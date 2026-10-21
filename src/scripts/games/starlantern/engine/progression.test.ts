@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   canRaiseNode, canRaiseTalent, defaultTalents, defaultTree, freeNode, keystonesOf, learnedSkills, legacyDue, newTree, nodeRank, raiseNode,
   raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, ultimateFor, validBuild,
-  heroMainBranch, heroTalents, heroTree, memoriesOf, mechKnob, swapPair,
+  heroMainBranch, heroTalents, heroTree, knobOf, memoriesOf, mechKnob, swapPair,
 } from './progression';
 import { chainLength } from '../data/story/chains';
 import { HERO_ULTIMATES, RIN_DAWN, SKY_LANTERN, ULTIMATES } from '../data/ultimates';
@@ -10,7 +10,7 @@ import { gainExp, newMember } from './party';
 import { CHARACTERS, rulesOf } from '../data/characters';
 import { mulberry32 } from './rng';
 import { DEFAULT_CAPSTONE, DEFAULT_FIRST, K, LEGACY_LEARN_LEVEL, NODES, P, TIER_GATE, TREES, V0, branchNodes } from '../data/trees';
-import { withNode } from './testing';
+import { makeCombatant, withNode } from './testing';
 import { BOARDS, DEFAULT_KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE, talentBlocker } from '../data/talents';
 import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
 import type { AnyStat, CharacterId, Member } from './types';
@@ -928,6 +928,23 @@ describe('pairs, mechanic knobs and the first-learned list (plan 8d Task 1)', ()
       expect(mechKnob(null, 'noel', 'heatMax')).toBeUndefined();
       expect(mechKnob({ 'test-calm': 2 }, 'noel', 'markCap')).toBeUndefined();   // another knob
       expect(mechKnob({ 'test-calm': 2 }, 'rin', 'heatMax')).toBeUndefined();    // another member's
+    } finally { restore(); }
+  });
+
+  it("knobOf reads a combatant's knob once a fight", () => {
+    const restore = withNode('noel', 0, 1, K('test-calm', '測試冷靜', 'heatMax', [6, 7, 8], (v) => `熱度上限 ${v}。`));
+    try {
+      const noel = makeCombatant({ key: 'p0', side: 'party', defId: 'noel', ranks: { 'fire-star': 1, 'test-calm': 2 } });
+      expect(knobOf(noel, 'heatMax')).toBe(7);
+      expect(knobOf(noel, 'markCap')).toBeUndefined();
+      // Kept for the rest of this fight: the ranks a combatant fights with never change mid-battle.
+      noel.ranks!['test-calm'] = 3;
+      expect(knobOf(noel, 'heatMax')).toBe(7);
+      // The next fight builds new combatants, which read the tree afresh.
+      expect(knobOf(makeCombatant({ key: 'p0', side: 'party', defId: 'noel', ranks: { 'test-calm': 3 } }), 'heatMax')).toBe(8);
+      // Foes and members without ranks have no knobs.
+      expect(knobOf(makeCombatant({ key: 'e0', side: 'enemy', defId: 'noel', ranks: { 'test-calm': 3 } }), 'heatMax')).toBeUndefined();
+      expect(knobOf(makeCombatant({ key: 'p1', side: 'party', defId: 'noel' }), 'heatMax')).toBeUndefined();
     } finally { restore(); }
   });
 

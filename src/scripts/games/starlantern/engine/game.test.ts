@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Game, type MoveResult } from './game';
 import { STORY_FIGHT_ROUNDS } from './battle';
-import { SAVE_KEY, loadGame, saveGame } from './save';
+import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
 import { SAVE_VERSION, newGame, START_ITEMS } from './state';
 import { constRng, memoryStorage, plainItem, version8Save, withNode } from './testing';
 import { readFileSync } from 'node:fs';
@@ -1569,9 +1569,56 @@ describe('changing a variant side (plan 8d Task 1)', () => {
 });
 
 describe('the tree rework on load (plan 8d Task 2)', () => {
+  const fixture = join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'roster-8b.json');
+  const v8 = () => version8Save((JSON.parse(readFileSync(fixture, 'utf8')) as { trees: Record<string, { id: string }[][]> }).trees);
+
+  it('booting a version 8 save writes the migrated game at once, the old text kept in its own key first', () => {
+    const { raw } = v8();
+    const storage = memoryStorage({ [SAVE_KEY]: raw });
+    const g = Game.boot(calm(), storage);
+    expect(storage.map.get(V8_KEY)).toBe(raw);
+    const saved = JSON.parse(storage.map.get(SAVE_KEY)!);
+    expect(saved.version).toBe(SAVE_VERSION);
+    expect(saved).toEqual(JSON.parse(JSON.stringify(g.state)));
+    // The next boot reads version 9: no second notice, no second free respec.
+    const again = Game.boot(calm(), storage);
+    expect(again.notice).toBeNull();
+    expect(again.state).toEqual(g.state);
+  });
+
+  it('a version 8 save that does not migrate cleanly is never saved over', () => {
+    const bad = JSON.parse(v8().raw);
+    bad.gold = -1;
+    const raw = JSON.stringify(bad);
+    const storage = memoryStorage({ [SAVE_KEY]: raw });
+    const g = Game.boot(calm(), storage);
+    expect(g.notice).toBe('save-reset');
+    expect(storage.map.get(SAVE_KEY)).toBe(raw);
+    expect(storage.map.get(V8_KEY)).toBe(raw);
+  });
+
+  it('an old tab left open over the update cannot wipe the progress', () => {
+    const { raw } = v8();
+    const storage = memoryStorage({ [SAVE_KEY]: raw });
+    // The new build migrates and saves; the player plays on.
+    const g = Game.boot(calm(), storage);
+    g.state.gold = 4321;
+    expect(saveGame(storage, g.state)).toBe(true);
+    const progress = storage.map.get(SAVE_KEY)!;
+    // The old tab (plan 8c's build) reads version 9 as another version: it backs that text up, starts afresh and
+    // saves its new game as version 8.
+    storage.map.set(BACKUP_KEY, progress);
+    storage.map.set(SAVE_KEY, JSON.stringify({ ...newGame(), version: 8 }));
+    // The new build boots again: it migrates the old tab's game, and neither the version 8 text nor the progress is lost.
+    const next = Game.boot(calm(), storage);
+    expect(next.notice).toBe('tree-reworked');
+    expect(storage.map.get(V8_KEY)).toBe(raw);
+    expect(storage.map.get(BACKUP_KEY)).toBe(progress);
+    expect(JSON.parse(storage.map.get(BACKUP_KEY)!).gold).toBe(4321);
+  });
+
   it('booting a version 8 save says the tree was reworked', () => {
-    const fixture = join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'roster-8b.json');
-    const { raw } = version8Save((JSON.parse(readFileSync(fixture, 'utf8')) as { trees: Record<string, { id: string }[][]> }).trees);
+    const { raw } = v8();
     const storage = memoryStorage({ [SAVE_KEY]: raw });
     const g = Game.boot(calm(), storage);
     expect(g.notice).toBe('tree-reworked');

@@ -148,8 +148,13 @@ export class Game {
     // count as seen and never replay late.
     const g = new Game(rng, storage, r.status === 'ok' ? settleBellkeeper(settleOpening(r.state)) : undefined, forgeSalt, START_LINEUP);
     if (r.status === 'corrupt' || r.status === 'version') g.notice = 'save-reset';
-    // An older save brought up to this version: the trees were respent on the standard build (plan 8d), so say so once.
-    if (r.status === 'ok' && r.migrated) g.notice = 'tree-reworked';
+    // An older save brought up to this version: the trees were respent on the standard build (plan 8d), so say so once,
+    // and save the result at once (only a clean migration; loadGame has already kept the old text in V8_KEY), so the
+    // next load is version 9 and the free respec is not handed out again.
+    if (r.status === 'ok' && r.migrated) {
+      g.notice = 'tree-reworked';
+      saveGame(storage, g.state);
+    }
     g.rerolled = true;
     g.arrival = arrivalScenes(g.state, { chat: false });
     return g;

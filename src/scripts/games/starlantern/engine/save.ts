@@ -18,6 +18,12 @@ import type { CharacterId, ItemInstance, Member, Slot } from './types';
 
 export const SAVE_KEY = 'starlantern-save';
 export const BACKUP_KEY = 'starlantern-save-backup';
+/**
+ * The first version 8 text this browser ever read (plan 8d): written once before the migration writes anything, never
+ * overwritten. BACKUP_KEY is not enough on its own, since any later corrupt or other-version read (an old tab left open
+ * over the update, say) writes over it.
+ */
+export const V8_KEY = 'starlantern-save-v8';
 
 export type SaveStorage = { getItem(k: string): string | null; setItem(k: string, v: string): void };
 /** `migrated`: the save was an older version, brought up to this one on the way in (its text is kept in BACKUP_KEY). */
@@ -149,6 +155,11 @@ function backup(storage: SaveStorage, raw: string): void {
   try { storage.setItem(BACKUP_KEY, raw); } catch { /* storage full or denied: nothing more we can do */ }
 }
 
+/** Writes `raw` under `key` only when nothing is there yet. */
+function keepOnce(storage: SaveStorage, key: string, raw: string): void {
+  try { if (storage.getItem(key) === null) storage.setItem(key, raw); } catch { /* storage full or denied */ }
+}
+
 /**
  * B1 ruling: banters are cosmetic, so a banter id this build does not know (renamed, removed, or heard on a newer build before a
  * rollback) is dropped from the story's scene lists, and from a `heard` record keyed by it, instead of making the save corrupt.
@@ -170,6 +181,8 @@ function dropUnknownBanters(data: Record<string, unknown>): void {
  * build for their level (the hero's on the balanced build, with his memories) and each gets one free respec at the inn.
  * Talents, gear, memories and every other field are left alone. A member that is not an object with a known id and a
  * whole level from 1 to MAX_LEVEL is left as it is, for the validation to refuse.
+ * Since the old tree is thrown away, a version 8 save whose only fault is its tree (unknown ids, overspent, not an
+ * object) is repaired on purpose and loads as ok; any other fault still makes it corrupt.
  */
 export function migrate8to9(d: Record<string, unknown>): void {
   const party = d.party;
@@ -193,9 +206,10 @@ export function loadGame(storage: SaveStorage): LoadResult {
   let data: unknown;
   try { data = JSON.parse(raw); } catch { backup(storage, raw); return { status: 'corrupt' }; }
   if (!isObj(data)) { backup(storage, raw); return { status: 'corrupt' }; }
-  // The migrations, oldest first; the text before them is backed up, like a save of another version, so it can come back.
+  // The migrations, oldest first. The version 8 text is kept in V8_KEY (once, never overwritten) and BACKUP_KEY is left
+  // alone, so neither a later read nor this one can write over progress kept there.
   const migrated = data.version === 8;
-  if (migrated) { backup(storage, raw); migrate8to9(data); }
+  if (migrated) { keepOnce(storage, V8_KEY, raw); migrate8to9(data); }
   if (data.version !== SAVE_VERSION) { backup(storage, raw); return { status: 'version' }; }
   dropUnknownBanters(data);
   if (!isValid(data)) { backup(storage, raw); return { status: 'corrupt' }; }

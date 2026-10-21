@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { BACKUP_KEY, SAVE_KEY, loadGame, saveGame } from './save';
+import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
 import { SAVE_VERSION, newGame } from './state';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
@@ -653,6 +653,12 @@ describe('save version 9 (plan 8d)', () => {
     trees: Record<string, { id: string }[][]>;
   }).trees;
 
+  /** The game without any member's tree or free respec: what a migration must leave exactly as it was. */
+  const withoutTrees = (s: ReturnType<typeof newGame>) => ({
+    ...s,
+    party: { ...s.party, roster: Object.fromEntries(Object.entries(s.party.roster).map(([id, m]) => [id, { ...m, tree: undefined, freeRespec: undefined }])) },
+  });
+
   it('a version 8 save loads as version 9 with standard trees and one free respec', () => {
     const { raw, state: g } = version8Save(trees8b());
     // As plan 8c wrote it: strengthening nodes and since-renamed ids, which no tree of this build holds.
@@ -672,20 +678,53 @@ describe('save version 9 (plan 8d)', () => {
       expect(m.tree, id).toEqual(id === 'hero' ? heroTree(30, 'balanced', 4) : defaultTree(id, was.level));
       expect(m.freeRespec, id).toBe(true);
       expect(validBuild(id, m.level, m.tree, m.talents, memoriesOf(m)), id).toBe(true);
-      // Every other field of the member exactly as it was (gear, level, memories, talents).
-      expect({ ...m, tree: undefined, freeRespec: undefined }, id).toEqual({ ...was, tree: undefined });
     }
-    expect(r.state.party.roster.noel.equip).toEqual(g.party.roster.noel.equip);
-    for (const k of ['gold', 'inventory', 'bag', 'story', 'codex', 'dungeon', 'affinity', 'nextUid'] as const) {
-      expect(r.state[k as keyof typeof g], k).toEqual(g[k as keyof typeof g]);
-    }
-    expect({ ...r.state.party, roster: undefined }).toEqual({ ...g.party, roster: undefined });
-    // The text from before the migration is kept, so a player can go back to it.
-    expect(st.map.get(BACKUP_KEY)).toBe(raw);
+    // Everything else exactly as it was: the whole game, every member's gear, level, memories and talents included.
+    expect(withoutTrees(r.state)).toEqual(withoutTrees(g));
+    expect(r.state.party.roster.noel.equip.ring1?.special).toBe('lg-noel');
+    // The text from before the migration is kept in a key of its own, and the general backup is left alone.
+    expect(st.map.get(V8_KEY)).toBe(raw);
+    expect(st.map.has(BACKUP_KEY)).toBe(false);
     // Saved again, it loads as it is: no second migration, no second free respec.
     const again = memoryStorage();
     saveGame(again, r.state);
     expect(loadGame(again)).toEqual({ status: 'ok', state: r.state });
+  });
+
+  it('the version 8 text goes to its own key once, and nothing ever writes over it', () => {
+    const { raw } = version8Save(trees8b());
+    const st = memoryStorage({ [SAVE_KEY]: raw });
+    expect(loadGame(st).status).toBe('ok');
+    expect(st.map.get(V8_KEY)).toBe(raw);
+    // Another version 8 text later (an old tab's new game, say) leaves the first one where it is.
+    const other = JSON.stringify({ ...newGame(), version: 8 });
+    st.map.set(SAVE_KEY, other);
+    expect(loadGame(st).status).toBe('ok');
+    expect(st.map.get(V8_KEY)).toBe(raw);
+    // So do a corrupt read and a read of another version, which write the general backup.
+    st.map.set(SAVE_KEY, '{broken');
+    expect(loadGame(st).status).toBe('corrupt');
+    st.map.set(SAVE_KEY, JSON.stringify({ ...newGame(), version: 7 }));
+    expect(loadGame(st).status).toBe('version');
+    expect(st.map.get(V8_KEY)).toBe(raw);
+  });
+
+  it('a version 8 save whose only fault is its tree is repaired by the migration', () => {
+    // The old tree is thrown away, so a tree that would make a version 9 save corrupt (unknown ids, overspent, a
+    // missing free node) loads as the standard build: the migration repairs it on purpose.
+    const { raw, state: g } = version8Save(trees8b());
+    const bad = JSON.parse(raw);
+    bad.party.roster.noel.tree = { nope: 9, 'fire-star': 3, 'inferno': 1 };
+    bad.party.roster.liz.tree = {};
+    bad.party.roster.hero.tree = 'junk';
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify({ ...bad, version: 9 }) }))).toEqual({ status: 'corrupt' });
+    const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(bad) }));
+    if (r.status !== 'ok') throw new Error(`not repaired: ${r.status}`);
+    expect(r.migrated).toBe(true);
+    expect(r.state.party.roster.noel.tree).toEqual(defaultTree('noel', 20));
+    expect(r.state.party.roster.liz.tree).toEqual(defaultTree('liz', 12));
+    expect(r.state.party.roster.hero.tree).toEqual(heroTree(30, 'balanced', 4));
+    expect(withoutTrees(r.state)).toEqual(withoutTrees(g));
   });
 
   it('versions other than 8 and 9 are still refused', () => {

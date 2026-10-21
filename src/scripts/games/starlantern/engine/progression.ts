@@ -10,6 +10,7 @@ import { rulesOf } from '../data/characters';
 import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
 import { HERO_ULTIMATES, RIN_DAWN, SKY_LANTERN, ULTIMATES, skyForm } from '../data/ultimates';
 import type { AnyStat, CharacterId, GrowthRules, Member, Sheet, UltimateDef } from './types';
+import type { Combatant } from './combatant';
 import { stackMods } from './skills';
 import { chainLength } from '../data/story/chains';
 
@@ -233,15 +234,31 @@ export function swapPair(m: Member, node: string): { ok: true; member: Member } 
 /**
  * The value a mechanic knob takes from `owner`'s held mechanic node for `k`: `values[rank - 1]` (a rank above the max reads
  * as the max), or undefined when no such node holds a rank; the ranks are read as `rankIn` reads a tree, so junk is 0.
- * A mechanic module reads `mechKnob(c.ranks, owner, k) ?? its constant`; it never draws.
+ * In a fight a mechanic module reads it through `knobOf(c, k) ?? its constant`; it never draws.
  */
 export function mechKnob(ranks: unknown, owner: CharacterId, k: MechKnob): number | undefined {
+  if (!has(TREES, owner)) return undefined;
   for (const b of TREES[owner].branches) for (const { node } of branchNodes(b)) {
     if (node.kind !== 'mech' || node.knob !== k) continue;
     const r = Math.min(rankIn(ranks, node.id), node.maxRank);
     if (r > 0) return node.values![r - 1];
   }
   return undefined;
+}
+
+/** Each combatant's knobs, read once a fight: a fight builds its combatants afresh and their ranks never change in it. */
+const KNOBS = new WeakMap<Combatant, Map<MechKnob, number | undefined>>();
+
+/**
+ * A combatant's mechanic knob (`mechKnob` on its ranks, its defId as the owner), cached on the combatant for the rest of
+ * the fight; undefined for a foe or a member without ranks.
+ */
+export function knobOf(c: Combatant, k: MechKnob): number | undefined {
+  if (c.side !== 'party' || !c.ranks) return undefined;
+  let knobs = KNOBS.get(c);
+  if (!knobs) KNOBS.set(c, (knobs = new Map()));
+  if (!knobs.has(k)) knobs.set(k, mechKnob(c.ranks, c.defId as CharacterId, k));
+  return knobs.get(k);
 }
 
 /** One more rank in `node`, on a copy; the member passed in is never changed. */

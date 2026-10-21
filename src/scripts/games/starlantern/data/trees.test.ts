@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TREES, branchNodes, nodeDesc, nodeName, tierNodes } from './trees';
+import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, DEFAULT_FIRST, LEGACY_LEARN_LEVEL, NODES, P, TREES, V0, branchNodes, nodeDesc, nodeName, tierNodes } from './trees';
+import { withNode } from '../engine/testing';
 import { CHARACTERS, rulesOf } from './characters';
 import { SKILLS } from './skills';
 import { POWERS } from './gear';
@@ -33,6 +34,33 @@ describe('skill trees', () => {
         expect(a.pair.pair, `${id} ${i}/${t} pair`).toBeUndefined();
       }));
       expect(capacity(now.map((b) => b.nodes)), id).toBe(capacity(was[id]));
+    }
+  });
+
+  it('every DEFAULT_FIRST node is an A side of its owner that the standard build reaches', () => {
+    /** What is wrong with the list: a node of someone else (or none), a B side, a cell the standard build never takes. */
+    const problems = (): string[] => Object.entries(DEFAULT_FIRST).flatMap(([id, list]) => (list ?? []).flatMap((n) => {
+      const info = Object.prototype.hasOwnProperty.call(NODES, n) ? NODES[n] : undefined;
+      if (!info || info.owner !== id) return [`${id}: ${n} is not in her tree`];
+      if (id === 'hero') return [`hero: ${n} (his build follows HERO_BUILDS)`];
+      if (TREES[id as CharacterId].branches[info.branch].nodes[info.tier] !== info.node) return [`${id}: ${n} is a B side`];
+      if (info.tier === 4 && info.branch !== DEFAULT_CAPSTONE[id as Exclude<CharacterId, 'hero'>]) return [`${id}: ${n} is an ultimate the build never aims for`];
+      return (defaultTree(id as CharacterId, 50)[n] ?? 0) >= 1 ? [] : [`${id}: ${n} is never learned`];
+    }));
+    expect(problems()).toEqual([]);
+    // The guard itself catches each kind of mistake.
+    const restore = withNode('noel', 0, 1, P(TREES.noel.branches[0].nodes[1], V0('test-star-b', '測試星', 'fire-star', '測試', [{ powerPct: 101 }])));
+    const before = { ...DEFAULT_FIRST };
+    try {
+      for (const [id, n] of [['rin', 'noel-fire-up'], ['noel', 'nope'], ['noel', 'test-star-b'], ['noel', 'blizzard'], ['hero', 'hero-slash']] as const) {
+        for (const k of Object.keys(DEFAULT_FIRST)) delete DEFAULT_FIRST[k as CharacterId];
+        DEFAULT_FIRST[id] = [n];
+        expect(problems(), `${id} ${n}`).toHaveLength(1);
+      }
+    } finally {
+      for (const k of Object.keys(DEFAULT_FIRST)) delete DEFAULT_FIRST[k as CharacterId];
+      Object.assign(DEFAULT_FIRST, before);
+      restore();
     }
   });
 
