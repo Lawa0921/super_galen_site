@@ -210,7 +210,7 @@ tossSlot(slot: number, n?: number): boolean;      // 作用在 cur（B7）
 - [ ] **Step 2：跑測試確認失敗**：`npx vitest run src/scripts/games/delve/render/execRoutes.test.ts src/scripts/games/delve/input/mapping.test.ts` FAIL（列出違規行／`null`）；`npx playwright test tests/e2e/delve.spec.ts --project=chromium -g "按 Q"` FAIL。
 - [ ] **Step 3：改線**：每個呼叫都換成 `game.act({ op: …, … })`，回傳值的用法不變（型別來自 `CmdResults`）。`hud.ts:287` 換成 `act({ op: 'swap', a: this.picked, b: i })`。再加上 G 鍵。
 - [ ] **Step 4：跑測試確認通過**：掃描測試、mapping 測試 PASS；全套 vitest PASS；`npx playwright test tests/e2e/delve.spec.ts --project=chromium` 全綠（含新測試與既有的箱子、商店、鍛造、衣櫥、傳送碑流程）；tsc 沒有新增錯誤。
-- [ ] **Step 5：實機目測**：在 4321 起 dev server（先確認 4321 是不是被別的 worktree 佔用、服務的是不是本分支），開箱拿取、合成、換裝、買賣、技能樹、傳送碑、Q 丟出各試一次，回報時附上 `http://localhost:4321/games/delve`。
+- [ ] **Step 5：實機目測**：在 4321 起 dev server（先確認 4321 是不是被別的 worktree 佔用、服務的是不是本分支），開箱拿取、合成、換裝、買賣、技能樹、傳送碑、G 丟出各試一次，回報時附上 `http://localhost:4321/games/delve`。
 - [ ] **Step 6：Commit** `refactor(delve): route UI actions through the exec bus; G tosses the held stack`
 
 ---
