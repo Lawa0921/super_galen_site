@@ -66,6 +66,10 @@ export interface BattleState {
   moon?: { phase: MoonPhase; hold?: { turns: number } };
   /** Safira's 雙人舞 after her finale (plan 8d): the next ally's damage skill this round is `pct`% stronger (beat.ts). */
   duet?: { pct: number; by: string };
+  /** 同步 (plan 8e): the next other ally's skill this round is `pct`% stronger (engine/mechanics/runes.ts). */
+  sync?: { pct: number; by: string };
+  /** 回聲 (plan 8e): each strikes `target` with `effects` at the end of `round`, its caster and its foe still standing. */
+  reprises?: { by: string; target: string; round: number; name: string; effects: Effect[] }[];
 }
 
 /** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
@@ -427,14 +431,22 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       payMech(s, actor, def, ctx);
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
       ctx.cast = def.id;   // a barrier remembers the skill that raised it
-      if (def.effects.some((e) => e.kind === 'damage' && e.scatter)) scatterCast(s, actor, def, act.target, ctx, rng);
+      delete ctx.struck;
+      const scatter = def.effects.some((e) => e.kind === 'damage' && e.scatter);
+      let first: Combatant[] = [];
+      if (scatter) scatterCast(s, actor, def, act.target, ctx, rng);
       else {
-        const targets = resolveTargets(s, actor, def.target, act.target, rng);
+        first = resolveTargets(s, actor, def.target, act.target, rng);
         const before = ctx.lastHit;
-        for (const t of targets) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
+        for (const t of first) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
+        const landed = first.length === 1 && landedOn(ctx, before, first[0]);
+        // The first foe the cast struck (回聲 aims at it, plan 8e).
+        if (landed) ctx.struck = first[0].key;
         // 彈射 (plan 8e): after the first foe has had every effect, the damage goes on down the line, if a hit landed.
-        if (def.runeRules?.bounce && targets.length === 1 && landedOn(ctx, before, targets[0])) bounceCast(s, actor, def, targets[0], ctx);
+        if (def.runeRules?.bounce && landed) bounceCast(s, actor, def, first[0], ctx);
       }
+      // 雙重詠唱 (plan 8e): the whole skill once more, paid already; one action for the mechanics.
+      if (def.runeRules?.twice) twinCast(s, actor, def, first, scatter, ctx, rng);
       delete ctx.cast;
       return def;
     }
@@ -499,6 +511,34 @@ function bounceCast(s: BattleState, actor: Combatant, def: SkillDef, first: Comb
     // A bounce that is dodged ends the chain: it only goes on from a foe it struck.
     if (!landedOn(ctx, before, next)) return;
   }
+}
+
+/**
+ * 雙重詠唱's second cast (plan 8e ruling 12), at once and with no draw for its targets: a single foe again, or the first
+ * one standing should it have fallen; a single ally again, or else the default ally (the lowest share of HP); a revive
+ * on another fallen ally, or nothing; a whole side or herself as usual. It never bounces. A scatter skill scatters anew.
+ * With no one to cast on, nothing happens and nothing is logged.
+ */
+function twinCast(s: BattleState, actor: Combatant, def: SkillDef, first: Combatant[], scatter: boolean, ctx: EffectContext, rng: Rng): void {
+  const allies = actor.side === 'party' ? s.party : s.enemies;
+  const foes = actor.side === 'party' ? s.enemies : s.party;
+  const again = { type: 'act' as const, actor: actor.key, label: T.rune.again(def.name) };
+  if (scatter) {
+    if (!living(foes).length) return;
+    s.log.push(again);
+    scatterCast(s, actor, def, undefined, ctx, rng);
+    return;
+  }
+  const one = (t: Combatant | undefined): Combatant[] => (t ? [t] : []);
+  const targets = def.target === 'enemy' ? one(first[0]?.alive ? first[0] : living(foes)[0])
+    : def.target === 'ally' ? one(first[0]?.alive ? first[0] : living(allies).sort((a, b) => a.hp / a.max.hp - b.hp / b.max.hp)[0])
+      : def.target === 'deadAlly' ? one(allies.find((c) => !c.alive))
+        : resolveTargets(s, actor, def.target, undefined, rng);
+  if (!targets.length) return;
+  s.log.push(again);
+  const before = ctx.lastHit;
+  for (const t of targets) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
+  if (!ctx.struck && targets.length === 1 && landedOn(ctx, before, targets[0])) ctx.struck = targets[0].key;
 }
 
 /** Whether a hit landed on `t` since `before` was the context's last hit (each landed hit records a new one). */

@@ -35,6 +35,8 @@ export interface EffectContext {
   /** Who a foe's single blow went to by a cover, while that action and its aftermath (afterFoe) resolve (Scarlet's 回禮). */
   coverBlow?: string;
   lastHit?: { target: string; amount: number };
+  /** The first foe the skill being cast has struck (plan 8e: 回聲 aims at it, whatever a bounce reaches after). */
+  struck?: string;
 }
 
 /** A power's percentage of a number, rounded half away from zero so a debuff (-37.5) rounds as deep as a buff (37.5). */

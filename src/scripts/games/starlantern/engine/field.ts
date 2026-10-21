@@ -121,6 +121,13 @@ export function castField(
     const t = team.get(id)!;
     for (const eff of def.effects) if (FIELD_EFFECTS.has(eff.kind)) applyEffect(caster, t, eff, ctx);
   }
+  // 雙重詠唱 (plan 8e): its TP is already doubled, so it casts twice here too: on the same members, or on another fallen
+  // one for a revive (none left, nothing). The once-a-cast runes (輪轉, 同步, 回聲) only act in battle.
+  if (def.runeRules?.twice) {
+    const again = def.target === 'deadAlly' ? ids.filter((id) => !team.get(id)!.alive).slice(0, 1) : targets;
+    for (const id of again) for (const eff of def.effects) if (FIELD_EFFECTS.has(eff.kind)) applyEffect(caster, team.get(id)!, eff, ctx);
+    targets = [...targets, ...again.filter((id) => !targets.includes(id))];
+  }
 
   const gains: FieldGain[] = [];
   const hpAfter = new Map<CharacterId, number>();

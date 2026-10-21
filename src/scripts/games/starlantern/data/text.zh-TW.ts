@@ -769,6 +769,9 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       group: RUNE_GROUP,
       reserve: (cap: number) => `常駐保留的 TP 上限已經到 ${cap}%`,
     },
+    /** The battle log's act for 雙重詠唱's second cast and for a 回聲 (plan 8e Task 5). */
+    again: (name: string) => `${name}（第二次）`,
+    reprise: (name: string) => `${name}的回聲`,
   },
   clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card
   /** The finale's closing card; its text is the finale scene's summary. */

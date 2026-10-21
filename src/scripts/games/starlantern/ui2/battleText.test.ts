@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BattleEvent } from '../engine/combatant';
 import { battleLines } from './battleText';
+import { T } from '../data/text.zh-TW';
 
 describe('battleLines', () => {
   it('turns events into readable lines', () => {
@@ -51,5 +52,13 @@ describe('battleLines', () => {
 
   it('what a shield took is worded', () => {
     expect(battleLines([{ type: 'shield', target: 'noel', amount: 30 }], () => '諾艾兒')).toEqual(['諾艾兒的護盾擋下了 30 傷害']);
+  });
+});
+
+describe('battle lines for runes (plan 8e Task 5)', () => {
+  it('battle lines for the new acts', () => {
+    const nameOf = (k: string) => (k === 'noel' ? '諾艾兒' : k);
+    expect(battleLines([{ type: 'act', actor: 'noel', label: T.rune.again('火之星彈') }, { type: 'act', actor: 'noel', label: T.rune.reprise('火之星彈') }], nameOf))
+      .toEqual([T.log.act('諾艾兒', '火之星彈（第二次）'), T.log.act('諾艾兒', '火之星彈的回聲')]);
   });
 });

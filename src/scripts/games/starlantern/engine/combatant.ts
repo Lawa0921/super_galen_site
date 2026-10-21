@@ -40,6 +40,8 @@ export interface Combatant {
   powers: string[];
   /** Runes socketed per skill id (members only, plan 8e; `Member.sockets` without its empty slots). Absent: none. */
   runes?: Record<string, RuneRef[]>;
+  /** 星燈輪轉 (plan 8e): how many times each skill with it has been cast this fight. */
+  wheel?: Record<string, number>;
   /** Keystone talents held (members only; engine/progression.keystonesOf). */
   keystones: KeystoneId[];
   /** Memory pieces held (members only; read through `memoriesOf`); the hero's Lantern Key lights up with them. */

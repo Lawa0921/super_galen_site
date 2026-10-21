@@ -366,3 +366,19 @@ describe('runes in the field (plan 8e Task 3)', () => {
     expect(r.cost).toBe(SKILLS.moonlight.tp);
   });
 });
+
+describe('twin-cast in the field (plan 8e Task 5)', () => {
+  it('a twin-cast heal heals twice in the field', () => {
+    const s = game();
+    set(s, 'selene', { tree: { moonlight: 1 }, sockets: { moonlight: [{ id: 'twin-cast', tier: 'legendary' }] } });
+    set(s, 'noel', { level: 40, hp: 1 });   // a deep pool of HP, so both heals show
+    const each = healAmount(combatant(s, 'selene'), 120);
+    expect(1 + each).toBeLessThan(maxHp(s, 'noel'));   // one heal alone would not fill her
+    const r = castField(s, { caster: 'selene', skill: 'moonlight', target: 'noel', depth: 1 });
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.cost).toBe(10);
+    const want = Math.min(maxHp(s, 'noel'), 1 + 2 * each);
+    expect(member(r.state, 'noel').hp).toBe(want);
+    expect(r.gains).toEqual([{ id: 'noel', hp: want - 1, revived: false }]);
+  });
+});
