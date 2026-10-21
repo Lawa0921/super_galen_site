@@ -1,7 +1,8 @@
 // edits.ts — 世界編輯日誌（co-op M-B2；spec §5.2、§10 D5）：以 chunk 鍵記「改完之後的狀態」，給房主送增量用。
 // 同一批裡同一格只留一筆（順序是第一次被改的順序）；rev(chunk) 每記一次 +1、drain 不歸零（0 = 沒改過）。
 // 待取格子總數上限 cap（EDIT_CAP）：滿了以後被改到的 chunk 改標 full（丟掉它的格子清單，rev 照加），
-// 接收端整塊重抓。沒人取的日誌（單機玩很久）因此有上限。液體與結冰不進日誌（World.drainNetLiquid）。
+// 接收端整塊重抓。沒人取的日誌（單機玩很久）格子數因此有上限；待取 chunk 的項目與 rev 表仍隨改過的 chunk 數增長（spec §10 D5）。
+// 液體與結冰不進日誌（World.drainNetLiquid）。
 
 /** 待取格子總數上限 */
 export const EDIT_CAP = 4096;
