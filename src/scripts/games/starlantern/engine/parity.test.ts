@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -20,8 +20,14 @@ const FIXTURE = join(FIXTURES, 'contribution.8b.160.json');
  * `PARITY_CLOSEOUT=1` holds every row to 8b instead: the plan's last task runs it.
  */
 const PARITY_TASK: { name: string; changed: CharacterId[]; prev: string } = {
-  name: '8d Task 3', changed: ['noel', 'rin'], prev: 'contribution.8d-2.160.json',
+  name: '8d Task 5', changed: ['chizuru', 'selene'], prev: 'contribution.8d-3.160.json',
 };
+/**
+ * Plan 8d's tasks that change the roster's numbers, in order; 2 stands for the last gate before the first of them. Each
+ * task's `prev` must be the 160-seed table of the content task before it (`contribution.8d-<n>.160.json`, recorded from
+ * that task's accepted gate), and no later table may exist: a task that forgets to move `prev` on fails here.
+ */
+const CONTENT_TASKS = [2, 3, 5, 6, 7, 8];
 const TIMEOUT = 3_000_000;
 
 let measured: ParityTable | undefined;
@@ -122,6 +128,16 @@ describe('parity: the old roster baseline', () => {
     for (const id of PARITY_TASK.changed) expect(CHARACTER_IDS, id).toContain(id);
     expect(existsSync(join(FIXTURES, PARITY_TASK.prev)), PARITY_TASK.prev).toBe(true);
     expect(existsSync(FIXTURE), FIXTURE).toBe(true);
+  });
+
+  it("the task's previous gate is the latest accepted one: the content task before it, and no table after that", () => {
+    const task = Number(/^8d Task (\d+)$/.exec(PARITY_TASK.name)?.[1]);
+    expect(CONTENT_TASKS.slice(1), PARITY_TASK.name).toContain(task);
+    const before = CONTENT_TASKS[CONTENT_TASKS.indexOf(task) - 1];
+    expect(PARITY_TASK.prev).toBe(`contribution.8d-${before}.160.json`);
+    // The newest recorded table is that one: a table of this task or a later one means `PARITY_TASK` was left behind.
+    const recorded = readdirSync(FIXTURES).map((f) => /^contribution\.8d-(\d+)\.160\.json$/.exec(f)?.[1]).filter((n) => n !== undefined).map(Number);
+    expect(Math.max(...recorded)).toBe(before);
   });
 
   it('every character holds parity with the 8b roster', () => {
