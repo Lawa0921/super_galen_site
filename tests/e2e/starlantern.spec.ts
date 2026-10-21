@@ -1308,8 +1308,8 @@ test.describe('starlantern', () => {
 
     await flipTo(page, CHARACTERS.bobby.name);
     await expect(page.locator('.slx-tree-node[data-node=bobby-turret-twin]')).toContainText('設置砲台・雙管');
-    await expect(page.locator('.slx-tree-node[data-node=bobby-turret-pair]')).toContainText('設置砲台・雙砲台');
-    await expect(page.locator('.slx-tree-node[data-node=bobby-drone-aid]')).toContainText('修理無人機・急救');
+    await expect(page.locator('.slx-tree-node[data-node=bobby-turret-pair]')).toContainText('砲台・雙砲台');   // its short tree name (8d Task 8 review)
+    await expect(page.locator('.slx-tree-node[data-node=bobby-drone-aid]')).toContainText('無人機・急救');
     await expect(page.locator('.slx-tree-node[data-node=bobby-mine-chain]')).toContainText('電擊地雷・連鎖');
     const bench = page.locator('.slx-tree-node[data-node=bobby-bench]');
     await expect(bench).toContainText('工作檯');

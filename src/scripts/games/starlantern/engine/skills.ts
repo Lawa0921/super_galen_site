@@ -141,9 +141,13 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
   if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;
   if (mod.tpDelta !== undefined && def.tp > 0) out.tp = Math.max(1, def.tp + mod.tpDelta);
   // A variant (plan 8d): its label goes after the skill's name, its rule after the words; its rules merge key by key.
+  // Points added by another variant (雙砲台's powerDelta) on top of a variant's percent (雙管's) are added into the percent
+  // its words name, so the words give the real power (8d Task 8 review).
+  const sum = mod.powerPct !== undefined && mod.powerDelta !== undefined ? mod.powerPct + mod.powerDelta : undefined;
   for (const n of mod.notes ?? []) {
     out.name += `・${n.label}`;
-    out.desc += (out.desc && !out.desc.endsWith('。') ? '。' : '') + n.text;
+    const text = sum === undefined ? n.text : n.text.replace(T.mech.notePower(mod.powerPct!), T.mech.notePower(sum));
+    out.desc += (out.desc && !out.desc.endsWith('。') ? '。' : '') + text;
   }
   if (mod.rules) out.rules = { ...def.rules, ...definedOnly(mod.rules) };
   return out;

@@ -46,6 +46,15 @@ describe("the hero's echo", () => {
     expect(echoOf(r)!.def.id).toBe('moonlight');   // the record moved on; his choice did not
   });
 
+  it("echoing Scarlet's 挑釁 after his steady 守勢 leaves him taunting but no longer steady (8d Task 8 review)", () => {
+    const rec = { by: 'scarlet', round: 1, def: SKILLS.provoke, cost: SKILLS.provoke.tp };
+    const s0 = makeBattle([hero({ taunt: 2, steady: true }), P('scarlet')], [foe()], { round: 1, echo: rec });
+    const r = resolveRound(s0, { hero: { kind: 'echo', target: 'e0', rec } }, constRng(0.5));
+    expect(r.log).toContainEqual({ type: 'act', actor: 'hero', label: '殘響・挑釁' });
+    expect(r.party[0].taunt).toBeGreaterThan(0);
+    expect(r.party[0].steady).toBeUndefined();
+  });
+
   it('short of TP he loses the turn, as with a skill', () => {
     const s0 = makeBattle([hero({ tp: 1 }), P('noel')], [foe()]);
     const r = resolveRound(s0, { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' }, hero: { kind: 'echo', target: 'e0' } }, constRng(0.5));

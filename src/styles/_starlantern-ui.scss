@@ -628,7 +628,6 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-tree-node .slx-skill-head { gap: 2px; line-height: 14px; }   // 2px: a variant's seven characters (瞄準射擊・一擊) fit beside the rank at 844
 .slx-tree-node .slx-skill-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .slx-tree-node .slx-skill-name-long { font-size: 10px; letter-spacing: -0.5px; }
-.slx-tree-node .slx-skill-name-xlong { font-size: 9px; letter-spacing: -0.6px; }
 .slx-tree-node .slx-skill-rank { min-width: 0; flex: none; }
 .slx-tree-node:hover .slx-skill-name { color: #fff; }
 .slx-tree-node-foot { display: flex; justify-content: space-between; gap: 4px; font-size: 10px; line-height: 12px; white-space: nowrap; }

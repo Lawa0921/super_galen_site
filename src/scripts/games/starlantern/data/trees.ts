@@ -35,6 +35,11 @@ export interface TreeNode {
   desc?: string;
   /** A variant's name after its skill's: 火之星彈・{label}. */
   label?: string;
+  /**
+   * A variant's skill as its tree row names it when the whole name runs past seven characters (砲台 for 設置砲台: the row
+   * reads 砲台・雙砲台); the notes, the skills page and the battle menu keep the whole name (8d Task 8 review).
+   */
+  short?: string;
   mods?: SkillMod[];
   knob?: MechKnob;
   values?: number[];
@@ -296,13 +301,13 @@ export const TREES: Record<CharacterId, TreeDef> = {
       K('bobby-mass', '量產', 'deviceLevelCap', [4, 5, 6], (v) => `裝置最多改良到 ${v} 級。`),
       // The ultimate cell: a second turret beside the first, and the old capstone's power points and rounds, raised to keep
       // his Lv50 in parity once 加農強化 was gone (plan 8d Task 8, retune.md).
-      V('bobby-turret-pair', 'turret', '雙砲台', [{ powerDelta: 80, turnsDelta: 2, rules: { deviceTwin: true } }],
-        (m) => `可以同時架兩座砲台（第二座不算改良）；砲台威力 +${m.powerDelta}%，多撐 ${m.turnsDelta} 回合。`),
+      { ...V('bobby-turret-pair', 'turret', '雙砲台', [{ powerDelta: 80, turnsDelta: 2, rules: { deviceTwin: true } }],
+        (m) => `可以同時架兩座砲台（第二座不算改良）；砲台威力 +${m.powerDelta} 個百分點，多撐 ${m.turnsDelta} 回合。`), short: '砲台' },
     ] },
     { name: '整備', nodes: [
       A('tinker', 1),
       A('repair-drone', 3),
-      V('bobby-drone-aid', 'repair-drone', '急救', DRONE_CURES.map((deviceCures): SkillMod => ({ rules: { deviceCures } })), (m) => `也解除${curesSaid(m.rules!.deviceCures!)}。`),
+      { ...V('bobby-drone-aid', 'repair-drone', '急救', DRONE_CURES.map((deviceCures): SkillMod => ({ rules: { deviceCures } })), (m) => `也解除${curesSaid(m.rules!.deviceCures!)}。`), short: '無人機' },
       A('overclock', 3),
       A('emergency-repair', 1),
     ] },
@@ -437,6 +442,11 @@ export const nodeName = (id: string): string => {
   const n = NODES[id].node;
   if (n.kind === 'variant' && n.label !== undefined) return `${SKILLS[n.skill!].name}・${n.label}`;
   return n.name ?? SKILLS[n.skill!].name;
+};
+/** A node's name on its tree row: a variant's short skill name and its label when it has one (砲台・雙砲台), else nodeName. */
+export const treeName = (id: string): string => {
+  const n = NODES[id].node;
+  return n.kind === 'variant' && n.short !== undefined && n.label !== undefined ? `${n.short}・${n.label}` : nodeName(id);
 };
 export const nodeDesc = (id: string): string => NODES[id].node.desc ?? (NODES[id].node.skill ? SKILLS[NODES[id].node.skill!].desc : '');
 /** The rule of a variant or mechanic node at `rank` in one sentence; '' for an active, a `V0` variant or a rank out of range. */

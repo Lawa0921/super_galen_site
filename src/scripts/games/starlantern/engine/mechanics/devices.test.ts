@@ -190,6 +190,15 @@ describe("Bobby's nodes (plan 8d Task 8)", () => {
     expect(draws([dev('turret'), dev('turret')]) - draws([dev('turret')])).toBe(draws([dev('turret')]) - draws([]));
   });
 
+  it('with two turrets out, a cast upgrades the one closest to running out, the newer one too; on a tie the older (8d Task 8 review)', () => {
+    const two = (a: number, b: number) => devicesOf(cast(makeBattle([withRanks({ turret: 1, 'bobby-turret-pair': 1 }, [dev('turret', { turns: a }), dev('turret', { turns: b })])],
+      [foe('e0', { sleep: 9 }), foe('e1', { sleep: 9 })]), 'turret'))!.map((d) => [d.level, d.turns]);
+    // The newer (second) has 2 rounds left, the older 4: the newer is upgraded (its rounds start again at 5, 4 after the round).
+    expect(two(4, 2)).toEqual([[1, 3], [2, 4]]);
+    expect(two(2, 4)).toEqual([[2, 4], [1, 3]]);
+    expect(two(3, 3)).toEqual([[2, 4], [1, 2]]);
+  });
+
   it('with the pair node and both slots taken by other devices, the second turret upgrades the first', () => {
     const s = cast(makeBattle([withRanks({ turret: 1, 'bobby-turret-pair': 1 }, [dev('turret', { turns: 3 }), dev('mine', { skill: 'shock-mine', turns: 3 })])], [foe('e0', { sleep: 9 })]), 'turret');
     expect(devicesOf(s)!.map((d) => [d.kind, d.level])).toEqual([['turret', 2], ['mine', 1]]);
@@ -222,6 +231,17 @@ describe("Bobby's nodes (plan 8d Task 8)", () => {
     // A variance a foe for the strike; the chain's chance draws once more a foe hit, and only with the node.
     expect(draws([dev('mine', { skill: 'shock-mine' })]) - draws([])).toBe(2);
     expect(draws([dev('mine', { skill: 'shock-mine', shock: 0.2 })]) - draws([])).toBe(4);
+  });
+
+  it("the words give the real shot with both variants: 雙砲台's points are added to 雙管's percent (8d Task 8 review)", () => {
+    const both = skillFor({ powers: [], ranks: { turret: 1, 'bobby-turret-twin': 2, 'bobby-turret-pair': 1 } }, 'turret')!;
+    expect((both.effects[0] as { power: number }).power).toBe(pctOf(TURRET, 140));
+    expect(both.desc).toContain('每下威力 140%');
+    expect(both.desc).not.toContain('威力 60%');
+    expect(both.desc).toContain('+80 個百分點');
+    // Each alone says its own number.
+    expect(skillFor({ powers: [], ranks: { turret: 1, 'bobby-turret-twin': 2 } }, 'turret')!.desc).toContain('每下威力 60%');
+    expect(skillFor({ powers: [], ranks: { turret: 1, 'bobby-turret-pair': 1 } }, 'turret')!.desc).toContain('+80 個百分點');
   });
 
   it('the turret variants keep their names whole: 設置砲台・雙管・雙砲台', () => {

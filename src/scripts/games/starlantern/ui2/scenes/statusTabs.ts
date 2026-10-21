@@ -501,9 +501,9 @@ const tree: StatusTab = {
           // A name of five characters or more (護盾產生器) is set a size smaller, so it stays whole on its node. A variant's
           // (火之星彈・連星) may break onto a second line between its skill and its label, never inside either.
           n.kind === 'variant' && n.label !== undefined
-            // Eight characters or more (修理無人機・急救, 設置砲台・雙砲台; plan 8d Task 8) a size smaller again, so they stay on one line.
-            ? el('span', { class: `slx-skill-name slx-skill-name-long slx-skill-name-variant${nodeName(n).length >= 8 ? ' slx-skill-name-xlong' : ''}` }, [
-              el('span', { text: SKILLS[n.skill!]?.name ?? n.skill! }), el('span', { text: `・${n.label}` }),
+            // A variant too long for its row names its skill short there (砲台・雙砲台; data/trees.ts `short`).
+            ? el('span', { class: 'slx-skill-name slx-skill-name-long slx-skill-name-variant' }, [
+              el('span', { text: n.short ?? SKILLS[n.skill!]?.name ?? n.skill! }), el('span', { text: `・${n.label}` }),
             ])
             : el('span', { class: nodeName(n).length >= 5 ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: nodeName(n) }),
           el('span', { class: 'slx-skill-rank', text: T.ui2.status.rank(rank, n.maxRank) }),

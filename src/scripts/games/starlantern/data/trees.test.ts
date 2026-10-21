@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, DEFAULT_FIRST, INNATE, LEGACY_LEARN_LEVEL, NODES, P, TREES, V0, branchNodes, nodeDesc, nodeName, nodeText, tierNodes, type TreeNode } from './trees';
+import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, DEFAULT_FIRST, INNATE, LEGACY_LEARN_LEVEL, NODES, P, TREES, V0, branchNodes, nodeDesc, nodeName, nodeText, tierNodes, treeName, type TreeNode } from './trees';
 import { withNode } from '../engine/testing';
 import { CHARACTERS, rulesOf } from './characters';
 import { SKILLS } from './skills';
@@ -255,6 +255,22 @@ describe('skill trees', () => {
           }
         }
       });
+    }
+  });
+
+  it('a tree row names a node in seven characters at most: a longer variant carries a short skill name (8d Task 8 review)', () => {
+    expect(treeName('bobby-turret-pair')).toBe('砲台・雙砲台');
+    expect(treeName('bobby-drone-aid')).toBe('無人機・急救');
+    expect(treeName('noel-star-twin')).toBe(nodeName('noel-star-twin'));
+    expect(treeName('sweep')).toBe(nodeName('sweep'));
+    for (const id of Object.keys(NODES)) {
+      const n = NODES[id].node;
+      expect([...treeName(id)].length, `${id}: ${treeName(id)}`).toBeLessThanOrEqual(7);
+      // A short name only where the whole one is too long, and only on a variant (an active's name is its skill's own).
+      if (n.short !== undefined) {
+        expect(n.kind, id).toBe('variant');
+        expect([...nodeName(id)].length, id).toBeGreaterThan(7);
+      }
     }
   });
 

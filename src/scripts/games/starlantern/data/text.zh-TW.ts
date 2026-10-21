@@ -179,6 +179,8 @@ export const T = {
     coins: (n: number) => `銅板${n}`,
     /** 大手筆's words for the power a coin adds (data/skills.ts; 分期 rewrites the number, plan 8d). */
     coinPower: (n: number) => `每枚威力多 ${n}%`,
+    /** A variant's power as its words say it (雙管's 「每下威力 60%」); 雙砲台's added points rewrite it to the sum (8d Task 8 review). */
+    notePower: (n: number) => `威力 ${n}%`,
     /** ... and what it spends: every coin, or a share of them (分期), rounded up. */
     coinSpend: (pct: number) => (pct >= 100 ? '花光所有銅板' : `花掉 ${pct}% 的銅板（進位）`),
     /** 獵人標記's words for the stacks it locks at (her 獵人的耐心 raises it; engine/battle.ts skillFor rewrites it). */

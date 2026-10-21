@@ -526,13 +526,18 @@ describe('StatusScene', () => {
     expect(root.querySelector('.slx-tab-skills [data-skill=cannon] .slx-skill-name')!.classList.contains('slx-skill-name-long')).toBe(false);
   });
 
-  it("a variant name of eight characters or more is set smaller on the tree (修理無人機・急救, plan 8d Task 8)", () => {
+  it('a variant with a short tree name shows it on its tree row, at the normal size; the notes keep the whole name (8d Task 8 review)', () => {
     const { root, s } = setup('bobby', NO_ART, (g) => { g.state.party.recruited.push('bobby'); });
     s.onAction('right'); s.onAction('right'); s.onAction('right');
-    const cls = (id: string) => root.querySelector(`.slx-tree-node[data-node=${id}] .slx-skill-name`)!.classList;
-    expect(cls('bobby-drone-aid').contains('slx-skill-name-xlong')).toBe(true);
-    expect(cls('bobby-turret-pair').contains('slx-skill-name-xlong')).toBe(true);
-    expect(cls('bobby-turret-twin').contains('slx-skill-name-xlong')).toBe(false);
+    const name = (id: string) => root.querySelector(`.slx-tree-node[data-node=${id}] .slx-skill-name`)!;
+    expect(name('bobby-drone-aid').textContent).toBe('無人機・急救');
+    expect(name('bobby-turret-pair').textContent).toBe('砲台・雙砲台');
+    expect(name('bobby-turret-twin').textContent).toBe('設置砲台・雙管');   // no short name: the whole one
+    for (const id of ['bobby-drone-aid', 'bobby-turret-pair']) expect(name(id).className).toBe('slx-skill-name slx-skill-name-long slx-skill-name-variant');
+    expect(root.querySelector('.slx-skill-name-xlong')).toBeNull();
+    // The notes under the columns name the node in full.
+    root.querySelector<HTMLElement>('.slx-tree-node[data-node=bobby-drone-aid]')!.click();
+    expect(root.querySelector('.slx-tree-info-name')!.textContent).toBe('修理無人機・急救');
   });
 
   it('tree nodes and the skills tab show the skill icon when published', () => {
