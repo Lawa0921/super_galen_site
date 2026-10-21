@@ -632,6 +632,12 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-tree-state { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .slx-node-learned .slx-tree-state { color: $slx-up; }
 .slx-node-open .slx-tree-state { color: #6fa7ff; }
+// Plan 8d: a pair is two rows of one tier with 二選一 between them; the empty side of a taken pair can take its points over.
+.slx-tree-pair-tag { font-size: 9px; line-height: 10px; color: $slx-dim; text-align: center; }
+.slx-node-swap .slx-tree-state { color: #ffb36b; }
+.slx-tree-node .slx-skill-name-variant { white-space: normal; overflow: visible; }
+.slx-skill-name-variant > span { display: inline-block; white-space: nowrap; }
+.slx-node-swap .slx-skill-name, .slx-node-swap .slx-skill-rank { color: #b9b3c9; }
 .slx-node-locked .slx-skill-name, .slx-node-locked .slx-skill-rank, .slx-node-locked .slx-tree-state { color: #77718a; }
 .slx-tree-info { flex: none; min-height: 45px; margin-top: 1px; padding-top: 2px; border-top: 1px solid #3a3550; line-height: 14px; }
 .slx-tree-info p { margin: 0; }

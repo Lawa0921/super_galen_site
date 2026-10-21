@@ -342,7 +342,11 @@ export const T = {
       left: (n: number) => `剩餘技能點 ${n}`,
       /** A branch heading: its name and the points put into it. */
       branch: (name: string, n: number) => `${name}（${n} 點）`,
-      kind: { active: '主動', mod: '強化', passive: '被動', ultimate: '終極' },
+      kind: { active: '主動', variant: '變招', mech: '機制', passive: '被動', ultimate: '終極' },
+      /** Between the two sides of a pair (plan 8d): only one of them holds points. */
+      pairTag: '二選一',
+      /** The empty side of a pair whose other side holds points: a press moves the points over, free (two presses). */
+      swapOpen: '可改選（免費）', swapPending: '再按一次改選', swapped: '已改選',
       /** A node that can take its next rank now. */
       open: '可投點',
       /** Why a node cannot take its next rank (progression canRaiseNode). */

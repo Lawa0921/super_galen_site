@@ -2,7 +2,7 @@ import { CHARACTERS, rulesOf } from '../../data/characters';
 import { POWERS } from '../../data/gear';
 import { SKILLS } from '../../data/skills';
 import { BOARDS, BOARD_ROWS, KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE, boardPoints, rankOf, type TalentNode } from '../../data/talents';
-import { ACTIVE_RANK_PCT, NODES, TREES, type TreeNode } from '../../data/trees';
+import { ACTIVE_RANK_PCT, NODES, TREES, branchNodes, nodeName as treeNodeName, nodeText, tierNodes, type TreeBranch, type TreeNode } from '../../data/trees';
 import { T } from '../../data/text.zh-TW';
 import { skillCost, skillFor } from '../../engine/battle';
 import { itemLines } from '../../engine/compare';
@@ -338,16 +338,28 @@ function leaveTree(): void {
   treeView.top = 0;
 }
 
-/** Every node of the member's tree in cursor order: branch 0 tiers 0-4, then branch 1, then branch 2. */
-const treeOrder = (id: CharacterId): string[] => TREES[id].branches.flatMap((b) => b.nodes.map((n) => n.id));
+/**
+ * Every node of the member's tree in cursor order: branch 0 tiers 0-4, then branch 1, then branch 2; a pair's A side
+ * before its B side.
+ */
+const treeOrder = (id: CharacterId): string[] => TREES[id].branches.flatMap((b) => branchNodes(b).map((x) => x.node.id));
 
 type NodeKind = keyof typeof T.ui2.tree.kind;
 function kindOf(n: TreeNode, tier: number): NodeKind {
   if (tier === 4) return 'ultimate';
-  if (n.kind !== 'active') return 'mod';   // a variant (and, from plan 8d Task 4, a mechanic) node: shown as before until then
+  if (n.kind !== 'active') return n.kind;
   return SKILLS[n.skill!]?.passive ? 'passive' : 'active';
 }
-const nodeName = (n: TreeNode) => (n.kind === 'active' ? SKILLS[n.skill!]?.name ?? n.id : n.name ?? n.id);
+/** 火之星彈, 火之星彈・連星, 冷靜 (data/trees nodeName). */
+const nodeName = (n: TreeNode) => treeNodeName(n.id);
+
+/** A variant's or mechanic's rule at rank `r` in one sentence; a plan 8c variant (V0, no sentence) says its rewrite in short. */
+function ruleText(n: TreeNode, r: number): string {
+  const said = nodeText(n.id, r);
+  if (said) return said;
+  const m = n.mods?.[r - 1];
+  return m ? T.ui2.tree.mod(m) : '';
+}
 
 /** Moves the tree cursor to `node`, dropping a waiting press when the cursor actually moves. */
 function moveTree(node: string): boolean {
@@ -364,10 +376,17 @@ function treeReason(why: RaiseFail, node: string): string {
 
 /**
  * Enter on the cursor's node, or a click on `clicked` (which selects it first): the shared two-press spend, through the
- * Game so the spend is saved.
+ * Game so the spend is saved. On the empty side of a pair whose other side holds points the same two presses change
+ * the side instead, free (Game.swapVariant).
  */
 function pressTree(ctx: SceneCtx, id: CharacterId, clicked?: string): void {
   const node = clicked ?? treeView.cur;
+  if (canRaiseNode(ctx.game.state.party.roster[id], node) === 'pair') {
+    const swap = () => ctx.game.swapVariant(id, node).ok;
+    const r = clicked ? clickSpend(treeView.spend, node, moveTree, () => null, swap, ctx.sfx) : pressSpend(treeView.spend, node, () => null, swap, ctx.sfx);
+    treeView.msg = r === 'armed' ? T.ui2.tree.swapPending : r === 'raised' ? T.ui2.tree.swapped : T.ui2.tree.failed;
+    return;
+  }
   const can = () => canRaiseNode(ctx.game.state.party.roster[id], node);
   const raise = () => ctx.game.raiseNode(id, node).ok;
   const r = clicked ? clickSpend(treeView.spend, node, moveTree, can, raise, ctx.sfx) : pressSpend(treeView.spend, node, can, raise, ctx.sfx);
@@ -412,12 +431,17 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
     const next = rank > 0 && rank < n.maxRank ? nextRankText(n.skill!, rank) : null;
     if (next) change.push(el('span', { class: 'slx-tree-next', text: next }));
   } else {
-    change.push(el('span', { class: 'slx-tree-now', text: t.now(rank > 0 ? t.mod(n.mods![rank - 1]) : t.none) }));
-    if (rank < n.maxRank) change.push(el('span', { class: 'slx-tree-next', text: t.nextMod(t.mod(n.mods![rank])) }));
+    // A variant or mechanic node: its rule now and at the next rank, in its own sentence. A new variant's words are its
+    // skill's (its rule comes in the lines below); a mechanic node has a rule and nothing else.
+    if (n.kind === 'variant' && n.label !== undefined) desc = SKILLS[n.skill!]?.desc ?? '';
+    change.push(el('span', { class: 'slx-tree-now', text: t.now(rank > 0 ? ruleText(n, rank) : t.none) }));
+    if (rank < n.maxRank) change.push(el('span', { class: 'slx-tree-next', text: t.nextMod(ruleText(n, rank + 1)) }));
   }
-  // A shut node says why as soon as the cursor is on it (a pressed refusal in `msg` says the same, so it is not doubled).
+  // A shut node says why as soon as the cursor is on it (a pressed refusal in `msg` says the same, so it is not doubled);
+  // the empty side of a taken pair says it can be chosen instead.
   const why = rank === 0 ? canRaiseNode(m, n.id) : null;
-  const shut = why && treeView.msg !== treeReason(why, n.id) ? treeReason(why, n.id) : '';
+  const say = why === 'pair' ? t.swapOpen : why ? treeReason(why, n.id) : '';
+  const shut = say && treeView.msg !== say ? say : '';
   return el('div', { class: 'slx-tree-info' }, [
     el('p', { class: 'slx-tree-info-head' }, head),
     el('p', { class: 'slx-desc', text: desc }),
@@ -438,40 +462,57 @@ const tree: StatusTab = {
     // another tree's id, so it could never match a node here).
     if (!treeOrder(id).includes(treeView.cur)) treeView.cur = treeOrder(id)[0];
     const branches = TREES[id].branches;
-    const capstone = branches.map((b) => b.nodes[4]).filter((n) => nodeRank(m, n.id) > 0);
+    const capstone = branches.flatMap((b) => tierNodes(b, 4)).filter((n) => nodeRank(m, n.id) > 0);
+    const row = (n: TreeNode, tier: number): HTMLElement => {
+      const rank = nodeRank(m, n.id);
+      const why = canRaiseNode(m, n.id);
+      // The empty side of a pair whose other side holds points can take them over, free (`pressTree`).
+      const swap = rank === 0 && why === 'pair';
+      const state = rank > 0 ? 'slx-node-learned' : swap ? 'slx-node-swap' : why ? 'slx-node-locked' : 'slx-node-open';
+      const said = swap ? t.swapOpen : why ? treeReason(why, n.id) : t.open;
+      const nodeEl = el('div', {
+        class: `slx-skill slx-tree-node ${state}${treeView.cur === n.id ? ' slx-row-cur' : ''}`,
+        // Hover alone shows why a shut node is shut (the tooltip), for a pointer that has not clicked it.
+        attrs: { 'data-node': n.id, role: 'button', ...(rank === 0 && why ? { title: said } : {}) },
+      }, [
+        // A variant shows the icon of the skill it changes; a mechanic node has no skill and no icon.
+        ...(n.skill ? skillIco(ctx, n.skill) : []),
+        el('div', { class: 'slx-skill-head' }, [
+          // A name of five characters or more (護盾產生器) is set a size smaller, so it stays whole on its node. A variant's
+          // (火之星彈・連星) may break onto a second line between its skill and its label, never inside either.
+          n.kind === 'variant' && n.label !== undefined
+            ? el('span', { class: 'slx-skill-name slx-skill-name-long slx-skill-name-variant' }, [
+              el('span', { text: SKILLS[n.skill!]?.name ?? n.skill! }), el('span', { text: `・${n.label}` }),
+            ])
+            : el('span', { class: nodeName(n).length >= 5 ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: nodeName(n) }),
+          el('span', { class: 'slx-skill-rank', text: T.ui2.status.rank(rank, n.maxRank) }),
+        ]),
+        el('div', { class: 'slx-tree-node-foot' }, [
+          el('span', { class: 'slx-tree-kind', text: t.kind[kindOf(n, tier)] }),
+          el('span', { class: 'slx-tree-state', text: said }),
+        ]),
+      ]);
+      // The first click selects and arms the node; a second click on it spends (or changes the side of a pair).
+      nodeEl.addEventListener('click', () => {
+        if (locked(nodeEl)) return;
+        redraw(() => pressTree(ctx, id, n.id));
+      });
+      return nodeEl;
+    };
+    /** A tier's cell: one node, or a pair drawn as two rows, A above B, with 二選一 between them. */
+    const cell = (b: TreeBranch, tier: number): HTMLElement => {
+      const [a, bSide] = tierNodes(b, tier);
+      if (!bSide) return row(a, tier);
+      return el('div', { class: 'slx-tree-pair', attrs: { 'data-tier': String(tier) } }, [
+        row(a, tier), el('div', { class: 'slx-tree-pair-tag', text: t.pairTag }), row(bSide, tier),
+      ]);
+    };
     const cols = branches.map((b, bi) => {
-      // Points put into the branch: its ranks, less branch 0's free first rank.
-      const spent = b.nodes.reduce((s, n) => s + nodeRank(m, n.id), 0) - (bi === 0 ? Math.min(1, nodeRank(m, freeNode(id))) : 0);
+      // Points put into the branch: its ranks (both sides of a pair), less branch 0's free first rank.
+      const spent = branchNodes(b).reduce((s, x) => s + nodeRank(m, x.node.id), 0) - (bi === 0 ? Math.min(1, nodeRank(m, freeNode(id))) : 0);
       return el('section', { class: 'slx-tree-branch', attrs: { 'data-branch': String(bi) } }, [
         el('h5', { class: 'slx-tree-branch-name', text: t.branch(b.name, spent) }),
-        ...b.nodes.map((n, tier) => {
-          const rank = nodeRank(m, n.id);
-          const why = canRaiseNode(m, n.id);
-          const state = rank > 0 ? 'slx-node-learned' : why ? 'slx-node-locked' : 'slx-node-open';
-          const row = el('div', {
-            class: `slx-skill slx-tree-node ${state}${treeView.cur === n.id ? ' slx-row-cur' : ''}`,
-            // Hover alone shows why a shut node is shut (the tooltip), for a pointer that has not clicked it.
-            attrs: { 'data-node': n.id, role: 'button', ...(rank === 0 && why ? { title: treeReason(why, n.id) } : {}) },
-          }, [
-            // A modifier node shows the icon of the skill it changes.
-            ...skillIco(ctx, n.skill!),
-            el('div', { class: 'slx-skill-head' }, [
-              // A name of five characters or more (護盾產生器) is set a size smaller, so it stays whole on its node.
-              el('span', { class: nodeName(n).length >= 5 ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: nodeName(n) }),
-              el('span', { class: 'slx-skill-rank', text: T.ui2.status.rank(rank, n.maxRank) }),
-            ]),
-            el('div', { class: 'slx-tree-node-foot' }, [
-              el('span', { class: 'slx-tree-kind', text: t.kind[kindOf(n, tier)] }),
-              el('span', { class: 'slx-tree-state', text: why ? treeReason(why, n.id) : t.open }),
-            ]),
-          ]);
-          // The first click selects and arms the node; a second click on it spends.
-          row.addEventListener('click', () => {
-            if (locked(row)) return;
-            redraw(() => pressTree(ctx, id, n.id));
-          });
-          return row;
-        }),
+        ...b.nodes.map((_, tier) => cell(b, tier)),
       ]);
     });
     // The columns scroll on their own above the fixed notes, with ▲/▼ cues; a redraw keeps where they were (see `shown`).

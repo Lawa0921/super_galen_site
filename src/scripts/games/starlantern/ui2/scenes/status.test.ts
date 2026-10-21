@@ -5,7 +5,7 @@ import { newMember, statsOf, LEGACY_LINEUP } from '../../engine/party';
 import type { AnyStat } from '../../engine/types';
 import { STAT_CATEGORIES } from '../../engine/stats';
 import { raiseTalent } from '../../engine/progression';
-import { constRng, plainItem } from '../../engine/testing';
+import { constRng, noelTreeFixture, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView } from './statusTabs';
@@ -597,7 +597,7 @@ describe('StatusScene', () => {
       expect(node('ice-star').textContent).toContain('0／3');
       expect(node('ice-star').classList.contains('slx-node-open')).toBe(true);
       expect(node('ice-star').textContent).toContain(T.ui2.tree.kind.active);
-      expect(node('noel-fire-up').textContent).toContain(T.ui2.tree.kind.mod);
+      expect(node('noel-fire-up').textContent).toContain(T.ui2.tree.kind.variant);
       expect(node('inferno').textContent).toContain(T.ui2.tree.kind.ultimate);
       expect(node('flame-wave').classList.contains('slx-node-locked')).toBe(true);
       expect(node('flame-wave').textContent).toContain(T.ui2.tree.reason.req);
@@ -820,6 +820,113 @@ describe('StatusScene', () => {
       expect(info()).toContain(T.ui2.tree.nextMod('威力 110%'));
       node('noel-wave-up').click();
       expect(info()).toContain(T.ui2.tree.nextMod('TP −1'));
+    });
+
+    describe('pairs and mechanic nodes (plan 8d Task 4)', () => {
+      let restore: () => void = () => undefined;
+      beforeEach(() => { restore = noelTreeFixture(); });
+      afterEach(() => restore());
+
+      it('a pair sits on one tier with its tag', () => {
+        const { root, node } = onTree(10);
+        const branch0 = root.querySelector('.slx-tree-branch[data-branch="0"]')!;
+        const rows = [...branch0.querySelectorAll('.slx-tree-node')].map((n) => n.getAttribute('data-node'));
+        expect(rows).toEqual(['fire-star', 'noel-star-twin', 'noel-star-heavy', 'flame-wave', 'noel-wave-up', 'inferno']);
+        const pair = branch0.querySelector('.slx-tree-pair')!;
+        expect([...pair.children].map((c) => c.getAttribute('data-node') ?? c.textContent)).toEqual(['noel-star-twin', T.ui2.tree.pairTag, 'noel-star-heavy']);
+        expect(root.querySelectorAll('.slx-tree-node')).toHaveLength(16);
+        expect(node('noel-star-twin').textContent).toContain('火之星彈・連星');
+        expect(node('noel-star-heavy').textContent).toContain('火之星彈・重星');
+        expect(node('noel-star-twin').textContent).toContain(T.ui2.tree.kind.variant);
+        expect(node('noel-calm').textContent).toContain('冷靜');
+        expect(node('noel-calm').textContent).toContain(T.ui2.tree.kind.mech);
+      });
+
+      it("a variant's name may break between its skill and its label, never inside either", () => {
+        const { node } = onTree(10);
+        const name = node('noel-star-twin').querySelector('.slx-skill-name-variant')!;
+        expect([...name.children].map((c) => c.textContent)).toEqual(['火之星彈', '・連星']);
+        expect(node('noel-calm').querySelector('.slx-skill-name-variant')).toBeNull();
+        expect(node('fire-star').querySelector('.slx-skill-name-variant')).toBeNull();
+      });
+
+      it('the cursor walks a pair A side first, then B', () => {
+        const { s, cur } = onTree(10);
+        const seen = [cur()];
+        for (let i = 0; i < 3; i++) { s.onAction('down'); seen.push(cur()); }
+        expect(seen).toEqual(['fire-star', 'noel-star-twin', 'noel-star-heavy', 'flame-wave']);
+      });
+
+      it('pressing the other side twice swaps for free', () => {
+        const { s, game, node, cur, msg, info, noel, body, sfx } = onTree(10, { 'fire-star': 1, 'noel-star-twin': 2 });
+        const spy = vi.spyOn(game, 'swapVariant');
+        const gold = game.state.gold, left = body().match(/剩餘技能點 \d+/)![0];
+        expect(node('noel-star-heavy').classList.contains('slx-node-swap')).toBe(true);
+        expect(node('noel-star-heavy').textContent).toContain(T.ui2.tree.swapOpen);
+        s.onAction('down'); s.onAction('down');
+        expect(cur()).toBe('noel-star-heavy');
+        expect(info()).toContain(T.ui2.tree.swapOpen);
+        expect(info()).not.toContain(T.ui2.tree.reason.pair);
+        s.onAction('confirm');
+        expect(msg()).toBe(T.ui2.tree.swapPending);
+        expect(noel().tree).toEqual({ 'fire-star': 1, 'noel-star-twin': 2 });
+        s.onAction('confirm');
+        expect(spy).toHaveBeenCalledWith('noel', 'noel-star-heavy');   // through the Game, which saves
+        expect(noel().tree).toEqual({ 'fire-star': 1, 'noel-star-heavy': 2 });
+        expect(game.state.gold).toBe(gold);
+        expect(body()).toContain(left);
+        expect(msg()).toBe(T.ui2.tree.swapped);
+        expect(sfx.confirm).toHaveBeenCalled();
+        // And the side given up can be chosen back, the same way.
+        expect(node('noel-star-twin').classList.contains('slx-node-swap')).toBe(true);
+        node('noel-star-twin').click();
+        expect(msg()).toBe(T.ui2.tree.swapPending);
+        node('noel-star-twin').click();
+        expect(noel().tree).toEqual({ 'fire-star': 1, 'noel-star-twin': 2 });
+      });
+
+      it('a side with nothing on either side is a plain spend, and a refused swap says so', () => {
+        const { s, msg, noel, game } = onTree(10, { 'fire-star': 1 });
+        s.onAction('down'); s.onAction('down');
+        s.onAction('confirm'); s.onAction('confirm');
+        expect(noel().tree).toEqual({ 'fire-star': 1, 'noel-star-heavy': 1 });
+        // In battle the Game turns the swap down.
+        s.onAction('up');
+        s.onAction('confirm');
+        game.phase = 'battle';
+        s.onAction('confirm');
+        expect(noel().tree).toEqual({ 'fire-star': 1, 'noel-star-heavy': 1 });
+        expect(msg()).toBe(T.ui2.tree.failed);
+      });
+
+      it('variant and mechanic notes say the rule now and next', () => {
+        const { node, info } = onTree(10, { 'fire-star': 1, 'ice-star': 1, 'noel-calm': 1 });
+        node('noel-calm').click();
+        expect(info()).toContain('冷靜');
+        expect(info()).toContain(T.ui2.tree.kind.mech);
+        expect(info()).toContain(T.ui2.tree.now('熱度上限 6。'));
+        expect(info()).toContain(T.ui2.tree.nextMod('熱度上限 7。'));
+        node('noel-star-twin').click();
+        expect(info()).toContain('火之星彈・連星');
+        expect(info()).toContain(T.ui2.tree.now(T.ui2.tree.none));
+        expect(info()).toContain(T.ui2.tree.nextMod('改為 2 段，每段威力 55%。'));
+      });
+
+      it('a maxed mechanic node says only what it does now', () => {
+        const { node, info } = onTree(20, { 'fire-star': 1, 'ice-star': 1, 'noel-calm': 3 });
+        node('noel-calm').click();
+        expect(info()).toContain(T.ui2.tree.now('熱度上限 8。'));
+        expect(info()).not.toContain('下一級');
+      });
+
+      it('a mechanic node has no icon; the nodes with a skill keep theirs', () => {
+        const r = setup('noel', { has: () => true });
+        r.s.onAction('right'); r.s.onAction('right'); r.s.onAction('right');
+        const ico = (id: string) => r.root.querySelector(`.slx-tree-node[data-node="${id}"] img.slx-skill-ico`);
+        expect(ico('noel-calm')).toBeNull();
+        expect(ico('noel-star-twin')).not.toBeNull();
+        expect(ico('fire-star')).not.toBeNull();
+      });
     });
 
     it('every modifier rank reads as a summary', () => {

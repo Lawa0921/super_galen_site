@@ -948,6 +948,109 @@ test.describe('starlantern', () => {
     });
   });
 
+  test('the tree shows pairs and swaps a side (plan 8d)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    // Noel's tree with a pair (連星 / 重星) and a mechanic node (冷靜) before plan 8d Task 3 writes them for real: the dev
+    // server serves the test fixture to the page, where it shares the game's own modules.
+    const fixture = '/src/scripts/games/starlantern/engine/testing.ts';
+    await page.evaluate(async (url) => { (await import(/* @vite-ignore */ url)).noelTreeFixture(); }, fixture);
+    await legacyRoster(page);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.party.roster.noel.level = 20;
+      g.state.party.roster.noel.tree = { 'fire-star': 1, 'noel-star-twin': 2, 'ice-star': 1, 'noel-calm': 1 };
+    });
+    const noelTree = () => page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.party.roster.noel.tree);
+    /** Every row and tag of the pair, and the 冷靜 node, hold their text inside their own width. */
+    const fits = () => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-pair, .slx-tree-pair > *, .slx-tree-node[data-node=noel-calm], .slx-tree-pair .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className));
+
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+    await expect(page.locator('[data-tab=tree]')).toHaveAttribute('aria-selected', 'true');
+    await flipTo(page, CHARACTERS.noel.name);
+    const pair = page.locator('.slx-tree-branch[data-branch="0"] .slx-tree-pair');
+    await expect(pair.locator('.slx-tree-node')).toHaveCount(2);
+    await expect(pair.locator('.slx-tree-pair-tag')).toHaveText(T.ui2.tree.pairTag);
+    await expect(pair.locator('.slx-tree-node').first()).toContainText('火之星彈・連星');
+    await expect(pair.locator('.slx-tree-node').nth(1)).toContainText('火之星彈・重星');
+    await expect(page.locator('.slx-tree-node[data-node=noel-star-heavy]')).toHaveClass(/slx-node-swap/);
+    await expect(page.locator('.slx-tree-node[data-node=noel-calm] img')).toHaveCount(0);   // a mechanic node has no icon
+    // The cursor on 冷靜 (branch 1 tier 1, after branch 0's six rows): its rule now and next.
+    for (let i = 0; i < 7; i++) await w.key('ArrowDown');
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('熱度上限 6。'));
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.nextMod('熱度上限 7。'));
+    expect(await fits()).toEqual([]);
+    await shot('tree-1280');
+
+    // Two clicks on the empty side change the side, free.
+    const heavy = page.locator('.slx-tree-node[data-node=noel-star-heavy]');
+    await heavy.click();
+    await expect(page.locator('.slx-tree-msg')).toHaveText(T.ui2.tree.swapPending);
+    await heavy.click();
+    await expect(page.locator('.slx-tree-msg')).toHaveText(T.ui2.tree.swapped);
+    expect(await noelTree()).toEqual({ 'fire-star': 1, 'noel-star-heavy': 2, 'ice-star': 1, 'noel-calm': 1 });
+    await expect(heavy).toContainText('2／3');
+
+    for (const [vw, vh, name] of [[844, 390, 'tree-844'], [390, 844, 'tree-390']] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      expect(await fits(), name).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), name).toBe(true);
+      await shot(name);
+    }
+
+    // The skills page names the variant whole.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('[data-tab=skills]').click();
+    const star = page.locator('.slx-tab-skills [data-skill=fire-star] .slx-skill-name');
+    await expect(star).toHaveText('火之星彈・重星');
+    expect(await star.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5)).toBe(true);
+    await shot('skills-390');
+
+    // And so does the battle menu.
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      for (const e of g.battle.enemies) { e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1; }
+    });
+    for (let i = 0; i < 80; i++) {
+      if (!(await page.locator('.slx-bcmd [role=option]').count())) { await page.waitForTimeout(50); continue; }
+      const who = (await page.locator('.slx-bcmd .slx-who').textContent()) ?? '';
+      if (who.startsWith(CHARACTERS.noel.name)) break;
+      await w.choose('.slx-bcmd', '防禦');
+    }
+    await expect(page.locator('.slx-bcmd .slx-who')).toContainText(CHARACTERS.noel.name);
+    await w.choose('.slx-bcmd', '技能');
+    const item = page.locator('.slx-bsub [role=option]').filter({ hasText: '火之星彈・重星' });
+    await expect(item).toHaveCount(1);
+    for (const [vw, vh, name] of [[1280, 720, 'battle-1280'], [844, 390, 'battle-844'], [390, 844, 'battle-390']] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      expect(await item.locator('.slx-label').evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), name).toBe(true);
+      await shot(name);
+    }
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
   test('spends skill and talent points, then resets them at the inn', async ({ page }) => {
     const w = await setup(page, 7);
     const noel = () => page.evaluate(() => {
