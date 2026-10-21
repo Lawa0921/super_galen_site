@@ -409,9 +409,13 @@ export const T = {
       barrierClash: '兩個常駐結界只會留下一個：被換掉的那個照樣保留 TP 上限',
       /** 「持有 n（袋子 m，鑲嵌中 k）」 (plan 8g ruling 8). */
       owned: (all: number, bag: number, socketed: number) => `持有 ${all}（袋子 ${bag}，鑲嵌中 ${socketed}）`,
-      /** What the member a rune is moved from loses: 「諾艾兒・火之星彈：全體 → 單體」. */
-      giver: (who: string, skill: string, lost: string[]) => (lost.length ? `${who}・${skill}：${lost.join('・')}` : `${who}・${skill}`),
-      arrow: (before: string, after: string) => `${before} → ${after}`,
+      /**
+       * What the member a rune is moved from loses (Task 4b review): 「移走後 希爾薇・瞄準射擊：TP 10 → 5；少了「連續施放兩次」」,
+       * each changed row by name, each line she no longer has in 「」.
+       */
+      giver: (who: string, skill: string, items: string[]) => `移走後 ${who}・${skill}：${items.length ? items.join('；') : '不變'}`,
+      giverRow: (row: string, before: string, after: string) => `${row} ${before} → ${after}`,
+      giverLost: (line: string) => `少了「${line}」`,
       /** The workshop screen (plan 8g Task 4a). */
       title: '技能工坊',
       skillsHead: '技能',

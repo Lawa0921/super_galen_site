@@ -129,7 +129,7 @@ describe('the skill card (plan 8g Task 3)', () => {
                 moves++;
                 const from = ch.source.at;
                 const lines = compareCards(cardOf(member(s, from.id), from.skill)!, cardOf(member(game.state, from.id), from.skill)!);
-                const lost = [...lines.lines.filter((l) => l.changed).map((l) => W.arrow(l.before, l.after)), ...lines.removed.map(W.lost)];
+                const lost = [...lines.lines.filter((l) => l.changed).map((l) => W.giverRow(l.label, l.before, l.after)), ...lines.removed.map(W.giverLost)];
                 const same = from.id === id && from.skill === skill;
                 expect(ch.giver).toBe(same ? undefined : W.giver(CHARACTERS[from.id].name, skillFor(fromMember(member(s, from.id), 0), from.skill)!.name, lost));
                 const worked = slotStates(member(s, from.id), from.skill)[from.slot].state === 'on';
@@ -191,7 +191,7 @@ describe('the skill card (plan 8g Task 3)', () => {
     const fromChizuru = list.find((c) => c.source.kind === 'socket' && c.source.at.id === 'chizuru')!;
     expect(fromChizuru.source).toEqual({ kind: 'socket', ref: R('spread'), at: { id: 'chizuru', skill: 'pierce', slot: 0 } });
     const pierce = skillFor(fromMember(member(s, 'chizuru'), 0), 'pierce')!.name;
-    expect(fromChizuru.giver!.startsWith(`${CHARACTERS.chizuru.name}・${pierce}：${W.arrow('全體', '單體')}`)).toBe(true);
+    expect(fromChizuru.giver!.startsWith(`移走後 ${CHARACTERS.chizuru.name}・${pierce}：目標 全體 → 單體；`)).toBe(true);
     const own = list.find((c) => c.source.kind === 'socket' && c.source.at.id === 'noel')!;
     expect(own.source).toEqual({ kind: 'socket', ref: R('drain'), at: { id: 'noel', skill: 'ice-star', slot: 0 } });
     // Each bag row: the count, and 持有 split.
@@ -222,6 +222,22 @@ describe('the skill card (plan 8g Task 3)', () => {
     const after = runeChoices(g.state, at);
     expect(after).not.toBe(open);
     expect(after.some((c) => c.source.ref.id === 'venom')).toBe(true);
+  });
+
+  it("the giver line: 「移走後」, each changed row by name, what she loses in 「」, joined with 「；」", () => {
+    // Sylvie's 雙重詠唱 and 彈射 moved onto Noel: she pays less TP and loses the lines they gave her.
+    let s = stateAt(20, ['noel', 'sylvie'], { 'twin-cast@legendary': 1, 'bounce@magic': 1 });
+    learnOnly(s, 'sylvie', { 'aimed-shot': 1 });
+    s = ok(socketRune(s, 'sylvie', 'aimed-shot', 0, R('twin-cast', 'legendary')));
+    s = ok(socketRune(s, 'sylvie', 'aimed-shot', 1, R('bounce')));
+    const aimed = skillFor(fromMember(member(s, 'sylvie'), 0), 'aimed-shot')!.name;
+    const pick = (slot: number) => runeChoices(s, { id: 'noel', skill: 'fire-star', slot: 0 })
+      .find((c) => c.source.kind === 'socket' && c.source.at.id === 'sylvie' && c.source.at.slot === slot)!;
+    const tp = (st: GameState) => cardOf(member(st, 'sylvie'), 'aimed-shot')!.rows.find((r) => r.key === 'tp')!.text;
+    const after = ok(previewOf(s, { id: 'noel', skill: 'fire-star', slot: 0 }, { kind: 'move', from: { id: 'sylvie', skill: 'aimed-shot', slot: 0 } }));
+    expect(pick(0).giver).toBe(`移走後 ${CHARACTERS.sylvie.name}・${aimed}：TP ${tp(s)} → ${tp(after)}；少了「${W.add.twice}」`);
+    const bounce = RUNES.bounce.mod('magic').bounce!;
+    expect(pick(1).giver).toBe(`移走後 ${CHARACTERS.sylvie.name}・${aimed}：少了「${W.add.bounce(bounce.bounces, bounce.dropPct)}」`);
   });
 
   it('a move between two slots of one skill names no giver', () => {

@@ -60,9 +60,8 @@ export class WorkshopScene implements Scene {
   private skill = '';
   private slot = 0;
   private focus: Focus = 'skills';
-  /** The rune row under the cursor, by id and by place: kept while the list changes under it, else held in its range. */
+  /** The rune row under the cursor, by id: kept while the list is drawn again. */
   private runeCur = '';
-  private runeIdx = 0;
   /** The rune row a touch tap picked: a second tap on it does it (plan 8g ruling 11). Any other action clears it. */
   private armed = '';
   /** What pressed the rune row being clicked: a touch tap only picks the row the first time. */
@@ -200,7 +199,6 @@ export class WorkshopScene implements Scene {
   private openRunes(): void {
     this.focus = 'runes';
     this.runeCur = '';
-    this.runeIdx = 0;
     this.msg = '';
     this.cardTop = 0;
     this.render();
@@ -415,8 +413,10 @@ export class WorkshopScene implements Scene {
       id: rowOf(c),
       label: label(c.source.ref),
       cls: `slx-rarity-${c.source.ref.tier}${c.why !== null ? ' slx-ws-unfit' : ''}`,
-      // The bag's count, or for a rune in someone's slot who holds it.
-      right: c.source.kind === 'bag' ? T.rune.bag(c.source.count) : CHARACTERS[c.source.at.id].name,
+      // The bag's count; for a rune in a slot, who holds it, or on her own other skill, which skill (two 常駐 rows apart).
+      right: c.source.kind === 'bag' ? T.rune.bag(c.source.count)
+        : c.source.at.id === this.id ? skillFor(fromMember(this.member, 0), c.source.at.skill)?.name ?? c.source.at.skill
+          : CHARACTERS[c.source.at.id].name,
       ...(c.why !== null ? { rightClass: 'slx-lack' } : {}),
     });
     const moves = choices.filter((c) => c.section === 'move');
@@ -427,9 +427,8 @@ export class WorkshopScene implements Scene {
       ...moves.map(row),
     ];
     const key = `${this.id}|${this.skill}|${this.slot}|${items.map((it) => `${it.id}:${it.right}:${it.cls ?? ''}`).join(',')}`;
-    // The same row when it is still there; else the same place, held in the list's range (a heading passes the cursor on).
-    const same = items.findIndex((it) => it.id === this.runeCur);
-    const idx = same >= 0 ? same : Math.min(this.runeIdx, Math.max(0, items.length - 1));
+    // The same row when it is still there, else the first: a list is only built anew when it opens.
+    const idx = Math.max(0, items.findIndex((it) => it.id === this.runeCur));
     if (!this.runeView || key !== this.runeKeyOf) {
       this.runeKeyOf = key;
       this.runeView = items.length ? new MenuView(new Menu(items, idx), {
@@ -440,7 +439,6 @@ export class WorkshopScene implements Scene {
           if (touch && this.armed !== it.id) {
             this.armed = it.id;
             this.runeCur = it.id;
-            this.runeIdx = this.runeView?.menu.cursor ?? 0;
             this.refused = '';
             this.msg = '';
             this.cardTop = 0;
@@ -454,7 +452,6 @@ export class WorkshopScene implements Scene {
         moved: () => {
           this.armed = '';
           this.runeCur = this.runeView?.menu.current()?.id ?? '';
-          this.runeIdx = this.runeView?.menu.cursor ?? 0;
           this.refused = '';
           this.msg = '';
           this.cardTop = 0;
@@ -473,7 +470,6 @@ export class WorkshopScene implements Scene {
       ]));
     } else this.runeView.render();
     this.runeCur = this.runeView?.menu.current()?.id ?? '';
-    this.runeIdx = Math.max(0, this.runeView?.menu.cursor ?? 0);
   }
 
   /** What the rune row under the cursor would do: the engine's own result on a copy of the state. */

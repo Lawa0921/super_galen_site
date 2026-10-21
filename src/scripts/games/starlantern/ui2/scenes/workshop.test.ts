@@ -321,6 +321,17 @@ describe('WorkshopScene: moves, mouse and touch (plan 8g Task 4b)', () => {
     expect(w.game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread'), R('drain')] });
   });
 
+  it('a rune in another of her own skills is named by that skill', () => {
+    const w = setup((g) => {
+      noel(20, {}, { 'fire-star': 1, 'ice-star': 1, 'thunder-star': 1 })(g);
+      g.state.party.roster.noel.sockets = { 'ice-star': [R('lasting', 'common')], 'thunder-star': [R('lasting', 'common')] };
+    }, 'noel:fire-star');
+    w.press('confirm', 'confirm');
+    const right = (id: string) => runeRow(w, id).querySelector('.slx-right')!.textContent;
+    expect(right('move:noel:ice-star:0')).toBe(SKILLS['ice-star'].name);
+    expect(right('move:noel:thunder-star:0')).toBe(SKILLS['thunder-star'].name);
+  });
+
   it('the cursor stays in the list when it shrinks', () => {
     const inList = (w: ReturnType<typeof setup>) => {
       const rows = w.runes();
