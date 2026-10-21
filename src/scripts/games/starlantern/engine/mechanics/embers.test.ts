@@ -348,4 +348,34 @@ describe("Scarlet's nodes (plan 8d Task 7)", () => {
     expect(forcedTarget(t, t.enemies[0], { kind: 'attack', target: 'selene' })?.to.key).toBe('scarlet');
     expect(skillFor(her(both), 'cover')!.name).toBe('代受・雙肩');
   });
+
+  it('both shoulders: a cover cast again on one of the two keeps the other (8d Task 7 review)', () => {
+    const both = { cover: 1, 'scarlet-cover-both': 3 };                   // five rounds each: none runs out here
+    const covering = (t: BattleState) => [t.party[0].cover?.ally, t.party[0].coverAlso?.ally].filter(Boolean).sort();
+    let s = makeBattle([her(both), P('noel'), P('selene')], [foe('e0', { sleep: 9 })]);
+    s = round(s, cast('cover', 'noel'));
+    s = round(s, cast('cover', 'selene'));
+    s = round(s, cast('cover', 'selene'));                                 // the newest again
+    expect(covering(s)).toEqual(['noel', 'selene']);
+    expect(s.party[0].cover).toEqual({ ally: 'selene', turns: 4 });        // renewed: 5, less this round's end
+    s = round(s, cast('cover', 'noel'));                                   // the older one again
+    expect(covering(s)).toEqual(['noel', 'selene']);
+    expect(s.party[0].cover).toEqual({ ally: 'noel', turns: 4 });
+  });
+
+  it('thanks: no embers for a covered blow that misses her, nor for a blow a challenge sent her (8d Task 7 review)', () => {
+    // She dodges every blow (constRng(0) under her evasion): nothing landed, nothing kept.
+    const dodged = (ranks: Record<string, number>) => embersOf(round(makeBattle([her({ cover: 1, ...ranks }, { cover: { ally: 'noel', turns: 2 }, x: { evasion: 999 } }), P('noel')], [soft()],
+      { intents: { e0: { kind: 'attack', target: 'noel' } } }), {}, constRng(0)).party[0]);
+    expect(dodged({ 'scarlet-thanks': 3 })).toBe(dodged({}));
+    // 盾擊's challenge turns the blow (it beats her cover): it lands on her, but no cover took it.
+    const challenged = (ranks: Record<string, number>) => {
+      const s = makeBattle([her({ cover: 1, ...ranks }, { cover: { ally: 'noel', turns: 2 } }), P('noel')], [foe('e0', { challenged: { by: 'scarlet', round: 1 }, max: { hp: 99999, tp: 0, atk: 60, def: 20, mag: 20, res: 20, spd: 99 } })],
+        { round: 0, intents: { e0: { kind: 'attack', target: 'noel' } } });
+      const r = round(s);
+      expect(r.log.some((e) => e.type === 'damage' && e.target === 'scarlet')).toBe(true);
+      return embersOf(r.party[0]);
+    };
+    expect(challenged({ 'scarlet-thanks': 3 })).toBe(challenged({}));
+  });
 });

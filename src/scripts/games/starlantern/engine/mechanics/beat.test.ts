@@ -164,4 +164,10 @@ describe("Safira's nodes (plan 8d Task 7)", () => {
     fight({}, () => { m++; return 0.5; });
     expect(n).toBe(m);
   });
+
+  it('a duet no ally used is gone at the round end (8d Task 7 review)', () => {
+    const r = resolveRound(makeBattle([safira(4, 'attack', { ranks: { 'blade-dance': 1, 'safira-duet': 1 } })], [foe()]), { safira: skill('blade-dance') }, constRng(0.5));
+    expect(r.log).toContainEqual({ type: 'mech', actor: 'safira', cue: 'finale' });
+    expect(r.duet).toBeUndefined();
+  });
 });

@@ -371,8 +371,9 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'cover': {
       if (!target.alive || target === actor) return;
-      // 雙肩 (plan 8d): the cover she had stays beside the new one (two at most; one on the same ally is renewed).
-      const kept = eff.keep && actor.cover && actor.cover.ally !== target.key ? actor.cover : undefined;
+      // 雙肩 (plan 8d): the other cover she had stays beside the new one (two at most): her newest unless that is this
+      // ally, whose cover is only renewed (so a cover cast again on either of the two keeps the other).
+      const kept = eff.keep ? [actor.cover, actor.coverAlso].find((x) => x && x.ally !== target.key) : undefined;
       actor.cover = { ally: target.key, turns: eff.turns };
       if (kept) actor.coverAlso = kept; else delete actor.coverAlso;
       return;

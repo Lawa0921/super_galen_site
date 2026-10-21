@@ -6,6 +6,7 @@ import { choose, partyAt } from '../sim';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
 import { echoDef, echoOf } from './echo';
+import { pctOf } from '../skills';
 
 const MAX = { hp: 300, tp: 99, atk: 40, def: 20, mag: 60, res: 20, spd: 10 };
 const hero = (over: Partial<Combatant> = {}) => makeCombatant({ key: 'hero', side: 'party', defId: 'hero', max: { ...MAX, spd: 1 }, ...over });
@@ -83,5 +84,20 @@ describe("the hero's echo", () => {
       seen++;
     }
     expect(seen).toBeGreaterThan(1);
+  });
+
+  it("an echo of a skill Safira's duet lifted keeps the lift: it plays the skill as it was cast (8d Task 7 ruling)", () => {
+    const safira = makeCombatant({ key: 'safira', side: 'party', defId: 'safira', mech: { kind: 'beat', beat: 4, last: 'attack' }, ranks: { 'blade-dance': 1, 'safira-duet': 1 }, max: { ...MAX, spd: 90 } });
+    const fight = (ranks: Record<string, number>) => resolveRound(makeBattle([{ ...safira, ranks: { 'blade-dance': 1, ...ranks } }, P('noel'), hero()], [foe()], { round: 1 }),
+      { safira: { kind: 'skill', skill: 'blade-dance', target: 'e0' }, noel: { kind: 'skill', skill: 'fire-star', target: 'e0' }, hero: { kind: 'echo', target: 'e0' } }, constRng(0.5));
+    const power = (r: BattleState) => (echoOf(r)!.def.effects[0] as { power: number }).power;
+    const fire = (SKILLS['fire-star'].effects[0] as { power: number }).power;
+    const lifted = fight({ 'safira-duet': 1 }), plain = fight({});
+    expect(power(lifted)).toBe(pctOf(fire, 120));                        // recorded as Noel cast it, under the duet
+    expect(power(plain)).toBe(fire);
+    expect((echoDef(echoOf(lifted)!).effects[0] as { power: number }).power).toBe(pctOf(pctOf(fire, 120), 70));
+    // The hero's echo lands that much: more than the plain one.
+    const heroHit = (r: BattleState) => r.log.filter((e, i) => e.type === 'damage' && r.log.slice(0, i).some((x) => x.type === 'act' && x.actor === 'hero')).map((e) => (e as { amount: number }).amount)[0];
+    expect(heroHit(lifted)).toBeGreaterThan(heroHit(plain));
   });
 });
