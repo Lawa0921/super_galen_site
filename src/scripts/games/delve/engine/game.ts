@@ -1163,6 +1163,9 @@ export class DelveGame {
       const use = held ? ITEMS[held.item].use : undefined;
       const npc = this.useConsumed ? null : this.settle.npcAtPx(this.aimPx.x, this.aimPx.y);
       const fk = this.useConsumed || npc ? null : this.folk.atPx(this.aimPx.x, this.aimPx.y);
+      // 傳送碑 vs 放置：手上是能放的方塊 / 背景牆 → 一律走放置（出生點碑的 footprint 不能變成永遠蓋不了的洞）；
+      // 只有空手或拿不能放的東西時，瞄準碑才打開面板
+      const placeable = held !== null && (ITEMS[held.item].place !== undefined || ITEMS[held.item].placeWall !== undefined);
       let stone: Waystone | null = null;
       if (npc && this.canReach(Math.floor((npc.body.x + npc.body.w / 2) / TILE_SIZE), Math.floor((npc.body.y + npc.body.h / 2) / TILE_SIZE), this.reach() + 1)) {
         this.useConsumed = true; this.talkTo(npc);
@@ -1170,8 +1173,8 @@ export class DelveGame {
         this.useConsumed = true; this.talkFolk(fk);
       } else if (isInteractive(this.world.getFg(x, y))) {
         if (!this.useConsumed) { this.useConsumed = true; this.interact(x, y); }
-      } else if ((stone = this.stoneAtAim(x, y)) !== null) {
-        // 傳送碑（世界物件）：比照床 / 箱子，優先於放方塊 / 用道具
+      } else if (!placeable && (stone = this.stoneAtAim(x, y)) !== null) {
+        // 傳送碑（世界物件）：比照床 / 箱子，優先於用道具（能放的方塊 / 牆見上面的 placeable）
         if (!this.useConsumed) { this.useConsumed = true; this.openStone(stone); }
       } else if (use === 'hammer') {
         if (!this.useConsumed) { this.useConsumed = true; this.hammer(x, y); }

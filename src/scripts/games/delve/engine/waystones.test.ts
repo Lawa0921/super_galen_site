@@ -11,6 +11,7 @@ import { FIXED_DT, TILE_SIZE, WORLD_W } from './constants';
 import { chunkOfX } from './coords';
 import { overlapsSolid } from './physics';
 import { findStandSpot } from './npcPath';
+import { T, W } from './tiles';
 import { createCharacter } from '../save/character';
 import { normalizeAppearance } from './appearance';
 import { decodeSave, encodeSave, restoreGame, snapshotGame } from '../save/serialize';
@@ -235,31 +236,86 @@ describe('遊戲層：傳送碑', () => {
     expect(g.travelStone(0)).toBe(false);
   });
 
-  it('按使用瞄準碑 → stone open 事件（優先於放方塊）；太遠 → 不開', () => {
+  /** 拿著 item（null = 空手）瞄準 (x, y) 按一下使用 → 這段期間的事件 */
+  function useAt(g: DelveGame, item: string | null, x: number, y: number): DelveEvent[] {
+    if (item === null) {
+      const e = g.inventory.slots.findIndex((st, i) => i < 10 && !st);
+      g.selectSlot(e);
+      expect(g.inventory.selectedStack()).toBeNull();
+    } else {
+      if (!g.inventory.slots.some((st) => st?.item === item)) g.give(item as never, 10);
+      g.selectSlot(g.inventory.slots.findIndex((st) => st?.item === item));
+    }
+    g.drainEvents();
+    g.setAim(x, y);
+    g.setUse(true);
+    steps(g, 2);
+    g.setUse(false);
+    steps(g, 1);
+    return g.drainEvents();
+  }
+
+  it('空手 / 拿鎬 / 拿劍瞄準碑按使用 → stone open 事件；太遠 → 不開', () => {
     const g = game();
     const home = g.waystones.byId(0)!;
     standBy(g, home);
-    g.give('dirt', 10);
-    const i = g.inventory.slots.findIndex((st) => st?.item === 'dirt');
-    g.selectSlot(i);
-    g.drainEvents();
     const fp = g.waystones.footprint(home);
-    g.setAim(fp.x, fp.y + 1);
-    g.setUse(true);
-    steps(g, 2);
-    g.setUse(false);
-    const ev = g.drainEvents();
-    expect(of(ev, 'stone')).toEqual([{ type: 'stone', phase: 'open', id: 0, x: home.x, y: home.y }]);
-    expect(of(ev, 'place')).toEqual([]);
+    for (const item of [null, 'wood_pickaxe', 'wood_sword']) {
+      const ev = useAt(g, item, fp.x, fp.y + 1);
+      expect(of(ev, 'stone')).toEqual([{ type: 'stone', phase: 'open', id: 0, x: home.x, y: home.y }]);
+      expect(of(ev, 'place')).toEqual([]);
+    }
     // 遠處：不開
     g.teleport(home.x + 30, g.world.surface[home.x + 30] - 1);
     steps(g, 1);
-    g.drainEvents();
-    g.setAim(fp.x, fp.y + 1);
-    g.setUse(true);
+    expect(of(useAt(g, null, fp.x, fp.y + 1), 'stone')).toEqual([]);
+  });
+
+  it('拿著能放的方塊 / 背景牆瞄準碑的 footprint → 照常放置、不開面板（控制者裁定：放置優先）；碑還在', () => {
+    const g = game();
+    const home = g.waystones.byId(0)!;
+    standBy(g, home);
+    const fp = g.waystones.footprint(home), before = { ...home };
+    // 泥土放在碑腳（左欄最底列，玩家身體不在那欄）
+    const e1 = useAt(g, 'dirt', fp.x, fp.y + 2);
+    expect(of(e1, 'stone')).toEqual([]);
+    expect(of(e1, 'place')).toHaveLength(1);
+    expect(g.world.getFg(fp.x, fp.y + 2)).toBe(T.DIRT);
+    // 木板疊在泥土上
+    const e2 = useAt(g, 'planks', fp.x, fp.y + 1);
+    expect(of(e2, 'stone')).toEqual([]);
+    expect(g.world.getFg(fp.x, fp.y + 1)).toBe(T.PLANKS);
+    // 木板牆貼在碑的右下格（腳下是地面 = 有支撐）
+    const e3 = useAt(g, 'plank_wall', fp.x + 1, fp.y + 2);
+    expect(of(e3, 'stone')).toEqual([]);
+    expect(g.world.getWall(fp.x + 1, fp.y + 2)).toBe(W.PLANK_WALL);
+    // 放不了（右上格懸空沒支撐）也是走放置那條路：提示 support、不開面板
+    const e4 = useAt(g, 'plank_wall', fp.x + 1, fp.y);
+    expect(of(e4, 'stone')).toEqual([]);
+    expect(g.world.getWall(fp.x + 1, fp.y)).toBe(0);
+    expect(of(e4, 'blocked').map((e) => e.reason)).toEqual(['support']);
+    // 碑本身不受影響：位置相同、還找得到、空手照樣打得開
+    expect(g.waystones.byId(0)).toEqual(before);
+    expect(g.unlockedStones().map((s) => s.id)).toEqual([0]);
+    expect(of(useAt(g, null, fp.x + 1, fp.y + 1), 'stone')).toHaveLength(1);
+  });
+
+  it('外圍的碑 footprint 裡放了方塊，碑照樣碰得到、解鎖', () => {
+    const g = game();
+    const s = g.waystones.byId(1)!;
+    // 碑右邊第 3 欄：身體不碰到碑（還沒解鎖）
+    standBy(g, s, 3);
+    steps(g, 1);
+    expect(g.stonesUnlocked.has(1)).toBe(false);
+    const ev = useAt(g, 'planks', s.x, s.y);
+    expect(of(ev, 'stone')).toEqual([]);
+    expect(g.world.getFg(s.x, s.y)).toBe(T.PLANKS);
+    expect(g.stonesUnlocked.has(1)).toBe(false);
+    // 站到碑上（踩著剛放的木板）→ 碰到 → 解鎖
+    g.teleport(s.x + 1, s.y - 1);
     steps(g, 2);
-    g.setUse(false);
-    expect(of(g.drainEvents(), 'stone')).toEqual([]);
+    expect(g.stonesUnlocked.has(1)).toBe(true);
+    expect(of(g.drainEvents(), 'stone_unlock').map((e) => e.id)).toEqual([1]);
   });
 
   it('坐船時用傳送碑傳送 → 下船', () => {

@@ -3149,8 +3149,6 @@ test.describe('delve settlements', () => {
     await page.goto('/games/delve?seed=house-e2e&autostart=1&fresh=1');
     await waitGame(page);
     await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
-    // 出生點的傳送碑（世界物件，spawn.x + 7）正好在預設村子的床位上（右鍵會打開傳送碑）：先站到碑的右邊再蓋
-    await page.evaluate(() => { const g = window.__delveDebug!.game, s = g.waystones.byId(0)!; g.teleport(s.x + 6, g.feetTile().y); });
     const h = await village(page, 1, ['bed']);
     await page.keyboard.press('KeyH');
     await expect(page.locator('#delve-house-btn')).toHaveAttribute('aria-pressed', 'true');
