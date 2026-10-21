@@ -216,9 +216,9 @@ export class SettleUi {
   private onSettleClick(e: Event): void {
     const t = (e.target as HTMLElement).closest<HTMLElement>('button');
     if (!t || this.settleId === null) return;
-    if (t.dataset.act === 'spawn' && this.game.setSpawnCore(this.settleId)) this.onToast('重生點設在據點爐心旁');
+    if (t.dataset.act === 'spawn' && this.game.act({ op: 'spawnCore', id: this.settleId })) this.onToast('重生點設在據點爐心旁');
     else if (t.dataset.act === 'housing') this.toggleHousing();
-    else if (t.dataset.travel && this.game.travel(Number(t.dataset.travel))) { this.closeSettle(); this.renderer.snapCamera(); }
+    else if (t.dataset.travel && this.game.act({ op: 'travel', to: Number(t.dataset.travel) })) { this.closeSettle(); this.renderer.snapCamera(); }
     this.sig = '';
     this.renderSettle();
   }
@@ -336,16 +336,16 @@ export class SettleUi {
     if (!t || !k) return;
     if (t.dataset.buy !== undefined) {
       const e0 = NPCS[k].shop[Number(t.dataset.buy)];
-      if (this.game.buy(k, Number(t.dataset.buy)) && e0) this.onToast(`買了 ${ITEMS[e0.item].name.zh}${e0.n > 1 ? ` ×${e0.n}` : ''}`);
+      if (this.game.act({ op: 'buy', npc: k, i: Number(t.dataset.buy) }) && e0) this.onToast(`買了 ${ITEMS[e0.item].name.zh}${e0.n > 1 ? ` ×${e0.n}` : ''}`);
     } else if (t.dataset.sell) {
       const it = t.dataset.sell as ItemId;
-      if (this.game.sell(k, it, Number(t.dataset.n) || 1)) this.onToast(`賣出 ${ITEMS[it].name.zh}`);
+      if (this.game.act({ op: 'sell', npc: k, item: it, n: Number(t.dataset.n) || 1 })) this.onToast(`賣出 ${ITEMS[it].name.zh}`);
     } else if (t.dataset.rsvc) {
-      this.svcMsg = this.game.residentService(k, t.dataset.rsvc as never).msg;
+      this.svcMsg = this.game.act({ op: 'residentService', npc: k, svc: t.dataset.rsvc as never }).msg;
     } else if (t.dataset.openinv) {
       this.onInventory();
     } else if (t.dataset.service) {
-      if (this.game.service(k) && this.game.lastReveal) this.onToast(`打聽到「${this.game.lastReveal.name}」的位置，已標在地圖上`);
+      if (this.game.act({ op: 'service', npc: k }) && this.game.lastReveal) this.onToast(`打聽到「${this.game.lastReveal.name}」的位置，已標在地圖上`);
       else this.onToast('目前沒有可以打聽的地點了');
     }
     this.sig = '';

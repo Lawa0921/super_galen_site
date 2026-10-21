@@ -166,7 +166,7 @@ export class Hud {
         eye.className = 'delve-hide-eye';
         eye.setAttribute('aria-hidden', 'true');
         b.append(lab, eye);
-        b.addEventListener('click', () => { this.game.setHideArmor(slot, !this.game.vanity.hide[slot]); this.refresh(); });
+        b.addEventListener('click', () => { this.game.act({ op: 'hideArmor', slot, hide: !this.game.vanity.hide[slot] }); this.refresh(); });
         hr.appendChild(b);
         this.hideBtns.push({ slot, btn: b });
       }
@@ -180,18 +180,18 @@ export class Hud {
       cg.replaceChildren();
       for (let i = 0; i < CHEST_SLOTS; i++) {
         const s = this.makeSlot(i, '');
-        s.btn.addEventListener('click', () => { this.game.takeChestSlot(i); this.refresh(); });
+        s.btn.addEventListener('click', () => { this.game.act({ op: 'chestTake', slot: i }); this.refresh(); });
         cg.appendChild(s.btn);
         this.chestGrid.push(s);
       }
     }
     const takeAll = this.root.querySelector('#delve-chest-takeall'), chestClose = this.root.querySelector('#delve-chest-close');
     const onTakeAll = (): void => {
-      const n = this.game.takeAllFromChest();
+      const n = this.game.act({ op: 'chestTakeAll' });
       if (n) this.toast(`拿了 ${n} 樣東西`);
       this.refresh();
     };
-    const onChestClose = (): void => this.game.closeChest();
+    const onChestClose = (): void => this.game.act({ op: 'chestClose' });
     takeAll?.addEventListener('click', onTakeAll);
     chestClose?.addEventListener('click', onChestClose);
     this.offs.push(() => takeAll?.removeEventListener('click', onTakeAll), () => chestClose?.removeEventListener('click', onChestClose));
@@ -206,7 +206,7 @@ export class Hud {
     const onRecipe = (e: Event): void => {
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-recipe]');
       if (!b?.dataset.recipe) return;
-      const r = this.game.craft(b.dataset.recipe);
+      const r = this.game.act({ op: 'craft', recipe: b.dataset.recipe });
       if (!r.ok) this.toast(CRAFT_FAIL[r.reason] ?? '無法合成');
       this.refresh();
     };
@@ -273,7 +273,7 @@ export class Hud {
   private clickInventory(i: number): void {
     if (this.game.openChest) {
       // 開著箱子時：點背包格 = 整堆放進箱子
-      if (!this.game.depositToChest(i)) this.toast('箱子放不下');
+      if (!this.game.act({ op: 'chestDeposit', slot: i })) this.toast('箱子放不下');
       this.refresh();
       return;
     }
@@ -284,7 +284,7 @@ export class Hud {
       if (this.forgeTarget && gearSlot(st.item)) { this.setForge(st); this.refresh(); return; }
       this.picked = i;
     } else {
-      if (this.picked !== i) this.game.inventory.swap(this.picked, i);
+      if (this.picked !== i) this.game.act({ op: 'swap', a: this.picked, b: i });
       this.picked = null;
     }
     this.refresh();
@@ -296,10 +296,10 @@ export class Hud {
     if (this.forgeTarget && this.picked === null && eqSt) { this.setForge(eqSt); this.refresh(); return; }
     if (this.picked !== null) {
       const it = this.game.inventory.slots[this.picked]?.item;
-      if (!this.game.equipFromInventory(this.picked, slot)) this.toast(it ? `${ITEMS[it].name.zh}不能裝在這裡` : '不能裝在這裡');
+      if (!this.game.act({ op: 'equip', slot: this.picked, to: slot })) this.toast(it ? `${ITEMS[it].name.zh}不能裝在這裡` : '不能裝在這裡');
       this.picked = null;
     } else if (this.game.equipment.get(slot)) {
-      if (!this.game.unequip(slot)) this.toast('背包已滿，卸不下來');
+      if (!this.game.act({ op: 'unequip', slot })) this.toast('背包已滿，卸不下來');
     }
     this.refresh();
   }
@@ -307,10 +307,10 @@ export class Hud {
   private clickVanity(slot: VanitySlot): void {
     if (this.picked !== null) {
       const it = this.game.inventory.slots[this.picked]?.item;
-      if (!this.game.equipVanityFromInventory(this.picked, slot)) this.toast(it ? `${ITEMS[it].name.zh}不能放在外觀欄的這一格` : '不能放在這裡');
+      if (!this.game.act({ op: 'equipVanity', slot: this.picked, to: slot })) this.toast(it ? `${ITEMS[it].name.zh}不能放在外觀欄的這一格` : '不能放在這裡');
       this.picked = null;
     } else if (this.game.vanity.get(slot)) {
-      if (!this.game.unequipVanity(slot)) this.toast('背包已滿，卸不下來');
+      if (!this.game.act({ op: 'unequipVanity', slot })) this.toast('背包已滿，卸不下來');
     }
     this.refresh();
   }
@@ -319,12 +319,12 @@ export class Hud {
     const st = this.game.inventory.slots[i];
     if (!st) return;
     if (ITEMS[st.item].vanity) {
-      if (!this.game.equipVanityFromInventory(i)) this.toast('放不進外觀欄');
+      if (!this.game.act({ op: 'equipVanity', slot: i })) this.toast('放不進外觀欄');
       this.picked = null;
       this.refresh();
       return;
     }
-    if (!this.game.equipFromInventory(i)) this.toast(ITEMS[st.item].armor || ITEMS[st.item].accessory ? '已經裝了同一件' : '這不是裝備');
+    if (!this.game.act({ op: 'equip', slot: i })) this.toast(ITEMS[st.item].armor || ITEMS[st.item].accessory ? '已經裝了同一件' : '這不是裝備');
     this.picked = null;
     this.refresh();
   }
@@ -796,7 +796,7 @@ export class Hud {
     };
     on('#delve-lock-btn', () => {
       if (this.picked === null) return;
-      const r = this.game.toggleLock(this.picked);
+      const r = this.game.act({ op: 'lock', at: this.picked });
       if (r !== null) this.toast(r ? '已鎖定：不會被分解' : '已解除鎖定');
       this.refresh();
     });
@@ -807,7 +807,7 @@ export class Hud {
       if (!st || !gearSlot(st.item)) return;
       if (st.gear?.locked) { this.toast('已鎖定的裝備不能分解'); return; }
       const go = (): void => {
-        const y = this.game.salvage(i);
+        const y = this.game.act({ op: 'salvage', at: i });
         if (y) this.toast(`分解了 ${gearName(st.item, st.gear)}：${costText(y)}`);
         this.picked = null;
         if (this.forgeTarget === st) this.setForge(null);
@@ -821,7 +821,7 @@ export class Hud {
       const list = this.game.salvageTargets(0);
       if (!list.length) { this.toast('沒有可分解的普通裝備（快捷欄與鎖定的不算）'); return; }
       this.askConfirm(`要分解背包裡（快捷欄以外、沒鎖定）的 ${list.length} 件普通裝備嗎？`, () => {
-        const r = this.game.salvageAll(0);
+        const r = this.game.act({ op: 'salvageAll', maxRarity: 0 });
         this.toast(`分解了 ${r.count} 件：${costText(r)}`);
         this.picked = null;
         this.refresh();
@@ -842,11 +842,11 @@ export class Hud {
       const at = this.game.locate(st), op = b.dataset.op;
       if (at === null) { this.setForge(null); return; }
       if (op === 'lock') {
-        const r = this.game.toggleLock(at);
+        const r = this.game.act({ op: 'lock', at });
         if (r !== null) this.toast(r ? '已鎖定：不會被分解' : '已解除鎖定');
       } else if (op === 'salvage') {
         const go = (): void => {
-          const y = this.game.salvage(at);
+          const y = this.game.act({ op: 'salvage', at });
           if (y) this.toast(`分解了 ${gearName(st.item, st.gear)}：${costText(y)}`);
           this.setForge(null);
           this.refresh();
@@ -854,7 +854,7 @@ export class Hud {
         if (st.gear?.locked) this.toast('已鎖定的裝備不能分解');
         else this.askConfirm(`要分解${typeof at === 'number' ? '' : '裝備中的'} ${RARITIES[rarityOf(st.gear)].zh}「${gearName(st.item, st.gear)}」嗎？分解後無法復原。`, go);
       } else {
-        const r = op === 'reroll' ? this.game.reroll(at, Number(b.dataset.affix)) : op === 'upgrade' ? this.game.upgrade(at) : this.game.ascend(at);
+        const r = op === 'reroll' ? this.game.act({ op: 'reroll', at, affix: Number(b.dataset.affix) }) : op === 'upgrade' ? this.game.act({ op: 'upgrade', at }) : this.game.act({ op: 'ascend', at });
         if (!r.ok) this.toast(FORGE_FAIL[r.reason]);
         else this.toast(op === 'reroll' ? `洗煉完成：${gearName(st.item, st.gear)}` : op === 'upgrade' ? `強化成功：+${st.gear?.plus ?? 0}` : `升階成功：${RARITIES[rarityOf(st.gear)].zh}`);
       }

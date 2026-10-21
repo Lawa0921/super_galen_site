@@ -94,7 +94,7 @@ export class WaystoneUi {
   private onClick(e: Event): void {
     const t = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-stone]');
     if (!t || t.disabled || this.stoneId === null) return;
-    if (this.game.travelStone(Number(t.dataset.stone))) { this.close(); this.renderer.snapCamera(); return; }
+    if (this.game.act({ op: 'travelStone', to: Number(t.dataset.stone) })) { this.close(); this.renderer.snapCamera(); return; }
     this.sig = '';
     this.render();
   }

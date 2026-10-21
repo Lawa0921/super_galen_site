@@ -22,6 +22,10 @@ describe('keyAction', () => {
     expect(keyAction('Escape')).toBe('menu');
     expect(keyAction('KeyQ')).toBeNull();
   });
+
+  it('G 丟出手上的道具', () => {
+    expect(keyAction('KeyG')).toBe('toss');
+  });
 });
 
 describe('slotForKey', () => {

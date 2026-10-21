@@ -291,18 +291,18 @@ export class FolkUi {
     if (!g.nearFolk(n, FOLK_TALK_RANGE)) { this.msg = '太遠了，靠近一點再說'; this.sig = ''; this.render(); return; }
     if (d.buy !== undefined) {
       const it = g.folk.shop(n)[Number(d.buy)];
-      if (g.folkBuy(n.key, Number(d.buy)) && it) this.msg = `買了 ${ITEMS[it.item].name.zh}${it.n > 1 ? ` ×${it.n}` : ''}`;
+      if (g.act({ op: 'folkBuy', key: n.key, i: Number(d.buy) }) && it) this.msg = `買了 ${ITEMS[it.item].name.zh}${it.n > 1 ? ` ×${it.n}` : ''}`;
     } else if (d.sell) {
-      if (g.folkSell(n.key, d.sell as ItemId, Number(d.n) || 1)) this.msg = `賣出 ${ITEMS[d.sell as ItemId].name.zh}`;
+      if (g.act({ op: 'folkSell', key: n.key, item: d.sell as ItemId, n: Number(d.n) || 1 })) this.msg = `賣出 ${ITEMS[d.sell as ItemId].name.zh}`;
     } else if (d.svc) {
       if (d.svc === 'forge') { this.o.onInventory(); this.msg = '在背包裡選一件裝備，按「鍛造」：在鐵匠身邊不用鐵砧，好感度越高越便宜。'; }
-      else { const r = g.folkService(n.key, d.svc as never); this.msg = r.msg; if (r.ok && d.svc === 'invite') this.o.onToast(r.msg, 3200, TOAST_HIGH); }
+      else { const r = g.act({ op: 'folkService', key: n.key, svc: d.svc as never }); this.msg = r.msg; if (r.ok && d.svc === 'invite') this.o.onToast(r.msg, 3200, TOAST_HIGH); }
     } else if (d.accept) {
-      if (g.acceptQuest(n.key, d.accept)) this.msg = '接下了委託（L 打開委託清單）';
+      if (g.act({ op: 'acceptQuest', key: n.key, id: d.accept })) this.msg = '接下了委託（L 打開委託清單）';
     } else if (d.turnin) {
-      this.msg = g.turnInQuest(d.turnin) ? '委託完成！收下了報酬。' : '還不能交付（道具不夠、或不在委託人身邊）';
+      this.msg = g.act({ op: 'turnInQuest', id: d.turnin }) ? '委託完成！收下了報酬。' : '還不能交付（道具不夠、或不在委託人身邊）';
     } else if (d.deep !== undefined) {
-      const r = g.deepforge(Number(d.deep), n.key);
+      const r = g.act({ op: 'deepforge', at: Number(d.deep), key: n.key });
       this.msg = r.ok ? '熔爐裡的符文亮了起來——裝備升了一階！' : r.reason === 'cost' ? '錠或銅幣不夠' : '現在沒辦法升階';
     }
     this.sig = '';
@@ -315,7 +315,7 @@ export class FolkUi {
     const p = this.q('#delve-quests');
     if (p) p.hidden = !open;
     this.q('#delve-quests-btn')?.setAttribute('aria-pressed', open ? 'true' : 'false');
-    if (open) { this.close(); this.game.refreshQuests(); this.qsig = ''; this.renderQuestLog(); }
+    if (open) { this.close(); this.game.act({ op: 'refreshQuests' }); this.qsig = ''; this.renderQuestLog(); }
   }
   toggleQuests(): void { this.setQuests(!this.questsOpen); }
   private renderQuestLog(): void {

@@ -236,18 +236,18 @@ export function bootDelve(root: HTMLElement): Session {
    */
   function setMirror(game: DelveGame, open: boolean): void {
     if (!open) { if (mirrorOpen) wardrobe?.close(); return; }
-    if (!wardrobe || wardrobe.isOpen || handle?.game !== game) { game.closeMirror(); return; }
+    if (!wardrobe || wardrobe.isOpen || handle?.game !== game) { game.act({ op: 'mirrorClose' }); return; }
     mirrorOpen = true;
     handle.setPaused(true);
     wardrobe.open(game.appearance, {
       mode: 'mirror',
       tints: game.mirrorTints().map((t) => ({ slot: t.slot, tint: t.tint, name: ITEMS[t.item].name.zh, channels: t.channels })),
       look: (a, tints) => restyledLook(game.doll().look, a, tints),
-      onDone: (a) => game.setBodyLook(a),
-      onTints: (ts) => { for (const t of ts) game.recolorWorn(t.slot, t.tint); if (handle?.game === game) handle.hud.refresh(); },
+      onDone: (a) => game.act({ op: 'bodyLook', look: a }),
+      onTints: (ts) => { for (const t of ts) game.act({ op: 'recolor', slot: t.slot, tint: t.tint }); if (handle?.game === game) handle.hud.refresh(); },
       onClose: () => {
         mirrorOpen = false;
-        game.closeMirror();
+        game.act({ op: 'mirrorClose' });
         if (handle?.game === game) handle.setPaused(!menu!.hidden);
       },
     });
@@ -264,7 +264,7 @@ export function bootDelve(root: HTMLElement): Session {
       mode: 'race',
       look: (a) => restyledLook(game.doll().look, a, []),
       onDone: (a) => {
-        if (game.rebirth(a.race)) { handle?.hud.refresh(); handle?.hud.toast(`轉生成${RACES[a.race]?.zh ?? ''}`, 2400); }
+        if (game.act({ op: 'rebirth', race: a.race })) { handle?.hud.refresh(); handle?.hud.toast(`轉生成${RACES[a.race]?.zh ?? ''}`, 2400); }
         else handle?.hud.toast('種族沒有改變，轉生之藥沒有用掉');
       },
       onClose: () => { if (handle?.game === game) handle.setPaused(!menu!.hidden); },

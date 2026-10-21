@@ -953,6 +953,28 @@ test.describe('delve', () => {
     expect(errors).toEqual([]);
   });
 
+  test('按 G 丟出手上的道具', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=toss&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      // 開局背包有 10 支火把：先清掉，只留這次給的 5 支
+      g.inventory.remove('torch', g.inventory.count('torch'));
+      g.give('torch', 5);
+      const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'torch');
+      if (i !== 0) g.inventory.swap(i, 0);
+      g.selectSlot(0);
+    });
+    expect(await page.evaluate(() => window.__delveDebug!.game.inventory.selectedStack()?.item)).toBe('torch');
+    await page.keyboard.press('KeyG');
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.count('torch')), { timeout: 1000 }).toBe(0);
+    // 丟的人 1.5 秒內撿不回來：這段時間裡地上一定有那 5 支
+    expect(await page.evaluate(() => window.__delveDebug!.game.drops.list.some((d: { item: string; count: number }) => d.item === 'torch' && d.count === 5))).toBe(true);
+    expect(errors).toEqual([]);
+  });
+
   test('裝備：在背包點防具再點裝備格 → getState 防禦增加；點裝備格卸下', async ({ page }) => {
     await page.goto('/games/delve?seed=armor&autostart=1&fresh=1');
     await waitGame(page);

@@ -262,7 +262,7 @@ export class FullMap {
       const t = screenToTileOnMap(this.view, this.canvas.width, this.canvas.height, p.x, p.y);
       const w = this.game.world;
       if (w.inBounds(t.x, t.y)) {
-        const r = this.game.toggleMarker(t.x, t.y);
+        const r = this.game.act({ op: 'marker', x: t.x, y: t.y });
         if (r === 'full') this.opts.onToast('標記已滿（最多 20 個）——點既有的標記可以移除');
         this.dirty = true;
       }
