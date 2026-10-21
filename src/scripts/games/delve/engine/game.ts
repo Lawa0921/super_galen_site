@@ -2199,7 +2199,7 @@ export class DelveGame {
       this.inventory.remove('golden_key', 1);
       w.unlocked.add(w.idx(x, y));
       w.keysUsed++;
-      w.markModified(x, y);
+      w.touchChest(x, y);
       this.emit({ type: 'unlock', x, y, item: 'golden_key' });
     }
     if (this.openChest && this.openChest.x === x && this.openChest.y === y) return true;
@@ -2240,7 +2240,7 @@ export class DelveGame {
     const left = this.inventory.add(st.item, st.count, st.gear, st.tint);
     if (left === st.count) { this.block('mine', 'full', c.x, c.y); return false; }
     if (left > 0) st.count = left; else slots[i] = null;
-    this.world.markModified(c.x, c.y);
+    this.world.touchChest(c.x, c.y);
     return true;
   }
   /** 全部拿取，回傳拿到的道具總數 */
@@ -2267,7 +2267,7 @@ export class DelveGame {
       if (k < 0) return false;
       slots[k] = st;
       this.inventory.slots[invSlot] = null;
-      this.world.markModified(c.x, c.y);
+      this.world.touchChest(c.x, c.y);
       return true;
     }
     const max = ITEMS[st.item].maxStack;
@@ -2281,7 +2281,7 @@ export class DelveGame {
     }
     if (left === st.count) return false;
     if (left > 0) st.count = left; else this.inventory.slots[invSlot] = null;
-    this.world.markModified(c.x, c.y);
+    this.world.touchChest(c.x, c.y);
     return true;
   }
 
@@ -3626,7 +3626,7 @@ export class DelveGame {
           if (s0.count <= 0) slots[k] = null;
         }
         const { x: cxk, y: cyk } = this.world.tileXY(i);
-        this.world.markModified(cxk, cyk);
+        this.world.touchChest(cxk, cyk);
         if (need <= 0) break;
       }
     }
