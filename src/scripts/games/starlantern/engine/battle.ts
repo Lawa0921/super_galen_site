@@ -12,7 +12,7 @@ import { activeIds, hasPassive, powersOf, sheetOf, statsOf } from './party';
 import { pick, type Rng } from './rng';
 import { abyssPct, bossPartyScale, deepPower, empower, enemyLevelAt, groupCap, homeLevel, mul, partyScale, regionTint, scaleEnemy } from './scaling';
 import { SECONDARY_KEYS } from './stats';
-import { applyEffect, patchSkill, type EffectContext } from './skills';
+import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
 import { credit, lossOf, type Ledger } from './ledger';
@@ -23,7 +23,7 @@ import { payHp } from './mechanics/embers';
 import { echoDef, echoOf } from './mechanics/echo';
 import { T } from '../data/text.zh-TW';
 import type { RuneRef } from '../data/runes';
-import { applyRunes } from './runes';
+import { applyRunes, bounceNext } from './runes';
 import { isInnate, keystonesOf, mechKnob, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
@@ -428,7 +428,12 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
       ctx.cast = def.id;   // a barrier remembers the skill that raised it
       if (def.effects.some((e) => e.kind === 'damage' && e.scatter)) scatterCast(s, actor, def, act.target, ctx, rng);
-      else for (const t of resolveTargets(s, actor, def.target, act.target, rng)) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
+      else {
+        const targets = resolveTargets(s, actor, def.target, act.target, rng);
+        for (const t of targets) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
+        // 彈射 (plan 8e): after the first foe has had every effect, the damage goes on down the line.
+        if (def.runeRules?.bounce && targets.length === 1) bounceCast(s, actor, def, targets[0], ctx);
+      }
       delete ctx.cast;
       return def;
     }
@@ -475,6 +480,22 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
   }
 }
 
+
+/**
+ * 彈射 (plan 8e ruling 8): up to `bounces` more foes, each the next one standing in line not hit yet (no draw), take the
+ * skill's damage effects at 100 − dropPct × n percent of their power for the n-th bounce. Each hit rolls as any hit does.
+ */
+function bounceCast(s: BattleState, actor: Combatant, def: SkillDef, first: Combatant, ctx: EffectContext): void {
+  const { bounces, dropPct } = def.runeRules!.bounce!;
+  const foes = actor.side === 'party' ? s.enemies : s.party;
+  const hit = new Set([first.key]);
+  for (let n = 1; n <= bounces; n++) {
+    const next = bounceNext(foes, first.key, hit);
+    if (!next) return;
+    hit.add(next.key);
+    for (const eff of def.effects) if (eff.kind === 'damage') applyEffect(actor, next, { ...eff, power: pctOf(eff.power, 100 - dropPct * n) }, ctx);
+  }
+}
 
 /**
  * A skill with a scatter hit (散射, 一擲千金): its effects in order; a scatter damage effect throws each of its hits at a

@@ -2,6 +2,7 @@ import type { SkillMod } from '../data/gear';
 import { RUNES, TAGS, exclusiveGroupOf, type RuneId, type RuneMod, type RuneRef, type Tag } from '../data/runes';
 import { T } from '../data/text.zh-TW';
 import type { AilmentId } from './ailments';
+import type { Combatant } from './combatant';
 import { patchSkill } from './skills';
 import type { Effect, Element, RuneRules, SkillDef } from './types';
 
@@ -233,4 +234,17 @@ export function applyRunes(core: SkillDef, extra: Effect[], refs: readonly RuneR
   }
   if (Object.keys(rules).length) out.runeRules = rules;
   return out;
+}
+
+/**
+ * Where 彈射 goes next (plan 8e ruling 8, no draw): the next standing foe in line after `from` (the first target),
+ * wrapping round, that this cast has not hit yet; none, undefined.
+ */
+export function bounceNext(enemies: readonly Combatant[], from: string, hit: ReadonlySet<string>): Combatant | undefined {
+  const at = enemies.findIndex((c) => c.key === from);
+  for (let i = 1; i <= enemies.length; i++) {
+    const c = enemies[(at + i) % enemies.length];
+    if (c.alive && !hit.has(c.key)) return c;
+  }
+  return undefined;
 }

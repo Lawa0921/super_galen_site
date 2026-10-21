@@ -166,6 +166,8 @@ export interface DamageSpec {
   wounded?: number;
   /** Percent a stack of Sylvie's aim adds on this hit, in place of AIM.dmgPct (her 一擊, plan 8d). */
   aimPct?: number;
+  /** 破甲 (plan 8e): the target's armor and block count for nothing, and no block is rolled. */
+  armorBreak?: true;
 }
 
 /** Enemies crit for a flat 50% more, whatever critDmg they carry. */
@@ -193,7 +195,8 @@ export function rollHit(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rng):
   // The hero's 不動 (plan 8d): a steady guard is never crit, and nothing is rolled for it.
   const steady = !!t.steady && t.taunt > 0;
   const crit = !steady && (sure || roll((ax('crit') + AIM.critPct * aimOn(a, t)) / 100, rng));
-  const blocked = spec.element === 'phys' && roll(tx('block') / 100, rng);
+  // 破甲 (plan 8e): no block, so none is rolled.
+  const blocked = spec.element === 'phys' && !spec.armorBreak && roll(tx('block') / 100, rng);
   return { variance, crit, blocked };
 }
 
@@ -230,7 +233,7 @@ export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRo
   if (aim) mult *= 1 + ((spec.aimPct ?? AIM.dmgPct) * aim) / 100;
   // Safira's beat: every hit of hers, her plain attack and her ultimate included.
   if (a.mech?.kind === 'beat' && a.defId === 'safira' && a.mech.beat > 0) mult *= 1 + (BEAT.pctPer * a.mech.beat) / 100;
-  if (hitEl === 'phys') {
+  if (hitEl === 'phys' && !spec.armorBreak) {
     mult *= 1 - armorReduction(tx('armor'), a.level);
     if (r.blocked) mult *= 0.5;
   }

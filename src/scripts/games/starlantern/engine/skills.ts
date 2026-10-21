@@ -4,7 +4,7 @@ import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import { credit, creditPrevented, lossOf, type Ledger } from './ledger';
-import { clearAilments, inflictAilment } from './ailments';
+import { clearAilments, inflictAilment, type AilmentId } from './ailments';
 import type { BattleState } from './battle';
 import { onLandedHit } from './mechanics/index';
 import { MOON } from './mechanics/moon';
@@ -222,6 +222,34 @@ export function healAmount(actor: Combatant, power: number, bonus?: number): num
   return Math.floor((power / 100) * (stat(actor, 'mag') * 2 + 10) * k);
 }
 
+/** The ailment each element brings on a 餘波 crit (plan 8e). */
+const ELEMENT_AILMENT: Record<Element, AilmentId> = { phys: 'bleed', fire: 'burn', ice: 'freeze', thunder: 'shock' };
+
+/**
+ * The runes riding on one landed hit (plan 8e Task 4), in this order: 吸血 heals the caster a share of the HP the target
+ * lost; 回氣 gives her TP; each 命中異常 is tried on the target; 餘波 brings the element's ailment on a crit. Ailments are
+ * tried only on a target still standing. Only the ailments draw, one each, and only when the hit carries them.
+ */
+function runeHit(actor: Combatant, target: Combatant, eff: Extract<Effect, { kind: 'damage' }>, crit: boolean, hpLost: number, ctx: EffectContext): void {
+  if (eff.drainPct !== undefined && actor.alive) {
+    // What the target really lost: no overkill, nothing a shield took.
+    const n = Math.floor((hpLost * eff.drainPct) / 100);
+    if (n > 0) {
+      const gained = gainHp(actor, n);
+      credit(ctx.ledger, actor.key, 'healing', gained);
+      ctx.log.push({ type: 'heal', target: actor.key, amount: gained });
+    }
+  }
+  if (eff.tpPerHit !== undefined && actor.alive && actor.tp < actor.max.tp) {
+    const before = actor.tp;
+    actor.tp = Math.min(actor.max.tp, actor.tp + eff.tpPerHit);
+    ctx.log.push({ type: 'tp', target: actor.key, amount: actor.tp - before });
+  }
+  if (!target.alive) return;
+  for (const a of eff.onHit ?? []) inflictAilment(actor, target, a.status, a.chance, ctx);
+  if (eff.aftermath && crit && target.alive) inflictAilment(actor, target, ELEMENT_AILMENT[eff.element], 1, ctx);
+}
+
 function gainHp(t: Combatant, amount: number): number {
   const before = t.hp;
   t.hp = Math.min(t.max.hp, t.hp + amount);
@@ -241,12 +269,15 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
           if (actor.side === 'party' && target.side === 'enemy') credit(ctx.ledger, actor.key, 'damage', lossOf(target, amount));
           else if (actor.side === 'enemy' && target.side === 'party') creditPrevented(ctx.ledger, actor, target, eff, rolls, amount, ctx.redirect);
         }
+        const hpBefore = target.hp;
         const lost = dealDamage(target, amount, { ledger: ctx.ledger, log: ctx.log });
         ctx.lastHit = { target: target.key, amount: lost };
         if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });
         if (!target.alive) ctx.log.push({ type: 'ko', target: target.key });
         onLandedHit(actor, target, ctx);
+        // Her runes on this hit (plan 8e): absent fields do nothing and draw nothing.
+        runeHit(actor, target, eff, crit, hpBefore - target.hp, ctx);
         // crit-tp, weak-tp and kill-tp settle on every hit; none of them draws.
         if (crit) keystoneTp(actor, 'crit-tp', KEYSTONE_VALUES.critTp, ctx);
         if (isWeak(target, eff.element)) keystoneTp(actor, 'weak-tp', KEYSTONE_VALUES.weakTp, ctx);
