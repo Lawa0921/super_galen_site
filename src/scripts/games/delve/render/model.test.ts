@@ -32,6 +32,30 @@ describe('clampCamera', () => {
   });
 });
 
+describe('followCamera', () => {
+  it('朝目標平滑移動，不超過目標', () => {
+    const c = followCamera({ x: 0, y: 0 }, { x: 1000, y: 800 }, 800, 600, 0, 32000, 16000, 1 / 60);
+    // 目標鏡頭 = 中心 - 半視窗 = (600, 500)
+    expect(c.x).toBeGreaterThan(0);
+    expect(c.x).toBeLessThan(600);
+    expect(c.y).toBeGreaterThan(0);
+    expect(c.y).toBeLessThan(500);
+  });
+  it('長時間後收斂到目標並受夾限', () => {
+    let c = { x: 0, y: 0 };
+    for (let i = 0; i < 600; i++) c = followCamera(c, { x: 100, y: 100 }, 800, 600, 0, 32000, 16000, 1 / 60);
+    expect(c.x).toBeCloseTo(0);
+    expect(c.y).toBeCloseTo(0);
+    for (let i = 0; i < 600; i++) c = followCamera(c, { x: 5000, y: 4000 }, 800, 600, 0, 32000, 16000, 1 / 60);
+    expect(c.x).toBeCloseTo(4600, 0);
+    expect(c.y).toBeCloseTo(3700, 0);
+  });
+  it('snap=true 直接到位', () => {
+    const c = followCamera({ x: 0, y: 0 }, { x: 1000, y: 800 }, 800, 600, 0, 32000, 16000, 1 / 60, true);
+    expect(c).toEqual({ x: 600, y: 500 });
+  });
+});
+
 describe('FixedStepper', () => {
   it('累積到一個步長才步進', () => {
     const s = new FixedStepper(1 / 60);

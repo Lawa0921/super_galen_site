@@ -21,7 +21,7 @@ import { CombatLayer } from './combatDraw';
 import { LevelFx } from './levelFx';
 import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background, type BiomeSource } from './background';
-import { ColumnCache } from './colCache';
+import { ColumnCache, horizonSurfaceAt } from './colCache';
 import { scanTrees, torchMount, treeKind, TREE_KIND } from './scene';
 import { bufferSize, clampZoom, floatTextScale, snapCam, zoomScale } from './lowres';
 import { ambientReach, depthSurfaceAt, type LightMap, type PointLight } from '../engine/lighting';
@@ -209,7 +209,7 @@ export class Renderer {
   private glowSeen = { warm: this.torchesSeen, cool: this.coolSeen };
   /** 平均地表高度（世界 px）：世界沒有欄時的地平線 */
   private horizonPx: number;
-  /** 每欄地表高度 / 生態區的快取（外圍的 surfaceAt / biomeAt 要算雜湊；遠景地平線、遠景混合、地下背景每幀都問） */
+  /** 每欄「看得到的地表」（海上 = 水面，horizonSurfaceAt）/ 生態區的快取（外圍要算雜湊；遠景地平線、遠景混合、地下背景每幀都問） */
   private surfCache: ColumnCache;
   private biomeCache: ColumnCache;
   /** 遠景混合的生態區來源（物件固定 → Background 的權重場不重建） */
@@ -238,7 +238,7 @@ export class Renderer {
     this.bg = new Background(s % 100000);
     const gw = game.world;
     this.horizonPx = gw.surfaceY * S;
-    this.surfCache = new ColumnCache((x) => gw.surfaceAt(x));
+    this.surfCache = new ColumnCache((x) => horizonSurfaceAt(gw, x));
     this.biomeCache = new ColumnCache((x) => gw.biomeAt(x));
     const bc = this.biomeCache;
     this.biomeSrc = { at: (x) => bc.at(x), xMin: gw.xMin, xMax: gw.xMax };

@@ -24,6 +24,7 @@ export class OuterGen implements ColumnSource {
   surfaceAt(x: number): number { return this.profile.surfaceAt(x); }
   biomeAt(x: number): number { return this.profile.biomeAt(x); }
   layersAt(x: number): ColumnLayers { return this.profile.layersAt(x); }
+  waterTopAt(x: number): number | null { return this.profile.waterTopAt(x); }
   // 這一欄是不是地表洞穴入口（義大利麵從地表就開始挖）
   isEntrance(x: number): boolean { return this.filler.isEntrance(x); }
 }

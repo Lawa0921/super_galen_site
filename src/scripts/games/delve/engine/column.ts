@@ -62,6 +62,8 @@ export interface ColumnSource {
   surfaceAt(x: number): number;
   biomeAt(x: number): number;
   layersAt(x: number): ColumnLayers;
+  /** 第 x 欄的水面 y（海；沒有水 = null）。選用：畫面的遠景地平線用（海上看得到的是水面、不是海床） */
+  waterTopAt?(x: number): number | null;
 }
 
 /** 一個 chunk 的六層（各 CHUNK*CHUNK，索引 ly*CHUNK + lx；網路層 / 存檔 / 停放用） */

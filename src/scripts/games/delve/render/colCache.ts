@@ -3,6 +3,18 @@
 // 都走這裡；同一 chunk 欄連續查詢不查 Map。值只由 x 決定（生成時的資料，挖掘不改），所以不必失效，只限制大小。
 import { CHUNK } from '../engine/constants';
 import { chunkOfX, localX } from '../engine/coords';
+import type { World } from '../engine/world';
+
+/**
+ * 遠景地平線用的「看得到的地表」：中央照舊 surfaceAt；外圍有水的欄（海）取 min(地表, 水面)——
+ * surfaceAt 在海上是海床（水面下 ~46 格），拿它當地平線遠山會沉到水裡。
+ */
+export function horizonSurfaceAt(w: Pick<World, 'width' | 'source' | 'surfaceAt'>, x: number): number {
+  const s = w.surfaceAt(x);
+  if (x >= 0 && x < w.width) return s;
+  const top = w.source?.waterTopAt?.(x);
+  return top === null || top === undefined ? s : Math.min(s, top);
+}
 
 export class ColumnCache {
   private cols = new Map<number, Int16Array>();
