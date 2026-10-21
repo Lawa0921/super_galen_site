@@ -17,11 +17,14 @@ import {
 const AIR = LIGHT_AIR_DECAY_DEEP;
 
 /** 全石頭 + 背牆，中央挖一個封閉洞穴（20×10），surfaceY = 0 → 沒有天空光 */
+/** 整個世界填滿同一種前景 / 背景牆 */
+function fillAll(w: World, fg: number, wall: number): void {
+  for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) { w.setFg(x, y, fg); w.setWall(x, y, wall); }
+}
 function closedCave(): World {
   const w = new World(100, 100);
-  w.fg.fill(T.STONE);
-  w.wall.fill(W.STONE_WALL);
-  for (let y = 45; y < 55; y++) for (let x = 40; x < 60; x++) w.fg[w.idx(x, y)] = T.AIR;
+  fillAll(w, T.STONE, W.STONE_WALL);
+  for (let y = 45; y < 55; y++) for (let x = 40; x < 60; x++) w.setFg(x, y, T.AIR);
   w.surfaceY = 0;
   return w;
 }
@@ -34,7 +37,7 @@ describe('LightEngine', () => {
   });
   it('火把照亮鄰格，深處隨距離以 LIGHT_AIR_DECAY_DEEP 衰減', () => {
     const w = closedCave();
-    w.fg[w.idx(50, 50)] = T.TORCH;
+    w.setFg(50, 50, T.TORCH);
     const m = new LightEngine().compute(w, { x: 30, y: 30, w: 40, h: 40 }, { sky: 0 });
     expect(m.get(50, 50)).toBeCloseTo(1, 5);
     expect(m.get(51, 50)).toBeCloseTo(AIR, 4);
@@ -45,7 +48,7 @@ describe('LightEngine', () => {
   });
   it('穿過實心衰減更快（0.56）', () => {
     const w = closedCave();
-    w.fg[w.idx(41, 50)] = T.TORCH;
+    w.setFg(41, 50, T.TORCH);
     const m = new LightEngine().compute(w, { x: 20, y: 30, w: 40, h: 40 }, { sky: 0 });
     // 往右 3 格是空氣；往左 1 格起是石頭（x=39,38,...）
     const air3 = m.get(44, 50);
@@ -57,7 +60,7 @@ describe('LightEngine', () => {
   });
   it('天空光照到地表、照不進深層岩石', () => {
     const w = new World(80, 80);
-    for (let y = 30; y < 80; y++) for (let x = 0; x < 80; x++) { w.fg[w.idx(x, y)] = T.STONE; if (y > 32) w.wall[w.idx(x, y)] = W.STONE_WALL; }
+    for (let y = 30; y < 80; y++) for (let x = 0; x < 80; x++) { w.setFg(x, y, T.STONE); if (y > 32) w.setWall(x, y, W.STONE_WALL); }
     w.surfaceY = 35;
     w.surface.fill(30);
     const m = new LightEngine().compute(w, { x: 10, y: 5, w: 60, h: 60 }, { sky: 1 });
@@ -76,7 +79,7 @@ describe('LightEngine', () => {
     const w = new World(40, 40);
     w.surfaceY = 39;
     w.surface.fill(39); // 地形表面在底部：這些格都在地表之上（不是天光井）
-    for (let y = 0; y < 40; y++) for (let x = 0; x < 40; x++) w.wall[w.idx(x, y)] = W.DIRT_WALL;
+    for (let y = 0; y < 40; y++) for (let x = 0; x < 40; x++) w.setWall(x, y, W.DIRT_WALL);
     const m = new LightEngine().compute(w, { x: 0, y: 0, w: 40, h: 40 }, { sky: 1 });
     expect(m.get(20, 20)).toBe(0);
   });
@@ -107,7 +110,8 @@ describe('LightEngine', () => {
     }
   });
   it('效能：130×80 視窗 + 28 格外框只需數毫秒', () => {
-    const { world, spawn } = generateWorld('light-perf');
+    const gen = generateWorld('light-perf'), spawn = gen.spawn;
+    const world = World.fromGen(gen.world, gen.layers);
     const eng = new LightEngine();
     const view = { x: spawn.x - 65, y: spawn.y - 40, w: 130, h: 80 };
     eng.compute(world, view, { sky: 1 }); // 暖機
@@ -142,10 +146,10 @@ describe('LightEngine', () => {
       expect(LIGHT_WATER_DECAY[2]).toBeGreaterThan(LIGHT_WATER_DECAY[1]);
       expect(LIGHT_WATER_DECAY[1]).toBeGreaterThan(LIGHT_WATER_DECAY[0]);
       const w = closedCave();
-      w.fg[w.idx(42, 50)] = T.TORCH;
+      w.setFg(42, 50, T.TORCH);
       for (let y = 48; y < 55; y++) for (let x = 43; x < 60; x++) w.setLiquid(x, y, 255, LIQ.WATER);
       for (let x = 43; x < 60; x++) w.setLiquid(x, 46, 100, LIQ.WATER);
-      w.fg[w.idx(42, 46)] = T.TORCH;
+      w.setFg(42, 46, T.TORCH);
       const m = new LightEngine().compute(w, { x: 30, y: 30, w: 40, h: 40 }, { sky: 0 });
       // 深水那列：第 1 格之後每格 ×LIGHT_WATER_DECAY
       expect(m.getRGB(45, 50)[0] / m.getRGB(44, 50)[0]).toBeCloseTo(LIGHT_WATER_DECAY[0], 2);
@@ -153,8 +157,8 @@ describe('LightEngine', () => {
     });
     it('地表的湖：只有水面那格吃天空光，越深越暗', () => {
       const w = new World(60, 60);
-      for (let y = 30; y < 60; y++) for (let x = 0; x < 60; x++) w.fg[w.idx(x, y)] = T.STONE;
-      for (let y = 30; y < 45; y++) for (let x = 10; x < 50; x++) { w.fg[w.idx(x, y)] = T.AIR; w.setLiquid(x, y, 255, LIQ.WATER); }
+      for (let y = 30; y < 60; y++) for (let x = 0; x < 60; x++) w.setFg(x, y, T.STONE);
+      for (let y = 30; y < 45; y++) for (let x = 10; x < 50; x++) { w.setFg(x, y, T.AIR); w.setLiquid(x, y, 255, LIQ.WATER); }
       w.surfaceY = 50;
       const m = new LightEngine().compute(w, { x: 0, y: 0, w: 60, h: 60 }, { sky: 1 });
       expect(m.get(30, 30)).toBeCloseTo(1, 4);
@@ -169,7 +173,7 @@ describe('LightEngine', () => {
       new LightEngine().compute(w, { x: 30, y: 30, w: 40, h: 40 }, opts).getRGB(x, y);
     it('LightMap.data = 三通道最大值；rgb 每格三個值', () => {
       const w = closedCave();
-      w.fg[w.idx(50, 50)] = T.TORCH;
+      w.setFg(50, 50, T.TORCH);
       const m = new LightEngine().compute(w, { x: 30, y: 30, w: 40, h: 40 }, { sky: 0 });
       expect(m.rgb.length).toBe(m.w * m.h * 3);
       for (const [x, y] of [[50, 50], [53, 51], [58, 54]]) {
@@ -184,7 +188,7 @@ describe('LightEngine', () => {
     it('火把暖橘、蠟燭 / 吊燈 / 熔爐暖黃：紅 > 綠 > 藍', () => {
       for (const t of [T.TORCH, T.CANDLE, T.LANTERN, T.FURNACE]) {
         const w = closedCave();
-        w.fg[w.idx(50, 50)] = t;
+        w.setFg(50, 50, t);
         const [r, g, b] = at(w, 52, 50);
         expect(r).toBeGreaterThan(g);
         expect(g).toBeGreaterThan(b);
@@ -192,12 +196,12 @@ describe('LightEngine', () => {
     });
     it('螢光菇發藍光；蘑菇草（實心）也發藍光照亮上方', () => {
       const w = closedCave();
-      w.fg[w.idx(50, 50)] = T.GLOW_MUSHROOM;
+      w.setFg(50, 50, T.GLOW_MUSHROOM);
       const [r, g, b] = at(w, 52, 50);
       expect(b).toBeGreaterThan(g);
       expect(g).toBeGreaterThan(r);
       const w2 = closedCave();
-      for (let x = 40; x < 60; x++) w2.fg[w2.idx(x, 54)] = T.MUSHROOM_GRASS;
+      for (let x = 40; x < 60; x++) w2.setFg(x, 54, T.MUSHROOM_GRASS);
       const c2 = at(w2, 50, 52);
       expect(c2[2]).toBeGreaterThan(0.15);
       expect(c2[2]).toBeGreaterThan(c2[0] * 1.5);
@@ -206,7 +210,7 @@ describe('LightEngine', () => {
       const hues = new Set<string>();
       for (let vx = 40; vx < 52; vx++) {
         const w = closedCave();
-        w.fg[w.idx(vx, 50)] = T.CRYSTAL;
+        w.setFg(vx, 50, T.CRYSTAL);
         const [r, g, b] = at(w, vx, 50);
         expect(b).toBeGreaterThan(0.5);
         expect(b).toBeGreaterThanOrEqual(r);
@@ -231,8 +235,8 @@ describe('LightEngine', () => {
     it('深水裡越深越藍；深蜂蜜裡越深越琥珀（藍掉最快）', () => {
       const lake = (liq: number): World => {
         const w = new World(60, 80);
-        for (let y = 30; y < 80; y++) for (let x = 0; x < 60; x++) w.fg[w.idx(x, y)] = T.STONE;
-        for (let y = 30; y < 70; y++) for (let x = 10; x < 50; x++) { w.fg[w.idx(x, y)] = T.AIR; w.setLiquid(x, y, 255, liq); }
+        for (let y = 30; y < 80; y++) for (let x = 0; x < 60; x++) w.setFg(x, y, T.STONE);
+        for (let y = 30; y < 70; y++) for (let x = 10; x < 50; x++) { w.setFg(x, y, T.AIR); w.setLiquid(x, y, 255, liq); }
         w.surfaceY = 50;
         return w;
       };
@@ -256,11 +260,11 @@ describe('LightEngine', () => {
     });
     it('天光井：從地表直通下去的豎井（有背牆）上段吃得到淡淡天光，越深越淡；頂端封住的洞沒有', () => {
       const w = new World(80, 220);
-      for (let y = 30; y < 220; y++) for (let x = 0; x < 80; x++) { w.fg[w.idx(x, y)] = T.STONE; w.wall[w.idx(x, y)] = W.STONE_WALL; }
+      for (let y = 30; y < 220; y++) for (let x = 0; x < 80; x++) { w.setFg(x, y, T.STONE); w.setWall(x, y, W.STONE_WALL); }
       w.surface.fill(30);
       w.surfaceY = 32;
-      for (let y = 30; y < 200; y++) for (let x = 40; x < 43; x++) w.fg[w.idx(x, y)] = T.AIR;
-      for (let y = 40; y < 70; y++) for (let x = 10; x < 13; x++) w.fg[w.idx(x, y)] = T.AIR;
+      for (let y = 30; y < 200; y++) for (let x = 40; x < 43; x++) w.setFg(x, y, T.AIR);
+      for (let y = 40; y < 70; y++) for (let x = 10; x < 13; x++) w.setFg(x, y, T.AIR);
       const eng = new LightEngine();
       const m = eng.compute(w, { x: 0, y: 30, w: 80, h: 60 }, { sky: 1 });
       const near = m.get(41, 45), deeper = m.get(41, 70);
@@ -315,12 +319,11 @@ describe('LightEngine', () => {
     /** 一條水平走廊（y = row），每欄地表在 y = 40 */
     function corridor(row: number): World {
       const w = new World(120, 160);
-      w.fg.fill(T.STONE);
-      w.wall.fill(W.STONE_WALL);
+      fillAll(w, T.STONE, W.STONE_WALL);
       w.surface.fill(40);
       w.surfaceY = 0;
-      for (let x = 10; x < 110; x++) w.fg[w.idx(x, row)] = T.AIR;
-      w.fg[w.idx(60, row)] = T.TORCH;
+      for (let x = 10; x < 110; x++) w.setFg(x, row, T.AIR);
+      w.setFg(60, row, T.TORCH);
       return w;
     }
     const ratio = (row: number): number => {
@@ -344,8 +347,8 @@ describe('LightEngine', () => {
   it('裂紋石（密室假牆）比一般岩石更擋光：牆後幾乎看不到', () => {
     const plug = (t: number): number => {
       const w = closedCave();
-      for (let y = 45; y < 55; y++) { w.fg[w.idx(50, y)] = t; w.fg[w.idx(51, y)] = t; }
-      w.fg[w.idx(44, 50)] = T.TORCH;
+      for (let y = 45; y < 55; y++) { w.setFg(50, y, t); w.setFg(51, y, t); }
+      w.setFg(44, 50, T.TORCH);
       return new LightEngine().compute(w, { x: 30, y: 30, w: 40, h: 40 }, { sky: 0 }).get(53, 50);
     };
     expect(plug(T.CRACKED_STONE)).toBeLessThan(0.05);
@@ -356,7 +359,7 @@ describe('LightEngine', () => {
     /** 走廊（玩家在這）| 1 格厚裂紋石牆 | 密室 */
     function secretRoom(): World {
       const w = closedCave(); // 40..59 × 45..54 空洞
-      for (let y = 45; y < 55; y++) w.fg[w.idx(50, y)] = T.CRACKED_STONE;
+      for (let y = 45; y < 55; y++) w.setFg(50, y, T.CRACKED_STONE);
       return w;
     }
     it('走廊與牆面標記、牆後的密室不標記', () => {

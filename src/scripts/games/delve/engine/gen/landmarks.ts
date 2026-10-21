@@ -5,7 +5,7 @@
 //     蘑菇林 / 蘑菇大洞窟 → 菇之圖騰（藍光）                         蜂巢 → 蜂王蜜罐
 //     地表的湖 / 綠洲 / 冰湖、裂谷、峽谷、天坑 → 旅人石堆（紅布旗，遠遠就看得到）
 //   找不到合適地板的地點就不放（不硬塞進牆裡）。
-import type { World } from '../world';
+import type { GenGrid } from './grid';
 import type { Structure } from '../worldgen';
 import { T, W, SOLID_LUT } from '../tiles';
 
@@ -28,7 +28,7 @@ export function landmarkFor(s: Pick<Structure, 'kind' | 'flavor'>): number | nul
 /** 地表型（找地表那一列：石堆放在湖邊 / 裂谷邊緣） */
 const RIM = new Set(['frozen_lake', 'lake_bed', 'oasis', 'chasm', 'ravine', 'sinkhole']);
 
-export function placeLandmarks(world: World, structures: readonly Structure[], surface: Int16Array): LandmarkInfo[] {
+export function placeLandmarks(world: GenGrid, structures: readonly Structure[], surface: Int16Array): LandmarkInfo[] {
   const { width, height, fg, wall } = world, WW = width;
   const out: LandmarkInfo[] = [];
   const inB = (x: number, y: number): boolean => x >= 1 && y >= 1 && x < width - 1 && y < height - 2;
@@ -109,7 +109,7 @@ export function placeLandmarks(world: World, structures: readonly Structure[], s
 }
 
 /** 礦坑：沿坑道地板鋪軌道（空氣格、下面實心），礦車停在中段 */
-function mineCart(world: World, s: Structure, standOk: (x: number, y: number) => boolean): { x: number; y: number } | null {
+function mineCart(world: GenGrid, s: Structure, standOk: (x: number, y: number) => boolean): { x: number; y: number } | null {
   const { width, fg } = world, WW = width;
   const floor = s.y + 4; // 坑道：yTop = s.y + 1，空氣 yTop..yTop+3（站立列 = yTop + 3）
   const mid = s.x + (s.w >> 1);

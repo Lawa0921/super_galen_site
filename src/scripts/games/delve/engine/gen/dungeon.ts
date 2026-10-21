@@ -13,7 +13,7 @@
 //   6. 施工：先把整個地城範圍（外接框，邊緣帶雜訊）填回天然岩層——把生成時穿過預留區的天然洞穴補掉，
 //      房間之間不會再被洞穴打穿；再把所有房間 / 走廊外擴 SHELL 格填滿地城磚（厚磚殼），挖空內部、鋪背景牆、
 //      放平台 / 門 / 家具 / 裝飾 / 箱子。
-import type { World } from '../world';
+import type { GenGrid } from './grid';
 import { Rng, subSeed } from '../rng';
 import { T, SOLID_LUT } from '../tiles';
 import { chestLoot, type Drop } from '../loot';
@@ -84,7 +84,7 @@ const fy = (r: DungeonRoom): number => r.y + r.h - 1;
 const cxOf = (r: DungeonRoom): number => r.x + r.w / 2;
 const cyOf = (r: DungeonRoom): number => r.y + r.h / 2;
 
-export function generateDungeon(world: World, o: DungeonOptions): DungeonInfo | null {
+export function generateDungeon(world: GenGrid, o: DungeonOptions): DungeonInfo | null {
   const { zone } = o;
   if (zone.x1 - zone.x0 < 120 || world.height < 500) return null;
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -101,7 +101,7 @@ interface Plan {
   entry: number; treasure: number; keyRoom: number; vault: number;
 }
 
-function planDungeon(world: World, o: DungeonOptions, rng: Rng): Plan | null {
+function planDungeon(world: GenGrid, o: DungeonOptions, rng: Rng): Plan | null {
   const { zone, surface } = o;
   const cx = Math.floor((zone.x0 + zone.x1) / 2);
   // 地面：塔附近地表的中位數
@@ -286,7 +286,7 @@ function planDungeon(world: World, o: DungeonOptions, rng: Rng): Plan | null {
   };
 }
 
-function build(world: World, o: DungeonOptions, p: Plan, rng: Rng): DungeonInfo {
+function build(world: GenGrid, o: DungeonOptions, p: Plan, rng: Rng): DungeonInfo {
   const W = world.width, H = world.height, fg = world.fg, wall = world.wall;
   const BR = o.color.brick, BW = o.color.wall;
   const inB = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < W && y < H;

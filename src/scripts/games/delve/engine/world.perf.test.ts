@@ -1,10 +1,11 @@
 // world.perf.test.ts — R5 效能預算：與儲存無關的 World 存取不可以比舊扁平實作慢太多。
-// P1 / P2 是和測試檔內一份「舊 World 扁平實作」比比值（與機器快慢無關）；
+// P1 / P2 是和舊的扁平實作（現在是生成器用的 GenGrid）比比值（與機器快慢無關）；
 // P3 / P4 是 Task 1 量出的基準 max(2 × 單跑, 2 × 全套並行) 往上取整 ms 寫死的上限（量到的數字記在 Task 1 的 commit 訊息）。
 // 慢機器可用 DELVE_SKIP_PERF=1 跳過整組。
 import { describe, it, expect, beforeAll } from 'vitest';
 import { World, LIQ, type TileWindow } from './world';
-import { T, SOLID_LUT } from './tiles';
+import { T } from './tiles';
+import type { GenGrid } from './gen/grid';
 import { LightEngine } from './lighting';
 import { LiquidSim } from './liquid';
 import { LIQ_MAX } from './liquidKind';
@@ -20,47 +21,14 @@ const P4_CEILING_MS = 1806;
 const median = (a: number[]): number => { const s = [...a].sort((p, q) => p - q); return s[s.length >> 1]; };
 const now = (): number => performance.now();
 
-/** 舊 World 的扁平實作（Task 1 之前的 isSolid / getFg / 批次讀取），比較用 */
-class FlatRef {
-  readonly fg: Uint8Array; readonly wall: Uint8Array; readonly liquid: Uint8Array; readonly liquidType: Uint8Array;
-  readonly frozen: Uint8Array; readonly half: Uint8Array; readonly variant: Uint8Array;
-  constructor(readonly width: number, readonly height: number, src: World) {
-    this.fg = src.fg.slice(); this.wall = src.wall.slice(); this.liquid = src.liquid.slice(); this.liquidType = src.liquidType.slice();
-    this.frozen = src.frozen.slice(); this.half = src.half.slice(); this.variant = src.variant.slice();
-  }
-  inBounds(x: number, y: number): boolean { return x >= 0 && y >= 0 && x < this.width && y < this.height; }
-  getFg(x: number, y: number): number {
-    if (!this.inBounds(x, y)) return T.STONE;
-    return this.fg[y * this.width + x];
-  }
-  isSolid(x: number, y: number): boolean {
-    if (x < 0 || x >= this.width || y >= this.height) return true;
-    if (y < 0) return false;
-    const i = y * this.width + x;
-    return SOLID_LUT[this.fg[i]] === 1 || this.frozen[i] === 1;
-  }
-  /** 逐列 set(subarray)（矩形完全在界內） */
-  copyRect(x0: number, y0: number, w: number, h: number, out: TileWindow): void {
-    const W = this.width;
-    for (let r = 0; r < h; r++) {
-      const s = (y0 + r) * W + x0, e = s + w, d = r * w;
-      out.fg.set(this.fg.subarray(s, e), d);
-      out.wall.set(this.wall.subarray(s, e), d);
-      out.liquid.set(this.liquid.subarray(s, e), d);
-      out.liquidType.set(this.liquidType.subarray(s, e), d);
-      out.frozen.set(this.frozen.subarray(s, e), d);
-      out.half.set(this.half.subarray(s, e), d);
-      out.variant.set(this.variant.subarray(s, e), d);
-    }
-  }
-}
-
 describe.skipIf(SKIP)('World 效能（R5）', () => {
   let gen: GenResult;
-  beforeAll(() => { gen = generateWorld('infinite-1a'); }, 60_000);
+  /** 區塊欄儲存的世界（受測）與舊扁平格（參考）：同一份生成結果 */
+  let world: World, ref: GenGrid;
+  beforeAll(() => { gen = generateWorld('infinite-1a'); ref = gen.world; world = World.fromGen(gen.world, gen.layers); }, 60_000);
 
   it('P1 點查詢：96×96 隨機漫步 2,000,000 次 isSolid + getFg，比值 ≤ 2.0', () => {
-    const w = gen.world, ref = new FlatRef(w.width, w.height, w);
+    const w = world;
     const N = 2_000_000, X0 = 2000, Y0 = gen.world.surfaceAt(2000) - 20;
     const xs = new Int32Array(N), ys = new Int32Array(N);
     let s = 4242, x = 48, y = 48;
@@ -90,11 +58,11 @@ describe.skipIf(SKIP)('World 效能（R5）', () => {
     expect(ratio).toBeLessThanOrEqual(2.0);
   });
 
-  it('P2 批次讀取：window(…, 200, 140) 500 次 vs 逐列 set(subarray)，比值 ≤ 2.5', () => {
-    const w = gen.world, ref = new FlatRef(w.width, w.height, w);
+  it('P2 批次讀取：window(…, 200, 140) 500 次 vs 扁平格逐列 set(subarray)，比值 ≤ 2.5', () => {
+    const w = world;
     const X0 = 1800, Y0 = Math.max(0, gen.world.surfaceAt(1800) - 60), N = 500;
     let win: TileWindow = w.window(X0, Y0, 200, 140);
-    const refOut = w.window(0, 0, 200, 140);
+    let refOut: TileWindow = ref.window(X0, Y0, 200, 140);
     const runWorld = (): number => {
       const t = now();
       for (let k = 0; k < N; k++) win = w.window(X0 + (k & 7), Y0, 200, 140, win);
@@ -102,7 +70,7 @@ describe.skipIf(SKIP)('World 效能（R5）', () => {
     };
     const runRef = (): number => {
       const t = now();
-      for (let k = 0; k < N; k++) ref.copyRect(X0 + (k & 7), Y0, 200, 140, refOut);
+      for (let k = 0; k < N; k++) refOut = ref.window(X0 + (k & 7), Y0, 200, 140, refOut);
       return now() - t;
     };
     runWorld(); runRef();
@@ -115,7 +83,7 @@ describe.skipIf(SKIP)('World 效能（R5）', () => {
   });
 
   it(`P3 光照：LightEngine.compute 地表附近 130×75、預設 margin，20 次中位數 ≤ ${P3_CEILING_MS} ms`, () => {
-    const w = gen.world, eng = new LightEngine();
+    const w = world, eng = new LightEngine();
     const cx = gen.spawn.x, view = { x: cx - 65, y: w.surfaceAt(cx) - 37, w: 130, h: 75 };
     for (let k = 0; k < 3; k++) eng.compute(w, view, { sky: 1 }); // 暖機
     const ts: number[] = [];
@@ -148,5 +116,5 @@ describe.skipIf(SKIP)('World 效能（R5）', () => {
     const ts = [run(), run(), run()];
     console.log(`[perf] P4 liquid median ${median(ts).toFixed(2)} ms`);
     expect(median(ts)).toBeLessThanOrEqual(P4_CEILING_MS);
-  });
+  }, 30_000); // 4 次（含暖機）在全套並行時可能超過預設的 5 秒；上限由 P4_CEILING_MS 把關
 });

@@ -2,7 +2,7 @@
 // 每完成一段生成就重新取樣，新出現的像素由上往下以 Bayer 抖動掃進來（一層一層填滿）。
 // 另有六個大階段（地形 → 洞穴 → 礦脈 → 地城 → 裝飾 → 液體），由生成器實際 yield 的段名推進（單調）。
 // 純邏輯（取樣 / 揭露 / 階段）不碰 DOM；GenSectionView 才畫到 canvas。只有不透明像素。
-import type { World } from '../engine/world';
+import type { GenGrid } from '../engine/gen/grid';
 import { TILES, T, SOLID_LUT } from '../engine/tiles';
 import { LIQ } from '../engine/liquidKind';
 import { buildMapLut, type MapLut } from './mapModel';
@@ -60,7 +60,7 @@ const SUB = 3;
  * 每個像素看它那塊區域裡 SUB×SUB 個取樣點：熔岩（≥1 點）/ 水（≥2 點）> 礦（≥1 點，Bayer 篩掉一半）> 地城磚 > 空氣（過半）> 實心（最多的那種）。
  * 空氣在該欄地表（第一個有實心的取樣列）之上 = 天空，之下 = 洞穴；整欄都沒有實心 = 還沒成形（暗色抖動）。
  */
-export function sampleSection(world: World, outW: number, outH: number, out: Uint32Array, lut: MapLut = buildMapLut()): void {
+export function sampleSection(world: GenGrid, outW: number, outH: number, out: Uint32Array, lut: MapLut = buildMapLut()): void {
   const { width: W, height: H, fg, wall, liquid, liquidType } = world;
   const sx = W / outW, sy = H / outH;
   const counts = new Uint16Array(256);
@@ -145,7 +145,7 @@ export class GenSectionView {
   private th = new Float32Array(0);
   private view = new Uint32Array(0);
   private raf = 0;
-  private world: World | null = null;
+  private world: GenGrid | null = null;
   /** 取樣次數（e2e / 除錯） */
   samples = 0;
 
@@ -163,7 +163,7 @@ export class GenSectionView {
   }
 
   /** 新的生成開始：清成「未成形」 */
-  reset(world: World | null): void {
+  reset(world: GenGrid | null): void {
     this.world = world;
     cancelAnimationFrame(this.raf);
     this.raf = 0;

@@ -2,6 +2,9 @@
 // 總量只會因薄膜蒸發減少、不會變多；熔岩 / 蜂蜜照原本的節奏比較慢；世界生成的真實湖也一樣（沒有水壓：要往上爬才出得去的水留著，跟 Terraria 一樣）；靜止時不花成本。
 import { describe, it, expect } from 'vitest';
 import { World, LIQ } from './world';
+import type { GenGrid } from './gen/grid';
+/** 測試世界或生成器的扁平格（湖泊洩水直接跑在生成結果上） */
+type AnyWorld = World | GenGrid;
 import { T, SOLID_LUT } from './tiles';
 import { LiquidSim } from './liquid';
 import { LIQ_MAX } from './liquidKind';
@@ -27,23 +30,23 @@ function lakeWorld(o: { LW?: number; LD?: number; CAV_W?: number; CAV_H?: number
   sim.settle(500);
   return { w, sim, W, H, LW, LD, LY0, LY1, FLOOR, CAV_W };
 }
-function sumRect(w: World, x0: number, y0: number, x1: number, y1: number): number {
+function sumRect(w: AnyWorld, x0: number, y0: number, x1: number, y1: number): number {
   let s = 0;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) s += w.getLiquid(x, y);
   return s;
 }
-function total(w: World): number { return w.liquidTotal(); }
+function total(w: AnyWorld): number { return w.liquidTotal(); }
 /** 直接改一格的前景（像舊的 w.fg[i] = id：不經 onTileChange 喚醒液體） */
-function rawFg(w: World, x: number, y: number, id: number): void {
+function rawFg(w: AnyWorld, x: number, y: number, id: number): void {
   const wake = w.onTileChange;
   w.onTileChange = null;
   w.setFg(x, y, id);
   w.onTileChange = wake;
 }
 /** 中央 tile 鍵（= y*width + x）的液體量 / 種類 / 前景 */
-const liqAt = (w: World, i: number): number => w.getLiquid(i % w.width, Math.floor(i / w.width));
-const typeAt = (w: World, i: number): number => w.getLiquidType(i % w.width, Math.floor(i / w.width));
-const fgAt = (w: World, i: number): number => w.getFg(i % w.width, Math.floor(i / w.width));
+const liqAt = (w: AnyWorld, i: number): number => w.getLiquid(i % w.width, Math.floor(i / w.width));
+const typeAt = (w: AnyWorld, i: number): number => w.getLiquidType(i % w.width, Math.floor(i / w.width));
+const fgAt = (w: AnyWorld, i: number): number => w.getFg(i % w.width, Math.floor(i / w.width));
 
 describe('湖泊洩水（合成湖）', () => {
   it('靜止的湖不花成本：退休後每刻處理 0 格', () => {
@@ -116,7 +119,7 @@ describe('湖泊洩水（合成湖）', () => {
  * 水只會落下或橫攤、不會往上爬，所以 U 形彎 / 岩簷底下的水道後面那片水本來就流不過來。
  * 這個集合就是挖穿後「照規則該流光」的部分；集合外的格一滴都不該少。
  */
-function downhillTo(w: World, src: number, box: { x0: number; y0: number; x1: number; y1: number }): Uint8Array {
+function downhillTo(w: AnyWorld, src: number, box: { x0: number; y0: number; x1: number; y1: number }): Uint8Array {
   const W = w.width, ok = new Uint8Array(w.width * w.height), q = [src];
   ok[src] = 1;
   while (q.length) {

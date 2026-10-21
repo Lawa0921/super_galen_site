@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { generateWorld, type GenResult } from './worldgen';
 import { DelveGame } from './game';
 import type { World } from './world';
+import type { GenGrid } from './gen/grid';
 
 const SEED = 'infinite-1a';
 
@@ -17,7 +18,7 @@ function fnv(bytes: Uint8Array, h = 0x811c9dc5): number {
 const hex = (h: number): string => h.toString(16).padStart(8, '0');
 const hashBytes = (a: Uint8Array): string => hex(fnv(a));
 const hashI16 = (a: Int16Array): string => hex(fnv(new Uint8Array(a.buffer, a.byteOffset, a.byteLength)));
-function hashChests(w: World): string {
+function hashChests(w: World | GenGrid): string {
   const keys = [...w.chests.keys()].sort((a, b) => a - b);
   const json = JSON.stringify(keys.map((k) => [k, w.chests.get(k)]));
   return hex(fnv(new TextEncoder().encode(json)));

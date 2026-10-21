@@ -5,7 +5,7 @@
 //   · 矮人地廳（1～2 座）：洞穴層深處鑿出的拱頂石廳（鑿石磚外殼、鑿刻石牆背景）、矮人熔爐 + 鐵砧、火盆、旗幟與吊燈、
 //     長桌、橫貫大廳的礦車軌道與兩側鑿出的軌道隧道（通往附近洞穴）、軌道上一台滿載的礦車（一次性發現物）。
 //   回傳結構矩形 + NPC 要站的位置（engine/folk.ts 用來安排村民 / 矮人）。
-import type { World } from '../world';
+import type { GenGrid } from './grid';
 import { BIOME } from '../world';
 import { subSeed, type Rng } from '../rng';
 import { T, W, SOLID_LUT } from '../tiles';
@@ -39,7 +39,7 @@ export interface HallInfo {
 }
 
 export interface SettleGenCtx {
-  world: World;
+  world: GenGrid;
   seed: string | number;
   surface: Int16Array;
   colBiome: Uint8Array;
@@ -197,7 +197,7 @@ export function placeVillages(c: SettleGenCtx): { villages: VillageInfo[]; rects
 }
 
 /** 一棟村屋：木骨灰泥外牆、茅草三角屋頂、門朝廣場、另一側開窗；屋內木板背景牆 + 床 / 桌 / 椅 / 光源 */
-function buildHouse(w: World, x0: number, x1: number, floorY: number, door: number, role: VillageHouse['role'], rng: Rng): void {
+function buildHouse(w: GenGrid, x0: number, x1: number, floorY: number, door: number, role: VillageHouse['role'], rng: Rng): void {
   const { width, fg, wall } = w, WW = width;
   const put = (x: number, y: number, t: number): void => { if (x >= 0 && x < width && y >= 0) fg[y * WW + x] = t; };
   const putWall = (x: number, y: number, t: number): void => { if (x >= 0 && x < width && y >= 0) wall[y * WW + x] = t; };

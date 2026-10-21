@@ -767,7 +767,8 @@ export class DelveGame {
     // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
     const pre = opts.gen && (opts.width === undefined || opts.gen.world.width === opts.width) && (opts.height === undefined || opts.gen.world.height === opts.height) ? opts.gen : null;
     const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
-    this.world = gen.world;
+    // 舊生成器的扁平格 → 區塊欄儲存（1a 的正式世界仍是 legacy 有界；Task 8 才切 defaultBounds）
+    this.world = World.fromGen(gen.world, gen.layers);
     this.liquids = new LiquidSim(this.world);
     // 液體反應（熔岩遇水 / 蜂蜜）不在任何活著的玩家站的格子凝成黑曜石 / 脆蜜塊（不把人封進方塊；液體本身照樣流過去）
     this.liquids.blocked = (x, y) => this.tileOverlapsPlayer(x, y, true);

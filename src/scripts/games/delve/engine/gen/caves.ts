@@ -4,13 +4,13 @@
 //     以隧道把每個大洞窟接到最近的鄰居（保證連通）→ 雙線性放大回 tile 解析度（邊緣平滑、不是階梯）
 //   · carveNoiseTunnels：「義大利麵」雜訊隧道（|n − 0.5| < t 的細帶），由低頻遮罩決定哪裡密、哪裡是實心岩區
 //   · carveChamber：巨大的圓頂洞室（雜訊邊界 + 較平的地板）
-import type { World } from '../world';
+import type { GenGrid } from './grid';
 import { Rng } from '../rng';
 import { T, SOLID_LUT } from '../tiles';
 import { FbmField, NoiseField, vnoise1 } from '../noise';
 
 /** 圓形筆刷挖空：只挖實心格（air / 裝飾不動），可用 keep 保護特定 tile */
-export function carveDisc(world: World, cx: number, cy: number, r: number, keep?: (id: number) => boolean): void {
+export function carveDisc(world: GenGrid, cx: number, cy: number, r: number, keep?: (id: number) => boolean): void {
   const { width, height, fg } = world;
   const r2 = r * r;
   const y0 = Math.max(1, Math.floor(cy - r)), y1 = Math.min(height - 2, Math.ceil(cy + r));
@@ -52,7 +52,7 @@ export interface WormOptions {
  * 柏林蟲：方向向量每步依 1D 值雜訊轉一點（小角度旋轉 + 重新正規化，不用三角函數），
  * 半徑也隨雜訊起伏 → 平滑蜿蜒、寬窄變化的隧道。回傳走過的點（取樣）供呼叫端接洞。
  */
-export function perlinWorm(world: World, rng: Rng, o: WormOptions, depth = 0): { x: number; y: number }[] {
+export function perlinWorm(world: GenGrid, rng: Rng, o: WormOptions, depth = 0): { x: number; y: number }[] {
   let px = o.x, py = o.y;
   let dx = o.dx ?? rng.range(-1, 1), dy = o.dy ?? rng.range(-0.5, 0.5);
   let len = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -85,7 +85,7 @@ export function perlinWorm(world: World, rng: Rng, o: WormOptions, depth = 0): {
 }
 
 /** 兩點之間挖一條微彎的隧道（側向偏移由雜訊決定） */
-export function carveLink(world: World, ax: number, ay: number, bx: number, by: number, r: number, seed: number, keep?: (id: number) => boolean): void {
+export function carveLink(world: GenGrid, ax: number, ay: number, bx: number, by: number, r: number, seed: number, keep?: (id: number) => boolean): void {
   const ddx = bx - ax, ddy = by - ay;
   const L = Math.sqrt(ddx * ddx + ddy * ddy);
   if (L < 1) return;
@@ -122,7 +122,7 @@ export interface NetworkResult {
  * 洞穴層的大洞窟網路。粗格 2×2：雜訊（水平拉長）+ 少量亂數 → 4-5 細胞自動機 3 輪 → 4 連通標記，
  * 移除小洞窟 → 依 x 排序，每個洞窟以隧道接到「已處理洞窟中最近的那個」→ 全部連成一張網。
  */
-export function carveNetwork(world: World, o: NetworkOptions): NetworkResult {
+export function carveNetwork(world: GenGrid, o: NetworkOptions): NetworkResult {
   const W = world.width;
   const cw = Math.ceil(W / 2), y0 = Math.max(1, o.yTop), y1 = Math.min(world.height - 2, o.yBot);
   const ch = Math.ceil((y1 - y0) / 2);
@@ -240,7 +240,7 @@ export function carveNetwork(world: World, o: NetworkOptions): NetworkResult {
 }
 
 /** 每欄的 [top, bottom) 帶狀範圍 → 陣列 + 全域最小 / 最大列（給 row-major 掃描用） */
-function bandRows(world: World, top: (x: number) => number, bottom: (x: number) => number): { t0: Int32Array; t1: Int32Array; lo: number; hi: number } {
+function bandRows(world: GenGrid, top: (x: number) => number, bottom: (x: number) => number): { t0: Int32Array; t1: Int32Array; lo: number; hi: number } {
   const W = world.width, t0 = new Int32Array(W), t1 = new Int32Array(W);
   let lo = world.height, hi = 0;
   for (let x = 0; x < W; x++) {
@@ -263,7 +263,7 @@ export interface TunnelOptions {
 }
 
 /** 義大利麵隧道：兩組拉長的雜訊各取 |n − 0.5| < t 的細帶（交會處自然成網），低頻遮罩讓有些區域密、有些是實心岩 */
-export function carveNoiseTunnels(world: World, o: TunnelOptions): void {
+export function carveNoiseTunnels(world: GenGrid, o: TunnelOptions): void {
   const W = world.width, H = world.height, fg = world.fg;
   const n1 = new FbmField(W, H, 78, 34, o.seed, 2, 0.45);
   const n2 = new FbmField(W, H, 40, 60, o.seed + 5, 2, 0.45);
@@ -287,7 +287,7 @@ export function carveNoiseTunnels(world: World, o: TunnelOptions): void {
 }
 
 /** 巨大圓頂洞室：橢圓 + 雜訊邊界，下半部較平（地板），回傳實際挖空的 tile 數 */
-export function carveChamber(world: World, cx: number, cy: number, rx: number, ry: number, seed: number, keep?: (id: number) => boolean): number {
+export function carveChamber(world: GenGrid, cx: number, cy: number, rx: number, ry: number, seed: number, keep?: (id: number) => boolean): number {
   const W = world.width, fg = world.fg;
   const bx = Math.max(1, Math.floor(cx - rx * 1.3)), by = Math.max(1, Math.floor(cy - ry * 1.3));
   const ex = Math.min(W - 2, Math.ceil(cx + rx * 1.3)), ey = Math.min(world.height - 3, Math.ceil(cy + ry * 1.3));
@@ -313,7 +313,7 @@ export function carveChamber(world: World, cx: number, cy: number, rx: number, r
 }
 
 /** 有機團塊：橢圓 + 雜訊邊界，把 only(id) 為真的格換成 type（花崗岩 / 大理石岩體用） */
-export function paintBlob(world: World, cx: number, cy: number, rx: number, ry: number, type: number, seed: number, only: (id: number) => boolean): void {
+export function paintBlob(world: GenGrid, cx: number, cy: number, rx: number, ry: number, type: number, seed: number, only: (id: number) => boolean): void {
   const W = world.width, fg = world.fg;
   const bx = Math.max(0, Math.floor(cx - rx * 1.4)), by = Math.max(1, Math.floor(cy - ry * 1.4));
   const ex = Math.min(W - 1, Math.ceil(cx + rx * 1.4)), ey = Math.min(world.height - 2, Math.ceil(cy + ry * 1.4));
@@ -332,7 +332,7 @@ export function paintBlob(world: World, cx: number, cy: number, rx: number, ry: 
 }
 
 /** 雜訊團塊材料：在 [top(x), bottom(x)) 帶狀範圍內 field > threshold 的格把 from(id) 換成 type */
-export function noisePockets(world: World, field: FbmField | NoiseField, threshold: number,
+export function noisePockets(world: GenGrid, field: FbmField | NoiseField, threshold: number,
   top: (x: number) => number, bottom: (x: number) => number, from: (id: number) => boolean, type: number): void {
   const W = world.width, fg = world.fg;
   const { t0, t1, lo, hi } = bandRows(world, top, bottom);
@@ -353,7 +353,7 @@ export function noisePockets(world: World, field: FbmField | NoiseField, thresho
  * 填掉孤立的小氣泡：y0(x) 以下、4 連通的空氣區塊面積 < maxSize 的，用鄰近的實心 tile 填回。
  * 回傳填掉的區塊數。
  */
-export function fillTinyPockets(world: World, y0: (x: number) => number, maxSize: number): number {
+export function fillTinyPockets(world: GenGrid, y0: (x: number) => number, maxSize: number): number {
   const W = world.width, H = world.height, fg = world.fg, N = W * H;
   const lab = new Int32Array(N);
   for (let x = 0; x < W; x++) {

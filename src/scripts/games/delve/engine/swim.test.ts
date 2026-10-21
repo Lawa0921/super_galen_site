@@ -10,7 +10,7 @@ import { TILE_SIZE as S, FIXED_DT, MAX_FALL, RUN_SPEED, PLAYER_H } from './const
 /** 40×40 世界：第 30 列以下石頭；x 5..34、y 10..29 是一池深水（量 255） */
 function pool(type: number = LIQ.WATER, amount = 255): World {
   const w = new World(40, 40);
-  for (let y = 30; y < 40; y++) for (let x = 0; x < 40; x++) w.fg[w.idx(x, y)] = T.STONE;
+  for (let y = 30; y < 40; y++) for (let x = 0; x < 40; x++) w.setFg(x, y, T.STONE);
   for (let y = 10; y < 30; y++) for (let x = 5; x < 35; x++) w.setLiquid(x, y, amount, type);
   return w;
 }
@@ -86,7 +86,7 @@ describe('玩家在液體裡', () => {
   });
   it('水中跑得比較慢', () => {
     const w = pool();
-    for (let x = 0; x < 40; x++) w.fg[w.idx(x, 20)] = T.STONE; // 水底地板
+    for (let x = 0; x < 40; x++) w.setFg(x, 20, T.STONE); // 水底地板
     const b = makeBody(10 * S, 20 * S - PLAYER_H), m = idle();
     for (let i = 0; i < 90; i++) stepPlayer(w, b, m, { moveX: 1, jump: false }, FIXED_DT, {}, playerMedium(liquidContact(w, b)));
     expect(b.vx).toBeGreaterThan(RUN_SPEED * 0.3);

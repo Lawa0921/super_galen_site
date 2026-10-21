@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { GEN_PHASES, genPhaseOf, genPhaseLabel, sampleSection, revealStep, revealThreshold, SECTION_COLORS } from './genSection';
 import { generateWorldSteps, GEN_STAGE_COUNT } from '../engine/worldgen';
-import { World } from '../engine/world';
+import { GenGrid } from '../engine/gen/grid';
 import { T } from '../engine/tiles';
 import { LIQ } from '../engine/liquidKind';
 import { buildMapLut } from './mapModel';
@@ -45,7 +45,7 @@ describe('genPhaseOf：生成器實際的段名 → 六個大階段', () => {
 
 describe('sampleSection', () => {
   const W = 120, H = 60, OW = 40, OH = 20;
-  const blank = (): World => { const w = new World(W, H); return w; };
+  const blank = (): GenGrid => { const w = new GenGrid(W, H); return w; };
   it('世界還是空的（還沒成形）→ 整張暗色抖動', () => {
     const out = new Uint32Array(OW * OH);
     sampleSection(blank(), OW, OH, out);

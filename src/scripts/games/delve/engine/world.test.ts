@@ -1,13 +1,14 @@
 // world.test.ts
 import { describe, it, expect } from 'vitest';
-import { World, LIQ, type TileWindow } from './world';
+import { World, LIQ, variantHash, type TileWindow } from './world';
 import { T, W } from './tiles';
 import { CHUNK } from './constants';
 
 describe('World', () => {
   it('尺寸、chunk 數、預設空氣', () => {
     const w = new World(100, 70);
-    expect(w.fg.length).toBe(7000);
+    expect(w.residentColumns()).toHaveLength(Math.ceil(100 / CHUNK));
+    expect(w.getFg(99, 69)).toBe(T.AIR);
     expect(w.chunksX).toBe(Math.ceil(100 / CHUNK));
     expect(w.chunksY).toBe(Math.ceil(70 / CHUNK));
     expect(w.getFg(5, 5)).toBe(T.AIR);
@@ -45,7 +46,7 @@ describe('World', () => {
   });
   it('variant 由座標雜湊決定（0..2）', () => {
     const w = new World(64, 64);
-    for (let i = 0; i < 50; i++) expect(w.variant[i]).toBeLessThan(3);
+    for (let i = 0; i < 50; i++) expect(w.variantAt(i, 0)).toBeLessThan(3);
   });
 
   it('xMin / xMax（扁平世界 = 0 / width）、idx / tileXY 往返', () => {
@@ -110,7 +111,7 @@ describe('World', () => {
     expect(w.isFrozen(3, 3)).toBe(false);
     w.setFrozen(3, 3, true);
     expect(w.isFrozen(3, 3)).toBe(true);
-    expect(w.frozen[w.idx(3, 3)]).toBe(1);
+    expect(w.flaggedTiles('frozen')).toEqual([w.idx(3, 3)]);
     expect(w.drainDirty()).toEqual([]);
     expect(w.modifiedChunks.size).toBe(0);
     w.setFrozen(3, 3, false);
@@ -139,7 +140,7 @@ describe('World', () => {
 
   it('variantAt 在界內 = variant 陣列；界外也有座標雜湊值（0..2）', () => {
     const w = new World(64, 64);
-    for (let i = 0; i < 64; i++) expect(w.variantAt(i, 5)).toBe(w.variant[w.idx(i, 5)]);
+    for (let i = 0; i < 64; i++) expect(w.variantAt(i, 5)).toBe(variantHash(i, 5));
     for (const x of [-1, -100, 64, 9999]) {
       const v = w.variantAt(x, 3);
       expect(v).toBeGreaterThanOrEqual(0);
