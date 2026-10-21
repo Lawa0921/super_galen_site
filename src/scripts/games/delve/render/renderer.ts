@@ -1239,7 +1239,7 @@ export class Renderer {
   lightAt(tx: number, ty: number): number {
     const L = this.lastLight;
     if (!L || this.fullbright) return 1;
-    return depthCurve(Math.min(1, L.get(tx, ty) * 1.08), ty - depthSurfaceAt(this.game.world.surface, tx));
+    return depthCurve(Math.min(1, L.get(tx, ty) * 1.08), ty - depthSurfaceAt((x) => this.game.world.surfaceAt(x), tx));
   }
 
   destroy(): void {

@@ -56,7 +56,7 @@ export function shadeTiles(
   const W = world.width, surf = world.surfaceY, fg = world.fg, wall = world.wall, LQ = world.liquid;
   if (DEPTH_REF.length < w) DEPTH_REF = new Int32Array(w);
   const DS = DEPTH_REF;
-  depthSurface(world.surface, x0, w, DS);
+  depthSurface((x) => world.surfaceAt(x), x0, w, DS);
   // 開放天空的格：天空色往白拉一半（背景天空本身已經畫了晝夜色）
   const or = 1 - (1 - sky[0]) * 0.5, og = 1 - (1 - sky[1]) * 0.5, ob = 1 - (1 - sky[2]) * 0.5;
   const rgb = L.rgb;

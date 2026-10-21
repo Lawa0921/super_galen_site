@@ -392,7 +392,7 @@ export class FolkWorld {
     for (const dir of order) {
       for (let d = Math.max(ENC_DIST.min, h.viewHalf.w + 3); d <= Math.max(ENC_DIST.max, h.viewHalf.w + 18); d += 2) {
         const x = pt.x + dir * d;
-        if (x < 6 || x >= w.width - 6) break;
+        if (x < w.xMin + 6 || x >= w.xMax - 6) break;
         const g = this.groundAt(w, x, pt.y);
         if (g === null || !h.onSurface(x, g) || h.safeAt(x, g)) continue;
         let flat = true;
@@ -418,8 +418,8 @@ export class FolkWorld {
       const s = findStandSpot(w, pt.x + dx, pt.y + dy, 6);
       if (!s || !h.underground(s.x, s.y) || h.safeAt(s.x, s.y)) continue;
       if (this.onScreen(h, s.x, s.y)) continue;
-      const i = w.idx(s.x, s.y);
-      if (HOUSE_WALLS.has(w.wall[i]) || w.wall[i] >= 10 && w.wall[i] <= 12 || w.liquid[i] || w.getLiquid(s.x, s.y - 1)) continue;
+      const wl = w.getWall(s.x, s.y);
+      if (HOUSE_WALLS.has(wl) || wl >= 10 && wl <= 12 || w.getLiquid(s.x, s.y) || w.getLiquid(s.x, s.y - 1)) continue;
       return s;
     }
     return null;
@@ -586,7 +586,7 @@ export class FolkWorld {
     }
     for (const t of Array.isArray(o.travellers) ? o.travellers : []) {
       if (!t || typeof t.key !== 'string' || !['peddler', 'herbalist', 'stranded'].includes(t.role) || !num(t.x) || !num(t.y)) continue;
-      if (this.byKey(t.key) || t.x < 0 || t.y < 0 || t.x > w.width * S || t.y > w.height * S) continue;
+      if (this.byKey(t.key) || t.x < w.xMin * S || t.y < 0 || t.x > w.xMax * S || t.y > w.height * S) continue;
       const tx = Math.floor(t.x / S), ty = Math.floor(t.y / S);
       const n = this.add(w, t.key, t.role, t.role === 'stranded' ? 'cave' : 'road', -1, { x0: tx - 3, x1: tx + 3 }, ty + 2, null);
       n.body.x = t.x; n.body.y = t.y;

@@ -4,7 +4,7 @@
 //   · 居民（npcs.ts 的五位）在條件達成、有空房（含床）時白天搬進來；作息：白天在家 / 上班、晚上回自己的床睡覺；
 //     會自己開關門。離玩家很遠的居民凍結（不跑物理），CPU 很省。
 //   · 存檔：核心位置 + 居民（種類、位置、家）+ 設為重生點的核心。
-import type { World } from './world';
+import type { World, TileWindow } from './world';
 import { T, isSolidTile } from './tiles';
 import { checkRoom, scanRooms, type RoomCheck } from './housing';
 import { DECOR_TILES, FURNITURE_BY_TILE, LIGHT_TILES, SAFETY_TILES } from './furniture';
@@ -115,8 +115,10 @@ export function claimsOverlap(a: { x: number; y: number }, b: { x: number; y: nu
 }
 
 /** 評估一個據點（掃描範圍內所有房間與家具） */
+/** evaluate 的視窗暫存（world.window 重用） */
+let EVAL_WIN: TileWindow | undefined;
 export function evaluate(w: World, core: Core, gardenBonus = false): Evaluation {
-  const x0 = Math.max(0, core.x - CLAIM.x), x1 = Math.min(w.width - 1, core.x + CLAIM.x);
+  const x0 = Math.max(w.xMin, core.x - CLAIM.x), x1 = Math.min(w.xMax - 1, core.x + CLAIM.x);
   const y0 = Math.max(0, core.y - CLAIM.y), y1 = Math.min(w.height - 1, core.y + CLAIM.y);
   const rooms = scanRooms(w, x0, y0, x1, y1);
   const valid = rooms.filter((r) => r.ok);
@@ -125,10 +127,12 @@ export function evaluate(w: World, core: Core, gardenBonus = false): Evaluation 
   const counts = new Map<number, number>();
   const chests: number[] = [];
   let light = 0, decor = 0, safety = 0;
-  const W0 = w.width;
+  const win = (EVAL_WIN = w.window(x0, y0, Math.max(0, x1 - x0 + 1), Math.max(0, y1 - y0 + 1), EVAL_WIN));
+  const ww = win.w;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-    const i = y * W0 + x, id = w.fg[i];
+    const id = win.fg[(y - y0) * ww + (x - x0)];
     if (id === T.AIR || isSolidTile(id) && id !== T.GLASS) continue;
+    const i = w.idx(x, y);
     if (id === T.CHEST) chests.push(i);
     if (LIGHT_TILES.has(id)) { light++; if (!indoor.has(i)) safety++; }
     if (DECOR_TILES.has(id)) decor++;
@@ -382,7 +386,7 @@ export class Settlements {
     if (inRoom) { sx = inRoom.x; sy = inRoom.y; }
     if (walkIn) {
       const side = room && (room.x0 + room.x1) / 2 < core.x ? -1 : 1;
-      const ex = Math.max(2, Math.min(w.width - 3, core.x + side * (CLAIM.x - 2)));
+      const ex = Math.max(w.xMin + 2, Math.min(w.xMax - 3, core.x + side * (CLAIM.x - 2)));
       const spot = findStandSpot(w, ex, core.y, 12) ?? findStandSpot(w, core.x + 1, core.y, 10);
       if (spot) { sx = spot.x; sy = spot.y; }
     }
@@ -500,11 +504,12 @@ export class Settlements {
       let best: number | null = null, bd = Infinity;
       if (work.length) {
         // 整個據點範圍找最近的工作 tile（站在它旁邊）；走不走得到交給尋路
-        const x0 = Math.max(0, core.x - CLAIM.x), x1 = Math.min(w.width - 1, core.x + CLAIM.x);
+        const x0 = Math.max(w.xMin, core.x - CLAIM.x), x1 = Math.min(w.xMax - 1, core.x + CLAIM.x);
         const y0 = Math.max(0, core.y - CLAIM.y), y1 = Math.min(w.height - 1, core.y + CLAIM.y);
         const ny = Math.floor((n.body.y + n.body.h - 1) / S);
+        const win = (EVAL_WIN = w.window(x0, y0, Math.max(0, x1 - x0 + 1), Math.max(0, y1 - y0 + 1), EVAL_WIN));
         for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-          if (!work.includes(w.fg[y * w.width + x])) continue;
+          if (!work.includes(win.fg[(y - y0) * win.w + (x - x0)])) continue;
           const dd = Math.abs(x * S - n.body.x) + Math.abs(y - ny) * S * 3;
           if (dd < bd) { bd = dd; best = (x + 0.5) * S + (x * S > n.body.x ? -S : S); n.goalY = y; }
         }

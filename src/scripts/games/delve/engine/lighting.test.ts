@@ -277,16 +277,37 @@ describe('LightEngine', () => {
     it('平地不變；24 格的落差變成逐欄的緩坡；單欄版本相同；世界邊緣夾住', () => {
       const s = new Int16Array(100);
       for (let x = 0; x < 100; x++) s[x] = x < 50 ? 40 : 64;
+      const at = (x: number): number => s[Math.max(0, Math.min(99, x))];
       const out = new Int32Array(100);
-      depthSurface(s, 0, 100, out);
+      depthSurface(at, 0, 100, out);
       expect(out[10]).toBe(40);
       expect(out[90]).toBe(64);
       for (let x = 0; x < 99; x++) expect(Math.abs(out[x + 1] - out[x])).toBeLessThanOrEqual(2);
-      for (const x of [0, 7, 45, 50, 55, 99]) expect(depthSurfaceAt(s, x)).toBe(out[x]);
+      for (const x of [0, 7, 45, 50, 55, 99]) expect(depthSurfaceAt(at, x)).toBe(out[x]);
       const part = new Int32Array(10);
-      depthSurface(s, 45, 10, part);
+      depthSurface(at, 45, 10, part);
       expect([...part]).toEqual([...out.subarray(45, 55)]);
       expect(DEPTH_SMOOTH_R).toBe(8);
+    });
+    it('吃函式（surfaceAt）的結果等於舊的吃陣列版本（同一組資料，含世界邊緣夾住）', () => {
+      // 舊版：吃每欄陣列、越界夾到邊欄
+      const refDepth = (surf: ArrayLike<number>, x0: number, w: number): number[] => {
+        const n = surf.length, R = DEPTH_SMOOTH_R, res: number[] = [];
+        for (let i = 0; i < w; i++) {
+          let sum = 0;
+          for (let k = x0 + i - R; k <= x0 + i + R; k++) sum += surf[k < 0 ? 0 : k >= n ? n - 1 : k];
+          res.push(Math.round(sum / (2 * R + 1)));
+        }
+        return res;
+      };
+      const w = new World(90, 40);
+      for (let x = 0; x < 90; x++) w.surface[x] = 10 + ((x * 7) % 13) + (x > 60 ? 9 : 0);
+      for (const [x0, n] of [[0, 90], [-12, 30], [70, 30], [33, 1]] as const) {
+        const out = new Int32Array(n);
+        depthSurface((x) => w.surfaceAt(x), x0, n, out);
+        expect([...out], `${x0}+${n}`).toEqual(refDepth(w.surface, x0, n));
+        for (let i = 0; i < n; i++) expect(depthSurfaceAt((x) => w.surfaceAt(x), x0 + i)).toBe(out[i]);
+      }
     });
   });
 

@@ -68,7 +68,7 @@ export class World {
   moltenY = 0;
   /** 每欄地表的生態區（BIOME） */
   readonly biome: Uint8Array;
-  /** 每欄的深度層線（生成器填；沒有時 layersAt 用 rockY / cavernY / moltenY） */
+  /** 每欄的深度層線（生成器填、DelveGame 建構時再設一次；沒有時 layersAt 用 rockY / cavernY / moltenY）。系統一律走 layersAt(x) */
   layers: GenLayers | null = null;
   /** 箱子內容：key = tile index（y*width+x） */
   readonly chests = new Map<number, ChestSlots>();

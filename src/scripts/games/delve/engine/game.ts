@@ -791,6 +791,8 @@ export class DelveGame {
     this.landforms = gen.landforms;
     this.dungeonZone = gen.dungeonZone;
     this.layers = gen.layers;
+    // 每欄深度層線：系統一律走 world.layersAt(x)（預先生成的世界也補上）
+    this.world.layers = gen.layers;
     this.dungeon = gen.dungeon;
     this.tablets = gen.tablets;
     this.relics = gen.relics;
@@ -1097,7 +1099,7 @@ export class DelveGame {
   private updateMining(dt: number): void {
     const { x, y } = this.aim;
     const id = this.world.getFg(x, y);
-    if (id === T.AIR && this.world.inBounds(x, y) && this.world.frozen[this.world.idx(x, y)]) { this.mineIce(x, y, dt); return; }
+    if (id === T.AIR && this.world.isFrozen(x, y)) { this.mineIce(x, y, dt); return; }
     if (id === T.AIR && WALL_ITEM[this.world.getWall(x, y)]) { this.mineWall(x, y, dt); return; }
     if (!this.world.inBounds(x, y) || id === T.AIR) { this.mining = null; return; }
     if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
@@ -1126,9 +1128,9 @@ export class DelveGame {
     if (this.mining.elapsed + 1e-9 < need) return;
     this.mining = null;
     const w = this.world, i = w.idx(x, y);
-    w.frozen[i] = 0;
+    w.setFrozen(x, y, false);
     this.minedIce.add(i);
-    w.touchLiquid(i);
+    w.touchLiquidAt(x, y);
     this.liquids.wake(x, y);
     this.emit({ type: 'mine', x, y, tile: T.ICE, item: null });
   }
@@ -1949,7 +1951,7 @@ export class DelveGame {
       if (this.boltT <= 0) {
         const r = this.weatherRng;
         this.boltT = BOLT_MIN + r.next() * (BOLT_MAX - BOLT_MIN);
-        const bx = Math.max(0, Math.min(w.width - 1, f.x + Math.round((r.next() * 2 - 1) * 40)));
+        const bx = Math.max(w.xMin, Math.min(w.xMax - 1, f.x + Math.round((r.next() * 2 - 1) * 40)));
         if (nearSurface) {
           this.flashT = FLASH_TIME;
           this.wxCache = null;
@@ -1966,14 +1968,13 @@ export class DelveGame {
   private rainFill(px: number): void {
     const w = this.world, r = this.weatherRng;
     const x = px + Math.round((r.next() * 2 - 1) * 40);
-    if (x < 0 || x >= w.width) return;
+    if (x < w.xMin || x >= w.xMax) return;
     const surf = w.surfaceAt(x);
     for (let y = Math.max(0, surf - 64); y <= Math.min(w.height - 1, surf + 12); y++) {
-      const i = w.idx(x, y);
-      if (isSolidTile(w.fg[i]) || w.frozen[i]) return;
-      const a = w.liquid[i];
+      if (isSolidTile(w.getFg(x, y)) || w.isFrozen(x, y)) return;
+      const a = w.getLiquid(x, y);
       if (!a) continue;
-      if (w.liquidType[i] !== LIQ.WATER || w.wall[i] !== 0 || a >= RAIN_TOP) return;
+      if (w.getLiquidType(x, y) !== LIQ.WATER || w.getWall(x, y) !== 0 || a >= RAIN_TOP) return;
       w.setLiquid(x, y, Math.min(RAIN_TOP, a + RAIN_ADD), LIQ.WATER);
       this.liquids.wake(x, y);
       return;
@@ -2811,7 +2812,7 @@ export class DelveGame {
   canSummon(): boolean {
     if (this.bossEnemy()) return false;
     const f = this.feetTile();
-    const deep = this.layers.deep[Math.max(0, Math.min(this.world.width - 1, f.x))];
+    const deep = this.world.layersAt(f.x).deep;
     return this.isNight() || f.y >= deep;
   }
   /** 召喚燈脈守望者（在玩家正上方畫面外） */
@@ -2990,7 +2991,7 @@ export class DelveGame {
     }
     const tx = pt.x + dx, ty = pt.y + dy;
     if (!w.inBounds(tx, ty)) return;
-    const hab = habitatAt({ world: w, layers: this.layers, night: this.isNight() }, tx, ty);
+    const hab = habitatAt({ world: w, night: this.isNight() }, tx, ty);
     hab.season = this.season();
     hab.weather = this.withActor(c.a, () => this.localWeatherState()).kind;
     let near = 0;
@@ -3077,7 +3078,7 @@ export class DelveGame {
       for (let k = 0; k < steps; k++) {
         f.x += (f.vx * dt) / steps; f.y += (f.vy * dt) / steps;
         const tx = Math.floor(f.x / S), ty = Math.floor(f.y / S);
-        if (ty >= w.height || tx < 0 || tx >= w.width) { end('snag'); return; }
+        if (ty >= w.height || tx < w.xMin || tx >= w.xMax) { end('snag'); return; }
         if (ty < 0) continue;
         if (w.isSolid(tx, ty)) { end('snag'); return; }
         const a = w.getLiquid(tx, ty);
@@ -3122,22 +3123,25 @@ export class DelveGame {
   }
   /** 浮標所在水域的格數（同種液體的 4 連通，數到 POOL_COUNT_MAX） */
   private poolSize(tx: number, ty: number, type: number): number {
-    const w = this.world, W = w.width;
-    const seen = new Set<number>([ty * W + tx]);
-    const q = [ty * W + tx];
-    for (let k = 0; k < q.length && seen.size < POOL_COUNT_MAX; k++) {
-      const i = q[k];
-      for (const j of [i - 1, i + 1, i - W, i + W]) {
-        if (j < 0 || j >= w.liquid.length || seen.has(j) || !w.liquid[j] || w.liquidType[j] !== type) continue;
-        seen.add(j); q.push(j);
+    const w = this.world;
+    const seen = new Set<number>([w.idx(tx, ty)]);
+    const qx = [tx], qy = [ty];
+    for (let k = 0; k < qx.length && seen.size < POOL_COUNT_MAX; k++) {
+      const x = qx[k], y = qy[k];
+      for (let d = 0; d < 4; d++) {
+        const nx = d === 0 ? x - 1 : d === 1 ? x + 1 : x, ny = d === 2 ? y - 1 : d === 3 ? y + 1 : y;
+        if (!w.getLiquid(nx, ny) || w.getLiquidType(nx, ny) !== type) continue;
+        const j = w.idx(nx, ny);
+        if (seen.has(j)) continue;
+        seen.add(j); qx.push(nx); qy.push(ny);
       }
     }
     return seen.size;
   }
   /** 浮標所在的深度帶 */
   private depthZone(tx: number, ty: number): DepthZone {
-    const x = Math.max(0, Math.min(this.world.width - 1, tx)), L = this.layers;
-    return ty < L.rock[x] ? 'surface' : ty < L.deep[x] ? 'underground' : ty < L.molten[x] ? 'cavern' : 'molten';
+    const L = this.world.layersAt(tx);
+    return ty < L.rock ? 'surface' : ty < L.deep ? 'underground' : ty < L.molten ? 'cavern' : 'molten';
   }
   private catchFish(): void {
     const f = this.fishing;
@@ -3470,7 +3474,8 @@ export class DelveGame {
           s0.count -= take; need -= take;
           if (s0.count <= 0) slots[k] = null;
         }
-        this.world.markModified(i % this.world.width, Math.floor(i / this.world.width));
+        const { x: cxk, y: cyk } = this.world.tileXY(i);
+        this.world.markModified(cxk, cyk);
         if (need <= 0) break;
       }
     }
@@ -3671,13 +3676,11 @@ export class DelveGame {
       get viewHalf() { return self.viewHalf; },
       isNight: () => this.isNight(), playerTiles: () => this.playerTiles(),
       underground: (x, y) => {
-        const cx = Math.max(0, Math.min(this.world.width - 1, x));
         const b = this.dungeon?.bbox;
-        return y > this.layers.rock[cx] + 4 && !(b && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
+        return y > this.world.layersAt(x).rock + 4 && !(b && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
       },
       onSurface: (x, y) => {
-        const cx = Math.max(0, Math.min(this.world.width - 1, x));
-        return y <= this.layers.rock[cx] - 6 && y <= this.world.surface[cx] + 4;
+        return y <= this.world.layersAt(x).rock - 6 && y <= this.world.surfaceAt(x) + 4;
       },
       safeAt: (x, y) => this.settle.claimAt(x, y) !== null || this.siteAt(x, y) !== null,
       playerOverlaps: (x, y) => this.tileOverlapsPlayer(x, y),

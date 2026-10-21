@@ -103,3 +103,23 @@ describe('Discovery', () => {
     expect(e.toJSON()).toEqual(d.toJSON());
   });
 });
+
+describe('Discovery 格網（負 x）', () => {
+  const rect = (id: number, x: number, y: number, w: number, h: number): Region => ({
+    id, cat: 'land', kind: `r${id}`, name: `地區${id}`, x, y, w, h, ax: x, ay: y,
+    contains: (px, py) => px >= x && px < x + w && py >= y && py < y + h,
+  });
+  it('x ∈ [−200, −100) 的地區與 x ∈ [0, 64) 的地區各自只在自己那裡', () => {
+    const d = new Discovery([rect(0, -200, 0, 100, 40), rect(1, 0, 0, 64, 40)]);
+    expect(d.regionsAt(-150, 10).map((r) => r.id)).toEqual([0]);
+    expect(d.regionsAt(10, 10).map((r) => r.id)).toEqual([1]);
+  });
+  it('負 gx 的格不會撞到別列（地區自己的 contains 全收也只出現在自己的格）', () => {
+    // 舊鍵 gy*4096 + gx：(gx −3, gy 1) 與 (gx 4093, gy 0) 同一個鍵
+    const everywhere: Region = { ...rect(0, -200, 64, 100, 64), contains: () => true };
+    const d = new Discovery([everywhere]);
+    expect(d.regionsAt(-150, 100).map((r) => r.id)).toEqual([0]);
+    expect(d.regionsAt(4093 * 64 + 10, 10)).toEqual([]);
+    expect(d.regionsAt(4094 * 64 + 10, 10)).toEqual([]);
+  });
+});

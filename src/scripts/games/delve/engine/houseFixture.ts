@@ -34,7 +34,7 @@ export function buildHouse(w: World, x: number, y: number, iw: number, ih: numbe
 
 /** 平地：y 以下整片石頭、上面全空（測試世界用） */
 export function flatWorld(w: World, groundY: number): void {
-  for (let yy = 0; yy < w.height; yy++) for (let xx = 0; xx < w.width; xx++) {
+  for (let yy = 0; yy < w.height; yy++) for (let xx = w.xMin; xx < w.xMax; xx++) {
     w.setFg(xx, yy, yy >= groundY ? T.STONE : T.AIR);
     w.setWall(xx, yy, 0);
   }

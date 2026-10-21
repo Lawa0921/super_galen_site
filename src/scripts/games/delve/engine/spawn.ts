@@ -1,7 +1,7 @@
 // spawn.ts — 怪物生成規則（純函式）：棲地判定 → 生成表（權重 / 成群）→ 找生成點。
 // 規則：不在畫面內（離玩家 > 視野半寬 / 半高）、不在床（重生點）附近、不在有木板牆的房子裡、
 // 附近怪物數有上限（依棲地）；離玩家太遠的一般怪物會消失。和平模式不生成。
-import type { World } from './world';
+import type { World, TileWindow } from './world';
 import { BIOME } from './world';
 import { T, W, isSolidTile } from './tiles';
 import { LIQ } from './liquidKind';
@@ -58,8 +58,8 @@ export const BED_SAFE = 24;
 export const MAX_ENEMIES = 40;
 
 export interface HabitatSource {
+  /** 深度層線走 world.layersAt(x)（每欄；越界夾到邊欄） */
   world: World;
-  layers: { deep: Int16Array; molten: Int16Array };
   night: boolean;
 }
 
@@ -68,14 +68,15 @@ export function isDungeonWall(w: number): boolean { return w >= W.DUNGEON_WALL_B
 /** (x,y) tile 的棲地 */
 export function habitatAt(src: HabitatSource, x: number, y: number): Habitat {
   const w = src.world;
-  const cx = Math.max(0, Math.min(w.width - 1, x));
+  const cx = Math.max(w.xMin, Math.min(w.xMax - 1, x));
   const biome = w.biomeAt(cx);
+  const L = w.layersAt(cx);
   let mushroom = false;
   for (let yy = y - 2; yy <= y + 4 && !mushroom; yy++) for (let xx = x - 3; xx <= x + 3; xx++) if (w.getFg(xx, yy) === T.MUSHROOM_GRASS) { mushroom = true; break; }
   let zone: Zone;
   if (isDungeonWall(w.getWall(x, y))) zone = 'dungeon';
-  else if (y >= src.layers.molten[cx]) zone = 'molten';
-  else if (y >= src.layers.deep[cx]) zone = 'cavern';
+  else if (y >= L.molten) zone = 'molten';
+  else if (y >= L.deep) zone = 'cavern';
   else if (y <= w.surfaceAt(cx) + 6) zone = 'surface';
   else zone = 'underground';
   let water = false;
@@ -238,12 +239,17 @@ export function inHouse(w: World, x: number, y: number): boolean {
 export const HOME_SAFE = { x: 24, y: 14 };
 const HOME_FURNISH = { x: 7, y: 4 };
 const HOME_LIGHTS = new Set<number>([T.TORCH, T.CANDLE, T.LANTERN, T.LANTERN_POST, T.CAMPFIRE]);
+/** homeNear 的掃描暫存（world.window 重用） */
+let HOME_WIN: TileWindow | undefined;
 export function homeNear(w: World, x: number, y: number): boolean {
-  const x0 = Math.max(0, x - HOME_SAFE.x), x1 = Math.min(w.width - 1, x + HOME_SAFE.x);
+  const x0 = Math.max(w.xMin, x - HOME_SAFE.x), x1 = Math.min(w.xMax - 1, x + HOME_SAFE.x);
   const y0 = Math.max(0, y - HOME_SAFE.y), y1 = Math.min(w.height - 1, y + HOME_SAFE.y);
-  const W0 = w.width, fg = w.fg;
+  if (x1 < x0 || y1 < y0) return false;
+  const win = (HOME_WIN = w.window(x0, y0, x1 - x0 + 1, y1 - y0 + 1, HOME_WIN));
+  const { fg, wall, w: ww } = win;
   for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
-    if (fg[ty * W0 + tx] !== T.TABLE || w.wall[ty * W0 + tx] !== W.PLANK_WALL) continue;
+    const i = (ty - y0) * ww + (tx - x0);
+    if (fg[i] !== T.TABLE || wall[i] !== W.PLANK_WALL) continue;
     let seat = false, lamp = false;
     for (let yy = ty - HOME_FURNISH.y; yy <= ty + HOME_FURNISH.y && !(seat && lamp); yy++) {
       for (let xx = tx - HOME_FURNISH.x; xx <= tx + HOME_FURNISH.x; xx++) {

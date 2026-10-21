@@ -2,24 +2,26 @@
 import { describe, it, expect } from 'vitest';
 import { World, BIOME } from './world';
 import { T, W } from './tiles';
+import { LIQ } from './liquidKind';
 import { Rng } from './rng';
 import { habitatAt, spawnTable, pickEntry, findSpot, spawnCap, spawnChance, spawnInterval, isFirstNight, inHouse, SPAWN_INTERVAL, NEAR_SPAWN_TILES, type Habitat } from './spawn';
 import { DAY_LENGTH } from './constants';
 import { NATURAL_KINDS } from './enemies';
 import { TILE_SIZE as S } from './constants';
 
-function world(): { w: World; layers: { deep: Int16Array; molten: Int16Array } } {
+function world(): { w: World } {
   const w = new World(80, 120);
   for (let x = 0; x < 80; x++) w.surface[x] = 20;
   for (let y = 20; y < 120; y++) for (let x = 0; x < 80; x++) w.setFg(x, y, T.STONE);
-  return { w, layers: { deep: new Int16Array(80).fill(60), molten: new Int16Array(80).fill(100) } };
+  w.layers = { rock: new Int16Array(80).fill(40), deep: new Int16Array(80).fill(60), molten: new Int16Array(80).fill(100) };
+  return { w };
 }
 const kinds = (h: Habitat): string[] => spawnTable(h).map((e) => e.kind);
 
 describe('棲地', () => {
   it('地表 / 地下 / 洞穴層 / 熔岩深淵 / 地城 / 菇林', () => {
-    const { w, layers } = world();
-    const src = { world: w, layers, night: false };
+    const { w } = world();
+    const src = { world: w, night: false };
     expect(habitatAt(src, 10, 18).zone).toBe('surface');
     expect(habitatAt(src, 10, 40).zone).toBe('underground');
     expect(habitatAt(src, 10, 70).zone).toBe('cavern');
@@ -60,6 +62,48 @@ describe('棲地', () => {
     let n = 0;
     for (let i = 0; i < 2000; i++) if (pickEntry(t, r)!.kind === 'gel_blob') n++;
     expect(n / 2000).toBeGreaterThan(0.85);
+  });
+});
+
+describe('棲地：世界的每欄深度層（world.layersAt）', () => {
+  /** 舊介面（HabitatSource 帶 layers 陣列）的參考實作：中央的結果必須逐點相同 */
+  function oldHabitat(w: World, layers: { deep: Int16Array; molten: Int16Array }, night: boolean, x: number, y: number): Habitat {
+    const cx = Math.max(0, Math.min(w.width - 1, x));
+    const biome = w.biomeAt(cx);
+    let mushroom = false;
+    for (let yy = y - 2; yy <= y + 4 && !mushroom; yy++) for (let xx = x - 3; xx <= x + 3; xx++) if (w.getFg(xx, yy) === T.MUSHROOM_GRASS) { mushroom = true; break; }
+    let zone: Habitat['zone'];
+    if (w.getWall(x, y) >= W.DUNGEON_WALL_BLUE && w.getWall(x, y) <= W.DUNGEON_WALL_PINK) zone = 'dungeon';
+    else if (y >= layers.molten[cx]) zone = 'molten';
+    else if (y >= layers.deep[cx]) zone = 'cavern';
+    else if (y <= w.surfaceAt(cx) + 6) zone = 'surface';
+    else zone = 'underground';
+    let water = false;
+    for (let yy = y - 4; yy <= y + 4 && !water; yy++) water = w.getLiquidType(x, yy) === LIQ.WATER && w.getLiquid(x, yy) >= 200;
+    return { zone, biome, mushroom, night, water };
+  }
+  it('habitatAt({ world, night }) 在中央與舊介面逐點相同（同一個世界、50 個點）', () => {
+    const w = new World(80, 120);
+    const rock = new Int16Array(80), deep = new Int16Array(80), molten = new Int16Array(80);
+    for (let x = 0; x < 80; x++) {
+      w.surface[x] = 18 + (x % 7); w.biome[x] = x % 4;
+      rock[x] = 35 + (x % 5); deep[x] = 55 + ((x * 3) % 11); molten[x] = 95 + ((x * 5) % 13);
+      for (let y = w.surface[x]; y < 120; y++) w.setFg(x, y, T.STONE);
+    }
+    w.layers = { rock, deep, molten };
+    for (let x = 30; x < 36; x++) for (let y = 40; y < 46; y++) { w.setFg(x, y, T.AIR); w.setWall(x, y, W.DUNGEON_WALL_GREEN); }
+    for (let x = 50; x < 56; x++) w.setFg(x, 70, T.MUSHROOM_GRASS);
+    for (let x = 10; x < 16; x++) for (let y = 60; y < 66; y++) { w.setFg(x, y, T.AIR); w.setLiquid(x, y, 255, LIQ.WATER); }
+    let s = 7;
+    const rnd = (n: number): number => { s = (Math.imul(s, 1103515245) + 12345) >>> 0; return (s >>> 8) % n; };
+    const zones = new Set<string>();
+    for (let k = 0; k < 50; k++) {
+      const x = rnd(80), y = rnd(120), night = k % 2 === 1;
+      const want = oldHabitat(w, { deep, molten }, night, x, y);
+      expect(habitatAt({ world: w, night }, x, y), `(${x}, ${y})`).toEqual(want);
+      zones.add(want.zone);
+    }
+    expect(zones.size).toBeGreaterThanOrEqual(3);
   });
 });
 

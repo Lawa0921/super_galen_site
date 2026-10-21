@@ -216,6 +216,8 @@ export interface JournalStats {
 }
 
 const CELL = 64;
+/** 格網鍵：(gx + 2**15) * 64 + gy（gy = y / CELL < 64；負 gx 不會撞到別列） */
+const cellKey = (gx: number, gy: number): number => (gx + 2 ** 15) * 64 + gy;
 
 export class Discovery {
   readonly found = new Set<number>();
@@ -241,7 +243,7 @@ export class Discovery {
     for (const r of regions) {
       for (let gy = Math.floor(r.y / CELL); gy <= Math.floor((r.y + r.h - 1) / CELL); gy++) {
         for (let gx = Math.floor(r.x / CELL); gx <= Math.floor((r.x + r.w - 1) / CELL); gx++) {
-          const k = gy * 4096 + gx;
+          const k = cellKey(gx, gy);
           let l = this.grid.get(k);
           if (!l) { l = []; this.grid.set(k, l); }
           l.push(r.id);
@@ -251,7 +253,7 @@ export class Discovery {
   }
 
   regionsAt(x: number, y: number): Region[] {
-    const l = this.grid.get(Math.floor(y / CELL) * 4096 + Math.floor(x / CELL));
+    const l = this.grid.get(cellKey(Math.floor(x / CELL), Math.floor(y / CELL)));
     if (!l) return [];
     const out: Region[] = [];
     for (const id of l) { const r = this.regions[id]; if (r.contains(x, y)) out.push(r); }
