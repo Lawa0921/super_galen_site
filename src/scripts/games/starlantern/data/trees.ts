@@ -101,7 +101,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
     { name: '火', nodes: [
       A('fire-star', 3),
       P(
-        V('noel-star-twin', 'fire-star', '連星', [52, 57, 62].map((powerPct) => ({ hits: 2, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
+        V('noel-star-twin', 'fire-star', '連星', [52, 57, 62].map((powerPct) => ({ hits: 2, powerPct })), (m) => `${T.rune.perHitNote(m.hits!, m.powerPct!)}。`),
         V('noel-star-heavy', 'fire-star', '重星', [130, 140, 150].map((powerPct) => ({ powerPct, rules: { heat: 2 } })), (m) => `威力 ${m.powerPct}%，每次熱度 +${m.rules!.heat}。`),
       ),
       A('flame-wave', 3),
@@ -127,14 +127,14 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('hex', 3),
       A('thunder-star', 3),
       V('noel-hex-wide', 'hex', '擴咒', [2, 3, 4].map((turns): SkillMod => ({ target: 'enemies', turns })), (m) => `改為對全體，弱點 ${m.turns} 回合。`),
-      V('noel-thunder-double', 'thunder-star', '雙響', [60, 65, 75].map((powerPct) => ({ hits: 2, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
+      V('noel-thunder-double', 'thunder-star', '雙響', [60, 65, 75].map((powerPct) => ({ hits: 2, powerPct })), (m) => `${T.rune.perHitNote(m.hits!, m.powerPct!)}。`),
       A('judgement', 1),
     ] },
   ] },
   chizuru: { branches: [
     { name: '槍舞', nodes: [
       A('sweep', 3),
-      V('chizuru-sweep-twin', 'sweep', '雙月', [60, 65, 72].map((powerPct) => ({ hits: 2, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
+      V('chizuru-sweep-twin', 'sweep', '雙月', [60, 65, 72].map((powerPct) => ({ hits: 2, powerPct })), (m) => `${T.rune.perHitNote(m.hits!, m.powerPct!)}。`),
       A('spiral-spear', 3),
       P(
         K('chizuru-thunder-ward', '雷之結界', 'barrierThunder', [20, 30, 40], (v) => `有結界時，每回合結束對全體敵人雷擊（威力 ${v}）。`),
@@ -151,7 +151,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
     ] },
     { name: '突刺', nodes: [
       A('pierce', 3),
-      V('chizuru-pierce-twin', 'pierce', '連突', [60, 65, 72].map((powerPct) => ({ hits: 2, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
+      V('chizuru-pierce-twin', 'pierce', '連突', [60, 65, 72].map((powerPct) => ({ hits: 2, powerPct })), (m) => `${T.rune.perHitNote(m.hits!, m.powerPct!)}。`),
       A('exorcism-thrust', 3),
       V('chizuru-release-keep', 'exorcism-thrust', '連解', [3, 2, 1].map((releaseKeep) => ({ rules: { releaseKeep } })), (m) => `解放後結界不消失，只少 ${m.rules!.releaseKeep} 回合。`),
       A('heaven-spear', 1),
@@ -164,7 +164,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('twin-slash', 3),
       A('pickpocket', 3),
       P(
-        V('liz-twin-quick', 'twin-slash', '快手', [75, 80, 87].map((powerPct) => ({ hits: 3, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
+        V('liz-twin-quick', 'twin-slash', '快手', [75, 80, 87].map((powerPct) => ({ hits: 3, powerPct })), (m) => `${T.rune.perHitNote(m.hits!, m.powerPct!)}。`),
         V('liz-twin-haggle', 'twin-slash', '殺價', [85, 90, 95].map((powerPct) => ({ tpDelta: -2, powerPct })), (m) => `TP −${-m.tpDelta!}，威力 ${m.powerPct}%。`),
       ),
       K('liz-change', '找零', 'coinRefund', [2, 3, 4], (v) => `用掉銅板的招之後，退還 ${v} 枚。`),
@@ -269,7 +269,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
   safira: { branches: [
     { name: '刃舞', nodes: [
       A('blade-dance', 3),
-      V('safira-dance-four', 'blade-dance', '四拍', [82, 90, 100].map((powerPct) => ({ hits: 4, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
+      V('safira-dance-four', 'blade-dance', '四拍', [82, 90, 100].map((powerPct) => ({ hits: 4, powerPct })), (m) => `${T.rune.perHitNote(m.hits!, m.powerPct!)}。`),
       A('sand-cyclone', 3),
       // 即興: at 0 the repeat costs no beat at all, said in words (plan 8d Task 7).
       K('safira-improv', '即興', 'misstepLoss', [2, 1, 0], (v) => (v > 0 ? `同一招連用不再踩空，拍子只少 ${v}。` : '同一招連用不再踩空，拍子不變。')),
@@ -322,7 +322,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
   rin: { branches: [
     { name: '暗器', nodes: [
       A('rin-needle', 3),
-      V('rin-needle-three', 'rin-needle', '三連', [74, 80, 85].map((powerPct) => ({ hits: 3, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
+      V('rin-needle-three', 'rin-needle', '三連', [74, 80, 85].map((powerPct) => ({ hits: 3, powerPct })), (m) => `${T.rune.perHitNote(m.hits!, m.powerPct!)}。`),
       A('rin-fan', 3),
       A('rin-venom-needle', 3),
       A('rin-storm', 1),
@@ -349,7 +349,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
   hero: { branches: [
     { name: '劍技', nodes: [
       A('hero-slash', 5),
-      V('hero-slash-twin', 'hero-slash', '連斬', [50, 52, 54, 56, 58].map((powerPct) => ({ hits: 2, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
+      V('hero-slash-twin', 'hero-slash', '連斬', [50, 52, 54, 56, 58].map((powerPct) => ({ hits: 2, powerPct })), (m) => `${T.rune.perHitNote(m.hits!, m.powerPct!)}。`),
       A('hero-cleave', 5),
       A('hero-sunder', 5),
       A('abyss-sword', 1),

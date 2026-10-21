@@ -134,11 +134,14 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
   const out: SkillDef = { ...def, effects: [...effects, ...(mod.extra ?? []).map((e) => ({ ...e }))] };
   // The words follow the numbers (plan 8c): any number an effect's description names (its rounds, a buff's or debuff's
   // percent, a barrier's percent, an ailment's chance, its hits) is rewritten to the effective one, effect by effect.
+  // Rounds are named again wherever they stand (a variant's note names them too): see `rounds` after the loop.
+  const rounds = new Map<number, number>();
   def.effects.forEach((e, i) => {
     const now = effects[i] as unknown as Record<string, unknown>;
     for (const [f, say] of NAMED_NUMBERS(e)) {
       const was = (e as unknown as Record<string, unknown>)[f], is = now[f];
-      if (typeof was === 'number' && typeof is === 'number' && was !== is) out.desc = out.desc.replace(say(was), say(is));
+      if (typeof was !== 'number' || typeof is !== 'number' || was === is) continue;
+      if (f === 'turns') { if (!rounds.has(was)) rounds.set(was, is); } else out.desc = out.desc.replace(say(was), say(is));
     }
     // 新月之夜 (plan 8d): the night's words name the phase it holds and for how long (8d final review).
     if (e.kind === 'moon' && e.step === undefined) {
@@ -150,6 +153,11 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
     const held = (now as { hold?: number }).hold ?? 0;
     if (e.kind === 'moon' && e.step === -1 && held > (e.hold ?? 0)) out.desc += T.mech.recallHold(held);
   });
+  // Every old count of rounds at once (plan 8g Task 2 review: 「7 回合內……降防持續 7 回合」 both), whole numbers only,
+  // so one effect's new count is never taken for another's old one.
+  if (rounds.size) {
+    out.desc = out.desc.replace(new RegExp(`(?<![0-9])(${[...rounds.keys()].join('|')}) 回合`, 'g'), (_, n: string) => `${rounds.get(Number(n))} 回合`);
+  }
   // 分期 (plan 8d): a coin spender's words name the power a coin as the variant makes it.
   if (mod.rules?.coinPowerPct !== undefined) {
     out.desc = out.desc.replace(T.mech.coinPower(def.rules?.coinPowerPct ?? COINS.coinPowerPct), T.mech.coinPower(mod.rules.coinPowerPct));

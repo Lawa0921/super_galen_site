@@ -797,10 +797,17 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
      */
     notes: {
       merged: (pct: number, ailment: string) => `這招本來就有 ${pct}% ${ailment}，取較高的一個`,
+      sure: (ailment: string) => `這招本來就必定${ailment}`,
       aftermath: (element: string, ailment: string) => `這招是${element}屬性：暴擊時必定${ailment}`,
     },
     /** A skill's words for its element, 「火屬性」: rewritten when an element rune changes it (plan 8g ruling 14). */
     elementWord: (element: string) => `${element}屬性`,
+    /**
+     * A variant's per-hit note (data/trees), and the same note once 重擊 folds the hits into one, its power the sum (plan
+     * 8g Task 2 review). `pct` may be a pattern: applyRunes finds the note through it.
+     */
+    perHitNote: (hits: number | string, pct: number | string) => `改為 ${hits} 段，每段威力 ${pct}%`,
+    foldedHits: (hits: number, pct: number) => `合為 ${hits} 段，威力 ${pct}%`,
     reprise: (name: string) => `${name}的回聲`,
     /** A rune as every screen names it (plan 8f): 「擴散（魔法）」, the tier in the gear's rarity words. */
     label: (id: RuneId, tier: RuneTier) => `${RUNES[id].name}（${RARITY[tier]}）`,

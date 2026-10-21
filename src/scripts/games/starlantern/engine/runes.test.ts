@@ -416,3 +416,80 @@ describe('the words follow the runes (plan 8g Task 2)', () => {
     expect(runeNotes(SKILLS['fire-star'], 'venom')).toEqual([]);
   });
 });
+
+describe('the words follow the runes: review fixes (plan 8g Task 2 review)', () => {
+  const m = (id: RuneId): RuneRef => ({ id, tier: tiersOf(id).includes('magic') ? 'magic' : 'legendary' });
+  /** `skill` with tree node `node` at its top rank (and the skill's own top rank) and these runes. */
+  const at = (skill: string, node: string | null, runes: RuneId[] = []) => {
+    const own = NODES[skill]?.node.kind === 'active' ? { [skill]: NODES[skill].node.maxRank } : {};
+    const ranks = node ? { ...own, [node]: NODES[node].node.maxRank } : own;
+    return skillFor({ powers: [], ranks, ...(runes.length ? { runes: { [skill]: runes.map(m) } } : {}) }, skill)!;
+  };
+  const rank1 = (skill: string, node: string, runes: RuneId[] = []) => {
+    const own = NODES[skill]?.node.kind === 'active' ? { [skill]: NODES[skill].node.maxRank } : {};
+    return skillFor({ powers: [], ranks: { ...own, [node]: 1 }, ...(runes.length ? { runes: { [skill]: runes.map(m) } } : {}) }, skill)!;
+  };
+
+  it('a one-hit skill names no hit count: 連擊 leaves its other counts alone', () => {
+    const hop = rank1('rin-mark', 'rin-mark-hop');
+    expect(hop.desc).toContain('（每場最多 1 次）');
+    expect(rank1('rin-mark', 'rin-mark-hop', ['multistrike']).desc).toBe(hop.desc);
+    const chase = rank1('rin-execute', 'rin-execute-chase');
+    expect(chase.desc).toContain('多 1 次');
+    expect(rank1('rin-execute', 'rin-execute-chase', ['multistrike']).desc).toBe(chase.desc);
+  });
+
+  it('重擊 folds a per-hit note into one hit at the whole power', () => {
+    let folded = 0;
+    for (const [nid, info] of Object.entries(NODES)) {
+      const skill = info.node.skill;
+      if (!skill || info.node.kind !== 'variant') continue;
+      const before = at(skill, nid);
+      const hit = before.desc.match(/改為 ([0-9]+) 段，每段威力 ([0-9]+)%/);
+      if (!hit || runeFits(before, 'heavy', [], before) !== null) continue;
+      const after = at(skill, nid, ['heavy']);
+      expect(after.desc, nid).toContain(T.rune.foldedHits(1, Number(hit[1]) * Number(hit[2])));
+      expect(after.desc, nid).not.toContain('每段威力');
+      folded++;
+    }
+    expect(folded).toBeGreaterThanOrEqual(7);
+    expect(at('hero-slash', 'hero-slash-twin', ['heavy']).desc).toBe('單體近戰斬擊。合為 1 段，威力 116%。');
+    // The notes say the same words they always did.
+    expect(at('hero-slash', 'hero-slash-twin').desc).toBe(`單體近戰斬擊。${T.rune.perHitNote(2, 58)}。`);
+  });
+
+  it('散射 with 多矢 counts its arrows with 連擊 and 重擊', () => {
+    expect(at('scatter-shot', 'sylvie-scatter-more').desc).toContain('改為 6 支箭');
+    expect(at('scatter-shot', 'sylvie-scatter-more', ['multistrike']).desc).toContain('改為 7 支箭');
+    expect(at('scatter-shot', 'sylvie-scatter-more', ['heavy']).desc).toContain('改為 1 支箭');
+  });
+
+  it("延長 changes every place the effect's rounds are named", () => {
+    for (const [skill, node] of [['hex', 'noel-hex-wide'], ['ward', 'chizuru-ward-long'], ['sunder-arrow', 'sylvie-sunder-deep']] as const) {
+      const before = at(skill, node);
+      const after = at(skill, node, ['extend']);
+      const was = (before.effects.find((e) => 'turns' in e) as { turns: number }).turns;
+      const now = (after.effects.find((e) => 'turns' in e) as { turns: number }).turns;
+      expect(now, skill).toBeGreaterThan(was);
+      expect(before.desc.split(`${was} 回合`).length, skill).toBe(3);
+      expect(after.desc, skill).toBe(before.desc.split(`${was} 回合`).join(`${now} 回合`));
+    }
+    // A number of rounds that names something else stays (砲台's 「多撐 2 回合」 is the pair's own).
+    const turret = at('turret', 'bobby-turret-pair');
+    expect(at('turret', 'bobby-turret-pair', ['extend']).desc).toContain('多撐 2 回合');
+    expect(turret.desc).toContain('多撐 2 回合');
+  });
+
+  it("a shape rune that undoes a node's target change drops the node's sentence for it", () => {
+    expect(at('moonlight', 'selene-moon-wide').desc).toBe('回復一名隊友 HP。改為對我方全體，威力 65%。');
+    expect(at('moonlight', 'selene-moon-wide', ['focus']).desc).toBe('回復一名隊友 HP。');
+    expect(at('flame-wave', 'noel-wave-focus', ['spread']).desc).toBe('火屬性全體魔法攻擊。');
+    // A rune that takes the target elsewhere keeps it, its words rewritten.
+    expect(at('flame-wave', 'noel-wave-focus', ['rime']).desc).toBe('冰屬性全體魔法攻擊。改為打單體，威力 190%。');
+  });
+
+  it('a sure ailment says so', () => {
+    const sure: SkillDef = { ...SKILLS['rin-venom-needle'], effects: SKILLS['rin-venom-needle'].effects.map((e) => (e.kind === 'inflict' ? { ...e, chance: 1 } : e)) };
+    expect(runeNotes(sure, 'venom')).toEqual(['這招本來就必定中毒']);
+  });
+});
