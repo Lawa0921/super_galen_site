@@ -137,7 +137,11 @@ export class Game {
     this.state = state ?? newGame(rng, forgeSalt, start);
   }
 
-  static boot(rng: Rng, storage: SaveStorage | null, forgeSalt = 0): Game {
+  /**
+   * `previous`: the game this boot replaces (the page boots once for the title, then again on 繼續). A rework notice it
+   * still owes carries over: its boot already saved the migrated game, so this boot reads version 9 and would say nothing.
+   */
+  static boot(rng: Rng, storage: SaveStorage | null, forgeSalt = 0, previous?: Game): Game {
     if (!storage) {
       const g = new Game(rng, null, undefined, forgeSalt, START_LINEUP);
       g.arrival = arrivalScenes(g.state, { chat: false });
@@ -155,6 +159,7 @@ export class Game {
       g.notice = 'tree-reworked';
       saveGame(storage, g.state);
     }
+    if (r.status === 'ok' && previous?.notice === 'tree-reworked') g.notice = 'tree-reworked';
     g.rerolled = true;
     g.arrival = arrivalScenes(g.state, { chat: false });
     return g;

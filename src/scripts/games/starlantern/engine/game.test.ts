@@ -1617,6 +1617,21 @@ describe('the tree rework on load (plan 8d Task 2)', () => {
     expect(JSON.parse(storage.map.get(BACKUP_KEY)!).gold).toBe(4321);
   });
 
+  it('a boot that replaces the one which migrated still owes the notice (the title boots once, 繼續 boots again)', () => {
+    const storage = memoryStorage({ [SAVE_KEY]: v8().raw });
+    const title = Game.boot(calm(), storage);
+    expect(title.notice).toBe('tree-reworked');
+    // The title's boot already saved version 9, so the next boot alone would say nothing.
+    expect(Game.boot(calm(), storage).notice).toBeNull();
+    const cont = Game.boot(calm(), storage, 0, title);
+    expect(cont.notice).toBe('tree-reworked');
+    // Once spoken it is not owed any more, and no other notice is carried over.
+    cont.notice = null;
+    expect(Game.boot(calm(), storage, 0, cont).notice).toBeNull();
+    title.notice = 'saved';
+    expect(Game.boot(calm(), storage, 0, title).notice).toBeNull();
+  });
+
   it('booting a version 8 save says the tree was reworked', () => {
     const { raw } = v8();
     const storage = memoryStorage({ [SAVE_KEY]: raw });

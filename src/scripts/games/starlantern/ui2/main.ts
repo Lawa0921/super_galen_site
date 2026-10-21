@@ -70,7 +70,8 @@ export async function mountNext(): Promise<void> {
     art: bank, sfx,
     hasSave: () => { try { return !!storage?.getItem(SAVE_KEY); } catch { return false; } },
     newGame: () => { game = Game.fresh(mulberry32(seed), storage, seed); },
-    continueGame: () => { game = Game.boot(mulberry32(seed), storage, seed); },
+    // The title's boot may have migrated and saved an old save: its notice is still owed (Game.boot `previous`).
+    continueGame: () => { game = Game.boot(mulberry32(seed), storage, seed, game); },
     stage, fast,
     settings: settingsStore,
     vibrate: (ms: number) => { if (settings.vibrate) { try { navigator.vibrate?.(ms); } catch { /* not supported */ } } },
