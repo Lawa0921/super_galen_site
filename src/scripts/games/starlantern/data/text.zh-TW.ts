@@ -138,7 +138,12 @@ export const T = {
     /** The hero's echo: what it repeats (「殘響」 alone, greyed, when there is nothing); the act's name in the log. */
     echo: (name?: string) => (name ? `殘響：${name}` : '殘響'),
     echoAct: (name: string) => `殘響・${name}`,
-    echoNote: (pct: number, desc: string) => `以 ${pct}% 的威力重現：${desc}`,
+    /** What the echo repeats, in numbers (plan 8g ruling 12): the repeated skill's battle line. */
+    echoNote: (pct: number, line: string) => `以 ${pct}% 的威力重現：${line}`,
+    /** After a skill's name in the battle menu, one for each working rune on it (plan 8g ruling 12). */
+    runeMark: '◆',
+    /** A skill's note in the battle menu: its final numbers (battleLine), then its words. */
+    noteWith: (line: string, desc: string) => `${line}　${desc}`,
     /** After the note when the record left a variant's mechanic extras out (8d final review). */
     echoDropped: '（機制效果不會重現）',
   },

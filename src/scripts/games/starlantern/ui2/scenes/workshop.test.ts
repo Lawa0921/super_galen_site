@@ -23,10 +23,10 @@ const R = (id: RuneRef['id'], tier: RuneRef['tier'] = 'magic'): RuneRef => ({ id
 const label = (r: RuneRef) => T.rune.label(r.id, r.tier);
 
 /** A town game (the standard five, Sylvie met on the bench); `prep` sets members, bag and flags before the scene opens. */
-function setup(prep: (g: Game) => void, arg?: string, from: SceneName = 'guild') {
-  const storage = memoryStorage();
-  const game = new Game(constRng(0.5), storage, undefined, 0, STANDARD_LINEUP);
-  game.state.party.recruited.push('sylvie');
+function setup(prep: (g: Game) => void, arg?: string, from: SceneName = 'guild', reuse?: { game: Game; storage: ReturnType<typeof memoryStorage> }) {
+  const storage = reuse?.storage ?? memoryStorage();
+  const game = reuse?.game ?? new Game(constRng(0.5), storage, undefined, 0, STANDARD_LINEUP);
+  if (!reuse) game.state.party.recruited.push('sylvie');
   prep(game);
   const go = vi.fn();
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
@@ -383,8 +383,10 @@ describe('WorkshopScene: the rune tutorial (plan 8g Task 6)', () => {
     expect(w.game.state.runeTutorialSeen).toBe(true);
     expect(JSON.parse(w.storage.getItem(SAVE_KEY)!).runeTutorialSeen).toBe(true);   // town: saved at once
     expect(w.root.querySelector('.slx-ws-skills')!.hasAttribute('inert')).toBe(false);
-    // The second visit: no tutorial.
-    const again = setup(noel(20, { 'spread@magic': 1 }), 'noel:fire-star');
+    // The second visit, on the game loaded back from what the first one saved: no tutorial.
+    const reloaded = Game.boot(constRng(0.5), w.storage);
+    expect(reloaded.state.runeTutorialSeen).toBe(true);
+    const again = setup(() => undefined, 'noel:fire-star', 'guild', { game: reloaded, storage: w.storage });
     expect(talk(again).hidden).toBe(true);
     // Only a socketed rune counts too.
     const socketed = setup((g) => { fresh(20, {})(g); g.state.party.roster.noel.sockets = { 'fire-star': [R('spread')] }; }, 'noel:fire-star');

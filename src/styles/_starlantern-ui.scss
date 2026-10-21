@@ -121,6 +121,8 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-opt { display: flex; align-items: center; gap: 4px; }
 .slx-ico { width: 12px; height: 12px; object-fit: contain; }
 .slx-right { margin-left: auto; padding-left: 12px; color: $slx-dim; }
+// ◆ for each working rune after a skill's name in the battle menu (plan 8g Task 7), in the rune's own blue.
+.slx-badge { flex: none; margin-left: 2px; font-size: 9px; letter-spacing: 1px; color: #9fc1ff; }
 .slx-qty { left: 6px; top: 190px; width: 112px; text-align: center; }
 .slx-qty .slx-hint { white-space: pre-line; }
 .slx-qty .slx-qty-note { margin: 6px 0 0; }   // 「袋子 m」 under a rune's count (plan 8f)
@@ -219,7 +221,7 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-dungeon .slx-talk { z-index: 1; }
 .slx-field-menu { left: 12px; top: 50px; }
 // The ten-line field menu covers the condition badge and the weight line: hide them, so no sliver shows at its edge.
-.slx-dungeon:has(.slx-field-menu) .slx-condition, .slx-dungeon:has(.slx-field-menu) .slx-weight { visibility: hidden; }
+.slx-dungeon:has(.slx-field-menu) .slx-condition, .slx-dungeon:has(.slx-field-menu) .slx-weight, .slx-dungeon:has(.slx-field-menu) .slx-keyhint { visibility: hidden; }
 .slx-dungeon > .slx-back { right: 140px; top: 6px; }
 .slx-keyhint { position: absolute; left: 8px; bottom: 68px; margin: 0; font-size: 10px; line-height: 12px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
 .slx-title .slx-keyhint, .slx-town .slx-keyhint { bottom: 6px; }
@@ -1223,7 +1225,7 @@ $slx-starlit: #bff6ff;
 // after a rune, its body scrolling under ▲/▼ above a foot that always shows), the slots or the runes for one.
 .slx-workshop .slx-keyhint { bottom: 4px; }
 // The narrator's box over a battle (a memory, the rune tutorial) sits above the party bar's gauges.
-.slx-battle > .slx-talk { z-index: 10; }
+.slx-battle > .slx-talk, .slx-workshop > .slx-talk { z-index: 10; }
 .slx-workshop > .slx-back { right: 10px; top: auto; bottom: 4px; }
 .slx-ws-head { left: 8px; top: 6px; right: 8px; display: flex; align-items: center; gap: 8px; padding: 2px 8px; }
 .slx-ws-name { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }

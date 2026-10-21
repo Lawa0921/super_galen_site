@@ -1297,6 +1297,10 @@ test.describe('starlantern', () => {
       p.grid = ['hero', 'noel', null, 'bobby', null, null, 'chizuru', null, 'selene'];
       p.roster.bobby.level = 50;
       p.roster.bobby.tree = { turret: 3, 'bobby-turret-twin': 2, cannon: 3, 'bobby-mass': 3, 'bobby-turret-pair': 1, tinker: 1, 'repair-drone': 1, 'bobby-drone-aid': 1, barrier: 1, 'bobby-bench': 1, 'shock-mine': 1, 'bobby-mine-chain': 1 };
+      // Two working runes on the turret: the battle menu marks them (plan 8g Task 7).
+      p.roster.bobby.sockets = { turret: [{ id: 'extend', tier: 'magic' }, { id: 'thrift', tier: 'magic' }] };
+      g.state.runesOpen = true;
+      g.state.runeTutorialSeen = true;
       p.roster.hero.level = 35;
       p.roster.hero.tree = { 'hero-slash': 2, 'hero-slash-twin': 2, 'hero-guard': 1, 'hero-guard-steady': 1, 'hero-flare': 1, 'hero-frost': 1, 'hero-frost-chill': 1, 'hero-mend': 1, 'hero-mend-overflow': 1 };
     });
@@ -1380,9 +1384,15 @@ test.describe('starlantern', () => {
     await w.choose('.slx-bcmd', '技能');
     const item = page.locator('.slx-bsub [role=option]').filter({ hasText: '設置砲台・雙管・雙砲台' });
     await expect(item).toHaveCount(1);
-    for (const [vw, vh, name] of [[1280, 720, 'bobby-battle-1280'], [390, 844, 'bobby-battle-390']] as const) {
+    await expect(item.locator('.slx-badge')).toHaveText('◆◆');
+    await item.hover();                                     // its note: the final numbers, then its words
+    await expect(page.locator('.slx-bnote')).toHaveText(/^自身　架一座砲台/);   // a device: its summary is its target
+    for (const [vw, vh, name] of [[1280, 720, 'bobby-battle-1280'], [844, 390, 'bobby-battle-844'], [390, 844, 'bobby-battle-390']] as const) {
       await page.setViewportSize({ width: vw, height: vh });
       expect(await item.locator('.slx-label').evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), name).toBe(true);
+      const rows = await page.locator('.slx-bsub [role=option]').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+      expect(rows, `battle skill rows wider than their box at ${vw}`).toEqual([]);
+      await expect(item.locator('.slx-badge')).toBeVisible();
       await shot(name);
     }
     expect(missing).toEqual([]);
@@ -3498,9 +3508,10 @@ test.describe('starlantern', () => {
     await expect(talk.locator('.slx-text')).toContainText('你得到了符文');
     await w.key('z');                                       // the first page whole (a key finishes the typing)
     await expect(talk.locator('.slx-next')).toBeVisible();
-    for (const [vw, vh] of [[390, 844], [1280, 720]] as const) {
+    for (const [vw, vh] of [[390, 844], [844, 390], [1280, 720]] as const) {
       await page.setViewportSize({ width: vw, height: vh });
       await page.waitForTimeout(150);
+      await expect(page.locator('.slx-battle .slx-msg')).toBeHidden();   // the foes' names gone with the fight
       const screen = (await page.locator('.slx-screen').boundingBox())!;
       const box = (await talk.boundingBox())!;
       expect([box.x >= screen.x - 0.5, box.y >= screen.y - 0.5, box.x + box.width <= screen.x + screen.width + 0.5, box.y + box.height <= screen.y + screen.height + 0.5], `the tutorial inside the stage at ${vw}`).toEqual([true, true, true, true]);
@@ -3854,6 +3865,7 @@ test.describe('starlantern', () => {
       await expect(menu.locator('[data-id=workshop]')).toBeVisible();
       await expect(menu.locator('.slx-more-down')).toHaveCount(0);           // every line on screen, 關閉 included
       await expect(menu.locator('[data-id=close]')).toBeVisible();
+      await expect(page.locator('.slx-dungeon .slx-keyhint')).toBeHidden();   // the map's key hint gives way to the menu
       const screen = await page.locator('.slx-screen').boundingBox();
       const box = await menu.boundingBox();
       expect(box!.y + box!.height).toBeLessThanOrEqual(screen!.y + screen!.height + 0.5);
@@ -3861,6 +3873,41 @@ test.describe('starlantern', () => {
       const over = await menu.locator('[role=option]').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
       expect(over).toEqual([]);
       if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/field-menu-844.png` });
+      expect(w.errors).toEqual([]);
+    });
+
+    test('the workshop tells the rune tutorial to a player who already holds runes (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const w = await setup(page, 7);
+      await page.evaluate(() => {
+        const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+        s.runesOpen = true;
+        s.runes = { 'spread@magic': 1 };
+      });
+      await w.choose('.slx-town', '冒險者公會');
+      await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+      await w.choose('.slx-guild .slx-cmd', '技能工坊');
+      const talk = page.locator('.slx-workshop .slx-talk');
+      await expect(talk).toBeVisible();
+      await w.key('z');                                       // the first page whole
+      await expect(talk.locator('.slx-next')).toBeVisible();
+      for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+        await page.setViewportSize({ width: vw, height: vh });
+        await page.waitForTimeout(150);
+        const screen = (await page.locator('.slx-screen').boundingBox())!;
+        const box = (await talk.boundingBox())!;
+        expect([box.x >= screen.x - 0.5, box.y >= screen.y - 0.5, box.x + box.width <= screen.x + screen.width + 0.5, box.y + box.height <= screen.y + screen.height + 0.5], `the tutorial inside the stage at ${vw}`).toEqual([true, true, true, true]);
+        // Nothing of the screen under it shows through (the card's ▼ included).
+        const top = await page.evaluate(() => { const b = document.querySelector('.slx-workshop .slx-talk')!.getBoundingClientRect(); return document.elementFromPoint(b.x + b.width - 12, b.y + 12)?.closest('.slx-talk') !== null; });
+        expect(top, `the tutorial on top at ${vw}`).toBe(true);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-tutorial-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      for (let i = 0; i < 12 && (await talk.isVisible()); i++) await w.key('z');
+      await expect(talk).toBeHidden();
+      expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runeTutorialSeen)).toBe(true);
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
+      expect(saved.runeTutorialSeen).toBe(true);
       expect(w.errors).toEqual([]);
     });
   });

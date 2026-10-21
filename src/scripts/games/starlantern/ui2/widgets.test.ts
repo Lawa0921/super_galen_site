@@ -396,3 +396,15 @@ describe('Dialogue faces', () => {
     expect(d.el.classList.contains('slx-talk--memory')).toBe(false);
   });
 });
+
+describe('MenuView badges (plan 8g Task 7)', () => {
+  it('a badge follows the label', () => {
+    const v = new MenuView(new Menu([{ id: 'a', label: '火之星彈', badge: '◆◆', right: '4 TP' }, { id: 'b', label: '冰之星彈' }]), { pick: vi.fn() });
+    const [a, b] = [...v.el.querySelectorAll('[role=option]')];
+    const badge = a.querySelector('.slx-badge')!;
+    expect(badge.textContent).toBe('◆◆');
+    expect(badge.previousElementSibling!.classList.contains('slx-label')).toBe(true);
+    expect(badge.nextElementSibling!.classList.contains('slx-right')).toBe(true);
+    expect(b.querySelector('.slx-badge')).toBeNull();
+  });
+});

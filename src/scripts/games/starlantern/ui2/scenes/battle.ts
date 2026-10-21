@@ -5,7 +5,7 @@ import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
 import { STORY } from '../../data/story.zh-TW';
 import { CHARACTERS } from '../../data/characters';
-import { LIMIT_MAX, intentLabel, skillFor, type Action, type BattleState } from '../../engine/battle';
+import { LIMIT_MAX, intentLabel, runeView, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
 import { ailmentChips, type AilmentChip } from '../../engine/ailments';
 import { castCost, cueWord, fieldWords, foeWords, memberWords, whyNot, type MechCue, type MechWord } from '../../engine/mechanics/index';
@@ -21,6 +21,7 @@ import { fragmentItem } from '../../engine/story/fragments';
 import { gearIconUrl } from '../gearArt';
 import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
 import { RUNE_SLOT_LEVELS, RUNE_STACK } from '../../data/runes';
+import { battleLine } from '../skillCard';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
@@ -259,7 +260,8 @@ export class BattleScene implements Scene {
     const rec = echoOf(this.state, this.state.round + 1);
     if (!rec) return [{ id: 'echo', label: T.cmd.echo(), disabled: true }];
     const def = echoDef(rec);
-    return [{ id: 'echo', label: T.cmd.echo(def.name), right: T.cmd.tp(rec.cost), disabled: actor.tp < rec.cost, note: T.cmd.echoNote(ECHO.powerPct, def.desc) + (rec.dropped ? T.cmd.echoDropped : '') }];
+    // What it repeats in numbers, not the repeated skill's words (they may name a mechanic it leaves out; plan 8g ruling 12).
+    return [{ id: 'echo', label: T.cmd.echo(def.name), right: T.cmd.tp(rec.cost), disabled: actor.tp < rec.cost, note: T.cmd.echoNote(ECHO.powerPct, battleLine(def)) + (rec.dropped ? T.cmd.echoDropped : '') }];
   }
 
   private skillItems(actor: Combatant): MenuItem[] {
@@ -272,7 +274,12 @@ export class BattleScene implements Scene {
         const cost = castCost(this.state, actor, sk.id);
         // A skill that would spend an empty resource (no coins, no barrier) is greyed, its reason in place of the TP.
         const why = whyNot(this.state, actor, sk);
-        return { id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: sk.desc };
+        // ◆ for each rune that works on it, and its final numbers before its words (plan 8g ruling 12).
+        const working = runeView(actor, sk.id, actor.runes?.[sk.id] ?? [])?.states.filter((x) => x.miss === null).length ?? 0;
+        return {
+          id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: T.cmd.noteWith(battleLine(sk), sk.desc),
+          ...(working ? { badge: T.cmd.runeMark.repeat(working) } : {}),
+        };
       });
   }
 
@@ -549,6 +556,7 @@ export class BattleScene implements Scene {
   private async playMemories(ids: SceneId[]): Promise<void> {
     const box = this.body.querySelector<HTMLElement>('.slx-result');
     if (box) box.hidden = true;
+    if (ids.length) this.msg.hidden = true;   // the foes' names go with the fight (Task 6 review)
     for (const id of ids) {
       try {
         const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
@@ -566,14 +574,18 @@ export class BattleScene implements Scene {
   private async runeTutorial(): Promise<void> {
     const box = this.body.querySelector<HTMLElement>('.slx-result');
     if (box) box.hidden = true;
+    this.msg.hidden = true;
     this.talk.setStyle('plain');
     this.tutoring = true;
+    // A tutorial that fails is reported and over: it must never lock the way out (as a memory).
     try {
       for (const line of T.rune.tutorial(RUNE_SLOT_LEVELS, T.ui2.guild.workshop, T.ui2.dungeon.workshop)) await this.talk.say('', line);
+      this.ctx.game.seeRuneTutorial();
+    } catch (e) {
+      console.error('starlantern: rune tutorial failed', e);
     } finally {
       this.tutoring = false;
     }
-    this.ctx.game.seeRuneTutorial();
   }
 
   private leave(): void {

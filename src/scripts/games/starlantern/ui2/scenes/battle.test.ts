@@ -12,6 +12,9 @@ import { LEGACY_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
 import { RUNE_SLOT_LEVELS } from '../../data/runes';
+import { battleLine } from '../skillCard';
+import { skillFor } from '../../engine/battle';
+import { ECHO, echoDef } from '../../engine/mechanics/echo';
 import { CHARACTERS } from '../../data/characters';
 import { SHARD_NAMES } from '../../data/story/fragments';
 import { FINALE_DEPTH } from '../../data/story/scenes';
@@ -1032,6 +1035,7 @@ describe('BattleScene story', () => {
     expect(go).not.toHaveBeenCalled();
     expect(root.querySelector('.slx-talk--memory')).not.toBeNull();
     expect((root.querySelector('.slx-result') as HTMLElement).hidden).toBe(true);
+    expect((root.querySelector('.slx-msg') as HTMLElement).hidden).toBe(true);   // the foes' names gone with them (Task 6 review)
     for (let i = 0; i < 40 && !talkHidden(root); i++) { s.onAction('confirm'); await flush(); }
     expect(go).toHaveBeenCalledWith('dungeon');
     expect(game.state.story.seen).toContain('mem:rin:1');
@@ -1229,6 +1233,7 @@ describe('BattleScene: the rune tutorial (plan 8g Task 6)', () => {
       await flush();
       expect(go).not.toHaveBeenCalled();
       expect((root.querySelector('.slx-result') as HTMLElement).hidden).toBe(true);
+      expect((root.querySelector('.slx-msg') as HTMLElement).hidden).toBe(true);
       expect(root.querySelector('.slx-talk .slx-name')!.hasAttribute('hidden')).toBe(true);   // narration: no name
       const seen: string[] = [];
       for (let i = 0; i < 10 && !talkHidden(root); i++) { seen.push(said(root)!); s.onAction('confirm'); await flush(); }
@@ -1243,6 +1248,22 @@ describe('BattleScene: the rune tutorial (plan 8g Task 6)', () => {
     again.s.onAction('confirm');
     expect(again.go).toHaveBeenCalledWith('dungeon');
     expect(talkHidden(again.root)).toBe(true);
+  });
+
+  it('a tutorial that fails still leaves the battle', async () => {
+    const { game, go, s } = setup(undefined, instant);
+    winWith(game, [spread]);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(game, 'seeRuneTutorial').mockImplementation(() => { throw new Error('broken'); });
+    try {
+      await fight(s);
+      s.onAction('confirm');
+      for (let i = 0; i < 10 && !go.mock.calls.length; i++) { s.onAction('confirm'); await flush(); }
+      expect(go).toHaveBeenCalledWith('dungeon');
+      expect(err).toHaveBeenCalled();
+    } finally {
+      err.mockRestore();
+    }
   });
 
   it('no rune, no tutorial', async () => {
@@ -1265,5 +1286,53 @@ describe('BattleScene: the rune tutorial (plan 8g Task 6)', () => {
     const pages = T.rune.tutorial(RUNE_SLOT_LEVELS, T.ui2.guild.workshop, T.ui2.dungeon.workshop);
     expect(pages.length).toBeGreaterThanOrEqual(3);
     expect(pages.length).toBeLessThanOrEqual(4);
+  });
+});
+
+describe('BattleScene: the skill menu in numbers (plan 8g Task 7)', () => {
+  /** Everyone before `name` defends; then `name`'s skill list, its rows by id and the note shown for the first. */
+  const skillsOf = (name: string, prep?: (g: Game) => void, lineup: CharacterId[] = [...LEGACY_LINEUP]) => {
+    const w = setup(prep, {}, lineup);
+    for (let i = 0; i < 5 && w.heading() !== T.cmd.choose(name); i++) {
+      for (let k = 0; k < 9 && w.root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'defend'; k++) w.s.onAction('down');
+      w.s.onAction('confirm');
+    }
+    expect(w.heading()).toBe(T.cmd.choose(name));
+    for (let k = 0; k < 9 && w.root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'skill'; k++) w.s.onAction('down');
+    w.s.onAction('confirm');
+    const row = (id: string) => w.root.querySelector<HTMLElement>(`.slx-bsub [data-id="${id}"]`);
+    return { ...w, row, note: () => w.root.querySelector('.slx-bnote')?.textContent ?? '' };
+  };
+
+  it('the skill menu shows the final numbers and the runes that work', () => {
+    // 火之星彈 with 擴散 (works) and 重擊 (does not: it needs a skill of more than one hit).
+    const runes = { 'fire-star': [{ id: 'spread' as const, tier: 'magic' as const }, { id: 'heavy' as const, tier: 'magic' as const }] };
+    const w = skillsOf('諾艾兒', (g) => {
+      g.state.party.roster.noel.tree = { 'fire-star': 1, 'ice-star': 1 };
+      const c = g.battle!.party.find((x) => x.key === 'noel')!;
+      c.ranks = { 'fire-star': 1, 'ice-star': 1 };
+      c.runes = runes;
+    });
+    const fire = w.row('fire-star')!;
+    expect(fire.querySelector('.slx-badge')!.textContent).toBe(T.cmd.runeMark);
+    expect(w.row('ice-star')!.querySelector('.slx-badge')).toBeNull();
+    const c = w.game.battle!.party.find((x) => x.key === 'noel')!;
+    const def = skillFor(c, 'fire-star')!;
+    expect(battleLine(def)).toBe('全體・威力 84・火');
+    // The note under the cursor (the first skill): the summary first, then the skill's words.
+    expect(w.note()).toBe(T.cmd.noteWith(battleLine(def), def.desc));
+    expect(w.note().startsWith('全體・威力 84・火')).toBe(true);
+  });
+
+  it('the echo says what it repeats, in numbers', () => {
+    const lineup: CharacterId[] = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+    const def = { ...SKILLS.provoke, name: '挑釁・高喊' };
+    const w = setup((g) => { g.battle!.echo = { by: 'scarlet', round: g.battle!.round, def, cost: 3, dropped: true }; }, {}, lineup);
+    expect(w.heading()).toBe(T.cmd.choose('洛恩'));
+    for (let k = 0; k < 9 && w.root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'echo'; k++) w.s.onAction('down');
+    const note = w.root.querySelector('.slx-bnote')!.textContent!;
+    const rec = w.game.battle!.echo!;
+    expect(note).toBe(T.cmd.echoNote(ECHO.powerPct, battleLine(echoDef(rec))) + T.cmd.echoDropped);
+    expect(note).not.toContain(def.desc);
   });
 });
