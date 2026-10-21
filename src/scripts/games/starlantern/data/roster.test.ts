@@ -2,8 +2,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import type { Effect, SkillDef, UltimateDef } from '../engine/types';
+import type { CharacterId, Effect, SkillDef, UltimateDef } from '../engine/types';
+import { NO_ICON_YET_IDS } from '../render/artPaths';
+import { POWERS } from './gear';
 import { SKILLS } from './skills';
+import { LEGACY_NODE_IDS, NODES, TREES } from './trees';
 import { HERO_ULTIMATES, RIN_DAWN, ULTIMATES } from './ultimates';
 
 /**
@@ -101,5 +104,119 @@ describe('the roster against plan 8b', () => {
     expect(identity({ ...was, effects: [{ ...damage, element: 'ice' }] } as SkillDef)).not.toEqual(identity(was));
     expect(identity({ ...was, target: 'enemies' })).not.toEqual(identity(was));
     expect(identity({ ...was, name: '火' })).not.toEqual(identity(was));
+  });
+});
+
+/** Spec §8: the 15 companion skills replaced by new ones (old id → new id), character by character. */
+const REPLACED: Readonly<Record<string, string>> = {
+  // Chizuru
+  'sacred-sake': 'purify-ward', 'thunder-thrust': 'exorcism-thrust',
+  // Selene
+  blessing: 'moon-recall', sanctuary: 'full-moon-night',
+  // Liz
+  'triple-slash': 'pickpocket', 'shadow-flurry': 'jackpot', 'venom-edge': 'appraise',
+  // Sylvie
+  'snare-shot': 'sunder-arrow', 'fire-arrow': 'scatter-shot', 'storm-volley': 'deluge-volley',
+  // Scarlet
+  'guardian-roar': 'cover', fortress: 'atoning-flame',
+  // Safira
+  'veil-dance': 'clap', sirocco: 'mirage-step',
+  // Bobby
+  'repair-kit': 'repair-drone',
+};
+
+describe('the converged roster (plan 8c Task 7)', () => {
+  const roster = (): Roster => JSON.parse(readFileSync(FIXTURE, 'utf8')) as Roster;
+  const companions = () => Object.values(SKILLS).filter((d) => d.owner !== 'hero');
+
+  it('84 companion skills: 54 kept, 15 changed, 15 replaced', () => {
+    const r = roster();
+    const old = Object.values(r.SKILLS).filter((d) => d.owner !== 'hero');
+    expect(Object.keys(REPLACED)).toHaveLength(15);
+    for (const [was, now] of Object.entries(REPLACED)) {
+      expect(r.SKILLS[was]?.owner, was).toBeDefined();
+      expect(SKILLS[was], `${was} is gone`).toBeUndefined();
+      expect(SKILLS[now]?.owner, now).toBe(r.SKILLS[was].owner);
+      expect(NO_ICON_YET_IDS.has(now), `${now} waits for its icon`).toBe(true);
+    }
+    // The changed ones: every other old companion skill, still there under its id, its identity, its mechanic tag or its
+    // words not as recorded (星墜一矢 keeps its effects and gains the aim it spends).
+    const changed = old.filter((d) => !KEPT.includes(d.id) && !(d.id in REPLACED));
+    expect(changed).toHaveLength(15);
+    const concept = (d: SkillDef) => ({ ...identity(d), mech: d.mech, desc: d.desc });
+    for (const d of changed) {
+      expect(SKILLS[d.id]?.owner, d.id).toBe(d.owner);
+      expect(concept(SKILLS[d.id]), `${d.id} is changed`).not.toEqual(concept(d));
+    }
+    expect(companions()).toHaveLength(84);
+    expect(new Set(companions().map((d) => d.id))).toEqual(new Set([...KEPT, ...changed.map((d) => d.id), ...Object.values(REPLACED)]));
+    // The save's rename table is these 15, each to a node of the same character.
+    expect(LEGACY_NODE_IDS).toEqual(REPLACED);
+    for (const [was, now] of Object.entries(LEGACY_NODE_IDS)) expect(NODES[now]?.owner, now).toBe(r.SKILLS[was].owner);
+  });
+
+  it('each concept belongs to one character', () => {
+    /** The owners of the companion skills with an effect that `test` holds for. */
+    const owners = (test: (e: Effect, d: SkillDef) => boolean) =>
+      [...new Set(companions().filter((d) => d.effects.some((e) => test(e, d))).map((d) => d.owner))].sort();
+    const ownSide = (d: SkillDef) => d.target === 'self' || d.target === 'ally' || d.target === 'allies';
+    const foeSide = (d: SkillDef) => d.target === 'enemy' || d.target === 'enemies';
+    const guards = (e: Effect) => e.kind === 'buff' && (e.stat === 'def' || e.stat === 'res') && e.pct > 0;
+    // Guarding: a positive def / res buff on the party is Scarlet's, and only on herself; barriers are Chizuru's.
+    expect(owners((e, d) => guards(e) && ownSide(d))).toEqual(['scarlet']);
+    for (const d of companions().filter((x) => x.effects.some(guards))) expect(d.target, d.id).toBe('self');
+    expect(owners((e) => e.kind === 'barrier' || e.kind === 'barrier-boost')).toEqual(['chizuru']);
+    // Healing is Selene's; devices are Bobby's.
+    expect(owners((e) => e.kind === 'heal')).toEqual(['selene']);
+    expect(owners((e) => e.kind === 'device' || e.kind === 'overclock' || e.kind === 'tune-up')).toEqual(['bobby']);
+    // The party's atk / spd is Safira's; a speed buff on oneself is Liz's (and Safira's 蜃樓步, her finale, spec §8.7).
+    expect(owners((e, d) => e.kind === 'buff' && (e.stat === 'atk' || e.stat === 'spd') && e.pct > 0 && d.target === 'allies')).toEqual(['safira']);
+    expect(owners((e, d) => e.kind === 'buff' && e.stat === 'spd' && e.pct > 0 && d.target === 'self')).toEqual(['liz', 'safira']);
+    expect(companions().filter((d) => d.owner === 'safira' && d.target === 'self' && d.effects.some((e) => e.kind === 'buff' && e.stat === 'spd')).map((d) => d.id)).toEqual(['mirage-step']);
+    // Weakening foes: atk is Liz's, def is Sylvie's; poison is Rin's, sleep is Selene's; drawing blows is Scarlet's.
+    expect(owners((e, d) => e.kind === 'buff' && e.stat === 'atk' && e.pct < 0 && foeSide(d))).toEqual(['liz']);
+    expect(owners((e, d) => e.kind === 'buff' && e.stat === 'def' && e.pct < 0 && foeSide(d))).toEqual(['sylvie']);
+    expect(owners((e) => e.kind === 'inflict' && e.status === 'poison')).toEqual(['rin']);
+    expect(owners((e) => e.kind === 'inflict' && e.status === 'sleep')).toEqual(['selene']);
+    expect(owners((e) => e.kind === 'taunt' || e.kind === 'cover' || e.kind === 'challenge')).toEqual(['scarlet']);
+    // Each strikes with her own elements (a device's: the mine and the coil are thunder, the turret physical).
+    const elements: Record<string, string[]> = {};
+    const elementOf = (e: Effect): string | null =>
+      e.kind === 'damage' ? e.element : e.kind === 'device' ? (e.device === 'mine' || e.device === 'coil' ? 'thunder' : e.device === 'turret' ? 'phys' : null) : null;
+    for (const d of companions()) for (const e of d.effects) {
+      const el = elementOf(e);
+      const list = (elements[d.owner] ??= []);
+      if (el && !list.includes(el)) list.push(el);
+    }
+    for (const k of Object.keys(elements)) elements[k].sort();
+    expect(elements).toEqual({
+      noel: ['fire', 'ice', 'thunder'], scarlet: ['fire', 'phys'], selene: ['ice'], bobby: ['phys', 'thunder'],
+      chizuru: ['phys'], liz: ['phys'], sylvie: ['phys'], safira: ['phys'], rin: ['phys'],
+    });
+  });
+
+  it('every legendary power names a living skill', () => {
+    const r = roster();
+    expect(Object.keys(POWERS).sort()).toEqual(Object.keys(r.POWERS).sort());
+    const moved: Record<string, string> = { 'shade-silent-blade': 'rin-needle', 'mire-whisper-gloves': 'rin-venom-needle' };
+    for (const [id, p] of Object.entries(POWERS)) {
+      expect(SKILLS[p.skill], `${id} → ${p.skill}`).toBeDefined();
+      expect(p.skill, id).toBe(moved[id] ?? (r.POWERS[id] as { skill: string }).skill);
+    }
+    expect(Object.keys(POWERS).filter((id) => !(id in moved))).toHaveLength(12);
+  });
+
+  it('every tree node still stands where it stood', () => {
+    const r = roster();
+    expect(Object.keys(TREES).sort()).toEqual(Object.keys(r.trees).sort());
+    for (const [who, branches] of Object.entries(r.trees)) {
+      const now = TREES[who as CharacterId].branches;
+      expect(now.map((b) => b.nodes.length), who).toEqual(branches.map((b) => b.length));
+      branches.forEach((b, i) => b.forEach((was, t) => {
+        const n = now[i].nodes[t];
+        expect(n.maxRank, `${who} ${i}/${t}`).toBe(was.maxRank);
+        expect(n.id, `${who} ${i}/${t}`).toBe(LEGACY_NODE_IDS[was.id] ?? was.id);
+      }));
+    }
   });
 });
