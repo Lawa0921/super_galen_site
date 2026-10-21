@@ -4,12 +4,13 @@ import { describe, it, expect } from 'vitest';
 import { DelveGame, TOSS_OWNER_DELAY, TOSS_VX, TOSS_VY, type DelveEvent } from './game';
 import { T, W } from './tiles';
 import { BIOME, LIQ } from './world';
-import { FIXED_DT, INV_SIZE } from './constants';
+import { FIXED_DT, INV_SIZE, TILE_SIZE } from './constants';
 import { createCharacter } from '../save/character';
 import { normalizeAppearance } from './appearance';
 import { snapshotGame, restoreGame } from '../save/serialize';
 import type { PlayerActor } from './actor';
 import { ITEMS, type ItemId } from './items';
+import { overlapsSolid } from './physics';
 import type { Tint } from './tint';
 
 const FLOOR = 60;
@@ -176,6 +177,40 @@ describe('tossSlot（act / exec 的 toss）', () => {
     expect(g.act({ op: 'toss', slot: 0 })).toBe(true);
     const d = g.drops.list.find((q) => q.item === vanity)!;
     expect(d.tint).toEqual(tint);
+  });
+
+  it('貼著牆丟：生成點不卡進牆、落在腳邊地上，旁人立刻撿得到', () => {
+    const g = arena();
+    // x = 42 那一欄立一道牆，往右走到貼牆
+    for (let y = FLOOR - 6; y < FLOOR; y++) g.world.setFg(42, y, T.STONE);
+    g.setMoveX(1); steps(g, 40); g.setMoveX(0); steps(g, 10);
+    expect(g.facing).toBe(1);
+    expect(g.player.x + g.player.w).toBeCloseTo(42 * TILE_SIZE);
+    holdAt0(g, 'dirt', 10);
+    const c = g.playerCenter();
+    const solidAt = (d: { body: { x: number; y: number; w: number; h: number } }) =>
+      overlapsSolid(g.env, d.body.x, d.body.y, d.body.w, d.body.h);
+    expect(g.act({ op: 'toss', slot: 0 })).toBe(true);
+    const d = g.drops.list[0];
+    expect(solidAt(d)).toBe(false);
+    for (let i = 0; i < 60; i++) { g.step(FIXED_DT); expect(solidAt(d)).toBe(false); }
+    expect(d.body.onGround).toBe(true);
+    expect(d.body.y + d.body.h).toBeCloseTo(FLOOR * TILE_SIZE);
+    expect(Math.abs(d.body.x + d.body.w / 2 - c.x)).toBeLessThan(TILE_SIZE);
+    expect(d.body.x + d.body.w).toBeLessThanOrEqual(42 * TILE_SIZE);
+    expect(ground(g, 'dirt')).toBe(10);
+
+    // 旁人（站在左邊一格）不必等倒數就撿得到
+    const g2 = arena();
+    for (let y = FLOOR - 6; y < FLOOR; y++) g2.world.setFg(42, y, T.STONE);
+    g2.setMoveX(1); steps(g2, 40); g2.setMoveX(0); steps(g2, 10);
+    const b = g2.addActor('b', hero(), { x: 40, y: FLOOR - 1 });
+    b.inventory.slots = b.inventory.slots.map((s) => (s && s.item === 'dirt' ? null : s));
+    holdAt0(g2, 'dirt', 10);
+    expect(g2.act({ op: 'toss', slot: 0 })).toBe(true);
+    steps(g2, 60); // 1 秒 < TOSS_OWNER_DELAY
+    expect(b.inventory.count('dirt')).toBe(10);
+    expect(g2.local.inventory.count('dirt')).toBe(0);
   });
 
   it('不合法：空格、n = 0、n 大於數量、死亡中 → false，地上不變', () => {

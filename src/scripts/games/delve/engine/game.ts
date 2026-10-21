@@ -18,7 +18,7 @@ import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, typ
 import { bossRebirth, potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult, type Station } from './crafting';
-import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats } from './physics';
+import { makeBody, stepPlayer, onPlatform, overlapsSolid, type Body, type MoveStats } from './physics';
 import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight, type LightRGB } from './lighting';
 import { skyColor, isNight as skyIsNight } from './sky';
 import {
@@ -37,7 +37,7 @@ import {
   BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
   knockbackScale, regenRate, rollCrit, type PlayerStats,
 } from './combat';
-import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type PhysEnv, type Picker } from './entities';
+import { DropList, ITEM_SIZE, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type PhysEnv, type Picker } from './entities';
 import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { liquidContact, liquidMedium, playerMedium } from './swim';
@@ -2362,7 +2362,7 @@ export class DelveGame {
 
   /**
    * 丟出背包第 slot 格（co-op B7；作用在 cur）：n 省略 = 整格。掉落物從玩家中心往 facing 偏 TOSS_OFFSET px 生成、
-   * 往前上方飛；丟的人 TOSS_OWNER_DELAY 秒內撿不回來，其他人立刻撿得到。帶詞條的裝備 / 時裝原樣丟出。
+   * 往前上方飛（貼著牆時改從正中央往上拋，免得卡進牆）；丟的人 TOSS_OWNER_DELAY 秒內撿不回來，其他人立刻撿得到。帶詞條的裝備 / 時裝原樣丟出。
    * 鎖定的裝備不能丟（blocked lockedtoss）；死亡、空格、n 不合法 → false。划船中也可以丟（只是背包動作）。
    */
   tossSlot(slot: number, n?: number): boolean {
@@ -2376,16 +2376,18 @@ export class DelveGame {
       this.block('use', 'lockedtoss', t.x, t.y);
       return false;
     }
-    const c = this.playerCenter(), f = this.facing;
-    const x = c.x + f * TOSS_OFFSET, y = c.y;
+    const c = this.playerCenter(), f = this.facing, y = c.y;
+    let x = c.x + f * TOSS_OFFSET, vx = f * TOSS_VX;
+    // 貼著牆：往前偏的生成點會卡進牆裡（掉落物推不出來、凍住），改從玩家正中央往上拋、落在腳邊
+    if (overlapsSolid(this.env, x - ITEM_SIZE / 2, y - ITEM_SIZE / 2, ITEM_SIZE, ITEM_SIZE)) { x = c.x; vx = 0; }
     const owner = { pid: this.cur.pid, delay: TOSS_OWNER_DELAY };
     if (st.gear || st.tint) {
       // 單件實例（count 1）：整格移到地上，gear 物件原樣交出
       this.inventory.slots[slot] = null;
-      this.drops.spawn(st.item, 1, x, y, f * TOSS_VX, -TOSS_VY, 0, st.gear, st.tint, owner);
+      this.drops.spawn(st.item, 1, x, y, vx, -TOSS_VY, 0, st.gear, st.tint, owner);
     } else {
       this.inventory.takeFromSlot(slot, k);
-      this.drops.spawn(st.item, k, x, y, f * TOSS_VX, -TOSS_VY, 0, undefined, undefined, owner);
+      this.drops.spawn(st.item, k, x, y, vx, -TOSS_VY, 0, undefined, undefined, owner);
     }
     this.emit({ type: 'toss', item: st.item, n: k, x, y });
     return true;
