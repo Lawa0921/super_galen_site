@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
-import { SAVE_VERSION, newGame } from './state';
+import { SAVE_VERSION, newGame, type GameState } from './state';
+import { STANDARD_LINEUP } from './party';
+import { socketable, validRuneFields } from './sockets';
+import type { RuneRef } from '../data/runes';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { mulberry32 } from './rng';
@@ -773,5 +776,100 @@ describe('save version 9 (plan 8d)', () => {
     expect(r).toEqual({ status: 'ok', state: g });
     expect(r).not.toHaveProperty('migrated');
     expect(st.map.has(BACKUP_KEY)).toBe(false);
+  });
+});
+
+describe('rune fields in the save (plan 8e Task 2)', () => {
+  /** A Noel at `level` on her default build, in a game the save can hold. */
+  const runeGame = (level = 35): GameState => {
+    const g = newGame(undefined, 0, STANDARD_LINEUP);
+    g.party.roster.noel = { ...g.party.roster.noel, level, tree: defaultTree('noel', level) };
+    return g;
+  };
+  /** Loads `g` after `edit` has its way with the raw save. */
+  const loadEdited = (g: GameState, edit: (raw: Record<string, any>) => void = () => {}) => {
+    const st = memoryStorage();
+    const raw = JSON.parse(JSON.stringify(g));
+    edit(raw);
+    st.setItem(SAVE_KEY, JSON.stringify(raw));
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(`load: ${r.status}`);
+    expect(validRuneFields(r.state as unknown as Record<string, unknown>)).toBe(true);
+    return r.state;
+  };
+  const S = (id: string, tier = 'magic') => ({ id, tier });
+
+  it('a version 9 save without rune fields loads and saves unchanged', () => {
+    const st = memoryStorage();
+    const g = newGame(undefined, 0, STANDARD_LINEUP);
+    expect(saveGame(st, g)).toBe(true);
+    const text = st.getItem(SAVE_KEY);
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.state.runes).toBeUndefined();
+    for (const id of CHARACTER_IDS) expect(r.state.party.roster[id].sockets).toBeUndefined();
+    expect(saveGame(st, r.state)).toBe(true);
+    expect(st.getItem(SAVE_KEY)).toBe(text);
+  });
+
+  it('rune fields survive a save and a load', () => {
+    const g: GameState = { ...runeGame(), runes: { 'spread@magic': 2, 'ignite@rare': 1, 'twin-cast@legendary': 1 } };
+    g.party.roster.noel.sockets = { 'fire-star': [{ id: 'flame', tier: 'epic' }, { id: 'focus', tier: 'common' }] };
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+
+  it('rune fields that break the rules are repaired, not refused', () => {
+    for (const k of ['nope@magic', 'spread@legendary']) expect(loadEdited(runeGame(), (raw) => { raw.runes = { [k]: 1, 'focus@rare': 2 }; }).runes).toEqual({ 'focus@rare': 2 });
+    for (const v of [1.5, -1, '1', null]) expect(loadEdited(runeGame(), (raw) => { raw.runes = { 'spread@magic': v, 'focus@rare': 2 }; }).runes).toEqual({ 'focus@rare': 2 });
+    expect(loadEdited(runeGame(), (raw) => { raw.runes = 5; })).not.toHaveProperty('runes');
+    expect(loadEdited(runeGame(), (raw) => { raw.party.roster.noel.sockets = 'x'; }).party.roster.noel).not.toHaveProperty('sockets');
+    // A skill she does not know, or a passive: the key goes and its runes go to the bag.
+    const lost = loadEdited(runeGame(), (raw) => {
+      raw.party.roster.noel.sockets = { moonlight: [S('spread')], stealth: [S('focus'), null], 'fire-star': [S('ignite')] };
+    });
+    expect(lost.party.roster.noel.sockets).toEqual({ 'fire-star': [S('ignite')] });
+    expect(lost.runes).toEqual({ 'spread@magic': 1, 'focus@magic': 1 });
+    // Lv10 has one slot: the second is cleared and its rune bagged.
+    const lv10 = loadEdited(runeGame(10), (raw) => { raw.runes = { 'focus@magic': 1 }; raw.party.roster.noel.sockets = { 'fire-star': [S('ignite'), S('focus')] }; });
+    expect(lv10.party.roster.noel.sockets).toEqual({ 'fire-star': [S('ignite')] });
+    expect(lv10.runes).toEqual({ 'focus@magic': 2 });
+    // The same rune twice, or a second of one group: the later one goes.
+    const twice = loadEdited(runeGame(), (raw) => { raw.party.roster.noel.sockets = { 'fire-star': [S('spread'), S('ignite'), S('spread', 'rare')] }; });
+    expect(twice.party.roster.noel.sockets).toEqual({ 'fire-star': [S('spread'), S('ignite')] });
+    expect(twice.runes).toEqual({ 'spread@rare': 1 });
+    const group = loadEdited(runeGame(), (raw) => { raw.party.roster.noel.sockets = { 'fire-star': [S('focus'), S('spread')] }; });
+    expect(group.party.roster.noel.sockets).toEqual({ 'fire-star': [S('focus')] });
+    expect(group.runes).toEqual({ 'spread@magic': 1 });
+    // Four 常駐 hold 120%: the one on the skill learned last goes, whatever order the save lists them in.
+    const order = socketable(runeGame().party.roster.noel).slice(0, 4);
+    const four = loadEdited(runeGame(), (raw) => {
+      raw.party.roster.noel.sockets = Object.fromEntries([...order].reverse().map((k) => [k, [S('lasting', 'common')]]));
+    });
+    expect(Object.keys(four.party.roster.noel.sockets!).sort()).toEqual(order.slice(0, 3).sort());
+    expect(four.runes).toEqual({ 'lasting@common': 1 });
+    // More than 99 of one rune, bag and sockets together: the bag gives way.
+    const full = loadEdited(runeGame(), (raw) => { raw.runes = { 'spread@magic': 99 }; raw.party.roster.noel.sockets = { 'fire-star': [S('spread')] }; });
+    expect(full.runes).toEqual({ 'spread@magic': 98 });
+    expect(full.party.roster.noel.sockets).toEqual({ 'fire-star': [S('spread')] });
+    // A cell that is no rune is cleared, and the empty end trimmed; an array left empty goes with its key.
+    const junk = loadEdited(runeGame(), (raw) => {
+      raw.party.roster.noel.sockets = { 'fire-star': [S('spread'), 'x'], 'ice-star': ['x', { id: 'spread', tier: 'magic', extra: 1 }] };
+    });
+    expect(junk.party.roster.noel.sockets).toEqual({ 'fire-star': [S('spread')] });
+    expect(junk).not.toHaveProperty('runes');
+  });
+
+  it('a clean rune field is left byte for byte', () => {
+    const g: GameState = { ...runeGame(), runes: { 'spread@magic': 3, 'focus@rare': 0 } };
+    g.party.roster.noel.sockets = { 'fire-star': [null, S('flame', 'common') as RuneRef], 'ice-star': [] };
+    g.party.roster.rin.sockets = {};
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    const text = st.getItem(SAVE_KEY);
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(JSON.stringify(r.state)).toBe(text);
   });
 });

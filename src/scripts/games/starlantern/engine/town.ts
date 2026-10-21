@@ -4,6 +4,7 @@ import { MATERIALS } from '../data/materials';
 import { addGear, BAG_SIZE, sortBag, type AutoJunk } from './loot/bag';
 import { itemSlot, sellPrice } from './loot/item';
 import { resetBuild, newTree } from './progression';
+import { returnOrphanRunes } from './sockets';
 import { hasPerk } from './story/fragments';
 import { PERKS } from '../data/story/fragments';
 import { defaultSlotFor, slotsFor, statsOf } from './party';
@@ -238,7 +239,8 @@ export function respec(s: GameState, memberId: CharacterId): TownResult {
   n.party.roster[memberId] = resetBuild(n.party.roster[memberId]);
   delete n.party.roster[memberId].freeRespec;
   clampToMax(n.party.roster[memberId]);
-  return { ok: true, state: n };
+  // The runes of skills the reset forgot go back to the bag (plan 8e ruling 15).
+  return { ok: true, state: returnOrphanRunes(n, memberId) };
 }
 
 /** Use a recovery item in the labyrinth: ally items on the living, deadAlly items on the fallen. */

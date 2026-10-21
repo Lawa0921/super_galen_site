@@ -1,5 +1,6 @@
 import type { AilmentId } from './ailments';
 import type { DeviceKind } from './mech';
+import type { RuneRef } from '../data/runes';
 
 export type Element = 'phys' | 'fire' | 'ice' | 'thunder';
 export type StatKey = 'hp' | 'tp' | 'atk' | 'def' | 'mag' | 'res' | 'spd';
@@ -221,6 +222,8 @@ export interface Member {
   oath?: true;
   /** One free respec at the inn, given by the tree rework (plan 8d, save version 9); the reset uses it up. */
   freeRespec?: true;
+  /** Runes socketed per skill id, slot by slot (plan 8e; engine/sockets.ts). Absent: none. */
+  sockets?: Record<string, (RuneRef | null)[]>;
 }
 export interface Party {
   /** 3x3 placement, cells 0-2 front, 3-5 middle, 6-8 back (see engine/formation.ts). */

@@ -11,6 +11,7 @@ import { MAX_ILVL, MAX_REACHED } from './levels';
 import { MAX_LEVEL, SLOTS, slotsFor } from './party';
 import { defaultTree, heroTree, memoriesOf, validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
+import { repairRuneFields } from './sockets';
 import { isSceneId } from '../data/story/scenes';
 import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
@@ -212,6 +213,8 @@ export function loadGame(storage: SaveStorage): LoadResult {
   if (migrated) { keepOnce(storage, V8_KEY, raw); migrate8to9(data); }
   if (data.version !== SAVE_VERSION) { backup(storage, raw); return { status: 'version' }; }
   dropUnknownBanters(data);
+  // Rune fields that break the rules are put right, never a corrupt save (plan 8e ruling 19); isValid leaves them alone.
+  repairRuneFields(data);
   if (!isValid(data)) { backup(storage, raw); return { status: 'corrupt' }; }
   const state = data as unknown as GameState;
   // The game never writes a codex id twice; a hand-edited save that does is tidied rather than refused.

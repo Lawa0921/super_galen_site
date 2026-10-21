@@ -30,7 +30,7 @@ import { BOSS_LEGENDARY, chestHasGear, GEAR_CHANCE, RARE_MATERIALS, rollBossGear
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy, unequip } from './town';
-import { memoriesOf } from './progression';
+import { defaultTree, memoriesOf } from './progression';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
 import { ACT_DEPTHS, FINALE_BOSS, FINALE_DEPTH, type SceneId } from '../data/story/scenes';
@@ -1574,6 +1574,49 @@ describe('changing a variant side (plan 8d Task 1)', () => {
       expect(full.swapVariant('noel', 'test-star-b')).toEqual({ ok: true });
       expect(full.notice).toBe('save-failed');
     } finally { restore(); }
+  });
+});
+
+describe('moving runes (plan 8e Task 2)', () => {
+  it('runes move in town and the field, never in battle', () => {
+    const spread = { id: 'spread', tier: 'magic' } as const;
+    const lv20 = (g: Game) => {
+      g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 20, tree: defaultTree('noel', 20) };
+      g.state.runes = { 'spread@magic': 1 };
+      return g;
+    };
+    const storage = memoryStorage();
+    const g = lv20(new Game(calm(), storage, undefined, 0, HERO_LINEUP));
+    g.phase = 'battle';
+    expect(g.canSocketRune('noel', 'fire-star', 0, spread)).toBe('invalid');
+    expect(g.socketRune('noel', 'fire-star', 0, spread)).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.unsocketRune('noel', 'fire-star', 0)).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.state.runes).toEqual({ 'spread@magic': 1 });
+    g.phase = 'town';
+    expect(g.canSocketRune('noel', 'fire-star', 2, spread)).toBe('slot');
+    expect(g.canSocketRune('noel', 'fire-star', 0, spread)).toBeNull();
+    expect(g.state.runes).toEqual({ 'spread@magic': 1 });
+    expect(storage.map.has(SAVE_KEY)).toBe(false);
+    expect(g.socketRune('noel', 'fire-star', 0, { id: 'focus', tier: 'magic' })).toEqual({ ok: false, reason: 'none' });
+    expect(storage.map.has(SAVE_KEY)).toBe(false);
+    expect(g.socketRune('noel', 'fire-star', 0, spread)).toEqual({ ok: true });
+    expect(g.notice).toBeNull();
+    expect(Game.boot(calm(), storage).state.party.roster.noel.sockets).toEqual({ 'fire-star': [spread] });
+    expect(g.unsocketRune('noel', 'fire-star', 0)).toEqual({ ok: true });
+    const back = Game.boot(calm(), storage).state;
+    expect([back.runes, back.party.roster.noel.sockets]).toEqual([{ 'spread@magic': 1 }, undefined]);
+    // In the labyrinth the move counts at once and waits for the next town save.
+    const fieldStorage = memoryStorage();
+    const field = inMap(1, calm(), fieldStorage);
+    lv20(field);
+    const saved = fieldStorage.map.get(SAVE_KEY);
+    expect(field.socketRune('noel', 'fire-star', 0, spread)).toEqual({ ok: true });
+    expect(field.state.party.roster.noel.sockets).toEqual({ 'fire-star': [spread] });
+    expect([field.notice, fieldStorage.map.get(SAVE_KEY)]).toEqual([null, saved]);
+    // A failed town save says so and keeps the move.
+    const full = lv20(new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP));
+    expect(full.socketRune('noel', 'fire-star', 0, spread)).toEqual({ ok: true });
+    expect([full.notice, full.state.runes]).toEqual(['save-failed', {}]);
   });
 });
 

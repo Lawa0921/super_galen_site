@@ -35,6 +35,8 @@ import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeResult, RerollOpts } from './forge/cost';
 import { dismantle, enhance, fuse, reroll } from './forge/forge';
 import { castField, packEquip, packUnequip } from './field';
+import { socketRune, unsocketRune, type SocketFail } from './sockets';
+import type { RuneRef } from '../data/runes';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
 
@@ -758,6 +760,36 @@ export class Game {
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
+    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return { ok: true };
+  }
+
+  /** Why `socketRune(...)` would be turned down now, or null when it would go in; changes nothing. */
+  canSocketRune(id: CharacterId, skill: string, slot: number, r: RuneRef): SocketFail | null {
+    if (this.phase !== 'town' && this.phase !== 'map') return 'invalid';
+    const out = socketRune(this.state, id, skill, slot, r);
+    return out.ok ? null : out.reason;
+  }
+
+  /**
+   * A rune from the bag into a slot of a recruited member's skill (plan 8e; the rules: sockets `socketRune`), what the slot
+   * held back to the bag: free, in town and the labyrinth's field, never in battle. Saved like `swapVariant`: at once in
+   * town, at the next town save in the labyrinth; only a failed save leaves a notice.
+   */
+  socketRune(id: CharacterId, skill: string, slot: number, r: RuneRef): { ok: true } | { ok: false; reason: SocketFail } {
+    if (this.phase !== 'town' && this.phase !== 'map') return { ok: false, reason: 'invalid' };
+    return this.runesMoved(socketRune(this.state, id, skill, slot, r));
+  }
+
+  /** The rune in a slot back to the bag (the rules: sockets `unsocketRune`), when and saved as `socketRune`. */
+  unsocketRune(id: CharacterId, skill: string, slot: number): { ok: true } | { ok: false; reason: 'invalid' | 'empty' } {
+    if (this.phase !== 'town' && this.phase !== 'map') return { ok: false, reason: 'invalid' };
+    return this.runesMoved(unsocketRune(this.state, id, skill, slot));
+  }
+
+  private runesMoved<R extends string>(r: { ok: true; state: GameState } | { ok: false; reason: R }): { ok: true } | { ok: false; reason: R } {
+    if (!r.ok) return r;
+    this.state = r.state;
     if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
   }

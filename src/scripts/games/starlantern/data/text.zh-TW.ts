@@ -20,6 +20,9 @@ const STATUS_LINE: Record<AilmentShown, string> = {
   poison: '中毒了', sleep: '睡著了', burn: '燒起來了', freeze: '被凍住了', chill: '的動作變慢了', shock: '觸電了', bleed: '開始流血了',
 };
 const AILMENT_NAME: Record<AilmentShown, string> = { poison: '中毒', sleep: '睡眠', burn: '灼燒', freeze: '凍結', chill: '冰緩', shock: '感電', bleed: '流血' };
+/** A rune refused or greyed for one already on the skill: the same one, or one of its group (T.rune.why and T.rune.fail). */
+const RUNE_SAME = (name: string) => `同一招不能裝兩個${name}`;
+const RUNE_GROUP = (name: string) => `已有同類符文：${name}`;
 const SLOT: Record<Slot, string> = {
   weapon: '武器', offhand: '副手', head: '頭部', body: '身體', hands: '手部', feet: '腳部', neck: '項鍊', ring1: '戒指 1', ring2: '戒指 2',
 };
@@ -751,12 +754,20 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       and: '＋',
       /** After an element an element rune can give (spec §6.2): 「需要：火（可由屬性符文提供）＋傷害」. */
       fromRune: '（可由屬性符文提供）',
-      group: (name: string) => `已有同類符文：${name}`,
-      same: (name: string) => `同一招不能裝兩個${name}`,
+      group: RUNE_GROUP,
+      same: RUNE_SAME,
       revive: '不能用在復活',
       scatter: '隨機目標的招不能改形狀',
       pure: '只能用在只有增益的招',
       noHeal: '需要：回復效果',
+    },
+    /** Why a rune cannot go into a socket (engine/sockets.ts SocketFail); `reserve` takes RESERVE_CAP. */
+    fail: {
+      none: '袋子裡沒有這個符文',
+      slot: '這一招還沒有這個插槽',
+      same: RUNE_SAME,
+      group: RUNE_GROUP,
+      reserve: (cap: number) => `常駐保留的 TP 上限已經到 ${cap}%`,
     },
   },
   clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card

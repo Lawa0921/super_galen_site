@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { newGame, START_ITEMS } from './state';
+import { newGame, START_ITEMS, type GameState } from './state';
 import { buy, equip, innCost, isUnlocked, priceOf, junkTotals, respec, respecCost, respecPrice, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
-import { statsOf, LEGACY_LINEUP } from './party';
+import { statsOf, LEGACY_LINEUP, STANDARD_LINEUP } from './party';
+import { loadGame, saveGame } from './save';
 import { defaultTalents, defaultTree, newTree, raiseTalent, skillPointsLeft, talentPointsLeft, validBuild } from './progression';
 import type { Member } from './types';
-import { plainItem } from './testing';
+import { memoryStorage, plainItem } from './testing';
 import { BAG_SIZE, mintUid } from './loot/bag';
 import { sellPrice } from './loot/item';
 import { EQUIPMENT } from '../data/equipment';
@@ -326,6 +327,27 @@ describe('respec', () => {
     expect(after.equip).toEqual(m.equip);
     expect([after.level, after.exp]).toEqual([m.level, m.exp]);
     expect(validBuild('scarlet', after.level, after.tree, after.talents)).toBe(true);
+  });
+  it('a respec sends the runes of forgotten skills back to the bag', () => {
+    const s = newGame(undefined, 0, STANDARD_LINEUP);
+    s.party.roster.noel = { ...s.party.roster.noel, level: 35, tree: defaultTree('noel', 35) };
+    s.gold = respecCost(35);
+    s.runes = { 'spread@magic': 1 };
+    const spread = { id: 'spread', tier: 'magic' } as const, flame = { id: 'flame', tier: 'rare' } as const, focus = { id: 'focus', tier: 'common' } as const;
+    // ice-star is a node she paid for; fire-star is the free first node, still known after the reset.
+    expect(newTree('noel')).toEqual({ 'fire-star': 1 });
+    s.party.roster.noel.sockets = { 'fire-star': [flame], 'ice-star': [focus, spread] };
+    const total = (g: GameState) => Object.values(g.runes ?? {}).reduce((a, n) => a + n, 0)
+      + Object.values(g.party.roster).reduce((a, m) => a + Object.values(m.sockets ?? {}).flat().filter((x) => x !== null).length, 0);
+    const r = respec(s, 'noel');
+    if (!r.ok) throw new Error('respec failed');
+    expect(r.state.party.roster.noel.sockets).toEqual({ 'fire-star': [flame] });
+    expect(r.state.runes).toEqual({ 'spread@magic': 2, 'focus@common': 1 });
+    expect(total(r.state)).toBe(total(s));
+    expect(s.party.roster.noel.sockets).toHaveProperty('ice-star');
+    const st = memoryStorage();
+    expect(saveGame(st, r.state)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: r.state });
   });
 });
 

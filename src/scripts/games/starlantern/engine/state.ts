@@ -68,6 +68,8 @@ export interface GameState {
    */
   forgeSalt: number;
   story: StoryState;
+  /** The rune bag (plan 8e): unsocketed runes by key, 「spread@magic」 (data/runes runeKey). Absent: empty. */
+  runes?: Record<string, number>;
 }
 
 /**
