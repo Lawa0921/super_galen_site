@@ -50,13 +50,15 @@ export interface Run {
   dropped: Record<number, CharacterId[]>;
   /** Depths where a memory scene has already played this run; later pieces there wait in the handbook. */
   played: number[];
+  /** Rune draws taken in battle so far (plan 8f); `runeRng` seeds each from the run seed, RUNE_SALT and this count. */
+  runeDraws: number;
 }
 
 export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number, rescues: Record<number, Meetable> = {}): Run {
   return {
     seed, region, condition, startDepth, floors: new Map(), opened: new Set(), explored: {},
     loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, waiting: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(), rescues: { ...rescues },
-    glimmers: {}, memoryDraws: 0, dropped: {}, played: [],
+    glimmers: {}, memoryDraws: 0, dropped: {}, played: [], runeDraws: 0,
   };
 }
 

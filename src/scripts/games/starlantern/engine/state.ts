@@ -70,6 +70,11 @@ export interface GameState {
   story: StoryState;
   /** The rune bag (plan 8e): unsocketed runes by key, 「spread@magic」 (data/runes runeKey). Absent: empty. */
   runes?: Record<string, number>;
+  /**
+   * Set by the first boss won in the labyrinth (plan 8f ruling 5): from then on runes drop and Orik sells them. Absent
+   * on an old save past its first boss too; its next boss sets it.
+   */
+  runesOpen?: true;
 }
 
 /**

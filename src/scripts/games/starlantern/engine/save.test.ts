@@ -892,3 +892,25 @@ describe('rune fields in the save (plan 8e Task 2)', () => {
     expect(JSON.stringify(r.state)).toBe(text);
   });
 });
+
+describe('the runes-open flag in the save (plan 8f Task 1)', () => {
+  it('runesOpen survives a save and a load', () => {
+    const g: GameState = { ...newGame(undefined, 0, STANDARD_LINEUP), runesOpen: true, runes: { 'spread@magic': 1 } };
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+
+  it('a junk runesOpen is dropped, the save loads', () => {
+    for (const v of [false, 1, 'yes', null]) {
+      const st = memoryStorage();
+      const raw = JSON.parse(JSON.stringify(newGame(undefined, 0, STANDARD_LINEUP)));
+      raw.runesOpen = v;
+      st.setItem(SAVE_KEY, JSON.stringify(raw));
+      const r = loadGame(st);
+      if (r.status !== 'ok') throw new Error(`load: ${r.status}`);
+      expect(r.state).not.toHaveProperty('runesOpen');
+      expect(validRuneFields(r.state as unknown as Record<string, unknown>)).toBe(true);
+    }
+  });
+});

@@ -21,6 +21,18 @@ export const socketable = (m: Member): string[] => learnedSkills(m).filter((id) 
 /** How many of this rune are in the bag (not socketed). */
 export const bagCount = (s: Pick<GameState, 'runes'>, r: RuneRef): number => s.runes?.[runeKey(r)] ?? 0;
 
+/**
+ * How many of this rune the player owns (plan 8f ruling 13): the bag and every member's sockets, on the field or not. The
+ * number RUNE_STACK caps, and the 「持有」 the screens show; only the bag's can be sold or fused.
+ */
+export function ownedCount(s: Pick<GameState, 'runes' | 'party'>, r: RuneRef): number {
+  let n = bagCount(s, r);
+  for (const m of Object.values(s.party.roster)) {
+    for (const cells of Object.values(m.sockets ?? {})) for (const c of cells) if (c && c.id === r.id && c.tier === r.tier) n++;
+  }
+  return n;
+}
+
 /** 常駐's reserve of one rune, in percent of max TP (data/runes RUNE_NUMBERS). */
 const reserveOf = (r: RuneRef | null): number => (r?.id === 'lasting' ? RUNES.lasting.mod(r.tier).lasting!.reservePct : 0);
 
@@ -161,11 +173,13 @@ function totals(d: Record<string, unknown>, members: Member[]): Map<string, numb
 }
 
 /**
- * Whether a save's rune fields keep the rules: the bag (absent, or known keys with whole counts), each readable member's
- * sockets (absent, or learned active skills with at most socketCount slots of runes, no rune twice, one of each exclusive
- * group, 常駐 within RESERVE_CAP), and at most RUNE_STACK of any one rune, bag and sockets together.
+ * Whether a save's rune fields keep the rules: the runes-open flag (absent or true, plan 8f), the bag (absent, or known
+ * keys with whole counts), each readable member's sockets (absent, or learned active skills with at most socketCount
+ * slots of runes, no rune twice, one of each exclusive group, 常駐 within RESERVE_CAP), and at most RUNE_STACK of any one
+ * rune, bag and sockets together.
  */
 export function validRuneFields(d: Record<string, unknown>): boolean {
+  if (d.runesOpen !== undefined && d.runesOpen !== true) return false;
   if (d.runes !== undefined && !(isObj(d.runes) && Object.entries(d.runes).every(([k, n]) => parseRuneKey(k) !== null && isCount(n)))) return false;
   const members = readableMembers(d);
   if (!members.every(validSockets)) return false;
@@ -174,12 +188,13 @@ export function validRuneFields(d: Record<string, unknown>): boolean {
 
 /**
  * Brings a save's rune fields within the rules in place (plan 8e ruling 19: repaired, never corrupt), so that
- * `validRuneFields(d)` holds after; fields that keep the rules are not touched at all. A bag or sockets field that is no
- * object goes; bag keys that are unknown or not whole counts go; a slot that is no rune is emptied; a rune in the wrong
+ * `validRuneFields(d)` holds after; fields that keep the rules are not touched at all. A runes-open flag that is not
+ * `true` goes (plan 8f). A bag or sockets field that is no object goes; bag keys that are unknown or not whole counts go; a slot that is no rune is emptied; a rune in the wrong
  * place (a skill she does not know or a passive, past her slots, a second of its id or group, a 常駐 past the cap in
  * learned order) goes back to the bag; past RUNE_STACK of one rune, the bag gives way.
  */
 export function repairRuneFields(d: Record<string, unknown>): void {
+  if (d.runesOpen !== undefined && d.runesOpen !== true) delete d.runesOpen;
   if (d.runes !== undefined && !isObj(d.runes)) delete d.runes;
   if (isObj(d.runes)) for (const [k, n] of Object.entries(d.runes)) if (parseRuneKey(k) === null || !isCount(n)) delete d.runes[k];
   const bag = (): Record<string, number> => (isObj(d.runes) ? d.runes : (d.runes = {})) as Record<string, number>;

@@ -159,3 +159,21 @@ describe('the TP a lasting rune holds back (plan 8e Task 7)', () => {
     expect(reservedTpPct({ sockets: { ward: [spread] } })).toBe(0);
   });
 });
+
+describe('the runes-open flag (plan 8f Task 1)', () => {
+  it('runesOpen is true or absent', () => {
+    const base = JSON.parse(JSON.stringify(noelAt(10, {}))) as Record<string, unknown>;
+    expect(validRuneFields({ ...base })).toBe(true);
+    const open = { ...base, runesOpen: true };
+    expect(validRuneFields(open)).toBe(true);
+    repairRuneFields(open);
+    expect(open.runesOpen).toBe(true);
+    for (const v of [false, 1, 'yes', null, {}]) {
+      const d = { ...base, runesOpen: v };
+      expect(validRuneFields(d)).toBe(false);
+      repairRuneFields(d);
+      expect(d).not.toHaveProperty('runesOpen');
+      expect(validRuneFields(d)).toBe(true);
+    }
+  });
+});

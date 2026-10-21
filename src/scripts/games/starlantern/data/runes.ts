@@ -23,7 +23,7 @@ export type Tag = 'damage' | 'heal' | 'buff' | 'debuff' | 'ailment' | 'device' |
 export const TAGS: readonly Tag[] = ['damage', 'heal', 'buff', 'debuff', 'ailment', 'device', 'single', 'all', 'self', 'multi',
   'melee', 'ranged', 'attack', 'spell', 'phys', 'fire', 'ice', 'thunder', 'tp'];
 
-const RUNE_IDS = [
+export const RUNE_IDS = [
   'spread', 'focus', 'bounce', 'multistrike', 'heavy', 'flame', 'rime', 'thunderclap',
   'ignite', 'jolt', 'tear', 'frostbite', 'venom', 'aftermath', 'on-crit', 'on-kill', 'on-struck',
   'regain', 'thrift', 'charge', 'drain', 'extend', 'share', 'lasting', 'dispel', 'armor-break',
