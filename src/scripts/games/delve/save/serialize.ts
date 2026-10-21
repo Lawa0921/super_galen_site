@@ -48,7 +48,8 @@
 //   之後依 header.chunks 順序，每個 chunk：fg CHUNK*CHUNK bytes + wall CHUNK*CHUNK bytes（越界格補 0）
 // 世界檔 format 10（co-op，save/worldSave.ts）用同一個容器（encodeContainer / readContainer / readChunks）。
 import { DelveGame, BOSS_SUMMON_ITEM, MAX_BREATH, BURN_TIME, HONEY_TIME } from '../engine/game';
-import type { World } from '../engine/world';
+import type { World, ChunkPayload } from '../engine/world';
+import { chunkOfX } from '../engine/coords';
 import { Inventory, cloneStack, type InventoryJSON, type Stack } from '../engine/inventory';
 import { gearSlot, validGear, type Gear } from '../engine/gear';
 import type { CodexJSON } from '../engine/codex';
@@ -210,7 +211,7 @@ export interface EnvSave {
   frozen: number[];
 }
 export interface ChestSave { i: number; slots: (Stack | null)[]; }
-export interface ChunkPayload { fg: Uint8Array; wall: Uint8Array; }
+export type { ChunkPayload } from '../engine/world';
 export interface SaveData { header: SaveHeader; chunks: Map<number, ChunkPayload>; }
 
 export class SaveFormatError extends Error {
@@ -234,49 +235,25 @@ export interface RestoreOptions {
 // ── chunk 讀寫 ─────────────────────────────────────────────
 export function readChunk(world: World, ci: number): ChunkPayload {
   const { cx, cy } = world.chunkCoords(ci);
-  const fg = new Uint8Array(CHUNK * CHUNK), wall = new Uint8Array(CHUNK * CHUNK);
-  for (let ly = 0; ly < CHUNK; ly++) {
-    const y = cy * CHUNK + ly;
-    if (y >= world.height) break;
-    for (let lx = 0; lx < CHUNK; lx++) {
-      const x = cx * CHUNK + lx;
-      if (x >= world.width) break;
-      const wi = y * world.width + x;
-      fg[ly * CHUNK + lx] = world.fg[wi];
-      wall[ly * CHUNK + lx] = world.wall[wi];
-    }
-  }
-  return { fg, wall };
+  return world.readChunkPayload(cx, cy);
 }
 
 /** 直接覆寫 chunk 內容並標為已修改（不經 setFg，避免逐格 touch）。 */
 export function writeChunk(world: World, ci: number, data: ChunkPayload): void {
   const { cx, cy } = world.chunkCoords(ci);
-  for (let ly = 0; ly < CHUNK; ly++) {
-    const y = cy * CHUNK + ly;
-    if (y >= world.height) break;
-    for (let lx = 0; lx < CHUNK; lx++) {
-      const x = cx * CHUNK + lx;
-      if (x >= world.width) break;
-      const wi = y * world.width + x;
-      world.fg[wi] = data.fg[ly * CHUNK + lx];
-      world.wall[wi] = data.wall[ly * CHUNK + lx];
-    }
-  }
-  world.modifiedChunks.add(ci);
+  world.writeChunkPayload(cx, cy, data);
 }
 
 /** 兩個同尺寸世界中內容（fg 或 wall）不同的 chunk index，已排序。 */
 export function diffChunks(a: World, b: World): number[] {
   if (a.width !== b.width || a.height !== b.height) throw new Error('diffChunks: world size mismatch');
-  const out = new Set<number>();
-  for (let i = 0; i < a.fg.length; i++) {
-    if (a.fg[i] !== b.fg[i] || a.wall[i] !== b.wall[i]) {
-      const x = i % a.width, y = (i - x) / a.width;
-      out.add(a.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK)));
-    }
-  }
-  return [...out].sort((p, q) => p - q);
+  const out: number[] = [];
+  const same = (p: Uint8Array, q: Uint8Array): boolean => { for (let i = 0; i < p.length; i++) if (p[i] !== q[i]) return false; return true; };
+  a.forEachChunk((cx, cy) => {
+    const pa = a.readChunkPayload(cx, cy), pb = b.readChunkPayload(cx, cy);
+    if (!same(pa.fg, pb.fg) || !same(pa.wall, pb.wall)) out.push(a.chunkIndex(cx, cy));
+  });
+  return out.sort((p, q) => p - q);
 }
 
 // ── 液體 RLE ─────────────────────────────────────────────
@@ -320,16 +297,7 @@ function readLiquids(world: World, chunks: readonly number[]): { amount: Uint8Ar
   const K = CHUNK * CHUNK, amount = new Uint8Array(chunks.length * K), type = new Uint8Array(chunks.length * K);
   chunks.forEach((ci, k) => {
     const { cx, cy } = world.chunkCoords(ci);
-    for (let ly = 0; ly < CHUNK; ly++) {
-      const y = cy * CHUNK + ly;
-      if (y >= world.height) break;
-      for (let lx = 0; lx < CHUNK; lx++) {
-        const x = cx * CHUNK + lx;
-        if (x >= world.width) break;
-        const wi = y * world.width + x, o = k * K + ly * CHUNK + lx;
-        amount[o] = world.liquid[wi]; type[o] = world.liquid[wi] ? world.liquidType[wi] : 0;
-      }
-    }
+    world.readChunkLiquids(cx, cy, amount, type, k * K);
   });
   return { amount, type };
 }
@@ -384,11 +352,17 @@ export function validHalves(v: unknown): number[] | undefined {
   if (!Array.isArray(v)) return undefined;
   return v.filter((d) => Number.isInteger(d) && d >= 0).slice(0, 2_000_000);
 }
-function encodeFrozen(F: Uint8Array): number[] {
+/** 升冪 tile 鍵 → 差分（第一個是絕對值，之後是與前一個的差） */
+function encodeDeltas(keys: readonly number[]): number[] {
   const out: number[] = [];
   let last = 0;
-  for (let i = 0; i < F.length; i++) if (F[i]) { out.push(i - last); last = i; }
+  for (const i of keys) { out.push(i - last); last = i; }
   return out;
+}
+/** tile 鍵所在的 chunk 鍵 */
+function chunkOfKey(w: World, i: number): number {
+  const { x, y } = w.tileXY(i);
+  return w.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK));
 }
 export function validFishLog(v: unknown): Partial<Record<ItemId, number>> {
   const fishLog: Partial<Record<ItemId, number>> = {};
@@ -440,8 +414,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
   const mod = w.modifiedChunks;
   const chests: ChestSave[] = [];
   for (const [i, slots] of w.chests) {
-    const x = i % w.width, y = (i - x) / w.width;
-    if (!mod.has(w.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK)))) continue;
+    if (!mod.has(chunkOfKey(w, i))) continue;
     chests.push({ i, slots: slots.map((st) => (st ? cloneStack(st) : null)) });
   }
   chests.sort((a, b) => a.i - b.i);
@@ -494,13 +467,13 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
         return o;
       }),
       bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
-      env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
+      env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeDeltas(w.flaggedTiles('frozen')) },
       extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce], codex: game.codex.toJSON(), rng: game.rngState() },
       appearance: { ...game.appearance },
       cformat: CHARACTER_FORMAT,
       vanity: game.vanity.toJSON(),
       settle: game.settle.toJSON(),
-      halves: encodeFrozen(w.half),
+      halves: encodeDeltas(w.flaggedTiles('half')),
       levels: game.levels.toJSON(),
       folk: { world: game.folk.toJSON(), quests: game.quests.toJSON(), buffs: { ...game.buffs }, scoutMarks: game.scoutMarks.map((m) => ({ ...m })), perkDays: { ...game.perkDays }, scouted: [...game.scouted] },
     },
@@ -752,22 +725,19 @@ export function decodeSave(bytes: Uint8Array): SaveData {
 /** 被修改 chunk 裡：丟掉世界生成的箱子，依 tile 重建空箱，再套用存檔內容。 */
 function restoreChests(w: World, chunks: readonly number[], saved: readonly ChestSave[]): void {
   const mod = new Set(chunks);
-  const chunkOf = (i: number): number => {
-    const x = i % w.width, y = (i - x) / w.width;
-    return w.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK));
-  };
-  for (const i of [...w.chests.keys()]) if (mod.has(chunkOf(i))) w.chests.delete(i);
+  for (const i of [...w.chests.keys()]) if (mod.has(chunkOfKey(w, i))) w.chests.delete(i);
   for (const ci of mod) {
     const { cx, cy } = w.chunkCoords(ci);
+    // 世界外的格讀到 STONE（不是箱子）→ 不必另夾左右邊界
     for (let y = cy * CHUNK; y < Math.min(w.height, (cy + 1) * CHUNK); y++) {
-      for (let x = cx * CHUNK; x < Math.min(w.width, (cx + 1) * CHUNK); x++) {
-        const i = y * w.width + x;
-        if (isChestTile(w.fg[i])) w.chests.set(i, new Array<Stack | null>(CHEST_SLOTS).fill(null));
+      for (let x = cx * CHUNK; x < (cx + 1) * CHUNK; x++) {
+        if (isChestTile(w.getFg(x, y))) w.chests.set(w.idx(x, y), new Array<Stack | null>(CHEST_SLOTS).fill(null));
       }
     }
   }
   for (const c of saved) {
-    if (c.i >= w.fg.length || !isChestTile(w.fg[c.i]) || !mod.has(chunkOf(c.i))) continue;
+    const { x, y } = w.tileXY(c.i);
+    if (!isChestTile(w.getFg(x, y)) || !mod.has(chunkOfKey(w, c.i))) continue;
     const slots = new Array<Stack | null>(CHEST_SLOTS).fill(null);
     c.slots.forEach((st, k) => { slots[k] = st ? cloneStack(st) : null; });
     w.chests.set(c.i, slots);
@@ -895,14 +865,13 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     h.liquids.chunks.forEach((ci, k) => {
       if (ci >= total) return;
       const { cx, cy } = w.chunkCoords(ci);
+      // 世界外的格 setLiquidRaw 會丟掉
       for (let ly = 0; ly < CHUNK; ly++) {
         const y = cy * CHUNK + ly;
         if (y >= w.height) break;
         for (let lx = 0; lx < CHUNK; lx++) {
-          const x = cx * CHUNK + lx;
-          if (x >= w.width) break;
-          const wi = y * w.width + x, o = k * K + ly * CHUNK + lx;
-          w.liquid[wi] = lq.amount[o]; w.liquidType[wi] = lq.type[o];
+          const o = k * K + ly * CHUNK + lx;
+          w.setLiquidRaw(cx * CHUNK + lx, y, lq.amount[o], lq.type[o]);
         }
       }
       w.liquidModified.add(ci);
@@ -911,9 +880,8 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   } else {
     for (const ci of h.chunks) {
       const { cx, cy } = w.chunkCoords(ci);
-      for (let y = cy * CHUNK; y < Math.min(w.height, (cy + 1) * CHUNK); y++) for (let x = cx * CHUNK; x < Math.min(w.width, (cx + 1) * CHUNK); x++) {
-        const wi = y * w.width + x;
-        if (w.liquid[wi] && w.isSolid(x, y)) { w.liquid[wi] = 0; w.liquidType[wi] = 0; }
+      for (let y = cy * CHUNK; y < Math.min(w.height, (cy + 1) * CHUNK); y++) for (let x = cx * CHUNK; x < (cx + 1) * CHUNK; x++) {
+        if (w.getLiquid(x, y) && w.isSolid(x, y)) w.setLiquidRaw(x, y, 0, 0);
       }
     }
   }
@@ -921,7 +889,10 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     const { cx, cy } = w.chunkCoords(ci);
     game.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
   }
-  for (const i of h.unlocked ?? []) if (i < w.fg.length && w.fg[i] === T.LOCKED_CHEST) w.unlocked.add(i);
+  for (const i of h.unlocked ?? []) {
+    const { x, y } = w.tileXY(i);
+    if (w.getFg(x, y) === T.LOCKED_CHEST) w.unlocked.add(i);
+  }
   w.keysUsed = h.keysUsed ?? 0;
   w.markAllDirty();
   // 第一次來這個世界（freshVisit）：位置 / 探索 / 標記 / 發現 / 床維持建構子的出生點狀態
@@ -965,7 +936,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   }
   // 地上的掉落物（format 7）：放回原地、靜止
   for (const d of h.drops ?? []) {
-    if (d.x < 0 || d.y < 0 || d.x > w.width * TILE_SIZE || d.y > w.height * TILE_SIZE) continue;
+    if (d.x < w.xMin * TILE_SIZE || d.y < 0 || d.x > w.xMax * TILE_SIZE || d.y > w.height * TILE_SIZE) continue;
     game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0, 0, d.gear ? { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) } : undefined, d.tint);
   }
   // 舊角色的時裝轉換（spec C6）：放在掉落物讀回來之後（玩家位置已經放好），背包放不下而掉在腳邊的轉換物品
@@ -973,17 +944,18 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   if (needsWardrobeMigration(h.cformat)) game.migrateWardrobe();
   // 曆法 / 天氣：結冰格（只留在還有水的格）、強制天氣；舊存檔沒有 → 依日期重算結冰
   if (h.env) {
-    w.frozen.fill(0);
+    for (const k of w.flaggedTiles('frozen')) { const p = w.tileXY(k); w.setFlag('frozen', p.x, p.y, false); }
     let i = 0;
     for (let k = 0; k < h.env.frozen.length; k++) {
       i += h.env.frozen[k];
-      if (i < w.frozen.length && w.liquidType[i] === LIQ.WATER && w.liquid[i] > 0 && !w.isSolid(i % w.width, Math.floor(i / w.width))) w.frozen[i] = 1;
+      const p = w.tileXY(i), x = p.x, y = p.y;
+      if (w.inBounds(x, y) && w.getLiquidType(x, y) === LIQ.WATER && w.getLiquid(x, y) > 0 && !w.isSolid(x, y)) w.setFlag('frozen', x, y, true);
     }
     game.weatherOverride = h.env.weather ? { ...h.env.weather } : null;
     game.syncDay();
   } else game.refreshSeason();
   if (h.extra) {
-    for (const i of h.extra.minedIce ?? []) if (i < w.liquid.length) game.minedIce.add(i);
+    for (const i of h.extra.minedIce ?? []) { const { x, y } = w.tileXY(i); if (w.inBounds(x, y)) game.minedIce.add(i); }
     if (h.extra.rng) game.setRngState(h.extra.rng);
   }
   // 半格方塊（只留在實心格）、據點 / 居民（核心那格要還是爐心）
@@ -991,7 +963,8 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     let i = 0;
     for (let k = 0; k < h.halves.length; k++) {
       i += h.halves[k];
-      if (i < w.half.length && w.isSolid(i % w.width, Math.floor(i / w.width))) w.half[i] = 1;
+      const { x, y } = w.tileXY(i);
+      if (w.inBounds(x, y) && w.isSolid(x, y)) w.setFlag('half', x, y, true);
     }
   }
   game.settle.load(h.settle, w);

@@ -723,7 +723,7 @@ export class DelveGame {
   private readonly spawnRng: Rng;
   private readonly combatRng: Rng;
   // ── 液體 ───────────────────────────────────────────────
-  /** 液體模擬（world.liquid / liquidType） */
+  /** 液體模擬（世界的液體量 / 種類層） */
   readonly liquids: LiquidSim;
   /** 實體物理環境：world 的碰撞 + 液體介質 / 接觸（掉落物、怪物用） */
   readonly env: PhysEnv;

@@ -1,5 +1,5 @@
 // tileFamily.ts — 石 / 土的材質「家族」（純邏輯，無 DOM）：
-//   每格原本只有 3 個變體（world.variant），大片石壁看得出格狀重複。這裡再用世界座標的低頻值雜訊
+//   每格原本只有 3 個變體（world.variantAt），大片石壁看得出格狀重複。這裡再用世界座標的低頻值雜訊
 //   挑一個「家族」（同色票、不同肌理的整組變體），家族交界處加每格雜湊抖動 → 交界是參差的鋸齒而不是直線。
 //   圖集：tile(id, variant + VARIANTS × 家族, mask)（textures.ts 依家族換列）。
 import { T } from '../engine/tiles';

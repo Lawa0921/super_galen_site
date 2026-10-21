@@ -14,7 +14,7 @@
 import type { TileWindow } from './world';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { SOLID_LUT, T } from './tiles';
-import { T_BASE, T_OFF, T_Y } from './coords';
+import { tileKeyX, tileKeyY } from './coords';
 import { CHUNK } from './constants';
 import { TileFlags } from './tileFlags';
 
@@ -178,13 +178,8 @@ export class LiquidSim {
 
   /** tile 鍵 → (this.kx, this.ky)，就地解碼、不配置物件（與 coords.ts tileXY 同一套算術：中央 / 外圍兩段） */
   private keyXY(k: number): void {
-    if (k < T_BASE) {
-      const W = this.world.width, y = Math.floor(k / W);
-      this.kx = k - y * W; this.ky = y;
-      return;
-    }
-    const r = k - T_BASE, y = r % T_Y;
-    this.kx = (r - y) / T_Y - T_OFF; this.ky = y;
+    this.kx = tileKeyX(this.world.width, k);
+    this.ky = tileKeyY(this.world.width, k);
   }
 
   /** 把 (x,y) 排入（有液體且還沒排入時；世界外沒有液體 → 不排） */

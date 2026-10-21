@@ -10,7 +10,7 @@ const SMALL = { width: 160, height: 100 };
 function lake(): DelveGame {
   const g = new DelveGame({ seed: 'save-env', ...SMALL, peaceful: true });
   const w = g.world;
-  for (let i = 0; i < w.liquid.length; i++) { w.liquid[i] = 0; w.liquidType[i] = 0; }
+  for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) w.setLiquidRaw(x, y, 0, 0);
   for (let y = 0; y < 100; y++) for (let x = 0; x < 160; x++) { w.setFg(x, y, y >= 60 ? T.STONE : T.AIR); w.setWall(x, y, W.NONE); }
   for (let x = 0; x < 160; x++) { w.surface[x] = 60; w.biome[x] = 0; }
   for (let x = 70; x < 90; x++) for (let y = 60; y < 63; y++) { w.setFg(x, y, T.AIR); w.setLiquid(x, y, 255, LIQ.WATER); }
@@ -24,18 +24,18 @@ describe('存檔：曆法 / 天氣', { timeout: 120_000 }, () => {
     const g = lake();
     g.setDate({ year: 2, season: SEASON.WINTER, day: SEASON_TRANSITION_DAYS + 2, hour: 15 });
     g.forceWeather('snow', 5);
-    const frozenBefore = [...g.world.frozen].reduce((a, b) => a + b, 0);
+    const frozenBefore = g.world.flaggedTiles('frozen').length;
     expect(frozenBefore).toBeGreaterThan(10);
-    g.world.frozen[g.world.idx(75, 60)] = 0; // 玩家敲掉一格
+    g.world.setFrozen(75, 60, false); // 玩家敲掉一格
     const r = restoreGame(serializeGame(g));
     if (!r.ok) throw new Error(r.message);
     const h = r.game;
     expect(h.dateText()).toBe(g.dateText());
     expect(h.weather().kind).toBe('snow');
     expect(h.weatherOverride?.until).toBeCloseTo(g.weatherOverride!.until, 6);
-    expect(h.world.frozen[h.world.idx(75, 60)]).toBe(0);
-    expect(h.world.frozen[h.world.idx(80, 60)]).toBe(1);
-    expect([...h.world.frozen].reduce((a, b) => a + b, 0)).toBe(frozenBefore - 1);
+    expect(h.world.isFrozen(75, 60)).toBe(false);
+    expect(h.world.isFrozen(80, 60)).toBe(true);
+    expect(h.world.flaggedTiles('frozen').length).toBe(frozenBefore - 1);
   });
   it('沒有 env 的存檔：讀檔後依日期重算結冰', () => {
     const g = lake();
@@ -45,7 +45,7 @@ describe('存檔：曆法 / 天氣', { timeout: 120_000 }, () => {
     const r = restoreGame(encodeSave(snap));
     if (!r.ok) throw new Error(r.message);
     // 讀檔重新生成的世界用生成時的地表 → 結冰結果 = 依日期重算的結果（再算一次不變）
-    const count = (gg: DelveGame): number => [...gg.world.frozen].reduce((a, b) => a + b, 0);
+    const count = (gg: DelveGame): number => gg.world.flaggedTiles('frozen').length;
     const n = count(r.game);
     r.game.refreshSeason();
     expect(count(r.game)).toBe(n);

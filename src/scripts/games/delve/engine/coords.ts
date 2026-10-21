@@ -25,6 +25,17 @@ export function tileXY(width: number, k: number): { x: number; y: number } {
   return { x: (r - y) / T_Y - T_OFF, y };
 }
 
+/** tile 鍵的 x（不配置物件；熱路徑解碼用，與 tileXY 同一套算術） */
+export function tileKeyX(width: number, k: number): number {
+  if (k < T_BASE) return k - Math.floor(k / width) * width;
+  const r = k - T_BASE;
+  return (r - r % T_Y) / T_Y - T_OFF;
+}
+/** tile 鍵的 y（不配置物件） */
+export function tileKeyY(width: number, k: number): number {
+  return k < T_BASE ? Math.floor(k / width) : (k - T_BASE) % T_Y;
+}
+
 /** x 所在的 chunk 欄（CHUNK = 32；負數向下取整：−1 → −1） */
 export function chunkOfX(x: number): number { return x >> 5; }
 /** x 在 chunk 內的局部座標 0..31（−1 → 31） */

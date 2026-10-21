@@ -2,6 +2,7 @@
 // → 樹 / 火把（動態）→ 掉落物 / 怪物 → 玩家（分件精靈）→ 液體圖層（每幀、抖動半透、熔岩光暈）→ 裂痕 / 游標 → 呼吸泡泡
 // → 粒子（含濺水 / 蒸氣 / 火焰）→ 彩色光照遮罩（multiply；亮度 8 階 + 階界 Bayer 抖動、色相吸附）→ 暗處怪物剪影 → 火光暈。
 import type { DelveGame, DelveEvent } from '../engine/game';
+import type { TileWindow } from '../engine/world';
 import { BLOCKS_LIGHT_LUT, T, isSolidTile, isDecor } from '../engine/tiles';
 import { ITEMS, type ItemId } from '../engine/items';
 import { TILE_SIZE, CHUNK, DAY_LENGTH } from '../engine/constants';
@@ -157,6 +158,10 @@ export class Renderer {
   private cache: ChunkLRU<HTMLCanvasElement>;
   private pool: HTMLCanvasElement[] = [];
   private pending = new Set<number>();
+  /** chunk 烘焙的 tile 視窗（CHUNK 寬 × CHUNK+2 高，含上下各一列；重用） */
+  private bakeWin: TileWindow | undefined;
+  /** 每幀畫面附近的 tile 視窗（植物 / 冰 / 火把依序共用；重用） */
+  private viewWin: TileWindow | undefined;
   private buf: HTMLCanvasElement = document.createElement('canvas');
   private bctx: CanvasRenderingContext2D;
   /** 光照遮罩兩組（multiply 光色 + 'lighter' 暗色補色）：一組顯示、另一組分幀填色，填完互換 */
@@ -345,12 +350,13 @@ export class Renderer {
     this.tp = performance.now();
     this.frame++;
     this.clock += dt;
-    const worldW = w.width * S, worldH = w.height * S;
+    // 世界水平範圍 [xMin, xMax)（px）：鏡頭夾在裡面
+    const worldX0 = w.xMin * S, worldW = (w.xMax - w.xMin) * S, worldH = w.height * S;
     const vw = this.worldViewW(), vh = this.worldViewH();
     const pc = g.playerCenter();
     this.cam = this.camOverride
-      ? { x: Math.max(0, Math.min(worldW - vw, this.camOverride.x)), y: Math.max(0, Math.min(worldH - vh, this.camOverride.y)) }
-      : followCamera(this.cam, cameraFocus(pc, vw, vh), vw, vh, worldW, worldH, dt, this.snapNext);
+      ? { x: Math.max(worldX0, Math.min(worldX0 + worldW - vw, this.camOverride.x)), y: Math.max(0, Math.min(worldH - vh, this.camOverride.y)) }
+      : followCamera(this.cam, cameraFocus(pc, vw, vh), vw, vh, worldW, worldH, dt, this.snapNext, undefined, worldX0);
     this.snapNext = false;
     // 繪製時對齊整數美術 px：精靈 / chunk / 視差層都落在像素格上，不會閃爍
     this.drawCam = snapCam(this.cam);
@@ -382,7 +388,7 @@ export class Renderer {
     // 只有「這一幀新變動、而且碰到光照視窗」的 chunk 才逼光照重算；
     // 留在 pending 裡等進畫面才重畫的畫面外 chunk 不算（以前會讓光照每幀重算）
     const lw = this.light;
-    if (dirty.length && (!lw || chunksTouchRect(dirty, w.chunksX, { x: lw.x0, y: lw.y0, w: lw.w, h: lw.h }, LIGHT_MARGIN))) this.lightDirty = true;
+    if (dirty.length && (!lw || chunksTouchRect(dirty, w, { x: lw.x0, y: lw.y0, w: lw.w, h: lw.h }, LIGHT_MARGIN))) this.lightDirty = true;
 
     const ctx = this.bctx;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -393,7 +399,7 @@ export class Renderer {
     this.bg.draw(ctx, {
       viewW: this.bufW, viewH: this.bufH, camX, camY,
       horizonY: this.localHorizon(camX + vw / 2), time: g.time, dayFrac: day,
-      biome: { a: w.biome[Math.max(0, Math.min(w.width - 1, Math.floor((camX + vw / 2) / S)))], b: 0, t: 0 },
+      biome: { a: w.biomeAt(Math.floor((camX + vw / 2) / S)), b: 0, t: 0 },
       // 生態區交界：每層依鏡頭中心連續混合（標題背景不混）
       biomeCols: this.plainBackdrop ? undefined : w.biome, centerTile: (camX + vw / 2) / S,
       sunrise: sun.sunrise, sunset: sun.sunset, twilight: sun.twilight, moon: g.moon(),
@@ -404,9 +410,8 @@ export class Renderer {
     });
 
     ctx.setTransform(1, 0, 0, 1, -camX, -camY);
-    const surf = w.surface;
     this.bg.drawUnderground(ctx, camX, camY, vw, vh,
-      (tx) => (surf[Math.max(0, Math.min(surf.length - 1, tx))] + 6) * S, S, (w.rockY || w.cavernY) * S, w.cavernY * S, w.moltenY ? w.moltenY * S : Infinity,
+      (tx) => (w.surfaceAt(tx) + 6) * S, S, (w.rockY || w.cavernY) * S, w.cavernY * S, w.moltenY ? w.moltenY * S : Infinity,
       { biome: w.biome, structures: g.structures }); // [polish] biome-specific backdrops
     ph.bg = this.lap();
 
@@ -520,8 +525,11 @@ export class Renderer {
     const w = this.game.world, A = this.atlas, img = A.canvas;
     const { cx, cy } = w.chunkCoords(ci);
     const x0 = cx * CHUNK, y0 = cy * CHUNK;
-    const x1 = Math.min(w.width, x0 + CHUNK), y1 = Math.min(w.height, y0 + CHUNK);
-    const W = w.width, fg = w.fg, wall = w.wall, variant = w.variant;
+    const x1 = Math.min(w.xMax, x0 + CHUNK), y1 = Math.min(w.height, y0 + CHUNK);
+    // tile 視窗：本 chunk 再加上下各一列（草葉看上一格、最底列的草長到下一個 chunk）；格 (x,y) = y*W + x + off
+    const win = w.window(x0, y0 - 1, CHUNK, CHUNK + 2, this.bakeWin);
+    this.bakeWin = win;
+    const W = win.w, off = W - y0 * W - x0, fg = win.fg, wall = win.wall, variant = win.variant, half = win.half;
     let qx = 0, qy = 0;
     const nb: Neighbor = (dx, dy) => w.getFg(qx + dx, qy + dy);
     const masks = new Uint8Array(CHUNK * CHUNK);
@@ -529,7 +537,7 @@ export class Renderer {
     // 前景遮罩（先算，牆要知道哪些實心格有圓角缺口）
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
-        if (!isSolidTile(fg[y * W + x])) continue;
+        if (!isSolidTile(fg[y * W + x + off])) continue;
         qx = x; qy = y;
         masks[(y - y0) * CHUNK + (x - x0)] = edgeMask(nb);
       }
@@ -538,7 +546,7 @@ export class Renderer {
     const wallOpen = (x: number, y: number): boolean => w.getWall(x, y) === 0 && !isSolidTile(w.getFg(x, y));
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
-        const i = y * W + x;
+        const i = y * W + x + off;
         const wid = wall[i];
         if (wid === 0) continue;
         if (isSolidTile(fg[i]) && masks[(y - y0) * CHUNK + (x - x0)] === 0) continue;
@@ -554,15 +562,15 @@ export class Renderer {
     // 2) 前景（樹幹 / 樹葉 / 火把為動態精靈）
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
-        const i = y * W + x;
+        const i = y * W + x + off;
         const f = fg[i];
         // 樹 / 火把 / 花 / 高草是每幀畫的動態精靈（季節外觀、隨風擺動）
         if (f === T.AIR || f === T.WOOD || f === T.LEAVES || f === T.TORCH || f === T.FLOWER || f === T.TALL_GRASS) continue;
         qx = x; qy = y;
-        const s = isDecor(f) ? A.decor(f, decorStyleAt(f, x, y, nb, this.seasonDay, w.surface[x])) // [polish] cobweb corners + seasonal decor
-          : f === T.GRASS ? A.grass(this.grassSeason(x, y, i), variant[i], masks[(y - y0) * CHUNK + (x - x0)])
+        const s = isDecor(f) ? A.decor(f, decorStyleAt(f, x, y, nb, this.seasonDay, w.surfaceAt(x))) // [polish] cobweb corners + seasonal decor
+          : f === T.GRASS ? A.grass(this.grassSeason(x, y), variant[i], masks[(y - y0) * CHUNK + (x - x0)])
           : A.tile(f, tileVariant(f, x, y, variant[i]), masks[(y - y0) * CHUNK + (x - x0)]); // [polish] stone/dirt families
-        if (w.half[i]) { // [settle] 半格：上緣 4 列 + 下緣 4 列疊成下半格
+        if (half[i]) { // [settle] 半格：上緣 4 列 + 下緣 4 列疊成下半格
           ctx.drawImage(img, s.sx, s.sy, S, 4, (x - x0) * S, (y - y0) * S + 8, S, 4);
           ctx.drawImage(img, s.sx, s.sy + 12, S, 4, (x - x0) * S, (y - y0) * S + 12, S, 4);
           continue;
@@ -573,7 +581,7 @@ export class Renderer {
     // 3) 材質滲透 + 內角
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
-        const f = fg[y * W + x];
+        const f = fg[y * W + x + off];
         if (!isSolidTile(f)) continue;
         const mask = masks[(y - y0) * CHUNK + (x - x0)];
         const px = (x - x0) * S, py = (y - y0) * S;
@@ -601,7 +609,7 @@ export class Renderer {
     const yEnd = Math.min(w.height - 1, y1);
     for (let y = Math.max(1, y0); y <= yEnd; y++) {
       for (let x = x0; x < x1; x++) {
-        const i = y * W + x;
+        const i = y * W + x + off;
         const gt = fg[i];
         // 一般草地的草葉改成每幀畫（季節 + 風），這裡只畫叢林草葉
         if (gt !== T.JUNGLE_GRASS) continue;
@@ -618,7 +626,7 @@ export class Renderer {
     const w = this.game.world;
     const tx0 = Math.floor(camX / S) - 6, tx1 = Math.ceil((camX + vw) / S) + 6;
     const ty0 = Math.floor(camY / S) - 1, ty1 = Math.ceil((camY + vh) / S) + 1;
-    const trees = scanTrees((x, y) => w.getFg(x, y), Math.max(0, tx0), Math.max(0, ty0), Math.min(w.width, tx1), Math.min(w.height, ty1));
+    const trees = scanTrees((x, y) => w.getFg(x, y), Math.max(w.xMin, tx0), Math.max(0, ty0), Math.min(w.xMax, tx1), Math.min(w.height, ty1));
     const day = Math.max(0, this.seasonDay);
     this.canopies.length = 0;
     for (const t of trees) {
@@ -639,9 +647,12 @@ export class Renderer {
    * （風小時大多不動；有風時整片往下風處偏，局部陣風來回擺）。
    */
   private drawFlora(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
-    const g = this.game, w = g.world, W = w.width, fg = w.fg, F = this.flora, img = F.canvas;
-    const tx0 = Math.max(0, Math.floor(camX / S)), tx1 = Math.min(W, Math.ceil((camX + vw) / S) + 1);
+    const g = this.game, w = g.world, F = this.flora, img = F.canvas;
+    const tx0 = Math.max(w.xMin, Math.floor(camX / S)), tx1 = Math.min(w.xMax, Math.ceil((camX + vw) / S) + 1);
     const ty0 = Math.max(1, Math.floor(camY / S)), ty1 = Math.min(w.height, Math.ceil((camY + vh) / S) + 2);
+    // tile 視窗（多讀上一列：草葉看上一格）；格 (x,y) = (y-ty0+1)*W + (x-tx0)
+    const win = this.nearTiles(tx0, ty0 - 1, tx1 - tx0, ty1 - ty0 + 1);
+    const W = win.w, fg = win.fg, V = win.variant;
     const day = Math.max(0, this.seasonDay), wind = g.wind(), t = this.clock;
     const gust = 0.3 + Math.abs(wind);
     const sway = (x: number, k: number): number => {
@@ -649,12 +660,12 @@ export class Renderer {
       return v > 0.5 ? 1 : v < -0.5 ? -1 : 0;
     };
     for (let y = ty0; y < ty1; y++) {
-      const row = y * W;
+      const row = (y - ty0 + 1) * W - tx0;
       for (let x = tx0; x < tx1; x++) {
         const f = fg[row + x];
         if (f === T.GRASS) {
           if (fg[row - W + x] !== T.AIR) continue;
-          const s = F.blades(grassLook(x, day), w.variant[row + x], sway(x, 0.8));
+          const s = F.blades(grassLook(x, day), V[row + x], sway(x, 0.8));
           ctx.drawImage(img, s.sx, s.sy, S, S, x * S, (y - 1) * S, S, S);
         } else if (f === T.FLOWER || f === T.TALL_GRASS) {
           const style = decorStyle(f, x, y, (dx, dy) => w.getFg(x + dx, y + dy));
@@ -667,37 +678,50 @@ export class Renderer {
   }
 
   /** 草皮的季節外觀：冬天只有露天的草才積雪（湖底 / 水下的草改用秋天的枯黃） */
-  private grassSeason(x: number, y: number, i: number): number {
+  private grassSeason(x: number, y: number): number {
     const w = this.game.world;
     const look = grassLook(x, this.seasonDay < 0 ? 0 : this.seasonDay);
-    if (look === 3 && y > 0 && w.liquid[i - w.width] > 0) return 2;
+    if (look === 3 && y > 0 && w.getLiquid(x, y - 1) > 0) return 2;
     return look;
+  }
+
+  /** 畫面附近的 tile 視窗（植物 / 冰 / 火把依序共用同一塊暫存：拿到後要在下一次呼叫前讀完） */
+  private nearTiles(x0: number, y0: number, w: number, h: number): TileWindow {
+    const win = this.game.world.window(x0, y0, Math.max(0, w), Math.max(0, h), this.viewWin);
+    this.viewWin = win;
+    return win;
   }
 
   /** 結冰的湖面（畫在液體圖層之上，蓋住那格的水） */
   private drawIce(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
-    const w = this.game.world, W = w.width, F = w.frozen;
-    const tx0 = Math.max(0, Math.floor(camX / S)), tx1 = Math.min(W, Math.ceil((camX + vw) / S) + 1);
+    const w = this.game.world;
+    const tx0 = Math.max(w.xMin, Math.floor(camX / S)), tx1 = Math.min(w.xMax, Math.ceil((camX + vw) / S) + 1);
     const ty0 = Math.max(0, Math.floor(camY / S)), ty1 = Math.min(w.height, Math.ceil((camY + vh) / S) + 1);
+    // tile 視窗（多讀上一列：冰面頂端看上一格）；格 (x,y) = (y-ty0+1)*W + (x-tx0)
+    const win = this.nearTiles(tx0, ty0 - 1, tx1 - tx0, ty1 - ty0 + 1);
+    const W = win.w, F = win.frozen, V = win.variant;
     for (let y = ty0; y < ty1; y++) {
-      const row = y * W;
+      const row = (y - ty0 + 1) * W - tx0;
       for (let x = tx0; x < tx1; x++) {
         if (!F[row + x]) continue;
         const top = y === 0 || !F[row - W + x];
-        ctx.drawImage(this.ice[(w.variant[row + x] % 3) * 2 + (top ? 1 : 0)], x * S, y * S);
+        ctx.drawImage(this.ice[(V[row + x] % 3) * 2 + (top ? 1 : 0)], x * S, y * S);
       }
     }
   }
 
   private drawTorches(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number): void {
-    const w = this.game.world, W = w.width, fg = w.fg;
-    const tx0 = Math.max(0, Math.floor(camX / S) - 1), tx1 = Math.min(W, Math.ceil((camX + vw) / S) + 1);
+    const w = this.game.world;
+    const tx0 = Math.max(w.xMin, Math.floor(camX / S) - 1), tx1 = Math.min(w.xMax, Math.ceil((camX + vw) / S) + 1);
     const ty0 = Math.max(0, Math.floor(camY / S) - 1), ty1 = Math.min(w.height, Math.ceil((camY + vh) / S) + 1);
-    const seen = this.torchesSeen, cool = this.coolSeen, crys = this.crystalSeen, VAR = w.variant;
+    // tile 視窗（四周各多一格：支撐 / 熔岩石上方）；世界外 = STONE；格 (x,y) = (y-ty0+1)*W + (x-tx0+1)
+    const win = this.nearTiles(tx0 - 1, ty0 - 1, tx1 - tx0 + 2, ty1 - ty0 + 2);
+    const W = win.w, fg = win.fg, VAR = win.variant;
+    const seen = this.torchesSeen, cool = this.coolSeen, crys = this.crystalSeen;
     seen.length = 0; cool.length = 0; crys.length = 0;
     const t = this.clock;
     for (let y = ty0; y < ty1; y++) {
-      const row = y * W;
+      const row = (y - ty0 + 1) * W - tx0 + 1;
       for (let x = tx0; x < tx1; x++) {
         const f = fg[row + x];
         if (f === T.CRYSTAL) { crys.push({ x: x * S + 8, y: y * S + 8, v: VAR[row + x] & 1 }); continue; }
@@ -712,7 +736,7 @@ export class Renderer {
         }
         if (f !== T.TORCH) continue;
         // 依支撐挑精靈：地板 / 背牆直立，貼左右牆的斜掛（底端貼牆）
-        const mount = torchMount(y + 1 < w.height ? fg[row + W + x] : T.STONE, x > 0 ? fg[row + x - 1] : T.STONE, x + 1 < W ? fg[row + x + 1] : T.STONE);
+        const mount = torchMount(fg[row + W + x], fg[row + x - 1], fg[row + x + 1]); // 世界外（含最底列之下）= STONE
         const fr = flameFrame(t, x, y), SP = this.sprites;
         const ox = mount === 'left' ? 0 : mount === 'right' ? 6 : 3;
         const c = mount === 'left' ? SP.torchesLeft[fr] : mount === 'right' ? SP.torchesRight[fr] : SP.torches[fr];
@@ -1062,10 +1086,10 @@ export class Renderer {
   private updateAmbient(dt: number, camX: number, camY: number, vw: number, vh: number): void {
     const g = this.game, w = g.world;
     if (this.frame % 20 === 1) {
-      const p = g.playerTile(), x = Math.max(0, Math.min(w.width - 1, p.x));
+      const p = g.playerTile(), x = p.x;
       const surf = w.surfaceAt(x);
       this.ambientNow = ambientKind({
-        molten: p.y >= g.layers.molten[x],
+        molten: p.y >= w.layersAt(x).molten,
         mushroom: g.discovery.regionsAt(p.x, p.y).some((r) => r.kind === 'mushroom_biome') || this.nearMushroomGrass(p.x, p.y),
         outdoors: p.y <= surf + 1 && w.getWall(p.x, p.y) === 0,
         underground: p.y > surf + 4,

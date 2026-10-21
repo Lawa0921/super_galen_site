@@ -6,7 +6,7 @@
 //     逐像素把兩格的色階做雙線性內插、同樣用世界錨定的 Bayer 抖動到相鄰的整數階（不會在格邊一刀切換色）。
 //   遮罩以 'multiply' 疊在畫面上（不透明像素，沒有 alpha 混色）：輸出色 = 色票色 × 有限光色表裡的某一色，
 //   再以 'lighter' 加上「暗色 × (1 − 亮度階)」：全暗 = 純黑 + #0c0a12 = 色票最暗色，暗處不會比微亮處還亮。
-import type { World } from '../engine/world';
+import type { TileWindow, World } from '../engine/world';
 import type { LightMap } from '../engine/lighting';
 import { BLOCKS_LIGHT_LUT } from '../engine/tiles';
 import { LIGHT_LEVELS, PLATEAU } from './lowres';
@@ -53,7 +53,10 @@ export function shadeTiles(
   sky: readonly number[], reach: Uint8Array, out: Float32Array,
 ): void {
   const { x0, y0, w, h } = rect;
-  const W = world.width, surf = world.surfaceY, fg = world.fg, wall = world.wall, LQ = world.liquid;
+  // 多讀上面一列（水面下判斷要看上一格的液體）；世界外 = STONE（擋光）→ 走光照分支，同舊的越界讀取
+  const win = world.window(x0, y0 - 1, w, h + 1, SHADE_WIN);
+  SHADE_WIN = win;
+  const surf = world.surfaceY, fg = win.fg, wall = win.wall, LQ = win.liquid;
   if (DEPTH_REF.length < w) DEPTH_REF = new Int32Array(w);
   const DS = DEPTH_REF;
   depthSurface((x) => world.surfaceAt(x), x0, w, DS);
@@ -63,8 +66,8 @@ export function shadeTiles(
   for (let y = 0; y < h; y++) {
     const ty = y0 + y, dyp = ty - player.y;
     for (let x = 0; x < w; x++) {
-      const tx = x0 + x, o = (y * w + x) * 3, wi = ty * W + tx;
-      const under = LQ[wi] > 0 && wi >= W && LQ[wi - W] > 0;
+      const tx = x0 + x, o = (y * w + x) * 3, wi = (y + 1) * w + x;
+      const under = LQ[wi] > 0 && ty >= 1 && LQ[wi - w] > 0;
       if (ty <= surf && BLOCKS_LIGHT_LUT[fg[wi]] === 0 && wall[wi] === 0 && !under) { out[o] = or; out[o + 1] = og; out[o + 2] = ob; continue; }
       const lx = tx - L.x0, ly = ty - L.y0;
       let r = 0, g = 0, b = 0;
@@ -92,6 +95,8 @@ export function shadeTiles(
 
 /** shadeTiles 的參考地表工作區 */
 let DEPTH_REF = new Int32Array(0);
+/** shadeTiles 的 tile 視窗（重用） */
+let SHADE_WIN: TileWindow | undefined;
 
 const H1 = HUE_STEPS + 1;
 /** 光色表：lv × hr × hg × hb → 不透明 RGBA（ABGR uint32） */

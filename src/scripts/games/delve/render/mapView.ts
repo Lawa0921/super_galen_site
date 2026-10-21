@@ -24,9 +24,10 @@ export class MapCache {
   version = 0;
 
   constructor(private game: DelveGame) {
-    const w = game.world;
-    this.canvas.width = w.width;
-    this.canvas.height = w.height;
+    // 整張地圖 canvas 對應探索位元圖的範圍（中央區；之後換成地圖頁）
+    const w = game.world, ex = game.explored;
+    this.canvas.width = ex.width;
+    this.canvas.height = ex.height;
     const ctx = this.canvas.getContext('2d');
     if (!ctx) throw new Error('2d context unavailable');
     this.ctx = ctx;
@@ -35,11 +36,11 @@ export class MapCache {
     const lut = buildMapLut();
     const f = lut.fog;
     ctx.fillStyle = `rgb(${f & 255},${(f >>> 8) & 255},${(f >>> 16) & 255})`;
-    ctx.fillRect(0, 0, w.width, w.height);
+    ctx.fillRect(0, 0, ex.width, ex.height);
     // 已有探索資料（讀檔）：只畫有任何已探索格的 chunk
-    const ex = game.explored, cw = Math.ceil(w.width / CHUNK), ch = Math.ceil(w.height / CHUNK);
+    const cw = Math.ceil(ex.width / CHUNK), ch = Math.ceil(ex.height / CHUNK);
     ex.drainDirty();
-    for (let cy = 0; cy < ch; cy++) for (let cx = 0; cx < cw; cx++) if (this.chunkHasExplored(cx, cy)) { this.pending.add(cy * cw + cx); this.seen.add(cy * cw + cx); }
+    for (let cy = 0; cy < ch; cy++) for (let cx = 0; cx < cw; cx++) if (this.chunkHasExplored(cx, cy)) { const ci = w.chunkIndex(cx, cy); this.pending.add(ci); this.seen.add(ci); }
     this.update(Infinity);
   }
 
@@ -59,12 +60,12 @@ export class MapCache {
   update(budget = 24): number {
     for (const ci of this.game.explored.drainDirty()) { this.pending.add(ci); this.seen.add(ci); }
     if (!this.pending.size) return 0;
-    const w = this.game.world, cw = Math.ceil(w.width / CHUNK);
+    const w = this.game.world;
     let n = 0;
     for (const ci of this.pending) {
       if (n >= budget) break;
       this.pending.delete(ci);
-      const cx = ci % cw, cy = Math.floor(ci / cw);
+      const { cx, cy } = w.chunkCoords(ci);
       paintMapChunk(this.buf, w, this.game.explored, cx, cy);
       this.ctx.putImageData(this.img, cx * CHUNK, cy * CHUNK);
       n++;
@@ -335,7 +336,8 @@ export class FullMap {
     ctx.fillRect(0, 0, W, H);
     // 可見範圍（tile）→ 只取那一塊貼上
     const tx0 = Math.max(0, Math.floor(v.cx - W / 2 / v.scale)), ty0 = Math.max(0, Math.floor(v.cy - H / 2 / v.scale));
-    const tx1 = Math.min(w.width, Math.ceil(v.cx + W / 2 / v.scale) + 1), ty1 = Math.min(w.height, Math.ceil(v.cy + H / 2 / v.scale) + 1);
+    const src = this.cache.canvas; // 中央區的整張地圖 canvas：只能取它範圍內的那一塊
+    const tx1 = Math.min(src.width, Math.ceil(v.cx + W / 2 / v.scale) + 1), ty1 = Math.min(src.height, Math.ceil(v.cy + H / 2 / v.scale) + 1);
     if (tx1 > tx0 && ty1 > ty0) {
       const p0 = tileToScreenOnMap(v, W, H, tx0, ty0);
       const ox = Math.round(p0.x - 0.5 * v.scale), oy = Math.round(p0.y - 0.5 * v.scale);

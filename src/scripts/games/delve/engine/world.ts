@@ -14,6 +14,11 @@ export type ChestSlots = (Stack | null)[];
 export const BIOME = { FOREST: 0, DESERT: 1, SNOW: 2, JUNGLE: 3 } as const;
 export type BiomeId = (typeof BIOME)[keyof typeof BIOME];
 
+/** 一個 chunk 的前景 / 背景牆（各 CHUNK*CHUNK，索引 ly*CHUNK + lx；存檔 payload） */
+export interface ChunkPayload { fg: Uint8Array; wall: Uint8Array; }
+/** flaggedTiles / setFlag 的旗標層 */
+export type FlagLayer = 'frozen' | 'half';
+
 /** 矩形批次讀取的扁平暫存（world.window）：索引 (y-y0)*w + (x-x0)；各層長度 ≥ w*h（重用時可能更長） */
 export interface TileWindow {
   x0: number; y0: number; w: number; h: number;
@@ -207,6 +212,61 @@ export class World {
       if (ix1 < x0 + w) fillOutside(win, o, x0, y, ix1 - x0, w);
     }
     return win;
+  }
+
+  // ── chunk payload（存檔讀寫） ─────────────────────────
+  /** (cx, cy) chunk 的前景 / 背景牆（世界外的格補 0）。 */
+  readChunkPayload(cx: number, cy: number): ChunkPayload {
+    const K = CHUNK * CHUNK, fg = new Uint8Array(K), wall = new Uint8Array(K);
+    const x0 = cx * CHUNK, y0 = cy * CHUNK, W = this.width;
+    const ax = Math.max(x0, 0), bx = Math.min(x0 + CHUNK, W), by = Math.min(y0 + CHUNK, this.height);
+    if (bx <= ax) return { fg, wall };
+    for (let y = Math.max(y0, 0); y < by; y++) {
+      const s = y * W, d = (y - y0) * CHUNK - x0;
+      fg.set(this.fg.subarray(s + ax, s + bx), d + ax);
+      wall.set(this.wall.subarray(s + ax, s + bx), d + ax);
+    }
+    return { fg, wall };
+  }
+  /**
+   * 直接覆寫 (cx, cy) chunk 的前景 / 背景牆並標為已修改（不經 setFg：不逐格 touch、不動箱子 / 半格 / 結冰）。
+   * maxX（不含）之後的格不寫（省略 = 整塊）；世界外的格丟掉。
+   */
+  writeChunkPayload(cx: number, cy: number, p: ChunkPayload, maxX?: number): void {
+    const x0 = cx * CHUNK, y0 = cy * CHUNK, W = this.width;
+    const ax = Math.max(x0, 0), bx = Math.min(x0 + CHUNK, W, maxX ?? Infinity), by = Math.min(y0 + CHUNK, this.height);
+    if (bx > ax) {
+      for (let y = Math.max(y0, 0); y < by; y++) {
+        const s = (y - y0) * CHUNK - x0, d = y * W;
+        this.fg.set(p.fg.subarray(s + ax, s + bx), d + ax);
+        this.wall.set(p.wall.subarray(s + ax, s + bx), d + ax);
+      }
+    }
+    this.modifiedChunks.add(this.chunkIndex(cx, cy));
+  }
+  /** (cx, cy) chunk 的液體量 / 種類寫進 out[offset .. offset + CHUNK*CHUNK)（索引 ly*CHUNK + lx；世界外、量 0 的種類補 0） */
+  readChunkLiquids(cx: number, cy: number, outAmount: Uint8Array, outType: Uint8Array, offset: number): void {
+    const K = CHUNK * CHUNK;
+    outAmount.fill(0, offset, offset + K); outType.fill(0, offset, offset + K);
+    const x0 = cx * CHUNK, y0 = cy * CHUNK, W = this.width;
+    const ax = Math.max(x0, 0), bx = Math.min(x0 + CHUNK, W), by = Math.min(y0 + CHUNK, this.height);
+    for (let y = Math.max(y0, 0); y < by; y++) {
+      for (let x = ax; x < bx; x++) {
+        const i = y * W + x, a = this.liquid[i], o = offset + (y - y0) * CHUNK + (x - x0);
+        outAmount[o] = a; outType[o] = a ? this.liquidType[i] : 0;
+      }
+    }
+  }
+  /** 旗標層（結冰 / 半格）為 1 的所有 tile 鍵，升冪（存檔差分編碼用） */
+  flaggedTiles(layer: FlagLayer): number[] {
+    const F = layer === 'frozen' ? this.frozen : this.half, out: number[] = [];
+    for (let i = 0; i < F.length; i++) if (F[i]) out.push(i);
+    return out;
+  }
+  /** 直接設定旗標層的一格（讀檔還原用；不夾值、不 touch；世界外忽略） */
+  setFlag(layer: FlagLayer, x: number, y: number, on: boolean): void {
+    if (!this.inBounds(x, y)) return;
+    (layer === 'frozen' ? this.frozen : this.half)[y * this.width + x] = on ? 1 : 0;
   }
 
   /** 單向平台（物理用） */

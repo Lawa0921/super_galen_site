@@ -14,7 +14,7 @@ const SMALL = { width: 160, height: 100 };
 function scene(): DelveGame {
   const g = new DelveGame({ seed: 'save-liquid', ...SMALL, peaceful: true });
   const w = g.world;
-  for (let i = 0; i < w.liquid.length; i++) { w.liquid[i] = 0; w.liquidType[i] = 0; }
+  for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) w.setLiquidRaw(x, y, 0, 0);
   for (let y = 0; y < 100; y++) for (let x = 20; x < 140; x++) { w.setFg(x, y, y >= 60 ? T.STONE : T.AIR); w.setWall(x, y, W.NONE); }
   for (let y = 54; y < 60; y++) { w.setFg(60, y, T.STONE); w.setFg(70, y, T.STONE); }
   g.liquids.settle(50);
@@ -60,8 +60,9 @@ describe('存檔格式 6（液體）', { timeout: 180_000 }, () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const w = r.game.world;
-    expect(Buffer.from(w.liquid).equals(Buffer.from(g.world.liquid))).toBe(true);
-    expect(Buffer.from(w.liquidType).equals(Buffer.from(g.world.liquidType))).toBe(true);
+    const ra = w.window(0, 0, w.width, w.height), rb = g.world.window(0, 0, w.width, w.height);
+    expect(Buffer.from(ra.liquid).equals(Buffer.from(rb.liquid))).toBe(true);
+    expect(Buffer.from(ra.liquidType).equals(Buffer.from(rb.liquidType))).toBe(true);
     // 讀檔後液體被喚醒，會繼續流到盆底
     expect(r.game.liquids.activeCount).toBeGreaterThan(0);
     run(r.game, 400);
@@ -95,7 +96,7 @@ describe('存檔格式 6（液體）', { timeout: 180_000 }, () => {
     if (!r.ok) return;
     const rw = r.game.world;
     let inSolid = 0;
-    for (let i = 0; i < rw.liquid.length; i++) if (rw.liquid[i] && SOLID_LUT[rw.fg[i]]) inSolid++;
+    for (let y = 0; y < rw.height; y++) for (let x = 0; x < rw.width; x++) if (rw.getLiquid(x, y) && SOLID_LUT[rw.getFg(x, y)]) inSolid++;
     expect(inSolid).toBe(0);
     expect(GEN_VERSION).toBe(7);
   });

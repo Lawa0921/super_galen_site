@@ -15,6 +15,12 @@ describe('clampCamera', () => {
   it('視窗比世界大時置中', () => {
     expect(clampCamera(0, 0, 1000, 600, 800, 1600).x).toBe(-100);
   });
+  it('世界左緣不是 0（worldX0）：夾在 [worldX0, worldX0 + worldW - viewW]', () => {
+    expect(clampCamera(-5000, 0, 800, 600, 3200, 1600, -1600).x).toBe(-1600);
+    expect(clampCamera(5000, 0, 800, 600, 3200, 1600, -1600).x).toBe(800);
+    expect(clampCamera(-700, 0, 800, 600, 3200, 1600, -1600).x).toBe(-700);
+    expect(followCamera({ x: 0, y: 0 }, { x: -5000, y: 0 }, 800, 600, 3200, 1600, 1 / 60, true, 9, -1600).x).toBe(-1600);
+  });
 });
 
 describe('followCamera', () => {

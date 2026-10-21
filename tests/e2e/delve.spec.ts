@@ -150,12 +150,12 @@ async function expectCrisp(page: Page, sel: string): Promise<void> {
   expect(Math.round(sx), `${sel} scale >= 1`).toBeGreaterThanOrEqual(1);
 }
 
-/** 世界 fg 的 FNV-1a 雜湊（整個世界） */
+/** 世界 fg 的 FNV-1a 雜湊（中央區 [0, width) × [0, height)，逐格走 getter） */
 function worldHash(page: Page): Promise<string> {
   return page.evaluate(() => {
-    const fg: Uint8Array = window.__delveDebug!.game.world.fg;
+    const w = window.__delveDebug!.game.world;
     let h = 0x811c9dc5;
-    for (let i = 0; i < fg.length; i++) { h ^= fg[i]; h = Math.imul(h, 16777619); }
+    for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) { h ^= w.getFg(x, y); h = Math.imul(h, 16777619); }
     return (h >>> 0).toString(16);
   });
 }
@@ -288,7 +288,7 @@ test.describe('delve', () => {
     await waitGame(page);
     const r = await page.evaluate(() => {
       const g = window.__delveDebug!.game, w = g.world;
-      const topOf = (x: number): number => { let y = 0; while (y < w.height && ![1, 2, 3, 4, 18, 19, 20, 21, 22, 43].includes(w.fg[y * w.width + x])) y++; return w.fg[y * w.width + x]; };
+      const topOf = (x: number): number => { let y = 0; while (y < w.height && ![1, 2, 3, 4, 18, 19, 20, 21, 22, 43].includes(w.getFg(x, y))) y++; return w.getFg(x, y); };
       return {
         size: [w.width, w.height],
         spawnBiome: w.biomeAt(g.spawn.x),
@@ -1209,7 +1209,7 @@ test.describe('delve 曆法 / 天氣', () => {
       for (let y = top; y < top + 4; y++) { w.setFg(x0 - 1, y, 3); w.setFg(x0 + 10, y, 3); }
       for (let x = x0; x < x0 + 10; x++) w.setFg(x, top + 3, 3);
       g.setDate({ season: 3, day: 6, hour: 12 });
-      return { x0, top, frozen: w.frozen[w.idx(x0 + 5, top)], solid: w.isSolid(x0 + 5, top) };
+      return { x0, top, frozen: w.isFrozen(x0 + 5, top) ? 1 : 0, solid: w.isSolid(x0 + 5, top) };
     });
     expect(lake.frozen).toBe(1);
     expect(lake.solid).toBe(true);
@@ -3430,8 +3430,7 @@ test.describe('delve folk · villages, dwarves, encounters, quests', () => {
     await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
     await waitGame(page);
     const p = await nearFolk(page, 'v0:trader');
-    const before = await page.evaluate(() => { const g = window.__delveDebug!.game; g.selectSlot(g.inventory.slots.findIndex((s) => s?.item === 'wood_pickaxe')); return Array.from(g.world.fg.subarray(0, 1)).length; });
-    void before;
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.selectSlot(g.inventory.slots.findIndex((s) => s?.item === 'wood_pickaxe')); });
     const mined0 = await page.evaluate(() => window.__delveDebug!.game.world.modifiedChunks.size);
     await page.touchscreen.tap(p.sx, p.sy);
     await expect(page.locator('#delve-folk')).toBeVisible();

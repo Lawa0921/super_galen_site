@@ -6,7 +6,7 @@ import { T } from '../engine/tiles';
 
 function flat(): World {
   const w = new World(96, 96);
-  for (let y = 40; y < 96; y++) for (let x = 0; x < 96; x++) w.fg[w.idx(x, y)] = T.STONE;
+  for (let y = 40; y < 96; y++) for (let x = 0; x < 96; x++) w.setFg(x, y, T.STONE);
   return w;
 }
 const view = (w: World, camY: number, kind: 'rain' | 'snow' | null = 'rain') => ({
@@ -29,11 +29,11 @@ describe('WeatherFx 雨雪', () => {
   });
   it('屋頂下的欄不生雨；拆掉屋頂（invalidate）後就會下', () => {
     const w = flat();
-    for (let x = 0; x < 96; x++) w.fg[w.idx(x, 20)] = T.STONE; // 整片屋頂
+    for (let x = 0; x < 96; x++) w.setFg(x, 20, T.STONE); // 整片屋頂
     const fx = new WeatherFx(rnd);
     for (let i = 0; i < 60; i++) fx.update(1 / 60, view(w, 22 * 16));
     expect(fx.dropCount).toBe(0);
-    for (let x = 0; x < 96; x++) w.fg[w.idx(x, 20)] = T.AIR;
+    for (let x = 0; x < 96; x++) w.setFg(x, 20, T.AIR);
     fx.invalidate(w, [0, 1, 2]);
     for (let i = 0; i < 60; i++) fx.update(1 / 60, view(w, 22 * 16));
     expect(fx.dropCount).toBeGreaterThan(0);

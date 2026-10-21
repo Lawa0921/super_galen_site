@@ -14,7 +14,7 @@ describe('expectSameGame', () => {
 
   it('世界組：結冰格 / 強制天氣 / 種子不同 → 失敗（visit: false 也一樣）', () => {
     const a = fixtureGame();
-    const frozen = fixtureGame(); frozen.world.frozen[frozen.world.frozen.indexOf(0)] = 1;
+    const frozen = fixtureGame(); frozen.world.setFrozen(0, 0, !frozen.world.isFrozen(0, 0));
     expect(() => expectSameGame(a, frozen, { visit: false })).toThrow();
     const weather = fixtureGame(); weather.weatherOverride = { kind: 'storm', until: weather.time + 100 };
     expect(() => expectSameGame(a, weather, { visit: false })).toThrow();

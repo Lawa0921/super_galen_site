@@ -6,6 +6,7 @@
 import { TILES, WALLS, T, W, SOLID_LUT } from '../engine/tiles';
 import { CHUNK } from '../engine/constants';
 import type { ExploredMap } from '../engine/explore';
+import type { TileWindow } from '../engine/world';
 import type { Discovery, Region } from '../engine/discovery';
 import { Bmp, INK, hex, nudge, snap, type RGB } from './pixel';
 import { LIQUID_MAP_COLOR } from './liquidArt';
@@ -61,42 +62,42 @@ export function buildMapLut(): MapLut {
   return LUT;
 }
 
+/** 地圖要的世界介面：水平 / 垂直邊界、地表線、矩形批次讀取（World 本身就符合） */
 export interface MapWorld {
-  width: number; height: number; surfaceY: number;
-  fg: Uint8Array; wall: Uint8Array; variant: Uint8Array;
-  /** 液體（省略 = 沒有液體） */
-  liquid?: Uint8Array; liquidType?: Uint8Array;
+  readonly xMin: number; readonly xMax: number; readonly height: number; readonly surfaceY: number;
+  window(x0: number, y0: number, w: number, h: number, out?: TileWindow): TileWindow;
 }
+
+/** paintMapChunk 的 tile 視窗（CHUNK+2 見方，含四周一圈鄰格；重用） */
+let MAP_WIN: TileWindow | undefined;
 
 /** 畫 chunk (cx, cy) 到 out（CHUNK*CHUNK，row-major）；世界外 = 0（透明） */
 export function paintMapChunk(out: Uint32Array, w: MapWorld, ex: ExploredMap, cx: number, cy: number, lut: MapLut = buildMapLut()): void {
-  const W = w.width, x0 = cx * CHUNK, y0 = cy * CHUNK;
-  const bits = ex.bits;
-  const has = (x: number, y: number): boolean => {
-    if (x < 0 || y < 0 || x >= W || y >= w.height) return false;
-    const i = y * W + x;
-    return ((bits[i >> 3] >> (i & 7)) & 1) === 1;
-  };
+  const x0 = cx * CHUNK, y0 = cy * CHUNK;
+  // 視窗多一圈鄰格（描邊看四鄰）；世界外的格 = STONE（不是地城磚 → 不影響描邊）
+  const win = w.window(x0 - 1, y0 - 1, CHUNK + 2, CHUNK + 2, MAP_WIN);
+  MAP_WIN = win;
+  const WW = win.w, fg = win.fg;
   for (let ly = 0; ly < CHUNK; ly++) {
     const y = y0 + ly;
     for (let lx = 0; lx < CHUNK; lx++) {
       const x = x0 + lx, o = ly * CHUNK + lx;
-      if (x >= W || y >= w.height) { out[o] = 0; continue; }
-      if (!has(x, y)) {
-        out[o] = ((x + y) & 1) === 1 && (has(x - 1, y) || has(x + 1, y) || has(x, y - 1) || has(x, y + 1)) ? lut.fogEdge : lut.fog;
+      if (x < w.xMin || x >= w.xMax || y >= w.height) { out[o] = 0; continue; }
+      if (!ex.has(x, y)) {
+        out[o] = ((x + y) & 1) === 1 && (ex.has(x - 1, y) || ex.has(x + 1, y) || ex.has(x, y - 1) || ex.has(x, y + 1)) ? lut.fogEdge : lut.fog;
         continue;
       }
-      const i = y * W + x, f = w.fg[i];
-      const c = w.variant[i] === 2 ? lut.fgDark[f] : lut.fg[f];
+      const i = (ly + 1) * WW + lx + 1, f = fg[i];
+      const c = win.variant[i] === 2 ? lut.fgDark[f] : lut.fg[f];
       if (c && SOLID_LUT[f] === 1) {
         // 緊貼地城磚殼外側的一般實心格 → 描邊
-        if (!IS_BRICK[f] && ((x > 0 && IS_BRICK[w.fg[i - 1]]) || (x + 1 < W && IS_BRICK[w.fg[i + 1]]) || (y > 0 && IS_BRICK[w.fg[i - W]]) || (y + 1 < w.height && IS_BRICK[w.fg[i + W]]))) out[o] = lut.outline;
+        if (!IS_BRICK[f] && (IS_BRICK[fg[i - 1]] || IS_BRICK[fg[i + 1]] || IS_BRICK[fg[i - WW]] || IS_BRICK[fg[i + WW]])) out[o] = lut.outline;
         else out[o] = c;
         continue;
       }
-      if (w.liquid && w.liquid[i] && w.liquidType) { out[o] = lut.liquid[w.liquidType[i]]; continue; }
+      if (win.liquid[i]) { out[o] = lut.liquid[win.liquidType[i]]; continue; }
       if (c) { out[o] = c; continue; }
-      const wl = w.wall[i];
+      const wl = win.wall[i];
       // 有第二色的牆（地城）：3 格高、4 格寬、隔列錯開的磚紋
       if (wl && lut.wallAlt[wl] && (y % 3 === 2 || (x + (Math.floor(y / 3) & 1) * 2) % 4 === 3)) { out[o] = lut.wallAlt[wl]; continue; }
       out[o] = wl ? lut.wall[wl] : y <= w.surfaceY && SOLID_LUT[f] !== 1 ? lut.sky : lut.cave;

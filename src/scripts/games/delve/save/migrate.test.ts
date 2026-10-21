@@ -52,9 +52,9 @@ describe('fixture 的拆分欄位都不是預設值（否則相等比較證明�
   it('rng／發現有值；液體／天氣／半磚／掉落物在 fixture 是預設值（凍結檔不重生，這幾欄只證明預設值不丟）', () => {
     expect(g.rngState().loot.some((n) => n !== 0)).toBe(true);
     expect(g.discovery.toJSON().depthRecord).toBe(40);
-    expect(g.world.liquid.some((v: number) => v > 0)).toBe(false);
+    expect(g.world.liquidTotal()).toBe(0);
     expect(g.weatherOverride).toBeNull();
-    expect(g.world.half.some((v: number) => v > 0)).toBe(false);
+    expect(g.world.flaggedTiles('half')).toEqual([]);
     expect(g.drops.list).toHaveLength(0);
   });
 });

@@ -3,7 +3,7 @@
 //   · 每格依「上方有沒有液體 / 下面能不能流」挑貼片（liquidPiece），動畫格由時鐘決定（水 6 fps、熔岩 / 蜂蜜較慢）
 //   · 熔岩表面格（隔欄取樣、有上限）丟進暖色光暈清單
 //   · 呼吸泡泡（玩家頭上）
-import type { World } from '../engine/world';
+import type { TileWindow, World } from '../engine/world';
 import { LIQ } from '../engine/liquidKind';
 import { SOLID_LUT } from '../engine/tiles';
 import { TILE_SIZE } from '../engine/constants';
@@ -34,6 +34,8 @@ export class LiquidLayer {
   /** 瀑布泡沫：列 = 種類（水 / 熔岩），欄 = (kind, frame)；每格 16×32 */
   private readonly foam: HTMLCanvasElement;
   private readonly splashAt: number[] = [];
+  /** 畫面附近的 tile 視窗（重用） */
+  private win: TileWindow | undefined;
 
   constructor() {
     // 欄：h = 1..16（水面用；body / fall 用 h = 16 那欄）；列：(type, piece, frame)
@@ -82,9 +84,13 @@ export class LiquidLayer {
   /** 畫視窗（世界 px）內的液體；lavaGlows 收集熔岩表面光暈點（世界 px） */
   draw(ctx: CanvasRenderingContext2D, w: World, camX: number, camY: number, vw: number, vh: number, clock: number,
     lavaGlows: { x: number; y: number }[]): void {
-    const W = w.width, L = w.liquid, LT = w.liquidType, fg = w.fg;
-    const tx0 = Math.max(0, Math.floor(camX / S)), tx1 = Math.min(W, Math.ceil((camX + vw) / S) + 1);
+    const tx0 = Math.max(w.xMin, Math.floor(camX / S)), tx1 = Math.min(w.xMax, Math.ceil((camX + vw) / S) + 1);
     const ty0 = Math.max(0, Math.floor(camY / S)), ty1 = Math.min(w.height, Math.ceil((camY + vh) / S) + 1);
+    // 視窗：左右各多一欄（落點泡沫）、上多一列、下多兩列（水柱 / 落點往下看兩格）；索引 (y-wy0)*W + (x-wx0)
+    const wx0 = tx0 - 1, wy0 = ty0 - 1;
+    const win = w.window(wx0, wy0, Math.max(0, tx1 - tx0) + 2, Math.max(0, ty1 - ty0) + 3, this.win);
+    this.win = win;
+    const W = win.w, L = win.liquid, LT = win.liquidType, fg = win.fg;
     const frames = [0, 0, 0, 0];
     for (const t of TYPES) frames[t] = Math.floor(clock * FPS[t]) % LIQUID_FRAMES;
     let cells = 0, glows = 0, falls = 0;
@@ -101,7 +107,7 @@ export class LiquidLayer {
       return t;
     };
     for (let y = ty0; y < ty1; y++) {
-      const row = y * W;
+      const row = (y - wy0) * W - wx0;
       for (let x = tx0; x < tx1; x++) {
         const i = row + x, a = L[i];
         if (!a) continue;
@@ -144,10 +150,10 @@ export class LiquidLayer {
     }
     // 落點泡沫：落點那格 + 左右各一格（畫在整層液體之上）
     for (let k = 0; k < splash.length; k += 2) {
-      const j = splash[k], t = splash[k + 1], x = j % W, y = (j - x) / W, ft = t === LIQ.LAVA ? 1 : 0;
+      const j = splash[k], t = splash[k + 1], lx = j % W, x = wx0 + lx, y = wy0 + (j - lx) / W, ft = t === LIQ.LAVA ? 1 : 0;
       for (let dx = -1; dx <= 1; dx++) {
         const q = j + dx;
-        if (x + dx < 0 || x + dx >= W || LT[q] !== t || SOLID_LUT[fg[q]] === 1) continue;
+        if (x + dx < w.xMin || x + dx >= w.xMax || LT[q] !== t || SOLID_LUT[fg[q]] === 1) continue;
         const fr = (ff + (x + dx) * 2) % FOAM_FRAMES;
         ctx.drawImage(this.foam, (FOAM_FRAMES + fr) * S, ft * S * 2, S, S * 2, (x + dx) * S, (y - 1) * S, S, S * 2);
       }

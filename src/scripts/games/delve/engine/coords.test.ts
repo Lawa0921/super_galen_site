@@ -1,7 +1,7 @@
 // coords.test.ts — 座標鍵：中央沿用舊 tile / chunk index，外圍落在 T_BASE / C_BASE 以上，雙射。
 import { describe, it, expect } from 'vitest';
 import {
-  X_LIMIT, T_BASE, C_BASE, tileKey, tileXY, chunkKey, chunkXY, isOuterChunkKey, defaultBounds, chunkOfX, localX,
+  X_LIMIT, T_BASE, C_BASE, tileKey, tileXY, tileKeyX, tileKeyY, chunkKey, chunkXY, isOuterChunkKey, defaultBounds, chunkOfX, localX,
 } from './coords';
 
 const W = 4200, CX = Math.ceil(W / 32);
@@ -81,6 +81,16 @@ describe('chunkKey / chunkXY', () => {
     for (const [x, c, l] of cases) {
       expect([x, chunkOfX(x), localX(x)]).toEqual([x, c, l]);
       expect(chunkOfX(x) * 32 + localX(x)).toBe(x);
+    }
+  });
+});
+
+describe('tileKeyX / tileKeyY（不配置的解碼）', () => {
+  it('與 tileXY 相同（中央 / 負 x / x ≥ width / 硬邊界）', () => {
+    for (const [x, y] of [[0, 0], [5, 7], [W - 1, 1199], [-1, 0], [W, 3], [-X_LIMIT, 1199], [X_LIMIT - 1, 600], [-37, 12]]) {
+      const k = tileKey(W, x, y);
+      expect([tileKeyX(W, k), tileKeyY(W, k)]).toEqual([tileXY(W, k).x, tileXY(W, k).y]);
+      expect([tileKeyX(W, k), tileKeyY(W, k)]).toEqual([x, y]);
     }
   });
 });

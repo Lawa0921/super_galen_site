@@ -31,8 +31,8 @@ describe('paintMapChunk', () => {
   const world = (): World => {
     const w = new World(64, 64);
     w.surfaceY = 10;
-    for (let y = 20; y < 64; y++) for (let x = 0; x < 64; x++) { w.fg[y * 64 + x] = T.STONE; w.wall[y * 64 + x] = W.STONE_WALL; }
-    w.fg[25 * 64 + 5] = T.AIR; // 洞（有背景牆）
+    for (let y = 20; y < 64; y++) for (let x = 0; x < 64; x++) { w.setFg(x, y, T.STONE); w.setWall(x, y, W.STONE_WALL); }
+    w.setFg(5, 25, T.AIR); // 洞（有背景牆）
     return w;
   };
   it('未探索 = 迷霧；探索過的實心 = tile 色、天空 = 天空色、有牆的空洞 = 牆色', () => {
@@ -132,12 +132,12 @@ describe('地城在地圖上讀得出來', () => {
   const dungeonWorld = (): World => {
     const w = new World(64, 64);
     w.surfaceY = 2;
-    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) { w.fg[y * 64 + x] = T.STONE; w.wall[y * 64 + x] = W.STONE_WALL; }
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) { w.setFg(x, y, T.STONE); w.setWall(x, y, W.STONE_WALL); }
     // 磚殼 20..40 × 20..40，裡面是地城牆的空房間
     for (let y = 20; y <= 40; y++) for (let x = 20; x <= 40; x++) {
       const shell = x === 20 || x === 40 || y === 20 || y === 40;
-      w.fg[y * 64 + x] = shell ? T.DUNGEON_BRICK_BLUE : T.AIR;
-      w.wall[y * 64 + x] = W.DUNGEON_WALL_BLUE;
+      w.setFg(x, y, shell ? T.DUNGEON_BRICK_BLUE : T.AIR);
+      w.setWall(x, y, W.DUNGEON_WALL_BLUE);
     }
     return w;
   };

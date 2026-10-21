@@ -10,10 +10,9 @@ import { LIGHT_LEVELS } from './lowres';
 
 function secretRoomWorld(): World {
   const w = new World(100, 100);
-  w.fg.fill(T.STONE);
-  w.wall.fill(W.STONE_WALL);
-  for (let y = 45; y < 55; y++) for (let x = 40; x < 60; x++) w.fg[w.idx(x, y)] = T.AIR;
-  for (let y = 45; y < 55; y++) w.fg[w.idx(50, y)] = T.CRACKED_STONE;
+  for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) { w.setFg(x, y, T.STONE); w.setWall(x, y, W.STONE_WALL); }
+  for (let y = 45; y < 55; y++) for (let x = 40; x < 60; x++) w.setFg(x, y, T.AIR);
+  for (let y = 45; y < 55; y++) w.setFg(50, y, T.CRACKED_STONE);
   w.surfaceY = 0;
   return w;
 }
@@ -61,7 +60,7 @@ describe('depthCurve：地下的暗部曲線（未照到的地方更暗、光源
   });
   it('shadeTiles 套用曲線：同樣的引擎光，深處的格比地表附近暗、色相不變', () => {
     const w = new World(40, 120);
-    w.wall.fill(W.STONE_WALL);
+    for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) w.setWall(x, y, W.STONE_WALL);
     w.surface.fill(10);
     w.surfaceY = 0;
     const rect = { x0: 0, y0: 0, w: 40, h: 120 };
@@ -80,13 +79,12 @@ describe('depthCurve：地下的暗部曲線（未照到的地方更暗、光源
   /** 深處的一條走廊，(70, row) 放火把（tile）或手持火把（動態光 0.85）；回傳每格距離的亮度階 */
   function poolLevels(held: boolean): number[] {
     const w = new World(140, 200);
-    w.fg.fill(T.STONE);
-    w.wall.fill(W.STONE_WALL);
+    for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) { w.setFg(x, y, T.STONE); w.setWall(x, y, W.STONE_WALL); }
     w.surface.fill(20);
     w.surfaceY = 0;
     const row = 150;
-    for (let x = 10; x < 130; x++) for (let y = row - 6; y <= row; y++) w.fg[w.idx(x, y)] = T.AIR;
-    if (!held) w.fg[w.idx(70, row)] = T.TORCH;
+    for (let x = 10; x < 130; x++) for (let y = row - 6; y <= row; y++) w.setFg(x, y, T.AIR);
+    if (!held) w.setFg(70, row, T.TORCH);
     const rect = { x0: 20, y0: row - 20, w: 100, h: 30 };
     const L = new LightEngine().compute(w, { x: rect.x0, y: rect.y0, w: rect.w, h: rect.h }, { sky: 0, lights: held ? [{ x: 70, y: row, v: 0.85 }] : [] });
     const out = new Float32Array(rect.w * rect.h * 3);
@@ -103,13 +101,12 @@ describe('depthCurve：地下的暗部曲線（未照到的地方更暗、光源
   });
   it('深處火把的光池：亮度階隨距離一階一階往下（階梯式），十幾格外全暗', () => {
     const w = new World(140, 200);
-    w.fg.fill(T.STONE);
-    w.wall.fill(W.STONE_WALL);
+    for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) { w.setFg(x, y, T.STONE); w.setWall(x, y, W.STONE_WALL); }
     w.surface.fill(20);
     w.surfaceY = 0;
     const row = 150;
-    for (let x = 10; x < 130; x++) for (let y = row - 6; y <= row; y++) w.fg[w.idx(x, y)] = T.AIR;
-    w.fg[w.idx(70, row)] = T.TORCH;
+    for (let x = 10; x < 130; x++) for (let y = row - 6; y <= row; y++) w.setFg(x, y, T.AIR);
+    w.setFg(70, row, T.TORCH);
     const rect = { x0: 20, y0: row - 20, w: 100, h: 30 };
     const L = new LightEngine().compute(w, { x: rect.x0, y: rect.y0, w: rect.w, h: rect.h }, { sky: 0 });
     const out = new Float32Array(rect.w * rect.h * 3);
@@ -128,7 +125,7 @@ describe('depthCurve：地下的暗部曲線（未照到的地方更暗、光源
 describe('湖岸 / 懸崖：地表一欄就差 24 格時，深度曲線不切出直線', () => {
   it('同樣的引擎光、同一列，相鄰兩欄的亮度差很小（參考地表在 ±8 欄內平滑）', () => {
     const w = new World(120, 160);
-    w.wall.fill(W.STONE_WALL);
+    for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) w.setWall(x, y, W.STONE_WALL);
     for (let x = 0; x < 120; x++) w.surface[x] = x < 60 ? 40 : 64; // x = 60 是湖岸的落差
     w.surfaceY = 0;
     const rect = { x0: 0, y0: 0, w: 120, h: 160 };
