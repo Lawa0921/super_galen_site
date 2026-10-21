@@ -362,6 +362,32 @@ describe('the reworked trees (plan 8d Task 9)', () => {
     for (const n of allNodes()) expect(['active', 'variant', 'mech'], n.id).toContain(n.kind);
   });
 
+  /** The fields that only scale a number; a variant made of these alone changes no rule. */
+  const NUMBER_ONLY = ['powerPct', 'buffPct', 'tpDelta', 'turns', 'turnsDelta', 'hpCost', 'chance', 'powerDelta'];
+  /**
+   * The variants that may change numbers alone: plan ruling 10's five (殺價 and 速射 are B sides), and two more by the
+   * controller's 8d Task 9 ruling (a):
+   * - selene-moon-bright (月光・凝光): the numeric side of a pair whose other side, 群照, changes the target; choosing
+   *   between the two is the rule.
+   * - safira-clap-encore (拍手・安可): low impact, never cast by the sim. Revisit when runes land.
+   */
+  const NUMBERS_ONLY_OK = ['chizuru-ward-long', 'sylvie-sunder-deep', 'selene-dream-deep', 'liz-twin-haggle', 'sylvie-aim-rapid',
+    'selene-moon-bright', 'safira-clap-encore'];
+
+  it('every variant changes a rule; only the whitelisted ones change numbers alone', () => {
+    const numbersOnly = allNodes().filter((n) => n.kind === 'variant')
+      .filter((n) => Object.entries(n.mods![0]).every(([k, v]) => k === 'notes' || v === undefined || NUMBER_ONLY.includes(k)))
+      .map((n) => n.id);
+    expect(numbersOnly.sort()).toEqual([...NUMBERS_ONLY_OK].sort());
+    // 凝光 is the A side of its pair, 群照 (target: allies) the B side.
+    expect(NODES['selene-moon-bright'].pair).toBe('selene-moon-wide');
+    expect(NODES['selene-moon-wide'].node.mods![0].target).toBe('allies');
+    for (const id of ['liz-twin-haggle', 'sylvie-aim-rapid']) {
+      const info = NODES[id];
+      expect(TREES[info.owner].branches[info.branch].nodes[info.tier].pair?.id, id).toBe(id);   // a B side
+    }
+  });
+
   it('every mechanic knob is read by the engine, and exactly one node turns it', () => {
     const src = readFileSync(join(here, 'trees.ts'), 'utf8');
     const union = /export type MechKnob =([^;]+);/.exec(src)![1];
