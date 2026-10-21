@@ -1,6 +1,7 @@
 // weatherFx.ts — 天氣 / 季節的畫面效果（renderer 每幀呼叫；世界 px = 美術 px）：
 //   · 雨（斜向 1 px 雨絲 + 落地水花）/ 雪（1–2 px 雪花，落地停一下）：只生在畫面內、而且只在「頭上是天空」的欄
-//     （每欄的第一個實心格 = skyTop，快取、chunk 變動時失效），總數有上限、依畫面面積縮放。
+//     （每欄的第一個實心格 = skyTop，按 chunk 欄快取 Map<cx, Int16Array(32)>、chunk 變動時失效、欄卸載時 prune 丟掉；
+//     沒常駐的欄不快取），總數有上限、依畫面面積縮放。
 //   · 霧：地表附近的抖動遮罩（Bayer 圖樣、世界座標錨定、離地越近越濃，沒有半透明）
 //   · 落葉 / 花瓣：從畫面上秋天 / 開花的樹冠飄下，碰到實心就停住消失
 //   · 睡覺淡出：全畫面 Bayer 抖動的黑（4 階）
@@ -68,13 +69,22 @@ export class WeatherFx {
     for (const ci of cis) this.skyTop.get(world.chunkCoords(ci).cx)?.fill(-1);
   }
   invalidateAll(): void { this.skyTop.clear(); this.skyCx = NaN; this.skyCol = null; }
-  /** 第 x 欄從天空往下第一個實心（或結冰）格的 y */
+  /** 丟掉已經沒常駐的欄的天空高度（renderer 定期呼叫；欄卸載後記憶體不留） */
+  prune(world: World): void {
+    if (this.skyWorld !== world) return;
+    for (const cx of this.skyTop.keys()) if (!world.isResident(cx)) this.skyTop.delete(cx);
+    if (this.skyCol && !this.skyTop.has(this.skyCx)) { this.skyCx = NaN; this.skyCol = null; }
+  }
+  /** 有快取天空高度的 chunk 欄（測試用） */
+  cachedSkyColumns(): number[] { return [...this.skyTop.keys()]; }
+  /** 第 x 欄從天空往下第一個實心（或結冰）格的 y（沒常駐的欄讀到 = 石頭 → 0，不快取） */
   top(world: World, x: number): number {
     if (this.skyWorld !== world) { this.skyWorld = world; this.invalidateAll(); }
     if (x < world.xMin || x >= world.xMax) return 0;
     const cx = chunkOfX(x);
     let col = this.skyCol;
     if (cx !== this.skyCx || !col) {
+      if (!world.isResident(cx)) return 0;
       col = this.skyTop.get(cx) ?? null;
       if (!col) { col = new Int16Array(CHUNK).fill(-1); this.skyTop.set(cx, col); }
       this.skyCx = cx; this.skyCol = col;

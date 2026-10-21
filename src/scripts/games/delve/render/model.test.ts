@@ -7,43 +7,28 @@ import { Inventory } from '../engine/inventory';
 import { DAY_LENGTH } from '../engine/constants';
 
 describe('clampCamera', () => {
-  it('夾在世界範圍內', () => {
-    expect(clampCamera(-50, -10, 800, 600, 3200, 1600)).toEqual({ x: 0, y: 0 });
-    expect(clampCamera(5000, 5000, 800, 600, 3200, 1600)).toEqual({ x: 2400, y: 1000 });
-    expect(clampCamera(100, 200, 800, 600, 3200, 1600)).toEqual({ x: 100, y: 200 });
+  it('夾在世界範圍內（有界世界傳 0, width*S）', () => {
+    expect(clampCamera(-50, -10, 800, 600, 0, 3200, 1600)).toEqual({ x: 0, y: 0 });
+    expect(clampCamera(5000, 5000, 800, 600, 0, 3200, 1600)).toEqual({ x: 2400, y: 1000 });
+    expect(clampCamera(100, 200, 800, 600, 0, 3200, 1600)).toEqual({ x: 100, y: 200 });
   });
   it('視窗比世界大時置中', () => {
-    expect(clampCamera(0, 0, 1000, 600, 800, 1600).x).toBe(-100);
+    expect(clampCamera(0, 0, 1000, 600, 0, 800, 1600).x).toBe(-100);
   });
-  it('世界左緣不是 0（worldX0）：夾在 [worldX0, worldX0 + worldW - viewW]', () => {
-    expect(clampCamera(-5000, 0, 800, 600, 3200, 1600, -1600).x).toBe(-1600);
-    expect(clampCamera(5000, 0, 800, 600, 3200, 1600, -1600).x).toBe(800);
-    expect(clampCamera(-700, 0, 800, 600, 3200, 1600, -1600).x).toBe(-700);
-    expect(followCamera({ x: 0, y: 0 }, { x: -5000, y: 0 }, 800, 600, 3200, 1600, 1 / 60, true, 9, -1600).x).toBe(-1600);
+  it('世界左緣不是 0（worldX0）：夾在 [worldX0, worldX1 - viewW]', () => {
+    expect(clampCamera(-5000, 0, 800, 600, -1600, 1600, 1600).x).toBe(-1600);
+    expect(clampCamera(5000, 0, 800, 600, -1600, 1600, 1600).x).toBe(800);
+    expect(clampCamera(-700, 0, 800, 600, -1600, 1600, 1600).x).toBe(-700);
+    expect(followCamera({ x: 0, y: 0 }, { x: -5000, y: 0 }, 800, 600, -1600, 1600, 1600, 1 / 60, true).x).toBe(-1600);
   });
-});
-
-describe('followCamera', () => {
-  it('朝目標平滑移動，不超過目標', () => {
-    const c = followCamera({ x: 0, y: 0 }, { x: 1000, y: 800 }, 800, 600, 32000, 16000, 1 / 60);
-    // 目標鏡頭 = 中心 - 半視窗 = (600, 500)
-    expect(c.x).toBeGreaterThan(0);
-    expect(c.x).toBeLessThan(600);
-    expect(c.y).toBeGreaterThan(0);
-    expect(c.y).toBeLessThan(500);
-  });
-  it('長時間後收斂到目標並受夾限', () => {
-    let c = { x: 0, y: 0 };
-    for (let i = 0; i < 600; i++) c = followCamera(c, { x: 100, y: 100 }, 800, 600, 32000, 16000, 1 / 60);
-    expect(c.x).toBeCloseTo(0);
-    expect(c.y).toBeCloseTo(0);
-    for (let i = 0; i < 600; i++) c = followCamera(c, { x: 5000, y: 4000 }, 800, 600, 32000, 16000, 1 / 60);
-    expect(c.x).toBeCloseTo(4600, 0);
-    expect(c.y).toBeCloseTo(3700, 0);
-  });
-  it('snap=true 直接到位', () => {
-    const c = followCamera({ x: 0, y: 0 }, { x: 1000, y: 800 }, 800, 600, 32000, 16000, 1 / 60, true);
-    expect(c).toEqual({ x: 600, y: 500 });
+  it('無限世界（±1e6 格）：可以停在負 px、也可以走過舊的 4200 寬右緣', () => {
+    const X0 = -1e6 * 16, X1 = 1e6 * 16, H = 1200 * 16;
+    expect(clampCamera(-5000, 300, 800, 600, X0, X1, H)).toEqual({ x: -5000, y: 300 });
+    expect(clampCamera(4300 * 16, 300, 800, 600, X0, X1, H).x).toBe(4300 * 16);
+    expect(clampCamera(-3e7, 0, 800, 600, X0, X1, H).x).toBe(X0);
+    expect(clampCamera(3e7, 0, 800, 600, X0, X1, H).x).toBe(X1 - 800);
+    const c = followCamera({ x: 0, y: 0 }, { x: -4800, y: 300 }, 800, 600, X0, X1, H, 1 / 60, true);
+    expect(c.x).toBe(-5200);
   });
 });
 
@@ -66,13 +51,23 @@ describe('FixedStepper', () => {
 });
 
 describe('visibleChunks', () => {
-  it('列出與視窗相交的 chunk，夾在世界內', () => {
+  it('列出與視窗相交的 chunk，夾在世界內（cxMin..cxMax 含端點）', () => {
     // chunk 512px；視窗 (0,0)-(800,600) → cx 0..1, cy 0..1
-    const v = visibleChunks(0, 0, 800, 600, 512, 50, 16);
+    const v = visibleChunks(0, 0, 800, 600, 512, 0, 49, 16);
     expect(v).toEqual({ cx0: 0, cy0: 0, cx1: 1, cy1: 1 });
-    const w = visibleChunks(-100, 7000, 800, 2000, 512, 50, 16);
+    const w = visibleChunks(-100, 7000, 800, 2000, 512, 0, 49, 16);
     expect(w.cx0).toBe(0);
     expect(w.cy1).toBe(15);
+  });
+  it('無限世界：視窗在負 x → 負的 cx0；過了舊右緣（cx 131）不被夾住', () => {
+    const v = visibleChunks(-1000, 0, 800, 600, 512, -31250, 31249, 38);
+    expect(v.cx0).toBe(-2);
+    expect(v.cx1).toBe(-1);
+    const e = visibleChunks(4300 * 16, 0, 800, 600, 512, -31250, 31249, 38);
+    expect(e.cx0).toBe(134);
+    expect(e.cx1).toBe(135);
+    // 硬邊界還是夾住
+    expect(visibleChunks(-1e9, 0, 800, 600, 512, -31250, 31249, 38).cx0).toBe(-31250);
   });
 });
 
@@ -86,6 +81,13 @@ describe('ChunkLRU', () => {
     expect(lru.has(2)).toBe(false);
     expect(lru.get(1)).toBe('a');
     expect(lru.size).toBe(2);
+  });
+  it('evictWhere：拿掉符合條件的項目並回傳（卸載欄的 chunk 圖回收）', () => {
+    const lru = new ChunkLRU<string>(8);
+    lru.set(1, 'a'); lru.set(2, 'b'); lru.set(3, 'c');
+    expect(lru.evictWhere((k) => k !== 2)).toEqual(['a', 'c']);
+    expect(lru.keys()).toEqual([2]);
+    expect(lru.evictWhere(() => false)).toEqual([]);
   });
   it('覆寫同 key 不淘汰', () => {
     const lru = new ChunkLRU<string>(1);

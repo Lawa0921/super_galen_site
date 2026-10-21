@@ -6,7 +6,7 @@ import { FAR_RAMP, UG, UG_KEEPS, UG_FADE_STEPS, UG_SEAM, UG_TILE, smoothTops, ug
 const T = 16;
 const base = (o: Partial<UgColumn> = {}): UgColumn => ({
   tx: 100, top: 200 * T, fade: 96, rockY: 300 * T, deepY: 400 * T, moltenY: 600 * T,
-  viewTop: 0, viewBottom: 2000 * T, tile: T, biomeAt: () => 0, width: 1000, areas: [], ...o,
+  viewTop: 0, viewBottom: 2000 * T, tile: T, biomeAt: () => 0, xMin: 0, xMax: 1000, areas: [], ...o,
 });
 const FULL = UG_KEEPS.length - 1;
 
@@ -51,6 +51,12 @@ describe('ugColumnBands', () => {
     expect(over(85)).toEqual([]);
     const b = ugColumnBands(base({ tx: 100, biomeAt }));
     expect(b.filter((q) => q.overlay && (q.theme === UG.DIRT || q.theme === UG.ROCK)).length).toBeGreaterThan(0);
+  });
+  it('無限世界：負 x 的欄也看得到另一區（交界不被夾在 x = 0）；世界邊界外不找', () => {
+    const biomeAt = (x: number): number => (x < -100 ? 1 : 0);
+    const over = (tx: number, xMin = -1e6): number[] => ugColumnBands(base({ tx, biomeAt, xMin })).filter((q) => q.overlay && q.theme === UG.SAND).map((q) => q.keep);
+    expect(over(-99).length).toBeGreaterThan(0);
+    expect(over(-99, -100)).toEqual([]);
   });
   it('菇林（橢圓）覆蓋：中心欄整段實心 + 上下抖動邊；外接框角落外面沒有', () => {
     const areas = ugAreas([{ kind: 'mushroom_biome', x: 80, y: 420, w: 40, h: 30 }, { kind: 'cabin', x: 0, y: 0, w: 5, h: 5 }]);

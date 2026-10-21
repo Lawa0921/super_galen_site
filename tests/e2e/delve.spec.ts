@@ -203,6 +203,50 @@ test.describe('delve', () => {
     expect(await worldHash(page)).not.toBe(a);
   });
 
+  test('無限世界：鏡頭與 chunk 圖跟著走出中央（東邊海上 x 4300、西邊負 x），只烘焙常駐的欄，沒有 console 錯誤', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=infinite-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const frames = (n: number): Promise<void> => page.evaluate((n) => new Promise<void>((ok) => {
+      let k = 0;
+      const f = (): void => { if (++k >= n) ok(); else requestAnimationFrame(f); };
+      requestAnimationFrame(f);
+    }), n);
+    const go = (x: number): Promise<void> => page.evaluate((x) => {
+      const d = window.__delveDebug!, g = d.game;
+      g.teleport(x, g.world.surfaceAt(x) - 1);
+      d.handle.renderer.snapCamera();
+    }, x);
+    const look = () => page.evaluate(() => {
+      const d = window.__delveDebug!, r = d.handle.renderer, w = d.game.world, p = d.game.feetTile();
+      const keys = r.cachedChunks().map((k) => w.chunkCoords(k).cx);
+      return {
+        camX: r.cam.x, vw: r.worldViewW(), bounds: w.bounds,
+        res134: w.isResident(134), playerCx: Math.floor(p.x / 32),
+        hasPlayerChunk: r.cachedChunks().includes(w.chunkIndex(Math.floor(p.x / 32), Math.floor(p.y / 32))),
+        allResident: keys.every((cx) => w.isResident(cx)),
+      };
+    });
+    await go(4300);
+    await frames(30);
+    const e = await look();
+    expect(e.bounds).toBe('infinite');
+    expect(e.camX).toBeGreaterThan(4200 * 16 - e.vw);
+    expect(e.res134).toBe(true);
+    expect(e.hasPlayerChunk).toBe(true);
+    expect(e.allResident).toBe(true);
+    await go(-300);
+    await frames(30);
+    const wv = await look();
+    expect(wv.camX).toBeLessThan(0);
+    expect(wv.playerCx).toBeLessThan(0);
+    expect(wv.hasPlayerChunk).toBe(true);
+    expect(wv.allResident).toBe(true);
+    expect(errors).toEqual([]);
+  });
+
   test('瞄準腳下並按住挖掘 → 背包泥土增加', async ({ page }) => {
     await page.goto('/games/delve?seed=mine&autostart=1&fresh=1');
     await waitGame(page);

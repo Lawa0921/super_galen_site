@@ -6,6 +6,7 @@ import type { TileWindow } from '../engine/world';
 import { BLOCKS_LIGHT_LUT, T, isSolidTile, isDecor } from '../engine/tiles';
 import { ITEMS, type ItemId } from '../engine/items';
 import { TILE_SIZE, CHUNK, DAY_LENGTH } from '../engine/constants';
+import { chunkOfX } from '../engine/coords';
 import { buildAtlas, perpMask, type Atlas } from './textures';
 import { ChunkLRU, cameraFocus, chunksTouchRect, followCamera, nearRect, visibleChunks, type Cam, type TileRect } from './model';
 import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type Neighbor } from './autotile';
@@ -19,7 +20,8 @@ import { previewArms } from './dollPreview';
 import { CombatLayer } from './combatDraw';
 import { LevelFx } from './levelFx';
 import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
-import { Background } from './background';
+import { Background, type BiomeSource } from './background';
+import { ColumnCache } from './colCache';
 import { scanTrees, torchMount, treeKind, TREE_KIND } from './scene';
 import { bufferSize, clampZoom, floatTextScale, snapCam, zoomScale } from './lowres';
 import { ambientReach, depthSurfaceAt, type LightMap, type PointLight } from '../engine/lighting';
@@ -43,6 +45,8 @@ const S = TILE_SIZE;
 const CPX = CHUNK * S;
 /** 每幀最多重畫幾個「已在快取裡」的 dirty chunk（看得到但沒快取的一律立即畫） */
 const REDRAW_BUDGET = 4;
+/** 回收的 chunk 畫布最多留幾張（卸載欄收回來的不無限累積） */
+const POOL_MAX = 32;
 const LIGHT_EVERY = 4;
 /** 光照重算每幀最多花這麼多毫秒（超過就留到下一幀繼續填；畫面沒被遮罩蓋滿時例外：當幀填完） */
 const LIGHT_BUDGET_MS = 1.6;
@@ -203,10 +207,13 @@ export class Renderer {
   /** 畫面上的水晶簇（光暈中心 + 變體：0 青 / 1 紫） */
   private crystalSeen: { x: number; y: number; v: number }[] = [];
   private glowSeen = { warm: this.torchesSeen, cool: this.coolSeen };
-  /** 平均地表高度（世界 px），地下背景起點用 */
+  /** 平均地表高度（世界 px）：世界沒有欄時的地平線 */
   private horizonPx: number;
-  /** 地表高度前綴和（遠景地平線取鏡頭附近平均） */
-  private surfSum: Float64Array;
+  /** 每欄地表高度 / 生態區的快取（外圍的 surfaceAt / biomeAt 要算雜湊；遠景地平線、遠景混合、地下背景每幀都問） */
+  private surfCache: ColumnCache;
+  private biomeCache: ColumnCache;
+  /** 遠景混合的生態區來源（物件固定 → Background 的權重場不重建） */
+  private biomeSrc: BiomeSource;
 
   /**
    * opts.direct：直接畫在 canvas 上（canvas 大小 = 低解析緩衝），整數倍放大交給 CSS（image-rendering: pixelated）；
@@ -229,12 +236,12 @@ export class Renderer {
     let s = 0;
     for (const ch of game.seed) s = (s * 31 + ch.charCodeAt(0)) >>> 0;
     this.bg = new Background(s % 100000);
-    const surf = game.world.surface;
-    let sum = 0;
-    for (let i = 0; i < surf.length; i++) sum += surf[i];
-    this.horizonPx = (surf.length ? sum / surf.length : game.world.surfaceY) * S;
-    this.surfSum = new Float64Array(surf.length + 1);
-    for (let i = 0; i < surf.length; i++) this.surfSum[i + 1] = this.surfSum[i] + surf[i];
+    const gw = game.world;
+    this.horizonPx = gw.surfaceY * S;
+    this.surfCache = new ColumnCache((x) => gw.surfaceAt(x));
+    this.biomeCache = new ColumnCache((x) => gw.biomeAt(x));
+    const bc = this.biomeCache;
+    this.biomeSrc = { at: (x) => bc.at(x), xMin: gw.xMin, xMax: gw.xMax };
   }
 
   resize(cssW: number, cssH: number, devicePixelRatio: number): void {
@@ -292,6 +299,8 @@ export class Renderer {
     return { x: (wx - this.drawCam.x) * this.zoom, y: (wy - this.drawCam.y) * this.zoom };
   }
   snapCamera(): void { this.snapNext = true; }
+  /** 快取裡有圖的 chunk 鍵（e2e：只烘焙常駐的欄、走出中央也有圖） */
+  cachedChunks(): number[] { return this.cache.keys(); }
   invalidateAll(): void {
     for (const k of this.cache.keys()) this.pending.add(k);
     this.lightDirty = true;
@@ -350,13 +359,13 @@ export class Renderer {
     this.tp = performance.now();
     this.frame++;
     this.clock += dt;
-    // 世界水平範圍 [xMin, xMax)（px）：鏡頭夾在裡面
-    const worldX0 = w.xMin * S, worldW = (w.xMax - w.xMin) * S, worldH = w.height * S;
+    // 世界水平範圍 [xMin, xMax)（px）：鏡頭夾在裡面（無限世界 ±1e6 格 → 可以是負 px）
+    const worldX0 = w.xMin * S, worldX1 = w.xMax * S, worldH = w.height * S;
     const vw = this.worldViewW(), vh = this.worldViewH();
     const pc = g.playerCenter();
     this.cam = this.camOverride
-      ? { x: Math.max(worldX0, Math.min(worldX0 + worldW - vw, this.camOverride.x)), y: Math.max(0, Math.min(worldH - vh, this.camOverride.y)) }
-      : followCamera(this.cam, cameraFocus(pc, vw, vh), vw, vh, worldW, worldH, dt, this.snapNext, undefined, worldX0);
+      ? { x: Math.max(worldX0, Math.min(worldX1 - vw, this.camOverride.x)), y: Math.max(0, Math.min(worldH - vh, this.camOverride.y)) }
+      : followCamera(this.cam, cameraFocus(pc, vw, vh), vw, vh, worldX0, worldX1, worldH, dt, this.snapNext);
     this.snapNext = false;
     // 繪製時對齊整數美術 px：精靈 / chunk / 視差層都落在像素格上，不會閃爍
     this.drawCam = snapCam(this.cam);
@@ -401,7 +410,7 @@ export class Renderer {
       horizonY: this.localHorizon(camX + vw / 2), time: g.time, dayFrac: day,
       biome: { a: w.biomeAt(Math.floor((camX + vw / 2) / S)), b: 0, t: 0 },
       // 生態區交界：每層依鏡頭中心連續混合（標題背景不混）
-      biomeCols: this.plainBackdrop ? undefined : w.biome, centerTile: (camX + vw / 2) / S,
+      biomes: this.plainBackdrop ? undefined : this.biomeSrc, centerTile: (camX + vw / 2) / S,
       sunrise: sun.sunrise, sunset: sun.sunset, twilight: sun.twilight, moon: g.moon(),
       season: seasonBlend(g.time),
       weather: { kind: wx.kind, intensity: wx.intensity, flash, wind: g.wind() },
@@ -412,10 +421,12 @@ export class Renderer {
     ctx.setTransform(1, 0, 0, 1, -camX, -camY);
     this.bg.drawUnderground(ctx, camX, camY, vw, vh,
       (tx) => (w.surfaceAt(tx) + 6) * S, S, (w.rockY || w.cavernY) * S, w.cavernY * S, w.moltenY ? w.moltenY * S : Infinity,
-      { biome: w.biome, structures: g.structures }); // [polish] biome-specific backdrops
+      { biomeAt: this.biomeSrc.at, xMin: w.xMin, xMax: w.xMax, structures: g.structures }); // [polish] biome-specific backdrops
     ph.bg = this.lap();
 
-    const r = visibleChunks(camX, camY, vw, vh, CPX, w.chunksX, w.chunksY);
+    const r = visibleChunks(camX, camY, vw, vh, CPX, chunkOfX(w.xMin), chunkOfX(w.xMax - 1), w.chunksY);
+    // 卸載的欄：chunk 圖 / 待重畫 / 天空高度都丟掉（每 30 幀掃一次快取；畫面上的另外在下面當場處理）
+    if (this.frame % 30 === 0) this.dropUnloaded();
     if (seasonFlush) {
       for (const k of this.cache.keys()) {
         const { cx, cy } = w.chunkCoords(k);
@@ -428,6 +439,13 @@ export class Renderer {
     for (let cy = r.cy0; cy <= r.cy1; cy++) {
       for (let cx = r.cx0; cx <= r.cx1; cx++) {
         const ci = w.chunkIndex(cx, cy);
+        // 沒常駐的欄（讀到 = 石頭）不烘焙也不畫舊圖：載入時引擎會把整欄標 dirty → 那時才畫
+        if (!w.isResident(cx)) {
+          const old = this.cache.get(ci);
+          if (old) { this.cache.delete(ci); if (this.pool.length < POOL_MAX) this.pool.push(old); }
+          this.pending.delete(ci);
+          continue;
+        }
         let c = this.cache.get(ci);
         if (!c) {
           c = this.paintChunk(ci, this.pool.pop());
@@ -505,13 +523,24 @@ export class Renderer {
     ph.blit = this.lap();
   }
 
-  /** 鏡頭附近 ±80 欄的平均地表（世界 px） */
+  /** 鏡頭附近 ±80 欄的平均地表（世界 px；夾在世界水平範圍內，無限世界不夾） */
   private localHorizon(wx: number): number {
-    const n = this.surfSum.length - 1;
-    if (n <= 0) return this.horizonPx;
+    const w = this.game.world, lo = w.xMin, hi = w.xMax;
+    if (hi <= lo || w.width === 0) return this.horizonPx;
     const c = Math.floor(wx / S);
-    const a = Math.max(0, Math.min(n - 1, c - 80)), b = Math.max(a + 1, Math.min(n, c + 80));
-    return ((this.surfSum[b] - this.surfSum[a]) / (b - a)) * S;
+    const a = Math.max(lo, Math.min(hi - 1, c - 80)), b = Math.max(a + 1, Math.min(hi, c + 80));
+    let sum = 0;
+    for (let x = a; x < b; x++) sum += this.surfCache.at(x);
+    return (sum / (b - a)) * S;
+  }
+
+  /** 卸載的欄：快取裡的 chunk 圖收回 pool、待重畫清掉、天空高度丟掉（renderer 不留沒常駐欄的任何東西） */
+  private dropUnloaded(): void {
+    const w = this.game.world;
+    const gone = (k: number): boolean => !w.isResident(w.chunkCoords(k).cx);
+    for (const c of this.cache.evictWhere(gone)) if (this.pool.length < POOL_MAX) this.pool.push(c);
+    for (const k of this.pending) if (gone(k)) this.pending.delete(k);
+    this.fx.prune(w);
   }
 
   // ── chunk ─────────────────────────────────────────────
