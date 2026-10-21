@@ -20,7 +20,7 @@ const FIXTURE = join(FIXTURES, 'contribution.8b.160.json');
  * `PARITY_CLOSEOUT=1` holds every row to 8b instead: the plan's last task runs it.
  */
 const PARITY_TASK: { name: string; changed: CharacterId[]; prev: string } = {
-  name: '8d Task 5', changed: ['chizuru', 'selene'], prev: 'contribution.8d-3.160.json',
+  name: '8d Task 6', changed: ['liz', 'sylvie'], prev: 'contribution.8d-5.160.json',
 };
 /**
  * Plan 8d's tasks that change the roster's numbers, in order; 2 stands for the last gate before the first of them. Each
