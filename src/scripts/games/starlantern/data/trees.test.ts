@@ -105,10 +105,9 @@ describe('skill trees', () => {
     for (const id of companions.filter((x) => x !== 'scarlet' && x !== 'rin')) expect(DEFAULT_CAPSTONE[id], id).toBe(0);
   });
 
-  it('mod nodes that lower hpCost do so rank by rank', () => {
-    const hp = allNodes().filter((n) => n.mods?.some((m) => m.hpCost !== undefined));
-    expect(hp.map((n) => n.id)).toEqual(['scarlet-ring-up']);
-    expect(hp[0].mods!.map((m) => m.hpCost)).toEqual([0.08, 0.06, 0.04]);
+  it('no node lowers an HP cost any more (plan 8d Task 7: 炎環節制 became 炎環斬・燎原)', () => {
+    expect(allNodes().filter((n) => n.mods?.some((m) => m.hpCost !== undefined)).map((n) => n.id)).toEqual([]);
+    expect(NODES['scarlet-ring-up']).toBeUndefined();
   });
 
   it('the default build learns every legacy skill by its old level', () => {
@@ -195,18 +194,19 @@ describe('skill trees', () => {
     for (let r = 1; r <= 3; r++) expect(nodeText(n.id, r)).toContain(`${n.mods![r - 1].turns} 回合`);
   });
 
-  it('every power mod node (powerPct or powerDelta) names a skill that deals damage, heals, sets a device or raises a barrier', () => {
+  it('every power mod node (powerPct or powerDelta) names a skill that deals damage, heals, sets a device, raises a barrier or fills a gauge', () => {
     const power = allNodes().filter((n) => n.kind === 'variant' && n.mods!.some((m) => m.powerPct !== undefined || m.powerDelta !== undefined));
     expect(power.map((n) => n.id)).toContain('twin-turret');
+    expect(power.map((n) => n.id)).toContain('safira-clap-encore');   // 拍手・安可: its power is the gauge it fills (plan 8d Task 7)
     for (const n of power) {
-      expect(SKILLS[n.skill!].effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'device' || e.kind === 'barrier'), n.id).toBe(true);
+      expect(SKILLS[n.skill!].effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'device' || e.kind === 'barrier' || e.kind === 'gauge'), n.id).toBe(true);
     }
   });
 
-  it('a skill whose HP cost a mod node lowers does not state a fixed HP percent', () => {
+  it('a skill whose HP cost a mod node lowers does not state a fixed HP percent (none is left since plan 8d Task 7)', () => {
     const lowered = [...new Set(allNodes().filter((n) => n.mods?.some((m) => m.hpCost !== undefined)).map((n) => n.skill!))];
-    expect(lowered).toEqual(['blaze-ring']);
-    for (const s of lowered) expect(SKILLS[s].desc, s).not.toMatch(/\d+\s*%/);
+    expect(lowered).toEqual([]);
+    expect(SKILLS['blaze-ring'].desc).not.toMatch(/\d+\s*%/);
   });
 
   it("a power with absolute turns names each tree node whose turn bonus it overrides (lg-bobby and twin-turret)", () => {
@@ -260,8 +260,8 @@ describe('skill trees', () => {
     expect(NODES['flame-wave']).toMatchObject({ owner: 'noel', branch: 0, tier: 2 });
     expect(NODES.pickpocket).toMatchObject({ owner: 'liz', branch: 0, tier: 1 });
     expect(nodeName('sweep')).toBe(SKILLS.sweep.name);
-    expect(nodeName('scarlet-burst-up')).toBe('爆炎強化');
-    expect(nodeDesc('scarlet-burst-up')).toBeTruthy();
+    expect(nodeName('bobby-turret-up')).toBe('砲台強化');   // a plan 8c node still standing (V0)
+    expect(nodeDesc('bobby-turret-up')).toBeTruthy();
     expect(nodeName('noel-star-twin')).toBe('火之星彈・連星');
     expect(nodeName('noel-calm')).toBe('冷靜');
     expect(NODES['noel-star-heavy']).toMatchObject({ owner: 'noel', branch: 0, tier: 1, pair: 'noel-star-twin' });
@@ -309,7 +309,7 @@ describe('node words (plan 8d)', () => {
   };
 
   it('node words name their own numbers', () => {
-    const owners = ['noel', 'rin', 'chizuru', 'selene', 'liz', 'sylvie'] as const;   // Task 9 widens this to every tree
+    const owners = ['noel', 'rin', 'chizuru', 'selene', 'liz', 'sylvie', 'scarlet', 'safira'] as const;   // Task 9 widens this to every tree
     let checked = 0;
     for (const id of owners) for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) {
       if (node.kind === 'active') continue;
@@ -319,7 +319,8 @@ describe('node words (plan 8d)', () => {
         expect(text, `${node.id} r${r}`).toMatch(/。$/);
         // A whole number in the words: 「30%」 is not inside 「130%」.
         const says = (v: number) => new RegExp(`(?<![0-9.])${v}(?![0-9.])`).test(text);
-        for (const v of numbersOf(node, r)) expect(says(v), `${node.id} r${r} names ${v}: ${text}`).toBe(true);
+        // A zero is said in words (即興 r3: 「拍子不變」, plan 8d Task 7).
+        for (const v of numbersOf(node, r)) if (v !== 0) expect(says(v), `${node.id} r${r} names ${v}: ${text}`).toBe(true);
         if (r > 1) {
           const was = numbersOf(node, r - 1), now = numbersOf(node, r);
           was.forEach((v, i) => { if (v !== now[i]) expect(says(v), `${node.id} r${r} still says ${v}: ${text}`).toBe(false); });

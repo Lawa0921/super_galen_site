@@ -226,9 +226,9 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
   });
 
   it('a modifier node rewrites its skill at its rank', () => {
-    // A plan 8c strengthening node still standing, and a plan 8d variant that cuts TP (殺價).
-    const burst = (SKILLS['flame-burst'].effects[0] as { power: number }).power;
-    expect(dmg(caster({ 'flame-burst': 1, 'scarlet-burst-up': 2 }), 'flame-burst')).toBe(pw(burst, mod('scarlet-burst-up', 2).powerPct!));
+    // A plan 8c strengthening node still standing (劍技精通), and a plan 8d variant that cuts TP (殺價).
+    const slash = (SKILLS['hero-slash'].effects[0] as { power: number }).power;
+    expect(dmg(caster({ 'hero-slash': 1, 'hero-sword-up': 2 }), 'hero-slash')).toBe(pw(slash, mod('hero-sword-up', 2).powerPct!));
     expect(skillCost(caster({ 'twin-slash': 1, 'liz-twin-haggle': 3 }), 'twin-slash'))
       .toBe(Math.max(1, SKILLS['twin-slash'].tp + mod('liz-twin-haggle', 3).tpDelta!));
   });
@@ -244,7 +244,9 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
   const TURRET = (SKILLS.turret.effects[0] as { power: number }).power;
 
   it('hpCost and the turret capstone come through', () => {
-    expect(skillFor(caster({ 'blaze-ring': 1, 'scarlet-ring-up': 3 }), 'blaze-ring')!.hpCost).toBe(mod('scarlet-ring-up', 3).hpCost);
+    // No tree node lowers an HP cost since plan 8d Task 7; patchSkill still carries one (0 kept: no HP cost at all).
+    expect(patchSkill(SKILLS['blaze-ring'], { hpCost: 0.04 }).hpCost).toBe(0.04);
+    expect(patchSkill(SKILLS['blaze-ring'], { hpCost: 0 }).hpCost).toBe(0);
     const turret = fx(caster({ turret: 1, 'twin-turret': 1 }), 'turret')[0] as { power: number; turns: number };
     expect(turret.power).toBe(pw(TURRET, 100 + twin.powerDelta!));
     expect(turret.turns).toBe(turretTurns + twin.turnsDelta!);
@@ -298,17 +300,14 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
       .toEqual({ ...baseDebuff, turns: 7 });
     const smoke = fx(caster({ 'smoke-bomb': 1, 'liz-smoke-choke': 2 }), 'smoke-bomb');
     expect(smoke).toEqual([...SKILLS['smoke-bomb'].effects, { kind: 'buff', stat: 'spd', pct: -20, turns: 3 }]);
-    const bash = fx(caster({ 'shield-bash': 1, 'scarlet-bash-up': 3 }), 'shield-bash');
-    const bash0 = SKILLS['shield-bash'].effects;
-    // Plan 8c Task 5: the bash challenges instead of weakening, so its node scales the power alone.
-    expect(mod('scarlet-bash-up', 3).buffPct).toBeUndefined();
-    expect(bash).toEqual([{ ...bash0[0], power: pw((bash0[0] as { power: number }).power, mod('scarlet-bash-up', 3).powerPct!) }, { kind: 'challenge' }]);
+    // Plan 8d Task 7: 燎原 adds a burn to 炎環斬's hits and leaves its power as it is.
+    expect(fx(caster({ 'blaze-ring': 1, 'scarlet-ring-blaze': 2 }), 'blaze-ring')).toEqual([...SKILLS['blaze-ring'].effects, { kind: 'inflict', status: 'burn', chance: 0.4 }]);
   });
 
   it('skillFor casts exactly what treeMods describes, then the worn powers (one path)', () => {
     for (const [skill, ranks, powers] of [
       ['turret', { turret: 2, 'bobby-turret-up': 3, 'twin-turret': 1 }, ['lg-bobby']],
-      ['shield-bash', { 'shield-bash': 3, 'scarlet-bash-up': 2 }, []],
+      ['blaze-ring', { 'blaze-ring': 3, 'scarlet-ring-blaze': 2 }, []],
       ['fire-star', { 'fire-star': 3, 'noel-star-twin': 1 }, ['lg-noel']],
     ] as [string, Record<string, number>, string[]][]) {
       const tree = treeMods(ranks, skill).reduce((d, m) => patchSkill(d, m), SKILLS[skill]);

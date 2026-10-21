@@ -525,9 +525,9 @@ describe('StatusScene', () => {
     expect(icons[0].nextElementSibling!.classList.contains('slx-skill-head')).toBe(true);
     s.onAction('right');                                               // 技能樹
     const withIcon = [...root.querySelectorAll('.slx-tree-node')].filter((n) => n.querySelector('img.slx-skill-ico')).map((n) => n.getAttribute('data-node'));
-    // The skill's own node, and the node that changes it (a mod node shows the skill it modifies).
-    expect(withIcon).toEqual(TREES.scarlet.branches.flatMap((b) => b.nodes).filter((n) => n.skill === 'blaze-ring').map((n) => n.id));
-    expect(withIcon).toContain('scarlet-ring-up');
+    // The skill's own node only: its variant (炎環斬・燎原) names the skill and goes without (8d Task 6 review).
+    expect(withIcon).toEqual(['blaze-ring']);
+    expect(TREES.scarlet.branches.flatMap((b) => b.nodes).filter((n) => n.skill === 'blaze-ring').map((n) => n.id)).toEqual(['blaze-ring', 'scarlet-ring-blaze']);
     expect(root.querySelector('.slx-tree-node[data-node=blaze-ring] img')!.getAttribute('src')).toBe(art.icon('blaze-ring'));
   });
 

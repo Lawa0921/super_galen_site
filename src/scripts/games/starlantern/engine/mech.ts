@@ -79,7 +79,8 @@ export type MechState =
   | { kind: 'coins'; coins: number }
   /** `lock`: round ends the hunter's mark still holds the aim on its target. */
   | { kind: 'aim'; target: string | null; stacks: number; lock?: number }
-  | { kind: 'embers'; embers: number }
+  /** `capPct`: her cap in percent of max HP, written at a fight's start when her 熾心 raises it (absent: EMBER.capPct). */
+  | { kind: 'embers'; embers: number; capPct?: number }
   | { kind: 'beat'; beat: number; last: string | null }
   | { kind: 'devices'; devices: Device[]; cap: number }
   /**

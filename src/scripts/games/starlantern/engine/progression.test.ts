@@ -1067,6 +1067,44 @@ describe("Liz's and Sylvie's trees (plan 8d Task 6)", () => {
   });
 });
 
+describe("Scarlet's and Safira's trees (plan 8d Task 7)", () => {
+  it('scarlet and safira hold no B side and no 8c node', () => {
+    for (const id of ['scarlet', 'safira'] as const) for (const L of [5, 10, 20, 35, 50]) {
+      for (const k of Object.keys(defaultTree(id, L))) {
+        const { node, branch, tier } = NODES[k];
+        expect(TREES[id].branches[branch].nodes[tier], `${id} Lv${L} ${k}`).toBe(node);   // an A side
+        expect(k, `${id} Lv${L}`).not.toMatch(/-up$/);
+      }
+    }
+    for (const id of ['scarlet', 'safira'] as const) {
+      for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) expect(node.id, id).not.toMatch(/-up$/);
+    }
+    // Two mechanic nodes each (spec §7): 熾心 and 回禮; 即興 and 雙人舞.
+    const mechs = (id: 'scarlet' | 'safira') => TREES[id].branches.flatMap((b) => branchNodes(b)).filter((x) => x.node.kind === 'mech').map((x) => x.node.id);
+    expect(mechs('scarlet')).toEqual(['scarlet-ardent', 'scarlet-thanks']);
+    expect(mechs('safira')).toEqual(['safira-improv', 'safira-duet']);
+  });
+
+  it("the tuned numbers of Scarlet's and Safira's nodes, and 爆炎斬's power and HP cost (8d Task 7, retune.md)", () => {
+    const mods = (id: string) => NODES[id].node.mods!;
+    const vals = (id: string) => NODES[id].node.values!;
+    // 爆炎強化 (+10/20/35% always) became 赤心 (+30/40/50% only when the embers pay the whole cost, 1-15% of the sim's
+    // casts): 爆炎斬 carries her power instead, 220 → 260, at a dearer 20% HP (was 15%), so Lv10 and Lv50 both hold parity.
+    expect([(SKILLS['flame-burst'].effects[0] as { power: number }).power, SKILLS['flame-burst'].hpCost]).toEqual([260, 0.2]);
+    expect(mods('scarlet-burst-heart').map((m) => m.rules!.emberPaidPct)).toEqual([30, 40, 50]);
+    expect(mods('scarlet-provoke-shout').map((m) => (m.extra![0] as { pct: number }).pct)).toEqual([10, 15, 20]);
+    expect(mods('scarlet-cover-both').map((m) => [m.turns, m.rules!.keep])).toEqual([[3, true], [4, true], [5, true]]);
+    expect(mods('scarlet-ring-blaze').map((m) => (m.extra![0] as { chance: number }).chance)).toEqual([0.3, 0.4, 0.5]);
+    expect([vals('scarlet-ardent'), vals('scarlet-thanks')]).toEqual([[60, 70, 80], [5, 8, 10]]);
+    // Safira at the plan's numbers.
+    expect(mods('safira-dance-four').map((m) => [m.hits, m.powerPct])).toEqual([[4, 82], [4, 90], [4, 100]]);
+    expect(mods('safira-war-heat').map((m) => (m.extra![0] as { pct: number; turns: number }))).toEqual([10, 15, 20].map((pct) => ({ kind: 'buff', stat: 'spd', pct, turns: 3 })));
+    expect(mods('safira-clap-encore').map((m) => m.powerPct)).toEqual([150, 175, 200]);
+    expect(mods('safira-shadow-sync').map((m) => m.rules!.beats)).toEqual([2, 3, 4]);
+    expect([vals('safira-improv'), vals('safira-duet')]).toEqual([[2, 1, 0], [20, 30, 40]]);
+  });
+});
+
 describe("Chizuru's and Selene's trees (plan 8d Task 5)", () => {
   it("selene's prayer branch: recall at tier 2, open from Lv5", () => {
     const b = TREES.selene.branches[1];

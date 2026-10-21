@@ -6,6 +6,8 @@ import { choose, partyAt } from '../sim';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
 import { castDef } from './index';
+import { skillFor } from '../battle';
+import { pctOf } from '../skills';
 import { BEAT } from './beat';
 
 const safira = (beat = 0, last: string | null = null, over: Partial<Combatant> = {}) => makeCombatant({
@@ -108,5 +110,58 @@ describe("Safira's beat", () => {
       return n;
     };
     expect(draws(3)).toBe(draws(0));
+  });
+});
+
+describe("Safira's nodes (plan 8d Task 7)", () => {
+  const cues = (s: BattleState) => s.log.filter((e) => e.type === 'mech' && e.actor === 'safira').map((e) => (e as { cue: string }).cue);
+
+  it('improv: a repeat costs two beats, not all, and is no misstep', () => {
+    const repeat = (r: number, beat = 3) => step(makeBattle([safira(beat, 'blade-dance', { ranks: { 'blade-dance': 1, 'safira-improv': r } })], [foe()]), skill('blade-dance'));
+    expect(beatOf(repeat(1))).toEqual([1, 'blade-dance']);
+    expect(cues(repeat(1))).toEqual([]);
+    expect(beatOf(repeat(1, 1))).toEqual([0, 'blade-dance']);              // never below none
+    expect(beatOf(repeat(2))).toEqual([2, 'blade-dance']);
+    expect(beatOf(repeat(3))).toEqual([3, 'blade-dance']);                 // 拍子不變
+    // Without the node: back to none, a misstep.
+    const plain = step(makeBattle([safira(3, 'blade-dance')], [foe()]), skill('blade-dance'));
+    expect(beatOf(plain)).toEqual([0, 'blade-dance']);
+    expect(cues(plain)).toEqual(['misstep']);
+  });
+
+  it('syncopation adds beats', () => {
+    const sync = (beat: number) => step(makeBattle([safira(beat, 'attack', { ranks: { 'shadow-step': 1, 'safira-shadow-sync': 1 } })], [foe()]), skill('shadow-step'));
+    expect(beatOf(sync(1))).toEqual([3, 'shadow-step']);                   // +2
+    expect(beatOf(sync(3))).toEqual([4, 'shadow-step']);                   // held at four
+    expect(beatOf(step(makeBattle([safira(1, 'attack')], [foe()]), skill('shadow-step')))).toEqual([2, 'shadow-step']);
+    expect(skillFor(safira(0, null, { ranks: { 'shadow-step': 1, 'safira-shadow-sync': 3 } }), 'shadow-step')!.desc).toContain('這一招讓拍子 +4。');
+  });
+
+  it("a duet lifts the next ally's blow once, and draws nothing", () => {
+    // Safira on her fourth beat, then two allies (slower) striking with the same skill.
+    const fight = (ranks: Record<string, number> = {}, rng: () => number = constRng(0.5)) => resolveRound(
+      makeBattle([safira(4, 'attack', { ranks: { 'blade-dance': 1, ...ranks } }), P('noel'), P('selene')], [foe()]),
+      { safira: skill('blade-dance'), noel: skill('twin-slash'), selene: skill('twin-slash') }, rng);
+    const hits = (s: BattleState, who: string) => {
+      const i = s.log.findIndex((e) => e.type === 'act' && e.actor === who);
+      const j = s.log.findIndex((e, k) => k > i && e.type === 'act');
+      return s.log.slice(i, j < 0 ? undefined : j).filter((e) => e.type === 'damage').map((e) => (e as { amount: number }).amount);
+    };
+    const duet = fight({ 'safira-duet': 1 }), plain = fight();
+    expect(duet.log).toContainEqual({ type: 'mech', actor: 'safira', cue: 'finale' });
+    const [a, b] = [hits(duet, 'noel'), hits(plain, 'noel')];
+    expect(a.length).toBe(b.length);
+    const sum = (v: number[]) => v.reduce((x, y) => x + y, 0);
+    expect(sum(a) / sum(b)).toBeCloseTo(1.2, 1);                           // 雙人舞 r1: 20% more
+    expect(hits(duet, 'selene')).toEqual(hits(plain, 'selene'));         // once only
+    expect(duet.duet).toBeUndefined();                                     // gone by the round's end
+    // The skill as the ally would cast it: power x 1.2 while the duet stands, never for Safira herself.
+    const s = makeBattle([safira(1, 'attack'), P('noel')], [foe()], { duet: { pct: 20, by: 'safira' } });
+    expect(castDef(s, s.party[1], SKILLS['twin-slash']).effects[0]).toMatchObject({ power: pctOf(SKILLS['twin-slash'].effects[0].kind === 'damage' ? SKILLS['twin-slash'].effects[0].power : 0, 120) });
+    expect(castDef(s, s.party[0], SKILLS['blade-dance']).effects[0]).toMatchObject({ power: 50 });
+    let n = 0, m = 0;
+    fight({ 'safira-duet': 1 }, () => { n++; return 0.5; });
+    fight({}, () => { m++; return 0.5; });
+    expect(n).toBe(m);
   });
 });

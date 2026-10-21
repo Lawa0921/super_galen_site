@@ -24,7 +24,8 @@ import { ABYSS } from '../data/hero';
 // Re-captured in plan 8d Task 3 for Noel's and Rin's nodes and Rin's innate, striking mark: every run moved (1:3 now 3 rounds).
 // Re-captured in plan 8d Task 5 for Chizuru's and Selene's nodes: all but 0:2 and 2:3 moved (1:3 back to 2 rounds).
 // Re-captured in plan 8d Task 6 for Liz's and Sylvie's nodes (大手筆 from Lv3): all but 1:3 moved.
-const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,2273561440],"0:2":["win",2,2117482776],"0:3":["win",2,2930739072],"1:1":["win",2,2620719507],"1:2":["win",2,2100695979],"1:3":["win",2,3777402565],"2:1":["win",1,1116501792],"2:2":["win",1,3362250862],"2:3":["win",1,1969318116],"3:1":["win",2,1026183619],"3:2":["win",2,3677718684],"3:3":["win",2,2993445275]};
+// Re-captured in plan 8d Task 7 for Scarlet's nodes (爆炎斬 260 at 20% HP): 0:3, 1:1, 1:3, 2:1, 2:2, 2:3, 3:2, 3:3 moved.
+const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,2273561440],"0:2":["win",2,2117482776],"0:3":["win",2,3852993709],"1:1":["win",2,3298871120],"1:2":["win",2,2100695979],"1:3":["win",2,3779446041],"2:1":["win",1,3911781680],"2:2":["win",1,3311963584],"2:3":["win",1,660301701],"3:1":["win",2,1026183619],"3:2":["win",2,1034134533],"3:3":["win",2,3002320086]};
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
 const P = (key: string, over = {}) => makeCombatant({ key, side: 'party', ...over });
 const E = (key: string, over = {}) => makeCombatant({ key, side: 'enemy', ...over });
@@ -124,7 +125,7 @@ describe('resolveRound', () => {
     // the faster sleeper skips its turn first, so the hit that wakes it lands after it would have acted
     const s = resolveRound(makeBattle([P('p')], [E('e0', { sleep: 3, max: { spd: 20 } as never })]), { p: { kind: 'skill', skill: 'flame-burst', target: 'e0' } }, rng);
     expect(s.party[0].tp).toBe(17);
-    expect(s.party[0].hp).toBe(85);
+    expect(s.party[0].hp).toBe(80);   // 爆炎斬 costs 20% HP since plan 8d Task 7
   });
   it('skips sleeping actors, and damage wakes them', () => {
     const asleep = resolveRound(makeBattle([P('p')], [E('e0', { sleep: 2 })]), { p: { kind: 'defend' } }, rng);
@@ -450,6 +451,7 @@ describe('keystones in battle', () => {
     // Re-recorded in plan 8d Task 3 (Noel's new nodes in her standard tree: 連星, 冷靜, 擴咒, 雙響 replace the plan 8c ones).
     // Re-recorded in plan 8d Task 5 (Chizuru's 雙月, 久護, 連突 and Selene's 凝光, 深眠 replace the plan 8c ones).
     // Re-recorded in plan 8d Task 6 (Liz learns 大手筆 at Lv3 and 分期 by Lv20; now 4 rounds, and Chizuru falls).
+    // Re-recorded in plan 8d Task 7 (爆炎斬 260 at 20% HP, 赤心 for 爆炎強化: Scarlet ends on 81 HP, was 111).
     // A keystone reaching this fight changes TP, damage or heals, and so the replay.
     const party = partyAt(20, { ids: LEGACY_LINEUP });
     // The fighters only: the hero (Lv20, 15 talent points) holds one on the bench, and never enters this fight.
@@ -461,7 +463,7 @@ describe('keystones in battle', () => {
     let rounds = 0;
     while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, choose(s, party), counted); rounds++; }
     expect({ outcome: s.outcome, rounds, draws, hp: Object.fromEntries(s.party.map((c) => [c.key, c.hp])) })
-      .toEqual({ outcome: 'win', rounds: 4, draws: 99, hp: { scarlet: 111, chizuru: 0, liz: 0, noel: 104, selene: 0 } });
+      .toEqual({ outcome: 'win', rounds: 4, draws: 99, hp: { scarlet: 81, chizuru: 0, liz: 0, noel: 104, selene: 0 } });
   });
 });
 

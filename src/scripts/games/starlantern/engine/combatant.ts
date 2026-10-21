@@ -73,6 +73,8 @@ export interface Combatant {
   delay?: number;
   /** The ally whose single attacks this member takes, and the rounds left (Scarlet's 代受). */
   cover?: { ally: string; turns: number };
+  /** Her second cover, kept beside `cover` (Scarlet's 雙肩, plan 8d). */
+  coverAlso?: { ally: string; turns: number };
   /** The counter this member answers each blow with, and the rounds left (Scarlet's 贖火). */
   riposte?: { power: number; turns: number };
   /** Who this foe must strike, and in which round (Scarlet's 盾擊). */
@@ -262,9 +264,9 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     else delete t.shield;
   }
   const lost = t.undying ? Math.max(0, Math.min(amount, t.hp - 1)) : amount;
-  // Scarlet keeps half of what she really loses as embers (ticks too), up to half her max HP.
+  // Scarlet keeps half of what she really loses as embers (ticks too), up to her cap (half her max HP; 熾心 raises it).
   if (t.mech?.kind === 'embers' && t.alive && lost > 0) {
-    t.mech.embers = Math.min(Math.floor((t.max.hp * EMBER.capPct) / 100), t.mech.embers + Math.floor((Math.min(lost, t.hp) * EMBER.sharePct) / 100));
+    t.mech.embers = Math.min(Math.floor((t.max.hp * (t.mech.capPct ?? EMBER.capPct)) / 100), t.mech.embers + Math.floor((Math.min(lost, t.hp) * EMBER.sharePct) / 100));
   }
   if (t.side === 'party' && t.alive && lost > 0) t.limit = Math.min(100, t.limit + gaugeGain(t, Math.max(1, Math.floor((lost / t.max.hp) * 40))));
   t.hp = Math.max(t.undying ? 1 : 0, t.hp - amount);
@@ -283,6 +285,7 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     delete t.nextCrit;
     delete t.delay;
     delete t.cover;
+    delete t.coverAlso;
     delete t.riposte;
     delete t.challenged;
     // Her marks and her aim end with her (their words go from the foes too).

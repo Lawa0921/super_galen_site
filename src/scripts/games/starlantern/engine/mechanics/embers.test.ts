@@ -6,7 +6,8 @@ import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
 import { ENEMIES } from '../../data/enemies';
 import type { EnemyDef } from '../types';
-import { castDef, memberWords } from './index';
+import { castDef, initMechs, memberWords } from './index';
+import { skillFor } from '../battle';
 import { EMBER } from './embers';
 
 const MAX = { hp: 200, tp: 99, atk: 40, def: 20, mag: 20, res: 20, spd: 1 };
@@ -36,12 +37,12 @@ describe("Scarlet's embers", () => {
 
   it('a fire skill pays its HP with embers first', () => {
     const r = round(makeBattle([scarlet({ mech: { kind: 'embers', embers: 20 } })], [foe('e0', { frozen: true })]), { scarlet: { kind: 'skill', skill: 'flame-burst', target: 'e0' } });
-    // 15% of 200 = 30: 20 from the embers, 10 from her HP.
-    expect(r.party[0].hp).toBe(190);
+    // 20% of 200 = 40 (plan 8d Task 7): 20 from the embers, 20 from her HP.
+    expect(r.party[0].hp).toBe(180);
     expect(embersOf(r.party[0])).toBe(0);
     const rich = round(makeBattle([scarlet({ mech: { kind: 'embers', embers: 50 } })], [foe('e0', { frozen: true })]), { scarlet: { kind: 'skill', skill: 'flame-burst', target: 'e0' } });
     expect(rich.party[0].hp).toBe(200);
-    expect(embersOf(rich.party[0])).toBe(20);
+    expect(embersOf(rich.party[0])).toBe(10);
   });
 
   it('crimson end spends the embers left for power, 1% a point of max HP', () => {
@@ -268,5 +269,83 @@ describe("Scarlet's embers", () => {
       return n;
     };
     expect(draws(100)).toBe(draws(0));
+  });
+});
+
+describe("Scarlet's nodes (plan 8d Task 7)", () => {
+  const her = (ranks: Record<string, number>, over: Partial<Combatant> = {}) => scarlet({ ranks, ...over });
+  const still = () => foe('e0', { frozen: true });
+  const cast = (skill: string, target?: string): Record<string, Action> => ({ scarlet: { kind: 'skill', skill, ...(target ? { target } : {}) } });
+  const soft = () => foe('e0', { max: { hp: 99999, tp: 0, atk: 60, def: 20, mag: 20, res: 20, spd: 99 } });
+
+  it('a shout stores embers, up to the cap', () => {
+    const shout = (r: number, embers = 0) => embersOf(round(makeBattle([her({ provoke: 1, 'scarlet-provoke-shout': r }, { mech: { kind: 'embers', embers } })], [still()]), cast('provoke')).party[0]);
+    expect(shout(1)).toBe(20);                                             // 10% of 200
+    expect(shout(3)).toBe(40);                                             // 20%
+    expect(shout(3, 95)).toBe(100);                                        // held at half her max HP
+    expect(embersOf(round(makeBattle([her({ provoke: 1 })], [still()]), cast('provoke')).party[0])).toBe(0);
+  });
+
+  it('ardent raises the cap', () => {
+    const capped = (ranks: Record<string, number>) => {
+      const s = makeBattle([her(ranks)], [foe()]);
+      initMechs(s);
+      const c = s.party[0];
+      if (c.mech?.kind === 'embers') c.mech.embers = 110;
+      dealDamage(c, 40);                                                   // +20, past either cap
+      return embersOf(c);
+    };
+    expect(capped({ 'scarlet-ardent': 1 })).toBe(120);                     // 60% of 200
+    expect(capped({ 'scarlet-ardent': 3 })).toBe(130);                     // 80% is 160: not reached
+    expect(capped({})).toBe(100);
+  });
+
+  it('heart: paid in embers, the blow is 30% stronger; not, it is as before', () => {
+    const who = (embers: number) => her({ 'flame-burst': 1, 'scarlet-burst-heart': 1 }, { mech: { kind: 'embers', embers } });
+    const power = (embers: number) => {
+      const c = who(embers);
+      const d = castDef(makeBattle([c], [foe()]), c, skillFor(c, 'flame-burst')!).effects[0];
+      return d.kind === 'damage' ? d.power : NaN;
+    };
+    expect(power(40)).toBe(338);                                           // the cost is 20% of 200: all in embers; 260 x 1.3
+    expect(power(39)).toBe(260);
+    const r = round(makeBattle([who(39)], [still()]), cast('flame-burst', 'e0'));
+    expect([r.party[0].hp, embersOf(r.party[0])]).toEqual([199, 0]);       // the rest from her HP, as in 8c
+    expect(skillFor(who(0), 'flame-burst')!.name).toBe('爆炎斬・赤心');
+  });
+
+  it('thanks: a blow she takes for the one she covers adds embers', () => {
+    const covered = (ranks: Record<string, number>) => {
+      const s = makeBattle([her({ cover: 1, ...ranks }, { cover: { ally: 'noel', turns: 2 } }), P('noel')], [soft()], { intents: { e0: { kind: 'attack', target: 'noel' } } });
+      const r = round(s);
+      expect(r.log.some((e) => e.type === 'damage' && e.target === 'scarlet')).toBe(true);
+      return embersOf(r.party[0]);
+    };
+    expect(covered({ 'scarlet-thanks': 1 }) - covered({})).toBe(10);      // 5% of 200
+    // A blow at her own self is no cover: nothing more.
+    const own = (ranks: Record<string, number>) => embersOf(round(makeBattle([her(ranks), P('noel')], [soft()], { intents: { e0: { kind: 'attack', target: 'scarlet' } } })).party[0]);
+    expect(own({ 'scarlet-thanks': 1 })).toBe(own({}));
+  });
+
+  it('both shoulders cover two at once', () => {
+    const both = { cover: 1, 'scarlet-cover-both': 1 };
+    let s = makeBattle([her(both), P('noel'), P('selene')], [foe('e0', { sleep: 9 })]);
+    s = round(s, cast('cover', 'noel'));
+    s = round(s, cast('cover', 'selene'));
+    const words = (key: string) => memberWords(s, s.party.find((c) => c.key === key)!).map((w) => w.text);
+    expect(words('noel')).toContain('受護');
+    expect(words('selene')).toContain('受護');
+    for (const target of ['noel', 'selene']) expect(forcedTarget(s, s.enemies[0], { kind: 'attack', target })?.to.key).toBe('scarlet');
+    // Each lasts its own three rounds (雙肩 r1): Noel's has one left, Selene's two.
+    s = round(s);
+    expect(words('noel')).not.toContain('受護');
+    expect(words('selene')).toContain('受護');
+    // Without the node, the second cover takes the first one's place.
+    let t = makeBattle([her({ cover: 1 }), P('noel'), P('selene')], [foe('e0', { sleep: 9 })]);
+    t = round(t, cast('cover', 'noel'));
+    t = round(t, cast('cover', 'selene'));
+    expect(forcedTarget(t, t.enemies[0], { kind: 'attack', target: 'noel' })).toBeNull();
+    expect(forcedTarget(t, t.enemies[0], { kind: 'attack', target: 'selene' })?.to.key).toBe('scarlet');
+    expect(skillFor(her(both), 'cover')!.name).toBe('代受・雙肩');
   });
 });

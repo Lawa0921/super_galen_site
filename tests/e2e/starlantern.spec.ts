@@ -1211,6 +1211,76 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test("scarlet's and safira's trees show their new nodes (plan 8d Task 7)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const p = g.state.party;
+      for (const id of ['scarlet', 'safira'] as const) if (!p.recruited.includes(id)) p.recruited.push(id);
+      p.roster.scarlet.level = 35;
+      p.roster.scarlet.tree = { provoke: 1, 'scarlet-provoke-shout': 2, cover: 1, 'scarlet-cover-both': 1, 'flame-burst': 3, 'scarlet-burst-heart': 2, 'iron-wall': 1, 'scarlet-ardent': 1 };
+      p.roster.safira.level = 35;
+      p.roster.safira.tree = { 'blade-dance': 3, 'safira-dance-four': 2, 'sand-cyclone': 1, 'safira-improv': 1, 'war-dance': 1, 'safira-war-heat': 1, mirage: 1, 'safira-duet': 1 };
+    });
+    /** No node row, name or pair tag of the tree spills out of its own width, and no name wraps. */
+    const spills = async () => [...await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className)), ...await treeNameFaults(page)];
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+
+    await flipTo(page, CHARACTERS.scarlet.name);
+    await expect(page.locator('.slx-tree-node[data-node=scarlet-provoke-shout]')).toContainText('挑釁・高喊');
+    await expect(page.locator('.slx-tree-node[data-node=scarlet-cover-both]')).toContainText('代受・雙肩');
+    await expect(page.locator('.slx-tree-node[data-node=scarlet-burst-heart]')).toContainText('爆炎斬・赤心');
+    const ardent = page.locator('.slx-tree-node[data-node=scarlet-ardent]');
+    await expect(ardent).toContainText('熾心');
+    await expect(ardent).toContainText(T.ui2.tree.kind.mech);
+    await expect(ardent.locator('img')).toHaveCount(0);
+    await ardent.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('餘燼上限是最大 HP 的 60%。'));
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.nextMod('餘燼上限是最大 HP 的 70%。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('scarlet-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('scarlet-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // 赤心's rule rides on 爆炎斬's own words on the skills page.
+    await page.locator('[data-tab=skills]').click();
+    await expect(page.locator('.slx-tab-skills [data-skill=flame-burst] .slx-skill-name')).toHaveText('爆炎斬・赤心');
+    await expect(page.locator('.slx-tab-skills [data-skill=flame-burst] .slx-desc')).toContainText('HP 消耗全部用餘燼付清時，威力多 40%。');
+    await page.locator('[data-tab=tree]').click();
+
+    await flipTo(page, CHARACTERS.safira.name);
+    await expect(page.locator('.slx-tree-node[data-node=safira-dance-four]')).toContainText('刃舞・四拍');
+    await expect(page.locator('.slx-tree-node[data-node=safira-war-heat]')).toContainText('戰舞・熱場');
+    const improv = page.locator('.slx-tree-node[data-node=safira-improv]');
+    await expect(improv).toContainText(T.ui2.tree.kind.mech);
+    await expect(improv.locator('img')).toHaveCount(0);
+    await improv.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('同一招連用不再踩空，拍子只少 2。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('safira-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('safira-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // 四拍 rewrites 刃舞's hits in its own words.
+    await page.locator('[data-tab=skills]').click();
+    await expect(page.locator('.slx-tab-skills [data-skill=blade-dance] .slx-desc')).toContainText('連砍 4 次');
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
   test("no tree node's name wraps or spills, on any member's tree, at 1280 or 844 (8d Task 6 review)", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     const w = await setup(page, 7);

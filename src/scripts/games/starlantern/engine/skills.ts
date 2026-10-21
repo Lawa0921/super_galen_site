@@ -14,6 +14,7 @@ import { aimCapOf } from './mechanics/aim';
 import { T } from '../data/text.zh-TW';
 import { overclock, placeDevice, tuneUp } from './mechanics/devices';
 import { raiseBarrier } from './mechanics/barrier';
+import { addEmbers } from './mechanics/embers';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
@@ -31,6 +32,8 @@ export interface EffectContext {
   cast?: string;
   /** The TP the current action paid for its skill (the hero's echo records it). */
   paid?: number;
+  /** Who a foe's single blow went to by a cover, while that action and its aftermath (afterFoe) resolve (Scarlet's 回禮). */
+  coverBlow?: string;
   lastHit?: { target: string; amount: number };
 }
 
@@ -79,7 +82,8 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       // 祓 (plan 8d ruling 7): the purifying barrier it raises also wakes the party.
       case 'barrier': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns), ...(mod.rules?.wake ? { wake: true as const } : {}) };
       case 'aim-lock': return { ...e, turns: lasting(e.turns) };
-      case 'cover': return { ...e, turns: lasting(e.turns) };
+      // 雙肩 (plan 8d ruling 7): her other cover stays.
+      case 'cover': return { ...e, turns: lasting(e.turns), ...(mod.rules?.keep ? { keep: true as const } : {}) };
       case 'riposte': return { ...e, power: pctOf(e.power, power), turns: lasting(e.turns) };
       case 'gauge': return { ...e, amount: pctOf(e.amount, power) };
       // The moon's hold counts as its rounds (moon-recall's ranks hold the phase it steps back to; 新月之夜 holds the new
@@ -367,7 +371,15 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'cover': {
       if (!target.alive || target === actor) return;
+      // 雙肩 (plan 8d): the cover she had stays beside the new one (two at most; one on the same ally is renewed).
+      const kept = eff.keep && actor.cover && actor.cover.ally !== target.key ? actor.cover : undefined;
       actor.cover = { ally: target.key, turns: eff.turns };
+      if (kept) actor.coverAlso = kept; else delete actor.coverAlso;
+      return;
+    }
+    case 'embers': {
+      // 高喊 (plan 8d): embers on the spot, up to her cap.
+      if (target === actor) addEmbers(actor, Math.floor((actor.max.hp * eff.pct) / 100));
       return;
     }
     case 'riposte': {

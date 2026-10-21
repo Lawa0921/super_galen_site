@@ -61,6 +61,8 @@ export interface BattleState {
   echo?: { by: string; round: number; def: SkillDef; cost: number };
   /** The moon's phase while Selene fights (engine/mechanics/moon.ts), and the rounds a phase is held. */
   moon?: { phase: MoonPhase; hold?: { turns: number } };
+  /** Safira's 雙人舞 after her finale (plan 8d): the next ally's damage skill this round is `pct`% stronger (beat.ts). */
+  duet?: { pct: number; by: string };
 }
 
 /** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
@@ -307,7 +309,7 @@ function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string
     // the target already, so a plain intent gains no field.
     const ch = e.challenged;
     const challenged = !!ch && ch.round === round && s.party.some((c) => c.key === ch.by && c.alive);
-    const covered = living(s.party).some((c) => c.key !== target && c.cover?.ally === target);
+    const covered = living(s.party).some((c) => c.key !== target && covers(c, target));
     const forced = challenged || covered ? forcedTarget(s, e, act, round) : null;
     out.set(e.key, forced && forced.to.key !== target ? { ...act, shownTarget: forced.to.key } : act);
   }
@@ -334,10 +336,13 @@ export function forcedTarget(s: BattleState, enemy: Combatant, act: EnemyAction,
   if (by) return { to: by, pool: others(by) };
   const meant = s.party.find((c) => c.key === act.target && c.alive);
   // A frozen or sleeping Scarlet stands in for no one (designer ruling, plan 8c final).
-  const cover = meant ? living(s.party).find((c) => c !== meant && c.cover?.ally === meant.key && !c.frozen && c.sleep === 0) : undefined;
+  const cover = meant ? living(s.party).find((c) => c !== meant && covers(c, meant.key) && !c.frozen && c.sleep === 0) : undefined;
   if (meant && cover) return { to: cover, pool: [meant], cover: true };
   return null;
 }
+
+/** Whether `c` stands in for `ally` (Scarlet's 代受; with 雙肩 her second cover too). */
+export const covers = (c: Combatant, ally: string | undefined): boolean => !!ally && (c.cover?.ally === ally || c.coverAlso?.ally === ally);
 
 function checkOutcome(s: BattleState): boolean {
   if (!living(s.enemies).length) s.outcome = 'win';
@@ -352,6 +357,7 @@ function checkOutcome(s: BattleState): boolean {
 function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ctx: EffectContext, rng: Rng): CastDef | null {
   delete ctx.lastHit;   // burn and bleed ride only on a hit of this action
   delete ctx.paid;
+  delete ctx.coverBlow;
   let sentTo: Combatant | undefined;   // a challenger or a cover is reached wherever she stands
   if (actor.side === 'enemy') {
     // A single blow goes where a taunt, a challenge or a cover sends it (forcedTarget); the ledger credits the one it
@@ -361,6 +367,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     const taunter = living(s.party).find((c) => c.taunt > 0);
     if (forced) {
       if (ctx.ledger) ctx.redirect = forced.cover ? { pool: forced.pool, cover: true } : { pool: forced.pool };
+      if (forced.cover) ctx.coverBlow = forced.to.key;
       act = { ...act, target: forced.to.key } as EnemyAction;
       sentTo = forced.to;
     } else if (taunter) act = { ...act, target: taunter.key } as EnemyAction;

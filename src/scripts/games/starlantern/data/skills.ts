@@ -35,8 +35,9 @@ const LIST: SkillDef[] = [
 
   { id: 'provoke', name: '挑釁', owner: 'scarlet', tp: 3, target: 'self', desc: '3 回合內吸引敵人單體攻擊',
     effects: [{ kind: 'taunt', turns: 3 }] },
-  { id: 'flame-burst', name: '爆炎斬', owner: 'scarlet', tp: 3, hpCost: 0.15, target: 'enemy', desc: '消耗 {hpCost}% HP 的火屬性重擊',
-    effects: [{ kind: 'damage', power: 220, element: 'fire', scale: 'atk', melee: true }] },
+  // 220 → 260 at 20% HP (was 15%), plan 8d Task 7: 赤心 replaced 爆炎強化, so the blow itself carries her power (retune.md).
+  { id: 'flame-burst', name: '爆炎斬', owner: 'scarlet', tp: 3, hpCost: 0.2, target: 'enemy', desc: '消耗 {hpCost}% HP 的火屬性重擊',
+    effects: [{ kind: 'damage', power: 260, element: 'fire', scale: 'atk', melee: true }] },
   { id: 'iron-wall', name: '鐵壁', owner: 'scarlet', tp: 4, target: 'self', desc: '自身防禦大幅提升',
     effects: [{ kind: 'buff', stat: 'def', pct: 40, turns: 3 }] },
 

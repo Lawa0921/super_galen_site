@@ -43,7 +43,7 @@ describe('skill words take their percentages from the numbers (plan 8c final)', 
     expect(SKILLS['exorcism-thrust'].desc).toContain('威力多 10%');
     expect(SKILLS['heaven-spear'].desc).toContain('威力多 10%');
     expect(SKILLS['tesla-coil'].desc).toContain('30% 讓牠們感電');
-    expect(SKILLS['flame-burst'].desc).toContain('15% HP');
+    expect(SKILLS['flame-burst'].desc).toContain('20% HP');   // 15% → 20%, plan 8d Task 7
     expect(SKILLS['crimson-end'].desc).toContain('30% HP');
     expect(SKILLS['sunder-arrow'].desc).toContain('防禦降低 30%');
     expect(SKILLS['hunters-mark'].desc).toContain('防禦降低 40%');

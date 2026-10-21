@@ -72,8 +72,13 @@ export type Effect =
   | { kind: 'aim-lock'; turns: number }
   /** The caster's aimed foe (none yet: the first foe it reaches) gains `n` stacks, up to her cap; draws nothing (Sylvie's 覆蓋). */
   | { kind: 'aim-add'; n: number }
-  /** The caster takes the single attacks meant for the target ally for `turns` rounds (Scarlet's 代受). */
-  | { kind: 'cover'; turns: number }
+  /**
+   * The caster takes the single attacks meant for the target ally for `turns` rounds (Scarlet's 代受). `keep`: her other
+   * cover stays, so she covers two at once (her 雙肩, plan 8d).
+   */
+  | { kind: 'cover'; turns: number; keep?: true }
+  /** The caster keeps `pct`% of her max HP more as embers, up to her cap (Scarlet's 高喊, plan 8d). */
+  | { kind: 'embers'; pct: number }
   /** For `turns` rounds each foe that lands a blow on the caster takes a fire counter of `power` (Scarlet's 贖火). */
   | { kind: 'riposte'; power: number; turns: number }
   /** The target's single attacks next round go to the caster (Scarlet's 盾擊). */
@@ -123,6 +128,12 @@ export interface SkillRules {
   coinPowerPct?: number;
   /** Copied onto the skill's damage effects: each aim stack adds this percent (Sylvie's 一擊). */
   aimPct?: number;
+  /** +% power when its whole HP cost is paid in embers (Scarlet's 赤心). */
+  emberPaidPct?: number;
+  /** Copied onto the skill's cover effect: her other cover stays (Scarlet's 雙肩). */
+  keep?: true;
+  /** Beats this skill adds, in place of 1 (Safira's 切分音). */
+  beats?: number;
 }
 export interface UltimateDef {
   id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string;
