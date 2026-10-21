@@ -347,6 +347,8 @@ export const T = {
       pairTag: '二選一',
       /** The empty side of a pair whose other side holds points: a press moves the points over, free (two presses). */
       swapOpen: '可改選（免費）', swapPending: '再按一次改選', swapped: '已改選',
+      /** The Game would not change the side now (in battle, say). */
+      swapRefused: '現在無法改選',
       /** A node that can take its next rank now. */
       open: '可投點',
       /** Why a node cannot take its next rank (progression canRaiseNode). */

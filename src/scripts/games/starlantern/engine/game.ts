@@ -740,12 +740,20 @@ export class Game {
     return { ok: true };
   }
 
+  /** Why `swapVariant(id, node)` would be turned down now, or null when it would change the side; changes nothing. */
+  canSwapVariant(id: CharacterId, node: string): 'unknown' | 'empty' | 'invalid' | null {
+    if ((this.phase !== 'town' && this.phase !== 'map') || !this.state.party.recruited.includes(id)) return 'invalid';
+    const r = swapPair(this.state.party.roster[id], node);
+    return r.ok ? null : r.reason;
+  }
+
   /**
    * A recruited member's pair changes side for free (plan 8d; the rules: progression `swapPair`): in town and the labyrinth's
    * field, never in battle. Saved like `raiseNode`: at once in town, at the next town save in the labyrinth.
    */
   swapVariant(id: CharacterId, node: string): { ok: true } | { ok: false; reason: 'unknown' | 'empty' | 'invalid' } {
-    if ((this.phase !== 'town' && this.phase !== 'map') || !this.state.party.recruited.includes(id)) return { ok: false, reason: 'invalid' };
+    const why = this.canSwapVariant(id, node);
+    if (why) return { ok: false, reason: why };
     const r = swapPair(this.state.party.roster[id], node);
     if (!r.ok) return r;
     const party = this.state.party;

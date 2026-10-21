@@ -890,13 +890,22 @@ describe('StatusScene', () => {
         s.onAction('down'); s.onAction('down');
         s.onAction('confirm'); s.onAction('confirm');
         expect(noel().tree).toEqual({ 'fire-star': 1, 'noel-star-heavy': 1 });
-        // In battle the Game turns the swap down.
+        // Where no side can change (in battle), the first press already says so: nothing armed, nothing changed.
         s.onAction('up');
-        s.onAction('confirm');
         game.phase = 'battle';
         s.onAction('confirm');
+        expect(msg()).toBe(T.ui2.tree.swapRefused);
+        s.onAction('confirm');
+        expect(msg()).toBe(T.ui2.tree.swapRefused);
         expect(noel().tree).toEqual({ 'fire-star': 1, 'noel-star-heavy': 1 });
-        expect(msg()).toBe(T.ui2.tree.failed);
+        // A swap the Game turns down after the page armed it (the phase changed in between) says so too.
+        game.phase = 'town';
+        s.onAction('confirm');
+        expect(msg()).toBe(T.ui2.tree.swapPending);
+        game.phase = 'battle';
+        s.onAction('confirm');
+        expect(msg()).toBe(T.ui2.tree.swapRefused);
+        expect(noel().tree).toEqual({ 'fire-star': 1, 'noel-star-heavy': 1 });
       });
 
       it('variant and mechanic notes say the rule now and next', () => {

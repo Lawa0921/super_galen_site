@@ -989,6 +989,24 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.nextMod('熱度上限 7。'));
     expect(await fits()).toEqual([]);
     await shot('tree-1280');
+    // Scrolled down, the ▲ cue shows and covers no text: no node's name or rank, not the line above the columns.
+    await page.locator('.slx-tree-cols').evaluate((c) => { c.scrollTop = 30; c.dispatchEvent(new Event('scroll')); });
+    const upCue = page.locator('.slx-tree-frame .slx-more-up');
+    await expect(upCue).toBeVisible();
+    const covered = await upCue.evaluate((cue) => {
+      const r = cue.getBoundingClientRect();
+      const frame = cue.closest('.slx-tab-tree')!;
+      const texts = [...frame.querySelectorAll<HTMLElement>('.slx-tree-node .slx-skill-name, .slx-tree-node .slx-skill-rank, .slx-tree-node .slx-tree-state, .slx-tree-node .slx-tree-kind, .slx-tree-left, .slx-tree-capstone, .slx-tree-branch-name')];
+      return texts.filter((e) => {
+        const t = e.getBoundingClientRect();
+        // Only what shows: a row scrolled out of the columns is hidden by them.
+        const cols = frame.querySelector('.slx-tree-cols')!.getBoundingClientRect();
+        if (e.closest('.slx-tree-cols') && (t.bottom <= cols.top || t.top >= cols.bottom)) return false;
+        return t.width > 0 && r.left < t.right && t.left < r.right && r.top < t.bottom && t.top < r.bottom;
+      }).map((e) => `${e.className}:${e.textContent}`);
+    });
+    expect(covered).toEqual([]);
+    await page.locator('.slx-tree-cols').evaluate((c) => { c.scrollTop = 0; c.dispatchEvent(new Event('scroll')); });
 
     // Two clicks on the empty side change the side, free.
     const heavy = page.locator('.slx-tree-node[data-node=noel-star-heavy]');

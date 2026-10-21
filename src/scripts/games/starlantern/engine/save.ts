@@ -26,7 +26,7 @@ export const BACKUP_KEY = 'starlantern-save-backup';
 export const V8_KEY = 'starlantern-save-v8';
 
 export type SaveStorage = { getItem(k: string): string | null; setItem(k: string, v: string): void };
-/** `migrated`: the save was an older version, brought up to this one on the way in (its text is kept in BACKUP_KEY). */
+/** `migrated`: the save was an older version, brought up to this one on the way in (its text is kept in V8_KEY). */
 export type LoadResult = { status: 'ok'; state: GameState; migrated?: true } | { status: 'empty' } | { status: 'corrupt' } | { status: 'version' };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);

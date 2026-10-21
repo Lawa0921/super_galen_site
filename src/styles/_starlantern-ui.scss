@@ -597,7 +597,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 // Skill-tree tab: three branch columns of text rows (the skill rows' rule lines); a node's state only changes its text colour.
 // The columns scroll on their own so the notes for the cursor's node always stay in view below them.
 .slx-tab-tree { height: 100%; display: flex; flex-direction: column; }
-.slx-tree-top { flex: none; display: flex; justify-content: space-between; gap: 12px; line-height: 14px; }
+.slx-tree-top { flex: none; display: flex; justify-content: space-between; gap: 12px; padding-right: 16px; line-height: 14px; }
 .slx-tree-left { color: $slx-gold; }
 .slx-tree-capstone { color: $slx-dim; }
 /* The tree columns and the talent board scroll inside a frame that carries their ▲/▼ cues on its right edge. */
@@ -609,7 +609,8 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 /* The talent board's ▲ sits just above it, beside the gate line; the tree's sits inside over the branch headings' right
    end (the line above it is the right-aligned capstone line), shown only once those headings have scrolled away. */
 .slx-talent-frame .slx-more-up { top: -12px; }
-.slx-tree-frame .slx-more-up { top: 0; }
+// ▲ sits in a gutter at the right end of the line above the columns (.slx-tree-top), where it covers no node.
+.slx-tree-frame .slx-more-up { top: -14px; }
 .slx-tree-cols { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 0 8px; }
 .slx-tree-cols.slx-tree-wide { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0 4px; }
 .slx-tree-wide .slx-tree-branch-name { font-size: 10px; overflow: hidden; text-overflow: ellipsis; }

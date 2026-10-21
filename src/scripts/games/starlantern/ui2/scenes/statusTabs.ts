@@ -382,9 +382,11 @@ function treeReason(why: RaiseFail, node: string): string {
 function pressTree(ctx: SceneCtx, id: CharacterId, clicked?: string): void {
   const node = clicked ?? treeView.cur;
   if (canRaiseNode(ctx.game.state.party.roster[id], node) === 'pair') {
+    // The first press already asks the Game, so a swap it would turn down (in battle) is never armed.
+    const can = () => ctx.game.canSwapVariant(id, node);
     const swap = () => ctx.game.swapVariant(id, node).ok;
-    const r = clicked ? clickSpend(treeView.spend, node, moveTree, () => null, swap, ctx.sfx) : pressSpend(treeView.spend, node, () => null, swap, ctx.sfx);
-    treeView.msg = r === 'armed' ? T.ui2.tree.swapPending : r === 'raised' ? T.ui2.tree.swapped : T.ui2.tree.failed;
+    const r = clicked ? clickSpend(treeView.spend, node, moveTree, can, swap, ctx.sfx) : pressSpend(treeView.spend, node, can, swap, ctx.sfx);
+    treeView.msg = r === 'armed' ? T.ui2.tree.swapPending : r === 'raised' ? T.ui2.tree.swapped : T.ui2.tree.swapRefused;
     return;
   }
   const can = () => canRaiseNode(ctx.game.state.party.roster[id], node);

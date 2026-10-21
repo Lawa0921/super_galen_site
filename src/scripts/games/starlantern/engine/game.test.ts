@@ -1560,6 +1560,15 @@ describe('changing a variant side (plan 8d Task 1)', () => {
       expect(field.swapVariant('noel', 'test-star-b')).toEqual({ ok: true });
       expect(field.state.party.roster.noel.tree['test-star-b']).toBe(2);
       // A failed town save says so and keeps the change.
+      // canSwapVariant answers as swapVariant would, and changes nothing.
+      const ask = new Game(calm(), memoryStorage(), undefined, 0, HERO_LINEUP);
+      ask.state.party.roster.noel = { ...ask.state.party.roster.noel, level: 20, tree: held };
+      expect(ask.canSwapVariant('noel', 'test-star-b')).toBeNull();
+      expect(ask.canSwapVariant('noel', a)).toBe('empty');
+      expect(ask.canSwapVariant('sylvie', 'test-star-b')).toBe('invalid');
+      ask.phase = 'battle';
+      expect(ask.canSwapVariant('noel', 'test-star-b')).toBe('invalid');
+      expect(ask.state.party.roster.noel.tree).toEqual(held);
       const full = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP);
       full.state.party.roster.noel = { ...full.state.party.roster.noel, level: 20, tree: held };
       expect(full.swapVariant('noel', 'test-star-b')).toEqual({ ok: true });
