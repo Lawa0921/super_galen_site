@@ -29,7 +29,7 @@
 - **B5 液體與結冰不進日誌。** `World` 另加 `netLiquid` 集合：`touchLiquidAt`、`markLiquidDirty`、`writeChunk` 會加入，`unloadColumn` 會刪除，`drainNetLiquid()` 取走。它跟 renderer 的 `drainLiquidDirty` 互不影響。
 - **B6 箱子。** 箱子內容和 `unlocked` 的變動改呼叫 `World.touchChest(x, y)`，等於 `markModified` 再記一筆箱子項目（tile 鍵）。`game.ts` 現有 5 處 `markModified`（約 2202、2243、2270、2284、3629 行）全部換掉。箱子的建立和刪除由 tile 項目隱含：replica 套 `setFg` 時會做同樣的事。
 - **B7 `tossSlot(slot, n?)`**（spec §5.7）。作用在 cur。n 省略時丟整格，上限是該格數量。掉落物從玩家中心往 `facing` 方向偏 10 px 生成，初速 `vx = facing * TOSS_VX`（200 px/s）、`vy = -TOSS_VY`（150 px/s）。丟的人 `TOSS_OWNER_DELAY = 1.5` 秒內撿不回來，其他人立刻可以撿（U6）。帶 owner 的堆不跟 owner 不同的堆合併。owner 與倒數不存檔。鎖定的裝備不能丟，提示原因 `lockedtoss`。死亡、空格、n 不合法時回 `false`。事件 `{ type: 'toss', item, n, x, y }` 是公開的（不進 `PRIVATE_EVENTS`）。
-- **B8 Q 鍵**（`KeyAction 'toss'`）丟出整個選中的快捷欄格。背包面板不加新操作（YAGNI）。
+- **B8 G 鍵**（Q 已經是衝刺 dash，T 是對話；G 未使用——controller 裁定）（`KeyAction 'toss'`）丟出整個選中的快捷欄格。背包面板不加新操作（YAGNI）。
 - **B9 `validCmd(v: unknown): Cmd | null`** 是給 M-B3 收到的網路 JSON 用的。它建立**新物件**，只拷貝已知欄位，所以 `__proto__` 和多餘欄位都會丟掉。整數欄位用 `Number.isSafeInteger` 檢查並限制範圍；字串長度 1–64；列舉欄位對照現有表格。語意檢查（配方存不存在、錢夠不夠）交給既有方法，它們本來就會回失敗。
 - **B10 M-B1 遺留修正。** `settle.spawnLink`（game.ts 約 791 行）讀寫的是 `this.local.spawnCore`，改成 `this.cur.spawnCore`。step 外 `cur` 等於 `local`，所以單機等價；改完以後 `exec('b', spawnCore)` 才會設到 B 身上。
 
@@ -193,25 +193,25 @@ tossSlot(slot: number, n?: number): boolean;      // 作用在 cur（B7）
 - [ ] **Step 4：跑測試確認通過**：toss.test PASS；`engine/actors.world.test.ts`（多人撿取）、golden、`render/model.test.ts`、全套 vitest、delve e2e PASS；tsc 沒有新增錯誤。
 - [ ] **Step 5：Commit** `feat(delve): toss inventory slots with an owner pickup delay`
 
-### Task 4：UI 全部走 `act`，加上 Q 鍵
+### Task 4：UI 全部走 `act`，加上 G 鍵
 
 **Files:**
-- Modify: `render/hud.ts`（108 的 `selectSlot` 是輸入，保留不動；169、183、190、194、209、276、287 的 `inventory.swap`、299、302、310、313、322、327、799、810、824、845、849、857）、`render/main.ts`（205 `closeChest`、218 `talkNearest`）、`render/session.ts`（239、250 `closeMirror`；246 `setBodyLook`；247 `recolorWorn`；267 `rebirth`；907、913 的 `setAppearance` 是標題畫面預覽，不改）、`render/folkUi.ts`（294–318）、`render/settleUi.ts`（219、221、339、342、344、348）、`render/levelsUi.ts`（93、146、268、286）、`render/mapView.ts`（265）、`render/waystoneUi.ts`（97）、`input/controls.ts`（148 `talkAtPx`；新增 `toss`）、`input/mapping.ts`（`KeyAction` 加 `'toss'`，`KeyQ: 'toss'`）、`input/mapping.test.ts`、`tests/e2e/delve.spec.ts`
+- Modify: `render/hud.ts`（108 的 `selectSlot` 是輸入，保留不動；169、183、190、194、209、276、287 的 `inventory.swap`、299、302、310、313、322、327、799、810、824、845、849、857）、`render/main.ts`（205 `closeChest`、218 `talkNearest`）、`render/session.ts`（239、250 `closeMirror`；246 `setBodyLook`；247 `recolorWorn`；267 `rebirth`；907、913 的 `setAppearance` 是標題畫面預覽，不改）、`render/folkUi.ts`（294–318）、`render/settleUi.ts`（219、221、339、342、344、348）、`render/levelsUi.ts`（93、146、268、286）、`render/mapView.ts`（265）、`render/waystoneUi.ts`（97）、`input/controls.ts`（148 `talkAtPx`；新增 `toss`）、`input/mapping.ts`（`KeyAction` 加 `'toss'`，`KeyG: 'toss'`）、`input/mapping.test.ts`、`tests/e2e/delve.spec.ts`
 - Create: `render/execRoutes.test.ts`
 
-**Interfaces — Consumes:** Task 2 的 `act`、Task 3 的 `toss`。**Produces:** `ControlsOptions` 不變。Q 在 `controls.ts` 裡直接呼叫 `game.act({ op: 'toss', slot: game.inventory.selected })`（非重複按鍵，`isBlocked()` 時忽略）。
+**Interfaces — Consumes:** Task 2 的 `act`、Task 3 的 `toss`。**Produces:** `ControlsOptions` 不變。G 在 `controls.ts` 裡直接呼叫 `game.act({ op: 'toss', slot: game.inventory.selected })`（非重複按鍵，`isBlocked()` 時忽略）。
 
 掃描測試的寫法照 `engine/flatAccess.test.ts`：列出 `render/` 與 `input/` 底下所有不是 `.test.ts` 的檔案，對每個 mutator 名稱找 `\b(?:game|g|this\.game|scene\?\.game)\.(NAME)\(` 的呼叫，另外找 `\.inventory\.swap\(`，命中就以 `檔案:行號` 失敗。mutator 名單：`craft takeChestSlot takeAllFromChest depositToChest closeChest closeMirror equipFromInventory equipVanityFromInventory unequip unequipVanity setHideArmor recolorWorn setBodyLook rebirth toggleLock salvage salvageAll reroll upgrade ascend deepforge buy sell service residentService folkBuy folkSell folkService acceptQuest turnInQuest refreshQuests learnSkill respecSkills useSkill talkNearest talkAtPx travel travelStone setSpawnCore toggleMarker tossSlot tryPlace`。
 
 - [ ] **Step 1：寫失敗測試**：
   - `render/execRoutes.test.ts` → `render/ 與 input/ 不直接呼叫 mutator`：違規清單等於 `[]`。現在會列出上面 Files 裡的每一個行號。
-  - `input/mapping.test.ts`：`keyAction('KeyQ') === 'toss'`。
-  - `tests/e2e/delve.spec.ts` 新增 `按 Q 丟出手上的道具`：進遊戲以後 `page.evaluate` 執行 `g.give('torch', 5)`，把它換到第 0 格並選中；`page.keyboard.press('KeyQ')` → `expect.poll(() => 背包 torch 數)` 變成 0，`g.drops.list.some(d => d.item === 'torch' && d.count === 5)` 為 true（在 1.5 秒的撿取延遲內檢查）；`errors` 等於 `[]`。
+  - `input/mapping.test.ts`：`keyAction('KeyG') === 'toss'`。
+  - `tests/e2e/delve.spec.ts` 新增 `按 G 丟出手上的道具`：進遊戲以後 `page.evaluate` 執行 `g.give('torch', 5)`，把它換到第 0 格並選中；`page.keyboard.press('KeyQ')` → `expect.poll(() => 背包 torch 數)` 變成 0，`g.drops.list.some(d => d.item === 'torch' && d.count === 5)` 為 true（在 1.5 秒的撿取延遲內檢查）；`errors` 等於 `[]`。
 - [ ] **Step 2：跑測試確認失敗**：`npx vitest run src/scripts/games/delve/render/execRoutes.test.ts src/scripts/games/delve/input/mapping.test.ts` FAIL（列出違規行／`null`）；`npx playwright test tests/e2e/delve.spec.ts --project=chromium -g "按 Q"` FAIL。
-- [ ] **Step 3：改線**：每個呼叫都換成 `game.act({ op: …, … })`，回傳值的用法不變（型別來自 `CmdResults`）。`hud.ts:287` 換成 `act({ op: 'swap', a: this.picked, b: i })`。再加上 Q 鍵。
+- [ ] **Step 3：改線**：每個呼叫都換成 `game.act({ op: …, … })`，回傳值的用法不變（型別來自 `CmdResults`）。`hud.ts:287` 換成 `act({ op: 'swap', a: this.picked, b: i })`。再加上 G 鍵。
 - [ ] **Step 4：跑測試確認通過**：掃描測試、mapping 測試 PASS；全套 vitest PASS；`npx playwright test tests/e2e/delve.spec.ts --project=chromium` 全綠（含新測試與既有的箱子、商店、鍛造、衣櫥、傳送碑流程）；tsc 沒有新增錯誤。
 - [ ] **Step 5：實機目測**：在 4321 起 dev server（先確認 4321 是不是被別的 worktree 佔用、服務的是不是本分支），開箱拿取、合成、換裝、買賣、技能樹、傳送碑、Q 丟出各試一次，回報時附上 `http://localhost:4321/games/delve`。
-- [ ] **Step 6：Commit** `refactor(delve): route UI actions through the exec bus; Q tosses the held stack`
+- [ ] **Step 6：Commit** `refactor(delve): route UI actions through the exec bus; G tosses the held stack`
 
 ---
 
