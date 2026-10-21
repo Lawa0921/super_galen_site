@@ -116,6 +116,23 @@ export function unsocketRune(s: GameState, id: CharacterId, skill: string, slot:
   return { ok: true, state: { ...s, runes, party: { ...s.party, roster: { ...s.party.roster, [id]: withCells(m, skill, next) } } } };
 }
 
+/** One slot of one member's skill. */
+export interface SocketAt { id: CharacterId; skill: string; slot: number }
+
+/**
+ * The rune in `from` into `to` in one step (plan 8g Task 1; spec §6.5: from any member's skill to any member's): taken
+ * out, then socketed as from the bag, what `to` held going to the bag. Either both happen or nothing does: a refusal
+ * (the slot itself, an empty `from`, or the socketing's reason seen with `from` already emptied) changes neither side.
+ * Never changes `s`.
+ */
+export function moveRune(s: GameState, from: SocketAt, to: SocketAt): { ok: true; state: GameState } | { ok: false; reason: SocketFail | 'empty' } {
+  if (from.id === to.id && from.skill === to.skill && from.slot === to.slot) return { ok: false, reason: 'invalid' };
+  const held = s.party.roster[from.id]?.sockets?.[from.skill]?.[from.slot] ?? null;
+  const out = unsocketRune(s, from.id, from.skill, from.slot);
+  if (!out.ok) return out;
+  return socketRune(out.state, to.id, to.skill, to.slot, held!);
+}
+
 /**
  * The runes on skills the member no longer knows go back to the bag (plan 8e ruling 15: a respec never loses a rune).
  * The same object when there are none.
@@ -173,13 +190,14 @@ function totals(d: Record<string, unknown>, members: Member[]): Map<string, numb
 }
 
 /**
- * Whether a save's rune fields keep the rules: the runes-open flag (absent or true, plan 8f), the bag (absent, or known
- * keys with whole counts), each readable member's sockets (absent, or learned active skills with at most socketCount
- * slots of runes, no rune twice, one of each exclusive group, 常駐 within RESERVE_CAP), and at most RUNE_STACK of any one
- * rune, bag and sockets together.
+ * Whether a save's rune fields keep the rules: the runes-open and rune-tutorial flags (absent or true, plans 8f and
+ * 8g), the bag (absent, or known keys with whole counts), each readable member's sockets (absent, or learned active
+ * skills with at most socketCount slots of runes, no rune twice, one of each exclusive group, 常駐 within RESERVE_CAP),
+ * and at most RUNE_STACK of any one rune, bag and sockets together.
  */
 export function validRuneFields(d: Record<string, unknown>): boolean {
   if (d.runesOpen !== undefined && d.runesOpen !== true) return false;
+  if (d.runeTutorialSeen !== undefined && d.runeTutorialSeen !== true) return false;
   if (d.runes !== undefined && !(isObj(d.runes) && Object.entries(d.runes).every(([k, n]) => parseRuneKey(k) !== null && isCount(n)))) return false;
   const members = readableMembers(d);
   if (!members.every(validSockets)) return false;
@@ -188,14 +206,15 @@ export function validRuneFields(d: Record<string, unknown>): boolean {
 
 /**
  * Brings a save's rune fields within the rules in place (plan 8e ruling 19: repaired, never corrupt), so that
- * `validRuneFields(d)` holds after; fields that keep the rules are not touched at all. A runes-open flag that is not
- * `true` goes (plan 8f). A bag or sockets field that is no object goes; bag keys that are unknown or not whole counts
- * go; a slot that is no rune is emptied; a rune in the wrong place (a skill she does not know or a passive, past her
- * slots, a second of its id or group, a 常駐 past the cap in learned order) goes back to the bag; past RUNE_STACK of
- * one rune, the bag gives way.
+ * `validRuneFields(d)` holds after; fields that keep the rules are not touched at all. A runes-open or rune-tutorial
+ * flag that is not `true` goes (plans 8f and 8g). A bag or sockets field that is no object goes; bag keys that are
+ * unknown or not whole counts go; a slot that is no rune is emptied; a rune in the wrong place (a skill she does not
+ * know or a passive, past her slots, a second of its id or group, a 常駐 past the cap in learned order) goes back to
+ * the bag; past RUNE_STACK of one rune, the bag gives way.
  */
 export function repairRuneFields(d: Record<string, unknown>): void {
   if (d.runesOpen !== undefined && d.runesOpen !== true) delete d.runesOpen;
+  if (d.runeTutorialSeen !== undefined && d.runeTutorialSeen !== true) delete d.runeTutorialSeen;
   if (d.runes !== undefined && !isObj(d.runes)) delete d.runes;
   if (isObj(d.runes)) for (const [k, n] of Object.entries(d.runes)) if (parseRuneKey(k) === null || !isCount(n)) delete d.runes[k];
   const bag = (): Record<string, number> => (isObj(d.runes) ? d.runes : (d.runes = {})) as Record<string, number>;

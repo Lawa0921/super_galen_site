@@ -38,7 +38,7 @@ import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeFail, RerollOpts } from './forge/cost';
 import { dismantle, enhance, fuse, reroll } from './forge/forge';
 import { castField, packEquip, packUnequip } from './field';
-import { socketRune, unsocketRune, type SocketFail } from './sockets';
+import { moveRune, socketRune, unsocketRune, type SocketAt, type SocketFail } from './sockets';
 import type { RuneRef } from '../data/runes';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
@@ -857,6 +857,31 @@ export class Game {
   unsocketRune(id: CharacterId, skill: string, slot: number): { ok: true } | { ok: false; reason: 'invalid' | 'empty' } {
     if (this.phase !== 'town' && this.phase !== 'map') return { ok: false, reason: 'invalid' };
     return this.runesMoved(unsocketRune(this.state, id, skill, slot));
+  }
+
+  /** Why `moveRune(from, to)` would be turned down now, or null when it would go; changes nothing. */
+  canMoveRune(from: SocketAt, to: SocketAt): SocketFail | 'empty' | null {
+    if (this.phase !== 'town' && this.phase !== 'map') return 'invalid';
+    const out = moveRune(this.state, from, to);
+    return out.ok ? null : out.reason;
+  }
+
+  /**
+   * A rune from one slot straight into another, of any recruited member's skill (plan 8g; the rules: sockets
+   * `moveRune`): when and saved as `socketRune`. A refusal leaves both slots as they were.
+   */
+  moveRune(from: SocketAt, to: SocketAt): { ok: true } | { ok: false; reason: SocketFail | 'empty' } {
+    if (this.phase !== 'town' && this.phase !== 'map') return { ok: false, reason: 'invalid' };
+    return this.runesMoved(moveRune(this.state, from, to));
+  }
+
+  /**
+   * The rune tutorial has been shown (plan 8g ruling 13). Saved at once in town (only a failed save leaves a notice);
+   * anywhere else it counts at once and is saved at the next town save.
+   */
+  seeRuneTutorial(): void {
+    this.state = { ...this.state, runeTutorialSeen: true };
+    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
   }
 
   /** Buy runes at Orik's (engine/runeTrade buyRune): town only (plan 8f ruling 14), saved at once; a failed save leaves a notice. */

@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { resolveRound, skillFor } from './battle';
+import { createBattle, resolveRound, runeView, skillFor } from './battle';
 import { hitAmount, rollHit, type BattleEvent, type Combatant } from './combatant';
 import { AILMENT } from './ailments';
 import { newLedger } from './ledger';
 import { mulberry32, type Rng } from './rng';
 import { bounceNext } from './runes';
-import { applyEffect, pctOf, type EffectContext } from './skills';
-import { constRng, makeBattle, makeCombatant } from './testing';
+import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
+import { lastingBarrierLoss } from './mechanics/runes';
+import { constRng, fullParty, makeBattle, makeCombatant } from './testing';
 import { SKILLS } from '../data/skills';
-import type { RuneId, RuneRef } from '../data/runes';
+import { RUNES, type RuneId, type RuneRef } from '../data/runes';
+import { POWERS } from '../data/gear';
 import type { Effect } from './types';
 
 type Damage = Extract<Effect, { kind: 'damage' }>;
@@ -202,5 +204,75 @@ describe('runes on every hit: review fixes (plan 8e Task 4 review)', () => {
     expect(damageTo(r1.log, 'e0')).toHaveLength(1);
     expect(r1.log).toContainEqual({ type: 'miss', target: 'e1' });
     expect(damageTo(r1.log, 'e2')).toHaveLength(0);
+  });
+});
+
+describe('the runes as the workshop reads them (plan 8g Task 1)', () => {
+  it('runeView tells what applyRunes uses', () => {
+    // 延長 reads the skill without its extras: the legendary power's def debuff on 瞄準射擊 gives it nothing to lengthen.
+    const sylvie = member('sylvie', { 'aimed-shot': [R('extend')] }, { powers: ['lg-sylvie'] });
+    const aimed = runeView(sylvie, 'aimed-shot', [R('extend')])!;
+    expect(aimed.states).toHaveLength(1);
+    expect(aimed.states[0].ref).toEqual(R('extend'));
+    expect(aimed.states[0].miss?.kind).toBe('needs');
+    expect(aimed.def).toEqual(skillFor({ ...sylvie, runes: undefined }, 'aimed-shot'));
+    const debuff = (c: Combatant) => skillFor(c, 'aimed-shot')!.effects.find((e) => e.kind === 'buff') as Extract<Effect, { kind: 'buff' }>;
+    expect(debuff(sylvie).turns).toBe(debuff({ ...sylvie, runes: undefined }).turns);
+    // 守之結界 takes it: no miss, and the barrier really lasts longer.
+    const chizuru = member('chizuru', { ward: [R('extend')] });
+    const ward = runeView(chizuru, 'ward', [R('extend')])!;
+    expect(ward.states.map((x) => x.miss)).toEqual([null]);
+    expect(ward.def).toEqual(skillFor({ ...chizuru, runes: undefined }, 'ward'));
+    const turns = (c: Combatant) => (skillFor(c, 'ward')!.effects[0] as { turns: number }).turns;
+    expect(turns(chizuru)).toBe(turns({ ...chizuru, runes: undefined }) + RUNES.extend.mod('magic').turns!);
+    // The refs need not be the ones she wears: the view of a rune not yet socketed.
+    expect(runeView(member('chizuru'), 'ward', [R('extend')])!.states.map((x) => x.miss)).toEqual([null]);
+    expect(runeView(member('chizuru'), 'ward', [])!.states).toEqual([]);
+    expect(runeView(member('chizuru'), 'no-such-skill', [])).toBeUndefined();
+  });
+
+  it('a skill nothing rewrites is the very same object; a rewritten one is as before', () => {
+    expect(skillFor(member('noel'), 'fire-star')).toBe(SKILLS['fire-star']);
+    expect(runeView(member('noel'), 'fire-star', [])!.def).toBe(SKILLS['fire-star']);
+    const lg = POWERS['lg-sylvie'].mod;
+    const want = patchSkill(patchSkill(SKILLS['aimed-shot'], {}), { extra: lg.extra });
+    expect(skillFor(member('sylvie', undefined, { powers: ['lg-sylvie'] }), 'aimed-shot')).toEqual(want);
+  });
+});
+
+describe('two lasting barriers (plan 8g Task 1)', () => {
+  const lasting = R('lasting', 'common');
+  const chizuru = (runes: Record<string, RuneRef[]>, over: Partial<Combatant> = {}) => member('chizuru', runes, { mech: { kind: 'barrier' }, ...over });
+
+  it('two lasting barriers: one is lost', () => {
+    const both = chizuru({ ward: [lasting], 'purify-ward': [lasting] });
+    expect(lastingBarrierLoss(both)).toBe(1);
+    expect(lastingBarrierLoss(chizuru({ ward: [lasting] }))).toBe(0);
+    expect(lastingBarrierLoss(chizuru({}))).toBe(0);
+    // With the twin ward two kinds stand at once.
+    const twin = chizuru({ ward: [lasting], 'purify-ward': [lasting] }, { ranks: { ward: 1, 'purify-ward': 1, 'chizuru-twin-ward': 1 } });
+    expect(lastingBarrierLoss(twin)).toBe(0);
+    // It changes nothing on her.
+    const before = JSON.stringify(both);
+    lastingBarrierLoss(both);
+    expect(JSON.stringify(both)).toBe(before);
+  });
+
+  it('the loss is what a fight opened from the party shows', () => {
+    const open = (twin: boolean) => {
+      const party = fullParty(['hero', 'chizuru', 'noel']);
+      const m = party.roster.chizuru;
+      party.roster.chizuru = { ...m, level: 20, tree: { ...m.tree, ward: 1, 'purify-ward': 1, ...(twin ? { 'chizuru-twin-ward': 1 } : {}) },
+        sockets: { ward: [lasting], 'purify-ward': [lasting] } };
+      const fight = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+      const c = fight.party.find((x) => x.key === 'chizuru')!;
+      return { raised: 2, standing: fight.barriers?.length ?? 0, loss: lastingBarrierLoss(c) };
+    };
+    for (const twin of [false, true]) {
+      const r = open(twin);
+      expect(r.raised - r.standing, `twin ${twin}`).toBe(r.loss);
+    }
+    expect(open(false).loss).toBe(1);
+    expect(open(true).loss).toBe(0);
   });
 });

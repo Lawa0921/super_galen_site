@@ -914,3 +914,24 @@ describe('the runes-open flag in the save (plan 8f Task 1)', () => {
     }
   });
 });
+
+describe('the rune tutorial flag in the save (plan 8g Task 1)', () => {
+  it('runeTutorialSeen survives a save and a load', () => {
+    const g: GameState = { ...newGame(undefined, 0, STANDARD_LINEUP), runesOpen: true, runeTutorialSeen: true, runes: { 'spread@magic': 1 } };
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+
+  it('a junk runeTutorialSeen is dropped, the save loads', () => {
+    for (const v of [false, 1, 'yes', null]) {
+      const st = memoryStorage();
+      const raw = JSON.parse(JSON.stringify(newGame(undefined, 0, STANDARD_LINEUP)));
+      raw.runeTutorialSeen = v;
+      st.setItem(SAVE_KEY, JSON.stringify(raw));
+      const r = loadGame(st);
+      if (r.status !== 'ok') throw new Error(`load: ${r.status}`);
+      expect(r.state).not.toHaveProperty('runeTutorialSeen');
+    }
+  });
+});

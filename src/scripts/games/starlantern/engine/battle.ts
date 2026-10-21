@@ -24,7 +24,7 @@ import { echoDef, echoOf } from './mechanics/echo';
 import { applyLasting, runTriggers } from './mechanics/runes';
 import { T } from '../data/text.zh-TW';
 import type { RuneRef } from '../data/runes';
-import { applyRunes, bounceNext } from './runes';
+import { applyRunes, bounceNext, runeStates, type RuneMiss } from './runes';
 import { isInnate, keystonesOf, mechKnob, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
@@ -285,22 +285,46 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
  * With nothing to rewrite it is `SKILLS[id]` itself. An unknown id is undefined.
  */
 export function skillFor(c: Pick<Combatant, 'powers' | 'ranks' | 'weaponKind' | 'runes'>, id: string): SkillDef | undefined {
-  const base = SKILLS[id];
-  if (!base) return base;
+  const base = skillBase(c, id);
+  if (!base) return undefined;
   // Runes come after all of it (spec §6.6 rule 1): on the skill without its extras, which they hand back last (plan 8e).
   const runes = c.runes?.[id];
+  const { core, extra } = base;
+  if (runes?.length) return knobWords(c, applyRunes(core, extra, runes));
+  return knobWords(c, extra.length ? patchSkill(core, { extra }) : core);
+}
+
+/**
+ * The skill before its runes, as `skillFor` builds it: `core` after the tree, mastery and legendary powers, and the
+ * `extra` effects they add, handed back last. `core` is the data's own object when nothing rewrites the skill.
+ */
+function skillBase(c: Pick<Combatant, 'powers' | 'ranks' | 'weaponKind'>, id: string): { core: SkillDef; extra: Effect[] } | undefined {
+  const base = SKILLS[id];
+  if (!base) return undefined;
   // The tree's two stages (the active's own rank, then its mod nodes stacked into one) come from progression.treeMods only.
   const powers = (c.powers ?? []).map((p) => POWERS[p]).filter((p) => p && p.skill === id).map((p) => p.mod);
   const info = NODES[id];
   const mastered = c.weaponKind && info?.owner === 'hero' && WEAPON_KINDS[c.weaponKind].mastery.includes(info.branch)
     ? pctMod(id, 100 + WEAPON_MASTERY_PCT) : undefined;
   const mods = [...(c.ranks ? treeMods(c.ranks, id) : []), ...(mastered ? [mastered] : []), ...powers];
-  if (!mods.length) return knobWords(c, runes?.length ? applyRunes(base, [], runes) : base);
-  let def = base;
+  let core = base;
   const extra: Effect[] = [];
-  for (const { extra: more, ...mod } of mods) { def = patchSkill(def, mod); extra.push(...(more ?? [])); }
-  if (runes?.length) return knobWords(c, applyRunes(def, extra, runes));
-  return knobWords(c, extra.length ? patchSkill(def, { extra }) : def);
+  for (const { extra: more, ...mod } of mods) { core = patchSkill(core, mod); extra.push(...(more ?? [])); }
+  return { core, extra };
+}
+
+/**
+ * The skill without its runes and whether each of `refs` would work on it (plan 8g Task 1): what the workshop shows
+ * before a rune goes in. `def` is `skillFor` with no runes; `states` the very judgement `applyRunes` makes on `refs`.
+ */
+export function runeView(c: Pick<Combatant, 'powers' | 'ranks' | 'weaponKind'>, id: string, refs: readonly RuneRef[]): { def: SkillDef; states: { ref: RuneRef; miss: RuneMiss | null }[] } | undefined {
+  const base = skillBase(c, id);
+  if (!base) return undefined;
+  const { core, extra } = base;
+  return {
+    def: knobWords(c, extra.length ? patchSkill(core, { extra }) : core),
+    states: runeStates({ ...core, effects: [...core.effects, ...extra] }, refs, core),
+  };
 }
 
 /**

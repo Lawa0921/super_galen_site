@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { Game, type BattleEnd, type MoveResult } from './game';
 import { STORY_FIGHT_ROUNDS } from './battle';
 import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
-import { SAVE_VERSION, newGame, START_ITEMS } from './state';
+import { SAVE_VERSION, newGame, START_ITEMS, type GameState } from './state';
 import { constRng, memoryStorage, plainItem, version8Save, withNode } from './testing';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -1621,6 +1621,75 @@ describe('moving runes (plan 8e Task 2)', () => {
     const full = lv20(new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP));
     expect(full.socketRune('noel', 'fire-star', 0, spread)).toEqual({ ok: true });
     expect([full.notice, full.state.runes]).toEqual(['save-failed', {}]);
+  });
+});
+
+describe('moving a rune between members (plan 8g Task 1)', () => {
+  const spread = { id: 'spread', tier: 'magic' } as const;
+  /** Noel and Chizuru at Lv20 on their default builds, Noel's 火之星彈 holding 擴散. */
+  const ready = (g: Game) => {
+    g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 20, tree: defaultTree('noel', 20), sockets: { 'fire-star': [spread] } };
+    g.state.party.roster.chizuru = { ...g.state.party.roster.chizuru, level: 20, tree: defaultTree('chizuru', 20) };
+    return g;
+  };
+  const from = { id: 'noel', skill: 'fire-star', slot: 0 } as const;
+  const to = { id: 'chizuru', skill: 'pierce', slot: 0 } as const;
+  const where = (s: GameState) => [s.party.roster.noel.sockets, s.party.roster.chizuru.sockets];
+
+  it('runes move in the field and are saved at the next town save', () => {
+    const storage = memoryStorage();
+    const g = ready(inMap(1, calm(), storage));
+    const saved = storage.map.get(SAVE_KEY);
+    expect(g.canMoveRune(from, to)).toBeNull();
+    expect(where(g.state)).toEqual([{ 'fire-star': [spread] }, undefined]);   // asking changes nothing
+    expect(g.moveRune(from, to)).toEqual({ ok: true });
+    expect(where(g.state)).toEqual([undefined, { pierce: [spread] }]);
+    expect([g.notice, storage.map.get(SAVE_KEY)]).toEqual([null, saved]);
+    expect(g.returnToTown()).toBe(true);
+    expect(g.rest().ok).toBe(true);
+    expect(where(Game.boot(calm(), storage).state)).toEqual([undefined, { pierce: [spread] }]);
+    // In town a move is saved at once; a refusal says why and changes nothing.
+    expect(g.moveRune(to, to)).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.canMoveRune(from, to)).toBe('empty');
+    expect(g.moveRune(from, to)).toEqual({ ok: false, reason: 'empty' });
+    g.notice = null;
+    expect(g.moveRune(to, from)).toEqual({ ok: true });
+    expect(g.notice).toBeNull();
+    expect(where(Game.boot(calm(), storage).state)).toEqual([{ 'fire-star': [spread] }, undefined]);
+    // A failed town save says so and keeps the move.
+    const full = ready(new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP));
+    expect(full.moveRune(from, to)).toEqual({ ok: true });
+    expect([full.notice, ...where(full.state)]).toEqual(['save-failed', undefined, { pierce: [spread] }]);
+  });
+
+  it('a battle refuses with invalid', () => {
+    const g = ready(new Game(calm(), memoryStorage(), undefined, 0, HERO_LINEUP));
+    g.phase = 'battle';
+    expect(g.canMoveRune(from, to)).toBe('invalid');
+    expect(g.moveRune(from, to)).toEqual({ ok: false, reason: 'invalid' });
+    expect(where(g.state)).toEqual([{ 'fire-star': [spread] }, undefined]);
+  });
+
+  it('seeRuneTutorial saves in town, waits in the labyrinth', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
+    expect(g.state.runeTutorialSeen).toBeUndefined();
+    g.seeRuneTutorial();
+    expect([g.state.runeTutorialSeen, g.notice]).toEqual([true, null]);
+    expect(Game.boot(calm(), storage).state.runeTutorialSeen).toBe(true);
+    const fieldStorage = memoryStorage();
+    const field = inMap(1, calm(), fieldStorage);
+    const saved = fieldStorage.map.get(SAVE_KEY);
+    field.seeRuneTutorial();
+    expect(field.state.runeTutorialSeen).toBe(true);
+    expect([field.notice, fieldStorage.map.get(SAVE_KEY)]).toEqual([null, saved]);
+    expect(field.returnToTown()).toBe(true);
+    expect(field.rest().ok).toBe(true);
+    expect(Game.boot(calm(), fieldStorage).state.runeTutorialSeen).toBe(true);
+    // A failed town save leaves its notice and keeps the flag.
+    const full = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP);
+    full.seeRuneTutorial();
+    expect([full.notice, full.state.runeTutorialSeen]).toEqual(['save-failed', true]);
   });
 });
 

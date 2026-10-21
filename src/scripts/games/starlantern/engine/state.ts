@@ -75,6 +75,11 @@ export interface GameState {
    * on an old save past its first boss too; its next boss sets it.
    */
   runesOpen?: true;
+  /**
+   * The rune tutorial has been shown (plan 8g ruling 13): after the battle that first gave a rune, or on the first
+   * workshop visit of a player who already holds one. Absent: not yet.
+   */
+  runeTutorialSeen?: true;
 }
 
 /**

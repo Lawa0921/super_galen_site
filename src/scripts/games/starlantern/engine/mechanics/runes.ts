@@ -179,6 +179,24 @@ export function battleReservePct(c: Combatant): number {
 }
 
 /**
+ * How many of her working lasting barriers a fight's start would put up only to see replaced (plan 8g ruling 10): each
+ * raised in learned order on a field with no barrier, as `applyLasting` raises them (`raiseBarrier`, so with 重結界 two
+ * kinds both stand). The workshop warns of it: a lost one still holds back its TP. Draws nothing, changes nothing on `c`.
+ */
+export function lastingBarrierLoss(c: Combatant): number {
+  const field = { barriers: [] } as Partial<BattleState> as BattleState;
+  let raised = 0;
+  for (const { def, pct } of lastingSkills(c)) {
+    for (const e of def.effects) {
+      if (e.kind !== 'barrier') continue;
+      raiseBarrier(field, c, { ...e, power: pctOf(e.power, pct) }, def.id);
+      raised++;
+    }
+  }
+  return raised - (field.barriers?.length ?? 0);
+}
+
+/**
  * 常駐 at the fight's start (plan 8e Task 7), after the mechanics' init: in party order, each member's skills with a working
  * 常駐 put their buffs on as auras (`lastingTargets`, at the rune's percent; one a stat and way, the stronger kept) and
  * raise their barriers as lasting ones (at the rune's percent); then her max TP gives up her reserve. No TP is paid, no

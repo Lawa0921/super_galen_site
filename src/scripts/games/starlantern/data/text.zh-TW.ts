@@ -774,6 +774,9 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       same: RUNE_SAME,
       group: RUNE_GROUP,
       reserve: (cap: number) => `常駐保留的 TP 上限已經到 ${cap}%`,
+      /** Socketing or moving outside town and the labyrinth's field (plan 8g ruling 19), and moving from an empty slot. */
+      invalid: '現在不能換符文',
+      empty: '這個槽是空的',
       /** Trading runes (plan 8f, engine/runeTrade RuneTradeFail); `gold` uses T.reasons.gold. */
       closed: '在迷宮打倒頭目之後才有符文',
       full: (n: number) => `這個符文已經 ${n} 個了`,

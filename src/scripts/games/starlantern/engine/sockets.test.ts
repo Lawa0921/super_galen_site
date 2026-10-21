@@ -7,7 +7,7 @@ import { runeStates } from './runes';
 import { SKILLS } from '../data/skills';
 import { RESERVE_CAP } from '../data/runes';
 import { T } from '../data/text.zh-TW';
-import { bagCount, repairRuneFields, reservedTpPct, returnOrphanRunes, socketCount, socketRune, socketable, unsocketRune, validRuneFields } from './sockets';
+import { bagCount, moveRune, repairRuneFields, reservedTpPct, returnOrphanRunes, socketCount, socketRune, socketable, unsocketRune, validRuneFields, type SocketAt } from './sockets';
 
 const spread: RuneRef = { id: 'spread', tier: 'magic' };
 const focus: RuneRef = { id: 'focus', tier: 'magic' };
@@ -20,7 +20,7 @@ const noelAt = (level: number, runes: Record<string, number>): GameState => {
   s.party.roster.noel = { ...s.party.roster.noel, level, tree: defaultTree('noel', level) };
   return { ...s, runes };
 };
-const ok = (r: ReturnType<typeof socketRune>): GameState => {
+const ok = (r: { ok: true; state: GameState } | { ok: false; reason: string }): GameState => {
   if (!r.ok) throw new Error(`refused: ${r.reason}`);
   return r.state;
 };
@@ -173,6 +173,85 @@ describe('the runes-open flag (plan 8f Task 1)', () => {
       expect(validRuneFields(d)).toBe(false);
       repairRuneFields(d);
       expect(d).not.toHaveProperty('runesOpen');
+      expect(validRuneFields(d)).toBe(true);
+    }
+  });
+});
+
+describe('moving a rune from one skill to another (plan 8g Task 1)', () => {
+  /** Noel and Sylvie at Lv20 on their default builds, Sylvie recruited; Noel's 火之星彈 holds 擴散 in slot 0. */
+  const two = (runes: Record<string, number> = {}): GameState => {
+    const s = noelAt(20, { 'spread@magic': 1, ...runes });
+    s.party.recruited = [...s.party.recruited, 'sylvie'];
+    s.party.roster.sylvie = { ...s.party.roster.sylvie, level: 20, tree: defaultTree('sylvie', 20) };
+    const out = ok(socketRune(s, 'noel', 'fire-star', 0, spread));
+    expect(out.runes).toEqual(runes);
+    return out;
+  };
+  const at = (id: SocketAt['id'], skill: string, slot = 0): SocketAt => ({ id, skill, slot });
+
+  it('a rune moves from one member to another', () => {
+    const s = two({ 'ignite@magic': 2 });
+    const before = JSON.stringify(s);
+    const r = ok(moveRune(s, at('noel', 'fire-star'), at('sylvie', 'aimed-shot')));
+    expect(r.party.roster.noel.sockets).toBeUndefined();
+    expect(r.party.roster.sylvie.sockets).toEqual({ 'aimed-shot': [spread] });
+    expect(r.runes).toEqual(s.runes);
+    expect(JSON.stringify(s)).toBe(before);
+    // Into a slot that holds a rune: that one goes to the bag.
+    const held = ok(socketRune(two({ 'ignite@magic': 1 }), 'sylvie', 'aimed-shot', 0, ignite));
+    const swapped = ok(moveRune(held, at('noel', 'fire-star'), at('sylvie', 'aimed-shot')));
+    expect(swapped.party.roster.sylvie.sockets).toEqual({ 'aimed-shot': [spread] });
+    expect(swapped.runes).toEqual({ 'ignite@magic': 1 });
+    // Between two skills of one member, and between two slots of one skill.
+    const own = ok(moveRune(s, at('noel', 'fire-star'), at('noel', 'ice-star', 1)));
+    expect(own.party.roster.noel.sockets).toEqual({ 'ice-star': [null, spread] });
+    const slots = ok(moveRune(s, at('noel', 'fire-star'), at('noel', 'fire-star', 1)));
+    expect(slots.party.roster.noel.sockets).toEqual({ 'fire-star': [null, spread] });
+  });
+
+  it('a refused move changes nothing on either side', () => {
+    const refused = (s: GameState, from: SocketAt, to: SocketAt, reason: string) => {
+      const before = JSON.stringify(s);
+      const roster = { ...s.party.roster };
+      expect(moveRune(s, from, to)).toEqual({ ok: false, reason });
+      expect(JSON.stringify(s)).toBe(before);
+      for (const id of Object.keys(roster) as SocketAt['id'][]) expect(s.party.roster[id]).toBe(roster[id]);
+    };
+    // Sylvie's 瞄準射擊 already holds 集中.
+    const focused = ok(socketRune(two({ 'focus@magic': 1 }), 'sylvie', 'aimed-shot', 1, focus));
+    refused(focused, at('noel', 'fire-star'), at('sylvie', 'aimed-shot'), 'group');
+    // A 常駐 onto a member who already holds 90%.
+    let full = noelAt(35, { 'lasting@common': 4 });
+    for (const k of socketable(full.party.roster.noel).slice(0, 3)) full = ok(socketRune(full, 'noel', k, 0, lasting));
+    full.party.roster.chizuru = { ...full.party.roster.chizuru, level: 20, tree: defaultTree('chizuru', 20) };
+    full = ok(socketRune(full, 'chizuru', 'ward', 0, lasting));
+    expect(reservedTpPct(full.party.roster.noel)).toBe(RESERVE_CAP);
+    refused(full, at('chizuru', 'ward'), at('noel', 'thunder-star'), 'reserve');
+    // From an empty slot; onto itself; past her slots; a skill she does not have.
+    const s = two();
+    refused(s, at('noel', 'ice-star'), at('sylvie', 'aimed-shot'), 'empty');
+    refused(s, at('noel', 'fire-star'), at('noel', 'fire-star'), 'invalid');
+    refused(s, at('noel', 'fire-star'), at('sylvie', 'aimed-shot', 2), 'slot');
+    refused(s, at('noel', 'fire-star'), at('sylvie', 'heart-shot'), 'invalid');
+    // The words for the two refusals the sockets had none for.
+    expect([T.rune.fail.invalid, T.rune.fail.empty]).toEqual(['現在不能換符文', '這個槽是空的']);
+  });
+});
+
+describe('the rune tutorial flag (plan 8g Task 1)', () => {
+  it('the tutorial flag is true or absent', () => {
+    const base = JSON.parse(JSON.stringify(noelAt(10, {}))) as Record<string, unknown>;
+    expect(validRuneFields({ ...base })).toBe(true);
+    const seen = { ...base, runeTutorialSeen: true };
+    expect(validRuneFields(seen)).toBe(true);
+    repairRuneFields(seen);
+    expect(seen.runeTutorialSeen).toBe(true);
+    for (const v of [false, 1, 'yes', null, {}]) {
+      const d = { ...base, runeTutorialSeen: v };
+      expect(validRuneFields(d)).toBe(false);
+      repairRuneFields(d);
+      expect(d).not.toHaveProperty('runeTutorialSeen');
       expect(validRuneFields(d)).toBe(true);
     }
   });
