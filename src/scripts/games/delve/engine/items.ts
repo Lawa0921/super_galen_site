@@ -19,7 +19,7 @@ export type ItemId =
   | 'platform' | 'wooden_door' | 'dungeon_key' | 'golden_key'
   | 'lantern' | 'rune_pickaxe' | 'explorer_map'
   // ── 探索工具 / 飾品 ──
-  | 'rope' | 'bed' | 'recall_stone' | 'compass' | 'depth_meter'
+  | 'rope' | 'bed' | 'recall_stone' | 'compass' | 'depth_meter' | 'boat'
   | 'jump_boots' | 'swift_boots' | 'night_amulet' | 'magnet'
   // ── 戰鬥：怪物素材 / 錠 / 合成站 ──
   | 'gel' | 'bone' | 'feather' | 'fang' | 'chitin' | 'stinger' | 'spore' | 'ember'
@@ -136,7 +136,9 @@ export interface ItemDef {
     /** 轉生之藥：開種族選單，確定換族才消耗 */
     | 'rebirth'
     /** 建築木槌：方塊整格 ⇄ 半格 */
-    | 'hammer';
+    | 'hammer'
+    /** 小木船：在水面上上船（不消耗；按跳下船） */
+    | 'boat';
   /** 釣竿：釣力、能不能在熔岩裡釣 */
   rod?: { power: number; lava?: boolean };
   /** 魚餌的釣力 */
@@ -233,6 +235,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   // 床：放置時佔兩格（床頭 + 右邊床尾，game.tryPlace 特別處理）
   bed: { ...block('bed', '床', 'Bed', T.BED_HEAD), maxStack: 99 },
   recall_stone: { id: 'recall_stone', name: { zh: '傳送石', en: 'Recall Stone' }, maxStack: 1, use: 'recall' },
+  boat: { id: 'boat', name: { zh: '小木船', en: 'Boat' }, maxStack: 1, use: 'boat' },
   compass: { id: 'compass', name: { zh: '指南針', en: 'Compass' }, maxStack: 1, accessory: 'compass' },
   depth_meter: { id: 'depth_meter', name: { zh: '深度計', en: 'Depth Gauge' }, maxStack: 1, accessory: 'depth' },
   jump_boots: { id: 'jump_boots', name: { zh: '跳躍靴', en: 'Springstep Boots' }, maxStack: 1, unique: true, accessory: 'jump' },

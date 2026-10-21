@@ -247,6 +247,41 @@ test.describe('delve', () => {
     expect(errors).toEqual([]);
   });
 
+  test('小木船：debug 給船、傳送到東邊海面、右鍵上船 → boating；按住右 2 秒 → 往東開超過 25 格', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=infinite-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    // 先按住右鍵（使用）：傳到水面上一碰到水就上船
+    await page.mouse.move(640, 200);
+    await page.mouse.down({ button: 'right' });
+    const top = await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game, x = 4300;
+      // 先傳到海上任一點（載入目的地），再找這欄的水面
+      g.teleport(x, 100);
+      const src = g.world.source as { waterTopAt?(x: number): number | null };
+      const top = src.waterTopAt?.(x) ?? -1;
+      g.give('boat', 1);
+      const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'boat');
+      g.inventory.swap(i, 3); g.selectSlot(3);
+      g.teleport(x, top - 1); d.handle.renderer.snapCamera();
+      return top;
+    });
+    expect(top).toBeGreaterThan(0);
+    expect(await page.evaluate((top) => window.__delveDebug!.game.world.getLiquid(4300, top), top)).toBeGreaterThan(0);
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.local.boating), { timeout: 5000 }).toBe(true);
+    await page.mouse.up({ button: 'right' });
+    const x0 = await page.evaluate(() => window.__delveDebug!.game.player.x);
+    await page.keyboard.down('d');
+    await page.waitForTimeout(2000);
+    await page.keyboard.up('d');
+    const s = await page.evaluate(() => { const g = window.__delveDebug!.game; return { x: g.player.x, boating: g.local.boating }; });
+    expect(s.boating).toBe(true);
+    expect((s.x - x0) / 16).toBeGreaterThan(25);
+    expect(errors).toEqual([]);
+  });
+
   test('瞄準腳下並按住挖掘 → 背包泥土增加', async ({ page }) => {
     await page.goto('/games/delve?seed=mine&autostart=1&fresh=1');
     await waitGame(page);

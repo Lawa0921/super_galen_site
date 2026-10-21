@@ -41,6 +41,7 @@ import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type Ph
 import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { liquidContact, liquidMedium, playerMedium } from './swim';
+import { BOAT_DRAFT, boatWaterline, canBoard, stepBoat } from './boat';
 import { normalizeAppearance, RACES, type Appearance } from './appearance';
 import { raceMods, type RaceMods } from './race';
 import { VANITY_SLOTS, type HideSlot, type VanitySlot } from './vanity';
@@ -83,7 +84,7 @@ import {
   SLAM_DIVE_BONUS, SLAM_KB, SLAM_PER_LEVEL, SLAM_RADIUS, gearBonus, type ActiveSkill, type LearnFail, type SkillId,
 } from './skills';
 import {
-  TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH, HOTBAR_SIZE,
+  TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH, HOTBAR_SIZE, JUMP_SPEED, JUMP_HOLD,
 } from './constants';
 
 export interface DelveOptions {
@@ -139,6 +140,8 @@ type DelveEventBody =
   | { type: 'spawn'; set: boolean; x: number; y: number }
   /** 傳送石：開始引導 / 取消 / 完成傳送（x,y = 目的地腳底 tile） */
   | { type: 'recall'; phase: 'start' | 'cancel' | 'done'; x: number; y: number }
+  /** 小木船：上船 / 下船（按跳、擱淺、傳送、死亡） */
+  | { type: 'boat'; on: boolean }
   // ── 戰鬥 ──
   /** 開始一次攻擊（音效 / 動畫） */
   | { type: 'attack'; item: ItemId; kind: WeaponKind }
@@ -463,7 +466,7 @@ const LEVEL_EVENTS = new Set<DelveEvent['type']>(['kill', 'place', 'mine', 'ches
  */
 export const PRIVATE_EVENTS: ReadonlySet<DelveEvent['type']> = new Set<DelveEvent['type']>([
   'pickup', 'blocked', 'select', 'xp', 'levelup', 'xploss', 'hurt', 'talk', 'trade', 'quest', 'bubble', 'craft',
-  'chest', 'mirror', 'rebirth', 'hint', 'recall', 'spawn', 'lifeup', 'buff', 'learn', 'respec', 'refund', 'salvage', 'forge',
+  'chest', 'mirror', 'rebirth', 'hint', 'recall', 'boat', 'spawn', 'lifeup', 'buff', 'learn', 'respec', 'refund', 'salvage', 'forge',
   'codex', 'treasure', 'discover', 'lore', 'landmark', 'folktalk', 'folktrade', 'hearth', 'travel', 'eat', 'crate',
 ]);
 /** 有人一直不取事件時，佇列最多留幾筆（取得最慢的那個人會漏掉最舊的） */
@@ -549,6 +552,8 @@ export class DelveGame {
   set buffs(v: PlayerActor['buffs']) { this.cur.buffs = v; }
   private get recallT(): PlayerActor['recallT'] { return this.cur.recallT; }
   private set recallT(v: PlayerActor['recallT']) { this.cur.recallT = v; }
+  private get boating(): PlayerActor['boating'] { return this.cur.boating; }
+  private set boating(v: PlayerActor['boating']) { this.cur.boating = v; }
   private get accSig(): PlayerActor['accSig'] { return this.cur.accSig; }
   private set accSig(v: PlayerActor['accSig']) { this.cur.accSig = v; }
   private get acc(): PlayerActor['acc'] { return this.cur.acc; }
@@ -1092,7 +1097,8 @@ export class DelveGame {
     this.contact = liquidContact(this.world, this.player);
     const air0 = this.motion.airUsed ?? 0, climb0 = Boolean(this.motion.climbing), mantle0 = this.motion.mantle ?? null;
     this.preMoveSkills(dt);
-    stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
+    if (this.boating) this.stepBoating(dt, knocked);
+    else stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
     if ((this.motion.airUsed ?? 0) > air0) {
       const pl = this.player;
       // 三段跳（雲步 + 凌雲）的第三跳只有一半的按住時間：跳得比較矮，豎井不會變成一路連跳
@@ -1121,8 +1127,9 @@ export class DelveGame {
     if (this.attackCd > 0) this.attackCd -= dt;
     const weapon = this.heldWeapon();
     const rodHeld = this.heldRod() !== null;
-    // 拿著釣竿：主按鍵（觸控的點擊）也是拋竿 / 收竿（按下那一刻）
-    if (this.miningHeld && rodHeld) { if (!this.miningWas) this.fishAction(); }
+    // 拿著釣竿：主按鍵（觸控的點擊）也是拋竿 / 收竿（按下那一刻）；船上不挖 / 不打 / 不用道具
+    if (this.boating) this.mining = null;
+    else if (this.miningHeld && rodHeld) { if (!this.miningWas) this.fishAction(); }
     else if (this.miningHeld) {
       if (weapon) this.tryAttack(weapon.item, weapon.def);
       else this.updateMining(dt);
@@ -1133,7 +1140,7 @@ export class DelveGame {
     this.updateAttack(dt);
     if (!this.attack && Math.abs(this.player.vx) > 8) this.facing = this.player.vx > 0 ? 1 : -1;
     if (this.placeCooldown > 0) this.placeCooldown -= dt;
-    if (this.useHeld && this.placeCooldown <= 0) {
+    if (this.useHeld && this.placeCooldown <= 0 && !this.boating) {
       const { x, y } = this.aim;
       const held = this.inventory.selectedStack();
       const use = held ? ITEMS[held.item].use : undefined;
@@ -1149,6 +1156,9 @@ export class DelveGame {
         if (!this.useConsumed) { this.useConsumed = true; this.hammer(x, y); }
       } else if (use === 'recall') {
         if (!this.useConsumed) { this.useConsumed = true; this.startRecall(); }
+      } else if (use === 'boat') {
+        // 上不了船（還沒碰到水）不算用掉這次按住：按著掉進水裡，一碰到水面就上船
+        if (!this.useConsumed && this.boardBoat()) this.useConsumed = true;
       } else if (use === 'fish') {
         if (!this.useConsumed) { this.useConsumed = true; this.fishAction(); }
       } else if (use === 'scoop' || use === 'pour' || use === 'sponge') {
@@ -1162,6 +1172,41 @@ export class DelveGame {
       }
     }
   }
+  // ── 小木船 ─────────────────────────────────────────────
+  /** 手持船按使用：碰到水面才上船（身體貼齊水線）；船不消耗。不能上船 → 不做事、回傳 false */
+  private boardBoat(): boolean {
+    const p = this.player, m = this.motion;
+    if (this.boating || !canBoard(this.world, p)) return false;
+    p.y = boatWaterline(this.world, p)! + BOAT_DRAFT - p.h;
+    p.vy = 0; p.onGround = true; p.gfxOffY = 0;
+    m.climbing = false; m.mantle = null; m.jumpTimer = 0; m.jumpWasHeld = this.jump || this.upHeld;
+    this.mining = null; this.fallPeak = null; this.dashT = 0; this.slamming = false;
+    this.boating = true;
+    this.emit({ type: 'boat', on: true });
+    return true;
+  }
+  /** 下船（按跳 / 擱淺 / 傳送 / 死亡）；不在船上 → 什麼都不做 */
+  private leaveBoat(): void {
+    if (!this.boating) return;
+    this.boating = false;
+    this.emit({ type: 'boat', on: false });
+  }
+  /** 船上的一步（取代 stepPlayer）：按跳 → 下船並起跳；擱淺 / 水沒了 → 下船；否則照 stepBoat 開 */
+  private stepBoating(dt: number, knocked: boolean): void {
+    const m = this.motion, p = this.player;
+    const jumpIn = !knocked && (this.jump || this.upHeld);
+    const pressed = jumpIn && !m.jumpWasHeld;
+    m.jumpWasHeld = jumpIn;
+    if (pressed) {
+      this.leaveBoat();
+      p.vy = -JUMP_SPEED; p.onGround = false; m.jumpTimer = JUMP_HOLD;
+      return;
+    }
+    const mx: -1 | 0 | 1 = knocked || this.moveX === 0 ? 0 : this.moveX > 0 ? 1 : -1;
+    if (mx !== 0) m.face = mx;
+    if (!stepBoat(this.world, this.world, p, mx, dt).afloat) this.leaveBoat();
+  }
+
   /** 走遠 / 被拆 → 關掉開著的箱子 / 梳妝台（cur = 這個玩家；世界後段之後） */
   private closeFarPanels(): void {
     if (this.openChest) {
@@ -2644,6 +2689,7 @@ export class DelveGame {
     if ([...this.actors.values()].every((a) => a === this.cur || a.dead)) this.folk.playerDied();
     this.dead = true; this.hp = 0; this.respawnT = RESPAWN_TIME;
     this.sleepReady = false;
+    this.leaveBoat();
     this.dashT = 0; this.slamming = false;
     // 等級：失去本級進度的一小部分（不會掉級）
     const lost = this.levels.die();
@@ -2721,8 +2767,8 @@ export class DelveGame {
       }
       this.wasWet = wetType;
     }
-    // 呼吸：頭在水 / 蜂蜜下就消耗；沒氣了開始溺水
-    if (c.head && (c.type === LIQ.WATER || c.type === LIQ.HONEY)) {
+    // 呼吸：頭在水 / 蜂蜜下就消耗；沒氣了開始溺水（船上不扣）
+    if (c.head && !this.boating && (c.type === LIQ.WATER || c.type === LIQ.HONEY)) {
       const before = Math.ceil(this.breath);
       this.breath = Math.max(0, this.breath - dt / (BREATH_STEP * (1 + this.levels.totals().breath / 100)));
       const now = Math.ceil(this.breath);
@@ -4396,6 +4442,7 @@ export class DelveGame {
     this.motion.climbing = false;
     this.motion.mantle = null;
     this.fallPeak = null;
+    this.leaveBoat();
   }
   /** 立即挖掉一格（不檢查距離 / 等級），掉落物照常入背包。 */
   mineInstant(x: number, y: number): boolean { return this.breakTile(x, y, true); }

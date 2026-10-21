@@ -40,6 +40,7 @@ export const RECIPES: readonly Recipe[] = [
   r('rope', 'rope', 8, null, ['wood', 1]),
   r('bed', 'bed', 1, 'workbench', ['planks', 15]),
   r('recall_stone', 'recall_stone', 1, 'workbench', ['crystal', 3], ['stone', 20]),
+  r('boat', 'boat', 1, 'workbench', ['planks', 18], ['rope', 4]),
   r('compass', 'compass', 1, 'workbench', ['iron_ore', 6], ['copper_ore', 2]),
   r('depth_meter', 'depth_meter', 1, 'workbench', ['copper_ore', 8], ['stone', 10]),
   // ── 合成站 ──

@@ -250,6 +250,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
           if (e.phase === 'done') { renderer.snapCamera(); hud.toast('傳送回重生點'); }
           else if (e.phase === 'cancel') hud.toast('移動了：傳送中斷');
         }
+        else if (e.type === 'boat') { sound.boat(e.on); if (e.on) hud.toast('坐上小木船：按跳下船'); }
         else if (e.type === 'hint') hud.toast(hintText(e.id));
         else if (e.type === 'unlock') { hud.toast(e.item === 'golden_key' ? '用金鑰匙打開了金寶箱' : '用地城鑰匙打開了門'); invChanged = true; }
         else if (e.type === 'door') { /* 門的開關：只需要重畫（chunk dirty） */ }

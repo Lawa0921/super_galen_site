@@ -37,6 +37,7 @@ import { tileVariant } from './tileFamily'; // [polish]
 import { WeatherFx, type Canopy } from './weatherFx';
 import { lootGlyphScale } from './lootArt';
 import { toCanvas } from './pixel';
+import { boatBmp, BOAT_PX, BOAT_PY, BOAT_RAIL_ABOVE, BOAT_RAIL_Y } from './boatArt';
 import { bobberBmp, campfireBmp } from './fishArt';
 import { SettleLayer } from './settleDraw'; // [settle]
 import { FolkLayer } from './folkDraw';
@@ -196,6 +197,8 @@ export class Renderer {
   private lightDirty = true;
   private frame = 0;
   private clock = 0;
+  /** 小木船的圖（第一次有人上船才烘） */
+  private boatCanvas: HTMLCanvasElement | null = null;
   private particles: Particle[] = [];
   private walkPhase = 0;
   private swingPhase = 0;
@@ -483,6 +486,8 @@ export class Renderer {
     this.stats.liquidMs = performance.now() - tl;
     this.stats.liquidCells = this.liquidLayer.stats.cells;
     ph.liquid = this.lap();
+    // 船畫在水面之上（船身浮在水上；船上的人腳泡在水裡、被船身擋住）
+    this.drawBoats(ctx);
     this.drawIce(ctx, camX, camY, vw, vh);
     this.drawFishing(ctx);
     this.drawMiningAndCursor(ctx);
@@ -839,9 +844,11 @@ export class Renderer {
     const doll = g.doll();
     SP.setDoll(doll.look, doll.key);
     const mt = st.player.mantle;
-    const swim = st.liquid.frac > 0.55 && !p.onGround && !st.player.climbing;
+    // 船上：站著不動的姿勢（船在走、人不踏步）
+    const boating = g.local.boating;
+    const swim = !boating && st.liquid.frac > 0.55 && !p.onGround && !st.player.climbing;
     const an = this.animator.update({
-      dt, dead: st.dead, climbing: st.player.climbing, mantle: mt ? mt.p : null, onGround: p.onGround, vx: p.vx, vy: p.vy,
+      dt, dead: st.dead, climbing: st.player.climbing, mantle: mt ? mt.p : null, onGround: boating || p.onGround, vx: boating ? 0 : p.vx, vy: boating ? 0 : p.vy,
       swim, sinceHurt: this.clock - this.hurtAt,
     });
     this.playerAnim = an.anim;
@@ -881,7 +888,8 @@ export class Renderer {
     }
     const kind: PoseKind = an.anim === 'walk' || an.anim === 'jump' || an.anim === 'fall' ? an.anim : 'idle';
     const local = an.anim === 'walk' || an.anim === 'idle' ? an.frame : 0;
-    const held = st.held ? st.held.item : null;
+    // 船上：手上不拿東西（不能挖 / 用道具）
+    const held = st.held && !boating ? st.held.item : null;
     const heldDef = held ? ITEMS[held] : null;
     let swing: number | null = st.mining ? swingAngle(this.swingPhase) : null;
     let blade: ItemId | null = null;
@@ -1002,6 +1010,25 @@ export class Renderer {
     if (glowAt) this.coolSeen.push({ x: X + this.facing * (glowAt.x + reach), y: bottom + glowAt.y });
     if (heldOther === 'torch' || heldOther === 'lantern') this.torchesSeen.push({ x: X + this.facing * (hx + reach), y: bottom + hy - 8 });
     this.rodTip = rodTipL ? { x: Math.round(X + this.facing * (rodTipL.x + reach)), y: Math.round(bottom + rodTipL.y) } : null;
+  }
+
+  /** 小木船：每個坐船的 actor（不只本地玩家）腳下畫一艘；隨 clock 上下晃 1 px（只在畫面上，不影響物理） */
+  private drawBoats(ctx: CanvasRenderingContext2D): void {
+    const g = this.game, vb = this.viewBox;
+    for (const a of g.actors.values()) {
+      if (!a.boating || a.dead) continue;
+      const p = a.player, cx = Math.round(p.x + p.w / 2), feet = Math.round(p.y + p.h);
+      if (cx + BOAT_PX < vb.x || cx - BOAT_PX > vb.x + vb.w || feet + BOAT_PY < vb.y || feet - BOAT_PY > vb.y + vb.h) continue;
+      const c = this.boatCanvas ??= toCanvas(boatBmp()) as HTMLCanvasElement;
+      // 每個人的船晃的相位錯開一點
+      const bob = Math.round(Math.sin(this.clock * 2.4 + a.pid.length * 1.7 + a.pid.charCodeAt(0)));
+      const facing = a === g.local ? this.facing : a.facing;
+      ctx.save();
+      ctx.translate(cx, feet - BOAT_RAIL_ABOVE - BOAT_RAIL_Y + bob);
+      ctx.scale(facing, 1);
+      ctx.drawImage(c, -BOAT_PX / 2, 0);
+      ctx.restore();
+    }
   }
 
   /** 釣線（竿尖 → 浮標，往下垂的拋物線，1px 像素點）+ 浮標（上鉤時沉下去、頭上冒驚嘆號） */

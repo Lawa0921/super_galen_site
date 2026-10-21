@@ -67,6 +67,7 @@ export function itemTooltip(item: ItemId): string[] {
     case 'heal': out.push(`使用：回復 ${POTION_HEAL} 生命（冷卻 ${POTION_COOLDOWN} 秒）`); break;
     case 'summon': out.push('使用：召喚燈脈守望者（夜晚或洞穴層以下）'); break;
     case 'recall': out.push('使用：引導後傳送回重生點'); break;
+    case 'boat': out.push('使用：在水面上上船（不會用掉）；按跳下船'); break;
     case 'scoop': out.push('使用：舀起瞄準格的水 / 熔岩 / 蜂蜜'); break;
     case 'pour': out.push('使用：把整桶倒在瞄準格（水碰熔岩會變黑曜石）'); break;
     case 'sponge': out.push('使用：吸掉瞄準格附近的水 / 蜂蜜（按住連續吸）'); break;
