@@ -18,13 +18,10 @@ import { gearLabel, invested, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { GEAR_ROWS, MenuView, QtyView, confirmBox, win } from '../widgets';
-import { RUNES, RUNE_IDS, RUNE_STACK, parseRuneKey, runeKey, type RuneRef, type RuneTier } from '../../data/runes';
-import { runeBuyMax, runeBuyPrice, runeSellMax, runeSellPrice, runeStock } from '../../engine/runeTrade';
+import { RUNES, RUNE_STACK, parseRuneKey, runeKey, type RuneRef } from '../../data/runes';
+import { bagRunes, runeBuyMax, runeBuyPrice, runeSellMax, runeSellPrice, runeStock } from '../../engine/runeTrade';
 import { bagCount, ownedCount } from '../../engine/sockets';
 import { FacilityScene } from './facility';
-
-/** The order rune tiers are listed in (data/runes RUNE_TIERS, then legendary). */
-const TIER_ORDER: readonly RuneTier[] = ['common', 'magic', 'rare', 'epic', 'legendary'];
 
 export class ShopScene extends FacilityScene {
   constructor(ctx: SceneCtx, cps?: number) { super(ctx, 'shop', cps); }
@@ -263,8 +260,8 @@ export class ShopScene extends FacilityScene {
   }
 
   /**
-   * The rune rows (plan 8f Task 4): first what Orik sells (one grey line before runes are open), then every rune in the bag
-   * by RUNE_IDS and tier. 持有 is `ownedCount` (bag and sockets, plan 8f ruling 13); only the bag's can be sold.
+   * The rune rows (plan 8f Task 4): first what Orik sells (one grey line before runes are open), then, under a 收購
+   * heading, every rune in the bag by RUNE_IDS and tier. 持有 is `ownedCount` (bag and sockets, plan 8f ruling 13); only the bag's can be sold.
    */
   private runeRows(): MenuItem[] {
     const s = this.ctx.game.state;
@@ -272,9 +269,10 @@ export class ShopScene extends FacilityScene {
     const top: MenuItem[] = stock.length
       ? stock.map((r) => ({ id: `buy:${runeKey(r)}`, label: T.rune.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }), right: T.rune.buyRight(runeBuyPrice(s, r)!, ownedCount(s, r)) }))
       : [{ id: 'closed', label: T.rune.fail.closed, disabled: true }];
-    const order = (r: RuneRef) => RUNE_IDS.indexOf(r.id) * 10 + TIER_ORDER.indexOf(r.tier);
-    const bag = Object.entries(s.runes ?? {}).filter(([, n]) => n > 0).map(([k]) => parseRuneKey(k)).filter((r): r is RuneRef => r !== null).sort((a, b) => order(a) - order(b));
-    return [...top, ...bag.map((r) => ({ id: `sell:${runeKey(r)}`, label: T.rune.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }), right: T.rune.sellRight(runeSellPrice(r), ownedCount(s, r)) }))];
+    const bag = bagRunes(s);
+    // A heading row (no cursor: the keys pass over it) keeps a rune to buy apart from the same rune to sell.
+    const head: MenuItem[] = bag.length ? [{ id: 'sell-head', label: T.rune.sellHead, disabled: true, cls: 'slx-list-head' }] : [];
+    return [...top, ...head, ...bag.map((r) => ({ id: `sell:${runeKey(r)}`, label: T.rune.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }), right: T.rune.sellRight(runeSellPrice(r), ownedCount(s, r)) }))];
   }
 
   /** A rune row's detail: what it does at this tier, the bag's count, and how many are socketed (they must come out first). */
@@ -345,7 +343,7 @@ export class ShopScene extends FacilityScene {
         void this.say(mode === 'buy' ? T.ui2.shop.bought(label, n) : T.ui2.shop.sold(label, n, g.state.gold - gold), 'happy');
       },
       cancel: () => this.pop(),
-    }, price);
+    }, price, T.rune.bag(bagCount(st, r)));
     this.push({ el: q.el, onAction: (a) => q.onAction(a) });
   }
 }

@@ -1,5 +1,6 @@
-import { RUNE_BUY, RUNE_SELL, RUNE_STOCK } from '../data/runeEconomy';
-import { RUNE_STACK, parseRuneKey, runeKey, type RuneRef } from '../data/runes';
+import { RUNE_BUY, RUNE_FUSE, RUNE_FUSE_IN, RUNE_SELL, RUNE_STOCK } from '../data/runeEconomy';
+import { RUNE_IDS, RUNE_STACK, parseRuneKey, runeKey, type RuneRef, type RuneTier } from '../data/runes';
+import { canPay, pay } from './forge/cost';
 import { PERKS } from '../data/story/fragments';
 import { bagCount, ownedCount } from './sockets';
 import type { GameState } from './state';
@@ -7,7 +8,8 @@ import { hasPerk } from './story/fragments';
 
 /**
  * Trading runes in town (spec §6.5, plan 8f): Orik sells four common runes once runes are open and buys any rune in the
- * bag back. Pure; Game.buyRune/sellRune check the phase and save. Prices: data/runeEconomy. Never changes `s`.
+ * bag back; the forge fuses three of a kind into the next tier. Pure; Game.buyRune/sellRune/fuseRune check the phase
+ * and save. Prices: data/runeEconomy. Never changes `s`.
  */
 
 /** Why a rune trade is refused; `essence` is fusion's alone (Task 5). */
@@ -64,3 +66,45 @@ export function sellRunes(s: GameState, r: RuneRef, qty: number): Traded {
   if (have === qty) delete runes[k]; else runes[k] = have - qty;
   return { ok: true, state: { ...s, gold: s.gold + runeSellPrice(r) * qty, runes } };
 }
+
+/** Why a fusion is refused: a trade reason, or `top` for a tier that fuses no higher (epic, legendary). */
+export type RuneFuseFail = RuneTradeFail | 'top';
+
+/** What fusing three of `r` makes and costs (plan 8f ruling 9); undefined for epic and legendary. */
+export function fuseCostOf(r: RuneRef): { to: RuneRef; gold: number; essence: string } | undefined {
+  const f = (RUNE_FUSE as Partial<Record<RuneTier, (typeof RUNE_FUSE)['common']>>)[r.tier];
+  return f ? { to: { id: r.id, tier: f.to }, gold: f.gold, essence: f.essence } : undefined;
+}
+
+/**
+ * Three of `r` from the bag, the gold and one essence make one of the next tier. Refused, in this order: a tier that fuses
+ * no higher (`top`), fewer than three in the bag (`stock`; socketed ones do not count), the gold, the essence (named on
+ * screen, not mixed up with the runes), and the next tier already at RUNE_STACK (bag and sockets, `full`). Open runes are
+ * not needed; nothing is drawn (forgeDraws untouched).
+ */
+export function fuseRunes(s: GameState, r: RuneRef): { ok: true; state: GameState; made: RuneRef } | { ok: false; reason: RuneFuseFail } {
+  const cost = fuseCostOf(r);
+  if (!known(r)) return { ok: false, reason: 'invalid' };
+  if (!cost) return { ok: false, reason: 'top' };
+  if (bagCount(s, r) < RUNE_FUSE_IN) return { ok: false, reason: 'stock' };
+  const lack = canPay(s, { gold: cost.gold, mats: { [cost.essence]: 1 } });
+  if (lack) return { ok: false, reason: lack === 'gold' ? 'gold' : 'essence' };
+  if (ownedCount(s, cost.to) >= RUNE_STACK) return { ok: false, reason: 'full' };
+  const next: GameState = { ...s, inventory: { ...s.inventory } };
+  pay(next, { gold: cost.gold, mats: { [cost.essence]: 1 } });
+  const runes = { ...s.runes };
+  const k = runeKey(r);
+  const left = bagCount(s, r) - RUNE_FUSE_IN;
+  if (left > 0) runes[k] = left; else delete runes[k];
+  runes[runeKey(cost.to)] = bagCount(s, cost.to) + 1;
+  return { ok: true, state: { ...next, runes }, made: cost.to };
+}
+
+const TIER_ORDER: readonly RuneTier[] = ['common', 'magic', 'rare', 'epic', 'legendary'];
+/** The order runes are listed in on every screen: RUNE_IDS order, then tier from common up. */
+export const compareRunes = (a: RuneRef, b: RuneRef): number =>
+  RUNE_IDS.indexOf(a.id) - RUNE_IDS.indexOf(b.id) || TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier);
+
+/** The runes in the bag (count above 0), in `compareRunes` order. */
+export const bagRunes = (s: Pick<GameState, 'runes'>): RuneRef[] =>
+  Object.entries(s.runes ?? {}).filter(([, n]) => n > 0).map(([k]) => parseRuneKey(k)).filter((r): r is RuneRef => r !== null).sort(compareRunes);

@@ -470,20 +470,22 @@ describe('the rune shop (plan 8f Task 4)', () => {
     game.state.party.roster.noel = { ...game.state.party.roster.noel, sockets: { 'fire-star': [{ id: 'bounce', tier: 'rare' }] } };
     pick('符文');
     const list = rows(root);
-    expect(list.map((r) => r.label)).toEqual(['擴散（普通）', '連擊（普通）', '節流（普通）', '延長（普通）', '彈射（稀有）']);
+    expect(list.map((r) => r.label)).toEqual(['擴散（普通）', '連擊（普通）', '節流（普通）', '延長（普通）', '收購', '彈射（稀有）']);
     expect(list[0].right).toBe('100 G　持有 0');
     expect(list[0].cls).toContain('slx-rarity-common');
-    expect(list[4].right).toBe('收購 150 G　持有 2');   // the bag's one and Noel's socketed one
-    expect(list[4].cls).toContain('slx-rarity-rare');
+    expect(list[4]).toMatchObject({ id: 'sell-head', disabled: true });   // the sell rows' heading takes no cursor
+    expect(list[5].right).toBe('收購 150 G　持有 2');   // the bag's one and Noel's socketed one
+    expect(list[5].cls).toContain('slx-rarity-rare');
     // The detail: what the rune does at this tier, the bag's count, and the socketed ones.
     expect(info(root)).toContain('擴散（普通）');
-    for (let i = 0; i < 4; i++) s.onAction('down');
+    for (let i = 0; i < 4; i++) s.onAction('down');   // past the heading: the keys skip it
     expect(info(root)).toContain('彈射（稀有）');
     expect(info(root)).toContain(RUNES.bounce.text('rare'));
     expect(info(root)).toContain('袋子 1');
     expect(info(root)).toContain('其中 1 個鑲嵌中，先拆下才能賣或合成');
     // Buying: the quantity box stops at runeBuyMax.
     pick('擴散（普通）');
+    expect(root.querySelector('.slx-qty')!.textContent).toContain('袋子 0');
     const want = runeBuyMax(game.state, { id: 'spread', tier: 'common' });
     expect(want).toBe(4);
     s.onAction('up');
@@ -496,11 +498,12 @@ describe('the rune shop (plan 8f Task 4)', () => {
     for (let i = 0; i < 6 && root.querySelector('.slx-talk:not([hidden])'); i++) s.onAction('confirm');
     pick('彈射（稀有）');
     expect(root.querySelector('.slx-qty-n')!.textContent).toBe('× 1');
+    expect(root.querySelector('.slx-qty')!.textContent).toContain('袋子 1');
     s.onAction('confirm');
     expect(game.state.gold).toBe(200);
     expect(game.state.runes).toEqual({ 'spread@common': 4 });
     expect(game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [{ id: 'bounce', tier: 'rare' }] });
-    expect(rows(root).map((r) => r.label)).toEqual(['擴散（普通）', '連擊（普通）', '節流（普通）', '延長（普通）', '擴散（普通）']);
+    expect(rows(root).map((r) => r.label)).toEqual(['擴散（普通）', '連擊（普通）', '節流（普通）', '延長（普通）', '收購', '擴散（普通）']);
   });
 
   it('before the first boss the shop has no runes, but buys what the bag holds', () => {
@@ -516,8 +519,8 @@ describe('the rune shop (plan 8f Task 4)', () => {
     t.game.state.runes = { 'focus@magic': 2 };
     t.pick('符文');
     const held = rows(t.root);
-    expect(held.map((r) => r.label)).toEqual(['打倒第一位頭目之後才有符文', '集中（魔法）']);
-    expect(held[1].right).toBe('收購 60 G　持有 2');
+    expect(held.map((r) => r.label)).toEqual(['打倒第一位頭目之後才有符文', '收購', '集中（魔法）']);
+    expect(held[2].right).toBe('收購 60 G　持有 2');
   });
 
   it('a rune that cannot be bought says why', () => {

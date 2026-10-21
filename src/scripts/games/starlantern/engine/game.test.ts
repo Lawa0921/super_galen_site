@@ -3876,3 +3876,27 @@ describe("the order of a fight's runes (plan 8f Task 4, review of Task 3)", () =
     }
   });
 });
+
+describe('fusing runes in the game (plan 8f Task 5)', () => {
+  it('runes are fused in town only', () => {
+    const spread = { id: 'spread', tier: 'common' } as const;
+    const stock = (g: Game) => { g.state.gold = 100; g.state.runes = { 'spread@common': 3 }; g.state.inventory['essence-common'] = 1; return g; };
+    const fieldStorage = memoryStorage();
+    const field = stock(inMap(1, calm(), fieldStorage));
+    const saved = fieldStorage.map.get(SAVE_KEY);
+    expect(field.fuseRune(spread)).toEqual({ ok: false, reason: 'phase' });
+    field.phase = 'battle';
+    expect(field.fuseRune(spread)).toEqual({ ok: false, reason: 'phase' });
+    expect([field.state.runes, field.state.gold, fieldStorage.map.get(SAVE_KEY)]).toEqual([{ 'spread@common': 3 }, 100, saved]);
+    const storage = memoryStorage();
+    const g = stock(new Game(calm(), storage, undefined, 0, HERO_LINEUP));
+    const r = g.fuseRune(spread);
+    expect(r.ok && r.out).toEqual({ id: 'spread', tier: 'magic' });
+    expect([g.state.runes, g.state.gold, g.state.inventory['essence-common']]).toEqual([{ 'spread@magic': 1 }, 70, undefined]);
+    expect(g.notice).toBe('saved');
+    const back = Game.boot(calm(), storage).state;
+    expect([back.runes, back.gold]).toEqual([{ 'spread@magic': 1 }, 70]);
+    expect(g.fuseRune(spread)).toEqual({ ok: false, reason: 'stock' });
+    expect(g.fuseRune({ id: 'spread', tier: 'epic' })).toEqual({ ok: false, reason: 'top' });
+  });
+});

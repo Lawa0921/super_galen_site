@@ -1852,6 +1852,7 @@ test.describe('starlantern', () => {
       const g = (window as unknown as Dbg).__starlanternDebug.game;
       g.state.gold = 5000;
       Object.assign(g.state.inventory, { 'essence-magic': 10, 'essence-rare': 4, 'blaze-core': 9, 'star-tear': 1 });
+      g.state.runes = { 'spread@common': 3 };   // something for 符文合成 to list (plan 8f)
       for (const it of [{ rarity: 'common', enhance: 5, affixes: [] }, ...[3, 4, 5].map((v) => ({ rarity: 'magic', enhance: 0, affixes: [{ key: 'crit', value: v }] }))]) {
         g.state.bag.push({ uid: g.mintUid(), base: 'iron-sword', ilvl: 8, ...it });
       }
@@ -1864,7 +1865,7 @@ test.describe('starlantern', () => {
       const scrolled = [...document.querySelectorAll<HTMLElement>('#sl-screen, #sl-screen *')].filter((e) => e.scrollLeft > 0).map((e) => e.className);
       return [...wins.filter(({ r }) => r.left < screen.left - 0.5 || r.right > screen.right + 0.5).map(({ cls, r }) => `${cls} ${r.left}-${r.right} / ${screen.left}-${screen.right}`), ...scrolled.map((c) => `scrolled: ${c}`)];
     });
-    const pages: [string, string[]][] = [['dismantle', []], ['enhance', []], ['reroll', ['[role=option]']], ['fuse', ['[data-id=magic]']], ['craft', ['[data-id=set]', '[data-id=set-blaze]']]];
+    const pages: [string, string[]][] = [['dismantle', []], ['enhance', []], ['reroll', ['[role=option]']], ['fuse', ['[data-id=magic]']], ['craft', ['[data-id=set]', '[data-id=set-blaze]']], ['runes', []]];
     for (const [tab, steps] of pages) {
       await page.locator(`.slx-forge .slx-cmd [data-id=${tab}]`).click();
       for (const step of steps) await page.locator('.slx-forge .slx-layer').last().locator(step).first().click();
@@ -1917,6 +1918,9 @@ test.describe('starlantern', () => {
       for (const v of [3, 4, 5]) s.bag.push({ uid: g.mintUid(), base: 'iron-sword', rarity: 'magic', ilvl: 999, enhance: 0, affixes: [{ key: 'critDmg', value: v }] });
       for (const v of [3, 4, 5]) s.bag.push({ uid: g.mintUid(), base: longBase, rarity: 'rare', ilvl: 999, enhance: 10, locked: 0, affixes: [{ key: 'critDmg', value: v }] });
       s.bag.push({ uid: g.mintUid(), base: 'iron-sword', rarity: 'common', ilvl: 1, enhance: 5, affixes: [] });
+      // 符文合成 (plan 8f): two rows that can fuse, one greyed with its reason; a legendary is not listed.
+      s.runes = { 'armor-break@common': 3, 'thunderclap@magic': 1, 'spill-shield@legendary': 1, 'on-struck@rare': 3 };
+      s.inventory['essence-common'] = 1;
     }, { special: named.id, rarity: named.rarity, base, slot, keys: longKeys, longest, longBase });
     await w.choose('.slx-town', '鍛造屋');
     await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
@@ -1956,6 +1960,7 @@ test.describe('starlantern', () => {
       await w.key('Escape');
     }
     await back();
+    await tab('runes'); await whole('runes'); await walk('runes'); await back();
     expect(w.errors).toEqual([]);
   });
 
@@ -3510,7 +3515,7 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
     await page.locator('.slx-shop .slx-cmd [data-id=runes]').click();
     const list = page.locator('.slx-rune-list');
-    await expect(list.locator('[role=option]')).toHaveCount(5);
+    await expect(list.locator('[role=option]')).toHaveCount(6);   // four to buy, the 收購 heading, the bag's 彈射
     await expect(list.locator('[data-id="buy:spread@common"] .slx-right')).toHaveText('100 G　持有 0');
     await expect(list.locator('[data-id="sell:bounce@rare"] .slx-right')).toHaveText('收購 150 G　持有 1');
     const fits = async (where: string) => {
@@ -3548,5 +3553,44 @@ test.describe('starlantern', () => {
     expect([saved.gold, saved.runes, saved.runesOpen]).toEqual([550, { 'spread@common': 1 }, true]);
     expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
+  });
+
+  test('the forge fuses three runes into one (plan 8f)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.gold = 100;
+      g.state.runes = { 'spread@common': 3 };
+      g.state.inventory['essence-common'] = 1;
+    });
+    const state = () => page.evaluate(() => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      return { gold: s.gold as number, runes: s.runes as Record<string, number>, essence: s.inventory['essence-common'] as number | undefined };
+    });
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-forge .slx-cmd [data-id=runes]').click();
+    const row = page.locator('.slx-forge-list [data-id="fuse:spread@common"]');
+    await expect(row.locator('.slx-label')).toHaveText('擴散（普通）');
+    await expect(row.locator('.slx-right')).toHaveText('持有 3');
+    await expect(page.locator('.slx-rune-fuse-info')).toContainText('3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）');
+    for (const [vw, vh] of [[390, 844], [1280, 720]] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      await page.waitForTimeout(150);
+      const over = await page.locator('.slx-forge-list [role=option], .slx-rune-fuse-info p').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+      expect(over, `rows wider than their box at ${vw}`).toEqual([]);
+      const doc = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(doc, `the page scrolls sideways at ${vw}`).toBeLessThanOrEqual(0);
+      if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/rune-fuse-${vw}.png` });
+    }
+    await row.click();
+    await expect(page.locator('.slx-confirm')).toBeVisible();
+    await w.key('ArrowUp'); await w.key('Enter');           // 是
+    await expect.poll(state).toEqual({ gold: 70, runes: { 'spread@magic': 1 }, essence: undefined });
+    await expect(page.locator('.slx-forge .slx-talk')).toContainText('擴散（魔法）');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
+    expect([saved.gold, saved.runes]).toEqual([70, { 'spread@magic': 1 }]);
+    expect(w.errors).toEqual([]);
   });
 });

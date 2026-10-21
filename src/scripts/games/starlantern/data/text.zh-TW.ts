@@ -497,7 +497,7 @@ export const T = {
       leave: '離開',
     },
     forge: {
-      tabs: { dismantle: '分解', enhance: '強化', reroll: '重鑄', fuse: '合成', craft: '製作' },
+      tabs: { dismantle: '分解', enhance: '強化', reroll: '重鑄', fuse: '合成', craft: '製作', runes: '符文合成' },
       wornBy: (name: string) => `（${name}裝備中）`,
       saveFailed: '東西是做好了，可是存檔失敗：瀏覽器不允許儲存。',
       /** An essence tally as one phrase: 「普通精華 ×2、魔法精華 ×1」. */
@@ -778,6 +778,9 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       closed: '打倒第一位頭目之後才有符文',
       full: (n: number) => `這個符文已經 ${n} 個了`,
       stock: '袋子裡沒有這麼多',
+      /** Fusion (plan 8f Task 5): an epic or legendary rune, and the essence it lacks by name. */
+      top: '這一階不能再合成',
+      essence: (name: string) => `缺少${name}`,
     },
     /** The battle log's act for 雙重詠唱's second cast and for a 回聲 (plan 8e Task 5). */
     again: (name: string) => `${name}（第二次）`,
@@ -796,6 +799,14 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     /** How many are in the bag: only these can be sold or fused. */
     bag: (n: number) => `袋子 ${n}`,
     socketedNote: (k: number) => `其中 ${k} 個鑲嵌中，先拆下才能賣或合成`,
+    /** The heading over the shop's sell rows, which takes no cursor. */
+    sellHead: '收購',
+    /** A fusion as one line: 「3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）」. */
+    fuseLine: (n: number, from: string, gold: number, essence: string, to: string) => `${n} 個${from}＋${gold} G＋${essence} → ${to}`,
+    askFuse: (line: string) => `${line}\n要合成嗎？`,
+    fused: (label: string) => `合成了 ${label}！`,
+    /** The rune tab with nothing in the bag to fuse. */
+    fuseEmpty: '三個同名同階的符文可以合成高一階',
   },
   clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card
   /** The finale's closing card; its text is the finale scene's summary. */

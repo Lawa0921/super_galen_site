@@ -21,11 +21,15 @@ import { fillRich, gearLabel, gearPart, invested, joinParts, rarityClass } from 
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { GEAR_ROWS, MenuView, confirmBox, richNodes, richText, win, type Rich, type RichPart } from '../widgets';
+import { RUNE_FUSE_IN } from '../../data/runeEconomy';
+import { RUNES, RUNE_STACK, runeKey, parseRuneKey, type RuneRef } from '../../data/runes';
+import { bagRunes, fuseCostOf, fuseRunes, type RuneFuseFail } from '../../engine/runeTrade';
+import { bagCount, ownedCount } from '../../engine/sockets';
 import { FacilityScene, type Layer } from './facility';
 import { openCraft } from './forgeCraft';
 
-/** The forge's commands are its five tabs, in this order. */
-export const FORGE_TABS = ['dismantle', 'enhance', 'reroll', 'fuse', 'craft'] as const;
+/** The forge's commands are its six tabs, in this order (符文合成 since plan 8f). */
+export const FORGE_TABS = ['dismantle', 'enhance', 'reroll', 'fuse', 'craft', 'runes'] as const;
 export type ForgeTab = typeof FORGE_TABS[number];
 
 /**
@@ -79,7 +83,7 @@ export function forgeRows(s: GameState, o: {
   return rows;
 }
 
-/** 鍛造屋: 分解, 強化, 重鑄, 合成 and 製作. Each tab's page arrives with its own task; until then it says so. */
+/** 鍛造屋: 分解, 強化, 重鑄, 合成, 製作 and 符文合成. Each tab's page arrives with its own task; until then it says so. */
 export class ForgeScene extends FacilityScene {
   constructor(ctx: SceneCtx, cps?: number) { super(ctx, 'forge', cps); }
 
@@ -98,6 +102,7 @@ export class ForgeScene extends FacilityScene {
     if (id === 'reroll') { rerollPage(this.host()); return; }
     if (id === 'fuse') { fusePage(this.host()); return; }
     if (id === 'craft') { openCraft(this.host()); return; }
+    if (id === 'runes') { runeFusePage(this.host()); return; }
     const label = T.ui2.forge.tabs[id as ForgeTab];
     if (label) void this.say(T.ui2.town.soon(label));
   }
@@ -579,4 +584,91 @@ export function fusePage(h: ForgeHost): void {
       if (r.ok) h.ctx.sfx.loot?.(r.out.item.rarity);
     };
   }
+}
+
+/** Why a rune fusion cannot go, in words (engine/runeTrade RuneFuseFail; gold and the rest read as T.reasons). */
+function runeFuseWhy(r: RuneRef, reason: RuneFuseFail | 'phase'): string {
+  const F = T.rune.fail;
+  if (reason === 'stock') return F.stock;
+  if (reason === 'essence') return F.essence(MATERIALS[fuseCostOf(r)!.essence]?.name ?? '');
+  if (reason === 'full') return F.full(RUNE_STACK);
+  if (reason === 'top') return F.top;
+  return T.reasons[reason] ?? T.reasons.invalid;
+}
+
+/** A rune fusion as one line: 「3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）」. */
+function runeFuseLine(r: RuneRef): string {
+  const c = fuseCostOf(r)!;
+  return T.rune.fuseLine(RUNE_FUSE_IN, T.rune.label(r.id, r.tier), c.gold, MATERIALS[c.essence]?.name ?? c.essence, T.rune.label(c.to.id, c.to.tier));
+}
+
+/**
+ * 符文合成 (plan 8f Task 5): every rune in the bag that can fuse higher, one row each, 「擴散（普通）」 with 「持有 4」 on
+ * the right (持有 counts the socketed ones, plan 8f ruling 13). A row the bag cannot pay for is greyed with the reason in
+ * place of 持有 (the 262px forge list has no room for both beside the label): too few in the bag, the gold, the essence by
+ * name, or the next tier full. The detail follows the cursor: the fusion as one
+ * line, the bag's count, the socketed note and what the next tier does. Enter asks first (否 under the cursor), then
+ * fuses; the list stays open for the next one. With nothing to fuse, the tab says how fusion works.
+ */
+export function runeFusePage(h: ForgeHost): void {
+  const game = h.ctx.game;
+  const R = T.rune;
+  const fusable = (): RuneRef[] => bagRunes(game.state).filter((r) => fuseCostOf(r) !== undefined);
+  if (!fusable().length) { void h.say(R.fuseEmpty); return; }
+  const blocked = (r: RuneRef): string | undefined => { const f = fuseRunes(game.state, r); return f.ok ? undefined : runeFuseWhy(r, f.reason); };
+  const rows = (): MenuItem[] => fusable().map((r) => {
+    const why = blocked(r);
+    return {
+      id: `fuse:${runeKey(r)}`, label: R.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }),
+      ...(why ? { disabled: true, right: why, note: why } : { right: T.ui2.shop.owned(ownedCount(game.state, r)) }),
+    };
+  });
+  const refOf = (id?: string): RuneRef | null => (id ? parseRuneKey(id.slice(id.indexOf(':') + 1)) : null);
+  const info = win('slx-info slx-rune-fuse-info');
+  const show = () => {
+    const r = refOf(v.menu.current()?.id);
+    const c = r && fuseCostOf(r);
+    if (!r || !c) { info.replaceChildren(); return; }
+    const bag = bagCount(game.state, r);
+    const worn = ownedCount(game.state, r) - bag;
+    info.replaceChildren(
+      el('p', { class: `slx-name-line ${rarityClass({ rarity: r.tier })}`, text: R.label(r.id, r.tier) }),
+      el('p', { text: runeFuseLine(r) }),
+      el('p', { text: R.bag(bag) }),
+      ...(worn > 0 ? [el('p', { class: 'slx-desc', text: R.socketedNote(worn) })] : []),
+      el('p', { class: 'slx-desc', text: RUNES[c.to.id].text(c.to.tier) }),
+    );
+  };
+  const sync = () => {
+    const next = rows();
+    v.menu.items.splice(0, v.menu.items.length, ...next);
+    const here = v.menu.items[v.menu.cursor];
+    if (!here || here.disabled) { const k = next.findIndex((x) => !x.disabled); if (k >= 0) v.menu.setCursor(k); }
+    v.render(); show();
+  };
+  const run = (r: RuneRef) => {
+    const res = game.fuseRune(r);
+    if (!res.ok) { h.ctx.sfx.error(); void h.say(runeFuseWhy(r, res.reason)); return; }
+    if (fusable().length) sync(); else { info.remove(); h.pop(true); }
+    h.afterAct(res, (out) => [{ text: R.fused(R.label(out.id, out.tier)), cls: rarityClass({ rarity: out.tier }) }]);
+  };
+  const first = rows();
+  const v: MenuView = new MenuView(new Menu(first, Math.max(0, first.findIndex((x) => !x.disabled))), {
+    pick: (item) => {
+      const r = refOf(item.id);
+      if (!r || item.disabled) return;
+      const box = confirmBox(R.askFuse(runeFuseLine(r)), (yes) => {
+        h.pop(!yes);
+        if (yes) run(r);
+      });
+      box.view.menu.setCursor(1);
+      box.view.render();
+      h.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+    },
+    moved: () => { h.ctx.sfx.cursor(); show(); },
+    cancel: () => { info.remove(); h.pop(); },
+  }, GEAR_ROWS);
+  show();
+  h.layerRoot.append(info);
+  h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
 }

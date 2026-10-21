@@ -20,7 +20,7 @@ import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMat
 import { itemWeight, type DropSource } from './loot/item';
 import { grantRune, rollRune, runeRng, spotRuneRng } from './loot/runes';
 import { RUNE_DROP } from '../data/runeEconomy';
-import { buyRune, sellRunes, type RuneTradeFail } from './runeTrade';
+import { buyRune, fuseRunes, sellRunes, type RuneTradeFail } from './runeTrade';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { CHARACTERS } from '../data/characters';
 import { MAX_ACTIVE } from './formation';
@@ -35,7 +35,7 @@ import { nextLead } from './story/leads';
 import { afterWin, arrivalScenes, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
-import type { ForgeResult, RerollOpts } from './forge/cost';
+import type { ForgeFail, RerollOpts } from './forge/cost';
 import { dismantle, enhance, fuse, reroll } from './forge/forge';
 import { castField, packEquip, packUnequip } from './field';
 import { socketRune, unsocketRune, type SocketFail } from './sockets';
@@ -1038,7 +1038,8 @@ export class Game {
    * One forge action: town only (checked here, once), applied, then saved at once so a reload can neither undo a paid
    * action nor re-draw an enhance or reroll (the engine's forgeRng owns forgeDraws; no rng is passed in).
    */
-  private forgeAct<O>(run: (s: GameState) => ForgeResult<O>): ForgeResult<O> {
+  private forgeAct<O, R extends string = ForgeFail>(run: (s: GameState) => { ok: true; state: GameState; out: O } | { ok: false; reason: R }):
+    { ok: true; state: GameState; out: O } | { ok: false; reason: R | 'phase' } {
     if (this.phase !== 'town') return { ok: false, reason: 'phase' };
     const r = run(this.state);
     if (!r.ok) return r;
@@ -1053,6 +1054,13 @@ export class Game {
   craftItem(id: string, qty: number) { return this.forgeAct((s) => craftItem(s, id, qty)); }
   craftBase(slot: GearSlot) { return this.forgeAct((s) => craftBase(s, slot)); }
   craftSet(pieceId: string) { return this.forgeAct((s) => craftSet(s, pieceId)); }
+  /** Three runes of a kind into one of the next tier (engine/runeTrade fuseRunes; plan 8f Task 5): a forge action, town only. */
+  fuseRune(r: RuneRef) {
+    return this.forgeAct((s) => {
+      const f = fuseRunes(s, r);
+      return f.ok ? { ok: true as const, state: f.state, out: f.made } : f;
+    });
+  }
 
   apply(r: TownResult): TownResult {
     if (r.ok) this.state = r.state;

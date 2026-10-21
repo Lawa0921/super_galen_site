@@ -20,6 +20,8 @@ import { specialLines } from '../../engine/compare';
 import { priceOf } from '../../engine/town';
 import { ForgeScene, costText, forgeRows, type ForgeHost } from './forge';
 import { GEAR_ROWS } from '../widgets';
+import { RUNES } from '../../data/runes';
+import { defaultTree } from '../../engine/progression';
 
 const gear = (uid: number, base: string, rarity: Rarity, extra: Partial<ItemInstance> = {}): ItemInstance =>
   ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0, ...extra });
@@ -74,7 +76,7 @@ describe('forgeRows', () => {
 });
 
 describe('ForgeScene', () => {
-  const TABS = ['分解', '強化', '重鑄', '合成', '製作'];
+  const TABS = ['分解', '強化', '重鑄', '合成', '製作', '符文合成'];
 
   it('greets as 多蘭 in the 鍛造屋', () => {
     const { root, line } = setup();
@@ -89,7 +91,7 @@ describe('ForgeScene', () => {
     s.onAction('confirm');                  // greeting
     const opts = [...root.querySelectorAll('.slx-cmd [role=option]')];
     expect(opts.map((o) => o.querySelector('.slx-label')!.textContent)).toEqual([...TABS, '離開']);
-    expect(opts.map((o) => o.getAttribute('data-id'))).toEqual(['dismantle', 'enhance', 'reroll', 'fuse', 'craft', 'leave']);
+    expect(opts.map((o) => o.getAttribute('data-id'))).toEqual(['dismantle', 'enhance', 'reroll', 'fuse', 'craft', 'runes', 'leave']);
     // Keyboard: each tab in turn.
     TABS.forEach((tab, i) => {
       if (i) s.onAction('down');
@@ -1276,6 +1278,70 @@ describe('ForgeScene craft page', () => {
     go('cancel');
     expect(root.querySelectorAll('.slx-forge-list').length).toBe(0);
     expect(root.querySelectorAll('[style]').length).toBe(0);
+  });
+});
+
+describe('the rune tab (plan 8f Task 5)', () => {
+  /** The forge on the rune tab, with this bag and essences; the greeting closed. */
+  const runeTab = (runes: Record<string, number>, essences: Record<string, number>, gold = 1000, prep: (g: Game) => void = () => {}) => {
+    const game = new Game(constRng(0.5), memoryStorage());
+    game.state.gold = gold;
+    game.state.runes = runes;
+    Object.assign(game.state.inventory, essences);
+    prep(game);
+    const t = setup(game);
+    t.s.onAction('confirm');   // greeting
+    (t.root.querySelector('.slx-cmd [data-id=runes]') as HTMLElement).click();
+    const rows = () => [...t.root.querySelectorAll('.slx-forge-list [role=option]')].map((o) => ({
+      id: o.getAttribute('data-id'), label: o.querySelector('.slx-label')!.textContent, right: o.querySelector('.slx-right')?.textContent ?? '',
+      disabled: o.getAttribute('aria-disabled') === 'true',
+    }));
+    const info = () => t.root.querySelector('.slx-rune-fuse-info')?.textContent ?? '';
+    return { ...t, rows, info };
+  };
+
+  it('the rune tab lists what can be fused', () => {
+    const t = runeTab({ 'spread@common': 3, 'bounce@magic': 1, 'twin-cast@legendary': 1 }, { 'essence-common': 2, 'essence-magic': 2 });
+    expect(t.rows()).toEqual([
+      { id: 'fuse:spread@common', label: '擴散（普通）', right: '持有 3', disabled: false },
+      { id: 'fuse:bounce@magic', label: '彈射（魔法）', right: '袋子裡沒有這麼多', disabled: true },
+    ]);
+    expect(t.info()).toContain('3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）');
+    expect(t.info()).toContain('袋子 3');
+    expect(t.info()).toContain(RUNES.spread.text('magic'));
+    // The essences used up: the 擴散 row greys too, naming the essence.
+    const dry = runeTab({ 'spread@common': 3 }, {});
+    expect(dry.rows()[0]).toMatchObject({ right: '缺少普通精華', disabled: true });
+    expect(runeTab({ 'spread@common': 3 }, { 'essence-common': 1 }, 29).rows()[0]).toMatchObject({ right: '金錢不足', disabled: true });
+  });
+
+  it('fusing asks first, then makes the rune and saves', () => {
+    const t = runeTab({ 'spread@common': 4 }, { 'essence-common': 1 }, 100, (g) => {
+      // A socketing the save keeps: Noel at Lv20 on her default build, 火之星彈 holding one 擴散（普通）.
+      g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 20, tree: defaultTree('noel', 20), sockets: { 'fire-star': [{ id: 'spread', tier: 'common' }] } };
+    });
+    expect(t.info()).toContain('袋子 4');
+    expect(t.info()).toContain('其中 1 個鑲嵌中，先拆下才能賣或合成');
+    expect(t.rows()[0]).toMatchObject({ label: '擴散（普通）', right: '持有 5' });
+    t.s.onAction('confirm');
+    const confirm = t.root.querySelector('.slx-confirm')!;
+    expect(confirm.textContent).toContain('3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）');
+    expect(confirm.querySelector('[aria-selected=true] .slx-label')!.textContent).toBe('否');
+    t.s.onAction('confirm');                      // 否: nothing happens
+    expect(t.game.state.runes).toEqual({ 'spread@common': 4 });
+    t.s.onAction('confirm'); t.s.onAction('up'); t.s.onAction('confirm');   // 是
+    expect(t.game.state.runes).toEqual({ 'spread@common': 1, 'spread@magic': 1 });
+    expect([t.game.state.gold, t.game.state.inventory['essence-common']]).toEqual([70, undefined]);
+    expect(t.line()).toContain('擴散（魔法）');
+    expect(Game.boot(constRng(0.5), t.game.storage!).state.runes).toEqual({ 'spread@common': 1, 'spread@magic': 1 });
+    // One 擴散（普通） is left: its row stays, greyed for want of three.
+    expect(t.rows()[0]).toMatchObject({ id: 'fuse:spread@common', disabled: true, right: '袋子裡沒有這麼多' });
+  });
+
+  it('with nothing to fuse the tab says how fusion works', () => {
+    const t = runeTab({ 'twin-cast@legendary': 3, 'spread@epic': 3 }, {});
+    expect(t.root.querySelector('.slx-forge-list')).toBeNull();
+    expect(t.line()).toBe('三個同名同階的符文可以合成高一階');
   });
 });
 

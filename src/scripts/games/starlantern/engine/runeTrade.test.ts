@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { RUNE_BUY, RUNE_SELL, RUNE_STOCK } from '../data/runeEconomy';
+import { RUNE_BUY, RUNE_FUSE_IN, RUNE_SELL, RUNE_STOCK } from '../data/runeEconomy';
 import type { RuneRef } from '../data/runes';
 import { PERKS } from '../data/story/fragments';
 import { STANDARD_LINEUP } from './party';
-import { buyRune, runeBuyMax, runeBuyPrice, runeSellMax, runeSellPrice, runeStock, sellRunes } from './runeTrade';
+import { buyRune, fuseCostOf, fuseRunes, runeBuyMax, runeBuyPrice, runeSellMax, runeSellPrice, runeStock, sellRunes } from './runeTrade';
 import { bagCount } from './sockets';
 import { newGame, type GameState } from './state';
 
@@ -102,5 +102,73 @@ describe('buying and selling runes (plan 8f Task 4)', () => {
     const one = ok(sellRunes(both, spreadMagic, 1));
     expect(one.party.roster.noel.sockets).toEqual(both.party.roster.noel.sockets);
     expect(one.runes).toEqual({});
+  });
+});
+
+describe('fusing runes (plan 8f Task 5)', () => {
+  /** A game with this bag, gold and essences (runes need not be open to fuse). */
+  const forge = (runes: Record<string, number>, gold: number, essences: Record<string, number> = {}): GameState => {
+    const s = game(gold, runes, false);
+    return { ...s, inventory: { ...s.inventory, ...essences } };
+  };
+  const fused = (r: ReturnType<typeof fuseRunes>) => {
+    if (!r.ok) throw new Error(`refused: ${r.reason}`);
+    return r;
+  };
+
+  it('three of a kind make one of the next tier', () => {
+    expect(RUNE_FUSE_IN).toBe(3);
+    const s = forge({ 'spread@common': 4 }, 100, { 'essence-common': 2 });
+    const before = JSON.stringify(s);
+    const r = fused(fuseRunes(s, spread));
+    expect(r.made).toEqual(spreadMagic);
+    expect(r.state.runes).toEqual({ 'spread@common': 1, 'spread@magic': 1 });
+    expect([r.state.gold, r.state.inventory['essence-common']]).toEqual([70, 1]);
+    expect(JSON.stringify(s)).toBe(before);
+    // The last essence goes from the inventory; three of three leave no key behind.
+    const rare = fused(fuseRunes(forge({ 'bounce@rare': 3 }, 250, { 'essence-rare': 1 }), { id: 'bounce', tier: 'rare' }));
+    expect(rare.made).toEqual({ id: 'bounce', tier: 'epic' });
+    expect([rare.state.gold, rare.state.inventory['essence-rare'], rare.state.runes]).toEqual([50, undefined, { 'bounce@epic': 1 }]);
+    const magic = fused(fuseRunes(forge({ 'focus@magic': 3 }, 80, { 'essence-magic': 1 }), { id: 'focus', tier: 'magic' }));
+    expect([magic.made, magic.state.gold]).toEqual([{ id: 'focus', tier: 'rare' }, 0]);
+    expect(fuseCostOf(spread)).toEqual({ to: spreadMagic, gold: 30, essence: 'essence-common' });
+    expect(fuseCostOf({ id: 'spread', tier: 'epic' })).toBeUndefined();
+    expect(fuseCostOf({ id: 'twin-cast', tier: 'legendary' })).toBeUndefined();
+  });
+
+  it('fusion refuses with a reason', () => {
+    const cases: [GameState, RuneRef, string][] = [
+      [forge({ 'spread@epic': 3 }, 9999, { 'essence-rare': 9 }), { id: 'spread', tier: 'epic' }, 'top'],
+      [forge({ 'twin-cast@legendary': 3 }, 9999, { 'essence-legendary': 9 }), { id: 'twin-cast', tier: 'legendary' }, 'top'],
+      [forge({ 'spread@common': 2 }, 9999, { 'essence-common': 9 }), spread, 'stock'],
+      [forge({ 'spread@common': 3 }, 29, { 'essence-common': 9 }), spread, 'gold'],
+      [forge({ 'spread@common': 3 }, 9999, {}), spread, 'essence'],
+      [forge({ 'spread@common': 3, 'spread@magic': 99 }, 9999, { 'essence-common': 9 }), spread, 'full'],
+    ];
+    for (const [s, r, reason] of cases) {
+      const before = JSON.stringify(s);
+      expect(fuseRunes(s, r), reason).toEqual({ ok: false, reason });
+      expect(JSON.stringify(s)).toBe(before);
+    }
+    // Socketed ones of the next tier count toward its 99.
+    const worn = socketed(forge({ 'spread@common': 3, 'spread@magic': 98 }, 9999, { 'essence-common': 9 }), spreadMagic, 1);
+    expect(fuseRunes(worn, spread)).toEqual({ ok: false, reason: 'full' });
+  });
+
+  it('fusion takes from the bag only', () => {
+    const s = socketed(forge({ 'spread@common': 2 }, 9999, { 'essence-common': 9 }), spread, 1);
+    expect(fuseRunes(s, spread)).toEqual({ ok: false, reason: 'stock' });
+    const more = socketed(forge({ 'spread@common': 3 }, 9999, { 'essence-common': 9 }), spread, 2);
+    const r = fused(fuseRunes(more, spread));
+    expect(r.state.runes).toEqual({ 'spread@magic': 1 });
+    expect(r.state.party.roster.noel.sockets).toEqual(more.party.roster.noel.sockets);
+  });
+
+  it('fusion draws nothing', () => {
+    const s = { ...forge({ 'spread@common': 6 }, 100, { 'essence-common': 2 }), forgeDraws: 7, forgeSalt: 1234 };
+    const a = fused(fuseRunes(s, spread));
+    const b = fused(fuseRunes(s, spread));
+    expect(a).toEqual(b);
+    expect([a.state.forgeDraws, a.state.forgeSalt]).toEqual([7, 1234]);
   });
 });

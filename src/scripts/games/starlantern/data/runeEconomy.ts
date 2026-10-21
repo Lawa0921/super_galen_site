@@ -27,3 +27,6 @@ export const RUNE_FUSE: Record<'common' | 'magic' | 'rare', { to: RuneTier; gold
   magic: { to: 'rare', gold: 80, essence: 'essence-magic' },
   rare: { to: 'epic', gold: 200, essence: 'essence-rare' },
 };
+
+/** How many runes of one id and tier a fusion takes (spec §6.5: three of a kind make one of the next tier). */
+export const RUNE_FUSE_IN = 3;
