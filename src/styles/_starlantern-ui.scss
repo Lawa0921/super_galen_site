@@ -429,12 +429,12 @@ $slx-battle-left: 150px;
 // nothing leaves the screen. Like the panel's pop tags they stand over the command window's lower edge (z-index 3), so
 // the member choosing a command still sees them. The one colour source here; render/ailmentStyle.ts holds the same
 // values for the Pixi labels (ui2/rarity.test.ts).
-$slx-ailment: (poison: #b48cff, sleep: #c4c8dc, burn: #ff8a4a, freeze: #8fe8ff, chill: #8fa8ff, shock: #ffe45c, bleed: #ff5a6e);
+$slx-ailment: (poison: #b889fe, sleep: #c1c5d6, burn: #fe8a57, freeze: #92ebfd, chill: #8ea8fe, shock: #ffe845, bleed: #ff5c74);
 .slx-pm-ail { position: absolute; left: 0; right: 0; bottom: 100%; z-index: 3; margin-bottom: 1px; display: flex; flex-wrap: nowrap; gap: 1px; overflow: hidden; pointer-events: none; }
 .slx-pm-ail[hidden] { display: none; }
 .slx-ail, .slx-mech { flex: none; padding: 0 1px; font-size: 9px; line-height: 10px; border: 1px solid currentColor; white-space: nowrap; background: rgba($slx-win, 0.92); }
 // Character mechanics (plan 8c): the same word look as an ailment, in their own colours (render/mechStyle.ts MECH_FILL).
-$slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6fd8, veil: #8fb8b0, ward: #4cc3ff, purify: #d8ff7a, moon: #e6c6ff, coins: #d8b048, aim: #ff8fb0, embers: #ff3d2e, beat: #3fd8c4, devices: #c0a080, plain: #f1ead8);
+$slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: #4ac2ff, purify: #d6ff7b, moon: #e6c6ff, coins: #d3ae46, aim: #ff9bb8, embers: #ff3c2a, beat: #3fd8c4, devices: #c0a081, plain: #f1ead8);
 @each $k, $c in $slx-mech {
   .slx-mech-#{$k} { color: $c; }
 }
@@ -624,6 +624,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-tree-node { padding: 1px 3px; cursor: pointer; }
 .slx-tree-node .slx-skill-head { gap: 4px; line-height: 14px; }
 .slx-tree-node .slx-skill-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slx-tree-node .slx-skill-name-long { font-size: 10px; letter-spacing: -0.5px; }
 .slx-tree-node .slx-skill-rank { min-width: 0; flex: none; }
 .slx-tree-node:hover .slx-skill-name { color: #fff; }
 .slx-tree-node-foot { display: flex; justify-content: space-between; gap: 4px; font-size: 10px; line-height: 12px; white-space: nowrap; }
@@ -838,13 +839,14 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
 // panel's bottom right, over the bars, so it covers neither the HP digits nor the ailment row above the panel, and over
 // the hit effects (.slx-pm-fx, .slx-pm-fxa) so a blow landing at the same moment never hides it.
 .slx-pm-cue {
-  position: absolute; right: 4px; bottom: 2px; z-index: 4; pointer-events: none; white-space: nowrap;
-  font-size: 12px; line-height: 12px; padding: 1px 3px; border: 1px solid currentColor; background: rgba($slx-win, 0.92);
+  position: absolute; right: 4px; bottom: 0; z-index: 4; pointer-events: none; white-space: nowrap;
+  font-size: 10px; line-height: 10px; padding: 0 2px; border: 1px solid currentColor; background: rgba($slx-win, 0.92);
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
   animation: slx-pm-cue 0.9s ease-out forwards;
 }
-// Readable from its first frame (fast mode holds it only a moment), then it rises and fades.
-@keyframes slx-pm-cue { 0% { translate: 0 2px; opacity: 1; } 70% { translate: 0 -4px; opacity: 1; } 100% { translate: 0 -12px; opacity: 0; } }
+// Readable from its first frame (fast mode holds it only a moment) over the bars, clear of the TP line above them; it
+// holds there, then rises as it fades.
+@keyframes slx-pm-cue { 0% { translate: 0 0; opacity: 1; } 70% { translate: 0 0; opacity: 1; } 100% { translate: 0 -10px; opacity: 0; } }
 .slx-pm-pop-tp { font-size: 12px; line-height: 12px; top: 14px; color: #8fb8ff; }
 @media (prefers-reduced-motion: reduce) {
   .slx-pm-weak, .slx-pm-crit, .slx-pm-resist, .slx-pm-miss, .slx-pm-cue { animation: none; }

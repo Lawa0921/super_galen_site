@@ -26,7 +26,8 @@ import { echo } from './echo';
 /** `plain`: a moment no mechanic claims, in the ink colour. */
 export type MechTone = 'heat' | 'expose' | 'mark' | 'veil' | 'ward' | 'purify' | 'moon' | 'coins' | 'aim' | 'embers' | 'beat' | 'devices' | 'plain';
 /** A mechanic's word on the battle screen: 「熱度3」, 「暗記」. */
-export interface MechWord { tone: MechTone; text: string }
+/** `setup`: one the party put on a foe on purpose (暗記, 瞄準, 估價, 弱點): it comes before a foe's other words and ailments. */
+export interface MechWord { tone: MechTone; text: string; setup?: true }
 /** A mechanic's moment, popped over the member and logged: Noel's overload, Rin's 還有。. */
 /** `no-barrier`: the great barrier cast with no barrier up; `counter`: Scarlet's 贖火; `misstep`, `finale`: Safira's beat. */
 export type MechCue = 'overload' | 'again' | 'no-barrier' | 'counter' | 'misstep' | 'finale';

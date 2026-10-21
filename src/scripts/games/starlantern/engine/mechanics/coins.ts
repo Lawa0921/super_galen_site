@@ -55,6 +55,6 @@ export const coins: MechModule = {
     return n === null ? [] : [{ tone: 'coins', text: T.mech.coins(n) }];
   },
   foeWords(_s, e) {
-    return e.appraised ? [{ tone: 'coins', text: T.mech.appraised }] : [];
+    return e.appraised ? [{ tone: 'coins', text: T.mech.appraised, setup: true }] : [];
   },
 };

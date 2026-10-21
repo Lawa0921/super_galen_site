@@ -4,7 +4,7 @@ import { T } from '../data/text.zh-TW';
 import type { Row } from '../engine/types';
 import type { AilmentChip } from '../engine/ailments';
 import type { MechWord } from '../engine/mechanics/index';
-import { fitChips, textWidth } from '../render/ailmentStyle';
+import { bySeverity, fitRow, isHalting, textWidth } from '../render/ailmentStyle';
 import type { ArtIndex } from '../render/textures';
 
 const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' };
@@ -170,28 +170,28 @@ export class PartyBar {
         el('span', { class: 'slx-pm-tp' }), bar(0, 1, 'slx-bar-tp'), bar(0, 1, 'slx-bar-limit'), el('span', { class: 'slx-pm-ail' }));
     }
     const [name, num, hp, tpNum, tp, limit, ail] = [...p.body.children] as HTMLElement[];
-    // One line: her mechanic's words first, then the ailments, the most severe first, the rest folded into +N. Words
-    // that do not fit the line fold into the +N too, with every ailment; the first always shows.
-    const all = m.mech ?? [];
-    const ails = m.ailments ?? [];
-    const widthOf = (k: number) => all.slice(0, k).reduce((w, x) => w + ailWordWidth(x.text) + 1, 0);
-    // Every word fits, with room left for at least the ailments' +N (or no ailments at all).
-    const allFit = widthOf(all.length) - 1 <= AIL_ROW_W && (!ails.length || widthOf(all.length) + ailWordWidth(T.ailmentMore(ails.length)) <= AIL_ROW_W);
-    let mech = all, shown: ReturnType<typeof fitChips>['shown'], more: number;
-    if (allFit || all.length < 2) {
-      ({ shown, more } = fitChips(ails, AIL_ROW_W - widthOf(all.length), ailWordWidth, 1));
-    } else {
-      const folded = (k: number) => all.length - k + ails.length;
-      let k = all.length - 1;
-      while (k > 1 && widthOf(k) + ailWordWidth(T.ailmentMore(folded(k))) > AIL_ROW_W) k--;
-      mech = all.slice(0, k);
-      shown = [];
-      more = folded(k);
-    }
-    ail.replaceChildren(...mech.map((x) => el('span', { class: `slx-mech slx-mech-${x.tone}`, text: x.text })),
-      ...shown.map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
-      ...(more ? [el('span', { class: 'slx-ail slx-ail-more', text: T.ailmentMore(more) })] : []));
-    ail.hidden = mech.length + shown.length + more === 0;
+    // One line, by priority (plan 8c final): freeze and sleep (never folded), her mechanic's words, then the other ailments,
+    // the most severe first; what does not fit folds into +N. Widths are measured on the page (the row's own width and
+    // each word's), and estimated only where nothing is laid out (tests).
+    const chips = bySeverity(m.ailments ?? []);
+    const halting = chips.filter(isHalting);
+    const words = [
+      ...halting.map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
+      ...(m.mech ?? []).map((x) => el('span', { class: `slx-mech slx-mech-${x.tone}`, text: x.text })),
+      ...chips.filter((c) => !isHalting(c)).map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
+    ];
+    const moreEl = (n: number) => el('span', { class: 'slx-ail slx-ail-more', text: T.ailmentMore(n) });
+    ail.hidden = words.length === 0;
+    ail.replaceChildren(...words);
+    const probe = moreEl(words.length);
+    ail.append(probe);
+    // Layout px (offsetWidth, as clientWidth), not the scaled screen box.
+    const measured = ail.clientWidth > 0 && [...words, probe].every((w) => w.offsetWidth > 0);
+    const widthOf = (w: HTMLElement) => (measured ? w.offsetWidth : ailWordWidth(w.textContent ?? ''));
+    const moreW = measured ? probe.offsetWidth : 0;
+    probe.remove();
+    const { shown, more } = fitRow(words, measured ? ail.clientWidth : AIL_ROW_W, widthOf, (n) => (measured ? moreW : ailWordWidth(T.ailmentMore(n))), 1, halting.length);
+    ail.replaceChildren(...shown, ...(more ? [moreEl(more)] : []));
     tpNum.textContent = `TP ${m.tp}/${m.maxTp}`;
     name.replaceChildren(m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : []));
     num.textContent = `${m.hp}/${m.maxHp}`;

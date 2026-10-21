@@ -9,7 +9,7 @@ import { T } from '../data/text.zh-TW';
  * when `ctx.art.has(url)`; the word stays. This plan defines no art keys and asks for no image.
  */
 export const AILMENT_FILL: Record<AilmentShown, number> = {
-  poison: 0xb48cff, sleep: 0xc4c8dc, burn: 0xff8a4a, freeze: 0x8fe8ff, chill: 0x8fa8ff, shock: 0xffe45c, bleed: 0xff5a6e,
+  poison: 0xb889fe, sleep: 0xc1c5d6, burn: 0xfe8a57, freeze: 0x92ebfd, chill: 0x8ea8fe, shock: 0xffe845, bleed: 0xff5c74,
 };
 
 /** The ink colour of a row's 「+N」 (the folded ailments are not one colour). */
@@ -28,6 +28,22 @@ export const bySeverity = (chips: readonly AilmentChip[]): AilmentChip[] =>
 /** A label's width at `size` px, estimated without measuring (no canvas or layout needed): a CJK character is a full em, anything else (digits, ×, +) 0.6 em. */
 export const textWidth = (text: string, size: number): number =>
   [...text].reduce((w, ch) => w + (ch.charCodeAt(0) > 0x2e80 ? size : size * 0.6), 0);
+
+/** Freeze and sleep cost a turn: a row never folds them away (plan 8c final). */
+export const isHalting = (c: AilmentChip): boolean => c.id === 'freeze' || c.id === 'sleep';
+
+/**
+ * One line of words in priority order no wider than `max`: every one when they all fit; otherwise the longest prefix
+ * that fits beside a 「+N」 counting the rest. The first `keep` always stand, whatever the width (freeze and sleep).
+ */
+export function fitRow<W>(words: readonly W[], max: number, widthOf: (w: W) => number, moreWidth: (n: number) => number, gap: number, keep = 0): { shown: W[]; more: number } {
+  const ws = words.map(widthOf);
+  const line = (k: number, more: number) => ws.slice(0, k).reduce((a, b) => a + b, 0) + (more ? moreWidth(more) : 0) + gap * Math.max(0, k + (more ? 1 : 0) - 1);
+  if (line(words.length, 0) <= max) return { shown: [...words], more: 0 };
+  let k = words.length - 1;
+  while (k > keep && line(k, words.length - k) > max) k--;
+  return { shown: words.slice(0, k), more: words.length - k };
+}
 
 /**
  * One line of ailments no wider than `max`: in severity order, every one when they all fit; otherwise as many of the

@@ -214,7 +214,7 @@ describe('ailment colours and words (plan 8b)', () => {
 });
 
 /** The least CIEDE2000 difference between any two chip colours (ailments and mechanics alike). */
-const CHIP_DE = 12;
+const CHIP_DE = 15;
 
 /** sRGB hex (no #) to CIELAB under D65. */
 function labOf(h: string): [number, number, number] {
@@ -296,7 +296,7 @@ describe('mechanic colours (plan 8c)', () => {
     expect(cue).toMatch(/right:/);
     expect(cue).not.toMatch(/left:/);
     // From the panel's bottom right, over the bars: clear of the HP digits and of the ailment row above the panel.
-    expect(cue).toMatch(/bottom:\s*\d+px/);
+    expect(cue).toMatch(/bottom:\s*\d+(px)?;/);
     expect(cue).not.toMatch(/top:/);
     expect(z('.slx-pm-cue')).toBeGreaterThan(z('.slx-pm-fx'));
     expect(z('.slx-pm-cue')).toBeGreaterThan(z('.slx-pm-fxa'));

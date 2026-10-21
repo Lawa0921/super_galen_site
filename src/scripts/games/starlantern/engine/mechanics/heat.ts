@@ -44,7 +44,7 @@ export const heat: MechModule = {
     return h === null ? [] : [{ tone: 'heat', text: T.mech.heat(h) }];
   },
   foeWords(_s, e) {
-    return e.exposed ? [{ tone: 'expose', text: T.mech.expose(e.exposed) }] : [];
+    return e.exposed ? [{ tone: 'expose', text: T.mech.expose(e.exposed), setup: true }] : [];
   },
   roundEnd(s) {
     // The hex's weak points count down with the round (a fallen one has already lost them).

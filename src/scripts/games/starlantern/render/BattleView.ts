@@ -9,9 +9,9 @@ import type { Combatant } from '../engine/combatant';
 import type { WeaponKind } from '../engine/types';
 import { art, enemyArt, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
-import { AILMENT_FILL, AILMENT_MORE_FILL, fitChips, textWidth } from './ailmentStyle';
+import { AILMENT_FILL, AILMENT_MORE_FILL, bySeverity, fitRow, isHalting, textWidth } from './ailmentStyle';
 import { MECH_FILL } from './mechStyle';
-import type { MechCue, MechWord } from '../engine/mechanics/index';
+import type { MechCue, MechTone, MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
 
 
@@ -82,6 +82,8 @@ const NAME_LIFT = 8;
 /** An enemy's ailment row: one line above its head, just under its intent, so it never covers a small sprite. */
 const AIL_UNDER_INTENT = 2;
 const AIL_GAP = 4;
+/** The party's setups on a foe, in the order a crowded row keeps them: 暗記, 瞄準, 估價, 弱點. */
+const SETUP_ORDER: readonly MechTone[] = ['mark', 'aim', 'coins', 'expose'];
 const AIL_SIZE = 11;
 /** Room kept between two enemies' ailment rows: each row fits its slot less this. */
 const AIL_SLOT_MARGIN = 6;
@@ -458,11 +460,18 @@ export class BattleView {
       if (s.ail.destroyed) continue;
       for (const c of s.ail.removeChildren()) c.destroy();
       const mech = marks[k] ?? [];
-      const mechW = mech.reduce((w, x) => w + ailLabelWidth(x.text) + AIL_GAP, 0);
-      // One line inside its slot: the marks, then the most severe ailments, the rest folded into +N.
-      const { shown, more } = fitChips(byKey[k] ?? [], this.ailMax - mechW, (t) => ailLabelWidth(t), AIL_GAP);
+      const chips = bySeverity(byKey[k] ?? []);
+      // One line inside its slot, by priority (plan 8c final): freeze and sleep (never folded), the party's own setups on
+      // it (暗記, 瞄準, 估價, 弱點), the other ailments, the other words; what does not fit folds into +N.
+      type W = { text: string; fill: number };
+      const ofChip = (c: AilmentChip): W => ({ text: T.ailmentChip(c), fill: AILMENT_FILL[c.id] });
+      const ofWord = (x: MechWord): W => ({ text: x.text, fill: MECH_FILL[x.tone] });
+      const halting = chips.filter(isHalting);
+      const setups = mech.filter((x) => x.setup).sort((a, b) => SETUP_ORDER.indexOf(a.tone) - SETUP_ORDER.indexOf(b.tone));
+      const items: W[] = [...halting.map(ofChip), ...setups.map(ofWord), ...chips.filter((c) => !isHalting(c)).map(ofChip), ...mech.filter((x) => !x.setup).map(ofWord)];
+      const { shown, more } = fitRow(items, this.ailMax, (w) => ailLabelWidth(w.text), (n) => ailLabelWidth(T.ailmentMore(n)), AIL_GAP, halting.length);
       const word = (text: string, fill: number) => new Text({ text, style: { fill, fontSize: AIL_SIZE, stroke: { color: 0x000000, width: 3 } } });
-      const words = [...mech.map((x) => word(x.text, MECH_FILL[x.tone])), ...shown.map((chip) => word(T.ailmentChip(chip), AILMENT_FILL[chip.id]))];
+      const words = shown.map((w) => word(w.text, w.fill));
       if (more) words.push(word(T.ailmentMore(more), AILMENT_MORE_FILL));
       const widths = words.map((t) => ailLabelWidth(t.text));
       let x = -(widths.reduce((a, b) => a + b, 0) + AIL_GAP * Math.max(0, words.length - 1)) / 2;

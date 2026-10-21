@@ -456,7 +456,8 @@ const tree: StatusTab = {
             // A modifier node shows the icon of the skill it changes.
             ...skillIco(ctx, n.skill),
             el('div', { class: 'slx-skill-head' }, [
-              el('span', { class: 'slx-skill-name', text: nodeName(n) }),
+              // A name of five characters or more (護盾產生器) is set a size smaller, so it stays whole on its node.
+              el('span', { class: nodeName(n).length >= 5 ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: nodeName(n) }),
               el('span', { class: 'slx-skill-rank', text: T.ui2.status.rank(rank, n.maxRank) }),
             ]),
             el('div', { class: 'slx-tree-node-foot' }, [

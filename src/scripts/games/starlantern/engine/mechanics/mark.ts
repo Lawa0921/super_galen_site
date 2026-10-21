@@ -75,6 +75,6 @@ export const mark: MechModule = {
     return c.veil ? [{ tone: 'veil', text: T.mech.veil }] : [];
   },
   foeWords(s, e) {
-    return markedBy(s, e.key) ? [{ tone: 'mark', text: T.mech.mark }] : [];
+    return markedBy(s, e.key) ? [{ tone: 'mark', text: T.mech.mark, setup: true }] : [];
   },
 };

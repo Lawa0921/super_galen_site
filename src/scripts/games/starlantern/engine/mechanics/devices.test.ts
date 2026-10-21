@@ -104,7 +104,8 @@ describe("Bobby's devices", () => {
 
   it("Bobby's words: each device, its level and rounds; a shield's amount on whoever holds it", () => {
     const s = makeBattle([bobby([dev('turret', { level: 2, turns: 3 }), dev('shield', { skill: 'barrier', turns: 1 })]), P('noel', { shield: { amount: 12, src: 'bobby' } })], [foe()]);
-    expect(memberWords(s, s.party[0])).toEqual([{ tone: 'devices', text: '砲台Lv2・3' }, { tone: 'devices', text: '護盾機Lv1・1' }]);
+    // Two characters a name, then its level and its rounds: two devices and an ailment fit one row (plan 8c final).
+    expect(memberWords(s, s.party[0])).toEqual([{ tone: 'devices', text: '砲台2・3' }, { tone: 'devices', text: '盾機1・1' }]);
     expect(memberWords(s, s.party[1])).toEqual([{ tone: 'devices', text: '護盾12' }]);
   });
 

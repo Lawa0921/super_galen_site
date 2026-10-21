@@ -255,6 +255,11 @@ describe('PartyBar mechanics (plan 8c)', () => {
     // Words that fit, but leave no room for the ailments' +N: the last word folds in with them (plan 8c Task 6).
     bar.update([m('scarlet', 30, { mech: [{ tone: 'devices', text: '砲台Lv1・2' }, { tone: 'devices', text: '護盾機Lv2・2' }], ailments: [{ id: 'poison' }] })]);
     expect([...row.children].map((c) => c.textContent)).toEqual(['砲台Lv1・2', '+2']);
+    // Freeze and sleep are never folded: they stand first, and the words make room (plan 8c final).
+    bar.update([m('scarlet', 30, { mech: [{ tone: 'embers', text: '餘燼500' }, { tone: 'embers', text: '贖火4' }, { tone: 'embers', text: '代受' }], ailments: [{ id: 'poison' }, { id: 'sleep', turns: 3 }, { id: 'freeze' }] })]);
+    const kept = [...row.children].map((c) => c.textContent);
+    expect(kept.slice(0, 2)).toEqual(['凍結', '睡眠3']);
+    expect(kept.at(-1)).toMatch(/^\+\d$/);
     // When they all fit, nothing folds.
     bar.update([m('scarlet', 30, { mech: [{ tone: 'embers', text: '餘燼0' }, { tone: 'embers', text: '贖火4' }] })]);
     expect([...row.children].map((c) => c.textContent)).toEqual(['餘燼0', '贖火4']);

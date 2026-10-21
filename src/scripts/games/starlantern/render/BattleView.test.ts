@@ -8,6 +8,7 @@ import { BattleView, TINT_COLORS, TINT_STYLE, ailLabelWidth } from './BattleView
 import { AILMENT_FILL, AILMENT_MORE_FILL } from './ailmentStyle';
 import { MECH_FILL } from './mechStyle';
 import type { AilmentChip } from '../engine/ailments';
+import type { MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
 import { enemyArt } from './artPaths';
 import { T } from '../data/text.zh-TW';
@@ -190,6 +191,40 @@ describe('BattleView bottom inset', () => {
     const shown = rows[0].texts.length - 1, folded = Number(rows[0].texts.at(-1)!.slice(1));
     expect(shown + folded).toBe(5);
     expect(view.ailmentTexts('e0').at(-1)!.style.fill).toBe(AILMENT_MORE_FILL);
+  });
+
+  it("four foes: one row each of words and ailments, capped with +N; freeze and sleep, then the setups, then other ailments, then other words (plan 8c final)", () => {
+    const view = new BattleView(true, bank);
+    const four = makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], ['e0', 'e1', 'e2', 'e3'].map((key) => makeCombatant({ key, side: 'enemy' })));
+    view.setup(four, { width: 640, height: 360 }, 1, 150, 66);
+    const words: MechWord[] = [
+      { tone: 'aim', text: '最後行動' }, { tone: 'mark', text: '暗記', setup: true }, { tone: 'aim', text: '瞄準3・鎖定', setup: true },
+      { tone: 'coins', text: '估價', setup: true }, { tone: 'expose', text: '弱點2', setup: true },
+    ];
+    const ail: AilmentChip[] = [...FIVE, { id: 'freeze' }];
+    view.showAilments(Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, ail])), Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, words])));
+    const slotW = (640 - 150) / 5;
+    const rows = ['e0', 'e1', 'e2', 'e3'].map((key) => {
+      const box = view.enemyBoxOf(key)!;
+      const t = view.ailmentTexts(key);
+      expect(new Set(t.map((x) => x.y)).size, key).toBe(1);
+      const left = box.x + t[0].x - ailLabelWidth(t[0].text) / 2;
+      const right = box.x + t.at(-1)!.x + ailLabelWidth(t.at(-1)!.text) / 2;
+      expect(right - left, key).toBeLessThanOrEqual(slotW - 6);
+      return { key, left, right, texts: t.map((x) => x.text) };
+    });
+    for (let i = 1; i < rows.length; i++) expect(rows[i].left).toBeGreaterThan(rows[i - 1].right);
+    const texts = rows[0].texts;
+    expect(texts[0]).toBe('凍結');
+    expect(texts[1]).toBe('暗記');   // the first setup
+    expect(texts).not.toContain('最後行動');
+    expect(texts.at(-1)).toMatch(/^\+\d+$/);
+    expect(texts.length - 1 + Number(texts.at(-1)!.slice(1))).toBe(ail.length + words.length);
+    // A light row (one foe, a wide slot) shows all of it, in that order.
+    const one = new BattleView(true, bank);
+    one.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    one.showAilments({ e0: [{ id: 'poison' }] }, { e0: [{ tone: 'aim', text: '最後行動' }, { tone: 'mark', text: '暗記', setup: true }] });
+    expect(one.ailmentTexts('e0').map((x) => x.text)).toEqual(['暗記', '中毒', '最後行動']);
   });
 });
 
@@ -400,7 +435,7 @@ describe('BattleView mechanics (plan 8c)', () => {
   it("marks come first in an enemy's row", () => {
     const view = new BattleView(true, bank);
     view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
-    view.showAilments({ e0: [{ id: 'burn', turns: 3 }] }, { e0: [{ tone: 'mark', text: '暗記' }, { tone: 'expose', text: '弱點2' }] });
+    view.showAilments({ e0: [{ id: 'burn', turns: 3 }] }, { e0: [{ tone: 'mark', text: '暗記', setup: true }, { tone: 'expose', text: '弱點2', setup: true }] });
     const words = view.ailmentTexts('e0');
     expect(words.map((t) => t.text)).toEqual(['暗記', '弱點2', '灼燒3']);
     expect(words.map((t) => t.style.fill)).toEqual([MECH_FILL.mark, MECH_FILL.expose, AILMENT_FILL.burn]);
@@ -409,7 +444,7 @@ describe('BattleView mechanics (plan 8c)', () => {
     // Without marks, the row is the ailments alone, as before.
     view.showAilments({ e0: [{ id: 'burn', turns: 3 }] });
     expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['灼燒3']);
-    view.showAilments({}, { e0: [{ tone: 'mark', text: '暗記' }] });
+    view.showAilments({}, { e0: [{ tone: 'mark', text: '暗記', setup: true }] });
     expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['暗記']);
   });
 });

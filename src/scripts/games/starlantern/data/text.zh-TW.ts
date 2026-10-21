@@ -188,10 +188,10 @@ export const T = {
     embers: (n: number) => `餘燼${n}`,
     cover: '代受',
     guarded: '受護',
-    /** Bobby's devices: their names (the act's label when one runs), the short ones in a word 「砲台Lv2・3」, a shield's 「護盾12」. */
+    /** Bobby's devices: their names (the act's label when one runs), the short ones in a word 「砲台2・3」 (level, rounds), a shield's 「護盾12」. */
     device: { turret: '砲台', drone: '無人機', shield: '護盾產生器', mine: '地雷', coil: '線圈' },
-    deviceShort: { turret: '砲台', drone: '無人機', shield: '護盾機', mine: '地雷', coil: '線圈' },
-    deviceWord: (name: string, level: number, turns: number) => `${name}Lv${level}・${turns}`,
+    deviceShort: { turret: '砲台', drone: '修機', shield: '盾機', mine: '地雷', coil: '線圈' },
+    deviceWord: (name: string, level: number, turns: number) => `${name}${level}・${turns}`,
     shield: (n: number) => `護盾${n}`,
     riposte: (n: number) => `贖火${n}`,
     beat: (n: number) => (n >= 4 ? `拍子${n}・終幕` : `拍子${n}`),

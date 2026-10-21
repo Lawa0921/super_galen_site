@@ -60,7 +60,7 @@ export const aim: MechModule = {
     const out = [];
     for (const c of s.party) {
       const m = c.mech;
-      if (m?.kind === 'aim' && m.target === e.key && m.stacks > 0) out.push({ tone: 'aim' as const, text: m.lock ? T.mech.aimLocked(m.stacks) : T.mech.aim(m.stacks) });
+      if (m?.kind === 'aim' && m.target === e.key && m.stacks > 0) out.push({ tone: 'aim' as const, text: m.lock ? T.mech.aimLocked(m.stacks) : T.mech.aim(m.stacks), setup: true as const });
     }
     if (e.delay !== undefined && e.delay > s.round) out.push({ tone: 'aim' as const, text: T.mech.last });
     return out;
