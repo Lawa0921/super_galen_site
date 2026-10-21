@@ -164,9 +164,12 @@ describe('exec(pid, cmd)', () => {
     expect(g.drainEvents('b')).toContainEqual(expect.objectContaining({ type: 'blocked', reason: 'reach' }));
   });
 
-  it('toss 在 Task 3 之前回 false', () => {
+  it('toss 分派到 tossSlot（細節見 toss.test.ts）', () => {
     const g = arena();
-    expect(g.act({ op: 'toss', slot: 0 })).toBe(false);
+    g.inventory.slots[0] = { item: 'dirt', count: 4 };
+    expect(g.act({ op: 'toss', slot: 0, n: 5 })).toBe(false);
+    expect(g.act({ op: 'toss', slot: 0, n: 1 })).toBe(true);
+    expect(g.inventory.slots[0]).toEqual({ item: 'dirt', count: 3 });
   });
 
   it('沒有這個 pid 會拋', () => {

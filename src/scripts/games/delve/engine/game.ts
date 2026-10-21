@@ -115,7 +115,9 @@ export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occu
   /** 據點：範圍和別的據點重疊；商店：錢不夠 / 背包滿 */
   | 'claim' | 'coins' | 'bagfull'
   /** 傳送點：目的地爐心旁沒有空位；傳送碑：目的地碑旁沒有空位 */
-  | 'blockedspot' | 'blockedstone';
+  | 'blockedspot' | 'blockedstone'
+  /** 丟出背包格：鎖定的裝備不能丟 */
+  | 'lockedtoss';
 /** 遊戲事件；pid = 由哪個玩家的動作產生（多 actor 時才有；世界事件 / 單機沒有 = 公開） */
 export type DelveEvent = DelveEventBody & { pid?: Pid };
 type DelveEventBody =
@@ -160,6 +162,8 @@ type DelveEventBody =
   | { type: 'respawn'; x: number; y: number }
   /** 撿起來；rarity = 帶詞條裝備的稀有度 */
   | { type: 'pickup'; item: ItemId; n: number; rarity?: number }
+  /** 丟出背包格（tossSlot；公開）：x / y = 掉落物生成的位置（px） */
+  | { type: 'toss'; item: ItemId; n: number; x: number; y: number }
   // ── 裝備詞條 ──
   /** 地上出現一件裝備（掉落 / 擊殺；音效與光柱用） */
   | { type: 'loot'; item: ItemId; rarity: number; x: number; y: number }
@@ -348,6 +352,10 @@ export interface DelveState {
 const HAND: PickStats = { speed: 0.35, tier: 1 };
 /** 同一個 blocked 提示重複出現的最短間隔（秒） */
 const BLOCK_REPEAT = 1.8;
+/** 丟出背包格（tossSlot）：初速（px/s；vx 乘 facing、vy 往上）與丟的人撿不回來的秒數 */
+export const TOSS_VX = 200, TOSS_VY = 150, TOSS_OWNER_DELAY = 1.5;
+/** 丟出的掉落物從玩家中心往 facing 方向偏幾 px 生成 */
+const TOSS_OFFSET = 10;
 /** 傳送石引導時間（秒） */
 export const RECALL_TIME = 1.2;
 /** 磁石增加的伸手距離（格） */
@@ -1041,7 +1049,7 @@ export class DelveGame {
         if (this.inventory.selected !== cmd.slot) return false satisfies CmdResults['place'];
         return this.tryPlace(cmd.x, cmd.y) satisfies CmdResults['place'];
       }
-      case 'toss': return false satisfies CmdResults['toss']; // Task 3 接上 tossSlot
+      case 'toss': return this.tossSlot(cmd.slot, cmd.n) satisfies CmdResults['toss'];
       case 'chestTake': return this.takeChestSlot(cmd.slot) satisfies CmdResults['chestTake'];
       case 'chestTakeAll': return this.takeAllFromChest() satisfies CmdResults['chestTakeAll'];
       case 'chestDeposit': return this.depositToChest(cmd.slot) satisfies CmdResults['chestDeposit'];
@@ -2352,6 +2360,37 @@ export class DelveGame {
     return true;
   }
 
+  /**
+   * 丟出背包第 slot 格（co-op B7；作用在 cur）：n 省略 = 整格。掉落物從玩家中心往 facing 偏 TOSS_OFFSET px 生成、
+   * 往前上方飛；丟的人 TOSS_OWNER_DELAY 秒內撿不回來，其他人立刻撿得到。帶詞條的裝備 / 時裝原樣丟出。
+   * 鎖定的裝備不能丟（blocked lockedtoss）；死亡、空格、n 不合法 → false。划船中也可以丟（只是背包動作）。
+   */
+  tossSlot(slot: number, n?: number): boolean {
+    if (this.dead || !Number.isInteger(slot) || slot < 0 || slot >= this.inventory.slots.length) return false;
+    const st = this.inventory.slots[slot];
+    if (!st) return false;
+    const k = n === undefined ? st.count : n;
+    if (!Number.isInteger(k) || k < 1 || k > st.count) return false;
+    if (st.gear?.locked) {
+      const t = this.playerTile();
+      this.block('use', 'lockedtoss', t.x, t.y);
+      return false;
+    }
+    const c = this.playerCenter(), f = this.facing;
+    const x = c.x + f * TOSS_OFFSET, y = c.y;
+    const owner = { pid: this.cur.pid, delay: TOSS_OWNER_DELAY };
+    if (st.gear || st.tint) {
+      // 單件實例（count 1）：整格移到地上，gear 物件原樣交出
+      this.inventory.slots[slot] = null;
+      this.drops.spawn(st.item, 1, x, y, f * TOSS_VX, -TOSS_VY, 0, st.gear, st.tint, owner);
+    } else {
+      this.inventory.takeFromSlot(slot, k);
+      this.drops.spawn(st.item, k, x, y, f * TOSS_VX, -TOSS_VY, 0, undefined, undefined, owner);
+    }
+    this.emit({ type: 'toss', item: st.item, n: k, x, y });
+    return true;
+  }
+
   /** 玩家身上的動態光：空手時一點微光；拿著發光道具（火把、提燈）時照亮身邊 */
   heldLights(): PointLight[] {
     const held = this.inventory.selectedStack();
@@ -3171,7 +3210,7 @@ export class DelveGame {
     const pickers: Picker[] = vs.map(({ a }) => {
       const inv = a.inventory;
       return {
-        body: a.player, magnetPx: this.withActor(a, () => this.magnetRadius()) * S, canPickup: !a.dead,
+        pid: a.pid, body: a.player, magnetPx: this.withActor(a, () => this.magnetRadius()) * S, canPickup: !a.dead,
         room: (item, n) => (inv.canAdd(item, n) ? n : inv.canAdd(item, 1) ? 1 : 0),
         take: (item, n, gear, tint) => n - inv.add(item, n, gear, tint),
       };
