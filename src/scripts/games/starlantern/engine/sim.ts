@@ -13,6 +13,8 @@ import { HERO_BUILDS, type HeroBuild } from '../data/hero';
 import { EQUIPMENT, WEAPON_KINDS, weaponKindOf } from '../data/equipment';
 import { expectedMemories } from './story/expect';
 import { mulberry32 } from './rng';
+import { socketCount, socketable } from './sockets';
+import type { RuneRef } from '../data/runes';
 import type { Ledger } from './ledger';
 import type { Combatant } from './combatant';
 import { applyPolicy, type PolicyTable } from './policy';
@@ -54,7 +56,11 @@ export const ODD_LINEUPS: Record<'noHeal' | 'noTank' | 'allMagic' | 'allPhys', {
  * still sets the hero's count over it. `armHero` gives a caster hero his build's own staff (plan 6b Task 20a, hand-off M9).
  * `policies` replaces the sim player's default policies (data/policies.ts) for its fights.
  */
-export interface Lineup { ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number; expect?: boolean; armHero?: boolean; policies?: PolicyTable }
+/**
+ * `runes`: a fixed rune set a member wears, skill by skill (plan 8e Task 8, spec §13 point 3: the rune bands of step ⑧).
+ * The bands field none.
+ */
+export interface Lineup { ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number; expect?: boolean; armHero?: boolean; policies?: PolicyTable; runes?: Partial<Record<CharacterId, Record<string, RuneRef[]>>> }
 
 /**
  * A fresh party with everyone at `level`, held to the real level cap, each with the default tree and talents of that
@@ -84,10 +90,23 @@ export function partyAt(level: number, lineup: Lineup = {}, depth = 1): Party {
       const kind = weaponKindOf({ base });
       if (kind && WEAPON_KINDS[kind].scale === 'mag') m.equip = { ...m.equip, weapon: { uid: 0, base, rarity: 'common', ilvl: EQUIPMENT[base].ilvl, affixes: [], enhance: 0 } };
     }
+    const sockets = lineup.runes?.[id];
+    if (sockets) m.sockets = wornRunes(m, sockets);
     const s = statsOf(m);
     p.roster[id] = { ...m, hp: s.hp, tp: s.tp };
   }
   return p;
+}
+
+/** A lineup's rune set as sockets; a skill she does not know, or more runes than her slots, throws (a test hook mends nothing). */
+function wornRunes(m: Member, set: Record<string, RuneRef[]>): Record<string, (RuneRef | null)[]> {
+  const out: Record<string, (RuneRef | null)[]> = {};
+  for (const [skill, refs] of Object.entries(set)) {
+    if (!socketable(m).includes(skill)) throw new Error(`${m.id} cannot wear runes on ${skill}`);
+    if (refs.length > socketCount(m.level)) throw new Error(`${m.id} has ${socketCount(m.level)} slots on ${skill}, not ${refs.length}`);
+    out[skill] = refs.map((r) => ({ id: r.id, tier: r.tier }));
+  }
+  return out;
 }
 
 /**

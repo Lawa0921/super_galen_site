@@ -6,7 +6,7 @@ import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
 import { LEGACY_LINEUP, MAX_LEVEL, SLOTS, STANDARD_LINEUP, rowOfCell, statsOf } from './party';
 import { mulberry32 } from './rng';
-import { KIT_ORDER, attackAll, kitParty, partyAt, simBattle, winRate } from './sim';
+import { KIT_ORDER, attackAll, kitParty, partyAt, setSimTrace, simBattle, winRate } from './sim';
 import { heroTalents, heroTree } from './progression';
 import { fullParty } from './testing';
 import { CHARACTER_IDS } from '../data/characters';
@@ -192,5 +192,29 @@ describe('the sim reads the mechanics (plan 8c)', () => {
     const s = makeBattle([noel(3)], []);
     expect(castPower(s, noel(0), SKILLS['fire-star'])).toBe(140);
     expect(castPower(s, noel(3), SKILLS['fire-star'])).toBe(Math.round((140 * (100 + 3 * HEAT.pctPer)) / 100));
+  });
+});
+
+describe('a lineup with runes (plan 8e Task 8)', () => {
+  it('a lineup can wear a fixed rune set', () => {
+    const spread = { id: 'spread', tier: 'magic' } as const;
+    const p = partyAt(35, { runes: { noel: { 'fire-star': [spread] } } });
+    expect(p.roster.noel.sockets).toEqual({ 'fire-star': [spread] });
+    for (const id of Object.keys(p.roster) as CharacterId[]) if (id !== 'noel') expect(p.roster[id].sockets, id).toBeUndefined();
+    // Without runes, the very same party.
+    expect(JSON.stringify(partyAt(35, {}))).toBe(JSON.stringify(partyAt(35)));
+    // The same seed plays the same fight twice.
+    const run = () => {
+      const seen: string[] = [];
+      setSimTrace({ round: (acts, _b, after) => { seen.push(JSON.stringify([acts, after.log])); }, end: (r) => { seen.push(JSON.stringify(r)); } });
+      try { simBattle(partyAt(35, { runes: { noel: { 'fire-star': [spread] } } }), ['slime', 'slime', 'slime'], false, 7919); } finally { setSimTrace(null); }
+      return seen;
+    };
+    const first = run();
+    expect(first.length).toBeGreaterThan(1);
+    expect(run()).toEqual(first);
+    // A test hook never quietly mends a set: a second slot at Lv10, or a skill she does not know, throws.
+    expect(() => partyAt(10, { runes: { noel: { 'fire-star': [spread, { id: 'ignite', tier: 'magic' }] } } })).toThrow();
+    expect(() => partyAt(35, { runes: { noel: { moonlight: [spread] } } })).toThrow();
   });
 });

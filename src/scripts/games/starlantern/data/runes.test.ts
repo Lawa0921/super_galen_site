@@ -136,7 +136,7 @@ describe('the rune catalogue (plan 8e Task 1)', () => {
       'armor-break': { tier: { effect: [100, 105, 110, 115] }, fixed: { tpPct: 20 } },
       'twin-cast': { tier: {}, fixed: { tpPct: 100 } },
       starwheel: { tier: {}, fixed: { tpFlat: 1 } },
-      'blood-price': { tier: { bloodPct: [3] }, fixed: {} },
+      'blood-price': { tier: { bloodPct: [3] }, fixed: { perTp: 1 } },
       sync: { tier: { sync: [30] }, fixed: {} },
       'spill-shield': { tier: { overflowPct: [30] }, fixed: {} },
       reprise: { tier: { reprise: [50] }, fixed: {} },
