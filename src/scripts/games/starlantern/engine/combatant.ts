@@ -47,6 +47,8 @@ export interface Combatant {
    * down) of a stat counts the stronger of its buff and its aura.
    */
   auras?: Buff[];
+  /** The max TP 常駐 holds back this fight (plan 8e), given back by writeBack. */
+  reservedTp?: number;
   /** The round each trigger condition last fired for her (plan 8e: once a round each). */
   fired?: Partial<Record<'crit' | 'kill' | 'struck', number>>;
   /** Keystone talents held (members only; engine/progression.keystonesOf). */

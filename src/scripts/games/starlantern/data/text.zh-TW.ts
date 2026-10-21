@@ -179,6 +179,8 @@ export const T = {
     purify: (n: number | string, bolt = false) => `淨之結界${bolt ? '・雷' : ''}${n}`,
     /** A lasting barrier's word in place of its rounds (常駐, plan 8e). */
     lasting: '常駐',
+    /** After a barrier's name in the field bar: 「守之結界・常駐」. */
+    lastingTag: '・常駐',
     /** Chizuru's 雷之結界 (plan 8d Task 5): the act line of its round-end strike. */
     thunderWard: '雷之結界',
     moon: (now: string, next: string) => `月相：${now}→${next}`,

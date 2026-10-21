@@ -228,3 +228,26 @@ describe('a lasting barrier (plan 8e Task 7)', () => {
     expect(runeNote(SKILLS.ward, 'extend')).toBeUndefined();
   });
 });
+
+describe('a lasting barrier and 大結界 (plan 8e Task 7 review)', () => {
+  it("大結界 doubles a lasting barrier for its own rounds, and adds none to it", () => {
+    const lasting = { id: 'lasting', tier: 'magic' } as const;
+    const s0 = makeBattle([chizuru({ runes: { ward: [lasting] } }), P('noel')], [foe()]);
+    applyLasting(s0);
+    let s = round(s0, cast('great-barrier'));
+    expect(s.barriers).toEqual([{ skill: 'ward', kind: 'guard', power: 18, turns: 3, src: 'chizuru', lasting: true, boost: 2, boostTurns: 2 }]);
+    expect(s.party[1].ward?.def).toBe(36);
+    // A release reads its own three rounds, not six.
+    expect((castDef(s, s.party[0], SKILLS['exorcism-thrust']).effects[0] as { power: number }).power).toBe(pctOf(150, 100 + BARRIER.releasePct * 3));
+    s = round(s);
+    expect(s.barriers![0]).toMatchObject({ boost: 2, boostTurns: 1, turns: 3 });
+    s = round(s);
+    expect(s.barriers).toEqual([{ skill: 'ward', kind: 'guard', power: 18, turns: 3, src: 'chizuru', lasting: true }]);
+    expect(s.party[1].ward?.def).toBe(18);
+    expect(fieldWords(s).map((w) => w.text)).toContain(`守之結界・${T.mech.lasting}`);
+    // A plain barrier boosted gains its rounds as before.
+    const plain = round(round(makeBattle([chizuru(), P('noel')], [foe()]), cast('ward')), cast('great-barrier'));
+    expect(plain.barriers![0]).toMatchObject({ boost: 2, turns: 4 });
+    expect(plain.barriers![0].boostTurns).toBeUndefined();
+  });
+});

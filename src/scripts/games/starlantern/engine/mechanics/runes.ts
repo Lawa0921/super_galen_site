@@ -186,7 +186,8 @@ export function applyLasting(s: BattleState): void {
   for (const c of s.party) {
     const list = lastingSkills(c);
     if (!list.length) continue;
-    for (const { def, pct } of list) {
+    // A caster down at the start raises nothing, though her TP is still held back.
+    for (const { def, pct } of c.alive ? list : []) {
       for (const e of def.effects) {
         if (e.kind === 'buff' && e.pct > 0) {
           for (const t of lastingTargets(def, c, s.party)) addAura(t, { stat: e.stat, pct: pctOf(e.pct, pct), turns: 0, src: c.key });
@@ -200,7 +201,9 @@ export function applyLasting(s: BattleState): void {
     }
     const reserve = battleReservePct(c);
     if (reserve > 0) {
-      c.max = { ...c.max, tp: Math.floor((c.max.tp * (100 - reserve)) / 100) };
+      const tp = Math.floor((c.max.tp * (100 - reserve)) / 100);
+      c.reservedTp = c.max.tp - tp;
+      c.max = { ...c.max, tp };
       c.tp = Math.min(c.tp, c.max.tp);
     }
   }

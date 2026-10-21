@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LIMIT_PER_ACTION, createBattle, resolveRound, type Action, type BattleState } from '../battle';
+import { LIMIT_PER_ACTION, createBattle, resolveRound, writeBack, type Action, type BattleState } from '../battle';
 import { hitAmount, rollHit, type BattleEvent, type Combatant } from '../combatant';
 import { applyEffect, pctOf, type EffectContext } from '../skills';
 import { BARRIER } from '../mech';
@@ -532,5 +532,37 @@ describe('lasting runes (plan 8e Task 7)', () => {
     const before = JSON.stringify(s);
     applyLasting(s);
     expect(JSON.stringify(s)).toBe(before);
+  });
+});
+
+describe('lasting runes: review fixes (plan 8e Task 7 review)', () => {
+  const lasting: RuneRef = { id: 'lasting', tier: 'magic' };
+
+  it('a caster down at the start raises nothing, but her TP is still held back', () => {
+    const safira = member('safira', { hp: 0, alive: false, max: { ...MAX, tp: 100 }, tp: 100, runes: { 'war-dance': [lasting] } });
+    const s = makeBattle([safira, member('noel')], [tough('e0')]);
+    applyLasting(s);
+    for (const c of s.party) expect(c.auras, c.key).toBeUndefined();
+    expect(s.party[0].max.tp).toBe(70);
+    const chizuru = member('chizuru', { hp: 0, alive: false, mech: { kind: 'barrier' }, runes: { ward: [lasting] } });
+    const b = makeBattle([chizuru, member('noel')], [tough('e0')]);
+    applyLasting(b);
+    expect(b.barriers).toBeUndefined();
+  });
+
+  it('the TP held back comes back after the fight', () => {
+    const party = fullParty(['hero', 'safira', 'noel']);
+    party.roster.safira = { ...party.roster.safira, sockets: { 'war-dance': [lasting] } };
+    const full = party.roster.safira.tp;
+    const fight = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    const sf = fight.party.find((c) => c.key === 'safira')!;
+    const held = full - sf.max.tp;
+    expect(held).toBeGreaterThan(0);
+    sf.tp = sf.max.tp - 5;   // she spent 5
+    expect(writeBack(party, fight).roster.safira.tp).toBe(full - 5);
+    // Without the rune, as ever.
+    const plain = createBattle({ party: fullParty(['hero', 'safira', 'noel']), enemyIds: ['slime'], inventory: {}, revealed: {} });
+    plain.party.find((c) => c.key === 'safira')!.tp = full - 5;
+    expect(writeBack(fullParty(['hero', 'safira', 'noel']), plain).roster.safira.tp).toBe(full - 5);
   });
 });

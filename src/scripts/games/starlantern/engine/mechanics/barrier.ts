@@ -77,6 +77,14 @@ function strike(s: BattleState, ctx: EffectContext, rng: Rng): void {
   }
 }
 
+/** A lasting barrier's 大結界 boost runs out on its own rounds (plan 8e Task 7 review); the barrier itself does not. */
+function boostDown(b: Barrier): Barrier {
+  if (b.boostTurns === undefined) return b;
+  if (b.boostTurns > 1) return { ...b, boostTurns: b.boostTurns - 1 };
+  const { boost: _boost, boostTurns: _turns, ...rest } = b;
+  return rest;
+}
+
 export const barrier: MechModule = {
   castDef(s, _c, def) {
     const b = longest(s);
@@ -116,14 +124,14 @@ export const barrier: MechModule = {
   roundEnd(s) {
     if (!s.barriers?.length) return;
     // A lasting barrier (常駐, plan 8e) takes no round off.
-    s.barriers = s.barriers.map((b) => (b.lasting ? b : { ...b, turns: b.turns - 1 })).filter((b) => b.turns > 0);
+    s.barriers = s.barriers.map((b) => (b.lasting ? boostDown(b) : { ...b, turns: b.turns - 1 })).filter((b) => b.turns > 0);
   },
   fieldWords(s) {
     const bolt = thunderOf(s) !== undefined;
     // A lasting barrier says 常駐 where the rounds would be.
     return (s.barriers ?? []).map((b) => b.kind === 'guard'
-      ? { tone: 'ward' as const, text: T.mech.ward(b.lasting ? T.mech.lasting : b.turns, (b.boost ?? 1) > 1, bolt) }
-      : { tone: 'purify' as const, text: T.mech.purify(b.lasting ? T.mech.lasting : b.turns, bolt) });
+      ? { tone: 'ward' as const, text: T.mech.ward(b.lasting ? T.mech.lastingTag : b.turns, (b.boost ?? 1) > 1, bolt) }
+      : { tone: 'purify' as const, text: T.mech.purify(b.lasting ? T.mech.lastingTag : b.turns, bolt) });
   },
   unusable(s, _c, def) {
     return def.effects.some((e) => e.kind === 'barrier-boost') && !s.barriers?.length ? T.mech.noBarrier : null;

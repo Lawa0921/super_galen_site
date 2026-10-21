@@ -419,7 +419,8 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       if (target !== actor || !s) return;
       const b = s.barriers?.[0];
       if (!b) { ctx.log.push({ type: 'mech', actor: actor.key, cue: 'no-barrier' }); return; }
-      s.barriers = s.barriers!.map((x) => ({ ...x, boost: eff.mul, turns: x.turns + eff.turns }));   // both, under 重結界
+      // Both, under 重結界. A lasting barrier (plan 8e) gains no rounds: its boost counts down on its own.
+      s.barriers = s.barriers!.map((x) => (x.lasting ? { ...x, boost: eff.mul, boostTurns: eff.turns } : { ...x, boost: eff.mul, turns: x.turns + eff.turns }));
       return;
     }
     case 'coins': {

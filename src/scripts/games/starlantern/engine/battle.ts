@@ -560,7 +560,7 @@ function twinCast(s: BattleState, actor: Combatant, cast: SkillDef, raw: SkillDe
     // The mechanic's cue (Safira's finale) was said for the first cast; paying again says nothing more.
     const said = s.log.length;
     payMech(s, actor, def, ctx);
-    s.log.splice(said).forEach((e) => { if (e.type !== 'mech') s.log.push(e); });
+    s.log.splice(said).forEach((e) => { if (!(e.type === 'mech' && e.cue === 'finale')) s.log.push(e); });
     delete ctx.afterTried;
     return def;
   };
@@ -802,7 +802,9 @@ export function writeBack(p: Party, s: BattleState): Party {
   const roster = { ...p.roster };
   for (const c of s.party) {
     const id = c.key as CharacterId;
-    roster[id] = { ...roster[id], hp: c.alive ? c.hp : 0, tp: c.tp, limit: c.limit };
+    // The TP 常駐 held back (plan 8e) comes back with the fight over, up to her max.
+    const held = c.reservedTp ?? 0;
+    roster[id] = { ...roster[id], hp: c.alive ? c.hp : 0, tp: held ? Math.min(c.max.tp + held, c.tp + held) : c.tp, limit: c.limit };
   }
   return { ...p, roster };
 }
