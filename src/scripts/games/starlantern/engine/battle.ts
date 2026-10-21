@@ -519,6 +519,22 @@ function bounceCast(s: BattleState, actor: Combatant, def: SkillDef, first: Comb
   }
 }
 
+/**
+ * The struck triggers this foe's action queued for members who could not stir as it began (the same `idle` 贖火 reads):
+ * dropped, and their once-a-round mark given back, since nothing fired.
+ */
+function dropIdleStruck(s: BattleState, idle: readonly string[]): void {
+  if (!s.triggers) return;
+  const drop = s.triggers.filter((t) => t.on === 'struck' && idle.includes(t.by));
+  if (!drop.length) return;
+  s.triggers = s.triggers.filter((t) => !drop.includes(t));
+  if (!s.triggers.length) delete s.triggers;
+  for (const t of drop) {
+    const c = s.party.find((m) => m.key === t.by);
+    if (c?.fired) delete c.fired.struck;
+  }
+}
+
 /** A skill cast once on its targets as `perform` resolves them (a scatter skill scatters), for a triggered cast (plan 8e). */
 export function castOnce(s: BattleState, actor: Combatant, def: SkillDef, chosen: string | undefined, ctx: EffectContext, rng: Rng): void {
   if (def.effects.some((e) => e.kind === 'damage' && e.scatter)) scatterCast(s, actor, def, chosen, ctx, rng);
@@ -539,7 +555,10 @@ function twinCast(s: BattleState, actor: Combatant, cast: SkillDef, raw: SkillDe
   // now (一擲千金 throws the coins she holds now, 天之逆鉾 finds no barrier left to release), and spends it again.
   const second = (): SkillDef => {
     const def = castDef(s, actor, raw);
+    // The mechanic's cue (Safira's finale) was said for the first cast; paying again says nothing more.
+    const said = s.log.length;
     payMech(s, actor, def, ctx);
+    s.log.splice(said).forEach((e) => { if (e.type !== 'mech') s.log.push(e); });
     delete ctx.afterTried;
     return def;
   };
@@ -691,6 +710,8 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
       delete ctx.redirect;
       // What the foe's action set off on the party (Scarlet's 贖火 counter); that sets off nothing more.
       if (actor.side === 'enemy') afterFoe(s, actor, ctx, from, idle);
+      // A member frozen or asleep as the blow fell sets off no struck trigger, though the blow woke her (plan 8e ruling 11).
+      if (actor.side === 'enemy' && idle.length) dropIdleStruck(s, idle);
       if (actor.side === 'party' && actor.alive && act.kind !== 'ultimate' && act.kind !== 'escape') actor.limit = Math.min(LIMIT_MAX, actor.limit + gaugeGain(actor, LIMIT_PER_ACTION));
       if (actor.side === 'party') {
         const own = act as Action;

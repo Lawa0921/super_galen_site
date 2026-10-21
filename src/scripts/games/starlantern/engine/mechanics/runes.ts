@@ -110,6 +110,8 @@ export function noteHit(actor: Combatant, target: Combatant, crit: boolean, ctx:
  */
 export function runTriggers(s: BattleState, ctx: EffectContext, rng: Rng): void {
   while (s.triggers?.length) {
+    // No foe standing (the fight is won): nothing more is cast, not even a heal or a buff.
+    if (!s.enemies.some((e) => e.alive)) { delete s.triggers; return; }
     const [t, ...rest] = s.triggers;
     s.triggers = rest;
     if (!rest.length) delete s.triggers;
@@ -139,6 +141,9 @@ export function runTriggers(s: BattleState, ctx: EffectContext, rng: Rng): void 
       if (!chosen) continue;
     }
     s.log.push({ type: 'trigger', actor: c.key, skill: t.skill, rune: rune.id });
+    // A cast of its own: nothing of the action that set it off rides on it (its last hit, 餘波's tries).
+    delete ctx.lastHit;
+    delete ctx.afterTried;
     ctx.cast = def.id;
     castOnce(s, c, def, chosen, ctx, rng);
     delete ctx.cast;
