@@ -430,9 +430,10 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       if (def.effects.some((e) => e.kind === 'damage' && e.scatter)) scatterCast(s, actor, def, act.target, ctx, rng);
       else {
         const targets = resolveTargets(s, actor, def.target, act.target, rng);
+        const before = ctx.lastHit;
         for (const t of targets) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
-        // 彈射 (plan 8e): after the first foe has had every effect, the damage goes on down the line.
-        if (def.runeRules?.bounce && targets.length === 1) bounceCast(s, actor, def, targets[0], ctx);
+        // 彈射 (plan 8e): after the first foe has had every effect, the damage goes on down the line, if a hit landed.
+        if (def.runeRules?.bounce && targets.length === 1 && landedOn(ctx, before, targets[0])) bounceCast(s, actor, def, targets[0], ctx);
       }
       delete ctx.cast;
       return def;
@@ -493,9 +494,16 @@ function bounceCast(s: BattleState, actor: Combatant, def: SkillDef, first: Comb
     const next = bounceNext(foes, first.key, hit);
     if (!next) return;
     hit.add(next.key);
+    const before = ctx.lastHit;
     for (const eff of def.effects) if (eff.kind === 'damage') applyEffect(actor, next, { ...eff, power: pctOf(eff.power, 100 - dropPct * n) }, ctx);
+    // A bounce that is dodged ends the chain: it only goes on from a foe it struck.
+    if (!landedOn(ctx, before, next)) return;
   }
 }
+
+/** Whether a hit landed on `t` since `before` was the context's last hit (each landed hit records a new one). */
+const landedOn = (ctx: EffectContext, before: EffectContext['lastHit'], t: Combatant): boolean =>
+  ctx.lastHit !== before && ctx.lastHit?.target === t.key;
 
 /**
  * A skill with a scatter hit (散射, 一擲千金): its effects in order; a scatter damage effect throws each of its hits at a

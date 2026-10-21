@@ -148,3 +148,59 @@ describe('runes on every hit (plan 8e Task 4)', () => {
     expect(SKILLS['fire-star']).toBeDefined();
   });
 });
+
+describe('runes on every hit: review fixes (plan 8e Task 4 review)', () => {
+  const sure = (c: Combatant, skill: string): Damage => ({ ...hit(c, skill), crit: 'always' });
+
+  it('aftermath and a hit ailment of the same kind never stack: one stack, one draw, at the higher chance', () => {
+    const both = member('sylvie', { 'aimed-shot': [R('tear'), R('aftermath')] });
+    const tearOnly = member('sylvie', { 'aimed-shot': [R('tear')] });
+    const draws = (c: Combatant, rng: Rng & { n: number }, t = foe()) => { applyEffect(c, t, sure(c, 'aimed-shot'), ctxOf(rng)); return { n: rng.n, t }; };
+    const a = draws(both, counting(mulberry32(5))), b = draws(tearOnly, counting(mulberry32(5)));
+    expect(a.n).toBe(b.n);
+    expect(a.t.bleed).toHaveLength(1);
+    // The crit makes it sure: at 0.9, past 撕裂's 35%, it still bleeds.
+    const t = foe();
+    applyEffect(both, t, sure(both, 'aimed-shot'), ctxOf(constRng(0.9)));
+    expect(t.bleed).toHaveLength(1);
+    // Without a crit, 撕裂 alone at its own chance.
+    const calm = foe();
+    applyEffect(both, calm, hit(both, 'aimed-shot'), ctxOf(constRng(0.9)));
+    expect(calm.bleed).toBeUndefined();
+  });
+
+  it("aftermath's ailment is halved on a boss: burn, bleed and shock", () => {
+    const caster = member('noel', { 'fire-star': [R('aftermath')], 'thunder-star': [R('aftermath')] });
+    const archer = member('sylvie', { 'aimed-shot': [R('aftermath')] });
+    const cases: [Combatant, string, (t: Combatant) => unknown][] = [
+      [caster, 'fire-star', (t) => t.burn], [archer, 'aimed-shot', (t) => t.bleed?.length], [caster, 'thunder-star', (t) => t.shock],
+    ];
+    for (const [c, sk, got] of cases) {
+      // 0.6: past half, so a boss shrugs it off; a normal foe never can (100%).
+      const boss = foe('e0', { boss: true }), plain = foe('e0');
+      applyEffect(c, boss, sure(c, sk), ctxOf(constRng(0.6)));
+      applyEffect(c, plain, sure(c, sk), ctxOf(constRng(0.6)));
+      expect(got(boss), sk).toBeUndefined();
+      expect(got(plain), sk).toBeDefined();
+      const lucky = foe('e0', { boss: true });
+      applyEffect(c, lucky, sure(c, sk), ctxOf(constRng(0.4)));
+      expect(got(lucky), sk).toBeDefined();
+    }
+  });
+
+  it('a bounce follows a hit that landed, never a dodge', () => {
+    const noel = member('noel', { 'fire-star': [R('bounce')] }, { max: { ...MAX, spd: 50 } });
+    const s0 = makeBattle([noel], [foe('e0', { sleep: 9, x: { evasion: 50 } }), foe('e1', { sleep: 9 })]);
+    // Every draw 0.1: e0 dodges (50%); nothing lands, so nothing bounces.
+    const r = resolveRound(s0, { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.1));
+    expect(r.log).toContainEqual({ type: 'miss', target: 'e0' });
+    expect(damageTo(r.log, 'e1')).toHaveLength(0);
+    // A bounce that is dodged ends the chain: e1 dodges, e2 is never reached.
+    const s1 = makeBattle([member('noel', { 'fire-star': [R('bounce')] }, { max: { ...MAX, spd: 50 } })],
+      [foe('e0', { sleep: 9 }), foe('e1', { sleep: 9, x: { evasion: 50 } }), foe('e2', { sleep: 9 })]);
+    const r1 = resolveRound(s1, { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.1));
+    expect(damageTo(r1.log, 'e0')).toHaveLength(1);
+    expect(r1.log).toContainEqual({ type: 'miss', target: 'e1' });
+    expect(damageTo(r1.log, 'e2')).toHaveLength(0);
+  });
+});

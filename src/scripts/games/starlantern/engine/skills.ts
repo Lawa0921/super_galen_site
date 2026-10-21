@@ -246,8 +246,11 @@ function runeHit(actor: Combatant, target: Combatant, eff: Extract<Effect, { kin
     ctx.log.push({ type: 'tp', target: actor.key, amount: actor.tp - before });
   }
   if (!target.alive) return;
-  for (const a of eff.onHit ?? []) inflictAilment(actor, target, a.status, a.chance, ctx);
-  if (eff.aftermath && crit && target.alive) inflictAilment(actor, target, ELEMENT_AILMENT[eff.element], 1, ctx);
+  // 餘波 on a crit makes the hit's own ailment of that kind sure (one try, the higher chance: spec §6.6 rule 3), and is
+  // tried on its own only when the hit carries no such ailment.
+  const after = eff.aftermath && crit ? ELEMENT_AILMENT[eff.element] : undefined;
+  for (const a of eff.onHit ?? []) inflictAilment(actor, target, a.status, a.status === after ? 1 : a.chance, ctx);
+  if (after && !eff.onHit?.some((a) => a.status === after) && target.alive) inflictAilment(actor, target, after, 1, ctx);
 }
 
 function gainHp(t: Combatant, amount: number): number {
