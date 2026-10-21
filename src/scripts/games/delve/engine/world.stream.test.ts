@@ -257,6 +257,49 @@ describe('World 區塊欄儲存', () => {
     expect(w.drainColumnEvents()).toEqual({ loaded: [], unloaded: [] });
   });
 
+  it('載入一欄 → 常駐的左右鄰欄整欄 chunk 標 dirty（接縫重烘焙）；卸載 → 它的 chunk 從 dirty / liquidDirty 拿掉', () => {
+    const w = mk();
+    w.ensureColumn(-2);
+    w.drainDirty(); w.drainLiquidDirty();
+    w.ensureColumn(-1);
+    const d = new Set(w.drainDirty());
+    for (let cy = 0; cy < w.chunksY; cy++) {
+      for (const cx of [-2, -1, 0]) expect(d.has(w.chunkIndex(cx, cy)), `${cx},${cy}`).toBe(true);
+      expect(d.has(w.chunkIndex(-3, cy))).toBe(false);
+    }
+    w.setFg(-40, 10, T.AIR);
+    w.setLiquid(-40, 12, 100, LIQ.WATER);
+    w.setFg(-60, 10, T.AIR);
+    expect(w.unloadColumn(-2)).toBe(true);
+    const dirty = w.drainDirty(), liq = w.drainLiquidDirty();
+    for (let cy = 0; cy < w.chunksY; cy++) {
+      expect(dirty).not.toContain(w.chunkIndex(-2, cy));
+      expect(liq).not.toContain(w.chunkIndex(-2, cy));
+    }
+    // 停放的仍在（存檔 / 回來時蓋回）
+    expect(w.parkedChunks()).toContain(w.chunkIndex(-2, 0));
+  });
+
+  it('停放蓋回來的 chunk → drainRestoredChunks；parkChunk 只停放沒常駐的欄', () => {
+    const w = mk();
+    w.ensureColumn(-3);
+    w.setFg(-90, 40, T.WOOD);
+    const k = w.chunkIndex(-3, 1);
+    w.unloadColumn(-3);
+    expect(w.drainRestoredChunks()).toEqual([]);
+    w.ensureColumn(-3);
+    expect(w.drainRestoredChunks()).toEqual([k]);
+    expect(w.getFg(-90, 40)).toBe(T.WOOD);
+    const d = w.readChunk(-3, 1)!;
+    expect(w.parkChunk(-3, 1, d)).toBe(false);
+    w.unloadColumn(-3);
+    const e = { ...d, fg: d.fg.slice() };
+    e.fg[(40 % CHUNK) * CHUNK + (-90 & 31)] = T.GLASS;
+    expect(w.parkChunk(-3, 1, e)).toBe(true);
+    w.ensureColumn(-3);
+    expect(w.getFg(-90, 40)).toBe(T.GLASS);
+  });
+
   it('flaggedTiles 含常駐與停放的外圍格（升冪）', () => {
     const w = mk();
     w.ensureColumn(-1);

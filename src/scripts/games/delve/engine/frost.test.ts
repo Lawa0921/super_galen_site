@@ -3,7 +3,8 @@ import { describe, it, expect } from 'vitest';
 import { World, LIQ, BIOME } from './world';
 import { T, W } from './tiles';
 import { LiquidSim } from './liquid';
-import { updateFreeze, frozenCount } from './frost';
+import { updateFreeze, freezeColumns, frozenCount } from './frost';
+import { li, type Column, type ColumnLayers, type ColumnSource } from './column';
 import { DAYS_PER_SEASON, SEASON, SEASON_TRANSITION_DAYS } from './calendar';
 
 /** 寬 60、高 40 的小世界：地面在 y=20，x 20..39 挖一個 4 格深的湖（水面 y=17..20 → 湖底 y=21） */
@@ -120,5 +121,44 @@ describe('updateFreeze', () => {
     updateFreeze(w, new LiquidSim(w), winterLate);
     expect(w.isFrozen(25, 17)).toBe(true);
     expect(w.isFrozen(25, 18)).toBe(true);
+  });
+});
+
+/** 外圍（x < 0）是雪原的湖：地面 y=21、水面 y=18..20（每欄都一樣） */
+class SnowLakeSource implements ColumnSource {
+  readonly version = 1;
+  fill(col: Column, x0: number, x1: number): void {
+    for (let x = x0; x < x1; x++) {
+      for (let y = 21; y < col.height; y++) col.fg[li(x, y)] = T.DIRT;
+      for (let y = 18; y < 21; y++) { col.liquid[li(x, y)] = 255; col.liquidType[li(x, y)] = LIQ.WATER; }
+    }
+  }
+  surfaceAt(): number { return 21; }
+  biomeAt(): number { return BIOME.SNOW; }
+  layersAt(): ColumnLayers { return { rock: 30, deep: 35, molten: 38 }; }
+}
+
+describe('freezeColumns（無限世界：欄載入時依日期結冰）', () => {
+  it('只處理指定的欄；外圍的冰只標重畫、不標液體已修改（不必存檔 / 停放）', () => {
+    const w = new World(60, 40, { bounds: 'infinite', source: new SnowLakeSource() });
+    for (let x = 0; x < 60; x++) { w.biome[x] = BIOME.SNOW; w.surface[x] = 21; }
+    for (let x = 20; x < 40; x++) for (let y = 18; y < 21; y++) w.setLiquid(x, y, 255, LIQ.WATER);
+    w.ensureColumn(-1);
+    w.drainLiquidDirty();
+    w.liquidModified.clear();
+    const r = freezeColumns(w, null, winterLate, [-1]);
+    expect(r.frozen).toBeGreaterThan(0);
+    // 中央的湖沒被碰
+    for (let x = 20; x < 40; x++) expect(w.isFrozen(x, 18)).toBe(false);
+    let outer = 0;
+    for (let x = -32; x < 0; x++) if (w.isFrozen(x, 18)) outer++;
+    expect(outer).toBe(r.frozen);
+    const ci = w.chunkIndex(-1, 0);
+    expect(w.drainLiquidDirty()).toContain(ci);
+    expect(w.liquidModified.has(ci)).toBe(false);
+    // 中央照舊：結冰的 chunk 標已修改（存檔）
+    updateFreeze(w, null, winterLate, undefined, undefined, [0, 1]);
+    expect(w.isFrozen(25, 18)).toBe(true);
+    expect(w.liquidModified.has(w.chunkIndex(0, 0))).toBe(true);
   });
 });

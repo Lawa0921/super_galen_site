@@ -3,6 +3,8 @@
 //   （薄膜 < FREEZE_THIN 時連下面一格一起），碰撞算實心、液體模擬不動它（world.isFrozen / liquid.ts）。
 //   哪幾欄結冰由曆法 freezeSeason（季節 × 生態區 × 欄位雜湊 → 冰面逐日擴大、逐日融化）決定。
 //   全部走座標 getter / setter（與儲存無關）；欄 x 由小到大處理。
+//   中央以外（x < 0、x ≥ width）的冰只標重畫、不標「液體已修改」：外圍的結冰由日期重算（欄載入時 freezeColumns），
+//   不必存檔 / 停放（走過結冰的湖不會讓欄被停放）。
 import type { World, TileWindow } from './world';
 import type { LiquidSim } from './liquid';
 import { LIQ } from './liquidKind';
@@ -26,6 +28,12 @@ export function freezeHash(x: number): number {
   return (((h ^ (h >>> 13)) >>> 0) % 10000) / 10000;
 }
 
+/** 冰變動的那格：中央標液體 dirty + 已修改（存檔），外圍只標 dirty */
+function touchIce(w: World, x: number, y: number): void {
+  if (x >= 0 && x < w.width) w.touchLiquidAt(x, y);
+  else w.markLiquidDirty(x, y);
+}
+
 /** 單一 tile 欄 x 的結冰 / 融化；結冰 / 融化格數累加進 acc */
 function freezeColumn(w: World, sim: LiquidSim | null, dayIndex: number, x: number, acc: { frozen: number; thawed: number },
   blocked?: (x: number, y: number) => boolean, keepOpen?: Set<number>): void {
@@ -36,7 +44,7 @@ function freezeColumn(w: World, sim: LiquidSim | null, dayIndex: number, x: numb
     if (w.isFrozen(x, y) || w.getLiquidType(x, y) !== LIQ.WATER || !w.getLiquid(x, y) || w.getWall(x, y) !== 0
       || blocked?.(x, y) || keepOpen?.has(w.idx(x, y))) return;
     w.setFrozen(x, y, true); acc.frozen++;
-    w.touchLiquidAt(x, y);
+    touchIce(w, x, y);
   };
   // 已經結冰但這欄不該結冰（或冰面上方被蓋了屋頂）→ 先全部融掉，再重找湖面
   let top = -1;
@@ -49,7 +57,7 @@ function freezeColumn(w: World, sim: LiquidSim | null, dayIndex: number, x: numb
     const keep = want && (y === top || y === top + 1);
     if (keep) continue;
     w.setFrozen(x, y, false); acc.thawed++;
-    w.touchLiquidAt(x, y);
+    touchIce(w, x, y);
     sim?.wake(x, y);
   }
   if (!want || top < 0) return;
@@ -87,6 +95,15 @@ export function updateFreeze(w: World, sim: LiquidSim | null, dayIndex: number, 
     }
   }
   return acc;
+}
+
+/**
+ * 只處理 cols（區塊欄 cx）的結冰 / 融化（欄剛載入時依今天日期跑一次；每日換日跑常駐欄）。
+ * 與 updateFreeze(w, sim, dayIndex, blocked, keepOpen, cols) 相同。
+ */
+export function freezeColumns(w: World, sim: LiquidSim | null, dayIndex: number, cols: Iterable<number>,
+  blocked?: (x: number, y: number) => boolean, keepOpen?: Set<number>): { frozen: number; thawed: number } {
+  return updateFreeze(w, sim, dayIndex, blocked, keepOpen, cols);
 }
 
 /** 全世界結冰格數（測試 / debug；逐 chunk 用 window 讀） */

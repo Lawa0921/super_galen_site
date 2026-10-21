@@ -113,10 +113,13 @@ export class World {
   private sortedCols: number[] | null = null;
   /** pin() 的欄（中央欄不在這裡：恆常駐） */
   private readonly pinned = new Set<number>();
+  private pinCache: Set<number> | null = null;
   /** 停放中的 chunk：chunk 鍵 → 六層 payload */
   private readonly parked = new Map<number, ChunkData>();
   private loadedEv: number[] = [];
   private unloadedEv: number[] = [];
+  /** 載入時由停放蓋回來的 chunk 鍵（drainRestoredChunks 取走：液體要整塊喚醒） */
+  private restoredEv: number[] = [];
   /** 上一次用到的欄（點查詢快取） */
   private lcx = NO_COL;
   private lcol: Column | null = null;
@@ -206,12 +209,23 @@ export class World {
     if (!this.sortedCols) this.sortedCols = [...this.resident].sort((a, b) => a - b);
     return this.sortedCols.slice();
   }
+  /** 常駐欄號的集合（唯讀、不複製；串流規劃用） */
+  residentSet(): ReadonlySet<number> { return this.resident; }
   /** 中央欄或 pin() 過的欄：不卸載 */
-  private isPinned(cx: number): boolean {
+  isPinned(cx: number): boolean {
     return (cx >= 0 && cx < this.chunksX) || this.pinned.has(cx);
   }
-  pin(cx: number): void { this.pinned.add(cx); }
-  unpin(cx: number): void { this.pinned.delete(cx); }
+  /** 不卸載的欄（中央欄 + pin() 過的）；快取，pin / unpin 時重建 */
+  pinnedSet(): ReadonlySet<number> {
+    if (!this.pinCache) {
+      const s = new Set<number>(this.pinned);
+      for (let cx = Math.max(0, this.cxLo); cx < this.chunksX && cx <= this.cxHi; cx++) s.add(cx);
+      this.pinCache = s;
+    }
+    return this.pinCache;
+  }
+  pin(cx: number): void { this.pinned.add(cx); this.pinCache = null; }
+  unpin(cx: number): void { this.pinned.delete(cx); this.pinCache = null; }
 
   /** 讓第 cx 欄常駐：生成（source；沒有 source = 空氣）再蓋上停放的 chunk。中央欄恆常駐。邊界外丟 RangeError */
   ensureColumn(cx: number): Column {
@@ -222,6 +236,11 @@ export class World {
     this.register(col);
     this.loadedEv.push(cx);
     for (let cy = 0; cy < this.chunksY; cy++) this.dirty.add(this.chunkIndex(cx, cy));
+    // 接縫：常駐的左右鄰欄邊上的 chunk 也重畫（之前那一側讀到的是「沒載入 = 石頭」）
+    for (const n of [cx - 1, cx + 1]) {
+      if (!this.isResident(n)) continue;
+      for (let cy = 0; cy < this.chunksY; cy++) this.dirty.add(this.chunkIndex(n, cy));
+    }
     return col;
   }
   /** 卸載第 cx 欄：pinned 的拒絕（回 false）；有改過的 chunk（modifiedChunks ∪ liquidModified）→ 停放 */
@@ -231,6 +250,9 @@ export class World {
     for (let cy = 0; cy < this.chunksY; cy++) {
       const k = this.chunkIndex(cx, cy);
       if (this.modifiedChunks.has(k) || this.liquidModified.has(k)) this.parked.set(k, extractChunk(col, cy));
+      // 沒常駐的 chunk 不重畫（renderer 不烘焙卸載的欄）
+      this.dirty.delete(k);
+      this.liquidDirty.delete(k);
     }
     this.slots[cx - this.cxLo] = null;
     this.resident.delete(cx);
@@ -277,6 +299,21 @@ export class World {
   }
   /** 停放中的 chunk 鍵 */
   parkedChunks(): number[] { return [...this.parked.keys()]; }
+  /**
+   * 直接停放 (cx, cy) chunk 的六層（讀檔用：離所有 actor 都遠的外圍欄不必生成、不常駐；之後載入時才蓋回來）。
+   * 欄常駐中 / 邊界外 → 不做（回 false）。不標修改——呼叫端依存檔內容自己加 modifiedChunks / liquidModified。
+   */
+  parkChunk(cx: number, cy: number, d: ChunkData): boolean {
+    if (cy < 0 || cy >= this.chunksY || cx < this.cxLo || cx > this.cxHi || this.isResident(cx)) return false;
+    this.parked.set(this.chunkIndex(cx, cy), d);
+    return true;
+  }
+  /** 取走並清空「載入時由停放蓋回來的 chunk」 */
+  drainRestoredChunks(): number[] {
+    const out = this.restoredEv;
+    this.restoredEv = [];
+    return out;
+  }
   /** 取走並清空「載入 / 卸載了哪些欄」（建構時的中央欄不算） */
   drainColumnEvents(): { loaded: number[]; unloaded: number[] } {
     const out = { loaded: this.loadedEv, unloaded: this.unloadedEv };
@@ -310,7 +347,7 @@ export class World {
         if (!p) continue;
         const o = cy * CK, n = Math.min(CK, col.fg.length - o);
         for (const L of CHUNK_LAYERS) col[L].set(p[L].subarray(0, n), o);
-        if (consume) this.parked.delete(k);
+        if (consume) { this.parked.delete(k); this.restoredEv.push(k); }
       }
     }
     return col;
@@ -631,6 +668,12 @@ export class World {
     const ci = this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK));
     this.liquidDirty.add(ci);
     this.liquidModified.add(ci);
+  }
+  /** (x,y) 的液體層要重畫（不標已修改：外圍的結冰由日期重算，不必存 / 停放） */
+  markLiquidDirty(x: number, y: number): void {
+    if (x < this.xMin || x >= this.xMax || y < 0 || y >= this.height) return;
+    if (this.col(x >> 5) === null) return;
+    this.liquidDirty.add(this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK)));
   }
   /** 取走並清空液體 dirty chunk 清單 */
   drainLiquidDirty(): number[] {

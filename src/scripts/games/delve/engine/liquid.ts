@@ -29,6 +29,8 @@ export interface LiquidWorld {
   isFrozen(x: number, y: number): boolean; setLiquidRaw(x: number, y: number, a: number, t: number): void;
   touchLiquidAt(x: number, y: number): void; onTileChange: ((x: number, y: number) => void) | null;
   window(x0: number, y0: number, w: number, h: number, out?: TileWindow): TileWindow;
+  /** 常駐的區塊欄（升冪；World 才有：wakeAll 只掃這些） */
+  residentColumns?(): number[];
   // 倒液體 / 反應用
   isSolid(x: number, y: number): boolean;
   setFg(x: number, y: number, id: number): boolean;
@@ -209,10 +211,26 @@ export class LiquidSim {
       for (let x = ax; x < bx; x++) if (w.getLiquid(x, y)) this.enqueue(x, y);
     }
   }
-  /** 喚醒全世界的液體格 */
-  // TODO(Task 8)：無限世界的 [xMin, xMax) 是 ±X_LIMIT，這裡必須改成只掃常駐的欄
-  wakeAll(): void { this.wakeRect(this.world.xMin, 0, this.world.xMax, this.world.height); }
-
+  /**
+   * 喚醒全世界（常駐的欄）的液體格。世界有 residentColumns（World）→ 只掃常駐欄，連續的欄合成一段矩形
+   * （有界世界全部常駐 = 一個矩形 [xMin, xMax)，排入順序與以前相同）；沒有（GenGrid）→ 整個 [xMin, xMax)。
+   */
+  wakeAll(): void {
+    const w = this.world;
+    const cols = w.residentColumns?.();
+    if (!cols) { this.wakeRect(w.xMin, 0, w.xMax, w.height); return; }
+    for (let i = 0; i < cols.length;) {
+      let j = i;
+      while (j + 1 < cols.length && cols[j + 1] === cols[j] + 1) j++;
+      this.wakeRect(cols[i] * CHUNK, 0, (cols[j] + 1) * CHUNK, w.height);
+      i = j + 1;
+    }
+  }
+  /**
+   * 喚醒接縫 x−1 | x 兩側的液體格（2 格寬、列 [y0, y1)）。欄剛載入時 DelveGame 對「可能與生成不一致」的接縫呼叫
+   * （中央 ↔ 外圍、改過 / 停放回來的 chunk）：剛生成的海 / 熔岩是靜止的，不整欄喚醒（spec C9）。
+   */
+  wakeSeam(x: number, y0 = 0, y1 = this.world.height): void { this.wakeRect(x - 1, y0, x + 1, y1); }
   /**
    * 第 cx 欄卸載：丟掉那欄的 inQ / kill 旗標，並把那欄的格從佇列 / 溢出區拿掉（順序不變）。
    * 重新載入後由喚醒重新排入。

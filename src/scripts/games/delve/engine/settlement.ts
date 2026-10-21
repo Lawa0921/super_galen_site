@@ -4,7 +4,9 @@
 //   · 居民（npcs.ts 的五位）在條件達成、有空房（含床）時白天搬進來；作息：白天在家 / 上班、晚上回自己的床睡覺；
 //     會自己開關門。離玩家很遠的居民凍結（不跑物理），CPU 很省。
 //   · 存檔：核心位置 + 居民（種類、位置、家）+ 設為重生點的核心。
+//   · 無限世界：核心範圍（±CLAIM.x）所在的區塊欄 pin 住、恆常駐（居民在那裡活動）；建立 / 讀檔時 pin、拆除時 unpin（B7）。
 import type { World, TileWindow } from './world';
+import { chunkOfX } from './coords';
 import { T, isSolidTile } from './tiles';
 import { checkRoom, scanRooms, type RoomCheck } from './housing';
 import { DECOR_TILES, FURNITURE_BY_TILE, LIGHT_TILES, SAFETY_TILES } from './furniture';
@@ -246,8 +248,32 @@ export class Settlements {
   /** 上次重算時所有據點的合格房間總數（rooms 事件） */
   private lastRooms = 0;
   private events: SettleEvent[] = [];
+  /** pin 住核心範圍的世界（DelveGame 建構時 attach；沒接 = 不 pin，單獨測 Settlements） */
+  private pinWorld: World | null = null;
+  /** 目前因核心而 pin 住的區塊欄 */
+  private readonly pinnedCols = new Set<number>();
 
   drainEvents(): SettleEvent[] { const e = this.events; this.events = []; return e; }
+
+  /** 接上世界：之後建立 / 拆除 / 讀檔的核心都會 pin / unpin 範圍內的欄 */
+  attach(w: World): void { this.pinWorld = w; this.syncPins(w); }
+  /** 核心 c 範圍內的區塊欄（夾在世界邊界內） */
+  private claimCols(w: World, x: number): number[] {
+    const a = chunkOfX(Math.max(w.xMin, x - CLAIM.x)), b = chunkOfX(Math.min(w.xMax - 1, x + CLAIM.x));
+    const out: number[] = [];
+    for (let c = a; c <= b; c++) out.push(c);
+    return out;
+  }
+  /** 依目前的核心重設 pin：不再需要的 unpin、新的 pin 並載入 */
+  private syncPins(w: World): void {
+    const want = new Set<number>();
+    for (const c of this.cores) for (const cx of this.claimCols(w, c.x)) want.add(cx);
+    for (const cx of this.pinnedCols) if (!want.has(cx)) { w.unpin(cx); this.pinnedCols.delete(cx); }
+    for (const cx of want) {
+      if (!this.pinnedCols.has(cx)) { w.pin(cx); this.pinnedCols.add(cx); }
+      w.ensureColumn(cx);
+    }
+  }
 
   // ── 核心 ──
   coreAt(x: number, y: number): Core | null { return this.cores.find((c) => c.x === x && c.y === y) ?? null; }
@@ -264,6 +290,7 @@ export class Settlements {
     this.lastLevel.set(c.id, 0);
     this.evalRev = -1;
     this.events.push({ type: 'settlement', phase: 'found', id: c.id, level: 0, x, y });
+    if (this.pinWorld) this.syncPins(this.pinWorld);
     return c;
   }
   /** 核心被拆掉：據點消失、居民搬走 */
@@ -277,6 +304,7 @@ export class Settlements {
     for (const n of this.npcs.filter((q) => q.core === c.id)) this.events.push({ type: 'npc', phase: 'leave', kind: n.kind, x: n.body.x, y: n.body.y });
     this.npcs = this.npcs.filter((q) => q.core !== c.id);
     this.events.push({ type: 'settlement', phase: 'lost', id: c.id, level: 0, x, y });
+    if (this.pinWorld) this.syncPins(this.pinWorld);
   }
 
   // ── 評估（快取：世界有改才重算） ──
@@ -670,7 +698,7 @@ export class Settlements {
   /** 讀檔：壞欄位丟掉（不讓存檔壞掉）；核心那格不是爐心了也丟掉 */
   load(j: unknown, w: World): void {
     this.cores = []; this.npcs = []; this.spawnCore = null; this.evals.clear(); this.evalRev = -1; this.lastLevel.clear(); this.invited.clear(); this.idents = {};
-    if (!j || typeof j !== 'object') return;
+    if (!j || typeof j !== 'object') { this.syncPins(w); return; }
     const o = j as Partial<SettlementJSON>;
     if (o.idents && typeof o.idents === 'object') {
       for (const [k, v] of Object.entries(o.idents)) {
@@ -682,10 +710,14 @@ export class Settlements {
     const int = (v: unknown): v is number => Number.isInteger(v);
     let maxId = 0;
     for (const c of Array.isArray(o.cores) ? o.cores : []) {
-      if (!c || !int(c.id) || !int(c.x) || !int(c.y) || w.getFg(c.x, c.y) !== T.HEARTH || this.coreById(c.id)) continue;
+      if (!c || !int(c.id) || !int(c.x) || !int(c.y) || this.coreById(c.id)) continue;
+      // 核心那一欄可能還沒常駐（讀檔時離玩家很遠 → 停放中）：先載入再看那格是不是爐心
+      if (w.inBounds(c.x, c.y)) w.ensureColumn(chunkOfX(c.x));
+      if (w.getFg(c.x, c.y) !== T.HEARTH) continue;
       this.cores.push({ id: c.id, x: c.x, y: c.y });
       maxId = Math.max(maxId, c.id);
     }
+    this.syncPins(w);
     for (const q of Array.isArray(o.npcs) ? o.npcs : []) {
       if (!q || !NPC_KINDS.includes(q.kind) || this.npc(q.kind) || !this.coreById(q.core)) continue;
       if (typeof q.x !== 'number' || typeof q.y !== 'number' || !Number.isFinite(q.x) || !Number.isFinite(q.y)) continue;

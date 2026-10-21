@@ -373,3 +373,21 @@ describe('LiquidSim', () => {
     expect(w.getFg(6, 8)).toBe(T.OBSIDIAN);
   });
 });
+
+describe('無限世界的喚醒（Task 8）', () => {
+  it('wakeAll 只掃常駐的欄；wakeSeam 只喚醒接縫兩側各一格', () => {
+    const w = new World(64, 40, { bounds: 'infinite' });
+    w.ensureColumn(-1); w.ensureColumn(5);
+    for (const x of [-20, 10, 170]) w.setLiquid(x, 10, 100, LIQ.WATER);
+    const sim = new LiquidSim(w);
+    const t0 = performance.now();
+    sim.wakeAll();
+    expect(performance.now() - t0).toBeLessThan(500);
+    expect(sim.activeCount).toBe(3);
+    const s2 = new LiquidSim(w);
+    for (let y = 0; y < 40; y++) for (const x of [30, 31, 32, 33, 34]) w.setLiquid(x, y, 50, LIQ.WATER);
+    s2.wakeSeam(32, 5, 10);
+    // x 31、32 × 列 5..9
+    expect(s2.activeCount).toBe(10);
+  });
+});

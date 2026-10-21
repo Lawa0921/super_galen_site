@@ -158,11 +158,15 @@ describe('format 11：無限世界的存讀檔', () => {
     expect(h.bounds).toBe('infinite');
     expect(h.getFg(-40, 50)).toBe(T.AIR);
     expect(h.getFg(-41, 50)).toBe(T.STONE);
-    expect(h.getFg(5000, 60)).toBe(T.AIR);
     expect(h.getFg(-38, 50)).toBe(T.CHEST);
     expect(h.chests.get(ck)?.[0]).toEqual({ item: 'copper_coin', count: 9 });
+    // 讀檔時離玩家很遠的外圍欄直接停放（Task 8）：走近（載入）才蓋回來
+    expect(h.isResident(chunkOfX(5000))).toBe(false);
+    expect(h.parkedChunks()).toContain(h.chunkIndex(chunkOfX(5000), Math.floor(60 / CHUNK)));
+    r.game.ensureAround(5000);
     expect(h.getLiquid(5002, 60)).toBe(200);
     expect(h.isFrozen(5002, 60)).toBe(true);
+    expect(h.getFg(5000, 60)).toBe(T.AIR);
     expect(h.isHalf(5004, 60)).toBe(true);
     expect(r.game.explored.has(-40, 50)).toBe(true);
     expect(r.game.explored.has(-44, 50)).toBe(true);
@@ -188,6 +192,10 @@ describe('format 11：無限世界的存讀檔', () => {
     const { world, character } = saveSplitGame(g, who, where, 7);
     const r = restoreSplit(encodeWorld(world), character, { source: new StoneSource() });
     if (!r.ok) throw new Error(r.message);
+    // 讀檔時那一欄離玩家很遠 → 直接停放、不常駐（Task 8）；載入後蓋回來
+    expect(r.game.world.isResident(cx)).toBe(false);
+    expect(r.game.world.parkedChunks()).toContain(k);
+    r.game.world.ensureColumn(cx);
     expect(r.game.world.getFg(-3000, 70)).toBe(T.AIR);
     expect(r.game.world.getFg(-2999, 70)).toBe(T.STONE);
   });

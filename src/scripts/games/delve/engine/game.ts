@@ -7,7 +7,9 @@
 //   const light = game.computeLight(viewRectInTiles);
 //   for (const e of game.drainEvents()) playSfx(e);
 import { World, type ColumnSource } from './world';
-import type { WorldBounds } from './coords';
+import { chunkOfX, defaultBounds, type WorldBounds } from './coords';
+import { OuterGen, frameOf } from './chunkgen';
+import { LOAD_COLS, planStreaming } from './streaming';
 import { generateWorld, type GenResult, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
 import type { DungeonInfo } from './gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
@@ -24,12 +26,12 @@ import {
   type GameDate, type Season, type SunTimes,
 } from './calendar';
 import { localWeather, weatherAt, weatherDim, type WeatherKind, type WeatherState } from './weather';
-import { updateFreeze } from './frost';
+import { freezeColumns, updateFreeze } from './frost';
 import {
   FISH, POOL_COUNT_MAX, biteDelay, biteWindow, canFishIn, crateLoot, fishingPower, rollCatch, timeSlot, type DepthZone, type TimeSlot,
 } from './fishing';
 import { ExploredMap, toggleMarker, type MapMarker } from './explore';
-import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
+import { Discovery, buildRegions, outerRegions, type Region, type RegionCat } from './discovery';
 import { EQUIP_SLOTS, type EquipSlot } from './equipment';
 import {
   BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
@@ -94,9 +96,9 @@ export interface DelveOptions {
   gen?: GenResult;
   /** 角色外觀（省略 = 預設外觀） */
   appearance?: Appearance;
-  /** 水平邊界（省略 = legacy 有界；Task 8 才改成 defaultBounds） */
+  /** 水平邊界（省略 = defaultBounds(width, height)：正式尺寸無限、小尺寸的測試世界有界） */
   bounds?: WorldBounds;
-  /** 中央以外的欄由誰生成（測試注入；正式來源在 Task 8 接） */
+  /** 中央以外的欄由誰生成（省略 = 無限世界用外圍生成器 OuterGen；測試可注入） */
   columnSource?: ColumnSource;
 }
 
@@ -677,6 +679,8 @@ export class DelveGame {
 
   /** 據點與居民（存檔內容） */
   readonly settle = new Settlements();
+  /** 外圍地區（無限世界的海 / 生態段；所有 actor 的 Discovery 共用同一個查詢與快取） */
+  private readonly outerRegion: ((x: number, y: number) => Region | null) | null;
   /** 地表村落 / 矮人地廳（世界生成） */
   readonly villages: readonly VillageInfo[];
   readonly halls: readonly HallInfo[];
@@ -772,8 +776,11 @@ export class DelveGame {
     // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
     const pre = opts.gen && (opts.width === undefined || opts.gen.world.width === opts.width) && (opts.height === undefined || opts.gen.world.height === opts.height) ? opts.gen : null;
     const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
-    // 舊生成器的扁平格 → 區塊欄儲存（1a 的正式世界仍是 legacy 有界；Task 8 才切 defaultBounds）
-    this.world = World.fromGen(gen.world, gen.layers, { bounds: opts.bounds ?? 'legacy', source: opts.columnSource ?? null });
+    // 舊生成器的扁平格 → 區塊欄儲存。正式尺寸的世界無限（中央以外由外圍生成器產生），小尺寸的測試世界有界（B5）
+    const bounds = opts.bounds ?? defaultBounds(gen.world.width, gen.world.height);
+    const source = opts.columnSource ?? (bounds === 'infinite' ? new OuterGen(this.seed, frameOf(gen.world)) : null);
+    this.world = World.fromGen(gen.world, gen.layers, { bounds, source });
+    this.outerRegion = source instanceof OuterGen ? outerRegions(this.seed, source.profile) : null;
     this.liquids = new LiquidSim(this.world);
     // 液體反應（熔岩遇水 / 蜂蜜）不在任何活著的玩家站的格子凝成黑曜石 / 脆蜜塊（不把人封進方塊；液體本身照樣流過去）
     this.liquids.blocked = (x, y) => this.tileOverlapsPlayer(x, y, true);
@@ -813,6 +820,9 @@ export class DelveGame {
     this.landmarks = gen.landmarks ?? [];
     for (const l of this.landmarks) this.landmarkAt.set(this.world.idx(l.x, l.y), l);
     this.discovery = new Discovery(this.regions, { loreTotal: gen.tablets.length, landmarks: [...this.landmarkAt.keys()] });
+    this.discovery.setOuter(this.outerRegion);
+    // 據點核心範圍的欄 pin 住（無限世界：居民在那裡活動，不卸載）
+    this.settle.attach(this.world);
     this.folk = new FolkWorld(this.seed, this.villages, this.halls);
     this.folk.populate(this.world);
     // 開局一段時間內不會遇見（第一位旅人至少四分之一天後、第一位受困者半天後）
@@ -845,6 +855,65 @@ export class DelveGame {
     this.markers = markers;
   }
 
+  // ── 載入區（B7：每個 actor 周圍的欄常駐，遠的卸載 / 停放） ─────────────
+  /**
+   * 依所有 actor（活著或死亡等待重生）的位置 ensure / 預生成 / 卸載欄（engine/streaming.ts），再處理欄的載入 / 卸載事件。
+   * step() 的第一件事；不碰任何 RNG。有界世界全部常駐 → 什麼都不做。
+   */
+  updateLoadedArea(): void {
+    const w = this.world;
+    const xs: number[] = [];
+    for (const a of this.actors.values()) xs.push(Math.floor((a.player.x + a.player.w / 2) / TILE_SIZE));
+    const plan = planStreaming(xs, w.residentSet(), w.pinnedSet(), w, this.tick);
+    for (const cx of plan.load) w.ensureColumn(cx);
+    if (plan.prefetch !== null) w.ensureColumn(plan.prefetch);
+    for (const cx of plan.unload) w.unloadColumn(cx);
+    this.columnEvents();
+  }
+  /**
+   * 剛載入的第 cx 欄與常駐的鄰欄 n 之間的接縫：只喚醒可能與生成結果不一致的地方——接縫一側是中央（舊生成器，
+   * 外圍的海接上中央的地形會流進來，spec C9）整條喚醒；兩側都是外圍生成的 → 只喚醒任一側 chunk 改過的那幾列
+   * （同一個生成器的輸出在接縫兩側本來就連續，剛生成的海 / 熔岩保持沉睡，載入不會讓欄被標成已修改）。
+   */
+  private seamWake(cx: number, n: number): void {
+    const w = this.world;
+    if (!w.isResident(n)) return;
+    const sx = Math.max(cx, n) * CHUNK;
+    const central = (x: number): boolean => x >= 0 && x < w.width;
+    if (central(sx - 1) || central(sx)) { this.liquids.wakeSeam(sx); return; }
+    for (let cy = 0; cy < w.chunksY; cy++) {
+      const a = w.chunkIndex(cx, cy), b = w.chunkIndex(n, cy);
+      if (w.modifiedChunks.has(a) || w.liquidModified.has(a) || w.modifiedChunks.has(b) || w.liquidModified.has(b)) {
+        this.liquids.wakeSeam(sx, cy * CHUNK, (cy + 1) * CHUNK);
+      }
+    }
+  }
+  /** tile 欄 x 周圍 LOAD_COLS 欄同步載入（teleport / 重生 / 傳送先叫它，落點不會是「沒載入 = 石頭」） */
+  ensureAround(x: number): void {
+    const w = this.world;
+    if (!Number.isFinite(x)) return;
+    const c = chunkOfX(Math.floor(x));
+    const lo = Math.max(chunkOfX(w.xMin), c - LOAD_COLS), hi = Math.min(chunkOfX(w.xMax - 1), c + LOAD_COLS);
+    for (let cx = lo; cx <= hi; cx++) w.ensureColumn(cx);
+  }
+  /**
+   * 欄的載入 / 卸載事件：卸載 → 液體模擬忘掉那欄；載入 → 液體只喚醒接縫（seamWake）、依今天日期結冰、
+   * 停放蓋回來的 chunk 整塊喚醒（玩家改過的地方可能還在流）。
+   */
+  private columnEvents(): void {
+    const w = this.world;
+    const ev = w.drainColumnEvents(), restored = w.drainRestoredChunks();
+    if (!ev.loaded.length && !ev.unloaded.length && !restored.length) return;
+    for (const cx of ev.unloaded) this.liquids.forgetColumn(cx);
+    const loaded = [...new Set(ev.loaded)].filter((cx) => w.isResident(cx)).sort((a, b) => a - b);
+    for (const cx of loaded) { this.seamWake(cx, cx - 1); this.seamWake(cx, cx + 1); }
+    if (loaded.length) freezeColumns(w, this.liquids, dayIndexOf(this.time), loaded, (x, y) => this.tileOverlapsPlayer(x, y, true), this.minedIce);
+    for (const k of restored) {
+      const { cx, cy } = w.chunkCoords(k);
+      if (w.isResident(cx)) this.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
+    }
+  }
+
   // ── 多個玩家（actor）────────────────────────────────────
   /**
    * 暫時把 cur 切到 a 執行 fn（相容 accessor 都讀寫 a），結束（含丟例外）後還原。
@@ -874,6 +943,7 @@ export class DelveGame {
     a.appearance = normalizeAppearance(character.appearance);
     a.explored = new ExploredMap(this.world.width, this.world.height, undefined, this.world);
     a.discovery = new Discovery(this.regions, { loreTotal: this.tablets.length, landmarks: [...this.landmarkAt.keys()] });
+    a.discovery.setOuter(this.outerRegion);
     this.actors.set(pid, a);
     this.evRead.set(pid, this.evBase + this.events.length);
     this.withActor(a, () => {
@@ -974,6 +1044,8 @@ export class DelveGame {
   /** 一個固定步長。整段是世界段（事件公開），玩家段 / 重生 / 換算經驗各自用 withActor 切回該玩家 */
   step(dt: number = FIXED_DT): void { this.inWorld(() => this.stepWorld(dt)); }
   private stepWorld(dt: number): void {
+    // 第一件事：各 actor 周圍的載入區（不碰任何 RNG；有界世界全部常駐 → 什麼都不做）
+    this.updateLoadedArea();
     this.flushLevels();
     this.tick++;
     this.time += dt;
@@ -1668,6 +1740,8 @@ export class DelveGame {
       if (spot) return spot;
     }
     const b = this.bed;
+    // 床可能在沒載入的遠方（Review Focus 5）：先載入床那一欄再看床還在不在（傳送時 teleport 再載入整個載入區）
+    if (b && this.world.inBounds(b.x, b.y)) this.world.ensureColumn(chunkOfX(b.x));
     if (b && this.world.getFg(b.x, b.y) === T.BED_HEAD) return { x: b.x, y: b.y };
     return { x: this.spawn.x, y: this.spawn.y };
   }
@@ -1945,7 +2019,8 @@ export class DelveGame {
       const r = this.scout();
       if (r) this.emit({ type: 'scoutmark', by: this.settle.nameOf('guide'), name: r.name, x: r.x, y: r.y });
     }
-    updateFreeze(this.world, this.liquids, day, (x, y) => this.tileOverlapsPlayer(x, y, true), this.minedIce);
+    // 只跑常駐的欄（x 升冪；有界世界 = 全部）
+    updateFreeze(this.world, this.liquids, day, (x, y) => this.tileOverlapsPlayer(x, y, true), this.minedIce, this.world.residentColumns());
   }
   /** 天氣效果：雷雨打閃電、雨水補露天水池 */
   private updateWeatherFx(dt: number): void {
@@ -4309,10 +4384,12 @@ export class DelveGame {
     this.appearance = normalizeAppearance({ ...a, race: cur.race, outfit: cur.outfit, acc: cur.acc, glasses: cur.glasses });
   }
 
-  /** 把玩家腳底放到 tile (tx, ty)（身體底 = (ty+1)*16），水平置中。 */
+  /** 把玩家腳底放到 tile (tx, ty)（身體底 = (ty+1)*16），水平置中。先同步載入目的地周圍（ensureAround）再放人。 */
   teleport(tx: number, ty: number): void {
-    const p = this.player;
-    p.x = tx * TILE_SIZE + TILE_SIZE / 2 - p.w / 2;
+    this.ensureAround(tx);
+    const p = this.player, w = this.world;
+    // 夾在水平邊界內（傳送到 ±X_LIMIT 的邊欄：身體不卡進邊界外的實心牆，Review Focus 4）
+    p.x = Math.max(w.xMin * TILE_SIZE, Math.min(w.xMax * TILE_SIZE - p.w, tx * TILE_SIZE + TILE_SIZE / 2 - p.w / 2));
     p.y = (ty + 1) * TILE_SIZE - p.h;
     p.vx = 0; p.vy = 0; p.gfxOffY = 0;
     this.motion.jumpTimer = 0;
