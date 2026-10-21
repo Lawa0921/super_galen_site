@@ -146,6 +146,11 @@ describe('HUD 文字', () => {
     expect(blockedMessage('tier')).toMatch(/鎬/);
     expect(blockedMessage('occupied')).toBeNull();
   });
+  it('blockedMessage：傳送碑旁被擋住與爐心旁被擋住是不同的提示', () => {
+    expect(blockedMessage('blockedspot')).toMatch(/爐心/);
+    expect(blockedMessage('blockedstone')).toMatch(/傳送碑/);
+    expect(blockedMessage('blockedstone')).not.toMatch(/爐心/);
+  });
   it('countLabel：1 個不顯示數字', () => {
     expect(countLabel(null)).toBe('');
     expect(countLabel({ item: 'wood_pickaxe', count: 1 })).toBe('');

@@ -246,6 +246,63 @@ describe('無限世界：遠方重生（Review Focus 5）', () => {
     for (let y = fy; y < fy + 2; y++) for (let x = fx0; x <= fx1; x++) if (w.isSolid(x, y)) support = true;
     expect(support).toBe(true);
   });
+
+  /** 床在 −3000（那一欄停放）、主角在 6000 */
+  function farBed(): { g: DelveGame; by: number; bedCx: number } {
+    const g = game();
+    const by = standAt(g, -3000);
+    const w = g.world;
+    for (let y = by - 3; y <= by; y++) for (let x = -3001; x <= -2997; x++) w.setFg(x, y, T.AIR);
+    w.setFg(-3000, by, T.BED_HEAD); w.setFg(-2999, by, T.BED_FOOT);
+    g.bed = { x: -3000, y: by };
+    standAt(g, 6000);
+    steps(g, 61);
+    const bedCx = chunkOfX(-3000);
+    expect(w.isResident(bedCx)).toBe(false);
+    return { g, by, bedCx };
+  }
+
+  it('respawnPoint 唯讀：床在停放的遠方 → 照樣認得床、但不載入那一欄；死亡中存檔也不載入', () => {
+    const { g, by, bedCx } = farBed();
+    expect(g.respawnPoint()).toEqual({ x: -3000, y: by });
+    expect(g.world.isResident(bedCx)).toBe(false);
+    g.hurtPlayer(9999, 0);
+    expect(g.dead).toBe(true);
+    const snap = saveSplitGame(g, who, where, 5);
+    expect(g.world.isResident(bedCx)).toBe(false);
+    // 存成重生後的狀態：位置在床邊
+    const pos = snap.world.header.visits[who.id].pos;
+    expect(Math.abs(Math.floor((pos.x + g.player.w / 2) / TILE_SIZE) - -3000)).toBeLessThanOrEqual(1);
+    // 床被拆掉（停放的 chunk 裡）→ 回出生點
+    const h = game();
+    h.bed = { x: -3000, y: by };
+    expect(h.respawnPoint()).toEqual({ x: h.spawn.x, y: h.spawn.y });
+    expect(h.world.isResident(bedCx)).toBe(false);
+  });
+
+  it('傳送石引導中不載入床那一欄（不會每 60 刻載入 / 卸載）；引導完成才載入、落在床邊', () => {
+    const { g, bedCx } = farBed();
+    g.give('recall_stone', 1);
+    const i = g.inventory.slots.findIndex((s) => s?.item === 'recall_stone');
+    g.inventory.swap(i, 0);
+    g.selectSlot(0);
+    g.world.drainColumnEvents();
+    g.setAim(feetX(g), 10);
+    g.setUse(true);
+    let done = false;
+    for (let t = 0; t < 200 && !done; t++) {
+      g.step(FIXED_DT);
+      done = g.drainEvents().some((e) => e.type === 'recall' && e.phase === 'done');
+      if (!done) expect(g.world.isResident(bedCx)).toBe(false);
+    }
+    g.setUse(false);
+    expect(done).toBe(true);
+    expect(g.world.isResident(bedCx)).toBe(true);
+    expect(Math.abs(feetX(g) - -3000)).toBeLessThanOrEqual(2);
+    expect(overlapsSolid(g.world, g.player.x, g.player.y, g.player.w, g.player.h)).toBe(false);
+    // 引導期間床那一欄沒有被載入過
+    expect(g.world.drainColumnEvents().loaded.filter((c) => c === bedCx)).toHaveLength(1);
+  });
 });
 
 describe('無限世界：外圍發現', () => {

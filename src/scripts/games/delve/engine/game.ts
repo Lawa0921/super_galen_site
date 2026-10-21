@@ -113,8 +113,8 @@ export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occu
   | 'bait' | 'full_hp'
   /** 據點：範圍和別的據點重疊；商店：錢不夠 / 背包滿 */
   | 'claim' | 'coins' | 'bagfull'
-  /** 傳送點 / 傳送碑：目的地（爐心旁 / 碑旁）沒有空位 */
-  | 'blockedspot';
+  /** 傳送點：目的地爐心旁沒有空位；傳送碑：目的地碑旁沒有空位 */
+  | 'blockedspot' | 'blockedstone';
 /** 遊戲事件；pid = 由哪個玩家的動作產生（多 actor 時才有；世界事件 / 單機沒有 = 公開） */
 export type DelveEvent = DelveEventBody & { pid?: Pid };
 type DelveEventBody =
@@ -1809,9 +1809,9 @@ export class DelveGame {
       if (spot) return spot;
     }
     const b = this.bed;
-    // 床可能在沒載入的遠方（Review Focus 5）：先載入床那一欄再看床還在不在（傳送時 teleport 再載入整個載入區）
-    if (b && this.world.inBounds(b.x, b.y)) this.world.ensureColumn(chunkOfX(b.x));
-    if (b && this.world.getFg(b.x, b.y) === T.BED_HEAD) return { x: b.x, y: b.y };
+    // 床可能在沒載入的遠方（Review Focus 5）：唯讀地看床還在不在（停放 / 暫時生成，不載入那一欄）——
+    // 死亡中存檔、傳送石引導每刻都會問；真正傳過去時 teleport 才載入整個載入區
+    if (b && this.world.peekFg(b.x, b.y) === T.BED_HEAD) return { x: b.x, y: b.y };
     return { x: this.spawn.x, y: this.spawn.y };
   }
   private useBed(x: number, y: number): boolean {
@@ -3833,7 +3833,7 @@ export class DelveGame {
     if (!here || !this.stoneUnlocked(here.id) || !dest || !this.stoneUnlocked(dest.id) || dest.id === here.id) return false;
     this.ensureAround(dest.x);
     const spot = findStandSpot(this.world, dest.x + 2, dest.y);
-    if (!spot) { this.block('use', 'blockedspot', dest.x, dest.y); return false; }
+    if (!spot) { this.block('use', 'blockedstone', dest.x, dest.y); return false; }
     this.teleport(spot.x, spot.y);
     this.closeChest();
     this.emit({ type: 'stone', phase: 'travel', id: here.id, to: dest.id, x: spot.x, y: spot.y });
@@ -4373,10 +4373,11 @@ export class DelveGame {
     return { ok: true, refunded };
   }
   skillCooldown(a: ActiveSkill): number { return Math.max(0, this.skillCd[a]); }
-  /** 主動技能：沒學 / 死亡 / 睡覺 → false；冷卻中 → 發 cd 事件、false */
+  /** 主動技能：沒學 / 死亡 / 睡覺 → false；坐船時不能突進 / 震地（false、不進冷卻）；冷卻中 → 發 cd 事件、false */
   useSkill(a: ActiveSkill): boolean { return this.withActor(this.local, () => this.useSkillCur(a)); }
   private useSkillCur(a: ActiveSkill): boolean {
     if (this.dead || this.sleepT !== null || !this.levels.has(ACTIVE_NODE[a])) return false;
+    if (this.boating && (a === 'dash' || a === 'slam')) return false;
     const p = this.player, cx = p.x + p.w / 2, fy = p.y + p.h;
     if (this.skillCd[a] > 0) { this.emit({ type: 'skill', skill: a, phase: 'cd', x: cx, y: fy, n: Math.ceil(this.skillCd[a]) }); return false; }
     let n = 0;

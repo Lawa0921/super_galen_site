@@ -266,6 +266,18 @@ export class World {
     this.checkCx(cx);
     return this.slots[cx - this.cxLo] ?? this.build(cx, false);
   }
+  /**
+   * (x,y) 的前景，但不載入任何欄（唯讀查詢用，例如重生點）：常駐讀常駐、停放讀停放、都不是就暫時生成那一欄（peekColumn，不註冊）。
+   * 世界外同 getFg（STONE）
+   */
+  peekFg(x: number, y: number): number {
+    if (x < this.xMin || x >= this.xMax || y < 0 || y >= this.height) return T.STONE;
+    const cx = x >> 5;
+    if (this.isResident(cx)) return this.getFg(x, y);
+    const p = this.parked.get(this.chunkIndex(cx, y >> 5));
+    if (p) return p.fg[((y & 31) << 5) | (x & 31)];
+    return this.peekColumn(cx).fg[(y << 5) | (x & 31)];
+  }
   /** (cx, cy) chunk 的六層（常駐或停放；複本）。都不是 → null（網路層 / 存檔用） */
   readChunk(cx: number, cy: number): ChunkData | null {
     if (cy < 0 || cy >= this.chunksY) return null;

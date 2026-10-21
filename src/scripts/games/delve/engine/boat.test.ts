@@ -6,6 +6,7 @@ import { makeBody, type Body } from './physics';
 import { BOAT_SPEED, BOAT_DRAFT, boatWaterline, canBoard, stepBoat } from './boat';
 import { DelveGame, MAX_BREATH, PRIVATE_EVENTS, type DelveEvent } from './game';
 import { RECIPES } from './crafting';
+import { xpAtLevel } from './levels';
 import { ITEMS, type ItemId } from './items';
 import { TILE_SIZE as S, FIXED_DT, PLAYER_H } from './constants';
 
@@ -229,6 +230,27 @@ describe('遊戲層：上船 / 下船', () => {
     g.hp = 1;
     (g as unknown as { die(): void }).die();
     expect(g.local.boating).toBe(false);
+  });
+  it('船上不能用突進 / 震地（下船後照常）', () => {
+    const g = arena();
+    g.levels.locked = false;
+    g.addXp(xpAtLevel(8) - g.levels.xp);
+    for (const id of ['b_vigor', 'b_dash', 'b_guard', 'b_slam'] as const) expect(g.learnSkill(id)).toBeNull();
+    board(g);
+    expect(g.local.boating).toBe(true);
+    g.drainEvents();
+    const x0 = g.player.x;
+    expect(g.useSkill('dash')).toBe(false);
+    expect(g.useSkill('slam')).toBe(false);
+    expect(g.skillCooldown('dash')).toBe(0);
+    expect(g.skillCooldown('slam')).toBe(0);
+    run(g, 0.3);
+    expect(g.local.boating).toBe(true);
+    expect(Math.abs(g.player.x - x0)).toBeLessThan(S);
+    expect(g.drainEvents().some((e) => e.type === 'skill')).toBe(false);
+    g.teleport(35, 59);
+    run(g, 0.1);
+    expect(g.useSkill('dash')).toBe(true);
   });
   it('船上不能挖 / 放東西', () => {
     const g = arena();

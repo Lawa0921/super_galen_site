@@ -226,6 +226,24 @@ describe('遊戲層：傳送碑', () => {
     expect(of(g.drainEvents(), 'stone')).toEqual([]);
   });
 
+  it('目的地碑旁被方塊填滿 → false、不動、blocked 原因是 blockedstone（不是爐心的 blockedspot）', () => {
+    const g = game();
+    const home = g.waystones.byId(0)!, dest = g.waystones.byId(1)!;
+    standBy(g, home);
+    g.stonesUnlocked.add(1);
+    g.ensureAround(dest.x);
+    for (let y = dest.y - 12; y <= dest.y + 12; y++) for (let x = dest.x - 10; x <= dest.x + 14; x++) {
+      g.world.setFg(x, y, T.STONE);
+      g.world.setLiquid(x, y, 0, 0);
+    }
+    const x0 = g.player.x;
+    g.drainEvents();
+    expect(g.travelStone(1)).toBe(false);
+    expect(g.player.x).toBe(x0);
+    const bl = of(g.drainEvents(), 'blocked');
+    expect(bl.map((e) => e.reason)).toEqual(['blockedstone']);
+  });
+
   it('站在沒解鎖的碑旁（沒碰到）不能從那裡傳', () => {
     const g = game();
     const s = g.waystones.byId(1)!;

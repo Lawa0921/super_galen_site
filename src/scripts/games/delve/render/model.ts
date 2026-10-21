@@ -228,6 +228,7 @@ const BLOCKED: Record<BlockReason, string | null> = {
   coins: '錢不夠',
   bagfull: '背包放不下了',
   blockedspot: '目的地的爐心被方塊圍住了，傳不過去（先清出一點空間）',
+  blockedstone: '目的地的傳送碑旁邊被方塊擋住了，傳不過去（先清出一點空間）',
 };
 
 /** 古碑碑文（佔位文字） */
