@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { createBattle, resolveRound, type BattleState } from '../battle';
-import type { Combatant } from '../combatant';
+import { hitAmount, type Combatant } from '../combatant';
 import { mulberry32 } from '../rng';
 import { choose, partyAt } from '../sim';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
-import { ECHO, echoDef, echoOf } from './echo';
+import { echoDef, echoOf } from './echo';
 
 const MAX = { hp: 300, tp: 99, atk: 40, def: 20, mag: 60, res: 20, spd: 10 };
 const hero = (over: Partial<Combatant> = {}) => makeCombatant({ key: 'hero', side: 'party', defId: 'hero', max: { ...MAX, spd: 1 }, ...over });
@@ -19,10 +19,16 @@ describe("the hero's echo", () => {
     const rec = echoOf(r)!;
     expect(rec).toMatchObject({ by: 'noel', round: 1, cost: SKILLS['fire-star'].tp });
     expect((rec.def.effects[0] as { power: number }).power).toBe(174);   // 140 at heat 3: +24%
-    expect((echoDef(rec).effects[0] as { power: number }).power).toBe(Math.round((174 * ECHO.powerPct) / 100));
+    expect((echoDef(rec).effects[0] as { power: number }).power).toBe(122);   // the plan's number: 174 at 70%
     expect(r.log).toContainEqual({ type: 'act', actor: 'hero', label: '殘響・火之星彈' });
     expect(r.party[0].tp).toBe(99 - SKILLS['fire-star'].tp);
     expect(r.log.filter((e) => e.type === 'damage' && e.target === 'e0')).toHaveLength(2);
+    // What he really deals: a 122-power fire spell of his own (the draw at 0.5 is a variance of exactly 1, no crit).
+    const at = r.log.findIndex((e) => e.type === 'act' && e.actor === 'hero');
+    const dealt = r.log.slice(at).find((e) => e.type === 'damage' && e.target === 'e0') as { amount: number };
+    const spec = { power: 122, element: 'fire', scale: 'mag', melee: false } as const;
+    expect(dealt.amount).toBe(hitAmount(hero(), foe(), spec, { variance: 1, crit: false, blocked: false }).amount);
+    expect(dealt.amount).not.toBe(hitAmount(hero(), foe(), { ...spec, power: 174 }, { variance: 1, crit: false, blocked: false }).amount);
     // His own echo is not a skill of hers to echo again; the record is still Noel's.
     expect(echoOf(r)!.by).toBe('noel');
   });

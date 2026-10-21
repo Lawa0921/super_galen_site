@@ -207,6 +207,12 @@ describe('BattleScene', () => {
     expect(listOf('洛恩')).toContainEqual(['殘響', 'true']);
     const some = listOf('洛恩', (g) => { g.battle!.echo = { by: 'noel', round: g.battle!.round, def: SKILLS['fire-star'], cost: 5 }; });
     expect(some).toContainEqual(['殘響：火之星彈', 'false']);
+    // Short of the TP Noel paid: greyed.
+    const poor = listOf('洛恩', (g) => {
+      g.battle!.echo = { by: 'noel', round: g.battle!.round, def: SKILLS['fire-star'], cost: 5 };
+      g.battle!.party.find((c) => c.key === 'hero')!.tp = 4;
+    });
+    expect(poor).toContainEqual(['殘響：火之星彈', 'true']);
     // Nobody else has the command.
     for (const name of ['凜', '千鶴']) expect(listOf(name).some(([t]) => t?.startsWith('殘響')), name).toBe(false);
   });

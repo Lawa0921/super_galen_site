@@ -180,6 +180,7 @@ export const T = {
     /** Why a skill is greyed in the menu: its resource is empty. */
     noCoins: '沒有銅板',
     noBarrier: '沒有結界',
+    noDevices: '沒有裝置',
     /** Scarlet's embers, her cover (受護 on the one she covers), her 贖火's rounds; Safira's beat (the fourth is the finale's). */
     embers: (n: number) => `餘燼${n}`,
     cover: '代受',

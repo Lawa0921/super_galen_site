@@ -8,7 +8,7 @@ import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
 import { POWERS } from '../../data/gear';
 import { DEVICE, devicePower } from './devices';
-import { memberWords } from './index';
+import { memberWords, whyNot } from './index';
 
 const MAX = { hp: 200, tp: 99, atk: 40, def: 20, mag: 40, res: 20, spd: 1 };
 const bobby = (devices: Device[] = [], over: Partial<Combatant> = {}) =>
@@ -106,6 +106,16 @@ describe("Bobby's devices", () => {
     const s = makeBattle([bobby([dev('turret', { level: 2, turns: 3 }), dev('shield', { skill: 'barrier', turns: 1 })]), P('noel', { shield: { amount: 12, src: 'bobby' } })], [foe()]);
     expect(memberWords(s, s.party[0])).toEqual([{ tone: 'devices', text: '砲台Lv2・3' }, { tone: 'devices', text: '護盾機Lv1・1' }]);
     expect(memberWords(s, s.party[1])).toEqual([{ tone: 'devices', text: '護盾12' }]);
+  });
+
+  it('超頻 with no device out is greyed with its reason; with one it is not', () => {
+    const s = makeBattle([bobby()], [foe()]);
+    expect(whyNot(s, s.party[0], SKILLS.overclock)).toBe('沒有裝置');
+    const t = makeBattle([bobby([dev('turret')])], [foe()]);
+    expect(whyNot(t, t.party[0], SKILLS.overclock)).toBeNull();
+    // Only 超頻: a device skill or 全面整備 (it cures too) is never greyed for it.
+    expect(whyNot(s, s.party[0], SKILLS.turret)).toBeNull();
+    expect(whyNot(s, s.party[0], SKILLS['emergency-repair'])).toBeNull();
   });
 
   it('devices draw only what the old turret drew', () => {

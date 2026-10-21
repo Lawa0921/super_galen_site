@@ -115,6 +115,11 @@ export function tuneUp(c: Combatant, levels: number, turns: number): void {
 }
 
 export const devices: MechModule = {
+  unusable(_s, c, def) {
+    // 超頻 with nothing out would spend its TP on nothing.
+    const ds = devicesOf(c);
+    return ds && !ds.length && def.effects.some((e) => e.kind === 'overclock') ? T.mech.noDevices : null;
+  },
   beforeTicks(s, ctx, rng) {
     for (const c of living(s.party)) {
       const ds = devicesOf(c);
