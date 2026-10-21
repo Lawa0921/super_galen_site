@@ -7,6 +7,7 @@ import { ITEMS } from './items';
 import { MATERIALS } from './materials';
 import { SETS } from './gear';
 import type { RegionId } from './regions';
+import type { Tag } from './runes';
 import { CHARACTERS } from './characters';
 import type { MaterialUse } from '../engine/forge/uses';
 import type { MaterialKind } from '../engine/types';
@@ -737,6 +738,26 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       }
     },
     junkOnly: '雜物：只能賣錢',
+  },
+  /** Runes (plan 8e): a skill's tags, and the one line that says why a rune does not fit (engine/runes.ts runeWhy). */
+  rune: {
+    tag: {
+      damage: '傷害', heal: '治療', buff: '增益', debuff: '減益', ailment: '異常', device: '裝置', single: '單體', all: '全體', self: '自身',
+      multi: '多段', melee: '近戰', ranged: '遠程', attack: '武技', spell: '法術', phys: '物理', fire: '火', ice: '冰', thunder: '雷', tp: '消耗 TP',
+    } as Record<Tag, string>,
+    why: {
+      /** 「需要：單體＋傷害，或單體＋治療」: each list is one way to fit, its tags all needed. */
+      needs: (ways: string[]) => `需要：${ways.join('，或')}`,
+      and: '＋',
+      /** After an element an element rune can give (spec §6.2): 「需要：火（可由屬性符文提供）＋傷害」. */
+      fromRune: '（可由屬性符文提供）',
+      group: (name: string) => `已有同類符文：${name}`,
+      same: (name: string) => `同一招不能裝兩個${name}`,
+      revive: '不能用在復活',
+      scatter: '隨機目標的招不能改形狀',
+      pure: '只能用在只有增益的招',
+      noHeal: '需要：回復效果',
+    },
   },
   clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card
   /** The finale's closing card; its text is the finale scene's summary. */
