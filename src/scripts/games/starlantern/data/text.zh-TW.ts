@@ -361,6 +361,58 @@ export const T = {
       /** The engine turned a spend down after the page allowed it (e.g. outside town and the labyrinth). */
       failed: '現在無法投點',
     },
+    /**
+     * The skill workshop (plan 8g): the card's rows before and after a rune, its 附加 lines (what the skill does beyond
+     * its rows, read from the skill as it is), the battle menu's summary, the TP lines. Every number is passed in.
+     */
+    workshop: {
+      row: { target: '目標', hits: '段數', element: '屬性', power: '威力', heal: '回復', effect: '效果', turns: '回合', tp: 'TP', hp: 'HP 消耗', tpMax: '戰鬥 TP 上限' },
+      /** Enemy skills only aim at a row, a column or a cross; the words are kept so every target has one. */
+      target: {
+        enemy: '單體', enemies: '全體', ally: '單體', allies: '全體', self: '自身', deadAlly: '倒下的隊友', row: '一排', column: '一列', cross: '十字範圍',
+      } satisfies Record<Target, string>,
+      /** A row one side of the card does not have. */
+      none: '—',
+      /** Numbers that differ between a skill's effects. */
+      join: '／',
+      /** A power that strikes every target. */
+      each: (v: string) => `${v}（每個目標）`,
+      pct: (n: number) => `${n}%`,
+      buff: (stat: string, pct: number) => `${stat} ${pct > 0 ? '+' : '−'}${Math.abs(pct)}%`,
+      guard: (pct: number) => `防禦與魔防 +${pct}%`,
+      purify: (n: number) => `每回合回復 ${n}`,
+      device: (n: number) => `威力 ${n}`,
+      expose: '火冰雷弱點',
+      add: {
+        onHit: (pct: number, ailment: string) => `每段命中 ${pct}% ${ailment}`,
+        inflict: (pct: number, ailment: string) => `每次施放 ${pct}% ${ailment}`,
+        aftermath: (ailment: string) => `暴擊時必定${ailment}`,
+        drain: (pct: number) => `造成傷害的 ${pct}% 回復自己`,
+        regain: (n: number) => `每段命中回復 ${n} TP`,
+        armorBreak: '無視護甲與格擋',
+        cure: '解除異常',
+        spill: (pct: number) => `超出的回復變成護盾（最多 ${pct}%）`,
+        when: { crit: '她暴擊時', kill: '她擊倒敵人時', struck: '她受到攻擊後' },
+        trigger: (when: string, pct: number) => `${when}自動施放（威力 ${pct}%）`,
+        twice: '連續施放兩次',
+        bounce: (n: number, drop: number) => `彈射 ${n} 次，每次威力 −${drop}%`,
+        reprise: (pct: number) => `下一回合結束時再打一次（威力 ${pct}%）`,
+        sync: (pct: number) => `下一位隊友本回合的技能威力 +${pct}%`,
+        lasting: (pct: number, reserve: number) => `常駐：效果 ${pct}%，保留 ${reserve}% TP 上限`,
+        wheel: (a: string, b: string, c: string) => `屬性依${a}、${b}、${c}輪替`,
+      },
+      /** The battle menu's summary of a skill (plan 8g ruling 12): 「全體・威力 84・火」. */
+      battle: { sep: '・', power: (n: number) => `威力 ${n}`, heal: (n: number) => `回復 ${n}` },
+      /** Max TP out of battle and in it, when 常駐 holds some back (plan 8g ruling 9). */
+      reserve: (max: number, battle: number, pct: number) => `TP 上限 ${max}，戰鬥中 ${battle}（常駐保留 ${pct}%）`,
+      /** Two lasting barriers (plan 8g ruling 10). */
+      barrierClash: '兩個常駐結界只會留下一個：被換掉的那個照樣保留 TP 上限',
+      /** 「持有 n（袋子 m，鑲嵌中 k）」 (plan 8g ruling 8). */
+      owned: (all: number, bag: number, socketed: number) => `持有 ${all}（袋子 ${bag}，鑲嵌中 ${socketed}）`,
+      /** What the member a rune is moved from loses: 「諾艾兒・火之星彈：全體 → 單體」. */
+      giver: (who: string, skill: string, lost: string[]) => (lost.length ? `${who}・${skill}：${lost.join('・')}` : `${who}・${skill}`),
+      arrow: (before: string, after: string) => `${before} → ${after}`,
+    },
     /** The status screen's skill-tree tab. */
     tree: {
       left: (n: number) => `剩餘技能點 ${n}`,
