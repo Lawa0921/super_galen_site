@@ -358,6 +358,17 @@ test.describe('starlantern', () => {
     const box = c.getBoundingClientRect();
     return [...c.querySelectorAll('.slx-tree-branch-name')].every((h) => { const r = h.getBoundingClientRect(); return r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5; });
   });
+  /**
+   * Every tree node whose name breaks onto a second line (a variant's skill and label on two rows, or the rank pushed under
+   * the name) or runs out of its own width (8d Task 6 review). The hero's five narrow columns (`.slx-tree-wide`) put the rank
+   * under the name by design, so there only the name itself is held to one line.
+   */
+  const treeNameFaults = (page: Page) => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node')].filter((n) => {
+    const name = n.querySelector<HTMLElement>('.slx-skill-name')!;
+    const below = (els: Element[]) => els.some((e) => e.getBoundingClientRect().top > els[0].getBoundingClientRect().top + 4);
+    const head = n.closest('.slx-tree-wide') ? [] : [...n.querySelector('.slx-skill-head')!.children];
+    return below([...name.children]) || below(head) || name.scrollWidth > name.clientWidth + 0.5;
+  }).map((n) => n.getAttribute('data-node')!));
   /** Page the status screen with 下一位 until `name` shows, at most once round the recruited members. */
   const flipTo = async (page: Page, name: string) => {
     const recruited: number = await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.party.recruited.length);
@@ -1091,9 +1102,9 @@ test.describe('starlantern', () => {
       g.state.party.roster.selene.level = 35;
       g.state.party.roster.selene.tree = { moonlight: 3, 'selene-moon-bright': 2, 'moon-rain': 1, 'selene-tide': 1, cleanse: 1, rebirth: 1, 'moon-recall': 1, dream: 1, 'selene-dream-deep': 1 };
     });
-    /** No node row, name or pair tag of the tree spills out of its own width. */
-    const spills = () => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
-      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className));
+    /** No node row, name or pair tag of the tree spills out of its own width, and no name wraps. */
+    const spills = async () => [...await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className)), ...await treeNameFaults(page)];
     await w.choose('.slx-town', '冒險者公會');
     await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
     await page.locator('.slx-guild [data-id=tree]').click();
@@ -1153,9 +1164,9 @@ test.describe('starlantern', () => {
       p.roster.sylvie.level = 35;
       p.roster.sylvie.tree = { 'aimed-shot': 3, 'sylvie-aim-one': 2, 'heart-shot': 1, 'sylvie-patience': 1, 'pin-shot': 1, 'sylvie-shift': 1, 'arrow-rain': 1, 'sylvie-rain-cover': 1 };
     });
-    /** No node row, name or pair tag of the tree spills out of its own width. */
-    const spills = () => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
-      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className));
+    /** No node row, name or pair tag of the tree spills out of its own width, and no name wraps. */
+    const spills = async () => [...await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className)), ...await treeNameFaults(page)];
     await w.choose('.slx-town', '冒險者公會');
     await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
     await page.locator('.slx-guild [data-id=tree]').click();
@@ -1197,6 +1208,77 @@ test.describe('starlantern', () => {
     expect(await spills()).toEqual([]);
     await shot('sylvie-tree-844');
     expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test("no tree node's name wraps or spills, on any member's tree, at 1280 or 844 (8d Task 6 review)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const w = await setup(page, 7);
+    const ids = Object.keys(TREES);
+    await page.evaluate((all) => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      for (const id of all) if (!p.recruited.includes(id)) p.recruited.push(id);
+    }, ids);
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+    const bad: string[] = [];
+    for (const id of ids) {
+      await flipTo(page, CHARACTERS[id as keyof typeof CHARACTERS].name);
+      await expect(page.locator(`.slx-tree-node[data-node="${TREES[id as keyof typeof TREES].branches[0].nodes[0].id}"]`)).toBeVisible();
+      for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
+        await page.setViewportSize({ width: vw, height: vh });
+        bad.push(...(await treeNameFaults(page)).map((n) => `${vw} ${n}`));
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
+    expect(bad).toEqual([]);
+
+    // A click on a row the columns cut off brings it whole into view, and moves nothing when it already shows.
+    await page.setViewportSize({ width: 844, height: 390 });
+    await flipTo(page, CHARACTERS.sylvie.name);
+    const cols = page.locator('.slx-tree-cols');
+    // Scroll the columns so the first row they cut off shows only its top half.
+    const cut = await cols.evaluate((c) => {
+      const box = c.getBoundingClientRect();
+      const n = [...c.querySelectorAll<HTMLElement>('.slx-tree-node')].find((x) => x.getBoundingClientRect().bottom > box.bottom + 1);
+      if (!n) return null;
+      const r = n.getBoundingClientRect();
+      c.scrollTop += r.top + r.height / 2 - box.bottom;
+      c.dispatchEvent(new Event('scroll'));
+      return n.getAttribute('data-node');
+    });
+    expect(cut).not.toBeNull();
+    /** The row shows whole: inside the columns and below its branch name, which stays pinned at their top. */
+    const whole = (id: string) => cols.evaluate((c, nid) => {
+      const n = c.querySelector(`.slx-tree-node[data-node="${nid}"]`)!;
+      const box = c.getBoundingClientRect(), r = n.getBoundingClientRect();
+      const head = n.closest('.slx-tree-branch')!.querySelector('.slx-tree-branch-name')!.getBoundingClientRect();
+      return r.top >= head.bottom - 0.5 && r.bottom <= box.bottom + 0.5;
+    }, id);
+    // A plain DOM click: Playwright's own click would scroll the row into view first.
+    await page.locator(`.slx-tree-node[data-node="${cut}"]`).evaluate((n) => (n as HTMLElement).click());
+    await expect(page.locator(`.slx-tree-node[data-node="${cut}"]`)).toHaveClass(/slx-row-cur/);
+    expect(await whole(cut!)).toBe(true);
+    const top = await cols.evaluate((c) => c.scrollTop);
+    await page.locator(`.slx-tree-node[data-node="${cut}"]`).evaluate((n) => (n as HTMLElement).click());
+    expect(await cols.evaluate((c) => c.scrollTop)).toBe(top);
+    expect(await whole(cut!)).toBe(true);
+    // A row half under the pinned branch name comes down below it.
+    const under = await cols.evaluate((c) => {
+      const head = c.querySelector('.slx-tree-branch-name')!;
+      // The first row the columns can scroll half under the name (their scroll is short at 844).
+      const at = (n: HTMLElement) => c.scrollTop + n.getBoundingClientRect().top - head.getBoundingClientRect().bottom + n.getBoundingClientRect().height / 2;
+      const n = [...c.querySelectorAll<HTMLElement>('.slx-tree-node')].find((x) => at(x) > 0 && at(x) <= c.scrollHeight - c.clientHeight)!;
+      c.scrollTop = at(n);
+      c.dispatchEvent(new Event('scroll'));
+      return n.getAttribute('data-node');
+    });
+    expect(await whole(under!)).toBe(false);
+    await page.locator(`.slx-tree-node[data-node="${under}"]`).evaluate((n) => (n as HTMLElement).click());
+    expect(await whole(under!)).toBe(true);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    expect(await branchNamesShown(page)).toBe(true);
     expect(w.errors).toEqual([]);
   });
 

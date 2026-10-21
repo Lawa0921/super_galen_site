@@ -1,5 +1,6 @@
 import { AIM, BARRIER, COINS, DEVICE, MARK } from '../engine/mech';
 import type { SkillDef } from '../engine/types';
+import { T } from './text.zh-TW';
 
 const LIST: SkillDef[] = [
   { id: 'fire-star', name: '火之星彈', owner: 'noel', tp: 4, target: 'enemy', desc: '火屬性魔法攻擊',
@@ -88,7 +89,7 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'damage', power: 40, element: 'phys', scale: 'atk', melee: true, hits: 1, scatter: true }] },
   { id: 'smoke-bomb', name: '煙霧彈', owner: 'liz', tp: 6, target: 'enemies', desc: '降低全體敵人攻擊',
     effects: [{ kind: 'buff', stat: 'atk', pct: -20, turns: 3 }] },
-  { id: 'fortune-strike', name: '大手筆', owner: 'liz', tp: 10, target: 'enemy', mech: 'coin-power', desc: `這一下花光所有銅板，每枚威力多 ${COINS.coinPowerPct}%。很貴，但值得。`,
+  { id: 'fortune-strike', name: '大手筆', owner: 'liz', tp: 10, target: 'enemy', mech: 'coin-power', desc: `這一下${T.mech.coinSpend(100)}，${T.mech.coinPower(COINS.coinPowerPct)}。很貴，但值得。`,
     effects: [{ kind: 'damage', power: 160, element: 'phys', scale: 'atk', melee: true }] },
   { id: 'quickstep', name: '疾步', owner: 'liz', tp: 3, target: 'self', desc: '自身速度提升',
     effects: [{ kind: 'buff', stat: 'spd', pct: 30, turns: 3 }] },
@@ -103,7 +104,7 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'damage', power: 260, element: 'phys', scale: 'atk', melee: false }] },
   { id: 'sunder-arrow', name: '破甲箭', owner: 'sylvie', tp: 5, target: 'enemy', desc: '找到盔甲的縫。3 回合內，牠的防禦降低 {e1.pct}%。',
     effects: [{ kind: 'damage', power: 80, element: 'phys', scale: 'atk', melee: false }, { kind: 'buff', stat: 'def', pct: -30, turns: 3 }] },
-  { id: 'hunters-mark', name: '獵人標記', owner: 'sylvie', tp: 10, target: 'enemy', desc: `盯上牠了。4 回合內防禦降低 {e1.pct}%，瞄準直接 ${AIM.cap} 層，不會歸零。`,
+  { id: 'hunters-mark', name: '獵人標記', owner: 'sylvie', tp: 10, target: 'enemy', desc: `盯上牠了。4 回合內防禦降低 {e1.pct}%，${T.mech.aimFull(AIM.cap)}，不會歸零。`,
     effects: [{ kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: false }, { kind: 'buff', stat: 'def', pct: -40, turns: 4 }, { kind: 'aim-lock', turns: 4 }] },
   { id: 'scatter-shot', name: '散射', owner: 'sylvie', tp: 7, target: 'enemies', desc: '三支箭，射向隨機的敵人。',
     effects: [{ kind: 'damage', power: 70, element: 'phys', scale: 'atk', melee: false, hits: 3, scatter: true }] },

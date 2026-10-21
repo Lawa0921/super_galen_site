@@ -16,13 +16,13 @@ import { applyEffect, patchSkill, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
 import { credit, lossOf, type Ledger } from './ledger';
-import { barrierPower, type Barrier } from './mech';
+import { AIM, barrierPower, type Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
 import { COINS } from './mechanics/coins';
 import { payHp } from './mechanics/embers';
 import { echoDef, echoOf } from './mechanics/echo';
 import { T } from '../data/text.zh-TW';
-import { isInnate, keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
+import { isInnate, keystonesOf, mechKnob, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
@@ -266,11 +266,21 @@ export function skillFor(c: Pick<Combatant, 'powers' | 'ranks' | 'weaponKind'>, 
   const mastered = c.weaponKind && info?.owner === 'hero' && WEAPON_KINDS[c.weaponKind].mastery.includes(info.branch)
     ? pctMod(id, 100 + WEAPON_MASTERY_PCT) : undefined;
   const mods = [...(c.ranks ? treeMods(c.ranks, id) : []), ...(mastered ? [mastered] : []), ...powers];
-  if (!mods.length) return base;
+  if (!mods.length) return knobWords(c, base);
   let def = base;
   const extra: Effect[] = [];
   for (const { extra: more, ...mod } of mods) { def = patchSkill(def, mod); extra.push(...(more ?? [])); }
-  return extra.length ? patchSkill(def, { extra }) : def;
+  return knobWords(c, extra.length ? patchSkill(def, { extra }) : def);
+}
+
+/**
+ * A skill's words that name a number its owner's mechanic node turns: 獵人標記 locks the aim at her cap, which 獵人的耐心
+ * raises (plan 8d Task 6 review). Unchanged (the same object) when no such node is held.
+ */
+function knobWords(c: Pick<Combatant, 'ranks'>, def: SkillDef): SkillDef {
+  if (!c.ranks || !def.effects.some((e) => e.kind === 'aim-lock')) return def;
+  const cap = mechKnob(c.ranks, def.owner, 'aimCap');
+  return cap === undefined ? def : { ...def, desc: def.desc.replace(T.mech.aimFull(AIM.cap), T.mech.aimFull(cap)) };
 }
 
 /** TP this combatant pays for a skill: ceil(tp x (1 - tpCost / 100)), at least 1 for a skill that costs TP at all. */

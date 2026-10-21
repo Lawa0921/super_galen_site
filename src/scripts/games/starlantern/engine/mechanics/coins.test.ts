@@ -9,6 +9,8 @@ import { ENEMIES } from '../../data/enemies';
 import { castDef, whyNot } from './index';
 import { skillFor } from '../battle';
 import { T } from '../../data/text.zh-TW';
+import { coins } from './coins';
+import type { SkillDef } from '../types';
 
 const liz = (coins: number, over: Partial<Combatant> = {}) => makeCombatant({
   key: 'liz', side: 'party', defId: 'liz', mech: { kind: 'coins', coins },
@@ -137,6 +139,43 @@ describe("Liz's coin nodes (plan 8d Task 6)", () => {
     // The jackpot spends them too.
     const j = liz(3, { ranks: { jackpot: 1, 'liz-change': 3 } });
     expect(coinsOf(miss(makeBattle([j], [dodge('e0')]), cast('jackpot')))).toBe(4);
+  });
+
+  it("大手筆's words say what it spends: all of them, or 分期's share (8d Task 6 review)", () => {
+    expect(SKILLS['fortune-strike'].desc).toContain('花光所有銅板');
+    const split = skillFor(liz(0, { ranks: { 'fortune-strike': 1, 'liz-fortune-split': 1 } }), 'fortune-strike')!.desc;
+    expect(split).not.toContain('花光');
+    expect(split).toContain('這一下花掉 50% 的銅板（進位），每枚威力多 14%。');
+  });
+
+  it('change never hands back past the cap', () => {
+    // A spender that spends one coin of ten: nine left, four back, held at ten (and at the vault's twelve).
+    const c = (ranks: Record<string, number>) => liz(10, { ranks });
+    const thin: SkillDef = { ...SKILLS['fortune-strike'], rules: { coinSpendPct: 10 } };
+    const left = (ranks: Record<string, number>) => {
+      const who = c(ranks);
+      const s = makeBattle([who], [foe('e0')]);
+      coins.pay!(s, who, thin, { rng: constRng(0.5), itemBoost: false, revealed: {}, log: [] });
+      return who.mech?.kind === 'coins' ? who.mech.coins : NaN;
+    };
+    expect(left({ 'liz-change': 3 })).toBe(10);
+    expect(left({ 'liz-change': 3, 'liz-vault': 1 })).toBe(12);
+    expect(left({})).toBe(9);
+  });
+
+  it("the vault caps the appraisal's doubling and the pickpocket's take", () => {
+    const vault = { 'liz-vault': 1 };
+    // 順手牽羊: eight coins, three hits (eleven), two more: twelve under the vault, not thirteen; ten without it.
+    expect(coinsOf(round(makeBattle([liz(8, { ranks: { pickpocket: 1, ...vault } })], [foe('e0')]), cast('pickpocket')))).toBe(12);
+    expect(coinsOf(round(makeBattle([liz(8, { ranks: { pickpocket: 1 } })], [foe('e0')]), cast('pickpocket')))).toBe(10);
+    // An appraised foe falls: seven coins double to twelve under the vault, to ten without it.
+    const doubled = (ranks: Record<string, number>) => {
+      const s = makeBattle([liz(7, { ranks }), makeCombatant({ key: 'noel', side: 'party', defId: 'noel', max: { hp: 100, tp: 20, atk: 999, def: 20, mag: 20, res: 20, spd: 1 } })],
+        [foe('e0', { hp: 1, appraised: 'liz' }), foe('e1')]);
+      return coinsOf(round(s, { liz: { kind: 'defend' }, noel: { kind: 'attack', target: 'e0' } }));
+    };
+    expect(doubled(vault)).toBe(12);
+    expect(doubled({})).toBe(10);
   });
 
   it('the vault holds more', () => {

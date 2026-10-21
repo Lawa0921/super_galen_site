@@ -940,12 +940,12 @@ describe('StatusScene', () => {
         expect(info()).not.toContain('下一級');
       });
 
-      it('a mechanic node has no icon; the nodes with a skill keep theirs', () => {
+      it('a mechanic node has no icon, nor a variant (its name names the skill); an active keeps its own', () => {
         const r = setup('noel', { has: () => true });
         r.s.onAction('right'); r.s.onAction('right'); r.s.onAction('right');
         const ico = (id: string) => r.root.querySelector(`.slx-tree-node[data-node="${id}"] img.slx-skill-ico`);
         expect(ico('noel-calm')).toBeNull();
-        expect(ico('noel-star-twin')).not.toBeNull();
+        expect(ico('noel-star-twin')).toBeNull();   // 火之星彈・連星: the name says the skill, and the row is all its (8d Task 6 review)
         expect(ico('fire-star')).not.toBeNull();
       });
     });
@@ -1025,13 +1025,14 @@ describe('StatusScene', () => {
         expect([cue(root, 'up').hidden, cue(root, 'down').hidden]).toEqual([false, true]);
       });
 
-      it('the cursor scrolls the columns only when its node is out of view, bringing its branch name along when both fit (8d Task 5)', () => {
+      it('the cursor or a click scrolls the columns only when its node is out of view, and shows it below the pinned branch name (8d Task 5, 6 review)', () => {
         sh.mockReturnValue(600); ch.mockReturnValue(200);
         const into = vi.fn();
         const orig = Element.prototype.scrollIntoView;
         Element.prototype.scrollIntoView = into;
-        // On screen: the columns from 100 to 300; the cursor's node, and the name of its branch, where `at` says.
-        const at = { node: { top: 150, bottom: 180 }, head: { top: 130, bottom: 144 } };
+        // On screen: the columns from 100 to 300; the cursor's node, and the name of its branch (pinned at their top, 14 high),
+        // where `at` says.
+        const at = { node: { top: 150, bottom: 180 }, head: { top: 100, bottom: 114 } };
         const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
           const r = this.classList.contains('slx-tree-cols') ? { top: 100, bottom: 300 }
             : this.classList.contains('slx-row-cur') ? at.node
@@ -1048,20 +1049,22 @@ describe('StatusScene', () => {
           at.node = { top: 290, bottom: 330 };
           s.onAction('down');
           expect(cols(root).scrollTop).toBe(30);
-          // Above, its branch name just over it: both come into view.
+          // Half under the pinned name: down just below it.
           cols(root).scrollTop = 80;
           cols(root).dispatchEvent(new Event('scroll'));
-          at.node = { top: 75, bottom: 105 };
-          at.head = { top: 60, bottom: 74 };
+          at.node = { top: 105, bottom: 135 };
           s.onAction('up');
-          expect(cols(root).scrollTop).toBe(40);                // 80 − (100 − 60)
-          // Above, its branch name too far up to fit with it: the node alone, at the top.
+          expect(cols(root).scrollTop).toBe(71);                // 80 − (114 − 105)
+          // Far above: the same, just below the name.
           cols(root).scrollTop = 300;
           cols(root).dispatchEvent(new Event('scroll'));
           at.node = { top: 80, bottom: 110 };
-          at.head = { top: -200, bottom: -186 };
           s.onAction('up');
-          expect(cols(root).scrollTop).toBe(280);               // 300 − (100 − 80)
+          expect(cols(root).scrollTop).toBe(266);               // 300 − (114 − 80)
+          // A click on a row the columns cut off at the bottom brings it whole into view, as a key does.
+          at.node = { top: 290, bottom: 330 };
+          (root.querySelector('.slx-tree-node.slx-row-cur') as HTMLElement).click();
+          expect(cols(root).scrollTop).toBe(296);               // 266 + (330 − 300)
           expect(into).not.toHaveBeenCalled();                  // nothing else on the page moves
         } finally {
           rect.mockRestore();

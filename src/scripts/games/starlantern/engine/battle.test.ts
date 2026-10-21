@@ -315,7 +315,7 @@ describe('the sim player', () => {
     expect(choose(s, party).noel.kind).toBe('attack');                 // 火之星彈 costs 4
     noel.x.tpCost = 50;
     expect(choose(s, party).noel).toEqual({ kind: 'skill', skill: 'fire-star', target: 'e0' });
-    // At level 6 順手牽羊 (55 x 3) is 莉茲's strongest (大手筆 waits for six coins); 三叉刃 makes 雙刃 (60 x 3 at its rank) outrank it.
+    // At level 6 順手牽羊 (55 x 3) is 莉茲's strongest (大手筆 waits for four coins, and she starts with none); 三叉刃 makes 雙刃 (60 x 3 at its rank) outrank it.
     const lv6 = partyAt(6, { ids: LEGACY_LINEUP });
     const s6 = createBattle({ party: lv6, enemyIds: ['slime'], inventory: {}, revealed: {} });
     expect(choose(s6, lv6).liz).toMatchObject({ kind: 'skill', skill: 'pickpocket' });

@@ -120,6 +120,10 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
   if (mod.rules?.coinPowerPct !== undefined) {
     out.desc = out.desc.replace(T.mech.coinPower(def.rules?.coinPowerPct ?? COINS.coinPowerPct), T.mech.coinPower(mod.rules.coinPowerPct));
   }
+  // ... and the share it spends (分期 spends half, so the words never say it spends them all).
+  if (mod.rules?.coinSpendPct !== undefined) {
+    out.desc = out.desc.replace(T.mech.coinSpend(def.rules?.coinSpendPct ?? 100), T.mech.coinSpend(mod.rules.coinSpendPct));
+  }
   if (mod.target !== undefined) out.target = mod.target;
   if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;
   if (mod.tpDelta !== undefined && def.tp > 0) out.tp = Math.max(1, def.tp + mod.tpDelta);
@@ -348,9 +352,10 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       return;
     }
     case 'aim-add': {
-      // Her aimed foe gains stacks; with no aim yet, the first living foe it reaches becomes it. Draws nothing.
+      // 命中後: only a foe this volley really hit; her aimed foe gains stacks, and with no aim yet the first foe it hits
+      // becomes it. Draws nothing.
       const m = actor.mech;
-      if (m?.kind !== 'aim' || !target.alive || target.side === actor.side) return;
+      if (m?.kind !== 'aim' || !target.alive || target.side === actor.side || ctx.lastHit?.target !== target.key) return;
       if (m.target === null) m.target = target.key;
       if (m.target === target.key) m.stacks = Math.min(aimCapOf(actor), m.stacks + eff.n);
       return;

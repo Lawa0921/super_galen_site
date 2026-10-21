@@ -308,17 +308,14 @@ export function cueFrame(cls: string, pane: HTMLElement, keep: (top: number) => 
 
 /**
  * Scrolls `pane` (only it: nothing around it moves) just enough to show `node` whole, and not at all when it already shows
- * (plan 8d Task 5: a nudge of a few pixels used to hide the branch names at 1280). Scrolling up to it, `head` (its branch's
- * name) comes along when the two fit on the pane together.
+ * (plan 8d Task 5: a nudge of a few pixels used to hide the branch names at 1280). `head`, its branch's name, stays pinned
+ * at the top of the columns (sticky, 8d Task 6 review), so a row shows only below it.
  */
 export function revealIn(pane: HTMLElement, node: HTMLElement, head: HTMLElement | null): void {
   const p = pane.getBoundingClientRect(), r = node.getBoundingClientRect();
-  if (r.top < p.top) {
-    const top = head && r.bottom - head.getBoundingClientRect().top <= p.bottom - p.top ? head.getBoundingClientRect().top : r.top;
-    pane.scrollTop = Math.max(0, pane.scrollTop - (p.top - top));
-  } else if (r.bottom > p.bottom) {
-    pane.scrollTop += Math.min(r.bottom - p.bottom, r.top - p.top);   // its top never leaves the pane
-  }
+  const top = p.top + (head?.getBoundingClientRect().height ?? 0);
+  if (r.top < top) pane.scrollTop = Math.max(0, pane.scrollTop - (top - r.top));
+  else if (r.bottom > p.bottom) pane.scrollTop += Math.min(r.bottom - p.bottom, r.top - top);   // its top never goes under the name
 }
 
 /** The cues of the cue frame around `pane`, brought up to date after a redraw has set its scroll position. */
@@ -493,8 +490,9 @@ const tree: StatusTab = {
         // Hover alone shows why a shut node is shut (the tooltip), for a pointer that has not clicked it.
         attrs: { 'data-node': n.id, role: 'button', ...(rank === 0 && why ? { title: said } : {}) },
       }, [
-        // A variant shows the icon of the skill it changes; a mechanic node has no skill and no icon.
-        ...(n.skill ? skillIco(ctx, n.skill) : []),
+        // An active shows its skill's icon. A variant's name starts with the skill it changes (火之星彈・連星), so it goes
+        // without, and the whole row is its name's (8d Task 6 review: no name wraps); a mechanic node has no skill at all.
+        ...(n.skill && !(n.kind === 'variant' && n.label !== undefined) ? skillIco(ctx, n.skill) : []),
         el('div', { class: 'slx-skill-head' }, [
           // A name of five characters or more (護盾產生器) is set a size smaller, so it stays whole on its node. A variant's
           // (火之星彈・連星) may break onto a second line between its skill and its label, never inside either.
@@ -510,10 +508,11 @@ const tree: StatusTab = {
           el('span', { class: 'slx-tree-state', text: said }),
         ]),
       ]);
-      // The first click selects and arms the node; a second click on it spends (or changes the side of a pair).
+      // The first click selects and arms the node; a second click on it spends (or changes the side of a pair). A row the
+      // columns cut off comes whole into view, as with the keys (`shown`; nothing moves when it already shows).
       nodeEl.addEventListener('click', () => {
         if (locked(nodeEl)) return;
-        redraw(() => pressTree(ctx, id, n.id));
+        redraw(() => { pressTree(ctx, id, n.id); treeView.reveal = true; });
       });
       return nodeEl;
     };

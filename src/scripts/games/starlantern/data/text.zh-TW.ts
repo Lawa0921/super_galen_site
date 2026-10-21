@@ -179,6 +179,10 @@ export const T = {
     coins: (n: number) => `銅板${n}`,
     /** 大手筆's words for the power a coin adds (data/skills.ts; 分期 rewrites the number, plan 8d). */
     coinPower: (n: number) => `每枚威力多 ${n}%`,
+    /** ... and what it spends: every coin, or a share of them (分期), rounded up. */
+    coinSpend: (pct: number) => (pct >= 100 ? '花光所有銅板' : `花掉 ${pct}% 的銅板（進位）`),
+    /** 獵人標記's words for the stacks it locks at (her 獵人的耐心 raises it; engine/battle.ts skillFor rewrites it). */
+    aimFull: (n: number) => `瞄準直接 ${n} 層`,
     appraised: '估價',
     aim: (n: number) => `瞄準${n}`,
     aimLocked: (n: number) => `瞄準${n}・鎖定`,

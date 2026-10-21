@@ -611,7 +611,8 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-talent-frame .slx-more-up { top: -12px; }
 // ▲ sits in a gutter at the right end of the line above the columns (.slx-tree-top), where it covers no node.
 .slx-tree-frame .slx-more-up { top: -14px; }
-.slx-tree-cols { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 0 8px; }
+// Each column is as tall as the longest (stretch), so its branch name, pinned at the top (sticky), never meets its column's end.
+.slx-tree-cols { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 0 8px; }
 .slx-tree-cols.slx-tree-wide { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0 4px; }
 .slx-tree-wide .slx-tree-branch-name { font-size: 10px; overflow: hidden; text-overflow: ellipsis; }
 .slx-tree-wide .slx-tree-node { padding: 1px 2px; }
@@ -621,9 +622,9 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-tree-wide .slx-node-locked .slx-tree-state { display: none; }   // a locked node is dimmed; the notes give its reason when the cursor is on it
 .slx-tree-wide .slx-tree-node-foot { gap: 2px; font-size: 9px; }
 .slx-tree-branch { min-width: 0; }
-.slx-tree-branch-name { margin: 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; border-bottom: 1px solid #6e5a2e; white-space: nowrap; }
+.slx-tree-branch-name { position: sticky; top: 0; z-index: 1; margin: 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; background: $slx-win; border-bottom: 1px solid #6e5a2e; white-space: nowrap; }
 .slx-tree-node { padding: 1px 3px; cursor: pointer; }
-.slx-tree-node .slx-skill-head { gap: 4px; line-height: 14px; }
+.slx-tree-node .slx-skill-head { gap: 2px; line-height: 14px; }   // 2px: a variant's seven characters (瞄準射擊・一擊) fit beside the rank at 844
 .slx-tree-node .slx-skill-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .slx-tree-node .slx-skill-name-long { font-size: 10px; letter-spacing: -0.5px; }
 .slx-tree-node .slx-skill-rank { min-width: 0; flex: none; }

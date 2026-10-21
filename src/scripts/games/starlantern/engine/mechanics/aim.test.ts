@@ -152,4 +152,38 @@ describe("Sylvie's aim nodes (plan 8d Task 6)", () => {
     };
     expect(draws(cover.ranks)).toBe(draws({ 'arrow-rain': 1 }));
   });
+
+  it('cover adds stacks only on a hit, and with no aim picks the first foe it really hits (命中後, 8d Task 6 review)', () => {
+    const cover = { ranks: { 'arrow-rain': 1, 'sylvie-rain-cover': 2 } };
+    const dodger = (key: string) => foe(key, { x: { evasion: 100 } });   // constRng(0): it dodges, the others are hit
+    const miss = (s: BattleState) => round(s, act({ kind: 'skill', skill: 'arrow-rain' }), constRng(0));
+    // Her aimed foe dodges the volley: no stacks, though the other foe is hit.
+    expect(aimOf(miss(makeBattle([sylvie({ target: 'e1', stacks: 1 }, cover)], [foe('e0'), dodger('e1')])))).toEqual({ target: 'e1', stacks: 1 });
+    // No aim yet and the first foe dodges: the aim goes to the one it hit.
+    expect(aimOf(miss(makeBattle([sylvie({ target: null, stacks: 0 }, cover)], [dodger('e0'), foe('e1')])))).toEqual({ target: 'e1', stacks: 2 });
+    // Every foe dodges: nothing.
+    expect(aimOf(miss(makeBattle([sylvie({ target: null, stacks: 0 }, cover)], [dodger('e0'), dodger('e1')])))).toEqual({ target: null, stacks: 0 });
+  });
+
+  it("the caps follow her 獵人的耐心: the hunter's mark locks at it, cover stops at it", () => {
+    const patience = { 'sylvie-patience': 1 };
+    const lock = (ranks: Record<string, number>) =>
+      aimOf(round(makeBattle([sylvie({ target: null, stacks: 0 }, { ranks: { 'hunters-mark': 1, ...ranks } })], [foe('e0')]), act({ kind: 'skill', skill: 'hunters-mark', target: 'e0' })));
+    // Rank 2 (five): the shot's own +1 after the lock cannot reach it from the plain three.
+    expect(lock({ 'sylvie-patience': 2 })).toMatchObject({ target: 'e0', stacks: 5 });
+    expect(lock({})).toMatchObject({ target: 'e0', stacks: 3 });
+    const rain = (ranks: Record<string, number>) =>
+      aimOf(round(makeBattle([sylvie({ target: 'e0', stacks: 3 }, { ranks: { 'arrow-rain': 1, 'sylvie-rain-cover': 2, ...ranks } })], [foe('e0')]), act({ kind: 'skill', skill: 'arrow-rain' })));
+    expect(rain(patience)).toEqual({ target: 'e0', stacks: 4 });
+    expect(rain({})).toEqual({ target: 'e0', stacks: 3 });
+  });
+
+  it("獵人標記's words name the stacks her 獵人的耐心 locks at", () => {
+    const words = (ranks: Record<string, number>) => skillFor(sylvie(undefined, { ranks }), 'hunters-mark')!.desc;
+    expect(words({ 'hunters-mark': 1 })).toContain('瞄準直接 3 層');
+    expect(words({ 'hunters-mark': 1, 'sylvie-patience': 2 })).toContain('瞄準直接 5 層');
+    expect(words({ 'hunters-mark': 1, 'sylvie-patience': 2 })).not.toContain('3 層');
+    // Nothing to rewrite: the skill as written, itself.
+    expect(skillFor(sylvie(undefined, { ranks: { 'hunters-mark': 1 } }), 'hunters-mark')).toBe(SKILLS['hunters-mark']);
+  });
 });
