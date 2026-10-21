@@ -71,9 +71,17 @@ export interface MapWorld {
 /** paintMapChunk 的 tile 視窗（CHUNK+2 見方，含四周一圈鄰格；重用） */
 let MAP_WIN: TileWindow | undefined;
 
+/** 迷霧 chunk 位元（bit = ly*32 + lx）的一格；沒有 = 未探索 */
+function fogBit(b: Uint8Array | undefined, lx: number, ly: number): boolean {
+  return b !== undefined && ((b[(ly << 2) | (lx >> 3)] >> (lx & 7)) & 1) === 1;
+}
+
 /** 畫 chunk (cx, cy) 到 out（CHUNK*CHUNK，row-major）；世界外 = 0（透明） */
 export function paintMapChunk(out: Uint32Array, w: MapWorld, ex: ExploredMap, cx: number, cy: number, lut: MapLut = buildMapLut()): void {
   const x0 = cx * CHUNK, y0 = cy * CHUNK;
+  // 迷霧：本 chunk 與四鄰 chunk 的位元各取一次（逐格不查 Map）
+  const E = ex.chunkBits(cx, cy), EL = ex.chunkBits(cx - 1, cy), ER = ex.chunkBits(cx + 1, cy);
+  const EU = ex.chunkBits(cx, cy - 1), ED = ex.chunkBits(cx, cy + 1);
   // 視窗多一圈鄰格（描邊看四鄰）；世界外的格 = STONE（不是地城磚 → 不影響描邊）
   const win = w.window(x0 - 1, y0 - 1, CHUNK + 2, CHUNK + 2, MAP_WIN);
   MAP_WIN = win;
@@ -83,8 +91,13 @@ export function paintMapChunk(out: Uint32Array, w: MapWorld, ex: ExploredMap, cx
     for (let lx = 0; lx < CHUNK; lx++) {
       const x = x0 + lx, o = ly * CHUNK + lx;
       if (x < w.xMin || x >= w.xMax || y >= w.height) { out[o] = 0; continue; }
-      if (!ex.has(x, y)) {
-        out[o] = ((x + y) & 1) === 1 && (ex.has(x - 1, y) || ex.has(x + 1, y) || ex.has(x, y - 1) || ex.has(x, y + 1)) ? lut.fogEdge : lut.fog;
+      if (!fogBit(E, lx, ly)) {
+        out[o] = ((x + y) & 1) === 1 && (
+          (lx > 0 ? fogBit(E, lx - 1, ly) : fogBit(EL, CHUNK - 1, ly))
+          || (lx < CHUNK - 1 ? fogBit(E, lx + 1, ly) : fogBit(ER, 0, ly))
+          || (ly > 0 ? fogBit(E, lx, ly - 1) : fogBit(EU, lx, CHUNK - 1))
+          || (ly < CHUNK - 1 ? fogBit(E, lx, ly + 1) : fogBit(ED, lx, 0))
+        ) ? lut.fogEdge : lut.fog;
         continue;
       }
       const i = (ly + 1) * WW + lx + 1, f = fg[i];

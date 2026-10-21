@@ -127,7 +127,8 @@ export class ExploreUi {
     if (!body) return;
     const g = this.game, d = g.discovery, s = d.stats();
     const w = g.world;
-    const explored = g.explored.count / (w.width * w.height);
+    // 「已探索 %」只算中央區（外圍無限，百分比沒有意義）
+    const explored = g.explored.centralCount() / (w.width * w.height);
     const killSig = Object.values(g.kills).reduce((a, n) => a + (n ?? 0), 0);
     const fishSig = Object.values(g.fishLog).reduce((a, n) => a + (n ?? 0), 0);
     const codexSig = [...g.codex.affixes.values()].reduce((a, n) => a + n, 0) * 100 + [...g.codex.items.values()].reduce((a, n) => a + n + 1, 0);

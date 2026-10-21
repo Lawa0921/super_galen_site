@@ -451,7 +451,7 @@ test.describe('delve', () => {
       };
     }));
     // 備份 = 原封複製的舊記錄（壓縮後的 bytes 一個不差）
-    expect(db).toMatchObject({ v: 2, bak: stored, fmt: 10, chars: 1 });
+    expect(db).toMatchObject({ v: 2, bak: stored, fmt: 11, chars: 1 });
     expect(typeof (db as { charId: unknown }).charId).toBe('string');
     // 再讀一次：走 split 路徑，內容一樣，標題顯示暱稱
     await page.evaluate(() => window.__delveDebug!.save());
@@ -499,7 +499,7 @@ test.describe('delve', () => {
     // 匯入當下就存成世界 + 角色
     const imported = await worldRecords(b, 'exptest');
     expect(imported).toHaveLength(1);
-    expect(imported[0]).toMatchObject({ slot: expect.stringMatching(/^w-/), format: 10, charId: expect.any(String) });
+    expect(imported[0]).toMatchObject({ slot: expect.stringMatching(/^w-/), format: 11, charId: expect.any(String) });
     expect(await b.evaluate(() => new Promise((ok) => {
       const r = indexedDB.open('delve');
       r.onsuccess = () => { const d = r.result, q = d.transaction('characters').objectStore('characters').count(); q.onsuccess = () => { ok(q.result); d.close(); }; };
@@ -1917,7 +1917,7 @@ test.describe('delve 標題流程（生成畫面 / 回到標題）', () => {
         t.oncomplete = () => { ok({ bak: bak.result ? [...bak.result.data] : null, fmt: main.result?.format, char: typeof main.result?.charId }); d.close(); };
       };
     }));
-    expect(db).toEqual({ bak: stored, fmt: 10, char: 'string' });
+    expect(db).toEqual({ bak: stored, fmt: 11, char: 'string' });
   });
 
   test('legacy main row picked with another character：先轉換（含 main.v9.bak）再用選定的角色進去，不是轉換出來的 旅人', async ({ page }) => {
@@ -1955,7 +1955,7 @@ test.describe('delve 標題流程（生成畫面 / 回到標題）', () => {
       };
     }));
     expect(db.bak).toEqual(stored);
-    expect(db.fmt).toBe(10);
+    expect(db.fmt).toBe(11);
     // 'main' 最後進場的是 甲（轉換出來的 旅人 照 B5 留在角色庫）
     expect(db.nicks[db.charId!]).toBe('甲');
     expect(Object.values(db.nicks).sort()).toEqual(['旅人', '甲'].sort());

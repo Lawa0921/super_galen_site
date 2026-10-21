@@ -143,7 +143,7 @@ describe('地城在地圖上讀得出來', () => {
   };
   const paint = (): { out: Uint32Array; lut: ReturnType<typeof buildMapLut> } => {
     const w = dungeonWorld(), ex = new ExploredMap(64, 64), lut = buildMapLut();
-    ex.bits.fill(255);
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) ex.reveal(x, y);
     const out = new Uint32Array(CHUNK * CHUNK);
     paintMapChunk(out, w, ex, 0, 0, lut);
     return { out, lut };

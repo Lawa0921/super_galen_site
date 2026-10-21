@@ -1,4 +1,7 @@
-// worldSave.ts — 世界檔 format 10（co-op M-A）：純資料，不碰 IndexedDB / DOM。
+// worldSave.ts — 世界檔 format 10 / 11（co-op M-A）：純資料，不碰 IndexedDB / DOM。
+// format 11（無限世界 1a）：chunk / tile 鍵可含外圍鍵；header.bounds = 'infinite' + header.outerGen 只在無限世界才寫；
+//   visit.exploredOuter = 中央框外的迷霧（非空才寫）。decodeWorld 接受 10 與 11（header.format 保留讀到的值）；
+//   splitSnapshot 一律寫 11。format 10 的檔第一次存檔前先備份成 slot + V10_BACKUP_SUFFIX（save/split.ts）。
 // 存檔 = snapshotGame()（format 9 的完整 header）→ splitSnapshot() 切成「世界 + 角色」；
 // 讀檔 = joinSplit() 拼回 format-9 形狀的 SaveData → 交給現行 restoreGame()（restoreSplit 包好這兩步；存檔用 saveSplitGame）。
 //   角色第一次來這個世界（沒有 visit）→ restoreGame 的 freshVisit：出生點、只揭露出生點周圍、沒有標記 / 床 / 重生核心。
@@ -6,14 +9,14 @@
 //   呼吸燃燒蜂蜜 / lastSeen），最多 MAX_VISITS 筆，超過以 lastSeen 最舊者淘汰（LRU）。settle.spawnCore 在世界一律 null。
 // 角色隨身的東西（背包 / 裝備 / 等級 / 圖鑑 / 釣魚紀錄 / 不滅冷卻 / buff 剩餘秒數）在 character.ts 的 DelveCharacter。
 // 容器與 format 9 相同（magic "DLVS" + header JSON + chunk payload），靠 header.format 分流：
-//   format ≤ 9 → decodeSave（舊合併檔）、format 10 → decodeWorld；restoreGame 收到 format 10 會回 'format' 錯誤。
+//   format ≤ 9 → decodeSave（舊合併檔）、format 10 / 11 → decodeWorld；restoreGame 收到 format 10 / 11 會回 'format' 錯誤。
 // 驗證：世界欄位重用 serialize 的驗證函式（壞了 = 損毀）；worldId 不合法 = 損毀；worldName 不合法 → 退回 seed；
 //   visits 不是物件 = 損毀，但單筆 visit 不合法只丟那一筆（該角色在這個世界從出生點重來）；
 //   匯出檔才有的內嵌 character 有值時過 validateCharacter。
 import {
   SAVE_FORMAT, SaveFormatError, decodeSave, encodeContainer, isNum, readChunks, readContainer, restoreGame, snapshotGame,
   validBed, validBossActive, validChests, validDiscovery, validDrops, validEnv, validExplored, validExtra, validFolk, validHalves,
-  validKeysUsed, validLevels, validLiquids, validMarkers, validUnlocked, validVitals,
+  validKeysUsed, validLevels, validLiquids, validMarkers, validUnlocked, validVitals, validBounds, validOuterGen, validExploredOuter,
   type ChestSave, type ChunkPayload, type DropSave, type EnvSave, type FolkSave, type LiquidSave, type PlayerSave,
   type CharacterState, type RestoreOptions, type RestoreResult, type SaveData, type SaveHeader,
 } from './serialize';
@@ -26,7 +29,7 @@ import { Vanity } from '../engine/vanity';
 import { normalizeAppearance } from '../engine/appearance';
 import { WARDROBE_CFORMAT } from '../engine/wardrobeMigration';
 import { ENEMIES, type EnemyKind } from '../engine/enemies';
-import type { MapMarker } from '../engine/explore';
+import type { MapMarker, OuterBitsSave } from '../engine/explore';
 import type { DiscoveryJSON } from '../engine/discovery';
 import type { RngState } from '../engine/rng';
 import type { SettlementJSON } from '../engine/settlement';
@@ -34,7 +37,9 @@ import type { BuffKind } from '../engine/folkDefs';
 import type { FolkJSON } from '../engine/folk';
 import type { QuestLogJSON } from '../engine/quests';
 
-export const WORLD_FORMAT = 10;
+export const WORLD_FORMAT = 11;
+/** format 10 的世界檔第一次以 format 11 寫回前的備份槽後綴 */
+export const V10_BACKUP_SUFFIX = '.v10.bak';
 export const MAX_VISITS = 8;
 const MAX_WORLD_NAME = 64;
 /** worldId 與 visits 的 key（角色 id）共用 */
@@ -44,10 +49,12 @@ export interface VisitSave {
   pos: PlayerSave; bed: { x: number; y: number } | null; spawnCore: number | null;
   explored?: string; markers: MapMarker[]; discovery?: DiscoveryJSON;
   vitals: { breath: number; burning: number; honey: number }; lastSeen: number;
+  /** 中央框外的迷霧（format 11；非空才有） */
+  exploredOuter?: OuterBitsSave;
 }
 export type VisitMap = Record<string, VisitSave>;
 export interface WorldHeader {
-  format: 10; genVersion: number; seed: string; width: number; height: number;
+  format: 10 | 11; genVersion: number; seed: string; width: number; height: number;
   time: number; tick: number; savedAt: number; worldId: string; worldName: string;
   chunks: number[]; chests: ChestSave[]; unlocked: number[]; keysUsed: number;
   combat: { bosses: string[]; kills: Partial<Record<EnemyKind, number>>; peaceful: boolean };
@@ -55,6 +62,10 @@ export interface WorldHeader {
   extra: { minedIce: number[]; rng?: { loot?: RngState; fish?: RngState } };
   settle?: SettlementJSON; halves?: number[]; folk?: Omit<FolkSave, 'buffs'>;
   visits: VisitMap;
+  /** 無限世界才有（format 11） */
+  bounds?: 'infinite';
+  /** 外圍生成器版本（無限世界才有） */
+  outerGen?: number;
   /** 只有匯出檔有（D4） */
   character?: DelveCharacter;
 }
@@ -112,6 +123,7 @@ export function splitSnapshot(data: SaveData, who: CharIdentity, where: WorldIde
     explored: h.explored, markers: h.markers ?? [], discovery: h.discovery,
     vitals: { breath: h.vitals?.breath ?? MAX_BREATH, burning: h.vitals?.burning ?? 0, honey: h.vitals?.honey ?? 0 },
     lastSeen: now,
+    ...(h.exploredOuter ? { exploredOuter: h.exploredOuter } : {}),
   };
   let folk: Omit<FolkSave, 'buffs'> | undefined;
   if (h.folk) { const { buffs: _buffs, ...rest } = h.folk; folk = rest; }
@@ -126,6 +138,8 @@ export function splitSnapshot(data: SaveData, who: CharIdentity, where: WorldIde
     settle: h.settle ? { ...h.settle, spawnCore: null } : undefined,
     halves: h.halves, folk,
     visits: upsertVisit(where.visits, who.id, visit),
+    ...(h.bounds ? { bounds: h.bounds } : {}),
+    ...(h.outerGen !== undefined ? { outerGen: h.outerGen } : {}),
   };
   return { world: { header, chunks: data.chunks }, character };
 }
@@ -184,6 +198,9 @@ export function joinSplit(world: WorldData, character: DelveCharacter): { data: 
     settle: w.settle ? { ...w.settle, spawnCore: visit?.spawnCore ?? null } : undefined,
     halves: w.halves, levels: character.levels,
     folk: { ...folk, buffs },
+    ...(w.bounds ? { bounds: w.bounds } : {}),
+    ...(w.outerGen !== undefined ? { outerGen: w.outerGen } : {}),
+    ...(visit?.exploredOuter ? { exploredOuter: visit.exploredOuter } : {}),
   };
   return { data: { header, chunks: world.chunks }, freshVisit: !visit };
 }
@@ -212,7 +229,7 @@ export function encodeWorld(w: WorldData): Uint8Array {
 }
 
 /** 單筆 visit：不合法 → null（丟掉這筆，不算世界損毀） */
-function validVisit(v: unknown, width: number, height: number): VisitSave | null {
+function validVisit(v: unknown, width: number, height: number, bounds?: 'infinite'): VisitSave | null {
   if (!isObj(v)) return null;
   const p = v.pos;
   if (!isObj(p) || !isNum(p.x) || !isNum(p.y) || !isNum(v.lastSeen)) return null;
@@ -220,6 +237,7 @@ function validVisit(v: unknown, width: number, height: number): VisitSave | null
   try {
     const vit = validVitals(v.vitals);
     if (!vit) return null;
+    const exploredOuter = validExploredOuter(v.exploredOuter, { width, height, bounds });
     return {
       pos: { x: p.x, y: p.y, vx: isNum(p.vx) ? p.vx : 0, vy: isNum(p.vy) ? p.vy : 0 },
       bed: validBed(v.bed),
@@ -229,6 +247,7 @@ function validVisit(v: unknown, width: number, height: number): VisitSave | null
       discovery: validDiscovery(v.discovery),
       vitals: { breath: vit.breath, burning: vit.burning, honey: vit.honey },
       lastSeen: v.lastSeen,
+      ...(exploredOuter ? { exploredOuter } : {}),
     };
   } catch (e) {
     if (e instanceof SaveFormatError) return null;
@@ -255,7 +274,8 @@ function validWorldCombat(v: unknown): WorldHeader['combat'] {
 function worldFromContainer(bytes: Uint8Array, { raw, body }: { raw: unknown; body: number }): WorldData {
   if (!isObj(raw)) throw new SaveFormatError('world header');
   const { genVersion, seed, width, height, time, tick, chunks } = raw;
-  if (raw.format !== WORLD_FORMAT) throw new SaveFormatError(`world format ${String(raw.format)}`);
+  const format = raw.format;
+  if (format !== 10 && format !== WORLD_FORMAT) throw new SaveFormatError(`world format ${String(format)}`);
   if (!isNum(genVersion) || typeof seed !== 'string' || !isNum(width) || !isNum(height) || !isNum(time) || !isNum(tick)
     || !Array.isArray(chunks) || !chunks.every((c) => Number.isInteger(c) && c >= 0)) {
     throw new SaveFormatError('world header fields');
@@ -264,10 +284,13 @@ function worldFromContainer(bytes: Uint8Array, { raw, body }: { raw: unknown; bo
   const name = raw.worldName;
   const worldName = typeof name === 'string' && [...name].length <= MAX_WORLD_NAME ? name : seed;
   if (!isObj(raw.visits)) throw new SaveFormatError('visits');
+  // bounds / outerGen 是 format 11 的欄位（format 10 的檔一律當有界的舊檔：只接受中央範圍的鍵、補零規則）
+  const bounds = format === 10 ? undefined : validBounds(raw.bounds);
+  const outerGen = format === 10 ? undefined : validOuterGen(raw.outerGen);
   const visits: VisitMap = {};
   for (const [id, v] of Object.entries(raw.visits)) {
     if (!ID_RE.test(id)) continue;
-    const ok = validVisit(v, width, height);
+    const ok = validVisit(v, width, height, bounds);
     if (ok) visits[id] = ok;
   }
   evictOldest(visits, MAX_VISITS);
@@ -276,14 +299,14 @@ function worldFromContainer(bytes: Uint8Array, { raw, body }: { raw: unknown; bo
   let worldFolk: Omit<FolkSave, 'buffs'> | undefined;
   if (folk) { const { buffs: _buffs, ...rest } = folk; worldFolk = rest; }
   const header: WorldHeader = {
-    format: WORLD_FORMAT, genVersion, seed, width, height, time, tick,
+    format, genVersion, seed, width, height, time, tick,
     savedAt: isNum(raw.savedAt) ? raw.savedAt : 0, worldId: raw.worldId, worldName,
     chunks: chunks as number[],
     chests: validChests(raw.chests),
     unlocked: validUnlocked(raw.unlocked),
     keysUsed: validKeysUsed(raw.keysUsed),
     combat: validWorldCombat(raw.combat),
-    liquids: validLiquids(raw.liquids, width, height),
+    liquids: validLiquids(raw.liquids, width, height, bounds),
     drops: validDrops(raw.drops) ?? [],
     bossActive: validBossActive(raw.bossActive),
     env: validEnv(raw.env),
@@ -292,12 +315,14 @@ function worldFromContainer(bytes: Uint8Array, { raw, body }: { raw: unknown; bo
     halves: validHalves(raw.halves),
     folk: worldFolk,
     visits,
+    ...(bounds ? { bounds } : {}),
+    ...(outerGen !== undefined ? { outerGen } : {}),
   };
   if (raw.character !== undefined) header.character = validateCharacter(raw.character);
   return { header, chunks: readChunks(bytes, body, header.chunks) };
 }
 
-/** 世界檔 bytes → WorldData；不是 format 10 或任何欄位損毀 → SaveFormatError */
+/** 世界檔 bytes → WorldData；不是 format 10 / 11 或任何欄位損毀 → SaveFormatError */
 export function decodeWorld(bytes: Uint8Array): WorldData {
   return worldFromContainer(bytes, readContainer(bytes));
 }

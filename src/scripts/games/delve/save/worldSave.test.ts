@@ -160,9 +160,10 @@ describe('world save format 10', () => {
       expect(() => decodeWorld(tamper({ character: null }))).toThrow(SaveFormatError);
     });
 
-    it('format 不是 10 → 損毀', () => {
+    it('format 不是 10 / 11 → 損毀', () => {
       expect(() => decodeWorld(readLegacyFixture())).toThrow(SaveFormatError);
-      expect(() => decodeWorld(tamper({ format: 11 }))).toThrow(SaveFormatError);
+      expect(() => decodeWorld(tamper({ format: 12 }))).toThrow(SaveFormatError);
+      expect(() => decodeWorld(tamper({ format: 9 }))).toThrow(SaveFormatError);
     });
 
     it('世界專屬欄位型別錯 → 損毀', () => {

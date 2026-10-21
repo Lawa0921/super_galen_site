@@ -44,13 +44,9 @@ export class MapCache {
     this.update(Infinity);
   }
 
+  /** 迷霧按 chunk 儲存：只有含已探索格的 chunk 才有位元 */
   private chunkHasExplored(cx: number, cy: number): boolean {
-    const ex = this.game.explored, W = ex.width;
-    for (let y = cy * CHUNK; y < Math.min(ex.height, (cy + 1) * CHUNK); y++) {
-      const a = y * W + cx * CHUNK, b = Math.min(y * W + W, a + CHUNK);
-      for (let i = a; i < b; i++) if ((ex.bits[i >> 3] >> (i & 7)) & 1) return true;
-    }
-    return false;
+    return this.game.explored.chunkBits(cx, cy) !== undefined;
   }
 
   /** 世界 chunk 變動（挖掘 / 放置）：已探索的 chunk 才需要重畫 */
@@ -380,7 +376,7 @@ export class FullMap {
     const t = g.playerTile(), ps = tileToScreenOnMap(v, W, H, t.x, t.y);
     drawPlayer(ctx, ps.x, ps.y, k, (blinkFrame & 3) === 3);
     const info = this.root.querySelector('#delve-map-info');
-    if (info) info.textContent = `標記 ${g.markers.length}/20 · 嚮導與線索 ${g.scoutMarks.length} · 已探索 ${(100 * g.explored.count / (w.width * w.height)).toFixed(1)}%`;
+    if (info) info.textContent = `標記 ${g.markers.length}/20 · 嚮導與線索 ${g.scoutMarks.length} · 已探索 ${(100 * g.explored.centralCount() / (w.width * w.height)).toFixed(1)}%`;
   }
 
   destroy(): void { for (const f of this.offs) f(); this.close(); }

@@ -6,7 +6,8 @@
 //   for (const ci of game.world.drainDirty()) redrawChunk(ci);
 //   const light = game.computeLight(viewRectInTiles);
 //   for (const e of game.drainEvents()) playSfx(e);
-import { World } from './world';
+import { World, type ColumnSource } from './world';
+import type { WorldBounds } from './coords';
 import { generateWorld, type GenResult, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
 import type { DungeonInfo } from './gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
@@ -93,6 +94,10 @@ export interface DelveOptions {
   gen?: GenResult;
   /** 角色外觀（省略 = 預設外觀） */
   appearance?: Appearance;
+  /** 水平邊界（省略 = legacy 有界；Task 8 才改成 defaultBounds） */
+  bounds?: WorldBounds;
+  /** 中央以外的欄由誰生成（測試注入；正式來源在 Task 8 接） */
+  columnSource?: ColumnSource;
 }
 
 export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden'
@@ -768,7 +773,7 @@ export class DelveGame {
     const pre = opts.gen && (opts.width === undefined || opts.gen.world.width === opts.width) && (opts.height === undefined || opts.gen.world.height === opts.height) ? opts.gen : null;
     const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
     // 舊生成器的扁平格 → 區塊欄儲存（1a 的正式世界仍是 legacy 有界；Task 8 才切 defaultBounds）
-    this.world = World.fromGen(gen.world, gen.layers);
+    this.world = World.fromGen(gen.world, gen.layers, { bounds: opts.bounds ?? 'legacy', source: opts.columnSource ?? null });
     this.liquids = new LiquidSim(this.world);
     // 液體反應（熔岩遇水 / 蜂蜜）不在任何活著的玩家站的格子凝成黑曜石 / 脆蜜塊（不把人封進方塊；液體本身照樣流過去）
     this.liquids.blocked = (x, y) => this.tileOverlapsPlayer(x, y, true);
@@ -802,7 +807,7 @@ export class DelveGame {
       seed: this.seed, width: this.world.width, height: this.world.height, spawn: gen.spawn,
       surface: this.world.surface, layers: gen.layers, biomes: gen.biomes, structures: gen.structures, dungeon: gen.dungeon,
     });
-    this.explored = new ExploredMap(this.world.width, this.world.height);
+    this.explored = new ExploredMap(this.world.width, this.world.height, undefined, this.world);
     this.villages = gen.villages ?? [];
     this.halls = gen.halls ?? [];
     this.landmarks = gen.landmarks ?? [];
@@ -867,7 +872,7 @@ export class DelveGame {
     a.player = makeBody(0, 0);
     a.inventory = starterInventory();
     a.appearance = normalizeAppearance(character.appearance);
-    a.explored = new ExploredMap(this.world.width, this.world.height);
+    a.explored = new ExploredMap(this.world.width, this.world.height, undefined, this.world);
     a.discovery = new Discovery(this.regions, { loreTotal: this.tablets.length, landmarks: [...this.landmarkAt.keys()] });
     this.actors.set(pid, a);
     this.evRead.set(pid, this.evBase + this.events.length);

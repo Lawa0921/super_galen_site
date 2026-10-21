@@ -1,10 +1,13 @@
 // split.ts — 世界檔 + 角色檔的存讀編排（純邏輯；IndexedDB 在 SplitStore 後面，Task 7 接）。
 // 規則：讀檔（planContinue / planPlay）永遠不寫；遷移 = 先備份、備份成功才 putSplit；每次存檔只有一次 putSplit（一個 transaction）。
+// format 10 的世界檔：讀進來時 SplitSession.pendingBackup = V10_BACKUP_SUFFIX，第一次 saveSplit 先備份成
+//   slot + '.v10.bak'、成功才寫 format 11（備份丟錯就整個丟出、原檔不動；寫成功後清空，之後不再備份）。
 // 多世界 × 多角色：任何角色都能進任何世界（planPlay）；匯入一律開新槽（importWorld），不動既有世界。
 import { SaveFormatError, applyCharacter, restoreBlocker, snapshotGame, type RestoreError, type SaveData } from './serialize';
 import { decodeCharacter, newId, newIdentity, type CharIdentity, type DelveCharacter } from './character';
 import {
-  characterState, decodeAnySave, encodeWorld, splitSnapshot, type AnySave, type WorldData, type WorldHeader, type WorldIdentity,
+  V10_BACKUP_SUFFIX, characterState, decodeAnySave, encodeWorld, splitSnapshot,
+  type AnySave, type WorldData, type WorldHeader, type WorldIdentity,
 } from './worldSave';
 import { GEN_VERSION } from '../engine/constants';
 import type { DelveGame } from '../engine/game';
@@ -47,6 +50,8 @@ export interface SplitStore {
 export class SplitSession {
   private who: CharIdentity;
   private where: WorldIdentity;
+  /** 下一次存檔前要先備份的槽後綴（讀進 format 10 的世界檔 → V10_BACKUP_SUFFIX；備份 + 寫入成功後清空） */
+  pendingBackup: string | null = null;
   constructor(who: CharIdentity, where: WorldIdentity, readonly slot: string) {
     this.who = { ...who };
     this.where = { ...where, visits: { ...where.visits } };
@@ -56,7 +61,9 @@ export class SplitSession {
   }
   static fromLoaded(world: WorldHeader, character: DelveCharacter, slot: string): SplitSession {
     const { id, nick, createdAt, rev } = character;
-    return new SplitSession({ id, nick, createdAt, rev }, { worldId: world.worldId, worldName: world.worldName, visits: world.visits }, slot);
+    const s = new SplitSession({ id, nick, createdAt, rev }, { worldId: world.worldId, worldName: world.worldName, visits: world.visits }, slot);
+    if (world.format === 10) s.pendingBackup = V10_BACKUP_SUFFIX;
+    return s;
   }
   get charId(): string { return this.who.id; }
   get nick(): string { return this.who.nick; }
@@ -217,8 +224,13 @@ function putData(store: SplitStore, s: SplitSession, data: SaveData, now: number
   return store.putSplit(s.slot, { bytes: encodeWorld(world), seed: world.header.seed, summary }, character);
 }
 
-export function saveSplit(store: SplitStore, s: SplitSession, game: DelveGame, now: number, summary?: SaveSummary): Promise<SlotMeta> {
-  return putData(store, s, snapshotGame(game, now), now, summary);
+/** 存檔；s.pendingBackup 有值（format 10 的世界）→ 先 backupSlot 成功才 putSplit，putSplit 成功後清空 */
+export async function saveSplit(store: SplitStore, s: SplitSession, game: DelveGame, now: number, summary?: SaveSummary): Promise<SlotMeta> {
+  const suffix = s.pendingBackup;
+  if (suffix) await store.backupSlot(s.slot, s.slot + suffix);
+  const meta = await putData(store, s, snapshotGame(game, now), now, summary);
+  if (suffix && s.pendingBackup === suffix) s.pendingBackup = null;
+  return meta;
 }
 
 type MigrateOpts = { backup: boolean; summary?: SaveSummary };
