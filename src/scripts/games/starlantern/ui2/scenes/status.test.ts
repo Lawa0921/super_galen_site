@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { CHARACTERS, OATH_TITLE, rulesOf } from '../../data/characters';
 import { newMember, statsOf, LEGACY_LINEUP } from '../../engine/party';
-import type { AnyStat } from '../../engine/types';
+import type { AnyStat, CharacterId } from '../../engine/types';
 import { STAT_CATEGORIES } from '../../engine/stats';
 import { raiseTalent } from '../../engine/progression';
 import { constRng, plainItem } from '../../engine/testing';
@@ -226,7 +226,7 @@ describe('StatusScene', () => {
       expect(cats.map((c) => c.querySelector('.slx-stat-cat-head')!.getAttribute('aria-expanded'))).toEqual(['true', 'true', 'false', 'false', 'false', 'false']);
       expect(root.querySelector('[data-cat=defense] tbody')).toBeNull();     // folded: no rows to land on
       const cols = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
-      expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '主屬性', '上限', '合計']);
+      expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '主屬', '上限', '合計']);
       expect(root.querySelector('[data-stat=str] .slx-talent')!.textContent).toBe(T.signed(TALENT_PER.str! * TALENT_SCALE));
       // str is scarlet's affinity: 3 str gives 4.5 atk, shown whole so the parts add up to the floored total.
       const atk = root.querySelector('[data-stat=atk]')!;
@@ -1707,9 +1707,10 @@ describe('the skills page and the workshop (plan 8g Task 5)', () => {
     prep(game);
     const go = vi.fn();
     const root = document.createElement('div');
-    const s = new StatusScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), from, arg });
+    const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
+    const s = new StatusScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), from, arg });
     s.enter(root);
-    return { game, go, root, s, skill: (sk: string) => root.querySelector<HTMLElement>(`.slx-skill[data-skill="${sk}"]`) };
+    return { game, go, root, s, sfx, skill: (sk: string) => root.querySelector<HTMLElement>(`.slx-skill[data-skill="${sk}"]`) };
   };
   const noel = (tree: Record<string, number>, sockets: Record<string, (RuneRef | null)[]>) => (g: Game) => {
     g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 20, tree, sockets };
@@ -1752,13 +1753,41 @@ describe('the skills page and the workshop (plan 8g Task 5)', () => {
     expect(w.root.querySelector('.slx-tab-sel')!.textContent).toBe(T.ui2.status.tabs.skills);
     w.s.onAction('cancel');
     expect(w.go).toHaveBeenCalledWith('guild');
-    const field = open((g) => { g.phase = 'map'; }, 'tab:skills:noel', 'workshop');
+    const field = open((g) => { g.phase = 'map'; Object.assign(g, { run: {} }); }, 'tab:skills:noel', 'workshop');
     field.s.onAction('cancel');
     expect(field.go).toHaveBeenCalledWith('dungeon');
     // A member not met: the usual first member, on the skills page.
     const unmet = open(() => undefined, 'tab:skills:bobby');
     expect(unmet.root.querySelector('.slx-status-name')!.textContent).not.toContain(CHARACTERS.bobby.name);
     expect(unmet.root.querySelector('.slx-tab-sel')!.textContent).toBe(T.ui2.status.tabs.skills);
+  });
+
+  it("in the labyrinth a benched member's skills do not open the workshop", () => {
+    const inField = (who: CharacterId) => open((g) => {
+      g.state.party.recruited.push('sylvie');
+      g.state.party.roster.sylvie = { ...g.state.party.roster.sylvie, level: 20, tree: { 'aimed-shot': 1 } };
+      g.phase = 'map';
+      Object.assign(g, { run: {} });
+    }, `tab:skills:${who}`);
+    const bench = inField('sylvie');
+    bench.s.onAction('confirm');
+    expect(bench.go).not.toHaveBeenCalled();
+    expect(bench.sfx.error).toHaveBeenCalledTimes(1);
+    expect(bench.root.querySelector('.slx-tab-skills')!.textContent).toContain(T.ui2.status.fieldOnly);
+    bench.skill('aimed-shot')!.click();
+    expect(bench.go).not.toHaveBeenCalled();
+    expect(bench.sfx.error).toHaveBeenCalledTimes(2);
+    // A member on the field opens it as in town.
+    const front = inField('noel');
+    front.s.onAction('confirm');
+    expect(front.go).toHaveBeenCalledWith('workshop', expect.stringMatching(/^noel:/));
+  });
+
+  it('the stats tables name the primary column 主屬, the whole word in its title', () => {
+    const w = open(() => undefined, 'scarlet');
+    const head = [...w.root.querySelectorAll<HTMLElement>('.slx-stat-table thead th')].find((th) => th.getAttribute('title') === T.ui2.status.sources.primary)!;
+    expect(head.textContent).toBe(T.ui2.status.sourcesShort.primary);
+    expect(T.ui2.status.sourcesShort.primary).toBe('主屬');
   });
 
   it('the TP held for battle shows on the stats page', () => {

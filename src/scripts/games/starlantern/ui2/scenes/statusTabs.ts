@@ -12,7 +12,7 @@ import {
 } from '../../engine/progression';
 import type { RaiseFail, TalentFail } from '../../engine/progression';
 import { ABYSS_UNLOCK } from '../../data/hero';
-import { SLOTS, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
+import { SLOTS, activeIds, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
 import { chainLength } from '../../data/story/chains';
 import type { AnyStat, CharacterId, Member, Slot, StatKey, Stats } from '../../engine/types';
@@ -165,7 +165,10 @@ const stats: StatusTab = {
       });
       const table = open
         ? [el('table', { class: 'slx-stat-table' }, [
-          el('thead', {}, [el('tr', {}, [el('th'), ...parts.map((p) => el('th', { text: t.sources[p.source] ?? p.source })), el('th', { text: t.capCol }), el('th', { text: t.total })])]),
+          // A heading too long for its share reads short, the whole word in its title (主屬 for 主屬性).
+          el('thead', {}, [el('tr', {}, [el('th'), ...parts.map((p) => el('th', {
+            text: t.sourcesShort[p.source] ?? t.sources[p.source] ?? p.source, attrs: { title: t.sources[p.source] ?? p.source },
+          })), el('th', { text: t.capCol }), el('th', { text: t.total })])]),
           el('tbody', {}, c.keys.map(statRow)),
         ])]
         : [];
@@ -241,10 +244,23 @@ const gear: StatusTab = {
   },
 };
 
-/** The workshop on `id`'s `skill` (plan 8g Task 5), or on her first skill that takes runes. */
+/** The skills page's one-line note: why the workshop did not open (shown until the next key or page). */
+const skillsView = { note: '' };
+
+/**
+ * The workshop on `id`'s `skill` (plan 8g Task 5), or on her first skill that takes runes. In the labyrinth only the
+ * members on the field can change runes (the workshop pages over them alone): for one on the bench the error cue and a
+ * note, and nothing opens (Task 5 review).
+ */
 const toWorkshop = (ctx: SceneCtx, id: CharacterId, skill?: string): boolean => {
   const first = skill ?? socketable(ctx.game.state.party.roster[id])[0];
   if (!first) return false;
+  const g = ctx.game;
+  if (g.phase === 'map' && !!g.run && !activeIds(g.state.party).includes(id)) {
+    ctx.sfx.error();
+    skillsView.note = T.ui2.status.fieldOnly;
+    return true;
+  }
   ctx.sfx.confirm();
   ctx.go('workshop', `${id}:${first}`);
   return true;
@@ -255,9 +271,11 @@ const skills: StatusTab = {
   label: T.ui2.status.tabs.skills,
   hint: T.ui2.status.hintSkills,
   onAction(a, ctx, id) {
+    skillsView.note = '';
     return a === 'confirm' ? toWorkshop(ctx, id) : false;
   },
-  render(ctx, id) {
+  leave() { skillsView.note = ''; },
+  render(ctx, id, redraw) {
     const t = T.ui2.status;
     const m = ctx.game.state.party.roster[id];
     // The skill as this member casts it: tree ranks and mod nodes, worn powers, her weapon and her runes rewrite it; tpCost
@@ -266,7 +284,8 @@ const skills: StatusTab = {
     const caster = fromMember(m, 0);
     // Only what the member has learned, each with its rank in the tree.
     const runed = socketable(m);
-    return el('div', { class: 'slx-tab-skills' }, learnedSkills(m).flatMap((sk) => {
+    const note = skillsView.note ? [el('p', { class: 'slx-skills-note', attrs: { role: 'status' }, text: skillsView.note })] : [];
+    return el('div', { class: 'slx-tab-skills' }, [...note, ...learnedSkills(m).flatMap((sk) => {
       const s = skillFor(caster, sk);
       if (!s) return [];
       const changed = powers.map((p) => POWERS[p]).filter((p) => p && p.skill === sk);
@@ -294,9 +313,9 @@ const skills: StatusTab = {
           ...(x.state === 'off' && x.why ? [el('span', { class: 'slx-line-note', text: T.ui2.workshop.off(x.why) })] : []),
         ])),
       ]);
-      if (takes) node.addEventListener('click', () => { if (!locked(node)) toWorkshop(ctx, id, sk); });
+      if (takes) node.addEventListener('click', () => { if (!locked(node)) redraw(() => { skillsView.note = ''; toWorkshop(ctx, id, sk); }); });
       return node;
-    }));
+    })]);
   },
 };
 

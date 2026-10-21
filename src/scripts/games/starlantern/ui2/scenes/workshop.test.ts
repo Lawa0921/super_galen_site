@@ -178,6 +178,10 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     const g = setup(noel(20, {}), 'noel');
     g.press('cancel');
     expect(g.go).toHaveBeenCalledWith('guild');
+    // Opened from the labyrinth's field menu: back to the labyrinth.
+    const d = setup((x) => { noel(20, {})(x); x.phase = 'map'; Object.assign(x, { run: {} }); }, 'noel', 'dungeon');
+    d.press('cancel');
+    expect(d.go).toHaveBeenCalledWith('dungeon');
   });
 
   it('Q/E in the labyrinth passes over the bench', () => {

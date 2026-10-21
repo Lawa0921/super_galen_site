@@ -287,6 +287,8 @@ export const T = {
       fieldTag: '迷宮中可用',
       /** Column titles for statSources; a new source needs one line here. */
       sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', memory: '記憶', primary: '主屬性' } as Record<string, string>,
+      /** A column heading too long for its share of the table: the short word, the whole one in its title (plan 8g Task 5 review). */
+      sourcesShort: { primary: '主屬' } as Record<string, string>,
       total: '合計',
       /** Category headings of the stats page, in STAT_CATEGORIES order. */
       cats: { primary: '主屬性', attack: '攻擊', defense: '防禦', element: '元素', resource: '資源', other: '其他' } as Record<StatCategory, string>,
@@ -317,6 +319,8 @@ export const T = {
       hintSkills: '←→ 分頁　Q／E 換人　↑↓ 捲動　Enter／點一招：技能工坊　Esc 返回',
       /** After the TP line, when 常駐 holds some back: the max TP a fight leaves her (plan 8g ruling 9). */
       tpBattle: (n: number) => `（戰鬥中上限 ${n}）`,
+      /** In the labyrinth only the members on the field change their runes (plan 8g Task 5 review). */
+      fieldOnly: '迷宮中只能調整出戰的成員',
       /** The tree and talent tabs' own keys: a node cursor and the two-press spend. */
       hintTree: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 投點　Esc 返回',
       /** The talent tab's own keys: ↑↓ go between the board's rows, Tab along a row (←→ stay the tab switch). */

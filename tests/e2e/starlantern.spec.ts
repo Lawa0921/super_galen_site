@@ -552,7 +552,8 @@ test.describe('starlantern', () => {
     const primary = page.locator('.slx-stat-cat[data-cat=primary]');
     await expect(primary.locator('.slx-stat-cat-head')).toHaveText('主屬性');
     // One column per stat source: the gear column holds the spear's strength.
-    await expect(primary.locator('thead th')).toContainText(['裝備', '主屬性']);
+    await expect(primary.locator('thead th')).toContainText(['裝備', '主屬']);   // 主屬性 short in the heading (plan 8g Task 5 review)
+    await expect(primary.locator('thead th[title=主屬性]')).toHaveText('主屬');
     await expect(primary.locator('tr[data-stat=str] td.slx-gear')).toHaveText('+6');
     await page.locator('.slx-back').click();
     await expect(page.locator('.slx-guild')).toBeVisible();
@@ -3819,6 +3820,27 @@ test.describe('starlantern', () => {
       await w.key('Escape');                                  // back to the guild, no new greeting
       await expect(page.locator('.slx-guild')).toBeVisible();
       await expect(page.locator('.slx-talk')).toBeHidden();
+      expect(w.errors).toEqual([]);
+    });
+
+    test('the field menu, with the workshop on it, fits a landscape phone (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 844, height: 390 });
+      const w = await setup(page, 11);
+      await depart(page, w);
+      await w.closeTalk();
+      await w.key('c');
+      const menu = page.locator('.slx-field-menu');
+      await expect(menu).toBeVisible();
+      await expect(menu.locator('[data-id=workshop]')).toBeVisible();
+      await expect(menu.locator('.slx-more-down')).toHaveCount(0);           // every line on screen, 關閉 included
+      await expect(menu.locator('[data-id=close]')).toBeVisible();
+      const screen = await page.locator('.slx-screen').boundingBox();
+      const box = await menu.boundingBox();
+      expect(box!.y + box!.height).toBeLessThanOrEqual(screen!.y + screen!.height + 0.5);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(screen!.x + screen!.width + 0.5);
+      const over = await menu.locator('[role=option]').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+      expect(over).toEqual([]);
+      if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/field-menu-844.png` });
       expect(w.errors).toEqual([]);
     });
   });

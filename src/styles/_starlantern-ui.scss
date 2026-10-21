@@ -556,11 +556,11 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-stat-cat-head.slx-row-cur, .slx-stat-table .slx-row-cur th { color: #fff; }
 /* Fixed layout (plan 8g Task 5): the row names take 22%, the total 11%, and the source columns share the rest evenly, so
    every category's table has the same column edges and the columns line up down the page; a long row name wraps rather
-   than push the table past the page's edge. The headings are set small enough that 主屬性 fits its share. */
+   than push the table past the page's edge. The headings are 10px and centred; 主屬性 reads 主屬 there (its title whole). */
 .slx-stat-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 4px; }
 .slx-stat-table thead th:first-child { width: 22%; }
 .slx-stat-table thead th:last-child { width: 11%; }
-.slx-stat-table thead th { white-space: nowrap; font-size: 9px; letter-spacing: -0.5px; }
+.slx-stat-table thead th { white-space: nowrap; font-size: 10px; text-align: center; }
 .slx-stat-table tbody tr { cursor: pointer; }
 .slx-stat-table .slx-zero th, .slx-stat-table .slx-zero td { color: #5f5a6e; }
 .slx-stat-table .slx-zero.slx-row-cur th { color: $slx-ink; }
@@ -570,6 +570,7 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-stat-table .slx-memory { color: #ffd27a; }
 .slx-stat-table .slx-capped, .slx-stat-table .slx-cap { color: #ffb36b; }
 .slx-stat-table th, .slx-stat-table td { padding: 1px 1px; text-align: right; font-weight: normal; }
+.slx-stat-table thead th:first-child { text-align: left; }
 .slx-stat-table td { font-size: 11px; }
 .slx-stat-table thead th { color: $slx-dim; border-bottom: 1px solid #3a3550; }
 .slx-stat-table tbody th { text-align: left; color: $slx-gold; }
@@ -603,6 +604,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-skill-power { margin: 1px 0 0; color: #ff9a3c; font-size: 10px; }
 // A skill that takes runes (plan 8g Task 5): its slot dots after the name, a line for each rune, a click opens the workshop.
 .slx-skill-runed { cursor: pointer; }
+.slx-skills-note { margin: 0 0 2px; font-size: 11px; color: $slx-down; }
 .slx-skill-runed:hover .slx-skill-name { color: #fff; }
 .slx-skill-slots { flex: none; color: $slx-gold; letter-spacing: 1px; white-space: nowrap; }
 .slx-skill-rune { margin: 1px 0 0; font-size: 10px; line-height: 12px; color: #9fc1ff; }
@@ -631,7 +633,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-tree-wide .slx-tree-branch-name { font-size: 10px; line-height: 12px; }
 // Five branches: the name on one line and its points on the next, each whole (no ellipsis).
 .slx-tree-branch-title, .slx-tree-branch-pts { display: block; }
-.slx-tree-branch-pts { color: $slx-dim; }
+.slx-tree-branch-pts { color: $slx-dim; text-indent: -0.5em; }   // the full-width 「（」 brings its own space: flush with the name
 .slx-tree-wide .slx-tree-node { padding: 1px 2px; }
 .slx-tree-wide .slx-tree-node .slx-skill-head { gap: 0 2px; font-size: 10px; flex-wrap: wrap; }
 .slx-tree-wide .slx-tree-node .slx-skill-name { flex: 0 1 auto; max-width: 100%; }
