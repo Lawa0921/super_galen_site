@@ -63,11 +63,15 @@ export function isUnlocked(s: GameState, equipId: string): boolean {
   return !!e && (e.unlock ?? []).every((u) => (s.sold[u.mat] ?? 0) >= u.qty);
 }
 
-/** What the shop asks for `id` (a consumable or a base): the listed price, less PERKS.shopDiscountPct once Orik's fragment is home. */
+/** A shop price after Orik's discount (PERKS.shopDiscountPct once his fragment is home), rounded up: the one formula for goods and runes. */
+export const shopPrice = (s: GameState, price: number): number =>
+  (hasPerk(s, 'shop-discount') ? Math.ceil(price * (100 - PERKS.shopDiscountPct) / 100) : price);
+
+/** What the shop asks for `id` (a consumable or a base): the listed price, less Orik's discount (`shopPrice`). */
 export function priceOf(s: GameState, id: string): number | undefined {
   const price = ITEMS[id]?.price ?? EQUIPMENT[id]?.price;
   if (price === undefined) return undefined;
-  return hasPerk(s, 'shop-discount') ? Math.ceil(price * (100 - PERKS.shopDiscountPct) / 100) : price;
+  return shopPrice(s, price);
 }
 
 export function buy(s: GameState, id: string): TownResult {

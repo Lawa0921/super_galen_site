@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { ESSENCE_IDS } from './forge';
 import { RUNE_BUY, RUNE_DROP, RUNE_FUSE, RUNE_LEGENDARY, RUNE_SELL, RUNE_STOCK } from './runeEconomy';
+import { PERKS } from './story/fragments';
+import { STANDARD_LINEUP } from '../engine/party';
+import { newGame } from '../engine/state';
+import { shopPrice } from '../engine/town';
 
 describe('the rune economy table (plan 8f Task 1)', () => {
   it("the numbers are the spec's and the plan's", () => {
@@ -25,5 +29,16 @@ describe('the rune economy table (plan 8f Task 1)', () => {
       expect(ESSENCE_IDS).toContain(f.essence);
     }
     expect(RUNE_BUY.common!).toBeGreaterThan(RUNE_SELL.common);
+  });
+});
+
+describe("Orik's discount and the money loop (plan 8f final review)", () => {
+  it("even at Orik's discount a rune costs more than it sells for", () => {
+    const s = newGame(undefined, 0, STANDARD_LINEUP);
+    s.story = { ...s.story, returned: ['orik'] };
+    const price = shopPrice(s, RUNE_BUY.common!);
+    expect(price).toBe(Math.ceil(RUNE_BUY.common! * (100 - PERKS.shopDiscountPct) / 100));
+    expect(price).toBeLessThan(RUNE_BUY.common!);
+    expect(price).toBeGreaterThan(RUNE_SELL.common);
   });
 });

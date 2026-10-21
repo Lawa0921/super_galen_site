@@ -775,7 +775,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       group: RUNE_GROUP,
       reserve: (cap: number) => `常駐保留的 TP 上限已經到 ${cap}%`,
       /** Trading runes (plan 8f, engine/runeTrade RuneTradeFail); `gold` uses T.reasons.gold. */
-      closed: '打倒第一位頭目之後才有符文',
+      closed: '在迷宮打倒頭目之後才有符文',
       full: (n: number) => `這個符文已經 ${n} 個了`,
       stock: '袋子裡沒有這麼多',
       /** Fusion (plan 8f Task 5): an epic or legendary rune, and the essence it lacks by name. */
@@ -808,7 +808,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     askFuse: (line: string) => `${line}\n要合成嗎？`,
     fused: (label: string) => `合成了 ${label}！`,
     /** The rune tab with nothing in the bag to fuse. */
-    fuseEmpty: '三個同名同階的符文可以合成高一階',
+    fuseEmpty: '袋子裡沒有可合成的符文，三個同名同階的符文可以合成高一階',
   },
   clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card
   /** The finale's closing card; its text is the finale scene's summary. */

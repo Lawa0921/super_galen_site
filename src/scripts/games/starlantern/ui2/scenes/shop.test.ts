@@ -485,7 +485,8 @@ describe('the rune shop (plan 8f Task 4)', () => {
     expect(info(root)).toContain('其中 1 個鑲嵌中，先拆下才能賣或合成');
     // Buying: the quantity box stops at runeBuyMax.
     pick('擴散（普通）');
-    expect(root.querySelector('.slx-qty')!.textContent).toContain('袋子 0');
+    // Buying stops at the stack, which counts the socketed ones too: the box says 持有, the cap's basis.
+    expect(root.querySelector('.slx-qty-note')!.textContent).toBe('持有 0');
     const want = runeBuyMax(game.state, { id: 'spread', tier: 'common' });
     expect(want).toBe(4);
     s.onAction('up');
@@ -498,7 +499,7 @@ describe('the rune shop (plan 8f Task 4)', () => {
     for (let i = 0; i < 6 && root.querySelector('.slx-talk:not([hidden])'); i++) s.onAction('confirm');
     pick('彈射（稀有）');
     expect(root.querySelector('.slx-qty-n')!.textContent).toBe('× 1');
-    expect(root.querySelector('.slx-qty')!.textContent).toContain('袋子 1');
+    expect(root.querySelector('.slx-qty-note')!.textContent).toBe('袋子 1');   // selling takes from the bag alone
     s.onAction('confirm');
     expect(game.state.gold).toBe(200);
     expect(game.state.runes).toEqual({ 'spread@common': 4 });
@@ -511,15 +512,15 @@ describe('the rune shop (plan 8f Task 4)', () => {
     pick('符文');
     const list = rows(root);
     expect(list).toHaveLength(1);
-    expect(list[0]).toMatchObject({ label: '打倒第一位頭目之後才有符文', disabled: true });
-    pick('打倒第一位頭目之後才有符文');   // a disabled row does nothing
+    expect(list[0]).toMatchObject({ label: '在迷宮打倒頭目之後才有符文', disabled: true });
+    pick('在迷宮打倒頭目之後才有符文');   // a disabled row does nothing
     expect(game.state.gold).toBe(1000);
     // A rune already in the bag (an old save, a hand-edit) can still be sold.
     const t = setup(0);
     t.game.state.runes = { 'focus@magic': 2 };
     t.pick('符文');
     const held = rows(t.root);
-    expect(held.map((r) => r.label)).toEqual(['打倒第一位頭目之後才有符文', '收購', '集中（魔法）']);
+    expect(held.map((r) => r.label)).toEqual(['在迷宮打倒頭目之後才有符文', '收購', '集中（魔法）']);
     expect(held[2].right).toBe('收購 60 G　持有 2');
   });
 

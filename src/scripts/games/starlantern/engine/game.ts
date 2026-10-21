@@ -765,7 +765,8 @@ export class Game {
 
   /**
    * One rune into the bag, or, when RUNE_STACK of it are owned, its sell price straight into `state.gold` (plan 8f rulings
-   * 4, 7): neither rides in the run pack, so a wipe keeps them; only a town save writes them down.
+   * 4, 7). Neither rides in the run pack: a wipe keeps the rune, and the gold stays in `state.gold`, where a wipe takes its
+   * quarter as it does of all gold. Only a town save writes them down.
    */
   private giveRune(r: RuneRef): RuneFind {
     const g = grantRune(this.state, r);

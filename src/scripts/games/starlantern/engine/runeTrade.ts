@@ -1,10 +1,9 @@
 import { RUNE_BUY, RUNE_FUSE, RUNE_FUSE_IN, RUNE_SELL, RUNE_STOCK } from '../data/runeEconomy';
-import { RUNE_IDS, RUNE_STACK, parseRuneKey, runeKey, type RuneRef, type RuneTier } from '../data/runes';
+import { RUNE_IDS, RUNE_STACK, RUNE_TIERS, parseRuneKey, runeKey, type RuneRef, type RuneTier } from '../data/runes';
 import { canPay, pay } from './forge/cost';
-import { PERKS } from '../data/story/fragments';
 import { bagCount, ownedCount } from './sockets';
 import type { GameState } from './state';
-import { hasPerk } from './story/fragments';
+import { shopPrice } from './town';
 
 /**
  * Trading runes in town (spec §6.5, plan 8f): Orik sells four common runes once runes are open and buys any rune in the
@@ -24,11 +23,11 @@ export function runeStock(s: Pick<GameState, 'runesOpen'>): RuneRef[] {
   return s.runesOpen ? RUNE_STOCK.map((id) => ({ id, tier: 'common' })) : [];
 }
 
-/** What the shop asks for `r`: its RUNE_BUY price less Orik's discount, as priceOf takes it; undefined when not for sale. */
+/** What the shop asks for `r`: its RUNE_BUY price less Orik's discount (town `shopPrice`); undefined when not for sale. */
 export function runeBuyPrice(s: GameState, r: RuneRef): number | undefined {
   const price = RUNE_BUY[r.tier];
   if (price === undefined || !runeStock(s).some((x) => x.id === r.id && x.tier === r.tier)) return undefined;
-  return hasPerk(s, 'shop-discount') ? Math.ceil(price * (100 - PERKS.shopDiscountPct) / 100) : price;
+  return shopPrice(s, price);
 }
 
 /** The most of `r` the player can buy now: what the gold pays for, up to the stack (bag and sockets); 0 when not for sale. */
@@ -100,7 +99,7 @@ export function fuseRunes(s: GameState, r: RuneRef): { ok: true; state: GameStat
   return { ok: true, state: { ...next, runes }, made: cost.to };
 }
 
-const TIER_ORDER: readonly RuneTier[] = ['common', 'magic', 'rare', 'epic', 'legendary'];
+const TIER_ORDER: readonly RuneTier[] = [...RUNE_TIERS, 'legendary'];
 /** The order runes are listed in on every screen: RUNE_IDS order, then tier from common up. */
 export const compareRunes = (a: RuneRef, b: RuneRef): number =>
   RUNE_IDS.indexOf(a.id) - RUNE_IDS.indexOf(b.id) || TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier);

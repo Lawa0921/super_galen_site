@@ -1352,7 +1352,7 @@ describe('the rune tab (plan 8f Task 5)', () => {
   it('with nothing to fuse the tab says how fusion works', () => {
     const t = runeTab({ 'twin-cast@legendary': 3, 'spread@epic': 3 }, {});
     expect(t.root.querySelector('.slx-forge-list')).toBeNull();
-    expect(t.line()).toBe('三個同名同階的符文可以合成高一階');
+    expect(t.line()).toBe('袋子裡沒有可合成的符文，三個同名同階的符文可以合成高一階');
   });
 });
 

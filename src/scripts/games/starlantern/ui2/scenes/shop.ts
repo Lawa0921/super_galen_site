@@ -343,7 +343,8 @@ export class ShopScene extends FacilityScene {
         void this.say(mode === 'buy' ? T.ui2.shop.bought(label, n) : T.ui2.shop.sold(label, n, g.state.gold - gold), 'happy');
       },
       cancel: () => this.pop(),
-    }, price, T.rune.bag(bagCount(st, r)));
+      // The note is the count the cap stands on: buying stops at the stack (bag and sockets), selling at the bag.
+    }, price, mode === 'buy' ? T.ui2.shop.owned(ownedCount(st, r)) : T.rune.bag(bagCount(st, r)));
     this.push({ el: q.el, onAction: (a) => q.onAction(a) });
   }
 }
