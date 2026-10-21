@@ -38,11 +38,16 @@ import { WeatherFx, type Canopy } from './weatherFx';
 import { lootGlyphScale } from './lootArt';
 import { toCanvas } from './pixel';
 import { boatBmp, BOAT_PX, BOAT_PY, BOAT_RAIL_ABOVE, BOAT_RAIL_Y } from './boatArt';
+import { waystoneBmp, waystoneGlyphBmp, STONE_PY, STONE_SINK } from './waystoneArt';
+import type { Waystone } from '../engine/waystones';
 import { bobberBmp, campfireBmp } from './fishArt';
 import { SettleLayer } from './settleDraw'; // [settle]
 import { FolkLayer } from './folkDraw';
 
 const S = TILE_SIZE;
+/** 已解鎖傳送碑的小光源：強度 / 色（青） */
+const STONE_LIGHT = 0.55;
+const STONE_HUE = [0.55, 0.95, 1] as const;
 const CPX = CHUNK * S;
 /** 每幀最多重畫幾個「已在快取裡」的 dirty chunk（看得到但沒快取的一律立即畫） */
 const REDRAW_BUDGET = 4;
@@ -199,6 +204,10 @@ export class Renderer {
   private clock = 0;
   /** 小木船的圖（第一次有人上船才烘） */
   private boatCanvas: HTMLCanvasElement | null = null;
+  /** 傳送碑的圖（未解鎖 / 解鎖 / 刻符發光兩相位；第一次看到碑才烘） */
+  private stoneArt: { locked: HTMLCanvasElement; open: HTMLCanvasElement; glyph: HTMLCanvasElement[] } | null = null;
+  /** 這一幀畫面上已解鎖的碑（刻符發光層用） */
+  private stonesSeen: Waystone[] = [];
   private particles: Particle[] = [];
   private walkPhase = 0;
   private swingPhase = 0;
@@ -476,6 +485,7 @@ export class Renderer {
     this.drawTorches(ctx, camX, camY, vw, vh);
     const vb = this.viewBox;
     vb.x = camX; vb.y = camY; vb.w = vw; vb.h = vh;
+    this.drawWaystones(ctx, vb);
     this.combat.drawWorld(ctx, vb, this.glowSeen);
     this.settleLayer.drawWorld(ctx, vb, this.clock); // [settle]
     this.folkLayer.drawWorld(ctx, vb, this.clock);
@@ -512,6 +522,7 @@ export class Renderer {
     this.drawAmbient(ctx, true);
     this.drawRecall(ctx);
     this.drawGlows(ctx);
+    this.drawStoneGlyphs(ctx);
     this.combat.drawOverlay(ctx, dt);
     if (this.showCursor) this.settleLayer.drawOverlay(ctx, vb); // [settle]
     this.levelFx.draw(ctx, dt);
@@ -1012,6 +1023,36 @@ export class Renderer {
     this.rodTip = rodTipL ? { x: Math.round(X + this.facing * (rodTipL.x + reach)), y: Math.round(bottom + rodTipL.y) } : null;
   }
 
+  /** 傳送碑（世界物件，畫在人物後面、光照之前）：未解鎖灰、解鎖刻符青；已解鎖的記進 stonesSeen 與冷色光暈 */
+  private drawWaystones(ctx: CanvasRenderingContext2D, vb: { x: number; y: number; w: number; h: number }): void {
+    const g = this.game, seen = this.stonesSeen;
+    seen.length = 0;
+    const list = g.waystones.near(Math.floor(vb.x / S) - 2, Math.ceil((vb.x + vb.w) / S) + 1);
+    if (!list.length) return;
+    const art = this.stoneArt ??= {
+      locked: toCanvas(waystoneBmp(false)) as HTMLCanvasElement,
+      open: toCanvas(waystoneBmp(true)) as HTMLCanvasElement,
+      glyph: [toCanvas(waystoneGlyphBmp(0)) as HTMLCanvasElement, toCanvas(waystoneGlyphBmp(1)) as HTMLCanvasElement],
+    };
+    for (const s of list) {
+      const f = g.waystones.footprint(s), px = f.x * S, py = f.y * S + STONE_SINK;
+      if (py > vb.y + vb.h || py + STONE_PY < vb.y) continue;
+      const on = g.stoneUnlocked(s.id);
+      ctx.drawImage(on ? art.open : art.locked, px, py);
+      if (on) { seen.push(s); this.coolSeen.push({ x: px + S, y: py + 22 }); }
+    }
+  }
+  /** 已解鎖的碑：刻符發光層（光照之後畫，夜裡 / 洞裡也看得到；約 0.7 秒換一次亮度） */
+  private drawStoneGlyphs(ctx: CanvasRenderingContext2D): void {
+    const art = this.stoneArt;
+    if (!art || !this.stonesSeen.length) return;
+    const c = art.glyph[Math.floor(this.clock * 1.4) & 1];
+    for (const s of this.stonesSeen) {
+      const f = this.game.waystones.footprint(s);
+      ctx.drawImage(c, f.x * S, f.y * S + STONE_SINK);
+    }
+  }
+
   /** 小木船：每個坐船的 actor（不只本地玩家）腳下畫一艘；隨 clock 上下晃 1 px（只在畫面上，不影響物理） */
   private drawBoats(ctx: CanvasRenderingContext2D): void {
     const g = this.game, vb = this.viewBox;
@@ -1242,6 +1283,10 @@ export class Renderer {
     for (const l of g.heldLights()) extra.push(l);
     for (const l of g.enemyLights()) extra.push(l);
     for (const l of g.projectileLights()) extra.push(l);
+    // 已解鎖的傳送碑：刻符的小光源（青）
+    for (const s of g.waystones.near(Math.floor(camX / S) - 10, Math.ceil((camX + vw) / S) + 10)) {
+      if (g.stoneUnlocked(s.id)) extra.push({ x: s.x + 1, y: s.y - 1, v: STONE_LIGHT, c: STONE_HUE });
+    }
     const view = { x: Math.floor(camX / S) - 1, y: Math.floor(camY / S) - 1, w: Math.ceil(vw / S) + 3, h: Math.ceil(vh / S) + 3 };
     const L = g.computeLight(view, extra);
     this.stats.lightEngineMs = performance.now() - t0;

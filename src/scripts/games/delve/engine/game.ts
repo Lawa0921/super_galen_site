@@ -68,6 +68,7 @@ import { CALM_REGEN, Settlements, inClaim, type SettleEvent, type SettleHost, ty
 import { NPCS, earn, forgeMul, npcLine, pay, shopPrice, walletOf, type NpcKind } from './npcs';
 import { PAIR_OF_LEFT, PAIR_OF_RIGHT } from './furniture';
 import { findStandSpot } from './npcPath';
+import { SPAWN_STONE, Waystones, type Waystone } from './waystones';
 import { FolkWorld, type FolkEvent, type FolkHost, type FolkNpc } from './folk';
 import { ROLES, AFF_QUEST, AFF_RESCUE, BUFFS, affMul, affTier, type BuffKind, type FolkService } from './folkDefs';
 import { QuestLog, type QuestDef, type GiverInfo, type QuestCtx } from './quests';
@@ -112,7 +113,7 @@ export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occu
   | 'bait' | 'full_hp'
   /** 據點：範圍和別的據點重疊；商店：錢不夠 / 背包滿 */
   | 'claim' | 'coins' | 'bagfull'
-  /** 傳送點：目的地爐心旁沒有空位 */
+  /** 傳送點 / 傳送碑：目的地（爐心旁 / 碑旁）沒有空位 */
   | 'blockedspot';
 /** 遊戲事件；pid = 由哪個玩家的動作產生（多 actor 時才有；世界事件 / 單機沒有 = 公開） */
 export type DelveEvent = DelveEventBody & { pid?: Pid };
@@ -142,6 +143,10 @@ type DelveEventBody =
   | { type: 'recall'; phase: 'start' | 'cancel' | 'done'; x: number; y: number }
   /** 小木船：上船 / 下船（按跳、擱淺、傳送、死亡） */
   | { type: 'boat'; on: boolean }
+  /** 傳送碑：第一次有人碰到某顆（解鎖是世界共用的 → 公開事件；x, y = 碑的站立 tile） */
+  | { type: 'stone_unlock'; id: number; name: string; x: number; y: number }
+  /** 傳送碑：按使用打開面板（x, y = 碑）/ 傳送（id = 出發的碑、to = 目的地、x, y = 落點腳底 tile） */
+  | { type: 'stone'; phase: 'open' | 'travel'; id: number; to?: number; x: number; y: number }
   // ── 戰鬥 ──
   /** 開始一次攻擊（音效 / 動畫） */
   | { type: 'attack'; item: ItemId; kind: WeaponKind }
@@ -466,7 +471,7 @@ const LEVEL_EVENTS = new Set<DelveEvent['type']>(['kill', 'place', 'mine', 'ches
  */
 export const PRIVATE_EVENTS: ReadonlySet<DelveEvent['type']> = new Set<DelveEvent['type']>([
   'pickup', 'blocked', 'select', 'xp', 'levelup', 'xploss', 'hurt', 'talk', 'trade', 'quest', 'bubble', 'craft',
-  'chest', 'mirror', 'rebirth', 'hint', 'recall', 'boat', 'spawn', 'lifeup', 'buff', 'learn', 'respec', 'refund', 'salvage', 'forge',
+  'chest', 'mirror', 'rebirth', 'hint', 'recall', 'boat', 'stone', 'spawn', 'lifeup', 'buff', 'learn', 'respec', 'refund', 'salvage', 'forge',
   'codex', 'treasure', 'discover', 'lore', 'landmark', 'folktalk', 'folktrade', 'hearth', 'travel', 'eat', 'crate',
 ]);
 /** 有人一直不取事件時，佇列最多留幾筆（取得最慢的那個人會漏掉最舊的） */
@@ -484,6 +489,10 @@ export const SCOUT_SPACING = 24;
 /** 裝備的位置：背包格號碼或裝備槽 */
 export type GearAt = number | EquipSlot;
 export type ForgeResult = { ok: true } | { ok: false; reason: 'none' | 'station' | 'cost' | 'max' | 'unique' | 'locked' };
+/** 身體（px）與 tile 矩形（左上 x, y、寬 w、高 h 格）重疊 */
+function bodyOverlaps(p: { x: number; y: number; w: number; h: number }, x: number, y: number, w: number, h: number): boolean {
+  return p.x < (x + w) * TILE_SIZE && p.x + p.w > x * TILE_SIZE && p.y < (y + h) * TILE_SIZE && p.y + p.h > y * TILE_SIZE;
+}
 
 export class DelveGame {
   static readonly TILE_SIZE = TILE_SIZE;
@@ -684,6 +693,10 @@ export class DelveGame {
 
   /** 據點與居民（存檔內容） */
   readonly settle = new Settlements();
+  /** 傳送碑（世界物件、不是 tile；位置只由種子決定） */
+  readonly waystones: Waystones;
+  /** 已解鎖的傳送碑 id（世界層級、所有 actor 共用；不含 0：出生點那顆恆解鎖；存檔內容） */
+  readonly stonesUnlocked = new Set<number>();
   /** 外圍地區（無限世界的海 / 生態段；所有 actor 的 Discovery 共用同一個查詢與快取） */
   private readonly outerRegion: ((x: number, y: number) => Region | null) | null;
   /** 地表村落 / 矮人地廳（世界生成） */
@@ -786,6 +799,9 @@ export class DelveGame {
     const source = opts.columnSource ?? (bounds === 'infinite' ? new OuterGen(this.seed, frameOf(gen.world)) : null);
     this.world = World.fromGen(gen.world, gen.layers, { bounds, source });
     this.outerRegion = source instanceof OuterGen ? outerRegions(this.seed, source.profile) : null;
+    // 傳送碑：出生點那顆在 spawn.x + 7 的生成地表上（中央每欄陣列：挖掘 / 蓋東西不會讓碑移動）；外圍的由外圍側寫算（有界世界沒有）
+    const stoneX = gen.spawn.x + 7;
+    this.waystones = new Waystones(this.seed, { x: stoneX, y: this.world.surface[stoneX] - 1 }, source instanceof OuterGen ? source.profile : null);
     this.liquids = new LiquidSim(this.world);
     // 液體反應（熔岩遇水 / 蜂蜜）不在任何活著的玩家站的格子凝成黑曜石 / 脆蜜塊（不把人封進方塊；液體本身照樣流過去）
     this.liquids.blocked = (x, y) => this.tileOverlapsPlayer(x, y, true);
@@ -1120,6 +1136,7 @@ export class DelveGame {
     if (this.cur === this.local) this.inWorld(() => this.updateWeatherFx(dt));
     this.updateRecall(dt);
     this.updateExploration();
+    this.touchStones();
     if (!this.platformHinted && this.player.onGround && !this.dropHeld && onPlatform(this.world, this.player)) {
       this.platformHinted = true;
       this.emit({ type: 'hint', id: 'platform' });
@@ -1146,12 +1163,16 @@ export class DelveGame {
       const use = held ? ITEMS[held.item].use : undefined;
       const npc = this.useConsumed ? null : this.settle.npcAtPx(this.aimPx.x, this.aimPx.y);
       const fk = this.useConsumed || npc ? null : this.folk.atPx(this.aimPx.x, this.aimPx.y);
+      let stone: Waystone | null = null;
       if (npc && this.canReach(Math.floor((npc.body.x + npc.body.w / 2) / TILE_SIZE), Math.floor((npc.body.y + npc.body.h / 2) / TILE_SIZE), this.reach() + 1)) {
         this.useConsumed = true; this.talkTo(npc);
       } else if (fk && this.canReach(Math.floor((fk.body.x + fk.body.w / 2) / TILE_SIZE), Math.floor((fk.body.y + fk.body.h / 2) / TILE_SIZE), this.reach() + 1)) {
         this.useConsumed = true; this.talkFolk(fk);
       } else if (isInteractive(this.world.getFg(x, y))) {
         if (!this.useConsumed) { this.useConsumed = true; this.interact(x, y); }
+      } else if ((stone = this.stoneAtAim(x, y)) !== null) {
+        // 傳送碑（世界物件）：比照床 / 箱子，優先於放方塊 / 用道具
+        if (!this.useConsumed) { this.useConsumed = true; this.openStone(stone); }
       } else if (use === 'hammer') {
         if (!this.useConsumed) { this.useConsumed = true; this.hammer(x, y); }
       } else if (use === 'recall') {
@@ -3748,6 +3769,71 @@ export class DelveGame {
     this.teleport(spot.x, spot.y);
     this.closeChest();
     this.emit({ type: 'travel', from: here.id, to, x: spot.x, y: spot.y });
+    return true;
+  }
+  // ── 傳送碑（B10；engine/waystones.ts） ─────────────────────
+  /** 這顆碑解鎖了沒（出生點那顆恆解鎖） */
+  stoneUnlocked(id: number): boolean { return id === SPAWN_STONE || this.stonesUnlocked.has(id); }
+  /** 已解鎖的碑（含出生點那顆），依 x 排序 */
+  unlockedStones(): Waystone[] {
+    const out: Waystone[] = [this.waystones.byId(SPAWN_STONE)!];
+    for (const id of this.stonesUnlocked) { const s = this.waystones.byId(id); if (s) out.push(s); }
+    return out.sort((a, b) => a.x - b.x);
+  }
+  /** cur 的身體在某顆碑的 footprint ± 2 格內 → 那顆（不只一顆時取水平最近的）；沒有 → null */
+  stoneHere(): Waystone | null {
+    const p = this.player, ws = this.waystones;
+    const t = Math.floor((p.x + p.w / 2) / TILE_SIZE);
+    let best: Waystone | null = null, bd = Infinity;
+    for (const s of ws.near(t - 5, t + 5)) {
+      const f = ws.footprint(s);
+      if (!bodyOverlaps(p, f.x - 2, f.y - 2, f.w + 4, f.h + 4)) continue;
+      const d = Math.abs(p.x + p.w / 2 - (f.x + 1) * TILE_SIZE);
+      if (d < bd) { bd = d; best = s; }
+    }
+    return best;
+  }
+  /** 每刻（玩家段）：身體碰到還沒解鎖的碑 → 全世界解鎖 */
+  private touchStones(): void {
+    const p = this.player, ws = this.waystones;
+    const t = Math.floor((p.x + p.w / 2) / TILE_SIZE);
+    for (const s of ws.near(t - 2, t + 3)) {
+      if (this.stoneUnlocked(s.id)) continue;
+      const f = ws.footprint(s);
+      if (bodyOverlaps(p, f.x, f.y, f.w, f.h)) this.unlockStone(s);
+    }
+  }
+  private unlockStone(s: Waystone): void {
+    this.stonesUnlocked.add(s.id);
+    this.emit({ type: 'stone_unlock', id: s.id, name: s.name, x: s.x, y: s.y });
+  }
+  /** 瞄準的格 (x, y) 在某顆碑的 footprint 內、伸手距離內 → 那顆 */
+  private stoneAtAim(x: number, y: number): Waystone | null {
+    const ws = this.waystones;
+    for (const s of ws.near(x - 1, x + 1)) {
+      const f = ws.footprint(s);
+      if (x >= f.x && x < f.x + f.w && y >= f.y && y < f.y + f.h && this.canReach(x, y)) return s;
+    }
+    return null;
+  }
+  /** 按使用打開傳送碑面板（伸手碰到也算碰過：還沒解鎖的先解鎖） */
+  private openStone(s: Waystone): void {
+    if (!this.stoneUnlocked(s.id)) this.unlockStone(s);
+    this.emit({ type: 'stone', phase: 'open', id: s.id, x: s.x, y: s.y });
+  }
+  /**
+   * 傳送碑之間傳送（cur）：站在一顆已解鎖的碑旁（stoneHere）、目的地已解鎖且不是同一顆 → 先載入目的地，
+   * 碑右邊最近、站得下的空位；整圈都被填滿 → 不傳（提示）。坐船時傳送 = 下船（teleport）。
+   */
+  travelStone(to: number): boolean {
+    const here = this.stoneHere(), dest = this.waystones.byId(to);
+    if (!here || !this.stoneUnlocked(here.id) || !dest || !this.stoneUnlocked(dest.id) || dest.id === here.id) return false;
+    this.ensureAround(dest.x);
+    const spot = findStandSpot(this.world, dest.x + 2, dest.y);
+    if (!spot) { this.block('use', 'blockedspot', dest.x, dest.y); return false; }
+    this.teleport(spot.x, spot.y);
+    this.closeChest();
+    this.emit({ type: 'stone', phase: 'travel', id: here.id, to: dest.id, x: spot.x, y: spot.y });
     return true;
   }
   /** 建築木槌：方塊整格 ⇄ 半格（只對實心、會自動接邊的方塊） */

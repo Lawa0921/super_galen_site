@@ -43,6 +43,8 @@
 //   header.bounds = 'infinite' + header.outerGen（外圍生成器版本）只在無限世界才寫；chunks / liquids.chunks 可含外圍 chunk 鍵、
 //   chests / unlocked / minedIce / 結冰 / 半格差分可含外圍 tile 鍵（engine/coords.ts）；chunks = 常駐 + 停放的已修改 chunk。
 //   header.exploredOuter = 含中央框外已探索格的 chunk 的迷霧（engine/explore.ts encodeOuter），只在非空時寫。
+//   header.stones = 已解鎖的傳送碑 id（世界共用；由小到大），只在非空時寫；讀檔：不是整數陣列 → 當作沒有，
+//   還原時以 engine/waystones.ts validStoneIds 過濾（這個世界沒有的碑 / 0 丟掉，不算損毀）。
 //   讀檔：有 bounds → 外圍鍵合法、chunk payload 整塊 32 欄寫入；沒有 bounds（format ≤ 10 的舊檔）→ 只接受中央範圍的鍵
 //   （restoreBlocker 回 size），payload / 液體 / 箱子只寫 x < width 的格（補零規則：舊 payload 在 x ≥ width 是補的 0，
 //   不能把無限世界那幾欄的地形挖成空氣）。
@@ -85,6 +87,7 @@ import { Progression, type LevelsJSON } from '../engine/levels';
 import type { FolkJSON } from '../engine/folk';
 import type { QuestLogJSON } from '../engine/quests';
 import { BUFFS, type BuffKind } from '../engine/folkDefs';
+import { validStoneIds } from '../engine/waystones';
 
 export const SAVE_FORMAT = 9;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
@@ -208,6 +211,8 @@ export interface SaveHeader {
   outerGen?: number;
   /** 中央框外的迷霧（非空才有） */
   exploredOuter?: OuterBitsSave;
+  /** 已解鎖的傳送碑 id（世界共用；非空才有） */
+  stones?: number[];
 }
 export interface FolkSave {
   world: FolkJSON; quests: QuestLogJSON;
@@ -530,6 +535,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       // B6：只在不是預設值時才寫（有界世界 / 沒有外圍迷霧 → 位元組與之前相同）
       ...(w.bounds === 'infinite' ? { bounds: 'infinite' as const, outerGen: w.source ? w.source.version : 0 } : {}),
       ...(fog.outer ? { exploredOuter: { chunks: [...fog.outer.chunks], data: fog.outer.data } } : {}),
+      ...(game.stonesUnlocked.size ? { stones: [...game.stonesUnlocked].sort((a, b) => a - b) } : {}),
     },
     chunks,
   };
@@ -668,6 +674,13 @@ export function validOuterGen(v: unknown): number | undefined {
   if (!Number.isInteger(v) || (v as number) < 0) throw new SaveFormatError('outerGen');
   return v as number;
 }
+/** 傳送碑解鎖清單（讀檔第一關，只看形狀）：整數陣列才收（最多 MAX_STONE_IDS 筆）、空的 = 沒有；其他 = 當作沒有（不算損毀） */
+export const MAX_STONE_IDS = 4096;
+export function validStoneList(v: unknown): number[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out = v.slice(0, MAX_STONE_IDS).filter((x): x is number => Number.isInteger(x));
+  return out.length ? out : undefined;
+}
 /** 中央框外的迷霧：chunk 鍵合法（validChunkKeys）+ RLE 長度要剛好 chunks*1024；壞了 = 損毀 */
 export function validExploredOuter(v: unknown, h: KeyDims): OuterBitsSave | undefined {
   if (v === undefined) return undefined;
@@ -764,6 +777,12 @@ export function validOuterFields(h: { width: number; height: number; bounds?: un
   };
 }
 
+/** header.stones：形狀合法且非空才放（同 snapshotGame 的 B6） */
+export function stonesField(v: unknown): Pick<SaveHeader, 'stones'> {
+  const stones = validStoneList(v);
+  return stones ? { stones } : {};
+}
+
 export function decodeSave(bytes: Uint8Array): SaveData {
   const { raw, body } = readContainer(bytes);
   const h = raw as Partial<SaveHeader>;
@@ -802,6 +821,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     levels: validLevels(h.levels),
     folk: validFolk(h.folk),
     ...outer,
+    ...stonesField(h.stones),
   };
   return { header, chunks: readChunks(bytes, body, header.chunks) };
 }
@@ -1067,6 +1087,8 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     if (far.fgAt(x, y) === T.LOCKED_CHEST) w.unlocked.add(i);
   }
   w.keysUsed = h.keysUsed ?? 0;
+  // 傳送碑解鎖（世界共用；freshVisit 也照樣讀：是世界的東西不是角色的）
+  for (const id of validStoneIds(h.stones, game.waystones)) game.stonesUnlocked.add(id);
   w.markAllDirty();
   // 第一次來這個世界（freshVisit）：位置 / 探索 / 標記 / 發現 / 床維持建構子的出生點狀態
   if (!opts.freshVisit) {

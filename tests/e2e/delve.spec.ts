@@ -282,6 +282,42 @@ test.describe('delve', () => {
     expect(errors).toEqual([]);
   });
 
+  test('傳送碑：debug 解鎖東境第 1 碑 → 站到出生點碑旁、右鍵打開面板（兩個項目）→ 點東境那顆 → 傳到海的另一邊', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=infinite-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const stone = await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game;
+      g.stonesUnlocked.add(1);
+      const s = g.waystones.byId(0)!;
+      // 碑右邊第 3 欄的地面上（伸手碰得到碑、身體不重疊）
+      const x = s.x + 3;
+      let y = Math.max(0, s.y - 12);
+      while (y < g.world.height && !g.world.isSolid(x, y)) y++;
+      g.teleport(x, y - 1); d.handle.renderer.snapCamera();
+      return { x: s.x, y: s.y };
+    });
+    await page.waitForTimeout(300);
+    // 瞄準碑身中間那格（footprint = x..x+1、y−2..y）
+    const pt = await page.evaluate(({ x, y }) => {
+      const d = window.__delveDebug!, r = d.handle.renderer, c = (document.querySelector('#delve-canvas') as HTMLCanvasElement).getBoundingClientRect();
+      const p = r.worldToScreen((x + 1) * 16, (y - 0.5) * 16);
+      return { x: c.left + p.x, y: c.top + p.y };
+    }, stone);
+    await page.mouse.move(pt.x, pt.y);
+    await page.mouse.down({ button: 'right' });
+    await expect(page.locator('#delve-stone')).toBeVisible({ timeout: 5000 });
+    await page.mouse.up({ button: 'right' });
+    await expect(page.locator('#delve-stone [data-stone]')).toHaveCount(2);
+    await expect(page.locator('#delve-stone [data-stone="0"]')).toBeDisabled();
+    await page.click('#delve-stone [data-stone="1"]');
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.player.x / 16), { timeout: 5000 }).toBeGreaterThan(4200 + 480);
+    await expect(page.locator('#delve-stone')).toBeHidden();
+    expect(errors).toEqual([]);
+  });
+
   test('瞄準腳下並按住挖掘 → 背包泥土增加', async ({ page }) => {
     await page.goto('/games/delve?seed=mine&autostart=1&fresh=1');
     await waitGame(page);
@@ -3113,6 +3149,8 @@ test.describe('delve settlements', () => {
     await page.goto('/games/delve?seed=house-e2e&autostart=1&fresh=1');
     await waitGame(page);
     await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
+    // 出生點的傳送碑（世界物件，spawn.x + 7）正好在預設村子的床位上（右鍵會打開傳送碑）：先站到碑的右邊再蓋
+    await page.evaluate(() => { const g = window.__delveDebug!.game, s = g.waystones.byId(0)!; g.teleport(s.x + 6, g.feetTile().y); });
     const h = await village(page, 1, ['bed']);
     await page.keyboard.press('KeyH');
     await expect(page.locator('#delve-house-btn')).toHaveAttribute('aria-pressed', 'true');

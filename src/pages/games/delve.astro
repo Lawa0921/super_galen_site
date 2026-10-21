@@ -77,6 +77,15 @@ const lang: Language = defaultLang;
         <div class="delve-settle-body" id="delve-settle-body"></div>
       </section>
 
+      <section class="delve-panel delve-panel--stone" id="delve-stone" hidden aria-label="傳送碑">
+        <header class="delve-panel-head">
+          <h2 id="delve-stone-title">傳送碑</h2>
+          <button class="delve-x" id="delve-stone-close" type="button" aria-label="關閉傳送碑面板">×</button>
+        </header>
+        <p class="delve-hint" id="delve-stone-note"></p>
+        <ul class="delve-stone-list" id="delve-stone-list"></ul>
+      </section>
+
       <section class="delve-panel delve-panel--npc" id="delve-npc" hidden aria-label="居民">
         <header class="delve-panel-head">
           <h2 id="delve-npc-title">居民</h2>
@@ -1894,6 +1903,15 @@ const lang: Language = defaultLang;
   .delve-chip--house[aria-pressed='true'] { --bv-hi: #c2e478; --bv-bg: #2d672e; --bv-lo: #16301e; }
   .delve-panel--settle,
   .delve-panel--npc { left: auto; right: 10px; width: min(460px, calc(100vw - 20px)); }
+  /* 傳送碑面板：已解鎖的碑一列一顆（名字 / 方向與距離），目前這顆標「你在這裡」 */
+  .delve-panel--stone { left: auto; right: 10px; width: min(380px, calc(100vw - 20px)); }
+  .delve-stone-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .delve-stone-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; text-align: left; }
+  .delve-stone-name { font-size: 16px; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-stone-dist { font-size: 16px; color: #cceaf8; }
+  .delve-stone-item.is-here { --bv-hi: #4aaeb0; --bv-bg: #1f6474; --bv-lo: #16301e; }
+  .delve-stone-item.is-here .delve-stone-dist { color: #fff4c0; }
+  .delve-stone-item:disabled:not(.is-here) .delve-stone-name { color: #966139; }
   .delve-settle-body,
   .delve-npc-body { display: grid; gap: 8px; margin-top: 8px; }
   .delve-st-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -1993,6 +2011,7 @@ const lang: Language = defaultLang;
   @media (min-width: 641px) and (min-height: 521px) {
     .delve-panel--settle,
     .delve-panel--npc,
+    .delve-panel--stone,
     .delve-panel--quests { top: 256px; max-height: calc(100vh - 266px); }
     /* 觸控時小地圖的 －/地圖/＋ 按鈕比較高（40px）：面板再往下讓一點 */
     .delve[data-touch='1'] .delve-panel--settle,
