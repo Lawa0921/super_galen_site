@@ -2,6 +2,7 @@ import type { BattleState } from './battle';
 import type { Combatant } from './combatant';
 import { EQUIPMENT } from '../data/equipment';
 import { STANDARD_LINEUP, partyWith } from './party';
+import { NODES, TREES, type TreeNode } from '../data/trees';
 import type { CharacterId, ItemInstance, Party } from './types';
 
 /** A plain common instance of a base (no affixes) at the base's own level, for fixtures. */
@@ -38,4 +39,23 @@ export function makeBattle(party: Combatant[], enemies: Combatant[], extra: Part
 /** A party of `ids` (default the standard five), everyone at level 1, for tests that need real members on a real grid. */
 export function fullParty(ids: CharacterId[] = STANDARD_LINEUP): Party {
   return partyWith(ids);
+}
+
+/**
+ * Puts `node` (and its pair, if any) in the cell of `owner`'s tree at `branch` / `tier` until the returned function puts the
+ * old cell back: for tests of the tree rules (pairs, mechanic knobs) before the real trees hold such a node.
+ */
+export function withNode(owner: CharacterId, branch: number, tier: number, node: TreeNode): () => void {
+  const nodes = TREES[owner].branches[branch].nodes;
+  const old = nodes[tier];
+  const index = (n: TreeNode, pair?: string) => { NODES[n.id] = { node: n, owner, branch, tier, ...(pair ? { pair } : {}) }; };
+  const unindex = (n: TreeNode) => { delete NODES[n.id]; if (n.pair) delete NODES[n.pair.id]; };
+  const put = (n: TreeNode) => {
+    nodes[tier] = n;
+    index(n, n.pair?.id);
+    if (n.pair) index(n.pair, n.id);
+  };
+  unindex(old);
+  put(node);
+  return () => { unindex(node); put(old); };
 }

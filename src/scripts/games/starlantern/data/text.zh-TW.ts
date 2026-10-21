@@ -346,7 +346,7 @@ export const T = {
       open: '可投點',
       /** Why a node cannot take its next rank (progression canRaiseNode). */
       reason: {
-        unknown: '無法投點', max: '已達最高等級', points: '點數不足', req: '需先學會上一階',
+        unknown: '無法投點', max: '已達最高等級', pair: '已選另一個版本', points: '點數不足', req: '需先學會上一階',
         gate: '分支點數不足', capstone: '已選其他終極',
         abyss: (n: number) => `深淵尚未甦醒（需要 ${n} 片記憶）`,
       } as Record<Exclude<RaiseFail, 'abyss'>, string> & { abyss: (n: number) => string },

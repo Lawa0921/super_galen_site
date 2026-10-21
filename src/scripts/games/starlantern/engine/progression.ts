@@ -1,4 +1,6 @@
-import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES, type TreeNode } from '../data/trees';
+import {
+  ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, DEFAULT_FIRST, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES, branchNodes, tierNodes, type MechKnob, type TreeNode,
+} from '../data/trees';
 import type { SkillMod } from '../data/gear';
 import { SKILLS } from '../data/skills';
 import {
@@ -45,9 +47,10 @@ export function talentPoints(level: number, curve: GrowthRules['curve'] = 'compa
 /**
  * Why a node cannot take its next rank, in the order they are checked: the structural reasons first, so a member with no
  * points left still learns what stands in the way; 'points' only for a node that is otherwise open.
+ * 'pair': the other side of the node's pair holds points (plan 8d; `swapPair` moves them instead).
  * 'abyss': the hero's tier-4 node of that branch needs more memories than he has (ABYSS_UNLOCK).
  */
-export type RaiseFail = 'unknown' | 'max' | 'req' | 'gate' | 'abyss' | 'capstone' | 'points';
+export type RaiseFail = 'unknown' | 'max' | 'pair' | 'req' | 'gate' | 'abyss' | 'capstone' | 'points';
 
 const has = (o: object, k: string) => Object.prototype.hasOwnProperty.call(o, k);
 
@@ -67,16 +70,16 @@ export const nodeRank = (m: Member, node: string): number => rankIn(m.tree, node
 
 /** Every active node's skill in the character's tree (passives too), in tree order: branch 0 tiers 0-4, then branch 1, then 2. */
 export const treeSkills = (id: CharacterId): string[] =>
-  TREES[id].branches.flatMap((b) => b.nodes.filter((n) => n.kind === 'active').map((n) => n.skill));
+  TREES[id].branches.flatMap((b) => branchNodes(b).filter((x) => x.node.kind === 'active').map((x) => x.node.skill!));
 
 /** The skills a member knows: the active nodes they hold at rank 1 or more, in tree order. */
 export const learnedSkills = (m: Member): string[] =>
-  TREES[m.id].branches.flatMap((b) => b.nodes.filter((n) => n.kind === 'active' && rankIn(m.tree, n.id) > 0).map((n) => n.skill));
+  TREES[m.id].branches.flatMap((b) => branchNodes(b).filter((x) => x.node.kind === 'active' && rankIn(m.tree, x.node.id) > 0).map((x) => x.node.skill!));
 
 /**
  * The tree's rewrites of `skill` for these ranks, as the two stages battle.ts `skillFor` applies one after another (its
  * only source for the tree): first the active node's own rank (`rankMod`; left out when it changes nothing), then
- * `mods[rank - 1]` of every mod node of that skill held at rank 1 or more, stacked into one by `stackMods` in tree order
+ * `mods[rank - 1]` of every variant node of that skill held at rank 1 or more, stacked into one by `stackMods` in tree order
  * (left out when none is held). A rank above a node's max reads as the max; a junk rank reads as 0.
  * The order and the stacking rules: engine/skills.ts `patchSkill`.
  */
@@ -126,13 +129,13 @@ export function pctMod(skill: string, pct: number): SkillMod | undefined {
   return kinds.includes('buff') ? { buffPct: pct } : undefined;
 }
 
-/** `mods[rank - 1]` of every mod node of `skill` held at rank 1 or more, in tree order. */
+/** `mods[rank - 1]` of every variant node of `skill` held at rank 1 or more, in tree order (a pair's A side before its B). */
 export function nodeMods(ranks: Record<string, number>, skill: string): SkillMod[] {
   const info = activeNode(skill);
   if (!info) return [];
   const out: SkillMod[] = [];
-  for (const b of TREES[info.owner].branches) for (const n of b.nodes) {
-    if (n.kind !== 'mod' || n.skill !== skill) continue;
+  for (const b of TREES[info.owner].branches) for (const { node: n } of branchNodes(b)) {
+    if (n.kind !== 'variant' || n.skill !== skill) continue;
     const r = Math.min(rankIn(ranks, n.id), n.maxRank);
     if (r > 0) out.push(n.mods![r - 1]);
   }
@@ -147,7 +150,7 @@ export function heroMainBranch(ranks: Record<string, number>): number {
   let best = 0;
   let most = -1;
   TREES.hero.branches.forEach((b, i) => {
-    const held = b.nodes.reduce((n, node) => n + rankIn(ranks, node.id), 0);
+    const held = branchNodes(b).reduce((n, x) => n + rankIn(ranks, x.node.id), 0);
     if (held > most) { best = i; most = held; }
   });
   return best;
@@ -166,10 +169,10 @@ export function ultimateFor(id: CharacterId, ranks?: Record<string, number>, m?:
   return id === 'rin' && m?.oath ? RIN_DAWN : ULTIMATES[id];
 }
 
-/** Ranks held in the character's own nodes; ids of other trees or unknown ids are ignored. */
+/** Ranks held in the character's own nodes (B sides too); ids of other trees or unknown ids are ignored. */
 function ranksHeld(id: CharacterId, tree: unknown): number {
   let n = 0;
-  for (const b of TREES[id].branches) for (const node of b.nodes) n += rankIn(tree, node.id);
+  for (const b of TREES[id].branches) for (const x of branchNodes(b)) n += rankIn(tree, x.node.id);
   return n;
 }
 
@@ -181,14 +184,16 @@ function check(id: CharacterId, level: number, tree: unknown, node: string, memo
   const info = has(NODES, node) ? NODES[node] : undefined;
   if (!info || info.owner !== id) return 'unknown';
   if (rankIn(tree, node) >= info.node.maxRank) return 'max';
-  const branch = TREES[id].branches[info.branch].nodes;
-  if (info.tier > 0 && rankIn(tree, branch[info.tier - 1].id) === 0) return 'req';
+  if (info.pair !== undefined && rankIn(tree, info.pair) > 0) return 'pair';
+  const branch = TREES[id].branches[info.branch];
+  const held = (t: number) => tierNodes(branch, t).reduce((n, x) => n + rankIn(tree, x.id), 0);
+  if (info.tier > 0 && held(info.tier - 1) === 0) return 'req';
   let below = 0;
-  for (let t = 0; t < info.tier; t++) below += rankIn(tree, branch[t].id);
-  if (info.branch === 0 && info.tier > 0) below -= Math.min(1, rankIn(tree, branch[0].id));
+  for (let t = 0; t < info.tier; t++) below += held(t);
+  if (info.branch === 0 && info.tier > 0) below -= Math.min(1, rankIn(tree, branch.nodes[0].id));
   if (below < TIER_GATE[info.tier]) return 'gate';
   if (id === 'hero' && info.tier === 4 && !(memories >= ABYSS_UNLOCK[info.branch])) return 'abyss';   // `!(>=)`, so a NaN count keeps the node shut
-  if (info.tier === 4 && TREES[id].branches.filter((b) => b.nodes[4].id !== node && rankIn(tree, b.nodes[4].id) > 0).length >= rulesOf(id).capstones) return 'capstone';
+  if (info.tier === 4 && TREES[id].branches.filter((b, i) => i !== info.branch && tierNodes(b, 4).some((x) => rankIn(tree, x.id) > 0)).length >= rulesOf(id).capstones) return 'capstone';
   if (pointsLeft(id, level, tree) <= 0) return 'points';
   return null;
 }
@@ -209,6 +214,36 @@ export function memoriesOf(m: Pick<Member, 'id' | 'memories'>): number {
  */
 export const canRaiseNode = (m: Member, node: string, memories = memoriesOf(m)): RaiseFail | null => check(m.id, m.level, m.tree, node, memories);
 
+/**
+ * The other side of `node`'s pair takes all its points over to `node` (plan 8d ruling 3: free outside battle, no inn), on
+ * a copy; the member passed in is never changed. The tiers above stay legal: they need some node of this tier to hold
+ * points, and the gate counts the tier's points whichever side holds them. 'unknown': not a node of this member's pairs;
+ * 'empty': the other side holds no points.
+ */
+export function swapPair(m: Member, node: string): { ok: true; member: Member } | { ok: false; reason: 'unknown' | 'empty' } {
+  const info = has(NODES, node) ? NODES[node] : undefined;
+  if (!info || info.owner !== m.id || info.pair === undefined) return { ok: false, reason: 'unknown' };
+  const other = rankIn(m.tree, info.pair);
+  if (other === 0) return { ok: false, reason: 'empty' };
+  const tree = { ...m.tree, [node]: other };
+  delete tree[info.pair];
+  return { ok: true, member: { ...m, tree } };
+}
+
+/**
+ * The value a mechanic knob takes from `owner`'s held mechanic node for `k`: `values[rank - 1]` (a rank above the max reads
+ * as the max), or undefined when no such node holds a rank; the ranks are read as `rankIn` reads a tree, so junk is 0.
+ * A mechanic module reads `mechKnob(c.ranks, owner, k) ?? its constant`; it never draws.
+ */
+export function mechKnob(ranks: unknown, owner: CharacterId, k: MechKnob): number | undefined {
+  for (const b of TREES[owner].branches) for (const { node } of branchNodes(b)) {
+    if (node.kind !== 'mech' || node.knob !== k) continue;
+    const r = Math.min(rankIn(ranks, node.id), node.maxRank);
+    if (r > 0) return node.values![r - 1];
+  }
+  return undefined;
+}
+
 /** One more rank in `node`, on a copy; the member passed in is never changed. */
 export function raiseNode(m: Member, node: string, memories = memoriesOf(m)): { ok: true; member: Member } | { ok: false; reason: RaiseFail } {
   const reason = canRaiseNode(m, node, memories);
@@ -226,9 +261,12 @@ export function legacyDue(skill: string): number {
 
 /**
  * The build a member of `level` gets when nobody chose: one point at a time, in this order of kinds —
- * 1. old skills that are due, smallest old level first; 2. ranks and mods of skills already learned;
- * 3. other new nodes, but not old skills before they are due; 4. old skills early, only when nothing else is open.
- * Within a kind, lowest (rank, tier, branch) first. Ultimates other than DEFAULT_CAPSTONE's branch are never taken.
+ * 1. old skills that are due, smallest old level first; 2. the first node of DEFAULT_FIRST[id] not yet learned that can
+ * be (learned, rank 0 to 1; its later ranks come as upgrades); 3. upgrades: ranks of skills already learned, variants of
+ * them, and mechanic nodes whose tier above holds points; 4. other new nodes, but not old skills before they are due;
+ * 5. old skills early, only when nothing else is open.
+ * Within a kind, lowest (rank, tier, branch) first. Ultimates other than DEFAULT_CAPSTONE's branch are never taken, and
+ * neither is the B side of a pair (plan 8d ruling 5).
  * `memories` is the hero's memory count (abyss nodes wait for it, ABYSS_UNLOCK); the default 0 keeps them shut.
  */
 export function defaultTree(id: CharacterId, level: number, memories = 0): Record<string, number> {
@@ -236,8 +274,14 @@ export function defaultTree(id: CharacterId, level: number, memories = 0): Recor
   const tree = newTree(id);
   const nodes: { node: TreeNode; branch: number; tier: number }[] = [];
   TREES[id].branches.forEach((b, branch) => b.nodes.forEach((node, tier) => {
-    if (tier < 4 || branch === DEFAULT_CAPSTONE[id]) nodes.push({ node, branch, tier });
+    if (tier < 4 || branch === DEFAULT_CAPSTONE[id]) nodes.push({ node, branch, tier });   // A sides only: never a B
   }));
+  const first = (DEFAULT_FIRST[id] ?? []).map((n) => nodes.find((x) => x.node.id === n)).filter((x) => x !== undefined);
+  const learned = (x: (typeof nodes)[number]) => {
+    if (x.node.kind === 'active') return rankIn(tree, x.node.id) >= 1;
+    if (x.node.kind === 'variant') return rankIn(tree, x.node.skill!) >= 1;
+    return x.tier > 0 && tierNodes(TREES[id].branches[x.branch], x.tier - 1).some((n) => rankIn(tree, n.id) > 0);
+  };
   const legacy = (n: TreeNode) => n.kind === 'active' && has(LEGACY_LEARN_LEVEL, n.id) && NODES[n.id].owner === id;
   const order = (a: (typeof nodes)[number], b: (typeof nodes)[number]) =>
     rankIn(tree, a.node.id) - rankIn(tree, b.node.id) || a.tier - b.tier || a.branch - b.branch;
@@ -249,12 +293,11 @@ export function defaultTree(id: CharacterId, level: number, memories = 0): Recor
     for (let p = skillPoints(L, curve) - skillPoints(L - 1, curve); p > 0; p--) {
       const unlearnedOld = nodes.filter((x) => legacy(x.node) && rankIn(tree, x.node.id) === 0);
       const due = unlearnedOld.filter((x) => legacyDue(x.node.id) <= L).sort(byOld);
-      const upgrades = nodes.filter((x) => x.node.kind === 'active'
-        ? rankIn(tree, x.node.id) >= 1
-        : rankIn(tree, x.node.skill) >= 1).sort(order);
+      const firsts = first.filter((x) => rankIn(tree, x.node.id) === 0);
+      const upgrades = nodes.filter(learned).sort(order);
       const fresh = nodes.filter((x) => !upgrades.includes(x) && !unlearnedOld.includes(x)).sort(order);
       const early = unlearnedOld.filter((x) => !due.includes(x)).sort(byOld);
-      const pick = [due, upgrades, fresh, early]
+      const pick = [due, firsts, upgrades, fresh, early]
         .map((kind) => kind.find((x) => check(id, L, tree, x.node.id, memories) === null))
         .find((x) => x !== undefined);
       if (!pick) return tree;
@@ -275,6 +318,7 @@ export function heroTree(level: number, build: HeroBuild = 'balanced', memories 
   const mine = HERO_BUILDS[build].branches;
   const first = HERO_BUILDS[build].nodes ?? [];
   const others = TREES.hero.branches.map((_, i) => i).filter((i) => !mine.includes(i));
+  // A sides only: the standard build never takes a B (plan 8d ruling 5).
   const open = (L: number, branch: number): string | undefined => TREES.hero.branches[branch].nodes
     .map((node, tier) => ({ id: node.id, tier }))
     .filter((x) => check('hero', L, tree, x.id, memories) === null)

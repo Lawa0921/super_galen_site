@@ -7,7 +7,7 @@ import { POWERS } from '../data/gear';
 import { SKILLS } from '../data/skills';
 import { LEGACY_LINEUP } from './party';
 import { constRng, makeBattle, makeCombatant, plainItem, fullParty } from './testing';
-import type { SkillDef } from './types';
+import type { SkillDef, SkillRules } from './types';
 import { KEYSTONE_VALUES as V, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import { dealDamage, stat, type Combatant } from './combatant';
 import type { Element } from './types';
@@ -508,5 +508,30 @@ describe('effect sources', () => {
     expect(foe.poisonSrc).toBe('B');
     dealDamage(foe, foe.hp);
     expect([foe.alive, foe.poison, foe.poisonSrc]).toEqual([false, false, undefined]);
+  });
+});
+
+describe('variant notes and rules (plan 8d Task 1)', () => {
+  it('notes name the variant and add its rule; rules merge key by key', () => {
+    const star = patchSkill(SKILLS['fire-star'], { notes: [{ label: '連星', text: '改為 2 段。' }], hits: 2 });
+    expect(star.name).toBe('火之星彈・連星');
+    expect(star.desc.startsWith(SKILLS['fire-star'].desc)).toBe(true);
+    expect(star.desc.endsWith('改為 2 段。')).toBe(true);
+    expect((star.effects[0] as { hits?: number }).hits).toBe(2);
+    // A mod without notes leaves the name and the words alone.
+    expect(patchSkill(SKILLS['fire-star'], { powerPct: 110 }).name).toBe(SKILLS['fire-star'].name);
+    // Two notes in a row: both labels on the name, both rules on the words, in order.
+    const a = { label: '甲', text: '規則甲。' }, b = { label: '乙', text: '規則乙。' };
+    const both = patchSkill(SKILLS['fire-star'], { notes: [a, b] });
+    expect(both.name).toBe('火之星彈・甲・乙');
+    expect(both.desc.endsWith('規則甲。規則乙。')).toBe(true);
+    expect(stackMods([{ notes: [a] }, { notes: [b] }]).notes).toEqual([a, b]);
+    expect(stackMods([{ powerPct: 110 }]).notes).toBeUndefined();
+    // Rules: the later mod wins a key, the other keys stay; a skill keeps its own rules unless a mod names the key.
+    const R = (r: Record<string, unknown>) => r as Partial<SkillRules>;
+    expect(stackMods([{ rules: R({ x: 1, y: 2 }) }, { rules: R({ y: 3 }) }]).rules).toEqual({ x: 1, y: 3 });
+    const ruled = patchSkill({ ...SKILLS['fire-star'], rules: R({ x: 1, y: 2 }) }, { rules: R({ y: 3, z: 4 }) });
+    expect(ruled.rules).toEqual({ x: 1, y: 3, z: 4 });
+    expect(patchSkill(SKILLS['fire-star'], { powerPct: 110 }).rules).toBeUndefined();
   });
 });

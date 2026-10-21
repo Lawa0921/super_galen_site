@@ -229,7 +229,7 @@ describe('the data guard', () => {
     for (const p of Object.values(POWERS)) if (p.mod.extra) lists.push([`power ${p.id}`, [...(SKILLS[p.skill]?.effects ?? []), ...p.mod.extra]]);
     for (const tree of Object.values(TREES)) {
       for (const b of tree.branches) for (const n of b.nodes) for (const m of n.mods ?? []) {
-        if (m.extra) lists.push([`node ${n.id}`, [...(SKILLS[n.skill]?.effects ?? []), ...m.extra]]);
+        if (m.extra) lists.push([`node ${n.id}`, [...(SKILLS[n.skill!]?.effects ?? []), ...m.extra]]);
       }
     }
     expect(lists.length).toBeGreaterThan(50);

@@ -654,8 +654,8 @@ describe('StatusScene', () => {
     });
 
     it('every refusal has its own words', () => {
-      for (const k of ['unknown', 'max', 'points', 'req', 'gate', 'capstone'] as const) expect(T.ui2.tree.reason[k].length, k).toBeGreaterThan(0);
-      expect(new Set(Object.values(T.ui2.tree.reason).filter((v) => typeof v === 'string')).size).toBe(6);
+      for (const k of ['unknown', 'max', 'pair', 'points', 'req', 'gate', 'capstone'] as const) expect(T.ui2.tree.reason[k].length, k).toBeGreaterThan(0);
+      expect(new Set(Object.values(T.ui2.tree.reason).filter((v) => typeof v === 'string')).size).toBe(7);
     });
 
     it('moving the cursor cancels a pending raise', () => {
@@ -1438,7 +1438,7 @@ describe('StatusScene', () => {
       game.state.party.roster.hero = { ...game.state.party.roster.hero, tree: { ...game.state.party.roster.hero.tree, [caps[0].id]: 1, [caps[1].id]: 1 } };
       tabTo(3);
       const text = root.querySelector('.slx-tree-capstone')!.textContent!;
-      for (const c of caps) expect(text).toContain(c.kind === 'active' ? SKILLS[c.skill].name : c.name!);
+      for (const c of caps) expect(text).toContain(c.kind === 'active' ? SKILLS[c.skill!].name : c.name!);
     });
 
     it("the hero's ultimate line names his current form", () => {

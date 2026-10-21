@@ -7,7 +7,7 @@ import { TREES } from './trees';
 
 const FRONT: CharacterId[] = ['chizuru', 'liz', 'scarlet', 'safira'];
 const avg = (pick: (id: CharacterId) => number) => FRONT.reduce((n, id) => n + pick(id), 0) / FRONT.length;
-const rinSkills = () => TREES.rin.branches.flatMap((b) => b.nodes).filter((n) => n.kind === 'active').map((n) => SKILLS[n.skill]);
+const rinSkills = () => TREES.rin.branches.flatMap((b) => b.nodes).filter((n) => n.kind === 'active').map((n) => SKILLS[n.skill!]);
 
 describe('rin', () => {
   it("rin's HP and DEF are about 15% above the front line", () => {

@@ -83,7 +83,14 @@ export interface SkillDef {
   field?: true;
   /** Its part in its owner's mechanic (plan 8c). */
   mech?: SkillMechTag;
+  /** Rules a variant node writes on the whole skill (plan 8d), read by the mechanic modules. */
+  rules?: Partial<SkillRules>;
 }
+/**
+ * Rules a variant node changes on a skill as a whole (plan 8d ruling 7): each task adds its fields; `patchSkill` merges
+ * them key by key and copies the ones that belong to one effect onto that effect.
+ */
+export interface SkillRules {}
 export interface UltimateDef {
   id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string;
   /** After the blow lands: more effects on the living party (`allies`) or on the living hero (`hero`). */

@@ -51,7 +51,7 @@ export const pctOf = (base: number, pct: number | undefined): number => {
  * 1. base: SKILLS[id];
  * 2. tree rank: the active node's ACTIVE_RANK_PCT on the skill's primary effect (progression.rankMod): powerPct for a
  *    damage, heal or device skill, buffPct for a pure buff or debuff skill; a debuff riding on damage never scales;
- * 3. tree modifiers: every mod node of the skill the member holds, folded into one mod by `stackMods` in tree order:
+ * 3. tree variants: every variant node of the skill the member holds, folded into one mod by `stackMods` in tree order:
  *    absolute values (powerPct, buffPct, turns, chance, hpCost, hits, element, target) replace the earlier node's,
  *    relative values (tpDelta, powerDelta, turnsDelta; e.g. twin-turret's +60 points and +1 turn) add;
  * 4. legendary powers last, one after another in the order worn;
@@ -99,8 +99,18 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
   if (mod.target !== undefined) out.target = mod.target;
   if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;
   if (mod.tpDelta !== undefined && def.tp > 0) out.tp = Math.max(1, def.tp + mod.tpDelta);
+  // A variant (plan 8d): its label goes after the skill's name, its rule after the words; its rules merge key by key.
+  for (const n of mod.notes ?? []) {
+    out.name += `・${n.label}`;
+    out.desc += (out.desc && !out.desc.endsWith('。') ? '。' : '') + n.text;
+  }
+  if (mod.rules) out.rules = { ...def.rules, ...definedOnly(mod.rules) };
   return out;
 }
+
+/** The keys of `o` whose value is not undefined (an undefined rule never overwrites one). */
+const definedOnly = <O extends object>(o: O): Partial<O> =>
+  Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<O>;
 
 /** The ways a description names an effect's number, by field (patchSkill keeps them true). */
 const NAMED_NUMBERS = (e: Effect): [string, (v: number) => string][] => {
@@ -114,16 +124,21 @@ const NAMED_NUMBERS = (e: Effect): [string, (v: number) => string][] => {
   return out;
 };
 
-/** Mod nodes of one skill folded into one mod: absolute values replace (the later node wins), deltas add, extra appends. */
+/**
+ * Mod nodes of one skill folded into one mod: absolute values replace (the later node wins), deltas add, extra and notes
+ * append, rules merge key by key (the later node wins a key).
+ */
 export function stackMods(mods: SkillMod[]): SkillMod {
   const out: SkillMod = {};
   for (const m of mods) {
-    const { tpDelta, powerDelta, turnsDelta, extra, ...abs } = m;
+    const { tpDelta, powerDelta, turnsDelta, extra, notes, rules, ...abs } = m;
     Object.assign(out, Object.fromEntries(Object.entries(abs).filter(([, v]) => v !== undefined)));
     for (const [k, v] of [['tpDelta', tpDelta], ['powerDelta', powerDelta], ['turnsDelta', turnsDelta]] as const) {
       if (v !== undefined) out[k] = (out[k] ?? 0) + v;
     }
     if (extra?.length) out.extra = [...(out.extra ?? []), ...extra];
+    if (notes?.length) out.notes = [...(out.notes ?? []), ...notes];
+    if (rules) out.rules = { ...out.rules, ...definedOnly(rules) };
   }
   return out;
 }

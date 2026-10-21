@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TREES, nodeDesc, nodeName } from './trees';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TREES, branchNodes, nodeDesc, nodeName, tierNodes } from './trees';
 import { CHARACTERS, rulesOf } from './characters';
 import { SKILLS } from './skills';
 import { POWERS } from './gear';
@@ -11,6 +14,46 @@ const ids = Object.keys(TREES) as CharacterId[];
 const allNodes = () => ids.flatMap((id) => TREES[id]!.branches.flatMap((b) => b.nodes));
 
 describe('skill trees', () => {
+  /** Points a tree can take (plan 8d ruling 4): every rank of tiers 0-3 (a pair is one cell), less the free one, plus one ultimate. */
+  const capacity = (branches: { maxRank: number }[][]) =>
+    branches.reduce((s, b) => s + b.slice(0, 4).reduce((t, n) => t + n.maxRank, 0), 0) - 1 /* free */ + 1 /* one ultimate */;
+
+  it('every tree keeps its 8b capacity and shape', () => {
+    const fixture = join(dirname(fileURLToPath(import.meta.url)), '..', 'engine', '__fixtures__', 'roster-8b.json');
+    const was = (JSON.parse(readFileSync(fixture, 'utf8')) as { trees: Record<string, { id: string; maxRank: number }[][]> }).trees;
+    expect(Object.keys(TREES).sort()).toEqual(Object.keys(was).sort());
+    for (const id of ids) {
+      const now = TREES[id].branches;
+      expect(now.map((b) => b.nodes.length), id).toEqual(was[id].map((b) => b.length));
+      now.forEach((b, i) => b.nodes.forEach((a, t) => {
+        expect(a.maxRank, `${id} ${i}/${t}`).toBe(was[id][i][t].maxRank);
+        if (!a.pair) return;
+        expect(a.pair.kind, `${id} ${i}/${t} pair`).toBe(a.kind);
+        expect(a.pair.maxRank, `${id} ${i}/${t} pair`).toBe(a.maxRank);
+        expect(a.pair.pair, `${id} ${i}/${t} pair`).toBeUndefined();
+      }));
+      expect(capacity(now.map((b) => b.nodes)), id).toBe(capacity(was[id]));
+    }
+  });
+
+  it('every node is reachable through branchNodes and NODES knows its pair', () => {
+    const all = ids.flatMap((id) => TREES[id].branches.flatMap((b) => branchNodes(b).map((x) => x.node.id)));
+    expect(Object.keys(NODES).sort()).toEqual([...all].sort());
+    for (const id of ids) for (const b of TREES[id].branches) {
+      branchNodes(b).forEach(({ node, tier }) => {
+        expect(tierNodes(b, tier).map((n) => n.id), node.id).toContain(node.id);
+        expect(NODES[node.id].tier, node.id).toBe(tier);
+      });
+      b.nodes.forEach((a, tier) => {
+        expect(tierNodes(b, tier), a.id).toEqual(a.pair ? [a, a.pair] : [a]);
+        if (!a.pair) { expect(NODES[a.id].pair, a.id).toBeUndefined(); return; }
+        expect(NODES[a.id].pair, a.id).toBe(a.pair.id);
+        expect(NODES[a.pair.id].pair, a.pair.id).toBe(a.id);
+        expect(NODES[a.pair.id].tier, a.pair.id).toBe(tier);
+      });
+    }
+  });
+
   it('every character has a tree', () => {
     expect([...ids].sort()).toEqual(Object.keys(CHARACTERS).sort());
   });
@@ -59,7 +102,7 @@ describe('skill trees', () => {
   it("an active node's id is its skill id, so a skill id finds its node (statusTabs and nodeRank rely on it)", () => {
     for (const n of allNodes().filter((x) => x.kind === 'active')) {
       expect(n.id, n.skill).toBe(n.skill);
-      expect(NODES[n.skill].node, n.skill).toBe(n);
+      expect(NODES[n.skill!].node, n.skill).toBe(n);
     }
   });
 
@@ -70,11 +113,11 @@ describe('skill trees', () => {
       for (const n of nodes) {
         if (n.kind === 'active') {
           expect(n.id).toBe(n.skill);
-          expect(SKILLS[n.skill], n.id).toBeDefined();
-          expect(SKILLS[n.skill].owner).toBe(id);
+          expect(SKILLS[n.skill!], n.id).toBeDefined();
+          expect(SKILLS[n.skill!].owner).toBe(id);
           expect(n.name ?? n.desc ?? n.mods).toBeUndefined();
         } else {
-          expect(actives.has(n.skill), `${n.id} -> ${n.skill}`).toBe(true);
+          expect(actives.has(n.skill!), `${n.id} -> ${n.skill}`).toBe(true);
           expect(n.name, n.id).toBeTruthy();
           expect(n.desc, n.id).toBeTruthy();
         }
@@ -83,7 +126,7 @@ describe('skill trees', () => {
   });
 
   it('mod nodes carry one mod per rank and powerPct and buffPct rise with rank', () => {
-    for (const n of allNodes().filter((x) => x.kind === 'mod')) {
+    for (const n of allNodes().filter((x) => x.kind === 'variant')) {
       expect(n.mods, n.id).toHaveLength(n.maxRank);
       for (const key of ['powerPct', 'buffPct'] as const) {
         const pcts = n.mods!.map((m) => m[key]).filter((p) => p !== undefined) as number[];
@@ -97,10 +140,10 @@ describe('skill trees', () => {
   });
 
   it('a mod node deepens a buff or debuff only when its text says so', () => {
-    for (const n of allNodes().filter((x) => x.kind === 'mod')) {
+    for (const n of allNodes().filter((x) => x.kind === 'variant')) {
       const says = /削弱|提升幅度/.test(n.desc!);
       expect(n.mods!.some((m) => m.buffPct !== undefined), n.id).toBe(says);
-      if (says) expect(SKILLS[n.skill].effects.some((e) => e.kind === 'buff'), n.id).toBe(true);
+      if (says) expect(SKILLS[n.skill!].effects.some((e) => e.kind === 'buff'), n.id).toBe(true);
     }
   });
 
@@ -113,15 +156,15 @@ describe('skill trees', () => {
   });
 
   it('every power mod node (powerPct or powerDelta) names a skill that deals damage, heals, sets a device or raises a barrier', () => {
-    const power = allNodes().filter((n) => n.kind === 'mod' && n.mods!.some((m) => m.powerPct !== undefined || m.powerDelta !== undefined));
+    const power = allNodes().filter((n) => n.kind === 'variant' && n.mods!.some((m) => m.powerPct !== undefined || m.powerDelta !== undefined));
     expect(power.map((n) => n.id)).toContain('twin-turret');
     for (const n of power) {
-      expect(SKILLS[n.skill].effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'device' || e.kind === 'barrier'), n.id).toBe(true);
+      expect(SKILLS[n.skill!].effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'device' || e.kind === 'barrier'), n.id).toBe(true);
     }
   });
 
   it('a skill whose HP cost a mod node lowers does not state a fixed HP percent', () => {
-    const lowered = [...new Set(allNodes().filter((n) => n.mods?.some((m) => m.hpCost !== undefined)).map((n) => n.skill))];
+    const lowered = [...new Set(allNodes().filter((n) => n.mods?.some((m) => m.hpCost !== undefined)).map((n) => n.skill!))];
     expect(lowered).toEqual(['blaze-ring']);
     for (const s of lowered) expect(SKILLS[s].desc, s).not.toMatch(/\d+\s*%/);
   });
@@ -140,10 +183,10 @@ describe('skill trees', () => {
 
   it('an active above rank 1 has an effect its rank scales (damage, heal or turret by powerPct; a pure buff by buffPct), or a TP cost its rank lowers', () => {
     for (const n of allNodes().filter((x) => x.kind === 'active' && x.maxRank > 1)) {
-      const kinds = SKILLS[n.skill].effects.map((e) => e.kind);
+      const kinds = SKILLS[n.skill!].effects.map((e) => e.kind);
       // Plan 8c: a skill with nothing to scale costs 1 TP less a rank (so it needs TP to spare), or lasts longer a rank.
       const scales = kinds.some((k) => ['damage', 'heal', 'buff', 'device', 'barrier', 'gauge'].includes(k));
-      expect(scales || SKILLS[n.skill].tp > n.maxRank || n.rank === 'turns', n.id).toBe(true);
+      expect(scales || SKILLS[n.skill!].tp > n.maxRank || n.rank === 'turns', n.id).toBe(true);
     }
   });
 
@@ -152,7 +195,7 @@ describe('skill trees', () => {
       const t = TREES[id]!;
       const free = t.branches[0].nodes[0];
       expect(free.kind).toBe('active');
-      expect(SKILLS[free.skill].passive).toBeUndefined();
+      expect(SKILLS[free.skill!].passive).toBeUndefined();
       for (const b of t.branches) expect(b.nodes[4].maxRank).toBe(1);
     }
   });

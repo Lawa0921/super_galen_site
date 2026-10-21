@@ -2,14 +2,15 @@ import { describe, it, expect } from 'vitest';
 import {
   canRaiseNode, canRaiseTalent, defaultTalents, defaultTree, freeNode, keystonesOf, learnedSkills, legacyDue, newTree, nodeRank, raiseNode,
   raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, ultimateFor, validBuild,
-  heroMainBranch, heroTalents, heroTree, memoriesOf,
+  heroMainBranch, heroTalents, heroTree, memoriesOf, mechKnob, swapPair,
 } from './progression';
 import { chainLength } from '../data/story/chains';
 import { HERO_ULTIMATES, RIN_DAWN, SKY_LANTERN, ULTIMATES } from '../data/ultimates';
 import { gainExp, newMember } from './party';
 import { CHARACTERS, rulesOf } from '../data/characters';
 import { mulberry32 } from './rng';
-import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES } from '../data/trees';
+import { DEFAULT_CAPSTONE, DEFAULT_FIRST, K, LEGACY_LEARN_LEVEL, NODES, P, TIER_GATE, TREES, V0, branchNodes } from '../data/trees';
+import { withNode } from './testing';
 import { BOARDS, DEFAULT_KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE, talentBlocker } from '../data/talents';
 import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
 import type { AnyStat, CharacterId, Member } from './types';
@@ -798,11 +799,21 @@ describe('every rank of every node counts (plan 8c fix round 1)', () => {
     const { TREES } = await import('../data/trees');
     const dead: string[] = [];
     for (const tree of Object.values(TREES)) {
-      const nodes = tree.branches.flatMap((b) => b.nodes);
+      const nodes = tree.branches.flatMap((b) => branchNodes(b).map((x) => x.node));
       for (const n of nodes) {
-        const others = Object.fromEntries(nodes.filter((x) => x.skill === n.skill && x.id !== n.id).map((x) => [x.id, x.maxRank]));
+        const owner = NODES[n.id].owner;
+        // A mechanic node has no skill: each of its ranks must turn its knob to a new value.
+        if (n.kind === 'mech') {
+          for (let r = 1; r <= n.maxRank; r++) {
+            if (mechKnob({ [n.id]: r }, owner, n.knob!) === mechKnob({ [n.id]: r - 1 }, owner, n.knob!)) dead.push(`${n.id} rank ${r}`);
+          }
+          continue;
+        }
+        // The other side of the node's own pair never holds points beside it.
+        const pair = NODES[n.id].pair;
+        const others = Object.fromEntries(nodes.filter((x) => x.skill === n.skill && x.id !== n.id && x.id !== pair).map((x) => [x.id, x.maxRank]));
         const lo = n.kind === 'active' ? 1 : 0;
-        const at = (r: number) => skillFor({ powers: [], ranks: { ...others, [n.id]: r } }, n.skill);
+        const at = (r: number) => skillFor({ powers: [], ranks: { ...others, [n.id]: r } }, n.skill!);
         for (let r = lo + 1; r <= n.maxRank; r++) if (JSON.stringify(at(r)) === JSON.stringify(at(r - 1))) dead.push(`${n.id} rank ${r}`);
       }
     }
@@ -830,9 +841,9 @@ describe('skill words follow their numbers (plan 8c)', () => {
       const nodes = tree.branches.flatMap((b) => b.nodes);
       for (const n of nodes) for (let r = 1; r <= n.maxRank; r++) {
         const active = nodes.find((x) => x.kind === 'active' && x.skill === n.skill);
-        if (!active || !SKILLS[n.skill]) continue;
-        const ranks = { [active.id]: n.kind === 'active' ? r : 1, ...(n.kind === 'mod' ? { [n.id]: r } : {}) };
-        const base = SKILLS[n.skill], now = skillFor({ powers: [], ranks }, n.skill)!;
+        if (!active || !SKILLS[n.skill!]) continue;
+        const ranks = { [active.id]: n.kind === 'active' ? r : 1, ...(n.kind === 'variant' ? { [n.id]: r } : {}) };
+        const base = SKILLS[n.skill!], now = skillFor({ powers: [], ranks }, n.skill!)!;
         base.effects.forEach((e, i) => {
           const p = now.effects[i] as unknown as Record<string, number>;
           for (const [f, say] of named(e as unknown as Record<string, unknown>)) {
@@ -859,5 +870,86 @@ describe('skill words follow their numbers (plan 8c)', () => {
   it('skill text calls a foe 牠', async () => {
     const { SKILLS } = await import('../data/skills');
     for (const s of Object.values(SKILLS)) expect(s.desc, s.id).not.toContain('它');
+  });
+});
+
+describe('pairs, mechanic knobs and the first-learned list (plan 8d Task 1)', () => {
+  /** A B side for noel's tier-1 cell of branch 0 (the A side is the node standing there): a variant of the same skill. */
+  const fakeB = () => V0('test-star-b', '測試星', 'fire-star', '測試用的另一個版本', [{ powerPct: 101 }, { powerPct: 102 }, { powerPct: 103 }]);
+  const withFakePair = () => withNode('noel', 0, 1, P(TREES.noel.branches[0].nodes[1], fakeB()));
+
+  it('a pair holds points on one side only', () => {
+    const restore = withFakePair();
+    try {
+      const a = TREES.noel.branches[0].nodes[1].id;
+      expect(canRaiseNode(at('noel', 20, { 'fire-star': 1, [a]: 1 }), 'test-star-b')).toBe('pair');
+      expect(canRaiseNode(at('noel', 20, { 'fire-star': 1, 'test-star-b': 1 }), a)).toBe('pair');
+      expect(validBuild('noel', 20, { 'fire-star': 1, [a]: 1, 'test-star-b': 1 }, {})).toBe(false);
+      expect(validBuild('noel', 20, { 'fire-star': 1, 'test-star-b': 2 }, {})).toBe(true);
+      const empty = at('noel', 20, { 'fire-star': 1 });
+      expect(canRaiseNode(empty, a)).toBeNull();
+      expect(canRaiseNode(empty, 'test-star-b')).toBeNull();
+      // 'pair' is checked before 'req': with nothing above, the pair still answers first.
+      expect(canRaiseNode(at('noel', 20, { [a]: 1 } as Record<string, number>), 'test-star-b')).toBe('pair');
+    } finally { restore(); }
+  });
+
+  it('swapping a side keeps the nodes above it and every point', () => {
+    const restore = withFakePair();
+    try {
+      const a = TREES.noel.branches[0].nodes[1].id;
+      const m = at('noel', 20, { 'fire-star': 1, [a]: 2, 'flame-wave': 1 });
+      expect(validBuild('noel', 20, m.tree, {})).toBe(true);
+      const r = swapPair(m, 'test-star-b');
+      if (!r.ok) throw new Error(`swap refused: ${r.reason}`);
+      expect(r.member.tree).toEqual({ 'fire-star': 1, 'test-star-b': 2, 'flame-wave': 1 });
+      expect(m.tree).toEqual({ 'fire-star': 1, [a]: 2, 'flame-wave': 1 });   // the member passed in is never changed
+      expect(skillPointsLeft(r.member)).toBe(skillPointsLeft(m));
+      expect(validBuild('noel', 20, r.member.tree, {})).toBe(true);
+      // And back again.
+      const back = swapPair(r.member, a);
+      expect(back.ok && back.member.tree).toEqual(m.tree);
+      expect(swapPair(m, a)).toEqual({ ok: false, reason: 'empty' });
+      expect(swapPair(m, 'flame-wave')).toEqual({ ok: false, reason: 'unknown' });
+      expect(swapPair(m, 'no-such-node')).toEqual({ ok: false, reason: 'unknown' });
+      expect(swapPair(at('rin', 20), 'test-star-b')).toEqual({ ok: false, reason: 'unknown' });
+    } finally { restore(); }
+  });
+
+  it('mechKnob reads the held rank of a mechanic node', () => {
+    const restore = withNode('noel', 0, 1, K('test-calm', '測試冷靜', 'heatMax', [6, 7, 8], (v) => `熱度上限 ${v}。`));
+    try {
+      expect(mechKnob({ 'fire-star': 1 }, 'noel', 'heatMax')).toBeUndefined();
+      expect(mechKnob({ 'test-calm': 0 }, 'noel', 'heatMax')).toBeUndefined();
+      expect(mechKnob({ 'test-calm': 1 }, 'noel', 'heatMax')).toBe(6);
+      expect(mechKnob({ 'test-calm': 2 }, 'noel', 'heatMax')).toBe(7);
+      expect(mechKnob({ 'test-calm': 9 }, 'noel', 'heatMax')).toBe(8);   // a hand-edited rank reads as the max
+      expect(mechKnob({ 'test-calm': 'x' }, 'noel', 'heatMax')).toBeUndefined();
+      expect(mechKnob(null, 'noel', 'heatMax')).toBeUndefined();
+      expect(mechKnob({ 'test-calm': 2 }, 'noel', 'markCap')).toBeUndefined();   // another knob
+      expect(mechKnob({ 'test-calm': 2 }, 'rin', 'heatMax')).toBeUndefined();    // another member's
+    } finally { restore(); }
+  });
+
+  it('the standard build never takes a B side and takes DEFAULT_FIRST before upgrades', () => {
+    const restore = withFakePair();
+    try {
+      for (let L = 2; L <= 50; L++) expect(defaultTree('noel', L)['test-star-b'], `Lv${L}`).toBeUndefined();
+    } finally { restore(); }
+    // Liz: Lv2's point goes to stealth (an old skill due at Lv2), Lv3's to quickstep (first). It is learned, not raised:
+    // Lv5's point is an upgrade by the usual order.
+    expect(defaultTree('liz', 3).quickstep).toBeUndefined();
+    DEFAULT_FIRST.liz = ['quickstep'];
+    try {
+      expect(defaultTree('liz', 2)).toEqual({ 'twin-slash': 1, stealth: 1 });
+      expect(defaultTree('liz', 3)).toEqual({ 'twin-slash': 1, stealth: 1, quickstep: 1 });
+      expect(defaultTree('liz', 5).quickstep).toBe(1);
+      expect(validBuild('liz', 30, defaultTree('liz', 30), {})).toBe(true);
+    } finally { delete DEFAULT_FIRST.liz; }
+    // Rin has no old skills: her first point goes to the list.
+    DEFAULT_FIRST.rin = ['rin-mark'];
+    try {
+      expect(defaultTree('rin', 2)).toEqual({ 'rin-needle': 1, 'rin-mark': 1 });
+    } finally { delete DEFAULT_FIRST.rin; }
   });
 });

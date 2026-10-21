@@ -107,7 +107,7 @@ describe('hero', () => {
       'hero-mend': 5, 'hero-prayer': 9, 'hero-purify': 3, 'abyss-light': 16,
       'hero-shackle': 4, 'hero-slow': 6, 'hero-expose': 5, 'hero-sleep': 5, 'abyss-chain': 13,
     };
-    const actives = heroNodes().filter((n) => n.kind === 'active').map((n) => n.skill);
+    const actives = heroNodes().filter((n) => n.kind === 'active').map((n) => n.skill!);
     expect([...actives].sort()).toEqual(Object.keys(cost).sort());
     for (const [id, tp] of Object.entries(cost)) {
       expect(SKILLS[id].owner, id).toBe('hero');
@@ -129,7 +129,7 @@ describe('hero', () => {
 
   it('no hero skill revives, always crits, executes or backstabs', () => {
     const effects = [
-      ...heroNodes().filter((n) => n.kind === 'active').flatMap((n) => SKILLS[n.skill].effects),
+      ...heroNodes().filter((n) => n.kind === 'active').flatMap((n) => SKILLS[n.skill!].effects),
       ...HERO_ULTIMATES.flatMap((u) => u.effects),   // the five Lantern Key forms count too
     ];
     expect(effects.length).toBeGreaterThan(0);
@@ -149,7 +149,7 @@ describe('the hero never outdoes a specialist', () => {
   const KINDS: Kind[] = [undefined, ...(Object.keys(WEAPON_KINDS) as WeaponKind[])];
   const maxed = (id: CharacterId) =>
     Object.fromEntries(TREES[id].branches.flatMap((b) => b.nodes).map((n) => [n.id, n.maxRank])) as Record<string, number>;
-  const actives = (id: CharacterId) => TREES[id].branches.flatMap((b) => b.nodes).filter((n) => n.kind === 'active').map((n) => n.skill);
+  const actives = (id: CharacterId) => TREES[id].branches.flatMap((b) => b.nodes).filter((n) => n.kind === 'active').map((n) => n.skill!);
   type Measure = (s: SkillDef) => number[];
   const best = (xs: number[]) => Math.max(0, ...xs);
   /** `skillFor` for a maxed character, failing with the skill's name instead of a bare undefined. */
@@ -212,7 +212,7 @@ describe('the hero never outdoes a specialist', () => {
   it("the hero learns no companion's skill", () => {
     const mine = Object.values(NODES).filter((x) => x.owner === 'hero');
     expect(mine.length).toBeGreaterThan(0);
-    for (const x of mine) expect(SKILLS[x.node.skill].owner, x.node.id).toBe('hero');
+    for (const x of mine) expect(SKILLS[x.node.skill!].owner, x.node.id).toBe('hero');
     const others = new Set(Object.entries(ULTIMATES).filter(([id]) => id !== 'hero').map(([, u]) => u.id));
     expect(new Set(HERO_ULTIMATES.map((u) => u.id)).size).toBe(HERO_ULTIMATES.length);
     for (const u of HERO_ULTIMATES) {

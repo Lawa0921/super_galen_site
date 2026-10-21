@@ -1,4 +1,4 @@
-import type { AnyStat, Effect, GearSlot, Rarity, Sheet, Target, Element, WeaponKind } from '../engine/types';
+import type { AnyStat, Effect, GearSlot, Rarity, Sheet, SkillRules, Target, Element, WeaponKind } from '../engine/types';
 import type { RegionId } from './regions';
 
 export const GEAR_SLOTS: GearSlot[] = ['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring'];
@@ -84,6 +84,10 @@ export interface SkillMod {
   /** Added to a TP-costing skill's cost (floored at 1); a free skill stays free. */
   tpDelta?: number;
   extra?: Effect[];
+  /** A variant's label and rule (plan 8d): the label goes after the skill's name (・label), the rule after its words. */
+  notes?: { label: string; text: string }[];
+  /** Rules the variant writes on the skill, merged key by key (engine/types SkillRules). */
+  rules?: Partial<SkillRules>;
 }
 export interface PowerDef { id: string; skill: string; text: string; mod: SkillMod }
 

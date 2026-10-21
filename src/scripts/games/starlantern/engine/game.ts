@@ -22,7 +22,7 @@ import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { CHARACTERS } from '../data/characters';
 import { MAX_ACTIVE } from './formation';
 import { activeIds, awardExp, hasPassive, joinLevel, meet, placeInGrid, setFormation, START_LINEUP, statsOf, type LevelUp, type SetFormationFail } from './party';
-import { raiseNode, raiseTalent, type RaiseFail, type TalentFail } from './progression';
+import { raiseNode, raiseTalent, swapPair, type RaiseFail, type TalentFail } from './progression';
 import { pick, type Rng } from './rng';
 import { depthClearExp, depthLevel, encounterGroup } from './scaling';
 import { loadGame, saveGame, type SaveStorage } from './save';
@@ -721,6 +721,20 @@ export class Game {
   raiseNode(id: CharacterId, node: string): { ok: true } | { ok: false; reason: RaiseFail | 'invalid' } {
     if ((this.phase !== 'town' && this.phase !== 'map') || !this.state.party.recruited.includes(id)) return { ok: false, reason: 'invalid' };
     const r = raiseNode(this.state.party.roster[id], node);
+    if (!r.ok) return r;
+    const party = this.state.party;
+    this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
+    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return { ok: true };
+  }
+
+  /**
+   * A recruited member's pair changes side for free (plan 8d; the rules: progression `swapPair`): in town and the labyrinth's
+   * field, never in battle. Saved like `raiseNode`: at once in town, at the next town save in the labyrinth.
+   */
+  swapVariant(id: CharacterId, node: string): { ok: true } | { ok: false; reason: 'unknown' | 'empty' | 'invalid' } {
+    if ((this.phase !== 'town' && this.phase !== 'map') || !this.state.party.recruited.includes(id)) return { ok: false, reason: 'invalid' };
+    const r = swapPair(this.state.party.roster[id], node);
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };

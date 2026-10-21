@@ -3,7 +3,8 @@ import { Game, type MoveResult } from './game';
 import { STORY_FIGHT_ROUNDS } from './battle';
 import { SAVE_KEY, loadGame, saveGame } from './save';
 import { SAVE_VERSION, newGame, START_ITEMS } from './state';
-import { constRng, memoryStorage, plainItem } from './testing';
+import { constRng, memoryStorage, plainItem, withNode } from './testing';
+import { P, TREES, V0 } from '../data/trees';
 import { mulberry32 } from './rng';
 import { rollPortals, validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
@@ -1524,6 +1525,43 @@ describe('spending a skill point', () => {
     expect(g.raiseNode('noel', 'ice-star')).toEqual({ ok: true });
     expect(g.state.party.roster.noel.tree['ice-star']).toBe(1);
     expect([g.notice, storage.map.has(SAVE_KEY)]).toEqual([null, false]);
+  });
+});
+
+describe('changing a variant side (plan 8d Task 1)', () => {
+  it('swapVariant works in town and the field, never in battle', () => {
+    const b = V0('test-star-b', '測試星', 'fire-star', '測試用的另一個版本', [{ powerPct: 101 }, { powerPct: 102 }, { powerPct: 103 }]);
+    const restore = withNode('noel', 0, 1, P(TREES.noel.branches[0].nodes[1], b));
+    try {
+      const a = TREES.noel.branches[0].nodes[1].id;
+      const storage = memoryStorage();
+      const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
+      const held = { 'fire-star': 1, [a]: 2, 'flame-wave': 1 };
+      g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 20, tree: held };
+      g.phase = 'battle';
+      expect(g.swapVariant('noel', 'test-star-b')).toEqual({ ok: false, reason: 'invalid' });
+      expect(g.state.party.roster.noel.tree).toEqual(held);
+      g.phase = 'town';
+      expect(g.swapVariant('noel', a)).toEqual({ ok: false, reason: 'empty' });
+      expect(g.swapVariant('noel', 'flame-wave')).toEqual({ ok: false, reason: 'unknown' });
+      expect(g.swapVariant('sylvie', 'test-star-b')).toEqual({ ok: false, reason: 'invalid' });   // not recruited
+      expect(storage.map.has(SAVE_KEY)).toBe(false);
+      expect(g.swapVariant('noel', 'test-star-b')).toEqual({ ok: true });
+      expect(g.state.party.roster.noel.tree).toEqual({ 'fire-star': 1, 'test-star-b': 2, 'flame-wave': 1 });
+      expect(g.notice).toBeNull();
+      const back = Game.boot(calm(), storage);
+      expect(back.state.party.roster.noel.tree).toEqual({ 'fire-star': 1, 'test-star-b': 2, 'flame-wave': 1 });
+      // In the labyrinth the change counts at once and waits for the next town save.
+      const field = inMap(1, calm(), memoryStorage());
+      field.state.party.roster.noel = { ...field.state.party.roster.noel, level: 20, tree: held };
+      expect(field.swapVariant('noel', 'test-star-b')).toEqual({ ok: true });
+      expect(field.state.party.roster.noel.tree['test-star-b']).toBe(2);
+      // A failed town save says so and keeps the change.
+      const full = new Game(calm(), { getItem: () => null, setItem: () => { throw new Error('full'); } }, undefined, 0, HERO_LINEUP);
+      full.state.party.roster.noel = { ...full.state.party.roster.noel, level: 20, tree: held };
+      expect(full.swapVariant('noel', 'test-star-b')).toEqual({ ok: true });
+      expect(full.notice).toBe('save-failed');
+    } finally { restore(); }
   });
 });
 

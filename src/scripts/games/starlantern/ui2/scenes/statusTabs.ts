@@ -344,10 +344,10 @@ const treeOrder = (id: CharacterId): string[] => TREES[id].branches.flatMap((b) 
 type NodeKind = keyof typeof T.ui2.tree.kind;
 function kindOf(n: TreeNode, tier: number): NodeKind {
   if (tier === 4) return 'ultimate';
-  if (n.kind === 'mod') return 'mod';
-  return SKILLS[n.skill]?.passive ? 'passive' : 'active';
+  if (n.kind !== 'active') return 'mod';   // a variant (and, from plan 8d Task 4, a mechanic) node: shown as before until then
+  return SKILLS[n.skill!]?.passive ? 'passive' : 'active';
 }
-const nodeName = (n: TreeNode) => (n.kind === 'active' ? SKILLS[n.skill]?.name ?? n.id : n.name ?? n.id);
+const nodeName = (n: TreeNode) => (n.kind === 'active' ? SKILLS[n.skill!]?.name ?? n.id : n.name ?? n.id);
 
 /** Moves the tree cursor to `node`, dropping a waiting press when the cursor actually moves. */
 function moveTree(node: string): boolean {
@@ -403,13 +403,13 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   if (n.kind === 'active') {
     // The skill as this member casts it: tree ranks and worn powers, at the TP they pay (as on the skills page).
     const caster = { powers: powersOf(m), ranks: { ...m.tree }, x: { tpCost: sheetOf(m).tpCost } };
-    const s = skillFor(caster, n.skill);
+    const s = skillFor(caster, n.skill!);
     if (s) {
-      head.push(el('span', { class: 'slx-tree-use', text: s.passive ? T.ui2.status.passive : `${T.ui2.status.targets[s.target]}　${T.ui2.status.tp(skillCost(caster, n.skill))}` }));
+      head.push(el('span', { class: 'slx-tree-use', text: s.passive ? T.ui2.status.passive : `${T.ui2.status.targets[s.target]}　${T.ui2.status.tp(skillCost(caster, n.skill!))}` }));
       desc = s.desc;
     }
     // What a further rank changes, by the engine's own rule (power, a percent, TP or rounds).
-    const next = rank > 0 && rank < n.maxRank ? nextRankText(n.skill, rank) : null;
+    const next = rank > 0 && rank < n.maxRank ? nextRankText(n.skill!, rank) : null;
     if (next) change.push(el('span', { class: 'slx-tree-next', text: next }));
   } else {
     change.push(el('span', { class: 'slx-tree-now', text: t.now(rank > 0 ? t.mod(n.mods![rank - 1]) : t.none) }));
@@ -454,7 +454,7 @@ const tree: StatusTab = {
             attrs: { 'data-node': n.id, role: 'button', ...(rank === 0 && why ? { title: treeReason(why, n.id) } : {}) },
           }, [
             // A modifier node shows the icon of the skill it changes.
-            ...skillIco(ctx, n.skill),
+            ...skillIco(ctx, n.skill!),
             el('div', { class: 'slx-skill-head' }, [
               // A name of five characters or more (護盾產生器) is set a size smaller, so it stays whole on its node.
               el('span', { class: nodeName(n).length >= 5 ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: nodeName(n) }),

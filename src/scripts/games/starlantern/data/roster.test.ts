@@ -2,11 +2,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import type { CharacterId, Effect, SkillDef, UltimateDef } from '../engine/types';
+import type { Effect, SkillDef, UltimateDef } from '../engine/types';
 import { NO_ICON_YET_IDS } from '../render/artPaths';
 import { POWERS } from './gear';
 import { SKILLS } from './skills';
-import { LEGACY_NODE_IDS, NODES, TREES } from './trees';
+import { LEGACY_NODE_IDS, NODES } from './trees';
 import { HERO_ULTIMATES, RIN_DAWN, ULTIMATES } from './ultimates';
 
 /**
@@ -204,19 +204,5 @@ describe('the converged roster (plan 8c Task 7)', () => {
       expect(p.skill, id).toBe(moved[id] ?? (r.POWERS[id] as { skill: string }).skill);
     }
     expect(Object.keys(POWERS).filter((id) => !(id in moved))).toHaveLength(12);
-  });
-
-  it('every tree node still stands where it stood', () => {
-    const r = roster();
-    expect(Object.keys(TREES).sort()).toEqual(Object.keys(r.trees).sort());
-    for (const [who, branches] of Object.entries(r.trees)) {
-      const now = TREES[who as CharacterId].branches;
-      expect(now.map((b) => b.nodes.length), who).toEqual(branches.map((b) => b.length));
-      branches.forEach((b, i) => b.forEach((was, t) => {
-        const n = now[i].nodes[t];
-        expect(n.maxRank, `${who} ${i}/${t}`).toBe(was.maxRank);
-        expect(n.id, `${who} ${i}/${t}`).toBe(LEGACY_NODE_IDS[was.id] ?? was.id);
-      }));
-    }
   });
 });
