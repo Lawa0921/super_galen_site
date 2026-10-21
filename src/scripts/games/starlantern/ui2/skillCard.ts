@@ -78,7 +78,7 @@ function effectOf(e: Effect): { text: string; turns: number } | undefined {
   switch (e.kind) {
     case 'buff': return { text: W.buff(T.stat[e.stat], Math.round(e.pct)), turns: e.turns };
     case 'barrier': return { text: e.barrier === 'guard' ? W.guard(Math.round(e.power)) : W.purify(Math.round(e.power)), turns: e.turns };
-    case 'device': return { text: W.device(Math.round(e.power)), turns: e.turns };
+    case 'device': return { text: W.device(T.mech.device[e.device], Math.round(e.power)), turns: e.turns };
     case 'expose': return { text: W.expose, turns: e.turns };
     default: return undefined;
   }
@@ -273,13 +273,19 @@ export function runeChoices(s: GameState, at: SocketAt): readonly RuneChoice[] {
   return frozen;
 }
 
-/** The battle menu's summary of a skill (plan 8g ruling 12): 「全體・威力 84・火」, a heal 「單體・回復 n」, else the target. */
+/**
+ * The battle menu's summary of a skill (plan 8g ruling 12), in the card's words: 「全體・威力 84・火」 (effects that differ
+ * joined with 「／」), a heal 「單體・回復 n」, a device 「自身・砲台 威力 140」, else the target alone.
+ */
 export function battleLine(def: SkillDef): string {
   const parts: string[] = [W.target[def.target]];
-  const d = def.effects.find(isDamage);
-  const h = def.effects.find((e): e is Extract<Effect, { kind: 'heal' }> => e.kind === 'heal');
-  if (d) parts.push(W.battle.power(Math.round(d.power)), T.element[d.element]);
-  else if (h) parts.push(W.battle.heal(Math.round(h.power)));
+  const dmg = def.effects.filter(isDamage);
+  const heals = def.effects.flatMap((e) => (e.kind === 'heal' ? [e] : []));
+  const devices = def.effects.flatMap((e) => (e.kind === 'device' ? [e] : []));
+  if (dmg.length) {
+    parts.push(W.battle.power(joined(dmg.map((e) => num(e.power)))), joined(dmg.map((e) => T.element[e.element])));
+  } else if (heals.length) parts.push(W.battle.heal(joined(heals.map((e) => num(e.power)))));
+  else if (devices.length) parts.push(joined(devices.map((e) => W.device(T.mech.device[e.device], Math.round(e.power)))));
   return parts.join(W.battle.sep);
 }
 

@@ -1333,6 +1333,47 @@ describe('BattleScene: the skill menu in numbers (plan 8g Task 7)', () => {
     const note = w.root.querySelector('.slx-bnote')!.textContent!;
     const rec = w.game.battle!.echo!;
     expect(note).toBe(T.cmd.echoNote(ECHO.powerPct, battleLine(echoDef(rec))) + T.cmd.echoDropped);
+    expect(note.startsWith(`重現（已含 ${ECHO.powerPct}%）：`)).toBe(true);
     expect(note).not.toContain(def.desc);
+  });
+});
+
+describe('BattleScene: the summary is what the battle does (plan 8g Task 7 review)', () => {
+  const lineup: CharacterId[] = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+  const echoNoteOf = (def: (typeof SKILLS)[string]) => {
+    const w = setup((g) => { g.battle!.echo = { by: 'noel', round: g.battle!.round, def, cost: 5 }; }, {}, lineup);
+    for (let k = 0; k < 9 && w.root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'echo'; k++) w.s.onAction('down');
+    return w.root.querySelector('.slx-bnote')!.textContent!;
+  };
+
+  it('the echo states its power once, already at its percent', () => {
+    const fire = SKILLS['fire-star'];
+    const p = (fire.effects[0] as { power: number }).power;
+    const once = Math.round((p * ECHO.powerPct) / 100);
+    const twice = Math.round((once * ECHO.powerPct) / 100);
+    const note = echoNoteOf(fire);
+    expect(note).toBe(T.cmd.echoNote(ECHO.powerPct, `單體・威力 ${once}・火`));
+    expect(note).not.toContain(`威力 ${twice}`);
+    const heal = SKILLS.moonlight;
+    const h = (heal.effects[0] as { power: number }).power;
+    expect(echoNoteOf(heal)).toBe(T.cmd.echoNote(ECHO.powerPct, `單體・回復 ${Math.round((h * ECHO.powerPct) / 100)}`));
+  });
+
+  it("an abyss skill's summary has the depth's bonus in it", () => {
+    // 深淵・劍 at a depth with a bonus: the battle's own power (castDef's bonus) is the number shown.
+    const w = setup((g) => {
+      g.state.party.roster.hero.tree = { ...g.state.party.roster.hero.tree, 'abyss-sword': 1 };
+      const c = g.battle!.party.find((x) => x.key === 'hero')!;
+      c.ranks = { ...c.ranks, 'abyss-sword': 1 };
+      g.battle!.abyss = 20;
+    }, {}, lineup);
+    for (let k = 0; k < 9 && w.root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'skill'; k++) w.s.onAction('down');
+    w.s.onAction('confirm');
+    for (let k = 0; k < 12 && w.root.querySelector('.slx-bsub .slx-sel')?.getAttribute('data-id') !== 'abyss-sword'; k++) w.s.onAction('down');
+    const c = w.game.battle!.party.find((x) => x.key === 'hero')!;
+    const base = (skillFor(c, 'abyss-sword')!.effects.find((e) => e.kind === 'damage') as { power: number }).power;
+    const withBonus = Math.round((base * 120) / 100);
+    expect(withBonus).not.toBe(base);
+    expect(w.root.querySelector('.slx-bnote')!.textContent).toContain(`威力 ${withBonus}`);
   });
 });

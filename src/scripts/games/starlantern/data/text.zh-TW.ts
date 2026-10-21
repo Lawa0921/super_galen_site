@@ -138,8 +138,8 @@ export const T = {
     /** The hero's echo: what it repeats (「殘響」 alone, greyed, when there is nothing); the act's name in the log. */
     echo: (name?: string) => (name ? `殘響：${name}` : '殘響'),
     echoAct: (name: string) => `殘響・${name}`,
-    /** What the echo repeats, in numbers (plan 8g ruling 12): the repeated skill's battle line. */
-    echoNote: (pct: number, line: string) => `以 ${pct}% 的威力重現：${line}`,
+    /** What the echo repeats, in numbers (plan 8g ruling 12): the repeated skill's battle line, its percent already in it. */
+    echoNote: (pct: number, line: string) => `重現（已含 ${pct}%）：${line}`,
     /** After a skill's name in the battle menu, one for each working rune on it (plan 8g ruling 12). */
     runeMark: '◆',
     /** A skill's note in the battle menu: its final numbers (battleLine), then its words. */
@@ -394,7 +394,7 @@ export const T = {
       buff: (stat: string, pct: number) => `${stat} ${pct > 0 ? '+' : '−'}${Math.abs(pct)}%`,
       guard: (pct: number) => `防禦與魔防 +${pct}%`,
       purify: (n: number) => `每回合回復 ${n}`,
-      device: (n: number) => `威力 ${n}`,
+      device: (name: string, n: number) => `${name} 威力 ${n}`,
       expose: '火冰雷弱點',
       add: {
         onHit: (pct: number, ailment: string) => `每段命中 ${pct}% ${ailment}`,
@@ -415,7 +415,7 @@ export const T = {
         wheel: (a: string, b: string, c: string) => `屬性依${a}、${b}、${c}輪替`,
       },
       /** The battle menu's summary of a skill (plan 8g ruling 12): 「全體・威力 84・火」. */
-      battle: { sep: '・', power: (n: number) => `威力 ${n}`, heal: (n: number) => `回復 ${n}` },
+      battle: { sep: '・', power: (n: number | string) => `威力 ${n}`, heal: (n: number | string) => `回復 ${n}` },
       /** Max TP out of battle and in it, when 常駐 holds some back (plan 8g ruling 9). */
       reserve: (max: number, battle: number, pct: number) => `TP 上限 ${max}，戰鬥中 ${battle}（常駐保留 ${pct}%）`,
       /** Two lasting barriers (plan 8g ruling 10). */

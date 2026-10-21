@@ -11,8 +11,9 @@ import { ailmentChips, type AilmentChip } from '../../engine/ailments';
 import { castCost, cueWord, fieldWords, foeWords, memberWords, whyNot, type MechCue, type MechWord } from '../../engine/mechanics/index';
 import { ECHO, echoDef, echoOf } from '../../engine/mechanics/echo';
 import type { BattleEnd } from '../../engine/game';
-import { learnedSkills, ultimateFor } from '../../engine/progression';
-import type { CharacterId, Target } from '../../engine/types';
+import { learnedSkills, pctMod, ultimateFor } from '../../engine/progression';
+import { patchSkill } from '../../engine/skills';
+import type { CharacterId, SkillDef, Target } from '../../engine/types';
 import { art, enemyArt } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
 import { playCutIn } from '../../ui/cutin';
@@ -277,10 +278,16 @@ export class BattleScene implements Scene {
         // ◆ for each rune that works on it, and its final numbers before its words (plan 8g ruling 12).
         const working = runeView(actor, sk.id, actor.runes?.[sk.id] ?? [])?.states.filter((x) => x.miss === null).length ?? 0;
         return {
-          id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: T.cmd.noteWith(battleLine(sk), sk.desc),
+          id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: T.cmd.noteWith(battleLine(this.withAbyss(sk)), sk.desc),
           ...(working ? { badge: T.cmd.runeMark.repeat(working) } : {}),
         };
       });
+  }
+
+  /** The skill with the abyss capstones' depth bonus in it, as perform casts it (the summary is what the battle does). */
+  private withAbyss(sk: SkillDef): SkillDef {
+    const bonus = sk.abyss && this.state.abyss ? pctMod(sk.id, 100 + this.state.abyss) : undefined;
+    return bonus ? patchSkill(sk, bonus) : sk;
   }
 
   private itemItems(): MenuItem[] {

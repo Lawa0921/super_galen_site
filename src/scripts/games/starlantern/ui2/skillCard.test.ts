@@ -349,6 +349,19 @@ describe('the skill card (plan 8g Task 3)', () => {
     expect(cardOf(member(s, 'selene'), 'rebirth')!.rows.find((r) => r.key === 'heal')?.text).toBe(W.pct(Math.round(hpPct * 100)));
   });
 
+  it('the battle line joins effects that differ, and names a device with its power', () => {
+    const two = { ...SKILLS['fire-star'], effects: [{ kind: 'damage' as const, power: 140, element: 'fire' as const, scale: 'mag' as const, melee: false }, { kind: 'damage' as const, power: 60, element: 'ice' as const, scale: 'mag' as const, melee: false }] };
+    expect(battleLine(two)).toBe('單體・威力 140／60・火／冰');
+    const turret = SKILLS.turret.effects[0] as { device: 'turret'; power: number };
+    const line = battleLine(SKILLS.turret);
+    expect(line).toBe(`自身・${W.device(T.mech.device.turret, turret.power)}`);
+    expect(line).toBe(`自身・砲台 威力 ${turret.power}`);
+    // The card's 效果 row says the same words.
+    const bobby = stateAt(20, ['bobby']);
+    learnOnly(bobby, 'bobby', { turret: 1 });
+    expect(cardOf(member(bobby, 'bobby'), 'turret')!.rows.find((r) => r.key === 'effect')!.text).toBe(W.device(T.mech.device.turret, turret.power));
+  });
+
   it('the battle line', () => {
     const plain = stateAt(5, ['noel'], { 'spread@magic': 1 });
     learnOnly(plain, 'noel', { 'fire-star': 1 });

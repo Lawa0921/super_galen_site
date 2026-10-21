@@ -293,6 +293,8 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-bcmd { left: 6px; bottom: 70px; min-width: 132px; }
 .slx-who { color: $slx-gold; margin-bottom: 2px; }
 .slx-bsub { right: 6px; top: 64px; min-width: 200px; }
+// With the field bar up (a barrier, the moon), the skill list opens under it rather than on its words (Task 7 review).
+.slx-battle:has(.slx-fieldbar:not([hidden])) .slx-bsub:not(.slx-btarget) { top: 86px; }
 .slx-bsub .slx-right { min-width: 40px; text-align: right; }
 .slx-result { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 260px; }
 // Many level-ups can outgrow the screen: the lines scroll, 繼續 always stays on screen.

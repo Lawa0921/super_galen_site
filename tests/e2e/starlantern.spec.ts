@@ -1386,13 +1386,19 @@ test.describe('starlantern', () => {
     await expect(item).toHaveCount(1);
     await expect(item.locator('.slx-badge')).toHaveText('◆◆');
     await item.hover();                                     // its note: the final numbers, then its words
-    await expect(page.locator('.slx-bnote')).toHaveText(/^自身　架一座砲台/);   // a device: its summary is its target
+    await expect(page.locator('.slx-bnote')).toHaveText(/^自身・砲台 威力 \d+　架一座砲台/);   // a device: its target and its power, as the card says
     for (const [vw, vh, name] of [[1280, 720, 'bobby-battle-1280'], [844, 390, 'bobby-battle-844'], [390, 844, 'bobby-battle-390']] as const) {
       await page.setViewportSize({ width: vw, height: vh });
       expect(await item.locator('.slx-label').evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), name).toBe(true);
       const rows = await page.locator('.slx-bsub [role=option]').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
       expect(rows, `battle skill rows wider than their box at ${vw}`).toEqual([]);
       await expect(item.locator('.slx-badge')).toBeVisible();
+      // The field bar (Selene's moon) stands clear of the skill list's frame.
+      if (await page.locator('.slx-fieldbar').isVisible()) {
+        const bar = (await page.locator('.slx-fieldbar').boundingBox())!;
+        const list = (await page.locator('.slx-bsub').boundingBox())!;
+        expect(bar.y + bar.height, `the field bar above the skill list at ${vw}`).toBeLessThanOrEqual(list.y + 0.5);
+      }
       await shot(name);
     }
     expect(missing).toEqual([]);
@@ -3908,6 +3914,55 @@ test.describe('starlantern', () => {
       expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runeTutorialSeen)).toBe(true);
       const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
       expect(saved.runeTutorialSeen).toBe(true);
+      expect(w.errors).toEqual([]);
+    });
+
+    test('a skill with three runes and a reason in place of its TP fits the battle menu at 390 (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const w = await setup(page, 7);
+      // Liz at Lv 35: 一擲千金 with three working runes, and no coins at the fight's start (its reason replaces the TP). The
+      // skills that can show a reason (coins, a barrier, devices) all have four-character names; this is the widest row.
+      await page.evaluate(() => {
+        const g = (window as unknown as Dbg).__starlanternDebug.game;
+        const p = g.state.party;
+        p.recruited = ['hero', 'liz'];
+        p.grid = ['hero', null, null, 'liz', null, null, null, null, null];
+        p.roster.liz.level = 35;
+        p.roster.liz.tree = { 'twin-slash': 1, jackpot: 1 };
+        p.roster.liz.sockets = { jackpot: [{ id: 'tear', tier: 'magic' }, { id: 'drain', tier: 'magic' }, { id: 'regain', tier: 'magic' }] };
+        g.state.runesOpen = true;
+        g.state.runeTutorialSeen = true;
+      });
+      await depart(page, w);
+      for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+        await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+        await w.closeTalk();
+        if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+        if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+      }
+      await expect(page.locator('.slx-battle')).toBeVisible();
+      await page.evaluate(() => {
+        const g = (window as unknown as Dbg).__starlanternDebug.game;
+        for (const e of g.battle.enemies) { e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1; }
+      });
+      for (let i = 0; i < 80; i++) {
+        if (!(await page.locator('.slx-bcmd [role=option]').count())) { await page.waitForTimeout(50); continue; }
+        const who = (await page.locator('.slx-bcmd .slx-who').textContent()) ?? '';
+        if (who.startsWith('莉茲')) break;
+        await w.choose('.slx-bcmd', '防禦');
+      }
+      await w.choose('.slx-bcmd', '技能');
+      const item = page.locator('.slx-bsub [data-id=jackpot]');
+      await expect(item.locator('.slx-badge')).toHaveText('◆◆◆');
+      await expect(item.locator('.slx-right')).toHaveText('沒有銅板');
+      for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
+        await page.setViewportSize({ width: vw, height: vh });
+        await page.waitForTimeout(150);
+        const rows = await page.locator('.slx-bsub [role=option], .slx-bsub .slx-label').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+        expect(rows, `rows or names cut at ${vw}`).toEqual([]);
+        await expect(item.locator('.slx-badge')).toBeVisible();
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/battle-long-${vw}.png` });
+      }
       expect(w.errors).toEqual([]);
     });
   });
