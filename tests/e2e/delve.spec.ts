@@ -150,12 +150,12 @@ async function expectCrisp(page: Page, sel: string): Promise<void> {
   expect(Math.round(sx), `${sel} scale >= 1`).toBeGreaterThanOrEqual(1);
 }
 
-/** 世界 fg 的 FNV-1a 雜湊（整個世界） */
+/** 世界 fg 的 FNV-1a 雜湊（中央區 [0, width) × [0, height)，逐格走 getter） */
 function worldHash(page: Page): Promise<string> {
   return page.evaluate(() => {
-    const fg: Uint8Array = window.__delveDebug!.game.world.fg;
+    const w = window.__delveDebug!.game.world;
     let h = 0x811c9dc5;
-    for (let i = 0; i < fg.length; i++) { h ^= fg[i]; h = Math.imul(h, 16777619); }
+    for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) { h ^= w.getFg(x, y); h = Math.imul(h, 16777619); }
     return (h >>> 0).toString(16);
   });
 }
@@ -201,6 +201,189 @@ test.describe('delve', () => {
     await page.goto('/games/delve?seed=abd&autostart=1&fresh=1');
     await waitGame(page);
     expect(await worldHash(page)).not.toBe(a);
+  });
+
+  test('無限世界：鏡頭與 chunk 圖跟著走出中央（東邊海上 x 4300、西邊負 x），只烘焙常駐的欄，沒有 console 錯誤', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=infinite-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const frames = (n: number): Promise<void> => page.evaluate((n) => new Promise<void>((ok) => {
+      let k = 0;
+      const f = (): void => { if (++k >= n) ok(); else requestAnimationFrame(f); };
+      requestAnimationFrame(f);
+    }), n);
+    const go = (x: number): Promise<void> => page.evaluate((x) => {
+      const d = window.__delveDebug!, g = d.game;
+      g.teleport(x, g.world.surfaceAt(x) - 1);
+      d.handle.renderer.snapCamera();
+    }, x);
+    const look = () => page.evaluate(() => {
+      const d = window.__delveDebug!, r = d.handle.renderer, w = d.game.world, p = d.game.feetTile();
+      const keys = r.cachedChunks().map((k) => w.chunkCoords(k).cx);
+      return {
+        camX: r.cam.x, vw: r.worldViewW(), bounds: w.bounds,
+        res134: w.isResident(134), playerCx: Math.floor(p.x / 32),
+        hasPlayerChunk: r.cachedChunks().includes(w.chunkIndex(Math.floor(p.x / 32), Math.floor(p.y / 32))),
+        allResident: keys.every((cx) => w.isResident(cx)),
+      };
+    });
+    await go(4300);
+    await frames(30);
+    const e = await look();
+    expect(e.bounds).toBe('infinite');
+    expect(e.camX).toBeGreaterThan(4200 * 16 - e.vw);
+    expect(e.res134).toBe(true);
+    expect(e.hasPlayerChunk).toBe(true);
+    expect(e.allResident).toBe(true);
+    await go(-300);
+    await frames(30);
+    const wv = await look();
+    expect(wv.camX).toBeLessThan(0);
+    expect(wv.playerCx).toBeLessThan(0);
+    expect(wv.hasPlayerChunk).toBe(true);
+    expect(wv.allResident).toBe(true);
+    expect(errors).toEqual([]);
+  });
+
+  test('小木船：debug 給船、傳送到東邊海面、右鍵上船 → boating；按住右 2 秒 → 往東開超過 25 格', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=infinite-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    // 先按住右鍵（使用）：傳到水面上一碰到水就上船
+    await page.mouse.move(640, 200);
+    await page.mouse.down({ button: 'right' });
+    const top = await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game, x = 4300;
+      // 先傳到海上任一點（載入目的地），再找這欄的水面
+      g.teleport(x, 100);
+      const src = g.world.source as { waterTopAt?(x: number): number | null };
+      const top = src.waterTopAt?.(x) ?? -1;
+      g.give('boat', 1);
+      const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'boat');
+      g.inventory.swap(i, 3); g.selectSlot(3);
+      g.teleport(x, top - 1); d.handle.renderer.snapCamera();
+      return top;
+    });
+    expect(top).toBeGreaterThan(0);
+    expect(await page.evaluate((top) => window.__delveDebug!.game.world.getLiquid(4300, top), top)).toBeGreaterThan(0);
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.local.boating), { timeout: 5000 }).toBe(true);
+    await page.mouse.up({ button: 'right' });
+    const x0 = await page.evaluate(() => window.__delveDebug!.game.player.x);
+    await page.keyboard.down('d');
+    await page.waitForTimeout(2000);
+    await page.keyboard.up('d');
+    const s = await page.evaluate(() => { const g = window.__delveDebug!.game; return { x: g.player.x, boating: g.local.boating }; });
+    expect(s.boating).toBe(true);
+    expect((s.x - x0) / 16).toBeGreaterThan(25);
+    expect(errors).toEqual([]);
+  });
+
+  test('傳送碑：debug 解鎖東境第 1 碑 → 站到出生點碑旁、右鍵打開面板（兩個項目）→ 點東境那顆 → 傳到海的另一邊', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=infinite-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    const stone = await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game;
+      g.stonesUnlocked.add(1);
+      const s = g.waystones.byId(0)!;
+      // 碑右邊第 3 欄的地面上（伸手碰得到碑、身體不重疊）
+      const x = s.x + 3;
+      let y = Math.max(0, s.y - 12);
+      while (y < g.world.height && !g.world.isSolid(x, y)) y++;
+      g.teleport(x, y - 1); d.handle.renderer.snapCamera();
+      return { x: s.x, y: s.y };
+    });
+    await page.waitForTimeout(300);
+    // 瞄準碑身中間那格（footprint = x..x+1、y−2..y）
+    const pt = await page.evaluate(({ x, y }) => {
+      const d = window.__delveDebug!, r = d.handle.renderer, c = (document.querySelector('#delve-canvas') as HTMLCanvasElement).getBoundingClientRect();
+      const p = r.worldToScreen((x + 1) * 16, (y - 0.5) * 16);
+      return { x: c.left + p.x, y: c.top + p.y };
+    }, stone);
+    await page.mouse.move(pt.x, pt.y);
+    await page.mouse.down({ button: 'right' });
+    await expect(page.locator('#delve-stone')).toBeVisible({ timeout: 5000 });
+    await page.mouse.up({ button: 'right' });
+    await expect(page.locator('#delve-stone [data-stone]')).toHaveCount(2);
+    await expect(page.locator('#delve-stone [data-stone="0"]')).toBeDisabled();
+    await page.click('#delve-stone [data-stone="1"]');
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.player.x / 16), { timeout: 5000 }).toBeGreaterThan(4200 + 480);
+    await expect(page.locator('#delve-stone')).toBeHidden();
+    expect(errors).toEqual([]);
+  });
+
+  test('大地圖（無限世界）：傳到 x −600 走幾步 → 開 M → 玩家附近畫出探索過的地形（不是一片迷霧）；往西拖 → 中心夾在探索範圍、仍看得到地形；mapPins 只有解鎖的傳送碑', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=infinite-e2e&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => {
+      const d = window.__delveDebug!, g = d.game, x = -600;
+      g.teleport(x, g.world.surfaceAt(x) - 1); d.handle.renderer.snapCamera();
+    });
+    await page.keyboard.down('a');
+    await page.waitForTimeout(500);
+    await page.keyboard.up('a');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('KeyM');
+    await expect(page.locator('#delve-map')).toBeVisible();
+    /** 地圖 canvas 上「不是迷霧色、也不是背景」的像素數（中心玩家圖示附近 20 px 不算） */
+    const terrain = (): Promise<number> => page.evaluate(() => new Promise<number>((ok) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const c = document.querySelector<HTMLCanvasElement>('#delve-map-canvas')!, ctx = c.getContext('2d')!;
+        const W = c.width, H = c.height, data = ctx.getImageData(0, 0, W, H).data;
+        let n = 0;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          if (Math.abs(x - W / 2) < 20 && Math.abs(y - H / 2) < 20) continue;
+          const i = (y * W + x) * 4, r = data[i], gg = data[i + 1], b = data[i + 2];
+          // 迷霧 #0c0a12 / 迷霧邊 #2c2838
+          if ((r === 12 && gg === 10 && b === 18) || (r === 44 && gg === 40 && b === 56)) continue;
+          n++;
+        }
+        ok(n);
+      }));
+    }));
+    await expect.poll(terrain, { timeout: 5000 }).toBeGreaterThan(1000);
+    const v0 = await page.evaluate(() => window.__delveDebug!.handle.map.full.view.cx);
+    expect(v0).toBeLessThan(-550);
+    // 往右拖（地圖往西捲）約 100 格 → 到 x −700 一帶；中心夾在探索範圍內，畫面上仍有地形
+    const box = (await page.locator('#delve-map-canvas').boundingBox())!;
+    const sx = box.x + box.width / 2, sy = box.y + box.height / 2;
+    await page.mouse.move(sx, sy);
+    await page.mouse.down();
+    for (let k = 1; k <= 10; k++) await page.mouse.move(sx + k * 30, sy);
+    await page.mouse.up();
+    const after = await page.evaluate(() => {
+      const d = window.__delveDebug!;
+      const v = d.handle.map.full.view, c = document.querySelector<HTMLCanvasElement>('#delve-map-canvas')!;
+      return { cx: v.cx, halfW: c.width / 2 / v.scale, ext: d.handle.map.pages.exploredExtent() };
+    });
+    expect(after.cx).toBeLessThan(v0 - 10);
+    expect(after.ext).not.toBeNull();
+    expect(after.cx).toBeGreaterThanOrEqual(after.ext!.x0);
+    // x −700 在畫面內（中心左邊半個畫面以內）
+    expect(after.cx - after.halfW).toBeLessThanOrEqual(-700);
+    expect(await terrain()).toBeGreaterThan(1000);
+    await page.keyboard.press('KeyM');
+    // 傳送碑：解鎖東境第 1 碑 → mapPins 有它（waystone 圖示、名字），沒解鎖的西境第 1 碑沒有
+    const pins = await page.evaluate(() => {
+      const d = window.__delveDebug!;
+      d.game.stonesUnlocked.add(1);
+      return d.mapPins();
+    });
+    const stones = pins.filter((p) => p.icon === 'waystone');
+    expect(stones.map((p) => p.name)).toContain('東境第 1 碑');
+    expect(stones.map((p) => p.name)).toContain('出生地傳送碑');
+    expect(stones.map((p) => p.name)).not.toContain('西境第 1 碑');
+    expect(stones.length).toBe(2);
+    expect(errors).toEqual([]);
   });
 
   test('瞄準腳下並按住挖掘 → 背包泥土增加', async ({ page }) => {
@@ -288,7 +471,7 @@ test.describe('delve', () => {
     await waitGame(page);
     const r = await page.evaluate(() => {
       const g = window.__delveDebug!.game, w = g.world;
-      const topOf = (x: number): number => { let y = 0; while (y < w.height && ![1, 2, 3, 4, 18, 19, 20, 21, 22, 43].includes(w.fg[y * w.width + x])) y++; return w.fg[y * w.width + x]; };
+      const topOf = (x: number): number => { let y = 0; while (y < w.height && ![1, 2, 3, 4, 18, 19, 20, 21, 22, 43].includes(w.getFg(x, y))) y++; return w.getFg(x, y); };
       return {
         size: [w.width, w.height],
         spawnBiome: w.biomeAt(g.spawn.x),
@@ -451,7 +634,7 @@ test.describe('delve', () => {
       };
     }));
     // 備份 = 原封複製的舊記錄（壓縮後的 bytes 一個不差）
-    expect(db).toMatchObject({ v: 2, bak: stored, fmt: 10, chars: 1 });
+    expect(db).toMatchObject({ v: 2, bak: stored, fmt: 11, chars: 1 });
     expect(typeof (db as { charId: unknown }).charId).toBe('string');
     // 再讀一次：走 split 路徑，內容一樣，標題顯示暱稱
     await page.evaluate(() => window.__delveDebug!.save());
@@ -499,7 +682,7 @@ test.describe('delve', () => {
     // 匯入當下就存成世界 + 角色
     const imported = await worldRecords(b, 'exptest');
     expect(imported).toHaveLength(1);
-    expect(imported[0]).toMatchObject({ slot: expect.stringMatching(/^w-/), format: 10, charId: expect.any(String) });
+    expect(imported[0]).toMatchObject({ slot: expect.stringMatching(/^w-/), format: 11, charId: expect.any(String) });
     expect(await b.evaluate(() => new Promise((ok) => {
       const r = indexedDB.open('delve');
       r.onsuccess = () => { const d = r.result, q = d.transaction('characters').objectStore('characters').count(); q.onsuccess = () => { ok(q.result); d.close(); }; };
@@ -1209,7 +1392,7 @@ test.describe('delve 曆法 / 天氣', () => {
       for (let y = top; y < top + 4; y++) { w.setFg(x0 - 1, y, 3); w.setFg(x0 + 10, y, 3); }
       for (let x = x0; x < x0 + 10; x++) w.setFg(x, top + 3, 3);
       g.setDate({ season: 3, day: 6, hour: 12 });
-      return { x0, top, frozen: w.frozen[w.idx(x0 + 5, top)], solid: w.isSolid(x0 + 5, top) };
+      return { x0, top, frozen: w.isFrozen(x0 + 5, top) ? 1 : 0, solid: w.isSolid(x0 + 5, top) };
     });
     expect(lake.frozen).toBe(1);
     expect(lake.solid).toBe(true);
@@ -1917,7 +2100,7 @@ test.describe('delve 標題流程（生成畫面 / 回到標題）', () => {
         t.oncomplete = () => { ok({ bak: bak.result ? [...bak.result.data] : null, fmt: main.result?.format, char: typeof main.result?.charId }); d.close(); };
       };
     }));
-    expect(db).toEqual({ bak: stored, fmt: 10, char: 'string' });
+    expect(db).toEqual({ bak: stored, fmt: 11, char: 'string' });
   });
 
   test('legacy main row picked with another character：先轉換（含 main.v9.bak）再用選定的角色進去，不是轉換出來的 旅人', async ({ page }) => {
@@ -1955,7 +2138,7 @@ test.describe('delve 標題流程（生成畫面 / 回到標題）', () => {
       };
     }));
     expect(db.bak).toEqual(stored);
-    expect(db.fmt).toBe(10);
+    expect(db.fmt).toBe(11);
     // 'main' 最後進場的是 甲（轉換出來的 旅人 照 B5 留在角色庫）
     expect(db.nicks[db.charId!]).toBe('甲');
     expect(Object.values(db.nicks).sort()).toEqual(['旅人', '甲'].sort());
@@ -3430,8 +3613,7 @@ test.describe('delve folk · villages, dwarves, encounters, quests', () => {
     await page.goto('/games/delve?seed=folk-e2e&autostart=1&fresh=1');
     await waitGame(page);
     const p = await nearFolk(page, 'v0:trader');
-    const before = await page.evaluate(() => { const g = window.__delveDebug!.game; g.selectSlot(g.inventory.slots.findIndex((s) => s?.item === 'wood_pickaxe')); return Array.from(g.world.fg.subarray(0, 1)).length; });
-    void before;
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.selectSlot(g.inventory.slots.findIndex((s) => s?.item === 'wood_pickaxe')); });
     const mined0 = await page.evaluate(() => window.__delveDebug!.game.world.modifiedChunks.size);
     await page.touchscreen.tap(p.sx, p.sy);
     await expect(page.locator('#delve-folk')).toBeVisible();

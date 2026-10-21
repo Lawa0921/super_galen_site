@@ -163,14 +163,15 @@ export class SettleLayer {
     this.drawGhost(ctx);
   }
   private drawHousing(ctx: CanvasRenderingContext2D, vb: { x: number; y: number; w: number; h: number }): void {
-    const w = this.game.world, W0 = w.width;
+    const w = this.game.world;
     for (const r of this.roomsInView(vb)) {
+      // 房間的格是 tile 鍵（w.idx）：解碼成座標、鄰格用座標重新算鍵
       if (r.reasons[0] === 'open') {
         // 漏出去的「房間」：只把種子附近（畫面內）標成紅色外框太吵 → 只標有人造牆的格
         ctx.fillStyle = `rgb(${FILL_BAD.join(',')})`;
         for (const i of r.tiles) {
-          if (!w.wall[i]) continue;
-          const tx = i % W0, ty = (i - tx) / W0;
+          const { x: tx, y: ty } = w.tileXY(i);
+          if (!w.getWall(tx, ty)) continue;
           ctx.drawImage(this.fills[1], tx * S, ty * S);
         }
         continue;
@@ -179,12 +180,12 @@ export class SettleLayer {
       const set = new Set(r.tiles);
       ctx.fillStyle = `rgb(${edge.join(',')})`;
       for (const i of r.tiles) {
-        const tx = i % W0, ty = (i - tx) / W0, px = tx * S, py = ty * S;
+        const { x: tx, y: ty } = w.tileXY(i), px = tx * S, py = ty * S;
         ctx.drawImage(fill, px, py);
-        if (!set.has(i - W0)) ctx.fillRect(px, py, S, 1);
-        if (!set.has(i + W0)) ctx.fillRect(px, py + S - 1, S, 1);
-        if (!set.has(i - 1)) ctx.fillRect(px, py, 1, S);
-        if (!set.has(i + 1)) ctx.fillRect(px + S - 1, py, 1, S);
+        if (!set.has(w.idx(tx, ty - 1))) ctx.fillRect(px, py, S, 1);
+        if (!set.has(w.idx(tx, ty + 1))) ctx.fillRect(px, py + S - 1, S, 1);
+        if (!set.has(w.idx(tx - 1, ty))) ctx.fillRect(px, py, 1, S);
+        if (!set.has(w.idx(tx + 1, ty))) ctx.fillRect(px + S - 1, py, 1, S);
       }
     }
   }

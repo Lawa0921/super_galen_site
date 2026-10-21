@@ -1,5 +1,6 @@
 // bgBlend.ts — 遠景的生態區混合（純邏輯 + 純資料 Bmp，無 DOM）：
-//   · BiomeField：每欄生態區的前綴和 → 以鏡頭中心為準、半寬 half 格的盒狀濾波權重（連續、無狀態 → 來回走不會跳）
+//   · BiomeField：biomeAt(x) 逐欄加總（兩端按小數比例）→ 以鏡頭中心為準、半寬 half 格的盒狀濾波權重
+//     （連續、無狀態 → 來回走不會跳；不預先建每欄陣列 → 無限世界、負 x 都能用）
 //   · pair：視窗裡最重的兩區，依重心分左 / 右，u = 右區比例（0 = 全左、1 = 全右）
 //   · 每個視差層用自己的半寬（遠山最寬 → 換得最慢，近林最窄 → 換得最快），天空更寬
 //   · wipeFront：u → 螢幕上的垂直分界線（左邊畫左區、右邊畫右區），分界帶 WIPE_BAND px 用 1×1 Bayer 抖動
@@ -18,36 +19,35 @@ const NB = 4;
 export interface BiomePair { left: number; right: number; u: number; }
 
 export class BiomeField {
-  readonly width: number;
-  /** cnt[b][x] = 欄 0..x-1 裡屬於 b 的欄數；mom[b][x] = 那些欄的 x 總和（算重心） */
-  private cnt: Float64Array[] = [];
-  private mom: Float64Array[] = [];
-  constructor(readonly cols: ArrayLike<number>) {
-    const n = cols.length;
-    this.width = n;
-    for (let b = 0; b < NB; b++) { this.cnt.push(new Float64Array(n + 1)); this.mom.push(new Float64Array(n + 1)); }
-    for (let x = 0; x < n; x++) {
-      const id = Math.max(0, Math.min(NB - 1, cols[x] | 0));
-      for (let b = 0; b < NB; b++) {
-        this.cnt[b][x + 1] = this.cnt[b][x] + (b === id ? 1 : 0);
-        this.mom[b][x + 1] = this.mom[b][x] + (b === id ? x + 0.5 : 0);
-      }
+  /** 這次視窗裡各區的覆蓋欄數與 x 矩（重用，不配置） */
+  private cnt = new Float64Array(NB);
+  private mom = new Float64Array(NB);
+  /**
+   * biomeAt(x) = 第 x 欄的生態區（呼叫端可自己快取）；[xMin, xMax) = 世界水平範圍（xMax 不含），視窗夾在裡面。
+   * 每次 weights / pair 最多問 2·half + 1 欄（half ≤ 128 → 257 次）。
+   */
+  constructor(readonly biomeAt: (x: number) => number, readonly xMin: number, readonly xMax: number) {}
+  /** 視窗 [lo, hi) 的各區欄數 / x 矩（部分覆蓋的欄按比例；矩以欄中心 x + 0.5 計，同舊前綴和的線性內插） */
+  private scan(lo: number, hi: number): void {
+    const cnt = this.cnt, mom = this.mom;
+    cnt.fill(0); mom.fill(0);
+    if (!(hi > lo)) return;
+    const i0 = Math.floor(lo), i1 = Math.ceil(hi);
+    for (let i = i0; i < i1; i++) {
+      const f = Math.min(hi, i + 1) - Math.max(lo, i);
+      if (f <= 0) continue;
+      const b = Math.max(0, Math.min(NB - 1, this.biomeAt(i) | 0));
+      cnt[b] += f;
+      mom[b] += f * (i + 0.5);
     }
-  }
-  /** 前綴和在小數位置的值（線性內插；邊界外夾住） */
-  private at(a: Float64Array, x: number): number {
-    const n = this.width;
-    if (x <= 0) return 0;
-    if (x >= n) return a[n];
-    const i = Math.floor(x), f = x - i;
-    return a[i] + (a[i + 1] - a[i]) * f;
   }
   /** 視窗 [cx-half, cx+half]（夾在世界內）裡各區的比例 */
   weights(cx: number, half: number): number[] {
-    const lo = Math.max(0, cx - half), hi = Math.min(this.width, cx + half);
+    const lo = Math.max(this.xMin, cx - half), hi = Math.min(this.xMax, cx + half);
     const span = Math.max(1e-6, hi - lo);
+    this.scan(lo, hi);
     const out: number[] = [];
-    for (let b = 0; b < NB; b++) out.push((this.at(this.cnt[b], hi) - this.at(this.cnt[b], lo)) / span);
+    for (let b = 0; b < NB; b++) out.push(this.cnt[b] / span);
     return out;
   }
   pair(cx: number, half: number): BiomePair {
@@ -57,11 +57,8 @@ export class BiomeField {
     let s = -1;
     for (let b = 0; b < NB; b++) if (b !== a && w[b] > 1e-9 && (s < 0 || w[b] > w[s])) s = b;
     if (s < 0) return { left: a, right: a, u: 0 };
-    const lo = Math.max(0, cx - half), hi = Math.min(this.width, cx + half);
-    const centroid = (b: number): number => {
-      const c = this.at(this.cnt[b], hi) - this.at(this.cnt[b], lo);
-      return c > 1e-9 ? (this.at(this.mom[b], hi) - this.at(this.mom[b], lo)) / c : cx;
-    };
+    // weights 剛掃過同一個視窗：cnt / mom 還是這個視窗的
+    const centroid = (b: number): number => (this.cnt[b] > 1e-9 ? this.mom[b] / this.cnt[b] : cx);
     const [left, right] = centroid(a) <= centroid(s) ? [a, s] : [s, a];
     const u = w[right] / (w[left] + w[right]);
     return { left, right, u: u < 1e-6 ? 0 : u > 1 - 1e-6 ? 1 : u };

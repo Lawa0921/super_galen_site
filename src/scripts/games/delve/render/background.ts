@@ -529,13 +529,16 @@ function cloudLayer(i: number): IndexedLayer {
   return L;
 }
 
+/** 每欄生態區的來源：at(x) = 第 x 欄的生態區；[xMin, xMax) = 世界水平範圍 */
+export interface BiomeSource { at(x: number): number; readonly xMin: number; readonly xMax: number; }
+
 export interface BgView {
   /** 低解析緩衝大小（美術 px = 世界 px） */
   viewW: number; viewH: number;
-  /** 沒有 biomeCols 時整片遠景用的生態區（標題背景：不混色）；b / t 已不使用 */
+  /** 沒有 biomes 時整片遠景用的生態區（標題背景：不混色）；b / t 已不使用 */
   biome?: { a: number; b: number; t: number };
-  /** 每欄的生態區（world.biome）：有給 → 依鏡頭中心 centerTile 做連續的分層混合 */
-  biomeCols?: ArrayLike<number>;
+  /** 每欄的生態區（world.biomeAt，可快取）：有給 → 依鏡頭中心 centerTile 做連續的分層混合。物件不變 → 權重場不重建 */
+  biomes?: BiomeSource;
   /** 鏡頭中心的世界 x（格，可帶小數） */
   centerTile?: number;
   /** 已對齊整數的鏡頭左上角（世界 px） */
@@ -597,7 +600,7 @@ export class Background {
   /** 每個生態區的遠 / 中 / 近三層剪影 */
   private sets: IndexedLayer[][] = [];
   private field: BiomeField | null = null;
-  private fieldSrc: ArrayLike<number> | null = null;
+  private fieldSrc: BiomeSource | null = null;
   private clouds: IndexedLayer[] = [];
   private sun = toCanvas(sunBmp()) as HTMLCanvasElement;
   private moon = toCanvas(moonBmp()) as HTMLCanvasElement;
@@ -636,17 +639,17 @@ export class Background {
     this.cloudSeed = seed;
   }
 
-  /** 生態區權重場（每欄生態區陣列換了才重建） */
-  private fieldFor(cols: ArrayLike<number> | undefined): BiomeField | null {
-    if (!cols) return null;
-    if (cols !== this.fieldSrc) { this.fieldSrc = cols; this.field = new BiomeField(cols); }
+  /** 生態區權重場（來源換了才重建） */
+  private fieldFor(src: BiomeSource | undefined): BiomeField | null {
+    if (!src) return null;
+    if (src !== this.fieldSrc) { this.fieldSrc = src; this.field = new BiomeField((x) => src.at(x), src.xMin, src.xMax); }
     return this.field;
   }
 
   /** 每層：左區 / 右區的剪影、分界線（螢幕 x；±Infinity = 整層同一區） */
   private plan(v: BgView, winter: boolean): LayerPlan[] {
     const bm = v.biome ?? { a: 0, b: 0, t: 0 };
-    const field = this.fieldFor(v.biomeCols);
+    const field = this.fieldFor(v.biomes);
     const set = (biome: number, k: number): IndexedLayer =>
       (biome === 0 && winter ? this.winterSet[k] : this.sets[biome]?.[k]) ?? this.sets[0][k];
     const out: LayerPlan[] = [];
@@ -673,7 +676,7 @@ export class Background {
     const winter = sb ? (sb.season === 3 ? sb.t >= 0.5 : sb.prev === 3 && sb.t < 0.5) : false;
     const plan = this.plan(v, winter);
     // 天空色調：依鏡頭附近（SKY_HALF 格）各區的比例，白天往該區的天色靠（連續權重 → 吸附色票後一階一階地換）
-    const field = this.fieldFor(v.biomeCols);
+    const field = this.fieldFor(v.biomes);
     const bm = v.biome ?? { a: 0, b: 0, t: 0 };
     const sw = field ? field.weights(v.centerTile ?? 0, SKY_HALF) : [0, 1, 2, 3].map((b) => (b === bm.a ? 1 : 0));
     const sky = tintSky(sky0, sw, dayness * (1 - 0.6 * cover));
@@ -897,10 +900,11 @@ export class Background {
    * 從「該欄地表 + depth」開始 96 px 的 8 階 Bayer 淡入、土 / 岩層依該欄生態區換主題（交界抖動）、層與層之間 64 px 的抖動過渡帶、
    * 兩層視差（遠層環境色 1/4 速、近層有洞口 1/2 速）、
    * 深層 / 熔岩照舊，菇林與地城整段覆蓋。zones 省略 = 全部當森林、沒有覆蓋區。
+   * zones.biomeAt 每幀每個畫面欄會問好幾次（交界找鄰欄）→ 呼叫端傳有快取的函式；[xMin, xMax) = 世界水平範圍。
    */
   drawUnderground(ctx: CanvasRenderingContext2D, camX: number, camY: number, vw: number, vh: number,
     colTop: (tx: number) => number, tile: number, cavernY: number, deepY = Infinity, moltenY = Infinity,
-    zones?: { biome?: ArrayLike<number>; structures?: readonly { kind: string; x: number; y: number; w: number; h: number }[] }): void {
+    zones?: { biomeAt?: (tx: number) => number; xMin?: number; xMax?: number; structures?: readonly { kind: string; x: number; y: number; w: number; h: number }[] }): void {
     const bottom = camY + vh + 1;
     // 兩層視差：遠層（環境色、整片）0.75 → 畫面上移動 1/4 速；近層（有洞口）0.5 → 1/2 速。
     // 圖樣原點用 translate 移（不必每幀對每個圖樣 setTransform）；對齊整數美術 px
@@ -916,8 +920,8 @@ export class Background {
       }
       return p;
     };
-    const bio = zones?.biome, W = bio ? bio.length : 1;
-    const biomeAt = (tx: number): number => (bio ? bio[Math.max(0, Math.min(W - 1, tx))] : 0);
+    const biomeAt = zones?.biomeAt ?? ((): number => 0);
+    const xMin = zones?.xMin ?? -Infinity, xMax = zones?.xMax ?? Infinity;
     if (zones?.structures !== this.ugAreaSrc) { this.ugAreaSrc = zones?.structures ?? null; this.ugAreaList = ugAreas(zones?.structures ?? []); }
     const tx0 = Math.floor(camX / tile), tx1 = Math.ceil((camX + vw) / tile);
     const vx0 = camX / tile, vy0 = camY / tile, vx1 = (camX + vw) / tile, vy1 = bottom / tile;
@@ -937,7 +941,7 @@ export class Background {
       const y0 = snapPx(tops[tx - cx0]), x = tx * tile;
       if (y0 >= bottom) continue;
       const bands = ugColumnBands({
-        tx, top: y0, fade: UG_FADE, rockY: cavernY, deepY, moltenY, viewTop: camY, viewBottom: bottom, tile, biomeAt, width: W, areas,
+        tx, top: y0, fade: UG_FADE, rockY: cavernY, deepY, moltenY, viewTop: camY, viewBottom: bottom, tile, biomeAt, xMin, xMax, areas,
       });
       const last = runs[runs.length - 1];
       if (last && last.x + last.w === x && same(last.bands, bands)) { last.w += tile; continue; }

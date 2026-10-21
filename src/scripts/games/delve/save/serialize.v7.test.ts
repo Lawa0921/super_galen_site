@@ -16,7 +16,7 @@ const SMALL = { width: 160, height: 100 };
 function flat(seed = 'save-v7'): DelveGame {
   const g = new DelveGame({ seed, ...SMALL, peaceful: true });
   const w = g.world;
-  for (let i = 0; i < w.liquid.length; i++) { w.liquid[i] = 0; w.liquidType[i] = 0; }
+  for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) w.setLiquidRaw(x, y, 0, 0);
   for (let y = 0; y < 100; y++) for (let x = 20; x < 140; x++) { w.setFg(x, y, y >= 60 ? T.STONE : T.AIR); w.setWall(x, y, W.NONE); }
   g.teleport(40, 59);
   return g;
@@ -69,7 +69,7 @@ describe('存檔格式 7', { timeout: 120_000 }, () => {
     w.setFg(100, 59, T.BED_HEAD); w.setFg(101, 59, T.BED_FOOT);
     g.bed = { x: 100, y: 59 };
     // 地板下挖一個熔岩坑（x 30..50、y 60..65），玩家在坑裡
-    for (let x = 30; x < 50; x++) for (let y = 60; y < 66; y++) { w.setFg(x, y, T.AIR); w.liquid[w.idx(x, y)] = 255; w.liquidType[w.idx(x, y)] = LIQ.LAVA; }
+    for (let x = 30; x < 50; x++) for (let y = 60; y < 66; y++) { w.setFg(x, y, T.AIR); w.setLiquidRaw(x, y, 255, LIQ.LAVA); }
     g.teleport(40, 65);
     for (let i = 0; i < 60 * 20 && !g.dead; i++) g.step();
     expect(g.dead).toBe(true);

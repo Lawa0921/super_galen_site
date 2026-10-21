@@ -8,7 +8,8 @@
 // 沙漠淚滴、雪原往下收窄成冰洞、叢林鼓起再收）→ 迷你生態區 → 礦脈群 → 熔岩深淵細節 → 草 → 出生點 → 結構
 // （礦坑、小屋、遺跡、地城）→ 樹 → 地表裝飾 → 地下裝飾 → 浮空島 → 珍寶 / 古碑 → 液體（生成器 v5，見 gen/liquids.ts：
 // 湖 / 池塘 / 綠洲 / 地下湖 / 熔岩囊與熔岩湖 / 叢林蜂巢，最後靜置）。
-import { World, BIOME, type BiomeId } from './world';
+import { BIOME, type BiomeId } from './world';
+import { GenGrid } from './gen/grid';
 import { Rng, subSeed } from './rng';
 import { T, W, SOLID_LUT, DUNGEON_COLORS } from './tiles';
 import { WORLD_W, WORLD_H } from './constants';
@@ -27,7 +28,7 @@ import type { Stack } from './inventory';
 export interface GenOptions {
   width?: number; height?: number;
   /** 世界一建立就交給呼叫端（生成畫面的地層剖面用來邊生成邊取樣；不影響生成結果） */
-  peek?: (world: World) => void;
+  peek?: (world: GenGrid) => void;
 }
 export interface GenBands {
   surfaceLow: number; surfaceHigh: number; rockLow: number; rockHigh: number;
@@ -58,7 +59,7 @@ export interface Structure {
   rope?: { x: number; y0: number; y1: number };
 }
 export interface GenResult {
-  world: World;
+  world: GenGrid;
   /** 出生 tile：玩家腳底所在格（y+1 為實心地面） */
   spawn: { x: number; y: number };
   /** 每欄地表高度（第一個實心格 y；含樹以外的所有生成） */
@@ -105,7 +106,7 @@ export interface RunnerOptions {
  * type = -1 → 挖空；type >= 0 → 設為該 tile。直接寫 world.fg（不標記玩家修改）。
  */
 export function tileRunner(
-  world: World, rng: Rng, x: number, y: number, strength: number, steps: number,
+  world: GenGrid, rng: Rng, x: number, y: number, strength: number, steps: number,
   type: number, opt: RunnerOptions = {},
 ): void {
   const { width, height, fg } = world;
@@ -254,7 +255,7 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
   };
   const width = opts.width ?? WORLD_W;
   const height = opts.height ?? WORLD_H;
-  const world = new World(width, height);
+  const world = new GenGrid(width, height);
   opts.peek?.(world);
   const { fg, wall } = world;
   const A = width * height;
@@ -603,6 +604,7 @@ export function* generateWorldSteps(seed: string | number, opts: GenOptions = {}
   world.surface.set(surface); // 洞穴挖穿前的地形地表（HUD 深度用）
   const bands: GenBands = { surfaceLow, surfaceHigh, rockLow, rockHigh };
   const layers: GenLayers = { rock: rockLine, deep: deepLine, molten: moltenLine };
+  world.layers = layers;
   const bottom = height - 1;
   const cavernY = world.cavernY;
   const yIn = (rng: Rng, lo: number, hi: number): number => rng.int(Math.min(lo, hi - 1), Math.max(lo + 1, hi));

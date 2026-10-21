@@ -84,6 +84,8 @@ export class PlayerActor {
   buffs: Partial<Record<BuffKind, number>> = {};
   /** 傳送石引導經過秒數；null = 沒在引導 @internal */
   recallT: number | null = null;
+  /** 坐在小木船上（不存檔：讀檔後在水裡就是游泳）；渲染器在每個 boating 的 actor 腳下畫船 */
+  boating = false;
   /** 飾品快取（以背包裡的飾品簽名判斷是否要重算） @internal */
   accSig = '';
   /** @internal */

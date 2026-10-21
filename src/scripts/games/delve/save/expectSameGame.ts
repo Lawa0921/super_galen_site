@@ -34,12 +34,9 @@ export function expectSameGame(a: DelveGame, b: DelveGame, o: { visit?: boolean 
   const wa = a.world, wb = b.world;
   expect(b.seed).toBe(a.seed);
   expect([wb.width, wb.height]).toEqual([wa.width, wa.height]);
-  expect(wb.fg).toEqual(wa.fg);
-  expect(wb.wall).toEqual(wa.wall);
-  expect(wb.half).toEqual(wa.half);
-  expect(wb.liquid).toEqual(wa.liquid);
-  expect(wb.liquidType).toEqual(wa.liquidType);
-  expect(wb.frozen).toEqual(wa.frozen);
+  // 中央區逐層比對（走 window：與儲存方式無關）
+  const ra = wa.window(0, 0, wa.width, wa.height), rb = wb.window(0, 0, wa.width, wa.height);
+  for (const k of ['fg', 'wall', 'half', 'liquid', 'liquidType', 'frozen'] as const) expect(rb[k], k).toEqual(ra[k]);
   expect(b.weatherOverride).toEqual(a.weatherOverride);
   expect([...wb.chests]).toEqual([...wa.chests]);
   expect(wb.unlocked).toEqual(wa.unlocked);

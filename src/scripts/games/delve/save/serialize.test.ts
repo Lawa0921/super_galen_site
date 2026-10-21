@@ -59,8 +59,9 @@ describe('save serialize', () => {
     if (!r.ok) return;
     const h = r.game;
     expect(h.seed).toBe(g.seed);
-    expect(bytesEqual(h.world.fg, g.world.fg)).toBe(true);
-    expect(bytesEqual(h.world.wall, g.world.wall)).toBe(true);
+    const hw = h.world.window(0, 0, h.world.width, h.world.height), gw = g.world.window(0, 0, g.world.width, g.world.height);
+    expect(bytesEqual(hw.fg, gw.fg)).toBe(true);
+    expect(bytesEqual(hw.wall, gw.wall)).toBe(true);
     expect(h.world.getFg(159, 99)).toBe(T.TORCH);
     expect(h.player.x).toBe(g.player.x);
     expect(h.player.y).toBe(g.player.y);
@@ -122,12 +123,86 @@ describe('diffChunks', () => {
   it('找出兩個世界內容不同的 chunk', () => {
     const a = new World(100, 70), b = new World(100, 70);
     expect(diffChunks(a, b)).toEqual([]);
-    b.fg[b.idx(40, 10)] = T.DIRT;
-    b.wall[b.idx(99, 69)] = W.DIRT_WALL;
+    b.setFg(40, 10, T.DIRT);
+    b.setWall(99, 69, W.DIRT_WALL);
     expect(diffChunks(a, b)).toEqual([a.chunkIndex(1, 0), a.chunkIndex(3, 2)]);
   });
   it('尺寸不同丟錯', () => {
     expect(() => diffChunks(new World(10, 10), new World(11, 10))).toThrow();
+  });
+});
+
+describe('World chunk payload（存檔讀寫的座標 API）', () => {
+  // 寬高都不是 CHUNK 的倍數：最後一欄 / 最後一列是 partial chunk
+  function filled(): World {
+    const w = new World(150, 70);
+    let h = 12345;
+    for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) {
+      h = (Math.imul(h, 1103515245) + 12345) >>> 0;
+      w.setFg(x, y, 1 + (h >>> 8) % 40); w.setWall(x, y, (h >>> 16) % 9);
+      if ((h >>> 4) % 3 === 0) w.setLiquid(x, y, 1 + (h >>> 20) % 200, 1 + (h >>> 12) % 3);
+    }
+    return w;
+  }
+  /** 舊 readChunk 的語意（逐格讀、越界補 0），當獨立參考 */
+  function legacyRead(w: World, cx: number, cy: number): { fg: Uint8Array; wall: Uint8Array } {
+    const fg = new Uint8Array(CHUNK * CHUNK), wall = new Uint8Array(CHUNK * CHUNK);
+    for (let ly = 0; ly < CHUNK; ly++) for (let lx = 0; lx < CHUNK; lx++) {
+      const x = cx * CHUNK + lx, y = cy * CHUNK + ly;
+      if (x >= w.width || y >= w.height) continue;
+      fg[ly * CHUNK + lx] = w.getFg(x, y); wall[ly * CHUNK + lx] = w.getWall(x, y);
+    }
+    return { fg, wall };
+  }
+  it('readChunkPayload 與舊 readChunk 對 chunk 0 / 最後一欄 / 最後一列 / 右下角位元組相同', () => {
+    const w = filled();
+    const lastX = w.chunksX - 1, lastY = w.chunksY - 1;
+    for (const [cx, cy] of [[0, 0], [lastX, 0], [0, lastY], [lastX, lastY], [2, 1]]) {
+      const p = w.readChunkPayload(cx, cy), old = legacyRead(w, cx, cy);
+      expect(bytesEqual(p.fg, old.fg), `fg ${cx},${cy}`).toBe(true);
+      expect(bytesEqual(p.wall, old.wall), `wall ${cx},${cy}`).toBe(true);
+    }
+  });
+  it('writeChunkPayload 往返；maxX 之後的格不寫；越界的格丟掉', () => {
+    const src = filled(), dst = new World(150, 70);
+    const lastX = src.chunksX - 1;
+    dst.writeChunkPayload(lastX, 2, src.readChunkPayload(lastX, 2));
+    expect(bytesEqual(dst.readChunkPayload(lastX, 2).fg, src.readChunkPayload(lastX, 2).fg)).toBe(true);
+    expect(bytesEqual(dst.readChunkPayload(lastX, 2).wall, src.readChunkPayload(lastX, 2).wall)).toBe(true);
+    const part = new World(150, 70);
+    part.writeChunkPayload(1, 0, src.readChunkPayload(1, 0), 40);
+    expect(part.getFg(39, 3)).toBe(src.getFg(39, 3));
+    expect(part.getFg(40, 3)).toBe(0);
+    expect(part.getWall(63, 31)).toBe(0);
+  });
+  it('readChunkLiquids 與舊 readLiquids 相同（越界補 0、量 0 的種類為 0）', () => {
+    const w = filled();
+    const K = CHUNK * CHUNK, lastX = w.chunksX - 1, lastY = w.chunksY - 1;
+    const amount = new Uint8Array(2 * K).fill(9), type = new Uint8Array(2 * K).fill(9);
+    w.readChunkLiquids(0, 0, amount, type, 0);
+    w.readChunkLiquids(lastX, lastY, amount, type, K);
+    [[0, 0], [lastX, lastY]].forEach(([cx, cy], k) => {
+      for (let ly = 0; ly < CHUNK; ly++) for (let lx = 0; lx < CHUNK; lx++) {
+        const x = cx * CHUNK + lx, y = cy * CHUNK + ly, o = k * K + ly * CHUNK + lx;
+        const inside = x < w.width && y < w.height;
+        expect(amount[o]).toBe(inside ? w.getLiquid(x, y) : 0);
+        expect(type[o]).toBe(inside && w.getLiquid(x, y) ? w.getLiquidType(x, y) : 0);
+      }
+    });
+  });
+  it("flaggedTiles('frozen' | 'half') 等於舊的逐格掃描（升冪 tile 鍵）", () => {
+    const w = filled();
+    for (const [x, y] of [[149, 69], [0, 0], [77, 33], [5, 0], [140, 12]]) w.setFrozen(x, y, true);
+    for (let y = 0; y < w.height; y += 7) for (let x = y % 5; x < w.width; x += 11) w.setHalf(x, y, true);
+    const scan = (on: (x: number, y: number) => boolean): number[] => {
+      const out: number[] = [];
+      for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) if (on(x, y)) out.push(w.idx(x, y));
+      return out;
+    };
+    const halves = scan((x, y) => w.isHalf(x, y));
+    expect(halves.length).toBeGreaterThan(10);
+    expect(w.flaggedTiles('frozen')).toEqual(scan((x, y) => w.isFrozen(x, y)));
+    expect(w.flaggedTiles('half')).toEqual(halves);
   });
 });
 
@@ -203,7 +278,7 @@ describe('箱子存檔（format 2）', () => {
     const bytes = serializeGame(g);
     const r = restoreGame(bytes);
     if (!r.ok) throw new Error('restore failed');
-    for (const [i, slots] of r.game.world.chests) expect(r.game.world.fg[i], `chest at ${i}`).toBe(T.CHEST), void slots;
+    for (const [i, slots] of r.game.world.chests) { const p = r.game.world.tileXY(i); expect(r.game.world.getFg(p.x, p.y), `chest at ${i}`).toBe(T.CHEST); void slots; }
   });
   it('箱子裡的壞道具 → format 錯誤', () => {
     const snap = snapshotGame(chestGame());

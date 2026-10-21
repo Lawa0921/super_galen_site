@@ -17,7 +17,7 @@ function arena(): DelveGame {
   g.levels.locked = true;
   const w = g.world;
   g.liquids.setSprings([]);
-  for (let i = 0; i < w.liquid.length; i++) { w.liquid[i] = 0; w.liquidType[i] = 0; }
+  for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) w.setLiquidRaw(x, y, 0, 0);
   for (let y = 0; y < w.height; y++) for (let x = 30; x < 100; x++) { w.setFg(x, y, y >= 60 ? T.STONE : T.AIR); w.setWall(x, y, W.NONE); }
   g.teleport(60, 59);
   run(g, 0.1);

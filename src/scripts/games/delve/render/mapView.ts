@@ -1,77 +1,24 @@
-// mapView.ts — 地圖的 DOM / canvas 層：
-//   · MapCache：整個世界 1 tile = 1 px 的快取 canvas。迷霧揭露 / tile 變動只重畫那些 chunk（共用一塊 32×32 ImageData，
-//     putImageData 寫入），每幀有預算，不會一次重畫整張。
+// mapView.ts — 地圖的 DOM / canvas 層（地圖內容在 mapPages.ts 的地圖頁：只有探索過的地方）：
 //   · Minimap：HUD 角落的小地圖（原生美術像素，CSS 整數倍放大），縮放 1–3、玩家標記、使用者標記
-//   · FullMap：全螢幕地圖（拖曳平移、滾輪 / 雙指縮放、點一下放 / 拿標記）、地標圖示、地域名字
+//   · FullMap：全螢幕地圖（拖曳平移、滾輪 / 雙指縮放、點一下放 / 拿標記；拖曳夾在探索範圍）、地標圖示、
+//     解鎖的傳送碑（圖示 + 名字）、地域名字
 import type { DelveGame } from '../engine/game';
-import { CHUNK } from '../engine/constants';
 import {
-  buildMapLut, paintMapChunk, mapIconBmp, mapPins, mapLabels, minimapSource, zoomView, panView, clampView,
+  mapIconBmp, mapPins, mapLabels, stonePins, minimapView, zoomView, panView, clampView,
   screenToTileOnMap, tileToScreenOnMap, MAP_ICONS, type MapIcon, type MapView,
 } from './mapModel';
+import type { MapPages } from './mapPages';
 import { Bmp, INK, hex, toCanvas } from './pixel';
 import { FontGate } from './fontGate';
 
-export class MapCache {
-  readonly canvas = document.createElement('canvas');
-  private ctx: CanvasRenderingContext2D;
-  private img: ImageData;
-  private buf: Uint32Array;
-  private pending = new Set<number>();
-  /** 有任何已探索格的 chunk（只有這些 chunk 的 tile 變動需要重畫地圖） */
-  private seen = new Set<number>();
-  /** 地圖內容的版本號（有重畫就 +1，小地圖 / 全地圖據此決定要不要重繪） */
-  version = 0;
-
-  constructor(private game: DelveGame) {
-    const w = game.world;
-    this.canvas.width = w.width;
-    this.canvas.height = w.height;
-    const ctx = this.canvas.getContext('2d');
-    if (!ctx) throw new Error('2d context unavailable');
-    this.ctx = ctx;
-    this.img = ctx.createImageData(CHUNK, CHUNK);
-    this.buf = new Uint32Array(this.img.data.buffer);
-    const lut = buildMapLut();
-    const f = lut.fog;
-    ctx.fillStyle = `rgb(${f & 255},${(f >>> 8) & 255},${(f >>> 16) & 255})`;
-    ctx.fillRect(0, 0, w.width, w.height);
-    // 已有探索資料（讀檔）：只畫有任何已探索格的 chunk
-    const ex = game.explored, cw = Math.ceil(w.width / CHUNK), ch = Math.ceil(w.height / CHUNK);
-    ex.drainDirty();
-    for (let cy = 0; cy < ch; cy++) for (let cx = 0; cx < cw; cx++) if (this.chunkHasExplored(cx, cy)) { this.pending.add(cy * cw + cx); this.seen.add(cy * cw + cx); }
-    this.update(Infinity);
-  }
-
-  private chunkHasExplored(cx: number, cy: number): boolean {
-    const ex = this.game.explored, W = ex.width;
-    for (let y = cy * CHUNK; y < Math.min(ex.height, (cy + 1) * CHUNK); y++) {
-      const a = y * W + cx * CHUNK, b = Math.min(y * W + W, a + CHUNK);
-      for (let i = a; i < b; i++) if ((ex.bits[i >> 3] >> (i & 7)) & 1) return true;
-    }
-    return false;
-  }
-
-  /** 世界 chunk 變動（挖掘 / 放置）：已探索的 chunk 才需要重畫 */
-  markWorld(cis: readonly number[]): void { for (const ci of cis) if (this.seen.has(ci)) this.pending.add(ci); }
-
-  /** 重畫 dirty chunk（每幀最多 budget 個；回傳畫了幾個） */
-  update(budget = 24): number {
-    for (const ci of this.game.explored.drainDirty()) { this.pending.add(ci); this.seen.add(ci); }
-    if (!this.pending.size) return 0;
-    const w = this.game.world, cw = Math.ceil(w.width / CHUNK);
-    let n = 0;
-    for (const ci of this.pending) {
-      if (n >= budget) break;
-      this.pending.delete(ci);
-      const cx = ci % cw, cy = Math.floor(ci / cw);
-      paintMapChunk(this.buf, w, this.game.explored, cx, cy);
-      this.ctx.putImageData(this.img, cx * CHUNK, cy * CHUNK);
-      n++;
-    }
-    if (n) this.version++;
-    return n;
-  }
+/** 大地圖會畫的圖示（除錯 / e2e：__delveDebug.mapPins）：地標（未發現的畫成 ?）、解鎖的傳送碑、嚮導線索、玩家標記 */
+export function fullMapPins(g: DelveGame): { icon: string; x: number; y: number; name: string }[] {
+  const out: { icon: string; x: number; y: number; name: string }[] = [];
+  for (const p of mapPins(g.regions, g.discovery, g.hasAccessory('map'))) out.push({ icon: p.found ? p.icon : 'unknown', x: p.x, y: p.y, name: p.found ? p.name : '' });
+  for (const p of stonePins(g.unlockedStones())) out.push({ icon: p.icon, x: p.x, y: p.y, name: p.name });
+  for (const m of g.scoutMarks) out.push({ icon: 'landmark', x: m.x, y: m.y, name: '' });
+  for (const m of g.markers) out.push({ icon: 'marker', x: m.x, y: m.y, name: '' });
+  return out;
 }
 
 /** 圖示 canvas 快取（9×9 原生像素） */
@@ -149,7 +96,7 @@ export class Minimap {
   private lastSig = '';
   private frame = 0;
 
-  constructor(private root: HTMLElement, private canvas: HTMLCanvasElement, private cache: MapCache, private game: DelveGame) {
+  constructor(private root: HTMLElement, private canvas: HTMLCanvasElement, private pages: MapPages, private game: DelveGame) {
     this.ctx = canvas.getContext('2d');
     this.apply();
   }
@@ -170,26 +117,28 @@ export class Minimap {
     if (!this.visible || !this.ctx) return;
     const g = this.game, t = g.playerTile(), w = g.world;
     const blink = ((this.frame >> 3) & 1) === 1;
-    const sig = `${this.cache.version}|${t.x}|${t.y}|${this.zoom}|${blink}|${g.markers.length}|${g.scoutMarks.length}`;
+    const sig = `${this.pages.version}|${t.x}|${t.y}|${this.zoom}|${blink}|${g.markers.length}|${g.scoutMarks.length}`;
     if (sig === this.lastSig) return;
     this.lastSig = sig;
     const W = this.canvas.width, H = this.canvas.height, z = this.zoom;
-    const s = minimapSource(t.x, t.y, W, H, z, w.width, w.height);
+    const v = minimapView(t.x, t.y, W, H, z, w.height);
     const ctx = this.ctx;
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = '#0c0a12';
     ctx.fillRect(0, 0, W, H);
-    ctx.drawImage(this.cache.canvas, s.sx, s.sy, s.sw, s.sh, 0, 0, s.sw * z, s.sh * z);
+    this.pages.draw(ctx, v, W, H);
+    // 格 (x, y) 的左上角在小地圖上的位置（與地圖頁同一個換算）
+    const sx = (x: number): number => Math.round(W / 2 + (x - v.cx) * z), sy = (y: number): number => Math.round(H / 2 + (y - v.cy) * z);
     for (const [list, col] of [[g.markers, '#e8701c'], [g.scoutMarks, '#4aaeb0']] as const) {
       for (const m of list) {
-        const mx = (m.x - s.sx) * z, my = (m.y - s.sy) * z;
+        const mx = sx(m.x), my = sy(m.y);
         if (mx < -4 || my < -4 || mx > W + 4 || my > H + 8) continue;
         ctx.fillStyle = '#0c0a12'; ctx.fillRect(mx - 1, my - 1, 3 + (z > 1 ? 1 : 0), 3 + (z > 1 ? 1 : 0));
         ctx.fillStyle = col; ctx.fillRect(mx, my, 1 + (z > 1 ? 1 : 0), 1 + (z > 1 ? 1 : 0));
       }
     }
     // 玩家：白色十字 + 黑框（閃爍時中心換成橘色），不會整個消失
-    const px = (t.x - s.sx) * z + (z >> 1), py = (t.y - s.sy) * z + (z >> 1);
+    const px = sx(t.x) + (z >> 1), py = sy(t.y) + (z >> 1);
     ctx.fillStyle = '#0c0a12';
     ctx.fillRect(px - 2, py - 1, 5, 3); ctx.fillRect(px - 1, py - 2, 3, 5);
     ctx.fillStyle = '#ffffff';
@@ -215,7 +164,7 @@ export class FullMap {
   private scaleSet = false;
   private fontEpoch = -1;
 
-  constructor(private root: HTMLElement, private canvas: HTMLCanvasElement, private cache: MapCache, private game: DelveGame,
+  constructor(private root: HTMLElement, private canvas: HTMLCanvasElement, private pages: MapPages, private game: DelveGame,
     private opts: FullMapOptions) {
     this.ctx = canvas.getContext('2d', { alpha: false });
     const on = (el: EventTarget, type: string, fn: EventListener, o?: AddEventListenerOptions): void => {
@@ -258,7 +207,7 @@ export class FullMap {
     this.view = this.clamp(zoomView(this.view, this.canvas.width, this.canvas.height, this.canvas.width / 2, this.canvas.height / 2, d));
     this.dirty = true;
   }
-  private clamp(v: MapView): MapView { return clampView(v, this.game.world.width, this.game.world.height, this.canvas.width, this.canvas.height); }
+  private clamp(v: MapView): MapView { return clampView(v, this.pages.exploredExtent(), this.game.world.height, this.canvas.width, this.canvas.height); }
   resize(): void {
     const r = this.canvas.getBoundingClientRect();
     this.dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -325,22 +274,16 @@ export class FullMap {
   draw(): void {
     if (!this.isOpen || !this.ctx) return;
     const blinkFrame = (performance.now() / 260) | 0;
-    if (!this.dirty && this.cache.version === this.lastVersion && this.fontEpoch === fontEpoch && (blinkFrame & 1) === 0) return;
+    if (!this.dirty && this.pages.version === this.lastVersion && this.fontEpoch === fontEpoch && (blinkFrame & 1) === 0) return;
     this.dirty = false;
     this.fontEpoch = fontEpoch;
-    this.lastVersion = this.cache.version;
+    this.lastVersion = this.pages.version;
     const ctx = this.ctx, W = this.canvas.width, H = this.canvas.height, v = this.view, g = this.game, w = g.world;
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = '#0c0a12';
     ctx.fillRect(0, 0, W, H);
-    // 可見範圍（tile）→ 只取那一塊貼上
-    const tx0 = Math.max(0, Math.floor(v.cx - W / 2 / v.scale)), ty0 = Math.max(0, Math.floor(v.cy - H / 2 / v.scale));
-    const tx1 = Math.min(w.width, Math.ceil(v.cx + W / 2 / v.scale) + 1), ty1 = Math.min(w.height, Math.ceil(v.cy + H / 2 / v.scale) + 1);
-    if (tx1 > tx0 && ty1 > ty0) {
-      const p0 = tileToScreenOnMap(v, W, H, tx0, ty0);
-      const ox = Math.round(p0.x - 0.5 * v.scale), oy = Math.round(p0.y - 0.5 * v.scale);
-      ctx.drawImage(this.cache.canvas, tx0, ty0, tx1 - tx0, ty1 - ty0, ox, oy, (tx1 - tx0) * v.scale, (ty1 - ty0) * v.scale);
-    }
+    // 只有探索過的地方有地圖頁；其餘留迷霧色
+    this.pages.draw(ctx, v, W, H);
     // 圖示與文字：固定大小（每個美術像素 = k 個裝置像素）
     const k = Math.max(1, Math.round(this.dpr * (W / this.dpr >= 900 ? 2 : 1.5)));
     const showAll = g.hasAccessory('map');
@@ -354,6 +297,16 @@ export class FullMap {
         const lk = Math.max(1, Math.round(k / 2));
         ctx.drawImage(lc, Math.round(s.x - (lc.width * lk) / 2), Math.round(s.y + 5 * k), lc.width * lk, lc.height * lk);
       }
+    }
+    // 解鎖的傳送碑：圖示 + 名字（碑很稀疏，名字一直顯示）
+    for (const st of stonePins(g.unlockedStones())) {
+      const s = tileToScreenOnMap(v, W, H, st.x, st.y);
+      if (s.x < -200 || s.y < -40 || s.x > W + 200 || s.y > H + 40) continue;
+      ctx.drawImage(iconCanvas(st.icon), Math.round(s.x - 4.5 * k), Math.round(s.y - 4.5 * k), 9 * k, 9 * k);
+      const lc = labelCanvas(st.name, '#cceaf8');
+      if (!lc) continue;
+      const lk = Math.max(1, Math.round(k / 2));
+      ctx.drawImage(lc, Math.round(s.x - (lc.width * lk) / 2), Math.round(s.y + 5 * k), lc.width * lk, lc.height * lk);
     }
     for (const lb of mapLabels(g.regions, g.discovery)) {
       // 名字跟著畫面中心走，但不超出該地域的欄範圍（寬的森林段也看得到名字）
@@ -378,7 +331,7 @@ export class FullMap {
     const t = g.playerTile(), ps = tileToScreenOnMap(v, W, H, t.x, t.y);
     drawPlayer(ctx, ps.x, ps.y, k, (blinkFrame & 3) === 3);
     const info = this.root.querySelector('#delve-map-info');
-    if (info) info.textContent = `標記 ${g.markers.length}/20 · 嚮導與線索 ${g.scoutMarks.length} · 已探索 ${(100 * g.explored.count / (w.width * w.height)).toFixed(1)}%`;
+    if (info) info.textContent = `標記 ${g.markers.length}/20 · 嚮導與線索 ${g.scoutMarks.length} · 已探索 ${(100 * g.explored.centralCount() / (w.width * w.height)).toFixed(1)}%`;
   }
 
   destroy(): void { for (const f of this.offs) f(); this.close(); }

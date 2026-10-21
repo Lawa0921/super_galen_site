@@ -33,11 +33,12 @@ export function findPath(w: World, sx: number, sy: number, gx: number, gy?: numb
   bounds?: { x0: number; x1: number; y0: number; y1: number }): PathNode[] {
   const start = { x: sx, y: sy };
   if (!standable(w, sx, sy)) return [start];
-  const W = w.width, key = (x: number, y: number): number => y * W + x;
+  // 鍵 = world 的 tile 鍵（w.idx；負 x 也合法）。佇列另存座標，不必從鍵反解。
+  const key = (x: number, y: number): number => w.idx(x, y);
   const prev = new Map<number, number>();
   const sk = key(sx, sy);
   prev.set(sk, -1);
-  const queue: number[] = [sk];
+  const queue: number[] = [sk], qx: number[] = [sx], qy: number[] = [sy];
   let best = sk, bestScore = score(sx, sy);
   function score(x: number, y: number): number { return Math.abs(x - gx) * 4 + (gy === undefined ? 0 : Math.abs(y - gy)); }
   const inB = (x: number, y: number): boolean => !bounds || (x >= bounds.x0 && x <= bounds.x1 && y >= bounds.y0 && y <= bounds.y1);
@@ -46,10 +47,10 @@ export function findPath(w: World, sx: number, sy: number, gx: number, gy?: numb
     const k = key(x, y);
     if (prev.has(k)) return;
     prev.set(k, from);
-    queue.push(k);
+    queue.push(k); qx.push(x); qy.push(y);
   };
   for (let head = 0; head < queue.length && head < budget; head++) {
-    const k = queue[head], x = k % W, y = (k - x) / W;
+    const k = queue[head], x = qx[head], y = qy[head];
     const sc = score(x, y);
     if (sc < bestScore) { bestScore = sc; best = k; }
     if (sc === 0) break;
@@ -68,7 +69,7 @@ export function findPath(w: World, sx: number, sy: number, gx: number, gy?: numb
     }
   }
   const out: PathNode[] = [];
-  for (let k = best; k !== -1; k = prev.get(k) ?? -1) { const x = k % W; out.push({ x, y: (k - x) / W }); }
+  for (let k = best; k !== -1; k = prev.get(k) ?? -1) out.push(w.tileXY(k));
   return out.reverse();
 }
 

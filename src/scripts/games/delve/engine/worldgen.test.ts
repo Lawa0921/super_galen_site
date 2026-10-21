@@ -1,7 +1,8 @@
 // worldgen.test.ts
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, tileRunner, type GenResult } from './worldgen';
-import { World, BIOME } from './world';
+import { BIOME } from './world';
+import { GenGrid } from './gen/grid';
 import { Rng } from './rng';
 import { T, W, isSolidTile, tileDef, floorOk, ceilOk, isChestTile } from './tiles';
 import { WORLD_W, WORLD_H, PLAYER_H, TILE_SIZE } from './constants';
@@ -14,7 +15,7 @@ function hashBytes(...arrs: Uint8Array[]): number {
 
 describe('tileRunner', () => {
   it('在空白世界灑出菱形塊、尺寸隨步數收斂', () => {
-    const w = new World(64, 64);
+    const w = new GenGrid(64, 64);
     tileRunner(w, new Rng(1), 32, 32, 8, 6, T.STONE, { addTile: true });
     let n = 0;
     for (let i = 0; i < w.fg.length; i++) if (w.fg[i] === T.STONE) n++;
@@ -23,7 +24,7 @@ describe('tileRunner', () => {
     expect(w.modifiedChunks.size).toBe(0); // 生成階段不算玩家修改
   });
   it('type=-1 挖成空氣', () => {
-    const w = new World(64, 64);
+    const w = new GenGrid(64, 64);
     w.fg.fill(T.STONE);
     tileRunner(w, new Rng(2), 32, 32, 10, 10, -1);
     expect(w.fg[w.idx(32, 32)]).toBe(T.AIR);

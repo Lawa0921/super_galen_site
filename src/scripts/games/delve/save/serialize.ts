@@ -39,6 +39,15 @@
 //   （活的遊戲已經轉換過）；沒有 = 舊資料。讀檔時 < WARDROBE_CFORMAT → applyCharacter 做一次舊角色的時裝轉換（spec C6）。
 // header.levels = 等級 / 經驗 / 技能樹 / 防刷紀錄（engine/levels.ts LevelsJSON）。沒有 / 壞掉 → 各欄位獨立退回預設
 //   （技能樹不合法 → 整棵重置、點數退回），不算存檔損毀。
+// 無限世界（世界檔 format 11 起；B6：新欄位只在不是預設值時才寫，有界世界的 snapshot 位元組不變）：
+//   header.bounds = 'infinite' + header.outerGen（外圍生成器版本）只在無限世界才寫；chunks / liquids.chunks 可含外圍 chunk 鍵、
+//   chests / unlocked / minedIce / 結冰 / 半格差分可含外圍 tile 鍵（engine/coords.ts）；chunks = 常駐 + 停放的已修改 chunk。
+//   header.exploredOuter = 含中央框外已探索格的 chunk 的迷霧（engine/explore.ts encodeOuter），只在非空時寫。
+//   header.stones = 已解鎖的傳送碑 id（世界共用；由小到大），只在非空時寫；讀檔：不是整數陣列 → 當作沒有，
+//   還原時以 engine/waystones.ts validStoneIds 過濾（這個世界沒有的碑 / 0 丟掉，不算損毀）。
+//   讀檔：有 bounds → 外圍鍵合法、chunk payload 整塊 32 欄寫入；沒有 bounds（format ≤ 10 的舊檔）→ 只接受中央範圍的鍵
+//   （restoreBlocker 回 size），payload / 液體 / 箱子只寫 x < width 的格（補零規則：舊 payload 在 x ≥ width 是補的 0，
+//   不能把無限世界那幾欄的地形挖成空氣）。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
@@ -48,16 +57,18 @@
 //   之後依 header.chunks 順序，每個 chunk：fg CHUNK*CHUNK bytes + wall CHUNK*CHUNK bytes（越界格補 0）
 // 世界檔 format 10（co-op，save/worldSave.ts）用同一個容器（encodeContainer / readContainer / readChunks）。
 import { DelveGame, BOSS_SUMMON_ITEM, MAX_BREATH, BURN_TIME, HONEY_TIME } from '../engine/game';
-import type { World } from '../engine/world';
+import type { World, ChunkData, ChunkPayload, ColumnSource } from '../engine/world';
+import { C_BASE, T_BASE, X_LIMIT, chunkOfX, chunkXY, defaultBounds, tileXY, type WorldBounds } from '../engine/coords';
+import { fromBase64, toBase64 } from '../engine/base64';
 import { Inventory, cloneStack, type InventoryJSON, type Stack } from '../engine/inventory';
 import { gearSlot, validGear, type Gear } from '../engine/gear';
 import type { CodexJSON } from '../engine/codex';
 import { CHEST_SLOTS } from '../engine/loot';
 import { CHUNK, GEN_VERSION, INV_SIZE, TILE_SIZE } from '../engine/constants';
-import { TILES, WALLS, T, isChestTile } from '../engine/tiles';
+import { TILES, WALLS, T, SOLID_LUT, isChestTile } from '../engine/tiles';
 import { ITEMS, isItemId, type ItemId } from '../engine/items';
 import { MAX_DROPS } from '../engine/entities';
-import { ExploredMap, MAX_MARKERS, decodeRle, type MapMarker } from '../engine/explore';
+import { ExploredMap, MAX_MARKERS, decodeRle, type MapMarker, type OuterBitsSave } from '../engine/explore';
 import type { GenResult } from '../engine/worldgen';
 import type { DiscoveryJSON } from '../engine/discovery';
 import { Equipment, type EquipmentGearJSON, type EquipmentJSON } from '../engine/equipment';
@@ -76,6 +87,7 @@ import { Progression, type LevelsJSON } from '../engine/levels';
 import type { FolkJSON } from '../engine/folk';
 import type { QuestLogJSON } from '../engine/quests';
 import { BUFFS, type BuffKind } from '../engine/folkDefs';
+import { validStoneIds } from '../engine/waystones';
 
 export const SAVE_FORMAT = 9;
 /** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
@@ -105,6 +117,41 @@ export function validDims(width: unknown, height: unknown): boolean {
 function chunkTotal(width: number, height: number): number { return Math.ceil(width / CHUNK) * Math.ceil(height / CHUNK); }
 /** 尺寸不合法時的 chunk 清單長度上限（只用來擋超大清單；尺寸本身交給 restoreGame 的 size 檢查） */
 const MAX_CHUNKS = chunkTotal(MAX_WORLD_W, MAX_WORLD_H);
+/** 外圍欄號範圍（X_LIMIT 內） */
+const CX_MIN = chunkOfX(-X_LIMIT), CX_MAX = chunkOfX(X_LIMIT - 1);
+/**
+ * chunk 鍵清單的長度上限 = 合法鍵的總數（清單不重複，所以寫出來的清單一定在這之內）：
+ * 有界世界 = 中央 chunk 數；無限世界 = 硬邊界內的所有欄 × 每欄 chunk 數（走得再遠，存檔也讀得回來）
+ */
+function maxChunkKeys(width: number, height: number, bounds: 'infinite' | undefined): number {
+  return bounds === 'infinite' ? (CX_MAX - CX_MIN + 1) * Math.ceil(height / CHUNK) : chunkTotal(width, height);
+}
+/** 鍵合法性要看的 header 欄位 */
+type KeyDims = Pick<SaveHeader, 'width' | 'height' | 'bounds'>;
+/** chunk 鍵是否合法：中央鍵 < 中央 chunk 數；外圍鍵只在 bounds 有值時合法（cx 在 X_LIMIT 內、不是中央欄、cy 在範圍內） */
+function chunkKeyOk(k: unknown, h: KeyDims): boolean {
+  if (!Number.isInteger(k) || (k as number) < 0) return false;
+  const cxN = Math.ceil(h.width / CHUNK), cyN = Math.ceil(h.height / CHUNK);
+  if ((k as number) < C_BASE) return (k as number) < cxN * cyN;
+  if (h.bounds !== 'infinite') return false;
+  const { cx, cy } = chunkXY(cxN, k as number);
+  return cy < cyN && (cx < 0 || cx >= cxN) && cx >= CX_MIN && cx <= CX_MAX;
+}
+/** chunk 鍵清單：每個都要合法（見 chunkKeyOk）、不重複，否則存檔損毀；回傳副本 */
+export function validChunkKeys(keys: unknown, h: KeyDims): number[] {
+  if (!Array.isArray(keys) || keys.length > maxChunkKeys(h.width, h.height, h.bounds)) throw new SaveFormatError('chunk keys');
+  for (const k of keys) if (!chunkKeyOk(k, h)) throw new SaveFormatError(`chunk key ${String(k)}`);
+  if (new Set(keys).size !== keys.length) throw new SaveFormatError('chunk keys: duplicate');
+  return [...keys] as number[];
+}
+/** tile 鍵是否合法：中央鍵 < width*height；外圍鍵只在 bounds 有值時合法（x 在 X_LIMIT 內且在中央框外、y 在範圍內） */
+export function validTileKey(k: number, h: KeyDims): boolean {
+  if (!Number.isInteger(k) || k < 0) return false;
+  if (k < T_BASE) return k < h.width * h.height;
+  if (h.bounds !== 'infinite') return false;
+  const { x, y } = tileXY(h.width, k);
+  return y < h.height && (x < 0 || x >= h.width) && x >= -X_LIMIT && x < X_LIMIT;
+}
 
 export interface PlayerSave { x: number; y: number; vx: number; vy: number; }
 /** undying = 不滅（傳奇詞條）冷卻剩餘秒數；format 8 起 */
@@ -165,6 +212,14 @@ export interface SaveHeader {
   levels?: LevelsJSON;
   /** 世界 NPC（好感度 / 遇見的旅人 / 冷卻）+ 委託 + buff；沒有 = 都是初始值 */
   folk?: FolkSave;
+  /** 無限世界才有（有界世界不寫；format ≤ 10 的舊檔沒有 = 只接受中央範圍的鍵、payload 補零規則） */
+  bounds?: 'infinite';
+  /** 外圍生成器版本（無限世界才有） */
+  outerGen?: number;
+  /** 中央框外的迷霧（非空才有） */
+  exploredOuter?: OuterBitsSave;
+  /** 已解鎖的傳送碑 id（世界共用；非空才有） */
+  stones?: number[];
 }
 export interface FolkSave {
   world: FolkJSON; quests: QuestLogJSON;
@@ -210,7 +265,7 @@ export interface EnvSave {
   frozen: number[];
 }
 export interface ChestSave { i: number; slots: (Stack | null)[]; }
-export interface ChunkPayload { fg: Uint8Array; wall: Uint8Array; }
+export type { ChunkPayload } from '../engine/world';
 export interface SaveData { header: SaveHeader; chunks: Map<number, ChunkPayload>; }
 
 export class SaveFormatError extends Error {
@@ -229,54 +284,34 @@ export interface RestoreOptions {
   /** 角色第一次來這個世界（save/worldSave.ts restoreSplit）：不套用存檔的位置 / 探索 / 標記 / 發現 / 床，
    *  保留建構子給的出生點狀態（出生點、只揭露出生點周圍、只發現出生地區） */
   freshVisit?: boolean;
+  /** 測試用覆寫：世界的水平邊界（省略 = 存檔的 bounds，沒有就 defaultBounds(width, height)：正式尺寸的舊檔打開是無限世界） */
+  bounds?: WorldBounds;
+  /** 測試用覆寫：中央以外的欄由誰生成 */
+  source?: ColumnSource;
 }
 
 // ── chunk 讀寫 ─────────────────────────────────────────────
 export function readChunk(world: World, ci: number): ChunkPayload {
   const { cx, cy } = world.chunkCoords(ci);
-  const fg = new Uint8Array(CHUNK * CHUNK), wall = new Uint8Array(CHUNK * CHUNK);
-  for (let ly = 0; ly < CHUNK; ly++) {
-    const y = cy * CHUNK + ly;
-    if (y >= world.height) break;
-    for (let lx = 0; lx < CHUNK; lx++) {
-      const x = cx * CHUNK + lx;
-      if (x >= world.width) break;
-      const wi = y * world.width + x;
-      fg[ly * CHUNK + lx] = world.fg[wi];
-      wall[ly * CHUNK + lx] = world.wall[wi];
-    }
-  }
-  return { fg, wall };
+  return world.readChunkPayload(cx, cy);
 }
 
 /** 直接覆寫 chunk 內容並標為已修改（不經 setFg，避免逐格 touch）。 */
 export function writeChunk(world: World, ci: number, data: ChunkPayload): void {
   const { cx, cy } = world.chunkCoords(ci);
-  for (let ly = 0; ly < CHUNK; ly++) {
-    const y = cy * CHUNK + ly;
-    if (y >= world.height) break;
-    for (let lx = 0; lx < CHUNK; lx++) {
-      const x = cx * CHUNK + lx;
-      if (x >= world.width) break;
-      const wi = y * world.width + x;
-      world.fg[wi] = data.fg[ly * CHUNK + lx];
-      world.wall[wi] = data.wall[ly * CHUNK + lx];
-    }
-  }
-  world.modifiedChunks.add(ci);
+  world.writeChunkPayload(cx, cy, data);
 }
 
 /** 兩個同尺寸世界中內容（fg 或 wall）不同的 chunk index，已排序。 */
 export function diffChunks(a: World, b: World): number[] {
   if (a.width !== b.width || a.height !== b.height) throw new Error('diffChunks: world size mismatch');
-  const out = new Set<number>();
-  for (let i = 0; i < a.fg.length; i++) {
-    if (a.fg[i] !== b.fg[i] || a.wall[i] !== b.wall[i]) {
-      const x = i % a.width, y = (i - x) / a.width;
-      out.add(a.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK)));
-    }
-  }
-  return [...out].sort((p, q) => p - q);
+  const out: number[] = [];
+  const same = (p: Uint8Array, q: Uint8Array): boolean => { for (let i = 0; i < p.length; i++) if (p[i] !== q[i]) return false; return true; };
+  a.forEachChunk((cx, cy) => {
+    const pa = a.readChunkPayload(cx, cy), pb = b.readChunkPayload(cx, cy);
+    if (!same(pa.fg, pb.fg) || !same(pa.wall, pb.wall)) out.push(a.chunkIndex(cx, cy));
+  });
+  return out.sort((p, q) => p - q);
 }
 
 // ── 液體 RLE ─────────────────────────────────────────────
@@ -320,27 +355,19 @@ function readLiquids(world: World, chunks: readonly number[]): { amount: Uint8Ar
   const K = CHUNK * CHUNK, amount = new Uint8Array(chunks.length * K), type = new Uint8Array(chunks.length * K);
   chunks.forEach((ci, k) => {
     const { cx, cy } = world.chunkCoords(ci);
-    for (let ly = 0; ly < CHUNK; ly++) {
-      const y = cy * CHUNK + ly;
-      if (y >= world.height) break;
-      for (let lx = 0; lx < CHUNK; lx++) {
-        const x = cx * CHUNK + lx;
-        if (x >= world.width) break;
-        const wi = y * world.width + x, o = k * K + ly * CHUNK + lx;
-        amount[o] = world.liquid[wi]; type[o] = world.liquid[wi] ? world.liquidType[wi] : 0;
-      }
-    }
+    world.readChunkLiquids(cx, cy, amount, type, k * K);
   });
   return { amount, type };
 }
-/** 液體欄位：先驗 chunk 清單（長度 ≤ 世界 chunk 總數、index 在範圍內、不重複），再配置 RLE 解碼緩衝 */
-export function validLiquids(v: unknown, width: number, height: number): LiquidSave | undefined {
+/** 液體欄位：先驗 chunk 清單（長度 ≤ 合法鍵總數（maxChunkKeys）、鍵合法（外圍鍵只在 bounds 有值時）、不重複），再配置 RLE 解碼緩衝 */
+export function validLiquids(v: unknown, width: number, height: number, bounds?: 'infinite'): LiquidSave | undefined {
   if (v === undefined) return undefined;
   const o = v as Partial<LiquidSave> | null;
   const dimsOk = validDims(width, height);
-  const total = dimsOk ? chunkTotal(width, height) : MAX_CHUNKS;
+  const total = dimsOk ? maxChunkKeys(width, height, bounds) : MAX_CHUNKS;
+  const keyOk = dimsOk ? (c: unknown): boolean => chunkKeyOk(c, { width, height, bounds }) : (c: unknown): boolean => Number.isInteger(c) && (c as number) >= 0 && (c as number) < total;
   if (!o || typeof o !== 'object' || !Array.isArray(o.chunks) || typeof o.data !== 'string' || o.chunks.length > total
-    || !o.chunks.every((c) => Number.isInteger(c) && c >= 0 && c < total)) throw new SaveFormatError('liquids');
+    || !o.chunks.every(keyOk)) throw new SaveFormatError('liquids');
   if (new Set(o.chunks).size !== o.chunks.length) throw new SaveFormatError('liquids: duplicate chunk');
   // 尺寸不合法時不解碼（restoreGame 的 size 檢查會拒絕）
   if (dimsOk) {
@@ -384,11 +411,17 @@ export function validHalves(v: unknown): number[] | undefined {
   if (!Array.isArray(v)) return undefined;
   return v.filter((d) => Number.isInteger(d) && d >= 0).slice(0, 2_000_000);
 }
-function encodeFrozen(F: Uint8Array): number[] {
+/** 升冪 tile 鍵 → 差分（第一個是絕對值，之後是與前一個的差） */
+function encodeDeltas(keys: readonly number[]): number[] {
   const out: number[] = [];
   let last = 0;
-  for (let i = 0; i < F.length; i++) if (F[i]) { out.push(i - last); last = i; }
+  for (const i of keys) { out.push(i - last); last = i; }
   return out;
+}
+/** tile 鍵所在的 chunk 鍵 */
+function chunkOfKey(w: World, i: number): number {
+  const { x, y } = w.tileXY(i);
+  return w.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK));
 }
 export function validFishLog(v: unknown): Partial<Record<ItemId, number>> {
   const fishLog: Partial<Record<ItemId, number>> = {};
@@ -421,31 +454,44 @@ export function validBossActive(v: unknown): EnemyKind | null {
 }
 
 // ── 探索位元圖編碼快取：自動存檔每 30 秒一次；迷霧只會增加，揭露格數沒變 = 內容沒變，重用上次的 base64 ──
-const exploredCache = new WeakMap<ExploredMap, { count: number; b64: string }>();
-function encodeExplored(m: ExploredMap): string {
+const exploredCache = new WeakMap<ExploredMap, { count: number; b64: string; outer: OuterBitsSave | undefined }>();
+function encodeExplored(m: ExploredMap): { b64: string; outer: OuterBitsSave | undefined } {
   const c = exploredCache.get(m);
-  if (c && c.count === m.count) return c.b64;
-  const b64 = toBase64(m.encode());
-  exploredCache.set(m, { count: m.count, b64 });
-  return b64;
+  if (c && c.count === m.count) return c;
+  const e = { count: m.count, b64: toBase64(m.encode()), outer: m.encodeOuter() };
+  exploredCache.set(m, e);
+  return e;
 }
 
 // ── snapshot / encode / decode ────────────────────────────
+/** 不該發生的狀態：測試環境丟例外（抓出來）；正式環境 console.error、照常繼續（不讓存檔失敗） */
+function invariantBroken(msg: string): void {
+  // vitest 會設 NODE_ENV = 'test'；瀏覽器裡沒有 process → 一律走 console.error
+  if ((globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NODE_ENV === 'test') throw new Error(msg);
+  console.error(`[delve] ${msg}`);
+}
 export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveData {
   const w = game.world;
-  const list = [...w.modifiedChunks].sort((p, q) => p - q);
+  // 只存常駐 + 停放的已修改 chunk（readChunkPayload 對兩者都不是的外圍 chunk 回 0，不能當資料寫出）；數字升冪 → 外圍鍵在中央之後
+  const parked = new Set(w.parkedChunks());
+  const stored = new Set<number>(), lost: number[] = [];
+  for (const k of new Set([...w.modifiedChunks, ...w.liquidModified])) {
+    if (parked.has(k) || w.isResident(w.chunkCoords(k).cx)) stored.add(k); else lost.push(k);
+  }
+  // 不該發生：改過的 chunk 卸載時一定停放。內容已經不在記憶體，寫出來只會是 0 → 不寫，但要大聲說
+  if (lost.length) invariantBroken(`snapshotGame: modified chunks ${lost.sort((p, q) => p - q).join(',')} are neither resident nor parked (dropped from save)`);
+  const list = [...w.modifiedChunks].filter((k) => stored.has(k)).sort((p, q) => p - q);
   const chunks = new Map<number, ChunkPayload>();
   for (const ci of list) chunks.set(ci, readChunk(w, ci));
   const p = game.player;
-  const mod = w.modifiedChunks;
+  const mod = new Set(list);
   const chests: ChestSave[] = [];
   for (const [i, slots] of w.chests) {
-    const x = i % w.width, y = (i - x) / w.width;
-    if (!mod.has(w.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK)))) continue;
+    if (!mod.has(chunkOfKey(w, i))) continue;
     chests.push({ i, slots: slots.map((st) => (st ? cloneStack(st) : null)) });
   }
   chests.sort((a, b) => a.i - b.i);
-  const liqChunks = [...new Set([...w.modifiedChunks, ...w.liquidModified])].sort((p, q) => p - q);
+  const liqChunks = [...stored].sort((p, q) => p - q);
   const lq = readLiquids(w, liqChunks);
   // 死亡中：存成重生後的狀態（重生點、滿血滿魔），避免讀檔後在死亡地點（例如熔岩裡）復活
   let player: PlayerSave = { x: p.x, y: p.y, vx: p.vx, vy: p.vy };
@@ -457,6 +503,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
   }
   const r2 = (v: number): number => Math.round(v * 100) / 100;
   const boss = game.bossEnemy();
+  const fog = encodeExplored(game.explored);
   return {
     header: {
       format: SAVE_FORMAT,
@@ -473,7 +520,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       chests,
       unlocked: [...w.unlocked].sort((a, b) => a - b),
       keysUsed: w.keysUsed,
-      explored: encodeExplored(game.explored),
+      explored: fog.b64,
       markers: game.markers.map((m) => ({ x: m.x, y: m.y })),
       discovery: game.discovery.toJSON(),
       bed: game.bed ? { ...game.bed } : null,
@@ -494,32 +541,26 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
         return o;
       }),
       bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
-      env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeFrozen(w.frozen) },
+      env: { weather: game.weatherOverride ? { ...game.weatherOverride } : null, frozen: encodeDeltas(w.flaggedTiles('frozen')) },
       extra: { fishLog: { ...game.fishLog }, minedIce: [...game.minedIce], codex: game.codex.toJSON(), rng: game.rngState() },
       appearance: { ...game.appearance },
       cformat: CHARACTER_FORMAT,
       vanity: game.vanity.toJSON(),
       settle: game.settle.toJSON(),
-      halves: encodeFrozen(w.half),
+      halves: encodeDeltas(w.flaggedTiles('half')),
       levels: game.levels.toJSON(),
       folk: { world: game.folk.toJSON(), quests: game.quests.toJSON(), buffs: { ...game.buffs }, scoutMarks: game.scoutMarks.map((m) => ({ ...m })), perkDays: { ...game.perkDays }, scouted: [...game.scouted] },
+      // B6：只在不是預設值時才寫（有界世界 / 沒有外圍迷霧 → 位元組與之前相同）
+      ...(w.bounds === 'infinite' ? { bounds: 'infinite' as const, outerGen: w.source ? w.source.version : 0 } : {}),
+      ...(fog.outer ? { exploredOuter: { chunks: [...fog.outer.chunks], data: fog.outer.data } } : {}),
+      ...(game.stonesUnlocked.size ? { stones: [...game.stonesUnlocked].sort((a, b) => a - b) } : {}),
     },
     chunks,
   };
 }
 
-// ── base64（瀏覽器與 Node 都有 btoa / atob） ───────────────
-export function toBase64(b: Uint8Array): string {
-  let s = '';
-  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000));
-  return btoa(s);
-}
-export function fromBase64(s: string): Uint8Array {
-  const bin = atob(s);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
+// ── base64（engine/base64.ts；這裡轉出給既有的呼叫端） ───────────────
+export { toBase64, fromBase64 };
 
 /** 容器（magic + header JSON + 依 order 的 chunk payload）；舊合併檔與世界檔共用 */
 export function encodeContainer(headerJson: unknown, order: readonly number[], chunks: Map<number, ChunkPayload>): Uint8Array {
@@ -639,6 +680,39 @@ export function validExplored(v: unknown, width: number, height: number): string
   }
   return v;
 }
+/** 無限世界標記：沒有 = undefined；只接受 'infinite'（其他 = 損毀） */
+export function validBounds(v: unknown): 'infinite' | undefined {
+  if (v === undefined) return undefined;
+  if (v !== 'infinite') throw new SaveFormatError('bounds');
+  return v;
+}
+/** 外圍生成器版本：沒有 = undefined；非負整數 */
+export function validOuterGen(v: unknown): number | undefined {
+  if (v === undefined) return undefined;
+  if (!Number.isInteger(v) || (v as number) < 0) throw new SaveFormatError('outerGen');
+  return v as number;
+}
+/** 傳送碑解鎖清單（讀檔第一關，只看形狀）：整數陣列才收（最多 MAX_STONE_IDS 筆）、空的 = 沒有；其他 = 當作沒有（不算損毀） */
+export const MAX_STONE_IDS = 4096;
+export function validStoneList(v: unknown): number[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out = v.slice(0, MAX_STONE_IDS).filter((x): x is number => Number.isInteger(x));
+  return out.length ? out : undefined;
+}
+/** 中央框外的迷霧：chunk 鍵合法（validChunkKeys）+ RLE 長度要剛好 chunks*1024；壞了 = 損毀 */
+export function validExploredOuter(v: unknown, h: KeyDims): OuterBitsSave | undefined {
+  if (v === undefined) return undefined;
+  const o = v as Partial<OuterBitsSave> | null;
+  if (!o || typeof o !== 'object' || typeof o.data !== 'string') throw new SaveFormatError('exploredOuter');
+  const chunks = validChunkKeys(o.chunks, h);
+  if (!validDims(h.width, h.height)) return { chunks, data: o.data };
+  try {
+    decodeRle(fromBase64(o.data), chunks.length * CHUNK * CHUNK);
+  } catch {
+    throw new SaveFormatError('exploredOuter');
+  }
+  return { chunks, data: o.data };
+}
 export function validMarkers(v: unknown): MapMarker[] {
   if (v === undefined) return [];
   if (!Array.isArray(v) || v.length > MAX_MARKERS) throw new SaveFormatError('markers');
@@ -709,6 +783,24 @@ export function validInventory(v: unknown): InventoryJSON {
 /** 角色資料版本：正整數才算；其他 = 沒有（舊資料） */
 function validCformat(v: unknown): v is number { return Number.isInteger(v) && (v as number) >= 1; }
 
+/** 無限世界的欄位（bounds / outerGen / exploredOuter）：有值才放（同 snapshotGame 的 B6） */
+export function validOuterFields(h: { width: number; height: number; bounds?: unknown; outerGen?: unknown; exploredOuter?: unknown }):
+  Pick<SaveHeader, 'bounds' | 'outerGen' | 'exploredOuter'> {
+  const bounds = validBounds(h.bounds), outerGen = validOuterGen(h.outerGen);
+  const exploredOuter = validExploredOuter(h.exploredOuter, { width: h.width, height: h.height, bounds });
+  return {
+    ...(bounds ? { bounds } : {}),
+    ...(outerGen !== undefined ? { outerGen } : {}),
+    ...(exploredOuter ? { exploredOuter } : {}),
+  };
+}
+
+/** header.stones：形狀合法且非空才放（同 snapshotGame 的 B6） */
+export function stonesField(v: unknown): Pick<SaveHeader, 'stones'> {
+  const stones = validStoneList(v);
+  return stones ? { stones } : {};
+}
+
 export function decodeSave(bytes: Uint8Array): SaveData {
   const { raw, body } = readContainer(bytes);
   const h = raw as Partial<SaveHeader>;
@@ -718,6 +810,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     || !Array.isArray(h.chunks) || !h.chunks.every((c) => Number.isInteger(c) && c >= 0)) {
     throw new SaveFormatError('header fields');
   }
+  const outer = validOuterFields({ ...h, width: h.width, height: h.height });
   const header: SaveHeader = {
     format: h.format, genVersion: h.genVersion, seed: h.seed, width: h.width, height: h.height,
     time: h.time, tick: h.tick, savedAt: isNum(h.savedAt) ? h.savedAt : 0,
@@ -732,7 +825,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     discovery: validDiscovery(h.discovery),
     bed: validBed(h.bed),
     combat: validCombat(h.combat),
-    liquids: validLiquids(h.liquids, h.width, h.height),
+    liquids: validLiquids(h.liquids, h.width, h.height, outer.bounds),
     vitals: validVitals(h.vitals),
     drops: validDrops(h.drops),
     bossActive: validBossActive(h.bossActive),
@@ -745,32 +838,104 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     halves: validHalves(h.halves),
     levels: validLevels(h.levels),
     folk: validFolk(h.folk),
+    ...outer,
+    ...stonesField(h.stones),
   };
   return { header, chunks: readChunks(bytes, body, header.chunks) };
 }
 
-/** 被修改 chunk 裡：丟掉世界生成的箱子，依 tile 重建空箱，再套用存檔內容。 */
-function restoreChests(w: World, chunks: readonly number[], saved: readonly ChestSave[]): void {
+/**
+ * 被修改 chunk 裡：丟掉世界生成的箱子，依 tile 重建空箱，再套用存檔內容。
+ * maxX（不含）= 補零規則的上限（沒有 bounds 的舊檔 = width：x ≥ width 是 payload 補的 0，不是存檔內容）。
+ */
+function restoreChests(w: World, chunks: readonly number[], saved: readonly ChestSave[], h: KeyDims, maxX: number,
+  fgAt: (x: number, y: number) => number = (x, y) => w.getFg(x, y)): void {
   const mod = new Set(chunks);
-  const chunkOf = (i: number): number => {
-    const x = i % w.width, y = (i - x) / w.width;
-    return w.chunkIndex(Math.floor(x / CHUNK), Math.floor(y / CHUNK));
-  };
-  for (const i of [...w.chests.keys()]) if (mod.has(chunkOf(i))) w.chests.delete(i);
+  // x ≥ maxX 的格不是存檔內容（補零）：那裡生成的箱子留著
+  for (const i of [...w.chests.keys()]) if (mod.has(chunkOfKey(w, i)) && w.tileXY(i).x < maxX) w.chests.delete(i);
   for (const ci of mod) {
     const { cx, cy } = w.chunkCoords(ci);
+    // 世界外的格讀到 STONE（不是箱子）→ 不必另夾左右邊界
     for (let y = cy * CHUNK; y < Math.min(w.height, (cy + 1) * CHUNK); y++) {
-      for (let x = cx * CHUNK; x < Math.min(w.width, (cx + 1) * CHUNK); x++) {
-        const i = y * w.width + x;
-        if (isChestTile(w.fg[i])) w.chests.set(i, new Array<Stack | null>(CHEST_SLOTS).fill(null));
+      for (let x = cx * CHUNK; x < Math.min((cx + 1) * CHUNK, maxX); x++) {
+        if (isChestTile(fgAt(x, y))) w.chests.set(w.idx(x, y), new Array<Stack | null>(CHEST_SLOTS).fill(null));
       }
     }
   }
   for (const c of saved) {
-    if (c.i >= w.fg.length || !isChestTile(w.fg[c.i]) || !mod.has(chunkOf(c.i))) continue;
+    if (!validTileKey(c.i, h)) continue;
+    const { x, y } = w.tileXY(c.i);
+    if (!isChestTile(fgAt(x, y)) || !mod.has(chunkOfKey(w, c.i))) continue;
     const slots = new Array<Stack | null>(CHEST_SLOTS).fill(null);
     c.slots.forEach((st, k) => { slots[k] = st ? cloneStack(st) : null; });
     w.chests.set(c.i, slots);
+  }
+}
+
+const CK = CHUNK * CHUNK;
+/**
+ * 讀檔時沒常駐的外圍欄（離讀檔後的玩家很遠）：存檔裡的 chunk 直接組成六層、最後停放（world.parkChunk），
+ * 不生成、不常駐 → 讀檔時間不隨走過的距離增加（B8）。fg / wall 用存檔 payload、液體用存檔的液體；
+ * 只有缺層的 chunk（只有液體被改過、或沒有液體紀錄）才暫時生成那一欄（peekColumn）補上。
+ */
+export class FarChunks {
+  readonly map = new Map<number, ChunkData>();
+  private readonly peeked = new Map<number, ChunkData[]>();
+  constructor(private readonly w: World, private readonly payload: ReadonlySet<number>, private readonly liquid: ReadonlySet<number>) {}
+  /** 第 cx 欄讀檔時沒常駐 → 它的存檔 chunk 走停放 */
+  isFar(cx: number): boolean { return !this.w.isResident(cx); }
+  /** chunk ci 的六層（第一次用到時建立） */
+  get(ci: number): ChunkData {
+    const have = this.map.get(ci);
+    if (have) return have;
+    const { cx, cy } = this.w.chunkCoords(ci);
+    let d: ChunkData;
+    if (this.payload.has(ci) && this.liquid.has(ci)) {
+      d = { fg: new Uint8Array(CK), wall: new Uint8Array(CK), liquid: new Uint8Array(CK), liquidType: new Uint8Array(CK), frozen: new Uint8Array(CK), half: new Uint8Array(CK) };
+    } else {
+      let col = this.peeked.get(cx);
+      if (!col) {
+        const c = this.w.peekColumn(cx);
+        const take = (a: Uint8Array, k: number): Uint8Array => { const b = new Uint8Array(CK); b.set(a.subarray(k * CK, Math.min((k + 1) * CK, a.length))); return b; };
+        col = [];
+        for (let k = 0; k < this.w.chunksY; k++) {
+          col.push({ fg: take(c.fg, k), wall: take(c.wall, k), liquid: take(c.liquid, k), liquidType: take(c.liquidType, k), frozen: take(c.frozen, k), half: take(c.half, k) });
+        }
+        this.peeked.set(cx, col);
+      }
+      d = col[cy];
+    }
+    this.map.set(ci, d);
+    return d;
+  }
+  /** (x,y) 落在已建立的停放 chunk → 那個 chunk 與格的索引（ly*CHUNK + lx）；否則 null */
+  at(x: number, y: number): { d: ChunkData; i: number } | null {
+    if (y < 0 || y >= this.w.height) return null;
+    const d = this.map.get(this.w.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK)));
+    return d ? { d, i: (y % CHUNK) * CHUNK + (x & 31) } : null;
+  }
+  /** (x,y) 的前景：停放 chunk 裡的讀它，否則讀世界 */
+  fgAt(x: number, y: number): number {
+    const a = this.at(x, y);
+    return a ? a.d.fg[a.i] : this.w.getFg(x, y);
+  }
+  /**
+   * 全部停放（之後走近時 ensureColumn 生成那一欄再蓋上）。停放被拒絕（那一欄在讀檔途中變成常駐）→ 不能默默丟掉：
+   * 六層直接寫進常駐欄，修改標記維持存檔內容（writeChunk 會兩種都標）。回傳改走寫入的 chunk 鍵（升冪；呼叫端喚醒液體）
+   */
+  park(): number[] {
+    const wrote: number[] = [];
+    const w = this.w;
+    for (const [ci, d] of this.map) {
+      const { cx, cy } = w.chunkCoords(ci);
+      if (w.parkChunk(cx, cy, d)) continue;
+      const mod = w.modifiedChunks.has(ci), liq = w.liquidModified.has(ci);
+      w.writeChunk(cx, cy, d);
+      if (!mod) w.modifiedChunks.delete(ci);
+      if (!liq) w.liquidModified.delete(ci);
+      wrote.push(ci);
+    }
+    return wrote.sort((p, q) => p - q);
   }
 }
 
@@ -791,8 +956,8 @@ export function restoreBlocker(h: SaveHeader, opts: RestoreOptions = {}): Extrac
   if (!validDims(h.width, h.height)) {
     return { ok: false, error: 'size', message: `bad size ${h.width}x${h.height}` };
   }
-  const total = Math.ceil(h.width / CHUNK) * Math.ceil(h.height / CHUNK);
-  for (const ci of h.chunks) if (ci >= total) return { ok: false, error: 'size', message: `chunk ${ci} out of range` };
+  // 中央鍵要在範圍內；外圍鍵只在 bounds 有值（format 11 的無限世界）時合法
+  for (const ci of h.chunks) if (!chunkKeyOk(ci, h)) return { ok: false, error: 'size', message: `chunk ${ci} out of range` };
   return null;
 }
 
@@ -863,7 +1028,8 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       validBed(data.header.bed);
       validDiscovery(data.header.discovery);
       data.header.combat = validCombat(data.header.combat);
-      validLiquids(data.header.liquids, data.header.width, data.header.height);
+      Object.assign(data.header, validOuterFields(data.header));
+      validLiquids(data.header.liquids, data.header.width, data.header.height, data.header.bounds);
       data.header.vitals = validVitals(data.header.vitals);
       data.header.drops = validDrops(data.header.drops);
       data.header.bossActive = validBossActive(data.header.bossActive);
@@ -879,30 +1045,52 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   const h = data.header;
   const blocked = restoreBlocker(h, opts);
   if (blocked) return blocked;
-  const game = new DelveGame({ seed: h.seed, width: h.width, height: h.height, gen: opts.gen, appearance: h.appearance });
+  // 沒有 bounds 的存檔（format ≤ 10）：正式尺寸 → 無限世界、小尺寸的測試世界 → 有界（CONFLICT-2）
+  const game = new DelveGame({
+    seed: h.seed, width: h.width, height: h.height, gen: opts.gen, appearance: h.appearance,
+    bounds: opts.bounds ?? h.bounds ?? defaultBounds(h.width, h.height), columnSource: opts.source,
+  });
   const w = game.world;
-  const total = w.chunksX * w.chunksY;
+  // 讀檔後玩家所在的那一帶先載入（存檔內容直接寫進常駐欄）；其他沒常駐的外圍欄的存檔 chunk 直接停放（FarChunks）
+  if (!opts.freshVisit) game.ensureAround(Math.floor((h.player.x + game.player.w / 2) / TILE_SIZE));
+  const far = new FarChunks(w, new Set(h.chunks.filter((ci) => data.chunks.has(ci))), new Set(h.liquids?.chunks ?? []));
+  // 補零規則：沒有 bounds（format ≤ 10）的 payload 在 x ≥ width 是補的 0 → 只寫 x < width（其餘留給生成器 / 來源）
+  const maxX = h.bounds ? Infinity : h.width;
   for (const ci of h.chunks) {
     const c = data.chunks.get(ci);
-    if (c) writeChunk(w, ci, c);
+    if (!c) continue;
+    const { cx, cy } = w.chunkCoords(ci);
+    if (far.isFar(cx)) {
+      const d = far.get(ci);
+      d.fg.set(c.fg.subarray(0, CK)); d.wall.set(c.wall.subarray(0, CK));
+      w.modifiedChunks.add(ci);
+      continue;
+    }
+    w.writeChunkPayload(cx, cy, c, h.bounds ? undefined : h.width);
   }
-  restoreChests(w, h.chunks, h.chests ?? []);
+  restoreChests(w, h.chunks, h.chests ?? [], h, maxX, (x, y) => far.fgAt(x, y));
   // 液體（format 6）：存檔裡的 chunk 整塊覆蓋；舊格式：被改過 chunk 裡蓋在方塊上的新液體清掉
   const wake: number[] = [...h.chunks];
   if (h.liquids) {
     const lq = decodeLiquidRle(fromBase64(h.liquids.chunks.length ? h.liquids.data : ''), h.liquids.chunks.length * CHUNK * CHUNK);
     const K = CHUNK * CHUNK;
     h.liquids.chunks.forEach((ci, k) => {
-      if (ci >= total) return;
+      if (!chunkKeyOk(ci, h)) return;
       const { cx, cy } = w.chunkCoords(ci);
+      if (far.isFar(cx)) {
+        const d = far.get(ci), n = Math.min(CHUNK, w.height - cy * CHUNK) * CHUNK;
+        for (let j = 0; j < n; j++) { d.liquid[j] = lq.amount[k * K + j]; d.liquidType[j] = lq.type[k * K + j]; }
+        w.liquidModified.add(ci);
+        return;
+      }
+      const lxEnd = Math.min(CHUNK, maxX - cx * CHUNK);
+      // 世界外的格 setLiquidRaw 會丟掉；沒有 bounds 的舊檔只寫 x < width（補零規則）
       for (let ly = 0; ly < CHUNK; ly++) {
         const y = cy * CHUNK + ly;
         if (y >= w.height) break;
-        for (let lx = 0; lx < CHUNK; lx++) {
-          const x = cx * CHUNK + lx;
-          if (x >= w.width) break;
-          const wi = y * w.width + x, o = k * K + ly * CHUNK + lx;
-          w.liquid[wi] = lq.amount[o]; w.liquidType[wi] = lq.type[o];
+        for (let lx = 0; lx < lxEnd; lx++) {
+          const o = k * K + ly * CHUNK + lx;
+          w.setLiquidRaw(cx * CHUNK + lx, y, lq.amount[o], lq.type[o]);
         }
       }
       w.liquidModified.add(ci);
@@ -911,18 +1099,25 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   } else {
     for (const ci of h.chunks) {
       const { cx, cy } = w.chunkCoords(ci);
-      for (let y = cy * CHUNK; y < Math.min(w.height, (cy + 1) * CHUNK); y++) for (let x = cx * CHUNK; x < Math.min(w.width, (cx + 1) * CHUNK); x++) {
-        const wi = y * w.width + x;
-        if (w.liquid[wi] && w.isSolid(x, y)) { w.liquid[wi] = 0; w.liquidType[wi] = 0; }
+      for (let y = cy * CHUNK; y < Math.min(w.height, (cy + 1) * CHUNK); y++) for (let x = cx * CHUNK; x < Math.min((cx + 1) * CHUNK, maxX); x++) {
+        if (w.getLiquid(x, y) && w.isSolid(x, y)) w.setLiquidRaw(x, y, 0, 0);
       }
     }
   }
   for (const ci of wake) {
     const { cx, cy } = w.chunkCoords(ci);
+    // 停放的 chunk 走近載入時才整塊喚醒
+    if (far.isFar(cx)) continue;
     game.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
   }
-  for (const i of h.unlocked ?? []) if (i < w.fg.length && w.fg[i] === T.LOCKED_CHEST) w.unlocked.add(i);
+  for (const i of h.unlocked ?? []) {
+    if (!validTileKey(i, h)) continue;
+    const { x, y } = w.tileXY(i);
+    if (far.fgAt(x, y) === T.LOCKED_CHEST) w.unlocked.add(i);
+  }
   w.keysUsed = h.keysUsed ?? 0;
+  // 傳送碑解鎖（世界共用；freshVisit 也照樣讀：是世界的東西不是角色的）
+  for (const id of validStoneIds(h.stones, game.waystones)) game.stonesUnlocked.add(id);
   w.markAllDirty();
   // 第一次來這個世界（freshVisit）：位置 / 探索 / 標記 / 發現 / 床維持建構子的出生點狀態
   if (!opts.freshVisit) {
@@ -935,7 +1130,9 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   game.tick = h.tick;
   if (!opts.freshVisit) {
     // 探索（format 4）；舊格式 = 什麼都沒探索
-    const explored = h.explored ? ExploredMap.decode(fromBase64(h.explored), w.width, w.height) : new ExploredMap(w.width, w.height);
+    const explored = h.explored
+      ? ExploredMap.decode(fromBase64(h.explored), w.width, w.height, h.exploredOuter, w)
+      : new ExploredMap(w.width, w.height, undefined, w);
     game.setExploration(explored, (h.markers ?? []).map((m) => ({ ...m })));
     if (h.discovery) game.discovery.load(h.discovery);
     else game.discovery.found.clear();
@@ -965,7 +1162,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   }
   // 地上的掉落物（format 7）：放回原地、靜止
   for (const d of h.drops ?? []) {
-    if (d.x < 0 || d.y < 0 || d.x > w.width * TILE_SIZE || d.y > w.height * TILE_SIZE) continue;
+    if (d.x < w.xMin * TILE_SIZE || d.y < 0 || d.x > w.xMax * TILE_SIZE || d.y > w.height * TILE_SIZE) continue;
     game.drops.spawn(d.item, d.count, d.x, d.y, 0, 0, 0, d.gear ? { ...d.gear, affixes: d.gear.affixes.map((a) => ({ ...a })) } : undefined, d.tint);
   }
   // 舊角色的時裝轉換（spec C6）：放在掉落物讀回來之後（玩家位置已經放好），背包放不下而掉在腳邊的轉換物品
@@ -973,17 +1170,24 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   if (needsWardrobeMigration(h.cformat)) game.migrateWardrobe();
   // 曆法 / 天氣：結冰格（只留在還有水的格）、強制天氣；舊存檔沒有 → 依日期重算結冰
   if (h.env) {
-    w.frozen.fill(0);
+    for (const k of w.flaggedTiles('frozen')) { const p = w.tileXY(k); w.setFlag('frozen', p.x, p.y, false); }
     let i = 0;
     for (let k = 0; k < h.env.frozen.length; k++) {
       i += h.env.frozen[k];
-      if (i < w.frozen.length && w.liquidType[i] === LIQ.WATER && w.liquid[i] > 0 && !w.isSolid(i % w.width, Math.floor(i / w.width))) w.frozen[i] = 1;
+      if (!validTileKey(i, h)) continue;
+      const p = w.tileXY(i), x = p.x, y = p.y;
+      const a = far.at(x, y);
+      if (a) {
+        if (a.d.liquidType[a.i] === LIQ.WATER && a.d.liquid[a.i] > 0 && SOLID_LUT[a.d.fg[a.i]] !== 1) a.d.frozen[a.i] = 1;
+        continue;
+      }
+      if (w.inBounds(x, y) && w.getLiquidType(x, y) === LIQ.WATER && w.getLiquid(x, y) > 0 && !w.isSolid(x, y)) w.setFlag('frozen', x, y, true);
     }
     game.weatherOverride = h.env.weather ? { ...h.env.weather } : null;
     game.syncDay();
   } else game.refreshSeason();
   if (h.extra) {
-    for (const i of h.extra.minedIce ?? []) if (i < w.liquid.length) game.minedIce.add(i);
+    for (const i of h.extra.minedIce ?? []) { if (!validTileKey(i, h)) continue; const { x, y } = w.tileXY(i); if (w.inBounds(x, y)) game.minedIce.add(i); }
     if (h.extra.rng) game.setRngState(h.extra.rng);
   }
   // 半格方塊（只留在實心格）、據點 / 居民（核心那格要還是爐心）
@@ -991,8 +1195,17 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     let i = 0;
     for (let k = 0; k < h.halves.length; k++) {
       i += h.halves[k];
-      if (i < w.half.length && w.isSolid(i % w.width, Math.floor(i / w.width))) w.half[i] = 1;
+      if (!validTileKey(i, h)) continue;
+      const { x, y } = w.tileXY(i);
+      const a = far.at(x, y);
+      if (a) { if (SOLID_LUT[a.d.fg[a.i]] === 1) a.d.half[a.i] = 1; continue; }
+      if (w.inBounds(x, y) && w.isSolid(x, y)) w.setFlag('half', x, y, true);
     }
+  }
+  // 遠方的存檔 chunk 停放（據點核心那幾欄接著由 settle.load 載入、蓋回來）；途中變成常駐的欄改成直接寫入 → 喚醒液體
+  for (const ci of far.park()) {
+    const { cx, cy } = w.chunkCoords(ci);
+    game.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
   }
   game.settle.load(h.settle, w);
   game.folk.load(h.folk?.world, w);

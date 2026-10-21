@@ -36,7 +36,8 @@ describe('generateWorldSteps', () => {
     const { res } = runSteps('pregen');
     const a = new DelveGame({ seed: 'pregen', ...SMALL, gen: res });
     const b = new DelveGame({ seed: 'pregen', ...SMALL });
-    expect(hash(a.world.fg, a.world.wall)).toBe(hash(b.world.fg, b.world.wall));
+    const va = a.world.window(0, 0, a.world.width, a.world.height), vb = b.world.window(0, 0, b.world.width, b.world.height);
+    expect(hash(va.fg, va.wall)).toBe(hash(vb.fg, vb.wall));
     expect(a.spawn).toEqual(b.spawn);
     expect(a.player.x).toBe(b.player.x);
   });

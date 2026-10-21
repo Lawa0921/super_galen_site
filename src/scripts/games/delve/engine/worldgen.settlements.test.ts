@@ -1,7 +1,7 @@
 // worldgen.settlements.test.ts — 地表村落、矮人地廳、地標（gen/settlements.ts、gen/landmarks.ts）
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, type GenResult } from './worldgen';
-import { BIOME } from './world';
+import { BIOME, World } from './world';
 import { T, W, isSolidTile } from './tiles';
 import { landmarkFor } from './gen/landmarks';
 import { buildRegions } from './discovery';
@@ -41,6 +41,14 @@ describe('世界生成：NPC 聚落與地標', { timeout: 180_000 }, () => {
     }
   });
 
+  /** checkRoom 吃遊戲世界（區塊欄）：生成結果複製一份（每個 seed 一次） */
+  const worlds = new Map<GenResult, World>();
+  const gameWorld = (g: GenResult): World => {
+    let w = worlds.get(g);
+    if (!w) { w = World.fromGen(g.world, g.layers); worlds.set(g, w); }
+    return w;
+  };
+
   it('村落有 2～3 棟有門有床的房子、委託板、兩端的高旗桿；水不會淹進村子', () => {
     for (const g of gens) for (const v of g.villages) {
       const w = g.world;
@@ -54,7 +62,7 @@ describe('世界生成：NPC 聚落與地標', { timeout: 180_000 }, () => {
         }
         expect(bed && roof).toBe(true);
         // 房子內部是合格的房間（封閉、有背景牆 / 門 / 光 / 桌 / 椅 / 床）
-        const r = checkRoom(w, (h.x0 + h.x1) >> 1, h.floorY - 2);
+        const r = checkRoom(gameWorld(g), (h.x0 + h.x1) >> 1, h.floorY - 2);
         expect(r?.ok, r?.reasons.join()).toBe(true);
       }
       expect(w.getFg(v.board.x, v.board.y)).toBe(T.QUEST_BOARD);

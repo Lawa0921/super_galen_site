@@ -7,22 +7,26 @@ import { CHUNK, DAY_LENGTH } from '../engine/constants';
 
 export interface Cam { x: number; y: number; }
 
-/** 把鏡頭左上角夾在世界內；視窗比世界大時置中。 */
-export function clampCamera(x: number, y: number, viewW: number, viewH: number, worldW: number, worldH: number): Cam {
-  const cx = viewW >= worldW ? (worldW - viewW) / 2 : Math.max(0, Math.min(worldW - viewW, x));
+/**
+ * 把鏡頭左上角夾在世界內：水平範圍 [worldX0, worldX1)、垂直 [0, worldH)（都是世界 px）；視窗比世界大時置中。
+ * 有界世界傳 0, width*S；無限世界傳 xMin*S, xMax*S（±1e6 格 → 鏡頭可以停在負 px）。
+ */
+export function clampCamera(x: number, y: number, viewW: number, viewH: number, worldX0: number, worldX1: number, worldH: number): Cam {
+  const worldW = worldX1 - worldX0;
+  const cx = viewW >= worldW ? worldX0 + (worldW - viewW) / 2 : Math.max(worldX0, Math.min(worldX1 - viewW, x));
   const cy = viewH >= worldH ? (worldH - viewH) / 2 : Math.max(0, Math.min(worldH - viewH, y));
   return { x: cx, y: cy };
 }
 
-/** 鏡頭跟隨（指數平滑，與幀率無關）。target 為要置中的世界 px 座標。 */
+/** 鏡頭跟隨（指數平滑，與幀率無關）。focus 為要置中的世界 px 座標；世界範圍同 clampCamera。 */
 export function followCamera(
-  cam: Cam, target: Cam, viewW: number, viewH: number, worldW: number, worldH: number,
+  cam: Cam, focus: Cam, viewW: number, viewH: number, worldX0: number, worldX1: number, worldH: number,
   dt: number, snap = false, stiffness = 9,
 ): Cam {
-  const goal = clampCamera(target.x - viewW / 2, target.y - viewH / 2, viewW, viewH, worldW, worldH);
+  const goal = clampCamera(focus.x - viewW / 2, focus.y - viewH / 2, viewW, viewH, worldX0, worldX1, worldH);
   if (snap) return goal;
   const a = 1 - Math.exp(-stiffness * Math.max(0, dt));
-  return clampCamera(cam.x + (goal.x - cam.x) * a, cam.y + (goal.y - cam.y) * a, viewW, viewH, worldW, worldH);
+  return clampCamera(cam.x + (goal.x - cam.x) * a, cam.y + (goal.y - cam.y) * a, viewW, viewH, worldX0, worldX1, worldH);
 }
 
 /**
@@ -53,11 +57,11 @@ export class FixedStepper {
 
 export interface ChunkRange { cx0: number; cy0: number; cx1: number; cy1: number; }
 
-/** 與視窗（世界 px）相交的 chunk 範圍（含端點），夾在世界內。 */
+/** 與視窗（世界 px）相交的 chunk 範圍（含端點），水平夾在 [cxMin, cxMax]（含端點，可為負）、垂直夾在 [0, chunksY)。 */
 export function visibleChunks(
-  camX: number, camY: number, viewW: number, viewH: number, chunkPx: number, chunksX: number, chunksY: number,
+  camX: number, camY: number, viewW: number, viewH: number, chunkPx: number, cxMin: number, cxMax: number, chunksY: number,
 ): ChunkRange {
-  const clampX = (v: number): number => Math.max(0, Math.min(chunksX - 1, v));
+  const clampX = (v: number): number => Math.max(cxMin, Math.min(cxMax, v));
   const clampY = (v: number): number => Math.max(0, Math.min(chunksY - 1, v));
   return {
     cx0: clampX(Math.floor(camX / chunkPx)),
@@ -92,6 +96,12 @@ export class ChunkLRU<V> {
   keys(): number[] { return [...this.map.keys()]; }
   delete(k: number): boolean { return this.map.delete(k); }
   clear(): void { this.map.clear(); }
+  /** 拿掉所有 pred(key) 為真的項目，回傳它們的值（供回收 canvas；例如卸載欄的 chunk 圖） */
+  evictWhere(pred: (k: number) => boolean): V[] {
+    const out: V[] = [];
+    for (const [k, v] of this.map) if (pred(k)) { out.push(v); this.map.delete(k); }
+    return out;
+  }
 }
 
 // ── HUD 文字 ─────────────────────────────────────────────
@@ -175,11 +185,13 @@ export interface TileRect { x: number; y: number; w: number; h: number; }
 export function nearRect(x: number, y: number, r: TileRect, margin: number): boolean {
   return x >= r.x - margin && x < r.x + r.w + margin && y >= r.y - margin && y < r.y + r.h + margin;
 }
-/** 有沒有任何 chunk（index = cy*chunksX+cx）和 rect（tile，往外 margin）相交：只有這樣才需要重算光照 */
-export function chunksTouchRect(cis: Iterable<number>, chunksX: number, r: TileRect, margin: number): boolean {
+/** 有沒有任何 chunk（chunk 鍵，world.chunkCoords 解碼）和 rect（tile，往外 margin）相交：只有這樣才需要重算光照 */
+export function chunksTouchRect(
+  cis: Iterable<number>, world: { chunkCoords(ci: number): { cx: number; cy: number } }, r: TileRect, margin: number,
+): boolean {
   const x0 = r.x - margin, y0 = r.y - margin, x1 = r.x + r.w + margin, y1 = r.y + r.h + margin;
   for (const ci of cis) {
-    const cx = ci % chunksX, cy = (ci - cx) / chunksX;
+    const { cx, cy } = world.chunkCoords(ci);
     const tx = cx * CHUNK, ty = cy * CHUNK;
     if (tx < x1 && tx + CHUNK > x0 && ty < y1 && ty + CHUNK > y0) return true;
   }
@@ -216,6 +228,7 @@ const BLOCKED: Record<BlockReason, string | null> = {
   coins: '錢不夠',
   bagfull: '背包放不下了',
   blockedspot: '目的地的爐心被方塊圍住了，傳不過去（先清出一點空間）',
+  blockedstone: '目的地的傳送碑旁邊被方塊擋住了，傳不過去（先清出一點空間）',
 };
 
 /** 古碑碑文（佔位文字） */

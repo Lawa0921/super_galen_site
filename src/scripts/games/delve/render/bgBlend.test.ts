@@ -2,9 +2,84 @@
 import { describe, it, expect } from 'vitest';
 import { BAND_SLICES, BiomeField, LAYER_HALF, SKY_HALF, WIPE_BAND, WIPE_LEVELS, levelKeep, levelMask, wipeFront } from './bgBlend';
 
-// 0..299 森林、300..599 沙漠、600..899 雪原
+// 0..299 森林、300..599 沙漠、600..899 雪原（有界世界 [0, 900)）
 const cols = Array.from({ length: 900 }, (_, x) => (x < 300 ? 0 : x < 600 ? 1 : 2));
-const field = new BiomeField(cols);
+const field = new BiomeField((x) => cols[x], 0, cols.length);
+
+/** 舊版（每欄陣列的前綴和）的 weights / pair：函式版在中央視窗要與它相同 */
+function arrayField(c: readonly number[]): { weights(cx: number, half: number): number[]; pair(cx: number, half: number): { left: number; right: number; u: number } } {
+  const n = c.length, cnt: Float64Array[] = [], mom: Float64Array[] = [];
+  for (let b = 0; b < 4; b++) { cnt.push(new Float64Array(n + 1)); mom.push(new Float64Array(n + 1)); }
+  for (let x = 0; x < n; x++) for (let b = 0; b < 4; b++) {
+    cnt[b][x + 1] = cnt[b][x] + (b === c[x] ? 1 : 0);
+    mom[b][x + 1] = mom[b][x] + (b === c[x] ? x + 0.5 : 0);
+  }
+  const at = (a: Float64Array, x: number): number => {
+    if (x <= 0) return 0;
+    if (x >= n) return a[n];
+    const i = Math.floor(x), f = x - i;
+    return a[i] + (a[i + 1] - a[i]) * f;
+  };
+  const weights = (cx: number, half: number): number[] => {
+    const lo = Math.max(0, cx - half), hi = Math.min(n, cx + half), span = Math.max(1e-6, hi - lo);
+    return [0, 1, 2, 3].map((b) => (at(cnt[b], hi) - at(cnt[b], lo)) / span);
+  };
+  const pair = (cx: number, half: number): { left: number; right: number; u: number } => {
+    const w = weights(cx, half);
+    let a = 0;
+    for (let b = 1; b < 4; b++) if (w[b] > w[a]) a = b;
+    let s = -1;
+    for (let b = 0; b < 4; b++) if (b !== a && w[b] > 1e-9 && (s < 0 || w[b] > w[s])) s = b;
+    if (s < 0) return { left: a, right: a, u: 0 };
+    const lo = Math.max(0, cx - half), hi = Math.min(n, cx + half);
+    const centroid = (b: number): number => {
+      const k = at(cnt[b], hi) - at(cnt[b], lo);
+      return k > 1e-9 ? (at(mom[b], hi) - at(mom[b], lo)) / k : cx;
+    };
+    const [left, right] = centroid(a) <= centroid(s) ? [a, s] : [s, a];
+    const u = w[right] / (w[left] + w[right]);
+    return { left, right, u: u < 1e-6 ? 0 : u > 1 - 1e-6 ? 1 : u };
+  };
+  return { weights, pair };
+}
+
+describe('BiomeField（吃 biomeAt 函式）與舊陣列版相同', () => {
+  it('中央視窗：weights / pair 與前綴和版一致（含視窗被世界邊界夾住的兩端）', () => {
+    const ref = arrayField(cols);
+    for (const half of [40, 68, 104, 128]) {
+      for (let cx = -20; cx <= 920; cx += 7.3125) {
+        const a = field.weights(cx, half), b = ref.weights(cx, half);
+        for (let k = 0; k < 4; k++) expect(a[k]).toBeCloseTo(b[k], 9);
+        const p = field.pair(cx, half), q = ref.pair(cx, half);
+        expect([p.left, p.right]).toEqual([q.left, q.right]);
+        expect(p.u).toBeCloseTo(q.u, 9);
+      }
+    }
+  });
+  it('每次 pair / weights 最多問 2·half + 1 欄（half ≤ 128 → ≤ 257 次 biomeAt）', () => {
+    let n = 0;
+    const f = new BiomeField((x) => { n++; return cols[x]; }, 0, cols.length);
+    f.pair(450.37, 128);
+    expect(n).toBeLessThanOrEqual(257);
+    n = 0;
+    f.weights(300.5, 128);
+    expect(n).toBeLessThanOrEqual(257);
+  });
+  it('無限世界：視窗跨過 x = 0 往負方向時不被夾住', () => {
+    // x < 0 沙漠、x ≥ 0 森林
+    const inf = new BiomeField((x) => (x < 0 ? 1 : 0), -1e6, 1e6);
+    const w = inf.weights(0, 40);
+    expect(w[0]).toBeCloseTo(0.5);
+    expect(w[1]).toBeCloseTo(0.5);
+    expect(inf.weights(-10, 40)[1]).toBeCloseTo(50 / 80);
+    expect(inf.weights(-500, 40)[1]).toBeCloseTo(1);
+    const p = inf.pair(0, 40);
+    expect(p.left).toBe(1);
+    expect(p.right).toBe(0);
+    expect(p.u).toBeCloseTo(0.5);
+    expect(inf.pair(-200, 40)).toEqual({ left: 1, right: 1, u: 0 });
+  });
+});
 
 describe('BiomeField.weights（盒狀濾波，連續）', () => {
   it('遠離邊界：只有本區', () => {

@@ -3,7 +3,11 @@
 //     大洞窟、裂谷、天坑、小屋、礦坑、遺跡、浮空島、結冰湖、乾湖床、密室、地城與其重要房間），依種子命名（中文）。
 //     id = 陣列索引（同種子永遠相同），存檔只存 id。
 //   · Discovery：已發現的地區、讀過的碑文、拿到的珍寶、最深紀錄、移動距離 → 日誌統計與完成度。
+//   · 外圍（B13）：每個 v0 生態段與兩片海各是一個惰性地區（cat land），id = OUTER_REGION_BASE + zigzag(段號, 側)；
+//     會跳「發現」並存進 found，但不算進日誌的總數與完成度（stats 只看中央的 regions）。
 import { Rng } from './rng';
+import { seedInt, hash2 } from './noise';
+import { SEA_W, type OuterProfile } from './chunkgen/profile';
 import { BIOME } from './world';
 import type { BiomeSegment, Structure, GenLayers } from './worldgen';
 import type { DungeonInfo, RoomKind } from './gen/dungeon';
@@ -191,6 +195,59 @@ export function buildRegions(src: RegionSource): Region[] {
   return out;
 }
 
+// ── 外圍地區（B13） ──────────────────────────────────────
+/** 外圍地區 id 的起點（中央地區 id = 陣列索引，遠小於這個） */
+export const OUTER_REGION_BASE = 2 ** 30;
+/** 外圍地區 id 的上限（不含；段號 / 側的 zigzag 不會超過） */
+export const OUTER_REGION_END = OUTER_REGION_BASE + 2 ** 22;
+/** 段號 n（海 = 0、海後第 k 段陸地 = k + 1）與側（東 1 / 西 −1）→ 外圍地區 id */
+export function outerRegionId(n: number, side: 1 | -1): number {
+  return OUTER_REGION_BASE + n * 2 + (side === 1 ? 0 : 1);
+}
+export function isOuterRegionId(id: number): boolean {
+  return Number.isInteger(id) && id >= OUTER_REGION_BASE && id < OUTER_REGION_END;
+}
+const OUTER_BIOME_KEY: Record<number, string> = { [BIOME.FOREST]: 'forest', [BIOME.DESERT]: 'desert', [BIOME.SNOW]: 'snow', [BIOME.JUNGLE]: 'jungle' };
+
+/**
+ * 外圍地區的查詢：(x, y) → 那一片海 / 那一段生態的地區（惰性建立、快取；中央 → null）。
+ * 名字：海 = 「西方大海」/「東方大海」；陸地 = 「東境・」/「西境・」+ NAMES[生態] 依（seed, 側, 段號）雜湊挑。
+ * 範圍：該段的欄、y 在洞穴層線以上（同中央的地表區域）。
+ */
+export function outerRegions(seed: string, profile: OuterProfile): (x: number, y: number) => Region | null {
+  const cache = new Map<number, Region>();
+  const sName = seedInt(seed, 'outer-region-names');
+  const width = profile.frame.width;
+  const deep = (x: number): number => profile.layersAt(x).deep;
+  const make = (id: number, kind: string, name: string, x0: number, x1: number): Region => {
+    const ax = Math.floor((x0 + x1) / 2);
+    return {
+      id, cat: 'land', kind, name, x: x0, y: 0, w: x1 - x0, h: profile.frame.cavernY,
+      ax, ay: Math.max(4, profile.surfaceAt(ax) - 14),
+      contains: (x: number, y: number): boolean => x >= x0 && x < x1 && y >= 0 && y < deep(x),
+    };
+  };
+  return (x: number, y: number): Region | null => {
+    const z = profile.zoneAt(x);
+    if (z.kind === 'central') return null;
+    const n = z.kind === 'sea' ? 0 : z.seg.k + 1;
+    const id = outerRegionId(n, z.side);
+    let r = cache.get(id);
+    if (!r) {
+      if (z.kind === 'sea') {
+        const [x0, x1] = z.side === 1 ? [width, width + SEA_W] : [-SEA_W, 0];
+        r = make(id, 'sea', z.side === 1 ? '東方大海' : '西方大海', x0, x1);
+      } else {
+        const key = OUTER_BIOME_KEY[z.seg.biome] ?? 'forest', list = NAMES[key];
+        const pick = list[Math.floor(hash2(z.seg.k, z.side, sName) * list.length) % list.length];
+        r = make(id, key, `${z.side === 1 ? '東境・' : '西境・'}${pick}`, z.seg.x0, z.seg.x1);
+      }
+      cache.set(id, r);
+    }
+    return r.contains(x, y) ? r : null;
+  };
+}
+
 // ── 發現狀態 ─────────────────────────────────────────────
 /** 會被算進「珍寶」的獨特道具 */
 export const TREASURE_ITEMS: readonly ItemId[] = (Object.keys(ITEMS) as ItemId[]).filter((id) => ITEMS[id].unique);
@@ -216,6 +273,8 @@ export interface JournalStats {
 }
 
 const CELL = 64;
+/** 格網鍵：(gx + 2**15) * 64 + gy（gy = y / CELL < 64；負 gx 不會撞到別列） */
+const cellKey = (gx: number, gy: number): number => (gx + 2 ** 15) * 64 + gy;
 
 export class Discovery {
   readonly found = new Set<number>();
@@ -231,6 +290,8 @@ export class Discovery {
   /** 世界裡所有地標的 tile index（存檔讀回時只認這些） */
   readonly landmarkSet: ReadonlySet<number>;
   private grid = new Map<number, number[]>();
+  /** 外圍地區的查詢（無限世界；null = 沒有外圍） */
+  private outer: ((x: number, y: number) => Region | null) | null = null;
   private lastX: number | null = null;
   private lastY = 0;
 
@@ -241,7 +302,7 @@ export class Discovery {
     for (const r of regions) {
       for (let gy = Math.floor(r.y / CELL); gy <= Math.floor((r.y + r.h - 1) / CELL); gy++) {
         for (let gx = Math.floor(r.x / CELL); gx <= Math.floor((r.x + r.w - 1) / CELL); gx++) {
-          const k = gy * 4096 + gx;
+          const k = cellKey(gx, gy);
           let l = this.grid.get(k);
           if (!l) { l = []; this.grid.set(k, l); }
           l.push(r.id);
@@ -251,7 +312,7 @@ export class Discovery {
   }
 
   regionsAt(x: number, y: number): Region[] {
-    const l = this.grid.get(Math.floor(y / CELL) * 4096 + Math.floor(x / CELL));
+    const l = this.grid.get(cellKey(Math.floor(x / CELL), Math.floor(y / CELL)));
     if (!l) return [];
     const out: Region[] = [];
     for (const id of l) { const r = this.regions[id]; if (r.contains(x, y)) out.push(r); }
@@ -260,7 +321,10 @@ export class Discovery {
 
   isFound(id: number): boolean { return this.found.has(id); }
 
-  /** 玩家在 (x,y)：回傳這次新發現的地區（越小的越前面——結構比生態區先顯示） */
+  /** 外圍地區的查詢（outerRegions 的結果；null = 沒有外圍） */
+  setOuter(fn: ((x: number, y: number) => Region | null) | null): void { this.outer = fn; }
+
+  /** 玩家在 (x,y)：回傳這次新發現的地區（越小的越前面——結構比生態區先顯示）；外圍地區排最後 */
   visit(x: number, y: number): Region[] {
     const out: Region[] = [];
     for (const r of this.regionsAt(x, y)) {
@@ -268,7 +332,10 @@ export class Discovery {
       this.found.add(r.id);
       out.push(r);
     }
-    return out.sort((a, b) => a.w * a.h - b.w * b.h);
+    out.sort((a, b) => a.w * a.h - b.w * b.h);
+    const o = this.outer?.(x, y);
+    if (o && !this.found.has(o.id)) { this.found.add(o.id); out.push(o); }
+    return out;
   }
 
   /** 讀到碑文；回傳是否第一次 */
@@ -329,7 +396,7 @@ export class Discovery {
   load(j: Partial<DiscoveryJSON> | null | undefined): void {
     if (!j || typeof j !== 'object') return;
     const ints = (v: unknown): number[] => (Array.isArray(v) ? v.filter((i): i is number => Number.isInteger(i) && i >= 0) : []);
-    for (const id of ints(j.regions)) if (id < this.regions.length) this.found.add(id);
+    for (const id of ints(j.regions)) if (id < this.regions.length || isOuterRegionId(id)) this.found.add(id);
     for (const id of ints(j.lore)) this.readLore(id);
     if (Array.isArray(j.treasures)) for (const t of j.treasures) if (isItemId(t)) this.gainTreasure(t);
     for (const i of ints(j.landmarks)) this.claimLandmark(i);

@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { exploredLabel, nearRect, chunksTouchRect, helpSeen, HELP_KEY } from './model';
 import { zoomScale, clampZoom } from './lowres';
 import { CHUNK, TILE_SIZE } from '../engine/constants';
+import { World } from '../engine/world';
 
 describe('exploredLabel', () => {
   it('不到 1% 顯示兩位小數；0 顯示 0%；之後一位小數', () => {
@@ -24,16 +25,21 @@ describe('nearRect / chunksTouchRect', () => {
     expect(nearRect(120, 10, view, 8)).toBe(false);
   });
   it('dirty chunk 和光照視窗（含 margin）相交', () => {
-    const chunksX = 10;
-    const ci = (cx: number, cy: number): number => cy * chunksX + cx;
+    const w = new World(320, 320);
+    const ci = (cx: number, cy: number): number => w.chunkIndex(cx, cy);
     // 視窗 tile 100..160 × 50..84 → chunk x 3..5、y 1..2（CHUNK=32）
     expect(CHUNK).toBe(32);
-    expect(chunksTouchRect([ci(4, 2)], chunksX, view, 0)).toBe(true);
-    expect(chunksTouchRect([ci(9, 9)], chunksX, view, 8)).toBe(false);
-    expect(chunksTouchRect([], chunksX, view, 8)).toBe(false);
+    expect(chunksTouchRect([ci(4, 2)], w, view, 0)).toBe(true);
+    expect(chunksTouchRect([ci(9, 9)], w, view, 8)).toBe(false);
+    expect(chunksTouchRect([], w, view, 8)).toBe(false);
     // 剛好在視窗左邊 margin 內
-    expect(chunksTouchRect([ci(2, 1)], chunksX, view, 8)).toBe(true);
-    expect(chunksTouchRect([ci(1, 1)], chunksX, view, 8)).toBe(false);
+    expect(chunksTouchRect([ci(2, 1)], w, view, 8)).toBe(true);
+    expect(chunksTouchRect([ci(1, 1)], w, view, 8)).toBe(false);
+    // 中央以外的 chunk（負 cx、cx ≥ chunksX）照座標判斷
+    const edge = { x: -20, y: 50, w: 30, h: 10 };
+    expect(chunksTouchRect([ci(-1, 1)], w, edge, 0)).toBe(true);
+    expect(chunksTouchRect([ci(-2, 1)], w, edge, 0)).toBe(false);
+    expect(chunksTouchRect([ci(10, 1)], w, { x: 330, y: 40, w: 4, h: 4 }, 0)).toBe(true);
   });
 });
 

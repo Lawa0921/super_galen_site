@@ -10,17 +10,17 @@ import { LiquidSim, LAVA_EVERY, SPRING_RATE, type SpringSpec } from './liquid';
  */
 function scene(type: number = LIQ.WATER): { w: World; spec: SpringSpec } {
   const w = new World(60, 50);
-  for (let y = 0; y < 50; y++) for (let x = 0; x < 60; x++) w.fg[w.idx(x, y)] = T.STONE;
-  for (let y = 5; y < 40; y++) for (let x = 21; x < 56; x++) w.fg[w.idx(x, y)] = T.AIR;
-  for (let y = 40; y < 45; y++) for (let x = 21; x <= 30; x++) { w.fg[w.idx(x, y)] = T.AIR; w.liquid[w.idx(x, y)] = 255; w.liquidType[w.idx(x, y)] = type; }
-  w.fg[w.idx(20, 10)] = type === LIQ.LAVA ? T.LAVA_SPRING : T.SPRING;
-  w.fg[w.idx(31, 40)] = T.DRAIN;
+  for (let y = 0; y < 50; y++) for (let x = 0; x < 60; x++) w.setFg(x, y, T.STONE);
+  for (let y = 5; y < 40; y++) for (let x = 21; x < 56; x++) w.setFg(x, y, T.AIR);
+  for (let y = 40; y < 45; y++) for (let x = 21; x <= 30; x++) { w.setFg(x, y, T.AIR); w.setLiquid(x, y, 255, type); }
+  w.setFg(20, 10, type === LIQ.LAVA ? T.LAVA_SPRING : T.SPRING);
+  w.setFg(31, 40, T.DRAIN);
   const spec: SpringSpec = { x: 20, y: 10, type, box: { x0: 18, y0: 8, x1: 36, y1: 46 }, cap: 10 * 5 * 255 + 255 * 12, drains: [{ x: 31, y: 40 }] };
   return { w, spec };
 }
 function total(w: World, x0 = 0, x1 = w.width): number {
   let s = 0;
-  for (let y = 0; y < w.height; y++) for (let x = x0; x < x1; x++) s += w.liquid[w.idx(x, y)];
+  for (let y = 0; y < w.height; y++) for (let x = x0; x < x1; x++) s += w.getLiquid(x, y);
   return s;
 }
 
@@ -63,7 +63,7 @@ describe('泉水 / 滲水石', () => {
 
   it('滲水石被堵住：泉水在區域總量到上限後停水（不會無限淹）', () => {
     const { w, spec } = scene();
-    w.fg[w.idx(31, 40)] = T.STONE;
+    w.setFg(31, 40, T.STONE);
     const sim = new LiquidSim(w);
     sim.setSprings([{ ...spec, drains: [] }]);
     for (let k = 0; k < 20000; k++) sim.step();
@@ -97,6 +97,6 @@ describe('泉水 / 滲水石', () => {
     const sa = new LiquidSim(a.w), sb = new LiquidSim(b.w);
     sa.setSprings([a.spec]); sb.setSprings([b.spec]);
     for (let k = 0; k < 3000; k++) { sa.step(); sb.step(); }
-    expect(Array.from(a.w.liquid)).toEqual(Array.from(b.w.liquid));
+    expect(Array.from(a.w.window(0, 0, 60, 50).liquid)).toEqual(Array.from(b.w.window(0, 0, 60, 50).liquid));
   });
 });

@@ -49,7 +49,7 @@ export function buildLegacyFixtureGame(): DelveGame {
   if (!g.tryPlace(60, GROUND - 1)) throw new Error('fixture: hearth placement failed');
   if (!g.setSpawnCore(g.settle.cores[0].id)) throw new Error('fixture: setSpawnCore failed');
   w.setFg(FIXTURE_CHEST.x, FIXTURE_CHEST.y, T.CHEST);
-  const ci = FIXTURE_CHEST.y * w.width + FIXTURE_CHEST.x;
+  const ci = w.idx(FIXTURE_CHEST.x, FIXTURE_CHEST.y);
   const slots = w.chests.get(ci);
   if (!slots) throw new Error('fixture: chest slots missing');
   slots[0] = { item: 'copper_coin', count: 37 };

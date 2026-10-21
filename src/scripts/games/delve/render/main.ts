@@ -6,7 +6,8 @@ import { LIQ } from '../engine/liquidKind';
 import { Renderer } from './renderer';
 import { Hud } from './hud';
 import { FixedStepper, blockedMessage, hintText } from './model';
-import { MapCache, Minimap, FullMap } from './mapView';
+import { Minimap, FullMap } from './mapView';
+import { MapPages } from './mapPages';
 import { ExploreUi } from './journal';
 import { CalendarUi } from './calendarUi';
 import { LevelsUi } from './levelsUi';
@@ -20,6 +21,7 @@ import { TOAST_HIGH, TOAST_LOW, TOAST_NORMAL } from './toastQueue';
 import { LIVE, endLoop, loopId, markFrame } from './live';
 import { SettleUi } from './settleUi';
 import { FolkUi } from './folkUi';
+import { WaystoneUi } from './waystoneUi';
 import { NPCS } from '../engine/npcs';
 import { LEVEL_NAMES } from '../engine/settlement';
 
@@ -56,12 +58,14 @@ export interface DelveHandle {
   game: DelveGame;
   renderer: Renderer;
   hud: Hud;
-  map: { cache: MapCache; minimap: Minimap; full: FullMap };
+  map: { pages: MapPages; minimap: Minimap; full: FullMap };
   ui: ExploreUi;
   /** 據點面板 / 居民面板 / 查房標籤 */
   settleUi: SettleUi;
   /** 世界 NPC 面板 / 委託清單 */
   folkUi: FolkUi;
+  /** 傳送碑面板 */
+  stoneUi: WaystoneUi;
   /** HUD 日期時鐘 + 日曆 / 天氣預報面板 */
   calendar: CalendarUi;
   /** 等級系統：經驗條、升級橫幅、角色 / 技能面板、主動技能按鍵 */
@@ -103,15 +107,16 @@ export function startDelve(opts: StartOptions): DelveHandle {
   const calendar = new CalendarUi(root, game);
   const settleUi = new SettleUi(root, game, renderer, renderer.atlas, (m) => hud.toast(m, 2400), () => hud.setInventory(true));
   const folkUi = new FolkUi(root, game, renderer, renderer.atlas, { onToast: (m, ms, prio) => hud.toast(m, ms ?? 2400, prio), onInventory: () => hud.setInventory(true) });
-  const mapCache = new MapCache(game);
-  renderer.onWorldDirty = (cis) => mapCache.markWorld(cis);
+  const stoneUi = new WaystoneUi(root, game, renderer, (m) => hud.toast(m, 2000));
+  const mapPages = new MapPages(game);
+  renderer.onWorldDirty = (cis) => mapPages.markWorld(cis);
   const mmRoot = root.querySelector<HTMLElement>('#delve-minimap'), mmCanvas = root.querySelector<HTMLCanvasElement>('#delve-minimap-canvas');
   const mapRoot = root.querySelector<HTMLElement>('#delve-map'), mapCanvas = root.querySelector<HTMLCanvasElement>('#delve-map-canvas');
   if (!mmRoot || !mmCanvas || !mapRoot || !mapCanvas) throw new Error('delve: missing map elements');
-  const minimap = new Minimap(mmRoot, mmCanvas, mapCache, game);
+  const minimap = new Minimap(mmRoot, mmCanvas, mapPages, game);
   /** 選單暫停（session 控制）與地圖開啟（這裡控制）分開記 */
   let menuPaused = false;
-  const fullmap = new FullMap(mapRoot, mapCanvas, mapCache, game, {
+  const fullmap = new FullMap(mapRoot, mapCanvas, mapPages, game, {
     onClose: () => setMap(false),
     onToast: (m) => hud.toast(m),
   });
@@ -194,6 +199,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       else if (levels.isOpen) levels.setOpen(false);
       else if (ui.loreOpen) ui.closeLore();
       else if (settleUi.closeTop()) { /* 據點 / 居民面板 */ }
+      else if (stoneUi.closeTop()) { /* 傳送碑面板 */ }
       else if (folkUi.closeTop()) { /* NPC 面板 / 委託清單 */ }
       else if (hud.confirmOpen) hud.cancelConfirm();
       else if (game.openChest) game.closeChest();
@@ -250,6 +256,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
           if (e.phase === 'done') { renderer.snapCamera(); hud.toast('傳送回重生點'); }
           else if (e.phase === 'cancel') hud.toast('移動了：傳送中斷');
         }
+        else if (e.type === 'boat') { sound.boat(e.on); if (e.on) hud.toast('坐上小木船：按跳下船'); }
         else if (e.type === 'hint') hud.toast(hintText(e.id));
         else if (e.type === 'unlock') { hud.toast(e.item === 'golden_key' ? '用金鑰匙打開了金寶箱' : '用地城鑰匙打開了門'); invChanged = true; }
         else if (e.type === 'door') { /* 門的開關：只需要重畫（chunk dirty） */ }
@@ -351,6 +358,11 @@ export function startDelve(opts: StartOptions): DelveHandle {
           if (e.first) { sound.treasure(); invChanged = true; } else sound.tick();
         }
         else if (e.type === 'travel') { renderer.snapCamera(); sound.recall('done'); hud.toast('傳送到另一個據點'); }
+        else if (e.type === 'stone_unlock') { sound.discover(); hud.toast(`傳送碑解鎖：${e.name}`, 2400, TOAST_HIGH); }
+        else if (e.type === 'stone') {
+          if (e.phase === 'open') { if (ui.journalOpen) ui.setJournal(false); folkUi.closeTop(); folkUi.closeTop(); settleUi.closeNpc(); settleUi.closeSettle(); stoneUi.open(e.id); sound.tick(); }
+          else { stoneUi.close(); renderer.snapCamera(); sound.recall('done'); hud.toast(`傳送到${game.waystones.byId(e.to ?? 0)?.name ?? '傳送碑'}`); }
+        }
         else if (e.type === 'boss') {
           if (e.phase === 'spawn') { sound.roar(); hud.toast('燈脈守望者甦醒了！', 2600); invChanged = true; }
           else if (e.phase === 'phase2') { sound.roar(); hud.toast('鐵籠碎裂——守望者發狂了！', 2400); }
@@ -371,9 +383,10 @@ export function startDelve(opts: StartOptions): DelveHandle {
     ui.tick(dt);
     settleUi.tick();
     folkUi.tick();
+    stoneUi.tick();
     calendar.tick();
     const tm = performance.now();
-    mapCache.update(fullmap.isOpen ? 64 : 16);
+    mapPages.update(fullmap.isOpen ? 64 : 16);
     if (fullmap.isOpen) fullmap.draw();
     else if ((frames & 3) === 0) minimap.draw();
     mapWork[frames % WINDOW] = performance.now() - tm;
@@ -401,8 +414,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
   };
 
   const handle: DelveHandle = {
-    game, renderer, hud, ui, settleUi, folkUi, calendar, sound, levels,
-    map: { cache: mapCache, minimap, full: fullmap },
+    game, renderer, hud, ui, settleUi, folkUi, stoneUi, calendar, sound, levels,
+    map: { pages: mapPages, minimap, full: fullmap },
     stats: () => {
       const f = avg(gaps);
       return {
@@ -450,6 +463,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       fullmap.destroy();
       settleUi.destroy();
       folkUi.destroy();
+      stoneUi.destroy();
       ui.destroy();
       calendar.destroy();
       levels.destroy();

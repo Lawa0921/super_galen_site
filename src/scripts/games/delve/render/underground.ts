@@ -35,7 +35,8 @@ export interface UgColumn {
   viewTop: number; viewBottom: number;
   tile: number;
   biomeAt: (tx: number) => number;
-  width: number;
+  /** 世界水平範圍 [xMin, xMax)（交界只在這裡面找另一區） */
+  xMin: number; xMax: number;
   areas: readonly UgArea[];
 }
 
@@ -86,7 +87,7 @@ export function ugColumnBands(c: UgColumn): UgBand[] {
   let nd = 0, nb = bio;
   for (let d = 1; d <= BORDER_R && !nd; d++) {
     for (const x of [c.tx - d, c.tx + d]) {
-      if (x < 0 || x >= c.width) continue;
+      if (x < c.xMin || x >= c.xMax) continue;
       const b = c.biomeAt(x);
       if (b !== bio) { nd = d; nb = b; break; }
     }

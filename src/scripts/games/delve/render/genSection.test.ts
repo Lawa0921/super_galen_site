@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { GEN_PHASES, genPhaseOf, genPhaseLabel, sampleSection, revealStep, revealThreshold, SECTION_COLORS } from './genSection';
 import { generateWorldSteps, GEN_STAGE_COUNT } from '../engine/worldgen';
-import { World } from '../engine/world';
+import { GenGrid } from '../engine/gen/grid';
 import { T } from '../engine/tiles';
 import { LIQ } from '../engine/liquidKind';
 import { buildMapLut } from './mapModel';
@@ -45,7 +45,7 @@ describe('genPhaseOf：生成器實際的段名 → 六個大階段', () => {
 
 describe('sampleSection', () => {
   const W = 120, H = 60, OW = 40, OH = 20;
-  const blank = (): World => { const w = new World(W, H); return w; };
+  const blank = (): GenGrid => { const w = new GenGrid(W, H); return w; };
   it('世界還是空的（還沒成形）→ 整張暗色抖動', () => {
     const out = new Uint32Array(OW * OH);
     sampleSection(blank(), OW, OH, out);
@@ -53,10 +53,10 @@ describe('sampleSection', () => {
   });
   it('地表以上是天空、以下是土 / 石；地下的空洞是洞穴色；礦與熔岩看得到；全部是色票色', () => {
     const w = blank();
-    for (let y = 30; y < H; y++) for (let x = 0; x < W; x++) w.fg[w.idx(x, y)] = y < 36 ? T.DIRT : T.STONE;
-    for (let y = 42; y < 51; y++) for (let x = 30; x < 60; x++) w.fg[w.idx(x, y)] = T.AIR; // 洞穴
-    for (let y = 45; y < 48; y++) for (let x = 90; x < 93; x++) w.fg[w.idx(x, y)] = T.GOLD_ORE;
-    for (let y = 54; y < 60; y++) for (let x = 0; x < 15; x++) { w.fg[w.idx(x, y)] = T.AIR; w.setLiquid(x, y, 255, LIQ.LAVA); }
+    for (let y = 30; y < H; y++) for (let x = 0; x < W; x++) w.setFg(x, y, y < 36 ? T.DIRT : T.STONE);
+    for (let y = 42; y < 51; y++) for (let x = 30; x < 60; x++) w.setFg(x, y, T.AIR); // 洞穴
+    for (let y = 45; y < 48; y++) for (let x = 90; x < 93; x++) w.setFg(x, y, T.GOLD_ORE);
+    for (let y = 54; y < 60; y++) for (let x = 0; x < 15; x++) { w.setFg(x, y, T.AIR); w.setLiquid(x, y, 255, LIQ.LAVA); }
     const out = new Uint32Array(OW * OH), lut = buildMapLut();
     sampleSection(w, OW, OH, out, lut);
     const at = (tx: number, ty: number): number => out[Math.floor(ty / (H / OH)) * OW + Math.floor(tx / (W / OW))];

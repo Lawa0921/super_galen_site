@@ -9,7 +9,7 @@ const SMALL = { width: 160, height: 100 };
 function flat(seed = 'save-gear'): DelveGame {
   const g = new DelveGame({ seed, ...SMALL, peaceful: true });
   const w = g.world;
-  for (let i = 0; i < w.liquid.length; i++) { w.liquid[i] = 0; w.liquidType[i] = 0; }
+  for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) w.setLiquidRaw(x, y, 0, 0);
   for (let y = 0; y < 100; y++) for (let x = 20; x < 140; x++) { w.setFg(x, y, y >= 60 ? T.STONE : T.AIR); w.setWall(x, y, W.NONE); }
   g.teleport(40, 59);
   return g;

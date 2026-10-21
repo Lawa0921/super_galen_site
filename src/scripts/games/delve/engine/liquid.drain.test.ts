@@ -2,6 +2,9 @@
 // 總量只會因薄膜蒸發減少、不會變多；熔岩 / 蜂蜜照原本的節奏比較慢；世界生成的真實湖也一樣（沒有水壓：要往上爬才出得去的水留著，跟 Terraria 一樣）；靜止時不花成本。
 import { describe, it, expect } from 'vitest';
 import { World, LIQ } from './world';
+import type { GenGrid } from './gen/grid';
+/** 測試世界或生成器的扁平格（湖泊洩水直接跑在生成結果上） */
+type AnyWorld = World | GenGrid;
 import { T, SOLID_LUT } from './tiles';
 import { LiquidSim } from './liquid';
 import { LIQ_MAX } from './liquidKind';
@@ -19,7 +22,7 @@ function lakeWorld(o: { LW?: number; LD?: number; CAV_W?: number; CAV_H?: number
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const cavity = y > FLOOR && y < H - 1 && x >= 1 && x <= CAV_W;
     const lake = y < FLOOR && x >= 1 && x <= LW;
-    if (!cavity && !lake) w.fg[w.idx(x, y)] = T.STONE;
+    if (!cavity && !lake) w.setFg(x, y, T.STONE);
   }
   const sim = new LiquidSim(w);
   for (let y = LY0; y <= LY1; y++) for (let x = 1; x <= LW; x++) w.setLiquid(x, y, LIQ_MAX, type);
@@ -27,12 +30,23 @@ function lakeWorld(o: { LW?: number; LD?: number; CAV_W?: number; CAV_H?: number
   sim.settle(500);
   return { w, sim, W, H, LW, LD, LY0, LY1, FLOOR, CAV_W };
 }
-function sumRect(w: World, x0: number, y0: number, x1: number, y1: number): number {
+function sumRect(w: AnyWorld, x0: number, y0: number, x1: number, y1: number): number {
   let s = 0;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) s += w.getLiquid(x, y);
   return s;
 }
-function total(w: World): number { let s = 0; for (let i = 0; i < w.liquid.length; i++) s += w.liquid[i]; return s; }
+function total(w: AnyWorld): number { return w.liquidTotal(); }
+/** 直接改一格的前景（像舊的 w.fg[i] = id：不經 onTileChange 喚醒液體） */
+function rawFg(w: AnyWorld, x: number, y: number, id: number): void {
+  const wake = w.onTileChange;
+  w.onTileChange = null;
+  w.setFg(x, y, id);
+  w.onTileChange = wake;
+}
+/** 中央 tile 鍵（= y*width + x）的液體量 / 種類 / 前景 */
+const liqAt = (w: AnyWorld, i: number): number => w.getLiquid(i % w.width, Math.floor(i / w.width));
+const typeAt = (w: AnyWorld, i: number): number => w.getLiquidType(i % w.width, Math.floor(i / w.width));
+const fgAt = (w: AnyWorld, i: number): number => w.getFg(i % w.width, Math.floor(i / w.width));
 
 describe('湖泊洩水（合成湖）', () => {
   it('靜止的湖不花成本：退休後每刻處理 0 格', () => {
@@ -105,14 +119,14 @@ describe('湖泊洩水（合成湖）', () => {
  * 水只會落下或橫攤、不會往上爬，所以 U 形彎 / 岩簷底下的水道後面那片水本來就流不過來。
  * 這個集合就是挖穿後「照規則該流光」的部分；集合外的格一滴都不該少。
  */
-function downhillTo(w: World, src: number, box: { x0: number; y0: number; x1: number; y1: number }): Uint8Array {
-  const W = w.width, ok = new Uint8Array(w.liquid.length), q = [src];
+function downhillTo(w: AnyWorld, src: number, box: { x0: number; y0: number; x1: number; y1: number }): Uint8Array {
+  const W = w.width, ok = new Uint8Array(w.width * w.height), q = [src];
   ok[src] = 1;
   while (q.length) {
     const r = q.pop()!;
     for (const j of [r - 1, r + 1, r - W]) {
       const x = j % W, y = (j - x) / W;
-      if (x < box.x0 || x > box.x1 || y < box.y0 || y > box.y1 || ok[j] || SOLID_LUT[w.fg[j]] === 1) continue;
+      if (x < box.x0 || x > box.x1 || y < box.y0 || y > box.y1 || ok[j] || SOLID_LUT[fgAt(w, j)] === 1) continue;
       ok[j] = 1; q.push(j);
     }
   }
@@ -124,7 +138,7 @@ describe('沒有水壓（跟 Terraria 一樣）', () => {
     // 湖 y 2..7。岩簷 x 11..12、y 2..6 把右池（x 13..30）和左邊隔開，只在 y = 7 的水道相通；
     // 水道往左延伸到 x 6，x 1..5 的 y = 7 是石頭 → 水道出口要往上一格（y = 6）才接到左池（x 1..10、y 2..6）。
     const { w, sim, FLOOR, H } = lakeWorld({ LW: 30, LD: 6 });
-    const stone = (x: number, y: number): void => { w.setLiquid(x, y, 0, LIQ.NONE); w.fg[w.idx(x, y)] = T.STONE; };
+    const stone = (x: number, y: number): void => { w.setLiquid(x, y, 0, LIQ.NONE); rawFg(w, x, y, T.STONE); };
     for (let y = 2; y <= 6; y++) { stone(11, y); stone(12, y); }
     for (let x = 1; x <= 5; x++) stone(x, 7);
     sim.wakeAll(); sim.settle(500);
@@ -147,16 +161,17 @@ describe('湖泊洩水（世界生成的真實湖）', { timeout: 120_000 }, () 
     sim.setSprings(r.springs);
     sim.measure = true;
     // 連通水域，取最大的 5 座
-    const seen = new Uint8Array(w.liquid.length);
+    const N0 = w.width * w.height;
+    const seen = new Uint8Array(N0);
     const lakes: number[][] = [];
-    for (let s = 0; s < w.liquid.length; s++) {
-      if (seen[s] || w.liquidType[s] !== LIQ.WATER) continue;
+    for (let s = 0; s < N0; s++) {
+      if (seen[s] || typeAt(w, s) !== LIQ.WATER) continue;
       const cur: number[] = [], st = [s];
       seen[s] = 1;
       while (st.length) {
         const i = st.pop()!;
         cur.push(i);
-        for (const j of [i - 1, i + 1, i - W, i + W]) if (j >= 0 && j < w.liquid.length && !seen[j] && w.liquidType[j] === LIQ.WATER) { seen[j] = 1; st.push(j); }
+        for (const j of [i - 1, i + 1, i - W, i + W]) if (j >= 0 && j < N0 && !seen[j] && typeAt(w, j) === LIQ.WATER) { seen[j] = 1; st.push(j); }
       }
       lakes.push(cur);
     }
@@ -169,7 +184,7 @@ describe('湖泊洩水（世界生成的真實湖）', { timeout: 120_000 }, () 
       for (const i of reg) {
         const x = i % W, y = (i - x) / W;
         x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
-        if (y > hy && w.liquidType[i + W] !== LIQ.WATER) { hy = y; hx = x; }
+        if (y > hy && typeAt(w, i + W) !== LIQ.WATER) { hy = y; hx = x; }
       }
       const box = { x0, y0, x1, y1 };
       const drain = downhillTo(w, hy * W + hx, box);
@@ -184,13 +199,13 @@ describe('湖泊洩水（世界生成的真實湖）', { timeout: 120_000 }, () 
     for (const i of reg) if (drain[i]) farDx = Math.max(farDx, Math.abs((i % W) - hx));
     expect(farDx).toBeGreaterThan(40);
 
-    const vol = (sel: (i: number) => boolean): number => { let s = 0; for (const i of reg) if (sel(i)) s += w.liquid[i]; return s; };
+    const vol = (sel: (i: number) => boolean): number => { let s = 0; for (const i of reg) if (sel(i)) s += liqAt(w, i); return s; };
     const drainVol0 = vol((i) => drain[i] === 1), keepVol0 = vol((i) => drain[i] === 0);
     // 湖底下方挖一個裝得下整湖的空腔（還沒接通），再挖穿湖底到空腔的豎井
     const cy0 = hy + 4, cy1 = hy + 30, cx0 = hx - 150, cx1 = hx + 150;
     expect(301 * 27).toBeGreaterThan(reg.length);
-    for (let y = cy0; y <= cy1; y++) for (let x = cx0; x <= cx1; x++) { const i = y * W + x; w.fg[i] = T.AIR; w.liquid[i] = 0; w.liquidType[i] = LIQ.NONE; }
-    const local = (): number => { let s = vol(() => true); for (let y = hy + 1; y <= cy1 + 1; y++) for (let x = cx0 - 1; x <= cx1 + 1; x++) s += w.liquid[y * W + x]; return s; };
+    for (let y = cy0; y <= cy1; y++) for (let x = cx0; x <= cx1; x++) { rawFg(w, x, y, T.AIR); w.setLiquidRaw(x, y, 0, LIQ.NONE); }
+    const local = (): number => { let s = vol(() => true); for (let y = hy + 1; y <= cy1 + 1; y++) for (let x = cx0 - 1; x <= cx1 + 1; x++) s += w.getLiquid(x, y); return s; };
     const v0 = local();
     for (let y = hy + 1; y < cy0; y++) w.setFg(hx, y, T.AIR);
     let sum = 0, mx = 0;
@@ -198,7 +213,7 @@ describe('湖泊洩水（世界生成的真實湖）', { timeout: 120_000 }, () 
     for (let k = 0; k < N; k++) { sim.step(); sum += sim.stats.ms; if (sim.stats.ms > mx) mx = sim.stats.ms; }
     const drainVol1 = vol((i) => drain[i] === 1), keepVol1 = vol((i) => drain[i] === 0);
     let wet = 0, farWet = 0;
-    for (const i of reg) if (drain[i] && w.liquid[i] >= 3) { wet++; if (Math.abs((i % W) - hx) === farDx) farWet++; }
+    for (const i of reg) if (drain[i] && liqAt(w, i) >= 3) { wet++; if (Math.abs((i % W) - hx) === farDx) farWet++; }
     console.log(`[drain] lake ${reg.length} cells, breach x=${hx}; downhill-to-breach ${best!.n} cells (farthest dx ${farDx}) vol ${drainVol0} -> ${drainVol1}; rest ${keepVol0} -> ${keepVol1}; local loss ${v0 - local()}; avg ${(sum / N).toFixed(3)} ms/tick, max ${mx.toFixed(2)} ms`);
     expect(wet).toBe(0); // 能流的格都流光（只剩 < 3 的薄膜）
     expect(farWet).toBe(0);

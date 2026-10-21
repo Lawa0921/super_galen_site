@@ -4,7 +4,9 @@
 //   · 居民（npcs.ts 的五位）在條件達成、有空房（含床）時白天搬進來；作息：白天在家 / 上班、晚上回自己的床睡覺；
 //     會自己開關門。離玩家很遠的居民凍結（不跑物理），CPU 很省。
 //   · 存檔：核心位置 + 居民（種類、位置、家）+ 設為重生點的核心。
-import type { World } from './world';
+//   · 無限世界：核心範圍（±CLAIM.x）所在的區塊欄 pin 住、恆常駐（居民在那裡活動）；建立 / 讀檔時 pin、拆除時 unpin（B7）。
+import type { World, TileWindow } from './world';
+import { chunkOfX } from './coords';
 import { T, isSolidTile } from './tiles';
 import { checkRoom, scanRooms, type RoomCheck } from './housing';
 import { DECOR_TILES, FURNITURE_BY_TILE, LIGHT_TILES, SAFETY_TILES } from './furniture';
@@ -115,8 +117,10 @@ export function claimsOverlap(a: { x: number; y: number }, b: { x: number; y: nu
 }
 
 /** 評估一個據點（掃描範圍內所有房間與家具） */
+/** evaluate 的視窗暫存（world.window 重用） */
+let EVAL_WIN: TileWindow | undefined;
 export function evaluate(w: World, core: Core, gardenBonus = false): Evaluation {
-  const x0 = Math.max(0, core.x - CLAIM.x), x1 = Math.min(w.width - 1, core.x + CLAIM.x);
+  const x0 = Math.max(w.xMin, core.x - CLAIM.x), x1 = Math.min(w.xMax - 1, core.x + CLAIM.x);
   const y0 = Math.max(0, core.y - CLAIM.y), y1 = Math.min(w.height - 1, core.y + CLAIM.y);
   const rooms = scanRooms(w, x0, y0, x1, y1);
   const valid = rooms.filter((r) => r.ok);
@@ -125,10 +129,12 @@ export function evaluate(w: World, core: Core, gardenBonus = false): Evaluation 
   const counts = new Map<number, number>();
   const chests: number[] = [];
   let light = 0, decor = 0, safety = 0;
-  const W0 = w.width;
+  const win = (EVAL_WIN = w.window(x0, y0, Math.max(0, x1 - x0 + 1), Math.max(0, y1 - y0 + 1), EVAL_WIN));
+  const ww = win.w;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-    const i = y * W0 + x, id = w.fg[i];
+    const id = win.fg[(y - y0) * ww + (x - x0)];
     if (id === T.AIR || isSolidTile(id) && id !== T.GLASS) continue;
+    const i = w.idx(x, y);
     if (id === T.CHEST) chests.push(i);
     if (LIGHT_TILES.has(id)) { light++; if (!indoor.has(i)) safety++; }
     if (DECOR_TILES.has(id)) decor++;
@@ -242,8 +248,32 @@ export class Settlements {
   /** 上次重算時所有據點的合格房間總數（rooms 事件） */
   private lastRooms = 0;
   private events: SettleEvent[] = [];
+  /** pin 住核心範圍的世界（DelveGame 建構時 attach；沒接 = 不 pin，單獨測 Settlements） */
+  private pinWorld: World | null = null;
+  /** 目前因核心而 pin 住的區塊欄 */
+  private readonly pinnedCols = new Set<number>();
 
   drainEvents(): SettleEvent[] { const e = this.events; this.events = []; return e; }
+
+  /** 接上世界：之後建立 / 拆除 / 讀檔的核心都會 pin / unpin 範圍內的欄 */
+  attach(w: World): void { this.pinWorld = w; this.syncPins(w); }
+  /** 核心 c 範圍內的區塊欄（夾在世界邊界內） */
+  private claimCols(w: World, x: number): number[] {
+    const a = chunkOfX(Math.max(w.xMin, x - CLAIM.x)), b = chunkOfX(Math.min(w.xMax - 1, x + CLAIM.x));
+    const out: number[] = [];
+    for (let c = a; c <= b; c++) out.push(c);
+    return out;
+  }
+  /** 依目前的核心重設 pin：不再需要的 unpin、新的 pin 並載入 */
+  private syncPins(w: World): void {
+    const want = new Set<number>();
+    for (const c of this.cores) for (const cx of this.claimCols(w, c.x)) want.add(cx);
+    for (const cx of this.pinnedCols) if (!want.has(cx)) { w.unpin(cx); this.pinnedCols.delete(cx); }
+    for (const cx of want) {
+      if (!this.pinnedCols.has(cx)) { w.pin(cx); this.pinnedCols.add(cx); }
+      w.ensureColumn(cx);
+    }
+  }
 
   // ── 核心 ──
   coreAt(x: number, y: number): Core | null { return this.cores.find((c) => c.x === x && c.y === y) ?? null; }
@@ -260,6 +290,7 @@ export class Settlements {
     this.lastLevel.set(c.id, 0);
     this.evalRev = -1;
     this.events.push({ type: 'settlement', phase: 'found', id: c.id, level: 0, x, y });
+    if (this.pinWorld) this.syncPins(this.pinWorld);
     return c;
   }
   /** 核心被拆掉：據點消失、居民搬走 */
@@ -273,6 +304,7 @@ export class Settlements {
     for (const n of this.npcs.filter((q) => q.core === c.id)) this.events.push({ type: 'npc', phase: 'leave', kind: n.kind, x: n.body.x, y: n.body.y });
     this.npcs = this.npcs.filter((q) => q.core !== c.id);
     this.events.push({ type: 'settlement', phase: 'lost', id: c.id, level: 0, x, y });
+    if (this.pinWorld) this.syncPins(this.pinWorld);
   }
 
   // ── 評估（快取：世界有改才重算） ──
@@ -382,7 +414,7 @@ export class Settlements {
     if (inRoom) { sx = inRoom.x; sy = inRoom.y; }
     if (walkIn) {
       const side = room && (room.x0 + room.x1) / 2 < core.x ? -1 : 1;
-      const ex = Math.max(2, Math.min(w.width - 3, core.x + side * (CLAIM.x - 2)));
+      const ex = Math.max(w.xMin + 2, Math.min(w.xMax - 3, core.x + side * (CLAIM.x - 2)));
       const spot = findStandSpot(w, ex, core.y, 12) ?? findStandSpot(w, core.x + 1, core.y, 10);
       if (spot) { sx = spot.x; sy = spot.y; }
     }
@@ -500,11 +532,12 @@ export class Settlements {
       let best: number | null = null, bd = Infinity;
       if (work.length) {
         // 整個據點範圍找最近的工作 tile（站在它旁邊）；走不走得到交給尋路
-        const x0 = Math.max(0, core.x - CLAIM.x), x1 = Math.min(w.width - 1, core.x + CLAIM.x);
+        const x0 = Math.max(w.xMin, core.x - CLAIM.x), x1 = Math.min(w.xMax - 1, core.x + CLAIM.x);
         const y0 = Math.max(0, core.y - CLAIM.y), y1 = Math.min(w.height - 1, core.y + CLAIM.y);
         const ny = Math.floor((n.body.y + n.body.h - 1) / S);
+        const win = (EVAL_WIN = w.window(x0, y0, Math.max(0, x1 - x0 + 1), Math.max(0, y1 - y0 + 1), EVAL_WIN));
         for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-          if (!work.includes(w.fg[y * w.width + x])) continue;
+          if (!work.includes(win.fg[(y - y0) * win.w + (x - x0)])) continue;
           const dd = Math.abs(x * S - n.body.x) + Math.abs(y - ny) * S * 3;
           if (dd < bd) { bd = dd; best = (x + 0.5) * S + (x * S > n.body.x ? -S : S); n.goalY = y; }
         }
@@ -665,7 +698,7 @@ export class Settlements {
   /** 讀檔：壞欄位丟掉（不讓存檔壞掉）；核心那格不是爐心了也丟掉 */
   load(j: unknown, w: World): void {
     this.cores = []; this.npcs = []; this.spawnCore = null; this.evals.clear(); this.evalRev = -1; this.lastLevel.clear(); this.invited.clear(); this.idents = {};
-    if (!j || typeof j !== 'object') return;
+    if (!j || typeof j !== 'object') { this.syncPins(w); return; }
     const o = j as Partial<SettlementJSON>;
     if (o.idents && typeof o.idents === 'object') {
       for (const [k, v] of Object.entries(o.idents)) {
@@ -677,10 +710,14 @@ export class Settlements {
     const int = (v: unknown): v is number => Number.isInteger(v);
     let maxId = 0;
     for (const c of Array.isArray(o.cores) ? o.cores : []) {
-      if (!c || !int(c.id) || !int(c.x) || !int(c.y) || w.getFg(c.x, c.y) !== T.HEARTH || this.coreById(c.id)) continue;
+      if (!c || !int(c.id) || !int(c.x) || !int(c.y) || this.coreById(c.id)) continue;
+      // 核心那一欄可能還沒常駐（讀檔時離玩家很遠 → 停放中）：先載入再看那格是不是爐心
+      if (w.inBounds(c.x, c.y)) w.ensureColumn(chunkOfX(c.x));
+      if (w.getFg(c.x, c.y) !== T.HEARTH) continue;
       this.cores.push({ id: c.id, x: c.x, y: c.y });
       maxId = Math.max(maxId, c.id);
     }
+    this.syncPins(w);
     for (const q of Array.isArray(o.npcs) ? o.npcs : []) {
       if (!q || !NPC_KINDS.includes(q.kind) || this.npc(q.kind) || !this.coreById(q.core)) continue;
       if (typeof q.x !== 'number' || typeof q.y !== 'number' || !Number.isFinite(q.x) || !Number.isFinite(q.y)) continue;

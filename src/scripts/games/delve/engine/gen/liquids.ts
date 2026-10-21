@@ -8,7 +8,7 @@
 //   flood fill 碰到建築（箱子 / 門 / 床 / 古碑 / 火把 / 木樑 / 繩索 / 平台 / 木板牆 / 地城牆）、樹幹、
 //   世界邊緣就整個放棄；淹到的可替換植物 / 藤蔓 / 蜘蛛網清掉。
 //   最後用 LiquidSim.settle 把不穩定的邊緣（下方 / 左右還能流的格）靜置，世界載入時就是靜止的。
-import type { World } from '../world';
+import type { GenGrid } from './grid';
 import { LIQ, LIQ_MAX } from '../liquidKind';
 import { T, W, SOLID_LUT, tileDef } from '../tiles';
 import { Rng, subSeed } from '../rng';
@@ -30,7 +30,7 @@ export interface LiquidGenStats {
 }
 export interface LiquidStructure { kind: 'pond' | 'oasis' | 'hive' | 'underground_lake' | 'waterfall' | 'lavafall'; x: number; y: number; w: number; h: number; }
 export interface LiquidGenCtx {
-  world: World;
+  world: GenGrid;
   seed: string | number;
   /** 每欄地表（第一個實心格 y；會被綠洲改寫） */
   surface: Int16Array;

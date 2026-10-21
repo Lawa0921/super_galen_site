@@ -79,6 +79,12 @@ export class SoundManager {
     else if (phase === 'done') { this.tone(1318.51, 0, 0.4, 'triangle', 0.1); this.tone(1975.53, 0.05, 0.5, 'sine', 0.05); }
     else this.tone(440, 0, 0.25, 'sine', 0.06, 180);
   }
+  /** 小木船：上船（木頭咚 + 水聲）/ 下船（水聲 + 下滑音） */
+  boat(on: boolean): void {
+    this.noise(0, 0.18, 1100, 300, 0.07, 0.8);
+    if (on) { this.tone(196, 0, 0.12, 'triangle', 0.1, 150); this.tone(293.66, 0.08, 0.15, 'triangle', 0.07); }
+    else this.tone(392, 0, 0.18, 'sine', 0.06, 220);
+  }
   /** 設定重生點：溫和的兩音 */
   spawn(): void { this.tone(392, 0, 0.3, 'triangle', 0.1); this.tone(523.25, 0.12, 0.45, 'triangle', 0.1); }
   /** 放繩索 / 敲碎裂紋石 */

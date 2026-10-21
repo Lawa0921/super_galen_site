@@ -15,6 +15,7 @@ import { RUNE_METAL, iconDoor, iconKey, iconLantern, iconMap, iconPlatform } fro
 import {
   crackStone, iconBed, iconCompass, iconDepthMeter, iconJumpBoots, iconMagnet, iconNightAmulet, iconRecall, iconRope, iconSwiftBoots,
 } from './exploreArt';
+import { iconBoat } from './boatArt';
 import { combatIcon } from './combatArt';
 import { iconBucket, iconMagmaWard, iconSponge } from './liquidArt';
 import { LIQ } from '../engine/liquidKind';
@@ -665,7 +666,7 @@ const ICON_ORDER: ItemId[] = [
   'silver_pickaxe', 'gold_pickaxe',
   'deep_stone', 'basalt', 'ash', 'obsidian', 'magma_rock', 'dungeon_brick_blue', 'dungeon_brick_green', 'dungeon_brick_pink',
   'platform', 'wooden_door', 'dungeon_key', 'golden_key', 'lantern', 'rune_pickaxe', 'explorer_map',
-  'rope', 'bed', 'recall_stone', 'compass', 'depth_meter', 'jump_boots', 'swift_boots', 'night_amulet', 'magnet',
+  'rope', 'bed', 'recall_stone', 'compass', 'depth_meter', 'jump_boots', 'swift_boots', 'night_amulet', 'magnet', 'boat',
   // 戰鬥
   'gel', 'bone', 'feather', 'fang', 'chitin', 'stinger', 'spore', 'ember',
   'copper_bar', 'iron_bar', 'silver_bar', 'gold_bar', 'molten_bar', 'furnace', 'anvil',
@@ -725,6 +726,7 @@ export function paintIcon(item: ItemId): Bmp {
     case 'rope': return iconRope();
     case 'bed': return iconBed();
     case 'recall_stone': return iconRecall();
+    case 'boat': return iconBoat();
     case 'compass': return iconCompass();
     case 'depth_meter': return iconDepthMeter();
     case 'jump_boots': return iconJumpBoots();

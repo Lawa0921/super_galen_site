@@ -6,7 +6,10 @@
 //   for (const ci of game.world.drainDirty()) redrawChunk(ci);
 //   const light = game.computeLight(viewRectInTiles);
 //   for (const e of game.drainEvents()) playSfx(e);
-import { World } from './world';
+import { World, type ColumnSource } from './world';
+import { chunkOfX, defaultBounds, type WorldBounds } from './coords';
+import { OuterGen, frameOf } from './chunkgen';
+import { LOAD_COLS, planStreaming } from './streaming';
 import { generateWorld, type GenResult, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
 import type { DungeonInfo } from './gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
@@ -23,12 +26,12 @@ import {
   type GameDate, type Season, type SunTimes,
 } from './calendar';
 import { localWeather, weatherAt, weatherDim, type WeatherKind, type WeatherState } from './weather';
-import { updateFreeze } from './frost';
+import { freezeColumns, updateFreeze } from './frost';
 import {
   FISH, POOL_COUNT_MAX, biteDelay, biteWindow, canFishIn, crateLoot, fishingPower, rollCatch, timeSlot, type DepthZone, type TimeSlot,
 } from './fishing';
 import { ExploredMap, toggleMarker, type MapMarker } from './explore';
-import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
+import { Discovery, buildRegions, outerRegions, type Region, type RegionCat } from './discovery';
 import { EQUIP_SLOTS, type EquipSlot } from './equipment';
 import {
   BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
@@ -38,6 +41,7 @@ import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type Ph
 import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { liquidContact, liquidMedium, playerMedium } from './swim';
+import { BOAT_DRAFT, boatWaterline, canBoard, stepBoat } from './boat';
 import { normalizeAppearance, RACES, type Appearance } from './appearance';
 import { raceMods, type RaceMods } from './race';
 import { VANITY_SLOTS, type HideSlot, type VanitySlot } from './vanity';
@@ -64,6 +68,7 @@ import { CALM_REGEN, Settlements, inClaim, type SettleEvent, type SettleHost, ty
 import { NPCS, earn, forgeMul, npcLine, pay, shopPrice, walletOf, type NpcKind } from './npcs';
 import { PAIR_OF_LEFT, PAIR_OF_RIGHT } from './furniture';
 import { findStandSpot } from './npcPath';
+import { SPAWN_STONE, Waystones, type Waystone } from './waystones';
 import { FolkWorld, type FolkEvent, type FolkHost, type FolkNpc } from './folk';
 import { ROLES, AFF_QUEST, AFF_RESCUE, BUFFS, affMul, affTier, type BuffKind, type FolkService } from './folkDefs';
 import { QuestLog, type QuestDef, type GiverInfo, type QuestCtx } from './quests';
@@ -80,7 +85,7 @@ import {
   SLAM_DIVE_BONUS, SLAM_KB, SLAM_PER_LEVEL, SLAM_RADIUS, gearBonus, type ActiveSkill, type LearnFail, type SkillId,
 } from './skills';
 import {
-  TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH, HOTBAR_SIZE,
+  TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH, HOTBAR_SIZE, JUMP_SPEED, JUMP_HOLD,
 } from './constants';
 
 export interface DelveOptions {
@@ -93,6 +98,10 @@ export interface DelveOptions {
   gen?: GenResult;
   /** 角色外觀（省略 = 預設外觀） */
   appearance?: Appearance;
+  /** 水平邊界（省略 = defaultBounds(width, height)：正式尺寸無限、小尺寸的測試世界有界） */
+  bounds?: WorldBounds;
+  /** 中央以外的欄由誰生成（省略 = 無限世界用外圍生成器 OuterGen；測試可注入） */
+  columnSource?: ColumnSource;
 }
 
 export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden'
@@ -104,8 +113,8 @@ export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occu
   | 'bait' | 'full_hp'
   /** 據點：範圍和別的據點重疊；商店：錢不夠 / 背包滿 */
   | 'claim' | 'coins' | 'bagfull'
-  /** 傳送點：目的地爐心旁沒有空位 */
-  | 'blockedspot';
+  /** 傳送點：目的地爐心旁沒有空位；傳送碑：目的地碑旁沒有空位 */
+  | 'blockedspot' | 'blockedstone';
 /** 遊戲事件；pid = 由哪個玩家的動作產生（多 actor 時才有；世界事件 / 單機沒有 = 公開） */
 export type DelveEvent = DelveEventBody & { pid?: Pid };
 type DelveEventBody =
@@ -132,6 +141,12 @@ type DelveEventBody =
   | { type: 'spawn'; set: boolean; x: number; y: number }
   /** 傳送石：開始引導 / 取消 / 完成傳送（x,y = 目的地腳底 tile） */
   | { type: 'recall'; phase: 'start' | 'cancel' | 'done'; x: number; y: number }
+  /** 小木船：上船 / 下船（按跳、擱淺、傳送、死亡） */
+  | { type: 'boat'; on: boolean }
+  /** 傳送碑：第一次有人碰到某顆（解鎖是世界共用的 → 公開事件；x, y = 碑的站立 tile） */
+  | { type: 'stone_unlock'; id: number; name: string; x: number; y: number }
+  /** 傳送碑：按使用打開面板（x, y = 碑）/ 傳送（id = 出發的碑、to = 目的地、x, y = 落點腳底 tile） */
+  | { type: 'stone'; phase: 'open' | 'travel'; id: number; to?: number; x: number; y: number }
   // ── 戰鬥 ──
   /** 開始一次攻擊（音效 / 動畫） */
   | { type: 'attack'; item: ItemId; kind: WeaponKind }
@@ -456,7 +471,7 @@ const LEVEL_EVENTS = new Set<DelveEvent['type']>(['kill', 'place', 'mine', 'ches
  */
 export const PRIVATE_EVENTS: ReadonlySet<DelveEvent['type']> = new Set<DelveEvent['type']>([
   'pickup', 'blocked', 'select', 'xp', 'levelup', 'xploss', 'hurt', 'talk', 'trade', 'quest', 'bubble', 'craft',
-  'chest', 'mirror', 'rebirth', 'hint', 'recall', 'spawn', 'lifeup', 'buff', 'learn', 'respec', 'refund', 'salvage', 'forge',
+  'chest', 'mirror', 'rebirth', 'hint', 'recall', 'boat', 'stone', 'spawn', 'lifeup', 'buff', 'learn', 'respec', 'refund', 'salvage', 'forge',
   'codex', 'treasure', 'discover', 'lore', 'landmark', 'folktalk', 'folktrade', 'hearth', 'travel', 'eat', 'crate',
 ]);
 /** 有人一直不取事件時，佇列最多留幾筆（取得最慢的那個人會漏掉最舊的） */
@@ -474,6 +489,10 @@ export const SCOUT_SPACING = 24;
 /** 裝備的位置：背包格號碼或裝備槽 */
 export type GearAt = number | EquipSlot;
 export type ForgeResult = { ok: true } | { ok: false; reason: 'none' | 'station' | 'cost' | 'max' | 'unique' | 'locked' };
+/** 身體（px）與 tile 矩形（左上 x, y、寬 w、高 h 格）重疊 */
+function bodyOverlaps(p: { x: number; y: number; w: number; h: number }, x: number, y: number, w: number, h: number): boolean {
+  return p.x < (x + w) * TILE_SIZE && p.x + p.w > x * TILE_SIZE && p.y < (y + h) * TILE_SIZE && p.y + p.h > y * TILE_SIZE;
+}
 
 export class DelveGame {
   static readonly TILE_SIZE = TILE_SIZE;
@@ -542,6 +561,8 @@ export class DelveGame {
   set buffs(v: PlayerActor['buffs']) { this.cur.buffs = v; }
   private get recallT(): PlayerActor['recallT'] { return this.cur.recallT; }
   private set recallT(v: PlayerActor['recallT']) { this.cur.recallT = v; }
+  private get boating(): PlayerActor['boating'] { return this.cur.boating; }
+  private set boating(v: PlayerActor['boating']) { this.cur.boating = v; }
   private get accSig(): PlayerActor['accSig'] { return this.cur.accSig; }
   private set accSig(v: PlayerActor['accSig']) { this.cur.accSig = v; }
   private get acc(): PlayerActor['acc'] { return this.cur.acc; }
@@ -672,6 +693,12 @@ export class DelveGame {
 
   /** 據點與居民（存檔內容） */
   readonly settle = new Settlements();
+  /** 傳送碑（世界物件、不是 tile；位置只由種子決定） */
+  readonly waystones: Waystones;
+  /** 已解鎖的傳送碑 id（世界層級、所有 actor 共用；不含 0：出生點那顆恆解鎖；存檔內容） */
+  readonly stonesUnlocked = new Set<number>();
+  /** 外圍地區（無限世界的海 / 生態段；所有 actor 的 Discovery 共用同一個查詢與快取） */
+  private readonly outerRegion: ((x: number, y: number) => Region | null) | null;
   /** 地表村落 / 矮人地廳（世界生成） */
   readonly villages: readonly VillageInfo[];
   readonly halls: readonly HallInfo[];
@@ -723,7 +750,7 @@ export class DelveGame {
   private readonly spawnRng: Rng;
   private readonly combatRng: Rng;
   // ── 液體 ───────────────────────────────────────────────
-  /** 液體模擬（world.liquid / liquidType） */
+  /** 液體模擬（世界的液體量 / 種類層） */
   readonly liquids: LiquidSim;
   /** 實體物理環境：world 的碰撞 + 液體介質 / 接觸（掉落物、怪物用） */
   readonly env: PhysEnv;
@@ -767,7 +794,14 @@ export class DelveGame {
     // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
     const pre = opts.gen && (opts.width === undefined || opts.gen.world.width === opts.width) && (opts.height === undefined || opts.gen.world.height === opts.height) ? opts.gen : null;
     const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
-    this.world = gen.world;
+    // 舊生成器的扁平格 → 區塊欄儲存。正式尺寸的世界無限（中央以外由外圍生成器產生），小尺寸的測試世界有界（B5）
+    const bounds = opts.bounds ?? defaultBounds(gen.world.width, gen.world.height);
+    const source = opts.columnSource ?? (bounds === 'infinite' ? new OuterGen(this.seed, frameOf(gen.world)) : null);
+    this.world = World.fromGen(gen.world, gen.layers, { bounds, source });
+    this.outerRegion = source instanceof OuterGen ? outerRegions(this.seed, source.profile) : null;
+    // 傳送碑：出生點那顆在 spawn.x + 7 的生成地表上（中央每欄陣列：挖掘 / 蓋東西不會讓碑移動）；外圍的由外圍側寫算（有界世界沒有）
+    const stoneX = gen.spawn.x + 7;
+    this.waystones = new Waystones(this.seed, { x: stoneX, y: this.world.surface[stoneX] - 1 }, source instanceof OuterGen ? source.profile : null);
     this.liquids = new LiquidSim(this.world);
     // 液體反應（熔岩遇水 / 蜂蜜）不在任何活著的玩家站的格子凝成黑曜石 / 脆蜜塊（不把人封進方塊；液體本身照樣流過去）
     this.liquids.blocked = (x, y) => this.tileOverlapsPlayer(x, y, true);
@@ -791,6 +825,8 @@ export class DelveGame {
     this.landforms = gen.landforms;
     this.dungeonZone = gen.dungeonZone;
     this.layers = gen.layers;
+    // 每欄深度層線：系統一律走 world.layersAt(x)（預先生成的世界也補上）
+    this.world.layers = gen.layers;
     this.dungeon = gen.dungeon;
     this.tablets = gen.tablets;
     this.relics = gen.relics;
@@ -799,12 +835,15 @@ export class DelveGame {
       seed: this.seed, width: this.world.width, height: this.world.height, spawn: gen.spawn,
       surface: this.world.surface, layers: gen.layers, biomes: gen.biomes, structures: gen.structures, dungeon: gen.dungeon,
     });
-    this.explored = new ExploredMap(this.world.width, this.world.height);
+    this.explored = new ExploredMap(this.world.width, this.world.height, undefined, this.world);
     this.villages = gen.villages ?? [];
     this.halls = gen.halls ?? [];
     this.landmarks = gen.landmarks ?? [];
     for (const l of this.landmarks) this.landmarkAt.set(this.world.idx(l.x, l.y), l);
     this.discovery = new Discovery(this.regions, { loreTotal: gen.tablets.length, landmarks: [...this.landmarkAt.keys()] });
+    this.discovery.setOuter(this.outerRegion);
+    // 據點核心範圍的欄 pin 住（無限世界：居民在那裡活動，不卸載）
+    this.settle.attach(this.world);
     this.folk = new FolkWorld(this.seed, this.villages, this.halls);
     this.folk.populate(this.world);
     // 開局一段時間內不會遇見（第一位旅人至少四分之一天後、第一位受困者半天後）
@@ -837,6 +876,65 @@ export class DelveGame {
     this.markers = markers;
   }
 
+  // ── 載入區（B7：每個 actor 周圍的欄常駐，遠的卸載 / 停放） ─────────────
+  /**
+   * 依所有 actor（活著或死亡等待重生）的位置 ensure / 預生成 / 卸載欄（engine/streaming.ts），再處理欄的載入 / 卸載事件。
+   * step() 的第一件事；不碰任何 RNG。有界世界全部常駐 → 什麼都不做。
+   */
+  updateLoadedArea(): void {
+    const w = this.world;
+    const xs: number[] = [];
+    for (const a of this.actors.values()) xs.push(Math.floor((a.player.x + a.player.w / 2) / TILE_SIZE));
+    const plan = planStreaming(xs, w.residentSet(), w.pinnedSet(), w, this.tick);
+    for (const cx of plan.load) w.ensureColumn(cx);
+    if (plan.prefetch !== null) w.ensureColumn(plan.prefetch);
+    for (const cx of plan.unload) w.unloadColumn(cx);
+    this.columnEvents();
+  }
+  /**
+   * 剛載入的第 cx 欄與常駐的鄰欄 n 之間的接縫：只喚醒可能與生成結果不一致的地方——接縫一側是中央（舊生成器，
+   * 外圍的海接上中央的地形會流進來，spec C9）整條喚醒；兩側都是外圍生成的 → 只喚醒任一側 chunk 改過的那幾列
+   * （同一個生成器的輸出在接縫兩側本來就連續，剛生成的海 / 熔岩保持沉睡，載入不會讓欄被標成已修改）。
+   */
+  private seamWake(cx: number, n: number): void {
+    const w = this.world;
+    if (!w.isResident(n)) return;
+    const sx = Math.max(cx, n) * CHUNK;
+    const central = (x: number): boolean => x >= 0 && x < w.width;
+    if (central(sx - 1) || central(sx)) { this.liquids.wakeSeam(sx); return; }
+    for (let cy = 0; cy < w.chunksY; cy++) {
+      const a = w.chunkIndex(cx, cy), b = w.chunkIndex(n, cy);
+      if (w.modifiedChunks.has(a) || w.liquidModified.has(a) || w.modifiedChunks.has(b) || w.liquidModified.has(b)) {
+        this.liquids.wakeSeam(sx, cy * CHUNK, (cy + 1) * CHUNK);
+      }
+    }
+  }
+  /** tile 欄 x 周圍 LOAD_COLS 欄同步載入（teleport / 重生 / 傳送先叫它，落點不會是「沒載入 = 石頭」） */
+  ensureAround(x: number): void {
+    const w = this.world;
+    if (!Number.isFinite(x)) return;
+    const c = chunkOfX(Math.floor(x));
+    const lo = Math.max(chunkOfX(w.xMin), c - LOAD_COLS), hi = Math.min(chunkOfX(w.xMax - 1), c + LOAD_COLS);
+    for (let cx = lo; cx <= hi; cx++) w.ensureColumn(cx);
+  }
+  /**
+   * 欄的載入 / 卸載事件：卸載 → 液體模擬忘掉那欄；載入 → 液體只喚醒接縫（seamWake）、依今天日期結冰、
+   * 停放蓋回來的 chunk 整塊喚醒（玩家改過的地方可能還在流）。
+   */
+  private columnEvents(): void {
+    const w = this.world;
+    const ev = w.drainColumnEvents(), restored = w.drainRestoredChunks();
+    if (!ev.loaded.length && !ev.unloaded.length && !restored.length) return;
+    for (const cx of ev.unloaded) this.liquids.forgetColumn(cx);
+    const loaded = [...new Set(ev.loaded)].filter((cx) => w.isResident(cx)).sort((a, b) => a - b);
+    for (const cx of loaded) { this.seamWake(cx, cx - 1); this.seamWake(cx, cx + 1); }
+    if (loaded.length) freezeColumns(w, this.liquids, dayIndexOf(this.time), loaded, (x, y) => this.tileOverlapsPlayer(x, y, true), this.minedIce);
+    for (const k of restored) {
+      const { cx, cy } = w.chunkCoords(k);
+      if (w.isResident(cx)) this.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
+    }
+  }
+
   // ── 多個玩家（actor）────────────────────────────────────
   /**
    * 暫時把 cur 切到 a 執行 fn（相容 accessor 都讀寫 a），結束（含丟例外）後還原。
@@ -864,8 +962,9 @@ export class DelveGame {
     a.player = makeBody(0, 0);
     a.inventory = starterInventory();
     a.appearance = normalizeAppearance(character.appearance);
-    a.explored = new ExploredMap(this.world.width, this.world.height);
+    a.explored = new ExploredMap(this.world.width, this.world.height, undefined, this.world);
     a.discovery = new Discovery(this.regions, { loreTotal: this.tablets.length, landmarks: [...this.landmarkAt.keys()] });
+    a.discovery.setOuter(this.outerRegion);
     this.actors.set(pid, a);
     this.evRead.set(pid, this.evBase + this.events.length);
     this.withActor(a, () => {
@@ -966,6 +1065,8 @@ export class DelveGame {
   /** 一個固定步長。整段是世界段（事件公開），玩家段 / 重生 / 換算經驗各自用 withActor 切回該玩家 */
   step(dt: number = FIXED_DT): void { this.inWorld(() => this.stepWorld(dt)); }
   private stepWorld(dt: number): void {
+    // 第一件事：各 actor 周圍的載入區（不碰任何 RNG；有界世界全部常駐 → 什麼都不做）
+    this.updateLoadedArea();
     this.flushLevels();
     this.tick++;
     this.time += dt;
@@ -1012,7 +1113,8 @@ export class DelveGame {
     this.contact = liquidContact(this.world, this.player);
     const air0 = this.motion.airUsed ?? 0, climb0 = Boolean(this.motion.climbing), mantle0 = this.motion.mantle ?? null;
     this.preMoveSkills(dt);
-    stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
+    if (this.boating) this.stepBoating(dt, knocked);
+    else stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
     if ((this.motion.airUsed ?? 0) > air0) {
       const pl = this.player;
       // 三段跳（雲步 + 凌雲）的第三跳只有一半的按住時間：跳得比較矮，豎井不會變成一路連跳
@@ -1034,6 +1136,7 @@ export class DelveGame {
     if (this.cur === this.local) this.inWorld(() => this.updateWeatherFx(dt));
     this.updateRecall(dt);
     this.updateExploration();
+    this.touchStones();
     if (!this.platformHinted && this.player.onGround && !this.dropHeld && onPlatform(this.world, this.player)) {
       this.platformHinted = true;
       this.emit({ type: 'hint', id: 'platform' });
@@ -1041,8 +1144,9 @@ export class DelveGame {
     if (this.attackCd > 0) this.attackCd -= dt;
     const weapon = this.heldWeapon();
     const rodHeld = this.heldRod() !== null;
-    // 拿著釣竿：主按鍵（觸控的點擊）也是拋竿 / 收竿（按下那一刻）
-    if (this.miningHeld && rodHeld) { if (!this.miningWas) this.fishAction(); }
+    // 拿著釣竿：主按鍵（觸控的點擊）也是拋竿 / 收竿（按下那一刻）；船上不挖 / 不打 / 不用道具
+    if (this.boating) this.mining = null;
+    else if (this.miningHeld && rodHeld) { if (!this.miningWas) this.fishAction(); }
     else if (this.miningHeld) {
       if (weapon) this.tryAttack(weapon.item, weapon.def);
       else this.updateMining(dt);
@@ -1053,22 +1157,32 @@ export class DelveGame {
     this.updateAttack(dt);
     if (!this.attack && Math.abs(this.player.vx) > 8) this.facing = this.player.vx > 0 ? 1 : -1;
     if (this.placeCooldown > 0) this.placeCooldown -= dt;
-    if (this.useHeld && this.placeCooldown <= 0) {
+    if (this.useHeld && this.placeCooldown <= 0 && !this.boating) {
       const { x, y } = this.aim;
       const held = this.inventory.selectedStack();
       const use = held ? ITEMS[held.item].use : undefined;
       const npc = this.useConsumed ? null : this.settle.npcAtPx(this.aimPx.x, this.aimPx.y);
       const fk = this.useConsumed || npc ? null : this.folk.atPx(this.aimPx.x, this.aimPx.y);
+      // 傳送碑 vs 放置：手上是能放的方塊 / 背景牆 → 一律走放置（出生點碑的 footprint 不能變成永遠蓋不了的洞）；
+      // 只有空手或拿不能放的東西時，瞄準碑才打開面板
+      const placeable = held !== null && (ITEMS[held.item].place !== undefined || ITEMS[held.item].placeWall !== undefined);
+      let stone: Waystone | null = null;
       if (npc && this.canReach(Math.floor((npc.body.x + npc.body.w / 2) / TILE_SIZE), Math.floor((npc.body.y + npc.body.h / 2) / TILE_SIZE), this.reach() + 1)) {
         this.useConsumed = true; this.talkTo(npc);
       } else if (fk && this.canReach(Math.floor((fk.body.x + fk.body.w / 2) / TILE_SIZE), Math.floor((fk.body.y + fk.body.h / 2) / TILE_SIZE), this.reach() + 1)) {
         this.useConsumed = true; this.talkFolk(fk);
       } else if (isInteractive(this.world.getFg(x, y))) {
         if (!this.useConsumed) { this.useConsumed = true; this.interact(x, y); }
+      } else if (!placeable && (stone = this.stoneAtAim(x, y)) !== null) {
+        // 傳送碑（世界物件）：比照床 / 箱子，優先於用道具（能放的方塊 / 牆見上面的 placeable）
+        if (!this.useConsumed) { this.useConsumed = true; this.openStone(stone); }
       } else if (use === 'hammer') {
         if (!this.useConsumed) { this.useConsumed = true; this.hammer(x, y); }
       } else if (use === 'recall') {
         if (!this.useConsumed) { this.useConsumed = true; this.startRecall(); }
+      } else if (use === 'boat') {
+        // 上不了船（還沒碰到水）不算用掉這次按住：按著掉進水裡，一碰到水面就上船
+        if (!this.useConsumed && this.boardBoat()) this.useConsumed = true;
       } else if (use === 'fish') {
         if (!this.useConsumed) { this.useConsumed = true; this.fishAction(); }
       } else if (use === 'scoop' || use === 'pour' || use === 'sponge') {
@@ -1082,6 +1196,41 @@ export class DelveGame {
       }
     }
   }
+  // ── 小木船 ─────────────────────────────────────────────
+  /** 手持船按使用：碰到水面才上船（身體貼齊水線）；船不消耗。不能上船 → 不做事、回傳 false */
+  private boardBoat(): boolean {
+    const p = this.player, m = this.motion;
+    if (this.boating || !canBoard(this.world, p)) return false;
+    p.y = boatWaterline(this.world, p)! + BOAT_DRAFT - p.h;
+    p.vy = 0; p.onGround = true; p.gfxOffY = 0;
+    m.climbing = false; m.mantle = null; m.jumpTimer = 0; m.jumpWasHeld = this.jump || this.upHeld;
+    this.mining = null; this.fallPeak = null; this.dashT = 0; this.slamming = false;
+    this.boating = true;
+    this.emit({ type: 'boat', on: true });
+    return true;
+  }
+  /** 下船（按跳 / 擱淺 / 傳送 / 死亡）；不在船上 → 什麼都不做 */
+  private leaveBoat(): void {
+    if (!this.boating) return;
+    this.boating = false;
+    this.emit({ type: 'boat', on: false });
+  }
+  /** 船上的一步（取代 stepPlayer）：按跳 → 下船並起跳；擱淺 / 水沒了 → 下船；否則照 stepBoat 開 */
+  private stepBoating(dt: number, knocked: boolean): void {
+    const m = this.motion, p = this.player;
+    const jumpIn = !knocked && (this.jump || this.upHeld);
+    const pressed = jumpIn && !m.jumpWasHeld;
+    m.jumpWasHeld = jumpIn;
+    if (pressed) {
+      this.leaveBoat();
+      p.vy = -JUMP_SPEED; p.onGround = false; m.jumpTimer = JUMP_HOLD;
+      return;
+    }
+    const mx: -1 | 0 | 1 = knocked || this.moveX === 0 ? 0 : this.moveX > 0 ? 1 : -1;
+    if (mx !== 0) m.face = mx;
+    if (!stepBoat(this.world, this.world, p, mx, dt).afloat) this.leaveBoat();
+  }
+
   /** 走遠 / 被拆 → 關掉開著的箱子 / 梳妝台（cur = 這個玩家；世界後段之後） */
   private closeFarPanels(): void {
     if (this.openChest) {
@@ -1097,7 +1246,7 @@ export class DelveGame {
   private updateMining(dt: number): void {
     const { x, y } = this.aim;
     const id = this.world.getFg(x, y);
-    if (id === T.AIR && this.world.inBounds(x, y) && this.world.frozen[this.world.idx(x, y)]) { this.mineIce(x, y, dt); return; }
+    if (id === T.AIR && this.world.isFrozen(x, y)) { this.mineIce(x, y, dt); return; }
     if (id === T.AIR && WALL_ITEM[this.world.getWall(x, y)]) { this.mineWall(x, y, dt); return; }
     if (!this.world.inBounds(x, y) || id === T.AIR) { this.mining = null; return; }
     if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
@@ -1126,9 +1275,9 @@ export class DelveGame {
     if (this.mining.elapsed + 1e-9 < need) return;
     this.mining = null;
     const w = this.world, i = w.idx(x, y);
-    w.frozen[i] = 0;
+    w.setFrozen(x, y, false);
     this.minedIce.add(i);
-    w.touchLiquid(i);
+    w.touchLiquidAt(x, y);
     this.liquids.wake(x, y);
     this.emit({ type: 'mine', x, y, tile: T.ICE, item: null });
   }
@@ -1660,7 +1809,9 @@ export class DelveGame {
       if (spot) return spot;
     }
     const b = this.bed;
-    if (b && this.world.getFg(b.x, b.y) === T.BED_HEAD) return { x: b.x, y: b.y };
+    // 床可能在沒載入的遠方（Review Focus 5）：唯讀地看床還在不在（停放 / 暫時生成，不載入那一欄）——
+    // 死亡中存檔、傳送石引導每刻都會問；真正傳過去時 teleport 才載入整個載入區
+    if (b && this.world.peekFg(b.x, b.y) === T.BED_HEAD) return { x: b.x, y: b.y };
     return { x: this.spawn.x, y: this.spawn.y };
   }
   private useBed(x: number, y: number): boolean {
@@ -1937,7 +2088,8 @@ export class DelveGame {
       const r = this.scout();
       if (r) this.emit({ type: 'scoutmark', by: this.settle.nameOf('guide'), name: r.name, x: r.x, y: r.y });
     }
-    updateFreeze(this.world, this.liquids, day, (x, y) => this.tileOverlapsPlayer(x, y, true), this.minedIce);
+    // 只跑常駐的欄（x 升冪；有界世界 = 全部）
+    updateFreeze(this.world, this.liquids, day, (x, y) => this.tileOverlapsPlayer(x, y, true), this.minedIce, this.world.residentColumns());
   }
   /** 天氣效果：雷雨打閃電、雨水補露天水池 */
   private updateWeatherFx(dt: number): void {
@@ -1949,7 +2101,7 @@ export class DelveGame {
       if (this.boltT <= 0) {
         const r = this.weatherRng;
         this.boltT = BOLT_MIN + r.next() * (BOLT_MAX - BOLT_MIN);
-        const bx = Math.max(0, Math.min(w.width - 1, f.x + Math.round((r.next() * 2 - 1) * 40)));
+        const bx = Math.max(w.xMin, Math.min(w.xMax - 1, f.x + Math.round((r.next() * 2 - 1) * 40)));
         if (nearSurface) {
           this.flashT = FLASH_TIME;
           this.wxCache = null;
@@ -1966,14 +2118,13 @@ export class DelveGame {
   private rainFill(px: number): void {
     const w = this.world, r = this.weatherRng;
     const x = px + Math.round((r.next() * 2 - 1) * 40);
-    if (x < 0 || x >= w.width) return;
+    if (x < w.xMin || x >= w.xMax) return;
     const surf = w.surfaceAt(x);
     for (let y = Math.max(0, surf - 64); y <= Math.min(w.height - 1, surf + 12); y++) {
-      const i = w.idx(x, y);
-      if (isSolidTile(w.fg[i]) || w.frozen[i]) return;
-      const a = w.liquid[i];
+      if (isSolidTile(w.getFg(x, y)) || w.isFrozen(x, y)) return;
+      const a = w.getLiquid(x, y);
       if (!a) continue;
-      if (w.liquidType[i] !== LIQ.WATER || w.wall[i] !== 0 || a >= RAIN_TOP) return;
+      if (w.getLiquidType(x, y) !== LIQ.WATER || w.getWall(x, y) !== 0 || a >= RAIN_TOP) return;
       w.setLiquid(x, y, Math.min(RAIN_TOP, a + RAIN_ADD), LIQ.WATER);
       this.liquids.wake(x, y);
       return;
@@ -2562,6 +2713,7 @@ export class DelveGame {
     if ([...this.actors.values()].every((a) => a === this.cur || a.dead)) this.folk.playerDied();
     this.dead = true; this.hp = 0; this.respawnT = RESPAWN_TIME;
     this.sleepReady = false;
+    this.leaveBoat();
     this.dashT = 0; this.slamming = false;
     // 等級：失去本級進度的一小部分（不會掉級）
     const lost = this.levels.die();
@@ -2639,8 +2791,8 @@ export class DelveGame {
       }
       this.wasWet = wetType;
     }
-    // 呼吸：頭在水 / 蜂蜜下就消耗；沒氣了開始溺水
-    if (c.head && (c.type === LIQ.WATER || c.type === LIQ.HONEY)) {
+    // 呼吸：頭在水 / 蜂蜜下就消耗；沒氣了開始溺水（船上不扣）
+    if (c.head && !this.boating && (c.type === LIQ.WATER || c.type === LIQ.HONEY)) {
       const before = Math.ceil(this.breath);
       this.breath = Math.max(0, this.breath - dt / (BREATH_STEP * (1 + this.levels.totals().breath / 100)));
       const now = Math.ceil(this.breath);
@@ -2811,7 +2963,7 @@ export class DelveGame {
   canSummon(): boolean {
     if (this.bossEnemy()) return false;
     const f = this.feetTile();
-    const deep = this.layers.deep[Math.max(0, Math.min(this.world.width - 1, f.x))];
+    const deep = this.world.layersAt(f.x).deep;
     return this.isNight() || f.y >= deep;
   }
   /** 召喚燈脈守望者（在玩家正上方畫面外） */
@@ -2990,7 +3142,7 @@ export class DelveGame {
     }
     const tx = pt.x + dx, ty = pt.y + dy;
     if (!w.inBounds(tx, ty)) return;
-    const hab = habitatAt({ world: w, layers: this.layers, night: this.isNight() }, tx, ty);
+    const hab = habitatAt({ world: w, night: this.isNight() }, tx, ty);
     hab.season = this.season();
     hab.weather = this.withActor(c.a, () => this.localWeatherState()).kind;
     let near = 0;
@@ -3077,7 +3229,7 @@ export class DelveGame {
       for (let k = 0; k < steps; k++) {
         f.x += (f.vx * dt) / steps; f.y += (f.vy * dt) / steps;
         const tx = Math.floor(f.x / S), ty = Math.floor(f.y / S);
-        if (ty >= w.height || tx < 0 || tx >= w.width) { end('snag'); return; }
+        if (ty >= w.height || tx < w.xMin || tx >= w.xMax) { end('snag'); return; }
         if (ty < 0) continue;
         if (w.isSolid(tx, ty)) { end('snag'); return; }
         const a = w.getLiquid(tx, ty);
@@ -3122,22 +3274,25 @@ export class DelveGame {
   }
   /** 浮標所在水域的格數（同種液體的 4 連通，數到 POOL_COUNT_MAX） */
   private poolSize(tx: number, ty: number, type: number): number {
-    const w = this.world, W = w.width;
-    const seen = new Set<number>([ty * W + tx]);
-    const q = [ty * W + tx];
-    for (let k = 0; k < q.length && seen.size < POOL_COUNT_MAX; k++) {
-      const i = q[k];
-      for (const j of [i - 1, i + 1, i - W, i + W]) {
-        if (j < 0 || j >= w.liquid.length || seen.has(j) || !w.liquid[j] || w.liquidType[j] !== type) continue;
-        seen.add(j); q.push(j);
+    const w = this.world;
+    const seen = new Set<number>([w.idx(tx, ty)]);
+    const qx = [tx], qy = [ty];
+    for (let k = 0; k < qx.length && seen.size < POOL_COUNT_MAX; k++) {
+      const x = qx[k], y = qy[k];
+      for (let d = 0; d < 4; d++) {
+        const nx = d === 0 ? x - 1 : d === 1 ? x + 1 : x, ny = d === 2 ? y - 1 : d === 3 ? y + 1 : y;
+        if (!w.getLiquid(nx, ny) || w.getLiquidType(nx, ny) !== type) continue;
+        const j = w.idx(nx, ny);
+        if (seen.has(j)) continue;
+        seen.add(j); qx.push(nx); qy.push(ny);
       }
     }
     return seen.size;
   }
   /** 浮標所在的深度帶 */
   private depthZone(tx: number, ty: number): DepthZone {
-    const x = Math.max(0, Math.min(this.world.width - 1, tx)), L = this.layers;
-    return ty < L.rock[x] ? 'surface' : ty < L.deep[x] ? 'underground' : ty < L.molten[x] ? 'cavern' : 'molten';
+    const L = this.world.layersAt(tx);
+    return ty < L.rock ? 'surface' : ty < L.deep ? 'underground' : ty < L.molten ? 'cavern' : 'molten';
   }
   private catchFish(): void {
     const f = this.fishing;
@@ -3470,7 +3625,8 @@ export class DelveGame {
           s0.count -= take; need -= take;
           if (s0.count <= 0) slots[k] = null;
         }
-        this.world.markModified(i % this.world.width, Math.floor(i / this.world.width));
+        const { x: cxk, y: cyk } = this.world.tileXY(i);
+        this.world.markModified(cxk, cyk);
         if (need <= 0) break;
       }
     }
@@ -3618,6 +3774,71 @@ export class DelveGame {
     this.emit({ type: 'travel', from: here.id, to, x: spot.x, y: spot.y });
     return true;
   }
+  // ── 傳送碑（B10；engine/waystones.ts） ─────────────────────
+  /** 這顆碑解鎖了沒（出生點那顆恆解鎖） */
+  stoneUnlocked(id: number): boolean { return id === SPAWN_STONE || this.stonesUnlocked.has(id); }
+  /** 已解鎖的碑（含出生點那顆），依 x 排序 */
+  unlockedStones(): Waystone[] {
+    const out: Waystone[] = [this.waystones.byId(SPAWN_STONE)!];
+    for (const id of this.stonesUnlocked) { const s = this.waystones.byId(id); if (s) out.push(s); }
+    return out.sort((a, b) => a.x - b.x);
+  }
+  /** cur 的身體在某顆碑的 footprint ± 2 格內 → 那顆（不只一顆時取水平最近的）；沒有 → null */
+  stoneHere(): Waystone | null {
+    const p = this.player, ws = this.waystones;
+    const t = Math.floor((p.x + p.w / 2) / TILE_SIZE);
+    let best: Waystone | null = null, bd = Infinity;
+    for (const s of ws.near(t - 5, t + 5)) {
+      const f = ws.footprint(s);
+      if (!bodyOverlaps(p, f.x - 2, f.y - 2, f.w + 4, f.h + 4)) continue;
+      const d = Math.abs(p.x + p.w / 2 - (f.x + 1) * TILE_SIZE);
+      if (d < bd) { bd = d; best = s; }
+    }
+    return best;
+  }
+  /** 每刻（玩家段）：身體碰到還沒解鎖的碑 → 全世界解鎖 */
+  private touchStones(): void {
+    const p = this.player, ws = this.waystones;
+    const t = Math.floor((p.x + p.w / 2) / TILE_SIZE);
+    for (const s of ws.near(t - 2, t + 3)) {
+      if (this.stoneUnlocked(s.id)) continue;
+      const f = ws.footprint(s);
+      if (bodyOverlaps(p, f.x, f.y, f.w, f.h)) this.unlockStone(s);
+    }
+  }
+  private unlockStone(s: Waystone): void {
+    this.stonesUnlocked.add(s.id);
+    this.emit({ type: 'stone_unlock', id: s.id, name: s.name, x: s.x, y: s.y });
+  }
+  /** 瞄準的格 (x, y) 在某顆碑的 footprint 內、伸手距離內 → 那顆 */
+  private stoneAtAim(x: number, y: number): Waystone | null {
+    const ws = this.waystones;
+    for (const s of ws.near(x - 1, x + 1)) {
+      const f = ws.footprint(s);
+      if (x >= f.x && x < f.x + f.w && y >= f.y && y < f.y + f.h && this.canReach(x, y)) return s;
+    }
+    return null;
+  }
+  /** 按使用打開傳送碑面板（伸手碰到也算碰過：還沒解鎖的先解鎖） */
+  private openStone(s: Waystone): void {
+    if (!this.stoneUnlocked(s.id)) this.unlockStone(s);
+    this.emit({ type: 'stone', phase: 'open', id: s.id, x: s.x, y: s.y });
+  }
+  /**
+   * 傳送碑之間傳送（cur）：站在一顆已解鎖的碑旁（stoneHere）、目的地已解鎖且不是同一顆 → 先載入目的地，
+   * 碑右邊最近、站得下的空位；整圈都被填滿 → 不傳（提示）。坐船時傳送 = 下船（teleport）。
+   */
+  travelStone(to: number): boolean {
+    const here = this.stoneHere(), dest = this.waystones.byId(to);
+    if (!here || !this.stoneUnlocked(here.id) || !dest || !this.stoneUnlocked(dest.id) || dest.id === here.id) return false;
+    this.ensureAround(dest.x);
+    const spot = findStandSpot(this.world, dest.x + 2, dest.y);
+    if (!spot) { this.block('use', 'blockedstone', dest.x, dest.y); return false; }
+    this.teleport(spot.x, spot.y);
+    this.closeChest();
+    this.emit({ type: 'stone', phase: 'travel', id: here.id, to: dest.id, x: spot.x, y: spot.y });
+    return true;
+  }
   /** 建築木槌：方塊整格 ⇄ 半格（只對實心、會自動接邊的方塊） */
   private hammer(x: number, y: number): boolean {
     const w = this.world, id = w.getFg(x, y);
@@ -3671,13 +3892,11 @@ export class DelveGame {
       get viewHalf() { return self.viewHalf; },
       isNight: () => this.isNight(), playerTiles: () => this.playerTiles(),
       underground: (x, y) => {
-        const cx = Math.max(0, Math.min(this.world.width - 1, x));
         const b = this.dungeon?.bbox;
-        return y > this.layers.rock[cx] + 4 && !(b && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
+        return y > this.world.layersAt(x).rock + 4 && !(b && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
       },
       onSurface: (x, y) => {
-        const cx = Math.max(0, Math.min(this.world.width - 1, x));
-        return y <= this.layers.rock[cx] - 6 && y <= this.world.surface[cx] + 4;
+        return y <= this.world.layersAt(x).rock - 6 && y <= this.world.surfaceAt(x) + 4;
       },
       safeAt: (x, y) => this.settle.claimAt(x, y) !== null || this.siteAt(x, y) !== null,
       playerOverlaps: (x, y) => this.tileOverlapsPlayer(x, y),
@@ -4154,10 +4373,11 @@ export class DelveGame {
     return { ok: true, refunded };
   }
   skillCooldown(a: ActiveSkill): number { return Math.max(0, this.skillCd[a]); }
-  /** 主動技能：沒學 / 死亡 / 睡覺 → false；冷卻中 → 發 cd 事件、false */
+  /** 主動技能：沒學 / 死亡 / 睡覺 → false；坐船時不能突進 / 震地（false、不進冷卻）；冷卻中 → 發 cd 事件、false */
   useSkill(a: ActiveSkill): boolean { return this.withActor(this.local, () => this.useSkillCur(a)); }
   private useSkillCur(a: ActiveSkill): boolean {
     if (this.dead || this.sleepT !== null || !this.levels.has(ACTIVE_NODE[a])) return false;
+    if (this.boating && (a === 'dash' || a === 'slam')) return false;
     const p = this.player, cx = p.x + p.w / 2, fy = p.y + p.h;
     if (this.skillCd[a] > 0) { this.emit({ type: 'skill', skill: a, phase: 'cd', x: cx, y: fy, n: Math.ceil(this.skillCd[a]) }); return false; }
     let n = 0;
@@ -4300,16 +4520,19 @@ export class DelveGame {
     this.appearance = normalizeAppearance({ ...a, race: cur.race, outfit: cur.outfit, acc: cur.acc, glasses: cur.glasses });
   }
 
-  /** 把玩家腳底放到 tile (tx, ty)（身體底 = (ty+1)*16），水平置中。 */
+  /** 把玩家腳底放到 tile (tx, ty)（身體底 = (ty+1)*16），水平置中。先同步載入目的地周圍（ensureAround）再放人。 */
   teleport(tx: number, ty: number): void {
-    const p = this.player;
-    p.x = tx * TILE_SIZE + TILE_SIZE / 2 - p.w / 2;
+    this.ensureAround(tx);
+    const p = this.player, w = this.world;
+    // 夾在水平邊界內（傳送到 ±X_LIMIT 的邊欄：身體不卡進邊界外的實心牆，Review Focus 4）
+    p.x = Math.max(w.xMin * TILE_SIZE, Math.min(w.xMax * TILE_SIZE - p.w, tx * TILE_SIZE + TILE_SIZE / 2 - p.w / 2));
     p.y = (ty + 1) * TILE_SIZE - p.h;
     p.vx = 0; p.vy = 0; p.gfxOffY = 0;
     this.motion.jumpTimer = 0;
     this.motion.climbing = false;
     this.motion.mantle = null;
     this.fallPeak = null;
+    this.leaveBoat();
   }
   /** 立即挖掉一格（不檢查距離 / 等級），掉落物照常入背包。 */
   mineInstant(x: number, y: number): boolean { return this.breakTile(x, y, true); }

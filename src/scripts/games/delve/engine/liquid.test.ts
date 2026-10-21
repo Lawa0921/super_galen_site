@@ -2,13 +2,14 @@
 import { describe, it, expect } from 'vitest';
 import { World, LIQ } from './world';
 import { T } from './tiles';
-import { LiquidSim, LAVA_EVERY, HONEY_EVERY, RETIRE_AFTER } from './liquid';
+import { LiquidSim, LAVA_EVERY, HONEY_EVERY, RETIRE_AFTER, type LiquidWorld } from './liquid';
+import { tileKey, chunkOfX, T_BASE, X_LIMIT } from './coords';
 
 /** w×h 的石箱：外框一圈石頭，內部空氣 */
 function box(w: number, h: number): World {
   const wd = new World(w, h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    if (x === 0 || y === 0 || x === w - 1 || y === h - 1) wd.fg[wd.idx(x, y)] = T.STONE;
+    if (x === 0 || y === 0 || x === w - 1 || y === h - 1) wd.setFg(x, y, T.STONE);
   }
   return wd;
 }
@@ -118,7 +119,7 @@ describe('LiquidSim', () => {
 
   it('挖開水壩 → 喚醒、水流到另一邊', () => {
     const w = box(20, 10);
-    for (let y = 1; y < 9; y++) w.fg[w.idx(8, y)] = T.STONE; // 水壩
+    for (let y = 1; y < 9; y++) w.setFg(8, y, T.STONE); // 水壩
     const sim = new LiquidSim(w);
     for (let y = 4; y < 9; y++) for (let x = 1; x < 8; x++) { w.setLiquid(x, y, 255, LIQ.WATER); sim.add(x, y); }
     run(sim, 40);
@@ -140,8 +141,9 @@ describe('LiquidSim', () => {
       return w;
     };
     const a = make(), b = make();
-    expect(Buffer.from(a.liquid).equals(Buffer.from(b.liquid))).toBe(true);
-    expect(Buffer.from(a.liquidType).equals(Buffer.from(b.liquidType))).toBe(true);
+    const wa = a.window(0, 0, a.width, a.height), wb = b.window(0, 0, b.width, b.height);
+    expect(Buffer.from(wa.liquid).equals(Buffer.from(wb.liquid))).toBe(true);
+    expect(Buffer.from(wa.liquidType).equals(Buffer.from(wb.liquidType))).toBe(true);
   });
 
   it('熔岩只在每 LAVA_EVERY 刻更新、蜂蜜更慢（HONEY_EVERY）', () => {
@@ -268,6 +270,93 @@ describe('LiquidSim', () => {
     expect(w.getLiquid(30, 3)).toBe(0); // 熔岩也落下了
   });
 
+  it('世界最左 / 最右欄（xMin = 0、沒有外牆）：不會繞到上一列 / 下一列的另一端，邊界外視為實心', () => {
+    const W = 10, H = 8;
+    const w = new World(W, H);
+    expect(w.xMin).toBe(0);
+    for (let x = 0; x < W; x++) w.setFg(x, H - 1, T.STONE);
+    const sim = new LiquidSim(w);
+    expect(sim.pour(0, H - 2, LIQ.WATER, 255)).toBe(true);
+    expect(sim.pour(-1, H - 2, LIQ.WATER, 255)).toBe(false);
+    run(sim, 200);
+    expect(w.liquidTotal()).toBe(255); // 沒有流出世界、也沒有憑空變多
+    expect(w.getLiquid(W - 1, H - 3)).toBe(0); // 舊 i − 1 的陷阱：上一列最右邊
+    for (let x = 0; x < W; x++) expect(w.getLiquid(x, H - 2)).toBeGreaterThan(0);
+    // 最右欄同理：不會繞到下一列最左邊
+    const w2 = new World(W, H);
+    for (let x = 0; x < W; x++) w2.setFg(x, H - 1, T.STONE);
+    const sim2 = new LiquidSim(w2);
+    sim2.pour(W - 1, H - 3, LIQ.WATER, 255);
+    run(sim2, 200);
+    expect(w2.liquidTotal()).toBe(255);
+    expect(w2.getLiquid(0, H - 2) + w2.getLiquid(0, H - 3)).toBeGreaterThan(0); // 攤到最左欄（同一列往左走過去的）
+    expect(sim2.activeCount).toBe(0);
+  });
+
+  it('滲水石在最左欄：不會吸到上一列最右邊那格的液體', () => {
+    const W = 12, H = 10;
+    const w = new World(W, H);
+    for (let x = 0; x < W; x++) { w.setFg(x, 5, T.STONE); w.setFg(x, H - 1, T.STONE); }
+    w.setFg(0, 5, T.DRAIN);
+    w.setFg(W - 2, 4, T.STONE);
+    w.setLiquid(W - 1, 4, 200, LIQ.WATER); // 上一列最右邊（舊 d − 1），被石頭圍住、不會自己流到滲水石
+    const sim = new LiquidSim(w);
+    sim.setSprings([{ x: 6, y: 8, type: LIQ.WATER, box: { x0: 0, y0: 0, x1: W, y1: H }, cap: 0, drains: [{ x: 0, y: 5 }] }]);
+    for (let k = 0; k < 5; k++) sim.step();
+    expect(sim.springStats().drained).toBe(0);
+    expect(w.getLiquid(W - 1, 4)).toBe(200);
+  });
+
+  it('forgetColumn(cx)：那欄的格離開佇列、旗標清掉；喚醒後重新排入', () => {
+    const w = box(80, 10);
+    const sim = new LiquidSim(w, { cap: 4 });
+    for (const x of [3, 5, 40, 45, 70]) { w.setLiquid(x, 4, 255, LIQ.WATER); sim.add(x, 4); }
+    expect(sim.activeCount).toBe(5); // 4 在佇列、1 在溢出區
+    sim.forgetColumn(1); // x 32..63
+    expect(sim.activeCount).toBe(3);
+    sim.wakeRect(32, 0, 64, 10);
+    expect(sim.activeCount).toBe(5);
+    sim.add(40, 4); // 已排入 → 不重複
+    expect(sim.activeCount).toBe(5);
+  });
+
+  it('外圍座標的 tile 鍵：佇列鍵就地解碼回原座標（不呼叫 world.tileXY），forgetColumn 也認得', () => {
+    // 稀疏的無限世界替身：寬 4200 的鍵、x ∈ [−X_LIMIT, X_LIMIT)、y ≥ 12 是石頭
+    const H = 40, WD = 4200;
+    const fg = new Map<number, number>(), liq = new Map<number, number>(), lt = new Map<number, number>();
+    const inB = (x: number, y: number): boolean => x >= -X_LIMIT && x < X_LIMIT && y >= 0 && y < H;
+    const stub: LiquidWorld = {
+      width: WD, height: H, chunksX: Math.ceil(WD / 32), xMin: -X_LIMIT, xMax: X_LIMIT, onTileChange: null,
+      inBounds: inB, idx: (x, y) => tileKey(WD, x, y),
+      tileXY: () => { throw new Error('tileXY 不該被呼叫（會配置物件）'); },
+      window: () => { throw new Error('unused'); },
+      getFg: (x, y) => (!inB(x, y) || y >= 12 ? T.STONE : fg.get(tileKey(WD, x, y)) ?? T.AIR),
+      getLiquid: (x, y) => (inB(x, y) ? liq.get(tileKey(WD, x, y)) ?? 0 : 0),
+      getLiquidType: (x, y) => (inB(x, y) ? lt.get(tileKey(WD, x, y)) ?? LIQ.NONE : LIQ.NONE),
+      isFrozen: () => false,
+      isSolid: (x, y) => stub.getFg(x, y) !== T.AIR,
+      setLiquidRaw: (x, y, a, t) => { if (inB(x, y)) { liq.set(tileKey(WD, x, y), a); lt.set(tileKey(WD, x, y), t); } },
+      setLiquid: (x, y, a, t) => { stub.setLiquidRaw(x, y, a, a === 0 ? LIQ.NONE : t); return true; },
+      touchLiquidAt: () => {},
+      setFg: (x, y, id) => { fg.set(tileKey(WD, x, y), id); return true; },
+    };
+    const xs = [-1, -40, WD, 5000, X_LIMIT - 1, -(X_LIMIT - 1)];
+    const sim = new LiquidSim(stub);
+    for (const x of xs) { expect(tileKey(WD, x, 10)).toBeGreaterThanOrEqual(T_BASE); stub.setLiquid(x, 10, 255, LIQ.WATER); sim.add(x, 10); }
+    expect(sim.activeCount).toBe(xs.length);
+    sim.step(); // 每格往下落一格：解碼錯了就會去更新別的（沒有水的）格
+    for (const x of xs) {
+      expect(stub.getLiquid(x, 10)).toBe(0);
+      expect(stub.getLiquid(x, 11)).toBe(255);
+    }
+    const before = sim.activeCount;
+    expect(before).toBeGreaterThan(0);
+    sim.forgetColumn(chunkOfX(5000));
+    sim.forgetColumn(chunkOfX(-(X_LIMIT - 1)));
+    sim.wakeRect(5000, 11, 5001, 12); // 那欄的旗標已清 → 可以重新排入
+    expect(sim.activeCount).toBe(before - 1);
+  });
+
   it('pour / take：倒水、舀水', () => {
     const w = box(10, 10);
     const sim = new LiquidSim(w);
@@ -282,5 +371,23 @@ describe('LiquidSim', () => {
     w.setLiquid(6, 8, 255, LIQ.LAVA);
     expect(sim.pour(6, 8, LIQ.WATER, 255)).toBe(true);
     expect(w.getFg(6, 8)).toBe(T.OBSIDIAN);
+  });
+});
+
+describe('無限世界的喚醒（Task 8）', () => {
+  it('wakeAll 只掃常駐的欄；wakeSeam 只喚醒接縫兩側各一格', () => {
+    const w = new World(64, 40, { bounds: 'infinite' });
+    w.ensureColumn(-1); w.ensureColumn(5);
+    for (const x of [-20, 10, 170]) w.setLiquid(x, 10, 100, LIQ.WATER);
+    const sim = new LiquidSim(w);
+    const t0 = performance.now();
+    sim.wakeAll();
+    expect(performance.now() - t0).toBeLessThan(500);
+    expect(sim.activeCount).toBe(3);
+    const s2 = new LiquidSim(w);
+    for (let y = 0; y < 40; y++) for (const x of [30, 31, 32, 33, 34]) w.setLiquid(x, y, 50, LIQ.WATER);
+    s2.wakeSeam(32, 5, 10);
+    // x 31、32 × 列 5..9
+    expect(s2.activeCount).toBe(10);
   });
 });

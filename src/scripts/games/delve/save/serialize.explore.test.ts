@@ -34,7 +34,7 @@ describe('存檔格式 4（探索）', () => {
     if (!r.ok) return;
     const h = r.game;
     expect(h.explored.count).toBe(g.explored.count);
-    expect(Array.from(h.explored.bits)).toEqual(Array.from(g.explored.bits));
+    expect(Array.from(h.explored.encode())).toEqual(Array.from(g.explored.encode()));
     expect(h.markers).toEqual(g.markers);
     expect(h.discovery.toJSON()).toEqual(g.discovery.toJSON());
     expect(h.bed).toEqual(g.bed);

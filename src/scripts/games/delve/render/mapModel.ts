@@ -1,12 +1,15 @@
 // mapModel.ts — 地圖的純邏輯（無 DOM）：
 //   · 色表：每個 tile / 背景牆 / 天空 / 洞穴空氣 / 迷霧 → 色票色（uint32 ABGR，可直接寫進 ImageData）
-//   · paintMapChunk：把一個 CHUNK×CHUNK 區塊畫成 1 tile = 1 px（未探索 = 迷霧；迷霧邊緣棋盤抖動）
-//   · 全地圖視圖：中心 tile + 每格幾個裝置像素（只在 MAP_SCALES 間跳，保持整數 / 1/n 倍的像素感）、縮放平移
-//   · 小地圖取樣框、地標圖示（7×7 手繪）、名字標籤
+//   · paintMapChunk：把一個 CHUNK×CHUNK 區塊（tile 視窗 + 迷霧位元）畫成 1 tile = 1 px（未探索 = 迷霧；迷霧邊緣棋盤抖動）
+//   · 全地圖視圖：中心 tile + 每格幾個裝置像素（只在 MAP_SCALES 間跳，保持整數 / 1/n 倍的像素感）、縮放平移、夾在探索範圍
+//   · 小地圖視圖、地標 / 傳送碑圖示（7×7 手繪）、名字標籤
 import { TILES, WALLS, T, W, SOLID_LUT } from '../engine/tiles';
 import { CHUNK } from '../engine/constants';
 import type { ExploredMap } from '../engine/explore';
+import type { TileWindow } from '../engine/world';
 import type { Discovery, Region } from '../engine/discovery';
+import type { Waystone } from '../engine/waystones';
+import { X_LIMIT } from '../engine/coords';
 import { Bmp, INK, hex, nudge, snap, type RGB } from './pixel';
 import { LIQUID_MAP_COLOR } from './liquidArt';
 
@@ -61,47 +64,79 @@ export function buildMapLut(): MapLut {
   return LUT;
 }
 
-export interface MapWorld {
-  width: number; height: number; surfaceY: number;
-  fg: Uint8Array; wall: Uint8Array; variant: Uint8Array;
-  /** 液體（省略 = 沒有液體） */
-  liquid?: Uint8Array; liquidType?: Uint8Array;
+/** paintMapChunk 要的世界框：水平 / 垂直邊界、地表線（World 本身就符合） */
+export interface MapFrame {
+  readonly xMin: number; readonly xMax: number; readonly height: number; readonly surfaceY: number;
+}
+/** 地圖要的世界介面：MapFrame + 矩形批次讀取（World 本身就符合） */
+export interface MapWorld extends MapFrame {
+  window(x0: number, y0: number, w: number, h: number, out?: TileWindow): TileWindow;
+}
+/** 四鄰 chunk 的迷霧位元（迷霧邊緣抖動用；沒有 = 那一側未探索） */
+export interface MapEdgeBits { l?: Uint8Array; r?: Uint8Array; u?: Uint8Array; d?: Uint8Array; }
+
+/** paintMapChunkAt 的 tile 視窗（CHUNK+2 見方，含四周一圈鄰格；重用） */
+let MAP_WIN: TileWindow | undefined;
+/** 地圖 chunk 的 tile 視窗：(cx, cy) chunk 外加一圈鄰格（CHUNK+2 見方）；out 夠大就重用 */
+export function mapChunkWindow(w: MapWorld, cx: number, cy: number, out?: TileWindow): TileWindow {
+  return w.window(cx * CHUNK - 1, cy * CHUNK - 1, CHUNK + 2, CHUNK + 2, out);
 }
 
-/** 畫 chunk (cx, cy) 到 out（CHUNK*CHUNK，row-major）；世界外 = 0（透明） */
-export function paintMapChunk(out: Uint32Array, w: MapWorld, ex: ExploredMap, cx: number, cy: number, lut: MapLut = buildMapLut()): void {
-  const W = w.width, x0 = cx * CHUNK, y0 = cy * CHUNK;
-  const bits = ex.bits;
-  const has = (x: number, y: number): boolean => {
-    if (x < 0 || y < 0 || x >= W || y >= w.height) return false;
-    const i = y * W + x;
-    return ((bits[i >> 3] >> (i & 7)) & 1) === 1;
-  };
+/** 迷霧 chunk 位元（bit = ly*32 + lx）的一格；沒有 = 未探索 */
+function fogBit(b: Uint8Array | undefined, lx: number, ly: number): boolean {
+  return b !== undefined && ((b[(ly << 2) | (lx >> 3)] >> (lx & 7)) & 1) === 1;
+}
+
+/**
+ * 畫一個 CHUNK×CHUNK 區塊到 out（CHUNK*CHUNK，row-major；1 tile = 1 px）。
+ * src = 該 chunk 外加一圈鄰格的 tile 視窗（x0 = cx*CHUNK − 1、y0 = cy*CHUNK − 1、CHUNK+2 見方；描邊看四鄰）——
+ * 常駐的欄用 world.window，沒常駐的欄由呼叫端 peek 後填進視窗。bits = 本 chunk 的迷霧位元（沒有 = 整塊未探索），
+ * edge = 四鄰 chunk 的位元（迷霧邊緣抖動）。世界外 = 0（透明）。逐格不查 Map。
+ */
+export function paintMapChunk(out: Uint32Array, src: TileWindow, bits: Uint8Array | undefined, lut: MapLut, frame: MapFrame, edge: MapEdgeBits = {}): void {
+  const x0 = src.x0 + 1, y0 = src.y0 + 1;
+  const E = bits, EL = edge.l, ER = edge.r, EU = edge.u, ED = edge.d;
+  const WW = src.w, fg = src.fg;
   for (let ly = 0; ly < CHUNK; ly++) {
     const y = y0 + ly;
     for (let lx = 0; lx < CHUNK; lx++) {
       const x = x0 + lx, o = ly * CHUNK + lx;
-      if (x >= W || y >= w.height) { out[o] = 0; continue; }
-      if (!has(x, y)) {
-        out[o] = ((x + y) & 1) === 1 && (has(x - 1, y) || has(x + 1, y) || has(x, y - 1) || has(x, y + 1)) ? lut.fogEdge : lut.fog;
+      if (x < frame.xMin || x >= frame.xMax || y >= frame.height) { out[o] = 0; continue; }
+      if (!fogBit(E, lx, ly)) {
+        out[o] = ((x + y) & 1) === 1 && (
+          (lx > 0 ? fogBit(E, lx - 1, ly) : fogBit(EL, CHUNK - 1, ly))
+          || (lx < CHUNK - 1 ? fogBit(E, lx + 1, ly) : fogBit(ER, 0, ly))
+          || (ly > 0 ? fogBit(E, lx, ly - 1) : fogBit(EU, lx, CHUNK - 1))
+          || (ly < CHUNK - 1 ? fogBit(E, lx, ly + 1) : fogBit(ED, lx, 0))
+        ) ? lut.fogEdge : lut.fog;
         continue;
       }
-      const i = y * W + x, f = w.fg[i];
-      const c = w.variant[i] === 2 ? lut.fgDark[f] : lut.fg[f];
+      const i = (ly + 1) * WW + lx + 1, f = fg[i];
+      const c = src.variant[i] === 2 ? lut.fgDark[f] : lut.fg[f];
       if (c && SOLID_LUT[f] === 1) {
         // 緊貼地城磚殼外側的一般實心格 → 描邊
-        if (!IS_BRICK[f] && ((x > 0 && IS_BRICK[w.fg[i - 1]]) || (x + 1 < W && IS_BRICK[w.fg[i + 1]]) || (y > 0 && IS_BRICK[w.fg[i - W]]) || (y + 1 < w.height && IS_BRICK[w.fg[i + W]]))) out[o] = lut.outline;
+        if (!IS_BRICK[f] && (IS_BRICK[fg[i - 1]] || IS_BRICK[fg[i + 1]] || IS_BRICK[fg[i - WW]] || IS_BRICK[fg[i + WW]])) out[o] = lut.outline;
         else out[o] = c;
         continue;
       }
-      if (w.liquid && w.liquid[i] && w.liquidType) { out[o] = lut.liquid[w.liquidType[i]]; continue; }
+      if (src.liquid[i]) { out[o] = lut.liquid[src.liquidType[i]]; continue; }
       if (c) { out[o] = c; continue; }
-      const wl = w.wall[i];
+      const wl = src.wall[i];
       // 有第二色的牆（地城）：3 格高、4 格寬、隔列錯開的磚紋
       if (wl && lut.wallAlt[wl] && (y % 3 === 2 || (x + (Math.floor(y / 3) & 1) * 2) % 4 === 3)) { out[o] = lut.wallAlt[wl]; continue; }
-      out[o] = wl ? lut.wall[wl] : y <= w.surfaceY && SOLID_LUT[f] !== 1 ? lut.sky : lut.cave;
+      out[o] = wl ? lut.wall[wl] : y <= frame.surfaceY && SOLID_LUT[f] !== 1 ? lut.sky : lut.cave;
     }
   }
+}
+
+/** 從世界（常駐的欄）與迷霧畫 chunk (cx, cy)：視窗一次批次讀取、迷霧位元本塊 + 四鄰各查一次 */
+export function paintMapChunkAt(out: Uint32Array, w: MapWorld, ex: ExploredMap, cx: number, cy: number, lut: MapLut = buildMapLut()): void {
+  MAP_WIN = mapChunkWindow(w, cx, cy, MAP_WIN);
+  paintMapChunk(out, MAP_WIN, ex.chunkBits(cx, cy), lut, w, chunkEdgeBits(ex, cx, cy));
+}
+/** (cx, cy) 四鄰 chunk 的迷霧位元（各查一次 Map） */
+export function chunkEdgeBits(ex: ExploredMap, cx: number, cy: number): MapEdgeBits {
+  return { l: ex.chunkBits(cx - 1, cy), r: ex.chunkBits(cx + 1, cy), u: ex.chunkBits(cx, cy - 1), d: ex.chunkBits(cx, cy + 1) };
 }
 
 // ── 全地圖視圖 ──────────────────────────────────────────
@@ -128,28 +163,31 @@ export function zoomView(v: MapView, sw: number, sh: number, sx: number, sy: num
 export function panView(v: MapView, dx: number, dy: number): MapView {
   return { scale: v.scale, cx: v.cx - dx / v.scale, cy: v.cy - dy / v.scale };
 }
-/** 中心夾在世界內（世界比畫面小時置中） */
-export function clampView(v: MapView, ww: number, wh: number, sw: number, sh: number): MapView {
-  const fit = (c: number, world: number, screen: number): number => {
-    const half = screen / 2 / v.scale;
-    if (world <= half * 2) return world / 2;
-    return Math.max(half * 0.25, Math.min(world - half * 0.25, c));
-  };
-  return { scale: v.scale, cx: fit(v.cx, ww, sw), cy: fit(v.cy, wh, sh) };
+/**
+ * 拖曳 / 縮放的夾限：中心不離開探索範圍 [x0, x1]（畫面左右各可多看半個視窗的未探索區）、也不過 ±X_LIMIT；
+ * extent = null（還沒探索任何格）→ 水平不動（維持置中在玩家）。垂直夾在 [0, wh]（世界比畫面矮時置中）。
+ */
+export function clampView(v: MapView, extent: { x0: number; x1: number } | null, wh: number, sw: number, sh: number): MapView {
+  void sw;
+  let cx = v.cx;
+  if (extent) cx = Math.max(extent.x0, Math.min(extent.x1, cx));
+  cx = Math.max(-X_LIMIT, Math.min(X_LIMIT, cx));
+  const half = sh / 2 / v.scale;
+  const cy = wh <= half * 2 ? wh / 2 : Math.max(half * 0.25, Math.min(wh - half * 0.25, v.cy));
+  return { scale: v.scale, cx, cy };
 }
 
-/** 小地圖：以玩家 tile (px,py) 為中心、w×h 美術像素、每格 zoom 像素 → 地圖快取上的取樣框 */
-export function minimapSource(px: number, py: number, w: number, h: number, zoom: number, ww: number, wh: number):
-  { sx: number; sy: number; sw: number; sh: number } {
-  const sw = Math.min(ww, Math.ceil(w / zoom)), sh = Math.min(wh, Math.ceil(h / zoom));
-  const sx = Math.max(0, Math.min(ww - sw, Math.round(px - sw / 2)));
-  const sy = Math.max(0, Math.min(wh - sh, Math.round(py - sh / 2)));
-  return { sx, sy, sw, sh };
+/** 小地圖：以玩家 tile (px, py) 為中心、w×h 美術像素、每格 zoom 像素的視圖（水平不夾：無限世界；垂直夾在世界內） */
+export function minimapView(px: number, py: number, w: number, h: number, zoom: number, wh: number): MapView {
+  void w;
+  const half = h / 2 / zoom;
+  const cy = wh <= half * 2 ? wh / 2 : Math.max(half, Math.min(wh - half, py + 0.5));
+  return { cx: px + 0.5, cy, scale: zoom };
 }
 
 // ── 地標圖示 ─────────────────────────────────────────────
 export const MAP_ICONS = ['cabin', 'mineshaft', 'ruin', 'sky_island', 'lake', 'cavern', 'chasm', 'mushroom_biome', 'crystal_cave',
-  'secret_room', 'dungeon', 'treasure', 'unknown', 'player', 'marker', 'village', 'dwarf_hall', 'landmark'] as const;
+  'secret_room', 'dungeon', 'treasure', 'unknown', 'player', 'marker', 'village', 'dwarf_hall', 'landmark', 'waystone'] as const;
 export type MapIcon = (typeof MAP_ICONS)[number];
 const ICON_OF: Record<string, MapIcon> = {
   cabin: 'cabin', mineshaft: 'mineshaft', ruin: 'ruin', sky_island: 'sky_island', frozen_lake: 'lake', lake_bed: 'lake',
@@ -182,6 +220,7 @@ const ICON_ART: Record<MapIcon, string[]> = {
   village: ['.d.....', '.drr...', '.dr.yy.', '.dyyyyy', 'yyyyyyy', '.wbwbw.', '.wbdbw.'],
   dwarf_hall: ['.GGGGG.', 'G..d..G', '...d...', '...d...', '...d...', 'ooodooo', 'kkkkkkk'],
   landmark: ['...y...', '...y...', 'yyyWyyy', '.yyyyy.', '..yyy..', '.yy.yy.', '.y...y.'],
+  waystone: ['..GGG..', '.GgggG.', '.gcCcg.', '.ggcgg.', '.gcCcg.', '.ggggg.', 'nsssssn'],
 };
 export function mapIconBmp(kind: MapIcon): Bmp {
   const b = new Bmp(9, 9);
@@ -201,6 +240,11 @@ export function mapPins(regions: readonly Region[], d: Discovery, showAll: boole
     out.push({ id: r.id, x: r.ax, y: r.ay, icon, name: r.name, found });
   }
   return out;
+}
+/** 地圖上的傳送碑（只給解鎖的：呼叫端傳 game.unlockedStones()） */
+export interface StonePin { icon: 'waystone'; x: number; y: number; name: string; }
+export function stonePins(stones: readonly Waystone[]): StonePin[] {
+  return stones.map((s) => ({ icon: 'waystone' as const, x: s.x, y: s.y, name: s.name }));
 }
 export interface MapLabel { id: number; name: string; x: number; y: number; }
 /** 發現過的地域 / 地層名字（x = -1：跟著畫面置中） */

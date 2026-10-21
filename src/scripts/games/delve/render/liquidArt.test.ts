@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { liquidTile, liquidPiece, breathBubble, texHive, texCrispy, texHiveWall, LIQUID_FRAMES } from './liquidArt';
 import { inPalette, Bmp } from './pixel';
 import { LIQ } from '../engine/liquidKind';
-import { buildMapLut, paintMapChunk } from './mapModel';
+import { buildMapLut, paintMapChunkAt } from './mapModel';
 import { World } from '../engine/world';
 import { ExploredMap } from '../engine/explore';
 import { CHUNK } from '../engine/constants';
@@ -95,7 +95,7 @@ describe('地圖：液體顏色', () => {
     ex.revealDisc(5, 5, 20);
     const lut = buildMapLut();
     const out = new Uint32Array(CHUNK * CHUNK);
-    paintMapChunk(out, w, ex, 0, 0, lut);
+    paintMapChunkAt(out, w, ex, 0, 0, lut);
     const c = [out[CHUNK + 1], out[CHUNK + 2], out[CHUNK + 3]];
     expect(new Set(c).size).toBe(3);
     expect(c).toEqual([lut.liquid[LIQ.WATER], lut.liquid[LIQ.LAVA], lut.liquid[LIQ.HONEY]]);
