@@ -184,6 +184,7 @@ export function battleReservePct(c: Combatant): number {
  * kinds both stand). The workshop warns of it: a lost one still holds back its TP. Draws nothing, changes nothing on `c`.
  */
 export function lastingBarrierLoss(c: Combatant): number {
+  // Her own barriers only: another member's could replace hers too, but only Chizuru has barrier skills today.
   const field = { barriers: [] } as Partial<BattleState> as BattleState;
   let raised = 0;
   for (const { def, pct } of lastingSkills(c)) {

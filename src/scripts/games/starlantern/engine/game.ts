@@ -836,9 +836,14 @@ export class Game {
     return { ok: true };
   }
 
+  /** Runes change slots only in town and the labyrinth's field, never in battle (plan 8e); elsewhere `invalid`. */
+  private runesChangeable(): boolean {
+    return this.phase === 'town' || this.phase === 'map';
+  }
+
   /** Why `socketRune(...)` would be turned down now, or null when it would go in; changes nothing. */
   canSocketRune(id: CharacterId, skill: string, slot: number, r: RuneRef): SocketFail | null {
-    if (this.phase !== 'town' && this.phase !== 'map') return 'invalid';
+    if (!this.runesChangeable()) return 'invalid';
     const out = socketRune(this.state, id, skill, slot, r);
     return out.ok ? null : out.reason;
   }
@@ -849,19 +854,19 @@ export class Game {
    * town, at the next town save in the labyrinth; only a failed save leaves a notice.
    */
   socketRune(id: CharacterId, skill: string, slot: number, r: RuneRef): { ok: true } | { ok: false; reason: SocketFail } {
-    if (this.phase !== 'town' && this.phase !== 'map') return { ok: false, reason: 'invalid' };
+    if (!this.runesChangeable()) return { ok: false, reason: 'invalid' };
     return this.runesMoved(socketRune(this.state, id, skill, slot, r));
   }
 
   /** The rune in a slot back to the bag (the rules: sockets `unsocketRune`), when and saved as `socketRune`. */
   unsocketRune(id: CharacterId, skill: string, slot: number): { ok: true } | { ok: false; reason: 'invalid' | 'empty' } {
-    if (this.phase !== 'town' && this.phase !== 'map') return { ok: false, reason: 'invalid' };
+    if (!this.runesChangeable()) return { ok: false, reason: 'invalid' };
     return this.runesMoved(unsocketRune(this.state, id, skill, slot));
   }
 
   /** Why `moveRune(from, to)` would be turned down now, or null when it would go; changes nothing. */
   canMoveRune(from: SocketAt, to: SocketAt): SocketFail | 'empty' | null {
-    if (this.phase !== 'town' && this.phase !== 'map') return 'invalid';
+    if (!this.runesChangeable()) return 'invalid';
     const out = moveRune(this.state, from, to);
     return out.ok ? null : out.reason;
   }
@@ -871,7 +876,7 @@ export class Game {
    * `moveRune`): when and saved as `socketRune`. A refusal leaves both slots as they were.
    */
   moveRune(from: SocketAt, to: SocketAt): { ok: true } | { ok: false; reason: SocketFail | 'empty' } {
-    if (this.phase !== 'town' && this.phase !== 'map') return { ok: false, reason: 'invalid' };
+    if (!this.runesChangeable()) return { ok: false, reason: 'invalid' };
     return this.runesMoved(moveRune(this.state, from, to));
   }
 

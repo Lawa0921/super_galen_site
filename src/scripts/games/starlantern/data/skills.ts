@@ -2,6 +2,17 @@ import { AIM, BARRIER, COINS, DEVICE, MARK } from '../engine/mech';
 import type { SkillDef } from '../engine/types';
 import { T } from './text.zh-TW';
 
+/** A count of hits in Chinese numerals, for the words that count them so (plan 8g Task 2); past ten, the digits. */
+const ZH_COUNT = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+const zh = (n: number): string => ZH_COUNT[n] ?? String(n);
+/** The coins 順手牽羊 takes. */
+const PICKPOCKET_COINS = 2;
+/** 順手牽羊's words: a sway for each hit, then the hits counted. */
+const pickpocketWords = (hits: number): string =>
+  `手${Array.from({ length: hits }, (_, i) => `${zh(i + 1)}晃`).join('、')}，輕輕${zh(hits)}下就摸走 ${PICKPOCKET_COINS} 枚銅板。成交。`;
+/** 散射's words: its arrows counted. */
+const scatterWords = (hits: number): string => `${zh(hits)}支箭，射向隨機的敵人。`;
+
 const LIST: SkillDef[] = [
   { id: 'fire-star', name: '火之星彈', owner: 'noel', tp: 4, target: 'enemy', desc: '火屬性魔法攻擊',
     effects: [{ kind: 'damage', power: 140, element: 'fire', scale: 'mag', melee: false }] },
@@ -23,8 +34,8 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'damage', power: 60, element: 'phys', scale: 'atk', melee: true, hits: 2 }] },
   { id: 'stealth', name: '潛行', owner: 'liz', tp: 0, target: 'self', desc: '被動：遇敵率減半', effects: [], passive: 'encounterDown' },
   { id: 'treasure-sense', name: '尋寶直覺', owner: 'liz', tp: 0, target: 'self', desc: '被動：素材掉落率加倍', effects: [], passive: 'dropBoost' },
-  { id: 'pickpocket', name: '順手牽羊', owner: 'liz', tp: 7, target: 'enemy', desc: '手一晃、二晃、三晃，輕輕三下就摸走 2 枚銅板。成交。',
-    effects: [{ kind: 'damage', power: 55, element: 'phys', scale: 'atk', melee: true, hits: 3 }, { kind: 'coins', amount: 2 }] },
+  { id: 'pickpocket', name: '順手牽羊', owner: 'liz', tp: 7, target: 'enemy', desc: pickpocketWords(3),
+    effects: [{ kind: 'damage', power: 55, element: 'phys', scale: 'atk', melee: true, hits: 3 }, { kind: 'coins', amount: PICKPOCKET_COINS }] },
 
   { id: 'aimed-shot', name: '瞄準射擊', owner: 'sylvie', tp: 5, target: 'enemy', desc: '單體高傷害射擊',
     effects: [{ kind: 'damage', power: 160, element: 'phys', scale: 'atk', melee: false }] },
@@ -107,7 +118,7 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'damage', power: 80, element: 'phys', scale: 'atk', melee: false }, { kind: 'buff', stat: 'def', pct: -30, turns: 3 }] },
   { id: 'hunters-mark', name: '獵人標記', owner: 'sylvie', tp: 10, target: 'enemy', desc: `盯上牠了。4 回合內防禦降低 {e1.pct}%，${T.mech.aimFull(AIM.cap)}，不會歸零。`,
     effects: [{ kind: 'damage', power: 100, element: 'phys', scale: 'atk', melee: false }, { kind: 'buff', stat: 'def', pct: -40, turns: 4 }, { kind: 'aim-lock', turns: 4 }] },
-  { id: 'scatter-shot', name: '散射', owner: 'sylvie', tp: 7, target: 'enemies', desc: '三支箭，射向隨機的敵人。',
+  { id: 'scatter-shot', name: '散射', owner: 'sylvie', tp: 7, target: 'enemies', desc: scatterWords(3),
     effects: [{ kind: 'damage', power: 70, element: 'phys', scale: 'atk', melee: false, hits: 3, scatter: true }] },
   { id: 'deluge-volley', name: '暴雨箭', owner: 'sylvie', tp: 15, target: 'enemies', desc: '箭像雨一樣落下：全體敵人 2 段。',
     effects: [{ kind: 'damage', power: 85, element: 'phys', scale: 'atk', melee: false, hits: 2 }] },
@@ -241,3 +252,12 @@ function fill(d: SkillDef): SkillDef {
 }
 
 export const SKILLS: Record<string, SkillDef> = Object.fromEntries(LIST.map((s) => [s.id, fill(s)]));
+
+/**
+ * The whole words of a skill that counts its hits in Chinese numerals, for `hits` hits (plan 8g ruling 14): a rune that
+ * changes the count rewrites the sentence through it, so the words stay one count from start to end.
+ */
+export const HIT_DESC: Partial<Record<string, (hits: number) => string>> = {
+  pickpocket: pickpocketWords,
+  'scatter-shot': scatterWords,
+};

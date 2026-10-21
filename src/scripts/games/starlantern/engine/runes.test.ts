@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { SKILLS } from '../data/skills';
-import { skillFor } from './battle';
-import { applyRunes, runeFits, runeStates, runeWhy, skillTags } from './runes';
+import { HIT_DESC, SKILLS } from '../data/skills';
+import { runeView, skillFor } from './battle';
+import { applyRunes, runeFits, runeNotes, runeStates, runeWhy, skillTags } from './runes';
 import { RUNES, RUNE_STACK, tiersOf, type RuneId, type RuneRef } from '../data/runes';
 import { CHARACTER_IDS } from '../data/characters';
 import { INNATE, NODES, TREES } from '../data/trees';
 import { rulesOf } from '../data/characters';
 import { defaultTree, treeSkills } from './progression';
 import { pctOf } from './skills';
+import { POWERS } from '../data/gear';
+import { T } from '../data/text.zh-TW';
+import type { Combatant } from './combatant';
 import type { CharacterId, Effect, SkillDef } from './types';
 
 /** How many sets of three runes the slot-order test finds (see that test). */
@@ -283,5 +286,133 @@ describe('rune follow-ups (plan 8e Task 3 review)', () => {
     expect(total).toBeLessThan(RUNE_STACK);
     // Every skill of every tree, capstones and all, would be more: the capstone rule is what keeps it under.
     expect(CHARACTER_IDS.reduce((a, id) => a + treeSkills(id).filter((sk) => !SKILLS[sk].passive).length, 0)).toBeGreaterThan(total);
+  });
+});
+
+describe('the words follow the runes (plan 8g Task 2)', () => {
+  const m = (id: RuneId): RuneRef => ({ id, tier: tiersOf(id).includes('magic') ? 'magic' : 'legendary' });
+  type Build = Pick<Combatant, 'powers' | 'ranks'>;
+  /** Every way each member's skills can stand: plain, each tree node that rewrites it (both sides of a pair), each legendary power on it. */
+  const builds = (): { label: string; skill: string; c: Build }[] => {
+    const out: { label: string; skill: string; c: Build }[] = [];
+    for (const id of CHARACTER_IDS) {
+      for (const skill of treeSkills(id).filter((k) => !SKILLS[k].passive)) {
+        const own = NODES[skill]?.node.kind === 'active' ? { [skill]: NODES[skill].node.maxRank } : {};
+        out.push({ label: skill, skill, c: { powers: [], ranks: own } });
+        for (const [nid, info] of Object.entries(NODES)) {
+          if (info.owner === id && info.node.skill === skill && info.node.kind !== 'active') {
+            out.push({ label: `${skill}+${nid}`, skill, c: { powers: [], ranks: { ...own, [nid]: info.node.maxRank } } });
+          }
+        }
+        for (const pw of Object.values(POWERS)) if (pw.skill === skill) out.push({ label: `${skill}+${pw.id}`, skill, c: { powers: [pw.id], ranks: own } });
+      }
+    }
+    return out;
+  };
+  /** The old>new target words (plan 8g ruling 14). */
+  const WORDS: Record<string, [string, string][]> = {
+    'enemy>enemies': [['一名敵人', '全體敵人'], ['單體', '全體'], ['牠', '牠們']],
+    'ally>allies': [['一名隊友', '我方全體'], ['單體', '全體']],
+    'enemies>enemy': [['全體敵人', '一名敵人'], ['敵方全體', '一名敵人'], ['全體', '單體'], ['牠們', '牠']],
+    'allies>ally': [['我方全體', '一名隊友'], ['全隊', '一名隊友'], ['全體', '單體']],
+    'self>allies': [['自身', '我方全體']],
+  };
+  /** An old word where it stands alone: 牠 inside 牠們 is not the word 牠. */
+  const oldWord = (a: string, b: string) => new RegExp(b.startsWith(a) ? `${a}(?!${b.slice(a.length)})` : a, 'g');
+  const masked = (d: string) => d.replace(/[0-9]+/g, '#');
+  const one = (skill: string, r: RuneId) => applyRunes(SKILLS[skill], [], [m(r)]).desc;
+
+  it('words follow the target', () => {
+    let changed = 0;
+    for (const { label, skill, c } of builds()) {
+      const before = skillFor(c, skill)!;
+      for (const r of ['spread', 'focus', 'share'] as const) {
+        if (runeView(c, skill, [m(r)])!.states[0].miss !== null) continue;
+        const after = skillFor({ ...c, runes: { [skill]: [m(r)] } }, skill)!;
+        const pairs = WORDS[`${before.target}>${after.target}`];
+        expect(pairs, `${label}+${r}: ${before.target}>${after.target}`).toBeDefined();
+        let rest = before.desc, any = false;
+        for (const [a, b] of [...pairs!].sort((x, y) => y[0].length - x[0].length)) {
+          if (!oldWord(a, b).test(rest)) continue;
+          any = true;
+          expect(after.desc, `${label}+${r}`).toContain(b);
+          rest = rest.replace(oldWord(a, b), '|');
+        }
+        for (const [a, b] of pairs!) expect(oldWord(a, b).test(after.desc), `${label}+${r}: ${after.desc}`).toBe(false);
+        if (any) changed++;
+        else expect(masked(after.desc), `${label}+${r}`).toBe(masked(before.desc));
+      }
+    }
+    expect(changed).toBeGreaterThan(20);
+    // Pinned.
+    expect(one('sweep', 'focus')).toBe('攻擊一名敵人');
+    expect(one('moonlight', 'spread')).toBe('回復我方全體 HP');
+    expect(one('pierce', 'spread')).toBe('全體強力突刺');
+    expect(one('pin-shot', 'spread')).toBe('釘住牠們的腳。下一回合，牠們最後才動。');
+    expect(one('iron-wall', 'share')).toBe('我方全體防禦大幅提升');
+    expect(one('moon-rain', 'focus')).toBe('回復一名隊友 HP');
+  });
+
+  it('words follow the element', () => {
+    let changed = 0;
+    for (const { label, skill, c } of builds()) {
+      const before = skillFor(c, skill)!;
+      const was = new Set(before.effects.flatMap((e) => (e.kind === 'damage' ? [e.element] : [])));
+      for (const r of ['flame', 'rime', 'thunderclap'] as const) {
+        if (runeView(c, skill, [m(r)])!.states[0].miss !== null) continue;
+        const after = skillFor({ ...c, runes: { [skill]: [m(r)] } }, skill)!;
+        const now = (after.effects.find((e) => e.kind === 'damage') as { element: keyof typeof T.element }).element;
+        for (const el of was) {
+          if (el === now || el === 'phys') continue;
+          const word = `${T.element[el]}屬性`;
+          if (!before.desc.includes(word)) continue;
+          changed++;
+          expect(after.desc, `${label}+${r}`).not.toContain(word);
+          expect(after.desc, `${label}+${r}`).toContain(`${T.element[now]}屬性`);
+        }
+      }
+    }
+    expect(changed).toBeGreaterThan(10);
+    expect(one('fire-star', 'rime')).toBe('冰屬性魔法攻擊');
+    expect(one('flame-wave', 'thunderclap')).toBe('雷屬性全體魔法攻擊');
+    // The same element: nothing to say.
+    expect(one('fire-star', 'flame')).toBe(SKILLS['fire-star'].desc);
+  });
+
+  it("順手牽羊's whole phrase counts with 連擊", () => {
+    expect(HIT_DESC.pickpocket!(3)).toBe(SKILLS.pickpocket.desc);
+    expect(one('pickpocket', 'multistrike')).toBe('手一晃、二晃、三晃、四晃，輕輕四下就摸走 2 枚銅板。成交。');
+    expect(one('pickpocket', 'heavy')).toBe('手一晃，輕輕一下就摸走 2 枚銅板。成交。');
+    // 散射 counts its arrows the same way.
+    expect(HIT_DESC['scatter-shot']!(3)).toBe(SKILLS['scatter-shot'].desc);
+    expect(one('scatter-shot', 'multistrike')).toBe('四支箭，射向隨機的敵人。');
+    expect(one('scatter-shot', 'heavy')).toBe('一支箭，射向隨機的敵人。');
+    expect(one('twin-slash', 'multistrike')).toBe('連砍 3 次');
+    // Every damage skill that counts its hits in Chinese numerals has its whole phrase.
+    const counted = Object.values(SKILLS).filter((d) => d.effects.some((e) => e.kind === 'damage') && /[二三四五六七八九十][下段次支晃]/.test(d.desc));
+    expect(counted.map((d) => d.id).sort()).toEqual(Object.keys(HIT_DESC).sort());
+  });
+
+  it('no rune, no rewrite', () => {
+    for (const d of Object.values(SKILLS)) {
+      expect(applyRunes(d, [], []).desc, d.id).toBe(d.desc);
+      // A rune that does not work changes no word either.
+      const idle = (['spread', 'focus', 'share', 'flame', 'multistrike'] as const).find((r) => runeFits(d, r, [], d) !== null);
+      if (idle) expect(applyRunes(d, [], [m(idle)]).desc, `${d.id}+${idle}`).toBe(d.desc);
+    }
+  });
+
+  it('notes say what the rune does here', () => {
+    const venomChance = Math.round((SKILLS['rin-venom-needle'].effects.find((e) => e.kind === 'inflict') as { chance: number }).chance * 100);
+    expect(runeNotes(SKILLS['rin-venom-needle'], 'venom')).toEqual([T.rune.notes.merged(venomChance, T.ailment.poison)]);
+    expect(runeNotes(SKILLS['rin-venom-needle'], 'venom')[0]).toBe(`這招本來就有 ${venomChance}% 中毒，取較高的一個`);
+    expect(runeNotes(SKILLS['ice-star'], 'aftermath')).toEqual(['這招是冰屬性：暴擊時必定凍結']);
+    expect(runeNotes(SKILLS.pierce, 'aftermath')).toEqual(['這招是物理屬性：暴擊時必定流血']);
+    expect(runeNotes(SKILLS['fire-star'], 'aftermath')).toEqual(['這招是火屬性：暴擊時必定灼燒']);
+    expect(runeNotes(SKILLS['fire-star'], 'aftermath', ['rime'])).toEqual(['這招是冰屬性：暴擊時必定凍結']);
+    expect(runeNotes(SKILLS.ward, 'lasting')).toEqual([T.rune.lastingBarrier]);
+    expect(runeNotes(SKILLS.ward, 'extend')).toEqual([]);
+    expect(runeNotes(SKILLS['war-dance'], 'lasting')).toEqual([]);
+    expect(runeNotes(SKILLS['fire-star'], 'venom')).toEqual([]);
   });
 });

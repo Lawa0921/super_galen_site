@@ -1,10 +1,11 @@
 import type { SkillMod } from '../data/gear';
-import { RUNES, TAGS, exclusiveGroupOf, type RuneId, type RuneMod, type RuneRef, type Tag } from '../data/runes';
+import { RUNES, TAGS, exclusiveGroupOf, tiersOf, type RuneId, type RuneMod, type RuneRef, type Tag } from '../data/runes';
+import { HIT_DESC } from '../data/skills';
 import { T } from '../data/text.zh-TW';
 import type { AilmentId } from './ailments';
 import type { Combatant } from './combatant';
-import { patchSkill } from './skills';
-import type { Effect, Element, RuneRules, SkillDef } from './types';
+import { ELEMENT_AILMENT, patchSkill } from './skills';
+import type { Effect, Element, RuneRules, SkillDef, Target } from './types';
 
 /**
  * Runes on skills (spec §6, plan 8e): a skill's tags, whether a rune fits it, and why not. Pure functions over a skill as
@@ -131,6 +132,26 @@ const runeTp = (tp: number, pct: number, flat: number): number => (tp > 0 ? Math
 const HIT_WORDS = (v: number) => [`${v} 段`, `${v} 次`, `${v} 枚`];
 
 /**
+ * A skill's words for its target, by 「old>new」 target (plan 8g ruling 14): when a rune really changes the target, only
+ * that pair's words are rewritten, the longer ones first, every place they stand.
+ */
+export const TARGET_WORDS: Partial<Record<string, [string, string][]>> = {
+  'enemy>enemies': [['一名敵人', '全體敵人'], ['單體', '全體'], ['牠', '牠們']],
+  'ally>allies': [['一名隊友', '我方全體'], ['單體', '全體']],
+  'enemies>enemy': [['全體敵人', '一名敵人'], ['敵方全體', '一名敵人'], ['全體', '單體'], ['牠們', '牠']],
+  'allies>ally': [['我方全體', '一名隊友'], ['全隊', '一名隊友'], ['全體', '單體']],
+  'self>allies': [['自身', '我方全體']],
+};
+
+/** `desc` with the target words of `from` made `to`'s; a word already said the new way (牠們 for 牠) stays. */
+function targetWords(desc: string, from: Target, to: Target): string {
+  for (const [a, b] of TARGET_WORDS[`${from}>${to}`] ?? []) {
+    desc = desc.replace(new RegExp(b.startsWith(a) ? `${a}(?!${b.slice(a.length)})` : a, 'g'), b);
+  }
+  return desc;
+}
+
+/**
  * The skill with its runes (spec §6.6, plan 8e Task 3): `core` is the skill after tree, mastery and legendary powers
  * without their `extra` effects, which come in `extra`. Only the runes that work count (runeStates), taken in RUNES
  * order, so any slot order gives the same skill. One patchSkill call: the shape's target, the hits, the element, the
@@ -196,12 +217,22 @@ export function applyRunes(core: SkillDef, extra: Effect[], refs: readonly RuneR
     ...(effects.length ? { buffPct: product(effects) } : {}),
   };
   const out = patchSkill(base, patch);
-  // The hits' words follow when every damage effect went from one count to one other.
+  // The hits' words follow when every damage effect went from one count to one other: words that count them in Chinese
+  // numerals are written again whole (HIT_DESC), any other has its 「n 段／次／枚」 changed, every place it stands.
   const was = new Set(damages.map((e) => e.hits ?? 1)), now = new Set(out.effects.filter((e): e is Damage => e.kind === 'damage').map((e) => e.hits ?? 1));
   if (hits && was.size === 1 && now.size === 1) {
     const [a] = was, [b] = now;
+    const whole = HIT_DESC[core.id];
+    if (whole && out.desc === whole(a)) out.desc = whole(b);
     // A whole number only: 「2 次」 never matches inside 「12 次」.
-    HIT_WORDS(a).forEach((w, i) => { out.desc = out.desc.replace(new RegExp(`(?<![0-9])${w}`), HIT_WORDS(b)[i]); });
+    else HIT_WORDS(a).forEach((w, i) => { out.desc = out.desc.replace(new RegExp(`(?<![0-9])${w}`, 'g'), HIT_WORDS(b)[i]); });
+  }
+  // The target's and the element's words follow when they really changed (plan 8g ruling 14).
+  if (out.target !== core.target) out.desc = targetWords(out.desc, core.target, out.target);
+  if (element) {
+    for (const el of new Set(damages.map((e) => e.element))) {
+      if (el !== element) out.desc = out.desc.split(T.rune.elementWord(T.element[el])).join(T.rune.elementWord(T.element[element]));
+    }
   }
 
   // An ailment the skill (or its extra) already has is folded into the rune's of the same ailment, highest chance.
@@ -249,7 +280,24 @@ export function bounceNext(enemies: readonly Combatant[], from: string, hit: Rea
   return undefined;
 }
 
-/** What the rune card adds after a rune's sentence on this skill (plan 8e Task 7): 常駐 on a barrier skill. */
-export function runeNote(def: SkillDef, id: RuneId): string | undefined {
-  return id === 'lasting' && def.effects.some((e) => e.kind === 'barrier') ? T.rune.lastingBarrier : undefined;
+/**
+ * What a rune says beyond its own sentence when it sits on this skill (plan 8g ruling 15); `def` is the skill before
+ * runes, `others` the skill's other working runes. 常駐 on a barrier skill (plan 8e Task 7); an ailment rune whose ailment
+ * the skill already has, at the skill's own chance (the higher one counts, applyRunes); 餘波 with the ailment it brings
+ * on this skill's element, an element rune's among `others` first. Every number from `def`.
+ */
+export function runeNotes(def: SkillDef, id: RuneId, others: readonly RuneId[] = []): string[] {
+  const out: string[] = [];
+  if (id === 'lasting' && def.effects.some((e) => e.kind === 'barrier')) out.push(T.rune.lastingBarrier);
+  const mod = RUNES[id].mod(tiersOf(id)[0]);
+  const status = mod.onHit?.status ?? mod.inflict?.status;
+  if (status) {
+    const own = def.effects.flatMap((e) => (e.kind === 'inflict' ? [e] : e.kind === 'damage' ? e.onHit ?? [] : [])).filter((a) => a.status === status);
+    if (own.length) out.push(T.rune.notes.merged(Math.round(Math.max(...own.map((a) => a.chance)) * 100), T.ailment[status]));
+  }
+  if (id === 'aftermath') {
+    const el = others.map((o) => GIVES[o]).find((e) => e !== undefined) ?? def.effects.find((e): e is Damage => e.kind === 'damage')?.element;
+    if (el) out.push(T.rune.notes.aftermath(T.element[el], T.ailment[ELEMENT_AILMENT[el]]));
+  }
+  return out;
 }

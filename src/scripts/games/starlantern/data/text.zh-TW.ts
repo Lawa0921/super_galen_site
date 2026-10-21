@@ -791,6 +791,16 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     again: (name: string) => `${name}（第二次）`,
     /** After 常駐's sentence on a barrier skill (plan 8e Task 7). */
     lastingBarrier: '再施放一次會換掉它。',
+    /**
+     * What else a rune says on this skill (plan 8g ruling 15): the ailment the skill already has, at its own chance, and
+     * the ailment 餘波 brings on this skill's element.
+     */
+    notes: {
+      merged: (pct: number, ailment: string) => `這招本來就有 ${pct}% ${ailment}，取較高的一個`,
+      aftermath: (element: string, ailment: string) => `這招是${element}屬性：暴擊時必定${ailment}`,
+    },
+    /** A skill's words for its element, 「火屬性」: rewritten when an element rune changes it (plan 8g ruling 14). */
+    elementWord: (element: string) => `${element}屬性`,
     reprise: (name: string) => `${name}的回聲`,
     /** A rune as every screen names it (plan 8f): 「擴散（魔法）」, the tier in the gear's rarity words. */
     label: (id: RuneId, tier: RuneTier) => `${RUNES[id].name}（${RARITY[tier]}）`,

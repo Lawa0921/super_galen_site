@@ -923,6 +923,21 @@ describe('the rune tutorial flag in the save (plan 8g Task 1)', () => {
     expect(loadGame(st)).toEqual({ status: 'ok', state: g });
   });
 
+  it('an old save without the flag loads and saves back without it', () => {
+    const st = memoryStorage();
+    const raw = JSON.parse(JSON.stringify({ ...newGame(undefined, 0, STANDARD_LINEUP), runesOpen: true, runes: { 'spread@magic': 1 } }));
+    expect(raw).not.toHaveProperty('runeTutorialSeen');
+    st.setItem(SAVE_KEY, JSON.stringify(raw));
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(`load: ${r.status}`);
+    expect(r.state).not.toHaveProperty('runeTutorialSeen');
+    const again = memoryStorage();
+    expect(saveGame(again, r.state)).toBe(true);
+    const back = JSON.parse(again.getItem(SAVE_KEY)!);
+    expect(back).toHaveProperty('runesOpen', true);
+    expect(back).not.toHaveProperty('runeTutorialSeen');
+  });
+
   it('a junk runeTutorialSeen is dropped, the save loads', () => {
     for (const v of [false, 1, 'yes', null]) {
       const st = memoryStorage();

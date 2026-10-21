@@ -6,7 +6,7 @@ import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
 import { castDef, fieldWords } from './index';
 import { applyLasting } from './runes';
-import { runeNote } from '../runes';
+import { runeNotes } from '../runes';
 import { pctOf } from '../skills';
 import { BARRIER } from '../mech';
 import { T } from '../../data/text.zh-TW';
@@ -223,9 +223,9 @@ describe('a lasting barrier (plan 8e Task 7)', () => {
     for (let i = 0; i < 2; i++) again = round(again);
     expect(again.barriers ?? []).toEqual([]);
     // The card's note on a barrier skill with 常駐.
-    expect(runeNote(SKILLS.ward, 'lasting')).toBe('再施放一次會換掉它。');
-    expect(runeNote(SKILLS['war-dance'], 'lasting')).toBeUndefined();
-    expect(runeNote(SKILLS.ward, 'extend')).toBeUndefined();
+    expect(runeNotes(SKILLS.ward, 'lasting')).toEqual(['再施放一次會換掉它。']);
+    expect(runeNotes(SKILLS['war-dance'], 'lasting')).toEqual([]);
+    expect(runeNotes(SKILLS.ward, 'extend')).toEqual([]);
   });
 });
 

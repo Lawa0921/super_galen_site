@@ -236,7 +236,7 @@ export function healAmount(actor: Combatant, power: number, bonus?: number): num
 }
 
 /** The ailment each element brings on a 餘波 crit (plan 8e). */
-const ELEMENT_AILMENT: Record<Element, AilmentId> = { phys: 'bleed', fire: 'burn', ice: 'freeze', thunder: 'shock' };
+export const ELEMENT_AILMENT: Record<Element, AilmentId> = { phys: 'bleed', fire: 'burn', ice: 'freeze', thunder: 'shock' };
 
 /**
  * The runes riding on one landed hit (plan 8e Task 4), in this order: 吸血 heals the caster a share of the HP the target
