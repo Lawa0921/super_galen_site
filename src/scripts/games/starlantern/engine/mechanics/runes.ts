@@ -2,10 +2,16 @@
  * The runes that act once a cast (spec §6.4, plan 8e Task 5): 星燈輪轉 turns the element fire, ice, thunder, each skill
  * counting on its own (Combatant.wheel); 同步 lifts the next other ally's skill this round (BattleState.sync); 回聲
  * strikes the foe the cast struck first again at the next round's end (BattleState.reprises). 雙重詠唱 and 彈射 run in
- * battle.ts perform. Nothing here draws but a reprise's own hits.
+ * battle.ts perform. The trigger runes (Task 6): `noteHit` queues them, `runTriggers` casts them after each action.
+ * Nothing here draws but the hits of a reprise or a triggered cast.
  */
-import type { Element } from '../types';
-import { applyEffect, pctOf } from '../skills';
+import type { CharacterId, Element } from '../types';
+import { applyEffect, patchSkill, pctOf, type EffectContext } from '../skills';
+import { castOnce, skillFor, type BattleState } from '../battle';
+import type { Combatant } from '../combatant';
+import type { Rng } from '../rng';
+import { isInnate, pctMod, skillRank, treeSkills } from '../progression';
+import { RUNES } from '../../data/runes';
 import { T } from '../../data/text.zh-TW';
 import type { MechModule } from './index';
 
@@ -60,3 +66,81 @@ export const runes: MechModule = {
     }
   },
 };
+
+type Trigger = 'crit' | 'kill' | 'struck';
+
+/**
+ * Her skill that a trigger of this kind sets off: the first she has learned (her innate skills first, then her tree's
+ * order) with a working trigger rune for `on` (plan 8e ruling 11). A combatant without ranks (tests) knows every skill.
+ */
+function triggerSkill(c: Combatant, on: Trigger): string | undefined {
+  if (!c.runes) return undefined;
+  return treeSkills(c.defId as CharacterId).find((id) => c.runes?.[id]?.length
+    && (!c.ranks || skillRank(c.ranks, id) > 0 || isInnate(c.defId, id))
+    && skillFor(c, id)?.runeRules?.trigger?.on === on);
+}
+
+/** Queues `c`'s trigger for `on` against `foe`, once a round. */
+function queue(s: BattleState, c: Combatant, on: Trigger, foe: string): void {
+  if (c.fired?.[on] === s.round) return;
+  const skill = triggerSkill(c, on);
+  if (!skill) return;
+  c.fired = { ...c.fired, [on]: s.round };
+  s.triggers = [...(s.triggers ?? []), { by: c.key, skill, on, foe }];
+}
+
+/**
+ * One landed hit of an action (plan 8e Task 6), while that action's actor is `ctx.acting`: a member's crit queues her
+ * crit trigger, her felling a foe her kill trigger; a foe's blow on a member queues her struck trigger. Draws nothing.
+ */
+export function noteHit(actor: Combatant, target: Combatant, crit: boolean, ctx: EffectContext): void {
+  const s = ctx.battle;
+  if (!s || ctx.acting !== actor.key) return;
+  if (actor.side === 'party' && target.side === 'enemy') {
+    if (crit) queue(s, actor, 'crit', target.key);
+    if (!target.alive) queue(s, actor, 'kill', target.key);
+  } else if (actor.side === 'enemy' && target.side === 'party') queue(s, target, 'struck', actor.key);
+}
+
+/**
+ * The queued triggers, in order (plan 8e ruling 11): each the plain skill (its trigger rune off; 雙重詠唱, 彈射, 回聲 and
+ * 同步 do not ride on it; 星燈輪轉 at the element now due, the wheel not turned), with the abyss bonus as a cast has it,
+ * at the trigger's percent of power and effect, for free. A single foe is the one the trigger came from, or else the
+ * first standing; none standing, nothing. No TP, gauge, mechanic, echo record or further trigger.
+ */
+export function runTriggers(s: BattleState, ctx: EffectContext, rng: Rng): void {
+  while (s.triggers?.length) {
+    const [t, ...rest] = s.triggers;
+    s.triggers = rest;
+    if (!rest.length) delete s.triggers;
+    const c = s.party.find((m) => m.key === t.by);
+    if (!c || !c.alive || c.frozen || c.sleep > 0) continue;
+    const rune = (c.runes?.[t.skill] ?? []).find((r) => RUNES[r.id].group === 'trigger');
+    let def = skillFor({ ...c, runes: { ...c.runes, [t.skill]: (c.runes?.[t.skill] ?? []).filter((r) => r !== rune) } }, t.skill);
+    const pct = skillFor(c, t.skill)?.runeRules?.trigger?.pct;
+    if (!def || !rune || pct === undefined) continue;
+    const bonus = def.abyss && s.abyss ? pctMod(def.id, 100 + s.abyss) : undefined;
+    if (bonus) def = patchSkill(def, bonus);
+    def = patchSkill(def, { powerPct: pct, buffPct: pct });
+    if (def.runeRules) {
+      const keep = { ...def.runeRules };
+      for (const k of ['twice', 'bounce', 'reprise', 'sync', 'wheel'] as const) delete keep[k];
+      const wheel = def.runeRules.wheel;
+      if (wheel) {
+        const el = WHEEL[(c.wheel?.[def.id] ?? 0) % WHEEL.length];
+        def = { ...def, effects: def.effects.map((e) => (e.kind === 'damage' ? { ...e, element: el } : e)) };
+      }
+      def = { ...def, runeRules: keep };
+      if (!Object.keys(keep).length) delete def.runeRules;
+    }
+    let chosen: string | undefined;
+    if (def.target === 'enemy') {
+      chosen = s.enemies.find((e) => e.key === t.foe && e.alive)?.key ?? s.enemies.find((e) => e.alive)?.key;
+      if (!chosen) continue;
+    }
+    s.log.push({ type: 'trigger', actor: c.key, skill: t.skill, rune: rune.id });
+    ctx.cast = def.id;
+    castOnce(s, c, def, chosen, ctx, rng);
+    delete ctx.cast;
+  }
+}

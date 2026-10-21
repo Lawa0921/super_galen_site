@@ -216,6 +216,8 @@ export const T = {
   },
   log: {
     act: (who: string, label: string) => `${who}：${label}`,
+    /** A trigger rune's free cast (plan 8e): 「凜的暴擊觸發：飛針！」. */
+    trigger: (who: string, rune: string, skill: string) => `${who}的${rune}：${skill}！`,
     damage: (who: string, n: number, mult: number) => `${who} 受到 ${n} 傷害${mult > 1 ? '（弱點）' : mult < 1 ? '（抗性）' : ''}`,
     ko: (who: string) => `${who} 倒下了`,
     heal: (who: string, n: number) => `${who} 回復 ${n} HP`,

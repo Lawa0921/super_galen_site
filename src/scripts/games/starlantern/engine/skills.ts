@@ -7,6 +7,7 @@ import { credit, creditPrevented, lossOf, type Ledger } from './ledger';
 import { clearAilments, inflictAilment, type AilmentId } from './ailments';
 import type { BattleState } from './battle';
 import { onLandedHit } from './mechanics/index';
+import { noteHit } from './mechanics/runes';
 import { MOON } from './mechanics/moon';
 import { AIM } from './mech';
 import { COINS, coinCapOf } from './mechanics/coins';
@@ -42,6 +43,11 @@ export interface EffectContext {
    * the same kind on the same target is then not tried again (one try, the sure one: spec §6.6 rule 3).
    */
   afterTried?: string[];
+  /**
+   * Whose own action is resolving (plan 8e Task 6): set by resolveRound around `perform` only, so a blow struck at any
+   * other time (devices, ticks, counters, echoes, reprises, triggered casts) sets off no trigger.
+   */
+  acting?: string;
 }
 
 /** A power's percentage of a number, rounded half away from zero so a debuff (-37.5) rounds as deep as a buff (37.5). */
@@ -289,6 +295,8 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         onLandedHit(actor, target, ctx);
         // Her runes on this hit (plan 8e): absent fields do nothing and draw nothing.
         runeHit(actor, target, eff, crit, hpBefore - target.hp, ctx);
+        // Her crit or kill, or a foe's blow on her, may set off a trigger rune (plan 8e Task 6).
+        noteHit(actor, target, crit, ctx);
         // crit-tp, weak-tp and kill-tp settle on every hit; none of them draws.
         if (crit) keystoneTp(actor, 'crit-tp', KEYSTONE_VALUES.critTp, ctx);
         if (isWeak(target, eff.element)) keystoneTp(actor, 'weak-tp', KEYSTONE_VALUES.weakTp, ctx);

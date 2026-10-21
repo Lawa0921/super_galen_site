@@ -62,3 +62,9 @@ describe('battle lines for runes (plan 8e Task 5)', () => {
       .toEqual([T.log.act('諾艾兒', '火之星彈（第二次）'), T.log.act('諾艾兒', '火之星彈的回聲')]);
   });
 });
+
+describe('the trigger line (plan 8e Task 6)', () => {
+  it('a trigger reads as one line', () => {
+    expect(battleLines([{ type: 'trigger', actor: 'rin', skill: 'rin-needle', rune: 'on-crit' }], (k) => (k === 'rin' ? '凜' : k))).toEqual(['凜的暴擊觸發：飛針！']);
+  });
+});

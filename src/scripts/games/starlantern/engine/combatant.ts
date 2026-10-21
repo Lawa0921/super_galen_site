@@ -2,7 +2,7 @@ import { ROW_MELEE } from './formation';
 import type { Rng } from './rng';
 import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
-import type { RuneRef } from '../data/runes';
+import type { RuneId, RuneRef } from '../data/runes';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import { AIM, BEAT, EMBER, MARK, type MechState } from './mech';
 import type { MechCue } from './mechanics/index';
@@ -42,6 +42,8 @@ export interface Combatant {
   runes?: Record<string, RuneRef[]>;
   /** 星燈輪轉 (plan 8e): how many times each skill with it has been cast this fight. */
   wheel?: Record<string, number>;
+  /** The round each trigger condition last fired for her (plan 8e: once a round each). */
+  fired?: Partial<Record<'crit' | 'kill' | 'struck', number>>;
   /** Keystone talents held (members only; engine/progression.keystonesOf). */
   keystones: KeystoneId[];
   /** Memory pieces held (members only; read through `memoriesOf`); the hero's Lantern Key lights up with them. */
@@ -121,7 +123,9 @@ export type BattleEvent =
   /** A frozen combatant's turn, lost (it thaws). */
   | { type: 'frozen'; actor: string }
   /** A survive fight lasted its rounds. */
-  | { type: 'survived' };
+  | { type: 'survived' }
+  /** A trigger rune cast `skill` for `actor`, for free (plan 8e Task 6). */
+  | { type: 'trigger'; actor: string; skill: string; rune: RuneId };
 
 export const MAX_BUFFS = 3;
 export const SLEEP_TURNS = 3;

@@ -1,6 +1,8 @@
 import { CHARACTERS } from '../data/characters';
 import { STORY } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
+import { RUNES } from '../data/runes';
+import { SKILLS } from '../data/skills';
 import type { BattleEvent } from '../engine/combatant';
 import { SHARD_NAMES, TOWN_FRAGMENTS, fragmentName } from '../data/story/fragments';
 import type { FragmentGain } from '../engine/story/memories';
@@ -34,6 +36,7 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
       case 'mech': return T.log.mech(nameOf(e.actor), e.cue, e.amount);
       case 'frozen': return T.log.frozen(nameOf(e.actor));
       case 'survived': return STORY.survived;
+      case 'trigger': return T.log.trigger(nameOf(e.actor), RUNES[e.rune].name, SKILLS[e.skill]?.name ?? e.skill);
     }
   });
 }

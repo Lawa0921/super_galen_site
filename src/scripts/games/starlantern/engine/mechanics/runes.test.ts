@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveRound, type Action, type BattleState } from '../battle';
+import { LIMIT_PER_ACTION, resolveRound, type Action, type BattleState } from '../battle';
 import { hitAmount, rollHit, type BattleEvent, type Combatant } from '../combatant';
 import { applyEffect, pctOf, type EffectContext } from '../skills';
 import { BARRIER } from '../mech';
@@ -255,5 +255,130 @@ describe('runes on every cast: review fixes (plan 8e Task 5 review)', () => {
     const at = (power: number) => hitAmount(chizuru, tough('e0'), { power, element: 'phys', scale: 'atk', melee: true }, { variance: 1, crit: false, blocked: false }).amount;
     expect(second).toBe(at(330));
     expect(first).toBe(at(pctOf(330, 100 + BARRIER.releasePct * 3)));
+  });
+});
+
+describe('trigger runes (plan 8e Task 6)', () => {
+  const crit = (id: RuneId): RuneRef => ({ id, tier: 'magic' });
+  const triggers = (log: BattleEvent[]) => log.filter((e) => e.type === 'trigger');
+  const after = (log: BattleEvent[], i: number) => damage(log.slice(i));
+  const atk = (target: string): Action => ({ kind: 'attack', target });
+  const rolls = (c = false) => ({ variance: 1, crit: c, blocked: false });
+
+  it('a crit sets off the crit trigger after the action, at 60%, for free', () => {
+    const rin = member('rin', { nextCrit: true, runes: { 'rin-needle': [crit('on-crit')] } });
+    const r = resolveRound(makeBattle([rin], [tough('e0')]), { rin: atk('e0') }, constRng(0.5));
+    expect(triggers(r.log)).toEqual([{ type: 'trigger', actor: 'rin', skill: 'rin-needle', rune: 'on-crit' }]);
+    const at = r.log.findIndex((e) => e.type === 'trigger');
+    expect(r.log.slice(0, at).some((e) => e.type === 'damage' && e.crit)).toBe(true);
+    const spec = { power: pctOf(65, 60), element: 'phys', scale: 'atk', melee: false } as const;
+    expect(after(r.log, at).map((e) => e.amount)).toEqual([0, 1].map(() => hitAmount(member('rin'), tough('e0'), spec, rolls()).amount));
+    expect(r.party[0].tp).toBe(99);
+    expect(r.party[0].limit).toBe(LIMIT_PER_ACTION);
+  });
+
+  it('once a round, and a triggered cast sets off nothing', () => {
+    const rin = member('rin', { x: { crit: 100 }, runes: { 'rin-needle': [crit('on-crit')] } });
+    const rounds = play(makeBattle([rin], [tough('e0', { frozen: undefined, sleep: 0, max: { hp: 99999, tp: 0, atk: 1, def: 20, mag: 1, res: 20, spd: 1 } })]),
+      [{ rin: cast('rin-needle', 'e0') }, { rin: cast('rin-needle', 'e0') }]);
+    // Two crits in her cast, and two more in the triggered needle: one trigger a round.
+    for (const r of rounds) expect(triggers(r.log)).toHaveLength(1);
+  });
+
+  it('a kill and a blow set off theirs', () => {
+    const rin = member('rin', { max: { ...MAX, atk: 999 }, runes: { 'rin-needle': [crit('on-kill')] } });
+    const k = resolveRound(makeBattle([rin], [tough('e0', { hp: 1 }), tough('e1')]), { rin: atk('e0') }, constRng(0.5));
+    expect(triggers(k.log)).toEqual([{ type: 'trigger', actor: 'rin', skill: 'rin-needle', rune: 'on-kill' }]);
+    expect(after(k.log, k.log.findIndex((e) => e.type === 'trigger')).map((e) => e.target)).toEqual(['e1', 'e1']);
+    // A blow on her: after that foe's action, 挑釁 for free.
+    const scarlet = (over: Partial<Combatant> = {}) => member('scarlet', { runes: { provoke: [crit('on-struck')] }, max: { ...MAX, spd: 1 }, ...over });
+    const awake = () => tough('e0', { frozen: undefined, max: { hp: 99999, tp: 0, atk: 10, def: 20, mag: 1, res: 20, spd: 50 } });
+    // The foe has announced a plain blow on her.
+    const hits = { intents: { e0: { kind: 'attack' as const, target: 'scarlet' } } };
+    const struck = resolveRound(makeBattle([scarlet()], [awake()], hits), {}, constRng(0.5));
+    const i = struck.log.findIndex((e) => e.type === 'trigger');
+    expect(triggers(struck.log)).toEqual([{ type: 'trigger', actor: 'scarlet', skill: 'provoke', rune: 'on-struck' }]);
+    expect(struck.log.slice(0, i).some((e) => e.type === 'damage' && e.target === 'scarlet')).toBe(true);
+    expect(struck.log.slice(i)).toContainEqual({ type: 'taunt', target: 'scarlet' });
+    // A blow she dodges sets off nothing; nor one that finds her frozen.
+    const dodge = resolveRound(makeBattle([scarlet({ x: { evasion: 9999 } })], [awake()], hits), {}, constRng(0.01));
+    expect(dodge.log).toContainEqual({ type: 'miss', target: 'scarlet' });
+    expect(triggers(dodge.log)).toEqual([]);
+    const frozen = resolveRound(makeBattle([scarlet({ frozen: true })], [awake()], hits), {}, constRng(0.5));
+    expect(frozen.log.some((e) => e.type === 'damage' && e.target === 'scarlet')).toBe(true);
+    expect(triggers(frozen.log)).toEqual([]);
+  });
+
+  it('only her own blows count', () => {
+    // 回聲 at the round's end fells the foe: her 擊倒觸發 stays quiet.
+    const noel = member('noel', { runes: { 'fire-star': [crit('on-kill'), R('reprise')] } });
+    const [r1] = play(makeBattle([noel], [tough('e0'), tough('e1')]), [{ noel: cast('fire-star', 'e0') }]);
+    const r2 = resolveRound({ ...r1, enemies: r1.enemies.map((e) => (e.key === 'e0' ? { ...e, hp: 1 } : e)) }, {}, constRng(0.5));
+    expect(r2.log).toContainEqual({ type: 'ko', target: 'e0' });
+    expect(triggers(r2.log)).toEqual([]);
+    // A burn tick fells the foe: nothing.
+    const rin = member('rin', { runes: { 'rin-needle': [crit('on-kill')] } });
+    const burnt = resolveRound(makeBattle([rin], [tough('e0', { hp: 1, burn: { tick: 5, turns: 2, src: 'rin' } }), tough('e1')]), {}, constRng(0.5));
+    expect(burnt.log).toContainEqual({ type: 'ko', target: 'e0' });
+    expect(triggers(burnt.log)).toEqual([]);
+    // The hero's echo crits: his own crit trigger stays quiet.
+    const hero = member('hero', { x: { crit: 100 }, max: { ...MAX, spd: 1 }, runes: { 'hero-slash': [crit('on-crit')] } });
+    const plainNoel = member('noel', { max: { ...MAX, spd: 50 } });
+    const echoed = resolveRound(makeBattle([hero, plainNoel], [tough('e0')]), { noel: cast('fire-star', 'e0'), hero: { kind: 'echo', target: 'e0' } }, constRng(0.5));
+    expect(echoed.log.some((e) => e.type === 'damage' && e.crit)).toBe(true);
+    expect(triggers(echoed.log)).toEqual([]);
+    // Bobby's turret crits at the round's end: his crit trigger stays quiet.
+    const bobby = member('bobby', { x: { crit: 100 }, mech: { kind: 'devices', devices: [], cap: 2 }, runes: { cannon: [crit('on-crit')] } });
+    const turret = resolveRound(makeBattle([bobby], [tough('e0')]), { bobby: cast('turret') }, constRng(0.5));
+    expect(turret.log.some((e) => e.type === 'damage' && e.crit)).toBe(true);
+    expect(triggers(turret.log)).toEqual([]);
+    // Scarlet's 贖火 counter crits: her crit trigger stays quiet.
+    const scarlet = member('scarlet', { x: { crit: 100 }, max: { ...MAX, spd: 90 }, runes: { 'flame-burst': [crit('on-crit')] } });
+    const foe = tough('e0', { frozen: undefined, max: { hp: 99999, tp: 0, atk: 10, def: 20, mag: 1, res: 20, spd: 50 } });
+    const counter = resolveRound(makeBattle([scarlet], [foe]), { scarlet: cast('atoning-flame') }, constRng(0.5));
+    expect(counter.log.some((e) => e.type === 'damage' && e.target === 'e0' && e.crit)).toBe(true);
+    expect(triggers(counter.log)).toEqual([]);
+  });
+
+  it('a trigger with no foe standing does nothing', () => {
+    const rin = (runes?: Record<string, RuneRef[]>) => member('rin', { nextCrit: true, max: { ...MAX, atk: 999 }, ...(runes ? { runes } : {}) });
+    const alone = resolveRound(makeBattle([rin({ 'rin-needle': [crit('on-crit')] })], [tough('e0', { hp: 1 })]), { rin: atk('e0') }, constRng(0.5));
+    expect(triggers(alone.log)).toEqual([]);
+    expect(alone.outcome).toBe('win');
+    // The crit foe fell, another stands: the first one standing, and choosing it draws nothing.
+    const a = counting(mulberry32(4));
+    const r = resolveRound(makeBattle([rin({ 'rin-needle': [crit('on-crit')] })], [tough('e0', { hp: 1 }), tough('e1')]), { rin: atk('e0') }, a);
+    expect(after(r.log, r.log.findIndex((e) => e.type === 'trigger')).map((e) => e.target)).toEqual(['e1', 'e1']);
+    const b = counting(mulberry32(4));
+    resolveRound(makeBattle([rin()], [tough('e0', { hp: 1 }), tough('e1')]), { rin: atk('e0') }, b);
+    const needle = counting(mulberry32(4));
+    const spec = skillFor(member('rin'), 'rin-needle')!.effects[0] as Parameters<typeof rollHit>[2];
+    rollHit(member('rin'), tough('e1'), spec, needle);
+    rollHit(member('rin'), tough('e1'), spec, needle);
+    expect(a.n - b.n).toBe(needle.n);
+  });
+
+  it('two skills with one condition: the first learned fires', () => {
+    const rin = member('rin', { nextCrit: true, runes: { 'rin-mark': [crit('on-crit')], 'rin-needle': [crit('on-crit')] } });
+    const r = resolveRound(makeBattle([rin], [tough('e0')]), { rin: atk('e0') }, constRng(0.5));
+    expect(triggers(r.log)).toEqual([{ type: 'trigger', actor: 'rin', skill: 'rin-mark', rune: 'on-crit' }]);
+  });
+
+  it('a triggered cast is the plain skill', () => {
+    const noel = (runes: RuneRef[], over: Partial<Combatant> = {}) => member('noel', { x: { crit: 100 }, runes: { 'fire-star': [crit('on-crit'), ...runes] }, ...over });
+    // 雙重詠唱 and 彈射 do not ride on it: one cast, on the foe she struck.
+    const r = resolveRound(makeBattle([noel([R('twin-cast'), R('bounce', 'magic')])], [tough('e0'), tough('e1'), tough('e2')]), { noel: atk('e0') }, constRng(0.5));
+    const at = r.log.findIndex((e) => e.type === 'trigger');
+    expect(after(r.log, at).map((e) => e.target)).toEqual(['e0']);
+    expect(acts(r.log.slice(at), 'noel')).toEqual([]);
+    // 星燈輪轉: the element now due, and the wheel does not turn.
+    const w = resolveRound(makeBattle([noel([R('starwheel')], { wheel: { 'fire-star': 1 } })], [tough('e0')]), { noel: atk('e0') }, constRng(0.5));
+    expect(after(w.log, w.log.findIndex((e) => e.type === 'trigger'))[0].element).toBe('ice');
+    expect(w.party[0].wheel).toEqual({ 'fire-star': 1 });
+    // In an abyss fight an abyss skill grows first, then the trigger's 60%.
+    const hero = member('hero', { x: { crit: 100 }, runes: { 'abyss-star': [crit('on-crit')] } });
+    const d = resolveRound(makeBattle([hero], [tough('e0')], { abyss: 20 }), { hero: atk('e0') }, constRng(0.5));
+    const spec = { power: pctOf(pctOf(95, 120), 60), element: 'thunder', scale: 'mag', melee: false } as const;
+    expect(after(d.log, d.log.findIndex((e) => e.type === 'trigger')).map((e) => e.amount)).toEqual([hitAmount(hero, tough('e0'), spec, rolls(true)).amount]);
   });
 });

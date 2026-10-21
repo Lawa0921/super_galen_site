@@ -21,6 +21,7 @@ import type { MoonPhase } from './mechanics/moon';
 import { COINS } from './mechanics/coins';
 import { payHp } from './mechanics/embers';
 import { echoDef, echoOf } from './mechanics/echo';
+import { runTriggers } from './mechanics/runes';
 import { T } from '../data/text.zh-TW';
 import type { RuneRef } from '../data/runes';
 import { applyRunes, bounceNext } from './runes';
@@ -70,6 +71,8 @@ export interface BattleState {
   sync?: { pct: number; by: string };
   /** 回聲 (plan 8e): each strikes `target` with `effects` at the end of `round`, its caster and its foe still standing. */
   reprises?: { by: string; target: string; round: number; name: string; effects: Effect[] }[];
+  /** Trigger runes set off in this action, cast after it (plan 8e Task 6; engine/mechanics/runes.ts runTriggers). */
+  triggers?: { by: string; skill: string; on: 'crit' | 'kill' | 'struck'; foe: string }[];
 }
 
 /** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
@@ -469,6 +472,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       if (!rec) return null;
       if (actor.tp < rec.cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return null; }
       actor.tp -= rec.cost;
+      delete ctx.acting;   // an echo's blows set off no trigger rune (plan 8e ruling 11)
       const def = echoDef(rec);
       s.log.push({ type: 'act', actor: actor.key, label: T.cmd.echoAct(def.name) });
       if (def.effects.some((e) => e.kind === 'damage' && e.scatter)) scatterCast(s, actor, def, act.target, ctx, rng);
@@ -513,6 +517,12 @@ function bounceCast(s: BattleState, actor: Combatant, def: SkillDef, first: Comb
     // A bounce that is dodged ends the chain: it only goes on from a foe it struck.
     if (!landedOn(ctx, before, next)) return;
   }
+}
+
+/** A skill cast once on its targets as `perform` resolves them (a scatter skill scatters), for a triggered cast (plan 8e). */
+export function castOnce(s: BattleState, actor: Combatant, def: SkillDef, chosen: string | undefined, ctx: EffectContext, rng: Rng): void {
+  if (def.effects.some((e) => e.kind === 'damage' && e.scatter)) scatterCast(s, actor, def, chosen, ctx, rng);
+  else for (const t of resolveTargets(s, actor, def.target, chosen, rng)) for (const eff of def.effects) applyEffect(actor, t, eff, ctx);
 }
 
 /**
@@ -675,7 +685,9 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
       const from = s.log.length;
       // Who could not stir as the foe's blow fell (a hit wakes a sleeper, so it is read before).
       const idle = actor.side === 'enemy' ? s.party.filter((c) => c.frozen || c.sleep > 0).map((c) => c.key) : [];
+      ctx.acting = actor.key;   // only her own action's blows set off a trigger rune (plan 8e)
       const def = perform(s, actor, act, ctx, rng);
+      delete ctx.acting;
       delete ctx.redirect;
       // What the foe's action set off on the party (Scarlet's 贖火 counter); that sets off nothing more.
       if (actor.side === 'enemy') afterFoe(s, actor, ctx, from, idle);
@@ -687,12 +699,16 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
         let again = extraAction(s, actor, own, ctx, seen);
         while (again) {
           const seen2 = watchAction(s, actor);
+          ctx.acting = actor.key;
           const def2 = perform(s, actor, again, ctx, rng);
+          delete ctx.acting;
           delete ctx.redirect;
           afterAction(s, actor, again, def2, ctx);
           again = extraAction(s, actor, again, ctx, seen2);
         }
       }
+      // The trigger runes her action (or the foe's blow on her) set off, cast now (plan 8e).
+      runTriggers(s, ctx, rng);
     }
     ringBell(s, heroUp, ctx);
     syncWards(s);
