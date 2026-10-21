@@ -54,6 +54,7 @@ import {
   salvageYield, upgradeCost, upgradeGear, weaponDamage, affixDef, pickSpeed, MAX_PLUS, STAT_CAPS, type AffixId, type Cost, type Gear, type GearTotals, type LootSource,
 } from './gear';
 import { MAX_BREATH, PlayerActor, SOLO_PID, type ActorInput, type GameMode, type Pid } from './actor';
+import type { Cmd, CmdOp, CmdResults } from './commands';
 // 角色檔 ↔ actor（addActor / removeActor）。save/ 也 import 本檔：兩邊都只在函式內用對方，循環 import 無妨
 import { applyCharacter, snapshotGame } from '../save/serialize';
 import { characterState, splitSnapshot } from '../save/worldSave';
@@ -787,8 +788,8 @@ export class DelveGame {
     const me = new PlayerActor(SOLO_PID);
     this.actors.set(me.pid, me);
     this.cur = me;
-    // settle.spawnCore（存檔欄位）= 本地玩家的重生爐心；其他玩家的存在各自的 actor 上
-    this.settle.spawnLink = { get: () => this.local.spawnCore, set: (v) => { this.local.spawnCore = v; } };
+    // settle.spawnCore（存檔欄位）= 目前 actor（cur）的重生爐心；step 外 cur = 本地玩家，存檔照舊。exec(pid) 切到別人時讀寫他的（B10）
+    this.settle.spawnLink = { get: () => this.cur.spawnCore, set: (v) => { this.cur.spawnCore = v; } };
     this.seed = String(opts.seed ?? 'delve');
     this.appearance = normalizeAppearance(opts.appearance);
     // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
@@ -1016,6 +1017,72 @@ export class DelveGame {
       get selected() { return a.inventory.selected; },
       set selected(i: number) { g.selectOf(a, i); },
     };
+  }
+  /**
+   * 指令匯流排（co-op M-B2，B1 / B2）：玩家 pid 的一個離散動作（面板、按鍵、對話、技能）。
+   * 薄分派：切到該 actor（withActor）再呼叫既有方法，不加新規則 → 單機等價。沒有這個 pid → 丟例外。
+   * 網路收到的指令先過 validCmd（engine/commands.ts）。
+   */
+  exec<C extends Cmd>(pid: Pid, cmd: C): CmdResults[C['op']] {
+    const a = this.actors.get(pid);
+    if (!a) throw new Error(`delve: no actor ${pid}`);
+    return this.withActor(a, () => this.runCmd(cmd)) as CmdResults[C['op']];
+  }
+  /** 本地玩家的指令（= exec(localPid, cmd)）；render / input 只透過它改狀態 */
+  act<C extends Cmd>(cmd: C): CmdResults[C['op']] { return this.exec(this.localPid, cmd); }
+  /** 在 cur 上執行一個指令。會強制切回本地的包裝（talkNearest / talkAtPx / useSkill）改叫 …Cur 版本 */
+  private runCmd(cmd: Cmd): CmdResults[CmdOp] {
+    switch (cmd.op) {
+      case 'craft': return this.craft(cmd.recipe) satisfies CmdResults['craft'];
+      case 'swap': return this.inventory.swap(cmd.a, cmd.b) satisfies CmdResults['swap'];
+      case 'place': {
+        // 選不到那格（不是快捷欄）就不放：免得放成原本手上的東西
+        this.selectOf(this.cur, cmd.slot);
+        if (this.inventory.selected !== cmd.slot) return false satisfies CmdResults['place'];
+        return this.tryPlace(cmd.x, cmd.y) satisfies CmdResults['place'];
+      }
+      case 'toss': return false satisfies CmdResults['toss']; // Task 3 接上 tossSlot
+      case 'chestTake': return this.takeChestSlot(cmd.slot) satisfies CmdResults['chestTake'];
+      case 'chestTakeAll': return this.takeAllFromChest() satisfies CmdResults['chestTakeAll'];
+      case 'chestDeposit': return this.depositToChest(cmd.slot) satisfies CmdResults['chestDeposit'];
+      case 'chestClose': return this.closeChest() satisfies CmdResults['chestClose'];
+      case 'equip': return this.equipFromInventory(cmd.slot, cmd.to) satisfies CmdResults['equip'];
+      case 'unequip': return this.unequip(cmd.slot) satisfies CmdResults['unequip'];
+      case 'equipVanity': return this.equipVanityFromInventory(cmd.slot, cmd.to) satisfies CmdResults['equipVanity'];
+      case 'unequipVanity': return this.unequipVanity(cmd.slot) satisfies CmdResults['unequipVanity'];
+      case 'hideArmor': return this.setHideArmor(cmd.slot, cmd.hide) satisfies CmdResults['hideArmor'];
+      case 'recolor': return this.recolorWorn(cmd.slot, cmd.tint) satisfies CmdResults['recolor'];
+      case 'bodyLook': return this.setBodyLook(cmd.look) satisfies CmdResults['bodyLook'];
+      case 'mirrorClose': return this.closeMirror() satisfies CmdResults['mirrorClose'];
+      case 'rebirth': return this.rebirth(cmd.race) satisfies CmdResults['rebirth'];
+      case 'lock': return this.toggleLock(cmd.at) satisfies CmdResults['lock'];
+      case 'salvage': return this.salvage(cmd.at) satisfies CmdResults['salvage'];
+      case 'salvageAll': return this.salvageAll(cmd.maxRarity) satisfies CmdResults['salvageAll'];
+      case 'reroll': return this.reroll(cmd.at, cmd.affix) satisfies CmdResults['reroll'];
+      case 'upgrade': return this.upgrade(cmd.at) satisfies CmdResults['upgrade'];
+      case 'ascend': return this.ascend(cmd.at) satisfies CmdResults['ascend'];
+      case 'deepforge': return this.deepforge(cmd.at, cmd.key) satisfies CmdResults['deepforge'];
+      case 'buy': return this.buy(cmd.npc, cmd.i) satisfies CmdResults['buy'];
+      case 'sell': return this.sell(cmd.npc, cmd.item, cmd.n) satisfies CmdResults['sell'];
+      case 'service': return this.service(cmd.npc) satisfies CmdResults['service'];
+      case 'residentService': return this.residentService(cmd.npc, cmd.svc) satisfies CmdResults['residentService'];
+      case 'folkBuy': return this.folkBuy(cmd.key, cmd.i) satisfies CmdResults['folkBuy'];
+      case 'folkSell': return this.folkSell(cmd.key, cmd.item, cmd.n) satisfies CmdResults['folkSell'];
+      case 'folkService': return this.folkService(cmd.key, cmd.svc) satisfies CmdResults['folkService'];
+      case 'acceptQuest': return this.acceptQuest(cmd.key, cmd.id) satisfies CmdResults['acceptQuest'];
+      case 'turnInQuest': return this.turnInQuest(cmd.id) satisfies CmdResults['turnInQuest'];
+      case 'refreshQuests': return this.refreshQuests() satisfies CmdResults['refreshQuests'];
+      case 'learnSkill': return this.learnSkill(cmd.id) satisfies CmdResults['learnSkill'];
+      case 'respec': return this.respecSkills() satisfies CmdResults['respec'];
+      case 'skill': return this.useSkillCur(cmd.skill) satisfies CmdResults['skill'];
+      case 'talk': return this.talkNearestCur() satisfies CmdResults['talk'];
+      case 'talkAt': return this.talkAtPxCur(cmd.px, cmd.py) satisfies CmdResults['talkAt'];
+      case 'travel': return this.travel(cmd.to) satisfies CmdResults['travel'];
+      case 'travelStone': return this.travelStone(cmd.to) satisfies CmdResults['travelStone'];
+      case 'spawnCore': return this.setSpawnCore(cmd.id) satisfies CmdResults['spawnCore'];
+      case 'marker': return this.toggleMarker(cmd.x, cmd.y) satisfies CmdResults['marker'];
+      default: { const never: never = cmd; throw new Error(`delve: unknown cmd ${(never as { op: string }).op}`); }
+    }
   }
   private aimOf(a: PlayerActor, tx: number, ty: number): void {
     const x = Math.floor(tx), y = Math.floor(ty);
