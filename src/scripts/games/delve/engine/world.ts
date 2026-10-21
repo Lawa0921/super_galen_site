@@ -11,6 +11,7 @@ import { SOLID_LUT, PLATFORM_LUT, CLIMB_LUT, T } from './tiles';
 import { cloneStack, type Stack } from './inventory';
 import { CHEST_SLOTS, type Drop } from './loot';
 import { LIQ, LIQ_MAX } from './liquidKind';
+import { EditJournal } from './edits';
 export { LIQ, LIQ_MAX } from './liquidKind';
 export { variantHash } from './column';
 export type { ChunkData, ColumnSource, ColumnLayers } from './column';
@@ -97,6 +98,10 @@ export class World {
   private readonly liquidDirty = new Set<number>();
   /** 生成後液體被改過的 chunk（存檔用；與 modifiedChunks 分開，流動不會讓 tile 被存） */
   readonly liquidModified = new Set<number>();
+  /** 液體有變動的 chunk（網路同步用；drainNetLiquid 取走。與 renderer 的 liquidDirty 互不影響；卸載的欄刪掉） */
+  private readonly netLiquid = new Set<number>();
+  /** 前景 / 背景牆 / 半格與箱子的編輯日誌（chunk 鍵；touch / touchChest / writeChunk 記。讀檔還原、液體、結冰不記） */
+  readonly edits = new EditJournal();
   /** 前景 tile 改變時的通知（液體模擬用來喚醒鄰格）；setFg 之後呼叫 */
   onTileChange: ((x: number, y: number) => void) | null = null;
   /** 前景 / 背景牆每改一格 +1（據點評分等快取用來判斷要不要重算） */
@@ -253,6 +258,7 @@ export class World {
       // 沒常駐的 chunk 不重畫（renderer 不烘焙卸載的欄）
       this.dirty.delete(k);
       this.liquidDirty.delete(k);
+      this.netLiquid.delete(k);
     }
     this.slots[cx - this.cxLo] = null;
     this.resident.delete(cx);
@@ -290,8 +296,11 @@ export class World {
       frozen: p.frozen.slice(), half: p.half.slice(),
     };
   }
-  /** 覆寫 (cx, cy) chunk 的六層並標為已修改（欄沒常駐就先 ensure；邊界外的格丟掉） */
-  writeChunk(cx: number, cy: number, d: ChunkData): void {
+  /**
+   * 覆寫 (cx, cy) chunk 的六層並標為已修改（欄沒常駐就先 ensure；邊界外的格丟掉）。
+   * journal = 編輯日誌把這個 chunk 標 full（讀檔還原傳 false：還原不進日誌）
+   */
+  writeChunk(cx: number, cy: number, d: ChunkData, journal = true): void {
     if (cy < 0 || cy >= this.chunksY || cx < this.cxLo || cx > this.cxHi) return;
     const col = this.ensureColumn(cx);
     const o = cy * CK, n = Math.min(CK, col.fg.length - o);
@@ -303,6 +312,8 @@ export class World {
     this.liquidModified.add(k);
     this.dirty.add(k);
     this.liquidDirty.add(k);
+    this.netLiquid.add(k);
+    if (journal) this.edits.markFull(k);
     if (cx > this.cxLo) this.dirty.add(this.chunkIndex(cx - 1, cy));
     if (cx < this.cxHi) this.dirty.add(this.chunkIndex(cx + 1, cy));
     if (cy > 0) this.dirty.add(this.chunkIndex(cx, cy - 1));
@@ -680,17 +691,26 @@ export class World {
     const ci = this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK));
     this.liquidDirty.add(ci);
     this.liquidModified.add(ci);
+    this.netLiquid.add(ci);
   }
   /** (x,y) 的液體層要重畫（不標已修改：外圍的結冰由日期重算，不必存 / 停放） */
   markLiquidDirty(x: number, y: number): void {
     if (x < this.xMin || x >= this.xMax || y < 0 || y >= this.height) return;
     if (this.col(x >> 5) === null) return;
-    this.liquidDirty.add(this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK)));
+    const ci = this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK));
+    this.liquidDirty.add(ci);
+    this.netLiquid.add(ci);
   }
   /** 取走並清空液體 dirty chunk 清單 */
   drainLiquidDirty(): number[] {
     const out = [...this.liquidDirty];
     this.liquidDirty.clear();
+    return out;
+  }
+  /** 取走並清空網路用的液體 dirty chunk 清單（不影響 drainLiquidDirty） */
+  drainNetLiquid(): number[] {
+    const out = [...this.netLiquid];
+    this.netLiquid.clear();
     return out;
   }
   /** 液體總量（常駐欄；測試 / debug） */
@@ -706,6 +726,13 @@ export class World {
   markModified(x: number, y: number): void {
     if (!this.inBounds(x, y) || this.col(x >> 5) === null) return;
     this.modifiedChunks.add(this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK)));
+  }
+  /** (x,y) 的箱子內容 / 解鎖變了：markModified 再記一筆箱子項目（tile 鍵）。沒常駐 = 什麼都不做 */
+  touchChest(x: number, y: number): void {
+    if (!this.inBounds(x, y) || this.col(x >> 5) === null) return;
+    const ci = this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK));
+    this.modifiedChunks.add(ci);
+    this.edits.chest(ci, this.idx(x, y));
   }
   setWall(x: number, y: number, id: number): boolean {
     if (!this.inBounds(x, y)) return false;
@@ -756,6 +783,9 @@ export class World {
     const dxc = left ? -1 : right ? 1 : 0;
     const dyc = up ? -1 : down ? 1 : 0;
     if (dxc && dyc) this.dirty.add(this.chunkIndex(cx + dxc, cy + dyc));
+    // 編輯日誌：改完之後的狀態（呼叫端剛寫過這一欄，col 走上一欄快取）
+    const c = this.col(cx)!, i = (y << 5) | lx;
+    this.edits.record(ci, x, y, c.fg[i], c.wall[i], c.half[i]);
   }
 }
 

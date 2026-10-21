@@ -150,6 +150,7 @@ describe('HUD 文字', () => {
     expect(blockedMessage('blockedspot')).toMatch(/爐心/);
     expect(blockedMessage('blockedstone')).toMatch(/傳送碑/);
     expect(blockedMessage('blockedstone')).not.toMatch(/爐心/);
+    expect(blockedMessage('lockedtoss')).toBe('鎖定的裝備不能丟（先在背包裡解鎖）');
   });
   it('countLabel：1 個不顯示數字', () => {
     expect(countLabel(null)).toBe('');

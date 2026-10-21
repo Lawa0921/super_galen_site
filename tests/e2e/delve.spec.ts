@@ -953,6 +953,62 @@ test.describe('delve', () => {
     expect(errors).toEqual([]);
   });
 
+  test('按 G 丟出手上的道具', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=toss&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      // 開局背包有 10 支火把：先清掉，只留這次給的 5 支
+      g.inventory.remove('torch', g.inventory.count('torch'));
+      g.give('torch', 5);
+      const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'torch');
+      if (i !== 0) g.inventory.swap(i, 0);
+      g.selectSlot(0);
+    });
+    expect(await page.evaluate(() => window.__delveDebug!.game.inventory.selectedStack()?.item)).toBe('torch');
+    await page.keyboard.press('KeyG');
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.inventory.count('torch')), { timeout: 1000 }).toBe(0);
+    // 丟的人 1.5 秒內撿不回來：這段時間裡地上一定有那 5 支
+    expect(await page.evaluate(() => window.__delveDebug!.game.drops.list.some((d: { item: string; count: number }) => d.item === 'torch' && d.count === 5))).toBe(true);
+    expect(errors).toEqual([]);
+  });
+
+  test('G 跟其他遊戲鍵一樣被技能樹擋住；在背包選中的那格丟掉後不再是選中狀態', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/games/delve?seed=toss&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => {
+      const g = window.__delveDebug!.game;
+      g.inventory.remove('torch', g.inventory.count('torch'));
+      g.give('torch', 5);
+      const i = g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'torch');
+      if (i !== 0) g.inventory.swap(i, 0);
+      g.selectSlot(0);
+    });
+    const torches = () => page.evaluate(() => window.__delveDebug!.game.inventory.count('torch'));
+    // 技能樹開著：G 不丟東西
+    await page.keyboard.press('KeyK');
+    await expect(page.locator('#delve-skills')).toBeVisible();
+    await page.keyboard.press('KeyG');
+    await page.waitForTimeout(150);
+    expect(await torches()).toBe(5);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#delve-skills')).toBeHidden();
+    // 背包裡點第 0 格（選中）→ G 丟掉 → 那格不再標成選中
+    await page.keyboard.press('KeyE');
+    await expect(page.locator('#delve-inv')).toBeVisible();
+    const slot0 = page.locator('#delve-inv-grid .delve-slot').nth(0);
+    await slot0.click();
+    await expect(slot0).toHaveClass(/is-picked/);
+    await page.keyboard.press('KeyG');
+    await expect.poll(torches, { timeout: 1000 }).toBe(0);
+    await expect(slot0).not.toHaveClass(/is-picked/);
+    expect(errors).toEqual([]);
+  });
+
   test('裝備：在背包點防具再點裝備格 → getState 防禦增加；點裝備格卸下', async ({ page }) => {
     await page.goto('/games/delve?seed=armor&autostart=1&fresh=1');
     await waitGame(page);

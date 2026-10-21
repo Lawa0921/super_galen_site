@@ -921,7 +921,7 @@ export class FarChunks {
   }
   /**
    * 全部停放（之後走近時 ensureColumn 生成那一欄再蓋上）。停放被拒絕（那一欄在讀檔途中變成常駐）→ 不能默默丟掉：
-   * 六層直接寫進常駐欄，修改標記維持存檔內容（writeChunk 會兩種都標）。回傳改走寫入的 chunk 鍵（升冪；呼叫端喚醒液體）
+   * 六層直接寫進常駐欄，修改標記維持存檔內容（writeChunk 會兩種都標）；不進編輯日誌（B5）。回傳改走寫入的 chunk 鍵（升冪；呼叫端喚醒液體）
    */
   park(): number[] {
     const wrote: number[] = [];
@@ -930,7 +930,7 @@ export class FarChunks {
       const { cx, cy } = w.chunkCoords(ci);
       if (w.parkChunk(cx, cy, d)) continue;
       const mod = w.modifiedChunks.has(ci), liq = w.liquidModified.has(ci);
-      w.writeChunk(cx, cy, d);
+      w.writeChunk(cx, cy, d, false);
       if (!mod) w.modifiedChunks.delete(ci);
       if (!liq) w.liquidModified.delete(ci);
       wrote.push(ci);

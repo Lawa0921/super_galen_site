@@ -90,7 +90,7 @@ export class LevelsUi {
     for (const t of this.root.querySelectorAll<HTMLButtonElement>('.delve-sk-tab')) this.on(t, 'click', () => this.setTab(t.dataset.tab as Branch, true));
     for (const a of ACTIVES) {
       const b = q<HTMLButtonElement>(`#delve-act-${a}`);
-      this.on(b, 'pointerdown', (e) => { e.preventDefault(); if (!this.o.isBlocked() && !this.isOpen) this.game.useSkill(a); });
+      this.on(b, 'pointerdown', (e) => { e.preventDefault(); if (!this.o.isBlocked() && !this.isOpen) this.game.act({ op: 'skill', skill: a }); });
     }
     this.on(window, 'keydown', (e) => this.onKey(e as KeyboardEvent));
     this.on(this.panel, 'keydown', (e) => this.onPanelKey(e as KeyboardEvent));
@@ -143,7 +143,7 @@ export class LevelsUi {
       return;
     }
     const a = KEY_ACTIVE[e.code];
-    if (a && !e.repeat && !this.isOpen && !this.o.isBlocked()) { this.game.useSkill(a); e.preventDefault(); }
+    if (a && !e.repeat && !this.isOpen && !this.o.isBlocked()) { this.game.act({ op: 'skill', skill: a }); e.preventDefault(); }
   }
   private onPanelKey(e: KeyboardEvent): void {
     const dir: 'left' | 'right' | 'up' | 'down' | undefined = ARROWS[e.key];
@@ -265,7 +265,7 @@ export class LevelsUi {
   }
 
   private learn(id: SkillId): void {
-    const f = this.game.learnSkill(id);
+    const f = this.game.act({ op: 'learnSkill', id });
     const msg = this.root.querySelector('#delve-sk-msg');
     if (f) {
       this.sound.denied();
@@ -283,7 +283,7 @@ export class LevelsUi {
       return;
     }
     this.respecArm = 0;
-    const r = g.respecSkills();
+    const r = g.act({ op: 'respec' });
     if (msg) msg.textContent = r.ok ? `技能樹已重置：退回 ${r.refunded} 點` : r.reason === 'cost' ? '材料不足（碎晶 / 星塵；分解裝備可以拿到）' : '還沒有點任何技能';
     if (!r.ok) this.sound.denied();
     this.renderPanel(true);

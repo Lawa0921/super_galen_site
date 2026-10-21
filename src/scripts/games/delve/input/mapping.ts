@@ -5,14 +5,14 @@ import type { Stack } from '../engine/inventory';
 import { HOTBAR_SIZE, TILE_SIZE } from '../engine/constants';
 
 export type KeyAction = 'left' | 'right' | 'jump' | 'up' | 'down' | 'inventory' | 'menu' | 'zoomIn' | 'zoomOut'
-  | 'map' | 'minimap' | 'journal' | 'housing' | 'settle' | 'quests' | 'talk';
+  | 'map' | 'minimap' | 'journal' | 'housing' | 'settle' | 'quests' | 'talk' | 'toss';
 
 const KEYS: Record<string, KeyAction> = {
   KeyA: 'left', ArrowLeft: 'left',
   KeyD: 'right', ArrowRight: 'right',
   Space: 'jump', KeyW: 'up', ArrowUp: 'up',
   KeyS: 'down', ArrowDown: 'down',
-  KeyE: 'inventory',
+  KeyE: 'inventory', KeyG: 'toss',
   KeyM: 'map', KeyN: 'minimap', KeyJ: 'journal', KeyH: 'housing', KeyB: 'settle', KeyL: 'quests', KeyT: 'talk',
   Escape: 'menu',
   Equal: 'zoomIn', NumpadAdd: 'zoomIn',

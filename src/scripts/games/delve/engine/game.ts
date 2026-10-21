@@ -18,7 +18,7 @@ import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, typ
 import { bossRebirth, potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult, type Station } from './crafting';
-import { makeBody, stepPlayer, onPlatform, type Body, type MoveStats } from './physics';
+import { makeBody, stepPlayer, onPlatform, overlapsSolid, type Body, type MoveStats } from './physics';
 import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight, type LightRGB } from './lighting';
 import { skyColor, isNight as skyIsNight } from './sky';
 import {
@@ -37,7 +37,7 @@ import {
   BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
   knockbackScale, regenRate, rollCrit, type PlayerStats,
 } from './combat';
-import { DropList, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type PhysEnv, type Picker } from './entities';
+import { DropList, ITEM_SIZE, LODESTONE_TILES, MAGNET_TILES, overlaps, popVelocity, type PhysEnv, type Picker } from './entities';
 import { LiquidSim, type ReactionKind, type SpringSpec } from './liquid';
 import { LIQ, LIQ_MAX } from './liquidKind';
 import { liquidContact, liquidMedium, playerMedium } from './swim';
@@ -54,6 +54,7 @@ import {
   salvageYield, upgradeCost, upgradeGear, weaponDamage, affixDef, pickSpeed, MAX_PLUS, STAT_CAPS, type AffixId, type Cost, type Gear, type GearTotals, type LootSource,
 } from './gear';
 import { MAX_BREATH, PlayerActor, SOLO_PID, type ActorInput, type GameMode, type Pid } from './actor';
+import type { Cmd, CmdOp, CmdResults } from './commands';
 // 角色檔 ↔ actor（addActor / removeActor）。save/ 也 import 本檔：兩邊都只在函式內用對方，循環 import 無妨
 import { applyCharacter, snapshotGame } from '../save/serialize';
 import { characterState, splitSnapshot } from '../save/worldSave';
@@ -114,7 +115,9 @@ export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occu
   /** 據點：範圍和別的據點重疊；商店：錢不夠 / 背包滿 */
   | 'claim' | 'coins' | 'bagfull'
   /** 傳送點：目的地爐心旁沒有空位；傳送碑：目的地碑旁沒有空位 */
-  | 'blockedspot' | 'blockedstone';
+  | 'blockedspot' | 'blockedstone'
+  /** 丟出背包格：鎖定的裝備不能丟 */
+  | 'lockedtoss';
 /** 遊戲事件；pid = 由哪個玩家的動作產生（多 actor 時才有；世界事件 / 單機沒有 = 公開） */
 export type DelveEvent = DelveEventBody & { pid?: Pid };
 type DelveEventBody =
@@ -159,6 +162,8 @@ type DelveEventBody =
   | { type: 'respawn'; x: number; y: number }
   /** 撿起來；rarity = 帶詞條裝備的稀有度 */
   | { type: 'pickup'; item: ItemId; n: number; rarity?: number }
+  /** 丟出背包格（tossSlot；公開）：x / y = 掉落物生成的位置（px） */
+  | { type: 'toss'; item: ItemId; n: number; x: number; y: number }
   // ── 裝備詞條 ──
   /** 地上出現一件裝備（掉落 / 擊殺；音效與光柱用） */
   | { type: 'loot'; item: ItemId; rarity: number; x: number; y: number }
@@ -347,6 +352,10 @@ export interface DelveState {
 const HAND: PickStats = { speed: 0.35, tier: 1 };
 /** 同一個 blocked 提示重複出現的最短間隔（秒） */
 const BLOCK_REPEAT = 1.8;
+/** 丟出背包格（tossSlot）：初速（px/s；vx 乘 facing、vy 往上）與丟的人撿不回來的秒數 */
+export const TOSS_VX = 200, TOSS_VY = 150, TOSS_OWNER_DELAY = 1.5;
+/** 丟出的掉落物從玩家中心往 facing 方向偏幾 px 生成 */
+const TOSS_OFFSET = 10;
 /** 傳送石引導時間（秒） */
 export const RECALL_TIME = 1.2;
 /** 磁石增加的伸手距離（格） */
@@ -787,8 +796,8 @@ export class DelveGame {
     const me = new PlayerActor(SOLO_PID);
     this.actors.set(me.pid, me);
     this.cur = me;
-    // settle.spawnCore（存檔欄位）= 本地玩家的重生爐心；其他玩家的存在各自的 actor 上
-    this.settle.spawnLink = { get: () => this.local.spawnCore, set: (v) => { this.local.spawnCore = v; } };
+    // settle.spawnCore（存檔欄位）= 目前 actor（cur）的重生爐心；step 外 cur = 本地玩家，存檔照舊。exec(pid) 切到別人時讀寫他的（B10）
+    this.settle.spawnLink = { get: () => this.cur.spawnCore, set: (v) => { this.cur.spawnCore = v; } };
     this.seed = String(opts.seed ?? 'delve');
     this.appearance = normalizeAppearance(opts.appearance);
     // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
@@ -1016,6 +1025,72 @@ export class DelveGame {
       get selected() { return a.inventory.selected; },
       set selected(i: number) { g.selectOf(a, i); },
     };
+  }
+  /**
+   * 指令匯流排（co-op M-B2，B1 / B2）：玩家 pid 的一個離散動作（面板、按鍵、對話、技能）。
+   * 薄分派：切到該 actor（withActor）再呼叫既有方法，不加新規則 → 單機等價。沒有這個 pid → 丟例外。
+   * 網路收到的指令先過 validCmd（engine/commands.ts）。
+   */
+  exec<C extends Cmd>(pid: Pid, cmd: C): CmdResults[C['op']] {
+    const a = this.actors.get(pid);
+    if (!a) throw new Error(`delve: no actor ${pid}`);
+    return this.withActor(a, () => this.runCmd(cmd)) as CmdResults[C['op']];
+  }
+  /** 本地玩家的指令（= exec(localPid, cmd)）；render / input 只透過它改狀態 */
+  act<C extends Cmd>(cmd: C): CmdResults[C['op']] { return this.exec(this.localPid, cmd); }
+  /** 在 cur 上執行一個指令。會強制切回本地的包裝（talkNearest / talkAtPx / useSkill）改叫 …Cur 版本 */
+  private runCmd(cmd: Cmd): CmdResults[CmdOp] {
+    switch (cmd.op) {
+      case 'craft': return this.craft(cmd.recipe) satisfies CmdResults['craft'];
+      case 'swap': return this.inventory.swap(cmd.a, cmd.b) satisfies CmdResults['swap'];
+      case 'place': {
+        // 選不到那格（不是快捷欄）就不放：免得放成原本手上的東西
+        this.selectOf(this.cur, cmd.slot);
+        if (this.inventory.selected !== cmd.slot) return false satisfies CmdResults['place'];
+        return this.tryPlace(cmd.x, cmd.y) satisfies CmdResults['place'];
+      }
+      case 'toss': return this.tossSlot(cmd.slot, cmd.n) satisfies CmdResults['toss'];
+      case 'chestTake': return this.takeChestSlot(cmd.slot) satisfies CmdResults['chestTake'];
+      case 'chestTakeAll': return this.takeAllFromChest() satisfies CmdResults['chestTakeAll'];
+      case 'chestDeposit': return this.depositToChest(cmd.slot) satisfies CmdResults['chestDeposit'];
+      case 'chestClose': return this.closeChest() satisfies CmdResults['chestClose'];
+      case 'equip': return this.equipFromInventory(cmd.slot, cmd.to) satisfies CmdResults['equip'];
+      case 'unequip': return this.unequip(cmd.slot) satisfies CmdResults['unequip'];
+      case 'equipVanity': return this.equipVanityFromInventory(cmd.slot, cmd.to) satisfies CmdResults['equipVanity'];
+      case 'unequipVanity': return this.unequipVanity(cmd.slot) satisfies CmdResults['unequipVanity'];
+      case 'hideArmor': return this.setHideArmor(cmd.slot, cmd.hide) satisfies CmdResults['hideArmor'];
+      case 'recolor': return this.recolorWorn(cmd.slot, cmd.tint) satisfies CmdResults['recolor'];
+      case 'bodyLook': return this.setBodyLook(cmd.look) satisfies CmdResults['bodyLook'];
+      case 'mirrorClose': return this.closeMirror() satisfies CmdResults['mirrorClose'];
+      case 'rebirth': return this.rebirth(cmd.race) satisfies CmdResults['rebirth'];
+      case 'lock': return this.toggleLock(cmd.at) satisfies CmdResults['lock'];
+      case 'salvage': return this.salvage(cmd.at) satisfies CmdResults['salvage'];
+      case 'salvageAll': return this.salvageAll(cmd.maxRarity) satisfies CmdResults['salvageAll'];
+      case 'reroll': return this.reroll(cmd.at, cmd.affix) satisfies CmdResults['reroll'];
+      case 'upgrade': return this.upgrade(cmd.at) satisfies CmdResults['upgrade'];
+      case 'ascend': return this.ascend(cmd.at) satisfies CmdResults['ascend'];
+      case 'deepforge': return this.deepforge(cmd.at, cmd.key) satisfies CmdResults['deepforge'];
+      case 'buy': return this.buy(cmd.npc, cmd.i) satisfies CmdResults['buy'];
+      case 'sell': return this.sell(cmd.npc, cmd.item, cmd.n) satisfies CmdResults['sell'];
+      case 'service': return this.service(cmd.npc) satisfies CmdResults['service'];
+      case 'residentService': return this.residentService(cmd.npc, cmd.svc) satisfies CmdResults['residentService'];
+      case 'folkBuy': return this.folkBuy(cmd.key, cmd.i) satisfies CmdResults['folkBuy'];
+      case 'folkSell': return this.folkSell(cmd.key, cmd.item, cmd.n) satisfies CmdResults['folkSell'];
+      case 'folkService': return this.folkService(cmd.key, cmd.svc) satisfies CmdResults['folkService'];
+      case 'acceptQuest': return this.acceptQuest(cmd.key, cmd.id) satisfies CmdResults['acceptQuest'];
+      case 'turnInQuest': return this.turnInQuest(cmd.id) satisfies CmdResults['turnInQuest'];
+      case 'refreshQuests': return this.refreshQuests() satisfies CmdResults['refreshQuests'];
+      case 'learnSkill': return this.learnSkill(cmd.id) satisfies CmdResults['learnSkill'];
+      case 'respec': return this.respecSkills() satisfies CmdResults['respec'];
+      case 'skill': return this.useSkillCur(cmd.skill) satisfies CmdResults['skill'];
+      case 'talk': return this.talkNearestCur() satisfies CmdResults['talk'];
+      case 'talkAt': return this.talkAtPxCur(cmd.px, cmd.py) satisfies CmdResults['talkAt'];
+      case 'travel': return this.travel(cmd.to) satisfies CmdResults['travel'];
+      case 'travelStone': return this.travelStone(cmd.to) satisfies CmdResults['travelStone'];
+      case 'spawnCore': return this.setSpawnCore(cmd.id) satisfies CmdResults['spawnCore'];
+      case 'marker': return this.toggleMarker(cmd.x, cmd.y) satisfies CmdResults['marker'];
+      default: { const never: never = cmd; throw new Error(`delve: unknown cmd ${(never as { op: string }).op}`); }
+    }
   }
   private aimOf(a: PlayerActor, tx: number, ty: number): void {
     const x = Math.floor(tx), y = Math.floor(ty);
@@ -2199,7 +2274,7 @@ export class DelveGame {
       this.inventory.remove('golden_key', 1);
       w.unlocked.add(w.idx(x, y));
       w.keysUsed++;
-      w.markModified(x, y);
+      w.touchChest(x, y);
       this.emit({ type: 'unlock', x, y, item: 'golden_key' });
     }
     if (this.openChest && this.openChest.x === x && this.openChest.y === y) return true;
@@ -2240,7 +2315,7 @@ export class DelveGame {
     const left = this.inventory.add(st.item, st.count, st.gear, st.tint);
     if (left === st.count) { this.block('mine', 'full', c.x, c.y); return false; }
     if (left > 0) st.count = left; else slots[i] = null;
-    this.world.markModified(c.x, c.y);
+    this.world.touchChest(c.x, c.y);
     return true;
   }
   /** 全部拿取，回傳拿到的道具總數 */
@@ -2267,7 +2342,7 @@ export class DelveGame {
       if (k < 0) return false;
       slots[k] = st;
       this.inventory.slots[invSlot] = null;
-      this.world.markModified(c.x, c.y);
+      this.world.touchChest(c.x, c.y);
       return true;
     }
     const max = ITEMS[st.item].maxStack;
@@ -2281,7 +2356,40 @@ export class DelveGame {
     }
     if (left === st.count) return false;
     if (left > 0) st.count = left; else this.inventory.slots[invSlot] = null;
-    this.world.markModified(c.x, c.y);
+    this.world.touchChest(c.x, c.y);
+    return true;
+  }
+
+  /**
+   * 丟出背包第 slot 格（co-op B7；作用在 cur）：n 省略 = 整格。掉落物從玩家中心往 facing 偏 TOSS_OFFSET px 生成、
+   * 往前上方飛（貼著牆時改從正中央往上拋，免得卡進牆）；丟的人 TOSS_OWNER_DELAY 秒內撿不回來，其他人立刻撿得到。帶詞條的裝備 / 時裝原樣丟出。
+   * 鎖定的裝備不能丟（blocked lockedtoss）；死亡、空格、n 不合法 → false。划船中也可以丟（只是背包動作）。
+   */
+  tossSlot(slot: number, n?: number): boolean {
+    if (this.dead || !Number.isInteger(slot) || slot < 0 || slot >= this.inventory.slots.length) return false;
+    const st = this.inventory.slots[slot];
+    if (!st) return false;
+    const k = n === undefined ? st.count : n;
+    if (!Number.isInteger(k) || k < 1 || k > st.count) return false;
+    if (st.gear?.locked) {
+      const t = this.playerTile();
+      this.block('use', 'lockedtoss', t.x, t.y);
+      return false;
+    }
+    const c = this.playerCenter(), f = this.facing, y = c.y;
+    let x = c.x + f * TOSS_OFFSET, vx = f * TOSS_VX;
+    // 貼著牆：往前偏的生成點會卡進牆裡（掉落物推不出來、凍住），改從玩家正中央往上拋、落在腳邊
+    if (overlapsSolid(this.env, x - ITEM_SIZE / 2, y - ITEM_SIZE / 2, ITEM_SIZE, ITEM_SIZE)) { x = c.x; vx = 0; }
+    const owner = { pid: this.cur.pid, delay: TOSS_OWNER_DELAY };
+    if (st.gear || st.tint) {
+      // 單件實例（count 1）：整格移到地上，gear 物件原樣交出
+      this.inventory.slots[slot] = null;
+      this.drops.spawn(st.item, 1, x, y, vx, -TOSS_VY, 0, st.gear, st.tint, owner);
+    } else {
+      this.inventory.takeFromSlot(slot, k);
+      this.drops.spawn(st.item, k, x, y, vx, -TOSS_VY, 0, undefined, undefined, owner);
+    }
+    this.emit({ type: 'toss', item: st.item, n: k, x, y });
     return true;
   }
 
@@ -3104,7 +3212,7 @@ export class DelveGame {
     const pickers: Picker[] = vs.map(({ a }) => {
       const inv = a.inventory;
       return {
-        body: a.player, magnetPx: this.withActor(a, () => this.magnetRadius()) * S, canPickup: !a.dead,
+        pid: a.pid, body: a.player, magnetPx: this.withActor(a, () => this.magnetRadius()) * S, canPickup: !a.dead,
         room: (item, n) => (inv.canAdd(item, n) ? n : inv.canAdd(item, 1) ? 1 : 0),
         take: (item, n, gear, tint) => n - inv.add(item, n, gear, tint),
       };
@@ -3626,7 +3734,7 @@ export class DelveGame {
           if (s0.count <= 0) slots[k] = null;
         }
         const { x: cxk, y: cyk } = this.world.tileXY(i);
-        this.world.markModified(cxk, cyk);
+        this.world.touchChest(cxk, cyk);
         if (need <= 0) break;
       }
     }

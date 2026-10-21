@@ -62,8 +62,14 @@ export function centerOf(b: { x: number; y: number; w: number; h: number }): { x
 }
 
 // ── 掉落物 ─────────────────────────────────────────────
-/** gear = 帶詞條的裝備；tint = 帶顏色的時裝（兩者都一件一個、不合併） */
-export interface DroppedItem { id: number; item: ItemId; count: number; body: Body; age: number; pickDelay: number; grabbed: boolean; gear?: Gear; tint?: Tint; }
+/**
+ * gear = 帶詞條的裝備；tint = 帶顏色的時裝（兩者都一件一個、不合併）。
+ * owner / ownerDelay = 玩家丟出的（tossSlot）：丟的人 ownerDelay 秒內撿不回來、也吸不過去，其他人照常撿。
+ * 只有丟出的才有這兩個鍵；倒數完就刪掉（之後當一般掉落物）。不存檔。
+ */
+export interface DroppedItem { id: number; item: ItemId; count: number; body: Body; age: number; pickDelay: number; grabbed: boolean; gear?: Gear; tint?: Tint; owner?: string; ownerDelay?: number; }
+/** 丟出的人與他的撿取延遲（秒） */
+export interface TossOwner { pid: string; delay: number; }
 export const ITEM_SIZE = 10;
 /** 玩家 AABB 往外擴張多少 px 算「碰到」 */
 export const PICKUP_GRAB_PX = 14;
@@ -86,6 +92,8 @@ export interface Picker {
   magnetPx: number;
   /** 玩家死亡時不撿 */
   canPickup: boolean;
+  /** 玩家 id：自己丟出、還在倒數的掉落物略過他 */
+  pid?: string;
 }
 
 export interface PickupHost {
@@ -99,15 +107,22 @@ export class DropList {
   readonly list: DroppedItem[] = [];
   private nextId = 1;
 
-  /** 在 (x,y)（px，中心）丟出一堆道具；同種靜止的堆就近合併（帶詞條的裝備 / 帶顏色的時裝不合併、一件一個） */
-  spawn(item: ItemId, count: number, x: number, y: number, vx = 0, vy = -120, pickDelay = 0, gear?: Gear, tint?: Tint): DroppedItem | null {
+  /**
+   * 在 (x,y)（px，中心）丟出一堆道具；同種靜止的堆就近合併（帶詞條的裝備 / 帶顏色的時裝不合併、一件一個）。
+   * owner = 玩家丟出的：帶 owner 的堆只跟同一個 owner 的堆合併（併進去時倒數取較長的），一般掉落物照舊互相合併。
+   */
+  spawn(item: ItemId, count: number, x: number, y: number, vx = 0, vy = -120, pickDelay = 0, gear?: Gear, tint?: Tint, owner?: TossOwner): DroppedItem | null {
     if (count <= 0) return null;
     const max = ITEMS[item].maxStack;
+    const mark = (d: DroppedItem): DroppedItem => {
+      if (owner) { d.owner = owner.pid; d.ownerDelay = owner.delay; }
+      return d;
+    };
     if (gear || tint) {
-      const d: DroppedItem = {
+      const d: DroppedItem = mark({
         id: this.nextId++, item, count: 1, age: 0, pickDelay, grabbed: false,
         body: { x: x - ITEM_SIZE / 2, y: y - ITEM_SIZE / 2, w: ITEM_SIZE, h: ITEM_SIZE, vx, vy, onGround: false, gfxOffY: 0 },
-      };
+      });
       if (gear) d.gear = gear;
       if (tint) d.tint = cloneTint(tint);
       this.list.push(d);
@@ -115,11 +130,12 @@ export class DropList {
       return d;
     }
     for (const d of this.list) {
-      if (d.item !== item || d.count >= max || d.grabbed || d.gear || d.tint) continue;
+      if (d.item !== item || d.count >= max || d.grabbed || d.gear || d.tint || d.owner !== owner?.pid) continue;
       const c = centerOf(d.body);
       if (Math.abs(c.x - x) < MERGE_PX && Math.abs(c.y - y) < MERGE_PX) {
         const k = Math.min(count, max - d.count);
         d.count += k; count -= k;
+        if (owner) d.ownerDelay = Math.max(d.ownerDelay ?? 0, owner.delay);
         if (count <= 0) return d;
       }
     }
@@ -127,10 +143,10 @@ export class DropList {
     while (count > 0) {
       const k = Math.min(count, max);
       count -= k;
-      last = {
+      last = mark({
         id: this.nextId++, item, count: k, age: 0, pickDelay, grabbed: false,
         body: { x: x - ITEM_SIZE / 2, y: y - ITEM_SIZE / 2, w: ITEM_SIZE, h: ITEM_SIZE, vx, vy, onGround: false, gfxOffY: 0 },
-      };
+      });
       this.list.push(last);
     }
     while (this.list.length > MAX_DROPS) this.list.shift();
@@ -139,7 +155,8 @@ export class DropList {
 
   /**
    * 每步：物理（彈跳）→ 吸取 → 撿起。每個掉落物只歸一個人：距離最近、活著、背包收得下的那個玩家吸 / 撿
-   * （距離相同取 pickers 順序在前的）。回傳這步撿到的 [item, n, gear, tint, picker 的索引]。
+   * （距離相同取 pickers 順序在前的）；丟出的人在 ownerDelay 倒數完之前不算（撿不到也吸不到）。
+   * 回傳這步撿到的 [item, n, gear, tint, picker 的索引]。
    */
   step(q: PhysEnv, host: PickupHost, dt: number): [ItemId, number, Gear | undefined, Tint | undefined, number][] {
     const got: [ItemId, number, Gear | undefined, Tint | undefined, number][] = [];
@@ -160,12 +177,17 @@ export class DropList {
       if (!near) continue;
       d.age += dt;
       if (d.pickDelay > 0) d.pickDelay -= dt;
+      if (d.ownerDelay !== undefined) {
+        d.ownerDelay -= dt;
+        if (d.ownerDelay <= 0) { delete d.owner; delete d.ownerDelay; }
+      }
       // 歸誰：最近的、可以撿的人
       let k = -1, r2 = Infinity, dx = 0, dy = 0;
       if (d.pickDelay <= 0) {
         for (let j = 0; j < ps.length; j++) {
           const p = ps[j];
           if (!p.pk.canPickup) continue;
+          if (d.owner !== undefined && p.pk.pid === d.owner) continue; // 自己丟的、還在倒數（倒數完 owner 就刪了）
           const ex = p.cx - bx, ey = p.cy - by, e2 = ex * ex + ey * ey;
           if (e2 >= r2 || p.pk.room(d.item, 1) <= 0) continue;
           k = j; r2 = e2; dx = ex; dy = ey;

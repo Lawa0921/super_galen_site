@@ -202,7 +202,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       else if (stoneUi.closeTop()) { /* 傳送碑面板 */ }
       else if (folkUi.closeTop()) { /* NPC 面板 / 委託清單 */ }
       else if (hud.confirmOpen) hud.cancelConfirm();
-      else if (game.openChest) game.closeChest();
+      else if (game.openChest) game.act({ op: 'chestClose' });
       else if (hud.forgeOpen) hud.setForge(null);
       else if (ui.journalOpen) ui.setJournal(false);
       else if (calendar.isOpen) calendar.setOpen(false);
@@ -215,7 +215,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
     onHousing: () => { if (!menuPaused && !fullmap.isOpen) settleUi.toggleHousing(); },
     onSettle: () => { if (!menuPaused && !fullmap.isOpen) { if (ui.journalOpen) ui.setJournal(false); settleUi.toggleSettle(); } },
     onQuests: () => { if (!menuPaused && !fullmap.isOpen) { if (ui.journalOpen) ui.setJournal(false); folkUi.toggleQuests(); } },
-    onTalk: () => { if (!menuPaused && !fullmap.isOpen && !game.talkNearest()) hud.toast('附近沒有可以說話的人（靠近 NPC 再按 T）', 1600); },
+    onTalk: () => { if (!menuPaused && !fullmap.isOpen && !game.act({ op: 'talk' })) hud.toast('附近沒有可以說話的人（靠近 NPC 再按 T）', 1600); },
     onZoom: zoom,
     isBlocked: () => paused,
   });
@@ -304,6 +304,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
           invChanged = true;
         }
         else if (e.type === 'eat') { sound.munch(); invChanged = true; }
+        else if (e.type === 'toss') invChanged = true;
         else if (e.type === 'pickup') {
           if (e.rarity !== undefined) {
             sound.lootPickup(e.rarity);
