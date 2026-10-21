@@ -11,6 +11,7 @@ import { STORY_FIGHT_ROUNDS } from '../../engine/battle';
 import { LEGACY_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
+import { RUNE_SLOT_LEVELS } from '../../data/runes';
 import { CHARACTERS } from '../../data/characters';
 import { SHARD_NAMES } from '../../data/story/fragments';
 import { FINALE_DEPTH } from '../../data/story/scenes';
@@ -835,6 +836,7 @@ describe('BattleScene loot and stat cues', () => {
     try {
       const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
       game.state.dungeon.reached.iron = 5;
+      game.state.runeTutorialSeen = true;   // the rune tutorial after this result has its own tests (plan 8g Task 6)
       expect(game.depart({ region: 'iron', condition: 'plain' }, 5)).toEqual({ ok: true });
       const at = game.map().boss!;
       const from = [[0, 1], [0, -1], [1, 0], [-1, 0]].map(([dx, dy]) => ({ x: at.x + dx, y: at.y + dy })).find((p) => game.map().tiles[p.y]?.[p.x] === 'floor')!;
@@ -1202,5 +1204,66 @@ describe('BattleScene empty resources (plan 8c)', () => {
     const s = makeBattle([makeCombatant({ key: 'liz', side: 'party', defId: 'liz', mech: { kind: 'coins', coins: 0 }, ranks: { ...party.roster.liz.tree }, tp: 99, max: { hp: 100, tp: 99, atk: 20, def: 20, mag: 20, res: 20, spd: 10 } })],
       [makeCombatant({ key: 'e0', side: 'enemy' })]);
     expect(choose(s, party, { liz: [{ kind: 'spend-at', gauge: 'coins', min: 0, skill: 'jackpot' }] }).liz).not.toMatchObject({ skill: 'jackpot' });
+  });
+});
+
+describe('BattleScene: the rune tutorial (plan 8g Task 6)', () => {
+  const instant: Partial<SceneCtx> = { settings: { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' }) } };
+  const pages = () => T.rune.tutorial(RUNE_SLOT_LEVELS, T.ui2.guild.workshop, T.ui2.dungeon.workshop);
+  const spread = { id: 'spread' as const, tier: 'magic' as const };
+  /** The next round wins, with these runes found. */
+  const winWith = (game: Game, runes?: (typeof spread)[]) => {
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], ...(runes ? { runes } : {}) };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+  };
+  const fight = async (s: BattleScene) => { for (let i = 0; i < 5; i++) s.onAction('down'); s.onAction('confirm'); await flush(); };
+  const said = (root: HTMLElement) => root.querySelector('.slx-talk .slx-text')!.textContent;
+  const talkHidden = (root: HTMLElement) => root.querySelector('.slx-talk')!.hasAttribute('hidden');
+
+  it('the first rune found plays the rune tutorial once', async () => {
+    for (const extra of [instant, { ...instant, fast: true }]) {
+      const { game, go, s, root } = setup(undefined, extra);
+      winWith(game, [spread]);
+      await fight(s);
+      s.onAction('confirm');                                                 // 繼續
+      await flush();
+      expect(go).not.toHaveBeenCalled();
+      expect((root.querySelector('.slx-result') as HTMLElement).hidden).toBe(true);
+      expect(root.querySelector('.slx-talk .slx-name')!.hasAttribute('hidden')).toBe(true);   // narration: no name
+      const seen: string[] = [];
+      for (let i = 0; i < 10 && !talkHidden(root); i++) { seen.push(said(root)!); s.onAction('confirm'); await flush(); }
+      expect(seen).toEqual(pages());
+      expect(game.state.runeTutorialSeen).toBe(true);
+      expect(go).toHaveBeenCalledWith('dungeon');
+    }
+    // The next rune found: no tutorial.
+    const again = setup((g) => { g.state.runeTutorialSeen = true; }, instant);
+    winWith(again.game, [spread]);
+    await fight(again.s);
+    again.s.onAction('confirm');
+    expect(again.go).toHaveBeenCalledWith('dungeon');
+    expect(talkHidden(again.root)).toBe(true);
+  });
+
+  it('no rune, no tutorial', async () => {
+    const { game, go, s, root } = setup(undefined, instant);
+    winWith(game);
+    await fight(s);
+    s.onAction('confirm');
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(talkHidden(root)).toBe(true);
+    expect(game.state.runeTutorialSeen).toBeUndefined();
+  });
+
+  it('the tutorial names the slot levels it is given, never typed in', () => {
+    const say = (levels: readonly number[]) => T.rune.tutorial(levels, T.ui2.guild.workshop, T.ui2.dungeon.workshop).join('');
+    for (const n of RUNE_SLOT_LEVELS) expect(say(RUNE_SLOT_LEVELS)).toContain(String(n));
+    const moved = say([6, 21, 36]);
+    for (const n of [6, 21, 36]) expect(moved).toContain(String(n));
+    for (const n of RUNE_SLOT_LEVELS) expect(moved).not.toContain(`${n}`);
+    expect(say(RUNE_SLOT_LEVELS)).toContain(T.ui2.guild.workshop);
+    const pages = T.rune.tutorial(RUNE_SLOT_LEVELS, T.ui2.guild.workshop, T.ui2.dungeon.workshop);
+    expect(pages.length).toBeGreaterThanOrEqual(3);
+    expect(pages.length).toBeLessThanOrEqual(4);
   });
 });

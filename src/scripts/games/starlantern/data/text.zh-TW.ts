@@ -882,6 +882,17 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     /** After 常駐's sentence on a barrier skill (plan 8e Task 7). */
     lastingBarrier: '再施放一次會換掉它。',
     /**
+     * The rune tutorial (plan 8g Task 6), told once by the narrator: after the battle that first gave a rune, or on the first
+     * workshop visit of a player who already holds one. `levels` are RUNE_SLOT_LEVELS; `town` and `field` name the guild's
+     * and the field menu's 技能工坊.
+     */
+    tutorial: (levels: readonly number[], town: string, field: string): string[] => [
+      '你得到了符文！符文會改變一招「怎麼打」：單體變全體、一段變多段，或加上異常與觸發。',
+      `每一招都有插槽：角色在 Lv ${levels.join('／')} 時各開一格。`,
+      `到公會的「${town}」或迷宮選單的「${field}」把符文裝上；裝之前就會看到這一招之前 → 之後的數字。`,
+      '戰鬥外隨時都能免費拆下、換到別招或別人身上，符文不會壞，也不會不見。',
+    ],
+    /**
      * What else a rune says on this skill (plan 8g ruling 15): the ailment the skill already has, at its own chance, and
      * the ailment 餘波 brings on this skill's element.
      */

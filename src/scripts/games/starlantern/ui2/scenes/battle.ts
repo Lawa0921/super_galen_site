@@ -20,7 +20,7 @@ import { battleLines, fragmentLines, levelUpLines } from '../battleText';
 import { fragmentItem } from '../../engine/story/fragments';
 import { gearIconUrl } from '../gearArt';
 import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
-import { RUNE_STACK } from '../../data/runes';
+import { RUNE_SLOT_LEVELS, RUNE_STACK } from '../../data/runes';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
@@ -75,6 +75,8 @@ export class BattleScene implements Scene {
   private talk: Dialogue;
   /** The memory scene on screen, if any: it takes the actions while it plays. */
   private playing: ReturnType<typeof playAndRecord> | null = null;
+  /** The rune tutorial is on screen (plan 8g Task 6): the dialogue takes the actions. */
+  private tutoring = false;
 
   constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
     this.bar = new PartyBar(ctx.art);
@@ -115,6 +117,7 @@ export class BattleScene implements Scene {
 
   onAction(a: UiAction): void {
     if (this.playing) { this.playing.onAction(a); return; }
+    if (this.tutoring) { this.talk.onAction(a); return; }
     if (this.busy) return;
     // Confirm or cancel ends a legendary drop's moment first (fast mode never waits on it).
     if (!this.ctx.fast && skipPillar(this.body, a)) return;
@@ -559,6 +562,20 @@ export class BattleScene implements Scene {
     }
   }
 
+  /** The rune tutorial, told by the narrator with the result window out of the way; once read, its flag is set. */
+  private async runeTutorial(): Promise<void> {
+    const box = this.body.querySelector<HTMLElement>('.slx-result');
+    if (box) box.hidden = true;
+    this.talk.setStyle('plain');
+    this.tutoring = true;
+    try {
+      for (const line of T.rune.tutorial(RUNE_SLOT_LEVELS, T.ui2.guild.workshop, T.ui2.dungeon.workshop)) await this.talk.say('', line);
+    } finally {
+      this.tutoring = false;
+    }
+    this.ctx.game.seeRuneTutorial();
+  }
+
   private leave(): void {
     this.ctx.go(this.ctx.game.phase === 'clear' ? 'clear' : 'dungeon');
   }
@@ -617,8 +634,10 @@ export class BattleScene implements Scene {
         this.ctx.sfx.confirm();
         if (end.outcome === 'lose') { this.ctx.go('town'); return; }
         const scenes = this.memoriesToPlay(end);
-        if (scenes.length === 0) { this.leave(); return; }
-        void this.playMemories(scenes).then(() => this.leave());
+        // The battle that first gave a rune tells the rune tutorial once, after its memories (plan 8g ruling 13).
+        const tutorial = !!end.runes?.length && !this.ctx.game.state.runeTutorialSeen;
+        if (scenes.length === 0 && !tutorial) { this.leave(); return; }
+        void this.playMemories(scenes).then(() => (tutorial ? this.runeTutorial() : undefined)).then(() => this.leave());
       },
     });
     // A held or repeated key must not skip the rewards: accept input after a short beat.

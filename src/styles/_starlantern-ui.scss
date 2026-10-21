@@ -1222,6 +1222,8 @@ $slx-starlit: #bff6ff;
 // The skill workshop (plan 8g Task 4a), left to right: the member's skills with their slot dots, the card (before and
 // after a rune, its body scrolling under ▲/▼ above a foot that always shows), the slots or the runes for one.
 .slx-workshop .slx-keyhint { bottom: 4px; }
+// The narrator's box over a battle (a memory, the rune tutorial) sits above the party bar's gauges.
+.slx-battle > .slx-talk { z-index: 10; }
 .slx-workshop > .slx-back { right: 10px; top: auto; bottom: 4px; }
 .slx-ws-head { left: 8px; top: 6px; right: 8px; display: flex; align-items: center; gap: 8px; padding: 2px 8px; }
 .slx-ws-name { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }

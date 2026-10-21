@@ -10,8 +10,10 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
+import type { GameState } from '../../engine/state';
 import { cardOf, compareCards, previewOf, reserveLine, runeChoices, slotDots, slotStates, type Card, type RuneAction, type RuneChoice } from '../skillCard';
-import { MenuView, backControl, win } from '../widgets';
+import { textCps } from '../settings';
+import { Dialogue, MenuView, backControl, win } from '../widgets';
 import { cueFrame, updateCues } from './statusTabs';
 
 const W = T.ui2.workshop;
@@ -25,6 +27,9 @@ const SKILL_ROWS = 13;
 const RUNE_ROWS = 12;
 
 const label = (r: RuneRef): string => T.rune.label(r.id, r.tier);
+/** Whether the player holds any rune: in the bag, or in anyone's slot. */
+const holdsRune = (s: GameState): boolean => Object.values(s.runes ?? {}).some((n) => n > 0)
+  || Object.values(s.party.roster).some((m) => Object.values(m.sockets ?? {}).some((cells) => cells.some((c) => c !== null)));
 /** A rune row's id: `bag:<key>`, or `move:<member>:<skill>:<slot>` for a rune in someone's slot. */
 const rowOf = (c: RuneChoice): string =>
   (c.source.kind === 'bag' ? `bag:${runeKey(c.source.ref)}` : `move:${c.source.at.id}:${c.source.at.skill}:${c.source.at.slot}`);
@@ -80,6 +85,11 @@ export class WorkshopScene implements Scene {
   private footMsg!: HTMLElement;
   private slotsWin!: HTMLElement;
   private skillView: MenuView | null = null;
+  private backEl!: HTMLElement;
+  /** The narrator's box for the rune tutorial (plan 8g Task 6); hidden unless it plays. */
+  private talk!: Dialogue;
+  /** The tutorial's pages still to come while it plays (it takes the keys); null when it is not playing. */
+  private tutorial: string[] | null = null;
   private skillKey = '';
   private runeView: MenuView | null = null;
   private runeKeyOf = '';
@@ -103,17 +113,43 @@ export class WorkshopScene implements Scene {
       el('div', { class: 'slx-ws-foot', attrs: { role: 'status', 'aria-live': 'polite' } }, [this.footWhy, this.footMsg]),
     ]);
     this.slotsWin = win('slx-ws-slots');
+    this.backEl = backControl(() => this.onAction('cancel'));
+    // A dismissed page brings up the next at once (synchronously), so the keys never reach the screen in between.
+    this.talk = new Dialogue(textCps(this.ctx), () => this.nextPage());
     this.sceneEl = el('div', { class: 'slx-scene slx-workshop' }, [
       this.head, this.skillsWin, this.cardWin, this.slotsWin,
-      el('p', { class: 'slx-keyhint', text: W.hint }), backControl(() => this.onAction('cancel')),
+      el('p', { class: 'slx-keyhint', text: W.hint }), this.backEl, this.talk.el,
     ]);
     root.append(this.sceneEl);
     this.render();
+    // A player who already holds runes and has never read the rune tutorial reads it here first (plan 8g ruling 13).
+    if (!this.game.state.runeTutorialSeen && holdsRune(this.game.state)) {
+      this.tutorial = T.rune.tutorial(RUNE_SLOT_LEVELS, T.ui2.guild.workshop, T.ui2.dungeon.workshop);
+      this.lock(true);
+      this.nextPage();
+    }
   }
 
-  exit(): void {}
+  /** The tutorial's next page, or once it is read, the flag (saved at once in town) and the screen back. */
+  private nextPage(): void {
+    if (!this.tutorial) return;
+    const line = this.tutorial.shift();
+    if (line !== undefined) { void this.talk.say('', line); return; }
+    this.tutorial = null;
+    this.lock(false);
+    this.game.seeRuneTutorial();
+    this.render();
+  }
+
+  /** While the tutorial plays, the windows and 返回 under it take no pointer. */
+  private lock(on: boolean): void {
+    for (const w of [this.head, this.skillsWin, this.cardWin, this.slotsWin, this.backEl]) w.toggleAttribute('inert', on);
+  }
+
+  exit(): void { this.talk.stop(); }
 
   onAction(a: UiAction): void {
+    if (this.tutorial) { this.talk.onAction(a); return; }
     this.armed = '';
     if (a !== 'confirm') { this.refused = ''; }
     switch (a) {

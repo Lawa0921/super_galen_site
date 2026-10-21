@@ -3492,8 +3492,23 @@ test.describe('starlantern', () => {
       expect([box.x >= 0, box.y >= 0, box.x + box.width <= vw + 0.5, box.y + box.height <= vh + 0.5], `the result inside ${vw}x${vh}`).toEqual([true, true, true, true]);
       await expect(rune).toHaveCount(1);
     }
-    await w.key('Enter');
+    await w.key('Enter');                                   // 繼續: the first rune's tutorial, told once by the narrator (plan 8g)
+    const talk = page.locator('.slx-battle .slx-talk');
+    await expect(talk).toBeVisible();
+    await expect(talk.locator('.slx-text')).toContainText('你得到了符文');
+    await w.key('z');                                       // the first page whole (a key finishes the typing)
+    await expect(talk.locator('.slx-next')).toBeVisible();
+    for (const [vw, vh] of [[390, 844], [1280, 720]] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      await page.waitForTimeout(150);
+      const screen = (await page.locator('.slx-screen').boundingBox())!;
+      const box = (await talk.boundingBox())!;
+      expect([box.x >= screen.x - 0.5, box.y >= screen.y - 0.5, box.x + box.width <= screen.x + screen.width + 0.5, box.y + box.height <= screen.y + screen.height + 0.5], `the tutorial inside the stage at ${vw}`).toEqual([true, true, true, true]);
+      if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/rune-tutorial-${vw}.png` });
+    }
+    for (let i = 0; i < 12 && (await talk.isVisible()); i++) await w.key('z');
     await expect(page.locator('.slx-dungeon')).toBeVisible();
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runeTutorialSeen)).toBe(true);
     await expect(page.locator('.slx-loot-rune')).toHaveCount(0);   // told on the result alone, not again on the map
     expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runes)).toEqual({ 'spread@magic': 1 });
     expect(w.errors).toEqual([]);
@@ -3601,7 +3616,8 @@ test.describe('starlantern', () => {
       await page.setViewportSize({ width: vw, height: vh });
       await page.waitForTimeout(150);
       const screen = await page.locator('.slx-screen').boundingBox();
-      for (const box of await page.locator('.slx-workshop .slx-win').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, c: e.className }; }))) {
+      // Every window on screen (the tutorial's box is there but hidden unless it plays).
+      for (const box of await page.locator('.slx-workshop .slx-win:not([hidden])').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, c: e.className }; }))) {
         expect(box.x, `${box.c} at ${vw}`).toBeGreaterThanOrEqual(screen!.x - 0.5);
         expect(box.y, `${box.c} at ${vw}`).toBeGreaterThanOrEqual(screen!.y - 0.5);
         expect(box.x + box.w, `${box.c} at ${vw}`).toBeLessThanOrEqual(screen!.x + screen!.width + 0.5);
@@ -3621,6 +3637,7 @@ test.describe('starlantern', () => {
       await page.evaluate(() => {
         const s = (window as unknown as Dbg).__starlanternDebug.game.state;
         s.runesOpen = true;
+        s.runeTutorialSeen = true;   // read already: the tutorial has its own test
         s.runes = { 'spread@magic': 1 };
         s.party.recruited = [...s.party.recruited, 'noel'];
         s.party.roster.noel = { ...s.party.roster.noel, level: 20, tree: { 'fire-star': 1 } };
@@ -3665,6 +3682,7 @@ test.describe('starlantern', () => {
       await page.evaluate(() => {
         const s = (window as unknown as Dbg).__starlanternDebug.game.state;
         s.runesOpen = true;
+        s.runeTutorialSeen = true;   // read already: the tutorial has its own test
         s.runes = { 'thrift@magic': 1 };
         s.party.recruited = [...s.party.recruited, 'chizuru', 'sylvie'];
         s.party.roster.chizuru = {
@@ -3720,6 +3738,7 @@ test.describe('starlantern', () => {
       await page.evaluate(() => {
         const s = (window as unknown as Dbg).__starlanternDebug.game.state;
         s.runesOpen = true;
+        s.runeTutorialSeen = true;   // read already: the tutorial has its own test
         s.runes = { 'spread@magic': 1 };
         s.party.recruited = [...s.party.recruited, 'noel', 'sylvie'];
         s.party.roster.noel = { ...s.party.roster.noel, level: 20, tree: { 'fire-star': 1 } };
@@ -3764,6 +3783,7 @@ test.describe('starlantern', () => {
       await page.evaluate(() => {
         const s = (window as unknown as Dbg).__starlanternDebug.game.state;
         s.runesOpen = true;
+        s.runeTutorialSeen = true;   // read already: the tutorial has its own test
         s.party.recruited = [...s.party.recruited, 'noel'];
         s.party.roster.noel = { ...s.party.roster.noel, level: 20, tree: { 'fire-star': 1 }, sockets: { 'fire-star': [{ id: 'spread', tier: 'magic' }] } };
       });

@@ -16,6 +16,7 @@ import { NO_ART } from '../../render/textures';
 import type { SceneName } from '../scene';
 import { reserveLine } from '../skillCard';
 import { WorkshopScene } from './workshop';
+import { DEFAULT_SETTINGS } from '../settings';
 
 const W = T.ui2.workshop;
 const R = (id: RuneRef['id'], tier: RuneRef['tier'] = 'magic'): RuneRef => ({ id, tier });
@@ -30,7 +31,9 @@ function setup(prep: (g: Game) => void, arg?: string, from: SceneName = 'guild')
   const go = vi.fn();
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
   const root = document.createElement('div');
-  const s = new WorkshopScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), from, arg });
+  // Lines show whole at once (the tutorial's pages), as the instant text setting has them.
+  const settings = { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' as const }) } as never;
+  const s = new WorkshopScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), from, arg, settings });
   s.enter(root);
   const press = (...as: Parameters<WorkshopScene['onAction']>[0][]) => as.forEach((a) => s.onAction(a));
   const focus = () => root.querySelector<HTMLElement>('.slx-workshop')!.dataset.focus;
@@ -50,7 +53,10 @@ const noel = (level: number, runes: Record<string, number>, tree: Record<string,
   g.state.party.roster.noel = { ...g.state.party.roster.noel, level, tree };
   g.state.runesOpen = true;
   g.state.runes = runes;
+  g.state.runeTutorialSeen = true;   // the rune tutorial read already (plan 8g Task 6 has its own tests)
 };
+/** As `noel`, for a player who has not read the rune tutorial yet. */
+const fresh = (level: number, runes: Record<string, number>) => (g: Game) => { noel(level, runes)(g); delete g.state.runeTutorialSeen; };
 
 describe('WorkshopScene (plan 8g Task 4a)', () => {
   it('opens on the member and skill it was given', () => {
@@ -358,5 +364,34 @@ describe('WorkshopScene: moves, mouse and touch (plan 8g Task 4b)', () => {
     // To a member with fewer skills and back: nothing breaks.
     w.press('cancel', 'cancel', 'next', 'prev', 'confirm', 'confirm');
     inList(w);
+  });
+});
+
+describe('WorkshopScene: the rune tutorial (plan 8g Task 6)', () => {
+  const pages = () => T.rune.tutorial(RUNE_SLOT_LEVELS, T.ui2.guild.workshop, T.ui2.dungeon.workshop);
+  const talk = (w: ReturnType<typeof setup>) => w.root.querySelector<HTMLElement>('.slx-workshop .slx-talk')!;
+
+  it('a player who already has runes sees the tutorial on the first visit', () => {
+    // A rune in the bag (or in a slot) and no flag yet: the tutorial plays first, and takes the keys.
+    const w = setup(fresh(20, { 'spread@magic': 1 }), 'noel:fire-star');
+    expect(talk(w).hidden).toBe(false);
+    expect(w.root.querySelector('.slx-ws-skills')!.hasAttribute('inert')).toBe(true);
+    const seen: string[] = [];
+    for (let i = 0; i < 10 && !talk(w).hidden; i++) { seen.push(talk(w).querySelector('.slx-text')!.textContent!); w.press('confirm'); }
+    expect(seen).toEqual(pages());
+    expect(w.focus()).toBe('skills');                                     // the keys went to the tutorial, not the screen
+    expect(w.game.state.runeTutorialSeen).toBe(true);
+    expect(JSON.parse(w.storage.getItem(SAVE_KEY)!).runeTutorialSeen).toBe(true);   // town: saved at once
+    expect(w.root.querySelector('.slx-ws-skills')!.hasAttribute('inert')).toBe(false);
+    // The second visit: no tutorial.
+    const again = setup(noel(20, { 'spread@magic': 1 }), 'noel:fire-star');
+    expect(talk(again).hidden).toBe(true);
+    // Only a socketed rune counts too.
+    const socketed = setup((g) => { fresh(20, {})(g); g.state.party.roster.noel.sockets = { 'fire-star': [R('spread')] }; }, 'noel:fire-star');
+    expect(talk(socketed).hidden).toBe(false);
+    // No rune at all: no tutorial, no flag.
+    const none = setup(fresh(20, {}), 'noel:fire-star');
+    expect(talk(none).hidden).toBe(true);
+    expect(none.game.state.runeTutorialSeen).toBeUndefined();
   });
 });
