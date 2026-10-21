@@ -41,8 +41,11 @@ export type Effect =
   | { kind: 'tune-up'; levels: number; turns: number }
   /** Fire, ice and thunder all strike the target as a weakness for `turns` rounds (Noel's hex, plan 8c). */
   | { kind: 'expose'; turns: number }
-  /** The caster's mark moves onto the target (Rin's mark, engine/mechanics/mark.ts). */
-  | { kind: 'mark' }
+  /**
+   * The caster's mark moves onto the target (Rin's mark, engine/mechanics/mark.ts). `critPct`: her crits on it hit that
+   * much harder (不眨眼); `hops`: times a fight the mark jumps to the next foe when its foe falls (轉印). Plan 8d.
+   */
+  | { kind: 'mark'; critPct?: number; hops?: number }
   /** The caster is passed over by single attacks for `turns` round ends, and her next landed hit crits (Rin's veil). */
   | { kind: 'veil'; turns: number }
   /** A barrier over the party, replacing any other (Chizuru, engine/mechanics/barrier.ts): a guard's percent, or a purifying heal's power. */
@@ -90,7 +93,15 @@ export interface SkillDef {
  * Rules a variant node changes on a skill as a whole (plan 8d ruling 7): each task adds its fields; `patchSkill` merges
  * them key by key and copies the ones that belong to one effect onto that effect.
  */
-export interface SkillRules {}
+export interface SkillRules {
+  /** Heat a fire or thunder skill adds, in place of 1 (Noel's 重星). */
+  heat?: number;
+  /** Copied onto the skill's mark effect as `critPct` / `hops` (Rin's 不眨眼 / 轉印). */
+  markCritPct?: number;
+  markHops?: number;
+  /** More 還有。 a round when this skill fells her mark (Rin's 追命). */
+  again?: number;
+}
 export interface UltimateDef {
   id: string; name: string; owner: CharacterId; target: Target; effects: Effect[]; desc: string;
   /** After the blow lands: more effects on the living party (`allies`) or on the living hero (`hero`). */

@@ -314,7 +314,7 @@ describe('skills and passives', () => {
     }
   });
   it('a level-up spends no point: the tree and the talents stay as the player left them', () => {
-    const own = { ...newMember('noel'), level: 2, tree: { 'fire-star': 1, 'noel-fire-up': 1 } };
+    const own = { ...newMember('noel'), level: 2, tree: { 'fire-star': 1, 'noel-star-twin': 1 } };
     const r = gainExp(own, expToNext(2)).member;   // Lv3: one point left
     expect(r.level).toBe(3);
     expect(r.tree).toEqual(own.tree);

@@ -22,7 +22,7 @@ import { COINS } from './mechanics/coins';
 import { payHp } from './mechanics/embers';
 import { echoDef, echoOf } from './mechanics/echo';
 import { T } from '../data/text.zh-TW';
-import { keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
+import { isInnate, keystonesOf, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
@@ -373,8 +373,9 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     }
     case 'skill': {
       // A member casts only what their tree has learned (a whole rank of the skill's own node, read as progression reads
-      // a tree); a combatant without ranks (tests) casts anything. The lost turn is logged, as one short of TP is.
-      if (actor.ranks && skillRank(actor.ranks, act.skill) === 0) { s.log.push({ type: 'no-skill', actor: actor.key }); return null; }
+      // a tree) or knows innately (Rin's mark); a combatant without ranks (tests) casts anything. The lost turn is logged,
+      // as one short of TP is.
+      if (actor.ranks && skillRank(actor.ranks, act.skill) === 0 && !isInnate(actor.defId, act.skill)) { s.log.push({ type: 'no-skill', actor: actor.key }); return null; }
       let def = skillFor(actor, act.skill);
       if (!def || def.passive) return null;
       // The abyss capstones grow with the fight's depth, after the tree and the worn powers have had their say.
@@ -564,12 +565,14 @@ export function resolveRound(prev: BattleState, actions: Record<string, Action>,
       if (actor.side === 'party') {
         const own = act as Action;
         afterAction(s, actor, own, def, ctx);
-        // A mechanic may grant one more action at once (Rin's 還有。); it fills no gauge.
-        const again = extraAction(s, actor, own, ctx, seen);
-        if (again) {
+        // A mechanic may grant more actions at once (Rin's 還有。, and with 追命 one after another); they fill no gauge.
+        let again = extraAction(s, actor, own, ctx, seen);
+        while (again) {
+          const seen2 = watchAction(s, actor);
           const def2 = perform(s, actor, again, ctx, rng);
           delete ctx.redirect;
           afterAction(s, actor, again, def2, ctx);
+          again = extraAction(s, actor, again, ctx, seen2);
         }
       }
     }

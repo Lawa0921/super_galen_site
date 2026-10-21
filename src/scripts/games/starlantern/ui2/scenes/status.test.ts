@@ -5,7 +5,7 @@ import { newMember, statsOf, LEGACY_LINEUP } from '../../engine/party';
 import type { AnyStat } from '../../engine/types';
 import { STAT_CATEGORIES } from '../../engine/stats';
 import { raiseTalent } from '../../engine/progression';
-import { constRng, noelTreeFixture, plainItem } from '../../engine/testing';
+import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView } from './statusTabs';
@@ -13,7 +13,7 @@ import { StatusScene } from './status';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
-import { NODES, TREES } from '../../data/trees';
+import { NODES, TREES, branchNodes } from '../../data/trees';
 import { BOARDS, KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE } from '../../data/talents';
 
 /** A shown number back to a number: the minus sign reads as a minus. */
@@ -487,19 +487,28 @@ describe('StatusScene', () => {
     expect(root.querySelector('[data-skill=fire-star] .slx-skill-rank')!.textContent).toBe('1／3');
     expect(body()).not.toContain('冰之星彈');
     expect(root.querySelector('[data-skill=ice-star]')).toBeNull();
-    game.state.party.roster.noel.tree = { 'fire-star': 2, 'ice-star': 1, 'noel-fire-up': 1 };
+    game.state.party.roster.noel.tree = { 'fire-star': 2, 'ice-star': 1, 'noel-star-twin': 1 };
     s.onAction('next'); s.onAction('prev');
     expect(root.querySelector('[data-skill=fire-star] .slx-skill-rank')!.textContent).toBe('2／3');
+    expect(root.querySelector('[data-skill=fire-star] .slx-skill-name')!.textContent).toBe('火之星彈・連星');   // the variant names the skill
     expect(root.querySelector('[data-skill=ice-star] .slx-skill-rank')!.textContent).toBe('1／3');
-    expect(root.querySelector('[data-skill=noel-fire-up]')).toBeNull();   // a mod node is not a skill of its own
+    expect(root.querySelector('[data-skill=noel-star-twin]')).toBeNull();   // a variant is not a skill of its own
+  });
+
+  it("the skills tab lists rin's innate mark first, as innate rather than a rank", () => {
+    const { root } = setup('rin', NO_ART, (g) => { g.state.party.recruited.push('rin'); });
+    for (let i = 0; i < 2; i++) root.querySelector<HTMLElement>('[data-tab=skills]')?.click();
+    const rows = [...root.querySelectorAll('.slx-tab-skills [data-skill]')].map((r) => r.getAttribute('data-skill'));
+    expect(rows).toEqual(['rin-mark', 'rin-needle']);
+    expect(root.querySelector('[data-skill=rin-mark] .slx-skill-rank')!.textContent).toBe(T.ui2.status.innate);
   });
 
   it('the skills tab prices a skill as the tree rewrites it: a modifier node lowers its TP', () => {
-    const { root, s, game } = setup('noel');
-    game.state.party.roster.noel.tree = { 'fire-star': 1, 'flame-wave': 1, 'noel-wave-up': 3 };
+    const { root, s, game } = setup('chizuru');
+    game.state.party.roster.chizuru.tree = { sweep: 1, 'spiral-spear': 1, 'chizuru-spiral-up': 3 };
     s.onAction('right'); s.onAction('right');
-    const want = Math.max(1, SKILLS['flame-wave'].tp + NODES['noel-wave-up'].node.mods![2].tpDelta!);
-    expect(root.querySelector('[data-skill=flame-wave] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
+    const want = Math.max(1, SKILLS['spiral-spear'].tp + NODES['chizuru-spiral-up'].node.mods![2].tpDelta!);
+    expect(root.querySelector('[data-skill=spiral-spear] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
   });
 
   it('tree nodes and the skills tab show the skill icon when published', () => {
@@ -580,8 +589,10 @@ describe('StatusScene', () => {
       return { ...r, node, cur, msg, info, noel };
     };
     const down = (s: StatusScene, n: number) => { for (let i = 0; i < n; i++) s.onAction('down'); };
-    /** Noel's nodes in cursor order: branch 0 tiers 0-4, then branch 1, then branch 2. */
-    const order = TREES.noel.branches.flatMap((b) => b.nodes.map((n) => n.id));
+    /** Noel's nodes in cursor order: branch 0 tiers 0-4, then branch 1, then branch 2; a pair's A side before its B. */
+    const order = TREES.noel.branches.flatMap((b) => branchNodes(b).map((x) => x.node.id));
+    /** Presses of ↓ from the first node to `id`. */
+    const to = (id: string) => order.indexOf(id);
 
     it('the tree tab shows three branches, the points left and each node\'s rank', () => {
       const { root, body, node, game } = onTree(2);
@@ -591,13 +602,15 @@ describe('StatusScene', () => {
       expect(heads[0]).toContain('火');
       expect(heads[1]).toContain('冰');
       expect(heads[2]).toContain('雷咒');
-      expect(root.querySelectorAll('.slx-tree-node')).toHaveLength(15);
+      expect(root.querySelectorAll('.slx-tree-node')).toHaveLength(order.length);
+      expect(order).toHaveLength(18);   // 15 cells, three of them pairs
       expect(node('fire-star').textContent).toContain('1／3');
       expect(node('fire-star').classList.contains('slx-node-learned')).toBe(true);
       expect(node('ice-star').textContent).toContain('0／3');
       expect(node('ice-star').classList.contains('slx-node-open')).toBe(true);
       expect(node('ice-star').textContent).toContain(T.ui2.tree.kind.active);
-      expect(node('noel-fire-up').textContent).toContain(T.ui2.tree.kind.variant);
+      expect(node('noel-star-twin').textContent).toContain(T.ui2.tree.kind.variant);
+      expect(node('noel-calm').textContent).toContain(T.ui2.tree.kind.mech);
       expect(node('inferno').textContent).toContain(T.ui2.tree.kind.ultimate);
       expect(node('flame-wave').classList.contains('slx-node-locked')).toBe(true);
       expect(node('flame-wave').textContent).toContain(T.ui2.tree.reason.req);
@@ -622,7 +635,7 @@ describe('StatusScene', () => {
     it('Enter twice spends one point; then Enter on the same node is refused at once', () => {
       const { s, game, cur, msg, noel, sfx, body, node } = onTree(2);
       const spy = vi.spyOn(game, 'raiseNode');
-      down(s, 5);
+      down(s, to('ice-star'));
       expect(cur()).toBe('ice-star');
       s.onAction('confirm');
       expect(noel().tree['ice-star']).toBeUndefined();
@@ -643,7 +656,7 @@ describe('StatusScene', () => {
 
     it('a locked node shows its reason on the first press and is never armed', () => {
       const { s, cur, msg, noel, sfx } = onTree(2);
-      down(s, 2);
+      down(s, to('flame-wave'));
       expect(cur()).toBe('flame-wave');
       s.onAction('confirm');
       expect(msg()).toBe(T.ui2.tree.reason.req);
@@ -660,7 +673,7 @@ describe('StatusScene', () => {
 
     it('moving the cursor cancels a pending raise', () => {
       const { s, cur, msg, noel } = onTree(2);
-      down(s, 5);
+      down(s, to('ice-star'));
       s.onAction('confirm');
       expect(msg()).toBe(T.ui2.tree.pending);
       s.onAction('up');
@@ -674,7 +687,7 @@ describe('StatusScene', () => {
 
     it('paging to another member cancels a pending raise', () => {
       const { s, msg, cur, name } = onTree(2);
-      down(s, 5);
+      down(s, to('ice-star'));
       s.onAction('confirm');
       expect(msg()).toBe(T.ui2.tree.pending);
       s.onAction('next');
@@ -687,7 +700,7 @@ describe('StatusScene', () => {
 
     it('a pending press does not survive switching the tab away and back', () => {
       const { s, msg, noel, cur } = onTree(2);
-      down(s, 5);
+      down(s, to('ice-star'));
       s.onAction('confirm');
       expect(msg()).toBe(T.ui2.tree.pending);
       s.onAction('right'); s.onAction('left');
@@ -700,7 +713,7 @@ describe('StatusScene', () => {
 
     it('closing the sheet drops a pending press', () => {
       const { s, game, sfx, go, noel } = onTree(2);
-      down(s, 5);
+      down(s, to('ice-star'));
       s.onAction('confirm');
       s.exit();
       const root = document.createElement('div');
@@ -715,7 +728,7 @@ describe('StatusScene', () => {
 
     it('a spend the Game turns down is not shown as spent', () => {
       const { s, game, msg, noel, sfx, body } = onTree(2);
-      down(s, 5);
+      down(s, to('ice-star'));
       s.onAction('confirm');
       game.phase = 'battle';                                    // the Game refuses spends here
       sfx.confirm.mockClear();
@@ -731,7 +744,7 @@ describe('StatusScene', () => {
       expect(node('flame-wave').textContent).toContain(T.ui2.tree.reason.req);
       expect(node('flame-wave').textContent).not.toContain(T.ui2.tree.reason.points);
       expect(node('ice-star').textContent).toContain(T.ui2.tree.reason.points);
-      down(s, 2);
+      down(s, to('flame-wave'));
       s.onAction('confirm');
       expect(msg()).toBe('需先學會上一階');
     });
@@ -739,10 +752,10 @@ describe('StatusScene', () => {
     it('the keyboard reaches every node, branch by branch', () => {
       const { s, cur } = onTree(2);
       const seen = [cur()];
-      for (let i = 0; i < 14; i++) { s.onAction('down'); seen.push(cur()); }
+      for (let i = 1; i < order.length; i++) { s.onAction('down'); seen.push(cur()); }
       expect(seen).toEqual(order);
       s.onAction('down');
-      expect(cur()).toBe(order[14]);                            // held at the last node
+      expect(cur()).toBe(order[order.length - 1]);                            // held at the last node
       for (let i = 0; i < 20; i++) s.onAction('up');
       expect(cur()).toBe(order[0]);
     });
@@ -814,27 +827,23 @@ describe('StatusScene', () => {
       expect(info()).toContain(T.ui2.status.tp(SKILLS['fire-star'].tp));
       expect(info()).toContain(SKILLS['fire-star'].desc);
       expect(info()).toContain(T.ui2.tree.next('power', 110, 120));
-      node('noel-fire-up').click();
-      expect(info()).toContain(NODES['noel-fire-up'].node.desc!);
+      node('noel-star-twin').click();
+      expect(info()).toContain(SKILLS['fire-star'].desc);
       expect(info()).toContain(T.ui2.tree.now(T.ui2.tree.none));
-      expect(info()).toContain(T.ui2.tree.nextMod('威力 110%'));
-      node('noel-wave-up').click();
-      expect(info()).toContain(T.ui2.tree.nextMod('TP −1'));
+      expect(info()).toContain(T.ui2.tree.nextMod('改為 2 段，每段威力 52%。'));
+      node('noel-wave-burn').click();
+      expect(info()).toContain(T.ui2.tree.nextMod('命中時 30% 使目標灼燒。'));
     });
 
     describe('pairs and mechanic nodes (plan 8d Task 4)', () => {
-      let restore: () => void = () => undefined;
-      beforeEach(() => { restore = noelTreeFixture(); });
-      afterEach(() => restore());
-
       it('a pair sits on one tier with its tag', () => {
         const { root, node } = onTree(10);
         const branch0 = root.querySelector('.slx-tree-branch[data-branch="0"]')!;
         const rows = [...branch0.querySelectorAll('.slx-tree-node')].map((n) => n.getAttribute('data-node'));
-        expect(rows).toEqual(['fire-star', 'noel-star-twin', 'noel-star-heavy', 'flame-wave', 'noel-wave-up', 'inferno']);
+        expect(rows).toEqual(['fire-star', 'noel-star-twin', 'noel-star-heavy', 'flame-wave', 'noel-wave-burn', 'noel-wave-focus', 'inferno']);
         const pair = branch0.querySelector('.slx-tree-pair')!;
         expect([...pair.children].map((c) => c.getAttribute('data-node') ?? c.textContent)).toEqual(['noel-star-twin', T.ui2.tree.pairTag, 'noel-star-heavy']);
-        expect(root.querySelectorAll('.slx-tree-node')).toHaveLength(16);
+        expect(root.querySelectorAll('.slx-tree-node')).toHaveLength(18);
         expect(node('noel-star-twin').textContent).toContain('火之星彈・連星');
         expect(node('noel-star-heavy').textContent).toContain('火之星彈・重星');
         expect(node('noel-star-twin').textContent).toContain(T.ui2.tree.kind.variant);
@@ -918,7 +927,7 @@ describe('StatusScene', () => {
         node('noel-star-twin').click();
         expect(info()).toContain('火之星彈・連星');
         expect(info()).toContain(T.ui2.tree.now(T.ui2.tree.none));
-        expect(info()).toContain(T.ui2.tree.nextMod('改為 2 段，每段威力 55%。'));
+        expect(info()).toContain(T.ui2.tree.nextMod('改為 2 段，每段威力 52%。'));
       });
 
       it('a maxed mechanic node says only what it does now', () => {
@@ -944,20 +953,21 @@ describe('StatusScene', () => {
       expect(T.ui2.tree.mod({ turns: 5 })).toBe('持續 5 回合');
       expect(T.ui2.tree.mod({ chance: 0.7 })).toBe('毒機率 70%');
       expect(T.ui2.tree.mod({ hpCost: 0.06 })).toBe('HP 消耗 6%');
-      for (const info of Object.values(NODES)) for (const m of info.node.mods ?? []) expect(T.ui2.tree.mod(m), info.node.id).not.toBe('');
+      // Every plan 8c variant (V0) still says its rewrite in short; a plan 8d one has its own sentence (nodeText).
+      for (const info of Object.values(NODES)) if (info.node.label === undefined) for (const m of info.node.mods ?? []) expect(T.ui2.tree.mod(m), info.node.id).not.toBe('');
     });
 
     it('a taken capstone is named, and the other capstones say why they are shut', () => {
       const tree = {
-        'fire-star': 1, 'noel-fire-up': 1, 'flame-wave': 3, 'noel-wave-up': 3, inferno: 1,
-        'ice-star': 3, 'noel-ice-up': 3, 'frost-bind': 1, 'noel-bind-up': 1,
+        'fire-star': 1, 'noel-star-twin': 1, 'flame-wave': 3, 'noel-wave-burn': 3, inferno: 1,
+        'ice-star': 3, 'noel-calm': 3, 'frost-bind': 1, 'noel-bind-freeze': 1,
       };
       const { s, body, node, msg, noel, cur } = onTree(50, tree);
       expect(body()).toContain(T.ui2.tree.capstone(SKILLS.inferno.name));
       expect(node('inferno').classList.contains('slx-node-learned')).toBe(true);
       expect(node('blizzard').classList.contains('slx-node-locked')).toBe(true);
       expect(node('blizzard').textContent).toContain(T.ui2.tree.reason.capstone);
-      down(s, 9);
+      down(s, to('blizzard'));
       expect(cur()).toBe('blizzard');
       s.onAction('confirm');
       expect(msg()).toBe(T.ui2.tree.reason.capstone);

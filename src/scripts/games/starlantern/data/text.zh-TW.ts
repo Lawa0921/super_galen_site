@@ -284,7 +284,9 @@ export const T = {
       place: (where: string) => `站位 ${where}`,
       attack: (melee: boolean, pct: number | null) => (!melee ? '攻擊方式 遠程／魔法' : pct === null ? '攻擊方式 近戰' : `攻擊方式 近戰（${pct}%）`),
       gauge: (n: number) => `絕技量表 ${n}%`,
-      rank: (r: number, max: number) => `${r}／${max}`, passive: '被動', tp: (n: number) => `TP ${n}`,
+      rank: (r: number, max: number) => `${r}／${max}`, passive: '被動',
+      /** In place of a rank: a skill she knows outside her tree (Rin's mark). */
+      innate: '天生', tp: (n: number) => `TP ${n}`,
       none: '（未裝備）',
       hint: '←→ 分頁　Q／E 換人　↑↓ 捲動　Esc 返回',
       /** The stats tab's own keys: a row cursor and folding. */

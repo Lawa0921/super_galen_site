@@ -10,10 +10,10 @@ describe("the tree's next-rank line (plan 8c)", () => {
     expect(nextRankText('fire-star', 2)).toBe(t.next('power', 110, 120));
     expect(nextRankText('hero-shackle', 1)).toBe(t.next('buff', 100, 110));   // a pure debuff: its percent
     expect(nextRankText('hex', 1)).toBe('下一級：TP −1');
-    expect(nextRankText('rin-mark', 2)).toBe('下一級：TP −1');
+    expect(nextRankText('hex', 2)).toBe('下一級：TP −1');   // (the mark lost its ranks when 8d made it innate)
     expect(nextRankText('rin-veil', 1)).toBe('下一級：持續 +1 回合');
     expect(nextRankText('rin-veil', 2)).toBe('下一級：持續 +1 回合');
-    for (const id of ['hex', 'rin-mark', 'rin-veil']) expect(nextRankText(id, 1), id).not.toContain('%');
+    for (const id of ['hex', 'rin-veil']) expect(nextRankText(id, 1), id).not.toContain('%');
   });
 
   it("收回's ranks say how many round ends the recalled phase really stays (plan 8c final)", () => {

@@ -1,4 +1,4 @@
-import { AIM, BARRIER, COINS, DEVICE } from '../engine/mech';
+import { AIM, BARRIER, COINS, DEVICE, MARK } from '../engine/mech';
 import type { SkillDef } from '../engine/types';
 
 const LIST: SkillDef[] = [
@@ -176,8 +176,9 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'veil', turns: 2 }] },
   { id: 'rin-shadowless', name: '無影', owner: 'rin', tp: 12, target: 'enemy', desc: '無影的一刺，對受傷的敵人傷害大增',
     effects: [{ kind: 'damage', power: 200, element: 'phys', scale: 'atk', melee: true, wounded: 80 }] },
-  { id: 'rin-mark', name: '暗記', owner: 'rin', tp: 6, target: 'enemy', desc: '記下一個。打牠，必定暴擊。只記一個。',
-    effects: [{ kind: 'mark' }] },
+  { id: 'rin-mark', name: '暗記', owner: 'rin', tp: 6, target: 'enemy', desc: `先刺一下，記住牠。之後打牠必定暴擊，暴擊加成是平常的 ${MARK.critSharePct}%。`,
+    // 8d Task 3 ruling: the mark also strikes (a plain hit, before the mark is on).
+    effects: [{ kind: 'damage', power: 130, element: 'phys', scale: 'atk', melee: false }, { kind: 'mark' }] },
   { id: 'rin-execute', name: '處決', owner: 'rin', tp: 8, target: 'enemy', desc: '必定暴擊；對殘血的敵人傷害大增',
     effects: [{ kind: 'damage', power: 110, element: 'phys', scale: 'atk', melee: true, execute: 150, crit: 'always' }] },
   { id: 'rin-deathblow', name: '斷命', owner: 'rin', tp: 14, target: 'enemy', desc: '必定暴擊；對殘血的敵人傷害極大',

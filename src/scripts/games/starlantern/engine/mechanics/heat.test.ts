@@ -6,6 +6,7 @@ import { applyEffect, type EffectContext } from '../skills';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
 import { castDef } from './index';
+import { skillFor } from '../battle';
 import { HEAT } from './heat';
 import { T } from '../../data/text.zh-TW';
 
@@ -112,5 +113,52 @@ describe("Noel's heat", () => {
     const fire = draws('fire-star'), ice = draws('ice-star');
     expect(fire.n).toBe(ice.n);
     expect(fire.heat).not.toBe(ice.heat);
+  });
+});
+
+describe("Noel's heat with her tree (plan 8d)", () => {
+  const ranked = (heat: number, ranks: Record<string, number>) => noel(heat, { ranks: { 'fire-star': 1, 'ice-star': 1, ...ranks } });
+  const powerOf = (c: Combatant) => {
+    const d = castDef(makeBattle([c], [foe()]), c, skillFor(c, 'fire-star')!).effects[0];
+    return d.kind === 'damage' ? d.power : NaN;
+  };
+  const after = (c: Combatant) => resolveRound(makeBattle([c], [foe()]), cast('fire-star'), constRng(0.5));
+
+  it('calm raises the heat cap and overload waits for it', () => {
+    const calm = { 'noel-calm': 2 };   // heat cap 7
+    expect(powerOf(ranked(5, {}))).toBe(pct(140, HEAT.overloadPct));
+    expect(powerOf(ranked(5, calm))).toBe(pct(140, 100 + 5 * HEAT.pctPer));
+    expect(powerOf(ranked(6, calm))).toBe(pct(140, 100 + 6 * HEAT.pctPer));
+    expect(powerOf(ranked(7, calm))).toBe(pct(140, HEAT.overloadPct));
+    expect(heatOf(after(ranked(5, calm)))).toBe(6);
+    expect(heatOf(after(ranked(6, calm)))).toBe(7);
+    expect(heatOf(after(ranked(7, calm)))).toBe(0);
+    expect(heatOf(after(ranked(4, {})))).toBe(5);
+    expect(heatOf(after(ranked(5, {})))).toBe(0);
+    // A rank above the max reads as the max (cap 8).
+    expect(heatOf(after(ranked(7, { 'noel-calm': 9 })))).toBe(8);
+  });
+
+  it('no backlash: overload is 160% and costs no HP', () => {
+    const safe = ranked(HEAT.max, { 'noel-safe': 1 });
+    expect(powerOf(safe)).toBe(pct(140, 160));
+    expect(powerOf(safe)).toBe(224);
+    const r = after(ranked(HEAT.max, { 'noel-safe': 1 }));
+    const taken = r.log.reduce((n, e) => n + (e.type === 'damage' && e.target === 'noel' ? e.amount : 0), 0);
+    expect(r.party[0].hp).toBe(200 - taken);
+    expect(heatOf(r)).toBe(0);
+    expect(r.log.filter((e) => e.type === 'mech')).toEqual([{ type: 'mech', actor: 'noel', cue: 'overload' }]);
+    // Without the node the same overload costs HP.
+    const plain = after(ranked(HEAT.max, {}));
+    const hit = plain.log.reduce((n, e) => n + (e.type === 'damage' && e.target === 'noel' ? e.amount : 0), 0);
+    expect(plain.party[0].hp).toBe(200 - hit - Math.floor((200 * HEAT.backlashPct) / 100));
+  });
+
+  it('the heavy star heats by two', () => {
+    const heavy = ranked(0, { 'noel-star-heavy': 1 });
+    expect(powerOf(heavy)).toBe(182);
+    expect(heatOf(after(ranked(0, { 'noel-star-heavy': 1 })))).toBe(2);
+    expect(heatOf(after(ranked(HEAT.max - 1, { 'noel-star-heavy': 1 })))).toBe(HEAT.max);   // never above the cap
+    expect(heatOf(after(ranked(0, { 'noel-star-twin': 1 })))).toBe(1);                      // the twin star heats as ever
   });
 });

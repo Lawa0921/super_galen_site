@@ -194,3 +194,17 @@ describe('legendary powers follow the roster (plan 8c Task 4)', () => {
     for (const p of Object.values(POWERS)) expect(SKILLS[p.skill], p.id).toBeDefined();
   });
 });
+
+describe('legendary powers and variants (plan 8d)', () => {
+  it('a legendary power and a variant on the same skill both apply', async () => {
+    const { skillFor } = await import('../engine/battle');
+    const { pctOf } = await import('../engine/skills');
+    const s = skillFor({ powers: ['lg-noel'], ranks: { 'fire-star': 1, 'noel-star-twin': 1 } }, 'fire-star')!;
+    const d = s.effects[0] as { power: number; hits?: number };
+    expect(s.target).toBe('enemies');
+    expect(d.hits).toBe(2);
+    expect(d.power).toBe(pctOf(pctOf(140, 52), 70));
+    expect(d.power).toBe(51);
+    expect(s.name).toBe('火之星彈・連星');
+  });
+});

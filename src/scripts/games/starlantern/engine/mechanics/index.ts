@@ -39,8 +39,8 @@ export interface MechModule {
   init?(s: BattleState, c: Combatant): void;
   /** The skill as `c` would cast it now; pure, draws nothing, never changes `def`. */
   castDef?(s: BattleState, c: Combatant, def: SkillDef): SkillDef;
-  /** The TP `c` would pay now, given what she pays without mechanics. */
-  castCost?(s: BattleState, c: Combatant, cost: number): number;
+  /** The TP `c` would pay now for skill `id`, given what she pays without mechanics. */
+  castCost?(s: BattleState, c: Combatant, cost: number, id: string): number;
   /** After the TP and HP are paid, before the effects. */
   pay?(s: BattleState, c: Combatant, def: SkillDef, ctx: EffectContext): void;
   /** After every landed hit of `applyEffect`. */
@@ -101,7 +101,7 @@ export function castDef(s: BattleState, c: Combatant, def: SkillDef): SkillDef {
 }
 
 export function castCost(s: BattleState, c: Combatant, id: string): number {
-  return modules().reduce((n, m) => (m.castCost ? m.castCost(s, c, n) : n), skillCost(c, id));
+  return modules().reduce((n, m) => (m.castCost ? m.castCost(s, c, n, id) : n), skillCost(c, id));
 }
 
 export function payMech(s: BattleState, c: Combatant, def: SkillDef, ctx: EffectContext): void {

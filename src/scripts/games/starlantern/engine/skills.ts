@@ -80,6 +80,12 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       // The moon's hold counts as its rounds (moon-recall's ranks hold the phase it steps back to).
       case 'moon': return mod.turns !== undefined || mod.turnsDelta !== undefined ? { ...e, hold: lasting(e.hold ?? 0) } : { ...e };
       case 'inflict': return { ...e, chance: e.status === 'poison' ? mod.chance ?? e.chance : e.chance };
+      // Rules that belong to the mark (plan 8d ruling 7): 不眨眼's crit damage, 轉印's jumps.
+      case 'mark': return {
+        ...e,
+        ...(mod.rules?.markCritPct !== undefined ? { critPct: mod.rules.markCritPct } : {}),
+        ...(mod.rules?.markHops !== undefined ? { hops: mod.rules.markHops } : {}),
+      };
       default: return { ...e };
     }
   });
@@ -119,7 +125,7 @@ const NAMED_NUMBERS = (e: Effect): [string, (v: number) => string][] => {
   if (e.kind === 'buff') out.push(['pct', (v) => `${Math.abs(v)}%`]);
   if (e.kind === 'barrier') out.push(['power', (v) => `${v}%`]);
   if (e.kind === 'inflict') out.push(['chance', (v) => `${Math.round(v * 100)}%`]);
-  if (e.kind === 'damage') out.push(['hits', (v) => `${v} 段`], ['hits', (v) => `${v} 次`]);
+  if (e.kind === 'damage') out.push(['hits', (v) => `${v} 段`], ['hits', (v) => `${v} 次`], ['hits', (v) => `${v} 枚`]);
   if (e.kind === 'gauge') out.push(['amount', (v) => `+${v}`]);
   return out;
 };
@@ -280,6 +286,9 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       const m = actor.mech;
       if (m?.kind !== 'mark' || !target.alive) return;
       m.marks = [...m.marks.filter((k) => k !== target.key), target.key].slice(-m.cap);
+      // What the mark carries as cast (plan 8d): 不眨眼's crit damage, 轉印's jumps for this fight.
+      if (eff.critPct !== undefined) m.crit = eff.critPct; else delete m.crit;
+      if (eff.hops !== undefined) m.hops = eff.hops; else delete m.hops;
       return;
     }
     case 'veil': {

@@ -956,10 +956,7 @@ test.describe('starlantern', () => {
     if (shots) mkdirSync(shots, { recursive: true });
     const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
     const w = await setup(page, 7);
-    // Noel's tree with a pair (連星 / 重星) and a mechanic node (冷靜) before plan 8d Task 3 writes them for real: the dev
-    // server serves the test fixture to the page, where it shares the game's own modules.
-    const fixture = '/src/scripts/games/starlantern/engine/testing.ts';
-    await page.evaluate(async (url) => { (await import(/* @vite-ignore */ url)).noelTreeFixture(); }, fixture);
+    // Noel's tree has a pair (連星 / 重星) at branch 0 tier 1 and a mechanic pair (冷靜 / 反噬無效) at branch 1 tier 1.
     await legacyRoster(page);
     await page.evaluate(() => {
       const g = (window as unknown as Dbg).__starlanternDebug.game;
@@ -976,15 +973,15 @@ test.describe('starlantern', () => {
     await page.locator('.slx-guild [data-id=tree]').click();
     await expect(page.locator('[data-tab=tree]')).toHaveAttribute('aria-selected', 'true');
     await flipTo(page, CHARACTERS.noel.name);
-    const pair = page.locator('.slx-tree-branch[data-branch="0"] .slx-tree-pair');
+    const pair = page.locator('.slx-tree-branch[data-branch="0"] .slx-tree-pair').first();   // 連星 / 重星 (延燒 / 聚焰 is the second)
     await expect(pair.locator('.slx-tree-node')).toHaveCount(2);
     await expect(pair.locator('.slx-tree-pair-tag')).toHaveText(T.ui2.tree.pairTag);
     await expect(pair.locator('.slx-tree-node').first()).toContainText('火之星彈・連星');
     await expect(pair.locator('.slx-tree-node').nth(1)).toContainText('火之星彈・重星');
     await expect(page.locator('.slx-tree-node[data-node=noel-star-heavy]')).toHaveClass(/slx-node-swap/);
     await expect(page.locator('.slx-tree-node[data-node=noel-calm] img')).toHaveCount(0);   // a mechanic node has no icon
-    // The cursor on 冷靜 (branch 1 tier 1, after branch 0's six rows): its rule now and next.
-    for (let i = 0; i < 7; i++) await w.key('ArrowDown');
+    // The cursor on 冷靜 (branch 1 tier 1, after branch 0's seven rows): its rule now and next.
+    for (let i = 0; i < 8; i++) await w.key('ArrowDown');
     await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('熱度上限 6。'));
     await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.nextMod('熱度上限 7。'));
     expect(await fits()).toEqual([]);
@@ -1069,6 +1066,49 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test("rin's innate mark and her 熟記 show on the status pages (plan 8d Task 3)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    await legacyRoster(page);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.party.roster.rin.level = 20;
+      g.state.party.roster.rin.tree = { 'rin-needle': 3, 'rin-needle-three': 2, 'rin-mark-hone': 1, 'rin-mark-steady': 1 };
+    });
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+    await flipTo(page, CHARACTERS.rin.name);
+    const hone = page.locator('.slx-tree-node[data-node=rin-mark-hone]');
+    await expect(hone).toContainText('熟記');
+    await expect(hone).toContainText(T.ui2.tree.kind.mech);
+    await expect(hone.locator('img')).toHaveCount(0);
+    await expect(page.locator('.slx-tree-node[data-node=rin-mark-steady]')).toContainText('暗記・不眨眼');
+    await expect(page.locator('.slx-tree-node[data-node=rin-mark]')).toHaveCount(0);   // not a node of her tree any more
+    await hone.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('暗記只要 5 TP。'));
+    await shot('rin-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    await shot('rin-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.locator('[data-tab=skills]').click();
+    const mark = page.locator('.slx-tab-skills [data-skill=rin-mark]');
+    await expect(mark.locator('.slx-skill-rank')).toHaveText(T.ui2.status.innate);
+    await expect(mark.locator('.slx-skill-name')).toHaveText('暗記・不眨眼');
+    await expect(mark.locator('.slx-skill-cost')).toHaveText(T.ui2.status.tp(5));
+    await shot('rin-skills-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await mark.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5)).toBe(true);
+    await shot('rin-skills-844');
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
   test('spends skill and talent points, then resets them at the inn', async ({ page }) => {
     const w = await setup(page, 7);
     const noel = () => page.evaluate(() => {
@@ -1117,10 +1157,12 @@ test.describe('starlantern', () => {
     await toNoel();
     const ice = page.locator('.slx-tree-node[data-node=ice-star]');
     await expect(ice).toContainText('0／3');
-    // Every node fits at 1280x720, so the columns' scroll cues stay hidden.
+    // At the top nothing is above, so ▲ stays hidden. Since plan 8d Task 3 Noel's 火 branch holds two pairs (each variant on
+    // two lines) and runs past 1280x720, so ▼ shows exactly when the columns overflow.
     await expect(page.locator('.slx-tab-tree .slx-more-up')).toBeHidden();
-    await expect(page.locator('.slx-tab-tree .slx-more-down')).toBeHidden();
-    expect(await page.locator('.slx-tree-cols').evaluate((c) => c.scrollHeight <= c.clientHeight + 1)).toBe(true);
+    const overflows = await page.locator('.slx-tree-cols').evaluate((c) => c.scrollHeight > c.clientHeight + 1);
+    expect(overflows).toBe(true);
+    await expect(page.locator('.slx-tab-tree .slx-more-down')).toBeVisible();
     await ice.click();                                      // the first click selects and arms
     await expect(ice).toHaveClass(/slx-row-cur/);
     await expect(page.locator('.slx-tree-msg')).toHaveText('再按一次投點');

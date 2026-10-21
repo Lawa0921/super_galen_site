@@ -11,7 +11,8 @@ export const DEFAULT_POLICIES: PolicyTable = {
   // Bobby keeps his devices up while a boss or an elite stands; the shield generator is left to the player (plan 8c Task 6 tuning, retune.md).
   bobby: [{ kind: 'ensure-device', skills: ['turret', 'shock-mine', 'repair-drone'], big: true }],
   // Rin marks a boss or an elite once it is under half its HP (plan 8c Task 2 tuning, retune.md).
-  rin: [{ kind: 'ensure-mark', skill: 'rin-mark', big: true, below: 50 }],
+  // 8d Task 3 ruling 1: her mark is innate, and she marks a boss or an elite from the first round.
+  rin: [{ kind: 'ensure-mark', skill: 'rin-mark', big: true }],
   // Safira keeps the beat, but with one damage skill she casts it again rather than attack (plan 8c Task 5 tuning, retune.md).
   safira: [{ kind: 'alternate', repeat: true }],
   liz: [{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'jackpot' }, { kind: 'spend-at', gauge: 'coins', min: 6, skill: 'fortune-strike' }],

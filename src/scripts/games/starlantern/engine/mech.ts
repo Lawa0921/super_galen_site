@@ -14,6 +14,12 @@ import type { Combatant } from './combatant';
 export const AIM = { cap: 3, dmgPct: 10, critPct: 0, consumePct: 50 } as const;
 
 /**
+ * Rin's mark (8d Task 3 ruling 1, innate from Lv1, marked from the first round): her hits on her marked foe always crit,
+ * with this share (percent) of her crit damage. 30: the consultant's measured set (160 seeds, retune.md). Kept here so combatant.ts reads it without the mechanics.
+ */
+export const MARK = { critSharePct: 30 } as const;
+
+/**
  * Safira's beat (spec §8.7, engine/mechanics/beat.ts): the most beats, and the percent each adds to every hit of hers and to
  * her buffs. Kept here so combatant.ts reads it without the mechanics.
  */
@@ -58,8 +64,12 @@ export type MechState =
   | { kind: 'embers'; embers: number }
   | { kind: 'beat'; beat: number; last: string | null }
   | { kind: 'devices'; devices: Device[]; cap: number }
-  /** `again`: 還有。 has been spent this round (engine/mechanics/mark.ts). */
-  | { kind: 'mark'; marks: string[]; cap: number; again?: true }
+  /**
+   * `again`: 還有。 has been spent this round; `extra`: the further ones 追命 gave this round, `chase` how many her last
+   * action's skill allows. `crit`: her crits on a mark hit that much harder (不眨眼); `hops` / `hopped`: the jumps her
+   * mark may make this fight and has made (轉印). Engine/mechanics/mark.ts; plan 8d.
+   */
+  | { kind: 'mark'; marks: string[]; cap: number; again?: true; extra?: number; chase?: number; crit?: number; hops?: number; hopped?: number }
   | { kind: 'barrier' };
 
 /** The value of gauge `g` on `c` (`aim` reads its stacks); undefined when `c` keeps no such gauge. */

@@ -2,7 +2,7 @@ import type { BattleState } from './battle';
 import type { Combatant } from './combatant';
 import { EQUIPMENT } from '../data/equipment';
 import { STANDARD_LINEUP, partyWith } from './party';
-import { K, NODES, P, TREES, V, type TreeNode } from '../data/trees';
+import { NODES, TREES, type TreeNode } from '../data/trees';
 import type { CharacterId, ItemInstance, Party } from './types';
 import { CHARACTER_IDS } from '../data/characters';
 import { newGame, type GameState } from './state';
@@ -80,17 +80,4 @@ export function version8Save(trees8b: Record<string, { id: string }[][]>): { raw
   g.party.roster.noel.equip.ring1 = { ...plainItem('star-ring', g.nextUid), rarity: 'legendary', ilvl: 20, special: 'lg-noel' };
   g.nextUid++;
   return { raw: JSON.stringify({ ...g, version: 8 }), state: g };
-}
-
-/**
- * Noel's tree with one pair and one mechanic node in place of two plan 8c nodes (plan 8d Task 4, before Task 3 writes
- * them for real): 連星 / 重星 at branch 0 tier 1 and 冷靜 at branch 1 tier 1. Returns the function that puts the old
- * nodes back. Used by the tree page's tests and its e2e (the dev server serves this module to the page).
- */
-export function noelTreeFixture(): () => void {
-  const twin = V('noel-star-twin', 'fire-star', '連星', [55, 60, 65].map((powerPct) => ({ hits: 2, powerPct })), (m) => `改為 2 段，每段威力 ${m.powerPct}%。`);
-  const heavy = V('noel-star-heavy', 'fire-star', '重星', [130, 140, 150].map((powerPct) => ({ powerPct })), (m) => `威力 ${m.powerPct}%，每次熱度 +2。`);
-  const pair = withNode('noel', 0, 1, P(twin, heavy));
-  const calm = withNode('noel', 1, 1, K('noel-calm', '冷靜', 'heatMax', [6, 7, 8], (v) => `熱度上限 ${v}。`));
-  return () => { calm(); pair(); };
 }

@@ -1,5 +1,5 @@
 import {
-  ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, DEFAULT_FIRST, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES, branchNodes, tierNodes, type MechKnob, type TreeNode,
+  ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, DEFAULT_FIRST, INNATE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES, branchNodes, tierNodes, type MechKnob, type TreeNode,
 } from '../data/trees';
 import type { SkillMod } from '../data/gear';
 import { SKILLS } from '../data/skills';
@@ -69,13 +69,22 @@ function rankIn(tree: unknown, node: string): number {
 
 export const nodeRank = (m: Member, node: string): number => rankIn(m.tree, node);
 
-/** Every active node's skill in the character's tree (passives too), in tree order: branch 0 tiers 0-4, then branch 1, then 2. */
-export const treeSkills = (id: CharacterId): string[] =>
-  TREES[id].branches.flatMap((b) => branchNodes(b).filter((x) => x.node.kind === 'active').map((x) => x.node.skill!));
+/** Her innate skills (data/trees INNATE), known from Lv1 outside the tree. */
+const innateOf = (id: CharacterId): string[] => (has(INNATE, id) ? INNATE[id as CharacterId] ?? [] : []);
 
-/** The skills a member knows: the active nodes they hold at rank 1 or more, in tree order. */
+/** Whether `skill` is innate to `owner` (a defId that is no character has none). */
+export const isInnate = (owner: string, skill: string): boolean => innateOf(owner as CharacterId).includes(skill);
+
+/**
+ * Every skill of the character: her innate ones first, then every active node's skill in her tree (passives too), in tree
+ * order: branch 0 tiers 0-4, then branch 1, then 2.
+ */
+export const treeSkills = (id: CharacterId): string[] =>
+  [...innateOf(id), ...TREES[id].branches.flatMap((b) => branchNodes(b).filter((x) => x.node.kind === 'active').map((x) => x.node.skill!))];
+
+/** The skills a member knows: her innate ones first, then the active nodes she holds at rank 1 or more, in tree order. */
 export const learnedSkills = (m: Member): string[] =>
-  TREES[m.id].branches.flatMap((b) => branchNodes(b).filter((x) => x.node.kind === 'active' && rankIn(m.tree, x.node.id) > 0).map((x) => x.node.skill!));
+  [...innateOf(m.id), ...TREES[m.id].branches.flatMap((b) => branchNodes(b).filter((x) => x.node.kind === 'active' && rankIn(m.tree, x.node.id) > 0).map((x) => x.node.skill!))];
 
 /**
  * The tree's rewrites of `skill` for these ranks, as the two stages battle.ts `skillFor` applies one after another (its
@@ -130,12 +139,15 @@ export function pctMod(skill: string, pct: number): SkillMod | undefined {
   return kinds.includes('buff') ? { buffPct: pct } : undefined;
 }
 
-/** `mods[rank - 1]` of every variant node of `skill` held at rank 1 or more, in tree order (a pair's A side before its B). */
+/**
+ * `mods[rank - 1]` of every variant node of `skill` held at rank 1 or more, in tree order (a pair's A side before its B);
+ * the skill's owner is its active node's, or the character it is innate to.
+ */
 export function nodeMods(ranks: Record<string, number>, skill: string): SkillMod[] {
-  const info = activeNode(skill);
-  if (!info) return [];
+  const owner = activeNode(skill)?.owner ?? (Object.keys(INNATE) as CharacterId[]).find((id) => innateOf(id).includes(skill));
+  if (!owner) return [];
   const out: SkillMod[] = [];
-  for (const b of TREES[info.owner].branches) for (const { node: n } of branchNodes(b)) {
+  for (const b of TREES[owner].branches) for (const { node: n } of branchNodes(b)) {
     if (n.kind !== 'variant' || n.skill !== skill) continue;
     const r = Math.min(rankIn(ranks, n.id), n.maxRank);
     if (r > 0) out.push(n.mods![r - 1]);
@@ -259,6 +271,15 @@ export function knobOf(c: Combatant, k: MechKnob): number | undefined {
   if (!knobs) KNOBS.set(c, (knobs = new Map()));
   if (!knobs.has(k)) knobs.set(k, mechKnob(c.ranks, c.defId as CharacterId, k));
   return knobs.get(k);
+}
+
+/**
+ * What `m` pays for `skill` by her tree's mechanic nodes, given `cost` (out of battle; in battle the mark module's castCost
+ * does the same): 熟記 caps the mark's TP.
+ */
+export function treeCost(m: Pick<Member, 'id' | 'tree'>, skill: string, cost: number): number {
+  const tp = skill === 'rin-mark' ? mechKnob(m.tree, m.id, 'markTp') : undefined;
+  return tp === undefined ? cost : Math.min(cost, tp);
 }
 
 /** One more rank in `node`, on a copy; the member passed in is never changed. */

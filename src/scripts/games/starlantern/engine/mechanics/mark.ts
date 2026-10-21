@@ -10,12 +10,26 @@ import type { Action, BattleState } from '../battle';
 import type { Combatant } from '../combatant';
 import { T } from '../../data/text.zh-TW';
 import { castCost, type MechModule } from './index';
+import type { SkillDef } from '../types';
+import { knobOf } from '../progression';
 
-/** Every member's marks lose the foes that are down. */
+/**
+ * Every member's marks lose the foes that are down; with 轉印 (plan 8d) a fallen mark jumps to the first standing foe she
+ * has not marked, while the fight's jumps last.
+ */
 function pruneMarks(party: Combatant[], enemies: Combatant[]): void {
   for (const c of party) {
     const m = c.mech;
-    if (m?.kind === 'mark') m.marks = m.marks.filter((k) => enemies.some((e) => e.key === k && e.alive));
+    if (m?.kind !== 'mark') continue;
+    const up = (k: string) => enemies.some((e) => e.key === k && e.alive);
+    m.marks = m.marks.flatMap((k) => {
+      if (up(k)) return [k];
+      if ((m.hopped ?? 0) >= (m.hops ?? 0)) return [];
+      const next = enemies.find((e) => e.alive && !m.marks.includes(e.key));
+      if (!next) return [];
+      m.hopped = (m.hopped ?? 0) + 1;
+      return [next.key];
+    });
   }
 }
 
@@ -39,7 +53,23 @@ export const mark: MechModule = {
     if (ctx.battle) pruneMarks(ctx.battle.party, ctx.battle.enemies);
     else if (actor.mech?.kind === 'mark') actor.mech.marks = actor.mech.marks.filter((k) => k !== target.key);
   },
+  castCost(_s, c, cost, id) {
+    // 熟記 (8d Task 3): the mark costs this much at most.
+    const tp = id === 'rin-mark' ? knobOf(c, 'markTp') : undefined;
+    return tp === undefined ? cost : Math.min(cost, tp);
+  },
+  init(_s, c) {
+    // 名單 (plan 8d): more marks at once.
+    const cap = c.mech?.kind === 'mark' ? knobOf(c, 'markCap') : undefined;
+    if (c.mech?.kind === 'mark' && cap !== undefined) c.mech.cap = cap;
+  },
   after(_s, c, act, def) {
+    // 追命 (plan 8d): how many more 還有。 the skill of this action allows this round, should it fell her mark.
+    const m = c.mech;
+    if (m?.kind === 'mark') {
+      const chase = act.kind === 'skill' ? (def as SkillDef | null)?.rules?.again ?? 0 : 0;
+      if (chase) m.chase = chase; else delete m.chase;
+    }
     // The veil ends with her first blow (a designer ruling on spec §8.9, which gives it no end): an attack, or a skill or
     // an ultimate that fired with a damage effect. That blow kept its sure crit if it landed; if it missed, the crit goes
     // with the veil. An ultimate her gauge could not pay is no blow (`def` is null then).
@@ -51,11 +81,12 @@ export const mark: MechModule = {
     return c.mech?.kind === 'mark' ? c.mech.marks.filter((k) => s.enemies.some((e) => e.key === k && e.alive)) : [];
   },
   extraAction(s, c, act, ctx, seen) {
-    // 還有。: she fells her mark on her own action, once a round, while a foe still stands.
+    // 還有。: she fells her mark on her own action, once a round (and with 追命 that many more times), while a foe still stands.
     const m = c.mech;
     const marked = seen as string[];
-    if (m?.kind !== 'mark' || m.again || !c.alive || !s.enemies.some((e) => e.alive)) return null;
+    if (m?.kind !== 'mark' || (m.again && (m.extra ?? 0) >= (m.chase ?? 0)) || !c.alive || !s.enemies.some((e) => e.alive)) return null;
     if (!marked.some((k) => !s.enemies.find((e) => e.key === k)?.alive)) return null;
+    if (m.again) m.extra = (m.extra ?? 0) + 1;
     m.again = true;
     ctx.log.push({ type: 'mech', actor: c.key, cue: 'again' });
     return againAction(s, c, act);
@@ -64,7 +95,7 @@ export const mark: MechModule = {
     // After every tick: a foe a tick felled loses its mark this round; the veil counts down; 還有。 comes back.
     pruneMarks(s.party, s.enemies);
     for (const c of s.party) {
-      if (c.mech?.kind === 'mark') delete c.mech.again;
+      if (c.mech?.kind === 'mark') { delete c.mech.again; delete c.mech.extra; }
       if (c.veil) { if (c.veil > 1) c.veil -= 1; else delete c.veil; }
     }
   },

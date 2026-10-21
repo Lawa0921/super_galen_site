@@ -226,9 +226,10 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
   });
 
   it('a modifier node rewrites its skill at its rank', () => {
-    expect(dmg(caster({ 'fire-star': 1, 'noel-fire-up': 2 }), 'fire-star')).toBe(pw(140, mod('noel-fire-up', 2).powerPct!));
-    expect(skillCost(caster({ 'flame-wave': 1, 'noel-wave-up': 3 }), 'flame-wave'))
-      .toBe(Math.max(1, SKILLS['flame-wave'].tp + mod('noel-wave-up', 3).tpDelta!));
+    const sweep = (SKILLS.sweep.effects[0] as { power: number }).power;
+    expect(dmg(caster({ sweep: 1, 'chizuru-sweep-up': 2 }), 'sweep')).toBe(pw(sweep, mod('chizuru-sweep-up', 2).powerPct!));
+    expect(skillCost(caster({ 'spiral-spear': 1, 'chizuru-spiral-up': 3 }), 'spiral-spear'))
+      .toBe(Math.max(1, SKILLS['spiral-spear'].tp + mod('chizuru-spiral-up', 3).tpDelta!));
   });
 
   it('the tree applies before worn powers', () => {
@@ -290,9 +291,9 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
       expect(fx(caster({ 'frost-bind': r }), 'frost-bind'), `bind ${r}`)
         .toEqual(bind0.map((e) => (e.kind === 'damage' ? { ...e, power: pw(e.power, ACTIVE_RANK_PCT[r - 1]) } : e)));
     }
-    const baseDebuff = bind0.find((e) => e.kind === 'buff');
-    expect(fx(caster({ 'frost-bind': 1, 'noel-bind-up': 3 }), 'frost-bind').find((e) => e.kind === 'buff'))
-      .toEqual({ ...baseDebuff, pct: -45 });   // 「並加深速度削弱」: -30 x 150%
+    const baseDebuff = SKILLS['sunder-arrow'].effects.find((e) => e.kind === 'buff') as { pct: number };
+    expect(fx(caster({ 'sunder-arrow': 1, 'sylvie-snare-up': 3 }), 'sunder-arrow').find((e) => e.kind === 'buff'))
+      .toEqual({ ...baseDebuff, pct: pw(baseDebuff.pct, 150) });   // 「並加深防禦削弱」: x 150%
     const smoke = fx(caster({ 'smoke-bomb': 1, 'liz-smoke-up': 2 }), 'smoke-bomb')[0] as { pct: number };
     const smoke0 = SKILLS['smoke-bomb'].effects[0] as { pct: number };
     expect(smoke.pct).toBe(pw(smoke0.pct, mod('liz-smoke-up', 2).buffPct!));                                    // 「加深煙霧彈的攻擊削弱」
@@ -307,7 +308,7 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
     for (const [skill, ranks, powers] of [
       ['turret', { turret: 2, 'bobby-turret-up': 3, 'twin-turret': 1 }, ['lg-bobby']],
       ['shield-bash', { 'shield-bash': 3, 'scarlet-bash-up': 2 }, []],
-      ['fire-star', { 'fire-star': 3, 'noel-fire-up': 1 }, ['lg-noel']],
+      ['fire-star', { 'fire-star': 3, 'noel-star-twin': 1 }, ['lg-noel']],
     ] as [string, Record<string, number>, string[]][]) {
       const tree = treeMods(ranks, skill).reduce((d, m) => patchSkill(d, m), SKILLS[skill]);
       const want = powers.map((p) => POWERS[p].mod).reduce((d, m) => patchSkill(d, m), tree);
@@ -330,8 +331,8 @@ describe('skill ranks and modifier nodes (Task 8)', () => {
 
   it('a mod node without its active, a rank of 0 and a junk rank change nothing', () => {
     expect(skillFor(caster({ 'fire-star': 0 }), 'fire-star')).toBe(SKILLS['fire-star']);
-    expect(skillFor(caster({ 'fire-star': 1, 'noel-fire-up': 0 }), 'fire-star')).toBe(SKILLS['fire-star']);
-    expect(skillFor(caster({ 'fire-star': 1.5 as never, 'noel-fire-up': '2' as never }), 'fire-star')).toBe(SKILLS['fire-star']);
+    expect(skillFor(caster({ 'fire-star': 1, 'noel-star-twin': 0 }), 'fire-star')).toBe(SKILLS['fire-star']);
+    expect(skillFor(caster({ 'fire-star': 1.5 as never, 'noel-star-twin': '2' as never }), 'fire-star')).toBe(SKILLS['fire-star']);
     // A rank above the node's max reads as the max.
     expect(dmg(caster({ 'fire-star': 9 }), 'fire-star')).toBe(pw(140, ACTIVE_RANK_PCT[2]));
   });

@@ -21,7 +21,8 @@ import { ABYSS } from '../data/hero';
 
 // Re-captured (CAPTURE=1) in plan 6a Task 19c for its ENEMY_POWER retune (amount 0.3, amount2 0.26, ramp 0.002). Task 20 then moved the ramp to 0.0012; the replays below did not change.
 // Re-captured in plan 8c Task 5 for Scarlet's mechanic (embers, cover, 贖火, 盾擊's challenge): 1:1, 1:2, 1:3 and 3:2 moved.
-const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,4209479467],"0:2":["win",2,353535899],"0:3":["win",2,2306201561],"1:1":["win",2,1458626261],"1:2":["win",2,359523701],"1:3":["win",2,50483140],"2:1":["win",1,2825205314],"2:2":["win",1,624891372],"2:3":["win",1,2519986409],"3:1":["win",2,2822226627],"3:2":["win",2,1809277650],"3:3":["win",2,3134430678]};
+// Re-captured in plan 8d Task 3 for Noel's and Rin's nodes and Rin's innate, striking mark: every run moved (1:3 now 3 rounds).
+const BASELINE: Record<string, [string, number, number]> = {"0:1":["win",2,3471727866],"0:2":["win",2,482244242],"0:3":["win",2,2082202399],"1:1":["win",2,842438602],"1:2":["win",2,1059628043],"1:3":["win",3,933992787],"2:1":["win",1,780072338],"2:2":["win",1,868227560],"2:3":["win",1,2065006204],"3:1":["win",2,132573462],"3:2":["win",2,1266276884],"3:3":["win",2,3501219592]};
 const rng = constRng(0.5); // enemies never use skills (all chances < 0.5), variance 1.0
 const P = (key: string, over = {}) => makeCombatant({ key, side: 'party', ...over });
 const E = (key: string, over = {}) => makeCombatant({ key, side: 'enemy', ...over });
@@ -354,12 +355,12 @@ describe('skills from the tree (Task 8)', () => {
   });
 
   it('a modifier node lowers the TP a cast pays', () => {
-    const ranks = { 'flame-wave': 1, 'noel-wave-up': 3 };
+    const ranks = { 'spiral-spear': 1, 'chizuru-spiral-up': 3 };
     const p = P('p', { tp: 20, ranks });
     const s = makeBattle([p], [E('e0', { max: { hp: 999 } as never })]);
-    const r = resolveRound(s, { p: { kind: 'skill', skill: 'flame-wave' } }, rng);
-    expect(r.party[0].tp).toBe(20 - skillCost(p, 'flame-wave'));
-    expect(skillCost(p, 'flame-wave')).toBeLessThan(skillCost(P('q'), 'flame-wave'));
+    const r = resolveRound(s, { p: { kind: 'skill', skill: 'spiral-spear', target: 'e0' } }, rng);
+    expect(r.party[0].tp).toBe(20 - skillCost(p, 'spiral-spear'));
+    expect(skillCost(p, 'spiral-spear')).toBeLessThan(skillCost(P('q'), 'spiral-spear'));
   });
 });
 
@@ -444,6 +445,7 @@ describe('keystones in battle', () => {
     // under KEYSTONE_GATE, so nobody holds a keystone. Re-recorded 2026-10-17 in 21867eb3, under the ENEMY_POWER shape that
     // plan 5c Task 4 settled on there (a deep step from Lv12 plus a small ramp; the d5 enemies are Lv18): the same no-keystone code path against stronger
     // enemies. Re-recorded again in plan 6a Task 19c for its ENEMY_POWER retune (amount 0.3, amount2 0.26, ramp 0.002; scarlet 72 -> 65); Task 20's ramp 0.0012 left it as it was.
+    // Re-recorded in plan 8d Task 3 (Noel's new nodes in her standard tree: 連星, 冷靜, 擴咒, 雙響 replace the plan 8c ones).
     // A keystone reaching this fight changes TP, damage or heals, and so the replay.
     const party = partyAt(20, { ids: LEGACY_LINEUP });
     // The fighters only: the hero (Lv20, 15 talent points) holds one on the bench, and never enters this fight.
@@ -455,7 +457,7 @@ describe('keystones in battle', () => {
     let rounds = 0;
     while (s.outcome === 'ongoing' && rounds < 60) { s = resolveRound(s, choose(s, party), counted); rounds++; }
     expect({ outcome: s.outcome, rounds, draws, hp: Object.fromEntries(s.party.map((c) => [c.key, c.hp])) })
-      .toEqual({ outcome: 'win', rounds: 4, draws: 83, hp: { scarlet: 65, chizuru: 166, liz: 0, noel: 0, selene: 0 } });
+      .toEqual({ outcome: 'win', rounds: 3, draws: 78, hp: { scarlet: 88, chizuru: 166, liz: 0, noel: 104, selene: 0 } });
   });
 });
 

@@ -1,4 +1,4 @@
-import type { CharacterId } from '../engine/types';
+import type { CharacterId, Effect } from '../engine/types';
 import type { SkillMod } from './gear';
 import { SKILLS } from './skills';
 
@@ -20,7 +20,7 @@ import { SKILLS } from './skills';
  */
 export type NodeKind = 'active' | 'variant' | 'mech';
 /** The knobs a mechanic node can turn (each read by its mechanic module, falling back to the plan 8c constant). */
-export type MechKnob = 'heatMax' | 'overloadSafePct' | 'markCap' | 'barrierThunder' | 'barrierPair' | 'moonPct' | 'coinRefund' | 'coinCap'
+export type MechKnob = 'heatMax' | 'overloadSafePct' | 'markCap' | 'markTp' | 'barrierThunder' | 'barrierPair' | 'moonPct' | 'coinRefund' | 'coinCap'
   | 'aimCap' | 'aimKeep' | 'emberCap' | 'coverEmbers' | 'misstepLoss' | 'duetPct' | 'deviceLevelCap' | 'deviceCap';
 export interface TreeNode {
   id: string; kind: NodeKind; maxRank: 1 | 2 | 3 | 4 | 5;
@@ -79,28 +79,44 @@ const turns = (...v: number[]): SkillMod[] => v.map((t) => ({ turns: t }));
 const chance = (...v: number[]): SkillMod[] => v.map((c) => ({ chance: c }));
 const hp = (...v: number[]): SkillMod[] => v.map((hpCost) => ({ hpCost }));
 const tp = (...v: number[]): SkillMod[] => v.map((tpDelta) => ({ tpDelta }));
+/** One ailment a variant adds to its skill's hits, at each rank's chance. */
+const inflicting = (status: 'burn' | 'freeze' | 'bleed', ...chances: number[]): SkillMod[] =>
+  chances.map((chance): SkillMod => ({ extra: [{ kind: 'inflict', status, chance } as Effect] }));
+/** The chance of a variant's added ailment, as its words say it (30 for 0.3). */
+const chanceOf = (m: SkillMod): number => Math.round(((m.extra![0] as { chance: number }).chance) * 100);
 
 export const TREES: Record<CharacterId, TreeDef> = {
   noel: { branches: [
     { name: '火', nodes: [
       A('fire-star', 3),
-      V0('noel-fire-up', '火星強化', 'fire-star', '強化火之星彈的威力', pct(110, 120, 135)),
+      P(
+        V('noel-star-twin', 'fire-star', '連星', [52, 57, 62].map((powerPct) => ({ hits: 2, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
+        V('noel-star-heavy', 'fire-star', '重星', [130, 140, 150].map((powerPct) => ({ powerPct, rules: { heat: 2 } })), (m) => `威力 ${m.powerPct}%，每次熱度 +${m.rules!.heat}。`),
+      ),
       A('flame-wave', 3),
-      V0('noel-wave-up', '炎波節流', 'flame-wave', '降低炎之波的 TP 消耗', tp(-1, -2, -3)),
+      P(
+        V('noel-wave-burn', 'flame-wave', '延燒', inflicting('burn', 0.3, 0.4, 0.5), (m) => `命中時 ${chanceOf(m)}% 使目標灼燒。`),
+        V('noel-wave-focus', 'flame-wave', '聚焰', [170, 180, 190].map((powerPct): SkillMod => ({ target: 'enemy', powerPct })), (m) => `改為打單體，威力 ${m.powerPct}%。`),
+      ),
       A('inferno', 1),
     ] },
     { name: '冰', nodes: [
       A('ice-star', 3),
-      V0('noel-ice-up', '冰星強化', 'ice-star', '強化冰之星彈的威力', pct(110, 120, 135)),
+      P(
+        K('noel-calm', '冷靜', 'heatMax', [6, 7, 8], (v) => `熱度上限 ${v}。`),
+        K('noel-safe', '反噬無效', 'overloadSafePct', [160, 170, 180], (v) => `暴走不再傷到自己，但暴走威力只有 ${v}%。`),
+      ),
       A('frost-bind', 3),
-      V0('noel-bind-up', '寒縛強化', 'frost-bind', '強化冰縛的威力，並加深速度削弱', deepen(115, 130, 150)),
+      // 冰封 keeps 寒縛強化's deepened slow (8d Task 3 ruling 2: Noel's debuff peak as it was), and adds the freeze.
+      V('noel-bind-freeze', 'frost-bind', '冰封', inflicting('freeze', 0.3, 0.4, 0.5).map((m, i) => ({ ...m, buffPct: [115, 130, 150][i] })),
+        (m) => `命中時 ${chanceOf(m)}% 使目標凍結（頭目改冰緩），速度削弱加深為 ${m.buffPct}%。`),
       A('blizzard', 1),
     ] },
     { name: '雷咒', nodes: [
       A('hex', 3),
       A('thunder-star', 3),
-      V0('noel-hex-up', '弱點延長', 'hex', '延長衰弱咒的弱點回合', turns(4, 5, 6)),
-      V0('noel-thunder-up', '雷星強化', 'thunder-star', '強化雷之星彈的威力', pct(115, 130, 150)),
+      V('noel-hex-wide', 'hex', '擴咒', [2, 3, 4].map((turns): SkillMod => ({ target: 'enemies', turns })), (m) => `改為對全體，弱點 ${m.turns} 回合。`),
+      V('noel-thunder-double', 'thunder-star', '雙響', [60, 65, 75].map((powerPct) => ({ hits: 2, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
       A('judgement', 1),
     ] },
   ] },
@@ -268,23 +284,27 @@ export const TREES: Record<CharacterId, TreeDef> = {
   rin: { branches: [
     { name: '暗器', nodes: [
       A('rin-needle', 3),
-      V0('rin-needle-up', '飛針強化', 'rin-needle', '強化飛針的威力', pct(110, 120, 135)),
+      V('rin-needle-three', 'rin-needle', '三連', [74, 80, 85].map((powerPct) => ({ hits: 3, powerPct })), (m) => `改為 ${m.hits} 段，每段威力 ${m.powerPct}%。`),
       A('rin-fan', 3),
       A('rin-venom-needle', 3),
       A('rin-storm', 1),
     ] },
     { name: '背刺', nodes: [
       A('rin-backstab', 3),
-      V0('rin-backstab-up', '背刺強化', 'rin-backstab', '強化背刺的威力', pct(110, 120, 135)),
+      V('rin-backstab-bleed', 'rin-backstab', '影縫', inflicting('bleed', 0.3, 0.4, 0.5), (m) => `命中時 ${chanceOf(m)}% 使目標流血。`),
       { ...A('rin-veil', 3), rank: 'turns' },
-      V0('rin-veil-up', '隱匿節流', 'rin-veil', '降低隱匿的 TP 消耗', tp(-1, -2, -3)),
+      K('rin-names', '名單', 'markCap', [2, 3, 4], (v) => `可以同時暗記 ${v} 個目標。`),
       A('rin-shadowless', 1),
     ] },
     { name: '處決', nodes: [
-      A('rin-mark', 3),
-      V0('rin-mark-up', '暗記節流', 'rin-mark', '降低暗記的 TP 消耗', tp(-1, -2, -3)),
+      // Her mark is innate (INNATE): this cell, where the tree used to teach it, makes it cheaper.
+      K('rin-mark-hone', '熟記', 'markTp', [5, 4, 3], (v) => `暗記只要 ${v} TP。`),
+      P(
+        V('rin-mark-steady', 'rin-mark', '不眨眼', [15, 20, 25].map((markCritPct) => ({ rules: { markCritPct } })), (m) => `打暗記的目標，暴擊傷害 +${m.rules!.markCritPct}%。`),
+        V('rin-mark-hop', 'rin-mark', '轉印', [1, 2, 3].map((markHops) => ({ rules: { markHops } })), (m) => `暗記的目標倒下時，暗記跳到下一個敵人（每場最多 ${m.rules!.markHops} 次）。`),
+      ),
       A('rin-execute', 3),
-      V0('rin-execute-up', '處決強化', 'rin-execute', '強化處決的威力', pct(115, 130, 150)),
+      V('rin-execute-chase', 'rin-execute', '追命', [1, 2, 3].map((again) => ({ rules: { again } })), (m) => `處決擊倒暗記的目標時，這回合的「還有。」多 ${m.rules!.again} 次。`),
       A('rin-deathblow', 1),
     ] },
   ] },
@@ -347,6 +367,13 @@ export const branchNodes = (b: TreeBranch): { node: TreeNode; tier: number }[] =
  * any other upgrade, the build learns the first of these it can (rank 0 to 1; later ranks come as upgrades).
  */
 export const DEFAULT_FIRST: Partial<Record<CharacterId, string[]>> = {};
+
+/**
+ * Skills a character knows from Lv1 outside her tree, for no point (8d Task 3 ruling 1): a core mechanic's entry skill
+ * must not compete with damage nodes for build points. Her tree's variants of it still apply (progression.nodeMods).
+ * Reusable: another character's core-mechanic entry skill may move here the same way if it hits the same wall.
+ */
+export const INNATE: Partial<Record<CharacterId, string[]>> = { rin: ['rin-mark'] };
 
 /** Every node by id, B sides too; `pair` is the id of the other side of its pair. */
 export const NODES: Record<string, { node: TreeNode; owner: CharacterId; branch: number; tier: number; pair?: string }> = {};

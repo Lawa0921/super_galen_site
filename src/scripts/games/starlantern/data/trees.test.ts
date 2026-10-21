@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, DEFAULT_FIRST, LEGACY_LEARN_LEVEL, NODES, P, TREES, V0, branchNodes, nodeDesc, nodeName, tierNodes } from './trees';
+import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, DEFAULT_FIRST, INNATE, LEGACY_LEARN_LEVEL, NODES, P, TREES, V0, branchNodes, nodeDesc, nodeName, nodeText, tierNodes, type TreeNode } from './trees';
 import { withNode } from '../engine/testing';
 import { CHARACTERS, rulesOf } from './characters';
 import { SKILLS } from './skills';
@@ -12,7 +12,8 @@ import { newMember } from '../engine/party';
 import type { CharacterId, Member } from '../engine/types';
 
 const ids = Object.keys(TREES) as CharacterId[];
-const allNodes = () => ids.flatMap((id) => TREES[id]!.branches.flatMap((b) => b.nodes));
+/** Every node, B sides of pairs too. */
+const allNodes = () => ids.flatMap((id) => TREES[id]!.branches.flatMap((b) => branchNodes(b).map((x) => x.node)));
 
 describe('skill trees', () => {
   /** Points a tree can take (plan 8d ruling 4): every rank of tiers 0-3 (a pair is one cell), less the free one, plus one ultimate. */
@@ -52,7 +53,7 @@ describe('skill trees', () => {
     const restore = withNode('noel', 0, 1, P(TREES.noel.branches[0].nodes[1], V0('test-star-b', '測試星', 'fire-star', '測試', [{ powerPct: 101 }])));
     const before = { ...DEFAULT_FIRST };
     try {
-      for (const [id, n] of [['rin', 'noel-fire-up'], ['noel', 'nope'], ['noel', 'test-star-b'], ['noel', 'blizzard'], ['hero', 'hero-slash']] as const) {
+      for (const [id, n] of [['rin', 'noel-star-twin'], ['noel', 'nope'], ['noel', 'test-star-b'], ['noel', 'blizzard'], ['hero', 'hero-slash']] as const) {
         for (const k of Object.keys(DEFAULT_FIRST)) delete DEFAULT_FIRST[k as CharacterId];
         DEFAULT_FIRST[id] = [n];
         expect(problems(), `${id} ${n}`).toHaveLength(1);
@@ -86,10 +87,11 @@ describe('skill trees', () => {
     expect([...ids].sort()).toEqual(Object.keys(CHARACTERS).sort());
   });
 
-  it("every skill in SKILLS is an active node of exactly one tree, its owner's", () => {
+  it("every skill in SKILLS is an active node of exactly one tree, its owner's, or innate to its owner", () => {
     for (const s of Object.values(SKILLS)) {
       const owners = ids.filter((id) => TREES[id]!.branches.some((b) => b.nodes.some((n) => n.kind === 'active' && n.id === s.id)));
-      expect(owners, s.id).toEqual([s.owner]);
+      const innate = ids.filter((id) => (INNATE[id] ?? []).includes(s.id));
+      expect([...owners, ...innate], s.id).toEqual([s.owner]);
     }
   });
 
@@ -134,9 +136,9 @@ describe('skill trees', () => {
     }
   });
 
-  it('active nodes are skills of their owner; mod nodes name an active node of the same tree', () => {
+  it('active nodes are skills of their owner; variants name an active node of the same tree; mechanic nodes turn a knob', () => {
     for (const id of ids) {
-      const nodes = TREES[id]!.branches.flatMap((b) => b.nodes);
+      const nodes = TREES[id]!.branches.flatMap((b) => branchNodes(b).map((x) => x.node));
       const actives = new Set(nodes.filter((n) => n.kind === 'active').map((n) => n.id));
       for (const n of nodes) {
         if (n.kind === 'active') {
@@ -144,10 +146,18 @@ describe('skill trees', () => {
           expect(SKILLS[n.skill!], n.id).toBeDefined();
           expect(SKILLS[n.skill!].owner).toBe(id);
           expect(n.name ?? n.desc ?? n.mods).toBeUndefined();
-        } else {
-          expect(actives.has(n.skill!), `${n.id} -> ${n.skill}`).toBe(true);
+        } else if (n.kind === 'mech') {
+          // A mechanic node: a name, a knob, one value and one sentence a rank; no skill.
+          expect(n.skill, n.id).toBeUndefined();
           expect(n.name, n.id).toBeTruthy();
-          expect(n.desc, n.id).toBeTruthy();
+          expect(n.knob, n.id).toBeTruthy();
+          expect(n.values, n.id).toHaveLength(n.maxRank);
+          expect(n.say, n.id).toBeDefined();
+        } else {
+          expect(actives.has(n.skill!) || (INNATE[id] ?? []).includes(n.skill!), `${n.id} -> ${n.skill}`).toBe(true);
+          // A plan 8d variant has a label and a sentence; a plan 8c one (V0) still has its name and words.
+          if (n.label !== undefined) expect(n.say, n.id).toBeDefined();
+          else { expect(n.name, n.id).toBeTruthy(); expect(n.desc, n.id).toBeTruthy(); }
         }
       }
     }
@@ -169,14 +179,14 @@ describe('skill trees', () => {
 
   it('a mod node deepens a buff or debuff only when its text says so', () => {
     for (const n of allNodes().filter((x) => x.kind === 'variant')) {
-      const says = /削弱|提升幅度/.test(n.desc!);
+      const says = /削弱|提升幅度/.test(n.desc ?? nodeText(n.id, 1));
       expect(n.mods!.some((m) => m.buffPct !== undefined), n.id).toBe(says);
       if (says) expect(SKILLS[n.skill!].effects.some((e) => e.kind === 'buff'), n.id).toBe(true);
     }
   });
 
-  it('the frost-bind and snare-shot upgrades deepen the debuff along with the power, and say so', () => {
-    for (const id of ['noel-bind-up', 'sylvie-snare-up']) {
+  it('the snare-shot upgrade deepens the debuff along with the power, and says so', () => {
+    for (const id of ['sylvie-snare-up']) {
       const n = NODES[id].node;
       expect(n.desc, id).toMatch(/削弱/);
       expect(n.mods!.map((m) => m.buffPct), id).toEqual(n.mods!.map((m) => m.powerPct));
@@ -248,8 +258,11 @@ describe('skill trees', () => {
     expect(NODES['flame-wave']).toMatchObject({ owner: 'noel', branch: 0, tier: 2 });
     expect(NODES.pickpocket).toMatchObject({ owner: 'liz', branch: 0, tier: 1 });
     expect(nodeName('sweep')).toBe(SKILLS.sweep.name);
-    expect(nodeName('noel-fire-up')).toBe('火星強化');
-    expect(nodeDesc('noel-fire-up')).toBeTruthy();
+    expect(nodeName('chizuru-sweep-up')).toBe('橫掃強化');
+    expect(nodeDesc('chizuru-sweep-up')).toBeTruthy();
+    expect(nodeName('noel-star-twin')).toBe('火之星彈・連星');
+    expect(nodeName('noel-calm')).toBe('冷靜');
+    expect(NODES['noel-star-heavy']).toMatchObject({ owner: 'noel', branch: 0, tier: 1, pair: 'noel-star-twin' });
     expect(nodeDesc('sweep')).toBe(SKILLS.sweep.desc);
   });
 
@@ -276,5 +289,42 @@ describe('skill trees', () => {
     }
     expect(NODES.turret.owner).toBe('bobby');
     expect(NODES['iron-wall'].owner).toBe('scarlet');
+  });
+});
+
+describe('node words (plan 8d)', () => {
+  /** Every number a rank's mod or value holds, as its words would say it: a chance in (0, 1) as a percent. */
+  const numbersOf = (n: TreeNode, r: number): number[] => {
+    const out: number[] = [];
+    const walk = (v: unknown, key = ''): void => {
+      if (key === 'notes') return;
+      if (typeof v === 'number') out.push(v > 0 && v < 1 ? Math.round(v * 100) : Math.abs(v));
+      else if (Array.isArray(v)) v.forEach((x) => walk(x));
+      else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, k);
+    };
+    if (n.kind === 'mech') walk(n.values![r - 1]); else walk(n.mods![r - 1]);
+    return out;
+  };
+
+  it('node words name their own numbers', () => {
+    const owners = ['noel', 'rin'] as const;   // Task 9 widens this to every tree
+    let checked = 0;
+    for (const id of owners) for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) {
+      if (node.kind === 'active') continue;
+      expect(node.say, node.id).toBeDefined();
+      for (let r = 1; r <= node.maxRank; r++) {
+        const text = nodeText(node.id, r);
+        expect(text, `${node.id} r${r}`).toMatch(/。$/);
+        // A whole number in the words: 「30%」 is not inside 「130%」.
+        const says = (v: number) => new RegExp(`(?<![0-9.])${v}(?![0-9.])`).test(text);
+        for (const v of numbersOf(node, r)) expect(says(v), `${node.id} r${r} names ${v}: ${text}`).toBe(true);
+        if (r > 1) {
+          const was = numbersOf(node, r - 1), now = numbersOf(node, r);
+          was.forEach((v, i) => { if (v !== now[i]) expect(says(v), `${node.id} r${r} still says ${v}: ${text}`).toBe(false); });
+        }
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(30);
   });
 });

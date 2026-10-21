@@ -3,7 +3,7 @@ import type { Rng } from './rng';
 import { armorReduction, evadeChance, EVADE_MAX } from './stats';
 import type { BuffStat, Element, Row, SecondaryKey, Stats, WeaponKind } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
-import { AIM, BEAT, EMBER, type MechState } from './mech';
+import { AIM, BEAT, EMBER, MARK, type MechState } from './mech';
 import type { MechCue } from './mechanics/index';
 import { credit, type Ledger } from './ledger';
 import { AILMENT, clearAilments, type AilmentShown, type Dot } from './ailments';
@@ -210,7 +210,11 @@ export function hitAmount(a: Combatant, t: Combatant, spec: DamageSpec, r: HitRo
   if (t.boss || t.tint === 'elite') mult *= 1 + ax('eliteDmg') / 100;
   if (spec.execute) mult *= 1 + (spec.execute / 100) * (1 - t.hp / t.max.hp);
   if (spec.wounded && t.hp < t.max.hp) mult *= 1 + spec.wounded / 100;
-  if (r.crit) mult *= 1 + (a.side === 'enemy' ? ENEMY_CRIT_DMG : ax('critDmg')) / 100;
+  // A crit on Rin's marked foe carries MARK.critSharePct of her crit damage (8d Task 3 ruling 1).
+  const marked = a.mech?.kind === 'mark' && a.mech.marks.includes(t.key);
+  if (r.crit) mult *= 1 + (a.side === 'enemy' ? ENEMY_CRIT_DMG : (ax('critDmg') * (marked ? MARK.critSharePct : 100)) / 100) / 100;
+  // Rin's 不眨眼 (plan 8d): a crit on her marked foe hits harder still.
+  if (r.crit && a.mech?.kind === 'mark' && a.mech.crit && a.mech.marks.includes(t.key)) mult *= 1 + a.mech.crit / 100;
   const aim = aimOn(a, t);
   if (aim) mult *= 1 + (AIM.dmgPct * aim) / 100;
   // Safira's beat: every hit of hers, her plain attack and her ultimate included.

@@ -8,7 +8,7 @@ import { skillCost, skillFor } from '../../engine/battle';
 import { itemLines } from '../../engine/compare';
 import { ROW_MELEE, rowOfCell } from '../../engine/formation';
 import {
-  boardKeystonesOf, canRaiseNode, canRaiseTalent, freeNode, memoryKeystoneAwake, learnedSkills, nodeRank, rankMod, skillPointsLeft, talentPointsLeft, ultimateFor,
+  boardKeystonesOf, canRaiseNode, canRaiseTalent, freeNode, treeCost, memoryKeystoneAwake, learnedSkills, nodeRank, rankMod, skillPointsLeft, talentPointsLeft, ultimateFor,
 } from '../../engine/progression';
 import type { RaiseFail, TalentFail } from '../../engine/progression';
 import { ABYSS_UNLOCK } from '../../data/hero';
@@ -259,8 +259,9 @@ const skills: StatusTab = {
           // A recovery skill that can also be cast from the labyrinth's field menu (SkillDef.field).
           ...(SKILLS[sk]?.field ? [el('span', { class: 'slx-field-tag', text: t.fieldTag })] : []),
           ...(s.passive ? [] : [el('span', { class: 'slx-skill-target', text: t.targets[s.target] })]),
-          el('span', { class: 'slx-skill-cost', text: s.passive ? t.passive : t.tp(skillCost(caster, sk)) }),
-          el('span', { class: 'slx-skill-rank', text: t.rank(nodeRank(m, sk), NODES[sk].node.maxRank) }),
+          el('span', { class: 'slx-skill-cost', text: s.passive ? t.passive : t.tp(treeCost(m, sk, skillCost(caster, sk))) }),
+          // A skill she knows outside her tree (Rin's mark) has no rank to show.
+          el('span', { class: 'slx-skill-rank', text: NODES[sk] ? t.rank(nodeRank(m, sk), NODES[sk].node.maxRank) : t.innate }),
         ]),
         el('p', { class: 'slx-desc', text: s.desc }),
         ...changed.map((p) => el('p', { class: 'slx-skill-power', text: p.text })),
