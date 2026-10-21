@@ -304,6 +304,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
           invChanged = true;
         }
         else if (e.type === 'eat') { sound.munch(); invChanged = true; }
+        else if (e.type === 'toss') invChanged = true;
         else if (e.type === 'pickup') {
           if (e.rarity !== undefined) {
             sound.lootPickup(e.rarity);

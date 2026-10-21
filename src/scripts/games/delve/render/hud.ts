@@ -351,6 +351,8 @@ export class Hud {
 
   /** 背包變動後呼叫（事件驅動 + 定期保底） */
   refresh(): void {
+    // 選中的背包格被清空了（G 丟出、吃掉、放完最後一個…）：取消選取，免得點下一格變成「把空格換過去」
+    if (this.picked !== null && !this.game.inventory.slots[this.picked]) this.picked = null;
     const sel = this.game.inventory.selected;
     for (let i = 0; i < this.hotbar.length; i++) this.paintSlot(this.hotbar[i], i, i === sel);
     const chest = this.game.chestSlots();
