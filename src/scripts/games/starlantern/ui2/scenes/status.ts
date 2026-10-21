@@ -31,9 +31,11 @@ export class StatusScene implements Scene {
   enter(root: HTMLElement): void {
     const p = this.ctx.game.state.party;
     const arg = this.ctx.arg ?? '';
-    this.id = p.recruited.includes(arg as CharacterId) ? (arg as CharacterId) : (p.recruited.includes('hero') ? 'hero' : (activeIds(p)[0] ?? p.recruited[0]));
-    // `tab:<id>` (the guild's skill-tree and talent entries): open that page, with its kept cursor brought into view.
-    const want = arg.startsWith('tab:') ? STATUS_TABS.findIndex((t) => t.id === arg.slice(4)) : -1;
+    // `tab:<id>` (the guild's skill-tree and talent entries) or `tab:<id>:<member>` (back from the workshop, plan 8g).
+    const [, tabId, who] = arg.startsWith('tab:') ? arg.split(':') : ['', '', arg];
+    this.id = p.recruited.includes(who as CharacterId) ? (who as CharacterId) : (p.recruited.includes('hero') ? 'hero' : (activeIds(p)[0] ?? p.recruited[0]));
+    // Open that page, with its kept cursor brought into view.
+    const want = tabId ? STATUS_TABS.findIndex((t) => t.id === tabId) : -1;
     if (want >= 0) { this.tab = want; STATUS_TABS[want].reveal?.(); }
     this.standee = el('div', { class: 'slx-status-art' });
     const arrow = (cls: string, text: string, a: UiAction) => {
@@ -70,7 +72,12 @@ export class StatusScene implements Scene {
       updateCues(this.bodyEl);
       return;
     }
-    if (a === 'cancel') { this.ctx.sfx.cancel(); this.ctx.go(this.ctx.from ?? 'guild'); }
+    // Back from the workshop the sheet does not return to it: to the labyrinth or the guild, whichever opened them.
+    if (a === 'cancel') {
+      this.ctx.sfx.cancel();
+      const from = this.ctx.from === 'workshop' ? (this.ctx.game.phase === 'map' ? 'dungeon' : 'guild') : this.ctx.from;
+      this.ctx.go(from ?? 'guild');
+    }
   }
 
   private page(d: 1 | -1): void {

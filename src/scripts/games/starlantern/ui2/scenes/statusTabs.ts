@@ -22,6 +22,9 @@ import type { UiAction } from '../input';
 import { gearLabel, rarityClass } from '../loot';
 import type { SceneCtx } from '../scene';
 import { cancelSpend, clickSpend, pressSpend, type SpendState } from '../spendPress';
+import { battleTp, slotDots, slotStates } from '../skillCard';
+import { RUNES } from '../../data/runes';
+import { socketable } from '../../engine/sockets';
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 
@@ -175,7 +178,8 @@ const stats: StatusTab = {
 
     return el('div', { class: 'slx-tab-stats' }, [
       el('div', { class: 'slx-status-facts' }, [
-        el('p', { text: `HP ${m.hp}／${st.hp}　TP ${m.tp}／${st.tp}` }),
+        // With 常駐 holding some back, the max TP a fight leaves her (plan 8g ruling 9).
+        el('p', { text: `HP ${m.hp}／${st.hp}　TP ${m.tp}／${st.tp}${((tp) => (tp === null ? '' : t.tpBattle(tp)))(battleTp(m))}` }),
         el('p', { text: t.exp(m.exp, expToNext(m.level)) }),
         el('p', { text: t.place(row ? T.ui2.rows[row] : T.ui2.formation.reserve) }),
         el('p', { text: t.attack(def.melee, row ? Math.round(ROW_MELEE[row] * 100) : null) }),
@@ -237,9 +241,22 @@ const gear: StatusTab = {
   },
 };
 
+/** The workshop on `id`'s `skill` (plan 8g Task 5), or on her first skill that takes runes. */
+const toWorkshop = (ctx: SceneCtx, id: CharacterId, skill?: string): boolean => {
+  const first = skill ?? socketable(ctx.game.state.party.roster[id])[0];
+  if (!first) return false;
+  ctx.sfx.confirm();
+  ctx.go('workshop', `${id}:${first}`);
+  return true;
+};
+
 const skills: StatusTab = {
   id: 'skills',
   label: T.ui2.status.tabs.skills,
+  hint: T.ui2.status.hintSkills,
+  onAction(a, ctx, id) {
+    return a === 'confirm' ? toWorkshop(ctx, id) : false;
+  },
   render(ctx, id) {
     const t = T.ui2.status;
     const m = ctx.game.state.party.roster[id];
@@ -248,17 +265,23 @@ const skills: StatusTab = {
     const powers = powersOf(m);
     const caster = fromMember(m, 0);
     // Only what the member has learned, each with its rank in the tree.
+    const runed = socketable(m);
     return el('div', { class: 'slx-tab-skills' }, learnedSkills(m).flatMap((sk) => {
       const s = skillFor(caster, sk);
       if (!s) return [];
       const changed = powers.map((p) => POWERS[p]).filter((p) => p && p.skill === sk);
-      return el('div', { class: 'slx-skill', attrs: { 'data-skill': sk } }, [
+      // A skill that takes runes: its slot dots after the name, a line for each rune in it (greyed with its reason when it
+      // does nothing), and a click opens the workshop on it (plan 8g Task 5).
+      const takes = runed.includes(sk);
+      const runes = takes ? slotStates(m, sk).flatMap((x) => (x.ref ? [x] : [])) : [];
+      const node = el('div', { class: takes ? 'slx-skill slx-skill-runed' : 'slx-skill', attrs: { 'data-skill': sk } }, [
         ...skillIco(ctx, sk),
         el('div', { class: 'slx-skill-head' }, [
           // A name with two variants on it (設置砲台・雙管・雙砲台, plan 8d Task 8) is set a size smaller, so it stays whole.
           el('span', { class: s.name.length >= LONG_SKILL_NAME ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: s.name }),
           // A recovery skill that can also be cast from the labyrinth's field menu (SkillDef.field).
           ...(SKILLS[sk]?.field ? [el('span', { class: 'slx-field-tag', text: t.fieldTag })] : []),
+          ...(takes ? [el('span', { class: 'slx-skill-slots', text: slotDots(m, sk) })] : []),
           ...(s.passive ? [] : [el('span', { class: 'slx-skill-target', text: t.targets[s.target] })]),
           el('span', { class: 'slx-skill-cost', text: s.passive ? t.passive : t.tp(treeCost(m, sk, skillCost(caster, sk))) }),
           // A skill she knows outside her tree (Rin's mark) has no rank to show.
@@ -266,7 +289,13 @@ const skills: StatusTab = {
         ]),
         el('p', { class: 'slx-desc', text: s.desc }),
         ...changed.map((p) => el('p', { class: 'slx-skill-power', text: p.text })),
+        ...runes.map((x) => el('p', { class: x.state === 'off' ? 'slx-skill-rune slx-line-off' : 'slx-skill-rune' }, [
+          `${T.rune.label(x.ref!.id, x.ref!.tier)}：${RUNES[x.ref!.id].text(x.ref!.tier)}`,
+          ...(x.state === 'off' && x.why ? [el('span', { class: 'slx-line-note', text: T.ui2.workshop.off(x.why) })] : []),
+        ])),
       ]);
+      if (takes) node.addEventListener('click', () => { if (!locked(node)) toWorkshop(ctx, id, sk); });
+      return node;
     }));
   },
 };
@@ -526,7 +555,13 @@ const tree: StatusTab = {
       // Points put into the branch: its ranks (both sides of a pair), less branch 0's free first rank.
       const spent = branchNodes(b).reduce((s, x) => s + nodeRank(m, x.node.id), 0) - (bi === 0 ? Math.min(1, nodeRank(m, freeNode(id))) : 0);
       return el('section', { class: 'slx-tree-branch', attrs: { 'data-branch': String(bi) } }, [
-        el('h5', { class: 'slx-tree-branch-name', text: t.branch(b.name, spent) }),
+        // Five branches (the hero's) are narrow: the name on one line, its points on the next, both whole (plan 8g Task 5).
+        branches.length > 3
+          ? el('h5', { class: 'slx-tree-branch-name' }, [
+            el('span', { class: 'slx-tree-branch-title', text: b.name }),
+            el('span', { class: 'slx-tree-branch-pts', text: t.branch(b.name, spent).slice(b.name.length) }),
+          ])
+          : el('h5', { class: 'slx-tree-branch-name', text: t.branch(b.name, spent) }),
         ...b.nodes.map((_, tier) => cell(b, tier)),
       ]);
     });

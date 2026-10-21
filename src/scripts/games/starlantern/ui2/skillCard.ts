@@ -283,10 +283,21 @@ export function battleLine(def: SkillDef): string {
   return parts.join(W.battle.sep);
 }
 
+/** The max TP a fight leaves her when her working 常駐 runes hold some back (plan 8g ruling 9); else null. */
+export function battleTp(m: Member): number | null {
+  const held = battleReservePct(fromMember(m, 0));
+  return held > 0 ? battleMax(statsOf(m).tp, held) : null;
+}
+
 /** Her max TP and what a battle leaves of it when her working 常駐 runes hold some back (plan 8g ruling 9); else null. */
 export function reserveLine(m: Member): string | null {
   const held = battleReservePct(fromMember(m, 0));
   if (held <= 0) return null;
   const tp = statsOf(m).tp;
   return W.reserve(tp, battleMax(tp, held), held);
+}
+
+/** A skill's open slots as glyphs (controller ruling): ◆ a working rune, ◇ a rune that does nothing, ○ an empty slot. */
+export function slotDots(m: Member, skill: string): string {
+  return slotStates(m, skill).map((s) => (s.state === 'on' ? '◆' : s.state === 'off' ? '◇' : '○')).join('');
 }

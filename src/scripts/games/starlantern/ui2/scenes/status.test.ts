@@ -12,6 +12,11 @@ import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView } from './s
 import { StatusScene } from './status';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
+import { RUNES, type RuneRef } from '../../data/runes';
+import { fromMember, skillFor } from '../../engine/battle';
+import { runeFits, runeWhy } from '../../engine/runes';
+import { memoryStorage } from '../../engine/testing';
+import type { SceneName } from '../scene';
 import { SKILLS } from '../../data/skills';
 import { NODES, TREES, branchNodes, nodeText } from '../../data/trees';
 import { BOARDS, KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE } from '../../data/talents';
@@ -338,6 +343,11 @@ describe('StatusScene', () => {
           expect(hint()).toContain('↑↓ 換列');
           expect(hint()).toContain('Tab 換欄');
           expect(hint()).toContain('Enter 投點');
+          continue;
+        }
+        // The skills tab's Enter opens the workshop (plan 8g Task 5).
+        if (tab() === T.ui2.status.tabs.skills) {
+          expect(hint()).toBe(T.ui2.status.hintSkills);
           continue;
         }
         expect(hint()).not.toContain('Enter');
@@ -1685,5 +1695,99 @@ describe('Rin after her oath', () => {
     expect(after.name()).toContain('破鐘刺客');
     expect(after.name()).not.toContain(CHARACTERS.rin.title);
     expect(OATH_TITLE).toBe('破鐘刺客');
+  });
+});
+
+describe('the skills page and the workshop (plan 8g Task 5)', () => {
+  const R = (id: RuneRef['id'], tier: RuneRef['tier'] = 'magic'): RuneRef => ({ id, tier });
+  const label = (r: RuneRef) => T.rune.label(r.id, r.tier);
+  /** The sheet on a game prepared by `prep`, opened from `from` with `arg`. */
+  const open = (prep: (g: Game) => void, arg: string, from: SceneName = 'guild') => {
+    const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, LEGACY_LINEUP);
+    prep(game);
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new StatusScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), from, arg });
+    s.enter(root);
+    return { game, go, root, s, skill: (sk: string) => root.querySelector<HTMLElement>(`.slx-skill[data-skill="${sk}"]`) };
+  };
+  const noel = (tree: Record<string, number>, sockets: Record<string, (RuneRef | null)[]>) => (g: Game) => {
+    g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 20, tree, sockets };
+    g.state.runesOpen = true;
+  };
+
+  it('the skills page shows slots and runes, and opens the workshop', () => {
+    const w = open(noel({ 'fire-star': 1, 'ice-star': 1 }, { 'fire-star': [R('spread')] }), 'tab:skills:noel');
+    expect(w.root.querySelector('.slx-tab-sel')!.textContent).toBe(T.ui2.status.tabs.skills);
+    expect(w.root.querySelector('.slx-hint')!.textContent).toBe(T.ui2.status.hintSkills);
+    const fire = w.skill('fire-star')!;
+    expect(fire.querySelector('.slx-skill-head .slx-skill-slots')!.textContent).toBe('◆○');
+    const rune = fire.querySelector('.slx-skill-rune')!;
+    expect(rune.textContent).toBe(`${label(R('spread'))}：${RUNES.spread.text('magic')}`);
+    expect(rune.classList.contains('slx-line-off')).toBe(false);
+    expect(w.skill('ice-star')!.querySelector('.slx-skill-slots')!.textContent).toBe('○○');
+    // Enter: the workshop on her first skill that takes runes; a click on a skill: that skill.
+    w.s.onAction('confirm');
+    expect(w.go).toHaveBeenLastCalledWith('workshop', 'noel:fire-star');
+    w.skill('ice-star')!.click();
+    expect(w.go).toHaveBeenLastCalledWith('workshop', 'noel:ice-star');
+    // A rune that no longer works (火焰波 hits them all): ◇, greyed, with its reason.
+    const off = open(noel({ 'flame-wave': 1 }, { 'flame-wave': [R('spread')] }), 'tab:skills:noel');
+    const m = off.game.state.party.roster.noel;
+    const why = runeWhy(runeFits(skillFor(fromMember(m, 0), 'flame-wave')!, 'spread', [])!);
+    expect(off.skill('flame-wave')!.querySelector('.slx-skill-slots')!.textContent).toBe('◇○');
+    const line = off.skill('flame-wave')!.querySelector('.slx-skill-rune')!;
+    expect(line.classList.contains('slx-line-off')).toBe(true);
+    expect(line.textContent).toContain(T.ui2.workshop.off(why));
+    // A passive takes no rune: no dots, and a click on it opens nothing.
+    const liz = open((g) => { g.state.party.roster.liz = { ...g.state.party.roster.liz, level: 20, tree: { 'twin-slash': 1, stealth: 1 } }; }, 'tab:skills:liz');
+    expect(liz.skill('stealth')!.querySelector('.slx-skill-slots')).toBeNull();
+    liz.skill('stealth')!.click();
+    expect(liz.go).not.toHaveBeenCalled();
+  });
+
+  it('back from the workshop lands on the same member\'s skills', () => {
+    const w = open((g) => { g.state.party.recruited.push('sylvie'); }, 'tab:skills:sylvie', 'workshop');
+    expect(w.root.querySelector('.slx-status-name')!.textContent).toContain(CHARACTERS.sylvie.name);
+    expect(w.root.querySelector('.slx-tab-sel')!.textContent).toBe(T.ui2.status.tabs.skills);
+    w.s.onAction('cancel');
+    expect(w.go).toHaveBeenCalledWith('guild');
+    const field = open((g) => { g.phase = 'map'; }, 'tab:skills:noel', 'workshop');
+    field.s.onAction('cancel');
+    expect(field.go).toHaveBeenCalledWith('dungeon');
+    // A member not met: the usual first member, on the skills page.
+    const unmet = open(() => undefined, 'tab:skills:bobby');
+    expect(unmet.root.querySelector('.slx-status-name')!.textContent).not.toContain(CHARACTERS.bobby.name);
+    expect(unmet.root.querySelector('.slx-tab-sel')!.textContent).toBe(T.ui2.status.tabs.skills);
+  });
+
+  it('the TP held for battle shows on the stats page', () => {
+    const lasting = R('lasting');
+    const held = (sockets: Record<string, RuneRef[]>) => open((g) => {
+      g.state.party.recruited.push('safira');
+      g.state.party.roster.safira = { ...g.state.party.roster.safira, level: 20, tree: { 'blade-dance': 1, 'war-dance': 1 }, sockets };
+    }, 'safira');
+    const w = held({ 'war-dance': [lasting] });
+    const m = w.game.state.party.roster.safira;
+    const max = statsOf(m).tp;
+    const pct = RUNES.lasting.mod('magic').lasting!.reservePct;
+    expect(w.root.querySelector('.slx-status-facts p')!.textContent).toContain(T.ui2.status.tpBattle(Math.floor((max * (100 - pct)) / 100)));
+    // On a skill she has not learned it holds nothing in battle.
+    const idle = held({ 'desert-festival': [lasting] });
+    expect(idle.root.querySelector('.slx-status-facts p')!.textContent).not.toContain(T.ui2.status.tpBattle(0).slice(0, 4));
+  });
+
+  it("the hero's five branch names: the name, then its points on a line of their own", () => {
+    const w = open(() => undefined, 'tab:tree:scarlet');
+    const hero = open((g) => { g.state.party.recruited.push('hero'); }, 'tab:tree:hero');
+    const heads = [...hero.root.querySelectorAll('.slx-tree-wide .slx-tree-branch-name')];
+    expect(heads.length).toBe(5);
+    for (const h of heads) {
+      const [name, pts] = [...h.querySelectorAll('span')].map((x) => x.textContent);
+      expect(h.textContent).toBe(`${name}${pts}`);
+      expect(T.ui2.tree.branch(name!, 0).startsWith(name!)).toBe(true);
+    }
+    // Three branches stay one line, one span.
+    expect(w.root.querySelector('.slx-tree-branch-name span')).toBeNull();
   });
 });

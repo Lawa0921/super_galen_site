@@ -3756,5 +3756,70 @@ test.describe('starlantern', () => {
       expect(saved.party.roster.noel.sockets).toEqual({ 'fire-star': [{ id: 'bounce', tier: 'magic' }] });
       expect(w.errors).toEqual([]);
     });
+
+    test("the status page: columns line up across categories, the hero's branch names are whole, and the skills page leads to the workshop (plan 8g)", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const w = await setup(page, 7);
+      await page.evaluate(() => {
+        const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+        s.runesOpen = true;
+        s.party.recruited = [...s.party.recruited, 'noel'];
+        s.party.roster.noel = { ...s.party.roster.noel, level: 20, tree: { 'fire-star': 1 }, sockets: { 'fire-star': [{ id: 'spread', tier: 'magic' }] } };
+      });
+      await w.choose('.slx-town', '冒險者公會');
+      await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+      await page.locator('.slx-guild [data-id=status]').click();
+      await expect(page.locator('.slx-status-scene')).toBeVisible();
+      // Every category open: the n-th column starts at the same x in every table.
+      for (let i = 0; i < 8; i++) {
+        const closed = page.locator('.slx-stat-cat-head[aria-expanded=false]');
+        if (!(await closed.count())) break;
+        await closed.first().click();
+      }
+      const columns = async (vw: number) => {
+        const lefts = await page.locator('.slx-stat-table').evaluateAll((ts) => ts.map((t) => [...t.querySelectorAll('thead th')].map((th) => th.getBoundingClientRect().left)));
+        expect(lefts.length, `tables at ${vw}`).toBeGreaterThan(1);
+        for (const l of lefts) {
+          expect(l.length).toBe(lefts[0].length);
+          l.forEach((x, i) => expect(Math.abs(x - lefts[0][i]), `column ${i} at ${vw}`).toBeLessThanOrEqual(0.5));
+        }
+      };
+      const branches = async (vw: number) => {
+        const heads = await page.locator('.slx-tree-branch-name').evaluateAll((hs) => hs.map((h) => ({
+          t: h.textContent, over: h.scrollWidth > h.clientWidth + 0.5, ellipsis: getComputedStyle(h).textOverflow === 'ellipsis',
+        })));
+        expect(heads.length, `branches at ${vw}`).toBe(5);
+        expect(heads.filter((h) => h.over || h.ellipsis), `cut branch names at ${vw}`).toEqual([]);
+      };
+      for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+        await page.setViewportSize({ width: vw, height: vh });
+        await page.waitForTimeout(150);
+        await page.locator('.slx-tab[data-tab=stats]').click();
+        await columns(vw);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/status-columns-${vw}.png` });
+        await page.locator('.slx-tab[data-tab=tree]').click();   // the hero's five branches
+        await branches(vw);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/status-hero-tree-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      // The skills page: Noel's 火之星彈 with its dots and rune line; a click opens the workshop on it.
+      await flipTo(page, '諾艾兒');
+      await page.locator('.slx-tab[data-tab=skills]').click();
+      const fire = page.locator('.slx-skill[data-skill=fire-star]');
+      await expect(fire.locator('.slx-skill-slots')).toHaveText('◆○');
+      await expect(fire.locator('.slx-skill-rune')).toContainText('擴散（魔法）：');
+      await fire.click();
+      await expect(page.locator('.slx-workshop')).toBeVisible();
+      await expect(page.locator('.slx-ws-name')).toContainText('諾艾兒');
+      await expect(page.locator('.slx-ws-skills [aria-selected=true]')).toHaveAttribute('data-id', 'fire-star');
+      await w.key('Escape');                                  // back to her skills page
+      await expect(page.locator('.slx-status-scene')).toBeVisible();
+      await expect(page.locator('.slx-status-name')).toContainText('諾艾兒');
+      await expect(page.locator('.slx-tab-sel')).toHaveText('技能');
+      await w.key('Escape');                                  // back to the guild, no new greeting
+      await expect(page.locator('.slx-guild')).toBeVisible();
+      await expect(page.locator('.slx-talk')).toBeHidden();
+      expect(w.errors).toEqual([]);
+    });
   });
 });

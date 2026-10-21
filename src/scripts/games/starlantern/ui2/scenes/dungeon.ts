@@ -38,6 +38,8 @@ const CONDITION_BANNER_MS = 2000;
 const FLASH_MS = 450;
 /** The readout turns yellow past this share of the carry limit, red at the limit. */
 const HEAVY_SHARE = 0.8;
+/** The field menu shows all its lines at once (eleven with the workshop, plan 8g Task 5): no ▼ to reach 關閉. */
+const FIELD_MENU_ROWS = 12;
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
 /** Labyrinth: map on the Pixi stage, party bar, floor name, encounter lamp, events as dialogue, a field menu. */
@@ -414,12 +416,12 @@ export class DungeonScene implements Scene {
     this.layers.forEach((l, i) => lock(l.el, busy || i < this.layers.length - 1));
   }
 
-  private list(items: MenuItem[], pick: (it: MenuItem) => void, cls = 'slx-list', title?: string): void {
+  private list(items: MenuItem[], pick: (it: MenuItem) => void, cls = 'slx-list', title?: string, rows = 10): void {
     const v = new MenuView(new Menu(items), {
       pick: (it) => { this.ctx.sfx.confirm(); pick(it); },
       moved: () => this.ctx.sfx.cursor(),
       cancel: () => { this.ctx.sfx.cancel(); this.pop(); },
-    }, 10);
+    }, rows);
     this.push({ el: win(cls, [...(title ? [el('div', { class: 'slx-who', text: title })] : []), v.el]), onAction: (a) => v.onAction(a) });
   }
 
@@ -454,6 +456,7 @@ export class DungeonScene implements Scene {
       { id: 'skills', label: d.skills, disabled: this.casters().length === 0 },
       { id: 'items', label: d.items, disabled: this.usableItems().length === 0 },
       { id: 'equip', label: d.equip },
+      { id: 'workshop', label: d.workshop },
       { id: 'formation', label: d.formation },
       { id: 'lamp', label: d.lamp(lamps), disabled: lamps <= 0 },
       ...(cond ? [{ id: 'condition', label: d.conditionItem(cond.name) }] : []),
@@ -466,12 +469,12 @@ export class DungeonScene implements Scene {
       if (it.id === 'lamp') { this.askLamp(); return; }
       if (it.id === 'settings') { this.popAll(); this.leaving = true; this.ctx.go('settings'); return; }
       if (it.id === 'handbook') { this.popAll(); this.leaving = true; this.ctx.go('handbook', 'dungeon'); return; }
-      // The labyrinth modes of the equipment and formation screens (they read the phase); closing them comes back here.
-      if (it.id === 'equip' || it.id === 'formation') { this.popAll(); this.leaving = true; this.ctx.go(it.id); return; }
+      // The labyrinth modes of the equipment, workshop and formation screens (they read the phase); closing them comes back here.
+      if (it.id === 'equip' || it.id === 'workshop' || it.id === 'formation') { this.popAll(); this.leaving = true; this.ctx.go(it.id); return; }
       if (it.id === 'skills') { this.skillList(); return; }
       if (it.id === 'items') { this.itemList(); return; }
       this.statusList();
-    }, 'slx-list slx-field-menu');
+    }, 'slx-list slx-field-menu', undefined, FIELD_MENU_ROWS);
   }
 
   /** Members on the field who can cast in the field: standing, with a field skill learned. */

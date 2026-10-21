@@ -313,6 +313,10 @@ export const T = {
       hint: '←→ 分頁　Q／E 換人　↑↓ 捲動　Esc 返回',
       /** The stats tab's own keys: a row cursor and folding. */
       hintStats: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 摺疊　Esc 返回',
+      /** The skills tab's keys (plan 8g Task 5): Enter or a click on a skill opens the workshop. */
+      hintSkills: '←→ 分頁　Q／E 換人　↑↓ 捲動　Enter／點一招：技能工坊　Esc 返回',
+      /** After the TP line, when 常駐 holds some back: the max TP a fight leaves her (plan 8g ruling 9). */
+      tpBattle: (n: number) => `（戰鬥中上限 ${n}）`,
       /** The tree and talent tabs' own keys: a node cursor and the two-press spend. */
       hintTree: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 投點　Esc 返回',
       /** The talent tab's own keys: ↑↓ go between the board's rows, Tab along a row (←→ stay the tab switch). */
@@ -677,7 +681,7 @@ export const T = {
       bagRoom: (n: number) => `背包剩 ${n} 格，帶回的裝備放不下的會遺失。`,
       conditionItem: (name: string) => `本次狀況　${name}`, conditionLine: (name: string, desc: string) => `${name}：${desc}`,
       /** The field menu's recovery skills (plan 6f): who casts, which skill, on whom, then one line per member helped. */
-      skills: '技能', equip: '裝備', formation: '隊形',
+      skills: '技能', equip: '裝備', workshop: '技能工坊', formation: '隊形',
       castWho: '誰要施放技能？',
       castWhat: (name: string) => `${name}要施放哪個技能？`,
       castOn: (skill: string) => `${skill}要對誰施放？`,

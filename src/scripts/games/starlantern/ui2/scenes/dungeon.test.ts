@@ -885,11 +885,18 @@ describe('DungeonScene field menu: skills, equipment and formation (6f Task 5)',
   it('the field menu lists skills, equipment and formation in order', () => {
     const { game, s, root } = setup();
     s.onAction('menu');
-    expect(options(root).map((o) => o.dataset.id)).toEqual(['status', 'skills', 'items', 'equip', 'formation', 'lamp', 'condition', 'handbook', 'settings', 'close']);
+    expect(options(root).map((o) => o.dataset.id)).toEqual(['status', 'skills', 'items', 'equip', 'workshop', 'formation', 'lamp', 'condition', 'handbook', 'settings', 'close']);
     expect(labels(root)).toEqual([
-      d.status, '技能', d.items, '裝備', '隊形', d.lamp(game.state.inventory['return-lamp'] ?? 0),
+      d.status, '技能', d.items, '裝備', d.workshop, '隊形', d.lamp(game.state.inventory['return-lamp'] ?? 0),
       d.conditionItem(CONDITIONS[game.run!.condition].name), d.handbook, T.ui2.title.settings, d.close,
     ]);
+  });
+
+  it('the field menu opens the workshop', () => {
+    const { s, root, go } = setup();
+    s.onAction('menu');
+    row(root, d.workshop).click();
+    expect(go).toHaveBeenCalledWith('workshop');
   });
 
   it('skills is disabled while nobody has learned a field skill', () => {

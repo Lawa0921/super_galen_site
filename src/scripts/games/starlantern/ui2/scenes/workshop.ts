@@ -10,7 +10,7 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
-import { cardOf, compareCards, previewOf, reserveLine, runeChoices, slotStates, type Card, type RuneAction, type RuneChoice } from '../skillCard';
+import { cardOf, compareCards, previewOf, reserveLine, runeChoices, slotDots, slotStates, type Card, type RuneAction, type RuneChoice } from '../skillCard';
 import { MenuView, backControl, win } from '../widgets';
 import { cueFrame, updateCues } from './statusTabs';
 
@@ -319,9 +319,9 @@ export class WorkshopScene implements Scene {
     );
   }
 
-  /** ◆ a working rune, ◇ a rune that does nothing, ○ an empty slot; slots not open yet are not drawn (controller ruling). */
+  /** ◆ a working rune, ◇ a rune that does nothing, ○ an empty slot; slots not open yet are not drawn (skillCard slotDots). */
   private dots(skill: string): string {
-    return slotStates(this.member, skill).map((s) => (s.state === 'on' ? '◆' : s.state === 'off' ? '◇' : '○')).join('');
+    return slotDots(this.member, skill);
   }
 
   private renderSkills(): void {
