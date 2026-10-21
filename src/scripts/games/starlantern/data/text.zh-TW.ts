@@ -135,6 +135,8 @@ export const T = {
     echo: (name?: string) => (name ? `殘響：${name}` : '殘響'),
     echoAct: (name: string) => `殘響・${name}`,
     echoNote: (pct: number, desc: string) => `以 ${pct}% 的威力重現：${desc}`,
+    /** After the note when the record left a variant's mechanic extras out (8d final review). */
+    echoDropped: '（機制效果不會重現）',
   },
   battle: {
     win: '勝利！', lose: '全滅……', fled: '成功逃跑', cont: '繼續', poison: '毒', sleep: '睡眠',

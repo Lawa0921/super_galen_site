@@ -22,12 +22,15 @@ function pruneMarks(party: Combatant[], enemies: Combatant[]): void {
     const m = c.mech;
     if (m?.kind !== 'mark') continue;
     const up = (k: string) => enemies.some((e) => e.key === k && e.alive);
+    // A jump never lands on a foe she already marks, standing or just jumped to (two marks falling together, 8d final review).
+    const taken = new Set(m.marks.filter(up));
     m.marks = m.marks.flatMap((k) => {
       if (up(k)) return [k];
       if ((m.hopped ?? 0) >= (m.hops ?? 0)) return [];
-      const next = enemies.find((e) => e.alive && !m.marks.includes(e.key));
+      const next = enemies.find((e) => e.alive && !taken.has(e.key));
       if (!next) return [];
       m.hopped = (m.hopped ?? 0) + 1;
+      taken.add(next.key);
       return [next.key];
     });
   }

@@ -55,6 +55,31 @@ describe("the hero's echo", () => {
     expect(r.party[0].steady).toBeUndefined();
   });
 
+  it("a variant's mechanic extra is not copied: 挑釁・高喊 and 箭雨・覆蓋 are echoed as their plain part (8d final review)", () => {
+    // 高喊: 挑釁 also stores embers. The record keeps the taunt and drops the embers effect, and says it dropped something.
+    const rs = resolveRound(makeBattle([hero(), P('scarlet', { ranks: { provoke: 1, 'scarlet-provoke-shout': 1 }, mech: { kind: 'embers', embers: 0 } })], [foe()]),
+      { scarlet: { kind: 'skill', skill: 'provoke' } }, constRng(0.5));
+    const rec = echoOf(rs)!;
+    expect(rec.def.name).toBe('挑釁・高喊');
+    expect(rec.def.effects).toEqual(SKILLS.provoke.effects);
+    expect(rec.dropped).toBe(true);
+    // 覆蓋: 箭雨 also adds aim. The record keeps the arrows, drops the aim.
+    const rain = resolveRound(makeBattle([hero(), P('sylvie', { ranks: { 'arrow-rain': 1, 'sylvie-rain-cover': 1 }, mech: { kind: 'aim', target: null, stacks: 0 } })], [foe()]),
+      { sylvie: { kind: 'skill', skill: 'arrow-rain', target: 'e0' } }, constRng(0.5));
+    const rr = echoOf(rain)!;
+    expect(rr.def.name).toBe('箭雨・覆蓋');
+    expect(rr.def.effects).toEqual(SKILLS['arrow-rain'].effects);
+    expect(rr.dropped).toBe(true);
+    // A plain skill drops nothing; a skill that is all mechanic (a device) is still never recorded.
+    const plain = resolveRound(makeBattle([hero(), P('noel', { mech: { kind: 'heat', heat: 0 } })], [foe()]), { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' } }, constRng(0.5));
+    expect(echoOf(plain)!.dropped).toBeUndefined();
+    const turret = resolveRound(makeBattle([hero(), P('bobby', { mech: { kind: 'devices', devices: [], cap: 2 } })], [foe()]), { bobby: { kind: 'skill', skill: 'turret' } }, constRng(0.5));
+    expect(echoOf(turret)).toBeNull();
+    // A skill that is a mechanic in itself (8c's choice, e.g. 暗記's mark or 釘足箭's delay) stays unechoed: only a variant's extras drop.
+    const pin = resolveRound(makeBattle([hero(), P('sylvie', { mech: { kind: 'aim', target: null, stacks: 0 } })], [foe()]), { sylvie: { kind: 'skill', skill: 'pin-shot', target: 'e0' } }, constRng(0.5));
+    expect(echoOf(pin)).toBeNull();
+  });
+
   it('short of TP he loses the turn, as with a skill', () => {
     const s0 = makeBattle([hero({ tp: 1 }), P('noel')], [foe()]);
     const r = resolveRound(s0, { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' }, hero: { kind: 'echo', target: 'e0' } }, constRng(0.5));

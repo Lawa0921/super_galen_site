@@ -213,6 +213,21 @@ describe("Rin's tree (plan 8d)", () => {
     expect(marksOf(ticked.party[0])).toEqual(['e1']);
   });
 
+  it('hop with two marks: two marked foes falling together jump to two different foes (8d final review)', () => {
+    const burn = { tick: 5, turns: 2, src: 'rin' };
+    const r = resolveRound(makeBattle([rin({ mech: { kind: 'mark', marks: ['e0', 'e1'], cap: 2, hops: 2 } })],
+      [foe('e0', { hp: 3, burn }), foe('e1', { hp: 3, burn }), foe('e2'), foe('e3')]), { rin: { kind: 'defend' } }, constRng(0.5));
+    expect(marksOf(r.party[0])).toEqual(['e2', 'e3']);
+    // One hop left: the first fallen mark jumps, the second is lost; never two marks on one foe.
+    const one = resolveRound(makeBattle([rin({ mech: { kind: 'mark', marks: ['e0', 'e1'], cap: 2, hops: 1 } })],
+      [foe('e0', { hp: 3, burn }), foe('e1', { hp: 3, burn }), foe('e2'), foe('e3')]), { rin: { kind: 'defend' } }, constRng(0.5));
+    expect(marksOf(one.party[0])).toEqual(['e2']);
+    // A standing mark is never doubled by a hop onto it.
+    const kept = resolveRound(makeBattle([rin({ mech: { kind: 'mark', marks: ['e0', 'e1'], cap: 2, hops: 2 } })],
+      [foe('e0', { hp: 3, burn }), foe('e1'), foe('e2')]), { rin: { kind: 'defend' } }, constRng(0.5));
+    expect(marksOf(kept.party[0])).toEqual(['e2', 'e1']);
+  });
+
   it('chase: an execute that fells the mark brings 還有。 twice', () => {
     const fight = (ranks: Record<string, number>) => resolveRound(
       makeBattle([ranked({ 'rin-execute': 1, ...ranks }, { mech: { kind: 'mark', marks: ['e0', 'e1'], cap: 2 } })], [foe('e0', { hp: 1 }), foe('e1', { hp: 1 }), foe('e2'), foe('e3')]),

@@ -13,7 +13,7 @@ import { StatusScene } from './status';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
-import { NODES, TREES, branchNodes } from '../../data/trees';
+import { NODES, TREES, branchNodes, nodeText } from '../../data/trees';
 import { BOARDS, KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE } from '../../data/talents';
 
 /** A shown number back to a number: the minus sign reads as a minus. */
@@ -976,14 +976,18 @@ describe('StatusScene', () => {
       });
     });
 
-    it('every modifier rank reads as a summary', () => {
+    it('a summary reads an active rank TP or rounds (nextRankText)', () => {
       expect(T.ui2.tree.mod({ powerPct: 120 })).toBe('威力 120%');
       expect(T.ui2.tree.mod({ tpDelta: -2 })).toBe('TP −2');
       expect(T.ui2.tree.mod({ turns: 5 })).toBe('持續 5 回合');
       expect(T.ui2.tree.mod({ chance: 0.7 })).toBe('毒機率 70%');
       expect(T.ui2.tree.mod({ hpCost: 0.06 })).toBe('HP 消耗 6%');
-      // Every plan 8c variant (V0) still says its rewrite in short; a plan 8d one has its own sentence (nodeText).
-      for (const info of Object.values(NODES)) if (info.node.label === undefined) for (const m of info.node.mods ?? []) expect(T.ui2.tree.mod(m), info.node.id).not.toBe('');
+    });
+
+    it('every variant and mechanic rank has its own sentence for the notes (the plan 8c summary fallback is gone, 8d final review)', () => {
+      const ruled = Object.values(NODES).filter((info) => info.node.kind !== 'active');
+      expect(ruled.length).toBeGreaterThan(50);
+      for (const { node } of ruled) for (let r = 1; r <= node.maxRank; r++) expect(nodeText(node.id, r), `${node.id} r${r}`).not.toBe('');
     });
 
     it('a taken capstone is named, and the other capstones say why they are shut', () => {

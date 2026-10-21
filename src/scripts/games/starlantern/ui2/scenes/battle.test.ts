@@ -213,6 +213,15 @@ describe('BattleScene', () => {
       expect(heading()).toBe(T.cmd.choose('洛恩'));
       for (let k = 0; k < 9 && root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'echo'; k++) s.onAction('down');
       expect(root.querySelector('.slx-bnote')?.textContent).toContain('70%');
+      expect(root.querySelector('.slx-bnote')?.textContent).not.toContain(T.cmd.echoDropped);
+    }
+    // A record whose mechanic extras were dropped says so on the note (8d final review).
+    {
+      const def = { ...SKILLS.provoke, name: '挑釁・高喊' };
+      const { root, s, heading } = setup((g) => { g.battle!.echo = { by: 'scarlet', round: g.battle!.round, def, cost: 3, dropped: true }; }, {}, lineup);
+      expect(heading()).toBe(T.cmd.choose('洛恩'));
+      for (let k = 0; k < 9 && root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'echo'; k++) s.onAction('down');
+      expect(root.querySelector('.slx-bnote')?.textContent).toContain(T.cmd.echoDropped);
     }
     // Chosen, it submits the record the menu showed: a later cast that round (a faster companion's) is not what he repeats.
     {

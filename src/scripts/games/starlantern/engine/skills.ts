@@ -125,6 +125,12 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
       const was = (e as unknown as Record<string, unknown>)[f], is = now[f];
       if (typeof was === 'number' && typeof is === 'number' && was !== is) out.desc = out.desc.replace(say(was), say(is));
     }
+    // 新月之夜 (plan 8d): the night's words name the phase it holds and for how long (8d final review).
+    if (e.kind === 'moon' && e.step === undefined) {
+      const was = e as { hold?: number; phase?: 'new' }, is = now as { hold?: number; phase?: 'new' };
+      if (was.hold !== undefined && is.hold !== undefined && was.hold !== is.hold) out.desc = out.desc.replace(`${was.hold} 回合`, `${is.hold} 回合`);
+      if ((is.phase ?? 'full') !== (was.phase ?? 'full')) out.desc = out.desc.replace(T.mech.phase[was.phase ?? 'full'], T.mech.phase[is.phase ?? 'full']);
+    }
     // 收回's ranks hold the phase it steps back to: the words say for how many more round ends.
     const held = (now as { hold?: number }).hold ?? 0;
     if (e.kind === 'moon' && e.step === -1 && held > (e.hold ?? 0)) out.desc += T.mech.recallHold(held);
@@ -137,6 +143,8 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
   if (mod.rules?.coinSpendPct !== undefined) {
     out.desc = out.desc.replace(T.mech.coinSpend(def.rules?.coinSpendPct ?? 100), T.mech.coinSpend(mod.rules.coinSpendPct));
   }
+  // A single-foe skill made to strike every foe (擴咒) speaks of them all (8d final review).
+  if (mod.target === 'enemies' && def.target === 'enemy') out.desc = out.desc.replace(/牠(?!們)/g, '牠們');
   if (mod.target !== undefined) out.target = mod.target;
   if (mod.hpCost !== undefined) out.hpCost = mod.hpCost;
   if (mod.tpDelta !== undefined && def.tp > 0) out.tp = Math.max(1, def.tp + mod.tpDelta);
@@ -147,7 +155,8 @@ export function patchSkill(def: SkillDef, mod: SkillMod): SkillDef {
   for (const n of mod.notes ?? []) {
     out.name += `・${n.label}`;
     const text = sum === undefined ? n.text : n.text.replace(T.mech.notePower(mod.powerPct!), T.mech.notePower(sum));
-    out.desc += (out.desc && !out.desc.endsWith('。') ? '。' : '') + text;
+    // A note the skill's own words already carry adds nothing (V's inWords); after 「！」 or 「？」 no 「。」 is added.
+    if (text) out.desc += (out.desc && !/[。！？]$/.test(out.desc) ? '。' : '') + text;
   }
   if (mod.rules) out.rules = { ...def.rules, ...definedOnly(mod.rules) };
   return out;

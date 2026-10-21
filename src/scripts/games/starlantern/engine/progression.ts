@@ -258,12 +258,17 @@ export function mechKnob(ranks: unknown, owner: CharacterId, k: MechKnob): numbe
   return undefined;
 }
 
-/** Each combatant's knobs, read once a fight: a fight builds its combatants afresh and their ranks never change in it. */
+/**
+ * Each combatant object's knobs. resolveRound works on a structuredClone of the state, so a combatant object (and this
+ * cache with it) lasts one round, not the whole fight: the cache spares the repeated reads within a round (8d final
+ * review: corrected; a per-fight cache would have to live on the battle state, and the reads are cheap). Ranks never
+ * change in a fight, so a value read in any round is the fight's.
+ */
 const KNOBS = new WeakMap<Combatant, Map<MechKnob, number | undefined>>();
 
 /**
- * A combatant's mechanic knob (`mechKnob` on its ranks, its defId as the owner), cached on the combatant for the rest of
- * the fight; undefined for a foe or a member without ranks.
+ * A combatant's mechanic knob (`mechKnob` on its ranks, its defId as the owner), cached on that combatant object for the
+ * rest of its round (see KNOBS); undefined for a foe or a member without ranks.
  */
 export function knobOf(c: Combatant, k: MechKnob): number | undefined {
   if (c.side !== 'party' || !c.ranks) return undefined;

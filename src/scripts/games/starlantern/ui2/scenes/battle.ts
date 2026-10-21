@@ -255,7 +255,7 @@ export class BattleScene implements Scene {
     const rec = echoOf(this.state, this.state.round + 1);
     if (!rec) return [{ id: 'echo', label: T.cmd.echo(), disabled: true }];
     const def = echoDef(rec);
-    return [{ id: 'echo', label: T.cmd.echo(def.name), right: T.cmd.tp(rec.cost), disabled: actor.tp < rec.cost, note: T.cmd.echoNote(ECHO.powerPct, def.desc) }];
+    return [{ id: 'echo', label: T.cmd.echo(def.name), right: T.cmd.tp(rec.cost), disabled: actor.tp < rec.cost, note: T.cmd.echoNote(ECHO.powerPct, def.desc) + (rec.dropped ? T.cmd.echoDropped : '') }];
   }
 
   private skillItems(actor: Combatant): MenuItem[] {

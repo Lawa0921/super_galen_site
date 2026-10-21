@@ -589,3 +589,22 @@ describe("the hero's variants (plan 8d Task 8)", () => {
     expect(frost.effects).toEqual([...SKILLS['hero-frost'].effects, { kind: 'inflict', status: 'freeze', chance: 0.14 }]);
   });
 });
+
+describe('variant words read right (8d final review)', () => {
+  const desc = (skill: string, ranks: Record<string, number>) => skillFor({ powers: [], ranks }, skill)!.desc;
+  it('新月之夜 holds the new moon for its own rounds, said once', () => {
+    expect(desc('full-moon-night', { 'full-moon-night': 1, 'selene-new-night': 3 })).toBe('今晚就讓月亮停一停呢。接下來 5 回合，月相停在新月。');
+    expect(desc('full-moon-night', { 'full-moon-night': 1 })).toBe(SKILLS['full-moon-night'].desc);
+  });
+  it('擴咒 speaks of all foes, with no stray full stop after 「！」', () => {
+    const d = desc('hex', { hex: 1, 'noel-hex-wide': 1 });
+    expect(d).not.toContain('！。');
+    expect(d).not.toMatch(/牠(?!們)/);
+    expect(d).toContain('牠們的弱點！');
+    expect(d.endsWith('改為對全體，弱點 2 回合。')).toBe(true);
+  });
+  it('分期 says what it spends once', () => {
+    expect(desc('fortune-strike', { 'fortune-strike': 1, 'liz-fortune-split': 1 })).toBe('這一下花掉 50% 的銅板（進位），每枚威力多 14%。很貴，但值得。');
+    expect(skillFor({ powers: [], ranks: { 'fortune-strike': 1, 'liz-fortune-split': 1 } }, 'fortune-strike')!.name).toBe('大手筆・分期');
+  });
+});

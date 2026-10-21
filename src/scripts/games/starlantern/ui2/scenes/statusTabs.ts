@@ -370,13 +370,6 @@ function kindOf(n: TreeNode, tier: number): NodeKind {
 /** 火之星彈, 火之星彈・連星, 冷靜 (data/trees nodeName). */
 const nodeName = (n: TreeNode) => treeNodeName(n.id);
 
-/** A variant's or mechanic's rule at rank `r` in one sentence; a plan 8c variant (V0, no sentence) says its rewrite in short. */
-function ruleText(n: TreeNode, r: number): string {
-  const said = nodeText(n.id, r);
-  if (said) return said;
-  const m = n.mods?.[r - 1];
-  return m ? T.ui2.tree.mod(m) : '';
-}
 
 /** Moves the tree cursor to `node`, dropping a waiting press when the cursor actually moves. */
 function moveTree(node: string): boolean {
@@ -453,8 +446,8 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
     // A variant or mechanic node: its rule now and at the next rank, in its own sentence. A new variant's words are its
     // skill's (its rule comes in the lines below); a mechanic node has a rule and nothing else.
     if (n.kind === 'variant' && n.label !== undefined) desc = SKILLS[n.skill!]?.desc ?? '';
-    change.push(el('span', { class: 'slx-tree-now', text: t.now(rank > 0 ? ruleText(n, rank) : t.none) }));
-    if (rank < n.maxRank) change.push(el('span', { class: 'slx-tree-next', text: t.nextMod(ruleText(n, rank + 1)) }));
+    change.push(el('span', { class: 'slx-tree-now', text: t.now(rank > 0 ? nodeText(n.id, rank) : t.none) }));
+    if (rank < n.maxRank) change.push(el('span', { class: 'slx-tree-next', text: t.nextMod(nodeText(n.id, rank + 1)) }));
   }
   // A shut node says why as soon as the cursor is on it (a pressed refusal in `msg` says the same, so it is not doubled);
   // the empty side of a taken pair says it can be chosen instead.

@@ -58,7 +58,8 @@ export interface BattleState {
   /** The barriers over the party (engine/mech.ts); the old roster raises none. */
   barriers?: Barrier[];
   /** The last plain skill a companion cast, for the hero's echo (engine/mechanics/echo.ts): who, in which round, as cast, at what TP. */
-  echo?: { by: string; round: number; def: SkillDef; cost: number };
+  /** `dropped`: a variant's mechanic extras were left out of `def` (挑釁・高喊's embers; 8d final review). */
+  echo?: { by: string; round: number; def: SkillDef; cost: number; dropped?: true };
   /** The moon's phase while Selene fights (engine/mechanics/moon.ts), and the rounds a phase is held. */
   moon?: { phase: MoonPhase; hold?: { turns: number } };
   /** Safira's 雙人舞 after her finale (plan 8d): the next ally's damage skill this round is `pct`% stronger (beat.ts). */

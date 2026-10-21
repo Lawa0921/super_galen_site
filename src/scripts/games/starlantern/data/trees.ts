@@ -64,10 +64,14 @@ export const TIER_GATE = [0, 0, 2, 4, 7];
 
 type Rank = 1 | 2 | 3 | 4 | 5;
 const A = (skill: string, maxRank: Rank): TreeNode => ({ id: skill, kind: 'active', skill, maxRank });
-/** A variant of `skill`: rank r is `mods[r - 1]`, which carries its label and `say`'s sentence as notes. */
-export const V = (id: string, skill: string, label: string, mods: SkillMod[], say: (m: SkillMod) => string): TreeNode => ({
+/**
+ * A variant of `skill`: rank r is `mods[r - 1]`, which carries its label and `say`'s sentence as notes. `inWords`: the
+ * skill's own words are rewritten to carry the rule (分期's spend, 新月之夜's moon), so the cast skill adds no sentence of it
+ * (the tree still says it, nodeText).
+ */
+export const V = (id: string, skill: string, label: string, mods: SkillMod[], say: (m: SkillMod) => string, opts: { inWords?: true } = {}): TreeNode => ({
   id, kind: 'variant', skill, label, maxRank: mods.length as Rank,
-  mods: mods.map((m) => ({ ...m, notes: [{ label, text: say(m) }] })), say: (r) => say(mods[r - 1]),
+  mods: mods.map((m) => ({ ...m, notes: [{ label, text: opts.inWords ? '' : say(m) }] })), say: (r) => say(mods[r - 1]),
 });
 /** A mechanic node: rank r turns `knob` to `values[r - 1]`. */
 export const K = (id: string, name: string, knob: MechKnob, values: number[], say: (v: number) => string): TreeNode =>
@@ -177,7 +181,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
     { name: '花錢', nodes: [
       A('fortune-strike', 3),
       V('liz-fortune-split', 'fortune-strike', '分期', [14, 24, 26].map((coinPowerPct): SkillMod => ({ rules: { coinSpendPct: 50, coinPowerPct } })),
-        (m) => `只花 ${m.rules!.coinSpendPct}% 的銅板（進位），每枚威力多 ${m.rules!.coinPowerPct}%。`),
+        (m) => `只花 ${m.rules!.coinSpendPct}% 的銅板（進位），每枚威力多 ${m.rules!.coinPowerPct}%。`, { inWords: true }),
       A('quickstep', 3),
       K('liz-vault', '金庫', 'coinCap', [12, 14, 16], (v) => `銅板上限 ${v} 枚。`),
       A('appraise', 1),
@@ -251,7 +255,7 @@ export const TREES: Record<CharacterId, TreeDef> = {
       A('cleanse', 1),
       A('rebirth', 1),
       { ...A('moon-recall', 3), rank: 'turns' },
-      V('selene-new-night', 'full-moon-night', '新月', [3, 4, 5].map((turns): SkillMod => ({ turns, rules: { phase: 'new' } })), (m) => `改停在新月，停 ${m.turns} 回合。`),
+      V('selene-new-night', 'full-moon-night', '新月', [3, 4, 5].map((turns): SkillMod => ({ turns, rules: { phase: 'new' } })), (m) => `改停在新月，停 ${m.turns} 回合。`, { inWords: true }),
       A('full-moon-night', 1),
     ] },
     { name: '夢境', nodes: [

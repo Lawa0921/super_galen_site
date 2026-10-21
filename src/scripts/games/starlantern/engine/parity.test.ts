@@ -17,17 +17,22 @@ const FIXTURE = join(FIXTURES, 'contribution.8b.160.json');
 /**
  * The task under measurement (8d ruling on parity measurement), set by each task: the characters whose kit it changes
  * (held to 8b with every party) and the previous accepted gate it starts from (everyone else is held to that).
- * `PARITY_CLOSEOUT=1` holds every row to 8b instead: the plan's last task runs it.
+ * `PARITY_CLOSEOUT=1` holds every row to 8b instead: a plan's last task runs it.
+ *
+ * Plan 8d is closed (8d final review M5). Between plans no task is measured: `changed` is empty and every member is held to
+ * the 8d close-out table. The next plan's first content task sets
+ *   { name: '<plan> Task <n>', changed: [<the characters whose kit it changes>], prev: 'contribution.8d-final.160.json' }
+ * and each later task records its predecessor's accepted gate (its gate's contribution.json, 160 seeds) as
+ * `contribution.<plan>-<n>.160.json` and moves `prev` onto it, as plan 8d's tasks did; the guard below fails when a later
+ * table exists and `prev` was left on the 8d close-out.
  */
 const PARITY_TASK: { name: string; changed: CharacterId[]; prev: string } = {
-  name: '8d Task 8', changed: ['bobby', 'hero'], prev: 'contribution.8d-7.160.json',
+  name: 'between plans', changed: [], prev: 'contribution.8d-final.160.json',
 };
-/**
- * Plan 8d's tasks that change the roster's numbers, in order; 2 stands for the last gate before the first of them. Each
- * task's `prev` must be the 160-seed table of the content task before it (`contribution.8d-<n>.160.json`, recorded from
- * that task's accepted gate), and no later table may exist: a task that forgets to move `prev` on fails here.
- */
-const CONTENT_TASKS = [2, 3, 5, 6, 7, 8];
+/** The name PARITY_TASK carries between plans (no task under measurement). */
+const BETWEEN_PLANS = 'between plans';
+/** Plan 8d's close-out table (8d Task 9: gate-9, every row within 8b), the baseline the next plan starts from. */
+const D8_FINAL = 'contribution.8d-final.160.json';
 const TIMEOUT = 3_000_000;
 
 let measured: ParityTable | undefined;
@@ -124,20 +129,24 @@ describe('parity: the old roster baseline', () => {
   });
 
   it('the task under measurement names real characters and a recorded previous gate', () => {
-    expect(PARITY_TASK.changed.length).toBeGreaterThan(0);
+    // Between plans no task is measured (`changed` empty): every member is held to the last close-out.
+    if (PARITY_TASK.name !== BETWEEN_PLANS) expect(PARITY_TASK.changed.length).toBeGreaterThan(0);
+    else expect(PARITY_TASK.changed).toEqual([]);
     for (const id of PARITY_TASK.changed) expect(CHARACTER_IDS, id).toContain(id);
     expect(existsSync(join(FIXTURES, PARITY_TASK.prev)), PARITY_TASK.prev).toBe(true);
     expect(existsSync(FIXTURE), FIXTURE).toBe(true);
   });
 
-  it("the task's previous gate is the latest accepted one: the content task before it, and no table after that", () => {
-    const task = Number(/^8d Task (\d+)$/.exec(PARITY_TASK.name)?.[1]);
-    expect(CONTENT_TASKS.slice(1), PARITY_TASK.name).toContain(task);
-    const before = CONTENT_TASKS[CONTENT_TASKS.indexOf(task) - 1];
-    expect(PARITY_TASK.prev).toBe(`contribution.8d-${before}.160.json`);
-    // The newest recorded table is that one: a table of this task or a later one means `PARITY_TASK` was left behind.
-    const recorded = readdirSync(FIXTURES).map((f) => /^contribution\.8d-(\d+)\.160\.json$/.exec(f)?.[1]).filter((n) => n !== undefined).map(Number);
-    expect(Math.max(...recorded)).toBe(before);
+  it("plan 8d is closed: the next plan starts from its close-out table, and no table recorded after it is left unused", () => {
+    // contribution.8d-final.160.json is the close-out (8d Task 9, PARITY_CLOSEOUT=1: every row within 8b); the 8d task
+    // tables before it are history.
+    expect(existsSync(join(FIXTURES, D8_FINAL)), D8_FINAL).toBe(true);
+    expect(PARITY_TASK.name, '8d is closed').not.toMatch(/^8d Task/);
+    // A later plan records its own tables (contribution.<plan>-<n>.160.json). While none exists, its first task (or the
+    // standing between-plans setting) starts from the 8d close-out; once one exists, `prev` must be the newest of them.
+    const later = readdirSync(FIXTURES).filter((f) => /^contribution\..+\.160\.json$/.test(f) && !/^contribution\.(8b|8d-\w+)\.160\.json$/.test(f));
+    if (!later.length) expect(PARITY_TASK.prev).toBe(D8_FINAL);
+    else expect(later, 'prev moves onto a table of the later plan').toContain(PARITY_TASK.prev);
   });
 
   it('every character holds parity with the 8b roster', () => {
