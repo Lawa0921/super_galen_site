@@ -650,9 +650,9 @@ describe('StatusScene', () => {
     it('a variant previews what it changes, with the workshop\'s card', () => {
       const W = T.ui2.workshop;
       /** The preview line as the card model says it, for Noel going from her tree now to `after`. */
-      const want = (before: Member, after: Member) => {
+      const want = (before: Member, after: Member, swap: boolean) => {
         const c = compareCards(cardOf(before, 'fire-star')!, cardOf(after, 'fire-star')!);
-        return T.ui2.tree.preview([...c.lines.filter((l) => l.changed).map((l) => W.change(l.label, l.before, l.after)), ...c.added.map(W.added)]);
+        return T.ui2.tree.preview(swap, [...c.lines.filter((l) => l.changed).map((l) => W.change(l.label, l.before, l.after)), ...c.added.map(W.added)]);
       };
       const preview = (r: ReturnType<typeof onTree>) => r.root.querySelector('.slx-tree-preview')?.textContent ?? null;
       // 連星 can be learned: what learning it does.
@@ -661,7 +661,8 @@ describe('StatusScene', () => {
       expect(open.cur()).toBe('noel-star-twin');
       const raised = raiseNode(open.noel(), 'noel-star-twin');
       if (!raised.ok) throw new Error(raised.reason);
-      expect(preview(open)).toBe(want(open.noel(), raised.member));
+      expect(preview(open)).toBe(want(open.noel(), raised.member, false));
+      expect(preview(open)!.startsWith('學會後：')).toBe(true);
       expect(preview(open)).toContain(`${W.row.hits} 1 → 2`);
       expect(preview(open)).toContain(`${W.row.power} `);
       // 連星 held, the cursor on 重星: what changing side does.
@@ -671,7 +672,16 @@ describe('StatusScene', () => {
       expect(held.cur()).toBe('noel-star-heavy');
       const swapped = swapPair(held.noel(), 'noel-star-heavy');
       if (!swapped.ok) throw new Error(swapped.reason);
-      expect(preview(held)).toBe(want(held.noel(), swapped.member));
+      expect(preview(held)).toBe(want(held.noel(), swapped.member, true));
+      expect(preview(held)!.startsWith('改選後：')).toBe(true);
+      // Its rule line is the rank the swap brings (all of 連星's points), not rank 1 (Task 8 review).
+      const max = NODES['noel-star-heavy'].node.maxRank;
+      expect(held.info()).toContain(T.ui2.tree.afterSwap(1, max, nodeText('noel-star-heavy', 1)));
+      expect(held.info()).not.toContain(T.ui2.tree.nextMod(nodeText('noel-star-heavy', 1)));
+      const two = onTree(20, { 'fire-star': 1, 'noel-star-twin': 2 });
+      expect(two.cur()).toBe('noel-star-heavy');
+      expect(two.info()).toContain(T.ui2.tree.afterSwap(2, max, nodeText('noel-star-heavy', 2)));
+      expect(two.info()).not.toContain(T.ui2.tree.nextMod(nodeText('noel-star-heavy', 1)));
       expect(preview(held)).toContain(`${W.row.hits} 2 → 1`);
       // A learned variant, an active node, a mechanic node: no preview.
       resetTreeView();

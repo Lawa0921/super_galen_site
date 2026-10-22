@@ -470,7 +470,6 @@ export function nextRankText(skill: string, rank: number): string | null {
   return null;
 }
 
-/** The notes under the tree for the cursor's node: what it does now and what its next rank changes. */
 /**
  * A variant not held yet (plan 8g Task 8, spec §6.8 「選變招都用同一張卡」): the workshop's card before and after learning
  * it (or, for the empty side of a pair, after changing side), its changed rows and new lines in one line; '' when
@@ -484,9 +483,10 @@ function variantPreview(m: Member, node: string, skill: string, swap: boolean): 
   const W = T.ui2.workshop;
   const c = compareCards(before, after);
   const parts = [...c.lines.filter((l) => l.changed).map((l) => W.change(l.label, l.before, l.after)), ...c.added.map(W.added)];
-  return parts.length ? T.ui2.tree.preview(parts) : '';
+  return parts.length ? T.ui2.tree.preview(swap, parts) : '';
 }
 
+/** The notes under the tree for the cursor's node: what it does now and what its next rank changes. */
 function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   const t = T.ui2.tree;
   const m = ctx.game.state.party.roster[id];
@@ -495,6 +495,9 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   const head = [el('span', { class: 'slx-tree-info-name', text: nodeName(n) }), el('span', { text: t.kind[kindOf(n, tier)] }), el('span', { text: T.ui2.status.rank(rank, n.maxRank) })];
   let desc = '';
   const change: HTMLElement[] = [];
+  // A shut node says why as soon as the cursor is on it (a pressed refusal in `msg` says the same, so it is not doubled);
+  // the empty side of a taken pair says it can be chosen instead.
+  const why = rank === 0 ? canRaiseNode(m, n.id) : null;
   if (n.kind === 'active') {
     // The skill as this member casts it, at the TP she pays (as on the skills page: fromMember, so runes count too).
     const caster = fromMember(m, 0);
@@ -511,11 +514,11 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
     // skill's (its rule comes in the lines below); a mechanic node has a rule and nothing else.
     if (n.kind === 'variant' && n.label !== undefined) desc = SKILLS[n.skill!]?.desc ?? '';
     change.push(el('span', { class: 'slx-tree-now', text: t.now(rank > 0 ? nodeText(n.id, rank) : t.none) }));
-    if (rank < n.maxRank) change.push(el('span', { class: 'slx-tree-next', text: t.nextMod(nodeText(n.id, rank + 1)) }));
+    // The empty side of a taken pair: a swap moves all the other side's points here, so its rule at that rank (Task 8 review).
+    const swapRank = why === 'pair' ? Math.min(n.maxRank, nodeRank(m, NODES[n.id].pair!)) : 0;
+    if (swapRank > 0) change.push(el('span', { class: 'slx-tree-next', text: t.afterSwap(swapRank, n.maxRank, nodeText(n.id, swapRank)) }));
+    else if (rank < n.maxRank) change.push(el('span', { class: 'slx-tree-next', text: t.nextMod(nodeText(n.id, rank + 1)) }));
   }
-  // A shut node says why as soon as the cursor is on it (a pressed refusal in `msg` says the same, so it is not doubled);
-  // the empty side of a taken pair says it can be chosen instead.
-  const why = rank === 0 ? canRaiseNode(m, n.id) : null;
   const say = why === 'pair' ? t.swapOpen : why ? treeReason(why, n.id) : '';
   const shut = say && treeView.msg !== say ? say : '';
   const preview = rank === 0 && n.kind === 'variant' && (why === 'pair' || why === null) ? variantPreview(m, n.id, n.skill!, why === 'pair') : '';

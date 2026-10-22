@@ -468,7 +468,9 @@ export const T = {
       /** The empty side of a pair whose other side holds points: a press moves the points over, free (two presses). */
       swapOpen: '可改選（免費）', swapPending: '再按一次改選', swapped: '已改選',
       /** What learning a variant, or changing to it, does to its skill (plan 8g Task 8): the card's changed rows. */
-      preview: (parts: string[]) => `改變：${parts.join('・')}`,
+      preview: (swap: boolean, parts: string[]) => `${swap ? '改選後' : '學會後'}：${parts.join('・')}`,
+      /** The empty side of a pair: its rule at the rank the swap brings (all the other side's points). */
+      afterSwap: (rank: number, max: number, text: string) => `改選後（${rank}/${max}）：${text}`,
       /** The Game would not change the side now (in battle, say). */
       swapRefused: '現在無法改選',
       /** A node that can take its next rank now. */
