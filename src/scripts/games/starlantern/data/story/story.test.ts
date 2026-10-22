@@ -424,18 +424,36 @@ describe('the script gates', () => {
     for (const id of SCENE_IDS) {
       const lines = STORY.scenes[id].lines;
       const cap = lineCap(id);
+      // every combination of the scenes its lines wait on (story depth Task 1): each seen or not
+      const waits = [...new Set(lines.flatMap((l) => [l.if?.seen, l.if?.notSeen].filter((x): x is SceneId => !!x)))];
+      const seens = Array.from({ length: 1 << waits.length }, (_, mask) => waits.filter((_, i) => mask & (1 << i)));
       for (const met of subsets) {
         for (const full of [[], met]) {
           for (const returned of [[], returnedAll]) {
             for (const oath of id === 'finale' ? [true] : [false, true]) {
-              const w: LineWhen = { met: ['hero', 'rin', ...met], full: full.length ? ['hero', 'rin', ...full] : [], returned, oath };
-              const n = linesWhen(lines, w).length;
-              if (n < 1 || n > cap) throw new Error(`${id} plays ${n} lines (cap ${cap}) for ${JSON.stringify(w)}`);
+              for (const seen of seens) {
+                const w: LineWhen = { met: ['hero', 'rin', ...met], full: full.length ? ['hero', 'rin', ...full] : [], returned, oath, seen };
+                const n = linesWhen(lines, w).length;
+                if (n < 1 || n > cap) throw new Error(`${id} plays ${n} lines (cap ${cap}) for ${JSON.stringify(w)}`);
+              }
             }
           }
         }
       }
     }
+  });
+
+  it('linesWhen reads seen and notSeen (story depth Task 1)', () => {
+    const lines: ScriptLine[] = [
+      { who: 'rin', text: '「看過了。」', if: { seen: 'banter:rin-sylvie:1' } },
+      { who: 'rin', text: '「還沒看過。」', if: { notSeen: 'banter:rin-sylvie:1' } },
+      { who: 'narrator', text: '風停了。' },
+    ];
+    const w = (seen?: SceneId[]): LineWhen => ({ met: [...CHARACTER_IDS], full: [], returned: [], oath: false, ...(seen ? { seen } : {}) });
+    expect(linesWhen(lines, w(['banter:rin-sylvie:1'])).map((l) => l.text)).toEqual(['「看過了。」', '風停了。']);
+    expect(linesWhen(lines, w(['banter:noel-rin:1'])).map((l) => l.text)).toEqual(['「還沒看過。」', '風停了。']);
+    expect(linesWhen(lines, w([])).map((l) => l.text)).toEqual(['「還沒看過。」', '風停了。']);
+    expect(linesWhen(lines, w()).map((l) => l.text)).toEqual(['「還沒看過。」', '風停了。']);   // not given: nothing seen
   });
 
   it('no line is longer than MAX_LINE_CHARS', () => {

@@ -1,5 +1,6 @@
 import { writeFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
+import { STORY, type ScriptLine } from '../story.zh-TW';
 import { dumpStory, readAloud } from './readAloud';
 
 describe('readAloud (story polish Task 3)', () => {
@@ -47,6 +48,24 @@ describe('readAloud (story polish Task 3)', () => {
     const order = ['selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet'].map(at);
     for (const i of order) expect(i).toBeGreaterThanOrEqual(0);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it('labels a seen reading (story depth Task 1)', () => {
+    const scene = STORY.scenes['chat:noel:1'];
+    const saved = scene.lines;
+    const lines: ScriptLine[] = [
+      { who: 'noel', text: '「看過了。」', if: { seen: 'banter:rin-sylvie:1' } },
+      { who: 'noel', text: '「還沒看過。」', if: { notSeen: 'banter:rin-sylvie:1' } },
+    ];
+    scene.lines = lines;
+    try {
+      const out = readAloud(['scenes.chat:noel:1.']);
+      expect(out).toContain('### 讀法：沒看過 banter:rin-sylvie:1');
+      expect(out).toContain('### 讀法：看過 banter:rin-sylvie:1');
+      expect(out.match(/^### 讀法/gm)).toHaveLength(2);
+    } finally {
+      scene.lines = saved;
+    }
   });
 
   it('writes the dump when STORY_DUMP is set', () => {

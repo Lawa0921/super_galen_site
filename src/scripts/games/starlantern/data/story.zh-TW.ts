@@ -20,12 +20,19 @@ export interface ScriptLine {
    * `full`: that person's memories are all found; `notFull`: not yet (a chat can play before or after her last piece).
    * `oath`: Rin has made her choice (`true`) or has not yet (`false`).
    * `returned`: that townsfolk fragment has been given back; `notReturned`: not yet (Liz's last piece reads both ways).
+   * `seen`: that scene has been seen; `notSeen`: not yet (story depth: a line that waits on a scene, or stands in for it).
    */
-  if?: { met?: CharacterId; notMet?: CharacterId; returned?: TownFragmentId; notReturned?: TownFragmentId; full?: CharacterId; notFull?: CharacterId; oath?: boolean };
+  if?: {
+    met?: CharacterId; notMet?: CharacterId; returned?: TownFragmentId; notReturned?: TownFragmentId; full?: CharacterId; notFull?: CharacterId; oath?: boolean;
+    seen?: SceneId; notSeen?: SceneId;
+  };
 }
 
-/** What a scene's conditions are checked against. */
-export interface LineWhen { met: CharacterId[]; full: CharacterId[]; returned: TownFragmentId[]; oath: boolean }
+/**
+ * What a scene's conditions are checked against. `seen` is the save's seen scenes; left out, nothing counts as seen (the one
+ * caller in play, `ui2/story.ts`, always gives it; tests and the handbook readers that do not name it read it as empty).
+ */
+export interface LineWhen { met: CharacterId[]; full: CharacterId[]; returned: TownFragmentId[]; oath: boolean; seen?: SceneId[] }
 
 /** The lines that play: every line whose conditions all hold (a line with none always plays). */
 export function linesWhen(lines: ScriptLine[], w: LineWhen): ScriptLine[] {
@@ -39,6 +46,8 @@ export function linesWhen(lines: ScriptLine[], w: LineWhen): ScriptLine[] {
     if (c.full && !w.full.includes(c.full)) return false;
     if (c.notFull && w.full.includes(c.notFull)) return false;
     if (c.oath !== undefined && c.oath !== w.oath) return false;
+    if (c.seen && !(w.seen ?? []).includes(c.seen)) return false;
+    if (c.notSeen && (w.seen ?? []).includes(c.notSeen)) return false;
     return true;
   });
 }

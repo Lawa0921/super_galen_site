@@ -5,7 +5,7 @@ import { STORY, type ScriptLine, type Speaker } from '../story.zh-TW';
 import { SCENE_IDS, type SceneId } from './scenes';
 import {
   CONNECTIVES, ELLIPSIS, INTERJECTIONS, SENTENCE_PARTICLE, TELEGRAPH_OK, VOCATIVES, VOICE, WORD_LISTS_AT_TASK3,
-  dots, heavyScene, opensOnDots, pinBeat, sceneReadings, speakerOf, storyTexts, telegraphBreaks, type Text,
+  dots, heavyScene, opensOnDots, pinBeat, readingsOf, sceneReadings, speakerOf, storyTexts, telegraphBreaks, type Text,
 } from './voiceGates';
 
 /**
@@ -86,7 +86,13 @@ function particleBreaks(scope: Scope): string[] {
     if (v.never) for (const t of theirs) if (v.never.test(t.text)) out.push(`${t.key}: ${who} never says ${v.never}: ${t.text}`);
     if (!v.mark) continue;
     const marked = theirs.filter((t) => v.mark!.test(t.text));
-    if (v.maxShare !== undefined && marked.length > theirs.length * v.maxShare) out.push(`${who}: ${marked.length} of ${theirs.length} lines carry ${v.mark}`);
+    // The share is a whole-script budget (plan ruling 5): it is checked once all their lines are in scope, as the 「……」
+    // share is; until then a guest line or two would decide it (story polish Task 8: Bobby's one line in Chizuru's chat).
+    const whole = storyTexts().filter((t) => speakerOf(t.key, t.line) === who);
+    if (v.maxShare !== undefined && whole.every((t) => isPolished(t.key, scope))) {
+      const all = whole.filter((t) => v.mark!.test(t.text));
+      if (all.length > whole.length * v.maxShare) out.push(`${who}: ${all.length} of ${whole.length} lines carry ${v.mark}`);
+    }
     if (v.heavyNone) for (const t of marked) {
       const [top, id] = t.key.split('.');
       if (top === 'scenes' && heavyScene(id as SceneId)) out.push(`${t.key}: ${who}'s ${v.mark} in a heavy scene: ${t.text}`);
@@ -252,6 +258,35 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
     expect(budgetBreaks([], [{ id: 'heavy', heavy: true, readings: [[tell('風……停了。'), ...four]] }])).toEqual(['heavy (heavy): 2 lines with 「……」, cap 1']);
     expect(budgetBreaks([], [{ id: 'light', heavy: false, readings: [[tell('風……停了。'), ...four]] }])).toEqual(['light (light): 2 lines with 「……」']);
     expect(budgetBreaks([])).toEqual([]);   // nothing in scope, nothing to check
+  });
+
+  it("a particle share is checked over all of a speaker's lines, once they are all in scope", () => {
+    const share = /^bobby: \d+ of \d+ lines/;
+    // a guest's one line does not decide her share
+    expect(particleBreaks(['scenes.chat:chizuru:']).some((x) => share.test(x))).toBe(false);
+    // all of Bobby's keys but one: still not checked
+    const hers = storyTexts().filter((t) => speakerOf(t.key, t.line) === 'bobby').map((t) => t.key);
+    const left = hers.find((k) => !isPolished(k, hers.filter((x) => x !== k)));
+    expect(left, 'a key of hers that only it puts in scope').toBeDefined();
+    expect(particleBreaks(hers.filter((x) => x !== left)).some((x) => share.test(x))).toBe(false);
+    // the whole script in scope: the gate says so exactly when her share is over the budget, whatever the data is today
+    const everything = [''];   // every key starts with it
+    const said = storyTexts().filter((t) => speakerOf(t.key, t.line) === 'bobby');
+    const marked = said.filter((t) => VOICE.bobby!.mark!.test(t.text)).length;
+    const over = marked > said.length * VOICE.bobby!.maxShare!;
+    expect(particleBreaks(everything).some((x) => share.test(x))).toBe(over);
+    expect(particleBreaks(everything).includes(`bobby: ${marked} of ${said.length} lines carry ${VOICE.bobby!.mark}`)).toBe(over);
+  });
+
+  it('readings cover a seen condition (story depth Task 1)', () => {
+    const lines: ScriptLine[] = [
+      { who: 'rin', text: '「看過了。」', if: { seen: 'banter:rin-sylvie:1' } },
+      { who: 'rin', text: '「還沒看過。」', if: { notSeen: 'banter:rin-sylvie:1' } },
+    ];
+    const readings = readingsOf(lines);
+    expect(readings).toHaveLength(2);
+    expect(readings.map((r) => r.lines.map((l) => l.text))).toEqual([['「還沒看過。」'], ['「看過了。」']]);
+    expect(readings.map((r) => r.when.seen)).toEqual([[], ['banter:rin-sylvie:1']]);
   });
 
   it('a scene is polished whole once any key of it is', () => {

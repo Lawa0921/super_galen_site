@@ -190,12 +190,12 @@ const BASE: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: 
 
 /**
  * Every different way `lines` can play: each condition its lines name, on and off (a companion met or not, her memories
- * whole or not, a townsfolk piece back or not, Rin's choice made or not), a full chain counting as met. `oath` fixes the
- * choice when the scene only plays on one side of it. Each different run of lines comes once, with the first `when` that
- * plays it.
+ * whole or not, a townsfolk piece back or not, Rin's choice made or not, a scene seen or not), a full chain counting as met.
+ * `oath` fixes the choice when the scene only plays on one side of it. Each different run of lines comes once, with the
+ * first `when` that plays it; every `when` names its `seen` (empty when nothing is).
  */
 export function readingsOf(lines: ScriptLine[], oath?: boolean): { when: LineWhen; lines: ScriptLine[] }[] {
-  type Atom = { kind: 'met' | 'full'; id: CharacterId } | { kind: 'returned'; id: TownFragmentId } | { kind: 'oath' };
+  type Atom = { kind: 'met' | 'full'; id: CharacterId } | { kind: 'returned'; id: TownFragmentId } | { kind: 'oath' } | { kind: 'seen'; id: SceneId };
   const atoms: Atom[] = [];
   const add = (a: Atom) => { if (!atoms.some((b) => JSON.stringify(b) === JSON.stringify(a))) atoms.push(a); };
   for (const l of lines) {
@@ -208,16 +208,19 @@ export function readingsOf(lines: ScriptLine[], oath?: boolean): { when: LineWhe
     if (c.returned) add({ kind: 'returned', id: c.returned });
     if (c.notReturned) add({ kind: 'returned', id: c.notReturned });
     if (c.oath !== undefined && oath === undefined) add({ kind: 'oath' });
+    if (c.seen) add({ kind: 'seen', id: c.seen });
+    if (c.notSeen) add({ kind: 'seen', id: c.notSeen });
   }
   const out: { when: LineWhen; lines: ScriptLine[] }[] = [];
   const seen = new Set<string>();
   for (let mask = 0; mask < 1 << atoms.length; mask++) {
-    const w: LineWhen = { met: [...BASE.met], full: [], returned: [], oath: oath ?? false };
+    const w: LineWhen = { met: [...BASE.met], full: [], returned: [], oath: oath ?? false, seen: [] };
     atoms.forEach((a, i) => {
       if (!(mask & (1 << i))) return;
       if (a.kind === 'met') w.met = w.met.filter((x) => x !== a.id);   // on: not met
       else if (a.kind === 'full') w.full.push(a.id);
       else if (a.kind === 'returned') w.returned.push(a.id);
+      else if (a.kind === 'seen') w.seen!.push(a.id);
       else w.oath = true;
     });
     if (w.full.some((c) => !w.met.includes(c))) continue;   // a full chain is a met companion's

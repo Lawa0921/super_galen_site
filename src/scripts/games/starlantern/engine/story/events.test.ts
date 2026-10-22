@@ -5,7 +5,7 @@ import { CHARACTER_IDS } from '../../data/characters';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
-import { arrivalScenes, banterOpen, chatOpen, markRead, nextBanter, nextChat, onReturn, sceneDone, settleBellkeeper, settleOpening, storyStage, afterWin } from './events';
+import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, onReturn, sceneDone, settleBellkeeper, settleOpening, storyStage, afterWin } from './events';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
 const base = (): GameState => {
@@ -455,6 +455,56 @@ describe('town banter', () => {
     expect(banterOpen(base(), id, {})).toBe(false);
   });
 
+  it('a gate opens on each of its kinds (story depth)', () => {
+    const s = meetAll(base(), ['noel', 'bobby', 'chizuru']);
+    const id: SceneId = 'banter:noel-rin:1';
+    const chat: SceneId = 'chat:noel:2';
+    // before her choice: open until she makes it, closed after
+    expect(banterOpen(s, id, { [id]: { beforeChoice: true } })).toBe(true);
+    expect(chatOpen(s, chat, { [chat]: { beforeChoice: true } })).toBe(true);
+    // pieces: each named one holds at least that many
+    expect(banterOpen(s, id, { [id]: { pieces: { noel: 1 } } })).toBe(false);
+    expect(chatOpen(s, chat, { [chat]: { pieces: { noel: 1 } } })).toBe(false);
+    s.party.roster.noel.memories = 1;
+    expect(banterOpen(s, id, { [id]: { pieces: { noel: 1 } } })).toBe(true);
+    expect(chatOpen(s, chat, { [chat]: { pieces: { noel: 1 } } })).toBe(true);
+    s.party.roster.bobby.memories = 3;
+    expect(banterOpen(s, id, { [id]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(false);   // only one of the two at three
+    expect(chatOpen(s, chat, { [chat]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(false);
+    s.party.roster.chizuru.memories = 3;
+    expect(banterOpen(s, id, { [id]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(true);
+    expect(chatOpen(s, chat, { [chat]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(true);
+    // seen: every named scene already seen
+    expect(banterOpen(s, id, { [id]: { seen: ['rin-reveal'] } })).toBe(false);
+    expect(chatOpen(s, chat, { [chat]: { seen: ['rin-reveal'] } })).toBe(false);
+    s.story.seen.push('rin-reveal');
+    expect(banterOpen(s, id, { [id]: { seen: ['rin-reveal'] } })).toBe(true);
+    expect(chatOpen(s, chat, { [chat]: { seen: ['rin-reveal'] } })).toBe(true);
+    // the kinds there were before: stage, oath, full
+    expect(banterOpen(s, id, { [id]: { stage: 'act2' } })).toBe(false);
+    expect(chatOpen(s, chat, { [chat]: { stage: 'act2' } })).toBe(false);
+    s.story.nodes = ['act2'];
+    expect(banterOpen(s, id, { [id]: { stage: 'act2' } })).toBe(true);
+    expect(chatOpen(s, chat, { [chat]: { stage: 'act2' } })).toBe(true);
+    expect(banterOpen(s, id, { [id]: { full: 'noel' } })).toBe(false);
+    expect(chatOpen(s, chat, { [chat]: { full: 'noel' } })).toBe(false);
+    s.party.roster.noel.memories = chainLength('noel');
+    expect(banterOpen(s, id, { [id]: { full: 'noel' } })).toBe(true);
+    expect(chatOpen(s, chat, { [chat]: { full: 'noel' } })).toBe(true);
+    expect(banterOpen(s, id, { [id]: { oath: true } })).toBe(false);
+    expect(chatOpen(s, chat, { [chat]: { oath: true } })).toBe(false);
+    s.party.roster.rin.oath = true;
+    expect(banterOpen(s, id, { [id]: { oath: true } })).toBe(true);
+    expect(chatOpen(s, chat, { [chat]: { oath: true } })).toBe(true);
+    // her choice made: a before-choice gate is closed for good, and expired
+    expect(banterOpen(s, id, { [id]: { beforeChoice: true } })).toBe(false);
+    expect(chatOpen(s, chat, { [chat]: { beforeChoice: true } })).toBe(false);
+    expect(gateExpired(s, { beforeChoice: true })).toBe(true);
+    expect(gateExpired(s, { oath: true })).toBe(false);
+    expect(gateExpired(s, undefined)).toBe(false);
+    expect(gateOpen(s, undefined)).toBe(true);
+  });
+
   it('one banter per return, after the chat, behind every light story scene a return can bring', () => {
     const s = meetAll(base(), ['noel', 'safira', 'sylvie', 'liz', 'scarlet']);
     s.party.roster.safira.memories = chainLength('safira');
@@ -574,6 +624,30 @@ describe('town banter', () => {
     expect(nextBanter(s, gates, count)).toBeNull();   // noel-rin:2 waits behind its gated first
     s.story.nodes = ['act2', 'act3'];
     expect(nextBanter(s, gates, count)).toBe('banter:noel-rin:1');
+  });
+
+  it('an expired banter neither plays nor holds back the next of its pair', () => {
+    const count: Partial<Record<BanterPair, number>> = { 'rin-sylvie': 2 };
+    const gates = { 'banter:rin-sylvie:1': { beforeChoice: true as const }, 'banter:rin-sylvie:2': { oath: true as const } };
+    const s = meetAll(base(), ['sylvie']);
+    expect(nextBanter(s, gates, count)).toBe('banter:rin-sylvie:1');   // before her choice
+    s.party.roster.rin.oath = true;   // her choice made, :1 never heard
+    expect(nextBanter(s, gates, count)).toBe('banter:rin-sylvie:2');
+    expect(s.story.seen).not.toContain('banter:rin-sylvie:1');
+    s.story.seen.push('banter:rin-sylvie:2');
+    expect(nextBanter(s, gates, count)).toBeNull();   // the expired one is never offered
+  });
+
+  it('an expired chat neither plays nor holds back the next one (story depth)', () => {
+    const s = meetAll(base(), ['noel']);
+    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:rin:1', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4');
+    const gates = { 'chat:noel:1': { beforeChoice: true as const } };
+    expect(nextChat(s, gates)).toBe('chat:noel:1');
+    s.party.roster.rin.oath = true;
+    expect(nextChat(s, gates)).toBe('chat:noel:2');
+    expect(s.story.seen).not.toContain('chat:noel:1');
+    s.story.seen.push('chat:noel:2');
+    expect(nextChat(s, gates)).toBeNull();
   });
 
   it('the pick is a pure function of the state: no rng, nothing written', () => {

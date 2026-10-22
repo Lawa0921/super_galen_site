@@ -1,8 +1,9 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { chainLength } from '../../data/story/chains';
-import { ACT_DEPTHS, ACT_NODES, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, STAGES, banterScene, banterTwo, homeScene, isHeavyArrival, type BanterGate, type BanterPair, type SceneId, type Stage } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, STAGES, banterScene, banterTwo, homeScene, isHeavyArrival, type BanterPair, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
+import type { CharacterId } from '../types';
 
 /** Where the story stands, from what the player has done (the handbook and the town lines follow it). */
 export function storyStage(s: GameState): Stage {
@@ -74,30 +75,59 @@ const rank = (id: SceneId): number => {
   return 5;
 };
 
-/** Whether a chat may be offered yet: its stage reached, and Rin's choice made if it needs it. A chat with no gate is always open. */
-export function chatOpen(s: GameState, id: SceneId, gates: Partial<Record<SceneId, { stage?: Stage; oath?: true }>> = CHAT_GATE): boolean {
-  const g = gates[id];
+/** How many memory pieces `c` holds; one not met yet holds none. */
+const piecesOf = (s: GameState, c: CharacterId): number => {
+  const m = s.party.roster[c];
+  return m ? memoriesOf(m) : 0;
+};
+
+/**
+ * Whether a gate holds (`StoryGate`): every kind it names. No gate always holds. `stage`: reached; `oath`: her choice made;
+ * `full`: all of that one's memories; `beforeChoice`: her choice not made yet; `pieces`: each one named holds at least that
+ * many; `seen`: every scene named is in `story.seen`.
+ */
+export function gateOpen(s: GameState, g: StoryGate | undefined): boolean {
   if (!g) return true;
   if (g.stage && STAGES.indexOf(storyStage(s)) < STAGES.indexOf(g.stage)) return false;
   if (g.oath && !s.party.roster.rin?.oath) return false;
+  if (g.full && piecesOf(s, g.full) < chainLength(g.full)) return false;
+  if (g.beforeChoice && s.party.roster.rin?.oath) return false;
+  if (g.pieces && (Object.entries(g.pieces) as [CharacterId, number][]).some(([c, n]) => piecesOf(s, c) < n)) return false;
+  if (g.seen && !g.seen.every((id) => s.story.seen.includes(id))) return false;
   return true;
 }
 
 /**
- * The next chat for a return to town: whoever has said least among the people met, their next one in order.
- * A person whose next chat is still gated is not a candidate this time, and what comes after it waits too.
+ * Whether a gate can never open again: a `beforeChoice` gate once Rin has made her choice. A scene behind it is passed over
+ * for good: it never plays, and it no longer holds back the next one of its line (it is not written into `story.seen`).
  */
-export function nextChat(s: GameState, gates = CHAT_GATE): SceneId | null {
+export function gateExpired(s: GameState, g: StoryGate | undefined): boolean {
+  return !!g?.beforeChoice && !!s.party.roster.rin?.oath;
+}
+
+/** Whether a chat may be offered yet: its gate holds (`gateOpen`). A chat with no gate is always open. */
+export function chatOpen(s: GameState, id: SceneId, gates: Partial<Record<SceneId, StoryGate>> = CHAT_GATE): boolean {
+  return gateOpen(s, gates[id]);
+}
+
+/**
+ * The next chat for a return to town: whoever has said least among the people met, their next one in order.
+ * A person whose next chat is still gated is not a candidate this time, and what comes after it waits too. An expired chat
+ * (`gateExpired`) is passed over: it counts as heard, never plays, and does not hold back the one after it.
+ */
+export function nextChat(s: GameState, gates: Partial<Record<SceneId, StoryGate>> = CHAT_GATE): SceneId | null {
   const seen = new Set<SceneId>(s.story.seen);
   let best: { id: SceneId; heard: number } | null = null;
   for (const who of CHARACTER_IDS) {
     if (!s.party.recruited.includes(who)) continue;
     let heard = 0;
     let next: SceneId | null = null;
+    let open = true;   // the one before is seen or passed over
     for (let n = 1; n <= CHAT_COUNT[who]; n++) {
       const id: SceneId = `chat:${who}:${n}`;
-      if (seen.has(id)) { heard++; continue; }
-      if (!next && (n === 1 || seen.has(`chat:${who}:${n - 1}`)) && chatOpen(s, id, gates)) next = id;
+      if (seen.has(id) || gateExpired(s, gates[id])) { heard++; open = true; continue; }
+      if (!next && open && chatOpen(s, id, gates)) next = id;
+      open = false;
     }
     if (next && (!best || heard < best.heard)) best = { id: next, heard };
   }
@@ -105,35 +135,33 @@ export function nextChat(s: GameState, gates = CHAT_GATE): SceneId | null {
 }
 
 /**
- * Whether a banter may play (B1): both of its two met, and its gate holding, used like `chatOpen`: the stage reached, Rin's
- * choice made, her memories whole. No gate opens a banter whose two are not both met.
+ * Whether a banter may play (B1): both of its two met, and its gate holding (`gateOpen`), as a chat's does. No gate opens a
+ * banter whose two are not both met.
  */
-export function banterOpen(s: GameState, id: SceneId, gates: Partial<Record<SceneId, BanterGate>> = BANTER_GATE): boolean {
+export function banterOpen(s: GameState, id: SceneId, gates: Partial<Record<SceneId, StoryGate>> = BANTER_GATE): boolean {
   if (!banterTwo(id).every((c) => s.party.recruited.includes(c))) return false;
-  const g = gates[id];
-  if (!g) return true;
-  if (g.stage && STAGES.indexOf(storyStage(s)) < STAGES.indexOf(g.stage)) return false;
-  if (g.oath && !s.party.roster.rin?.oath) return false;
-  if (g.full && memoriesOf(s.party.roster[g.full]) < chainLength(g.full)) return false;
-  return true;
+  return gateOpen(s, gates[id]);
 }
 
 /**
  * The banter for a return to town (B1), picked without any rng: the pair heard least among those with one ready, then the
  * pairs' fixed order (`BANTER_PAIRS`). A pair offers its banters in order: one still gated holds back the ones after it,
  * like a chat. A heard banter is never offered again (the handbook replays it), so none repeats before every open one has played.
+ * An expired banter (`gateExpired`) is passed over, as a chat is: counted as heard, never offered, holding nothing back.
  */
-export function nextBanter(s: GameState, gates: Partial<Record<SceneId, BanterGate>> = BANTER_GATE, count: Partial<Record<BanterPair, number>> = BANTER_COUNT): SceneId | null {
+export function nextBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>> = BANTER_GATE, count: Partial<Record<BanterPair, number>> = BANTER_COUNT): SceneId | null {
   const seen = new Set<SceneId>(s.story.seen);
   const pairs = count === BANTER_COUNT ? BANTER_PAIRS : (Object.keys(count) as BanterPair[]).sort();
   let best: { id: SceneId; heard: number } | null = null;
   for (const pair of pairs) {
     let heard = 0;
     let next: SceneId | null = null;
+    let open = true;   // the one before is seen or passed over
     for (let n = 1; n <= (count[pair] ?? 0); n++) {
       const id = banterScene(pair, n);
-      if (seen.has(id)) { heard++; continue; }
-      if (!next && (n === 1 || seen.has(banterScene(pair, n - 1))) && banterOpen(s, id, gates)) next = id;
+      if (seen.has(id) || gateExpired(s, gates[id])) { heard++; open = true; continue; }
+      if (!next && open && banterOpen(s, id, gates)) next = id;
+      open = false;
     }
     if (next && (!best || heard < best.heard)) best = { id: next, heard };
   }

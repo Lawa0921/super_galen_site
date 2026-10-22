@@ -5,7 +5,7 @@ import { CHARACTERS, CHARACTER_IDS } from '../characters';
 import { MEETINGS } from '../meetings';
 import { NPC_NAMES, STORY, introIndex, type LineWhen, type ScriptLine, type Speaker } from '../story.zh-TW';
 import { T } from '../text.zh-TW';
-import { SCENE_IDS } from './scenes';
+import { SCENE_IDS, type SceneId } from './scenes';
 import { SENTENCE_PARTICLE, dots, heavyScene, readingsOf, sceneReadings, speakerOf, storyTexts } from './voiceGates';
 
 /** The pools that are not scenes, in the order they are printed after the scenes and the meetings. */
@@ -19,13 +19,19 @@ const say = (l: ScriptLine, plate?: string): string => {
   const name = plate ?? nameOf(l.who);
   return name ? `${name}：${l.text}` : l.text;
 };
-/** What a reading turns on, in words: who is not met, whose memories are whole, which townsfolk piece is back, her choice. */
-const readingLabel = (w: LineWhen): string => {
+/** The scenes `lines` wait on (`if.seen`, `if.notSeen`), in the order they first come. */
+const waitsOn = (lines: ScriptLine[]): SceneId[] => [...new Set(lines.flatMap((l) => [l.if?.seen, l.if?.notSeen].filter((x): x is SceneId => !!x)))];
+/**
+ * What a reading turns on, in words: who is not met, whose memories are whole, which townsfolk piece is back, her choice,
+ * and each scene the lines wait on, seen or not (`waits`).
+ */
+const readingLabel = (w: LineWhen, waits: SceneId[] = []): string => {
   const parts = [
     ...CHARACTER_IDS.filter((c) => !w.met.includes(c)).map((c) => `未遇見${CHARACTERS[c].name}`),
     ...w.full.map((c) => `${CHARACTERS[c].name}集滿`),
     ...w.returned.map((t) => `${t}已交還`),
     ...(w.oath ? ['凜已選擇'] : []),
+    ...waits.map((id) => ((w.seen ?? []).includes(id) ? `看過 ${id}` : `沒看過 ${id}`)),
   ];
   return parts.length ? parts.join('、') : '基本';
 };
@@ -50,7 +56,8 @@ export function readAloud(prefixes: string[]): string {
     if (!touches(`scenes.${id}.`)) continue;
     const scene = STORY.scenes[id];
     body.push(`## scenes.${id} ${heavyScene(id) ? '［重］' : '［輕］'} ${scene.title}`, '');
-    for (const r of sceneReadings(id)) body.push(`### 讀法：${readingLabel(r.when)}`, ...r.lines.map((l) => say(l)), '');
+    const waits = waitsOn(scene.lines);
+    for (const r of sceneReadings(id)) body.push(`### 讀法：${readingLabel(r.when, waits)}`, ...r.lines.map((l) => say(l)), '');
     body.push(`摘要：${scene.summary}`, '');
   }
   // in the order they are met: by depth, the mainline first at a depth it shares (spec §6)
@@ -79,7 +86,7 @@ export function readAloud(prefixes: string[]): string {
   const rest = texts.filter((t) => !printed(t.key));
   if (rest.length) {
     const finaleWait = rest.filter((t) => t.key.startsWith('finaleWait.') && t.line).map((t) => t.line!);
-    if (finaleWait.length) for (const r of readingsOf(finaleWait)) body.push(`## finaleWait ［重］ 讀法：${readingLabel(r.when)}`, ...r.lines.map((l) => say(l)), '');
+    if (finaleWait.length) for (const r of readingsOf(finaleWait)) body.push(`## finaleWait ［重］ 讀法：${readingLabel(r.when, waitsOn(finaleWait))}`, ...r.lines.map((l) => say(l)), '');
     body.push('## 其他', '', ...rest.filter((t) => !(t.key.startsWith('finaleWait.') && t.line)).map((t) => `${t.key}　${t.text}`), '');
   }
 

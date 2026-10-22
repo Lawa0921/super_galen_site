@@ -104,11 +104,31 @@ export function lineCap(id: SceneId): number {
 }
 
 /**
- * Chats that wait: a later `stage`, and/or Rin's choice (`oath`). A chat with no entry is open as soon as the person is met.
+ * What a chat, a banter (and from the story depth plan, a return line) waits on; every kind it names has to hold
+ * (`engine/story/events.ts` `gateOpen`):
+ * - `stage`: the story has reached that stage;
+ * - `oath`: Rin has made her choice;
+ * - `full`: that one holds all of her memories;
+ * - `beforeChoice`: Rin has not made her choice yet. Once she has, the gate is expired (`gateExpired`): the scene never
+ *   plays, and it no longer holds back the ones after it (it counts as passed, never as seen);
+ * - `pieces`: each one named holds at least that many memory pieces;
+ * - `seen`: every scene named has been seen.
+ */
+export interface StoryGate {
+  stage?: Stage;
+  oath?: true;
+  full?: CharacterId;
+  beforeChoice?: true;
+  pieces?: Partial<Record<CharacterId, number>>;
+  seen?: SceneId[];
+}
+
+/**
+ * Chats that wait (`StoryGate`). A chat with no entry is open as soon as the person is met.
  * `position` in the story tests reads it; `nextChat` reads it from Task 3. The first chat of anyone is never gated.
  * Every entry needs a reason in the lore ledger.
  */
-export const CHAT_GATE: Partial<Record<SceneId, { stage?: Stage; oath?: true }>> = {
+export const CHAT_GATE: Partial<Record<SceneId, StoryGate>> = {
   // Task 6: Lorne's chats follow the acts (lore ledger I-47).
   'chat:hero:2': { stage: 'act2' }, 'chat:hero:3': { stage: 'act3' }, 'chat:hero:4': { stage: 'act4' },
   // Task 7: Rin's chats. She looks away only from her 4th piece (act 3); her last chat is her choice (lore ledger I-54).
@@ -118,12 +138,12 @@ export const CHAT_GATE: Partial<Record<SceneId, { stage?: Stage; oath?: true }>>
 };
 
 /**
- * Banters that wait (B1), used like `CHAT_GATE`: a later `stage`, Rin's choice (`oath`), and/or one of the two holding all of
- * her memories (`full`). A banter with no entry is open as soon as both of its two are met; no gate can open it sooner.
- * Every entry needs a reason in the lore ledger.
+ * Banters that wait (B1), used like `CHAT_GATE` (`StoryGate`). A banter with no entry is open as soon as both of its two are
+ * met; no gate can open it sooner. Every entry needs a reason in the lore ledger.
  */
-export interface BanterGate { stage?: Stage; oath?: true; full?: CharacterId }
-export const BANTER_GATE: Partial<Record<SceneId, BanterGate>> = {
+/** The gate's old name (B1), kept: a banter's gate is a `StoryGate`. */
+export type BanterGate = StoryGate;
+export const BANTER_GATE: Partial<Record<SceneId, StoryGate>> = {
   // B2 (lore ledger §5): later chapters of a pair. A stage for time spent together, Rin's choice for the Rin who teases back,
   // a full memory for the one who has changed.
   'banter:liz-noel:1': { stage: 'act3' }, 'banter:safira-sylvie:2': { stage: 'act3' },

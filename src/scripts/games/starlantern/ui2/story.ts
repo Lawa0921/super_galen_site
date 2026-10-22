@@ -59,7 +59,7 @@ export function linesOf(id: SceneId, s: GameState): ScriptLine[] {
     const m = s.party.roster[c];
     return !!m && memoriesOf(m) >= chainLength(c);
   });
-  return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath });
+  return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath, seen: s.story.seen });
 }
 
 /** The first one to speak in `lines`: they stand on the left, everyone else on the right. */

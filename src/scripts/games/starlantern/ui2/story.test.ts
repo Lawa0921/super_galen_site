@@ -108,6 +108,23 @@ describe('playScene', () => {
     expect(texts()).toEqual(['甲', '乙', '丙']);
   });
 
+  it('a scene line waits on a scene the save has seen (story depth Task 1)', async () => {
+    const { game, talk, ctx } = mk();
+    stage('chat:liz:1', [
+      { who: 'rin', text: '看過', if: { seen: 'banter:rin-sylvie:1' } },
+      { who: 'rin', text: '沒看過', if: { notSeen: 'banter:rin-sylvie:1' } },
+    ]);
+    const s = game.state;
+    expect(s.story.seen).not.toContain('banter:rin-sylvie:1');
+    expect(linesOf('chat:liz:1', s).map((l) => l.text)).toEqual(['沒看過']);
+    s.story.seen.push('banter:rin-sylvie:1');
+    expect(linesOf('chat:liz:1', s).map((l) => l.text)).toEqual(['看過']);
+    const p = playScene(talk, 'chat:liz:1', ctx);   // the player reads the save as it is
+    expect(shown(talk)).toBe('看過');
+    p.onAction('confirm');
+    await expect(p.done).resolves.toBe('done');
+  });
+
   it('linesWhen keeps a line only when every one of its conditions holds', () => {
     const none: LineWhen = { met: [], full: [], returned: [], oath: false };
     const ls: ScriptLine[] = [
