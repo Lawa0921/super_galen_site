@@ -2701,3 +2701,32 @@ describe('story depth Task 8: Selene and Chizuru', () => {
     for (const oath of [false, true]) for (const l of linesWhen(five, reading(oath))) expect(l.text).not.toMatch(/不是月亮/);
   });
 });
+
+describe('story depth Task 9: Safira and Sylvie', () => {
+  const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
+  const who = (id: SceneId, re: RegExp) => linesWhen(STORY.scenes[id].lines, ALL).find((l) => re.test(l.text))!.who;
+
+  it("Sylvie's last piece turns on a choice now: she would hand him the seed, he will not take it, she plants it herself (design §7.6)", () => {
+    const lines = linesWhen(STORY.scenes['mem:sylvie:5'].lines, ALL);
+    expect(lines).toHaveLength(4);
+    expect(() => pinBeat('mem:sylvie:5', {}, /種子/)).not.toThrow();   // the past: the last seed of the oldest tree
+    expect(() => pinBeat('mem:sylvie:5', {}, /妳帶出來的/)).not.toThrow();
+    expect(who('mem:sylvie:5', /妳帶出來的/)).toBe('hero');
+    expect(() => pinBeat('mem:sylvie:5', {}, /自己種/)).not.toThrow();
+    expect(who('mem:sylvie:5', /自己種/)).toBe('sylvie');
+    expect(lines[lines.length - 1].who).toBe('sylvie');
+    expect(lines.some((l) => /人，我都帶出去了/.test(l.text))).toBe(false);   // a whole sentence now
+    expect(linesWhen(STORY.scenes['home:sylvie'].lines, ALL).some((l) => /發芽/.test(l.text))).toBe(true);   // the sprout still answers it
+  });
+
+  it("Safira's last piece: she stops for the first time and thinks of them one by one, with no joke about the troupe (design §7.6)", () => {
+    const lines = linesWhen(STORY.scenes['mem:safira:5'].lines, ALL);
+    expect(lines).toHaveLength(4);
+    expect(() => pinBeat('mem:safira:5', {}, /停下腳步/)).not.toThrow();
+    expect(who('mem:safira:5', /停下腳步/)).toBe('narrator');
+    expect(() => pinBeat('mem:safira:5', {}, /一個一個想一遍/)).not.toThrow();
+    expect(who('mem:safira:5', /一個一個想一遍/)).toBe('safira');
+    expect(lines.some((l) => /團長那一推/.test(l.text))).toBe(false);
+    expect(lines[lines.length - 1].who).toBe('safira');
+  });
+});

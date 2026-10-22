@@ -708,8 +708,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('沙丘上的營火。鼓手敲著皮鼓，她赤著腳，在火光裡轉圈。'),
       N('「慢了半拍！」鼓手笑著喊，「跟上我的鼓，別讓鼓跟著妳跑！」'),
-      { who: 'safira', mood: 'laugh', text: '「哈哈，那個大鬍子，打起鼓來比誰都兇。是我們舞團的鼓手啦。」' },
-      { who: 'safira', mood: 'sad', text: '「……可是，鼓聲是哪一天停的，我想不起來。」' },
+      { who: 'safira', mood: 'laugh', text: '「哈哈，那個大鬍子，打起鼓來比誰都兇。他是我們舞團的鼓手唷。」' },
+      { who: 'safira', mood: 'sad', text: '「可是鼓聲是哪一天停的……我想不起來。」' },
     ],
     summary: '莎菲拉想起舞團的鼓手，和營火邊跟不上的那半拍。鼓聲是哪一天停的，她想不起來。',
   },
@@ -718,7 +718,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('乾掉的河床。吹笛的少年跟在她後面，笛聲斷斷續續。水袋已經空了兩天。'),
       N('她先看見了。地平線上浮著一座城，屋頂閃閃發亮。她喊著「那裡有城」，第一個跑了過去。'),
       { who: 'safira', mood: 'sad', text: '「笛子是我教他吹的。他什麼都學我，連往哪裡跑，也學我。」' },
-      { who: 'safira', mood: 'sad', text: '「……小洛。是我先看見那座城的。」' },
+      { who: 'safira', mood: 'sad', text: '「小洛，那座城……是我先看見的。」' },
     ],
     summary: '沙漠裡，莎菲拉第一個看見蜃樓裡的城，第一個跑了過去。吹笛的少年跟在她後面。',
   },
@@ -726,28 +726,31 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('帳篷裡熱得像爐子。縫衣裳的大姊替她的舞衣縫上最後一排銅片，針扎了手也不吭聲。'),
       N('大姊把自己那一口水推給她：「跳舞的人，喉嚨不能乾。我只要拿得動針就好。」'),
-      { who: 'safira', mood: 'sad', text: '「這件舞衣，就是我身上這件。……銅片，一片都沒掉。」' },
-      { who: 'safira', mood: 'smile', text: '「很好看吧？大姊的手藝，可是全舞團第一喔。」' },
+      { who: 'safira', mood: 'sad', text: '「這件舞衣，就是我身上這件。上面的銅片……一片都沒掉。」' },
+      { who: 'safira', mood: 'smile', text: '「很好看吧？大姊的手藝，可是全舞團第一唷。」' },
     ],
     summary: '莎菲拉身上的舞衣，是縫衣裳的大姊縫的。大姊把最後一口水讓給了她。',
   },
   'mem:safira:4': {
     lines: [
       N('她發著燒，躺在搖晃的駱駝背上。牽駱駝的老人走在前面，和團長低聲說話。'),
-      N('「那座城是假的。」老人說，「可身後的沙暴是真的。進去，也許還有一條路。」'),
+      N('「那座城是假的。」老人說，「可身後的沙暴是真的。走進去，也許還有一條路。」'),
       N('團長沉默了很久，最後只說了一句：「走吧。」'),
-      { who: 'safira', mood: 'surprised', text: '「……做決定的，不是我？」' },
+      { who: 'safira', mood: 'surprised', text: '「做決定的……不是我？」' },
     ],
     summary: '發燒的莎菲拉在駱駝背上，聽見牽駱駝的老人和團長商量。走進蜃樓，是團長決定的。',
   },
+  // Story depth design §7.6 (fix six): the absolution still comes from the memory, but the turn is hers, now. She stops
+  // for the first time, ankle rings silent, and thinks of them one by one before she goes to dance it out. The old joke
+  // about the leader's push is gone (her jokes never touch the troupe). I-67.
   'mem:safira:5': {
     lines: [
-      N('蜃樓裡的城燒了起來，火順著沙丘一路燒開。團長抓住她的手臂，把她推向那道快要合上的光。'),
+      N('蜃樓裡的城燒了起來，火順著沙丘一路燒開。腳下這片火海，原來就是那片沙漠。團長把她推向那道快要合上的光。'),
       N('「進來是我選的，不是妳的錯。」團長說，「妳要繼續跳。」'),
-      { who: 'safira', mood: 'sad', text: '「……這片火海，原來就是那片沙漠啊。團長那一推，害我一路跳到了這裡。」' },
-      { who: 'safira', mood: 'smile', text: '「小洛，回城之後來廣場看囉。舞團最後的那支舞，我替大家跳完。」' },
+      N('莎菲拉停下腳步，腳踝上的銅環第一次一聲也沒響。'),
+      { who: 'safira', mood: 'sad', text: '「小洛，等我一下。我想站著，把他們一個一個想一遍。……想完了，再去廣場替大家跳完。」' },
     ],
-    summary: '團長在最後一刻把莎菲拉推出了蜃樓：妳要繼續跳。她要在露米亞的廣場，跳完舞團最後的那支舞。',
+    summary: '團長在最後一刻把莎菲拉推出了蜃樓：妳要繼續跳。她第一次停下腳步，把團員一個一個想一遍，再去廣場替大家跳完。',
   },
   'chat:safira:1': {
     lines: [
@@ -759,7 +762,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'chat:safira:2': {
     lines: [
-      { who: 'safira', mood: 'wink', text: '「凜凜，妳走路都沒聲音，天生跳舞的料呀。來，一拍就好～」' },
+      { who: 'safira', mood: 'wink', text: '「凜凜，妳走路都沒聲音，天生是跳舞的料呀。跳一拍就好～」' },
       { who: 'rin', text: '「一拍之後，會有第二拍。然後第三拍。」' },   // ungated: may play after her oath, where guarded is the bellkeeper's
       { who: 'safira', mood: 'laugh', text: '「哈哈，被算得一清二楚！那換小洛上台──欸，主角別跑呀！」' },
     ],
@@ -779,38 +782,40 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:sylvie:2': {
     lines: [
       N('那一年，霧從林子深處漫了出來。樹從根開始發灰，一棵接著一棵。'),
-      N('她拉滿了弓，卻不知道該對著什麼射。霧，是射不死的。'),
+      N('她拉滿了弓，卻不知道該對著什麼射。霧是射不死的。'),
       { who: 'sylvie', mood: 'sad', text: '「我沒守住。……林子死了，我還活著。」' },
-      { who: 'hero', text: '「霧，不是一個人擋得住的。」' },
+      { who: 'hero', text: '「霧不是一個人擋得住的。」' },
     ],
     summary: '暮霧吞掉了希爾薇的林子。她覺得是自己沒守住，不該一個人活下來。',
   },
   'mem:sylvie:3': {
     lines: [
-      N('霧裡，她牽著一個抱著嬰兒的女人，踩著樹上的箭頭，一棵一棵往外走。'),
+      N('她在霧裡牽著一個抱著嬰兒的女人，踩著樹上的箭頭，一棵一棵往外走。'),
       N('林子邊上透進了光。她把那一家人推出去，自己轉身，又鑽回霧裡。'),
       { who: 'sylvie', mood: 'serious', text: '「才一家。……林子裡的人，不只這些。」' },
       N('她說完就站了起來，背好弓，往沼澤更深的地方看。'),
     ],
-    summary: '霧裡，希爾薇把一家人帶到林外，又轉身回去。她說，才一家而已。',
+    summary: '希爾薇在霧裡把一家人帶到林外，又轉身回去。她說才一家而已。',
   },
   'mem:sylvie:4': {
     lines: [
-      N('一趟，又一趟。砍柴的、採藥的、迷路的獵人，一個一個跟著箭頭走出了霧。'),
+      N('一趟又一趟。砍柴的、採藥的、迷路的獵人，一個一個跟著箭頭走出了霧。'),
       N('最後一趟出來，林外的人點著火把，數了又數：「都出來了。一個也沒少。」'),
-      { who: 'hero', text: '「妳把他們，全都帶出去了。」' },
-      { who: 'sylvie', mood: 'sad', text: '「……那又怎樣。林子，我還是沒守住。」' },
+      { who: 'hero', text: '「妳把他們全都帶出去了。」' },
+      { who: 'sylvie', mood: 'sad', text: '「那又怎樣。林子還是沒守住。」' },
     ],
     summary: '希爾薇一趟又一趟，把林子裡的人全部帶了出去。她還是覺得，自己沒守住林子。',
   },
+  // Story depth design §7.6 (fix six): the seed is the past; the turn is now. She would hand it to him to plant, he will not
+  // take it, and she plants it herself: she brought everyone out, and this one she keeps for her own hands. I-63.
   'mem:sylvie:5': {
     lines: [
-      N('人都出來了，她才回頭，走進正在倒下的林子。'),
-      N('最老的那棵樹，落下了最後一顆種子。她把它握進手心，霧就漫了上來。'),
-      { who: 'sylvie', mood: 'sad', text: '「這顆種子，我一直握著。……人，我都帶出去了。它，也帶出來了。」' },
-      { who: 'sylvie', mood: 'smile', text: '「洛恩。回城以後，找一塊空地。……林子，還能再長。」' },
+      N('人都出來了，她才回頭，走進正在倒下的林子。最老的那棵樹落下最後一顆種子，她剛握進手心，霧就漫了上來。'),
+      { who: 'sylvie', mood: 'serious', text: '「這顆給你。找一塊空地，替我種下去。」' },
+      { who: 'hero', mood: 'smile', text: '「妳帶出來的，妳來種。」' },
+      { who: 'sylvie', mood: 'smile', text: '「我把人都帶出去了。……這一顆，我自己種。」' },
     ],
-    summary: '人都出來之後，希爾薇才回頭，帶出了林子最後一顆種子。她要把它種在露米亞的空地上。',
+    summary: '人都出來之後，希爾薇才回頭，帶出林子最後一顆種子。她想交給洛恩替她種，洛恩沒收，她便決定自己種。',
   },
   'chat:sylvie:1': {
     lines: [
@@ -831,10 +836,10 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'narrator', text: '深夜的月影旅館。希爾薇把被子摺得方方正正，像一塊豆腐，自己卻抱著弓，靠在窗邊的牆上。', if: { notFull: 'sylvie' } },
       { who: 'narrator', text: '深夜的月影旅館。被子摺得方方正正。希爾薇抱著弓靠在窗邊，又看了一眼樓下空地上的新芽。', if: { full: 'sylvie' } },
       { who: 'hero', text: '「那塊豆腐，是摺來看的？」' },
-      { who: 'sylvie', mood: 'sad', text: '「床，留給該睡的人。……我在這裡就好。」', if: { notFull: 'sylvie' } },
+      { who: 'sylvie', mood: 'sad', text: '「床留給該睡的人。……我在這裡就好。」', if: { notFull: 'sylvie' } },
       { who: 'sylvie', mood: 'smile', text: '「新芽，我看過了。今晚我睡床。換你守窗。」', if: { full: 'sylvie' } },
     ],
-    summary: '深夜，希爾薇抱著弓，靠在旅館的窗邊。洛恩問她不睡嗎。',
+    summary: '希爾薇深夜抱著弓，靠在旅館的窗邊。洛恩問她不睡嗎。',
   },
   // Task 9: Noel (spec §6, §7.5). She stole her teacher's book; its star fire burns the caster's own memory; the teacher
   // forbade it to protect her. Her last piece holds the teacher's memory too: she gives it back at the merchant's stall.
@@ -1258,7 +1263,7 @@ const HOME: Record<HomeOwner, Written> = {
     lines: [
       N('黃昏的廣場。莎菲拉赤著腳站在石板中央，腳踝上的銅環輕輕一響。'),
       N('鎮上的人圍了過來。沒有鼓，也沒有笛。守門的葛倫打著呵欠，第一個拍起了手，替她打拍子。'),
-      { who: 'safira', mood: 'smile', text: '「這拍子，比鼓手還準呀。……團長，大家，看好了。」' },
+      { who: 'safira', mood: 'smile', text: '「這拍子比鼓手還準呀。……團長和大家，都看好了。」' },
       N('她跳完最後一步，深深鞠了一躬。拍手聲響了很久，很久都沒有停。'),
     ],
     summary: '莎菲拉在露米亞的廣場，跳完舞團最後的那支舞。鎮上的人都來看，替她打拍子。',
@@ -1268,9 +1273,9 @@ const HOME: Record<HomeOwner, Written> = {
       N('幾天後的清晨，月影旅館。希爾薇站在窗邊，看著樓下那塊空地，看了很久。'),
       N('她種下的那顆種子，冒出了兩片小小的葉子。旁邊插著三支箭，圍成一圈，像在站崗。'),
       { who: 'sylvie', mood: 'surprised', text: '「發芽了。」' },
-      { who: 'sylvie', mood: 'smile', text: '「洛恩。林子，從這裡再長。」' },
+      { who: 'sylvie', mood: 'smile', text: '「洛恩，林子會從這裡重新長起來。」' },
     ],
-    summary: '希爾薇種在旅館窗外空地的種子發芽了。她說，林子要從這裡再長。',
+    summary: '希爾薇種在旅館窗外空地的種子發芽了。她說林子會從這裡重新長起來。',
   },
   liz: {
     lines: [
@@ -1705,14 +1710,14 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   ],
   safira: [
     '莎菲拉。在熾焰之地的火裡一個人跳劍舞，把怪物叫成舞伴。她叫我小洛，說要教我跟上拍子，我還沒答應。',
-    '她是流浪舞團的舞者。碎片裡有打鼓的、吹笛的、縫衣裳的團員。她說，是她先看見沙漠裡那座蜃樓的城。',
-    '走進蜃樓是團長選的，團長把她推了出來：「妳要繼續跳。」她要在鎮上的廣場，跳完舞團最後的那支舞。',
+    '她是流浪舞團的舞者。碎片裡有打鼓的、吹笛的、縫衣裳的團員。她說是她先看見沙漠裡那座蜃樓的城。',
+    '走進蜃樓是團長選的，團長把她推了出來：「妳要繼續跳。」她第一次停下腳步，把團員一個一個想了一遍，才說要去廣場替大家跳完。',
   ],
   // Task 9: Lorne's notes on Sylvie, Noel and Bobby. Each segment is placed at her meeting: no act content (I-58).
   sylvie: [
-    '希爾薇。在腐毒沼澤被毒藤纏住，箭筒只剩一支箭，還在射。話很少，只說路、風，和哪些東西能吃。',
-    '腐毒沼澤，以前是她守的林子。霧來的時候，她牽著一家人走出去，又回頭了。她說，林子是在她眼前死的。',
-    '人全出來之後，她才回頭，帶出了林子最後一顆種子。她要把它種在鎮上的空地。她說，林子還能再長。',
+    '希爾薇。在腐毒沼澤被毒藤纏住，箭筒只剩一支箭，還在射。話很少，只說路怎麼走、風往哪吹、哪些東西能吃。',
+    '腐毒沼澤，以前是她守的林子。霧來的時候，她牽著一家人走出去，又回頭了。她說林子是在她眼前死的。',
+    '人全出來之後，她才回頭，帶出了林子最後一顆種子。她想交給我替她種，我沒收。她說這一顆要自己種。',
   ],
   noel: [
     '諾艾兒。在雷鳴之地亂放雷，魔力見底，眼神空空的，頭髮還被自己劈蓬了。自稱本小姐，叫我歸來者，不准我笑。',
@@ -1788,7 +1793,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
       { who: 'safira', mood: 'laugh', text: '「哈哈，好久沒人陪我跳完一整首了！你們踩拍子的腳，還不錯唷。」' },
       { who: 'hero', text: '「我是洛恩。剛才那個，我們是在打架。」' },
       { who: 'safira', mood: 'sad', text: '「打架也是跳舞呀。……一停下來，好像就會忘掉什麼。所以，就一直跳。」' },
-      { who: 'safira', mood: 'wink', text: '「好了，掌聲呢？我是莎菲拉！你的名字太硬，就叫你小洛。大家，以後都跟上拍子囉。」' },
+      { who: 'safira', mood: 'wink', text: '「掌聲呢？我是莎菲拉！你的名字太硬，就叫你小洛。以後大家都要跟上拍子囉。」' },
     ],
   },
   // Task 9
@@ -1803,7 +1808,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
       N('洛恩割斷了毒藤。她把箭一支一支撿回來，順手拎起一條被射穿的蛇，掂了掂。'),
       { who: 'sylvie', text: '「希爾薇。……謝了。這個，晚上能吃。」' },
       { who: 'hero', text: '「我是洛恩。蛇就不用了。」' },
-      { who: 'sylvie', mood: 'serious', text: '「洛恩。這片沼澤的路，我認得。跟著我。蛇，我自己吃。」' },
+      { who: 'sylvie', mood: 'serious', text: '「這片沼澤的路，我認得。跟著我走就好。那條蛇，我自己吃。」' },
     ],
   },
   noel: {

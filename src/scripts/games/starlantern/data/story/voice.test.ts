@@ -21,6 +21,8 @@ const POLISHED: string[] = [
   ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `scenes.mem:hero:${n}.`), 'scenes.chat:hero:2.', 'scenes.chat:hero:3.', 'scenes.chat:hero:4.', 'scenes.act2.', 'scenes.act3.', 'scenes.act4.', 'people.hero.', 'truths.',
   // Task 8: Selene and Chizuru (story depth plan Task 8)
   'meet.selene.', 'meet.chizuru.', 'scenes.mem:selene:', 'scenes.mem:chizuru:', 'scenes.chat:selene:', 'scenes.chat:chizuru:', 'scenes.home:chizuru.', 'people.selene.', 'people.chizuru.',
+  // Task 9: Safira and Sylvie (story depth plan Task 9)
+  'meet.safira.', 'meet.sylvie.', 'scenes.mem:safira:', 'scenes.mem:sylvie:', 'scenes.chat:safira:', 'scenes.chat:sylvie:', 'scenes.home:safira.', 'scenes.home:sylvie.', 'people.safira.', 'people.sylvie.',
 ];
 
 type Scope = readonly string[];

@@ -895,6 +895,7 @@
 照 R1–R8。**鍵前綴**：rin-scarlet:2、rin-scarlet:3、rin-selene:2、rin-sylvie:2、chizuru-rin:2、chizuru-noel:2、noel-rin:2、safira-sylvie:3、liz-scarlet:3、noel-selene:3。這一段做完，`scenes.banter:` 全部在 `POLISHED` 裡。
 - `rin-scarlet:2` 照樣稿一（定稿品質）。`rin-scarlet:3` 不說「選了人，不是命令」（修正五）。
 - `rin-selene:2` 的最後一句是瑟蕾「是我說的，不是月亮」：符合 `/是我說的，不是月亮/`。這是伏筆 7 的回收，`pinBeat` 釘它。
+- **控制者裁定（Task 8 審查後）**：`rin-selene:2` 的開頭要在 `mem:selene:5` 的兩種讀法之後都成立：沉默的那一種讀法裡，凜不可能知道瑟蕾看見過。寫成凜自己問，例：「瑟蕾，出口前那一刀，妳看見過吧。早一點說，…」。
 - 搬過來的三段（`:3`）與 `rin-sylvie:2` 照打磨的標準修，不換內容。
 - 已知會被守門擋下：
   - `chizuru-rin:2` 千鶴「……完整了。甚好。」用「……」開頭，而且是兩個短句；
