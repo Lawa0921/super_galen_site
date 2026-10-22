@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createBattle, resolveRound, skillFor, type BattleState } from './battle';
+import { createBattle, resolveRound, skillFor, type Action, type BattleState } from './battle';
 import type { Combatant } from './combatant';
-import { mechGauge, type MechState } from './mech';
-import { applyPolicy, type PolicyRule } from './policy';
+import { mechGauge, type MechState, type MoonPhase } from './mech';
+import { applyPolicy, reach, type PolicyRule } from './policy';
 import { mulberry32 } from './rng';
 import { encounterTable } from './scaling';
 import { castPower, choose, partyAt } from './sim';
@@ -250,5 +250,207 @@ describe('per-character policies', () => {
     }
     random.mockRestore();
     expect(chose).toBeGreaterThan(1);
+  });
+});
+
+describe('build policy rules (plan 8h Task 1)', () => {
+  const skill = (id: string, target?: string): Action => (target === undefined ? { kind: 'skill', skill: id } : { kind: 'skill', skill: id, target });
+
+  it('ensure-taunt', () => {
+    const rule: PolicyRule[] = [{ kind: 'ensure-taunt', skill: 'provoke' }];
+    const at = (taunt: number, castable = sk('provoke', 'pierce')) => {
+      const s = makeBattle([P('scarlet', { taunt })], [E('e0')]);
+      return run(s, s.party[0], castable, rule).action;
+    };
+    expect(at(2)).toBeNull();
+    expect(at(1)).toEqual(skill('provoke'));
+    expect(at(0)).toEqual(skill('provoke'));
+    expect(at(0, sk('pierce'))).toBeNull();   // not castable
+  });
+
+  it('ensure-cover', () => {
+    const rule: PolicyRule[] = [{ kind: 'ensure-cover', skill: 'cover' }];
+    const at = (over: Partial<Combatant> = {}, castable = sk('cover')) => {
+      const s = makeBattle([P('scarlet', { hp: 10, ...over }), P('noel', { hp: 60 }), P('rin', { hp: 30 }), P('liz', { hp: 0, alive: false })], [E('e0')]);
+      return run(s, s.party[0], castable, rule).action;
+    };
+    // The lowest share of HP among the others standing: Rin at 30%, not Scarlet herself at 10% nor fallen Liz.
+    expect(at()).toEqual(skill('cover', 'rin'));
+    expect(at({ cover: { ally: 'rin', turns: 2 } })).toBeNull();
+    expect(at({}, sk('pierce'))).toBeNull();
+    // A tie keeps the party order; the share, not the HP, decides.
+    const tie = makeBattle([P('scarlet'), P('noel', { hp: 50 }), P('rin', { hp: 50 })], [E('e0')]);
+    expect(run(tie, tie.party[0], sk('cover'), rule).action).toEqual(skill('cover', 'noel'));
+    const share = makeBattle([P('scarlet'), P('noel', { hp: 90, max: { hp: 300 } as Combatant['max'] }), P('rin', { hp: 50 })], [E('e0')]);
+    expect(run(share, share.party[0], sk('cover'), rule).action).toEqual(skill('cover', 'noel'));
+    // Alone: no one to cover.
+    const alone = makeBattle([P('scarlet')], [E('e0')]);
+    expect(run(alone, alone.party[0], sk('cover'), rule).action).toBeNull();
+  });
+
+  it('release-at', () => {
+    const rule: PolicyRule[] = [{ kind: 'release-at', min: 3, skill: 'heaven-spear' }];
+    const at = (b: Partial<NonNullable<BattleState['barriers']>[number]>, castable = sk('heaven-spear', 'pierce')) => {
+      const s = makeBattle([P('chizuru', { mech: { kind: 'barrier' } })], [E('e0', { alive: false, hp: 0 }), E('e1')], { barriers: [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru', ...b }] });
+      return run(s, s.party[0], castable, rule).action;
+    };
+    expect(at({ turns: 2 })).toBeNull();
+    expect(at({ turns: 3 })).toEqual(skill('heaven-spear', 'e1'));
+    expect(at({ turns: 4 })).toEqual(skill('heaven-spear', 'e1'));
+    expect(at({ turns: 3, src: 'hero' })).toBeNull();   // someone else's barrier
+    expect(at({ turns: 1, lasting: true })).toEqual(skill('heaven-spear', 'e1'));
+    expect(at({ turns: 3 }, sk('pierce'))).toBeNull();
+    const none = makeBattle([P('chizuru', { mech: { kind: 'barrier' } })], [E('e0')]);
+    expect(run(none, none.party[0], sk('heaven-spear'), rule).action).toBeNull();
+  });
+
+  it('at-phase', () => {
+    const at = (phase: MoonPhase | null, rule: PolicyRule, castable: SkillDef[]) => {
+      const s = makeBattle([P('selene', { hp: 90 }), P('hero', { hp: 40 }), P('rin', { hp: 70 })], [E('e0', { alive: false, hp: 0 }), E('e1')], phase ? { moon: { phase } } : {});
+      return run(s, s.party[0], castable, [rule]).action;
+    };
+    const full: PolicyRule = { kind: 'at-phase', phase: 'full', skill: 'full-moon' };
+    expect(at('full', full, sk('full-moon'))).toEqual(skill('full-moon'));   // all allies: no target
+    expect(at('first', full, sk('full-moon'))).toBeNull();
+    expect(at(null, full, sk('full-moon'))).toBeNull();
+    expect(at('full', full, sk('moonlight'))).toBeNull();   // not castable
+    // Targets: a single foe gets the first one standing; a single ally the lowest share of HP.
+    expect(at('new', { kind: 'at-phase', phase: 'new', skill: 'pierce' }, sk('pierce'))).toEqual(skill('pierce', 'e1'));
+    expect(at('waning', { kind: 'at-phase', phase: 'waning', skill: 'moonlight' }, sk('moonlight'))).toEqual(skill('moonlight', 'hero'));
+  });
+
+  it('execute-below', () => {
+    const rule: PolicyRule[] = [{ kind: 'execute-below', pct: 35, skill: 'rin-execute' }];
+    const at = (marks: string[], hps: number[], castable = sk('rin-execute', 'rin-needle')) => {
+      const s = makeBattle([P('rin', { mech: { kind: 'mark', marks, cap: 1 } })], hps.map((hp, i) => E(`e${i}`, { hp, alive: hp > 0 })));
+      return run(s, s.party[0], castable, rule).action;
+    };
+    expect(at([], [50, 20, 20])).toEqual(skill('rin-execute', 'e1'));
+    expect(at(['e2'], [50, 20, 20])).toEqual(skill('rin-execute', 'e2'));   // her mark first
+    expect(at(['e0'], [50, 20, 20])).toEqual(skill('rin-execute', 'e1'));   // a mark above the line does not count
+    expect(at([], [35, 50])).toBeNull();                                       // 35% is not under 35%
+    expect(at([], [0, 34])).toEqual(skill('rin-execute', 'e1'));             // the fallen are not foes
+    expect(at([], [20], sk('rin-needle'))).toBeNull();
+  });
+
+  it('cast-unless-last', () => {
+    const rule: PolicyRule[] = [{ kind: 'cast-unless-last', skill: 'clap' }];
+    const at = (mech: MechState | undefined, castable = sk('clap', 'blade-dance')) => {
+      const s = makeBattle([P('safira', mech ? { mech } : {})], [E('e0')]);
+      return run(s, s.party[0], castable, rule).action;
+    };
+    expect(at({ kind: 'beat', beat: 1, last: 'clap' })).toBeNull();
+    expect(at({ kind: 'beat', beat: 1, last: 'blade-dance' })).toEqual(skill('clap'));
+    expect(at({ kind: 'beat', beat: 0, last: null })).toEqual(skill('clap'));
+    expect(at(undefined)).toBeNull();                                          // no beat to keep
+    expect(at({ kind: 'beat', beat: 1, last: 'attack' }, sk('blade-dance'))).toBeNull();
+  });
+
+  it('cast-when', () => {
+    const at = (rule: PolicyRule, foe: Partial<Combatant> = {}, log: BattleState['log'] = [], castable = sk('mirage-step', 'blade-dance')) => {
+      const s = makeBattle([P('safira'), P('hero')], [E('e0', foe)], { log });
+      return run(s, s.party[0], castable, [rule]).action;
+    };
+    const plain: PolicyRule = { kind: 'cast-when', skill: 'mirage-step' };
+    expect(at(plain)).toEqual(skill('mirage-step'));
+    expect(at(plain, {}, [], sk('blade-dance'))).toBeNull();
+    const big: PolicyRule = { kind: 'cast-when', skill: 'mirage-step', big: true };
+    expect(at(big)).toBeNull();
+    expect(at(big, { boss: true })).toEqual(skill('mirage-step'));
+    expect(at(big, { tint: 'elite' })).toEqual(skill('mirage-step'));
+    const once: PolicyRule = { kind: 'cast-when', skill: 'mirage-step', once: true };
+    expect(at(once)).toEqual(skill('mirage-step'));
+    expect(at(once, {}, [{ type: 'act', actor: 'safira', label: SKILLS['mirage-step'].name }])).toBeNull();
+    expect(at(once, {}, [{ type: 'act', actor: 'hero', label: SKILLS['mirage-step'].name }])).toEqual(skill('mirage-step'));   // someone else's
+    expect(at(once, {}, [{ type: 'act', actor: 'safira', label: SKILLS['blade-dance'].name }])).toEqual(skill('mirage-step'));
+  });
+
+  it('echo', () => {
+    const rule: PolicyRule[] = [{ kind: 'echo' }];
+    // pierce 170 at 70% = 119: stronger than sweep (80), weaker than pierce itself.
+    const rec = (over: Partial<NonNullable<BattleState['echo']>> = {}): NonNullable<BattleState['echo']> => ({ by: 'chizuru', round: 0, def: SKILLS.pierce, cost: 5, ...over });
+    const at = (echo: BattleState['echo'], castable: SkillDef[], over: Partial<Combatant> = {}) => {
+      const s = makeBattle([P('hero', { defId: 'hero', ...over }), P('chizuru')], [E('e0', { alive: false, hp: 0 }), E('e1')], echo ? { echo } : {});
+      return run(s, s.party[0], castable, rule).action;
+    };
+    const r = rec();
+    expect(at(r, sk('sweep'))).toEqual({ kind: 'echo', rec: r, target: 'e1' });
+    expect(at(r, [])).toEqual({ kind: 'echo', rec: r, target: 'e1' });
+    expect(at(r, sk('pierce'))).toBeNull();                                  // weaker than his strongest
+    expect(at(r, sk('sweep'), { tp: 4 })).toBeNull();                        // short of TP
+    expect(at(undefined, sk('sweep'))).toBeNull();                           // nothing to echo
+    expect(at(rec({ round: -1 }), sk('sweep'))).toBeNull();                  // too old for the coming round
+    expect(at(rec({ def: SKILLS.moonlight }), sk('sweep'))).toBeNull();      // no damage
+    expect(at(r, sk('sweep'), { defId: 'scarlet' })).toBeNull();             // not the hero
+    // The same measure on both sides: power x reach (sweep meets three foes: 240 > 119).
+    const three = makeBattle([P('hero', { defId: 'hero' })], [E('e0'), E('e1'), E('e2')], { echo: r });
+    expect(run(three, three.party[0], sk('sweep'), rule).action).toBeNull();
+  });
+
+  it('spend-at of max HP', () => {
+    const rule: PolicyRule[] = [{ kind: 'spend-at', gauge: 'embers', min: 40, of: 'maxHp', skill: 'crimson-end' }];
+    const at = (embers: number, hp = 100) => {
+      const s = makeBattle([P('scarlet', { mech: { kind: 'embers', embers }, max: { hp } as Combatant['max'] })], [E('e0')]);
+      return run(s, s.party[0], sk('crimson-end', 'provoke'), rule);
+    };
+    expect(at(40)).toEqual({ action: skill('crimson-end', 'e0'), hold: [] });
+    expect(at(39)).toEqual({ action: null, hold: ['crimson-end'] });
+    expect(at(40, 200)).toEqual({ action: null, hold: ['crimson-end'] });   // 20% of her max HP
+    expect(at(80, 200)).toEqual({ action: skill('crimson-end', 'e0'), hold: [] });
+  });
+
+  it('reach counts the foes a cast meets', () => {
+    const foes = (n: number, dead = 0) => makeBattle([P('hero')], [...Array.from({ length: dead }, (_, i) => E(`d${i}`, { alive: false, hp: 0 })), ...Array.from({ length: n }, (_, i) => E(`e${i}`))]);
+    const bounce: SkillDef = { ...SKILLS.pierce, runeRules: { bounce: { bounces: 2, dropPct: 30 } } };
+    expect(reach(foes(3), SKILLS.sweep)).toBe(3);
+    expect(reach(foes(2, 1), SKILLS.sweep)).toBe(2);
+    expect(reach(foes(3), SKILLS.pierce)).toBe(1);
+    expect(reach(foes(3), SKILLS.moonlight)).toBe(1);
+    expect(reach(foes(3), bounce)).toBeCloseTo(1 + 0.7 + 0.4, 10);
+    expect(reach(foes(2), bounce)).toBeCloseTo(1.7, 10);
+    expect(reach(foes(1), bounce)).toBe(1);
+  });
+
+  it('aoe ranks by reach, the default does not', () => {
+    const spread = [{ id: 'spread' as const, tier: 'magic' as const }];
+    const noel = P('noel', { defId: 'noel', runes: { 'fire-star': spread } });
+    const s = makeBattle([noel], [E('e0'), E('e1'), E('e2')]);
+    const fire = skillFor(noel, 'fire-star')!;
+    expect(fire.target).toBe('enemies');
+    const castable = [fire, SKILLS['ice-star']];
+    expect(run(s, noel, castable, [{ kind: 'strongest-damage', aoe: true }]).action).toEqual(skill('fire-star', 'e0'));
+    expect(run(s, noel, castable, [{ kind: 'strongest-damage' }]).action).toEqual(skill('ice-star', 'e0'));
+    // Against one foe the spread cast is the weaker.
+    const one = makeBattle([noel], [E('e0')]);
+    expect(run(one, noel, castable, [{ kind: 'strongest-damage', aoe: true }]).action).toEqual(skill('ice-star', 'e0'));
+    // The sim's default choice for the same party is as it was before this task.
+    const party = partyAt(20, { ids: ['hero', 'noel', 'chizuru', 'selene', 'rin'], runes: { noel: { 'fire-star': spread } } });
+    const st = createBattle({ party, enemyIds: ['slime', 'slime', 'slime'], inventory: {}, revealed: {} });
+    expect(party.roster.noel.sockets).toEqual({ 'fire-star': spread });
+    expect(choose(st, party)).toEqual({
+      hero: skill('hero-slash', 'e0'), chizuru: skill('pierce', 'e0'), rin: skill('rin-needle', 'e0'),
+      noel: skill('thunder-star', 'e0'),   // the spread fire star is not her strongest by power alone
+      selene: { kind: 'attack', target: 'e0' },
+    });
+  });
+
+  it('choose hands on an echo as the rule gives it', () => {
+    const party = partyAt(20, { ids: ['hero', 'noel', 'chizuru', 'selene', 'rin'] });
+    const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
+    const rec: NonNullable<BattleState['echo']> = { by: 'chizuru', round: s.round, def: { ...SKILLS.pierce, effects: [{ kind: 'damage', power: 900, element: 'phys', scale: 'atk', melee: true }] }, cost: 1 };
+    s.echo = rec;
+    expect(choose(s, party, { hero: [{ kind: 'echo' }] }).hero).toEqual({ kind: 'echo', rec, target: 'e0' });
+    expect(choose(s, party).hero.kind).not.toBe('echo');   // the default never echoes
+  });
+
+  it('no new rule is in the default policies', () => {
+    const old = ['ensure-barrier', 'ensure-device', 'ensure-mark', 'alternate', 'spend-at', 'heal-below', 'strongest-damage'];
+    for (const [id, rules] of Object.entries(DEFAULT_POLICIES)) {
+      for (const r of rules ?? []) {
+        expect(old, `${id} ${r.kind}`).toContain(r.kind);
+        expect(r, id).not.toHaveProperty('aoe');
+        expect(r, id).not.toHaveProperty('of');
+      }
+    }
   });
 });

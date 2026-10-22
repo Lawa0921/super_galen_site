@@ -5,7 +5,8 @@
  */
 import type { Action, BattleState } from './battle';
 import type { Combatant } from './combatant';
-import { mechGauge, type MechGauge } from './mech';
+import { mechGauge, type MechGauge, type MoonPhase } from './mech';
+import { echoDef, echoOf } from './mechanics/echo';
 import type { CharacterId, SkillDef } from './types';
 
 export type PolicyRule =
@@ -20,14 +21,52 @@ export type PolicyRule =
    * beat is missed, but a skill still lands); else an attack.
    */
   | { kind: 'alternate'; repeat?: true }
-  | { kind: 'spend-at'; gauge: MechGauge; min: number; skill: string }
+  /** `of: 'maxHp'`: the gauge is read as a percent of her max HP (Scarlet's embers). */
+  | { kind: 'spend-at'; gauge: MechGauge; min: number; skill: string; of?: 'maxHp' }
   | { kind: 'heal-below'; pct: number }
-  | { kind: 'strongest-damage' };
+  /** `aoe`: rank by power x the foes the cast meets (`reach`), not by power alone (plan 8h ruling 6). */
+  | { kind: 'strongest-damage'; aoe?: true }
+  // The rules below are for the suggested builds (plan 8h Task 1); no default policy uses them.
+  /** Her taunt is down to its last round (or gone): cast `skill`. */
+  | { kind: 'ensure-taunt'; skill: string }
+  /** She covers no one: cast `skill` on the other living ally with the lowest share of HP (ties in party order). */
+  | { kind: 'ensure-cover'; skill: string }
+  /** A barrier of hers is lasting or has at least `min` rounds left: release it with `skill` on the first foe. */
+  | { kind: 'release-at'; min: number; skill: string }
+  /** The moon is at `phase`: cast `skill`. */
+  | { kind: 'at-phase'; phase: MoonPhase; skill: string }
+  /** A foe is under `pct`% of its HP: cast `skill` on it, a marked one first. */
+  | { kind: 'execute-below'; pct: number; skill: string }
+  /** She keeps a beat and her last move was not `skill`: cast it. */
+  | { kind: 'cast-unless-last'; skill: string }
+  /**
+   * Cast `skill` whenever it can be cast; `big`: only while a boss or an elite stands; `once`: not when the battle log
+   * (`s.log`) holds an act of hers under that skill's name.
+   */
+  | { kind: 'cast-when'; skill: string; big?: true; once?: true }
+  /** The hero: echo the coming round's record when it is worth at least his strongest damage skill (power x reach). */
+  | { kind: 'echo' };
 
 export type PolicyTable = Readonly<Partial<Record<CharacterId, readonly PolicyRule[]>>>;
 
 const isDamage = (d: SkillDef) => d.effects.some((e) => e.kind === 'damage');
 const isHeal = (d: SkillDef) => d.effects.some((e) => e.kind === 'heal');
+
+/**
+ * How many foes a cast of `def` meets, for ranking (plan 8h ruling 6): an all-foes skill every living foe; a bounce
+ * (彈射) the first foe plus each bounce the living foes allow, at its dropped power; anything else 1.
+ */
+export function reach(s: BattleState, def: SkillDef): number {
+  const foes = s.enemies.filter((e) => e.alive).length;
+  if (def.target === 'enemies') return foes;
+  const b = def.runeRules?.bounce;
+  if (!b) return 1;
+  let n = 1;
+  for (let i = 1; i <= Math.min(b.bounces, foes - 1); i++) n += (100 - b.dropPct * i) / 100;
+  return n;
+}
+
+const shareOf = (c: Combatant) => c.hp / c.max.hp;
 
 /** The castable damage skills, strongest first; ties keep their order (a stable sort, as `choose` sorts). */
 const byPower = (castable: SkillDef[], power: (def: SkillDef) => number) =>
@@ -42,9 +81,16 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
   const hold: string[] = [];
   const foes = s.enemies.filter((e) => e.alive);
   const first = foes[0]?.key ?? '';
+  const big = () => foes.some((e) => e.boss || e.tint === 'elite');
+  /** The living ally with the lowest share of HP (ties in party order), leaving out `but`. */
+  const lowest = (but?: string) => s.party.filter((m) => m.alive && m.key !== but).reduce<Combatant | undefined>((lo, m) => (!lo || shareOf(m) < shareOf(lo) ? m : lo), undefined);
+  /** Where a rule with no target of its own casts `def`: a single foe the first standing, a single ally the lowest; else none. */
+  const aim = (def: SkillDef | undefined): string | undefined =>
+    def?.target === 'enemy' ? first : def?.target === 'ally' ? lowest()?.key : undefined;
   for (const rule of rules) {
     const usable = castable.filter((d) => !hold.includes(d.id));
     const has = (id: string) => usable.some((d) => d.id === id);
+    const defOf = (id: string) => usable.find((d) => d.id === id);
     const cast = (skill: string, target?: string): { action: Action; hold: string[] } =>
       ({ action: target === undefined ? { kind: 'skill', skill } : { kind: 'skill', skill, target }, hold });
     switch (rule.kind) {
@@ -87,8 +133,9 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
         return { action: { kind: 'attack', target: first }, hold };
       }
       case 'spend-at': {
-        const g = mechGauge(c, rule.gauge);
-        if (g === undefined) break;
+        const raw = mechGauge(c, rule.gauge);
+        if (raw === undefined) break;
+        const g = rule.of === 'maxHp' ? (raw * 100) / c.max.hp : raw;
         if (g < rule.min) { if (!hold.includes(rule.skill)) hold.push(rule.skill); break; }
         if (!has(rule.skill)) break;
         const m = c.mech;
@@ -102,8 +149,53 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
         break;
       }
       case 'strongest-damage': {
-        const pick = byPower(usable, power)[0];
+        const pick = byPower(usable, rule.aoe ? (d) => power(d) * reach(s, d) : power)[0];
         return { action: pick ? { kind: 'skill', skill: pick.id, target: first } : { kind: 'attack', target: first }, hold };
+      }
+      case 'ensure-taunt': {
+        if (c.taunt <= 1 && has(rule.skill)) return cast(rule.skill);
+        break;
+      }
+      case 'ensure-cover': {
+        const ally = lowest(c.key);
+        if (!c.cover && ally && has(rule.skill)) return cast(rule.skill, ally.key);
+        break;
+      }
+      case 'release-at': {
+        const held = (s.barriers ?? []).some((b) => b.src === c.key && (b.lasting || b.turns >= rule.min));
+        if (held && foes.length && has(rule.skill)) return cast(rule.skill, first);
+        break;
+      }
+      case 'at-phase': {
+        if (s.moon?.phase === rule.phase && has(rule.skill)) return cast(rule.skill, aim(defOf(rule.skill)));
+        break;
+      }
+      case 'execute-below': {
+        if (!has(rule.skill)) break;
+        const low = foes.filter((e) => e.hp * 100 < e.max.hp * rule.pct);
+        const m = c.mech;
+        const pick = low.find((e) => m?.kind === 'mark' && m.marks.includes(e.key)) ?? low[0];
+        if (pick) return cast(rule.skill, pick.key);
+        break;
+      }
+      case 'cast-unless-last': {
+        const m = c.mech;
+        if (m?.kind === 'beat' && m.last !== rule.skill && has(rule.skill)) return cast(rule.skill, aim(defOf(rule.skill)));
+        break;
+      }
+      case 'cast-when': {
+        const def = defOf(rule.skill);
+        if (!def || (rule.big && !big())) break;
+        if (rule.once && s.log.some((e) => e.type === 'act' && e.actor === c.key && e.label.startsWith(def.name))) break;
+        return cast(rule.skill, aim(def));
+      }
+      case 'echo': {
+        const rec = c.defId === 'hero' ? echoOf(s, s.round + 1) : null;
+        if (!rec || c.tp < rec.cost || !rec.def.effects.some((e) => e.kind === 'damage')) break;
+        const worth = (d: SkillDef) => power(d) * reach(s, d);
+        const best = Math.max(0, ...usable.filter(isDamage).map(worth));
+        if (worth(echoDef(rec)) >= best) return { action: { kind: 'echo', rec, target: first }, hold };
+        break;
       }
     }
   }
