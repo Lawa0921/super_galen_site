@@ -54,9 +54,11 @@ const isHeal = (d: SkillDef) => d.effects.some((e) => e.kind === 'heal');
 
 /**
  * How many foes a cast of `def` meets, for ranking (plan 8h ruling 6): an all-foes skill every living foe; a bounce
- * (彈射) the first foe plus each bounce the living foes allow, at its dropped power; anything else 1.
+ * (彈射) the first foe plus each bounce the living foes allow, at its dropped power; anything else 1. A scatter's hits
+ * land one foe each at random, so its power x hits is already all it deals: 1.
  */
 export function reach(s: BattleState, def: SkillDef): number {
+  if (def.effects.some((e) => e.kind === 'damage' && e.scatter)) return 1;
   const foes = s.enemies.filter((e) => e.alive).length;
   if (def.target === 'enemies') return foes;
   const b = def.runeRules?.bounce;

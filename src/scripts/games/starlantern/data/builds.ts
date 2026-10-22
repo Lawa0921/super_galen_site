@@ -58,26 +58,29 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
   ],
   chizuru: [
     { key: 'steady', name: '不動結界', intro: '失禮了。守之結界整場都在，代價是一點 TP 上限。', scenario: 'long',
-      runes: { ward: ['lasting', 'extend'], sweep: ['multistrike'] },
+      // 常駐 keeps it up all fight, never cast by hand: no 延長.
+      runes: { ward: ['lasting'], sweep: ['multistrike'] },
       policy: [{ kind: 'heal-below', pct: 40 }, aoe] },
     { key: 'exorcist', name: '破邪神槍', intro: '貫槍帶著雷鳴；結界蓄好之後，天之逆鉾一口氣解放。', scenario: 'boss', capstone: 2,
       first: ['chizuru-thunder-ward'],
-      // 連擊 on 貫槍 (the shop's): one more hit, one more chance of 感電.
-      runes: { pierce: ['thunderclap', 'jolt', 'multistrike'], 'heaven-spear': ['charge'] },
+      // 雷鳴 and 感電 ride on 天之逆鉾, the blow the build is for; 連擊 on 貫槍 (the shop's) for the turns between.
+      runes: { pierce: ['multistrike'], 'heaven-spear': ['thunderclap', 'jolt', 'charge'] },
       policy: [{ kind: 'ensure-barrier', skills: ['ward'] }, { kind: 'release-at', min: 3, skill: 'heaven-spear' }, aoe] },
   ],
   liz: [
     { key: 'jackpot', name: '一擲千金', intro: '雙刃快快賺銅板，存夠了就一擲千金！', scenario: 'crowd', capstone: 0,
       runes: { 'twin-slash': ['multistrike', 'regain'] },
-      policy: [{ kind: 'spend-at', gauge: 'coins', min: 8, skill: 'jackpot' }, aoe] },
+      // 雙刃 between the throws: it earns the coins (大手筆 would spend them).
+      policy: [{ kind: 'spend-at', gauge: 'coins', min: 8, skill: 'jackpot' }, { kind: 'cast-when', skill: 'twin-slash' }] },
     { key: 'bleed', name: '撕裂快刀', intro: '雙刃加撕裂，一刀一刀讓牠流血流到見底。', scenario: 'boss',
       runes: { 'twin-slash': ['tear', 'multistrike'], pickpocket: ['tear'] },
-      policy: [aoe] },
+      // 大手筆 waits for a full purse, so the torn blades come first.
+      policy: [{ kind: 'spend-at', gauge: 'coins', min: 10, skill: 'fortune-strike' }, aoe] },
   ],
   sylvie: [
     { key: 'heart', name: '一箭穿心', intro: '盯住頭目，穿心箭蓄滿力，再用星墜一矢收下瞄準。', scenario: 'boss', capstone: 0,
-      // 節流 on 瞄準射擊 (the shop's): cheap shots that stack the aim, leaving TP for 穿心箭 and 星墜一矢.
-      runes: { 'heart-shot': ['charge', 'armor-break'], 'aimed-shot': ['thrift'] },
+      // 連擊 on 穿心箭 (the shop's): the shot the build casts, one more hit on the aimed foe.
+      runes: { 'heart-shot': ['charge', 'armor-break', 'multistrike'] },
       policy: [{ kind: 'spend-at', gauge: 'aim', min: 3, skill: 'starfall-arrow' }, aoe] },
     { key: 'wildfire', name: '燎原箭雨', intro: '箭雨帶火，整片一起燒掉。', scenario: 'crowd', capstone: 2,
       runes: { 'arrow-rain': ['flame', 'ignite', 'multistrike'] },
@@ -86,8 +89,8 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
   scarlet: [
     { key: 'riposte', name: '反擊之壁', intro: '來打我啊！挨一下，就燒一圈還給你們。', scenario: 'long', capstone: 2,
       first: ['scarlet-burst-heart', 'blaze-ring'],
-      // 炎環斬 is fire already: 點燃 in place of the table's 灼焰; 延長 does not take a taunt, so 挑釁 takes 節流 (「依 fit」).
-      runes: { 'blaze-ring': ['on-struck', 'ignite'], provoke: ['thrift'] },
+      // 炎環斬 is fire already: 點燃 in place of the table's 灼焰; 連擊 (the shop's) on it too (「依 fit」).
+      runes: { 'blaze-ring': ['on-struck', 'ignite', 'multistrike'] },
       policy: [{ kind: 'ensure-taunt', skill: 'provoke' }, { kind: 'cast-when', skill: 'atoning-flame', big: true, whileAbsent: true }, aoe] },
     { key: 'ember', name: '紅蓮餘燼', intro: '替大家擋下的傷，全部存成餘燼，紅蓮終焉一次還給牠。', scenario: 'boss', capstone: 1,
       // 代受 (on the way, 高喊), then 熾心, 赤心 and 回禮; 延長 does not take a cover, so 代受 takes 節流 (「依 fit」).
@@ -98,14 +101,14 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
   selene: [
     { key: 'fullmoon', name: '滿月聖女', intro: '月光照著大家，大補就留到滿月呢。', scenario: 'long', capstone: 1,
       runes: { moonlight: ['spread', 'dispel'] },
-      // 滿月之癒 is the other branch's ultimate: the full moon's big heal is 月光雨 (「依 fit」).
+      // The full moon's big heal is 月光 spread over everyone (滿月之癒 is the other branch's ultimate).
       policy: [
         { kind: 'cast-when', skill: 'full-moon-night', big: true, whileAbsent: true }, { kind: 'at-phase', phase: 'waning', skill: 'moon-recall' },
-        { kind: 'at-phase', phase: 'full', skill: 'moon-rain' }, { kind: 'heal-below', pct: 60 }, aoe,
+        { kind: 'at-phase', phase: 'full', skill: 'moonlight' }, { kind: 'heal-below', pct: 60 }, aoe,
       ] },
     { key: 'nightmare', name: '新月夢魘', intro: '新月來了，大家都睡吧。夢裡也有毒喔。', scenario: 'crowd', capstone: 2,
-      // 夢境 deals no damage, so 淬毒 goes on 月影箭 and 夢境 takes 節流 and 蓄力 (「依 fit」).
-      runes: { dream: ['thrift', 'charge'], 'moon-arrow': ['venom'] },
+      // 夢境 deals no damage: 淬毒 goes on 月蝕, which strikes them all; 夢境 takes 節流 (「依 fit」).
+      runes: { dream: ['thrift'], 'lunar-eclipse': ['venom'] },
       policy: [{ kind: 'at-phase', phase: 'new', skill: 'dream' }, aoe] },
   ],
   safira: [
@@ -115,8 +118,8 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       policy: [{ kind: 'cast-when', skill: 'mirage-step', whileAbsent: true }, { kind: 'alternate', repeat: true }, aoe] },
     { key: 'festival', name: '祭典指揮', intro: '戰舞整場不停，拍手幫大家把絕技量表炒熱！', scenario: 'long', capstone: 1,
       first: ['clap', 'safira-clap-encore'],
-      // No rune takes 拍手 (a free gauge skill): the table's 延長 goes to 戰舞 (「依 fit」).
-      runes: { 'war-dance': ['lasting', 'extend'] },
+      // No rune takes 拍手 (a free gauge skill); 常駐 keeps 戰舞 up; 連擊 (the shop's) on 刃舞 (「依 fit」).
+      runes: { 'war-dance': ['lasting'], 'blade-dance': ['multistrike'] },
       policy: [{ kind: 'cast-unless-last', skill: 'clap' }, { kind: 'alternate', repeat: true }] },
   ],
   bobby: [

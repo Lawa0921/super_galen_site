@@ -484,6 +484,10 @@ describe('build policy rules (plan 8h Task 1)', () => {
     expect(reach(foes(3), bounce)).toBeCloseTo(1 + 0.7 + 0.4, 10);
     expect(reach(foes(2), bounce)).toBeCloseTo(1.7, 10);
     expect(reach(foes(1), bounce)).toBe(1);
+    // A scatter's hits land at random, one foe each: however many stand, it reaches one at a time (一擲千金, 散射).
+    expect(SKILLS.jackpot.target).toBe('enemies');
+    expect(reach(foes(3), SKILLS.jackpot)).toBe(1);
+    expect(reach(foes(3), SKILLS['scatter-shot'])).toBe(1);
   });
 
   it('aoe ranks by reach, the default does not', () => {

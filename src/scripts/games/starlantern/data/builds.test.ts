@@ -4,7 +4,7 @@ import { CHARACTER_IDS } from './characters';
 import { NODES, TREES } from './trees';
 import { RESERVE_CAP } from './runes';
 import { RUNE_STOCK } from './runeEconomy';
-import { fromMember, runeView } from '../engine/battle';
+import { fromMember, runeView, skillFor } from '../engine/battle';
 import { buildSockets, buildTalents, buildTree, policyText } from '../engine/builds';
 import { battleReservePct, lastingBarrierLoss } from '../engine/mechanics/runes';
 import { newMember } from '../engine/party';
@@ -69,6 +69,36 @@ describe('the suggested builds (plan 8h Task 4)', () => {
       }
     }
     expect(checked).toBeGreaterThan(40);
+  });
+
+  it('every suggested rune does something besides raising the TP', () => {
+    // The skill with all its runes against the skill without this one, TP aside: a rune whose only change is a higher TP
+    // (蓄力 on a skill with no power to raise) is a rune that only costs.
+    const shape = (d: ReturnType<typeof skillFor>) => (d ? JSON.stringify({ target: d.target, effects: d.effects, runeRules: d.runeRules ?? null, hpCost: d.hpCost ?? null }) : '');
+    for (const b of runeBuilds()) {
+      for (const level of LEVELS) {
+        const m = wearing(b, level);
+        for (const [skill, refs] of Object.entries(m.sockets ?? {})) {
+          const all = refs.filter((r) => r !== null);
+          const withAll = skillFor(fromMember(m, 0), skill)!;
+          for (const r of all) {
+            const less = skillFor(fromMember({ ...m, sockets: { ...m.sockets, [skill]: all.filter((x) => x !== r) } }, 0), skill)!;
+            const same = shape(withAll) === shape(less);
+            expect(same && withAll.tp >= less.tp, `${b.owner} ${b.key} Lv${level} ${skill} ${r.id}`).toBe(false);
+          }
+        }
+      }
+    }
+  });
+
+  it('a lasting skill takes no 延長 unless the build casts it by hand', () => {
+    // 常駐 keeps it up all fight; 延長 only lengthens a cast of it.
+    for (const b of runeBuilds()) {
+      const cast = new Set(b.policy.flatMap(named));
+      for (const [skill, ids] of Object.entries(b.runes)) {
+        if (ids.includes('lasting')) expect(!ids.includes('extend') || cast.has(skill), `${b.owner} ${b.key} ${skill}`).toBe(true);
+      }
+    }
   });
 
   it('the TP held for battle stays in reach', () => {
