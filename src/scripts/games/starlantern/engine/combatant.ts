@@ -10,7 +10,8 @@ import { credit, type Ledger } from './ledger';
 import { AILMENT, clearAilments, type AilmentShown, type Dot } from './ailments';
 
 /** `src`: the combatant key of whoever cast it (the contribution ledger credits what it prevents to them). */
-export interface Buff { stat: BuffStat; pct: number; turns: number; src?: string }
+/** `skill`: the skill that gave it, tagged only for a ledger that credits buff givers (plan 8h Task 5b review). */
+export interface Buff { stat: BuffStat; pct: number; turns: number; src?: string; skill?: string }
 
 export interface Combatant {
   key: string; side: 'party' | 'enemy'; defId: string; name: string;
@@ -71,10 +72,16 @@ export interface Combatant {
   frozen?: true;
   freezeGuard?: number;
   chill?: number;
-  /** The guard barrier over the party, as it stands on this member (battle.syncWards): def and res percent, who raised it. */
-  ward?: { def: number; res: number; src: string };
-  /** A shield: damage it takes before HP (dealDamage), and who gave it (the ledger credits what it absorbs to them). */
-  shield?: { amount: number; src: string };
+  /**
+   * The guard barrier over the party, as it stands on this member (battle.syncWards): def and res percent, who raised it,
+   * and with which skill (a ledger split by skill credits what it prevents to that skill; plan 8h Task 2 review).
+   */
+  ward?: { def: number; res: number; src: string; skill?: string };
+  /**
+   * A shield: damage it takes before HP (dealDamage), who gave it (the ledger credits what it absorbs to them) and, when a
+   * skill of theirs gave it, that skill (for a ledger split by skill).
+   */
+  shield?: { amount: number; src: string; skill?: string };
   /** Rounds fire, ice and thunder hit it as a weakness (Noel's hex; `isWeak`). */
   exposed?: number;
   /** Round ends a single enemy attack passes over this member (Rin's veil; battle.foePool). */
@@ -293,7 +300,7 @@ export const gaugeGain = (c: Combatant, n: number): number => Math.floor(n * (1 
 export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; ledger?: Ledger; log?: BattleEvent[] } = {}): number {
   if (t.shield) {
     const absorbed = Math.min(t.shield.amount, amount);
-    credit(opts.ledger, t.shield.src, 'shield', absorbed);
+    credit(opts.ledger, t.shield.src, 'shield', absorbed, t.shield.skill);
     opts.log?.push({ type: 'shield', target: t.key, amount: absorbed });
     amount -= absorbed;
     if (t.shield.amount > absorbed) t.shield = { ...t.shield, amount: t.shield.amount - absorbed };

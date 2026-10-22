@@ -27,12 +27,13 @@ export class InnScene extends FacilityScene {
   }
 
   protected commands(): MenuItem[] {
-    return [{ id: 'rest', label: T.ui2.inn.rest(innCost(this.ctx.game.state.party)) }, { id: 'revive', label: T.ui2.inn.revive }, { id: 'respec', label: T.ui2.inn.respec }];
+    return [{ id: 'rest', label: T.ui2.inn.rest(innCost(this.ctx.game.state.party)) }, { id: 'revive', label: T.ui2.inn.revive }, { id: 'respec', label: T.ui2.inn.respec }, { id: 'builds', label: T.ui2.inn.builds }];
   }
 
   protected onCommand(id: string): void {
     if (id === 'rest') this.askRest();
     else if (id === 'respec') this.respecList();
+    else if (id === 'builds') this.ctx.go('builds');
     else this.reviveList();
   }
 

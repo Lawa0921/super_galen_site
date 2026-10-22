@@ -12,7 +12,13 @@ import { LEGACY_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
 import { RUNE_SLOT_LEVELS } from '../../data/runes';
-import { battleLine, withoutPowerClause } from '../skillCard';
+import { autoLine, battleLine, withoutPowerClause } from '../skillCard';
+import { autoActions } from '../../engine/builds';
+import { castPower } from '../../engine/sim';
+import { castDef } from '../../engine/mechanics/index';
+import { LIMIT_MAX } from '../../engine/battle';
+import { hitAmount, type DamageSpec } from '../../engine/combatant';
+import { ultimateFor } from '../../engine/progression';
 import { skillFor } from '../../engine/battle';
 import { ECHO, echoDef } from '../../engine/mechanics/echo';
 import { CHARACTERS } from '../../data/characters';
@@ -62,7 +68,7 @@ describe('BattleScene', () => {
   });
   it('lists the commands for the first member and adds the ultimate when the gauge is full', () => {
     const plain = setup();
-    expect(plain.labels()).toEqual(['攻擊', '技能', '防禦', '道具', '逃跑', '全員攻擊']);
+    expect(plain.labels()).toEqual(['攻擊', '技能', '防禦', '道具', '逃跑', '自動', '全員攻擊']);
     expect(plain.heading()).toBe('絲嘉蕾 的行動');
     const full = setup((g) => { g.battle!.party[0].limit = 100; });
     expect(full.labels()).toContain('絕技：紅蓮劫火');
@@ -263,10 +269,10 @@ describe('BattleScene', () => {
   });
 
   it('全員攻擊 keeps what earlier members already chose and attacks with the rest', () => {
-    const { game, s } = setup();
+    const { game, s, root } = setup();
     const submit = vi.spyOn(game, 'submitRound');
     s.onAction('down'); s.onAction('down'); s.onAction('confirm');   // 絲嘉蕾: 防禦
-    for (let i = 0; i < 5; i++) s.onAction('down');
+    for (let k = 0; k < 9 && root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'auto'; k++) s.onAction('down');
     s.onAction('confirm');                                           // 全員攻擊 for the rest
     const sent = Object.values(submit.mock.calls[0][0]);
     expect(sent[0].kind).toBe('defend');
@@ -274,9 +280,9 @@ describe('BattleScene', () => {
   });
 
   it('全員攻擊 sends an attack for everyone at once', () => {
-    const { game, s } = setup();
+    const { game, s, root } = setup();
     const submit = vi.spyOn(game, 'submitRound');
-    for (let i = 0; i < 5; i++) s.onAction('down');
+    for (let k = 0; k < 9 && root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'auto'; k++) s.onAction('down');
     s.onAction('confirm');
     expect(Object.values(submit.mock.calls[0][0]).every((a) => a.kind === 'attack')).toBe(true);
   });
@@ -608,7 +614,7 @@ describe('BattleScene sound and failure safety', () => {
       } } };
     const s = new BattleScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: stage as never, fast: true });
     s.enter(root);
-    for (let i = 0; i < 5; i++) s.onAction('down');
+    for (let k = 0; k < 9 && root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'auto'; k++) s.onAction('down');
     s.onAction('confirm');                                   // 全員攻擊
     await flush();
     expect(seen[0]).toMatch(/：攻擊$/);                      // only the action so far
@@ -1399,5 +1405,132 @@ describe('BattleScene: one kind of 威力 on a note (plan 8g final review)', () 
     expect(note).toBe(T.cmd.noteWith(battleLine(def), withoutPowerClause(def.desc)));
     expect(note).not.toContain('×');
     expect(note).toContain('每次熱度 +2');
+  });
+});
+
+describe('BattleScene: 自動 (plan 8h Task 8)', () => {
+  const lineup: CharacterId[] = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+  const toCmd = (w: ReturnType<typeof setup>, id: string) => {
+    for (let k = 0; k < 12 && w.root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== id; k++) w.s.onAction('down');
+    expect(w.root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id')).toBe(id);
+  };
+  const note = (w: ReturnType<typeof setup>) => w.root.querySelector('.slx-bnote')?.textContent ?? '';
+
+  it('auto plays the round as the note said', () => {
+    // Noel follows 暴走流星; Chizuru's gauge is full (自動 fires an ultimate first).
+    const w = setup((g) => {
+      g.state.party.roster.noel.build = 'meteor';
+      g.battle!.party.find((c) => c.key === 'chizuru')!.limit = LIMIT_MAX;
+    }, {}, lineup);
+    const submit = vi.spyOn(w.game, 'submitRound');
+    toCmd(w, 'defend');
+    w.s.onAction('confirm');                                   // 洛恩: 防禦
+    toCmd(w, 'policy');
+    const b = w.game.battle!;
+    const party = w.game.state.party;
+    const who = b.party.filter((c) => c.alive && c.sleep === 0 && !c.frozen).map((c) => c.key).filter((k) => k !== 'hero');
+    const want = autoActions(b, party, who);
+    // The note is the round 自動 plays, member by member.
+    expect(note(w)).toBe(autoLine(b, party, who));
+    expect(note(w).split('\n')).toHaveLength(who.length);   // one member a line
+    expect(w.root.querySelector('.slx-bnote')!.classList.contains('slx-bnote-lines')).toBe(true);
+    const chizuru = b.party.find((c) => c.key === 'chizuru')!;
+    expect(want.chizuru.kind).toBe('ultimate');
+    expect(note(w)).toContain(T.cmd.policyPart(chizuru.name, T.cmd.ultimate(ultimateFor('chizuru', chizuru.ranks, chizuru).name)));
+    for (const k of who) {
+      const c = b.party.find((x) => x.key === k)!;
+      const a = want[k];
+      const what = a.kind === 'skill' ? T.cmd.policySkill(skillFor(c, a.skill)!.name, battleLine(castDef(b, c, skillFor(c, a.skill)!)))
+        : a.kind === 'attack' ? T.cmd.attack : a.kind === 'ultimate' ? T.cmd.ultimate(ultimateFor(c.defId as CharacterId, c.ranks, c).name) : '';
+      expect(note(w), k).toContain(T.cmd.policyPart(c.name, what));
+    }
+    expect(note(w)).not.toContain(T.cmd.policyPart(b.party.find((c) => c.key === 'hero')!.name, ''));   // 洛恩 has chosen
+    w.s.onAction('confirm');                                   // 自動
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(submit.mock.calls[0][0]).toEqual({ ...want, hero: { kind: 'defend' } });
+  });
+
+  it('the summary counts heat, coins and the barrier, as the battle casts them', () => {
+    const skillNote = (prep: (g: Game) => void, who: string, skill: string, lu: CharacterId[] = lineup) => {
+      const w = setup(prep, {}, lu);
+      for (let i = 0; i < 5 && w.heading() !== T.cmd.choose(who); i++) { toCmd(w, 'defend'); w.s.onAction('confirm'); }
+      expect(w.heading()).toBe(T.cmd.choose(who));
+      toCmd(w, 'skill');
+      w.s.onAction('confirm');
+      for (let k = 0; k < 12 && w.root.querySelector('.slx-bsub .slx-sel')?.getAttribute('data-id') !== skill; k++) w.s.onAction('down');
+      expect(w.root.querySelector('.slx-bsub .slx-sel')?.getAttribute('data-id')).toBe(skill);
+      return { w, text: note(w) };
+    };
+    const engine = (w: ReturnType<typeof setup>, key: string, skill: string) => {
+      const b = w.game.battle!;
+      const c = b.party.find((x) => x.key === key)!;
+      return { line: battleLine(castDef(b, c, skillFor(c, skill)!)), power: castPower(b, c, skillFor(c, skill)!) };
+    };
+    // Noel's heat: 3 points, 8% each, on 火之星彈's 140.
+    const heat = (n: number) => skillNote((g) => {
+      g.state.party.roster.noel.tree = { 'fire-star': 1 };
+      const c = g.battle!.party.find((x) => x.key === 'noel')!;
+      c.ranks = { 'fire-star': 1 };
+      c.mech = { kind: 'heat', heat: n } as never;
+    }, '諾艾兒', 'fire-star');
+    const hot = heat(3);
+    expect(hot.text.startsWith('敵方單體・威力 174・火')).toBe(true);
+    expect(engine(hot.w, 'noel', 'fire-star')).toEqual({ line: '敵方單體・威力 174・火', power: 174 });
+    expect(heat(0).text.startsWith('敵方單體・威力 140・火')).toBe(true);
+    // Liz's coins: 大手筆 with 6 coins, 5% a coin, on its 160.
+    const coins = skillNote((g) => {
+      g.state.party.roster.liz.tree = { ...g.state.party.roster.liz.tree, 'fortune-strike': 1 };
+      const c = g.battle!.party.find((x) => x.key === 'liz')!;
+      c.ranks = { ...c.ranks, 'fortune-strike': 1 };
+      c.mech = { kind: 'coins', coins: 6 } as never;
+    }, '莉茲', 'fortune-strike', [...LEGACY_LINEUP]);
+    expect(coins.text.startsWith('敵方單體・威力 208・物理')).toBe(true);
+    expect(engine(coins.w, 'liz', 'fortune-strike').power).toBe(208);
+    // Chizuru's barrier: 天之逆鉾 releasing three rounds, 10% a round, on its 330.
+    const spear = skillNote((g) => {
+      g.state.party.roster.chizuru.tree = { ...g.state.party.roster.chizuru.tree, 'heaven-spear': 1 };
+      const c = g.battle!.party.find((x) => x.key === 'chizuru')!;
+      c.ranks = { ...c.ranks, 'heaven-spear': 1 };
+      c.tp = c.max.tp = 99;
+      g.battle!.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 3, src: 'chizuru' }];
+    }, '千鶴', 'heaven-spear');
+    expect(spear.text.startsWith('敵方單體・威力 429・物理')).toBe(true);
+    expect(engine(spear.w, 'chizuru', 'heaven-spear').power).toBe(429);
+  });
+});
+
+describe("BattleScene: Safira's beat in her numbers (plan 8h Task 8 review)", () => {
+  /** Safira leads; her 刃舞 note at `beat`, and the engine's hit at that beat. */
+  const at = (beat: number) => {
+    const w = setup((g) => {
+      g.state.party.roster.safira.tree = { ...g.state.party.roster.safira.tree, 'blade-dance': 1 };
+      const c = g.battle!.party.find((x) => x.key === 'safira')!;
+      c.ranks = { ...c.ranks, 'blade-dance': 1 };
+      c.mech = { kind: 'beat', beat, last: '' } as never;
+    }, {}, ['safira', 'rin', 'chizuru', 'noel', 'selene']);
+    for (let k = 0; k < 9 && w.root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'skill'; k++) w.s.onAction('down');
+    w.s.onAction('confirm');
+    for (let k = 0; k < 12 && w.root.querySelector('.slx-bsub .slx-sel')?.getAttribute('data-id') !== 'blade-dance'; k++) w.s.onAction('down');
+    expect(w.root.querySelector('.slx-bsub .slx-sel')?.getAttribute('data-id')).toBe('blade-dance');
+    const text = w.root.querySelector('.slx-bnote')!.textContent!;
+    const shown = Number(/威力 (\d+)/.exec(text)![1]);
+    const b = w.game.battle!;
+    const c = b.party.find((x) => x.key === 'safira')!;
+    const foe = b.enemies[0];
+    const spec = skillFor(c, 'blade-dance')!.effects.find((e) => e.kind === 'damage') as unknown as DamageSpec;
+    const r = { variance: 1, crit: false, blocked: false };
+    // What one hit of hers does at this beat, and what a hit of the shown power does with no beat at all.
+    const real = hitAmount(c, foe, spec, r).amount;
+    const flat = hitAmount({ ...c, mech: { kind: 'beat', beat: 0, last: '' } } as never, foe, { ...spec, power: shown }, r).amount;
+    return { shown, real, flat, base: spec.power };
+  };
+
+  it('the menu power at beat 0 is the skill\'s own, and at beat 3 it carries the beat, as the engine hits', () => {
+    const zero = at(0);
+    expect(zero.shown).toBe(zero.base);
+    expect(zero.flat).toBe(zero.real);
+    const three = at(3);
+    expect(three.shown).toBe(Math.round((three.base * 130) / 100));
+    expect(three.flat).toBe(three.real);
   });
 });

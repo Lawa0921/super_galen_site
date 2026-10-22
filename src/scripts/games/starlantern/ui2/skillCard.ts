@@ -1,10 +1,15 @@
 import { CHARACTERS } from '../data/characters';
-import { RESERVE_CAP, RUNES, RUNE_IDS, RUNE_TIERS, exclusiveGroupOf, parseRuneKey, type RuneRef, type RuneTier } from '../data/runes';
+import { RESERVE_CAP, RUNES, RUNE_IDS, RUNE_NUMBERS, RUNE_TIERS, exclusiveGroupOf, parseRuneKey, type RuneRef, type RuneTier } from '../data/runes';
 import { T } from '../data/text.zh-TW';
-import { fromMember, runeView, skillCost, skillFor } from '../engine/battle';
+import { castNow, fromMember, runeView, skillCost, skillFor, type Action, type BattleState } from '../engine/battle';
+import { autoActions } from '../engine/builds';
+import type { Combatant } from '../engine/combatant';
+import { echoDef, echoOf } from '../engine/mechanics/echo';
+import { BEAT } from '../engine/mech';
+import { pctOf } from '../engine/skills';
 import { battleReservePct, lastingBarrierLoss, WHEEL } from '../engine/mechanics/runes';
 import { statsOf } from '../engine/party';
-import { treeCost } from '../engine/progression';
+import { treeCost, ultimateFor } from '../engine/progression';
 import { runeNotes, runeWhy, skillTags } from '../engine/runes';
 import { ELEMENT_AILMENT } from '../engine/skills';
 import {
@@ -35,7 +40,8 @@ const isDamage = (e: Effect): e is Damage => e.kind === 'damage';
 const num = (v: number): string => String(Math.round(v));
 /** The values of one row: one when they agree, 「／」 between them when the effects differ. */
 const joined = (vals: string[]): string => [...new Set(vals)].join(W.join);
-const pct = (chance: number): number => Math.round(chance * 100);
+/** A chance in percent, to a tenth (淬毒's exact half on a wide cast reads 12.5%). */
+const pct = (chance: number): number => Math.round(chance * 1000) / 10;
 
 /** Each ailment once, at its highest chance. */
 function strongest(list: { status: keyof typeof T.ailment; chance: number }[]): [keyof typeof T.ailment, number][] {
@@ -64,7 +70,7 @@ function addsOf(def: SkillDef): string[] {
   if (spill.length) out.push(A.spill(Math.max(...spill)));
   const r = def.runeRules;
   if (r?.trigger) out.push(A.trigger(A.when[r.trigger.on], r.trigger.pct));
-  if (r?.twice) out.push(A.twice);
+  if (r?.twice) out.push(A.twice(RUNE_NUMBERS['twin-cast'].fixed.secondPct));
   if (r?.bounce) out.push(A.bounce(r.bounce.bounces, r.bounce.dropPct));
   if (r?.reprise !== undefined) out.push(A.reprise(r.reprise));
   if (r?.sync !== undefined) out.push(A.sync(r.sync));
@@ -177,7 +183,7 @@ export interface RuneChoice {
 }
 
 /** Why the engine turned a socketing down, in the words of T.rune.fail. */
-function failWhy(reason: SocketFail | 'empty', s: GameState, at: SocketAt, ref: RuneRef, from?: SocketAt): string {
+export function failWhy(reason: SocketFail | 'empty', s: GameState, at: SocketAt, ref: RuneRef, from?: SocketAt): string {
   const F = T.rune.fail;
   switch (reason) {
     case 'reserve': return F.reserve(RESERVE_CAP);
@@ -297,6 +303,51 @@ export function battleLine(def: SkillDef): string {
   } else if (heals.length) parts.push(W.battle.heal(joined(heals.map((e) => num(e.power)))));
   else if (devices.length) parts.push(joined(devices.map((e) => W.device(T.mech.device[e.device], Math.round(e.power)))));
   return parts.join(W.battle.sep);
+}
+
+/**
+ * 自動's note (plan 8h ruling 15): what each of `who` will do this round, read from the same `autoActions` the command
+ * plays, one member a line: 「諾艾兒：火之星彈（敵方單體・威力 174・火）」 (her skill as the menu shows it, `shownDef`),
+ * 「攻擊」, 「殘響：…」, or 「絕技：…」 for a full gauge.
+ */
+export function autoLine(s: BattleState, party: Party, who: readonly string[]): string {
+  const acts = autoActions(s, party, who);
+  return T.cmd.policyNote(who.flatMap((k) => {
+    const c = s.party.find((x) => x.key === k);
+    const a = acts[k];
+    return c && a ? [T.cmd.policyPart(c.name, actText(s, c, a))] : [];
+  }));
+}
+
+/** One member's part of 自動's note: what `a` is, in the battle menu's words. */
+function actText(s: BattleState, c: Combatant, a: Action): string {
+  switch (a.kind) {
+    case 'skill': {
+      const def = skillFor(c, a.skill);
+      return def ? T.cmd.policySkill(def.name, battleLine(shownDef(s, c, def))) : a.skill;
+    }
+    case 'ultimate': return T.cmd.ultimate(ultimateFor(c.defId as CharacterId, c.ranks, c).name);
+    case 'echo': {
+      const rec = a.rec ?? echoOf(s, s.round + 1);
+      return T.cmd.echo(rec ? echoDef(rec).name : undefined);
+    }
+    case 'defend': return T.cmd.defend;
+    case 'escape': return T.cmd.escape;
+    // An attack (choose never picks an item).
+    default: return T.cmd.attack;
+  }
+}
+
+/**
+ * `def` as the battle menu shows it (plan 8h Task 8 review): as she casts it now (`castNow`), and for Safira her beat on
+ * each hit, which the engine adds per hit (combatant.ts hitAmount: 1 + BEAT.pctPer x beat), not in castDef. Display only.
+ */
+export function shownDef(s: BattleState, c: Combatant, def: SkillDef): SkillDef {
+  const now = castNow(s, c, def);
+  const beat = c.mech?.kind === 'beat' && c.defId === 'safira' ? c.mech.beat : 0;
+  if (beat <= 0) return now;
+  const pct = 100 + BEAT.pctPer * beat;
+  return { ...now, effects: now.effects.map((e) => (e.kind === 'damage' ? { ...e, power: pctOf(e.power, pct) } : e)) };
 }
 
 /** The max TP a fight leaves her when her working 常駐 runes hold some back (plan 8g ruling 9); else null. */

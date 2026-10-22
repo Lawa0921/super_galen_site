@@ -69,7 +69,21 @@ describe('InnScene', () => {
 
   it('the inn offers 休息, 復活 and 重置配點', () => {
     const { opts } = setup();
-    expect(opts()).toEqual(['休息（20 G）', '復活', '重置配點', '離開']);
+    expect(opts()).toEqual(['休息（20 G）', '復活', '重置配點', '建議配點', '離開']);
+  });
+
+  it('the inn opens the suggested builds (plan 8h)', () => {
+    const { s, game } = setup();
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const inn = new InnScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), from: 'builds' }, Infinity, 0);
+    inn.enter(root);
+    // Back from the builds screen: no greeting, the cursor on 建議配點; Enter opens it again.
+    expect(root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(true);
+    expect(root.querySelector('.slx-cmd [aria-selected=true] .slx-label')!.textContent).toBe('建議配點');
+    inn.onAction('confirm');
+    expect(go).toHaveBeenCalledWith('builds');
+    s.exit();
   });
 
   it('重置配點 lists members with their price and resets after a yes', async () => {
@@ -90,7 +104,7 @@ describe('InnScene', () => {
     expect(game.state.gold).toBe(gold - 25);
     expect(storage.map.get('starlantern-save')).toBeTruthy();   // saved
     await vi.waitFor(() => expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('絲嘉蕾的配點已重置，點數可以重新分配了。'));
-    expect(opts().length).toBe(4);
+    expect(opts().length).toBe(5);   // 休息, 復活, 重置配點, 建議配點 (plan 8h), 離開
   });
 
   /** Opens 重置配點 and says yes for 絲嘉蕾, who has one talent point spent. */

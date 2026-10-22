@@ -19,6 +19,7 @@
     "test:e2e:chromium": "playwright test --project=chromium",
     "test:e2e:report": "playwright show-report",
     "test:tooling": "node --import tsx --test tests/tooling/*.test.mjs",
+    "test:starlantern:bands": "node scripts/starlantern-bands.mjs",
     "test:seo": "astro build && node --test tests/tooling/seo-build.test.mjs",
     "test:all": "vitest run --maxWorkers=4 && npm run test:tooling && playwright test",
     "compile": "hardhat compile",

@@ -6,13 +6,13 @@ import { T } from '../../data/text.zh-TW';
 import { STORY } from '../../data/story.zh-TW';
 import { CHARACTERS } from '../../data/characters';
 import { LIMIT_MAX, intentLabel, runeView, skillFor, type Action, type BattleState } from '../../engine/battle';
+import { autoActions } from '../../engine/builds';
 import type { Combatant } from '../../engine/combatant';
 import { ailmentChips, type AilmentChip } from '../../engine/ailments';
 import { castCost, cueWord, fieldWords, foeWords, memberWords, whyNot, type MechCue, type MechWord } from '../../engine/mechanics/index';
 import { ECHO, echoDef, echoOf } from '../../engine/mechanics/echo';
 import type { BattleEnd } from '../../engine/game';
-import { learnedSkills, pctMod, ultimateFor } from '../../engine/progression';
-import { patchSkill } from '../../engine/skills';
+import { learnedSkills, ultimateFor } from '../../engine/progression';
 import type { CharacterId, SkillDef, Target } from '../../engine/types';
 import { art, enemyArt } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
@@ -22,7 +22,7 @@ import { fragmentItem } from '../../engine/story/fragments';
 import { gearIconUrl } from '../gearArt';
 import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
 import { RUNE_SLOT_LEVELS, RUNE_STACK } from '../../data/runes';
-import { battleLine, withoutPowerClause } from '../skillCard';
+import { autoLine, battleLine, shownDef, withoutPowerClause } from '../skillCard';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
@@ -182,6 +182,8 @@ export class BattleScene implements Scene {
       { id: 'item', label: T.cmd.item, disabled: items.length === 0 },
       ...(actor.limit >= LIMIT_MAX && ult ? [{ id: 'ultimate', label: T.cmd.ultimate(ult.name) }] : []),
       { id: 'escape', label: T.cmd.escape, disabled: this.state.boss },
+      // 自動 (plan 8h ruling 15): its note is the round it will play for whoever has no command yet.
+      { id: 'policy', label: T.cmd.policy, note: autoLine(this.state, this.ctx.game.state.party, this.actors().slice(this.index).map((c) => c.key)) },
       { id: 'auto', label: T.cmd.auto },
     ];
     this.view = new MenuView(new Menu(list), {
@@ -232,6 +234,12 @@ export class BattleScene implements Scene {
     if (id === 'attack') { this.withTarget('enemy', { kind: 'attack' }); return; }
     if (id === 'defend') { this.choose({ kind: 'defend' }); return; }
     if (id === 'escape') { this.choose({ kind: 'escape' }); return; }
+    if (id === 'policy') {
+      // Who has no command yet plays what the note said (autoActions); earlier members' choices stay.
+      Object.assign(this.actions, autoActions(this.state, this.ctx.game.state.party, this.actors().filter((c) => !this.actions[c.key]).map((c) => c.key)));
+      void this.submit();
+      return;
+    }
     if (id === 'auto') {
       const target = this.state.enemies.find((e) => e.alive)?.key ?? 'e0';
       for (const c of this.actors()) this.actions[c.key] ??= { kind: 'attack', target };   // keep earlier members' choices
@@ -278,7 +286,7 @@ export class BattleScene implements Scene {
         // ◆ for each rune that works on it, and its final numbers before its words (plan 8g ruling 12).
         const working = runeView(actor, sk.id, actor.runes?.[sk.id] ?? [])?.states.filter((x) => x.miss === null).length ?? 0;
         return {
-          id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: this.noteOf(sk),
+          id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: this.noteOf(sk, actor),
           ...(working ? { badge: T.cmd.runeMark.repeat(working) } : {}),
         };
       });
@@ -288,16 +296,12 @@ export class BattleScene implements Scene {
    * A skill's note: its final numbers, then its words; when the summary gives the final power (damage, a heal, a device),
    * the words' power multiplier goes, so one line never shows two kinds of 威力 (plan 8g final review).
    */
-  private noteOf(sk: SkillDef): string {
-    const shown = this.withAbyss(sk);
+  private noteOf(sk: SkillDef, actor: Combatant): string {
+    // As she casts it this moment, as perform does (plan 8h ruling 11h): the depth's bonus, then her heat, coins or barrier;
+    // and Safira's beat, which the engine adds on each hit (shownDef).
+    const shown = shownDef(this.state, actor, sk);
     const final = shown.effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'device');
     return T.cmd.noteWith(battleLine(shown), final ? withoutPowerClause(sk.desc) : sk.desc);
-  }
-
-  /** The skill with the abyss capstones' depth bonus in it, as perform casts it (the summary is what the battle does). */
-  private withAbyss(sk: SkillDef): SkillDef {
-    const bonus = sk.abyss && this.state.abyss ? pctMod(sk.id, 100 + this.state.abyss) : undefined;
-    return bonus ? patchSkill(sk, bonus) : sk;
   }
 
   private itemItems(): MenuItem[] {
@@ -401,6 +405,8 @@ export class BattleScene implements Scene {
     if (!text) { this.note?.remove(); this.note = null; return; }
     if (!this.note) { this.note = win('slx-bnote'); this.body.append(this.note); }
     this.note.textContent = text;
+    // 自動's note: one member a line (plan 8h Task 8 review).
+    this.note.classList.toggle('slx-bnote-lines', text.includes('\n'));
   }
 
   private sfxAdapter(): SoundManager {

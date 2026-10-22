@@ -4,7 +4,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { castField, fieldCost, fieldSkills, fieldTargets, noDraw, packEquip, packUnequip } from './field';
 import { createBattle, fromMember, skillCost, skillFor } from './battle';
-import { applyEffect, healAmount, patchSkill, type EffectContext } from './skills';
+import { applyEffect, healAmount, patchSkill, pctOf, type EffectContext } from './skills';
+import { RUNE_NUMBERS } from '../data/runes';
 import { pctMod } from './progression';
 import { abyssPct } from './scaling';
 import { activeIds, statsOf, STANDARD_LINEUP } from './party';
@@ -368,7 +369,7 @@ describe('runes in the field (plan 8e Task 3)', () => {
 });
 
 describe('twin-cast in the field (plan 8e Task 5)', () => {
-  it('a twin-cast heal heals twice in the field', () => {
+  it('a twin-cast heal heals twice in the field, the second at its percent (plan 8h ruling B1)', () => {
     const s = game();
     set(s, 'selene', { tree: { moonlight: 1 }, sockets: { moonlight: [{ id: 'twin-cast', tier: 'legendary' }] } });
     set(s, 'noel', { level: 40, hp: 1 });   // a deep pool of HP, so both heals show
@@ -377,7 +378,9 @@ describe('twin-cast in the field (plan 8e Task 5)', () => {
     const r = castField(s, { caster: 'selene', skill: 'moonlight', target: 'noel', depth: 1 });
     if (!r.ok) throw new Error(r.reason);
     expect(r.cost).toBe(10);
-    const want = Math.min(maxHp(s, 'noel'), 1 + 2 * each);
+    const second = healAmount(combatant(s, 'selene'), pctOf(120, RUNE_NUMBERS['twin-cast'].fixed.secondPct));
+    expect(second).toBeLessThan(each);
+    const want = Math.min(maxHp(s, 'noel'), 1 + each + second);
     expect(member(r.state, 'noel').hp).toBe(want);
     expect(r.gains).toEqual([{ id: 'noel', hp: want - 1, revived: false }]);
   });

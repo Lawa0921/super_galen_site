@@ -157,6 +157,13 @@ export const T = {
     noteWith: (line: string, desc: string) => `${line}　${desc}`,
     /** After the note when the record left a variant's mechanic extras out (8d final review). */
     echoDropped: '（機制效果不會重現）',
+    /** 自動 (plan 8h ruling 15): each member not commanded yet does what her build's policy (or the standard one) says. */
+    policy: '自動',
+    /** Its note: what each of them will do this round, as it will be done, one member a line. */
+    policyNote: (parts: string[]) => parts.join('\n'),
+    policyPart: (name: string, what: string) => `${name}：${what}`,
+    /** A skill in the note: its name and its numbers as she casts it now (battleLine). */
+    policySkill: (skill: string, line: string) => `${skill}（${line}）`,
   },
   battle: {
     win: '勝利！', lose: '全滅……', fled: '成功逃跑', cont: '繼續', poison: '毒', sleep: '睡眠',
@@ -172,6 +179,8 @@ export const T = {
       skill === 0 && talent > 0
         ? `${name} 獲得天賦點 ${talent}（狀態→天賦）`
         : `${name} 獲得技能點 ${skill}（狀態→技能樹）${talent > 0 ? `、天賦點 ${talent}（狀態→天賦）` : ''}`,
+    /** In place of `points` for a member who follows a build: the points were laid out for her (plan 8h final review I2). */
+    followed: (name: string, build: string) => `${name} 已照〈${build}〉配好`,
     weak: (els: string) => `已知弱點：${els}`,
     /** Words that pop over a struck enemy or member. */
     pop: { miss: 'MISS', crit: '暴擊！', weak: '弱點！', resist: '抗性', tp: (n: number) => `+${n} TP` },
@@ -415,7 +424,7 @@ export const T = {
         spill: (pct: number) => `超出的回復變成護盾（最多 ${pct}%）`,
         when: { crit: '她暴擊時', kill: '她擊倒敵人時', struck: '她受到攻擊後' },
         trigger: (when: string, pct: number) => `${when}自動施放（威力 ${pct}%）`,
-        twice: '連續施放兩次',
+        twice: (pct: number) => `連續施放兩次，第二次威力 ${pct}%`,
         bounce: (n: number, drop: number) => `彈射 ${n} 次，每次威力 −${drop}%`,
         reprise: (pct: number) => `下一回合結束時再打一次（威力 ${pct}%）`,
         sync: (pct: number) => `下一位隊友本回合的技能威力 +${pct}%`,
@@ -468,6 +477,16 @@ export const T = {
       added: (line: string) => `＋${line}`,
       lost: (line: string) => `−${line}`,
       hint: '↑↓ 選擇　Enter 決定　Tab 切換欄　Q/E 換人　R/F 捲動卡片　Esc 返回',
+      /** Under the title while she follows a suggested build (plan 8h): its name and the first rule of its play. */
+      following: (name: string, line: string) => `跟隨：${name}——${line}`,
+      /** Over the rune list: the runes her build suggests for this skill not in its slots yet, each with where it is. */
+      lacking: (items: [string, string][]) => `缺：${items.map(([name, where]) => `${name}（${where}）`).join('、')}`,
+      /** In place of where a lacking rune is found: one is in the bag already. */
+      inBag: '袋子裡有',
+      /** Over the rune list: suggested runes the bag holds for this skill's slots, ready to put in (plan 8h final review). */
+      ready: (items: [string, string][]) => `可裝：${items.map(([name, where]) => `${name}（${where}）`).join('、')}`,
+      /** Over the rune list, a suggested rune the slot refuses (Task 7 review): why, in place of where it is. */
+      refusedWhy: (name: string, why: string) => `${name}裝不上：${why}`,
     },
     /** The status screen's skill-tree tab. */
     tree: {
@@ -729,6 +748,62 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       respecSaveFailed: (name: string) => `${name}的配點已重置，但存檔失敗了……瀏覽器不允許儲存。`,
       morning: '──隔天早上', saved: '已存檔。', saveFailed: '存檔失敗了……瀏覽器不允許儲存。',
       nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
+      /** Plan 8h: the suggested builds screen, after 重置配點. */
+      builds: '建議配點',
+    },
+    /** The suggested builds screen (plan 8h Task 7): each build of a member, what it does and lacks; apply and follow. */
+    builds: {
+      title: '建議配點', listHead: '配點方案',
+      /** Beside the name of the build she follows. */
+      following: '跟隨中',
+      /** What applying starts (plan 8h ruling 2: following is off until a build is applied). */
+      follow: '套用之後會跟隨這套：升級時自動照這套配點，新開的符文槽也從袋子補上。自己動手配點就會停止跟隨。',
+      /** On the card of the build she follows: what it does, and how to stop it. */
+      followingNow: '正在跟隨這套：升級時自動照這套配點，新開的符文槽從袋子補上。按「停止跟隨」或自己動手配點就會停下來。',
+      stopFollow: '停止跟隨',
+      stopped: (name: string, build: string) => `${name}不再跟隨${build}，配點維持現在的樣子。`,
+      apply: (cost: number) => `套用（${cost} G）`,
+      applyFree: '套用（免費）',
+      applied: (name: string, build: string, placed: number, missing: number, returned: number) =>
+        `${name}套用了${build}：鑲上 ${placed} 顆符文${missing ? `，還缺 ${missing} 顆` : ''}${returned ? `，${returned} 顆回到袋子` : ''}。`,
+      townOnly: '回城後才能套用',
+      /** The confirm (plan 8h ruling 12, Task 7 review): the price, then a line for each thing it changes (`notes`). */
+      askApply: (name: string, build: string, cost: number, notes: string[]) =>
+        `要讓${name}套用${build}嗎？${cost === 0 ? '免費' : `需要 ${cost} G`}。${notes.map((n) => `\n${n}`).join('')}`,
+      /** Points she spent move. */
+      reassign: '技能樹與天賦會照這套重新分配。',
+      /** No point moves, some are added. */
+      addPoints: '會照這套補上技能點與天賦點。',
+      /** A rune she wears would not be back in its slot. */
+      strip: (name: string) => `${name}身上其他的符文會回到袋子。`,
+      /** Below the build's suggested level (ruling E2): on the card and in the confirm. */
+      underLevel: (lv: number, min: number) => `目前 Lv ${lv}，建議 Lv ${min} 以上`,
+      askStop: (name: string, build: string) => `要讓${name}停止跟隨${build}嗎？\n配點維持現在的樣子，之後升級要自己配點。`,
+      /** Where the build is measured to shine (data/builds.ts BuildScenario). */
+      scenario: { boss: '擅長：頭目戰', crowd: '擅長：一次對付一大群', long: '擅長：打得久的戰鬥', ordeal: '擅長：更深處的頭目戰' },
+      policyHead: '打法',
+      /** The tree the build lays out at the top level: its ultimate and the B sides it takes. */
+      treeHead: (lv: number) => `技能樹（練到 Lv ${lv}）`,
+      ultimate: (names: string[]) => `絕技：${names.join('、')}`,
+      noUltimate: '絕技：不學',
+      sides: (names: string[]) => `二選一：${names.join('、')}`,
+      runesHead: '建議符文',
+      noRunes: '不裝符文。',
+      /** The mark of a rune in reach (a missing one says 缺 on its own row). */
+      have: '◆ 鑲得上（鑲著或袋子裡有）',
+      /** What applying costs: the respec's price when her points move; free when they only grow or stay. */
+      cost: (n: number) => `費用：${n} G（技能樹與天賦重新分配）`,
+      costFree: '費用：免費（技能樹與天賦照這套補上）',
+      costFill: '費用：免費（技能樹不變，只補符文）',
+      costStrip: '費用：免費（技能樹不變，有些符文會回到袋子）',
+      /** The tree tab, following nothing with points left (plan 8h ruling 14). */
+      unspentHint: '不想自己配？旅館的『建議配點』可以一鍵套用',
+      /** The tree tab's way in, and the build she follows. */
+      entry: 'Tab 建議配點',
+      followTag: (name: string) => `跟隨：${name}`,
+      hint: '↑↓ 選擇　←→ 換按鈕　Enter 決定　Q/E 換人　R/F 捲動　Esc 返回',
+      /** One button: no ←→. */
+      hintOne: '↑↓ 選擇　Enter 決定　Q/E 換人　R/F 捲動　Esc 返回',
     },
     gate: {
       reroll: '重抽傳送門',
@@ -880,6 +955,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       scatter: '隨機目標的招不能改形狀',
       pure: '只能用在只有增益的招',
       noHeal: '需要：回復效果',
+      /** A trigger rune on a skill with no plain effect (plan 8h ruling 11b). */
+      plain: '需要：傷害、治療或增益這類一般效果（觸發不會打出結界、裝置這些機制）',
     },
     /** Why a rune cannot go into a socket (engine/sockets.ts SocketFail); `reserve` takes RESERVE_CAP. */
     fail: {
@@ -956,6 +1033,46 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     fused: (label: string) => `合成了 ${label}！`,
     /** The rune tab with nothing in the bag to fuse. */
     fuseEmpty: '袋子裡沒有可合成的符文，三個同名同階的符文可以合成高一階',
+  },
+  /** The suggested builds (plan 8h): the standard build's name and line, and a policy's words, one sentence a rule. */
+  build: {
+    standard: { name: '標準', intro: '照預設的配點走，不裝符文：補血優先，其他時候放最強的招。' },
+    gauge: { heat: '熱度', coins: '銅板', aim: '瞄準層數', embers: '餘燼' },
+    /** After a build's line when it is suggested from a level (ruling E2). */
+    minLevel: (lv: number) => `（建議 Lv ${lv} 以上）`,
+    /** Where a missing rune is found. */
+    from: { shop: '道具店有賣', drop: '打怪、寶箱掉落', legendary: '菁英、頭目掉落' },
+    missing: (name: string, from: string) => `缺：${name}（${from}）`,
+    later: (name: string, lv: number) => `${name}：Lv ${lv} 起`,
+    /** A rune whose skill waits for the hero's memories (his abyss skills). */
+    laterMemories: (name: string, n: number) => `${name}：記憶 ${n} 段後`,
+    /** A rune the slot refused (常駐's reserve, or a clash with a rune already there). */
+    refused: (name: string) => `${name}：這一格裝不上`,
+    /** Changes by hand stopped them following their builds (several at once, in the order they stopped). */
+    followEnded: (names: string[]) => `${names.join('、')}不再跟隨建議配點。`,
+    rule: {
+      none: '沒有特別的規則：補血優先，其他時候放最強的招。',
+      ensureBarrier: (names: string[], big: boolean, below?: number) =>
+        `${big ? (below !== undefined ? `頭目或菁英剩不到 ${below}% HP 時，` : '有頭目或菁英時，') : ''}結界快結束就重新架起${names.join('或')}。`,
+      ensureDevice: (names: string[], big: boolean) => `${big ? '有頭目或菁英時，' : ''}裝置快停了就重新設置（${names.join('、')}）。`,
+      ensureMark: (name: string, big: boolean, below?: number) =>
+        `先用${name}記住${below !== undefined ? `剩不到 ${below}% HP 的` : ''}${big ? '頭目或菁英' : '敵人'}。`,
+      alternate: (repeat: boolean) => (repeat ? '跟著拍子換招，只剩一招時照樣出招。' : '跟著拍子換招。'),
+      spendAt: (gauge: string, min: number, name: string, ofMaxHp: boolean) =>
+        `${gauge}${ofMaxHp ? `累積到最大 HP 的 ${min}%` : `到 ${min}`} 就放${name}，之前先留著。`,
+      healBelow: (pct: number) => `有人 HP 低於 ${pct}% 就先補血。`,
+      strongest: (aoe: boolean) => (aoe ? '其他時候放打得最多的招（看威力，也看打到幾個）。' : '其他時候放威力最高的招。'),
+      ensureTaunt: (name: string) => `挑釁快結束就再用${name}。`,
+      ensureCover: (name: string) => `用${name}護住 HP 比例最低的隊友。`,
+      releaseAt: (min: number, name: string) => `結界還剩 ${min} 回合以上（或常駐）就用${name}解放。`,
+      atPhase: (phase: string, name: string) => `${phase}時放${name}。`,
+      executeBelow: (pct: number, name: string) => `敵人剩不到 ${pct}% HP 就用${name}收尾，先挑暗記中的。`,
+      castUnlessLast: (name: string) => `上一招不是${name}就放${name}。`,
+      castWhen: (name: string, big: boolean, whileAbsent: boolean) =>
+        `${big ? '有頭目或菁英時，' : ''}${whileAbsent ? `${name}的效果不在了就放` : `能放就放${name}`}。`,
+      echo: '同伴剛放的招比自己最強的招還強時，用殘響重現它。',
+      echoAt: (pct: number) => `同伴剛放的招有自己最強的招的 ${pct}% 以上時，用殘響重現它。`,
+    },
   },
   clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card
   /** The finale's closing card; its text is the finale scene's summary. */
