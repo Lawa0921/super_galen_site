@@ -5,6 +5,7 @@
 - 標記：**【使用者決定】** = 擁有者已拍板，不再討論；**【建造者決定／提案】** = 本稿作者的選擇，實作者可在不違反【使用者決定】的前提下調整，但要在 PR 說明理由。
 - 先備研究：`reports/網頁版泰拉瑞亞技術研究.md`（host 權威、三通道、`TileReq → 套用 → 廣播`、里程碑 M4）。
 - 修訂：**2026-10-21 因無限世界修訂**（PR #299；`docs/superpowers/specs/2026-10-21-delve-infinite-world-design.md` §6 C11）。改了 §4 三列、§5.2 編輯日誌、§5.3 客人世界、§5.4 訊息、§5.5 第 6 點、§5.6、§6 M-B 測試、§7 R4／R10，並新增 §10。其餘不變；行號以 2026-10-20 為準，可能過期。
+- 修訂：**2026-10-22 M-C**。§5.7「已知剩餘窗口」改成 C1 的描述，§5.8 補 C2–C10，§6 M-C 驗收補背景實測。
 - 補記：2026-10-22 M-B2 終審：§5.6 第 5 點與 §10 D5 的措辭，並在 §10 新增「M-B3 進場清單」。
 
 ---
@@ -219,7 +220,13 @@ class DelveGame {
   - 客人只會寫入**最後一次收到的 `chk`**，絕不寫入自己本地的預測狀態。
   - 房主離開：客人保留最後的 `chk`，回到標題畫面，顯示「主機已離線」。
 - **鎖**：客人用 `navigator.locks.request('delve-char-'+id, {ifAvailable:true})` 防止同一個角色同時開在兩個分頁。房主拒絕已經在 session 裡的 `charId`。
-- **已知剩餘窗口**：房主在 checkpoint 和存世界之間崩潰，可能複製或遺失「最後幾秒」的跨邊界物品。這在反目標的範圍內可以接受，寫成測試記錄行為，不追求零窗口。
+- **確認收到的 checkpoint（2026-10-22 M-C，C1）【建造者決定】**
+  - `chk` 多帶 `upTo`，代表房主已經處理到這位客人的第幾個 cmd seq。客人把 checkpoint 寫進 IDB 之後，回 `chkAck{rev}`。
+  - 房主移除客人時，把那份角色存進世界檔的 `held[charId]`。原本的 `retained` 只放在記憶體，M-C 改成透過 `VisitStore` 寫進世界存檔，房主重新整理也不會丟。
+  - 客人重進時，`held.rev` 比 hello 帶來的大，就用 held。收到 rev ≥ held.rev 的 `chkAck` 時清掉 held。
+  - 斷線時如果還有跨邊界操作沒被 checkpoint 涵蓋（`unconfirmed`），客人存最後一份 chk，並在角色記錄標上 `pendingWorld`。標題畫面會顯示「待同步」，選這個角色時跳確認。
+- **已知剩餘窗口**：客人沒回原世界，先在別的世界玩，最後一筆跨邊界操作可能重複或消失。依反目標（朋友間不防作弊）接受，UI 會明白告知。房主在 checkpoint 和存世界之間崩潰的窗口同理，寫成測試記錄行為，不追求零窗口。
+- **已知缺口（終審處理）**：「繼續冒險」直接開最近的世界時不會跳待同步確認（確認只在標題的選角色路徑，`session.ts` 的 `pickCharacter`）。
 
 ### 5.8 連線、大廳與 UI（M-C）
 
@@ -229,6 +236,16 @@ class DelveGame {
 - 標題畫面：新增「角色」選單（建立、選擇、匯出、匯入），以及「多人」入口（建立房間顯示 5 碼房號，或輸入房號加入），加上暱稱欄位。
 - 遊戲中：玩家名單和延遲顯示、名牌、遠端紙娃娃（`SpriteCache` 改成以 `dollKey` 為 key 的多筆 LRU）、等待睡覺的提示、房主斷線的提示。
 - 文案：依照 delve 目前的慣例，UI 直接寫中文。如果改走站台 i18n，**兩套檔都要改**（CLAUDE.md 雷 1）。
+- **M-C 建造者決定（2026-10-22，擁有者可推翻；C1 見 §5.7）**
+  - **C2 `sum` 洪水**：離客人超過 `NET_TILE_COLS` 欄的 `sum`，先停在 `parkedSums`（以 cx 去重，上限 `SUM_PARK_MAX = 32`，超過丟最舊的）。客人走近時才處理，超過 `2 × NET_TILE_COLS` 直接丟（客人那邊也已經卸載，回來時會重送）。佇列裡同一個 cx 的 sum 只留最新一份。
+  - **C3 延遲關閉**：房主送 reject、bye 或判定逾時之後，過 `LINGER_MS = 2000` 才 `link.close('linger')`。這段時間只處理 `chkAck` 和 `pong`。`NetHost.close()` 之後 `frame()` 只負責這些延遲關閉。
+  - **C4 `savedAt`**：由寫入 IDB 的一端蓋 `Date.now()`。客人在 `CoopGuestSession` 的 persist 包裝裡蓋，房主不改。
+  - **C5 延遲**：雙方都每 `PING_MS = 2000` 在 ctrl 送 `ping{at}`，對方回 `pong{at}`，各自算 RTT。房主看到每位客人的延遲，客人看到自己到房主的延遲。
+  - **C6 同角色快速重連**：新的 hello 帶同一個 charId，而舊連線已經沉默超過 `REPLACE_SILENT_MS = 5000`，就直接把舊的移除（`'timeout'`），讓新的進來，不必等 90 秒（例如客人重新整理頁面但 RTC 沒及時報斷線）。
+  - **C7 建置版本**：`astro.config.mjs` 用 `vite.define` 注入 `__DELVE_BUILD__ = VERCEL_GIT_COMMIT_SHA ?? 'dev'`。`delve/net/build.ts` 匯出 `DELVE_BUILD`，用 `typeof` 守住沒有 define 的情況（vitest）。
+  - **C8 入口**：房主入口在遊戲中的暫停選單「開放加入」，房主一定要先進入自己的世界。客人入口在標題：選角色之後，世界清單面板裡的「加入朋友的世界」。
+  - **C9 遠端紙娃娃**：`Sprites.sheetFor(look, key, need)` 取任意樣子的影格表，不改目前的 `look` 和手臂快取；`SHEET_CACHE` 從 6 改成 10。遠端玩家只畫身體影格（跑、跳、待機），v1 不畫手持物和揮擊手臂。
+  - **C10 背景運作**：連線時 `NetLoop` 用 Worker 計時器。`RoomHost.poll` 也由同一個 loop 驅動，所以房主在背景時客人照樣能加入。主執行緒計時器只用在不影響正確性的 UI。
 
 ## 6. 里程碑與測試策略
 
@@ -262,7 +279,7 @@ class DelveGame {
   - vitest：用 mock 的 RTCPeerConnection 測三通道的建立和二進位收發，寫法參考 `tetris/net/webrtcTransport.test.ts`。
   - Playwright 新增 `tests/e2e/delve-online.spec.ts`：照 `tests/e2e/bomber-online.spec.ts` 的方式開 2 個 browser context，只跑 chromium。流程是房主建房、客人輸入房號，雙方透過 `window.__delveDebug`（`session.ts:189`）看到 2 名玩家；客人放一塊方塊，房主那邊的 tile 也變了；客人離線後，角色檔裡有剛撿的物品。
   - 指令：`npx playwright test tests/e2e/delve-online.spec.ts --project=chromium`。
-- 驗收：兩台實機（同一個 Wi-Fi，加上一台用手機熱點）可以連線。附上 4321 連結給擁有者實測。
+- 驗收：兩台實機（同一個 Wi-Fi，加上一台用手機熱點）可以連線。附上 4321 連結給擁有者實測。背景 10 分鐘、兩台實機由擁有者實測：房主分頁在背景 10 分鐘，客人持續遊玩、世界不會停（U8）；客人分頁在背景 10 分鐘再回來，沒有斷線（U9）。
 
 **M-D 打磨**
 - 內容：兩邊確認的交易視窗、聊天和表情、名牌樣式、二進位量化快照和頻寬儀表、客人在寬限期內用同一個 `charId` 重連、怪物血量依人數縮放（v1 不做，見第 8 節 Q11）、連線失敗時提示「可能是 NAT」。
