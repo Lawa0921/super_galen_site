@@ -2,7 +2,7 @@
 import { RECIPES, canCraft, stationOk, type CraftContext, type Station } from '../engine/crafting';
 import type { Inventory, Stack } from '../engine/inventory';
 import type { ItemId } from '../engine/items';
-import type { BlockReason } from '../engine/game';
+import type { BlockReason, GameMode } from '../engine/game';
 import { CHUNK, DAY_LENGTH } from '../engine/constants';
 
 export interface Cam { x: number; y: number; }
@@ -53,6 +53,11 @@ export class FixedStepper {
   }
   /** 插值用：累加器剩餘比例 0..1 */
   get alpha(): number { return this.acc / this.dt; }
+}
+
+/** rAF 這一幀要不要跑模擬：只有單機、沒暫停、沒在對話時（連線時模擬由 NetLoop 跑，UI 暫停只放開按鍵） */
+export function stepsInFrame(mode: GameMode, paused: boolean, talking: boolean): boolean {
+  return mode === 'solo' && !paused && !talking;
 }
 
 export interface ChunkRange { cx0: number; cy0: number; cx1: number; cy1: number; }

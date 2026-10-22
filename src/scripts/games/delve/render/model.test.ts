@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   clampCamera, followCamera, FixedStepper, visibleChunks, ChunkLRU,
-  formatClock, depthLabel, blockedMessage, recipeRows, countLabel, cameraFocus, autostartPlan, biomeLabel, regionLabel } from './model';
+  formatClock, depthLabel, blockedMessage, recipeRows, countLabel, cameraFocus, autostartPlan, biomeLabel, regionLabel, stepsInFrame } from './model';
 import { Inventory } from '../engine/inventory';
 import { DAY_LENGTH } from '../engine/constants';
 
@@ -245,5 +245,16 @@ describe('biomeLabel', () => {
     expect(regionLabel(0, regions, 15, 15)).toBe('螢光菇林');
     expect(regionLabel(0, regions, 55, 55)).toBe('水晶洞');
     expect(regionLabel(2, regions, 0, 0)).toBe('雪原');
+  });
+});
+
+describe('stepsInFrame', () => {
+  it('單機：只有沒暫停、沒在對話才跑', () => {
+    expect(stepsInFrame('solo', false, false)).toBe(true);
+    expect(stepsInFrame('solo', true, false)).toBe(false);
+    expect(stepsInFrame('solo', false, true)).toBe(false);
+  });
+  it('連線（host／replica）：rAF 一律不跑模擬', () => {
+    for (const m of ['host', 'replica'] as const) for (const p of [false, true]) for (const k of [false, true]) expect(stepsInFrame(m, p, k)).toBe(false);
   });
 });
