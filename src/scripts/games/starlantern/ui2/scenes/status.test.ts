@@ -647,6 +647,31 @@ describe('StatusScene', () => {
     /** Presses of ↓ from the first node to `id`. */
     const to = (id: string) => order.indexOf(id);
 
+    it("a variant's power is a multiplier in its words, never a final number", () => {
+      // 重星's rule says 「威力 ×1.3」: the card's final number (80 → 196) is the only 威力 number on the notes.
+      expect(nodeText('noel-star-heavy', 1)).toContain(`威力 ${T.mult(130)}`);
+      expect(nodeText('noel-star-heavy', 1)).not.toContain('130%');
+      expect(T.ui2.tree.next('power', 100, 110)).toBe(`下一級：威力 ${T.mult(100)} → ${T.mult(110)}`);
+      const held = onTree(20, { 'fire-star': 1, 'noel-star-twin': 2 });
+      down(held.s, to('noel-star-heavy'));
+      expect(held.info()).not.toMatch(/威力 [0-9]+%/);
+    });
+
+    it('a swap that would leave a rune doing nothing says so', () => {
+      // 擴散 on 火焰波 works while 聚焰 makes it hit one foe; the cursor on 延燒 (the other side): after the swap it would not.
+      const r = onTree(20, { 'flame-wave': 1, 'noel-wave-focus': 1 });
+      r.game.state.party.roster.noel = { ...r.noel(), sockets: { 'flame-wave': [{ id: 'spread', tier: 'magic' }] } };
+      r.s.onAction('left'); r.s.onAction('right');                                // redraw with the rune in
+      down(r.s, to('noel-wave-burn'));
+      expect(r.cur()).toBe('noel-wave-burn');
+      expect(r.root.querySelector('.slx-tree-warn')!.textContent).toBe(T.ui2.tree.runeOff([T.rune.label('spread', 'magic')]));
+      // Without a rune that would stop: no warning.
+      resetTreeView();
+      const plain = onTree(20, { 'flame-wave': 1, 'noel-wave-focus': 1 });
+      down(plain.s, to('noel-wave-burn'));
+      expect(plain.root.querySelector('.slx-tree-warn')).toBeNull();
+    });
+
     it('a variant previews what it changes, with the workshop\'s card', () => {
       const W = T.ui2.workshop;
       /** The preview line as the card model says it, for Noel going from her tree now to `after`. */
@@ -933,7 +958,7 @@ describe('StatusScene', () => {
       node('noel-star-twin').click();
       expect(info()).toContain(SKILLS['fire-star'].desc);
       expect(info()).toContain(T.ui2.tree.now(T.ui2.tree.none));
-      expect(info()).toContain(T.ui2.tree.nextMod('改為 2 段，每段威力 52%。'));
+      expect(info()).toContain(T.ui2.tree.nextMod(`${T.rune.perHitNote(2, T.mult(52))}。`));
       node('noel-wave-burn').click();
       expect(info()).toContain(T.ui2.tree.nextMod('命中時 30% 使目標灼燒。'));
     });
@@ -1030,7 +1055,7 @@ describe('StatusScene', () => {
         node('noel-star-twin').click();
         expect(info()).toContain('火之星彈・連星');
         expect(info()).toContain(T.ui2.tree.now(T.ui2.tree.none));
-        expect(info()).toContain(T.ui2.tree.nextMod('改為 2 段，每段威力 52%。'));
+        expect(info()).toContain(T.ui2.tree.nextMod(`${T.rune.perHitNote(2, T.mult(52))}。`));
       });
 
       it('a maxed mechanic node says only what it does now', () => {
@@ -1051,7 +1076,7 @@ describe('StatusScene', () => {
     });
 
     it('a summary reads an active rank TP or rounds (nextRankText)', () => {
-      expect(T.ui2.tree.mod({ powerPct: 120 })).toBe('威力 120%');
+      expect(T.ui2.tree.mod({ powerPct: 120 })).toBe('威力 ×1.2');
       expect(T.ui2.tree.mod({ tpDelta: -2 })).toBe('TP −2');
       expect(T.ui2.tree.mod({ turns: 5 })).toBe('持續 5 回合');
       expect(T.ui2.tree.mod({ chance: 0.7 })).toBe('毒機率 70%');
@@ -1775,7 +1800,13 @@ describe('the skills page and the workshop (plan 8g Task 5)', () => {
     const fire = w.skill('fire-star')!;
     expect(fire.querySelector('.slx-skill-head .slx-skill-slots')!.textContent).toBe('◆○');
     const rune = fire.querySelector('.slx-skill-rune')!;
-    expect(rune.textContent).toBe(`${label(R('spread'))}：${RUNES.spread.text('magic')}`);
+    // What the rune does to this skill, in the card's final numbers (final review): not its own 「威力 60%」.
+    const m0 = w.game.state.party.roster.noel;
+    const c = compareCards(cardOf({ ...m0, sockets: undefined }, 'fire-star')!, cardOf(m0, 'fire-star')!);
+    const parts = [...c.lines.filter((l) => l.changed).map((l) => T.ui2.workshop.change(l.label, l.before, l.after)), ...c.added.map(T.ui2.workshop.added)];
+    expect(rune.textContent).toBe(T.ui2.status.runeLine(label(R('spread')), parts));
+    expect(rune.textContent).toContain('84');
+    expect(rune.textContent).not.toContain(RUNES.spread.text('magic'));
     expect(rune.classList.contains('slx-line-off')).toBe(false);
     expect(w.skill('ice-star')!.querySelector('.slx-skill-slots')!.textContent).toBe('○○');
     // Enter: the workshop on her first skill that takes runes; a click on a skill: that skill.

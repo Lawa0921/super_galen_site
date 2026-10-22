@@ -14,7 +14,7 @@ import { runeWhy, runeFits } from '../engine/runes';
 import { newGame, type GameState } from '../engine/state';
 import type { CharacterId, Member } from '../engine/types';
 import {
-  battleLine, cardOf, compareCards, previewOf, reserveLine, runeChoices, slotStates, type RuneAction,
+  battleLine, cardOf, compareCards, previewOf, reserveLine, runeChoices, slotStates, withoutPowerClause, type RuneAction,
 } from './skillCard';
 
 const W = T.ui2.workshop;
@@ -53,7 +53,9 @@ describe('the skill card (plan 8g Task 3)', () => {
     const r = previewOf(s, { id: 'noel', skill: 'fire-star', slot: 0 }, { kind: 'bag', ref: R('spread') });
     if (!r.ok) throw new Error(r.reason);
     const c = compareCards(cardOf(member(s, 'noel'), 'fire-star')!, cardOf(r.state.party.roster.noel, 'fire-star')!);
-    expect(lineOf(c, 'target')).toMatchObject({ before: '單體', after: '全體', changed: true });
+    expect(lineOf(c, 'target')).toMatchObject({ before: '敵方單體', after: '敵方全體', changed: true });
+    // The card's target words are the status page's (one style everywhere, final review).
+    expect(W.target).toBe(T.ui2.status.targets);
     expect(lineOf(c, 'power')).toMatchObject({ before: '140', after: '84（每個目標）', changed: true });
     expect(lineOf(c, 'tp')).toMatchObject({ before: '4', after: '4', changed: false });
     expect(lineOf(c, 'hits')).toMatchObject({ before: '1', after: '1', changed: false });
@@ -191,7 +193,7 @@ describe('the skill card (plan 8g Task 3)', () => {
     const fromChizuru = list.find((c) => c.source.kind === 'socket' && c.source.at.id === 'chizuru')!;
     expect(fromChizuru.source).toEqual({ kind: 'socket', ref: R('spread'), at: { id: 'chizuru', skill: 'pierce', slot: 0 } });
     const pierce = skillFor(fromMember(member(s, 'chizuru'), 0), 'pierce')!.name;
-    expect(fromChizuru.giver!.startsWith(`移走後 ${CHARACTERS.chizuru.name}・${pierce}：目標 全體 → 單體；`)).toBe(true);
+    expect(fromChizuru.giver!.startsWith(`移走後 ${CHARACTERS.chizuru.name}・${pierce}：目標 敵方全體 → 敵方單體；`)).toBe(true);
     const own = list.find((c) => c.source.kind === 'socket' && c.source.at.id === 'noel')!;
     expect(own.source).toEqual({ kind: 'socket', ref: R('drain'), at: { id: 'noel', skill: 'ice-star', slot: 0 } });
     // Each bag row: the count, and 持有 split.
@@ -247,6 +249,29 @@ describe('the skill card (plan 8g Task 3)', () => {
     expect(own.giver).toBeUndefined();
   });
 
+  it('a power multiplier comes out of words whose final number is shown', () => {
+    expect(T.mult(130)).toBe('×1.3');
+    expect(T.mult(52)).toBe('×0.52');
+    const cases: [string, string][] = [
+      [`火屬性魔法攻擊。威力 ${T.mult(130)}，每次熱度 +2。`, '火屬性魔法攻擊。每次熱度 +2。'],
+      [`單體近戰斬擊。改為 2 段，每段威力 ${T.mult(58)}。`, '單體近戰斬擊。改為 2 段。'],
+      [`回復一名隊友 HP。TP −2，威力 ${T.mult(90)}。`, '回復一名隊友 HP。TP −2。'],
+      [`請靜心。也解除睡眠；回復威力 ${T.mult(130)}。`, '請靜心。也解除睡眠。'],
+      ['火屬性魔法攻擊', '火屬性魔法攻擊'],
+      ['解放結界的一突：結界每剩 1 回合，威力多 10%。', '解放結界的一突：結界每剩 1 回合，威力多 10%。'],
+    ];
+    for (const [desc, want] of cases) expect(withoutPowerClause(desc), desc).toBe(want);
+  });
+
+  it('only the members given may hand a rune over (the labyrinth: the field alone)', () => {
+    let s = stateAt(20, ['noel', 'chizuru'], { 'spread@magic': 1 });
+    s = ok(socketRune(s, 'chizuru', 'pierce', 0, R('spread')));
+    const at: SocketAt = { id: 'noel', skill: 'fire-star', slot: 0 };
+    expect(runeChoices(s, at).some((c) => c.section === 'move')).toBe(true);
+    expect(runeChoices(s, at, ['noel']).some((c) => c.section === 'move')).toBe(false);
+    expect(runeChoices(s, at, ['noel', 'chizuru'])).toEqual(runeChoices(s, at));
+  });
+
   it('choices are cached per state and slot', () => {
     const s = stateAt(20, ['noel'], { 'spread@magic': 1, 'drain@magic': 1 });
     const at: SocketAt = { id: 'noel', skill: 'fire-star', slot: 0 };
@@ -274,7 +299,7 @@ describe('the skill card (plan 8g Task 3)', () => {
     const off = previewOf(spread, at('noel', 'fire-star'), { kind: 'remove' });
     if (!off.ok) throw new Error(off.reason);
     const o = compareCards(cardOf(member(spread, 'noel'), 'fire-star')!, cardOf(member(off.state, 'noel'), 'fire-star')!);
-    expect(lineOf(o, 'target')).toMatchObject({ before: '全體', after: '單體' });
+    expect(lineOf(o, 'target')).toMatchObject({ before: '敵方全體', after: '敵方單體' });
     expect(o.removed).toEqual([]);
     // A trigger rune adds one line with its power.
     const crit = previewOf(s, at('noel', 'fire-star'), { kind: 'bag', ref: R('on-crit') });
@@ -351,7 +376,7 @@ describe('the skill card (plan 8g Task 3)', () => {
 
   it('the battle line joins effects that differ, and names a device with its power', () => {
     const two = { ...SKILLS['fire-star'], effects: [{ kind: 'damage' as const, power: 140, element: 'fire' as const, scale: 'mag' as const, melee: false }, { kind: 'damage' as const, power: 60, element: 'ice' as const, scale: 'mag' as const, melee: false }] };
-    expect(battleLine(two)).toBe('單體・威力 140／60・火／冰');
+    expect(battleLine(two)).toBe('敵方單體・威力 140／60・火／冰');
     const turret = SKILLS.turret.effects[0] as { device: 'turret'; power: number };
     const line = battleLine(SKILLS.turret);
     expect(line).toBe(`自身・${W.device(T.mech.device.turret, turret.power)}`);
@@ -366,10 +391,10 @@ describe('the skill card (plan 8g Task 3)', () => {
     const plain = stateAt(5, ['noel'], { 'spread@magic': 1 });
     learnOnly(plain, 'noel', { 'fire-star': 1 });
     const spread = ok(socketRune(plain, 'noel', 'fire-star', 0, R('spread')));
-    expect(battleLine(skillFor(fromMember(member(spread, 'noel'), 0), 'fire-star')!)).toBe('全體・威力 84・火');
+    expect(battleLine(skillFor(fromMember(member(spread, 'noel'), 0), 'fire-star')!)).toBe('敵方全體・威力 84・火');
     const heal = (SKILLS.moonlight.effects[0] as { power: number }).power;
-    expect(battleLine(SKILLS.moonlight)).toBe(`單體・${W.battle.heal(heal)}`);
-    expect(battleLine(SKILLS['war-dance'])).toBe('全體');
+    expect(battleLine(SKILLS.moonlight)).toBe(`我方單體・${W.battle.heal(heal)}`);
+    expect(battleLine(SKILLS['war-dance'])).toBe('我方全體');
   });
 });
 

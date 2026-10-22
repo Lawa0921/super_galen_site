@@ -22,7 +22,7 @@ import { fragmentItem } from '../../engine/story/fragments';
 import { gearIconUrl } from '../gearArt';
 import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
 import { RUNE_SLOT_LEVELS, RUNE_STACK } from '../../data/runes';
-import { battleLine } from '../skillCard';
+import { battleLine, withoutPowerClause } from '../skillCard';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
@@ -278,10 +278,20 @@ export class BattleScene implements Scene {
         // ◆ for each rune that works on it, and its final numbers before its words (plan 8g ruling 12).
         const working = runeView(actor, sk.id, actor.runes?.[sk.id] ?? [])?.states.filter((x) => x.miss === null).length ?? 0;
         return {
-          id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: T.cmd.noteWith(battleLine(this.withAbyss(sk)), sk.desc),
+          id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: this.noteOf(sk),
           ...(working ? { badge: T.cmd.runeMark.repeat(working) } : {}),
         };
       });
+  }
+
+  /**
+   * A skill's note: its final numbers, then its words; when the summary gives the final power (damage, a heal, a device),
+   * the words' power multiplier goes, so one line never shows two kinds of 威力 (plan 8g final review).
+   */
+  private noteOf(sk: SkillDef): string {
+    const shown = this.withAbyss(sk);
+    const final = shown.effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'device');
+    return T.cmd.noteWith(battleLine(shown), final ? withoutPowerClause(sk.desc) : sk.desc);
   }
 
   /** The skill with the abyss capstones' depth bonus in it, as perform casts it (the summary is what the battle does). */

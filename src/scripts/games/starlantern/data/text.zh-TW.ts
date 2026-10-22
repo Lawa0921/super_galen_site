@@ -28,6 +28,16 @@ const SLOT: Record<Slot, string> = {
 };
 
 const RARITY: Record<Rarity, string> = { common: '普通', magic: '魔法', rare: '稀有', epic: '史詩', legendary: '傳說', unique: '獨特', set: '套裝' };
+/**
+ * A power percent said as a multiplier, 「×1.3」 for 130 (plan 8g final review): a variant's or a rank's power is never
+ * read as a final number beside the card's.
+ */
+const MULT = (pct: number): string => `×${+(pct / 100).toFixed(2)}`;
+/** Who a skill aims at, one style on every screen (the status page, the card, the battle summary). */
+const TARGETS: Record<Target, string> = {
+  enemy: '敵方單體', enemies: '敵方全體', ally: '我方單體', allies: '我方全體', self: '自身', deadAlly: '倒下的隊友',
+  row: '敵方一排', column: '敵方一列', cross: '十字範圍',
+};
 /** Every stat's name: the seven base names come from STAT, so they are written once. */
 const STAT_NAME: Record<AnyStat, string> = {
   ...STAT,
@@ -70,6 +80,7 @@ const rescueFound = (name: string) => `有人被怪物圍住了──是${name}�
 
 export const T = {
   signed,
+  mult: MULT,
   stat: STAT,
   slot: SLOT,
   /** Gear kinds, for a base's own slot: a ring is one "戒指" here, "戒指 1" / "戒指 2" only where a member's slots are listed. */
@@ -195,7 +206,7 @@ export const T = {
     /** 大手筆's words for the power a coin adds (data/skills.ts; 分期 rewrites the number, plan 8d). */
     coinPower: (n: number) => `每枚威力多 ${n}%`,
     /** A variant's power as its words say it (雙管's 「每下威力 60%」); 雙砲台's added points rewrite it to the sum (8d Task 8 review). */
-    notePower: (n: number) => `威力 ${n}%`,
+    notePower: (n: number) => `威力 ${MULT(n)}`,
     /** ... and what it spends: every coin, or a share of them (分期), rounded up. */
     coinSpend: (pct: number) => (pct >= 100 ? '花光所有銅板' : `花掉 ${pct}% 的銅板（進位）`),
     /** 獵人標記's words for the stacks it locks at (her 獵人的耐心 raises it; engine/battle.ts skillFor rewrites it). */
@@ -305,10 +316,7 @@ export const T = {
       affinityAll: '全能',
       /** Column of the cut a cap takes off a total (an em dash when the stat is under its cap). */
       capCol: '上限',
-      targets: {
-        enemy: '敵方單體', enemies: '敵方全體', ally: '我方單體', allies: '我方全體', self: '自身', deadAlly: '倒下的隊友',
-        row: '敵方一排', column: '敵方一列', cross: '十字範圍',
-      } as Record<Target, string>,
+      targets: TARGETS,
       exp: (n: number, next: number) => `經驗 ${n}／${next}`,
       place: (where: string) => `站位 ${where}`,
       attack: (melee: boolean, pct: number | null) => (!melee ? '攻擊方式 遠程／魔法' : pct === null ? '攻擊方式 近戰' : `攻擊方式 近戰（${pct}%）`),
@@ -324,6 +332,8 @@ export const T = {
       hintSkills: '←→ 分頁　Q／E 換人　↑↓ 捲動　Enter／點一招：技能工坊　Esc 返回',
       /** After the TP line, when 常駐 holds some back: the max TP a fight leaves her (plan 8g ruling 9). */
       tpBattle: (n: number) => `（戰鬥中上限 ${n}）`,
+      /** A rune on the skills page: what it does to this skill, in the card's final numbers (plan 8g final review). */
+      runeLine: (label: string, parts: string[]) => `${label}：${parts.join('・')}`,
       /** In the labyrinth only the members on the field change their runes (plan 8g Task 5 review). */
       fieldOnly: '迷宮中只能調整出戰的成員',
       /** The tree and talent tabs' own keys: a node cursor and the two-press spend. */
@@ -380,10 +390,8 @@ export const T = {
      */
     workshop: {
       row: { target: '目標', hits: '段數', element: '屬性', power: '威力', heal: '回復', effect: '效果', turns: '回合', tp: 'TP', hp: 'HP 消耗', tpMax: '戰鬥 TP 上限' },
-      /** Enemy skills only aim at a row, a column or a cross; the words are kept so every target has one. */
-      target: {
-        enemy: '單體', enemies: '全體', ally: '單體', allies: '全體', self: '自身', deadAlly: '倒下的隊友', row: '一排', column: '一列', cross: '十字範圍',
-      } satisfies Record<Target, string>,
+      /** The status page's target words (TARGETS): one style everywhere. */
+      target: TARGETS,
       /** A row one side of the card does not have. */
       none: '—',
       /** Numbers that differ between a skill's effects. */
@@ -444,6 +452,10 @@ export const T = {
       noSlots: (lv: number) => `Lv ${lv} 才有第一個插槽`,
       noSkills: '還沒有可以裝符文的技能',
       remove: '拆下',
+      /** The rune a pick takes out of its slot (plan 8g final review). */
+      swapOut: (label: string) => `換下：${label}，回到袋子`,
+      /** A power multiplier in a skill's words, dropped from a battle note whose summary gives the final number. */
+      powerClause: /[，；、]?(?:每段|每下|回復)?威力 ×[0-9.]+/g,
       /** The rune list's heading over the runes in other slots, and what a move says (plan 8g Task 4b). */
       fromOthers: '從別人身上移過來',
       moved: (label: string, who: string, skill: string) => `從${who}・${skill}移過來：${label}`,
@@ -471,6 +483,8 @@ export const T = {
       preview: (swap: boolean, parts: string[]) => `${swap ? '改選後' : '學會後'}：${parts.join('・')}`,
       /** The empty side of a pair: its rule at the rank the swap brings (all the other side's points). */
       afterSwap: (rank: number, max: number, text: string) => `改選後（${rank}/${max}）：${text}`,
+      /** The runes on the skill that would do nothing after learning or changing to this variant (plan 8g final review). */
+      runeOff: (labels: string[]) => `之後不再生效：${labels.join('、')}`,
       /** The Game would not change the side now (in battle, say). */
       swapRefused: '現在無法改選',
       /** A node that can take its next rank now. */
@@ -487,14 +501,14 @@ export const T = {
       capstone: (name: string) => `終極技：${name}`,
       noCapstone: (max: number) => `終極技：未選（限選 ${max} 個）`,
       /** What the next rank of an active node scales: power for damage and heals, the percent for a pure buff or debuff. */
-      next: (what: 'power' | 'buff', a: number, b: number) => `下一級：${what === 'power' ? '威力' : '效果'} ${a}% → ${b}%`,
+      next: (what: 'power' | 'buff', a: number, b: number) => `下一級：${what === 'power' ? `威力 ${MULT(a)} → ${MULT(b)}` : `效果 ${a}% → ${b}%`}`,
       now: (text: string) => `目前：${text}`,
       nextMod: (text: string) => `下一級：${text}`,
       nextHold: (n: number) => `下一級：倒回的月相再停 ${n} 回合`,
       none: '未投入',
       /** A modifier rank's rewrite in short, e.g. 「威力 120%」「TP −2」「持續 5 回合」. */
       mod: (m: SkillMod): string => [
-        m.powerPct !== undefined ? `威力 ${m.powerPct}%` : '',
+        m.powerPct !== undefined ? `威力 ${MULT(m.powerPct)}` : '',
         m.powerDelta !== undefined ? `威力 ${signed(m.powerDelta)}%` : '',
         m.buffPct !== undefined ? `效果 ${m.buffPct}%` : '',
         m.tpDelta !== undefined ? `TP ${signed(m.tpDelta)}` : '',
@@ -917,11 +931,13 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
      * A variant's per-hit note (data/trees), and the same note once 重擊 folds the hits into one, its power the sum (plan
      * 8g Task 2 review). `pct` may be a pattern: applyRunes finds the note through it.
      */
-    perHitNote: (hits: number | string, pct: number | string) => `改為 ${hits} 段，每段威力 ${pct}%`,
-    foldedHits: (hits: number, pct: number) => `合為 ${hits} 段，威力 ${pct}%`,
+    perHitNote: (hits: number | string, times: string) => `改為 ${hits} 段，每段威力 ${times}`,
+    foldedHits: (hits: number, pct: number) => `合為 ${hits} 段，威力 ${MULT(pct)}`,
     reprise: (name: string) => `${name}的回聲`,
     /** A rune as every screen names it (plan 8f): 「擴散（魔法）」, the tier in the gear's rarity words. */
     label: (id: RuneId, tier: RuneTier) => `${RUNES[id].name}（${RARITY[tier]}）`,
+    /** The tier part of a label, kept whole where a long name is cut (plan 8g final review). */
+    tierTag: (tier: RuneTier) => `（${RARITY[tier]}）`,
     /** A rune found in a fight, a chest or a vault. */
     got: (label: string) => `得到符文：${label}`,
     /** A rune found with `n` (RUNE_STACK) already owned: paid as its sell price instead (plan 8f ruling 7). */

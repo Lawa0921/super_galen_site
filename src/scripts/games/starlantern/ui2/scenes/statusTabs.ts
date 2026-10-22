@@ -23,7 +23,7 @@ import { gearLabel, rarityClass } from '../loot';
 import type { SceneCtx } from '../scene';
 import { cancelSpend, clickSpend, pressSpend, type SpendState } from '../spendPress';
 import { battleTp, cardOf, compareCards, slotDots, slotStates } from '../skillCard';
-import { RUNES } from '../../data/runes';
+import { RUNES, type RuneRef } from '../../data/runes';
 import { socketable } from '../../engine/sockets';
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
@@ -244,6 +244,21 @@ const gear: StatusTab = {
   },
 };
 
+/**
+ * A rune's line on the skills page (plan 8g final review): what it does to this skill in the card's final numbers, the
+ * card with it against the card without it; its own sentence when the card shows no change.
+ */
+function runeLineOf(m: Member, skill: string, ref: RuneRef): string {
+  const cells = m.sockets?.[skill] ?? [];
+  const without: Member = { ...m, sockets: { ...m.sockets, [skill]: cells.map((c) => (c && c.id === ref.id && c.tier === ref.tier ? null : c)) } };
+  const now = cardOf(m, skill), before = cardOf(without, skill);
+  const W = T.ui2.workshop;
+  const c = now && before ? compareCards(before, now) : undefined;
+  const parts = c ? [...c.lines.filter((l) => l.changed).map((l) => W.change(l.label, l.before, l.after)), ...c.added.map(W.added)] : [];
+  const label = T.rune.label(ref.id, ref.tier);
+  return parts.length ? T.ui2.status.runeLine(label, parts) : `${label}：${RUNES[ref.id].text(ref.tier)}`;
+}
+
 /** The skills page's one-line note: why the workshop did not open (shown until the next key or page). */
 const skillsView = { note: '' };
 
@@ -309,7 +324,7 @@ const skills: StatusTab = {
         el('p', { class: 'slx-desc', text: s.desc }),
         ...changed.map((p) => el('p', { class: 'slx-skill-power', text: p.text })),
         ...runes.map((x) => el('p', { class: x.state === 'off' ? 'slx-skill-rune slx-line-off' : 'slx-skill-rune' }, [
-          `${T.rune.label(x.ref!.id, x.ref!.tier)}：${RUNES[x.ref!.id].text(x.ref!.tier)}`,
+          runeLineOf(m, sk, x.ref!),
           ...(x.state === 'off' && x.why ? [el('span', { class: 'slx-line-note', text: T.ui2.workshop.off(x.why) })] : []),
         ])),
       ]);
@@ -475,15 +490,18 @@ export function nextRankText(skill: string, rank: number): string | null {
  * it (or, for the empty side of a pair, after changing side), its changed rows and new lines in one line; '' when
  * nothing on the card changes.
  */
-function variantPreview(m: Member, node: string, skill: string, swap: boolean): string {
+function variantPreview(m: Member, node: string, skill: string, swap: boolean): { text: string; off: string[] } {
   const r = swap ? swapPair(m, node) : raiseNode(m, node);
-  if (!r.ok) return '';
+  if (!r.ok) return { text: '', off: [] };
   const before = cardOf(m, skill), after = cardOf(r.member, skill);
-  if (!before || !after) return '';
+  if (!before || !after) return { text: '', off: [] };
   const W = T.ui2.workshop;
   const c = compareCards(before, after);
   const parts = [...c.lines.filter((l) => l.changed).map((l) => W.change(l.label, l.before, l.after)), ...c.added.map(W.added)];
-  return parts.length ? T.ui2.tree.preview(swap, parts) : '';
+  // The runes in its slots that work now and would do nothing after (final review).
+  const was = slotStates(m, skill), will = slotStates(r.member, skill);
+  const off = was.flatMap((x, i) => (x.state === 'on' && will[i]?.state === 'off' && x.ref ? [T.rune.label(x.ref.id, x.ref.tier)] : []));
+  return { text: parts.length ? T.ui2.tree.preview(swap, parts) : '', off };
 }
 
 /** The notes under the tree for the cursor's node: what it does now and what its next rank changes. */
@@ -521,12 +539,13 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   }
   const say = why === 'pair' ? t.swapOpen : why ? treeReason(why, n.id) : '';
   const shut = say && treeView.msg !== say ? say : '';
-  const preview = rank === 0 && n.kind === 'variant' && (why === 'pair' || why === null) ? variantPreview(m, n.id, n.skill!, why === 'pair') : '';
+  const preview = rank === 0 && n.kind === 'variant' && (why === 'pair' || why === null) ? variantPreview(m, n.id, n.skill!, why === 'pair') : { text: '', off: [] };
   return el('div', { class: 'slx-tree-info' }, [
     el('p', { class: 'slx-tree-info-head' }, head),
     el('p', { class: 'slx-desc', text: desc }),
     ...(change.length ? [el('p', { class: 'slx-tree-change' }, change)] : []),
-    ...(preview ? [el('p', { class: 'slx-tree-preview', text: preview })] : []),
+    ...(preview.text ? [el('p', { class: 'slx-tree-preview', text: preview.text })] : []),
+    ...(preview.off.length ? [el('p', { class: 'slx-tree-warn', text: T.ui2.tree.runeOff(preview.off) })] : []),
     ...(shut ? [el('p', { class: 'slx-tree-reason', text: shut })] : []),
     ...(treeView.msg ? [el('p', { class: 'slx-tree-msg', text: treeView.msg, attrs: { role: 'status' } })] : []),
   ]);

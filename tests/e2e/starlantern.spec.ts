@@ -3680,7 +3680,7 @@ test.describe('starlantern', () => {
       await w.key('Enter');                                   // slot 1's runes
       await expect(page.locator('.slx-ws-runes [aria-selected=true]')).toHaveAttribute('data-id', 'bag:spread@magic');
       const target = page.locator('.slx-ws-card tr[data-key=target]');
-      await expect(target.locator('td')).toHaveText(['單體', '全體']);
+      await expect(target.locator('td')).toHaveText(['敵方單體', '敵方全體']);
       await expect(target).toHaveClass(/slx-changed/);
       await expect(page.locator('.slx-ws-card tr[data-key=power] .slx-ws-after')).toHaveText('84（每個目標）');
       for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
@@ -3786,7 +3786,7 @@ test.describe('starlantern', () => {
       await expect(row.locator('.slx-right')).toHaveText('希爾薇');
       await row.hover();
       await expect(page.locator('.slx-ws-giver')).toContainText('希爾薇・瞄準射擊');
-      await expect(page.locator('.slx-ws-card tr[data-key=target] td')).toHaveText(['單體', '單體']);
+      await expect(page.locator('.slx-ws-card tr[data-key=target] td')).toHaveText(['敵方單體', '敵方單體']);
       for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
         await inside(page, vw, vh);
         if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-move-${vw}.png` });

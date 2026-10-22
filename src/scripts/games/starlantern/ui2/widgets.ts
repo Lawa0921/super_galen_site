@@ -114,6 +114,7 @@ export class MenuView {
       } }, [
         ...(item.icon ? [el('img', { class: item.iconCls ? `slx-ico ${item.iconCls}` : 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
         el('span', { class: item.cls ? `slx-label ${item.cls}` : 'slx-label', text: item.label }),
+        ...(item.tail ? [el('span', { class: item.cls ? `slx-label-tail ${item.cls}` : 'slx-label-tail', text: item.tail })] : []),
         ...(item.badge ? [el('span', { class: 'slx-badge', text: item.badge })] : []),
         ...(item.right !== undefined ? [el('span', { class: item.rightClass ? `slx-right ${item.rightClass}` : 'slx-right', text: item.right })] : []),
       ]);

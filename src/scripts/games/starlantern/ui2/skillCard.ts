@@ -11,7 +11,7 @@ import {
   bagCount, moveRune, ownedCount, socketCount, socketRune, unsocketRune, type SocketAt, type SocketFail,
 } from '../engine/sockets';
 import type { GameState } from '../engine/state';
-import type { Effect, Member, Party, SkillDef } from '../engine/types';
+import type { CharacterId, Effect, Member, Party, SkillDef } from '../engine/types';
 
 /**
  * The skill card (plan 8g Task 3, spec §6.8): one model of a skill as a member casts it, before and after a rune, read
@@ -118,7 +118,8 @@ export function cardOf(m: Member, skill: string): Card | undefined {
   const tp = statsOf(m).tp;
   const held = battleReservePct(c);
   if (held > 0) rows.push({ key: 'tpMax', text: String(battleMax(tp, held)) });
-  return { name: def.name, tags: skillTags(view.def).map((t) => T.rune.tag[t]), rows, adds: addsOf(def), tpPlain: String(tp) };
+  // The tags of the skill as cast, runes in: an after card never says ［單體］ beside 全體 (final review).
+  return { name: def.name, tags: skillTags(def).map((t) => T.rune.tag[t]), rows, adds: addsOf(def), tpPlain: String(tp) };
 }
 
 export interface CardLine { key: CardKey; label: string; before: string; after: string; changed: boolean }
@@ -208,12 +209,12 @@ const NO_RUNES = {};
  * changed rows by name, then the lines she loses), unless it stays on the same skill. Within each section: the ones that work first, then the most changes, then RUNE_IDS order, then the higher tier. Cached per party,
  * bag and slot, and frozen: the caller must not sort or change it.
  */
-export function runeChoices(s: GameState, at: SocketAt): readonly RuneChoice[] {
+export function runeChoices(s: GameState, at: SocketAt, givers?: readonly CharacterId[]): readonly RuneChoice[] {
   let byBag = CACHE.get(s.party);
   if (!byBag) CACHE.set(s.party, (byBag = new WeakMap()));
   let bySlot = byBag.get(s.runes ?? NO_RUNES);
   if (!bySlot) byBag.set(s.runes ?? NO_RUNES, (bySlot = new Map()));
-  const key = `${at.id}:${at.skill}:${at.slot}`;
+  const key = `${at.id}:${at.skill}:${at.slot}|${givers?.join(',') ?? '*'}`;
   const hit = bySlot.get(key);
   if (hit) return hit;
   const m = s.party.roster[at.id];
@@ -253,7 +254,8 @@ export function runeChoices(s: GameState, at: SocketAt): readonly RuneChoice[] {
       const ref = parseRuneKey(k);
       if (ref && count > 0) out.push(choice({ kind: 'bag', ref, count }, 'bag'));
     }
-    for (const id of s.party.recruited) {
+    // Only the members given may hand a rune over (the labyrinth: those on the field).
+    for (const id of s.party.recruited.filter((x) => !givers || givers.includes(x))) {
       for (const [skill, cells] of Object.entries(s.party.roster[id]?.sockets ?? {})) {
         cells.forEach((r, slot) => {
           if (!r || (id === at.id && skill === at.skill && slot === at.slot)) return;
@@ -271,6 +273,14 @@ export function runeChoices(s: GameState, at: SocketAt): readonly RuneChoice[] {
   const frozen = Object.freeze(out.map((c) => Object.freeze(c)));
   bySlot.set(key, frozen);
   return frozen;
+}
+
+/**
+ * A skill's words without their power multipliers (「威力 ×1.3」): for a battle note whose summary already gives the
+ * final number (plan 8g final review).
+ */
+export function withoutPowerClause(desc: string): string {
+  return desc.replace(W.powerClause, '').replace(/。，/g, '。').replace(/^，/, '');
 }
 
 /**

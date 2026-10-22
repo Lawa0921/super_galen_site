@@ -673,6 +673,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-tree-now { color: $slx-ink; }
 .slx-tree-next { color: $slx-up; }
 // A variant's preview (plan 8g Task 8): the card's changed rows, wrapping inside the notes.
+.slx-tree-warn { margin: 2px 0 0; color: #ffb36b; font-size: 11px; line-height: 14px; white-space: normal; overflow-wrap: anywhere; }
 .slx-tree-preview { margin: 2px 0 0; color: #9fc1ff; font-size: 11px; line-height: 14px; white-space: normal; overflow-wrap: anywhere; }
 .slx-tree-reason { color: $slx-dim; }
 .slx-tree-msg { color: #ffb36b; }
@@ -1254,6 +1255,13 @@ $slx-starlit: #bff6ff;
 .slx-ws-runes { display: flex; flex-direction: column; min-height: 0; }
 .slx-ws-runes .slx-desc { white-space: normal; }
 .slx-ws-unfit { opacity: 0.55; }
+// A rune row: the name may be cut, its 「（品階）」 stays whole beside it (plan 8g final review).
+// A rune's name (four characters at most) and its tier stay whole; the right column (the bag's count, a giver's name or
+// skill) gives way, the card's giver line naming the giver in full.
+.slx-ws-runes .slx-opt .slx-label { flex: 0 0 auto; }
+.slx-ws-runes .slx-opt .slx-right { flex: 0 4 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slx-label-tail { flex: none; white-space: nowrap; }
+.slx-ws-swapout { font-size: 11px; line-height: 14px; color: $slx-dim; }
 // The card: its body scrolls inside the frame (no native bar; ▲/▼ stand in), the foot below never moves.
 .slx-ws-card-frame { flex: 1 1 auto; min-height: 0; }
 .slx-ws-card-frame > .slx-more-up { top: 0; }

@@ -6,6 +6,7 @@ import type { Device } from '../mech';
 import { patchSkill, pctOf } from '../skills';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
+import { T } from '../../data/text.zh-TW';
 import { POWERS } from '../../data/gear';
 import { DEVICE, devicePower } from './devices';
 import { initMechs, memberWords, whyNot } from './index';
@@ -236,11 +237,11 @@ describe("Bobby's nodes (plan 8d Task 8)", () => {
   it("the words give the real shot with both variants: 雙砲台's points are added to 雙管's percent (8d Task 8 review)", () => {
     const both = skillFor({ powers: [], ranks: { turret: 1, 'bobby-turret-twin': 2, 'bobby-turret-pair': 1 } }, 'turret')!;
     expect((both.effects[0] as { power: number }).power).toBe(pctOf(TURRET, 140));
-    expect(both.desc).toContain('每下威力 140%');
-    expect(both.desc).not.toContain('威力 60%');
+    expect(both.desc).toContain(`每下威力 ${T.mult(140)}`);
+    expect(both.desc).not.toContain(`威力 ${T.mult(60)}`);
     expect(both.desc).toContain('+80 個百分點');
     // Each alone says its own number.
-    expect(skillFor({ powers: [], ranks: { turret: 1, 'bobby-turret-twin': 2 } }, 'turret')!.desc).toContain('每下威力 60%');
+    expect(skillFor({ powers: [], ranks: { turret: 1, 'bobby-turret-twin': 2 } }, 'turret')!.desc).toContain(`每下威力 ${T.mult(60)}`);
     expect(skillFor({ powers: [], ranks: { turret: 1, 'bobby-turret-pair': 1 } }, 'turret')!.desc).toContain('+80 個百分點');
   });
 

@@ -84,7 +84,11 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     expect(w.runeCur()).toBe('bag:spread@magic');
     const target = w.row('target')!;
     expect(target.classList.contains('slx-changed')).toBe(true);
-    expect([...target.querySelectorAll('td')].map((t) => t.textContent)).toEqual(['單體', '全體']);
+    expect([...target.querySelectorAll('td')].map((t) => t.textContent)).toEqual(['敵方單體', '敵方全體']);
+    // The tags are the after card's: ［全體］, never ［單體］ beside it (final review).
+    const tags = w.root.querySelector('.slx-ws-tags')!.textContent!;
+    expect(tags).toContain(`［${T.rune.tag.all}］`);
+    expect(tags).not.toContain(`［${T.rune.tag.single}］`);
     expect(w.row('power')!.querySelector('.slx-ws-after')!.textContent).toBe('84（每個目標）');
     expect(w.row('tp')!.classList.contains('slx-changed')).toBe(false);
     expect(w.root.querySelector('.slx-ws-card')!.textContent).toContain(W.before);
@@ -116,7 +120,14 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     }, 'noel:fire-star');
     w.press('confirm');
     expect(w.runes().map((r) => r.dataset.id)).toEqual(['remove', 'bag:spread@magic']);
-    w.press('down', 'confirm');
+    w.press('down');
+    // A rune already in the slot: the preview says it comes off, back to the bag (final review).
+    expect(w.root.querySelector('.slx-ws-card')!.textContent).toContain(W.swapOut(label(R('multistrike'))));
+    // The rune row keeps its tier whole: the name, then 「（品階）」 in a part that is never cut.
+    const row = w.root.querySelector<HTMLElement>('.slx-ws-runes [data-id="bag:spread@magic"]')!;
+    expect(row.querySelector('.slx-label-tail')!.textContent).toBe(T.rune.tierTag('magic'));
+    expect(row.querySelector('.slx-label')!.textContent! + row.querySelector('.slx-label-tail')!.textContent!).toBe(label(R('spread')));
+    w.press('confirm');
     expect(w.game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread')] });
     expect(w.game.state.runes).toEqual({ 'multistrike@magic': 1 });
     expect(w.foot()).toContain(W.socketed(label(R('spread')), SKILLS['fire-star'].name) + W.backToBag(label(R('multistrike'))));
@@ -204,6 +215,19 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     const active = activeIds(field.game.state.party);
     expect(active).not.toContain('sylvie');
     walks(field, active);
+    // In the labyrinth a benched member's runes are not offered (only the field changes runes).
+    const bench = setup((g) => {
+      noel(20, {})(g);
+      g.state.party.roster.sylvie = { ...g.state.party.roster.sylvie, level: 20, tree: { 'aimed-shot': 1 }, sockets: { 'aimed-shot': [R('bounce')] } };
+      g.state.party.roster.noel.sockets = { 'ice-star': [R('drain')] };
+      g.state.party.roster.noel.tree = { 'fire-star': 1, 'ice-star': 1 };
+      g.phase = 'map';
+      Object.assign(g, { run: {} });
+    }, 'noel:fire-star');
+    bench.press('confirm', 'confirm');
+    const ids = bench.runes().map((r) => r.dataset.id);
+    expect(ids).toContain('move:noel:ice-star:0');
+    expect(ids).not.toContain('move:sylvie:aimed-shot:0');
     // A new member: back to the skills, on the first one.
     field.press('confirm');
     field.press('next');
@@ -315,7 +339,7 @@ describe('WorkshopScene: moves, mouse and touch (plan 8g Task 4b)', () => {
     expect(w.runeCur()).toBe(other);
     expect(JSON.stringify(w.game.state)).toBe(before);
     const target = () => w.row('target')!.querySelector('.slx-ws-after')?.textContent;
-    expect(target()).toBe(other === 'bag:spread@magic' ? '全體' : '單體');
+    expect(target()).toBe(other === 'bag:spread@magic' ? '敵方全體' : '敵方單體');
     // A touch: the first tap only moves there; a second tap on that row does it.
     tap(runeRow(w, 'bag:spread@magic'), 'touch');
     expect(w.runeCur()).toBe('bag:spread@magic');

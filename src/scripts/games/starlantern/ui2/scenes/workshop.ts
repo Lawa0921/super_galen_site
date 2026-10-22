@@ -252,7 +252,8 @@ export class WorkshopScene implements Scene {
   /** The slot's choices: the bag, then what the others hold (runeChoices' order). */
   private choices(): readonly RuneChoice[] {
     if (!this.game.state.runesOpen || !this.skill || this.slot >= this.open) return [];
-    return runeChoices(this.game.state, this.at);
+    // In the labyrinth only the members on the field change runes, so only they hand one over (final review).
+    return runeChoices(this.game.state, this.at, this.field ? activeIds(this.game.state.party) : undefined);
   }
 
   private choiceOf(rowId: string): RuneChoice | undefined {
@@ -447,7 +448,9 @@ export class WorkshopScene implements Scene {
     const choices = this.choices();
     const row = (c: RuneChoice): MenuItem => ({
       id: rowOf(c),
-      label: label(c.source.ref),
+      // The name may be cut; its tier stays whole beside it (final review).
+      label: RUNES[c.source.ref.id].name,
+      tail: T.rune.tierTag(c.source.ref.tier),
       cls: `slx-rarity-${c.source.ref.tier}${c.why !== null ? ' slx-ws-unfit' : ''}`,
       // The bag's count; for a rune in a slot, who holds it, or on her own other skill, which skill (two 常駐 rows apart).
       right: c.source.kind === 'bag' ? T.rune.bag(c.source.count)
@@ -539,6 +542,9 @@ export class WorkshopScene implements Scene {
       for (const n of p?.choice?.notes ?? []) if (n !== W.barrierClash) out.push(el('p', { class: 'slx-ws-note', text: n }));
       // Ruling 10, now and in the preview: the barriers her lasting runes raise that a fight's start would replace.
       if (lastingBarrierLoss(fromMember(p?.after ?? m, 0)) > 0) out.push(el('p', { class: 'slx-ws-warn', text: W.barrierClash }));
+      // A rune already in the slot comes out with this pick: it goes back to the bag (final review).
+      const inSlot = this.held();
+      if (p?.choice && inSlot) out.push(el('p', { class: 'slx-ws-swapout', text: W.swapOut(label(inSlot)) }));
       if (p?.choice?.giver) out.push(el('p', { class: 'slx-ws-giver', text: p.choice.giver }));
       const own = p?.choice?.owned;
       if (own) out.push(el('p', { class: 'slx-ws-owned', text: W.owned(own.all, own.bag, own.socketed) }));

@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ACTIVE_RANK_PCT, DEFAULT_CAPSTONE, DEFAULT_FIRST, INNATE, LEGACY_LEARN_LEVEL, NODES, P, TREES, V, branchNodes, nodeDesc, nodeName, nodeText, tierNodes, treeName, type TreeNode } from './trees';
 import { withNode } from '../engine/testing';
+import { T } from './text.zh-TW';
 import { CHARACTERS, rulesOf } from './characters';
 import { SKILLS } from './skills';
 import { POWERS } from './gear';
@@ -336,7 +337,9 @@ describe('node words (plan 8d)', () => {
         const text = nodeText(node.id, r);
         expect(text, `${node.id} r${r}`).toMatch(/。$/);
         // A whole number in the words: 「30%」 is not inside 「130%」.
-        const says = (v: number) => new RegExp(`(?<![0-9.])${v}(?![0-9.])`).test(text);
+        // A power percent may be said as its multiplier, 「×1.3」 for 130 (plan 8g final review).
+        const says = (v: number) => new RegExp(`(?<![0-9.])${v}(?![0-9.])`).test(text)
+          || new RegExp(`${T.mult(v).replace('.', '\\.')}(?![0-9.])`).test(text);
         // A zero is said in words (即興 r3: 「拍子不變」, plan 8d Task 7).
         for (const v of numbersOf(node, r)) if (v !== 0) expect(says(v), `${node.id} r${r} names ${v}: ${text}`).toBe(true);
         if (r > 1) {

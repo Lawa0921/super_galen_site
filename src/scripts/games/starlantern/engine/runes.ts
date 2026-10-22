@@ -232,7 +232,8 @@ export function applyRunes(core: SkillDef, extra: Effect[], refs: readonly RuneR
       // 重擊 folds a variant's per-hit note into one hit at the whole power, the runes' own percent in it (rounded as
       // the engine rounds a power).
       if (b === 1) {
-        out.desc = out.desc.replace(new RegExp(T.rune.perHitNote(a, '([0-9]+)'), 'g'), (_, p: string) => T.rune.foldedHits(b, pctOf(a * Number(p), patch.powerPct)));
+        out.desc = out.desc.replace(new RegExp(T.rune.perHitNote(a, '×([0-9.]+)'), 'g'),
+          (_, p: string) => T.rune.foldedHits(b, pctOf(a * Math.round(Number(p) * 100), patch.powerPct)));
       }
       // A whole number only: 「2 次」 never matches inside 「12 次」.
       HIT_WORDS(a).forEach((w, i) => { out.desc = out.desc.replace(new RegExp(`(?<![0-9])${w}`, 'g'), HIT_WORDS(b)[i]); });

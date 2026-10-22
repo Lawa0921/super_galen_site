@@ -12,7 +12,7 @@ import { LEGACY_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
 import { RUNE_SLOT_LEVELS } from '../../data/runes';
-import { battleLine } from '../skillCard';
+import { battleLine, withoutPowerClause } from '../skillCard';
 import { skillFor } from '../../engine/battle';
 import { ECHO, echoDef } from '../../engine/mechanics/echo';
 import { CHARACTERS } from '../../data/characters';
@@ -1318,10 +1318,10 @@ describe('BattleScene: the skill menu in numbers (plan 8g Task 7)', () => {
     expect(w.row('ice-star')!.querySelector('.slx-badge')).toBeNull();
     const c = w.game.battle!.party.find((x) => x.key === 'noel')!;
     const def = skillFor(c, 'fire-star')!;
-    expect(battleLine(def)).toBe('全體・威力 84・火');
+    expect(battleLine(def)).toBe('敵方全體・威力 84・火');
     // The note under the cursor (the first skill): the summary first, then the skill's words.
     expect(w.note()).toBe(T.cmd.noteWith(battleLine(def), def.desc));
-    expect(w.note().startsWith('全體・威力 84・火')).toBe(true);
+    expect(w.note().startsWith('敵方全體・威力 84・火')).toBe(true);
   });
 
   it('the echo says what it repeats, in numbers', () => {
@@ -1352,11 +1352,11 @@ describe('BattleScene: the summary is what the battle does (plan 8g Task 7 revie
     const once = Math.round((p * ECHO.powerPct) / 100);
     const twice = Math.round((once * ECHO.powerPct) / 100);
     const note = echoNoteOf(fire);
-    expect(note).toBe(T.cmd.echoNote(ECHO.powerPct, `單體・威力 ${once}・火`));
+    expect(note).toBe(T.cmd.echoNote(ECHO.powerPct, `敵方單體・威力 ${once}・火`));
     expect(note).not.toContain(`威力 ${twice}`);
     const heal = SKILLS.moonlight;
     const h = (heal.effects[0] as { power: number }).power;
-    expect(echoNoteOf(heal)).toBe(T.cmd.echoNote(ECHO.powerPct, `單體・回復 ${Math.round((h * ECHO.powerPct) / 100)}`));
+    expect(echoNoteOf(heal)).toBe(T.cmd.echoNote(ECHO.powerPct, `我方單體・回復 ${Math.round((h * ECHO.powerPct) / 100)}`));
   });
 
   it("an abyss skill's summary has the depth's bonus in it", () => {
@@ -1375,5 +1375,29 @@ describe('BattleScene: the summary is what the battle does (plan 8g Task 7 revie
     const withBonus = Math.round((base * 120) / 100);
     expect(withBonus).not.toBe(base);
     expect(w.root.querySelector('.slx-bnote')!.textContent).toContain(`威力 ${withBonus}`);
+  });
+});
+
+describe('BattleScene: one kind of 威力 on a note (plan 8g final review)', () => {
+  it("a note whose summary gives the final power drops the words' power multiplier", () => {
+    const lineup: CharacterId[] = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+    const w = setup((g) => {
+      g.state.party.roster.noel.tree = { 'fire-star': 1, 'noel-star-heavy': 1 };
+      const c = g.battle!.party.find((x) => x.key === 'noel')!;
+      c.ranks = { 'fire-star': 1, 'noel-star-heavy': 1 };
+    }, {}, lineup);
+    for (let i = 0; i < 5 && w.heading() !== T.cmd.choose('諾艾兒'); i++) {
+      for (let k = 0; k < 9 && w.root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'defend'; k++) w.s.onAction('down');
+      w.s.onAction('confirm');
+    }
+    for (let k = 0; k < 9 && w.root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'skill'; k++) w.s.onAction('down');
+    w.s.onAction('confirm');
+    const c = w.game.battle!.party.find((x) => x.key === 'noel')!;
+    const def = skillFor(c, 'fire-star')!;
+    expect(def.desc).toContain(`威力 ${T.mult(130)}`);
+    const note = w.root.querySelector('.slx-bnote')!.textContent!;
+    expect(note).toBe(T.cmd.noteWith(battleLine(def), withoutPowerClause(def.desc)));
+    expect(note).not.toContain('×');
+    expect(note).toContain('每次熱度 +2');
   });
 });
