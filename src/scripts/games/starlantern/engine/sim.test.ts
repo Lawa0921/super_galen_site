@@ -271,7 +271,8 @@ describe('a lineup wears a build (plan 8h Task 5a)', () => {
     const files = readdirSync(dir).filter((f) => /^balance.*\.test\.ts$/.test(f));
     expect(files.length).toBeGreaterThan(3);
     for (const f of files) expect(BANDS.normal, f).toContain(f);
-    expect(BANDS.normal).toContain('builds.bands.test.ts');
+    for (const f of readdirSync(dir).filter((x) => /^builds\.bands\..*\.test\.ts$/.test(x))) expect(BANDS.normal, f).toContain(f);
+    for (const f of BANDS.normal) expect(readdirSync(dir), f).toContain(f);
     expect([BANDS.nightmare, BANDS.hell]).toEqual([[], []]);
   });
 });

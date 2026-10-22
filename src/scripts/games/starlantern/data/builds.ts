@@ -39,7 +39,8 @@ const standard = (owner: CharacterId): BuildDef => ({
 
 type RuneBuild = Omit<BuildDef, 'owner'>;
 
-const aoe: PolicyRule = { kind: 'strongest-damage', aoe: true };
+/** The builds' damage pick: what each cast would really deal, times the foes it meets (plan 8h Task 5b, H1). */
+const aoe: PolicyRule = { kind: 'strongest-damage', aoe: true, effective: true };
 
 /**
  * The rune builds (plan 8h Task 4; spec §16's starting proposal on the roster as it is now). Each puts at least one rune

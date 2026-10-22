@@ -1,4 +1,4 @@
-import { addBuff, dealDamage, hitAmount, isWeak, roll, rollHit, SLEEP_TURNS, stat, type BattleEvent, type Combatant } from './combatant';
+import { addBuff, dealDamage, hitAmount, isWeak, roll, rollHit, SLEEP_TURNS, stat, type BattleEvent, type Combatant, type HitRolls } from './combatant';
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
@@ -288,6 +288,28 @@ function runeHit(actor: Combatant, target: Combatant, eff: Extract<Effect, { kin
   if (after && !eff.onHit?.some((a) => a.status === after) && target.alive) inflictAilment(actor, target, after, 1, ctx);
 }
 
+/**
+ * A ledger that asks (`buffGivers`, plan 8h Task 5b, H3): each ally's attack buff on the hitter, and each ally's debuff on
+ * the foe's guard, taken away alone with the same rolls; what the hit would have lost less is that giver's, out of the
+ * hitter's `own` share. Returns what was given away. Nothing without such a ledger.
+ */
+function creditGivers(l: Ledger | undefined, a: Combatant, t: Combatant, eff: Extract<Effect, { kind: 'damage' }>, rolls: HitRolls, own: number): number {
+  if (!l?.buffGivers) return 0;
+  const guard = eff.scale === 'atk' ? 'def' : 'res';
+  const loss = (alt: Combatant, foe: Combatant) => lossOf(t, hitAmount(alt, foe, eff, rolls).amount);
+  const now = loss(a, t);
+  let given = 0;
+  const give = (src: string | undefined, without: number) => {
+    if (!src || src === a.key) return;
+    const n = Math.min(own - given, Math.max(0, now - without));
+    if (n > 0) { credit(l, src, 'damage', n); given += n; }
+  };
+  a.buffs.forEach((b, i) => { if (b.stat === eff.scale && b.pct > 0) give(b.src, loss({ ...a, buffs: a.buffs.filter((_, j) => j !== i) }, t)); });
+  (a.auras ?? []).forEach((b, i) => { if (b.stat === eff.scale && b.pct > 0) give(b.src, loss({ ...a, auras: (a.auras ?? []).filter((_, j) => j !== i) }, t)); });
+  t.buffs.forEach((b, i) => { if (b.stat === guard && b.pct < 0) give(b.src, loss(a, { ...t, buffs: t.buffs.filter((_, j) => j !== i) })); });
+  return given;
+}
+
 function gainHp(t: Combatant, amount: number): number {
   const before = t.hp;
   t.hp = Math.min(t.max.hp, t.hp + amount);
@@ -309,7 +331,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
             const loss = lossOf(target, amount);
             const own = eff.lift ? Math.min(loss, lossOf(target, hitAmount(actor, target, { ...eff, power: eff.lift.from }, rolls).amount)) : loss;
             credit(ctx.ledger, eff.lift?.by, 'damage', loss - own);
-            credit(ctx.ledger, actor.key, 'damage', own, castOf(ctx, actor));
+            credit(ctx.ledger, actor.key, 'damage', own - creditGivers(ctx.ledger, actor, target, eff, rolls, own), castOf(ctx, actor));
           } else if (actor.side === 'enemy' && target.side === 'party') creditPrevented(ctx.ledger, actor, target, eff, rolls, amount, ctx.redirect);
         }
         const hpBefore = target.hp;
@@ -513,7 +535,11 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'gauge': {
       if (!target.alive || target.side !== 'party') return;
+      const before = target.limit;
       target.limit = Math.min(100, target.limit + eff.amount);
+      // Fed to another member: counted apart in a ledger that asks (plan 8h Task 5b, H3).
+      const gauge = ctx.ledger?.gauge;
+      if (gauge && target !== actor && target.limit > before) gauge[actor.key] = (gauge[actor.key] ?? 0) + target.limit - before;
       return;
     }
     case 'moon': {

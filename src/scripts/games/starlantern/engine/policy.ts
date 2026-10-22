@@ -4,7 +4,8 @@
  * reads only the new mechanics (`Combatant.mech`, `BattleState.barriers`), so on the old roster none of them holds.
  */
 import type { Action, BattleState } from './battle';
-import type { Combatant } from './combatant';
+import { hitAmount, type Combatant } from './combatant';
+import { castDef } from './mechanics/index';
 import { mechGauge, type MechGauge, type MoonPhase } from './mech';
 import { echoDef, echoOf } from './mechanics/echo';
 import type { CharacterId, SkillDef } from './types';
@@ -24,8 +25,12 @@ export type PolicyRule =
   /** `of: 'maxHp'`: the gauge is read as a percent of her max HP (Scarlet's embers). */
   | { kind: 'spend-at'; gauge: MechGauge; min: number; skill: string; of?: 'maxHp' }
   | { kind: 'heal-below'; pct: number }
-  /** `aoe`: rank by power x the foes the cast meets (`reach`), not by power alone (plan 8h ruling 6). */
-  | { kind: 'strongest-damage'; aoe?: true }
+  /**
+   * `aoe`: rank by power x the foes the cast meets (`reach`), not by power alone (plan 8h ruling 6). `effective`: rank by
+   * the damage a cast would deal the first foe (`effectiveOf`: her attack or magic, its defence, resistance and weakness)
+   * instead of the bare power (plan 8h Task 5b, H1). Builds only; the default policies rank by power.
+   */
+  | { kind: 'strongest-damage'; aoe?: true; effective?: true }
   // The rules below are for the suggested builds (plan 8h Task 1); no default policy uses them.
   /** Her taunt is down to its last round (or gone): cast `skill`. */
   | { kind: 'ensure-taunt'; skill: string }
@@ -69,6 +74,18 @@ export function reach(s: BattleState, def: SkillDef): number {
 }
 
 const shareOf = (c: Combatant) => c.hp / c.max.hp;
+
+/**
+ * What a cast of `def` by `c` would deal the first living foe, hit by hit, on an even roll (no crit, no block, variance 1):
+ * the skill as she casts it now (her mechanic), her attack or magic, the foe's defence, resistance and weakness
+ * (combatant.hitAmount). For ranking only; it draws nothing. 0 with no foe standing.
+ */
+export function effectiveOf(s: BattleState, c: Combatant, def: SkillDef): number {
+  const foe = s.enemies.find((e) => e.alive);
+  if (!foe) return 0;
+  const even = { variance: 1, crit: false, blocked: false };
+  return castDef(s, c, def).effects.reduce((n, e) => n + (e.kind === 'damage' ? hitAmount(c, foe, e, even).amount * (e.hits ?? 1) : 0), 0);
+}
 
 /**
  * Whether an effect `c` gave with `def` still holds (plan 8h Task 1 ruling): a moon hold while the moon is held; a buff
@@ -172,7 +189,8 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
         break;
       }
       case 'strongest-damage': {
-        const pick = byPower(usable, rule.aoe ? (d) => power(d) * reach(s, d) : power)[0];
+        const base = rule.effective ? (d: SkillDef) => effectiveOf(s, c, d) : power;
+        const pick = byPower(usable, rule.aoe ? (d) => base(d) * reach(s, d) : base)[0];
         return { action: pick ? { kind: 'skill', skill: pick.id, target: first } : { kind: 'attack', target: first }, hold };
       }
       case 'ensure-taunt': {

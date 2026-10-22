@@ -487,6 +487,38 @@ describe('step ⑧ in the ledger (plan 8h Task 2)', () => {
     expect((r.party[0].mech as { devices: object[] }).devices[0]).not.toHaveProperty('untracked');
   });
 
+  it('a ledger that asks credits buff givers by what their buff added, and gauge feeding apart (plan 8h Task 5b, H3)', () => {
+    // Safira's 戰舞 (+25% atk) on Rin: Rin's hit, with and without it on the same rolls; the difference is Safira's.
+    const buff = { stat: 'atk' as const, pct: 25, turns: 3, src: 'safira' };
+    const rin = () => member('rin', 50, { buffs: [buff] });
+    const foe = () => makeCombatant({ key: 'e0', side: 'enemy', max: { hp: 99999, tp: 0, atk: 1, def: 20, mag: 1, res: 20, spd: 1 } });
+    const spec = { kind: 'damage' as const, power: 100, element: 'phys' as const, scale: 'atk' as const, melee: false };
+    const hit = (l: ReturnType<typeof newLedger>) => { applyEffect(rin(), foe(), spec, ctx(l)); return l; };
+    const plain = hit(newLedger());
+    const split = hit(newLedger({ buffGivers: true }));
+    const rolls = rollHit(rin(), foe(), spec, constRng(0.5))!;
+    const without = hitAmount(member('rin', 50), foe(), spec, rolls).amount;
+    expect(of(split, 'safira').damage).toBe(of(plain, 'rin').damage - without);
+    expect(of(split, 'rin').damage).toBe(without);
+    expect(of(split, 'safira').damage + of(split, 'rin').damage).toBe(of(plain, 'rin').damage);
+    expect(of(plain, 'safira').damage).toBe(0);   // a plain ledger (the gate's) is as it always was
+    // Her own buff is hers: nothing moves.
+    const self = newLedger({ buffGivers: true });
+    applyEffect(member('rin', 50, { buffs: [{ ...buff, src: 'rin' }] }), foe(), spec, ctx(self));
+    expect(Object.keys(self.by)).toEqual(['rin']);
+    // A def debuff on the foe from Sylvie: hers likewise.
+    const sunder = newLedger({ buffGivers: true });
+    applyEffect(member('rin', 50), makeCombatant({ key: 'e0', side: 'enemy', buffs: [{ stat: 'def', pct: -30, turns: 3, src: 'sylvie' }], max: { hp: 99999, tp: 0, atk: 1, def: 20, mag: 1, res: 20, spd: 1 } }), spec, ctx(sunder));
+    expect(of(sunder, 'sylvie').damage).toBeGreaterThan(0);
+    // Gauge fed to the party: counted apart, never in the totals.
+    const g = newLedger({ buffGivers: true });
+    const allies = [member('noel', 50), member('rin', 50, { limit: 95 })];
+    for (const t of allies) applyEffect(member('safira', 50), t, { kind: 'gauge', amount: 10 }, ctx(g));
+    expect(g.gauge).toEqual({ safira: 15 });
+    expect(g.by).toEqual({});
+    expect(newLedger()).not.toHaveProperty('gauge');
+  });
+
   it('the ledger can split by skill', () => {
     expect(newLedger()).toEqual({ by: {} });
     const l = newLedger({ bySkill: true });

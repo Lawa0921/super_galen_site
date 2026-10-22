@@ -513,6 +513,30 @@ describe('build policy rules (plan 8h Task 1)', () => {
     });
   });
 
+  it('effective ranks by the damage each would really deal (plan 8h Task 5b, H1)', () => {
+    // A caster with next to no attack: by power 深淵・劍 (250) wins, by what it would do 星火 does.
+    const mage = P('hero', { defId: 'hero', max: { hp: 100, tp: 20, atk: 5, def: 20, mag: 80, res: 20, spd: 10 } });
+    const s = makeBattle([mage], [E('e0')]);
+    const castable = sk('abyss-sword', 'hero-flare');
+    expect(run(s, mage, castable, [{ kind: 'strongest-damage' }]).action).toEqual(skill('abyss-sword', 'e0'));
+    expect(run(s, mage, castable, [{ kind: 'strongest-damage', effective: true }]).action).toEqual(skill('hero-flare', 'e0'));
+    // A foe that shrugs off fire: the ice star, though both are 140.
+    const noel = P('noel', { defId: 'noel' });
+    const cold = makeBattle([noel], [E('e0', { x: { fireRes: 80 } })]);
+    const stars = sk('fire-star', 'ice-star');
+    expect(run(cold, noel, stars, [{ kind: 'strongest-damage' }]).action).toEqual(skill('fire-star', 'e0'));
+    expect(run(cold, noel, stars, [{ kind: 'strongest-damage', effective: true }]).action).toEqual(skill('ice-star', 'e0'));
+    // With `aoe` too, what it would do on the first foe times the foes it meets.
+    const three = makeBattle([P('chizuru', { defId: 'chizuru' })], [E('e0'), E('e1'), E('e2')]);
+    expect(run(three, three.party[0], sk('pierce', 'sweep'), [{ kind: 'strongest-damage', effective: true, aoe: true }]).action).toEqual(skill('sweep', 'e0'));
+    expect(run(three, three.party[0], sk('pierce', 'sweep'), [{ kind: 'strongest-damage', effective: true }]).action).toEqual(skill('pierce', 'e0'));
+    // It draws nothing.
+    const random = vi.spyOn(Math, 'random');
+    run(cold, noel, stars, [{ kind: 'strongest-damage', effective: true }]);
+    expect(random).not.toHaveBeenCalled();
+    random.mockRestore();
+  });
+
   it('choose hands on an echo as the rule gives it', () => {
     const party = partyAt(20, { ids: ['hero', 'noel', 'chizuru', 'selene', 'rin'] });
     const s = createBattle({ party, enemyIds: ['slime'], inventory: {}, revealed: {} });
@@ -529,6 +553,7 @@ describe('build policy rules (plan 8h Task 1)', () => {
         expect(old, `${id} ${r.kind}`).toContain(r.kind);
         expect(r, id).not.toHaveProperty('aoe');
         expect(r, id).not.toHaveProperty('of');
+        expect(r, id).not.toHaveProperty('effective');
       }
     }
   });

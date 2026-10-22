@@ -9,10 +9,18 @@ export interface Contribution { damage: number; healing: number; prevented: numb
  * `bySkill` (plan 8h ruling 9), only when asked for: each skill's share of what its caster did while she cast it by hand
  * (not a triggered cast, an echo or a reprise), and how many times she cast it.
  */
-export interface Ledger { by: Record<string, Contribution>; bySkill?: Record<string, Contribution & { casts: number }> }
+export interface Ledger {
+  by: Record<string, Contribution>; bySkill?: Record<string, Contribution & { casts: number }>;
+  /**
+   * Measurement only (plan 8h Task 5b, H3): `buffGivers` credits an ally's attack buff on the hitter, or a debuff on the
+   * foe's guard, with what it added to each hit (taken away alone, the same rolls), the hitter keeping the rest; `gauge`
+   * counts the gauge each member fed the others, apart from the totals. The sim gate's ledger asks for neither.
+   */
+  buffGivers?: true; gauge?: Record<string, number>;
+}
 
-export function newLedger(opts: { bySkill?: true } = {}): Ledger {
-  return opts.bySkill ? { by: {}, bySkill: {} } : { by: {} };
+export function newLedger(opts: { bySkill?: true; buffGivers?: true } = {}): Ledger {
+  return { by: {}, ...(opts.bySkill ? { bySkill: {} } : {}), ...(opts.buffGivers ? { buffGivers: true as const, gauge: {} } : {}) };
 }
 
 const empty = (): Contribution => ({ damage: 0, healing: 0, prevented: 0, shield: 0 });
