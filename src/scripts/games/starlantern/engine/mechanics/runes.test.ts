@@ -17,7 +17,7 @@ import type { CharacterId } from '../types';
 import { echoOf } from './echo';
 import { skillFor } from '../battle';
 import { T } from '../../data/text.zh-TW';
-import type { RuneId, RuneRef } from '../../data/runes';
+import { RUNE_NUMBERS, type RuneId, type RuneRef } from '../../data/runes';
 import type { Effect } from '../types';
 
 const R = (id: RuneId, tier: RuneRef['tier'] = 'legendary'): RuneRef => ({ id, tier });
@@ -53,6 +53,29 @@ describe('runes on every cast (plan 8e Task 5)', () => {
     const safira = member('safira', { mech: { kind: 'beat', beat: 0, last: null }, runes: { 'blade-dance': [R('twin-cast')] } });
     const b = resolveRound(makeBattle([safira], [tough('e0')]), { safira: cast('blade-dance', 'e0') }, constRng(0.5));
     expect(b.party[0].mech).toMatchObject({ kind: 'beat', beat: 1 });
+  });
+
+  it("雙重詠唱's second cast hits at its own percent of power (plan 8h Task 5b, ruling B1)", () => {
+    const second = RUNE_NUMBERS['twin-cast'].fixed.secondPct;
+    expect(second).toBe(80);
+    const noel = member('noel', { runes: { 'fire-star': [R('twin-cast')] } });
+    const r = resolveRound(makeBattle([noel], [tough('e0')]), { noel: cast('fire-star', 'e0') }, constRng(0.5));
+    const [a, b] = damage(r.log).filter((e) => e.target === 'e0').map((e) => e.amount);
+    const spec = (power: number) => ({ power, element: 'fire', scale: 'mag', melee: false } as const);
+    const even = { variance: 1, crit: false, blocked: false };
+    expect(a).toBe(hitAmount(member('noel'), tough('e0'), spec(140), even).amount);
+    expect(b).toBe(hitAmount(member('noel'), tough('e0'), spec(pctOf(140, second)), even).amount);
+  });
+
+  it('淬毒 tries each target once a cast, however many hits (plan 8h Task 5b, ruling B2)', () => {
+    // 箭雨 with 連擊 strikes each of three foes twice: three poison tries, one a target.
+    const sylvie = member('sylvie', { runes: { 'arrow-rain': [R('venom', 'magic'), R('multistrike', 'magic')] } });
+    const draws = (runes: boolean) => {
+      const rng = counting(mulberry32(5));
+      resolveRound(makeBattle([runes ? sylvie : member('sylvie', { runes: { 'arrow-rain': [R('multistrike', 'magic')] } })], [tough('e0'), tough('e1'), tough('e2')]), { sylvie: cast('arrow-rain') }, rng);
+      return rng.n;
+    };
+    expect(draws(true) - draws(false)).toBe(3);
   });
 
   it('the second cast moves on when its foe falls', () => {
@@ -260,7 +283,7 @@ describe('runes on every cast: review fixes (plan 8e Task 5 review)', () => {
     const [first, second] = damage(r.log).map((e) => e.amount);
     expect(r.barriers ?? []).toEqual([]);
     const at = (power: number) => hitAmount(chizuru, tough('e0'), { power, element: 'phys', scale: 'atk', melee: true }, { variance: 1, crit: false, blocked: false }).amount;
-    expect(second).toBe(at(330));
+    expect(second).toBe(at(pctOf(330, RUNE_NUMBERS['twin-cast'].fixed.secondPct)));   // and at 80% (ruling B1)
     expect(first).toBe(at(pctOf(330, 100 + BARRIER.releasePct * 3)));
   });
 });

@@ -23,7 +23,7 @@ import { payHp } from './mechanics/embers';
 import { echoDef, echoOf } from './mechanics/echo';
 import { applyLasting, runTriggers } from './mechanics/runes';
 import { T } from '../data/text.zh-TW';
-import type { RuneRef } from '../data/runes';
+import { RUNE_NUMBERS, type RuneRef } from '../data/runes';
 import { applyRunes, bounceNext, runeStates, type RuneMiss } from './runes';
 import { isInnate, keystonesOf, mechKnob, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
@@ -587,8 +587,11 @@ function twinCast(s: BattleState, actor: Combatant, cast: SkillDef, raw: SkillDe
   const again = { type: 'act' as const, actor: actor.key, label: T.rune.again(cast.name) };
   // The mechanic is paid again (controller ruling, Task 5 review): the second cast is the skill as her resource stands
   // now (一擲千金 throws the coins she holds now, 天之逆鉾 finds no barrier left to release), and spends it again.
+  // At `secondPct` of the power (plan 8h Task 5b ruling B1); a 同步's lift is scaled with it.
+  const pct = RUNE_NUMBERS['twin-cast'].fixed.secondPct;
   const second = (): SkillDef => {
-    const def = castDef(s, actor, raw);
+    const full = patchSkill(castDef(s, actor, raw), { powerPct: pct });
+    const def = { ...full, effects: full.effects.map((e) => ((e.kind === 'damage' || e.kind === 'heal') && e.lift ? { ...e, lift: { ...e.lift, from: pctOf(e.lift.from, pct) } } : e)) };
     // The mechanic's cue (Safira's finale) was said for the first cast; paying again says nothing more.
     const said = s.log.length;
     payMech(s, actor, def, ctx);

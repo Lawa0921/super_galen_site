@@ -415,7 +415,7 @@ export const T = {
         spill: (pct: number) => `超出的回復變成護盾（最多 ${pct}%）`,
         when: { crit: '她暴擊時', kill: '她擊倒敵人時', struck: '她受到攻擊後' },
         trigger: (when: string, pct: number) => `${when}自動施放（威力 ${pct}%）`,
-        twice: '連續施放兩次',
+        twice: (pct: number) => `連續施放兩次，第二次威力 ${pct}%`,
         bounce: (n: number, drop: number) => `彈射 ${n} 次，每次威力 −${drop}%`,
         reprise: (pct: number) => `下一回合結束時再打一次（威力 ${pct}%）`,
         sync: (pct: number) => `下一位隊友本回合的技能威力 +${pct}%`,

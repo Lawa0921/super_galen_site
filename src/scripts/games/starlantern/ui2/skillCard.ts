@@ -1,5 +1,5 @@
 import { CHARACTERS } from '../data/characters';
-import { RESERVE_CAP, RUNES, RUNE_IDS, RUNE_TIERS, exclusiveGroupOf, parseRuneKey, type RuneRef, type RuneTier } from '../data/runes';
+import { RESERVE_CAP, RUNES, RUNE_IDS, RUNE_NUMBERS, RUNE_TIERS, exclusiveGroupOf, parseRuneKey, type RuneRef, type RuneTier } from '../data/runes';
 import { T } from '../data/text.zh-TW';
 import { fromMember, runeView, skillCost, skillFor } from '../engine/battle';
 import { battleReservePct, lastingBarrierLoss, WHEEL } from '../engine/mechanics/runes';
@@ -64,7 +64,7 @@ function addsOf(def: SkillDef): string[] {
   if (spill.length) out.push(A.spill(Math.max(...spill)));
   const r = def.runeRules;
   if (r?.trigger) out.push(A.trigger(A.when[r.trigger.on], r.trigger.pct));
-  if (r?.twice) out.push(A.twice);
+  if (r?.twice) out.push(A.twice(RUNE_NUMBERS['twin-cast'].fixed.secondPct));
   if (r?.bounce) out.push(A.bounce(r.bounce.bounces, r.bounce.dropPct));
   if (r?.reprise !== undefined) out.push(A.reprise(r.reprise));
   if (r?.sync !== undefined) out.push(A.sync(r.sync));

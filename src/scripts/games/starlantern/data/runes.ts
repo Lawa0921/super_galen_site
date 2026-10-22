@@ -74,7 +74,8 @@ export const RUNE_NUMBERS: Record<RuneId, { tier: Record<string, readonly number
   aftermath: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 1 } },
   'on-crit': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
   'on-kill': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
-  'on-struck': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
+  // Plan 8h Task 5b ruling B3: 10 less at every tier (紅蓮餘燼's one-rune ceiling, 1.65 -> 1.59 at the magic tier).
+  'on-struck': { tier: { pct: [40, 50, 60, 70] }, fixed: {} },
   regain: { tier: { tpPerHit: [1, 1, 1, 2], power: [80, 85, 90, 90] }, fixed: {} },
   thrift: { tier: { effect: [75, 80, 85, 90] }, fixed: { tpPct: -35 } },
   charge: { tier: { effect: [130, 140, 150, 160] }, fixed: { tpPct: 60 } },
@@ -84,7 +85,8 @@ export const RUNE_NUMBERS: Record<RuneId, { tier: Record<string, readonly number
   lasting: { tier: { pct: [50, 60, 70, 80] }, fixed: { reservePct: 30 } },
   dispel: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 2 } },
   'armor-break': { tier: { effect: [100, 105, 110, 115] }, fixed: { tpPct: 20 } },
-  'twin-cast': { tier: {}, fixed: { tpPct: 100 } },
+  // Plan 8h Task 5b ruling B1: the second cast at `secondPct` of the power.
+  'twin-cast': { tier: {}, fixed: { tpPct: 100, secondPct: 80 } },
   starwheel: { tier: {}, fixed: { tpFlat: 1 } },
   'blood-price': { tier: { bloodPct: [3] }, fixed: { perTp: 1 } },
   sync: { tier: { sync: [30] }, fixed: {} },
@@ -192,7 +194,7 @@ const LIST: RuneDef[] = [
     text: (t) => `無視目標的護甲與格擋${unlessFull('威力', at('armor-break', 'effect', t))}；${tpPctOf('armor-break')}。`,
     mod: (t) => ({ armorBreak: true, effect: at('armor-break', 'effect', t), tpPct: fixed('armor-break', 'tpPct') }) },
   { id: 'twin-cast', name: '雙重詠唱', group: 'legendary', needs: [['tp']],
-    text: () => '這招連續施放兩次；TP 兩倍。', mod: () => ({ twice: true, tpPct: fixed('twin-cast', 'tpPct') }) },
+    text: () => `這招連續施放兩次，第二次威力 ${fixed('twin-cast', 'secondPct')}%；TP 兩倍。`, mod: () => ({ twice: true, tpPct: fixed('twin-cast', 'tpPct') }) },
   { id: 'starwheel', name: '星燈輪轉', group: 'legendary', needs: [['damage']],
     text: () => `每次施放，屬性依${ELEMENT_WORD.fire}、${ELEMENT_WORD.ice}、${ELEMENT_WORD.thunder}輪替${tpPlus('starwheel')}。`,
     mod: () => ({ element: 'wheel', tpFlat: fixed('starwheel', 'tpFlat') }) },

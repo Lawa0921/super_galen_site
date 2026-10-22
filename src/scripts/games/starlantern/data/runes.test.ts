@@ -59,7 +59,7 @@ describe('the rune catalogue (plan 8e Task 1)', () => {
     expect(RUNES.flame.text('common')).toBe('屬性改為火；TP +1。');
     expect(RUNES.flame.text('magic')).toBe('屬性改為火，威力 105%；TP +1。');
     expect(RUNES.thrift.text('magic')).toBe('TP −35%；威力與效果 80%。');
-    expect(RUNES['twin-cast'].text('legendary')).toBe('這招連續施放兩次；TP 兩倍。');
+    expect(RUNES['twin-cast'].text('legendary')).toBe('這招連續施放兩次，第二次威力 80%；TP 兩倍。');
     // 餘波 puts the skill's own power first, so it never reads as the ailment's; what a boss halves is its chance.
     expect(RUNES.aftermath.text('common')).toBe('暴擊時附帶這招屬性的異常（物理是流血，頭目的機率減半、抗性照算）；TP +1。');
     expect(RUNES.aftermath.text('magic')).toBe('這招威力 105%，暴擊時附帶這招屬性的異常（物理是流血，頭目的機率減半、抗性照算）；TP +1。');
@@ -124,7 +124,7 @@ describe('the rune catalogue (plan 8e Task 1)', () => {
       aftermath: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 1 } },
       'on-crit': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
       'on-kill': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
-      'on-struck': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
+      'on-struck': { tier: { pct: [40, 50, 60, 70] }, fixed: {} },
       regain: { tier: { tpPerHit: [1, 1, 1, 2], power: [80, 85, 90, 90] }, fixed: {} },
       thrift: { tier: { effect: [75, 80, 85, 90] }, fixed: { tpPct: -35 } },
       charge: { tier: { effect: [130, 140, 150, 160] }, fixed: { tpPct: 60 } },
@@ -134,7 +134,7 @@ describe('the rune catalogue (plan 8e Task 1)', () => {
       lasting: { tier: { pct: [50, 60, 70, 80] }, fixed: { reservePct: 30 } },
       dispel: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 2 } },
       'armor-break': { tier: { effect: [100, 105, 110, 115] }, fixed: { tpPct: 20 } },
-      'twin-cast': { tier: {}, fixed: { tpPct: 100 } },
+      'twin-cast': { tier: {}, fixed: { tpPct: 100, secondPct: 80 } },
       starwheel: { tier: {}, fixed: { tpFlat: 1 } },
       'blood-price': { tier: { bloodPct: [3] }, fixed: { perTp: 1 } },
       sync: { tier: { sync: [30] }, fixed: {} },
@@ -154,7 +154,7 @@ describe('the rune catalogue (plan 8e Task 1)', () => {
     expect(RUNES['armor-break'].mod('epic')).toEqual({ armorBreak: true, effect: 115, tpPct: 20 });
     expect(RUNES['twin-cast'].mod('legendary')).toEqual({ twice: true, tpPct: 100 });
     expect(RUNES.starwheel.mod('legendary')).toEqual({ element: 'wheel', tpFlat: 1 });
-    expect(RUNES['on-struck'].mod('magic')).toEqual({ trigger: { on: 'struck', pct: 60 } });
+    expect(RUNES['on-struck'].mod('magic')).toEqual({ trigger: { on: 'struck', pct: 50 } });
   });
 
   it('rune names and ids collide with nothing', () => {
