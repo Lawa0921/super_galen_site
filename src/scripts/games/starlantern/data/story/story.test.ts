@@ -4,7 +4,7 @@ import { ITEMS } from '../items';
 import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
-import { numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
+import { FOUND_LINE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
 import type { CharacterId } from '../../engine/types';
 import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
@@ -552,6 +552,30 @@ describe('the script gates', () => {
     }
   });
 
+  it('every meeting opens on FOUND_LINE, names her nowhere before she says it, and has her self-introduction', () => {
+    expect(FOUND_LINE).toBe('有人被怪物圍住了！');
+    for (const name of Object.values(CHARACTERS).map((c) => c.name)) expect(FOUND_LINE, name).not.toContain(name);
+    for (const { id } of MEETINGS) {
+      const { before, after } = STORY.meet[id];
+      const name = CHARACTERS[id].name;
+      expect(before[0].text, id).toBe(FOUND_LINE);
+      const intro = introIndex(id);
+      expect(intro, `${id} says her own name after the fight`).toBeGreaterThanOrEqual(0);
+      expect(after[intro].who, id).toBe(id);
+      expect(after[intro].text, id).toContain(name);
+      for (const l of [...before, ...after.slice(0, intro)]) expect(l.text, `${id}: ${l.text}`).not.toContain(name);
+    }
+    // Liz says her own name now (story polish Task 1, ruling 2): the plan's four lines, word for word.
+    expect(STORY.meet.liz.after).toEqual([
+      { who: 'narrator', text: '洛恩遞過乾糧。她兩口就吞了下去，連膝上的碎屑都撿起來吃掉。' },
+      { who: 'liz', mood: 'smile', text: '「活過來了！我是莉茲，尋寶獵人。金幣真的不要？你們這群怪人。」' },
+      { who: 'liz', mood: 'hushed', text: '「我是來把錢帶回家的。……可是家人的臉，一張也想不起來了。」' },
+      { who: 'liz', mood: 'scheming', text: '「好啦，不說這個。老大，讓我跟著你們吧，分紅好商量。」' },
+    ]);
+    // introIndex finds her first line that says her name, and nothing else.
+    expect(introIndex('selene')).toBe(STORY.meet.selene.after.findIndex((l) => l.who === 'selene' && l.text.includes(CHARACTERS.selene.name)));
+  });
+
   it('people and truths are one to three sentences', () => {
     const sentences = (t: string) => (t.match(/[^。！？]+[。！？]+/g) ?? []).length;
     for (const { key, text } of storyTexts().filter((t) => t.key.startsWith('people.') || t.key.startsWith('truths.'))) {
@@ -791,7 +815,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
     for (const c of ['selene', 'chizuru', 'safira'] as const) {
       const { before, after } = STORY.meet[c];
       expect(before[0].who, c).toBe('narrator');
-      expect(before[0].text, c).toContain(CHARACTERS[c].name);
+      expect(before[0].text, c).toBe(FOUND_LINE);   // story polish Task 1: the found line names nobody (ruling 2)
       expect(before.some((l) => l.who === c), c).toBe(true);
       expect(after.length, c).toBeGreaterThanOrEqual(1);
       expect(after.some((l) => l.who === c), c).toBe(true);
@@ -907,7 +931,7 @@ describe('Task 9: Sylvie, Noel and Bobby', () => {
     for (const c of THREE) {
       const { before, after } = STORY.meet[c];
       expect(before[0].who, c).toBe('narrator');
-      expect(before[0].text, c).toContain(CHARACTERS[c].name);
+      expect(before[0].text, c).toBe(FOUND_LINE);   // story polish Task 1: the found line names nobody (ruling 2)
       expect(before.some((l) => l.who === c), c).toBe(true);
       expect(after.length, c).toBeGreaterThanOrEqual(1);
       expect(after.some((l) => l.who === c), c).toBe(true);
@@ -1010,7 +1034,7 @@ describe('Task 10: Liz, Scarlet and the survive line', () => {
     for (const c of TWO) {
       const { before, after } = STORY.meet[c];
       expect(before[0].who, c).toBe('narrator');
-      expect(before[0].text, c).toContain(CHARACTERS[c].name);
+      expect(before[0].text, c).toBe(FOUND_LINE);   // story polish Task 1: the found line names nobody (ruling 2)
       expect(before.some((l) => l.who === c), c).toBe(true);
       expect(after.length, c).toBeGreaterThanOrEqual(1);
       expect(after.some((l) => l.who === c), c).toBe(true);

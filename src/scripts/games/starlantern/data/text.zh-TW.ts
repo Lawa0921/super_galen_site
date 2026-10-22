@@ -76,8 +76,6 @@ const FORGE_GROUP: Record<RegionId, string> = {
 };
 const SLOT_KIND = { ...SLOT, ring: '戒指' } as Record<Slot | 'ring', string>;
 
-const rescueFound = (name: string) => `有人被怪物圍住了──是${name}！`;
-
 export const T = {
   signed,
   mult: MULT,
@@ -164,8 +162,6 @@ export const T = {
     /** Liz's coins left at a won fight's end, already counted in the gold line. */
     coinGold: (n: number) => `（其中莉茲的銅板換了 ${n}）`, drop: (name: string, n: number) => `${name} ×${n}`,
     leftBehind: (name: string, n: number) => `背包已滿，留下了 ${name} ×${n}`,
-    /** A line spoken after a meeting fight, with the name of who says it. */
-    saidBy: (name: string, text: string) => `${name}：${text}`,
     levelUp: (name: string, lv: number) => `${name} 升到 Lv ${lv}`,
     /** Points a level-up brought, each pointing to the status tab where it is spent; the talent part only when there is one. */
     points: (name: string, skill: number, talent: number) =>
@@ -270,7 +266,7 @@ export const T = {
       shard: (name: string) => `撿到了${name}。`,
       town: (name: string) => `撿到了${name}。`,
     },
-    rescue: { waiting: '這層好像還有別人。', found: rescueFound, joined: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍！`, benched: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍，在公會待命。` },
+    rescue: { waiting: '這層好像還有別人。', stranger: '？？？', joined: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍！`, benched: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍，在公會待命。` },
     banner: { encounter: '遭遇！', boss: '頭目出現！', win: '勝利！' },
     hints: {
       title: '↑↓ 選擇　Enter 決定　滑鼠也可以操作',

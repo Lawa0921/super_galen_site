@@ -1511,8 +1511,11 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   ],
 };
 
-/** The found line: narration that opens every meeting, as the rescue screen says it (`T.ui2.rescue.found`). */
-const foundLine = (id: Meetable): string => `有人被怪物圍住了──是${nameOf(id)}！`;
+/**
+ * The found line: narration that opens every meeting. It names nobody (story polish ruling 2; lore ledger I-161): her name
+ * comes in her own words after the fight (`introIndex`), and until then her plate reads 「？？？」 (`ui2/rescue.ts`).
+ */
+export const FOUND_LINE = '有人被怪物圍住了！';
 /**
  * The written meetings (spec §6): the found line, then what the party sees and her own words; after the fight, she joins.
  * Played unfiltered: no `if`, and only she, Lorne, Rin and the narrator speak.
@@ -1521,7 +1524,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
   // Task 8
   selene: {
     before: [
-      N(foundLine('selene')),
+      N(FOUND_LINE),
       N('水晶洞窟的石壁上，映著一輪天上沒有的月亮。她跪在那片月光裡，被怪物圍著，卻抬頭讀著月相。'),
       { who: 'selene', mood: 'foresee', text: '「上弦的月呢。今晚，也許會有人經過吧。」' },
       { who: 'rin', text: '「被圍住了，還在看月亮。心很大。」' },   // a meeting plays unfiltered and may come after her oath: no guarded face
@@ -1535,7 +1538,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
   },
   chizuru: {
     before: [
-      N(foundLine('chizuru')),
+      N(FOUND_LINE),
       N('一大塊冰裡凍著一位巫女，握著長槍，還保持著封印儀式的姿勢。冰面忽然裂開一道細縫。'),
       { who: 'chizuru', mood: 'solemn', text: '「封印──尚未，完成。」' },
       { who: 'rin', text: '「冰在說話。」' },   // V2: her deadpan; a meeting plays unfiltered, so no guarded face
@@ -1549,7 +1552,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
   },
   safira: {
     before: [
-      N(foundLine('safira')),
+      N(FOUND_LINE),
       N('熾焰之地的火海裡，一個少女握著彎刀，一個人跳著劍舞。每一步，都像在等誰接上她的拍子。'),
       { who: 'safira', mood: 'wink', text: '「哎呀，有觀眾！來得剛好，這首一個人跳太寂寞了呀。舞伴又一個比一個醜。」' },
       { who: 'rin', text: '「那是在打，還是在跳？」' },   // V1: her deadpan; a meeting plays unfiltered, so no guarded face
@@ -1564,7 +1567,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
   // Task 9
   sylvie: {
     before: [
-      N(foundLine('sylvie')),
+      N(FOUND_LINE),
       N('腐毒沼澤的爛泥裡，毒藤纏住了一個少女的腿。她的箭筒裡，只剩最後一支箭。'),
       N('她還在射。弓弦一響，撲過來的怪物就倒下一隻。'),
       { who: 'sylvie', mood: 'alert', text: '「別過來。風向不對，毒會往你們那邊飄。」' },
@@ -1578,7 +1581,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
   },
   noel: {
     before: [
-      N(foundLine('noel')),
+      N(FOUND_LINE),
       N('雷鳴之地的岩台上，雷光四處亂竄。一個少女揮著法杖，連自己腳邊都劈。'),
       { who: 'noel', mood: 'panic', text: '「別、別過來！我的雷還、還沒用完！」' },
       N('她的眼睛空空的，像是連自己為什麼在這裡都忘了。'),
@@ -1592,7 +1595,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
   },
   bobby: {
     before: [
-      N(foundLine('bobby')),
+      N(FOUND_LINE),
       N('星燈神殿的石柱之間，倒著一台古代機兵。一個少女趴在它的胸口，扳手轉個不停。'),
       { who: 'bobby', mood: 'focused', text: '「這顆螺絲，再半圈──再半圈就好──好，接上了喔！」' },
       { who: 'rin', text: '「後面。三隻。」' },   // a meeting plays unfiltered and may come after her oath: no guarded face
@@ -1607,15 +1610,16 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
   // Task 10
   liz: {
     before: [
-      N(foundLine('liz')),
+      N(FOUND_LINE),
       N('暗影迴廊深處，寶庫的門鎖被撬開了。金幣堆成小山，一個少女靠著它坐著，餓得站不起來。'),
       { who: 'liz', mood: 'scheming', text: '「喂，那邊的。金幣分你們一半，換一口吃的。不說話？六成。七成！成交？」' },
       { who: 'rin', text: '「她在跟自己殺價。」' },   // V2: her deadpan; a meeting plays unfiltered, so no guarded face
     ],
     after: [
-      N('洛恩遞過乾糧。她兩口就吞了下去，連膝上的碎屑都撿起來吃掉：「活過來了！我是莉茲，尋寶獵人。」'),
-      { who: 'hero', mood: 'smile', text: '「我是洛恩。金幣不用。妳一個人來這裡做什麼？」' },
-      { who: 'liz', mood: 'hushed', text: '「得把錢帶回家。……家人的臉，卻一張也想不起來了。」' },
+      // Story polish Task 1 (ruling 2): she says her own name in her own line; 「金幣不用」 lives on in her answer to it.
+      N('洛恩遞過乾糧。她兩口就吞了下去，連膝上的碎屑都撿起來吃掉。'),
+      { who: 'liz', mood: 'smile', text: '「活過來了！我是莉茲，尋寶獵人。金幣真的不要？你們這群怪人。」' },
+      { who: 'liz', mood: 'hushed', text: '「我是來把錢帶回家的。……可是家人的臉，一張也想不起來了。」' },
       // V2 fix 1 (controller ruling): her cover-up joke, in its own box after a turn word, never in the quiet line (bible §2.2).
       { who: 'liz', mood: 'scheming', text: '「好啦，不說這個。老大，讓我跟著你們吧，分紅好商量。」' },
     ],
@@ -1624,7 +1628,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
   // soldiers until the party has lasted STORY_FIGHT_ROUNDS; the battle log then says `survived`, and she joins.
   scarlet: {
     before: [
-      N(foundLine('scarlet')),
+      N(FOUND_LINE),
       N('鋼鐵要塞的城門前，一位騎士舉著燃燒的劍，背對著城門站著。'),
       N('圍在她身邊的機兵，一台也沒有對她動手。它們和她一起，轉向了隊伍。'),
       { who: 'scarlet', mood: 'vow', text: '「止步。這扇門後，一步也不許過。以我的劍起誓，我不會再轉身。」' },
@@ -1655,6 +1659,14 @@ const LEADS: Record<Meetable, string> = {
   liz: '暗影迴廊第六層，有間寶庫的鎖被撬開了。金幣堆成小山，旁邊靠著一個人，一直沒有站起來。這份紀錄，我用紅筆圈起來了。',
   scarlet: '鋼鐵要塞第八層，一位騎士舉著燃燒的劍，守在城門前。靠近的人，全被趕了回來。去之前，把隊伍整好──這一項，我要打勾。',
 };
+
+/**
+ * Where she first says her own name after the fight: the index in `STORY.meet[id].after` of her first line that has her name
+ * in it, or -1. Before it her plate reads 「？？？」 (story polish ruling 2). Read live, so a test that swaps the lines is seen.
+ */
+export function introIndex(id: Meetable): number {
+  return STORY.meet[id].after.findIndex((l) => l.who === id && l.text.includes(nameOf(id)));
+}
 
 export const STORY = {
   scenes: buildScenes(),

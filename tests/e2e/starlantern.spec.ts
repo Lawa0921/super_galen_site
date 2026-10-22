@@ -3,7 +3,7 @@ import { SPECIALS, AFFIXES } from '../../src/scripts/games/starlantern/data/gear
 import { CHARACTERS } from '../../src/scripts/games/starlantern/data/characters';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
 import { LEGACY_GRID, LEGACY_LINEUP, meet } from '../../src/scripts/games/starlantern/engine/party';
-import { STORY } from '../../src/scripts/games/starlantern/data/story.zh-TW';
+import { FOUND_LINE, STORY } from '../../src/scripts/games/starlantern/data/story.zh-TW';
 import { T } from '../../src/scripts/games/starlantern/data/text.zh-TW';
 import { CHAINS, chainLength } from '../../src/scripts/games/starlantern/data/story/chains';
 import { ABSORB_CAP, ABSORB_GAIN, SHARD_IDS, SHARD_NAMES } from '../../src/scripts/games/starlantern/data/story/fragments';
@@ -2852,7 +2852,7 @@ test.describe('starlantern', () => {
     await shot('02-map-rescue-marker');
     await game((g) => { g.encounter = 0; });
     await page.keyboard.press(plan!.key);
-    await expect(page.locator('.slx-dungeon .slx-talk .slx-text')).toContainText('瑟蕾');
+    await expect(page.locator('.slx-dungeon .slx-talk .slx-text')).toHaveText(FOUND_LINE);   // the found line names nobody (story polish Task 1)
     await shot('03-meeting-line');
     // The found line, then the written meeting (plan 6c Task 8: up to four lines, hers among them), then the fight.
     // A key may first finish a line's typing, so allow a few presses per line, as the second meeting below does.
@@ -2864,16 +2864,31 @@ test.describe('starlantern', () => {
       await page.waitForTimeout(60);
     }
     await expect(page.locator('.slx-battle')).toBeVisible();
-    expect(plates, 'Selene speaks in her own meeting').toContain('瑟蕾');
+    expect(plates, 'Selene speaks in her own meeting, under a plate that does not name her yet').toContain(T.ui2.rescue.stranger);
+    expect(plates, 'her name waits for her own words').not.toContain('瑟蕾');
     await game((g) => { for (const e of g.battle.enemies) { e.hp = 0; e.alive = false; } });
     for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
       if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }   // 全員攻擊
       else await page.waitForTimeout(50);
     }
     await expect(page.locator('.slx-result')).toContainText('勝利');
-    await expect(page.locator('.slx-result')).toContainText(/瑟蕾（Lv\d+）加入了隊伍！/);
+    await expect(page.locator('.slx-result')).not.toContainText('加入了隊伍');   // the list keeps to the spoils (story polish Task 1)
     await shot('04-rescue-result');
-    await w.key('Enter');
+    await w.key('Enter');   // 繼續: she speaks in the battle's dialogue box, and joins after her last line
+    const talk = page.locator('.slx-battle .slx-talk');
+    await expect(talk.locator('.slx-name')).toHaveText('瑟蕾');   // she says her name in her first line after the fight
+    await expect(talk.locator('.slx-talk-face')).toBeVisible();
+    await shot('04b-rescue-talk');
+    if (process.env.SL_SHOTS) {   // the same line inside a phone screen, for the record
+      await page.setViewportSize({ width: 390, height: 844 });
+      await shot('04c-rescue-talk-phone');
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
+    const join = /^瑟蕾（Lv\d+）加入了隊伍！$/;
+    for (let i = 0; i < 12 && !join.test((await talk.locator('.slx-text').textContent()) ?? ''); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(talk.locator('.slx-text')).toHaveText(join);
+    await expect(talk.locator('.slx-name')).toBeHidden();   // the narrator says it
+    await w.key('z');
     await expect(page.locator('.slx-dungeon')).toBeVisible();
     expect(await game((g) => g.state.party.recruited)).toEqual(['hero', 'rin', 'selene']);
     await lampHome(page, w);
@@ -3263,9 +3278,17 @@ test.describe('starlantern', () => {
       if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }   // 全員攻擊
       else await page.waitForTimeout(50);
     }
-    await expect(page.locator('.slx-result')).toContainText(/瑟蕾（Lv\d+）加入了隊伍！/);
+    await expect(page.locator('.slx-result')).not.toContainText('加入了隊伍');   // said after 繼續 (story polish Task 1)
     await shot('07-rescue-result');
     await w.key('Enter');
+    {
+      const talk = page.locator('.slx-battle .slx-talk');
+      const join = /^瑟蕾（Lv\d+）加入了隊伍！$/;
+      await expect(talk).toBeVisible();
+      for (let i = 0; i < 12 && !join.test((await talk.locator('.slx-text').textContent()) ?? ''); i++) { await w.key('z'); await page.waitForTimeout(60); }
+      await expect(talk.locator('.slx-text')).toHaveText(join);
+      await w.key('z');
+    }
     await expect(page.locator('.slx-dungeon')).toBeVisible();
     await playOut();
     expect(await game((g) => g.state.party.recruited)).toEqual(['hero', 'rin', 'selene']);

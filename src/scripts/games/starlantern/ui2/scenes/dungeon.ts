@@ -27,6 +27,7 @@ import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich } from '../widgets';
 import { fragmentLines, levelUpLines } from '../battleText';
 import { playAndRecord, speakerOf, storyCtx } from '../story';
+import { meetingPlate } from '../rescue';
 import { STORY } from '../../data/story.zh-TW';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
@@ -349,10 +350,11 @@ export class DungeonScene implements Scene {
     this.hideHud(true);
     let fighting = false;
     try {
-      for (const line of STORY.meet[who].before) {
-        // Each line has its own speaker: the found line is narration (no plate, no face), hers carry her portrait.
+      for (const [i, line] of STORY.meet[who].before.entries()) {
+        // Each line has its own speaker: the found line is narration (no plate, no face), hers carry her portrait under a
+        // 「？？？」 plate until she says her name after the fight (story polish Task 1).
         const sp = speakerOf(line.who, this.ctx.game.state, this.ctx.art, line.mood);
-        await this.say(line.text, sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined);
+        await this.say(line.text, meetingPlate(who, 'before', i, line) ?? sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined);
         if (this.exited) return;   // the scene went while a line was waiting: no fight from a scene that is gone
       }
       fighting = true;

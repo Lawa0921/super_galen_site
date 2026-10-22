@@ -9,7 +9,7 @@ import { constRng } from '../engine/testing';
 import { allArtUrls, art } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { Dialogue } from './widgets';
-import { linesOf, playAndRecord, playScene, shouldPlay, speakerOf, type StoryCtx } from './story';
+import { linesOf, playAndRecord, playLines, playScene, shouldPlay, speakerOf, type StoryCtx } from './story';
 
 const ART: ArtIndex = (() => { const set = new Set([...allArtUrls(), art.npc('guild', 'normal')]); return { has: (u: string) => set.has(u) }; })();
 const mk = () => {
@@ -122,6 +122,42 @@ describe('playScene', () => {
     expect(t({})).toEqual(['無', '未遇']);
     expect(t({ met: ['liz'], full: ['liz'], returned: ['anna'] })).toEqual(['無', '遇', '滿', '歸']);
     expect(t({ met: ['liz'], oath: true })).toEqual(['無', '遇', '兩']);
+  });
+});
+
+describe('playLines (story polish Task 1)', () => {
+  const two: ScriptLine[] = [{ who: 'rin', text: '一' }, { who: 'hero', text: '二' }];
+  const plates = async (plate?: (line: ScriptLine, i: number) => string | undefined) => {
+    const { talk, ctx } = mk();
+    const p = playLines(talk, two, ctx, plate);
+    const seen: { name: string; side: string | null }[] = [];
+    for (let i = 0; i < two.length; i++) {
+      const face = talk.el.querySelector('.slx-talk-face');
+      seen.push({ name: nameOf(talk).textContent ?? '', side: face ? (face.classList.contains('slx-talk-face--left') ? 'left' : 'right') : null });
+      p.onAction('confirm');
+      await tick();
+    }
+    await expect(p.done).resolves.toBe('done');
+    return seen;
+  };
+
+  it('playLines plays each line with its plate and face, the first speaker on the left', async () => {
+    expect(await plates()).toEqual([{ name: CHARACTERS.rin.name, side: 'left' }, { name: CHARACTERS.hero.name, side: 'right' }]);
+    // A plate given for a line replaces the name only: the face stays where it was.
+    expect(await plates((_l, i) => (i === 0 ? '？？？' : undefined))).toEqual([{ name: '？？？', side: 'left' }, { name: CHARACTERS.hero.name, side: 'right' }]);
+  });
+
+  it('cancel stops playLines with skipped and no summary', async () => {
+    const { talk, ctx } = mk();
+    const say = vi.spyOn(talk, 'say');
+    const p = playLines(talk, two, ctx);
+    expect(shown(talk)).toBe('一');
+    p.onAction('cancel');
+    await expect(p.done).resolves.toBe('skipped');
+    p.onAction('confirm');            // a key after the end does nothing
+    await tick();
+    expect(say.mock.calls.map((c) => c[1])).toEqual(['一']);   // nothing more said: no summary, no second line
+    expect(shown(talk)).not.toBe(T.ui2.story.skipped(''));
   });
 });
 

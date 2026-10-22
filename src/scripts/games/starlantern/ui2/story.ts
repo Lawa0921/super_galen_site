@@ -62,6 +62,15 @@ export function linesOf(id: SceneId, s: GameState): ScriptLine[] {
   return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath });
 }
 
+/** The first one to speak in `lines`: they stand on the left, everyone else on the right. */
+const firstSpeaker = (lines: ScriptLine[]): Speaker | undefined => lines.find((l) => l.who !== 'narrator')?.who;
+
+/** Says one line in the box: its speaker's plate (or `plate`, when given), and the face on its side. */
+function sayLine(talk: Dialogue, line: ScriptLine, ctx: StoryCtx, first: Speaker | undefined, plate?: string): Promise<void> {
+  const sp = speakerOf(line.who, ctx.game.state, ctx.art, line.mood);
+  return talk.say(plate ?? sp.name, line.text, sp.face ? { src: sp.face, side: line.who === first ? 'left' : 'right' } : undefined);
+}
+
 /**
  * Plays a scene in the dialogue box. While it plays the caller hands every action to `onAction`:
  * confirm turns the page, cancel (Esc, X, right click) stops and shows the summary instead.
@@ -70,16 +79,13 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
   let finished = false;
   let summary: Promise<void> | null = null;
   const lines = linesOf(id, ctx.game.state);
-  const state = ctx.game.state;
-  // The first one to speak stands on the left, everyone else on the right.
-  const first = lines.find((l) => l.who !== 'narrator')?.who;
+  const first = firstSpeaker(lines);
   talk.setStyle(sceneKind(id) === 'memory' ? 'memory' : 'plain');
 
   const run = async (): Promise<'done' | 'skipped'> => {
     for (const line of lines) {
       if (summary) break;
-      const sp = speakerOf(line.who, state, ctx.art, line.mood);
-      await talk.say(sp.name, line.text, sp.face ? { src: sp.face, side: line.who === first ? 'left' : 'right' } : undefined);
+      await sayLine(talk, line, ctx, first);
     }
     if (summary) await summary;
     finished = true;
@@ -95,6 +101,37 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
       if (a === 'confirm') { talk.onAction('confirm'); return; }
       // Cancelling while the summary is up does nothing more: the summary is already the last line.
       if (a === 'cancel' && !summary) { talk.stop(); summary = talk.say('', T.ui2.story.skipped(STORY.scenes[id].summary)); }
+    },
+  };
+}
+
+/**
+ * Plays `lines` in the dialogue box as a scene plays them (plates, faces, the first speaker on the left), with no scene to
+ * record and no summary (story polish Task 1). `plate`, when it gives a string, stands in for that line's name plate; the
+ * face stays. Confirm turns the page; cancel stops at once and ends `done` with `skipped`, leaving the box to the caller's
+ * next line.
+ */
+export function playLines(talk: Dialogue, lines: ScriptLine[], ctx: StoryCtx, plate?: (line: ScriptLine, i: number) => string | undefined): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void } {
+  let finished = false;
+  let stop = (): void => {};
+  const stopped = new Promise<'skipped'>((r) => { stop = () => r('skipped'); });
+  const first = firstSpeaker(lines);
+
+  const run = async (): Promise<'done' | 'skipped'> => {
+    for (const [i, line] of lines.entries()) {
+      const said = sayLine(talk, line, ctx, first, plate?.(line, i)).then(() => 'said' as const);
+      if ((await Promise.race([said, stopped])) === 'skipped') return 'skipped';
+    }
+    return 'done';
+  };
+  const done = run().finally(() => { finished = true; });
+
+  return {
+    done,
+    onAction(a) {
+      if (finished) return;
+      if (a === 'confirm') { talk.onAction('confirm'); return; }
+      if (a === 'cancel') { finished = true; talk.stop(); stop(); }
     },
   };
 }
