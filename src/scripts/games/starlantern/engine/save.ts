@@ -94,6 +94,7 @@ function isStory(v: unknown): boolean {
   if (!isUniqueList(v.nodes, (x) => ACT_NODES.includes(x as string))) return false;
   if (!isUniqueList(v.returned, (x) => TOWN_FRAGMENTS.some((f) => f.id === x))) return false;
   // story depth Task 6: each banter pair's wait, a real pair only, a whole number up to MAX_WAITED (as `pity`'s 999)
+  if (v.confession !== undefined && v.confession !== 'dinner' && v.confession !== 'depth30') return false;   // story depth Task 15 review
   if (v.waited !== undefined && !(isObj(v.waited) && Object.entries(v.waited).every(([k, n]) => BANTER_PAIRS.includes(k as BanterPair) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_WAITED))) return false;
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }

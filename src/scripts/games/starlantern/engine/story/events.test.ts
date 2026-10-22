@@ -609,6 +609,8 @@ describe('town banter', () => {
     s.story.seen.push('rin-reveal');
     expect(banterOpen(s, id)).toBe(false);   // her choice made, the confession not heard yet
     s.story.seen.push('rin-confess');
+    expect(banterOpen(s, id)).toBe(false);   // Task 15 review: told where? the seventh night needs the dinner
+    s.story.confession = 'dinner';
     expect(banterOpen(s, id)).toBe(true);
     s.party.roster.rin.oath = undefined;   // a save without her oath (by hand): the gate still asks for it
     expect(banterOpen(s, id)).toBe(false);
@@ -1087,5 +1089,34 @@ describe('town banter', () => {
 
   it('every pair counted has at least one banter', () => {
     for (const p of BANTER_PAIRS) expect(BANTER_COUNT[p]!, p).toBeGreaterThan(0);
+  });
+});
+
+describe('the confession remembers where it was told (Task 15 review, controller ruling)', () => {
+  const confessed = (heroPieces: number): GameState => {
+    let s = withMemories(base(), 'scarlet', 5);
+    s = withMemories(s, 'hero', heroPieces);
+    s.party.roster.rin.oath = true;
+    s.story.seen.push('rin-reveal', 'banter:rin-scarlet:1');
+    return sceneDone(s, 'rin-confess', 'played');
+  };
+  it('at dinner the seventh night waits for it; at the bottom it expires, and the torn rota comes next', () => {
+    const dinner = confessed(chainLength('hero') - 1);
+    expect(dinner.story.confession).toBe('dinner');
+    expect(banterOpen(dinner, 'banter:rin-scarlet:2')).toBe(true);
+    expect(gateExpired(dinner, BANTER_GATE['banter:rin-scarlet:2'])).toBe(false);
+    const bottom = confessed(chainLength('hero'));
+    expect(bottom.story.confession).toBe('depth30');
+    expect(banterOpen(bottom, 'banter:rin-scarlet:2')).toBe(false);
+    expect(gateExpired(bottom, BANTER_GATE['banter:rin-scarlet:2'])).toBe(true);
+    // the pair goes on without it: with every other pair heard, the next is :3, never :2
+    for (const p of BANTER_PAIRS) if (p !== 'rin-scarlet') for (let n = 1; n <= (BANTER_COUNT[p] ?? 0); n++) bottom.story.seen.push(`banter:${p}:${n}` as SceneId);
+    expect(nextBanter(bottom)).toBe('banter:rin-scarlet:3');
+    expect(bottom.story.seen).not.toContain('banter:rin-scarlet:2');
+  });
+  it('the auto-skipped confession (story off) records its place too', () => {
+    const s = base();
+    s.party.roster.rin.oath = true;
+    expect(sceneDone(s, 'rin-confess', 'auto').story.confession).toBe('dinner');
   });
 });

@@ -2512,8 +2512,8 @@ describe('story depth Task 4: banters, gates and the hero\'s fifth chat', () => 
       'banter:noel-selene:2': { pieces: { noel: 3 } },
       'banter:bobby-chizuru:2': { pieces: { bobby: 4, chizuru: 3 } },   // Task 4 ruling 2 (design said bobby: 3)
       'banter:bobby-sylvie:2': { stage: 'act3' },
-      'banter:rin-scarlet:2': { oath: true, seen: ['rin-confess'] },
-      'banter:rin-scarlet:3': { full: 'scarlet', seen: ['banter:rin-scarlet:2'] },
+      'banter:rin-scarlet:2': { oath: true, seen: ['rin-confess'], confession: 'dinner' },
+      'banter:rin-scarlet:3': { oath: true, full: 'scarlet', seen: ['rin-confess'] },
       'banter:rin-selene:2': { oath: true, full: 'selene' },
       'banter:rin-sylvie:2': { oath: true },
       'banter:chizuru-rin:2': { oath: true },
@@ -2901,7 +2901,7 @@ describe('story depth Task 15: the banters after her choice', () => {
     const w = W({ full: ['selene'] });
     const lines = play('banter:rin-selene:2', w);
     expect(lines[0].who).toBe('rin');
-    expect(lines[0].text).toMatch(/出口前那一刀/);
+    expect(lines[0].text).toMatch(/差點刺下去的那一刀/);
     expect(lines[0].text).toMatch(/看見過吧/);   // she asks: in the silent reading Selene never told her
     expect(lines[lines.length - 1].who).toBe('selene');
     expect(() => pinBeat('banter:rin-selene:2', w, /是我說的，不是月亮/)).not.toThrow();
@@ -2913,9 +2913,19 @@ describe('story depth Task 15: the banters after her choice', () => {
     expect(() => pinBeat('banter:rin-scarlet:2', W({ seen: ['rin-confess'] }), /妳守的不是門，是我/)).not.toThrow();
     const three = W({ full: ['scarlet'], seen: ['rin-confess', 'banter:rin-scarlet:2'] });
     expect(() => pinBeat('banter:rin-scarlet:3', three, /守夜表，我撕了/)).not.toThrow();
+    // Task 15 review: told at the depth-30 rest, the seventh night never came (rin-scarlet:2 expired); :3 reads without it
+    const without = W({ full: ['scarlet'], seen: ['rin-confess'] });
+    expect(play('banter:rin-scarlet:3', without)).toHaveLength(4);
+    expect(() => pinBeat('banter:rin-scarlet:3', without, /還沒排就撕了/)).not.toThrow();
+    expect(play('banter:rin-scarlet:3', without).map((l) => l.text).join('')).not.toMatch(/守夜表，我撕了|第七個晚上/);
     expect(play('banter:rin-scarlet:3', three).map((l) => l.text).join('')).not.toMatch(/選了人|不是命令/);   // fix five
     expect(() => pinBeat('banter:chizuru-rin:2', W(), /另外半句/)).not.toThrow();
     expect(play('banter:chizuru-rin:2', W()).find((l) => l.who === 'rin' && /早安/.test(l.text))).toBeDefined();
     for (const t of storyTexts()) if (t.line?.who === 'rin') expect(t.text, t.key).not.toMatch(/呢(?=[。！？～」，]|……|──)/);
+    // Task 15 review: and her words quoted in the narration (「凜想了一下，說：「沒事。」」)
+    for (const t of storyTexts()) if (!t.line || t.line.who === 'narrator') {
+      for (const m of t.text.matchAll(/凜[^「」。]{0,10}「([^」]*)」/g)) expect(m[1], t.key).not.toMatch(/呢(?=[。！？～，]|……|──|$)/);
+    }
+    expect([...'凜想了一下，說：「沒事呢。」'.matchAll(/凜[^「」。]{0,10}「([^」]*)」/g)].map((m) => m[1])).toEqual(['沒事呢。']);   // the scan sees a quote
   });
 });

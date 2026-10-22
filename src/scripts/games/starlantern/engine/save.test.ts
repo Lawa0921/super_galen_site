@@ -77,6 +77,18 @@ describe('save', () => {
     expect(status({ 'liz-scarlet': '2' })).toBe('corrupt');
     expect(status([1, 2])).toBe('corrupt');
   });
+  it("a story's confession place loads only as the dinner or the depth-30 rest (Task 15 review)", () => {
+    const status = (confession: unknown) => {
+      const g = newGame();
+      (g.story as unknown as Record<string, unknown>).confession = confession;
+      return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+    };
+    expect(status(undefined)).toBe('ok');
+    expect(status('dinner')).toBe('ok');
+    expect(status('depth30')).toBe('ok');
+    expect(status('lunch')).toBe('corrupt');
+    expect(status(1)).toBe('corrupt');
+  });
 
   it('reports an empty slot', () => {
     expect(loadGame(memoryStorage())).toEqual({ status: 'empty' });

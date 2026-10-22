@@ -114,14 +114,17 @@ export function gateOpen(s: GameState, g: StoryGate | undefined): boolean {
   if (g.beforeChoice && s.party.roster.rin?.oath) return false;
   if (g.pieces && (Object.entries(g.pieces) as [CharacterId, number][]).some(([c, n]) => piecesOf(s, c) < n)) return false;
   if (g.seen && !g.seen.every((id) => s.story.seen.includes(id))) return false;
+  if (g.confession && s.story.confession !== g.confession) return false;
   return true;
 }
 
 /**
- * Whether a gate can never open again: a `beforeChoice` gate once Rin has made her choice. A scene behind it is passed over
+ * Whether a gate can never open again: a `beforeChoice` gate once Rin has made her choice, or a `confession` gate once her
+ * confession was told at the other place (Task 15 review: the seventh night needs the dinner). A scene behind it is passed over
  * for good: it never plays, and it no longer holds back the next one of its line (it is not written into `story.seen`).
  */
 export function gateExpired(s: GameState, g: StoryGate | undefined): boolean {
+  if (g?.confession && s.story.confession && s.story.confession !== g.confession) return true;   // told at the other place
   return !!g?.beforeChoice && !!s.party.roster.rin?.oath;
 }
 
@@ -319,7 +322,12 @@ export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' |
   }
   // Story depth: once she has told the table, her bell no longer answering the society's brings its keeper to town on the
   // next arrival (continuity fix 4, spec §5.2), once.
-  if (id === 'rin-confess') queueOnce('bellkeeper-arrives');
+  if (id === 'rin-confess') {
+    queueOnce('bellkeeper-arrives');
+    // Task 15 review (controller ruling): which reading played. It is the depth-30 rest once the hero's chain is whole, as
+    // `ui2/story.ts` reads the scene's `full: 'hero'` lines; the seventh night (`rin-scarlet:2`) waits for the dinner.
+    story.confession = piecesOf(s, 'hero') >= chainLength('hero') ? 'depth30' : 'dinner';
+  }
   if (id !== 'rin-reveal') return { ...s, story };
   // Her choice is made: the oath, and the reports that follow it (spec §5.3). She tells the others at dinner on the next
   // return (story depth: `rin-confess`), once.

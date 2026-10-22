@@ -144,6 +144,8 @@ export interface StoryGate {
   beforeChoice?: true;
   pieces?: Partial<Record<CharacterId, number>>;
   seen?: SceneId[];
+  /** Story depth Task 15 review: where Rin's confession was told (`StoryState.confession`); the other place expires it. */
+  confession?: 'dinner';
 }
 
 /**
@@ -183,8 +185,8 @@ export const BANTER_GATE: Partial<Record<SceneId, StoryGate>> = {
   'banter:noel-selene:2': { pieces: { noel: 3 } },
   'banter:bobby-chizuru:2': { pieces: { bobby: 4, chizuru: 3 } },   // Task 4 ruling: Bobby's apology is her fourth piece
   'banter:bobby-sylvie:2': { stage: 'act3' },
-  'banter:rin-scarlet:2': { oath: true, seen: ['rin-confess'] },
-  'banter:rin-scarlet:3': { full: 'scarlet', seen: ['banter:rin-scarlet:2'] },
+  'banter:rin-scarlet:2': { oath: true, seen: ['rin-confess'], confession: 'dinner' },
+  'banter:rin-scarlet:3': { oath: true, full: 'scarlet', seen: ['rin-confess'] },
   'banter:rin-selene:2': { oath: true, full: 'selene' },
   'banter:rin-sylvie:2': { oath: true },
   'banter:chizuru-rin:2': { oath: true },

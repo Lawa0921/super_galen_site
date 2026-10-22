@@ -1473,7 +1473,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'noel', mood: 'smug', text: '「瑟蕾，今天不准說『也許』。本小姐明天贏不贏得了凜？」' },
       { who: 'selene', mood: 'foresee', text: '「贏得了。」' },
       { who: 'noel', mood: 'panic', text: '「咦？！妳、妳竟然直接說了？不收回？」' },
-      { who: 'selene', mood: 'smile', text: '「不收回呢。只是月亮沒說，比的是什麼。」' },
+      { who: 'selene', mood: 'smile', text: '「不收回呢。只是我沒說，比的是什麼。」' },
     ],
     summary: '瑟蕾第一次把一個明天直接說出口，也不收回。只是她沒說，諾艾兒要和凜比的是什麼。',
   },
@@ -1556,7 +1556,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       N('千鶴行了一禮：「聽聞令師平安。先前那句『謂之竊』，我收回。」'),
       { who: 'noel', mood: 'panic', text: '「不、不用行禮啦！」' },
       { who: 'chizuru', mood: 'solemn', text: '「禮尚往來。」' },
-      { who: 'noel', mood: 'blush', text: '「那……本小姐也收回一句。千鶴的祝詞，很好聽。」' },
+      { who: 'noel', mood: 'blush', text: '「那……本小姐也收回一句。『比誰都厲害』那句先不算，千鶴的祝詞就比我厲害。」' },
     ],
     summary: '千鶴聽說諾艾兒的老師平安，收回了那句「謂之竊」。諾艾兒也收回一句：千鶴的祝詞很好聽。',
   },
@@ -1598,12 +1598,12 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   },
   'banter:rin-selene:2': {
     lines: [
-      { who: 'rin', mood: 'serious', text: '「瑟蕾，出口前那一刀，妳看見過吧。早一點說，我就能早一點知道自己是什麼。」' },
+      { who: 'rin', mood: 'serious', text: '「瑟蕾，我差點刺下去的那一刀，妳看見過吧。早一點說，我就能早一點收刀。」' },
       { who: 'selene', mood: 'wistful', text: '「對不起。下一次看見什麼，我會先說。」' },
       { who: 'rin', mood: 'normal', text: '「那現在說一個。我明天會怎樣？」' },
       { who: 'selene', mood: 'smile', text: '「妳明天會多眨幾次眼。是我說的，不是月亮。」' },
     ],
-    summary: '凜問瑟蕾，出口前那一刀是不是早就看見了。瑟蕾道歉，答應下一次先說，還替凜說了一個明天。',
+    summary: '凜問瑟蕾，她差點刺下去的那一刀，是不是早就看見了。瑟蕾道歉，答應下一次先說，還替凜說了一個明天。',
   },
   'banter:safira-scarlet:2': {
     lines: [
@@ -1654,8 +1654,10 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'scarlet', mood: 'serious', text: '「凜小姐，我想起來了。有人命令我活下去，我照做了。」' },
       { who: 'rin', mood: 'serious', text: '「我收到的命令，我沒照做。」' },
-      { who: 'scarlet', mood: 'smile', text: '「嗯。……守夜表，我撕了。」' },
-      N('凜說前面歸她，後面歸自己。結果兩人都走到洛恩旁邊，把他夾在中間，三個人並排走。'),
+      { who: 'scarlet', mood: 'smile', text: '「嗯。……守夜表，我撕了。」', if: { seen: 'banter:rin-scarlet:2' } },
+      // Told at the depth-30 rest, there was no seventh night (rin-scarlet:2 expired): the rota she meant to draw up is never used.
+      { who: 'scarlet', mood: 'smile', text: '「嗯。那張守夜表，我還沒排就撕了。」', if: { notSeen: 'banter:rin-scarlet:2' } },
+      N('凜說前面歸絲嘉蕾，後面歸她自己。結果兩人都走到洛恩旁邊，把他夾在中間，三個人並排走。'),
     ],
     summary: '絲嘉蕾想起了要她活下去的命令，凜說她收到的命令沒有照做。守夜表撕了，三個人並排走。',
   },

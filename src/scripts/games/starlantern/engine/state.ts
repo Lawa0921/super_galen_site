@@ -42,6 +42,8 @@ export interface StoryState {
   fed: boolean;
   /** Story depth Task 6 review: how many returns each banter pair has had one ready and not heard it (`nextBanter`'s tie-break). */
   waited?: Partial<Record<BanterPair, number>>;
+  /** Story depth Task 15 review: where Rin told the table (`rin-confess`), at dinner or at the depth-30 rest before the finale. */
+  confession?: 'dinner' | 'depth30';
 }
 
 /** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */
