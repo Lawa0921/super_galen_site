@@ -2032,8 +2032,18 @@ const lang: Language = defaultLang;
   .delve-hud > .delve-coop-box { pointer-events: none; }
   .delve-coop-box > .delve-chip { margin: 0; cursor: default; color: #fff4c0; }
   .delve-players { margin: 0; padding: 0; list-style: none; font-size: 16px; line-height: 1.35; color: var(--ink); text-shadow: var(--text-outline); }
+  .delve-players > li { max-width: 60vw; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .delve-players > li.is-self { color: #fff4c0; }
+  /* 8 人：超過 4 列換小字（coopUi COMPACT_ROWS） */
+  .delve-players.is-many { font-size: 13px; line-height: 1.2; }
   .delve[data-touch='1'] .delve-coop-box { bottom: 180px; }
+  /* 手機橫拿（矮）：搖桿上面只剩一點高度 → 名單排成兩欄（每欄 4 列）、房號移到名單右邊，不會蓋到左上的地點 / 日期
+     （外框不改 display，[hidden] 照樣藏得掉）；直拿的高度夠，維持一欄（右下有血條） */
+  @media (max-height: 480px) {
+    .delve[data-touch='1'] .delve-coop-box.is-many { grid-auto-flow: column; align-items: end; column-gap: 14px; }
+    .delve[data-touch='1'] .delve-players.is-many { display: grid; grid-auto-flow: column; grid-template-rows: repeat(4, auto); column-gap: 14px; }
+    .delve[data-touch='1'] .delve-players.is-many > li { max-width: min(30vw, 200px); }
+  }
   /* 客人：存檔 / 匯出 / 匯入 / 難度 / 開放加入都是房主的事 */
   .delve[data-coop='guest'] #delve-save,
   .delve[data-coop='guest'] #delve-export,

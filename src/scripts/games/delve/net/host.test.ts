@@ -172,10 +172,10 @@ describe('NetHost 握手', () => {
     const c1 = hero();
     r.join(c1);
     expect(reject(hello({ ...c1 }))).toBe('charInUse');
-    r.join(); r.join();
-    expect([...r.game.actors.keys()]).toEqual(['h', 'p1', 'p2', 'p3']);
+    for (let i = 0; i < 6; i++) r.join();
+    expect([...r.game.actors.keys()]).toEqual(['h', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']);
     expect(reject(hello(hero()))).toBe('full');
-    expect(r.game.actors.size).toBe(4);
+    expect(r.game.actors.size).toBe(8);
   });
 
   it('客人看到的房主暱稱 = opts.nick（welcome players、房主換裝的 look）；沒給才是「房主」', () => {

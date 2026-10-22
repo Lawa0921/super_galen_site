@@ -19,7 +19,7 @@ import type { EnvSave } from '../save/serialize';
 import type { VisitSave } from '../save/worldSave';
 
 export const PROTO = 1;
-export const MAX_GUESTS = 3;                    // MAX_PLAYERS 4（含房主）
+export const MAX_GUESTS = 7;                    // MAX_PLAYERS 8（含房主；M-C2 D7）
 export const PS_HZ = 20, WS_HZ = 15, LIQ_HZ = 5, CHAR_HZ = 5;
 export const WORLD_SIG_MS = 1000, LOOK_MS = 1000, CHK_MS = 30_000, SAVE_DEBOUNCE_MS = 2000;
 export const GUEST_TIMEOUT_MS = 90_000, HOST_TIMEOUT_MS = 90_000, PS_STALE_MS = 500;   // C8

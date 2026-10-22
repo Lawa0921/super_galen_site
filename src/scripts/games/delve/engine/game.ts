@@ -65,7 +65,7 @@ import { CHARACTER_FORMAT, type DelveCharacter } from '../save/character';
 import { fromBase64 } from './base64';
 import { ENEMIES, makeEnemy, stepEnemy, type AiCtx, type Enemy, type EnemyKind } from './enemies';
 import {
-  ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, NEAR_SPAWN_TILES, SPAWN_MAX, findSpot, habitatAt, homeNear, inHouse,
+  ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, MAX_ENEMIES_TOTAL, NEAR_SPAWN_TILES, SPAWN_MAX, findSpot, habitatAt, homeNear, inHouse,
   isFirstNight, pickEntry, spawnCap, spawnChance, spawnInterval, spawnTable, type SpawnPressure,
 } from './spawn';
 import { Rng, type RngState } from './rng';
@@ -763,11 +763,11 @@ export class DelveGame {
   /** 渲染端告知的視野半寬 / 半高（格）：生成點要在畫面外 */
   viewHalf = { ...DEFAULT_VIEW_HALF };
   private nextEnemyId = 1;
-  private spawnT = SPAWN_GRACE;
-  /** 生成輪到第幾個活著的玩家當中心 */
-  private spawnTurn = 0;
-  /** 距上次喘息（新世界 / 讀檔 / 重生）的秒數：生成間隔由慢漸快（spawn.spawnInterval） */
-  private spawnCalm = 0;
+  /**
+   * 每位玩家自己的生成計時（D8）：t = 距下次生成檢查的秒數；calm = 距上次喘息（新世界 / 讀檔 / 重生 / 睡覺）的秒數，
+   * 生成間隔由慢漸快（spawn.spawnInterval）。第一次用到時從 SPAWN_GRACE 開始；removeActor 時丟掉
+   */
+  private readonly spawnClocks = new Map<Pid, { t: number; calm: number }>();
   private readonly spawnRng: Rng;
   private readonly combatRng: Rng;
   // ── 液體 ───────────────────────────────────────────────
@@ -1049,6 +1049,7 @@ export class DelveGame {
     const now = Date.now();
     const out = { character: this.characterOf(pid, now), visit: this.visitOf(pid, now) };
     this.actors.delete(pid);
+    this.spawnClocks.delete(pid);
     this.evRead.delete(pid);
     this.trimEvents();
     return out;
@@ -2174,8 +2175,7 @@ export class DelveGame {
       if (day !== this.lastDay) this.onNewDay(day);
       // 睡飽：每個活著的人回滿血、怪物生成重新從慢開始
       for (const a of this.actors.values()) if (!a.dead) this.withActor(a, () => { this.hp = this.maxHp(); });
-      this.spawnCalm = 0;
-      this.spawnT = Math.max(this.spawnT, 4);
+      for (const c of this.spawnClocks.values()) { c.calm = 0; c.t = Math.max(c.t, 4); }
     }
     if (this.sleepT >= SLEEP_FADE * 2) {
       this.sleepT = null;
@@ -3092,8 +3092,10 @@ export class DelveGame {
     this.teleport(r.x, r.y);
     this.hp = this.maxHp(); this.mana = this.maxMana();
     this.iframes = 2; this.sinceHit = 99;
-    this.spawnT = Math.max(this.spawnT, 4);
-    this.spawnCalm = 0;
+    // 只重設重生的那位的生成計時
+    const sc = this.spawnClock(this.cur.pid);
+    sc.t = Math.max(sc.t, 4);
+    sc.calm = 0;
     this.emit({ type: 'respawn', x: r.x, y: r.y });
   }
 
@@ -3340,7 +3342,7 @@ export class DelveGame {
 
   // ── 實體更新（生成 / AI / 投射物 / 掉落物） ─────────────
   /**
-   * 世界的實體（看所有玩家，spec §5.2）：生成輪流以活著的玩家為中心；每隻怪鎖定最近的活著的玩家（全員死亡 = 最近的屍體）；
+   * 世界的實體（看所有玩家，spec §5.2）：每位活著的玩家各自計時、以自己為中心生成（D8）；每隻怪鎖定最近的活著的玩家（全員死亡 = 最近的屍體）；
    * 任一玩家在 ACTIVE 內就活躍、離所有玩家都超過 DESPAWN 才消失；接觸傷害 / 敵方投射物打到誰就在誰的 cur 下 hurtPlayer；
    * 玩家投射物在 owner 的 cur 下結算；掉落物給最近的、收得下的活人。
    * 單機（一個 actor）時每個 RNG 呼叫 / 受傷 / 撿取的順序都和以前一樣（actor.golden.test）。
@@ -3348,11 +3350,15 @@ export class DelveGame {
   private updateEntities(dt: number): void {
     const vs = this.views();
     const S = TILE_SIZE;
-    // 生成：有人活著才生
-    if (!this.peacefulMode && vs.some((v) => !v.dead)) {
-      this.spawnT -= dt;
-      this.spawnCalm += dt;
-      if (this.spawnT <= 0) { this.spawnT = spawnInterval(this.spawnCalm); this.trySpawn(vs); }
+    // 生成：每位活著的玩家各自計時、以自己為中心（D8；單機 = 以前那一個計時器）
+    if (!this.peacefulMode) {
+      for (const v of vs) {
+        if (v.dead) continue;
+        const sc = this.spawnClock(v.pid);
+        sc.t -= dt;
+        sc.calm += dt;
+        if (sc.t <= 0) { sc.t = spawnInterval(sc.calm); this.trySpawn(vs, v); }
+      }
     }
     // 怪物：ctx 的玩家欄位每隻怪換成牠的目標
     const night = this.isNight();
@@ -3472,15 +3478,15 @@ export class DelveGame {
   }
 
   /**
-   * 生成一次：每次輪流以一個活著的玩家為中心（單機 = 永遠是自己，spawnRng 的呼叫和以前一樣）。
+   * 以活著的玩家 c 為中心生成一次（D8：每位玩家的計時器到了各自呼叫；單機 = 永遠是自己，spawnRng 的呼叫和以前一樣）。
+   * 上限：c 那一帶的怪（mineCount）≤ MAX_ENEMIES、全世界 ≤ MAX_ENEMIES_TOTAL。
    * 床的安全範圍、「生成點要在畫面外」對每個玩家都檢查（每個玩家都當成一個用同一個 viewHalf 的觀看者）。
    */
-  private trySpawn(vs: readonly PlayerView[]): void {
+  private trySpawn(vs: readonly PlayerView[], c: PlayerView): void {
     const w = this.world, r = this.spawnRng, S = TILE_SIZE;
-    if (this.enemies.length >= MAX_ENEMIES) return;
-    const alive = vs.filter((v) => !v.dead);
-    if (!alive.length) return;
-    const c = alive[this.spawnTurn++ % alive.length];
+    if (this.enemies.length >= MAX_ENEMIES_TOTAL) return;
+    const mine = this.mineCount(vs, c);
+    if (mine >= MAX_ENEMIES) return;
     const pt = { x: Math.floor(c.cx / S), y: Math.floor(c.cy / S) };
     const tileOf = (v: PlayerView): { x: number; y: number } => ({ x: Math.floor(v.cx / S), y: Math.floor(v.cy / S) });
     const vw = this.viewHalf.w + 2, vh = this.viewHalf.h + 2;
@@ -3514,7 +3520,29 @@ export class DelveGame {
     // 生成點仍要在每個人的畫面外
     if (vs.some((v) => { const t = tileOf(v); return Math.abs(spot.x / S - t.x) <= vw && Math.abs(spot.y / S - t.y) <= vh; })) return;
     const n = entry.group ? r.int(entry.group[0], entry.group[1] + 1) : 1;
-    for (let k = 0; k < n && this.enemies.length < MAX_ENEMIES; k++) this.addEnemy(entry.kind, spot.x + k * 10, spot.y - k * 6);
+    for (let k = 0; k < n && mine + k < MAX_ENEMIES && this.enemies.length < MAX_ENEMIES_TOTAL; k++) this.addEnemy(entry.kind, spot.x + k * 10, spot.y - k * 6);
+  }
+  /**
+   * 算在玩家 c 那一帶的怪數（MAX_ENEMIES 用）：在 c 的活躍範圍（ACTIVE）內的，加上不在 c 範圍內、但最近的活人是 c 的
+   * （遠方凍住的怪算給離牠最近的人）。單機（只有一個活人）= 全部的怪，和以前的「全世界 40 隻」逐位元相同。
+   */
+  private mineCount(vs: readonly PlayerView[], c: PlayerView): number {
+    const S = TILE_SIZE, px = Math.floor(c.cx / S), py = Math.floor(c.cy / S);
+    const alive = vs.filter((v) => !v.dead);
+    if (alive.length <= 1) return this.enemies.length;
+    let n = 0;
+    for (const e of this.enemies) {
+      const b = e.body;
+      if (Math.abs(b.x / S - px) < ACTIVE.x && Math.abs(b.y / S - py) < ACTIVE.y) n++;
+      else if (this.nearestView(alive, b.x + b.w / 2, b.y + b.h / 2) === c) n++;
+    }
+    return n;
+  }
+  /** 玩家 pid 的生成計時（沒有就從 SPAWN_GRACE 開始） */
+  private spawnClock(pid: Pid): { t: number; calm: number } {
+    let c = this.spawnClocks.get(pid);
+    if (!c) { c = { t: SPAWN_GRACE, calm: 0 }; this.spawnClocks.set(pid, c); }
+    return c;
   }
 
   /** 燼角魔瞬移點：牠的目標玩家（中心 px = (px, py)）左右 4–9 格、站得住的地方 */

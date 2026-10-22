@@ -36,6 +36,8 @@ export interface RigOptions {
   peaceful?: boolean;
   /** 直接用這個遊戲當房主（例：restoreSplit 讀回來的）；world 只決定客人副本怎麼建 */
   game?: DelveGame;
+  /** 房主的 VisitStore 改用這個（例：SplitSession，帶真正的 held LRU）；預設是 Map 版（rig.visits / rig.held） */
+  store?: VisitStore;
 }
 export interface Rig {
   net: LoopbackNet; readonly host: NetHost; hostGame: DelveGame; guests: NetGuest[]; visits: Map<string, VisitSave>; checkpoints: DelveCharacter[][];
@@ -156,7 +158,7 @@ export function coopRig(o: RigOptions = {}): Rig {
   const net = new LoopbackNet({ seed: o.seed ?? 'coop-rig', latencyMs: o.latencyMs, loss: o.loss });
   const visits = new Map<string, VisitSave>();
   const held = new Map<string, HeldChar>();
-  const store: VisitStore = {
+  const store: VisitStore = o.store ?? {
     get: (k) => visits.get(k), put: (k, v) => { visits.set(k, v); },
     getHeld: (k) => held.get(k), putHeld: (k, h) => { if (h) held.set(k, h); else held.delete(k); },
   };

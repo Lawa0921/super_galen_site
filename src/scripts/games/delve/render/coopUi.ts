@@ -9,6 +9,9 @@ export interface CoopRow { nick: string; self: boolean; rttMs?: number | null }
 /** 房主的加入狀態（null = 還沒開房） */
 export type CoopJoinState = { joining: boolean } | null;
 
+/** 名單超過這麼多列：名單與外框加 is-many（CSS 換小字、觸控橫向時房號移到名單右邊；8 人時不超出畫面） */
+export const COMPACT_ROWS = 4;
+
 export const roomChipText = (room: string): string => `房號 ${room}`;
 
 export function playerLine(r: CoopRow): string {
@@ -44,6 +47,9 @@ export class CoopUi {
     const list = this.list;
     if (!list) return;
     const rows = [...s.rows.filter((r) => r.self), ...s.rows.filter((r) => !r.self)];
+    const many = rows.length > COMPACT_ROWS;
+    list.classList.toggle('is-many', many);
+    this.box?.classList.toggle('is-many', many);
     // 每秒更新一次：沿用既有的 li，只改文字（不重建，免得閃）
     while (list.children.length > rows.length) list.lastElementChild?.remove();
     rows.forEach((r, i) => {

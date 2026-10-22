@@ -50,6 +50,23 @@ describe('coopUi', () => {
     expect(lines()).toEqual([]);
   });
 
+  it('8 人名單：超過 4 列，名單與外框加 is-many（CSS 縮小字級 / 觸控橫向改排法）；回到 4 列以下拿掉', () => {
+    const list = (): HTMLElement => document.getElementById('delve-players')!;
+    const rows = (n: number) => Array.from({ length: n }, (_, i) => ({ nick: `玩家${i}`, self: i === 0, rttMs: i === 0 ? undefined : 40 + i }));
+    m.ui.update({ show: true, room: 'ABCDE', rows: rows(4) });
+    expect(list().classList.contains('is-many')).toBe(false);
+    m.ui.update({ show: true, room: 'ABCDE', rows: rows(8) });
+    expect(lines()).toHaveLength(8);
+    expect(list().classList.contains('is-many')).toBe(true);
+    expect(box().classList.contains('is-many')).toBe(true);
+    // 不寫行內樣式
+    expect(list().getAttribute('style')).toBeNull();
+    expect(box().getAttribute('style')).toBeNull();
+    m.ui.update({ show: true, room: 'ABCDE', rows: rows(3) });
+    expect(list().classList.contains('is-many')).toBe(false);
+    expect(box().classList.contains('is-many')).toBe(false);
+  });
+
   it('暫停選單按鈕：沒開房「開放加入」、開放中「停止加入」、停止後「重新開放加入」', () => {
     expect(coopButtonLabel(null)).toBe('開放加入');
     expect(coopButtonLabel({ joining: true })).toBe('停止加入');

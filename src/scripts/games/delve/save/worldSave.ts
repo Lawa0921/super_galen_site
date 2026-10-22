@@ -14,7 +14,8 @@
 //   visits 不是物件 = 損毀，但單筆 visit 不合法只丟那一筆（該角色在這個世界從出生點重來）；
 //   匯出檔才有的內嵌 character 有值時過 validateCharacter。
 // held（co-op M-C C1）：房主移除客人時留下的角色（rev 是房主的 checkpoint rev），客人重進時 rev 較新就用它、收到 chkAck 就清掉。
-//   不升 format：沒有 held = {}；非空才寫；單筆不合法只丟那一筆；最多 MAX_VISITS 筆，超過以 at 最舊者淘汰（LRU）。
+//   不升 format：沒有 held = {}；非空才寫；單筆不合法只丟那一筆；最多 MAX_HELD 筆，超過以 at 最舊者淘汰（LRU）。
+//   MAX_HELD 不跟 visits 共用（M-C2 D7）：7 位在線客人每 30 秒的 held 不能擠掉剛斷線那位的。
 import {
   SAVE_FORMAT, SaveFormatError, decodeSave, encodeContainer, isNum, readChunks, readContainer, restoreGame, snapshotGame,
   validBed, validBossActive, validChests, validDiscovery, validDrops, validEnv, validExplored, validExtra, validFolk, validHalves,
@@ -44,6 +45,8 @@ export const WORLD_FORMAT = 11;
 /** format 10 的世界檔第一次以 format 11 寫回前的備份槽後綴 */
 export const V10_BACKUP_SUFFIX = '.v10.bak';
 export const MAX_VISITS = 8;
+/** held（離線客人的角色）上限：比 visits 寬，在線的 7 位 + 最近斷線的都放得下 */
+export const MAX_HELD = 32;
 const MAX_WORLD_NAME = 64;
 /** worldId 與 visits 的 key（角色 id）共用 */
 const ID_RE = /^[A-Za-z0-9-]{1,64}$/;
@@ -98,7 +101,7 @@ function evictOldest(v: VisitMap, max: number, keep?: string): void {
 }
 
 /** held 的 LRU：回傳新物件（不改輸入），超過 max 筆淘汰 at 最舊的（keep 永不淘汰；同 at 先淘汰先放進來的） */
-export function trimHeld(held: HeldMap, max: number = MAX_VISITS, keep?: string): HeldMap {
+export function trimHeld(held: HeldMap, max: number = MAX_HELD, keep?: string): HeldMap {
   const out: HeldMap = { ...held };
   const ids = Object.keys(out);
   if (ids.length <= max) return out;

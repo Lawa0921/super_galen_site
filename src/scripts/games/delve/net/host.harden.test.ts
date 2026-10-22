@@ -135,15 +135,15 @@ describe('遠方 sum 停放', () => {
 
 describe('延遲關連線', () => {
   it('reject 後 2 秒才關連線', () => {
-    const r = coopRig({ guests: 3 });
-    const g4 = r.join();                                 // 房主 + 3 位客人已滿，第 4 位客人被拒
+    const r = coopRig({ guests: 7 });
+    const g8 = r.join();                                 // 房主 + 7 位客人已滿，第 8 位客人被拒
     r.run(1900);
-    expect(g4.state).toBe('ended');
-    expect(g4.endText).toBe(END_TEXT.full);
-    expect(r.hostLinks[3].open).toBe(true);
+    expect(g8.state).toBe('ended');
+    expect(g8.endText).toBe(END_TEXT.full);
+    expect(r.hostLinks[7].open).toBe(true);
     expect(r.host.lingering).toBe(1);
     r.run(200);
-    expect(r.hostLinks[3].open).toBe(false);
+    expect(r.hostLinks[7].open).toBe(false);
     expect(r.host.lingering).toBe(0);
   });
 

@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { SaveFormatError, decodeSave, restoreGame } from './serialize';
 import { readLegacyFixture } from './legacyFixture';
 import { validateCharacter } from './character';
+import { SplitSession } from './split';
 import {
-  MAX_VISITS, WORLD_FORMAT, decodeAnySave, decodeWorld, encodeWorld, joinSplit, splitSnapshot, upsertVisit,
+  MAX_HELD, MAX_VISITS, WORLD_FORMAT, decodeAnySave, decodeWorld, encodeWorld, joinSplit, splitSnapshot, upsertVisit,
   type HeldChar, type HeldMap, type VisitMap, type VisitSave, type WorldHeader,
 } from './worldSave';
 
@@ -212,15 +213,33 @@ describe('world save format 10', () => {
       expect(back.header.seed).toBe('fixture-v9');
     });
 
-    it('held LRU：第 9 筆擠掉 at 最舊的', () => {
+    it('held LRU 上限 32', () => {
+      // 有自己的上限，不跟 visits（8）共用：7 位在線客人每 30 秒的 held 不會擠掉剛斷線那位的
+      expect(MAX_HELD).toBe(32);
+      expect(MAX_HELD).toBeGreaterThan(MAX_VISITS);
+      const base = held('g', 1, 0);
+      const one = (id: string, at: number): HeldChar => ({ ...base, character: { ...base.character, id }, at });
       const h: HeldMap = {};
-      for (let i = 0; i < 9; i++) h[`g${i}`] = held(`g${i}`, i, i === 4 ? 1 : 100 + i);
+      for (let i = 0; i <= MAX_HELD; i++) h[`g${i}`] = one(`g${i}`, i === 4 ? 1 : 100 + i);
+      // 寫檔：第 33 筆擠掉 at 最舊的
       const { world } = splitSnapshot(legacy(), who, { ...where, held: h }, 99);
-      expect(Object.keys(world.header.held!)).toHaveLength(MAX_VISITS);
+      expect(Object.keys(world.header.held!)).toHaveLength(MAX_HELD);
       expect(world.header.held!.g4).toBeUndefined();
       expect(world.header.held!.g0).toBeDefined();
-      expect(world.header.held!.g8).toBeDefined();
-      expect(Object.keys(h)).toHaveLength(9);          // 不改輸入
+      expect(world.header.held![`g${MAX_HELD}`]).toBeDefined();
+      expect(Object.keys(h)).toHaveLength(MAX_HELD + 1);   // 不改輸入
+      // 讀檔：同樣淘汰到 32 筆
+      const back = decodeWorld(encodeWorld({ header: { ...world.header, held: h }, chunks: world.chunks }));
+      expect(Object.keys(back.header.held!)).toHaveLength(MAX_HELD);
+      expect(back.header.held!.g4).toBeUndefined();
+      // SplitSession.putHeld（房主的 VisitStore）：放到 32 筆都留著，第 33 筆擠掉 at 最舊的、剛放的不淘汰
+      const s = SplitSession.fresh('held-lru', 1, 'w-held');
+      for (let i = 0; i < MAX_HELD; i++) s.putHeld(`g${i}`, one(`g${i}`, 100 + i));
+      for (let i = 0; i < MAX_HELD; i++) expect(s.getHeld(`g${i}`)).toBeDefined();
+      s.putHeld('late', one('late', 0));
+      expect(s.getHeld('late')).toBeDefined();
+      expect(s.getHeld('g0')).toBeUndefined();
+      expect(s.getHeld('g1')).toBeDefined();
     });
   });
 

@@ -5,7 +5,8 @@ import { test, expect, type Page } from '@playwright/test';
  * DELVE 線上合作雙瀏覽器端到端：兩個 context，房主在遊戲中「開放加入」，客人以 5 碼房號加入，
  * 打真的 /api/signal（e2e server 單程序 MemoryStore）+ 同機 WebRTC。
  * 驗證：雙方 2 名玩家、客人真實輸入放方塊房主端同格變更、雙方互相看到對方暱稱的名牌（客人看到的是房主角色的暱稱，不是「房主」）、
- * 房號貼上時帶空白與小寫照樣加入、客人離開房間後角色 savedAt > 0；沒有 IndexedDB 時開著房從暫停選單匯入 → 舊房間關掉。
+ * 房號貼上時帶空白與小寫照樣加入、客人拿鎬挖掘時房主端畫出他手上的鎬、客人離開房間後角色 savedAt > 0；
+ * 3 位客人加入（4 人）→ 每一方都看到 4 名玩家；沒有 IndexedDB 時開著房從暫停選單匯入 → 舊房間關掉。
  */
 import type {} from '../../src/scripts/games/delve/render/session';
 
@@ -21,18 +22,52 @@ async function waitGame(page: Page): Promise<void> {
   await page.waitForFunction(() => Boolean(window.__delveDebug?.game), undefined, { timeout: 30000 });
 }
 
-/** 在畫面上右鍵 tile (x, y)（按住一下再放開：放置） */
-async function rightClickTile(page: Page, t: { x: number; y: number }): Promise<void> {
-  const p = await page.evaluate(([x, y]) => {
+/** tile (x, y) 中心在畫面上的座標 */
+function tileScreen(page: Page, t: { x: number; y: number }): Promise<{ sx: number; sy: number }> {
+  return page.evaluate(([x, y]) => {
     const r = window.__delveDebug!.handle.renderer, c = (document.querySelector('#delve-canvas') as HTMLCanvasElement).getBoundingClientRect();
     return { sx: c.left + ((x + 0.5) * 16 - r.drawCam.x) * r.zoom, sy: c.top + ((y + 0.5) * 16 - r.drawCam.y) * r.zoom };
   }, [t.x, t.y]);
+}
+
+/** 在畫面上右鍵 tile (x, y)（按住一下再放開：放置） */
+async function rightClickTile(page: Page, t: { x: number; y: number }): Promise<void> {
+  const p = await tileScreen(page, t);
   await page.mouse.move(p.sx, p.sy);
   await page.mouse.down({ button: 'right' }); await page.waitForTimeout(120); await page.mouse.up({ button: 'right' });
   await page.waitForTimeout(80);
 }
 
 /** IndexedDB 'characters' 裡暱稱是 nick 的角色記錄的 savedAt（沒有 → -1） */
+/** 房主開房：暫停選單「開放加入」→ 回傳房號（收起選單） */
+async function openRoom(host: Page): Promise<string> {
+  await host.click('#delve-menu-btn');
+  await host.click('#delve-coop');
+  await expect(host.locator('#delve-room-chip')).toHaveText(/房號 [A-Z0-9]{5}/, { timeout: 30000 });
+  const room = ((await host.locator('#delve-room-chip').innerText()).match(/[A-Z0-9]{5}/) ?? [''])[0];
+  expect(room).toMatch(/^[A-Z0-9]{5}$/);
+  await host.keyboard.press('Escape');
+  return room;
+}
+
+/** 客人：標題 → 新角色 nick → 世界面板「加入朋友的世界」→ 房號 → 加入，等到 live */
+async function joinRoom(guest: Page, room: string, nick: string): Promise<void> {
+  await guest.goto('/games/delve');
+  await pressStart(guest);
+  await guest.click('#delve-start');
+  await expect(guest.locator('#delve-charpanel')).toBeVisible({ timeout: 15000 });
+  await guest.click('#delve-newchar-open');
+  await expect(guest.locator('#delve-newchar')).toBeVisible();
+  await guest.fill('#delve-nick', nick);
+  await guest.click('#delve-newchar-create');
+  await expect(guest.locator('#delve-worldpanel')).toBeVisible();
+  await guest.click('#delve-join-open');
+  await expect(guest.locator('#delve-joinpanel')).toBeVisible();
+  await guest.fill('#delve-room', room);
+  await guest.click('#delve-join');
+  await guest.waitForFunction(() => window.__delveDebug?.coop?.phase === 'live', undefined, { timeout: 60000 });
+}
+
 function charSavedAt(page: Page, nick: string): Promise<number> {
   return page.evaluate((nick) => new Promise<number>((ok, bad) => {
     const r = indexedDB.open('delve');
@@ -136,6 +171,37 @@ test.describe('delve — online co-op', () => {
       await rightClickTile(guest, target);
       await expect.poll(() => host.evaluate(({ x, y }) => window.__delveDebug!.game.world.getFg(x, y), target), { timeout: 15000 }).toBe(DIRT_FG);
 
+      // 房主給客人一把鐵鎬；客人拿著它按住左鍵挖腳下 → 房主端畫出客人手上的鎬（avatarDraws.get(客人).held）
+      await host.evaluate((pid) => {
+        const a = window.__delveDebug!.game.actors.get(pid as never);
+        if (!a) throw new Error('host has no actor for guest');
+        a.inventory.add('iron_pickaxe', 1);
+      }, guestPid);
+      await guest.waitForFunction(() => window.__delveDebug!.game.inventory.count('iron_pickaxe') >= 1, undefined, { timeout: 15000 });
+      await guest.evaluate(() => {
+        const g = window.__delveDebug!.game;
+        g.selectSlot(g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'iron_pickaxe'));
+      });
+      const heldOnHost = (): Promise<boolean> => host.evaluate((pid) => window.__delveDebug!.handle.renderer.avatarDraws.get(pid)?.held === true, guestPid);
+      // 腳下那一欄往下挖：挖穿一格就把游標移到下一格（滑鼠一直按著）
+      let dig = { x: feet.x + 1, y: feet.y + 1 };
+      const at0 = await tileScreen(guest, dig);
+      await guest.mouse.move(at0.sx, at0.sy);
+      await guest.mouse.down({ button: 'left' });
+      let held = false;
+      for (let t = Date.now(); !held && Date.now() - t < 20000;) {
+        held = await heldOnHost();
+        if (held) break;
+        if (await guest.evaluate(({ x, y }) => window.__delveDebug!.game.world.getFg(x, y) === 0, dig)) {
+          dig = { x: dig.x, y: dig.y + 1 };
+          const at = await tileScreen(guest, dig);
+          await guest.mouse.move(at.sx, at.sy);
+        }
+        await guest.waitForTimeout(50);
+      }
+      await guest.mouse.up({ button: 'left' });
+      expect(held).toBe(true);
+
       // 客人離開房間 → 回標題；離開時的最後一份 chk 帶新時間寫進 IDB（savedAt 嚴格變大）
       const savedBefore = await charSavedAt(guest, '客人');
       await guest.click('#delve-menu-btn');
@@ -148,6 +214,34 @@ test.describe('delve — online co-op', () => {
     } finally {
       await ctxHost.close();
       await ctxGuest.close();
+    }
+  });
+
+  test('three guests join one host: every page sees 4 players', async ({ browser }) => {
+    const ctxs = await Promise.all([0, 1, 2, 3].map(() => browser.newContext()));
+    for (const ctx of ctxs) {
+      await ctx.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
+    }
+    const pages = await Promise.all(ctxs.map((c) => c.newPage()));
+    const [host, ...guests] = pages;
+    const errors: string[] = [];
+    pages.forEach((p, i) => p.on('pageerror', (e) => errors.push(`${i}: ${e.message}`)));
+    try {
+      await host.goto('/games/delve?seed=coop-e2e-4p&autostart=1&fresh=1');
+      await waitGame(host);
+      const room = await openRoom(host);
+      for (let i = 0; i < guests.length; i++) await joinRoom(guests[i], room, `客人${i + 1}`);
+      // 每一方都看到 4 名玩家（peer 清單晚到，用輪詢）
+      for (const p of pages) {
+        await expect.poll(() => p.evaluate(() => window.__delveDebug?.coop?.players().length ?? 0), { timeout: 30000 }).toBe(4);
+      }
+      // 房主的 HUD 名單 4 列；pid 互不相同
+      await expect(host.locator('#delve-players > li')).toHaveCount(4, { timeout: 15000 });
+      const pids = await host.evaluate(() => window.__delveDebug!.coop!.players().map((p) => p.pid));
+      expect(new Set(pids).size).toBe(4);
+      expect(errors).toEqual([]);
+    } finally {
+      for (const ctx of ctxs) await ctx.close();
     }
   });
 
