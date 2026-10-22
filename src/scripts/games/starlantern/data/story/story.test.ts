@@ -13,7 +13,7 @@ import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragme
 import { memoryPace } from '../../engine/story/expect';
 import { leadOpen } from '../../engine/story/leads';
 import type { StoryMood } from '../../render/artPaths';
-import { ACT_DEPTHS, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage } from './scenes';
+import { ACT_DEPTHS, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage, type StoryGate } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
 
@@ -276,6 +276,26 @@ const fragmentStage = (id: string): Stage => {
 };
 const isStage = (v: string): v is Stage => (STAGES as string[]).includes(v);
 
+/** The earliest stage `c` can hold `n` memory pieces: Lorne's and Rin's by the depth of that piece, a companion's once she is met. */
+const piecesStage = (c: CharacterId, n: number): Stage =>
+  c === 'hero' || c === 'rin' ? stageOf(CHAINS[c].pieces[Math.min(n, chainLength(c)) - 1].minDepth) : metStage(c);
+/**
+ * The earliest stage a gate (`StoryGate`) lets a scene play in, from `base`: its stage, Rin's choice, a full chain, pieces,
+ * the scenes it waits on (each at its own earliest). `beforeChoice` only closes later, so it moves nothing; with `oath` or
+ * `full` it could never open (plan ruling 14), so that throws.
+ */
+function gateStage(base: Stage, gate: StoryGate | undefined): Stage {
+  if (!gate) return base;
+  if (gate.beforeChoice && (gate.oath || gate.full)) throw new Error(`a before-choice gate with oath or full never opens: ${JSON.stringify(gate)}`);
+  let st = base;
+  if (gate.stage) st = later(st, gate.stage);
+  if (gate.oath) st = later(st, rinSeventh());
+  if (gate.full) st = later(st, piecesStage(gate.full, chainLength(gate.full)));
+  for (const [c, n] of Object.entries(gate.pieces ?? {}) as [CharacterId, number][]) st = later(st, piecesStage(c, n));
+  for (const id of gate.seen ?? []) st = later(st, position(`scenes.${id}`));
+  return st;
+}
+
 /** The earliest stage a text can be seen in. */
 function position(key: string): Stage {
   const [top, a, b] = key.split('.');
@@ -291,11 +311,7 @@ function position(key: string): Stage {
       if (kind === 'town') return fragmentStage(c);
       if (kind === 'banter') {   // B1: once both of the pair are met, or later if it is gated
         const [a1, b1] = c.split('-');
-        const gate = BANTER_GATE[id];
-        let st = later(metStage(a1), metStage(b1));
-        if (gate?.stage) st = later(st, gate.stage);
-        if (gate?.oath) st = later(st, rinSeventh());
-        return st;
+        return gateStage(later(metStage(a1), metStage(b1)), BANTER_GATE[id]);
       }
       if (kind === 'home') return metStage(c);   // after her last piece; placed like the rest of her story (I-58)
       if (kind === 'mem') {
@@ -303,11 +319,7 @@ function position(key: string): Stage {
         return metStage(c);
       }
       // A chat: when she is met, or later if it is gated.
-      const base = c === 'hero' || c === 'rin' ? 'prologue' : metStage(c);
-      const gate = CHAT_GATE[id];
-      let st = gate?.stage ? later(base, gate.stage) : base;
-      if (gate?.oath) st = later(st, rinSeventh());
-      return st;
+      return gateStage(c === 'hero' || c === 'rin' ? 'prologue' : metStage(c), CHAT_GATE[id]);
     }
     case 'townLines': case 'greet': case 'rinLines': case 'truths': {
       const st = top === 'greet' ? b : a;
@@ -614,6 +626,31 @@ describe('the script gates', () => {
     expect(position('bellkeeper.oath.0')).toBe(rinSeventh());
     expect(position('bellkeeper.after.0')).toBe('after');
     expect(() => position('nope.0')).toThrow();
+  });
+
+  it('position reads every kind of gate: pieces, seen, full and before her choice (story depth Task 1 review)', () => {
+    const fullStage = (c: CharacterId): Stage => (c === 'hero' || c === 'rin' ? stageOf(CHAINS[c].pieces[chainLength(c) - 1].minDepth) : metStage(c));
+    // no gate, or a gate that only closes later, leaves the earliest stage where it is
+    expect(gateStage('prologue', undefined)).toBe('prologue');
+    expect(gateStage('act1', { beforeChoice: true })).toBe('act1');
+    // pieces: when the last of the counts named can be found (Lorne's and Rin's by depth, a companion's once she is met)
+    expect(gateStage('prologue', { pieces: { rin: chainLength('rin') } })).toBe(rinSeventh());
+    expect(gateStage('prologue', { pieces: { hero: 9 } })).toBe(stageOf(CHAINS.hero.pieces[8].minDepth));
+    expect(gateStage('prologue', { pieces: { scarlet: 1 } })).toBe(metStage('scarlet'));
+    expect(gateStage('prologue', { pieces: { hero: 1, rin: chainLength('rin') } })).toBe(rinSeventh());
+    // full: all of hers
+    expect(gateStage('prologue', { full: 'rin' })).toBe(fullStage('rin'));
+    expect(gateStage('prologue', { full: 'liz' })).toBe(fullStage('liz'));
+    // seen: the latest of the scenes named
+    expect(gateStage('prologue', { seen: ['act3'] })).toBe('act3');
+    expect(gateStage('prologue', { seen: ['act2', 'act4'] })).toBe('act4');
+    expect(gateStage('prologue', { seen: ['rin-reveal'] })).toBe(rinSeventh());
+    // each kind on top of the others; a later base stays
+    expect(gateStage('act4', { stage: 'act2', seen: ['act3'] })).toBe('act4');
+    expect(gateStage('prologue', { stage: 'act2', oath: true })).toBe(later('act2', rinSeventh()));
+    // before her choice and after it at once can never open (plan ruling 14)
+    expect(() => gateStage('prologue', { beforeChoice: true, oath: true })).toThrow();
+    expect(() => gateStage('prologue', { beforeChoice: true, full: 'rin' })).toThrow();
   });
 
   it('spoilers stay behind their owner', () => {

@@ -137,12 +137,12 @@ export const CHAT_GATE: Partial<Record<SceneId, StoryGate>> = {
   'chat:selene:2': { stage: 'act3' },
 };
 
+/** The gate's old name (B1), kept: a banter's gate is a `StoryGate`. */
+export type BanterGate = StoryGate;
 /**
  * Banters that wait (B1), used like `CHAT_GATE` (`StoryGate`). A banter with no entry is open as soon as both of its two are
  * met; no gate can open it sooner. Every entry needs a reason in the lore ledger.
  */
-/** The gate's old name (B1), kept: a banter's gate is a `StoryGate`. */
-export type BanterGate = StoryGate;
 export const BANTER_GATE: Partial<Record<SceneId, StoryGate>> = {
   // B2 (lore ledger §5): later chapters of a pair. A stage for time spent together, Rin's choice for the Rin who teases back,
   // a full memory for the one who has changed.

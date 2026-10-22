@@ -638,6 +638,29 @@ describe('town banter', () => {
     expect(nextBanter(s, gates, count)).toBeNull();   // the expired one is never offered
   });
 
+  it('an expired banter counts toward its pair\'s heard: the other pair goes first (story depth Task 1 review)', () => {
+    const count: Partial<Record<BanterPair, number>> = { 'noel-rin': 2, 'rin-sylvie': 2 };
+    const gates = { 'banter:noel-rin:1': { beforeChoice: true as const } };
+    const s = meetAll(base(), ['noel', 'sylvie']);
+    expect(nextBanter(s, gates, count)).toBe('banter:noel-rin:1');   // both heard none: the fixed order
+    s.party.roster.rin.oath = true;   // noel-rin:1 expired, never heard: it counts as heard
+    expect(nextBanter(s, gates, count)).toBe('banter:rin-sylvie:1');
+    s.story.seen.push('banter:rin-sylvie:1');
+    expect(nextBanter(s, gates, count)).toBe('banter:noel-rin:2');   // one each: the fixed order again
+  });
+
+  it('a seen gate naming two scenes opens only once both are seen (story depth Task 1 review)', () => {
+    const s = meetAll(base(), ['noel']);
+    const id: SceneId = 'banter:noel-rin:1';
+    const gates = { [id]: { seen: ['rin-reveal', 'act3'] as SceneId[] } };
+    expect(banterOpen(s, id, gates)).toBe(false);
+    s.story.seen.push('act3');
+    expect(banterOpen(s, id, gates)).toBe(false);
+    s.story.seen.push('rin-reveal');
+    expect(banterOpen(s, id, gates)).toBe(true);
+    expect(gateOpen(s, { seen: ['rin-reveal', 'act3', 'finale'] })).toBe(false);
+  });
+
   it('an expired chat neither plays nor holds back the next one (story depth)', () => {
     const s = meetAll(base(), ['noel']);
     s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:rin:1', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4');
