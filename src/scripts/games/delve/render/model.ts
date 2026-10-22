@@ -60,6 +60,21 @@ export function stepsInFrame(mode: GameMode, paused: boolean, talking: boolean):
   return mode === 'solo' && !paused && !talking;
 }
 
+/**
+ * rAF 這一幀對玩家輸入怎麼處理：
+ * 單機——暫停或對話中不碰（照舊）；連線——任何面板（選單／地圖／技能樹／衣櫥／轉生／NPC）開著就每幀放開按鍵，
+ * 否則才讀輸入（模擬照跑，面板裡按的鍵不能驅動角色，也不能在關閉後殘留）。
+ */
+export function inputAction(mode: GameMode, paused: boolean, talking: boolean, npcOpen: boolean): 'update' | 'release' | 'none' {
+  if (mode === 'solo') return paused || talking ? 'none' : 'update';
+  return paused || npcOpen ? 'release' : 'update';
+}
+
+/** 這一幀要不要消化事件：單機暫停時不消化（照舊）；連線時模擬在跑，事件每幀都要排掉 */
+export function drainsEvents(mode: GameMode, paused: boolean): boolean {
+  return mode !== 'solo' || !paused;
+}
+
 export interface ChunkRange { cx0: number; cy0: number; cx1: number; cy1: number; }
 
 /** 與視窗（世界 px）相交的 chunk 範圍（含端點），水平夾在 [cxMin, cxMax]（含端點，可為負）、垂直夾在 [0, chunksY)。 */

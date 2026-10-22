@@ -53,6 +53,8 @@ describe('NetLoop', () => {
     t.fire(0);
     t.fire(5000);
     expect(steps[1]).toBe(60);
+    t.fire(5000 + LOOP_EVERY_MS);
+    expect(steps[2]).toBe(1); // 超出上限的時間不累積成債
   });
 
   it('stop() 後 fire 不再呼叫 run', () => {
