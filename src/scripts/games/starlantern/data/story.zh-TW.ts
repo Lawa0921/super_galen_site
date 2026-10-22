@@ -1251,7 +1251,7 @@ const TOWN_SCENES: Record<TownFragmentId, Written> = {
       // was, so he names no society; the keeper's line that answers this waits for this piece (bellkeeper.oath, I-185).
       { who: 'glen', text: '「我想起來了，小子。那年我十七，剛當上守門的。天還沒亮，門自己亮了。」' },
       { who: 'glen', text: '「走出來一個渾身是灰、拖著劍的男人，長得跟你很像。走沒幾步，就倒在我腳邊。」' },
-      { who: 'glen', text: '「倒下前，他還笑了一下：『門還開著啊。』這句話我說了幾十年，原來是跟他學的。」' },
+      { who: 'glen', text: '「倒下前，他還笑了一下：『門還開著啊。』這句話我掛在嘴邊幾十年，沒想到是跟他學的。」' },
       { who: 'hero', mood: 'distant', text: '「那個人，後來呢？」' },
       { who: 'glen', text: '「幾天後，一個穿長袍的年輕人來問，從門裡出來的那個人住在哪裡。我說了，還替他指了路。」' },
       { who: 'glen', text: '「後來那個人就不在了。……我天沒亮就站在這裡，原來是為了這個。」' },
@@ -2022,7 +2022,7 @@ export const STORY = {
     oath: [
       { text: '從深處走出來的人。鐘響了，吾等便來。世世代代，都是如此。' },
       { text: '吾等不是來動手的。那孩子的選擇，吾等還不知道該怎麼回答。' },
-      { text: '那孩子領口的鐘，被敲平了。那枚鐘得由她親手還來，吾等不去取。' },
+      { text: '那孩子領口的鐘，被敲平了。那枚鐘得由她親手交回來，吾等不去取。' },
       // V3 voice pass: one human touch, never a joke (style bible §3 鐘守): the man he came to watch nodded to him.
       { text: '這幾天，我在鎮上看著你。你替旅館劈柴，替孩子撿球。球滾到我腳邊，你也向我點了頭。迷宮的意志，會做這些事嗎？' },
       { text: '吾等怕了很久。怕霧、怕深處，也怕自己弄錯。' },
