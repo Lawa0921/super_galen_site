@@ -128,12 +128,12 @@
   - `{ kind: 'at-phase'; phase: MoonPhase; skill: string }`：`s.moon?.phase === phase` 且可施放 → 施放；目標：單體敵方招給第一個活著的敵人，單體我方招給 HP 比例最低的隊友，其他不指定。
   - `{ kind: 'execute-below'; pct: number; skill: string }`：活著、`hp × 100 < max.hp × pct` 的敵人，先挑她暗記中的、再照順序 → 對它施放。
   - `{ kind: 'cast-unless-last'; skill: string }`：`c.mech?.kind === 'beat'` 而且 `last !== skill`、可施放 → 施放（目標規則同 `at-phase`）。
-  - `{ kind: 'cast-when'; skill: string; big?: true; once?: true }`：可施放就施放（目標規則同 `at-phase`）；`big`：只在頭目或菁英還站著時；`once`：這一場她已經施放過這招就不成立（看 `s.log` 裡她的 `act` 事件是否有這招的名稱開頭，或實作者選的等價判斷，不抽、不加狀態欄位）。給蜃樓步、超頻、全面整備、贖火這些自身／全隊招。
+  - `{ kind: 'cast-when'; skill: string; big?: true; whileAbsent?: true }`：可施放就施放（目標規則同 `at-phase`）；`big`：只在頭目或菁英還站著時；`whileAbsent`：她用這招給的效果還在就不成立（控制者裁定，8h Task 1：月相停住看 `s.moon.hold`；增益看這招的目標——自身招只看她自己——身上是否還有她給的同屬性同方向增益；結界看 `s.barriers` 是否還有她用這招架的；贖火看她的 `riposte`；不讀 `s.log`（它每回合清空）、不抽、不加狀態欄位）。給蜃樓步、超頻、全面整備、贖火這些自身／全隊招。
   - `{ kind: 'echo' }`：只有洛恩；`rec = echoOf(s, s.round + 1)`（和戰鬥選單的 `echoItem` 同一個），`rec` 有傷害效果、`c.tp >= rec.cost`，而且 `castPower(s, c, echoDef(rec)) × reach` ≥ 他可施放傷害技中同一個量的最大值 → `{ kind: 'echo', rec, target: 第一個活著的敵人 }`。
   - `spend-at` 多一個可省略的 `of: 'maxHp'`：量表值換成 `量表 × 100 / c.max.hp` 再和 `min` 比（給餘燼用）。
   - `strongest-damage` 多一個可省略的 `aoe: true`：排序用 `castPower × reach`（裁定 6，`export function reach(s: BattleState, def: SkillDef): number` 放在 `policy.ts`）。
 - [ ] **Step 1：先寫失敗的測試**（`engine/policy.test.ts`，狀態用 `makeBattle`／`makeCombatant` 直接寫欄位）
-  - 每一種新規則一個成立、一個不成立的例子（數值寫死）：`ensure-taunt`（`taunt: 2` → null，`taunt: 1` → 施放）；`ensure-cover`（兩位隊友 HP 30%／60% → 目標是 30% 那位；她自己 10% 也不選自己；已有 `cover` → null）；`release-at`（`turns: 2`、`min: 3` → null；`turns: 3` → 施放；別人的結界不算；`lasting` 永遠算）；`at-phase`（滿月 → 施放、上弦 → null、沒有 `moon` → null）；`execute-below`（兩隻 HP 20%，第二隻被暗記 → 打第二隻）；`cast-unless-last`（`last: 'clap'` → null）；`cast-when`（可施放 → 施放；`big` 而場上沒有頭目菁英 → null；`once` 而這場已施放過 → null）；`echo`（紀錄是 70% 之後比他最強的招強 → `{ kind: 'echo', rec }`；比較弱、TP 不夠、沒有紀錄、不是洛恩 → null）；`spend-at of maxHp`（餘燼 40／最大 HP 100、`min: 40` → 施放，39 → 扣住）。
+  - 每一種新規則一個成立、一個不成立的例子（數值寫死）：`ensure-taunt`（`taunt: 2` → null，`taunt: 1` → 施放）；`ensure-cover`（兩位隊友 HP 30%／60% → 目標是 30% 那位；她自己 10% 也不選自己；已有 `cover` → null）；`release-at`（`turns: 2`、`min: 3` → null；`turns: 3` → 施放；別人的結界不算；`lasting` 永遠算）；`at-phase`（滿月 → 施放、上弦 → null、沒有 `moon` → null）；`execute-below`（兩隻 HP 20%，第二隻被暗記 → 打第二隻）；`cast-unless-last`（`last: 'clap'` → null）；`cast-when`（可施放 → 施放；`big` 而場上沒有頭目菁英 → null；`whileAbsent` 而她給的效果還在 → null，效果結束後的回合再施放）；`echo`（紀錄是 70% 之後比他最強的招強 → `{ kind: 'echo', rec }`；比較弱、TP 不夠、沒有紀錄、不是洛恩 → null）；`spend-at of maxHp`（餘燼 40／最大 HP 100、`min: 40` → 施放，39 → 扣住）。
   - `reach counts the foes a cast meets`：`enemies` 對三隻 → 3；單體 → 1；帶彈射（2 次、−30%）對三隻 → 1 + 0.7 + 0.4；對一隻 → 1。
   - `aoe ranks by reach, the default does not`：火之星彈＋擴散 vs 冰之星彈對三隻：`aoe` 選前者；同一個狀態的 `choose(s, party)`（預設策略）結果和本任務之前相同（逐一寫死）。
   - `no new rule is in the default policies`：`DEFAULT_POLICIES` 的每一條 `kind` 都在 8a 的七種裡、沒有 `aoe`／`of`。
@@ -223,11 +223,11 @@
 | | `bleed` 撕裂快刀 | boss | twin-slash：tear、multistrike；pickpocket：tear | strongest-damage aoe |
 | 希爾薇 | `heart` 一箭穿心 | boss | heart-shot：charge、armor-break；**aimed-shot：thrift** | spend-at aim 3 starfall-arrow；strongest-damage aoe |
 | | `wildfire` 燎原箭雨（`capstone: 2`） | crowd | arrow-rain：flame、ignite、multistrike | strongest-damage aoe |
-| 絲嘉蕾 | `riposte` 反擊之壁（`capstone: 2`） | long | blaze-ring：on-struck、flame…（依 fit）；provoke：extend | ensure-taunt provoke；cast-when atoning-flame big；strongest-damage aoe |
+| 絲嘉蕾 | `riposte` 反擊之壁（`capstone: 2`） | long | blaze-ring：on-struck、flame…（依 fit）；provoke：extend | ensure-taunt provoke；cast-when atoning-flame big whileAbsent；strongest-damage aoe |
 | | `ember` 紅蓮餘燼（熾心、回禮、赤心） | boss | crimson-end：charge；cover：extend | ensure-cover cover；spend-at embers 40 of maxHp crimson-end；strongest-damage aoe |
-| 瑟蕾 | `fullmoon` 滿月聖女（`capstone: 1`） | long | moonlight：spread、dispel | cast-when full-moon-night big once；at-phase waning moon-recall；at-phase full full-moon；heal-below 60；strongest-damage aoe |
+| 瑟蕾 | `fullmoon` 滿月聖女（`capstone: 1`） | long | moonlight：spread、dispel | cast-when full-moon-night big whileAbsent；at-phase waning moon-recall；at-phase full full-moon；heal-below 60；strongest-damage aoe |
 | | `nightmare` 新月夢魘（`capstone: 2`） | crowd | dream：venom、extend | at-phase new dream；strongest-damage aoe |
-| 莎菲拉 | `fourbeat` 四拍劍舞（`capstone: 2`） | boss | blade-dance：tear、multistrike | cast-when mirage-step once；alternate repeat；strongest-damage aoe |
+| 莎菲拉 | `fourbeat` 四拍劍舞（`capstone: 2`） | boss | blade-dance：tear、multistrike | cast-when mirage-step whileAbsent；alternate repeat；strongest-damage aoe |
 | | `festival` 祭典指揮（`capstone: 1`、`first` 含 `safira-clap-encore`） | long | war-dance：lasting；clap：extend…（依 fit） | cast-unless-last clap；alternate repeat |
 | 波比 | `factory` 砲台工廠 | long | turret：multistrike、extend | ensure-device [turret]；cast-when overclock big；strongest-damage aoe |
 | | `grid` 電網（`capstone: 2`） | crowd | tesla-coil：extend；shock-mine：extend | ensure-device [tesla-coil, shock-mine, barrier]；strongest-damage aoe |
