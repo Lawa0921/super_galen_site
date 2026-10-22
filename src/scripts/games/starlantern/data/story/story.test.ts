@@ -2809,3 +2809,29 @@ describe('story depth Task 12: the light banters keep their setups', () => {
     expect(() => pinBeat('banter:rin-scarlet:1', {}, /鎧甲/)).not.toThrow();   // the armour that is loud
   });
 });
+
+describe('story depth Task 13: the friction banters', () => {
+  const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
+  // each banter's beat (plan Task 13), read as it plays: after her choice for none of these, so the base reading
+  const beats: [SceneId, RegExp][] = [
+    ['banter:liz-scarlet:2', /門後還有人/],
+    ['banter:safira-sylvie:2', /後面的人就會跟/],
+    ['banter:rin-sylvie:1', /追獵物/],
+    ['banter:bobby-chizuru:2', /生氣一刻鐘/],
+    ['banter:bobby-sylvie:2', /背帶/],
+    ['banter:chizuru-noel:1', /借而不告/],
+    ['banter:noel-selene:2', /少掉一點自己/],
+    ['banter:safira-scarlet:2', /追思/],
+  ];
+  it('each friction banter keeps its sting, and the sting is not the last line (design §4.3)', () => {
+    for (const [id, re] of beats) {
+      expect(() => pinBeat(id, {}, re), `${id} ${re}`).not.toThrow();
+      const lines = linesWhen(STORY.scenes[id].lines, ALL);
+      expect(re.test(lines[lines.length - 1].text), `${id}: the sting closes it`).toBe(false);
+    }
+  });
+  it('rin-selene:1 does not name the knife yet (fix one), and no banter here preaches a choice', () => {
+    expect(linesWhen(STORY.scenes['banter:rin-selene:1'].lines, ALL).map((l) => l.text).join('')).not.toMatch(/刀|短刃/);
+    for (const [id] of beats) expect(STORY.scenes[id].lines.map((l) => l.text).join(''), id).not.toMatch(/選擇|我選/);
+  });
+});

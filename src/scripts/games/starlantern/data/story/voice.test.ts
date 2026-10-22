@@ -29,6 +29,8 @@ const POLISHED: string[] = [
   'meet.liz.', 'meet.scarlet.', 'scenes.mem:liz:', 'scenes.mem:scarlet:', 'scenes.chat:liz:', 'scenes.chat:scarlet:', 'scenes.home:liz.', 'people.liz.', 'people.scarlet.', 'survived',
   // Task 12: the light banters (story depth plan Task 12)
   ...['bobby-chizuru:1', 'bobby-liz:1', 'bobby-noel:1', 'bobby-sylvie:1', 'chizuru-rin:1', 'chizuru-safira:1', 'chizuru-scarlet:1', 'liz-noel:1', 'liz-selene:1', 'liz-scarlet:1', 'noel-rin:1', 'noel-selene:1', 'rin-scarlet:1', 'safira-scarlet:1', 'safira-sylvie:1', 'scarlet-selene:1', 'selene-sylvie:1'].map((id) => `scenes.banter:${id}.`),
+  // Task 13: the act 2 and act 3 friction banters (story depth plan Task 13)
+  ...['chizuru-noel:1', 'liz-scarlet:2', 'safira-sylvie:2', 'rin-sylvie:1', 'rin-selene:1', 'safira-scarlet:2', 'noel-selene:2', 'bobby-chizuru:2', 'bobby-sylvie:2'].map((id) => `scenes.banter:${id}.`),
 ];
 
 type Scope = readonly string[];

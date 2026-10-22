@@ -1537,12 +1537,12 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   // The writing tasks finalize them; a beat the design gives as stage direction is narration. ----
   'banter:chizuru-noel:1': {
     lines: [
-      { who: 'chizuru', text: '「諾艾兒姑娘，借而不告，謂之竊。那本書，何時歸還？」' },
-      { who: 'noel', text: '「本、本小姐有打算還的！等本小姐比誰都厲害的時候！」' },
-      { who: 'chizuru', text: '「那便是永遠不還了。」' },
-      { who: 'noel', mood: 'panic', text: '「妳、妳那是什麼意思！」' },
+      { who: 'noel', mood: 'smug', text: '「千鶴，看好了。本小姐的魔法書，封面的星星會自己發光！」' },
+      { who: 'chizuru', mood: 'serious', text: '「確實好看。只是借而不告，謂之竊。此書何時歸還？」' },
+      { who: 'noel', mood: 'panic', text: '「本、本小姐有打算還的！等本小姐比誰都厲害的時候！」' },
+      { who: 'chizuru', mood: 'solemn', text: '「那便是永遠不還了。」' },
     ],
-    summary: '千鶴說借而不告謂之竊，問諾艾兒那本書什麼時候還。諾艾兒說等她比誰都厲害的時候，千鶴說那便是永遠不還了。',
+    summary: '諾艾兒向千鶴炫耀她的魔法書。千鶴說借而不告謂之竊，問她何時歸還；諾艾兒說等她比誰都厲害的時候，千鶴說那便是永遠不還了。',
   },
   'banter:chizuru-noel:2': {
     lines: [
@@ -1555,36 +1555,36 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   },
   'banter:liz-scarlet:2': {
     lines: [
-      N('莉茲估著一片有名字的碎片：「交給公會只有謝禮，賣給收藏的翻三倍。」'),
-      { who: 'scarlet', text: '「那是某個人的記憶，請交還。」' },
-      { who: 'liz', text: '「騎士大姊，妳守的那扇門，門後還有人嗎？」' },
+      { who: 'liz', mood: 'scheming', text: '「這片碎片上刻著名字，好貨。交給公會只有謝禮，賣給收藏家，翻三倍。」' },
+      { who: 'scarlet', mood: 'serious', text: '「那是某個人的記憶。請交還。」' },
+      { who: 'liz', mood: 'normal', text: '「騎士大姊，妳守的那扇門，門後還有人嗎？」' },
       N('絲嘉蕾沒有回答。莉茲嘟囔著把碎片交了出去，謝禮兩枚銀幣，虧大了。'),
     ],
-    summary: '莉茲想把一片有名字的碎片賣給收藏家，絲嘉蕾要她交還。莉茲問她守的門後還有沒有人，絲嘉蕾沒有回答。',
+    summary: '莉茲想把刻著名字的碎片賣給收藏家，絲嘉蕾要她交還。莉茲問她守的門後還有沒有人；絲嘉蕾沒有回答，碎片還是交了出去。',
   },
   'banter:safira-sylvie:2': {
     lines: [
-      N('莎菲拉單腳轉了三圈。'),
-      { who: 'safira', text: '「小希，剛才那一場我一個人衝第一個，帥不帥？」' },
-      { who: 'sylvie', text: '「妳一跑，後面的人就會跟。跟錯路的人，回不來。」' },
-      { who: 'safira', text: '「那、那就叫他們別跟呀。……好唷，下一場我數拍子，讓小希先走。」' },
+      N('莎菲拉單腳轉了三圈，彎刀上還挑著一隻怪物的角。'),
+      { who: 'safira', mood: 'wink', text: '「小希，剛才那一場我一個人衝第一個，帥不帥？」' },
+      { who: 'sylvie', mood: 'serious', text: '「妳一跑，後面的人就會跟。跟錯路的人，回不來。」' },
+      { who: 'safira', mood: 'sad', text: '「那、那就叫他們別跟呀。……好唷，下一場我數拍子，讓小希先走。」' },
     ],
     summary: '莎菲拉一個人衝在最前面，問希爾薇帥不帥。希爾薇說跟錯路的人回不來，莎菲拉答應下一場讓她先走。',
   },
   'banter:rin-sylvie:1': {
     lines: [
       N('夜裡的屋頂，希爾薇盯著巷子。凜從背後走近，一點聲音也沒有。'),
-      { who: 'sylvie', text: '「妳走路像在追獵物，腳跟不落地。在追什麼？」' },
-      { who: 'rin', text: '「不知道。等我知道了，第一個告訴妳。」' },
+      { who: 'sylvie', mood: 'alert', text: '「妳走路像在追獵物，腳跟不落地。在追什麼？」' },
+      { who: 'rin', mood: 'normal', text: '「不知道。等我知道了，第一個告訴妳。」' },
       N('希爾薇往旁邊挪了一個位置。兩人一起盯著巷子，盯到一隻貓走過去。'),
     ],
     summary: '希爾薇問凜，走路像在追獵物，是在追什麼。凜說不知道，等她知道了，第一個告訴希爾薇。',
   },
   'banter:rin-selene:1': {
     lines: [
-      { who: 'selene', text: '「凜，妳的明天，月亮說了一點點呢。──算了，請當作沒聽見。」' },
-      { who: 'rin', text: '「說一半就收回，比不說還吵。」' },
-      { who: 'selene', mood: 'wistful', text: '「那凜呢？每次都說『沒事』。」' },
+      { who: 'selene', mood: 'foresee', text: '「凜，妳的明天，月亮說了一點點呢。──算了，請當作沒聽見。」' },
+      { who: 'rin', mood: 'normal', text: '「說一半就收回，比不說還吵。」' },
+      { who: 'selene', mood: 'wistful', text: '「凜也一樣。每次都只說『沒事』。」' },
       N('凜想了一下，說：「沒事。」瑟蕾笑出聲來。'),
     ],
     summary: '瑟蕾說月亮讀到了凜的明天，又收了回去。凜嫌她吵，瑟蕾說凜每次都只說沒事，凜想了一下，還是說沒事。',
@@ -1600,37 +1600,37 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   },
   'banter:safira-scarlet:2': {
     lines: [
-      { who: 'scarlet', text: '「莎菲拉小姐，今天是追思日，請肅靜。」' },
-      { who: 'safira', text: '「我就是在追思呀。我們那裡，送人走是用跳的唷。小嘉那張臉，送得走誰呀？」' },
-      { who: 'scarlet', text: '「失禮了……」' },
+      { who: 'scarlet', mood: 'serious', text: '「莎菲拉小姐，今天是鎮上的追思日，請肅靜。」' },
+      { who: 'safira', mood: 'wink', text: '「我也在想他們呀。我們那裡，送人走是用跳的唷。小嘉那張臉，送得走誰呀？」' },
+      { who: 'scarlet', mood: 'shaken', text: '「失禮了……」' },
       N('絲嘉蕾踩著閱兵的步子下場，拍子準得讓莎菲拉笑出聲。'),
     ],
     summary: '追思日，絲嘉蕾要莎菲拉肅靜。莎菲拉說她們那裡送人走是用跳的，絲嘉蕾便踩著閱兵的步子下場陪她跳。',
   },
   'banter:bobby-chizuru:2': {
     lines: [
-      { who: 'bobby', text: '「千鶴姊，燈是我家的人造錯的。迷宮奪走妳的那些年，對不起。」' },
-      { who: 'chizuru', text: '「道歉不必。但請容我，生氣一刻鐘。」' },
-      N('千鶴端坐閉眼，一動也不動，波比也不敢動。'),
-      N('一刻鐘後，千鶴起身，照樣替彈簧大人上緊發條：「好了，氣生完了。」'),
+      { who: 'bobby', mood: 'sad', text: '「千鶴姊，燈是我家的人造錯的。迷宮奪走妳的那些年，對不起。」' },
+      { who: 'chizuru', mood: 'serious', text: '「道歉不必。但請容我，生氣一刻鐘。」' },
+      N('千鶴端坐閉眼，一動也不動。波比也不敢動，連彈簧大人都停了。'),
+      N('一刻鐘後，千鶴起身，照樣替彈簧大人上緊發條：「氣生完了。今日也請多指教。」'),
     ],
     summary: '波比替祖先向千鶴道歉。千鶴說不必道歉，只請她容自己生氣一刻鐘；一刻鐘後，她照樣替彈簧大人上緊發條。',
   },
   'banter:bobby-sylvie:2': {
     lines: [
-      N('波比遞出一條箭袋背帶，希爾薇照樣說「不用」。'),
-      { who: 'bobby', text: '「希爾薇姊什麼都說不用。我做的東西，妳一次都沒用過。」' },
-      { who: 'sylvie', text: '「背帶很牢。明天就用。」' },
-      N('希爾薇已經把背帶背上了。波比哭了一下，又笑了，說還可以再加一個口袋。'),
+      N('波比遞出一條箭袋背帶，上面縫了七個口袋。希爾薇照樣說「不用」。'),
+      { who: 'bobby', mood: 'sad', text: '「希爾薇姊什麼都說不用。我做的東西，妳一次都沒用過。」' },
+      { who: 'sylvie', mood: 'blush', text: '「很牢。明天就用。」' },
+      N('她已經背上了。波比哭了一下，又笑了，說還可以再加一個口袋。'),
     ],
     summary: '波比做的東西，希爾薇從來不用。這一次，希爾薇把箭袋背帶背上了，說明天就用。',
   },
   'banter:noel-selene:2': {
     lines: [
-      { who: 'noel', text: '「瑟蕾的力量明明那麼強，不用，跟沒有一樣！」' },
-      { who: 'selene', text: '「有些力量，用一次，就會少掉一點自己呢。」' },
+      { who: 'noel', mood: 'pout', text: '「瑟蕾的魔法明明那麼強，留著不用，是要醃起來嗎！」' },
+      { who: 'selene', mood: 'wistful', text: '「有些力量，用一次，就會少掉一點自己呢。」' },
       { who: 'noel', mood: 'panic', text: '「妳、妳怎麼知道──」' },
-      { who: 'selene', text: '「月亮說的。」' },
+      { who: 'selene', mood: 'smile', text: '「月亮說的。」' },
     ],
     summary: '諾艾兒不懂瑟蕾為什麼不用自己的力量。瑟蕾說有些力量用一次就會少掉一點自己，說的是她自己。',
   },
