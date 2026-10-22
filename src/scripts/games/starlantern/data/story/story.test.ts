@@ -2038,7 +2038,7 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
     const all = (c: keyof typeof STORY.meet) => join([...STORY.meet[c].before, ...STORY.meet[c].after]);
     const hero = (c: keyof typeof STORY.meet) => join([...STORY.meet[c].before, ...STORY.meet[c].after].filter((l) => l.who === 'hero'));
     expect(all('selene')).toMatch(/上弦/);
-    expect(all('selene')).toContain('今晚，也許會有人經過吧');
+    expect(all('selene')).toMatch(/今晚.?也許會有人經過/);   // story polish Task 8: the beat the finale's 「經過」 answers
     expect(hero('chizuru')).toContain('站得起來嗎？');
     expect(all('safira')).toContain('陪我跳完一整首');
     expect(all('sylvie')).toMatch(/割斷了毒藤/);
@@ -2672,5 +2672,32 @@ describe('story depth Task 7: the reveal, the keeper in town, act 3, the truths 
     expect(first.who).toBe('narrator');
     expect(first.text).toMatch(/抄/);
     expect(first.text).toMatch(/最後一道/);
+  });
+});
+
+describe('story depth Task 8: Selene and Chizuru', () => {
+  const reading = (oath: boolean): LineWhen => ({ met: [...CHARACTER_IDS], full: [], returned: [], oath });
+
+  it("Selene's fifth piece: the back that falls before the exit; after Rin's choice she owns it, before it she keeps quiet (design §7.4)", () => {
+    const five = STORY.scenes['mem:selene:5'].lines;
+    for (const oath of [false, true]) {
+      const lines = linesWhen(five, reading(oath));
+      expect(lines, `oath ${oath}`).toHaveLength(4);
+      expect(() => pinBeat('mem:selene:5', { oath }, /往上走/), `oath ${oath}`).not.toThrow();
+      expect(() => pinBeat('mem:selene:5', { oath }, /出口前倒下/), `oath ${oath}`).not.toThrow();
+      expect(() => pinBeat('mem:selene:5', { oath }, /短刃/), `oath ${oath}`).not.toThrow();
+      expect(() => pinBeat('mem:selene:5', { oath }, /我想看見/), `oath ${oath}`).not.toThrow();
+      expect(lines.some((l) => /我不怕了/.test(l.text)), `oath ${oath}`).toBe(false);   // she is still afraid: only 「我想看見」
+      expect(lines[0].who).toBe('narrator');
+      expect(lines[1].who).toBe('narrator');
+    }
+    expect(() => pinBeat('mem:selene:5', { oath: true }, /早就看見/)).not.toThrow();
+    expect(linesWhen(five, reading(true)).find((l) => /早就看見/.test(l.text))!.who).toBe('selene');
+    expect(() => pinBeat('mem:selene:5', { oath: false }, /什麼也沒有說/)).not.toThrow();
+    expect(linesWhen(five, reading(false)).find((l) => /什麼也沒有說/.test(l.text))!.who).toBe('narrator');
+    // before her choice nobody names the knife as Rin's: the narration only shows where Rin stands
+    for (const l of linesWhen(five, reading(false))) if (l.who === 'selene') expect(l.text).not.toMatch(/凜|刀/);
+    // the confession 「是我說的，不是月亮」 belongs to rin-selene:2, not here
+    for (const oath of [false, true]) for (const l of linesWhen(five, reading(oath))) expect(l.text).not.toMatch(/不是月亮/);
   });
 });

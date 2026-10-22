@@ -577,17 +577,17 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('滿月的夜。銀盆裡的水自己亮了起來，映出一道從地底往上走的背影。'),
       N('很多人在喊同一個名字。那個從深處走出來的人走過的地方，一盞很大的燈重新亮了。'),
-      { who: 'selene', mood: 'foresee', text: '「那是滿月給我看的結局。……很亮，也很暖呢。」' },
-      { who: 'selene', mood: 'wistful', text: '「那個人的臉，我沒有看清楚。也許，是我不敢看吧。」' },
+      { who: 'selene', mood: 'foresee', text: '「那是滿月給我看的結局，又亮又暖。」' },
+      { who: 'selene', mood: 'wistful', text: '「那個人的臉，我沒有看清楚。也許是我不敢看吧。」' },
     ],
     summary: '滿月的夜，瑟蕾在水盆裡看見一個光明的結局：從深處走出來的人被很多人記住，燈重新亮了。',
   },
   'mem:selene:3': {
     lines: [
       N('迷宮的入口，暮霧從門縫裡吐出來。她捧著銀盆，在霧前跪下。'),
-      N('她把盆裡的水倒進霧裡：「看見的，我不要了。未來，就讓它自己走過來吧。」'),
+      N('她把盆裡的水倒進霧裡：「看見的，我不要了。就讓未來自己走過來吧。」'),
       { who: 'hero', text: '「是妳自己交出去的？」' },
-      { who: 'selene', mood: 'sad', text: '「……兩種結局，我都看見了。我怕一開口，就替所有人選了其中一個。」' },
+      { who: 'selene', mood: 'sad', text: '「兩種結局，我都看見了……我怕一開口，就替所有人選了其中一個。」' },
     ],
     summary: '瑟蕾想起，她看見的結局不是被迷宮奪走的，是她自己交出去的。她怕自己的話替所有人選了未來。',
   },
@@ -596,22 +596,28 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('又是滿月。這一次，銀盆裡那道背影的旁邊，站著好幾個人。'),
       N('他們一起提著燈往下走，又一起走了回來。她只看見手和衣角，看不見臉。'),
       { who: 'selene', mood: 'foresee', text: '「那個人，不是一個人走到燈前的。」' },
-      { who: 'selene', mood: 'wistful', text: '「……洛恩先生。我差一點，就看清楚他們的臉了。」' },
+      { who: 'selene', mood: 'wistful', text: '「洛恩先生，我差一點……就看清楚他們的臉了。」' },
     ],
     summary: '又一個滿月的結局：從深處走出來的人身邊，站著好幾個一起提燈的人。他們的臉，瑟蕾還沒看清。',
   },
+  // Story depth design §7.4 (fix one): the new moon is the back that falls before the exit with a short blade in it, the
+  // same picture as Rin's seventh piece. Her piece can come before or after Rin's choice: after it she owns what she saw;
+  // before it she only looks at where Rin stands, and says nothing. She is still afraid, so no 「我不怕了」; her
+  // 「是我說的，不是月亮」 waits for banter:rin-selene:2 (I-60, I-170).
   'mem:selene:5': {
     lines: [
-      N('新月的夜，銀盆裡沒有月亮。燈熄了，暮霧一層一層漫上來，吞掉了每一個人。'),
-      N('她曾把它和滿月的結局，一起倒進了霧裡。如今，滿月裡那些人的臉，一張一張清楚了。'),
-      { who: 'selene', mood: 'surprised', text: '「站在燈旁邊的那群人……是你們。」' },
-      { who: 'selene', mood: 'smile', text: '「洛恩。我不怕了。……我想看見，我們走到那一天。」' },
+      N('新月的夜，銀盆裡沒有月亮。那道往上走的背影，在出口前倒下了，背後插著一把短刃。'),
+      N('燈等不到人，熄了。暮霧漫上來，吞掉了每一個人。滿月裡那些人的臉，這時才一張一張清楚了。'),
+      { who: 'selene', mood: 'sad', text: '「凜，插在背後的那把刀……我早就看見了。是我一直沒有說出口。」', if: { oath: true } },
+      { who: 'selene', mood: 'smile', text: '「站在燈旁邊的那群人，是你們。洛恩，我想看見我們走到那一天。」', if: { oath: true } },
+      { who: 'narrator', text: '瑟蕾抬起頭，看著站在洛恩身後一步的凜，看了很久，什麼也沒有說。', if: { oath: false } },
+      { who: 'selene', mood: 'wistful', text: '「站在燈旁邊的那群人……是你們。洛恩，我想看見我們走到那一天。」', if: { oath: false } },
     ],
-    summary: '新月的結局是燈熄、所有人被暮霧吞沒。瑟蕾也認出了光明結局裡的那群人，就是這支隊伍。她說：我想看見。',
+    summary: '新月的結局：往上走的背影在出口前倒下，背後插著短刃，燈熄了。瑟蕾認出滿月裡的那群人就是這支隊伍，說她想看見。',
   },
   'chat:selene:1': {
     lines: [
-      N('深夜，月影旅館的屋頂。瑟蕾抱著膝蓋，看月亮看得很專心。'),
+      N('深夜的月影旅館屋頂。瑟蕾抱著膝蓋，看月亮看得很專心。'),
       { who: 'hero', text: '「看得見明天嗎？」' },
       { who: 'selene', mood: 'foresee', text: '「一點點呢。明天的早餐是──不行。話一說出口，就會自己長出腳來。所以，我只說月亮的事。」' },
     ],
@@ -620,9 +626,9 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'chat:selene:2': {
     lines: [
       // Her last piece can come before this chat (one chat per return): after it she calls him 「洛恩」 (I-22, I-58).
-      { who: 'selene', mood: 'foresee', text: '「洛恩先生。今晚的月亮很好說話呢。替您讀一件未來的事吧，什麼都可以──早餐除外。」', if: { notFull: 'selene' } },
-      { who: 'selene', mood: 'foresee', text: '「洛恩。今晚的月亮很好說話呢。替你讀一件未來的事吧，什麼都可以──早餐除外。」', if: { full: 'selene' } },
-      { who: 'hero', text: '「明天，大家有沒有都回來。」' },
+      { who: 'selene', mood: 'foresee', text: '「洛恩先生，今晚的月亮很好說話。替您讀一件未來的事吧，什麼都可以──早餐除外。」', if: { notFull: 'selene' } },
+      { who: 'selene', mood: 'foresee', text: '「洛恩，今晚的月亮很好說話。替你讀一件未來的事吧，什麼都可以──早餐除外。」', if: { full: 'selene' } },
+      { who: 'hero', text: '「明天大家有沒有都回來。」' },
       { who: 'selene', mood: 'smile', text: '「那一件，不用讀月亮也知道呢。您每一次，都把大家帶回來了。」', if: { notFull: 'selene' } },
       { who: 'selene', mood: 'smile', text: '「那一件，不用讀月亮也知道呢。你每一次，都把大家帶回來了。」', if: { full: 'selene' } },
     ],
@@ -635,7 +641,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('山腰的神社，石階兩旁積著雪。神主替她繫好袖帶，把長槍交到她手上。'),
       N('「去封住迷宮的裂口吧。」神主說，「春祭之前，回來。」'),
       { who: 'chizuru', mood: 'solemn', text: '「是。……不過是幾日前的事，記得這般清楚。」' },
-      { who: 'chizuru', mood: 'smile', text: '「洛恩大人，春祭時請務必來看。神社的石階，有九十九級呢。」' },
+      { who: 'chizuru', mood: 'smile', text: '「洛恩大人，春祭時請務必來看。神社的石階有九十九級，請先備好腳力。」' },
     ],
     summary: '千鶴想起神主送她出發：去封住迷宮的裂口，春祭之前回來。她以為那只是幾天前的事。',
   },
@@ -652,17 +658,17 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('從冰裡看出去，世界像隔著一層水。有人提著燈從冰前走過，又有人走過。'),
       N('起初是草鞋與皮甲，後來是她沒見過的長靴與鐵扣。走過的人，衣裳換了好幾回樣式。'),
-      { who: 'chizuru', mood: 'bewildered', text: '「……幾日之間，換不了這麼多回衣裳。」' },
-      { who: 'chizuru', mood: 'sad', text: '「洛恩大人。我在冰裡，究竟待了多久？」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「幾日之間，換不了這麼多回衣裳。」' },
+      { who: 'chizuru', mood: 'sad', text: '「洛恩大人，我在冰裡究竟待了多久？」' },
     ],
     summary: '千鶴想起冰外走過的冒險者，衣裳換了好幾回樣式。她在冰裡待的，不只幾天。',
   },
   'mem:chizuru:4': {
     lines: [
-      N('出發的前一夜。神社的院子裡沒有別人，只有神主在掃石階上的雪，一下，又一下。'),
+      N('出發的前一夜。神社的院子裡沒有別人，只有神主在掃石階上的雪，一下又一下。'),
       N('「參拜的人，一年比一年少了。」神主說，「我之後，這裡就沒有人了。」'),
       { who: 'chizuru', mood: 'sad', text: '「神主大人那時，已經很老了。那是幾十年前的事。」' },
-      { who: 'chizuru', mood: 'sad', text: '「……神社，已經不在了吧。」' },
+      { who: 'chizuru', mood: 'sad', text: '「神社……已經不在了吧。」' },
     ],
     summary: '神主是神社最後的守護者。千鶴明白，自己在冰裡待了幾十年，神社早就不在了。',
   },
@@ -671,7 +677,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('出發的清晨。神主解下拜殿前的鈴，繫在她的槍穗上。'),
       N('「帶著吧。」神主說，「回不來也無妨。在妳守著的地方掛上它，那裡就是神社。」'),
       { who: 'chizuru', mood: 'solemn', text: '「神主大人，早就知道我可能回不去了。」' },
-      { who: 'chizuru', mood: 'smile', text: '「洛恩大人，回城之後，我想在鎮邊蓋一座小祠。為了此處的人，掛上這枚鈴。」' },
+      { who: 'chizuru', mood: 'smile', text: '「洛恩大人，回城之後，我想在鎮邊蓋一座小祠，為此處的人掛上這枚鈴。」' },
     ],
     summary: '槍穗上的鈴，是神主託付給千鶴的。她決定在露米亞的鎮邊蓋一座小祠，為了現在的人。',
   },
@@ -1242,7 +1248,7 @@ const HOME: Record<HomeOwner, Written> = {
   chizuru: {
     lines: [
       N('幾天後的清晨，鎮邊。一座小小的祠立在路旁，屋簷下掛著那枚鈴。'),
-      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人。祠雖小，鈴一響，此處便是神社了。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，祠雖小，鈴一響，此處便是神社了。」' },
       N('賣菜的老婆婆路過，合了合掌，又在祠前放了一根白蘿蔔。風一吹，鈴響了一聲。'),
       { who: 'chizuru', mood: 'smile', text: '「第一份供品，甚好。春祭時，請務必來看。……這一回，我會等到春祭。」' },
     ],
@@ -1690,7 +1696,7 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   selene: [
     '瑟蕾。在本道的水晶洞窟遇見她，被怪物圍著，還在讀月相。她叫我洛恩先生，話說到一半常收回去，說那是月亮說的。',
     '她是讀月亮的占星師，怕說出口的預言會自己成真。滿月的夜裡，她看過燈重新亮起。那些結局，是她自己交給迷宮的。',
-    '新月的夜裡，她看過燈熄滅。她說，滿月裡站在燈旁邊的，是我們。現在她叫我洛恩，說她想看見。',
+    '新月的夜裡，她看過一道背影在出口前倒下，燈也熄了。她說滿月裡站在燈旁邊的，就是我們。現在她叫我洛恩，說她想看見。',
   ],
   chizuru: [
     '千鶴。在霜凍之地的冰裡找到她，出冰的第一件事，是向倒下的怪物行禮。她說只睡了幾天，叫我洛恩大人。',
@@ -1747,13 +1753,13 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
     before: [
       N(FOUND_LINE),
       N('水晶洞窟的石壁上，映著一輪天上沒有的月亮。她跪在那片月光裡，被怪物圍著，卻抬頭讀著月相。'),
-      { who: 'selene', mood: 'foresee', text: '「上弦的月呢。今晚，也許會有人經過吧。」' },
+      { who: 'selene', mood: 'foresee', text: '「上弦的月。今晚也許會有人經過吧。」' },
       { who: 'rin', text: '「被圍住了，還在看月亮。心很大。」' },   // a meeting plays unfiltered and may come after her oath: no guarded face
     ],
     after: [
       { who: 'selene', mood: 'smile', text: '「謝謝各位。我是瑟蕾，讀月亮的人。剛才那句『會有人經過』，是月亮說的，不是我說的呢。」' },
       { who: 'hero', text: '「我是洛恩。那月亮有沒有說，妳怎麼一個人在這裡？」' },
-      { who: 'selene', mood: 'wistful', text: '「月亮沒說呢。我好像，把很重要的東西忘在這座迷宮裡了。……洛恩先生，請讓我同行吧。」' },
+      { who: 'selene', mood: 'wistful', text: '「月亮沒說。我好像把很重要的東西，忘在這座迷宮裡了。……洛恩先生，請讓我同行吧。」' },
       N('凜比洛恩先開了口：「可以。」瑟蕾眨了眨眼，輕輕笑出聲來。'),   // V1 fix 1: her verdict, and Selene's answer to it
     ],
   },
@@ -1761,7 +1767,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
     before: [
       N(FOUND_LINE),
       N('一大塊冰裡凍著一位巫女，握著長槍，還保持著封印儀式的姿勢。冰面忽然裂開一道細縫。'),
-      { who: 'chizuru', mood: 'solemn', text: '「封印──尚未，完成。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「封印……尚未完成。」' },
       { who: 'rin', text: '「冰在說話。」' },   // V2: her deadpan; a meeting plays unfiltered, so no guarded face
     ],
     after: [

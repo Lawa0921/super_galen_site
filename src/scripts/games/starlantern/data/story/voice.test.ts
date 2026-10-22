@@ -19,6 +19,8 @@ const POLISHED: string[] = [
   'scenes.mem:rin:', 'scenes.chat:rin:2.', 'scenes.chat:rin:3.', 'scenes.chat:rin:4.', 'scenes.rin-reveal.', 'scenes.bellkeeper-arrives.', 'rinLines.', 'rinOath.', 'people.rin.',
   // Task 7: Lorne's memories and the acts
   ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `scenes.mem:hero:${n}.`), 'scenes.chat:hero:2.', 'scenes.chat:hero:3.', 'scenes.chat:hero:4.', 'scenes.act2.', 'scenes.act3.', 'scenes.act4.', 'people.hero.', 'truths.',
+  // Task 8: Selene and Chizuru (story depth plan Task 8)
+  'meet.selene.', 'meet.chizuru.', 'scenes.mem:selene:', 'scenes.mem:chizuru:', 'scenes.chat:selene:', 'scenes.chat:chizuru:', 'scenes.home:chizuru.', 'people.selene.', 'people.chizuru.',
 ];
 
 type Scope = readonly string[];
