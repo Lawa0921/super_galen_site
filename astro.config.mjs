@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel';
+import { includeInSitemap } from './src/utils/sitemapFilter';
 
 // https://astro.build/config
 export default defineConfig({
@@ -40,7 +41,7 @@ export default defineConfig({
   },
 
   // 整合
-  integrations: [sitemap()],
+  integrations: [sitemap({ filter: includeInSitemap })],
 
   // 建構輸出
   build: {
