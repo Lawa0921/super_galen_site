@@ -544,7 +544,7 @@ export class WorkshopScene implements Scene {
       if (lastingBarrierLoss(fromMember(p?.after ?? m, 0)) > 0) out.push(el('p', { class: 'slx-ws-warn', text: W.barrierClash }));
       // A rune already in the slot comes out with this pick: it goes back to the bag (final review).
       const inSlot = this.held();
-      if (p?.choice && inSlot) out.push(el('p', { class: 'slx-ws-swapout', text: W.swapOut(label(inSlot)) }));
+      if (p?.choice && p.choice.why === null && inSlot) out.push(el('p', { class: 'slx-ws-swapout', text: W.swapOut(label(inSlot)) }));
       if (p?.choice?.giver) out.push(el('p', { class: 'slx-ws-giver', text: p.choice.giver }));
       const own = p?.choice?.owned;
       if (own) out.push(el('p', { class: 'slx-ws-owned', text: W.owned(own.all, own.bag, own.socketed) }));

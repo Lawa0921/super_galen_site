@@ -248,9 +248,10 @@ const gear: StatusTab = {
  * A rune's line on the skills page (plan 8g final review): what it does to this skill in the card's final numbers, the
  * card with it against the card without it; its own sentence when the card shows no change.
  */
-function runeLineOf(m: Member, skill: string, ref: RuneRef): string {
+function runeLineOf(m: Member, skill: string, slot: number, ref: RuneRef): string {
   const cells = m.sockets?.[skill] ?? [];
-  const without: Member = { ...m, sockets: { ...m.sockets, [skill]: cells.map((c) => (c && c.id === ref.id && c.tier === ref.tier ? null : c)) } };
+  // That one slot emptied, the others as they are.
+  const without: Member = { ...m, sockets: { ...m.sockets, [skill]: cells.map((c, i) => (i === slot ? null : c)) } };
   const now = cardOf(m, skill), before = cardOf(without, skill);
   const W = T.ui2.workshop;
   const c = now && before ? compareCards(before, now) : undefined;
@@ -307,7 +308,7 @@ const skills: StatusTab = {
       // A skill that takes runes: its slot dots after the name, a line for each rune in it (greyed with its reason when it
       // does nothing), and a click opens the workshop on it (plan 8g Task 5).
       const takes = runed.includes(sk);
-      const runes = takes ? slotStates(m, sk).flatMap((x) => (x.ref ? [x] : [])) : [];
+      const runes = takes ? slotStates(m, sk).flatMap((x, slot) => (x.ref ? [{ ...x, slot }] : [])) : [];
       const node = el('div', { class: takes ? 'slx-skill slx-skill-runed' : 'slx-skill', attrs: { 'data-skill': sk } }, [
         ...skillIco(ctx, sk),
         el('div', { class: 'slx-skill-head' }, [
@@ -324,7 +325,7 @@ const skills: StatusTab = {
         el('p', { class: 'slx-desc', text: s.desc }),
         ...changed.map((p) => el('p', { class: 'slx-skill-power', text: p.text })),
         ...runes.map((x) => el('p', { class: x.state === 'off' ? 'slx-skill-rune slx-line-off' : 'slx-skill-rune' }, [
-          runeLineOf(m, sk, x.ref!),
+          runeLineOf(m, sk, x.slot, x.ref!),
           ...(x.state === 'off' && x.why ? [el('span', { class: 'slx-line-note', text: T.ui2.workshop.off(x.why) })] : []),
         ])),
       ]);

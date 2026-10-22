@@ -280,7 +280,7 @@ export function runeChoices(s: GameState, at: SocketAt, givers?: readonly Charac
  * final number (plan 8g final review).
  */
 export function withoutPowerClause(desc: string): string {
-  return desc.replace(W.powerClause, '').replace(/。，/g, '。').replace(/^，/, '');
+  return desc.replace(W.powerClause, '').replace(/。，/g, '。').replace(/。。/g, '。').replace(/^，/, '');
 }
 
 /**

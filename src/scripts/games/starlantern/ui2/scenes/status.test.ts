@@ -1829,6 +1829,19 @@ describe('the skills page and the workshop (plan 8g Task 5)', () => {
     expect(liz.go).not.toHaveBeenCalled();
   });
 
+  it('a rune line takes out its own slot alone', () => {
+    // Two of one rune (a hand-made save: the same rune twice, so neither works). The first line compares the card with
+    // that one slot emptied: the other 擴散 then works, so the line says what this slot costs, 全體 back to 單體. Emptying
+    // every 擴散 would show no change at all.
+    const w = open(noel({ 'fire-star': 1 }, { 'fire-star': [R('spread'), R('spread')] }), 'tab:skills:noel');
+    const m0 = w.game.state.party.roster.noel;
+    const c = compareCards(cardOf({ ...m0, sockets: { 'fire-star': [null, R('spread')] } }, 'fire-star')!, cardOf(m0, 'fire-star')!);
+    const parts = [...c.lines.filter((l) => l.changed).map((l) => T.ui2.workshop.change(l.label, l.before, l.after)), ...c.added.map(T.ui2.workshop.added)];
+    expect(parts.length).toBeGreaterThan(0);
+    const first = w.skill('fire-star')!.querySelector('.slx-skill-rune')!.textContent!;
+    expect(first.startsWith(T.ui2.status.runeLine(label(R('spread')), parts))).toBe(true);
+  });
+
   it('back from the workshop lands on the same member\'s skills', () => {
     const w = open((g) => { g.state.party.recruited.push('sylvie'); }, 'tab:skills:sylvie', 'workshop');
     expect(w.root.querySelector('.slx-status-name')!.textContent).toContain(CHARACTERS.sylvie.name);

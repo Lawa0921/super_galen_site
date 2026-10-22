@@ -258,6 +258,9 @@ describe('the skill card (plan 8g Task 3)', () => {
       [`回復一名隊友 HP。TP −2，威力 ${T.mult(90)}。`, '回復一名隊友 HP。TP −2。'],
       [`請靜心。也解除睡眠；回復威力 ${T.mult(130)}。`, '請靜心。也解除睡眠。'],
       ['火屬性魔法攻擊', '火屬性魔法攻擊'],
+      // A power clause that is a sentence of its own leaves one 「。」 (群照＋集中, 聚焰＋擴散).
+      [`回復一名隊友 HP。威力 ${T.mult(65)}。`, '回復一名隊友 HP。'],
+      [`火屬性全體魔法攻擊。威力 ${T.mult(190)}。`, '火屬性全體魔法攻擊。'],
       ['解放結界的一突：結界每剩 1 回合，威力多 10%。', '解放結界的一突：結界每剩 1 回合，威力多 10%。'],
     ];
     for (const [desc, want] of cases) expect(withoutPowerClause(desc), desc).toBe(want);

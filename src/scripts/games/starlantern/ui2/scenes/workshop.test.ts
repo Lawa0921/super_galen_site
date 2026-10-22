@@ -156,6 +156,19 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     expect(w.focus()).toBe('runes');
   });
 
+  it('a pick that will be refused takes nothing out, so it says no 換下', () => {
+    const w = setup((g) => {
+      noel(5, { 'focus@magic': 1, 'spread@magic': 1 })(g);
+      g.state.party.roster.noel.sockets = { 'fire-star': [R('multistrike')] };
+    }, 'noel:fire-star');
+    w.press('confirm');
+    for (let i = 0; i < 6 && w.runeCur() !== 'bag:focus@magic'; i++) w.press('down');
+    expect(w.runeCur()).toBe('bag:focus@magic');
+    expect(w.root.querySelector('.slx-ws-card')!.textContent).not.toContain(W.swapOut(label(R('multistrike'))));
+    for (let i = 0; i < 6 && w.runeCur() !== 'bag:spread@magic'; i++) w.press('down');
+    expect(w.root.querySelector('.slx-ws-card')!.textContent).toContain(W.swapOut(label(R('multistrike'))));
+  });
+
   it('a rune that stopped working stays, with its reason', () => {
     // 擴散 on 火焰波 while 聚焰 made it hit one foe; the variant gone, it hits them all and 擴散 no longer works.
     const w = setup((g) => {
