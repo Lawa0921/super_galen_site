@@ -175,9 +175,9 @@ describe('exec(pid, cmd)', () => {
     steps(g, 8);
     expect(g.exec('b', { op: 'place', x: 53, y: FLOOR - 1, slot: 1 })).toBe(true);
     steps(g, 8);
-    g.withActor(b, () => { g.boating = true; });
+    b.boating = true;
     expect(g.exec('b', { op: 'place', x: 54, y: FLOOR - 1, slot: 1 })).toBe(false);
-    g.withActor(b, () => { g.boating = false; });
+    b.boating = false;
     // hp = 0 不會自己判死（死亡走 applyDamage → die）：用致命傷害讓 B 真的倒下
     g.withActor(b, () => { g.hurtPlayer(99999, 0); });
     expect(b.dead).toBe(true);
