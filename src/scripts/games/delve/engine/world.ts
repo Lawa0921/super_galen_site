@@ -109,6 +109,8 @@ export class World {
   onTileChange: ((x: number, y: number) => void) | null = null;
   /** 前景 / 背景牆每改一格 +1（據點評分等快取用來判斷要不要重算） */
   rev = 0;
+  /** true（客人副本）：unloadColumn 直接丟掉、不停放，並清掉那些 chunk 的 modified / liquidModified（回來時由房主重新同步） */
+  noPark = false;
 
   // ── 欄儲存 ──────────────────────────────────────────
   /** 邊界內第一 / 最後一欄（含） */
@@ -251,13 +253,14 @@ export class World {
     }
     return col;
   }
-  /** 卸載第 cx 欄：pinned 的拒絕（回 false）；有改過的 chunk（modifiedChunks ∪ liquidModified）→ 停放 */
+  /** 卸載第 cx 欄：pinned 的拒絕（回 false）；有改過的 chunk（modifiedChunks ∪ liquidModified）→ 停放（noPark：丟掉） */
   unloadColumn(cx: number): boolean {
     if (this.isPinned(cx) || !this.isResident(cx)) return false;
     const col = this.slots[cx - this.cxLo]!;
     for (let cy = 0; cy < this.chunksY; cy++) {
       const k = this.chunkIndex(cx, cy);
-      if (this.modifiedChunks.has(k) || this.liquidModified.has(k)) this.parked.set(k, extractChunk(col, cy));
+      if (this.noPark) { this.modifiedChunks.delete(k); this.liquidModified.delete(k); }
+      else if (this.modifiedChunks.has(k) || this.liquidModified.has(k)) this.parked.set(k, extractChunk(col, cy));
       // 沒常駐的 chunk 不重畫（renderer 不烘焙卸載的欄）
       this.dirty.delete(k);
       this.liquidDirty.delete(k);

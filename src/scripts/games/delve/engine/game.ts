@@ -53,9 +53,10 @@ import {
   ascendCost, ascendGear, baseTier, gearSlot, ilvlForDepth, rerollAffix, rerollCost, rollDropItem, rollGear, rollRarity,
   salvageYield, upgradeCost, upgradeGear, weaponDamage, affixDef, pickSpeed, MAX_PLUS, STAT_CAPS, type AffixId, type Cost, type Gear, type GearTotals, type LootSource,
 } from './gear';
-import { MAX_BREATH, PlayerActor, SOLO_PID, type ActorInput, type GameMode, type Pid } from './actor';
+import { MAX_BREATH, PlayerActor, SOLO_PID, type ActorInput, type GameMode, type Pid, type RemoteMotion } from './actor';
 export type { GameMode } from './actor';
-import type { Cmd, CmdOp, CmdResults } from './commands';
+import { CMD_PENDING, type Cmd, type CmdOp, type CmdResults } from './commands';
+import { REMOTE_REACH_SLACK } from '../net/protocol';
 // 角色檔 ↔ actor（addActor / removeActor）。save/ 也 import 本檔：兩邊都只在函式內用對方，循環 import 無妨
 import { applyCharacter, encodeExplored } from '../save/serialize';
 import { characterState, type VisitSave } from '../save/worldSave';
@@ -540,6 +541,8 @@ export class DelveGame {
   localPid: Pid = SOLO_PID;
   /** 單機 / 房主 / 客人副本（可變：開房 / 關房時 NetHost 會改） */
   mode: GameMode = 'solo';
+  /** 客人副本：exec(localPid) 把指令交給它（NetGuest 送給房主）；null = 丟掉（C13） */
+  cmdSink: ((cmd: Cmd) => void) | null = null;
   /** 這一步的天氣特效中心（stepWorld 在 actor 迴圈前算一次） */
   private wxAnchor: PlayerActor | null = null;
   /** 目前在處理的 actor：下面的相容 accessor 都讀寫它（M-B1 Task 1 恆等於 local） */
@@ -817,6 +820,8 @@ export class DelveGame {
     const bounds = opts.bounds ?? defaultBounds(gen.world.width, gen.world.height);
     const source = opts.columnSource ?? (bounds === 'infinite' ? new OuterGen(this.seed, frameOf(gen.world)) : null);
     this.world = World.fromGen(gen.world, gen.layers, { bounds, source });
+    // 客人副本：卸載的欄不停放（D4：回來時由房主重新同步）
+    if (this.mode === 'replica') this.world.noPark = true;
     this.outerRegion = source instanceof OuterGen ? outerRegions(this.seed, source.profile) : null;
     // 傳送碑：出生點那顆在 spawn.x + 7 的生成地表上（中央每欄陣列：挖掘 / 蓋東西不會讓碑移動）；外圍的由外圍側寫算（有界世界沒有）
     const stoneX = gen.spawn.x + 7;
@@ -945,6 +950,8 @@ export class DelveGame {
     const ev = w.drainColumnEvents(), restored = w.drainRestoredChunks();
     if (!ev.loaded.length && !ev.unloaded.length && !restored.length) return;
     for (const cx of ev.unloaded) this.liquids.forgetColumn(cx);
+    // 客人副本不跑液體 / 結冰：載入的欄等房主同步
+    if (this.mode === 'replica') return;
     const loaded = [...new Set(ev.loaded)].filter((cx) => w.isResident(cx)).sort((a, b) => a - b);
     for (const cx of loaded) { this.seamWake(cx, cx - 1); this.seamWake(cx, cx + 1); }
     if (loaded.length) freezeColumns(w, this.liquids, dayIndexOf(this.time), loaded, (x, y) => this.tileOverlapsPlayer(x, y, true), this.minedIce);
@@ -1130,9 +1137,34 @@ export class DelveGame {
    * 網路收到的指令先過 validCmd（engine/commands.ts）。
    */
   exec<C extends Cmd>(pid: Pid, cmd: C): CmdResults[C['op']] {
+    if (this.mode === 'replica') return this.execReplica(pid, cmd);
     const a = this.actors.get(pid);
     if (!a) throw new Error(`delve: no actor ${pid}`);
     return this.withActor(a, () => this.runCmd(cmd)) as CmdResults[C['op']];
+  }
+  /**
+   * 客人副本的 exec（C13）：只收本地玩家的指令，交給 cmdSink（送房主），回傳 CMD_PENDING[op]。
+   * 技能另外在本地跑一次當移動預測（突進位移由客人權威）。其他 pid → 丟例外。
+   */
+  private execReplica<C extends Cmd>(pid: Pid, cmd: C): CmdResults[C['op']] {
+    if (pid !== this.localPid) throw new Error(`delve: replica cannot exec for ${pid}`);
+    if (cmd.op === 'skill') this.withActor(this.local, () => this.useSkillCur(cmd.skill));
+    this.cmdSink?.(cmd);
+    return CMD_PENDING[cmd.op as C['op']];
+  }
+  /** host 模式：遠端 actor 最近一筆被接受的回報位置（net/motion.ts checkMove 通過後；C11）。拷貝已知欄位 */
+  setRemoteMotion(pid: Pid, m: RemoteMotion): void {
+    const a = this.actors.get(pid);
+    if (!a) throw new Error(`delve: no actor ${pid}`);
+    a.remote = { x: m.x, y: m.y, vx: m.vx, vy: m.vy, onGround: m.onGround, boating: m.boating, climbing: m.climbing, facing: m.facing };
+  }
+  /** 客人副本：房主送來的事件直接進佇列（不補 pid、不換算經驗：經驗來自房主的 char） */
+  pushNetEvents(list: readonly DelveEvent[]): void {
+    for (const e of list) this.events.push(e);
+  }
+  /** 客人副本：套上房主送來的角色（本地 actor；不做舊角色的時裝轉換） */
+  applyNetCharacter(c: DelveCharacter): void {
+    this.withActor(this.local, () => applyCharacter(this, characterState(c, this.time), false));
   }
   /** 本地玩家的指令（= exec(localPid, cmd)）；render / input 只透過它改狀態 */
   act<C extends Cmd>(cmd: C): CmdResults[C['op']] { return this.exec(this.localPid, cmd); }
@@ -1242,6 +1274,7 @@ export class DelveGame {
   /** 一個固定步長。整段是世界段（事件公開），玩家段 / 重生 / 換算經驗各自用 withActor 切回該玩家 */
   step(dt: number = FIXED_DT): void { this.inWorld(() => this.stepWorld(dt)); }
   private stepWorld(dt: number): void {
+    if (this.mode === 'replica') { this.stepReplica(dt); return; }
     // 第一件事：各 actor 周圍的載入區（不碰任何 RNG；有界世界全部常駐 → 什麼都不做）
     this.updateLoadedArea();
     this.flushLevels();
@@ -1283,6 +1316,46 @@ export class DelveGame {
     this.updateFolk(dt);
     for (const a of alive) this.withActor(a, () => this.closeFarPanels());
   }
+  /**
+   * 客人副本的一步（C12）：串流（不停放）→ tick / time → 本地 actor 活著才跑移動預測（技能 → 物理 → 技能收尾，
+   * 不打震地衝擊波）、擊退 / 無敵倒數、探索。液體、結冰、換日副作用、怪物 / 掉落物 / 投射物 / NPC / 據點、
+   * 經驗換算都不跑（世界狀態由 NetGuest 依房主的訊息寫進來）。
+   */
+  private stepReplica(dt: number): void {
+    this.updateLoadedArea();
+    this.flushLevels();
+    this.tick++;
+    this.time += dt;
+    const day = dayIndexOf(this.time);
+    if (day !== this.lastDay) this.onNewDay(day);
+    const a = this.local;
+    if (a.dead) return;
+    this.withActor(a, () => {
+      const knocked = this.knockT > 0;
+      this.contact = liquidContact(this.world, this.player);
+      this.preMoveSkills(dt);
+      if (this.boating) this.stepBoating(dt, knocked);
+      else stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
+      this.contact = liquidContact(this.world, this.player);
+      this.postMoveSkills();
+      if (this.knockT > 0) this.knockT -= dt;
+      if (this.iframes > 0) this.iframes -= dt;
+      // 面向跟著水平速度（同 stepActor；房主照抄客人回報的 facing）
+      if (!this.attack && Math.abs(this.player.vx) > 8) this.facing = this.player.vx > 0 ? 1 : -1;
+      this.updateExploration();
+    });
+  }
+  /** host 模式的遠端 actor（cur）：套上回報的位置取代 stepPlayer / stepBoating；沒有回報 → 身體停住（C11） */
+  private applyRemoteMotion(): void {
+    const p = this.player, m = this.cur.remote;
+    if (!m) { p.vx = 0; p.vy = 0; return; }
+    p.x = m.x; p.y = m.y; p.vx = m.vx; p.vy = m.vy; p.onGround = m.onGround;
+    this.cur.boating = m.boating;
+    this.motion.climbing = m.climbing;
+    this.facing = m.facing;
+  }
+  /** host 模式、cur 不是本地玩家 = 遠端 actor（位置由客人回報） */
+  private isRemoteCur(): boolean { return this.mode === 'host' && this.cur !== this.local; }
 
   /** 玩家段（cur = 這個玩家）：移動、技能、摔落、液體、生命、探索、挖 / 打 / 釣 / 用 */
   private stepActor(dt: number): void {
@@ -1291,7 +1364,9 @@ export class DelveGame {
     this.contact = liquidContact(this.world, this.player);
     const air0 = this.motion.airUsed ?? 0, climb0 = Boolean(this.motion.climbing), mantle0 = this.motion.mantle ?? null;
     this.preMoveSkills(dt);
-    if (this.boating) this.stepBoating(dt, knocked);
+    const remote = this.isRemoteCur();
+    if (remote) this.applyRemoteMotion();
+    else if (this.boating) this.stepBoating(dt, knocked);
     else stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
     if ((this.motion.airUsed ?? 0) > air0) {
       const pl = this.player;
@@ -1333,7 +1408,8 @@ export class DelveGame {
     this.updateFishing(dt);
     if (this.foodCd > 0) this.foodCd -= dt;
     this.updateAttack(dt);
-    if (!this.attack && Math.abs(this.player.vx) > 8) this.facing = this.player.vx > 0 ? 1 : -1;
+    // 遠端 actor 的面向照抄回報（applyRemoteMotion），不由速度推
+    if (!remote && !this.attack && Math.abs(this.player.vx) > 8) this.facing = this.player.vx > 0 ? 1 : -1;
     if (this.placeCooldown > 0) this.placeCooldown -= dt;
     if (this.useHeld && this.placeCooldown <= 0 && !this.boating) {
       const { x, y } = this.aim;
@@ -1719,7 +1795,7 @@ export class DelveGame {
     const w = this.world, id = ITEMS[item].placeWall ?? 0;
     if (!w.inBounds(x, y)) return false;
     if (w.getWall(x, y) !== 0) return false; // 已有牆（按住時不洗提示）
-    if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
+    if (!this.canReach(x, y, this.placeReach())) { this.block('place', 'reach', x, y); return false; }
     const near = isSolidTile(w.getFg(x, y)) || [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => w.getWall(x + dx, y + dy) !== 0 || isSolidTile(w.getFg(x + dx, y + dy)));
     if (!near) { this.block('place', 'support', x, y); return false; }
     w.setWall(x, y, id);
@@ -1743,6 +1819,8 @@ export class DelveGame {
     if ((sup === 'wall' || sup === 'any' || sup === 'mount') && !this.placeSupported(x, y, f)) this.breakTile(x, y);
   }
 
+  /** 放置的觸及距離（格）：host 模式的遠端 actor 多給 REMOTE_REACH_SLACK（客人的位置落後半個 RTT；C14） */
+  private placeReach(): number { return this.reach() + (this.isRemoteCur() ? REMOTE_REACH_SLACK : 0); }
   /** 嘗試以快捷欄選中的方塊放在 (x,y)。 */
   tryPlace(x: number, y: number): boolean {
     const stack = this.inventory.selectedStack();
@@ -1751,13 +1829,13 @@ export class DelveGame {
     if (!stack || place === undefined) return false;
     if (!this.world.inBounds(x, y)) return false;
     if (place === T.ROPE) {
-      if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
+      if (!this.canReach(x, y, this.placeReach())) { this.block('place', 'reach', x, y); return false; }
       return this.placeRope(x, y, stack.item);
     }
     const cur = this.world.getFg(x, y);
     const replace = cur !== T.AIR && cur !== place && tileDef(cur).replaceable;
     if (cur !== T.AIR && !replace) { this.block('place', 'occupied', x, y); return false; }
-    if (!this.canReach(x, y)) { this.block('place', 'reach', x, y); return false; }
+    if (!this.canReach(x, y, this.placeReach())) { this.block('place', 'reach', x, y); return false; }
     if (place === T.DOOR_CLOSED) return this.placeDoor(x, y, stack.item);
     if (PAIR_OF_LEFT.has(place)) return this.placePair(x, y, stack.item, place);
     if (place === T.HEARTH && this.settle.canFound(x, y) !== 'ok') { this.block('place', 'claim', x, y); return false; }
@@ -2264,6 +2342,8 @@ export class DelveGame {
   private onNewDay(day: number): void { this.inWorld(() => this.newDay(day)); }
   private newDay(day: number): void {
     this.lastDay = day;
+    // 客人副本：換日的副作用（嚮導、結冰…）都在房主那邊
+    if (this.mode === 'replica') return;
     // 據點的嚮導：每天自動在地圖上標一個新地點
     const guide = this.settle.npc('guide');
     if (guide && day > this.perkDays.guide) {
@@ -2903,6 +2983,9 @@ export class DelveGame {
     p.vy = -240; p.onGround = false;
     this.motion.climbing = false; this.motion.jumpTimer = 0; this.motion.mantle = null;
     this.knockT = 0.18;
+    // 連線：房主 fanout 比對 knockSeq，把擊退送給客人（C11；純加法、不碰 RNG）
+    this.cur.knockSeq++;
+    this.cur.knockV = { vx: p.vx, vy: p.vy };
     return true;
   }
   private applyDamage(amount: number, fall: boolean, cause?: 'lava'): void {
@@ -4535,6 +4618,8 @@ export class DelveGame {
   }
   /** 把還沒換算過的事件換成經驗（step 開頭、drainEvents 時；新推的 xp / levelup 事件不會再被換算） */
   private flushLevels(): void {
+    // 客人副本：經驗來自房主的 char，佇列裡的事件（房主送來的）都不換算
+    if (this.mode === 'replica') { this.lvScan = this.events.length; return; }
     const ev = this.events;
     let ctx: XpCtx | null = null;
     for (; this.lvScan < ev.length; this.lvScan++) {
@@ -4614,8 +4699,8 @@ export class DelveGame {
       this.knockT = 0;
       this.motion.climbing = false; this.motion.mantle = null; this.motion.jumpTimer = 0;
     } else if (a === 'slam') {
-      if (p.onGround) this.slamShock(1);
-      else {
+      // 客人副本的本地預測不打衝擊波（房主打）
+      if (p.onGround) { if (this.mode !== 'replica') this.slamShock(1); } else {
         this.slamming = true; this.slamY = p.y;
         // 急墜前已經掉了多高（px）：落地時照算摔落傷害，只有急墜這一段免傷
         this.slamPre = this.fallPeak === null ? 0 : Math.max(0, p.y - this.fallPeak);
@@ -4652,6 +4737,8 @@ export class DelveGame {
     this.fallPeak = this.slamPre > 0 ? p.y - this.slamPre : null;
     if (p.onGround) {
       this.slamming = false;
+      // 客人副本：衝擊波由房主打（只預測移動）
+      if (this.mode === 'replica') return;
       this.slamShock(1 + Math.min(SLAM_DIVE_BONUS, Math.max(0, (p.y - this.slamY) / TILE_SIZE) / 20));
     } else if (this.motion.climbing || this.contact.frac > 0) { this.slamming = false; this.fallPeak = null; }
   }
@@ -4758,6 +4845,9 @@ export class DelveGame {
     this.motion.mantle = null;
     this.fallPeak = null;
     this.leaveBoat();
+    // 連線：房主 fanout 比對 teleSeq，送 teleport 給客人；舊的回報位置作廢（不然下一步又被拉回去）。純加法、不碰 RNG
+    this.cur.teleSeq++;
+    this.cur.remote = null;
   }
   /** 立即挖掉一格（不檢查距離 / 等級），掉落物照常入背包。 */
   mineInstant(x: number, y: number): boolean { return this.breakTile(x, y, true); }

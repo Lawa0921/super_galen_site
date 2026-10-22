@@ -40,6 +40,9 @@ export interface ActorInput {
   selected: number;
 }
 
+/** 客人回報的移動（房主 setRemoteMotion；C11）：身體左上角 px、速度 px/s、著地 / 坐船 / 抓繩、面向 */
+export interface RemoteMotion { x: number; y: number; vx: number; vy: number; onGround: boolean; boating: boolean; climbing: boolean; facing: 1 | -1 }
+
 /** 角色檔身分（addActor 帶進來；removeActor 拍角色快照時沿用） */
 export interface ActorIdentity { id: string; nick: string; createdAt: number; rev: number }
 
@@ -205,4 +208,13 @@ export class PlayerActor {
   orePulse: { t: number; max: number; x: number; y: number; ores: { x: number; y: number; tile: number }[] } | null = null;
   /** 製圖師上次替這個玩家打聽到的地點（UI 顯示；付錢的人自己的地圖標記 / 迷霧，所以跟著 actor） */
   lastReveal: { name: string; x: number; y: number } | null = null;
+  // ── 連線（C11；都不存檔、不碰 RNG）──
+  /** host 模式的遠端 actor：最近一筆被接受的回報位置；null = 沒有（身體停住） */
+  remote: RemoteMotion | null = null;
+  /** teleport() 每次 +1（房主 fanout 比對，送 teleport 給客人） */
+  teleSeq = 0;
+  /** 擊退每次 +1（房主 fanout 比對，送 knock 給客人） */
+  knockSeq = 0;
+  /** 最近一次擊退的速度（px/s） */
+  knockV = { vx: 0, vy: 0 };
 }
