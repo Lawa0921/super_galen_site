@@ -138,7 +138,7 @@ export class RoomHost {
       if (!o || this.seen.has(o.id)) continue;
       this.seen.add(o.id);
       try { await this.api.put(room, offerSlot(i), ''); } catch { /* 靠 seen 擋重複 */ }
-      if (gen !== this.passGen || this.roomCode !== room) return;
+      if (this.roomCode !== room) return;   // 已標記 seen 並清槽的客人一定要接；只有 close 才放棄
       void this.handleGuest(room, i, o.id, o.v, nowMs);
     }
   }

@@ -213,11 +213,9 @@ describe('rtcSignal', () => {
     expect(api.store.get(`${room}:guest-0-offer`)).toBe('');
     const b = joinRoom(api, makePeer, room, clock());   // A 還沒讀 ack
     await settle(2);
-    open();                                       // A 繼續輪詢，讀到自己的 ack
-    const linkA = await a;
-    await settle(3);
-    host.poll(HOST_POLL_MS); await settle();
-    const linkB = await b;
+    host.poll(HOST_POLL_MS); await settle();      // 房主在 A 的 ack 還沒被讀之前就處理 B
+    open();                                       // 這時 A 才繼續輪詢
+    const [linkA, linkB] = await Promise.all([a, b]);
     await settle();
     expect(links).toHaveLength(2);
     const got: unknown[][] = [[], []];
