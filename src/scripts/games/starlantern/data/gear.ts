@@ -138,7 +138,7 @@ const SPECIAL_LIST: SpecialDef[] = [
   legendary(['blaze-heart-sword', '灼心之劍', 'weapon', 'blaze', '劍心仍在燃燒，持劍者卻不再被火舌反噬。']),
   unique(['blaze-ember-ring', '餘燼指環', 'ring', 'blaze', '火焰熄滅之後，只剩餘燼還記得溫度。'], ['fireDmg', 'fireRes', 'atk']),
   unique(['frost-winter-staff', '永冬權杖', 'weapon', 'frost', '權杖所指之處，季節停在最冷的那一天。'], ['mag', 'iceDmg', 'int']),
-  legendary(['frost-bloom-neck', '霜華頸鍊', 'neck', 'frost', '一朵冰花凝在鍊墜上。它綻開的那一刻，整片霜凍之地都安靜了下來。']),
+  legendary(['frost-bloom-neck', '霜華頸鍊', 'neck', 'frost', '一朵冰花凝在鍊墜上。冰花綻開的那一刻，整片霜凍之地都安靜了下來。']),
   legendary(['storm-thunder-bow', '疾雷之弓', 'weapon', 'storm', '弦響之前，雷聲已先一步落地。']),
   unique(['storm-swift-boots', '迅雷之靴', 'feet', 'storm', '穿上它的人，總是比雷聲先到。'], ['spd', 'agi', 'evasion']),
   unique(['mire-miasma-mask', '瘴氣面具', 'head', 'mire', '面具內側浸滿沼氣，戴久了連毒也學會了客氣。'], ['poisonRes', 'hp', 'armor']),

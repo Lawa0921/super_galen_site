@@ -3498,6 +3498,95 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test('the depth scenes read inside the box, desktop and phone (story depth)', async ({ page }) => {
+    test.setTimeout(300_000);
+    /** With SL_SHOTS=<dir> each scene leaves its beat there as <scene>-<width>.png; otherwise this is a no-op. */
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    // Instant text, so each line is whole when it is measured (written before setup's own default, which only fills a gap).
+    await page.addInitScript(() => {
+      if (localStorage.getItem('starlantern-settings') === null) localStorage.setItem('starlantern-settings', JSON.stringify({ volume: 0, textSpeed: 'instant', vibrate: false, story: 'none' }));
+    });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const H = T.ui2.handbook;
+    const banter = (a: string, b: string, n: number) => `banter:${a}-${b}:${n}`;
+    /** The beat each scene is shot on (story depth Task 20): the line it must reach, and the file it leaves. */
+    const BEATS: [string, RegExp][] = [
+      ['rin-confess', /欠我們一句實話/],
+      ['hero-alone', /得先過我這裡/],
+      [banter('rin', 'scarlet', 2), /第七個晚上/],
+      [banter('noel', 'selene', 2), /少掉一點自己/],
+      ['finale-cost', /那十段記憶/],
+      ['finale', /一張一張淡了/],
+      ['epilogue', /第一頁/],
+    ];
+    for (const [width, height] of [[1280, 720], [390, 844]] as const) {
+      await page.setViewportSize({ width, height });
+      const w = await setup(page, 7);
+      await page.evaluate(() => {
+        const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+        const all = ['hero', 'rin', 'selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet'];
+        s.party.recruited = [...all];
+        for (const id of all) s.party.roster[id].memories = id === 'scarlet' ? 5 : 2;
+        s.party.roster.hero.memories = 9;   // the confession at the dinner (her depth-30 reading waits for his tenth)
+        s.party.roster.rin.oath = true;
+        s.story.confession = 'dinner';
+        s.story.finaleCleared = true;
+        s.story.seen = ['prologue', 'prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'banter:rin-scarlet:2', 'banter:noel-selene:2', 'finale', 'epilogue'];
+        s.story.fresh = [];
+        s.story.queue = [];
+      });
+      await page.locator('.slx-town [data-id=handbook]').click();
+      await expect(page.locator('.slx-handbook')).toBeVisible();
+      const hbTab = (label: string) => page.locator('.slx-tabs .slx-tab').filter({ hasText: label });
+      const pickRow = async (label: string) => {
+        for (let i = 0; i < 40; i++) {
+          const cur = (await page.locator('.slx-hb-list [aria-selected=true] .slx-label').first().textContent()) ?? '';
+          if (cur === label) { await w.key('Enter'); return; }
+          await w.key('ArrowDown');
+        }
+        throw new Error(`no handbook row ${label}`);
+      };
+      const reached = new Set<string>();
+      /** Turns every page of the replay; each line, once still, must sit inside the box, its name plate too. */
+      const readThrough = async () => {
+        await expect(page.locator('.slx-handbook.slx-hb-playing')).toBeVisible();
+        for (let i = 0; i < 80 && (await page.locator('.slx-handbook.slx-hb-playing').count()) > 0; i++) {
+          await page.waitForTimeout(120);
+          const fit = await page.evaluate(() => {
+            const t = document.querySelector<HTMLElement>('.slx-handbook .slx-talk:not([hidden]) .slx-text');
+            const n = document.querySelector<HTMLElement>('.slx-handbook .slx-talk:not([hidden]) .slx-name:not([hidden])');
+            return { line: t?.textContent ?? '', text: !t || t.scrollHeight <= t.clientHeight + 1, name: !n || n.scrollWidth <= n.clientWidth + 1 };
+          });
+          expect(fit.text, `${width}: the line fits its box: ${fit.line}`).toBe(true);
+          expect(fit.name, `${width}: the name plate fits: ${fit.line}`).toBe(true);
+          for (const [scene, re] of BEATS) {
+            if (reached.has(scene) || !re.test(fit.line)) continue;
+            reached.add(scene);
+            if (shots) await page.screenshot({ path: `${shots}/${scene.replace(/:/g, '-')}-${width}.png` });   // no 「:」 in a Windows file name
+          }
+          await w.key('z');
+        }
+        await expect(page.locator('.slx-handbook.slx-hb-playing')).toHaveCount(0);
+      };
+      await hbTab(H.tabs.people).click();
+      await pickRow(CHARACTERS.rin.name);
+      for (const id of ['rin-confess', 'hero-alone', 'banter:rin-scarlet:2'] as const) { await pickRow(STORY.scenes[id].title); await readThrough(); }
+      await page.locator('.slx-back').click();
+      await pickRow(CHARACTERS.noel.name);
+      await pickRow(STORY.scenes['banter:noel-selene:2'].title);
+      await readThrough();
+      await page.locator('.slx-back').click();
+      await hbTab(H.tabs.truths).click();
+      await pickRow(H.stages.after);   // the finale, then the lantern festival (story depth ruling 12)
+      await readThrough();
+      expect([...reached].sort(), `${width}`).toEqual(BEATS.map(([scene]) => scene).sort());
+      expect(w.errors).toEqual([]);
+    }
+    expect(missing).toEqual([]);
+  });
+
   test('the first boss names its rune on the result, once, inside a phone screen (plan 8f)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     const w = await setup(page, 7);
@@ -3811,7 +3900,7 @@ test.describe('starlantern', () => {
       const row = runes.locator('[data-id="move:sylvie:aimed-shot:0"]');
       await expect(row.locator('.slx-right')).toHaveText('希爾薇');
       await row.hover();
-      await expect(page.locator('.slx-ws-giver')).toContainText('希爾薇・瞄準射擊');
+      await expect(page.locator('.slx-ws-giver')).toContainText('希爾薇的瞄準射擊');
       await expect(page.locator('.slx-ws-card tr[data-key=target] td')).toHaveText(['敵方單體', '敵方單體']);
       for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
         await inside(page, vw, vh);

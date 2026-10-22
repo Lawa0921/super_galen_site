@@ -436,6 +436,16 @@ describe('voice gates over the polished script (story polish)', () => {
     for (const id of banters) expect(isPolished(`scenes.${id}.lines.0.text`), id).toBe(true);
   });
 
+  it('the polish covers the whole script (story depth Task 20)', () => {
+    const left = storyTexts().filter((t) => !isPolished(t.key)).map((t) => t.key);
+    expect(left).toEqual([]);
+    // the whole script's share of strings with 「……」 (bible §2.3), and 「一起回來」 three times at most over all of it
+    const all = storyTexts();
+    const withDots = all.filter((t) => dots(t.text) > 0).length;
+    expect(withDots / all.length, `${withDots} of ${all.length}`).toBeLessThanOrEqual(ELLIPSIS.scriptShare);
+    expect(all.filter((t) => t.text.includes('一起回來')).length).toBeLessThanOrEqual(3);
+  });
+
   it('POLISHED names real keys', () => {
     const keys = storyTexts().map((t) => t.key);
     for (const p of POLISHED) expect(keys.some((k) => k.startsWith(p)), p).toBe(true);

@@ -218,7 +218,8 @@ export class HandbookScene implements Scene {
     const page = (id: string | undefined) => h.truths.find((p) => p.stage === id);
     return {
       key: 'truths', rows: h.truths.map((p): MenuItem => p.unlocked ? { id: p.stage, label: H.stages[p.stage], ...freshRight(p.scenes.some((e) => e.fresh)) } : { id: p.stage, label: H.unknown }),
-      pick: (id) => { const s = page(id)?.scenes[0]; if (s) this.pickScene(s.scene); else this.ctx.sfx.error(); },
+      // The after page plays its scenes in a row: the finale, then the lantern festival (story depth ruling 12, Task 20).
+      pick: (id) => { const ss = page(id)?.scenes ?? []; if (ss.length) void this.replay(ss.map((e) => e.scene)); else this.ctx.sfx.error(); },
       detail: (id) => { const p = page(id); return p?.text ? [el('h4', { text: H.stages[p.stage] }), el('p', { text: p.text })] : []; },
       shown: () => null,
     };
@@ -274,16 +275,21 @@ export class HandbookScene implements Scene {
     void this.replay(id as SceneId);
   }
 
-  /** Plays a scene seen before and drops its 新 mark. It never goes through sceneDone, so no progress, reward or flag moves. */
-  private async replay(id: SceneId): Promise<void> {
+  /**
+   * Plays scenes seen before, one after another, and drops each one's 新 mark as it ends. It never goes through sceneDone,
+   * so no progress, reward or flag moves.
+   */
+  private async replay(ids: SceneId | SceneId[]): Promise<void> {
     this.sceneEl.classList.add('slx-hb-playing');
     this.panelEl.setAttribute('inert', '');
     this.backEl.setAttribute('inert', '');
     try {
-      const p = playScene(this.talk, id, storyCtx(this.ctx));
-      this.playing = p;
-      await p.done;
-      this.ctx.game.markRead(id);
+      for (const id of Array.isArray(ids) ? ids : [ids]) {
+        const p = playScene(this.talk, id, storyCtx(this.ctx));
+        this.playing = p;
+        await p.done;
+        this.ctx.game.markRead(id);
+      }
     } catch (e) {
       console.error('starlantern: handbook replay failed', e);
     } finally {

@@ -309,7 +309,7 @@ describe('WorkshopScene: moves, mouse and touch (plan 8g Task 4b)', () => {
     w.press('down');
     expect(w.runeCur()).toBe(moveId);                                 // the heading takes no cursor
     const aimed = skillFor(fromMember(w.game.state.party.roster.sylvie, 0), 'aimed-shot')!.name;
-    expect(w.root.querySelector('.slx-ws-giver')!.textContent).toContain(`${CHARACTERS.sylvie.name}・${aimed}`);
+    expect(w.root.querySelector('.slx-ws-giver')!.textContent).toContain(`${CHARACTERS.sylvie.name}的${aimed}`);
     w.press('confirm');
     expect(w.game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [R('bounce')] });
     expect(w.game.state.party.roster.sylvie.sockets).toBeUndefined();

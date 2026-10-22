@@ -437,10 +437,10 @@ export const T = {
       /** 「持有 n（袋子 m，鑲嵌中 k）」 (plan 8g ruling 8). */
       owned: (all: number, bag: number, socketed: number) => `持有 ${all}（袋子 ${bag}，鑲嵌中 ${socketed}）`,
       /**
-       * What the member a rune is moved from loses (Task 4b review): 「移走後 希爾薇・瞄準射擊：TP 10 → 5；少了「連續施放兩次」」,
+       * What the member a rune is moved from loses (Task 4b review): 「移走後，希爾薇的瞄準射擊：TP 10 → 5；少了「連續施放兩次」」,
        * each changed row by name, each line she no longer has in 「」.
        */
-      giver: (who: string, skill: string, items: string[]) => `移走後 ${who}・${skill}：${items.length ? items.join('；') : '不變'}`,
+      giver: (who: string, skill: string, items: string[]) => `移走後，${who}的${skill}：${items.length ? items.join('；') : '不受影響'}`,
       /** A card row that changes: 「段數 1 → 2」 (the giver line, the tree's variant preview). */
       change: (row: string, before: string, after: string) => `${row} ${before} → ${after}`,
       giverLost: (line: string) => `少了「${line}」`,
@@ -756,7 +756,9 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       /** What applying starts (plan 8h ruling 2: following is off until a build is applied). */
       follow: '套用之後會跟隨這套：升級時自動照這套配點，新開的符文槽也從袋子補上。自己動手配點就會停止跟隨。',
       /** On the card of the build she follows: what it does, and how to stop it. */
-      followingNow: '正在跟隨這套：升級時自動照這套配點，新開的符文槽從袋子補上。按「停止跟隨」或自己動手配點就會停下來。',
+      followingNow: '正在跟隨這套：升級時自動照這套配點，新開的符文槽從袋子補上。',
+      /** Beside the buttons while she follows the build on the card (story depth Task 20): how to stop, by the stop button. */
+      stopHint: '想停下來，按「停止跟隨」或自己配點就好。',
       stopFollow: '停止跟隨',
       stopped: (name: string, build: string) => `${name}不再跟隨${build}，配點維持現在的樣子。`,
       apply: (cost: number) => `套用（${cost} G）`,
@@ -850,7 +852,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       full: {
         title: '背包已滿', desc: (name: string, qty: number, need: number) => `${name} ×${qty} 放不下（還差重量 ${need}）。`, which: '要丟掉什麼來換？',
         keep: '先留在這裡', ask: (name: string, n: number) => `要丟掉 ${name} ×${n} 嗎？`,
-        freed: '空出位置了。再踩一次寶箱就能撿起來。', left: '先把它留在原地吧。',
+        freed: '空出位置了。再走回寶箱那一格就能撿起來。', left: '先把它留在原地吧。',
         bagTitle: (n: number) => `背包已滿（${n} 件）`, bagDesc: (name: string) => `${name} 放不下：背包沒有空位了。`,
         whichGear: '要丟掉哪件裝備來騰出空位？', askGear: (name: string) => `要丟掉 ${name} 嗎？`,
         noGear: '冒險背包裡沒有能丟的裝備，這件只能先留在原地。',
@@ -1029,7 +1031,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     askFuse: (line: string) => `${line}\n要合成嗎？`,
     fused: (label: string) => `合成了 ${label}！`,
     /** The rune tab with nothing in the bag to fuse. */
-    fuseEmpty: '袋子裡沒有可合成的符文，三個同名同階的符文可以合成高一階',
+    fuseEmpty: '袋子裡沒有可合成的符文。三個同名同階的符文，可以合成一個高一階的符文。',
   },
   /** The suggested builds (plan 8h): the standard build's name and line, and a policy's words, one sentence a rule. */
   build: {

@@ -128,6 +128,28 @@ describe('HandbookScene', () => {
     expect({ ...t.game.state.story, fresh: [] }).toEqual(before);
   });
 
+  it('the after page replays the finale, then the lantern festival, and clears both (story depth ruling 12, Task 20)', async () => {
+    const t = setup(undefined, (g) => {
+      meetAll(g, ['rin']);
+      g.state.party.roster.rin.oath = true;
+      g.state.story.finaleCleared = true;
+      g.state.story.seen = ['prologue', 'finale', 'epilogue'];
+      g.state.story.fresh = ['finale', 'epilogue'];
+    });
+    const done = vi.spyOn(t.game, 'sceneDone');
+    t.goTab(H.tabs.truths);
+    expect(t.fresh(H.stages.after)).toBe(true);
+    t.pick(H.stages.after);
+    await t.skipScene();                                          // the finale
+    expect(t.root.querySelector('.slx-handbook')!.classList.contains('slx-hb-playing')).toBe(true);   // the festival follows
+    expect(t.game.state.story.fresh).toEqual(['epilogue']);
+    await t.skipScene();                                          // the festival
+    expect(t.root.querySelector('.slx-handbook')!.classList.contains('slx-hb-playing')).toBe(false);
+    expect(t.game.state.story.fresh).toEqual([]);
+    expect(t.fresh(H.stages.after)).toBe(false);
+    expect(done).not.toHaveBeenCalled();
+  });
+
   it('a banter heard on a return is replayed from the people page of either of its two, and moves no progress (B1)', async () => {
     const id: SceneId = 'banter:noel-rin:1';
     const t = setup(undefined, (g) => {

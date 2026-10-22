@@ -195,7 +195,7 @@ describe('the skill card (plan 8g Task 3)', () => {
     const fromChizuru = list.find((c) => c.source.kind === 'socket' && c.source.at.id === 'chizuru')!;
     expect(fromChizuru.source).toEqual({ kind: 'socket', ref: R('spread'), at: { id: 'chizuru', skill: 'pierce', slot: 0 } });
     const pierce = skillFor(fromMember(member(s, 'chizuru'), 0), 'pierce')!.name;
-    expect(fromChizuru.giver!.startsWith(`移走後 ${CHARACTERS.chizuru.name}・${pierce}：目標 敵方全體 → 敵方單體；`)).toBe(true);
+    expect(fromChizuru.giver!.startsWith(`移走後，${CHARACTERS.chizuru.name}的${pierce}：目標 敵方全體 → 敵方單體；`)).toBe(true);
     const own = list.find((c) => c.source.kind === 'socket' && c.source.at.id === 'noel')!;
     expect(own.source).toEqual({ kind: 'socket', ref: R('drain'), at: { id: 'noel', skill: 'ice-star', slot: 0 } });
     // Each bag row: the count, and 持有 split.
@@ -239,9 +239,9 @@ describe('the skill card (plan 8g Task 3)', () => {
       .find((c) => c.source.kind === 'socket' && c.source.at.id === 'sylvie' && c.source.at.slot === slot)!;
     const tp = (st: GameState) => cardOf(member(st, 'sylvie'), 'aimed-shot')!.rows.find((r) => r.key === 'tp')!.text;
     const after = ok(previewOf(s, { id: 'noel', skill: 'fire-star', slot: 0 }, { kind: 'move', from: { id: 'sylvie', skill: 'aimed-shot', slot: 0 } }));
-    expect(pick(0).giver).toBe(`移走後 ${CHARACTERS.sylvie.name}・${aimed}：TP ${tp(s)} → ${tp(after)}；少了「${W.add.twice(RUNE_NUMBERS['twin-cast'].fixed.secondPct)}」`);
+    expect(pick(0).giver).toBe(`移走後，${CHARACTERS.sylvie.name}的${aimed}：TP ${tp(s)} → ${tp(after)}；少了「${W.add.twice(RUNE_NUMBERS['twin-cast'].fixed.secondPct)}」`);
     const bounce = RUNES.bounce.mod('magic').bounce!;
-    expect(pick(1).giver).toBe(`移走後 ${CHARACTERS.sylvie.name}・${aimed}：少了「${W.add.bounce(bounce.bounces, bounce.dropPct)}」`);
+    expect(pick(1).giver).toBe(`移走後，${CHARACTERS.sylvie.name}的${aimed}：少了「${W.add.bounce(bounce.bounces, bounce.dropPct)}」`);
   });
 
   it('a move between two slots of one skill names no giver', () => {

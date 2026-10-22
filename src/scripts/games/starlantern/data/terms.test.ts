@@ -38,31 +38,32 @@ function sourceTexts(): { file: string; text: string }[] {
 }
 
 /**
- * The interface keys plan 8h owns (story depth SDD `off-limits.md`): this plan never edits them, so the voice guard does not
- * read them either; rough lines there are listed for after the merge (story depth Task 19 report).
- */
-const OFF_LIMITS = [
-  'T.cmd.', 'T.rune.', 'T.build.', 'T.ui2.workshop.', 'T.ui2.tree.', 'T.ui2.builds.', 'T.clear.',
-  // the inn's tail sits in 8h's hunk: its builds line and the lines around it
-  'T.ui2.inn.builds', 'T.ui2.inn.respecSaveFailed', 'T.ui2.inn.morning', 'T.ui2.inn.saved', 'T.ui2.inn.saveFailed', 'T.ui2.inn.nobodyDown', 'T.ui2.inn.revived',
-];
-
-/**
- * What the player reads as a sentence outside the script (story depth Task 19): every plain string of `T` that ends a
- * sentence (。！？), outside `OFF_LIMITS`; each scene's title as the handbook and the scene plate show it; each special's lore.
- * Templates are left to the source scan above (their numbers are passed in).
+ * What the player reads outside the script (story depth Task 19; widened in Task 20 once 8h was merged, so no key of `T` is
+ * left out): every string of `T`, every template of `T` called with stand-in words (a three-character name, the number
+ * 345, `true`; a call that needs an object is skipped), each scene's title as the handbook and the scene plate show it, and
+ * each special's lore.
  */
 function uiSentences(): { key: string; text: string }[] {
   const out: { key: string; text: string }[] = [];
   const walk = (v: unknown, path: string): void => {
-    if (typeof v === 'string') { if (/[。！？]/.test(v)) out.push({ key: path, text: v }); return; }
+    if (typeof v === 'string') { out.push({ key: path, text: v }); return; }
+    if (typeof v === 'function') {
+      for (const arg of ['某某某', 345, true]) {
+        try {
+          const r: unknown = (v as (...a: unknown[]) => unknown)(...Array(Math.max(1, v.length)).fill(arg));
+          if (typeof r === 'string' && !/undefined|object|NaN/.test(r)) out.push({ key: `${path}(${typeof arg})`, text: r });
+          if (Array.isArray(r)) r.forEach((x, i) => { if (typeof x === 'string') out.push({ key: `${path}(${typeof arg}).${i}`, text: x }); });
+        } catch { /* a template that needs an object */ }
+      }
+      return;
+    }
     if (Array.isArray(v)) { v.forEach((x, i) => walk(x, `${path}.${i}`)); return; }
     if (v && typeof v === 'object' && !(v instanceof RegExp)) for (const [k, x] of Object.entries(v)) walk(x, `${path}.${k}`);
   };
   walk(T, 'T');
   for (const id of SCENE_IDS) out.push({ key: `STORY.scenes.${id}.title`, text: STORY.scenes[id].title });
   for (const s of Object.values(SPECIALS)) out.push({ key: `SPECIALS.${s.id}.lore`, text: s.lore ?? '' });
-  return out.filter((s) => !OFF_LIMITS.some((p) => s.key.startsWith(p)));
+  return out;
 }
 
 /** Misspellings of the cast's names, as they have turned up or easily could (audit A4, A5). */
@@ -128,7 +129,8 @@ describe('terms (story polish)', () => {
     // the walk reaches what the player reads: notices, the handbook, a scene's title, a gear's lore
     const keys = uiSentences().map((s) => s.key);
     for (const k of ['T.notices.wipe', 'T.ui2.handbook.empty', 'T.ui2.equip.full', 'STORY.scenes.rin-reveal.title', 'SPECIALS.lg-noel.lore']) expect(keys, k).toContain(k);
-    for (const k of keys) expect(OFF_LIMITS.some((p) => k.startsWith(p)), k).toBe(false);
+    // Task 20: 8h's keys, the inn's tail, templates and strings with no full stop are read too
+    for (const k of ['T.rune.fuseEmpty', 'T.ui2.builds.followingNow', 'T.ui2.inn.nobodyDown', 'T.rune.got(string)', 'T.ui2.exchange.giveAsk(string)', 'T.ui2.formation.title']) expect(keys, k).toContain(k);
   });
 
   it("a townsperson's fragment goes back to 本人, she or he (story depth Task 19)", () => {
