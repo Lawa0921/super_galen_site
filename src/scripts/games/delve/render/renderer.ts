@@ -132,6 +132,9 @@ export class Renderer {
   hidePlayer = false;
   private remote = new RemotePlayers();
   private remoteSource: (() => RemoteView[]) | null = null;
+  private remoteNow: readonly RemoteView[] = [];
+  /** 這一幀畫的遠端玩家（名牌共用；來源有狀態，不要在同一幀再叫一次） */
+  get remoteViews(): readonly RemoteView[] { return this.remoteNow; }
   /** 其他玩家的來源（房主 / 客人各給一個）；null = 單機不畫 */
   setRemoteSource(fn: (() => RemoteView[]) | null): void { this.remoteSource = fn; }
   /** 畫瞄準游標（標題背景關掉） */
@@ -495,7 +498,8 @@ export class Renderer {
     this.settleLayer.drawWorld(ctx, vb, this.clock); // [settle]
     this.folkLayer.drawWorld(ctx, vb, this.clock);
     // 其他玩家（連線時）：畫在本地玩家後面；ctx 已經是世界座標，toPx 不必再換
-    if (this.remoteSource && !this.hidePlayer) this.remote.draw(ctx, this.sprites, this.remoteSource(), dt, (x, y) => ({ x, y }));
+    this.remoteNow = this.remoteSource && !this.hidePlayer ? this.remoteSource() : [];
+    this.remote.draw(ctx, this.sprites, this.remoteNow, dt, (x, y) => ({ x, y }));
     this.drawPlayer(ctx, dt);
     ph.sprites = this.lap();
     const tl = performance.now();

@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { Sprites } from './sprites';
 import { RemotePlayers, GuestViews, hostRemoteViews, type RemoteView } from './remotePlayers';
 import { Nameplates } from './nameplates';
+import { Renderer } from './renderer';
 import { arenaGame } from '../net/testRig';
 import { createCharacter } from '../save/character';
 import { normalizeAppearance, type Appearance } from '../engine/appearance';
@@ -80,17 +81,41 @@ describe('RemotePlayers.draw', () => {
     return { ctx, calls };
   };
   const id = (x: number, y: number) => ({ x, y });
-  it('活著且有 look 的才 drawImage（身體 + 頭兩張）', () => {
+  it('活著且有 look 的才 drawImage（後臂 + 身體 + 前臂 + 頭）', () => {
     const { ctx, calls } = mockCtx();
     const rp = new RemotePlayers();
     const sp = sprites();
     rp.draw(ctx, sp, [view({ pid: 'a' }), view({ pid: 'b', dead: true }), view({ pid: 'c', look: null, key: '' })], 0.016, id);
-    expect(calls.drawImage).toBe(2);
+    expect(calls.drawImage).toBe(4);
   });
   it('腳底置中：translate 到 (x + W/2, y + H) 經 toPx', () => {
     const { ctx, calls } = mockCtx();
     new RemotePlayers().draw(ctx, sprites(), [view({ x: 100, y: 200 })], 0.016, (x, y) => ({ x: x + 1, y: y + 2 }));
     expect(calls.translate[0]).toEqual([Math.round(100 + PLAYER_W / 2) + 1, Math.round(200 + PLAYER_H) + 2]);
+  });
+  it('arms:true 的影格（待機）畫休息的手臂：後手臂、身體、前手臂、頭四次，且不動 Sprites 手臂快取', () => {
+    const calls: { img: unknown; dx: number; dy: number }[] = [];
+    const ctx = {
+      save() {}, restore() {}, scale() {}, translate() {},
+      drawImage(img: unknown, ...a: number[]) { const n = a.length; calls.push({ img, dx: a[n - 4], dy: a[n - 3] }); },
+    } as unknown as CanvasRenderingContext2D;
+    const sp = sprites();
+    const before = sp.bakes.arms;
+    new RemotePlayers().draw(ctx, sp, [view()], 0.016, (x, y) => ({ x, y }));
+    expect(calls).toHaveLength(4);
+    const sheet = calls[1].img;
+    expect(calls[3].img).toBe(sheet);
+    expect(calls[0].img).not.toBe(sheet);
+    expect(calls[2].img).not.toBe(sheet);
+    expect(calls[0].img).not.toBe(calls[2].img);
+    expect(sp.bakes.arms).toBe(before);
+  });
+  it('gfxOffY 把腳底往下移', () => {
+    const { ctx, calls } = mockCtx();
+    const rp = new RemotePlayers();
+    rp.draw(ctx, sprites(), [view({ y: 200 })], 0.016, id);
+    rp.draw(ctx, sprites(), [view({ y: 200, gfxOffY: 6 })], 0.016, id);
+    expect(calls.translate[1][1] - calls.translate[0][1]).toBe(6);
   });
   it('離開的 pid 的動畫器被丟掉', () => {
     const { ctx } = mockCtx();
@@ -125,5 +150,13 @@ describe('Nameplates', () => {
     expect(els[0].classList.contains('is-dead')).toBe(true);
     np.destroy();
     expect(box.querySelectorAll('.delve-nameplate')).toHaveLength(0);
+  });
+});
+
+describe('Renderer.remoteViews', () => {
+  it('回傳這一幀 draw 用的同一個陣列', () => {
+    const arr = [view()];
+    const get = Object.getOwnPropertyDescriptor(Renderer.prototype, 'remoteViews')!.get!;
+    expect(get.call({ remoteNow: arr })).toBe(arr);
   });
 });

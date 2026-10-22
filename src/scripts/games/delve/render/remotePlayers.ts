@@ -6,9 +6,10 @@ import { PLAYER_H, PLAYER_W } from '../engine/constants';
 import type { PeerView } from '../net/guest';
 import { FH, FW, type Sprites } from './sprites';
 import { PlayerAnimator } from './playerAnim';
-import { SHEET, type SheetAnim } from './avatarArt';
+import { SHEET, shoulderOf, type SheetAnim } from './avatarArt';
+import { ARM_CANVAS, armCanvas, previewArms } from './dollPreview';
 
-export interface RemoteView { pid: string; nick: string; look: DollLook | null; key: string; x: number; y: number; vx: number; vy: number; facing: 1 | -1; dead: boolean }
+export interface RemoteView { pid: string; nick: string; look: DollLook | null; key: string; x: number; y: number; vx: number; vy: number; facing: 1 | -1; dead: boolean; gfxOffY?: number }
 
 /** 房主：game.actors 裡非本地的玩家 */
 export function hostRemoteViews(game: DelveGame): RemoteView[] {
@@ -18,7 +19,7 @@ export function hostRemoteViews(game: DelveGame): RemoteView[] {
     const d = game.withActor(a, () => game.doll());
     out.push({
       pid: a.pid, nick: a.who?.nick ?? '', look: d.look, key: d.key,
-      x: a.player.x, y: a.player.y, vx: a.player.vx, vy: a.player.vy, facing: a.facing, dead: a.dead,
+      x: a.player.x, y: a.player.y, vx: a.player.vx, vy: a.player.vy, facing: a.facing, dead: a.dead, gfxOffY: a.player.gfxOffY,
     });
   }
   return out;
@@ -45,7 +46,7 @@ export class RemotePlayers {
   get size(): number { return this.anims.size; }
 
   /** toPx：世界座標（Body，px）→ 繪製座標（含鏡頭）。畫在人物腳底置中 */
-  draw(ctx: CanvasRenderingContext2D, sprites: Sprites, views: RemoteView[], dt: number, toPx: (x: number, y: number) => { x: number; y: number }): void {
+  draw(ctx: CanvasRenderingContext2D, sprites: Sprites, views: readonly RemoteView[], dt: number, toPx: (x: number, y: number) => { x: number; y: number }): void {
     const seen = new Set<string>();
     for (const v of views) {
       seen.add(v.pid);
@@ -60,12 +61,21 @@ export class RemotePlayers {
       const sheet = sprites.sheetFor(v.look, v.key, fi);
       const meta = sheet.meta[fi];
       if (!meta || !sheet.ready(fi)) continue;
-      const c = toPx(Math.round(v.x + PLAYER_W / 2), Math.round(v.y + PLAYER_H));
+      const c = toPx(Math.round(v.x + PLAYER_W / 2), Math.round(v.y + PLAYER_H + (v.gfxOffY ?? 0)));
       ctx.save();
       ctx.translate(c.x, c.y);
       ctx.scale(v.facing, 1);
       const ox = -FW / 2 + (meta.ox ?? 0), oy = -FH;
+      // 同 NPC（dollPreview）的順序：後手臂 → 身體 → 前手臂 → 頭。手持物和揮擊手臂 v1 不畫（C9），休息的手臂要畫
+      let arms: { back: number; front: number } | null = null;
+      if (meta.arms) arms = previewArms(sheetAnim, o.frame);
+      const put = (back: boolean): void => {
+        const s = shoulderOf(v.look!.app.body, back);
+        ctx.drawImage(armCanvas(v.look!, v.key, back, back ? arms!.back : arms!.front), ox + s.x + meta.dx - ARM_CANVAS / 2, oy + s.y + meta.dy - ARM_CANVAS / 2);
+      };
+      if (arms) put(true);
       ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox, oy, FW, FH);
+      if (arms) put(false);
       ctx.drawImage(sheet.canvas, fi * FW, FH, FW, FH, ox, oy, FW, FH);
       ctx.restore();
     }
