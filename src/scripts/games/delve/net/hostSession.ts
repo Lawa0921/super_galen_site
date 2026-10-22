@@ -1,6 +1,7 @@
 // hostSession.ts — 房主端協調層（M-C Task 6；DOM-free）：NetHost + RoomHost（房號信令）+ NetLoop（注入的 Ticker）。
 // C10：RoomHost.poll 跟 host.frame 同一個 loop 驅動（Worker 計時器），房主分頁在背景時客人照樣能加入。
-// 時間一律是 loop 傳進來的 nowMs（同 NetHost 的決定性規則）；open / reopenJoin 在第一次 tick 之前呼叫時，join 計時延到那一 tick 才起算。
+// 時間一律是 loop 傳進來的 nowMs（同 NetHost 的決定性規則）：拿到房號後 join 計時一律在下一次 tick 用 loop 的時鐘重新起算。
+// 唯一的主執行緒計時器是 close() 的保險（CLOSE_SAFETY_MS）：ticker 死掉也一定 resolve，不影響正常流程的正確性（C10）。
 import type { DelveGame } from '../engine/game';
 import { NetHost, type GuestPhase, type VisitStore } from './host';
 import { NetLoop, type Ticker } from './loop';
@@ -14,6 +15,9 @@ export interface HostSessionDeps {
   visits: VisitStore & { worldId: string }; requestSave: () => void; nick: string;
 }
 export type CoopChange = { type: 'join' | 'leave'; nick: string };
+
+/** close() 最晚這麼久（主執行緒牆鐘）一定結束，即使 loop 再也不 tick */
+export const CLOSE_SAFETY_MS = LINGER_MS * 3;
 
 export class CoopHostSession {
   private readonly game: DelveGame;
@@ -30,6 +34,7 @@ export class CoopHostSession {
   private readonly cbs: ((e: CoopChange) => void)[] = [];
   private opening: Promise<string> | null = null;
   private closing: { until: number | null; done: Promise<void>; resolve: () => void } | null = null;
+  private safety: ReturnType<typeof setTimeout> | null = null;
 
   constructor(game: DelveGame, deps: HostSessionDeps) {
     this.game = game;
@@ -79,6 +84,7 @@ export class CoopHostSession {
     this.game.mode = 'solo';   // 從沒 open 過的 NetHost.close 不會改 mode
     this.live.clear();
     if (this.closing.until === null || !this.loop.running) this.finish();
+    else this.safety = setTimeout(() => this.finish(), CLOSE_SAFETY_MS);
     return done;
   }
 
@@ -86,10 +92,15 @@ export class CoopHostSession {
     this.host.open();
     this.loop.start();
     let code: string;
-    // 拿房號失敗（網路）：可以再呼叫 open 重試；放棄就 close() 讓 mode 回 solo
-    try { code = await this.rooms.open(this.now ?? 0); } catch (e) { this.opening = null; throw e; }
+    try { code = await this.rooms.open(this.now ?? 0); } catch (e) {
+      // 拿房號失敗（網路）：整個退回單機（沒有客人，不必等延遲關閉）；要重試就建新的 session
+      void this.close();
+      this.finish();
+      throw e;
+    }
     if (this.closing) { this.rooms.close(); throw new Error('coop host closed'); }   // 等房號時就關了
-    if (this.now === null) this.stampJoin = true;
+    // createRoom 來回期間 loop 可能已經 tick（this.now 不是 open 當下的值）：一律在下一次 tick 用那時的時間重新起算
+    this.stampJoin = true;
     return code;
   }
 
@@ -107,6 +118,7 @@ export class CoopHostSession {
   }
 
   private finish(): void {
+    if (this.safety !== null) { clearTimeout(this.safety); this.safety = null; }
     this.loop.stop();
     this.closing?.resolve();
   }

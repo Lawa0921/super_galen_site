@@ -2,7 +2,7 @@
 // C4：savedAt 由這裡（寫 IDB 的一端）蓋 now()。C1：chk 寫好才 ack（NetGuest 等 persist 的 promise）；
 //   結束時還有跨邊界操作沒被 chk 涵蓋（unconfirmed）→ 最後一份 chk 再存一次並標 pendingWorld = 那個世界。
 // Task 1 合約：收到 reject / bye 之後由房主在 LINGER_MS 後關連線；房主沒關（分頁直接沒了）就由這裡在 LINGER_MS + 1000 後自己關。
-// loop 跑到連線關掉、而且排著的 persist 都完成才停。
+// loop 跑到連線關掉、而且排著的 persist 都完成才停。leave() 另有主執行緒的保險（LEAVE_SAFETY_MS）：ticker 死掉或 IDB 卡住也一定結束。
 import type { DelveGame } from '../engine/game';
 import type { DelveCharacter } from '../save/character';
 import type { NetLink } from './link';
@@ -27,6 +27,8 @@ export interface GuestSessionDeps {
 const HOST_CLOSE_SLACK_MS = 1000;
 /** leave 後 NetGuest 最晚 LEAVE_GRACE_MS 自己關；多等這麼久還開著就由這裡關 */
 const LEAVE_SLACK_MS = 500;
+/** leave() 最晚這麼久（主執行緒牆鐘）一定結束：關連線、停 loop、resolve（卡住的 persist 不再等） */
+export const LEAVE_SAFETY_MS = LINGER_MS * 3;
 
 export class CoopGuestSession {
   private readonly deps: GuestSessionDeps;
@@ -48,6 +50,8 @@ export class CoopGuestSession {
   private chain: Promise<void> = Promise.resolve();
   private inflight = 0;
   private resolveDone!: () => void;
+  private safety: ReturnType<typeof setTimeout> | null = null;
+  private finished = false;
   private readonly done = new Promise<void>((r) => { this.resolveDone = r; });
 
   constructor(deps: GuestSessionDeps) {
@@ -65,14 +69,14 @@ export class CoopGuestSession {
       link = await joinRoom(this.deps.signal, this.deps.makePeer, room, { sleep: this.deps.sleep, now: this.deps.now });
     } catch (e) {
       this.setPhase('failed');
-      this.resolveDone();
+      this.finish();
       throw e instanceof JoinError ? e : new JoinError('rtc');
     }
     if (this.left) {   // 信令途中按了離開
       link.close('leave');
       this.text = END_TEXT.leave;
       this.setPhase('ended');
-      this.resolveDone();
+      this.finish();
       return;
     }
     this.link = link;
@@ -107,6 +111,7 @@ export class CoopGuestSession {
       g.leave();
       this.syncPhase();
     }
+    if (!this.finished) this.safety ??= setTimeout(() => this.finish(), LEAVE_SAFETY_MS);
     return this.done;
   }
 
@@ -124,6 +129,14 @@ export class CoopGuestSession {
     if (link.open) return;
     this.checkFinal(g);
     if (this.inflight > 0) return;
+    this.finish();
+  }
+
+  /** 停 loop、resolve；連線還開著就關（保險觸發時） */
+  private finish(): void {
+    this.finished = true;
+    if (this.safety !== null) { clearTimeout(this.safety); this.safety = null; }
+    if (this.link?.open) this.link.close(this.left ? 'leave' : 'ended');
     this.loop?.stop();
     this.resolveDone();
   }

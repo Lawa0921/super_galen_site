@@ -1,6 +1,6 @@
 // coopSession.test.ts — CoopHostSession／CoopGuestSession（M-C Task 6）：假信令 + 假 peer（LoopbackNet）+ 手動 ticker。
-// 虛擬時間：每幀 net.advance → 兩邊的 ticker → 到期的 sleep → 讓出一個 macrotask（信令都是 promise）。
-import { describe, it, expect } from 'vitest';
+// 虛擬時間：每幀 net.advance → 兩邊的 ticker → 到期的 sleep → drain 一段微任務（信令都是 promise，不靠計時器）。
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { normalizeAppearance } from '../engine/appearance';
 import type { DelveGame } from '../engine/game';
 import type { ItemId } from '../engine/items';
@@ -12,12 +12,12 @@ import type { Ticker } from './loop';
 import type { RtcPeer } from './rtcLink';
 import { END_TEXT } from './guest';
 import { LINGER_MS } from './protocol';
+import { JOIN_IDLE_MS } from './rtcSignal';
 import { arenaGame, BUILD, FRAME } from './testRig';
 import { CoopHostSession } from './hostSession';
 import { CoopGuestSession } from './guestSession';
 
 const WORLD = 'w-coop';
-const settle = () => new Promise<void>((r) => setTimeout(r, 0));
 /** 每幀讓微任務跑一段（假信令與假 peer 都只靠 promise；沒跑完的留到下一幀繼續）：比每幀一個 macrotask 快很多，全套負載下也不逾時 */
 const drain = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
 
@@ -62,14 +62,18 @@ function setup() {
     get saves() { return saves; },
     /** false：不再觸發房主的 ticker（模擬房主分頁直接關掉） */
     driveHost: true,
-    addGuest(nick = '乙'): G {
+    /** false：不再觸發客人的 ticker（模擬 Worker 計時器死掉） */
+    driveGuests: true,
+    /** 時鐘直接往前跳（不跑幀；模擬頁面已經開很久） */
+    skip(ms: number) { t += ms; },
+    addGuest(nick = '乙', persist?: (c: DelveCharacter, world: string | null) => Promise<void>): G {
       const character = { ...createCharacter(nick, normalizeAppearance(undefined), 0), id: `char-${guests.length}` };
       const ticker = trackedTicker();
       const saved: Saved[] = [], peers: RtcPeer[] = [];
       const s = new CoopGuestSession({
         signal, ticker, build: BUILD, character,
         makePeer: () => { const p = makePeer(); peers.push(p); return p; },
-        persist: async (c, world) => { saved.push({ c, world }); },
+        persist: async (c, world) => { saved.push({ c, world }); await persist?.(c, world); },
         now: () => 1_000_000 + t,
         sleep: (ms) => new Promise<void>((r) => { sleeps.push({ at: t + ms, r }); }),
       });
@@ -82,7 +86,7 @@ function setup() {
         t += FRAME;
         net.advance(FRAME);
         if (env.driveHost) hostTicker.fire(t);
-        for (const g of guests) g.ticker.fire(t);
+        if (env.driveGuests) for (const g of guests) g.ticker.fire(t);
         for (const sl of sleeps.filter((x) => x.at <= t)) { sleeps.splice(sleeps.indexOf(sl), 1); sl.r(); }
         await drain();
       }
@@ -92,9 +96,9 @@ function setup() {
       return cond();
     },
     /** 開房並讓客人加入到雙方都 live */
-    async joined(nick = '乙'): Promise<G> {
+    async joined(nick = '乙', persist?: (c: DelveCharacter, world: string | null) => Promise<void>): Promise<G> {
       const room = host.room ?? await host.open();
-      const g = env.addGuest(nick);
+      const g = env.addGuest(nick, persist);
       const err = g.s.join(room).then(() => null, (e: unknown) => e);
       const ok = await env.until(() => g.s.phase === 'live' && host.players().some((p) => !p.self && p.nick === nick && p.phase === 'live'), 15_000);
       expect(await err).toBeNull();
@@ -110,6 +114,8 @@ const slotOf = (game: DelveGame, item: ItemId): number => game.local.inventory.s
 const toss = (g: G): void => { const game = g.s.game!; game.act({ op: 'toss', slot: slotOf(game, 'torch'), n: 1 }); };
 
 describe('CoopHostSession／CoopGuestSession', { timeout: 20_000 }, () => {
+  afterEach(() => { vi.useRealTimers(); });
+
   it('房主開房 → 客人加入 → 雙方 players/peers 都有 2 人，客人 phase=live', async () => {
     const e = setup();
     const room = await e.host.open();
@@ -134,17 +140,93 @@ describe('CoopHostSession／CoopGuestSession', { timeout: 20_000 }, () => {
   });
 
   it('poll 只靠 loop 驅動', async () => {
+    vi.useFakeTimers();
     const e = setup();
     await e.host.open();
-    await settle();
+    await drain();
     const before = { ...e.signal.calls };
-    // 時間過去、微任務跑完，但 ticker 沒有觸發 → 一次信令請求都沒有
+    // 主執行緒計時器與網路時間都過去 10 秒、微任務跑完，但 ticker 沒有觸發 → 一次信令請求都沒有
+    vi.advanceTimersByTime(10_000);
     e.net.advance(10_000);
-    await settle(); await settle();
+    await drain();
     expect(e.signal.calls).toEqual(before);
     e.hostTicker.fire(1);
-    await settle();
+    await drain();
     expect(e.signal.calls.get).toBeGreaterThan(before.get);
+  });
+
+  it('createRoom 回來前 loop 已經 tick（頁面開超過 JOIN_IDLE_MS）→ 仍在開放加入，客人進得來', async () => {
+    const e = setup();
+    let give!: (room: string) => void;
+    e.signal.createRoom = () => new Promise<string>((r) => { give = r; });
+    const opening = e.host.open();
+    e.skip(JOIN_IDLE_MS + 5000);
+    await e.run(FRAME * 3);   // createRoom 還在路上時 Worker 已經 tick 了好幾次
+    give('ABCDE');
+    expect(await opening).toBe('ABCDE');
+    await e.run(FRAME * 3);
+    expect(e.host.joining).toBe(true);
+    const g = await e.joined();
+    expect(g.s.phase).toBe('live');
+    expect(e.host.joining).toBe(true);
+  });
+
+  it('createRoom 失敗 → open reject，房主回到 solo、loop 停止', async () => {
+    const e = setup();
+    e.signal.createRoom = () => Promise.reject(new Error('net down'));
+    await expect(e.host.open()).rejects.toThrow('net down');
+    expect(e.hostGame.mode).toBe('solo');
+    expect(e.hostTicker.running).toBe(false);
+    expect(e.host.room).toBeNull();
+    expect(e.host.joining).toBe(false);
+  });
+
+  it('persist 還沒寫好 → 房主不清 held（沒收到 chkAck）；寫好之後才清', async () => {
+    const e = setup();
+    let hold: Promise<void> | null = null;
+    let release!: () => void;
+    const g = await e.joined('乙', () => hold ?? Promise.resolve());
+    hold = new Promise<void>((r) => { release = r; });
+    const n0 = g.saved.length;
+    toss(g);
+    expect(await e.until(() => g.saved.length > n0, 1000)).toBe(true);
+    expect(e.held.has(g.character.id)).toBe(true);   // 房主送 chk 時寫成 held
+    await e.run(1000);
+    expect(e.held.has(g.character.id)).toBe(true);
+    release();
+    expect(await e.until(() => !e.held.has(g.character.id), 1000)).toBe(true);
+  });
+
+  it('房主 ticker 死掉 → close() 最晚 LINGER_MS × 3（主執行緒計時器）也會 resolve', async () => {
+    const e = setup();
+    await e.joined();
+    vi.useFakeTimers();
+    e.driveHost = false;
+    let closed = false;
+    void e.host.close().then(() => { closed = true; });
+    await drain();
+    expect(closed).toBe(false);
+    vi.advanceTimersByTime(LINGER_MS * 3);
+    await drain();
+    expect(closed).toBe(true);
+    expect(e.hostTicker.running).toBe(false);
+    expect(e.hostGame.mode).toBe('solo');
+  });
+
+  it('客人 ticker 死掉 → leave() 最晚 LINGER_MS × 3 也會 resolve：關連線、停 loop', async () => {
+    const e = setup();
+    const g = await e.joined();
+    vi.useFakeTimers();
+    e.driveGuests = false;
+    let done = false;
+    void g.s.leave().then(() => { done = true; });
+    await drain();
+    expect(done).toBe(false);
+    vi.advanceTimersByTime(LINGER_MS * 3);
+    await drain();
+    expect(done).toBe(true);
+    expect(g.peers[0].link.open).toBe(false);
+    expect(g.ticker.running).toBe(false);
   });
 
   it('onChange 收到 join 與 leave，nick 正確', async () => {
