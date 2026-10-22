@@ -14,7 +14,10 @@ import { handbook } from './handbook';
 import { arrivalScenes, onReturn, sceneDone } from './events';
 
 /** Rin's banters, in the pairs' fixed order: what her people page lists after her chats (B1, B2; ids are frozen once shipped). */
-const RIN_BANTERS: SceneId[] = ['banter:chizuru-rin:1', 'banter:noel-rin:1', 'banter:noel-rin:2', 'banter:rin-scarlet:1', 'banter:rin-sylvie:1'];
+const RIN_BANTERS: SceneId[] = [
+  'banter:chizuru-rin:1', 'banter:chizuru-rin:2', 'banter:noel-rin:1', 'banter:noel-rin:2', 'banter:rin-scarlet:1', 'banter:rin-scarlet:2',
+  'banter:rin-scarlet:3', 'banter:rin-selene:1', 'banter:rin-selene:2', 'banter:rin-sylvie:1', 'banter:rin-sylvie:2',
+];   // story depth Task 4 (I6): the friction banters and the moved rin-sylvie
 
 const withMemories = (s: GameState, id: CharacterId, n: number): GameState => {
   if (!s.party.recruited.includes(id)) s.party = meet(s.party, id, 1);
@@ -84,7 +87,7 @@ describe("the adventurer's handbook", () => {
     expect(segs()).toEqual(STORY.people.rin.slice(0, 3));   // seven pieces, no choice yet
     s.party.roster.rin.oath = true;
     expect(segs()).toEqual(STORY.people.rin);
-    expect(segs()[3]).toMatch(/選擇不要/);
+    expect(segs()[3]).toMatch(/不做了.*自己決定/);   // story polish Task 2: the choice, in the reveal's new words
     // the others keep three pages, whatever her oath
     expect(handbook(withMemories(s, 'noel', chainLength('noel'))).people.find((p) => p.id === 'noel')!.segments).toHaveLength(3);
   });
@@ -187,7 +190,13 @@ describe("the adventurer's handbook", () => {
     expect(arrivalScenes(s, { chat: true })).toEqual(['rin-reveal']);
     s = sceneDone(s, 'rin-reveal', 'played');
     expect(open(s)).toEqual(['prologue', 'act1']);   // the stay after the reveal: the acts wait for the next return
-    for (const id of arrivalScenes(s, { chat: false })) s = sceneDone(s, id, 'played');
+    // story depth Task 3: her confession plays alone, then one heavy major scene an arrival: each act page opens as its act plays
+    const pages: string[][] = [];
+    for (let back = 0; back < 6 && s.story.queue.length; back++) {
+      for (const id of arrivalScenes(s, { chat: false })) s = sceneDone(s, id, 'played');
+      pages.push(open(s).slice(2));
+    }
+    expect(pages.slice(0, 4)).toEqual([[], ['act2'], ['act2', 'act3'], ['act2', 'act3', 'act4']]);
     expect(open(s)).toEqual(['prologue', 'act1', 'act2', 'act3', 'act4']);
   });
 
@@ -202,11 +211,28 @@ describe("the adventurer's handbook", () => {
     const rin = h.people.find((p) => p.id === 'rin')!;
     // Task 10b: the inn night and the first return are the two of them before her story; they sit on her page, in story order.
     expect(rin.scenes.map((e) => [e.scene, e.fresh])).toEqual([
-      ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['bellkeeper-arrives', false], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
+      ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['rin-confess', false], ['bellkeeper-arrives', false], ['hero-alone', false], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
       ...RIN_BANTERS.map((id) => [id, false]),   // B1: her banters follow her chats, in the pairs' order (B2: all of them)
     ]);
     expect(h.town.find((t) => t.id === 'orik')!.scene!.fresh).toBe(true);
     expect(h.town.find((t) => t.id === 'marta')!.scene!.fresh).toBe(false);
+  });
+
+  it("Rin's page replays her confession and the lone morning once seen; the after page replays the festival (story depth Task 2)", () => {
+    const s = everything();
+    const unseen: SceneId[] = ['rin-confess', 'hero-alone', 'epilogue'];
+    s.story.seen = s.story.seen.filter((id) => !unseen.includes(id));
+    const before = handbook(s);
+    const rinOf = (h: typeof before) => h.people.find((p) => p.id === 'rin')!.scenes.map((e) => e.scene);
+    const after = (h: typeof before) => h.truths.find((t) => t.stage === 'after')!.scenes.map((e) => e.scene);
+    for (const id of unseen) expect(rinOf(before), id).not.toContain(id);
+    expect(after(before)).toEqual(['finale']);
+    s.story.seen.push(...unseen);
+    const h = handbook(s);
+    expect(rinOf(h).slice(0, 6)).toEqual(['prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone']);
+    expect(rinOf(h)[6]).toBe('chat:rin:1');   // then her chats, then her banters
+    expect(after(h)).toEqual(['finale', 'epilogue']);
+    expect(h.people.every((p) => !p.scenes.some((e) => e.scene === 'epilogue'))).toBe(true);   // the festival is the after page's alone
   });
 
   it('every scene in the catalogue has a page', () => {

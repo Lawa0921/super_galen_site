@@ -3,8 +3,6 @@ import type { HitExtra, PartyCue } from '../../render/BattleView';
 import type { FxKey } from '../../render/artPaths';
 import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
-import { STORY } from '../../data/story.zh-TW';
-import { CHARACTERS } from '../../data/characters';
 import { LIMIT_MAX, intentLabel, runeView, skillFor, type Action, type BattleState } from '../../engine/battle';
 import { autoActions } from '../../engine/builds';
 import type { Combatant } from '../../engine/combatant';
@@ -30,7 +28,8 @@ import { PartyBar, type PulseOpts } from '../partyBar';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, richNodes, win, type Rich } from '../widgets';
 import { textCps } from '../settings';
-import { playAndRecord, speakerOf, storyCtx } from '../story';
+import { playAndRecord, storyCtx } from '../story';
+import { playRescue } from '../rescue';
 import { memScene, type SceneId } from '../../data/story/scenes';
 
 /** Width kept clear for the command window; must match $slx-battle-left in _starlantern-ui.scss. */
@@ -79,6 +78,10 @@ export class BattleScene implements Scene {
   private playing: ReturnType<typeof playAndRecord> | null = null;
   /** The rune tutorial is on screen (plan 8g Task 6): the dialogue takes the actions. */
   private tutoring = false;
+  /** Who was rescued, speaking and joining after 繼續 (story polish Task 1): the dialogue takes the actions. */
+  private rescue: ReturnType<typeof playRescue> | null = null;
+  /** 繼續 was taken: the way out runs once, however often the key is pressed. */
+  private picked = false;
 
   constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
     this.bar = new PartyBar(ctx.art);
@@ -118,6 +121,7 @@ export class BattleScene implements Scene {
   }
 
   onAction(a: UiAction): void {
+    if (this.rescue) { this.rescue.onAction(a); return; }
     if (this.playing) { this.playing.onAction(a); return; }
     if (this.tutoring) { this.talk.onAction(a); return; }
     if (this.busy) return;
@@ -620,8 +624,6 @@ export class BattleScene implements Scene {
     const lines: { text: string | Rich; cls?: string }[] = [];
     if (end.outcome === 'win') {
       if (fanfare) this.ctx.sfx.win?.();
-      // The join line leads: the list scrolls, and this is the line the fight was for.
-      if (end.met) lines.push({ text: (end.met.benched ? T.ui2.rescue.benched : T.ui2.rescue.joined)(CHARACTERS[end.met.id].name, end.met.level) });
       // A fragment that did not fit is told once, by its 留下 line below, not also as found.
       const unplaced = { ...end.left };
       const found = (end.fragments ?? []).filter((g) => {
@@ -654,25 +656,22 @@ export class BattleScene implements Scene {
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
       for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it, gearIconUrl(this.ctx.art, it))]), cls: 'slx-loot-left' });
       lines.push(...levelUpLines(end.levelUps, this.ctx.game.state.party));
-      if (end.met) {
-        // Each line says who speaks; narration stands alone.
-        for (const l of STORY.meet[end.met.id].after) {
-          const name = l.who === 'narrator' ? '' : speakerOf(l.who, this.ctx.game.state, this.ctx.art, l.mood).name;
-          lines.push({ text: name ? T.battle.saidBy(name, l.text) : l.text });
-        }
-      }
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;
     this.result = new MenuView(new Menu([{ id: 'ok', label: T.battle.cont }]), {
       pick: () => {
-        if (!this.resultReady) return;   // clicks too, not just keys
+        if (!this.resultReady || this.picked) return;   // clicks too, not just keys; and only once
+        this.picked = true;
         this.ctx.sfx.confirm();
         if (end.outcome === 'lose') { this.ctx.go('town'); return; }
         const scenes = this.memoriesToPlay(end);
         // The battle that first gave a rune tells the rune tutorial once, after its memories (plan 8g ruling 13).
         const tutorial = !!end.runes?.length && !this.ctx.game.state.runeTutorialSeen;
-        if (scenes.length === 0 && !tutorial) { this.leave(); return; }
-        void this.playMemories(scenes).then(() => (tutorial ? this.runeTutorial() : undefined)).then(() => this.leave());
+        if (!end.met && scenes.length === 0 && !tutorial) { this.leave(); return; }
+        // Who was rescued speaks first, in the dialogue box, and joins after her last line; then the memories (Task 1).
+        if (end.met) { this.body.querySelector<HTMLElement>('.slx-result')!.hidden = true; this.msg.hidden = true; this.rescue = playRescue(this.talk, end.met, storyCtx(this.ctx)); }
+        const met = (this.rescue?.done ?? Promise.resolve()).catch((e) => console.error('starlantern: rescue failed', e)).finally(() => { this.rescue = null; });
+        void met.then(() => this.playMemories(scenes)).then(() => (tutorial ? this.runeTutorial() : undefined)).then(() => this.leave());
       },
     });
     // A held or repeated key must not skip the rewards: accept input after a short beat.

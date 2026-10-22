@@ -8,6 +8,7 @@ import type { Game } from '../../engine/game';
 import type { ItemInstance } from '../../engine/types';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { storyStage } from '../../engine/story/events';
+import { bellkeeperPool } from '../../engine/story/keeper';
 import { el, itemName } from '../../ui/dom';
 import { gearIconUrl } from '../gearArt';
 import { fillRich, gearPart, joinParts } from '../loot';
@@ -76,7 +77,6 @@ export class TownScene implements Scene {
       // A broken scene must not lock the town: say so in the console and carry on to the day's line.
       console.error('starlantern: arrival scene failed', e);
     }
-    const t = T.ui2.town;
     const notice = game.notice;
     const banked = game.banked;
     game.notice = null;
@@ -90,16 +90,15 @@ export class TownScene implements Scene {
     else if (notice) then(this.speak('', T.notices[notice]));
     else if (endedLine) void this.speak('', endedLine);
     else {
-      // The day's line: the town's own, and from act 2 Rin's foreshadowing once she has joined.
+      // The day's line: the town's own, told by the narrator with no plate (story polish ruling 8), and from act 2 Rin's
+      // foreshadowing once she has joined.
       const stage = storyStage(game.state);
       const chose = !!game.state.party.roster.rin?.oath;
       const rinSays = game.state.party.recruited.includes('rin') ? (chose ? STORY.rinOath : STORY.rinLines[stage] ?? []) : [];
-      // The bellkeeper is in town once his arrival scene has played (her choice only queues it for the next return, final
-      // review I-1); once the finale is won he speaks of what came after.
-      const arrived = game.state.story.seen.includes('bellkeeper-arrives');
-      const keeper = arrived ? (game.state.story.finaleCleared ? STORY.bellkeeper.after : STORY.bellkeeper.oath) : [];
+      // The bellkeeper once his arrival scene has played (engine/story/keeper.ts, story depth Task 4).
+      const keeper = bellkeeperPool(game.state);
       const pool = [
-        ...STORY.townLines[stage].map((text) => ({ who: t.place.split(' ').pop() ?? '', text })),
+        ...STORY.townLines[stage].map((text) => ({ who: '', text })),
         ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),
         ...keeper.map((text) => ({ who: NPC_NAMES.bellkeeper, text })),
       ];

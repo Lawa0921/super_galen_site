@@ -260,9 +260,19 @@ export class GateScene extends FacilityScene {
     const box = confirmBox(T.ui2.gate.ask(REGIONS[p.region].name, n, CONDITIONS[p.condition].name), (yes) => {
       this.pop();
       if (!yes) return;
-      const r = this.ctx.game.depart(p, n);
-      if (!r.ok) { this.popAll(); this.fail(r.reason); return; }
-      this.ctx.go('dungeon');
+      // Story depth plan ruling 7: a departure that may go first plays the scene it owes (the lone morning), with every
+      // window closed so the dialogue box is not under the cards; refused, nothing plays and the scene keeps waiting.
+      const refused = this.ctx.game.departCheck(p, n);
+      if (refused) { this.popAll(); this.fail(refused); return; }
+      const owed = this.ctx.game.departScene();
+      const go = (): void => {
+        const r = this.ctx.game.depart(p, n);
+        if (!r.ok) { this.popAll(); this.fail(r.reason); return; }
+        this.ctx.go('dungeon');
+      };
+      if (!owed) { go(); return; }
+      this.popAll();
+      void this.play(owed).then(go);
     });
     // Over the limit before setting out (the consumables alone): say so, but let the party go.
     const now = carried(this.ctx.game.state), cap = capacity(this.ctx.game.state.party);

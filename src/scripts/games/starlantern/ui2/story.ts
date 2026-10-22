@@ -7,7 +7,7 @@ import type { Game } from '../engine/game';
 import { memoriesOf } from '../engine/progression';
 import type { GameState } from '../engine/state';
 import type { CharacterId } from '../engine/types';
-import { art, type StoryMood } from '../render/artPaths';
+import { NORMAL_SMILES, art, type StoryMood } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { artIdOf } from '../ui/art';
 import type { UiAction } from './input';
@@ -34,9 +34,18 @@ export const NPC_FACILITY: Partial<Record<NpcId, 'guild' | 'shop' | 'inn' | 'gat
   anna: 'guild', orik: 'shop', marta: 'inn', glen: 'gate', doran: 'forge',
 };
 
-/** Faces to try for a mood, best first. Sad falls back to down and then normal; any other face straight to normal (never another feeling). */
-const faceOrder = (mood: StoryMood): StoryMood[] =>
-  mood === 'normal' ? ['normal'] : mood === 'sad' ? ['sad', 'down', 'normal'] : [mood, 'normal'];
+/** The heavy faces (story depth final review): a smile borrowed for one of these says the opposite. */
+const GRAVE = new Set<StoryMood>(['serious', 'sad', 'solemn', 'shaken', 'vow', 'distant', 'wistful']);
+/**
+ * Faces to try for a mood, best first. Sad falls back to down and then normal; any other face straight to normal (never
+ * another feeling). But a speaker whose normal portrait smiles (`NORMAL_SMILES`: the companions) takes a grave face of her
+ * own or none: until the art pipeline brings it, the line shows its name plate alone (story depth final review).
+ */
+const faceOrder = (mood: StoryMood, artId: string): StoryMood[] => {
+  if (mood === 'normal') return ['normal'];
+  if (GRAVE.has(mood) && NORMAL_SMILES.has(artId)) return [mood];
+  return mood === 'sad' ? ['sad', 'down', 'normal'] : [mood, 'normal'];
+};
 
 /** Who speaks: the name plate, and the face when there is published art for it. */
 export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: StoryMood = 'normal'): { name: string; face?: string } {
@@ -44,7 +53,7 @@ export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: Sto
   if (who in CHARACTERS) {
     const id = who as CharacterId;
     const artId = artIdOf(s.party.roster[id] ?? { id, oath: undefined });
-    const face = faceOrder(mood).map((m) => art.portrait(artId, m)).find((u) => index.has(u));
+    const face = faceOrder(mood, artId).map((m) => art.portrait(artId, m)).find((u) => index.has(u));
     return face ? { name: CHARACTERS[id].name, face } : { name: CHARACTERS[id].name };
   }
   const npc = who as NpcId;
@@ -59,7 +68,16 @@ export function linesOf(id: SceneId, s: GameState): ScriptLine[] {
     const m = s.party.roster[c];
     return !!m && memoriesOf(m) >= chainLength(c);
   });
-  return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath });
+  return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath, seen: s.story.seen });
+}
+
+/** The first one to speak in `lines`: they stand on the left, everyone else on the right. */
+const firstSpeaker = (lines: ScriptLine[]): Speaker | undefined => lines.find((l) => l.who !== 'narrator')?.who;
+
+/** Says one line in the box: its speaker's plate (or `plate`, when given), and the face on its side. */
+function sayLine(talk: Dialogue, line: ScriptLine, ctx: StoryCtx, first: Speaker | undefined, plate?: string): Promise<void> {
+  const sp = speakerOf(line.who, ctx.game.state, ctx.art, line.mood);
+  return talk.say(plate ?? sp.name, line.text, sp.face ? { src: sp.face, side: line.who === first ? 'left' : 'right' } : undefined);
 }
 
 /**
@@ -70,16 +88,13 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
   let finished = false;
   let summary: Promise<void> | null = null;
   const lines = linesOf(id, ctx.game.state);
-  const state = ctx.game.state;
-  // The first one to speak stands on the left, everyone else on the right.
-  const first = lines.find((l) => l.who !== 'narrator')?.who;
+  const first = firstSpeaker(lines);
   talk.setStyle(sceneKind(id) === 'memory' ? 'memory' : 'plain');
 
   const run = async (): Promise<'done' | 'skipped'> => {
     for (const line of lines) {
       if (summary) break;
-      const sp = speakerOf(line.who, state, ctx.art, line.mood);
-      await talk.say(sp.name, line.text, sp.face ? { src: sp.face, side: line.who === first ? 'left' : 'right' } : undefined);
+      await sayLine(talk, line, ctx, first);
     }
     if (summary) await summary;
     finished = true;
@@ -95,6 +110,37 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
       if (a === 'confirm') { talk.onAction('confirm'); return; }
       // Cancelling while the summary is up does nothing more: the summary is already the last line.
       if (a === 'cancel' && !summary) { talk.stop(); summary = talk.say('', T.ui2.story.skipped(STORY.scenes[id].summary)); }
+    },
+  };
+}
+
+/**
+ * Plays `lines` in the dialogue box as a scene plays them (plates, faces, the first speaker on the left), with no scene to
+ * record and no summary (story polish Task 1). `plate`, when it gives a string, stands in for that line's name plate; the
+ * face stays. Confirm turns the page; cancel stops at once and ends `done` with `skipped`, leaving the box to the caller's
+ * next line.
+ */
+export function playLines(talk: Dialogue, lines: ScriptLine[], ctx: StoryCtx, plate?: (line: ScriptLine, i: number) => string | undefined): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void } {
+  let finished = false;
+  let stop = (): void => {};
+  const stopped = new Promise<'skipped'>((r) => { stop = () => r('skipped'); });
+  const first = firstSpeaker(lines);
+
+  const run = async (): Promise<'done' | 'skipped'> => {
+    for (const [i, line] of lines.entries()) {
+      const said = sayLine(talk, line, ctx, first, plate?.(line, i)).then(() => 'said' as const);
+      if ((await Promise.race([said, stopped])) === 'skipped') return 'skipped';
+    }
+    return 'done';
+  };
+  const done = run().finally(() => { finished = true; });
+
+  return {
+    done,
+    onAction(a) {
+      if (finished) return;
+      if (a === 'confirm') { talk.onAction('confirm'); return; }
+      if (a === 'cancel') { finished = true; talk.stop(); stop(); }
     },
   };
 }

@@ -71,9 +71,12 @@ export function handbook(s: GameState): Handbook {
     // B1: a banter sits on the page of each of its two, after her chats, in the pairs' fixed order.
     const banters = BANTER_PAIRS.filter((p) => p.split('-').includes(id))
       .flatMap((p) => Array.from({ length: BANTER_COUNT[p] ?? 0 }, (_, i) => banterScene(p, i + 1)));
-    // Rin's page also replays the two of them before her story (the inn night and the first return, Task 10b) and the
-    // bellkeeper's arrival after it (continuity fix 4); a homecoming sits last on its owner's page (continuity fix 2).
-    const own: SceneId[] = id === 'rin' ? ['prologue-inn', 'first-return', 'rin-reveal', 'bellkeeper-arrives', ...chats, ...banters] : [...chats, ...banters, ...home];
+    // Rin's page also replays the two of them before her story (the inn night and the first return, Task 10b), her
+    // confession, the bellkeeper's arrival and the lone morning after it (continuity fix 4; story depth plan ruling 12); a
+    // homecoming sits last on its owner's page (continuity fix 2).
+    const own: SceneId[] = id === 'rin'
+      ? ['prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', ...chats, ...banters]
+      : [...chats, ...banters, ...home];
     return { id, met, title: titleOf(m), segments: STORY.people[id].slice(0, k), scenes: entries(own) };
   });
   const town = TOWN_FRAGMENTS.map((f): TownPage => {
@@ -102,8 +105,9 @@ export function handbook(s: GameState): Handbook {
       default: return s.story.nodes.includes(stage) && seen.has(TRUTH_SCENE[stage]);
     }
   };
+  // The after page replays the finale, then the lantern festival (story depth plan ruling 12).
   const truths = STAGES.map((stage): TruthPage => ({
-    stage, unlocked: open(stage), text: open(stage) ? STORY.truths[stage] : null, scenes: entries([TRUTH_SCENE[stage]]),
+    stage, unlocked: open(stage), text: open(stage) ? STORY.truths[stage] : null, scenes: entries(stage === 'after' ? ['finale', 'epilogue'] : [TRUTH_SCENE[stage]]),
   }));
   const followed = followedLeads(s);
   const leads: LeadsPage = { current: nextLead(s), followed, allMet: followed.length === MEETINGS.length };

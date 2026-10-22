@@ -50,6 +50,12 @@ export const MOODS_OF: Record<string, StoryMood[]> = Object.fromEntries(
 export const PUBLISHED_FACES: Record<string, StoryMood[]> = {
   hero: ['smile', 'sad'], rin: ['smile', 'sad'], 'rin-oath': ['smile', 'sad'],
 };
+/**
+ * Art ids whose `normal` portrait smiles (story depth final review, checked by eye on the published art): every companion.
+ * Lorne's and Rin's normal faces are calm, so they are not here. A grave line of theirs with no face of its own shows no
+ * portrait (ui2/story.ts); when their serious and sad art is published (plan leftovers, user approval), it shows instead.
+ */
+export const NORMAL_SMILES: ReadonlySet<string> = new Set(['selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet']);
 
 /** Characters whose art is not on disk yet; allArtUrls leaves them out. */
 export const NO_ART_YET = new Set<CharacterId>();

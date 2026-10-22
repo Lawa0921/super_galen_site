@@ -1,5 +1,5 @@
 import { favouredRegions } from '../data/meetings';
-import type { ActNode, SceneId } from '../data/story/scenes';
+import type { ActNode, BanterPair, SceneId } from '../data/story/scenes';
 import type { TownFragmentId } from '../data/story/fragments';
 import type { RegionId } from '../data/regions';
 import type { Portal } from './dungeon/run';
@@ -40,6 +40,10 @@ export interface StoryState {
   returned: TownFragmentId[];
   /** Marta's meal waits for the next departure (Task 9). */
   fed: boolean;
+  /** Story depth Task 6 review: how many returns each banter pair has had one ready and not heard it (`nextBanter`'s tie-break). */
+  waited?: Partial<Record<BanterPair, number>>;
+  /** Story depth Task 15 review: where Rin told the table (`rin-confess`), at dinner or at the depth-30 rest before the finale. */
+  confession?: 'dinner' | 'depth30';
 }
 
 /** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */

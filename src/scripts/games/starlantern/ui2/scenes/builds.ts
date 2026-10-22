@@ -93,6 +93,8 @@ export class BuildsScene implements Scene {
   private btns!: HTMLElement;
   private footWhy!: HTMLElement;
   private footMsg!: HTMLElement;
+  /** How to stop following, beside the buttons while the card is the build she follows (story depth Task 20). */
+  private footNote!: HTMLElement;
   private backEl!: HTMLElement;
   private hintEl!: HTMLElement;
   private view: MenuView | null = null;
@@ -116,9 +118,10 @@ export class BuildsScene implements Scene {
     this.btns = el('div', { class: 'slx-bd-btns' });
     this.footWhy = el('p', { class: 'slx-bd-why' });
     this.footMsg = el('p', { class: 'slx-bd-msg' });
+    this.footNote = el('p', { class: 'slx-bd-note' });
     this.cardWin = win('slx-bd-card', [
       cueFrame('slx-bd-card-frame', this.cardBody, (top) => { this.cardTop = top; }),
-      el('div', { class: 'slx-bd-foot', attrs: { role: 'status', 'aria-live': 'polite' } }, [this.btns, this.footWhy, this.footMsg]),
+      el('div', { class: 'slx-bd-foot', attrs: { role: 'status', 'aria-live': 'polite' } }, [this.btns, this.footNote, this.footWhy, this.footMsg]),
     ]);
     this.backEl = backControl(() => this.onAction('cancel'));
     this.hintEl = el('p', { class: 'slx-keyhint' });
@@ -399,6 +402,7 @@ export class BuildsScene implements Scene {
       });
       return btn;
     }));
+    this.footNote.textContent = this.followed === this.key ? B.stopHint : '';
     this.footWhy.textContent = off ? B.townOnly : this.refused;
     this.hintEl.textContent = acts.length > 1 ? B.hint : B.hintOne;
     this.footMsg.textContent = this.msg;

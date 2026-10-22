@@ -7,7 +7,7 @@ import { STORY_FIGHT_ROUNDS, createBattle, planEnemies, resolveRound, rewards, w
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
-import { ACT_DEPTHS, ACT_NODES, FINALE_BOSS, FINALE_DEPTH, memScene, type SceneId } from '../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, ALONE, DEPARTURE_SCENES, FINALE_BOSS, FINALE_DEPTH, memScene, type SceneId } from '../data/story/scenes';
 import { STORY } from '../data/story.zh-TW';
 import { PERKS, SHARD_IDS, isFragmentItem, shardGrade, type ShardGrade, type TownFragmentId } from '../data/story/fragments';
 import { absorb, fragmentItem, gainOf, hasPerk, lootFragments, returnFragment, sellShards, type AbsorbResult } from './story/fragments';
@@ -215,11 +215,31 @@ export class Game {
     return this.phase === 'map' && tileAt(this.map(), this.pos) === 'entrance';
   }
 
+  /** Why a departure through `portal` at `startDepth` would be refused, or null when it may go (story depth plan ruling 7). */
+  departCheck(portal: Portal, startDepth: number): 'locked' | 'party-down' | 'phase' | null {
+    if (this.phase !== 'town') return 'phase';
+    if (!startDepths(portal.region, this.state.dungeon.reached[portal.region]).includes(startDepth)) return 'locked';
+    if (!activeIds(this.state.party).some((id) => this.state.party.roster[id].hp > 0)) return 'party-down';
+    return null;
+  }
+
+  /**
+   * The scene a departure plays first (story depth plan ruling 6): the first `DEPARTURE_SCENES` waiting in the queue, in town,
+   * once his ninth piece and the bellkeeper's arrival are both seen and no scene that plays alone is waiting. Otherwise null,
+   * and it keeps waiting for a later departure.
+   */
+  departScene(): SceneId | null {
+    const story = this.state.story;
+    if (this.phase !== 'town') return null;
+    if (!story.seen.includes('mem:hero:9') || !story.seen.includes('bellkeeper-arrives')) return null;
+    if (ALONE.some((id) => story.queue.includes(id))) return null;
+    return DEPARTURE_SCENES.find((id) => story.queue.includes(id)) ?? null;
+  }
+
   /** Start a new run through a gate: a fresh labyrinth every time. */
   depart(portal: Portal, startDepth: number): { ok: true } | { ok: false; reason: 'locked' | 'party-down' | 'phase' } {
-    if (this.phase !== 'town') return { ok: false, reason: 'phase' };
-    if (!startDepths(portal.region, this.state.dungeon.reached[portal.region]).includes(startDepth)) return { ok: false, reason: 'locked' };
-    if (!activeIds(this.state.party).some((id) => this.state.party.roster[id].hp > 0)) return { ok: false, reason: 'party-down' };
+    const refused = this.departCheck(portal, startDepth);
+    if (refused) return { ok: false, reason: refused };
     this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited));
     this.pending = [];
     this.finale = null;
@@ -1169,11 +1189,16 @@ export class Game {
    * finale, one of its own scenes. It leaves that list and the story queue; town saves at once.
    */
   sceneDone(id: SceneId, how: 'played' | 'skipped' | 'auto'): boolean {
-    const due = this.arrival.includes(id) || this.pending.includes(id) || (this.finale !== null && (id === 'finale' || this.finale.pieces.includes(id)));
+    const due = this.arrival.includes(id) || this.pending.includes(id) || (this.finale !== null && (id === 'finale' || this.finale.pieces.includes(id)))
+      || id === this.departScene();
     if (!due) return false;
     this.arrival = this.arrival.filter((s) => s !== id);
     this.pending = this.pending.filter((s) => s !== id);
     this.state = sceneDone(this.state, id, how);
+    // Inside the finale, a scene its own list covers never waits in the queue (Task 3 review): the keeper her confession
+    // queues is the finale's to play, and leaving the ending early must not leave him for the town after the festival.
+    const covered = this.finale?.pieces;
+    if (covered) this.state.story.queue = this.state.story.queue.filter((q) => !covered.includes(q));
     this.saveInTown();
     return true;
   }
@@ -1202,23 +1227,33 @@ export class Game {
 
   /**
    * The scenes the finale plays before itself, in story order. First every act still owed (continuity fix 1): one held back
-   * by Rin's reveal, or one reached on this dive and never brought home; an act must never play after the ending. Then the
-   * bellkeeper's arrival if it still waits (the finale hands her bell to him; continuity fix 4). Then the hero pieces this
-   * fight filled in and any still waiting in the queue from an earlier floor (depth 25's top-up), in piece order. What is
-   * taken leaves the queue, so the town does not play it again.
+   * by Rin's reveal, or one reached on this dive and never brought home; an act must never play after the ending. Then her
+   * confession if it still waits, and the bellkeeper's arrival if it waits or the confession does (the finale hands her bell
+   * to him; continuity fix 4; story depth plan ruling 8: playing the confession queues him, and the finale plays him itself).
+   * Then the hero pieces this fight filled in and any still waiting in the queue from an earlier floor (depth 25's top-up),
+   * in piece order. What is taken leaves the queue, so the town does not play it again. A lone morning not seen yet is
+   * answered by the finale, queued or not (no return may have come between her choice, his ninth piece and the bottom;
+   * design §9.3.5): it counts as seen, and new, so the handbook offers it.
    */
   private finalePieces(gained: FragmentGain[]): SceneId[] {
     const story = this.state.story;
     const reached = this.state.dungeon.reached.mainline;
     const acts = ACT_NODES.filter((node) => !story.seen.includes(node) && (story.queue.includes(node) || reached >= ACT_DEPTHS[node]));
     for (const node of acts) if (!story.nodes.includes(node)) story.nodes.push(node);
-    const keeper: SceneId[] = story.queue.includes('bellkeeper-arrives') ? ['bellkeeper-arrives'] : [];
+    const confess: SceneId[] = story.queue.includes('rin-confess') ? ['rin-confess'] : [];
+    const keeper: SceneId[] = story.queue.includes('bellkeeper-arrives') || confess.length ? ['bellkeeper-arrives'] : [];
     const heroNo = (id: SceneId) => Number(id.slice('mem:hero:'.length));
     const queued = story.queue.filter((id) => id.startsWith('mem:hero:'));
-    const taken = new Set<SceneId>([...acts, ...keeper]);
+    const taken = new Set<SceneId>([...acts, ...confess, ...keeper]);
     story.queue = story.queue.filter((id) => !id.startsWith('mem:hero:') && !taken.has(id));
+    for (const id of DEPARTURE_SCENES) {
+      story.queue = story.queue.filter((q) => q !== id);
+      if (story.seen.includes(id)) continue;
+      story.seen.push(id);
+      if (!story.fresh.includes(id)) story.fresh.push(id);
+    }
     const filled = gained.flatMap((g) => (g.kind === 'piece' && g.id === 'hero' ? [memScene('hero', g.n)] : []));
-    return [...acts, ...keeper, ...[...new Set([...queued, ...filled])].sort((a, b) => heroNo(a) - heroNo(b))];
+    return [...acts, ...confess, ...keeper, ...[...new Set([...queued, ...filled])].sort((a, b) => heroNo(a) - heroNo(b))];
   }
 
   /** The mainline's depth 3 holds the story boss: beating it ends Act 1. */

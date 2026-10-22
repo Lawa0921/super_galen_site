@@ -231,6 +231,18 @@ describe('BuildsScene (plan 8h Task 7)', () => {
     expect(w.rune('fire-star', 'ignite')!.dataset.state).toBe('lack');
   });
 
+  it('the stop instruction sits by the buttons, not on the card (story depth Task 20)', () => {
+    const w = setup((g) => { noel(35)(g); g.applyBuild('noel', 'meteor'); g.notice = null; });
+    expect(w.card()).toContain(B.followingNow);
+    expect(w.card()).not.toContain(B.stopFollow);                 // the card says what following does, the foot how to stop
+    expect(w.foot()).toContain(B.stopHint);
+    expect(B.stopHint).toContain(`「${B.stopFollow}」`);
+    expect(w.root.querySelector('.slx-bd-foot .slx-bd-note')!.textContent).toBe(B.stopHint);
+    // Not following that build: no stop to explain.
+    const other = setup(noel(35));
+    expect(other.foot()).not.toContain(B.stopHint);
+  });
+
   it('stop following is its own button, and asks first', () => {
     const w = setup((g) => { noel(35)(g); g.applyBuild('noel', 'meteor'); g.notice = null; });
     expect(w.cur()).toBe('meteor');                             // it opens on the build she follows

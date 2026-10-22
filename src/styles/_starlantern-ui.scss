@@ -1353,4 +1353,6 @@ $slx-starlit: #bff6ff;
 .slx-bd-btn.slx-sel { border-color: $slx-gold; }
 .slx-bd-btn[aria-disabled='true'] { color: #6f6a5c; cursor: default; }
 .slx-bd-why { color: $slx-down; }
+.slx-bd-note { color: $slx-dim; }
+.slx-bd-note:empty { display: none; }
 .slx-bd-msg { color: $slx-up; }

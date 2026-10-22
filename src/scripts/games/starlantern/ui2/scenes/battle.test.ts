@@ -24,7 +24,7 @@ import { ECHO, echoDef } from '../../engine/mechanics/echo';
 import { CHARACTERS } from '../../data/characters';
 import { SHARD_NAMES } from '../../data/story/fragments';
 import { FINALE_DEPTH } from '../../data/story/scenes';
-import { STORY } from '../../data/story.zh-TW';
+import { STORY, type ScriptLine } from '../../data/story.zh-TW';
 import { DEFAULT_SETTINGS } from '../settings';
 import type { SceneCtx } from '../scene';
 
@@ -331,7 +331,7 @@ describe('BattleScene', () => {
     expect(lines).not.toContain('蝙蝠翼膜 ×2');
   });
 
-  it('a won rescue lists who joined', async () => {
+  it('a won rescue keeps the result list to the spoils', async () => {
     const run = async (benched: boolean) => {
       const { game, s, root } = setup();
       const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], met: { id: 'selene' as const, level: 4, benched } };
@@ -339,33 +339,15 @@ describe('BattleScene', () => {
       for (let i = 0; i < 5; i++) s.onAction('down');
       s.onAction('confirm');
       await flush();
-      return [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
+      return [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent ?? '');
     };
-    const joined = await run(false);
-    expect(joined[0]).toBe(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));   // first, so the list's scroll never hides it
-    expect(joined.length).toBeGreaterThan(2);
-    const benched = await run(true);
-    expect(benched[0]).toBe(T.ui2.rescue.benched(CHARACTERS.selene.name, 4));
-    expect(benched).not.toContain(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));
-  });
-
-  it("a meeting's after-lines show who speaks", async () => {
-    const lines = STORY.meet.selene.after;
-    const saved = [...lines];
-    lines.splice(0, lines.length, { who: 'selene', text: '謝謝你們。' }, { who: 'narrator', text: '她收起了劍。' });
-    try {
-      const { game, s, root } = setup();
-      const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], met: { id: 'selene' as const, level: 4, benched: false } };
-      vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
-      for (let i = 0; i < 5; i++) s.onAction('down');
-      s.onAction('confirm');
-      await flush();
-      const got = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
-      expect(got).toContain(T.battle.saidBy(CHARACTERS.selene.name, '謝謝你們。'));
-      expect(got).toContain('她收起了劍。');
-      expect(got).not.toContain(T.battle.saidBy('', '她收起了劍。'));
-    } finally {
-      lines.splice(0, lines.length, ...saved);
+    for (const benched of [false, true]) {
+      const got = await run(benched);
+      expect(got).toContain(T.battle.exp(5));
+      // Who joined, and her words, are told in the dialogue box after 繼續 (story polish Task 1), never in the list.
+      expect(got).not.toContain(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));
+      expect(got).not.toContain(T.ui2.rescue.benched(CHARACTERS.selene.name, 4));
+      for (const l of STORY.meet.selene.after) expect(got.join('\n'), l.text).not.toContain(l.text);
     }
   });
 
@@ -382,11 +364,10 @@ describe('BattleScene', () => {
     s.onAction('confirm');
     await flush();
     const lines = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
-    const joined = lines.indexOf(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));
-    expect(joined).toBe(0);
-    expect(lines[joined + 1]).toBe(T.ui2.memory.piece(CHARACTERS.rin.name, 2));
-    expect(lines[joined + 2]).toBe(T.ui2.memory.shard(SHARD_NAMES.clear));
-    expect(lines[joined + 3]).toBe(T.ui2.memory.town('瑪莎的記憶碎片'));
+    expect(lines).not.toContain(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));   // the join line is said after 繼續 (story polish Task 1)
+    expect(lines[0]).toBe(T.ui2.memory.piece(CHARACTERS.rin.name, 2));
+    expect(lines[1]).toBe(T.ui2.memory.shard(SHARD_NAMES.clear));
+    expect(lines[2]).toBe(T.ui2.memory.town('瑪莎的記憶碎片'));
   });
 
   it('a fragment that did not fit is told once, as left behind', async () => {
@@ -1080,6 +1061,134 @@ describe('BattleScene story', () => {
     expect(go).toHaveBeenCalledWith('dungeon');
     expect(err).toHaveBeenCalled();
     err.mockRestore();
+  });
+
+  // Story polish Task 1 (S1 A1): who joins, and her words, play in the dialogue box after 繼續, not in the result list.
+  const rescueWin = (game: Game, benched = false, fragments: { kind: 'piece'; id: 'rin'; n: number; play: boolean }[] = []) => {
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], met: { id: 'selene' as const, level: 4, benched }, fragments };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+  };
+  const plateOf = (root: HTMLElement) => root.querySelector('.slx-talk .slx-name')!.textContent ?? '';
+  const textOf = (root: HTMLElement) => root.querySelector('.slx-talk .slx-text')!.textContent ?? '';
+  /** Reads the dialogue to its end, one confirm a line: the plates and the lines, in order. */
+  const readOut = async (s: BattleScene, root: HTMLElement) => {
+    const plates: string[] = [], texts: string[] = [];
+    for (let i = 0; i < 20 && !talkHidden(root); i++) { plates.push(plateOf(root)); texts.push(textOf(root)); s.onAction('confirm'); await flush(); }
+    return { plates, texts };
+  };
+  const joinedLine = (benched = false) => (benched ? T.ui2.rescue.benched : T.ui2.rescue.joined)(CHARACTERS.selene.name, 4);
+  /** Puts `lines` in Selene's after-lines for the test, and back after it. */
+  const withAfter = async (lines: ScriptLine[], fn: () => Promise<void>) => {
+    const after = STORY.meet.selene.after;
+    const saved = [...after];
+    after.splice(0, after.length, ...lines);
+    try { await fn(); } finally { after.splice(0, after.length, ...saved); }
+  };
+  const three: ScriptLine[] = [{ who: 'selene', text: '謝謝你們。' }, { who: 'narrator', text: '她收起了劍。' }, { who: 'selene', text: '我是瑟蕾。' }];
+
+  it('her words play in the dialogue box after 繼續, her plate once she has said her name, then the join line', async () => {
+    await withAfter(three, async () => {
+      const { game, go, s, root } = setup(undefined, instant);
+      rescueWin(game);
+      await fight(s);
+      expect(talkHidden(root)).toBe(true);   // nothing said over the result window
+      s.onAction('confirm');                 // 繼續
+      await flush();
+      expect((root.querySelector('.slx-result') as HTMLElement).hidden).toBe(true);
+      const { plates, texts } = await readOut(s, root);
+      expect(plates).toEqual([T.ui2.rescue.stranger, '', CHARACTERS.selene.name, '']);
+      expect(texts).toEqual(['謝謝你們。', '她收起了劍。', '我是瑟蕾。', joinedLine()]);
+      expect(go).toHaveBeenCalledTimes(1);
+      expect(go).toHaveBeenCalledWith('dungeon');
+    });
+  });
+
+  it('a benched rescue ends on the bench line', async () => {
+    const { game, s, root } = setup(undefined, instant);
+    rescueWin(game, true);
+    await fight(s);
+    s.onAction('confirm');
+    await flush();
+    const { texts } = await readOut(s, root);
+    expect(texts).toEqual([...STORY.meet.selene.after.map((l) => l.text), joinedLine(true)]);
+    expect(texts).not.toContain(joinedLine());
+  });
+
+  it('cancel during her words goes straight to the join line, then the memories', async () => {
+    const { game, go, s, root } = setup((g) => { g.pending.push('mem:rin:1'); }, instant);
+    rescueWin(game, false, [{ kind: 'piece', id: 'rin', n: 1, play: true }]);
+    await fight(s);
+    s.onAction('confirm');   // 繼續
+    await flush();
+    expect(textOf(root)).toBe(STORY.meet.selene.after[0].text);
+    s.onAction('cancel');
+    await flush();
+    expect(textOf(root)).toBe(joinedLine());
+    expect(root.querySelector('.slx-talk--memory')).toBeNull();
+    s.onAction('confirm');
+    await flush();
+    expect(root.querySelector('.slx-talk--memory')).not.toBeNull();   // her memory follows the join line
+    expect(go).not.toHaveBeenCalled();
+    for (let i = 0; i < 40 && !talkHidden(root); i++) { s.onAction('confirm'); await flush(); }
+    expect(go).toHaveBeenCalledTimes(1);
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(game.state.story.seen).toContain('mem:rin:1');
+  });
+
+  it('confirm on the join line leaves exactly once', async () => {
+    const { game, go, s, root } = setup(undefined, instant);
+    rescueWin(game);
+    await fight(s);
+    s.onAction('confirm');   // 繼續
+    await flush();
+    for (let i = 0; i < 20 && textOf(root) !== joinedLine(); i++) { s.onAction('confirm'); await flush(); }
+    expect(textOf(root)).toBe(joinedLine());
+    expect(go).not.toHaveBeenCalled();
+    for (let i = 0; i < 5; i++) s.onAction('confirm');   // a held key on the join line
+    await flush();
+    s.onAction('confirm');                               // and once more, on what was the result menu
+    await flush();
+    expect(go).toHaveBeenCalledTimes(1);
+    expect(go).toHaveBeenCalledWith('dungeon');
+  });
+
+  it('her words play whatever the story setting', async () => {
+    const none: Partial<SceneCtx> = { settings: { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant', story: 'none' }) } };
+    const { game, go, s, root } = setup(undefined, none);
+    rescueWin(game);
+    await fight(s);
+    s.onAction('confirm');
+    await flush();
+    const { texts } = await readOut(s, root);
+    expect(texts).toEqual([...STORY.meet.selene.after.map((l) => l.text), joinedLine()]);
+    expect(go).toHaveBeenCalledWith('dungeon');
+  });
+
+  it('Esc while her line is still typing jumps to the join line, and Esc on the join line finishes it before it closes it', async () => {
+    const { game, go, s, root } = setup();   // no settings: the default speed, so every line types out
+    rescueWin(game);
+    await fight(s);
+    s.onAction('confirm');   // 繼續
+    await flush();
+    const first = STORY.meet.selene.after[0].text;
+    expect(textOf(root).length).toBeLessThan(first.length);   // her first line is still typing
+    s.onAction('cancel');
+    await flush();
+    const join = joinedLine();
+    expect(talkHidden(root)).toBe(false);
+    expect(plateOf(root)).toBe('');                              // the narrator's join line, not more of her words
+    expect(join.startsWith(textOf(root))).toBe(true);
+    expect(textOf(root).length).toBeLessThan(join.length);      // and it is typing in turn
+    s.onAction('cancel');                                        // Esc on a typing join line only finishes it
+    await flush();
+    expect(textOf(root)).toBe(join);
+    expect(talkHidden(root)).toBe(false);
+    expect(go).not.toHaveBeenCalled();
+    s.onAction('cancel');                                        // read: Esc closes it as confirm does
+    await flush();
+    expect(go).toHaveBeenCalledTimes(1);
+    expect(go).toHaveBeenCalledWith('dungeon');
+    s.exit?.();
   });
 });
 
