@@ -53,6 +53,8 @@ export interface Rig {
   driveHost: boolean;
   /** 每位客人目前的連線（客人那一端） */
   links: NetLink[];
+  /** 同上，房主那一端（驗延遲關閉用） */
+  hostLinks: NetLink[];
   /** 每位客人加入時的角色 */
   chars: DelveCharacter[];
   /** 房主收到每位客人的 ps（state 通道）則數 */
@@ -153,7 +155,7 @@ export function coopRig(o: RigOptions = {}): Rig {
   host.open();
   const hs = new FixedStepper();
   const guests: NetGuest[] = [], steppers: FixedStepper[] = [], paused: boolean[] = [];
-  const links: NetLink[] = [], chars: DelveCharacter[] = [], ps: number[] = [], checkpoints: DelveCharacter[][] = [];
+  const links: NetLink[] = [], hostLinks: NetLink[] = [], chars: DelveCharacter[] = [], ps: number[] = [], checkpoints: DelveCharacter[][] = [];
   const cols: { cx: number; diff: number[] }[][] = [];
   let now = 0;
 
@@ -168,11 +170,12 @@ export function coopRig(o: RigOptions = {}): Rig {
       if (m && m.head.t === 'col') cols[i].push({ cx: m.head.cx, diff: m.head.diff.map((q) => q.cy) });
     });
     links[i] = p.guest;
+    hostLinks[i] = p.host;
     return p.guest;
   };
 
   const rig: Rig = {
-    net, host, hostGame, guests, visits, checkpoints, links, chars, ps, cols,
+    net, host, hostGame, guests, visits, checkpoints, links, hostLinks, chars, ps, cols,
     driveHost: true,
     get now() { return now; },
     run(ms, each) {

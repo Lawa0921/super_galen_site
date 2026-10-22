@@ -15,8 +15,8 @@ import { validateCharacterStrict, type DelveCharacter } from '../save/character'
 import type { VisitSave } from '../save/worldSave';
 import type { Channel, NetLink, Payload } from './link';
 import {
-  BULK_HIGH_WATER, CHAR_HZ, CHK_MS, CMD_BURST, CMD_RATE, GUEST_TIMEOUT_MS, LIQ_HZ, LOOK_MS, MAX_GUESTS, NET_TILE_COLS, PROTO,
-  PS_BOAT, PS_CLIMB, PS_GROUND, PS_STALE_MS, SAVE_DEBOUNCE_MS, WORLD_SIG_MS, WS_HZ,
+  BULK_HIGH_WATER, CHAR_HZ, CHK_MS, CMD_BURST, CMD_RATE, GUEST_TIMEOUT_MS, LIQ_HZ, LINGER_MS, LOOK_MS, MAX_GUESTS, NET_TILE_COLS, PING_MS, PROTO,
+  PS_BOAT, PS_CLIMB, PS_GROUND, PS_STALE_MS, REPLACE_SILENT_MS, SAVE_DEBOUNCE_MS, SUM_PARK_MAX, WORLD_SIG_MS, WS_HZ,
   type ByeReason, type GuestCtrl, type HostCtrl, type PeerInfo, type Ps, type RejectReason, type WireBatch, type Ws,
   type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj,
 } from './protocol';
@@ -35,7 +35,7 @@ export interface NetHostOptions {
   maxGuests?: number;
 }
 export type GuestPhase = 'hello' | 'syncing' | 'live';
-export interface GuestInfo { pid: Pid; charId: string; nick: string; phase: GuestPhase; silentMs: number }
+export interface GuestInfo { pid: Pid; charId: string; nick: string; phase: GuestPhase; silentMs: number; rttMs: number | null }
 
 /** 跨邊界指令（物品進出世界 / 箱子 / 商店 / 鍛造）：同一幀結束時送 chk，並觸發存世界的防抖（C9） */
 export const BOUNDARY_OPS: ReadonlySet<CmdOp> = new Set<CmdOp>([
@@ -66,9 +66,17 @@ interface Guest {
   tiles: WireBatch[]; ev: DelveEvent[]; pub: DelveEvent[];
   /** bulk 待送（依序）；chunk 去重 */
   jobs: BulkJob[]; chunkQ: Set<number>; liq: Set<number>;
+  /** 興趣範圍外的 sum（cx → sums，Map 順序 = 新舊）：走近才回；太遠或超過 SUM_PARK_MAX 就丟 */
+  parkedSums: Map<number, number[]>;
+  /** ping：下次送出時間與最近一次 pong 算出的 RTT */
+  nextPing: number; rttMs: number | null;
+  /** true = 已移出名單、連線留在 lingerQ 等 LINGER_MS 後關（期間只處理 pong） */
+  lingering: boolean;
 }
 
 type Inbox = { g: Guest; ch: Channel; data: Payload } | { g: Guest; close: true };
+/** 延遲關閉中的連線：到 at 才 close */
+interface Linger { g: Guest; at: number }
 type Timer = 'ws' | 'liq' | 'char' | 'world' | 'look';
 const PERIOD: Record<Timer, number> = { ws: 1000 / WS_HZ, liq: 1000 / LIQ_HZ, char: 1000 / CHAR_HZ, world: WORLD_SIG_MS, look: LOOK_MS };
 
@@ -100,6 +108,9 @@ export class NetHost {
   private readonly maxGuests: number;
   private list: Guest[] = [];
   private inbox: Inbox[] = [];
+  /** reject / 帶 bye 的 remove 之後等 LINGER_MS 才關連線；lingerIn = 這些連線期間送來的訊息（目前只理 pong，Task 2 加 chkAck） */
+  private lingerQ: Linger[] = [];
+  private lingerIn: { g: Guest; ch: Channel; data: Payload }[] = [];
   /** 離線客人最後的角色（C8）：同 charId 再加入時與 hello 帶來的取 rev 較大的 */
   private readonly retained = new Map<string, { character: DelveCharacter; rev: number }>();
   private readonly lookKeys = new Map<Pid, string>();
@@ -135,16 +146,21 @@ export class NetHost {
       teleBase: 0, teleSeen: 0, knockSeen: 0, psSeq: -1, psAt: 0, released: false, prev: { x: 0, y: 0, at: 0 },
       tokens: CMD_BURST, tokenAt: 0, charRev: 0, charSig: '', nextChk: 0, chkNow: false,
       tiles: [], ev: [], pub: [], jobs: [], chunkQ: new Set(), liq: new Set(),
+      parkedSums: new Map(), nextPing: 0, rttMs: null, lingering: false,
     };
-    link.onMessage((ch, data) => { if (g.alive) this.inbox.push({ g, ch, data }); });
+    link.onMessage((ch, data) => {
+      if (g.alive) this.inbox.push({ g, ch, data });
+      else if (g.lingering) this.lingerIn.push({ g, ch, data });
+    });
     link.onClose(() => { if (g.alive) this.inbox.push({ g, close: true }); });
-    if (!this.opened || this.closed) { g.alive = false; this.sendCtrl(g, { t: 'reject', reason: 'closed' }); return; }
+    if (!this.opened || this.closed) { this.reject(g, 'closed'); return; }
     this.list.push(g);
   }
 
   frame(nowMs: number, steps: number): void {
-    if (!this.opened || this.closed) return;
     this.now = nowMs;
+    this.sweepLinger();
+    if (!this.opened || this.closed) return;
     for (const g of this.list) if (g.heardAt === null) g.heardAt = nowMs;
     // ① 收件匣
     const inbox = this.inbox;
@@ -193,8 +209,17 @@ export class NetHost {
   guests(): GuestInfo[] {
     return this.list.map((g) => ({
       pid: g.pid, charId: g.charId, nick: g.nick, phase: g.phase,
-      silentMs: g.heardAt === null ? 0 : Math.max(0, this.now - g.heardAt),
+      silentMs: g.heardAt === null ? 0 : Math.max(0, this.now - g.heardAt), rttMs: g.rttMs,
     }));
+  }
+
+  /** 還在等延遲關閉的連線數 */
+  get lingering(): number { return this.lingerQ.length; }
+
+  /** 只給測試：客人 pid 目前停放的遠方 sum 的 cx（舊到新） */
+  debugParked(pid: Pid): number[] {
+    const g = this.list.find((o) => o.alive && o.pid === pid);
+    return g ? [...g.parkedSums.keys()] : [];
   }
 
   // ── 收訊 ──────────────────────────────────────────
@@ -208,7 +233,9 @@ export class NetHost {
     if (g.phase === 'hello') return;                                          // 還沒加入：只收 hello
     switch (m.t) {
       case 'ready': if (g.phase === 'syncing') g.phase = 'live'; return;
-      case 'sum': g.jobs.push({ k: 'sum', cx: m.cx, sums: m.sums }); return;  // 每則都要依序回一次（不限速）
+      case 'sum': this.onSum(g, m.cx, m.sums); return;
+      case 'ping': this.sendCtrl(g, { t: 'pong', at: m.at }); return;
+      case 'pong': g.rttMs = Math.max(0, this.now - m.at); return;
       case 'cmd': this.onCmd(g, m); return;
       case 'bye': this.remove(g, null); return;
     }
@@ -218,8 +245,9 @@ export class NetHost {
     const game = this.game;
     if (m.proto !== PROTO || m.build !== this.opts.build) { this.reject(g, 'proto'); return; }
     // 同 charId 的舊連線已經逾時（還沒輪到 ④）→ 先移除
+    // （RTC 常常沒及時報斷線，所以不等 GUEST_TIMEOUT_MS：沉默超過 REPLACE_SILENT_MS 就讓新連線取代）
     const dup = this.list.find((o) => o !== g && o.alive && o.phase !== 'hello' && o.charId === m.charId);
-    if (dup && this.now - (dup.heardAt ?? this.now) > GUEST_TIMEOUT_MS) this.remove(dup, 'timeout');
+    if (dup && this.now - (dup.heardAt ?? this.now) > REPLACE_SILENT_MS) this.remove(dup, 'timeout');
     if (this.list.filter((o) => o.alive && o.phase !== 'hello').length >= this.maxGuests) { this.reject(g, 'full'); return; }
     let character: DelveCharacter;
     try { character = validateCharacterStrict(m.character); } catch { this.reject(g, 'char'); return; }
@@ -238,7 +266,7 @@ export class NetHost {
       phase: 'syncing', pid, charId: m.charId, nick: m.nick,
       teleBase: a.teleSeq, teleSeen: a.teleSeq, knockSeen: a.knockSeq,
       psSeq: -1, psAt: now, released: false, prev: { x: a.player.x, y: a.player.y, at: now },
-      tokens: CMD_BURST, tokenAt: now, charRev: character.rev, nextChk: now + CHK_MS, chkNow: false,
+      tokens: CMD_BURST, tokenAt: now, charRev: character.rev, nextChk: now + CHK_MS, chkNow: false, nextPing: now,
     } satisfies Partial<Guest>);
     // 空字串：第一個 char 計時一到就送（房主可能改用 retained 那份較新的角色，客人手上只有 hello 那份）
     g.charSig = '';
@@ -254,6 +282,19 @@ export class NetHost {
     const look = this.lookOf(pid);
     this.lookKeys.set(pid, look.key);
     this.broadcast({ t: 'look', pid, nick: g.nick, look: look.look }, g);
+  }
+
+  /** sum：興趣範圍內照舊依序回（同 cx 已排著就換掉它的 sums）；範圍外先停放，走近才回 */
+  private onSum(g: Guest, cx: number, sums: number[]): void {
+    if (Math.abs(cx - this.colOf(g.pid)) <= NET_TILE_COLS) {
+      g.parkedSums.delete(cx);
+      const job = g.jobs.find((j) => j.k === 'sum' && j.cx === cx);
+      if (job && job.k === 'sum') job.sums = sums; else g.jobs.push({ k: 'sum', cx, sums });
+      return;
+    }
+    g.parkedSums.delete(cx);                                                  // 先 delete 再 set：排到最新
+    g.parkedSums.set(cx, sums);
+    while (g.parkedSums.size > SUM_PARK_MAX) g.parkedSums.delete(g.parkedSums.keys().next().value!);
   }
 
   private onCmd(g: Guest, m: Extract<GuestCtrl, { t: 'cmd' }>): void {
@@ -357,6 +398,15 @@ export class NetHost {
     let ws: ReturnType<NetHost['wsParts']> | null = null;
     for (const g of this.list) {
       if (!g.alive || g.phase === 'hello') continue;
+      if (g.parkedSums.size) {
+        const gcx = this.colOf(g.pid);
+        for (const [cx, sums] of [...g.parkedSums]) {
+          const d = Math.abs(cx - gcx);
+          if (d <= NET_TILE_COLS) { g.parkedSums.delete(cx); g.jobs.push({ k: 'sum', cx, sums }); }
+          else if (d > 2 * NET_TILE_COLS) g.parkedSums.delete(cx);
+        }
+      }
+      if (now >= g.nextPing) { g.nextPing = now + PING_MS; this.sendCtrl(g, { t: 'ping', at: now }); }
       if (g.tiles.length) { this.sendCtrl(g, { t: 'tiles', tick: game.tick, batches: g.tiles }); g.tiles = []; }
       if (g.ev.length) { this.sendCtrl(g, { t: 'ev', list: g.ev }); g.ev = []; }
       if (g.pub.length) { this.sendCtrl(g, { t: 'pub', list: g.pub }); g.pub = []; }
@@ -462,13 +512,37 @@ export class NetHost {
       this.lookKeys.delete(g.pid);
       this.broadcast({ t: 'gone', pid: g.pid }, null);
     }
-    if (bye && g.link.open) this.sendCtrl(g, { t: 'bye', reason: bye });
+    if (bye && g.link.open) { this.sendCtrl(g, { t: 'bye', reason: bye }); this.linger(g); }
   }
 
   private reject(g: Guest, reason: RejectReason): void {
     this.sendCtrl(g, { t: 'reject', reason });
     g.alive = false;
     this.list = this.list.filter((o) => o !== g);
+    this.linger(g);
+  }
+
+  /** 連線不立刻關（剛送出的 reject / bye 會被丟掉）：LINGER_MS 後才關，期間客人那端自己也不關 */
+  private linger(g: Guest): void {
+    g.lingering = true;
+    this.lingerQ.push({ g, at: this.now + LINGER_MS });
+  }
+
+  /** 每個 frame 開頭：處理延遲中連線收到的訊息（目前只有 pong；Task 2 加 chkAck），再關掉到期的 */
+  private sweepLinger(): void {
+    const inbox = this.lingerIn;
+    this.lingerIn = [];
+    const w = this.opened ? this.game.world : null;
+    for (const it of inbox) {
+      if (!it.g.lingering || it.ch !== 'ctrl' || !w) continue;
+      const m = parseGuestCtrl(it.data, w.chunksY, { lo: chunkOfX(w.xMin), hi: chunkOfX(w.xMax - 1) });
+      if (m && m.t === 'pong') it.g.rttMs = Math.max(0, this.now - m.at);
+    }
+    if (!this.lingerQ.length) return;
+    const due = this.lingerQ.filter((l) => this.now >= l.at);
+    if (!due.length) return;
+    this.lingerQ = this.lingerQ.filter((l) => this.now < l.at);
+    for (const l of due) { l.g.lingering = false; if (l.g.link.open) l.g.link.close('linger'); }
   }
 
   // ── 小工具 ────────────────────────────────────────

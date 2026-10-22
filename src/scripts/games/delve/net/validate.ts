@@ -47,6 +47,10 @@ export function parseGuestCtrl(data: Payload, chunksY: number, cxRange: { lo: nu
       const reason = get(o, 'reason');
       return BYE.includes(reason as ByeReason) ? { t: 'bye', reason: reason as ByeReason } : null;
     }
+    case 'ping': case 'pong': {
+      const at = get(o, 'at');
+      return fin(at) ? { t: get(o, 't') as 'ping' | 'pong', at } : null;
+    }
     default: return null;
   }
 }

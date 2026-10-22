@@ -205,11 +205,11 @@ describe('A7 斷線重連（arena；Review Focus 4）', () => {
     expect(r.sameTiles(0)).toEqual([]);
   });
 
-  it('客人沉默 30 秒（還沒逾時）→ 同 charId 從第二條連線 hello → reject charInUse；舊的那位恢復後照常 live', () => {
+  it('客人沉默 4 秒（還不到 REPLACE_SILENT_MS）→ 同 charId 從第二條連線 hello → reject charInUse；舊的那位恢復後照常 live', () => {
     const r = coopRig();
     const g = r.guests[0], hg = r.hostGame;
     r.pause(0, true);
-    r.run(30_000);
+    r.run(4000);
     expect(hg.actors.has('p1')).toBe(true);
     expect(r.host.guests()[0].phase).toBe('live');
     const g2 = r.join({ character: r.chars[0] });

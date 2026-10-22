@@ -438,7 +438,7 @@ describe('NetGuest 主機離線', () => {
     expect(END_TEXT.hostGone).toBe('主機已離線');
     expect(calls.length).toBe(1);
     expect(g.lastCheckpoint).toEqual({ rev: calls[0].rev, character: calls[0].c });
-    expect(r.link.open).toBe(false);
+    expect(r.link.open).toBe(true);                // 連線由房主延遲關閉（LINGER_MS），客人不自己關
   });
 
   it('sever → ended、主機已離線、lastCheckpoint 是最後那則', () => {
@@ -552,7 +552,7 @@ describe('NetGuest 拒絕與版本', () => {
     expect(s.made).toBe(0);
   });
 
-  it('reject full → ended 房間已滿、自己關連線', () => {
+  it('reject full → ended 房間已滿（連線由房主延遲關閉，客人不自己關）', () => {
     const net = new LoopbackNet();
     const p = net.pair();
     p.host.onMessage(() => { p.host.send('ctrl', JSON.stringify({ t: 'reject', reason: 'full' })); });
@@ -560,7 +560,7 @@ describe('NetGuest 拒絕與版本', () => {
     for (let i = 1; i < 5; i++) { net.advance(FRAME); g.frame(i * FRAME, 1); }
     expect(g.state).toBe('ended');
     expect(g.endText).toBe('房間已滿');
-    expect(p.guest.open).toBe(false);
+    expect(p.guest.open).toBe(true);
     expect(END_TEXT).toMatchObject({
       full: '房間已滿', proto: '版本不同，請重新整理頁面', gen: '世界版本不同，無法加入', charInUse: '這個角色已經在房間裡',
       char: '角色檔格式不正確', closed: '主機已離線', hostGone: '主機已離線', timeout: '連線逾時', leave: '已離開',

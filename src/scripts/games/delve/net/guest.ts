@@ -21,7 +21,7 @@ import { chunkOfX } from '../engine/coords';
 import type { DelveCharacter } from '../save/character';
 import type { Channel, NetLink, Payload } from './link';
 import {
-  HOST_TIMEOUT_MS, PROTO, PS_BOAT, PS_CLIMB, PS_GROUND, PS_HZ,
+  HOST_TIMEOUT_MS, PING_MS, PROTO, PS_BOAT, PS_CLIMB, PS_GROUND, PS_HZ,
   type ByeReason, type GuestCtrl, type HostCtrl, type Ps, type RejectReason, type Welcome, type WorldSnap,
   type Ws, type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj,
 } from './protocol';
@@ -116,6 +116,8 @@ export class NetGuest {
   private cmdSeq = 0;
   private psSeq = 0;
   private nextPs = -Infinity;
+  private nextPing = -Infinity;
+  private rtt: number | null = null;
   /** 最後收到的 teleport tseq（ps 回報） */
   private tseq = 0;
   private placeCd = 0;
@@ -148,6 +150,8 @@ export class NetGuest {
   get lastCheckpoint(): { rev: number; character: DelveCharacter } | null { return this.checkpoint; }
   /** chunk 同步狀態（測試 / 除錯用）；welcome 之前 null */
   get sync(): ChunkSyncGuest | null { return this.chunks; }
+  /** 最近一次 ping/pong 量到的往返時間（ms）；第一個 pong 到之前是 null */
+  get rttMs(): number | null { return this.rtt; }
 
   frame(nowMs: number, steps: number): void {
     this.now = nowMs;
@@ -167,6 +171,7 @@ export class NetGuest {
     if (nowMs - this.heardAt > HOST_TIMEOUT_MS) { this.end(END_TEXT.hostGone, true); return; }
     const game = this.replica;
     if (!game) return;
+    if (nowMs >= this.nextPing) { this.nextPing = nowMs + PING_MS; this.ctrl({ t: 'ping', at: nowMs }); }
     // ②–⑤ 包起來：半套用的房主狀態讓副本拋例外 → 丟掉這一幀的工作，不拋出 frame（引擎沒有 warn / invariant 管道，不記錄）
     try { this.simulate(game, nowMs, steps); } catch { /* 這一幀的模擬丟掉 */ }
     // ⑥ 內插取樣寫進 replica 的列表（C12）
@@ -243,6 +248,8 @@ export class NetGuest {
     this.tseq = 0;
     this.placeCd = 0;
     this.nextPs = -Infinity;
+    this.nextPing = -Infinity;
+    this.rtt = null;
     this.pending.clear();
     this.resetWs();
     this.peerInfo.clear();
@@ -313,8 +320,11 @@ export class NetGuest {
     const c = m as unknown as HostCtrl;
     switch (c.t) {
       case 'welcome': this.onWelcome(c); return;
-      case 'reject': this.end(endText(c.reason), true); return;
-      case 'bye': this.end(endText(c.reason), true); return;
+      // reject / bye 之後由房主延遲關連線（LINGER_MS，讓最後的訊息送達），客人不自己關
+      case 'reject': this.end(endText(c.reason), false); return;
+      case 'bye': this.end(endText(c.reason), false); return;
+      case 'ping': if (fin(c.at)) this.ctrl({ t: 'pong', at: c.at }); return;
+      case 'pong': if (fin(c.at)) this.rtt = Math.max(0, this.now - c.at); return;
     }
     const game = this.replica;
     if (!game) return;

@@ -23,6 +23,8 @@ export const PS_HZ = 20, WS_HZ = 15, LIQ_HZ = 5, CHAR_HZ = 5;
 export const WORLD_SIG_MS = 1000, LOOK_MS = 1000, CHK_MS = 30_000, SAVE_DEBOUNCE_MS = 2000;
 export const GUEST_TIMEOUT_MS = 90_000, HOST_TIMEOUT_MS = 90_000, PS_STALE_MS = 500;   // C8
 export const INTERP_DELAY_MS = 100, CMD_RATE = 30, CMD_BURST = 60;
+/** M-C：reject / bye 之後房主多留連線這麼久才關（讓最後那則訊息送達）；ping 週期；每位客人停放的遠方 sum 上限；同角色舊連線沉默超過這麼久可被新 hello 取代 */
+export const LINGER_MS = 2000, PING_MS = 2000, SUM_PARK_MAX = 32, REPLACE_SILENT_MS = 5000;
 /** 定義在 engine/constants.ts（引擎不依賴 net/）；這裡轉出口，既有的 import 不必改 */
 export { REMOTE_REACH_SLACK } from '../engine/constants';
 /** 興趣範圍（C6）：tiles／liq 用的欄數，比客人自己的 UNLOAD_COLS 多 2 欄 */
@@ -60,9 +62,10 @@ export type HostCtrl = Welcome | { t: 'reject'; reason: RejectReason } | { t: 't
   | { t: 'char'; rev: number; character: DelveCharacter } | { t: 'chk'; rev: number; character: DelveCharacter }
   | { t: 'look'; pid: Pid; nick: string; look: DollLook } | { t: 'gone'; pid: Pid }
   | { t: 'teleport'; x: number; y: number; tseq: number } | { t: 'knock'; vx: number; vy: number; dur: number }
-  | { t: 'world'; snap: WorldSnap } | { t: 'bye'; reason: ByeReason };
+  | { t: 'world'; snap: WorldSnap } | { t: 'bye'; reason: ByeReason } | { t: 'ping'; at: number } | { t: 'pong'; at: number };
 export type GuestCtrl = { t: 'hello'; proto: number; build: string; charId: string; nick: string; character: unknown }
-  | { t: 'ready' } | { t: 'cmd'; seq: number; cmd: Cmd } | { t: 'sum'; cx: number; sums: number[] } | { t: 'bye'; reason: ByeReason };
+  | { t: 'ready' } | { t: 'cmd'; seq: number; cmd: Cmd } | { t: 'sum'; cx: number; sums: number[] } | { t: 'bye'; reason: ByeReason }
+  | { t: 'ping'; at: number } | { t: 'pong'; at: number };
 
 /** spec §5.6 第 2 點：只有世界層級（Task 7 產生 / 套用） */
 export interface WorldSnap {
