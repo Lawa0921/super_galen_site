@@ -126,7 +126,7 @@ export class DropList {
       if (gear) d.gear = gear;
       if (tint) d.tint = cloneTint(tint);
       this.list.push(d);
-      while (this.list.length > MAX_DROPS) this.list.shift();
+      this.evict();
       return d;
     }
     for (const d of this.list) {
@@ -149,8 +149,17 @@ export class DropList {
       });
       this.list.push(last);
     }
-    while (this.list.length > MAX_DROPS) this.list.shift();
+    this.evict();
     return last;
+  }
+
+  /** 超過 MAX_DROPS 時淘汰：先淘汰最舊的「沒有 owner 或 ownerDelay ≤ 0」的堆，都沒有才淘汰最舊的 */
+  private evict(): void {
+    while (this.list.length > MAX_DROPS) {
+      let i = this.list.findIndex((d) => !d.owner || (d.ownerDelay ?? 0) <= 0);
+      if (i < 0) i = 0;
+      this.list.splice(i, 1);
+    }
   }
 
   /**

@@ -55,6 +55,9 @@ const NO_COL = 0x3fffffff;
 /** 停放 / readChunk 的六層 */
 const CHUNK_LAYERS = ['fg', 'wall', 'liquid', 'liquidType', 'frozen', 'half'] as const;
 
+/** writeChunk 選項 */
+export interface WriteChunkOpts { /** 編輯日誌把這個 chunk 標 full（預設 true；讀檔還原傳 false） */ journal?: boolean }
+
 export class World {
   readonly width: number;
   readonly height: number;
@@ -106,6 +109,8 @@ export class World {
   onTileChange: ((x: number, y: number) => void) | null = null;
   /** 前景 / 背景牆每改一格 +1（據點評分等快取用來判斷要不要重算） */
   rev = 0;
+  /** true（客人副本）：unloadColumn 直接丟掉、不停放，並清掉那些 chunk 的 modified / liquidModified（回來時由房主重新同步） */
+  noPark = false;
 
   // ── 欄儲存 ──────────────────────────────────────────
   /** 邊界內第一 / 最後一欄（含） */
@@ -248,13 +253,14 @@ export class World {
     }
     return col;
   }
-  /** 卸載第 cx 欄：pinned 的拒絕（回 false）；有改過的 chunk（modifiedChunks ∪ liquidModified）→ 停放 */
+  /** 卸載第 cx 欄：pinned 的拒絕（回 false）；有改過的 chunk（modifiedChunks ∪ liquidModified）→ 停放（noPark：丟掉） */
   unloadColumn(cx: number): boolean {
     if (this.isPinned(cx) || !this.isResident(cx)) return false;
     const col = this.slots[cx - this.cxLo]!;
     for (let cy = 0; cy < this.chunksY; cy++) {
       const k = this.chunkIndex(cx, cy);
-      if (this.modifiedChunks.has(k) || this.liquidModified.has(k)) this.parked.set(k, extractChunk(col, cy));
+      if (this.noPark) { this.modifiedChunks.delete(k); this.liquidModified.delete(k); }
+      else if (this.modifiedChunks.has(k) || this.liquidModified.has(k)) this.parked.set(k, extractChunk(col, cy));
       // 沒常駐的 chunk 不重畫（renderer 不烘焙卸載的欄）
       this.dirty.delete(k);
       this.liquidDirty.delete(k);
@@ -298,9 +304,10 @@ export class World {
   }
   /**
    * 覆寫 (cx, cy) chunk 的六層並標為已修改（欄沒常駐就先 ensure；邊界外的格丟掉）。
-   * journal = 編輯日誌把這個 chunk 標 full（讀檔還原傳 false：還原不進日誌）
+   * opts.journal = 編輯日誌把這個 chunk 標 full（預設 true；讀檔還原傳 false：還原不進日誌）
    */
-  writeChunk(cx: number, cy: number, d: ChunkData, journal = true): void {
+  writeChunk(cx: number, cy: number, d: ChunkData, opts: WriteChunkOpts = {}): void {
+    const journal = opts.journal ?? true;
     if (cy < 0 || cy >= this.chunksY || cx < this.cxLo || cx > this.cxHi) return;
     const col = this.ensureColumn(cx);
     const o = cy * CK, n = Math.min(CK, col.fg.length - o);
@@ -461,11 +468,15 @@ export class World {
     const c = this.col(x >> 5);
     return c !== null && c.frozen[(y << 5) | (x & 31)] === 1;
   }
-  /** 設定 / 取消結冰（霜系統用；不標 dirty——呼叫端自己決定重畫哪些 chunk） */
+  /** 設定 / 取消結冰（霜系統用；不標 dirty——呼叫端自己決定重畫哪些 chunk）。值有變 → 該 chunk 進 netLiquid（D5：結冰跟著液體走） */
   setFrozen(x: number, y: number, on: boolean): void {
     if (!this.inBounds(x, y)) return;
     const c = this.col(x >> 5);
-    if (c !== null) c.frozen[(y << 5) | (x & 31)] = on ? 1 : 0;
+    if (c === null) return;
+    const i = (y << 5) | (x & 31), v = on ? 1 : 0;
+    if (c.frozen[i] === v) return;
+    c.frozen[i] = v;
+    this.netLiquid.add(this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK)));
   }
   /** (x,y) 的材質變體 0..2（世界外 / 沒常駐照座標雜湊——同一個雜湊） */
   variantAt(x: number, y: number): number {

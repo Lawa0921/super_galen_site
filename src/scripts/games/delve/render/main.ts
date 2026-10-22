@@ -5,7 +5,7 @@ import { LIQUID_BUDGET_MS } from '../engine/game';
 import { LIQ } from '../engine/liquidKind';
 import { Renderer } from './renderer';
 import { Hud } from './hud';
-import { FixedStepper, blockedMessage, hintText } from './model';
+import { FixedStepper, blockedMessage, hintText, stepsInFrame, inputAction, drainsEvents } from './model';
 import { Minimap, FullMap } from './mapView';
 import { MapPages } from './mapPages';
 import { ExploreUi } from './journal';
@@ -229,11 +229,15 @@ export function startDelve(opts: StartOptions): DelveHandle {
     last = now;
     const t0 = performance.now();
     // 和 NPC 對話（面板開著）時：非和平模式下暫停模擬（怪物不會趁你挑商品時打你）；UI 事件照常處理
-    const talking = !game.peaceful && (folkUi.isOpen || settleUi.npcOpen);
+    // 連線時（mode !== 'solo'）不暫停模擬：模擬由 NetLoop 跑，這裡只畫；對話／選單只放開按鍵
+    const npcOpen = !game.peaceful && (folkUi.isOpen || settleUi.npcOpen);
+    const talking = game.mode === 'solo' && npcOpen;
     if (talking !== talkPaused) { talkPaused = talking; root.dataset.talkpause = talking ? '1' : ''; if (!talking) delete root.dataset.talkpause; if (talking) controls.releaseAll(); }
-    if (!paused) {
-      if (!talking) {
-        controls.update();
+    if (drainsEvents(game.mode, paused)) {
+      const act = inputAction(game.mode, paused, talking, npcOpen);
+      if (act === 'update') controls.update();
+      else if (act === 'release') controls.releaseAll();
+      if (stepsInFrame(game.mode, paused, talking)) {
         const n = stepper.advance(dt);
         for (let i = 0; i < n; i++) game.step(FIXED_DT);
       }
@@ -378,7 +382,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       }
       if (invChanged) hud.refresh();
     }
-    renderer.render(paused || talkPaused ? 0 : dt);
+    renderer.render((paused && game.mode === 'solo') || talkPaused ? 0 : dt);
     hud.tick();
     levels.tick(dt);
     ui.tick(dt);

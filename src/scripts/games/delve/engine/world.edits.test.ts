@@ -87,7 +87,7 @@ describe('World.edits', () => {
 
   it('writeChunk(…, false)（讀檔還原）不進日誌', () => {
     const w = new World(64, 64);
-    w.writeChunk(0, 0, w.readChunk(0, 0)!, false);
+    w.writeChunk(0, 0, w.readChunk(0, 0)!, { journal: false });
     expect(w.edits.pending()).toBe(0);
     expect(w.modifiedChunks.has(w.chunkIndex(0, 0))).toBe(true);
   });
