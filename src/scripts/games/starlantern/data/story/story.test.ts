@@ -6,7 +6,7 @@ import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
 import { FOUND_LINE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
-import { AFTER_CHOICE, pinBeat, sceneReadings, storyTexts, type Text } from './voiceGates';
+import { AFTER_CHOICE, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
 import { T } from '../text.zh-TW';
 import type { CharacterId } from '../../engine/types';
 import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
@@ -3021,5 +3021,80 @@ describe('story depth Task 17: the town day to day', () => {
     expect(act4.some((t) => /洛恩和凜/.test(t))).toBe(false);
     const heavy = act4.filter((t) => /暗|熄|不再來|倒在他頭上|那個歸來者/.test(t));
     expect(heavy.length * 2).toBeLessThan(act4.length);   // the light lines outnumber the heavy
+  });
+});
+
+describe('story depth Task 18: the townsfolk returns and the bellkeeper', () => {
+  const pin = (id: SceneId, reading: Partial<LineWhen>, re: RegExp) => expect(() => pinBeat(id, reading, re), `${id} ${re}`).not.toThrow();
+  const said = (id: SceneId, re: RegExp) => STORY.scenes[id].lines.find((l) => re.test(l.text));
+  const oath = () => STORY.bellkeeper.oath.map((l) => l.text);
+  /** How many of a speaker's lines carry 「……」 over the whole script, and how many lines they have. */
+  const share = (who: string) => {
+    const theirs = storyTexts().filter((t) => speakerOf(t.key, t.line) === who);
+    return { dots: theirs.filter((t) => t.text.includes('……')).length, lines: theirs.length };
+  };
+
+  it("Glen remembers the young man in the robe and the way he pointed him, the setup the keeper's line answers (design §7.3, ruling b)", () => {
+    for (const r of sceneReadings('town:glen')) expect(r.lines.length).toBeLessThanOrEqual(8);
+    for (const re of [/想起來了/, /穿長袍的年輕人/, /指了路/, /天沒亮/, /這一次，我記住了/]) {
+      pin('town:glen', {}, re);
+      expect(said('town:glen', re)!.who, String(re)).toBe('glen');
+    }
+    const L = STORY.scenes['town:glen'].lines;
+    expect(L[L.length - 1].text).toMatch(/這一次，我記住了/);   // the closing stays his
+    const at = (re: RegExp) => L.findIndex((l) => re.test(l.text));
+    expect(at(/想起來了/)).toBeLessThan(at(/穿長袍的年輕人/));
+    expect(at(/穿長袍的年輕人/)).toBeLessThan(at(/天沒亮/));     // the robe, then why he stands at the gate before dawn
+    expect(L.map((l) => l.text).join('') + STORY.scenes['town:glen'].summary).not.toMatch(/靜鐘會|鐘守|殺/);
+    expect(STORY.scenes['town:glen'].summary).toMatch(/指了路/);
+    // the keeper's line that answers it waits for Glen's piece, and names what Glen remembered
+    const boy = STORY.bellkeeper.oath.filter((l) => /指路的少年/.test(l.text));
+    expect(boy).toHaveLength(1);
+    expect(boy[0].if?.returned).toBe('glen');
+    expect(boy[0].text).toMatch(/想起來了/);
+  });
+
+  it('the keeper while he waits: the blink line for everyone, cold, and never a word to or from Rin past 「師父」 (ruling a)', () => {
+    const blink = STORY.bellkeeper.oath.filter((l) => /不准眨眼/.test(l.text));
+    expect(blink).toHaveLength(1);
+    expect(blink[0].if).toBeUndefined();
+    for (const t of oath()) expect(t, t).not.toMatch(/原諒|和好|對不起|孩子笑/);
+    // Rin says one word to him in his arrival and nothing after it
+    const arrives = STORY.scenes['bellkeeper-arrives'].lines;
+    const rinAfter = arrives.slice(arrives.findIndex((l) => l.who === 'rin' && /師父/.test(l.text)) + 1).filter((l) => l.who === 'rin');
+    expect(rinAfter).toEqual([]);
+  });
+
+  it("after the finale his warmth is his own: he sees her laugh from afar, with others, and buys a second loaf for the gate (design §3.3)", () => {
+    const after = STORY.bellkeeper.after;
+    const laugh = after.filter((t) => /那孩子笑起來的樣子/.test(t));
+    expect(laugh).toHaveLength(1);
+    expect(laugh[0]).toMatch(/隔著|遠遠/);
+    expect(laugh[0]).toMatch(/同伴/);
+    expect(laugh[0]).toMatch(/沒有走過去/);
+    for (const t of after) expect(t, t).not.toMatch(/凜|原諒|和好|對我笑|向我笑/);
+    const bread = after.filter((t) => /麵包/.test(t));
+    expect(bread).toHaveLength(1);
+    expect(bread[0]).toMatch(/兩個/);
+    expect(bread[0]).toMatch(/守門/);
+    expect(STORY.townLines.after!.filter((t) => /葛倫和穿長袍的老人/.test(t))).toHaveLength(1);   // the bench stays
+  });
+
+  it('each return keeps its beat (ledger I-87 to I-91)', () => {
+    pin('town:orik', {}, /紅帽子/);
+    pin('town:orik', { full: ['liz'], returned: ['orik'] }, /爸爸。我回來了/);
+    pin('town:marta', {}, /路上小心/);
+    pin('town:anna', {}, /鬆開了手/);
+    pin('town:anna', {}, /緹雅/);
+    pin('town:doran', {}, /聽鐵/);
+    pin('town:doran', {}, /洛恩/);
+  });
+
+  it("Orik and the keeper are back inside their 「……」 share (plan Task 18, controller ruling after Task 17)", () => {
+    for (const who of ['orik', 'bellkeeper', 'glen', 'marta', 'anna', 'doran']) {
+      const s = share(who);
+      expect(s.dots, `${who}: ${s.dots} of ${s.lines}`).toBeLessThanOrEqual(Math.max(1, Math.floor(s.lines / 6)));
+    }
+    expect([...oath(), ...STORY.bellkeeper.after].filter((t) => t.includes('……')).length).toBeLessThanOrEqual(1);   // the finale holds his other one
   });
 });

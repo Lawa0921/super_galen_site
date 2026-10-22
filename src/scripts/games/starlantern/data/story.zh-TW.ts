@@ -1207,25 +1207,25 @@ const TOWN_SCENES: Record<TownFragmentId, Written> = {
   orik: {
     lines: [
       N('道具店，打烊以後。歐里克把碎片捧在掌心。嗓門大了一輩子的人，半天說不出一句話。'),
-      { who: 'orik', text: '「……小兄弟，我想起來了。是我女兒的臉。一笑，眼睛就瞇成一條線，跟我一個樣。」' },
-      { who: 'orik', text: '「想起來的，是她出門那年的臉，還是個小丫頭。……現在長成什麼模樣，老頭子我可猜不著。」' },
+      { who: 'orik', text: '「小兄弟，我想起來了。是我女兒的臉。她一笑，眼睛就瞇成一條線，跟我一個樣。」' },
+      { who: 'orik', text: '「想起來的，是她出門那年的臉，還是個小丫頭。現在長成什麼模樣，老頭子我可猜不著。」' },
       { who: 'orik', text: '「門後還掛著一頂紅帽子，是她的。這些年，我一直沒捨得收。」' },
       { who: 'orik', text: '「壓箱底的好貨，我賣了。這三百金幣是謝禮。往後店裡的東西，都算你便宜一成！」' },
       { who: 'narrator', text: '店門被推開了。莉茲站在門口，看著門後那頂紅帽子，一步也沒有動。', if: { full: 'liz' } },
-      { who: 'liz', mood: 'sad', text: '「……爸爸。我回來了。」', if: { full: 'liz' } },
-      { who: 'orik', text: '「……丫頭？是妳。妳看那頂帽子的樣子，爸爸認得。……它還等著妳戴呢。」', if: { full: 'liz' } },
+      { who: 'liz', mood: 'sad', text: '「爸爸。我回來了。」', if: { full: 'liz' } },
+      { who: 'orik', text: '「丫頭？……是妳啊。妳看那頂帽子的樣子，爸爸認得。它還等著妳戴呢。」', if: { full: 'liz' } },
     ],
     summary: '歐里克想起了女兒小時候的臉。門後那頂紅帽子，他一直沒捨得收。他賣了壓箱底的好貨當謝禮，往後也算便宜一成。',
   },
   marta: {
     lines: [
       N('月影旅館的廚房。瑪莎把碎片貼在胸口，爐上的湯咕嘟咕嘟地響。'),
-      { who: 'marta', text: '「……想起來了。他走的那天早上，我也在煮這鍋湯。」' },
+      { who: 'marta', text: '「想起來了。他走的那天早上，我也在煮這鍋湯。」' },
       { who: 'marta', text: '「他是冒險者。出門前說：『回來的時候，把今天的事說給我聽。』」' },
       { who: 'marta', text: '「我一直怕，那天沒跟他說路上小心。……原來說了。追到門口，說了兩次。」' },
-      { who: 'marta', text: '「日記，原來是寫給他的。他回來的時候，我要說得出每一天。」' },
-      { who: 'hero', mood: 'normal', text: '「那，往後就不必寫了？」' },
-      { who: 'marta', text: '「還是會寫。現在想記住的事變多了。……你們的事，一件也不想漏。」' },
+      { who: 'marta', text: '「那本日記，原來是寫給他的。他回來的時候，我要說得出每一天。」' },
+      { who: 'hero', mood: 'normal', text: '「那以後就不用寫了？」' },
+      { who: 'marta', text: '「還是會寫。現在想記住的事變多了。你們的事，一件也不想漏。」' },
       { who: 'marta', text: '「這兩根復活羽毛，是他留在家裡的，你們帶著。往後的飯菜，我多添一道。」' },
     ],
     summary: '瑪莎想起丈夫出門的那個早上，她說了路上小心。日記原本是寫給他的；往後她還是會寫，因為想記住的事變多了。',
@@ -1234,9 +1234,9 @@ const TOWN_SCENES: Record<TownFragmentId, Written> = {
     lines: [
       N('冒險者公會，打烊以後。安娜從櫃子最底層，抽出一張發黃的失憶登記表。'),
       { who: 'anna', text: '「這一張是我的。名字那一欄的『安娜』，是上一任公會長取的。『名字總要有一個』，是他說的。」' },
-      { who: 'anna', text: '「……緹雅。進迷宮之前，我叫這個名字。我也當過冒險者。」' },
+      { who: 'anna', text: '「緹雅。進迷宮之前，我叫這個名字。我也當過冒險者。」' },
       { who: 'anna', text: '「我們四個人，提著同一盞燈下去。隊長總說，一起下去的，算同一盞燈。」' },
-      { who: 'anna', text: '「暮霧湧上來的時候，我鬆開了手。……醒來，已經躺在公會的床上。」' },
+      { who: 'anna', text: '「暮霧湧上來的時候，我鬆開了手。……再醒來，已經躺在公會的床上了。」' },
       { who: 'hero', mood: 'serious', text: '「其他三個人呢？」' },
       { who: 'anna', text: '「不知道。可是他們的名字，我想起來了。他們的登記表，我會一張一張找。」' },
       { who: 'anna', text: '「收購價我會調高，碎片都是拚了命帶上來的。這顆星燈之淚，是我們當年帶上來的，給你們。」' },
@@ -1246,26 +1246,29 @@ const TOWN_SCENES: Record<TownFragmentId, Written> = {
   glen: {
     lines: [
       N('傳送門廣場，天還沒亮。葛倫站在門前，盯著那三座門看了很久。'),
-      { who: 'glen', text: '「『這身灰，是深處才有的。』……小子，那天我怎麼知道的？因為我見過。」' },
-      { who: 'glen', text: '「那年我十七，剛當上守門的。天還沒亮，門自己亮了。」' },
-      { who: 'glen', text: '「走出來一個渾身是灰的男人，拖著一把劍。走了幾步，就倒在我腳邊。」' },
-      { who: 'glen', text: '「倒下之前，他還笑了一下：『門，還開著啊。』……那張臉，跟你很像。」' },
-      { who: 'hero', mood: 'distant', text: '「……後來呢？」' },
-      { who: 'glen', text: '「碎片裡只有那個早上。『門還開著』這句，我說了幾十年……原來是跟他學的。」' },
+      // Story depth Task 18 (design §7.3, controller ruling b): the morning, then the young man in the robe he pointed the
+      // way, and why his body stood at the gate before dawn all act 3 (townLines.act3). He never learns who the young man
+      // was, so he names no society; the keeper's line that answers this waits for this piece (bellkeeper.oath, I-185).
+      { who: 'glen', text: '「我想起來了，小子。那年我十七，剛當上守門的。天還沒亮，門自己亮了。」' },
+      { who: 'glen', text: '「走出來一個渾身是灰、拖著劍的男人，長得跟你很像。走沒幾步，就倒在我腳邊。」' },
+      { who: 'glen', text: '「倒下前，他還笑了一下：『門還開著啊。』這句話我說了幾十年，原來是跟他學的。」' },
+      { who: 'hero', mood: 'distant', text: '「那個人，後來呢？」' },
+      { who: 'glen', text: '「幾天後，一個穿長袍的年輕人來問，從門裡出來的那個人住在哪裡。我說了，還替他指了路。」' },
+      { who: 'glen', text: '「後來那個人就不在了。……我天沒亮就站在這裡，原來是為了這個。」' },
       { who: 'glen', text: '「這一次，我記住了，洛恩。五百金幣，守門攢的，拿去買藥。哪扇門不合意，我替你換。」' },
     ],
-    summary: '葛倫想起年輕時的一個早上：傳送門自己亮了，走出來一個渾身是灰、長得像洛恩的男人。這一次，他記住了洛恩的名字。',
+    summary: '葛倫想起十七歲那年，門裡走出一個像洛恩的男人。幾天後，他替一個穿長袍的年輕人指了路。這一次，他記住了洛恩。',
   },
   doran: {
     lines: [
       N('鍛造屋。多蘭握著碎片站在爐前，風箱停了很久。'),
-      { who: 'doran', text: '「……師父的手法。我在鋼鐵要塞，把它弄丟了。」' },
+      { who: 'doran', text: '「師父的手法，我在鋼鐵要塞弄丟了。」' },
       { who: 'doran', text: '「年輕時下去找要塞的鐵。鐵扛回來了，手卻忘了怎麼打它。」' },
       { who: 'doran', text: '「師父按著我的手說：『別看火，聽鐵。鐵唱起來的那一下，就是火候。』」' },
-      { who: 'hero', mood: 'serious', text: '「現在，聽得見嗎？」' },
+      { who: 'hero', mood: 'serious', text: '「現在聽得見了嗎？」' },
       N('多蘭拉起風箱。爐火一亮，燒紅的鐵塊發出一聲細細的鳴響。'),
-      { who: 'doran', text: '「……聽見了。差的那一點，原來在耳朵裡。」' },
-      { who: 'doran', text: '「洛恩。這塊王者之鱗是師父留給我的，拿去。套裝的配方，往後少兩份料就打得成。」' },
+      { who: 'doran', text: '「聽見了。差的那一點，原來在耳朵裡。」' },
+      { who: 'doran', text: '「洛恩，這塊王者之鱗是師父留給我的，拿去。套裝的配方，往後少兩份料就打得成。」' },
     ],
     summary: '多蘭想起師父的鍛造手法：別看火，聽鐵。他第一次叫了洛恩的名字，套裝的配方也省下了素材。',
   },
@@ -2018,20 +2021,20 @@ export const STORY = {
     // Story depth Task 4: each line a `KeeperLine`; the town's pool is `engine/story/keeper.ts` `bellkeeperPool`.
     oath: [
       { text: '從深處走出來的人。鐘響了，吾等便來。世世代代，都是如此。' },
-      { text: '吾等不是來動手的。那孩子的選擇，吾等……還不知道該怎麼回答。' },
-      { text: '那孩子領口的鐘，被敲平了。要還，也得由她自己來還。吾等不去取。' },
+      { text: '吾等不是來動手的。那孩子的選擇，吾等還不知道該怎麼回答。' },
+      { text: '那孩子領口的鐘，被敲平了。那枚鐘得由她親手還來，吾等不去取。' },
       // V3 voice pass: one human touch, never a joke (style bible §3 鐘守): the man he came to watch nodded to him.
-      { text: '這幾天，我在鎮上看著你。你替旅館劈柴，替孩子撿球。球滾到我腳邊時，你也向我點了頭。……迷宮的意志，會做這些事嗎？' },
-      { text: '吾等怕了很久。怕霧，怕深處，也怕自己弄錯。' },
+      { text: '這幾天，我在鎮上看著你。你替旅館劈柴，替孩子撿球。球滾到我腳邊，你也向我點了頭。迷宮的意志，會做這些事嗎？' },
+      { text: '吾等怕了很久。怕霧、怕深處，也怕自己弄錯。' },
       // Story depth (design §7.4; controller ruling b): his own hand, and the boy at the gate once Glen remembers him.
       { text: '教那孩子不准眨眼的，是我。我的手，當年抖了。' },
       { text: '守門的那個人想起來了。很多年前替吾等指路的少年，就是他。吾等欠他一句話。', if: { returned: 'glen' } },
     ] as KeeperLine[],
     after: [
-      '洛恩。最後那一聲鐘，是我敲的。靜鐘會散了，往後不必再有人等它響。',
+      '洛恩，最後那一聲鐘是我敲的。靜鐘會散了，往後不必再有人等它響。',
       '吾等弄錯了很多年。……不，是我弄錯了。剩下的日子，我想拿來記住，不是拿來守。',
-      '那孩子笑起來的樣子，我從來沒見過。原來，她會笑。我也還在學。',
-      '廣場的麵包，吾等──不，我，今天買了兩個。一個，不夠吃。',
+      '那孩子笑起來的樣子，我從來沒見過。今天隔著廣場看見了，她在和同伴說笑。我沒有走過去。',
+      '廣場的麵包，吾等──不，我今天買了兩個。守門的那個人，每天只帶一個。',
     ],
   },
   /** The wandering merchant's greeting: before Noel has all her memories, and after (his recovered voice, I-68). */
@@ -2164,7 +2167,7 @@ export const STORY = {
     orik: {
       lost: '歐里克失去了女兒的臉。他記得自己有個女兒，卻想不起她長什麼樣子。',
       // V3 voice pass (light): the thanks keep their reward and lose their 「……」, so a counter's pool spends one at most.
-      after: '小兄弟，往後都算你便宜一成！名目？就叫「平安回來價」。',
+      after: '小兄弟，往後都算你便宜一成！名目嘛，就叫「平安回來價」。',
     },
     marta: {
       lost: '瑪莎失去了丈夫離開的那一天。她每天寫日記，怕明天連今天也忘了。',
@@ -2180,7 +2183,7 @@ export const STORY = {
     },
     doran: {
       lost: '多蘭失去了師父的鍛造手法。火候總是差一點，差在哪裡，他說不上來。',
-      after: '洛恩。套裝的料，少兩份也打得成。手藝回來了。',
+      after: '套裝的料，少兩份也打得成。手藝回來了，洛恩。',
     },
   } as Record<TownFragmentId, { lost: string; after: string }>,
 };

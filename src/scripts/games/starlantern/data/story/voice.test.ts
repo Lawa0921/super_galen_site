@@ -39,6 +39,9 @@ const POLISHED: string[] = [
   'finaleWait.', 'scenes.mem:hero:10.', 'scenes.finale.', 'scenes.epilogue.', 'endingTitle', 'finaleBossName',
   // Task 17: the town's daily lines (story depth plan Task 17)
   'townLines.', 'greet.', 'leads.', 'merchant.', 'absorb.', 'scenes.chat:hero:5.',
+  // Task 18: the townsfolk returns and the bellkeeper (story depth plan Task 18). `town.` (each return's handbook line and
+  // its thanks at the counter) was story polish Task 12a's and no depth task listed it; it belongs with the returns.
+  'scenes.town:', 'bellkeeper.', 'town.',
 ];
 
 type Scope = readonly string[];
