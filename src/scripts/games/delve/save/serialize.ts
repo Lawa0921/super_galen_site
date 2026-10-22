@@ -629,7 +629,7 @@ export function validateChunk(ci: number, c: ChunkPayload): void {
 }
 
 /** 格子上的 gear：沒有 → undefined；有但不合法（或不是裝備）→ 存檔損毀 */
-function strictGear(item: ItemId, raw: unknown, where: string): Gear | undefined {
+export function strictGear(item: ItemId, raw: unknown, where: string): Gear | undefined {
   if (raw === undefined || raw === null) return undefined;
   const g = gearSlot(item) ? validGear(item, raw) : null;
   if (!g) throw new SaveFormatError(`${where}: gear`);
