@@ -52,9 +52,10 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
     { key: 'meteor', name: '暴走流星', intro: '火之星彈一口氣燒過去，熱度滿了就用業火暴走！', scenario: 'crowd', capstone: 0,
       runes: { 'fire-star': ['spread', 'ignite', 'multistrike'] },
       policy: [{ kind: 'spend-at', gauge: 'heat', min: 4, skill: 'inferno' }, aoe] },
-    { key: 'cycle', name: '冰火循環', intro: '火之星彈蓄力猛攻，熱度一高就換冰之星彈，降溫順便回氣。', scenario: 'boss',
-      // 連擊 on the ice star (the shop's): one more hit is one more TP back, so she cools down sooner.
-      runes: { 'ice-star': ['regain', 'multistrike'], 'fire-star': ['charge', 'ignite'] },
+    { key: 'cycle', name: '冰雷循環', intro: '雷之星彈蓄力猛攻，熱度一高就換冰之星彈降溫，順便凍住頭目。', scenario: 'boss',
+      // Tuning round 2: the boss shrugs off fire and fears ice, so the heat comes from the thunder star; 連擊 (the shop's)
+      // on the ice star that cools her.
+      runes: { 'ice-star': ['charge', 'multistrike'], 'thunder-star': ['charge', 'jolt', 'thunderclap'] },
       policy: [{ kind: 'spend-at', gauge: 'heat', min: 4, skill: 'ice-star' }, aoe] },
   ],
   chizuru: [
@@ -64,18 +65,21 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       policy: [{ kind: 'heal-below', pct: 40 }, aoe] },
     { key: 'exorcist', name: '破邪神槍', intro: '貫槍帶著雷鳴；結界蓄好之後，天之逆鉾一口氣解放。', scenario: 'boss', capstone: 2,
       first: ['chizuru-thunder-ward'],
-      // 雷鳴 and 感電 ride on 天之逆鉾, the blow the build is for; 連擊 on 貫槍 (the shop's) for the turns between.
-      runes: { pierce: ['multistrike'], 'heaven-spear': ['thunderclap', 'jolt', 'charge'] },
+      // 雷鳴 and 感電 ride on 天之逆鉾, the blow the build is for; 延長 (the shop's) on the 守之結界 it releases (tuning
+      // round 2: 貫槍 was never cast).
+      runes: { 'heaven-spear': ['thunderclap', 'jolt', 'charge'], ward: ['extend'] },
       // Tuning round 1 (plan 8h Task 5b): released from two rounds left.
       policy: [{ kind: 'ensure-barrier', skills: ['ward'] }, { kind: 'release-at', min: 2, skill: 'heaven-spear' }, aoe] },
   ],
   liz: [
-    { key: 'jackpot', name: '一擲千金', intro: '雙刃快快賺銅板，存夠了就一擲千金！', scenario: 'crowd', capstone: 0,
-      runes: { 'twin-slash': ['multistrike', 'regain'] },
+    { key: 'jackpot', name: '一擲千金', intro: '順手牽羊掃過一整排賺銅板，存夠了就一擲千金！', scenario: 'crowd', capstone: 0,
+      // Tuning round 2: 雙刃 was never the pick; 順手牽羊 spread over the crowd earns a coin a hit on each.
+      runes: { pickpocket: ['spread', 'multistrike', 'regain'], jackpot: ['charge'] },
       // Between the throws the strongest cast earns the coins; 大手筆 waits for a full purse (tuning round 1).
       policy: [{ kind: 'spend-at', gauge: 'coins', min: 8, skill: 'jackpot' }, { kind: 'spend-at', gauge: 'coins', min: 10, skill: 'fortune-strike' }, aoe] },
-    { key: 'bleed', name: '撕裂快刀', intro: '雙刃加撕裂，一刀一刀讓牠流血流到見底。', scenario: 'boss',
-      runes: { 'twin-slash': ['tear', 'multistrike'], pickpocket: ['tear'] },
+    { key: 'bleed', name: '撕裂快刀', intro: '順手牽羊加撕裂，銅板存滿再一記大手筆，讓牠流血流到見底。', scenario: 'boss',
+      // Tuning round 2: her casts are 順手牽羊 and 大手筆 (雙刃 was never the pick), so the tears ride on them.
+      runes: { pickpocket: ['tear', 'multistrike', 'charge'], 'fortune-strike': ['charge', 'armor-break', 'tear'] },
       // 大手筆 waits for a full purse, so the torn blades come first.
       policy: [{ kind: 'spend-at', gauge: 'coins', min: 10, skill: 'fortune-strike' }, aoe] },
   ],
@@ -93,12 +97,14 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
     { key: 'riposte', name: '反擊之壁', intro: '來打我啊！挨一下，就燒一圈還給你們。', scenario: 'long', capstone: 2,
       first: ['scarlet-burst-heart', 'blaze-ring'],
       // 炎環斬 is fire already: 點燃 in place of the table's 灼焰; 連擊 (the shop's) on it too (「依 fit」).
-      runes: { 'blaze-ring': ['on-struck', 'ignite', 'multistrike'] },
+      // Tuning round 2: 火焰爆 is her hand-cast blow; it takes the fire runes too.
+      runes: { 'blaze-ring': ['on-struck', 'ignite', 'multistrike'], 'flame-burst': ['ignite', 'multistrike', 'charge'] },
       policy: [{ kind: 'ensure-taunt', skill: 'provoke' }, { kind: 'cast-when', skill: 'atoning-flame', big: true, whileAbsent: true }, aoe] },
     { key: 'ember', name: '紅蓮餘燼', intro: '替大家擋下的傷，全部存成餘燼，紅蓮終焉一次還給牠。', scenario: 'boss', capstone: 1,
       // 代受 (on the way, 高喊), then 熾心, 赤心 and 回禮; 延長 does not take a cover, so 代受 takes 節流 (「依 fit」).
       first: ['scarlet-provoke-shout', 'cover', 'scarlet-ardent', 'scarlet-burst-heart', 'scarlet-thanks'],
-      runes: { 'crimson-end': ['charge'], cover: ['thrift'] },
+      // Tuning round 2: 赤心's 火焰爆 is her steady blow; 紅蓮終焉 hits harder; 代受 takes none.
+      runes: { 'flame-burst': ['ignite', 'multistrike', 'charge'], 'crimson-end': ['charge', 'multistrike'] },
       // 紅蓮終焉 from a tenth of her max HP in embers (tuning round 1: at 40% it was never cast).
       policy: [{ kind: 'ensure-cover', skill: 'cover' }, { kind: 'spend-at', gauge: 'embers', min: 10, of: 'maxHp', skill: 'crimson-end' }, aoe] },
   ],
@@ -120,12 +126,13 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
   safira: [
     { key: 'fourbeat', name: '四拍劍舞', intro: '刃舞加撕裂，跟著四拍一路跳到終幕！', scenario: 'boss', capstone: 2,
       first: ['safira-dance-four'],
-      runes: { 'blade-dance': ['tear', 'multistrike'] },
+      // Tuning round 2: 蓄力 on 刃舞; 切分音's 影步 is the other half of the dance.
+      runes: { 'blade-dance': ['charge', 'multistrike', 'tear'], 'shadow-step': ['charge', 'multistrike'] },
       policy: [{ kind: 'cast-when', skill: 'mirage-step', whileAbsent: true }, { kind: 'alternate', repeat: true }, aoe] },
     { key: 'festival', name: '祭典指揮', intro: '戰舞整場不停，拍手幫大家把絕技量表炒熱！', scenario: 'long', capstone: 1,
       first: ['clap', 'safira-clap-encore'],
       // No rune takes 拍手 (a free gauge skill); 常駐 keeps 戰舞 up; 連擊 (the shop's) on 刃舞 (「依 fit」).
-      runes: { 'war-dance': ['lasting'], 'blade-dance': ['multistrike'] },
+      runes: { 'war-dance': ['lasting'], 'blade-dance': ['charge', 'multistrike', 'tear'] },
       policy: [{ kind: 'cast-unless-last', skill: 'clap' }, { kind: 'alternate', repeat: true }] },
   ],
   bobby: [
@@ -135,7 +142,7 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       runes: { turret: ['extend', 'charge'] },
       policy: [{ kind: 'ensure-device', skills: ['turret'] }, { kind: 'cast-when', skill: 'overclock', big: true }, aoe] },
     { key: 'grid', name: '電網', intro: '線圈加地雷，整片都通電啦！', scenario: 'crowd', capstone: 2,
-      runes: { 'tesla-coil': ['extend'], 'shock-mine': ['extend'] },
+      runes: { 'tesla-coil': ['extend', 'charge'], 'shock-mine': ['extend', 'charge'] },
       policy: [{ kind: 'ensure-device', skills: ['tesla-coil', 'shock-mine', 'barrier'] }, aoe] },
   ],
   rin: [
@@ -150,18 +157,19 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
   ],
   hero: [
     { key: 'sword', name: '劍技', intro: '正面衝上去，劍技一路連斬。', scenario: 'boss', hero: 'sword',
-      runes: { 'hero-slash': ['multistrike', 'tear'] }, policy: [aoe] },
+      // Tuning round 2: his blow is 深淵・劍 (斬擊 was never the pick).
+      runes: { 'abyss-sword': ['charge', 'multistrike', 'armor-break'] }, policy: [aoe] },
     { key: 'mage', name: '星術', intro: '星火擴散開來，一次照亮整片。', scenario: 'crowd', hero: 'mage',
-      runes: { 'hero-flare': ['spread', 'ignite'] }, policy: [{ kind: 'heal-below', pct: 40 }, aoe] },
+      runes: { 'hero-flare': ['spread', 'charge', 'ignite'] }, policy: [{ kind: 'heal-below', pct: 40 }, aoe] },
     { key: 'healer', name: '祈光', intro: '治癒照到每個人，誰都別倒下。', scenario: 'long', hero: 'healer',
       runes: { 'hero-mend': ['spread', 'dispel'] }, policy: [{ kind: 'heal-below', pct: 60 }, aoe] },
     { key: 'tank', name: '守護', intro: '站到最前面，傷害都衝著我來。', scenario: 'long', hero: 'tank',
       // 分享 needs a skill of buffs alone and 守勢 also taunts: 節流 in its place (「依 fit」).
-      runes: { 'hero-guard': ['extend', 'thrift'] }, policy: [{ kind: 'ensure-taunt', skill: 'hero-guard' }, aoe] },
+      runes: { 'hero-guard': ['extend', 'thrift'], 'abyss-sword': ['charge', 'multistrike', 'tear'] }, policy: [{ kind: 'ensure-taunt', skill: 'hero-guard' }, aoe] },
     // 連擊 on 劍技 (the shop's): more hits of his own bring more TP back, kept for the echo.
     { key: 'echo', name: '殘響', intro: '跟在大家後面，把最強的那一招再放一次。', scenario: 'boss', hero: 'balanced',
       // The echo from 40% of his strongest (tuning round 1: at 100% it never fired).
-      runes: { 'hero-slash': ['regain', 'multistrike'] }, policy: [{ kind: 'echo', min: 40 }, aoe] },
+      runes: { 'abyss-sword': ['charge', 'multistrike', 'regain'] }, policy: [{ kind: 'echo', min: 40 }, aoe] },
   ],
 };
 

@@ -9,15 +9,21 @@ import { buildSockets, buildTalents, buildTree, policyText } from '../engine/bui
 import { battleReservePct, lastingBarrierLoss } from '../engine/mechanics/runes';
 import { newMember } from '../engine/party';
 import { learnedSkills } from '../engine/progression';
+import { expectedMemories } from '../engine/story/expect';
+import { parityDepth } from '../engine/parity';
 import type { PolicyRule } from '../engine/policy';
 import type { Member } from '../engine/types';
 
 /** The levels the rune bands measure at (plan 8h ruling 7). */
 const LEVELS = [35, 50];
 const runeBuilds = (): BuildDef[] => CHARACTER_IDS.flatMap((id) => BUILDS[id].filter((b) => b.key !== 'standard'));
-/** `b`'s owner at `level`, laid out by `b`, magic runes socketed as a click would (every rune in hand). */
+/**
+ * `b`'s owner at `level`, laid out by `b`, magic runes socketed as a click would (every rune in hand). The hero holds the
+ * memories expected at that level's depth (his abyss skills wait for them), as the bands measure him.
+ */
 const wearing = (b: BuildDef, level: number): Member => {
-  const bare: Member = { ...newMember(b.owner), level, tree: buildTree(b.owner, level, b), talents: buildTalents(b.owner, level, b) };
+  const memories = b.owner === 'hero' ? expectedMemories(parityDepth(level), ['hero']).hero.memories : 0;
+  const bare: Member = { ...newMember(b.owner), level, ...(memories ? { memories } : {}), tree: buildTree(b.owner, level, b, memories), talents: buildTalents(b.owner, level, b) };
   return { ...bare, sockets: buildSockets(bare, b, 'magic') };
 };
 const named = (r: PolicyRule): string[] => ('skills' in r ? [...r.skills] : 'skill' in r ? [r.skill] : []);
