@@ -62,7 +62,7 @@ export interface CmdResults {
  * 客人副本 exec(localPid) 的回傳（C13）：指令已交給房主，先回一個型別中性、不觸發錯誤提示的值；
  * 真正的成敗由房主執行後的事件（blocked…）經 ev 回來。
  */
-export const CMD_PENDING: { readonly [K in CmdOp]: CmdResults[K] } = {
+const PENDING: { readonly [K in CmdOp]: CmdResults[K] } = {
   craft: { ok: true }, swap: true, place: true, toss: true,
   chestTake: true, chestTakeAll: 0, chestDeposit: true, chestClose: undefined,
   equip: true, unequip: true, equipVanity: true, unequipVanity: true,
@@ -78,6 +78,9 @@ export const CMD_PENDING: { readonly [K in CmdOp]: CmdResults[K] } = {
   travel: true, travelStone: true, spawnCore: true,
   marker: 'added',
 };
+// 值裡的物件是共用的：整張表與每個物件都凍結（呼叫端改不動）
+for (const v of Object.values(PENDING)) if (v !== null && typeof v === 'object') Object.freeze(v);
+export const CMD_PENDING: { readonly [K in CmdOp]: CmdResults[K] } = Object.freeze(PENDING);
 
 /** 鄉民服務（folkDefs 沒有匯出清單） */
 export const FOLK_SERVICES = ['heal', 'bless', 'ward', 'minesong', 'forge', 'deepforge', 'hint', 'scout', 'invite', 'rescue'] as const satisfies readonly FolkService[];

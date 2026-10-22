@@ -13,6 +13,7 @@ import { createCharacter } from '../save/character';
 import { normalizeAppearance } from './appearance';
 import type { ItemId } from './items';
 import { xpAtLevel } from './levels';
+import { THIRD_JUMP_HOLD } from './skills';
 
 const FLOOR = 60;
 const S = TILE_SIZE;
@@ -218,6 +219,35 @@ describe('replica：只動本地 actor、世界不動', () => {
   });
 });
 
+describe('replica：三段跳與移動事件（同 stepActor）', () => {
+  it('第三跳的按住時間減半（THIRD_JUMP_HOLD）、空中跳發 airjump', () => {
+    const g = replica();
+    g.addXp(xpAtLevel(20) - g.levels.xp);
+    for (const id of ['p_stride', 'p_feather', 'p_spring', 'p_cloud'] as const) expect(g.learnSkill(id)).toBeNull();
+    g.giveGear('wood_greaves', 4, { affixes: [{ id: 'skyleap', tier: 5, value: 1 }] });
+    expect(g.equipFromInventory(g.inventory.slots.findIndex((s) => s?.item === 'wood_greaves'))).toBe(true);
+    expect(g.moveStats().airJumps).toBe(2);
+    steps(g, 30);
+    g.drainEvents();
+    const m = g.local.motion;
+    /** 放開一步再按一步跳：回傳這一步之後的 airUsed / jumpTimer */
+    const tap = (): { air: number; timer: number } => {
+      g.setJump(false); g.step(FIXED_DT);
+      g.setJump(true); g.step(FIXED_DT);
+      return { air: m.airUsed ?? 0, timer: m.jumpTimer };
+    };
+    g.setJump(true); steps(g, 3); // 地面起跳
+    steps(g, 10);
+    const second = tap();
+    expect(second.air).toBe(1);
+    const third = tap();
+    expect(third.air).toBe(2);
+    expect(third.timer).toBeGreaterThan(0);
+    expect(third.timer).toBeCloseTo(second.timer * THIRD_JUMP_HOLD, 9);
+    expect(g.drainEvents().filter((e) => e.type === 'airjump')).toHaveLength(2);
+  });
+});
+
 describe('replica：exec 轉送', () => {
   it('合成：回 { ok: true }、轉送那個指令、背包不變', () => {
     const g = replica();
@@ -254,6 +284,9 @@ describe('replica：exec 轉送', () => {
     expect(CMD_PENDING.lock).toBeNull();
     expect(CMD_PENDING.marker).toBe('added');
     expect(CMD_PENDING.folkService).toEqual({ ok: true, msg: '' });
+    // 共用的物件都凍結（呼叫端改不動）
+    expect(Object.isFrozen(CMD_PENDING)).toBe(true);
+    for (const v of Object.values(CMD_PENDING)) if (v !== null && typeof v === 'object') expect(Object.isFrozen(v)).toBe(true);
   });
 });
 

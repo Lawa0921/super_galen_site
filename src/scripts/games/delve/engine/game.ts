@@ -18,7 +18,7 @@ import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, typ
 import { bossRebirth, potLoot, type Drop } from './loot';
 import { Inventory, starterInventory, type Stack } from './inventory';
 import { craft as craftRecipe, findRecipe, type CraftResult, type Station } from './crafting';
-import { makeBody, stepPlayer, onPlatform, overlapsSolid, type Body, type MoveStats } from './physics';
+import { makeBody, stepPlayer, onPlatform, overlapsSolid, type Body, type MoveStats, type PlayerMotion } from './physics';
 import { LightEngine, skyBrightness, type LightMap, type LightRect, type PointLight, type LightRGB } from './lighting';
 import { skyColor, isNight as skyIsNight } from './sky';
 import {
@@ -1333,9 +1333,12 @@ export class DelveGame {
     this.withActor(a, () => {
       const knocked = this.knockT > 0;
       this.contact = liquidContact(this.world, this.player);
+      const air0 = this.motion.airUsed ?? 0, climb0 = Boolean(this.motion.climbing), mantle0 = this.motion.mantle ?? null;
       this.preMoveSkills(dt);
       if (this.boating) this.stepBoating(dt, knocked);
       else stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
+      // 客人的位置是權威：第三跳的減半要在這裡套（房主照抄回報的位置）
+      this.afterMove(air0, climb0, mantle0);
       this.contact = liquidContact(this.world, this.player);
       this.postMoveSkills();
       if (this.knockT > 0) this.knockT -= dt;
@@ -1356,6 +1359,22 @@ export class DelveGame {
   }
   /** host 模式、cur 不是本地玩家 = 遠端 actor（位置由客人回報） */
   private isRemoteCur(): boolean { return this.mode === 'host' && this.cur !== this.local; }
+  /**
+   * 移動之後（stepActor / stepReplica 共用）：空中跳（第三跳減半按住時間、airjump 事件）、攀邊 / 抓繩事件。
+   * air0 / climb0 / mantle0 = 移動前的 airUsed / climbing / mantle
+   */
+  private afterMove(air0: number, climb0: boolean, mantle0: PlayerMotion['mantle']): void {
+    if ((this.motion.airUsed ?? 0) > air0) {
+      const pl = this.player;
+      // 三段跳（雲步 + 凌雲）的第三跳只有一半的按住時間：跳得比較矮，豎井不會變成一路連跳
+      if ((this.motion.airUsed ?? 0) >= 2) this.motion.jumpTimer *= THIRD_JUMP_HOLD;
+      this.emit({ type: 'airjump', x: pl.x + pl.w / 2, y: pl.y + pl.h }); this.fallPeak = null;
+    }
+    const pl = this.player, mt = this.motion.mantle ?? null;
+    if (mt && mt !== mantle0) this.emit({ type: 'climb', phase: 'mantle', x: mt.edgeX, y: mt.edgeY });
+    else if (!mt && mantle0) this.emit({ type: 'climb', phase: 'top', x: pl.x + pl.w / 2, y: pl.y + pl.h });
+    if (this.motion.climbing && !climb0) this.emit({ type: 'climb', phase: 'grab', x: pl.x + pl.w / 2, y: pl.y + 10 });
+  }
 
   /** 玩家段（cur = 這個玩家）：移動、技能、摔落、液體、生命、探索、挖 / 打 / 釣 / 用 */
   private stepActor(dt: number): void {
@@ -1368,18 +1387,7 @@ export class DelveGame {
     if (remote) this.applyRemoteMotion();
     else if (this.boating) this.stepBoating(dt, knocked);
     else stepPlayer(this.world, this.player, this.motion, { moveX: knocked ? 0 : this.moveX, jump: !knocked && this.jump, drop: this.dropHeld, up: !knocked && this.upHeld }, dt, this.moveStats(), playerMedium(this.contact));
-    if ((this.motion.airUsed ?? 0) > air0) {
-      const pl = this.player;
-      // 三段跳（雲步 + 凌雲）的第三跳只有一半的按住時間：跳得比較矮，豎井不會變成一路連跳
-      if ((this.motion.airUsed ?? 0) >= 2) this.motion.jumpTimer *= THIRD_JUMP_HOLD;
-      this.emit({ type: 'airjump', x: pl.x + pl.w / 2, y: pl.y + pl.h }); this.fallPeak = null;
-    }
-    {
-      const pl = this.player, mt = this.motion.mantle ?? null;
-      if (mt && mt !== mantle0) this.emit({ type: 'climb', phase: 'mantle', x: mt.edgeX, y: mt.edgeY });
-      else if (!mt && mantle0) this.emit({ type: 'climb', phase: 'top', x: pl.x + pl.w / 2, y: pl.y + pl.h });
-      if (this.motion.climbing && !climb0) this.emit({ type: 'climb', phase: 'grab', x: pl.x + pl.w / 2, y: pl.y + 10 });
-    }
+    this.afterMove(air0, climb0, mantle0);
     this.contact = liquidContact(this.world, this.player);
     this.postMoveSkills();
     this.updateFall();
