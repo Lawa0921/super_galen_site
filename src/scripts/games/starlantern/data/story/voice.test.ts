@@ -12,7 +12,10 @@ import {
  * The keys the story polish has rewritten (plan 2026-10-23, style bible 2026-10-22 revision). Each rewrite task adds its own
  * key prefixes here: adding them is that task's red, its rewrite the green. Task 16 makes it cover the whole script.
  */
-const POLISHED: string[] = [];
+const POLISHED: string[] = [
+  // Task 5: the opening and the first return
+  'scenes.prologue.', 'scenes.prologue-inn.', 'scenes.first-return.', 'scenes.act1-after.', 'scenes.chat:hero:1.', 'scenes.chat:rin:1.', 'act1Card.',
+];
 
 type Scope = readonly string[];
 /** The scene or meeting a key belongs to (`scenes.<id>.`, `meet.<id>.`), if any. */

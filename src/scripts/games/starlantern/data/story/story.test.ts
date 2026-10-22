@@ -1121,12 +1121,15 @@ describe('Task 10b: why the two of them go down together', () => {
   const lines = (id: SceneId) => STORY.scenes[id].lines;
   const said = (id: SceneId, who: string) => lines(id).filter((l) => l.who === who).map((l) => l.text);
 
-  it('the approved prologue is untouched: twelve lines, from the dawn plaza to 「歸來者」', () => {
+  it('the approved prologue keeps its twelve lines, from the dawn plaza to 「歸來者」, and its beats', () => {
     const p = lines('prologue');
     expect(p).toHaveLength(12);
     expect(p[0].text).toBe('黎明前的傳送門廣場。暮霧貼著石板流動，西邊高地上的星燈，淡得像快燒盡的燭火。');
-    expect(p[2].text).toBe('「沒人走進去，門卻自己亮了。這小子抓著那女孩的手腕，把她拖了出來，走了三步就倒了。」');
-    expect(p[10].text).toBe('「回復藥五瓶，歸還之燈一盞。在下面迷路了就點燈，星燈會把你們拉回來。」');
+    // story polish Task 5 (ruling 7): Glen tells the grip, Anna puts the medicine and the lamp on the guild's account
+    expect(p[2].who).toBe('glen');
+    expect(() => pinBeat('prologue', {}, /拖了出來.*三步就倒/)).not.toThrow();
+    expect(p[10].who).toBe('anna');
+    expect(() => pinBeat('prologue', {}, /歸還之燈.*公會的帳/)).not.toThrow();
     expect(p[11].text).toBe('從那天起，鎮上的人叫他「歸來者」──唯一從迷宮深處走出來的人。');
   });
 
@@ -1226,7 +1229,7 @@ describe('Task 10b: why the two of them go down together', () => {
 
   it("the first return is her first trust in a fight: 「身體自己動的。」, and she will not take his thanks", () => {
     const fr = lines('first-return');
-    expect(said('first-return', 'rin').some((t) => t.includes('身體自己動的。'))).toBe(true);
+    expect(said('first-return', 'rin').some((t) => t.includes('身體自己動的'))).toBe(true);   // story polish Task 5: the beat, not its full stop
     expect(said('first-return', 'hero').some((t) => t.includes('謝'))).toBe(true);
     // Her bell may be touched once, unexplained: only the narrator says so, and only once across the two scenes.
     const bells = OPENING.flatMap((id) => lines(id).filter((l) => l.text.includes('鐘')));
