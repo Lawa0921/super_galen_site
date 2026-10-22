@@ -105,15 +105,15 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // player's: the grip, each other's only lead, one lamp, the debt, and the pull she takes for instinct (her 7th piece pays it).
   'prologue-inn': {
     lines: [
-      N('深夜的月影旅館。洛恩從夢裡驚醒，窗邊的凜還睜著眼，朝著他的床，像是不知道他在哪裡，就睡不著。'),
-      N('她手腕上一圈發青的指痕。那幾根手指，葛倫怎麼掰也掰不開，直到洛恩昏了過去。他把自己的手，悄悄縮回被子裡。'),
+      N('深夜的月影旅館。洛恩從夢裡驚醒，看見窗邊的凜還睜著眼，臉朝著他的床。好像不確定他在哪裡，她就睡不著。'),
+      N('她手腕上還留著一圈發青的指痕。那幾根手指，葛倫怎麼掰也掰不開，直到洛恩昏了過去。他把自己的手，悄悄縮回被子裡。'),
       { who: 'hero', mood: 'normal', text: '「妳是唯一和我一起出來的人。我以前是誰，也許妳看過。」' },
-      { who: 'rin', mood: 'guarded', text: '「我什麼都不記得。你是我唯一的線索。還有。你說夢話。吵。」' },
+      { who: 'rin', mood: 'guarded', text: '「我什麼都不記得，你是我唯一的線索。另外，你說了三次夢話。很吵。」' },
       { who: 'hero', mood: 'serious', text: '「明天我要下去。我怎麼會從下面走出來，只有下面知道。何況欠公會的帳，也只有碎片還得起。」' },
       { who: 'rin', mood: 'normal', text: '「我跟你去。」' },
       { who: 'hero', mood: 'surprised', text: '「為什麼？妳不是嫌我吵？」' },
       { who: 'rin', mood: 'serious', text: '「公會說，一起下去的，算同一盞燈。一個人下去，就沒有燈帶你回來。」' },
-      { who: 'rin', mood: 'sad', text: '「吵是吵。……反正，我也只剩下面了。」' },
+      { who: 'rin', mood: 'sad', text: '「吵是吵。反正我能去的地方，也只剩迷宮了。」' },
       { who: 'rin', mood: 'normal', text: '「還有。你走路的樣子，我好像在哪裡看過。」' },
     ],
     summary: '旅館的第一夜。兩人都欠著公會，又只有彼此是自己的線索。同一盞燈的兩個人，決定一起下去。',
@@ -357,7 +357,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'hero', mood: 'serious', text: '「我在上面活過的日子，就是下一次的燈芯。」' },
       { who: 'narrator', text: '凜站在光照不到的地方，手緊緊按著領口的小銅鐘。', if: { oath: false } },
       { who: 'narrator', text: '凜走到他身邊，什麼也沒說，只是抓住了他的袖口。', if: { oath: true } },
-      { who: 'hero', mood: 'resolve', text: '「被殺了那麼多次，還是一直往上走。……原來我一直，想回來。」' },
+      { who: 'hero', mood: 'resolve', text: '「被殺了那麼多次，還是一直往上走。原來我一直都想回來。」' },
     ],
     summary: '洛恩想起了一切：他是守燈人。點燈、被吐回地面、被靜鐘會殺死，一輪又一輪。',
   },
@@ -426,7 +426,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('她收起短刃，靠著床腳坐下，一直坐到窗外發白。'),
       N('洛恩醒來時，桌上放著一枚裂開的小銅鐘。凜坐在桌邊，直直看著他的眼睛。'),
       N('她把一切都說了：鐘樓、名單、吐霧的石門、響了三天的鐘，還有出口前那一刀。'),
-      { who: 'rin', mood: 'serious', text: '「洛恩。我被派來殺你。我現在選擇不要。」' },
+      { who: 'rin', mood: 'serious', text: '「洛恩，我是被派來殺你的。可是我不殺了──這是我自己決定的。」' },   // story polish ruling 10 (user-approved sample)
       N('洛恩看著那枚鐘，看了很久。他沒有問為什麼，像是早就知道它會被放在那裡。'),
       { who: 'hero', mood: 'smile', text: '「明天也一起回來吧。」' },
       { who: 'rin', mood: 'smile', text: '「『凜』是他們給的代號。……可是，這個名字是我自己決定要用的。」' },
@@ -751,7 +751,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'narrator', text: '深夜的月影旅館。被子摺得方方正正。希爾薇抱著弓靠在窗邊，又看了一眼樓下空地上的新芽。', if: { full: 'sylvie' } },
       { who: 'hero', text: '「那塊豆腐，是摺來看的？」' },
       { who: 'sylvie', mood: 'sad', text: '「床，留給該睡的人。……我在這裡就好。」', if: { notFull: 'sylvie' } },
-      { who: 'sylvie', mood: 'smile', text: '「看過了。今晚，去睡床。」', if: { full: 'sylvie' } },
+      { who: 'sylvie', mood: 'smile', text: '「新芽，我看過了。今晚我睡床。換你守窗。」', if: { full: 'sylvie' } },
     ],
     summary: '深夜，希爾薇抱著弓，靠在旅館的窗邊。洛恩問她不睡嗎。',
   },
@@ -858,7 +858,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('老工匠把那半張圖交到她手上：「祖先造的機兵，還守在星燈底下。去看看它們吧。」'),
       N('神殿裡倒著一台機兵。它胸口的記號，和圖上畫的一模一樣。'),
-      { who: 'bobby', mood: 'sad', text: '「它們是家裡的人造的。……修好一台，就像替祖先道一次歉喔。」' },
+      { who: 'bobby', mood: 'sad', text: '「這些機兵，是我家的人造的。每修好一台，就像替祖先道一次歉。」' },
       N('洛恩想起相遇那天，她趴在機兵的胸口，連怪物圍過來都沒發現。'),
     ],
     summary: '老工匠要波比去看祖先造的機兵。她修機兵，是想替祖先道歉。',
@@ -883,7 +883,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'chat:bobby:2': {
     lines: [
       N('月影旅館的廚房冒出一陣白煙。波比抱著一支會自己轉的湯勺，臉上全是灰。'),
-      { who: 'bobby', mood: 'grin', text: '「嘿嘿，彈簧上太緊，它自己轉出鍋子了喔。瑪莎阿姨，再讓我試一次！」' },
+      { who: 'bobby', mood: 'grin', text: '「嘿嘿，彈簧上得太緊，它自己從鍋子裡轉出去了！瑪莎阿姨，再一次，一下下就好喔！」' },
       { who: 'marta', text: '「孩子，湯我自己攪。今天的日記就寫『湯勺離家出走』，畫一個圈。先去洗臉。」' },
     ],
     summary: '波比做了一支會自己轉的湯勺，弄得旅館廚房一陣白煙。瑪莎要她先去洗臉。',
@@ -934,8 +934,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       // he knows her by the red hat she hung behind the door (piece 3, I-72): both recognise each other here (I-75).
       N('傍晚的店門口。那張臉終於從霧裡浮了出來：鬍子扎人，一笑，眼睛就瞇成一條線。'),
       { who: 'narrator', text: '「回來啦，丫頭！」他張開雙手，把她連人帶帽子抱了起來。', if: { notReturned: 'orik' } },
-      { who: 'orik', text: '「紅帽子還掛在門後，等妳回來戴。……是妳吧，丫頭。爸爸認得那頂帽子，也認得妳了。」', if: { returned: 'orik' } },
-      { who: 'liz', mood: 'hushed', text: '「……想起來了。是爸爸的臉。這張臉，我好像在哪裡看過。」', if: { notReturned: 'orik' } },
+      { who: 'orik', text: '「妳出門那天掛在門後的紅帽子，爸爸到現在都沒收。……是妳吧，丫頭，爸爸認得妳了。」', if: { returned: 'orik' } },
+      { who: 'liz', mood: 'hushed', text: '「想起來了，是爸爸！……奇怪，這張臉，我最近好像在鎮上見過？」', if: { notReturned: 'orik' } },
       { who: 'hero', text: '「歐里克說過，他想起女兒的臉了。」', if: { returned: 'orik' } },
       { who: 'liz', mood: 'smile', text: '「老大。爸爸的臉，我不會再弄丟了。……總有一天，換我自己走回家。」', if: { notReturned: 'orik' } },
       { who: 'liz', mood: 'smile', text: '「……是爸爸。那頂帽子，是我掛的。老大，我們回家吧，換我在店門口喊『我回來了』。」', if: { returned: 'orik' } },
@@ -1022,7 +1022,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       // Until her last piece she calls him 「洛恩閣下」 and shields him as a duty; after it, 「洛恩」, by choice (I-26).
       N('回城的路上，絲嘉蕾的盾上，又多了一道新的凹痕。'),
       { who: 'hero', text: '「盾比我還常受傷。剛才那一下，不必替我擋。」' },
-      { who: 'scarlet', mood: 'serious', text: '「洛恩閣下，受傷本是盾的本分；替人擋下攻擊，本是騎士的本分。……總覺得，我還欠著誰。」', if: { notFull: 'scarlet' } },
+      { who: 'scarlet', mood: 'serious', text: '「洛恩閣下，盾本來就是用來受傷的，替人擋刀也是騎士的職責。只是總覺得……我還欠著某個人。」', if: { notFull: 'scarlet' } },
       { who: 'scarlet', mood: 'smile', text: '「洛恩。受傷是盾的本分。替你擋下，不是本分，是我想這麼做。」', if: { full: 'scarlet' } },
     ],
     summary: '絲嘉蕾又替洛恩擋下了一擊。洛恩說不必，她說了自己的理由。',
@@ -1463,7 +1463,7 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
     '她在鐘樓下長大，丟針是她小時候的遊戲。她戰鬥時從不眨眼。她的師父說，從深處走出來的，不是人。',
     '她的碎片裡，「凜」是靜鐘會給刺客的代號，銅鐘是信物。鐘響了三天，她走進迷宮，追那個從深處走出來的人。',
     // Continuity fix 3: unlocks with her oath, so once she has chosen the page ends on her choice (lore ledger I-120).
-    '旅館那一夜之後，她把一切都告訴了我。她說，她是被派來的，現在選擇不要。銅鐘她自己敲平了，現在她叫我洛恩。',
+    '旅館那一夜之後，她把一切都告訴了我。她是被派來的，可是她不做了，這是她自己決定的。銅鐘她自己敲平了，現在她叫我洛恩。',
   ],
   // Task 8: Lorne's notes on Selene, Chizuru and Safira. Each segment is placed at her meeting: no act content.
   selene: [

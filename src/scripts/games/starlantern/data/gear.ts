@@ -126,14 +126,14 @@ const unique = ([id, name, slot, region, lore]: Row, fixed: AnyStat[], source: S
   ({ id, name, rarity: 'unique', slot, region, source, fixed, lore });
 
 const SPECIAL_LIST: SpecialDef[] = [
-  legendary(['lg-noel', '群星之戒', 'ring', null, '諾艾爾把整片星空縫進指環，一彈便落滿地星火。']),
+  legendary(['lg-noel', '群星之戒', 'ring', null, '諾艾兒把整片星空縫進指環，一彈便落滿地星火。']),
   legendary(['lg-chizuru', '雙月槍', 'weapon', null, '槍身兩道彎月，橫掃時像兩輪月牙先後掠過。']),
   legendary(['lg-liz', '三叉刃', 'weapon', null, '多出的那一道刃，是莉茲用來說服別人的第三句話。']),
   legendary(['lg-sylvie', '破甲箭袋', 'offhand', null, '袋中的箭頭刻著細溝，專挑鎧甲的縫隙。']),
   legendary(['lg-scarlet', '挑戰者紋章', 'neck', null, '誰佩上它，誰就成了所有敵人的頭號目標，也成了最硬的那面牆。']),
   legendary(['lg-selene', '滿月頭冠', 'head', null, '滿月之夜鑄成，月光不再只照一人。']),
   legendary(['lg-safira', '四拍舞靴', 'feet', null, '舞步多了一拍，刀光便多了一道。']),
-  legendary(['lg-bobby', '長效齒輪手套', 'hands', null, '鮑比在齒輪裡多裝了一圈彈簧，砲台因此不容易停下。']),
+  legendary(['lg-bobby', '長效齒輪手套', 'hands', null, '波比在齒輪裡多裝了一圈彈簧，砲台因此不容易停下。']),
 
   legendary(['blaze-heart-sword', '灼心之劍', 'weapon', 'blaze', '劍心仍在燃燒，持劍者卻不再被火舌反噬。']),
   unique(['blaze-ember-ring', '餘燼指環', 'ring', 'blaze', '火焰熄滅之後，只剩餘燼還記得溫度。'], ['fireDmg', 'fireRes', 'atk']),

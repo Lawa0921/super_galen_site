@@ -84,7 +84,7 @@ describe("the adventurer's handbook", () => {
     expect(segs()).toEqual(STORY.people.rin.slice(0, 3));   // seven pieces, no choice yet
     s.party.roster.rin.oath = true;
     expect(segs()).toEqual(STORY.people.rin);
-    expect(segs()[3]).toMatch(/選擇不要/);
+    expect(segs()[3]).toMatch(/不做了.*自己決定/);   // story polish Task 2: the choice, in the reveal's new words
     // the others keep three pages, whatever her oath
     expect(handbook(withMemories(s, 'noel', chainLength('noel'))).people.find((p) => p.id === 'noel')!.segments).toHaveLength(3);
   });

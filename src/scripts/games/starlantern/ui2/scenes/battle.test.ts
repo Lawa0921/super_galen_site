@@ -1157,6 +1157,33 @@ describe('BattleScene story', () => {
     expect(texts).toEqual([...STORY.meet.selene.after.map((l) => l.text), joinedLine()]);
     expect(go).toHaveBeenCalledWith('dungeon');
   });
+
+  it('Esc while her line is still typing jumps to the join line, and Esc on the join line finishes it before it closes it', async () => {
+    const { game, go, s, root } = setup();   // no settings: the default speed, so every line types out
+    rescueWin(game);
+    await fight(s);
+    s.onAction('confirm');   // 繼續
+    await flush();
+    const first = STORY.meet.selene.after[0].text;
+    expect(textOf(root).length).toBeLessThan(first.length);   // her first line is still typing
+    s.onAction('cancel');
+    await flush();
+    const join = joinedLine();
+    expect(talkHidden(root)).toBe(false);
+    expect(plateOf(root)).toBe('');                              // the narrator's join line, not more of her words
+    expect(join.startsWith(textOf(root))).toBe(true);
+    expect(textOf(root).length).toBeLessThan(join.length);      // and it is typing in turn
+    s.onAction('cancel');                                        // Esc on a typing join line only finishes it
+    await flush();
+    expect(textOf(root)).toBe(join);
+    expect(talkHidden(root)).toBe(false);
+    expect(go).not.toHaveBeenCalled();
+    s.onAction('cancel');                                        // read: Esc closes it as confirm does
+    await flush();
+    expect(go).toHaveBeenCalledTimes(1);
+    expect(go).toHaveBeenCalledWith('dungeon');
+    s.exit?.();
+  });
 });
 
 describe('BattleScene mechanics (plan 8c)', () => {

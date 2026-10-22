@@ -405,7 +405,9 @@ const SPOILERS: { terms: string[]; allowed: (key: string, line?: ScriptLine) => 
 ];
 
 const SPEC_QUOTES: [string, string][] = [
-  ['scenes.rin-reveal.', '我被派來殺你。我現在選擇不要。'],
+  // Story polish ruling 10: the user approved the sample's wording over the spec's (lore ledger, 2026-10-22); the spec stays.
+  ['scenes.rin-reveal.', '我是被派來殺你的'],
+  ['scenes.rin-reveal.', '這是我自己決定的'],
   ['scenes.rin-reveal.', '明天也一起回來吧。'],
   ['scenes.rin-reveal.', '這個名字是我自己決定要用的。'],
   ['scenes.mem:rin:', '從深處走出來的，不是人'],
@@ -514,7 +516,7 @@ describe('the script gates', () => {
     expect(face('mem:rin:6', 'rin', '別看我')).toBe('averted');
     expect(face('mem:rin:7', 'rin', '那把劍')).toBe('surprised');
     expect(face('mem:hero:10', 'hero', '是燈鑰')).toBe('resolve');
-    expect(face('rin-reveal', 'rin', '選擇不要')).toBe('serious');
+    expect(face('rin-reveal', 'rin', '派來殺你')).toBe('serious');   // story polish Task 2: the choice line, by its beat
     expect(face('chat:rin:3', 'rin', '', true)).toBe('blush');
     expect(face('prologue', 'rin', '')).toBe('guarded');
   });
@@ -784,7 +786,7 @@ const UNDONE: { who: string; re: RegExp; piece: number }[] = [
   // Task 10
   { who: 'liz', re: /臉.{0,2}想不起來|一定有人在等/, piece: 5 },         // she remembers her father's face in her last piece
   { who: 'scarlet', re: /洛恩閣下/, piece: 5 },                       // I-26: plain 「洛恩」 from her last piece
-  { who: 'scarlet', re: /本是騎士的本分|欠著誰/, piece: 5 },          // her last piece: she guards by choice, she owes no one a flight
+  { who: 'scarlet', re: /騎士的(本分|職責)|欠著(誰|某個人)/, piece: 5 },          // her last piece: she guards by choice, she owes no one a flight
 ];
 // `heard`: the row is also checked against the narration of her chats (what the scene shows, not only what she says).
 const REVEALED: { who: string; re: RegExp; piece: number; heard?: true }[] = [
@@ -1197,7 +1199,7 @@ describe('Task 10b: why the two of them go down together', () => {
     expect(text).toMatch(/睡不著/);   // 5. she cannot sleep without knowing where he is
     const go = inn.findIndex((l) => l.who === 'rin' && l.text.includes('我跟你去'));
     const why = inn.findIndex((l) => l.who === 'hero' && l.text.includes('為什麼'));
-    const left = inn.findIndex((l) => l.who === 'rin' && l.text.includes('只剩下面'));
+    const left = inn.findIndex((l) => l.who === 'rin' && l.text.includes('只剩迷宮'));   // story polish Task 2 (audit A7)
     expect(go).toBeGreaterThanOrEqual(0);
     expect(why).toBeGreaterThan(go);
     expect(left).toBeGreaterThan(why);
@@ -1851,7 +1853,7 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
 
   it('exclamation marks: three a scene at most, and only the loud ones use them', () => {
     for (const { id, played } of light()) {
-      // spoken lines only: the meeting's found line (the rescue screen's, `foundLine`) is narration and not anyone's voice
+      // spoken lines only: the meeting's found line (`FOUND_LINE`) is narration and not anyone's voice
       const spoken = join(played.filter((l) => l.who !== 'narrator'));
       expect((spoken.match(/！/g) ?? []).length, `${id}: ${spoken}`).toBeLessThanOrEqual(3);
       for (const l of played) if (l.text.includes('！') && l.who !== 'narrator') expect(LOUD.has(l.who), `${id}: ${l.who} ${l.text}`).toBe(true);
@@ -2329,5 +2331,43 @@ describe('B2: what they say to each other (the banter content)', () => {
       const lines = linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: [], oath: true });
       expect(lines.at(-1)!.who, id).not.toBe('hero');
     }
+  });
+});
+
+describe('story polish Task 2: the S1 lines', () => {
+  const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
+  /** The line `who` says in `scene` that is exactly `text` (narration may hold it as one of its sentences). */
+  const said = (scene: SceneId, who: ScriptLine['who'], text: string): ScriptLine[] =>
+    STORY.scenes[scene].lines.filter((l) => l.who === who && (who === 'narrator' ? l.text.includes(text) : l.text === text));
+
+  it('the S1 lines read whole (story polish Task 2)', () => {
+    const finals: [SceneId, ScriptLine['who'], string][] = [
+      ['prologue-inn', 'narrator', '她手腕上還留著一圈發青的指痕。'],
+      ['prologue-inn', 'rin', '「我什麼都不記得，你是我唯一的線索。另外，你說了三次夢話。很吵。」'],
+      ['prologue-inn', 'rin', '「吵是吵。反正我能去的地方，也只剩迷宮了。」'],
+      ['rin-reveal', 'rin', '「洛恩，我是被派來殺你的。可是我不殺了──這是我自己決定的。」'],
+      ['mem:bobby:4', 'bobby', '「這些機兵，是我家的人造的。每修好一台，就像替祖先道一次歉。」'],
+      ['chat:bobby:2', 'bobby', '「嘿嘿，彈簧上得太緊，它自己從鍋子裡轉出去了！瑪莎阿姨，再一次，一下下就好喔！」'],
+      ['mem:hero:9', 'hero', '「被殺了那麼多次，還是一直往上走。原來我一直都想回來。」'],
+      ['chat:scarlet:2', 'scarlet', '「洛恩閣下，盾本來就是用來受傷的，替人擋刀也是騎士的職責。只是總覺得……我還欠著某個人。」'],
+      ['chat:sylvie:2', 'sylvie', '「新芽，我看過了。今晚我睡床。換你守窗。」'],
+      ['mem:liz:5', 'liz', '「想起來了，是爸爸！……奇怪，這張臉，我最近好像在鎮上見過？」'],
+    ];
+    for (const [scene, who, text] of finals) expect(said(scene, who, text), `${scene} ${who} ${text}`).toHaveLength(1);
+    // The old wordings are gone (audit A3, A6–A10).
+    const all = storyTexts().map((t) => t.text).join('｜');
+    for (const old of ['只剩下面', '彈簧上太緊', '看過了。今晚，去睡床', '原來我一直，想回來', '我被派來殺你。我現在選擇不要', '像是不知道他在哪裡，就睡不著']) expect(all, old).not.toContain(old);
+    // Each reading of Liz's fifth piece: four lines; with Orik back, his line speaks from now, not from the day she left.
+    const liz = STORY.scenes['mem:liz:5'].lines;
+    const back = linesWhen(liz, { ...ALL, returned: ['orik'] });
+    const notBack = linesWhen(liz, ALL);
+    expect(back).toHaveLength(4);
+    expect(notBack).toHaveLength(4);
+    const orik = back.filter((l) => l.who === 'orik');
+    expect(orik).toHaveLength(1);
+    expect(orik[0].text).not.toContain('還掛在門後，等妳回來戴');
+    expect(orik[0].text).toMatch(/紅帽子/);
+    expect(notBack.some((l) => l.text.includes('最近好像在鎮上見過'))).toBe(true);
+    expect(back.some((l) => l.text.includes('最近好像在鎮上見過'))).toBe(false);
   });
 });
