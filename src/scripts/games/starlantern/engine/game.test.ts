@@ -38,7 +38,8 @@ import { TALENT_NODES } from '../data/talents';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
 import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, lineCap, type SceneId } from '../data/story/scenes';
-import { STORY, linesWhen } from '../data/story.zh-TW';
+import { STORY } from '../data/story.zh-TW';
+import { linesOf } from '../ui2/story';
 import { chainLength } from '../data/story/chains';
 import { SKILLS } from '../data/skills';
 import { RUNE_DROP, RUNE_SELL } from '../data/runeEconomy';
@@ -3560,7 +3561,7 @@ describe('the finale', () => {
     killAll(g);
     expect(g.finale!.pieces).toContain('bellkeeper-arrives');
     expect(memoriesOf(g.state.party.roster.hero)).toBe(chainLength('hero'));
-    const lines = linesWhen(STORY.scenes['bellkeeper-arrives'].lines, { met: g.state.party.recruited, full: ['hero'], returned: g.state.story.returned, oath: true, seen: g.state.story.seen });
+    const lines = linesOf('bellkeeper-arrives', g.state);   // the reading the game plays, from its own state (re-review)
     expect(lines.length).toBeLessThanOrEqual(lineCap('bellkeeper-arrives'));
     const said = lines.map((l) => l.text).join('');
     expect(said).toMatch(/燈座/);

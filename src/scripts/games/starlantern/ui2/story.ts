@@ -7,7 +7,7 @@ import type { Game } from '../engine/game';
 import { memoriesOf } from '../engine/progression';
 import type { GameState } from '../engine/state';
 import type { CharacterId } from '../engine/types';
-import { art, type StoryMood } from '../render/artPaths';
+import { NORMAL_SMILES, art, type StoryMood } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { artIdOf } from '../ui/art';
 import type { UiAction } from './input';
@@ -34,13 +34,18 @@ export const NPC_FACILITY: Partial<Record<NpcId, 'guild' | 'shop' | 'inn' | 'gat
   anna: 'guild', orik: 'shop', marta: 'inn', glen: 'gate', doran: 'forge',
 };
 
+/** The heavy faces (story depth final review): a smile borrowed for one of these says the opposite. */
+const GRAVE = new Set<StoryMood>(['serious', 'sad', 'solemn', 'shaken', 'vow', 'distant', 'wistful']);
 /**
- * Faces to try for a mood, best first. A serious or sad line takes its own face or none (final review, story depth): a
- * companion's normal portrait often smiles, and a smile on a grave line says the opposite, so until the art pipeline
- * brings those faces the line shows its name plate alone. Any other face falls back to normal (never another feeling).
+ * Faces to try for a mood, best first. Sad falls back to down and then normal; any other face straight to normal (never
+ * another feeling). But a speaker whose normal portrait smiles (`NORMAL_SMILES`: the companions) takes a grave face of her
+ * own or none: until the art pipeline brings it, the line shows its name plate alone (story depth final review).
  */
-const GRAVE = new Set<StoryMood>(['serious', 'sad']);
-const faceOrder = (mood: StoryMood): StoryMood[] => (mood === 'normal' ? ['normal'] : GRAVE.has(mood) ? [mood] : [mood, 'normal']);
+const faceOrder = (mood: StoryMood, artId: string): StoryMood[] => {
+  if (mood === 'normal') return ['normal'];
+  if (GRAVE.has(mood) && NORMAL_SMILES.has(artId)) return [mood];
+  return mood === 'sad' ? ['sad', 'down', 'normal'] : [mood, 'normal'];
+};
 
 /** Who speaks: the name plate, and the face when there is published art for it. */
 export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: StoryMood = 'normal'): { name: string; face?: string } {
@@ -48,7 +53,7 @@ export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: Sto
   if (who in CHARACTERS) {
     const id = who as CharacterId;
     const artId = artIdOf(s.party.roster[id] ?? { id, oath: undefined });
-    const face = faceOrder(mood).map((m) => art.portrait(artId, m)).find((u) => index.has(u));
+    const face = faceOrder(mood, artId).map((m) => art.portrait(artId, m)).find((u) => index.has(u));
     return face ? { name: CHARACTERS[id].name, face } : { name: CHARACTERS[id].name };
   }
   const npc = who as NpcId;

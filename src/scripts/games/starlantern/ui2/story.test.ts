@@ -6,7 +6,7 @@ import { STORY, linesWhen, type LineWhen, type ScriptLine } from '../data/story.
 import { T } from '../data/text.zh-TW';
 import { Game } from '../engine/game';
 import { constRng } from '../engine/testing';
-import { allArtUrls, art } from '../render/artPaths';
+import { allArtUrls, art, NORMAL_SMILES } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { Dialogue } from './widgets';
 import { linesOf, playAndRecord, playLines, playScene, shouldPlay, speakerOf, type StoryCtx } from './story';
@@ -229,6 +229,27 @@ describe('speakerOf', () => {
     // The faces on disk still show: Lorne's and Rin's sad.
     expect(speakerOf('hero', game.state, ART, 'sad').face).toBe(art.portrait('hero', 'sad'));
     expect(speakerOf('noel', game.state, ART, 'normal').face).toBe(art.portrait('noel', 'normal'));
+  });
+
+  it('only a companion whose normal portrait smiles loses it on a grave line; Lorne and Rin keep theirs (re-review of the final fixes)', () => {
+    const { game } = mk();
+    // Rin's and Lorne's normal faces do not smile: a serious line keeps the portrait (「要出去，得先過我這裡」).
+    expect(speakerOf('rin', game.state, ART, 'serious').face).toBe(art.portrait('rin', 'normal'));
+    expect(speakerOf('hero', game.state, ART, 'serious').face).toBe(art.portrait('hero', 'normal'));
+    expect(speakerOf('hero', game.state, ART, 'distant').face).toBe(art.portrait('hero', 'normal'));
+    game.state.party.roster.rin.oath = true;
+    expect(speakerOf('rin', game.state, ART, 'serious').face).toBe(art.portrait('rin-oath', 'normal'));
+    // A companion's heavy faces count as grave too: Chizuru's solemn, Scarlet's vow and shaken, Selene's wistful.
+    for (const [who, mood] of [['chizuru', 'solemn'], ['scarlet', 'vow'], ['scarlet', 'shaken'], ['selene', 'wistful'], ['sylvie', 'serious']] as const) {
+      const said = speakerOf(who, game.state, ART, mood);
+      expect(said.face, `${who} ${mood}`).toBeUndefined();
+      expect(said.name).toBe(CHARACTERS[who].name);
+    }
+    // A plain or light line keeps her smiling normal face.
+    expect(speakerOf('chizuru', game.state, ART, 'normal').face).toBe(art.portrait('chizuru', 'normal'));
+    expect(speakerOf('chizuru', game.state, ART, 'bewildered').face).toBe(art.portrait('chizuru', 'normal'));
+    // The flag is data: every companion whose normal art smiles, and never Lorne or Rin.
+    expect([...NORMAL_SMILES].sort()).toEqual(['bobby', 'chizuru', 'liz', 'noel', 'safira', 'scarlet', 'selene', 'sylvie']);
   });
 
   it('a face with no art yet shows normal; one with art shows itself', () => {
