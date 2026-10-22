@@ -1613,21 +1613,25 @@ describe('Task 14: the finale', () => {
     for (const l of lines()) expect(l.if?.oath, l.text).toBeUndefined();   // U3: it always follows her choice
   });
 
-  it('every party hears twelve lines, one for each companion, and the beats in order', () => {
+  // Story depth Task 16 (plan ruling 13: the twelve-line rule is retired; cap 16, fifteen in every party)
+  it('every party hears fifteen lines, one for each companion, and the beats in order', () => {
     let n = 0;
     for (const w of readings()) {
       const played = linesWhen(lines(), w);
-      expect(played.length, JSON.stringify(w)).toBe(12);
+      expect(played.length, JSON.stringify(w)).toBe(15);
       for (const c of COMPANIONS) expect(played.filter((l) => l.if?.met === c || l.if?.notMet === c).length, `${c} ${JSON.stringify(w)}`).toBe(1);
-      // 1 Lorne the wick; 2 the eight; 3 the lamp, dawn and each other; 4 the bell; 5 Rin closes the game (coordinator ruling)
+      // 1 the wick; 2 the stake; 3-10 the eight; 11 his ten pieces; 12 the lamp; 13 the bell; 14 the keeper; 15 Rin
       expect(played[0].who).toBe('hero');
-      expect(played[11].who).toBe('rin');
+      expect(played[1].who).toBe('hero');
+      expect(played[10].who).toBe('hero');
+      expect(played[10].text).toMatch(/十段/);
+      expect(played[14].who).toBe('rin');
       const lamp = played.findIndex((l) => l.text.includes('燈穩了下來'));
-      expect(lamp, 'the lamp line plays').toBe(9);
+      expect(lamp, 'the lamp line plays').toBe(11);
       expect(played.slice(0, lamp + 1).some((l) => l.who !== 'hero' && (l.who !== 'narrator' || /凜/.test(l.text))), 'he is not alone at the lamp').toBe(true);
-      for (const i of [0, 9, 10, 11]) expect(played[i].if, `${i}`).toBeUndefined();
-      expect(played.slice(1, 9).every((l) => l.if !== undefined)).toBe(true);
-      expect(played[8].if?.met === 'bobby' || played[8].if?.notMet === 'bobby', 'Bobby closes the eight with the valve').toBe(true);
+      for (const i of [0, 1, 10, 11, 12, 13, 14]) expect(played[i].if, `${i}`).toBeUndefined();
+      expect(played.slice(2, 10).every((l) => l.if !== undefined)).toBe(true);
+      expect(played[9].if?.met === 'bobby' || played[9].if?.notMet === 'bobby', 'Bobby closes the eight with the valve').toBe(true);
       n++;
     }
     expect(n).toBeGreaterThan(1000);
@@ -1639,12 +1643,13 @@ describe('Task 14: the finale', () => {
     // Bobby's line is the wick repair (I-69): whole, she echoes her last piece; unmet, Lorne tells the mechanism.
     const bobby = L.filter((l) => l.if?.met === 'bobby');
     for (const l of bobby) expect(l.text).toMatch(/閥/);
-    expect(bobby.some((l) => l.if?.full === 'bobby' && /祖先造錯的東西/.test(l.text) && /修好/.test(l.text))).toBe(true);
+    // story depth Task 16 (design §7.5): whole, she says her family made his sword (I-46); every reading carries the valve's rule
+    expect(bobby.some((l) => l.if?.full === 'bobby' && /我家的人/.test(l.text) && /不回來的光/.test(l.text))).toBe(true);
     for (const l of bobby) if (l.if?.full !== 'bobby') expect(l.text).not.toMatch(/祖先/);   // her ancestors are her pieces' to tell
     const lorne = L.find((l) => l.if?.notMet === 'bobby')!;
     expect(lorne.text).toMatch(/閥/);
-    expect(lorne.text).toMatch(/燒盡/);
-    const tail = L.slice(-3).map((l) => l.text);
+    expect(lorne.text).toMatch(/不歸之光/);
+    const tail = L.slice(-4).map((l) => l.text);
     expect(tail[0]).toMatch(/碎片的光/);
     expect(tail[0]).toMatch(/暮霧/);
     expect(tail[0]).toMatch(/天亮/);
@@ -1656,11 +1661,13 @@ describe('Task 14: the finale', () => {
     // the finale's truths are said here first (spec §3.6), as the bellkeeper hears them, with her bell and his last one
     expect(tail[1]).toMatch(/凜/);
     expect(tail[1]).toMatch(/鐘守/);
-    expect(tail[1]).toMatch(/殺的一直是守燈人/);
-    expect(tail[1]).toMatch(/晚一次點亮/);
     expect(tail[1]).toMatch(/最後一聲/);
     expect(tail[1]).toMatch(/結社的鐘|靜鐘會的鐘/);   // fix round 1: the society's own bell; her flattened one never rings (I-51)
-    expect(tail[1]).toMatch(/散/);
+    // story depth Task 16: the keeper says it himself (story polish ruling 7), his own 「我」 at the end of the 「吾等」
+    expect(L[L.length - 2].who).toBe('bellkeeper');
+    expect(tail[2]).toMatch(/殺的一直是守燈人/);
+    expect(tail[2]).toMatch(/晚一次點亮/);
+    expect(tail[2]).toMatch(/散/);
     // Rin's last word echoes Lorne's from her reveal (「明天也一起回來吧。」), for everyone: after her choice she names him
     const rin = L[L.length - 1];
     expect(rin.who).toBe('rin');
@@ -2927,5 +2934,67 @@ describe('story depth Task 15: the banters after her choice', () => {
       for (const m of t.text.matchAll(/凜[^「」。]{0,10}「([^」]*)」/g)) expect(m[1], t.key).not.toMatch(/呢(?=[。！？～，]|……|──|$)/);
     }
     expect([...'凜想了一下，說：「沒事呢。」'.matchAll(/凜[^「」。]{0,10}「([^」]*)」/g)].map((m) => m[1])).toEqual(['沒事呢。']);   // the scan sees a quote
+  });
+});
+
+describe('story depth Task 16: the finale and the lantern festival', () => {
+  it('the finale costs his ten memories, the keeper says it, and Rin speaks last (design §7.5, ruling d)', () => {
+    let n = 0;
+    for (const r of sceneReadings('finale')) {
+      const L = r.lines;
+      const at = JSON.stringify(r.when);
+      expect(L.length, at).toBeLessThanOrEqual(16);
+      expect(L.filter((l) => l.who === 'hero' && /十段/.test(l.text)), at).toHaveLength(1);
+      expect(L.filter((l) => l.who === 'bellkeeper'), at).toHaveLength(1);
+      const keeper = L.find((l) => l.who === 'bellkeeper')!;
+      expect(keeper.text).toMatch(/是我殺的/);
+      expect(keeper.text).toMatch(/散了/);
+      expect(L.filter((l) => l.who === 'rin'), at).toHaveLength(1);
+      expect(L[L.length - 1].who, at).toBe('rin');
+      expect(L.some((l) => /閥/.test(l.text)), at).toBe(true);
+      expect(L.some((l) => /不送/.test(l.text)), at).toBe(false);
+      // the three 「……」 are Rin's, the keeper's and Lorne's; no companion's (controller ruling, Task 10 review)
+      for (const l of L) if (l.text.includes('……')) expect(['rin', 'bellkeeper', 'hero'], `${at} ${l.text}`).toContain(l.who);
+      expect(L.filter((l) => l.text.includes('……')).length, at).toBeLessThanOrEqual(3);
+      // she hands him the bell in the narration only (ruling a): no word between her and the keeper
+      expect(L.findIndex((l) => l.who === 'rin'), at).toBeGreaterThan(L.findIndex((l) => l.who === 'bellkeeper'));
+      n++;
+    }
+    expect(n).toBeGreaterThan(100);
+    expect(STORY.scenes.finale.lines.some((l) => l.who === 'narrator' && /鐘守/.test(l.text) && /一句話也沒說/.test(l.text))).toBe(true);
+  });
+
+  it("the valve's first light is his, as Bobby said it would be, in every way she is there or not (design §6, 27)", () => {
+    const full: LineWhen = { met: [...CHARACTER_IDS], full: ['bobby'], returned: [], oath: true };
+    const metOnly: LineWhen = { ...full, full: [] };
+    const unmet: LineWhen = { ...full, met: CHARACTER_IDS.filter((c) => c !== 'bobby'), full: [] };
+    for (const w of [full, metOnly, unmet]) {
+      const L = linesWhen(STORY.scenes.finale.lines, w);
+      expect(L.some((l) => /不回來的光|不歸之光/.test(l.text)), JSON.stringify(w.met.length)).toBe(true);
+    }
+    expect(linesWhen(STORY.scenes.finale.lines, full).find((l) => l.who === 'bobby')!.text).toMatch(/我家的人/);
+    expect(STORY.scenes['mem:hero:10'].lines.filter((l) => /要回來/.test(l.text))).toHaveLength(1);
+  });
+
+  it("the festival: Marta reads the diary, Anna's form, and Lorne's last word; townsfolk returns fold into their beats; no romance", () => {
+    for (const r of sceneReadings('epilogue')) {
+      const L = r.lines;
+      const at = JSON.stringify(r.when);
+      expect(L.length, at).toBeLessThanOrEqual(16);
+      expect(L.filter((l) => l.who === 'marta' && /日記/.test(l.text)), at).toHaveLength(1);
+      expect(L.filter((l) => l.who === 'marta' && /都一樣：回來了/.test(l.text)), at).toHaveLength(1);
+      expect(L.filter((l) => /登記表/.test(l.text)), at).toHaveLength(1);
+      expect(L[L.length - 1].who, at).toBe('hero');
+      expect(L.map((l) => l.text).join(''), at).not.toMatch(/喜歡|戀|心契|告白/);
+    }
+    const lines = STORY.scenes.epilogue.lines;
+    expect(lines.some((l) => l.if?.returned === 'marta')).toBe(true);
+    expect(lines.some((l) => l.if?.returned === 'anna')).toBe(true);
+    expect(sceneReadings('epilogue').every((r) => r.lines.length === 6)).toBe(true);   // folded in, not added (controller ruling)
+  });
+
+  it('the after page and the finale agree: ten pieces given, the notes kept', () => {
+    expect(STORY.truths.after).toMatch(/十段/);
+    expect(STORY.scenes.finale.summary).toMatch(/十段/);
   });
 });

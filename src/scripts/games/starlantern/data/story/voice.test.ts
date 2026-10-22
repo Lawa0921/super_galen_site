@@ -35,6 +35,8 @@ const POLISHED: string[] = [
   'scenes.rin-confess.', 'scenes.hero-alone.',
   // Task 15: the banters after her choice, and the payoffs (story depth plan Task 15); with it every banter is polished
   ...['rin-scarlet:2', 'rin-scarlet:3', 'rin-selene:2', 'rin-sylvie:2', 'chizuru-rin:2', 'chizuru-noel:2', 'noel-rin:2', 'safira-sylvie:3', 'liz-scarlet:3', 'noel-selene:3'].map((id) => `scenes.banter:${id}.`),
+  // Task 16: the finale and the lantern festival (story depth plan Task 16)
+  'finaleWait.', 'scenes.mem:hero:10.', 'scenes.finale.', 'scenes.epilogue.', 'endingTitle', 'finaleBossName',
 ];
 
 type Scope = readonly string[];

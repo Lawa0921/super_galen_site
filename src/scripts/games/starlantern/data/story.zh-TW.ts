@@ -386,7 +386,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('他說會回來。然後他往下走，走了很久很久。'),
       N('星燈之底。燈喰之母倒下了，牠身後那盞燈，只剩一點快熄的藍。'),
       N('洛恩手上的劍，紋路一條一條亮了起來，和燈座上刻的一模一樣。'),
-      { who: 'hero', mood: 'resolve', text: '「這把劍，是燈鑰。……我一直帶著它，走回來。」' },
+      { who: 'hero', mood: 'resolve', text: '「這把劍，就是燈鑰。我一直帶著它走回來。」' },
       { who: 'hero', mood: 'distant', text: '「第一次，是我自己選的。那時候，只剩我還記得。」' },
       { who: 'hero', mood: 'resolve', text: '「我知道該怎麼做。每一次，都是一個人做的。」' },
       N('他握緊劍，朝燈走去。身後的腳步聲，沒有停。'),
@@ -1127,43 +1127,48 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '絲嘉蕾又替洛恩擋下了一擊。洛恩說不必，她說了自己的理由。',
   },
-  // Task 14: the finale (spec §8.4, §3.4, §3.6, §6; lore ledger I-109 to I-115). It opens where the hero's 10th piece ends,
-  // the footsteps behind him, and always follows Rin's choice (U3): no `if.oath`. Twelve lines in every party: Lorne means to
-  // burn this round's days as the wick; each companion gives a memory of him in her own voice (met) or Lorne hears her in
-  // the lamp and names her (not met); Bobby's valve closes the eight; Rin's hand on his as the lamp steadies and the light
-  // goes home; the society's last bell; Rin's last word.
+  // Task 14: the finale (spec §8.4, §3.4, §3.6, §6; lore ledger I-109 to I-115), rewritten by story depth Task 16 (design §7.5,
+  // ruling d). It opens where the hero's 10th piece ends and always follows Rin's choice (U3): no `if.oath`. Lorne means to
+  // burn this round's days and says what the lamp takes; each companion gives a memory of him anyway, believing it lost (met),
+  // or Lorne hears her in the lamp and names her (not met); Bobby closes the eight with her valve and its rule (her fifth
+  // piece); Lorne pays its first light with the ten pieces he found; Rin's hand on his; the bell, handed over without a word,
+  // and the keeper's last; Rin's last word. Fifteen lines at most; the three 「……」 are Lorne's, the keeper's and Rin's.
   // Address forms that change with a full chain (Selene, Noel, Scarlet, and Bobby's ancestors) read both ways.
   finale: {
     lines: [
-      { who: 'hero', mood: 'resolve', text: '「這一輪走過的每一天，就是這一次的燈芯。……送到這裡就好。」' },
-      { who: 'selene', mood: 'smile', text: '「洛恩先生。上弦的那一夜，經過洞窟的人，是您呢。……這一段月光，交給燈吧。」', if: { met: 'selene', notFull: 'selene' } },
-      { who: 'selene', mood: 'smile', text: '「洛恩。銀盆裡，很多人喊著同一個名字。……原來是你呢。這一聲，我也交給燈。」', if: { met: 'selene', full: 'selene' } },
-      { who: 'hero', mood: 'distant', text: '「燈裡，有一段光在讀月亮。……瑟蕾。還沒找到妳，但我記住妳了。」', if: { notMet: 'selene' } },
-      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人。冰碎之後，頭一句聽見的，是『站得起來嗎？』……謹以此段，奉於燈前。」', if: { met: 'chizuru' } },
-      { who: 'hero', mood: 'distant', text: '「燈裡，有人還在念沒念完的祝詞。……千鶴。封印，可以停下了。」', if: { notMet: 'chizuru' } },
-      { who: 'safira', mood: 'smile', text: '「小洛，在火裡陪我跳完一整首的，是你。……這一拍，交給燈囉。」', if: { met: 'safira' } },
-      { who: 'hero', mood: 'distant', text: '「燈裡，有人一個人跳著舞，等誰接上拍子。……莎菲拉。我會去接。」', if: { notMet: 'safira' } },
-      { who: 'sylvie', mood: 'unguarded', text: '「洛恩。毒藤，是你割斷的。……這個，給燈。」', if: { met: 'sylvie' } },
-      { who: 'hero', mood: 'distant', text: '「燈裡，還有一支箭在射。……希爾薇。不用再一個人守了。」', if: { notMet: 'sylvie' } },
-      { who: 'noel', mood: 'pout', text: '「哼。喂，歸來者，『一起回去吧』是你先說的。……這句，本小姐借給燈。」', if: { met: 'noel', notFull: 'noel' } },
-      { who: 'noel', mood: 'blush', text: '「洛、洛恩。『一起回去吧』，是你先說的。……這一句，我交出去。」', if: { met: 'noel', full: 'noel' } },
-      { who: 'hero', mood: 'distant', text: '「燈裡，有人快把自己的雷燒乾了。……諾艾兒。一起回去吧。」', if: { notMet: 'noel' } },
-      { who: 'scarlet', mood: 'vow', text: '「洛恩閣下。城門前，閣下問我在守什麼。……以我的劍起誓，這一段，交給燈。」', if: { met: 'scarlet', notFull: 'scarlet' } },
-      { who: 'scarlet', mood: 'smile', text: '「洛恩。城門前，你問我在守什麼。……現在，我答得出來了。這一段，交給燈。」', if: { met: 'scarlet', full: 'scarlet' } },
-      { who: 'hero', mood: 'distant', text: '「燈裡，有個騎士還守著城門，不肯轉身。……絲嘉蕾。劍，可以放下了。」', if: { notMet: 'scarlet' } },
+      { who: 'hero', mood: 'resolve', text: '「這一輪走過的每一天，就是這一次的燈芯。送到這裡就好。」' },
+      { who: 'hero', mood: 'serious', text: '「燈要的是記憶。交出去的，就回不來了。」' },
+      { who: 'selene', mood: 'smile', text: '「洛恩先生，上弦那一夜經過洞窟的人，是您。這一段月光，請燈收下。」', if: { met: 'selene', notFull: 'selene' } },
+      { who: 'selene', mood: 'smile', text: '「銀盆裡很多人喊著的那個名字，是你呢。這一次，不是月亮說的。」', if: { met: 'selene', full: 'selene' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡有一段光在讀月亮。瑟蕾，還沒找到妳，但我記住妳了。」', if: { notMet: 'selene' } },
+      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，冰碎之後頭一句聽見的，是『站得起來嗎？』謹以此段，奉於燈前。」', if: { met: 'chizuru' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡有人還在念沒念完的祝詞。千鶴，封印可以停下了。」', if: { notMet: 'chizuru' } },
+      { who: 'safira', mood: 'smile', text: '「小洛，在火裡陪我跳完一整首的，是你。這一拍，送給燈唷。」', if: { met: 'safira' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡有人一個人跳著舞，等誰接上拍子。莎菲拉，我會去接。」', if: { notMet: 'safira' } },
+      { who: 'sylvie', mood: 'unguarded', text: '「毒藤是你割斷的。這一段，給燈。」', if: { met: 'sylvie' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡還有一支箭在射。希爾薇，不用再一個人守了。」', if: { notMet: 'sylvie' } },
+      { who: 'noel', mood: 'pout', text: '「哼。喂，歸來者，『一起回去吧』是你先說的。這一句，本小姐借給燈。」', if: { met: 'noel', notFull: 'noel' } },
+      { who: 'noel', mood: 'blush', text: '「洛、洛恩。『一起回去吧』，是你先說的。這一句，我交出去。」', if: { met: 'noel', full: 'noel' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡有人快把自己的雷燒乾了。諾艾兒，一起回去吧。」', if: { notMet: 'noel' } },
+      { who: 'scarlet', mood: 'vow', text: '「洛恩閣下，城門前閣下問我在守什麼。以騎士的名譽，這一段交給燈。」', if: { met: 'scarlet', notFull: 'scarlet' } },
+      { who: 'scarlet', mood: 'smile', text: '「城門前，你問我在守什麼。我現在答得出來了，洛恩。」', if: { met: 'scarlet', full: 'scarlet' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡有個騎士還守著城門，不肯轉身。絲嘉蕾，劍可以放下了。」', if: { notMet: 'scarlet' } },
       { who: 'liz', mood: 'smile', text: '「老大在寶庫遞給我的那塊乾糧，我估過了──無價。這種好貨，借燈用用。」', if: { met: 'liz' } },
-      { who: 'hero', mood: 'distant', text: '「燈裡，有人數著吃不下的金幣。……莉茲。家裡，有人在等。」', if: { notMet: 'liz' } },
-      { who: 'bobby', mood: 'focused', text: '「燈芯少了一道閥，只會吞，不會還喔。……好，裝上了！洛恩哥，燈不用再燒掉誰了。」', if: { met: 'bobby', notFull: 'bobby' } },
-      { who: 'bobby', mood: 'smile', text: '「洛恩哥，閥裝好了喔。祖先造錯的東西，我修好了。……燈，再也不用燒掉誰。」', if: { met: 'bobby', full: 'bobby' } },
-      { who: 'hero', mood: 'resolve', text: '「燈芯少一道閥，才會把點燈的人燒盡。……波比，造燈那一族的孩子。這道閥，我替妳補上。」', if: { notMet: 'bobby' } },
-      // Fix round 1: Rin's hand is on his when the lamp takes, in every reading; each other is shown, not said. The bell he
-      // strikes is the society's own: her flattened one never rings again (I-51).
+      { who: 'hero', mood: 'distant', text: '「燈裡有人數著吃不下的金幣。莉茲，家裡有人在等。」', if: { notMet: 'liz' } },
+      // The valve and its rule (Bobby's fifth piece, design fix four): her ancestors made the key too, when her chain is whole.
+      { who: 'bobby', mood: 'focused', text: '「洛恩哥，做這把劍的，是我家的人。閥裝好了，這次真的一下下。只是第一次點火，要一段不回來的光。」', if: { met: 'bobby', full: 'bobby' } },
+      { who: 'bobby', mood: 'focused', text: '「燈芯少一道閥──好，裝上了！洛恩哥，第一次點火，要一段不回來的光。」', if: { met: 'bobby', notFull: 'bobby' } },
+      { who: 'hero', mood: 'distant', text: '「燈座上刻著：閥初次點火，須一段不歸之光。波比，造燈那一族的孩子，這道閥我替妳補上。」', if: { notMet: 'bobby' } },
+      // The cost (ruling d): the ten pieces he found, given as the light that does not come back; 「要回來」 kept (mem:hero:10).
+      { who: 'hero', mood: 'resolve', text: '「那就用我找回來的那十段記憶。答應我要回來的那個人……我已經回來了。」' },
       N('凜的手疊上他握著燈鑰的手。燈穩了下來，碎片的光回到每一個弄丟它的人身上。暮霧散了。天亮時，沒有一個人鬆開手。'),
-      N('鎮上，凜把敲平的鐘交給鐘守。他敲響結社的鐘，最後一聲：「吾等殺的一直是守燈人。每殺一次，燈就晚一次點亮。靜鐘會，散了。」'),
-      // Coordinator ruling: Rin closes the game, echoing Lorne's line from her reveal; 「大家」 makes it everyone's, not a pick.
-      { who: 'rin', mood: 'smile', text: '「……洛恩。明天，大家也一起回來吧。」' },
+      // Ruling a: she hands the flattened bell over without a word; the keeper says the truth himself (story polish ruling 7).
+      N('回到鎮上，凜把敲平的鐘交給鐘守，一句話也沒說。他敲響結社的鐘，最後一聲。'),
+      { who: 'bellkeeper', text: '「吾等殺的一直是守燈人。每殺一次，燈就晚一次點亮。……是我殺的。靜鐘會，散了。」' },
+      // Coordinator ruling (T14): Rin closes the game, echoing Lorne's line from her reveal; 「大家」 makes it everyone's.
+      { who: 'rin', mood: 'smile', text: '「洛恩，明天……大家也一起回來吧。」' },
     ],
-    summary: '燈喰之母倒下，星燈不再由一個人點亮。暮霧散了，靜鐘會敲完最後一聲。大家一起回來了。從深處走出來的，再也不是一個人。',
+    summary: '燈喰之母倒下了。洛恩把找回的十段記憶交給了燈，閥點亮了星燈，大家都回來了。從深處走出來的，再也不是一個人。',
   },
   // Story depth Task 2 (design §7.5; controller ruling d: pulled from 6e into the main line): the lantern festival, the first
   // return after the finale. The main line's six core lines (plan Task 2's wording); 6e may add at most ten (affinity spec §8.5).
@@ -1172,8 +1177,12 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('終幕之後的第一個晚上，鎮上第一次辦了星燈祭。廣場掛滿了燈。'),
       { who: 'marta', text: '「洛恩，坐下。今天的日記，我念給你聽。」' },
       { who: 'marta', text: '「第一頁：兩個孩子倒在門口。名字是安娜取的。」' },
-      { who: 'marta', text: '「每一頁最上面那一行，都一樣：回來了。」' },
-      N('安娜從公會抱來一疊登記表，翻開最上面那一張。最後一欄填著：回來了。'),
+      // Controller ruling (Task 2 review): the townsfolk returns fold into Marta's and Anna's beats, not added lines (affinity
+      // spec §8.5: hopeful, 「有了消息」「找到一張登記表」; the whole of it is left to 6e's marta-diary and anna-name).
+      { who: 'marta', text: '「每一頁最上面那一行，都一樣：回來了。」', if: { notReturned: 'marta' } },
+      { who: 'marta', text: '「每一頁最上面那一行，都一樣：回來了。最早那幾頁是寫給我家那口子的，他也有消息了。」', if: { returned: 'marta' } },
+      { who: 'narrator', text: '安娜從公會抱來一疊登記表，翻開最上面那一張。最後一欄填著：回來了。', if: { notReturned: 'anna' } },
+      { who: 'narrator', text: '安娜從公會抱來一疊登記表，翻開最上面那一張，最後一欄填著：回來了。底下壓著一張舊的，寫著她同伴的名字。', if: { returned: 'anna' } },
       { who: 'hero', mood: 'smile', text: '「以前的每一輪，我一句也不記得。這一輪，有人念給我聽。」' },
     ],
     summary: '終幕之後，鎮上第一次辦了星燈祭，瑪莎把日記念給洛恩聽，每一頁最上面都寫著回來了。',
@@ -2022,7 +2031,7 @@ export const STORY = {
   /** The finale's boss room when Rin has not made her choice yet: said once, and the party stays on the map. */
   // Task 14: it plays in act 4 before her choice, maybe before her 6th piece: something is missing, and it is hers to give.
   finaleWait: [
-    { who: 'hero', mood: 'serious', text: '「……還少了什麼。今天，先回去吧。」' },
+    { who: 'hero', mood: 'serious', text: '「還少了什麼。今天先回去吧。」' },
     N('凜站在他身後，手按著領口的小銅鐘，一步也沒有往前。'),
   ] as ScriptLine[],
   /**
