@@ -491,7 +491,7 @@
     - `<ul class="delve-players" id="delve-players">`，每列是 `li`，文字「暱稱 · 45ms」；自己標「（你）」；還沒有延遲時顯示「暱稱 · …」。
   - 世界清單面板加 `<button class="delve-btn" id="delve-join-open">加入朋友的世界</button>`。
   - 新面板 `<section class="delve-tpanel" data-tpanel="join" id="delve-joinpanel" hidden role="dialog">`，結構照現有 tpanel，標題「加入朋友的世界」。內容：
-    - `<input class="delve-input" id="delve-room" maxlength="5" autocomplete="off" placeholder="房號">`
+    - `<input class="delve-input" id="delve-room" maxlength="12" autocomplete="off" placeholder="房號">`（maxlength 留空間給貼上的前後空白；normalizeRoom 負責驗證）
     - `<button class="delve-btn" id="delve-join">加入</button>`
     - `<p class="delve-msg" id="delve-join-msg">`
   - 角色列：`pendingWorld` 有值時，在 row 裡加 `span.delve-trow-badge`，文字「待同步」。

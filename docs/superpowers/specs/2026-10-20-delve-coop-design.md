@@ -225,9 +225,8 @@ class DelveGame {
   - 房主每送一份 chk（定時、跨邊界、撿起、離開前最後一份）就把它寫成世界檔的 `held[charId]`（送出但還沒 ack 的最新一份），透過 `VisitStore` 寫進世界存檔，房主重新整理也不會丟。
   - 客人把 checkpoint 寫進 IDB 之後回 `chkAck{rev}`；房主收到 rev ≥ held.rev 的 `chkAck`（連線中或延遲關閉中都算）就清掉 held。
   - 客人重進時，`held.rev` 比 hello 帶來的大就用 held；held 在同步（syncing）期間保留，客人 ready 後房主立刻送一份 chk，讓客人把房主這份寫進 IDB。
-  - 斷線時如果還有跨邊界操作沒被 checkpoint 涵蓋（`unconfirmed`），客人存最後一份 chk，並在角色記錄標上 `pendingWorld`；`unconfirmed` 會跨過 welcome 保留，直到新連線的第一份 chk 到達才清。標題畫面會顯示「待同步」，選這個角色時跳確認。
+  - 斷線時如果還有跨邊界操作沒被 checkpoint 涵蓋（`unconfirmed`），客人存最後一份 chk，並在角色記錄標上 `pendingWorld`；`unconfirmed` 會跨過 welcome 保留，直到新連線的第一份 chk 到達才清。標題畫面會顯示「待同步」，選這個角色、或按「繼續冒險」開到這個角色時都會跳確認。標記只在回到那個世界的 chk 才清；在別的世界收到的 chk 照樣保留它（`GuestSessionDeps.pendingWorld`）。
 - **已知剩餘窗口**：客人沒回原世界，先在別的世界玩，最後一筆跨邊界操作可能重複或消失。依反目標（朋友間不防作弊）接受，UI 會明白告知。房主在 checkpoint 和存世界之間崩潰的窗口同理，寫成測試記錄行為，不追求零窗口。
-- **已知缺口（終審處理）**：「繼續冒險」直接開最近的世界時不會跳待同步確認（確認只在標題的選角色路徑，`session.ts` 的 `pickCharacter`）。
 
 ### 5.8 連線、大廳與 UI（M-C）
 
