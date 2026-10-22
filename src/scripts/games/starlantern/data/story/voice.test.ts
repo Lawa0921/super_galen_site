@@ -4,8 +4,8 @@ import { MEETINGS } from '../meetings';
 import { STORY, type ScriptLine, type Speaker } from '../story.zh-TW';
 import { SCENE_IDS, type SceneId } from './scenes';
 import {
-  CONNECTIVES, ELLIPSIS, INTERJECTIONS, SENTENCE_PARTICLE, TELEGRAPH_OK, VOCATIVES, VOICE,
-  dots, heavyScene, opensOnDots, pinBeat, sceneReadings, storyTexts, telegraphBreaks, type Text,
+  CONNECTIVES, ELLIPSIS, INTERJECTIONS, SENTENCE_PARTICLE, TELEGRAPH_OK, VOCATIVES, VOICE, WORD_LISTS_AT_TASK3,
+  dots, heavyScene, opensOnDots, pinBeat, sceneReadings, speakerOf, storyTexts, telegraphBreaks, type Text,
 } from './voiceGates';
 
 /**
@@ -14,17 +14,68 @@ import {
  */
 const POLISHED: string[] = [];
 
-const isPolished = (key: string): boolean => POLISHED.some((p) => key.startsWith(p));
-const polishedTexts = (): Text[] => storyTexts().filter((t) => isPolished(t.key));
+type Scope = readonly string[];
+/** The scene or meeting a key belongs to (`scenes.<id>.`, `meet.<id>.`), if any. */
+const unitOf = (key: string): string | undefined => {
+  const [top, id] = key.split('.');
+  return top === 'scenes' || top === 'meet' ? `${top}.${id}.` : undefined;
+};
+/** A scene or meeting is polished whole as soon as a prefix covers any of its keys (Task 3 review I3). */
+const touches = (scope: Scope, unit: string): boolean => scope.some((p) => unit.startsWith(p) || p.startsWith(unit));
+const isPolished = (key: string, scope: Scope = POLISHED): boolean => {
+  const unit = unitOf(key);
+  return scope.some((p) => key.startsWith(p)) || (unit !== undefined && touches(scope, unit));
+};
+const polishedTexts = (scope: Scope = POLISHED): Text[] => storyTexts().filter((t) => isPolished(t.key, scope));
 /** The inside of a spoken line: the outer 「」 taken off. */
 const inner = (t: string): string => t.replace(/^「/, '').replace(/」$/, '');
 const spoken = (l: ScriptLine): boolean => l.who !== 'narrator';
 
 /** Every scene the polish covers, as it plays (each reading), with whether it is heavy. A meeting is one light scene. */
-const polishedScenes = (): { id: string; heavy: boolean; readings: ScriptLine[][] }[] => [
-  ...SCENE_IDS.filter((id) => isPolished(`scenes.${id}.`)).map((id) => ({ id, heavy: heavyScene(id), readings: sceneReadings(id).map((r) => r.lines) })),
-  ...MEETINGS.filter((m) => isPolished(`meet.${m.id}.`)).map((m) => ({ id: `meet.${m.id}`, heavy: false, readings: [[...STORY.meet[m.id].before, ...STORY.meet[m.id].after]] })),
+const polishedScenes = (scope: Scope = POLISHED): { id: string; heavy: boolean; readings: ScriptLine[][] }[] => [
+  ...SCENE_IDS.filter((id) => touches(scope, `scenes.${id}.`)).map((id) => ({ id, heavy: heavyScene(id), readings: sceneReadings(id).map((r) => r.lines) })),
+  ...MEETINGS.filter((m) => touches(scope, `meet.${m.id}.`)).map((m) => ({ id: `meet.${m.id}`, heavy: false, readings: [[...STORY.meet[m.id].before, ...STORY.meet[m.id].after]] })),
 ];
+
+/** Each speaker's share of 「……」 over the whole script, for every speaker whose lines are all in `scope` (plan ruling 4). */
+function speakerDotsBreaks(scope: Scope): string[] {
+  const all = storyTexts().map((t) => ({ ...t, who: speakerOf(t.key, t.line) })).filter((t) => t.who && t.who !== 'narrator');
+  const out: string[] = [];
+  for (const who of new Set(all.map((t) => t.who!))) {
+    const theirs = all.filter((t) => t.who === who);
+    if (!theirs.every((t) => isPolished(t.key, scope))) continue;   // checked once all their lines are polished (Task 16: everyone)
+    const cap = Math.max(1, Math.floor(theirs.length * ELLIPSIS.speakerShare));
+    const n = theirs.filter((t) => dots(t.text) > 0).length;
+    if (n > cap) out.push(`${who}: ${n} of ${theirs.length} lines carry 「……」, cap ${cap}`);
+  }
+  return out;
+}
+
+/** Each voice's particle budget over the lines in `scope` (`VOICE`, plan ruling 5); pools of plain strings count by `speakerOf`. */
+function particleBreaks(scope: Scope): string[] {
+  const out: string[] = [];
+  const lines = polishedTexts(scope).map((t) => ({ ...t, who: speakerOf(t.key, t.line) })).filter((t) => t.who);
+  for (const [who, v] of Object.entries(VOICE) as [Speaker, NonNullable<(typeof VOICE)[Speaker]>][]) {
+    const theirs = lines.filter((t) => t.who === who);
+    if (!theirs.length) continue;
+    if (v.never) for (const t of theirs) if (v.never.test(t.text)) out.push(`${t.key}: ${who} never says ${v.never}: ${t.text}`);
+    if (!v.mark) continue;
+    const marked = theirs.filter((t) => v.mark!.test(t.text));
+    if (v.maxShare !== undefined && marked.length > theirs.length * v.maxShare) out.push(`${who}: ${marked.length} of ${theirs.length} lines carry ${v.mark}`);
+    if (v.heavyNone) for (const t of marked) {
+      const [top, id] = t.key.split('.');
+      if (top === 'scenes' && heavyScene(id as SceneId)) out.push(`${t.key}: ${who}'s ${v.mark} in a heavy scene: ${t.text}`);
+    }
+    if (v.perScene !== undefined) {
+      // a scene as it plays: each reading on its own
+      for (const sc of polishedScenes(scope)) for (const r of sc.readings) {
+        const n = r.filter((l) => l.who === who && v.mark!.test(l.text)).length;
+        if (n > v.perScene) out.push(`${sc.id}: ${who} ${n} × ${v.mark}`);
+      }
+    }
+  }
+  return out;
+}
 
 describe('voice gates: the gates themselves (story polish Task 3)', () => {
   it('telegraphBreaks flags the audit\'s choppy forms and passes natural ones', () => {
@@ -133,6 +184,53 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
     expect(heavyScene('banter:noel-rin:1')).toBe(false);
   });
 
+  it('the review cases (Task 3 review): a lone connective is caught; compound words, fillers and doubled interjections are not', () => {
+    expect(telegraphBreaks('「另外。你說了三次夢話。」')).toEqual(['a connective stands alone: 「另外。」']);
+    expect(telegraphBreaks('「另外，你說了三次夢話。」')).toEqual([]);
+    for (const ok of ['「首先，把燈點上。」', '「這個，我想想。」', '「那個，借我看一下。」', '「嗯嗯，我知道。」', '「她的祖先，造錯了這裡。」', '「碎片交還，她就想起來了。」', '「他是個天才，你也知道。」']) {
+      expect(telegraphBreaks(ok), ok).toEqual([]);
+    }
+    expect(telegraphBreaks('「大家也，一起回來。」')).toHaveLength(1);   // the adverb rule still bites
+    expect(SENTENCE_PARTICLE('呢').test('「回來了呢……」')).toBe(true);
+    expect(SENTENCE_PARTICLE('喔').test('「接上了喔──啊，那顆螺絲！」')).toBe(true);
+  });
+
+  it('speakerOf names who says a plain string', () => {
+    expect(speakerOf('rinLines.act2.0')).toBe('rin');
+    expect(speakerOf('rinOath.0')).toBe('rin');
+    expect(speakerOf('greet.guild.act1.0')).toBe('anna');
+    expect(speakerOf('greet.forge.after.0')).toBe('doran');
+    expect(speakerOf('town.marta.after')).toBe('marta');
+    expect(speakerOf('town.marta.lost')).toBeUndefined();
+    expect(speakerOf('bellkeeper.oath.0')).toBe('bellkeeper');
+    expect(speakerOf('people.rin.0')).toBeUndefined();
+    expect(speakerOf('scenes.prologue.lines.0.text', { who: 'narrator', text: '…' })).toBe('narrator');
+  });
+
+  it("the plain-string pools count in the voice gates: Rin's 「回來了呢」 fails once her lines are polished (Task 6 fixes it)", () => {
+    const rin = particleBreaks(['rinLines.', 'rinOath.']);
+    expect(rin.some((x) => x.startsWith('rinOath.0:'))).toBe(true);
+    expect(particleBreaks([])).toEqual([]);
+  });
+
+  it('a scene is polished whole once any key of it is', () => {
+    const one = ['scenes.prologue-inn.lines.3'];
+    expect(isPolished('scenes.prologue-inn.lines.0.text', one)).toBe(true);
+    expect(isPolished('scenes.prologue-inn.summary', one)).toBe(true);
+    expect(isPolished('scenes.first-return.lines.0.text', one)).toBe(false);
+    expect(polishedScenes(one).map((s) => s.id)).toEqual(['prologue-inn']);
+    expect(polishedScenes(['meet.selene.after.0']).map((s) => s.id)).toEqual(['meet.selene']);
+    expect(polishedScenes(['scenes.mem:rin:']).length).toBe(7);
+  });
+
+  it('the word lists grow by ten words at most after Task 3 (plan ruling 6)', () => {
+    const now = { interjections: INTERJECTIONS.size, connectives: CONNECTIVES.size, vocatives: VOCATIVES.size };
+    const grown = (Object.keys(now) as (keyof typeof now)[]).map((k) => now[k] - WORD_LISTS_AT_TASK3[k]);
+    for (const g of grown) expect(g).toBeGreaterThanOrEqual(0);   // a list never shrinks below where Task 3 left it
+    expect(grown.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(10);
+    expect(WORD_LISTS_AT_TASK3).toEqual({ interjections: 32, connectives: 29, vocatives: 31 });
+  });
+
   it('sceneReadings plays every reading once, and the finale only after her choice', () => {
     const liz = sceneReadings('mem:liz:5');
     expect(liz).toHaveLength(2);
@@ -168,9 +266,9 @@ describe('voice gates over the polished script (story polish)', () => {
       const withDots = r.filter((l) => dots(l.text) > 0);
       if (!s.heavy && withDots.length > ELLIPSIS.lightPerScene) out.push(`${s.id} (light): ${withDots.length} lines with 「……」`);
       if (s.heavy) {
+        // every line with 「……」 counts, the narrator's too; the cap comes from the spoken lines (Task 3 review I1)
         const cap = Math.max(1, Math.floor(r.filter(spoken).length * ELLIPSIS.heavyShare));
-        const n = withDots.filter(spoken).length;
-        if (n > cap) out.push(`${s.id} (heavy): ${n} spoken lines with 「……」, cap ${cap}`);
+        if (withDots.length > cap) out.push(`${s.id} (heavy): ${withDots.length} lines with 「……」, cap ${cap}`);
       }
     }
     expect(out).toEqual([]);
@@ -185,41 +283,11 @@ describe('voice gates over the polished script (story polish)', () => {
   });
 
   it('each speaker keeps to their share of 「……」', () => {
-    const all = storyTexts().filter((t) => t.line && t.line.who !== 'narrator');
-    const out: string[] = [];
-    for (const who of new Set(all.map((t) => t.line!.who))) {
-      const theirs = all.filter((t) => t.line!.who === who);
-      if (!theirs.every((t) => isPolished(t.key))) continue;   // checked once all their lines are polished (Task 16: everyone)
-      const cap = Math.max(1, Math.floor(theirs.length * ELLIPSIS.speakerShare));
-      const n = theirs.filter((t) => dots(t.text) > 0).length;
-      if (n > cap) out.push(`${who}: ${n} of ${theirs.length} lines carry 「……」, cap ${cap}`);
-    }
-    expect(out).toEqual([]);
+    expect(speakerDotsBreaks(POLISHED)).toEqual([]);
   });
 
   it('each speaker keeps their particle budget', () => {
-    const out: string[] = [];
-    const lines = polishedTexts().filter((t) => t.line);
-    for (const [who, v] of Object.entries(VOICE) as [Speaker, NonNullable<(typeof VOICE)[Speaker]>][]) {
-      const theirs = lines.filter((t) => t.line!.who === who);
-      if (!theirs.length) continue;
-      if (v.never) for (const t of theirs) if (v.never.test(t.text)) out.push(`${t.key}: ${who} never says ${v.never}: ${t.text}`);
-      if (!v.mark) continue;
-      const marked = theirs.filter((t) => v.mark!.test(t.text));
-      if (v.maxShare !== undefined && marked.length > theirs.length * v.maxShare) out.push(`${who}: ${marked.length} of ${theirs.length} lines carry ${v.mark}`);
-      if (v.heavyNone) for (const t of marked) {
-        const [top, id] = t.key.split('.');
-        if (top === 'scenes' && heavyScene(id as SceneId)) out.push(`${t.key}: ${who}'s ${v.mark} in a heavy scene: ${t.text}`);
-      }
-      if (v.perScene !== undefined) {
-        // a scene as it plays: each reading on its own
-        for (const sc of polishedScenes()) for (const r of sc.readings) {
-          const n = r.filter((l) => l.who === who && v.mark!.test(l.text)).length;
-          if (n > v.perScene) out.push(`${sc.id}: ${who} ${n} × ${v.mark}`);
-        }
-      }
-    }
-    expect(out).toEqual([]);
+    expect(particleBreaks(POLISHED)).toEqual([]);
   });
 
   it('「還有。」 is retired', () => {

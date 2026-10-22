@@ -6,7 +6,7 @@ import { MEETINGS } from '../meetings';
 import { NPC_NAMES, STORY, introIndex, type LineWhen, type ScriptLine, type Speaker } from '../story.zh-TW';
 import { T } from '../text.zh-TW';
 import { SCENE_IDS } from './scenes';
-import { SENTENCE_PARTICLE, dots, heavyScene, readingsOf, sceneReadings, storyTexts } from './voiceGates';
+import { SENTENCE_PARTICLE, dots, heavyScene, readingsOf, sceneReadings, speakerOf, storyTexts } from './voiceGates';
 
 /** The pools that are not scenes, in the order they are printed after the scenes and the meetings. */
 const POOLS = ['townLines', 'greet', 'rinLines', 'rinOath', 'bellkeeper', 'merchant', 'leads', 'absorb', 'people', 'truths', 'town'] as const;
@@ -36,19 +36,27 @@ const readingLabel = (w: LineWhen): string => {
  * The header counts the strings with 「……」 and each speaker's sentence particles over the same keys.
  */
 export function readAloud(prefixes: string[]): string {
-  const under = (key: string): boolean => prefixes.some((p) => key.startsWith(p));
+  // a scene or meeting is printed whole as soon as a prefix names any of its keys (Task 3 review I3)
+  const touches = (unit: string): boolean => prefixes.some((p) => unit.startsWith(p) || p.startsWith(unit));
+  const unitOf = (key: string): string | undefined => {
+    const [top, id] = key.split('.');
+    return top === 'scenes' || top === 'meet' ? `${top}.${id}.` : undefined;
+  };
+  const under = (key: string): boolean => prefixes.some((p) => key.startsWith(p)) || (unitOf(key) !== undefined && touches(unitOf(key)!));
   const texts = storyTexts().filter((t) => under(t.key));
   const body: string[] = [];
 
   for (const id of SCENE_IDS) {
-    if (!under(`scenes.${id}.`)) continue;
+    if (!touches(`scenes.${id}.`)) continue;
     const scene = STORY.scenes[id];
     body.push(`## scenes.${id} ${heavyScene(id) ? '［重］' : '［輕］'} ${scene.title}`, '');
     for (const r of sceneReadings(id)) body.push(`### 讀法：${readingLabel(r.when)}`, ...r.lines.map((l) => say(l)), '');
     body.push(`摘要：${scene.summary}`, '');
   }
-  for (const { id } of MEETINGS) {
-    if (!under(`meet.${id}.`)) continue;
+  // in the order they are met: by depth, the mainline first at a depth it shares (spec §6)
+  const byDepth = [...MEETINGS].sort((a, b) => a.depth - b.depth || Number(b.region === 'mainline') - Number(a.region === 'mainline'));
+  for (const { id } of byDepth) {
+    if (!touches(`meet.${id}.`)) continue;
     const { before, after } = STORY.meet[id];
     const intro = introIndex(id);
     const stranger = (l: ScriptLine, i: number, part: 'before' | 'after') =>
@@ -58,7 +66,13 @@ export function readAloud(prefixes: string[]): string {
   for (const pool of POOLS) {
     const rows = texts.filter((t) => t.key.startsWith(`${pool}.`));
     if (!rows.length) continue;
-    body.push(`## ${pool} ${pool === 'rinLines' ? '［重］' : '［輕］'}`, '', ...rows.map((t) => `${t.key}　${t.line ? say(t.line) : t.text}`), '');
+    // each row with its plate: the one who says it (`speakerOf`), none for narration
+    const plated = (t: (typeof rows)[number]): string => {
+      if (t.line) return say(t.line);
+      const who = speakerOf(t.key);
+      return who && who !== 'narrator' ? `${nameOf(who)}：${t.text}` : t.text;
+    };
+    body.push(`## ${pool} ${pool === 'rinLines' ? '［重］' : '［輕］'}`, '', ...rows.map((t) => `${t.key}　${plated(t)}`), '');
   }
   // anything else the prefixes name (the finale's wait, the act card, single strings)
   const printed = (key: string) => key.startsWith('scenes.') || key.startsWith('meet.') || POOLS.some((p) => key.startsWith(`${p}.`));

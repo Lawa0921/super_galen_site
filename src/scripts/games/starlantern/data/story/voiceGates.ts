@@ -3,7 +3,7 @@
 // Read by `voice.test.ts` (the gates), `story.test.ts` (pins) and `readAloud.ts` (the read-aloud dump).
 import type { CharacterId } from '../../engine/types';
 import { CHARACTERS, CHARACTER_IDS } from '../characters';
-import { NPC_NAMES, STORY, linesWhen, type LineWhen, type ScriptLine, type Speaker } from '../story.zh-TW';
+import { NPC_NAMES, STORY, linesWhen, type LineWhen, type NpcId, type ScriptLine, type Speaker } from '../story.zh-TW';
 import type { TownFragmentId } from './fragments';
 import { sceneKind, type SceneId } from './scenes';
 
@@ -28,6 +28,24 @@ export function storyTexts(): Text[] {
   return out;
 }
 
+/** The townsperson who keeps each facility, and so says its greeting. */
+const FACILITY_KEEPER: Record<string, NpcId> = { guild: 'anna', shop: 'orik', inn: 'marta', gate: 'glen', forge: 'doran' };
+/**
+ * Who says the text at `key`: a scene line's own speaker, and for the pools of plain strings the one whose words they are
+ * (Rin's town lines, a facility's greeting, a townsperson's line once returned, the bellkeeper, the merchant, Anna's leads).
+ * `undefined` for narration-only pools (people, truths, summaries, absorb lines, the town's day line).
+ */
+export function speakerOf(key: string, line?: ScriptLine): Speaker | undefined {
+  if (line) return line.who;
+  const [top, a, b] = key.split('.');
+  if (top === 'rinLines' || top === 'rinOath') return 'rin';
+  if (top === 'greet') return FACILITY_KEEPER[a];
+  if (top === 'town' && b === 'after' && a in NPC_NAMES) return a as NpcId;
+  if (top === 'bellkeeper' || top === 'merchant') return top;
+  if (top === 'leads') return 'anna';
+  return undefined;
+}
+
 // ---- 「……」 (bible §2.3, plan ruling 4) ----
 
 /** How many 「……」 a text spends. */
@@ -49,17 +67,22 @@ export const INTERJECTIONS: ReadonlySet<string> = new Set([
   '嗯', '好', '喂', '是', '不', '啊', '咦', '哼', '欸', '哈', '嘿嘿', '唔', '噢', '哦', '哎', '是嗎', '對', '沒事', '奇怪', '吵', '可以',
   '不要', '不行', '不用', '服', '不服', '早', '說', '放著',
   '算了',   // Task 3 (plan's own example 「你走前面。──算了，並排走。」 must pass): a change of mind, said on its own
+  '這個', '那個',   // Task 3 review: fillers before a pause (「這個，我想想。」); the controller's ruling, so they cut nothing out
 ]);
 /** Words that open a sentence and hand it on: they may stand before a comma. */
 export const CONNECTIVES: ReadonlySet<string> = new Set([
   '另外', '還有', '可是', '不過', '所以', '而且', '然後', '只是', '反正', '其實', '但是', '因為', '如果', '結果', '總之', '對了', '那麼',
   '何況', '再說', '畢竟', '至少', '當然', '雖然', '原來', '難怪', '果然', '看來', '好像',
+  '首先',   // Task 3 review: 「首先，」 opens a list of steps
 ]);
 /** What one calls someone by: the cast's names, the town's, and the nicknames and titles of the script. */
 export const VOCATIVES: ReadonlySet<string> = new Set([
   ...Object.values(CHARACTERS).map((c) => c.name), ...Object.values(NPC_NAMES),
   '小洛', '小希', '凜凜', '老大', '松鼠', '小魔女', '丫頭', '孩子', '小子', '客人', '年輕人', '師父', '老師', '團長',
 ]);
+
+/** The three lists' sizes when Task 3 closed (with its review fixes): from here they may grow by ten words at most, together. */
+export const WORD_LISTS_AT_TASK3 = { interjections: 32, connectives: 29, vocatives: 31 } as const;
 
 // ---- Choppy lines (plan ruling 6) ----
 
@@ -68,14 +91,19 @@ export const TELEGRAPH_OK: readonly string[] = [
   '「新芽，我看過了。今晚我睡床。換你守窗。」',   // Task 2 final 7 (chat:sylvie:2, full), approved by the user
 ];
 
-/** The adverbs a comma must not cut from their verb. */
-const ADVERB_COMMA = /(一直|也|就|都|還|才|再|又|先)，/;
+/**
+ * The adverbs a comma must not cut from their verb. The character must be the adverb, not the end of a word: 首先、祖先、
+ * 交還、剛才、成就、首都 and their like are not cut from anything.
+ */
+const ADVERB_COMMA = /(一直|也|(?<![成造將遷])就|(?<![首古國])都|(?<![交歸償奉退送])還|(?<![剛方天人適])才|再|又|(?<![首原事預優起祖])先)，/;
 /** A clause's length once its marks are off: 「」『』……──～ and white space do not count. */
 const len = (s: string): number => [...s.replace(/[「」『』～\s]|……|──/g, '')].length;
 const bare = (s: string): string => s.replace(/[「」『』～\s]|……|──/g, '');
 /** Whether a word may stand alone: an interjection, a connective or a vocative, with or without a particle after it (好啦、好吧). */
 const standsAlone = (w: string, sets: ReadonlySet<string>[]): boolean => {
   const head = w.replace(/[呢吧啦喔囉嘛耶唷呀啊]$/, '');
+  const chars = [...w];
+  if (chars.length === 2 && chars[0] === chars[1] && INTERJECTIONS.has(chars[0])) return true;   // 嗯嗯、哈哈
   return sets.some((set) => set.has(w) || (head !== w && head.length > 0 && set.has(head)));
 };
 
@@ -102,17 +130,22 @@ export function telegraphBreaks(text: string): string[] {
   const out: string[] = [];
   if (text.includes('還有。')) out.push('「還有。」');
   for (const p of passages(text)) {
+    // a connective said as a whole sentence (「另外。」) hands on to nothing; 「還有。」 is told above
+    for (const [, s, end] of p.matchAll(/([^。！？]*)([。！？])/g)) {
+      const w = bare(s);
+      if (end === '。' && w !== '還有' && CONNECTIVES.has(w)) out.push(`a connective stands alone: 「${w}。」`);
+    }
     const sentences = p.split(/[。！？]/).filter((s) => len(s) > 0);
     const tiny = sentences.filter((s) => len(s) <= 2 && !standsAlone(bare(s), [INTERJECTIONS]) && bare(s) !== '還有');
     if (tiny.length >= 2) out.push(`very short sentences: ${tiny.map(bare).join('／')}`);
     for (const s of sentences) {
       if (ADVERB_COMMA.test(s.replace(/……/g, ''))) out.push(`a comma cuts the adverb from its verb: ${s}`);
-      // clauses with the mark that ends each one
+      // clauses with the mark that ends each one; a clause that ends on 「──」 is broken off, and only a comma cuts a
+      // phrase out (a list's 、 does not)
       const parts = [...s.matchAll(/([^，、；：]*?)(──|[，、；：]|$)/g)].filter((m) => m[0] !== '');
       for (const [, clause, mark] of parts) {
-        if (mark !== '，') continue;                 // only a comma cuts a phrase out (a list is not)
-        if (clause.endsWith('──')) continue;          // broken off
-        const words = bare(clause.split('──').pop() ?? '');
+        if (mark !== '，') continue;
+        const words = bare(clause);
         if (words.length === 0 || [...words].length > 2) continue;
         if (standsAlone(words, [INTERJECTIONS, CONNECTIVES, VOCATIVES])) continue;
         out.push(`a comma cuts out 「${words}」: ${s}`);
@@ -137,7 +170,7 @@ export function heavyScene(id: SceneId): boolean {
 // ---- Particles and voices (bible §3, plan ruling 5) ----
 
 /** A sentence particle `p` (a character or a class) at the end of a sentence or clause. */
-export const SENTENCE_PARTICLE = (p: string): RegExp => new RegExp(`${p}(?=[。！？～」，])`);
+export const SENTENCE_PARTICLE = (p: string): RegExp => new RegExp(`${p}(?=[。！？～」，]|……|──)`);
 const ALL_PARTICLES = '[呢吧啦喔囉嘛耶唷呀]';
 
 /** Each voice's particle budget: `mark` at most `maxShare` of their lines, `perScene` a scene, none in a heavy scene; `never` at all. */

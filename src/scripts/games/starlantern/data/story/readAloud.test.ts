@@ -29,10 +29,24 @@ describe('readAloud (story polish Task 3)', () => {
     expect(out).toContain('助詞');
   });
 
-  it('prints the pools that are not scenes', () => {
-    const out = readAloud(['people.rin.', 'townLines.']);
+  it('prints the pools that are not scenes, each row with its plate', () => {
+    const out = readAloud(['people.rin.', 'townLines.', 'rinOath.', 'greet.guild.']);
     expect(out).toContain('people.rin');
     expect(out).toContain('townLines');
+    expect(out).toMatch(/^rinOath\.0　凜：/m);
+    expect(out).toMatch(/^greet\.guild\.prologue\.0　安娜：/m);
+    expect(out).toMatch(/^people\.rin\.0　凜。/m);   // a handbook page has no plate
+  });
+
+  it('prints a whole scene when a prefix names one of its keys, and meetings in the order they are met', () => {
+    const one = readAloud(['scenes.prologue-inn.lines.3']);
+    expect(one).toContain('## scenes.prologue-inn');
+    expect(one).toContain('發青的指痕');   // a line the prefix did not name
+    const all = readAloud(['meet.']);
+    const at = (id: string) => all.indexOf(`## meet.${id} `);
+    const order = ['selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet'].map(at);
+    for (const i of order) expect(i).toBeGreaterThanOrEqual(0);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
   it('writes the dump when STORY_DUMP is set', () => {
