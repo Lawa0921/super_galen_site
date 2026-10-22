@@ -440,7 +440,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('幾天後的清晨，傳送門廣場。一位穿長袍的老人站在門前，雙手捧著一口小小的鐘。'),
       { who: 'bellkeeper', text: '「吾等敲了三回鐘。那孩子領口的鐘，一回也沒有應。」' },
       { who: 'rin', mood: 'guarded', text: '「那枚鐘，我敲平了。洛恩，站到我後面。」' },
-      { who: 'bellkeeper', text: '「鐘不應，吾等便知道了，所以我來了。」' },
+      { who: 'bellkeeper', text: '「鐘不應，吾等便知道了。所以，我來了。」' },
       N('老人捧著鐘的手在發抖。他看的不是凜，是站在她身後的洛恩。'),
       { who: 'bellkeeper', text: '「從深處走出來的人，我不動手。……我只是想看清楚你。」' },
     ],
@@ -480,7 +480,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'chat:rin:4': {
     lines: [
       { who: 'rin', mood: 'serious', text: '「洛恩，那枚銅鐘扣上的時候還是好的，從霧裡出來就裂了。」' },
-      { who: 'rin', text: '「我想是你抓住我手腕的那一下。……所以我把它敲平了。」' },
+      { who: 'rin', text: '「應該是你抓住我手腕那一下裂的。……所以我把它敲平了。」' },
       { who: 'rin', mood: 'smile', text: '「再也不會有鐘聲叫我去殺誰了。我們明天也一起回來。」' },
     ],
     summary: '凜說銅鐘是在霧裡裂的，就在洛恩抓住她手腕的那一下。她把它敲平了，再也不會響。',
@@ -1727,8 +1727,8 @@ export const STORY = {
   rinLines: {
     // V1 voice pass: her shadow, kept restrained (no jokes about her strangeness); one 「……」 at most per line, in half the lines at most.
     act2: ['沒什麼，別在意。', '喂，你走前面。我走後面。', '剛才是不是有鐘在響？──沒事，聽錯了。'],
-    act3: ['別一直看我。看路。', '最近夢裡一直有鐘聲。……沒事。', '沒事。問那麼多做什麼。'],
-    act4: ['今晚早點睡，門記得鎖好。', '不要站在我背後。……也不要讓我站在你背後。', '沒事。不要問。'],
+    act3: ['別一直看我。看路。', '最近夢裡一直有鐘聲。……沒事。', '問那麼多做什麼。你先顧好自己。'],
+    act4: ['今晚早點睡，門記得鎖好。', '不要站在我背後。……也不要讓我站在你背後。', '沒事。你再問，我也只會說沒事。'],
   } as Partial<Record<Stage, string[]>>,
   /** Rin's lines in the town once she has made her choice; they replace `rinLines`. They read right before and after the finale. */
   rinOath: [
