@@ -8,6 +8,8 @@ export const CHANNEL_IDS = { ctrl: 0, bulk: 1, state: 2 } as const;
 export const FRAG_BYTES = 16 * 1024;
 /** state 單則上限，超過靜默丟掉（不可靠通道不分片）。 */
 export const STATE_MAX_BYTES = 16 * 1024;
+/** 可靠通道重組後單則上限；還沒等到 FINAL 就超過 → 整條 link 以 failed 關掉（不讓對端塞爆記憶體）。 */
+export const MAX_MESSAGE_BYTES = 8 * 1024 * 1024;
 
 const FLAG_FINAL = 1;
 const FLAG_TEXT = 2;
@@ -53,18 +55,24 @@ export function createRtcPeer(makePc?: () => RTCPeerConnection): RtcPeer {
     teardown();
   }
 
-  // 可靠通道重組：同通道有序，片段依序累積到 FINAL。
-  function onFrame(ch: Channel, buf: Uint8Array, parts: Uint8Array[]): void {
+  // 可靠通道重組：同通道有序，片段依序累積到 FINAL；累積量超過 MAX_MESSAGE_BYTES → 關掉 link。
+  function onFrame(ch: Channel, buf: Uint8Array, acc: { parts: Uint8Array[]; bytes: number }): void {
     if (buf.byteLength < 1) return;
     const flags = buf[0];
-    parts.push(buf.subarray(1));
+    acc.parts.push(buf.subarray(1));
+    acc.bytes += buf.byteLength - 1;
+    if (acc.bytes > MAX_MESSAGE_BYTES) {
+      acc.parts.length = 0;
+      acc.bytes = 0;
+      fireClose('failed');
+      return;
+    }
     if (!(flags & FLAG_FINAL)) return;
-    let total = 0;
-    for (const p of parts) total += p.byteLength;
-    const out = new Uint8Array(total);
+    const out = new Uint8Array(acc.bytes);
     let off = 0;
-    for (const p of parts) { out.set(p, off); off += p.byteLength; }
-    parts.length = 0;
+    for (const p of acc.parts) { out.set(p, off); off += p.byteLength; }
+    acc.parts.length = 0;
+    acc.bytes = 0;
     const data: Payload = flags & FLAG_TEXT ? dec.decode(out) : out;
     for (const cb of msgCbs) cb(ch, data);
   }
@@ -75,15 +83,15 @@ export function createRtcPeer(makePc?: () => RTCPeerConnection): RtcPeer {
       : { negotiated: true, id: CHANNEL_IDS[ch], ordered: true });
     dc.binaryType = 'arraybuffer';
     dcs[ch] = dc;
-    const parts: Uint8Array[] = [];
+    const acc = { parts: [] as Uint8Array[], bytes: 0 };
     dc.onmessage = (e) => {
       if (closed) return;
       if (ch === 'state') {
         if (typeof e.data === 'string') for (const cb of msgCbs) cb(ch, e.data);
         return;
       }
-      if (e.data instanceof ArrayBuffer) onFrame(ch, new Uint8Array(e.data), parts);
-      else if (ArrayBuffer.isView(e.data)) onFrame(ch, new Uint8Array(e.data.buffer, e.data.byteOffset, e.data.byteLength), parts);
+      if (e.data instanceof ArrayBuffer) onFrame(ch, new Uint8Array(e.data), acc);
+      else if (ArrayBuffer.isView(e.data)) onFrame(ch, new Uint8Array(e.data.buffer, e.data.byteOffset, e.data.byteLength), acc);
     };
     dc.onopen = () => { if (allOpen()) for (const w of [...openWaiters]) w(); };
     dc.onclose = () => fireClose('closed');

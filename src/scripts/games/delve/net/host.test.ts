@@ -92,7 +92,7 @@ function hero(o: Partial<DelveCharacter> = {}): DelveCharacter {
 }
 const hello = (c: DelveCharacter, o: Record<string, unknown> = {}) => ({ t: 'hello', proto: PROTO, build: BUILD, charId: c.id, nick: c.nick, character: c, ...o });
 
-function rig(world: 'arena' | 'infinite' = 'arena', maxGuests?: number) {
+function rig(world: 'arena' | 'infinite' = 'arena', maxGuests?: number, nick?: string) {
   const game = world === 'arena' ? arena() : infinite();
   const net = new LoopbackNet();
   const visits = new Map<string, VisitSave>(), held = new Map<string, HeldChar>();
@@ -100,7 +100,7 @@ function rig(world: 'arena' | 'infinite' = 'arena', maxGuests?: number) {
   const saves: number[] = [];
   let now = 0;
   const host = new NetHost(game, {
-    build: BUILD, worldId: 'w1', maxGuests,
+    build: BUILD, worldId: 'w1', maxGuests, nick,
     visits: {
       get: (k) => visits.get(k), put: (k, v) => { puts.push(k); visits.set(k, v); },
       getHeld: (k) => held.get(k), putHeld: (k, h) => { if (h) held.set(k, h); else held.delete(k); },
@@ -176,6 +176,21 @@ describe('NetHost 握手', () => {
     expect([...r.game.actors.keys()]).toEqual(['h', 'p1', 'p2', 'p3']);
     expect(reject(hello(hero()))).toBe('full');
     expect(r.game.actors.size).toBe(4);
+  });
+
+  it('客人看到的房主暱稱 = opts.nick（welcome players、房主換裝的 look）；沒給才是「房主」', () => {
+    const r = rig('arena', undefined, '甲');
+    const g = r.join();
+    const host = (g.last('welcome')!.players as { pid: string; nick: string }[]).find((p) => p.pid === 'h');
+    expect(host?.nick).toBe('甲');
+    r.game.act({ op: 'bodyLook', look: { ...r.game.appearance, hair: (r.game.appearance.hair + 1) % 4 } });
+    r.run(2000);
+    const looks = g.of('look').filter((m) => m.pid === 'h');
+    expect(looks.length).toBeGreaterThan(0);
+    expect(looks.every((m) => m.nick === '甲')).toBe(true);
+    const r2 = rig();
+    const g2 = r2.join();
+    expect((g2.last('welcome')!.players as { pid: string; nick: string }[]).find((p) => p.pid === 'h')?.nick).toBe('房主');
   });
 
   it('pid 取最小的空號；其他客人收到新來的 look', () => {
@@ -513,6 +528,18 @@ describe('NetHost 逾時與關閉', () => {
     expect(r.game.actors.size).toBe(1);
     expect(r.game.mode).toBe('solo');
     expect(r.puts.length).toBe(2);
+  });
+
+  it('closeLingering：延遲關閉中的連線立刻全部關掉（不等 LINGER_MS）', () => {
+    const r = rig();
+    const a = r.join(), b = r.join();
+    r.host.close();
+    r.net.flush();
+    expect(r.host.lingering).toBe(2);
+    expect(a.closed || b.closed).toBe(false);
+    r.host.closeLingering();
+    expect(r.host.lingering).toBe(0);
+    expect(a.closed && b.closed).toBe(true);
   });
 });
 

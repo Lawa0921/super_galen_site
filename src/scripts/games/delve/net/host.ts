@@ -41,6 +41,8 @@ export interface NetHostOptions {
   requestSave?: () => void;
   /** 預設 MAX_GUESTS */
   maxGuests?: number;
+  /** 房主自己的暱稱（客人名單、名牌）；沒給 → 「房主」 */
+  nick?: string;
 }
 export type GuestPhase = 'hello' | 'syncing' | 'live';
 export interface GuestInfo { pid: Pid; charId: string; nick: string; phase: GuestPhase; silentMs: number; rttMs: number | null; ackedRev: number }
@@ -219,6 +221,14 @@ export class NetHost {
 
   /** 還在等延遲關閉的連線數 */
   get lingering(): number { return this.lingerQ.length; }
+
+  /** 延遲關閉中的連線現在全部關掉（關房的保險：loop 不再 tick 時不留半開的連線） */
+  closeLingering(): void {
+    const q = this.lingerQ;
+    this.lingerQ = [];
+    this.lingerIn = [];
+    for (const l of q) { l.g.lingering = false; if (l.g.link.open) l.g.link.close('linger'); }
+  }
 
   /** 只給測試：客人 pid 目前停放的遠方 sum 的 cx（舊到新） */
   debugParked(pid: Pid): number[] {
@@ -615,6 +625,7 @@ export class NetHost {
   private nickOf(pid: Pid): string {
     const g = this.list.find((o) => o.alive && o.pid === pid);
     if (g) return g.nick;
+    if (pid === this.game.localPid && this.opts.nick) return this.opts.nick;
     return this.game.actors.get(pid)?.who?.nick ?? '房主';
   }
 }

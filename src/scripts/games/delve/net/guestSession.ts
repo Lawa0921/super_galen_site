@@ -1,6 +1,7 @@
 // guestSession.ts — 客人端協調層（M-C Task 6；DOM-free）：joinRoom（房號信令）→ NetGuest + NetLoop（注入的 Ticker）+ 角色存檔。
 // C4：savedAt 由這裡（寫 IDB 的一端）蓋 now()。C1：chk 寫好才 ack（NetGuest 等 persist 的 promise）；
 //   結束時還有跨邊界操作沒被 chk 涵蓋（unconfirmed）→ 最後一份 chk 再存一次並標 pendingWorld = 那個世界。
+//   角色原本就帶著別的世界的 pendingWorld（deps.pendingWorld）→ 這裡的 chk 不清它；回到那個世界的 chk 才清。
 // Task 1 合約：收到 reject / bye 之後由房主在 LINGER_MS 後關連線；房主沒關（分頁直接沒了）就由這裡在 LINGER_MS + 1000 後自己關。
 // loop 跑到連線關掉、而且排著的 persist 都完成才停。leave() 另有主執行緒的保險（LEAVE_SAFETY_MS）：ticker 死掉或 IDB 卡住也一定結束。
 import type { DelveGame } from '../engine/game';
@@ -17,6 +18,8 @@ export interface GuestSessionDeps {
   signal: SignalApi; makePeer: () => RtcPeer; ticker: Ticker; build: string; character: DelveCharacter;
   /** 寫角色檔；pendingWorld = null 會清掉記錄上的標記 */
   persist: (c: DelveCharacter, pendingWorld: string | null) => Promise<void>;
+  /** 角色記錄上原本的 pendingWorld：chk 只在回到那個世界時清掉，在別的世界照樣留著 */
+  pendingWorld?: string | null;
   /** savedAt 與 joinRoom 等 ack 的逾時用；預設 Date.now */
   now?: () => number;
   /** 只給測試：joinRoom 等 ack 之間的 sleep（預設真的計時器） */
@@ -46,6 +49,8 @@ export class CoopGuestSession {
   /** 第一次看到 ended 的 loop 時間 */
   private endedAt: number | null = null;
   private finalChecked = false;
+  /** 每次 persist 要帶的 pendingWorld（原本的標記；回到那個世界的 chk 才清成 null） */
+  private marker: string | null;
   /** persist 串成一條：舊的 chk 不會因為壓縮比較慢而晚寫、蓋掉新的；inflight = 還沒完成的筆數 */
   private chain: Promise<void> = Promise.resolve();
   private inflight = 0;
@@ -57,6 +62,7 @@ export class CoopGuestSession {
   constructor(deps: GuestSessionDeps) {
     this.deps = deps;
     this.now = deps.now ?? Date.now;
+    this.marker = deps.pendingWorld ?? null;
   }
 
   /** 信令 → NetGuest → loop 開跑。失敗 reject JoinError、phase = 'failed'；之後 phase 跟著 NetGuest.state */
@@ -82,7 +88,7 @@ export class CoopGuestSession {
     this.link = link;
     this.guest = new NetGuest(link, {
       build: this.deps.build, character: this.deps.character,
-      onCheckpoint: (c) => this.save(c, null),
+      onCheckpoint: (c) => this.save(c, this.keepMarker()),
     });
     this.loop = new NetLoop(this.deps.ticker, (t, s) => this.tick(t, s));
     this.loop.start();
@@ -147,6 +153,12 @@ export class CoopGuestSession {
     this.finalChecked = true;
     const chk = g.lastCheckpoint, world = g.worldId;
     if (g.unconfirmed && chk && world) this.save(chk.character, world).catch(() => { /* 寫不進去：沒有別的辦法 */ });
+  }
+
+  /** chk 的 pendingWorld：標的就是這個世界 → 這份 chk 確認了它、清掉；別的世界的標記照樣保留 */
+  private keepMarker(): string | null {
+    if (this.marker !== null && this.marker === this.guest?.worldId) this.marker = null;
+    return this.marker;
   }
 
   /** savedAt 在真正寫的時候蓋（C4）；回傳這一筆的 promise（NetGuest 等它才 ack） */

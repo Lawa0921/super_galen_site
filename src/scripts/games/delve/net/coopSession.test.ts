@@ -36,7 +36,7 @@ function trackedTicker(): Ticker & { fire(nowMs: number): void; running: boolean
 interface Saved { c: DelveCharacter; world: string | null }
 interface G { s: CoopGuestSession; ticker: ReturnType<typeof trackedTicker>; saved: Saved[]; peers: RtcPeer[]; character: DelveCharacter }
 
-function setup() {
+function setup(hostNick = '房主') {
   const net = new LoopbackNet();
   const signal = new FakeSignal();
   const makePeer = fakePeerFactory(net);
@@ -51,7 +51,7 @@ function setup() {
   let saves = 0;
   const hostTicker = trackedTicker();
   const host = new CoopHostSession(hostGame, {
-    signal, makePeer, ticker: hostTicker, build: BUILD, visits: store, requestSave: () => { saves++; }, nick: '房主',
+    signal, makePeer, ticker: hostTicker, build: BUILD, visits: store, requestSave: () => { saves++; }, nick: hostNick,
   });
   let t = 0;
   const sleeps: { at: number; r: () => void }[] = [];
@@ -66,12 +66,13 @@ function setup() {
     driveGuests: true,
     /** 時鐘直接往前跳（不跑幀；模擬頁面已經開很久） */
     skip(ms: number) { t += ms; },
-    addGuest(nick = '乙', persist?: (c: DelveCharacter, world: string | null) => Promise<void>): G {
+    /** pendingWorld = 角色記錄上原本的待同步標記（session.ts 從角色列表帶進來） */
+    addGuest(nick = '乙', persist?: (c: DelveCharacter, world: string | null) => Promise<void>, pendingWorld?: string | null): G {
       const character = { ...createCharacter(nick, normalizeAppearance(undefined), 0), id: `char-${guests.length}` };
       const ticker = trackedTicker();
       const saved: Saved[] = [], peers: RtcPeer[] = [];
       const s = new CoopGuestSession({
-        signal, ticker, build: BUILD, character,
+        signal, ticker, build: BUILD, character, pendingWorld,
         makePeer: () => { const p = makePeer(); peers.push(p); return p; },
         persist: async (c, world) => { saved.push({ c, world }); await persist?.(c, world); },
         now: () => 1_000_000 + t,
@@ -96,9 +97,9 @@ function setup() {
       return cond();
     },
     /** 開房並讓客人加入到雙方都 live */
-    async joined(nick = '乙', persist?: (c: DelveCharacter, world: string | null) => Promise<void>): Promise<G> {
+    async joined(nick = '乙', persist?: (c: DelveCharacter, world: string | null) => Promise<void>, pendingWorld?: string | null): Promise<G> {
       const room = host.room ?? await host.open();
-      const g = env.addGuest(nick, persist);
+      const g = env.addGuest(nick, persist, pendingWorld);
       const err = g.s.join(room).then(() => null, (e: unknown) => e);
       const ok = await env.until(() => g.s.phase === 'live' && host.players().some((p) => !p.self && p.nick === nick && p.phase === 'live'), 15_000);
       expect(await err).toBeNull();
@@ -137,6 +138,13 @@ describe('CoopHostSession／CoopGuestSession', { timeout: 20_000 }, () => {
     await e.run(2500);
     expect(g.s.rttMs).not.toBeNull();
     expect(e.host.players()[1].rttMs).not.toBeNull();
+  });
+
+  it('客人的 peers 看到房主的暱稱（HostSessionDeps.nick），不是「房主」', async () => {
+    const e = setup('甲');
+    const g = await e.joined('乙');
+    expect(await e.until(() => g.s.peers().length === 1, 2000)).toBe(true);
+    expect(g.s.peers()[0]).toMatchObject({ pid: e.hostGame.localPid, nick: '甲' });
   });
 
   it('poll 只靠 loop 驅動', async () => {
@@ -225,9 +233,10 @@ describe('CoopHostSession／CoopGuestSession', { timeout: 20_000 }, () => {
     expect(await e.until(() => !e.held.has(g.character.id), 1000)).toBe(true);
   });
 
-  it('房主 ticker 死掉 → close() 最晚 LINGER_MS × 3（主執行緒計時器）也會 resolve', async () => {
+  it('房主 ticker 死掉 → close() 最晚 LINGER_MS × 3（主執行緒計時器）也會 resolve、關掉延遲中的連線', async () => {
     const e = setup();
-    await e.joined();
+    const g = await e.joined();
+    e.driveGuests = false;
     vi.useFakeTimers();
     e.driveHost = false;
     let closed = false;
@@ -239,6 +248,8 @@ describe('CoopHostSession／CoopGuestSession', { timeout: 20_000 }, () => {
     expect(closed).toBe(true);
     expect(e.hostTicker.running).toBe(false);
     expect(e.hostGame.mode).toBe('solo');
+    // 延遲關閉中的連線也一起關掉（不會留著半開的 RTC）
+    expect(g.peers[0].link.open).toBe(false);
   });
 
   it('客人 ticker 死掉 → leave() 最晚 LINGER_MS × 3 也會 resolve：關連線、停 loop', async () => {
@@ -279,6 +290,26 @@ describe('CoopHostSession／CoopGuestSession', { timeout: 20_000 }, () => {
     expect(last.world).toBeNull();
     expect(last.c.savedAt).toBeGreaterThan(0);
     expect(last.c.id).toBe(g.character.id);
+  });
+
+  it('角色帶著別的世界的 pendingWorld 進來 → 這裡的 chk 保留那個標記（不清掉）', async () => {
+    const e = setup();
+    const g = await e.joined('乙', undefined, 'w-other');
+    const n0 = g.saved.length;
+    toss(g);
+    expect(await e.until(() => g.saved.length > n0, 1000)).toBe(true);
+    expect(g.saved.length).toBeGreaterThan(0);
+    expect(g.saved.every((x) => x.world === 'w-other')).toBe(true);
+  });
+
+  it('角色帶著這個世界的 pendingWorld 進來 → 第一份 chk 就清掉（null），之後也是 null', async () => {
+    const e = setup();
+    const g = await e.joined('乙', undefined, WORLD);
+    const n0 = g.saved.length;
+    toss(g);
+    expect(await e.until(() => g.saved.length > n0, 1000)).toBe(true);
+    expect(g.saved.length).toBeGreaterThan(0);
+    expect(g.saved.every((x) => x.world === null)).toBe(true);
   });
 
   it('客人 leave → persist 最後一份 chk，phase=ended，link 關閉', async () => {

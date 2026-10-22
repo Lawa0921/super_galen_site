@@ -21,7 +21,7 @@ import { SoundManager } from '../audio/SoundManager';
 import { TitleScene } from './titleScene';
 import { TitleUi, PEACEFUL_KEY, publishVolume } from './titleUi';
 import { Wipe } from './wipe';
-import { continueSlot, importPlan, genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName, summarizeGame } from './titleModel';
+import { continueSlot, importPlan, genProgress, genStageLabel, GEN_STAGE_LABELS, needsPendingConfirm, readVolume, rollWorldName, summarizeGame } from './titleModel';
 import { liveCounts, type LiveCounts } from './live';
 import { GEN_PHASES, GenSectionView, genPhaseLabel, genPhaseOf } from './genSection';
 import { Wardrobe } from './wardrobe';
@@ -285,8 +285,14 @@ export function bootDelve(root: HTMLElement): Session {
     });
   }
 
-  /** begin / beginGuest 共用：收掉上一場、換鎖、藏標題、開 HUD、startDelve（remotes = 其他玩家的來源） */
+  /**
+   * begin / beginGuest 共用：收掉上一場、換鎖、藏標題、開 HUD、startDelve（remotes = 其他玩家的來源）。
+   * 上一場還開著房 / 還在朋友的房裡（例如沒有 IndexedDB 時從暫停選單匯入直接開局）→ 先關房 / 離開，
+   * 舊的 NetHost / NetLoop 不會繼續跑被丟掉的那場；關房的 requestSave 存的還是上一場（split 在 enter 之後才換）。
+   */
   function enter(game: DelveGame, locks: PlayLocks, remotes: () => RemoteView[]): DelveHandle {
+    if (hostCoop) void closeHost();
+    if (guestCoop) { void guestCoop.s.leave(); dropGuest(); }
     stopAutosave?.();
     stopAutosave = null;
     handle?.destroy();
@@ -302,9 +308,9 @@ export function bootDelve(root: HTMLElement): Session {
   }
 
   function begin(game: DelveGame, s: SplitSession, locks: PlayLocks): void {
-    split = s;
     // 單機時 actors 只有自己（空清單）；按「開放加入」之後客人進來就畫得到
     handle = enter(game, locks, () => hostRemoteViews(game));
+    split = s;
     window.__delveDebug = { game, handle, save: saveNow, mapPins: () => fullMapPins(game) };
     if (!helpSeen(storage)) setHelp(true);
     if (hasIndexedDB()) {
@@ -642,7 +648,14 @@ export function bootDelve(root: HTMLElement): Session {
       showLoading(text);
       const opened = await work();
       if (opened) {
-        if ('guest' in opened) beginGuest(opened, locks); else begin(opened.game, opened.session, locks);
+        if ('guest' in opened) {
+          // 客人已經 live 了才進場：進場失敗要離開房間，房主那邊不會留著一個不會動的客人
+          try { beginGuest(opened, locks); } catch (e) {
+            void opened.guest.leave();
+            if (guestCoop?.s === opened.guest) dropGuest();
+            throw e;
+          }
+        } else begin(opened.game, opened.session, locks);
         hideLoading();
         await wipe?.reveal();
       } else {
@@ -829,14 +842,19 @@ export function bootDelve(root: HTMLElement): Session {
     return Promise.resolve();
   }
 
-  /** 「繼續冒險」（B1）：最近存檔的世界 + 該世界記錄的角色；'main' 還是舊存檔 → 先轉換（B5）再開局 */
+  /**
+   * 「繼續冒險」（B1）：最近存檔的世界 + 該世界記錄的角色；'main' 還是舊存檔 → 先轉換（B5）再開局。
+   * 那個角色待同步（pendingWorld）→ 同選角色時先確認（C1）；取消 → 留在標題。
+   */
   function continueGame(): Promise<void> {
     return exclusive(undefined, async () => {
       let plan: ContinuePlan;
-      try { plan = await planContinue(idbSplitStore); } catch (e) {
+      let chars: CharacterMeta[];
+      try { [plan, chars] = await Promise.all([planContinue(idbSplitStore), idbSplitStore.listCharacters()]); } catch (e) {
         say(titleMsg, `讀取存檔失敗：${errText(e)}`);
         return;
       }
+      if (needsPendingConfirm(plan, chars) && !(await askConfirm(PENDING_WORLD_MSG, '繼續'))) return;
       await openPlan(plan, '找不到存檔');
     });
   }
@@ -975,6 +993,8 @@ export function bootDelve(root: HTMLElement): Session {
       return transition('連線中…', async () => {
         const guest = new CoopGuestSession({
           signal: realSignalApi, makePeer: () => createRtcPeer(), ticker: workerTicker(), build: DELVE_BUILD, character,
+          // 原本的待同步標記：只有回到那個世界的 chk 才清掉
+          pendingWorld: charList.find((m) => m.id === id)?.pendingWorld ?? null,
           // savedAt 由 session 蓋（C4）；pendingWorld = null 清掉標記
           persist: (ch, pendingWorld) => {
             if (hasIndexedDB()) return idbSplitStore.putCharacter(ch, { pendingWorld });

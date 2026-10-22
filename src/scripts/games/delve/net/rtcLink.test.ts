@@ -1,6 +1,6 @@
 // rtcLink.test.ts — RtcLink 用 MockPc/MockDc 對接測試（不需真瀏覽器）。
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { createRtcPeer, FRAG_BYTES, STATE_MAX_BYTES, type RtcPeer } from './rtcLink';
+import { createRtcPeer, FRAG_BYTES, MAX_MESSAGE_BYTES, STATE_MAX_BYTES, type RtcPeer } from './rtcLink';
 
 class MockDc {
   binaryType = 'blob';
@@ -285,5 +285,37 @@ describe('RtcLink', () => {
     expect(() => A.peer.link.close('x')).not.toThrow();
     expect(a).toEqual(['x']);
     expect(A.pc.closeCalls).toBeGreaterThan(0);
+  });
+
+  it('重組超過 MAX_MESSAGE_BYTES 還沒等到 FINAL → link 以 failed 關閉，不再累積', async () => {
+    const { A, B } = pair();
+    await Promise.all([A.peer.waitOpen(), B.peer.waitOpen()]);
+    const got: unknown[] = [], reasons: string[] = [];
+    B.peer.link.onMessage((ch, d) => got.push([ch, d]));
+    B.peer.link.onClose((r) => reasons.push(r));
+    const bulk = B.pc.dcs.get(1)!;
+    const piece = 1024 * 1024;
+    const frame = new Uint8Array(1 + piece);   // flags 0 = 不是最後一片
+    for (let sent = 0; sent <= MAX_MESSAGE_BYTES; sent += piece) bulk.onmessage!({ data: frame.slice().buffer });
+    expect(reasons).toEqual(['failed']);
+    expect(B.peer.link.open).toBe(false);
+    expect(got).toEqual([]);
+  });
+
+  it('剛好 MAX_MESSAGE_BYTES 的訊息照樣收到', async () => {
+    const { A, B } = pair();
+    await Promise.all([A.peer.waitOpen(), B.peer.waitOpen()]);
+    const got: Uint8Array[] = [], reasons: string[] = [];
+    B.peer.link.onMessage((_ch, d) => { if (typeof d !== 'string') got.push(d); });
+    B.peer.link.onClose((r) => reasons.push(r));
+    const bulk = B.pc.dcs.get(1)!;
+    const piece = 1024 * 1024, n = MAX_MESSAGE_BYTES / piece;
+    for (let i = 0; i < n; i++) {
+      const f = new Uint8Array(1 + piece);
+      f[0] = i === n - 1 ? 1 : 0;   // FLAG_FINAL
+      bulk.onmessage!({ data: f.buffer });
+    }
+    expect(reasons).toEqual([]);
+    expect(got.map((d) => d.byteLength)).toEqual([MAX_MESSAGE_BYTES]);
   });
 });

@@ -1,9 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
 
 /**
  * DELVE 線上合作雙瀏覽器端到端：兩個 context，房主在遊戲中「開放加入」，客人以 5 碼房號加入，
  * 打真的 /api/signal（e2e server 單程序 MemoryStore）+ 同機 WebRTC。
- * 驗證：雙方 2 名玩家、客人真實輸入放方塊房主端同格變更、房主看到客人名牌、客人離開房間後角色 savedAt > 0。
+ * 驗證：雙方 2 名玩家、客人真實輸入放方塊房主端同格變更、雙方互相看到對方暱稱的名牌（客人看到的是房主角色的暱稱，不是「房主」）、
+ * 房號貼上時帶空白與小寫照樣加入、客人離開房間後角色 savedAt > 0；沒有 IndexedDB 時開著房從暫停選單匯入 → 舊房間關掉。
  */
 import type {} from '../../src/scripts/games/delve/render/session';
 
@@ -86,7 +88,8 @@ test.describe('delve — online co-op', () => {
       await expect(guest.locator('#delve-worldpanel')).toBeVisible();
       await guest.click('#delve-join-open');
       await expect(guest.locator('#delve-joinpanel')).toBeVisible();
-      await guest.fill('#delve-room', room);
+      // 貼上的房號前面多一個空白、小寫：輸入框不能先截掉最後一碼（normalizeRoom 負責 trim + 大寫）
+      await guest.fill('#delve-room', ' ' + room.toLowerCase());
       await guest.click('#delve-join');
       await guest.waitForFunction(() => window.__delveDebug?.coop?.phase === 'live', undefined, { timeout: 60000 });
 
@@ -98,6 +101,13 @@ test.describe('delve — online co-op', () => {
       // 房主端有 1 個名牌，文字是「客人」
       await expect(host.locator('.delve-nameplate')).toHaveCount(1, { timeout: 15000 });
       await expect(host.locator('.delve-nameplate')).toHaveText('客人');
+      // 客人端的名牌是房主角色的暱稱（autostart 的預設角色），不是「房主」
+      const hostNick = await host.evaluate(() => window.__delveDebug!.coop!.players().find((p) => p.pid === window.__delveDebug!.game.localPid)!.nick);
+      expect(hostNick).not.toBe('');
+      expect(hostNick).not.toBe('房主');
+      await expect(guest.locator('.delve-nameplate')).toHaveCount(1, { timeout: 15000 });
+      await expect(guest.locator('.delve-nameplate')).toHaveText(hostNick);
+      expect(await guest.evaluate(() => window.__delveDebug!.coop!.players().map((p) => p.nick))).toContain(hostNick);
 
       // 等客人站穩，取它的腳邊 tile
       await guest.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 20000 });
@@ -138,6 +148,47 @@ test.describe('delve — online co-op', () => {
     } finally {
       await ctxHost.close();
       await ctxGuest.close();
+    }
+  });
+
+  test('no IndexedDB: hosting, then importing a save from the pause menu closes the old room', async ({ browser }) => {
+    const ctx = await browser.newContext();
+    await ctx.addInitScript(() => {
+      try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ }
+      Object.defineProperty(window, 'indexedDB', { value: undefined, configurable: true });
+    });
+    const page = await ctx.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    try {
+      await page.goto('/games/delve?seed=coop-noidb&autostart=1&fresh=1');
+      await waitGame(page);
+      // 先匯出目前的世界（沒有 IndexedDB 時匯入會直接開局）
+      await page.click('#delve-menu-btn');
+      const dl = page.waitForEvent('download');
+      await page.click('#delve-export');
+      const file = readFileSync((await (await dl).path())!);
+      // 開房
+      await page.click('#delve-coop');
+      await expect(page.locator('#delve-room-chip')).toHaveText(/房號 [A-Z0-9]{5}/, { timeout: 30000 });
+      await expect(page.locator('#delve-root')).toHaveAttribute('data-coop', 'host');
+      await page.evaluate(() => { (window as unknown as { __oldGame: unknown }).__oldGame = window.__delveDebug!.game; });
+      expect(await page.evaluate(() => window.__delveDebug!.game.mode)).toBe('host');
+      // 暫停選單「匯入存檔」→ 直接開新的一局
+      const chooser = page.waitForEvent('filechooser');
+      await page.click('#delve-import-menu');
+      await (await chooser).setFiles({ name: 'coop-noidb.delve', mimeType: 'application/octet-stream', buffer: file });
+      await page.waitForFunction(() => {
+        const d = window.__delveDebug;
+        return Boolean(d && d.game !== (window as unknown as { __oldGame: unknown }).__oldGame && document.querySelector('#delve-root')?.getAttribute('data-phase') === 'playing');
+      }, undefined, { timeout: 90000 });
+      // 舊的房間已經關掉：舊的一局回到 solo、HUD 沒有房號、沒有 data-coop
+      expect(await page.evaluate(() => (window as unknown as { __oldGame: { mode: string } }).__oldGame.mode)).toBe('solo');
+      await expect(page.locator('#delve-root')).not.toHaveAttribute('data-coop', /.*/);
+      await expect(page.locator('#delve-room-chip')).toBeHidden();
+      expect(errors).toEqual([]);
+    } finally {
+      await ctx.close();
     }
   });
 });

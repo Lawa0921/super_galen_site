@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatPlayTime, summarizeGame, continueLines, rollWorldName, menuMove, readVolume, writeVolume, VOLUME_KEY,
   genStageLabel, genProgress, wipeThreshold, titleCamY, panX, zoomPrefLabel, savedAgo, realDate, descentY, focusFor,
-  worldLine, characterLine, continueSlot, importPlan, charPreview,
+  worldLine, characterLine, continueSlot, importPlan, charPreview, needsPendingConfirm,
 } from './titleModel';
 import { DAY_LENGTH } from '../engine/constants';
 import { normalizeAppearance } from '../engine/appearance';
@@ -113,6 +113,24 @@ describe('continueSlot（「繼續冒險」指向哪個世界；同 planContinue
   it('沒有可玩的組合 → null', () => {
     expect(continueSlot([], [{ id: 'a' }])).toBeNull();
     expect(continueSlot([w('w-1', 1, 'gone')], [{ id: 'a' }])).toBeNull();
+  });
+});
+
+describe('needsPendingConfirm（「繼續冒險」開的角色有沒確認的交易 → 先跳待同步確認，C1）', () => {
+  const split = (id: string) => ({ kind: 'split', world: {}, character: { id }, slot: 'w-1' }) as never;
+  it('要開的角色記錄上有 pendingWorld → true', () => {
+    expect(needsPendingConfirm(split('a'), [{ id: 'b' }, { id: 'a', pendingWorld: 'w-friend' }])).toBe(true);
+  });
+  it('沒有標記、別的角色有標記、或角色不在列表 → false', () => {
+    expect(needsPendingConfirm(split('a'), [{ id: 'a' }])).toBe(false);
+    expect(needsPendingConfirm(split('a'), [{ id: 'a' }, { id: 'b', pendingWorld: 'w-friend' }])).toBe(false);
+    expect(needsPendingConfirm(split('a'), [])).toBe(false);
+  });
+  it('不是 split（舊存檔 / 找不到 / 錯誤）→ false', () => {
+    const chars = [{ id: 'a', pendingWorld: 'w-friend' }];
+    expect(needsPendingConfirm({ kind: 'none' }, chars)).toBe(false);
+    expect(needsPendingConfirm({ kind: 'error', message: 'x' }, chars)).toBe(false);
+    expect(needsPendingConfirm({ kind: 'legacy', data: {} as never, slot: 'main' }, chars)).toBe(false);
   });
 });
 

@@ -39,7 +39,7 @@ export class CoopHostSession {
   constructor(game: DelveGame, deps: HostSessionDeps) {
     this.game = game;
     this.deps = deps;
-    this.host = new NetHost(game, { build: deps.build, worldId: deps.visits.worldId, visits: deps.visits, requestSave: deps.requestSave });
+    this.host = new NetHost(game, { build: deps.build, worldId: deps.visits.worldId, visits: deps.visits, requestSave: deps.requestSave, nick: deps.nick });
     this.rooms = new RoomHost(deps.signal, deps.makePeer, (link) => this.host.accept(link));
     this.loop = new NetLoop(deps.ticker, (t, s) => this.tick(t, s));
   }
@@ -126,6 +126,7 @@ export class CoopHostSession {
 
   private finish(): void {
     if (this.safety !== null) { clearTimeout(this.safety); this.safety = null; }
+    this.host.closeLingering();   // 保險觸發（loop 沒再 tick）時延遲中的連線還開著：一起關
     this.loop.stop();
     this.closing?.resolve();
   }

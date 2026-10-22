@@ -1873,6 +1873,39 @@ test.describe('delve 標題流程（生成畫面 / 回到標題）', () => {
     await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
   });
 
+  test('「繼續冒險」開到待同步（pendingWorld）的角色 → 先跳確認；取消留在標題，確定才進去', async ({ page }) => {
+    await page.goto('/games/delve?seed=pend-cont&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => window.__delveDebug!.save());
+    // 角色記錄標上 pendingWorld（同客人斷線時 CoopGuestSession 寫的）
+    await page.evaluate(() => new Promise<void>((ok, bad) => {
+      const r = indexedDB.open('delve');
+      r.onsuccess = () => {
+        const d = r.result, t = d.transaction('characters', 'readwrite'), st = t.objectStore('characters'), q = st.getAll();
+        q.onsuccess = () => { for (const rec of q.result as Record<string, unknown>[]) st.put({ ...rec, pendingWorld: 'w-friend' }); };
+        t.oncomplete = () => { ok(); d.close(); };
+        t.onerror = () => bad(t.error);
+      };
+    }));
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await expect(page.locator('#delve-continue')).toBeVisible();
+    await page.click('#delve-continue');
+    await expect(page.locator('#delve-confirm')).toBeVisible();
+    await expect(page.locator('#delve-confirm-msg')).toContainText('最後一筆交易還沒確認');
+    await expect(page.locator('#delve-confirm-ok')).toHaveText('繼續');
+    await page.click('#delve-confirm-cancel');
+    await expect(page.locator('#delve-confirm')).toBeHidden();
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
+    await expect(page.locator('#delve-root')).toHaveAttribute('data-phase', 'title');
+    await page.click('#delve-continue');
+    await expect(page.locator('#delve-confirm')).toBeVisible();
+    await page.click('#delve-confirm-ok');
+    await waitGame(page);
+    expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('pend-cont');
+  });
+
   test('生成畫面：地層剖面跟著生成器真的取樣、六個階段依序完成', async ({ page }) => {
     await page.goto('/games/delve');
     await pressStart(page);
