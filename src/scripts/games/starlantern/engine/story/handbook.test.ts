@@ -202,11 +202,28 @@ describe("the adventurer's handbook", () => {
     const rin = h.people.find((p) => p.id === 'rin')!;
     // Task 10b: the inn night and the first return are the two of them before her story; they sit on her page, in story order.
     expect(rin.scenes.map((e) => [e.scene, e.fresh])).toEqual([
-      ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['bellkeeper-arrives', false], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
+      ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['rin-confess', false], ['bellkeeper-arrives', false], ['hero-alone', false], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
       ...RIN_BANTERS.map((id) => [id, false]),   // B1: her banters follow her chats, in the pairs' order (B2: all of them)
     ]);
     expect(h.town.find((t) => t.id === 'orik')!.scene!.fresh).toBe(true);
     expect(h.town.find((t) => t.id === 'marta')!.scene!.fresh).toBe(false);
+  });
+
+  it("Rin's page replays her confession and the lone morning once seen; the after page replays the festival (story depth Task 2)", () => {
+    const s = everything();
+    const unseen: SceneId[] = ['rin-confess', 'hero-alone', 'epilogue'];
+    s.story.seen = s.story.seen.filter((id) => !unseen.includes(id));
+    const before = handbook(s);
+    const rinOf = (h: typeof before) => h.people.find((p) => p.id === 'rin')!.scenes.map((e) => e.scene);
+    const after = (h: typeof before) => h.truths.find((t) => t.stage === 'after')!.scenes.map((e) => e.scene);
+    for (const id of unseen) expect(rinOf(before), id).not.toContain(id);
+    expect(after(before)).toEqual(['finale']);
+    s.story.seen.push(...unseen);
+    const h = handbook(s);
+    expect(rinOf(h).slice(0, 6)).toEqual(['prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone']);
+    expect(rinOf(h)[6]).toBe('chat:rin:1');   // then her chats, then her banters
+    expect(after(h)).toEqual(['finale', 'epilogue']);
+    expect(h.people.every((p) => !p.scenes.some((e) => e.scene === 'epilogue'))).toBe(true);   // the festival is the after page's alone
   });
 
   it('every scene in the catalogue has a page', () => {

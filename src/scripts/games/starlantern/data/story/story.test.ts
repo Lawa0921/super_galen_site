@@ -6,7 +6,7 @@ import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
 import { FOUND_LINE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
-import { pinBeat, storyTexts, type Text } from './voiceGates';
+import { AFTER_CHOICE, pinBeat, sceneReadings, storyTexts, type Text } from './voiceGates';
 import { T } from '../text.zh-TW';
 import type { CharacterId } from '../../engine/types';
 import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
@@ -125,7 +125,7 @@ describe('story data', () => {
     const banters = BANTER_PAIRS.flatMap((p) => Array.from({ length: BANTER_COUNT[p]! }, (_, i) => `banter:${p}:${i + 1}`));
     expect(SCENE_IDS.filter((s) => s.startsWith('banter:'))).toEqual(banters);
     expect(banters.every((id) => sceneKind(id as SceneId) === 'banter')).toBe(true);
-    for (const s of ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'bellkeeper-arrives', 'finale'] as const) expect(SCENE_IDS).toContain(s);
+    for (const s of ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale', 'epilogue'] as const) expect(SCENE_IDS).toContain(s);
     expect(new Set(SCENE_IDS).size).toBe(SCENE_IDS.length);
     expect(memScene('rin', 3)).toBe('mem:rin:3');
     expect(MAJOR_SCENES.every((s) => sceneKind(s) === 'major')).toBe(true);
@@ -149,7 +149,7 @@ describe('story data', () => {
     expect(lineCap('prologue')).toBe(12);
     expect(lineCap('prologue-inn')).toBe(10);
     expect(lineCap('first-return')).toBe(10);
-    expect(lineCap('bellkeeper-arrives')).toBe(6);
+    expect(lineCap('bellkeeper-arrives')).toBe(10);   // story depth Task 2: 6 -> 10 (design §7.4)
     for (const c of HOME_OWNERS) expect(lineCap(homeScene(c))).toBe(4);
     expect(lineCap('banter:noel-rin:1')).toBe(4);
     for (const id of SCENE_IDS) {
@@ -305,8 +305,9 @@ function position(key: string): Stage {
       if (id === 'prologue' || id === 'prologue-inn' || id === 'first-return') return 'prologue';   // the first return can come before depth 2
       if (id === 'act1-after') return 'act1';
       if (id === 'act2' || id === 'act3' || id === 'act4') return id;
-      if (id === 'rin-reveal' || id === 'bellkeeper-arrives') return rinSeventh();   // the arrival follows her choice
-      if (id === 'finale') return 'after';
+      if (id === 'rin-reveal' || id === 'rin-confess' || id === 'bellkeeper-arrives') return rinSeventh();   // the confession and the arrival follow her choice
+      if (id === 'hero-alone') return later(piecesStage('hero', 9), rinSeventh());   // the morning after his ninth piece, past her choice
+      if (id === 'finale' || id === 'epilogue') return 'after';
       const [kind, c, n] = id.split(':');
       if (kind === 'town') return fragmentStage(c);
       if (kind === 'banter') {   // B1: once both of the pair are met, or later if it is gated
@@ -363,6 +364,7 @@ const rinSecretAllowed = (key: string, line?: ScriptLine): boolean => {
   if (['scenes.mem:rin:6.', 'scenes.mem:rin:7.', 'scenes.rin-reveal.', 'rinOath.', 'bellkeeper.', 'people.rin.2'].some((p) => key === p || key.startsWith(p))) return true;
   if (line?.if?.oath === true) return true;
   const id = key.split('.')[1];
+  if (key.startsWith('scenes.') && AFTER_CHOICE.has(id as SceneId)) return true;   // story depth plan ruling 14
   if (key.startsWith('scenes.chat:rin:') && CHAT_GATE[id as SceneId]?.oath === true) return true;
   return position(key) === 'after';
 };
@@ -442,7 +444,7 @@ describe('the script gates', () => {
       for (const met of subsets) {
         for (const full of [[], met]) {
           for (const returned of [[], returnedAll]) {
-            for (const oath of id === 'finale' ? [true] : [false, true]) {
+            for (const oath of AFTER_CHOICE.has(id) ? [true] : [false, true]) {
               for (const seen of seens) {
                 const w: LineWhen = { met: ['hero', 'rin', ...met], full: full.length ? ['hero', 'rin', ...full] : [], returned, oath, seen };
                 const n = linesWhen(lines, w).length;
@@ -453,6 +455,52 @@ describe('the script gates', () => {
         }
       }
     }
+  });
+
+  it("the depth design's line caps (story depth Task 2)", () => {
+    const caps: [SceneId, number][] = [
+      ['act1-after', 3], ['prologue-inn', 10], ['first-return', 10], ['bellkeeper-arrives', 10], ['rin-confess', 12], ['hero-alone', 10],
+      ['finale', 16], ['epilogue', 16], ['prologue', 12], ['act2', 12], ['act3', 12], ['act4', 12], ['rin-reveal', 12],
+    ];
+    for (const [id, cap] of caps) expect(lineCap(id), id).toBe(cap);
+    expect(caps.map(([id]) => id).sort()).toEqual([...MAJOR_SCENES].sort());   // every major scene named
+  });
+
+  it('the new major scenes are titled and placed (story depth Task 2)', () => {
+    expect(STORY.scenes['rin-confess'].title).toBe('凜的坦白');
+    expect(STORY.scenes['hero-alone'].title).toBe('一個人的清晨');
+    expect(STORY.scenes.epilogue.title).toBe('星燈祭');
+    expect(MAJOR_SCENES).toEqual([
+      'prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale', 'epilogue',
+    ]);
+    expect(position('scenes.rin-confess.lines.0.text')).toBe(rinSeventh());
+    expect(position('scenes.hero-alone.lines.0.text')).toBe('act4');
+    expect(position('scenes.epilogue.lines.0.text')).toBe('after');
+    for (const id of ['rin-confess', 'hero-alone'] as SceneId[]) {
+      for (const k of [`scenes.${id}.lines.0.text`, `scenes.${id}.summary`]) expect(rinSecretAllowed(k), k).toBe(true);
+    }
+  });
+
+  it("rin-confess plays every one of its readings within its cap, and Scarlet's and Sylvie's lines only with them (story depth Task 2)", () => {
+    const readings = sceneReadings('rin-confess');
+    expect(readings.length).toBeGreaterThan(1);
+    for (const r of readings) {
+      expect(r.when.oath).toBe(true);
+      expect(r.lines.length, JSON.stringify(r.when)).toBeLessThanOrEqual(12);
+      const met = (c: CharacterId) => r.when.met.includes(c);
+      if (!met('scarlet')) expect(r.lines.filter((l) => l.who === 'scarlet' || l.if?.met === 'scarlet'), JSON.stringify(r.when)).toEqual([]);
+      // Sylvie's two lines, one for each side of the rooftop banter: one of them when she is met, none when she is not
+      expect(r.lines.filter((l) => l.who === 'sylvie').length, JSON.stringify(r.when)).toBe(met('sylvie') ? 1 : 0);
+    }
+    expect(Math.max(...readings.map((r) => r.lines.length))).toBe(12);   // the worst case: Scarlet, Sylvie and Liz all met
+    // Rin's party alone: six lines (coordinator ruling on Task 2: the 「沒有人動」 narration is a deliberate beat; design §8 sample 2's
+    // 「五句」 leaves it out)
+    const alone = linesWhen(STORY.scenes['rin-confess'].lines, { met: ['hero', 'rin'], full: [], returned: [], oath: true, seen: [] });
+    expect(alone.map((l) => l.who)).toEqual(['narrator', 'rin', 'narrator', 'hero', 'marta', 'narrator']);
+    // the rooftop: which of Sylvie's lines plays follows banter:rin-sylvie:1
+    const sylvie = (seen: SceneId[]) => linesWhen(STORY.scenes['rin-confess'].lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath: true, seen }).filter((l) => l.who === 'sylvie');
+    expect(sylvie(['banter:rin-sylvie:1'])[0].text).toContain('屋頂');
+    expect(sylvie([])[0].text).not.toContain('屋頂');
   });
 
   it('linesWhen reads seen and notSeen (story depth Task 1)', () => {
@@ -764,6 +812,7 @@ describe('the script gates', () => {
     // Style bible: before rin-reveal she calls him 「你」 or 「喂」; the reveal is the first 「洛恩」 (lore ledger I-20).
     const chosen = (key: string, line?: ScriptLine) => line?.if?.oath === true || key.startsWith('scenes.rin-reveal.')
       || key.startsWith('scenes.bellkeeper-arrives.')   // it plays only after her choice (continuity fix 4)
+      || (key.startsWith('scenes.') && AFTER_CHOICE.has(key.split('.')[1] as SceneId))   // story depth plan ruling 14
       || key.startsWith('scenes.finale.') || (key.startsWith('scenes.chat:rin:') && CHAT_GATE[key.split('.')[1] as SceneId]?.oath === true)
       || (key.startsWith('scenes.banter:') && BANTER_GATE[key.split('.')[1] as SceneId]?.oath === true);   // B1: a banter that waits for her choice
     for (const { key, text, line } of storyTexts()) {
@@ -782,20 +831,22 @@ describe('the script gates', () => {
 
   it('every line condition is well formed', () => {
     // Task 7 fix round 1: a condition object passed where a flag was meant made `if.oath` an object, and linesWhen dropped the line in every reading.
-    const KEYS = ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull', 'oath'];
+    const KEYS = ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull', 'oath', 'seen', 'notSeen'];
     for (const { key, line } of storyTexts().filter((t) => t.line)) {
       const c = line!.if;
       if (c === undefined) continue;
       expect(typeof c, key).toBe('object');
       for (const k of Object.keys(c)) expect(KEYS, `${key}: if.${k}`).toContain(k);
       if ('oath' in c) expect(typeof c.oath, `${key}: if.oath`).toBe('boolean');
-      for (const k of ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull'] as const) if (k in c) expect(typeof c[k], `${key}: if.${k}`).toBe('string');
+      for (const k of ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull', 'seen', 'notSeen'] as const) if (k in c) expect(typeof c[k], `${key}: if.${k}`).toBe('string');
+      for (const k of ['seen', 'notSeen'] as const) if (k in c) expect(isSceneId(c[k]), `${key}: if.${k} names a scene`).toBe(true);   // story depth Task 2
     }
-    // and every line of every scene plays in at least one reading (Task 10: with no fragment returned too, for `notReturned`)
+    // and every line of every scene plays in at least one reading (Task 10: with no fragment returned too, for `notReturned`;
+    // story depth Task 2: with no scene seen and with every scene seen, for `notSeen` and `seen`)
     for (const id of SCENE_IDS) {
       const lines = STORY.scenes[id].lines;
-      const everyone: LineWhen = { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: TOWN_FRAGMENTS.map((f) => f.id), oath: false };
-      const readings: LineWhen[] = [everyone, { ...everyone, full: [] }].flatMap((w) => [w, { ...w, returned: [] }]);
+      const everyone: LineWhen = { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: TOWN_FRAGMENTS.map((f) => f.id), oath: false, seen: [] };
+      const readings: LineWhen[] = [everyone, { ...everyone, full: [] }].flatMap((w) => [w, { ...w, returned: [] }]).flatMap((w) => [w, { ...w, seen: [...SCENE_IDS] }]);
       const played = new Set([true, false].flatMap((oath) => readings.flatMap((w) => linesWhen(lines, { ...w, oath }))));
       for (const l of lines) if (!l.if?.notMet) expect(played.has(l), `${id}: ${l.text}`).toBe(true);
     }
@@ -1700,6 +1751,7 @@ describe('continuity fixes (plan 6c Task 15 Step 6)', () => {
     for (const t of storyTexts()) {
       if (!t.key.startsWith('rinLines.') && t.line?.who !== 'rin') continue;
       if (/^scenes\.(mem:rin:[67]|rin-reveal|bellkeeper-arrives|finale)\./.test(t.key) || t.line?.if?.oath === true) continue;
+      if (t.key.startsWith('scenes.') && AFTER_CHOICE.has(t.key.split('.')[1] as SceneId)) continue;   // story depth plan ruling 14
       if (t.key.startsWith('scenes.chat:rin:') && CHAT_GATE[t.key.split('.')[1] as SceneId]?.oath === true) continue;
       expect(t.text, t.key).not.toContain('靜鐘會');
     }

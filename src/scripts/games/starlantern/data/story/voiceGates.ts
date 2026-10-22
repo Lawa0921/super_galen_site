@@ -158,7 +158,7 @@ export function telegraphBreaks(text: string): string[] {
 // ---- Light or heavy (bible §2.2) ----
 
 const HEAVY_SCENES = new Set<SceneId>([
-  'prologue', 'act2', 'act3', 'act4', 'rin-reveal', 'bellkeeper-arrives', 'finale',
+  'prologue', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale', 'epilogue',
   'chat:rin:2', 'chat:rin:3', 'chat:rin:4', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4',
 ]);
 /** Whether a scene is heavy: every memory, every townsfolk return, and the scenes the bible names. */
@@ -232,9 +232,14 @@ export function readingsOf(lines: ScriptLine[], oath?: boolean): { when: LineWhe
   }
   return out;
 }
-/** Every reading of a scene as it can play; the finale plays only after Rin's choice. */
+/**
+ * The scenes that only ever play after Rin's choice (story depth plan ruling 14): their readings fix `oath: true`. The story
+ * tests' line caps read the same set.
+ */
+export const AFTER_CHOICE: ReadonlySet<SceneId> = new Set<SceneId>(['finale', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'epilogue']);
+/** Every reading of a scene as it can play; the scenes after her choice (`AFTER_CHOICE`) only after it. */
 export const sceneReadings = (id: SceneId): { when: LineWhen; lines: ScriptLine[] }[] =>
-  readingsOf(STORY.scenes[id].lines, id === 'finale' ? true : undefined);
+  readingsOf(STORY.scenes[id].lines, AFTER_CHOICE.has(id) ? true : undefined);
 
 // ---- Pins (plan ruling 11) ----
 

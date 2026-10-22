@@ -81,7 +81,8 @@ const nameOf = (id: CharacterId): string => CHARACTERS[id].name;
 export { numeral } from './numeral';
 
 const MAJOR_TITLES: Record<MajorScene, string> = {
-  prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', 'bellkeeper-arrives': '鐘守來到鎮上', finale: '終幕',
+  prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', 'rin-confess': '凜的坦白', 'bellkeeper-arrives': '鐘守來到鎮上', 'hero-alone': '一個人的清晨', finale: '終幕',
+  epilogue: '星燈祭',
 };
 /** What each homecoming is called in the handbook, after her name (continuity fix 2). */
 const HOME_TITLES: Record<HomeOwner, string> = { chizuru: '鎮邊的小祠', safira: '廣場上的最後一支舞', sylvie: '窗外的新芽', liz: '店門口' };
@@ -441,6 +442,27 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '那天深夜，凜的刀尖停在洛恩的喉嚨上，最後收了回去。天亮後她說出一切，選擇不殺他。洛恩什麼也沒問。',
   },
+  // Story depth Task 2 (design §8 sample 2, pasted as it stands; plan ruling 10): her confession, at the dinner of the
+  // return after her reveal. It plays alone; the writing task finalizes it.
+  'rin-confess': {
+    lines: [
+      N('回城那天的晚飯，月影旅館的餐桌。凜沒有坐下。她把那枚裂開的小銅鐘，放在自己的湯碗旁邊。'),
+      { who: 'rin', mood: 'serious', text: '「我本來是靜鐘會的人，被派來殺洛恩。上一次回城的那一夜，我的刀尖抵在他的喉嚨上。」' },
+      { who: 'narrator', text: '絲嘉蕾站了起來，椅子倒在地上。她一步跨到洛恩和凜之間，手按住了劍柄。', if: { met: 'scarlet' } },
+      { who: 'narrator', text: '沒有人動。瑪莎端著湯鍋站在廚房門口，也沒有動。', if: { notMet: 'scarlet' } },
+      { who: 'scarlet', mood: 'vow', text: '「凜小姐，請退後三步。這一次，誰也別想從他背後過去。」', if: { met: 'scarlet' } },
+      { who: 'sylvie', mood: 'alert', text: '「屋頂上那一晚，我說過了。妳走路，像在追獵物。」', if: { met: 'sylvie', seen: 'banter:rin-sylvie:1' } },
+      { who: 'sylvie', mood: 'alert', text: '「我一直覺得，妳走路像在追獵物。」', if: { met: 'sylvie', notSeen: 'banter:rin-sylvie:1' } },
+      { who: 'rin', mood: 'serious', text: '「妳說對了。那時候，我自己也不知道在追什麼。」', if: { met: 'sylvie' } },
+      { who: 'liz', mood: 'hushed', text: '「所以這一路，妳一直欠我們一句實話。」', if: { met: 'liz' } },
+      { who: 'rin', mood: 'serious', text: '「是我欠的。今天還給你們。」', if: { met: 'liz' } },
+      { who: 'hero', mood: 'serious', text: '「那天早上她就說了。這一趟下去，她還是走在我後面。」' },
+      { who: 'scarlet', mood: 'serious', text: '「……我明白了。那麼，我有我的做法。」', if: { met: 'scarlet' } },
+      { who: 'marta', text: '「湯要涼了。……孩子，坐下。這碗是妳的，一直都是。」' },
+      N('凜坐下了。這一次，她把湯喝得很慢。'),
+    ],
+    summary: '回城那天的晚飯，凜當著大家說出自己本來是靜鐘會派來殺洛恩的人，最後在自己的湯碗前坐了下來。',
+  },
   // Continuity fix 4 (spec §5.2, §3.6; lore ledger I-119): the arrival after her choice. The society struck its bell and her
   // flattened one did not answer: that is how they know. He is afraid, not cruel; the finale's truths stay the finale's.
   // Rin's `guarded` belongs here after her oath (style bible §3: it is kept for the bellkeeper).
@@ -454,6 +476,28 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'bellkeeper', text: '「從深處走出來的人，我不動手。……我只是想看清楚你。」' },
     ],
     summary: '靜鐘會敲了三回鐘，凜領口那枚敲平的鐘沒有回應。鐘守來到鎮上，說他不動手，只想看清楚從深處走出來的人。',
+  },
+  // Story depth Task 2 (design §7.4, the row's nine beats; plan ruling 10): the morning after his ninth piece, when he means
+  // to go down alone. It plays on a departure, never on an arrival. Beat 6 reads five ways (Scarlet met or not, her second
+  // chat heard or not, her memories whole or not); beat 9 is two lines. The writing task finalizes it.
+  'hero-alone': {
+    lines: [
+      N('天還沒亮，洛恩揹好劍，走到門邊。門口坐著一個人。'),
+      N('凜背靠著房門，短刃橫在膝上。跟回城的那一夜一樣，從那裡看得見他。'),
+      { who: 'rin', text: '「要出去，得先過我這裡。」' },
+      { who: 'hero', text: '「燈要的是記憶。妳們跟下去，交出去的就回不來了。」' },
+      { who: 'rin', text: '「你說過，下次也拜託我。這就是下次。」' },
+      { who: 'scarlet', text: '「『不必替人擋』，是閣下說的。這一句，原封不動奉還。」', if: { met: 'scarlet', seen: 'chat:scarlet:2', notFull: 'scarlet' } },
+      { who: 'scarlet', text: '「『不必替人擋』，是你說的，洛恩。這一句，原封不動奉還。」', if: { met: 'scarlet', seen: 'chat:scarlet:2', full: 'scarlet' } },
+      { who: 'scarlet', text: '「盾還在，輪不到閣下一個人去擋。」', if: { met: 'scarlet', notSeen: 'chat:scarlet:2', notFull: 'scarlet' } },
+      { who: 'scarlet', text: '「盾還在，輪不到你一個人去擋，洛恩。」', if: { met: 'scarlet', notSeen: 'chat:scarlet:2', full: 'scarlet' } },
+      { who: 'narrator', text: '走廊的燈一盞一盞亮了，門外站著的不只一個人。', if: { notMet: 'scarlet' } },
+      N('瑪莎披著外套，端著熱湯，站在樓梯口。'),
+      { who: 'marta', text: '「要走，也先吃了再走。吃完，就不想走了。」' },
+      { who: 'hero', text: '「妳們都不睡的嗎。」' },
+      N('那天，洛恩沒有一個人出門。天亮以後，大家一起下去了。'),
+    ],
+    summary: '天還沒亮，洛恩想一個人下迷宮，門口的凜、走廊上的夥伴和端著熱湯的瑪莎，誰也沒讓他一個人走。',
   },
   // Task 7: Rin's chats. 2 waits for act 2, 3 for act 3 (she looks away only from her 4th piece), 4 for her choice.
   // 2 and 3 can be delayed past her choice (one chat per return): each reading has its own lines.
@@ -1072,6 +1116,19 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'rin', mood: 'smile', text: '「……洛恩。明天，大家也一起回來吧。」' },
     ],
     summary: '燈喰之母倒下，星燈不再由一個人點亮。暮霧散了，靜鐘會敲完最後一聲。大家一起回來了。從深處走出來的，再也不是一個人。',
+  },
+  // Story depth Task 2 (design §7.5; controller ruling d: pulled from 6e into the main line): the lantern festival, the first
+  // return after the finale. The main line's six core lines (plan Task 2's wording); 6e may add at most ten (affinity spec §8.5).
+  epilogue: {
+    lines: [
+      N('終幕之後的第一個晚上，鎮上第一次辦了星燈祭。廣場掛滿了燈。'),
+      { who: 'marta', text: '「洛恩，坐下。今天的日記，我念給你聽。」' },
+      { who: 'marta', text: '「第一頁：兩個孩子倒在門口。名字是安娜取的。」' },
+      { who: 'marta', text: '「每一頁最上面那一行，都一樣：回來了。」' },
+      N('安娜從公會抱來一疊登記表，翻開最上面那一張。最後一欄填著：回來了。'),
+      { who: 'hero', mood: 'smile', text: '「以前的每一輪，我一句也不記得。這一輪，有人念給我聽。」' },
+    ],
+    summary: '終幕之後，鎮上第一次辦了星燈祭，瑪莎把日記念給洛恩聽，每一頁最上面都寫著回來了。',
   },
 };
 

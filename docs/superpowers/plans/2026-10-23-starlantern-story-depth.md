@@ -434,7 +434,7 @@
   - `story.test.ts` `rin-confess plays every one of its readings within its cap, and Scarlet's and Sylvie's lines only with them`：
     - 用 `sceneReadings('rin-confess')`。
     - 每種讀法都 ≤ 12 句。
-    - 只有凜的隊伍時，正好五句。
+    - 只有凜的隊伍時，正好六句（控制者裁定，Task 2：「沒有人動」那句旁白是刻意的一拍；設計 §8 樣稿二寫的「五句」漏算了它）。
     - 絲嘉蕾沒遇見時，沒有她的台詞；希爾薇兩種讀法互斥。
   - `voice.test.ts` `the scenes after her choice read only after it`：`AFTER_CHOICE` 每一場的每一種讀法 `when.oath === true`；`heavyScene` 對三場都是 true。
   - `handbook.test.ts` `Rin's page replays her confession and the lone morning once seen; the after page replays the festival`：

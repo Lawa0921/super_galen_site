@@ -18,7 +18,8 @@ export type Stage = 'prologue' | 'act1' | 'act2' | 'act3' | 'act4' | 'after';
 export const STAGES: Stage[] = ['prologue', 'act1', 'act2', 'act3', 'act4', 'after'];
 
 export type SceneId =
-  | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'bellkeeper-arrives' | 'finale'
+  | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'rin-confess' | 'bellkeeper-arrives' | 'hero-alone'
+  | 'finale' | 'epilogue'
   | `mem:${CharacterId}:${number}` | `chat:${CharacterId}:${number}` | `town:${TownFragmentId}` | `home:${HomeOwner}`
   | `banter:${BanterPair}:${number}`;
 
@@ -58,13 +59,24 @@ export const banterTwo = (id: SceneId): [CharacterId, CharacterId] => id.split('
  * first arrival in town after a won fight (Task 10b: why the two of them go down together; lore ledger I-81 to I-86).
  * `bellkeeper-arrives` is the arrival after Rin's reveal: the society learns of her choice and its keeper comes to town
  * (continuity fix 4; lore ledger I-119).
+ * Story depth (design §7.4, §7.5): `rin-confess` is her confession at the dinner of the return after her reveal;
+ * `hero-alone` the morning he means to go down alone, played on a departure; `epilogue` the lantern festival, the first
+ * return after the finale (controller ruling d: pulled from 6e into the main line).
  */
-export type MajorScene = 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'bellkeeper-arrives' | 'finale';
-export const MAJOR_SCENES: MajorScene[] = ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'bellkeeper-arrives', 'finale'];
-/** The two short scenes of the opening: ten lines each at most (Task 10b). */
-const OPENING_SCENES = new Set<SceneId>(['prologue-inn', 'first-return']);
-/** The bellkeeper's arrival is a short scene: six lines at most (continuity fix 4). */
-const BELLKEEPER_CAP = 6;
+export type MajorScene =
+  | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'rin-confess' | 'bellkeeper-arrives' | 'hero-alone'
+  | 'finale' | 'epilogue';
+export const MAJOR_SCENES: MajorScene[] = [
+  'prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale', 'epilogue',
+];
+/**
+ * The major scenes whose cap is not twelve: Act 1's close; the two short scenes of the opening (Task 10b); and, from the
+ * story depth design (§7.4, §7.5), the bellkeeper's arrival (6 -> 10), the lone morning, the finale (12 -> 16) and the festival
+ * (six core lines and at most ten more, affinity spec §8.5).
+ */
+const MAJOR_CAPS: Partial<Record<MajorScene, number>> = {
+  'act1-after': 3, 'prologue-inn': 10, 'first-return': 10, 'bellkeeper-arrives': 10, 'rin-confess': 12, 'hero-alone': 10, finale: 16, epilogue: 16,
+};
 
 /** Every scene id, in a fixed order: major scenes, then memories, chats, returns, homecomings and banters (B1). */
 export const SCENE_IDS: SceneId[] = [
@@ -94,7 +106,7 @@ const LONG_MEMORIES = new Set<SceneId>(['mem:hero:9', 'mem:hero:10', 'mem:rin:7'
 /** The most lines a scene may have (spec §8.2, §17). */
 export function lineCap(id: SceneId): number {
   switch (sceneKind(id)) {
-    case 'major': return id === 'act1-after' ? 3 : OPENING_SCENES.has(id) ? 10 : id === 'bellkeeper-arrives' ? BELLKEEPER_CAP : 12;
+    case 'major': return MAJOR_CAPS[id as MajorScene] ?? 12;
     case 'memory': return LONG_MEMORIES.has(id) ? 12 : 4;
     case 'chat': return 3;
     case 'town': return 8;
@@ -170,5 +182,5 @@ export const CLOSING_PIECES: SceneId[] = CHARACTER_IDS.flatMap((id) => {
  * (a companion's happy after-story; the warm line comes last), middle memory pieces, `first-return`, `act1-after`.
  * 6d adds its heavy scenes here.
  */
-export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'bellkeeper-arrives', ...ACT_NODES, ...CLOSING_PIECES, 'finale', 'epilogue', 'romance:'];
+export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', ...ACT_NODES, ...CLOSING_PIECES, 'finale', 'epilogue', 'romance:'];
 export const isHeavyArrival = (id: string): boolean => HEAVY_ARRIVAL.some((h) => (h.endsWith(':') ? id.startsWith(h) : id === h));

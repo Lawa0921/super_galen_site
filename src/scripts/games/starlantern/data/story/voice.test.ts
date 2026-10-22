@@ -4,7 +4,7 @@ import { MEETINGS } from '../meetings';
 import { STORY, type ScriptLine, type Speaker } from '../story.zh-TW';
 import { SCENE_IDS, type SceneId } from './scenes';
 import {
-  CONNECTIVES, ELLIPSIS, INTERJECTIONS, SENTENCE_PARTICLE, TELEGRAPH_OK, VOCATIVES, VOICE, WORD_LISTS_AT_TASK3,
+  AFTER_CHOICE, CONNECTIVES, ELLIPSIS, INTERJECTIONS, SENTENCE_PARTICLE, TELEGRAPH_OK, VOCATIVES, VOICE, WORD_LISTS_AT_TASK3,
   dots, heavyScene, opensOnDots, pinBeat, readingsOf, sceneReadings, speakerOf, storyTexts, telegraphBreaks, type Text,
 } from './voiceGates';
 
@@ -287,6 +287,12 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
     expect(readings).toHaveLength(2);
     expect(readings.map((r) => r.lines.map((l) => l.text))).toEqual([['「還沒看過。」'], ['「看過了。」']]);
     expect(readings.map((r) => r.when.seen)).toEqual([[], ['banter:rin-sylvie:1']]);
+  });
+
+  it('the scenes after her choice read only after it (story depth Task 2)', () => {
+    expect([...AFTER_CHOICE].sort()).toEqual(['bellkeeper-arrives', 'epilogue', 'finale', 'hero-alone', 'rin-confess']);
+    for (const id of AFTER_CHOICE) for (const r of sceneReadings(id)) expect(r.when.oath, id).toBe(true);
+    for (const id of ['rin-confess', 'hero-alone', 'epilogue'] as SceneId[]) expect(heavyScene(id), id).toBe(true);
   });
 
   it('a scene is polished whole once any key of it is', () => {
