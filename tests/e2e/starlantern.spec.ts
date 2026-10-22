@@ -3856,6 +3856,14 @@ test.describe('starlantern', () => {
       const fire = page.locator('.slx-skill[data-skill=fire-star]');
       await expect(fire.locator('.slx-skill-slots')).toHaveText('◆○');
       await expect(fire.locator('.slx-skill-rune')).toContainText('擴散（魔法）：');
+      for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+        await page.setViewportSize({ width: vw, height: vh });
+        await page.waitForTimeout(150);
+        const over = await page.locator('.slx-tab-skills .slx-skill-head, .slx-tab-skills .slx-skill-rune').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+        expect(over, `the skills page spills at ${vw}`).toEqual([]);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/status-skills-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
       await fire.click();
       await expect(page.locator('.slx-workshop')).toBeVisible();
       await expect(page.locator('.slx-ws-name')).toContainText('諾艾兒');
