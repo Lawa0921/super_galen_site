@@ -1,4 +1,5 @@
 import { CHARACTERS } from '../data/characters';
+import { buildOf } from '../data/builds';
 import { STORY } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import { RUNES } from '../data/runes';
@@ -47,7 +48,10 @@ export function levelUpLines(ups: LevelUp[], party: Party): { text: string; cls:
   for (const u of ups) {
     const who = CHARACTERS[u.id].name;
     lines.push({ text: T.battle.levelUp(who, party.roster[u.id].level), cls: 'slx-levelup' });
-    if (u.points.skill > 0 || u.points.talent > 0) lines.push({ text: T.battle.points(who, u.points.skill, u.points.talent), cls: 'slx-levelup' });
+    if (u.points.skill === 0 && u.points.talent === 0) continue;
+    // A follower's points were laid out on her build (engine/builds followUp): say so, not where to spend them.
+    const b = party.roster[u.id].build === undefined ? undefined : buildOf(u.id, party.roster[u.id].build!);
+    lines.push({ text: b ? T.battle.followed(who, b.name) : T.battle.points(who, u.points.skill, u.points.talent), cls: 'slx-levelup' });
   }
   return lines;
 }

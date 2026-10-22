@@ -7,6 +7,7 @@ import { TREES, nodeName, tierNodes } from '../../data/trees';
 import { applyBuild, applyCost, buildTree, pitchOf, policyText } from '../../engine/builds';
 import { MAX_LEVEL, activeIds } from '../../engine/party';
 import { memoriesOf } from '../../engine/progression';
+import type { GameState } from '../../engine/state';
 import type { CharacterId, Member } from '../../engine/types';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
@@ -23,6 +24,8 @@ const CARD_STEP = 36;
 const LIST_ROWS = 10;
 
 type Act = 'apply' | 'stop';
+/** One card's worked-out parts. */
+interface Sel { rows: RuneRow[]; price: ReturnType<typeof applyCost>; marks: { ultimates: string[]; sides: string[] } }
 /** One suggested rune on the card: in reach (`have`: worn or in the bag), lacking, or waiting for a slot or skill. */
 interface RuneRow { skill: string; id: RuneId; state: 'have' | 'lack' | 'later'; text: string; tier?: RuneTier }
 
@@ -94,6 +97,11 @@ export class BuildsScene implements Scene {
   private hintEl!: HTMLElement;
   private view: MenuView | null = null;
   private viewKey = '';
+  /**
+   * What each card shows (its runes, price and tree marks), worked out once per member and build for the state it was
+   * worked out on: a cursor move back to a card, or a redraw, clones no state again (plan 8h final review).
+   */
+  private seen: { state: GameState | null; cards: Map<string, Sel> } = { state: null, cards: new Map() };
 
   constructor(private ctx: SceneCtx) {}
 
@@ -156,6 +164,19 @@ export class BuildsScene implements Scene {
     return k !== undefined && buildOf(this.id, k) ? k : undefined;
   }
   private get build(): BuildDef { return buildOf(this.id, this.key) ?? BUILDS[this.id][0]; }
+  /** The card under the cursor, from `seen` while the state is the same. */
+  private get sel(): Sel {
+    const s = this.game.state;
+    if (this.seen.state !== s) this.seen = { state: s, cards: new Map() };
+    const k = `${this.id}|${this.key}`;
+    let c = this.seen.cards.get(k);
+    if (!c) {
+      const b = this.build;
+      c = { rows: runeRows(s, this.id, b), price: applyCost(s, this.id, b.key), marks: treeMarks(this.member, b) };
+      this.seen.cards.set(k, c);
+    }
+    return c;
+  }
   /** The buttons of the card: the build she follows can be applied again (to fill its runes) and stopped. */
   private get acts(): Act[] { return this.followed === this.key ? ['apply', 'stop'] : ['apply']; }
   /** 「目前 Lv N，建議 Lv M 以上」 when she is below the build's suggested level, else ''. */
@@ -322,11 +343,8 @@ export class BuildsScene implements Scene {
 
   private renderCard(): void {
     const b = this.build;
-    const m = this.member;
     const following = this.followed === b.key;
-    const rows = runeRows(this.game.state, this.id, b);
-    const { ultimates, sides } = treeMarks(m, b);
-    const price = applyCost(this.game.state, this.id, b.key);
+    const { rows, price, marks: { ultimates, sides } } = this.sel;
     const skills = Object.keys(b.runes);
     const out: HTMLElement[] = [
       el('div', { class: 'slx-bd-card-name' }, [el('b', { text: b.name }), ...(following ? [el('span', { class: 'slx-bd-tag', text: B.following })] : [])]),
@@ -360,7 +378,7 @@ export class BuildsScene implements Scene {
   private renderFoot(): void {
     const acts = this.acts;
     this.actAt = Math.min(this.actAt, acts.length - 1);
-    const price = applyCost(this.game.state, this.id, this.key);
+    const price = this.sel.price;
     const off = !this.town;
     this.btns.replaceChildren(...acts.map((a, i) => {
       const text = a === 'stop' ? B.stopFollow : price && price.cost > 0 ? B.apply(price.cost) : B.applyFree;

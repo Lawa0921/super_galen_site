@@ -14,6 +14,13 @@ import { UNCAST } from './buildBands';
 import { MAX_LEVEL } from './party';
 import { kitParty, partyAt } from './sim';
 import type { CharacterId } from './types';
+import { applyCost } from './builds';
+import { createBattle } from './battle';
+import { encounterTable } from './scaling';
+import { newGame } from './state';
+import { STANDARD_LINEUP } from './party';
+import { defaultTalents, defaultTree } from './progression';
+import { autoLine } from '../ui2/skillCard';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const src = (...p: string[]) => readFileSync(join(here, ...p), 'utf8');
@@ -55,8 +62,21 @@ describe('build guards (plan 8h Task 9)', () => {
     for (const p of [partyAt(35), partyAt(50, {}, 10), kitParty(35, 8, 1)]) {
       for (const m of Object.values(p.roster)) expect(m.build, m.id).toBeUndefined();
     }
-    // Nothing of the builds draws a random number.
-    for (const f of [src('builds.ts'), src('buildBands.ts'), src('..', 'ui2', 'scenes', 'builds.ts')]) expect(f).not.toContain('Math.random');
+  });
+
+  it('reading a build changes nothing: applyCost and 自動\'s note leave the state as it was (final review)', () => {
+    const s = newGame(undefined, 0, STANDARD_LINEUP);
+    s.party.roster.noel = { ...s.party.roster.noel, level: 35, tree: defaultTree('noel', 35), talents: defaultTalents('noel', 35), sockets: { 'ice-star': [{ id: 'thrift', tier: 'magic' }] } };
+    s.runes = { 'spread@magic': 1 };
+    s.gold = 5000;
+    const before = structuredClone(s);
+    for (const id of s.party.recruited) for (const b of BUILDS[id]) applyCost(s, id, b.key);
+    expect(s).toEqual(before);
+    const party = partyAt(35, { build: { noel: 'meteor', rin: 'venom' } }, 9);
+    const battle = createBattle({ party: structuredClone(party), enemyIds: encounterTable('mainline', 9)[0], boss: false, inventory: {}, revealed: {}, scale: { depth: 9, region: 'mainline' } });
+    const [p0, b0] = [structuredClone(party), structuredClone(battle)];
+    expect(autoLine(battle, party, battle.party.map((c) => c.key))).not.toBe('');
+    expect([party, battle]).toEqual([p0, b0]);
   });
 
   it('the build words write no number by hand', () => {

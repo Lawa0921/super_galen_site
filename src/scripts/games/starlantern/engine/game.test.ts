@@ -33,6 +33,7 @@ import { buy, unequip } from './town';
 import { defaultTalents, defaultTree, memoriesOf } from './progression';
 import { buildTalents, buildTree } from './builds';
 import { buildOf } from '../data/builds';
+import { learnedSkills } from './progression';
 import { TALENT_NODES } from '../data/talents';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
@@ -4064,5 +4065,39 @@ describe('fusing runes in the game (plan 8f Task 5)', () => {
     expect([back.runes, back.gold]).toEqual([{ 'spread@magic': 1 }, 70]);
     expect(g.fuseRune(spread)).toEqual({ ok: false, reason: 'stock' });
     expect(g.fuseRune({ id: 'spread', tier: 'epic' })).toEqual({ ok: false, reason: 'top' });
+  });
+});
+
+describe('following between fights (plan 8h final review)', () => {
+  it('a memory gained between wins sends the runes of a skill her build drops back to the bag (I1)', () => {
+    const g = inMap(1);
+    const mage = buildOf('hero', 'mage')!;
+    const h = g.state.party.roster.hero;
+    g.state.party.roster.hero = { ...h, level: 31, exp: 0, memories: 7, tree: buildTree('hero', 31, mage, 7), talents: buildTalents('hero', 31, mage), build: 'mage',
+      sockets: { 'abyss-sword': [{ id: 'thrift', tier: 'magic' }] } };
+    g.state.runes = {};
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(killAll(g).outcome).toBe('win');
+    expect(g.state.party.roster.hero.sockets?.['abyss-sword']).toEqual([{ id: 'thrift', tier: 'magic' }]);   // a win: nothing moves
+    g.state.party.roster.hero.memories = 8;   // a memory between wins
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(killAll(g).outcome).toBe('win');
+    const hero = g.state.party.roster.hero;
+    expect(learnedSkills(hero)).not.toContain('abyss-sword');
+    expect(hero.sockets?.['abyss-sword'] ?? []).toEqual([]);
+    expect(g.state.runes).toEqual({ 'thrift@magic': 1 });
+  });
+
+  it('a rune she took off by hand stays off after a win (I3)', () => {
+    const g = inMap(1);
+    const meteor = buildOf('noel', 'meteor')!;
+    const m = g.state.party.roster.noel;
+    g.state.party.roster.noel = { ...m, level: 35, exp: 0, tree: buildTree('noel', 35, meteor), talents: buildTalents('noel', 35, meteor), build: 'meteor',
+      sockets: { 'fire-star': [null, { id: 'ignite', tier: 'magic' }] } };
+    g.state.runes = { 'spread@magic': 1 };
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(killAll(g).outcome).toBe('win');
+    expect(g.state.party.roster.noel.sockets?.['fire-star']).toEqual([null, { id: 'ignite', tier: 'magic' }]);
+    expect(g.state.runes).toEqual({ 'spread@magic': 1 });
   });
 });

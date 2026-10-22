@@ -12,6 +12,7 @@ import { STANDARD_LINEUP } from './party';
 import { respecPrice } from './town';
 import type { RuneId, RuneRef, RuneTier } from '../data/runes';
 import { ABYSS_UNLOCK } from '../data/hero';
+import { chainLength } from '../data/story/chains';
 import { MAX_LEVEL } from './party';
 import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, newTree, treeFor, validBuild } from './progression';
 import { TREES } from '../data/trees';
@@ -296,13 +297,50 @@ describe('apply and follow a build (plan 8h Task 6)', () => {
     expect(policyText(buildOf('noel', 'meteor')!)[0]).toBe(`熱度到 4 就放${SKILLS.inferno.name}，之前先留著。`);
   });
 
+  it('a rune taken off by hand stays off: only slots opened since the last fight are filled (final review I3)', () => {
+    const s = ok(applyBuild(town(35, { 'spread@magic': 1, 'ignite@magic': 1 }), 'noel', 'meteor')).state;
+    expect(s.party.roster.noel.sockets?.['fire-star']).toEqual([R('spread'), R('ignite')]);
+    // She takes 擴散 off: back in the bag, the slot empty. A fight later (no level) it stays so.
+    const off = structuredClone(s);
+    off.party.roster.noel.sockets = { 'fire-star': [null, R('ignite')] };
+    off.runes = { 'spread@magic': 1 };
+    const after = followUp(off, ['noel'], off.party);
+    expect(after.party.roster.noel.sockets?.['fire-star']).toEqual([null, R('ignite')]);
+    expect(after.runes).toEqual({ 'spread@magic': 1 });
+  });
+
+  it('a memory that drops a skill from her build sends its runes back to the bag (final review I1)', () => {
+    // 星術 at Lv31: with 7 memories it holds 深淵・劍, with 8 its tree goes elsewhere.
+    const mage = buildOf('hero', 'mage')!;
+    const s = town(31);
+    s.party.roster.hero = { ...s.party.roster.hero, level: 31, memories: 7, tree: buildTree('hero', 31, mage, 7), talents: buildTalents('hero', 31, mage), build: 'mage',
+      sockets: { 'abyss-sword': [R('thrift')] } };
+    expect(learnedSkills(s.party.roster.hero)).toContain('abyss-sword');
+    const before = s.party;
+    const now = structuredClone(s);
+    now.party.roster.hero.memories = 8;
+    const after = followUp(now, ['hero'], before);
+    expect(learnedSkills(after.party.roster.hero)).not.toContain('abyss-sword');
+    expect(after.party.roster.hero.sockets?.['abyss-sword'] ?? []).toEqual([]);
+    expect(after.runes).toEqual({ 'thrift@magic': 1 });
+  });
+
+  it('every build is valid at every level and every memory count (final review)', () => {
+    for (const id of CHARACTER_IDS) for (const b of BUILDS[id]) {
+      for (let L = 1; L <= MAX_LEVEL; L++) for (let mem = 0; mem <= chainLength(id); mem++) {
+        const ok = validBuild(id, L, buildTree(id, L, b, mem), buildTalents(id, L, b), mem);
+        if (!ok) expect.fail(`${id}/${b.key} Lv ${L} memories ${mem}`);
+      }
+    }
+  });
+
   it('following spends the points and fills new slots at a level-up', () => {
     const s = ok(applyBuild(town(19, { 'spread@magic': 1, 'ignite@magic': 1 }), 'noel', 'meteor')).state;
     const meteor = buildOf('noel', 'meteor')!;
     expect(s.party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread')] });
     const up = structuredClone(s);
     up.party.roster.noel.level = 20;
-    const after = followUp(up, ['noel', 'rin']);
+    const after = followUp(up, ['noel', 'rin'], s.party);
     const noel = after.party.roster.noel;
     expect(noel.tree).toEqual(buildTree('noel', 20, meteor));
     expect(noel.talents).toEqual(buildTalents('noel', 20, meteor));
@@ -313,11 +351,11 @@ describe('apply and follow a build (plan 8h Task 6)', () => {
     const dry = structuredClone(s);
     dry.runes = {};
     dry.party.roster.noel.level = 20;
-    expect(followUp(dry, ['noel']).party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread')] });
+    expect(followUp(dry, ['noel'], s.party).party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread')] });
     // Nobody following, or nothing to change: the same object.
-    expect(followUp(after, ['noel', 'rin'])).toBe(after);
+    expect(followUp(after, ['noel', 'rin'], after.party)).toBe(after);
     const plain = town(20);
-    expect(followUp(plain, ['noel'])).toBe(plain);
+    expect(followUp(plain, ['noel'], plain.party)).toBe(plain);
   });
 
   it("a build's suggested level goes on its pitch", () => {

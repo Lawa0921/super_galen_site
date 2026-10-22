@@ -457,10 +457,13 @@ describe('the workshop and the suggested builds (plan 8h Task 7)', () => {
     const lack = w.root.querySelector('.slx-ws-runes .slx-ws-lack')!;
     expect(lack.textContent).toBe(W.lacking([['點燃', T.build.from.drop], ['連擊', T.build.from.shop]]));
     expect(lack.textContent).toBe('缺：點燃（打怪、寶箱掉落）、連擊（道具店有賣）');
-    // One in the bag is still not in her slot: it says so in place of where it is found.
+    // One in the bag is not lacking: 「可裝」, apart from what is (plan 8h final review).
     const bag = setup(follower('meteor', { 'ignite@magic': 1 }), 'noel:fire-star');
     bag.press('confirm', 'confirm');
-    expect(bag.root.querySelector('.slx-ws-lack')!.textContent).toBe(W.lacking([['點燃', W.inBag], ['連擊', T.build.from.shop]]));
+    const both = bag.root.querySelector('.slx-ws-lack')!.textContent!;
+    expect(both).toBe(`${W.lacking([['連擊', T.build.from.shop]])}　${W.ready([['點燃', W.inBag]])}`);
+    expect(both).toContain('可裝：點燃（袋子裡有）');
+    expect(both).not.toContain('缺：點燃');
     // A skill the build suggests nothing for: no line.
     const ice = setup(follower('meteor'), 'noel:ice-star');
     expect(ice.skillCur()).toBe('ice-star');

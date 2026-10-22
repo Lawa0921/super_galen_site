@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { BattleEvent } from '../engine/combatant';
-import { battleLines } from './battleText';
+import { battleLines, levelUpLines } from './battleText';
+import { newGame } from '../engine/state';
+import { STANDARD_LINEUP } from '../engine/party';
+import { buildOf } from '../data/builds';
 import { T } from '../data/text.zh-TW';
 
 describe('battleLines', () => {
@@ -66,5 +69,22 @@ describe('battle lines for runes (plan 8e Task 5)', () => {
 describe('the trigger line (plan 8e Task 6)', () => {
   it('a trigger reads as one line', () => {
     expect(battleLines([{ type: 'trigger', actor: 'rin', skill: 'rin-needle', rune: 'on-crit' }], (k) => (k === 'rin' ? '凜' : k))).toEqual(['凜的暴擊觸發：飛針！']);
+  });
+});
+
+describe('level-up lines for a follower (plan 8h final review I2)', () => {
+  it('a member who follows a build is told it was laid out, not where to spend the points', () => {
+    const party = newGame(undefined, 0, STANDARD_LINEUP).party;
+    party.roster.noel = { ...party.roster.noel, level: 20, build: 'meteor' };
+    party.roster.rin = { ...party.roster.rin, level: 20 };
+    const lines = levelUpLines([
+      { id: 'noel', levels: 1, points: { skill: 2, talent: 1 } },
+      { id: 'rin', levels: 1, points: { skill: 2, talent: 1 } },
+    ], party).map((l) => l.text);
+    expect(lines).toEqual([
+      T.battle.levelUp('諾艾兒', 20), T.battle.followed('諾艾兒', buildOf('noel', 'meteor')!.name),
+      T.battle.levelUp('凜', 20), T.battle.points('凜', 2, 1),
+    ]);
+    expect(T.battle.followed('諾艾兒', '暴走流星')).toContain('已照〈暴走流星〉配好');
   });
 });

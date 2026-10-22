@@ -545,8 +545,9 @@ export class Game {
       return m.level !== before[id].level || m.exp !== before[id].exp;
     });
     if (awarded) {
+      const was = this.state.party;
       this.state.party = awarded.party;
-      this.state = followUp(this.state, this.state.party.recruited);
+      this.state = followUp(this.state, this.state.party.recruited, was);
     }
     const story = this.state.story;
     story.pity = pityAfterFloor(this.state.party, story.pity, this.run.region, this.floor, this.run.dropped[this.floor] ?? []);
@@ -644,9 +645,11 @@ export class Game {
     }
     const survivors = b.party.filter((c) => c.alive).map((c) => c.key as CharacterId);
     const awarded = awardExp(this.state.party, rw.exp, survivors);
+    const was = this.state.party;
     this.state.party = awarded.party;
-    // Followers spend their new points on their builds, and new slots take its runes from the bag (plan 8h ruling 13).
-    this.state = followUp(this.state, this.state.party.recruited);
+    // Followers lay out their builds at their level and memories now; only the rune slots opened since the last fight
+    // take its runes from the bag, so one she emptied by hand stays empty (plan 8h ruling 13, final review I3).
+    this.state = followUp(this.state, this.state.party.recruited, was);
     // Rin's first won fight queues the first-return scene for the next arrival (Task 10b).
     this.state.story = afterWin(this.state.story, b.party.map((c) => c.key));
     if (elite) this.map().tiles[elite.y][elite.x] = 'floor';   // a beaten elite is gone

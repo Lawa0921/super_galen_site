@@ -179,6 +179,8 @@ export const T = {
       skill === 0 && talent > 0
         ? `${name} 獲得天賦點 ${talent}（狀態→天賦）`
         : `${name} 獲得技能點 ${skill}（狀態→技能樹）${talent > 0 ? `、天賦點 ${talent}（狀態→天賦）` : ''}`,
+    /** In place of `points` for a member who follows a build: the points were laid out for her (plan 8h final review I2). */
+    followed: (name: string, build: string) => `${name} 已照〈${build}〉配好`,
     weak: (els: string) => `已知弱點：${els}`,
     /** Words that pop over a struck enemy or member. */
     pop: { miss: 'MISS', crit: '暴擊！', weak: '弱點！', resist: '抗性', tp: (n: number) => `+${n} TP` },
@@ -481,6 +483,8 @@ export const T = {
       lacking: (items: [string, string][]) => `缺：${items.map(([name, where]) => `${name}（${where}）`).join('、')}`,
       /** In place of where a lacking rune is found: one is in the bag already. */
       inBag: '袋子裡有',
+      /** Over the rune list: suggested runes the bag holds for this skill's slots, ready to put in (plan 8h final review). */
+      ready: (items: [string, string][]) => `可裝：${items.map(([name, where]) => `${name}（${where}）`).join('、')}`,
       /** Over the rune list, a suggested rune the slot refuses (Task 7 review): why, in place of where it is. */
       refusedWhy: (name: string, why: string) => `${name}裝不上：${why}`,
     },

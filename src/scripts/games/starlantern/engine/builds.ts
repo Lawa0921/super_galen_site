@@ -12,11 +12,11 @@ import { heroTalents, heroTree, learnedSkills, memoriesOf, talentsFor, treeFor }
 import { MAX_LEVEL } from './party';
 import type { GameState } from './state';
 import { clampToMax, respecPrice } from './town';
-import { bagCount, socketCount, socketRune, socketable, type SocketFail } from './sockets';
+import { bagCount, returnOrphanRunes, socketCount, socketRune, socketable, type SocketFail } from './sockets';
 import { chainLength } from '../data/story/chains';
 import type { CharacterId, Member, Party } from './types';
 import type { Action, BattleState } from './battle';
-import { choose } from './sim';
+import { choose } from './choose';
 
 /** The tree `b` lays out for `id` at `level` (the hero's from his HERO_BUILDS build). */
 export function buildTree(id: CharacterId, level: number, b: BuildDef, memories = 0): Record<string, number> {
@@ -89,7 +89,6 @@ export function pitchOf(b: BuildDef): string {
   return b.minLevel === undefined ? b.intro : `${b.intro}${T.build.minLevel(b.minLevel)}`;
 }
 
-/** A suggested rune the bag does not hold, and where one is found (plan 8h ruling 12). */
 /**
  * A suggested rune the bag does not hold, and where one is found (`from`); or one the slot refused (`refused`: 常駐's TP
  * reserve, or a clash with a rune already on the skill), which no shop would mend.
@@ -111,7 +110,7 @@ const sameRecord = (a: Record<string, number>, b: Record<string, number>): boole
   Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k]);
 
 /** The best tier of `id` in the bag (legendary at its one), or null. */
-function bestInBag(s: Pick<GameState, 'runes'>, id: RuneId): RuneRef | null {
+export function bestInBag(s: Pick<GameState, 'runes'>, id: RuneId): RuneRef | null {
   for (const tier of [...tiersOf(id)].reverse()) if (bagCount(s, { id, tier }) > 0) return { id, tier };
   return null;
 }
@@ -152,17 +151,35 @@ function lay(s: GameState, id: CharacterId, b: BuildDef): { state: GameState; pl
   for (const [skill, ids] of Object.entries(b.runes)) {
     const opensAt = known.includes(skill) ? { level: member.level } : learnedAt(member, b, skill);
     ids.forEach((rid, slot) => {
-      if (!known.includes(skill) || slot >= open) {
-        later.push('memories' in opensAt ? { skill, id: rid, memories: opensAt.memories } : { skill, id: rid, level: Math.max(opensAt.level, RUNE_SLOT_LEVELS[slot]) });
-        return;
-      }
-      const ref = bestInBag(state, rid);
-      if (!ref) { missing.push({ skill, id: rid, from: runeSource(rid) }); return; }
-      const put = socketRune(state, id, skill, slot, ref);
-      if (put.ok) { state = put.state; placed.push(ref); } else missing.push({ skill, id: rid, refused: put.reason });
+      if (known.includes(skill) && slot < open) return;
+      later.push('memories' in opensAt ? { skill, id: rid, memories: opensAt.memories } : { skill, id: rid, level: Math.max(opensAt.level, RUNE_SLOT_LEVELS[slot]) });
     });
   }
+  state = fillSlots(state, id, b, () => true, { placed, missing });
   return { state, placed, missing, later };
+}
+
+/**
+ * Each open slot of a skill `id` knows that `b` suggests a rune for, and that `take` lets in, takes the best tier of that
+ * rune the bag holds (build order, skill by skill). What it put in, and what it could not (none in the bag, or the slot
+ * refused it), go into `log`. The one slot-filling loop of apply (`lay`) and following (`followUp`). Draws nothing.
+ */
+function fillSlots(state: GameState, id: CharacterId, b: BuildDef, take: (skill: string, slot: number) => boolean,
+  log?: { placed: RuneRef[]; missing: MissingRune[] }): GameState {
+  const m = state.party.roster[id];
+  const known = socketable(m);
+  const open = socketCount(m.level);
+  for (const [skill, ids] of Object.entries(b.runes)) {
+    if (!known.includes(skill)) continue;
+    ids.forEach((rid, slot) => {
+      if (slot >= open || !take(skill, slot)) return;
+      const ref = bestInBag(state, rid);
+      if (!ref) { log?.missing.push({ skill, id: rid, from: runeSource(rid) }); return; }
+      const put = socketRune(state, id, skill, slot, ref);
+      if (put.ok) { state = put.state; log?.placed.push(ref); } else log?.missing.push({ skill, id: rid, refused: put.reason });
+    });
+  }
+  return state;
 }
 
 /**
@@ -216,11 +233,14 @@ function learnedAt(m: Member, b: BuildDef, skill: string): { level: number } | {
 }
 
 /**
- * Following at a level-up (plan 8h ruling 13): each of `ids` who follows a build takes its tree and talents at her level,
- * and each slot that is open and empty on a suggested skill takes the best of its rune in the bag; what she wears stays.
- * Members who follow nothing are left as they are; with nothing to change, the same object comes back. Draws nothing.
+ * Following after a fight (plan 8h ruling 13, final review I1/I3): each of `ids` who follows a build takes its tree and
+ * talents at her level and memories; the runes of a skill that tree no longer holds go back to the bag (as a respec's
+ * do). Then each slot that opened since `before` (the party going into the fight: a slot her level had not opened, or a
+ * skill she did not know) takes the best of its suggested rune in the bag. A slot she emptied by hand stays empty; what
+ * she wears stays. Members who follow nothing are left as they are; with nothing to change, the same object comes back.
+ * Draws nothing.
  */
-export function followUp(s: GameState, ids: readonly CharacterId[]): GameState {
+export function followUp(s: GameState, ids: readonly CharacterId[], before: Party): GameState {
   let state = s;
   for (const id of ids) {
     const m = state.party.roster[id];
@@ -228,20 +248,12 @@ export function followUp(s: GameState, ids: readonly CharacterId[]): GameState {
     if (!m || !b) continue;
     const { tree, talents } = laidOut(m, b);
     if (!sameRecord(tree, m.tree) || !sameRecord(talents, m.talents)) {
-      state = { ...state, party: { ...state.party, roster: { ...state.party.roster, [id]: { ...m, tree, talents } } } };
+      state = returnOrphanRunes({ ...state, party: { ...state.party, roster: { ...state.party.roster, [id]: { ...m, tree, talents } } } }, id);
     }
-    const now = state.party.roster[id];
-    const known = socketable(now);
-    const open = socketCount(now.level);
-    for (const [skill, rids] of Object.entries(b.runes)) {
-      if (!known.includes(skill)) continue;
-      rids.forEach((rid, slot) => {
-        if (slot >= open || state.party.roster[id].sockets?.[skill]?.[slot]) return;
-        const ref = bestInBag(state, rid);
-        const put = ref && socketRune(state, id, skill, slot, ref);
-        if (put && put.ok) state = put.state;
-      });
-    }
+    const was = before.roster[id];
+    const knew = was ? socketable(was) : [];
+    const opened = was ? socketCount(was.level) : 0;
+    state = fillSlots(state, id, b, (skill, slot) => !state.party.roster[id].sockets?.[skill]?.[slot] && (!knew.includes(skill) || slot >= opened));
   }
   return state;
 }
