@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { HIT_DESC, SKILLS } from '../data/skills';
 import { runeView, skillFor } from './battle';
 import { applyRunes, runeFits, runeNotes, runeStates, runeWhy, skillTags } from './runes';
-import { RUNES, RUNE_STACK, tiersOf, type RuneId, type RuneRef } from '../data/runes';
+import { RUNES, RUNE_NUMBERS, RUNE_STACK, tiersOf, type RuneId, type RuneRef } from '../data/runes';
 import { CHARACTER_IDS } from '../data/characters';
 import { INNATE, NODES, TREES } from '../data/trees';
 import { rulesOf } from '../data/characters';
@@ -57,6 +57,22 @@ describe('rune tags and fit (plan 8e Task 1)', () => {
     // Any skill takes 受擊觸發 and 同步; groups that do not exclude stand side by side.
     expect(runeFits(SKILLS.cleanse, 'on-struck', [])).toBeNull();
     expect(runeFits(star, 'regain', ['thrift', 'drain'])).toBeNull();
+  });
+
+  it("淬毒 is halved on a cast that strikes them all or at random (plan 8h ruling B2'')", () => {
+    const wide = RUNE_NUMBERS.venom.fixed.widePct;
+    expect(wide).toBe(50);
+    const chanceOn = (skill: string) => {
+      const d = applyRunes(SKILLS[skill], [], [{ id: 'venom', tier: 'magic' }]);
+      return (d.effects.find((e) => e.kind === 'inflict' && e.status === 'poison') as { chance: number }).chance;
+    };
+    expect(chanceOn('pierce')).toBe(0.3);                       // one foe: the whole chance
+    expect(chanceOn('sweep')).toBe(0.15);                       // all of them: half
+    expect(chanceOn('scatter-shot')).toBe(0.15);                // at random: half
+    // 擴散 makes a single-foe skill strike them all: halved too.
+    const spread = applyRunes(SKILLS.pierce, [], [{ id: 'venom', tier: 'magic' }, { id: 'spread', tier: 'magic' }]);
+    expect((spread.effects.find((e) => e.kind === 'inflict') as { chance: number }).chance).toBe(0.15);
+    expect(RUNES.venom.text('magic')).toContain(`${wide}%`);
   });
 
   it('a trigger rune needs a plain effect (plan 8h Task 2, ruling 11b)', () => {

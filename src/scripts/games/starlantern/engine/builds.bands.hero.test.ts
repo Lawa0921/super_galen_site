@@ -8,6 +8,7 @@ import {
   BAND_EXCEPTIONS, ONE_RUNE_EXCEPTIONS, ONE_RUNE_MAX, ONE_RUNE_MAX_LEGENDARY, RUNE_VALUE_PCT, UNCAST, WIN_SLACK_FIGHTS, bandResults, type OwnerResult,
 } from './buildBands';
 import { buildOf } from '../data/builds';
+import { SKILLS } from '../data/skills';
 
 const on = process.env.BANDS === '1';
 const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0';
@@ -26,19 +27,21 @@ describe.skipIf(!on)('the rune bands: hero (plan 8h)', () => {
         const at = `Lv${l.level}`;
         if (role === 'heal') {
           // E4: the party wins as often and loses no more members in the ordeal; her contribution is reported only.
-          if (l.run.rate < l.std.rate) why.push(`${at} win ${l.run.rate.toFixed(2)} < ${l.std.rate.toFixed(2)}`);
+          if (l.run.wins < l.std.wins) why.push(`${at} wins ${l.run.wins} < ${l.std.wins} of ${l.run.fights}`);
           if (l.run.partyKos > l.std.partyKos) why.push(`${at} KOs ${l.run.partyKos} > ${l.std.partyKos}`);
           return why;
         }
         if (role === 'gauge') {
           // E3: the party wins as often; the gauge she feeds is reported apart.
-          if (l.run.rate < l.std.rate) why.push(`${at} win ${l.run.rate.toFixed(2)} < ${l.std.rate.toFixed(2)}`);
+          if (l.run.wins < l.std.wins) why.push(`${at} wins ${l.run.wins} < ${l.std.wins} of ${l.run.fights}`);
         } else {
           // §12.4 with E1: a fifth more, and no more than WIN_SLACK_FIGHTS fights lost beyond the standard's.
           if (l.run.perRound < (l.std.perRound * (100 + RUNE_VALUE_PCT)) / 100) why.push(`${at} ${l.run.perRound.toFixed(1)} < ${l.std.perRound.toFixed(1)} x ${1 + RUNE_VALUE_PCT / 100}`);
-          if (l.run.rate < l.std.rate - WIN_SLACK_FIGHTS / l.run.fights) why.push(`${at} win ${l.run.rate.toFixed(2)} < ${l.std.rate.toFixed(2)} - ${WIN_SLACK_FIGHTS}/${l.run.fights}`);
+          if (l.run.wins < l.std.wins - WIN_SLACK_FIGHTS) why.push(`${at} wins ${l.run.wins} < ${l.std.wins} - ${WIN_SLACK_FIGHTS} of ${l.run.fights}`);
         }
         if (l.run.perRound <= l.bare.perRound) why.push(`${at} runes do not pay: ${l.run.perRound.toFixed(1)} <= bare ${l.bare.perRound.toFixed(1)}`);
+        // Every skill that holds a rune is cast (a trigger's cast counts; 常駐 works uncast).
+        if (l.idle.length) why.push(`${at} runes on skills never cast: ${l.idle.join(' ')}`);
         return why;
       });
       const known = BAND_EXCEPTIONS[b.tag];
@@ -70,5 +73,7 @@ describe.skipIf(!on)('the rune bands: hero (plan 8h)', () => {
 
   it('every node 8c and 8d left unmeasured is cast by some build of hers', () => {
     for (const s of r.uncast) expect(UNCAST[s], `${s} is not cast and has no reason in UNCAST`).toBeTruthy();
+    // And nothing stays in UNCAST once a build of hers casts it.
+    for (const s of Object.keys(UNCAST).filter((x) => SKILLS[x]?.owner === 'hero')) expect(r.uncast, `${s} is cast now: take it off UNCAST`).toContain(s);
   });
 });

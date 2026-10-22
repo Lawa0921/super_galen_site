@@ -61,7 +61,7 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
     { key: 'meteor', name: '暴走流星', intro: '火之星彈一口氣燒過去，熱度滿了就用業火暴走！', scenario: 'crowd', capstone: 0, minLevel: 40,
       runes: { 'fire-star': ['spread', 'ignite', 'multistrike'] },
       policy: [{ kind: 'spend-at', gauge: 'heat', min: 4, skill: 'inferno' }, aoe] },
-    { key: 'cycle', name: '冰雷循環', intro: '雷之星彈蓄力猛攻，熱度一高就換冰之星彈降溫，順便凍住頭目。', scenario: 'boss',
+    { key: 'cycle', name: '冰雷循環', intro: '雷之星彈蓄力猛攻，熱度一高就換冰之星彈降溫，順便讓頭目發寒。', scenario: 'boss',
       // Tuning round 2: the boss shrugs off fire and fears ice, so the heat comes from the thunder star; 連擊 (the shop's)
       // on the ice star that cools her.
       runes: { 'ice-star': ['charge', 'multistrike'], 'thunder-star': ['charge', 'jolt', 'thunderclap'] },
@@ -109,7 +109,7 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       first: ['scarlet-burst-heart', 'blaze-ring', 'scarlet-ring-blaze'],
       runes: { 'blaze-ring': ['on-struck', 'ignite', 'multistrike'], 'flame-burst': ['ignite', 'multistrike', 'charge'] },
       policy: [{ kind: 'ensure-taunt', skill: 'provoke' }, aoe] },
-    { key: 'ember', name: '紅蓮餘燼', intro: '替大家擋下的傷，全部存成餘燼，紅蓮終焉一次還給牠。', scenario: 'boss', capstone: 1,
+    { key: 'ember', name: '紅蓮餘燼', intro: '替大家擋下的傷存成餘燼，攢到一點就用紅蓮終焉還給牠。', scenario: 'boss', capstone: 1,
       // 代受 (on the way, 高喊), then 熾心, 赤心 and 回禮; 延長 does not take a cover, so 代受 takes 節流 (「依 fit」).
       first: ['scarlet-provoke-shout', 'cover', 'scarlet-ardent', 'scarlet-burst-heart', 'scarlet-thanks'],
       // Tuning round 2: 赤心's 火焰爆 is her steady blow; 紅蓮終焉 hits harder; 代受 takes none.
@@ -158,9 +158,11 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       policy: [{ kind: 'ensure-device', skills: ['tesla-coil', 'shock-mine', 'barrier'] }, aoe] },
   ],
   rin: [
-    { key: 'silent', name: '無聲處決', intro: '先暗記，處決收尾；倒下的時候，飛針會自己追出去。', scenario: 'boss',
+    // The review: alone with a boss, 飛針's 擊倒觸發 never fired (nothing falls before the boss does); the runes go on 處決,
+    // the blow the build is for, and the line says what they do.
+    { key: 'silent', name: '無聲處決', intro: '先暗記，再用處決收尾：一刀不夠就兩刀，盔甲也擋不住。', scenario: 'boss',
       first: ['rin-mark-steady', 'rin-execute'],
-      runes: { 'rin-needle': ['on-kill', 'multistrike'], 'rin-execute': ['charge'] },
+      runes: { 'rin-execute': ['charge', 'multistrike', 'armor-break'] },
       policy: [{ kind: 'ensure-mark', skill: 'rin-mark' }, { kind: 'execute-below', pct: 35, skill: 'rin-execute' }, aoe] },
     { key: 'venom', name: '千針毒', intro: '千針帶毒又帶撕裂，慢慢磨。', scenario: 'crowd', capstone: 0,
       // 連擊 on 千針 (the shop's): one more hit, one more 撕裂.

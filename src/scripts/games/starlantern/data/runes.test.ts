@@ -120,7 +120,7 @@ describe('the rune catalogue (plan 8e Task 1)', () => {
       jolt: { tier: { chance: [30, 35, 40, 45] }, fixed: {} },
       tear: { tier: { chance: [30, 35, 40, 45] }, fixed: {} },
       frostbite: { tier: { chance: [20, 25, 30, 35] }, fixed: {} },
-      venom: { tier: { chance: [13, 18, 23, 28] }, fixed: {} },
+      venom: { tier: { chance: [25, 30, 35, 40] }, fixed: { widePct: 50 } },
       aftermath: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 1 } },
       'on-crit': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
       'on-kill': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },

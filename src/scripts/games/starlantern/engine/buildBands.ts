@@ -35,6 +35,12 @@ export const ONE_RUNE_MAX_LEGENDARY = 2.0;
  */
 export const WIN_SLACK_FIGHTS = 2;
 
+/**
+ * How many floors below the level's own the healers' ordeal is fought (ruling E4, the review: two floors left every
+ * standard party winning every fight, four and six put the standard at 24/40 and 35/40).
+ */
+export const ORDEAL_FLOORS: Readonly<Record<number, number>> = { 35: 4, 50: 6 };
+
 /** The band levels a build is measured at: from its `minLevel` (ruling E2). */
 export const buildLevels = (b: BuildDef): number[] => BUILD_LEVELS.filter((l) => l >= (b.minLevel ?? 0));
 /** The ceiling's depths and seeds (plan 8h ruling 8). */
@@ -49,6 +55,8 @@ export const DEEP_LINEUP: Lineup = { memories: 10, abyss: ABYSS.cap, heroBuild: 
  */
 export interface BuildRun {
   perRound: number; gaugePerRound: number; rate: number; rounds: number;
+  /** Fights won (the win check compares counts, ruling E1). */
+  wins: number;
   /** How many fights the set had. */
   fights: number;
   bySkill: Record<string, { total: number; casts: number }>;
@@ -78,7 +86,7 @@ export function scenarioFights(s: BuildScenario | 'general', level: number): Ban
     case 'crowd': return groups.map((g, i) => ({ enemyIds: [...g, ...groups[(i + 1) % groups.length]], boss: false, scale, seeds: BUILD_SEEDS.crowd }));
     case 'long': return groups.map((g) => ({ enemyIds: g, boss: false, scale: { ...scale, elite: g[0] }, seeds: BUILD_SEEDS.long }));
     case 'general': return [...groups.map((g) => ({ enemyIds: g, boss: false, scale, seeds: 10 })), { ...boss, seeds: 10 }];
-    case 'ordeal': return [{ ...boss, scale: { depth: depth + 2, region: 'mainline' } }];
+    case 'ordeal': return [{ ...boss, scale: { depth: depth + (ORDEAL_FLOORS[level] ?? 4), region: 'mainline' } }];
   }
 }
 
@@ -100,6 +108,8 @@ export function measureBuild(owner: CharacterId, lineup: Lineup, scenario: Build
       const a = actions[owner];
       if (seen && a?.kind === 'skill') seen.add(a.skill);
       if (seen && a?.kind === 'echo') seen.add('echo');
+      // A trigger rune's free cast is a cast of its skill (the review: 炎環斬 answers blows and is never chosen).
+      if (seen) for (const e of after.log) if (e.type === 'trigger' && e.actor === owner) seen.add(e.skill);
       frozen += after.enemies.filter((e) => e.boss && e.frozen).length;
       kos += after.log.filter((e) => e.type === 'ko' && before.party.some((c) => c.key === e.target)).length;
     },
@@ -120,7 +130,7 @@ export function measureBuild(owner: CharacterId, lineup: Lineup, scenario: Build
   const mine = ledger.by[owner] ?? { damage: 0, healing: 0, prevented: 0, shield: 0 };
   const gauge = ledger.gauge?.[owner] ?? 0;
   return {
-    perRound: rounds ? totalOf(mine) / rounds : 0, gaugePerRound: rounds ? gauge / rounds : 0, rate: n ? wins / n : 0, rounds, fights: n, bySkill,
+    perRound: rounds ? totalOf(mine) / rounds : 0, gaugePerRound: rounds ? gauge / rounds : 0, rate: n ? wins / n : 0, rounds, wins, fights: n, bySkill,
     minBossRounds: minBoss === Infinity ? 0 : minBoss, bossFrozen: frozen, partyKos: kos,
   };
 }
@@ -269,7 +279,8 @@ export function bandResults(owner: CharacterId, say: (line: string) => void): Ow
       for (const [skill, s] of Object.entries(run.bySkill)) say(`skill ${tag} Lv${level} ${skill} casts ${s.casts} per-cast ${f2(s.casts ? s.total / s.casts : 0)}`);
       if (run.bossFrozen) say(`frozen ${tag} Lv${level} ${run.bossFrozen}`);
       const sockets = partyAt(level, { ...buildLineup(owner, b.key), expect: true }, parityDepth(level)).roster[owner].sockets ?? {};
-      const idle = Object.keys(sockets).filter((s) => !seen.has(s));
+      // A 常駐 skill works without a cast: never idle.
+      const idle = Object.keys(sockets).filter((s) => !seen.has(s) && !(b.runes[s] ?? []).includes('lasting'));
       if (idle.length) say(`idle-rune ${tag} Lv${level} ${idle.join(' ')}`);
       if (level === BUILD_LEVELS[1]) for (const s of seen) seen50.add(s);
       levels.push({ level, std, run, bare, idle });

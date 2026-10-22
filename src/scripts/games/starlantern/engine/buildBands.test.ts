@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ABYSS } from '../data/hero';
 import {
-  BAND_EXCEPTIONS, BUILD_LEVELS, BUILD_SEEDS, DEEP_LINEUP, ONE_RUNE_EXCEPTIONS, ONE_RUNE_MAX, ONE_RUNE_MAX_LEGENDARY, UNCAST, UNCAST_BEFORE, WIN_SLACK_FIGHTS, buildLevels,
+  BAND_EXCEPTIONS, ORDEAL_FLOORS, BUILD_LEVELS, BUILD_SEEDS, DEEP_LINEUP, ONE_RUNE_EXCEPTIONS, ONE_RUNE_MAX, ONE_RUNE_MAX_LEGENDARY, UNCAST, UNCAST_BEFORE, WIN_SLACK_FIGHTS, buildLevels,
   buildLineup, firstRuneSkill, measureBuild, measureStandard,
   scenarioFights, standardLineup,
 } from './buildBands';
@@ -30,8 +30,11 @@ describe('rune band measurements (plan 8h Task 5a)', () => {
     const long = scenarioFights('long', 35);
     expect(long.map((f) => f.scale.elite)).toEqual(groups.map((g) => g[0]));
     expect(long.every((f) => f.seeds === 10)).toBe(true);
-    // E4: the healers' ordeal is the Lantern-eater two floors deeper.
-    expect(scenarioFights('ordeal', 35)).toEqual([{ enemyIds: ['lanterneater'], boss: true, scale: { depth: depth + 2, region: 'mainline' }, seeds: BUILD_SEEDS.boss }]);
+    // E4: the healers' ordeal is the Lantern-eater deeper still: four floors at Lv35, six at Lv50 (the review: two left
+    // every standard party winning every fight, so the comparison said nothing).
+    expect(ORDEAL_FLOORS).toEqual({ 35: 4, 50: 6 });
+    expect(scenarioFights('ordeal', 35)).toEqual([{ enemyIds: ['lanterneater'], boss: true, scale: { depth: depth + 4, region: 'mainline' }, seeds: BUILD_SEEDS.boss }]);
+    expect(scenarioFights('ordeal', 50)[0].scale.depth).toBe(parityDepth(50) + 6);
     const general = scenarioFights('general', 35);
     expect(general.map((f) => f.enemyIds)).toEqual([...groups, ['lanterneater']]);
     expect(general.every((f) => f.seeds === 10)).toBe(true);
@@ -73,8 +76,16 @@ describe('rune band measurements (plan 8h Task 5a)', () => {
     for (const id of ids) expect(a.bySkill[id]?.casts ?? 0, id).toBe(byLog[id]);
     expect(seen.has('rin-execute')).toBe(true);
     expect(a.minBossRounds).toBeGreaterThan(0);
-    // The party's KOs over the fights, as the log shows them (the healers' band, ruling E4).
+    // The party's KOs over the fights, as the log shows them (the healers' band, ruling E4); wins as a count (E1).
     expect(a.partyKos).toBe(kos);
+    expect(a.wins).toBe(Math.round(a.rate * a.fights));
+  });
+
+  it('a triggered cast counts as a cast of its skill', () => {
+    // 反擊之壁's 炎環斬 is cast by 受擊觸發 alone: the review counted it idle.
+    const seen = new Set<string>();
+    measureBuild('scarlet', buildLineup('scarlet', 'riposte'), 'long', 35, seen);
+    expect(seen.has('blaze-ring')).toBe(true);
   });
 
   it('the standard and bare measurements are cached', () => {

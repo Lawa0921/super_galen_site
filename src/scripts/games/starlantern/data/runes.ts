@@ -39,7 +39,7 @@ export interface RuneRef { id: RuneId; tier: RuneTier }
  */
 export interface RuneMod {
   shape?: 'spread' | 'focus' | 'share'; power?: number; effect?: number; hits?: 'plus1' | 'one'; element?: Element | 'wheel';
-  onHit?: { status: AilmentId; chance: number }; inflict?: { status: AilmentId; chance: number }; aftermath?: true;
+  onHit?: { status: AilmentId; chance: number }; inflict?: { status: AilmentId; chance: number; widePct?: number }; aftermath?: true;
   trigger?: { on: 'crit' | 'kill' | 'struck'; pct: number }; tpPerHit?: number; drainPct?: number; armorBreak?: true;
   cure?: true; turns?: number; lasting?: { pct: number; reservePct: number }; bounce?: { bounces: number; dropPct: number };
   twice?: true; bloodPct?: number; sync?: number; overflowPct?: number; reprise?: number; tpPct?: number; tpFlat?: number;
@@ -70,8 +70,8 @@ export const RUNE_NUMBERS: Record<RuneId, { tier: Record<string, readonly number
   jolt: { tier: { chance: [30, 35, 40, 45] }, fixed: {} },
   tear: { tier: { chance: [30, 35, 40, 45] }, fixed: {} },
   frostbite: { tier: { chance: [20, 25, 30, 35] }, fixed: {} },
-  // Plan 8h Task 5b ruling B2': 12 less at every tier (淬毒 on 箭雨 1.81 -> 1.57 of her per-round at the magic tier).
-  venom: { tier: { chance: [13, 18, 23, 28] }, fixed: {} },
+  // Plan 8h Task 5b ruling B2'': `widePct` of the chance on a cast that strikes them all or at random.
+  venom: { tier: { chance: [25, 30, 35, 40] }, fixed: { widePct: 50 } },
   aftermath: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 1 } },
   'on-crit': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
   'on-kill': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
@@ -156,8 +156,8 @@ const LIST: RuneDef[] = [
     text: (t) => `每次施放 ${at('frostbite', 'chance', t)}% 機率凍結目標（頭目改冰緩）。`,
     mod: (t) => ({ inflict: { status: 'freeze', chance: at('frostbite', 'chance', t) / 100 } }) },
   { id: 'venom', name: '淬毒', group: 'ailment', needs: [['damage']],
-    text: (t) => `每次施放 ${at('venom', 'chance', t)}% 機率中毒。`,
-    mod: (t) => ({ inflict: { status: 'poison', chance: at('venom', 'chance', t) / 100 } }) },
+    text: (t) => `每次施放 ${at('venom', 'chance', t)}% 機率中毒；打全體或隨機目標的招只有這個機率的 ${fixed('venom', 'widePct')}%。`,
+    mod: (t) => ({ inflict: { status: 'poison', chance: at('venom', 'chance', t) / 100, widePct: fixed('venom', 'widePct') } }) },
   { id: 'aftermath', name: '餘波', group: 'ailment', needs: [['damage']],
     // The skill's power leads, so it never reads as the ailment's; a boss halves the chance (engine/ailments ailmentChance).
     text: (t) => {
