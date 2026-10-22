@@ -1514,7 +1514,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'chizuru', text: '「那便是永遠不還了。」' },
       { who: 'noel', mood: 'panic', text: '「妳、妳那是什麼意思！」' },
     ],
-    summary: '千鶴說借而不告謂之竊，問諾艾兒那本書什麼時候還。諾艾兒說等她比老師厲害的時候，千鶴說那便是永遠不還了。',
+    summary: '千鶴說借而不告謂之竊，問諾艾兒那本書什麼時候還。諾艾兒說等她比誰都厲害的時候，千鶴說那便是永遠不還了。',
   },
   'banter:chizuru-noel:2': {
     lines: [

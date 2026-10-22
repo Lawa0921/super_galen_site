@@ -884,23 +884,39 @@ const REVEALED: { who: string; re: RegExp; piece: number; heard?: true }[] = [
   { who: 'selene', re: /我想看見|新月/, piece: 5 },
   { who: 'chizuru', re: /不在了/, piece: 4 },
   { who: 'chizuru', re: /託付/, piece: 5 },
-  { who: 'safira', re: /團長|[你妳]要繼續跳|做決定的/, piece: 4 },
+  { who: 'safira', re: /團長|做決定的/, piece: 4 },
+  { who: 'safira', re: /[你妳]要繼續跳/, piece: 5 },   // the leader's last words are her last piece (Task 4 review)
   // Task 9
-  { who: 'sylvie', re: /林子|守林|帶出去|帶出來|種子|種下|空地|新綠|發芽/, piece: 5, heard: true },   // the mire was her forest (1); the seed and its clearing (5) (fix round 1)
+  // the mire was her forest (1); she led them out (4); the last out, the seed and its clearing (5) (fix round 1; Task 4 review: by piece)
+  { who: 'sylvie', re: /林子|守林/, piece: 1, heard: true },
+  { who: 'sylvie', re: /帶出去/, piece: 4, heard: true },
+  { who: 'sylvie', re: /帶出來|種子|種下|空地|新綠|發芽/, piece: 5, heard: true },
   { who: 'noel', re: /洛恩/, piece: 5 },
-  { who: 'noel', re: /星火|燒掉|燒光|為薪|保護|商人/, piece: 3 },
+  // Task 4 review: by piece. The star fire that burns (3); the teacher's note, why she forbade it (4); the merchant (5)
+  { who: 'noel', re: /星火|燒掉/, piece: 3 },
+  { who: 'noel', re: /燒光|為薪|保護/, piece: 4 },
+  { who: 'noel', re: /商人/, piece: 5 },
   // Bobby's row by piece (story depth Task 4 ruling 2): the ancestors and their plan (1), the forgotten clan and what they did
   // wrong (2), the lamp that holds any memory (3), the apology and the repairs (4), the valve (5)
-  { who: 'bobby', re: /祖先|構造圖/, piece: 1 },
+  { who: 'bobby', re: /祖先/, piece: 1 },
   { who: 'bobby', re: /一族|錯了/, piece: 2 },
-  { who: 'bobby', re: /都能裝/, piece: 3 },
+  { who: 'bobby', re: /構造圖|都能裝/, piece: 3 },
   { who: 'bobby', re: /道歉|修好/, piece: 4 },
   { who: 'bobby', re: /閥/, piece: 5 },
   // Task 10: the shop, the debt, the hat, the lamp's light, the vault and her father (1-5); she is Orik's daughter (5)
-  { who: 'liz', re: /櫃檯|估價的本事|瓶罐|債|借據|賒|帽子|星燈|光柱|麵包.{0,4}焦|焦.{0,4}麵包|寶庫的門|爸爸|父親|歐里克|臉想起來/, piece: 5, heard: true },
+  // (Task 4 review: by piece)
+  { who: 'liz', re: /櫃檯|估價的本事|瓶罐/, piece: 1, heard: true },
+  { who: 'liz', re: /債|借據|賒/, piece: 2, heard: true },
+  { who: 'liz', re: /帽子|星燈|光柱/, piece: 3, heard: true },
+  { who: 'liz', re: /麵包.{0,4}焦|焦.{0,4}麵包|寶庫的門/, piece: 4, heard: true },
+  { who: 'liz', re: /爸爸|父親|歐里克|臉想起來/, piece: 5, heard: true },
   { who: 'scarlet', re: /洛恩(?!閣下)/, piece: 5 },
-  // her oath, her kingdom, her turning away, the princess and the retreat (1-5)
-  { who: 'scarlet', re: /起誓|立誓|誓言|國家|王國|王城|轉身|逃|號角|公主|殿下|朋友|活下去|撤退|密道/, piece: 5, heard: true },
+  // her oath, her kingdom, her turning away, the princess and the retreat (1-5) (Task 4 review: by piece)
+  { who: 'scarlet', re: /起誓|誓言/, piece: 1, heard: true },
+  { who: 'scarlet', re: /國家|王國/, piece: 2, heard: true },
+  { who: 'scarlet', re: /轉身|逃|號角/, piece: 3, heard: true },
+  { who: 'scarlet', re: /立誓|王城|公主|殿下/, piece: 4, heard: true },
+  { who: 'scarlet', re: /朋友|活下去|撤退|密道/, piece: 5, heard: true },
 ];
 
 describe('Task 8: Selene, Chizuru and Safira', () => {
@@ -2185,10 +2201,23 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
    * faces; Rin's rules before her choice; each one's reveal rules while her memories may not be whole; Safira's and Sylvie's
    * registers.
    */
-  const banterBreaks = (id: SceneId, lines: ScriptLine[], gate: Gate = {}): string[] => {
+  const banterBreaks = (id: SceneId, lines: ScriptLine[], gate: Gate = {}, summary?: string): string[] => {
     const out: string[] = [];
     const [a, b] = id.split(':')[1].split('-') as CharacterId[];
     const two = [a, b];
+    // Task 4 review: the summary (the handbook's line) tells no more than the gate allows: each of the two's reveal rows and
+    // her own never-list, read like the narration (forms of address left out), unless her chain is whole or her pieces reach it.
+    if (summary !== undefined) {
+      for (const c of two.filter((x) => x !== 'rin' && x !== gate.full)) {
+        const known = (w: string) => REVEALED.some((r) => r.who === c && (gate.pieces?.[c] ?? 0) >= r.piece && r.re.test(w));
+        for (const r of REVEALED.filter((x) => x.who === c && !x.re.source.startsWith('洛恩'))) {
+          const m = summary.match(r.re);
+          if (m && !known(m[0])) out.push(`${id}: the summary tells what ${c}'s pieces reveal: ${r.re}`);
+        }
+        const words = (GUEST_NEVER[c]?.source ?? '').split('|').filter((w) => w && !/^洛恩|^歸來者$/.test(w));
+        for (const w of words) if (summary.includes(w) && !known(w)) out.push(`${id}: the summary tells what ${c} never says before her chain is whole: ${w}`);
+      }
+    }
     const others = COMPANIONS.filter((c) => !two.includes(c));
     const returnedAll = TOWN_FRAGMENTS.map((f) => f.id);
     const metOf = (extra: CharacterId[]): CharacterId[] => [...new Set<CharacterId>(['hero', 'rin', ...two, ...extra])];
@@ -2271,7 +2300,7 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
   });
 
   it('every banter passes its gates in every reading: speakers met by the gate, Lorne once, the light budget, Rin before her choice, faces, registers', () => {
-    expect(banterIds().flatMap((id) => banterBreaks(id, STORY.scenes[id].lines, BANTER_GATE[id]))).toEqual([]);
+    expect(banterIds().flatMap((id) => banterBreaks(id, STORY.scenes[id].lines, BANTER_GATE[id], STORY.scenes[id].summary))).toEqual([]);
   });
 
   it('the banter gate catches what it guards', () => {
@@ -2319,6 +2348,19 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
     expect(banterBreaks(bc, sorry, { pieces: { bobby: 3 } }).join(' | ')).toMatch(/her partner tells what bobby's pieces reveal/);
     expect(banterBreaks(bc, sorry, { pieces: { bobby: 4 } })).toEqual([]);
     expect(banterBreaks(bc, [L('bobby', '「對不起。」'), L('chizuru', '「那道閥呢？」')], { pieces: { bobby: 4 } }).join(' | ')).toMatch(/her partner tells what bobby's pieces reveal/);
+    // Task 4 review: each reveal row maps to the piece that reveals it, and the summary is checked like the narration
+    const cn = 'banter:chizuru-noel:1' as SceneId;
+    const fine = [L('chizuru', '「早。」'), L('noel', '「早啦。」')];
+    // (her own words are caught by GUEST_NEVER as well; her partner's only by the rows)
+    expect(banterBreaks(cn, [L('chizuru', '「那個商人。」'), L('noel', '「早啦。」')], { pieces: { noel: 3 } }).join(' | ')).toMatch(/her partner tells what noel's pieces reveal/);
+    expect(banterBreaks(cn, [L('chizuru', '「燒掉了。」'), L('noel', '「早啦。」')], { pieces: { noel: 3 } })).toEqual([]);
+    expect(banterBreaks(bc, [L('bobby', '「嗯。」'), L('chizuru', '「構造圖。」')], { pieces: { bobby: 2 } }).join(' | ')).toMatch(/her partner tells what bobby's pieces reveal/);
+    expect(banterBreaks(bc, [L('bobby', '「嗯。」'), L('chizuru', '「構造圖。」')], { pieces: { bobby: 3 } })).toEqual([]);
+    const ss = 'banter:safira-sylvie:2' as SceneId;
+    expect(banterBreaks(ss, [L('safira', '「來呀～」'), L('sylvie', '「妳要繼續跳。」')], { pieces: { safira: 4 } }).join(' | ')).toMatch(/her partner tells what safira's pieces reveal/);
+    expect(banterBreaks(cn, fine, { pieces: { noel: 1 } }, '諾艾兒說，等她比老師厲害的時候就還。').join(' | ')).toMatch(/summary tells what noel/);
+    expect(banterBreaks(cn, fine, { pieces: { noel: 1 } }, '諾艾兒說，等她比誰都厲害的時候就還。')).toEqual([]);
+    expect(banterBreaks(bc, sorry, { pieces: { bobby: 4 } }, '波比替祖先道歉。')).toEqual([]);   // the gate's pieces reveal it
     // fix round 1: Rin's faces and her eyes in a banter her oath does not gate
     expect(breaks([L('noel', '「喂。」'), L('rin', '「嗯。」', 'smile')])).toMatch(/Rin wears smile in a banter/);
     expect(breaks([L('noel', '「喂。」'), L('rin', '「嗯。」', 'serious')])).not.toMatch(/Rin wears/);
