@@ -177,7 +177,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'mem:rin:4': {
     lines: [
-      N('一張泛黃的名單。名字一個接一個被劃掉，墨跡有新有舊，筆跡都是同一個人的。'),
+      // Story depth ruling (a): the list is copied from the order's old book; only its last line is the master's (I-09).
+      N('一張泛黃的名單，抄自一本更舊的書。抄來的名字都劃著線，只有最後一道是師父自己劃的，劃得很深。'),
       N('師父擱下筆：「從深處走出來的，不是人，是迷宮的意志。它走到哪裡，暮霧就跟到哪裡。」'),
       { who: 'rin', mood: 'averted', text: '「名單上的人，我一個都不認得。……一個都不。」' },
       N('洛恩問她怎麼了。她說沒事，第一次沒有看著他的眼睛回答。'),
@@ -249,9 +250,10 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('冒險者公會的地下室。安娜搬出最舊的一本登記簿，封皮上的字已經磨平了。'),
       { who: 'anna', text: '「替你的碎片建檔的時候，我總覺得，這些字我在哪裡讀過。」' },
-      N('泛黃的一頁。找到的地點：傳送門廣場。身上的東西：一把刻著怪紋路的劍。'),
-      N('記得的最後一句話，只有一個字：「洛」。'),
-      { who: 'anna', text: '「比我出生還早。後面每隔幾十年就有一筆，我數到第七筆，就數不下去了。」' },
+      N('泛黃的一頁。找到的地點：傳送門廣場。身上的東西：一把刻著怪紋路的劍。記得的最後一句話：「洛」。'),
+      { who: 'anna', text: '「比我出生還早。每隔幾十年就有一筆，名字每一次都不一樣，可是地點、那把劍和那個『洛』字，從來沒變過。」' },
+      // Story depth design §7.3: the last entry's name is the last line on her list (I-09, I-168); true before and after her choice.
+      N('凜湊過來看那幾個名字。看到最後一筆，她按住了領口的小銅鐘。'),
       N('每一筆的最後一欄，不是「回到迷宮，未歸」，就是「死亡」。'),
       { who: 'anna', text: '「寫著死亡的那幾筆，邊上都有人補了同一個名字。不是人名，是一個結社。」' },
       { who: 'anna', text: '「『靜鐘會』。老冒險者說，他們不搶錢，也不搶碎片。只要一條命。」' },
@@ -438,22 +440,24 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   // Task 7: Rin's choice (spec §5.2), the darkest scene. It plays alone at night, after her 7th piece and before the finale (U3).
   // It may come before or after the hero's 9th piece, so it does not say he is the lamp keeper (lore ledger I-50).
+  // Story depth ruling (c): the bandage among her nights, her own hand on the knife, and one more line of his; it still ends
+  // on the spec's 「明天也一起回來吧」 (lore ledger I-169).
   'rin-reveal': {
     lines: [
       N('深夜的月影旅館。窗外星燈的光很淡，淡得只照得到床邊那一截刀刃。'),
       N('洛恩睡著了。凜站在床邊，短刃出鞘，刀尖落在他的喉嚨上。'),
-      N('她數著他的呼吸，一下又一下。'),
-      N('每數一下，就有一個一起回城的夜晚浮上來：瑪莎的熱湯、旅館的燈、走在她前面的那個背影。'),
+      N('她數著他的呼吸。每數一下，就有一個一起回城的夜晚浮上來：瑪莎的熱湯、纏得太緊的繃帶、走在她前面的背影。'),
       N('她沒有眨眼。先抖起來的，是刀尖。'),
       N('她收起短刃，靠著床腳坐下，一直坐到窗外發白。'),
-      N('洛恩醒來時，桌上放著一枚裂開的小銅鐘。凜坐在桌邊，直直看著他的眼睛。'),
-      N('她把一切都說了：鐘樓、名單、吐霧的石門、響了三天的鐘，還有出口前那一刀。'),
+      N('洛恩醒來時，桌上放著一枚裂開的小銅鐘。凜直直看著他的眼睛，把鐘樓、名單、石門和出口前那一刀，全都說了。'),
       { who: 'rin', mood: 'serious', text: '「洛恩，我是被派來殺你的。可是我不殺了──這是我自己決定的。」' },   // story polish ruling 10 (user-approved sample)
-      N('洛恩看著那枚鐘，看了很久。他沒有問為什麼，像是早就知道它會被放在那裡。'),
-      { who: 'hero', mood: 'smile', text: '「明天也一起回來吧。」' },
+      { who: 'rin', mood: 'serious', text: '「昨晚先抖的是刀尖。收刀的不是身體，是我。」' },   // answers first-return's 「身體自己動的」
       { who: 'rin', mood: 'smile', text: '「『凜』是他們給的代號。……這個名字是我自己決定要用的。」' },
+      { who: 'hero', mood: 'sad', text: '「我早就覺得不對勁了。一直沒問，是怕一問，妳就走了。」' },
+      N('凜沒有回答，也沒有移開視線。'),
+      { who: 'hero', mood: 'smile', text: '「明天也一起回來吧。」' },
     ],
-    summary: '那天深夜，凜的刀尖停在洛恩的喉嚨上，最後收了回去。天亮後她說出一切，選擇不殺他。洛恩什麼也沒問。',
+    summary: '那天深夜，凜的刀尖停在洛恩的喉嚨上，最後收了回去。天亮後她說出一切，選擇不殺他。洛恩說，他一直沒問，是怕她走。',
   },
   // Story depth Task 2 (design §8 sample 2, pasted as it stands; plan ruling 10): her confession, at the dinner of the
   // return after her reveal. It plays alone; the writing task finalizes it.
@@ -479,16 +483,22 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // Continuity fix 4 (spec §5.2, §3.6; lore ledger I-119): the arrival after her choice. The society struck its bell and her
   // flattened one did not answer: that is how they know. He is afraid, not cruel; the finale's truths stay the finale's.
   // Rin's `guarded` belongs here after her oath (style bible §3: it is kept for the bellkeeper).
+  // Story depth ruling (a): he is her master and the knife in the market (I-10, I-167). She calls him 「師父」 once and never
+  // speaks to him again; he will not say Lorne's name. No reconciling.
   'bellkeeper-arrives': {
     lines: [
       N('幾天後的清晨，傳送門廣場。一位穿長袍的老人站在門前，雙手捧著一口小小的鐘。'),
       { who: 'bellkeeper', text: '「吾等敲了三回鐘。那孩子領口的鐘，一回也沒有應。」' },
       { who: 'rin', mood: 'guarded', text: '「那枚鐘，我敲平了。洛恩，站到我後面。」' },
-      { who: 'bellkeeper', text: '「鐘不應，吾等便知道了。所以，我來了。」' },
+      { who: 'bellkeeper', text: '「站在目標身後一步，是我教妳的站法。妳卻站到了他的前面。」' },
+      { who: 'rin', mood: 'surprised', text: '「師父。」' },
       N('老人捧著鐘的手在發抖。他看的不是凜，是站在她身後的洛恩。'),
-      { who: 'bellkeeper', text: '「從深處走出來的人，我不動手。……我只是想看清楚你。」' },
+      { who: 'bellkeeper', text: '「那張臉，吾等記得。很多年前在市集裡，從背後刺進你的，是吾等的刀──是我的刀。」' },
+      { who: 'bellkeeper', text: '「從深處走出來的人，吾等殺了你，你卻又回來了，所以吾等才怕。這一回我不動手，只想看清楚你。」' },
+      { who: 'hero', mood: 'serious', text: '「我叫洛恩。名單上要寫的話，就寫這個。」' },
+      N('老人沒有應那個名字，把鐘抱緊，轉身走進了鎮裡。凜沒有再看他一眼。'),
     ],
-    summary: '靜鐘會敲了三回鐘，凜領口那枚敲平的鐘沒有回應。鐘守來到鎮上，說他不動手，只想看清楚從深處走出來的人。',
+    summary: '鐘守來到鎮上。他是凜的師父，也是很多年前在市集裡殺死洛恩的人。這一回他不動手，洛恩報上了名字。',
   },
   // Story depth Task 2 (design §7.4, the row's nine beats; plan ruling 10): the morning after his ninth piece, when he means
   // to go down alone. It plays on a departure, never on an arrival. Beat 6 reads five ways (Scarlet met or not, her second
@@ -2094,7 +2104,7 @@ export const STORY = {
     act2: '山上的光柱只是燈罩，燈芯在迷宮最底下。迷宮是燈壞掉之後才長出來的。凜喝湯的樣子，像有人規定她非喝完不可。',
     act3: '舊登記簿裡，有好幾個我。有幾筆死在靜鐘會手上。這一次的最後一欄，安娜說會一直空著。',
     act4: '地底的艾斯特拉，有人自願當燈芯，叫守燈人。霧變濃是因為燈芯快燒完，靜鐘會看反了。那塊碑，我讀得懂。',
-    after: '燈點亮了，這一次不必有人燒盡自己。碎片的光回到了主人身上。現在我們下去，是為了把失去的東西找回來。',
+    after: '燈點亮了，這一次不必有人燒盡自己。我找回的那十段記憶，交給了燈。手冊裡的筆記還在，大家也替我記著。',
   } as Record<Stage, string>,
   /**
    * The townsfolk in the handbook and at their counters (Task 11): `lost` is what the held fragment took from its owner;

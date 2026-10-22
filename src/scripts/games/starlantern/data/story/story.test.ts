@@ -1757,7 +1757,7 @@ describe('continuity fixes (plan 6c Task 15 Step 6)', () => {
 
   it("fix 4: the bellkeeper comes to town afraid, says how the society knew, and keeps the finale's truths", () => {
     const lines = linesOf('bellkeeper-arrives');
-    expect(lines.length).toBeLessThanOrEqual(6);
+    expect(lines.length).toBeLessThanOrEqual(lineCap('bellkeeper-arrives'));   // story depth Task 7: the ten beats of design §7.4 (cap 6 -> 10, Task 2)
     for (const l of lines) expect(l.if, l.text).toBeUndefined();   // one reading: it always follows her choice
     const his = textOf(lines.filter((l) => l.who === 'bellkeeper'));
     expect(his).toMatch(/那孩子/);
@@ -2610,5 +2610,67 @@ describe('story polish Task 2: the S1 lines', () => {
     expect(orik[0].text).toMatch(/紅帽子/);
     expect(notBack.some((l) => l.text.includes('最近好像在鎮上見過'))).toBe(true);
     expect(back.some((l) => l.text.includes('最近好像在鎮上見過'))).toBe(false);
+  });
+});
+
+describe('story depth Task 7: the reveal, the keeper in town, act 3, the truths and the list', () => {
+  /** Pins a beat (ruling 11) and the one who says it. */
+  const beat = (id: SceneId, reading: Partial<LineWhen>, re: RegExp, who: ScriptLine['who']): void => {
+    expect(() => pinBeat(id, reading, re), `${id} ${re}`).not.toThrow();
+    const w: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false, ...reading };
+    expect(linesWhen(STORY.scenes[id].lines, w).find((l) => re.test(l.text))!.who, `${id} ${re}`).toBe(who);
+  };
+
+  it("the reveal: twelve lines in the design's order; she sheathes the knife herself, and he says why he never asked", () => {
+    const lines = STORY.scenes['rin-reveal'].lines;
+    expect(lines).toHaveLength(12);
+    beat('rin-reveal', {}, /繃帶/, 'narrator');
+    beat('rin-reveal', {}, /收刀的.*是我/, 'rin');   // the first night's 「身體自己動的」 answered (design §6, 2)
+    beat('rin-reveal', {}, /一直沒問.*走/, 'hero');
+    expect(lines.find((l) => /一直沒問.*走/.test(l.text))!.mood).toBe('sad');
+    expect(lines[lines.length - 1].who).toBe('hero');
+    expect(lines[lines.length - 1].text).toMatch(/明天也一起回來吧/);
+    expect(lines.some((l) => /像是早就知道/.test(l.text))).toBe(false);
+    // design §7.4's table: bandages third, then her choice, the knife, her name, his one more line, her silence, his last
+    const at = (re: RegExp) => lines.findIndex((l) => re.test(l.text));
+    expect([at(/繃帶/), at(/派來殺你/), at(/收刀的.*是我/), at(/自己決定要用/), at(/一直沒問/), at(/明天也一起回來吧/)]).toEqual([2, 6, 7, 8, 9, 11]);
+  });
+
+  it("the keeper in town is her master and the market's knife; he will not say the name, and she never looks back (ruling a)", () => {
+    for (const r of sceneReadings('bellkeeper-arrives')) expect(r.lines.length, JSON.stringify(r.when)).toBeLessThanOrEqual(10);
+    const after = { oath: true };
+    beat('bellkeeper-arrives', after, /師父/, 'rin');
+    beat('bellkeeper-arrives', after, /市集/, 'bellkeeper');
+    beat('bellkeeper-arrives', after, /站在目標身後一步/, 'bellkeeper');
+    beat('bellkeeper-arrives', after, /我叫洛恩/, 'hero');
+    const lines = STORY.scenes['bellkeeper-arrives'].lines;
+    const last = lines[lines.length - 1];
+    expect(last.who).toBe('narrator');
+    expect(last.text).toMatch(/沒有再看他一眼/);
+    // no reconciling: after 「師父」 she says nothing more to him, and nobody forgives anybody
+    const master = lines.findIndex((l) => l.who === 'rin' && /師父/.test(l.text));
+    expect(lines.slice(master + 1).some((l) => l.who === 'rin')).toBe(false);
+    expect(lines.map((l) => l.text).join('')).not.toMatch(/原諒|和好|和解/);
+  });
+
+  it('act 3: twelve lines; the registry runs every few decades, and Rin presses her bell at its last entry, either side of her choice', () => {
+    for (const oath of [false, true]) {
+      expect(linesWhen(STORY.scenes.act3.lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath })).toHaveLength(12);
+      beat('act3', { oath }, /按住了.*銅鐘/, 'narrator');
+      beat('act3', { oath }, /每隔幾十年/, 'anna');
+    }
+    const bell = STORY.scenes.act3.lines.find((l) => /按住了.*銅鐘/.test(l.text))!;
+    expect(bell.if).toBeUndefined();
+    expect(bell.text).not.toMatch(/視線|移開|避開|別開|不看|別看/);
+  });
+
+  it("the after page says he gave the ten pieces and kept his notes; Rin's fourth piece copies the list and the master struck its last line", () => {
+    expect(STORY.truths.after).toMatch(/十段/);
+    expect(STORY.truths.after).toMatch(/筆記/);
+    expect(STORY.truths.after).not.toContain('……');
+    const first = STORY.scenes['mem:rin:4'].lines[0];
+    expect(first.who).toBe('narrator');
+    expect(first.text).toMatch(/抄/);
+    expect(first.text).toMatch(/最後一道/);
   });
 });
