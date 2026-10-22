@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createBattle, resolveRound, skillFor, type Action, type BattleState } from './battle';
 import type { Combatant } from './combatant';
 import { mechGauge, type MechState, type MoonPhase } from './mech';
-import { applyPolicy, reach, type PolicyRule } from './policy';
+import { applyPolicy, effectiveOf, reach, type PolicyRule } from './policy';
 import { mulberry32 } from './rng';
 import { encounterTable } from './scaling';
 import { castPower, choose, partyAt } from './sim';
@@ -535,6 +535,27 @@ describe('build policy rules (plan 8h Task 1)', () => {
     run(cold, noel, stars, [{ kind: 'strongest-damage', effective: true }]);
     expect(random).not.toHaveBeenCalled();
     random.mockRestore();
+  });
+
+  it('effective counts a sure crit, a gear extra hit and a rune ailment (plan 8h Task 5b review)', () => {
+    const crit = (over: Partial<Combatant> = {}) => P('rin', { defId: 'rin', x: { critDmg: 50 }, ...over });
+    // 處決 (110, always a crit) over 斬擊 (120, plain): with half again on a crit it deals more.
+    const s = makeBattle([crit()], [E('e0')]);
+    expect(run(s, s.party[0], sk('hero-slash', 'rin-execute'), [{ kind: 'strongest-damage' }]).action).toEqual(skill('hero-slash', 'e0'));
+    expect(effectiveOf(s, s.party[0], SKILLS['rin-execute'])).toBeGreaterThan(effectiveOf(s, s.party[0], SKILLS['hero-slash']));
+    expect(run(s, s.party[0], sk('hero-slash', 'rin-execute'), [{ kind: 'strongest-damage', effective: true }]).action).toEqual(skill('rin-execute', 'e0'));
+    // A readied crit, or her mark on the foe, makes any hit a crit.
+    const plain = effectiveOf(s, s.party[0], SKILLS['hero-slash']);
+    const ready = makeBattle([crit({ nextCrit: true })], [E('e0')]);
+    expect(effectiveOf(ready, ready.party[0], SKILLS['hero-slash'])).toBeGreaterThan(plain);
+    const marked = makeBattle([crit({ mech: { kind: 'mark', marks: ['e0'], cap: 1 } })], [E('e0')]);
+    expect(effectiveOf(marked, marked.party[0], SKILLS['hero-slash'])).toBeGreaterThan(plain);
+    // Gear's extra hit (x.multi) on a one-hit skill, and a rune's damage over time, count too.
+    const multi = makeBattle([P('rin', { defId: 'rin', x: { multi: 50 } })], [E('e0')]);
+    const one = makeBattle([P('rin', { defId: 'rin' })], [E('e0')]);
+    expect(effectiveOf(multi, multi.party[0], SKILLS['hero-slash'])).toBeCloseTo(1.5 * effectiveOf(one, one.party[0], SKILLS['hero-slash']), 6);
+    const torn: SkillDef = { ...SKILLS['hero-slash'], effects: [{ ...(SKILLS['hero-slash'].effects[0] as Extract<SkillDef['effects'][number], { kind: 'damage' }>), onHit: [{ status: 'bleed', chance: 1 }] }] };
+    expect(effectiveOf(one, one.party[0], torn)).toBeGreaterThan(effectiveOf(one, one.party[0], SKILLS['hero-slash']));
   });
 
   it('choose hands on an echo as the rule gives it', () => {

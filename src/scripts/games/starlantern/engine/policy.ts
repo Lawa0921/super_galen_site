@@ -6,6 +6,7 @@
 import type { Action, BattleState } from './battle';
 import { hitAmount, type Combatant } from './combatant';
 import { castDef } from './mechanics/index';
+import { AILMENT } from './ailments';
 import { mechGauge, type MechGauge, type MoonPhase } from './mech';
 import { echoDef, echoOf } from './mechanics/echo';
 import type { CharacterId, SkillDef } from './types';
@@ -75,16 +76,37 @@ export function reach(s: BattleState, def: SkillDef): number {
 
 const shareOf = (c: Combatant) => c.hp / c.max.hp;
 
+/** Rounds of damage a rune's poison is counted for when ranking (it lasts until cured). */
+const POISON_ROUNDS = 3;
+
 /**
- * What a cast of `def` by `c` would deal the first living foe, hit by hit, on an even roll (no crit, no block, variance 1):
- * the skill as she casts it now (her mechanic), her attack or magic, the foe's defence, resistance and weakness
- * (combatant.hitAmount). For ranking only; it draws nothing. 0 with no foe standing.
+ * What a cast of `def` by `c` would deal the first living foe, hit by hit, on an even roll (no block, variance 1): the skill
+ * as she casts it now (her mechanic), her attack or magic, the foe's defence, resistance and weakness (combatant.hitAmount);
+ * a crit when it is sure (always-crit, her readied crit, her mark on the foe: combatant.rollHit's `sure`); gear's extra hit
+ * (`x.multi`) on a one-hit effect at its chance; and each on-hit ailment's damage over time at its chance (burn and bleed
+ * a share of the hit for their rounds, poison a tenth of the foe's HP for POISON_ROUNDS; half on a boss). For ranking
+ * only; it draws nothing. 0 with no foe standing.
  */
 export function effectiveOf(s: BattleState, c: Combatant, def: SkillDef): number {
   const foe = s.enemies.find((e) => e.alive);
   if (!foe) return 0;
-  const even = { variance: 1, crit: false, blocked: false };
-  return castDef(s, c, def).effects.reduce((n, e) => n + (e.kind === 'damage' ? hitAmount(c, foe, e, even).amount * (e.hits ?? 1) : 0), 0);
+  const marked = c.mech?.kind === 'mark' && c.mech.marks.includes(foe.key);
+  const boss = foe.boss ? AILMENT.bossMul : 1;
+  let total = 0;
+  for (const e of castDef(s, c, def).effects) {
+    if (e.kind !== 'damage') continue;
+    const sure = e.crit === 'always' || !!c.nextCrit || marked;
+    const hit = hitAmount(c, foe, e, { variance: 1, crit: sure, blocked: false }).amount;
+    const hits = (e.hits ?? 1) + ((e.hits ?? 1) === 1 ? (c.x.multi ?? 0) / 100 : 0);
+    let dot = 0;
+    for (const a of e.onHit ?? []) {
+      if (a.status === 'burn') dot += a.chance * boss * ((hit * AILMENT.burnPct) / 100) * AILMENT.burnTurns;
+      else if (a.status === 'bleed') dot += a.chance * boss * ((hit * AILMENT.bleedPct) / 100) * AILMENT.bleedTurns;
+      else if (a.status === 'poison') dot += a.chance * boss * Math.floor(foe.max.hp * 0.1) * POISON_ROUNDS;
+    }
+    total += (hit + dot) * hits;
+  }
+  return total;
 }
 
 /**

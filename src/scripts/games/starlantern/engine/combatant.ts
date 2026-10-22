@@ -10,7 +10,8 @@ import { credit, type Ledger } from './ledger';
 import { AILMENT, clearAilments, type AilmentShown, type Dot } from './ailments';
 
 /** `src`: the combatant key of whoever cast it (the contribution ledger credits what it prevents to them). */
-export interface Buff { stat: BuffStat; pct: number; turns: number; src?: string }
+/** `skill`: the skill that gave it, tagged only for a ledger that credits buff givers (plan 8h Task 5b review). */
+export interface Buff { stat: BuffStat; pct: number; turns: number; src?: string; skill?: string }
 
 export interface Combatant {
   key: string; side: 'party' | 'enemy'; defId: string; name: string;

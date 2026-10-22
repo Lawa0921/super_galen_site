@@ -1,4 +1,4 @@
-import { addBuff, dealDamage, hitAmount, isWeak, roll, rollHit, SLEEP_TURNS, stat, type BattleEvent, type Combatant, type HitRolls } from './combatant';
+import { addBuff, dealDamage, hitAmount, isWeak, roll, rollHit, SLEEP_TURNS, stat, type BattleEvent, type Buff, type Combatant, type HitRolls } from './combatant';
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
@@ -299,14 +299,14 @@ function creditGivers(l: Ledger | undefined, a: Combatant, t: Combatant, eff: Ex
   const loss = (alt: Combatant, foe: Combatant) => lossOf(t, hitAmount(alt, foe, eff, rolls).amount);
   const now = loss(a, t);
   let given = 0;
-  const give = (src: string | undefined, without: number) => {
-    if (!src || src === a.key) return;
+  const give = (b: Buff, without: number) => {
+    if (!b.src || b.src === a.key) return;
     const n = Math.min(own - given, Math.max(0, now - without));
-    if (n > 0) { credit(l, src, 'damage', n); given += n; }
+    if (n > 0) { credit(l, b.src, 'damage', n, b.skill); given += n; }
   };
-  a.buffs.forEach((b, i) => { if (b.stat === eff.scale && b.pct > 0) give(b.src, loss({ ...a, buffs: a.buffs.filter((_, j) => j !== i) }, t)); });
-  (a.auras ?? []).forEach((b, i) => { if (b.stat === eff.scale && b.pct > 0) give(b.src, loss({ ...a, auras: (a.auras ?? []).filter((_, j) => j !== i) }, t)); });
-  t.buffs.forEach((b, i) => { if (b.stat === guard && b.pct < 0) give(b.src, loss(a, { ...t, buffs: t.buffs.filter((_, j) => j !== i) })); });
+  a.buffs.forEach((b, i) => { if (b.stat === eff.scale && b.pct > 0) give(b, loss({ ...a, buffs: a.buffs.filter((_, j) => j !== i) }, t)); });
+  (a.auras ?? []).forEach((b, i) => { if (b.stat === eff.scale && b.pct > 0) give(b, loss({ ...a, auras: (a.auras ?? []).filter((_, j) => j !== i) }, t)); });
+  t.buffs.forEach((b, i) => { if (b.stat === guard && b.pct < 0) give(b, loss(a, { ...t, buffs: t.buffs.filter((_, j) => j !== i) })); });
   return given;
 }
 
@@ -417,7 +417,9 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       if (!target.alive) return;
       // troupe-step: her buffs on her own side last longer (a debuff on a foe does not).
       const more = actor.keystones.includes('troupe-step') && target.side === actor.side ? MEMORY_KEYSTONE_VALUES.troupeTurns : 0;
-      addBuff(target, { stat: eff.stat, pct: eff.pct, turns: eff.turns + more, src: actor.key });
+      // A ledger that credits buff givers learns which cast of hers gave it (plan 8h Task 5b review).
+      const skill = ctx.ledger?.buffGivers ? castOf(ctx, actor) : undefined;
+      addBuff(target, { stat: eff.stat, pct: eff.pct, turns: eff.turns + more, src: actor.key, ...(skill ? { skill } : {}) });
       ctx.log.push({ type: 'buff', target: target.key, stat: eff.stat, pct: eff.pct });
       return;
     }

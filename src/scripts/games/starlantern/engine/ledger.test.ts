@@ -502,6 +502,18 @@ describe('step ⑧ in the ledger (plan 8h Task 2)', () => {
     expect(of(split, 'rin').damage).toBe(without);
     expect(of(split, 'safira').damage + of(split, 'rin').damage).toBe(of(plain, 'rin').damage);
     expect(of(plain, 'safira').damage).toBe(0);   // a plain ledger (the gate's) is as it always was
+    // The giver's share goes to the buff's skill when a cast of hers gave it in a ledger that asks (plan 8h review).
+    const byGiver = newLedger({ bySkill: true, buffGivers: true });
+    applyEffect(member('rin', 50, { buffs: [{ ...buff, skill: 'war-dance' }] }), foe(), spec, ctx(byGiver));
+    expect(byGiver.bySkill!['war-dance']?.damage).toBe(of(split, 'safira').damage);
+    // ... and such a ledger tags the buff a hand cast gives; a plain one never does.
+    const dancer = member('safira', 90);
+    const target = member('rin', 50);
+    applyEffect(dancer, target, { kind: 'buff', stat: 'atk', pct: 25, turns: 3 }, ctx(newLedger({ bySkill: true, buffGivers: true }), { cast: 'war-dance', acting: 'safira' }));
+    expect(target.buffs[0]).toMatchObject({ src: 'safira', skill: 'war-dance' });
+    const plainTarget = member('rin', 50);
+    applyEffect(dancer, plainTarget, { kind: 'buff', stat: 'atk', pct: 25, turns: 3 }, ctx(newLedger(), { cast: 'war-dance', acting: 'safira' }));
+    expect(plainTarget.buffs[0]).not.toHaveProperty('skill');
     // Her own buff is hers: nothing moves.
     const self = newLedger({ buffGivers: true });
     applyEffect(member('rin', 50, { buffs: [{ ...buff, src: 'rin' }] }), foe(), spec, ctx(self));
