@@ -3122,7 +3122,9 @@ describe('the arrival queue', () => {
     expect(g.state.story.queue).toEqual([]);
     inRun(g);
     g.returnToTown();
-    expect(g.arrival.filter((id) => id.startsWith('banter:'))).toEqual(['banter:liz-scarlet:1']);
+    // story depth Task 6 (ruling 9's fallback): three pairs ready on a light return, so a second banter follows the first
+    expect(g.arrival.filter((id) => id.startsWith('banter:'))[0]).toBe('banter:liz-scarlet:1');
+    expect(g.arrival.filter((id) => id.startsWith('banter:'))).toHaveLength(2);
     // a save that holds a heard banter loads too
     expect(g.sceneDone('banter:liz-scarlet:1', 'played')).toBe(true);
     expect(loadGame(storage).status).toBe('ok');

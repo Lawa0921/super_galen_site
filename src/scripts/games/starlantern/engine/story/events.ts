@@ -163,29 +163,46 @@ export function banterOpen(s: GameState, id: SceneId, gates: Partial<Record<Scen
   return gateOpen(s, gates[id]);
 }
 
-/**
- * The banter for a return to town (B1), picked without any rng: the pair heard least among those with one ready, then the
- * pairs' fixed order (`BANTER_PAIRS`). A pair offers its banters in order: one still gated holds back the ones after it,
- * like a chat. A heard banter is never offered again (the handbook replays it), so none repeats before every open one has played.
- * An expired banter (`gateExpired`) is passed over, as a chat is: counted as heard, never offered, holding nothing back.
- */
-export function nextBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>> = BANTER_GATE, count: Partial<Record<BanterPair, number>> = BANTER_COUNT): SceneId | null {
+/** Each pair with a banter ready now: its next one, how many it has heard (expired ones count), and whether it has started. */
+function readyPairs(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, count: Partial<Record<BanterPair, number>>): { id: SceneId; heard: number; started: boolean }[] {
   const seen = new Set<SceneId>(s.story.seen);
   const pairs = count === BANTER_COUNT ? BANTER_PAIRS : (Object.keys(count) as BanterPair[]).sort();
-  let best: { id: SceneId; heard: number } | null = null;
+  const out: { id: SceneId; heard: number; started: boolean }[] = [];
   for (const pair of pairs) {
     let heard = 0;
+    let started = false;
     let next: SceneId | null = null;
     let open = true;   // the one before is seen or passed over
     for (let n = 1; n <= (count[pair] ?? 0); n++) {
       const id = banterScene(pair, n);
-      if (seen.has(id) || gateExpired(s, gates[id])) { heard++; open = true; continue; }
+      if (seen.has(id)) { heard++; started = true; open = true; continue; }
+      if (gateExpired(s, gates[id])) { heard++; open = true; continue; }   // passed over: heard, but it starts nothing
       if (!next && open && banterOpen(s, id, gates)) next = id;
       open = false;
     }
-    if (next && (!best || heard < best.heard)) best = { id: next, heard };
+    if (next) out.push({ id: next, heard, started });
+  }
+  return out;
+}
+
+/**
+ * The banter for a return to town (B1), picked without any rng (story depth plan ruling 9): a pair already started (one of
+ * its banters seen) goes ahead of one not started, so a pair finishes what it starts; within each, the pair heard least,
+ * then the pairs' fixed order (`BANTER_PAIRS`). A pair offers its banters in order: one still gated holds back the ones
+ * after it, like a chat. A heard banter is never offered again (the handbook replays it). An expired banter (`gateExpired`)
+ * is passed over, as a chat is: counted as heard, never offered, holding nothing back, and starting nothing.
+ */
+export function nextBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>> = BANTER_GATE, count: Partial<Record<BanterPair, number>> = BANTER_COUNT): SceneId | null {
+  let best: { id: SceneId; heard: number; started: boolean } | null = null;
+  for (const p of readyPairs(s, gates, count)) {
+    if (!best || (p.started && !best.started) || (p.started === best.started && p.heard < best.heard)) best = p;
   }
   return best?.id ?? null;
+}
+
+/** How many pairs have a banter ready now (story depth plan ruling 9: a quiet return plays two when three or more do). */
+export function openPairs(s: GameState, gates: Partial<Record<SceneId, StoryGate>> = BANTER_GATE, count: Partial<Record<BanterPair, number>> = BANTER_COUNT): number {
+  return readyPairs(s, gates, count).length;
 }
 
 /**
@@ -210,7 +227,12 @@ export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: bo
   const chat = (o.slot ?? ((st: GameState) => nextChat(st, CHAT_GATE, heavyList)))(s);
   const heavy = !!o.afterFinale || [...list, ...(chat ? [chat] : [])].some(isHeavyArrival);
   const banter = heavy ? null : nextBanter(s);
-  return [...list, ...(chat ? [chat] : []), ...(banter ? [banter] : [])];
+  // A second banter (story depth plan ruling 9, with its pre-authorized fallback): on a return that is not heavy, with three
+  // pairs or more ready, picked as if the first were heard. Ruling 9 first asked for an empty queue and no chat as well; the
+  // scripted play then left payoffs unheard by depth 30 (Task 6 report), so the fallback widened it to any light return.
+  const quiet = !!banter && !o.afterFinale && openPairs(s) >= 3;
+  const second = quiet ? nextBanter({ ...s, story: { ...s.story, seen: [...s.story.seen, banter] } }) : null;
+  return [...list, ...(chat ? [chat] : []), ...(banter ? [banter] : []), ...(second ? [second] : [])];
 }
 
 /**
