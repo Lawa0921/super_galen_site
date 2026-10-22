@@ -79,7 +79,7 @@ tetris 的 deterministic lockstep **不適用**，原因有四：浮點物理沒
 | 輸入 | `setMoveX/Jump/Up/Drop/Aim/Mining/Use`、`selectSlot`，全部寫在單例欄位上（`game.ts:723-750`） | 要改成每個 actor 各有一份 `PlayerInput` |
 | 模擬迴圈 | `step(dt)`（`game.ts:752-843`）依序跑：液體、死亡、睡覺、單一玩家的移動／技能／生命值、挖掘、攻擊、使用、實體、據點、NPC | 要拆成世界階段加每個 actor 的階段 |
 | 事件 | 只有一個 `events[]`，`drainEvents()` 取出（`game.ts:535,1767`），共約 60 種，都沒有 pid（`:102-218`） | 要加 `pid`，並分成公開事件和私人事件 |
-| 怪物 | `AiCtx` 只有一個 `px/py/playerDead/playerWet`（`delve/engine/enemies.ts:133-147`）。活躍和消失範圍、生成都以單一玩家為中心（`game.ts:2383-2517`；`delve/engine/spawn.ts:48-58`：`ACTIVE 80×56`、`MAX_ENEMIES 40`） | 目標改成最近的活著的玩家；活躍範圍取所有玩家的聯集；生成輪流挑玩家 |
+| 怪物 | `AiCtx` 只有一個 `px/py/playerDead/playerWet`（`delve/engine/enemies.ts:133-147`）。活躍和消失範圍、生成都以單一玩家為中心（`game.ts:2383-2517`；`delve/engine/spawn.ts:48-58`：`ACTIVE 80×56`、`MAX_ENEMIES 40`） | 目標改成最近的活著的玩家；活躍範圍取所有玩家的聯集；每位活著的玩家各自計時生怪，上限算他那一帶（全世界另有上限，見 Q11） |
 | NPC／據點 | `FolkHost.playerTile/playerOverlaps`（`delve/engine/folk.ts:100-116`）、`SettleHost` 同理（`delve/engine/settlement.ts:193-201`） | 改成 `players()` 加 `anyPlayerOverlaps` |
 | 液體 | `liquids.blocked = 只檢查本地玩家`（`game.ts:655`），而且有牆鐘預算 | 只有房主跑液體模擬，客人只收液體差量 |
 | 掉落物 | `drops.step` 收單一個 `player`（`game.ts:2465-2470`） | 改成磁吸和撿取都對最近的合格 actor 生效 |
