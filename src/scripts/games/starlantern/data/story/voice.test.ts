@@ -37,6 +37,24 @@ const polishedScenes = (scope: Scope = POLISHED): { id: string; heavy: boolean; 
   ...MEETINGS.filter((m) => touches(scope, `meet.${m.id}.`)).map((m) => ({ id: `meet.${m.id}`, heavy: false, readings: [[...STORY.meet[m.id].before, ...STORY.meet[m.id].after]] })),
 ];
 
+type PlayedScene = { id: string; heavy: boolean; readings: ScriptLine[][] };
+/**
+ * The scene budgets of 「……」 (plan ruling 4), each reading on its own: a light scene one line at most; a heavy scene
+ * `max(1, floor(spoken / 4))` lines, every line with 「……」 counting, the narrator's too (Task 3 review I1).
+ */
+function budgetBreaks(scope: Scope, scenes: PlayedScene[] = polishedScenes(scope)): string[] {
+  const out: string[] = [];
+  for (const s of scenes) for (const r of s.readings) {
+    const withDots = r.filter((l) => dots(l.text) > 0);
+    if (!s.heavy && withDots.length > ELLIPSIS.lightPerScene) out.push(`${s.id} (light): ${withDots.length} lines with 「……」`);
+    if (s.heavy) {
+      const cap = Math.max(1, Math.floor(r.filter(spoken).length * ELLIPSIS.heavyShare));
+      if (withDots.length > cap) out.push(`${s.id} (heavy): ${withDots.length} lines with 「……」, cap ${cap}`);
+    }
+  }
+  return out;
+}
+
 /** Each speaker's share of 「……」 over the whole script, for every speaker whose lines are all in `scope` (plan ruling 4). */
 function speakerDotsBreaks(scope: Scope): string[] {
   const all = storyTexts().map((t) => ({ ...t, who: speakerOf(t.key, t.line) })).filter((t) => t.who && t.who !== 'narrator');
@@ -213,6 +231,16 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
     expect(particleBreaks([])).toEqual([]);
   });
 
+  it("budgetBreaks counts the narrator's 「……」 in a heavy scene, against a cap from the spoken lines (Task 4 review)", () => {
+    const say = (text: string): ScriptLine => ({ who: 'rin', text });
+    const tell = (text: string): ScriptLine => ({ who: 'narrator', text });
+    const four = [say('「一。」'), say('「二。」'), say('「三。」'), say('「四……」')];   // four spoken lines: the cap is one
+    expect(budgetBreaks([], [{ id: 'heavy', heavy: true, readings: [[tell('風停了。'), ...four]] }])).toEqual([]);
+    expect(budgetBreaks([], [{ id: 'heavy', heavy: true, readings: [[tell('風……停了。'), ...four]] }])).toEqual(['heavy (heavy): 2 lines with 「……」, cap 1']);
+    expect(budgetBreaks([], [{ id: 'light', heavy: false, readings: [[tell('風……停了。'), ...four]] }])).toEqual(['light (light): 2 lines with 「……」']);
+    expect(budgetBreaks([])).toEqual([]);   // nothing in scope, nothing to check
+  });
+
   it('a scene is polished whole once any key of it is', () => {
     const one = ['scenes.prologue-inn.lines.3'];
     expect(isPolished('scenes.prologue-inn.lines.0.text', one)).toBe(true);
@@ -261,17 +289,7 @@ describe('voice gates over the polished script (story polish)', () => {
   });
 
   it('every reading of a polished scene keeps its budget', () => {
-    const out: string[] = [];
-    for (const s of polishedScenes()) for (const r of s.readings) {
-      const withDots = r.filter((l) => dots(l.text) > 0);
-      if (!s.heavy && withDots.length > ELLIPSIS.lightPerScene) out.push(`${s.id} (light): ${withDots.length} lines with 「……」`);
-      if (s.heavy) {
-        // every line with 「……」 counts, the narrator's too; the cap comes from the spoken lines (Task 3 review I1)
-        const cap = Math.max(1, Math.floor(r.filter(spoken).length * ELLIPSIS.heavyShare));
-        if (withDots.length > cap) out.push(`${s.id} (heavy): ${withDots.length} lines with 「……」, cap ${cap}`);
-      }
-    }
-    expect(out).toEqual([]);
+    expect(budgetBreaks(POLISHED)).toEqual([]);
   });
 
   it('handbook, summary and absorb text spends no 「……」', () => {

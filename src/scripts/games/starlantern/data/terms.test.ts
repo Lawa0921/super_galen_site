@@ -10,9 +10,13 @@ import { SCENE_IDS } from './story/scenes';
 /** The starlantern folder: this file sits in its `data/`. */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
+/** The site's pages that host the game (their titles and loading words are the player's too). */
+const PAGES = join(ROOT, '..', '..', '..', 'pages', 'games');
+
 /**
- * Every source file the player's words can come from (story polish Task 2): each `.ts` under `data/`, `ui2/` and `engine/`
- * that is not a test, with its path from the starlantern folder. Task 4 and Task 15 add their checks over the same texts.
+ * Every source file the player's words can come from (story polish Task 2; widened in Task 5): each `.ts` under `data/`,
+ * `ui2/`, `engine/`, `render/`, `ui/` and `audio/` that is not a test, and the game's pages `src/pages/games/starlantern*.astro`,
+ * with its path from the starlantern folder (a page: from `src/`). Task 4 and Task 15 add their checks over the same texts.
  */
 function sourceTexts(): { file: string; text: string }[] {
   const out: { file: string; text: string }[] = [];
@@ -23,7 +27,10 @@ function sourceTexts(): { file: string; text: string }[] {
       if (name.endsWith('.ts') && !name.endsWith('.test.ts')) out.push({ file: relative(ROOT, path).replace(/\\/g, '/'), text: readFileSync(path, 'utf8') });
     }
   };
-  for (const top of ['data', 'ui2', 'engine']) walk(join(ROOT, top));
+  for (const top of ['data', 'ui2', 'engine', 'render', 'ui', 'audio']) walk(join(ROOT, top));
+  for (const name of readdirSync(PAGES)) {
+    if (/^starlantern.*\.astro$/.test(name)) out.push({ file: `pages/games/${name}`, text: readFileSync(join(PAGES, name), 'utf8') });
+  }
   return out;
 }
 
@@ -40,6 +47,8 @@ describe('terms (story polish)', () => {
     const texts = sourceTexts();
     expect(texts.length).toBeGreaterThan(50);
     expect(texts.some((t) => t.file === 'data/gear.ts')).toBe(true);
+    for (const top of ['render/', 'ui/', 'audio/']) expect(texts.some((t) => t.file.startsWith(top)), top).toBe(true);
+    expect(texts.map((t) => t.file)).toContain('pages/games/starlantern.astro');
     expect(texts.some((t) => t.file.endsWith('.test.ts'))).toBe(false);
     const found = texts.flatMap(({ file, text }) => NAME_TYPOS.filter((typo) => text.includes(typo)).map((typo) => `${file}: ${typo}`));
     expect(found).toEqual([]);
