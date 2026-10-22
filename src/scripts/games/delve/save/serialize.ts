@@ -930,7 +930,7 @@ export class FarChunks {
       const { cx, cy } = w.chunkCoords(ci);
       if (w.parkChunk(cx, cy, d)) continue;
       const mod = w.modifiedChunks.has(ci), liq = w.liquidModified.has(ci);
-      w.writeChunk(cx, cy, d, false);
+      w.writeChunk(cx, cy, d, { journal: false });
       if (!mod) w.modifiedChunks.delete(ci);
       if (!liq) w.liquidModified.delete(ci);
       wrote.push(ci);

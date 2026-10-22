@@ -272,3 +272,30 @@ describe('tossSlot（act / exec 的 toss）', () => {
     expect(d.body.y + d.body.h / 2).toBeCloseTo(g.playerCenter().y);
   });
 });
+
+describe('丟出手上的東西（結束挖掘 / 收線）', () => {
+  it('丟掉手上的工具會結束挖掘', () => {
+    const g = arena();
+    g.inventory.slots[0] = { item: 'wood_pickaxe', count: 1 };
+    g.inventory.select(0);
+    g.setAim(43, FLOOR);
+    g.setMining(true);
+    steps(g, 10);
+    expect(g.cur.mining).not.toBeNull();
+    expect(g.act({ op: 'toss', slot: 0 })).toBe(true);
+    expect(g.local.mining).toBeNull();
+  });
+
+  it('丟掉釣竿會收線', () => {
+    const g = arena();
+    g.give('worm', 5);
+    g.inventory.slots[0] = { item: 'wood_rod', count: 1 };
+    g.inventory.select(0);
+    g.setAim(43, FLOOR - 3);
+    g.setUse(true); g.step(FIXED_DT); g.setUse(false); g.step(FIXED_DT);
+    expect(g.local.fishing).not.toBeNull();
+    expect(g.act({ op: 'toss', slot: 0 })).toBe(true);
+    steps(g, 1);
+    expect(g.local.fishing).toBeNull();
+  });
+});

@@ -55,6 +55,9 @@ const NO_COL = 0x3fffffff;
 /** 停放 / readChunk 的六層 */
 const CHUNK_LAYERS = ['fg', 'wall', 'liquid', 'liquidType', 'frozen', 'half'] as const;
 
+/** writeChunk 選項 */
+export interface WriteChunkOpts { /** 編輯日誌把這個 chunk 標 full（預設 true；讀檔還原傳 false） */ journal?: boolean }
+
 export class World {
   readonly width: number;
   readonly height: number;
@@ -298,9 +301,10 @@ export class World {
   }
   /**
    * 覆寫 (cx, cy) chunk 的六層並標為已修改（欄沒常駐就先 ensure；邊界外的格丟掉）。
-   * journal = 編輯日誌把這個 chunk 標 full（讀檔還原傳 false：還原不進日誌）
+   * opts.journal = 編輯日誌把這個 chunk 標 full（預設 true；讀檔還原傳 false：還原不進日誌）
    */
-  writeChunk(cx: number, cy: number, d: ChunkData, journal = true): void {
+  writeChunk(cx: number, cy: number, d: ChunkData, opts: WriteChunkOpts = {}): void {
+    const journal = opts.journal ?? true;
     if (cy < 0 || cy >= this.chunksY || cx < this.cxLo || cx > this.cxHi) return;
     const col = this.ensureColumn(cx);
     const o = cy * CK, n = Math.min(CK, col.fg.length - o);

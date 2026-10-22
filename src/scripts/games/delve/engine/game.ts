@@ -1044,10 +1044,14 @@ export class DelveGame {
       case 'craft': return this.craft(cmd.recipe) satisfies CmdResults['craft'];
       case 'swap': return this.inventory.swap(cmd.a, cmd.b) satisfies CmdResults['swap'];
       case 'place': {
+        // 進場清單：死亡、划船、放置冷卻未到都不放（在選格之前擋掉，免得白改選取）
+        if (this.dead || this.boating || this.placeCooldown > 0) return false satisfies CmdResults['place'];
         // 選不到那格（不是快捷欄）就不放：免得放成原本手上的東西
         this.selectOf(this.cur, cmd.slot);
         if (this.inventory.selected !== cmd.slot) return false satisfies CmdResults['place'];
-        return this.tryPlace(cmd.x, cmd.y) satisfies CmdResults['place'];
+        const ok = this.tryPlace(cmd.x, cmd.y);
+        if (ok) this.placeCooldown = PLACE_COOLDOWN;
+        return ok satisfies CmdResults['place'];
       }
       case 'toss': return this.tossSlot(cmd.slot, cmd.n) satisfies CmdResults['toss'];
       case 'chestTake': return this.takeChestSlot(cmd.slot) satisfies CmdResults['chestTake'];
@@ -2380,6 +2384,8 @@ export class DelveGame {
     let x = c.x + f * TOSS_OFFSET, vx = f * TOSS_VX;
     // 貼著牆：往前偏的生成點會卡進牆裡（掉落物推不出來、凍住），改從玩家正中央往上拋、落在腳邊
     if (overlapsSolid(this.env, x - ITEM_SIZE / 2, y - ITEM_SIZE / 2, ITEM_SIZE, ITEM_SIZE)) { x = c.x; vx = 0; }
+    // 丟的是手上那格：挖掘結束（釣竿由 updateFishing 偵測「沒拿釣竿」收線）
+    if (slot === this.inventory.selected) this.mining = null;
     const owner = { pid: this.cur.pid, delay: TOSS_OWNER_DELAY };
     if (st.gear || st.tint) {
       // 單件實例（count 1）：整格移到地上，gear 物件原樣交出

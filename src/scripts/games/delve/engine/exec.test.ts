@@ -159,9 +159,31 @@ describe('exec(pid, cmd)', () => {
     expect(b.inventory.slots[1]).toEqual({ item: 'dirt', count: 9 });
     expect(b.inventory.selected).toBe(1);
     expect(g.local.inventory.selected).toBe(0);
+    steps(g, 8);
     expect(g.exec('b', { op: 'place', x: 70, y: FLOOR - 1, slot: 1 })).toBe(false);
     expect(g.world.getFg(70, FLOOR - 1)).toBe(T.AIR);
     expect(g.drainEvents('b')).toContainEqual(expect.objectContaining({ type: 'blocked', reason: 'reach' }));
+  });
+
+  it('place 守門：冷卻、死亡、划船都回 false', () => {
+    const g = arena();
+    const b = g.addActor('b', hero(), { x: 50, y: FLOOR - 1 });
+    b.inventory.slots[1] = { item: 'dirt', count: 10 };
+    expect(g.exec('b', { op: 'place', x: 52, y: FLOOR - 1, slot: 1 })).toBe(true);
+    expect(g.exec('b', { op: 'place', x: 53, y: FLOOR - 1, slot: 1 })).toBe(false);
+    expect(b.inventory.slots[1]).toEqual({ item: 'dirt', count: 9 });
+    steps(g, 8);
+    expect(g.exec('b', { op: 'place', x: 53, y: FLOOR - 1, slot: 1 })).toBe(true);
+    steps(g, 8);
+    g.withActor(b, () => { g.boating = true; });
+    expect(g.exec('b', { op: 'place', x: 54, y: FLOOR - 1, slot: 1 })).toBe(false);
+    g.withActor(b, () => { g.boating = false; });
+    // hp = 0 不會自己判死（死亡走 applyDamage → die）：用致命傷害讓 B 真的倒下
+    g.withActor(b, () => { g.hurtPlayer(99999, 0); });
+    expect(b.dead).toBe(true);
+    steps(g, 1);
+    expect(g.exec('b', { op: 'place', x: 54, y: FLOOR - 1, slot: 1 })).toBe(false);
+    expect(g.world.getFg(54, FLOOR - 1)).toBe(T.AIR);
   });
 
   it('toss 分派到 tossSlot（細節見 toss.test.ts）', () => {
