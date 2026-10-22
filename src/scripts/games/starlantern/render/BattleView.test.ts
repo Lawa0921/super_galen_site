@@ -291,7 +291,7 @@ describe('BattleView enemy status', () => {
     const view = new BattleView(true, bank);
     view.setup(battle([]), { width: 640, height: 360 }, 1);
     view.showIntents({ e0: '攻擊 → 絲嘉蕾' });
-    expect(view.intentText('e0')).toBe('▶ 攻擊 → 絲嘉蕾');
+    expect(view.intentText('e0')).toBe('◆ 攻擊 → 絲嘉蕾');
     view.showIntents({});
     expect(view.intentText('e0')).toBe('');
   });

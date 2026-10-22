@@ -165,6 +165,13 @@ describe('QtyView', () => {
     expect(q.el.querySelector('.slx-qty-total')!.textContent).toBe('40 G');
     expect(q.el.querySelector('.slx-hint')!.textContent).toContain('±10');
   });
+
+  it('says its keys in three lines, with arrows Cubic 11 has (legibility Task 1)', () => {
+    const q = new QtyView(10, { change: vi.fn(), done: vi.fn(), cancel: vi.fn() }, 20);
+    expect(q.el.querySelector('.slx-hint')!.textContent).toBe('←→ ±1\n↑↓ ±10\n點數字 決定');
+    expect(q.el.querySelector('.slx-qty-down')!.textContent).toBe('← ');
+    expect(q.el.querySelector('.slx-qty-up')!.textContent).toBe(' →');
+  });
 });
 
 describe('MenuView scrolling', () => {

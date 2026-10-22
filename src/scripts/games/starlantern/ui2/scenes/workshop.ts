@@ -357,9 +357,9 @@ export class WorkshopScene implements Scene {
     const b = this.followed;
     this.sceneEl.classList.toggle('slx-ws-following', !!b);
     this.head.replaceChildren(
-      arrow('◀', 'prev'),
+      arrow('←', 'prev'),
       el('div', { class: 'slx-ws-name' }, [el('b', { text: CHARACTERS[this.id].name }), el('span', { text: `Lv ${m.level}` })]),
-      arrow('▶', 'next'),
+      arrow('→', 'next'),
       ...(held ? [el('span', { class: 'slx-ws-reserve', text: held })] : []),
       el('span', { class: 'slx-ws-title', text: W.title }),
       // The build she follows, its name and the first rule of its play (plan 8h ruling 14), on a line of its own.

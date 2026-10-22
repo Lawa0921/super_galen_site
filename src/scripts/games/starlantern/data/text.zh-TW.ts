@@ -606,8 +606,8 @@ export const T = {
       pieces: (found: number, total: number) => `${found}/${total}`,
       codex: { none: '無', rarity: { legendary: '傳說', unique: '獨特', set: '套裝' }, weak: (list: string) => `弱點：${list}`, weakUnknown: '弱點：？？？', setPieces: (have: number, total: number) => `${have}/${total} 件` },
       pieceHint: (regions: string, deep: boolean) => `${regions}・${deep ? '深處' : '淺層'}`,
-      hint: '◀▶ 換分頁　確定：選取　取消：返回',
-      hintReadonly: '◀▶ 換分頁　確定：重看　取消：回到迷宮',
+      hint: '←→ 換分頁　確定：選取　取消：返回',
+      hintReadonly: '←→ 換分頁　確定：重看　取消：回到迷宮',
       empty: '還沒有可以重看的場景。',
       /** The guild's leads (6c Task 16): sightings, never a call for help (the lost remember nothing). */
       leads: { now: '目前的線索', found: '已找到', heard: '公會聽來的目擊', place: (region: string, depth: number) => `${region}・第 ${depth} 層`, allFound: '目擊過的人影，都已經找到了。', none: '公會還沒有新的目擊消息。' },

@@ -447,7 +447,7 @@ export class BattleView {
 
   /** What each enemy will do next ({} hides them all, e.g. while a round plays). */
   showIntents(byKey: Record<string, string>): void {
-    for (const [k, s] of this.slots) if (!s.intent.destroyed) s.intent.text = byKey[k] ? `▶ ${byKey[k]}` : '';
+    for (const [k, s] of this.slots) if (!s.intent.destroyed) s.intent.text = byKey[k] ? `◆ ${byKey[k]}` : '';
   }
 
   /**

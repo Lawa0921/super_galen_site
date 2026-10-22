@@ -255,10 +255,10 @@ export class QtyView {
 
   /** With a unit price the window also shows the total; `note` is one more line under the count (plan 8f: 「袋子 m」). */
   constructor(private max: number, private on: { change(qty: number): void; done(qty: number): void; cancel(): void }, private price?: number, note?: string) {
-    const down = el('span', { class: 'slx-qty-down', text: '◀ ' });
-    const up = el('span', { class: 'slx-qty-up', text: ' ▶' });
+    const down = el('span', { class: 'slx-qty-down', text: '← ' });
+    const up = el('span', { class: 'slx-qty-up', text: ' →' });
     const row = el('div', { class: 'slx-qty-row' }, [down, this.label, up, ...(price !== undefined ? [this.total] : [])]);
-    this.el = win('slx-qty', [row, ...(note ? [el('p', { class: 'slx-qty-note', text: note })] : []), el('p', { class: 'slx-hint', text: '◀▶ ±1　▲▼ ±10\n點數字 決定' })]);
+    this.el = win('slx-qty', [row, ...(note ? [el('p', { class: 'slx-qty-note', text: note })] : []), el('p', { class: 'slx-hint', text: '←→ ±1\n↑↓ ±10\n點數字 決定' })]);
     // Mouse: the arrows step by one, the number confirms.
     const tap = (a: UiAction) => () => { if (!this.el.closest('[inert]')) this.onAction(a); };
     down.addEventListener('click', tap('left'));

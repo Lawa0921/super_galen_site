@@ -49,7 +49,7 @@ export class StatusScene implements Scene {
     this.hintEl = el('p', { class: 'slx-hint' });
     root.append(el('div', { class: 'slx-scene slx-status-scene' }, [
       this.standee,
-      win('slx-status-plate', [arrow('slx-status-prev', '◀', 'prev'), this.nameEl, arrow('slx-status-next', '▶', 'next')]),
+      win('slx-status-plate', [arrow('slx-status-prev', '←', 'prev'), this.nameEl, arrow('slx-status-next', '→', 'next')]),
       // The page pages with ▲/▼ cues, never a native scrollbar; the sheet keeps its place itself (render), so `keep` is idle.
       win('slx-status-panel', [this.tabsEl, cueFrame('slx-status-frame', this.bodyEl, () => {}), this.hintEl]),
       backControl(() => this.onAction('cancel')),

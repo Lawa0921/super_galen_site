@@ -64,7 +64,7 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 .slx-opt { position: relative; padding: 2px 8px 2px 16px; cursor: pointer; }
 .slx-opt[aria-disabled='true'] { color: #6f6a5c; cursor: default; }
 .slx-sel { color: $slx-gold; background: linear-gradient(90deg, rgba(232, 196, 106, 0.2), transparent); }
-.slx-sel::before { content: '▶'; position: absolute; left: 3px; font-size: 8px; animation: slx-nudge 0.6s steps(2) infinite; }
+.slx-sel::before { content: '→'; position: absolute; left: 3px; font-size: 12px; animation: slx-nudge 0.6s steps(2) infinite; }
 @keyframes slx-nudge { 50% { transform: translateX(2px); } }
 .slx-talk { left: 12px; right: 12px; bottom: 10px; min-height: 52px; padding: 10px 12px 8px; }
 /* A multi-line message (the depth-clear reward and its level-ups) keeps its line breaks. */
@@ -555,8 +555,8 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-status-facts p { margin: 1px 0; }
 .slx-stat-cat { margin-bottom: 2px; }
 .slx-stat-cat-head { position: relative; padding: 2px 6px 2px 18px; cursor: pointer; color: $slx-gold; border-bottom: 1px solid #3a3550; }
-.slx-stat-cat-head::before { content: '▸'; position: absolute; left: 5px; color: $slx-dim; }
-.slx-stat-cat-head[aria-expanded='true']::before { content: '▾'; }
+.slx-stat-cat-head::before { content: '→'; position: absolute; left: 5px; color: $slx-dim; }
+.slx-stat-cat-head[aria-expanded='true']::before { content: '↓'; }
 .slx-stat-cat-head:hover { color: #fff; }
 .slx-stat-affinity { margin: 0; padding: 2px 6px 2px 18px; color: $slx-dim; }
 .slx-row-cur { background: linear-gradient(90deg, rgba(232, 196, 106, 0.22), transparent); box-shadow: inset 2px 0 0 $slx-gold; }

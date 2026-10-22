@@ -453,9 +453,9 @@ export class EquipScene implements Scene {
     const look = artIdOf(m);
     const face = this.ctx.art.has(art.portrait(look, 'normal')) ? [el('img', { class: 'slx-equip-face', attrs: { src: art.portrait(look, 'normal'), alt: '' } })] : [];
     const arrow = (text: string, a: UiAction) => { const b = el('span', { class: 'slx-status-arrow', text, attrs: { role: 'button' } }); b.addEventListener('click', () => this.onAction(a)); return b; };
-    this.head.replaceChildren(arrow('◀', 'prev'), ...face,
+    this.head.replaceChildren(arrow('←', 'prev'), ...face,
       el('div', { class: 'slx-equip-name' }, [el('span', { class: 'slx-status-title', text: titleOf(m) }), el('b', { text: def.name }), el('span', { text: `Lv ${m.level}` })]),
-      arrow('▶', 'next'), el('span', { class: 'slx-equip-title', text: T.ui2.equip.title }));
+      arrow('→', 'next'), el('span', { class: 'slx-equip-title', text: T.ui2.equip.title }));
   }
 
   /** The gear under the cursor: name and rarity word, slot, item level, weight, junk mark, its lines, and for bag gear what wearing it changes. */

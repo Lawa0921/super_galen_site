@@ -304,9 +304,9 @@ export class BuildsScene implements Scene {
       return b;
     };
     this.head.replaceChildren(
-      arrow('◀', 'prev'),
+      arrow('←', 'prev'),
       el('div', { class: 'slx-bd-name' }, [el('b', { text: CHARACTERS[this.id].name }), el('span', { text: `Lv ${this.member.level}` })]),
-      arrow('▶', 'next'),
+      arrow('→', 'next'),
       el('span', { class: 'slx-bd-title', text: B.title }),
     );
   }
