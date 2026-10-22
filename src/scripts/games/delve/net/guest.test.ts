@@ -305,6 +305,52 @@ describe('NetGuest 重連', () => {
   });
 });
 
+describe('NetGuest 重連拿到房主較新的角色', () => {
+  it('斷線前撿到但沒收到 chk → 重連時房主用 retained（rev 較新）→ 客人收到那份 char', () => {
+    const r = rig();
+    const g = r.join();
+    r.run(1500);
+    const a = r.game.actors.get('p1')!;
+    r.game.withActor(a, () => r.game.give('copper_bar', 5));
+    r.run(400);
+    expect(g.game!.local.inventory.count('copper_bar')).toBe(5);
+    expect(g.lastCheckpoint).toBeNull();
+    r.net.sever(r.link);
+    r.tick();
+    r.rejoin();
+    for (let i = 0; i < 120 && g.state !== 'live'; i++) r.tick();
+    r.run(500);
+    expect(g.state).toBe('live');
+    expect(g.game!.local.inventory.count('copper_bar')).toBe(5);
+  });
+});
+
+describe('NetGuest teleport', () => {
+  it('teleport 清掉跳躍計時、攀爬、攀邊、坐船、摔落高度（同房主的 teleport()）', () => {
+    const r = rig();
+    const g = r.join();
+    r.run(1500);
+    const a = r.game.actors.get('p1')!;
+    r.game.withActor(a, () => r.game.teleport(60, FLOOR - 1));
+    r.tick();                                          // 房主這一幀送出 teleport
+    const loc = g.game!.local;
+    loc.motion.jumpTimer = 0.3;
+    loc.motion.climbing = true;
+    loc.motion.mantle = { x0: loc.player.x, y0: loc.player.y, x1: loc.player.x + 8, y1: loc.player.y - 16, t: 0, dur: 0.2, edgeX: 0, edgeY: 0 } as never;
+    loc.boating = true;
+    loc.fallPeak = 123;
+    r.net.advance(FRAME);
+    g.frame(r.now + FRAME, 0);                         // 只收訊、不跑步（看 handler 本身清掉了什麼）
+    expect(loc.player.x).toBe(a.player.x);
+    expect(loc.player.y).toBe(a.player.y);
+    expect(loc.motion.jumpTimer).toBe(0);
+    expect(loc.motion.climbing).toBe(false);
+    expect(loc.motion.mantle ?? null).toBeNull();
+    expect(loc.boating).toBe(false);
+    expect(loc.fallPeak).toBeNull();
+  });
+});
+
 describe('NetGuest checkpoint', () => {
   it('toss → onCheckpoint 一則（背包少了那格）；30 秒後再一則', () => {
     const r = rig();
@@ -387,7 +433,7 @@ describe('NetGuest 主機離線', () => {
 
 describe('NetGuest 拒絕與版本', () => {
   /** 手寫的房主端：收到 hello 就回一則（可改過的）welcome */
-  function scripted(patch: Record<string, unknown>) {
+  function scripted(patch: Record<string, unknown>, character: DelveCharacter = hero()) {
     const net = new LoopbackNet();
     const p = net.pair();
     p.host.onMessage((ch, d) => {
@@ -400,7 +446,7 @@ describe('NetGuest 拒絕與版本', () => {
       }));
     });
     let made = 0;
-    const g = new NetGuest(p.guest, { build: BUILD, character: hero(), createReplica: () => { made++; return arena(); } });
+    const g = new NetGuest(p.guest, { build: BUILD, character, createReplica: () => { made++; return arena(); } });
     let now = 0;
     const tick = (): void => { now += FRAME; net.advance(FRAME); g.frame(now, 1); };
     return { net, p, g, tick, get made() { return made; } };
@@ -413,6 +459,14 @@ describe('NetGuest 拒絕與版本', () => {
     expect(s.g.endText).toBe('世界版本不同，無法加入');
     expect(s.made).toBe(0);
     expect(s.g.game).toBeNull();
+  });
+
+  it('welcome 先把時間設成房主的再套角色：buff 以房主時間計', () => {
+    const s = scripted({ time: 5000 }, { ...hero(), buffsLeft: { bless: 60 } });
+    for (let i = 0; i < 3; i++) s.tick();
+    expect(s.g.state).toBe('syncing');
+    expect(s.made).toBe(1);
+    expect(s.g.game!.local.buffs.bless).toBe(5060);
   });
 
   it('outerGenVersion 不同 → 一樣', () => {
@@ -482,5 +536,17 @@ describe('NetGuest 拒絕與版本', () => {
     for (let i = 0; i < 30; i++) tick();
     expect(g.game!.world.getFg(50, FLOOR - 3)).toBe(T.STONE);
     expect(g.peers().some((q) => q.pid === 'h')).toBe(true);
+    // 副本在半套用的狀態上拋例外：那一幀的工作丟掉、不拋出 frame、日誌照樣清掉，之後照常
+    const rep = g.game!;
+    const step = rep.step;
+    rep.step = () => { throw new Error('boom'); };
+    rep.world.setFg(60, FLOOR - 3, T.STONE);
+    expect(() => { for (let i = 0; i < 5; i++) tick(); }).not.toThrow();
+    expect(rep.world.edits.drain()).toEqual([]);
+    rep.step = step;
+    r.game.world.setFg(52, FLOOR - 3, T.STONE);
+    for (let i = 0; i < 30; i++) tick();
+    expect(g.state).toBe('live');
+    expect(rep.world.getFg(52, FLOOR - 3)).toBe(T.STONE);
   });
 });

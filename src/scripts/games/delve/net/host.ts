@@ -230,7 +230,8 @@ export class NetHost {
       psSeq: -1, psAt: now, released: false, prev: { x: a.player.x, y: a.player.y, at: now },
       tokens: CMD_BURST, tokenAt: now, charRev: character.rev, nextChk: now + CHK_MS, chkNow: false,
     } satisfies Partial<Guest>);
-    g.charJson = JSON.stringify(game.characterOf(pid, 0));
+    // 空字串：第一個 char 計時一到就送（房主可能改用 retained 那份較新的角色，客人手上只有 hello 那份）
+    g.charJson = '';
     const players: PeerInfo[] = [];
     for (const p of game.actors.keys()) if (p !== pid) players.push({ pid: p, nick: this.nickOf(p), look: this.lookOf(p).look });
     const w = game.world;

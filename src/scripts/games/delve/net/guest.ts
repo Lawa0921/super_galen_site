@@ -161,29 +161,37 @@ export class NetGuest {
     if (nowMs - this.heardAt > HOST_TIMEOUT_MS) { this.end(END_TEXT.hostGone, true); return; }
     const game = this.replica;
     if (!game) return;
+    // ②–⑤ 包起來：半套用的房主狀態讓副本拋例外 → 丟掉這一幀的工作，不拋出 frame（引擎沒有 warn / invariant 管道，不記錄）
+    try { this.simulate(game, nowMs, steps); } catch { /* 這一幀的模擬丟掉 */ }
+    // ⑥ 內插取樣寫進 replica 的列表（C12）
+    try { this.writeInterp(nowMs, steps * FIXED_DT); } catch { /* 房主給的列表壞掉：這一幀不更新 */ }
+    // ⑦ 副本自己的編輯日誌沒有人用（套房主的 tiles 也會進日誌）
+    try { game.world.edits.drain(); } catch { /* 同上 */ }
+  }
+
+  /** 樂觀放置與 ps.use 遮罩 → 固定步 → 興趣範圍送 sum → 20 Hz ps */
+  private simulate(game: DelveGame, nowMs: number, steps: number): void {
     // ② 樂觀放置與 ps.use 遮罩（C14）
     const use = this.placeStep();
     // ③ 固定步：腳下的 chunk 還沒同步好 → 身體原地不動（不在生成的地形裡掉下去）
     const p = game.local.player;
     const hold = this.bodyReady() ? null : { x: p.x, y: p.y };
-    for (let i = 0; i < steps; i++) game.step();
-    if (hold) { p.x = hold.x; p.y = hold.y; p.vx = 0; p.vy = 0; }
-    if (this.placeCd > 0) this.placeCd = Math.max(0, this.placeCd - steps * FIXED_DT);
-    if (this.st === 'live') {
-      // ④ 興趣範圍（C6）：新進的欄送 sum
-      const tx = Math.floor((p.x + p.w / 2) / TILE_SIZE);
-      for (const s of this.chunks!.updateInterest(tx)) this.ctrl({ t: 'sum', cx: s.cx, sums: s.sums });
-      // ⑤ 20 Hz 的 ps
-      if (nowMs >= this.nextPs) {
-        this.sendPs(use);
-        const n = this.nextPs + PS_MS;
-        this.nextPs = n > nowMs ? n : nowMs + PS_MS;
-      }
+    try {
+      for (let i = 0; i < steps; i++) game.step();
+    } finally {
+      if (hold) { p.x = hold.x; p.y = hold.y; p.vx = 0; p.vy = 0; }
+      if (this.placeCd > 0) this.placeCd = Math.max(0, this.placeCd - steps * FIXED_DT);
     }
-    // ⑥ 內插取樣寫進 replica 的列表（C12）
-    try { this.writeInterp(nowMs, steps * FIXED_DT); } catch { /* 房主給的列表壞掉：這一幀不更新 */ }
-    // ⑦ 副本自己的編輯日誌沒有人用（套房主的 tiles 也會進日誌）
-    game.world.edits.drain();
+    if (this.st !== 'live') return;
+    // ④ 興趣範圍（C6）：新進的欄送 sum
+    const tx = Math.floor((p.x + p.w / 2) / TILE_SIZE);
+    for (const s of this.chunks!.updateInterest(tx)) this.ctrl({ t: 'sum', cx: s.cx, sums: s.sums });
+    // ⑤ 20 Hz 的 ps
+    if (nowMs >= this.nextPs) {
+      this.sendPs(use);
+      const n = this.nextPs + PS_MS;
+      this.nextPs = n > nowMs ? n : nowMs + PS_MS;
+    }
   }
 
   /** 已加入的其他玩家（依 ws 內插；還沒有 ws 的不列） */
@@ -307,8 +315,14 @@ export class NetGuest {
       case 'ack': this.onAck(c); return;
       case 'teleport': {
         if (!fin(c.x) || !fin(c.y) || !fin(c.tseq)) return;
-        const p = game.local.player;
-        p.x = c.x; p.y = c.y; p.vx = 0; p.vy = 0;
+        // 同房主的 teleport()：位置、速度、跳躍計時、攀爬 / 攀邊、摔落高度、下船（下船事件由房主的 ev 帶回來）
+        const a = game.local, p = a.player;
+        p.x = c.x; p.y = c.y; p.vx = 0; p.vy = 0; p.gfxOffY = 0;
+        a.motion.jumpTimer = 0;
+        a.motion.climbing = false;
+        a.motion.mantle = null;
+        a.fallPeak = null;
+        a.boating = false;
         this.tseq = c.tseq;
         return;
       }
@@ -338,6 +352,9 @@ export class NetGuest {
     game.cmdSink = (cmd) => { this.sendCmd(cmd); };
     const p = game.local.player;
     p.x = m.you.x; p.y = m.you.y; p.vx = 0; p.vy = 0;
+    // 先對齊房主的時鐘再套角色（buff 的到期時間 = 目前時間 + 剩餘秒數）
+    if (fin(m.time)) game.time = m.time;
+    if (fin(m.tick)) game.tick = m.tick;
     game.applyNetCharacter(this.character);
     this.replica = game;
     this.chunks = sync;
