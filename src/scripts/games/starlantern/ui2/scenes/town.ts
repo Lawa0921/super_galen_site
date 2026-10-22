@@ -83,6 +83,7 @@ export class TownScene implements Scene {
     game.banked = null;
     // A safe return (walking home, or the lamp, whose notice replaces 'banked') says what came home.
     if (banked && (notice === 'banked' || notice === 'lamp')) void this.speak('', bankedLine(banked, this.ctx.art));
+    else if (notice === 'follow-ended') void this.speak('', T.build.followEnded(CHARACTERS[game.followEnded ?? 'hero'].name));
     else if (notice) void this.speak('', T.notices[notice]);
     else {
       // The day's line: the town's own, and from act 2 Rin's foreshadowing once she has joined.

@@ -105,6 +105,16 @@ describe('TownScene notices', () => {
     expect(game.notice).toBeNull();
   });
 
+  it('says who stopped following her build (plan 8h Task 6)', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'follow-ended';
+    game.followEnded = 'noel';
+    const root = document.createElement('div');
+    const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe(T.build.followEnded(CHARACTERS.noel.name));
+  });
+
   it('greets with what came home, mentions the lamp, and clears the haul', () => {
     const game = new Game(constRng(0.5), null);
     game.notice = 'lamp';

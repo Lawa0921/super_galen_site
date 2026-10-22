@@ -6,8 +6,12 @@ import { RUNE_SLOT_LEVELS } from '../data/runes';
 import { SKILLS } from '../data/skills';
 import { BOARDS, CHAR_KEYSTONES, DEFAULT_KEYSTONES } from '../data/talents';
 import { T } from '../data/text.zh-TW';
-import { buildSockets, buildTalents, buildTree, partyPolicies, policyOf, policyText } from './builds';
-import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, treeFor, validBuild } from './progression';
+import { applyBuild, buildSockets, buildTalents, buildTree, followUp, partyPolicies, pitchOf, policyOf, policyText, runeSource } from './builds';
+import { newGame, type GameState } from './state';
+import { STANDARD_LINEUP } from './party';
+import { respecPrice } from './town';
+import type { RuneId, RuneRef, RuneTier } from '../data/runes';
+import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, newTree, treeFor, validBuild } from './progression';
 import { TREES } from '../data/trees';
 import { socketCount } from './sockets';
 import { partyAt } from './sim';
@@ -153,5 +157,111 @@ describe('build data (plan 8h Task 3)', () => {
     expect(lines[13]).toContain(SKILLS['atoning-flame'].name);
     // The echo's share, from its rule.
     expect(policyText(build('hero', { policy: [{ kind: 'echo', min: 60 }] }))[0]).toContain('60');
+  });
+});
+
+describe('apply and follow a build (plan 8h Task 6)', () => {
+  const R = (id: RuneId, tier: RuneTier = 'magic'): RuneRef => ({ id, tier });
+  /** A town game: Noel at `level` on her default tree, `gold` in hand, `runes` in the bag. */
+  const town = (level: number, runes: Record<string, number> = {}, gold = 5000): GameState => {
+    const s = newGame(undefined, 0, STANDARD_LINEUP);
+    s.party.roster.noel = { ...s.party.roster.noel, level, tree: defaultTree('noel', level), talents: defaultTalents('noel', level) };
+    return { ...s, gold, runes };
+  };
+  const ok = <T extends { ok: boolean }>(r: T): Extract<T, { ok: true }> => { if (!r.ok) throw new Error(JSON.stringify(r)); return r as Extract<T, { ok: true }>; };
+
+  it('apply takes only from the bag and names what is missing', () => {
+    const s = town(35, { 'spread@common': 1, 'spread@rare': 1 });
+    s.party.roster.noel.sockets = { 'ice-star': [R('thrift')] };
+    s.party.roster.rin.sockets = { 'rin-needle': [R('ignite')] };
+    const before = structuredClone(s);
+    const r = ok(applyBuild(s, 'noel', 'meteor'));
+    expect(s).toEqual(before);   // never changes what it is given
+    const noel = r.state.party.roster.noel;
+    const meteor = buildOf('noel', 'meteor')!;
+    expect(noel.tree).toEqual(buildTree('noel', 35, meteor));
+    expect(noel.talents).toEqual(buildTalents('noel', 35, meteor));
+    expect(noel.build).toBe('meteor');
+    // The best 擴散 in the bag goes in; her old rune is back in the bag; the teammate's rune stays where it was.
+    expect(noel.sockets).toEqual({ 'fire-star': [R('spread', 'rare')] });
+    expect(r.state.runes).toEqual({ 'spread@common': 1, 'thrift@magic': 1 });
+    expect(r.state.party.roster.rin.sockets).toEqual({ 'rin-needle': [R('ignite')] });
+    expect(r.placed).toEqual([R('spread', 'rare')]);
+    expect(r.missing).toEqual([{ skill: 'fire-star', id: 'ignite', from: 'drop' }, { skill: 'fire-star', id: 'multistrike', from: 'shop' }]);
+    expect(r.later).toEqual([]);
+    expect([runeSource('spread'), runeSource('ignite'), runeSource('twin-cast')]).toEqual(['shop', 'drop', 'legendary']);
+  });
+
+  it('applying the same build again is free', () => {
+    const s = town(35);
+    const first = ok(applyBuild(s, 'noel', 'meteor'));
+    expect(first.cost).toBe(respecPrice(s.party.roster.noel));
+    expect(first.state.gold).toBe(s.gold - first.cost);
+    const again = ok(applyBuild(first.state, 'noel', 'meteor'));
+    expect([again.cost, again.state.gold]).toEqual([0, first.state.gold]);
+    // A free respec pays for it and is used up.
+    const free = town(35);
+    free.party.roster.noel.freeRespec = true;
+    const f = ok(applyBuild(free, 'noel', 'meteor'));
+    expect([f.cost, f.state.gold, f.state.party.roster.noel.freeRespec]).toEqual([0, free.gold, undefined]);
+    // A member who spent nothing pays nothing.
+    const fresh = town(35);
+    fresh.party.roster.noel = { ...fresh.party.roster.noel, tree: newTree('noel'), talents: {} };
+    expect(ok(applyBuild(fresh, 'noel', 'meteor')).cost).toBe(0);
+    // Short of gold: refused, nothing changed.
+    expect(applyBuild(town(35, {}, 10), 'noel', 'meteor')).toEqual({ ok: false, reason: 'gold' });
+    expect(applyBuild(town(35), 'noel', 'nope')).toEqual({ ok: false, reason: 'invalid' });
+    expect(applyBuild(town(35), 'noel', 'jackpot')).toEqual({ ok: false, reason: 'invalid' });   // another's build
+  });
+
+  it('a low-level apply lists later slots apart from missing runes', () => {
+    const s = town(10, { 'spread@magic': 1 });
+    const r = ok(applyBuild(s, 'noel', 'meteor'));
+    expect(r.state.party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread')] });
+    expect(r.later).toEqual([{ skill: 'fire-star', id: 'ignite', level: RUNE_SLOT_LEVELS[1] }, { skill: 'fire-star', id: 'multistrike', level: RUNE_SLOT_LEVELS[2] }]);
+    expect(r.missing).toEqual([]);
+    // A skill the build has not learned yet: its runes are later, at the level the build learns it.
+    const low = town(5);
+    low.party.roster.chizuru = { ...low.party.roster.chizuru, level: 5, tree: defaultTree('chizuru', 5), talents: defaultTalents('chizuru', 5) };
+    const exorcist = buildOf('chizuru', 'exorcist')!;
+    const r5 = ok(applyBuild(low, 'chizuru', 'exorcist'));
+    const learnAt = (skill: string) => { for (let L = 5; L <= 50; L++) if (learnedSkills({ ...r5.state.party.roster.chizuru, level: L, tree: buildTree('chizuru', L, exorcist) }).includes(skill)) return L; return 0; };
+    const at = learnAt('heaven-spear');
+    expect(at).toBeGreaterThan(5);
+    expect(r5.later.filter((x) => x.skill === 'heaven-spear')).toEqual(exorcist.runes['heaven-spear'].map((id, i) => ({ skill: 'heaven-spear', id, level: Math.max(at, RUNE_SLOT_LEVELS[i]) })));
+    expect(r5.missing.some((x) => x.skill === 'heaven-spear')).toBe(false);
+  });
+
+  it('following spends the points and fills new slots at a level-up', () => {
+    const s = ok(applyBuild(town(19, { 'spread@magic': 1, 'ignite@magic': 1 }), 'noel', 'meteor')).state;
+    const meteor = buildOf('noel', 'meteor')!;
+    expect(s.party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread')] });
+    const up = structuredClone(s);
+    up.party.roster.noel.level = 20;
+    const after = followUp(up, ['noel', 'rin']);
+    const noel = after.party.roster.noel;
+    expect(noel.tree).toEqual(buildTree('noel', 20, meteor));
+    expect(noel.talents).toEqual(buildTalents('noel', 20, meteor));
+    expect(noel.sockets).toEqual({ 'fire-star': [R('spread'), R('ignite')] });   // the new slot from the bag, the old one kept
+    expect(after.runes).toEqual({});
+    expect(after.party.roster.rin).toBe(up.party.roster.rin);   // not following: untouched
+    // Nothing in the bag: the new slot stays empty.
+    const dry = structuredClone(s);
+    dry.runes = {};
+    dry.party.roster.noel.level = 20;
+    expect(followUp(dry, ['noel']).party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread')] });
+    // Nobody following, or nothing to change: the same object.
+    expect(followUp(after, ['noel', 'rin'])).toBe(after);
+    const plain = town(20);
+    expect(followUp(plain, ['noel'])).toBe(plain);
+  });
+
+  it("a build's suggested level goes on its pitch", () => {
+    const meteor = buildOf('noel', 'meteor')!;
+    expect(meteor.minLevel).toBe(40);
+    expect(pitchOf(meteor)).toBe(`${meteor.intro}${T.build.minLevel(40)}`);
+    expect(pitchOf(buildOf('noel', 'cycle')!)).toBe(buildOf('noel', 'cycle')!.intro);
+    // Still applicable below it.
+    expect(applyBuild(town(20), 'noel', 'meteor').ok).toBe(true);
   });
 });

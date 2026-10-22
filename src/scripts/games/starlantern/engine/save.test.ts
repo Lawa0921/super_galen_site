@@ -915,6 +915,31 @@ describe('the runes-open flag in the save (plan 8f Task 1)', () => {
   });
 });
 
+describe('the followed build in the save (plan 8h Task 6)', () => {
+  it('an unknown build id is dropped, not corrupt', () => {
+    const load = (edit: (raw: Record<string, any>) => void) => {
+      const g = newGame(undefined, 0, STANDARD_LINEUP);
+      const st = memoryStorage();
+      const raw = JSON.parse(JSON.stringify(g));
+      edit(raw);
+      st.setItem(SAVE_KEY, JSON.stringify(raw));
+      return loadGame(st);
+    };
+    for (const bad of ['nope', 'jackpot', 7, null, { key: 'meteor' }]) {
+      const r = load((raw) => { raw.party.roster.noel.build = bad; });
+      expect(r.status, String(bad)).toBe('ok');
+      if (r.status === 'ok') expect(r.state.party.roster.noel, String(bad)).not.toHaveProperty('build');
+    }
+    const kept = load((raw) => { raw.party.roster.noel.build = 'meteor'; });
+    expect(kept.status).toBe('ok');
+    if (kept.status === 'ok') expect(kept.state.party.roster.noel.build).toBe('meteor');
+    // A save with no build field reads field for field as before.
+    const g = newGame(undefined, 0, STANDARD_LINEUP);
+    const plain = load(() => {});
+    if (plain.status === 'ok') expect(plain.state.party).toEqual(g.party);
+  });
+});
+
 describe('the rune tutorial flag in the save (plan 8g Task 1)', () => {
   it('runeTutorialSeen survives a save and a load', () => {
     const g: GameState = { ...newGame(undefined, 0, STANDARD_LINEUP), runesOpen: true, runeTutorialSeen: true, runes: { 'spread@magic': 1 } };

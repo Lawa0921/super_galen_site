@@ -7,7 +7,7 @@ import { constRng, memoryStorage, plainItem, version8Save, withNode } from './te
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { P, TREES, V } from '../data/trees';
+import { NODES, P, TREES, V } from '../data/trees';
 import { mulberry32 } from './rng';
 import { rollPortals, validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
@@ -30,7 +30,10 @@ import { BOSS_LEGENDARY, chestHasGear, GEAR_CHANCE, mix, RARE_MATERIALS, rollBos
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy, unequip } from './town';
-import { defaultTree, memoriesOf } from './progression';
+import { defaultTalents, defaultTree, memoriesOf } from './progression';
+import { buildTalents, buildTree } from './builds';
+import { buildOf } from '../data/builds';
+import { TALENT_NODES } from '../data/talents';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
 import { ACT_DEPTHS, FINALE_BOSS, FINALE_DEPTH, type SceneId } from '../data/story/scenes';
@@ -1323,6 +1326,85 @@ describe('depth-clear exp', () => {
     g.depart(MAIN, 1);
     expect(downstairs(g, g.map().down!)).toEqual({ kind: 'floor', floor: 2 });
     expect(g.state.dungeon.reached.mainline).toBe(5);
+  });
+});
+
+describe('apply and follow a build (plan 8h Task 6)', () => {
+  const townGame = (storage = memoryStorage()) => {
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
+    const noel = g.state.party.roster.noel;
+    g.state.party.roster.noel = { ...noel, level: 35, tree: defaultTree('noel', 35), talents: defaultTalents('noel', 35) };
+    g.state.gold = 5000;
+    return g;
+  };
+
+  it('apply is town only, saved at once, and says what it costs first', () => {
+    const storage = memoryStorage();
+    const g = townGame(storage);
+    const want = g.canApplyBuild('noel', 'meteor');
+    expect(want).toEqual({ cost: 25 * 35, changes: true, reason: null });
+    const r = g.applyBuild('noel', 'meteor');
+    expect(r.ok).toBe(true);
+    expect(g.notice).toBe('saved');
+    expect(Game.boot(calm(), storage).state.party.roster.noel.build).toBe('meteor');
+    // Again: nothing changes, nothing to pay.
+    expect(g.canApplyBuild('noel', 'meteor')).toEqual({ cost: 0, changes: false, reason: null });
+    expect(g.canApplyBuild('noel', 'nope').reason).toBe('invalid');
+    const map = inMap();
+    expect(map.applyBuild('noel', 'meteor')).toEqual({ ok: false, reason: 'invalid' });
+    expect(map.canApplyBuild('noel', 'meteor').reason).toBe('invalid');
+  });
+
+  it('a manual point ends following', () => {
+    const ends = (act: (g: Game) => boolean) => {
+      const g = townGame();
+      expect(g.applyBuild('noel', 'meteor').ok).toBe(true);
+      g.notice = null;
+      expect(act(g)).toBe(true);
+      expect(g.state.party.roster.noel).not.toHaveProperty('build');
+      expect([g.notice, g.followEnded]).toEqual(['follow-ended', 'noel']);
+    };
+    ends((g) => g.respec('noel').ok);
+    ends((g) => g.swapVariant('noel', 'noel-star-heavy').ok);
+    // Ten more levels of points, not yet spent (a level-up she would follow is not what this tests).
+    ends((g) => { g.state.party.roster.noel.level = 45; return Object.keys(NODES).some((n) => NODES[n].owner === 'noel' && g.raiseNode('noel', n).ok); });
+    ends((g) => { g.state.party.roster.noel.level = 45; return Object.keys(TALENT_NODES).some((n) => TALENT_NODES[n].owner === 'noel' && g.raiseTalent('noel', n).ok); });
+    // Stopping by hand.
+    const g = townGame();
+    g.applyBuild('noel', 'meteor');
+    g.stopFollowing('noel');
+    expect(g.state.party.roster.noel).not.toHaveProperty('build');
+    // A refused spend ends nothing.
+    const h = townGame();
+    h.applyBuild('noel', 'meteor');
+    expect(h.raiseNode('noel', 'nope').ok).toBe(false);
+    expect(h.state.party.roster.noel.build).toBe('meteor');
+  });
+
+  it('a won fight levels a follower up on her build, and a benched one too', () => {
+    const g = inMap(1);
+    // Noel follows 冰雷循環 at Lv19, a hair from Lv20; Rin, on the bench, follows 千針毒 the same way.
+    const set = (id: CharacterId, key: string) => {
+      const m = g.state.party.roster[id];
+      g.state.party.roster[id] = { ...m, level: 19, exp: expToNext(19) - 1, tree: buildTree(id, 19, buildOf(id, key)!), talents: buildTalents(id, 19, buildOf(id, key)!), build: key };
+    };
+    set('noel', 'cycle');
+    if (!g.state.party.recruited.includes('rin')) g.state.party.recruited.push('rin');
+    set('rin', 'venom');
+    g.state.runes = { 'thunderclap@magic': 1 };
+    g.state.party.roster.noel.sockets = { 'ice-star': [{ id: 'charge', tier: 'magic' }] };
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(killAll(g).outcome).toBe('win');
+    const noel = g.state.party.roster.noel;
+    expect(noel.level).toBe(20);
+    expect(noel.tree).toEqual(buildTree('noel', 20, buildOf('noel', 'cycle')!));
+    expect(noel.talents).toEqual(buildTalents('noel', 20, buildOf('noel', 'cycle')!));
+    expect(noel.sockets?.['ice-star']).toEqual([{ id: 'charge', tier: 'magic' }]);   // what she wore stays
+    const rin = g.state.party.roster.rin;
+    if (rin.level > 19) expect(rin.tree).toEqual(buildTree('rin', rin.level, buildOf('rin', 'venom')!));
+    // A member who follows nothing keeps her points unspent.
+    const chizuru = g.state.party.roster.chizuru;
+    expect(chizuru.build).toBeUndefined();
   });
 });
 
