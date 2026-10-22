@@ -2709,7 +2709,7 @@ describe('story depth Task 9: Safira and Sylvie', () => {
   it("Sylvie's last piece turns on a choice now: she would hand him the seed, he will not take it, she plants it herself (design §7.6)", () => {
     const lines = linesWhen(STORY.scenes['mem:sylvie:5'].lines, ALL);
     expect(lines).toHaveLength(4);
-    expect(() => pinBeat('mem:sylvie:5', {}, /種子/)).not.toThrow();   // the past: the last seed of the oldest tree
+    expect(() => pinBeat('mem:sylvie:5', {}, /最後一顆種子/)).not.toThrow();   // the past: the last seed of the oldest tree
     expect(() => pinBeat('mem:sylvie:5', {}, /妳帶出來的/)).not.toThrow();
     expect(who('mem:sylvie:5', /妳帶出來的/)).toBe('hero');
     expect(() => pinBeat('mem:sylvie:5', {}, /自己種/)).not.toThrow();
