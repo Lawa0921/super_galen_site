@@ -1030,6 +1030,16 @@ test.describe('starlantern', () => {
     const heavy = page.locator('.slx-tree-node[data-node=noel-star-heavy]');
     await heavy.click();
     await expect(page.locator('.slx-tree-msg')).toHaveText(T.ui2.tree.swapPending);
+    // The empty side previews its change with the workshop's card (plan 8g Task 8): wrapping, never spilling.
+    const preview = page.locator('.slx-tree-info .slx-tree-preview');
+    await expect(preview).toContainText('段數 2 → 1');
+    for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      await page.waitForTimeout(150);
+      expect(await preview.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), `the preview inside its line at ${vw}`).toBe(true);
+      await shot(`tree-preview-${vw}`);
+    }
+    await page.setViewportSize({ width: 1280, height: 720 });
     await heavy.click();
     await expect(page.locator('.slx-tree-msg')).toHaveText(T.ui2.tree.swapped);
     expect(await noelTree()).toEqual({ 'fire-star': 1, 'noel-star-heavy': 2, 'ice-star': 1, 'noel-calm': 1 });

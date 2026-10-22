@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { CHARACTERS, OATH_TITLE, rulesOf } from '../../data/characters';
 import { newMember, statsOf, LEGACY_LINEUP } from '../../engine/party';
-import type { AnyStat, CharacterId } from '../../engine/types';
+import type { AnyStat, CharacterId, Member } from '../../engine/types';
 import { STAT_CATEGORIES } from '../../engine/stats';
-import { raiseTalent } from '../../engine/progression';
+import { raiseNode, raiseTalent, swapPair } from '../../engine/progression';
+import { cardOf, compareCards } from '../skillCard';
 import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
@@ -645,6 +646,46 @@ describe('StatusScene', () => {
     const order = TREES.noel.branches.flatMap((b) => branchNodes(b).map((x) => x.node.id));
     /** Presses of ↓ from the first node to `id`. */
     const to = (id: string) => order.indexOf(id);
+
+    it('a variant previews what it changes, with the workshop\'s card', () => {
+      const W = T.ui2.workshop;
+      /** The preview line as the card model says it, for Noel going from her tree now to `after`. */
+      const want = (before: Member, after: Member) => {
+        const c = compareCards(cardOf(before, 'fire-star')!, cardOf(after, 'fire-star')!);
+        return T.ui2.tree.preview([...c.lines.filter((l) => l.changed).map((l) => W.change(l.label, l.before, l.after)), ...c.added.map(W.added)]);
+      };
+      const preview = (r: ReturnType<typeof onTree>) => r.root.querySelector('.slx-tree-preview')?.textContent ?? null;
+      // 連星 can be learned: what learning it does.
+      const open = onTree(20);
+      down(open.s, to('noel-star-twin'));
+      expect(open.cur()).toBe('noel-star-twin');
+      const raised = raiseNode(open.noel(), 'noel-star-twin');
+      if (!raised.ok) throw new Error(raised.reason);
+      expect(preview(open)).toBe(want(open.noel(), raised.member));
+      expect(preview(open)).toContain(`${W.row.hits} 1 → 2`);
+      expect(preview(open)).toContain(`${W.row.power} `);
+      // 連星 held, the cursor on 重星: what changing side does.
+      resetTreeView();                                                          // the cursor is kept for the session
+      const held = onTree(20, { 'fire-star': 1, 'noel-star-twin': 1 });
+      down(held.s, to('noel-star-heavy'));
+      expect(held.cur()).toBe('noel-star-heavy');
+      const swapped = swapPair(held.noel(), 'noel-star-heavy');
+      if (!swapped.ok) throw new Error(swapped.reason);
+      expect(preview(held)).toBe(want(held.noel(), swapped.member));
+      expect(preview(held)).toContain(`${W.row.hits} 2 → 1`);
+      // A learned variant, an active node, a mechanic node: no preview.
+      resetTreeView();
+      const learned = onTree(20, { 'fire-star': 1, 'noel-star-twin': 1 });
+      down(learned.s, to('noel-star-twin'));
+      expect(preview(learned)).toBeNull();
+      resetTreeView();
+      expect(preview(onTree(20))).toBeNull();                                   // the cursor on 火之星彈
+      resetTreeView();
+      const calm = onTree(20);
+      down(calm.s, to('noel-calm'));
+      expect(calm.cur()).toBe('noel-calm');
+      expect(preview(calm)).toBeNull();
+    });
 
     it('the tree tab shows three branches, the points left and each node\'s rank', () => {
       const { root, body, node, game } = onTree(2);

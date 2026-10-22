@@ -8,7 +8,7 @@ import { fromMember, skillCost, skillFor } from '../../engine/battle';
 import { itemLines } from '../../engine/compare';
 import { ROW_MELEE, rowOfCell } from '../../engine/formation';
 import {
-  boardKeystonesOf, canRaiseNode, canRaiseTalent, freeNode, treeCost, memoryKeystoneAwake, learnedSkills, nodeRank, rankMod, skillPointsLeft, talentPointsLeft, ultimateFor,
+  boardKeystonesOf, canRaiseNode, canRaiseTalent, freeNode, treeCost, memoryKeystoneAwake, learnedSkills, nodeRank, raiseNode, rankMod, skillPointsLeft, swapPair, talentPointsLeft, ultimateFor,
 } from '../../engine/progression';
 import type { RaiseFail, TalentFail } from '../../engine/progression';
 import { ABYSS_UNLOCK } from '../../data/hero';
@@ -22,7 +22,7 @@ import type { UiAction } from '../input';
 import { gearLabel, rarityClass } from '../loot';
 import type { SceneCtx } from '../scene';
 import { cancelSpend, clickSpend, pressSpend, type SpendState } from '../spendPress';
-import { battleTp, slotDots, slotStates } from '../skillCard';
+import { battleTp, cardOf, compareCards, slotDots, slotStates } from '../skillCard';
 import { RUNES } from '../../data/runes';
 import { socketable } from '../../engine/sockets';
 
@@ -471,6 +471,22 @@ export function nextRankText(skill: string, rank: number): string | null {
 }
 
 /** The notes under the tree for the cursor's node: what it does now and what its next rank changes. */
+/**
+ * A variant not held yet (plan 8g Task 8, spec §6.8 「選變招都用同一張卡」): the workshop's card before and after learning
+ * it (or, for the empty side of a pair, after changing side), its changed rows and new lines in one line; '' when
+ * nothing on the card changes.
+ */
+function variantPreview(m: Member, node: string, skill: string, swap: boolean): string {
+  const r = swap ? swapPair(m, node) : raiseNode(m, node);
+  if (!r.ok) return '';
+  const before = cardOf(m, skill), after = cardOf(r.member, skill);
+  if (!before || !after) return '';
+  const W = T.ui2.workshop;
+  const c = compareCards(before, after);
+  const parts = [...c.lines.filter((l) => l.changed).map((l) => W.change(l.label, l.before, l.after)), ...c.added.map(W.added)];
+  return parts.length ? T.ui2.tree.preview(parts) : '';
+}
+
 function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   const t = T.ui2.tree;
   const m = ctx.game.state.party.roster[id];
@@ -502,10 +518,12 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   const why = rank === 0 ? canRaiseNode(m, n.id) : null;
   const say = why === 'pair' ? t.swapOpen : why ? treeReason(why, n.id) : '';
   const shut = say && treeView.msg !== say ? say : '';
+  const preview = rank === 0 && n.kind === 'variant' && (why === 'pair' || why === null) ? variantPreview(m, n.id, n.skill!, why === 'pair') : '';
   return el('div', { class: 'slx-tree-info' }, [
     el('p', { class: 'slx-tree-info-head' }, head),
     el('p', { class: 'slx-desc', text: desc }),
     ...(change.length ? [el('p', { class: 'slx-tree-change' }, change)] : []),
+    ...(preview ? [el('p', { class: 'slx-tree-preview', text: preview })] : []),
     ...(shut ? [el('p', { class: 'slx-tree-reason', text: shut })] : []),
     ...(treeView.msg ? [el('p', { class: 'slx-tree-msg', text: treeView.msg, attrs: { role: 'status' } })] : []),
   ]);

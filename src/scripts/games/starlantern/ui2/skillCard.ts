@@ -244,7 +244,7 @@ export function runeChoices(s: GameState, at: SocketAt): readonly RuneChoice[] {
         const giverNow = s.party.roster[from.id];
         const was = cardOf(giverNow, from.skill), is = cardOf(r.state.party.roster[from.id], from.skill);
         const cmp = was && is ? compareCards(was, is) : undefined;
-        const lost = cmp ? [...cmp.lines.filter((l) => l.changed).map((l) => W.giverRow(l.label, l.before, l.after)), ...cmp.removed.map(W.giverLost)] : [];
+        const lost = cmp ? [...cmp.lines.filter((l) => l.changed).map((l) => W.change(l.label, l.before, l.after)), ...cmp.removed.map(W.giverLost)] : [];
         out.giver = W.giver(CHARACTERS[from.id].name, skillFor(fromMember(giverNow, 0), from.skill)?.name ?? from.skill, lost);
       }
       return out;

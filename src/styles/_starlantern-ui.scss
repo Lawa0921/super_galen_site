@@ -672,6 +672,8 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-tree-use { color: #6fa7ff; }
 .slx-tree-now { color: $slx-ink; }
 .slx-tree-next { color: $slx-up; }
+// A variant's preview (plan 8g Task 8): the card's changed rows, wrapping inside the notes.
+.slx-tree-preview { margin: 2px 0 0; color: #9fc1ff; font-size: 11px; line-height: 14px; white-space: normal; overflow-wrap: anywhere; }
 .slx-tree-reason { color: $slx-dim; }
 .slx-tree-msg { color: #ffb36b; }
 .slx-tab-talent { height: 100%; display: flex; flex-direction: column; }

@@ -427,7 +427,8 @@ export const T = {
        * each changed row by name, each line she no longer has in 「」.
        */
       giver: (who: string, skill: string, items: string[]) => `移走後 ${who}・${skill}：${items.length ? items.join('；') : '不變'}`,
-      giverRow: (row: string, before: string, after: string) => `${row} ${before} → ${after}`,
+      /** A card row that changes: 「段數 1 → 2」 (the giver line, the tree's variant preview). */
+      change: (row: string, before: string, after: string) => `${row} ${before} → ${after}`,
       giverLost: (line: string) => `少了「${line}」`,
       /** The workshop screen (plan 8g Task 4a). */
       title: '技能工坊',
@@ -466,6 +467,8 @@ export const T = {
       pairTag: '二選一',
       /** The empty side of a pair whose other side holds points: a press moves the points over, free (two presses). */
       swapOpen: '可改選（免費）', swapPending: '再按一次改選', swapped: '已改選',
+      /** What learning a variant, or changing to it, does to its skill (plan 8g Task 8): the card's changed rows. */
+      preview: (parts: string[]) => `改變：${parts.join('・')}`,
       /** The Game would not change the side now (in battle, say). */
       swapRefused: '現在無法改選',
       /** A node that can take its next rank now. */
