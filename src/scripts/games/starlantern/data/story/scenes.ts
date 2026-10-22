@@ -175,6 +175,27 @@ export const CLOSING_PIECES: SceneId[] = CHARACTER_IDS.flatMap((id) => {
   return (id === 'hero' || id === 'rin' ? [n - 1, n] : [n]).map((k) => memScene(id, k));
 });
 /**
+ * Story depth Task 3 (plan ruling 5). `ALONE`: a scene that plays by itself on its arrival (the reveal first); the chat and
+ * the banter wait for the next return. `HEAVY_MAJORS`: one of them an arrival, the first in play order; the others stay in
+ * the queue for the next return. `DEPARTURE_SCENES`: played on a departure (`Game.departScene`), never on an arrival.
+ */
+export const ALONE: readonly SceneId[] = ['rin-reveal', 'rin-confess'];
+export const HEAVY_MAJORS: ReadonlySet<SceneId> = new Set<SceneId>(['act2', 'act3', 'act4', 'bellkeeper-arrives', 'epilogue']);
+export const DEPARTURE_SCENES: readonly SceneId[] = ['hero-alone'];
+
+// ---- Light or heavy (style bible §2.2; moved here from voiceGates.ts in story depth Task 3: the engine reads it) ----
+
+const HEAVY_SCENES = new Set<SceneId>([
+  'prologue', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale', 'epilogue',
+  'chat:rin:2', 'chat:rin:3', 'chat:rin:4', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4',
+]);
+/** Whether a scene is heavy: every memory, every townsfolk return, and the scenes the bible names. */
+export function heavyScene(id: SceneId): boolean {
+  const kind = sceneKind(id);
+  return kind === 'memory' || kind === 'town' || HEAVY_SCENES.has(id);
+}
+
+/**
  * B1 ruling (fix round 1): no light banter after a heavy arrival. A return whose arrival (the queue, and the scene in the chat
  * slot) holds one of these plays no banter; the banter waits for the next return (it is never queued, so nothing is lost). An
  * entry ending in `:` is a prefix (6d's `romance:<c>`); any other is an exact id. Rin's reveal plays alone anyway; the return

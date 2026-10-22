@@ -37,7 +37,7 @@ import { learnedSkills } from './progression';
 import { TALENT_NODES } from '../data/talents';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
-import { ACT_DEPTHS, FINALE_BOSS, FINALE_DEPTH, type SceneId } from '../data/story/scenes';
+import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, type SceneId } from '../data/story/scenes';
 import { STORY } from '../data/story.zh-TW';
 import { chainLength } from '../data/story/chains';
 import { SKILLS } from '../data/skills';
@@ -205,6 +205,55 @@ describe('departing', () => {
     expect(tryAt(MAIN, 2)).toBe(false);
     g.state.dungeon.reached.mainline = 3;
     expect([1, 2, 3, 4].map((d) => tryAt(MAIN, d))).toEqual([true, true, true, false]);   // the mainline keeps its shortcuts
+  });
+
+  // Story depth Task 3 (plan rulings 6, 7): the lone morning plays on a departure, once its time has come.
+  describe('the lone morning at the gate (story depth Task 3)', () => {
+    const ready = (prep: (g: Game) => void = () => {}) => {
+      const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
+      Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+      g.state.story.seen.push('rin-reveal', 'rin-confess', 'mem:hero:9', 'bellkeeper-arrives');
+      g.state.story.queue = ['hero-alone'];
+      prep(g);
+      return g;
+    };
+
+    it('departing with the lone morning queued: departScene names it, and it is due', () => {
+      const g = ready();
+      expect(g.departScene()).toBe('hero-alone');
+      expect(g.sceneDone('hero-alone', 'played')).toBe(true);
+      expect(g.departScene()).toBeNull();
+      expect(g.state.story.seen).toContain('hero-alone');
+      expect(g.state.story.queue).not.toContain('hero-alone');
+      expect(g.sceneDone('hero-alone', 'played')).toBe(false);   // not due twice
+    });
+
+    it('the lone morning waits for the ninth piece and the keeper', () => {
+      const drop = (g: Game, id: SceneId) => { g.state.story.seen = g.state.story.seen.filter((x) => x !== id); };
+      const nine = ready((g) => { drop(g, 'mem:hero:9'); g.state.story.queue.push('mem:hero:9'); });
+      expect(nine.departScene()).toBeNull();
+      expect(nine.sceneDone('hero-alone', 'played')).toBe(false);
+      const keeper = ready((g) => { drop(g, 'bellkeeper-arrives'); g.state.story.queue.push('bellkeeper-arrives'); });
+      expect(keeper.departScene()).toBeNull();
+      const alone = ready((g) => { g.state.story.queue.push('rin-confess'); });
+      expect(alone.departScene()).toBeNull();
+      expect(ready().departScene()).toBe('hero-alone');
+      const out = ready();
+      expect(out.depart(MAIN, 1)).toEqual({ ok: true });
+      expect(out.departScene()).toBeNull();   // only in town
+    });
+
+    it('a refused departure keeps the lone morning waiting', () => {
+      const g = ready((x) => { for (const id of activeIds(x.state.party)) x.state.party.roster[id].hp = 0; });
+      expect(g.departCheck(MAIN, 1)).toBe('party-down');
+      expect(g.departScene()).toBe('hero-alone');
+      expect(g.state.story.queue).toContain('hero-alone');
+      const ok = ready();
+      expect(ok.departCheck(MAIN, 2)).toBe('locked');
+      expect(ok.departCheck(MAIN, 1)).toBeNull();
+      expect(ok.state.story.queue).toContain('hero-alone');   // asking changes nothing
+      expect(ok.phase).toBe('town');
+    });
   });
 });
 
@@ -3107,8 +3156,10 @@ describe('the arrival queue', () => {
     g.phase = 'clear';
     g.cleared = 'finale';
     g.restartAfterClear();
+    expect(g.arrival[0]).toBe('epilogue');   // story depth Task 3: the festival comes first on the return after the ending
     expect(g.arrival.some((id) => id.startsWith('banter:'))).toBe(false);
     expect(chatsOf(g)).toHaveLength(1);   // the chat still comes
+    expect(g.sceneDone('epilogue', 'played')).toBe(true);   // the player hears the festival before going back down
     inRun(g);
     g.returnToTown();
     expect(g.arrival.at(-1)).toBe('banter:noel-rin:1');
@@ -3470,6 +3521,39 @@ describe('the finale', () => {
     killAll(g);
     expect(g.finale!.pieces).toEqual(['act4', 'bellkeeper-arrives', 'mem:hero:10']);
     expect(g.state.story.queue).not.toContain('bellkeeper-arrives');
+  });
+
+  // Story depth Task 3 (plan ruling 8): what the finale owes is played before it; nothing heavy is left for the town.
+  it('the finale plays the owed confession and the keeper before itself', () => {
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal');
+      x.state.story.queue = ['rin-confess'];
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toEqual(['rin-confess', 'bellkeeper-arrives', 'mem:hero:10']);
+    expect(g.state.story.queue).not.toContain('rin-confess');
+    for (const id of g.finale!.pieces) expect(g.sceneDone(id, 'played'), id).toBe(true);
+    expect(g.sceneDone('finale', 'played')).toBe(true);
+    expect(g.state.story.queue.filter((id) => HEAVY_MAJORS.has(id) || ALONE.includes(id))).toEqual([]);
+    expect(g.state.story.seen).toEqual(expect.arrayContaining(['rin-confess', 'bellkeeper-arrives', 'finale']));
+    g.restartAfterClear();
+    expect(g.arrival[0]).toBe('epilogue');   // the festival, first on the return after the ending
+  });
+
+  it('a lone morning still owed at the finale counts as seen and new', () => {
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.story.seen.push('rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'mem:hero:9');
+      x.state.story.queue.push('hero-alone');
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).not.toContain('hero-alone');
+    expect(g.state.story.queue).not.toContain('hero-alone');
+    expect(g.state.story.seen).toContain('hero-alone');
+    expect(g.state.story.fresh).toContain('hero-alone');
   });
 
   it('a queued piece of someone else stays queued', () => {

@@ -48,7 +48,8 @@ describe('story triggers', () => {
     s.story.queue = ['mem:hero:7', 'act3', 'act1-after'];
     expect(arrivalScenes(s, { chat: false })).toEqual(['act1-after', 'act3', 'mem:hero:7']);
     s.story.queue = ['mem:hero:10', 'town:anna', 'act4', 'mem:hero:7', 'act2'];
-    expect(arrivalScenes(s, { chat: false })).toEqual(['act2', 'act4', 'mem:hero:7', 'mem:hero:10', 'town:anna']);
+    // story depth Task 3: one heavy major scene an arrival; act 4 waits in the queue for the next one
+    expect(arrivalScenes(s, { chat: false })).toEqual(['act2', 'mem:hero:7', 'mem:hero:10', 'town:anna']);
   });
 
   it("Rin's reveal plays alone on the first return after her seventh piece", () => {
@@ -58,23 +59,33 @@ describe('story triggers', () => {
     expect(back.story.queue).toEqual(['act2', 'rin-reveal']);
     expect(arrivalScenes(back, { chat: true })).toEqual(['rin-reveal']);
     const done = sceneDone(back, 'rin-reveal', 'played');
-    // continuity fix 4: the bellkeeper comes on the next return, after the act that waited
-    expect(arrivalScenes(returned(done), { chat: false })).toEqual(['act2', 'bellkeeper-arrives']);
+    // story depth Task 3: her confession plays alone on the next return; the act that waited comes after it, and the
+    // bellkeeper (continuity fix 4) once she has confessed, one heavy major scene an arrival
+    expect(arrivalScenes(returned(done), { chat: false })).toEqual(['rin-confess']);
+    const confessed = sceneDone(returned(done), 'rin-confess', 'played');
+    expect(arrivalScenes(returned(confessed), { chat: false })).toEqual(['act2']);
+    const acted = sceneDone(returned(confessed), 'act2', 'played');
+    expect(arrivalScenes(returned(acted), { chat: false })).toEqual(['bellkeeper-arrives']);
   });
 
-  it("her choice sends the bellkeeper to town on the next arrival, once, played, skipped or auto", () => {
+  it("her choice sends the bellkeeper to town on the arrival after her confession, once, played, skipped or auto", () => {
     for (const how of ['played', 'skipped', 'auto'] as const) {
-      const done = sceneDone(returned(withMemories(base(), 'rin', chainLength('rin'))), 'rin-reveal', how);
+      // story depth Task 3: her choice queues the confession; the confession queues the bellkeeper
+      const chosen = sceneDone(returned(withMemories(base(), 'rin', chainLength('rin'))), 'rin-reveal', how);
+      const done = sceneDone(returned(chosen), 'rin-confess', how);
       expect(done.story.queue, how).toEqual(['bellkeeper-arrives']);
       expect(arrivalScenes(done, { chat: false }), how).toEqual(['bellkeeper-arrives']);   // the reload or the next return
       const met = sceneDone(returned(done), 'bellkeeper-arrives', 'played');
       expect(returned(met).story.queue, how).toEqual([]);
       expect(sceneDone(met, 'rin-reveal', how).story.queue, how).toEqual([]);   // a replay from the handbook sends no one again
     }
-    // he comes after the acts and before the hero's late memories
+    // he comes after the acts and before the hero's late memories; story depth Task 3: one heavy major scene an arrival,
+    // so with act 4 waiting too he comes on the next one
     const s = base();
     s.story.queue = ['mem:hero:9', 'bellkeeper-arrives', 'act4'];
-    expect(arrivalScenes(s, { chat: false })).toEqual(['act4', 'bellkeeper-arrives', 'mem:hero:9']);
+    expect(arrivalScenes(s, { chat: false })).toEqual(['act4', 'mem:hero:9']);
+    s.story.queue = ['mem:hero:9', 'bellkeeper-arrives'];
+    expect(arrivalScenes(s, { chat: false })).toEqual(['bellkeeper-arrives', 'mem:hero:9']);
   });
 
   it("an old save past her choice counts the bellkeeper's arrival as seen, not new; a save of this version is left alone", () => {
@@ -88,7 +99,9 @@ describe('story triggers', () => {
     const before = withMemories(base(), 'rin', chainLength('rin'));
     expect(settleBellkeeper(before)).toBe(before);   // no choice yet
     const waiting = sceneDone(returned(withMemories(base(), 'rin', chainLength('rin'))), 'rin-reveal', 'played');
-    expect(settleBellkeeper(waiting)).toBe(waiting);   // queued: this version, untouched
+    expect(settleBellkeeper(waiting)).toBe(waiting);   // her confession queued (story depth Task 3): this version, untouched
+    const confessed = sceneDone(waiting, 'rin-confess', 'played');
+    expect(settleBellkeeper(confessed)).toBe(confessed);   // the bellkeeper queued: untouched
   });
 
   it('a homecoming waits for her last piece and plays once, behind the story and ahead of the chat', () => {
@@ -287,6 +300,135 @@ describe('chat gates', () => {
 
   it('no first chat is gated', () => {
     expect(Object.keys(CHAT_GATE).filter((id) => id.endsWith(':1'))).toEqual([]);
+  });
+});
+
+// Story depth Task 3: the confession, the keeper, the lone morning and the festival; one heavy scene an arrival.
+describe('story depth: when the scenes play (Task 3)', () => {
+  const meetAll = (s: GameState, ids: CharacterId[]): GameState => { for (const id of ids) s.party = meet(s.party, id, 1); return s; };
+  const rinWhole = (): GameState => withMemories(base(), 'rin', chainLength('rin'));
+
+  it('her choice queues the confession; the confession queues the keeper', () => {
+    for (const how of ['played', 'skipped', 'auto'] as const) {
+      const chosen = sceneDone(returned(rinWhole()), 'rin-reveal', how);
+      expect(chosen.party.roster.rin.oath, how).toBe(true);
+      expect(chosen.story.queue, how).toEqual(['rin-confess']);
+      const confessed = sceneDone(chosen, 'rin-confess', how);
+      expect(confessed.story.queue, how).toEqual(['bellkeeper-arrives']);
+      const met = sceneDone(confessed, 'bellkeeper-arrives', how);
+      expect(met.story.queue, how).toEqual([]);
+      // a replay from the handbook queues nothing again
+      expect(sceneDone(met, 'rin-reveal', how).story.queue, how).toEqual([]);
+      expect(sceneDone(met, 'rin-confess', how).story.queue, how).toEqual([]);
+    }
+  });
+
+  it('the confession plays alone at its arrival, and the chat and banter wait', () => {
+    const s = meetAll(rinWhole(), ['sylvie', 'noel']);
+    s.party.roster.rin.oath = true;
+    s.story.seen.push('rin-reveal');
+    s.story.queue = ['rin-confess', 'home:sylvie'];
+    expect(arrivalScenes(s, { chat: true })).toEqual(['rin-confess']);
+    expect(arrivalScenes(s, { chat: false })).toEqual(['rin-confess']);
+    s.story.queue = ['rin-reveal', 'rin-confess'];   // the reveal first, if both ever wait
+    expect(arrivalScenes(s, { chat: true })).toEqual(['rin-reveal']);
+  });
+
+  it('one heavy major scene an arrival; the rest wait in the queue', () => {
+    const s = base();
+    s.story.seen.push('act2');
+    s.story.nodes = ['act2', 'act3', 'act4'];
+    s.story.queue = ['act3', 'act4', 'home:sylvie'];
+    const list = arrivalScenes(s, { chat: true });
+    expect(list.slice(0, 2)).toEqual(['act3', 'home:sylvie']);
+    expect(list).not.toContain('act4');
+    expect(list.length).toBe(3);
+    expect(list[2].startsWith('chat:')).toBe(true);   // the chat, and no banter after a heavy arrival
+    expect(s.story.queue).toContain('act4');
+    expect(arrivalScenes(s, { chat: false })).toEqual(['act3', 'home:sylvie']);
+    // the keeper and the festival count too
+    s.story.queue = ['bellkeeper-arrives', 'act4'];
+    expect(arrivalScenes(s, { chat: false })).toEqual(['act4']);
+    s.story.queue = ['epilogue', 'home:liz'];
+    expect(arrivalScenes(s, { chat: false })).toEqual(['epilogue', 'home:liz']);
+  });
+
+  it('a heavy arrival gives the chat slot to a light chat', () => {
+    const s = meetAll(base(), ['sylvie']);
+    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:rin:1', 'chat:sylvie:1', 'act2', 'act3');
+    s.story.nodes = ['act2', 'act3', 'act4'];
+    expect(nextChat(s)).toBe('chat:rin:2');   // tied at one each: Rin first, and her chat is heavy
+    s.story.queue = ['act4'];
+    expect(arrivalScenes(s, { chat: true })).toEqual(['act4', 'chat:sylvie:2']);
+    expect(nextChat(s, CHAT_GATE, true)).toBe('chat:sylvie:2');
+    s.story.seen.push('chat:sylvie:2');   // no light chat left: the heavy one after all
+    expect(arrivalScenes(s, { chat: true })).toEqual(['act4', 'chat:rin:2']);
+  });
+
+  it('the lone morning is queued after the ninth piece, never played on arrival', () => {
+    const s = rinWhole();
+    s.party.roster.rin.oath = true;
+    s.story.seen.push('rin-reveal', 'rin-confess', 'bellkeeper-arrives');
+    s.story.queue = ['mem:hero:9'];
+    const back = returned(s);
+    expect(back.story.queue).toContain('hero-alone');
+    expect(arrivalScenes(back, { chat: false })).toEqual(['mem:hero:9']);
+    expect(arrivalScenes(back, { chat: true })).not.toContain('hero-alone');
+    expect(returned(back).story.queue.filter((id) => id === 'hero-alone')).toHaveLength(1);   // once
+    // the ninth piece already seen: queued all the same
+    const seen9 = rinWhole();
+    seen9.party.roster.rin.oath = true;
+    seen9.story.seen.push('mem:hero:9');
+    expect(returned(seen9).story.queue).toContain('hero-alone');
+    // seen already, before her choice, no ninth piece, or past the finale: not queued
+    const done = rinWhole();
+    done.party.roster.rin.oath = true;
+    done.story.seen.push('mem:hero:9', 'hero-alone');
+    expect(returned(done).story.queue).not.toContain('hero-alone');
+    const noOath = rinWhole();
+    noOath.story.seen.push('mem:hero:9');
+    expect(returned(noOath).story.queue).not.toContain('hero-alone');
+    const no9 = rinWhole();
+    no9.party.roster.rin.oath = true;
+    expect(returned(no9).story.queue).not.toContain('hero-alone');
+    const after = rinWhole();
+    after.party.roster.rin.oath = true;
+    after.story.seen.push('mem:hero:9');
+    after.story.finaleCleared = true;
+    expect(returned(after).story.queue).not.toContain('hero-alone');
+  });
+
+  it('an act waiting in the queue does not move the stage', () => {
+    const s = base();
+    s.dungeon.reached.mainline = ACT_DEPTHS.act4;
+    s.story.seen.push('act2', 'chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:rin:1', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4');
+    s.story.nodes = ['act2', 'act3', 'act4'];
+    s.story.queue = ['act3', 'act4'];
+    expect(storyStage(s)).toBe('act2');
+    expect(nextChat(s)).toBeNull();   // chat:hero:4 waits for act 4 to play
+    const three = sceneDone(s, 'act3', 'played');
+    expect(storyStage(three)).toBe('act3');
+    expect(nextChat(three)).toBeNull();
+    const four = sceneDone(three, 'act4', 'played');
+    expect(storyStage(four)).toBe('act4');
+    expect(nextChat(four)).toBe('chat:hero:4');
+    // an old save with the nodes and no queue counts as before
+    const old = base();
+    old.story.nodes = ['act2', 'act3', 'act4'];
+    expect(storyStage(old)).toBe('act4');
+  });
+
+  it('the festival is the first scene after the finale', () => {
+    const s = withMemories(base(), 'liz', chainLength('liz'));
+    s.story.finaleCleared = true;
+    const back = returned(s);
+    expect(back.story.queue).toContain('epilogue');
+    expect(arrivalScenes(back, { chat: false })[0]).toBe('epilogue');
+    expect(arrivalScenes(back, { chat: false })).toContain('home:liz');
+    expect(returned(back).story.queue.filter((id) => id === 'epilogue')).toHaveLength(1);
+    const seen = sceneDone(back, 'epilogue', 'played');
+    expect(returned(seen).story.queue).not.toContain('epilogue');
+    expect(returned(base()).story.queue).not.toContain('epilogue');   // not before the finale
   });
 });
 

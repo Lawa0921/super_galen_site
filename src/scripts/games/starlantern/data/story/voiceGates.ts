@@ -5,7 +5,7 @@ import type { CharacterId } from '../../engine/types';
 import { CHARACTERS, CHARACTER_IDS } from '../characters';
 import { NPC_NAMES, STORY, linesWhen, type LineWhen, type NpcId, type ScriptLine, type Speaker } from '../story.zh-TW';
 import type { TownFragmentId } from './fragments';
-import { sceneKind, type SceneId } from './scenes';
+import { type SceneId } from './scenes';
 
 export interface Text { key: string; text: string; line?: ScriptLine }
 /** Every string leaf of STORY, keyed by its path; a scene line's text carries its ScriptLine. Skips who, mood, if and scene titles (interface labels). */
@@ -157,15 +157,8 @@ export function telegraphBreaks(text: string): string[] {
 
 // ---- Light or heavy (bible §2.2) ----
 
-const HEAVY_SCENES = new Set<SceneId>([
-  'prologue', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale', 'epilogue',
-  'chat:rin:2', 'chat:rin:3', 'chat:rin:4', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4',
-]);
-/** Whether a scene is heavy: every memory, every townsfolk return, and the scenes the bible names. */
-export function heavyScene(id: SceneId): boolean {
-  const kind = sceneKind(id);
-  return kind === 'memory' || kind === 'town' || HEAVY_SCENES.has(id);
-}
+/** Moved to `scenes.ts` (story depth Task 3): the engine reads it too, and must not depend on the test tooling. */
+export { heavyScene } from './scenes';
 
 // ---- Particles and voices (bible §3, plan ruling 5) ----
 

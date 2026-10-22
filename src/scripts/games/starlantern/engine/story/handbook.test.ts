@@ -187,7 +187,13 @@ describe("the adventurer's handbook", () => {
     expect(arrivalScenes(s, { chat: true })).toEqual(['rin-reveal']);
     s = sceneDone(s, 'rin-reveal', 'played');
     expect(open(s)).toEqual(['prologue', 'act1']);   // the stay after the reveal: the acts wait for the next return
-    for (const id of arrivalScenes(s, { chat: false })) s = sceneDone(s, id, 'played');
+    // story depth Task 3: her confession plays alone, then one heavy major scene an arrival: each act page opens as its act plays
+    const pages: string[][] = [];
+    for (let back = 0; back < 6 && s.story.queue.length; back++) {
+      for (const id of arrivalScenes(s, { chat: false })) s = sceneDone(s, id, 'played');
+      pages.push(open(s).slice(2));
+    }
+    expect(pages.slice(0, 4)).toEqual([[], ['act2'], ['act2', 'act3'], ['act2', 'act3', 'act4']]);
     expect(open(s)).toEqual(['prologue', 'act1', 'act2', 'act3', 'act4']);
   });
 

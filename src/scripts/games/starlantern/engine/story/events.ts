@@ -1,17 +1,22 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { chainLength } from '../../data/story/chains';
-import { ACT_DEPTHS, ACT_NODES, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, STAGES, banterScene, banterTwo, homeScene, isHeavyArrival, type BanterPair, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, HEAVY_MAJORS, HOME_OWNERS, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
 import type { CharacterId } from '../types';
 
-/** Where the story stands, from what the player has done (the handbook and the town lines follow it). */
+/**
+ * Where the story stands, from what the player has done (the handbook and the town lines follow it). An act counts once it
+ * has played: a node still waiting in the queue (held back by one heavy scene an arrival) moves nothing yet (story depth
+ * plan ruling 5). An old save with the node and no queue entry counts as before.
+ */
 export function storyStage(s: GameState): Stage {
   const { story } = s;
+  const played = (node: ActNode): boolean => story.nodes.includes(node) && !story.queue.includes(node);
   if (story.finaleCleared) return 'after';
-  if (story.nodes.includes('act4')) return 'act4';
-  if (story.nodes.includes('act3')) return 'act3';
-  if (story.nodes.includes('act2')) return 'act2';
+  if (played('act4')) return 'act4';
+  if (played('act3')) return 'act3';
+  if (played('act2')) return 'act2';
   if (story.act1Cleared || s.dungeon.reached.mainline >= 2) return 'act1';
   return 'prologue';
 }
@@ -52,6 +57,12 @@ export function onReturn(s: GameState): StoryState {
     if (!s.party.recruited.includes(c) || memoriesOf(s.party.roster[c]) < chainLength(c)) continue;
     if (!story.seen.includes(id) && !story.queue.includes(id)) story.queue.push(id);
   }
+  // Story depth (plan ruling 6): the lone morning, once his ninth piece is seen or waiting and her choice is made, until the
+  // finale; it plays on a departure (`Game.departScene`). The festival, once, on the first return after the finale.
+  const owed = (id: SceneId): boolean => !story.seen.includes(id) && !story.queue.includes(id);
+  const ninth = story.seen.includes('mem:hero:9') || story.queue.includes('mem:hero:9');
+  if (ninth && rin?.oath && !story.finaleCleared && owed('hero-alone')) story.queue.push('hero-alone');
+  if (story.finaleCleared && owed('epilogue')) story.queue.push('epilogue');
   return story;
 }
 
@@ -63,12 +74,14 @@ export function onReturn(s: GameState): StoryState {
  */
 const rank = (id: SceneId): number => {
   if (id === 'prologue') return -3;
+  if (id === 'epilogue') return -0.5;   // the festival: first on the return after the finale
   if (id === 'prologue-inn') return -2;
   if (id === 'first-return') return -1;
   if (id === 'act1-after') return 0;
   if (id === 'act2') return 1;
   if (id === 'act3') return 2;
   if (id === 'act4') return 3;
+  if (id === 'rin-confess') return 3.4;
   if (id === 'bellkeeper-arrives') return 3.5;
   if (id.startsWith('mem:hero:')) return 4 + Number(id.slice('mem:hero:'.length)) / 1000;
   if (id.startsWith('home:')) return 6;
@@ -114,8 +127,14 @@ export function chatOpen(s: GameState, id: SceneId, gates: Partial<Record<SceneI
  * The next chat for a return to town: whoever has said least among the people met, their next one in order.
  * A person whose next chat is still gated is not a candidate this time, and what comes after it waits too. An expired chat
  * (`gateExpired`) is passed over: it counts as heard, never plays, and does not hold back the one after it.
+ * `light` (a heavy arrival, story depth plan ruling 5): a chat that is not heavy (`heavyScene`) first; a heavy one only when
+ * no light one is ready.
  */
-export function nextChat(s: GameState, gates: Partial<Record<SceneId, StoryGate>> = CHAT_GATE): SceneId | null {
+export function nextChat(s: GameState, gates: Partial<Record<SceneId, StoryGate>> = CHAT_GATE, light = false): SceneId | null {
+  return (light ? pickChat(s, gates, true) : null) ?? pickChat(s, gates, false);
+}
+
+function pickChat(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, lightOnly: boolean): SceneId | null {
   const seen = new Set<SceneId>(s.story.seen);
   let best: { id: SceneId; heard: number } | null = null;
   for (const who of CHARACTER_IDS) {
@@ -129,6 +148,7 @@ export function nextChat(s: GameState, gates: Partial<Record<SceneId, StoryGate>
       if (!next && open && chatOpen(s, id, gates)) next = id;
       open = false;
     }
+    if (next && lightOnly && heavyScene(next)) continue;
     if (next && (!best || heard < best.heard)) best = { id: next, heard };
   }
   return best?.id ?? null;
@@ -169,7 +189,10 @@ export function nextBanter(s: GameState, gates: Partial<Record<SceneId, StoryGat
 }
 
 /**
- * The scenes this arrival in town should play, in order. Rin's reveal plays alone (the rest wait for the next return).
+ * The scenes this arrival in town should play, in order. Rin's reveal plays alone (the rest wait for the next return); so
+ * does her confession (story depth: `ALONE`, the reveal first). Of the heavy major scenes (`HEAVY_MAJORS`) only the first
+ * plays; the others stay in the queue for the next return. A departure scene (`DEPARTURE_SCENES`) never plays here. On a
+ * heavy arrival the chat slot goes to a light chat first (`nextChat`'s `light`).
  * `chat` is true only for a return to town: a new game or a reload never adds a chat, nor a banter. On a return the queue
  * plays first (the opening, the acts, the bellkeeper, the memories, the homecomings), then one chat, then one banter (B1):
  * a banter never goes ahead of anything the story owes, and it plays even when no chat is due. No banter follows a heavy
@@ -177,10 +200,14 @@ export function nextBanter(s: GameState, gates: Partial<Record<SceneId, StoryGat
  * check reads the queue and the scene in the chat slot: `slot` fills that slot, `nextChat` by default (6d: an ending first).
  */
 export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: boolean; slot?: (s: GameState) => SceneId | null }): SceneId[] {
-  if (s.story.queue.includes('rin-reveal')) return ['rin-reveal'];
-  const list = [...s.story.queue].sort((a, b) => rank(a) - rank(b));
+  const alone = ALONE.find((id) => s.story.queue.includes(id));
+  if (alone) return [alone];
+  const sorted = s.story.queue.filter((id) => !DEPARTURE_SCENES.includes(id)).sort((a, b) => rank(a) - rank(b));
+  const major = sorted.find((id) => HEAVY_MAJORS.has(id));
+  const list = sorted.filter((id) => !HEAVY_MAJORS.has(id) || id === major);
   if (!o.chat) return list;
-  const chat = (o.slot ?? nextChat)(s);
+  const heavyList = list.some(isHeavyArrival);
+  const chat = (o.slot ?? ((st: GameState) => nextChat(st, CHAT_GATE, heavyList)))(s);
   const heavy = !!o.afterFinale || [...list, ...(chat ? [chat] : [])].some(isHeavyArrival);
   const banter = heavy ? null : nextBanter(s);
   return [...list, ...(chat ? [chat] : []), ...(banter ? [banter] : [])];
@@ -208,10 +235,14 @@ export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' |
   const story: StoryState = { ...s.story, queue: s.story.queue.filter((q) => q !== id), seen: [...s.story.seen], fresh: [...s.story.fresh] };
   if (!story.seen.includes(id)) story.seen.push(id);
   if (how === 'auto' && !story.fresh.includes(id)) story.fresh.push(id);
+  const queueOnce = (next: SceneId): void => { if (!story.seen.includes(next) && !story.queue.includes(next)) story.queue.push(next); };
+  // Story depth: once she has told the table, her bell no longer answering the society's brings its keeper to town on the
+  // next arrival (continuity fix 4, spec §5.2), once.
+  if (id === 'rin-confess') queueOnce('bellkeeper-arrives');
   if (id !== 'rin-reveal') return { ...s, story };
-  // Her choice is made: the oath, and the reports that follow it (spec §5.3). Her bell no longer answers the society's, so
-  // its keeper comes to town on the next arrival (continuity fix 4, spec §5.2), once.
-  if (!story.seen.includes('bellkeeper-arrives') && !story.queue.includes('bellkeeper-arrives')) story.queue.push('bellkeeper-arrives');
+  // Her choice is made: the oath, and the reports that follow it (spec §5.3). She tells the others at dinner on the next
+  // return (story depth: `rin-confess`), once.
+  queueOnce('rin-confess');
   const party = { ...s.party, roster: { ...s.party.roster, rin: { ...s.party.roster.rin, oath: true as const } } };
   return { ...s, story, party };
 }
@@ -224,6 +255,7 @@ export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' |
 export function settleBellkeeper(s: GameState): GameState {
   const { story } = s;
   if (!s.party.roster.rin?.oath || story.seen.includes('bellkeeper-arrives') || story.queue.includes('bellkeeper-arrives')) return s;
+  if (story.queue.includes('rin-confess')) return s;   // story depth plan ruling 4: the keeper is queued once the confession has played
   return { ...s, story: { ...story, seen: [...story.seen, 'bellkeeper-arrives'] } };
 }
 
