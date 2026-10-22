@@ -9,7 +9,11 @@ import { constRng, fullParty, makeBattle, makeCombatant } from '../testing';
 import { applyLasting, battleReservePct, lastingTargets } from './runes';
 import { reservedTpPct } from '../sockets';
 import { stat } from '../combatant';
-import { castCost } from './index';
+import { castCost, MECH_OF } from './index';
+import { treeSkills } from '../progression';
+import { runeStates } from '../runes';
+import { RUNES } from '../../data/runes';
+import type { CharacterId } from '../types';
 import { echoOf } from './echo';
 import { skillFor } from '../battle';
 import { T } from '../../data/text.zh-TW';
@@ -432,11 +436,11 @@ describe('trigger runes: review fixes (plan 8e Task 6 review)', () => {
   });
 
   it('a triggered mechanic skill spends nothing: coins, embers, the barrier, HP', () => {
-    // 大手筆 on Liz's crit: her coins only grow by her landed hits (none spent).
+    // 大手筆 on Liz's crit: her coins only grow by her own landed hit (none spent; the triggered hits earn none, plan 8h).
     const liz = member('liz', { nextCrit: true, mech: { kind: 'coins', coins: 3 }, runes: { 'fortune-strike': [crit('on-crit')] } });
     const l = resolveRound(makeBattle([liz], [tough('e0')]), { liz: atk('e0') }, constRng(0.5));
     expect(triggers(l.log)).toHaveLength(1);
-    expect(l.party[0].mech).toMatchObject({ coins: 3 + damage(l.log).length });
+    expect(l.party[0].mech).toMatchObject({ coins: 3 + damage(l.log.slice(0, l.log.findIndex((e) => e.type === 'trigger'))).length });
     // 紅蓮終焉 on Scarlet's crit: her embers and HP stay.
     const scarlet = member('scarlet', { nextCrit: true, mech: { kind: 'embers', embers: 50 }, runes: { 'crimson-end': [crit('on-crit')] } });
     const s = resolveRound(makeBattle([scarlet], [tough('e0')]), { scarlet: atk('e0') }, constRng(0.5));
@@ -614,5 +618,115 @@ describe('plan 8e final review', () => {
     const known = makeBattle([safira({ 'blade-dance': 1, 'war-dance': 1 })], [tough('e0')]);
     applyLasting(known);
     expect([known.party[0].auras?.length, known.party[0].max.tp]).toEqual([1, 70]);
+  });
+});
+
+describe('step ⑧: a triggered cast takes nothing and gives nothing (plan 8h Task 2, ruling 11b)', () => {
+  const T8 = (id: RuneId): RuneRef => ({ id, tier: 'magic' });
+  const triggers = (log: BattleEvent[]) => log.filter((e) => e.type === 'trigger');
+  /** A foe that is awake and has announced a plain blow on `who`. */
+  const striker = (key = 'e0', over: Partial<Combatant> = {}) => tough(key, { frozen: undefined, max: { hp: 99999, tp: 0, atk: 10, def: 20, mag: 1, res: 20, spd: 50 }, ...over });
+  const blowOn = (who: string, foe = 'e0') => ({ intents: { [foe]: { kind: 'attack' as const, target: who } } });
+  const slow = (key: string, over: Partial<Combatant> = {}) => member(key, { ...over, max: { ...MAX, spd: 1 } });
+
+  it('a triggered 順手牽羊 takes no coins: not its own, not one a hit', () => {
+    const liz = (runes?: Record<string, RuneRef[]>) => slow('liz', { mech: { kind: 'coins', coins: 3 }, ...(runes ? { runes } : {}) });
+    const r = resolveRound(makeBattle([liz({ pickpocket: [T8('on-struck')] })], [striker()], blowOn('liz')), {}, constRng(0.5));
+    expect(triggers(r.log)).toHaveLength(1);
+    expect(damage(r.log)).toHaveLength(3);
+    expect(r.party[0].mech).toEqual({ kind: 'coins', coins: 3 });
+    // Cast by hand it still pays: a coin a hit and its own two.
+    const m = resolveRound(makeBattle([liz()], [tough('e0')]), { liz: cast('pickpocket', 'e0') }, constRng(0.5));
+    const own = (SKILLS.pickpocket.effects[1] as { amount: number }).amount;
+    expect(m.party[0].mech).toEqual({ kind: 'coins', coins: 3 + 3 + own });
+  });
+
+  it("a triggered arrow at another foe leaves Sylvie's aim as it was", () => {
+    const sylvie = slow('sylvie', { mech: { kind: 'aim', target: 'e0', stacks: 2 }, runes: { 'aimed-shot': [T8('on-struck')] } });
+    const r = resolveRound(makeBattle([sylvie], [tough('e0'), striker('e1')], blowOn('sylvie', 'e1')), {}, constRng(0.5));
+    expect(triggers(r.log)).toHaveLength(1);
+    expect(damage(r.log).map((e) => e.target)).toEqual(['e1']);
+    expect(r.party[0].mech).toEqual({ kind: 'aim', target: 'e0', stacks: 2 });
+  });
+
+  it("a triggered blow neither spends nor rides on Rin's readied crit", () => {
+    const rin = slow('rin', { nextCrit: true, runes: { 'rin-needle': [T8('on-struck')] } });
+    const r = resolveRound(makeBattle([rin], [striker()], blowOn('rin')), {}, constRng(0.5));
+    expect(triggers(r.log)).toHaveLength(1);
+    expect(damage(r.log).length).toBeGreaterThan(0);
+    expect(damage(r.log).some((e) => e.crit)).toBe(false);
+    expect(r.party[0].nextCrit).toBe(true);
+  });
+
+  it('a triggered 挑釁・高喊 taunts but keeps no embers', () => {
+    const scarlet = (runes?: Record<string, RuneRef[]>) => slow('scarlet', { mech: { kind: 'embers', embers: 0 }, ranks: { provoke: 1, 'scarlet-provoke-shout': 1 }, ...(runes ? { runes } : {}) });
+    const r = resolveRound(makeBattle([scarlet({ provoke: [T8('on-struck')] })], [striker()], blowOn('scarlet')), {}, constRng(0.5));
+    const plain = resolveRound(makeBattle([scarlet()], [striker()], blowOn('scarlet')), {}, constRng(0.5));
+    expect(triggers(r.log)).toHaveLength(1);
+    expect(r.log.slice(r.log.findIndex((e) => e.type === 'trigger'))).toContainEqual({ type: 'taunt', target: 'scarlet' });
+    expect(r.party[0].mech).toEqual(plain.party[0].mech);
+  });
+
+  it("the books still close: a triggered blow that fells a marked foe clears the mark, an appraised one pays", () => {
+    const rin = slow('rin', { mech: { kind: 'mark', marks: ['e0'], cap: 1 }, runes: { 'rin-needle': [T8('on-struck')] } });
+    const r = resolveRound(makeBattle([rin], [striker('e0', { hp: 1 }), tough('e1')], blowOn('rin')), {}, constRng(0.5));
+    expect(r.log).toContainEqual({ type: 'ko', target: 'e0' });
+    expect(r.party[0].mech).toMatchObject({ kind: 'mark', marks: [] });
+    // Liz's twin slash fells the foe she appraised: her three coins double, with no coin for the hit.
+    const liz = slow('liz', { mech: { kind: 'coins', coins: 3 }, runes: { 'twin-slash': [T8('on-struck')] } });
+    const l = resolveRound(makeBattle([liz], [striker('e0', { hp: 1, appraised: 'liz' }), tough('e1')], blowOn('liz')), {}, constRng(0.5));
+    expect(l.log).toContainEqual({ type: 'ko', target: 'e0' });
+    expect(l.party[0].mech).toEqual({ kind: 'coins', coins: 6 });
+  });
+});
+
+describe('step ⑧: regain never profits (plan 8h Task 2, ruling 11c)', () => {
+  const T8 = (id: RuneId, tier: RuneRef['tier'] = 'magic'): RuneRef => ({ id, tier });
+  const tierFor = (id: RuneId): RuneRef['tier'] => (RUNES[id].group === 'legendary' ? 'legendary' : 'epic');
+
+  it('regain refunds nothing for a free cast', () => {
+    // A triggered needle with 回氣, after her 暗記 paid its TP: she is down exactly what 暗記 cost.
+    const rin = member('rin', { tp: 50, nextCrit: true, runes: { 'rin-needle': [T8('on-crit'), T8('regain', 'epic')] } });
+    const s = makeBattle([rin], [tough('e0')]);
+    const cost = castCost(s, rin, 'rin-mark');
+    const r = resolveRound(s, { rin: cast('rin-mark', 'e0') }, constRng(0.5));
+    expect(r.log.filter((e) => e.type === 'trigger')).toHaveLength(1);
+    expect(r.party[0].tp).toBe(50 - cost);
+    // 血之代價 pays HP, not TP: 回氣 gives none back.
+    const noel = member('noel', { tp: 40, runes: { 'fire-star': [T8('blood-price', 'legendary'), T8('regain', 'epic')] } });
+    const b = resolveRound(makeBattle([noel], [tough('e0')]), { noel: cast('fire-star', 'e0') }, constRng(0.5));
+    expect(b.party[0].hp).toBeLessThan(300);
+    expect(b.party[0].tp).toBe(40);
+    // The hero's echo of a 回氣 fire star (2 a hit) brings back no more than the 1 TP he paid.
+    const def = skillFor(member('noel', { runes: { 'fire-star': [T8('regain', 'epic')] } }), 'fire-star')!;
+    const hero = member('hero', { tp: 50, max: { ...MAX, spd: 1 } });
+    const e = resolveRound(makeBattle([hero], [tough('e0')], { round: 1, echo: { by: 'noel', round: 1, def, cost: 1 } }), { hero: { kind: 'echo', target: 'e0' } }, constRng(0.5));
+    expect(damage(e.log)).toHaveLength(1);
+    expect(e.party[0].tp).toBe(50);
+    // The rune's words say so.
+    expect(RUNES.regain.text('magic')).toContain('一次施放回復的總和不超過這招付的 TP');
+  });
+
+  it('regain never pays more than the cast cost', () => {
+    const combos: RuneId[][] = [['regain'], ['regain', 'multistrike'], ['regain', 'twin-cast'], ['regain', 'multistrike', 'twin-cast']];
+    let tried = 0;
+    for (const id of Object.keys(MECH_OF).concat(['hero', 'selene']) as CharacterId[]) {
+      for (const skill of treeSkills(id)) {
+        const base = SKILLS[skill];
+        if (!base || base.passive || !base.effects.some((x) => x.kind === 'damage')) continue;
+        for (const ids of combos) {
+          const runes = ids.map((r) => T8(r, tierFor(r)));
+          if (runeStates(base, runes).some((x) => x.miss)) continue;
+          const c = member(id, { tp: 500, max: { ...MAX, tp: 999 }, runes: { [skill]: runes }, ...(MECH_OF[id] ? { mech: MECH_OF[id]!() } : {}) });
+          const r = resolveRound(makeBattle([c], [tough('e0'), tough('e1'), tough('e2')]), { [id]: cast(skill, 'e0') }, constRng(0.5));
+          expect(r.party[0].tp, `${id} ${skill} ${ids.join('+')}`).toBeLessThanOrEqual(500);
+          tried++;
+        }
+      }
+    }
+    expect(tried).toBeGreaterThan(40);
+    // A one-hit, 4 TP skill with 回氣 still gets its 1 back.
+    const noel = member('noel', { tp: 50, runes: { 'fire-star': [T8('regain')] } });
+    expect(resolveRound(makeBattle([noel], [tough('e0')]), { noel: cast('fire-star', 'e0') }, constRng(0.5)).party[0].tp).toBe(50 - 4 + 1);
   });
 });

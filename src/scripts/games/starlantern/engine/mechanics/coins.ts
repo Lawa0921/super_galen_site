@@ -58,7 +58,8 @@ export const coins: MechModule = {
     c.mech.coins = Math.min(coinCapOf(c), c.mech.coins - n + (n > 0 ? knobOf(c, 'coinRefund') ?? 0 : 0));
   },
   onHit(actor, target, ctx) {
-    if (actor.mech?.kind === 'coins') actor.mech.coins = Math.min(coinCapOf(actor), actor.mech.coins + 1);
+    // A triggered cast's hits earn no coin (plan 8h ruling 11b); a foe it fells still pays its appraisal.
+    if (actor.mech?.kind === 'coins' && !ctx.triggered) actor.mech.coins = Math.min(coinCapOf(actor), actor.mech.coins + 1);
     if (!target.alive && ctx.battle) payAppraisal(ctx.battle.party, target);
   },
   roundEnd(s: BattleState) {

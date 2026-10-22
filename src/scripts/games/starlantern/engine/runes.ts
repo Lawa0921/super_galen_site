@@ -5,6 +5,7 @@ import { T } from '../data/text.zh-TW';
 import type { AilmentId } from './ailments';
 import type { Combatant } from './combatant';
 import { ELEMENT_AILMENT, patchSkill, pctOf } from './skills';
+import { PLAIN } from './mechanics/echo';
 import type { Effect, Element, RuneRules, SkillDef, Target } from './types';
 
 /**
@@ -51,7 +52,9 @@ export type RuneMiss =
   | { kind: 'needs'; needs: Tag[][]; hint?: true }
   | { kind: 'group'; other: RuneId }
   | { kind: 'same'; id: RuneId }
-  | { kind: 'revive' } | { kind: 'scatter' } | { kind: 'pure' } | { kind: 'no-heal' };
+  | { kind: 'revive' } | { kind: 'scatter' } | { kind: 'pure' } | { kind: 'no-heal' }
+  /** A trigger rune on a skill with no plain effect: its free cast would do nothing (plan 8h ruling 11b). */
+  | { kind: 'plain' };
 
 /** The structural reasons beyond tags (plan 8e ruling 7), or null. */
 function structural(def: SkillDef, rune: RuneId): RuneMiss | null {
@@ -62,6 +65,7 @@ function structural(def: SkillDef, rune: RuneId): RuneMiss | null {
   if (rune === 'share' && !def.effects.every((e) => e.kind === 'buff' && e.pct > 0)) return { kind: 'pure' };
   if (rune === 'lasting' && !def.effects.every(isBuff)) return { kind: 'pure' };
   if (rune === 'spill-shield' && !def.effects.some((e) => e.kind === 'heal')) return { kind: 'no-heal' };
+  if (RUNES[rune].group === 'trigger' && !def.effects.some((e) => PLAIN.has(e.kind))) return { kind: 'plain' };
   return null;
 }
 
@@ -100,6 +104,7 @@ export function runeWhy(m: RuneMiss): string {
     case 'scatter': return W.scatter;
     case 'pure': return W.pure;
     case 'no-heal': return W.noHeal;
+    case 'plain': return W.plain;
   }
 }
 

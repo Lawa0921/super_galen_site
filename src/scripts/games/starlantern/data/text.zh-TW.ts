@@ -880,6 +880,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       scatter: '隨機目標的招不能改形狀',
       pure: '只能用在只有增益的招',
       noHeal: '需要：回復效果',
+      /** A trigger rune on a skill with no plain effect (plan 8h ruling 11b). */
+      plain: '需要：傷害、治療或增益這類一般效果（觸發不會打出結界、裝置這些機制）',
     },
     /** Why a rune cannot go into a socket (engine/sockets.ts SocketFail); `reserve` takes RESERVE_CAP. */
     fail: {

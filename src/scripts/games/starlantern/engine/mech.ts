@@ -77,7 +77,8 @@ export type BarrierKind = 'guard' | 'purify';
  * `lasting`: raised by a 常駐 rune at the fight's start (plan 8e): it takes no round off, and a release or a new barrier
  * ends it. `boostTurns`: on a lasting barrier, the rounds its 大結界 boost has left (it gains no rounds of its own).
  */
-export interface Barrier { skill: string; kind: BarrierKind; power: number; turns: number; src: string; boost?: number; pair?: number; wake?: true; lasting?: true; boostTurns?: number }
+/** `lastingPct`: a lasting barrier's 常駐 percent, which its thunder strikes at too (plan 8h ruling 11d). */
+export interface Barrier { skill: string; kind: BarrierKind; power: number; turns: number; src: string; boost?: number; pair?: number; wake?: true; lasting?: true; lastingPct?: number; boostTurns?: number }
 
 /** What a barrier does now, in its own unit (a guard's percent, a purifying heal's power): power x boost x pair%. */
 export const barrierPower = (b: Barrier): number => (b.power * (b.boost ?? 1) * (b.pair ?? 100)) / 100;

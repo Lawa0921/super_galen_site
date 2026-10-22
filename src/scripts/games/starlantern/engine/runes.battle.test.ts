@@ -105,14 +105,15 @@ describe('runes on every hit (plan 8e Task 4)', () => {
     expect(scarlet.hp).toBe(208);
     expect(ledger.by.scarlet.healing).toBe(8);
     expect(ctx.log).toContainEqual({ type: 'heal', target: 'scarlet', amount: 8 });
-    // 回氣 1 a hit: of three hits two land (the middle one is dodged), TP +2.
+    // 回氣 1 a hit: of three hits two land (the middle one is dodged), TP +2 (the cast paid its TP: plan 8h ruling 11c).
+    const paid = { paid: SKILLS['blade-dance'].tp };
     const safira = member('safira', { 'blade-dance': [R('regain')] }, { tp: 5 });
     const dodgy = foe('e0', { x: { evasion: 50 } });
-    applyEffect(safira, dodgy, hit(safira, 'blade-dance'), ctxOf(script(0.9, 0.5, 0.1, 0.9, 0.5)));
+    applyEffect(safira, dodgy, hit(safira, 'blade-dance'), ctxOf(script(0.9, 0.5, 0.1, 0.9, 0.5), paid));
     expect(safira.tp).toBe(7);
     // Never past her max.
     const full = member('safira', { 'blade-dance': [R('regain')] }, { tp: 19 });
-    applyEffect(full, foe(), hit(full, 'blade-dance'), ctxOf(constRng(0.5)));
+    applyEffect(full, foe(), hit(full, 'blade-dance'), ctxOf(constRng(0.5), paid));
     expect(full.tp).toBe(20);
   });
 

@@ -13,6 +13,7 @@ import { raiseBarrier } from './barrier';
 import type { Rng } from '../rng';
 import { isInnate, pctMod, skillRank, treeSkills } from '../progression';
 import { RESERVE_CAP, RUNES } from '../../data/runes';
+import { PLAIN } from './echo';
 import { T } from '../../data/text.zh-TW';
 import type { MechModule } from './index';
 
@@ -32,10 +33,11 @@ export const runes: MechModule = {
       const repriseHit = def.effects.flatMap((e) => (e.kind === 'damage' ? [{ ...e, power: pctOf(e.power, pct) }] : []));
       def = { ...def, runeRules: { ...def.runeRules, repriseHit } };
     }
-    // 同步: another ally's skill while the sync stands is that much stronger, its damage and its heals.
+    // 同步: another ally's skill while the sync stands is that much stronger, its damage and its heals. Each lifted effect
+    // keeps who lifted it and its power before (plan 8h rulings 11a, 11e): the ledger credits the giver, the echo drops it.
     const sync = s.sync;
     if (sync && c.side === 'party' && c.key !== sync.by) {
-      def = { ...def, effects: def.effects.map((e) => (e.kind === 'damage' || e.kind === 'heal' ? { ...e, power: pctOf(e.power, 100 + sync.pct) } : e)) };
+      def = { ...def, effects: def.effects.map((e) => (e.kind === 'damage' || e.kind === 'heal' ? { ...e, power: pctOf(e.power, 100 + sync.pct), lift: { by: sync.by, from: e.power } } : e)) };
     }
     return def;
   },
@@ -49,7 +51,10 @@ export const runes: MechModule = {
     if (rules.sync !== undefined) s.sync = { pct: rules.sync, by: c.key };
     // 回聲: only a cast that struck a foe leaves one, aimed at the first foe it struck.
     if (rules.reprise !== undefined && rules.repriseHit && ctx.struck) {
-      s.reprises = [...(s.reprises ?? []), { by: c.key, target: ctx.struck, round: s.round + 1, name: def.name, effects: rules.repriseHit }];
+      // With 回氣 on it, the reprise may give back only what the cast's own hits left of what it paid (plan 8h ruling 11c).
+      const regain = rules.repriseHit.some((e) => e.kind === 'damage' && e.tpPerHit !== undefined);
+      const tpLeft = Math.max(0, (ctx.paid ?? 0) - (ctx.regained ?? 0));
+      s.reprises = [...(s.reprises ?? []), { by: c.key, target: ctx.struck, round: s.round + 1, name: def.name, effects: rules.repriseHit, ...(regain ? { tpLeft } : {}) }];
     }
   },
   roundEnd(s, ctx) {
@@ -63,6 +68,7 @@ export const runes: MechModule = {
       const t = s.enemies.find((c) => c.key === r.target && c.alive);
       if (!by || !t) continue;
       s.log.push({ type: 'act', actor: by.key, label: T.rune.reprise(r.name) });
+      if (r.tpLeft !== undefined) { ctx.paid = r.tpLeft; delete ctx.regained; }
       for (const e of r.effects) applyEffect(by, t, e, ctx);
     }
   },
@@ -108,6 +114,10 @@ export function noteHit(actor: Combatant, target: Combatant, crit: boolean, ctx:
  * 同步 do not ride on it; 星燈輪轉 at the element now due, the wheel not turned), with the abyss bonus as a cast has it,
  * at the trigger's percent of power and effect, for free. A single foe is the one the trigger came from, or else the
  * first standing; none standing, nothing. No TP, gauge, mechanic, echo record or further trigger.
+ *
+ * A free cast takes nothing and gives nothing (plan 8h ruling 11b): only its plain effects are cast (the echo's PLAIN: no
+ * barrier, device, mark, moon, coins, embers, aim), its hits gain her no coin and no TP back (`ctx.triggered`), and her
+ * readied crit (Rin's `nextCrit`) is neither ridden on nor spent. A foe it fells still settles (marks, appraisal).
  */
 export function runTriggers(s: BattleState, ctx: EffectContext, rng: Rng): void {
   while (s.triggers?.length) {
@@ -125,6 +135,7 @@ export function runTriggers(s: BattleState, ctx: EffectContext, rng: Rng): void 
     const bonus = def.abyss && s.abyss ? pctMod(def.id, 100 + s.abyss) : undefined;
     if (bonus) def = patchSkill(def, bonus);
     def = patchSkill(def, { powerPct: pct, buffPct: pct });
+    def = { ...def, effects: def.effects.filter((e) => PLAIN.has(e.kind)) };
     if (def.runeRules) {
       const keep = { ...def.runeRules };
       for (const k of ['twice', 'bounce', 'reprise', 'sync', 'wheel'] as const) delete keep[k];
@@ -146,7 +157,12 @@ export function runTriggers(s: BattleState, ctx: EffectContext, rng: Rng): void 
     delete ctx.lastHit;
     delete ctx.afterTried;
     ctx.cast = def.id;
+    ctx.triggered = true;
+    const readied = c.nextCrit;
+    delete c.nextCrit;
     castOnce(s, c, def, chosen, ctx, rng);
+    if (readied) c.nextCrit = true;
+    delete ctx.triggered;
     delete ctx.cast;
   }
 }
@@ -216,7 +232,7 @@ export function applyLasting(s: BattleState): void {
         } else if (e.kind === 'barrier') {
           raiseBarrier(s, c, { ...e, power: pctOf(e.power, pct) }, def.id);
           const b = s.barriers![s.barriers!.length - 1];
-          s.barriers![s.barriers!.length - 1] = { ...b, lasting: true };
+          s.barriers![s.barriers!.length - 1] = { ...b, lasting: true, lastingPct: pct };
           raised = true;
         }
       }

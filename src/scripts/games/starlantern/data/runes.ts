@@ -166,7 +166,7 @@ const LIST: RuneDef[] = [
   trigger('on-kill', '擊倒觸發', 'kill', '她擊倒敵人時', [['damage'], ['buff']]),
   trigger('on-struck', '受擊觸發', 'struck', '她受到攻擊後', []),
   { id: 'regain', name: '回氣', group: 'economy', needs: [['damage']],
-    text: (t) => `每段命中回復 ${at('regain', 'tpPerHit', t)} TP；威力 ${at('regain', 'power', t)}%。`,
+    text: (t) => `每段命中回復 ${at('regain', 'tpPerHit', t)} TP，一次施放回復的總和不超過這招付的 TP；威力 ${at('regain', 'power', t)}%。`,
     mod: (t) => ({ tpPerHit: at('regain', 'tpPerHit', t), power: at('regain', 'power', t) }) },
   { id: 'thrift', name: '節流', group: 'economy', needs: [['tp']],
     text: (t) => `${tpPctOf('thrift')}；威力與效果 ${at('thrift', 'effect', t)}%。`,

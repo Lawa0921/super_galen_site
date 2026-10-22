@@ -59,6 +59,22 @@ describe('rune tags and fit (plan 8e Task 1)', () => {
     expect(runeFits(star, 'regain', ['thrift', 'drain'])).toBeNull();
   });
 
+  it('a trigger rune needs a plain effect (plan 8h Task 2, ruling 11b)', () => {
+    // A triggered cast only plays the plain effects: a skill with none of them takes no trigger rune.
+    for (const r of ['on-struck', 'on-crit', 'on-kill'] as RuneId[]) {
+      for (const skill of ['turret', 'moon-recall', 'ward']) {
+        if (runeFits(SKILLS[skill], r, [])?.kind === 'needs') continue;   // its tags already say no
+        expect(runeFits(SKILLS[skill], r, []), `${r} ${skill}`).toEqual({ kind: 'plain' });
+      }
+    }
+    expect(runeWhy({ kind: 'plain' })).toBe(T.rune.why.plain);
+    expect(runeFits(SKILLS['blaze-ring'], 'on-struck', [])).toBeNull();
+    expect(runeFits(SKILLS.cleanse, 'on-struck', [])).toBeNull();   // a cure is plain
+    // Judged on the skill before runes (a mechanic extra beside a plain effect is fine: 挑釁・高喊).
+    expect(runeFits(skillFor({ powers: [], ranks: { provoke: 1, 'scarlet-provoke-shout': 1 } }, 'provoke')!, 'on-struck', [])).toBeNull();
+    expect(runeStates(SKILLS.turret, [{ id: 'on-struck', tier: 'magic' }])[0].miss).toEqual({ kind: 'plain' });
+  });
+
   it('fit: the structural reasons', () => {
     expect(runeFits(SKILLS.rebirth, 'spread', [])).toEqual({ kind: 'revive' });
     expect(runeFits(SKILLS['scatter-shot'], 'focus', [])).toEqual({ kind: 'scatter' });

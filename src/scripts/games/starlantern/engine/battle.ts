@@ -15,7 +15,7 @@ import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
-import { credit, lossOf, type Ledger } from './ledger';
+import { countCast, credit, lossOf, type Ledger } from './ledger';
 import { AIM, barrierPower, type Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
 import { COINS } from './mechanics/coins';
@@ -70,7 +70,8 @@ export interface BattleState {
   /** 同步 (plan 8e): the next other ally's skill this round is `pct`% stronger (engine/mechanics/runes.ts). */
   sync?: { pct: number; by: string };
   /** 回聲 (plan 8e): each strikes `target` with `effects` at the end of `round`, its caster and its foe still standing. */
-  reprises?: { by: string; target: string; round: number; name: string; effects: Effect[] }[];
+  /** `tpLeft`: the 回氣 its cast had still not given back, all its hits may give (plan 8h ruling 11c). */
+  reprises?: { by: string; target: string; round: number; name: string; effects: Effect[]; tpLeft?: number }[];
   /** Trigger runes set off in this action, cast after it (plan 8e Task 6; engine/mechanics/runes.ts runTriggers). */
   triggers?: { by: string; skill: string; on: 'crit' | 'kill' | 'struck'; foe: string }[];
 }
@@ -410,6 +411,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
   delete ctx.lastHit;   // burn and bleed ride only on a hit of this action
   delete ctx.afterTried;   // 餘波's tries of this action (plan 8e)
   delete ctx.paid;
+  delete ctx.regained;
   delete ctx.coverBlow;
   let sentTo: Combatant | undefined;   // a challenger or a cover is reached wherever she stands
   if (actor.side === 'enemy') {
@@ -461,6 +463,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       payHp(actor, def);
       payMech(s, actor, def, ctx);
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
+      if (actor.side === 'party') countCast(ctx.ledger, def.id);
       ctx.cast = def.id;   // a barrier remembers the skill that raised it
       delete ctx.struck;
       const scatter = def.effects.some((e) => e.kind === 'damage' && e.scatter);
@@ -494,6 +497,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       if (!rec) return null;
       if (actor.tp < rec.cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return null; }
       actor.tp -= rec.cost;
+      ctx.paid = rec.cost;   // what 回氣 may give back (plan 8h ruling 11c)
       delete ctx.acting;   // an echo's blows set off no trigger rune (plan 8e ruling 11)
       const def = echoDef(rec);
       s.log.push({ type: 'act', actor: actor.key, label: T.cmd.echoAct(def.name) });
@@ -535,7 +539,9 @@ function bounceCast(s: BattleState, actor: Combatant, def: SkillDef, first: Comb
     if (!next) return;
     hit.add(next.key);
     const before = ctx.lastHit;
-    for (const eff of def.effects) if (eff.kind === 'damage') applyEffect(actor, next, { ...eff, power: pctOf(eff.power, 100 - dropPct * n) }, ctx);
+    const drop = (p: number) => pctOf(p, 100 - dropPct * n);
+    // A 同步's lift drops with it (plan 8h ruling 11e).
+    for (const eff of def.effects) if (eff.kind === 'damage') applyEffect(actor, next, { ...eff, power: drop(eff.power), ...(eff.lift ? { lift: { ...eff.lift, from: drop(eff.lift.from) } } : {}) }, ctx);
     // A bounce that is dodged ends the chain: it only goes on from a foe it struck.
     if (!landedOn(ctx, before, next)) return;
   }

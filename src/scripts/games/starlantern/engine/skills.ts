@@ -48,7 +48,15 @@ export interface EffectContext {
    * other time (devices, ticks, counters, echoes, reprises, triggered casts) sets off no trigger.
    */
   acting?: string;
+  /** While a trigger rune's free cast resolves (plan 8h ruling 11b): it takes nothing for her mechanic and no TP back. */
+  triggered?: true;
+  /** The TP 回氣 has given back in this action (plan 8h ruling 11c): never more, all told, than the action paid. */
+  regained?: number;
 }
+
+/** The skill a credit belongs to in a ledger split by skill: her own cast by hand, while it resolves (plan 8h ruling 9). */
+const castOf = (ctx: EffectContext, actor: Combatant): string | undefined =>
+  ctx.cast !== undefined && ctx.acting === actor.key && !ctx.triggered ? ctx.cast : undefined;
 
 /** A power's percentage of a number, rounded half away from zero so a debuff (-37.5) rounds as deep as a buff (37.5). */
 export const pctOf = (base: number, pct: number | undefined): number => {
@@ -257,14 +265,19 @@ function runeHit(actor: Combatant, target: Combatant, eff: Extract<Effect, { kin
     const n = Math.floor((hpLost * eff.drainPct) / 100);
     if (n > 0) {
       const gained = gainHp(actor, n);
-      credit(ctx.ledger, actor.key, 'healing', gained);
+      credit(ctx.ledger, actor.key, 'healing', gained, castOf(ctx, actor));
       ctx.log.push({ type: 'heal', target: actor.key, amount: gained });
     }
   }
   if (eff.tpPerHit !== undefined && actor.alive && actor.tp < actor.max.tp) {
-    const before = actor.tp;
-    actor.tp = Math.min(actor.max.tp, actor.tp + eff.tpPerHit);
-    ctx.log.push({ type: 'tp', target: actor.key, amount: actor.tp - before });
+    // Never more, over the whole action, than the TP it paid (plan 8h ruling 11c): a free cast gets nothing back.
+    const room = (ctx.triggered ? 0 : ctx.paid ?? 0) - (ctx.regained ?? 0);
+    const n = Math.min(eff.tpPerHit, room, actor.max.tp - actor.tp);
+    if (n > 0) {
+      actor.tp += n;
+      ctx.regained = (ctx.regained ?? 0) + n;
+      ctx.log.push({ type: 'tp', target: actor.key, amount: n });
+    }
   }
   if (!target.alive) return;
   // 餘波 on a crit makes the hit's own ailment of that kind sure (one try, the higher chance: spec §6.6 rule 3), and is
@@ -291,8 +304,13 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         if (!rolls) { ctx.log.push({ type: 'miss', target: target.key }); continue; }
         const { amount, mult, crit } = hitAmount(actor, target, eff, rolls);
         if (ctx.ledger) {
-          if (actor.side === 'party' && target.side === 'enemy') credit(ctx.ledger, actor.key, 'damage', lossOf(target, amount));
-          else if (actor.side === 'enemy' && target.side === 'party') creditPrevented(ctx.ledger, actor, target, eff, rolls, amount, ctx.redirect);
+          if (actor.side === 'party' && target.side === 'enemy') {
+            // A 同步's lift goes to its giver: the loss less what the power before it would have taken, the same rolls.
+            const loss = lossOf(target, amount);
+            const own = eff.lift ? Math.min(loss, lossOf(target, hitAmount(actor, target, { ...eff, power: eff.lift.from }, rolls).amount)) : loss;
+            credit(ctx.ledger, eff.lift?.by, 'damage', loss - own);
+            credit(ctx.ledger, actor.key, 'damage', own, castOf(ctx, actor));
+          } else if (actor.side === 'enemy' && target.side === 'party') creditPrevented(ctx.ledger, actor, target, eff, rolls, amount, ctx.redirect);
         }
         const hpBefore = target.hp;
         const lost = dealDamage(target, amount, { ledger: ctx.ledger, log: ctx.log });
@@ -318,8 +336,14 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       let bonus = 1 + (actor.x.heal ?? 0) / 100;
       if (actor.keystones.includes('moon-promise')) bonus *= 1 + MEMORY_KEYSTONE_VALUES.moonHealPct / 100;
       const full = healAmount(actor, eff.power, bonus);
+      const room = target.max.hp - target.hp;
       const amount = gainHp(target, full);
-      if (actor.side === 'party' && target.side === 'party') credit(ctx.ledger, actor.key, 'healing', amount);
+      if (actor.side === 'party' && target.side === 'party') {
+        // A 同步's lift goes to its giver: what the heal restored past what the power before it would have.
+        const own = eff.lift ? Math.min(amount, Math.max(0, Math.min(healAmount(actor, eff.lift.from, bonus), room))) : amount;
+        credit(ctx.ledger, eff.lift?.by, 'healing', amount - own);
+        credit(ctx.ledger, actor.key, 'healing', own, castOf(ctx, actor));
+      }
       ctx.log.push({ type: 'heal', target: target.key, amount });
       // 滿溢 (plan 8d): the spill shields, up to the cap, as the shield generator does (the bigger shield stays, now theirs).
       if (eff.overflowPct !== undefined && full > amount) {
