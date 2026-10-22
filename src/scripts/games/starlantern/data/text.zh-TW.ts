@@ -959,6 +959,33 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     /** The rune tab with nothing in the bag to fuse. */
     fuseEmpty: '袋子裡沒有可合成的符文，三個同名同階的符文可以合成高一階',
   },
+  /** The suggested builds (plan 8h): the standard build's name and line, and a policy's words, one sentence a rule. */
+  build: {
+    standard: { name: '標準', intro: '照預設的配點走，不裝符文：補血優先，其他時候放最強的招。' },
+    gauge: { heat: '熱度', coins: '銅板', aim: '瞄準層數', embers: '餘燼' },
+    rule: {
+      none: '沒有特別的規則：補血優先，其他時候放最強的招。',
+      ensureBarrier: (names: string[], big: boolean, below?: number) =>
+        `${big ? (below !== undefined ? `頭目或菁英剩不到 ${below}% HP 時，` : '有頭目或菁英時，') : ''}結界快結束就重新架起${names.join('或')}。`,
+      ensureDevice: (names: string[], big: boolean) => `${big ? '有頭目或菁英時，' : ''}裝置快停了就重新設置（${names.join('、')}）。`,
+      ensureMark: (name: string, big: boolean, below?: number) =>
+        `先用${name}記住${below !== undefined ? `剩不到 ${below}% HP 的` : ''}${big ? '頭目或菁英' : '敵人'}。`,
+      alternate: (repeat: boolean) => (repeat ? '跟著拍子換招，只剩一招時照樣出招。' : '跟著拍子換招。'),
+      spendAt: (gauge: string, min: number, name: string, ofMaxHp: boolean) =>
+        `${gauge}${ofMaxHp ? `累積到最大 HP 的 ${min}%` : `到 ${min}`}就放${name}，之前先留著。`,
+      healBelow: (pct: number) => `有人 HP 低於 ${pct}% 就先補血。`,
+      strongest: (aoe: boolean) => (aoe ? '其他時候放打得最多的招（看威力，也看打到幾個）。' : '其他時候放威力最高的招。'),
+      ensureTaunt: (name: string) => `挑釁快結束就再用${name}。`,
+      ensureCover: (name: string) => `用${name}護住 HP 比例最低的隊友。`,
+      releaseAt: (min: number, name: string) => `結界還剩 ${min} 回合以上（或常駐）就用${name}解放。`,
+      atPhase: (phase: string, name: string) => `${phase}時放${name}。`,
+      executeBelow: (pct: number, name: string) => `敵人剩不到 ${pct}% HP 就用${name}收尾，先挑暗記中的。`,
+      castUnlessLast: (name: string) => `上一招不是${name}就放${name}。`,
+      castWhen: (name: string, big: boolean, whileAbsent: boolean) =>
+        `${big ? '有頭目或菁英時，' : ''}${whileAbsent ? `${name}的效果不在了就放` : `能放就放${name}`}。`,
+      echo: '同伴剛放的招比自己最強的招還強時，用殘響重現它。',
+    },
+  },
   clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card
   /** The finale's closing card; its text is the finale scene's summary. */
   ending: { back: '繼續' },   // its title is STORY.endingTitle

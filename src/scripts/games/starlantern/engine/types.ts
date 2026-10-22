@@ -247,6 +247,11 @@ export interface Member {
   freeRespec?: true;
   /** Runes socketed per skill id, slot by slot (plan 8e; engine/sockets.ts). Absent: none. */
   sockets?: Record<string, (RuneRef | null)[]>;
+  /**
+   * The suggested build she follows (plan 8h, data/builds.ts `key`): her policy is its policy, and a level-up spends her
+   * points its way. Absent: none (the standard policy). Nothing writes it before plan 8h Task 6.
+   */
+  build?: string;
 }
 export interface Party {
   /** 3x3 placement, cells 0-2 front, 3-5 middle, 6-8 back (see engine/formation.ts). */

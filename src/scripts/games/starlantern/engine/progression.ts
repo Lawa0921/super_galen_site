@@ -313,13 +313,32 @@ export function legacyDue(skill: string): number {
  * `memories` is the hero's memory count (abyss nodes wait for it, ABYSS_UNLOCK); the default 0 keeps them shut.
  */
 export function defaultTree(id: CharacterId, level: number, memories = 0): Record<string, number> {
+  return treeFor(id, level, memories, {});
+}
+
+/** How a build shapes a companion's tree (plan 8h Task 3): nodes learned first, B sides taken, the ultimate's branch. */
+export interface TreeOpts { first?: readonly string[]; sides?: readonly string[]; capstone?: number }
+
+/**
+ * `defaultTree`'s order with a build's choices (plan 8h Task 3): `opts.first` before DEFAULT_FIRST among the nodes learned
+ * first; a pair whose B side is in `opts.sides` offers its B side in place of its A side; the ultimate of branch
+ * `opts.capstone` (default DEFAULT_CAPSTONE), which, named, is learned first too (after `opts.first`) — the default's
+ * upgrades would spend every point before it. With no opts it is the default build to the bit. The hero's is heroTree.
+ */
+export function treeFor(id: CharacterId, level: number, memories: number, opts: TreeOpts): Record<string, number> {
   if (id === 'hero') return heroTree(level, 'balanced', memories);
   const tree = newTree(id);
   const nodes: { node: TreeNode; branch: number; tier: number }[] = [];
-  TREES[id].branches.forEach((b, branch) => b.nodes.forEach((node, tier) => {
-    if (tier < 4 || branch === DEFAULT_CAPSTONE[id]) nodes.push({ node, branch, tier });   // A sides only: never a B
+  const capstone = opts.capstone ?? DEFAULT_CAPSTONE[id];
+  TREES[id].branches.forEach((b, branch) => b.nodes.forEach((cell, tier) => {
+    // A sides unless the build names the B side (plan 8d ruling 5 for the default).
+    const node = cell.pair && opts.sides?.includes(cell.pair.id) ? cell.pair : cell;
+    if (tier < 4 || branch === capstone) nodes.push({ node, branch, tier });
   }));
-  const first = (DEFAULT_FIRST[id] ?? []).map((n) => nodes.find((x) => x.node.id === n)).filter((x) => x !== undefined);
+  // A build that names its ultimate's branch wants that ultimate: it comes after its own firsts, as soon as it can.
+  const ultimate = opts.capstone === undefined ? [] : tierNodes(TREES[id].branches[opts.capstone], 4).map((n) => n.id);
+  const firstIds = [...new Set([...(opts.first ?? []), ...ultimate, ...(DEFAULT_FIRST[id] ?? [])])];
+  const first = firstIds.map((n) => nodes.find((x) => x.node.id === n)).filter((x) => x !== undefined);
   const learned = (x: (typeof nodes)[number]) => {
     if (x.node.kind === 'active') return rankIn(tree, x.node.id) >= 1;
     if (x.node.kind === 'variant') return rankIn(tree, x.node.skill!) >= 1;
@@ -457,14 +476,28 @@ export function keystonesOf(m: Member): KeystoneId[] {
  * DEFAULT_KEYSTONES when one can be taken, else the open normal node of lowest (rank, row, col).
  */
 export function defaultTalents(id: CharacterId, level: number): Record<string, number> {
+  return talentsFor(id, level, {});
+}
+
+/** How a build shapes a companion's talents (plan 8h Task 3): its keystones, and the stats its normal nodes lean on. */
+export interface TalentOpts { talents?: readonly AnyStat[]; keystones?: readonly KeystoneId[] }
+
+/**
+ * `defaultTalents` with a build's choices (plan 8h Task 3): the keystones of `opts.keystones` (default DEFAULT_KEYSTONES),
+ * and among normal nodes the open one of lowest (rank, row, col) whose stat is in `opts.talents`, else any (as heroTalents
+ * leans). With no opts it is the default to the bit. The hero's is heroTalents.
+ */
+export function talentsFor(id: CharacterId, level: number, opts: TalentOpts): Record<string, number> {
   if (id === 'hero') return heroTalents(level, 'balanced');
   const t: Record<string, number> = {};
-  const keystones = DEFAULT_KEYSTONES[id].map((k) => BOARDS[id].find((n) => n.keystone === k)!);
+  const keystones = (opts.keystones ?? DEFAULT_KEYSTONES[id]).map((k) => BOARDS[id].find((n) => n.keystone === k)!);
   const normal = BOARDS[id].filter((n) => !n.keystone);
+  const lowest = (nodes: typeof normal) => nodes.filter((n) => talentBlocker(id, n.id, t) === null)
+    .sort((a, b) => rankOf(a, t) - rankOf(b, t) || a.row - b.row || a.col - b.col)[0];
+  const lean = opts.talents ?? [];
   for (let p = talentPoints(level, rulesOf(id).curve); p > 0; p--) {
     const pick = keystones.find((n) => talentBlocker(id, n.id, t) === null)
-      ?? normal.filter((n) => talentBlocker(id, n.id, t) === null)
-        .sort((a, b) => rankOf(a, t) - rankOf(b, t) || a.row - b.row || a.col - b.col)[0];
+      ?? (lean.length ? lowest(normal.filter((n) => n.stat && lean.includes(n.stat))) : undefined) ?? lowest(normal);
     if (!pick) break;
     t[pick.id] = rankOf(pick, t) + 1;
   }
