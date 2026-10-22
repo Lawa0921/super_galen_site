@@ -2840,3 +2840,56 @@ describe('story depth Task 13: the friction banters', () => {
     for (const [id] of beats) expect(STORY.scenes[id].lines.map((l) => l.text).join(''), id).not.toMatch(/選擇|我選/);
   });
 });
+
+describe('story depth Task 14: her confession and the lone morning', () => {
+  const W = (o: Partial<LineWhen> = {}): LineWhen => ({ met: [...CHARACTER_IDS], full: [], returned: [], oath: true, seen: [], ...o });
+  const play = (id: SceneId, w: LineWhen) => linesWhen(STORY.scenes[id].lines, w);
+  const by = (id: SceneId, w: LineWhen, re: RegExp) => play(id, w).find((l) => re.test(l.text))!;
+
+  it("the confession: each one's beat, at dinner, or at the bottom when it is owed there (ruling: full:'hero')", () => {
+    for (const r of sceneReadings('rin-confess')) expect(r.lines.length, JSON.stringify(r.when)).toBeLessThanOrEqual(12);
+    const dinner = W();
+    for (const [re, who] of [[/靜鐘會/, 'rin'], [/退後三步/, 'scarlet'], [/欠我們一句實話/, 'liz'], [/走在我後面/, 'hero'], [/這碗是妳的/, 'marta']] as [RegExp, ScriptLine['who']][]) {
+      expect(() => pinBeat('rin-confess', dinner, re), String(re)).not.toThrow();
+      expect(by('rin-confess', dinner, re).who, String(re)).toBe(who);
+    }
+    for (const seen of [[], ['banter:rin-sylvie:1']] as SceneId[][]) {
+      expect(() => pinBeat('rin-confess', W({ seen }), /追獵物/), String(seen)).not.toThrow();
+      expect(by('rin-confess', W({ seen }), /追獵物/).who).toBe('sylvie');
+    }
+    const bottom = W({ full: ['hero'] });
+    for (const w of [dinner, bottom]) {
+      const lines = play('rin-confess', w);
+      expect(lines[lines.length - 1].who).toBe('narrator');
+      expect(lines[lines.length - 1].text).toMatch(/喝得很慢/);
+    }
+    expect(play('rin-confess', dinner)[0].text).toMatch(/晚飯/);
+    expect(play('rin-confess', bottom)[0].text).toMatch(/第三十層/);
+    expect(play('rin-confess', bottom).map((l) => l.text).join('')).not.toMatch(/晚飯|廚房/);
+    expect(play('rin-confess', bottom).some((l) => l.who === 'marta')).toBe(false);   // Marta is in town
+    // Rin alone: six lines (controller ruling, Task 2)
+    expect(play('rin-confess', W({ met: ['hero', 'rin'] }))).toHaveLength(6);
+  });
+
+  it('the lone morning: the door, the next time, the soup, all of them going down; Scarlet quotes him as he said it', () => {
+    for (const r of sceneReadings('hero-alone')) {
+      expect(r.lines.length, JSON.stringify(r.when)).toBeLessThanOrEqual(10);
+      for (const l of r.lines) if (l.who !== 'narrator' && l.who !== 'marta') expect(l.mood, l.text).toBeDefined();
+      expect(r.lines.map((l) => l.text).join(''), JSON.stringify(r.when)).not.toMatch(/一起回來|葛倫/);
+    }
+    const w = W();
+    for (const [re, who] of [[/得先過我這裡/, 'rin'], [/這就是下次/, 'rin'], [/先吃了再走/, 'marta']] as [RegExp, ScriptLine['who']][]) {
+      expect(() => pinBeat('hero-alone', w, re), String(re)).not.toThrow();
+      expect(by('hero-alone', w, re).who).toBe(who);
+    }
+    const lines = play('hero-alone', w);
+    expect(lines[lines.length - 1].who).toBe('narrator');
+    expect(lines[lines.length - 1].text).toMatch(/大家一起下去/);
+    for (const full of [[], ['scarlet']] as CharacterId[][]) {
+      const quote = by('hero-alone', W({ seen: ['chat:scarlet:2'], full }), /不必替/);
+      expect(quote.who).toBe('scarlet');
+      expect(quote.text).toContain('『不必替我擋』');   // as he said it in chat:scarlet:2
+    }
+    expect(STORY.scenes['chat:scarlet:2'].lines.some((l) => l.who === 'hero' && l.text.includes('不必替我擋'))).toBe(true);
+  });
+});

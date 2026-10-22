@@ -459,26 +459,32 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '那天深夜，凜的刀尖停在洛恩的喉嚨上，最後收了回去。天亮後她說出一切，選擇不殺他。洛恩說，他一直沒問下去，是怕她走。',
   },
-  // Story depth Task 2 (design §8 sample 2, pasted as it stands; plan ruling 10): her confession, at the dinner of the
-  // return after her reveal. It plays alone; the writing task finalizes it.
+  // Story depth design §8 sample 2 (Task 14 final): her confession to the party, the dinner of the return after her reveal; it
+  // plays alone. Owed at depth 30 (the finale plays it first, plan ruling 8), it is the last rest before the lamp, with
+  // Marta's soup from the pack: `full: 'hero'` tells the two apart (controller ruling). Each one's beat comes from her own
+  // arc: Scarlet's shield and his back, Sylvie's hunter, Liz's debts; Lorne says a fact, not a speech; Marta's warmth.
   'rin-confess': {
     lines: [
-      N('回城那天的晚飯，月影旅館的餐桌。凜沒有坐下。她把那枚裂開的小銅鐘，放在自己的湯碗旁邊。'),
+      { who: 'narrator', text: '回城那天的晚飯，月影旅館的餐桌。凜沒有坐下。她把那枚裂開的小銅鐘，放在自己的湯碗旁邊。', if: { notFull: 'hero' } },
+      { who: 'narrator', text: '第三十層，燈前最後一次歇腳。凜沒有坐下。她把那枚小銅鐘，放在大家圍著的火堆旁邊。', if: { full: 'hero' } },
       { who: 'rin', mood: 'serious', text: '「我本來是靜鐘會的人，被派來殺洛恩。上一次回城的那一夜，我的刀尖抵在他的喉嚨上。」' },
-      { who: 'narrator', text: '絲嘉蕾站了起來，椅子倒在地上。她一步跨到洛恩和凜之間，手按住了劍柄。', if: { met: 'scarlet' } },
-      { who: 'narrator', text: '沒有人動。瑪莎端著湯鍋站在廚房門口，也沒有動。', if: { notMet: 'scarlet' } },
+      { who: 'narrator', text: '絲嘉蕾站了起來，椅子倒在地上。她一步跨到洛恩和凜之間，手按住了劍柄。', if: { met: 'scarlet', notFull: 'hero' } },
+      { who: 'narrator', text: '絲嘉蕾猛地站起來，踢散了火堆邊的石子。她一步跨到洛恩和凜之間，手按住了劍柄。', if: { met: 'scarlet', full: 'hero' } },
+      { who: 'narrator', text: '沒有人動。瑪莎端著湯鍋站在廚房門口，也沒有動。', if: { notMet: 'scarlet', notFull: 'hero' } },
+      { who: 'narrator', text: '沒有人動。火堆劈啪響了一聲，誰也沒有去撥。', if: { notMet: 'scarlet', full: 'hero' } },
       { who: 'scarlet', mood: 'vow', text: '「凜小姐，請退後三步。這一次，誰也別想從他背後過去。」', if: { met: 'scarlet' } },
       { who: 'sylvie', mood: 'alert', text: '「屋頂上那一晚，我說過了。妳走路，像在追獵物。」', if: { met: 'sylvie', seen: 'banter:rin-sylvie:1' } },
       { who: 'sylvie', mood: 'alert', text: '「我一直覺得，妳走路像在追獵物。」', if: { met: 'sylvie', notSeen: 'banter:rin-sylvie:1' } },
       { who: 'rin', mood: 'serious', text: '「妳說對了。那時候，我自己也不知道在追什麼。」', if: { met: 'sylvie' } },
-      { who: 'liz', mood: 'hushed', text: '「所以這一路，妳一直欠我們一句實話。」', if: { met: 'liz' } },
+      { who: 'liz', mood: 'serious', text: '「所以這一路，妳一直欠我們一句實話。我們背靠背打的時候，妳的刀朝著哪邊？」', if: { met: 'liz' } },
       { who: 'rin', mood: 'serious', text: '「是我欠的。今天還給你們。」', if: { met: 'liz' } },
       { who: 'hero', mood: 'serious', text: '「那天早上她就說了。這一趟下去，她還是走在我後面。」' },
-      { who: 'scarlet', mood: 'serious', text: '「……我明白了。那麼，我有我的做法。」', if: { met: 'scarlet' } },
-      { who: 'marta', text: '「湯要涼了。……孩子，坐下。這碗是妳的，一直都是。」' },
+      { who: 'scarlet', mood: 'serious', text: '「我明白了。那麼……我有我的做法。」', if: { met: 'scarlet' } },
+      { who: 'marta', text: '「湯要涼了。孩子，坐下。這碗是妳的，一直都是。」', if: { notFull: 'hero' } },
+      { who: 'narrator', text: '洛恩把瑪莎塞進行囊的那壺湯倒了一碗，推到凜的面前。', if: { full: 'hero' } },
       N('凜坐下了。這一次，她把湯喝得很慢。'),
     ],
-    summary: '回城那天的晚飯，凜當著大家說出自己本來是靜鐘會派來殺洛恩的人，最後在自己的湯碗前坐了下來。',
+    summary: '凜當著大家說出自己本來是靜鐘會派來殺洛恩的人。絲嘉蕾擋在洛恩身前，莉茲要她還一句實話；最後她坐下來，把湯喝得很慢。',
   },
   // Continuity fix 4 (spec §5.2, §3.6; lore ledger I-119): the arrival after her choice. The society struck its bell and her
   // flattened one did not answer: that is how they know. He is afraid, not cruel; the finale's truths stay the finale's.
@@ -507,18 +513,19 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('天還沒亮，洛恩揹好劍，走到門邊。門口坐著一個人。'),
       N('凜背靠著房門，短刃橫在膝上。跟回城的那一夜一樣，從那裡看得見他。'),
-      { who: 'rin', text: '「要出去，得先過我這裡。」' },
-      { who: 'hero', text: '「燈要的是記憶。妳們跟下去，交出去的就回不來了。」' },
-      { who: 'rin', text: '「你說過，下次也拜託我。這就是下次。」' },
-      { who: 'scarlet', text: '「『不必替人擋』，是閣下說的。這一句，原封不動奉還。」', if: { met: 'scarlet', seen: 'chat:scarlet:2', notFull: 'scarlet' } },
-      { who: 'scarlet', text: '「『不必替人擋』，是你說的，洛恩。這一句，原封不動奉還。」', if: { met: 'scarlet', seen: 'chat:scarlet:2', full: 'scarlet' } },
-      { who: 'scarlet', text: '「盾還在，輪不到閣下一個人去擋。」', if: { met: 'scarlet', notSeen: 'chat:scarlet:2', notFull: 'scarlet' } },
-      { who: 'scarlet', text: '「盾還在，輪不到你一個人去擋，洛恩。」', if: { met: 'scarlet', notSeen: 'chat:scarlet:2', full: 'scarlet' } },
-      { who: 'narrator', text: '走廊的燈一盞一盞亮了，門外站著的不只一個人。', if: { notMet: 'scarlet' } },
-      N('瑪莎披著外套，端著熱湯，站在樓梯口。'),
-      { who: 'marta', text: '「要走，也先吃了再走。吃完，就不想走了。」' },
-      { who: 'hero', text: '「妳們都不睡的嗎。」' },
-      N('那天，洛恩沒有一個人出門。天亮以後，大家一起下去了。'),
+      { who: 'rin', mood: 'serious', text: '「要出去，得先過我這裡。」' },
+      { who: 'hero', mood: 'sad', text: '「燈要的是記憶。妳們跟下去，交出去的就回不來了。」' },
+      { who: 'rin', mood: 'serious', text: '「你說過，下次也拜託我。這就是下次。」' },
+      // Scarlet gives him back his own words from chat:scarlet:2 (「不必替我擋」), as he said them; her address follows her memories.
+      { who: 'scarlet', mood: 'vow', text: '「『不必替我擋』，是閣下說的。這一句，原封不動奉還。」', if: { met: 'scarlet', seen: 'chat:scarlet:2', notFull: 'scarlet' } },
+      { who: 'scarlet', mood: 'vow', text: '「『不必替我擋』，是你說的，洛恩。這一句，原封不動奉還。」', if: { met: 'scarlet', seen: 'chat:scarlet:2', full: 'scarlet' } },
+      { who: 'scarlet', mood: 'vow', text: '「盾還在，輪不到閣下一個人去擋。」', if: { met: 'scarlet', notSeen: 'chat:scarlet:2', notFull: 'scarlet' } },
+      { who: 'scarlet', mood: 'vow', text: '「盾還在，輪不到你一個人去擋，洛恩。」', if: { met: 'scarlet', notSeen: 'chat:scarlet:2', full: 'scarlet' } },
+      { who: 'narrator', text: '房門外傳來腳步聲，不只一個人的。', if: { notMet: 'scarlet' } },
+      N('走廊上，大家都醒著。瑪莎披著外套，端著熱湯站在樓梯口。'),
+      { who: 'marta', text: '「真要走，也先吃了再走。吃飽了，就不想走了。」' },
+      { who: 'hero', mood: 'normal', text: '「妳們都不睡的嗎。」' },
+      N('那一天，洛恩沒有一個人出門。天亮以後，大家一起下去了。'),
     ],
     summary: '天還沒亮，洛恩想一個人下迷宮，門口的凜、走廊上的夥伴和端著熱湯的瑪莎，誰也沒讓他一個人走。',
   },
