@@ -2,19 +2,64 @@ import { test, expect, type Page } from '@playwright/test';
 import { SPECIALS, AFFIXES } from '../../src/scripts/games/starlantern/data/gear';
 import { CHARACTERS } from '../../src/scripts/games/starlantern/data/characters';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
+import { LEGACY_GRID, LEGACY_LINEUP, meet } from '../../src/scripts/games/starlantern/engine/party';
+import { STORY } from '../../src/scripts/games/starlantern/data/story.zh-TW';
+import { T } from '../../src/scripts/games/starlantern/data/text.zh-TW';
+import { CHAINS, chainLength } from '../../src/scripts/games/starlantern/data/story/chains';
+import { ABSORB_CAP, ABSORB_GAIN, SHARD_IDS, SHARD_NAMES } from '../../src/scripts/games/starlantern/data/story/fragments';
+import { memScene } from '../../src/scripts/games/starlantern/data/story/scenes';
+import { favouredRegions } from '../../src/scripts/games/starlantern/data/meetings';
+import { rollPortals, withLead } from '../../src/scripts/games/starlantern/engine/portals';
+import { SKILLS } from '../../src/scripts/games/starlantern/data/skills';
+import { TREES } from '../../src/scripts/games/starlantern/data/trees';
+import { STAT_CATEGORIES } from '../../src/scripts/games/starlantern/engine/stats';
+import { maxValue } from '../../src/scripts/games/starlantern/engine/loot/item';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { version8Save } from '../../src/scripts/games/starlantern/engine/testing';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
 const box = (page: Page) => page.locator('#sl-screen').boundingBox();
 
+type Rect = { x: number; y: number; width: number; height: number };
+const apart = (a: Rect, b: Rect) => a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y;
+/** If the dialogue box shows a speaker's portrait, it must lie inside the screen and clear of the text and the name plate. Returns the talk box height, or null with no portrait. */
+const faceFits = async (page: Page): Promise<number | null> => {
+  const faceEl = page.locator('.slx-talk:not([hidden]) img.slx-talk-face');
+  if ((await faceEl.count()) === 0) return null;
+  const scr = (await box(page))!;
+  const face = (await faceEl.first().boundingBox())!;
+  const talk = (await page.locator('.slx-talk:not([hidden])').first().boundingBox())!;
+  const text = (await page.locator('.slx-talk:not([hidden]) .slx-text').first().boundingBox())!;
+  const name = await page.locator('.slx-talk:not([hidden]) .slx-name:not([hidden])').first().boundingBox();
+  expect(face.y, 'portrait top inside the screen').toBeGreaterThanOrEqual(scr.y - 0.5);
+  expect(face.x, 'portrait left inside the screen').toBeGreaterThanOrEqual(scr.x - 0.5);
+  expect(face.x + face.width, 'portrait right inside the screen').toBeLessThanOrEqual(scr.x + scr.width + 0.5);
+  expect(face.y + face.height, 'portrait bottom inside the screen').toBeLessThanOrEqual(scr.y + scr.height + 0.5);
+  expect(apart(face, text), 'portrait clear of the dialogue text').toBe(true);
+  if (name) expect(apart(face, name), 'portrait clear of the name plate').toBe(true);
+  expect(apart(face, talk), 'portrait stands above the whole talk box').toBe(true);
+  return talk.height;
+};
+
 test.describe('starlantern', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'chromium only');
 
-  /** The town's own greeting lines: what it says on 繼續 when there is no notice (such as 存檔無法讀取) to give. */
-  const TOWN_LINE = /暮霧又濃了些|聽說迷宮深處有星燈的光|補給品記得在出發前備齊/;
+  /**
+   * Writes the story setting before the game opens. A new game plays the prologue, so most tests turn the story off;
+   * the story tests pass 'all' or 'major'. Other settings keep their defaults.
+   */
+  const storySetting = (page: Page, story: 'none' | 'major' | 'all' = 'none') =>
+    // Written only when absent: the init script runs again on every navigation, and a reload must not undo a setting the test changed.
+    page.addInitScript((s) => {
+      if (localStorage.getItem('starlantern-settings') === null) localStorage.setItem('starlantern-settings', JSON.stringify({ volume: 70, textSpeed: 'mid', vibrate: true, story: s }));
+    }, story);
+
+  /** The town's own greeting lines, straight from the story data: what it says on 繼續 when there is no notice (such as 存檔無法讀取) to give. */
+  const townLines = (): string[] => [...Object.values(STORY.townLines).flat(), ...Object.values(STORY.rinLines).flat(), ...STORY.rinOath, ...STORY.bellkeeper.oath, ...STORY.bellkeeper.after];
   /** After 繼續: the town greets as usual, and the game in play is exactly the stored save. */
   const expectSaveLoaded = async (page: Page) => {
-    await expect(page.locator('.slx-town .slx-talk .slx-text')).toHaveText(TOWN_LINE);
+    await expect.poll(async () => townLines().includes((await page.locator('.slx-town .slx-talk .slx-text').textContent()) ?? '')).toBe(true);
     const r = await page.evaluate(() => ({
       saved: JSON.parse(localStorage.getItem('starlantern-save') ?? 'null'),
       game: JSON.parse(JSON.stringify((window as unknown as Dbg).__starlanternDebug.game.state)),
@@ -22,6 +67,30 @@ test.describe('starlantern', () => {
     expect(r.saved).not.toBeNull();
     expect(r.game).toEqual(r.saved);
   };
+
+  test('story portraits fit a 390x844 phone: no horizontal scroll, inside the screen, clear of the text', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await storySetting(page, 'all');
+    await page.goto('/games/starlantern?seed=7&fast=1');
+    await page.evaluate(() => localStorage.removeItem('starlantern-save'));
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
+    await page.keyboard.press('Enter');
+    let faces = 0;
+    for (let i = 0; i < 80 && faces < 6; i++) {
+      if (await page.locator('.slx-talk:not([hidden])').count()) {
+        if ((await faceFits(page)) !== null) {
+          faces++;
+          const k = (await box(page))!.width / 640;
+          expect((await page.locator('.slx-talk:not([hidden]) img.slx-talk-face').first().boundingBox())!.height).toBeGreaterThanOrEqual(2 * 96 * k - 0.5);
+          expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+        }
+        await page.keyboard.press('z');
+      }
+      await page.waitForTimeout(60);
+    }
+    expect(faces, 'the prologue shows portraits').toBeGreaterThanOrEqual(3);
+  });
 
   test('forwards the old preview address to the game page', async ({ page }) => {
     await page.goto('/games/starlantern-next?seed=3');
@@ -57,6 +126,7 @@ test.describe('starlantern', () => {
   });
 
   test('tells the player when a save could not be read, and starts fresh', async ({ page }) => {
+    await storySetting(page);
     await page.goto('/games/starlantern');
     await page.evaluate(() => localStorage.setItem('starlantern-save', '{broken'));
     await page.reload();
@@ -65,7 +135,56 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-gold')).toHaveText('150 G');
   });
 
+  test('an old save opens with the rework notice and a free respec (plan 8d)', async ({ page }) => {
+    await storySetting(page);
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    // A version 8 save as plan 8c's build wrote it: strengthening nodes in every tree, a legendary ring on Noel.
+    const trees = (JSON.parse(readFileSync('src/scripts/games/starlantern/engine/__fixtures__/roster-8b.json', 'utf8')) as { trees: Record<string, { id: string }[][]> }).trees;
+    const { raw } = version8Save(trees);
+    await page.goto('/games/starlantern');
+    await page.evaluate((r) => localStorage.setItem('starlantern-save', r), raw);
+    await page.reload();
+    await page.locator('.slx-title [data-id=cont]').click();
+    await expect(page.locator('.slx-town .slx-talk')).toContainText(T.notices['tree-reworked']);
+    const key = (k: string) => page.keyboard.press(k);
+    const closeTalk = async () => { for (let i = 0; i < 6 && (await page.locator('.slx-talk').isVisible()); i++) await key('z'); };
+    const choose = async (scope: string, label: string) => {
+      for (let i = 0; i < 12; i++) {
+        const cur = (await page.locator(`${scope} [aria-selected=true] .slx-label`).first().textContent()) ?? '';
+        if (cur.startsWith(label)) break;
+        await key('ArrowDown');
+      }
+      await key('Enter');
+    };
+    await closeTalk();
+    await choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await closeTalk();
+    await choose('.slx-inn', '重置配點');
+    const noel = page.locator('.slx-list [role=option]').filter({ hasText: CHARACTERS.noel.name });
+    await expect(noel.locator('.slx-right')).toHaveText(T.ui2.inn.free);
+    await expect(page.locator('.slx-list [role=option] .slx-right')).toHaveText(Array(10).fill(T.ui2.inn.free));
+    await choose('.slx-list', CHARACTERS.noel.name);
+    await expect(page.locator('.slx-inn .slx-confirm')).toContainText('這次免費');
+    const gold = await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.gold);
+    await key('ArrowUp'); await key('Enter');                                    // 是
+    await expect(page.locator('.slx-inn .slx-talk')).toContainText('配點已重置');
+    const after = await page.evaluate(() => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      return { gold: s.gold, noel: s.party.roster.noel, saved: JSON.parse(localStorage.getItem('starlantern-save') ?? 'null') };
+    });
+    expect(after.gold).toBe(gold);
+    expect(after.noel.tree).toEqual({ 'fire-star': 1 });
+    expect(after.noel).not.toHaveProperty('freeRespec');
+    expect(after.saved.version).toBe(9);
+    expect(after.saved.party.roster.noel).not.toHaveProperty('freeRespec');
+    expect(after.saved.party.roster.liz.freeRespec).toBe(true);
+    expect(errors).toEqual([]);
+  });
+
   test('plays title → town with the keyboard only', async ({ page }) => {
+    await storySetting(page);
     await page.goto('/games/starlantern');
     await page.evaluate(() => localStorage.removeItem('starlantern-save'));
     await page.reload();
@@ -88,6 +207,7 @@ test.describe('starlantern', () => {
   });
 
   test('walks through the four facilities with the keyboard', async ({ page }) => {
+    await storySetting(page);
     await page.goto('/games/starlantern');
     await page.evaluate(() => localStorage.removeItem('starlantern-save'));
     await page.reload();
@@ -119,6 +239,7 @@ test.describe('starlantern', () => {
   });
 
   test('plays with the mouse only: menus, dialogue and the 返回 control', async ({ page }) => {
+    await storySetting(page);
     await page.goto('/games/starlantern');
     await page.evaluate(() => localStorage.removeItem('starlantern-save'));
     await page.reload();
@@ -126,6 +247,7 @@ test.describe('starlantern', () => {
     await page.locator('.slx-title [data-id=new]').click();
     await expect(page.locator('.slx-town')).toBeVisible();
     await talkThrough();
+    await legacyRoster(page);
     await page.locator('.slx-town [data-id=guild]').click();
     await expect(page.locator('.slx-guild')).toBeVisible();
     await talkThrough();
@@ -138,6 +260,10 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-guild')).toBeVisible();
     await page.locator('.slx-cmd [data-id=status]').click();
     await expect(page.locator('.slx-status-scene')).toBeVisible();
+    await expect(page.locator('.slx-status-name')).toContainText('洛恩');       // the hero leads
+    await page.locator('.slx-status-next').click();
+    await page.locator('.slx-status-next').click();
+    await expect(page.locator('.slx-status-name')).toContainText('絲嘉蕾');
     await page.locator('[data-tab=skills]').click();
     await expect(page.locator('.slx-status-body')).toContainText('挑釁');
     await page.locator('.slx-status-next').click();
@@ -157,6 +283,7 @@ test.describe('starlantern', () => {
   });
 
   test('plays the whole loop: depart, fight, return with the lamp, rest, reload and continue', async ({ page }) => {
+    await storySetting(page);
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/games/starlantern?seed=7&fast=1');
@@ -175,6 +302,7 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
     await key('Enter');
     await expect(page.locator('.slx-town')).toBeVisible(); await closeTalk();
+    await legacyRoster(page);
     await choose('.slx-town', '傳送門廣場');
     await expect(page.locator('.slx-gate')).toBeVisible(); await closeTalk();
     await key('Enter');                                    // 選擇傳送門
@@ -219,7 +347,36 @@ test.describe('starlantern', () => {
 
   /** Shared walkers for the portal-run tests. */
   type Dbg = { __starlanternDebug: { game: any } };
-  const setup = async (page: Page, seed: number) => {
+  /** The legacy five, then the hero and Rin, recruited in that order and standing on the old grid with the hero in Selene's cell: the new start no longer has the old five to page to. */
+  const legacyRoster = (page: Page) => page.evaluate(([ids, grid]) => {
+    const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+    p.recruited = [...ids, 'hero', 'rin'];
+    p.grid = grid;
+  }, [LEGACY_LINEUP, LEGACY_GRID.map((c) => (c === 'selene' ? 'hero' : c))] as const);
+  /** Every branch name of the tree page shows whole inside the columns (a reveal scroll must not hide them, 8d Task 5). */
+  const branchNamesShown = (page: Page) => page.locator('.slx-tree-cols').evaluate((c) => {
+    const box = c.getBoundingClientRect();
+    return [...c.querySelectorAll('.slx-tree-branch-name')].every((h) => { const r = h.getBoundingClientRect(); return r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5; });
+  });
+  /**
+   * Every tree node whose name breaks onto a second line (a variant's skill and label on two rows, or the rank pushed under
+   * the name) or runs out of its own width (8d Task 6 review). The hero's five narrow columns (`.slx-tree-wide`) put the rank
+   * under the name by design, so there only the name itself is held to one line.
+   */
+  const treeNameFaults = (page: Page) => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node')].filter((n) => {
+    const name = n.querySelector<HTMLElement>('.slx-skill-name')!;
+    const below = (els: Element[]) => els.some((e) => e.getBoundingClientRect().top > els[0].getBoundingClientRect().top + 4);
+    const head = n.closest('.slx-tree-wide') ? [] : [...n.querySelector('.slx-skill-head')!.children];
+    return below([...name.children]) || below(head) || name.scrollWidth > name.clientWidth + 0.5;
+  }).map((n) => n.getAttribute('data-node')!));
+  /** Page the status screen with 下一位 until `name` shows, at most once round the recruited members. */
+  const flipTo = async (page: Page, name: string) => {
+    const recruited: number = await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.party.recruited.length);
+    const label = page.locator('.slx-status-name');
+    for (let i = 0; i < recruited && !((await label.textContent()) ?? '').includes(name); i++) await page.locator('.slx-status-next').click();
+  };
+  const setup = async (page: Page, seed: number, opts: { story: 'none' | 'major' | 'all' } = { story: 'none' }) => {
+    await storySetting(page, opts.story);
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
@@ -395,7 +552,8 @@ test.describe('starlantern', () => {
     const primary = page.locator('.slx-stat-cat[data-cat=primary]');
     await expect(primary.locator('.slx-stat-cat-head')).toHaveText('主屬性');
     // One column per stat source: the gear column holds the spear's strength.
-    await expect(primary.locator('thead th')).toContainText(['裝備', '主屬性']);
+    await expect(primary.locator('thead th')).toContainText(['裝備', '主屬']);   // 主屬性 short in the heading (plan 8g Task 5 review)
+    await expect(primary.locator('thead th[title=主屬性]')).toHaveText('主屬');
     await expect(primary.locator('tr[data-stat=str] td.slx-gear')).toHaveText('+6');
     await page.locator('.slx-back').click();
     await expect(page.locator('.slx-guild')).toBeVisible();
@@ -459,17 +617,144 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  /**
+   * Plan 5g named the overlay `glow-starlit` before it became `starlit.png`: nothing may ask for that old name. The epic
+   * frame and the starlit overlay were published with plan 5d's G1 sample (Task 8): asking for them must succeed.
+   */
+  const UNPUBLISHED_RARITY_ART = ['ui/glow-starlit.png'];
+  /** Every starlantern asset response, to check none failed. */
+  const assetResponses = (page: Page) => {
+    const seen: { url: string; status: number }[] = [];
+    page.on('response', (r) => { if (r.url().includes('/assets/games/starlantern/')) seen.push({ url: r.url(), status: r.status() }); });
+    return seen;
+  };
+  const STARLIT_AFFIXES = (['atk', 'crit', 'str', 'hp'] as const).map((key) => ({ key, value: maxValue(key, 6) }));
+
+  test('epic and starlit gear come home, read their words and survive a save', async ({ page }) => {
+    const asked: string[] = [];
+    page.on('request', (r) => asked.push(r.url()));
+    const answered = assetResponses(page);
+    const w = await setup(page, 7);
+    await depart(page, w);
+    const uids: { epic: number; star: number } = await page.evaluate((starAffixes) => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const epic = g.mintUid(), star = g.mintUid();
+      g.run.loot.gear.push(
+        { uid: epic, base: 'iron-sword', rarity: 'epic', ilvl: 6, enhance: 0,
+          affixes: [{ key: 'atk', value: 5 }, { key: 'crit', value: 3 }, { key: 'hp', value: 12 }, { key: 'str', value: 3 }] },
+        { uid: star, base: 'thorn-spear', rarity: 'legendary', ilvl: 6, enhance: 0, special: 'lg-chizuru', starlit: true, affixes: starAffixes },
+      );
+      return { epic, star };
+    }, STARLIT_AFFIXES);
+    await lampHome(page, w);
+    await expect(page.locator('.slx-town .slx-talk')).toContainText('鐵劍・史詩');
+    await expect(page.locator('.slx-town .slx-talk')).toContainText('雙月槍・星輝傳說');
+    await w.closeTalk();
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=equip]').click();
+    await expect(page.locator('.slx-equip-scene')).toBeVisible();
+    const star = page.locator('.slx-bag-cell[aria-label="雙月槍・星輝傳說"]');
+    const epic = page.locator('.slx-bag-cell[aria-label="鐵劍・史詩"]');
+    await expect(star).toHaveClass(/slx-rarity-legendary/);
+    await expect(star).toHaveClass(/slx-starlit/);
+    await expect(epic).toHaveClass(/slx-rarity-epic/);
+    await expect(epic).toHaveCSS('color', 'rgb(179, 107, 255)');
+    // Plan 5d Task 8: the epic frame and the star light are published; both pieces' gear art too (iron sword, 雙月槍).
+    await expect(epic.locator('.slx-rframe.slx-rframe-epic')).toHaveCount(1);
+    await expect(epic.locator('img.slx-gear-ico')).toHaveCount(1);
+    await expect(star.locator('.slx-rstarlit')).toHaveCount(1);
+    await expect(star.locator('.slx-rglow')).toHaveCount(1);
+    await star.hover();
+    await expect(page.locator('.slx-item-detail .slx-line-starlit')).toHaveText(T.gear.starlitLine);
+    await epic.hover();
+    // The detail name takes the epic colour (it was gold whatever the rarity before plan 5g).
+    await expect(page.locator('.slx-item-detail .slx-item-name')).toHaveText('鐵劍・史詩');
+    await expect(page.locator('.slx-item-detail .slx-item-name')).toHaveCSS('color', 'rgb(179, 107, 255)');
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter'); await w.key('ArrowUp'); await w.key('Enter');
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText('已存檔。', { timeout: 5000 });
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
+    await w.key('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await expectSaveLoaded(page);
+    const kept = await page.evaluate((u) => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      const all = [...s.bag, ...Object.values(s.party.roster).flatMap((m: any) => Object.values(m.equip))] as any[];
+      const e = all.find((it) => it.uid === u.epic), st = all.find((it) => it.uid === u.star);
+      return { epic: e?.rarity, epicStarlit: e?.starlit, star: st?.rarity, starlit: st?.starlit, affixes: st?.affixes };
+    }, uids);
+    expect(kept).toEqual({ epic: 'epic', epicStarlit: undefined, star: 'legendary', starlit: true, affixes: STARLIT_AFFIXES });
+    expect(asked.filter((u) => UNPUBLISHED_RARITY_ART.some((a) => u.endsWith(a)))).toEqual([]);
+    expect(answered.filter((a) => a.status >= 400)).toEqual([]);
+    expect(answered.some((a) => a.url.endsWith('ui/rarity-epic.png') && a.status === 200)).toBe(true);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('a starlit chest drop raises a star-light pillar', async ({ page }) => {
+    const answered = assetResponses(page);
+    const w = await setup(page, 7);
+    await depart(page, w);
+    // As in the rare chest test, but every chest's gear is a starlit legendary.
+    const chests: number = await page.evaluate((starAffixes) => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      let n = 0;
+      g.map().tiles.forEach((row: string[], y: number) => row.forEach((t, x) => {
+        if (t !== 'chest') return;
+        g.run.gearRolls[`chest:${g.floor}:${x},${y}`] = {
+          uid: g.mintUid(), base: 'thorn-spear', rarity: 'legendary', ilvl: 6, enhance: 0, special: 'lg-chizuru', starlit: true, affixes: starAffixes,
+        };
+        n++;
+      }));
+      return n;
+    }, STARLIT_AFFIXES);
+    expect(chests).toBeGreaterThan(0);
+    const pillar = page.locator('.slx-pillar.slx-pillar-starlit.slx-pillar-legend');
+    const tried: string[] = [];
+    let raised = false;
+    let lineIcon = false;
+    for (let c = 0; c < chests && !raised; c++) {
+      const route = await pathTo(page, 'chest', tried);
+      if (!route) break;
+      tried.push(route.at);
+      for (const k of route.keys) {
+        await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.encounter = 0; });
+        await page.keyboard.press(k);
+      }
+      raised = (await pillar.count()) > 0;
+      if (raised) {
+        lineIcon = await page.locator('.slx-talk .slx-text img.slx-gear-ico[src$="/gear/lg-chizuru.png"]').evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth === 26)
+          .catch(() => false);
+      }
+      await w.closeTalk();
+    }
+    expect(raised).toBe(true);
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.run.loot.gear.map((it: any) => it.starlit === true))).toContain(true);
+    // The chest line names the piece after its published gear icon, which loaded; the spear's art answered 200.
+    expect(answered.some((a) => a.url.endsWith('/gear/lg-chizuru.png') && a.status === 200)).toBe(true);
+    expect(answered.filter((a) => a.status >= 400)).toEqual([]);
+    expect(lineIcon).toBe(true);
+    expect(w.errors).toEqual([]);
+  });
+
   test('the talent board shows the cursor\'s node at both ends, and its scroll cues follow the hidden rows', async ({ page }) => {
     const w = await setup(page, 7);
     await page.locator('.slx-town [data-id=guild]').click();
     await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await legacyRoster(page);
     await page.evaluate(() => {
       const m = (window as unknown as Dbg).__starlanternDebug.game.state.party.roster.noel;
       // Two keystones taken, so the third cell reads 關鍵已滿 (the widest cell state) for the cut-off check below.
       m.level = 50; m.talents = { 'noel-t00': 5, 'noel-t01': 5, 'noel-t02': 2, 'noel-k0': 1, 'noel-k1': 1 };
     });
     await page.locator('.slx-guild [data-id=status]').click();
-    for (let i = 0; i < 8 && !((await page.locator('.slx-status-name').textContent()) ?? '').includes('諾艾兒'); i++) await page.locator('.slx-status-next').click();
+    await flipTo(page, '諾艾兒');
     await page.locator('[data-tab=talent]').click();
     const board = page.locator('.slx-talent-board');
     const cur = page.locator('.slx-talent-node.slx-row-cur');
@@ -535,6 +820,715 @@ test.describe('starlantern', () => {
     expect((await page.evaluate(measure, true)).cut).toEqual([expect.stringMatching(/^noel-t00 /)]);
   });
 
+  test.describe('the status sheet', () => {
+    test('shows no native scrollbar on any page, and every row is reachable by the ▲/▼ cues, the keys and the wheel', async ({ playwright }, info) => {
+      test.setTimeout(180000);
+      // Headless Chromium hides scrollbars; in this browser they show, so a native one takes room and is measured as the
+      // player sees it. (A launch option cannot be set for one group, so this test opens its own browser.)
+      const browser = await playwright.chromium.launch({ args: ['--mute-audio'], ignoreDefaultArgs: ['--hide-scrollbars'] });
+      const context = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: { width: 1280, height: 720 } });
+      const page = await context.newPage();
+      try {
+        const w = await setup(page, 7);
+        await page.locator('.slx-town [data-id=guild]').click();
+        await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+        // The fullest sheets: everyone recruited at the top level with every tree node at its top rank, each slot wearing a
+        // +10 named piece (one with a power where the slot has one) with four affixes at their top values.
+        const gear = Object.fromEntries(['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring'].map((slot) => {
+          const named = Object.values(SPECIALS).filter((s) => s.slot === slot)
+            .sort((a, b) => Number(!!b.power) - Number(!!a.power) || b.name.length - a.name.length)[0];
+          const keys = (Object.keys(AFFIXES) as (keyof typeof AFFIXES)[]).filter((k) => AFFIXES[k].slots.includes(slot as never)).slice(0, 4);
+          return [slot, {
+            base: Object.values(EQUIPMENT).find((e) => e.slot === slot)!.id, rarity: named?.rarity ?? 'rare', special: named?.id,
+            affixes: keys.map((key) => ({ key, value: maxValue(key, 60) })),
+          }];
+        }));
+        const trees = Object.fromEntries(Object.entries(TREES).map(([id, t]) => [id, Object.fromEntries(t.branches.flatMap((b) => b.nodes.map((n) => [n.id, n.maxRank])))]));
+        await page.evaluate(({ gear, trees }) => {
+          const g = (window as unknown as Dbg).__starlanternDebug.game;
+          const p = g.state.party;
+          p.recruited = Object.keys(p.roster);
+          for (const id of p.recruited) {
+            const m = p.roster[id];
+            m.level = 50;
+            m.tree = trees[id];
+            for (const slot of ['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring1', 'ring2']) {
+              const d = gear[slot.startsWith('ring') ? 'ring' : slot];
+              m.equip[slot] = { uid: g.mintUid(), base: d.base, rarity: d.rarity, ...(d.special ? { special: d.special } : {}), ilvl: 60, enhance: 10, affixes: d.affixes };
+            }
+          }
+        }, { gear, trees });
+        await page.locator('.slx-guild [data-id=status]').click();
+        await expect(page.locator('.slx-status-scene')).toBeVisible();
+
+        /**
+         * Every box in the sheet that can scroll: none draws a native scrollbar or hides anything sideways, and one taller
+         * than its room sits in a cue frame whose ▼/▲ step it from end to end, every row of it whole on screen on the way.
+         */
+        const audit = () => page.evaluate(() => {
+          const scene = document.querySelector<HTMLElement>('.slx-status-scene')!;
+          const scrolls = [scene, ...scene.querySelectorAll<HTMLElement>('*')].filter((e) => /auto|scroll/.test(getComputedStyle(e).overflowY + getComputedStyle(e).overflowX));
+          const name = (e: HTMLElement) => `.${[...e.classList].join('.')}`;
+          const bars = scrolls.flatMap((e) => {
+            const cs = getComputedStyle(e);
+            const side = e.offsetWidth - e.clientWidth - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+            const under = e.offsetHeight - e.clientHeight - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth);
+            return side > 0.5 || under > 0.5 ? [`${name(e)} bar ${side}/${under}`] : [];
+          });
+          const sideways = scrolls.filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => `${name(e)} ${e.scrollWidth}>${e.clientWidth}`);
+          const ROWS = '.slx-status-facts p, .slx-stat-cat-head, .slx-stat-table tr, .slx-gear-row, .slx-tab-skills > .slx-skill, .slx-tree-node, .slx-talent-node, .slx-tab-ultimate > *';
+          const unreachable = scrolls.filter((pane) => pane.scrollHeight > pane.clientHeight + 1).flatMap((pane) => {
+            const up = pane.parentElement!.querySelector<HTMLElement>(':scope > .slx-more-up');
+            const down = pane.parentElement!.querySelector<HTMLElement>(':scope > .slx-more-down');
+            if (!up || !down) return [`${name(pane)} has no cues`];
+            const rows = [...pane.querySelectorAll<HTMLElement>(ROWS)].filter((r) => r.parentElement!.closest('.slx-status-body, .slx-tree-cols, .slx-talent-board') === pane);
+            const seen = new Set<HTMLElement>();
+            const look = () => {
+              const box = pane.getBoundingClientRect();
+              for (const r of rows) { const b = r.getBoundingClientRect(); if (b.top >= box.top - 0.5 && b.bottom <= box.bottom + 0.5) seen.add(r); }
+            };
+            pane.scrollTop = 0;
+            pane.dispatchEvent(new Event('scroll'));
+            const out: string[] = [];
+            if (down.hidden) out.push(`${name(pane)} hides ▼ with rows below`);
+            look();
+            for (let i = 0; i < 200 && !down.hidden; i++) { down.click(); look(); }
+            if (pane.scrollTop < pane.scrollHeight - pane.clientHeight - 1) out.push(`${name(pane)} ▼ stops short`);
+            if (up.hidden) out.push(`${name(pane)} hides ▲ at the bottom`);
+            for (let i = 0; i < 200 && !up.hidden; i++) up.click();
+            if (pane.scrollTop !== 0) out.push(`${name(pane)} ▲ stops short`);
+            const missed = rows.filter((r) => !seen.has(r)).map((r) => (r.textContent ?? '').slice(0, 12));
+            return missed.length ? [...out, `${name(pane)} never shows: ${missed.join(' | ')}`] : out;
+          });
+          return { bars, sideways, unreachable };
+        });
+        const flipToId = async (id: string) => {
+          const art = page.locator('.slx-status-art');
+          for (let i = 0; i < 12 && !((await art.getAttribute('class')) ?? '').includes(`slx-aura-${id} `) && !((await art.getAttribute('class')) ?? '').endsWith(`slx-aura-${id}`); i++) await page.locator('.slx-status-next').click();
+          await expect(page.locator('.slx-status-name b')).toHaveText(CHARACTERS[id as keyof typeof CHARACTERS].name);
+        };
+        const longest = Object.values(CHARACTERS).filter((c) => c.id !== 'hero' && c.id !== 'rin').sort((a, b) => b.name.length - a.name.length)[0].id;
+        for (const id of ['hero', 'rin', longest, 'safira', 'bobby']) {
+          await flipToId(id);
+          for (const tab of ['stats', 'gear', 'skills', 'tree', 'talent', 'ultimate']) {
+            await page.locator(`[data-tab=${tab}]`).click();
+            // Every category open: the longest the stats page gets (the fold state is kept, so once is enough).
+            const closed = page.locator('.slx-stat-cat-head[aria-expanded=false]');
+            for (let i = 0; tab === 'stats' && i < 10 && (await closed.count()); i++) await closed.first().click();
+            expect(await audit(), `${id} ${tab}`).toEqual({ bars: [], sideways: [], unreachable: [] });
+            // Every node's name whole on its tree (Bobby's 護盾產生器 is the longest, plan 8c final).
+            if (tab === 'tree') {
+              const cut = await page.locator('.slx-tree-node .slx-skill-name').evaluateAll((ns) => ns.filter((n) => n.scrollWidth > n.clientWidth + 0.5).map((n) => n.textContent));
+              expect(await page.locator('.slx-tree-node .slx-skill-name').count(), `${id} tree`).toBeGreaterThan(0);
+              expect(cut, `${id} tree`).toEqual([]);
+            }
+          }
+        }
+
+        // The keys: ↓ on the hero's skills page goes all the way down, and the cues follow.
+        await flipToId('hero');
+        await page.locator('[data-tab=skills]').click();
+        const body = page.locator('.slx-status-body');
+        const frame = (d: 'up' | 'down') => page.locator(`.slx-status-frame > .slx-more-${d}`);
+        await expect(frame('down')).toBeVisible();
+        await expect(frame('up')).toBeHidden();
+        for (let i = 0; i < 80 && (await frame('down').isVisible()); i++) await w.key('ArrowDown');
+        await expect(frame('down')).toBeHidden();
+        await expect(frame('up')).toBeVisible();
+        expect(await body.evaluate((b) => b.scrollHeight - b.clientHeight - b.scrollTop)).toBeLessThanOrEqual(1);
+        // The wheel: over the gear page it scrolls the page, and ▲ comes up.
+        await page.locator('[data-tab=gear]').click();
+        await expect(frame('up')).toBeHidden();
+        const at = (await body.boundingBox())!;
+        await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+        await page.mouse.wheel(0, 200);
+        await expect.poll(() => body.evaluate((b) => b.scrollTop)).toBeGreaterThan(0);
+        await expect(frame('up')).toBeVisible();
+        // The stats page's row cursor: ↓ to the last row brings it into view, with nothing left below.
+        await page.locator('[data-tab=stats]').click();
+        const last = STAT_CATEGORIES[STAT_CATEGORIES.length - 1].keys.at(-1)!;
+        const cur = page.locator('.slx-tab-stats .slx-row-cur');
+        for (let i = 0; i < 120 && (await cur.getAttribute('data-stat')) !== last; i++) await w.key('ArrowDown');
+        await expect(cur).toHaveAttribute('data-stat', last);
+        await expect(frame('down')).toBeHidden();
+        await expect(frame('up')).toBeVisible();
+        const curInView = await page.evaluate(() => {
+          const b = document.querySelector('.slx-status-body')!.getBoundingClientRect();
+          const c = document.querySelector('.slx-tab-stats .slx-row-cur')!.getBoundingClientRect();
+          return c.top >= b.top - 0.5 && c.bottom <= b.bottom + 0.5;
+        });
+        expect(curInView).toBe(true);
+        expect(w.errors).toEqual([]);
+      } finally {
+        await browser.close();
+      }
+    });
+  });
+
+  test('the tree shows pairs and swaps a side (plan 8d)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    // Noel's tree has a pair (連星 / 重星) at branch 0 tier 1 and a mechanic pair (冷靜 / 反噬無效) at branch 1 tier 1.
+    await legacyRoster(page);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.party.roster.noel.level = 20;
+      g.state.party.roster.noel.tree = { 'fire-star': 1, 'noel-star-twin': 2, 'ice-star': 1, 'noel-calm': 1 };
+    });
+    const noelTree = () => page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.party.roster.noel.tree);
+    /** Every row and tag of the pair, and the 冷靜 node, hold their text inside their own width. */
+    const fits = () => page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-pair, .slx-tree-pair > *, .slx-tree-node[data-node=noel-calm], .slx-tree-pair .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className));
+
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+    await expect(page.locator('[data-tab=tree]')).toHaveAttribute('aria-selected', 'true');
+    await flipTo(page, CHARACTERS.noel.name);
+    const pair = page.locator('.slx-tree-branch[data-branch="0"] .slx-tree-pair').first();   // 連星 / 重星 (延燒 / 聚焰 is the second)
+    await expect(pair.locator('.slx-tree-node')).toHaveCount(2);
+    await expect(pair.locator('.slx-tree-pair-tag')).toHaveText(T.ui2.tree.pairTag);
+    await expect(pair.locator('.slx-tree-node').first()).toContainText('火之星彈・連星');
+    await expect(pair.locator('.slx-tree-node').nth(1)).toContainText('火之星彈・重星');
+    await expect(page.locator('.slx-tree-node[data-node=noel-star-heavy]')).toHaveClass(/slx-node-swap/);
+    await expect(page.locator('.slx-tree-node[data-node=noel-calm] img')).toHaveCount(0);   // a mechanic node has no icon
+    // The cursor on 冷靜 (branch 1 tier 1, after branch 0's seven rows): its rule now and next.
+    for (let i = 0; i < 8; i++) await w.key('ArrowDown');
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('熱度上限 6。'));
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.nextMod('熱度上限 7。'));
+    expect(await fits()).toEqual([]);
+    // 冷靜 already shows, so the cursor scrolls nothing: the columns stay at the top, every branch name whole (8d Task 5).
+    expect(await page.locator('.slx-tree-cols').evaluate((c) => c.scrollTop)).toBe(0);
+    expect(await branchNamesShown(page)).toBe(true);
+    await expect(page.locator('.slx-tree-frame .slx-more-up')).toBeHidden();
+    await shot('tree-1280');
+    // Scrolled down, the ▲ cue shows and covers no text: no node's name or rank, not the line above the columns.
+    await page.locator('.slx-tree-cols').evaluate((c) => { c.scrollTop = 30; c.dispatchEvent(new Event('scroll')); });
+    const upCue = page.locator('.slx-tree-frame .slx-more-up');
+    await expect(upCue).toBeVisible();
+    const covered = await upCue.evaluate((cue) => {
+      const r = cue.getBoundingClientRect();
+      const frame = cue.closest('.slx-tab-tree')!;
+      const texts = [...frame.querySelectorAll<HTMLElement>('.slx-tree-node .slx-skill-name, .slx-tree-node .slx-skill-rank, .slx-tree-node .slx-tree-state, .slx-tree-node .slx-tree-kind, .slx-tree-left, .slx-tree-capstone, .slx-tree-branch-name')];
+      return texts.filter((e) => {
+        const t = e.getBoundingClientRect();
+        // Only what shows: a row scrolled out of the columns is hidden by them.
+        const cols = frame.querySelector('.slx-tree-cols')!.getBoundingClientRect();
+        if (e.closest('.slx-tree-cols') && (t.bottom <= cols.top || t.top >= cols.bottom)) return false;
+        return t.width > 0 && r.left < t.right && t.left < r.right && r.top < t.bottom && t.top < r.bottom;
+      }).map((e) => `${e.className}:${e.textContent}`);
+    });
+    expect(covered).toEqual([]);
+    await page.locator('.slx-tree-cols').evaluate((c) => { c.scrollTop = 0; c.dispatchEvent(new Event('scroll')); });
+
+    // Two clicks on the empty side change the side, free.
+    const heavy = page.locator('.slx-tree-node[data-node=noel-star-heavy]');
+    await heavy.click();
+    await expect(page.locator('.slx-tree-msg')).toHaveText(T.ui2.tree.swapPending);
+    // The empty side previews its change with the workshop's card (plan 8g Task 8): wrapping, never spilling.
+    const preview = page.locator('.slx-tree-info .slx-tree-preview');
+    await expect(preview).toContainText('段數 2 → 1');
+    for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      await page.waitForTimeout(150);
+      expect(await preview.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), `the preview inside its line at ${vw}`).toBe(true);
+      await shot(`tree-preview-${vw}`);
+    }
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await heavy.click();
+    await expect(page.locator('.slx-tree-msg')).toHaveText(T.ui2.tree.swapped);
+    expect(await noelTree()).toEqual({ 'fire-star': 1, 'noel-star-heavy': 2, 'ice-star': 1, 'noel-calm': 1 });
+    await expect(heavy).toContainText('2／3');
+
+    for (const [vw, vh, name] of [[844, 390, 'tree-844'], [390, 844, 'tree-390']] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      expect(await fits(), name).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), name).toBe(true);
+      await shot(name);
+    }
+
+    // The skills page names the variant whole.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('[data-tab=skills]').click();
+    const star = page.locator('.slx-tab-skills [data-skill=fire-star] .slx-skill-name');
+    await expect(star).toHaveText('火之星彈・重星');
+    expect(await star.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5)).toBe(true);
+    await shot('skills-390');
+
+    // And so does the battle menu.
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      for (const e of g.battle.enemies) { e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1; }
+    });
+    for (let i = 0; i < 80; i++) {
+      if (!(await page.locator('.slx-bcmd [role=option]').count())) { await page.waitForTimeout(50); continue; }
+      const who = (await page.locator('.slx-bcmd .slx-who').textContent()) ?? '';
+      if (who.startsWith(CHARACTERS.noel.name)) break;
+      await w.choose('.slx-bcmd', '防禦');
+    }
+    await expect(page.locator('.slx-bcmd .slx-who')).toContainText(CHARACTERS.noel.name);
+    await w.choose('.slx-bcmd', '技能');
+    const item = page.locator('.slx-bsub [role=option]').filter({ hasText: '火之星彈・重星' });
+    await expect(item).toHaveCount(1);
+    for (const [vw, vh, name] of [[1280, 720, 'battle-1280'], [844, 390, 'battle-844'], [390, 844, 'battle-390']] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      expect(await item.locator('.slx-label').evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), name).toBe(true);
+      await shot(name);
+    }
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test("chizuru's and selene's trees show their pairs and new nodes (plan 8d Task 5)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    await legacyRoster(page);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.party.roster.chizuru.level = 35;
+      g.state.party.roster.chizuru.tree = { sweep: 3, 'chizuru-sweep-twin': 2, 'spiral-spear': 1, 'chizuru-thunder-ward': 1, ward: 2, 'chizuru-ward-long': 1, 'purify-ward': 1, 'chizuru-purify-wake': 1 };
+      g.state.party.roster.selene.level = 35;
+      g.state.party.roster.selene.tree = { moonlight: 3, 'selene-moon-bright': 2, 'moon-rain': 1, 'selene-tide': 1, cleanse: 1, rebirth: 1, 'moon-recall': 1, dream: 1, 'selene-dream-deep': 1 };
+    });
+    /** No node row, name or pair tag of the tree spills out of its own width, and no name wraps. */
+    const spills = async () => [...await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className)), ...await treeNameFaults(page)];
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+
+    await flipTo(page, CHARACTERS.chizuru.name);
+    const thunder = page.locator('.slx-tree-node[data-node=chizuru-thunder-ward]');
+    await expect(thunder).toContainText('雷之結界');
+    await expect(thunder).toContainText(T.ui2.tree.kind.mech);
+    await expect(thunder.locator('img')).toHaveCount(0);
+    await expect(page.locator('.slx-tree-node[data-node=chizuru-twin-ward]')).toHaveClass(/slx-node-swap/);
+    await expect(page.locator('.slx-tree-branch[data-branch="0"] .slx-tree-pair-tag')).toHaveText(T.ui2.tree.pairTag);
+    await expect(page.locator('.slx-tree-node[data-node=chizuru-sweep-twin]')).toContainText('橫掃・雙月');
+    await thunder.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('有結界時，每回合結束對全體敵人雷擊（威力 20）。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('chizuru-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('chizuru-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+
+    await flipTo(page, CHARACTERS.selene.name);
+    // 收回 now sits at the prayer branch's tier 2, under 月之再生.
+    const prayer = page.locator('.slx-tree-branch[data-branch="1"] .slx-tree-node');
+    await expect(prayer.nth(2)).toHaveAttribute('data-node', 'moon-recall');
+    await expect(page.locator('.slx-tree-node[data-node=selene-moon-bright]')).toContainText('月光・凝光');
+    await expect(page.locator('.slx-tree-node[data-node=selene-moon-wide]')).toHaveClass(/slx-node-swap/);
+    await expect(page.locator('.slx-tree-node[data-node=selene-new-night]')).toContainText('滿月之夜・新月');
+    const tide = page.locator('.slx-tree-node[data-node=selene-tide]');
+    await tide.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('月相的好處由 30% 變成 40%。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('selene-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('selene-tree-844');
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test("liz's and sylvie's trees show their pairs and new nodes; 大手筆 heads 花錢 (plan 8d Task 6)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const p = g.state.party;
+      for (const id of ['liz', 'sylvie'] as const) if (!p.recruited.includes(id)) p.recruited.push(id);
+      p.roster.liz.level = 35;
+      p.roster.liz.tree = { 'twin-slash': 3, pickpocket: 2, 'liz-twin-quick': 2, 'liz-change': 1, stealth: 1, 'fortune-strike': 2, 'liz-fortune-split': 1, quickstep: 1 };
+      p.roster.sylvie.level = 35;
+      p.roster.sylvie.tree = { 'aimed-shot': 3, 'sylvie-aim-one': 2, 'heart-shot': 1, 'sylvie-patience': 1, 'pin-shot': 1, 'sylvie-shift': 1, 'arrow-rain': 1, 'sylvie-rain-cover': 1 };
+    });
+    /** No node row, name or pair tag of the tree spills out of its own width, and no name wraps. */
+    const spills = async () => [...await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className)), ...await treeNameFaults(page)];
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+
+    await flipTo(page, CHARACTERS.liz.name);
+    await expect(page.locator('.slx-tree-branch[data-branch="2"] .slx-tree-branch-name')).toContainText('花錢');
+    await expect(page.locator('.slx-tree-branch[data-branch="2"] .slx-tree-node').first()).toHaveAttribute('data-node', 'fortune-strike');
+    await expect(page.locator('.slx-tree-node[data-node=liz-twin-quick]')).toContainText('雙刃・快手');
+    await expect(page.locator('.slx-tree-node[data-node=liz-twin-haggle]')).toHaveClass(/slx-node-swap/);
+    await expect(page.locator('.slx-tree-branch[data-branch="0"] .slx-tree-pair-tag')).toHaveText(T.ui2.tree.pairTag);
+    const change = page.locator('.slx-tree-node[data-node=liz-change]');
+    await expect(change).toContainText(T.ui2.tree.kind.mech);
+    await expect(change.locator('img')).toHaveCount(0);
+    await change.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('用掉銅板的招之後，退還 2 枚。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('liz-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('liz-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // 分期's number goes into 大手筆's own words on the skills page.
+    await page.locator('[data-tab=skills]').click();
+    await expect(page.locator('.slx-tab-skills [data-skill=fortune-strike] .slx-skill-name')).toHaveText('大手筆・分期');
+    await expect(page.locator('.slx-tab-skills [data-skill=fortune-strike] .slx-desc')).toContainText('每枚威力多 14%');
+    await page.locator('[data-tab=tree]').click();
+
+    await flipTo(page, CHARACTERS.sylvie.name);
+    await expect(page.locator('.slx-tree-node[data-node=sylvie-aim-one]')).toContainText('瞄準射擊・一擊');
+    await expect(page.locator('.slx-tree-node[data-node=sylvie-aim-rapid]')).toHaveClass(/slx-node-swap/);
+    const patience = page.locator('.slx-tree-node[data-node=sylvie-patience]');
+    await patience.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('瞄準上限 4 層。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('sylvie-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('sylvie-tree-844');
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test("scarlet's and safira's trees show their new nodes (plan 8d Task 7)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const p = g.state.party;
+      for (const id of ['scarlet', 'safira'] as const) if (!p.recruited.includes(id)) p.recruited.push(id);
+      p.roster.scarlet.level = 35;
+      p.roster.scarlet.tree = { provoke: 1, 'scarlet-provoke-shout': 2, cover: 1, 'scarlet-cover-both': 1, 'flame-burst': 3, 'scarlet-burst-heart': 2, 'iron-wall': 1, 'scarlet-ardent': 1 };
+      p.roster.safira.level = 35;
+      p.roster.safira.tree = { 'blade-dance': 3, 'safira-dance-four': 2, 'sand-cyclone': 1, 'safira-improv': 1, 'war-dance': 1, 'safira-war-heat': 1, mirage: 1, 'safira-duet': 1 };
+    });
+    /** No node row, name or pair tag of the tree spills out of its own width, and no name wraps. */
+    const spills = async () => [...await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className)), ...await treeNameFaults(page)];
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+
+    await flipTo(page, CHARACTERS.scarlet.name);
+    await expect(page.locator('.slx-tree-node[data-node=scarlet-provoke-shout]')).toContainText('挑釁・高喊');
+    await expect(page.locator('.slx-tree-node[data-node=scarlet-cover-both]')).toContainText('代受・雙肩');
+    await expect(page.locator('.slx-tree-node[data-node=scarlet-burst-heart]')).toContainText('爆炎斬・赤心');
+    const ardent = page.locator('.slx-tree-node[data-node=scarlet-ardent]');
+    await expect(ardent).toContainText('熾心');
+    await expect(ardent).toContainText(T.ui2.tree.kind.mech);
+    await expect(ardent.locator('img')).toHaveCount(0);
+    await ardent.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('餘燼上限是最大 HP 的 60%。'));
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.nextMod('餘燼上限是最大 HP 的 70%。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('scarlet-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('scarlet-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // 赤心's rule rides on 爆炎斬's own words on the skills page.
+    await page.locator('[data-tab=skills]').click();
+    await expect(page.locator('.slx-tab-skills [data-skill=flame-burst] .slx-skill-name')).toHaveText('爆炎斬・赤心');
+    await expect(page.locator('.slx-tab-skills [data-skill=flame-burst] .slx-desc')).toContainText('HP 消耗全部用餘燼付清時，威力多 40%。');
+    await page.locator('[data-tab=tree]').click();
+
+    await flipTo(page, CHARACTERS.safira.name);
+    await expect(page.locator('.slx-tree-node[data-node=safira-dance-four]')).toContainText('刃舞・四拍');
+    await expect(page.locator('.slx-tree-node[data-node=safira-war-heat]')).toContainText('戰舞・熱場');
+    const improv = page.locator('.slx-tree-node[data-node=safira-improv]');
+    await expect(improv).toContainText(T.ui2.tree.kind.mech);
+    await expect(improv.locator('img')).toHaveCount(0);
+    await improv.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('同一招連用不再踩空，拍子只少 2。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('safira-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('safira-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // 四拍 rewrites 刃舞's hits in its own words.
+    await page.locator('[data-tab=skills]').click();
+    await expect(page.locator('.slx-tab-skills [data-skill=blade-dance] .slx-desc')).toContainText('連砍 4 次');
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test("bobby's and the hero's trees show their new nodes; a turret with both variants fits the battle menu (plan 8d Task 8)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const p = g.state.party;
+      p.recruited = ['hero', 'bobby', 'noel', 'chizuru', 'selene'];
+      p.grid = ['hero', 'noel', null, 'bobby', null, null, 'chizuru', null, 'selene'];
+      p.roster.bobby.level = 50;
+      p.roster.bobby.tree = { turret: 3, 'bobby-turret-twin': 2, cannon: 3, 'bobby-mass': 3, 'bobby-turret-pair': 1, tinker: 1, 'repair-drone': 1, 'bobby-drone-aid': 1, barrier: 1, 'bobby-bench': 1, 'shock-mine': 1, 'bobby-mine-chain': 1 };
+      // Two working runes on the turret: the battle menu marks them (plan 8g Task 7).
+      p.roster.bobby.sockets = { turret: [{ id: 'extend', tier: 'magic' }, { id: 'thrift', tier: 'magic' }] };
+      g.state.runesOpen = true;
+      g.state.runeTutorialSeen = true;
+      p.roster.hero.level = 35;
+      p.roster.hero.tree = { 'hero-slash': 2, 'hero-slash-twin': 2, 'hero-guard': 1, 'hero-guard-steady': 1, 'hero-flare': 1, 'hero-frost': 1, 'hero-frost-chill': 1, 'hero-mend': 1, 'hero-mend-overflow': 1 };
+    });
+    /** No node row, name or pair tag of the tree spills out of its own width, and no name wraps. */
+    const spills = async () => [...await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-tree-node, .slx-tree-pair, .slx-tree-pair > *, .slx-tree-node .slx-skill-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.getAttribute('data-node') ?? e.className)), ...await treeNameFaults(page)];
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+
+    await flipTo(page, CHARACTERS.bobby.name);
+    await expect(page.locator('.slx-tree-node[data-node=bobby-turret-twin]')).toContainText('設置砲台・雙管');
+    await expect(page.locator('.slx-tree-node[data-node=bobby-turret-pair]')).toContainText('砲台・雙砲台');   // its short tree name (8d Task 8 review)
+    await expect(page.locator('.slx-tree-node[data-node=bobby-drone-aid]')).toContainText('無人機・急救');
+    await expect(page.locator('.slx-tree-node[data-node=bobby-mine-chain]')).toContainText('電擊地雷・連鎖');
+    const bench = page.locator('.slx-tree-node[data-node=bobby-bench]');
+    await expect(bench).toContainText('工作檯');
+    await expect(bench).toContainText(T.ui2.tree.kind.mech);
+    await expect(bench.locator('img')).toHaveCount(0);
+    await bench.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('裝置最多同時 3 個。'));
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.nextMod('裝置最多同時 4 個。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('bobby-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('bobby-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // Both turret variants ride on one name on the skills page, whole at 390.
+    await page.locator('[data-tab=skills]').click();
+    const turretName = page.locator('.slx-tab-skills [data-skill=turret] .slx-skill-name');
+    await expect(turretName).toHaveText('設置砲台・雙管・雙砲台');
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await turretName.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5)).toBe(true);
+    await shot('bobby-skills-390');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.locator('[data-tab=tree]').click();
+
+    await flipTo(page, CHARACTERS.hero.name);
+    await expect(page.locator('.slx-tree-node[data-node=hero-slash-twin]')).toContainText('斬擊・連斬');
+    await expect(page.locator('.slx-tree-node[data-node=hero-guard-steady]')).toContainText('守勢・不動');
+    await expect(page.locator('.slx-tree-node[data-node=hero-frost-chill]')).toContainText('星霜・凍原');
+    const overflow = page.locator('.slx-tree-node[data-node=hero-mend-overflow]');
+    await expect(overflow).toContainText('治癒・滿溢');
+    await overflow.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('溢出的回復變成護盾，最多最大 HP 的 6%。'));
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.nextMod('溢出的回復變成護盾，最多最大 HP 的 8%。'));
+    expect(await spills()).toEqual([]);
+    expect(await branchNamesShown(page)).toBe(true);
+    await shot('hero-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await spills()).toEqual([]);
+    await shot('hero-tree-844');
+
+    // The battle menu: Bobby's turret, both variants on its name, stays inside its row at 1280 and 390.
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      for (const e of g.battle.enemies) { e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1; }
+    });
+    for (let i = 0; i < 80; i++) {
+      if (!(await page.locator('.slx-bcmd [role=option]').count())) { await page.waitForTimeout(50); continue; }
+      const who = (await page.locator('.slx-bcmd .slx-who').textContent()) ?? '';
+      if (who.startsWith(CHARACTERS.bobby.name)) break;
+      await w.choose('.slx-bcmd', '防禦');
+    }
+    await expect(page.locator('.slx-bcmd .slx-who')).toContainText(CHARACTERS.bobby.name);
+    await w.choose('.slx-bcmd', '技能');
+    const item = page.locator('.slx-bsub [role=option]').filter({ hasText: '設置砲台・雙管・雙砲台' });
+    await expect(item).toHaveCount(1);
+    await expect(item.locator('.slx-badge')).toHaveText('◆◆');
+    await item.hover();                                     // its note: the final numbers, then its words
+    await expect(page.locator('.slx-bnote')).toHaveText(/^自身・砲台 威力 \d+　架一座砲台/);   // a device: its target and its power, as the card says
+    for (const [vw, vh, name] of [[1280, 720, 'bobby-battle-1280'], [844, 390, 'bobby-battle-844'], [390, 844, 'bobby-battle-390']] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      expect(await item.locator('.slx-label').evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), name).toBe(true);
+      const rows = await page.locator('.slx-bsub [role=option]').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+      expect(rows, `battle skill rows wider than their box at ${vw}`).toEqual([]);
+      await expect(item.locator('.slx-badge')).toBeVisible();
+      // The field bar (Selene's moon) stands clear of the skill list's frame.
+      if (await page.locator('.slx-fieldbar').isVisible()) {
+        const bar = (await page.locator('.slx-fieldbar').boundingBox())!;
+        const list = (await page.locator('.slx-bsub').boundingBox())!;
+        expect(bar.y + bar.height, `the field bar above the skill list at ${vw}`).toBeLessThanOrEqual(list.y + 0.5);
+      }
+      await shot(name);
+    }
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test("no tree node's name wraps or spills, on any member's tree, at 1280 or 844 (8d Task 6 review)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const w = await setup(page, 7);
+    const ids = Object.keys(TREES);
+    await page.evaluate((all) => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      for (const id of all) if (!p.recruited.includes(id)) p.recruited.push(id);
+    }, ids);
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+    const bad: string[] = [];
+    for (const id of ids) {
+      await flipTo(page, CHARACTERS[id as keyof typeof CHARACTERS].name);
+      await expect(page.locator(`.slx-tree-node[data-node="${TREES[id as keyof typeof TREES].branches[0].nodes[0].id}"]`)).toBeVisible();
+      for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
+        await page.setViewportSize({ width: vw, height: vh });
+        bad.push(...(await treeNameFaults(page)).map((n) => `${vw} ${n}`));
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
+    expect(bad).toEqual([]);
+
+    // A click on a row the columns cut off brings it whole into view, and moves nothing when it already shows.
+    await page.setViewportSize({ width: 844, height: 390 });
+    await flipTo(page, CHARACTERS.sylvie.name);
+    const cols = page.locator('.slx-tree-cols');
+    // Scroll the columns so the first row they cut off shows only its top half.
+    const cut = await cols.evaluate((c) => {
+      const box = c.getBoundingClientRect();
+      const n = [...c.querySelectorAll<HTMLElement>('.slx-tree-node')].find((x) => x.getBoundingClientRect().bottom > box.bottom + 1);
+      if (!n) return null;
+      const r = n.getBoundingClientRect();
+      c.scrollTop += r.top + r.height / 2 - box.bottom;
+      c.dispatchEvent(new Event('scroll'));
+      return n.getAttribute('data-node');
+    });
+    expect(cut).not.toBeNull();
+    /** The row shows whole: inside the columns and below its branch name, which stays pinned at their top. */
+    const whole = (id: string) => cols.evaluate((c, nid) => {
+      const n = c.querySelector(`.slx-tree-node[data-node="${nid}"]`)!;
+      const box = c.getBoundingClientRect(), r = n.getBoundingClientRect();
+      const head = n.closest('.slx-tree-branch')!.querySelector('.slx-tree-branch-name')!.getBoundingClientRect();
+      return r.top >= head.bottom - 0.5 && r.bottom <= box.bottom + 0.5;
+    }, id);
+    // A plain DOM click: Playwright's own click would scroll the row into view first.
+    await page.locator(`.slx-tree-node[data-node="${cut}"]`).evaluate((n) => (n as HTMLElement).click());
+    await expect(page.locator(`.slx-tree-node[data-node="${cut}"]`)).toHaveClass(/slx-row-cur/);
+    expect(await whole(cut!)).toBe(true);
+    const top = await cols.evaluate((c) => c.scrollTop);
+    await page.locator(`.slx-tree-node[data-node="${cut}"]`).evaluate((n) => (n as HTMLElement).click());
+    expect(await cols.evaluate((c) => c.scrollTop)).toBe(top);
+    expect(await whole(cut!)).toBe(true);
+    // A row half under the pinned branch name comes down below it.
+    const under = await cols.evaluate((c) => {
+      const head = c.querySelector('.slx-tree-branch-name')!;
+      // The first row the columns can scroll half under the name (their scroll is short at 844).
+      const at = (n: HTMLElement) => c.scrollTop + n.getBoundingClientRect().top - head.getBoundingClientRect().bottom + n.getBoundingClientRect().height / 2;
+      const n = [...c.querySelectorAll<HTMLElement>('.slx-tree-node')].find((x) => at(x) > 0 && at(x) <= c.scrollHeight - c.clientHeight)!;
+      c.scrollTop = at(n);
+      c.dispatchEvent(new Event('scroll'));
+      return n.getAttribute('data-node');
+    });
+    expect(await whole(under!)).toBe(false);
+    await page.locator(`.slx-tree-node[data-node="${under}"]`).evaluate((n) => (n as HTMLElement).click());
+    expect(await whole(under!)).toBe(true);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    expect(await branchNamesShown(page)).toBe(true);
+    expect(w.errors).toEqual([]);
+  });
+
+  test("rin's innate mark and her 熟記 show on the status pages (plan 8d Task 3)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => { if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${name}.png` }); } };
+    const w = await setup(page, 7);
+    await legacyRoster(page);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.party.roster.rin.level = 20;
+      g.state.party.roster.rin.tree = { 'rin-needle': 3, 'rin-needle-three': 2, 'rin-mark-hone': 1, 'rin-mark-steady': 1 };
+    });
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+    await flipTo(page, CHARACTERS.rin.name);
+    const hone = page.locator('.slx-tree-node[data-node=rin-mark-hone]');
+    await expect(hone).toContainText('熟記');
+    await expect(hone).toContainText(T.ui2.tree.kind.mech);
+    await expect(hone.locator('img')).toHaveCount(0);
+    await expect(page.locator('.slx-tree-node[data-node=rin-mark-steady]')).toContainText('暗記・不眨眼');
+    await expect(page.locator('.slx-tree-node[data-node=rin-mark]')).toHaveCount(0);   // not a node of her tree any more
+    await hone.click();
+    await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('暗記只要 5 TP。'));
+    await shot('rin-tree-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    await shot('rin-tree-844');
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.locator('[data-tab=skills]').click();
+    const mark = page.locator('.slx-tab-skills [data-skill=rin-mark]');
+    await expect(mark.locator('.slx-skill-rank')).toHaveText(T.ui2.status.innate);
+    await expect(mark.locator('.slx-skill-name')).toHaveText('暗記・不眨眼');
+    await expect(mark.locator('.slx-skill-cost')).toHaveText(T.ui2.status.tp(5));
+    await shot('rin-skills-1280');
+    await page.setViewportSize({ width: 844, height: 390 });
+    expect(await mark.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5)).toBe(true);
+    await shot('rin-skills-844');
+    expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
   test('spends skill and talent points, then resets them at the inn', async ({ page }) => {
     const w = await setup(page, 7);
     const noel = () => page.evaluate(() => {
@@ -553,7 +1547,7 @@ test.describe('starlantern', () => {
     };
     const status = page.locator('.slx-status-name');
     const toNoel = async () => {
-      for (let i = 0; i < 8 && !((await status.textContent()) ?? '').includes('諾艾兒'); i++) await page.locator('.slx-status-next').click();
+      await flipTo(page, '諾艾兒');
       await expect(status).toContainText('諾艾兒');
     };
     const guildTab = async (tab: 'tree' | 'talent') => {
@@ -570,22 +1564,25 @@ test.describe('starlantern', () => {
       await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
     };
     // Lv7: skillPoints 5, talentPoints 1.
+    await legacyRoster(page);
     await page.evaluate(() => {
       const g = (window as unknown as Dbg).__starlanternDebug.game;
       g.state.party.roster.noel.level = 7;
       g.state.gold = 1000;
     });
 
-    // The guild's 技能樹 entry opens the tree tab on the first member; page to Noel.
+    // The guild's 技能樹 entry opens the tree tab on the hero; page to Noel.
     await guildTab('tree');
-    await expect(status).toContainText('絲嘉蕾');
+    await expect(status).toContainText('洛恩');
     await toNoel();
     const ice = page.locator('.slx-tree-node[data-node=ice-star]');
     await expect(ice).toContainText('0／3');
-    // Every node fits at 1280x720, so the columns' scroll cues stay hidden.
+    // At the top nothing is above, so ▲ stays hidden. Since plan 8d Task 3 Noel's 火 branch holds two pairs (each variant on
+    // two lines) and runs past 1280x720, so ▼ shows exactly when the columns overflow.
     await expect(page.locator('.slx-tab-tree .slx-more-up')).toBeHidden();
-    await expect(page.locator('.slx-tab-tree .slx-more-down')).toBeHidden();
-    expect(await page.locator('.slx-tree-cols').evaluate((c) => c.scrollHeight <= c.clientHeight + 1)).toBe(true);
+    const overflows = await page.locator('.slx-tree-cols').evaluate((c) => c.scrollHeight > c.clientHeight + 1);
+    expect(overflows).toBe(true);
+    await expect(page.locator('.slx-tab-tree .slx-more-down')).toBeVisible();
     await ice.click();                                      // the first click selects and arms
     await expect(ice).toHaveClass(/slx-row-cur/);
     await expect(page.locator('.slx-tree-msg')).toHaveText('再按一次投點');
@@ -691,6 +1688,109 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test("the guild points the way: Selene's lead first, then the next one, marked at the gate and kept in the handbook (6c Task 16)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    /** With SL_SHOTS=<dir> the run also leaves its screenshots there; otherwise this is a no-op (final review M-4). */
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => {
+      if (!shots) return;
+      await page.waitForTimeout(700);   // windows fade in: wait until they are fully drawn
+      await page.screenshot({ path: `${shots}/t16-${name}.png` });
+    };
+    const w = await setup(page, 7);
+    const said = page.locator('.slx-talk:not([hidden]) .slx-text');
+    /** Exactly one of `lines`, typed out in full. */
+    const oneOf = (lines: readonly string[]) => new RegExp('^(' + lines.map((l) => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')$');
+
+    // A new game: Anna greets as usual, then passes on Selene's lead in a second box (final review M-2 ruling), and the main
+    // road's portal carries it.
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(said).toHaveText(oneOf(STORY.greet.guild.prologue));
+    await w.key('z');                                       // the greeting closes: the lead is the second box
+    await expect(said).toHaveText(STORY.leads.selene);
+    await shot('01-guild-lead-selene');
+    await w.closeTalk();
+    await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '傳送門廣場');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');                                   // 選擇傳送門
+    const main = page.locator('.slx-portal[data-region=mainline]');
+    await expect(main).toHaveClass(/slx-portal-lead/);
+    await expect(main.locator('.slx-portal-sighting-depth')).toHaveText(T.ui2.gate.leadAt(2));
+    await w.key('Escape'); await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // Selene met on the main road's second floor (the game's own `meet`, run here on the party and written back): the next
+    // lead is the frost's. The way home rolls the portals on a constant rng chosen so that the plain roll has no frost (checked
+    // here with the game's own rollPortals), so the frost portal proves the guarantee rather than a lucky roll.
+    const party = await page.evaluate(() => JSON.parse(JSON.stringify((window as unknown as Dbg).__starlanternDebug.game.state.party)));
+    const met = meet(party, 'selene', 1);
+    const favoured = favouredRegions(met.recruited);
+    const v = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].find((x) => !rollPortals(() => x, favoured).some((p) => p.region === 'frost'))!;
+    expect(v, 'some constant rng rolls no frost').toBeDefined();
+    const plain = rollPortals(() => v, favoured);
+    expect(plain.map((p) => p.region)).not.toContain('frost');
+    await page.evaluate(([p]) => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      s.party = p;
+      s.dungeon.reached.mainline = 2;
+      s.inventory['return-lamp'] = 3;
+    }, [met] as const);
+    await depart(page, w);
+    await page.evaluate((x) => { (window as unknown as Dbg).__starlanternDebug.game.rng = () => x; }, v);
+    await lampHome(page, w);
+    await w.closeTalk();
+    const rolled = await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.dungeon.portals);
+    expect(rolled.map((p: { region: string }) => p.region)).toContain('frost');
+    expect(rolled).toEqual(withLead(plain, 'frost', favoured));   // exactly the plain roll with the lead put in
+    // A known draw for the greetings: 0.99 draws act 1's second line.
+    await page.evaluate(() => { (window as unknown as Dbg).__starlanternDebug.game.rng = () => 0.99; });
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(said).toHaveText(STORY.greet.guild.act1[1]);
+    await w.key('z');                                       // two confirms on the first visit of the stay: greeting, then lead
+    await expect(said).toHaveText(STORY.leads.chizuru);
+    await shot('02-guild-lead-chizuru');
+    await w.closeTalk();
+    await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    // Once per arrival: a second visit in the same stay is Anna's usual greeting, and nothing after it.
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(said).toHaveText(STORY.greet.guild.act1[1]);   // the rng's 0.99 draws act 1's second line
+    await w.key('z');
+    await expect(page.locator('.slx-talk')).toBeHidden();
+    await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '傳送門廣場');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');                                   // 選擇傳送門
+    const frost = page.locator('.slx-portal[data-region=frost]');
+    await expect(frost).toHaveClass(/slx-portal-lead/);
+    await expect(frost.locator('.slx-portal-lead-tag')).toHaveAttribute('title', T.ui2.gate.lead);
+    await expect(frost.locator('.slx-portal-sighting-depth')).toHaveText(T.ui2.gate.leadAt(3));
+    await expect(main.locator('.slx-portal-sighting')).toHaveCount(0);
+    // the marker fits: no card is clipped by it
+    const clipped = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-portal')].map((c) => c.scrollHeight - c.clientHeight));
+    for (const c of clipped) expect(c).toBeLessThanOrEqual(1);
+    await shot('03-gate-lead-frost');
+    await w.key('Escape'); await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // The handbook keeps it: the lead now, and Selene's, followed.
+    await page.locator('.slx-town [data-id=handbook]').click();
+    await expect(page.locator('.slx-handbook')).toBeVisible();
+    await page.locator('.slx-tabs .slx-tab').filter({ hasText: T.ui2.handbook.tabs.leads }).click();
+    const rows = page.locator('.slx-hb-list [role=option] .slx-label');
+    await expect(rows).toHaveText([T.ui2.handbook.leads.place('霜凍之地', 3), CHARACTERS.selene.name]);
+    await expect(page.locator('.slx-hb-detail')).toContainText(STORY.leads.chizuru);
+    await shot('04-handbook-leads');
+    expect(w.errors).toEqual([]);
+  });
+
   /** The parts of the game state the forge tests read, through the debug handle. */
   const forgeState = (page: Page) => page.evaluate(() => {
     const s = (window as unknown as Dbg).__starlanternDebug.game.state;
@@ -779,6 +1879,7 @@ test.describe('starlantern', () => {
       const g = (window as unknown as Dbg).__starlanternDebug.game;
       g.state.gold = 5000;
       Object.assign(g.state.inventory, { 'essence-magic': 10, 'essence-rare': 4, 'blaze-core': 9, 'star-tear': 1 });
+      g.state.runes = { 'spread@common': 3 };   // something for 符文合成 to list (plan 8f)
       for (const it of [{ rarity: 'common', enhance: 5, affixes: [] }, ...[3, 4, 5].map((v) => ({ rarity: 'magic', enhance: 0, affixes: [{ key: 'crit', value: v }] }))]) {
         g.state.bag.push({ uid: g.mintUid(), base: 'iron-sword', ilvl: 8, ...it });
       }
@@ -791,7 +1892,7 @@ test.describe('starlantern', () => {
       const scrolled = [...document.querySelectorAll<HTMLElement>('#sl-screen, #sl-screen *')].filter((e) => e.scrollLeft > 0).map((e) => e.className);
       return [...wins.filter(({ r }) => r.left < screen.left - 0.5 || r.right > screen.right + 0.5).map(({ cls, r }) => `${cls} ${r.left}-${r.right} / ${screen.left}-${screen.right}`), ...scrolled.map((c) => `scrolled: ${c}`)];
     });
-    const pages: [string, string[]][] = [['dismantle', []], ['enhance', []], ['reroll', ['[role=option]']], ['fuse', ['[data-id=magic]']], ['craft', ['[data-id=set]', '[data-id=set-blaze]']]];
+    const pages: [string, string[]][] = [['dismantle', []], ['enhance', []], ['reroll', ['[role=option]']], ['fuse', ['[data-id=magic]']], ['craft', ['[data-id=set]', '[data-id=set-blaze]']], ['runes', []]];
     for (const [tab, steps] of pages) {
       await page.locator(`.slx-forge .slx-cmd [data-id=${tab}]`).click();
       for (const step of steps) await page.locator('.slx-forge .slx-layer').last().locator(step).first().click();
@@ -844,6 +1945,9 @@ test.describe('starlantern', () => {
       for (const v of [3, 4, 5]) s.bag.push({ uid: g.mintUid(), base: 'iron-sword', rarity: 'magic', ilvl: 999, enhance: 0, affixes: [{ key: 'critDmg', value: v }] });
       for (const v of [3, 4, 5]) s.bag.push({ uid: g.mintUid(), base: longBase, rarity: 'rare', ilvl: 999, enhance: 10, locked: 0, affixes: [{ key: 'critDmg', value: v }] });
       s.bag.push({ uid: g.mintUid(), base: 'iron-sword', rarity: 'common', ilvl: 1, enhance: 5, affixes: [] });
+      // 符文合成 (plan 8f): two rows that can fuse, one greyed with its reason; a legendary is not listed.
+      s.runes = { 'armor-break@common': 3, 'thunderclap@magic': 1, 'spill-shield@legendary': 1, 'on-struck@rare': 3 };
+      s.inventory['essence-common'] = 1;
     }, { special: named.id, rarity: named.rarity, base, slot, keys: longKeys, longest, longBase });
     await w.choose('.slx-town', '鍛造屋');
     await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
@@ -883,6 +1987,7 @@ test.describe('starlantern', () => {
       await w.key('Escape');
     }
     await back();
+    await tab('runes'); await whole('runes'); await walk('runes'); await back();
     expect(w.errors).toEqual([]);
   });
 
@@ -923,6 +2028,734 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test('every published art file loads, and nothing unpublished is asked for (plan 5d Tasks 8 and 10)', async ({ page }) => {
+    const answered = assetResponses(page);
+    const w = await setup(page, 7);
+    const manifest = await page.evaluate(async () => (await (await fetch('/assets/games/starlantern/manifest.json')).json()).urls as string[]);
+    expect(manifest.length).toBe(410);
+    // Every file the manifest lists answers 200.
+    for (const u of manifest) expect((await page.request.get(u)).status(), u).toBe(200);
+    // Walk the screens that show the new art (equipment, shop, forge, portal codex) with every sample piece in the bag.
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const piece = (base: string, rarity: string, extra = {}) => ({ uid: g.mintUid(), base, rarity, ilvl: 6, enhance: 0, affixes: [{ key: 'atk', value: 3 }], ...extra });
+      g.state.bag = [piece('iron-sword', 'epic'), piece('wooden-buckler', 'rare'), piece('leather-cap', 'magic'),
+        piece('iron-sword', 'legendary', { special: 'blaze-heart-sword' }), piece('thorn-spear', 'legendary', { special: 'lg-chizuru', starlit: true }),
+        piece('wooden-buckler', 'unique', { special: 'iron-unbroken-shield' }), piece('leather-vest', 'set', { special: 'set-blaze-body' }),
+        piece('hunter-bow', 'common')];
+      g.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }, { region: 'blaze', condition: 'plain' }, { region: 'iron', condition: 'plain' }];
+    });
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=equip]').click();
+    await expect(page.locator('.slx-equip-scene .slx-bag-cell img.slx-gear-ico')).toHaveCount(8);   // every piece has its art
+    await expect(page.locator('.slx-bag-cell .slx-rframe-epic')).toHaveCount(1);
+    await expect(page.locator('.slx-bag-cell .slx-rstarlit')).toHaveCount(1);
+    await w.key('Tab'); await w.key('ArrowRight'); await w.key('ArrowRight'); await w.key('ArrowRight');   // the legendary sword
+    await expect(page.locator('.slx-item-art-box img.slx-gear-art')).toHaveAttribute('src', /gear\/blaze-heart-sword-large\.png$/);
+    await page.locator('.slx-back').click(); await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '道具店');
+    await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');
+    await expect(page.locator('.slx-shop-list [data-id="iron-sword"] img.slx-gear-ico')).toHaveCount(1);
+    await expect(page.locator('.slx-shop-list [data-id="hunter-bow"] img.slx-gear-ico')).toHaveAttribute('src', /gear\/hunter-bow\.png$/);
+    await toTown(page, w);
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');                                   // 分解
+    await expect(page.locator('.slx-forge-list img.slx-gear-ico').first()).toBeVisible();
+    await toTown(page, w);
+    await w.choose('.slx-town', '傳送門廣場');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');
+    await expect(page.locator('.slx-portal-blaze .slx-codex-pics img.slx-codex-silhouette')).toHaveCount(3);   // every blaze piece and the set: none obtained yet
+    await page.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>('img')].every((i) => i.complete));
+    // Every starlantern file asked for is listed (or is the manifest itself) and answered without error.
+    const known = new Set(manifest);
+    const unlisted = answered.map((a) => new URL(a.url).pathname).filter((p) => !known.has(p) && !p.endsWith('/manifest.json'));
+    expect(unlisted).toEqual([]);
+    expect(answered.filter((a) => a.status >= 400)).toEqual([]);
+    for (const p of ['/gear/iron-sword.png', '/ui/rarity-epic.png', '/ui/starlit.png', '/ui/glow-legendary.png', '/gear/set-blaze-silhouette.png']) {
+      expect(answered.some((a) => a.url.endsWith(p)), p).toBe(true);
+    }
+    for (const id of Object.keys(EQUIPMENT)) expect(answered.some((a) => a.url.endsWith(`/icon/${id}.png`)), `the retired old icon of ${id}`).toBe(false);
+    expect(answered.some((a) => a.url.endsWith('/npc/forge-happy.png') && a.status === 200), "Doran's smile").toBe(true);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('lists of gear with icons show every row they list inside their window and the screen (plan 5d Task 10)', async ({ page }) => {
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const bases = ['wooden-staff', 'iron-sword', 'hunter-bow', 'thorn-spear', 'crystal-blade', 'frost-staff', 'star-saber', 'cloth-robe',
+        'leather-vest', 'scale-mail', 'dusk-mantle', 'moss-charm', 'bat-earring', 'crystal-pendant', 'gear-ring', 'wooden-buckler'];
+      g.state.bag = bases.map((base) => ({ uid: g.mintUid(), base, rarity: 'magic', ilvl: 6, enhance: 0, affixes: [{ key: 'atk', value: 3 }] }));
+      g.state.gold = 5000;
+    });
+    /** Every listed row of the top list lies inside that list's window, and the window inside the screen. */
+    const rowsInside = async (list: string) => page.evaluate((sel) => {
+      const win = [...document.querySelectorAll<HTMLElement>(sel)].pop()!;
+      const scr = document.querySelector('#sl-screen')!.getBoundingClientRect();
+      const box = win.getBoundingClientRect();
+      const rows = [...win.querySelectorAll<HTMLElement>('[role=option]')].map((r) => r.getBoundingClientRect());
+      return {
+        rows: rows.length,
+        outside: rows.filter((r) => r.top < box.top - 0.5 || r.bottom > box.bottom + 0.5).length,
+        offScreen: box.bottom > scr.bottom + 0.5 || box.top < scr.top - 0.5,
+        cursorShown: (() => { const c = win.querySelector('[aria-selected=true]')?.getBoundingClientRect(); return !!c && c.top >= box.top - 0.5 && c.bottom <= box.bottom + 0.5; })(),
+      };
+    }, list);
+    await w.choose('.slx-town', '道具店');
+    await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');                                   // 購買
+    await expect(page.locator('.slx-shop-list img.slx-gear-ico').first()).toBeVisible();
+    for (let i = 0; i < 3; i++) {                           // the top, then scrolled down by the wheel through the locked bases
+      const r = await rowsInside('.slx-shop-list');
+      expect(r.rows, `shop ${i}`).toBeGreaterThan(0);
+      expect(r, `shop ${i}`).toEqual({ rows: r.rows, outside: 0, offScreen: false, cursorShown: r.cursorShown });
+      for (let k = 0; k < 6; k++) await page.locator('.slx-shop-list .slx-menu').dispatchEvent('wheel', { deltaY: 100 });
+    }
+    await toTown(page, w);
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    await w.key('ArrowDown'); await w.key('Enter');         // 強化: the bag and what everyone wears
+    for (let i = 0; i < 20; i++) {
+      const r = await rowsInside('.slx-forge-list');
+      expect(r, `forge row ${i}`).toEqual({ rows: r.rows, outside: 0, offScreen: false, cursorShown: true });
+      await w.key('ArrowDown');
+    }
+    expect(w.errors).toEqual([]);
+  });
+
+  test('five members with five ailments each never cover an enemy HP bar, at 1280x720 or 844x390 (one line each)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7);
+    await legacyRoster(page);
+    await depart(page, w);
+    await expect(page.locator('.slx-partybar .slx-pm')).toHaveCount(5);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    await game((g) => {
+      for (const m of g.battle.party) {
+        m.poison = true; m.burn = { tick: 1, turns: 3, src: 'e0' };
+        m.bleed = [{ tick: 1, turns: 3, src: 'e0' }, { tick: 1, turns: 3, src: 'e0' }];
+        m.shock = 3; m.chill = 3;
+        m.hp = m.max.hp;
+      }
+      for (const e of g.battle.enemies) {
+        e.poison = true; e.burn = { tick: 1, turns: 3, src: 'hero' }; e.bleed = [{ tick: 1, turns: 3, src: 'hero' }];
+        e.shock = 3; e.chill = 3; e.max.hp = 999; e.hp = 999;
+      }
+    });
+    // Everyone defends through one round, so every panel is redrawn with its words.
+    for (let i = 0; i < 60 && (await game((g) => g.battle?.round ?? -1)) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    await expect(page.locator('.slx-partybar .slx-pm-ail:not([hidden])')).toHaveCount(5);
+    // A mechanic's word (plan 8c: Noel's heat, Liz's coins, Scarlet's embers, Safira's beat) takes the first place in
+    // its row, and one more ailment folds into +N.
+    for (const row of await page.locator('.slx-partybar .slx-pm-ail').all()) {
+      const words = await row.locator('.slx-mech, .slx-ail').allTextContents();
+      const mech = /^(熱度|銅板|餘燼|拍子)\d+$/.test(words[0]) ? [words[0]] : [];
+      expect(words).toEqual(mech.length ? [...mech, '流血×2', '灼燒2', '+3'] : ['流血×2', '灼燒2', '中毒', '+2']);
+    }
+    /** Every member word against every living enemy's HP bar (design px, mapped onto the canvas as drawn). */
+    const overlaps = () => page.evaluate(() => {
+      const view = (window as unknown as { __starlanternDebug: { stage: any } }).__starlanternDebug.stage.battleView;
+      const canvas = document.querySelector('#sl-canvas')!.getBoundingClientRect();
+      const k = canvas.width / 640;
+      const keys: string[] = (window as unknown as { __starlanternDebug: { game: any } }).__starlanternDebug.game.battle.enemies.filter((e: any) => e.alive).map((e: any) => e.key);
+      const bars = keys.map((key) => view.hpBarRect(key)).filter(Boolean)
+        .map((r: { x: number; y: number; width: number; height: number }) => ({ left: canvas.left + r.x * k, top: canvas.top + r.y * k, right: canvas.left + (r.x + r.width) * k, bottom: canvas.top + (r.y + r.height) * k }));
+      const chips = [...document.querySelectorAll('.slx-partybar .slx-ail, .slx-partybar .slx-mech')].map((c) => c.getBoundingClientRect());
+      const hits: string[] = [];
+      for (const c of chips) for (const b of bars) {
+        if (c.left < b.right && b.left < c.right && c.top < b.bottom && b.top < c.bottom) hits.push(`${c.left},${c.top} x ${b.left},${b.top}`);
+      }
+      return { bars: bars.length, chips: chips.length, hits };
+    });
+    for (const size of [{ width: 1280, height: 720 }, { width: 844, height: 390 }]) {
+      await page.setViewportSize(size);
+      await page.waitForTimeout(300);
+      const r = await overlaps();
+      expect(r.bars, `${size.width}x${size.height}`).toBeGreaterThan(0);
+      expect(r.chips, `${size.width}x${size.height}`).toBe(20);
+      expect(r.hits, `${size.width}x${size.height}`).toEqual([]);
+      if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.screenshot({ path: `${process.env.SL_SHOTS}/five-by-five-${size.width}.png` }); }
+    }
+    expect(w.errors).toEqual([]);
+  });
+
+  test('ailments show as coloured words on the battle screen (plan 8b)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7);
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    const who: string = await game((g) => {
+      const m = g.battle.party[0];
+      m.poison = true; m.burn = { tick: 5, turns: 3, src: 'e0' };
+      m.bleed = [{ tick: 3, turns: 3, src: 'e0' }, { tick: 3, turns: 2, src: 'e0' }];
+      m.shock = 3; m.chill = 3;
+      m.hp = m.max.hp;
+      const e = g.battle.enemies[0];
+      e.shock = 3; e.bleed = [{ tick: 1, turns: 3, src: m.key }];
+      return m.key;
+    });
+    // Everyone defends through one round.
+    for (let i = 0; i < 40 && (await game((g) => g.battle?.round ?? -1)) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    const row = page.locator(`.slx-partybar [data-key=${who}] .slx-pm-ail`);
+    await expect(row).toBeVisible();
+    // One line, the most severe first; what does not fit is counted in +N.
+    expect(await row.locator('.slx-ail').allTextContents()).toEqual(['流血×2', '灼燒2', '中毒', '+2']);
+    expect(await page.locator('.slx-partybar .slx-ail img, .slx-partybar .slx-pm-ail img').count()).toBe(0);
+    if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.waitForTimeout(800); await page.screenshot({ path: `${process.env.SL_SHOTS}/ailments-1280.png` }); }
+    // At 1280 and on a phone: the words wrap within the panel's width just above it, on the screen; the panel keeps its height.
+    const fits = () => row.evaluate((r) => {
+      const panel = r.closest('.slx-pm')!.getBoundingClientRect(), box = r.getBoundingClientRect();
+      const screen = document.querySelector('#sl-screen')!.getBoundingClientRect();
+      const bar = r.closest('.slx-partybar')!.getBoundingClientRect();
+      return {
+        scroll: r.scrollWidth, client: r.clientWidth,
+        within: box.left >= panel.left - 0.5 && box.right <= panel.right + 0.5,
+        above: box.bottom <= panel.top + 0.5 && box.top >= screen.top - 0.5,
+        height: Math.abs(panel.height - bar.height) < 1,
+        // Nothing (the command window included) covers a word. The row ignores the pointer, so the probe lets it be hit for a moment.
+        seen: [...r.querySelectorAll<HTMLElement>('.slx-ail')].every((c) => {
+          const b = c.getBoundingClientRect();
+          r.style.pointerEvents = 'auto';
+          const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+          r.style.pointerEvents = '';
+          return c.contains(hit);
+        }),
+      };
+    });
+    // Polled: a hit's number or effect may pass over a word for a moment.
+    const settled = { within: true, above: true, height: true, seen: true };
+    await expect.poll(fits, { timeout: 3000 }).toMatchObject(settled);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(fits, { message: 'the ailment row wraps within its panel, above it, on the screen', timeout: 3000 }).toMatchObject(settled);
+    const fit = await fits();
+    expect(fit.scroll).toBeLessThanOrEqual(fit.client);
+    if (process.env.SL_SHOTS) { await page.waitForTimeout(800); await page.screenshot({ path: `${process.env.SL_SHOTS}/ailments-390.png` }); }
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test('slow enemy and backdrop art never shows a stand-in block, and lands when it arrives', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // Every enemy picture and backdrop is held back (a slow network) until the fight is on screen, then lands 3 s later.
+    let release!: () => void;
+    const held = new Promise<void>((r) => { release = r; });
+    await page.route(/\/assets\/games\/starlantern\/(enemy\/.*|bg\/.*|char\/[a-z-]+-standee)\.png/, async (route) => { await held; await route.continue(); });
+    const w = await setup(page, 7);
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    /** What each living foe's body holds: Sprite, Graphics or nothing. */
+    const bodies = () => page.evaluate(() => {
+      const d = (window as unknown as { __starlanternDebug: { game: any; stage: any } }).__starlanternDebug;
+      return d.game.battle.enemies.filter((e: any) => e.alive).map((e: any) => {
+        const box = d.stage.battleView.enemyBoxOf(e.key);
+        return box ? box.children[0].children.map((c: any) => ('texture' in c && !('context' in c) ? 'sprite' : 'other')) : [];
+      });
+    });
+    const seen: string[][][] = [await bodies()];
+    // The fight waited its moment and drew no stand-in: every foe is a name and a bar for now.
+    expect(seen[0].length).toBeGreaterThan(0);
+    expect(seen[0].every((x: string[]) => x.length === 0)).toBe(true);
+    if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.screenshot({ path: `${process.env.SL_SHOTS}/slow-art-held.png` }); }
+    await page.waitForTimeout(3000);
+    release();
+    for (let i = 0; i < 40; i++) {
+      const b = await bodies();
+      seen.push(b);
+      if (b.length && b.every((x: string[]) => x.length === 1 && x[0] === 'sprite')) break;
+      await page.waitForTimeout(250);
+    }
+    // Never anything but a sprite (or, while it is on its way, nothing at all); and in the end every foe has its picture.
+    for (const b of seen) for (const x of b) expect(x.every((k) => k === 'sprite')).toBe(true);
+    expect(seen.at(-1)!.length).toBeGreaterThan(0);   // foes there to have their pictures (an empty list would pass)
+    expect(seen.at(-1)!.every((x) => x.length === 1)).toBe(true);
+    if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/slow-art-landed.png` });
+    expect(w.errors).toEqual([]);
+  });
+
+  test('heat and the mark show on the battle screen (plan 8c)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const w = await setup(page, 7);
+    // The standard five: Noel and Rin both fight.
+    await page.evaluate(() => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      p.recruited = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+      p.grid = ['hero', 'rin', 'chizuru', null, null, null, 'noel', null, 'selene'];
+    });
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    // Noel runs at heat 3; Rin has marked the first foe; the foes are made harmless and sturdy.
+    const foes: number = await game((g) => {
+      const noel = g.battle.party.find((c: any) => c.key === 'noel');
+      const rin = g.battle.party.find((c: any) => c.key === 'rin');
+      noel.mech = { kind: 'heat', heat: 3 };
+      const live = g.battle.enemies.filter((e: any) => e.alive);
+      for (const e of live) { e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1; }
+      rin.mech = { kind: 'mark', marks: [live[0].key], cap: 1 };
+      return live.length;
+    });
+    const round = () => game((g) => g.battle?.round ?? -1);
+    /** One round: Rin does `rin`, everyone else defends. */
+    const play = async (rin: '攻擊' | '防禦') => {
+      const at = await round();
+      for (let i = 0; i < 60 && (await round()) === at; i++) {
+        if (!(await page.locator('.slx-bcmd [role=option]').count())) { await page.waitForTimeout(50); continue; }
+        const who = (await page.locator('.slx-bcmd .slx-who').textContent()) ?? '';
+        await w.choose('.slx-bcmd', who.startsWith(CHARACTERS.rin.name) ? rin : '防禦');
+        if (await page.locator('.slx-btarget').isVisible()) await w.key('Enter');   // the first foe: her mark
+      }
+    };
+    await play('防禦');
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    const row = page.locator('.slx-partybar [data-key=noel] .slx-pm-ail');
+    await expect(row.locator('.slx-mech-heat')).toHaveText('熱度3');
+    // The mark rides on the foe's picture (Pixi), first in its row.
+    const marked = await page.evaluate(() => {
+      const view = (window as unknown as Dbg & { __starlanternDebug: { stage: any } }).__starlanternDebug.stage.battleView;
+      return view.ailmentTexts('e0').map((t: { text: string }) => t.text);
+    });
+    expect(marked[0]).toBe('暗記');
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/mech-1280.png` }); }
+    await page.setViewportSize({ width: 844, height: 390 });
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/mech-844.png` }); }
+    // On a phone held upright the row still fits its panel on one line.
+    await page.setViewportSize({ width: 390, height: 844 });
+    const fit = await row.evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
+    expect(fit.client).toBeGreaterThan(0);   // the row is there (a hidden row would pass vacuously)
+    expect(fit.scroll).toBeLessThanOrEqual(fit.client);
+    // Rin fells her marked foe: 還有。 pops over her, and she strikes again while a foe stands.
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // Seed 7's first fight is two moss slimes: one to fell, one left standing for 還有。.
+    expect(foes).toBeGreaterThanOrEqual(2);
+    // Rin carries an ailment, so her ailment row stands above her panel for the cue to keep clear of.
+    await game((g) => { g.battle.enemies.find((e: any) => e.key === 'e0').hp = 1; g.battle.party.find((c: any) => c.key === 'rin').burn = { tick: 1, turns: 3, src: 'e1' }; });
+    const cue = page.locator('.slx-partybar [data-key=rin] .slx-pm-cue');
+    // In fast mode too, the word holds, on the name and HP side of her panel, on top of whatever else is drawn there.
+    const seen = cue.first().waitFor({ state: 'attached', timeout: 10_000 }).then(async () => {
+      const shown = await cue.first().evaluate((c) => {
+        const b = c.getBoundingClientRect(), panel = c.closest('.slx-pm')!.getBoundingClientRect();
+        // The word ignores the pointer and the screen is inert while a round plays, so the probe lifts both for a moment.
+        const inert = c.closest('[inert]');
+        inert?.removeAttribute('inert');
+        (c as HTMLElement).style.pointerEvents = 'auto';
+        const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+        (c as HTMLElement).style.pointerEvents = '';
+        inert?.setAttribute('inert', '');
+        // Off the HP digits, the TP line and the ailment row above the panel; each of them there to be kept clear of.
+        const meets = (r: DOMRect) => b.left < r.right && r.left < b.right && b.top < r.bottom && r.top < b.bottom;
+        const pm = c.closest('.slx-pm')!;
+        const others = ['.slx-pm-num', '.slx-pm-tp', '.slx-pm-ail:not([hidden])'].map((q) => pm.querySelector(q)?.getBoundingClientRect());
+        const clear = others.every((r) => !!r && r.width > 0 && !meets(r));
+        return { text: c.textContent, right: b.left >= panel.left + panel.width / 2 - 0.5 && b.right <= panel.right + 0.5, onTop: c.contains(top), clear };
+      });
+      if (shots) await page.screenshot({ path: `${shots}/again-1280.png` });
+      return shown;
+    });
+    await play('攻擊');
+    expect(await seen).toEqual({ text: '還有。', right: true, onTop: true, clear: true });
+    expect(await game((g) => g.battle.log.some((e: any) => e.type === 'mech' && e.cue === 'again'))).toBe(true);
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test('the barrier and the moon show above the battle, and release spends the barrier (plan 8c)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      p.recruited = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+      p.grid = ['hero', 'rin', 'chizuru', null, null, null, 'noel', null, 'selene'];
+    });
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    // A guard barrier with three rounds left, the moon at the full; Chizuru knows the release thrust; the foes are harmless.
+    await game((g) => {
+      g.battle.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 3, src: 'chizuru' }];
+      g.battle.moon = { phase: 'full' };
+      const c = g.battle.party.find((m: any) => m.key === 'chizuru');
+      c.ranks = { ...c.ranks, 'exorcism-thrust': 1 }; c.tp = c.max.tp;
+      g.state.party.roster.chizuru.tree = { ...g.state.party.roster.chizuru.tree, 'exorcism-thrust': 1 };
+      for (const e of g.battle.enemies) { e.max.hp = 9999; e.hp = 9999; e.max.atk = 1; e.max.mag = 1; }
+    });
+    const round = () => game((g) => g.battle?.round ?? -1);
+    /** One round: Chizuru does `chizuru` (a label path), everyone else defends. */
+    const play = async (chizuru: string[]) => {
+      const at = await round();
+      for (let i = 0; i < 80 && (await round()) === at; i++) {
+        if (!(await page.locator('.slx-bcmd [role=option]').count())) { await page.waitForTimeout(50); continue; }
+        const who = (await page.locator('.slx-bcmd .slx-who').textContent()) ?? '';
+        if (!who.startsWith(CHARACTERS.chizuru.name)) { await w.choose('.slx-bcmd', '防禦'); continue; }
+        for (const label of chizuru) {
+          await w.choose(label === chizuru[0] ? '.slx-bcmd' : '.slx-bsub', label);
+        }
+        if (await page.locator('.slx-btarget').isVisible()) await w.key('Enter');
+      }
+    };
+    await play(['防禦']);
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    const bar = page.locator('.slx-fieldbar');
+    await expect(bar).toBeVisible();
+    await expect(bar).toContainText('守之結界2');
+    await expect(bar).toContainText('月相：下弦→新月');
+    await expect(page.locator('.slx-fieldbar .slx-mech-ward')).toHaveCount(1);
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/field-1280.png` }); }
+    await page.setViewportSize({ width: 844, height: 390 });
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/field-844.png` }); }
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // Release: 破邪突 spends the barrier (two rounds left: 120% power); the bar loses its barrier word.
+    await play(['技能', SKILLS['exorcism-thrust'].name]);
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    expect(await game((g) => g.battle.log.some((e: any) => e.type === 'act' && e.actor === 'chizuru' && e.label === '破邪突'))).toBe(true);
+    expect(await game((g) => g.battle.barriers ?? [])).toEqual([]);
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/release-1280.png` }); }
+    await expect(page.locator('.slx-fieldbar .slx-mech-ward')).toHaveCount(0);
+    await expect(bar).toContainText('月相');
+    await page.setViewportSize({ width: 844, height: 390 });
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/release-844.png` }); }
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test('coins and aim show on the battle screen (plan 8c)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      p.recruited = ['hero', 'rin', 'liz', 'sylvie', 'selene'];
+      p.grid = ['hero', 'liz', null, null, 'rin', null, 'sylvie', null, 'selene'];
+    });
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    // Liz holds seven coins; Sylvie has two stacks on the first foe and Liz has appraised it; the foes are harmless.
+    await game((g) => {
+      const liz = g.battle.party.find((c: any) => c.key === 'liz');
+      const sylvie = g.battle.party.find((c: any) => c.key === 'sylvie');
+      const live = g.battle.enemies.filter((e: any) => e.alive);
+      for (const e of live) { e.max.hp = 9999; e.hp = 9999; e.max.atk = 1; e.max.mag = 1; }
+      liz.mech = { kind: 'coins', coins: 7 };
+      sylvie.mech = { kind: 'aim', target: live[0].key, stacks: 2 };
+      live[0].appraised = 'liz';
+    });
+    const round = () => game((g) => g.battle?.round ?? -1);
+    for (let i = 0; i < 60 && (await round()) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    await expect(page.locator('.slx-partybar [data-key=liz] .slx-mech-coins')).toHaveText('銅板7');
+    const words = await page.evaluate(() => {
+      const d = (window as unknown as { __starlanternDebug: { game: any; stage: any } }).__starlanternDebug;
+      return d.stage.battleView.ailmentTexts(d.game.battle.enemies.find((e: any) => e.alive).key).map((t: { text: string }) => t.text);
+    });
+    expect(words.slice(0, 2)).toEqual(['瞄準2', '估價']);   // the setups in their order: 暗記, 瞄準, 估價, 弱點
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/coins-aim-1280.png` }); }
+    await page.setViewportSize({ width: 844, height: 390 });
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/coins-aim-844.png` }); }
+    await page.setViewportSize({ width: 390, height: 844 });
+    const row = page.locator('.slx-partybar [data-key=liz] .slx-pm-ail');
+    const fit = await row.evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
+    expect(fit.client).toBeGreaterThan(0);   // the row is there (a hidden row would pass vacuously)
+    expect(fit.scroll).toBeLessThanOrEqual(fit.client);
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test('embers and the beat show on the battle screen (plan 8c)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      p.recruited = ['hero', 'scarlet', 'safira', 'chizuru', 'selene'];
+      p.grid = ['scarlet', 'safira', null, 'hero', null, null, 'chizuru', null, 'selene'];
+    });
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    // Scarlet holds 20 embers, covers Safira and has 贖火 up; Safira is on her first beat after an attack; the foes are harmless.
+    await game((g) => {
+      const scarlet = g.battle.party.find((c: any) => c.key === 'scarlet');
+      const safira = g.battle.party.find((c: any) => c.key === 'safira');
+      for (const e of g.battle.enemies.filter((x: any) => x.alive)) { e.max.hp = 9999; e.hp = 9999; e.max.atk = 1; e.max.mag = 1; }
+      scarlet.mech = { kind: 'embers', embers: 20 };   // under her cap (half her max HP); a 1-damage blow keeps none
+      scarlet.cover = { ally: 'safira', turns: 3 };
+      scarlet.riposte = { power: 80, turns: 3 };
+      safira.mech = { kind: 'beat', beat: 1, last: 'attack' };
+    });
+    const round = () => game((g) => g.battle?.round ?? -1);
+    // Everyone defends through one round: Safira's defend is a new move (the beat goes to 2); cover and 贖火 count down.
+    for (let i = 0; i < 60 && (await round()) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    // The rows only (a 贖火 counter's cue may still be rising over Scarlet's panel, in the same colour).
+    const row = (key: string) => page.locator(`.slx-partybar [data-key=${key}] .slx-pm-ail`).locator('.slx-mech, .slx-ail');
+    await expect(row('safira')).toHaveText(['拍子2', '受護']);
+    await expect(row('scarlet')).toHaveText(['餘燼20', '贖火2', '代受']);
+    await expect(page.locator('.slx-partybar [data-key=scarlet] .slx-pm-ail .slx-mech-embers')).toHaveCount(3);
+    await expect(page.locator('.slx-partybar [data-key=safira] .slx-pm-ail .slx-mech-embers')).toHaveText('受護');
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/embers-beat-1280.png` }); }
+    await page.setViewportSize({ width: 844, height: 390 });
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/embers-beat-844.png` }); }
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const key of ['scarlet', 'safira']) {
+      const fit = await page.locator(`.slx-partybar [data-key=${key}] .slx-pm-ail`).evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
+      expect(fit.client, key).toBeGreaterThan(0);
+      expect(fit.scroll, key).toBeLessThanOrEqual(fit.client);
+    }
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test('devices and the echo command show on the battle screen (plan 8c)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      p.recruited = ['hero', 'bobby', 'noel', 'chizuru', 'selene'];
+      p.grid = ['hero', 'noel', null, 'bobby', null, null, 'chizuru', null, 'selene'];
+    });
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    // Bobby has a turret up, and a shield generator; the foes are harmless and use no skill.
+    await game((g) => {
+      const bobby = g.battle.party.find((c: any) => c.key === 'bobby');
+      for (const e of g.battle.enemies.filter((x: any) => x.alive)) {
+        e.max.hp = 9999; e.hp = 9999; e.max.atk = 1; e.max.mag = 1;
+        if (g.battle.enemyDefs?.[e.key]) g.battle.enemyDefs[e.key] = { ...g.battle.enemyDefs[e.key], skills: [] };   // no acid, no ailment
+        g.battle.intents[e.key] = { kind: 'attack', target: g.battle.intents[e.key]?.target };
+      }
+      bobby.poison = true;   // two devices and an ailment: one row
+      bobby.mech = { kind: 'devices', cap: 2, devices: [
+        { skill: 'turret', kind: 'turret', power: 38, level: 1, turns: 3 },
+        { skill: 'barrier', kind: 'shield', power: 40, level: 2, turns: 3 },
+      ] };
+    });
+    const round = () => game((g) => g.battle?.round ?? -1);
+    // Everyone defends through one round: the devices run and count down.
+    for (let i = 0; i < 60 && (await round()) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    const words = page.locator('.slx-partybar [data-key=bobby] .slx-pm-ail').locator('.slx-mech, .slx-ail');
+    await expect(words).toHaveText(['砲台1・2', '盾機2・2', '中毒']);
+    // The hero's command list: 殘響, greyed with nothing to repeat; then named once Noel's skill is on record.
+    const heroTurn = async () => {
+      for (let i = 0; i < 6 && !((await page.locator('.slx-bcmd .slx-who').textContent()) ?? '').startsWith('洛恩'); i++) await w.choose('.slx-bcmd', '防禦');
+      await expect(page.locator('.slx-bcmd .slx-who')).toHaveText('洛恩 的行動');
+    };
+    await heroTurn();
+    const echo = page.locator('.slx-bcmd [role=option]', { hasText: '殘響' });
+    await expect(echo).toHaveAttribute('aria-disabled', 'true');
+    await expect(echo.locator('.slx-label')).toHaveText('殘響');
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/devices-echo-1280.png` }); }
+    await game((g) => {
+      const def = { id: 'fire-star', name: '火之星彈', owner: 'noel', tp: 5, target: 'enemy', desc: '', effects: [{ kind: 'damage', power: 140, element: 'fire', scale: 'mag', melee: false }] };
+      g.battle.echo = { by: 'noel', round: g.battle.round, def, cost: 5 };
+    });
+    await page.setViewportSize({ width: 844, height: 390 });
+    // On to the next member and back, so the hero's list is drawn again with the record.
+    await w.choose('.slx-bcmd', '防禦');
+    await w.key('Escape');
+    await heroTurn();
+    await expect(echo.locator('.slx-label')).toHaveText('殘響：火之星彈');
+    await expect(echo).toHaveAttribute('aria-disabled', 'false');
+    if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/devices-echo-844.png` }); }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(words).toHaveText(['砲台1・2', '盾機2・2', '中毒']);   // measured on the page: they still fit
+    const fit = await page.locator('.slx-partybar [data-key=bobby] .slx-pm-ail').evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
+    expect(fit.client).toBeGreaterThan(0);   // the row is there (a hidden row would pass vacuously)
+    expect(fit.scroll).toBeLessThanOrEqual(fit.client);
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  for (const [label, lineup] of [['a', ['hero', 'noel', 'chizuru', 'liz', 'sylvie']], ['b', ['scarlet', 'selene', 'safira', 'bobby', 'rin']]] as const) {
+    test(`every mechanic beside the ailments, over four foes (plan 8c final, lineup ${label})`, async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const missing: string[] = [];
+      page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+      const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+        page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+      const shots = process.env.SL_SHOTS;
+      if (shots) mkdirSync(shots, { recursive: true });
+      const w = await setup(page, 7);
+      await page.evaluate((ids) => {
+        const g = (window as unknown as Dbg).__starlanternDebug.game;
+        const p = g.state.party;
+        p.recruited = [...new Set([...p.recruited, ...ids])];
+        p.grid = [ids[0], ids[1], null, ids[2], null, null, ids[3], null, ids[4]];
+        // The first fight is four foes.
+        const start = g.startBattle.bind(g);
+        g.startBattle = (_ids: string[], ...rest: unknown[]) => start(['slime', 'slime', 'slime', 'slime'], ...rest);
+      }, [...lineup]);
+      await depart(page, w);
+      for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+        await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+        await w.closeTalk();
+        if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+        if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+      }
+      await expect(page.locator('.slx-battle')).toBeVisible();
+      expect(await game((g) => g.battle.enemies.length)).toBe(4);
+      // Every member's mechanic up, two ailments each (one of them a sleep or a freeze on two of them); every foe with
+      // the party's setups on it and three ailments; the foes harmless and skill-less, so the round leaves it as set.
+      await game((g) => {
+        const b = g.battle;
+        const foes = b.enemies;
+        for (const e of foes) {
+          e.max.hp = 9999; e.hp = 9999; e.max.atk = 1; e.max.mag = 1;
+          if (b.enemyDefs?.[e.key]) b.enemyDefs[e.key] = { ...b.enemyDefs[e.key], skills: [] };
+          b.intents[e.key] = { kind: 'attack', target: b.intents[e.key]?.target };
+          e.poison = true; e.burn = { tick: 1, turns: 3, src: 'x' }; e.shock = 3;
+          e.exposed = 3; e.appraised = 'liz';
+        }
+        foes[0].delay = b.round + 9;
+        const mechs: Record<string, unknown> = {
+          noel: { kind: 'heat', heat: 3 }, rin: { kind: 'mark', marks: [foes[0].key], cap: 1 }, chizuru: { kind: 'barrier' },
+          liz: { kind: 'coins', coins: 7 }, sylvie: { kind: 'aim', target: foes[1].key, stacks: 2 }, scarlet: { kind: 'embers', embers: 20 },
+          safira: { kind: 'beat', beat: 1, last: 'attack' },
+          bobby: { kind: 'devices', cap: 2, devices: [{ skill: 'turret', kind: 'turret', power: 38, level: 2, turns: 3 }, { skill: 'repair-drone', kind: 'drone', power: 45, level: 1, turns: 3 }] },
+        };
+        b.party.forEach((c: any, i: number) => {
+          if (mechs[c.key]) c.mech = mechs[c.key];
+          c.poison = true;
+          if (c.key === 'scarlet') { c.riposte = { power: 80, turns: 3 }; c.cover = { ally: b.party[1].key, turns: 3 }; }
+          if (c.key === 'rin') c.veil = 2;
+        });
+        if (b.party.some((c: any) => c.key === 'chizuru')) b.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 3, src: 'chizuru' }];
+      });
+      // Everyone who can defends through one round, so every panel is drawn with its words.
+      const round = () => game((g) => g.battle?.round ?? -1);
+      for (let i = 0; i < 60 && (await round()) === 0; i++) {
+        if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+        else await page.waitForTimeout(50);
+      }
+      await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+      // Then a sleep and a freeze (a round would wake and thaw them), drawn by stepping on to the next member and back.
+      await game((g) => { g.battle.party[1].sleep = 3; g.battle.party[3].frozen = true; g.battle.party[3].burn = { tick: 1, turns: 3, src: 'x' }; });
+      await w.choose('.slx-bcmd', '防禦');
+      await w.key('Escape');
+      for (const size of [{ width: 1280, height: 720 }, { width: 844, height: 390 }]) {
+        await page.setViewportSize(size);
+        await page.waitForTimeout(400);
+        // Every member's row on one line inside its panel, a freeze or a sleep never folded away.
+        const rows = await page.locator('.slx-partybar .slx-pm-ail').evaluateAll((rs) => rs.map((r) => ({
+          scroll: r.scrollWidth, client: r.clientWidth, words: [...r.children].map((c) => c.textContent),
+        })));
+        expect(rows).toHaveLength(5);
+        for (const r of rows) { expect(r.client, JSON.stringify(r)).toBeGreaterThan(0); expect(r.scroll, JSON.stringify(r)).toBeLessThanOrEqual(r.client); }
+        expect(rows.flatMap((r) => r.words).filter((t) => t === '凍結' || /^睡眠\d$/.test(t ?? ''))).toHaveLength(2);
+        // Every foe's row: the setups first, capped with +N, one line inside its slot.
+        const foeRows = await page.evaluate(() => {
+          const d = (window as unknown as { __starlanternDebug: { game: any; stage: any } }).__starlanternDebug;
+          return d.game.battle.enemies.map((e: any) => d.stage.battleView.ailmentTexts(e.key).map((t: { text: string }) => t.text));
+        });
+        expect(foeRows).toHaveLength(4);
+        for (const r of foeRows) { expect(r.length).toBeGreaterThan(0); expect(r.at(-1)).toMatch(/^\+\d+$/); }
+        if (shots) await page.screenshot({ path: `${shots}/final-${label}-${size.width}.png` });
+      }
+      expect(w.errors).toEqual([]);
+      expect(missing).toEqual([]);
+    });
+  }
+
   test('walks into the forge from town and dismantles one magic item', async ({ page }) => {
     const w = await setup(page, 7);
     const uid = await page.evaluate(() => {
@@ -947,5 +2780,1208 @@ test.describe('starlantern', () => {
     expect(after.forgeDraws).toBe(0);
     await toTown(page, w);
     expect(w.errors).toEqual([]);
+  });
+
+  test('two start, meet Selene, recall her', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    /** With SL_SHOTS=<dir> the run also leaves its screenshots there; otherwise this is a no-op. */
+    const shot = async (name: string) => {
+      if (!process.env.SL_SHOTS) return;
+      await page.waitForTimeout(700);   // windows fade in: wait until they are fully drawn
+      await page.screenshot({ path: `${process.env.SL_SHOTS}/${name}.png` });
+    };
+    /** Runs `fn` in the page on the live game (the debug hook), with one serialisable argument. */
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7);
+    const others = Object.values(CHARACTERS).filter((c) => c.id !== 'hero' && c.id !== 'rin').map((c) => c.name);
+    await shot('01-town-two-start');
+
+    // New game: the hero (洛恩) and Rin (凜) only, in the guild's pages, the formation's pick list and the recall command.
+    await page.locator('.slx-town [data-id=guild]').click();
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await expect(page.locator('.slx-cmd [data-id=recall]')).toHaveAttribute('aria-disabled', 'true');
+    await page.locator('.slx-cmd [data-id=status]').click();
+    const name = page.locator('.slx-status-name');
+    await expect(name).toContainText('洛恩');
+    await page.locator('.slx-status-next').click();
+    await expect(name).toContainText('凜');
+    await page.locator('.slx-status-next').click();
+    await expect(name).toContainText('洛恩');   // two members: the second page turn is back at the first
+    await page.locator('.slx-back').click();
+    await page.locator('.slx-cmd [data-id=formation]').click();
+    await expect(page.locator('.slx-formation-scene')).toBeVisible();
+    await page.locator('[data-cell="4"]').click();   // an empty cell: who goes here?
+    const picks = await page.locator('.slx-formation-pick [role=option] .slx-label').allTextContents();
+    expect(picks).toEqual(expect.arrayContaining(['洛恩', '凜']));
+    for (const other of others) expect(picks.join(' '), other).not.toContain(other);
+    await page.locator('.slx-back').click();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // Both at Lv4, out through the mainline gate and down to floor 2 (the stairs ask first).
+    await game((g) => { g.state.party.roster.hero.level = 4; g.state.party.roster.rin.level = 4; });
+    await depart(page, w);
+    const toStairs = await pathTo(page, 'down');
+    expect(toStairs?.keys.length).toBeGreaterThan(0);
+    for (const k of toStairs!.keys) {
+      await game((g) => { g.encounter = 0; });
+      await page.keyboard.press(k);
+    }
+    await w.choose('.slx-event-stairs', '前往');
+    await expect.poll(() => game((g) => g.floor)).toBe(2);
+    await w.closeTalk();
+
+    // Selene waits in a room of floor 2. Stand two cells before it in a straight line, so the first step shows it on the map.
+    const plan = await game((g) => {
+      const room = g.run.floors.get(g.floor).contents.find((c: any) => c.kind === 'rescue');
+      const open = (x: number, y: number) => ['floor', 'door'].includes(g.map().tiles[y]?.[x]);
+      for (const [key, dx, dy] of [['ArrowRight', 1, 0], ['ArrowLeft', -1, 0], ['ArrowDown', 0, 1], ['ArrowUp', 0, -1]] as const) {
+        const far = { x: room.at.x - 2 * dx, y: room.at.y - 2 * dy };
+        if (open(far.x, far.y) && open(room.at.x - dx, room.at.y - dy)) { g.pos = far; g.encounter = 0; return { key, who: room.who, at: room.at }; }
+      }
+      return null;
+    });
+    expect(plan, 'a straight way into the rescue room').not.toBeNull();
+    expect(plan!.who).toBe('selene');
+    await page.keyboard.press(plan!.key);
+    await expect.poll(() => game((g, at: string) => g.run.explored[g.floor].includes(at), `${plan!.at.x},${plan!.at.y}`)).toBe(true);
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    await shot('02-map-rescue-marker');
+    await game((g) => { g.encounter = 0; });
+    await page.keyboard.press(plan!.key);
+    await expect(page.locator('.slx-dungeon .slx-talk .slx-text')).toContainText('瑟蕾');
+    await shot('03-meeting-line');
+    // The found line, then the written meeting (plan 6c Task 8: up to four lines, hers among them), then the fight.
+    // A key may first finish a line's typing, so allow a few presses per line, as the second meeting below does.
+    const plates: string[] = [];
+    for (let i = 0; i < 12 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      const plate = page.locator('.slx-dungeon .slx-talk .slx-name');
+      if (await plate.isVisible()) plates.push((await plate.textContent()) ?? '');
+      await w.key('z');
+      await page.waitForTimeout(60);
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    expect(plates, 'Selene speaks in her own meeting').toContain('瑟蕾');
+    await game((g) => { for (const e of g.battle.enemies) { e.hp = 0; e.alive = false; } });
+    for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }   // 全員攻擊
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-result')).toContainText('勝利');
+    await expect(page.locator('.slx-result')).toContainText(/瑟蕾（Lv\d+）加入了隊伍！/);
+    await shot('04-rescue-result');
+    await w.key('Enter');
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    expect(await game((g) => g.state.party.recruited)).toEqual(['hero', 'rin', 'selene']);
+    await lampHome(page, w);
+    await w.closeTalk();
+
+    // Home: the formation lets Selene step out to the bench (never the hero), and the guild calls her back.
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=formation]').click();
+    await expect(page.locator('.slx-formation-scene')).toBeVisible();
+    const cellOf = (id: string) => game((g, who: string) => g.state.party.grid.indexOf(who), id);
+    await page.locator(`[data-cell="${await cellOf('hero')}"]`).click();
+    const heroPicks = await page.locator('.slx-formation-pick [role=option] .slx-label').allTextContents();
+    expect(heroPicks).toContain('洛恩');
+    expect(heroPicks).not.toContain('移出隊伍');   // the hero's cell has no way off the field
+    await shot('05-formation-hero-cell');
+    await page.locator('.slx-back').click();       // close the pick list
+    await page.locator(`[data-cell="${await cellOf('selene')}"]`).click();
+    await page.locator('.slx-formation-pick [role=option]').filter({ hasText: '移出隊伍' }).click();
+    expect(await cellOf('selene')).toBe(-1);
+    expect(await game((g) => g.state.party.recruited)).toContain('selene');
+    await shot('06-formation-selene-benched');
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(page.locator('.slx-cmd [data-id=recall]')).not.toHaveAttribute('aria-disabled', 'true');
+    await page.locator('.slx-cmd [data-id=recall]').click();
+    await shot('07-guild-recall-list');
+    await page.locator('.slx-layer [data-id=selene]').click();
+    await w.key('ArrowUp'); await w.key('Enter');   // 是
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText(T.ui2.guild.welcomeBack(CHARACTERS.selene.name));
+    expect(await cellOf('selene')).toBeGreaterThanOrEqual(0);
+    await w.closeTalk();
+
+    // A full field: someone has to step out.
+    await game((g) => {
+      const p = g.state.party;
+      p.grid = p.grid.map((c: string | null) => (c === 'selene' ? null : c));
+      p.recruited.push('chizuru', 'liz', 'noel');
+      for (const id of ['chizuru', 'liz', 'noel']) p.grid[p.grid.indexOf(null)] = id;
+    });
+    expect(await game((g) => g.state.party.grid.filter((c: string | null) => c).length)).toBe(5);
+    const lizCell = await cellOf('liz');
+    await page.locator('.slx-back').click();   // the guild reads the party when it opens: go out and in again
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=recall]').click();
+    await page.locator('.slx-layer [data-id=selene]').click();
+    await w.key('ArrowUp'); await w.key('Enter');   // 是
+    await expect(page.locator('.slx-layer').last()).toContainText('要讓誰回公會待命？');
+    await expect(page.locator('.slx-layer [data-id=hero]')).toHaveCount(0);   // the hero never steps out
+    await shot('08-guild-recall-full-field-swap');
+    await page.locator('.slx-layer [data-id=liz]').click();
+    expect(await cellOf('selene')).toBe(lizCell);
+    expect(await cellOf('liz')).toBe(-1);
+    await w.closeTalk();
+
+    // The hero's tree has five branches and his talent board six columns.
+    await page.locator('.slx-cmd [data-id=tree]').click();
+    await expect(page.locator('.slx-status-name')).toContainText('洛恩');
+    await expect(page.locator('.slx-tree-branch')).toHaveCount(5);
+    await shot('09-hero-skill-tree');
+    await page.locator('.slx-back').click();
+    await page.locator('.slx-cmd [data-id=talent]').click();
+    await expect(page.locator('.slx-status-name')).toContainText('洛恩');
+    await expect(page.locator('.slx-talent-wide')).toBeVisible();
+    await shot('10-hero-talent-board');
+    await page.locator('.slx-back').click();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // Save at the inn, reload and continue: the save is valid and Selene is still recruited.
+    await w.choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter'); await w.key('ArrowUp'); await w.key('Enter');
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText('已存檔。', { timeout: 5000 });
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
+    await w.key('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await expectSaveLoaded(page);
+    expect(await game((g) => g.state.party.recruited)).toContain('selene');
+    expect(w.errors).toEqual([]);
+  });
+
+  test('B1: on a return to town, Noel and Rin talk among themselves after the chat, and the town menu waits for them', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7, { story: 'all' });
+    const talkText = page.locator('.slx-town .slx-talk .slx-text');
+    const playOut = async () => {
+      for (let quiet = 0, i = 0; quiet < 4 && i < 400; i++) {
+        if (await page.locator('.slx-talk').first().isVisible()) { quiet = 0; await page.keyboard.press('z'); await page.waitForTimeout(30); }
+        else if ((await page.locator('.slx-cmd-hidden').count()) > 0) { quiet = 0; await page.waitForTimeout(60); }
+        else { quiet++; await page.waitForTimeout(60); }
+      }
+      await expect(page.locator('.slx-talk').first()).toBeHidden();
+    };
+    await playOut();   // the prologue and the inn night
+    // Noel joins (as a won rescue would leave her), so the two of them are met.
+    const party = await game((g) => JSON.parse(JSON.stringify(g.state.party)));
+    await game((g, p) => { g.state.party = p; }, meet(party, 'noel', 1));
+    const id = 'banter:noel-rin:1';
+    const banter = STORY.scenes[id];
+    await depart(page, w);
+    await game((g) => { g.state.inventory['return-lamp'] = 1; });
+    await lampHome(page, w);
+    // The arrival: the chat first (if one is due), then this one banter, last; nothing else is a banter.
+    const arrival = await game((g) => [...g.arrival]);
+    expect(arrival.at(-1)).toBe(id);
+    expect(arrival.filter((x: string) => x.startsWith('banter:'))).toEqual([id]);
+    expect(arrival.slice(0, -1).every((x: string) => x.startsWith('chat:'))).toBe(true);
+    await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+    // Its lines play in order on the town's dialogue box, under their speakers' names, while the menu stays hidden.
+    const spoken = banter.lines.filter((l) => l.who !== 'narrator');
+    let at = 0;
+    for (let i = 0; i < 80 && at < spoken.length; i++) {
+      const text = (await talkText.textContent()) ?? '';
+      if (text === spoken[at].text) {
+        await expect(page.locator('.slx-town .slx-talk .slx-name')).toHaveText(CHARACTERS[spoken[at].who as keyof typeof CHARACTERS].name);
+        await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+        at++;
+      }
+      if (at < spoken.length) { await w.key('z'); await page.waitForTimeout(60); }
+    }
+    expect(at, 'every spoken line of the banter showed, in order').toBe(spoken.length);
+    await playOut();
+    await expect(page.locator('.slx-town-menu')).not.toHaveClass(/slx-cmd-hidden/);
+    const after = await game((g) => ({ seen: g.state.story.seen, queue: g.state.story.queue, arrival: g.arrival }));
+    expect(after.seen).toContain(id);
+    expect(after.queue).toEqual([]);
+    expect(after.arrival).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('in the labyrinth: wear a found piece, move a row and heal with a skill', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7, { story: 'all' });
+    const playOut = async () => {
+      for (let quiet = 0, i = 0; quiet < 4 && i < 400; i++) {
+        if (await page.locator('.slx-talk').first().isVisible()) { quiet = 0; await page.keyboard.press('z'); await page.waitForTimeout(30); }
+        else if ((await page.locator('.slx-cmd-hidden').count()) > 0) { quiet = 0; await page.waitForTimeout(60); }
+        else { quiet++; await page.waitForTimeout(60); }
+      }
+      await expect(page.locator('.slx-talk').first()).toBeHidden();
+    };
+    /** The topmost window of the labyrinth's menu stack. */
+    const top = () => page.locator('.slx-dungeon .slx-layer').last();
+    const option = (label: string) => top().locator('[role=option]').filter({ has: page.locator('.slx-label', { hasText: new RegExp(`^${label}$`) }) });
+
+    // 1. The prologue and the inn night play out; Selene joins (as a won rescue would leave her), then the party sets out.
+    await playOut();
+    const party = await game((g) => JSON.parse(JSON.stringify(g.state.party)));
+    await game((g, p) => { g.state.party = p; }, meet(party, 'selene', 1));
+    await depart(page, w);
+    await playOut();
+
+    // 2. A weapon in the run pack, Selene on the field knowing 月光, and the hero at 1 HP.
+    const uid: number = await game((g) => {
+      const uid = g.mintUid();
+      g.run.loot.gear.push({ uid, base: 'thorn-spear', rarity: 'common', ilvl: 5, enhance: 0, affixes: [] });
+      const p = g.state.party;
+      if (!p.grid.includes('selene')) p.grid[p.grid.indexOf(null)] = 'selene';
+      p.roster.selene.tree.moonlight = 1;
+      p.roster.hero.hp = 1;
+      g.encounter = 0;
+      return uid;
+    });
+    expect(await game((g) => g.state.party.grid.includes('selene'))).toBe(true);
+
+    // 3. C → 裝備: the piece from the run pack goes on, and the doll's weapon slot names it. Esc is back in the labyrinth.
+    await w.key('c');
+    await w.choose('.slx-field-menu', '裝備');
+    await expect(page.locator('.slx-equip-scene')).toBeVisible();
+    const weapon = page.locator('.slx-doll-slot[data-slot=weapon]');
+    await expect(weapon).not.toHaveAttribute('aria-label', /荊棘槍/);
+    await page.locator('.slx-bag-cell[aria-label="荊棘槍"]').click();
+    await expect(weapon).toHaveAttribute('aria-label', /荊棘槍/);
+    expect(await game((g, u) => g.state.party.roster.hero.equip.weapon?.uid === u && !g.run.loot.gear.some((it: any) => it.uid === u), uid)).toBe(true);
+    await w.key('Escape');
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+
+    // 4. C → 隊形: two members trade cells. Esc is back in the labyrinth.
+    const before: (string | null)[] = await game((g) => [...g.state.party.grid]);
+    const [a, b] = before.flatMap((id, i) => (id ? [i] : [])).slice(0, 2);
+    await w.key('c');
+    await w.choose('.slx-field-menu', '隊形');
+    await expect(page.locator('.slx-formation-scene')).toBeVisible();
+    await page.locator(`.slx-formation-scene [data-cell="${a}"]`).click();
+    await page.locator('.slx-formation-pick [role=option]').filter({ hasText: CHARACTERS[before[b] as keyof typeof CHARACTERS].name }).click();
+    const after: (string | null)[] = await game((g) => [...g.state.party.grid]);
+    expect([after[a], after[b]]).toEqual([before[b], before[a]]);
+    await w.key('Escape');
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+
+    // 5. C → 技能 → 瑟蕾 → 月光 → 洛恩: the hero's HP goes up, on the party bar too.
+    await w.key('c');
+    await w.choose('.slx-field-menu', T.ui2.dungeon.skills);
+    await expect(top().locator('.slx-who')).toHaveText(T.ui2.dungeon.castWho);
+    await option(CHARACTERS.selene.name).click();
+    await expect(top().locator('.slx-who')).toHaveText(T.ui2.dungeon.castWhat(CHARACTERS.selene.name));
+    await option(SKILLS.moonlight.name).click();
+    await expect(top().locator('.slx-who')).toHaveText(T.ui2.dungeon.castOn(SKILLS.moonlight.name));
+    await option(CHARACTERS.hero.name).click();
+    await expect(page.locator('.slx-dungeon .slx-talk .slx-text')).toContainText(T.ui2.dungeon.cast(CHARACTERS.selene.name, SKILLS.moonlight.name));
+    const hp: number = await game((g) => g.state.party.roster.hero.hp);
+    expect(hp).toBeGreaterThan(1);
+    await expect(page.locator('.slx-dungeon .slx-pm[data-key=hero] [role=meter]').first()).toHaveAttribute('aria-valuenow', String(hp));
+    await w.closeTalk();
+
+    // 7. Home with the lamp (an arrival chat and a banter may play first): the weapon worn in the labyrinth is still worn.
+    await game((g) => { g.state.inventory['return-lamp'] = 1; });
+    await lampHome(page, w);
+    await playOut();
+    expect(await game((g, u) => g.state.party.roster.hero.equip.weapon?.uid === u, uid)).toBe(true);
+
+    // 6. No console error all the way.
+    expect(w.errors).toEqual([]);
+  });
+
+  test("prologue, Rin's first memory, Selene, recall, handbook, Rin's reveal and Scarlet's fight", async ({ page }) => {
+    test.setTimeout(300_000);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    /** With SL_SHOTS=<dir> the run also leaves its screenshots there; otherwise this is a no-op. */
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const shot = async (name: string) => {
+      if (!shots) return;
+      await page.waitForTimeout(700);   // windows fade in: wait until they are fully drawn
+      await page.screenshot({ path: `${shots}/${name}.png` });
+    };
+    /** Runs `fn` in the page on the live game (the debug hook), with one serialisable argument. */
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    /**
+     * Confirms through whatever is being said until the screen has stayed quiet for a few checks: no dialogue box, and no
+     * window hidden for a scene (the town menu, the pad, the guild's command window). Keyed on structure, not on any wording.
+     */
+    const playOut = async () => {
+      for (let quiet = 0, i = 0; quiet < 4 && i < 400; i++) {
+        if (await page.locator('.slx-talk').first().isVisible()) { quiet = 0; await page.keyboard.press('z'); await page.waitForTimeout(30); }
+        else if ((await page.locator('.slx-cmd-hidden').count()) > 0) { quiet = 0; await page.waitForTimeout(60); }
+        else { quiet++; await page.waitForTimeout(60); }
+      }
+      await expect(page.locator('.slx-talk').first()).toBeHidden();
+    };
+    const w = await setup(page, 7, { story: 'all' });
+
+    // 1. A new game plays the prologue and then the inn night to their end, with no return chat before them, and lands on the town menu.
+    expect(await game((g) => g.arrival)).toEqual(['prologue', 'prologue-inn']);
+    await playOut();
+    await expect(page.locator('.slx-town-menu')).not.toHaveClass(/slx-cmd-hidden/);
+    const first = await game((g) => ({ seen: g.state.story.seen, fresh: g.state.story.fresh, queue: g.state.story.queue }));
+    expect(first.seen).toEqual(['prologue', 'prologue-inn']);
+    expect(first.seen.filter((id: string) => id.startsWith('chat:'))).toEqual([]);
+    expect([first.fresh, first.queue]).toEqual([[], []]);   // played, not skipped: nothing is new, nothing waits
+
+    // 2. Another new game: Esc on the first sentence shows the skip summary, then the town menu. (The setting survives the reload.)
+    await page.evaluate(() => localStorage.removeItem('starlantern-save'));
+    await page.reload();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-settings') ?? '{}').story)).toBe('all');
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
+    await w.key('Enter');
+    await expect(page.locator('.slx-town .slx-talk')).toBeVisible();
+    await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+    await shot('01-prologue');
+    await w.key('Escape');
+    await expect(page.locator('.slx-town .slx-talk .slx-text')).toContainText(STORY.scenes.prologue.summary);
+    await shot('02-prologue-skip-summary');
+    // The inn night follows before the town is the player's (Task 10b): the menu stays hidden until its first line is up.
+    const talkText = page.locator('.slx-town .slx-talk .slx-text');
+    const innFirst = STORY.scenes['prologue-inn'].lines[0].text;
+    for (let i = 0; i < 6 && ((await talkText.textContent()) ?? '') !== innFirst; i++) {
+      await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+      await w.key('z'); await page.waitForTimeout(80);
+    }
+    await expect(talkText).toHaveText(innFirst);
+    await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+    expect(await game((g) => ({ seen: g.state.story.seen, arrival: g.arrival }))).toEqual({ seen: ['prologue'], arrival: ['prologue-inn'] });
+    await shot('02b-prologue-inn');
+    await playOut();
+    await expect(page.locator('.slx-town-menu')).not.toHaveClass(/slx-cmd-hidden/);
+    expect(await game((g) => g.state.story.seen)).toEqual(['prologue', 'prologue-inn']);
+
+    // 3. Out through the mainline gate. Rin's glimmer: stand two cells off, step once (it shows on the map), then onto it.
+    await depart(page, w);
+    const glimmer = await game((g) => {
+      const c = g.run.floors.get(g.floor).contents.find((x: any) => x.kind === 'glimmer' && x.owner === 'rin');
+      if (!c) return null;
+      const open = (x: number, y: number) => ['floor', 'door'].includes(g.map().tiles[y]?.[x]);
+      for (const [key, dx, dy] of [['ArrowRight', 1, 0], ['ArrowLeft', -1, 0], ['ArrowDown', 0, 1], ['ArrowUp', 0, -1]] as const) {
+        const far = { x: c.at.x - 2 * dx, y: c.at.y - 2 * dy };
+        if (open(far.x, far.y) && open(c.at.x - dx, c.at.y - dy)) { g.pos = far; g.encounter = 0; return { key, at: c.at }; }
+      }
+      return null;
+    });
+    expect(glimmer, "a straight way to Rin's glimmer on floor 1").not.toBeNull();
+    await page.keyboard.press(glimmer!.key);
+    await expect.poll(() => game((g, at: string) => g.run.explored[g.floor].includes(at), `${glimmer!.at.x},${glimmer!.at.y}`)).toBe(true);
+    await shot('04-map-glimmer-marker');
+    await game((g) => { g.encounter = 0; });
+    await page.keyboard.press(glimmer!.key);
+    // What the glimmer held, line by line, and then the memory scene in its own look.
+    const memoryTalk = page.locator('.slx-dungeon .slx-talk.slx-talk--memory');
+    for (let i = 0; i < 14 && !(await memoryTalk.isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(memoryTalk).toBeVisible();
+    // The memory may open on narration (no face): advance to Rin's first spoken line, then her portrait must be on the box.
+    const rinFirst = STORY.scenes[memScene('rin', 1)].lines.find((l) => l.who === 'rin')!;
+    const memoryText = page.locator('.slx-dungeon .slx-talk.slx-talk--memory .slx-text');
+    for (let i = 0; i < 20 && !((await memoryText.textContent()) ?? '').includes(rinFirst.text); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(memoryText).toHaveText(rinFirst.text);
+    await expect(page.locator('.slx-dungeon .slx-talk .slx-name')).toHaveText(CHARACTERS.rin.name);
+    await expect(page.locator('.slx-dungeon .slx-talk img.slx-talk-face[src$="/char/rin-portrait.png"]')).toBeVisible();   // her memory is spoken with her portrait on the box
+    // Task 10a: the portrait stands at least twice its old 96px (on-screen, at the page's own scale), and clear of the text and the name plate.
+    {
+      const scr = (await box(page))!;
+      const k = scr.width / 640;
+      const face = (await page.locator('.slx-dungeon .slx-talk img.slx-talk-face').boundingBox())!;
+      const textBox = (await memoryText.boundingBox())!;
+      const nameBox = (await page.locator('.slx-dungeon .slx-talk .slx-name').boundingBox())!;
+      expect(face.height).toBeGreaterThanOrEqual(2 * 96 * k - 0.5);
+      expect(face.width).toBeGreaterThanOrEqual(2 * 96 * k - 0.5);
+      const clear = (a: { x: number; y: number; width: number; height: number }, b: typeof a) => a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y;
+      expect(clear(face, textBox), 'portrait clear of the dialogue text').toBe(true);
+      expect(clear(face, nameBox), 'portrait clear of the name plate').toBe(true);
+      expect(face.y).toBeGreaterThanOrEqual(scr.y - 0.5);
+      expect(face.x).toBeGreaterThanOrEqual(scr.x - 0.5);
+      expect(face.x + face.width).toBeLessThanOrEqual(scr.x + scr.width + 0.5);
+    }
+    await shot('03-memory-scene');
+    // Every line of the memory, wrapped or not: whenever a portrait shows it fits (the tall dungeon box is the risk that capped its size).
+    {
+      let tallest = 0;
+      for (let i = 0; i < 60 && (await memoryTalk.isVisible()); i++) {
+        tallest = Math.max(tallest, (await faceFits(page)) ?? 0);
+        await w.key('z'); await page.waitForTimeout(40);
+      }
+      expect(tallest, 'at least one memory line showed a portrait').toBeGreaterThan(0);
+    }
+    await playOut();
+    await expect(page.locator('.slx-talk--memory')).toHaveCount(0);
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    const rin1 = await game((g) => ({ memories: g.state.party.roster.rin.memories, seen: g.state.story.seen, fresh: g.state.story.fresh }));
+    expect(rin1.memories).toBe(1);
+    expect(rin1.seen).toContain(memScene('rin', 1));
+    expect(rin1.fresh).not.toContain(memScene('rin', 1));
+
+    // 4. Both at Lv4, down to floor 2, and Selene waits in a room there.
+    await game((g) => { g.state.party.roster.hero.level = 4; g.state.party.roster.rin.level = 4; });
+    const toStairs = await pathTo(page, 'down');
+    expect(toStairs?.keys.length).toBeGreaterThan(0);
+    for (const k of toStairs!.keys) {
+      await game((g) => { g.encounter = 0; });
+      await page.keyboard.press(k);
+    }
+    await w.choose('.slx-event-stairs', '前往');
+    await expect.poll(() => game((g) => g.floor)).toBe(2);
+    await w.closeTalk();
+    const plan = await game((g) => {
+      const room = g.run.floors.get(g.floor).contents.find((c: any) => c.kind === 'rescue');
+      const open = (x: number, y: number) => ['floor', 'door'].includes(g.map().tiles[y]?.[x]);
+      for (const [key, dx, dy] of [['ArrowRight', 1, 0], ['ArrowLeft', -1, 0], ['ArrowDown', 0, 1], ['ArrowUp', 0, -1]] as const) {
+        const far = { x: room.at.x - 2 * dx, y: room.at.y - 2 * dy };
+        if (open(far.x, far.y) && open(room.at.x - dx, room.at.y - dy)) { g.pos = far; g.encounter = 0; return { key, who: room.who, at: room.at }; }
+      }
+      return null;
+    });
+    expect(plan, 'a straight way into the rescue room').not.toBeNull();
+    expect(plan!.who).toBe('selene');
+    await page.keyboard.press(plan!.key);
+    await expect.poll(() => game((g, at: string) => g.run.explored[g.floor].includes(at), `${plan!.at.x},${plan!.at.y}`)).toBe(true);
+    await shot('05-map-rescue-marker');
+    await game((g) => { g.encounter = 0; });
+    await page.keyboard.press(plan!.key);
+    // The meeting line first, then the fight.
+    await expect(page.locator('.slx-dungeon .slx-talk')).toBeVisible();
+    await shot('06-meeting-line');
+    for (let i = 0; i < 12 && !(await page.locator('.slx-battle').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    await game((g) => { for (const e of g.battle.enemies) { e.hp = 0; e.alive = false; } });
+    for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }   // 全員攻擊
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-result')).toContainText(/瑟蕾（Lv\d+）加入了隊伍！/);
+    await shot('07-rescue-result');
+    await w.key('Enter');
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    await playOut();
+    expect(await game((g) => g.state.party.recruited)).toEqual(['hero', 'rin', 'selene']);
+
+    // 5. Home with the lamp, after the party's first won fight: the first-return scene opens the arrival, ahead of any return
+    // chat, while the town menu waits (Task 10b). It plays with its portraits in the screen. Then Selene to the bench and back.
+    await game((g) => { g.state.inventory['return-lamp'] = 1; });
+    await lampHome(page, w);
+    const homeArrival = await game((g) => g.arrival);
+    expect(homeArrival[0]).toBe('first-return');
+    expect(homeArrival.slice(1).every((id: string) => /^(chat|banter):/.test(id))).toBe(true);   // B1: a banter may follow the chat
+    await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+    {
+      const trust = STORY.scenes['first-return'].lines.filter((l) => l.who === 'rin').at(-1)!.text;   // Rin's last spoken line of the scene
+      let heard = false;
+      let faces = 0;
+      for (let i = 0; i < 40 && !heard; i++) {
+        if (((await talkText.textContent()) ?? '') === trust) heard = true;
+        else if (await page.locator('.slx-town .slx-talk').isVisible()) { if ((await faceFits(page)) !== null) faces++; await w.key('z'); await page.waitForTimeout(60); }
+        else await page.waitForTimeout(60);
+      }
+      expect(heard, "the first return reaches Rin's last spoken line").toBe(true);
+      await expect(page.locator('.slx-town .slx-talk .slx-name')).toHaveText(CHARACTERS.rin.name);
+      expect((await faceFits(page)) ?? faces, 'the first return shows a portrait that fits').toBeGreaterThan(0);
+      await shot('07b-first-return');
+    }
+    await playOut();
+    expect(await game((g) => g.state.story.seen)).toContain('first-return');
+    expect(await game((g) => g.arrival)).toEqual([]);
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=formation]').click();
+    await expect(page.locator('.slx-formation-scene')).toBeVisible();
+    const cellOf = (id: string) => game((g, who: string) => g.state.party.grid.indexOf(who), id);
+    await page.locator(`[data-cell="${await cellOf('selene')}"]`).click();
+    await page.locator('.slx-formation-pick [role=option]').filter({ hasText: '移出隊伍' }).click();
+    expect(await cellOf('selene')).toBe(-1);
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await expect(page.locator('.slx-cmd [data-id=recall]')).not.toHaveAttribute('aria-disabled', 'true');
+    await page.locator('.slx-cmd [data-id=recall]').click();
+    await shot('08-guild-recall');
+    await page.locator('.slx-layer [data-id=selene]').click();
+    await w.key('ArrowUp'); await w.key('Enter');   // 是
+    await expect.poll(() => cellOf('selene')).toBeGreaterThanOrEqual(0);
+    await w.closeTalk();
+
+    // 6. The fragment exchange at the absorb cap: Rin is one short of ABSORB_CAP, the hero is full.
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    await game((g, a: { shard: string; amount: number; cap: number }) => {
+      g.state.inventory[a.shard] = 3;
+      const fill = (n: number) => Array.from({ length: n }, () => ({ stat: 'hp', amount: a.amount }));
+      g.state.party.roster.hero.absorbed = fill(a.cap);
+      g.state.party.roster.rin.absorbed = fill(a.cap - 1);
+    }, { shard: SHARD_IDS.dim, amount: ABSORB_GAIN.dim.hp, cap: ABSORB_CAP });
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    const layerRow = (label: string) => page.locator('.slx-layer:last-child [role=option]').filter({ hasText: label });
+    await page.locator('.slx-cmd [data-id=exchange]').click();
+    await shot('09-exchange-menu');
+    await layerRow(T.ui2.exchange.absorb).click();
+    await layerRow(SHARD_NAMES.dim).click();
+    await expect(layerRow(CHARACTERS.hero.name)).toHaveAttribute('aria-disabled', 'true');
+    await expect(layerRow(CHARACTERS.rin.name)).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(layerRow(CHARACTERS.rin.name)).toContainText(T.ui2.exchange.count(ABSORB_CAP - 1, ABSORB_CAP));
+    await shot('10-exchange-absorb-cap');
+    for (let i = 0; i < 6 && (await page.locator('.slx-layer').count()) > 0; i++) { await w.key('Escape'); await page.waitForTimeout(80); }
+    await expect(page.locator('.slx-guild')).toBeVisible();
+    await w.key('Escape');
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // 7. The handbook from the town menu: something new to clear, Rin's first piece, the truths, all five pages.
+    // A hero chat stands in for one heard before (the return chat did not necessarily play), so a plain scene with a portrait can be shot.
+    await game((g, ids: string[]) => {
+      for (const id of ids) {
+        if (!g.state.story.seen.includes(id)) g.state.story.seen.push(id);
+        if (!g.state.story.fresh.includes(id)) g.state.story.fresh.push(id);
+      }
+    }, [memScene('rin', 1), 'prologue', 'chat:hero:1']);
+    await page.locator('.slx-town [data-id=handbook]').click();
+    await expect(page.locator('.slx-handbook')).toBeVisible();
+    const H = T.ui2.handbook;
+    const hbTab = (label: string) => page.locator('.slx-tabs .slx-tab').filter({ hasText: label });
+    const hbRow = (label: string) => page.locator('.slx-hb-list [role=option]').filter({ hasText: label });
+    const replay = async () => {
+      await expect(page.locator('.slx-handbook.slx-hb-playing')).toBeVisible();
+      for (let i = 0; i < 120 && (await page.locator('.slx-handbook.slx-hb-playing').count()) > 0; i++) { await w.key('z'); await page.waitForTimeout(40); }
+      await expect(page.locator('.slx-handbook.slx-hb-playing')).toHaveCount(0);
+    };
+    await expect(page.locator('.slx-hb-list .slx-fresh')).toHaveCount(1);   // Rin's row carries 新
+    await shot('11-handbook-memories');
+    await hbRow(CHARACTERS.rin.name).click();
+    await expect(hbRow(STORY.scenes[memScene('rin', 1)].title).locator('.slx-fresh')).toHaveCount(1);
+    await hbRow(STORY.scenes[memScene('rin', 1)].title).click();
+    await replay();
+    await expect(page.locator('.slx-hb-list .slx-fresh')).toHaveCount(0);
+    await page.locator('.slx-back').click();   // from the piece list back to the memories
+    for (const [tab, name] of [['people', '12-handbook-people'], ['town', '13-handbook-town'], ['codex', '14-handbook-codex']] as const) {
+      await hbTab(H.tabs[tab]).click();
+      await expect(hbTab(H.tabs[tab])).toHaveAttribute('aria-selected', 'true');
+      await shot(name);
+    }
+    await hbTab(H.tabs.people).click();
+    await hbRow(CHARACTERS.hero.name).click();
+    await hbRow(STORY.scenes['chat:hero:1'].title).click();
+    await expect(page.locator('.slx-handbook.slx-hb-playing')).toBeVisible();
+    await expect(page.locator('.slx-handbook .slx-talk .slx-talk-face')).toBeVisible();
+    await expect(page.locator('.slx-talk--memory')).toHaveCount(0);   // a chat is plain, a memory is dimmed
+    await shot('12b-dialogue-portrait');
+    await replay();
+    await page.locator('.slx-back').click();
+    await hbTab(H.tabs.truths).click();
+    await expect(page.locator('.slx-hb-list .slx-fresh')).toHaveCount(1);   // the prologue is still marked new
+    await shot('15-handbook-truths');
+    await hbRow(H.stages.prologue).click();
+    await replay();
+    await expect(page.locator('.slx-hb-list .slx-fresh')).toHaveCount(0);
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+    expect(await game((g) => g.state.story.fresh)).toEqual([]);
+
+    // 8. Save at the inn, reload, continue: a valid save, Rin holds one memory, and the arrival has no return chat.
+    await w.choose('.slx-town', '旅館');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter'); await w.key('ArrowUp'); await w.key('Enter');
+    await expect(page.locator('.slx-talk .slx-text')).toHaveText(T.ui2.inn.saved, { timeout: 5000 });
+    await page.reload();
+    await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
+    await w.key('Enter');
+    await expect(page.locator('.slx-town')).toBeVisible();
+    await expectSaveLoaded(page);
+    const back = await game((g) => ({ rin: g.state.party.roster.rin.memories, arrival: g.arrival, recruited: g.state.party.recruited }));
+    expect(back.rin).toBe(1);
+    expect(back.arrival).toEqual([]);
+    expect(back.recruited).toContain('selene');
+    await w.closeTalk();
+
+    // 9. Rin's seventh piece, then home: the reveal plays alone in the town.
+    await depart(page, w);
+    await game((g, n: number) => { g.state.party.roster.rin.memories = n; g.state.inventory['return-lamp'] = 1; }, chainLength('rin'));
+    await lampHome(page, w);
+    await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
+    expect(await game((g) => g.arrival)).toEqual(['rin-reveal']);
+    for (let i = 0; i < 2; i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await shot('16-rin-reveal');
+    await playOut();
+    const reveal = await game((g) => ({ oath: g.state.party.roster.rin.oath, seen: g.state.story.seen }));
+    expect(reveal.oath).toBe(true);
+    expect(reveal.seen).toContain('rin-reveal');
+
+    // 10. The status page's memory column shows what her pieces added.
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-cmd [data-id=status]').click();
+    await flipTo(page, CHARACTERS.rin.name);
+    await page.locator('[data-tab=stats]').click();
+    const gainKey = Object.keys(CHAINS.rin.gain)[0];
+    const memoryCell = page.locator(`.slx-stat-cat[data-cat=primary] tr[data-stat=${gainKey}] td.slx-memory`);
+    await expect(page.locator('.slx-stat-cat[data-cat=primary] thead th')).toContainText([T.ui2.status.sources.memory]);
+    await expect(memoryCell).toHaveText(/^\+/);
+    await memoryCell.scrollIntoViewIfNeeded();
+    await shot('17-status-memory-column');
+    await page.locator('.slx-back').click();
+    await page.locator('.slx-back').click();
+    await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+
+    // 11. Scarlet at iron depth 8: her story fight, with her standee in the enemy slot.
+    await game((g) => {
+      g.state.dungeon.reached.iron = 8;
+      g.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }, { region: 'iron', condition: 'plain' }, { region: 'blaze', condition: 'plain' }];
+    });
+    await w.choose('.slx-town', '傳送門廣場');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');
+    await expect(page.locator('.slx-portal')).toHaveCount(3);
+    await page.locator('.slx-portal').nth(1).click();
+    await page.locator('.slx-depths [role=option]').nth(1).click();   // depth 5, the deepest start the region offers
+    await w.key('ArrowUp'); await w.key('Enter');                    // 是
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    await game((g) => { g.changeFloor(8); });
+    await w.key('ArrowDown');                                        // the scene redraws on the next step
+    const scarlet = await game((g) => {
+      const room = g.run.floors.get(g.floor).contents.find((c: any) => c.kind === 'rescue');
+      if (!room) return null;
+      const open = (x: number, y: number) => ['floor', 'door'].includes(g.map().tiles[y]?.[x]);
+      for (const [key, dx, dy] of [['ArrowRight', 1, 0], ['ArrowLeft', -1, 0], ['ArrowDown', 0, 1], ['ArrowUp', 0, -1]] as const) {
+        const far = { x: room.at.x - 2 * dx, y: room.at.y - 2 * dy };
+        if (open(far.x, far.y) && open(room.at.x - dx, room.at.y - dy)) { g.pos = far; g.encounter = 0; return { key, who: room.who, floor: g.floor }; }
+      }
+      return null;
+    });
+    expect(scarlet, "a straight way into Scarlet's room").not.toBeNull();
+    expect([scarlet!.who, scarlet!.floor]).toEqual(['scarlet', 8]);
+    await page.keyboard.press(scarlet!.key);
+    await game((g) => { g.encounter = 0; });
+    await page.keyboard.press(scarlet!.key);
+    for (let i = 0; i < 14 && !(await page.locator('.slx-battle').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    const fight = await game((g) => ({ survive: g.battle.survive, foes: g.battle.enemies.map((e: any) => e.defId) }));
+    expect(fight.survive).toBeGreaterThan(0);
+    expect(fight.foes[0]).toBe('scarlet-foe');
+    await shot('18-scarlet-story-fight');
+    expect(w.errors).toEqual([]);
+  });
+
+  test('the first boss names its rune on the result, once, inside a phone screen (plan 8f)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const w = await setup(page, 7);
+    await depart(page, w);
+    // A boss put next to the party on depth 1: stepping on it starts a boss fight, the first this save has won.
+    const key: string = await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const m = g.map();
+      const D: [string, number, number][] = [['ArrowUp', 0, -1], ['ArrowDown', 0, 1], ['ArrowLeft', -1, 0], ['ArrowRight', 1, 0]];
+      for (const [k, dx, dy] of D) {
+        const x = g.pos.x + dx, y = g.pos.y + dy;
+        if (m.tiles[y]?.[x] !== 'floor') continue;
+        m.tiles[y][x] = 'boss';
+        m.boss = { x, y };
+        g.encounter = 0;
+        return k;
+      }
+      return '';
+    });
+    expect(key).not.toBe('');
+    await w.closeTalk();
+    await page.keyboard.press(key);
+    for (let i = 0; i < 14 && !(await page.locator('.slx-battle').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.battle.boss)).toBe(true);
+    await page.evaluate(() => { for (const e of (window as unknown as Dbg).__starlanternDebug.game.battle.enemies) { e.hp = 0; e.alive = false; } });
+    for (let i = 0; i < 40 && !(await page.locator('.slx-result').isVisible()); i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) { await w.key('ArrowUp'); await w.key('Enter'); }   // 全員攻擊
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-result')).toContainText('勝利');
+    const rune = page.locator('.slx-result .slx-loot-rune');
+    await expect(rune).toHaveCount(1);
+    await expect(rune).toHaveText('得到符文：擴散（魔法）');
+    await expect(rune).toHaveClass(/slx-rarity-magic/);
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runesOpen)).toBe(true);
+    for (const [vw, vh] of [[390, 844], [1280, 720]] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      await page.waitForTimeout(150);
+      const rows = await page.locator('.slx-result-lines p').evaluateAll((ps) => ps.map((p) => ({ t: p.textContent, over: p.scrollWidth > p.clientWidth })));
+      expect(rows.filter((r) => r.over), `rows wider than the result at ${vw}`).toEqual([]);
+      // The result window itself sits inside the screen.
+      const box = (await page.locator('.slx-result').boundingBox())!;
+      expect([box.x >= 0, box.y >= 0, box.x + box.width <= vw + 0.5, box.y + box.height <= vh + 0.5], `the result inside ${vw}x${vh}`).toEqual([true, true, true, true]);
+      await expect(rune).toHaveCount(1);
+    }
+    await w.key('Enter');                                   // 繼續: the first rune's tutorial, told once by the narrator (plan 8g)
+    const talk = page.locator('.slx-battle .slx-talk');
+    await expect(talk).toBeVisible();
+    await expect(talk.locator('.slx-text')).toContainText('你得到了符文');
+    await w.key('z');                                       // the first page whole (a key finishes the typing)
+    await expect(talk.locator('.slx-next')).toBeVisible();
+    for (const [vw, vh] of [[390, 844], [844, 390], [1280, 720]] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      await page.waitForTimeout(150);
+      await expect(page.locator('.slx-battle .slx-msg')).toBeHidden();   // the foes' names gone with the fight
+      const screen = (await page.locator('.slx-screen').boundingBox())!;
+      const box = (await talk.boundingBox())!;
+      expect([box.x >= screen.x - 0.5, box.y >= screen.y - 0.5, box.x + box.width <= screen.x + screen.width + 0.5, box.y + box.height <= screen.y + screen.height + 0.5], `the tutorial inside the stage at ${vw}`).toEqual([true, true, true, true]);
+      if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/rune-tutorial-${vw}.png` });
+    }
+    for (let i = 0; i < 12 && (await talk.isVisible()); i++) await w.key('z');
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runeTutorialSeen)).toBe(true);
+    await expect(page.locator('.slx-loot-rune')).toHaveCount(0);   // told on the result alone, not again on the map
+    expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runes)).toEqual({ 'spread@magic': 1 });
+    expect(w.errors).toEqual([]);
+  });
+
+  test('the shop sells and buys runes (plan 8f)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404 && r.request().resourceType() === 'image') missing.push(r.url()); });
+    const w = await setup(page, 7);
+    // A save past its first boss: runes open, 500 G and a rare 彈射 in the bag.
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.runesOpen = true;
+      g.state.gold = 500;
+      g.state.runes = { 'bounce@rare': 1 };
+    });
+    const gold = () => page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.gold as number);
+    await w.choose('.slx-town', '道具店');
+    await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-shop .slx-cmd [data-id=runes]').click();
+    const list = page.locator('.slx-rune-list');
+    await expect(list.locator('[role=option]')).toHaveCount(6);   // four to buy, the 收購 heading, the bag's 彈射
+    await expect(list.locator('[data-id="buy:spread@common"] .slx-right')).toHaveText('100 G　持有 0');
+    await expect(list.locator('[data-id="sell:bounce@rare"] .slx-right')).toHaveText('收購 150 G　持有 1');
+    const fits = async (where: string) => {
+      const rows = await page.locator('.slx-rune-page [role=option], .slx-rune-info p').evaluateAll((els) => els.map((e) => ({ t: e.textContent, over: e.scrollWidth > e.clientWidth + 0.5 })));
+      expect(rows.filter((r) => r.over), `rows wider than their box at ${where}`).toEqual([]);
+      const page_ = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
+      expect(page_.sw, `the page scrolls sideways at ${where}`).toBeLessThanOrEqual(page_.cw);
+      const box = await page.locator('.slx-rune-page').boundingBox();
+      const vp = page.viewportSize()!;
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(vp.width + 0.5);
+    };
+    await fits('1280');
+    if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/rune-shop-1280.png` });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(150);
+    await fits('390');
+    if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/rune-shop-390.png` });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    // Buy one 擴散 (100 G), then sell the 彈射 back (150 G).
+    await list.locator('[data-id="buy:spread@common"]').click();
+    await expect(page.locator('.slx-qty')).toBeVisible();
+    await w.key('Enter');
+    await expect.poll(gold).toBe(400);
+    await w.closeTalk();
+    await expect(list.locator('[data-id="buy:spread@common"] .slx-right')).toHaveText('100 G　持有 1');
+    await list.locator('[data-id="sell:bounce@rare"]').click();
+    await expect(page.locator('.slx-qty')).toBeVisible();
+    await w.key('Enter');
+    await expect.poll(gold).toBe(550);
+    await w.closeTalk();
+    await expect(list.locator('[data-id="sell:bounce@rare"]')).toHaveCount(0);
+    // Both trades were saved at once.
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
+    expect([saved.gold, saved.runes, saved.runesOpen]).toEqual([550, { 'spread@common': 1 }, true]);
+    expect(w.errors).toEqual([]);
+    expect(missing).toEqual([]);
+  });
+
+  test('the forge fuses three runes into one (plan 8f)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const w = await setup(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.gold = 100;
+      g.state.runes = { 'spread@common': 3 };
+      g.state.inventory['essence-common'] = 1;
+    });
+    const state = () => page.evaluate(() => {
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      return { gold: s.gold as number, runes: s.runes as Record<string, number>, essence: s.inventory['essence-common'] as number | undefined };
+    });
+    await w.choose('.slx-town', '鍛造屋');
+    await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-forge .slx-cmd [data-id=runes]').click();
+    const row = page.locator('.slx-forge-list [data-id="fuse:spread@common"]');
+    await expect(row.locator('.slx-label')).toHaveText('擴散（普通）');
+    await expect(row.locator('.slx-right')).toHaveText('持有 3');
+    await expect(page.locator('.slx-rune-fuse-info')).toContainText('3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）');
+    for (const [vw, vh] of [[390, 844], [1280, 720]] as const) {
+      await page.setViewportSize({ width: vw, height: vh });
+      await page.waitForTimeout(150);
+      const over = await page.locator('.slx-forge-list [role=option], .slx-rune-fuse-info p').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+      expect(over, `rows wider than their box at ${vw}`).toEqual([]);
+      const doc = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(doc, `the page scrolls sideways at ${vw}`).toBeLessThanOrEqual(0);
+      if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/rune-fuse-${vw}.png` });
+    }
+    await row.click();
+    await expect(page.locator('.slx-confirm')).toBeVisible();
+    await w.key('ArrowUp'); await w.key('Enter');           // 是
+    await expect.poll(state).toEqual({ gold: 70, runes: { 'spread@magic': 1 }, essence: undefined });
+    await expect(page.locator('.slx-forge .slx-talk')).toContainText('擴散（魔法）');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
+    expect([saved.gold, saved.runes]).toEqual([70, { 'spread@magic': 1 }]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test.describe('the skill workshop (plan 8g)', () => {
+    /** Every workshop window inside the stage and every row, card cell and foot line inside its own box, at this size. */
+    const inside = async (page: Page, vw: number, vh: number) => {
+      await page.setViewportSize({ width: vw, height: vh });
+      await page.waitForTimeout(150);
+      const screen = await page.locator('.slx-screen').boundingBox();
+      // Every window on screen (the tutorial's box is there but hidden unless it plays).
+      for (const box of await page.locator('.slx-workshop .slx-win:not([hidden])').evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, c: e.className }; }))) {
+        expect(box.x, `${box.c} at ${vw}`).toBeGreaterThanOrEqual(screen!.x - 0.5);
+        expect(box.y, `${box.c} at ${vw}`).toBeGreaterThanOrEqual(screen!.y - 0.5);
+        expect(box.x + box.w, `${box.c} at ${vw}`).toBeLessThanOrEqual(screen!.x + screen!.width + 0.5);
+        expect(box.y + box.h, `${box.c} at ${vw}`).toBeLessThanOrEqual(screen!.y + screen!.height + 0.5);
+      }
+      const over = await page.locator('.slx-workshop [role=option], .slx-ws-card p, .slx-ws-card td, .slx-ws-foot p')
+        .evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+      expect(over, `wider than their box at ${vw}`).toEqual([]);
+    };
+
+    test('the skill workshop sockets a rune, after showing what it changes (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const missing: string[] = [];
+      page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+      const w = await setup(page, 7);
+      // A save past its first boss: Noel recruited at Lv 20 knowing 火之星彈, a magic 擴散 in the bag.
+      await page.evaluate(() => {
+        const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+        s.runesOpen = true;
+        s.runeTutorialSeen = true;   // read already: the tutorial has its own test
+        s.runes = { 'spread@magic': 1 };
+        s.party.recruited = [...s.party.recruited, 'noel'];
+        s.party.roster.noel = { ...s.party.roster.noel, level: 20, tree: { 'fire-star': 1 } };
+      });
+      await w.choose('.slx-town', '冒險者公會');
+      await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+      await w.choose('.slx-guild .slx-cmd', '技能工坊');
+      await expect(page.locator('.slx-workshop')).toBeVisible();
+      for (let i = 0; i < 4 && !((await page.locator('.slx-ws-name').textContent()) ?? '').includes('諾艾兒'); i++) await w.key('e');
+      await expect(page.locator('.slx-ws-name')).toContainText('諾艾兒');
+      await expect(page.locator('.slx-ws-skills [aria-selected=true]')).toHaveAttribute('data-id', 'fire-star');
+      await w.key('Enter');                                   // her slots
+      await w.key('Enter');                                   // slot 1's runes
+      await expect(page.locator('.slx-ws-runes [aria-selected=true]')).toHaveAttribute('data-id', 'bag:spread@magic');
+      const target = page.locator('.slx-ws-card tr[data-key=target]');
+      await expect(target.locator('td')).toHaveText(['敵方單體', '敵方全體']);
+      await expect(target).toHaveClass(/slx-changed/);
+      await expect(page.locator('.slx-ws-card tr[data-key=power] .slx-ws-after')).toHaveText('84（每個目標）');
+      for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+        await inside(page, vw, vh);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await w.key('Enter');                                   // socket it
+      await expect(page.locator('.slx-ws-foot')).toContainText('火之星彈裝上了擴散（魔法）');
+      await expect(page.locator('.slx-ws-skills [data-id=fire-star] .slx-right')).toHaveText('◆○');
+      await w.key('Escape'); await w.key('Escape');           // the slots, the skills, the guild
+      await expect(page.locator('.slx-guild')).toBeVisible();
+      await expect(page.locator('.slx-talk')).toBeHidden();   // no new greeting
+      await expect(page.locator('.slx-guild .slx-cmd [aria-selected=true]')).toHaveText('技能工坊');
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
+      expect([saved.party.roster.noel.sockets, saved.runes]).toEqual([{ 'fire-star': [{ id: 'spread', tier: 'magic' }] }, {}]);
+      expect(w.errors).toEqual([]);
+      expect(missing).toEqual([]);
+    });
+
+    test('the workshop card stays inside the stage at its fullest (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const w = await setup(page, 7);
+      // Chizuru at Lv 35: 守之結界 with three runes (常駐 and 除厄 among them), 淨之結界 with 常駐 too (the two-barrier
+      // warning); Sylvie holds 雙重詠唱, whose move into 守之結界's third slot adds a line, takes one away and names her loss.
+      await page.evaluate(() => {
+        const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+        s.runesOpen = true;
+        s.runeTutorialSeen = true;   // read already: the tutorial has its own test
+        s.runes = { 'thrift@magic': 1 };
+        s.party.recruited = [...s.party.recruited, 'chizuru', 'sylvie'];
+        s.party.roster.chizuru = {
+          ...s.party.roster.chizuru, level: 35, tree: { ward: 1, 'purify-ward': 1 },
+          sockets: { ward: [{ id: 'lasting', tier: 'common' }, { id: 'extend', tier: 'magic' }, { id: 'dispel', tier: 'magic' }], 'purify-ward': [{ id: 'lasting', tier: 'common' }] },
+        };
+        s.party.roster.sylvie = { ...s.party.roster.sylvie, level: 20, tree: { 'aimed-shot': 1 }, sockets: { 'aimed-shot': [{ id: 'twin-cast', tier: 'legendary' }] } };
+      });
+      await w.choose('.slx-town', '冒險者公會');
+      await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+      await w.choose('.slx-guild .slx-cmd', '技能工坊');
+      for (let i = 0; i < 4 && !((await page.locator('.slx-ws-name').textContent()) ?? '').includes('千鶴'); i++) await w.key('e');
+      for (let i = 0; i < 4 && (await page.locator('.slx-ws-skills [aria-selected=true]').getAttribute('data-id')) !== 'ward'; i++) await w.key('ArrowDown');
+      await expect(page.locator('.slx-ws-skills [aria-selected=true]')).toHaveAttribute('data-id', 'ward');
+      await w.key('Enter');                                   // her slots
+      await w.key('ArrowDown'); await w.key('ArrowDown');
+      await w.key('Enter');                                   // slot 3's runes (除厄 in it): 拆下, the bag, then the others'
+      const move = 'move:sylvie:aimed-shot:0';
+      for (let i = 0; i < 12 && (await page.locator('.slx-ws-runes [aria-selected=true]').getAttribute('data-id')) !== move; i++) await w.key('ArrowDown');
+      await expect(page.locator('.slx-ws-runes [aria-selected=true]')).toHaveAttribute('data-id', move);
+      await expect(page.locator('.slx-ws-giver')).toContainText('希爾薇');
+      await expect(page.locator('.slx-ws-card')).toContainText('兩個常駐結界只會留下一個');
+      for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
+        await inside(page, vw, vh);
+        const foot = await page.locator('.slx-ws-foot').boundingBox();
+        const card = await page.locator('.slx-ws-card').boundingBox();
+        expect(foot!.y + foot!.height, `the foot shows whole at ${vw}`).toBeLessThanOrEqual(card!.y + card!.height + 0.5);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-full-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const body = page.locator('.slx-ws-card-body');
+      const room = await body.evaluate((b) => b.scrollHeight - b.clientHeight);
+      expect(room, 'the fullest card needs its ▼').toBeGreaterThan(1);
+      const down = page.locator('.slx-ws-card-frame > .slx-more-down');
+      const up = page.locator('.slx-ws-card-frame > .slx-more-up');
+      await expect(down).toBeVisible();
+      await expect(up).toBeHidden();
+      await down.click();
+      await expect.poll(() => body.evaluate((b) => b.scrollTop)).toBeGreaterThan(0);
+      await expect(up).toBeVisible();
+      const top = await body.evaluate((b) => b.scrollTop);
+      if (top < room - 1) {
+        await w.key('f');
+        await expect.poll(() => body.evaluate((b) => b.scrollTop)).toBeGreaterThan(top);
+      }
+      expect(w.errors).toEqual([]);
+    });
+
+    test('the workshop moves a rune between members, by mouse (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const w = await setup(page, 7);
+      // Noel at Lv 20 knowing 火之星彈; Sylvie with 彈射 in 瞄準射擊's first slot; a magic 擴散 in the bag.
+      await page.evaluate(() => {
+        const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+        s.runesOpen = true;
+        s.runeTutorialSeen = true;   // read already: the tutorial has its own test
+        s.runes = { 'spread@magic': 1 };
+        s.party.recruited = [...s.party.recruited, 'noel', 'sylvie'];
+        s.party.roster.noel = { ...s.party.roster.noel, level: 20, tree: { 'fire-star': 1 } };
+        s.party.roster.sylvie = { ...s.party.roster.sylvie, level: 20, tree: { 'aimed-shot': 1 }, sockets: { 'aimed-shot': [{ id: 'bounce', tier: 'magic' }] } };
+      });
+      await w.choose('.slx-town', '冒險者公會');
+      await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+      await page.locator('.slx-guild .slx-cmd [data-id=workshop]').click();
+      await expect(page.locator('.slx-workshop')).toBeVisible();
+      const next = page.locator('.slx-ws-head .slx-status-arrow').last();
+      for (let i = 0; i < 4 && !((await page.locator('.slx-ws-name').textContent()) ?? '').includes('諾艾兒'); i++) await next.click();
+      await expect(page.locator('.slx-ws-name')).toContainText('諾艾兒');
+      await page.locator('.slx-ws-skills [data-id=fire-star]').click();
+      await page.locator('.slx-ws-slots [data-id="slot:0"]').click();
+      const runes = page.locator('.slx-ws-runes');
+      await expect(runes.locator('[data-id="head:others"]')).toHaveText('從別人身上移過來');
+      const row = runes.locator('[data-id="move:sylvie:aimed-shot:0"]');
+      await expect(row.locator('.slx-right')).toHaveText('希爾薇');
+      await row.hover();
+      await expect(page.locator('.slx-ws-giver')).toContainText('希爾薇・瞄準射擊');
+      await expect(page.locator('.slx-ws-card tr[data-key=target] td')).toHaveText(['敵方單體', '敵方單體']);
+      for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
+        await inside(page, vw, vh);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-move-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await row.click();
+      await expect(page.locator('.slx-ws-foot')).toContainText('從希爾薇・瞄準射擊移過來：彈射（魔法）');
+      const sockets = await page.evaluate(() => {
+        const r = (window as unknown as Dbg).__starlanternDebug.game.state.party.roster;
+        return [r.noel.sockets, r.sylvie.sockets ?? null];
+      });
+      expect(sockets).toEqual([{ 'fire-star': [{ id: 'bounce', tier: 'magic' }] }, null]);
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
+      expect(saved.party.roster.noel.sockets).toEqual({ 'fire-star': [{ id: 'bounce', tier: 'magic' }] });
+      expect(w.errors).toEqual([]);
+    });
+
+    test("the status page: columns line up across categories, the hero's branch names are whole, and the skills page leads to the workshop (plan 8g)", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const w = await setup(page, 7);
+      await page.evaluate(() => {
+        const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+        s.runesOpen = true;
+        s.runeTutorialSeen = true;   // read already: the tutorial has its own test
+        s.party.recruited = [...s.party.recruited, 'noel'];
+        s.party.roster.noel = { ...s.party.roster.noel, level: 20, tree: { 'fire-star': 1 }, sockets: { 'fire-star': [{ id: 'spread', tier: 'magic' }] } };
+      });
+      await w.choose('.slx-town', '冒險者公會');
+      await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+      await page.locator('.slx-guild [data-id=status]').click();
+      await expect(page.locator('.slx-status-scene')).toBeVisible();
+      // Every category open: the n-th column starts at the same x in every table.
+      for (let i = 0; i < 8; i++) {
+        const closed = page.locator('.slx-stat-cat-head[aria-expanded=false]');
+        if (!(await closed.count())) break;
+        await closed.first().click();
+      }
+      const columns = async (vw: number) => {
+        const lefts = await page.locator('.slx-stat-table').evaluateAll((ts) => ts.map((t) => [...t.querySelectorAll('thead th')].map((th) => th.getBoundingClientRect().left)));
+        expect(lefts.length, `tables at ${vw}`).toBeGreaterThan(1);
+        for (const l of lefts) {
+          expect(l.length).toBe(lefts[0].length);
+          l.forEach((x, i) => expect(Math.abs(x - lefts[0][i]), `column ${i} at ${vw}`).toBeLessThanOrEqual(0.5));
+        }
+      };
+      const branches = async (vw: number) => {
+        const heads = await page.locator('.slx-tree-branch-name').evaluateAll((hs) => hs.map((h) => ({
+          t: h.textContent, over: h.scrollWidth > h.clientWidth + 0.5, ellipsis: getComputedStyle(h).textOverflow === 'ellipsis',
+        })));
+        expect(heads.length, `branches at ${vw}`).toBe(5);
+        expect(heads.filter((h) => h.over || h.ellipsis), `cut branch names at ${vw}`).toEqual([]);
+      };
+      for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+        await page.setViewportSize({ width: vw, height: vh });
+        await page.waitForTimeout(150);
+        await page.locator('.slx-tab[data-tab=stats]').click();
+        await columns(vw);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/status-columns-${vw}.png` });
+        await page.locator('.slx-tab[data-tab=tree]').click();   // the hero's five branches
+        await branches(vw);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/status-hero-tree-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      // The skills page: Noel's 火之星彈 with its dots and rune line; a click opens the workshop on it.
+      await flipTo(page, '諾艾兒');
+      await page.locator('.slx-tab[data-tab=skills]').click();
+      const fire = page.locator('.slx-skill[data-skill=fire-star]');
+      await expect(fire.locator('.slx-skill-slots')).toHaveText('◆○');
+      await expect(fire.locator('.slx-skill-rune')).toContainText('擴散（魔法）：');
+      for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+        await page.setViewportSize({ width: vw, height: vh });
+        await page.waitForTimeout(150);
+        const over = await page.locator('.slx-tab-skills .slx-skill-head, .slx-tab-skills .slx-skill-rune').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+        expect(over, `the skills page spills at ${vw}`).toEqual([]);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/status-skills-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await fire.click();
+      await expect(page.locator('.slx-workshop')).toBeVisible();
+      await expect(page.locator('.slx-ws-name')).toContainText('諾艾兒');
+      await expect(page.locator('.slx-ws-skills [aria-selected=true]')).toHaveAttribute('data-id', 'fire-star');
+      await w.key('Escape');                                  // back to her skills page
+      await expect(page.locator('.slx-status-scene')).toBeVisible();
+      await expect(page.locator('.slx-status-name')).toContainText('諾艾兒');
+      await expect(page.locator('.slx-tab-sel')).toHaveText('技能');
+      await w.key('Escape');                                  // back to the guild, no new greeting
+      await expect(page.locator('.slx-guild')).toBeVisible();
+      await expect(page.locator('.slx-talk')).toBeHidden();
+      expect(w.errors).toEqual([]);
+    });
+
+    test('the field menu, with the workshop on it, fits a landscape phone (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 844, height: 390 });
+      const w = await setup(page, 11);
+      await depart(page, w);
+      await w.closeTalk();
+      await w.key('c');
+      const menu = page.locator('.slx-field-menu');
+      await expect(menu).toBeVisible();
+      await expect(menu.locator('[data-id=workshop]')).toBeVisible();
+      await expect(menu.locator('.slx-more-down')).toHaveCount(0);           // every line on screen, 關閉 included
+      await expect(menu.locator('[data-id=close]')).toBeVisible();
+      await expect(page.locator('.slx-dungeon .slx-keyhint')).toBeHidden();   // the map's key hint gives way to the menu
+      const screen = await page.locator('.slx-screen').boundingBox();
+      const box = await menu.boundingBox();
+      expect(box!.y + box!.height).toBeLessThanOrEqual(screen!.y + screen!.height + 0.5);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(screen!.x + screen!.width + 0.5);
+      const over = await menu.locator('[role=option]').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+      expect(over).toEqual([]);
+      if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/field-menu-844.png` });
+      expect(w.errors).toEqual([]);
+    });
+
+    test('the workshop tells the rune tutorial to a player who already holds runes (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const w = await setup(page, 7);
+      await page.evaluate(() => {
+        const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+        s.runesOpen = true;
+        s.runes = { 'spread@magic': 1 };
+      });
+      await w.choose('.slx-town', '冒險者公會');
+      await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+      await w.choose('.slx-guild .slx-cmd', '技能工坊');
+      const talk = page.locator('.slx-workshop .slx-talk');
+      await expect(talk).toBeVisible();
+      await w.key('z');                                       // the first page whole
+      await expect(talk.locator('.slx-next')).toBeVisible();
+      for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+        await page.setViewportSize({ width: vw, height: vh });
+        await page.waitForTimeout(150);
+        const screen = (await page.locator('.slx-screen').boundingBox())!;
+        const box = (await talk.boundingBox())!;
+        expect([box.x >= screen.x - 0.5, box.y >= screen.y - 0.5, box.x + box.width <= screen.x + screen.width + 0.5, box.y + box.height <= screen.y + screen.height + 0.5], `the tutorial inside the stage at ${vw}`).toEqual([true, true, true, true]);
+        // Nothing of the screen under it shows through (the card's ▼ included).
+        const top = await page.evaluate(() => { const b = document.querySelector('.slx-workshop .slx-talk')!.getBoundingClientRect(); return document.elementFromPoint(b.x + b.width - 12, b.y + 12)?.closest('.slx-talk') !== null; });
+        expect(top, `the tutorial on top at ${vw}`).toBe(true);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-tutorial-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      for (let i = 0; i < 12 && (await talk.isVisible()); i++) await w.key('z');
+      await expect(talk).toBeHidden();
+      expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runeTutorialSeen)).toBe(true);
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
+      expect(saved.runeTutorialSeen).toBe(true);
+      expect(w.errors).toEqual([]);
+    });
+
+    test('a skill with three runes and a reason in place of its TP fits the battle menu at 390 (plan 8g)', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const w = await setup(page, 7);
+      // Liz at Lv 35: 一擲千金 with three working runes, and no coins at the fight's start (its reason replaces the TP). The
+      // skills that can show a reason (coins, a barrier, devices) all have four-character names; this is the widest row.
+      await page.evaluate(() => {
+        const g = (window as unknown as Dbg).__starlanternDebug.game;
+        const p = g.state.party;
+        p.recruited = ['hero', 'liz'];
+        p.grid = ['hero', null, null, 'liz', null, null, null, null, null];
+        p.roster.liz.level = 35;
+        p.roster.liz.tree = { 'twin-slash': 1, jackpot: 1 };
+        p.roster.liz.sockets = { jackpot: [{ id: 'tear', tier: 'magic' }, { id: 'drain', tier: 'magic' }, { id: 'regain', tier: 'magic' }] };
+        g.state.runesOpen = true;
+        g.state.runeTutorialSeen = true;
+      });
+      await depart(page, w);
+      for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+        await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+        await w.closeTalk();
+        if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+        if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+      }
+      await expect(page.locator('.slx-battle')).toBeVisible();
+      await page.evaluate(() => {
+        const g = (window as unknown as Dbg).__starlanternDebug.game;
+        for (const e of g.battle.enemies) { e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1; }
+      });
+      for (let i = 0; i < 80; i++) {
+        if (!(await page.locator('.slx-bcmd [role=option]').count())) { await page.waitForTimeout(50); continue; }
+        const who = (await page.locator('.slx-bcmd .slx-who').textContent()) ?? '';
+        if (who.startsWith('莉茲')) break;
+        await w.choose('.slx-bcmd', '防禦');
+      }
+      await w.choose('.slx-bcmd', '技能');
+      const item = page.locator('.slx-bsub [data-id=jackpot]');
+      await expect(item.locator('.slx-badge')).toHaveText('◆◆◆');
+      await expect(item.locator('.slx-right')).toHaveText('沒有銅板');
+      for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
+        await page.setViewportSize({ width: vw, height: vh });
+        await page.waitForTimeout(150);
+        const rows = await page.locator('.slx-bsub [role=option], .slx-bsub .slx-label').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+        expect(rows, `rows or names cut at ${vw}`).toEqual([]);
+        await expect(item.locator('.slx-badge')).toBeVisible();
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/battle-long-${vw}.png` });
+      }
+      expect(w.errors).toEqual([]);
+    });
   });
 });

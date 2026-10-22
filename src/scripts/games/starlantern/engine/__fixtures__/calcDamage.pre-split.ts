@@ -1,0 +1,57 @@
+/**
+ * Test-only reference: `calcDamage` exactly as it stood at ae5b107c, before plan 8a Task 2 split it into `rollHit` and
+ * `hitAmount`. Frozen — never edit it to follow the engine. combatant.test.ts compares the split against it draw for draw,
+ * so a change to the formula's factor order or to the draw order fails there. Only the imports are rewritten for this folder.
+ */
+import { ROW_MELEE } from '../formation';
+import type { Rng } from '../rng';
+import { armorReduction, evadeChance, EVADE_MAX } from '../stats';
+import type { SecondaryKey } from '../types';
+import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES } from '../../data/talents';
+import { ENEMY_CRIT_DMG, elementMult, roll, stat, type Combatant, type DamageSpec } from '../combatant';
+
+
+/**
+ * One hit: evasion, then the base formula with weakness and row, element bonus and resistance, vuln (weakness hits
+ * only), eliteDmg (elites and bosses), crit, armor and block (physical only), melee / ranged reduction, defending.
+ * Only the variance always draws; every other roll draws only when its chance is above 0.
+ */
+export function calcDamagePreSplit(a: Combatant, t: Combatant, spec: DamageSpec, rng: Rng): { amount: number; mult: number; crit: boolean; miss: boolean } {
+  const ax = (k: SecondaryKey): number => a.x[k] ?? 0;
+  const tx = (k: SecondaryKey): number => t.x[k] ?? 0;
+  const el = elementMult(t, spec.element);
+  // An enemy's evasion is a plain percentage, held at the same 50% as a member's rated evasion.
+  const evade = t.side === 'party' ? evadeChance(tx('evasion'), a.level) : Math.min(EVADE_MAX, tx('evasion') / 100);
+  if (roll(evade, rng)) return { amount: 0, mult: 1, crit: false, miss: true };   // nothing landed: no element multiplier
+  const atk = stat(a, spec.scale);
+  const def = stat(t, spec.scale === 'atk' ? 'def' : 'res');
+  let mult = el;
+  // Melee weakens with the attacker's distance; the defender's row protects by reach (formation.reachable), not by halving.
+  if (spec.melee) mult *= ROW_MELEE[a.row];
+  const base = ((atk * spec.power) / 100) * (60 / (40 + def));
+  const variance = 0.9 + rng() * 0.2;
+  // Every factor below is exactly 1 when its stat is absent, so such a hit keeps its old value to the bit.
+  const hitEl = spec.element;
+  // A negative resistance is a weakness, held at -100 (double damage); above 100 it is held at 100 (no damage), so the factor
+  // never goes negative: a hit never heals, and a negative bonus times an over-100 resistance never multiplies back up.
+  if (hitEl !== 'phys') mult *= (1 + ax(`${hitEl}Dmg`) / 100) * (1 - Math.min(100, Math.max(-100, tx(`${hitEl}Res`))) / 100);
+  if (t.weak.includes(spec.element)) mult *= 1 + ax('vuln') / 100;
+  if (t.boss || t.tint === 'elite') mult *= 1 + ax('eliteDmg') / 100;
+  if (spec.execute) mult *= 1 + (spec.execute / 100) * (1 - t.hp / t.max.hp);
+  if (spec.wounded && t.hp < t.max.hp) mult *= 1 + spec.wounded / 100;
+  const crit = spec.crit === 'always' || roll(ax('crit') / 100, rng);
+  if (crit) mult *= 1 + (a.side === 'enemy' ? ENEMY_CRIT_DMG : ax('critDmg')) / 100;
+  if (hitEl === 'phys') {
+    mult *= 1 - armorReduction(tx('armor'), a.level);
+    if (roll(tx('block') / 100, rng)) mult *= 0.5;
+  }
+  mult *= 1 - tx(spec.melee ? 'meleeDR' : 'rangedDR') / 100;
+  if (t.defending) mult *= 0.5;
+  // Keystones (data/talents.ts): a factor only when held, and no draws, so a fight without them keeps its sequence.
+  if (a.keystones.includes('last-stand') && a.hp < a.max.hp * KEYSTONE_VALUES.lastStandHp) mult *= 1 + KEYSTONE_VALUES.lastStandPct / 100;
+  if (t.keystones.includes('taunt-guard') && t.taunt > 0) mult *= 1 - KEYSTONE_VALUES.tauntGuardPct / 100;
+  // Memory keystones: the same rule, a factor only when held and no draws.
+  if (a.keystones.includes('carried-out') && t.hp >= t.max.hp) mult *= 1 + MEMORY_KEYSTONE_VALUES.fullHpPct / 100;
+  if (t.keystones.includes('not-a-shield') && t.taunt > 0) mult *= 1 - MEMORY_KEYSTONE_VALUES.friendGuardPct / 100;
+  return { amount: Math.max(1, Math.floor(base * mult * variance)), mult: el, crit, miss: false };
+}

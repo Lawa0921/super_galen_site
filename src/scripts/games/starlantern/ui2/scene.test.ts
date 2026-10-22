@@ -59,3 +59,20 @@ describe('Router input timing', () => {
     expect(seen).toEqual([undefined, 'title']);
   });
 });
+
+describe('Router prepare', () => {
+  it("awaits a scene's prepare before it enters, while input is still locked", async () => {
+    const log: string[] = [];
+    const root = document.createElement('div');
+    let release!: () => void;
+    const scene: Scene = { ...fake(log, 'battle'), prepare: () => new Promise<void>((r) => { log.push('prepare'); release = r; }) };
+    const r = new Router(root, () => scene, {} as never, 0);
+    const going = r.go('battle');
+    await new Promise((res) => setTimeout(res, 0));
+    expect(log).toEqual(['prepare']);
+    expect(root.hasAttribute('inert')).toBe(true);
+    release();
+    await going;
+    expect(log).toEqual(['prepare', 'enter battle']);
+  });
+});

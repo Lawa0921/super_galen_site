@@ -1,4 +1,5 @@
-import { CHARACTERS } from '../data/characters';
+import { CHARACTERS, LEGACY_CHARACTER_IDS } from '../data/characters';
+import { ABYSS } from '../data/hero';
 import { CONDITIONS, type ConditionDef } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
@@ -12,6 +13,9 @@ import type { Element, EnemyDef, StatKey, Stats } from './types';
 
 export { depthLevel } from './levels';
 
+/** The abyss capstones' bonus at `depth`, in percent: ABYSS.perDepth per floor, never over ABYSS.cap. */
+export const abyssPct = (depth: number): number => Math.min(ABYSS.cap, ABYSS.perDepth * Math.max(0, depth));
+
 /**
  * Depth growth (spec §3.7): a monster is lifted from its home level (the depth level of the floor it was made for) to
  * the depth level where it is met, by as much as an average party grows between those levels. Each stat follows the
@@ -23,7 +27,8 @@ export { depthLevel } from './levels';
  */
 const STAT_KEYS: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 const AVG = (() => {
-  const cs = Object.values(CHARACTERS);
+  // The party stat baseline is the original eight: newer characters do not move the tuned enemy curve.
+  const cs = LEGACY_CHARACTER_IDS.map((id) => CHARACTERS[id]);
   const avg = (pick: (c: (typeof cs)[number]) => Stats) =>
     Object.fromEntries(STAT_KEYS.map((k) => [k, cs.reduce((n, c) => n + pick(c)[k], 0) / cs.length])) as Stats;
   return { base: avg((c) => c.base), growth: avg((c) => c.growth) };
@@ -35,9 +40,22 @@ const BOSS_HOME = 12;
 const DAMPING = 0.9;
 export const homeLevel = (def: EnemyDef): number => (def.boss ? BOSS_HOME : depthLevel(def.floor));
 
+/**
+ * Plan 6b Task 20c's knob for the deep road: past `fromDepth` an enemy's level (its growth and ENEMY_POWER) climbs
+ * `levelsPerDepth` per depth instead of the depth level's 4, and its hp, atk and mag are multiplied by `1 + power`.
+ * Exp, gold, item levels, the depth-clear grant and the suggested level stay on `depthLevel`. Task 20a added it at its
+ * start values, which leave every fight bit-identical (scaling.test: "the deep knobs at their start values change nothing").
+ */
+export const DEEP_ENEMIES = { fromDepth: 11, levelsPerDepth: 4, power: 0 };
+/** The level an enemy is met at on `depth`: the depth level up to DEEP_ENEMIES.fromDepth, then DEEP_ENEMIES.levelsPerDepth a depth. */
+export const enemyLevelAt = (depth: number): number =>
+  depth <= DEEP_ENEMIES.fromDepth ? depthLevel(depth) : depthLevel(DEEP_ENEMIES.fromDepth) + DEEP_ENEMIES.levelsPerDepth * (depth - DEEP_ENEMIES.fromDepth);
+/** The deep road's extra multiplier on an enemy's hp, atk and mag: 1 up to DEEP_ENEMIES.fromDepth, then 1 + DEEP_ENEMIES.power. */
+export const deepPower = (depth: number): number => (depth <= DEEP_ENEMIES.fromDepth ? 1 : 1 + DEEP_ENEMIES.power);
+
 function growth(def: EnemyDef, depth: number): Partial<Record<StatKey, number>> {
   const home = homeLevel(def);
-  const lv = Math.max(home, depthLevel(depth));
+  const lv = Math.max(home, enemyLevelAt(depth));
   if (lv === home) return {};
   const r = (k: StatKey) => partyStat(k, lv) / partyStat(k, home);
   const damp = (m: number) => m ** DAMPING;
@@ -116,7 +134,7 @@ export function regionTint(region: RegionDef): Element | undefined {
   return region.element ?? 'phys';
 }
 
-function mul(stats: Stats, by: Partial<Record<StatKey, number>>): Stats {
+export function mul(stats: Stats, by: Partial<Record<StatKey, number>>): Stats {
   const out = { ...stats };
   for (const [k, m] of Object.entries(by) as [StatKey, number][]) out[k] = Math.round(out[k] * m);
   return out;
@@ -144,8 +162,9 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
     name: `${elite ? '★' : ''}${name}`,
     stats,
     sec,
-    weak: regional ? [...region.weak] : [...def.weak],
-    resist: regional && !early ? [...region.resist] : [...def.resist],
+    // A named story foe keeps its own elements: the region's belong to its monsters.
+    weak: regional && !def.story ? [...region.weak] : [...def.weak],
+    resist: regional && !early && !def.story ? [...region.resist] : [...def.resist],
     skills: skill ? [...def.skills, skill] : [...def.skills],
     exp: Math.round(def.exp * reward * condition.expMul),
     gold: Math.round(def.gold * reward * condition.goldMul),
@@ -164,9 +183,11 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
  * is expected to grow a level every two depths (`expectedEnhance`); they start above the boss's home level, so band 6
  * keeps its tuning (see that task's sweeps in the commits that set them). The normal enemies of floors 1-3 (up to Lv10) keep their tuned numbers; the
  * depth-3 boss is fought at its home level (BOSS_HOME, Lv12), above `from`, so it does get the boost (band 6 is tuned
- * with it).
+ * with it). Plan 6a Task 19c retuned it for the hero-led lineup: amount 0.26 -> 0.3 (the boss at Lv12: band 16's benching
+ * check), amount2 0.04 -> 0.26 and ramp 0.004 -> 0.002 (bands 9 and 10 against band 8's elites). Task 20: ramp 0.002 ->
+ * 0.0012 (band 18b, the all-physical lineup with the balanced hero in iron at depth 8, against band 10 memories at depth 8).
  */
-export const ENEMY_POWER = { from: 10, amount: 0.26, from2: 12, amount2: 0.04, ramp: 0.004 };
+export const ENEMY_POWER = { from: 10, amount: 0.3, from2: 12, amount2: 0.26, ramp: 0.0012 };
 export const enemyPower = (level: number): number => {
   if (level <= ENEMY_POWER.from) return 1;
   const deep = level > ENEMY_POWER.from2 ? ENEMY_POWER.amount2 + ENEMY_POWER.ramp * (level - ENEMY_POWER.from2) : 0;
@@ -179,8 +200,29 @@ export function empower(def: EnemyDef, level: number): EnemyDef {
   return k === 1 ? def : { ...def, stats: mul(def.stats, { hp: k, atk: k, mag: k }) };
 }
 
+/** How many members stand in the formation, as a row of the party-size tables: one hero alone reads the 2-member row. */
+export type PartySize = 2 | 3 | 4 | 5;
+export const sizeOf = (n: number): PartySize => Math.min(5, Math.max(2, Math.round(n))) as PartySize;
+/**
+ * Enemy hp / atk / mag multiplier by party size (spec 9.4 point 1, `0.4 + 0.12n`). Each row is its own knob; the full
+ * party's row is fixed at 1 so a five-member fight plays exactly as it was tuned.
+ */
+export const PARTY_SCALE: Record<PartySize, number> = { 2: 0.58, 3: 0.76, 4: 0.88, 5: 1 };
+/** The most enemies in an ordinary group by party size (spec 9.4 point 2, `n + 1`). */
+export const GROUP_CAP: Record<PartySize, number> = { 2: 3, 3: 4, 4: 5, 5: 6 };
+/** Overrides GROUP_CAP at depth 1 only; empty today. */
+export const FIRST_DEPTH_CAP: Partial<Record<PartySize, number>> = {};
+export const partyScale = (n: number): number => PARTY_SCALE[sizeOf(n)];
+/**
+ * The same multiplier for a boss fight. A boss group is never trimmed by GROUP_CAP, so a small party meets all of it:
+ * its own table, tuned apart from PARTY_SCALE (band 16). [5] is fixed at 1, and the table is non-decreasing in size.
+ */
+export const BOSS_PARTY_SCALE: Record<PartySize, number> = { 2: 0.62, 3: 0.96, 4: 1, 5: 1 };
+export const bossPartyScale = (n: number): number => BOSS_PARTY_SCALE[sizeOf(n)];
+export const groupCap = (n: number, depth: number): number => (depth === 1 ? FIRST_DEPTH_CAP[sizeOf(n)] : undefined) ?? GROUP_CAP[sizeOf(n)];
+
 /** The ordinary monsters: every one but the boss (eight today; spec §3.7's "nine" counts the boss). */
-export const NORMAL_ENEMIES: string[] = Object.values(ENEMIES).filter((e) => !e.boss).map((e) => e.id);
+export const NORMAL_ENEMIES: string[] = Object.values(ENEMIES).filter((e) => !e.boss && !e.story).map((e) => e.id);
 
 /**
  * The groups a random encounter is drawn from (`encounterGroup` picks one). The mainline uses the encounter table of the depth's terrain. A random region

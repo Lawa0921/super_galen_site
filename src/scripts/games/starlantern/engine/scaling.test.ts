@@ -4,10 +4,10 @@ import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
 import { REGIONS, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
-import { expToNext, newParty } from './party';
+import { expToNext, LEGACY_LINEUP } from './party';
 import { mulberry32 } from './rng';
-import { DEPTH_CLEAR_SHARE, ENEMY_POWER, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, scaleEnemy } from './scaling';
-import { constRng } from './testing';
+import { DEEP_ENEMIES, deepPower, enemyLevelAt, homeLevel, BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
+import { constRng, fullParty } from './testing';
 
 const MAIN = REGIONS.mainline;
 const wolf = ENEMIES.wolf;
@@ -25,8 +25,8 @@ describe('scaleEnemy', () => {
       expect(rest, def.id).toEqual(def);
       expect(Object.values(sec ?? { missing: 1 }).every((v) => v === 0), `${def.id} sec`).toBe(true);
     }
-    const plain = createBattle({ party: newParty(), enemyIds: ['slime', 'slime', 'wolf'], inventory: {}, revealed: {} });
-    const scaled = createBattle({ party: newParty(), enemyIds: ['slime', 'slime', 'wolf'], inventory: {}, revealed: {}, scale: { depth: 1, region: 'mainline' } });
+    const plain = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime', 'slime', 'wolf'], inventory: {}, revealed: {} });
+    const scaled = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime', 'slime', 'wolf'], inventory: {}, revealed: {}, scale: { depth: 1, region: 'mainline' } });
     expect(scaled.enemies).toEqual(plain.enemies);
   });
 
@@ -189,7 +189,7 @@ describe('scaleEnemy', () => {
 
 describe('createBattle with scale', () => {
   const battle = (enemyIds: string[], scale: Parameters<typeof createBattle>[0]['scale']) =>
-    createBattle({ party: newParty(), enemyIds, inventory: {}, revealed: {}, scale });
+    createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds, inventory: {}, revealed: {}, scale });
 
   it('regional variants carry the scaled numbers, the region element as tint, and letters on duplicates', () => {
     const s = battle(['wolf', 'wolf'], { depth: 6, region: 'blaze' });
@@ -288,7 +288,7 @@ describe('ENEMY_POWER', () => {
 
   it("scales every enemy's HP, atk and mag in a fight, bosses included, at the level it is met", () => {
     const at = (enemyIds: string[], scale?: { depth: number; region: RegionId }) =>
-      createBattle({ party: newParty(), enemyIds, inventory: {}, revealed: {}, ...(scale ? { scale } : {}) }).enemies[0];
+      createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds, inventory: {}, revealed: {}, ...(scale ? { scale } : {}) }).enemies[0];
     // The boss is met at its home level without a scale.
     const boss = at(['lanterneater']);
     const k = enemyPower(boss.level);
@@ -303,5 +303,110 @@ describe('ENEMY_POWER', () => {
     expect([deep.max.hp, deep.max.atk, deep.max.def]).toEqual([Math.round(sc.hp * kd), Math.round(sc.atk * kd), sc.def]);
     // A floor-1 monster at home is untouched.
     expect(at(['slime']).max).toEqual(ENEMIES.slime.stats);
+  });
+});
+
+describe('the party-size tables', () => {
+  it('are sane per size', () => {
+    expect(PARTY_SCALE[5]).toBe(1);
+    const sizes = [2, 3, 4, 5] as const;
+    for (const n of sizes) { expect(PARTY_SCALE[n]).toBeGreaterThan(0); expect(PARTY_SCALE[n]).toBeLessThanOrEqual(1); }
+    for (let i = 1; i < sizes.length; i++) {
+      expect(PARTY_SCALE[sizes[i]]).toBeGreaterThanOrEqual(PARTY_SCALE[sizes[i - 1]]);
+      expect(GROUP_CAP[sizes[i]]).toBeGreaterThanOrEqual(GROUP_CAP[sizes[i - 1]]);
+    }
+    expect(partyScale(1)).toBe(partyScale(2));
+    expect(partyScale(9)).toBe(partyScale(5));
+  });
+
+  it('the boss table is its own: [5] is 1, every value in (0, 1.5], non-decreasing in party size', () => {
+    expect(BOSS_PARTY_SCALE[5]).toBe(1);
+    const sizes = [2, 3, 4, 5] as const;
+    for (const n of sizes) { expect(BOSS_PARTY_SCALE[n]).toBeGreaterThan(0); expect(BOSS_PARTY_SCALE[n]).toBeLessThanOrEqual(1.5); }
+    for (let i = 1; i < sizes.length; i++) expect(BOSS_PARTY_SCALE[sizes[i]]).toBeGreaterThanOrEqual(BOSS_PARTY_SCALE[sizes[i - 1]]);
+    expect(bossPartyScale(1)).toBe(BOSS_PARTY_SCALE[2]);
+    expect(bossPartyScale(3)).toBe(BOSS_PARTY_SCALE[3]);
+    expect(bossPartyScale(9)).toBe(1);
+  });
+});
+
+describe('groupCap reads the first-depth override only at depth 1', () => {
+  it('overrides depth 1 and nothing else', () => {
+    const before = FIRST_DEPTH_CAP[2];
+    FIRST_DEPTH_CAP[2] = 2;
+    try {
+      expect(groupCap(2, 1)).toBe(2);
+      expect(groupCap(2, 2)).toBe(GROUP_CAP[2]);
+      expect(groupCap(3, 1)).toBe(GROUP_CAP[3]);
+    } finally {
+      if (before === undefined) delete FIRST_DEPTH_CAP[2]; else FIRST_DEPTH_CAP[2] = before;
+    }
+  });
+});
+
+describe('story enemies', () => {
+  it('story enemies are not ordinary monsters', () => {
+    const story = Object.values(ENEMIES).filter((e) => e.story).map((e) => e.id);
+    expect(story).toContain('scarlet-foe');
+    for (const id of story) expect(NORMAL_ENEMIES).not.toContain(id);
+    expect(NORMAL_ENEMIES).toHaveLength(8);
+  });
+});
+
+describe('the deep enemy knobs (plan 6b Task 20c, added at their start values by Task 20a)', () => {
+  /** An enemy alone in a full-party fight at a main-road depth: the scaled, empowered numbers createBattle gives it. */
+  const met = (id: string, depth: number) =>
+    createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: [id], boss: !!ENEMIES[id].boss, inventory: {}, revealed: {}, scale: { depth, region: 'mainline' } }).enemies[0];
+
+  it('the deep knobs at their start values change nothing', () => {
+    for (let d = 1; d <= 60; d++) {
+      expect(enemyLevelAt(d), `depth ${d}`).toBe(depthLevel(d));
+      expect(deepPower(d), `depth ${d}`).toBe(1);
+    }
+    // FNV-1a over level, hp, atk and mag of every ordinary monster and the lanterneater at depths 1-60, taken at
+    // cae0b228 before the knobs existed.
+    let h = 0x811c9dc5;
+    const feed = (n: number) => { h = Math.imul(h ^ n, 0x01000193) >>> 0; };
+    for (const id of [...NORMAL_ENEMIES, 'lanterneater']) for (let d = 1; d <= 60; d++) {
+      const e = met(id, d);
+      feed(e.level); feed(e.max.hp); feed(e.max.atk); feed(e.max.mag);
+    }
+    expect(h.toString(16)).toBe('ea2e9278');
+  });
+
+  it('deep enemies grow strictly with depth', () => {
+    // Every ordinary monster and the lanterneater, from the first depth it is met above its home level (below that it
+    // stays at its home numbers by design), through the deep road to depth 250.
+    for (const id of [...NORMAL_ENEMIES, 'lanterneater']) {
+      let from = 1;
+      while (enemyLevelAt(from) < homeLevel(ENEMIES[id])) from++;
+      expect(from, id).toBeLessThan(DEEP_ENEMIES.fromDepth);
+      let last = met(id, from);
+      for (let d = from + 1; d <= 250; d++) {
+        const e = met(id, d);
+        for (const k of ['hp', 'atk', 'mag'] as const) expect(e.max[k], `${id} ${k} at depth ${d}`).toBeGreaterThan(last.max[k]);
+        last = e;
+      }
+    }
+  });
+
+  it('enemyLevelAt and deepPower follow the knobs past fromDepth', () => {
+    const saved = { ...DEEP_ENEMIES };
+    const before = { wolf: scaleEnemy(wolf, 20, MAIN, false), clear: depthClearExp(20), met: met('wolf', 20) };
+    try {
+      Object.assign(DEEP_ENEMIES, { fromDepth: 11, levelsPerDepth: 2, power: 0.1 });
+      expect(enemyLevelAt(11)).toBe(depthLevel(11));
+      expect(enemyLevelAt(15)).toBe(depthLevel(11) + 2 * 4);
+      expect(deepPower(11)).toBe(1);
+      expect(deepPower(12)).toBeCloseTo(1.1);
+      // The enemy is met at the lower level, but exp, gold and the depth-clear grant stay on the depth level.
+      const after = scaleEnemy(wolf, 20, MAIN, false);
+      expect([after.exp, after.gold, depthClearExp(20)]).toEqual([before.wolf.exp, before.wolf.gold, before.clear]);
+      expect(after.stats.hp).toBeLessThan(before.wolf.stats.hp);
+      expect(met('wolf', 20).level).toBe(enemyLevelAt(20));
+      expect(met('wolf', 20).max.hp).not.toBe(before.met.max.hp);
+    } finally {
+      Object.assign(DEEP_ENEMIES, saved);
+    }
   });
 });

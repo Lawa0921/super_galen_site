@@ -1,13 +1,21 @@
-import { ColorMatrixFilter, Container, Sprite, Text, Texture } from 'pixi.js';
+import { ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture, TextureSource } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
 import { makeBattle, makeCombatant } from '../engine/testing';
 import { OutlineFilter } from 'pixi-filters';
-import { BattleView, TINT_COLORS, TINT_STYLE } from './BattleView';
+import { BattleView, TINT_COLORS, TINT_STYLE, ailLabelWidth } from './BattleView';
+import { AILMENT_FILL, AILMENT_MORE_FILL } from './ailmentStyle';
+import { MECH_FILL } from './mechStyle';
+import type { AilmentChip } from '../engine/ailments';
+import type { MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
+import { enemyArt } from './artPaths';
+import { T } from '../data/text.zh-TW';
 
 const sfx = { hit: vi.fn(), weak: vi.fn(), heal: vi.fn(), ko: vi.fn() } as unknown as SoundManager;
+/** Five ailments, as the battle hands them over (the fixed chip order). */
+const FIVE: AilmentChip[] = [{ id: 'poison' }, { id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }, { id: 'shock', turns: 2 }, { id: 'chill', turns: 2 }];
 const bank = { get: () => Texture.WHITE, has: () => true } as unknown as TextureBank;
 const battle = (log: BattleState['log']): BattleState =>
   makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], [makeCombatant({ key: 'e0', side: 'enemy' })], { log });
@@ -71,6 +79,152 @@ describe('BattleView bottom inset', () => {
     const box = enemyBox(view);
     expect(box.y + 18).toBeLessThanOrEqual(360 - 66);
     expect(view.anchor('e0')!.y).toBeGreaterThan(60);   // below the message line
+  });
+
+  it("gives each enemy HP bar's box with its rim, in design px", () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    const box = enemyBox(view);
+    const bar = box.children.find((c) => c instanceof Graphics)!;
+    expect(view.hpBarRect('e0')).toEqual({ x: box.x - 33, y: box.y + bar.y - 1, width: 66, height: 6 });
+    expect(view.hpBarRect('nobody')).toBeNull();
+  });
+
+  it("keeps each HP bar clear of the party's one row of ailment words, lifted no more than that needs", () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    // The party bar's top is 360 - 2 - 62 = 296; the row of words is 12 px (10 + rim) with a 1 px margin.
+    const wordsTop = 296 - 1 - 12;
+    const r = view.hpBarRect('e0')!;
+    expect(r.y + r.height).toBeLessThanOrEqual(wordsTop - 1);
+    expect(r.y + r.height).toBeGreaterThanOrEqual(wordsTop - 2);   // the minimum lift, no more
+    const box = enemyBox(view);
+    const name = box.children.find((c) => c instanceof Text && c.text === 'e0')!;
+    expect(name.y + 18).toBeLessThanOrEqual(r.y - box.y + 1);
+  });
+
+  it("an enemy's hit number and its tags stand on its body, clear of its ailment row and its intent (the bat and a boss)", () => {
+    type R = { x: number; y: number; width: number; height: number };
+    const meets = (a: R, b: R) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+    const cases: [string, Texture, boolean, number][] = [
+      ['bat, four of them', new Texture({ source: new TextureSource({ width: 119, height: 65 }) }), false, 4],
+      ['bat, alone', new Texture({ source: new TextureSource({ width: 119, height: 65 }) }), false, 1],
+      ['boss', new Texture({ source: new TextureSource({ width: 220, height: 300 }) }), true, 1],
+    ];
+    for (const [name, tex, boss, n] of cases) {
+      const view = new BattleView(true, { get: () => tex, has: () => true } as unknown as TextureBank);
+      const foes = Array.from({ length: n }, (_, i) => makeCombatant({ key: `e${i}`, side: 'enemy', defId: boss ? 'golem' : 'bat', boss }));
+      view.setup(makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], foes), { width: 640, height: 360 }, 1, 150, 66);
+      view.showIntents({ e0: '攻擊 → 絲嘉蕾' });
+      view.showAilments({ e0: [{ id: 'poison' }, { id: 'burn', turns: 3 }] });
+      const row = view.ailmentRowRect('e0')!, intent = view.intentRect('e0')!;
+      const body = (view.enemyBoxOf('e0')!.children[0] as Container).height;
+      for (const opts of [{}, { resist: true }, { weak: true }, { crit: true }, { crit: true, weak: true }, { crit: true, resist: true }]) {
+        for (const text of ['7', '1234', 'MISS']) {
+          const p = view.popupLayout('e0', text, opts)!;
+          for (const r of [p.number, ...p.tags]) {
+            expect(meets(r, row), `${name} ${text} ${JSON.stringify(opts)} vs the ailment row`).toBe(false);
+            expect(meets(r, intent), `${name} ${text} ${JSON.stringify(opts)} vs the intent`).toBe(false);
+          }
+          // Readable on a small sprite: the number stands on the body.
+          const mid = p.number.y + p.number.height / 2;
+          expect(mid, `${name} ${text}`).toBeGreaterThanOrEqual(-body);
+          expect(mid, `${name} ${text}`).toBeLessThanOrEqual(0);
+        }
+      }
+    }
+  });
+
+  it('a hit draws its number and tags where popupLayout puts them', async () => {
+    const view = new BattleView(true, bank, true);   // calm: no scale animation
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    const box = view.enemyBoxOf('e0')!;
+    const added: { text: string; x: number; y: number }[] = [];
+    const add = box.addChild.bind(box);
+    vi.spyOn(box, 'addChild').mockImplementation(((...c: Text[]) => { added.push(...c.filter((x) => x instanceof Text).map((x) => ({ text: x.text, x: x.x, y: x.y }))); return add(...c); }) as never);
+    await view.play(battle([{ type: 'damage', target: 'e0', amount: 30, element: 'fire', mult: 1.5, crit: true }]), sfx);
+    const p = view.popupLayout('e0', '30', { weak: true, crit: true })!;
+    expect(added.map((t) => t.text)).toEqual(['30', T.battle.pop.crit, T.battle.pop.weak]);
+    expect(added[0].y).toBeCloseTo(p.number.y + p.number.height / 2, 6);
+    expect(added.slice(1).map((t) => t.y)).toEqual(p.tags.map((r) => r.y + r.height / 2));
+    expect(added.slice(1).map((t) => t.x)).toEqual(p.tags.map((r) => r.x + r.width / 2));
+  });
+
+  it('a small sprite (the bat) keeps at least 30 px visible above its name, its ailment words above its head', () => {
+    const bat = new Texture({ source: new TextureSource({ width: 119, height: 65 }) });
+    const batBank = { get: () => bat, has: () => true } as unknown as TextureBank;
+    const view = new BattleView(true, batBank);
+    const four = makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], ['e0', 'e1', 'e2', 'e3'].map((key) => makeCombatant({ key, side: 'enemy', defId: 'bat' })));
+    view.setup(four, { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments(Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, FIVE])));
+    for (const key of ['e0', 'e1', 'e2', 'e3']) {
+      const box = view.enemyBoxOf(key)!;
+      const body = box.children[0] as Container;
+      const name = box.children.find((c) => c instanceof Text && c.text === key)!;
+      const spriteTop = -body.height;
+      expect(name.y - spriteTop, key).toBeGreaterThanOrEqual(30);
+      const words = view.ailmentTexts(key);
+      expect(words.length).toBeGreaterThan(0);
+      for (const t of words) expect(t.parent!.y + t.y + 14, key).toBeLessThanOrEqual(spriteTop);
+    }
+  });
+
+  it('with four enemies of five ailments each, every row is one line inside its own slot and no two overlap', () => {
+    const view = new BattleView(true, bank);
+    const four = makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], ['e0', 'e1', 'e2', 'e3'].map((key) => makeCombatant({ key, side: 'enemy' })));
+    view.setup(four, { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments(Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, FIVE])));
+    const slotW = (640 - 150) / 5;
+    const rows = ['e0', 'e1', 'e2', 'e3'].map((key) => {
+      const box = view.enemyBoxOf(key)!;
+      const words = view.ailmentTexts(key);
+      expect(new Set(words.map((t) => t.y)).size, key).toBe(1);   // one line
+      const left = box.x + words[0].x - ailLabelWidth(words[0].text) / 2;
+      const right = box.x + words.at(-1)!.x + ailLabelWidth(words.at(-1)!.text) / 2;
+      expect(right - left, key).toBeLessThanOrEqual(slotW - 6);
+      return { key, left, right, texts: words.map((t) => t.text) };
+    });
+    for (let i = 1; i < rows.length; i++) expect(rows[i].left, `${rows[i - 1].key} / ${rows[i].key}`).toBeGreaterThan(rows[i - 1].right);
+    // The most severe first; what does not fit folds into +N in the ink colour.
+    expect(rows[0].texts[0]).toBe('流血×2');
+    expect(rows[0].texts.at(-1)).toMatch(/^\+\d$/);
+    const shown = rows[0].texts.length - 1, folded = Number(rows[0].texts.at(-1)!.slice(1));
+    expect(shown + folded).toBe(5);
+    expect(view.ailmentTexts('e0').at(-1)!.style.fill).toBe(AILMENT_MORE_FILL);
+  });
+
+  it("four foes: one row each of words and ailments, capped with +N; freeze and sleep, then the setups, then other ailments, then other words (plan 8c final)", () => {
+    const view = new BattleView(true, bank);
+    const four = makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], ['e0', 'e1', 'e2', 'e3'].map((key) => makeCombatant({ key, side: 'enemy' })));
+    view.setup(four, { width: 640, height: 360 }, 1, 150, 66);
+    const words: MechWord[] = [
+      { tone: 'aim', text: '最後行動' }, { tone: 'mark', text: '暗記', setup: true }, { tone: 'aim', text: '瞄準3・鎖定', setup: true },
+      { tone: 'coins', text: '估價', setup: true }, { tone: 'expose', text: '弱點2', setup: true },
+    ];
+    const ail: AilmentChip[] = [...FIVE, { id: 'freeze' }];
+    view.showAilments(Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, ail])), Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, words])));
+    const slotW = (640 - 150) / 5;
+    const rows = ['e0', 'e1', 'e2', 'e3'].map((key) => {
+      const box = view.enemyBoxOf(key)!;
+      const t = view.ailmentTexts(key);
+      expect(new Set(t.map((x) => x.y)).size, key).toBe(1);
+      const left = box.x + t[0].x - ailLabelWidth(t[0].text) / 2;
+      const right = box.x + t.at(-1)!.x + ailLabelWidth(t.at(-1)!.text) / 2;
+      expect(right - left, key).toBeLessThanOrEqual(slotW - 6);
+      return { key, left, right, texts: t.map((x) => x.text) };
+    });
+    for (let i = 1; i < rows.length; i++) expect(rows[i].left).toBeGreaterThan(rows[i - 1].right);
+    const texts = rows[0].texts;
+    expect(texts[0]).toBe('凍結');
+    expect(texts[1]).toBe('暗記');   // the first setup
+    expect(texts).not.toContain('最後行動');
+    expect(texts.at(-1)).toMatch(/^\+\d+$/);
+    expect(texts.length - 1 + Number(texts.at(-1)!.slice(1))).toBe(ail.length + words.length);
+    // A light row (one foe, a wide slot) shows all of it, in that order.
+    const one = new BattleView(true, bank);
+    one.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    one.showAilments({ e0: [{ id: 'poison' }] }, { e0: [{ tone: 'aim', text: '最後行動' }, { tone: 'mark', text: '暗記', setup: true }] });
+    expect(one.ailmentTexts('e0').map((x) => x.text)).toEqual(['暗記', '中毒', '最後行動']);
   });
 });
 
@@ -140,6 +294,35 @@ describe('BattleView enemy status', () => {
     expect(view.intentText('e0')).toBe('▶ 攻擊 → 絲嘉蕾');
     view.showIntents({});
     expect(view.intentText('e0')).toBe('');
+  });
+
+  it('showAilments draws one coloured label per ailment above the head, most severe first, and replaces them', () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1);
+    view.showAilments({ e0: [{ id: 'shock', turns: 2 }, { id: 'bleed', stacks: 3, turns: 2 }] });
+    const labels = view.ailmentTexts('e0');
+    expect(labels.map((t) => t.text)).toEqual(['流血×3', '感電2']);
+    expect(labels.map((t) => t.style.fill)).toEqual([AILMENT_FILL.bleed, AILMENT_FILL.shock]);
+    expect(labels.every((t) => t instanceof Text && t.style.fontSize === 11)).toBe(true);
+    const box = enemyBox(view);
+    for (const t of labels) {
+      expect(t.parent?.parent).toBe(box);
+      // Above the head (the body's top), never over the sprite, the name or the bar.
+      expect(t.parent!.y + t.y + 14).toBeLessThanOrEqual(-(box.children[0] as Container).height);
+    }
+    // Side by side, centred on the enemy.
+    expect(labels[0].x).toBeLessThan(labels[1].x);
+    const left = labels[0].x - ailLabelWidth('流血×3') / 2, right = labels[1].x + ailLabelWidth('感電2') / 2;
+    expect(right - left).toBeCloseTo(ailLabelWidth('感電2') + ailLabelWidth('流血×3') + 4, 6);
+    expect(left + right).toBeCloseTo(0, 6);
+    expect(ailLabelWidth('感電2')).toBeCloseTo(11 * 2 + 6.6, 6);
+    view.showAilments({ e0: [{ id: 'poison' }] });
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['中毒']);
+    expect(labels.every((t) => t.destroyed)).toBe(true);
+    view.showAilments({ e0: [] });
+    expect(view.ailmentTexts('e0')).toEqual([]);
+    view.showAilments({});
+    expect(view.ailmentTexts('e0')).toEqual([]);
   });
 });
 
@@ -245,5 +428,87 @@ describe('BattleView stat cues', () => {
     void view.play(battle([{ type: 'miss', target: 'e0' }]), sfx);
     const pop = enemyBox(view).children.find((c) => c instanceof Text && c.text === 'MISS') as Text;
     expect(pop.scale.x).toBe(1);
+  });
+});
+
+describe('BattleView mechanics (plan 8c)', () => {
+  it("marks come first in an enemy's row", () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments({ e0: [{ id: 'burn', turns: 3 }] }, { e0: [{ tone: 'mark', text: '暗記', setup: true }, { tone: 'expose', text: '弱點2', setup: true }] });
+    const words = view.ailmentTexts('e0');
+    expect(words.map((t) => t.text)).toEqual(['暗記', '弱點2', '灼燒3']);
+    expect(words.map((t) => t.style.fill)).toEqual([MECH_FILL.mark, MECH_FILL.expose, AILMENT_FILL.burn]);
+    expect(new Set(words.map((t) => t.y)).size).toBe(1);
+    expect(words.map((t) => t.style.fontSize)).toEqual([words[2].style.fontSize, words[2].style.fontSize, words[2].style.fontSize]);
+    // Without marks, the row is the ailments alone, as before.
+    view.showAilments({ e0: [{ id: 'burn', turns: 3 }] });
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['灼燒3']);
+    view.showAilments({}, { e0: [{ tone: 'mark', text: '暗記', setup: true }] });
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['暗記']);
+  });
+});
+
+describe('BattleView mechanic moments (plan 8c)', () => {
+  it('fast mode still holds a mechanic moment for its wait', async () => {
+    vi.useFakeTimers();
+    try {
+      const view = new BattleView(true, bank);
+      view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+      const onParty = vi.fn();
+      let done = false;
+      const p = view.play(battle([{ type: 'mech', actor: 'scarlet', cue: 'again' }]), sfx, onParty).then(() => { done = true; });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(onParty).toHaveBeenCalledWith('scarlet', 'mech', 'again');
+      await vi.advanceTimersByTimeAsync(250);
+      expect(done).toBe(false);
+      await vi.advanceTimersByTimeAsync(100);
+      await p;
+      expect(done).toBe(true);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("a held moment's timer is the view's own: a new fight clears it", async () => {
+    vi.useFakeTimers();
+    try {
+      const view = new BattleView(true, bank);
+      view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+      void view.play(battle([{ type: 'mech', actor: 'scarlet', cue: 'again' }]), sfx, vi.fn());
+      await vi.advanceTimersByTimeAsync(0);
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+      view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally { vi.useRealTimers(); }
+  });
+});
+
+describe('BattleView without enemy art (no placeholder)', () => {
+  it('draws no body at all for a foe whose picture has not loaded: just its name and bar', () => {
+    const none = { get: () => null, has: () => false } as unknown as TextureBank;
+    const view = new BattleView(true, none);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    const box = view.enemyBoxOf('e0')!;
+    const body = box.children[0] as Container;
+    expect(body.children).toHaveLength(0);
+    expect(box.children.some((c) => c instanceof Text && c.text === 'e0')).toBe(true);
+    expect(view.hpBarRect('e0')).not.toBeNull();
+  });
+
+  it('a picture that lands later fills the empty body and lifts the words above it', async () => {
+    const { TextureBank: Bank } = await import('./textures');
+    let resolve!: (t: Texture) => void;
+    const bank = new Bank(() => new Promise<Texture>((r) => { resolve = r; }), 10_000);
+    void bank.preload([enemyArt('slime')]);
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    const body = view.enemyBoxOf('e0')!.children[0] as Container;
+    expect(body.children).toHaveLength(0);
+    const before = view.intentRect('e0')!.y;
+    resolve(new Texture({ source: new TextureSource({ width: 120, height: 120 }) }));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(body.children).toHaveLength(1);
+    expect(body.children[0]).toBeInstanceOf(Sprite);
+    expect(view.intentRect('e0')!.y).toBeLessThan(before);
+    expect(view.intentRect('e0')!.y + view.intentRect('e0')!.height).toBeLessThanOrEqual(-body.height + 1);
   });
 });

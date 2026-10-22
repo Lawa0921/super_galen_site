@@ -1,0 +1,240 @@
+[balance] 1 bat+bat+slime n=13
+[balance] 1 wolf n=9
+[balance] 1 wolf+bat n=13
+[balance] 10 (記憶期望) blaze depth 10 with gear rate=1.000 hpLoss=0.123
+[balance] 10 (記憶期望) blaze depth 4 with gear rate=1.000 hpLoss=0.120
+[balance] 10 (記憶期望) blaze depth 6 with gear rate=1.000 hpLoss=0.114
+[balance] 10 (記憶期望) blaze depth 8 with gear rate=1.000 hpLoss=0.117
+[balance] 10 (記憶期望) mainline depth 10 with gear rate=1.000 hpLoss=0.118
+[balance] 10 (記憶期望) mainline depth 6 with gear rate=1.000 hpLoss=0.173
+[balance] 10 (記憶期望) mainline depth 8 with gear rate=1.000 hpLoss=0.101
+[balance] 10 blaze depth 10 with gear rate=1.000 hpLoss=0.134
+[balance] 10 blaze depth 4 with gear rate=1.000 hpLoss=0.122
+[balance] 10 blaze depth 6 with gear rate=1.000 hpLoss=0.124
+[balance] 10 blaze depth 8 with gear rate=1.000 hpLoss=0.135
+[balance] 10 mainline depth 10 with gear rate=1.000 hpLoss=0.121
+[balance] 10 mainline depth 6 with gear rate=1.000 hpLoss=0.199
+[balance] 10 mainline depth 8 with gear rate=1.000 hpLoss=0.115
+[balance] 11 boss depth 10 rounds=5.80
+[balance] 11 memories+abyss boss depth 10 rounds=5.15
+[balance] 12 depth 1 direct (next Lv6) n=5
+[balance] 12 depth 10 direct (next Lv42) n=41
+[balance] 12 depth 10 rooms (next Lv42) n=42
+[balance] 12 depth 2 direct (next Lv10) n=9
+[balance] 12 depth 2 rooms (next Lv10) n=9
+[balance] 12 depth 3 direct (next Lv14) n=13
+[balance] 12 depth 3 rooms (next Lv14) n=13
+[balance] 12 depth 4 direct (next Lv18) n=17
+[balance] 12 depth 4 rooms (next Lv18) n=17
+[balance] 12 depth 5 direct (next Lv22) n=21
+[balance] 12 depth 5 rooms (next Lv22) n=22
+[balance] 12 depth 6 direct (next Lv26) n=25
+[balance] 12 depth 6 rooms (next Lv26) n=27
+[balance] 12 depth 8 direct (next Lv34) n=33
+[balance] 12 depth 8 rooms (next Lv34) n=34
+[balance] 13 blaze depth 1 Lv1 attack-only rate=1.000 hpLoss=0.379
+[balance] 13 blaze depth 1 Lv1 rate=1.000 hpLoss=0.306
+[balance] 13 frost depth 1 Lv1 attack-only rate=1.000 hpLoss=0.363
+[balance] 13 frost depth 1 Lv1 rate=1.000 hpLoss=0.279
+[balance] 13 iron depth 1 Lv1 attack-only rate=1.000 hpLoss=0.461
+[balance] 13 iron depth 1 Lv1 rate=1.000 hpLoss=0.311
+[balance] 13 mainline depth 1 Lv1 attack-only rate=1.000 hpLoss=0.465
+[balance] 13 mire depth 1 Lv1 attack-only rate=0.975 hpLoss=0.484
+[balance] 13 mire depth 1 Lv1 rate=0.988 hpLoss=0.422
+[balance] 13 shade depth 1 Lv1 attack-only rate=0.925 hpLoss=0.481
+[balance] 13 shade depth 1 Lv1 rate=0.938 hpLoss=0.405
+[balance] 13 storm depth 1 Lv1 attack-only rate=1.000 hpLoss=0.292
+[balance] 13 storm depth 1 Lv1 rate=1.000 hpLoss=0.242
+[balance] 14 boss depth 10 +0 rounds=6.00
+[balance] 14 boss depth 10 +10 rounds=5.30
+[balance] 14 boss depth 5 +0 rounds=4.80
+[balance] 14 memories+abyss boss depth 10 +0 rounds=5.25
+[balance] 14 memories+abyss boss depth 10 +10 rounds=4.80
+[balance] 14 memories+abyss boss depth 5 +0 rounds=3.85
+[balance] 15 three depth 3 rate=0.958 hpLoss=0.271
+[balance] 16 four lanterneater Lv11 (vs full) rate=0.783 hpLoss=0.525
+[balance] 16 full lanterneater Lv11 rate=0.750 hpLoss=0.600
+[balance] 16 three lanterneater Lv11 (vs full) rate=0.700 hpLoss=0.585
+[balance] 16 three lanterneater Lv13 rate=1.000 hpLoss=0.316
+[balance] 16 two lanterneater Lv11 (vs full) rate=0.467 hpLoss=0.924
+[balance] 2-3 floor 2 fights n=13
+[balance] 2-3 floor 3 fights n=11
+[balance] 4 floor 2 Lv6 rate=1.000 hpLoss=0.126
+[balance] 4 floor 3 Lv9 rate=1.000 hpLoss=0.107
+[balance] 6 lanterneater Lv13 rate=0.950 hpLoss=0.519
+[balance] 7 (記憶期望) blaze depth 10 rate=0.986 hpLoss=0.228
+[balance] 7 (記憶期望) blaze depth 2 rate=1.000 hpLoss=0.117
+[balance] 7 (記憶期望) blaze depth 3 rate=1.000 hpLoss=0.109
+[balance] 7 (記憶期望) blaze depth 4 rate=0.986 hpLoss=0.255
+[balance] 7 (記憶期望) blaze depth 6 rate=0.995 hpLoss=0.214
+[balance] 7 (記憶期望) blaze depth 8 rate=1.000 hpLoss=0.213
+[balance] 7 (記憶期望) frost depth 10 rate=1.000 hpLoss=0.167
+[balance] 7 (記憶期望) frost depth 4 rate=1.000 hpLoss=0.193
+[balance] 7 (記憶期望) frost depth 6 rate=1.000 hpLoss=0.165
+[balance] 7 (記憶期望) frost depth 8 rate=1.000 hpLoss=0.163
+[balance] 7 (記憶期望) iron depth 10 rate=0.945 hpLoss=0.373
+[balance] 7 (記憶期望) iron depth 4 rate=0.955 hpLoss=0.373
+[balance] 7 (記憶期望) iron depth 6 rate=0.950 hpLoss=0.377
+[balance] 7 (記憶期望) iron depth 8 rate=0.955 hpLoss=0.374
+[balance] 7 (記憶期望) mainline depth 10 rate=1.000 hpLoss=0.196
+[balance] 7 (記憶期望) mainline depth 6 rate=0.983 hpLoss=0.172
+[balance] 7 (記憶期望) mainline depth 8 rate=1.000 hpLoss=0.204
+[balance] 7 (記憶期望) mire depth 10 rate=0.977 hpLoss=0.288
+[balance] 7 (記憶期望) mire depth 4 rate=0.964 hpLoss=0.287
+[balance] 7 (記憶期望) mire depth 6 rate=0.982 hpLoss=0.284
+[balance] 7 (記憶期望) mire depth 8 rate=0.973 hpLoss=0.290
+[balance] 7 (記憶期望) shade depth 10 rate=1.000 hpLoss=0.224
+[balance] 7 (記憶期望) shade depth 4 rate=1.000 hpLoss=0.207
+[balance] 7 (記憶期望) shade depth 6 rate=1.000 hpLoss=0.201
+[balance] 7 (記憶期望) shade depth 8 rate=1.000 hpLoss=0.209
+[balance] 7 (記憶期望) storm depth 10 rate=1.000 hpLoss=0.193
+[balance] 7 (記憶期望) storm depth 4 rate=1.000 hpLoss=0.203
+[balance] 7 (記憶期望) storm depth 6 rate=1.000 hpLoss=0.197
+[balance] 7 (記憶期望) storm depth 8 rate=1.000 hpLoss=0.193
+[balance] 7 blaze depth 10 rate=0.986 hpLoss=0.244
+[balance] 7 blaze depth 2 rate=1.000 hpLoss=0.117
+[balance] 7 blaze depth 3 rate=1.000 hpLoss=0.109
+[balance] 7 blaze depth 4 rate=0.986 hpLoss=0.238
+[balance] 7 blaze depth 6 rate=0.977 hpLoss=0.263
+[balance] 7 blaze depth 8 rate=0.982 hpLoss=0.262
+[balance] 7 frost depth 10 rate=1.000 hpLoss=0.187
+[balance] 7 frost depth 4 rate=1.000 hpLoss=0.187
+[balance] 7 frost depth 6 rate=1.000 hpLoss=0.190
+[balance] 7 frost depth 8 rate=0.995 hpLoss=0.186
+[balance] 7 iron depth 10 rate=0.914 hpLoss=0.399
+[balance] 7 iron depth 4 rate=0.950 hpLoss=0.391
+[balance] 7 iron depth 6 rate=0.932 hpLoss=0.400
+[balance] 7 iron depth 8 rate=0.923 hpLoss=0.393
+[balance] 7 mainline depth 10 rate=1.000 hpLoss=0.204
+[balance] 7 mainline depth 6 rate=0.942 hpLoss=0.259
+[balance] 7 mainline depth 8 rate=1.000 hpLoss=0.196
+[balance] 7 mire depth 10 rate=0.941 hpLoss=0.312
+[balance] 7 mire depth 4 rate=0.977 hpLoss=0.276
+[balance] 7 mire depth 6 rate=0.977 hpLoss=0.295
+[balance] 7 mire depth 8 rate=0.950 hpLoss=0.321
+[balance] 7 pace blaze depth 10 n=14
+[balance] 7 pace blaze depth 4 n=14
+[balance] 7 pace blaze depth 6 n=14
+[balance] 7 pace blaze depth 8 n=14
+[balance] 7 pace frost depth 10 n=14
+[balance] 7 pace frost depth 4 n=14
+[balance] 7 pace frost depth 6 n=14
+[balance] 7 pace frost depth 8 n=14
+[balance] 7 pace iron depth 10 n=14
+[balance] 7 pace iron depth 4 n=14
+[balance] 7 pace iron depth 6 n=14
+[balance] 7 pace iron depth 8 n=14
+[balance] 7 pace mainline depth 10 n=17
+[balance] 7 pace mainline depth 6 n=11
+[balance] 7 pace mainline depth 8 n=13
+[balance] 7 pace mire depth 10 n=14
+[balance] 7 pace mire depth 4 n=14
+[balance] 7 pace mire depth 6 n=14
+[balance] 7 pace mire depth 8 n=14
+[balance] 7 pace shade depth 10 n=14
+[balance] 7 pace shade depth 4 n=14
+[balance] 7 pace shade depth 6 n=14
+[balance] 7 pace shade depth 8 n=14
+[balance] 7 pace storm depth 10 n=14
+[balance] 7 pace storm depth 4 n=14
+[balance] 7 pace storm depth 6 n=14
+[balance] 7 pace storm depth 8 n=14
+[balance] 7 shade depth 10 rate=1.000 hpLoss=0.251
+[balance] 7 shade depth 4 rate=1.000 hpLoss=0.213
+[balance] 7 shade depth 6 rate=1.000 hpLoss=0.226
+[balance] 7 shade depth 8 rate=1.000 hpLoss=0.238
+[balance] 7 storm depth 10 rate=0.991 hpLoss=0.212
+[balance] 7 storm depth 4 rate=1.000 hpLoss=0.223
+[balance] 7 storm depth 6 rate=1.000 hpLoss=0.204
+[balance] 7 storm depth 8 rate=0.991 hpLoss=0.218
+[balance] 8 elite bat+bat+slime depth 4 rate=0.925 hpLoss=0.479
+[balance] 8 elite beetle depth 8 rate=1.000 hpLoss=0.134
+[balance] 8 elite lizard+beetle depth 2 rate=1.000 hpLoss=0.245
+[balance] 8 elite lizard+beetle depth 8 rate=0.725 hpLoss=0.621
+[balance] 8 elite slime+slime depth 4 rate=1.000 hpLoss=0.175
+[balance] 8 elite wisp+lizard depth 2 rate=1.000 hpLoss=0.136
+[balance] 8 elite wisp+lizard depth 8 rate=1.000 hpLoss=0.337
+[balance] 8 elite wisp+wisp depth 2 rate=1.000 hpLoss=0.179
+[balance] 8 elite wisp+wisp depth 8 rate=1.000 hpLoss=0.319
+[balance] 8 elite wolf depth 4 rate=1.000 hpLoss=0.174
+[balance] 8 elite wolf+bat depth 4 rate=0.650 hpLoss=0.704
+[balance] 9 altar depth 8 rate=1.000 hpLoss=0.139
+[deep] 19a mainline depth 20 Lv50 rate=1.000 hpLoss=0.157
+[deep] 19a mainline depth 25 Lv50 rate=0.919 hpLoss=0.353
+[lineups] 18e balanced d10 rounds=5.15 +10 rounds=4.80
+[lineups] 18e healer d10 rounds=6.65 +10 rounds=6.35
+[lineups] 18e healer d5 rounds=4.95 +10 rounds=4.45
+[lineups] 18e mage d10 rounds=6.90 +10 rounds=6.60
+[lineups] 18e mage d5 rounds=5.45 +10 rounds=4.85
+[lineups] 18e sword d10 rounds=5.15 +10 rounds=4.75
+[lineups] 18e sword d5 rounds=3.70 +10 rounds=3.25
+[lineups] 18e tank d10 rounds=5.35 +10 rounds=5.05
+[lineups] 18e tank d5 rounds=4.85 +10 rounds=4.30
+[lineups] allMagic balanced d4 mainline rate=1.000 hpLoss=0.305
+[lineups] allMagic balanced d8 mainline rate=1.000 hpLoss=0.189
+[lineups] allMagic healer d4 mainline rate=1.000 hpLoss=0.301
+[lineups] allMagic healer d8 mainline rate=1.000 hpLoss=0.174
+[lineups] allMagic mage d4 mainline rate=0.975 hpLoss=0.346
+[lineups] allMagic mage d8 mainline rate=0.825 hpLoss=0.367
+[lineups] allMagic sword d4 mainline rate=1.000 hpLoss=0.297
+[lineups] allMagic sword d8 mainline rate=1.000 hpLoss=0.180
+[lineups] allMagic tank d4 mainline rate=1.000 hpLoss=0.302
+[lineups] allMagic tank d8 mainline rate=1.000 hpLoss=0.175
+[lineups] allPhys balanced d4 iron rate=0.768 hpLoss=0.609
+[lineups] allPhys balanced d4 mire rate=0.882 hpLoss=0.493
+[lineups] allPhys balanced d8 iron rate=0.759 hpLoss=0.622
+[lineups] allPhys balanced d8 mire rate=0.855 hpLoss=0.502
+[lineups] allPhys healer d4 iron rate=0.891 hpLoss=0.392
+[lineups] allPhys healer d4 mire rate=0.955 hpLoss=0.315
+[lineups] allPhys healer d8 iron rate=0.886 hpLoss=0.402
+[lineups] allPhys healer d8 mire rate=0.927 hpLoss=0.314
+[lineups] allPhys mage d4 iron rate=0.964 hpLoss=0.386
+[lineups] allPhys mage d4 mire rate=0.986 hpLoss=0.258
+[lineups] allPhys mage d8 iron rate=0.959 hpLoss=0.379
+[lineups] allPhys mage d8 mire rate=0.986 hpLoss=0.275
+[lineups] allPhys sword d4 iron rate=0.805 hpLoss=0.573
+[lineups] allPhys sword d4 mire rate=0.909 hpLoss=0.464
+[lineups] allPhys sword d8 iron rate=0.800 hpLoss=0.565
+[lineups] allPhys sword d8 mire rate=0.895 hpLoss=0.451
+[lineups] allPhys tank d4 iron rate=0.773 hpLoss=0.612
+[lineups] allPhys tank d4 mire rate=0.877 hpLoss=0.503
+[lineups] allPhys tank d8 iron rate=0.791 hpLoss=0.562
+[lineups] allPhys tank d8 mire rate=0.873 hpLoss=0.460
+[lineups] noHeal balanced d8 mainline rate=1.000 hpLoss=0.377
+[lineups] noHeal healer d4 mainline rate=1.000 hpLoss=0.194
+[lineups] noHeal healer d8 mainline rate=0.988 hpLoss=0.244
+[lineups] noHeal mage d4 mainline rate=1.000 hpLoss=0.192
+[lineups] noHeal mage d8 mainline rate=1.000 hpLoss=0.226
+[lineups] noHeal sword d4 mainline rate=1.000 hpLoss=0.224
+[lineups] noHeal sword d8 mainline rate=1.000 hpLoss=0.326
+[lineups] noHeal tank d4 mainline rate=1.000 hpLoss=0.226
+[lineups] noHeal tank d8 mainline rate=1.000 hpLoss=0.324
+[lineups] noTank balanced d4 mainline rate=1.000 hpLoss=0.305
+[lineups] noTank balanced d8 mainline rate=1.000 hpLoss=0.189
+[lineups] noTank healer d4 mainline rate=0.738 hpLoss=0.493
+[lineups] noTank healer d8 mainline rate=0.750 hpLoss=0.511
+[lineups] noTank mage d4 mainline rate=0.950 hpLoss=0.362
+[lineups] noTank mage d8 mainline rate=0.863 hpLoss=0.471
+[lineups] noTank sword d4 mainline rate=1.000 hpLoss=0.297
+[lineups] noTank sword d8 mainline rate=1.000 hpLoss=0.180
+[lineups] noTank tank d4 mainline rate=1.000 hpLoss=0.302
+[lineups] noTank tank d8 mainline rate=1.000 hpLoss=0.175
+[lineups] standard balanced d4 mainline rate=1.000 hpLoss=0.215
+[lineups] standard balanced d8 mainline rate=1.000 hpLoss=0.206
+[lineups] standard healer d4 mainline rate=1.000 hpLoss=0.225
+[lineups] standard healer d8 mainline rate=0.975 hpLoss=0.213
+[lineups] standard mage d4 mainline rate=1.000 hpLoss=0.237
+[lineups] standard mage d8 mainline rate=1.000 hpLoss=0.197
+[lineups] standard sword d4 mainline rate=1.000 hpLoss=0.219
+[lineups] standard sword d8 mainline rate=1.000 hpLoss=0.182
+[lineups] standard tank d4 mainline rate=1.000 hpLoss=0.203
+[lineups] standard tank d8 mainline rate=1.000 hpLoss=0.188
+[pace] bobby mainline@6 pieces=9,12,15,18,21 gaps=3,3,3,3 mean=3.00
+[pace] chizuru frost@3 pieces=5,7,10,13,15 gaps=2,3,3,2 mean=2.50
+[pace] liz shade@6 pieces=9,12,15,18,21 gaps=3,3,3,3 mean=3.00
+[pace] noel storm@4 pieces=7,10,12,15,18 gaps=3,2,3,3 mean=2.75
+[pace] rin mainline@1 pieces=1,3,6,9,12,15,17 gaps=2,3,3,3,3,2 mean=2.67
+[pace] safira blaze@3 pieces=5,7,10,12,15 gaps=2,3,2,3 mean=2.50
+[pace] scarlet iron@8 pieces=10,13,15,18,21 gaps=3,2,3,3 mean=2.75
+[pace] selene mainline@2 pieces=5,8,11,14,17 gaps=3,3,3,3 mean=3.00
+[pace] sylvie mire@4 pieces=7,10,12,15,18 gaps=3,2,3,3 mean=2.75

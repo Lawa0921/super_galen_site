@@ -1,0 +1,32 @@
+{
+  "pass": false,
+  "reasons": [
+    "subject too light"
+  ],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 0,
+  "magenta_spill": 0,
+  "key_tint_inside": 0,
+  "subject": {
+    "long": 56,
+    "short": 40,
+    "mass": 0.281,
+    "box": [
+      12,
+      4,
+      52,
+      60
+    ],
+    "centre_off": 0.0
+  },
+  "block": 5.661,
+  "scale": 5.661,
+  "size": [
+    64,
+    64
+  ],
+  "spec": "gear-cell:03c3f55cc7d1"
+}

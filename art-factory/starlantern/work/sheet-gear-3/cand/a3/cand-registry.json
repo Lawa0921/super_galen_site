@@ -1,0 +1,746 @@
+{
+  "assets": {
+    "gear-thorn-gauntlets-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-thorn-gauntlets-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 49,
+          "mass": 0.595,
+          "box": [
+            4,
+            7,
+            60,
+            56
+          ],
+          "centre_off": 0.5
+        },
+        "block": 6.446,
+        "scale": 6.446,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "thorn-gauntlets"
+      },
+      "slot": "hands"
+    },
+    "gear-thorn-gauntlets": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-thorn-gauntlets.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 19,
+          "mass": 0.585,
+          "box": [
+            2,
+            3,
+            24,
+            22
+          ],
+          "centre_off": 0.5
+        },
+        "block": 16.409,
+        "scale": 16.409,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "thorn-gauntlets"
+      },
+      "slot": "hands"
+    },
+    "gear-straw-sandals-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-straw-sandals-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 48,
+          "mass": 0.641,
+          "box": [
+            4,
+            8,
+            60,
+            56
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.679,
+        "scale": 5.679,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "straw-sandals"
+      },
+      "slot": "feet"
+    },
+    "gear-straw-sandals": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-straw-sandals.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 19,
+          "mass": 0.651,
+          "box": [
+            2,
+            3,
+            24,
+            22
+          ],
+          "centre_off": 0.5
+        },
+        "block": 14.455,
+        "scale": 14.455,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "straw-sandals"
+      },
+      "slot": "feet"
+    },
+    "gear-bat-boots-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-bat-boots-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 41,
+          "mass": 0.512,
+          "box": [
+            4,
+            11,
+            60,
+            52
+          ],
+          "centre_off": 0.5
+        },
+        "block": 6.929,
+        "scale": 6.929,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "bat-boots"
+      },
+      "slot": "feet"
+    },
+    "gear-bat-boots": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-bat-boots.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 16,
+          "mass": 0.514,
+          "box": [
+            2,
+            5,
+            24,
+            21
+          ],
+          "centre_off": 0.0
+        },
+        "block": 17.636,
+        "scale": 17.636,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "bat-boots"
+      },
+      "slot": "feet"
+    },
+    "gear-cloth-robe-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-cloth-robe-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.692,
+          "box": [
+            4,
+            4,
+            60,
+            59
+          ],
+          "centre_off": 0.5
+        },
+        "block": 6.357,
+        "scale": 6.357,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "cloth-robe"
+      },
+      "slot": "body"
+    },
+    "gear-cloth-robe": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-cloth-robe.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.715,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 16.182,
+        "scale": 16.182,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "cloth-robe"
+      },
+      "slot": "body"
+    },
+    "gear-leather-vest-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-leather-vest-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 52,
+          "mass": 0.775,
+          "box": [
+            6,
+            4,
+            58,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.607,
+        "scale": 5.607,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "leather-vest"
+      },
+      "slot": "body"
+    },
+    "gear-leather-vest": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-leather-vest.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.8,
+          "box": [
+            2,
+            2,
+            23,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 14.273,
+        "scale": 14.273,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "leather-vest"
+      },
+      "slot": "body"
+    },
+    "gear-scale-mail-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-scale-mail-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 48,
+          "mass": 0.715,
+          "box": [
+            8,
+            4,
+            56,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.857,
+        "scale": 5.857,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "scale-mail"
+      },
+      "slot": "body"
+    },
+    "gear-scale-mail": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-scale-mail.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 19,
+          "mass": 0.733,
+          "box": [
+            3,
+            2,
+            22,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 14.909,
+        "scale": 14.909,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "scale-mail"
+      },
+      "slot": "body"
+    },
+    "gear-dusk-mantle-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-dusk-mantle-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.647,
+          "box": [
+            4,
+            4,
+            60,
+            59
+          ],
+          "centre_off": 0.5
+        },
+        "block": 6.393,
+        "scale": 6.393,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "dusk-mantle"
+      },
+      "slot": "body"
+    },
+    "gear-dusk-mantle": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-dusk-mantle.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.663,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 16.273,
+        "scale": 16.273,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "dusk-mantle"
+      },
+      "slot": "body"
+    },
+    "gear-moss-charm-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-moss-charm-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 47,
+          "mass": 0.513,
+          "box": [
+            8,
+            4,
+            55,
+            60
+          ],
+          "centre_off": 0.5
+        },
+        "block": 6.179,
+        "scale": 6.179,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "moss-charm"
+      },
+      "slot": "neck"
+    },
+    "gear-moss-charm": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-moss-charm.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 18,
+          "mass": 0.496,
+          "box": [
+            4,
+            2,
+            22,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 15.727,
+        "scale": 15.727,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "moss-charm"
+      },
+      "slot": "neck"
+    },
+    "gear-bat-earring-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-bat-earring-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 48,
+          "mass": 0.444,
+          "box": [
+            8,
+            4,
+            56,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 6.0,
+        "scale": 6.0,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "bat-earring"
+      },
+      "slot": "neck"
+    },
+    "gear-bat-earring": {
+      "final": "art-factory/starlantern/work/sheet-gear-3/cand/a3/gear-bat-earring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 19,
+          "mass": 0.448,
+          "box": [
+            3,
+            2,
+            22,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 15.273,
+        "scale": 15.273,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-3\\sheet-gear-3-a3.png",
+        "cell": "bat-earring"
+      },
+      "slot": "neck"
+    }
+  }
+}

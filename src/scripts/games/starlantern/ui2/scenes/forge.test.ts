@@ -1,10 +1,12 @@
+import { STORY } from '../../data/story.zh-TW';
 import { describe, expect, it, vi } from 'vitest';
 import { T } from '../../data/text.zh-TW';
 import { Game } from '../../engine/game';
 import type { ForgeResult } from '../../engine/forge/cost';
 import { constRng, memoryStorage } from '../../engine/testing';
 import type { ItemInstance, Rarity } from '../../engine/types';
-import { NO_ART } from '../../render/textures';
+import { NO_ART, type ArtIndex } from '../../render/textures';
+import { art } from '../../render/artPaths';
 import { CHARACTERS } from '../../data/characters';
 import { ENHANCE_COST, ENHANCE_MAX, ENHANCE_STEP, ENHANCE_SUCCESS, REGION_AFFIX_GROUP } from '../../data/forge';
 import { EQUIPMENT } from '../../data/equipment';
@@ -15,16 +17,20 @@ import { gearLabel } from '../loot';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { baseCost, craftLevel, setCost } from '../../engine/forge/craft';
 import { specialLines } from '../../engine/compare';
+import { priceOf } from '../../engine/town';
 import { ForgeScene, costText, forgeRows, type ForgeHost } from './forge';
+import { GEAR_ROWS } from '../widgets';
+import { RUNES } from '../../data/runes';
+import { defaultTree } from '../../engine/progression';
 
 const gear = (uid: number, base: string, rarity: Rarity, extra: Partial<ItemInstance> = {}): ItemInstance =>
   ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0, ...extra });
 
-function setup(game = new Game(constRng(0.5), memoryStorage())) {
+function setup(game = new Game(constRng(0.5), memoryStorage()), artIdx: ArtIndex = NO_ART) {
   const root = document.createElement('div');
   const go = vi.fn();
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
-  const s = new ForgeScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
+  const s = new ForgeScene({ game, art: artIdx, sfx, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
   s.enter(root);
   const line = () => root.querySelector('.slx-talk .slx-text')!.textContent;
   const talking = () => !root.querySelector('.slx-talk')!.hasAttribute('hidden');
@@ -54,16 +60,29 @@ describe('forgeRows', () => {
     expect(forgeRows(s, { worn: false, right: () => '' }).map((r) => r.id)).toEqual(['g1', 'g2']);
     expect(forgeRows(s, { worn: true, filter: (it) => it.rarity === 'rare', right: () => '' }).map((r) => r.id)).toEqual(['g1', 'g3']);
   });
+
+  it('forge rows carry the gear icon of the special', () => {
+    const game = new Game(constRng(0.5), null);
+    const s = game.state;
+    s.bag = [gear(1, 'iron-sword', 'legendary', { special: 'blaze-heart-sword' }), gear(2, 'hunter-bow', 'magic'), gear(3, 'iron-sword', 'rare'),
+      gear(4, 'iron-sword', 'unique', { special: 'blaze-ember-ring' })];
+    const published = [art.gear('blaze-heart-sword'), art.gear('iron-sword'), art.icon('hunter-bow')];
+    const rows = forgeRows(s, { worn: false, right: () => '', art: { has: (u) => published.includes(u) } });
+    // A special with no art of its own never borrows its base's icon; an old base icon is not gear art.
+    expect(rows.map((r) => r.icon)).toEqual([art.gear('blaze-heart-sword'), undefined, art.gear('iron-sword'), undefined]);
+    expect(rows.map((r) => r.iconCls)).toEqual(['slx-gear-ico', undefined, 'slx-gear-ico', undefined]);
+    expect(forgeRows(s, { worn: false, right: () => '' }).every((r) => r.icon === undefined)).toBe(true);   // no art index: text rows
+  });
 });
 
 describe('ForgeScene', () => {
-  const TABS = ['分解', '強化', '重鑄', '合成', '製作'];
+  const TABS = ['分解', '強化', '重鑄', '合成', '製作', '符文合成'];
 
   it('greets as 多蘭 in the 鍛造屋', () => {
     const { root, line } = setup();
     expect(root.querySelector('.slx-place')!.textContent).toBe('鍛造屋');
     expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe('多蘭');
-    expect(T.ui2.facility.forge.greet).toContain(line());
+    expect(STORY.greet.forge.prologue).toContain(line());
     expect(root.querySelector('.slx-facility.slx-forge')).not.toBeNull();
   });
 
@@ -72,7 +91,7 @@ describe('ForgeScene', () => {
     s.onAction('confirm');                  // greeting
     const opts = [...root.querySelectorAll('.slx-cmd [role=option]')];
     expect(opts.map((o) => o.querySelector('.slx-label')!.textContent)).toEqual([...TABS, '離開']);
-    expect(opts.map((o) => o.getAttribute('data-id'))).toEqual(['dismantle', 'enhance', 'reroll', 'fuse', 'craft', 'leave']);
+    expect(opts.map((o) => o.getAttribute('data-id'))).toEqual(['dismantle', 'enhance', 'reroll', 'fuse', 'craft', 'runes', 'leave']);
     // Keyboard: each tab in turn.
     TABS.forEach((tab, i) => {
       if (i) s.onAction('down');
@@ -250,6 +269,20 @@ describe('ForgeScene dismantle page', () => {
     expect(a.game.state.bag).toHaveLength(1);
   });
 
+  it('dismantling an epic asks first and warns it is precious; so does a starlit piece', () => {
+    expect(T.ui2.forge.warnPrecious).toBe('裡面有史詩、傳說、獨特、套裝、已強化或有重鑄鎖定詞綴的裝備，分解後無法復原。');
+    const a = open([gear(1, 'iron-sword', 'epic', { affixes: [{ key: 'crit', value: 3 }] })]);
+    a.s.onAction('confirm');
+    expect(a.confirmEl()).not.toBeNull();
+    expect(a.confirmEl()!.textContent).toContain(T.ui2.forge.warnPrecious);
+    expect(a.confirmEl()!.querySelector('.slx-rarity-epic')!.textContent).toBe('鐵劍・史詩');
+    expect(a.game.state.bag).toHaveLength(1);
+    const b = open([gear(1, 'thorn-spear', 'legendary', { special: 'lg-chizuru', starlit: true, affixes: [{ key: 'crit', value: 3 }] })]);
+    b.s.onAction('confirm');
+    expect(b.confirmEl()!.textContent).toContain(T.ui2.forge.warnPrecious);
+    expect(b.confirmEl()!.querySelector('.slx-rarity-legendary.slx-starlit')!.textContent).toBe('雙月槍・星輝傳說');
+  });
+
   it('has no 分解全部已標記 row without marked gear, and never lists worn gear', () => {
     const game = new Game(constRng(0.5), memoryStorage());
     game.state.bag = [gear(1, 'iron-sword', 'rare')];
@@ -282,7 +315,7 @@ describe('ForgeScene dismantle page', () => {
 
   it('a bag of 15 shows the ▼ scroll cue, and the cue and the wheel scroll', () => {
     const { s, root, rows } = open(Array.from({ length: 15 }, (_, i) => gear(i + 1, 'iron-sword', 'common')));
-    expect(rows().length).toBe(12);
+    expect(rows().length).toBe(GEAR_ROWS);                       // gear rows with their icons: fewer on screen (plan 5d Task 10)
     const down = root.querySelector('.slx-forge-list .slx-more-down') as HTMLElement;
     expect(down).not.toBeNull();
     down.click();
@@ -292,7 +325,7 @@ describe('ForgeScene dismantle page', () => {
     expect(root.querySelector('.slx-forge-list .slx-more-down')).toBeNull();
     // The wheel scrolls back up.
     root.querySelector('.slx-forge-list .slx-menu')!.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, cancelable: true }));
-    expect(rows()[0].getAttribute('data-id')).toBe('g3');
+    expect(rows()[0].getAttribute('data-id')).toBe(`g${15 - GEAR_ROWS}`);
   });
 
   it('a click on a row and on 是 dismantles too', () => {
@@ -505,13 +538,13 @@ describe('ForgeScene reroll page', () => {
   });
   const RICH = { 'essence-rare': 5, 'essence-legendary': 5, 'star-tear': 3, 'blaze-core': 2, 'frost-heart': 2, 'shade-crystal': 1 };
 
-  function open(bag: ItemInstance[], prep: (g: Game) => void = () => {}, storage = memoryStorage()) {
+  function open(bag: ItemInstance[], prep: (g: Game) => void = () => {}, storage = memoryStorage(), artIdx: ArtIndex = NO_ART) {
     const game = new Game(constRng(0.5), storage);
     game.state.bag = bag;
     game.state.gold = 1000;
     game.state.inventory = { ...RICH };
     prep(game);
-    const t = setup(game);
+    const t = setup(game, artIdx);
     t.s.onAction('confirm');                // greeting
     t.s.onAction('down'); t.s.onAction('down');
     t.s.onAction('confirm');                // 重鑄
@@ -541,6 +574,20 @@ describe('ForgeScene reroll page', () => {
     const t = setup(game);
     t.s.onAction('confirm'); t.s.onAction('down'); t.s.onAction('down'); t.s.onAction('confirm');
     expect(t.line()).toBe(F.nothingToReroll);
+  });
+
+  it('with only starlit uniques and sets to show it says there is nothing to reroll', () => {
+    const game = new Game(constRng(0.5), memoryStorage());
+    game.state.bag = [
+      gear(1, 'star-ring', 'unique', { special: 'blaze-ember-ring', starlit: true, affixes: [{ key: 'fireDmg', value: 3 }] }),
+      gear(2, 'leather-vest', 'set', { special: 'set-blaze-body', starlit: true, affixes: [{ key: 'fireDmg', value: 3 }] }),
+      gear(3, 'iron-sword', 'common'),
+    ];
+    for (const m of Object.values(game.state.party.roster)) m.equip = {};
+    const t = setup(game);
+    t.s.onAction('confirm'); t.s.onAction('down'); t.s.onAction('down'); t.s.onAction('confirm');
+    expect(t.line()).toBe(F.nothingToReroll);
+    expect(t.root.querySelectorAll('.slx-reroll-list, .slx-forge-list [aria-disabled=true]')).toHaveLength(0);
   });
 
   it('the first reroll warns about the lock; afterwards only that affix is selectable', () => {
@@ -588,6 +635,58 @@ describe('ForgeScene reroll page', () => {
     expect(info().textContent).toContain('稀有精華 5／2');
     // The right-hand column is the cost summary of each row.
     expect(rows()[1].querySelector('.slx-right')!.textContent).toBe(`${rerollCost(it, { swap: true }).gold} G`);
+  });
+
+  it("a starlit item's value reroll row is disabled with the starlit note", () => {
+    expect(F.starlitMaxed).toBe('星輝詞綴已是最大值');
+    const spear = gear(1, 'thorn-spear', 'legendary', {
+      special: 'lg-chizuru', starlit: true, ilvl: 30, affixes: [{ key: 'crit', value: 3 }, { key: 'atk', value: 12 }],
+    });
+    const a = open([spear]);
+    a.go('confirm', 'confirm');             // item -> affix -> how
+    expect(a.ids().slice(0, 2)).toEqual(['value', 'swap']);
+    const value = a.rows()[0];
+    expect(value.getAttribute('aria-disabled')).toBe('true');
+    expect(value.textContent).toContain(F.starlitMaxed);
+    expect(a.rows()[1].getAttribute('aria-disabled')).toBe('false');   // a swap still works
+    expect(a.rows()[1].getAttribute('aria-selected')).toBe('true');    // the cursor starts on it
+    value.click();
+    expect(a.confirmEl()).toBeNull();                                  // a disabled row cannot be picked
+    expect(a.game.state.bag[0].affixes).toEqual(spear.affixes);
+  });
+
+  it('a starlit unique or set is greyed out in the item list with the reason; a starlit legendary is not', () => {
+    const ring = gear(2, 'star-ring', 'unique', {
+      special: 'blaze-ember-ring', starlit: true, ilvl: 30, affixes: [{ key: 'fireDmg', value: 3 }, { key: 'fireRes', value: 3 }, { key: 'atk', value: 3 }],
+    });
+    const body = gear(4, 'leather-vest', 'set', { special: 'set-blaze-body', starlit: true, ilvl: 30, affixes: [{ key: 'fireDmg', value: 3 }] });
+    const spear = gear(1, 'thorn-spear', 'legendary', { special: 'lg-chizuru', starlit: true, ilvl: 30, affixes: [{ key: 'crit', value: 3 }] });
+    const { ids, rows, lists, info } = open([ring, spear, body, sword({ uid: 3 })]);
+    expect(ids()).toEqual(['g2', 'g1', 'g4', 'g3']);
+    expect(rows().map((r) => r.getAttribute('aria-disabled'))).toEqual(['true', 'false', 'true', 'false']);
+    expect(rows()[0].textContent).toContain(F.starlitMaxed);
+    expect(rows()[2].textContent).toContain(F.starlitMaxed);
+    expect(rows()[1].getAttribute('aria-selected')).toBe('true');      // the cursor starts on the first live row
+    expect(info().textContent).toContain('雙月槍・星輝傳說');
+    rows()[0].click();                      // a greyed row opens nothing
+    expect(lists()).toHaveLength(1);
+    expect(ids()).toEqual(['g2', 'g1', 'g4', 'g3']);
+  });
+
+  it('reroll material rows carry the material icon; the item rows carry the gear icon', () => {
+    const published = [art.icon('blaze-core'), art.gear('iron-sword')];
+    const { go, rows } = open([sword()], undefined, undefined, { has: (u) => published.includes(u) });
+    const ico = rows()[0].querySelector('img')!;
+    expect(ico.getAttribute('src')).toBe(art.gear('iron-sword'));
+    expect(ico.className).toBe('slx-ico slx-gear-ico');
+    go('confirm', 'confirm');
+    const byId = (id: string) => rows().find((r) => r.getAttribute('data-id') === id)!;
+    const mat = byId('mat:blaze-core').querySelector('img')!;
+    expect(mat.getAttribute('src')).toBe(art.icon('blaze-core'));
+    expect(mat.className).toBe('slx-ico');
+    expect(byId('mat:frost-heart').querySelector('img')).toBeNull();     // not published yet: the name alone
+    expect(byId('value').querySelector('img')).toBeNull();
+    expect(byId('swap').querySelector('img')).toBeNull();
   });
 
   it('region-material rows list each region, and an empty pool is disabled with the reason', () => {
@@ -971,12 +1070,12 @@ describe('ForgeScene fuse page', () => {
 describe('ForgeScene craft page', () => {
   const F = T.ui2.forge;
   type Act = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'cancel';
-  function open(prep: (g: Game) => void = () => {}, storage = memoryStorage()) {
+  function open(prep: (g: Game) => void = () => {}, storage = memoryStorage(), artIdx: ArtIndex = NO_ART) {
     const game = new Game(constRng(0.5), storage);
     game.state.gold = 1000;
     game.state.inventory = {};
     prep(game);
-    const t = setup(game);
+    const t = setup(game, artIdx);
     const loot = vi.fn();
     (t.sfx as Record<string, unknown>).loot = loot;
     t.s.onAction('confirm');                // greeting
@@ -994,6 +1093,17 @@ describe('ForgeScene craft page', () => {
     return { ...t, game, go, rows, ids, row, right, confirmEl, qty, info, loot };
   }
   const full = (n: number): ItemInstance[] => Array.from({ length: n }, (_, i) => gear(i + 1, 'iron-sword', 'common'));
+
+  it("the shop price beside a recipe is what the shop really asks, Orik's cut included", () => {
+    const plain = open((g) => { g.state.inventory = { moss: 10 }; });
+    plain.row('item').click();
+    expect(plain.right('potion').textContent).toBe(F.craftRow(priceOf(plain.game.state, 'potion')!, '6 G'));
+    const cut = open((g) => { g.state.inventory = { moss: 10 }; g.state.story.returned.push('orik'); });
+    cut.row('item').click();
+    const cheaper = priceOf(cut.game.state, 'potion')!;
+    expect(cheaper).toBeLessThan(priceOf(plain.game.state, 'potion')!);
+    expect(cut.right('potion').textContent).toBe(F.craftRow(cheaper, '6 G'));
+  });
 
   it('three categories; a potion recipe crafts the chosen quantity', () => {
     const { ids, row, right, go, qty, game, line, sfx, info } = open((g) => { g.state.inventory = { moss: 10 }; g.state.gold = 100; });
@@ -1094,6 +1204,20 @@ describe('ForgeScene craft page', () => {
     expect(game.state.inventory['thorn-fang']).toBe(3);
   });
 
+  it('set rows carry the gear icon: a set shows its first piece, each piece its own', () => {
+    const published = [art.gear('set-blaze-weapon'), art.gear('set-blaze-body')];
+    const { row, go } = open(() => {}, memoryStorage(), { has: (u) => published.includes(u) });
+    row('set').click();
+    const set = row('set-blaze').querySelector('img')!;
+    expect(set.getAttribute('src')).toBe(art.gear('set-blaze-weapon'));
+    expect(set.className).toBe('slx-ico slx-gear-ico');
+    expect(row('set-frost').querySelector('img')).toBeNull();
+    go('confirm');
+    expect(row('set-blaze-weapon').querySelector('img')!.getAttribute('src')).toBe(art.gear('set-blaze-weapon'));
+    expect(row('set-blaze-body').querySelector('img')!.getAttribute('src')).toBe(art.gear('set-blaze-body'));
+    expect(row('set-blaze-hands').querySelector('img')).toBeNull();
+  });
+
   it('a set piece crafts after a yes and is named in green', () => {
     const { row, ids, go, confirmEl, game, line, loot, root, info } = open((g) => { g.state.inventory = { 'blaze-core': 8, 'star-tear': 1 }; });
     row('set').click();
@@ -1154,6 +1278,81 @@ describe('ForgeScene craft page', () => {
     go('cancel');
     expect(root.querySelectorAll('.slx-forge-list').length).toBe(0);
     expect(root.querySelectorAll('[style]').length).toBe(0);
+  });
+});
+
+describe('the rune tab (plan 8f Task 5)', () => {
+  /** The forge on the rune tab, with this bag and essences; the greeting closed. */
+  const runeTab = (runes: Record<string, number>, essences: Record<string, number>, gold = 1000, prep: (g: Game) => void = () => {}) => {
+    const game = new Game(constRng(0.5), memoryStorage());
+    game.state.gold = gold;
+    game.state.runes = runes;
+    Object.assign(game.state.inventory, essences);
+    prep(game);
+    const t = setup(game);
+    t.s.onAction('confirm');   // greeting
+    (t.root.querySelector('.slx-cmd [data-id=runes]') as HTMLElement).click();
+    const rows = () => [...t.root.querySelectorAll('.slx-forge-list [role=option]')].map((o) => ({
+      id: o.getAttribute('data-id'), label: o.querySelector('.slx-label')!.textContent, right: o.querySelector('.slx-right')?.textContent ?? '',
+      disabled: o.getAttribute('aria-disabled') === 'true', lack: !!o.querySelector('.slx-right.slx-lack'),
+    }));
+    const info = () => t.root.querySelector('.slx-rune-fuse-info')?.textContent ?? '';
+    return { ...t, rows, info };
+  };
+
+  it('the rune tab lists what can be fused', () => {
+    const t = runeTab({ 'spread@common': 3, 'bounce@magic': 1, 'twin-cast@legendary': 1 }, { 'essence-common': 2, 'essence-magic': 2 });
+    expect(t.rows()).toEqual([
+      { id: 'fuse:spread@common', label: '擴散（普通）', right: '持有 3', disabled: false, lack: false },
+      { id: 'fuse:bounce@magic', label: '彈射（魔法）', right: '袋子 1／需要 3', disabled: false, lack: true },
+    ]);
+    expect(t.info()).toContain('3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）');
+    expect(t.info()).toContain('袋子 3');
+    expect(t.info()).toContain(RUNES.spread.text('magic'));
+    // The essences used up: the 擴散 row greys too, naming the essence.
+    const dry = runeTab({ 'spread@common': 3 }, {});
+    expect(dry.rows()[0]).toMatchObject({ right: '缺少普通精華', lack: true });
+    expect(runeTab({ 'spread@common': 3 }, { 'essence-common': 1 }, 29).rows()[0]).toMatchObject({ right: '金錢不足', lack: true });
+    // A row that cannot be fused still takes the cursor: its recipe and bag count are worth reading, and the detail
+    // says why; Enter says it again and asks nothing (as 製作's rows that the stores cannot cover).
+    t.s.onAction('down');
+    expect(t.info()).toContain('3 個彈射（魔法）＋80 G＋魔法精華 → 彈射（稀有）');
+    expect(t.info()).toContain('袋子 1');
+    expect(t.root.querySelector('.slx-rune-fuse-info .slx-lack')!.textContent).toBe('袋子 1／需要 3');
+    t.s.onAction('confirm');
+    expect(t.root.querySelector('.slx-confirm')).toBeNull();
+    expect(t.sfx.error).toHaveBeenCalled();
+    expect(t.line()).toBe('袋子 1／需要 3');
+    expect(t.game.state.runes).toEqual({ 'spread@common': 3, 'bounce@magic': 1, 'twin-cast@legendary': 1 });
+  });
+
+  it('fusing asks first, then makes the rune and saves', () => {
+    const t = runeTab({ 'spread@common': 4 }, { 'essence-common': 1 }, 100, (g) => {
+      // A socketing the save keeps: Noel at Lv20 on her default build, 火之星彈 holding one 擴散（普通）.
+      g.state.party.roster.noel = { ...g.state.party.roster.noel, level: 20, tree: defaultTree('noel', 20), sockets: { 'fire-star': [{ id: 'spread', tier: 'common' }] } };
+    });
+    expect(t.info()).toContain('袋子 4');
+    expect(t.info()).toContain('其中 1 個鑲嵌中，先拆下才能賣或合成');
+    expect(t.rows()[0]).toMatchObject({ label: '擴散（普通）', right: '持有 5' });
+    t.s.onAction('confirm');
+    const confirm = t.root.querySelector('.slx-confirm')!;
+    expect(confirm.textContent).toContain('3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）');
+    expect(confirm.querySelector('[aria-selected=true] .slx-label')!.textContent).toBe('否');
+    t.s.onAction('confirm');                      // 否: nothing happens
+    expect(t.game.state.runes).toEqual({ 'spread@common': 4 });
+    t.s.onAction('confirm'); t.s.onAction('up'); t.s.onAction('confirm');   // 是
+    expect(t.game.state.runes).toEqual({ 'spread@common': 1, 'spread@magic': 1 });
+    expect([t.game.state.gold, t.game.state.inventory['essence-common']]).toEqual([70, undefined]);
+    expect(t.line()).toContain('擴散（魔法）');
+    expect(Game.boot(constRng(0.5), t.game.storage!).state.runes).toEqual({ 'spread@common': 1, 'spread@magic': 1 });
+    // One 擴散（普通） is left: its row stays, greyed for want of three.
+    expect(t.rows()[0]).toMatchObject({ id: 'fuse:spread@common', lack: true, right: '袋子 1／需要 3' });
+  });
+
+  it('with nothing to fuse the tab says how fusion works', () => {
+    const t = runeTab({ 'twin-cast@legendary': 3, 'spread@epic': 3 }, {});
+    expect(t.root.querySelector('.slx-forge-list')).toBeNull();
+    expect(t.line()).toBe('袋子裡沒有可合成的符文，三個同名同階的符文可以合成高一階');
   });
 });
 

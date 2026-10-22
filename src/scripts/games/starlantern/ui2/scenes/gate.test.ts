@@ -3,9 +3,14 @@ import { Game } from '../../engine/game';
 import { constRng } from '../../engine/testing';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { GateScene, portalArt } from './gate';
+import { art, codexArtId } from '../../render/artPaths';
 import { generalLegendaries } from '../../data/gear';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { BAG_SIZE } from '../../engine/loot/bag';
+import { MEETINGS } from '../../data/meetings';
+import { T } from '../../data/text.zh-TW';
+import { meet } from '../../engine/party';
+import { STORY } from '../../data/story.zh-TW';
 
 function setup(prep?: (g: Game) => void, art: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
@@ -35,7 +40,8 @@ describe('GateScene: the portal plaza', () => {
     expect(cards()[0].getAttribute('aria-selected')).toBe('true');
     const blaze = cards()[1];
     expect(blaze.querySelector('.slx-portal-trait')!.textContent).toContain('火');
-    expect(blaze.querySelector('.slx-portal-trait')!.textContent).toContain('灼燒');
+    expect(blaze.querySelector('.slx-portal-trait')!.textContent).toContain('酷熱');
+    expect(blaze.querySelector('.slx-portal-trait')!.textContent).not.toContain(T.ailment.burn);   // the ailment keeps 灼燒
     expect(blaze.querySelector('.slx-portal-monsters')!.textContent).toContain('苔蘚史萊姆');
     expect(blaze.querySelector('.slx-portal-cond')!.textContent).toContain('濃霧');
     expect(blaze.querySelector('.slx-portal-gear')!.textContent).toContain('限定裝備');
@@ -262,10 +268,110 @@ describe('GateScene: region-only gear on the portal cards', () => {
     } finally { sh.mockRestore(); ch.mockRestore(); }
   });
 
-  it('no silhouette image without art, and one when the icon is published', () => {
-    const { root } = setup();
-    expect(root.querySelector('.slx-codex-silhouette')).toBeNull();
-    const withArt = setup(undefined, { has: (u: string) => u.endsWith('/icon/blaze-ember-ring.png') } as unknown as ArtIndex);
-    expect(withArt.root.querySelectorAll('.slx-codex-silhouette')).toHaveLength(1);
+  it('an unobtained piece loads only its silhouette file; an obtained one its gear icon', () => {
+    // The pictures stand in one strip on the 限定裝備 heading line, in list order (a 28px picture on every name line would
+    // push the third name out of the card; the names stay below as text).
+    const pic = (r: ReturnType<typeof setup>, id: string) => r.root.querySelector<HTMLImageElement>(`.slx-portal-gear-head .slx-codex-pics img[data-special="${id}"]`);
+    expect(setup().root.querySelector('.slx-codex-silhouette, .slx-codex-icon')).toBeNull();
+    // Its real icon published, its silhouette not: no picture at all, so the unobtained piece is never shown early.
+    const iconOnly = setup(undefined, { has: (u) => u === art.gear('blaze-ember-ring') || u === art.icon('blaze-ember-ring') });
+    expect(pic(iconOnly, 'blaze-ember-ring')).toBeNull();
+    const ALL: ArtIndex = { has: () => true };
+    const unknown = setup(undefined, ALL);
+    expect(pic(unknown, 'blaze-ember-ring')!.className).toBe('slx-codex-silhouette');
+    expect(pic(unknown, 'blaze-ember-ring')!.getAttribute('src')).toBe(art.gearSilhouette('blaze-ember-ring'));
+    expect(pic(unknown, 'set-blaze')!.getAttribute('src')).toBe(art.gearSilhouette('set-blaze'));
+    const known = setup((g) => { g.state.codex.push('blaze-ember-ring', 'set-blaze'); }, ALL);
+    expect(pic(known, 'blaze-ember-ring')!.className).toBe('slx-codex-icon');
+    expect(pic(known, 'blaze-ember-ring')!.getAttribute('src')).toBe(art.gear(codexArtId('blaze-ember-ring')));
+    expect(pic(known, 'set-blaze')!.getAttribute('src')).toBe(art.gear('set-blaze-weapon'));
+    // Each picture names its piece on hover; the names list below is unchanged and carries no picture of its own.
+    expect(pic(unknown, 'set-blaze')!.getAttribute('title')).toBe(unknown.root.querySelector('[data-special="set-blaze"].slx-codex-item')!.textContent);
+    expect(unknown.root.querySelector('.slx-codex-item img')).toBeNull();
+    const blaze = unknown.root.querySelector('.slx-portal-blaze')!;
+    const order = [...blaze.querySelectorAll('.slx-codex-pics img')].map((i) => i.getAttribute('data-special'));
+    expect(order).toEqual([...blaze.querySelectorAll('.slx-codex-item')].map((i) => i.getAttribute('data-special')));
+    expect(blaze.querySelector('.slx-portal-gear-head > .slx-portal-label')!.textContent).toBe(T.ui2.gate.gear);
+    // Obtained but its gear art not published: the name alone.
+    const knownNoArt = setup((g) => { g.state.codex.push('blaze-ember-ring'); }, { has: (u) => u === art.gearSilhouette('blaze-ember-ring') });
+    expect(pic(knownNoArt, 'blaze-ember-ring')).toBeNull();
+    expect(setup().root.querySelector('.slx-codex-pics')).toBeNull();          // no art at all: no empty strip
+  });
+});
+
+describe("GateScene: Glen's reroll", () => {
+  const commands = (prep?: (g: Game) => void) => {
+    const game = new Game(constRng(0.5), null);
+    prep?.(game);
+    const root = document.createElement('div');
+    const s = new GateScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    s.onAction('confirm');   // greeting
+    return { game, root, s, labels: () => [...root.querySelectorAll('.slx-cmd [role=option] .slx-label')].map((o) => o.textContent) };
+  };
+
+  it("the reroll command appears only with Glen's perk", () => {
+    expect(commands().labels()).toEqual(['選擇傳送門', '離開']);
+    expect(commands((g) => g.state.story.returned.push('glen')).labels()).toEqual(['選擇傳送門', '重抽傳送門', '離開']);
+  });
+
+  it("rerolling uses the arrival's one reroll, and the command goes away", () => {
+    const { game, s, labels } = commands((g) => g.state.story.returned.push('glen'));
+    s.onAction('down');
+    s.onAction('confirm');
+    expect(game.canReroll()).toBe(false);
+    expect(labels()).toEqual(['選擇傳送門', '離開']);
+  });
+});
+
+describe('GateScene: the leads (6c Task 16)', () => {
+  const mark = (c: HTMLElement) => c.querySelector('.slx-portal-sighting')?.querySelector('.slx-portal-sighting-depth')?.textContent ?? null;
+  const isLead = (c: HTMLElement) => c.classList.contains('slx-portal-lead') && !!c.querySelector('.slx-portal-lead-tag');
+
+  it("a new game marks the main road as the guild's lead, and no region yet: the regions' rumours come after the prologue (I-124)", () => {
+    const { cards } = setup();
+    const [main, blaze, iron] = cards();
+    expect(isLead(main)).toBe(true);
+    expect(main.querySelector('.slx-portal-lead-tag')!.getAttribute('title')).toBe(T.ui2.gate.lead);
+    expect(mark(main)).toBe(T.ui2.gate.leadAt(2));
+    // UI copy, so the card's own numerals (「最深 第 1 層」); only Anna's lead lines use Chinese numerals (6c Task 16 fix round 1)
+    expect([T.ui2.gate.leadAt(2), T.ui2.gate.sighted(3)]).toEqual(['線索・第 2 層', '目擊・第 3 層']);
+    // beside the name, so the card is no taller than before
+    expect(main.querySelector('.slx-portal-head .slx-portal-sighting')).not.toBeNull();
+    // Safira and Scarlet are out there, but the guild has no word from the regions in the prologue (final review M-3)
+    expect([isLead(blaze), mark(blaze)]).toEqual([false, null]);
+    expect([isLead(iron), mark(iron)]).toEqual([false, null]);
+  });
+
+  it('past the prologue each region where someone is still unmet shows its sighting (the same opening as the leads)', () => {
+    const { cards } = setup((g) => { g.state.dungeon.reached.mainline = 2; });
+    const [main, blaze, iron] = cards();
+    expect([isLead(main), mark(main)]).toEqual([true, T.ui2.gate.leadAt(2)]);   // Selene is still the lead
+    expect([isLead(blaze), mark(blaze)]).toEqual([false, T.ui2.gate.sighted(3)]);   // Safira
+    expect([isLead(iron), mark(iron)]).toEqual([false, T.ui2.gate.sighted(8)]);     // Scarlet
+  });
+
+  it('a regional lead marks its own portal; the main road is marked only for a lead of its own', () => {
+    const { cards } = setup((g) => {
+      g.state.party = meet(g.state.party, 'selene', 1);
+      g.state.dungeon.reached.mainline = 2;
+      g.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }, { region: 'frost', condition: 'fog' }, { region: 'blaze', condition: 'calm' }];
+    });
+    const [main, frost, blaze] = cards();
+    expect([isLead(main), mark(main)]).toEqual([false, null]);   // Bobby is unmet there, but the lead is the frost's
+    expect([isLead(frost), mark(frost)]).toEqual([true, T.ui2.gate.leadAt(3)]);
+    expect([isLead(blaze), mark(blaze)]).toEqual([false, T.ui2.gate.sighted(3)]);
+  });
+
+  it('nobody left: no portal is marked', () => {
+    const { cards, root } = setup((g) => { for (const m of MEETINGS) g.state.party = meet(g.state.party, m.id, 1); });
+    expect(cards().map(mark)).toEqual([null, null, null]);
+    expect(root.querySelector('.slx-portal-lead')).toBeNull();
+  });
+
+  it('a lead is a sighting, never a call for help: the companions are lost and remember nothing (user ruling)', () => {
+    expect(T.ui2.rescue.waiting).toBe('這層好像還有別人。');
+    const texts = [T.ui2.rescue.waiting, T.ui2.gate.lead, T.ui2.gate.leadAt(3), T.ui2.gate.sighted(3), ...Object.values(STORY.leads)];
+    for (const t of texts) expect(t).not.toMatch(/求救|求助|呼救|訊號|救命/);
   });
 });

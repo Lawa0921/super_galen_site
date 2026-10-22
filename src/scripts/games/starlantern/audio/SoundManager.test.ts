@@ -81,6 +81,39 @@ describe('SoundManager.loot', () => {
     }
   });
 
+  it('an epic chimes three rising notes, no shimmer', () => {
+    const sm = new SoundManager();
+    sm.loot('epic');
+    expect(oscs).toEqual([660, 990, 1320]);
+    expect(starts.map((t) => Math.round(t * 1000))).toEqual([0, 110, 220]);
+    expect(noises).toBe(0);
+  });
+
+  it('a starlit legend adds a high sparkle and a second shimmer', () => {
+    const sm = new SoundManager();
+    for (const r of ['legendary', 'unique', 'set'] as const) {
+      oscs = []; noises = 0;
+      sm.loot(r, 0, true);
+      expect([...oscs].sort((a, b) => a - b), r).toEqual([523, 784, 1047, 2093]);
+      expect(noises, r).toBe(2);
+    }
+    // Without the flag the legend chime is as before.
+    oscs = []; noises = 0;
+    sm.loot('legendary', 0, false);
+    expect([...oscs].sort((a, b) => a - b)).toEqual([523, 784, 1047]);
+    expect(noises).toBe(1);
+  });
+
+  it('muted, an epic or starlit chime builds nothing either', () => {
+    const sm = new SoundManager();
+    sm.setVolume(0);
+    sm.loot('epic');
+    sm.loot('legendary', 0, true);
+    expect(made).toBe(0);
+    expect(oscs).toEqual([]);
+    expect(noises).toBe(0);
+  });
+
   it('a delay holds the whole chime back, so it follows the chest or vault cue instead of doubling it', () => {
     const sm = new SoundManager();
     sm.loot('rare', 150);

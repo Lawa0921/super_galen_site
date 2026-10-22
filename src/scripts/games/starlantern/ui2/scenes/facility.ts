@@ -1,14 +1,18 @@
+import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
+import { storyStage } from '../../engine/story/events';
+import type { SceneId } from '../../data/story/scenes';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
+import { NPC_FACILITY, playAndRecord, storyCtx } from '../story';
 import { Dialogue, MenuView, backControl, win, type Rich } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate' | 'forge';
-const RETURNING: SceneName[] = ['formation', 'status', 'equip', 'settings'];
+const RETURNING: SceneName[] = ['formation', 'status', 'equip', 'workshop', 'settings'];
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
 /** Shared facility screen: scene art, NPC bust, place sign, gold, command window, dialogue and a stack of sub-windows. */
@@ -24,9 +28,18 @@ export abstract class FacilityScene implements Scene {
   private talk: Dialogue;
   private moodTimer: ReturnType<typeof setTimeout> | null = null;
   private talking = false;
+  /** A line `sayThen` holds for the next box: the dialogue's close brings it up at once, in place of unlocking the menu. */
+  private then: string | Rich | null = null;
+  /** The story scene on screen, if any: it takes the actions while it plays. */
+  private playing: ReturnType<typeof playAndRecord> | null = null;
 
   constructor(protected ctx: SceneCtx, protected id: FacilityId, cps = textCps(ctx)) {
-    this.talk = new Dialogue(cps, () => { this.talking = false; this.syncInert(); });
+    this.talk = new Dialogue(cps, () => {
+      const next = this.then;
+      if (next !== null) { void this.say(next); return; }
+      this.talking = false;
+      this.syncInert();
+    });
   }
 
   protected abstract commands(): MenuItem[];
@@ -50,16 +63,30 @@ export abstract class FacilityScene implements Scene {
     ]));
     this.refresh();
     // Coming back from one of the guild's own screens (or settings) is not a new visit: no greeting.
-    if (!RETURNING.includes(this.ctx.from ?? 'town')) void this.say(f.greet[Math.floor(this.ctx.game.rng() * f.greet.length)]);
+    if (!RETURNING.includes(this.ctx.from ?? 'town')) { const pool = this.greetings(); void this.greet(pool[Math.floor(this.ctx.game.rng() * pool.length)]); }
+  }
+
+  /** Says the greeting drawn for this visit; a facility with news of its own may say that instead (the draw is taken either way). */
+  protected greet(line: string): Promise<void> {
+    return this.say(line);
+  }
+
+  /** What the keeper says today: the lines for the story stage, and the thanks of a townsperson who got her memory back. */
+  private greetings(): string[] {
+    const s = this.ctx.game.state;
+    const thanks = s.story.returned.filter((n) => NPC_FACILITY[n] === this.id).map((n) => STORY.town[n].after);
+    return [...STORY.greet[this.id][storyStage(s)], ...thanks];
   }
 
   exit(): void {
+    this.then = null;
     this.talk.stop();
     if (this.moodTimer) clearTimeout(this.moodTimer);
     this.moodTimer = null;
   }
 
   onAction(a: UiAction): void {
+    if (this.playing) { this.playing.onAction(a); return; }
     if (this.talk.busy()) {
       this.talk.onAction(a);
       if (!this.talk.busy()) { this.talking = false; this.syncInert(); }
@@ -108,10 +135,35 @@ export abstract class FacilityScene implements Scene {
   }
 
   protected say(text: string | Rich, mood: 'normal' | 'happy' = 'normal'): Promise<void> {
+    this.then = null;
+    this.talk.setStyle('plain');
     if (mood === 'happy') this.setMood('happy');
     this.talking = true;
     this.syncInert();
     const done = this.talk.say(T.ui2.facility[this.id].npc, text);
+    // A line that settles while a newer one is up (a held line, or a line said over it) leaves the menu locked.
+    void done.then(() => { if (this.talk.busy()) return; this.talking = false; this.syncInert(); });
+    return done;
+  }
+
+  /** Two boxes from the keeper: `first`, and `second` once the player closes it (a key or a click). */
+  protected sayThen(first: string | Rich, second: string | Rich): Promise<void> {
+    const done = this.say(first);
+    this.then = second;
+    return done;
+  }
+
+  /**
+   * A line that is nobody's here (a stranger's memory surfacing from an absorbed shard): the remembered box, with no nameplate
+   * and no face, and the keeper's face back to neutral so it does not read as hers (6c Task 13).
+   */
+  protected narrate(text: string | Rich): Promise<void> {
+    this.then = null;
+    this.setMood('normal');
+    this.talk.setStyle('memory');
+    this.talking = true;
+    this.syncInert();
+    const done = this.talk.say('', text);
     void done.then(() => { this.talking = false; this.syncInert(); });
     return done;
   }
@@ -128,6 +180,18 @@ export abstract class FacilityScene implements Scene {
     this.layers.forEach((l, i) => lock(l.el, this.talking || i < this.layers.length - 1));
     this.cmdWin.classList.toggle('slx-under', this.layers.length > 0);
     this.layers.forEach((l, i) => l.el.classList.toggle('slx-under', i < this.layers.length - 1));
+  }
+
+  /** Plays story scene `id` in this facility's dialogue box and records it; resolves when it ends or the player skips it. */
+  protected play(id: SceneId): Promise<void> {
+    this.then = null;
+    const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
+    this.playing = p;
+    this.talking = true;
+    this.cmdWin.classList.add('slx-cmd-hidden');
+    this.syncInert();
+    // A scene that throws is reported and treated as over, so the caller carries on (the guild still pays the reward line).
+    return p.done.catch((e) => { console.error('starlantern: facility scene failed', e); }).finally(() => { this.playing = null; this.talking = false; this.cmdWin.classList.remove('slx-cmd-hidden'); this.syncInert(); });
   }
 
   protected fail(reason: string): void {

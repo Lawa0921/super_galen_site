@@ -1,0 +1,3008 @@
+{
+  "SKILLS": {
+    "fire-star": {
+      "id": "fire-star",
+      "name": "火之星彈",
+      "owner": "noel",
+      "tp": 4,
+      "target": "enemy",
+      "desc": "火屬性魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 140,
+          "element": "fire",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "ice-star": {
+      "id": "ice-star",
+      "name": "冰之星彈",
+      "owner": "noel",
+      "tp": 4,
+      "target": "enemy",
+      "desc": "冰屬性魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 140,
+          "element": "ice",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "hex": {
+      "id": "hex",
+      "name": "衰弱咒",
+      "owner": "noel",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "降低攻擊並可能中毒",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "atk",
+          "pct": -25,
+          "turns": 3
+        },
+        {
+          "kind": "inflict",
+          "status": "poison",
+          "chance": 0.5
+        }
+      ]
+    },
+    "thunder-star": {
+      "id": "thunder-star",
+      "name": "雷之星彈",
+      "owner": "noel",
+      "tp": 4,
+      "target": "enemy",
+      "desc": "雷屬性魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 140,
+          "element": "thunder",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "sweep": {
+      "id": "sweep",
+      "name": "橫掃",
+      "owner": "chizuru",
+      "tp": 5,
+      "target": "enemies",
+      "desc": "攻擊全體敵人",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 80,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "ward": {
+      "id": "ward",
+      "name": "結界",
+      "owner": "chizuru",
+      "tp": 6,
+      "target": "allies",
+      "desc": "我方全體防禦提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 30,
+          "turns": 3
+        }
+      ]
+    },
+    "pierce": {
+      "id": "pierce",
+      "name": "貫槍",
+      "owner": "chizuru",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "單體強力突刺",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 170,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "twin-slash": {
+      "id": "twin-slash",
+      "name": "雙刃",
+      "owner": "liz",
+      "tp": 4,
+      "target": "enemy",
+      "desc": "連砍 2 次",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 60,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "hits": 2
+        }
+      ]
+    },
+    "stealth": {
+      "id": "stealth",
+      "name": "潛行",
+      "owner": "liz",
+      "tp": 0,
+      "target": "self",
+      "desc": "被動：遇敵率減半",
+      "effects": [],
+      "passive": "encounterDown"
+    },
+    "treasure-sense": {
+      "id": "treasure-sense",
+      "name": "尋寶直覺",
+      "owner": "liz",
+      "tp": 0,
+      "target": "self",
+      "desc": "被動：素材掉落率加倍",
+      "effects": [],
+      "passive": "dropBoost"
+    },
+    "triple-slash": {
+      "id": "triple-slash",
+      "name": "三連刃",
+      "owner": "liz",
+      "tp": 7,
+      "target": "enemy",
+      "desc": "連砍 3 次",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 55,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "hits": 3
+        }
+      ]
+    },
+    "aimed-shot": {
+      "id": "aimed-shot",
+      "name": "瞄準射擊",
+      "owner": "sylvie",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "單體高傷害射擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 170,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false
+        }
+      ]
+    },
+    "pin-shot": {
+      "id": "pin-shot",
+      "name": "釘足箭",
+      "owner": "sylvie",
+      "tp": 4,
+      "target": "enemy",
+      "desc": "射擊並降低速度",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 90,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false
+        },
+        {
+          "kind": "buff",
+          "stat": "spd",
+          "pct": -30,
+          "turns": 3
+        }
+      ]
+    },
+    "arrow-rain": {
+      "id": "arrow-rain",
+      "name": "箭雨",
+      "owner": "sylvie",
+      "tp": 7,
+      "target": "enemies",
+      "desc": "射擊全體敵人",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 75,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false
+        }
+      ]
+    },
+    "provoke": {
+      "id": "provoke",
+      "name": "挑釁",
+      "owner": "scarlet",
+      "tp": 3,
+      "target": "self",
+      "desc": "3 回合內吸引敵人單體攻擊",
+      "effects": [
+        {
+          "kind": "taunt",
+          "turns": 3
+        }
+      ]
+    },
+    "flame-burst": {
+      "id": "flame-burst",
+      "name": "爆炎斬",
+      "owner": "scarlet",
+      "tp": 3,
+      "hpCost": 0.15,
+      "target": "enemy",
+      "desc": "消耗 15% HP 的火屬性重擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 220,
+          "element": "fire",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "iron-wall": {
+      "id": "iron-wall",
+      "name": "鐵壁",
+      "owner": "scarlet",
+      "tp": 4,
+      "target": "self",
+      "desc": "自身防禦大幅提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 40,
+          "turns": 3
+        }
+      ]
+    },
+    "moonlight": {
+      "id": "moonlight",
+      "name": "月光",
+      "owner": "selene",
+      "tp": 5,
+      "target": "ally",
+      "field": true,
+      "desc": "回復一名隊友 HP",
+      "effects": [
+        {
+          "kind": "heal",
+          "power": 120
+        }
+      ]
+    },
+    "cleanse": {
+      "id": "cleanse",
+      "name": "淨化",
+      "owner": "selene",
+      "tp": 3,
+      "target": "ally",
+      "desc": "解除毒與睡眠",
+      "effects": [
+        {
+          "kind": "cure"
+        }
+      ]
+    },
+    "dream": {
+      "id": "dream",
+      "name": "夢境",
+      "owner": "selene",
+      "tp": 6,
+      "target": "enemies",
+      "desc": "可能使全體敵人睡眠",
+      "effects": [
+        {
+          "kind": "inflict",
+          "status": "sleep",
+          "chance": 0.6
+        }
+      ]
+    },
+    "rebirth": {
+      "id": "rebirth",
+      "name": "月之再生",
+      "owner": "selene",
+      "tp": 10,
+      "target": "deadAlly",
+      "field": true,
+      "desc": "復活倒下的隊友",
+      "effects": [
+        {
+          "kind": "revive",
+          "hpPct": 0.3
+        }
+      ]
+    },
+    "blade-dance": {
+      "id": "blade-dance",
+      "name": "刃舞",
+      "owner": "safira",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "連砍 3 次",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 50,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "hits": 3
+        }
+      ]
+    },
+    "war-dance": {
+      "id": "war-dance",
+      "name": "戰舞",
+      "owner": "safira",
+      "tp": 7,
+      "target": "allies",
+      "desc": "我方全體攻擊提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "atk",
+          "pct": 25,
+          "turns": 3
+        }
+      ]
+    },
+    "mirage": {
+      "id": "mirage",
+      "name": "幻步",
+      "owner": "safira",
+      "tp": 5,
+      "target": "allies",
+      "desc": "我方全體速度提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "spd",
+          "pct": 30,
+          "turns": 3
+        }
+      ]
+    },
+    "turret": {
+      "id": "turret",
+      "name": "設置砲台",
+      "owner": "bobby",
+      "tp": 8,
+      "target": "self",
+      "desc": "3 回合內每回合結束時砲擊一名敵人",
+      "effects": [
+        {
+          "kind": "turret",
+          "power": 70,
+          "turns": 3
+        }
+      ]
+    },
+    "tinker": {
+      "id": "tinker",
+      "name": "改造",
+      "owner": "bobby",
+      "tp": 0,
+      "target": "self",
+      "desc": "被動：戰鬥中道具效果加倍",
+      "effects": [],
+      "passive": "itemBoost"
+    },
+    "barrier": {
+      "id": "barrier",
+      "name": "護盾裝置",
+      "owner": "bobby",
+      "tp": 6,
+      "target": "allies",
+      "desc": "我方全體防禦提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 25,
+          "turns": 3
+        }
+      ]
+    },
+    "flame-wave": {
+      "id": "flame-wave",
+      "name": "炎之波",
+      "owner": "noel",
+      "tp": 7,
+      "target": "enemies",
+      "desc": "火屬性全體魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 70,
+          "element": "fire",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "inferno": {
+      "id": "inferno",
+      "name": "業火",
+      "owner": "noel",
+      "tp": 14,
+      "target": "enemies",
+      "desc": "火屬性全體強力魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 130,
+          "element": "fire",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "frost-bind": {
+      "id": "frost-bind",
+      "name": "冰縛",
+      "owner": "noel",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "冰屬性魔法攻擊並降低速度",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 90,
+          "element": "ice",
+          "scale": "mag",
+          "melee": false
+        },
+        {
+          "kind": "buff",
+          "stat": "spd",
+          "pct": -30,
+          "turns": 3
+        }
+      ]
+    },
+    "blizzard": {
+      "id": "blizzard",
+      "name": "暴風雪",
+      "owner": "noel",
+      "tp": 13,
+      "target": "enemies",
+      "desc": "冰屬性全體魔法攻擊並降低速度",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 110,
+          "element": "ice",
+          "scale": "mag",
+          "melee": false
+        },
+        {
+          "kind": "buff",
+          "stat": "spd",
+          "pct": -20,
+          "turns": 3
+        }
+      ]
+    },
+    "judgement": {
+      "id": "judgement",
+      "name": "天雷",
+      "owner": "noel",
+      "tp": 12,
+      "target": "enemy",
+      "desc": "雷屬性單體極大魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 260,
+          "element": "thunder",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "spiral-spear": {
+      "id": "spiral-spear",
+      "name": "旋槍",
+      "owner": "chizuru",
+      "tp": 8,
+      "target": "enemies",
+      "desc": "旋轉長槍攻擊全體敵人",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 100,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "thousand-spear": {
+      "id": "thousand-spear",
+      "name": "千本槍",
+      "owner": "chizuru",
+      "tp": 14,
+      "target": "enemies",
+      "desc": "連刺 2 次攻擊全體敵人",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 75,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "hits": 2
+        }
+      ]
+    },
+    "sacred-sake": {
+      "id": "sacred-sake",
+      "name": "御神酒",
+      "owner": "chizuru",
+      "tp": 8,
+      "target": "allies",
+      "field": true,
+      "desc": "回復我方全體 HP",
+      "effects": [
+        {
+          "kind": "heal",
+          "power": 50
+        }
+      ]
+    },
+    "great-barrier": {
+      "id": "great-barrier",
+      "name": "大結界",
+      "owner": "chizuru",
+      "tp": 12,
+      "target": "allies",
+      "desc": "我方全體防禦與魔防提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 40,
+          "turns": 4
+        },
+        {
+          "kind": "buff",
+          "stat": "res",
+          "pct": 40,
+          "turns": 4
+        }
+      ]
+    },
+    "thunder-thrust": {
+      "id": "thunder-thrust",
+      "name": "雷神突",
+      "owner": "chizuru",
+      "tp": 6,
+      "target": "enemy",
+      "desc": "雷屬性單體突刺",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 150,
+          "element": "thunder",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "heaven-spear": {
+      "id": "heaven-spear",
+      "name": "天之逆鉾",
+      "owner": "chizuru",
+      "tp": 13,
+      "target": "enemy",
+      "desc": "單體極大突刺",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 330,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "shadow-flurry": {
+      "id": "shadow-flurry",
+      "name": "影刃亂舞",
+      "owner": "liz",
+      "tp": 14,
+      "target": "enemy",
+      "desc": "連砍 6 次",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 45,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "hits": 6
+        }
+      ]
+    },
+    "smoke-bomb": {
+      "id": "smoke-bomb",
+      "name": "煙霧彈",
+      "owner": "liz",
+      "tp": 6,
+      "target": "enemies",
+      "desc": "降低全體敵人攻擊",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "atk",
+          "pct": -20,
+          "turns": 3
+        }
+      ]
+    },
+    "fortune-strike": {
+      "id": "fortune-strike",
+      "name": "幸運一擊",
+      "owner": "liz",
+      "tp": 10,
+      "target": "enemy",
+      "desc": "單體強力一擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 260,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "quickstep": {
+      "id": "quickstep",
+      "name": "疾步",
+      "owner": "liz",
+      "tp": 3,
+      "target": "self",
+      "desc": "自身速度提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "spd",
+          "pct": 30,
+          "turns": 3
+        }
+      ]
+    },
+    "venom-edge": {
+      "id": "venom-edge",
+      "name": "毒刃",
+      "owner": "liz",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "斬擊並可能中毒",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 90,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        },
+        {
+          "kind": "inflict",
+          "status": "poison",
+          "chance": 0.5
+        }
+      ]
+    },
+    "phantom-step": {
+      "id": "phantom-step",
+      "name": "幻影步",
+      "owner": "liz",
+      "tp": 10,
+      "target": "self",
+      "desc": "自身速度與攻擊大幅提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "spd",
+          "pct": 60,
+          "turns": 4
+        },
+        {
+          "kind": "buff",
+          "stat": "atk",
+          "pct": 30,
+          "turns": 4
+        }
+      ]
+    },
+    "heart-shot": {
+      "id": "heart-shot",
+      "name": "穿心箭",
+      "owner": "sylvie",
+      "tp": 8,
+      "target": "enemy",
+      "desc": "單體強力射擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 210,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false
+        }
+      ]
+    },
+    "starfall-arrow": {
+      "id": "starfall-arrow",
+      "name": "星墜一矢",
+      "owner": "sylvie",
+      "tp": 13,
+      "target": "enemy",
+      "desc": "單體極大射擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 340,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false
+        }
+      ]
+    },
+    "snare-shot": {
+      "id": "snare-shot",
+      "name": "絆索箭",
+      "owner": "sylvie",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "射擊並降低攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 80,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false
+        },
+        {
+          "kind": "buff",
+          "stat": "atk",
+          "pct": -25,
+          "turns": 3
+        }
+      ]
+    },
+    "hunters-mark": {
+      "id": "hunters-mark",
+      "name": "獵人標記",
+      "owner": "sylvie",
+      "tp": 10,
+      "target": "enemy",
+      "desc": "射擊並大幅降低防禦",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 100,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false
+        },
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": -40,
+          "turns": 4
+        }
+      ]
+    },
+    "fire-arrow": {
+      "id": "fire-arrow",
+      "name": "火矢雨",
+      "owner": "sylvie",
+      "tp": 7,
+      "target": "enemies",
+      "desc": "火屬性全體射擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 70,
+          "element": "fire",
+          "scale": "atk",
+          "melee": false
+        }
+      ]
+    },
+    "storm-volley": {
+      "id": "storm-volley",
+      "name": "雷霆箭雨",
+      "owner": "sylvie",
+      "tp": 15,
+      "target": "enemies",
+      "desc": "雷屬性全體連射 2 次",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 85,
+          "element": "thunder",
+          "scale": "atk",
+          "melee": false,
+          "hits": 2
+        }
+      ]
+    },
+    "guardian-roar": {
+      "id": "guardian-roar",
+      "name": "守護咆哮",
+      "owner": "scarlet",
+      "tp": 6,
+      "target": "allies",
+      "desc": "我方全體防禦提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 20,
+          "turns": 3
+        }
+      ]
+    },
+    "unbreakable": {
+      "id": "unbreakable",
+      "name": "不屈",
+      "owner": "scarlet",
+      "tp": 10,
+      "target": "self",
+      "desc": "4 回合內吸引敵人單體攻擊，並大幅提升自身防禦",
+      "effects": [
+        {
+          "kind": "taunt",
+          "turns": 4
+        },
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 60,
+          "turns": 4
+        }
+      ]
+    },
+    "blaze-ring": {
+      "id": "blaze-ring",
+      "name": "炎環斬",
+      "owner": "scarlet",
+      "tp": 5,
+      "hpCost": 0.1,
+      "target": "enemies",
+      "desc": "消耗 HP 的火屬性全體斬擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 85,
+          "element": "fire",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "crimson-end": {
+      "id": "crimson-end",
+      "name": "紅蓮終焉",
+      "owner": "scarlet",
+      "tp": 8,
+      "hpCost": 0.3,
+      "target": "enemy",
+      "desc": "消耗 30% HP 的火屬性極大一擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 380,
+          "element": "fire",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "shield-bash": {
+      "id": "shield-bash",
+      "name": "盾擊",
+      "owner": "scarlet",
+      "tp": 4,
+      "target": "enemy",
+      "desc": "重擊並降低攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 120,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        },
+        {
+          "kind": "buff",
+          "stat": "atk",
+          "pct": -20,
+          "turns": 3
+        }
+      ]
+    },
+    "fortress": {
+      "id": "fortress",
+      "name": "要塞",
+      "owner": "scarlet",
+      "tp": 12,
+      "target": "allies",
+      "desc": "我方全體防禦與魔防提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 45,
+          "turns": 4
+        },
+        {
+          "kind": "buff",
+          "stat": "res",
+          "pct": 30,
+          "turns": 4
+        }
+      ]
+    },
+    "moon-rain": {
+      "id": "moon-rain",
+      "name": "月光雨",
+      "owner": "selene",
+      "tp": 9,
+      "target": "allies",
+      "field": true,
+      "desc": "回復我方全體 HP",
+      "effects": [
+        {
+          "kind": "heal",
+          "power": 60
+        }
+      ]
+    },
+    "full-moon": {
+      "id": "full-moon",
+      "name": "滿月之癒",
+      "owner": "selene",
+      "tp": 18,
+      "target": "allies",
+      "field": true,
+      "desc": "大幅回復我方全體 HP 並解除毒與睡眠",
+      "effects": [
+        {
+          "kind": "heal",
+          "power": 120
+        },
+        {
+          "kind": "cure"
+        }
+      ]
+    },
+    "blessing": {
+      "id": "blessing",
+      "name": "祝福",
+      "owner": "selene",
+      "tp": 7,
+      "target": "allies",
+      "desc": "我方全體魔防與防禦提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "res",
+          "pct": 30,
+          "turns": 3
+        },
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 15,
+          "turns": 3
+        }
+      ]
+    },
+    "sanctuary": {
+      "id": "sanctuary",
+      "name": "聖域",
+      "owner": "selene",
+      "tp": 14,
+      "target": "allies",
+      "desc": "我方全體防禦與魔防大幅提升，並解除毒與睡眠",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 35,
+          "turns": 4
+        },
+        {
+          "kind": "buff",
+          "stat": "res",
+          "pct": 35,
+          "turns": 4
+        },
+        {
+          "kind": "cure"
+        }
+      ]
+    },
+    "moon-arrow": {
+      "id": "moon-arrow",
+      "name": "月影箭",
+      "owner": "selene",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "冰屬性魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 130,
+          "element": "ice",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "lunar-eclipse": {
+      "id": "lunar-eclipse",
+      "name": "月蝕",
+      "owner": "selene",
+      "tp": 15,
+      "target": "enemies",
+      "desc": "冰屬性全體魔法攻擊，可能使其睡眠",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 120,
+          "element": "ice",
+          "scale": "mag",
+          "melee": false
+        },
+        {
+          "kind": "inflict",
+          "status": "sleep",
+          "chance": 0.4
+        }
+      ]
+    },
+    "sand-cyclone": {
+      "id": "sand-cyclone",
+      "name": "沙暴旋舞",
+      "owner": "safira",
+      "tp": 9,
+      "target": "enemies",
+      "desc": "連砍 2 次攻擊全體敵人",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 55,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "hits": 2
+        }
+      ]
+    },
+    "thousand-shadows": {
+      "id": "thousand-shadows",
+      "name": "千影刃",
+      "owner": "safira",
+      "tp": 14,
+      "target": "enemy",
+      "desc": "連砍 7 次",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 45,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "hits": 7
+        }
+      ]
+    },
+    "veil-dance": {
+      "id": "veil-dance",
+      "name": "紗之舞",
+      "owner": "safira",
+      "tp": 6,
+      "target": "allies",
+      "desc": "我方全體防禦提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 20,
+          "turns": 3
+        }
+      ]
+    },
+    "desert-festival": {
+      "id": "desert-festival",
+      "name": "沙漠祭典",
+      "owner": "safira",
+      "tp": 16,
+      "target": "allies",
+      "desc": "我方全體攻擊與速度大幅提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "atk",
+          "pct": 35,
+          "turns": 4
+        },
+        {
+          "kind": "buff",
+          "stat": "spd",
+          "pct": 35,
+          "turns": 4
+        }
+      ]
+    },
+    "shadow-step": {
+      "id": "shadow-step",
+      "name": "影步斬",
+      "owner": "safira",
+      "tp": 6,
+      "target": "enemy",
+      "desc": "單體強力斬擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 160,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "sirocco": {
+      "id": "sirocco",
+      "name": "熱風",
+      "owner": "safira",
+      "tp": 13,
+      "target": "enemies",
+      "desc": "火屬性全體攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 100,
+          "element": "fire",
+          "scale": "atk",
+          "melee": false
+        }
+      ]
+    },
+    "cannon": {
+      "id": "cannon",
+      "name": "加農砲",
+      "owner": "bobby",
+      "tp": 7,
+      "target": "enemy",
+      "desc": "單體強力砲擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 170,
+          "element": "phys",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "repair-kit": {
+      "id": "repair-kit",
+      "name": "修理包",
+      "owner": "bobby",
+      "tp": 5,
+      "target": "ally",
+      "field": true,
+      "desc": "回復一名隊友 HP",
+      "effects": [
+        {
+          "kind": "heal",
+          "power": 90
+        }
+      ]
+    },
+    "overclock": {
+      "id": "overclock",
+      "name": "超頻",
+      "owner": "bobby",
+      "tp": 7,
+      "target": "allies",
+      "desc": "我方全體速度提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "spd",
+          "pct": 25,
+          "turns": 3
+        }
+      ]
+    },
+    "emergency-repair": {
+      "id": "emergency-repair",
+      "name": "緊急維修",
+      "owner": "bobby",
+      "tp": 15,
+      "target": "allies",
+      "field": true,
+      "desc": "回復我方全體 HP 並解除毒與睡眠",
+      "effects": [
+        {
+          "kind": "heal",
+          "power": 80
+        },
+        {
+          "kind": "cure"
+        }
+      ]
+    },
+    "shock-mine": {
+      "id": "shock-mine",
+      "name": "電擊地雷",
+      "owner": "bobby",
+      "tp": 7,
+      "target": "enemies",
+      "desc": "雷屬性全體魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 70,
+          "element": "thunder",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "tesla-coil": {
+      "id": "tesla-coil",
+      "name": "特斯拉線圈",
+      "owner": "bobby",
+      "tp": 15,
+      "target": "enemies",
+      "desc": "雷屬性全體強力魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 110,
+          "element": "thunder",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "rin-needle": {
+      "id": "rin-needle",
+      "name": "飛針",
+      "owner": "rin",
+      "tp": 3,
+      "target": "enemy",
+      "desc": "連射 2 枚飛針",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 65,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false,
+          "hits": 2
+        }
+      ]
+    },
+    "rin-fan": {
+      "id": "rin-fan",
+      "name": "扇形針",
+      "owner": "rin",
+      "tp": 6,
+      "target": "enemies",
+      "desc": "飛針呈扇形射向全體敵人",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 60,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false
+        }
+      ]
+    },
+    "rin-venom-needle": {
+      "id": "rin-venom-needle",
+      "name": "毒針",
+      "owner": "rin",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "飛針攻擊並可能中毒",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 70,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false
+        },
+        {
+          "kind": "inflict",
+          "status": "poison",
+          "chance": 0.5
+        }
+      ]
+    },
+    "rin-storm": {
+      "id": "rin-storm",
+      "name": "千針",
+      "owner": "rin",
+      "tp": 13,
+      "target": "enemies",
+      "desc": "漫天飛針連射 2 次攻擊全體敵人",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 60,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false,
+          "hits": 2
+        }
+      ]
+    },
+    "rin-backstab": {
+      "id": "rin-backstab",
+      "name": "背刺",
+      "owner": "rin",
+      "tp": 4,
+      "target": "enemy",
+      "desc": "近身一刺，對受傷的敵人傷害更高",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 120,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "wounded": 50
+        }
+      ]
+    },
+    "rin-veil": {
+      "id": "rin-veil",
+      "name": "隱匿",
+      "owner": "rin",
+      "tp": 4,
+      "target": "self",
+      "desc": "自身速度提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "spd",
+          "pct": 30,
+          "turns": 3
+        }
+      ]
+    },
+    "rin-shadowless": {
+      "id": "rin-shadowless",
+      "name": "無影",
+      "owner": "rin",
+      "tp": 12,
+      "target": "enemy",
+      "desc": "無影的一刺，對受傷的敵人傷害大增",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 200,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "wounded": 80
+        }
+      ]
+    },
+    "rin-mark": {
+      "id": "rin-mark",
+      "name": "標記",
+      "owner": "rin",
+      "tp": 4,
+      "target": "enemy",
+      "desc": "降低敵人防禦",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": -25,
+          "turns": 3
+        }
+      ]
+    },
+    "rin-execute": {
+      "id": "rin-execute",
+      "name": "處決",
+      "owner": "rin",
+      "tp": 8,
+      "target": "enemy",
+      "desc": "必定暴擊；對殘血的敵人傷害大增",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 110,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "execute": 150,
+          "crit": "always"
+        }
+      ]
+    },
+    "rin-deathblow": {
+      "id": "rin-deathblow",
+      "name": "斷命",
+      "owner": "rin",
+      "tp": 14,
+      "target": "enemy",
+      "desc": "必定暴擊；對殘血的敵人傷害極大",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 160,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "execute": 200,
+          "crit": "always"
+        }
+      ]
+    },
+    "hero-slash": {
+      "id": "hero-slash",
+      "name": "斬擊",
+      "owner": "hero",
+      "tp": 3,
+      "target": "enemy",
+      "desc": "單體近戰斬擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 120,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "hero-cleave": {
+      "id": "hero-cleave",
+      "name": "迴旋斬",
+      "owner": "hero",
+      "tp": 6,
+      "target": "enemies",
+      "desc": "迴旋斬擊全體敵人",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 70,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "hero-sunder": {
+      "id": "hero-sunder",
+      "name": "破甲斬",
+      "owner": "hero",
+      "tp": 7,
+      "target": "enemy",
+      "desc": "斬擊並降低防禦",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 120,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        },
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": -15,
+          "turns": 3
+        }
+      ]
+    },
+    "abyss-sword": {
+      "id": "abyss-sword",
+      "abyss": true,
+      "name": "深淵・劍",
+      "owner": "hero",
+      "tp": 14,
+      "target": "enemy",
+      "desc": "借深淵之力的單體極大斬擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 250,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    "hero-guard": {
+      "id": "hero-guard",
+      "name": "守勢",
+      "owner": "hero",
+      "tp": 4,
+      "target": "self",
+      "desc": "3 回合內吸引敵人單體攻擊，並提升自身防禦",
+      "effects": [
+        {
+          "kind": "taunt",
+          "turns": 3
+        },
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 25,
+          "turns": 3
+        }
+      ]
+    },
+    "hero-aegis": {
+      "id": "hero-aegis",
+      "name": "庇護",
+      "owner": "hero",
+      "tp": 7,
+      "target": "allies",
+      "desc": "我方全體防禦提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 18,
+          "turns": 3
+        }
+      ]
+    },
+    "hero-rally": {
+      "id": "hero-rally",
+      "name": "鼓舞",
+      "owner": "hero",
+      "tp": 6,
+      "target": "allies",
+      "desc": "我方全體魔防提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "res",
+          "pct": 18,
+          "turns": 3
+        }
+      ]
+    },
+    "abyss-guard": {
+      "id": "abyss-guard",
+      "abyss": true,
+      "name": "深淵・守",
+      "owner": "hero",
+      "tp": 12,
+      "target": "allies",
+      "desc": "我方全體防禦與魔防提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 25,
+          "turns": 4
+        },
+        {
+          "kind": "buff",
+          "stat": "res",
+          "pct": 25,
+          "turns": 4
+        }
+      ]
+    },
+    "hero-flare": {
+      "id": "hero-flare",
+      "name": "星火",
+      "owner": "hero",
+      "tp": 4,
+      "target": "enemy",
+      "desc": "火屬性魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 110,
+          "element": "fire",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "hero-frost": {
+      "id": "hero-frost",
+      "name": "星霜",
+      "owner": "hero",
+      "tp": 7,
+      "target": "enemies",
+      "desc": "冰屬性全體魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 55,
+          "element": "ice",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "hero-spark": {
+      "id": "hero-spark",
+      "name": "星雷",
+      "owner": "hero",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "雷屬性魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 110,
+          "element": "thunder",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "abyss-star": {
+      "id": "abyss-star",
+      "abyss": true,
+      "name": "深淵・星",
+      "owner": "hero",
+      "tp": 14,
+      "target": "enemies",
+      "desc": "雷屬性全體強力魔法攻擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 95,
+          "element": "thunder",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "hero-mend": {
+      "id": "hero-mend",
+      "name": "治癒",
+      "owner": "hero",
+      "tp": 5,
+      "target": "ally",
+      "field": true,
+      "desc": "回復一名隊友 HP",
+      "effects": [
+        {
+          "kind": "heal",
+          "power": 90
+        }
+      ]
+    },
+    "hero-prayer": {
+      "id": "hero-prayer",
+      "name": "祈禱",
+      "owner": "hero",
+      "tp": 9,
+      "target": "allies",
+      "field": true,
+      "desc": "回復我方全體 HP",
+      "effects": [
+        {
+          "kind": "heal",
+          "power": 50
+        }
+      ]
+    },
+    "hero-purify": {
+      "id": "hero-purify",
+      "name": "淨光",
+      "owner": "hero",
+      "tp": 3,
+      "target": "ally",
+      "desc": "解除毒與睡眠",
+      "effects": [
+        {
+          "kind": "cure"
+        }
+      ]
+    },
+    "abyss-light": {
+      "id": "abyss-light",
+      "abyss": true,
+      "name": "深淵・光",
+      "owner": "hero",
+      "tp": 16,
+      "target": "allies",
+      "field": true,
+      "desc": "回復我方全體 HP 並解除毒與睡眠",
+      "effects": [
+        {
+          "kind": "heal",
+          "power": 85
+        },
+        {
+          "kind": "cure"
+        }
+      ]
+    },
+    "hero-shackle": {
+      "id": "hero-shackle",
+      "name": "枷鎖",
+      "owner": "hero",
+      "tp": 4,
+      "target": "enemy",
+      "desc": "降低敵人攻擊",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "atk",
+          "pct": -20,
+          "turns": 3
+        }
+      ]
+    },
+    "hero-slow": {
+      "id": "hero-slow",
+      "name": "遲緩",
+      "owner": "hero",
+      "tp": 6,
+      "target": "enemies",
+      "desc": "降低全體敵人速度",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "spd",
+          "pct": -15,
+          "turns": 3
+        }
+      ]
+    },
+    "hero-expose": {
+      "id": "hero-expose",
+      "name": "破綻",
+      "owner": "hero",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "降低敵人防禦",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": -20,
+          "turns": 3
+        }
+      ]
+    },
+    "hero-sleep": {
+      "id": "hero-sleep",
+      "name": "沉眠",
+      "owner": "hero",
+      "tp": 5,
+      "target": "enemy",
+      "desc": "可能使敵人睡眠",
+      "effects": [
+        {
+          "kind": "inflict",
+          "status": "sleep",
+          "chance": 0.5
+        }
+      ]
+    },
+    "abyss-chain": {
+      "id": "abyss-chain",
+      "abyss": true,
+      "name": "深淵・鎖",
+      "owner": "hero",
+      "tp": 13,
+      "target": "enemies",
+      "desc": "降低全體敵人攻擊與防禦",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "atk",
+          "pct": -20,
+          "turns": 4
+        },
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": -20,
+          "turns": 4
+        }
+      ]
+    }
+  },
+  "ULTIMATES": {
+    "noel": {
+      "id": "ult-noel",
+      "owner": "noel",
+      "name": "流星燈火",
+      "target": "enemies",
+      "desc": "降下燃燒的星燈，火屬性全體大傷害",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 230,
+          "element": "fire",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    "chizuru": {
+      "id": "ult-chizuru",
+      "owner": "chizuru",
+      "name": "千鳥神樂",
+      "target": "enemies",
+      "desc": "舞槍橫掃戰場，物理全體大傷害",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 190,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false
+        }
+      ]
+    },
+    "liz": {
+      "id": "ult-liz",
+      "owner": "liz",
+      "name": "寶光亂舞",
+      "target": "enemy",
+      "desc": "雙刃連斬 5 段",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 85,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "hits": 5
+        }
+      ]
+    },
+    "sylvie": {
+      "id": "ult-sylvie",
+      "owner": "sylvie",
+      "name": "星穿一矢",
+      "target": "enemy",
+      "desc": "貫穿星光的一箭，單體超高傷害",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 420,
+          "element": "phys",
+          "scale": "atk",
+          "melee": false
+        }
+      ]
+    },
+    "scarlet": {
+      "id": "ult-scarlet",
+      "owner": "scarlet",
+      "name": "紅蓮劫火",
+      "target": "enemies",
+      "desc": "燃起紅蓮，火屬性全體大傷害",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 220,
+          "element": "fire",
+          "scale": "atk",
+          "melee": false
+        }
+      ]
+    },
+    "selene": {
+      "id": "ult-selene",
+      "owner": "selene",
+      "name": "滿月之祈",
+      "target": "allies",
+      "desc": "全隊大幅回復並解毒",
+      "effects": [
+        {
+          "kind": "heal",
+          "power": 220
+        },
+        {
+          "kind": "cure"
+        }
+      ]
+    },
+    "safira": {
+      "id": "ult-safira",
+      "owner": "safira",
+      "name": "沙漠蜃樓",
+      "target": "allies",
+      "desc": "全隊攻擊與速度大幅提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "atk",
+          "pct": 40,
+          "turns": 4
+        },
+        {
+          "kind": "buff",
+          "stat": "spd",
+          "pct": 40,
+          "turns": 4
+        }
+      ]
+    },
+    "bobby": {
+      "id": "ult-bobby",
+      "owner": "bobby",
+      "name": "全彈發射",
+      "target": "enemies",
+      "desc": "所有砲管齊射，全體 2 段",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 110,
+          "element": "phys",
+          "scale": "mag",
+          "melee": false,
+          "hits": 2
+        }
+      ]
+    },
+    "rin": {
+      "id": "ult-rin",
+      "owner": "rin",
+      "name": "無聲一刺",
+      "target": "enemy",
+      "desc": "無聲的一刺，必定暴擊",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 300,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true,
+          "crit": "always"
+        }
+      ]
+    },
+    "hero": {
+      "id": "ult-hero-sword",
+      "owner": "hero",
+      "name": "燈鑰・斬",
+      "target": "enemy",
+      "desc": "劍上的紋路亮起，斬向一名敵人，物理單體大傷害",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 340,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    }
+  },
+  "RIN_DAWN": {
+    "id": "ult-rin-dawn",
+    "owner": "rin",
+    "name": "破鐘・黎明之刃",
+    "target": "enemy",
+    "desc": "必定暴擊的一刺；擊倒目標時返還一半量表，這場戰鬥中洛恩受到的傷害降低",
+    "effects": [
+      {
+        "kind": "damage",
+        "power": 320,
+        "element": "phys",
+        "scale": "atk",
+        "melee": true,
+        "crit": "always"
+      }
+    ],
+    "refundOnKill": 50,
+    "follow": {
+      "who": "hero",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 30,
+          "turns": 99
+        }
+      ]
+    }
+  },
+  "HERO_ULTIMATES": [
+    {
+      "id": "ult-hero-sword",
+      "owner": "hero",
+      "name": "燈鑰・斬",
+      "target": "enemy",
+      "desc": "劍上的紋路亮起，斬向一名敵人，物理單體大傷害",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 340,
+          "element": "phys",
+          "scale": "atk",
+          "melee": true
+        }
+      ]
+    },
+    {
+      "id": "ult-hero-guard",
+      "owner": "hero",
+      "name": "燈鑰・守",
+      "target": "allies",
+      "desc": "劍上紋路的光護住全隊，防禦與魔防提升",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": 30,
+          "turns": 4
+        },
+        {
+          "kind": "buff",
+          "stat": "res",
+          "pct": 30,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "id": "ult-hero-star",
+      "owner": "hero",
+      "name": "燈鑰・星",
+      "target": "enemies",
+      "desc": "劍上的紋路引下星雷，雷屬性全體傷害",
+      "effects": [
+        {
+          "kind": "damage",
+          "power": 190,
+          "element": "thunder",
+          "scale": "mag",
+          "melee": false
+        }
+      ]
+    },
+    {
+      "id": "ult-hero-light",
+      "owner": "hero",
+      "name": "燈鑰・光",
+      "target": "allies",
+      "desc": "劍上紋路的光照亮全隊，回復並解毒",
+      "effects": [
+        {
+          "kind": "heal",
+          "power": 180
+        },
+        {
+          "kind": "cure"
+        }
+      ]
+    },
+    {
+      "id": "ult-hero-chain",
+      "owner": "hero",
+      "name": "燈鑰・鎖",
+      "target": "enemies",
+      "desc": "劍上紋路的光鎖住全體敵人，攻擊與防禦下降",
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "atk",
+          "pct": -25,
+          "turns": 4
+        },
+        {
+          "kind": "buff",
+          "stat": "def",
+          "pct": -25,
+          "turns": 4
+        }
+      ]
+    }
+  ],
+  "POWERS": {
+    "lg-noel": {
+      "id": "lg-noel",
+      "skill": "fire-star",
+      "text": "火之星彈改為打全體，威力 70%",
+      "mod": {
+        "target": "enemies",
+        "powerPct": 70
+      }
+    },
+    "lg-chizuru": {
+      "id": "lg-chizuru",
+      "skill": "sweep",
+      "text": "橫掃打 2 次，威力 65%",
+      "mod": {
+        "hits": 2,
+        "powerPct": 65
+      }
+    },
+    "lg-liz": {
+      "id": "lg-liz",
+      "skill": "twin-slash",
+      "text": "雙刃改為 3 段",
+      "mod": {
+        "hits": 3
+      }
+    },
+    "lg-sylvie": {
+      "id": "lg-sylvie",
+      "skill": "aimed-shot",
+      "text": "瞄準射擊額外使目標防禦 −20%，持續 3 回合",
+      "mod": {
+        "extra": [
+          {
+            "kind": "buff",
+            "stat": "def",
+            "pct": -20,
+            "turns": 3
+          }
+        ]
+      }
+    },
+    "lg-scarlet": {
+      "id": "lg-scarlet",
+      "skill": "provoke",
+      "text": "挑釁額外使自己防禦 +25%，持續 3 回合",
+      "mod": {
+        "extra": [
+          {
+            "kind": "buff",
+            "stat": "def",
+            "pct": 25,
+            "turns": 3
+          }
+        ]
+      }
+    },
+    "lg-selene": {
+      "id": "lg-selene",
+      "skill": "moonlight",
+      "text": "月光改為治療全體，威力 60%",
+      "mod": {
+        "target": "allies",
+        "powerPct": 60
+      }
+    },
+    "lg-safira": {
+      "id": "lg-safira",
+      "skill": "blade-dance",
+      "text": "刃舞改為 4 段",
+      "mod": {
+        "hits": 4
+      }
+    },
+    "lg-bobby": {
+      "id": "lg-bobby",
+      "skill": "turret",
+      "text": "砲台持續回合固定為 5（雙砲台的 +1 回合不再疊加）",
+      "mod": {
+        "turns": 5
+      }
+    },
+    "blaze-heart-sword": {
+      "id": "blaze-heart-sword",
+      "skill": "flame-burst",
+      "text": "爆炎斬不再消耗 HP",
+      "mod": {
+        "hpCost": 0
+      }
+    },
+    "frost-bloom-neck": {
+      "id": "frost-bloom-neck",
+      "skill": "ice-star",
+      "text": "冰之星彈改為打全體，威力 70%",
+      "mod": {
+        "target": "enemies",
+        "powerPct": 70
+      }
+    },
+    "storm-thunder-bow": {
+      "id": "storm-thunder-bow",
+      "skill": "aimed-shot",
+      "text": "瞄準射擊改為雷屬性，威力 120%",
+      "mod": {
+        "element": "thunder",
+        "powerPct": 120
+      }
+    },
+    "mire-whisper-gloves": {
+      "id": "mire-whisper-gloves",
+      "skill": "hex",
+      "text": "衰弱咒必定使目標中毒（頭目減半）",
+      "mod": {
+        "chance": 1
+      }
+    },
+    "shade-silent-blade": {
+      "id": "shade-silent-blade",
+      "skill": "triple-slash",
+      "text": "三連刃改為 4 段",
+      "mod": {
+        "hits": 4
+      }
+    },
+    "iron-bulwark-plate": {
+      "id": "iron-bulwark-plate",
+      "skill": "iron-wall",
+      "text": "鐵壁改為作用全體，威力 50%",
+      "mod": {
+        "target": "allies",
+        "buffPct": 50
+      }
+    }
+  },
+  "trees": {
+    "noel": [
+      [
+        {
+          "id": "fire-star",
+          "maxRank": 3
+        },
+        {
+          "id": "noel-fire-up",
+          "maxRank": 3
+        },
+        {
+          "id": "flame-wave",
+          "maxRank": 3
+        },
+        {
+          "id": "noel-wave-up",
+          "maxRank": 3
+        },
+        {
+          "id": "inferno",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "ice-star",
+          "maxRank": 3
+        },
+        {
+          "id": "noel-ice-up",
+          "maxRank": 3
+        },
+        {
+          "id": "frost-bind",
+          "maxRank": 3
+        },
+        {
+          "id": "noel-bind-up",
+          "maxRank": 3
+        },
+        {
+          "id": "blizzard",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "hex",
+          "maxRank": 3
+        },
+        {
+          "id": "thunder-star",
+          "maxRank": 3
+        },
+        {
+          "id": "noel-hex-up",
+          "maxRank": 3
+        },
+        {
+          "id": "noel-thunder-up",
+          "maxRank": 3
+        },
+        {
+          "id": "judgement",
+          "maxRank": 1
+        }
+      ]
+    ],
+    "chizuru": [
+      [
+        {
+          "id": "sweep",
+          "maxRank": 3
+        },
+        {
+          "id": "chizuru-sweep-up",
+          "maxRank": 3
+        },
+        {
+          "id": "spiral-spear",
+          "maxRank": 3
+        },
+        {
+          "id": "chizuru-spiral-up",
+          "maxRank": 3
+        },
+        {
+          "id": "thousand-spear",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "ward",
+          "maxRank": 3
+        },
+        {
+          "id": "chizuru-ward-up",
+          "maxRank": 3
+        },
+        {
+          "id": "sacred-sake",
+          "maxRank": 3
+        },
+        {
+          "id": "chizuru-sake-up",
+          "maxRank": 3
+        },
+        {
+          "id": "great-barrier",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "pierce",
+          "maxRank": 3
+        },
+        {
+          "id": "chizuru-pierce-up",
+          "maxRank": 3
+        },
+        {
+          "id": "thunder-thrust",
+          "maxRank": 3
+        },
+        {
+          "id": "chizuru-thrust-up",
+          "maxRank": 3
+        },
+        {
+          "id": "heaven-spear",
+          "maxRank": 1
+        }
+      ]
+    ],
+    "liz": [
+      [
+        {
+          "id": "twin-slash",
+          "maxRank": 3
+        },
+        {
+          "id": "triple-slash",
+          "maxRank": 3
+        },
+        {
+          "id": "liz-twin-up",
+          "maxRank": 3
+        },
+        {
+          "id": "liz-triple-up",
+          "maxRank": 3
+        },
+        {
+          "id": "shadow-flurry",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "stealth",
+          "maxRank": 1
+        },
+        {
+          "id": "treasure-sense",
+          "maxRank": 1
+        },
+        {
+          "id": "smoke-bomb",
+          "maxRank": 3
+        },
+        {
+          "id": "liz-smoke-up",
+          "maxRank": 3
+        },
+        {
+          "id": "fortune-strike",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "quickstep",
+          "maxRank": 3
+        },
+        {
+          "id": "liz-quick-up",
+          "maxRank": 3
+        },
+        {
+          "id": "venom-edge",
+          "maxRank": 3
+        },
+        {
+          "id": "liz-venom-up",
+          "maxRank": 3
+        },
+        {
+          "id": "phantom-step",
+          "maxRank": 1
+        }
+      ]
+    ],
+    "sylvie": [
+      [
+        {
+          "id": "aimed-shot",
+          "maxRank": 3
+        },
+        {
+          "id": "sylvie-aim-up",
+          "maxRank": 3
+        },
+        {
+          "id": "heart-shot",
+          "maxRank": 3
+        },
+        {
+          "id": "sylvie-heart-up",
+          "maxRank": 3
+        },
+        {
+          "id": "starfall-arrow",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "pin-shot",
+          "maxRank": 3
+        },
+        {
+          "id": "sylvie-pin-up",
+          "maxRank": 3
+        },
+        {
+          "id": "snare-shot",
+          "maxRank": 3
+        },
+        {
+          "id": "sylvie-snare-up",
+          "maxRank": 3
+        },
+        {
+          "id": "hunters-mark",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "arrow-rain",
+          "maxRank": 3
+        },
+        {
+          "id": "sylvie-rain-up",
+          "maxRank": 3
+        },
+        {
+          "id": "fire-arrow",
+          "maxRank": 3
+        },
+        {
+          "id": "sylvie-fire-up",
+          "maxRank": 3
+        },
+        {
+          "id": "storm-volley",
+          "maxRank": 1
+        }
+      ]
+    ],
+    "scarlet": [
+      [
+        {
+          "id": "provoke",
+          "maxRank": 1
+        },
+        {
+          "id": "scarlet-provoke-up",
+          "maxRank": 3
+        },
+        {
+          "id": "guardian-roar",
+          "maxRank": 3
+        },
+        {
+          "id": "scarlet-roar-up",
+          "maxRank": 3
+        },
+        {
+          "id": "unbreakable",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "flame-burst",
+          "maxRank": 3
+        },
+        {
+          "id": "scarlet-burst-up",
+          "maxRank": 3
+        },
+        {
+          "id": "blaze-ring",
+          "maxRank": 3
+        },
+        {
+          "id": "scarlet-ring-up",
+          "maxRank": 3
+        },
+        {
+          "id": "crimson-end",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "iron-wall",
+          "maxRank": 3
+        },
+        {
+          "id": "scarlet-wall-up",
+          "maxRank": 3
+        },
+        {
+          "id": "shield-bash",
+          "maxRank": 3
+        },
+        {
+          "id": "scarlet-bash-up",
+          "maxRank": 3
+        },
+        {
+          "id": "fortress",
+          "maxRank": 1
+        }
+      ]
+    ],
+    "selene": [
+      [
+        {
+          "id": "moonlight",
+          "maxRank": 3
+        },
+        {
+          "id": "selene-moon-up",
+          "maxRank": 3
+        },
+        {
+          "id": "moon-rain",
+          "maxRank": 3
+        },
+        {
+          "id": "selene-rain-up",
+          "maxRank": 3
+        },
+        {
+          "id": "full-moon",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "cleanse",
+          "maxRank": 1
+        },
+        {
+          "id": "rebirth",
+          "maxRank": 1
+        },
+        {
+          "id": "selene-rebirth-up",
+          "maxRank": 3
+        },
+        {
+          "id": "blessing",
+          "maxRank": 3
+        },
+        {
+          "id": "sanctuary",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "dream",
+          "maxRank": 1
+        },
+        {
+          "id": "selene-dream-up",
+          "maxRank": 3
+        },
+        {
+          "id": "moon-arrow",
+          "maxRank": 3
+        },
+        {
+          "id": "selene-arrow-up",
+          "maxRank": 3
+        },
+        {
+          "id": "lunar-eclipse",
+          "maxRank": 1
+        }
+      ]
+    ],
+    "safira": [
+      [
+        {
+          "id": "blade-dance",
+          "maxRank": 3
+        },
+        {
+          "id": "safira-dance-up",
+          "maxRank": 3
+        },
+        {
+          "id": "sand-cyclone",
+          "maxRank": 3
+        },
+        {
+          "id": "safira-cyclone-up",
+          "maxRank": 3
+        },
+        {
+          "id": "thousand-shadows",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "war-dance",
+          "maxRank": 3
+        },
+        {
+          "id": "safira-war-up",
+          "maxRank": 3
+        },
+        {
+          "id": "veil-dance",
+          "maxRank": 3
+        },
+        {
+          "id": "safira-veil-up",
+          "maxRank": 3
+        },
+        {
+          "id": "desert-festival",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "mirage",
+          "maxRank": 3
+        },
+        {
+          "id": "safira-mirage-up",
+          "maxRank": 3
+        },
+        {
+          "id": "shadow-step",
+          "maxRank": 3
+        },
+        {
+          "id": "safira-shadow-up",
+          "maxRank": 3
+        },
+        {
+          "id": "sirocco",
+          "maxRank": 1
+        }
+      ]
+    ],
+    "bobby": [
+      [
+        {
+          "id": "turret",
+          "maxRank": 3
+        },
+        {
+          "id": "bobby-turret-up",
+          "maxRank": 3
+        },
+        {
+          "id": "cannon",
+          "maxRank": 3
+        },
+        {
+          "id": "bobby-cannon-up",
+          "maxRank": 3
+        },
+        {
+          "id": "twin-turret",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "tinker",
+          "maxRank": 1
+        },
+        {
+          "id": "repair-kit",
+          "maxRank": 3
+        },
+        {
+          "id": "bobby-repair-up",
+          "maxRank": 3
+        },
+        {
+          "id": "overclock",
+          "maxRank": 3
+        },
+        {
+          "id": "emergency-repair",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "barrier",
+          "maxRank": 3
+        },
+        {
+          "id": "bobby-barrier-up",
+          "maxRank": 3
+        },
+        {
+          "id": "shock-mine",
+          "maxRank": 3
+        },
+        {
+          "id": "bobby-mine-up",
+          "maxRank": 3
+        },
+        {
+          "id": "tesla-coil",
+          "maxRank": 1
+        }
+      ]
+    ],
+    "rin": [
+      [
+        {
+          "id": "rin-needle",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-needle-up",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-fan",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-venom-needle",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-storm",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "rin-backstab",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-backstab-up",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-veil",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-veil-up",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-shadowless",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "rin-mark",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-mark-up",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-execute",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-execute-up",
+          "maxRank": 3
+        },
+        {
+          "id": "rin-deathblow",
+          "maxRank": 1
+        }
+      ]
+    ],
+    "hero": [
+      [
+        {
+          "id": "hero-slash",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-sword-up",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-cleave",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-sunder",
+          "maxRank": 5
+        },
+        {
+          "id": "abyss-sword",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "hero-guard",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-guard-up",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-aegis",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-rally",
+          "maxRank": 5
+        },
+        {
+          "id": "abyss-guard",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "hero-flare",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-frost",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-star-up",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-spark",
+          "maxRank": 5
+        },
+        {
+          "id": "abyss-star",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "hero-mend",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-light-up",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-prayer",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-purify",
+          "maxRank": 1
+        },
+        {
+          "id": "abyss-light",
+          "maxRank": 1
+        }
+      ],
+      [
+        {
+          "id": "hero-shackle",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-slow",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-expose",
+          "maxRank": 5
+        },
+        {
+          "id": "hero-sleep",
+          "maxRank": 1
+        },
+        {
+          "id": "abyss-chain",
+          "maxRank": 1
+        }
+      ]
+    ]
+  }
+}

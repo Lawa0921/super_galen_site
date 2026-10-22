@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ALTARS, ALTAR_STAT_CAP_PCT, POISON_TP_LOSS_PCT, VAULT_CHEST_MULT, altarAt, trapDamage } from './events';
 import { RARE_MATERIALS } from './loot/drops';
+import { isFragmentItem, PERKS } from '../data/story/fragments';
 import { FLOORS } from '../data/floors';
 import { createBattle } from './battle';
 import { Game, type MoveResult } from './game';
@@ -185,6 +186,27 @@ describe('altar', () => {
     expect(g.run!.altarBuffs.filter((b) => b.stat === gain.stat).reduce((n, b) => n + b.pct, 0)).toBe(ALTAR_STAT_CAP_PCT);
     expect(tileAt(g.map(), at)).toBe('floor');
   });
+  it('the fed meal counts against the same per-stat cap', () => {
+    let g: Game | null = null;
+    for (let i = 1; i < 2000 && !g; i++) {
+      const t = new Game(constRng(0.5 + i / 4000), null);
+      t.state.dungeon.reached.mainline = 3;
+      t.depart(MAIN, 1);
+      const alt = floorOf(t.run!, 1).contents.find((c) => c.kind === 'altar');
+      if (alt && altarAt(t.run!, 1, alt.at).gain.stat === PERKS.meal.stat) g = t;
+    }
+    if (!g) throw new Error('no altar of the meal stat');
+    const at = contentOf(g, 'altar').at;
+    stepOnto(g, at);
+    const { gain } = altarAt(g.run!, g.floor, at);
+    g.state.gold = 9999;
+    // Together with the meal the stat would pass the cap by one: refused. Without the meal the same buffs are fine.
+    const other = ALTAR_STAT_CAP_PCT - gain.pct - PERKS.meal.pct + 1;
+    g.run!.altarBuffs = [{ ...PERKS.meal }, { stat: gain.stat, pct: other }];
+    expect(g.altar(at, true)).toBe(false);
+    g.run!.altarBuffs = [{ stat: gain.stat, pct: other }];
+    expect(g.altar(at, true)).toBe(true);
+  });
   it('createBattle applies altar buffs to the party only', () => {
     const g = gameWith('altar');
     const base = createBattle({ party: g.state.party, enemyIds: ['slime'], inventory: {}, revealed: {} });
@@ -225,7 +247,7 @@ describe('vault', () => {
     expect(r.loot[chest.item]).toBe(chest.qty * VAULT_CHEST_MULT);   // materials: three chests' worth
     const rare = Object.keys(r.loot).filter((id) => RARE_MATERIALS.includes(id));
     expect(rare.map((id) => r.loot[id])).toEqual([1]);   // exactly one rare material
-    expect(Object.keys(r.loot)).toHaveLength(2);
+    expect(Object.keys(r.loot).filter((id) => !isFragmentItem(id))).toHaveLength(2);   // fragments ride along on their own chance
     expect(r.gear).toHaveLength(1);
     expect(['common', 'magic']).not.toContain(r.gear[0].rarity);
     expect(g.run!.loot.items[chest.item]).toBe(held + chest.qty * VAULT_CHEST_MULT);

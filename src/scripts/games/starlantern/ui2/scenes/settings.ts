@@ -4,10 +4,10 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
-import { DEFAULT_SETTINGS, TEXT_SPEEDS, type Settings } from '../settings';
+import { DEFAULT_SETTINGS, STORY_MODES, TEXT_SPEEDS, type Settings } from '../settings';
 import { MenuView, backControl, win } from '../widgets';
 
-/** Settings: sound volume and text speed (left/right or click to change), fullscreen, the key list, and back. */
+/** Settings: sound volume, text speed and story playback (left/right or click to change), fullscreen, the key list, and back. */
 export class SettingsScene implements Scene {
   private view!: MenuView;
   private body!: HTMLElement;
@@ -46,6 +46,7 @@ export class SettingsScene implements Scene {
       { id: 'volume', label: t.volume, right: `◀ ${v.volume}% ▶` },
       { id: 'speed', label: t.speed, right: `◀ ${t.speeds[v.textSpeed]} ▶` },
       { id: 'vibrate', label: t.vibrate, right: `◀ ${v.vibrate ? t.on : t.off} ▶` },
+      { id: 'story', label: t.story, right: `◀ ${t.storyModes[v.story]} ▶` },
       { id: 'fullscreen', label: t.fullscreen },
       { id: 'keys', label: t.keys },
       { id: 'back', label: t.back },
@@ -71,15 +72,19 @@ export class SettingsScene implements Scene {
       next = { ...v, textSpeed: TEXT_SPEEDS[wrap ? (i + n) % n : Math.max(0, Math.min(n - 1, i))] };
     } else if (id === 'vibrate') {
       next = { ...v, vibrate: !v.vibrate };
+    } else if (id === 'story') {
+      const i = STORY_MODES.indexOf(v.story) + d;
+      const n = STORY_MODES.length;
+      next = { ...v, story: STORY_MODES[wrap ? (i + n) % n : Math.max(0, Math.min(n - 1, i))] };
     } else return;
-    if (next.volume === v.volume && next.textSpeed === v.textSpeed && next.vibrate === v.vibrate) { this.ctx.sfx.error(); return; }
+    if (next.volume === v.volume && next.textSpeed === v.textSpeed && next.vibrate === v.vibrate && next.story === v.story) { this.ctx.sfx.error(); return; }
     this.ctx.settings?.set?.(next);
     this.ctx.sfx.cursor();
     this.refresh();
   }
 
   private pick(id: string): void {
-    if (id === 'volume' || id === 'speed' || id === 'vibrate') { this.step(id, 1, true); return; }
+    if (id === 'volume' || id === 'speed' || id === 'vibrate' || id === 'story') { this.step(id, 1, true); return; }
     this.ctx.sfx.confirm();
     if (id === 'fullscreen') { void this.ctx.fullscreen?.(); return; }
     if (id === 'keys') { this.openKeys(); return; }

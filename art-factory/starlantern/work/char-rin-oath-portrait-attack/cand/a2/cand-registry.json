@@ -1,0 +1,30 @@
+{
+  "assets": {
+    "char-rin-oath-portrait-attack": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-attack/cand/a2/char-rin-oath-portrait-attack.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-attack\\char-rin-oath-portrait-attack-a2.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "subject cut by the canvas edge"
+        ],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 11,
+        "size": [
+          113,
+          112
+        ]
+      },
+      "status": "qa_failed"
+    }
+  }
+}

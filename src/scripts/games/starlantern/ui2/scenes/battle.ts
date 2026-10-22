@@ -3,33 +3,47 @@ import type { HitExtra, PartyCue } from '../../render/BattleView';
 import type { FxKey } from '../../render/artPaths';
 import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
-import { ULTIMATES } from '../../data/ultimates';
-import { LIMIT_MAX, intentLabel, skillCost, skillFor, type Action, type BattleState } from '../../engine/battle';
+import { STORY } from '../../data/story.zh-TW';
+import { CHARACTERS } from '../../data/characters';
+import { LIMIT_MAX, intentLabel, runeView, skillFor, type Action, type BattleState } from '../../engine/battle';
 import type { Combatant } from '../../engine/combatant';
+import { ailmentChips, type AilmentChip } from '../../engine/ailments';
+import { castCost, cueWord, fieldWords, foeWords, memberWords, whyNot, type MechCue, type MechWord } from '../../engine/mechanics/index';
+import { ECHO, echoDef, echoOf } from '../../engine/mechanics/echo';
 import type { BattleEnd } from '../../engine/game';
-import { learnedSkills } from '../../engine/progression';
-import type { CharacterId, Target } from '../../engine/types';
-import { art } from '../../render/artPaths';
+import { learnedSkills, pctMod, ultimateFor } from '../../engine/progression';
+import { patchSkill } from '../../engine/skills';
+import type { CharacterId, SkillDef, Target } from '../../engine/types';
+import { art, enemyArt } from '../../render/artPaths';
 import { el, itemName } from '../../ui/dom';
 import { playCutIn } from '../../ui/cutin';
-import { battleLines, levelUpLines } from '../battleText';
-import { fillRich, gearLabel, gearPart } from '../loot';
+import { battleLines, fragmentLines, levelUpLines } from '../battleText';
+import { fragmentItem } from '../../engine/story/fragments';
+import { gearIconUrl } from '../gearArt';
+import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
+import { RUNE_SLOT_LEVELS, RUNE_STACK } from '../../data/runes';
+import { battleLine, withoutPowerClause } from '../skillCard';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import { PartyBar, type PulseOpts } from '../partyBar';
 import type { Scene, SceneCtx } from '../scene';
-import { MenuView, backControl, richNodes, win, type Rich } from '../widgets';
+import { Dialogue, MenuView, backControl, richNodes, win, type Rich } from '../widgets';
+import { textCps } from '../settings';
+import { playAndRecord, speakerOf, storyCtx } from '../story';
+import { memScene, type SceneId } from '../../data/story/scenes';
 
 /** Width kept clear for the command window; must match $slx-battle-left in _starlantern-ui.scss. */
 export const BATTLE_LEFT = 150;
+/** How long a battle waits for its foes' pictures and its backdrop before it is drawn (a late one is drawn when it lands). */
+export const BATTLE_ART_WAIT_MS = 1500;
 const BANNER_MS = 1100;
 const WIN_MS = 1000;
 /** Height kept clear for the party bar; must match the .slx-partybar box in _starlantern-ui.scss. */
 export const BATTLE_BOTTOM = 66;
 
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
-type Pending = { kind: 'attack' } | { kind: 'skill'; skill: string } | { kind: 'item'; item: string } | { kind: 'ultimate' };
+type Pending = { kind: 'attack' } | { kind: 'skill'; skill: string } | { kind: 'item'; item: string } | { kind: 'ultimate' } | { kind: 'echo'; rec: NonNullable<BattleState['echo']> };
 
 /** Battle: message line on top, party bar below, a command window per member, target picking, playback and results. */
 export class BattleScene implements Scene {
@@ -38,6 +52,8 @@ export class BattleScene implements Scene {
   private msg!: HTMLElement;
   private cmd!: HTMLElement;
   private marker!: HTMLElement;
+  /** The field bar: the barrier up and the moon (plan 8c). */
+  private field = el('div', { class: 'slx-fieldbar', attrs: { role: 'status', hidden: '' } });
   private cutin!: HTMLElement;
   private backEl!: HTMLElement;
   private note: HTMLElement | null = null;
@@ -51,14 +67,29 @@ export class BattleScene implements Scene {
   private result: MenuView | null = null;
   private resultReady = false;
   /** Party values from before the round, shown until each member's own hit plays. */
-  private before: Map<string, Pick<Combatant, 'hp' | 'tp' | 'limit' | 'alive'>> | null = null;
+  /** Each member as the round began (ailments too), shown until the playback reaches them. */
+  private before: Map<string, Pick<Combatant, 'hp' | 'tp' | 'limit' | 'alive'> & { ailments: AilmentChip[]; mech: MechWord[] }> | null = null;
   private revealed = new Set<string>();
   private actLine = '';
   private cutins = 0;
   private shakeTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Tells a played memory after the result window. */
+  private talk: Dialogue;
+  /** The memory scene on screen, if any: it takes the actions while it plays. */
+  private playing: ReturnType<typeof playAndRecord> | null = null;
+  /** The rune tutorial is on screen (plan 8g Task 6): the dialogue takes the actions. */
+  private tutoring = false;
 
-  constructor(private ctx: SceneCtx) {
+  constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
     this.bar = new PartyBar(ctx.art);
+    this.talk = new Dialogue(cps);
+  }
+
+  /** Behind the fade: this fight's enemy pictures and backdrop get a moment to land, so no foe is drawn without its body. */
+  async prepare(): Promise<void> {
+    const g = this.ctx.game, b = g.battle;
+    if (!this.ctx.stage || !b) return;
+    await this.ctx.art.whenReady?.([...new Set(b.enemies.map((e) => enemyArt(e.defId))), art.bg(g.terrain())], BATTLE_ART_WAIT_MS);
   }
 
   enter(root: HTMLElement): void {
@@ -69,23 +100,26 @@ export class BattleScene implements Scene {
     this.marker = el('div', { class: 'slx-target', text: '▼', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.cutin = el('div', { class: 'sl-cutin', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.backEl = backControl(() => this.onAction('cancel'));
-    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.msg, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin]);
+    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.msg, this.field, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin, this.talk.el]);
     root.append(this.body);
     if (this.ctx.stage) {
       this.ctx.stage.show('battle');
       this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.terrain(), BATTLE_LEFT, BATTLE_BOTTOM, this.ctx.game.run?.region);
     }
-    this.msg.textContent = this.state.enemies.map((e) => e.name).join('、');
+    this.msg.textContent = this.state.enemies.map((e) => e.name).join('、') + this.surviveLine();
     this.banner(this.state.boss ? T.ui2.banner.boss : T.ui2.banner.encounter, this.state.boss ? 'slx-banner-boss' : '');
     this.startRound();
   }
 
   exit(): void {
+    this.talk.stop();
     if (this.body) clearPillars(this.body);
     this.ctx.stage?.show(null);
   }
 
   onAction(a: UiAction): void {
+    if (this.playing) { this.playing.onAction(a); return; }
+    if (this.tutoring) { this.talk.onAction(a); return; }
     if (this.busy) return;
     // Confirm or cancel ends a legendary drop's moment first (fast mode never waits on it).
     if (!this.ctx.fast && skipPillar(this.body, a)) return;
@@ -101,18 +135,32 @@ export class BattleScene implements Scene {
     this.view?.onAction(a);
   }
 
+  /** Who chooses a command this round: a sleeping or frozen member loses the turn and is skipped. */
   private actors(): Combatant[] {
-    return this.state.party.filter((c) => c.alive && c.sleep === 0);
+    return this.state.party.filter((c) => c.alive && c.sleep === 0 && !c.frozen);
   }
 
   private updateBar(active: string | null): void {
     this.bar.update(this.state.party.map((c) => {
-      const v = (!this.revealed.has(c.key) && this.before?.get(c.key)) || c;
-      return { key: c.key, name: c.name, hp: v.hp, maxHp: c.max.hp, tp: v.tp, maxTp: c.max.tp, limit: v.limit, alive: v.alive, row: c.row };
+      const was = this.revealed.has(c.key) ? undefined : this.before?.get(c.key);
+      const v = was || c;
+      // Ailments end with the fight (a new fight starts clean), so a finished one shows none.
+      const ongoing = this.state.outcome === 'ongoing';
+      const ailments = was ? was.ailments : ongoing ? ailmentChips(c) : [];
+      // Her mechanic's words, held like the ailments until the playback is over (plan 8c).
+      const mech = was ? was.mech : ongoing ? memberWords(this.state, c) : [];
+      return { key: c.key, name: c.name, hp: v.hp, maxHp: c.max.hp, tp: v.tp, maxTp: c.max.tp, limit: v.limit, alive: v.alive, row: c.row, ailments, mech, ...(c.artId ? { artId: c.artId } : {}) };
     }), active);
   }
 
+  /** A survive fight's reminder, on a line of its own: how many rounds are left. Empty in a plain fight. */
+  private surviveLine(): string {
+    const s = this.state;
+    return s.survive ? `\n${T.ui2.battle.survive(Math.max(0, s.survive - s.round))}` : '';
+  }
+
   private startRound(): void {
+    if (this.state.survive && this.state.round > 0) this.msg.textContent += this.surviveLine();
     this.index = 0;
     this.actions = {};
     this.showIntents();
@@ -123,12 +171,13 @@ export class BattleScene implements Scene {
     const actor = this.actors()[this.index];
     if (!actor) { void this.submit(); return; }
     this.updateBar(actor.key);
-    const ult = ULTIMATES[actor.defId as CharacterId];
+    const ult = ultimateFor(actor.defId as CharacterId, actor.ranks, actor);
     const skills = this.skillItems(actor);
     const items = this.itemItems();
     const list: MenuItem[] = [
       { id: 'attack', label: T.cmd.attack },
       { id: 'skill', label: T.cmd.skill, disabled: !skills.some((s) => !s.disabled) },
+      ...this.echoItem(actor),
       { id: 'defend', label: T.cmd.defend },
       { id: 'item', label: T.cmd.item, disabled: items.length === 0 },
       ...(actor.limit >= LIMIT_MAX && ult ? [{ id: 'ultimate', label: T.cmd.ultimate(ult.name) }] : []),
@@ -137,7 +186,7 @@ export class BattleScene implements Scene {
     ];
     this.view = new MenuView(new Menu(list), {
       pick: (it) => { this.ctx.sfx.confirm(); this.command(it.id, actor); },
-      moved: () => this.ctx.sfx.cursor(),
+      moved: () => { this.ctx.sfx.cursor(); this.showNote(this.view?.menu.current()?.note); },
       cancel: () => this.back(),
     });
     this.cmd.replaceChildren(el('div', { class: 'slx-who', text: T.cmd.choose(actor.name) }), this.view.el);
@@ -148,6 +197,22 @@ export class BattleScene implements Scene {
   private showIntents(): void {
     const s = this.state;
     this.ctx.stage?.battleView.showIntents?.(Object.fromEntries(s.enemies.filter((e) => e.alive).map((e) => [e.key, intentLabel(s, e.key)])));
+    this.showAilments();
+  }
+
+  /** The field bar (plan 8c): the barrier up and the moon, as words in their colours; hidden when there are none. */
+  private showField(): void {
+    const words = this.state.outcome === 'ongoing' ? fieldWords(this.state) : [];
+    this.field.replaceChildren(...words.map((w) => el('span', { class: `slx-mech slx-mech-${w.tone}`, text: w.text })));
+    this.field.hidden = words.length === 0;
+  }
+
+  /** Each living enemy's ailments by its name; none once the fight is over (won, lost or fled). The field bar with them. */
+  private showAilments(): void {
+    this.showField();
+    const s = this.state;
+    const live = s.outcome === 'ongoing' ? s.enemies.filter((e) => e.alive) : [];
+    this.ctx.stage?.battleView.showAilments?.(Object.fromEntries(live.map((e) => [e.key, ailmentChips(e)])), Object.fromEntries(live.map((e) => [e.key, foeWords(s, e)])));
   }
 
   /** 返回 shows only when cancel would do something: close a sub-list or go back to the previous member. */
@@ -173,7 +238,12 @@ export class BattleScene implements Scene {
       void this.submit();
       return;
     }
-    if (id === 'ultimate') { this.withTarget(ULTIMATES[actor.defId as CharacterId].target, { kind: 'ultimate' }); return; }
+    if (id === 'ultimate') { this.withTarget(ultimateFor(actor.defId as CharacterId, actor.ranks, actor).target, { kind: 'ultimate' }); return; }
+    if (id === 'echo') {
+      const rec = echoOf(this.state, this.state.round + 1);
+      if (rec) this.withTarget(echoDef(rec).target, { kind: 'echo', rec });
+      return;
+    }
     if (id === 'skill') {
       // Only known skills are listed (skillItems), so the lookup always finds one; the fallback is never reached.
       this.subList(this.skillItems(actor), (it) => this.withTarget(skillFor(actor, it.id)?.target ?? 'enemy', { kind: 'skill', skill: it.id }));
@@ -182,16 +252,52 @@ export class BattleScene implements Scene {
     if (id === 'item') this.subList(this.itemItems(), (it) => this.withTarget(ITEMS[it.id].target, { kind: 'item', item: it.id }));
   }
 
+  /**
+   * The hero's 殘響 (plan 8c Task 6): the companion skill it would repeat in the coming round and its TP; 「殘響」 greyed when
+   * there is none (or he is short of TP). Nobody else has the command.
+   */
+  private echoItem(actor: Combatant): MenuItem[] {
+    if (actor.defId !== 'hero') return [];
+    const rec = echoOf(this.state, this.state.round + 1);
+    if (!rec) return [{ id: 'echo', label: T.cmd.echo(), disabled: true }];
+    const def = echoDef(rec);
+    // What it repeats in numbers, not the repeated skill's words (they may name a mechanic it leaves out; plan 8g ruling 12).
+    return [{ id: 'echo', label: T.cmd.echo(def.name), right: T.cmd.tp(rec.cost), disabled: actor.tp < rec.cost, note: T.cmd.echoNote(ECHO.powerPct, battleLine(def)) + (rec.dropped ? T.cmd.echoDropped : '') }];
+  }
+
   private skillItems(actor: Combatant): MenuItem[] {
     const m = this.ctx.game.state.party.roster[actor.key as CharacterId];
     return (m ? learnedSkills(m) : [])
-      // As this member casts them: a worn power may change the target, and tpCost lowers what each costs.
+      // As this member casts them: a worn power may change the target; tpCost and her mechanic set what each costs now.
       .flatMap((s) => skillFor(actor, s) ?? [])
       .filter((sk) => !sk.passive)
       .map((sk) => {
-        const cost = skillCost(actor, sk.id);
-        return { id: sk.id, label: sk.name, right: T.cmd.tp(cost), disabled: actor.tp < cost, note: sk.desc };
+        const cost = castCost(this.state, actor, sk.id);
+        // A skill that would spend an empty resource (no coins, no barrier) is greyed, its reason in place of the TP.
+        const why = whyNot(this.state, actor, sk);
+        // ◆ for each rune that works on it, and its final numbers before its words (plan 8g ruling 12).
+        const working = runeView(actor, sk.id, actor.runes?.[sk.id] ?? [])?.states.filter((x) => x.miss === null).length ?? 0;
+        return {
+          id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: this.noteOf(sk),
+          ...(working ? { badge: T.cmd.runeMark.repeat(working) } : {}),
+        };
       });
+  }
+
+  /**
+   * A skill's note: its final numbers, then its words; when the summary gives the final power (damage, a heal, a device),
+   * the words' power multiplier goes, so one line never shows two kinds of 威力 (plan 8g final review).
+   */
+  private noteOf(sk: SkillDef): string {
+    const shown = this.withAbyss(sk);
+    const final = shown.effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'device');
+    return T.cmd.noteWith(battleLine(shown), final ? withoutPowerClause(sk.desc) : sk.desc);
+  }
+
+  /** The skill with the abyss capstones' depth bonus in it, as perform casts it (the summary is what the battle does). */
+  private withAbyss(sk: SkillDef): SkillDef {
+    const bonus = sk.abyss && this.state.abyss ? pctMod(sk.id, 100 + this.state.abyss) : undefined;
+    return bonus ? patchSkill(sk, bonus) : sk;
   }
 
   private itemItems(): MenuItem[] {
@@ -249,6 +355,7 @@ export class BattleScene implements Scene {
     if (p.kind === 'attack') this.choose({ kind: 'attack', target: target ?? this.state.enemies.find((e) => e.alive)?.key ?? 'e0' });
     else if (p.kind === 'skill') this.choose({ kind: 'skill', skill: p.skill, target });
     else if (p.kind === 'item') this.choose({ kind: 'item', item: p.item, target });
+    else if (p.kind === 'echo') this.choose(target ? { kind: 'echo', target, rec: p.rec } : { kind: 'echo', rec: p.rec });
     else this.choose(target ? { kind: 'ultimate', target } : { kind: 'ultimate' });
   }
 
@@ -312,7 +419,7 @@ export class BattleScene implements Scene {
     this.cmd.hidden = true;
     this.ctx.stage?.battleView.showIntents?.({});
     this.view = null;
-    this.before = new Map(this.state.party.map((c) => [c.key, { hp: c.hp, tp: c.tp, limit: c.limit, alive: c.alive }]));
+    this.before = new Map(this.state.party.map((c) => [c.key, { hp: c.hp, tp: c.tp, limit: c.limit, alive: c.alive, ailments: ailmentChips(c), mech: memberWords(this.state, c) }]));
     this.revealed.clear();
     this.updateBar(null);
     const r = this.ctx.game.submitRound(this.actions);
@@ -331,6 +438,7 @@ export class BattleScene implements Scene {
     this.before = null;
     this.updateBar(null);
     this.ctx.stage?.battleView.syncHp?.(r.battle);
+    this.showAilments();
     this.busy = false;
     this.cmd.hidden = !!r.end;
     this.root.removeAttribute('inert');
@@ -370,7 +478,8 @@ export class BattleScene implements Scene {
     const pos = eyes ? (this.cutins % 2 ? 'bottom' : 'top') : (this.cutins % 2 ? 'right' : 'left');
     this.cutins++;
     // The attack face carries the expression; both the strip and the bust use it.
-    const pic = this.ctx.art.has(art.portrait(id, 'attack')) ? art.portrait(id, 'attack') : art.portrait(id, 'normal');
+    const face = actor.artId ?? id;
+    const pic = this.ctx.art.has(art.portrait(face, 'attack')) ? art.portrait(face, 'attack') : art.portrait(face, 'normal');
     const c = el('div', { class: `slx-acut slx-acut-${eyes ? 'eyes' : 'bust'} slx-acut-${pos} slx-aura-${id}`, attrs: { 'aria-hidden': 'true' } }, [
       el('div', { class: 'slx-acut-band' }),
       el('div', { class: 'slx-acut-pic' }, this.ctx.art.has(pic) ? [el('img', { attrs: { src: pic, alt: '' } })] : []),
@@ -401,11 +510,13 @@ export class BattleScene implements Scene {
   private async onParty(key: string, cue: PartyCue, name?: string, amount?: number, extra?: HitExtra): Promise<void> {
     if (cue === 'ultimate') {
       this.ctx.sfx.ultimate?.();
-      const ult = art.portrait(key, 'ultimate');
-      const portrait = this.ctx.art.has(ult) ? ult : this.ctx.art.has(art.portrait(key, 'normal')) ? art.portrait(key, 'normal') : null;
+      const face = this.state.party.find((c) => c.key === key)?.artId ?? key;
+      const ult = art.portrait(face, 'ultimate');
+      const portrait = this.ctx.art.has(ult) ? ult : this.ctx.art.has(art.portrait(face, 'normal')) ? art.portrait(face, 'normal') : null;
       await playCutIn(this.cutin, { name: name ?? '', portrait, fast: !!this.ctx.fast });
       return;
     }
+    if (cue === 'mech') { this.bar.cue(key, cueWord(name as MechCue)); return; }
     const shown = this.before?.get(key);
     if (cue === 'tp' && shown && amount) {
       const max = this.state.party.find((c) => c.key === key)?.max.tp ?? shown.tp + amount;
@@ -453,26 +564,109 @@ export class BattleScene implements Scene {
     setTimeout(() => this.renderResult(end, false), WIN_MS);
   }
 
+  /** The memory pieces this win brought that play now (the rest were recorded as new when found). */
+  private memoriesToPlay(end: BattleEnd): SceneId[] {
+    return (end.fragments ?? []).flatMap((g) => (g.kind === 'piece' && g.play ? [memScene(g.id, g.n)] : []));
+  }
+
+  /** Plays the memories one by one with the result window out of the way. A scene that fails is reported and skipped: it must never lock the way out. */
+  private async playMemories(ids: SceneId[]): Promise<void> {
+    const box = this.body.querySelector<HTMLElement>('.slx-result');
+    if (box) box.hidden = true;
+    if (ids.length) this.msg.hidden = true;   // the foes' names go with the fight (Task 6 review)
+    for (const id of ids) {
+      try {
+        const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
+        this.playing = p;
+        await p.done;
+      } catch (e) {
+        console.error('starlantern: memory scene failed', e);
+      } finally {
+        this.playing = null;
+      }
+    }
+  }
+
+  /** The rune tutorial, told by the narrator with the result window out of the way; once read, its flag is set. */
+  private async runeTutorial(): Promise<void> {
+    const box = this.body.querySelector<HTMLElement>('.slx-result');
+    if (box) box.hidden = true;
+    this.msg.hidden = true;
+    this.talk.setStyle('plain');
+    this.tutoring = true;
+    // A tutorial that fails is reported and over: it must never lock the way out (as a memory).
+    try {
+      for (const line of T.rune.tutorial(RUNE_SLOT_LEVELS, T.ui2.guild.workshop, T.ui2.dungeon.workshop)) await this.talk.say('', line);
+      this.ctx.game.seeRuneTutorial();
+    } catch (e) {
+      console.error('starlantern: rune tutorial failed', e);
+    } finally {
+      this.tutoring = false;
+    }
+  }
+
+  private leave(): void {
+    this.ctx.go(this.ctx.game.phase === 'clear' ? 'clear' : 'dungeon');
+  }
+
   private renderResult(end: BattleEnd, fanfare = true): void {
     // `cls` styles the whole line: a level-up, or a piece of gear in its rarity colour.
     const lines: { text: string | Rich; cls?: string }[] = [];
     if (end.outcome === 'win') {
       if (fanfare) this.ctx.sfx.win?.();
+      // The join line leads: the list scrolls, and this is the line the fight was for.
+      if (end.met) lines.push({ text: (end.met.benched ? T.ui2.rescue.benched : T.ui2.rescue.joined)(CHARACTERS[end.met.id].name, end.met.level) });
+      // A fragment that did not fit is told once, by its 留下 line below, not also as found.
+      const unplaced = { ...end.left };
+      const found = (end.fragments ?? []).filter((g) => {
+        const id = fragmentItem(g);
+        if (id === undefined || !(unplaced[id] > 0)) return true;
+        unplaced[id]--;
+        return false;
+      });
+      for (const l of fragmentLines(found)) lines.push({ text: l });
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
-      for (const it of end.gear) lines.push({ text: gearLabel(it), cls: `slx-loot-gear slx-rarity-${it.rarity}` });
+      if (end.coinGold) lines.push({ text: T.battle.coinGold(end.coinGold) });
+      // Won gear reads after its gear icon once that is published (the line keeps its rarity colour either way).
+      for (const it of end.gear) {
+        const icon = gearIconUrl(this.ctx.art, it);
+        lines.push({ text: icon ? [{ text: gearLabel(it), cls: 'slx-loot-name', icon }] : gearLabel(it), cls: `slx-loot-gear ${rarityClass(it)}` });
+      }
+      // Runes after the gear, each once and in the order they dropped, in its tier's colour (plan 8f); one past the stack
+      // says the gold it became, where it fell.
+      const kept = [...(end.runes ?? [])];
+      const paid = end.runeGold ?? [];
+      const total = kept.length + paid.length;
+      for (let at = 0; at < total; at++) {
+        const g = paid.find((x) => x.at === at);
+        const r = g ? g.rune : kept.shift();
+        if (!r) continue;
+        const label = T.rune.label(r.id, r.tier);
+        lines.push({ text: g ? T.rune.overStack(label, RUNE_STACK, g.gold) : T.rune.got(label), cls: `slx-loot-rune ${rarityClass({ rarity: r.tier })}` });
+      }
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
-      for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it)]), cls: 'slx-loot-left' });
+      for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it, gearIconUrl(this.ctx.art, it))]), cls: 'slx-loot-left' });
       lines.push(...levelUpLines(end.levelUps, this.ctx.game.state.party));
+      if (end.met) {
+        // Each line says who speaks; narration stands alone.
+        for (const l of STORY.meet[end.met.id].after) {
+          const name = l.who === 'narrator' ? '' : speakerOf(l.who, this.ctx.game.state, this.ctx.art, l.mood).name;
+          lines.push({ text: name ? T.battle.saidBy(name, l.text) : l.text });
+        }
+      }
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;
     this.result = new MenuView(new Menu([{ id: 'ok', label: T.battle.cont }]), {
       pick: () => {
         if (!this.resultReady) return;   // clicks too, not just keys
         this.ctx.sfx.confirm();
-        if (end.outcome === 'lose') this.ctx.go('town');
-        else if (this.ctx.game.phase === 'clear') this.ctx.go('clear');
-        else this.ctx.go('dungeon');
+        if (end.outcome === 'lose') { this.ctx.go('town'); return; }
+        const scenes = this.memoriesToPlay(end);
+        // The battle that first gave a rune tells the rune tutorial once, after its memories (plan 8g ruling 13).
+        const tutorial = !!end.runes?.length && !this.ctx.game.state.runeTutorialSeen;
+        if (scenes.length === 0 && !tutorial) { this.leave(); return; }
+        void this.playMemories(scenes).then(() => (tutorial ? this.runeTutorial() : undefined)).then(() => this.leave());
       },
     });
     // A held or repeated key must not skip the rewards: accept input after a short beat.

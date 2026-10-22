@@ -1,15 +1,17 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
-import { mulberry32 } from '../rng';
-import { SPECIALS } from '../../data/gear';
+import { mulberry32, type Rng } from '../rng';
+import { ROLL_FLOOR, SPECIALS, affixRange } from '../../data/gear';
 import { MATERIALS } from '../../data/materials';
 import { CONDITIONS } from '../../data/conditions';
 import { MAX_ILVL, MAX_REACHED, depthLevel } from '../levels';
 import type { ItemInstance, Rarity } from '../types';
-import { itemLevel, type DropSource } from './item';
-import { BOSS_LEGENDARY, GEAR_CHANCE, RARE_MATERIALS, rarityWeights, rollBossGear, rollGear, rollRareMaterial, type DropCtx, type Tier } from './drops';
+import { itemLevel, rollItem, type DropSource } from './item';
+import { BOSS_LEGENDARY, EPIC_SHARE, GEAR_CHANCE, RARE_MATERIALS, STARLIT_CHANCE, STARLIT_SALT, applyStarlit, rarityWeights, rollBossGear, rollGear, rollRareMaterial, rollTier, starlitChance, type DropCtx, type Tier } from './drops';
 
 const N = 20000;
-const tierOf = (r: Rarity): Tier => (r === 'common' || r === 'magic' || r === 'rare' ? r : 'legendaryTier');
+const tierOf = (r: Rarity): Tier => (r === 'common' || r === 'magic' || r === 'rare' || r === 'epic' ? r : 'legendaryTier');
+const SOURCES: DropSource[] = ['monster', 'chest', 'elite', 'vault', 'boss'];
 const ctxFor = (over: Partial<DropCtx> = {}): DropCtx => {
   let uid = 0;
   return { uid: () => ++uid, depth: 1, region: 'mainline', condition: 'plain', source: 'monster', ...over };
@@ -32,26 +34,104 @@ describe('rarity weights', () => {
     const w = rarityWeights('monster', 10, 'plain');
     expect(w.common).toBe(70);
     expect(w.magic).toBeCloseTo(24 * 1.25);
-    expect(w.rare).toBeCloseTo(5.5 * 1.5);
+    expect(w.rare + w.epic).toBeCloseTo(5.5 * 1.5);
+    expect(w.epic).toBeCloseTo(5.5 * 1.5 * EPIC_SHARE.monster);
     expect(w.legendaryTier).toBeCloseTo(0.5 * 1.5);
   });
 
   it('applies chest, elite, vault and boss adjustments', () => {
     const m = rarityWeights('monster', 10, 'plain');
     const c = rarityWeights('chest', 10, 'plain');
-    expect(c.rare).toBeCloseTo(m.rare * 1.5);
+    expect(c.rare + c.epic).toBeCloseTo((m.rare + m.epic) * 1.5);
     expect(c.legendaryTier).toBeCloseTo(m.legendaryTier * 1.5);
     expect(c.common).toBe(70);
     const e = rarityWeights('elite', 10, 'plain');
     expect(e.common).toBe(0);
     expect(e.magic).toBeCloseTo(m.magic);
-    expect(e.rare).toBeCloseTo(m.rare * 3);
+    expect(e.rare + e.epic).toBeCloseTo((m.rare + m.epic) * 3);
     const v = rarityWeights('vault', 10, 'plain');
     expect(v).toMatchObject({ common: 0, magic: 0 });
-    expect(v.rare).toBeCloseTo(m.rare);
+    expect(v.rare + v.epic).toBeCloseTo(m.rare + m.epic);
     expect(v.legendaryTier).toBeCloseTo(m.legendaryTier * 3);
-    expect(rarityWeights('boss', 40, 'bounty')).toEqual({ common: 0, magic: 0, rare: 0.8, legendaryTier: 0.2 });
-    expect(rarityWeights('boss', 1, 'plain', true)).toEqual({ common: 0, magic: 0, rare: 0.9, legendaryTier: 0.1 });
+    const close = (got: Record<Tier, number>, want: Record<Tier, number>) => {
+      expect(Object.keys(got).sort()).toEqual(Object.keys(want).sort());
+      for (const k of Object.keys(want) as Tier[]) expect(got[k], k).toBeCloseTo(want[k]);
+    };
+    close(rarityWeights('boss', 40, 'bounty'), { common: 0, magic: 0, rare: 0.8 * (1 - EPIC_SHARE.boss), epic: 0.8 * EPIC_SHARE.boss, legendaryTier: 0.2 });
+    close(rarityWeights('boss', 1, 'plain', true), { common: 0, magic: 0, rare: 0.9 * (1 - EPIC_SHARE.boss), epic: 0.9 * EPIC_SHARE.boss, legendaryTier: 0.1 });
+  });
+
+  it('the epic share comes out of rare only, per source', () => {
+    for (const source of SOURCES) {
+      for (const lv of [1, 20]) {
+        const w = rarityWeights(source, lv, 'plain');
+        expect(w.epic / (w.rare + w.epic), `${source} ${lv}`).toBeCloseTo(EPIC_SHARE[source]);
+        const saved = { ...EPIC_SHARE };
+        let none: Record<Tier, number>;
+        try {
+          for (const k of SOURCES) EPIC_SHARE[k] = 0;
+          none = rarityWeights(source, lv, 'plain');
+        } finally {
+          Object.assign(EPIC_SHARE, saved);
+        }
+        expect(none.epic, `${source} ${lv}`).toBe(0);
+        expect(w.rare + w.epic, `${source} ${lv}`).toBeCloseTo(none.rare);
+        for (const t of ['common', 'magic', 'legendaryTier'] as Tier[]) expect(w[t], `${source} ${lv} ${t}`).toBe(none[t]);
+      }
+    }
+  });
+
+  it('bounty and fierce raise epic in proportion', () => {
+    const plain = rarityWeights('monster', 10, 'plain').epic;
+    expect(rarityWeights('monster', 10, 'bounty').epic).toBeCloseTo(1.5 * plain);
+    expect(rarityWeights('monster', 10, 'fierce').epic).toBeCloseTo(1.25 * plain);
+  });
+
+  it('one draw: only a draw that was rare can become epic', () => {
+    const counted = (seed: number): Rng & { n: number } => {
+      const inner = mulberry32(seed);
+      const f = Object.assign(() => { f.n++; return inner(); }, { n: 0 });
+      return f;
+    };
+    for (const source of ['monster', 'elite', 'boss'] as DropSource[]) {
+      const w = rarityWeights(source, 10, 'plain');
+      const merged = { ...w, rare: w.rare + w.epic, epic: 0 };
+      let epics = 0;
+      for (let s = 1; s <= 20000; s++) {
+        const ra = counted(s), rb = counted(s);
+        const a = rollTier(ra, w), b = rollTier(rb, merged);
+        if (a !== b) expect([b, a], `${source} #${s}`).toEqual(['rare', 'epic']);
+        if (a === 'epic') epics++;
+        expect(ra.n).toBe(1);
+        expect(rb.n).toBe(1);
+      }
+      expect(epics, source).toBeGreaterThan(0);
+    }
+  });
+
+  it('epic sits at the end of the rare band: the boundary is rare_end − share × rare', () => {
+    const at = (x: number): Rng => () => x;
+    for (const source of SOURCES) {
+      const w = rarityWeights(source, 10, 'plain');
+      const total = w.common + w.magic + w.rare + w.epic + w.legendaryTier;
+      const rareFull = w.rare + w.epic;
+      const rareStart = w.common + w.magic;
+      const rareEnd = rareStart + rareFull;
+      const boundary = rareEnd - EPIC_SHARE[source] * rareFull;
+      const merged = { ...w, rare: rareFull, epic: 0 };
+      const eps = 1e-9 * total;
+      const cases: [number, Tier, Tier][] = [
+        [rareStart + eps, 'rare', 'rare'],
+        [boundary - eps, 'rare', 'rare'],
+        [boundary + eps, 'epic', 'rare'],
+        [rareEnd - eps, 'epic', 'rare'],
+      ];
+      if (w.legendaryTier > 0) cases.push([rareEnd + eps, 'legendaryTier', 'legendaryTier']);
+      for (const [v, want, wantMerged] of cases) {
+        expect(rollTier(at(v / total), w), `${source} ${v}`).toBe(want);
+        expect(rollTier(at(v / total), merged), `${source} ${v} merged`).toBe(wantMerged);
+      }
+    }
   });
 
   it('uses rarityMul from the condition', () => {
@@ -65,9 +145,9 @@ describe('rollGear', () => {
   it('monster rarity matches rarityWeights at depth 1 and 10', () => {
     for (const depth of [1, 10]) {
       const w = rarityWeights('monster', depthLevel(depth), 'plain');
-      const total = w.common + w.magic + w.rare + w.legendaryTier;
+      const total = w.common + w.magic + w.rare + w.epic + w.legendaryTier;
       const xs = sample(ctxFor({ depth }), 11 + depth);
-      for (const t of ['common', 'magic', 'rare', 'legendaryTier'] as Tier[]) {
+      for (const t of ['common', 'magic', 'rare', 'epic', 'legendaryTier'] as Tier[]) {
         const p = w[t] / total;
         expect(Math.abs(frac(xs, (i) => tierOf(i.rarity) === t) - p), `depth ${depth} ${t}`).toBeLessThan(tol(p));
       }
@@ -95,6 +175,19 @@ describe('rollGear', () => {
     const repeat = frac(sample(ctxFor({ source: 'boss', bossRepeat: true }), 42), (i) => tierOf(i.rarity) === 'legendaryTier');
     expect(Math.abs(first - 0.2)).toBeLessThan(tol(0.2));
     expect(Math.abs(repeat - 0.1)).toBeLessThan(tol(0.1));
+  });
+
+  it('an epic drop has four or five affixes at the epic floor', () => {
+    const xs = sample(ctxFor({ source: 'vault', depth: 10 }), 101, 3000).filter((i) => i.rarity === 'epic');
+    expect(xs.length).toBeGreaterThan(0);
+    for (const i of xs) {
+      expect(i.affixes.length).toBeGreaterThanOrEqual(4);
+      expect(i.affixes.length).toBeLessThanOrEqual(5);
+      for (const a of i.affixes) {
+        const [lo, hi] = affixRange(a.key, i.ilvl);
+        expect(a.value, a.key).toBeGreaterThanOrEqual(Math.max(1, Math.round(lo + (hi - lo) * ROLL_FLOOR.epic)));
+      }
+    }
   });
 
   it('gives items the level of their source', () => {
@@ -177,18 +270,19 @@ describe('rollBossGear', () => {
       const ctx = ctxFor({ source: 'boss', depth });
       const rng = mulberry32(40 + depth);
       const n = 6000;
-      const tiers: Record<Tier, number> = { common: 0, magic: 0, rare: 0, legendaryTier: 0 };
+      const tiers: Record<Tier, number> = { common: 0, magic: 0, rare: 0, epic: 0, legendaryTier: 0 };
       for (let i = 0; i < n; i++) {
         const [, b] = rollBossGear(rng, ctx);
         expect(b.ilvl).toBe(itemLevel(depth, 'boss'));          // not the elite's own item level
         tiers[tierOf(b.rarity)]++;
       }
       const w = rarityWeights('elite', depthLevel(depth), 'plain');
-      const total = w.common + w.magic + w.rare + w.legendaryTier;
+      const total = w.common + w.magic + w.rare + w.epic + w.legendaryTier;
       expect(tiers.common, `depth ${depth}`).toBe(0);
       // Boss weights never give magic; the elite's do, at their share.
       expect(tiers.magic / n, `depth ${depth}`).toBeCloseTo(w.magic / total, 1);
       expect(tiers.rare / n, `depth ${depth}`).toBeCloseTo(w.rare / total, 1);
+      expect(tiers.epic / n, `depth ${depth}`).toBeCloseTo(w.epic / total, 1);
     }
   });
 });
@@ -216,5 +310,109 @@ describe('deep drops stay within the save cap', () => {
       expect(itemLevel(100000, source), source).toBe(MAX_ILVL);
     }
     expect(itemLevel(1, 'boss')).toBe(depthLevel(1) + 4);
+  });
+});
+
+describe('starlit drops (plan 5g)', () => {
+  const withChance = <T>(over: Partial<typeof STARLIT_CHANCE>, fn: () => T): T => {
+    const saved = { drop: { ...STARLIT_CHANCE.drop }, elite: { ...STARLIT_CHANCE.elite }, boss: { ...STARLIT_CHANCE.boss } };
+    try {
+      Object.assign(STARLIT_CHANCE, over);
+      return fn();
+    } finally {
+      Object.assign(STARLIT_CHANCE, saved);
+    }
+  };
+  const legendary = (uid: number): ItemInstance => rollItem(mulberry32(uid), { uid, ilvl: 20, rarity: 'legendary', special: 'lg-noel' });
+
+  it('the starlit chance table', () => {
+    expect(STARLIT_SALT).toBe(0xa54ff53a);
+    expect(starlitChance('monster', 1)).toBe(0.03);
+    expect(starlitChance('chest', 10)).toBeCloseTo(0.048);
+    expect(starlitChance('monster', 40)).toBe(0.08);
+    expect(starlitChance('vault', 1)).toBe(0.05);
+    expect(starlitChance('elite', 10)).toBeCloseTo(0.077);
+    expect(starlitChance('boss', 1)).toBe(0.08);
+    expect(starlitChance('boss', 10)).toBeCloseTo(0.116);
+    expect(starlitChance('boss', 30)).toBe(0.16);
+    for (const source of SOURCES) expect(starlitChance(source, 0), source).toBe(starlitChance(source, 1));
+  });
+
+  it('applyStarlit is keyed by seed and uid only', () => {
+    for (let uid = 1; uid <= 300; uid++) {
+      const it = legendary(uid);
+      const ctx = { seed: 4242, source: 'boss' as const, depth: 10 };
+      expect(applyStarlit(it, ctx)).toEqual(applyStarlit(legendary(uid), ctx));
+      expect(applyStarlit(it, { source: 'boss', depth: 10 })).toBe(it);
+    }
+    const always = { base: 1, perDepth: 0, cap: 1 };
+    withChance({ drop: always, elite: always, boss: always }, () => {
+      for (const rarity of ['magic', 'rare', 'epic'] as Rarity[]) {
+        const it = rollItem(mulberry32(3), { uid: 9, ilvl: 20, rarity });
+        expect(applyStarlit(it, { seed: 1, source: 'boss', depth: 10 }), rarity).toBe(it);
+      }
+      expect(applyStarlit(legendary(9), { seed: 1, source: 'boss', depth: 10 }).starlit).toBe(true);
+    });
+  });
+
+  it('different run seeds give different starlit outcomes for the same uid', () => {
+    const it = legendary(1);
+    let differ = 0;
+    for (let uid = 1; uid <= 2000; uid++) {
+      const a = applyStarlit({ ...it, uid }, { seed: 1, source: 'boss', depth: 10 }).starlit === true;
+      const b = applyStarlit({ ...it, uid }, { seed: 2, source: 'boss', depth: 10 }).starlit === true;
+      if (a !== b) differ++;
+    }
+    expect(differ).toBeGreaterThan(0);
+  });
+
+  it('applyStarlit hits its chance', () => {
+    const n = 20000;
+    let hits = 0;
+    const it = legendary(1);
+    for (let uid = 1; uid <= n; uid++) if (applyStarlit({ ...it, uid }, { seed: 12345, source: 'boss', depth: 10 }).starlit) hits++;
+    const p = starlitChance('boss', 10);
+    expect(Math.abs(hits / n - p)).toBeLessThan(tol(p, n));
+  });
+
+  it('the starlit stream takes no draw from the loot rng', () => {
+    withChance({ boss: { base: 0.5, perDepth: 0, cap: 0.5 } }, () => {
+      let starlit = 0;
+      for (let s = 1; s <= 2000; s++) {
+        const a = mulberry32(s), b = mulberry32(s);
+        const x = rollGear(a, ctxFor({ source: 'boss', seed: 777 }));
+        const y = rollGear(b, ctxFor({ source: 'boss' }));
+        expect(a(), `#${s}`).toBe(b());
+        const { affixes: _xa, starlit: xs, ...xr } = x;
+        const { affixes: _ya, starlit: ys, ...yr } = y;
+        expect(xr, `#${s}`).toEqual(yr);
+        expect(ys).toBeUndefined();
+        if (xs) starlit++;
+      }
+      expect(starlit).toBeGreaterThan(0);
+    });
+  });
+
+  it('only labyrinth drops are starlit: rollItem alone never is', () => {
+    for (const sp of Object.values(SPECIALS)) {
+      for (let seed = 1; seed <= 5; seed++) {
+        expect('starlit' in rollItem(mulberry32(seed), { uid: seed, ilvl: 30, rarity: sp.rarity, special: sp.id }), sp.id).toBe(false);
+      }
+    }
+  });
+
+  it('only the legendary tier of rollGear is ever starlit', () => {
+    const always = { base: 1, perDepth: 0, cap: 1 };
+    withChance({ drop: always, elite: always, boss: always }, () => {
+      const xs = sample(ctxFor({ source: 'elite', depth: 10, seed: 5 }), 61, 3000);
+      for (const it of xs) expect(it.starlit === true, it.rarity).toBe(tierOf(it.rarity) === 'legendaryTier');
+      expect(xs.some((it) => it.starlit)).toBe(true);
+    });
+  });
+
+  it('the sim never reaches the starlit stream', () => {
+    const src = readFileSync('src/scripts/games/starlantern/engine/sim.ts', 'utf8');
+    expect(src.length).toBeGreaterThan(1000);
+    for (const word of ['applyStarlit', 'rollGear', 'STARLIT', 'starlit']) expect(src, word).not.toContain(word);
   });
 });

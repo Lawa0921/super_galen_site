@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../rng';
+import { parseFloor } from '../map';
 import { posKey } from '../map';
-import { genFloor } from './gen';
-import { fillRooms, type Content } from './rooms';
+import { genFloor, type GenFloor } from './gen';
+import { fillRooms, placeRescue, placeSpecial, type Content } from './rooms';
 import { CONDITIONS, type ConditionId } from '../../data/conditions';
 import { REGIONS } from '../../data/regions';
 import { MATERIALS } from '../../data/materials';
+import { reachable } from '../map';
 
 const run = (seed: number, cond: ConditionId = 'plain', boss = false) => {
   const g = genFloor(seed, { depth: 1 + (seed % 5), boss });
@@ -105,5 +107,60 @@ describe('region and condition data', () => {
     expect(CONDITIONS.fog).toMatchObject({ sight: 0, encounterMul: 0.8 });
     expect(CONDITIONS.calm).toMatchObject({ encounterMul: 0.6, extraTraps: 1 });
     expect(CONDITIONS.plain).toMatchObject({ encounterMul: 1, enemyAtkMul: 1, extraChests: 0, sight: 1 });
+  });
+});
+
+describe('placeRescue', () => {
+  it('falls back to the first floor tile on a roomless map', () => {
+    const map = parseFloor(['#####', '#E..#', '#.>.#', '#####']);
+    const g: GenFloor = { map, rooms: [], entranceRoom: 0, exitRoom: 0 };
+    const f = { map: { ...map, tiles: map.tiles.map((r) => [...r]) }, contents: [] as Content[] };
+    placeRescue(f, g, mulberry32(1), 'selene');
+    expect(f.contents).toEqual([{ kind: 'rescue', at: { x: 2, y: 1 }, room: 0, who: 'selene' }]);
+    expect(f.map.tiles[1][2]).toBe('rescue');
+  });
+
+  it('prefers a room with nothing in it, and never the entrance or exit room', () => {
+    for (let seed = 1; seed <= 100; seed++) {
+      const g = genFloor(seed, { depth: 2, boss: false });
+      if (!g.rooms.length) continue;
+      const f = fillRooms(g, mulberry32(seed ^ 0x9e37), CONDITIONS.plain);
+      const busy = new Set(f.contents.map((c) => c.room));
+      const anyEmpty = g.rooms.some((r) => r.id !== g.entranceRoom && r.id !== g.exitRoom && !busy.has(r.id));
+      placeRescue(f, g, mulberry32(seed), 'selene');
+      const c = f.contents.find((x) => x.kind === 'rescue')!;
+      expect(c.room).not.toBe(g.entranceRoom);
+      expect(c.room).not.toBe(g.exitRoom);
+      if (anyEmpty) expect(busy.has(c.room), `seed ${seed}`).toBe(false);
+    }
+  });
+});
+
+describe('placeSpecial', () => {
+  it('placeRescue still lands where it did', () => {
+    const seen = [[1, 10, 1, 7], [2, 12, 10, 0], [3, 9, 2, 5], [5, 13, 10, 2], [8, 15, 8, 0], [13, 14, 4, 2], [21, 4, 6, 2], [34, 7, 8, 6]];
+    for (const [seed, x, y, room] of seen) {
+      const g = genFloor(seed, { depth: 2, boss: false });
+      const f = fillRooms(g, mulberry32(seed ^ 0x9e37), CONDITIONS.plain);
+      placeRescue(f, g, mulberry32(seed), 'selene');
+      const c = f.contents.find((k) => k.kind === 'rescue')!;
+      expect([c.at.x, c.at.y, c.room], `seed ${seed}`).toEqual([x, y, room]);
+    }
+  });
+
+  it('with no room left it takes a free floor tile joined to the entrance, never a cut-off pocket scanned before it', () => {
+    const map = parseFloor(['########', '#..#E..#', '########']);   // the row scan meets the pocket at x=1,2 before the entrance side
+    const g: GenFloor = { map, rooms: [], entranceRoom: 0, exitRoom: 0 };
+    const f = { map: { ...map, tiles: map.tiles.map((r) => [...r]) }, contents: [] as Content[] };
+    placeRescue(f, g, mulberry32(1), 'selene');
+    placeSpecial(f, g, mulberry32(2), { kind: 'glimmer', owner: 'selene' });
+    expect(f.contents.map((c) => [c.kind, c.at])).toEqual([['rescue', { x: 5, y: 1 }], ['glimmer', { x: 6, y: 1 }]]);
+    const open = reachable(map, map.entrance);
+    for (const c of f.contents) expect(open.has(posKey(c.at))).toBe(true);
+    expect(f.map.tiles[1][6]).toBe('glimmer');
+    expect(f.map.tiles[1][1]).toBe('floor');
+    expect(f.map.tiles[1][2]).toBe('floor');
+    placeSpecial(f, g, mulberry32(3), { kind: 'glimmer' });   // nothing joined to the entrance is left: it is not forced into the pocket
+    expect(f.contents).toHaveLength(2);
   });
 });

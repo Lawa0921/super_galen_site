@@ -1,0 +1,496 @@
+{
+  "assets": {
+    "gear-set-iron-offhand-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-set-iron-offhand-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 48,
+          "mass": 0.628,
+          "box": [
+            8,
+            4,
+            56,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 7.571,
+        "scale": 7.571,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "set-iron-offhand"
+      },
+      "slot": "offhand"
+    },
+    "gear-set-iron-offhand": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-set-iron-offhand.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 19,
+          "mass": 0.636,
+          "box": [
+            3,
+            2,
+            22,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 19.273,
+        "scale": 19.273,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "set-iron-offhand"
+      },
+      "slot": "offhand"
+    },
+    "gear-set-iron-head-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-set-iron-head-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 45,
+          "mass": 0.55,
+          "box": [
+            9,
+            4,
+            54,
+            60
+          ],
+          "centre_off": 0.5
+        },
+        "block": 7.268,
+        "scale": 7.268,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "set-iron-head"
+      },
+      "slot": "head"
+    },
+    "gear-set-iron-head": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-set-iron-head.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 18,
+          "mass": 0.558,
+          "box": [
+            4,
+            2,
+            22,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 18.5,
+        "scale": 18.5,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "set-iron-head"
+      },
+      "slot": "head"
+    },
+    "gear-set-iron-body-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-set-iron-body-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 49,
+          "mass": 0.629,
+          "box": [
+            4,
+            7,
+            60,
+            56
+          ],
+          "centre_off": 0.5
+        },
+        "block": 7.929,
+        "scale": 7.929,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "set-iron-body"
+      },
+      "slot": "body"
+    },
+    "gear-set-iron-body": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-set-iron-body.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 19,
+          "mass": 0.624,
+          "box": [
+            2,
+            3,
+            24,
+            22
+          ],
+          "centre_off": 0.5
+        },
+        "block": 20.182,
+        "scale": 20.182,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "set-iron-body"
+      },
+      "slot": "body"
+    },
+    "gear-set-iron-feet-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-set-iron-feet-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 53,
+          "mass": 0.695,
+          "box": [
+            4,
+            5,
+            60,
+            58
+          ],
+          "centre_off": 0.5
+        },
+        "block": 7.268,
+        "scale": 7.268,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "set-iron-feet"
+      },
+      "slot": "feet"
+    },
+    "gear-set-iron-feet": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-set-iron-feet.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.7,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 18.5,
+        "scale": 18.5,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "set-iron-feet"
+      },
+      "slot": "feet"
+    },
+    "gear-mire-miasma-mask-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-mire-miasma-mask-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.703,
+          "box": [
+            4,
+            4,
+            59,
+            60
+          ],
+          "centre_off": 0.5
+        },
+        "block": 7.107,
+        "scale": 7.107,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "mire-miasma-mask"
+      },
+      "slot": "head"
+    },
+    "gear-mire-miasma-mask": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-mire-miasma-mask.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.715,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 18.091,
+        "scale": 18.091,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "mire-miasma-mask"
+      },
+      "slot": "head"
+    },
+    "gear-shade-raven-cloak-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-shade-raven-cloak-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 52,
+          "mass": 0.666,
+          "box": [
+            4,
+            6,
+            60,
+            58
+          ],
+          "centre_off": 0.0
+        },
+        "block": 8.161,
+        "scale": 8.161,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "shade-raven-cloak"
+      },
+      "slot": "body"
+    },
+    "gear-shade-raven-cloak": {
+      "final": "art-factory/starlantern/work/sheet-gear-8/cand/a2/gear-shade-raven-cloak.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.645,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 20.773,
+        "scale": 20.773,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-8\\sheet-gear-8-a2.png",
+        "cell": "shade-raven-cloak"
+      },
+      "slot": "body"
+    }
+  }
+}

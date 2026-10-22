@@ -1,0 +1,1434 @@
+{
+  "cells": [
+    {
+      "level": 5,
+      "depth": 1,
+      "ids": [
+        "hero",
+        "rin",
+        "chizuru",
+        "noel",
+        "selene"
+      ],
+      "measured": [
+        "hero",
+        "rin",
+        "chizuru",
+        "noel",
+        "selene"
+      ],
+      "rounds": 2079,
+      "by": {
+        "hero": {
+          "damage": 58170,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 96794,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 46390,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "noel": {
+          "damage": 42352,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 13091,
+          "healing": 56503,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 5,
+      "depth": 1,
+      "ids": [
+        "hero",
+        "rin",
+        "liz",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "liz"
+      ],
+      "rounds": 2013,
+      "by": {
+        "hero": {
+          "damage": 55532,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 87051,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "liz": {
+          "damage": 70184,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 35088,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 12330,
+          "healing": 53746,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 5,
+      "depth": 1,
+      "ids": [
+        "hero",
+        "rin",
+        "sylvie",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "sylvie"
+      ],
+      "rounds": 1782,
+      "by": {
+        "hero": {
+          "damage": 47542,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 89381,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "sylvie": {
+          "damage": 74886,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 40821,
+          "healing": 0,
+          "prevented": 39,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 10303,
+          "healing": 36110,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 5,
+      "depth": 1,
+      "ids": [
+        "hero",
+        "rin",
+        "scarlet",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "scarlet"
+      ],
+      "rounds": 2233,
+      "by": {
+        "hero": {
+          "damage": 65038,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 98390,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "scarlet": {
+          "damage": 38704,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 42815,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 15895,
+          "healing": 73150,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 5,
+      "depth": 1,
+      "ids": [
+        "hero",
+        "rin",
+        "safira",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "safira"
+      ],
+      "rounds": 2052,
+      "by": {
+        "hero": {
+          "damage": 57491,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 89883,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "safira": {
+          "damage": 62768,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 37939,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 13054,
+          "healing": 53543,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 5,
+      "depth": 1,
+      "ids": [
+        "hero",
+        "rin",
+        "bobby",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "bobby"
+      ],
+      "rounds": 2077,
+      "by": {
+        "hero": {
+          "damage": 59430,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 97426,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "bobby": {
+          "damage": 32327,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 53562,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 15196,
+          "healing": 57646,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 10,
+      "depth": 3,
+      "ids": [
+        "hero",
+        "rin",
+        "chizuru",
+        "noel",
+        "selene"
+      ],
+      "measured": [
+        "hero",
+        "rin",
+        "chizuru",
+        "noel",
+        "selene"
+      ],
+      "rounds": 1441,
+      "by": {
+        "hero": {
+          "damage": 64911,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 114780,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 106527,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "noel": {
+          "damage": 56606,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 25176,
+          "healing": 4436,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 10,
+      "depth": 3,
+      "ids": [
+        "hero",
+        "rin",
+        "liz",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "liz"
+      ],
+      "rounds": 1479,
+      "by": {
+        "hero": {
+          "damage": 59084,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 96720,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "liz": {
+          "damage": 98018,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 88626,
+          "healing": 0,
+          "prevented": 28,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 25552,
+          "healing": 7435,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 10,
+      "depth": 3,
+      "ids": [
+        "hero",
+        "rin",
+        "sylvie",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "sylvie"
+      ],
+      "rounds": 1297,
+      "by": {
+        "hero": {
+          "damage": 50746,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 101461,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "sylvie": {
+          "damage": 110606,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 83563,
+          "healing": 0,
+          "prevented": 83,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 21624,
+          "healing": 1396,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 10,
+      "depth": 3,
+      "ids": [
+        "hero",
+        "rin",
+        "scarlet",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "scarlet"
+      ],
+      "rounds": 1276,
+      "by": {
+        "hero": {
+          "damage": 54038,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 125624,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "scarlet": {
+          "damage": 86869,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 76591,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 24878,
+          "healing": 7423,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 10,
+      "depth": 3,
+      "ids": [
+        "hero",
+        "rin",
+        "safira",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "safira"
+      ],
+      "rounds": 1369,
+      "by": {
+        "hero": {
+          "damage": 54529,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 104063,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "safira": {
+          "damage": 110810,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 76443,
+          "healing": 0,
+          "prevented": 62,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 22155,
+          "healing": 5001,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 10,
+      "depth": 3,
+      "ids": [
+        "hero",
+        "rin",
+        "bobby",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "bobby"
+      ],
+      "rounds": 1551,
+      "by": {
+        "hero": {
+          "damage": 67082,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 126529,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "bobby": {
+          "damage": 32078,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 109013,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 33298,
+          "healing": 6915,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 20,
+      "depth": 5,
+      "ids": [
+        "hero",
+        "rin",
+        "chizuru",
+        "noel",
+        "selene"
+      ],
+      "measured": [
+        "hero",
+        "rin",
+        "chizuru",
+        "noel",
+        "selene"
+      ],
+      "rounds": 2087,
+      "by": {
+        "hero": {
+          "damage": 230370,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 294510,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 220566,
+          "healing": 0,
+          "prevented": 740,
+          "shield": 0
+        },
+        "noel": {
+          "damage": 161756,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 55518,
+          "healing": 18023,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 20,
+      "depth": 5,
+      "ids": [
+        "hero",
+        "rin",
+        "liz",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "liz"
+      ],
+      "rounds": 2041,
+      "by": {
+        "hero": {
+          "damage": 215385,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 277772,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "liz": {
+          "damage": 272191,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 149116,
+          "healing": 0,
+          "prevented": 615,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 48256,
+          "healing": 25080,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 20,
+      "depth": 5,
+      "ids": [
+        "hero",
+        "rin",
+        "sylvie",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "sylvie"
+      ],
+      "rounds": 2035,
+      "by": {
+        "hero": {
+          "damage": 220669,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 275822,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "sylvie": {
+          "damage": 221897,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 196440,
+          "healing": 0,
+          "prevented": 824,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 47892,
+          "healing": 18947,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 20,
+      "depth": 5,
+      "ids": [
+        "hero",
+        "rin",
+        "scarlet",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "scarlet"
+      ],
+      "rounds": 2076,
+      "by": {
+        "hero": {
+          "damage": 228250,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 293886,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "scarlet": {
+          "damage": 220129,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 169529,
+          "healing": 0,
+          "prevented": 239,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 50926,
+          "healing": 37745,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 20,
+      "depth": 5,
+      "ids": [
+        "hero",
+        "rin",
+        "safira",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "safira"
+      ],
+      "rounds": 2396,
+      "by": {
+        "hero": {
+          "damage": 236433,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 299407,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "safira": {
+          "damage": 199165,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 174552,
+          "healing": 0,
+          "prevented": 991,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 53163,
+          "healing": 36731,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 20,
+      "depth": 5,
+      "ids": [
+        "hero",
+        "rin",
+        "bobby",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "bobby"
+      ],
+      "rounds": 2422,
+      "by": {
+        "hero": {
+          "damage": 249495,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 306178,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "bobby": {
+          "damage": 91991,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 253574,
+          "healing": 0,
+          "prevented": 587,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 61482,
+          "healing": 30275,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 35,
+      "depth": 9,
+      "ids": [
+        "hero",
+        "rin",
+        "chizuru",
+        "noel",
+        "selene"
+      ],
+      "measured": [
+        "hero",
+        "rin",
+        "chizuru",
+        "noel",
+        "selene"
+      ],
+      "rounds": 2521,
+      "by": {
+        "hero": {
+          "damage": 498186,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 391923,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 399264,
+          "healing": 0,
+          "prevented": 3820,
+          "shield": 0
+        },
+        "noel": {
+          "damage": 325931,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 79096,
+          "healing": 148064,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 35,
+      "depth": 9,
+      "ids": [
+        "hero",
+        "rin",
+        "liz",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "liz"
+      ],
+      "rounds": 2796,
+      "by": {
+        "hero": {
+          "damage": 479291,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 354623,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "liz": {
+          "damage": 526220,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 257655,
+          "healing": 0,
+          "prevented": 3153,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 70415,
+          "healing": 179032,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 35,
+      "depth": 9,
+      "ids": [
+        "hero",
+        "rin",
+        "sylvie",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "sylvie"
+      ],
+      "rounds": 2835,
+      "by": {
+        "hero": {
+          "damage": 493240,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 380702,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "sylvie": {
+          "damage": 396170,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 350579,
+          "healing": 0,
+          "prevented": 4367,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 68603,
+          "healing": 188161,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 35,
+      "depth": 9,
+      "ids": [
+        "hero",
+        "rin",
+        "scarlet",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "scarlet"
+      ],
+      "rounds": 2669,
+      "by": {
+        "hero": {
+          "damage": 494132,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 427702,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "scarlet": {
+          "damage": 360753,
+          "healing": 66880,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 329117,
+          "healing": 0,
+          "prevented": 4589,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 82696,
+          "healing": 185970,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 35,
+      "depth": 9,
+      "ids": [
+        "hero",
+        "rin",
+        "safira",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "safira"
+      ],
+      "rounds": 3165,
+      "by": {
+        "hero": {
+          "damage": 569673,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 418314,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "safira": {
+          "damage": 302150,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 311197,
+          "healing": 0,
+          "prevented": 2290,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 77605,
+          "healing": 228811,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 35,
+      "depth": 9,
+      "ids": [
+        "hero",
+        "rin",
+        "bobby",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "bobby"
+      ],
+      "rounds": 2864,
+      "by": {
+        "hero": {
+          "damage": 521381,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 414302,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "bobby": {
+          "damage": 239304,
+          "healing": 74289,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 432695,
+          "healing": 0,
+          "prevented": 3377,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 85570,
+          "healing": 141218,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 50,
+      "depth": 13,
+      "ids": [
+        "hero",
+        "rin",
+        "chizuru",
+        "noel",
+        "selene"
+      ],
+      "measured": [
+        "hero",
+        "rin",
+        "chizuru",
+        "noel",
+        "selene"
+      ],
+      "rounds": 2166,
+      "by": {
+        "hero": {
+          "damage": 512729,
+          "healing": 11967,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 487356,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 593668,
+          "healing": 0,
+          "prevented": 6245,
+          "shield": 0
+        },
+        "noel": {
+          "damage": 525049,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 339278,
+          "healing": 109788,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 50,
+      "depth": 13,
+      "ids": [
+        "hero",
+        "rin",
+        "liz",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "liz"
+      ],
+      "rounds": 2344,
+      "by": {
+        "hero": {
+          "damage": 491783,
+          "healing": 26770,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 477932,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "liz": {
+          "damage": 756096,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 431873,
+          "healing": 0,
+          "prevented": 5911,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 300396,
+          "healing": 115357,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 50,
+      "depth": 13,
+      "ids": [
+        "hero",
+        "rin",
+        "sylvie",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "sylvie"
+      ],
+      "rounds": 2189,
+      "by": {
+        "hero": {
+          "damage": 484126,
+          "healing": 19403,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 426757,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "sylvie": {
+          "damage": 730239,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 524293,
+          "healing": 0,
+          "prevented": 6592,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 292665,
+          "healing": 110085,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 50,
+      "depth": 13,
+      "ids": [
+        "hero",
+        "rin",
+        "scarlet",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "scarlet"
+      ],
+      "rounds": 2289,
+      "by": {
+        "hero": {
+          "damage": 550933,
+          "healing": 17407,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 532400,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "scarlet": {
+          "damage": 516880,
+          "healing": 71786,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 484882,
+          "healing": 0,
+          "prevented": 7036,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 372985,
+          "healing": 142383,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 50,
+      "depth": 13,
+      "ids": [
+        "hero",
+        "rin",
+        "safira",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "safira"
+      ],
+      "rounds": 2378,
+      "by": {
+        "hero": {
+          "damage": 541869,
+          "healing": 25315,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 539009,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "safira": {
+          "damage": 580645,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 469326,
+          "healing": 0,
+          "prevented": 7711,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 327231,
+          "healing": 122041,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    },
+    {
+      "level": 50,
+      "depth": 13,
+      "ids": [
+        "hero",
+        "rin",
+        "bobby",
+        "chizuru",
+        "selene"
+      ],
+      "measured": [
+        "bobby"
+      ],
+      "rounds": 2327,
+      "by": {
+        "hero": {
+          "damage": 557725,
+          "healing": 18450,
+          "prevented": 0,
+          "shield": 0
+        },
+        "rin": {
+          "damage": 529703,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "bobby": {
+          "damage": 343630,
+          "healing": 0,
+          "prevented": 0,
+          "shield": 0
+        },
+        "chizuru": {
+          "damage": 652212,
+          "healing": 0,
+          "prevented": 6972,
+          "shield": 0
+        },
+        "selene": {
+          "damage": 374810,
+          "healing": 126338,
+          "prevented": 0,
+          "shield": 0
+        }
+      }
+    }
+  ]
+}

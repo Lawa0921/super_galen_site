@@ -1,0 +1,18 @@
+{
+  "pass": false,
+  "reasons": [
+    "subject cut by the canvas edge"
+  ],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 3,
+  "block": 11,
+  "size": [
+    116,
+    113
+  ]
+}

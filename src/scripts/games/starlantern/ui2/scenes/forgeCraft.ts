@@ -7,11 +7,14 @@ import { specialLines } from '../../engine/compare';
 import { baseCost, craftLevel, itemRecipeCost, setCost } from '../../engine/forge/craft';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import type { GameState } from '../../engine/state';
+import { priceOf } from '../../engine/town';
 import type { GearSlot } from '../../engine/types';
+import { codexArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
+import { gearIconUrl } from '../gearArt';
 import { fillRich, gearPart } from '../loot';
 import { Menu, type MenuItem } from '../menu';
-import { MenuView, QtyView, confirmBox, richNodes, win, type Rich } from '../widgets';
+import { GEAR_ROWS, MenuView, QtyView, confirmBox, richNodes, win, type Rich } from '../widgets';
 import { costText, lackingNames, type ForgeHost } from './forge';
 
 /** The most of one consumable a single craft makes, as in the shop. */
@@ -44,10 +47,18 @@ const costLine = (s: GameState, c: Cost) => el('p', {}, richNodes([T.ui2.forge.c
 export function openCraft(h: ForgeHost): void {
   const game = h.ctx.game;
   const F = T.ui2.forge;
+  /** A set row shows its first piece's gear icon, a piece row its own, once published. */
+  const gearIcon = (id: string): Pick<MenuItem, 'icon' | 'iconCls'> => {
+    const icon = gearIconUrl(h.ctx.art, codexArtId(id));
+    return icon ? { icon, iconCls: 'slx-gear-ico' } : {};
+  };
 
-  /** One list layer sharing the page's detail window; the detail follows the cursor, Esc pops and runs `back`. */
+  /**
+   * One list layer sharing the page's detail window; the detail follows the cursor, Esc pops and runs `back`. `shown` is how
+   * many rows are on screen (fewer for gear with its icons).
+   */
   function layer(info: HTMLElement, o: {
-    rows(): MenuItem[]; detail(id: string): HTMLElement[]; pick(it: MenuItem, refresh: () => void): void; back(): void;
+    rows(): MenuItem[]; detail(id: string): HTMLElement[]; pick(it: MenuItem, refresh: () => void): void; back(): void; shown?: number;
   }): { show(): void } {
     const show = () => { const c = v.menu.current(); info.replaceChildren(...(c ? o.detail(c.id) : [])); };
     const refresh = () => {
@@ -60,7 +71,7 @@ export function openCraft(h: ForgeHost): void {
       pick: (it) => o.pick(it, refresh),
       moved: () => { h.ctx.sfx.cursor(); show(); },
       cancel: () => { h.pop(); o.back(); },
-    }, 12);
+    }, o.shown ?? 12);
     show();
     h.push({ el: win('slx-list slx-forge-list slx-craft-list', [v.el]), onAction: (a) => v.onAction(a) });
     return { show };
@@ -89,11 +100,11 @@ export function openCraft(h: ForgeHost): void {
   const consumables = () => {
     const info = newInfo();
     layer(info, {
-      rows: () => Object.keys(CONSUMABLE_RECIPES).map((id) => recipeRow(game.state, { id, label: ITEMS[id]?.name ?? id, cost: itemRecipeCost(id, 1)!, shop: ITEMS[id]?.price ?? 0 })),
+      rows: () => Object.keys(CONSUMABLE_RECIPES).map((id) => recipeRow(game.state, { id, label: ITEMS[id]?.name ?? id, cost: itemRecipeCost(id, 1)!, shop: priceOf(game.state, id) ?? 0 })),
       detail: (id) => [
         el('p', { class: 'slx-name-line', text: ITEMS[id]?.name ?? id }),
         el('p', { class: 'slx-desc', text: ITEMS[id]?.desc ?? '' }),
-        el('p', { text: F.craftShop(ITEMS[id]?.price ?? 0) }),
+        el('p', { text: F.craftShop(priceOf(game.state, id) ?? 0) }),
         costLine(game.state, itemRecipeCost(id, 1)!),
       ],
       pick: (it, refresh) => {
@@ -156,14 +167,16 @@ export function openCraft(h: ForgeHost): void {
   const sets = () => {
     const info = newInfo();
     const setsLayer = layer(info, {
-      rows: () => Object.values(SETS).map((set): MenuItem => ({ id: set.id, label: codexName(set.id), right: REGIONS[set.region].name })),
+      shown: GEAR_ROWS,
+      rows: () => Object.values(SETS).map((set): MenuItem => ({ id: set.id, label: codexName(set.id), right: REGIONS[set.region].name, ...gearIcon(set.id) })),
       detail: (id) => [
         el('p', { class: 'slx-name-line', text: codexName(id) }),
         ...specialLines(id).map((l) => el('p', { class: l.kind === 'lore' ? 'slx-desc' : '', text: l.text })),
       ],
       pick: (setRow) => {
         layer(info, {
-          rows: () => SETS[setRow.id].pieces.map((id) => recipeRow(game.state, { id, label: codexName(id), cost: setCost(game.state, id)!, cls: 'slx-rarity-set' })),
+          shown: GEAR_ROWS,
+          rows: () => SETS[setRow.id].pieces.map((id) => ({ ...recipeRow(game.state, { id, label: codexName(id), cost: setCost(game.state, id)!, cls: 'slx-rarity-set' }), ...gearIcon(id) })),
           detail: (id) => [
             el('p', { class: 'slx-name-line slx-rarity-set', text: codexName(id) }),
             ...specialLines(id).map((l) => el('p', { class: l.kind === 'lore' ? 'slx-desc' : '', text: l.text })),

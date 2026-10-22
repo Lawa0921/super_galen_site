@@ -1,7 +1,7 @@
 import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
 import type { CharacterId } from '../../engine/types';
-import { hasSpent, innCost, respecCost, revive, reviveCost } from '../../engine/town';
+import { hasSpent, innCost, respecPrice, revive, reviveCost } from '../../engine/town';
 import { el } from '../../ui/dom';
 import { Menu, type MenuItem } from '../menu';
 import type { UiAction } from '../input';
@@ -40,7 +40,7 @@ export class InnScene extends FacilityScene {
   private respecList(): void {
     const p = this.ctx.game.state.party;
     if (!p.recruited.some((id) => hasSpent(p.roster[id]))) { void this.say(T.ui2.inn.nothingToReset); return; }
-    const v = new MenuView(new Menu(p.recruited.map((id) => ({ id, label: CHARACTERS[id].name, right: `${respecCost(p.roster[id].level)} G`, disabled: !hasSpent(p.roster[id]) }))), {
+    const v = new MenuView(new Menu(p.recruited.map((id) => ({ id, label: CHARACTERS[id].name, right: respecPrice(p.roster[id]) === 0 ? T.ui2.inn.free : `${respecPrice(p.roster[id])} G`, disabled: !hasSpent(p.roster[id]) }))), {
       pick: (it) => {
         const m = this.ctx.game.state.party.roster[it.id as CharacterId];
         if (!hasSpent(m)) { this.popAll(); void this.say(T.ui2.inn.nothingToReset); return; }
@@ -53,7 +53,7 @@ export class InnScene extends FacilityScene {
   }
 
   private askRespec(id: CharacterId, name: string): void {
-    const cost = respecCost(this.ctx.game.state.party.roster[id].level);
+    const cost = respecPrice(this.ctx.game.state.party.roster[id]);
     const box = confirmBox(T.ui2.inn.askRespec(name, cost), (yes) => {
       if (!yes) { this.pop(); return; }
       const r = this.ctx.game.respec(id);

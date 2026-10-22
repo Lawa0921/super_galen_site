@@ -6,6 +6,8 @@ import type { MenuItem } from '../menu';
 import { FacilityScene } from './facility';
 import { MenuView } from '../widgets';
 import { Menu } from '../menu';
+import { STORY } from '../../data/story.zh-TW';
+import type { ActNode, SceneId } from '../../data/story/scenes';
 
 class Probe extends FacilityScene {
   picked: string[] = [];
@@ -16,6 +18,7 @@ class Probe extends FacilityScene {
     this.push({ el: sub.el, onAction: (a) => sub.onAction(a) });
   }
   cheer(): Promise<void> { return this.say('好！', 'happy'); }
+  scene(id: SceneId): Promise<void> { return this.play(id); }
 }
 
 const ctx = () => ({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() });
@@ -87,5 +90,47 @@ describe('FacilityScene mouse', () => {
     expect(c.go).not.toHaveBeenCalled();
     back.click();
     expect(c.go).toHaveBeenCalledWith('town');
+  });
+});
+
+describe('FacilityScene story', () => {
+  const stageCtx = (nodes: ActNode[], returned: ('anna' | 'orik')[] = []) => {
+    const c = ctx();
+    c.game.state.story.nodes.push(...nodes);
+    c.game.state.story.returned.push(...returned);
+    return c;
+  };
+  const greeting = (c: ReturnType<typeof ctx>, id: 'guild' | 'shop', rng: number) => {
+    Object.assign(c.game, { rng: () => rng });
+    const root = document.createElement('div');
+    new Probe(c, id, Infinity).enter(root);
+    return root.querySelector('.slx-talk .slx-text')!.textContent;
+  };
+
+  it('greetings follow the stage', () => {
+    const c = stageCtx(['act2']);
+    expect(STORY.greet.guild.act2).toContain(greeting(c, 'guild', 0));
+    expect(STORY.greet.guild.act2).toContain(greeting(c, 'guild', 0.999));
+  });
+
+  it('a returned townsperson after-line joins her greetings', () => {
+    const c = stageCtx([], ['anna']);
+    const pool = [...STORY.greet.guild.prologue, STORY.town.anna.after];
+    expect(greeting(c, 'guild', 0.999)).toBe(pool[pool.length - 1]);
+    // Orik has not returned: the shop pool is unchanged.
+    expect(STORY.greet.shop.prologue).toContain(greeting(c, 'shop', 0.999));
+  });
+
+  it('hides the command window while a scene plays and brings it back after', async () => {
+    const c = ctx(); const root = document.createElement('div');
+    const s = new Probe(c, 'guild', Infinity); s.enter(root);
+    s.onAction('confirm');
+    c.game.arrival = ['prologue'];
+    const done = s.scene('prologue');
+    const cmd = root.querySelector('.slx-cmd') as HTMLElement;
+    expect(cmd.classList.contains('slx-cmd-hidden')).toBe(true);
+    s.onAction('cancel'); await new Promise((r) => setTimeout(r, 0)); s.onAction('confirm');
+    await done;
+    expect(cmd.classList.contains('slx-cmd-hidden')).toBe(false);
   });
 });

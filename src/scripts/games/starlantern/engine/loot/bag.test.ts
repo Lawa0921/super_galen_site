@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { BAG_SIZE, addGear, applyAutoJunk, mintUid, sortBag } from './bag';
 import { newGame } from '../state';
 import type { ItemInstance, Rarity } from '../types';
+import { RARITIES } from '../../data/gear';
 
 const item = (uid: number, base: string, rarity: Rarity, ilvl: number): ItemInstance =>
   ({ uid, base, rarity, ilvl, affixes: [], enhance: 0 });
@@ -42,7 +43,7 @@ describe('bag', () => {
   });
 
   it('auto junk never marks legendary, unique or set', () => {
-    const all: Rarity[] = ['common', 'magic', 'rare', 'legendary', 'unique', 'set'];
+    const all: Rarity[] = RARITIES;
     const marked = (mode: 'off' | 'common' | 'magic') =>
       all.filter((r) => applyAutoJunk(item(1, 'iron-sword', r, 1), mode).junk === true);
     expect(marked('off')).toEqual([]);
@@ -50,5 +51,17 @@ describe('bag', () => {
     expect(marked('magic')).toEqual(['common', 'magic']);
     const kept = item(1, 'iron-sword', 'common', 1);
     expect(applyAutoJunk(kept, 'off')).toBe(kept);
+  });
+
+  it('epic sorts between rare and legendary; a starlit piece leads its rarity', () => {
+    const bag = [
+      item(1, 'iron-sword', 'rare', 5),
+      item(2, 'iron-sword', 'legendary', 5),
+      item(3, 'iron-sword', 'epic', 5),
+      { ...item(4, 'iron-sword', 'legendary', 5), starlit: true as const },
+      item(5, 'copper-ring', 'set', 5),
+      item(6, 'iron-sword', 'legendary', 5),
+    ];
+    expect(sortBag(bag, 'rarity').map((it) => it.uid)).toEqual([5, 4, 2, 6, 3, 1]);
   });
 });

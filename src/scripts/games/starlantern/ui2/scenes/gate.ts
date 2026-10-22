@@ -4,13 +4,16 @@ import { FLOORS } from '../../data/floors';
 import { MATERIALS } from '../../data/materials';
 import { SETS, SPECIALS, codexName, generalLegendaries, regionSpecials } from '../../data/gear';
 import { REGIONS, type RegionId } from '../../data/regions';
+import { rescuesFor } from '../../data/meetings';
+import { leadOpen, nextLead } from '../../engine/story/leads';
+import { storyStage } from '../../engine/story/events';
 import { T } from '../../data/text.zh-TW';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { materialUses } from '../../engine/forge/uses';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
 import { REGION_TRAITS_FROM, depthLevel, encounterTable } from '../../engine/scaling';
-import { ART_BASE, art } from '../../render/artPaths';
+import { ART_BASE, art, codexArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
@@ -60,16 +63,38 @@ class PortalCards {
     this.render();
   }
 
-  /** One region-only item: its name until obtained is dimmed with 「（未取得）」; once in the codex it shows rarity and its first line. */
-  private gearItem(id: string): HTMLElement {
-    const G = T.ui2.gate;
+  /** A region-only item's line: its name until obtained is dimmed with 「（未取得）」; once in the codex it shows rarity. */
+  private gearName(id: string): string {
     const rarity = SPECIALS[id]?.rarity ?? 'set';
     const known = this.ctx.game.state.codex.includes(id);
-    const icon = art.icon(id);
-    const pic = this.ctx.art.has(icon) ? [el('img', { class: known ? 'slx-codex-icon' : 'slx-codex-silhouette', attrs: { src: icon, alt: '' } })] : [];
-    const name = known && rarity !== 'set' ? `${codexName(id)}・${T.rarity[rarity]}` : known ? codexName(id) : G.unknownGear(codexName(id));
-    const body = [el('span', { class: 'slx-codex-name', text: name })];
-    return el('div', { class: `slx-codex-item slx-rarity-${rarity}${known ? '' : ' slx-codex-unknown'}`, attrs: { 'data-special': id } }, [...pic, ...body]);
+    return known && rarity !== 'set' ? `${codexName(id)}・${T.rarity[rarity]}` : known ? codexName(id) : T.ui2.gate.unknownGear(codexName(id));
+  }
+
+  private gearItem(id: string): HTMLElement {
+    const rarity = SPECIALS[id]?.rarity ?? 'set';
+    const known = this.ctx.game.state.codex.includes(id);
+    return el('div', { class: `slx-codex-item slx-rarity-${rarity}${known ? '' : ' slx-codex-unknown'}`, attrs: { 'data-special': id } },
+      [el('span', { class: 'slx-codex-name', text: this.gearName(id) })]);
+  }
+
+  /**
+   * The 限定裝備 heading with the pictures of the region's items in one strip, in list order, each named on hover. A
+   * picture once published: the gear icon when obtained (a set shows its first piece), else only its silhouette file, so
+   * the real icon is never requested before the piece is found. One strip, not a 28px picture on every name line, so all
+   * three names still fit the card.
+   */
+  private gearHead(ids: string[]): HTMLElement {
+    const known = (id: string) => this.ctx.game.state.codex.includes(id);
+    const pics = ids.flatMap((id) => {
+      const src = known(id) ? art.gear(codexArtId(id)) : art.gearSilhouette(id);
+      return this.ctx.art.has(src)
+        ? [el('img', { class: known(id) ? 'slx-codex-icon' : 'slx-codex-silhouette', attrs: { src, alt: '', title: this.gearName(id), 'data-special': id } })]
+        : [];
+    });
+    return el('div', { class: 'slx-portal-gear-head' }, [
+      el('div', { class: 'slx-portal-label', text: T.ui2.gate.gear }),
+      ...(pics.length ? [el('div', { class: 'slx-codex-pics' }, pics)] : []),
+    ]);
   }
 
   /** The mainline's summary: the general legendaries drop anywhere, so they are counted, not listed as this portal's own. */
@@ -86,6 +111,28 @@ class PortalCards {
     return el('div', { class: 'slx-portal-drop-use', text: T.ui2.gate.dropUse(short), attrs: { title: T.forge.usedFor(uses.map(T.forge.use).join('、')) } });
   }
 
+  /**
+   * Someone sighted beyond this portal (6c Task 16), beside the portal's name so the card keeps its height: 「目擊・第三層」, or
+   * on the portal of the guild's lead 「線索・第三層」 in gold. A region shows whoever is still unmet there, once the guild has
+   * word from the regions at all (`leadOpen`, lore ledger I-124: not in the prologue, final review M-3); the main road (always
+   * offered) only its lead, so it does not outshout the region's.
+   */
+  private sighting(region: RegionId): { lead: boolean; el: HTMLElement[] } {
+    const s = this.ctx.game.state;
+    const lead = nextLead(s);
+    const isLead = lead?.region === region;
+    const depths = Object.keys(rescuesFor(region, s.party.recruited)).map(Number);
+    const heard = leadOpen({ region }, storyStage(s));
+    const depth = isLead ? lead!.depth : region === 'mainline' || !heard || !depths.length ? null : Math.min(...depths);
+    if (depth === null) return { lead: false, el: [] };
+    const G = T.ui2.gate;
+    const text = isLead ? G.leadAt(depth) : G.sighted(depth);
+    const mark = el('span', { class: isLead ? 'slx-portal-sighting slx-portal-lead-tag' : 'slx-portal-sighting', attrs: isLead ? { title: G.lead } : {} }, [
+      el('span', { class: 'slx-portal-sighting-depth', text }),
+    ]);
+    return { lead: isLead, el: [mark] };
+  }
+
   private card(p: Portal, i: number): HTMLElement {
     const G = T.ui2.gate;
     const r = REGIONS[p.region];
@@ -100,9 +147,10 @@ class PortalCards {
     const firstOnly = startDepths(p.region, reached).every((d) => d < REGION_TRAITS_FROM);
     const resist = r.resist.length ? (firstOnly ? G.resistFrom(els(r.resist), REGION_TRAITS_FROM) : G.resist(els(r.resist))) : '';
     const affinity = [r.weak.length ? G.weak(els(r.weak)) : '', resist].filter(Boolean).join('　');
-    const c = win(`slx-portal slx-portal-${p.region}`, [
+    const seen = this.sighting(p.region);
+    const c = win(`slx-portal slx-portal-${p.region}${seen.lead ? ' slx-portal-lead' : ''}`, [
       ...(has(portalArt.card(p.region)) ? [el('img', { class: 'slx-portal-art', attrs: { src: portalArt.card(p.region), alt: '' } })] : []),
-      el('div', { class: 'slx-portal-name', text: r.name }),
+      el('div', { class: 'slx-portal-head' }, [el('div', { class: 'slx-portal-name', text: r.name }), ...seen.el]),
       el('div', { class: 'slx-portal-trait', attrs: { 'data-trait': icon ?? 'none' } }, [...traitIcon, el('span', { text: traitText })]),
       ...(affinity ? [el('div', { class: 'slx-portal-affinity', text: affinity })] : []),
       el('div', { class: 'slx-portal-monsters' }, [el('span', { class: 'slx-portal-label', text: G.monsters }), el('span', { text: monsterNames(p.region, reached).join('、') })]),
@@ -111,7 +159,7 @@ class PortalCards {
       el('div', { class: 'slx-portal-drop', text: G.drop(r.material ? MATERIALS[r.material]?.name ?? r.material : G.commonDrop) }),
       ...(r.material ? [this.dropUse(r.material)] : []),
       ...(p.region === 'mainline' ? [this.generalLine()] : [
-        el('div', { class: 'slx-portal-gear' }, [el('div', { class: 'slx-portal-label', text: G.gear }), ...gearIds(p.region).map((id) => this.gearItem(id))]),
+        el('div', { class: 'slx-portal-gear' }, [this.gearHead(gearIds(p.region)), ...gearIds(p.region).map((id) => this.gearItem(id))]),
         el('div', { class: 'slx-codex-more', text: G.moreGear, attrs: { hidden: '' } }),
       ]),
       el('div', { class: 'slx-portal-depth', text: reached > 0 ? G.deepest(reached) : G.notYet }),
@@ -173,10 +221,16 @@ export class GateScene extends FacilityScene {
   }
 
   protected commands(): MenuItem[] {
-    return [{ id: 'portals', label: T.ui2.gate.choose }];
+    const reroll = this.ctx.game.canReroll() ? [{ id: 'reroll', label: T.ui2.gate.reroll }] : [];
+    return [{ id: 'portals', label: T.ui2.gate.choose }, ...reroll];
   }
 
-  protected onCommand(): void {
+  protected onCommand(id?: string): void {
+    if (id === 'reroll') {
+      this.ctx.game.rerollPortals();
+      this.refresh();
+      return;
+    }
     const portals = this.ctx.game.state.dungeon.portals;
     const cards = new PortalCards(this.ctx, portals, {
       pick: (i) => { this.ctx.sfx.confirm(); this.chooseDepth(portals[i]); },

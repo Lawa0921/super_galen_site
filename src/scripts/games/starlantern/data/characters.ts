@@ -1,8 +1,14 @@
-import type { CharacterDef, CharacterId } from '../engine/types';
+import type { CharacterDef, CharacterId, GrowthRules, Member } from '../engine/types';
 
-export const CHARACTER_IDS: CharacterId[] = ['noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];
+export const CHARACTER_IDS: CharacterId[] = ['hero', 'rin', 'noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];
+
+/** The eight characters before Rin, in their old order. Balance baselines (enemy scaling) and kitParty's gear draws stay on them. */
+export const LEGACY_CHARACTER_IDS: CharacterId[] = ['noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];
 
 const s = (hp: number, tp: number, atk: number, def: number, mag: number, res: number, spd: number) => ({ hp, tp, atk, def, mag, res, spd });
+
+/** The growth rules every character follows unless its CharacterDef.rules says otherwise. */
+export const DEFAULT_RULES: GrowthRules = { curve: 'companion', branches: 3, capstones: 1, boardCols: 4, maxKeystones: 2 };
 
 export const CHARACTERS: Record<CharacterId, CharacterDef> = {
   noel: { id: 'noel', title: '見習魔女', name: '諾艾兒', row: 'back', melee: false,
@@ -21,4 +27,24 @@ export const CHARACTERS: Record<CharacterId, CharacterDef> = {
     base: s(36, 16, 12, 8, 5, 7, 14), growth: s(5, 2, 2, 1, 1, 1, 2), affinity: 'agi' },
   bobby: { id: 'bobby', title: '技師', name: '波比', row: 'back', melee: false,
     base: s(32, 22, 9, 8, 10, 8, 8), growth: s(5, 3, 1, 1, 2, 1, 1), affinity: 'int' },
+  rin: { id: 'rin', title: '失憶的短刃使', name: '凜', row: 'front', melee: true,
+    base: s(46, 16, 13, 12, 4, 7, 15), growth: s(6.7, 2, 2, 1.8, 1, 1, 2), affinity: 'agi' },
+  hero: { id: 'hero', title: '歸來者', name: '洛恩', row: 'front', melee: true, affinity: 'all', weaponMaster: true,
+    rules: { curve: 'hero', branches: 5, capstones: 2, boardCols: 6, maxKeystones: 3 },
+    base: s(44, 20, 12, 10, 9, 8, 9), growth: s(6.3, 3, 2, 1.8, 2, 1.5, 1) },
 };
+
+/** The growth rules of `id`: DEFAULT_RULES with the character's own overrides on top. */
+export const rulesOf = (id: CharacterId): GrowthRules => ({ ...DEFAULT_RULES, ...CHARACTERS[id].rules });
+
+/** Rin's title once she has sworn her oath. */
+export const OATH_TITLE = '破鐘刺客';
+
+/** The title a member goes by: Rin's changes with her oath. */
+/** The art id Rin wears once she has sworn her oath. */
+export const OATH_ART = 'rin-oath';
+
+/** The art id of a party member: Rin wears her oath look once she has sworn it. */
+export const artIdOf = (m: Pick<Member, 'id' | 'oath'>): string => (m.id === 'rin' && m.oath ? OATH_ART : m.id);
+
+export const titleOf = (m: Pick<Member, 'id' | 'oath'>): string => (m.id === 'rin' && m.oath ? OATH_TITLE : CHARACTERS[m.id].title);

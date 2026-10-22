@@ -1,4 +1,4 @@
-import { Text, Texture, TilingSprite } from 'pixi.js';
+import { Container, Graphics, Text, Texture, TilingSprite } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { Game } from '../engine/game';
 import { DELTA, tileAt } from '../engine/map';
@@ -6,10 +6,11 @@ import { mulberry32 } from '../engine/rng';
 import { floorOf } from '../engine/dungeon/run';
 import { constRng } from '../engine/testing';
 import { fogState } from './fog';
-import { MAP_CELL, MapView, tileColor } from './MapView';
+import { MAP_CELL, MapView } from './MapView';
 import { MARKER_GLYPH, markersOf } from './markers';
 import { chestHasGear } from '../engine/loot/drops';
 import type { TextureBank } from './textures';
+import { art } from './artPaths';
 
 const bank = { get: () => Texture.WHITE, has: () => true } as unknown as TextureBank;
 const MAIN = { region: 'mainline', condition: 'plain' } as const;
@@ -120,13 +121,28 @@ describe('MapView wall autotiling', () => {
   });
 });
 
-describe('MapView tile colours', () => {
-  it('draws the floor under tile kinds that have no art or colour of their own', () => {
-    for (const t of ['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key'] as const) {
-      expect(tileColor(t, false), t).toBe(tileColor('floor', false));
-    }
-    expect(tileColor('chest', true)).toBe(tileColor('floor', false));
-    expect(tileColor('boss', false)).not.toBe(tileColor('floor', false));
+describe('MapView without art (no placeholder)', () => {
+  /** Every Graphics under the view but the fog's own plain layer. */
+  const graphics = (c: Container): Graphics[] => c.children.flatMap((x) => [...(x instanceof Graphics && x.label !== 'fog' ? [x] : []), ...graphics(x as Container)]);
+
+  it('draws no colour square for a tile and no dot for the party while their art has not loaded, then streams it in', () => {
+    const game = new Game(constRng(0.99), null);
+    game.depart(MAIN, 1);
+    const listeners: ((u: string) => void)[] = [];
+    let loaded = false;
+    const late = {
+      get: (u: string) => (loaded || u.includes('/map/fog') ? Texture.WHITE : null), has: () => loaded,
+      onLoad: (fn: (u: string) => void) => { listeners.push(fn); return () => {}; },
+    } as unknown as TextureBank;
+    const view = new MapView(late);
+    view.draw(game, { width: 640, height: 296 });
+    expect(graphics(view.root)).toEqual([]);
+    expect(view.countByLabel('floor')).toBe(0);
+    // The art lands: the view redraws itself with it, no step needed.
+    loaded = true;
+    for (const fn of listeners) fn(art.tile(game.terrain(), 'floor'));
+    expect(view.countByLabel('floor')).toBeGreaterThan(0);
+    expect(graphics(view.root)).toEqual([]);
   });
 });
 
@@ -223,14 +239,69 @@ describe('MapView event markers', () => {
     exploreAll(game);
     const view = new MapView(spy);
     view.draw(game, SIZE);
-    expect(view.markerGlyphs()).toEqual([]);
+    expect(view.markerGlyphs().filter((g) => g !== MARKER_GLYPH.glimmer)).toEqual([]);   // a glimmer has no art, only its glyph
     const labels = view.markerLabels();
     for (const c of floorOf(game.run!, 1).contents) {
       if (c.kind === 'trap') expect(labels).not.toContain('event-trap');
-      else if (c.kind !== 'chest') expect(labels).toContain(`event-${c.kind}`);
+      else if (c.kind !== 'chest' && c.kind !== 'glimmer') expect(labels).toContain(`event-${c.kind}`);
     }
     const tileUrls = urls.filter((u) => /\/tiles\/f\d-/.test(u));
     expect(tileUrls.some((u) => /-(fountain|trap|merchant|altar|elite|vault|key)\.png$/.test(u))).toBe(false);
+  });
+
+  it('a seen rescue room shows the 救 marker and asks for no art', () => {
+    const urls: string[] = [];
+    const spy = { get: (u: string) => { urls.push(u); return u.includes('/tiles/event-') ? null : Texture.WHITE; }, has: () => true } as unknown as TextureBank;
+    const game = new Game(constRng(0.99), null);
+    game.state.dungeon.reached.mainline = 3;
+    expect(game.depart(MAIN, 2)).toEqual({ ok: true });
+    const f = floorOf(game.run!, 2);
+    f.map.tiles[1][1] = 'altar';   // a real event tile beside it, to prove the spy sits on the path that asks for art
+    f.contents.push({ kind: 'altar', at: { x: 1, y: 1 }, room: 0 });
+    exploreAll(game);
+    const view = new MapView(spy);
+    view.draw(game, SIZE);
+    expect(markersOf(game).map((m) => m.kind)).toContain('rescue');
+    expect(view.markerGlyphs()).toContain(MARKER_GLYPH.rescue);
+    expect(urls).not.toContain(art.eventTile('rescue' as never));
+    expect(urls).toContain(art.eventTile('altar'));
+  });
+
+  it('a seen glimmer shows the 憶 marker and asks for no art', () => {
+    const urls: string[] = [];
+    const spy = { get: (u: string) => { urls.push(u); return u.includes('/tiles/event-') ? null : Texture.WHITE; }, has: () => true } as unknown as TextureBank;
+    const game = new Game(constRng(0.99), null);
+    expect(game.depart(MAIN, 1)).toEqual({ ok: true });
+    const f = floorOf(game.run!, 1);
+    f.map.tiles[1][1] = 'altar';   // a real event tile beside it, to prove the spy sits on the path that asks for art
+    f.contents.push({ kind: 'altar', at: { x: 1, y: 1 }, room: 0 });
+    const glimmer = f.contents.find((c) => c.kind === 'glimmer')!;
+    expect(glimmer).toBeDefined();
+    const mark = () => markersOf(game).filter((m) => m.kind === 'glimmer');
+    expect(mark()).toEqual([]);   // not seen yet
+    exploreAll(game);
+    const view = new MapView(spy);
+    view.draw(game, SIZE);
+    expect(mark()).toEqual([{ kind: 'glimmer', x: glimmer.at.x, y: glimmer.at.y }]);
+    expect(view.markerGlyphs()).toContain(MARKER_GLYPH.glimmer);
+    expect(MARKER_GLYPH.glimmer).toBe('憶');
+    expect(urls).not.toContain(art.eventTile('glimmer' as never));
+    expect(urls).toContain(art.eventTile('altar'));
+    game.map().tiles[glimmer.at.y][glimmer.at.x] = 'floor';   // what stepping on it does
+    expect(mark()).toEqual([]);
+  });
+
+  it('the 救 marker shows only on a seen rescue room, and goes once the room is floor', () => {
+    const game = new Game(constRng(0.99), null);
+    game.state.dungeon.reached.mainline = 3;
+    expect(game.depart(MAIN, 2)).toEqual({ ok: true });
+    const at = floorOf(game.run!, 2).contents.find((c) => c.kind === 'rescue')!.at;
+    const rescues = () => markersOf(game).filter((m) => m.kind === 'rescue');
+    expect(rescues()).toEqual([]);   // not seen yet
+    exploreAll(game);
+    expect(rescues()).toEqual([{ kind: 'rescue', x: at.x, y: at.y }]);
+    game.map().tiles[at.y][at.x] = 'floor';   // what a win does to the room
+    expect(rescues()).toEqual([]);
   });
 
   it('keeps each marker glyph across draws and drops the ones that are spent', () => {

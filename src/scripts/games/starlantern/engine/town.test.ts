@@ -1,17 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { newGame } from './state';
-import { buy, equip, innCost, isUnlocked, junkTotals, respec, respecCost, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
-import { statsOf } from './party';
+import { newGame, START_ITEMS, type GameState } from './state';
+import { buy, equip, innCost, isUnlocked, priceOf, junkTotals, respec, respecCost, respecPrice, rest, revive, reviveCost, sell, sellGear, sellJunk, setAutoJunk, sortBagIn, toggleJunk, unequip, useFieldItem } from './town';
+import { statsOf, LEGACY_LINEUP, STANDARD_LINEUP } from './party';
+import { loadGame, saveGame } from './save';
 import { defaultTalents, defaultTree, newTree, raiseTalent, skillPointsLeft, talentPointsLeft, validBuild } from './progression';
 import type { Member } from './types';
-import { plainItem } from './testing';
+import { memoryStorage, plainItem } from './testing';
 import { BAG_SIZE, mintUid } from './loot/bag';
 import { sellPrice } from './loot/item';
 import { EQUIPMENT } from '../data/equipment';
+import { ITEMS } from '../data/items';
+import { PERKS } from '../data/story/fragments';
 import type { ItemInstance } from './types';
 
-const withInv = (inv: Record<string, number>, gold = 150) => ({ ...newGame(), inventory: inv, gold });
-const withBag = (bag: ItemInstance[]) => ({ ...newGame(), bag, nextUid: Math.max(0, ...bag.map((it) => it.uid)) + 1 });
+const withInv = (inv: Record<string, number>, gold = 150) => ({ ...newGame(undefined, 0, LEGACY_LINEUP), inventory: inv, gold });
+const withBag = (bag: ItemInstance[]) => ({ ...newGame(undefined, 0, LEGACY_LINEUP), bag, nextUid: Math.max(0, ...bag.map((it) => it.uid)) + 1 });
 
 describe('shop', () => {
   it('sells materials for gold and records the sale', () => {
@@ -102,6 +105,14 @@ describe('equipment', () => {
     expect(unequip(a.state, 'scarlet', 'neck')).toEqual({ ok: false, reason: 'full' });
     expect(a.state.party.roster.scarlet.equip.neck?.uid).toBe(1);
   });
+  it('wearing a junk-marked piece clears the mark: taken off again, it is back in the bag unmarked (6f Task 3)', () => {
+    const a = equip(withBag([{ ...plainItem('iron-sword', 1), junk: true }]), 'scarlet', 1);
+    if (!a.ok) throw new Error('equip failed');
+    expect(a.state.party.roster.scarlet.equip.weapon?.junk).toBeFalsy();
+    const b = unequip(a.state, 'scarlet', 'weapon');
+    if (!b.ok) throw new Error('unequip failed');
+    expect(b.state.bag.map((it) => [it.uid, !!it.junk])).toEqual([[1, false]]);
+  });
   it('mints uids in order', () => {
     const s = withBag([]);
     expect([mintUid(s), mintUid(s), s.nextUid]).toEqual([1, 2, 3]);
@@ -110,7 +121,7 @@ describe('equipment', () => {
 
 describe('inn', () => {
   it('charges by level and restores the living to full', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.party.roster.scarlet.hp = 3;
     s.party.roster.noel.tp = 0;
     s.party.roster.liz.hp = 0;
@@ -123,31 +134,31 @@ describe('inn', () => {
     expect(r.state.party.roster.liz.hp).toBe(0);
   });
   it('refuses to rest without gold', () => {
-    expect(rest({ ...newGame(), gold: 5 })).toEqual({ ok: false, reason: 'gold' });
+    expect(rest({ ...newGame(undefined, 0, LEGACY_LINEUP), gold: 5 })).toEqual({ ok: false, reason: 'gold' });
   });
   it('revives a fallen member at full HP for a fee', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.party.roster.liz.hp = 0;
     const r = revive(s, 'liz');
     expect(r.ok && [r.state.gold, r.state.party.roster.liz.hp]).toEqual([150 - reviveCost(1), statsOf(s.party.roster.liz).hp]);
-    expect(revive(newGame(), 'liz')).toEqual({ ok: false, reason: 'invalid' });
+    expect(revive(newGame(undefined, 0, LEGACY_LINEUP), 'liz')).toEqual({ ok: false, reason: 'invalid' });
     expect(revive({ ...s, gold: 0 }, 'liz')).toEqual({ ok: false, reason: 'gold' });
   });
 });
 
 describe('useFieldItem', () => {
   it('heals a living member and uses one item', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.party.roster.liz.hp = 5;
     const r = useFieldItem(s, 'potion', 'liz');
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.state.party.roster.liz.hp).toBe(Math.min(statsOf(r.state.party.roster.liz).hp, 65));
-    expect(r.state.inventory.potion).toBe(2);
+    expect(r.state.inventory.potion).toBe(START_ITEMS.potion - 1);
     expect(s.party.roster.liz.hp).toBe(5);
   });
   it('revives only the fallen at half HP and refuses wrong targets or an empty stock', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.inventory.phoenix = 1;
     expect(useFieldItem(s, 'phoenix', 'liz')).toEqual({ ok: false, reason: 'invalid' });
     s.party.roster.liz.hp = 0;
@@ -161,7 +172,7 @@ describe('useFieldItem', () => {
 
 describe('buying and selling gear', () => {
   it('buying a base puts a common item of that base and level in the bag', () => {
-    const s = { ...newGame(), nextUid: 7 };
+    const s = { ...newGame(undefined, 0, LEGACY_LINEUP), nextUid: 7 };
     const r = buy(s, 'iron-sword');
     if (!r.ok) throw new Error('buy failed');
     expect(r.state.bag).toEqual([{ uid: 7, base: 'iron-sword', rarity: 'common', ilvl: EQUIPMENT['iron-sword'].ilvl, affixes: [], enhance: 0 }]);
@@ -208,7 +219,7 @@ describe('buying and selling gear', () => {
 });
 
 describe('respec', () => {
-  const lv10 = (): Member => ({ ...newGame().party.roster.scarlet, level: 10, tree: newTree('scarlet'), talents: {} });
+  const lv10 = (): Member => ({ ...newGame(undefined, 0, LEGACY_LINEUP).party.roster.scarlet, level: 10, tree: newTree('scarlet'), talents: {} });
   /** A Lv10 Scarlet who has spent every skill and talent point, on the default build. */
   const spent = (): Member => ({ ...lv10(), tree: defaultTree('scarlet', 10), talents: defaultTalents('scarlet', 10) });
   /** A Lv10 Scarlet whose only spent point is one rank of an hp talent. */
@@ -219,11 +230,30 @@ describe('respec', () => {
   };
   const hpOnlyFull = (): Member => { const m = hpOnly(); m.hp = statsOf(m).hp; return m; };
   const gameWith = (m: Member, gold: number) => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.party.roster.scarlet = m;
     s.gold = gold;
     return s;
   };
+
+  it('the first respec after the rework is free, the next one is not', () => {
+    const m: Member = { ...spent(), freeRespec: true };
+    expect(respecPrice(m)).toBe(0);
+    expect(respecPrice(spent())).toBe(respecCost(10));
+    // Free even with no gold at all.
+    const r = respec(gameWith(m, 0), 'scarlet');
+    if (!r.ok) throw new Error('free respec refused');
+    expect(r.state.gold).toBe(0);
+    const after = r.state.party.roster.scarlet;
+    expect(after.tree).toEqual(newTree('scarlet'));
+    expect(after).not.toHaveProperty('freeRespec');
+    expect(respecPrice(after)).toBe(respecCost(10));
+    // Spent again, the next reset costs 25 G a level.
+    const again = respec(gameWith({ ...after, tree: defaultTree('scarlet', 10) }, 300), 'scarlet');
+    if (!again.ok) throw new Error('second respec refused');
+    expect(again.state.gold).toBe(300 - 25 * 10);
+    expect(respec(gameWith({ ...after, tree: defaultTree('scarlet', 10) }, 249), 'scarlet')).toEqual({ ok: false, reason: 'gold' });
+  });
 
   it('respec costs 25 G per level and refunds every point', () => {
     const m = spent();
@@ -241,7 +271,7 @@ describe('respec', () => {
     expect(talentPointsLeft(after)).toBe(talentPointsLeft(lv10()));
   });
   it('respec clamps HP and TP to the lower maximum', () => {
-    const base: Member = { ...newGame().party.roster.noel, level: 10, tree: newTree('noel'), talents: {} };
+    const base: Member = { ...newGame(undefined, 0, LEGACY_LINEUP).party.roster.noel, level: 10, tree: newTree('noel'), talents: {} };
     let m = base;
     for (const node of ['noel-t01', 'noel-t11']) {   // t11 is a tp talent, reached through t01
       const r = raiseTalent(m, node);
@@ -250,7 +280,7 @@ describe('respec', () => {
     }
     expect(statsOf(m).tp).toBeGreaterThan(statsOf(base).tp);
     m.hp = statsOf(m).hp; m.tp = statsOf(m).tp;
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     s.party.roster.noel = m;
     s.gold = 300;
     if (!s.party.recruited.includes('noel')) s.party.recruited.push('noel');
@@ -270,7 +300,7 @@ describe('respec', () => {
     expect(respec(poor, 'scarlet')).toEqual({ ok: false, reason: 'gold' });
     expect(poor.gold).toBe(249);
     expect(poor.party.roster.scarlet.talents).toEqual(m.talents);
-    const fresh = newGame();
+    const fresh = newGame(undefined, 0, LEGACY_LINEUP);
     expect(respec(fresh, 'scarlet')).toEqual({ ok: false, reason: 'invalid' });
     expect(fresh.gold).toBe(150);
     expect(respec(gameWith(m, 999), 'nobody' as never)).toEqual({ ok: false, reason: 'invalid' });
@@ -282,7 +312,7 @@ describe('respec', () => {
     expect(respec(gameWith(hpOnly(), 300), 'scarlet').ok).toBe(true);   // talents alone count too
   });
   it('refuses a roster member who is not recruited', () => {
-    const s = newGame();
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
     const out = (Object.keys(s.party.roster) as (keyof typeof s.party.roster)[]).find((id) => !s.party.recruited.includes(id))!;
     s.party.roster[out].talents = { [`${out}-t01`]: 1 };
     expect(respec(s, out)).toEqual({ ok: false, reason: 'invalid' });
@@ -297,6 +327,27 @@ describe('respec', () => {
     expect(after.equip).toEqual(m.equip);
     expect([after.level, after.exp]).toEqual([m.level, m.exp]);
     expect(validBuild('scarlet', after.level, after.tree, after.talents)).toBe(true);
+  });
+  it('a respec sends the runes of forgotten skills back to the bag', () => {
+    const s = newGame(undefined, 0, STANDARD_LINEUP);
+    s.party.roster.noel = { ...s.party.roster.noel, level: 35, tree: defaultTree('noel', 35) };
+    s.gold = respecCost(35);
+    s.runes = { 'spread@magic': 1 };
+    const spread = { id: 'spread', tier: 'magic' } as const, flame = { id: 'flame', tier: 'rare' } as const, focus = { id: 'focus', tier: 'common' } as const;
+    // ice-star is a node she paid for; fire-star is the free first node, still known after the reset.
+    expect(newTree('noel')).toEqual({ 'fire-star': 1 });
+    s.party.roster.noel.sockets = { 'fire-star': [flame], 'ice-star': [focus, spread] };
+    const total = (g: GameState) => Object.values(g.runes ?? {}).reduce((a, n) => a + n, 0)
+      + Object.values(g.party.roster).reduce((a, m) => a + Object.values(m.sockets ?? {}).flat().filter((x) => x !== null).length, 0);
+    const r = respec(s, 'noel');
+    if (!r.ok) throw new Error('respec failed');
+    expect(r.state.party.roster.noel.sockets).toEqual({ 'fire-star': [flame] });
+    expect(r.state.runes).toEqual({ 'spread@magic': 2, 'focus@common': 1 });
+    expect(total(r.state)).toBe(total(s));
+    expect(s.party.roster.noel.sockets).toHaveProperty('ice-star');
+    const st = memoryStorage();
+    expect(saveGame(st, r.state)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: r.state });
   });
 });
 
@@ -316,5 +367,35 @@ describe('sellJunk', () => {
     const s = withInv({ moss: 3, 'old-coin': 5 });
     const r = sellJunk(s);
     expect(r.ok && r.state.gold - s.gold).toBe(junkTotals(s).g);
+  });
+});
+
+describe('townsfolk returns change the town', () => {
+  it("Orik's return takes PERKS.shopDiscountPct off the shop", () => {
+    const s = withInv({}, 1000);
+    const plain = ITEMS.potion.price;
+    expect(priceOf(s, 'potion')).toBe(plain);
+    expect(priceOf(s, 'nope')).toBeUndefined();
+    const o = { ...s, story: { ...s.story, returned: ['orik' as const] } };
+    const cut = Math.ceil(plain * (100 - PERKS.shopDiscountPct) / 100);
+    expect(priceOf(o, 'potion')).toBe(cut);
+    expect(cut).toBeLessThan(plain);
+    expect(priceOf(o, 'moss-charm')).toBe(Math.ceil(EQUIPMENT['moss-charm'].price * (100 - PERKS.shopDiscountPct) / 100));
+    const r = buy(o, 'potion');
+    expect(r.ok && r.state.gold).toBe(1000 - cut);
+    const b = buy(s, 'potion');
+    expect(b.ok && b.state.gold).toBe(1000 - plain);
+    expect(buy({ ...o, gold: cut - 1 }, 'potion')).toEqual({ ok: false, reason: 'gold' });
+  });
+  it('Marta feeds the party who rest at the inn', () => {
+    const s = withInv({}, 1000);
+    expect(s.story.fed).toBe(false);
+    const plain = rest(s);
+    expect(plain.ok && plain.state.story.fed).toBe(false);
+    const m = { ...s, story: { ...s.story, returned: ['marta' as const] } };
+    const fed = rest(m);
+    expect(fed.ok && fed.state.story.fed).toBe(true);
+    expect(m.story.fed).toBe(false);
+    expect(rest({ ...m, gold: 0 })).toEqual({ ok: false, reason: 'gold' });
   });
 });

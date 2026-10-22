@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { floorOf, isBossDepth, newRun, startDepths, terrainOf } from './run';
+import { posKey, reachable } from '../map';
 import { chestHasGear, GEAR_CHANCE, lootRng } from '../loot/drops';
+import { GLIMMER_CHANCE } from '../../data/story/chains';
 
 describe('newRun', () => {
   it('starts empty: nothing opened, explored, carried or used', () => {
@@ -94,5 +96,122 @@ describe('loot randomness', () => {
     expect(run.lootDraws).toBe(0);
     expect(hits / 2000).toBeGreaterThan(GEAR_CHANCE.chest - 0.04);
     expect(hits / 2000).toBeLessThan(GEAR_CHANCE.chest + 0.04);
+  });
+});
+
+describe('rescue rooms', () => {
+  const rescueOf = (f: ReturnType<typeof floorOf>) => f.contents.filter((c) => c.kind === 'rescue');
+
+  it('a rescue room waits on the meeting depth', () => {
+    for (const seed of [3, 7, 11, 42, 99]) {
+      const f = floorOf(newRun(seed, 'mainline', 'plain', 1, { 2: 'selene' }), 2);
+      const rs = rescueOf(f);
+      expect(rs, `seed ${seed}`).toHaveLength(1);
+      expect(rs[0].who).toBe('selene');
+      expect(f.map.tiles[rs[0].at.y][rs[0].at.x]).toBe('rescue');
+      expect(reachable(f.map, f.map.entrance).has(posKey(rs[0].at))).toBe(true);
+    }
+  });
+
+  it('only the depth in the table gets one', () => {
+    const run = newRun(7, 'mainline', 'plain', 1, { 2: 'selene' });
+    expect(rescueOf(floorOf(run, 1))).toHaveLength(0);
+    expect(rescueOf(floorOf(run, 3))).toHaveLength(0);
+  });
+
+  it('same seed, same spot', () => {
+    const a = rescueOf(floorOf(newRun(21, 'mainline', 'plain', 1, { 2: 'selene' }), 2));
+    const b = rescueOf(floorOf(newRun(21, 'mainline', 'plain', 1, { 2: 'selene' }), 2));
+    expect(a).toEqual(b);
+  });
+
+  it('the rest of the floor is untouched', () => {
+    for (const seed of [3, 7, 11, 42, 99]) {
+      const without = floorOf(newRun(seed, 'mainline', 'plain', 1), 2);
+      const withIt = floorOf(newRun(seed, 'mainline', 'plain', 1, { 2: 'selene' }), 2);
+      const keep = (cs: typeof without.contents) => cs.filter((c) => c.kind !== 'glimmer');   // a glimmer takes an empty room, so it may move
+      expect(keep(withIt.contents.filter((c) => c.kind !== 'rescue'))).toEqual(keep(without.contents));
+      const at = rescueOf(withIt)[0].at;
+      const tiles = withIt.map.tiles.map((row) => [...row]);
+      tiles[at.y][at.x] = 'floor';
+      const bare = (rows: string[][]) => rows.map((row) => row.map((t) => (t === 'glimmer' ? 'floor' : t)));
+      expect(bare(tiles)).toEqual(bare(without.map.tiles.map((row) => [...row])));
+    }
+  });
+
+  it('no rescue for an empty table', () => {
+    const run = newRun(7, 'mainline', 'plain', 1);
+    expect(run.rescues).toEqual({});
+    for (let d = 1; d <= 8; d++) expect(rescueOf(floorOf(run, d))).toHaveLength(0);
+  });
+});
+
+describe('glimmers', () => {
+  const glimmers = (f: ReturnType<typeof floorOf>) => f.contents.filter((c) => c.kind === 'glimmer');
+  const noGlimmer = (f: ReturnType<typeof floorOf>) => f.contents.filter((c) => c.kind !== 'glimmer');
+
+  it("a glimmer may lie on a floor, decided by the floor's own seed", () => {
+    const withOne: number[] = [], without: number[] = [];
+    for (let seed = 1; seed <= 200 && (withOne.length < 3 || without.length < 3); seed++) {
+      (glimmers(floorOf(newRun(seed, 'mainline', 'plain', 1), 2)).length ? withOne : without).push(seed);
+    }
+    expect(withOne.length).toBeGreaterThanOrEqual(3);
+    expect(without.length).toBeGreaterThanOrEqual(3);
+    expect(GLIMMER_CHANCE).toBeGreaterThan(0);
+    for (const seed of [...withOne, ...without]) {
+      const a = floorOf(newRun(seed, 'mainline', 'plain', 1), 2);
+      const b = floorOf(newRun(seed, 'mainline', 'plain', 1), 2);
+      expect(b.contents).toEqual(a.contents);
+      const found = glimmers(a);
+      expect(found.length, `seed ${seed}`).toBe(withOne.includes(seed) ? 1 : 0);
+      for (const g of found) {
+        expect(g.owner).toBeUndefined();
+        expect(a.map.tiles[g.at.y][g.at.x]).toBe('glimmer');
+      }
+    }
+  });
+
+  it('putting a glimmer on a floor moves nothing else on it', () => {
+    for (const seed of [3, 7, 11, 42, 99]) {
+      const plain = floorOf(newRun(seed, 'mainline', 'plain', 1), 2);
+      const forced = newRun(seed, 'mainline', 'plain', 1);
+      forced.glimmers[2] = ['selene'];
+      const f = floorOf(forced, 2);
+      expect(noGlimmer(f)).toEqual(noGlimmer(plain));
+      const tiles = f.map.tiles.map((row) => row.map((t) => (t === 'glimmer' ? 'floor' : t)));
+      expect(tiles).toEqual(plain.map.tiles.map((row) => row.map((t) => (t === 'glimmer' ? 'floor' : t))));
+    }
+  });
+
+  it('a crowded floor still places every glimmer', () => {
+    for (const seed of [3, 7, 11, 42, 99, 123]) {
+      const run = newRun(seed, 'mainline', 'plain', 1, { 2: 'selene' });
+      run.glimmers[2] = ['rin', 'hero'];
+      const f = floorOf(run, 2);
+      const open = reachable(f.map, f.map.entrance);
+      const mine = f.contents.filter((c) => c.kind === 'glimmer' && c.owner);
+      expect(mine.map((c) => c.owner), `seed ${seed}`).toEqual(['rin', 'hero']);
+      expect(f.contents.some((c) => c.kind === 'rescue')).toBe(true);
+      const spots = f.contents.filter((c) => c.kind === 'glimmer' || c.kind === 'rescue');
+      expect(new Set(spots.map((c) => posKey(c.at))).size).toBe(spots.length);
+      for (const c of spots) expect(open.has(posKey(c.at))).toBe(true);
+    }
+  });
+
+  it('forced glimmers carry their owner', () => {
+    for (const seed of [3, 7, 11, 42]) {
+      const run = newRun(seed, 'mainline', 'plain', 1);
+      run.glimmers[2] = ['selene'];
+      const f = floorOf(run, 2);
+      const owned = f.contents.filter((c) => c.kind === 'glimmer' && c.owner === 'selene');
+      expect(owned).toHaveLength(1);
+      expect(reachable(f.map, f.map.entrance).has(posKey(owned[0].at))).toBe(true);
+      expect(f.map.tiles[owned[0].at.y][owned[0].at.x]).toBe('glimmer');
+    }
+  });
+
+  it('a new run starts with no glimmers, drops or plays', () => {
+    const run = newRun(1, 'mainline', 'plain', 1);
+    expect(run).toMatchObject({ glimmers: {}, memoryDraws: 0, dropped: {}, played: [] });
   });
 });

@@ -6,7 +6,7 @@ import type { Settings } from '../settings';
 import { SettingsScene } from './settings';
 
 function setup(from?: 'title' | 'town') {
-  let saved: Settings = { volume: 70, textSpeed: 'mid', vibrate: true };
+  let saved: Settings = { volume: 70, textSpeed: 'mid', vibrate: true, story: 'all' };
   const store = { get: () => saved, set: vi.fn((s: Settings) => { saved = s; }) };
   const go = vi.fn();
   const fullscreen = vi.fn();
@@ -23,7 +23,7 @@ function setup(from?: 'title' | 'town') {
 describe('SettingsScene', () => {
   it('lists volume, text speed, fullscreen, controls and back with current values', () => {
     const { root } = setup();
-    expect([...root.querySelectorAll('[role=option] .slx-label')].map((o) => o.textContent)).toEqual(['音效音量', '文字速度', '震動', '全螢幕', '按鍵說明', '返回']);
+    expect([...root.querySelectorAll('[role=option] .slx-label')].map((o) => o.textContent)).toEqual(['音效音量', '文字速度', '震動', '劇情播放', '全螢幕', '按鍵說明', '返回']);
     expect(root.querySelector('[data-id=volume] .slx-right')!.textContent).toContain('70%');
     expect(root.querySelector('[data-id=speed] .slx-right')!.textContent).toContain('中');
   });
@@ -63,6 +63,21 @@ describe('SettingsScene', () => {
     row('vibrate').click();
     expect(saved().vibrate).toBe(false);
     expect(root.querySelector('[data-id=vibrate] .slx-right')!.textContent).toContain('關');
+  });
+
+  it('the story row cycles all, major and none', () => {
+    const { row, saved, root } = setup();
+    const shown = () => root.querySelector('[data-id=story] .slx-right')!.textContent;
+    expect(root.querySelector('[data-id=story] .slx-label')!.textContent).toBe('劇情播放');
+    expect(shown()).toContain('全部播放');
+    row('story').click();
+    expect(saved().story).toBe('major');
+    expect(shown()).toContain('只播重大場景');
+    row('story').click();
+    expect(saved().story).toBe('none');
+    expect(shown()).toContain('不自動播放');
+    row('story').click();
+    expect(saved().story).toBe('all');
   });
 
   it('toggles fullscreen and shows the controls until dismissed', () => {

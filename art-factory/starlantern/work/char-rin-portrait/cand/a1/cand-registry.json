@@ -1,0 +1,28 @@
+{
+  "assets": {
+    "char-rin-portrait": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-rin-portrait/cand/a1/char-rin-portrait.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait\\char-rin-portrait-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 11,
+        "size": [
+          106,
+          114
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "pass": false,
+  "reasons": [
+    "magenta residue"
+  ],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 2,
+  "semi": 0,
+  "edge": 0,
+  "holes": 2,
+  "magenta_spill": 0,
+  "key_tint_inside": 0,
+  "subject": {
+    "long": 56,
+    "short": 52,
+    "mass": 0.62,
+    "box": [
+      4,
+      6,
+      60,
+      58
+    ],
+    "centre_off": 0.0
+  },
+  "block": 5.054,
+  "scale": 5.054,
+  "size": [
+    64,
+    64
+  ],
+  "spec": "gear-cell:03c3f55cc7d1"
+}

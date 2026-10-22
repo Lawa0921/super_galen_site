@@ -22,6 +22,8 @@ import { SettingsScene } from './scenes/settings';
 import { FormationScene } from './scenes/formation';
 import { StatusScene } from './scenes/status';
 import { EquipScene } from './scenes/equip';
+import { HandbookScene } from './scenes/handbook';
+import { WorkshopScene } from './scenes/workshop';
 
 function safeStorage(): Storage | null {
   try { return window.localStorage; } catch { return null; }
@@ -61,6 +63,8 @@ export async function mountNext(): Promise<void> {
       case 'formation': return new FormationScene(ctx);
       case 'status': return new StatusScene(ctx);
       case 'equip': return new EquipScene(ctx);
+      case 'workshop': return new WorkshopScene(ctx);
+      case 'handbook': return new HandbookScene(ctx);
     }
   };
   const ctx = {
@@ -68,7 +72,8 @@ export async function mountNext(): Promise<void> {
     art: bank, sfx,
     hasSave: () => { try { return !!storage?.getItem(SAVE_KEY); } catch { return false; } },
     newGame: () => { game = Game.fresh(mulberry32(seed), storage, seed); },
-    continueGame: () => { game = Game.boot(mulberry32(seed), storage, seed); },
+    // The title's boot may have migrated and saved an old save: its notice is still owed (Game.boot `previous`).
+    continueGame: () => { game = Game.boot(mulberry32(seed), storage, seed, game); },
     stage, fast,
     settings: settingsStore,
     vibrate: (ms: number) => { if (settings.vibrate) { try { navigator.vibrate?.(ms); } catch { /* not supported */ } } },
@@ -83,7 +88,7 @@ export async function mountNext(): Promise<void> {
   await bank.preload(menuArt);
   void bank.preload(urls.filter((u) => !menuArt.includes(u)));
   document.getElementById('sl-screen')?.classList.toggle('slx-skinned', bank.has(art.window) && bank.has(art.cursor));
-  (window as unknown as { __starlanternDebug?: unknown }).__starlanternDebug = { get game() { return game; } };
+  (window as unknown as { __starlanternDebug?: unknown }).__starlanternDebug = { get game() { return game; }, stage };
   ui.dataset.ready = 'true';
   await router.go('title');
 }

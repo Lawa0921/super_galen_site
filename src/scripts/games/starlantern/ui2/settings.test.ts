@@ -9,9 +9,9 @@ const mem = (init: Record<string, string> = {}) => {
 describe('settings', () => {
   it('round-trips through storage', () => {
     const s = mem();
-    expect(saveSettings(s, { volume: 40, textSpeed: 'fast', vibrate: false })).toBe(true);
-    expect(loadSettings(s)).toEqual({ volume: 40, textSpeed: 'fast', vibrate: false });
-    expect(JSON.parse(s.m.get(SETTINGS_KEY)!)).toEqual({ volume: 40, textSpeed: 'fast', vibrate: false });
+    expect(saveSettings(s, { volume: 40, textSpeed: 'fast', vibrate: false, story: 'major' })).toBe(true);
+    expect(loadSettings(s)).toEqual({ volume: 40, textSpeed: 'fast', vibrate: false, story: 'major' });
+    expect(JSON.parse(s.m.get(SETTINGS_KEY)!)).toEqual({ volume: 40, textSpeed: 'fast', vibrate: false, story: 'major' });
   });
 
   it('falls back to defaults for missing, broken or out-of-range values', () => {
@@ -24,9 +24,18 @@ describe('settings', () => {
     expect(saveSettings(throwing, DEFAULT_SETTINGS)).toBe(false);
   });
 
+  it('story playback defaults to all and rejects junk', () => {
+    expect(DEFAULT_SETTINGS.story).toBe('all');
+    expect(loadSettings(null).story).toBe('all');
+    expect(loadSettings(mem({ [SETTINGS_KEY]: JSON.stringify({ story: 'major' }) })).story).toBe('major');
+    expect(loadSettings(mem({ [SETTINGS_KEY]: JSON.stringify({ story: 'none' }) })).story).toBe('none');
+    expect(loadSettings(mem({ [SETTINGS_KEY]: JSON.stringify({ story: 'loud' }) })).story).toBe('all');
+    expect(loadSettings(mem({ [SETTINGS_KEY]: JSON.stringify({ story: 3 }) })).story).toBe('all');
+  });
+
   it('turns text speed into characters per second', () => {
-    expect(textCps({ settings: { get: () => ({ volume: 50, textSpeed: 'slow', vibrate: true }) } })).toBeLessThan(textCps({}));
-    expect(textCps({ settings: { get: () => ({ volume: 50, textSpeed: 'instant', vibrate: true }) } })).toBe(Infinity);
+    expect(textCps({ settings: { get: () => ({ volume: 50, textSpeed: 'slow', vibrate: true, story: 'all' }) } })).toBeLessThan(textCps({}));
+    expect(textCps({ settings: { get: () => ({ volume: 50, textSpeed: 'instant', vibrate: true, story: 'all' }) } })).toBe(Infinity);
     expect(textCps({})).toBe(30);
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BattleEvent } from '../engine/combatant';
 import { battleLines } from './battleText';
+import { T } from '../data/text.zh-TW';
 
 describe('battleLines', () => {
   it('turns events into readable lines', () => {
@@ -31,5 +32,39 @@ describe('battleLines', () => {
   it('TP regen has no line (the member panel shows it); a TP potion keeps its line', () => {
     const log: BattleEvent[] = [{ type: 'tp', target: 'p', amount: 3, regen: true }, { type: 'tp', target: 'p', amount: 20 }];
     expect(battleLines(log, () => '絲嘉蕾')).toEqual(['', '絲嘉蕾 回復 20 TP']);
+  });
+
+  it('each new ailment has its own line; poison and sleep keep theirs', () => {
+    const log: BattleEvent[] = (['burn', 'freeze', 'chill', 'shock', 'bleed', 'poison', 'sleep'] as const).map((status) => ({ type: 'status', target: 'e0', status }));
+    expect(battleLines(log, () => '史萊姆')).toEqual([
+      '史萊姆燒起來了', '史萊姆被凍住了', '史萊姆的動作變慢了', '史萊姆觸電了', '史萊姆開始流血了', '史萊姆中毒了', '史萊姆睡著了',
+    ]);
+  });
+
+  it('burn and bleed ticks and a frozen turn are worded', () => {
+    const log: BattleEvent[] = [
+      { type: 'dot-tick', target: 'e0', amount: 12, status: 'burn' },
+      { type: 'dot-tick', target: 'e0', amount: 5, status: 'bleed' },
+      { type: 'frozen', actor: 'e0' },
+    ];
+    expect(battleLines(log, () => '史萊姆')).toEqual(['史萊姆 因灼燒受到 12 傷害', '史萊姆 因流血受到 5 傷害', '史萊姆 被凍住了，動彈不得']);
+  });
+
+  it('what a shield took is worded', () => {
+    expect(battleLines([{ type: 'shield', target: 'noel', amount: 30 }], () => '諾艾兒')).toEqual(['諾艾兒的護盾擋下了 30 傷害']);
+  });
+});
+
+describe('battle lines for runes (plan 8e Task 5)', () => {
+  it('battle lines for the new acts', () => {
+    const nameOf = (k: string) => (k === 'noel' ? '諾艾兒' : k);
+    expect(battleLines([{ type: 'act', actor: 'noel', label: T.rune.again('火之星彈') }, { type: 'act', actor: 'noel', label: T.rune.reprise('火之星彈') }], nameOf))
+      .toEqual([T.log.act('諾艾兒', '火之星彈（第二次）'), T.log.act('諾艾兒', '火之星彈的回聲')]);
+  });
+});
+
+describe('the trigger line (plan 8e Task 6)', () => {
+  it('a trigger reads as one line', () => {
+    expect(battleLines([{ type: 'trigger', actor: 'rin', skill: 'rin-needle', rune: 'on-crit' }], (k) => (k === 'rin' ? '凜' : k))).toEqual(['凜的暴擊觸發：飛針！']);
   });
 });

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Menu } from './menu';
-import { Dialogue, MenuView, QtyView, backControl, confirmBox } from './widgets';
+import { Dialogue, MenuView, QtyView, backControl, confirmBox, richNodes, richText, type Rich } from './widgets';
 
 const mk = () => new Menu([{ id: 'a', label: '冒險者公會' }, { id: 'b', label: '道具店', disabled: true }, { id: 'c', label: '旅館' }]);
 
@@ -253,6 +253,44 @@ describe('Dialogue rich lines', () => {
   });
 });
 
+describe('rich parts with an icon (plan 5d Task 7)', () => {
+  const SRC = '/assets/games/starlantern/gear/iron-sword.png';
+  const line: Rich = ['拾到', { text: '鐵劍', cls: 'slx-gear-drop slx-rarity-rare', icon: SRC }, '。'];
+  const typed = (n: number) => { const p = document.createElement('p'); p.append(...richNodes(line, n)); return p; };
+
+  it('a rich part with an icon shows it once its first character is typed', () => {
+    expect(typed(0).querySelectorAll('img')).toHaveLength(0);
+    expect(typed(2).querySelectorAll('img')).toHaveLength(0);                 // only the words before it so far
+    const one = typed(3);
+    expect(one.querySelectorAll('img')).toHaveLength(1);
+    expect(one.textContent).toBe('拾到鐵');
+    const img = one.querySelector('img')!;
+    expect(img.className).toBe('slx-ico slx-gear-ico');
+    expect(img.getAttribute('src')).toBe(SRC);
+    expect(img.getAttribute('alt')).toBe('');
+    expect(img.nextElementSibling!.className).toBe('slx-gear-drop slx-rarity-rare');
+    expect(typed(Infinity).querySelectorAll('img')).toHaveLength(1);
+    expect(richText(line)).toBe('拾到鐵劍。');                                  // the icon adds no text
+  });
+
+  it('a dialogue line types its icon in with the part', async () => {
+    vi.useFakeTimers();
+    try {
+      const d = new Dialogue(20);
+      void d.say('', [{ text: '鐵劍', cls: 'slx-rarity-rare', icon: SRC }]);
+      const text = d.el.querySelector('.slx-text')!;
+      d.onAction('confirm');
+      expect(text.querySelectorAll('img.slx-gear-ico')).toHaveLength(1);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("a menu row's icon class is added to its icon", () => {
+    const v = new MenuView(new Menu([{ id: 'a', label: '鐵劍', icon: SRC, iconCls: 'slx-gear-ico' }, { id: 'b', label: '回復藥', icon: '/x.png' }]), { pick: () => {} });
+    const imgs = [...v.el.querySelectorAll('img')];
+    expect(imgs.map((i) => i.className)).toEqual(['slx-ico slx-gear-ico', 'slx-ico']);
+  });
+});
+
 describe('MenuView pointer scrolling', () => {
   const long = () => new Menu(Array.from({ length: 10 }, (_, i) => ({ id: `r${i}`, label: `row ${i}` })));
 
@@ -325,5 +363,48 @@ describe('confirmBox rich question', () => {
     const box = confirmBox(['要丟掉 ', { text: '鐵劍・魔法', cls: 'slx-rarity-magic' }, ' 嗎？'], vi.fn());
     expect(box.el.querySelector('p')!.textContent).toBe('要丟掉 鐵劍・魔法 嗎？');
     expect(box.el.querySelector('.slx-rarity-magic')!.textContent).toBe('鐵劍・魔法');
+  });
+});
+
+describe('Dialogue faces', () => {
+  it('a line can carry a face on either side', () => {
+    const d = new Dialogue(Infinity);
+    void d.say('洛恩', '走吧。', { src: '/a.png', side: 'left' });
+    const left = d.el.querySelector('img')!;
+    expect(left.classList.contains('slx-talk-face')).toBe(true);
+    expect(left.classList.contains('slx-talk-face--left')).toBe(true);
+    expect(left.getAttribute('src')).toBe('/a.png');
+    void d.say('凜', '嗯。', { src: '/b.png', side: 'right' });
+    const faces = d.el.querySelectorAll('img');
+    expect(faces).toHaveLength(1);
+    expect(faces[0].classList.contains('slx-talk-face--right')).toBe(true);
+    expect(faces[0].classList.contains('slx-talk-face--left')).toBe(false);
+  });
+
+  it('a line without a face shows no image', () => {
+    const d = new Dialogue(Infinity);
+    void d.say('洛恩', '走吧。', { src: '/a.png', side: 'left' });
+    void d.say('', '風很冷。');
+    expect(d.el.querySelector('img')).toBeNull();
+  });
+
+  it('memory style marks the box', () => {
+    const d = new Dialogue(Infinity);
+    d.setStyle('memory');
+    expect(d.el.classList.contains('slx-talk--memory')).toBe(true);
+    d.setStyle('plain');
+    expect(d.el.classList.contains('slx-talk--memory')).toBe(false);
+  });
+});
+
+describe('MenuView badges (plan 8g Task 7)', () => {
+  it('a badge follows the label', () => {
+    const v = new MenuView(new Menu([{ id: 'a', label: '火之星彈', badge: '◆◆', right: '4 TP' }, { id: 'b', label: '冰之星彈' }]), { pick: vi.fn() });
+    const [a, b] = [...v.el.querySelectorAll('[role=option]')];
+    const badge = a.querySelector('.slx-badge')!;
+    expect(badge.textContent).toBe('◆◆');
+    expect(badge.previousElementSibling!.classList.contains('slx-label')).toBe(true);
+    expect(badge.nextElementSibling!.classList.contains('slx-right')).toBe(true);
+    expect(b.querySelector('.slx-badge')).toBeNull();
   });
 });

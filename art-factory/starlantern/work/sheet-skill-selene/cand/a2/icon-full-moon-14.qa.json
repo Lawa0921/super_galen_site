@@ -1,0 +1,32 @@
+{
+  "pass": false,
+  "reasons": [
+    "subject long edge off target"
+  ],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 0,
+  "magenta_spill": 0,
+  "key_tint_inside": 0,
+  "subject": {
+    "long": 8,
+    "short": 8,
+    "mass": 0.368,
+    "box": [
+      3,
+      3,
+      11,
+      11
+    ],
+    "centre_off": 0.0
+  },
+  "block": 34.083,
+  "scale": 34.083,
+  "size": [
+    14,
+    14
+  ],
+  "spec": "skill-cell:533a8c45dbc6"
+}

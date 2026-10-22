@@ -1,22 +1,43 @@
 import type { RaiseFail, TalentFail } from '../engine/progression';
 import type { StatCategory } from '../engine/stats';
 import type { SkillMod } from './gear';
-import { KEYSTONE_GATE, MAX_KEYSTONES } from './talents';
+import { KEYSTONE_GATE } from './talents';
 import { EQUIPMENT } from './equipment';
 import { ITEMS } from './items';
 import { MATERIALS } from './materials';
 import { SETS } from './gear';
 import type { RegionId } from './regions';
+import { RUNES, type RuneId, type RuneTier, type Tag } from './runes';
+import { CHARACTERS } from './characters';
 import type { MaterialUse } from '../engine/forge/uses';
 import type { MaterialKind } from '../engine/types';
 import type { AnyStat, BuffStat, Rarity, Slot, StatKey, Target } from '../engine/types';
+import type { AilmentChip, AilmentShown } from '../engine/ailments';
 
 const STAT: Record<StatKey, string> = { hp: 'HP', tp: 'TP', atk: '攻擊', def: '防禦', mag: '魔力', res: '魔防', spd: '速度' };
+/** The battle log's line when an ailment takes hold (a boss's freeze reads as the chill it became). */
+const STATUS_LINE: Record<AilmentShown, string> = {
+  poison: '中毒了', sleep: '睡著了', burn: '燒起來了', freeze: '被凍住了', chill: '的動作變慢了', shock: '觸電了', bleed: '開始流血了',
+};
+const AILMENT_NAME: Record<AilmentShown, string> = { poison: '中毒', sleep: '睡眠', burn: '灼燒', freeze: '凍結', chill: '冰緩', shock: '感電', bleed: '流血' };
+/** A rune refused or greyed for one already on the skill: the same one, or one of its group (T.rune.why and T.rune.fail). */
+const RUNE_SAME = (name: string) => `同一招不能裝兩個${name}`;
+const RUNE_GROUP = (name: string) => `已有同類符文：${name}`;
 const SLOT: Record<Slot, string> = {
   weapon: '武器', offhand: '副手', head: '頭部', body: '身體', hands: '手部', feet: '腳部', neck: '項鍊', ring1: '戒指 1', ring2: '戒指 2',
 };
 
-const RARITY: Record<Rarity, string> = { common: '普通', magic: '魔法', rare: '稀有', legendary: '傳說', unique: '獨特', set: '套裝' };
+const RARITY: Record<Rarity, string> = { common: '普通', magic: '魔法', rare: '稀有', epic: '史詩', legendary: '傳說', unique: '獨特', set: '套裝' };
+/**
+ * A power percent said as a multiplier, 「×1.3」 for 130 (plan 8g final review): a variant's or a rank's power is never
+ * read as a final number beside the card's.
+ */
+const MULT = (pct: number): string => `×${+(pct / 100).toFixed(2)}`;
+/** Who a skill aims at, one style on every screen (the status page, the card, the battle summary). */
+const TARGETS: Record<Target, string> = {
+  enemy: '敵方單體', enemies: '敵方全體', ally: '我方單體', allies: '我方全體', self: '自身', deadAlly: '倒下的隊友',
+  row: '敵方一排', column: '敵方一列', cross: '十字範圍',
+};
 /** Every stat's name: the seven base names come from STAT, so they are written once. */
 const STAT_NAME: Record<AnyStat, string> = {
   ...STAT,
@@ -55,8 +76,11 @@ const FORGE_GROUP: Record<RegionId, string> = {
 };
 const SLOT_KIND = { ...SLOT, ring: '戒指' } as Record<Slot | 'ring', string>;
 
+const rescueFound = (name: string) => `有人被怪物圍住了──是${name}！`;
+
 export const T = {
   signed,
+  mult: MULT,
   stat: STAT,
   slot: SLOT,
   /** Gear kinds, for a base's own slot: a ring is one "戒指" here, "戒指 1" / "戒指 2" only where a member's slots are listed. */
@@ -65,6 +89,8 @@ export const T = {
   /** Rarity words (spec §4). Loot lines show the word after a gear name; common gear leaves it out. */
   rarity: RARITY,
   gearLabel: (name: string, rarity: string) => `${name}・${rarity}`,
+  /** The rarity word of a starlit piece (plan 5g): 「雙月槍・星輝傳說」. */
+  starlitWord: (word: string) => `星輝${word}`,
   /** A gear name with its enhance level: 「鐵劍 +3」; +0 shows nothing extra. */
   enhanced: (name: string, n: number) => (n > 0 ? `${name} +${n}` : name),
   /** The bare 「+3」 for cells too tight for the name and the level together; empty at +0. */
@@ -85,6 +111,8 @@ export const T = {
     setFour: '（同時擁有 2 件效果）',
     junk: '已標為垃圾',
     weight: (w: number) => `重量 ${w}`,
+    /** The detail line of a starlit piece (plan 5g), after its affixes. */
+    starlitLine: '星輝：所有詞綴皆為最大值，另多一條詞綴',
   },
   tabs: { guild: '公會', shop: '商店', inn: '旅館', depart: '出發' },
   shop: {
@@ -95,13 +123,16 @@ export const T = {
   departTo: (n: number, name: string) => `前往第 ${n} 層：${name}`,
   reasons: {
     gold: '金錢不足', full: '背包已滿', locked: '尚未解鎖', stock: '數量不足', invalid: '無法執行', phase: '現在不能這麼做',
-    'party-down': '出戰成員全部倒下，無法出發', size: '編隊格數錯誤', 'not-recruited': '尚未招募',
+    'party-down': '出戰成員全部倒下，無法出發', size: '編隊格數錯誤', 'not-recruited': '尚未遇見', 'no-hero': '洛恩必須出戰',
     duplicate: '同一人不能重複上陣', empty: '至少要有一人出戰', 'too-many': '最多只能 5 人上陣',
     mats: '素材不足', max: '已經強化到最高了', affixLocked: '這件裝備的重鑄已鎖定在標著（重鑄鎖定）的詞綴，其他詞綴不可重鑄', none: '沒有可以換的詞綴',
+    heavy: '太重了，冒險背包裝不下', lineup: '迷宮裡只能調整站位，不能換人', tp: 'TP 不足', 'no-effect': '沒有需要回復的人',
+    down: '倒下的人不能行動', 'not-learned': '還沒學會這個技能',
   } as Record<string, string>,
   notices: {
     'save-reset': '存檔無法讀取，已開始新遊戲', wipe: '全滅……冒險背包遺失在迷宮裡，身上的金幣也少了四分之一。',
     saved: '已存檔', 'save-failed': '存檔失敗：瀏覽器不允許儲存', lamp: '歸還之燈的光芒把隊伍帶回了城鎮。', banked: '平安回城，冒險背包裡的戰利品已經入庫。',
+    'tree-reworked': '技能樹改版了，技能點已依標準配點重新分配；下一次旅館重置免費。',
   },
   map: {
     returnTown: '回城', lamp: (n: number) => `歸還之燈 ×${n}`,
@@ -115,11 +146,26 @@ export const T = {
     attack: '攻擊', skill: '技能', defend: '防禦', item: '道具', escape: '逃跑', auto: '全員攻擊', back: '返回',
     choose: (name: string) => `${name} 的行動`, target: '選擇目標', tp: (n: number) => `${n} TP`,
     ultimate: (name: string) => `絕技：${name}`, gauge: (n: number) => `絕技 ${n}%`,
+    /** The hero's echo: what it repeats (「殘響」 alone, greyed, when there is nothing); the act's name in the log. */
+    echo: (name?: string) => (name ? `殘響：${name}` : '殘響'),
+    echoAct: (name: string) => `殘響・${name}`,
+    /** What the echo repeats, in numbers (plan 8g ruling 12): the repeated skill's battle line, its percent already in it. */
+    echoNote: (pct: number, line: string) => `重現（已含 ${pct}%）：${line}`,
+    /** After a skill's name in the battle menu, one for each working rune on it (plan 8g ruling 12). */
+    runeMark: '◆',
+    /** A skill's note in the battle menu: its final numbers (battleLine), then its words. */
+    noteWith: (line: string, desc: string) => `${line}　${desc}`,
+    /** After the note when the record left a variant's mechanic extras out (8d final review). */
+    echoDropped: '（機制效果不會重現）',
   },
   battle: {
     win: '勝利！', lose: '全滅……', fled: '成功逃跑', cont: '繼續', poison: '毒', sleep: '睡眠',
-    exp: (n: number) => `經驗值 +${n}`, gold: (n: number) => `金錢 +${n}`, drop: (name: string, n: number) => `${name} ×${n}`,
+    exp: (n: number) => `經驗值 +${n}`, gold: (n: number) => `金錢 +${n}`,
+    /** Liz's coins left at a won fight's end, already counted in the gold line. */
+    coinGold: (n: number) => `（其中莉茲的銅板換了 ${n}）`, drop: (name: string, n: number) => `${name} ×${n}`,
     leftBehind: (name: string, n: number) => `背包已滿，留下了 ${name} ×${n}`,
+    /** A line spoken after a meeting fight, with the name of who says it. */
+    saidBy: (name: string, text: string) => `${name}：${text}`,
     levelUp: (name: string, lv: number) => `${name} 升到 Lv ${lv}`,
     /** Points a level-up brought, each pointing to the status tab where it is spent; the talent part only when there is one. */
     points: (name: string, skill: number, talent: number) =>
@@ -132,29 +178,99 @@ export const T = {
     gearLeft: (name: string) => `背包已滿，留下了 ${name}`,
   },
   element: { phys: '物理', fire: '火', ice: '冰', thunder: '雷' },
+  /** Ailment names on the battle screen (the region trait `burn` reads 酷熱, so the two never share a word). */
+  ailment: AILMENT_NAME,
+  /** One ailment as a short label: its name and rounds left (「灼燒3」), a bleed's stacks (「流血×2」); poison and freeze have no number. */
+  ailmentChip: (c: AilmentChip) => `${AILMENT_NAME[c.id]}${c.stacks !== undefined ? `×${c.stacks}` : c.turns !== undefined ? c.turns : ''}`,
+  /** The ailments a full row folds away, counted: 「+2」. */
+  ailmentMore: (n: number) => `+${n}`,
+  /** Character mechanics on the battle screen (plan 8c): words under a member or over a foe, and the moments that pop. */
+  mech: {
+    heat: (n: number) => `熱度${n}`,
+    expose: (n: number) => `弱點${n}`,
+    mark: '暗記',
+    veil: '隱匿',
+    /** The field bar (plan 8c Task 3): the barrier up, with its rounds; the moon now and next. */
+    ward: (n: number | string, boosted: boolean, bolt = false) => `守之結界${boosted ? '・加倍' : ''}${bolt ? '・雷' : ''}${n}`,
+    purify: (n: number | string, bolt = false) => `淨之結界${bolt ? '・雷' : ''}${n}`,
+    /** A lasting barrier's word in place of its rounds (常駐, plan 8e). */
+    lasting: '常駐',
+    /** After a barrier's name in the field bar: 「守之結界・常駐」. */
+    lastingTag: '・常駐',
+    /** Chizuru's 雷之結界 (plan 8d Task 5): the act line of its round-end strike. */
+    thunderWard: '雷之結界',
+    moon: (now: string, next: string) => `月相：${now}→${next}`,
+    phase: { first: '上弦', full: '滿月', waning: '下弦', new: '新月' },
+    /** Liz's coins; a foe she appraised. Sylvie's aim on a foe (locked by the hunter's mark); a pinned foe. */
+    coins: (n: number) => `銅板${n}`,
+    /** 大手筆's words for the power a coin adds (data/skills.ts; 分期 rewrites the number, plan 8d). */
+    coinPower: (n: number) => `每枚威力多 ${n}%`,
+    /** A variant's power as its words say it (雙管's 「每下威力 60%」); 雙砲台's added points rewrite it to the sum (8d Task 8 review). */
+    notePower: (n: number) => `威力 ${MULT(n)}`,
+    /** ... and what it spends: every coin, or a share of them (分期), rounded up. */
+    coinSpend: (pct: number) => (pct >= 100 ? '花光所有銅板' : `花掉 ${pct}% 的銅板（進位）`),
+    /** 獵人標記's words for the stacks it locks at (her 獵人的耐心 raises it; engine/battle.ts skillFor rewrites it). */
+    aimFull: (n: number) => `瞄準直接 ${n} 層`,
+    appraised: '估價',
+    aim: (n: number) => `瞄準${n}`,
+    aimLocked: (n: number) => `瞄準${n}・鎖定`,
+    last: '最後行動',
+    /** Why a skill is greyed in the menu: its resource is empty. */
+    noCoins: '沒有銅板',
+    noBarrier: '沒有結界',
+    noDevices: '沒有裝置',
+    /** 收回 above its first rank: the phase it steps back to stays this many round ends more. */
+    recallHold: (n: number) => `倒回的月相再停 ${n} 回合。`,
+    /** Scarlet's embers, her cover (受護 on the one she covers), her 贖火's rounds; Safira's beat (the fourth is the finale's). */
+    embers: (n: number) => `餘燼${n}`,
+    cover: '代受',
+    guarded: '受護',
+    /** Bobby's devices: their names (the act's label when one runs), the short ones in a word 「砲台2・3」 (level, rounds), a shield's 「護盾12」. */
+    device: { turret: '砲台', drone: '無人機', shield: '護盾產生器', mine: '地雷', coil: '線圈' },
+    deviceShort: { turret: '砲台', drone: '修機', shield: '盾機', mine: '地雷', coil: '線圈' },
+    deviceWord: (name: string, level: number, turns: number) => `${name}${level}・${turns}`,
+    shield: (n: number) => `護盾${n}`,
+    riposte: (n: number) => `贖火${n}`,
+    beat: (n: number) => (n >= 4 ? `拍子${n}・終幕` : `拍子${n}`),
+    cue: { overload: '暴走！', again: '還有。', noBarrier: '沒有結界', counter: '贖火', misstep: '這一步踩空了呀。', finale: '終幕' },
+  },
   log: {
     act: (who: string, label: string) => `${who}：${label}`,
+    /** A trigger rune's free cast (plan 8e): 「凜的暴擊觸發：飛針！」. */
+    trigger: (who: string, rune: string, skill: string) => `${who}的${rune}：${skill}！`,
     damage: (who: string, n: number, mult: number) => `${who} 受到 ${n} 傷害${mult > 1 ? '（弱點）' : mult < 1 ? '（抗性）' : ''}`,
     ko: (who: string) => `${who} 倒下了`,
     heal: (who: string, n: number) => `${who} 回復 ${n} HP`,
     tp: (who: string, n: number) => `${who} 回復 ${n} TP`,
     revive: (who: string) => `${who} 復活了`,
     cure: (who: string) => `${who} 的異常狀態解除了`,
-    status: (who: string, s: 'poison' | 'sleep') => `${who}${s === 'poison' ? '中毒了' : '睡著了'}`,
+    status: (who: string, s: AilmentShown) => `${who}${STATUS_LINE[s]}`,
     resist: (who: string) => `${who} 沒有受到影響`,
     buff: (who: string, stat: BuffStat, pct: number) => `${who} 的${STAT[stat]}${pct > 0 ? '提升' : '下降'}了`,
     taunt: (who: string) => `${who} 吸引了敵人的注意`,
-    turret: (who: string) => `${who} 設置了砲台`,
     asleep: (who: string) => `${who} 正在睡覺`,
     noTp: (who: string) => `${who} 的 TP 不足`,
     noSkill: (who: string) => `${who} 還沒學會這個技能`,
     noLimit: (who: string) => `${who} 的絕技量表還沒滿`,
     escape: (ok: boolean) => (ok ? '成功逃跑了' : '逃跑失敗'),
     poison: (who: string, n: number) => `${who} 因毒受到 ${n} 傷害`,
+    dot: (who: string, s: 'burn' | 'bleed', n: number) => `${who} 因${s === 'burn' ? '灼燒' : '流血'}受到 ${n} 傷害`,
+    shield: (who: string, n: number) => `${who}的護盾擋下了 ${n} 傷害`,
+    mech: (who: string, cue: 'overload' | 'again' | 'no-barrier' | 'counter' | 'misstep' | 'finale', n?: number) => (cue === 'overload' ? `${who}的魔力暴走了！${n ? `反噬 ${n}` : ''}`
+      : cue === 'again' ? `${who}：還有。` : cue === 'no-barrier' ? `${who}：沒有結界可以加強` : cue === 'counter' ? `${who}以贖火反擊！`
+      : cue === 'misstep' ? `${who}：這一步踩空了呀。` : `${who}的終幕！`),
+    frozen: (who: string) => `${who} 被凍住了，動彈不得`,
     miss: (who: string) => `${who} 閃過了攻擊`,
     crit: '（暴擊）',
   },
   ui2: {
+    battle: { survive: (left: number) => `撐過去！還有 ${left} 回合` },
+    memory: {
+      piece: (name: string, n: number) => `找回了${name}的記憶（第 ${n} 片）。`,
+      shard: (name: string) => `撿到了${name}。`,
+      town: (name: string) => `撿到了${name}。`,
+    },
+    rescue: { waiting: '這層好像還有別人。', found: rescueFound, joined: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍！`, benched: (name: string, lv: number) => `${name}（Lv${lv}）加入了隊伍，在公會待命。` },
     banner: { encounter: '遭遇！', boss: '頭目出現！', win: '勝利！' },
     hints: {
       title: '↑↓ 選擇　Enter 決定　滑鼠也可以操作',
@@ -173,31 +289,53 @@ export const T = {
         '敵人的範圍技能會打中整排、整列或十字範圍。',
       ],
       hint: '方向鍵 選格　Enter／點擊 放人　Esc 返回',
+      /** The rules shown in the labyrinth, where only the rows move (the bench is in town). */
+      fieldRules: [
+        '迷宮裡只能調整站位：前、中、後排與同一排的格子。',
+        '換人要回公會。',
+        '近戰攻擊力：前排 100%、中排 75%、後排 50%。',
+        '近戰敵人只會攻擊最前面有人站著的一排。',
+      ],
     },
     status: {
       tabs: { stats: '能力', gear: '裝備', skills: '技能', tree: '技能樹', talent: '天賦', ultimate: '絕技' },
+      /** Beside a skill's name on the skills page: it can be cast outside battle (SkillDef.field). */
+      fieldTag: '迷宮中可用',
       /** Column titles for statSources; a new source needs one line here. */
-      sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', primary: '主屬性' } as Record<string, string>,
+      sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', memory: '記憶', primary: '主屬性' } as Record<string, string>,
+      /** A column heading too long for its share of the table: the short word, the whole one in its title (plan 8g Task 5 review). */
+      sourcesShort: { primary: '主屬' } as Record<string, string>,
       total: '合計',
       /** Category headings of the stats page, in STAT_CATEGORIES order. */
       cats: { primary: '主屬性', attack: '攻擊', defense: '防禦', element: '元素', resource: '資源', other: '其他' } as Record<StatCategory, string>,
       /** A sheet total: points read bare, every other stat as a percent. */
       value: (key: AnyStat, v: number) => `${v}${POINT_STATS.includes(key) ? '' : '%'}`,
+      /** The affinity line under the stats page's primary heading: the affinity primary's name, or affinityAll. */
+      affinity: (label: string) => `取向：${label}`,
+      /** The hero's affinity: every primary converts. */
+      affinityAll: '全能',
       /** Column of the cut a cap takes off a total (an em dash when the stat is under its cap). */
       capCol: '上限',
-      targets: {
-        enemy: '敵方單體', enemies: '敵方全體', ally: '我方單體', allies: '我方全體', self: '自身', deadAlly: '倒下的隊友',
-        row: '敵方一排', column: '敵方一列', cross: '十字範圍',
-      } as Record<Target, string>,
+      targets: TARGETS,
       exp: (n: number, next: number) => `經驗 ${n}／${next}`,
       place: (where: string) => `站位 ${where}`,
       attack: (melee: boolean, pct: number | null) => (!melee ? '攻擊方式 遠程／魔法' : pct === null ? '攻擊方式 近戰' : `攻擊方式 近戰（${pct}%）`),
       gauge: (n: number) => `絕技量表 ${n}%`,
-      rank: (r: number, max: number) => `${r}／${max}`, passive: '被動', tp: (n: number) => `TP ${n}`,
+      rank: (r: number, max: number) => `${r}／${max}`, passive: '被動',
+      /** In place of a rank: a skill she knows outside her tree (Rin's mark). */
+      innate: '天生', tp: (n: number) => `TP ${n}`,
       none: '（未裝備）',
       hint: '←→ 分頁　Q／E 換人　↑↓ 捲動　Esc 返回',
       /** The stats tab's own keys: a row cursor and folding. */
       hintStats: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 摺疊　Esc 返回',
+      /** The skills tab's keys (plan 8g Task 5): Enter or a click on a skill opens the workshop. */
+      hintSkills: '←→ 分頁　Q／E 換人　↑↓ 捲動　Enter／點一招：技能工坊　Esc 返回',
+      /** After the TP line, when 常駐 holds some back: the max TP a fight leaves her (plan 8g ruling 9). */
+      tpBattle: (n: number) => `（戰鬥中上限 ${n}）`,
+      /** A rune on the skills page: what it does to this skill, in the card's final numbers (plan 8g final review). */
+      runeLine: (label: string, parts: string[]) => `${label}：${parts.join('・')}`,
+      /** In the labyrinth only the members on the field change their runes (plan 8g Task 5 review). */
+      fieldOnly: '迷宮中只能調整出戰的成員',
       /** The tree and talent tabs' own keys: a node cursor and the two-press spend. */
       hintTree: '←→ 分頁　Q／E 換人　↑↓ 選擇　Enter 投點　Esc 返回',
       /** The talent tab's own keys: ↑↓ go between the board's rows, Tab along a row (←→ stay the tab switch). */
@@ -208,8 +346,13 @@ export const T = {
       left: (n: number) => `剩餘天賦點 ${n}`,
       /** Points on the board's normal nodes, against the keystone gate. */
       board: (n: number) => (n >= KEYSTONE_GATE ? `盤面已投 ${n} 點・可選關鍵天賦` : `盤面已投 ${n} 點・${KEYSTONE_GATE} 點後可選關鍵天賦`),
-      keystones: (k: number) => `關鍵天賦 ${k}／${MAX_KEYSTONES}`,
-      keysHead: `關鍵天賦（限選 ${MAX_KEYSTONES} 個）`,
+      keystones: (k: number, max: number) => `關鍵天賦 ${k}／${max}`,
+      keysHead: (max: number) => `關鍵天賦（限選 ${max} 個）`,
+      /** The memory keystone's line under the board (it takes no slot): its name once awake, or what wakes it. */
+      memoryKeystone: (name: string) => `記憶關鍵天賦：${name}`,
+      memoryLocked: (n: number) => `找回全部 ${n} 片記憶後覺醒`,
+      /** Rin's wakes on her oath, not on her pieces. Seen before her reveal, so it names no choice (6c Task 13; lore ledger I-107). */
+      memoryLockedRin: '當她不再等待的那天覺醒',
       /** A normal node's bonus per rank, e.g. 「+2／級」; a percent stat carries a % sign. */
       per: (key: AnyStat, v: number) => `${signed(v)}${POINT_STATS.includes(key) ? '' : '%'}／級`,
       /** The notes for a normal node: 「智力 +2／級（目前 +4）」. */
@@ -228,8 +371,8 @@ export const T = {
       /** Why a node cannot take its next rank (progression canRaiseTalent). */
       reason: {
         unknown: '無法投點', max: '已滿級', points: '點數不足', adjacent: '需相鄰上一列',
-        gate: `盤面需 ${KEYSTONE_GATE} 點`, keystones: `關鍵天賦已選滿 ${MAX_KEYSTONES} 個`,
-      } as Record<TalentFail, string>,
+        gate: `盤面需 ${KEYSTONE_GATE} 點`, keystones: (max: number) => `關鍵天賦已選滿 ${max} 個`,
+      } as Record<Exclude<TalentFail, 'keystones'>, string> & { keystones: (max: number) => string },
       /**
        * A board cell's state beside its bonus, at most 3 wide characters (a keystone cell has no bonus, so its own states take
        * up to 4); the notes under the board give `reason` in full. 已滿級 is a maxed node, 關鍵已滿 the keystone cap.
@@ -241,32 +384,131 @@ export const T = {
       /** The engine turned a spend down after the page allowed it (e.g. outside town and the labyrinth). */
       failed: '現在無法投點',
     },
+    /**
+     * The skill workshop (plan 8g): the card's rows before and after a rune, its 附加 lines (what the skill does beyond
+     * its rows, read from the skill as it is), the battle menu's summary, the TP lines. Every number is passed in.
+     */
+    workshop: {
+      row: { target: '目標', hits: '段數', element: '屬性', power: '威力', heal: '回復', effect: '效果', turns: '回合', tp: 'TP', hp: 'HP 消耗', tpMax: '戰鬥 TP 上限' },
+      /** The status page's target words (TARGETS): one style everywhere. */
+      target: TARGETS,
+      /** A row one side of the card does not have. */
+      none: '—',
+      /** Numbers that differ between a skill's effects. */
+      join: '／',
+      /** A power that strikes every target. */
+      each: (v: string) => `${v}（每個目標）`,
+      pct: (n: number) => `${n}%`,
+      buff: (stat: string, pct: number) => `${stat} ${pct > 0 ? '+' : '−'}${Math.abs(pct)}%`,
+      guard: (pct: number) => `防禦與魔防 +${pct}%`,
+      purify: (n: number) => `每回合回復 ${n}`,
+      device: (name: string, n: number) => `${name} 威力 ${n}`,
+      expose: '火冰雷弱點',
+      add: {
+        onHit: (pct: number, ailment: string) => `每段命中 ${pct}% ${ailment}`,
+        inflict: (pct: number, ailment: string) => `每次施放 ${pct}% ${ailment}`,
+        aftermath: (ailment: string) => `暴擊時必定${ailment}`,
+        drain: (pct: number) => `造成傷害的 ${pct}% 回復自己`,
+        regain: (n: number) => `每段命中回復 ${n} TP`,
+        armorBreak: '無視護甲與格擋',
+        cure: '解除異常',
+        spill: (pct: number) => `超出的回復變成護盾（最多 ${pct}%）`,
+        when: { crit: '她暴擊時', kill: '她擊倒敵人時', struck: '她受到攻擊後' },
+        trigger: (when: string, pct: number) => `${when}自動施放（威力 ${pct}%）`,
+        twice: '連續施放兩次',
+        bounce: (n: number, drop: number) => `彈射 ${n} 次，每次威力 −${drop}%`,
+        reprise: (pct: number) => `下一回合結束時再打一次（威力 ${pct}%）`,
+        sync: (pct: number) => `下一位隊友本回合的技能威力 +${pct}%`,
+        lasting: (pct: number, reserve: number) => `常駐：效果 ${pct}%，保留 ${reserve}% TP 上限`,
+        wheel: (a: string, b: string, c: string) => `屬性依${a}、${b}、${c}輪替`,
+      },
+      /** The battle menu's summary of a skill (plan 8g ruling 12): 「全體・威力 84・火」. */
+      battle: { sep: '・', power: (n: number | string) => `威力 ${n}`, heal: (n: number | string) => `回復 ${n}` },
+      /** Max TP out of battle and in it, when 常駐 holds some back (plan 8g ruling 9). */
+      reserve: (max: number, battle: number, pct: number) => `TP 上限 ${max}，戰鬥中 ${battle}（常駐保留 ${pct}%）`,
+      /** Two lasting barriers (plan 8g ruling 10). */
+      barrierClash: '兩個常駐結界只會留下一個：被換掉的那個照樣保留 TP 上限',
+      /** 「持有 n（袋子 m，鑲嵌中 k）」 (plan 8g ruling 8). */
+      owned: (all: number, bag: number, socketed: number) => `持有 ${all}（袋子 ${bag}，鑲嵌中 ${socketed}）`,
+      /**
+       * What the member a rune is moved from loses (Task 4b review): 「移走後 希爾薇・瞄準射擊：TP 10 → 5；少了「連續施放兩次」」,
+       * each changed row by name, each line she no longer has in 「」.
+       */
+      giver: (who: string, skill: string, items: string[]) => `移走後 ${who}・${skill}：${items.length ? items.join('；') : '不變'}`,
+      /** A card row that changes: 「段數 1 → 2」 (the giver line, the tree's variant preview). */
+      change: (row: string, before: string, after: string) => `${row} ${before} → ${after}`,
+      giverLost: (line: string) => `少了「${line}」`,
+      /** The workshop screen (plan 8g Task 4a). */
+      title: '技能工坊',
+      skillsHead: '技能',
+      slotsHead: '插槽',
+      runesHead: '符文',
+      now: '現在',
+      before: '之前',
+      after: '之後',
+      slot: (i: number) => `槽 ${i}`,
+      slotEmpty: '空',
+      slotLocked: (lv: number) => `Lv ${lv} 開放`,
+      noSlots: (lv: number) => `Lv ${lv} 才有第一個插槽`,
+      noSkills: '還沒有可以裝符文的技能',
+      remove: '拆下',
+      /** The rune a pick takes out of its slot (plan 8g final review). */
+      swapOut: (label: string) => `換下：${label}，回到袋子`,
+      /** A power multiplier in a skill's words, dropped from a battle note whose summary gives the final number. */
+      powerClause: /[，；、]?(?:每段|每下|回復)?威力 ×[0-9.]+/g,
+      /** The rune list's heading over the runes in other slots, and what a move says (plan 8g Task 4b). */
+      fromOthers: '從別人身上移過來',
+      moved: (label: string, who: string, skill: string) => `從${who}・${skill}移過來：${label}`,
+      pick: (i: number) => `要裝進槽 ${i} 的符文`,
+      off: (why: string) => `未生效：${why}`,
+      emptyBag: '袋子裡沒有符文',
+      socketed: (label: string, skill: string) => `${skill}裝上了${label}`,
+      removed: (label: string) => `拆下了${label}，回到袋子`,
+      backToBag: (label: string) => `，${label}回到袋子`,
+      added: (line: string) => `＋${line}`,
+      lost: (line: string) => `−${line}`,
+      hint: '↑↓ 選擇　Enter 決定　Tab 切換欄　Q/E 換人　R/F 捲動卡片　Esc 返回',
+    },
     /** The status screen's skill-tree tab. */
     tree: {
       left: (n: number) => `剩餘技能點 ${n}`,
       /** A branch heading: its name and the points put into it. */
       branch: (name: string, n: number) => `${name}（${n} 點）`,
-      kind: { active: '主動', mod: '強化', passive: '被動', ultimate: '終極' },
+      kind: { active: '主動', variant: '變招', mech: '機制', passive: '被動', ultimate: '終極' },
+      /** Between the two sides of a pair (plan 8d): only one of them holds points. */
+      pairTag: '二選一',
+      /** The empty side of a pair whose other side holds points: a press moves the points over, free (two presses). */
+      swapOpen: '可改選（免費）', swapPending: '再按一次改選', swapped: '已改選',
+      /** What learning a variant, or changing to it, does to its skill (plan 8g Task 8): the card's changed rows. */
+      preview: (swap: boolean, parts: string[]) => `${swap ? '改選後' : '學會後'}：${parts.join('・')}`,
+      /** The empty side of a pair: its rule at the rank the swap brings (all the other side's points). */
+      afterSwap: (rank: number, max: number, text: string) => `改選後（${rank}/${max}）：${text}`,
+      /** The runes on the skill that would do nothing after learning or changing to this variant (plan 8g final review). */
+      runeOff: (labels: string[]) => `之後不再生效：${labels.join('、')}`,
+      /** The Game would not change the side now (in battle, say). */
+      swapRefused: '現在無法改選',
       /** A node that can take its next rank now. */
       open: '可投點',
       /** Why a node cannot take its next rank (progression canRaiseNode). */
       reason: {
-        unknown: '無法投點', max: '已達最高等級', points: '點數不足', req: '需先學會上一階',
+        unknown: '無法投點', max: '已達最高等級', pair: '已選另一個版本', points: '點數不足', req: '需先學會上一階',
         gate: '分支點數不足', capstone: '已選其他終極',
-      } as Record<RaiseFail, string>,
+        abyss: (n: number) => `深淵尚未甦醒（需要 ${n} 片記憶）`,
+      } as Record<Exclude<RaiseFail, 'abyss'>, string> & { abyss: (n: number) => string },
       pending: '再按一次投點',
       /** The engine turned a spend down after the page allowed it (e.g. outside town and the labyrinth). */
       failed: '現在無法投點',
       capstone: (name: string) => `終極技：${name}`,
-      noCapstone: '終極技：未選（限選一個）',
+      noCapstone: (max: number) => `終極技：未選（限選 ${max} 個）`,
       /** What the next rank of an active node scales: power for damage and heals, the percent for a pure buff or debuff. */
-      next: (what: 'power' | 'buff', a: number, b: number) => `下一級：${what === 'power' ? '威力' : '效果'} ${a}% → ${b}%`,
+      next: (what: 'power' | 'buff', a: number, b: number) => `下一級：${what === 'power' ? `威力 ${MULT(a)} → ${MULT(b)}` : `效果 ${a}% → ${b}%`}`,
       now: (text: string) => `目前：${text}`,
       nextMod: (text: string) => `下一級：${text}`,
+      nextHold: (n: number) => `下一級：倒回的月相再停 ${n} 回合`,
       none: '未投入',
       /** A modifier rank's rewrite in short, e.g. 「威力 120%」「TP −2」「持續 5 回合」. */
       mod: (m: SkillMod): string => [
-        m.powerPct !== undefined ? `威力 ${m.powerPct}%` : '',
+        m.powerPct !== undefined ? `威力 ${MULT(m.powerPct)}` : '',
         m.powerDelta !== undefined ? `威力 ${signed(m.powerDelta)}%` : '',
         m.buffPct !== undefined ? `效果 ${m.buffPct}%` : '',
         m.tpDelta !== undefined ? `TP ${signed(m.tpDelta)}` : '',
@@ -281,6 +523,8 @@ export const T = {
       title: '裝備',
       dollTitle: '身上裝備',
       bag: (n: number, max: number) => `背包 ${n}／${max}`,
+      /** The labyrinth's bag line: the run pack's pieces and the party's load against its limit. */
+      pack: (n: number, w: string, cap: string) => `冒險背包 ${n} 件　重量 ${w}／${cap}`,
       menuBtn: '選單',
       target: (slot: string) => `目標：${slot}`,
       worn: (slot: string, name: string) => `${slot}：${name}`,
@@ -293,10 +537,13 @@ export const T = {
       pickSlot: 'Enter 選這一格，再到背包挑裝備',
       emptyCell: '空格',
       full: '背包已滿，無法卸下。先整理背包吧。',
+      fullField: '回城時背包放不下了，不能再卸下',
       /** The number of a comparison row: `+11`, `-3%`. */
       delta: (key: AnyStat, v: number) => `${signed(Math.round(v * 10) / 10)}${POINT_STATS.includes(key) ? '' : '%'}`,
       menu: {
         title: '背包選單',
+        /** In the labyrinth the grid is the run pack. */
+        titleField: '冒險背包選單',
         sort: { rarity: '排序：依稀有度', slot: '排序：依欄位', ilvl: '排序：依物品等級' },
         auto: { off: '自動標記：關閉', common: '自動標記：普通', magic: '自動標記：普通與魔法' },
         current: '使用中',
@@ -305,14 +552,20 @@ export const T = {
         markNone: '標記垃圾（先選一件）',
         wornNoMark: (name: string) => `標記垃圾：${name}（穿著中）`,
         unequip: (name: string) => `卸下：${name}`,
+        /** In the labyrinth, with nothing to take off: sorting and marking wait for town. */
+        townOnly: '整理背包要回城才能做',
       },
       hint: '方向鍵 移動　Tab 切換　Enter 決定　C 選單　Q／E 換人　R／F 捲動說明　Esc 返回',
       hintTarget: 'Enter 穿上　選空格 卸下　Esc 取消目標',
       hintTargetFull: 'Enter 穿上　C 選單 卸下　Esc 取消目標',
+      /** In the labyrinth with no room left at home (bag + pack fill the 60 slots): nothing can be taken off. */
+      hintTargetFullField: 'Enter 穿上　回城背包已滿，不能卸下　Esc 取消目標',
+      hintField: '方向鍵 移動　Tab 切換　Enter 穿上／卸下　C 選單　Q／E 換人　R／F 捲動說明　Esc 返回',
     },
     settings: {
-      title: '設定', volume: '音效音量', speed: '文字速度', vibrate: '震動', on: '開', off: '關', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',
+      title: '設定', volume: '音效音量', speed: '文字速度', vibrate: '震動', story: '劇情播放', on: '開', off: '關', fullscreen: '全螢幕', keys: '按鍵說明', back: '返回',
       speeds: { slow: '慢', mid: '中', fast: '快', instant: '立即' } as Record<'slow' | 'mid' | 'fast' | 'instant', string>,
+      storyModes: { all: '全部播放', major: '只播重大場景', none: '不自動播放' } as Record<'all' | 'major' | 'none', string>,
       hint: '←→ 調整　點擊 切換　Esc／右鍵 返回',
       close: '點擊或按 Enter／Esc 關閉',
       keyList: [
@@ -326,23 +579,39 @@ export const T = {
         ['滑鼠', '點選項目即決定；畫面上的「返回」等同取消'],
       ] as [string, string][],
     },
+    story: {
+      skipped: (summary: string) => `（略過）${summary}`,
+    },
+    handbook: {
+      title: '冒險者手冊',
+      tabs: { memories: '記憶', people: '人物', leads: '線索', town: '鎮民', codex: '圖鑑', truths: '真相' },
+      unknown: '？？？', fresh: '新', status: { unknown: '尚未找到', held: '持有中', returned: '已交還' },
+      stages: { prologue: '序章', act1: '第一幕', act2: '第二幕', act3: '第三幕', act4: '第四幕', after: '終幕' },
+      pieces: (found: number, total: number) => `${found}/${total}`,
+      codex: { none: '無', rarity: { legendary: '傳說', unique: '獨特', set: '套裝' }, weak: (list: string) => `弱點：${list}`, weakUnknown: '弱點：？？？', setPieces: (have: number, total: number) => `${have}/${total} 件` },
+      pieceHint: (regions: string, deep: boolean) => `${regions}・${deep ? '深處' : '淺層'}`,
+      hint: '◀▶ 換分頁　確定：選取　取消：返回',
+      hintReadonly: '◀▶ 換分頁　確定：重看　取消：回到迷宮',
+      empty: '還沒有可以重看的場景。',
+      /** The guild's leads (6c Task 16): sightings, never a call for help (the lost remember nothing). */
+      leads: { now: '目前的線索', found: '已找到', heard: '公會聽來的目擊', place: (region: string, depth: number) => `${region}・第 ${depth} 層`, allFound: '目擊過的人影，都已經找到了。', none: '公會還沒有新的目擊消息。' },
+    },
     town: {
       place: '邊境小鎮 露米亞',
-      facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '傳送門廣場', forge: '鍛造屋', settings: '設定' },
-      lines: ['暮霧又濃了些。冒險者們，今天要往哪裡去？', '聽說迷宮深處有星燈的光。', '補給品記得在出發前備齊。'],
+      facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '傳送門廣場', forge: '鍛造屋', handbook: '冒險者手冊', settings: '設定' },
       soon: (name: string) => `${name}的新介面正在製作中，下一階段開放。`,
       toTitle: '要回到標題畫面嗎？上次存檔之後的進度不會保留。',
     },
     facility: {
-      guild: { place: '冒險者公會', npc: '安娜', greet: ['歡迎回來，要整頓隊伍嗎？', '今天也請平安歸來。'] },
-      shop: { place: '道具店', npc: '歐里克', greet: ['歡迎光臨！看看有什麼需要的。', '剛進了新貨喔。'] },
-      inn: { place: '月影旅館', npc: '瑪莎', greet: ['辛苦了，要休息一下嗎？', '熱湯已經準備好了。'] },
-      gate: { place: '傳送門廣場', npc: '葛倫', greet: ['三座傳送門都開著。要去哪裡？別逞強。', '傳送門今天也在發光。'] },
-      forge: { place: '鍛造屋', npc: '多蘭', greet: ['爐火正旺。要拆、要打，還是要重新鍛一回？', '帶素材來了嗎？好鐵配好手藝。'] },
+      guild: { place: '冒險者公會', npc: '安娜' },
+      shop: { place: '道具店', npc: '歐里克' },
+      inn: { place: '月影旅館', npc: '瑪莎' },
+      gate: { place: '傳送門廣場', npc: '葛倫' },
+      forge: { place: '鍛造屋', npc: '多蘭' },
       leave: '離開',
     },
     forge: {
-      tabs: { dismantle: '分解', enhance: '強化', reroll: '重鑄', fuse: '合成', craft: '製作' },
+      tabs: { dismantle: '分解', enhance: '強化', reroll: '重鑄', fuse: '合成', craft: '製作', runes: '符文合成' },
       wornBy: (name: string) => `（${name}裝備中）`,
       saveFailed: '東西是做好了，可是存檔失敗：瀏覽器不允許儲存。',
       /** An essence tally as one phrase: 「普通精華 ×2、魔法精華 ×1」. */
@@ -353,7 +622,7 @@ export const T = {
 會得到：${yields}`,
       askMarked: (n: number, yields: string) => `要分解已標記的 ${n} 件裝備嗎？
 會得到：${yields}`,
-      warnPrecious: '裡面有傳說、獨特、套裝、已強化或有重鑄鎖定詞綴的裝備，分解後無法復原。',
+      warnPrecious: '裡面有史詩、傳說、獨特、套裝、已強化或有重鑄鎖定詞綴的裝備，分解後無法復原。',
       dismantled: (yields: string) => `分解完成，得到了${yields}。`,
       maxed: '已達上限',
       nothingToEnhance: '沒有可以強化的裝備。',
@@ -387,6 +656,8 @@ export const T = {
       /** The state of every other affix, short enough for a greyed row. */
       lockedShort: '不可重鑄',
       rerollValue: '重抽數值',
+      /** Why a starlit piece's 重抽數值 row is greyed out: its affixes are at their maximum already. */
+      starlitMaxed: '星輝詞綴已是最大值',
       rerollSwap: '換成其他詞綴',
       /** A swap pinned to a region material: 「火焰核（火焰系）」. */
       rerollWith: (mat: string, group: string) => `換：${mat}（${group}）`,
@@ -432,16 +703,27 @@ export const T = {
       crafted: (label: string) => `製作完成！得到了${label}。`,
     },
     dungeon: {
-      status: '隊伍狀態', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',
+      status: '隊伍狀態', handbook: '冒險者手冊', items: '道具', lamp: (n: number) => `歸還之燈 ×${n}`, close: '關閉', askTown: '要回到城鎮嗎？',
       noItems: '沒有可以使用的道具。', askLamp: '要使用歸還之燈回到城鎮嗎？', who: (item: string) => `${item}要給誰使用？`, used: (item: string, who: string) => `${who} 使用了${item}。`, menuHint: '選單',
       weight: (now: string, cap: string) => `重量 ${now}／${cap}`,
       bagRoom: (n: number) => `背包剩 ${n} 格，帶回的裝備放不下的會遺失。`,
       conditionItem: (name: string) => `本次狀況　${name}`, conditionLine: (name: string, desc: string) => `${name}：${desc}`,
+      /** The field menu's recovery skills (plan 6f): who casts, which skill, on whom, then one line per member helped. */
+      skills: '技能', equip: '裝備', workshop: '技能工坊', formation: '隊形',
+      castWho: '誰要施放技能？',
+      castWhat: (name: string) => `${name}要施放哪個技能？`,
+      castOn: (skill: string) => `${skill}要對誰施放？`,
+      cast: (who: string, skill: string) => `${who}施放了${skill}。`,
+      healed: (name: string, n: number) => `${name}回復了 ${n} HP。`,
+      revived: (name: string) => `${name}站起來了！`,
+      noSkills: '沒有可以在迷宮中使用的技能。',
     },
     inn: {
       rest: (cost: number) => `休息（${cost} G）`, revive: '復活', ask: (cost: number) => `住一晚要 ${cost} G，要休息嗎？`,
       respec: '重置配點', askRespec: (name: string, cost: number) => `要重置${name}的技能樹與天賦嗎？
-需要 ${cost} G，點數會全部退回。`,
+${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
+      /** The respec list's price for a member whose reset is free (the tree rework's, plan 8d). */
+      free: '免費',
       respecDone: (name: string) => `${name}的配點已重置，點數可以重新分配了。`, nothingToReset: '還沒有配過點，不需要重置。',
       /** The respec happened but its save did not: a reload would undo it (and give the gold back). */
       respecSaveFailed: (name: string) => `${name}的配點已重置，但存檔失敗了……瀏覽器不允許儲存。`,
@@ -449,13 +731,16 @@ export const T = {
       nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
     },
     gate: {
+      reroll: '重抽傳送門',
+      /** The portal of the guild's lead, and where someone was sighted (6c Task 16): a sighting, never a distress call. */
+      lead: '公會的線索', leadAt: (depth: number) => `線索・第 ${depth} 層`, sighted: (depth: number) => `目擊・第 ${depth} 層`,
       choose: '選擇傳送門', floor: (n: number, name?: string) => (name ? `第 ${n} 層 ${name}` : `第 ${n} 層`),
       suggest: (lv: number) => `建議 Lv ${lv}`,
       heavy: (now: string, cap: string) => `超重！重量 ${now}／${cap}，出發後撿不了任何東西`,
       bagLow: (free: number) => `背包只剩 ${free} 格空位，放不下的裝備只能先留在寶箱裡`,
       depthTitle: '起始深度', deepest: (n: number) => `最深 第 ${n} 層`, notYet: '尚未進入',
       element: (name: string | null) => (name ? `${name}屬性` : '無屬性'),
-      traits: { burn: '灼燒', chill: '降速', swift: '迅捷', poison: '劇毒', evasive: '閃避', armored: '堅甲' } as Record<string, string>,
+      traits: { burn: '酷熱', chill: '降速', swift: '迅捷', poison: '劇毒', evasive: '閃避', armored: '堅甲' } as Record<string, string>,
       noTrait: '無特性', weak: (els: string) => `弱 ${els}`, resist: (els: string) => `抗 ${els}`,
       /** A run that can only start at depth 1: the region resist is not there yet (scaling.REGION_TRAITS_FROM). */
       resistFrom: (els: string, depth: number) => `抗 ${els}（第 ${depth} 層起）`,
@@ -468,7 +753,7 @@ export const T = {
     event: {
       leave: '離開',
       fountain: { title: '泉水', desc: '清澈的泉水湧出。喝下能回復全隊 HP 與 TP 的 30%，每趟只能喝一次。', drink: '飲用', done: '喝下泉水，全隊的 HP 與 TP 回復了。' },
-      merchant: { title: '流浪商人', desc: '「旅途中缺什麼嗎？價錢跟城裡一樣。」', gold: (n: number) => `持有 ${n} G` },
+      merchant: { title: '流浪商人', gold: (n: number) => `持有 ${n} G` },
       altar: {
         title: '祭壇', accept: '接受', decline: '拒絕',
         cost: (hpPct: number | undefined, gold: number | undefined) => `代價：${[hpPct ? `全隊 HP ${hpPct}%` : '', gold ? `${gold} G` : ''].filter(Boolean).join('、')}`,
@@ -498,13 +783,14 @@ export const T = {
         whichGear: '要丟掉哪件裝備來騰出空位？', askGear: (name: string) => `要丟掉 ${name} 嗎？`,
         noGear: '冒險背包裡沒有裝備可以丟，這件裝備只能先留在原地。',
         gearHeavy: (name: string, need: number) => `${name} 放不下（還差重量 ${need}）。`,
+        fragments: (names: string) => `還有 ${names} 也放不下。`,
       },
     },
     home,
     banked: (viaLamp: boolean, list: string) => `${home(viaLamp)}帶回了：${list}。`,
     bankedLost: (n: number, list: string) => `背包已滿（${n} 件），沒能帶回：${list}。`,
     shop: {
-      buy: '購買', sell: '販賣', owned: (n: number) => `持有 ${n}`, bagFull: (n: number) => `背包已滿（${n} 件）`, needs: (text: string) => `需要 ${text}`,
+      buy: '購買', sell: '販賣', runes: '符文', owned: (n: number) => `持有 ${n}`, bagFull: (n: number) => `背包已滿（${n} 件）`, needs: (text: string) => `需要 ${text}`,
       bought: (name: string, n: number) => `${name} ×${n}，謝謝惠顧！`, sold: (name: string, n: number, g: number) => `收下 ${name} ×${n}，這是 ${g} G。`,
       unlocked: (names: string) => `託你的福，現在可以做出 ${names} 了！`, nothing: '沒有可以賣的素材。',
       pages: { mats: '素材', gear: '裝備' }, nothingGear: '沒有可以賣的裝備。', marked: '已標記',
@@ -518,13 +804,29 @@ export const T = {
       warnInvested: '裡面有已強化或有重鑄鎖定詞綴的裝備：售價不計強化與重鑄，賣出後無法復原。',
       soldGear: (n: number, g: number) => `收下 ${n} 件裝備，這是 ${g} G。`,
     },
+    /** The guild's fragment exchange: sell, absorb, and give townsfolk fragments back. */
+    exchange: {
+      title: '碎片交易所', sell: '販售無主碎片', absorb: '吸收無主碎片', give: '交還鎮民碎片', who: '要讓誰吸收？',
+      count: (n: number, cap: number) => `已吸收 ${n}／${cap}`, full: '已經吸收不了更多了。', none: '沒有可以交還的碎片。',
+      /** The question before a shard goes into a member. */
+      absorbAsk: (shard: string, name: string) => `要讓 ${name} 吸收${shard}嗎？`,
+      /** What the shard gave, after the stranger's line: 「攻擊 +2」. */
+      gain: (stat: string, amount: number) => `${stat} +${amount}`,
+      giveAsk: (name: string) => `要把${name}還給他嗎？`,
+      /** After a return: what the owner paid. */
+      reward: (parts: string) => `作為謝禮，收下了 ${parts}。`,
+      absorbFail: { cap: '已經吸收不了更多了。', stock: '手上沒有這種碎片了。', invalid: '這個人還沒加入隊伍，或這不是能吸收的碎片。' } as Record<string, string>,
+      giveFail: { invalid: '已經還給他了。', stock: '手上沒有這個碎片了。' } as Record<string, string>,
+    },
     guild: {
-      formation: '編隊', recruit: '招募', equip: '裝備', status: '狀態', tree: '技能樹', talent: '天賦',
-      ask: (name: string) => `要讓 ${name} 加入隊伍嗎？`, recruited: (name: string) => `${name} 加入了隊伍！`,
+      formation: '編隊', recall: '召回', equip: '裝備', status: '狀態', tree: '技能樹', talent: '天賦', workshop: '技能工坊',
+      recallAsk: (name: string) => `要讓 ${name} 回到隊伍嗎？`, swapWho: '要讓誰回公會待命？', swapOut: (name: string) => `${name} 回公會待命`, welcomeBack: (name: string) => `歡迎回來，${name}。`,
       roles: {
         noel: '後排。火、冰、雷攻擊；降低敵人能力、毒。', chizuru: '前排。全體攻擊；我方減傷。', liz: '前或後。多段攻擊；降低遇敵、素材掉落加成。',
         sylvie: '後排。單體高傷；先制攻擊、提高逃跑率。', scarlet: '前排。吸引攻擊、替隊友擋傷；消耗 HP 打火屬性大傷害。',
         selene: '後排。治療、復活、解毒；催眠。', safira: '前排。多段攻擊、提高閃避；全隊增益。', bobby: '後排。放置砲台每回合攻擊；道具效果加倍、護盾。',
+        rin: '靜默的短刃使。暗器牽制，對受傷的敵人背刺，處決殘血的目標。',
+        hero: '從迷宮深處走出來的人。什麼都能學，五條分支任意組合。',
       } as Record<string, string>,
     },
   },
@@ -560,5 +862,102 @@ export const T = {
     },
     junkOnly: '雜物：只能賣錢',
   },
-  clear: { title: '星燈重新亮起', body: '燈喰之獸倒下了。暮霧散去，露米亞迎來久違的晨光。', back: '回到城鎮' },
+  /** Runes (plan 8e): a skill's tags, and the one line that says why a rune does not fit (engine/runes.ts runeWhy). */
+  rune: {
+    tag: {
+      damage: '傷害', heal: '治療', buff: '增益', debuff: '減益', ailment: '異常', device: '裝置', single: '單體', all: '全體', self: '自身',
+      multi: '多段', melee: '近戰', ranged: '遠程', attack: '武技', spell: '法術', phys: '物理', fire: '火', ice: '冰', thunder: '雷', tp: '消耗 TP',
+    } satisfies Record<Tag, string>,
+    why: {
+      /** 「需要：單體＋傷害，或單體＋治療」: each list is one way to fit, its tags all needed. */
+      needs: (ways: string[]) => `需要：${ways.join('，或')}`,
+      and: '＋',
+      /** After an element an element rune can give (spec §6.2): 「需要：火（可由屬性符文提供）＋傷害」. */
+      fromRune: '（可由屬性符文提供）',
+      group: RUNE_GROUP,
+      same: RUNE_SAME,
+      revive: '不能用在復活',
+      scatter: '隨機目標的招不能改形狀',
+      pure: '只能用在只有增益的招',
+      noHeal: '需要：回復效果',
+    },
+    /** Why a rune cannot go into a socket (engine/sockets.ts SocketFail); `reserve` takes RESERVE_CAP. */
+    fail: {
+      none: '袋子裡沒有這個符文',
+      slot: '這一招還沒有這個插槽',
+      same: RUNE_SAME,
+      group: RUNE_GROUP,
+      reserve: (cap: number) => `常駐保留的 TP 上限已經到 ${cap}%`,
+      /** Socketing or moving outside town and the labyrinth's field (plan 8g ruling 19), and moving from an empty slot. */
+      invalid: '現在不能換符文',
+      empty: '這個槽是空的',
+      /** Trading runes (plan 8f, engine/runeTrade RuneTradeFail); `gold` uses T.reasons.gold. */
+      closed: '在迷宮打倒頭目之後才有符文',
+      full: (n: number) => `這個符文已經 ${n} 個了`,
+      stock: '袋子裡沒有這麼多',
+      /** Fusion (plan 8f Task 5): an epic or legendary rune, and the essence it lacks by name. */
+      top: '這一階不能再合成',
+      essence: (name: string) => `缺少${name}`,
+      /** A fusion short of runes in the bag: 「袋子 2／需要 3」. */
+      fuseStock: (have: number, need: number) => `袋子 ${have}／需要 ${need}`,
+    },
+    /** The battle log's act for 雙重詠唱's second cast and for a 回聲 (plan 8e Task 5). */
+    again: (name: string) => `${name}（第二次）`,
+    /** After 常駐's sentence on a barrier skill (plan 8e Task 7). */
+    lastingBarrier: '再施放一次會換掉它。',
+    /**
+     * The rune tutorial (plan 8g Task 6), told once by the narrator: after the battle that first gave a rune, or on the first
+     * workshop visit of a player who already holds one. `levels` are RUNE_SLOT_LEVELS; `town` and `field` name the guild's
+     * and the field menu's 技能工坊.
+     */
+    tutorial: (levels: readonly number[], town: string, field: string): string[] => [
+      '你得到了符文！符文會改變一招「怎麼打」：單體變全體、一段變多段，或加上異常與觸發。',
+      `每一招都有插槽：角色在 Lv ${levels.join('／')} 時各開一格。`,
+      `到公會的「${town}」或迷宮選單的「${field}」把符文裝上；裝之前就會看到這一招之前 → 之後的數字。`,
+      '戰鬥外隨時都能免費拆下、換到別招或別人身上，符文不會壞，也不會不見。',
+    ],
+    /**
+     * What else a rune says on this skill (plan 8g ruling 15): the ailment the skill already has, at its own chance, and
+     * the ailment 餘波 brings on this skill's element.
+     */
+    notes: {
+      merged: (pct: number, ailment: string) => `這招本來就有 ${pct}% ${ailment}，取較高的一個`,
+      sure: (ailment: string) => `這招本來就必定${ailment}`,
+      aftermath: (element: string, ailment: string) => `這招是${element}屬性：暴擊時必定${ailment}`,
+    },
+    /** A skill's words for its element, 「火屬性」: rewritten when an element rune changes it (plan 8g ruling 14). */
+    elementWord: (element: string) => `${element}屬性`,
+    /**
+     * A variant's per-hit note (data/trees), and the same note once 重擊 folds the hits into one, its power the sum (plan
+     * 8g Task 2 review). `pct` may be a pattern: applyRunes finds the note through it.
+     */
+    perHitNote: (hits: number | string, times: string) => `改為 ${hits} 段，每段威力 ${times}`,
+    foldedHits: (hits: number, pct: number) => `合為 ${hits} 段，威力 ${MULT(pct)}`,
+    reprise: (name: string) => `${name}的回聲`,
+    /** A rune as every screen names it (plan 8f): 「擴散（魔法）」, the tier in the gear's rarity words. */
+    label: (id: RuneId, tier: RuneTier) => `${RUNES[id].name}（${RARITY[tier]}）`,
+    /** The tier part of a label, kept whole where a long name is cut (plan 8g final review). */
+    tierTag: (tier: RuneTier) => `（${RARITY[tier]}）`,
+    /** A rune found in a fight, a chest or a vault. */
+    got: (label: string) => `得到符文：${label}`,
+    /** A rune found with `n` (RUNE_STACK) already owned: paid as its sell price instead (plan 8f ruling 7). */
+    overStack: (label: string, n: number, gold: number) => `${label}已經 ${n} 個，換成 ${gold} G`,
+    /** The shop's rune rows (plan 8f): 「100 G　持有 3」 to buy, 「收購 25 G　持有 3」 to sell; 持有 counts the socketed ones too. */
+    buyRight: (price: number, owned: number) => `${price} G　持有 ${owned}`,
+    sellRight: (price: number, owned: number) => `收購 ${price} G　持有 ${owned}`,
+    /** How many are in the bag: only these can be sold or fused. */
+    bag: (n: number) => `袋子 ${n}`,
+    socketedNote: (k: number) => `其中 ${k} 個鑲嵌中，先拆下才能賣或合成`,
+    /** The heading over the shop's sell rows, which takes no cursor. */
+    sellHead: '收購',
+    /** A fusion as one line: 「3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）」. */
+    fuseLine: (n: number, from: string, gold: number, essence: string, to: string) => `${n} 個${from}＋${gold} G＋${essence} → ${to}`,
+    askFuse: (line: string) => `${line}\n要合成嗎？`,
+    fused: (label: string) => `合成了 ${label}！`,
+    /** The rune tab with nothing in the bag to fuse. */
+    fuseEmpty: '袋子裡沒有可合成的符文，三個同名同階的符文可以合成高一階',
+  },
+  clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card
+  /** The finale's closing card; its text is the finale scene's summary. */
+  ending: { back: '繼續' },   // its title is STORY.endingTitle
 };

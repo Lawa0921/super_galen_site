@@ -1,0 +1,63 @@
+{
+  "pass": false,
+  "reasons": [
+    "edge does not repeat"
+  ],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 18,
+  "holes": 0,
+  "magenta_spill": 0,
+  "center_clear": true,
+  "ring_closed": true,
+  "edge_repeat": {
+    "top": 0.527,
+    "bottom": 0.03,
+    "left": 0.355,
+    "right": 1.687
+  },
+  "edge_steps": {
+    "top": {
+      "seam": 6.733,
+      "interior": 12.787
+    },
+    "bottom": {
+      "seam": 0.667,
+      "interior": 22.133
+    },
+    "left": {
+      "seam": 2.133,
+      "interior": 0.907
+    },
+    "right": {
+      "seam": 29.933,
+      "interior": 17.747
+    }
+  },
+  "stroke": [
+    2,
+    2
+  ],
+  "reach": {
+    "edge": 3,
+    "corner": 4
+  },
+  "stroke_colour": [
+    252,
+    113,
+    4
+  ],
+  "hue": 26.3,
+  "saturation": 0.984,
+  "chroma_share": 0.688,
+  "size": [
+    16,
+    16
+  ],
+  "slice": 5,
+  "role": "frame",
+  "pad": 0,
+  "tier_hue": 26,
+  "block": 19.188
+}

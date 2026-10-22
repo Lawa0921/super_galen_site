@@ -5,6 +5,17 @@ import { battleCues } from './battleCues';
 const defIdOf = (k: string) => ({ scarlet: 'scarlet', sylvie: 'sylvie', e0: 'slime' } as Record<string, string>)[k] ?? null;
 
 describe('battleCues', () => {
+  it("shows the acting hero's weapon effect on his physical hits only", () => {
+    const log: BattleEvent[] = [
+      { type: 'act', actor: 'hero', label: '攻擊' },
+      { type: 'damage', target: 'e0', amount: 9, element: 'phys', mult: 1 },
+      { type: 'act', actor: 'scarlet', label: '攻擊' },
+      { type: 'damage', target: 'e0', amount: 9, element: 'phys', mult: 1 },
+    ];
+    const hits = battleCues(log, (k) => k, (k) => (k === 'hero' ? 'spear' : undefined)).filter((c) => c.kind === 'hit');
+    expect(hits.map((c) => c.kind === 'hit' && c.fx)).toEqual(['pierce', 'slash']);
+  });
+
   it('tags hits with the acting character and its effect', () => {
     const log: BattleEvent[] = [
       { type: 'act', actor: 'sylvie', label: '射擊' },
@@ -73,5 +84,12 @@ describe('ultimate cue', () => {
     expect(battleCues(log, defIdOf).slice(0, 4)).toEqual([
       { kind: 'ultimate', key: 'scarlet', name: '紅蓮劫火' }, { kind: 'line', index: 0 }, { kind: 'act', key: 'scarlet' }, { kind: 'wait', ms: 420 },
     ]);
+  });
+});
+
+describe('battleCues mechanics (plan 8c)', () => {
+  it('a mechanic moment pops and holds the screen long enough to read, even in fast mode', () => {
+    const log: BattleEvent[] = [{ type: 'mech', actor: 'rin', cue: 'again' }];
+    expect(battleCues(log, defIdOf)).toEqual([{ kind: 'line', index: 0 }, { kind: 'mech', key: 'rin', cue: 'again' }, { kind: 'wait', ms: 320, keep: true }]);
   });
 });

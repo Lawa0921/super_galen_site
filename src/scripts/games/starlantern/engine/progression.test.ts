@@ -1,16 +1,23 @@
 import { describe, it, expect } from 'vitest';
 import {
   canRaiseNode, canRaiseTalent, defaultTalents, defaultTree, freeNode, keystonesOf, learnedSkills, legacyDue, newTree, nodeRank, raiseNode,
-  raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, validBuild,
+  raiseTalent, skillPoints, skillPointsLeft, talentPoints, talentPointsLeft, talentStats, treeSkills, ultimateFor, validBuild,
+  heroMainBranch, heroTalents, heroTree, knobOf, memoriesOf, mechKnob, swapPair,
 } from './progression';
-import { newMember } from './party';
+import { chainLength } from '../data/story/chains';
+import { SKILLS } from '../data/skills';
+import { HERO_ULTIMATES, RIN_DAWN, SKY_LANTERN, ULTIMATES } from '../data/ultimates';
+import { gainExp, newMember } from './party';
+import { CHARACTERS, CHARACTER_IDS, rulesOf } from '../data/characters';
 import { mulberry32 } from './rng';
-import { DEFAULT_CAPSTONE, LEGACY_LEARN_LEVEL, NODES, TIER_GATE, TREES } from '../data/trees';
-import { BOARDS, DEFAULT_KEYSTONES, TALENT_PER, TALENT_SCALE } from '../data/talents';
-import type { AnyStat } from './types';
-import type { CharacterId, Member } from './types';
+import { DEFAULT_CAPSTONE, DEFAULT_FIRST, INNATE, K, LEGACY_LEARN_LEVEL, NODES, P, TIER_GATE, TREES, V, branchNodes } from '../data/trees';
+import { makeCombatant, withNode } from './testing';
+import { BOARDS, DEFAULT_KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE, talentBlocker } from '../data/talents';
+import { ABYSS_UNLOCK, HERO_BUILDS, type HeroBuild } from '../data/hero';
+import type { AnyStat, CharacterId, Member } from './types';
 
-const ids = Object.keys(TREES) as CharacterId[];
+/** The companions: the curve, point counts and talent boards below are theirs (the hero's tree is tested in data/hero.test.ts). */
+const ids = (Object.keys(TREES) as CharacterId[]).filter((id): id is Exclude<CharacterId, 'hero'> => rulesOf(id).curve === 'companion');
 const at = (id: CharacterId, level: number, tree?: Record<string, number>): Member =>
   ({ ...newMember(id), level, ...(tree ? { tree } : {}) });
 /** Raises a node and returns the new member; fails the test when the raise is refused. */
@@ -29,14 +36,101 @@ const spent = (tree: Record<string, number>) => Object.values(tree).reduce((s, r
 
 describe('progression', () => {
   it('skill points on every level to 4, then odd levels for skills and even levels for talents', () => {
-    expect([1, 2, 4, 5, 6, 7, 50].map(skillPoints)).toEqual([0, 1, 3, 4, 4, 5, 26]);
-    expect([5, 6, 7, 8, 50].map(talentPoints)).toEqual([0, 1, 1, 2, 23]);
+    expect([1, 2, 4, 5, 6, 7, 50].map((L) => skillPoints(L))).toEqual([0, 1, 3, 4, 4, 5, 26]);
+    expect([5, 6, 7, 8, 50].map((L) => talentPoints(L))).toEqual([0, 1, 1, 2, 23]);
     for (let L = 1; L <= 50; L++) expect(skillPoints(L) + talentPoints(L), `Lv${L}`).toBe(L - 1);
+  });
+
+  it('hero curve: skill points are one per level plus one every second level', () => {
+    expect(skillPoints(50, 'hero')).toBe(73);
+    expect(skillPoints(1, 'hero')).toBe(0);
+    expect(skillPoints(3, 'hero')).toBe(3);
+  });
+
+  it("the hero's ultimate follows his deepest branch", () => {
+    expect(HERO_ULTIMATES.map((u) => u.id)).toEqual(['ult-hero-sword', 'ult-hero-guard', 'ult-hero-star', 'ult-hero-light', 'ult-hero-chain']);
+    expect(ULTIMATES.hero).toBe(HERO_ULTIMATES[0]);
+    const hero = newMember('hero');
+    expect(skillPointsLeft({ ...hero, level: 50 })).toBe(skillPoints(50, rulesOf('hero').curve));
+    expect(skillPoints(50, rulesOf('hero').curve)).toBe(73);
+    // a new hero holds only the free slash: the sword form
+    expect(heroMainBranch(hero.tree)).toBe(0);
+    expect(ultimateFor('hero', hero.tree).id).toBe('ult-hero-sword');
+    expect(ultimateFor('hero').id).toBe('ult-hero-sword');
+    // three points in 祈光 (branch 3) outweigh the free slash
+    const light = up({ ...hero, level: 50 }, 'hero-mend', 3);
+    expect(heroMainBranch(light.tree)).toBe(3);
+    expect(ultimateFor('hero', light.tree).id).toBe('ult-hero-light');
+    // every other branch picks its own form too
+    for (const [node, branch, form] of [['hero-guard', 1, 'guard'], ['hero-flare', 2, 'star'], ['hero-shackle', 4, 'chain']] as const) {
+      const m = up({ ...hero, level: 50 }, node, 3);
+      expect(heroMainBranch(m.tree), form).toBe(branch);
+      expect(ultimateFor('hero', m.tree).id, form).toBe(`ult-hero-${form}`);
+    }
+    // sword 2 and 祈光 2: the tie goes to the lower branch, the sword
+    const tie = up(up({ ...hero, level: 50 }, 'hero-slash'), 'hero-mend', 2);
+    expect(heroMainBranch(tie.tree)).toBe(0);
+    expect(ultimateFor('hero', tie.tree).id).toBe('ult-hero-sword');
+    // the companions keep their own, whatever the ranks
+    expect(ultimateFor('noel', light.tree)).toBe(ULTIMATES.noel);
+    expect(ultimateFor('rin')).toBe(ULTIMATES.rin);
+  });
+
+  it('hero curve: talent points from Lv6', () => {
+    expect(talentPoints(5, 'hero')).toBe(0);
+    expect(talentPoints(6, 'hero')).toBe(1);
+    expect(talentPoints(50, 'hero')).toBe(45);
+  });
+
+  it('companion curve is unchanged', () => {
+    for (let L = 1; L <= 50; L++) {
+      expect(skillPoints(L), `skill Lv${L}`).toBe(skillPoints(L, 'companion'));
+      expect(talentPoints(L), `talent Lv${L}`).toBe(talentPoints(L, 'companion'));
+    }
+    expect(skillPoints(50)).toBe(26);
+    expect(talentPoints(50)).toBe(23);
+  });
+
+  it('an unknown curve throws instead of reading as companion', () => {
+    expect(() => skillPoints(10, 3 as never)).toThrow();
+    expect(() => talentPoints(10, 'x' as never)).toThrow();
+    expect(() => [1, 2].map(skillPoints as (n: number) => number)).toThrow();
+  });
+
+  it('every rulesOf reader honours a per-character override', () => {
+    const noel = CHARACTERS.noel;
+    const original = noel.rules;
+    // Everything but the ultimates and the first branch's tiers 0-3 at max, plus ultimate 0 held: a second ultimate is the question.
+    const full: Record<string, number> = {};
+    for (const b of TREES.noel.branches) for (const n of b.nodes.slice(0, 4)) full[n.id] = n.maxRank;
+    const held = { ...full, [TREES.noel.branches[0].nodes[4].id]: 1 };
+    const second = TREES.noel.branches[1].nodes[4].id;
+    const keys = { 'noel-t00': 5, 'noel-t01': 5, 'noel-t02': 5, 'noel-k0': 1, 'noel-k1': 1 };
+    const probe = () => ({
+      skillLeft: skillPointsLeft({ ...newMember('noel'), level: 50 }),
+      talentLeft: talentPointsLeft({ ...newMember('noel'), level: 50 }),
+      second: canRaiseNode({ ...newMember('noel'), level: 50, tree: held }, second),
+      third: talentBlocker('noel', 'noel-k2', keys),
+      gained: gainExp({ ...newMember('noel'), level: 1, exp: 0 }, 1e9).points,
+    });
+    try {
+      noel.rules = undefined;
+      expect(probe()).toEqual({ skillLeft: 26, talentLeft: 23, second: 'capstone', third: 'keystone-cap', gained: { skill: 26, talent: 23 } });
+      noel.rules = { capstones: 2, maxKeystones: 3, curve: 'hero' };
+      const p = probe();
+      expect(p.skillLeft).toBe(73);
+      expect(p.talentLeft).toBe(45);
+      expect(p.second).not.toBe('capstone');
+      expect(p.third).toBeNull();
+      expect(p.gained).toEqual({ skill: 73, talent: 45 });
+    } finally {
+      noel.rules = original;
+    }
   });
 
   it('no tree fills by Lv50', () => {
     expect(Object.fromEntries(ids.map((id) => [id, capacity(id)]))).toEqual({
-      noel: 36, chizuru: 36, liz: 32, sylvie: 36, scarlet: 34, selene: 30, safira: 36, bobby: 34,
+      noel: 36, chizuru: 36, liz: 32, sylvie: 36, scarlet: 34, selene: 30, safira: 36, bobby: 34, rin: 36,
     });
     for (const id of ids) {
       expect(capacity(id), id).toBeGreaterThan(skillPoints(50));
@@ -61,13 +155,13 @@ describe('progression', () => {
     expect(skillPointsLeft(lv2)).toBe(0);
     expect(canRaiseNode(lv2, 'ice-star')).toBe('points');
 
-    expect(canRaiseNode(at('noel', 10), 'noel-ice-up')).toBe('req');
+    expect(canRaiseNode(at('noel', 10), 'noel-calm')).toBe('req');
 
-    let m = up(up(at('noel', 10), 'ice-star'), 'noel-ice-up');
+    let m = up(up(at('noel', 10), 'ice-star'), 'noel-calm');
     expect(TIER_GATE[2]).toBe(2);
     m = up(m, 'frost-bind');
     expect(TIER_GATE[3]).toBe(4);
-    expect(canRaiseNode(m, 'noel-bind-up')).toBe('gate');
+    expect(canRaiseNode(m, 'noel-bind-freeze')).toBe('gate');
 
     const maxed = up(at('noel', 10), 'fire-star', 2);
     expect(nodeRank(maxed, 'fire-star')).toBe(3);
@@ -78,24 +172,24 @@ describe('progression', () => {
 
   it('with no points left the structural reason comes first; 點數不足 only for a node that is otherwise legal', () => {
     expect(skillPointsLeft(at('noel', 1))).toBe(0);
-    expect(canRaiseNode(at('noel', 1), 'noel-ice-up')).toBe('req');
+    expect(canRaiseNode(at('noel', 1), 'noel-calm')).toBe('req');
     expect(canRaiseNode(at('noel', 1), 'ice-star')).toBe('points');
-    const gated = up(at('noel', 2), 'noel-fire-up');               // the one point spent: tiers below flame-wave hold 1 of 2
+    const gated = up(at('noel', 2), 'noel-star-twin');               // the one point spent: tiers below flame-wave hold 1 of 2
     expect(skillPointsLeft(gated)).toBe(0);
     expect(canRaiseNode(gated, 'flame-wave')).toBe('gate');
     const maxed = up(at('noel', 3), 'fire-star', 2);
     expect(skillPointsLeft(maxed)).toBe(0);
     expect(canRaiseNode(maxed, 'fire-star')).toBe('max');
     let m = at('noel', 50);
-    for (const [node, n] of [['fire-star', 2], ['noel-fire-up', 3], ['flame-wave', 1], ['noel-wave-up', 1], ['inferno', 1],
-      ['hex', 3], ['thunder-star', 3], ['noel-hex-up', 1], ['noel-thunder-up', 1]] as const) m = up(m, node, n);
-    for (const node of ['ice-star', 'noel-ice-up', 'frost-bind', 'noel-bind-up']) while (skillPointsLeft(m) > 0 && canRaiseNode(m, node) === null) m = up(m, node);
+    for (const [node, n] of [['fire-star', 2], ['noel-star-twin', 3], ['flame-wave', 1], ['noel-wave-burn', 1], ['inferno', 1],
+      ['hex', 3], ['thunder-star', 3], ['noel-hex-wide', 1], ['noel-thunder-double', 1]] as const) m = up(m, node, n);
+    for (const node of ['ice-star', 'noel-calm', 'frost-bind', 'noel-bind-freeze']) while (skillPointsLeft(m) > 0 && canRaiseNode(m, node) === null) m = up(m, node);
     expect(skillPointsLeft(m)).toBe(0);
     expect(canRaiseNode(m, 'judgement')).toBe('capstone');
   });
 
   it('the free rank does not count toward the branch gate', () => {
-    let m = up(at('noel', 10), 'noel-fire-up');
+    let m = up(at('noel', 10), 'noel-star-twin');
     expect(canRaiseNode(m, 'flame-wave')).toBe('gate');
     m = up(m, 'fire-star');
     expect(canRaiseNode(m, 'flame-wave')).toBeNull();
@@ -105,14 +199,14 @@ describe('progression', () => {
   it('only one capstone per character', () => {
     let m = at('noel', 50);
     m = up(m, 'fire-star', 2);
-    m = up(m, 'noel-fire-up', 3);
+    m = up(m, 'noel-star-twin', 3);
     m = up(m, 'flame-wave');
-    m = up(m, 'noel-wave-up');
+    m = up(m, 'noel-wave-burn');
     m = up(m, 'inferno');
     m = up(m, 'hex', 3);
     m = up(m, 'thunder-star', 3);
-    m = up(m, 'noel-hex-up');
-    m = up(m, 'noel-thunder-up');
+    m = up(m, 'noel-hex-wide');
+    m = up(m, 'noel-thunder-double');
     expect(skillPointsLeft(m)).toBeGreaterThan(0);
     expect(canRaiseNode(m, 'judgement')).toBe('capstone');
     // The same build without inferno may take judgement: the refusal is the capstone rule alone.
@@ -125,7 +219,7 @@ describe('progression', () => {
     const ok = raiseNode(m, 'ice-star');
     expect(ok.ok).toBe(true);
     expect(m).toEqual(before);
-    const bad = raiseNode(m, 'noel-ice-up');
+    const bad = raiseNode(m, 'noel-calm');
     expect(bad).toEqual({ ok: false, reason: 'req' });
     expect(m).toEqual(before);
   });
@@ -175,7 +269,7 @@ describe('progression', () => {
     const table: Record<string, number> = {
       'ice-star': 2, hex: 4, 'thunder-star': 5,
       ward: 3, pierce: 5,
-      stealth: 2, 'treasure-sense': 4, 'triple-slash': 5,
+      stealth: 2, 'treasure-sense': 4, pickpocket: 5,
       'pin-shot': 3, 'arrow-rain': 5,
       'flame-burst': 3, 'iron-wall': 5,
       cleanse: 2, dream: 4, rebirth: 5,
@@ -204,7 +298,7 @@ describe('progression', () => {
 
   it('early points go to upgrades, not to old skills ahead of time', () => {
     const t = defaultTree('noel', 3);
-    expect((t['noel-fire-up'] ?? 0) + (t['noel-ice-up'] ?? 0)).toBeGreaterThanOrEqual(1);
+    expect((t['noel-star-twin'] ?? 0) + (t['noel-calm'] ?? 0)).toBeGreaterThanOrEqual(1);
     expect(t.hex ?? 0).toBe(0);
     expect(t['thunder-star'] ?? 0).toBe(0);
   });
@@ -226,7 +320,7 @@ describe('progression', () => {
     expect(learnedSkills(at('liz', 10, { 'twin-slash': 1, stealth: 1, quickstep: 2 }))).toEqual(['twin-slash', 'stealth', 'quickstep']);
     // Tree order, not the order of the record; mod nodes and ids of other trees are not skills of this member.
     expect(learnedSkills(at('liz', 10, { quickstep: 1, stealth: 1, 'twin-slash': 1, 'fire-star': 1 }))).toEqual(['twin-slash', 'stealth', 'quickstep']);
-    expect(learnedSkills(at('noel', 10, { 'fire-star': 1, 'noel-fire-up': 2, 'ice-star': 0 }))).toEqual(['fire-star']);
+    expect(learnedSkills(at('noel', 10, { 'fire-star': 1, 'noel-star-twin': 2, 'ice-star': 0 }))).toEqual(['fire-star']);
   });
 
   it("treeSkills('noel') has the 4 old skills and 5 new ones", () => {
@@ -399,5 +493,716 @@ describe('validBuild', () => {
     expect(validBuild('liz', 50, defaultTree('liz', 50), { 'liz-t30': 1 })).toBe(false); // not adjacent
     expect(validBuild('liz', 50, newTree('liz'), { 'liz-t00': 1, 'liz-t01': 1, 'liz-t02': 1 })).toBe(true);
     expect(validBuild('liz', 50, newTree('liz'), { 'liz-k0': 1 })).toBe(false); // keystone gate
+  });
+});
+
+describe("the hero's abyss capstones", () => {
+  const ALL = { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5,
+    'hero-guard': 5, 'hero-guard-steady': 5, 'hero-aegis': 5, 'hero-rally': 5 };
+  const hero = (tree: Record<string, number>): Member => ({ ...newMember('hero'), level: 50, tree });
+  const up2 = (m: Member, node: string): Member => {
+    const r = raiseNode(m, node, 10);
+    if (!r.ok) throw new Error(`${node} refused: ${r.reason}`);
+    return r.member;
+  };
+  it('an abyss node waits for its memories', () => {
+    const m = hero({ 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5 });
+    expect(canRaiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0] - 1)).toBe('abyss');
+    expect(canRaiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0])).toBeNull();
+    expect(canRaiseNode(m, 'abyss-sword')).toBe('abyss');
+    expect(raiseNode(m, 'abyss-sword')).toEqual({ ok: false, reason: 'abyss' });
+    expect(raiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0]).ok).toBe(true);
+  });
+  it('memoriesOf clamps a hostile count', () => {
+    for (const id of ['hero', 'rin'] as const) {
+      for (const bad of [NaN, Infinity, -Infinity, -3, undefined]) expect(memoriesOf({ id, memories: bad }), `${id} ${String(bad)}`).toBe(0);
+      expect(memoriesOf({ id, memories: 2.7 })).toBe(2);
+      expect(memoriesOf({ id, memories: 99 })).toBe(chainLength(id));
+    }
+  });
+  it("the hero's own memories open his abyss node", () => {
+    const tree = { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5 };
+    const m = hero(tree);
+    expect(canRaiseNode({ ...m, memories: ABYSS_UNLOCK[0] }, 'abyss-sword')).toBeNull();
+    expect(canRaiseNode({ ...m, memories: ABYSS_UNLOCK[0] - 1 }, 'abyss-sword')).toBe('abyss');
+    expect(canRaiseNode({ ...m, memories: NaN }, 'abyss-sword')).toBe('abyss');
+    expect(raiseNode({ ...m, memories: ABYSS_UNLOCK[0] }, 'abyss-sword').ok).toBe(true);
+  });
+  it('an explicit memory count that is not a count keeps the abyss shut, and only Infinity opens it', () => {
+    const tree = { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5 };
+    const m = hero(tree);
+    for (const bad of [NaN, -1, 1.5, undefined as unknown as number]) expect(canRaiseNode(m, 'abyss-sword', bad), String(bad)).toBe('abyss');
+    expect(canRaiseNode(m, 'abyss-sword', Infinity)).toBeNull();
+    expect(canRaiseNode(m, 'abyss-sword', ABYSS_UNLOCK[0] + 0.5)).toBeNull();
+    const full = { ...tree, 'abyss-sword': 1 };
+    expect(validBuild('hero', 50, full, {}, NaN)).toBe(false);
+    expect(validBuild('hero', 50, full, {}, 1.5)).toBe(false);
+    expect(validBuild('hero', 50, full, {}, ABYSS_UNLOCK[0])).toBe(true);
+  });
+  it("every branch's capstone opens at its own memory count, and not one short of it", () => {
+    expect(ABYSS_UNLOCK).toEqual([2, 4, 6, 8, 10]);   // the spec's table: sword, guard, star, light, chain
+    TREES.hero.branches.forEach((b, i) => {
+      const cap = b.nodes[4].id;
+      const tree = Object.fromEntries(b.nodes.slice(0, 4).map((n) => [n.id, n.maxRank]));
+      const m = hero(tree);
+      expect(canRaiseNode(m, cap, ABYSS_UNLOCK[i] - 1), `${cap} one short`).toBe('abyss');
+      expect(canRaiseNode(m, cap, ABYSS_UNLOCK[i]), `${cap} at the count`).toBeNull();
+    });
+  });
+  it('the hero holds two ultimates, not three', () => {
+    let m = hero(ALL);
+    m = up2(m, 'abyss-sword');
+    m = up2(m, 'abyss-guard');
+    m = { ...m, tree: { ...m.tree, 'hero-flare': 5, 'hero-frost-chill': 5, 'hero-frost': 5, 'hero-spark': 5 } };
+    expect(canRaiseNode(m, 'abyss-star', 10)).toBe('capstone');
+  });
+  it('a companion still holds one', () => {
+    expect(rulesOf('noel').capstones).toBe(1);
+  });
+});
+
+describe('hero builds', () => {
+  const heroBranch = (node: string) => NODES[node].branch;
+  /** Points per branch, not counting the free first rank. */
+  const perBranch = (tree: Record<string, number>) => {
+    const out = [0, 0, 0, 0, 0];
+    for (const [k, r] of Object.entries(tree)) out[heroBranch(k)] += r - (k === freeNode('hero') ? 1 : 0);
+    return out;
+  };
+  const builds = Object.keys(HERO_BUILDS) as HeroBuild[];
+  it('defaults are the balanced build', () => {
+    expect(defaultTree('hero', 30)).toEqual(heroTree(30, 'balanced', 0));
+    expect(defaultTalents('hero', 30)).toEqual(heroTalents(30, 'balanced'));
+  });
+  it('balanced spreads over guard, star and sword, not light or chain (plan 6a Task 19c)', () => {
+    const [a, b, c, d, e] = perBranch(heroTree(20));
+    expect(Math.max(a, b, c) - Math.min(a, b, c)).toBeLessThanOrEqual(1);
+    expect(d).toBe(0);
+    expect(e).toBe(0);
+  });
+  it('a pure build stays in its branch until it is full', () => {
+    // The tank (guard only) is the pure single-branch build since Task 20 gave the mage a share of light.
+    const cap1 = TREES.hero.branches[1].nodes.slice(0, 4).reduce((s, n) => s + n.maxRank, 0);
+    let L = 1;
+    while (skillPoints(L + 1, 'hero') <= cap1) L++;
+    const at1 = perBranch(heroTree(L, 'tank'));
+    expect(at1.filter((_, i) => i !== 1).every((n) => n === 0)).toBe(true);
+    expect(at1[1]).toBe(skillPoints(L, 'hero'));
+    const over = perBranch(heroTree(L + 1, 'tank'));
+    expect(over[1]).toBe(cap1);
+    expect(over[0]).toBe(skillPoints(L + 1, 'hero') - cap1);
+  });
+  it('the mage is star first: two points of star for every point of light, nothing else (plan 6a Task 20)', () => {
+    for (const level of [6, 10, 14, 20]) {
+      const [a, b, c, d, e] = perBranch(heroTree(level, 'mage'));
+      expect(a + b + e, `Lv${level}`).toBe(0);
+      expect(d, `Lv${level}`).toBeGreaterThan(0);
+      expect(c, `Lv${level} star`).toBeGreaterThanOrEqual(2 * d - 1);
+      expect(c, `Lv${level} star`).toBeLessThanOrEqual(2 * d + 1);   // two to one, not just "at least"
+    }
+  });
+  it('no capstone without memories; a build takes its own with them', () => {
+    const caps = (t: Record<string, number>) => Object.keys(t).filter((k) => k.startsWith('abyss-'));
+    expect(caps(heroTree(50, 'balanced', 0))).toEqual([]);
+    expect(caps(defaultTree('hero', 50))).toEqual([]);   // the default build waits for memories too
+    const held = caps(heroTree(50, 'balanced', 10));
+    expect(held).toHaveLength(2);
+    for (const k of held) expect(HERO_BUILDS.balanced.branches).toContain(heroBranch(k));
+  });
+  it('every build is a legal build', () => {
+    for (const b of builds) for (const L of [1, 10, 30, 50]) {
+      for (const memories of [0, 2, 6, 8, 10]) {
+        expect(validBuild('hero', L, heroTree(L, b, memories), heroTalents(L, b), memories), `${b} Lv${L} m${memories}`).toBe(true);
+      }
+    }
+  });
+  it('the balanced build is not a regen tank; the tank build keeps the tank set', () => {
+    const held = (b: HeroBuild) => BOARDS.hero.filter((n) => n.keystone && heroTalents(50, b)[n.id]).map((n) => n.keystone!);
+    expect(new Set(held('balanced'))).toEqual(new Set(HERO_BUILDS.balanced.keystones));
+    expect(held('balanced')).not.toContain('regen');
+    expect(held('balanced')).not.toContain('taunt-guard');
+    expect(new Set(held('tank'))).toEqual(new Set(DEFAULT_KEYSTONES.hero));
+    for (const b of ['sword', 'mage', 'healer'] as const) expect(new Set(held(b)), b).toEqual(new Set(DEFAULT_KEYSTONES.hero));
+  });
+  it('balanced talents lean on HP and STR (plan 6a Task 19c)', () => {
+    const t = heroTalents(30, 'balanced');
+    let all = 0;
+    let lean = 0;
+    for (const n of BOARDS.hero) {
+      if (n.keystone) continue;
+      const r = t[n.id] ?? 0;
+      all += r;
+      if (n.stat === 'hp' || n.stat === 'str') lean += r;
+    }
+    expect(lean * 2).toBeGreaterThanOrEqual(all);
+  });
+  it('a mage leans on INT and MAG', () => {
+    const share = (build: HeroBuild) => {
+      const t = heroTalents(30, build);
+      let all = 0;
+      let magic = 0;
+      for (const n of BOARDS.hero) {
+        if (n.keystone) continue;
+        all += t[n.id] ?? 0;
+        if (n.stat === 'int' || n.stat === 'mag') magic += t[n.id] ?? 0;
+      }
+      return magic / all;
+    };
+    expect(share('mage')).toBeGreaterThanOrEqual(0.5);
+    expect(share('mage')).toBeGreaterThan(share('balanced'));
+  });
+  it('a build with nodes fills them first, in order, then follows its branches (plan 6a Task 20)', () => {
+    const saved = HERO_BUILDS.mage;
+    try {
+      HERO_BUILDS.mage = { ...saved, nodes: ['hero-frost', 'hero-flare'] };
+      const t = heroTree(12, 'mage');
+      const plain = { ...saved };
+      delete plain.nodes;
+      HERO_BUILDS.mage = plain;
+      const without = heroTree(12, 'mage');
+      // hero-frost needs hero-flare (tier 0) first: the listed order is tried point by point, the first open node wins.
+      expect(t['hero-frost']).toBe(5);
+      expect(t['hero-flare']).toBeGreaterThanOrEqual(1);
+      expect(without['hero-frost']).toBeLessThan(5);
+      expect(Object.values(t).reduce((s, n) => s + n, 0)).toBe(Object.values(without).reduce((s, n) => s + n, 0));
+      HERO_BUILDS.mage = { ...saved, nodes: ['hero-frost', 'hero-flare'] };
+      for (const L of [1, 10, 30, 50]) expect(validBuild('hero', L, heroTree(L, 'mage'), heroTalents(L, 'mage'), 0), `Lv${L}`).toBe(true);
+    } finally {
+      HERO_BUILDS.mage = saved;
+    }
+  });
+});
+
+describe('memory keystones', () => {
+  /** Noel with 12 board points and both board keystones: the most a companion may hold. */
+  const full = (id: 'noel' | 'selene' = 'noel'): Member => {
+    const base = upT(upT(upT(tal(id, 50), `${id}-t00`, 5), `${id}-t01`, 5), `${id}-t02`, 2);
+    return upT(upT(base, `${id}-k0`), `${id}-k1`);
+  };
+  it('a companion awakens her memory keystone with every piece', () => {
+    const selene = tal('selene', 50);
+    expect(keystonesOf({ ...selene, memories: chainLength('selene') - 1 })).not.toContain(MEMORY_KEYSTONES.selene);
+    expect(keystonesOf({ ...selene, memories: chainLength('selene') })).toEqual([MEMORY_KEYSTONES.selene]);
+    expect(MEMORY_KEYSTONES.selene).toBe('moon-promise');
+    // Each companion wakes her own and no other.
+    for (const id of ids.filter((c) => c !== 'rin')) {
+      expect(keystonesOf({ ...tal(id, 50), memories: chainLength(id) }), id).toContain(MEMORY_KEYSTONES[id]);
+      expect(keystonesOf(tal(id, 50)), id).not.toContain(MEMORY_KEYSTONES[id]);
+    }
+    // A junk count never wakes one.
+    expect(keystonesOf({ ...selene, memories: NaN })).toEqual([]);
+  });
+
+  it('memory keystones never count against the cap', () => {
+    const m = full();
+    const awake = { ...m, memories: chainLength('noel') };
+    expect(keystonesOf(m)).toHaveLength(2);
+    expect(keystonesOf(awake)).toEqual([...keystonesOf(m), MEMORY_KEYSTONES.noel]);
+    expect(keystonesOf(awake)).toHaveLength(3);
+    expect(canRaiseTalent(awake, 'noel-k2')).toBe('keystones');
+    expect(talentPointsLeft(awake)).toBe(talentPointsLeft(m));
+    // The raise path ignores them too: a first board keystone is still allowed with the memory keystone awake.
+    const one = upT(upT(upT(upT(tal('noel', 50), 'noel-t00', 5), 'noel-t01', 5), 'noel-t02', 2), 'noel-k0');
+    expect(canRaiseTalent({ ...one, memories: chainLength('noel') }, 'noel-k1')).toBeNull();
+  });
+
+  it("Rin's keystone waits for her oath, not her seventh piece", () => {
+    const rin = tal('rin', 50);
+    expect(MEMORY_KEYSTONES.rin).toBe('unrung-bell');
+    expect(keystonesOf({ ...rin, memories: chainLength('rin') })).toEqual([]);
+    expect(keystonesOf({ ...rin, memories: chainLength('rin'), oath: true })).toEqual([MEMORY_KEYSTONES.rin]);
+    expect(keystonesOf({ ...rin, memories: chainLength('rin') - 1, oath: true })).toEqual([MEMORY_KEYSTONES.rin]);
+    expect(keystonesOf(rin)).toEqual([]);
+  });
+
+  it('the hero has no memory keystone', () => {
+    const hero = { ...tal('hero', 50), memories: 10, oath: true as const };
+    expect(keystonesOf(hero).filter((k) => (Object.values(MEMORY_KEYSTONES) as string[]).includes(k))).toEqual([]);
+    expect(keystonesOf({ ...hero, memories: chainLength('hero') })).toEqual(keystonesOf(tal('hero', 50)));
+  });
+});
+
+describe('the Lantern Key and the dawn blade', () => {
+  const hero = newMember('hero');
+  const branches: [string, string][] = [['hero-slash', 'sword'], ['hero-guard', 'guard'], ['hero-flare', 'star'], ['hero-mend', 'light'], ['hero-shackle', 'chain']];
+
+  it('the Lantern Key lights up with every memory', () => {
+    expect(SKY_LANTERN).toEqual({ heal: 25, memories: 10 });
+    for (const [node, form] of branches) {
+      const tree = up({ ...hero, level: 50 }, node, 3).tree;
+      const plain = HERO_ULTIMATES.find((u) => u.id === `ult-hero-${form}`)!;
+      expect(ultimateFor('hero', tree, { memories: SKY_LANTERN.memories - 1 }), form).toBe(plain);
+      expect(ultimateFor('hero', tree), form).toBe(plain);
+      const sky = ultimateFor('hero', tree, { memories: SKY_LANTERN.memories });
+      expect(sky.id, form).toBe(`${plain.id}-sky`);
+      expect(sky.name, form).toBe('燈鑰・天燈');
+      expect(sky.effects, form).toEqual(plain.effects);
+      expect(sky.target, form).toBe(plain.target);
+      expect(sky.follow, form).toEqual({ who: 'allies', effects: [{ kind: 'heal', power: SKY_LANTERN.heal }] });
+    }
+  });
+
+  it('the Sky Lantern lights exactly when the hero holds his whole chain', () => {
+    expect(SKY_LANTERN.memories).toBe(chainLength('hero'));
+  });
+
+  it("Rin's dawn blade waits for her oath", () => {
+    expect(ultimateFor('rin')).toBe(ULTIMATES.rin);
+    expect(ultimateFor('rin', {}, {})).toBe(ULTIMATES.rin);
+    expect(ultimateFor('rin', {}, { memories: chainLength('rin') })).toBe(ULTIMATES.rin);
+    expect(ultimateFor('rin', {}, { oath: true })).toBe(RIN_DAWN);
+    expect(RIN_DAWN).toMatchObject({ id: 'ult-rin-dawn', owner: 'rin', name: '破鐘・黎明之刃', refundOnKill: 50 });
+    // a companion ignores both
+    expect(ultimateFor('noel', {}, { memories: 10, oath: true })).toBe(ULTIMATES.noel);
+  });
+});
+
+describe('ranks of a skill with nothing to scale (plan 8c)', () => {
+  it('hex costs 1 TP less a rank; the veil lasts a round longer a rank', async () => {
+    const { skillFor } = await import('./battle');
+    const { SKILLS } = await import('../data/skills');
+    // The mark had ranks too until 8d Task 3 made it innate; 熟記 lowers its TP now (engine/mechanics/mark.test.ts).
+    for (const id of ['hex']) {
+      const tp = (rank: number) => skillFor({ powers: [], ranks: { [id]: rank } }, id)!.tp;
+      expect([tp(1), tp(2), tp(3)], id).toEqual([SKILLS[id].tp, SKILLS[id].tp - 1, SKILLS[id].tp - 2]);
+      expect(skillFor({ powers: [], ranks: { [id]: 3 } }, id)!.effects, id).toEqual(SKILLS[id].effects);
+    }
+    const veil = (rank: number) => skillFor({ powers: [], ranks: { 'rin-veil': rank } }, 'rin-veil')!;
+    expect([1, 2, 3].map((r) => veil(r).effects)).toEqual([2, 3, 4].map((turns) => [{ kind: 'veil', turns }]));
+    expect([1, 2, 3].map((r) => veil(r).tp)).toEqual([SKILLS['rin-veil'].tp, SKILLS['rin-veil'].tp, SKILLS['rin-veil'].tp]);
+    // A skill that scales keeps its TP and scales instead.
+    expect(skillFor({ powers: [], ranks: { 'fire-star': 3 } }, 'fire-star')!.tp).toBe(SKILLS['fire-star'].tp);
+  });
+
+  it("the hex's and the veil's words follow their rounds", async () => {
+    const { skillFor } = await import('./battle');
+    const { SKILLS } = await import('../data/skills');
+    expect(SKILLS.hex.desc).toContain('3 回合');
+    // 擴咒 at rank 3 (plan 8d): weak points for 4 rounds, on every foe.
+    const hex = skillFor({ powers: [], ranks: { hex: 1, 'noel-hex-wide': 3 } }, 'hex')!;
+    expect(hex.effects).toEqual([{ kind: 'expose', turns: 4 }]);
+    expect(hex.target).toBe('enemies');
+    expect(hex.desc).toContain('4 回合');
+    expect(hex.desc).not.toContain('3 回合');
+    expect(SKILLS['rin-veil'].desc).toContain('2 回合');
+    expect(skillFor({ powers: [], ranks: { 'rin-veil': 3 } }, 'rin-veil')!.desc).toContain('4 回合');
+    // The guard barrier's words name its percent and rounds as her ranks and nodes make them.
+    expect(SKILLS.ward.desc).toContain('30%');
+    const ward = skillFor({ powers: [], ranks: { ward: 3, 'chizuru-ward-long': 2 } }, 'ward')!;
+    expect(ward.effects).toEqual([{ kind: 'barrier', barrier: 'guard', power: 36, turns: 5 }]);
+    expect(ward.desc).toContain('36%');
+    expect(ward.desc).toContain('5 回合');
+    expect(ward.desc).not.toContain('30%');
+    expect(SKILLS['heaven-spear'].desc.endsWith('。')).toBe(true);
+  });
+});
+
+describe('every rank of every node counts (plan 8c fix round 1)', () => {
+  it('each rank of each node changes its skill, even with every other node of that skill at its max', async () => {
+    const { skillFor } = await import('./battle');
+    const { TREES } = await import('../data/trees');
+    const dead: string[] = [];
+    for (const tree of Object.values(TREES)) {
+      const nodes = tree.branches.flatMap((b) => branchNodes(b).map((x) => x.node));
+      for (const n of nodes) {
+        const owner = NODES[n.id].owner;
+        // A mechanic node has no skill: each of its ranks must turn its knob to a new value.
+        if (n.kind === 'mech') {
+          for (let r = 1; r <= n.maxRank; r++) {
+            if (mechKnob({ [n.id]: r }, owner, n.knob!) === mechKnob({ [n.id]: r - 1 }, owner, n.knob!)) dead.push(`${n.id} rank ${r}`);
+          }
+          continue;
+        }
+        // The other side of the node's own pair never holds points beside it.
+        const pair = NODES[n.id].pair;
+        const others = Object.fromEntries(nodes.filter((x) => x.skill === n.skill && x.id !== n.id && x.id !== pair).map((x) => [x.id, x.maxRank]));
+        const lo = n.kind === 'active' ? 1 : 0;
+        const at = (r: number) => skillFor({ powers: [], ranks: { ...others, [n.id]: r } }, n.skill!);
+        for (let r = lo + 1; r <= n.maxRank; r++) if (JSON.stringify(at(r)) === JSON.stringify(at(r - 1))) dead.push(`${n.id} rank ${r}`);
+      }
+    }
+    expect(dead).toEqual([]);
+  });
+});
+
+describe('skill words follow their numbers (plan 8c)', () => {
+  /** The ways a description names an effect's number, by field. */
+  const named = (e: Record<string, unknown>): [string, (v: number) => string][] => [
+    ...(typeof e.turns === 'number' ? [['turns', (v: number) => `${v} 回合`] as [string, (v: number) => string]] : []),
+    ...(e.kind === 'buff' && typeof e.pct === 'number' ? [['pct', (v: number) => `${Math.abs(v)}%`] as [string, (v: number) => string]] : []),
+    ...(e.kind === 'barrier' ? [['power', (v: number) => `${v}%`] as [string, (v: number) => string]] : []),
+    ...(e.kind === 'inflict' ? [['chance', (v: number) => `${Math.round(v * 100)}%`] as [string, (v: number) => string]] : []),
+    ...(typeof e.hits === 'number' ? [['hits', (v: number) => `${v} 段`] as [string, (v: number) => string], ['hits', (v: number) => `${v} 次`] as [string, (v: number) => string]] : []),
+    ...(e.kind === 'gauge' ? [['amount', (v: number) => `+${v}`] as [string, (v: number) => string]] : []),
+  ];
+
+  it('every number a description names is the effective one, at every rank of every node', async () => {
+    const { skillFor } = await import('./battle');
+    const { SKILLS } = await import('../data/skills');
+    const { TREES } = await import('../data/trees');
+    const wrong: string[] = [];
+    for (const [owner, tree] of Object.entries(TREES)) {
+      const nodes = tree.branches.flatMap((b) => b.nodes);
+      for (const n of nodes) for (let r = 1; r <= n.maxRank; r++) {
+        const active = nodes.find((x) => x.kind === 'active' && x.skill === n.skill);
+        if (!active || !SKILLS[n.skill!]) continue;
+        const ranks = { [active.id]: n.kind === 'active' ? r : 1, ...(n.kind === 'variant' ? { [n.id]: r } : {}) };
+        const base = SKILLS[n.skill!], now = skillFor({ powers: [], ranks }, n.skill!)!;
+        base.effects.forEach((e, i) => {
+          const p = now.effects[i] as unknown as Record<string, number>;
+          for (const [f, say] of named(e as unknown as Record<string, unknown>)) {
+            const was = (e as unknown as Record<string, number>)[f];
+            if (!base.desc.includes(say(was))) continue;
+            if (!now.desc.includes(say(p[f]))) wrong.push(`${owner} ${n.id} r${r} ${n.skill}.${f}: ${now.desc} lacks ${say(p[f])}`);
+          }
+        });
+      }
+    }
+    expect(wrong).toEqual([]);
+    // 破甲箭's rounds follow 深鑿 (plan 8d Task 6).
+    const sunder = skillFor({ powers: [], ranks: { 'sunder-arrow': 1, 'sylvie-sunder-deep': 3 } }, 'sunder-arrow')!;
+    expect((sunder.effects[1] as { turns: number }).turns).toBe(7);
+    expect(sunder.desc).toContain('7 回合');
+    expect(sunder.desc).not.toContain('3 回合');
+    // 拍手's gauge follows its rank.
+    const clap = skillFor({ powers: [], ranks: { clap: 3 } }, 'clap')!;
+    const amount = (clap.effects[0] as { amount: number }).amount;
+    expect(amount).toBeGreaterThan(10);
+    expect(clap.desc).toContain(`+${amount}`);
+  });
+
+  it('skill text calls a foe 牠', async () => {
+    const { SKILLS } = await import('../data/skills');
+    for (const s of Object.values(SKILLS)) expect(s.desc, s.id).not.toContain('它');
+  });
+});
+
+describe('pairs, mechanic knobs and the first-learned list (plan 8d Task 1)', () => {
+  /** A B side for noel's tier-1 cell of branch 0 (the A side is the node standing there): a variant of the same skill. */
+  const fakeB = () => V('test-star-b', 'fire-star', '測試星', [{ powerPct: 101 }, { powerPct: 102 }, { powerPct: 103 }], (m) => `測試用的另一個版本，威力 ${m.powerPct}%。`);
+  const withFakePair = () => withNode('noel', 0, 1, P(TREES.noel.branches[0].nodes[1], fakeB()));
+
+  it('a pair holds points on one side only', () => {
+    const restore = withFakePair();
+    try {
+      const a = TREES.noel.branches[0].nodes[1].id;
+      expect(canRaiseNode(at('noel', 20, { 'fire-star': 1, [a]: 1 }), 'test-star-b')).toBe('pair');
+      expect(canRaiseNode(at('noel', 20, { 'fire-star': 1, 'test-star-b': 1 }), a)).toBe('pair');
+      expect(validBuild('noel', 20, { 'fire-star': 1, [a]: 1, 'test-star-b': 1 }, {})).toBe(false);
+      expect(validBuild('noel', 20, { 'fire-star': 1, 'test-star-b': 2 }, {})).toBe(true);
+      const empty = at('noel', 20, { 'fire-star': 1 });
+      expect(canRaiseNode(empty, a)).toBeNull();
+      expect(canRaiseNode(empty, 'test-star-b')).toBeNull();
+      // 'pair' is checked before 'req': with nothing above, the pair still answers first.
+      expect(canRaiseNode(at('noel', 20, { [a]: 1 } as Record<string, number>), 'test-star-b')).toBe('pair');
+    } finally { restore(); }
+  });
+
+  it('swapping a side keeps the nodes above it and every point', () => {
+    const restore = withFakePair();
+    try {
+      const a = TREES.noel.branches[0].nodes[1].id;
+      const m = at('noel', 20, { 'fire-star': 1, [a]: 2, 'flame-wave': 1 });
+      expect(validBuild('noel', 20, m.tree, {})).toBe(true);
+      const r = swapPair(m, 'test-star-b');
+      if (!r.ok) throw new Error(`swap refused: ${r.reason}`);
+      expect(r.member.tree).toEqual({ 'fire-star': 1, 'test-star-b': 2, 'flame-wave': 1 });
+      expect(m.tree).toEqual({ 'fire-star': 1, [a]: 2, 'flame-wave': 1 });   // the member passed in is never changed
+      expect(skillPointsLeft(r.member)).toBe(skillPointsLeft(m));
+      expect(validBuild('noel', 20, r.member.tree, {})).toBe(true);
+      // And back again.
+      const back = swapPair(r.member, a);
+      expect(back.ok && back.member.tree).toEqual(m.tree);
+      expect(swapPair(m, a)).toEqual({ ok: false, reason: 'empty' });
+      expect(swapPair(m, 'flame-wave')).toEqual({ ok: false, reason: 'unknown' });
+      expect(swapPair(m, 'no-such-node')).toEqual({ ok: false, reason: 'unknown' });
+      expect(swapPair(at('rin', 20), 'test-star-b')).toEqual({ ok: false, reason: 'unknown' });
+    } finally { restore(); }
+  });
+
+  it('mechKnob reads the held rank of a mechanic node', () => {
+    const restore = withNode('noel', 0, 1, K('test-calm', '測試冷靜', 'heatMax', [6, 7, 8], (v) => `熱度上限 ${v}。`));
+    try {
+      expect(mechKnob({ 'fire-star': 1 }, 'noel', 'heatMax')).toBeUndefined();
+      expect(mechKnob({ 'test-calm': 0 }, 'noel', 'heatMax')).toBeUndefined();
+      expect(mechKnob({ 'test-calm': 1 }, 'noel', 'heatMax')).toBe(6);
+      expect(mechKnob({ 'test-calm': 2 }, 'noel', 'heatMax')).toBe(7);
+      expect(mechKnob({ 'test-calm': 9 }, 'noel', 'heatMax')).toBe(8);   // a hand-edited rank reads as the max
+      expect(mechKnob({ 'test-calm': 'x' }, 'noel', 'heatMax')).toBeUndefined();
+      expect(mechKnob(null, 'noel', 'heatMax')).toBeUndefined();
+      expect(mechKnob({ 'test-calm': 2 }, 'noel', 'markCap')).toBeUndefined();   // another knob
+      expect(mechKnob({ 'test-calm': 2 }, 'rin', 'heatMax')).toBeUndefined();    // another member's
+    } finally { restore(); }
+  });
+
+  it("knobOf reads a combatant's knob once a fight", () => {
+    const restore = withNode('noel', 0, 1, K('test-calm', '測試冷靜', 'heatMax', [6, 7, 8], (v) => `熱度上限 ${v}。`));
+    try {
+      const noel = makeCombatant({ key: 'p0', side: 'party', defId: 'noel', ranks: { 'fire-star': 1, 'test-calm': 2 } });
+      expect(knobOf(noel, 'heatMax')).toBe(7);
+      expect(knobOf(noel, 'markCap')).toBeUndefined();
+      // Kept for the rest of this fight: the ranks a combatant fights with never change mid-battle.
+      noel.ranks!['test-calm'] = 3;
+      expect(knobOf(noel, 'heatMax')).toBe(7);
+      // The next fight builds new combatants, which read the tree afresh.
+      expect(knobOf(makeCombatant({ key: 'p0', side: 'party', defId: 'noel', ranks: { 'test-calm': 3 } }), 'heatMax')).toBe(8);
+      // Foes and members without ranks have no knobs.
+      expect(knobOf(makeCombatant({ key: 'e0', side: 'enemy', defId: 'noel', ranks: { 'test-calm': 3 } }), 'heatMax')).toBeUndefined();
+      expect(knobOf(makeCombatant({ key: 'p1', side: 'party', defId: 'noel' }), 'heatMax')).toBeUndefined();
+    } finally { restore(); }
+  });
+
+  it('the standard build never takes a B side and takes DEFAULT_FIRST before upgrades', () => {
+    const restore = withFakePair();
+    try {
+      for (let L = 2; L <= 50; L++) expect(defaultTree('noel', L)['test-star-b'], `Lv${L}`).toBeUndefined();
+    } finally { restore(); }
+    // Liz (plan 8d Task 6): Lv2's point goes to stealth (an old skill due at Lv2), Lv3's to fortune-strike (first). It is
+    // learned, not raised: Lv5's point is an upgrade by the usual order.
+    expect(DEFAULT_FIRST.liz).toEqual(['fortune-strike']);
+    expect(defaultTree('liz', 2)).toEqual({ 'twin-slash': 1, stealth: 1 });
+    expect(defaultTree('liz', 3)).toEqual({ 'twin-slash': 1, stealth: 1, 'fortune-strike': 1 });
+    expect(defaultTree('liz', 5)['fortune-strike']).toBe(1);
+    expect(validBuild('liz', 30, defaultTree('liz', 30), {})).toBe(true);
+    // Rin has no old skills: her first point goes to the list.
+    DEFAULT_FIRST.rin = ['rin-backstab'];
+    try {
+      expect(defaultTree('rin', 2)).toEqual({ 'rin-needle': 1, 'rin-backstab': 1 });
+    } finally { delete DEFAULT_FIRST.rin; }
+  });
+});
+
+describe("Noel's and Rin's trees (plan 8d Task 3)", () => {
+  it('rin knows her mark from Lv1, outside her tree, for no point (8d Task 3 ruling 1)', async () => {
+    const { skillFor } = await import('./battle');
+    expect(INNATE).toEqual({ rin: ['rin-mark'] });
+    expect(NODES['rin-mark']).toBeUndefined();
+    const rin = newMember('rin');
+    expect(learnedSkills(rin)).toEqual(['rin-mark', 'rin-needle']);
+    expect(treeSkills('rin')[0]).toBe('rin-mark');
+    for (const L of [1, 2, 5, 10, 20, 35, 50]) expect(defaultTree('rin', L), `Lv${L}`).not.toHaveProperty('rin-mark');
+    expect(skillPointsLeft({ ...rin, level: 5 })).toBe(skillPoints(5));
+    expect(DEFAULT_FIRST.rin).toBeUndefined();
+    expect(canRaiseNode(at('rin', 10), 'rin-mark')).toBe('unknown');
+    // Her tree's variants of the mark still rewrite it.
+    expect(skillFor({ powers: [], ranks: { 'rin-mark-hone': 1, 'rin-mark-steady': 2 } }, 'rin-mark')!.effects)
+      .toContainEqual({ kind: 'mark', critPct: NODES['rin-mark-steady'].node.mods![1].rules!.markCritPct });
+    // Nobody else knows a skill outside the tree.
+    for (const id of ids.filter((x) => x !== 'rin')) expect(learnedSkills(newMember(id)), id).toEqual([freeNode(id)]);
+  });
+
+  it("the tuned numbers of Noel's and Rin's nodes (8d Task 3, the consultant's measured set)", () => {
+    const pcts = (id: string) => NODES[id].node.mods!.map((m) => m.powerPct);
+    expect(pcts('noel-star-twin')).toEqual([52, 57, 62]);
+    expect(pcts('rin-needle-three')).toEqual([74, 80, 85]);
+    expect(NODES['rin-mark-steady'].node.mods!.map((m) => m.rules!.markCritPct)).toEqual([15, 20, 25]);
+  });
+
+  it('noel and rin hold no B side and no 8c node', () => {
+    for (const id of ['noel', 'rin'] as const) for (const L of [5, 10, 20, 35, 50]) {
+      for (const k of Object.keys(defaultTree(id, L))) {
+        const { node, branch, tier } = NODES[k];
+        expect(TREES[id].branches[branch].nodes[tier], `${id} Lv${L} ${k}`).toBe(node);   // an A side
+        expect(k, `${id} Lv${L}`).not.toMatch(/-up$/);
+      }
+    }
+    for (const id of ['noel', 'rin'] as const) {
+      for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) expect(node.id, id).not.toMatch(/-up$/);
+    }
+  });
+});
+
+describe("Liz's and Sylvie's trees (plan 8d Task 6)", () => {
+  it('the standard build learns fortune-strike by Lv3', () => {
+    expect(DEFAULT_FIRST.liz).toEqual(['fortune-strike']);
+    expect(defaultTree('liz', 2)).toEqual({ 'twin-slash': 1, stealth: 1 });
+    expect(defaultTree('liz', 3)['fortune-strike']).toBe(1);
+    for (const L of [5, 10, 20, 35, 50]) expect(defaultTree('liz', L)['fortune-strike'], `Lv${L}`).toBeGreaterThanOrEqual(1);
+  });
+
+  it("liz's tree keeps its capacity with fortune-strike at the foot of 花錢", () => {
+    const b = TREES.liz.branches;
+    expect(b.map((x) => x.name)).toEqual(['雙刃', '尋寶', '花錢']);
+    expect(b[0].nodes.map((n) => n.id)).toEqual(['twin-slash', 'pickpocket', 'liz-twin-quick', 'liz-change', 'jackpot']);
+    expect(b[0].nodes[2].pair?.id).toBe('liz-twin-haggle');
+    expect(b[1].nodes.map((n) => n.id)).toEqual(['stealth', 'treasure-sense', 'smoke-bomb', 'liz-smoke-choke', 'phantom-step']);
+    expect(b[2].nodes.map((n) => [n.id, n.maxRank])).toEqual([
+      ['fortune-strike', 3], ['liz-fortune-split', 3], ['quickstep', 3], ['liz-vault', 3], ['appraise', 1]]);
+    expect(DEFAULT_CAPSTONE.liz).toBe(0);
+  });
+
+  it("the tuned numbers of Liz's and Sylvie's kits (8d Task 6, retune.md)", async () => {
+    const { DEFAULT_POLICIES } = await import('../data/policies');
+    const { COINS, AIM } = await import('./mech');
+    const mods = (id: string) => NODES[id].node.mods!;
+    // 大手筆 from Lv3 put Liz's Lv5 at +27% of 8b: its power 200 -> 160 and the coin's 15% -> 5%, with 分期 carrying her
+    // later levels (14/24/26%), and she spends from four coins instead of six.
+    expect(SKILLS['fortune-strike'].effects[0]).toMatchObject({ kind: 'damage', power: 160 });
+    expect(COINS.coinPowerPct).toBe(5);
+    expect(mods('liz-fortune-split').map((m) => [m.rules!.coinSpendPct, m.rules!.coinPowerPct])).toEqual([[50, 14], [50, 24], [50, 26]]);
+    expect(DEFAULT_POLICIES.liz).toEqual([{ kind: 'spend-at', gauge: 'coins', min: 6, skill: 'jackpot' }, { kind: 'spend-at', gauge: 'coins', min: 4, skill: 'fortune-strike' }]);
+    expect(mods('liz-twin-quick').map((m) => [m.hits, m.powerPct])).toEqual([[3, 75], [3, 80], [3, 87]]);
+    expect(NODES['liz-change'].node.values).toEqual([2, 3, 4]);
+    expect(NODES['liz-vault'].node.values).toEqual([12, 14, 16]);
+    // Sylvie: 一擊 18/25/30 (the plan's 20 put her Lv5 at +9.5%), 穿心箭 210 -> 220 (her Lv35 lost 釘足 and 箭雨強化).
+    expect(mods('sylvie-aim-one').map((m) => m.rules!.aimPct)).toEqual([18, 25, 30]);
+    expect(SKILLS['heart-shot'].effects[0]).toMatchObject({ kind: 'damage', power: 220 });
+    expect(AIM.dmgPct).toBe(10);
+    expect(NODES['sylvie-patience'].node.values).toEqual([4, 5, 6]);
+    expect(NODES['sylvie-shift'].node.values).toEqual([1, 2, 3]);
+  });
+
+  it('liz and sylvie hold no B side and no 8c node', () => {
+    for (const id of ['liz', 'sylvie'] as const) for (const L of [5, 10, 20, 35, 50]) {
+      for (const k of Object.keys(defaultTree(id, L))) {
+        const { node, branch, tier } = NODES[k];
+        expect(TREES[id].branches[branch].nodes[tier], `${id} Lv${L} ${k}`).toBe(node);   // an A side
+        expect(k, `${id} Lv${L}`).not.toMatch(/-up$/);
+      }
+    }
+    for (const id of ['liz', 'sylvie'] as const) {
+      for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) expect(node.id, id).not.toMatch(/-up$/);
+    }
+    expect([TREES.sylvie.branches[0].nodes[1].id, TREES.sylvie.branches[0].nodes[1].pair?.id]).toEqual(['sylvie-aim-one', 'sylvie-aim-rapid']);
+  });
+});
+
+describe("Scarlet's and Safira's trees (plan 8d Task 7)", () => {
+  it('scarlet and safira hold no B side and no 8c node', () => {
+    for (const id of ['scarlet', 'safira'] as const) for (const L of [5, 10, 20, 35, 50]) {
+      for (const k of Object.keys(defaultTree(id, L))) {
+        const { node, branch, tier } = NODES[k];
+        expect(TREES[id].branches[branch].nodes[tier], `${id} Lv${L} ${k}`).toBe(node);   // an A side
+        expect(k, `${id} Lv${L}`).not.toMatch(/-up$/);
+      }
+    }
+    for (const id of ['scarlet', 'safira'] as const) {
+      for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) expect(node.id, id).not.toMatch(/-up$/);
+    }
+    // Two mechanic nodes each (spec §7): 熾心 and 回禮; 即興 and 雙人舞.
+    const mechs = (id: 'scarlet' | 'safira') => TREES[id].branches.flatMap((b) => branchNodes(b)).filter((x) => x.node.kind === 'mech').map((x) => x.node.id);
+    expect(mechs('scarlet')).toEqual(['scarlet-ardent', 'scarlet-thanks']);
+    expect(mechs('safira')).toEqual(['safira-improv', 'safira-duet']);
+  });
+
+  it('bobby and the hero hold no 8c node; the standard builds take no B side', () => {
+    for (const L of [5, 10, 20, 35, 50]) {
+      const trees: [CharacterId, Record<string, number>][] = [['bobby', defaultTree('bobby', L)], ...(Object.keys(HERO_BUILDS) as HeroBuild[]).map((b): [CharacterId, Record<string, number>] => ['hero', heroTree(L, b, 10)])];
+      for (const [id, tree] of trees) for (const k of Object.keys(tree)) {
+        const { node, branch, tier } = NODES[k];
+        expect(TREES[id].branches[branch].nodes[tier], `${id} Lv${L} ${k}`).toBe(node);
+        expect(k, `${id} Lv${L}`).not.toMatch(/-up$/);
+      }
+    }
+    for (const id of ['bobby', 'hero'] as const) {
+      for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) expect(node.id, id).not.toMatch(/-up$|^twin-turret$/);
+    }
+    // Two mechanic nodes for Bobby (spec §7): 量產 and 工作檯; none for the hero (his cells are variants).
+    const mechs = (id: CharacterId) => TREES[id].branches.flatMap((b) => branchNodes(b)).filter((x) => x.node.kind === 'mech').map((x) => x.node.id);
+    expect(mechs('bobby')).toEqual(['bobby-mass', 'bobby-bench']);
+    expect(mechs('hero')).toEqual([]);
+  });
+
+  it('every V0 is gone: each variant has a label and its words', () => {
+    for (const id of Object.keys(TREES) as CharacterId[]) for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) {
+      if (node.kind !== 'variant') continue;
+      expect(node.label, node.id).toBeTruthy();
+      expect(node.say, node.id).toBeDefined();
+      expect(node.name, node.id).toBeUndefined();
+    }
+  });
+
+  it("the tuned numbers of Scarlet's and Safira's nodes, and 爆炎斬's power and HP cost (8d Task 7, retune.md)", () => {
+    const mods = (id: string) => NODES[id].node.mods!;
+    const vals = (id: string) => NODES[id].node.values!;
+    // 爆炎強化 (+10/20/35% always) became 赤心 (+30/40/50% only when the embers pay the whole cost, 1-15% of the sim's
+    // casts): 爆炎斬 carries her power instead, 220 → 260, at a dearer 20% HP (was 15%), so Lv10 and Lv50 both hold parity.
+    expect([(SKILLS['flame-burst'].effects[0] as { power: number }).power, SKILLS['flame-burst'].hpCost]).toEqual([260, 0.2]);
+    expect(mods('scarlet-burst-heart').map((m) => m.rules!.emberPaidPct)).toEqual([30, 40, 50]);
+    expect(mods('scarlet-provoke-shout').map((m) => (m.extra![0] as { pct: number }).pct)).toEqual([10, 15, 20]);
+    expect(mods('scarlet-cover-both').map((m) => [m.turns, m.rules!.keep])).toEqual([[3, true], [4, true], [5, true]]);
+    expect(mods('scarlet-ring-blaze').map((m) => (m.extra![0] as { chance: number }).chance)).toEqual([0.3, 0.4, 0.5]);
+    expect([vals('scarlet-ardent'), vals('scarlet-thanks')]).toEqual([[60, 70, 80], [5, 8, 10]]);
+    // Safira at the plan's numbers.
+    expect(mods('safira-dance-four').map((m) => [m.hits, m.powerPct])).toEqual([[4, 82], [4, 90], [4, 100]]);
+    expect(mods('safira-war-heat').map((m) => (m.extra![0] as { pct: number; turns: number }))).toEqual([10, 15, 20].map((pct) => ({ kind: 'buff', stat: 'spd', pct, turns: 3 })));
+    expect(mods('safira-clap-encore').map((m) => m.powerPct)).toEqual([150, 175, 200]);
+    expect(mods('safira-shadow-sync').map((m) => m.rules!.beats)).toEqual([2, 3, 4]);
+    expect([vals('safira-improv'), vals('safira-duet')]).toEqual([[2, 1, 0], [20, 30, 40]]);
+  });
+});
+
+describe("Chizuru's and Selene's trees (plan 8d Task 5)", () => {
+  it("selene's prayer branch: recall at tier 2, open from Lv5", () => {
+    const b = TREES.selene.branches[1];
+    expect(b.nodes.map((n) => n.id)).toEqual(['cleanse', 'rebirth', 'moon-recall', 'selene-new-night', 'full-moon-night']);
+    expect([b.nodes[2].maxRank, b.nodes[2].rank]).toEqual([3, 'turns']);
+    expect(NODES['selene-rebirth-up']).toBeUndefined();
+    expect(canRaiseNode(at('selene', 5, { moonlight: 1, cleanse: 1, rebirth: 1 }), 'moon-recall')).toBeNull();
+    expect(canRaiseNode(at('selene', 5, { moonlight: 1, cleanse: 1 }), 'moon-recall')).toBe('req');
+    // The new-moon night is a variant of the full-moon night, a tier below it.
+    expect([NODES['selene-new-night'].node.kind, NODES['selene-new-night'].node.skill, NODES['selene-new-night'].tier]).toEqual(['variant', 'full-moon-night', 3]);
+  });
+
+  it('chizuru and selene hold no B side and no 8c node', () => {
+    for (const id of ['chizuru', 'selene'] as const) for (const L of [5, 10, 20, 35, 50]) {
+      for (const k of Object.keys(defaultTree(id, L))) {
+        const { node, branch, tier } = NODES[k];
+        expect(TREES[id].branches[branch].nodes[tier], `${id} Lv${L} ${k}`).toBe(node);   // an A side
+        expect(k, `${id} Lv${L}`).not.toMatch(/-up$/);
+      }
+    }
+    for (const id of ['chizuru', 'selene'] as const) {
+      for (const b of TREES[id].branches) for (const { node } of branchNodes(b)) expect(node.id, id).not.toMatch(/-up$/);
+    }
+    // The pairs: 雷之結界／重結界 (Chizuru's 槍舞 tier 3), 凝光／群照 (Selene's 月光 tier 1).
+    expect([TREES.chizuru.branches[0].nodes[3].id, TREES.chizuru.branches[0].nodes[3].pair?.id]).toEqual(['chizuru-thunder-ward', 'chizuru-twin-ward']);
+    expect([TREES.selene.branches[0].nodes[1].id, TREES.selene.branches[0].nodes[1].pair?.id]).toEqual(['selene-moon-bright', 'selene-moon-wide']);
+  });
+
+  it("the tuned numbers of Chizuru's and Selene's nodes, and 月影箭's power (8d Task 5, retune.md)", () => {
+    const mods = (id: string) => NODES[id].node.mods!;
+    const vals = (id: string) => NODES[id].node.values!;
+    // 55/60/68 (plan) → 60/65/72: two hits lose a single hit's multistrike, and band 18b allPhys balanced d8 iron fell to
+    // 0.745 (< 0.75); at 60/65/72 it is 0.768.
+    expect(mods('chizuru-sweep-twin').map((m) => [m.hits, m.powerPct])).toEqual([[2, 60], [2, 65], [2, 72]]);
+    expect(mods('chizuru-pierce-twin').map((m) => [m.hits, m.powerPct])).toEqual([[2, 60], [2, 65], [2, 72]]);
+    expect([vals('chizuru-thunder-ward'), vals('chizuru-twin-ward')]).toEqual([[20, 30, 40], [60, 80, 100]]);
+    expect(mods('chizuru-ward-long').map((m) => m.turns)).toEqual([4, 5, 6]);
+    expect(mods('chizuru-purify-wake').map((m) => [m.powerPct, m.rules!.wake])).toEqual([[100, true], [115, true], [130, true]]);
+    expect(mods('chizuru-release-keep').map((m) => m.rules!.releaseKeep)).toEqual([3, 2, 1]);
+    expect(mods('selene-moon-bright').map((m) => [m.powerPct, m.tpDelta])).toEqual([[125, 1], [135, 1], [150, 1]]);
+    expect(mods('selene-moon-wide').map((m) => [m.target, m.powerPct])).toEqual([['allies', 55], ['allies', 60], ['allies', 65]]);
+    expect(vals('selene-tide')).toEqual([40, 50, 60]);
+    expect(mods('selene-new-night').map((m) => [m.turns, m.rules!.phase])).toEqual([[3, 'new'], [4, 'new'], [5, 'new']]);
+    expect(mods('selene-dream-deep').map((m) => m.turns)).toEqual([4, 5, 6]);
+    expect(mods('selene-arrow-freeze').map((m) => (m.extra![0] as { chance: number }).chance)).toEqual([0.25, 0.35, 0.45]);
+    // 月影箭 130 → 155: 寒月 took 月影強化's place (its +50% at rank 3), and Selene's Lv50 fell to −12% of 8b without it.
+    expect(SKILLS['moon-arrow'].effects[0]).toEqual({ kind: 'damage', power: 155, element: 'ice', scale: 'mag', melee: false });
+  });
+
+  it('the standard build does not chase recall: no early pull, and it reaches it only as the old 再生節流 points did (plan 8d ruling 6)', () => {
+    expect(DEFAULT_FIRST.selene).toBeUndefined();
+    for (const L of [5, 10, 20]) expect(defaultTree('selene', L), `Lv${L}`).not.toHaveProperty('moon-recall');
+    // From Lv35 the build's spare points land on it in the cell 再生節流 held (the sim casts neither): a build that spent
+    // them on 月影箭 instead put her Lv35 contribution at +57% over 8b (retune.md, Task 5).
+    expect(defaultTree('selene', 35)['moon-recall']).toBe(2);
+    expect(defaultTree('selene', 35)).not.toHaveProperty('moon-arrow');
+    for (const L of [5, 10, 20, 35, 50]) expect(defaultTree('selene', L), `Lv${L}`).not.toHaveProperty('selene-new-night');
+  });
+});
+
+describe('the reworked trees in the standard build (plan 8d Task 9)', () => {
+  it('each core mechanic is in the standard build by Lv5', () => {
+    // The skill that enters each companion's mechanic. Selene needs none: her moon is a passive of the fight (spec §8.6).
+    const core: Partial<Record<CharacterId, string>> = {
+      noel: 'fire-star', chizuru: 'ward', liz: 'fortune-strike', sylvie: 'aimed-shot', scarlet: 'flame-burst',
+      safira: 'blade-dance', bobby: 'turret', rin: 'rin-mark',
+    };
+    for (const [id, skill] of Object.entries(core) as [CharacterId, string][]) {
+      const m: Member = { ...newMember(id), level: 5, tree: defaultTree(id, 5) };
+      expect(learnedSkills(m), `${id} Lv5`).toContain(skill);
+    }
+    expect(Object.keys(core).sort()).toEqual(CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'selene').sort());
   });
 });

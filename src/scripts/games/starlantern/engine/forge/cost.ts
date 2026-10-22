@@ -1,6 +1,6 @@
 import { AFFIXES, GEAR_SLOTS, ROLL_FLOOR, affixRange, generalLegendaries } from '../../data/gear';
 import { ENHANCE_COST, ENHANCE_MAX, ENHANCE_SUCCESS, ESSENCE_OF, FUSE_GOLD, FUSE_SLOT_COST, REGION_AFFIX_GROUP, REROLL, type Cost } from '../../data/forge';
-import { itemSlot } from '../loot/item';
+import { itemSlot, maxValue } from '../loot/item';
 import { mix } from '../loot/drops';
 import { mulberry32, type Rng } from '../rng';
 import type { GameState } from '../state';
@@ -82,10 +82,14 @@ export function rerollCost(it: ItemInstance, o: RerollOpts): Cost {
   return c;
 }
 
-/** The value range a reroll of affix `index` can land in (the same rounding as `rollValue`). */
+/** The value range a reroll of affix `index` can land in (the same rounding as `rollValue`); a starlit piece only ever holds the maximum. */
 export function rerollRange(it: ItemInstance, index: number): [number, number] | null {
   const affix = it.affixes[index];
   if (!affix) return null;
+  if (it.starlit) {
+    const max = maxValue(affix.key, it.ilvl);
+    return [max, max];
+  }
   const [lo, hi] = affixRange(affix.key, it.ilvl);
   const floor = ROLL_FLOOR[it.rarity];
   return [Math.max(1, Math.round(lo + (hi - lo) * floor)), Math.max(1, Math.round(hi))];

@@ -1,15 +1,25 @@
-import { GRID_SIZE, MAX_ACTIVE } from './formation';
-import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
+import { GRID_SIZE, MAX_ACTIVE, ROWS } from './formation';
+import { CHARACTERS, CHARACTER_IDS, rulesOf } from '../data/characters';
 import { SKILLS } from '../data/skills';
+import { depthLevel } from './levels';
+import { CHAINS, MEMORY_SCALE } from '../data/story/chains';
+import { memoriesOf } from './progression';
 import { SETS, SPECIALS } from '../data/gear';
 import { itemSlot, itemStats } from './loot/item';
 import { learnedSkills, newTree, skillPoints, talentPoints, talentStats } from './progression';
 import { PARTY_BASE, PRIMARY_KEYS, capSheet, convertPrimary, emptySheet, naturalPrimary } from './stats';
-import type { AnyStat, CharacterId, GearSlot, ItemInstance, Member, Party, Passive, PrimaryKey, Sheet, Slot, StatKey, Stats } from './types';
+import type { AnyStat, CharacterId, GearSlot, ItemInstance, Member, Party, Passive, PrimaryKey, Row, Sheet, Slot, StatKey, Stats } from './types';
 
 /** Level cap; deep floors (depthLevel 2 + 4 per depth) need room past 20. Progression design §6. */
 export const MAX_LEVEL = 50;
-export const STARTING_RECRUITS: CharacterId[] = ['scarlet', 'chizuru', 'liz', 'noel', 'selene'];
+/** Who a new game starts with: the hero at the front and Rin. */
+export const START_LINEUP: CharacterId[] = ['hero', 'rin'];
+/** The party the game now starts with and the simulation's full party (spec 9.4): the hero, Rin, Chizuru, Noel, Selene. */
+export const STANDARD_LINEUP: CharacterId[] = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+/** The five the simulation fielded before the hero existed; the default of partyAt and kitParty so the balance stays bit-identical. */
+export const LEGACY_LINEUP: CharacterId[] = ['scarlet', 'chizuru', 'liz', 'noel', 'selene'];
+/** Where the legacy five stood (the old newParty grid), so column and cross attacks hit the same people as before. */
+export const LEGACY_GRID: (CharacterId | null)[] = ['scarlet', 'chizuru', 'liz', null, null, null, 'noel', null, 'selene'];
 const STAT_KEYS: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 export const SLOTS: Slot[] = ['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring1', 'ring2'];
 
@@ -27,7 +37,7 @@ export function defaultSlotFor(m: Member, it: ItemInstance): Slot {
 export const expToNext = (level: number): number => Math.floor(14 * level ** 1.3);
 
 /** Where a member's numbers come from; later systems (enchanting, talents) add a source here and the character sheet grows a column. */
-export type StatSource = 'base' | 'growth' | 'gear' | 'set' | 'talent' | 'primary';
+export type StatSource = 'base' | 'growth' | 'gear' | 'set' | 'talent' | 'memory' | 'primary';
 
 const worn = (m: Member): ItemInstance[] => SLOTS.map((s) => m.equip[s]).filter((it): it is ItemInstance => !!it);
 
@@ -58,6 +68,16 @@ export function powersOf(m: Member): string[] {
   return out;
 }
 
+/** What a member's memory pieces and absorbed shards add (spec 7.3, 12); `scale` 0 switches the source off. */
+export function memoryStats(m: Member, scale = MEMORY_SCALE): Partial<Sheet> {
+  const out: Partial<Sheet> = {};
+  if (scale === 0) return out;
+  const n = memoriesOf(m);
+  if (n) for (const [k, v] of Object.entries(CHAINS[m.id].gain) as [PrimaryKey, number][]) addInto(out, { [k]: v * n * scale });
+  for (const a of m.absorbed ?? []) addInto(out, { [a.stat]: a.amount * scale });
+  return out;
+}
+
 export function statSources(m: Member): { source: StatSource; stats: Partial<Sheet> }[] {
   const def = CHARACTERS[m.id];
   // Natural primaries are shown here but never converted; only gear, set and talent primaries convert.
@@ -74,14 +94,15 @@ export function statSources(m: Member): { source: StatSource; stats: Partial<She
     if (n >= 4) addInto(set, s.four);
   }
   const talent = talentStats(m);
+  const memory = memoryStats(m);
   const prim: Partial<Record<PrimaryKey, number>> = {};
   for (const k of PRIMARY_KEYS) {
-    const n = (gear[k] ?? 0) + (set[k] ?? 0) + (talent[k] ?? 0);
+    const n = (gear[k] ?? 0) + (set[k] ?? 0) + (talent[k] ?? 0) + (memory[k] ?? 0);
     if (n) prim[k] = n;
   }
   return [
     { source: 'base', stats: base }, { source: 'growth', stats: growth }, { source: 'gear', stats: gear },
-    { source: 'set', stats: set }, { source: 'talent', stats: talent }, { source: 'primary', stats: convertPrimary(prim, def.affinity) },
+    { source: 'set', stats: set }, { source: 'talent', stats: talent }, { source: 'memory', stats: memory }, { source: 'primary', stats: convertPrimary(prim, def.affinity) },
   ];
 }
 
@@ -106,16 +127,34 @@ export function newMember(id: CharacterId): Member {
   return { ...m, hp: s.hp, tp: s.tp };
 }
 
-export function newParty(): Party {
-  return {
-    roster: Object.fromEntries(CHARACTER_IDS.map((id) => [id, newMember(id)])) as Record<CharacterId, Member>,
-    recruited: [...STARTING_RECRUITS],
-    grid: ['scarlet', 'chizuru', 'liz', null, null, null, 'noel', null, 'selene'],
-  };
+export function newParty(start: CharacterId[] = START_LINEUP): Party {
+  return partyWith(start);
 }
 
-export function recruit(p: Party, id: CharacterId): Party {
-  return p.recruited.includes(id) ? p : { ...p, recruited: [...p.recruited, id] };
+/** A copy of `grid` with `id` in the first empty cell of `row`; a full row spills to the middle row, then the other. The caller keeps the party under five. */
+export function placeInGrid(grid: (CharacterId | null)[], id: CharacterId, row: Row): (CharacterId | null)[] {
+  const out = [...grid];
+  for (const r of [row, 'middle' as Row, ...ROWS.filter((x) => x !== row && x !== 'middle')]) {
+    const base = ROWS.indexOf(r) * 3;
+    const cell = [0, 1, 2].map((i) => base + i).find((c) => out[c] === null);
+    if (cell !== undefined) { out[cell] = id; return out; }
+  }
+  return out;
+}
+
+/** Everyone in the roster, `ids` recruited and standing on the grid: as given, else each on their own row (the hero on `heroRow`). The legacy five keep the old grid. */
+export function partyWith(ids: CharacterId[], heroRow: Row = 'front', grid?: (CharacterId | null)[]): Party {
+  let g = grid ? [...grid] : undefined;
+  if (!g && ids.length === LEGACY_LINEUP.length && ids.every((id, i) => id === LEGACY_LINEUP[i])) g = [...LEGACY_GRID];
+  if (!g) {
+    g = Array<CharacterId | null>(GRID_SIZE).fill(null);
+    for (const id of ids) g = placeInGrid(g, id, id === 'hero' ? heroRow : CHARACTERS[id].row);
+  }
+  return {
+    roster: Object.fromEntries(CHARACTER_IDS.map((id) => [id, newMember(id)])) as Record<CharacterId, Member>,
+    recruited: [...ids],
+    grid: g,
+  };
 }
 
 /** Members on the field, front row first, left to right. */
@@ -125,15 +164,19 @@ export function activeIds(p: Party): CharacterId[] {
 
 export { rowOfCell } from './formation';
 
+export type SetFormationFail = 'size' | 'not-recruited' | 'duplicate' | 'empty' | 'too-many' | 'no-hero';
+
+/** The hero always takes the field: a formation without them is refused (`no-hero`, checked last). */
 export function setFormation(
   p: Party, grid: (CharacterId | null)[],
-): { ok: true; party: Party } | { ok: false; reason: 'size' | 'not-recruited' | 'duplicate' | 'empty' | 'too-many' } {
+): { ok: true; party: Party } | { ok: false; reason: SetFormationFail } {
   if (grid.length !== GRID_SIZE) return { ok: false, reason: 'size' };
   const ids = grid.filter((id): id is CharacterId => id !== null);
   if (ids.some((id) => !p.recruited.includes(id))) return { ok: false, reason: 'not-recruited' };
   if (new Set(ids).size !== ids.length) return { ok: false, reason: 'duplicate' };
   if (ids.length === 0) return { ok: false, reason: 'empty' };
   if (ids.length > MAX_ACTIVE) return { ok: false, reason: 'too-many' };
+  if (!ids.includes('hero')) return { ok: false, reason: 'no-hero' };
   return { ok: true, party: { ...p, grid: [...grid] } };
 }
 
@@ -153,7 +196,8 @@ export function gainExp(m: Member, amount: number): { member: Member; levels: nu
   const after = statsOf(next);
   next.hp = m.hp > 0 ? Math.min(after.hp, m.hp + after.hp - before.hp) : 0;
   next.tp = Math.min(after.tp, m.tp + after.tp - before.tp);
-  const points = { skill: skillPoints(level) - skillPoints(m.level), talent: talentPoints(level) - talentPoints(m.level) };
+  const curve = rulesOf(m.id).curve;
+  const points = { skill: skillPoints(level, curve) - skillPoints(m.level, curve), talent: talentPoints(level, curve) - talentPoints(m.level, curve) };
   // Points are never spent here: the player spends them on the status screen's tree and talent tabs.
   return { member: next, levels: level - m.level, points };
 }
@@ -182,4 +226,22 @@ export function hasPassive(p: Party, passive: Passive): boolean {
     const m = p.roster[id];
     return m.hp > 0 && learnedSkills(m).some((s) => SKILLS[s].passive === passive);
   });
+}
+
+/** The level a newcomer joins at (spec 9.2): the field's average, at least the depth's level less two, never past the field's best. */
+export function joinLevel(p: Party, depth: number): number {
+  const levels = activeIds(p).map((id) => p.roster[id].level);
+  if (levels.length === 0) return 1;
+  const avg = Math.round(levels.reduce((a, b) => a + b, 0) / levels.length);
+  return Math.min(MAX_LEVEL, Math.max(1, Math.min(Math.max(...levels), Math.max(avg, depthLevel(depth) - 2))));
+}
+
+/** Meets a companion: she joins at the given level with the free rank only (points are spent on the status screen), full HP and TP, on the field while there is room, else on the bench. */
+export function meet(p: Party, id: CharacterId, level: number): Party {
+  if (p.recruited.includes(id)) return p;
+  const base: Member = { ...newMember(id), level, tree: newTree(id), talents: {} };
+  const s = statsOf(base);
+  const member: Member = { ...base, hp: s.hp, tp: s.tp };
+  const grid = activeIds(p).length < MAX_ACTIVE ? placeInGrid(p.grid, id, CHARACTERS[id].row) : p.grid;
+  return { ...p, roster: { ...p.roster, [id]: member }, recruited: [...p.recruited, id], grid };
 }

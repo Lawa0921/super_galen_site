@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   BOARDS, BOARD_COLS, BOARD_ROWS, CHAR_KEYSTONES, DEFAULT_KEYSTONES, KEYSTONES, KEYSTONE_GATE, KEYSTONE_VALUES,
-  MAX_KEYSTONES, PALETTES, TALENT_NODES, TALENT_PER, TEMPLATE, boardPoints, keystoneCount, talentBlocker,
+  MAX_KEYSTONES, MEMORY_KEYSTONES, MEMORY_KEYSTONE_VALUES, PALETTES, TALENT_NODES, TALENT_PER, TEMPLATE, boardPoints, keystoneCount, talentBlocker, templateOf,
 } from './talents';
-import { CHARACTER_IDS } from './characters';
+import { CHARACTER_IDS, DEFAULT_RULES, rulesOf } from './characters';
+import { raiseTalent } from '../engine/progression';
+import type { CharacterId, Member } from '../engine/types';
 
 const V = KEYSTONE_VALUES;
 /** Normal nodes of noel's board, row-major, that satisfy adjacency when taken in this order. */
@@ -18,22 +20,24 @@ const fill = (c: string, pts: number): Record<string, number> => {
 };
 
 describe('talent boards', () => {
-  it('each board has 24 normal nodes at rank 5 and 3 keystones at rank 1, ids unique across boards', () => {
+  it('each board has BOARD_ROWS x boardCols normal nodes at rank 5 and its keystones at rank 1, ids unique across boards', () => {
     const all = new Set<string>();
+    let total = 0;
     for (const c of CHARACTER_IDS) {
       const b = BOARDS[c];
-      expect(normals(c)).toHaveLength(24);
-      expect(ks(c)).toHaveLength(3);
+      expect(normals(c)).toHaveLength(BOARD_ROWS * rulesOf(c).boardCols);
+      expect(ks(c)).toHaveLength(CHAR_KEYSTONES[c].length);
+      total += BOARD_ROWS * rulesOf(c).boardCols + CHAR_KEYSTONES[c].length;
       for (const n of normals(c)) expect(n.maxRank).toBe(5);
       for (const n of ks(c)) expect(n.maxRank).toBe(1);
       for (const n of b) { expect(all.has(n.id)).toBe(false); all.add(n.id); expect(TALENT_NODES[n.id].owner).toBe(c); }
     }
-    expect(all.size).toBe(CHARACTER_IDS.length * 27);
+    expect(all.size).toBe(total);
   });
 
   it('every palette stat has a positive TALENT_PER value and appears 4 times on its board', () => {
     for (const c of CHARACTER_IDS) {
-      expect(PALETTES[c]).toHaveLength(6);
+      expect(PALETTES[c]).toHaveLength(c === 'hero' ? 9 : 6);
       for (const s of PALETTES[c]) {
         expect(TALENT_PER[s]).toBeGreaterThan(0);
         expect(normals(c).filter((n) => n.stat === s)).toHaveLength(4);
@@ -41,12 +45,13 @@ describe('talent boards', () => {
     }
   });
 
-  it('keystones come from the catalogue, 3 distinct per character, and the descriptions show KEYSTONE_VALUES', () => {
+  it('keystones come from the catalogue, distinct per character, and the descriptions show KEYSTONE_VALUES', () => {
     for (const c of CHARACTER_IDS) {
-      expect(new Set(CHAR_KEYSTONES[c]).size).toBe(3);
+      expect(CHAR_KEYSTONES[c]).toHaveLength(c === 'hero' ? 5 : 3);
+      expect(new Set(CHAR_KEYSTONES[c]).size).toBe(CHAR_KEYSTONES[c].length);
       expect(ks(c).map((n) => n.keystone)).toEqual(CHAR_KEYSTONES[c]);
       for (const k of CHAR_KEYSTONES[c]) expect(KEYSTONES[k]).toBeDefined();
-      expect(DEFAULT_KEYSTONES[c]).toEqual(CHAR_KEYSTONES[c].slice(0, 2));
+      expect(DEFAULT_KEYSTONES[c]).toEqual(CHAR_KEYSTONES[c].slice(0, rulesOf(c).maxKeystones));
     }
     expect(KEYSTONES['crit-tp'].desc).toBe(`暴擊時回復 ${V.critTp} TP`);
     expect(KEYSTONES['kill-tp'].desc).toBe(`擊倒敵人時回復 ${V.killTp} TP`);
@@ -57,21 +62,50 @@ describe('talent boards', () => {
     expect(KEYSTONES['taunt-guard'].desc).toBe(`挑釁中受到的攻擊傷害 −${V.tauntGuardPct}%`);
   });
 
-  it('normal nodes sit on the 6x4 grid and keystones on row 6', () => {
+  it('normal nodes sit on the BOARD_ROWS x boardCols grid of templateOf and keystones on row BOARD_ROWS', () => {
     expect(TEMPLATE).toHaveLength(BOARD_ROWS);
     for (const line of TEMPLATE) expect(line).toHaveLength(BOARD_COLS);
     for (const c of CHARACTER_IDS) {
+      const cols = rulesOf(c).boardCols;
+      const tpl = templateOf(c);
+      expect(tpl).toHaveLength(BOARD_ROWS);
+      for (const line of tpl) expect(line).toHaveLength(cols);
+      if (c !== 'hero') expect(tpl).toBe(TEMPLATE);
       const seen = new Set<string>();
       for (const n of normals(c)) {
         expect(n.row).toBeGreaterThanOrEqual(0); expect(n.row).toBeLessThan(BOARD_ROWS);
-        expect(n.col).toBeGreaterThanOrEqual(0); expect(n.col).toBeLessThan(BOARD_COLS);
+        expect(n.col).toBeGreaterThanOrEqual(0); expect(n.col).toBeLessThan(cols);
         expect(n.id).toBe(`${c}-t${n.row}${n.col}`);
-        expect(n.stat).toBe(PALETTES[c][TEMPLATE[n.row][n.col]]);
+        expect(n.stat).toBe(PALETTES[c][tpl[n.row][n.col]]);
         seen.add(`${n.row},${n.col}`);
       }
-      expect(seen.size).toBe(24);
-      ks(c).forEach((n, i) => { expect(n.row).toBe(6); expect(n.col).toBe(i); expect(n.id).toBe(`${c}-k${i}`); });
+      expect(seen.size).toBe(BOARD_ROWS * cols);
+      ks(c).forEach((n, i) => { expect(n.row).toBe(BOARD_ROWS); expect(n.col).toBe(i); expect(n.id).toBe(`${c}-k${i}`); });
     }
+  });
+
+  it("the hero's board is 6x6 with 5 keystones and holds 3", () => {
+    expect(PALETTES.hero).toEqual(['str', 'hp', 'atk', 'wil', 'def', 'res', 'int', 'mag', 'agi']);
+    expect(CHAR_KEYSTONES.hero).toEqual(['regen', 'taunt-guard', 'last-stand', 'crit-tp', 'opening-gauge']);
+    expect(templateOf('hero')).toEqual([0, 1, 2, 3, 4, 5].map((r) => [0, 1, 2, 3, 4, 5].map((c) => (6 * r + c) % 9)));
+    expect(normals('hero')).toHaveLength(36);
+    expect(ks('hero')).toHaveLength(5);
+    expect(DEFAULT_KEYSTONES.hero).toEqual(['regen', 'taunt-guard', 'last-stand']);
+    expect(DEFAULT_KEYSTONES.rin).toEqual(['crit-tp', 'kill-tp']);
+
+    /** Level 50 with KEYSTONE_GATE points on the first row, then keystones one at a time in board order. */
+    const climb = (id: CharacterId) => {
+      let m: Member = { id, level: 50, exp: 0, hp: 0, tp: 0, equip: {}, tree: {}, talents: fill(id, KEYSTONE_GATE) };
+      const out: (string | null)[] = [];
+      for (const k of ks(id)) {
+        const r = raiseTalent(m, k.id);
+        out.push(r.ok ? null : r.reason);
+        if (r.ok) m = r.member;
+      }
+      return { out, held: keystoneCount(id, m.talents) };
+    };
+    expect(climb('hero')).toEqual({ out: [null, null, null, 'keystones', 'keystones'], held: 3 });
+    expect(climb('noel')).toEqual({ out: [null, null, 'keystones'], held: 2 });
   });
 });
 
@@ -101,6 +135,13 @@ describe('talent rules', () => {
     expect(talentBlocker('noel', 'noel-k0', twelve)).toBeNull();
     // keystone ranks never count as board points
     expect(boardPoints('noel', { ...eleven, 'noel-k0': 1 })).toBe(KEYSTONE_GATE - 1);
+  });
+
+  it('every companion reads the default rules', () => {
+    const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero');
+    expect(COMPANIONS).toHaveLength(9);
+    for (const id of COMPANIONS) expect(rulesOf(id), id).toEqual(DEFAULT_RULES);
+    expect(DEFAULT_RULES).toEqual({ curve: 'companion', branches: 3, capstones: 1, boardCols: 4, maxKeystones: 2 });
   });
 
   it('refuses a third keystone but still allows re-checking a held one as maxed', () => {
@@ -133,3 +174,63 @@ describe('talent rules', () => {
     expect(boardPoints('noel', { 'noel-t00': 5, 'noel-t01': 2 })).toBe(7);
   });
 });
+
+describe('memory keystones', () => {
+  it('memory keystones never sit on a board', () => {
+    const onBoards = new Set<string | undefined>(CHARACTER_IDS.flatMap((c) => BOARDS[c].filter((n) => n.keystone).map((n) => n.keystone)));
+    expect(Object.keys(MEMORY_KEYSTONES).sort()).toEqual(CHARACTER_IDS.filter((c) => c !== 'hero').sort());
+    for (const [c, k] of Object.entries(MEMORY_KEYSTONES)) {
+      expect(onBoards.has(k), c).toBe(false);
+      expect(KEYSTONES[k].name, c).not.toBe('');
+      expect(KEYSTONES[k].desc, c).not.toBe('');
+      expect(CHAR_KEYSTONES[c as 'noel'], c).not.toContain(k);
+    }
+    expect(new Set(Object.values(MEMORY_KEYSTONES)).size).toBe(9);
+    expect(MEMORY_KEYSTONE_VALUES).toEqual({
+      moonHealPct: 20, shrineDefPct: 15, shrineTurns: 3, troupeTurns: 1, fullHpPct: 30, tpCostPct: 20, devicePct: 30, matFind: 20,
+      friendGuardPct: 20, bellAtkPct: 50, bellTurns: 2,
+    });
+  });
+});
+
+describe('memory keystone words (6c Task 13)', () => {
+  const M = MEMORY_KEYSTONE_VALUES;
+  /** Each memory keystone's numbers as its template writes them, with the unit after the number where there is one. */
+  const NUMBERS: Record<string, string[]> = {
+    'moon-promise': [`+${M.moonHealPct}%`],
+    'small-shrine': [`+${M.shrineDefPct}%`, `${M.shrineTurns} 回合`],
+    'troupe-step': [`${M.troupeTurns} 回合`],
+    'carried-out': [`+${M.fullHpPct}%`],
+    'teachers-gift': [`−${M.tpCostPct}%`],
+    blueprint: [`+${M.devicePct}%`],
+    'fathers-face': [`+${M.matFind}`],
+    'not-a-shield': [`−${M.friendGuardPct}%`],
+    'unrung-bell': [`+${M.bellAtkPct}%`, `${M.bellTurns} 回合`],
+  };
+
+  it('memory keystone texts keep every number', () => {
+    expect(Object.keys(NUMBERS).sort()).toEqual(Object.values(MEMORY_KEYSTONES).sort());
+    for (const [k, nums] of Object.entries(NUMBERS)) {
+      const { desc } = KEYSTONES[k as 'blueprint'];
+      for (const n of nums) expect(desc, k).toContain(n);
+    }
+    const names = Object.values(MEMORY_KEYSTONES).map((k) => KEYSTONES[k].name);
+    for (const n of names) expect(n.trim()).not.toBe('');
+    expect(new Set(names).size).toBe(names.length);
+    expect(KEYSTONES['unrung-bell'].name).toBe('不再鳴響的鐘');
+    expect(KEYSTONES['not-a-shield'].name).toBe('不是盾，是朋友');
+  });
+
+  it("each memory keystone says a word of her memory before its effect (6c Task 13)", () => {
+    const before: Record<string, string> = {
+      'moon-promise': '她施放的回復', 'small-shrine': '戰鬥開始時', 'troupe-step': '她施放的增益', 'carried-out': '對滿血目標',
+      'teachers-gift': '她的技能', blueprint: '裝置效果', 'fathers-face': '素材尋獲', 'not-a-shield': '挑釁中', 'unrung-bell': '洛恩倒下時',
+    };
+    for (const [k, effect] of Object.entries(before)) {
+      const { desc } = KEYSTONES[k as 'blueprint'];
+      expect(desc.indexOf(effect), k).toBeGreaterThan(0);
+      expect(desc.slice(0, desc.indexOf(effect)), k).toMatch(/。$/);
+    }
+  });
+});
+

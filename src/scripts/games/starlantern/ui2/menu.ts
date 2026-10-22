@@ -1,5 +1,14 @@
-/** `cls` is added to the label (a rarity colour, say); `rightClass` to the right-hand text (`slx-lack`, say). */
-export interface MenuItem { id: string; label: string; disabled?: boolean; note?: string; icon?: string; right?: string; rightClass?: string; cls?: string }
+/**
+ * `cls` is added to the label (a rarity colour, say); `rightClass` to the right-hand text (`slx-lack`, say); `iconCls` to
+ * the icon (`slx-gear-ico` for gear art, which keeps its own size).
+ */
+export interface MenuItem {
+  id: string; label: string; disabled?: boolean; note?: string; icon?: string; iconCls?: string; right?: string; rightClass?: string; cls?: string;
+  /** A short mark right after the label (plan 8g Task 7: ◆ for each working rune on a skill). */
+  badge?: string;
+  /** The label's last part, never cut when the label is (a rune's 「（魔法）」, plan 8g final review); styled as the label. */
+  tail?: string;
+}
 
 /** Cursor over a list: skips disabled items, wraps at both ends, never loops when nothing is selectable. */
 export class Menu {

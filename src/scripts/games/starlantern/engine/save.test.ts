@@ -1,13 +1,24 @@
 import { describe, it, expect } from 'vitest';
-import { BACKUP_KEY, SAVE_KEY, loadGame, saveGame } from './save';
-import { newGame } from './state';
+import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
+import { SAVE_VERSION, newGame, type GameState } from './state';
+import { STANDARD_LINEUP } from './party';
+import { socketable, validRuneFields } from './sockets';
+import { RUNE_STACK, type RuneRef } from '../data/runes';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { mulberry32 } from './rng';
-import { memoryStorage, plainItem } from './testing';
-import { defaultTalents, defaultTree } from './progression';
+import { makeBattle, makeCombatant, memoryStorage, plainItem, fullParty, version8Save } from './testing';
+import { Game } from './game';
+import { defaultTalents, defaultTree, heroTree, memoriesOf, validBuild } from './progression';
 import { BOARDS } from '../data/talents';
 import { TREES } from '../data/trees';
+import { CHARACTER_IDS } from '../data/characters';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import type { CharacterId } from './types';
+import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
+import { chainLength } from '../data/story/chains';
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -17,6 +28,37 @@ describe('save', () => {
     g.dungeon.reached.blaze = 10;
     expect(saveGame(st, g)).toBe(true);
     expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+  it('B1 ruling: an unknown banter id is dropped from the story lists, never a corrupt save; any other unknown id still is', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.story.seen = ['prologue', 'banter:noel-rin:1'];
+    g.story.queue = ['prologue-inn'];
+    const raw = JSON.parse(JSON.stringify({ ...g, version: SAVE_VERSION }));
+    raw.story.seen.push('banter:noel-rin:9', 'banter:bobby-zelda:1');
+    raw.story.fresh.push('banter:noel-rin:9');
+    raw.story.queue.push('banter:bobby-zelda:2');
+    st.setItem(SAVE_KEY, JSON.stringify(raw));
+    const r = loadGame(st);
+    expect(r.status).toBe('ok');
+    if (r.status !== 'ok') return;
+    expect(r.state.story.seen).toEqual(['prologue', 'banter:noel-rin:1']);
+    expect(r.state.story.fresh).toEqual([]);
+    expect(r.state.story.queue).toEqual(g.story.queue);
+    // a 6d `heard` record keyed by an unknown banter is dropped with it
+    const withHeard = JSON.parse(JSON.stringify(raw));
+    withHeard.story.heard = { 'banter:noel-rin:9': [0] };
+    st.setItem(SAVE_KEY, JSON.stringify(withHeard));
+    const h = loadGame(st);
+    expect(h.status).toBe('ok');
+    if (h.status === 'ok') expect((h.state.story as unknown as { heard: object }).heard).toEqual({});
+    // any other unknown scene id keeps its old meaning: the save is corrupt
+    for (const bad of ['chat:noel:9', 'nope', 42]) {
+      const other = JSON.parse(JSON.stringify({ ...g, version: SAVE_VERSION }));
+      other.story.seen.push(bad);
+      st.setItem(SAVE_KEY, JSON.stringify(other));
+      expect(loadGame(st).status, String(bad)).toBe('corrupt');
+    }
   });
   it('reports an empty slot', () => {
     expect(loadGame(memoryStorage())).toEqual({ status: 'empty' });
@@ -32,6 +74,39 @@ describe('save', () => {
     expect(loadGame(st)).toEqual({ status: 'version' });
     expect(st.map.get(BACKUP_KEY)).toBe(raw);
   });
+  it('a v7 save reports version', () => {
+    const raw = JSON.stringify({ ...newGame(), version: 7 });
+    const st = memoryStorage({ [SAVE_KEY]: raw });
+    expect(loadGame(st)).toEqual({ status: 'version' });
+    expect(st.map.get(BACKUP_KEY)).toBe(raw);
+  });
+  it('a v6 save reports version', () => {
+    const raw = JSON.stringify({ ...newGame(), version: 6 });
+    const st = memoryStorage({ [SAVE_KEY]: raw });
+    expect(loadGame(st)).toEqual({ status: 'version' });
+    expect(st.map.get(BACKUP_KEY)).toBe(raw);
+  });
+  it('a save that lists one member twice in recruited is corrupt', () => {
+    const g = newGame();
+    g.party.recruited = [...g.party.recruited, g.party.recruited[0]];
+    const st = memoryStorage();
+    saveGame(st, g);
+    expect(loadGame(st)).toEqual({ status: 'corrupt' });
+  });
+  it('a save without the hero on the field, or with the hero on the field but not recruited, is corrupt', () => {
+    const bad = (mut: (g: ReturnType<typeof newGame>) => void) => {
+      const g = newGame();
+      mut(g);
+      const st = memoryStorage();
+      saveGame(st, g);
+      return loadGame(st).status;
+    };
+    expect(bad(() => {})).toBe('ok');
+    expect(bad((g) => { g.party.grid = g.party.grid.map((c) => (c === 'hero' ? null : c)); })).toBe('corrupt');
+    expect(bad((g) => { g.party.grid = g.party.grid.map((c) => (c === 'hero' ? 'rin' : c === 'rin' ? null : c)); })).toBe('corrupt');
+    expect(bad((g) => { g.party.recruited = g.party.recruited.filter((id) => id !== 'hero'); })).toBe('corrupt');   // still standing on the grid, not recruited
+    expect(bad((g) => { g.party.recruited = g.party.recruited.filter((id) => id !== 'hero'); g.party.grid = g.party.grid.map((c) => (c === 'hero' ? null : c)); g.party.grid[8] = 'rin'; })).toBe('corrupt');
+  });
   it('rejects structurally broken saves', () => {
     const g = newGame() as unknown as { party: { roster: Record<string, unknown> } };
     delete g.party.roster.bobby;
@@ -43,6 +118,7 @@ describe('save', () => {
   it('rejects malformed nested values that later code would iterate', () => {
     const bad = (mut: (g: ReturnType<typeof newGame>) => void) => {
       const g = newGame();
+      g.party = fullParty();
       mut(g);
       return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
     };
@@ -375,16 +451,502 @@ describe('save v5 skill trees and talents', () => {
     expect(status(lv(2, { [free]: 1, [liz[1].nodes[0].id]: 1, [liz[2].nodes[0].id]: 1 }))).toBe('corrupt'); // overspent
     expect(status(lv(50, { [liz[1].nodes[0].id]: 1 }))).toBe('corrupt');                        // free node missing
     // 17 points each way at Lv50 (26 earned): only the one-ultimate rule tells the two builds apart.
-    const b0 = { 'twin-slash': 3, 'triple-slash': 2, 'liz-twin-up': 2, 'liz-triple-up': 2, 'shadow-flurry': 1 };
-    const b1 = { stealth: 1, 'treasure-sense': 1, 'smoke-bomb': 3, 'liz-smoke-up': 3 };
-    expect(status(lv(50, { ...b0, ...b1, 'fortune-strike': 1 }))).toBe('corrupt');             // two ultimates
+    const b0 = { 'twin-slash': 3, pickpocket: 2, 'liz-twin-quick': 2, 'liz-change': 2, jackpot: 1 };
+    const b1 = { stealth: 1, 'treasure-sense': 1, 'smoke-bomb': 3, 'liz-smoke-choke': 3 };
+    expect(status(lv(50, { ...b0, ...b1, 'phantom-step': 1 }))).toBe('corrupt');               // two ultimates
     expect(status(lv(50, { ...b0, ...b1 }))).toBe('ok');                                        // one ultimate
-    expect(status(lv(50, { ...b1, 'twin-slash': 3, 'triple-slash': 2, 'liz-twin-up': 2, 'liz-triple-up': 2, 'fortune-strike': 1 }))).toBe('ok');
+    expect(status(lv(50, { ...b1, 'twin-slash': 3, pickpocket: 2, 'liz-twin-quick': 2, 'liz-change': 2, 'phantom-step': 1 }))).toBe('ok');
     expect(status(lv(50, { [free]: 1 }, { 'liz-t30': 1 }))).toBe('corrupt');                    // not adjacent
     expect(status(lv(50, { [free]: 1 }, { 'liz-t00': 5, 'liz-t01': 5, 'liz-t02': 5, 'liz-k0': 1, 'liz-k1': 1, 'liz-k2': 1 }))).toBe('corrupt'); // three keystones
     expect(status((g) => { delete (g.party.roster.liz as Partial<typeof g.party.roster.liz>).tree; })).toBe('corrupt');
     expect(status((g) => { delete (g.party.roster.liz as Partial<typeof g.party.roster.liz>).talents; })).toBe('corrupt');
     expect(status((g) => { g.party.roster.liz.level = 2.5; })).toBe('corrupt');
     expect(BOARDS.liz.filter((n) => n.keystone).length).toBeGreaterThanOrEqual(2);
+  });
+  const capTree = { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5, 'abyss-sword': 1 };
+  const withHero = (extra: Record<string, unknown>) => {
+    const g = newGame();
+    g.party.roster.hero = { ...g.party.roster.hero, level: 50, tree: capTree, ...extra } as typeof g.party.roster.hero;
+    return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  };
+  const withMember = (id: 'hero' | 'rin', extra: Record<string, unknown>) => {
+    const g = newGame();
+    g.party.roster[id] = { ...g.party.roster[id], ...extra } as typeof g.party.roster.hero;
+    return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  };
+  it("a saved capstone loads when the hero's memories allow it", () => {
+    expect(withHero({ memories: 2 })).toBe('ok');
+    expect(withHero({ memories: 1 })).toBe('corrupt');
+  });
+  it('hostile memories are corrupt', () => {
+    for (const bad of [null, -1, 1.5, '3', chainLength('hero') + 1]) expect(withHero({ memories: bad }), String(bad)).toBe('corrupt');
+    expect(withMember('rin', { memories: chainLength('rin') + 1 })).toBe('corrupt');
+  });
+  it("a queued reveal needs all seven of Rin's pieces", () => {
+    const withQueue = (pieces: number | undefined) => {
+      const g = newGame();
+      g.story.queue = ['rin-reveal'];
+      if (pieces !== undefined) g.party.roster.rin = { ...g.party.roster.rin, memories: pieces };
+      return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+    };
+    expect(withQueue(undefined)).toBe('corrupt');
+    expect(withQueue(chainLength('rin') - 1)).toBe('corrupt');
+    expect(withQueue(chainLength('rin'))).toBe('ok');
+  });
+  it('only Rin with all seven may hold her oath', () => {
+    expect(withMember('rin', { memories: chainLength('rin') - 1, oath: true })).toBe('corrupt');
+    expect(withMember('rin', { memories: chainLength('rin'), oath: true })).toBe('ok');
+    expect(withMember('rin', { oath: true })).toBe('corrupt');
+    expect(withMember('hero', { memories: chainLength('hero'), oath: true })).toBe('corrupt');
+    expect(withMember('rin', { memories: chainLength('rin'), oath: false })).toBe('corrupt');
+  });
+  it('absorbed gains must come from the table', () => {
+    const ok = { stat: 'atk', amount: ABSORB_GAIN.dim.atk };
+    expect(withMember('rin', { absorbed: [ok] })).toBe('ok');
+    expect(withMember('rin', { absorbed: [{ stat: 'hp', amount: ABSORB_GAIN.vivid.hp }] })).toBe('ok');
+    expect(withMember('rin', { absorbed: [{ stat: 'atk', amount: 999 }] })).toBe('corrupt');
+    expect(withMember('rin', { absorbed: [{ stat: 'crit', amount: 1 }] })).toBe('corrupt');
+    expect(withMember('rin', { absorbed: Array(ABSORB_CAP).fill(ok) })).toBe('ok');
+    expect(withMember('rin', { absorbed: Array(ABSORB_CAP + 1).fill(ok) })).toBe('corrupt');
+    expect(withMember('rin', { absorbed: 'x' })).toBe('corrupt');
+  });
+  it('a hero capstone without memories is corrupt', () => {
+    const tree = { 'hero-slash': 5, 'hero-slash-twin': 5, 'hero-cleave': 5, 'hero-sunder': 5, 'abyss-sword': 1 };
+    const g = newGame();
+    g.party.roster.hero = { ...g.party.roster.hero, level: 50, tree };
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status).toBe('corrupt');
+    expect(validBuild('hero', 50, tree, {}, 10)).toBe(true);
+  });
+});
+
+describe('save v8 story', () => {
+  const bad = (mut: (s: Record<string, unknown>) => void) => {
+    const g = newGame();
+    const story = structuredClone(g.story) as unknown as Record<string, unknown>;
+    mut(story);
+    return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify({ ...g, story }) })).status;
+  };
+  it("a fresh game's story round-trips", () => {
+    const st = memoryStorage();
+    const g = newGame();
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r.status).toBe('ok');
+    expect(r.status === 'ok' && r.state.story).toEqual(g.story);
+  });
+  it('a well-formed played story is ok', () => {
+    expect(bad((s) => { Object.assign(s, { act1Cleared: true, finaleCleared: true, seen: ['act2', 'prologue'], fresh: ['act2'], queue: ['act3'], nodes: ['act2'], pity: { rin: 999, hero: 0 }, returned: ['orik'], fed: true }); })).toBe('ok');
+  });
+  it('a broken story is corrupt', () => {
+    const cases: [string, (s: Record<string, unknown>) => void][] = [
+      ['act1Cleared is a string', (s) => { s.act1Cleared = 'yes'; }],
+      ['finale without act 1', (s) => { s.finaleCleared = true; s.act1Cleared = false; }],
+      ['unknown scene in seen', (s) => { s.seen = ['nope']; }],
+      ['duplicate seen', (s) => { s.seen = ['act2', 'act2']; }],
+      ['fresh not seen', (s) => { s.fresh = ['act2']; s.seen = []; }],
+      ['queue overlaps seen', (s) => { s.queue = ['act2']; s.seen = ['act2']; }],
+      ['duplicate queue', (s) => { s.queue = ['act2', 'act2']; }],
+      ['unknown node', (s) => { s.nodes = ['act9']; }],
+      ['duplicate node', (s) => { s.nodes = ['act2', 'act2']; }],
+      ['pity of an unknown key', (s) => { s.pity = { hero: -1 }; }],
+      ['pity of a ghost', (s) => { s.pity = { ghost: 1 }; }],
+      ['fractional pity', (s) => { s.pity = { rin: 1.5 }; }],
+      ['pity above 999', (s) => { s.pity = { rin: 1000 }; }],
+      ['duplicate returned', (s) => { s.returned = ['orik', 'orik']; }],
+      ['unknown returned', (s) => { s.returned = ['nobody']; }],
+      ['fed is a number', (s) => { s.fed = 1; }],
+    ];
+    for (const [name, mut] of cases) expect(bad(mut), name).toBe('corrupt');
+  });
+  it('a save with no story at all is corrupt, not a crash', () => {
+    const g = newGame();
+    const raw = JSON.parse(JSON.stringify(g));
+    delete raw.story;
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) })).status).toBe('corrupt');
+    raw.story = null;
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) })).status).toBe('corrupt');
+  });
+  it('a save while the finale waits loads: the main road at 30, no finale, no oath', () => {
+    const g = newGame();
+    g.dungeon.reached.mainline = 30;
+    g.story.act1Cleared = true;
+    g.story.nodes = ['act2', 'act3', 'act4'];
+    expect(g.story.finaleCleared).toBe(false);
+    expect(g.party.roster.rin?.oath).toBeUndefined();
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r.status).toBe('ok');
+    expect(r.status === 'ok' && r.state.dungeon.reached.mainline).toBe(30);
+  });
+});
+
+describe('save v8 epic and starlit gear (plan 5g)', () => {
+  const chizuru = (uid: number) => ({ ...plainItem('thorn-spear', uid), rarity: 'legendary' as const, ilvl: 20, special: 'lg-chizuru', affixes: [{ key: 'atk' as const, value: 11 }] });
+  const epic = (uid: number) => ({ ...plainItem('iron-sword', uid), rarity: 'epic' as const, ilvl: 15, affixes: [{ key: 'crit' as const, value: 3 }, { key: 'str' as const, value: 7 }, { key: 'atk' as const, value: 9 }, { key: 'hp' as const, value: 20 }] });
+  it('an old v8 save with no epic or starlit gear loads unchanged', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.bag = [plainItem('iron-sword', 1), chizuru(2)];
+    g.nextUid = 3;
+    expect(SAVE_VERSION).toBe(9);
+    expect(saveGame(st, g)).toBe(true);
+    expect(st.map.get(SAVE_KEY)).not.toContain('starlit');
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+  it('epic and starlit gear round-trip', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.bag = [
+      epic(1),
+      { ...chizuru(2), starlit: true },
+      { ...plainItem('copper-ring', 3), rarity: 'set', ilvl: 20, special: 'set-blaze-ring', affixes: [{ key: 'fireDmg', value: 9 }, { key: 'atk', value: 12 }], starlit: true },
+    ];
+    g.party.roster.liz.equip = {
+      ring1: { ...plainItem('copper-ring', 4), rarity: 'unique', ilvl: 20, special: 'blaze-ember-ring', affixes: [{ key: 'fireDmg', value: 9 }, { key: 'fireRes', value: 9 }, { key: 'atk', value: 9 }, { key: 'str', value: 9 }], starlit: true },
+    };
+    g.nextUid = 5;
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r).toEqual({ status: 'ok', state: g });
+    expect(r.status === 'ok' && r.state.bag.map((it) => it.starlit)).toEqual([undefined, true, true]);
+    expect(r.status === 'ok' && r.state.party.roster.liz.equip.ring1?.starlit).toBe(true);
+  });
+  it('a bad starlit flag makes the save corrupt', () => {
+    const cases: [string, Record<string, unknown>][] = [
+      ['starlit false', { ...chizuru(1), starlit: false }],
+      ["starlit 'yes'", { ...chizuru(1), starlit: 'yes' }],
+      ['starlit 1', { ...chizuru(1), starlit: 1 }],
+      ['a starlit rare', { ...plainItem('iron-sword', 1), rarity: 'rare', affixes: [{ key: 'crit', value: 3 }], starlit: true }],
+      ['a starlit epic', { ...epic(1), starlit: true }],
+      ['a starlit legendary with no special', { ...plainItem('iron-sword', 1), rarity: 'legendary', affixes: [{ key: 'atk', value: 3 }], starlit: true }],
+    ];
+    for (const [name, item] of cases) {
+      const g = newGame();
+      const raw = JSON.parse(JSON.stringify({ ...g, nextUid: 2 }));
+      raw.bag = [item];
+      expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(raw) })).status, name).toBe('corrupt');
+    }
+    const g = newGame();
+    const ok = JSON.parse(JSON.stringify({ ...g, nextUid: 2 }));
+    ok.bag = [{ ...chizuru(1), starlit: true }];
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(ok) })).status).toBe('ok');
+  });
+});
+
+describe('battle state is never saved (plan 8b)', () => {
+  it('a fight with burning and frozen foes saves only the game, and loads back', () => {
+    const st = memoryStorage();
+    const g = new Game(mulberry32(3), st);
+    g.battle = makeBattle(
+      [makeCombatant({ key: 'hero', side: 'party', shock: 2 })],
+      [makeCombatant({ key: 'e0', side: 'enemy', burn: { tick: 5, turns: 3, src: 'hero' }, frozen: true, bleed: [{ tick: 2, turns: 1, src: 'hero' }] })],
+    );
+    expect(saveGame(st, g.state)).toBe(true);
+    const raw = st.getItem(SAVE_KEY)!;
+    expect(Object.keys(JSON.parse(raw))).not.toContain('battle');
+    // As keys: a region trait may well be the word "burn" as a value.
+    for (const k of ['burn', 'frozen', 'bleed', 'shock']) expect(raw).not.toContain(`"${k}":`);
+    expect(loadGame(st).status).toBe('ok');
+  });
+});
+
+describe('save version 9 (plan 8d)', () => {
+  const trees8b = () => (JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '__fixtures__', 'roster-8b.json'), 'utf8')) as {
+    trees: Record<string, { id: string }[][]>;
+  }).trees;
+
+  /** The game without any member's tree or free respec: what a migration must leave exactly as it was. */
+  const withoutTrees = (s: ReturnType<typeof newGame>) => ({
+    ...s,
+    party: { ...s.party, roster: Object.fromEntries(Object.entries(s.party.roster).map(([id, m]) => [id, { ...m, tree: undefined, freeRespec: undefined }])) },
+  });
+
+  it('a version 8 save loads as version 9 with standard trees and one free respec', () => {
+    const { raw, state: g } = version8Save(trees8b());
+    // As plan 8c wrote it: strengthening nodes and since-renamed ids, which no tree of this build holds.
+    const old = JSON.parse(raw);
+    expect(old.version).toBe(8);
+    expect(old.party.roster.liz.tree).toEqual({ 'twin-slash': 1, 'triple-slash': 1, stealth: 1, 'treasure-sense': 1, quickstep: 1, 'liz-quick-up': 1 });
+    expect(old.party.roster.noel.tree).toHaveProperty('noel-fire-up', 1);
+    expect(old.party.roster.noel.equip.ring1.special).toBe('lg-noel');
+    const st = memoryStorage({ [SAVE_KEY]: raw });
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(`not loaded: ${r.status}`);
+    expect(r.migrated).toBe(true);
+    expect(r.state.version).toBe(9);
+    expect(r.state.version).toBe(SAVE_VERSION);
+    for (const id of CHARACTER_IDS) {
+      const m = r.state.party.roster[id], was = g.party.roster[id];
+      expect(m.tree, id).toEqual(id === 'hero' ? heroTree(30, 'balanced', 4) : defaultTree(id, was.level));
+      expect(m.freeRespec, id).toBe(true);
+      expect(validBuild(id, m.level, m.tree, m.talents, memoriesOf(m)), id).toBe(true);
+    }
+    // Everything else exactly as it was: the whole game, every member's gear, level, memories and talents included.
+    expect(withoutTrees(r.state)).toEqual(withoutTrees(g));
+    expect(r.state.party.roster.noel.equip.ring1?.special).toBe('lg-noel');
+    // The text from before the migration is kept in a key of its own, and the general backup is left alone.
+    expect(st.map.get(V8_KEY)).toBe(raw);
+    expect(st.map.has(BACKUP_KEY)).toBe(false);
+    // Saved again, it loads as it is: no second migration, no second free respec.
+    const again = memoryStorage();
+    saveGame(again, r.state);
+    expect(loadGame(again)).toEqual({ status: 'ok', state: r.state });
+  });
+
+  it('the version 8 text goes to its own key once, and nothing ever writes over it', () => {
+    const { raw } = version8Save(trees8b());
+    const st = memoryStorage({ [SAVE_KEY]: raw });
+    expect(loadGame(st).status).toBe('ok');
+    expect(st.map.get(V8_KEY)).toBe(raw);
+    // Another version 8 text later (an old tab's new game, say) leaves the first one where it is.
+    const other = JSON.stringify({ ...newGame(), version: 8 });
+    st.map.set(SAVE_KEY, other);
+    expect(loadGame(st).status).toBe('ok');
+    expect(st.map.get(V8_KEY)).toBe(raw);
+    // So do a corrupt read and a read of another version, which write the general backup.
+    st.map.set(SAVE_KEY, '{broken');
+    expect(loadGame(st).status).toBe('corrupt');
+    st.map.set(SAVE_KEY, JSON.stringify({ ...newGame(), version: 7 }));
+    expect(loadGame(st).status).toBe('version');
+    expect(st.map.get(V8_KEY)).toBe(raw);
+  });
+
+  it('a version 8 save whose only fault is its tree is repaired by the migration', () => {
+    // The old tree is thrown away, so a tree that would make a version 9 save corrupt (unknown ids, overspent, a
+    // missing free node) loads as the standard build: the migration repairs it on purpose.
+    const { raw, state: g } = version8Save(trees8b());
+    const bad = JSON.parse(raw);
+    bad.party.roster.noel.tree = { nope: 9, 'fire-star': 3, 'inferno': 1 };
+    bad.party.roster.liz.tree = {};
+    bad.party.roster.hero.tree = 'junk';
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify({ ...bad, version: 9 }) }))).toEqual({ status: 'corrupt' });
+    const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(bad) }));
+    if (r.status !== 'ok') throw new Error(`not repaired: ${r.status}`);
+    expect(r.migrated).toBe(true);
+    expect(r.state.party.roster.noel.tree).toEqual(defaultTree('noel', 20));
+    expect(r.state.party.roster.liz.tree).toEqual(defaultTree('liz', 12));
+    expect(r.state.party.roster.hero.tree).toEqual(heroTree(30, 'balanced', 4));
+    expect(withoutTrees(r.state)).toEqual(withoutTrees(g));
+  });
+
+  it('versions other than 8 and 9 are still refused', () => {
+    for (const version of [7, 10]) {
+      const raw = JSON.stringify({ ...newGame(), version });
+      const st = memoryStorage({ [SAVE_KEY]: raw });
+      expect(loadGame(st), String(version)).toEqual({ status: 'version' });
+      expect(st.map.get(BACKUP_KEY), String(version)).toBe(raw);
+    }
+  });
+
+  it('a version 8 save that is broken elsewhere is still corrupt, and backed up', () => {
+    const { raw } = version8Save(trees8b());
+    const bad = JSON.parse(raw);
+    bad.gold = -1;
+    const st = memoryStorage({ [SAVE_KEY]: JSON.stringify(bad) });
+    expect(loadGame(st)).toEqual({ status: 'corrupt' });
+    expect(st.map.get(BACKUP_KEY)).toBe(JSON.stringify(bad));
+    // A member the migration cannot read (a level out of range) is left for the validation, which refuses it.
+    const lv = JSON.parse(raw);
+    lv.party.roster.noel.level = 0;
+    expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(lv) }))).toEqual({ status: 'corrupt' });
+  });
+
+  it('freeRespec must be true or absent', () => {
+    for (const v of [false, 1, 'yes', null]) {
+      const g = JSON.parse(JSON.stringify(newGame()));
+      g.party.roster.noel.freeRespec = v;
+      expect(loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })), String(v)).toEqual({ status: 'corrupt' });
+    }
+    const g = newGame();
+    g.party.roster.noel.freeRespec = true;
+    const st = memoryStorage();
+    saveGame(st, g);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+
+  it('a version 9 save is not migrated again', () => {
+    const g = newGame();
+    g.party.roster.noel.level = 3;
+    g.party.roster.noel.tree = { 'fire-star': 3 };   // a build the standard one never makes
+    expect(defaultTree('noel', 3)).not.toEqual(g.party.roster.noel.tree);
+    const st = memoryStorage();
+    saveGame(st, g);
+    const r = loadGame(st);
+    expect(r).toEqual({ status: 'ok', state: g });
+    expect(r).not.toHaveProperty('migrated');
+    expect(st.map.has(BACKUP_KEY)).toBe(false);
+  });
+});
+
+describe('rune fields in the save (plan 8e Task 2)', () => {
+  /** A Noel at `level` on her default build, in a game the save can hold. */
+  const runeGame = (level = 35): GameState => {
+    const g = newGame(undefined, 0, STANDARD_LINEUP);
+    g.party.roster.noel = { ...g.party.roster.noel, level, tree: defaultTree('noel', level) };
+    return g;
+  };
+  /** Loads `g` after `edit` has its way with the raw save. */
+  const loadEdited = (g: GameState, edit: (raw: Record<string, any>) => void = () => {}) => {
+    const st = memoryStorage();
+    const raw = JSON.parse(JSON.stringify(g));
+    edit(raw);
+    st.setItem(SAVE_KEY, JSON.stringify(raw));
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(`load: ${r.status}`);
+    expect(validRuneFields(r.state as unknown as Record<string, unknown>)).toBe(true);
+    return r.state;
+  };
+  const S = (id: string, tier = 'magic') => ({ id, tier });
+
+  it('a version 9 save without rune fields loads and saves unchanged', () => {
+    const st = memoryStorage();
+    const g = newGame(undefined, 0, STANDARD_LINEUP);
+    expect(saveGame(st, g)).toBe(true);
+    const text = st.getItem(SAVE_KEY);
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.state.runes).toBeUndefined();
+    for (const id of CHARACTER_IDS) expect(r.state.party.roster[id].sockets).toBeUndefined();
+    expect(saveGame(st, r.state)).toBe(true);
+    expect(st.getItem(SAVE_KEY)).toBe(text);
+  });
+
+  it('rune fields survive a save and a load', () => {
+    const g: GameState = { ...runeGame(), runes: { 'spread@magic': 2, 'ignite@rare': 1, 'twin-cast@legendary': 1 } };
+    g.party.roster.noel.sockets = { 'fire-star': [{ id: 'flame', tier: 'epic' }, { id: 'focus', tier: 'common' }] };
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+
+  it('rune fields that break the rules are repaired, not refused', () => {
+    for (const k of ['nope@magic', 'spread@legendary']) expect(loadEdited(runeGame(), (raw) => { raw.runes = { [k]: 1, 'focus@rare': 2 }; }).runes).toEqual({ 'focus@rare': 2 });
+    for (const v of [1.5, -1, '1', null]) expect(loadEdited(runeGame(), (raw) => { raw.runes = { 'spread@magic': v, 'focus@rare': 2 }; }).runes).toEqual({ 'focus@rare': 2 });
+    expect(loadEdited(runeGame(), (raw) => { raw.runes = 5; })).not.toHaveProperty('runes');
+    expect(loadEdited(runeGame(), (raw) => { raw.party.roster.noel.sockets = 'x'; }).party.roster.noel).not.toHaveProperty('sockets');
+    // A skill she does not know, or a passive: the key goes and its runes go to the bag.
+    const lost = loadEdited(runeGame(), (raw) => {
+      raw.party.roster.noel.sockets = { moonlight: [S('spread')], stealth: [S('focus'), null], 'fire-star': [S('ignite')] };
+    });
+    expect(lost.party.roster.noel.sockets).toEqual({ 'fire-star': [S('ignite')] });
+    expect(lost.runes).toEqual({ 'spread@magic': 1, 'focus@magic': 1 });
+    // Lv10 has one slot: the second is cleared and its rune bagged.
+    const lv10 = loadEdited(runeGame(10), (raw) => { raw.runes = { 'focus@magic': 1 }; raw.party.roster.noel.sockets = { 'fire-star': [S('ignite'), S('focus')] }; });
+    expect(lv10.party.roster.noel.sockets).toEqual({ 'fire-star': [S('ignite')] });
+    expect(lv10.runes).toEqual({ 'focus@magic': 2 });
+    // The same rune twice, or a second of one group: the later one goes.
+    const twice = loadEdited(runeGame(), (raw) => { raw.party.roster.noel.sockets = { 'fire-star': [S('spread'), S('ignite'), S('spread', 'rare')] }; });
+    expect(twice.party.roster.noel.sockets).toEqual({ 'fire-star': [S('spread'), S('ignite')] });
+    expect(twice.runes).toEqual({ 'spread@rare': 1 });
+    const group = loadEdited(runeGame(), (raw) => { raw.party.roster.noel.sockets = { 'fire-star': [S('focus'), S('spread')] }; });
+    expect(group.party.roster.noel.sockets).toEqual({ 'fire-star': [S('focus')] });
+    expect(group.runes).toEqual({ 'spread@magic': 1 });
+    // Four 常駐 hold 120%: the one on the skill learned last goes, whatever order the save lists them in.
+    const order = socketable(runeGame().party.roster.noel).slice(0, 4);
+    const four = loadEdited(runeGame(), (raw) => {
+      raw.party.roster.noel.sockets = Object.fromEntries([...order].reverse().map((k) => [k, [S('lasting', 'common')]]));
+    });
+    expect(Object.keys(four.party.roster.noel.sockets!).sort()).toEqual(order.slice(0, 3).sort());
+    expect(four.runes).toEqual({ 'lasting@common': 1 });
+    // More than 99 of one rune, bag and sockets together: the bag gives way.
+    const full = loadEdited(runeGame(), (raw) => { raw.runes = { 'spread@magic': 99 }; raw.party.roster.noel.sockets = { 'fire-star': [S('spread')] }; });
+    expect(full.runes).toEqual({ 'spread@magic': 98 });
+    expect(full.party.roster.noel.sockets).toEqual({ 'fire-star': [S('spread')] });
+    // A cell that is no rune is cleared, and the empty end trimmed; an array left empty goes with its key.
+    const junk = loadEdited(runeGame(), (raw) => {
+      raw.party.roster.noel.sockets = { 'fire-star': [S('spread'), 'x'], 'ice-star': ['x', { id: 'spread', tier: 'magic', extra: 1 }] };
+    });
+    expect(junk.party.roster.noel.sockets).toEqual({ 'fire-star': [S('spread')] });
+    expect(junk).not.toHaveProperty('runes');
+  });
+
+  it('past 99 of one rune the bag gives way, and no socketed rune is lost (a hand-edited save)', () => {
+    // Bag only: cut to 99.
+    expect(loadEdited(runeGame(), (raw) => { raw.runes = { 'spread@magic': 150, 'focus@rare': 2 }; }).runes).toEqual({ 'spread@magic': 99, 'focus@rare': 2 });
+    // 100 socketed, none in the bag: one on every skill every member knows at Lv50, the rest piled onto Noel's 火之星彈.
+    // At most one of a rune fits a skill, so every pile-up goes to the bag first, and the bag then gives way: no rune
+    // left in a slot is ever lost (every skill of every member, one each, is far below 99).
+    const g = runeGame();
+    for (const id of CHARACTER_IDS) g.party.roster[id] = { ...g.party.roster[id], level: 50, tree: defaultTree(id, 50) };
+    const pairs = CHARACTER_IDS.flatMap((id) => socketable(g.party.roster[id]).map((sk) => [id, sk] as const));
+    expect(pairs.length).toBeLessThan(RUNE_STACK);
+    const r = loadEdited(g, (raw) => {
+      for (const [id, sk] of pairs) raw.party.roster[id].sockets = { ...raw.party.roster[id].sockets, [sk]: [S('spread')] };
+      raw.party.roster.noel.sockets['fire-star'] = Array.from({ length: 100 - pairs.length + 1 }, () => S('spread'));
+    });
+    const left = CHARACTER_IDS.flatMap((id) => Object.values(r.party.roster[id].sockets ?? {}).flat()).filter((x) => x !== null);
+    expect(left).toHaveLength(pairs.length);
+    expect(r.runes).toEqual({ 'spread@magic': RUNE_STACK - pairs.length });
+  });
+
+  it('a clean rune field is left byte for byte', () => {
+    const g: GameState = { ...runeGame(), runes: { 'spread@magic': 3, 'focus@rare': 0 } };
+    g.party.roster.noel.sockets = { 'fire-star': [null, S('flame', 'common') as RuneRef], 'ice-star': [] };
+    g.party.roster.rin.sockets = {};
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    const text = st.getItem(SAVE_KEY);
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(JSON.stringify(r.state)).toBe(text);
+  });
+});
+
+describe('the runes-open flag in the save (plan 8f Task 1)', () => {
+  it('runesOpen survives a save and a load', () => {
+    const g: GameState = { ...newGame(undefined, 0, STANDARD_LINEUP), runesOpen: true, runes: { 'spread@magic': 1 } };
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+
+  it('a junk runesOpen is dropped, the save loads', () => {
+    for (const v of [false, 1, 'yes', null]) {
+      const st = memoryStorage();
+      const raw = JSON.parse(JSON.stringify(newGame(undefined, 0, STANDARD_LINEUP)));
+      raw.runesOpen = v;
+      st.setItem(SAVE_KEY, JSON.stringify(raw));
+      const r = loadGame(st);
+      if (r.status !== 'ok') throw new Error(`load: ${r.status}`);
+      expect(r.state).not.toHaveProperty('runesOpen');
+      expect(validRuneFields(r.state as unknown as Record<string, unknown>)).toBe(true);
+    }
+  });
+});
+
+describe('the rune tutorial flag in the save (plan 8g Task 1)', () => {
+  it('runeTutorialSeen survives a save and a load', () => {
+    const g: GameState = { ...newGame(undefined, 0, STANDARD_LINEUP), runesOpen: true, runeTutorialSeen: true, runes: { 'spread@magic': 1 } };
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    expect(loadGame(st)).toEqual({ status: 'ok', state: g });
+  });
+
+  it('an old save without the flag loads and saves back without it', () => {
+    const st = memoryStorage();
+    const raw = JSON.parse(JSON.stringify({ ...newGame(undefined, 0, STANDARD_LINEUP), runesOpen: true, runes: { 'spread@magic': 1 } }));
+    expect(raw).not.toHaveProperty('runeTutorialSeen');
+    st.setItem(SAVE_KEY, JSON.stringify(raw));
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(`load: ${r.status}`);
+    expect(r.state).not.toHaveProperty('runeTutorialSeen');
+    const again = memoryStorage();
+    expect(saveGame(again, r.state)).toBe(true);
+    const back = JSON.parse(again.getItem(SAVE_KEY)!);
+    expect(back).toHaveProperty('runesOpen', true);
+    expect(back).not.toHaveProperty('runeTutorialSeen');
+  });
+
+  it('a junk runeTutorialSeen is dropped, the save loads', () => {
+    for (const v of [false, 1, 'yes', null]) {
+      const st = memoryStorage();
+      const raw = JSON.parse(JSON.stringify(newGame(undefined, 0, STANDARD_LINEUP)));
+      raw.runeTutorialSeen = v;
+      st.setItem(SAVE_KEY, JSON.stringify(raw));
+      const r = loadGame(st);
+      if (r.status !== 'ok') throw new Error(`load: ${r.status}`);
+      expect(r.state).not.toHaveProperty('runeTutorialSeen');
+    }
   });
 });

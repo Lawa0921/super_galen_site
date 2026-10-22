@@ -1,0 +1,758 @@
+{
+  "assets": {
+    "gear-crystal-pendant-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-crystal-pendant-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "subject too light"
+        ],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 44,
+          "mass": 0.344,
+          "box": [
+            10,
+            4,
+            54,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.946,
+        "scale": 5.946,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_failed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "crystal-pendant"
+      },
+      "slot": "neck"
+    },
+    "gear-crystal-pendant": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-crystal-pendant.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "subject too light"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 17,
+          "mass": 0.345,
+          "box": [
+            4,
+            2,
+            21,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 15.136,
+        "scale": 15.136,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_failed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "crystal-pendant"
+      },
+      "slot": "neck"
+    },
+    "gear-gear-ring-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-gear-ring-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 56,
+          "mass": 0.6,
+          "box": [
+            4,
+            4,
+            60,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.482,
+        "scale": 5.482,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "gear-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-gear-ring": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-gear-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.607,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 13.955,
+        "scale": 13.955,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "gear-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-copper-ring-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-copper-ring-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.69,
+          "box": [
+            4,
+            4,
+            60,
+            59
+          ],
+          "centre_off": 0.5
+        },
+        "block": 4.946,
+        "scale": 4.946,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "copper-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-copper-ring": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-copper-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.702,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 12.591,
+        "scale": 12.591,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "copper-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-star-ring-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-star-ring-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 54,
+          "mass": 0.708,
+          "box": [
+            4,
+            5,
+            60,
+            59
+          ],
+          "centre_off": 0.0
+        },
+        "block": 4.911,
+        "scale": 4.911,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "star-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-star-ring": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-star-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.709,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 12.5,
+        "scale": 12.5,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "star-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-lg-noel-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-lg-noel-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 17,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 51,
+          "mass": 0.643,
+          "box": [
+            4,
+            6,
+            60,
+            57
+          ],
+          "centre_off": 0.5
+        },
+        "block": 5.357,
+        "scale": 5.357,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "lg-noel"
+      },
+      "slot": "ring"
+    },
+    "gear-lg-noel": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-lg-noel.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 3,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.647,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 13.636,
+        "scale": 13.636,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "lg-noel"
+      },
+      "slot": "ring"
+    },
+    "gear-lg-liz-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-lg-liz-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 56,
+          "mass": 0.4,
+          "box": [
+            4,
+            4,
+            60,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 6.179,
+        "scale": 6.179,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "lg-liz"
+      },
+      "slot": "weapon",
+      "weapon_kind": "spear"
+    },
+    "gear-lg-liz": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-lg-liz.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.395,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 15.727,
+        "scale": 15.727,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "lg-liz"
+      },
+      "slot": "weapon",
+      "weapon_kind": "spear"
+    },
+    "gear-lg-sylvie-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-lg-sylvie-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 53,
+          "mass": 0.73,
+          "box": [
+            5,
+            4,
+            58,
+            60
+          ],
+          "centre_off": 0.5
+        },
+        "block": 6.696,
+        "scale": 6.696,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "lg-sylvie"
+      },
+      "slot": "offhand"
+    },
+    "gear-lg-sylvie": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-lg-sylvie.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.744,
+          "box": [
+            2,
+            2,
+            23,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 17.045,
+        "scale": 17.045,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "lg-sylvie"
+      },
+      "slot": "offhand"
+    },
+    "gear-lg-scarlet-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-lg-scarlet-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 46,
+          "mass": 0.475,
+          "box": [
+            9,
+            4,
+            55,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 6.5,
+        "scale": 6.5,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "lg-scarlet"
+      },
+      "slot": "neck"
+    },
+    "gear-lg-scarlet": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-lg-scarlet.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 18,
+          "mass": 0.473,
+          "box": [
+            4,
+            2,
+            22,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 16.545,
+        "scale": 16.545,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "lg-scarlet"
+      },
+      "slot": "neck"
+    },
+    "gear-lg-selene-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-lg-selene-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 56,
+          "short": 46,
+          "mass": 0.552,
+          "box": [
+            4,
+            9,
+            60,
+            55
+          ],
+          "centre_off": 0.0
+        },
+        "block": 6.643,
+        "scale": 6.643,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "lg-selene"
+      },
+      "slot": "head"
+    },
+    "gear-lg-selene": {
+      "final": "art-factory/starlantern/work/sheet-gear-4/cand/a4/gear-lg-selene.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 22,
+          "short": 18,
+          "mass": 0.543,
+          "box": [
+            2,
+            4,
+            24,
+            22
+          ],
+          "centre_off": 0.0
+        },
+        "block": 16.909,
+        "scale": 16.909,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:03c3f55cc7d1"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-4\\sheet-gear-4-a4.png",
+        "cell": "lg-selene"
+      },
+      "slot": "head"
+    }
+  }
+}

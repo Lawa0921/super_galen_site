@@ -6,12 +6,13 @@ import { GEAR_SLOTS, SETS, SPECIALS } from '../../data/gear';
 import { ITEMS } from '../../data/items';
 import { MATERIALS } from '../../data/materials';
 import { REGIONS } from '../../data/regions';
+import { PERKS } from '../../data/story/fragments';
 import { EQUIPMENT } from '../../data/equipment';
 import { BAG_SIZE } from '../loot/bag';
 import { MAX_ILVL, MAX_REACHED, depthLevel } from '../levels';
 import { itemLevel, itemSlot } from '../loot/item';
 import { isUnlocked, sell } from '../town';
-import { craftBase, craftItem, craftLevel, craftSet, baseCost, itemRecipeCost, setCost } from './craft';
+import { craftBase, craftItem, craftLevel, craftSet, baseCost, itemRecipeCost, setCost, setRecipeOf } from './craft';
 
 const stocked = (): Record<string, number> => Object.fromEntries(Object.keys(MATERIALS).map((m) => [m, 500]));
 const rich = (): GameState => {
@@ -233,5 +234,35 @@ describe('a full bag', () => {
     expect(s).toEqual(snap);
     expect(craftBase({ ...s, gold: 0 }, 'weapon')).toEqual({ ok: false, reason: 'full' });
     expect(craftBase({ ...s, bag: s.bag.slice(1) }, 'weapon').ok).toBe(true);
+  });
+});
+
+describe("Doran's master", () => {
+  it("Doran's master lowers the set recipe", () => {
+    const piece = Object.keys(SPECIALS).find((id) => SPECIALS[id].rarity === 'set' && SPECIALS[id].set === 'set-blaze')!;
+    const s = newGame();
+    s.gold = 5000;
+    s.inventory = { 'blaze-core': 20, 'star-tear': 2 };
+    expect(setRecipeOf(s)).toEqual(SET_RECIPE);
+    expect(setCost(s, piece)!.mats['blaze-core']).toBe(SET_RECIPE.regionQty);
+    const plain = craftSet(s, piece);
+    expect(plain.ok && plain.state.inventory['blaze-core']).toBe(20 - SET_RECIPE.regionQty);
+    s.story.returned.push('doran');
+    expect(setRecipeOf(s).regionQty).toBe(SET_RECIPE.regionQty - PERKS.setRecipeLess);
+    expect(setRecipeOf(s).rareQty).toBe(SET_RECIPE.rareQty);
+    expect(setCost(s, piece)!.mats).toEqual({ 'blaze-core': SET_RECIPE.regionQty - PERKS.setRecipeLess, 'star-tear': SET_RECIPE.rareQty });
+    const r = craftSet(s, piece);
+    expect(r.ok && r.state.inventory['blaze-core']).toBe(20 - (SET_RECIPE.regionQty - PERKS.setRecipeLess));
+  });
+  it('Doran never takes the region material below one', () => {
+    const s = rich();
+    s.story.returned.push('doran');
+    const perks = PERKS as { setRecipeLess: number };
+    const kept = perks.setRecipeLess;
+    try {
+      perks.setRecipeLess = SET_RECIPE.regionQty + 5;
+      expect(setRecipeOf(s).regionQty).toBe(1);
+      expect(setCost(s, piece)!.mats['blaze-core']).toBe(1);
+    } finally { perks.setRecipeLess = kept; }
   });
 });

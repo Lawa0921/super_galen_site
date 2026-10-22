@@ -1,0 +1,92 @@
+{
+  "4. a party at the recommended level wins reliably without trivialising": {
+    "battles": 440,
+    "rounds": 884,
+    "hash": "979ed387"
+  },
+  "5. under-levelled parties are at risk on floor 3": {
+    "battles": 120,
+    "rounds": 517,
+    "hash": "32c985fa"
+  },
+  "6. the boss is a real fight": {
+    "battles": 160,
+    "rounds": 1083,
+    "hash": "a7af12de"
+  },
+  "7. same depth level, same odds": {
+    "battles": 6260,
+    "rounds": 19558,
+    "hash": "15b466b2"
+  },
+  "7 (記憶期望). same depth level, same odds with the memory expectation": {
+    "battles": 6260,
+    "rounds": 18275,
+    "hash": "3e5bc9e7"
+  },
+  "8. a party at the depth level beats an elite of that depth": {
+    "battles": 480,
+    "rounds": 1785,
+    "hash": "c38cd4a5"
+  },
+  "9. a party with the altar cap reached on every stat is not trivialised below the band": {
+    "battles": 320,
+    "rounds": 723,
+    "hash": "06880efd"
+  },
+  "10. random gear in expectation keeps the bands": {
+    "battles": 2360,
+    "rounds": 5372,
+    "hash": "a310e686"
+  },
+  "10 (記憶期望). random gear in expectation keeps the bands with the memory expectation, the abyss by depth": {
+    "battles": 2360,
+    "rounds": 4982,
+    "hash": "1e9254e2"
+  },
+  "the memories variants measure something: the build holds an abyss capstone and changes the runs": {
+    "battles": 104,
+    "rounds": 334,
+    "hash": "2ba7a898"
+  },
+  "11. a full rare kit does not one-round a boss": {
+    "battles": 40,
+    "rounds": 209,
+    "hash": "785000ae"
+  },
+  "11 (memories, abyss cap). a full rare kit does not one-round a boss with ten memories and the abyss at its cap": {
+    "battles": 40,
+    "rounds": 177,
+    "hash": "0c9a5203"
+  },
+  "13. a fresh Lv1 two-member party with no gear holds depth 1 of every region": {
+    "battles": 1280,
+    "rounds": 3571,
+    "hash": "2f1ba943"
+  },
+  "14. a boss never falls in one round, even to a +ENHANCE_MAX rare kit, and the test sees enhancement": {
+    "battles": 80,
+    "rounds": 404,
+    "hash": "69101126"
+  },
+  "14 (memories, abyss cap). a boss never falls in one round to a +ENHANCE_MAX rare kit with ten memories and the abyss at its cap": {
+    "battles": 80,
+    "rounds": 343,
+    "hash": "8665d77b"
+  },
+  "15. three members hold depths 2 and 3 of the main road": {
+    "battles": 280,
+    "rounds": 991,
+    "hash": "e002371e"
+  },
+  "16. the boss is a real fight for three members": {
+    "battles": 520,
+    "rounds": 4268,
+    "hash": "8d4fcb5a"
+  },
+  "17. four members hold depth 4 of the main road": {
+    "battles": 160,
+    "rounds": 389,
+    "hash": "6b5be775"
+  }
+}

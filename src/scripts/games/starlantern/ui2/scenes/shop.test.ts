@@ -2,24 +2,36 @@ import { describe, expect, it, vi } from 'vitest';
 import { EQUIPMENT } from '../../data/equipment';
 import { compareDelta } from '../../engine/compare';
 import { Game } from '../../engine/game';
+import { START_ITEMS } from '../../engine/state';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { materialUses } from '../../engine/forge/uses';
 import { T } from '../../data/text.zh-TW';
 import { sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor } from '../../engine/party';
 import { constRng, plainItem } from '../../engine/testing';
-import { NO_ART } from '../../render/textures';
+import { NO_ART, type ArtIndex } from '../../render/textures';
+import { art } from '../../render/artPaths';
+import { priceOf } from '../../engine/town';
 import { ShopScene } from './shop';
+import { GEAR_ROWS } from '../widgets';
+import { RUNES } from '../../data/runes';
+import { runeBuyMax } from '../../engine/runeTrade';
+
+/** Scroll the goods list down by `n` rows with the wheel (locked rows cannot take the cursor). */
+const scrollGoods = (root: HTMLElement, n: number) => {
+  const list = root.querySelector('.slx-shop-list .slx-menu')!;
+  for (let i = 0; i < n; i++) list.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
+};
 
 /** The topmost open window of the facility (layers stack in document order). */
 const topLayer = (root: HTMLElement): Element | undefined => [...root.querySelectorAll('.slx-layer')].pop();
 
-function setup(gold = 100) {
+function setup(gold = 100, artIdx: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
   game.state.gold = gold;
   const root = document.createElement('div');
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
-  const s = new ShopScene({ game, art: NO_ART, sfx, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+  const s = new ShopScene({ game, art: artIdx, sfx, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
   s.enter(root);
   s.onAction('confirm');
   const pick = (label: string) => {
@@ -32,6 +44,35 @@ function setup(gold = 100) {
 }
 
 describe('ShopScene', () => {
+  it('gear goods use the gear icon and never an old icon/ path (all retired by plan 5d)', () => {
+    const published = [art.gear('iron-sword'), art.icon('iron-sword'), art.icon('hunter-bow'), art.icon('potion'), art.icon('leather-cap')];
+    const { pick, root } = setup(100, { has: (u) => published.includes(u) });
+    pick('購買');
+    const row = (id: string) => root.querySelector<HTMLElement>(`.slx-layer [role=option][data-id="${id}"]`)!;
+    const sword = row('iron-sword').querySelector('img')!;
+    expect(sword.getAttribute('src')).toBe(art.gear('iron-sword'));
+    expect(sword.className).toBe('slx-ico slx-gear-ico');
+    // Even with a file listed at the old path, a base without its gear art shows the name alone.
+    expect(row('hunter-bow').querySelector('img')).toBeNull();
+    const potion = row('potion').querySelector('img')!;              // items keep their icon
+    expect(potion.getAttribute('src')).toBe(art.icon('potion'));
+    expect(potion.className).toBe('slx-ico');
+    const list = root.querySelector('.slx-shop-list .slx-menu')!;   // locked rows: the wheel scrolls past them
+    // Neither art published: the name alone.
+    for (let i = 0; i < 60 && !row('thorn-spear'); i++) list.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
+    expect(row('thorn-spear').querySelector('img')).toBeNull();
+    // The same for a base that was never in the old icon set.
+    for (let i = 0; i < 60 && !row('leather-cap'); i++) list.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
+    expect(row('leather-cap').querySelector('img')).toBeNull();
+  });
+
+  it('the goods list shows GEAR_ROWS rows at a time: gear rows are taller with their icons', () => {
+    const { pick, root } = setup();
+    pick('購買');
+    expect(root.querySelectorAll('.slx-shop-list [role=option]')).toHaveLength(GEAR_ROWS);
+    expect(GEAR_ROWS).toBeLessThan(12);
+  });
+
   it('buys a chosen quantity, capped by what the party can afford', () => {
     const { game, pick, s } = setup(100);
     pick('購買');
@@ -39,7 +80,7 @@ describe('ShopScene', () => {
     s.onAction('up');                     // +10, clamped to 5
     expect(document.body).toBeTruthy();
     s.onAction('confirm');
-    expect(game.state.inventory.potion).toBe(3 + 5);
+    expect(game.state.inventory.potion).toBe(START_ITEMS.potion + 5);
     expect(game.state.gold).toBe(0);
   });
 
@@ -55,6 +96,7 @@ describe('ShopScene', () => {
   it('shows locked equipment as disabled with what it needs', () => {
     const { pick, root } = setup();
     pick('購買');
+    scrollGoods(root, 3);                                             // past the items, to the first locked bases
     const locked = [...root.querySelectorAll('.slx-layer [role=option]')].find((o) => o.getAttribute('aria-disabled') === 'true')!;
     expect(locked.querySelector('.slx-right')!.textContent).toContain('×');
   });
@@ -133,9 +175,10 @@ describe('ShopScene', () => {
   it('every base in the buy list carries the common colour (the shared label adds no word), and keeps its need text when locked', () => {
     const { pick, root } = setup();
     pick('購買');
+    scrollGoods(root, 3);                                             // past the items, to the first locked bases
     const rows = [...root.querySelectorAll('.slx-layer [role=option]')];
     const gear = rows.filter((o) => o.querySelector('.slx-label')!.classList.contains('slx-rarity-common'));
-    expect(gear.length).toBeGreaterThan(0);       // the window shows 12 rows; the rest scroll in
+    expect(gear.length).toBeGreaterThan(0);       // the window shows GEAR_ROWS rows; the rest scroll in
     expect(gear.map((o) => o.getAttribute('data-id'))).toEqual(Object.keys(EQUIPMENT).slice(0, gear.length));
     for (const o of gear) expect(o.querySelector('.slx-label')!.textContent).not.toContain('普通');
     const locked = rows.find((o) => o.getAttribute('aria-disabled') === 'true')!;
@@ -395,5 +438,106 @@ describe('ShopScene', () => {
     } finally {
       charm.unlock = was;
     }
+  });
+});
+
+describe('ShopScene: townsfolk perks', () => {
+  it('the shop shows the discounted price', () => {
+    const plain = setup(1000);
+    plain.pick('購買');
+    const label = (root: HTMLElement) => [...(topLayer(root) ?? root).querySelectorAll('[role=option]')].find((x) => x.querySelector('.slx-label')!.textContent === '回復藥')!.textContent!;
+    expect(label(plain.root)).toContain(`${priceOf(plain.game.state, 'potion')} G`);
+    const { game, root, pick } = setup(1000);
+    game.state.story.returned.push('orik');
+    const cut = priceOf(game.state, 'potion')!;
+    expect(cut).toBeLessThan(priceOf(plain.game.state, 'potion')!);
+    pick('購買');
+    expect(label(root)).toContain(`${cut} G`);
+  });
+});
+
+describe('the rune shop (plan 8f Task 4)', () => {
+  const rows = (root: HTMLElement) => [...topLayer(root)!.querySelectorAll('[role=option]')].map((o) => ({
+    id: o.getAttribute('data-id'), label: o.querySelector('.slx-label')!.textContent, right: o.querySelector('.slx-right')?.textContent ?? '',
+    disabled: o.getAttribute('aria-disabled') === 'true', cls: o.querySelector('.slx-label')!.className,
+  }));
+  const info = (root: HTMLElement) => root.querySelector('.slx-rune-info')?.textContent ?? '';
+
+  it('the rune list shows the stock and the bag', () => {
+    const { game, root, pick, s } = setup(450);
+    game.state.runesOpen = true;
+    game.state.runes = { 'bounce@rare': 1 };
+    game.state.party.roster.noel = { ...game.state.party.roster.noel, sockets: { 'fire-star': [{ id: 'bounce', tier: 'rare' }] } };
+    pick('符文');
+    const list = rows(root);
+    expect(list.map((r) => r.label)).toEqual(['擴散（普通）', '連擊（普通）', '節流（普通）', '延長（普通）', '收購', '彈射（稀有）']);
+    expect(list[0].right).toBe('100 G　持有 0');
+    expect(list[0].cls).toContain('slx-rarity-common');
+    expect(list[4]).toMatchObject({ id: 'sell-head', disabled: true });   // the sell rows' heading takes no cursor
+    expect(list[5].right).toBe('收購 150 G　持有 2');   // the bag's one and Noel's socketed one
+    expect(list[5].cls).toContain('slx-rarity-rare');
+    // The detail: what the rune does at this tier, the bag's count, and the socketed ones.
+    expect(info(root)).toContain('擴散（普通）');
+    for (let i = 0; i < 4; i++) s.onAction('down');   // past the heading: the keys skip it
+    expect(info(root)).toContain('彈射（稀有）');
+    expect(info(root)).toContain(RUNES.bounce.text('rare'));
+    expect(info(root)).toContain('袋子 1');
+    expect(info(root)).toContain('其中 1 個鑲嵌中，先拆下才能賣或合成');
+    // Buying: the quantity box stops at runeBuyMax.
+    pick('擴散（普通）');
+    // Buying stops at the stack, which counts the socketed ones too: the box says 持有, the cap's basis.
+    expect(root.querySelector('.slx-qty-note')!.textContent).toBe('持有 0');
+    const want = runeBuyMax(game.state, { id: 'spread', tier: 'common' });
+    expect(want).toBe(4);
+    s.onAction('up');
+    expect(root.querySelector('.slx-qty-n')!.textContent).toBe(`× ${want}`);
+    s.onAction('confirm');
+    expect(game.state.runes).toEqual({ 'bounce@rare': 1, 'spread@common': 4 });
+    expect(game.state.gold).toBe(50);
+    expect(rows(root)[0].right).toBe('100 G　持有 4');
+    // Selling the bag's rare 彈射: the socketed one stays.
+    for (let i = 0; i < 6 && root.querySelector('.slx-talk:not([hidden])'); i++) s.onAction('confirm');
+    pick('彈射（稀有）');
+    expect(root.querySelector('.slx-qty-n')!.textContent).toBe('× 1');
+    expect(root.querySelector('.slx-qty-note')!.textContent).toBe('袋子 1');   // selling takes from the bag alone
+    s.onAction('confirm');
+    expect(game.state.gold).toBe(200);
+    expect(game.state.runes).toEqual({ 'spread@common': 4 });
+    expect(game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [{ id: 'bounce', tier: 'rare' }] });
+    expect(rows(root).map((r) => r.label)).toEqual(['擴散（普通）', '連擊（普通）', '節流（普通）', '延長（普通）', '收購', '擴散（普通）']);
+  });
+
+  it('before the first boss the shop has no runes, but buys what the bag holds', () => {
+    const { game, root, pick } = setup(1000);
+    pick('符文');
+    const list = rows(root);
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ label: '在迷宮打倒頭目之後才有符文', disabled: true });
+    pick('在迷宮打倒頭目之後才有符文');   // a disabled row does nothing
+    expect(game.state.gold).toBe(1000);
+    // A rune already in the bag (an old save, a hand-edit) can still be sold.
+    const t = setup(0);
+    t.game.state.runes = { 'focus@magic': 2 };
+    t.pick('符文');
+    const held = rows(t.root);
+    expect(held.map((r) => r.label)).toEqual(['在迷宮打倒頭目之後才有符文', '收購', '集中（魔法）']);
+    expect(held[2].right).toBe('收購 60 G　持有 2');
+  });
+
+  it('a rune that cannot be bought says why', () => {
+    const poor = setup(50);
+    poor.game.state.runesOpen = true;
+    poor.pick('符文');
+    poor.pick('擴散（普通）');
+    expect(poor.root.querySelector('.slx-qty')).toBeNull();
+    expect(poor.root.querySelector('.slx-talk .slx-text')!.textContent).toBe('金錢不足');
+    const full = setup(1000);
+    full.game.state.runesOpen = true;
+    full.game.state.runes = { 'spread@common': 99 };
+    full.pick('符文');
+    full.pick('擴散（普通）');
+    expect(full.root.querySelector('.slx-qty')).toBeNull();
+    expect(full.root.querySelector('.slx-talk .slx-text')!.textContent).toBe('這個符文已經 99 個了');
+    expect(full.sfx.error).toHaveBeenCalled();
   });
 });

@@ -3,25 +3,29 @@ import { floorOf } from '../../engine/dungeon/run';
 import type { Content } from '../../engine/dungeon/rooms';
 import { altarAt } from '../../engine/events';
 import { chestHasGear, RARE_MATERIALS } from '../../engine/loot/drops';
+import { RUNE_DROP } from '../../data/runeEconomy';
 import { Game } from '../../engine/game';
 import { DELTA, tileAt, type Dir, type Tile } from '../../engine/map';
-import { statsOf } from '../../engine/party';
+import { statsOf, LEGACY_LINEUP } from '../../engine/party';
 import { constRng } from '../../engine/testing';
-import { NO_ART } from '../../render/textures';
+import { NO_ART, type ArtIndex } from '../../render/textures';
+import { art } from '../../render/artPaths';
 import { ITEMS } from '../../data/items';
 import { capacity, carried, weightOf } from '../../data/weights';
 import type { ItemInstance } from '../../engine/types';
 import { DungeonScene } from './dungeon';
+import { STORY } from '../../data/story.zh-TW';
+import { chainLength } from '../../data/story/chains';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 
-function setup() {
-  const game = new Game(constRng(0.99), null);   // 0.99: no encounter roll, and a trap is always poison
+function setup(artIdx: ArtIndex = NO_ART) {
+  const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);   // 0.99: no encounter roll, and a trap is always poison
   expect(game.depart({ region: 'mainline', condition: 'plain' }, 1)).toEqual({ ok: true });
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn(), bump: vi.fn(), step: vi.fn(), chest: vi.fn(), encounter: vi.fn(), heal: vi.fn(), hit: vi.fn(), loot: vi.fn() };
   const go = vi.fn();
   const root = document.createElement('div');
-  const s = new DungeonScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }, Infinity);
+  const s = new DungeonScene({ game, art: artIdx, sfx, go, hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }, Infinity);
   s.enter(root);
   const text = () => root.querySelector('.slx-talk .slx-text')?.textContent ?? '';
   const talking = () => !root.querySelector('.slx-talk')!.hasAttribute('hidden') && !(root.querySelector('.slx-talk') as HTMLElement).hidden;
@@ -85,6 +89,22 @@ describe('EventLayer', () => {
     expect(game.state.inventory.potion).toBe(before + 2);
     expect(game.state.gold).toBe(110);
     expect(root.querySelector('.slx-event-merchant .slx-event-gold')!.textContent).toContain('110 G');
+  });
+
+  it('the merchant remembers once Noel does', () => {
+    const greet = (memories: number) => {
+      const { game, s, layer, plant } = setup();
+      game.state.party.roster.noel.memories = memories;
+      const { dir } = plant('merchant', { stock: ['potion', 'ether', 'antidote'] });
+      s.onAction(dir);
+      return layer()!.textContent!;
+    };
+    const lost = greet(chainLength('noel') - 1);
+    expect(lost).toContain(STORY.merchant.lost);
+    expect(lost).not.toContain(STORY.merchant.found);
+    const found = greet(chainLength('noel'));
+    expect(found).toContain(STORY.merchant.found);
+    expect(found).not.toContain(STORY.merchant.lost);
   });
 
   it('the merchant refuses a purchase the pack cannot carry', () => {
@@ -247,6 +267,51 @@ describe('the full pack window', () => {
   });
 });
 
+describe('fragments in the labyrinth', () => {
+  it('a chest lists the fragments it held', () => {
+    const { game, s, plant, text } = setup();
+    const { dir, at } = plant('chest', {}, (spot) => !chestHasGear(game.run!, game.floor, spot));
+    game.run!.rolls[`frag:${game.floor}:${at.x},${at.y}`] = { item: '', qty: 0, frags: ['shard-dim'] };
+    s.onAction(dir);
+    expect(text()).toContain('打開寶箱');
+    expect(text()).toContain('微光的碎片');
+  });
+
+  it('the full window names the fragments a shut chest holds back', () => {
+    const { game, s, root, plant } = setup();
+    game.run!.loot.items['old-coin'] = 400;
+    const { dir, at } = plant('chest', {}, (spot) => !chestHasGear(game.run!, game.floor, spot));
+    game.run!.rolls[`frag:${game.floor}:${at.x},${at.y}`] = { item: '', qty: 0, frags: ['shard-dim'] };
+    s.onAction(dir);
+    expect(root.querySelector('.slx-full')!.textContent).toContain('微光的碎片');
+  });
+
+  it('a shut chest with materials and gear but no fragments shows only the material line', () => {
+    const { game, s, root, plant } = setup();
+    game.run!.loot.items['old-coin'] = 400;
+    const { dir, at } = plant('chest', {}, (spot) => chestHasGear(game.run!, game.floor, spot));
+    game.run!.rolls[`frag:${game.floor}:${at.x},${at.y}`] = { item: '', qty: 0, frags: [] };
+    s.onAction(dir);
+    const text = root.querySelector('.slx-full')!.textContent!;
+    expect(text.split('還差重量')).toHaveLength(2);   // one weight line, not the material line plus gearHeavy
+  });
+
+  it('a glimmer that did not fit is taken after discarding, from the same window', () => {
+    const { game, s, root, plant, pick, text } = setup();
+    for (const m of Object.values(game.state.party.roster)) m.memories = 99;   // every chain is spent: the glimmer holds a shard
+    game.run!.loot.items['old-coin'] = 400;
+    const { dir, at } = plant('glimmer');
+    s.onAction(dir);
+    expect(root.querySelector('.slx-full')!.textContent).toContain('微光的碎片');
+    pick('古代銀幣');
+    pick('是');
+    expect(root.querySelector('.slx-full')).toBeNull();
+    expect(text()).toContain('微光的碎片');
+    expect(game.run!.loot.items['shard-dim']).toBe(1);
+    expect(tileAt(game.map(), at)).toBe('floor');
+  });
+});
+
 describe('Review Focus 2', () => {
   it('moves and right-click are ignored while an event layer is open', () => {
     const { game, s, root, plant, layer, pick, talking } = setup();
@@ -304,6 +369,18 @@ describe('gear from chests and the vault', () => {
     expect(text()).toContain('打開寶庫');
     expect(text()).toContain('獵弓・獨特');
     expect(root.querySelector('.slx-talk .slx-text .slx-rarity-unique')!.textContent).toBe('獵弓・獨特');
+  });
+
+  it('the vault names its gear with the gear icon when published', () => {
+    const { game, s, root, pick, plant } = setup({ has: (u) => u === art.gear('hunter-bow') });
+    game.run!.keys.add(game.floor);
+    const { dir, at } = plant('vault');
+    game.run!.gearRolls[`vault:${game.floor}:${at.x},${at.y}`] = gearOf(55, 'hunter-bow', 'unique');
+    s.onAction(dir);
+    pick('開啟');
+    const img = root.querySelector('.slx-talk .slx-text img.slx-gear-ico')!;
+    expect(img.getAttribute('src')).toBe(art.gear('hunter-bow'));
+    expect(img.nextElementSibling!.textContent).toBe('獵弓・獨特');
   });
 
   it('the best drop raises one pillar and plays loot once', () => {
@@ -412,5 +489,75 @@ describe('gear from chests and the vault', () => {
     expect(game.run!.loot.gear.map((g) => g.uid)).toEqual([8]);
     expect(text()).toContain('打開寶箱');
     expect(game.run!.opened.has(`${game.floor}:${at.x},${at.y}`)).toBe(true);
+  });
+});
+
+describe('runes from chests and the vault (plan 8f Task 3)', () => {
+  const gearOf = (uid: number, base: string, rarity: ItemInstance['rarity']): ItemInstance => ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0 });
+
+  it('a chest or vault with a rune says so', () => {
+    const { game, s, root, pick, plant, text, talking } = setup();
+    const { dir } = plant('chest');
+    vi.spyOn(game, 'move').mockReturnValueOnce({ kind: 'chest', item: 'old-coin', qty: 2, rune: { id: 'bounce', tier: 'rare' } });
+    s.onAction(dir);
+    expect(text()).toContain('打開寶箱');
+    expect(text()).toContain('得到符文：彈射（稀有）');
+    const line = [...root.querySelectorAll('.slx-talk .slx-text .slx-loot-rune')];
+    expect(line.map((x) => x.textContent)).toEqual(['得到符文：彈射（稀有）']);
+    expect(line[0].classList.contains('slx-rarity-rare')).toBe(true);
+
+    for (let i = 0; i < 6 && talking(); i++) s.onAction('confirm');
+    expect(talking()).toBe(false);
+    game.run!.keys.add(game.floor);
+    const v = plant('vault');
+    s.onAction(v.dir);
+    vi.spyOn(game, 'openVault').mockReturnValueOnce({ kind: 'vault', loot: { 'old-coin': 6 }, gear: [], runeGold: { rune: { id: 'spread', tier: 'magic' }, gold: 60 } });
+    pick('開啟');
+    expect(text()).toContain('打開寶庫');
+    expect(text()).toContain('擴散（魔法）已經 99 個，換成 60 G');
+    expect(text()).not.toContain('得到符文');
+  });
+
+  it("a chest's rune is told once, also when its gear waits and is taken later", () => {
+    const saved = RUNE_DROP.chest;
+    RUNE_DROP.chest = 1;
+    try {
+      const { game, s, root, pick, text } = setup();
+      game.state.runesOpen = true;
+      game.state.bag = Array.from({ length: 59 }, (_, i) => gearOf(1000 + i, 'cloth-robe', 'common'));
+      game.run!.loot.gear.push(gearOf(7, 'leather-vest', 'common'));   // 59 + 1: full
+      const { dir, at } = (() => {
+        const m = game.map();
+        for (let y = 1; y < m.height - 1; y++) for (let x = 1; x < m.width - 1; x++) {
+          if (tileAt(m, { x, y }) !== 'floor' || !chestHasGear(game.run!, game.floor, { x, y })) continue;
+          const d = DIRS.find((k) => tileAt(m, { x: x - DELTA[k].x, y: y - DELTA[k].y }) === 'floor');
+          if (!d) continue;
+          game.pos = { x: x - DELTA[d].x, y: y - DELTA[d].y };
+          m.tiles[y][x] = 'chest';
+          return { dir: d, at: { x, y } };
+        }
+        throw new Error('no chest cell');
+      })();
+      game.run!.gearRolls[`chest:${game.floor}:${at.x},${at.y}`] = gearOf(10, 'wooden-staff', 'magic');
+      s.onAction(dir);
+      const keys = Object.keys(game.state.runes ?? {});
+      expect(keys).toHaveLength(1);
+      const runeLines = () => [...root.querySelectorAll('.slx-loot-rune')].map((x) => x.textContent);
+      // The chest opened: its rune is told in the full window that heads the waiting gear, once.
+      expect(root.querySelector('.slx-full')!.textContent).toContain('打開寶箱');
+      expect(runeLines()).toHaveLength(1);
+      expect(runeLines()[0]).toMatch(/^得到符文：/);
+      pick('皮背心');
+      pick('是');
+      expect(text()).toContain('撿起了 木杖・魔法');
+      expect(text()).not.toContain('得到符文');
+      expect(runeLines()).toEqual([]);
+      // Nothing waits in the emptied chest any more: there is nothing to tell again.
+      expect(game.pos).toEqual(at);
+      expect(game.pickUpHere()).toBeNull();
+      expect(Object.values(game.state.runes!)).toEqual([1]);
+    } finally {
+      RUNE_DROP.chest = saved;
+    }
   });
 });

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   AFFIXES, AFFIX_COUNT, AFFIX_SCALE, GEAR_SLOTS, IMPLICIT_PER_ILVL, POWERS, RARITIES, RARITY_RANK, ROLL_FLOOR, SETS, SLOT_WEIGHT, SPECIALS,
+  STARLIT_RARITIES,
   affixRange, codexName, generalLegendaries, regionSpecials,
 } from './gear';
 import { REGIONS } from './regions';
@@ -74,10 +75,11 @@ describe('affix pool', () => {
 describe('rarity and weight tables', () => {
   it('matches the spec constants', () => {
     expect(GEAR_SLOTS).toEqual(['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring']);
-    expect(RARITIES).toEqual(['common', 'magic', 'rare', 'legendary', 'unique', 'set']);
-    expect(RARITY_RANK).toEqual({ common: 0, magic: 1, rare: 2, legendary: 3, unique: 4, set: 5 });
-    expect(AFFIX_COUNT).toEqual({ magic: [1, 2], rare: [3, 4], legendary: [3, 3] });
-    expect(ROLL_FLOOR).toEqual({ common: 0, magic: 0, rare: 0.25, legendary: 0.5, unique: 0.9, set: 0.75 });
+    expect(RARITIES).toEqual(['common', 'magic', 'rare', 'epic', 'legendary', 'unique', 'set']);
+    expect(RARITY_RANK).toEqual({ common: 0, magic: 1, rare: 2, epic: 3, legendary: 4, unique: 5, set: 6 });
+    expect(AFFIX_COUNT).toEqual({ magic: [1, 2], rare: [3, 4], epic: [4, 5], legendary: [3, 3] });
+    expect(ROLL_FLOOR).toEqual({ common: 0, magic: 0, rare: 0.25, epic: 0.5, legendary: 0.5, unique: 0.9, set: 0.75 });
+    expect(STARLIT_RARITIES).toEqual(['legendary', 'unique', 'set']);
     // The two loot knobs, tuned against engine/balance.test.ts tests 10–11: their values are not pinned here.
     expect(AFFIX_SCALE).toBeGreaterThan(0);
     expect(IMPLICIT_PER_ILVL).toBeGreaterThan(0);
@@ -170,5 +172,39 @@ describe('specials', () => {
     expect(codexName('lg-noel')).toBe('群星之戒');
     expect(codexName('set-blaze')).toBe('焰紋套裝');
     expect(codexName('nope')).toBe('nope');
+  });
+});
+
+describe('legendary powers follow the roster (plan 8c)', () => {
+  it("mire-whisper-gloves now poisons through rin's needle", async () => {
+    const { skillFor } = await import('../engine/battle');
+    const def = skillFor({ powers: ['mire-whisper-gloves'] }, 'rin-venom-needle');
+    expect(def?.effects.find((e) => e.kind === 'inflict')).toEqual({ kind: 'inflict', status: 'poison', chance: 1 });
+    expect(POWERS['mire-whisper-gloves'].skill).toBe('rin-venom-needle');
+    expect(Object.values(POWERS).some((p) => p.skill === 'hex')).toBe(false);
+    for (const p of Object.values(POWERS)) expect(SKILLS[p.skill], p.id).toBeDefined();
+  });
+});
+
+describe('legendary powers follow the roster (plan 8c Task 4)', () => {
+  it("the silent blade now gives rin's needle three hits", async () => {
+    const { skillFor } = await import('../engine/battle');
+    expect(POWERS['shade-silent-blade'].skill).toBe('rin-needle');
+    expect(skillFor({ powers: ['shade-silent-blade'] }, 'rin-needle')?.effects[0]).toMatchObject({ kind: 'damage', hits: 3 });
+    for (const p of Object.values(POWERS)) expect(SKILLS[p.skill], p.id).toBeDefined();
+  });
+});
+
+describe('legendary powers and variants (plan 8d)', () => {
+  it('a legendary power and a variant on the same skill both apply', async () => {
+    const { skillFor } = await import('../engine/battle');
+    const { pctOf } = await import('../engine/skills');
+    const s = skillFor({ powers: ['lg-noel'], ranks: { 'fire-star': 1, 'noel-star-twin': 1 } }, 'fire-star')!;
+    const d = s.effects[0] as { power: number; hits?: number };
+    expect(s.target).toBe('enemies');
+    expect(d.hits).toBe(2);
+    expect(d.power).toBe(pctOf(pctOf(140, 52), 70));
+    expect(d.power).toBe(51);
+    expect(s.name).toBe('火之星彈・連星');
   });
 });

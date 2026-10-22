@@ -1,26 +1,36 @@
-import { CHARACTERS } from '../../data/characters';
+import { CHARACTERS, rulesOf } from '../../data/characters';
 import { POWERS } from '../../data/gear';
 import { SKILLS } from '../../data/skills';
-import { BOARDS, BOARD_ROWS, KEYSTONES, TALENT_PER, TALENT_SCALE, boardPoints, rankOf, type TalentNode } from '../../data/talents';
-import { ACTIVE_RANK_PCT, NODES, TREES, type TreeNode } from '../../data/trees';
+import { BOARDS, BOARD_ROWS, KEYSTONES, MEMORY_KEYSTONES, TALENT_PER, TALENT_SCALE, boardPoints, rankOf, type TalentNode } from '../../data/talents';
+import { ACTIVE_RANK_PCT, NODES, TREES, branchNodes, nodeName as treeNodeName, nodeText, tierNodes, type TreeBranch, type TreeNode } from '../../data/trees';
 import { T } from '../../data/text.zh-TW';
-import { ULTIMATES } from '../../data/ultimates';
-import { skillCost, skillFor } from '../../engine/battle';
+import { fromMember, skillCost, skillFor } from '../../engine/battle';
 import { itemLines } from '../../engine/compare';
 import { ROW_MELEE, rowOfCell } from '../../engine/formation';
 import {
-  canRaiseNode, canRaiseTalent, freeNode, keystonesOf, learnedSkills, nodeRank, rankMod, skillPointsLeft, talentPointsLeft,
+  boardKeystonesOf, canRaiseNode, canRaiseTalent, freeNode, treeCost, memoryKeystoneAwake, learnedSkills, nodeRank, raiseNode, rankMod, skillPointsLeft, swapPair, talentPointsLeft, ultimateFor,
 } from '../../engine/progression';
-import { SLOTS, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
+import type { RaiseFail, TalentFail } from '../../engine/progression';
+import { ABYSS_UNLOCK } from '../../data/hero';
+import { SLOTS, activeIds, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
-import type { AnyStat, CharacterId, Slot, StatKey, Stats } from '../../engine/types';
+import { chainLength } from '../../data/story/chains';
+import type { AnyStat, CharacterId, Member, Slot, StatKey, Stats } from '../../engine/types';
+import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
-import { gearLabel } from '../loot';
+import { gearLabel, rarityClass } from '../loot';
 import type { SceneCtx } from '../scene';
 import { cancelSpend, clickSpend, pressSpend, type SpendState } from '../spendPress';
+import { battleTp, cardOf, compareCards, slotDots, slotStates } from '../skillCard';
+import { RUNES, type RuneRef } from '../../data/runes';
+import { socketable } from '../../engine/sockets';
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
+
+/** A skill's icon (`icon/<skill>.png`) before its head line, once published; nothing before then. */
+const skillIco = (ctx: SceneCtx, skill: string): HTMLElement[] =>
+  (ctx.art.has(art.icon(skill)) ? [el('img', { class: 'slx-skill-ico', attrs: { src: art.icon(skill), alt: '' } })] : []);
 export const SLOT_ORDER: Slot[] = SLOTS;
 
 /**
@@ -155,16 +165,24 @@ const stats: StatusTab = {
       });
       const table = open
         ? [el('table', { class: 'slx-stat-table' }, [
-          el('thead', {}, [el('tr', {}, [el('th'), ...parts.map((p) => el('th', { text: t.sources[p.source] ?? p.source })), el('th', { text: t.capCol }), el('th', { text: t.total })])]),
+          // A heading too long for its share reads short, the whole word in its title (主屬 for 主屬性).
+          el('thead', {}, [el('tr', {}, [el('th'), ...parts.map((p) => el('th', {
+            text: t.sourcesShort[p.source] ?? t.sources[p.source] ?? p.source, attrs: { title: t.sources[p.source] ?? p.source },
+          })), el('th', { text: t.capCol }), el('th', { text: t.total })])]),
           el('tbody', {}, c.keys.map(statRow)),
         ])]
         : [];
-      return el('section', { class: 'slx-stat-cat', attrs: { 'data-cat': c.id } }, [head, ...table]);
+      // The primary heading carries the member's affinity: the primary that converts best, or 全能 for all of them.
+      const affinity = c.id === 'primary'
+        ? [el('p', { class: 'slx-stat-affinity', text: t.affinity(def.affinity === 'all' ? t.affinityAll : T.gear.statName[def.affinity]) })]
+        : [];
+      return el('section', { class: 'slx-stat-cat', attrs: { 'data-cat': c.id } }, [head, ...affinity, ...table]);
     });
 
     return el('div', { class: 'slx-tab-stats' }, [
       el('div', { class: 'slx-status-facts' }, [
-        el('p', { text: `HP ${m.hp}／${st.hp}　TP ${m.tp}／${st.tp}` }),
+        // With 常駐 holding some back, the max TP a fight leaves her (plan 8g ruling 9).
+        el('p', { text: `HP ${m.hp}／${st.hp}　TP ${m.tp}／${st.tp}${((tp) => (tp === null ? '' : t.tpBattle(tp)))(battleTp(m))}` }),
         el('p', { text: t.exp(m.exp, expToNext(m.level)) }),
         el('p', { text: t.place(row ? T.ui2.rows[row] : T.ui2.formation.reserve) }),
         el('p', { text: t.attack(def.melee, row ? Math.round(ROW_MELEE[row] * 100) : null) }),
@@ -193,8 +211,11 @@ const stats: StatusTab = {
   shown(body) {
     if (!view.reveal) return;
     view.reveal = false;
-    // The first heading also brings the facts above it back into view.
-    if (view.cur === stops()[0]) body.scrollTop = 0;
+    // The first heading also brings the facts above it back into view; the last stop the end of the page (the margin
+    // under it), so the ▼ cue does not stay up over nothing.
+    const list = stops();
+    if (view.cur === list[0]) body.scrollTop = 0;
+    else if (view.cur === list[list.length - 1]) body.scrollTop = body.scrollHeight;
     else body.querySelector('.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
   },
 };
@@ -211,7 +232,7 @@ const gear: StatusTab = {
       const power = lines.find((l) => l.kind === 'power');
       return el('div', { class: 'slx-gear-row' }, [
         el('span', { class: 'slx-gear-slot', text: T.slot[slot] }),
-        el('span', { class: it ? `slx-gear-name slx-rarity-${it.rarity}` : 'slx-gear-name', text: it ? gearLabel(it) : T.ui2.status.none }),
+        el('span', { class: it ? `slx-gear-name ${rarityClass(it)}` : 'slx-gear-name', text: it ? gearLabel(it) : T.ui2.status.none }),
         el('span', { class: 'slx-gear-bonus', text: stat }),
         // Outside the member's tree: dimmed. In the tree but not learned yet: at full colour, with the equip page's note.
         ...(power ? [el('span', { class: power.usable === false ? 'slx-gear-power slx-line-off' : 'slx-gear-power' }, [
@@ -223,34 +244,99 @@ const gear: StatusTab = {
   },
 };
 
+/**
+ * A rune's line on the skills page (plan 8g final review): what it does to this skill in the card's final numbers, the
+ * card with it against the card without it; its own sentence when the card shows no change.
+ */
+function runeLineOf(m: Member, skill: string, slot: number, ref: RuneRef): string {
+  const cells = m.sockets?.[skill] ?? [];
+  // That one slot emptied, the others as they are.
+  const without: Member = { ...m, sockets: { ...m.sockets, [skill]: cells.map((c, i) => (i === slot ? null : c)) } };
+  const now = cardOf(m, skill), before = cardOf(without, skill);
+  const W = T.ui2.workshop;
+  const c = now && before ? compareCards(before, now) : undefined;
+  const parts = c ? [...c.lines.filter((l) => l.changed).map((l) => W.change(l.label, l.before, l.after)), ...c.added.map(W.added)] : [];
+  const label = T.rune.label(ref.id, ref.tier);
+  return parts.length ? T.ui2.status.runeLine(label, parts) : `${label}：${RUNES[ref.id].text(ref.tier)}`;
+}
+
+/** The skills page's one-line note: why the workshop did not open (shown until the next key or page). */
+const skillsView = { note: '' };
+
+/**
+ * The workshop on `id`'s `skill` (plan 8g Task 5), or on her first skill that takes runes. In the labyrinth only the
+ * members on the field can change runes (the workshop pages over them alone): for one on the bench the error cue and a
+ * note, and nothing opens (Task 5 review).
+ */
+const toWorkshop = (ctx: SceneCtx, id: CharacterId, skill?: string): boolean => {
+  const first = skill ?? socketable(ctx.game.state.party.roster[id])[0];
+  if (!first) return false;
+  const g = ctx.game;
+  if (g.phase === 'map' && !!g.run && !activeIds(g.state.party).includes(id)) {
+    ctx.sfx.error();
+    skillsView.note = T.ui2.status.fieldOnly;
+    return true;
+  }
+  ctx.sfx.confirm();
+  ctx.go('workshop', `${id}:${first}`);
+  return true;
+};
+
 const skills: StatusTab = {
   id: 'skills',
   label: T.ui2.status.tabs.skills,
-  render(ctx, id) {
+  hint: T.ui2.status.hintSkills,
+  onAction(a, ctx, id) {
+    skillsView.note = '';
+    return a === 'confirm' ? toWorkshop(ctx, id) : false;
+  },
+  leave() { skillsView.note = ''; },
+  render(ctx, id, redraw) {
     const t = T.ui2.status;
     const m = ctx.game.state.party.roster[id];
-    // The skill as this member casts it: tree ranks and mod nodes, then worn powers rewrite it; tpCost lowers its price
-    // (the battle rules: engine/battle.ts skillFor and skillCost).
+    // The skill as this member casts it: tree ranks and mod nodes, worn powers, her weapon and her runes rewrite it; tpCost
+    // lowers its price (the battle rules: engine/battle.ts fromMember, skillFor and skillCost).
     const powers = powersOf(m);
-    const caster = { powers, ranks: { ...m.tree }, x: { tpCost: sheetOf(m).tpCost } };
+    const caster = fromMember(m, 0);
     // Only what the member has learned, each with its rank in the tree.
-    return el('div', { class: 'slx-tab-skills' }, learnedSkills(m).flatMap((sk) => {
+    const runed = socketable(m);
+    const note = skillsView.note ? [el('p', { class: 'slx-skills-note', attrs: { role: 'status' }, text: skillsView.note })] : [];
+    return el('div', { class: 'slx-tab-skills' }, [...note, ...learnedSkills(m).flatMap((sk) => {
       const s = skillFor(caster, sk);
       if (!s) return [];
       const changed = powers.map((p) => POWERS[p]).filter((p) => p && p.skill === sk);
-      return el('div', { class: 'slx-skill', attrs: { 'data-skill': sk } }, [
+      // A skill that takes runes: its slot dots after the name, a line for each rune in it (greyed with its reason when it
+      // does nothing), and a click opens the workshop on it (plan 8g Task 5).
+      const takes = runed.includes(sk);
+      const runes = takes ? slotStates(m, sk).flatMap((x, slot) => (x.ref ? [{ ...x, slot }] : [])) : [];
+      const node = el('div', { class: takes ? 'slx-skill slx-skill-runed' : 'slx-skill', attrs: { 'data-skill': sk } }, [
+        ...skillIco(ctx, sk),
         el('div', { class: 'slx-skill-head' }, [
-          el('span', { class: 'slx-skill-name', text: s.name }),
+          // A name with two variants on it (設置砲台・雙管・雙砲台, plan 8d Task 8) is set a size smaller, so it stays whole.
+          el('span', { class: s.name.length >= LONG_SKILL_NAME ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: s.name }),
+          // A recovery skill that can also be cast from the labyrinth's field menu (SkillDef.field).
+          ...(SKILLS[sk]?.field ? [el('span', { class: 'slx-field-tag', text: t.fieldTag })] : []),
+          ...(takes ? [el('span', { class: 'slx-skill-slots', text: slotDots(m, sk) })] : []),
           ...(s.passive ? [] : [el('span', { class: 'slx-skill-target', text: t.targets[s.target] })]),
-          el('span', { class: 'slx-skill-cost', text: s.passive ? t.passive : t.tp(skillCost(caster, sk)) }),
-          el('span', { class: 'slx-skill-rank', text: t.rank(nodeRank(m, sk), NODES[sk].node.maxRank) }),
+          el('span', { class: 'slx-skill-cost', text: s.passive ? t.passive : t.tp(treeCost(m, sk, skillCost(caster, sk))) }),
+          // A skill she knows outside her tree (Rin's mark) has no rank to show.
+          el('span', { class: 'slx-skill-rank', text: NODES[sk] ? t.rank(nodeRank(m, sk), NODES[sk].node.maxRank) : t.innate }),
         ]),
         el('p', { class: 'slx-desc', text: s.desc }),
         ...changed.map((p) => el('p', { class: 'slx-skill-power', text: p.text })),
+        ...runes.map((x) => el('p', { class: x.state === 'off' ? 'slx-skill-rune slx-line-off' : 'slx-skill-rune' }, [
+          runeLineOf(m, sk, x.slot, x.ref!),
+          ...(x.state === 'off' && x.why ? [el('span', { class: 'slx-line-note', text: T.ui2.workshop.off(x.why) })] : []),
+        ])),
       ]);
-    }));
+      if (takes) node.addEventListener('click', () => { if (!locked(node)) redraw(() => { skillsView.note = ''; toWorkshop(ctx, id, sk); }); });
+      return node;
+    })]);
   },
 };
+
+/** A skill name this long or longer (two variants on one skill) is set a size smaller on the skills page. */
+const LONG_SKILL_NAME = 9;
 
 /** How far one click on a ▲/▼ cue scrolls the tree columns or the talent board: about one row of nodes. */
 const CUE_STEP = 40;
@@ -263,11 +349,12 @@ function scrollCues(pane: HTMLElement, up: HTMLElement, down: HTMLElement): void
 }
 
 /**
- * `pane` (the tree columns or the talent board, which scroll on their own above the fixed notes) in a frame with the
- * ▲/▼ cues: they show while more is hidden that way, and a click (or tap) on one scrolls it. `keep` hears every new
- * scroll position, so a redraw can put the pane back where it was (the tab's `shown` then calls `scrollCues`).
+ * `pane` (the sheet's page, or the tree columns or the talent board, which scroll on their own above the fixed notes) in
+ * a frame with the ▲/▼ cues, which stand in for a native scrollbar (the sheet shows none): they show while more is
+ * hidden that way, and a click (or tap) on one scrolls it. `keep` hears every new scroll position, so a redraw can put
+ * the pane back where it was (the redraw then calls `updateCues`).
  */
-function cueFrame(cls: string, pane: HTMLElement, keep: (top: number) => void): HTMLElement {
+export function cueFrame(cls: string, pane: HTMLElement, keep: (top: number) => void): HTMLElement {
   const cue = (c: string, text: string, d: 1 | -1) => {
     const b = el('span', { class: `slx-more ${c}`, text, attrs: { 'aria-hidden': 'true', hidden: '' } });
     b.addEventListener('click', () => {
@@ -287,8 +374,20 @@ function cueFrame(cls: string, pane: HTMLElement, keep: (top: number) => void): 
   return el('div', { class: `slx-cue-frame ${cls}` }, [up, pane, down]);
 }
 
+/**
+ * Scrolls `pane` (only it: nothing around it moves) just enough to show `node` whole, and not at all when it already shows
+ * (plan 8d Task 5: a nudge of a few pixels used to hide the branch names at 1280). `head`, its branch's name, stays pinned
+ * at the top of the columns (sticky, 8d Task 6 review), so a row shows only below it.
+ */
+export function revealIn(pane: HTMLElement, node: HTMLElement, head: HTMLElement | null): void {
+  const p = pane.getBoundingClientRect(), r = node.getBoundingClientRect();
+  const top = p.top + (head?.getBoundingClientRect().height ?? 0);
+  if (r.top < top) pane.scrollTop = Math.max(0, pane.scrollTop - (top - r.top));
+  else if (r.bottom > p.bottom) pane.scrollTop += Math.min(r.bottom - p.bottom, r.top - top);   // its top never goes under the name
+}
+
 /** The cues of the cue frame around `pane`, brought up to date after a redraw has set its scroll position. */
-function updateCues(pane: HTMLElement): void {
+export function updateCues(pane: HTMLElement): void {
   const frame = pane.parentElement;
   const up = frame?.querySelector<HTMLElement>(':scope > .slx-more-up');
   const down = frame?.querySelector<HTMLElement>(':scope > .slx-more-down');
@@ -320,16 +419,21 @@ function leaveTree(): void {
   treeView.top = 0;
 }
 
-/** Every node of the member's tree in cursor order: branch 0 tiers 0-4, then branch 1, then branch 2. */
-const treeOrder = (id: CharacterId): string[] => TREES[id].branches.flatMap((b) => b.nodes.map((n) => n.id));
+/**
+ * Every node of the member's tree in cursor order: branch 0 tiers 0-4, then branch 1, then branch 2; a pair's A side
+ * before its B side.
+ */
+const treeOrder = (id: CharacterId): string[] => TREES[id].branches.flatMap((b) => branchNodes(b).map((x) => x.node.id));
 
 type NodeKind = keyof typeof T.ui2.tree.kind;
 function kindOf(n: TreeNode, tier: number): NodeKind {
   if (tier === 4) return 'ultimate';
-  if (n.kind === 'mod') return 'mod';
-  return SKILLS[n.skill]?.passive ? 'passive' : 'active';
+  if (n.kind !== 'active') return n.kind;
+  return SKILLS[n.skill!]?.passive ? 'passive' : 'active';
 }
-const nodeName = (n: TreeNode) => (n.kind === 'active' ? SKILLS[n.skill]?.name ?? n.id : n.name ?? n.id);
+/** 火之星彈, 火之星彈・連星, 冷靜 (data/trees nodeName). */
+const nodeName = (n: TreeNode) => treeNodeName(n.id);
+
 
 /** Moves the tree cursor to `node`, dropping a waiting press when the cursor actually moves. */
 function moveTree(node: string): boolean {
@@ -339,16 +443,66 @@ function moveTree(node: string): boolean {
   return true;
 }
 
+/** Why `node` is shut, in words; an abyss node names the memories its branch needs. */
+function treeReason(why: RaiseFail, node: string): string {
+  return why === 'abyss' ? T.ui2.tree.reason.abyss(ABYSS_UNLOCK[NODES[node].branch]) : T.ui2.tree.reason[why];
+}
+
 /**
  * Enter on the cursor's node, or a click on `clicked` (which selects it first): the shared two-press spend, through the
- * Game so the spend is saved.
+ * Game so the spend is saved. On the empty side of a pair whose other side holds points the same two presses change
+ * the side instead, free (Game.swapVariant).
  */
 function pressTree(ctx: SceneCtx, id: CharacterId, clicked?: string): void {
   const node = clicked ?? treeView.cur;
+  if (canRaiseNode(ctx.game.state.party.roster[id], node) === 'pair') {
+    // The first press already asks the Game, so a swap it would turn down (in battle) is never armed.
+    const can = () => ctx.game.canSwapVariant(id, node);
+    const swap = () => ctx.game.swapVariant(id, node).ok;
+    const r = clicked ? clickSpend(treeView.spend, node, moveTree, can, swap, ctx.sfx) : pressSpend(treeView.spend, node, can, swap, ctx.sfx);
+    treeView.msg = r === 'armed' ? T.ui2.tree.swapPending : r === 'raised' ? T.ui2.tree.swapped : T.ui2.tree.swapRefused;
+    return;
+  }
   const can = () => canRaiseNode(ctx.game.state.party.roster[id], node);
   const raise = () => ctx.game.raiseNode(id, node).ok;
   const r = clicked ? clickSpend(treeView.spend, node, moveTree, can, raise, ctx.sfx) : pressSpend(treeView.spend, node, can, raise, ctx.sfx);
-  treeView.msg = r === 'armed' ? T.ui2.tree.pending : r === 'raised' ? '' : r === 'failed' ? T.ui2.tree.failed : T.ui2.tree.reason[r.refused];
+  treeView.msg = r === 'armed' ? T.ui2.tree.pending : r === 'raised' ? '' : r === 'failed' ? T.ui2.tree.failed : treeReason(r.refused, node);
+}
+
+/**
+ * What the next rank of an active node changes, by the engine's own rule (progression.rankMod), at rank `rank`: power or
+ * a buff's percent (「下一級：威力 100% → 110%」), or, for a skill with nothing to scale, its TP (「下一級：TP −1」) or its
+ * rounds (「下一級：持續 +1 回合」). Null when the next rank changes nothing.
+ */
+export function nextRankText(skill: string, rank: number): string | null {
+  const t = T.ui2.tree;
+  const now = rankMod({ [skill]: rank }, skill), next = rankMod({ [skill]: rank + 1 }, skill);
+  if (!next) return null;
+  if (next.powerPct !== undefined || next.buffPct !== undefined) return t.next(next.powerPct !== undefined ? 'power' : 'buff', ACTIVE_RANK_PCT[rank - 1], ACTIVE_RANK_PCT[rank]);
+  if (next.tpDelta !== undefined) return t.nextMod(t.mod({ tpDelta: next.tpDelta - (now?.tpDelta ?? 0) }));
+  // 收回: its rounds are how long the recalled phase stays, said as such (the whole count at the next rank).
+  if (next.turnsDelta !== undefined && SKILLS[skill]?.effects.some((e) => e.kind === 'moon')) return t.nextHold(next.turnsDelta);
+  if (next.turnsDelta !== undefined) return t.nextMod(t.mod({ turnsDelta: next.turnsDelta - (now?.turnsDelta ?? 0) }));
+  return null;
+}
+
+/**
+ * A variant not held yet (plan 8g Task 8, spec §6.8 「選變招都用同一張卡」): the workshop's card before and after learning
+ * it (or, for the empty side of a pair, after changing side), its changed rows and new lines in one line; '' when
+ * nothing on the card changes.
+ */
+function variantPreview(m: Member, node: string, skill: string, swap: boolean): { text: string; off: string[] } {
+  const r = swap ? swapPair(m, node) : raiseNode(m, node);
+  if (!r.ok) return { text: '', off: [] };
+  const before = cardOf(m, skill), after = cardOf(r.member, skill);
+  if (!before || !after) return { text: '', off: [] };
+  const W = T.ui2.workshop;
+  const c = compareCards(before, after);
+  const parts = [...c.lines.filter((l) => l.changed).map((l) => W.change(l.label, l.before, l.after)), ...c.added.map(W.added)];
+  // The runes in its slots that work now and would do nothing after (final review).
+  const was = slotStates(m, skill), will = slotStates(r.member, skill);
+  const off = was.flatMap((x, i) => (x.state === 'on' && will[i]?.state === 'off' && x.ref ? [T.rune.label(x.ref.id, x.ref.tier)] : []));
+  return { text: parts.length ? T.ui2.tree.preview(swap, parts) : '', off };
 }
 
 /** The notes under the tree for the cursor's node: what it does now and what its next rank changes. */
@@ -358,29 +512,42 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   const { node: n, tier } = NODES[treeView.cur];
   const rank = nodeRank(m, n.id);
   const head = [el('span', { class: 'slx-tree-info-name', text: nodeName(n) }), el('span', { text: t.kind[kindOf(n, tier)] }), el('span', { text: T.ui2.status.rank(rank, n.maxRank) })];
-  let desc = n.desc ?? '';
+  let desc = '';
   const change: HTMLElement[] = [];
+  // A shut node says why as soon as the cursor is on it (a pressed refusal in `msg` says the same, so it is not doubled);
+  // the empty side of a taken pair says it can be chosen instead.
+  const why = rank === 0 ? canRaiseNode(m, n.id) : null;
   if (n.kind === 'active') {
-    // The skill as this member casts it: tree ranks and worn powers, at the TP they pay (as on the skills page).
-    const caster = { powers: powersOf(m), ranks: { ...m.tree }, x: { tpCost: sheetOf(m).tpCost } };
-    const s = skillFor(caster, n.skill);
+    // The skill as this member casts it, at the TP she pays (as on the skills page: fromMember, so runes count too).
+    const caster = fromMember(m, 0);
+    const s = skillFor(caster, n.skill!);
     if (s) {
-      head.push(el('span', { class: 'slx-tree-use', text: s.passive ? T.ui2.status.passive : `${T.ui2.status.targets[s.target]}　${T.ui2.status.tp(skillCost(caster, n.skill))}` }));
+      head.push(el('span', { class: 'slx-tree-use', text: s.passive ? T.ui2.status.passive : `${T.ui2.status.targets[s.target]}　${T.ui2.status.tp(skillCost(caster, n.skill!))}` }));
       desc = s.desc;
     }
-    // What a further rank scales, by the engine's own rule; a skill with nothing to scale shows no line.
-    const scaled = rankMod({ [n.skill]: 2 }, n.skill);
-    if (rank > 0 && rank < n.maxRank && scaled) {
-      change.push(el('span', { class: 'slx-tree-next', text: t.next(scaled.powerPct !== undefined ? 'power' : 'buff', ACTIVE_RANK_PCT[rank - 1], ACTIVE_RANK_PCT[rank]) }));
-    }
+    // What a further rank changes, by the engine's own rule (power, a percent, TP or rounds).
+    const next = rank > 0 && rank < n.maxRank ? nextRankText(n.skill!, rank) : null;
+    if (next) change.push(el('span', { class: 'slx-tree-next', text: next }));
   } else {
-    change.push(el('span', { class: 'slx-tree-now', text: t.now(rank > 0 ? t.mod(n.mods![rank - 1]) : t.none) }));
-    if (rank < n.maxRank) change.push(el('span', { class: 'slx-tree-next', text: t.nextMod(t.mod(n.mods![rank])) }));
+    // A variant or mechanic node: its rule now and at the next rank, in its own sentence. A new variant's words are its
+    // skill's (its rule comes in the lines below); a mechanic node has a rule and nothing else.
+    if (n.kind === 'variant' && n.label !== undefined) desc = SKILLS[n.skill!]?.desc ?? '';
+    change.push(el('span', { class: 'slx-tree-now', text: t.now(rank > 0 ? nodeText(n.id, rank) : t.none) }));
+    // The empty side of a taken pair: a swap moves all the other side's points here, so its rule at that rank (Task 8 review).
+    const swapRank = why === 'pair' ? Math.min(n.maxRank, nodeRank(m, NODES[n.id].pair!)) : 0;
+    if (swapRank > 0) change.push(el('span', { class: 'slx-tree-next', text: t.afterSwap(swapRank, n.maxRank, nodeText(n.id, swapRank)) }));
+    else if (rank < n.maxRank) change.push(el('span', { class: 'slx-tree-next', text: t.nextMod(nodeText(n.id, rank + 1)) }));
   }
+  const say = why === 'pair' ? t.swapOpen : why ? treeReason(why, n.id) : '';
+  const shut = say && treeView.msg !== say ? say : '';
+  const preview = rank === 0 && n.kind === 'variant' && (why === 'pair' || why === null) ? variantPreview(m, n.id, n.skill!, why === 'pair') : { text: '', off: [] };
   return el('div', { class: 'slx-tree-info' }, [
     el('p', { class: 'slx-tree-info-head' }, head),
     el('p', { class: 'slx-desc', text: desc }),
     ...(change.length ? [el('p', { class: 'slx-tree-change' }, change)] : []),
+    ...(preview.text ? [el('p', { class: 'slx-tree-preview', text: preview.text })] : []),
+    ...(preview.off.length ? [el('p', { class: 'slx-tree-warn', text: T.ui2.tree.runeOff(preview.off) })] : []),
+    ...(shut ? [el('p', { class: 'slx-tree-reason', text: shut })] : []),
     ...(treeView.msg ? [el('p', { class: 'slx-tree-msg', text: treeView.msg, attrs: { role: 'status' } })] : []),
   ]);
 }
@@ -396,44 +563,74 @@ const tree: StatusTab = {
     // another tree's id, so it could never match a node here).
     if (!treeOrder(id).includes(treeView.cur)) treeView.cur = treeOrder(id)[0];
     const branches = TREES[id].branches;
-    const capstone = branches.map((b) => b.nodes[4]).find((n) => nodeRank(m, n.id) > 0);
+    const capstone = branches.flatMap((b) => tierNodes(b, 4)).filter((n) => nodeRank(m, n.id) > 0);
+    const row = (n: TreeNode, tier: number): HTMLElement => {
+      const rank = nodeRank(m, n.id);
+      const why = canRaiseNode(m, n.id);
+      // The empty side of a pair whose other side holds points can take them over, free (`pressTree`).
+      const swap = rank === 0 && why === 'pair';
+      const state = rank > 0 ? 'slx-node-learned' : swap ? 'slx-node-swap' : why ? 'slx-node-locked' : 'slx-node-open';
+      const said = swap ? t.swapOpen : why ? treeReason(why, n.id) : t.open;
+      const nodeEl = el('div', {
+        class: `slx-skill slx-tree-node ${state}${treeView.cur === n.id ? ' slx-row-cur' : ''}`,
+        // Hover alone shows why a shut node is shut (the tooltip), for a pointer that has not clicked it.
+        attrs: { 'data-node': n.id, role: 'button', ...(rank === 0 && why ? { title: said } : {}) },
+      }, [
+        // An active shows its skill's icon. A variant's name starts with the skill it changes (火之星彈・連星), so it goes
+        // without, and the whole row is its name's (8d Task 6 review: no name wraps); a mechanic node has no skill at all.
+        ...(n.skill && !(n.kind === 'variant' && n.label !== undefined) ? skillIco(ctx, n.skill) : []),
+        el('div', { class: 'slx-skill-head' }, [
+          // A name of five characters or more (護盾產生器) is set a size smaller, so it stays whole on its node. A variant's
+          // (火之星彈・連星) may break onto a second line between its skill and its label, never inside either.
+          n.kind === 'variant' && n.label !== undefined
+            // A variant too long for its row names its skill short there (砲台・雙砲台; data/trees.ts `short`).
+            ? el('span', { class: 'slx-skill-name slx-skill-name-long slx-skill-name-variant' }, [
+              el('span', { text: n.short ?? SKILLS[n.skill!]?.name ?? n.skill! }), el('span', { text: `・${n.label}` }),
+            ])
+            : el('span', { class: nodeName(n).length >= 5 ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: nodeName(n) }),
+          el('span', { class: 'slx-skill-rank', text: T.ui2.status.rank(rank, n.maxRank) }),
+        ]),
+        el('div', { class: 'slx-tree-node-foot' }, [
+          el('span', { class: 'slx-tree-kind', text: t.kind[kindOf(n, tier)] }),
+          el('span', { class: 'slx-tree-state', text: said }),
+        ]),
+      ]);
+      // The first click selects and arms the node; a second click on it spends (or changes the side of a pair). A row the
+      // columns cut off comes whole into view, as with the keys (`shown`; nothing moves when it already shows).
+      nodeEl.addEventListener('click', () => {
+        if (locked(nodeEl)) return;
+        redraw(() => { pressTree(ctx, id, n.id); treeView.reveal = true; });
+      });
+      return nodeEl;
+    };
+    /** A tier's cell: one node, or a pair drawn as two rows, A above B, with 二選一 between them. */
+    const cell = (b: TreeBranch, tier: number): HTMLElement => {
+      const [a, bSide] = tierNodes(b, tier);
+      if (!bSide) return row(a, tier);
+      return el('div', { class: 'slx-tree-pair', attrs: { 'data-tier': String(tier) } }, [
+        row(a, tier), el('div', { class: 'slx-tree-pair-tag', text: t.pairTag }), row(bSide, tier),
+      ]);
+    };
     const cols = branches.map((b, bi) => {
-      // Points put into the branch: its ranks, less branch 0's free first rank.
-      const spent = b.nodes.reduce((s, n) => s + nodeRank(m, n.id), 0) - (bi === 0 ? Math.min(1, nodeRank(m, freeNode(id))) : 0);
+      // Points put into the branch: its ranks (both sides of a pair), less branch 0's free first rank.
+      const spent = branchNodes(b).reduce((s, x) => s + nodeRank(m, x.node.id), 0) - (bi === 0 ? Math.min(1, nodeRank(m, freeNode(id))) : 0);
       return el('section', { class: 'slx-tree-branch', attrs: { 'data-branch': String(bi) } }, [
-        el('h5', { class: 'slx-tree-branch-name', text: t.branch(b.name, spent) }),
-        ...b.nodes.map((n, tier) => {
-          const rank = nodeRank(m, n.id);
-          const why = canRaiseNode(m, n.id);
-          const state = rank > 0 ? 'slx-node-learned' : why ? 'slx-node-locked' : 'slx-node-open';
-          const row = el('div', {
-            class: `slx-skill slx-tree-node ${state}${treeView.cur === n.id ? ' slx-row-cur' : ''}`,
-            attrs: { 'data-node': n.id, role: 'button' },
-          }, [
-            el('div', { class: 'slx-skill-head' }, [
-              el('span', { class: 'slx-skill-name', text: nodeName(n) }),
-              el('span', { class: 'slx-skill-rank', text: T.ui2.status.rank(rank, n.maxRank) }),
-            ]),
-            el('div', { class: 'slx-tree-node-foot' }, [
-              el('span', { class: 'slx-tree-kind', text: t.kind[kindOf(n, tier)] }),
-              el('span', { class: 'slx-tree-state', text: why ? t.reason[why] : t.open }),
-            ]),
-          ]);
-          // The first click selects and arms the node; a second click on it spends.
-          row.addEventListener('click', () => {
-            if (locked(row)) return;
-            redraw(() => pressTree(ctx, id, n.id));
-          });
-          return row;
-        }),
+        // Five branches (the hero's) are narrow: the name on one line, its points on the next, both whole (plan 8g Task 5).
+        branches.length > 3
+          ? el('h5', { class: 'slx-tree-branch-name' }, [
+            el('span', { class: 'slx-tree-branch-title', text: b.name }),
+            el('span', { class: 'slx-tree-branch-pts', text: t.branch(b.name, spent).slice(b.name.length) }),
+          ])
+          : el('h5', { class: 'slx-tree-branch-name', text: t.branch(b.name, spent) }),
+        ...b.nodes.map((_, tier) => cell(b, tier)),
       ]);
     });
     // The columns scroll on their own above the fixed notes, with ▲/▼ cues; a redraw keeps where they were (see `shown`).
-    const colsEl = el('div', { class: 'slx-tree-cols' }, cols);
+    const colsEl = el('div', { class: branches.length > 3 ? 'slx-tree-cols slx-tree-wide' : 'slx-tree-cols' }, cols);
     return el('div', { class: 'slx-tab-tree' }, [
       el('div', { class: 'slx-tree-top' }, [
         el('span', { class: 'slx-tree-left', text: t.left(skillPointsLeft(m)) }),
-        el('span', { class: 'slx-tree-capstone', text: capstone ? t.capstone(nodeName(capstone)) : t.noCapstone }),
+        el('span', { class: 'slx-tree-capstone', text: capstone.length ? t.capstone(capstone.map(nodeName).join('、')) : t.noCapstone(rulesOf(id).capstones) }),
       ]),
       cueFrame('slx-tree-frame', colsEl, (top) => { treeView.top = top; }),
       treeNotes(ctx, id),
@@ -461,7 +658,8 @@ const tree: StatusTab = {
     cols.scrollTop = treeView.top;
     if (treeView.reveal) {
       treeView.reveal = false;
-      body.querySelector('.slx-tree-node.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
+      const node = cols.querySelector<HTMLElement>('.slx-tree-node.slx-row-cur');
+      if (node) revealIn(cols, node, node.closest('.slx-tree-branch')?.querySelector<HTMLElement>('.slx-tree-branch-name') ?? null);
       treeView.top = cols.scrollTop;
     }
     updateCues(cols);
@@ -531,6 +729,12 @@ function moveTalent(node: string): boolean {
   return true;
 }
 
+/** The words for a refused talent raise; the keystone cap reads the character's own limit. */
+const talentReason = (why: TalentFail, id: CharacterId): string => {
+  const r = T.ui2.talent.reason[why];
+  return typeof r === 'function' ? r(rulesOf(id).maxKeystones) : r;
+};
+
 /** Enter on the cursor's node, or a click on `clicked` (which selects it first): the shared spend, as the tree page's. */
 function pressTalent(ctx: SceneCtx, id: CharacterId, clicked?: string): void {
   const t = T.ui2.talent;
@@ -538,7 +742,7 @@ function pressTalent(ctx: SceneCtx, id: CharacterId, clicked?: string): void {
   const can = () => canRaiseTalent(ctx.game.state.party.roster[id], node);
   const raise = () => ctx.game.raiseTalent(id, node).ok;
   const r = clicked ? clickSpend(talentView.spend, node, moveTalent, can, raise, ctx.sfx) : pressSpend(talentView.spend, node, can, raise, ctx.sfx);
-  talentView.msg = r === 'armed' ? t.pending : r === 'raised' ? '' : r === 'failed' ? t.failed : t.reason[r.refused];
+  talentView.msg = r === 'armed' ? t.pending : r === 'raised' ? '' : r === 'failed' ? t.failed : talentReason(r.refused, id);
 }
 
 /** The notes under the board for the cursor's node: its bonus per rank and what it gives now, or the keystone's effect. */
@@ -556,7 +760,7 @@ function talentNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
       el('span', { class: 'slx-talent-info-name', text: name }),
       el('span', { text: key ? t.keystone : t.row(n.row + 1) }),
       el('span', { text: T.ui2.status.rank(rank, n.maxRank) }),
-      el('span', { class: 'slx-talent-state', text: why ? t.reason[why] : t.open }),
+      el('span', { class: 'slx-talent-state', text: why ? talentReason(why, id) : t.open }),
     ]),
     key
       ? el('p', { class: 'slx-desc', text: key.desc })
@@ -564,6 +768,20 @@ function talentNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
     ...(why === 'adjacent' ? [el('p', { class: 'slx-desc', text: t.adjacentRule })] : []),
     ...(talentView.msg ? [el('p', { class: 'slx-talent-msg', text: talentView.msg, attrs: { role: 'status' } })] : []),
   ]);
+}
+
+/** The memory keystone's line under the board: a companion only (the hero has none), awake or waiting on her pieces or her oath. */
+function memoryLine(m: Member): HTMLElement[] {
+  if (m.id === 'hero') return [];
+  const t = T.ui2.talent;
+  const k = KEYSTONES[MEMORY_KEYSTONES[m.id]];
+  const awake = memoryKeystoneAwake(m);
+  return [el('div', { class: `slx-talent-memkey ${awake ? 'slx-memkey-awake' : 'slx-memkey-locked'}` }, [
+    // A sleeping keystone keeps its name back: the name would tell what the memories hold.
+    // Rin's wakes on her oath, not her pieces, so her hint says so without naming the choice.
+    el('span', { class: 'slx-talent-memkey-name', text: t.memoryKeystone(awake ? k.name : T.ui2.handbook.unknown) }),
+    el('span', { class: 'slx-talent-memkey-desc', text: awake ? k.desc : m.id === 'rin' ? t.memoryLockedRin : t.memoryLocked(chainLength(m.id)) }),
+  ])];
 }
 
 const talent: StatusTab = {
@@ -609,18 +827,19 @@ const talent: StatusTab = {
       ...BOARDS[id].filter((n) => !n.keystone && n.row === r).map(cell),
     ]));
     // The board scrolls on its own above the fixed notes, with ▲/▼ cues; a redraw keeps where it was (see `shown`).
-    const board = el('div', { class: 'slx-talent-board' }, [
+    const board = el('div', { class: rulesOf(m.id).boardCols > 4 ? 'slx-talent-board slx-talent-wide' : 'slx-talent-board' }, [
       ...rows,
-      el('h5', { class: 'slx-talent-keys-head', text: t.keysHead }),
+      el('h5', { class: 'slx-talent-keys-head', text: t.keysHead(rulesOf(m.id).maxKeystones) }),
       el('div', { class: 'slx-talent-keys' }, BOARDS[id].filter((n) => n.keystone).map(cell)),
     ]);
     return el('div', { class: 'slx-tab-talent' }, [
       el('div', { class: 'slx-talent-top' }, [
         el('span', { class: 'slx-talent-left', text: t.left(talentPointsLeft(m)) }),
-        el('span', { class: 'slx-talent-count', text: t.keystones(keystonesOf(m).length) }),
+        el('span', { class: 'slx-talent-count', text: t.keystones(boardKeystonesOf(m).length, rulesOf(m.id).maxKeystones) }),
         el('span', { class: 'slx-talent-gate', text: t.board(boardPoints(id, held)) }),
       ]),
       cueFrame('slx-talent-frame', board, (top) => { talentView.top = top; }),
+      ...memoryLine(m),
       talentNotes(ctx, id),
     ]);
   },
@@ -655,8 +874,8 @@ const ultimate: StatusTab = {
   id: 'ultimate',
   label: T.ui2.status.tabs.ultimate,
   render(ctx, id) {
-    const u = ULTIMATES[id];
     const m = ctx.game.state.party.roster[id];
+    const u = ultimateFor(m.id, m.tree, m);
     return el('div', { class: 'slx-tab-ultimate' }, [
       el('h4', { text: u.name }),
       el('p', { class: 'slx-desc', text: u.desc }),

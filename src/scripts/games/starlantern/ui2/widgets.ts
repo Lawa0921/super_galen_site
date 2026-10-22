@@ -2,8 +2,11 @@ import { el } from '../ui/dom';
 import type { UiAction } from './input';
 import { Menu, type MenuItem } from './menu';
 
-/** A line with coloured parts: plain text, or `{ text, cls }` drawn in a span of that class (a rarity colour, say). */
-export type RichPart = string | { text: string; cls: string };
+/**
+ * A line with coloured parts: plain text, or `{ text, cls }` drawn in a span of that class (a rarity colour, say). A part
+ * with an `icon` (a piece's published gear art) shows it just before its span, from the part's first typed character.
+ */
+export type RichPart = string | { text: string; cls: string; icon?: string };
 export type Rich = RichPart[];
 
 const partText = (p: RichPart): string => (typeof p === 'string' ? p : p.text);
@@ -18,7 +21,11 @@ export function richNodes(r: Rich, n = Infinity): Node[] {
     const chars = [...partText(p)];
     const shown = chars.slice(0, left).join('');
     left -= chars.length;
-    out.push(typeof p === 'string' ? document.createTextNode(shown) : el('span', { class: p.cls, text: shown }));
+    if (typeof p === 'string') out.push(document.createTextNode(shown));
+    else {
+      if (p.icon && shown) out.push(el('img', { class: 'slx-ico slx-gear-ico', attrs: { src: p.icon, alt: '' } }));
+      out.push(el('span', { class: p.cls, text: shown }));
+    }
   }
   return out;
 }
@@ -26,6 +33,13 @@ export function richNodes(r: Rich, n = Infinity): Node[] {
 export function win(cls: string, children: Node[] = []): HTMLElement {
   return el('div', { class: `slx-win ${cls}` }, children);
 }
+
+/**
+ * Rows on screen for a list of gear with its 26px icons (shop goods, forge pieces, set crafting): a taller row than a text
+ * row, so fewer fit in the same window (plan 5d Task 10; 8 x 26px rows, the ▲/▼ cues and the frame stay inside the
+ * forge list's 260px and the screen).
+ */
+export const GEAR_ROWS = 8;
 
 /** Wheel travel, in pixels, that scrolls a list by one row: about one mouse-wheel notch. */
 const WHEEL_STEP = 100;
@@ -98,8 +112,10 @@ export class MenuView {
       const li = el('li', { class: i === this.menu.cursor ? 'slx-opt slx-sel' : 'slx-opt', attrs: {
         role: 'option', 'aria-selected': String(i === this.menu.cursor), 'aria-disabled': String(!!item.disabled), 'data-id': item.id,
       } }, [
-        ...(item.icon ? [el('img', { class: 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
+        ...(item.icon ? [el('img', { class: item.iconCls ? `slx-ico ${item.iconCls}` : 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
         el('span', { class: item.cls ? `slx-label ${item.cls}` : 'slx-label', text: item.label }),
+        ...(item.tail ? [el('span', { class: item.cls ? `slx-label-tail ${item.cls}` : 'slx-label-tail', text: item.tail })] : []),
+        ...(item.badge ? [el('span', { class: 'slx-badge', text: item.badge })] : []),
         ...(item.right !== undefined ? [el('span', { class: item.rightClass ? `slx-right ${item.rightClass}` : 'slx-right', text: item.right })] : []),
       ]);
       // pointermove, not pointerenter: a window that opens under a resting mouse must not steal the keyboard cursor.
@@ -142,6 +158,7 @@ export class Dialogue {
   /** Blinking mark shown once the whole line is on screen. */
   private next = el('span', { class: 'slx-next', text: '▼', attrs: { 'aria-hidden': 'true', hidden: '' } });
   private full: Rich = [];
+  private face: HTMLImageElement | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private resolve: (() => void) | null = null;
 
@@ -156,8 +173,20 @@ export class Dialogue {
 
   busy(): boolean { return this.resolve !== null; }
 
-  say(name: string, text: string | Rich): Promise<void> {
+  /** `memory` dims the box for a remembered scene; `plain` is the everyday look. */
+  setStyle(style: 'plain' | 'memory'): void {
+    this.el.classList.toggle('slx-talk--memory', style === 'memory');
+  }
+
+  /** `face` puts a portrait on the box's left or right edge for this line; a line without one shows no image. */
+  say(name: string, text: string | Rich, face?: { src: string; side: 'left' | 'right' }): Promise<void> {
     this.stop();
+    this.face?.remove();
+    this.face = null;
+    if (face) {
+      this.face = el('img', { class: `slx-talk-face slx-talk-face--${face.side}`, attrs: { src: face.src, alt: '', draggable: 'false' } });
+      this.el.prepend(this.face);
+    }
     // A newer line replaces the old one: settle the old promise so nothing awaits it forever.
     const old = this.resolve;
     this.resolve = null;
@@ -187,6 +216,8 @@ export class Dialogue {
     const r = this.resolve;
     this.resolve = null;
     this.el.hidden = true;
+    this.face?.remove();
+    this.face = null;
     this.onClose?.();
     r();
     return true;
@@ -222,12 +253,12 @@ export class QtyView {
   private label = el('span', { class: 'slx-qty-n' });
   private total = el('span', { class: 'slx-qty-total' });
 
-  /** With a unit price the window also shows the total. */
-  constructor(private max: number, private on: { change(qty: number): void; done(qty: number): void; cancel(): void }, private price?: number) {
+  /** With a unit price the window also shows the total; `note` is one more line under the count (plan 8f: 「袋子 m」). */
+  constructor(private max: number, private on: { change(qty: number): void; done(qty: number): void; cancel(): void }, private price?: number, note?: string) {
     const down = el('span', { class: 'slx-qty-down', text: '◀ ' });
     const up = el('span', { class: 'slx-qty-up', text: ' ▶' });
     const row = el('div', { class: 'slx-qty-row' }, [down, this.label, up, ...(price !== undefined ? [this.total] : [])]);
-    this.el = win('slx-qty', [row, el('p', { class: 'slx-hint', text: '◀▶ ±1　▲▼ ±10\n點數字 決定' })]);
+    this.el = win('slx-qty', [row, ...(note ? [el('p', { class: 'slx-qty-note', text: note })] : []), el('p', { class: 'slx-hint', text: '◀▶ ±1　▲▼ ±10\n點數字 決定' })]);
     // Mouse: the arrows step by one, the number confirms.
     const tap = (a: UiAction) => () => { if (!this.el.closest('[inert]')) this.onAction(a); };
     down.addEventListener('click', tap('left'));

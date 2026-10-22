@@ -1,14 +1,20 @@
 import { CHARACTERS } from '../../data/characters';
+import { artIdOf } from '../../ui/art';
 import { CONDITIONS } from '../../data/conditions';
 import { FLOORS } from '../../data/floors';
 import { ITEMS } from '../../data/items';
+import type { Meetable } from '../../data/meetings';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { T } from '../../data/text.zh-TW';
+import { memScene, sceneKind, type SceneId } from '../../data/story/scenes';
 import { floorOf } from '../../engine/dungeon/run';
+import type { FragmentGain } from '../../engine/story/memories';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { step, type Dir } from '../../engine/map';
 import { rowOfCell } from '../../engine/formation';
 import { activeIds, statsOf } from '../../engine/party';
+import { fromMember, skillFor } from '../../engine/battle';
+import { fieldCost, fieldSkills, fieldTargets } from '../../engine/field';
 import { useFieldItem } from '../../engine/town';
 import type { CharacterId } from '../../engine/types';
 import { el } from '../../ui/dom';
@@ -19,9 +25,12 @@ import { PartyBar } from '../partyBar';
 import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich } from '../widgets';
-import { levelUpLines } from '../battleText';
+import { fragmentLines, levelUpLines } from '../battleText';
+import { playAndRecord, speakerOf, storyCtx } from '../story';
+import { STORY } from '../../data/story.zh-TW';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import { eventLayer, showPickUp, stairsLayer, type EventHost } from './event';
+import { mapArtUrls } from '../../render/artPaths';
 
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
 const ENCOUNTER_MS = 520;
@@ -29,9 +38,14 @@ const CONDITION_BANNER_MS = 2000;
 const FLASH_MS = 450;
 /** The readout turns yellow past this share of the carry limit, red at the limit. */
 const HEAVY_SHARE = 0.8;
+/** The field menu shows all its lines at once (eleven with the workshop, plan 8g Task 5): no ▼ to reach 關閉. */
+const FIELD_MENU_ROWS = 12;
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 
 /** Labyrinth: map on the Pixi stage, party bar, floor name, encounter lamp, events as dialogue, a field menu. */
+/** How long the labyrinth waits for its floor's map art before it is drawn. */
+export const MAP_ART_WAIT_MS = 1500;
+
 export class DungeonScene implements Scene {
   private root!: HTMLElement;
   private body!: HTMLElement;
@@ -41,10 +55,13 @@ export class DungeonScene implements Scene {
   private pad!: HTMLElement;
   private backEl!: HTMLElement;
   private weightEl!: HTMLElement;
+  private hintEl!: HTMLElement;
   private minimap!: Minimap;
   private layers: Layer[] = [];
   private talk: Dialogue;
   private leaving = false;
+  /** The memory scene on screen, if any: it takes the actions while it plays. */
+  private playing: ReturnType<typeof playAndRecord> | null = null;
   /** Set on exit, so a line waiting on an earlier one (the depth-clear reward) never speaks on a scene that has gone. */
   private exited = false;
   /** Counts the lines said, so a follow-up line can tell that a newer one took its turn. */
@@ -57,6 +74,12 @@ export class DungeonScene implements Scene {
     this.talk = new Dialogue(cps, () => this.syncInert());
   }
 
+  /** Behind the fade: this floor's map art gets a moment to land (a late tile is drawn when it lands, nothing before). */
+  async prepare(): Promise<void> {
+    if (!this.ctx.stage) return;
+    await this.ctx.art.whenReady?.(mapArtUrls(this.ctx.game.terrain()), MAP_ART_WAIT_MS);
+  }
+
   enter(root: HTMLElement): void {
     this.root = root;
     this.exited = false;
@@ -66,16 +89,17 @@ export class DungeonScene implements Scene {
     const menuBtn = this.tapper('slx-menu-btn', T.ui2.dungeon.menuHint, 'menu');
     this.backEl = backControl(() => this.onAction('cancel'));
     this.backEl.hidden = true;
-    const hint = el('p', { class: 'slx-keyhint', text: T.ui2.hints.dungeon });
+    this.hintEl = el('p', { class: 'slx-keyhint', text: T.ui2.hints.dungeon });
     this.weightEl = el('p', { class: 'slx-weight', attrs: { 'aria-live': 'polite' } });
     this.minimap = new Minimap();
     this.body = el('div', { class: 'slx-scene slx-dungeon' }, [
-      this.floorName, ...this.conditionBadge(), this.lamp, menuBtn, this.minimap.el, this.backEl, this.weightEl, hint, this.pad, this.bar.el, this.talk.el,
+      this.floorName, ...this.conditionBadge(), this.lamp, menuBtn, this.minimap.el, this.backEl, this.weightEl, this.hintEl, this.pad, this.bar.el, this.talk.el,
     ]);
     root.append(this.body);
     this.ctx.stage?.show('map');
     this.refresh();
     if (this.ctx.from === 'gate') this.conditionBanner();
+    void this.flushPending();   // a memory still waiting from before (the settings screen, a battle) plays now
   }
 
   exit(): void {
@@ -89,6 +113,7 @@ export class DungeonScene implements Scene {
 
   onAction(a: UiAction): void {
     if (this.leaving) return;
+    if (this.playing) { this.playing.onAction(a); return; }
     // Confirm or cancel ends a legendary drop's moment first (fast mode never waits on it); directions always step.
     if (!this.ctx.fast && skipPillar(this.body, a)) return;
     if (this.talk.busy()) { this.talk.onAction(a); return; }
@@ -116,7 +141,7 @@ export class DungeonScene implements Scene {
     this.bar.update(activeIds(p).map((id) => {
       const m = p.roster[id];
       const st = statsOf(m);
-      return { key: id, name: CHARACTERS[id].name, hp: m.hp, maxHp: st.hp, tp: m.tp, maxTp: st.tp, limit: m.limit ?? 0, alive: m.hp > 0, row: rowOfCell(p.grid.indexOf(id)) };
+      return { key: id, name: CHARACTERS[id].name, hp: m.hp, maxHp: st.hp, tp: m.tp, maxTp: st.tp, limit: m.limit ?? 0, alive: m.hp > 0, row: rowOfCell(p.grid.indexOf(id)), artId: artIdOf(m) };
     }));
     this.ctx.stage?.mapView.draw(g, { width: 640, height: 296 });
     this.minimap.draw(g);
@@ -158,9 +183,9 @@ export class DungeonScene implements Scene {
     return [badge, tip];
   }
 
-  private say(text: string | Rich): Promise<void> {
+  private say(text: string | Rich, name = '', face?: { src: string; side: 'left' | 'right' }): Promise<void> {
     this.said++;
-    const shown = this.talk.say('', text);
+    const shown = this.talk.say(name, text, face);
     this.syncInert();
     return shown;
   }
@@ -225,7 +250,10 @@ export class DungeonScene implements Scene {
     switch (r.kind) {
       case 'ignored': return;
       case 'blocked': s.bump?.(); break;
-      case 'moved': s.step?.(); break;
+      case 'moved':
+        s.step?.();
+        if (this.ctx.game.finaleWaiting) { this.refresh(); void this.finaleWait(); return; }
+        break;
       case 'entrance': s.step?.(); this.refresh(); this.askTown(); return;
       case 'floor': s.stairs?.(); this.refresh(); this.say(T.map.floor(r.floor, FLOORS[this.ctx.game.terrain(r.floor) - 1].name)); return;
       case 'stairs': s.step?.(); this.refresh(); this.push(stairsLayer(this.host(), r, () => this.descend())); return;
@@ -239,21 +267,111 @@ export class DungeonScene implements Scene {
         this.say(r.effect === 'hurt' ? T.ui2.event.trap.hurt(r.amount) : T.ui2.event.trap.poison(r.amount, r.tp));
         return;
       case 'key': s.chest?.(); this.refresh(); this.say(T.ui2.event.key); return;
+      case 'glimmer': s.chest?.(); this.refresh(); void this.found(r.gained); return;
       case 'full': this.refresh(); showPickUp(this.host(), r); return;
-      case 'battle': case 'boss': {
-        s.encounter?.();
-        this.leaving = true;
-        this.root.setAttribute('inert', '');
-        // A flash and closing bars before the battle (red for the boss); skipped in fast mode.
-        const wipe = el('div', { class: r.kind === 'boss' ? 'slx-encounter slx-encounter-boss' : 'slx-encounter', attrs: { 'aria-hidden': 'true' } },
-          [0, 1, 2, 3, 4, 5].map((i) => el('span', { class: `slx-enc-bar slx-enc-bar-${i}` })));
-        this.body.append(wipe);
-        if (this.ctx.fast) this.ctx.go('battle');
-        else setTimeout(() => this.ctx.go('battle'), ENCOUNTER_MS);
-        return;
-      }
+      case 'rescue': { void this.meeting(r.who); return; }
+      case 'battle': case 'boss': this.fightOn(r.kind === 'boss'); return;
     }
     this.refresh();
+  }
+
+  /** What a glimmer held, one line at a time, then the memory scene of a piece that plays now. A glimmer always holds a piece or a shard. */
+  private async found(gained: FragmentGain[]): Promise<void> {
+    for (const line of fragmentLines(gained)) {
+      await this.say(line);
+      if (this.exited) return;
+    }
+    for (const g of gained) {
+      if (g.kind !== 'piece' || !g.play) continue;
+      await this.memory(memScene(g.id, g.n));
+      if (this.exited) return;
+    }
+  }
+
+  /**
+   * Plays one memory scene and records it, with the pad out of the way (the portrait stands over it). A scene that fails
+   * is reported in the console and the labyrinth carries on: it must never lock the screen.
+   */
+  private async memory(id: SceneId): Promise<void> {
+    this.hideHud(true);
+    try {
+      const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
+      this.playing = p;
+      await p.done;
+    } catch (e) {
+      console.error('starlantern: memory scene failed', e);
+    } finally {
+      this.playing = null;
+      this.hideHud(false);
+      this.syncInert();
+    }
+  }
+
+  /** The pad and the two text lines under the dialogue box step aside while a scene plays. */
+  private hideHud(on: boolean): void {
+    for (const e of [this.pad, this.weightEl, this.hintEl]) e.classList.toggle('slx-cmd-hidden', on);
+  }
+
+  /** Memory scenes the game still holds as due: leaving the floor drops them, so they play before the party goes. */
+  private waitingMemories(): SceneId[] {
+    return this.ctx.game.pending.filter((id) => sceneKind(id) === 'memory');
+  }
+
+  private async flushPending(): Promise<void> {
+    for (const id of this.waitingMemories()) {
+      await this.memory(id);
+      if (this.exited) return;
+    }
+  }
+
+  /** Runs `go` now, or once the memories still waiting have played. */
+  private beforeLeaving(go: () => void): void {
+    if (this.waitingMemories().length === 0) { go(); return; }
+    void this.flushPending().then(() => { if (!this.exited) go(); });
+  }
+
+  /** The finale's room before Rin has made her choice: what is missing is said once and the party stays where it stands. */
+  private async finaleWait(): Promise<void> {
+    this.hideHud(true);
+    try {
+      for (const line of STORY.finaleWait) {
+        const sp = speakerOf(line.who, this.ctx.game.state, this.ctx.art, line.mood);
+        await this.say(line.text, sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined);
+        if (this.exited) return;
+      }
+    } finally {
+      if (!this.exited) this.hideHud(false);
+    }
+  }
+
+  /** A rescue room: its lines one at a time, each with its own speaker, then the fight as for any encounter. */
+  private async meeting(who: Meetable): Promise<void> {
+    this.hideHud(true);
+    let fighting = false;
+    try {
+      for (const line of STORY.meet[who].before) {
+        // Each line has its own speaker: the found line is narration (no plate, no face), hers carry her portrait.
+        const sp = speakerOf(line.who, this.ctx.game.state, this.ctx.art, line.mood);
+        await this.say(line.text, sp.name, sp.face ? { src: sp.face, side: 'left' } : undefined);
+        if (this.exited) return;   // the scene went while a line was waiting: no fight from a scene that is gone
+      }
+      fighting = true;
+      this.fightOn(false);   // the scene leaves for the battle: the lines stay hidden under the closing bars
+    } finally {
+      if (!fighting) this.hideHud(false);
+    }
+  }
+
+  /** A flash and closing bars before the battle (red for the boss); skipped in fast mode. */
+  private fightOn(boss: boolean): void {
+    this.ctx.sfx.encounter?.();
+    this.leaving = true;
+    this.root.setAttribute('inert', '');
+    const wipe = el('div', { class: boss ? 'slx-encounter slx-encounter-boss' : 'slx-encounter', attrs: { 'aria-hidden': 'true' } },
+      [0, 1, 2, 3, 4, 5].map((i) => el('span', { class: `slx-enc-bar slx-enc-bar-${i}` })));
+    this.body.append(wipe);
+    if (this.ctx.fast) this.ctx.go('battle');
+    else setTimeout(() => this.ctx.go('battle'), ENCOUNTER_MS);
   }
 
   /** 前往 on the stairs window: go down and name the new floor, then pay the depth-clear exp in a second line. */
@@ -298,12 +416,12 @@ export class DungeonScene implements Scene {
     this.layers.forEach((l, i) => lock(l.el, busy || i < this.layers.length - 1));
   }
 
-  private list(items: MenuItem[], pick: (it: MenuItem) => void, cls = 'slx-list', title?: string): void {
+  private list(items: MenuItem[], pick: (it: MenuItem) => void, cls = 'slx-list', title?: string, rows = 10): void {
     const v = new MenuView(new Menu(items), {
       pick: (it) => { this.ctx.sfx.confirm(); pick(it); },
       moved: () => this.ctx.sfx.cursor(),
       cancel: () => { this.ctx.sfx.cancel(); this.pop(); },
-    }, 10);
+    }, rows);
     this.push({ el: win(cls, [...(title ? [el('div', { class: 'slx-who', text: title })] : []), v.el]), onAction: (a) => v.onAction(a) });
   }
 
@@ -320,7 +438,8 @@ export class DungeonScene implements Scene {
   private askTown(): void {
     const box = confirmBox(this.bagWarning(T.ui2.dungeon.askTown), (yes) => {
       this.pop();
-      if (yes && this.ctx.game.returnToTown()) { this.leaving = true; this.ctx.go('town'); }
+      if (!yes) return;
+      this.beforeLeaving(() => { if (this.ctx.game.returnToTown()) { this.leaving = true; this.ctx.go('town'); } });
     });
     box.view.menu.setCursor(1);
     box.view.render();
@@ -334,9 +453,14 @@ export class DungeonScene implements Scene {
     const cond = g.run ? CONDITIONS[g.run.condition] : null;
     this.list([
       { id: 'status', label: d.status },
+      { id: 'skills', label: d.skills, disabled: this.casters().length === 0 },
       { id: 'items', label: d.items, disabled: this.usableItems().length === 0 },
+      { id: 'equip', label: d.equip },
+      { id: 'workshop', label: d.workshop },
+      { id: 'formation', label: d.formation },
       { id: 'lamp', label: d.lamp(lamps), disabled: lamps <= 0 },
       ...(cond ? [{ id: 'condition', label: d.conditionItem(cond.name) }] : []),
+      { id: 'handbook', label: d.handbook },
       { id: 'settings', label: T.ui2.title.settings },
       { id: 'close', label: d.close },
     ], (it) => {
@@ -344,20 +468,81 @@ export class DungeonScene implements Scene {
       if (it.id === 'condition' && cond) { this.popAll(); this.say(d.conditionLine(cond.name, cond.desc)); return; }
       if (it.id === 'lamp') { this.askLamp(); return; }
       if (it.id === 'settings') { this.popAll(); this.leaving = true; this.ctx.go('settings'); return; }
+      if (it.id === 'handbook') { this.popAll(); this.leaving = true; this.ctx.go('handbook', 'dungeon'); return; }
+      // The labyrinth modes of the equipment, workshop and formation screens (they read the phase); closing them comes back here.
+      if (it.id === 'equip' || it.id === 'workshop' || it.id === 'formation') { this.popAll(); this.leaving = true; this.ctx.go(it.id); return; }
+      if (it.id === 'skills') { this.skillList(); return; }
       if (it.id === 'items') { this.itemList(); return; }
       this.statusList();
-    }, 'slx-list slx-field-menu');
+    }, 'slx-list slx-field-menu', undefined, FIELD_MENU_ROWS);
+  }
+
+  /** Members on the field who can cast in the field: standing, with a field skill learned. */
+  private casters(): CharacterId[] {
+    const p = this.ctx.game.state.party;
+    return activeIds(p).filter((id) => p.roster[id].hp > 0 && fieldSkills(p.roster[id]).length > 0);
+  }
+
+  /**
+   * 技能: who casts, then which field skill (as they cast it, at the battle price: engine/field fieldCost), then on whom
+   * when the skill takes one target. A skill short of TP, or with nobody to choose, is greyed out.
+   */
+  private skillList(): void {
+    const d = T.ui2.dungeon;
+    const who = this.casters();
+    if (!who.length) { this.say(d.noSkills); return; }
+    const p = this.ctx.game.state.party;
+    this.list(who.map((id) => {
+      const m = p.roster[id];
+      return { id, label: CHARACTERS[id].name, right: `TP ${m.tp}/${statsOf(m).tp}` };
+    }), (c) => {
+      const caster = c.id as CharacterId;
+      const m = p.roster[caster];
+      const as = fromMember(m, Math.max(0, p.grid.indexOf(caster)));
+      const skills = fieldSkills(m).flatMap((sk) => {
+        const def = skillFor(as, sk);
+        if (!def) return [];
+        const cost = fieldCost(m, sk);
+        const choose = def.target === 'ally' || def.target === 'deadAlly';
+        return [{ id: sk, label: def.name, right: T.cmd.tp(cost), disabled: m.tp < cost || (choose && fieldTargets(p, caster, sk).length === 0) }];
+      });
+      this.list(skills, (sk) => {
+        const targets = fieldTargets(p, caster, sk.id);
+        if (!targets.length) { this.cast(caster, sk.id, sk.label); return; }   // the whole party, or the caster: nobody to choose
+        this.list(targets.map((id) => ({ id, label: CHARACTERS[id].name, right: `HP ${p.roster[id].hp}/${statsOf(p.roster[id]).hp}` })),
+          (t) => this.cast(caster, sk.id, sk.label, t.id as CharacterId), 'slx-list', d.castOn(sk.label));
+      }, 'slx-list', d.castWhat(c.label));
+    }, 'slx-list', d.castWho);
+  }
+
+  /**
+   * Casts and says what came of it: the cast, then one line per member healed or raised (as descend's level-ups). A refusal
+   * changes nothing, so the lists stay open under the reason: the player picks again from where they were.
+   */
+  private cast(caster: CharacterId, skill: string, name: string, target?: CharacterId): void {
+    const d = T.ui2.dungeon;
+    const r = this.ctx.game.castInField(caster, skill, target);
+    if (!r.ok) { this.ctx.sfx.error(); this.say(T.reasons[r.reason] ?? T.reasons.invalid); return; }
+    this.popAll();
+    this.ctx.sfx.heal?.();
+    this.refresh();
+    const lines = [d.cast(CHARACTERS[caster].name, name),
+      ...r.gains.map((g) => (g.revived ? d.revived(CHARACTERS[g.id].name) : d.healed(CHARACTERS[g.id].name, g.hp)))];
+    this.say(lines.join('\n'));
   }
 
   private askLamp(): void {
     const g = this.ctx.game;
     const box = confirmBox(this.bagWarning(T.ui2.dungeon.askLamp), (yes) => {
       this.pop();
-      if (!yes || !g.useReturnLamp()) return;
-      g.notice = 'lamp';
-      this.popAll();
-      this.leaving = true;
-      this.ctx.go('town');
+      if (!yes) return;
+      this.beforeLeaving(() => {
+        if (!g.useReturnLamp()) return;
+        g.notice = 'lamp';
+        this.popAll();
+        this.leaving = true;
+        this.ctx.go('town');
+      });
     });
     box.view.menu.setCursor(1);
     box.view.render();
@@ -378,7 +563,8 @@ export class DungeonScene implements Scene {
     this.list(items, (it) => {
       const p = this.ctx.game.state.party;
       const dead = ITEMS[it.id].target === 'deadAlly';
-      this.list(p.recruited.map((id) => ({
+      // Only who is on the field: the bench waits in town.
+      this.list(activeIds(p).map((id) => ({
         id, label: CHARACTERS[id].name, right: `${p.roster[id].hp}/${statsOf(p.roster[id]).hp}`, disabled: dead !== (p.roster[id].hp <= 0),
       })), (who) => {
         const r = this.ctx.game.apply(useFieldItem(this.ctx.game.state, it.id, who.id as CharacterId));

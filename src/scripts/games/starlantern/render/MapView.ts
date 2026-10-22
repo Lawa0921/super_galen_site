@@ -7,14 +7,8 @@ import { fogState } from './fog';
 import { MARKER_GLYPH, markersOf, type MarkerKind } from './markers';
 import type { TextureBank } from './textures';
 
-const COLORS: Partial<Record<Tile, number>> = {
-  wall: 0x2a2d3a, floor: 0x5b6150, door: 0x9c6644, up: 0x8ecae6, down: 0x219ebc, chest: 0xe9c46a, entrance: 0x90be6d, boss: 0xd62828,
-};
+/** The fog's own dark, under the fog art (and alone until that art lands). */
 const FOG = 0x05060a;
-/** Fill colour for a tile without art; kinds with no colour of their own (fountain, trap, ...) show plain floor. */
-export function tileColor(t: Tile, opened: boolean): number {
-  return COLORS[opened ? 'floor' : t] ?? COLORS.floor!;
-}
 /** Remembered tiles are drawn darker so the area around the party stands out. */
 const MEMORY_TINT = 0x6a6e86;
 /** Screen pixels per map cell; the view follows the party instead of shrinking the whole floor to fit. */
@@ -23,15 +17,10 @@ export const MAP_CELL = 48;
 const FOG_PAD = 14;
 const HOP_FRAMES = 10;
 /** Tile kinds that stand on plain floor: the floor is drawn under them and a marker on top. */
-const ON_FLOOR = new Set<Tile>(['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key']);
+const ON_FLOOR = new Set<Tile>(['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue', 'glimmer']);
 /** Text marker colours: danger in red, everything else in the UI gold. */
 const GLYPH_FILL: Partial<Record<MarkerKind, number>> = { elite: 0xff8a6a, trap: 0xff7a6b };
 const GLYPH_FONT = ['Cubic 11', 'Noto Sans TC', 'Microsoft JhengHei', 'sans-serif'];
-
-function dim(color: number): number {
-  const r = (color >> 16) & 0xff, g = (color >> 8) & 0xff, b = color & 0xff;
-  return (Math.floor(r * 0.45) << 16) | (Math.floor(g * 0.45) << 8) | Math.floor(b * 0.5);
-}
 
 /**
  * The labyrinth from above: large cells, one seamless fog over everything unexplored, and a camera that keeps the party
@@ -53,8 +42,10 @@ export class MapView {
   private clock = 0;
   private bright = 0;
   private marker = new Container();
-  private dot = new Graphics();
   private icon = new Sprite();
+  /** Art the last draw wanted but did not have: when one lands, the view draws itself again (no placeholder meanwhile). */
+  private missing = new Set<string>();
+  private last: { game: Game; size: { width: number; height: number } } | null = null;
   private target = { x: 0, y: 0 };
   private view = { width: 640, height: 296 };
   private hop = 0;
@@ -63,10 +54,18 @@ export class MapView {
 
   /** `calm`: reduced motion, no hop while walking. */
   constructor(private bank: TextureBank | null = null, private calm = false) {
-    this.marker.addChild(this.dot, this.icon);
+    this.marker.addChild(this.icon);
     this.marks.label = 'markers';
     this.world.addChild(this.tiles, this.edges, this.marks, this.marker);
     this.root.addChild(this.world);
+    this.bank?.onLoad?.((u) => { if (this.missing.has(u) && this.last) this.draw(this.last.game, this.last.size); });
+  }
+
+  /** A texture from the bank, noting a missing one so its arrival redraws the view. */
+  private want(url: string): Texture | null {
+    const t = this.bank?.get(url) ?? null;
+    if (!t) this.missing.add(url);
+    return t;
   }
 
   /** Sprites with a given label on the last draw (for tests). */
@@ -101,12 +100,14 @@ export class MapView {
 
   draw(game: Game, size: { width: number; height: number }): void {
     this.view = size;
+    this.last = { game, size };
+    this.missing.clear();
     const map = game.map();
     const cell = MAP_CELL;
     const seen = new Set(game.run?.explored[game.floor] ?? []);
     const terrain = game.terrain();
     const fresh = this.drawn !== map || !this.fogLayer;   // first draw or a new floor: no slide from elsewhere
-    const fogArrived = this.fogLayer instanceof Graphics && !!this.bank?.get(art.fog);   // the art streamed in after the first draw
+    const fogArrived = this.fogLayer instanceof Graphics && !!this.want(art.fog);   // the art streamed in after the first draw
     if (fresh || fogArrived) this.layFog(map.width, map.height);
     this.drawn = map;
     const sight = game.run ? CONDITIONS[game.run.condition].sight : 1;
@@ -121,24 +122,21 @@ export class MapView {
         const t: Tile = ON_FLOOR.has(raw) ? 'floor' : raw;   // event tiles: floor first, the marker on top
         const opened = t === 'chest' && !!game.run?.opened.has(`${game.floor}:${x},${y}`);
         const wall = t === 'wall' ? this.wallSprite(map, terrain, x, y) : null;
-        const tex = wall ? null : this.bank?.get(art.tile(terrain, tileKey(t, opened))) ?? null;
+        const tex = wall ? null : this.want(art.tile(terrain, tileKey(t, opened)));
+        // A cell whose art has not landed is left to the fog underneath: no colour square stands in for it.
         if (wall || tex) {
           const s = wall ?? this.cellSprite(tex!, x, y, cell);
           if (!wall) s.label = t;
           if (state === 'memory') s.tint = MEMORY_TINT;
           this.tiles.addChild(s);
-        } else {
-          const color = tileColor(t, opened);
-          const g = new Graphics().rect(x * cell, y * cell, cell, cell).fill(state === 'memory' ? dim(color) : color);
-          this.tiles.addChild(g);
         }
       }
     }
     this.drawEdges(game, seen);
     this.drawWallShadows(game, seen);
     this.drawMarkers(game, seen, sight);
-    const tex = this.bank?.get(art.party(game.facing)) ?? null;
-    this.dot.clear();
+    const tex = this.want(art.party(game.facing));
+    // No drawn dot stands in for the party's art; it shows once the art lands.
     this.icon.visible = !!tex;
     if (tex) {
       this.icon.texture = tex;
@@ -146,8 +144,6 @@ export class MapView {
       this.icon.scale.set(k);
       this.icon.anchor.set(0.5, 1);
       this.icon.x = cell / 2; this.icon.y = cell * 0.95;
-    } else {
-      this.dot.circle(cell / 2, cell / 2, cell * 0.35).fill(0xffd166).stroke({ width: 2, color: 0x1d1d1d });
     }
     const tx = game.pos.x * cell, ty = game.pos.y * cell;
     const far = fresh || Math.abs(tx - this.marker.x) > cell * 1.5 || Math.abs(ty - this.marker.y) > cell * 1.5;
@@ -171,7 +167,7 @@ export class MapView {
       if (m.kind === 'chest' && chestArt && !m.waiting) continue;
       const memory = fogState(seen, game.pos, m.x, m.y, sight) === 'memory';
       const cx = m.x * cell + cell / 2, cy = m.y * cell + cell / 2;
-      const tex = m.kind === 'chest' ? null : this.bank?.get(art.eventTile(m.kind)) ?? null;
+      const tex = m.kind === 'chest' || m.kind === 'rescue' || m.kind === 'glimmer' ? null : this.bank?.get(art.eventTile(m.kind)) ?? null;   // no art for these: text marker
       if (tex) {
         const s = new Sprite(tex);
         s.anchor.set(0.5);
@@ -207,8 +203,8 @@ export class MapView {
    * seamless top. Without it, null (the single wall tile is drawn instead).
    */
   private wallSprite(map: FloorMap, terrain: number, x: number, y: number): Sprite | null {
-    const top = this.bank?.get(art.wallTop(terrain)) ?? null;
-    const face = this.bank?.get(art.wallFace(terrain)) ?? null;
+    const top = this.want(art.wallTop(terrain));
+    const face = this.want(art.wallFace(terrain));
     if (!top || !face) return null;
     const below = y + 1 < map.height ? map.tiles[y + 1][x] : 'wall';
     const s = this.cellSprite(below === 'wall' ? top : face, x, y, MAP_CELL);
@@ -307,6 +303,7 @@ export class MapView {
       this.fogLayer = f;
     } else {
       this.fogLayer = new Graphics().rect(x, y, width, height).fill(FOG);
+      this.fogLayer.label = 'fog';
     }
     this.world.addChildAt(this.fogLayer, 0);
   }
@@ -339,7 +336,6 @@ export class MapView {
       b.s.alpha = 0.88 + Math.sin(w * 0.8) * 0.12;
     }
     const lift = Math.sin((this.hop / HOP_FRAMES) * Math.PI) * MAP_CELL * 0.12;
-    this.dot.y = -lift;
     this.icon.y = MAP_CELL * 0.95 - lift;
     this.follow();
   }

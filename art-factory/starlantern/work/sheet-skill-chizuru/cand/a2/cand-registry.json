@@ -1,0 +1,622 @@
+{
+  "assets": {
+    "icon-spiral-spear": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-spiral-spear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-thousand-spear": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-thousand-spear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          34,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-sacred-sake": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-sacred-sake.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          32,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-great-barrier": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-great-barrier.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 15,
+        "size": [
+          33,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-thunder-thrust": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-thunder-thrust.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          32,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-heaven-spear": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-heaven-spear.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 14,
+        "size": [
+          35,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-spiral-spear-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-spiral-spear-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.592,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 30.714,
+        "scale": 30.714,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "spiral-spear"
+      }
+    },
+    "icon-spiral-spear-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-spiral-spear-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.576,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 35.833,
+        "scale": 35.833,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "spiral-spear"
+      }
+    },
+    "icon-thousand-spear-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-thousand-spear-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 13,
+          "mass": 0.52,
+          "box": [
+            1,
+            2,
+            15,
+            15
+          ],
+          "centre_off": 0.5
+        },
+        "block": 32.286,
+        "scale": 32.286,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "thousand-spear"
+      }
+    },
+    "icon-thousand-spear-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-thousand-spear-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 11,
+          "mass": 0.562,
+          "box": [
+            1,
+            2,
+            13,
+            13
+          ],
+          "centre_off": 0.5
+        },
+        "block": 37.667,
+        "scale": 37.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "thousand-spear"
+      }
+    },
+    "icon-sacred-sake-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-sacred-sake-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 13,
+          "short": 12,
+          "mass": 0.439,
+          "box": [
+            2,
+            2,
+            14,
+            15
+          ],
+          "centre_off": 0.5
+        },
+        "block": 30.786,
+        "scale": 30.786,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "sacred-sake"
+      }
+    },
+    "icon-sacred-sake-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-sacred-sake-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 11,
+          "mass": 0.465,
+          "box": [
+            1,
+            1,
+            12,
+            13
+          ],
+          "centre_off": 0.5
+        },
+        "block": 35.917,
+        "scale": 35.917,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "sacred-sake"
+      }
+    },
+    "icon-great-barrier-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-great-barrier-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.699,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 33.286,
+        "scale": 33.286,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "great-barrier"
+      }
+    },
+    "icon-great-barrier-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-great-barrier-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.701,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 38.833,
+        "scale": 38.833,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "great-barrier"
+      }
+    },
+    "icon-thunder-thrust-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-thunder-thrust-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.485,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.214,
+        "scale": 31.214,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "thunder-thrust"
+      }
+    },
+    "icon-thunder-thrust-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-thunder-thrust-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.486,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 36.417,
+        "scale": 36.417,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "thunder-thrust"
+      }
+    },
+    "icon-heaven-spear-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-heaven-spear-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.658,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 33.143,
+        "scale": 33.143,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "heaven-spear"
+      }
+    },
+    "icon-heaven-spear-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-chizuru/cand/a2/icon-heaven-spear-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.66,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 38.667,
+        "scale": 38.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-chizuru\\sheet-skill-chizuru-a2.png",
+        "cell": "heaven-spear"
+      }
+    }
+  }
+}

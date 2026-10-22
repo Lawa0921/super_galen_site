@@ -7,10 +7,13 @@ import { enhanceChance, enhanceCost, fuseCost, fuseSlots, rerollCost, rerollRang
 import { AFFIXES, GEAR_SLOTS, ROLL_FLOOR, SPECIALS, affixRange, generalLegendaries } from '../../data/gear';
 import { FUSE_GOLD, FUSE_SLOT_COST, REGION_AFFIX_GROUP, REROLL } from '../../data/forge';
 import { BAG_SIZE } from '../loot/bag';
-import { itemSlot } from '../loot/item';
+import { itemSlot, maxValue, rollItem } from '../loot/item';
+import { mulberry32 } from '../rng';
+import { craftSet } from './craft';
+import { MATERIALS } from '../../data/materials';
 import { statsOf } from '../party';
 import type { GameState } from '../state';
-import { STARTING_RECRUITS } from '../party';
+import { LEGACY_LINEUP } from '../party';
 import type { ItemInstance, Rarity } from '../types';
 
 const at = (rarity: Rarity, uid: number): ItemInstance => ({ ...plainItem('moss-charm', uid), rarity });
@@ -19,7 +22,7 @@ const sum = (rs: Rarity[]) => {
   for (const r of rs) for (const [k, v] of Object.entries(DISMANTLE[r])) out[k] = (out[k] ?? 0) + v;
   return out;
 };
-const withBag = (bag: ItemInstance[]) => ({ ...newGame(), bag, nextUid: 100 });
+const withBag = (bag: ItemInstance[]) => ({ ...newGame(undefined, 0, LEGACY_LINEUP), bag, nextUid: 100 });
 
 describe('dismantle', () => {
   it('dismantling yields DISMANTLE by rarity and removes the items', () => {
@@ -41,7 +44,7 @@ describe('dismantle', () => {
   });
   it('a worn uid or a duplicate is refused and nothing changes', () => {
     const s = withBag([at('magic', 1)]);
-    s.party.roster[STARTING_RECRUITS[0]].equip.ring1 = at('rare', 2);
+    s.party.roster[LEGACY_LINEUP[0]].equip.ring1 = at('rare', 2);
     const before = structuredClone(s);
     expect(dismantle(s, [2])).toEqual({ ok: false, reason: 'stock' });
     expect(dismantle(s, [1, 2])).toEqual({ ok: false, reason: 'stock' });
@@ -130,7 +133,7 @@ describe('enhance', () => {
   it('a worn item is enhanced in place on its wearer', () => {
     const s = rich(lv(2, 7));
     s.bag = [];
-    const m = STARTING_RECRUITS[0];
+    const m = LEGACY_LINEUP[0];
     s.party.roster[m].equip.ring1 = lv(2, 7);
     const r = enhance(s, 7);
     expect(r.ok && r.state.party.roster[m].equip.ring1?.enhance).toBe(3);
@@ -286,7 +289,7 @@ describe('reroll', () => {
     expect(s.forgeDraws).toBe(before.forgeDraws);
   });
   it('rerolling worn hp down holds HP at the new maximum', () => {
-    const m = STARTING_RECRUITS[0];
+    const m = LEGACY_LINEUP[0];
     const s = stocked(gear());
     s.bag = [];
     s.party.roster[m].equip.neck = gear({ affixes: [{ key: 'hp', value: 500 }, { key: 'str', value: 1 }, { key: 'spd', value: 1 }] });
@@ -392,7 +395,7 @@ describe('fuse', () => {
   });
   it('mixed rarities, two items, a worn uid or a set piece are refused and nothing changes', () => {
     const s = funded([...trio('common', [3, 3, 3]), { ...at('magic', 4) }, { ...at('legendary', 5) }, { ...at('set', 6) }, { ...at('unique', 7) }, { ...at('common', 8) }]);
-    s.party.roster[STARTING_RECRUITS[0]].equip.ring1 = at('common', 50);
+    s.party.roster[LEGACY_LINEUP[0]].equip.ring1 = at('common', 50);
     const before = structuredClone(s);
     expect(fuse(s, [1, 2, 4])).toEqual({ ok: false, reason: 'invalid' });
     expect(fuse(s, [1, 2])).toEqual({ ok: false, reason: 'invalid' });
@@ -459,5 +462,99 @@ describe('fuse', () => {
       expect(fuse(s, [1, 2, 3])).toEqual({ ok: false, reason: 'invalid' });
       expect(s).toEqual(before);
     }
+  });
+});
+
+describe('epic and starlit at the forge (plan 5g)', () => {
+  const stocked = (bag: ItemInstance[]): GameState => {
+    const s = withBag(bag);
+    s.gold = 1_000_000;
+    s.inventory = Object.fromEntries(Object.keys(MATERIALS).map((m) => [m, 500]));
+    return s;
+  };
+  const lit = (special: string, uid = 1): ItemInstance =>
+    ({ ...rollItem(mulberry32(uid), { uid, ilvl: 20, rarity: SPECIALS[special].rarity, special }), starlit: true });
+
+  it('a starlit value reroll is refused and changes nothing', () => {
+    const s = stocked([lit('lg-noel')]);
+    const before = structuredClone(s);
+    expect(reroll(s, 1, 0, { swap: false })).toEqual({ ok: false, reason: 'invalid' });
+    expect(s).toEqual(before);
+    expect(s.forgeDraws).toBe(0);
+  });
+
+  it('a starlit swap lands at the maximum and draws once', () => {
+    for (let i = 0; i < 50; i++) {
+      const s = stocked([lit('lg-noel')]);
+      s.forgeDraws = i;
+      const r = reroll(s, 1, 0, { swap: true });
+      if (!r.ok) throw new Error('refused');
+      expect(r.out.after.value).toBe(maxValue(r.out.after.key, 20));
+      expect(r.state.bag[0].affixes[0]).toEqual(r.out.after);
+      expect(r.state.bag[0].starlit).toBe(true);
+      expect(r.state.forgeDraws).toBe(i + 1);
+    }
+    // the swap takes one number from its rng: the key; never a value
+    const s = stocked([lit('lg-noel')]);
+    let n = 0;
+    const r = reroll(s, 1, 0, { swap: true }, () => { n++; return 0.5; });
+    expect(r.ok).toBe(true);
+    expect(n).toBe(1);
+  });
+
+  it('a starlit unique or set cannot be rerolled at all', () => {
+    const unique = Object.values(SPECIALS).find((x) => x.rarity === 'unique')!.id;
+    for (const id of [unique, 'set-blaze-ring']) {
+      const s = stocked([lit(id)]);
+      const before = structuredClone(s);
+      expect(reroll(s, 1, 0, { swap: false }), id).toEqual({ ok: false, reason: 'invalid' });
+      expect(reroll(s, 1, 0, { swap: true }), id).toEqual({ ok: false, reason: 'invalid' });
+      expect(s).toEqual(before);
+    }
+  });
+
+  it('rerollRange of a starlit piece is [max, max]; the same piece unlit is unchanged', () => {
+    const it = lit('lg-noel');
+    for (let i = 0; i < it.affixes.length; i++) {
+      const max = maxValue(it.affixes[i].key, it.ilvl);
+      expect(rerollRange(it, i)).toEqual([max, max]);
+      const { starlit: _s, ...plain } = it;
+      const [alo, ahi] = affixRange(it.affixes[i].key, it.ilvl);
+      expect(rerollRange(plain, i)).toEqual([Math.max(1, Math.round(alo + (ahi - alo) * ROLL_FLOOR.legendary)), Math.max(1, Math.round(ahi))]);
+    }
+    expect(rerollRange(it, it.affixes.length)).toBeNull();
+  });
+
+  it('three epics do not fuse', () => {
+    const s = stocked([at('epic', 1), at('epic', 2), at('epic', 3)]);
+    const before = structuredClone(s);
+    expect(fuse(s, [1, 2, 3])).toEqual({ ok: false, reason: 'invalid' });
+    expect(s).toEqual(before);
+  });
+
+  it('fusion and set crafting never make a starlit piece', () => {
+    for (let i = 0; i < 200; i++) {
+      const s = stocked([at('rare', 1), at('rare', 2), at('rare', 3)]);
+      s.forgeDraws = i;
+      const r = fuse(s, [1, 2, 3]);
+      if (!r.ok) throw new Error('refused');
+      expect('starlit' in r.out.item).toBe(false);
+    }
+    for (let i = 0; i < 50; i++) {
+      const s = stocked([]);
+      s.dungeon.reached.mainline = 10;
+      s.forgeDraws = i;
+      const r = craftSet(s, 'set-blaze-ring');
+      if (!r.ok) throw new Error(`refused ${r.reason}`);
+      expect('starlit' in r.out.item).toBe(false);
+    }
+  });
+
+  it('an epic dismantles into DISMANTLE.epic', () => {
+    const s = withBag([at('epic', 1)]);
+    s.inventory = {};
+    const r = dismantle(s, [1]);
+    expect(r.ok && r.out.essences).toEqual(DISMANTLE.epic);
+    expect(r.ok && r.state.inventory).toEqual({ 'essence-rare': 2 });
   });
 });

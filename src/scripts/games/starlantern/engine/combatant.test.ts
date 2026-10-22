@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { addBuff, calcDamage, dealDamage, roll, stat, MAX_BUFFS, type BattleEvent } from './combatant';
+import { addBuff, calcDamage, dealDamage, hitAmount, roll, rollHit, stat, MAX_BUFFS, type BattleEvent, type DamageSpec, type HitRolls } from './combatant';
 import { applyEffect } from './skills';
 import { constRng, makeCombatant } from './testing';
+import { mulberry32 } from './rng';
+import { calcDamagePreSplit } from './__fixtures__/calcDamage.pre-split';
 import { KEYSTONE_VALUES as V } from '../data/talents';
 import type { Combatant } from './combatant';
 
@@ -35,6 +37,39 @@ describe('calcDamage', () => {
   it('never deals less than 1', () => {
     const tank = makeCombatant({ key: 'k', side: 'enemy', max: { def: 9999 } as never });
     expect(calcDamage(a, tank, phys, rng).amount).toBe(1);
+  });
+});
+
+describe('calcDamage always-crit, execute and wounded', () => {
+  const counting = () => { let n = 0; const f = () => { n++; return 0.5; }; return { f, count: () => n }; };
+  const t = makeCombatant({ key: 't', side: 'enemy' });
+  const mk = (x: Combatant['x']) => makeCombatant({ key: 'a', side: 'party', x });
+  it('crit always crits and draws no crit roll', () => {
+    const a = mk({ crit: 0, critDmg: 50 });
+    const plain = calcDamage(a, t, phys, rng);
+    const always = calcDamage(a, t, { ...phys, crit: 'always' }, rng);
+    expect(always.crit).toBe(true);
+    expect(always.amount).toBeGreaterThan(plain.amount);
+    expect(Math.abs(always.amount - Math.floor(plain.amount * 1.5))).toBeLessThanOrEqual(1);
+    const c1 = counting(); calcDamage(mk({ crit: 50, critDmg: 50 }), t, phys, c1.f);
+    const c2 = counting(); calcDamage(a, t, { ...phys, crit: 'always' }, c2.f);
+    expect(c1.count() - c2.count()).toBe(1);
+  });
+  it("execute scales with the target's missing HP", () => {
+    const a = mk({});
+    const full = calcDamage(a, t, { ...phys, power: 300, execute: 100 }, rng).amount;
+    const half = calcDamage(a, { ...t, hp: 50 }, { ...phys, power: 300, execute: 100 }, rng).amount;
+    expect(Math.abs(half - Math.floor(full * 1.5))).toBeLessThanOrEqual(1);
+    expect(half).toBeGreaterThan(full);
+  });
+  it('wounded adds only when the target is hurt', () => {
+    const a = mk({});
+    const spec = { ...phys, power: 300, wounded: 50 };
+    const base = calcDamage(a, t, { ...phys, power: 300 }, rng).amount;
+    expect(calcDamage(a, t, spec, rng).amount).toBe(base);
+    const hurt = calcDamage(a, { ...t, hp: t.max.hp - 1 }, spec, rng).amount;
+    expect(Math.abs(hurt - Math.floor(base * 1.5))).toBeLessThanOrEqual(1);
+    expect(hurt).toBeGreaterThan(base);
   });
 });
 
@@ -196,6 +231,41 @@ describe('buffs', () => {
     for (const s of ['atk', 'def', 'spd', 'res'] as const) addBuff(c, { stat: s, pct: 10, turns: 3 });
     expect(c.buffs.map((b) => b.stat)).toEqual(['def', 'spd', 'res']);
   });
+  it('a weaker buff keeps the stronger one and lengthens it', () => {
+    const c = makeCombatant({ key: 'a', side: 'party' });
+    addBuff(c, { stat: 'atk', pct: 30, turns: 1, src: 'a' });
+    addBuff(c, { stat: 'atk', pct: 20, turns: 3, src: 'b' });
+    expect(c.buffs).toEqual([{ stat: 'atk', pct: 30, turns: 3, src: 'a' }]);
+  });
+  it('a stronger buff replaces the weaker one and keeps the longer time', () => {
+    const c = makeCombatant({ key: 'a', side: 'party' });
+    addBuff(c, { stat: 'atk', pct: 20, turns: 3, src: 'a' });
+    addBuff(c, { stat: 'atk', pct: 30, turns: 1, src: 'b' });
+    expect(c.buffs).toEqual([{ stat: 'atk', pct: 30, turns: 3, src: 'b' }]);
+  });
+  it('the deeper debuff wins', () => {
+    const c = makeCombatant({ key: 'a', side: 'enemy' });
+    addBuff(c, { stat: 'def', pct: -20, turns: 3, src: 'a' });
+    addBuff(c, { stat: 'def', pct: -40, turns: 2, src: 'b' });
+    expect(c.buffs).toEqual([{ stat: 'def', pct: -40, turns: 3, src: 'b' }]);
+    const d = makeCombatant({ key: 'b', side: 'enemy' });
+    addBuff(d, { stat: 'def', pct: -40, turns: 2, src: 'a' });
+    addBuff(d, { stat: 'def', pct: -20, turns: 3, src: 'b' });
+    expect(d.buffs).toEqual([{ stat: 'def', pct: -40, turns: 3, src: 'a' }]);
+  });
+  it('a buff and a debuff of one stat still sit side by side', () => {
+    const c = makeCombatant({ key: 'a', side: 'party' });
+    addBuff(c, { stat: 'atk', pct: 20, turns: 3 });
+    addBuff(c, { stat: 'atk', pct: -25, turns: 2 });
+    expect(c.buffs).toEqual([{ stat: 'atk', pct: 20, turns: 3 }, { stat: 'atk', pct: -25, turns: 2 }]);
+  });
+  it('the kept buff stays where it was in the list', () => {
+    const c = makeCombatant({ key: 'a', side: 'party' });
+    addBuff(c, { stat: 'atk', pct: 30, turns: 1 });
+    addBuff(c, { stat: 'def', pct: 10, turns: 2 });
+    addBuff(c, { stat: 'atk', pct: 40, turns: 2 });
+    expect(c.buffs).toEqual([{ stat: 'atk', pct: 40, turns: 2 }, { stat: 'def', pct: 10, turns: 2 }]);
+  });
 });
 
 describe('dealDamage', () => {
@@ -204,10 +274,15 @@ describe('dealDamage', () => {
     dealDamage(c, 5);
     expect([c.hp, c.sleep, c.alive]).toEqual([95, 0, true]);
   });
+  it('a tick does not wake a sleeper', () => {
+    const c = makeCombatant({ key: 'a', side: 'party', sleep: 2 });
+    expect(dealDamage(c, 5, { dot: true })).toBe(5);
+    expect([c.hp, c.sleep, c.alive]).toEqual([95, 2, true]);
+  });
   it('knocks out at 0 and clears statuses', () => {
     const c = makeCombatant({ key: 'a', side: 'party', poison: true, taunt: 2, buffs: [{ stat: 'atk', pct: 10, turns: 2 }] });
     dealDamage(c, 500);
-    expect(c).toMatchObject({ hp: 0, alive: false, poison: false, taunt: 0, buffs: [], turret: null });
+    expect(c).toMatchObject({ hp: 0, alive: false, poison: false, taunt: 0, buffs: [] });
   });
 });
 
@@ -225,5 +300,81 @@ describe('keystones in calcDamage', () => {
     expect(calcDamage(foe, m({ taunt: 2, keystones: ['taunt-guard'] }), phys, rng).amount).toBe(Math.floor(20 * (1 - V.tauntGuardPct / 100)));
     expect(calcDamage(foe, m({ keystones: ['taunt-guard'] }), phys, rng).amount).toBe(20);   // not taunting
     expect(calcDamage(foe, m({ taunt: 2 }), phys, rng).amount).toBe(20);                      // no keystone
+  });
+});
+
+describe('rollHit and hitAmount', () => {
+  /** A seeded rng that counts its draws. */
+  const counting = (seed: number) => {
+    const r = mulberry32(seed);
+    const c = { n: 0, rng: () => { c.n++; return r(); } };
+    return c;
+  };
+  /** A random fighter of `side` from `g`: stats, secondaries, buffs, stance and keystones that touch the formula. */
+  const fighter = (g: () => number, key: string, side: Combatant['side']): Combatant => {
+    const n = (lo: number, hi: number) => lo + Math.floor(g() * (hi - lo + 1));
+    const maybe = (p: number) => g() < p;
+    const hp = n(20, 500);
+    const keystones = (['last-stand', 'carried-out', 'taunt-guard', 'not-a-shield'] as const).filter(() => maybe(0.3));
+    const buffs = [
+      ...(maybe(0.5) ? [{ stat: 'def' as const, pct: n(-40, 40), turns: 2 }] : []),
+      ...(maybe(0.5) ? [{ stat: 'atk' as const, pct: n(-40, 40), turns: 2 }] : []),
+      ...(maybe(0.4) ? [{ stat: 'res' as const, pct: n(-40, 40), turns: 2 }] : []),
+      ...(maybe(0.4) ? [{ stat: 'mag' as const, pct: n(-40, 40), turns: 2 }] : []),
+    ];
+    return makeCombatant({
+      key, side, level: n(1, 50), row: (['front', 'middle', 'back'] as const)[n(0, 2)],
+      max: { hp, tp: 20, atk: n(5, 300), def: n(5, 300), mag: n(5, 300), res: n(5, 300), spd: 10 },
+      hp: n(1, hp), boss: maybe(0.2), tint: maybe(0.2) ? 'elite' : undefined,
+      weak: maybe(0.3) ? ['fire'] : [], resist: maybe(0.2) ? ['fire'] : [],
+      defending: maybe(0.3), taunt: maybe(0.4) ? n(1, 3) : 0, keystones, buffs,
+      x: {
+        crit: maybe(0.6) ? n(0, 60) : 0, critDmg: n(0, 150), block: maybe(0.5) ? n(0, 50) : 0, armor: maybe(0.6) ? n(0, 400) : 0,
+        evasion: maybe(0.5) ? n(0, 300) : 0, meleeDR: n(0, 30), rangedDR: n(0, 30), fireRes: n(-150, 150), fireDmg: n(0, 60),
+        vuln: n(0, 40), eliteDmg: n(0, 40),
+      },
+    });
+  };
+
+  it('rollHit then hitAmount is the pre-split calcDamage, draw for draw', () => {
+    let misses = 0, crits = 0;
+    for (let i = 1; i <= 2000; i++) {
+      const g = mulberry32(i);
+      const aSide = g() < 0.5 ? 'party' : 'enemy';
+      const a = fighter(g, 'a', aSide);
+      const t = fighter(g, 't', aSide === 'party' ? 'enemy' : 'party');
+      const spec: DamageSpec = {
+        power: 30 + Math.floor(g() * 300), element: g() < 0.5 ? 'phys' : 'fire', scale: g() < 0.5 ? 'atk' : 'mag', melee: g() < 0.5,
+        ...(g() < 0.15 ? { crit: 'always' as const } : {}),
+        ...(g() < 0.2 ? { execute: Math.floor(g() * 100) } : {}),
+        ...(g() < 0.2 ? { wounded: Math.floor(g() * 60) } : {}),
+      };
+      // The frozen reference (calcDamage as it stood before the split), the split, and today's calcDamage, each on its own copy of one stream.
+      const ref = counting(i * 31), split = counting(i * 31), now = counting(i * 31);
+      const whole = calcDamagePreSplit(a, t, spec, ref.rng);
+      const r = rollHit(a, t, spec, split.rng);
+      expect(split.n, `draws, case ${i}`).toBe(ref.n);
+      expect(calcDamage(a, t, spec, now.rng), `calcDamage, case ${i}`).toEqual(whole);
+      expect(now.n, `calcDamage draws, case ${i}`).toBe(ref.n);
+      if (whole.miss) { misses++; expect(r, `case ${i}`).toBeNull(); continue; }
+      expect(r, `case ${i}`).not.toBeNull();
+      if (whole.crit) crits++;
+      expect({ ...hitAmount(a, t, spec, r!), miss: false }, `case ${i}`).toEqual(whole);
+    }
+    // The cases reach every branch that draws.
+    expect(misses).toBeGreaterThan(50);
+    expect(crits).toBeGreaterThan(50);
+  });
+
+  it('hitAmount draws nothing', () => {
+    const a = makeCombatant({ key: 'a', side: 'party', x: { crit: 50, critDmg: 80 } });
+    const t = makeCombatant({ key: 't', side: 'enemy', x: { block: 50, armor: 100 } });
+    // No rng goes in: the signature has none.
+    expect(hitAmount.length).toBe(4);
+    const r: HitRolls = { variance: 1.05, crit: true, blocked: true };
+    const first = hitAmount(a, t, phys, r);
+    expect(hitAmount(a, t, phys, r)).toEqual(first);
+    expect(first.crit).toBe(true);
+    expect(hitAmount(a, t, phys, { ...r, blocked: false }).amount).toBeGreaterThan(first.amount);
   });
 });

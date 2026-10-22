@@ -1,0 +1,31 @@
+{
+  "pass": false,
+  "reasons": [
+    "subject too narrow",
+    "subject too light"
+  ],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 0,
+  "magenta_spill": 0,
+  "subject": {
+    "long": 22,
+    "short": 12,
+    "mass": 0.401,
+    "box": [
+      7,
+      2,
+      19,
+      24
+    ],
+    "centre_off": 0.0
+  },
+  "block": 18.227,
+  "scale": 18.227,
+  "size": [
+    26,
+    26
+  ]
+}

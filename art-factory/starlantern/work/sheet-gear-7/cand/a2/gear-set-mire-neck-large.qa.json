@@ -1,0 +1,33 @@
+{
+  "pass": false,
+  "reasons": [
+    "subject too light"
+  ],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 1,
+  "magenta_spill": 0,
+  "subject": {
+    "long": 56,
+    "short": 52,
+    "mass": 0.302,
+    "box": [
+      6,
+      4,
+      58,
+      60
+    ],
+    "centre_off": 0.0
+  },
+  "block": 5.321,
+  "scale": 5.321,
+  "size": [
+    64,
+    64
+  ],
+  "spec": "gear-cell:cba070036b9c"
+}

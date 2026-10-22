@@ -1,0 +1,30 @@
+{
+  "assets": {
+    "char-hero-portrait-down": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-hero-portrait-down/cand/a2/char-hero-portrait-down.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-down\\char-hero-portrait-down-a2.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "subject cut by the canvas edge"
+        ],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          125,
+          123
+        ]
+      },
+      "status": "qa_failed"
+    }
+  }
+}

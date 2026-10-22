@@ -1,0 +1,616 @@
+{
+  "assets": {
+    "icon-guardian-roar": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-guardian-roar.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 9,
+        "size": [
+          52,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-unbreakable": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-unbreakable.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-blaze-ring": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-blaze-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          36,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-crimson-end": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-crimson-end.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 13,
+        "size": [
+          36,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-shield-bash": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-shield-bash.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          37,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-fortress": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-fortress.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-guardian-roar-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-guardian-roar-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 8,
+          "mass": 0.403,
+          "box": [
+            1,
+            4,
+            15,
+            12
+          ],
+          "centre_off": 0.0
+        },
+        "block": 32.357,
+        "scale": 32.357,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "guardian-roar"
+      }
+    },
+    "icon-guardian-roar-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-guardian-roar-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 7,
+          "mass": 0.417,
+          "box": [
+            1,
+            4,
+            13,
+            11
+          ],
+          "centre_off": 0.5
+        },
+        "block": 37.75,
+        "scale": 37.75,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "guardian-roar"
+      }
+    },
+    "icon-unbreakable-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-unbreakable-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.724,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 27.214,
+        "scale": 27.214,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "unbreakable"
+      }
+    },
+    "icon-unbreakable-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-unbreakable-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 11,
+          "mass": 0.736,
+          "box": [
+            1,
+            2,
+            13,
+            13
+          ],
+          "centre_off": 0.5
+        },
+        "block": 31.75,
+        "scale": 31.75,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "unbreakable"
+      }
+    },
+    "icon-blaze-ring-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-blaze-ring-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 13,
+          "mass": 0.607,
+          "box": [
+            1,
+            1,
+            15,
+            14
+          ],
+          "centre_off": 0.5
+        },
+        "block": 31.429,
+        "scale": 31.429,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "blaze-ring"
+      }
+    },
+    "icon-blaze-ring-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-blaze-ring-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 11,
+          "mass": 0.653,
+          "box": [
+            1,
+            1,
+            13,
+            12
+          ],
+          "centre_off": 0.5
+        },
+        "block": 36.667,
+        "scale": 36.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "blaze-ring"
+      }
+    },
+    "icon-crimson-end-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-crimson-end-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.602,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.286,
+        "scale": 31.286,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "crimson-end"
+      }
+    },
+    "icon-crimson-end-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-crimson-end-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.583,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 36.5,
+        "scale": 36.5,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "crimson-end"
+      }
+    },
+    "icon-shield-bash-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-shield-bash-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 13,
+          "short": 13,
+          "mass": 0.561,
+          "box": [
+            2,
+            1,
+            15,
+            14
+          ],
+          "centre_off": 0.707
+        },
+        "block": 30.071,
+        "scale": 30.071,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "shield-bash"
+      }
+    },
+    "icon-shield-bash-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-shield-bash-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 10,
+          "mass": 0.542,
+          "box": [
+            1,
+            2,
+            13,
+            12
+          ],
+          "centre_off": 0.0
+        },
+        "block": 35.083,
+        "scale": 35.083,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "shield-bash"
+      }
+    },
+    "icon-fortress-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-fortress-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.719,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 27.857,
+        "scale": 27.857,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "fortress"
+      }
+    },
+    "icon-fortress-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-scarlet/cand/a2/icon-fortress-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.729,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 32.5,
+        "scale": 32.5,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-scarlet\\sheet-skill-scarlet-a2.png",
+        "cell": "fortress"
+      }
+    }
+  }
+}

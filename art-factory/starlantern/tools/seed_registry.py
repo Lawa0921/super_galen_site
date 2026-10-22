@@ -31,7 +31,8 @@ def build():
         put(f'sheet-tiles-f{n}', 'tile-sheet', parts=[f'tile-f{n}-{t}' for t in TILES], cols=3, rows=3)
         for t in TILES: put(f'tile-f{n}-{t}', 'opaque', f'tiles/f{n}-{t}.png')
         put(f'bg-f{n}', 'opaque', f'bg/f{n}.png')
-    for e in ids_in('enemies.ts'): put(f'enemy-{e}', 'sprite', f'enemy/{e}.png')
+    # An enemy with a `look` borrows that character's standee (render/artPaths.ts enemyArt) and has no sprite of its own.
+    for e in ids_in('enemies.ts', r"\bid: '([a-z0-9-]+)'(?![^\n]*\blook: ')"): put(f'enemy-{e}', 'sprite', f'enemy/{e}.png')
     for k in FX: put(f'fx-{k}', 'sprite', f'fx/{k}.png')
     put('ui-frame', 'opaque', 'ui/frame.png')
     # Game UI (plan 3): scenes, NPC busts, logo, window frame and cursor.

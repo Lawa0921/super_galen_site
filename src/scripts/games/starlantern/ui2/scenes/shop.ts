@@ -9,30 +9,41 @@ import { BAG_SIZE } from '../../engine/loot/bag';
 import { rollItem, sellPrice } from '../../engine/loot/item';
 import { activeIds, defaultSlotFor, statsOf } from '../../engine/party';
 import { mulberry32 } from '../../engine/rng';
-import { buy, isUnlocked, junkTotals, sell, sellGear, sellJunk } from '../../engine/town';
+import { buy, isUnlocked, priceOf, junkTotals, sell, sellGear, sellJunk } from '../../engine/town';
 import type { AnyStat } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
-import { gearLabel, invested } from '../loot';
+import { gearIconUrl } from '../gearArt';
+import { gearLabel, invested, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { MenuView, QtyView, confirmBox, win } from '../widgets';
+import { GEAR_ROWS, MenuView, QtyView, confirmBox, win } from '../widgets';
+import { RUNES, RUNE_STACK, parseRuneKey, runeKey, type RuneRef } from '../../data/runes';
+import { bagRunes, runeBuyMax, runeBuyPrice, runeSellMax, runeSellPrice, runeStock } from '../../engine/runeTrade';
+import { bagCount, ownedCount } from '../../engine/sockets';
 import { FacilityScene } from './facility';
 
 export class ShopScene extends FacilityScene {
   constructor(ctx: SceneCtx, cps?: number) { super(ctx, 'shop', cps); }
 
   protected commands(): MenuItem[] {
-    return [{ id: 'buy', label: T.ui2.shop.buy }, { id: 'sell', label: T.ui2.shop.sell }];
+    return [{ id: 'buy', label: T.ui2.shop.buy }, { id: 'sell', label: T.ui2.shop.sell }, { id: 'runes', label: T.ui2.shop.runes }];
   }
 
   protected onCommand(id: string): void {
     if (id === 'buy') this.buyList();
+    else if (id === 'runes') this.runeList();
     else this.sellList();
   }
 
   private icon(id: string): string | undefined {
     return this.ctx.art.has(art.icon(id)) ? art.icon(id) : undefined;
+  }
+
+  /** A base's row icon: its gear art at its own size (plan 5d); the old icon/ paths are all retired. */
+  private gearIcon(id: string): Pick<MenuItem, 'icon' | 'iconCls'> {
+    const icon = gearIconUrl(this.ctx.art, id);
+    return icon ? { icon, iconCls: 'slx-gear-ico' } : {};
   }
 
   private goods(): MenuItem[] {
@@ -42,7 +53,7 @@ export class ShopScene extends FacilityScene {
       const needs = locked ? (g.unlock ?? []).map((u) => `${MATERIALS[u.mat].name}×${u.qty}`).join('、') : '';
       // Every base is a plain (common) piece, which the shared label names without a rarity word; the colour class marks it.
       const gear = 'slot' in g ? { label: gearLabel(rollItem(mulberry32(0), { uid: 0, ilvl: g.ilvl, rarity: 'common', base: g.id })), cls: 'slx-rarity-common' } : { label: g.name };
-      return { id: g.id, ...gear, icon: this.icon(g.id), disabled: locked, right: locked ? T.ui2.shop.needs(needs) : `${g.price} G  ${T.ui2.shop.owned('slot' in g ? s.bag.filter((x) => x.base === g.id).length : (s.inventory[g.id] ?? 0))}` };
+      return { id: g.id, ...gear, ...('slot' in g ? this.gearIcon(g.id) : { icon: this.icon(g.id) }), disabled: locked, right: locked ? T.ui2.shop.needs(needs) : `${priceOf(s, g.id)} G  ${T.ui2.shop.owned('slot' in g ? s.bag.filter((x) => x.base === g.id).length : (s.inventory[g.id] ?? 0))}` };
     });
   }
 
@@ -72,7 +83,7 @@ export class ShopScene extends FacilityScene {
       pick: (it) => this.askQty(it.id, () => { v.menu.items.splice(0, v.menu.items.length, ...this.goods()); if (v.menu.cursor >= v.menu.items.length) v.menu.setCursor(0); v.render(); }),
       moved: () => { this.ctx.sfx.cursor(); show(); },
       cancel: () => { info.remove(); this.pop(); },
-    }, 12);
+    }, GEAR_ROWS);
     show();
     this.stage.append(info);
     this.push({ el: win('slx-list slx-shop-list', [v.el]), onAction: (a) => v.onAction(a) });
@@ -84,7 +95,7 @@ export class ShopScene extends FacilityScene {
   }
 
   private askQty(id: string, after: () => void): void {
-    const price = ITEMS[id]?.price ?? EQUIPMENT[id]?.price ?? 0;
+    const price = priceOf(this.ctx.game.state, id) ?? 0;
     const name = ITEMS[id]?.name ?? EQUIPMENT[id]?.name ?? id;
     const st = this.ctx.game.state;
     const afford = Math.min(99, Math.floor(st.gold / Math.max(1, price)));
@@ -206,7 +217,7 @@ export class ShopScene extends FacilityScene {
     return [
       { id: 'sell-marked', label: T.ui2.shop.sellMarked(marked), disabled: marked === 0 },
       ...bag.map((it) => ({
-        id: `g${it.uid}`, label: gearLabel(it), cls: `slx-rarity-${it.rarity}`,
+        id: `g${it.uid}`, label: gearLabel(it), cls: rarityClass(it),
         right: `${it.junk ? `${T.ui2.shop.marked}  ` : ''}${sellPrice(it)} G`,
       })),
     ];
@@ -246,5 +257,94 @@ export class ShopScene extends FacilityScene {
       cancel: () => this.pop(),
     }, 12);
     this.push({ el: win('slx-list slx-shop-list', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  /**
+   * The rune rows (plan 8f Task 4): first what Orik sells (one grey line before runes are open), then, under a 收購
+   * heading, every rune in the bag by RUNE_IDS and tier. 持有 is `ownedCount` (bag and sockets, plan 8f ruling 13); only the bag's can be sold.
+   */
+  private runeRows(): MenuItem[] {
+    const s = this.ctx.game.state;
+    const stock = runeStock(s);
+    const top: MenuItem[] = stock.length
+      ? stock.map((r) => ({ id: `buy:${runeKey(r)}`, label: T.rune.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }), right: T.rune.buyRight(runeBuyPrice(s, r)!, ownedCount(s, r)) }))
+      : [{ id: 'closed', label: T.rune.fail.closed, disabled: true }];
+    const bag = bagRunes(s);
+    // A heading row (no cursor: the keys pass over it) keeps a rune to buy apart from the same rune to sell.
+    const head: MenuItem[] = bag.length ? [{ id: 'sell-head', label: T.rune.sellHead, disabled: true, cls: 'slx-list-head' }] : [];
+    return [...top, ...head, ...bag.map((r) => ({ id: `sell:${runeKey(r)}`, label: T.rune.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }), right: T.rune.sellRight(runeSellPrice(r), ownedCount(s, r)) }))];
+  }
+
+  /** A rune row's detail: what it does at this tier, the bag's count, and how many are socketed (they must come out first). */
+  private describeRune(id: string): HTMLElement[] {
+    const r = parseRuneKey(id.slice(id.indexOf(':') + 1));
+    if (!r) return [el('p', { class: 'slx-desc', text: T.rune.fail.closed })];
+    const s = this.ctx.game.state;
+    const bag = bagCount(s, r);
+    const worn = ownedCount(s, r) - bag;
+    return [
+      el('p', { class: `slx-name-line ${rarityClass({ rarity: r.tier })}`, text: T.rune.label(r.id, r.tier) }),
+      el('p', { text: RUNES[r.id].text(r.tier) }),
+      el('p', { text: T.rune.bag(bag) }),
+      ...(worn > 0 ? [el('p', { class: 'slx-desc', text: T.rune.socketedNote(worn) })] : []),
+    ];
+  }
+
+  private runeList(): void {
+    const info = win('slx-info slx-mat-info slx-rune-info');
+    const show = () => { const c = v.menu.current(); info.replaceChildren(...(c ? this.describeRune(c.id) : [])); };
+    const firstOpen = (items: MenuItem[]) => Math.max(0, items.findIndex((it) => !it.disabled));
+    const reload = () => {
+      const rows = this.runeRows();
+      v.menu.items.splice(0, v.menu.items.length, ...rows);
+      if (v.menu.cursor >= rows.length || rows[v.menu.cursor]?.disabled) v.menu.setCursor(firstOpen(rows));
+      v.render(); show();
+    };
+    const rows = this.runeRows();
+    const v: MenuView = new MenuView(new Menu(rows, firstOpen(rows)), {
+      pick: (it) => {
+        const r = parseRuneKey(it.id.slice(it.id.indexOf(':') + 1));
+        if (r) this.askRuneQty(r, it.id.startsWith('buy:') ? 'buy' : 'sell', reload);
+      },
+      moved: () => { this.ctx.sfx.cursor(); show(); },
+      cancel: () => { info.remove(); this.pop(); },
+    }, 12);
+    show();
+    // One flex row holds the list and its detail, as the materials page does.
+    this.push({ el: el('div', { class: 'slx-mat-page slx-rune-page' }, [win('slx-list slx-shop-list slx-rune-list', [v.el]), info]), onAction: (a) => v.onAction(a) });
+  }
+
+  /** Why a rune trade was refused, in words (engine/runeTrade RuneTradeFail; gold and the rest read as T.reasons). */
+  private runeFail(reason: string): void {
+    const F = T.rune.fail;
+    this.ctx.sfx.error();
+    void this.say(reason === 'closed' ? F.closed : reason === 'full' ? F.full(RUNE_STACK) : reason === 'stock' ? F.stock : T.reasons[reason] ?? T.reasons.invalid);
+  }
+
+  /** The quantity box for a rune: buying stops at runeBuyMax (gold and the stack), selling at the bag's count. */
+  private askRuneQty(r: RuneRef, mode: 'buy' | 'sell', after: () => void): void {
+    const g = this.ctx.game;
+    const st = g.state;
+    const max = mode === 'buy' ? runeBuyMax(st, r) : runeSellMax(st, r);
+    if (max < 1) {
+      this.runeFail(mode === 'sell' ? 'stock' : !st.runesOpen ? 'closed' : ownedCount(st, r) >= RUNE_STACK ? 'full' : 'gold');
+      return;
+    }
+    const price = mode === 'buy' ? runeBuyPrice(st, r) ?? 0 : runeSellPrice(r);
+    const label = T.rune.label(r.id, r.tier);
+    const q = new QtyView(max, {
+      change: () => this.ctx.sfx.cursor(),
+      done: (n) => {
+        this.pop();
+        const gold = g.state.gold;
+        const res = mode === 'buy' ? g.buyRune(r, n) : g.sellRune(r, n);
+        if (!res.ok) { this.runeFail(res.reason); return; }
+        this.refresh(); after();
+        void this.say(mode === 'buy' ? T.ui2.shop.bought(label, n) : T.ui2.shop.sold(label, n, g.state.gold - gold), 'happy');
+      },
+      cancel: () => this.pop(),
+      // The note is the count the cap stands on: buying stops at the stack (bag and sockets), selling at the bag.
+    }, price, mode === 'buy' ? T.ui2.shop.owned(ownedCount(st, r)) : T.rune.bag(bagCount(st, r)));
+    this.push({ el: q.el, onAction: (a) => q.onAction(a) });
   }
 }

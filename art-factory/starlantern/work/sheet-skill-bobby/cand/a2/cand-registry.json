@@ -1,0 +1,616 @@
+{
+  "assets": {
+    "icon-cannon": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-cannon.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          40,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-repair-kit": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-repair-kit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-overclock": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-overclock.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 1,
+        "block": 10,
+        "size": [
+          45,
+          36
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-emergency-repair": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-emergency-repair.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          34
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-shock-mine": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-shock-mine.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          33
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-tesla-coil": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-tesla-coil.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          34,
+          35
+        ]
+      },
+      "status": "qa_passed"
+    },
+    "icon-cannon-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-cannon-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 11,
+          "mass": 0.48,
+          "box": [
+            1,
+            2,
+            15,
+            13
+          ],
+          "centre_off": 0.5
+        },
+        "block": 32.286,
+        "scale": 32.286,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "cannon"
+      }
+    },
+    "icon-cannon-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-cannon-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 10,
+          "mass": 0.507,
+          "box": [
+            1,
+            2,
+            13,
+            12
+          ],
+          "centre_off": 0.0
+        },
+        "block": 37.667,
+        "scale": 37.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "cannon"
+      }
+    },
+    "icon-repair-kit-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-repair-kit-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.704,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 27.143,
+        "scale": 27.143,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "repair-kit"
+      }
+    },
+    "icon-repair-kit-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-repair-kit-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.708,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.667,
+        "scale": 31.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "repair-kit"
+      }
+    },
+    "icon-overclock-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-overclock-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 13,
+          "short": 11,
+          "mass": 0.495,
+          "box": [
+            2,
+            2,
+            15,
+            13
+          ],
+          "centre_off": 0.707
+        },
+        "block": 30.857,
+        "scale": 30.857,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "overclock"
+      }
+    },
+    "icon-overclock-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-overclock-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 11,
+          "short": 9,
+          "mass": 0.486,
+          "box": [
+            2,
+            2,
+            13,
+            11
+          ],
+          "centre_off": 0.707
+        },
+        "block": 36.0,
+        "scale": 36.0,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "overclock"
+      }
+    },
+    "icon-emergency-repair-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-emergency-repair-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.684,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 27.5,
+        "scale": 27.5,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "emergency-repair"
+      }
+    },
+    "icon-emergency-repair-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-emergency-repair-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.715,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 32.083,
+        "scale": 32.083,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "emergency-repair"
+      }
+    },
+    "icon-shock-mine-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-shock-mine-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 13,
+          "short": 13,
+          "mass": 0.633,
+          "box": [
+            1,
+            2,
+            14,
+            15
+          ],
+          "centre_off": 0.707
+        },
+        "block": 27.286,
+        "scale": 27.286,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "shock-mine"
+      }
+    },
+    "icon-shock-mine-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-shock-mine-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 11,
+          "short": 11,
+          "mass": 0.625,
+          "box": [
+            1,
+            2,
+            12,
+            13
+          ],
+          "centre_off": 0.707
+        },
+        "block": 31.833,
+        "scale": 31.833,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "shock-mine"
+      }
+    },
+    "icon-tesla-coil-16": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-tesla-coil-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.551,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 27.929,
+        "scale": 27.929,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "tesla-coil"
+      }
+    },
+    "icon-tesla-coil-14": {
+      "final": "art-factory/starlantern/work/sheet-skill-bobby/cand/a2/icon-tesla-coil-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.556,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 32.583,
+        "scale": 32.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-skill-bobby\\sheet-skill-bobby-a2.png",
+        "cell": "tesla-coil"
+      }
+    }
+  }
+}

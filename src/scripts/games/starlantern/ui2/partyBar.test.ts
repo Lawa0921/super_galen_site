@@ -161,3 +161,138 @@ describe('PartyBar stat pops', () => {
     expect(['slx-pm-hit', 'slx-pm-heal', 'slx-pm-acting', 'slx-pm-ko'].some((c) => p.classList.contains(c))).toBe(false);
   });
 });
+
+describe('PartyBar portraits of the hero and Rin', () => {
+  const published = (ids: string[]) => ({ has: (u: string) => ids.some((id) => u === art.portrait(id, 'normal')) });
+
+  it('render from their published art paths', () => {
+    const bar = new PartyBar(published(['hero', 'rin']));
+    bar.update([m('hero'), m('rin')]);
+    const srcs = [...bar.el.querySelectorAll('.slx-pm img')].map((i) => i.getAttribute('src'));
+    expect(srcs).toEqual([art.portrait('hero', 'normal'), art.portrait('rin', 'normal')]);
+  });
+
+  it('a member whose art is missing falls back to the name, with no broken image', () => {
+    const bar = new PartyBar(published(['rin']));
+    bar.update([m('hero'), m('rin')]);
+    const [hero, rin] = [...bar.el.querySelectorAll('.slx-pm')];
+    expect(hero.querySelector('img')).toBeNull();
+    expect(hero.textContent).toContain('hero');
+    expect(rin.querySelector('img')!.getAttribute('src')).toBe(art.portrait('rin', 'normal'));
+  });
+});
+
+describe('PartyBar after the oath', () => {
+  it("after her oath Rin's face is rin-oath", () => {
+    const published = { has: (u: string) => [art.portrait('rin', 'normal'), art.portrait('rin-oath', 'normal')].includes(u) };
+    const bar = new PartyBar(published);
+    bar.update([m('hero'), m('rin', 30, { artId: 'rin-oath' })]);
+    const [hero, rin] = [...bar.el.querySelectorAll('.slx-pm')];
+    expect(hero.querySelector('img')).toBeNull();
+    expect(rin.querySelector('img')!.getAttribute('src')).toBe(art.portrait('rin-oath', 'normal'));
+    bar.update([m('hero'), m('rin', 30)]);
+    expect(bar.el.querySelector('[data-key=rin] img')!.getAttribute('src')).toBe(art.portrait('rin', 'normal'));
+  });
+
+  it('shows each ailment as a coloured word with its turns', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('scarlet', 30, { ailments: [{ id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }] }), m('noel')]);
+    const row = bar.el.querySelector<HTMLElement>('[data-key=scarlet] .slx-pm-ail')!;
+    expect(row.hidden).toBe(false);
+    expect([...row.children].map((c) => [c.className, c.textContent])).toEqual([['slx-ail slx-ail-bleed', '流血×2'], ['slx-ail slx-ail-burn', '灼燒3']]);
+    const none = bar.el.querySelector<HTMLElement>('[data-key=noel] .slx-pm-ail')!;
+    expect(none.hidden).toBe(true);
+    expect(none.children).toHaveLength(0);
+    bar.update([m('scarlet', 30, { ailments: [] }), m('noel')]);
+    expect(row.children).toHaveLength(0);
+    expect(row.hidden).toBe(true);
+    expect(bar.el.querySelector('.slx-pm-ail img')).toBeNull();
+    expect(bar.el.querySelectorAll('img').length).toBe(0);   // NO_ART: no faces, and the words bring no picture
+  });
+
+  it('one line: the most severe first, and what does not fit folds into +N', () => {
+    const bar = new PartyBar(NO_ART);
+    const five = [{ id: 'poison' }, { id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }, { id: 'shock', turns: 2 }, { id: 'chill', turns: 2 }] as const;
+    bar.update([m('scarlet', 30, { ailments: [...five] })]);
+    const row = bar.el.querySelector<HTMLElement>('[data-key=scarlet] .slx-pm-ail')!;
+    const words = [...row.children].map((c) => [c.className, c.textContent]);
+    expect(words).toEqual([['slx-ail slx-ail-bleed', '流血×2'], ['slx-ail slx-ail-burn', '灼燒3'], ['slx-ail slx-ail-poison', '中毒'], ['slx-ail slx-ail-more', '+2']]);
+    bar.update([m('scarlet', 30, { ailments: [{ id: 'chill', turns: 2 }, { id: 'freeze' }, { id: 'sleep', turns: 1 }] })]);
+    expect([...row.children].map((c) => c.textContent)).toEqual(['凍結', '睡眠1', '冰緩2']);   // all fit: no +N
+  });
+});
+
+describe('PartyBar mechanics (plan 8c)', () => {
+  it('shows mechanic words before the ailments', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度3' }], ailments: [{ id: 'burn', turns: 2 }] }), m('rin')]);
+    const row = bar.el.querySelector<HTMLElement>('[data-key=noel] .slx-pm-ail')!;
+    expect(row.hidden).toBe(false);
+    expect([...row.children].map((c) => [c.className, c.textContent])).toEqual([['slx-mech slx-mech-heat', '熱度3'], ['slx-ail slx-ail-burn', '灼燒2']]);
+    const none = bar.el.querySelector<HTMLElement>('[data-key=rin] .slx-pm-ail')!;
+    expect(none.hidden).toBe(true);
+    bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度0' }] }), m('rin', 30, { mech: [] })]);
+    expect([...row.children].map((c) => c.textContent)).toEqual(['熱度0']);
+    expect(row.hidden).toBe(false);
+    expect(none.hidden).toBe(true);
+    // The words take their room first; the ailments fold into +N in what is left of the one line.
+    const five = [{ id: 'poison' }, { id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }, { id: 'shock', turns: 2 }, { id: 'chill', turns: 2 }] as const;
+    bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度5' }], ailments: [...five] })]);
+    const texts = [...row.children].map((c) => c.textContent);
+    expect(texts[0]).toBe('熱度5');
+    expect(texts.at(-1)).toMatch(/^\+\d$/);
+    expect(texts.length - 2 + Number(texts.at(-1)!.slice(1))).toBe(5);
+  });
+
+  it('words that do not fit the line fold into +N too, after the ones that do (plan 8c Task 5)', () => {
+    const bar = new PartyBar(NO_ART);
+    const words = [{ tone: 'embers', text: '餘燼500' }, { tone: 'beat', text: '拍子4・終幕' }, { tone: 'embers', text: '贖火4' }] as const;
+    bar.update([m('scarlet', 30, { mech: [...words], ailments: [{ id: 'poison' }] })]);
+    const row = bar.el.querySelector<HTMLElement>('[data-key=scarlet] .slx-pm-ail')!;
+    expect([...row.children].map((c) => [c.className, c.textContent])).toEqual([
+      ['slx-mech slx-mech-embers', '餘燼500'], ['slx-mech slx-mech-beat', '拍子4・終幕'], ['slx-ail slx-ail-more', '+2'],
+    ]);
+    // Words that fit, but leave no room for the ailments' +N: the last word folds in with them (plan 8c Task 6).
+    bar.update([m('scarlet', 30, { mech: [{ tone: 'devices', text: '砲台Lv1・2' }, { tone: 'devices', text: '護盾機Lv2・2' }], ailments: [{ id: 'poison' }] })]);
+    expect([...row.children].map((c) => c.textContent)).toEqual(['砲台Lv1・2', '+2']);
+    // Freeze and sleep are never folded: they stand first, and the words make room (plan 8c final).
+    bar.update([m('scarlet', 30, { mech: [{ tone: 'embers', text: '餘燼500' }, { tone: 'embers', text: '贖火4' }, { tone: 'embers', text: '代受' }], ailments: [{ id: 'poison' }, { id: 'sleep', turns: 3 }, { id: 'freeze' }] })]);
+    const kept = [...row.children].map((c) => c.textContent);
+    expect(kept.slice(0, 2)).toEqual(['凍結', '睡眠3']);
+    expect(kept.at(-1)).toMatch(/^\+\d$/);
+    // When they all fit, nothing folds.
+    bar.update([m('scarlet', 30, { mech: [{ tone: 'embers', text: '餘燼0' }, { tone: 'embers', text: '贖火4' }] })]);
+    expect([...row.children].map((c) => c.textContent)).toEqual(['餘燼0', '贖火4']);
+  });
+
+  it('on a row too narrow even for them, freeze and sleep still stand, the rest folded (measured widths, plan 8c final)', () => {
+    // A laid-out page: every word 30 px, the row 50 px.
+    // jsdom's layout getters live somewhere up the chain: spy on the prototype that owns each.
+    const owner = (p: object, k: string): object => (Object.getOwnPropertyDescriptor(p, k) ? p : owner(Object.getPrototypeOf(p), k));
+    const offset = vi.spyOn(owner(HTMLElement.prototype, 'offsetWidth') as HTMLElement, 'offsetWidth', 'get').mockReturnValue(30);
+    const client = vi.spyOn(owner(HTMLElement.prototype, 'clientWidth') as HTMLElement, 'clientWidth', 'get').mockReturnValue(50);
+    try {
+      const bar = new PartyBar(NO_ART);
+      bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度5' }, { tone: 'heat', text: '熱度5' }], ailments: [{ id: 'poison' }, { id: 'sleep', turns: 3 }, { id: 'freeze' }] })]);
+      const row = bar.el.querySelector<HTMLElement>('[data-key=noel] .slx-pm-ail')!;
+      expect([...row.children].map((c) => c.textContent)).toEqual(['凍結', '睡眠3', '+3']);
+    } finally {
+      offset.mockRestore();
+      client.mockRestore();
+    }
+  });
+
+  it('a cue rises over the member and goes', () => {
+    vi.useFakeTimers();
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('rin')]);
+    bar.cue('rin', { tone: 'mark', text: '還有。' });
+    const pop = bar.el.querySelector('[data-key=rin] .slx-pm-cue')!;
+    expect([pop.className, pop.textContent]).toEqual(['slx-pm-cue slx-mech-mark', '還有。']);
+    bar.cue('nobody', { tone: 'heat', text: '暴走！' });
+    expect(bar.el.querySelectorAll('.slx-pm-cue')).toHaveLength(1);
+    vi.advanceTimersByTime(1000);
+    expect(bar.el.querySelector('.slx-pm-cue')).toBeNull();
+    vi.useRealTimers();
+  });
+});

@@ -4,18 +4,16 @@ import { REGIONS, type RegionId } from '../data/regions';
 import { T } from '../data/text.zh-TW';
 import type { SoundManager } from '../audio/SoundManager';
 import type { BattleState } from '../engine/battle';
+import type { AilmentChip } from '../engine/ailments';
 import type { Combatant } from '../engine/combatant';
-import { art, type FxKey } from './artPaths';
+import type { WeaponKind } from '../engine/types';
+import { art, enemyArt, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
+import { AILMENT_FILL, AILMENT_MORE_FILL, bySeverity, fitRow, isHalting, textWidth } from './ailmentStyle';
+import { MECH_FILL } from './mechStyle';
+import type { MechCue, MechTone, MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
 
-const PALETTE = [0x7fb069, 0x8e7dbe, 0xd1495b, 0x66a1d2, 0xe0a458, 0x5c946e, 0xb56576, 0x6d6875, 0xc44536];
-
-function colorFor(defId: string): number {
-  let h = 0;
-  for (const ch of defId) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return PALETTE[h % PALETTE.length];
-}
 
 /** Colours of regional variants: the element's for fire, ice and thunder; by region for the element-less ones. */
 export const TINT_COLORS = {
@@ -63,15 +61,47 @@ function tintMatrix(color: number, k: number): ColorMatrix {
   return [r[0], r[1], r[2], r[3], r[4], g[0], g[1], g[2], g[3], g[4], b[0], b[1], b[2], b[3], b[4], 0, 0, 0, 1, 0];
 }
 
-/** One enemy in the picture: its sprite, an HP bar under its name, and its announced next move above its head. */
+/** One enemy in the picture: its sprite, an HP bar under its name, and above its head its announced next move with its ailments just under it. */
 interface Slot {
   key: string; box: Container; body: Container; texture: Texture | null; hp: number; max: number; bar: Graphics; intent: Text;
   name: Text;
+  /** One coloured word per ailment, side by side above its head (`showAilments`). */
+  ail: Container;
   /** Its regional colour and elite outline: always on; the hit flash and the target highlight are added on top. */
   base: Filter[];
   tint: { color: number | null; elite: boolean };
+  /** A picture not loaded at setup: drawn when it lands (no placeholder body meanwhile), at the size it would have had. */
+  want?: { url: string; maxH: number; slotW: number; ground: number };
 }
 const BAR_W = 64;
+/**
+ * With a party bar below (`bottom` > 0), the name and the HP bar are raised this far over the feet: the least that keeps
+ * the bar clear of the party's one row of ailment words standing on the party bar (12 px and a 1 px margin above it).
+ */
+const NAME_LIFT = 8;
+/** An enemy's ailment row: one line above its head, just under its intent, so it never covers a small sprite. */
+const AIL_UNDER_INTENT = 2;
+const AIL_GAP = 4;
+/** The party's setups on a foe, in the order a crowded row keeps them: 暗記, 瞄準, 估價, 弱點. */
+const SETUP_ORDER: readonly MechTone[] = ['mark', 'aim', 'coins', 'expose'];
+const AIL_SIZE = 11;
+/** Room kept between two enemies' ailment rows: each row fits its slot less this. */
+const AIL_SLOT_MARGIN = 6;
+/** An ailment row's height (11 px words with their stroke); an intent's (12 px text with its stroke). */
+const AIL_ROW_H = 14;
+const INTENT_H = 15;
+/** A hit's tags (暴擊！ 弱點！ 抗性) stand side by side in one row of this height just over the number. */
+const TAG_SIZE = 14;
+const TAG_ROW_H = 16;
+const TAG_GAP = 4;
+/** A hit number drifts up this far while it shows; it and its tags keep this much more clear of the ailment row. */
+const POP_RISE = 4;
+const POP_CLEAR = 3;
+type Box = { x: number; y: number; width: number; height: number };
+type PopOpts = { weak?: boolean; crit?: boolean; resist?: boolean; small?: boolean };
+const popSize = (o: PopOpts): number => (o.crit ? 36 : o.weak ? 32 : o.small || o.resist ? 22 : 26);
+/** A label's width at the ailment font size, estimated without measuring (render/ailmentStyle.ts `textWidth`). */
+export const ailLabelWidth = (text: string): number => textWidth(text, AIL_SIZE);
 /** Nothing in the picture may rise above the message window. */
 const TOP_CLEAR = 52;
 
@@ -87,7 +117,8 @@ const T_RESIST = { text: T.battle.pop.resist, fill: 0xc8d6e6, stroke: 0x1a2a3a }
 const HIT_STOP_MS = 80;
 /** How far an enemy drops in from when a battle opens. */
 const DROP_PX = 28;
-export type PartyCue = 'acting' | 'hit' | 'ultimate' | 'heal' | 'ko' | 'miss' | 'tp';
+/** `mech`: a mechanic's moment; its MechCue comes as the `name`. */
+export type PartyCue = 'acting' | 'hit' | 'ultimate' | 'heal' | 'ko' | 'miss' | 'tp' | 'mech';
 /** What the party bar needs to draw a hit: its effect, and whether it was a weak point, a crit or resisted. */
 export interface HitExtra { fx: FxKey | null; weak: boolean; crit?: boolean; resist?: boolean }
 
@@ -95,11 +126,14 @@ export class BattleView {
   readonly root = new Container();
   private slots = new Map<string, Slot>();
   private defIds = new Map<string, string>();
+  private weapons = new Map<string, WeaponKind>();
   /** Pending timers, animation frames and shatters of the current battle; cleared when a new battle is set up. */
   private timers = new Set<ReturnType<typeof setTimeout>>();
   private frames = new Set<number>();
   private shattering: Promise<void>[] = [];
   private size = { width: 640, height: 360 };
+  /** How wide one enemy's ailment row may be: its slot, less a margin. */
+  private ailMax = Infinity;
   private lit = new Map<string, ColorMatrixFilter>();
   /** Tint, glow and outline filters of the current battle, destroyed on the next setup. */
   private tintFilters: Filter[] = [];
@@ -110,6 +144,47 @@ export class BattleView {
   /** `calm`: the player prefers reduced motion; no shake, push-in, lunges, flashes or breathing. */
   constructor(private fast = false, private bank: TextureBank | null = null, private calm = false) {
     this.root.addChild(this.scene);
+    // A picture that lands late (a slow network) is drawn then; nothing stands in for it meanwhile.
+    this.bank?.onLoad?.((u) => this.arrived(u));
+  }
+
+  /** The backdrop's url while it has not loaded, and the size it is drawn at. */
+  private bgWant: { url: string; size: { width: number; height: number } } | null = null;
+
+  private arrived(url: string): void {
+    const tex = this.bank?.get(url);
+    if (!tex) return;
+    if (this.bgWant?.url === url && !this.scene.destroyed) {
+      const old = this.scene.children.find((c) => c.label === 'bg-plain');
+      const s = this.backdrop(tex, this.bgWant.size);
+      this.scene.addChildAt(s, 0);
+      if (old) { this.scene.removeChild(old); old.destroy(); }
+      this.bgWant = null;
+    }
+    for (const slot of this.slots.values()) {
+      if (slot.want?.url !== url || slot.texture || slot.box.destroyed) continue;
+      this.placeBody(slot, tex, slot.want.maxH, slot.want.slotW, slot.want.ground);
+    }
+  }
+
+  private backdrop(bg: Texture, size: { width: number; height: number }): Sprite {
+    const s = new Sprite(bg);
+    const k = Math.max(size.width / bg.width, size.height / bg.height);
+    s.scale.set(k);
+    s.x = (size.width - bg.width * k) / 2; s.y = (size.height - bg.height * k) / 2;
+    return s;
+  }
+
+  /** An enemy's picture in its body, fitted to its slot; its intent and ailment row stand above it. */
+  private placeBody(slot: Slot, tex: Texture, maxH: number, slotW: number, ground: number): void {
+    const s = new Sprite(tex);
+    const k = Math.min(maxH / tex.height, (slotW * 0.9) / tex.width);
+    s.scale.set(k); s.anchor.set(0.5, 1);
+    slot.body.addChild(s);
+    slot.texture = tex;
+    delete slot.want;
+    slot.intent.y = Math.max(TOP_CLEAR - ground, -slot.body.height - 30);
+    slot.ail.y = slot.intent.y + AIL_UNDER_INTENT;
   }
 
   /**
@@ -131,54 +206,57 @@ export class BattleView {
     this.root.scale.set(1); this.root.x = 0; this.root.y = 0; this.scene.x = 0;
     this.slots.clear();
     this.defIds.clear();
-    for (const c of [...state.party, ...state.enemies]) this.defIds.set(c.key, c.defId);
+    this.weapons.clear();
+    for (const c of [...state.party, ...state.enemies]) { this.defIds.set(c.key, c.defId); if (c.weaponKind) this.weapons.set(c.key, c.weaponKind); }
     const bg = this.bank?.get(art.bg(floor)) ?? null;
+    this.bgWant = null;
     if (bg) {
-      const s = new Sprite(bg);
-      const k = Math.max(size.width / bg.width, size.height / bg.height);
-      s.scale.set(k);
-      s.x = (size.width - bg.width * k) / 2; s.y = (size.height - bg.height * k) / 2;
-      this.scene.addChild(s);
+      this.scene.addChild(this.backdrop(bg, size));
     } else {
-      this.scene.addChild(new Graphics().rect(0, 0, size.width, size.height).fill(0x141826));
+      // The window's own dark until the backdrop lands (a plain ground, not a stand-in picture).
+      const plain = new Graphics().rect(0, 0, size.width, size.height).fill(0x141826);
+      plain.label = 'bg-plain';
+      this.scene.addChild(plain);
+      this.bgWant = { url: art.bg(floor), size };
     }
     const n = state.enemies.length;
     const slotW = (size.width - left) / (n + 1);
+    this.ailMax = slotW - AIL_SLOT_MARGIN;
     const usable = size.height - bottom;
     const ground = bottom > 0 ? usable - 28 : size.height * 0.85;   // 28 px under the feet for the name and the HP bar
     state.enemies.forEach((e, i) => {
       const box = new Container();
       const body = new Container();
-      const tex = this.bank?.get(art.enemy(e.defId)) ?? null;
+      const tex = this.bank?.get(enemyArt(e.defId)) ?? null;
       const maxH = (bottom > 0 ? usable : size.height) * (e.boss ? (bottom > 0 ? 0.62 : 0.7) : 0.45);
-      if (tex) {
-        const s = new Sprite(tex);
-        const k = Math.min(maxH / tex.height, (slotW * 0.9) / tex.width);
-        s.scale.set(k); s.anchor.set(0.5, 1);
-        body.addChild(s);
-      } else {
-        const w = Math.min(160, slotW), h = w * 1.2;
-        body.addChild(new Graphics().roundRect(-w / 2, -h, w, h, 12).fill(colorFor(e.defId)));
-      }
       const elite = e.tint === 'elite';
       const name = elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
       const label = new Text({ text: name, style: { fill: 0xffffff, fontSize: 14, stroke: { color: 0x000000, width: 3 } } });
       label.anchor.set(0.5, 0);
+      const lift = bottom > 0 ? NAME_LIFT : 0;
+      label.y = -lift;
       const bar = new Graphics();
-      bar.y = 19;
+      bar.y = 19 - lift;
       const intent = new Text({ text: '', style: { fill: 0xffe08a, fontSize: 12, stroke: { color: 0x000000, width: 3 } } });
       intent.anchor.set(0.5, 1);
-      box.addChild(body, label, bar, intent);
+      const ail = new Container();
+      box.addChild(body, label, bar, ail, intent);
       box.x = left + slotW * (i + 1);
       box.y = ground;
       box.alpha = e.alive ? 1 : 0;
-      intent.y = Math.max(TOP_CLEAR - ground, -body.height - 30);
       this.scene.addChild(box);
       const key = tintKey(e.tint, region);
       const color = key ? TINT_COLORS[key] : null;
       const base = this.tintFor(key, elite);
       body.filters = base;
-      const slot: Slot = { key: e.key, box, body, texture: tex, hp: e.hp, max: e.max.hp, bar, intent, name: label, base, tint: { color, elite } };
+      const slot: Slot = { key: e.key, box, body, texture: null, hp: e.hp, max: e.max.hp, bar, intent, name: label, ail, base, tint: { color, elite } };
+      // Its picture, or, until it lands, no body at all: just its name and bar (no placeholder art).
+      if (tex) this.placeBody(slot, tex, maxH, slotW, ground);
+      else {
+        slot.want = { url: enemyArt(e.defId), maxH, slotW, ground };
+        intent.y = Math.max(TOP_CLEAR - ground, -30);
+        ail.y = intent.y + AIL_UNDER_INTENT;
+      }
       this.slots.set(e.key, slot);
       this.drawBar(slot);
     });
@@ -231,14 +309,21 @@ export class BattleView {
     return { x: slot.box.x, y: slot.box.y - slot.body.height };
   }
 
+  /** An enemy's HP bar with its black rim, in design px at rest (for layout checks). */
+  hpBarRect(key: string): { x: number; y: number; width: number; height: number } | null {
+    const s = this.slots.get(key);
+    if (!s || s.box.destroyed) return null;
+    return { x: s.box.x - BAR_W / 2 - 1, y: s.box.y + s.bar.y - 1, width: BAR_W + 2, height: 6 };
+  }
+
   /** Party members are drawn by the DOM party bar; these cues tell it what to show. */
   async play(
     state: BattleState, sfx: SoundManager,
     onParty?: (key: string, cue: PartyCue, name?: string, amount?: number, extra?: HitExtra) => void | Promise<void>,
     onLine?: (index: number) => void,
   ): Promise<void> {
-    for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null)) {
-      if (cue.kind === 'wait') { await this.wait(cue.ms); continue; }
+    for (const cue of battleCues(state.log, (k) => this.defIds.get(k) ?? null, (k) => this.weapons.get(k))) {
+      if (cue.kind === 'wait') { await (cue.keep ? this.hold(cue.ms) : this.wait(cue.ms)); continue; }
       if (cue.kind === 'line') { onLine?.(cue.index); continue; }
       const slot = this.slots.get(cue.key);
       if (cue.kind === 'ultimate') { if (!slot) await onParty?.(cue.key, 'ultimate', cue.name); continue; }
@@ -247,6 +332,7 @@ export class BattleView {
         continue;
       }
       if (cue.kind === 'tp') { if (!slot) void onParty?.(cue.key, 'tp', undefined, cue.amount); continue; }
+      if (cue.kind === 'mech') { if (!slot) void onParty?.(cue.key, 'mech', cue.cue satisfies MechCue); continue; }
       if (cue.kind === 'miss') {
         if (slot) this.popup(slot, T.battle.pop.miss, MISS_COLOR, { small: true }); else void onParty?.(cue.key, 'miss');
         continue;
@@ -362,6 +448,87 @@ export class BattleView {
   /** What each enemy will do next ({} hides them all, e.g. while a round plays). */
   showIntents(byKey: Record<string, string>): void {
     for (const [k, s] of this.slots) if (!s.intent.destroyed) s.intent.text = byKey[k] ? `▶ ${byKey[k]}` : '';
+  }
+
+  /**
+   * Each enemy's ailments as coloured words above its head, centred on it, in one line inside its slot (「流血×3」「感電2」「+1」); a call replaces the whole
+   * row, and an enemy missing from `byKey` or with an empty list shows none. `marks` are its mechanic words (「暗記」「弱點2」,
+   * plan 8c): first in the same row, in the same type, in their own colours.
+   */
+  showAilments(byKey: Record<string, AilmentChip[]>, marks: Record<string, MechWord[]> = {}): void {
+    for (const [k, s] of this.slots) {
+      if (s.ail.destroyed) continue;
+      for (const c of s.ail.removeChildren()) c.destroy();
+      const mech = marks[k] ?? [];
+      const chips = bySeverity(byKey[k] ?? []);
+      // One line inside its slot, by priority (plan 8c final): freeze and sleep (never folded), the party's own setups on
+      // it (暗記, 瞄準, 估價, 弱點), the other ailments, the other words; what does not fit folds into +N.
+      type W = { text: string; fill: number };
+      const ofChip = (c: AilmentChip): W => ({ text: T.ailmentChip(c), fill: AILMENT_FILL[c.id] });
+      const ofWord = (x: MechWord): W => ({ text: x.text, fill: MECH_FILL[x.tone] });
+      const halting = chips.filter(isHalting);
+      const setups = mech.filter((x) => x.setup).sort((a, b) => SETUP_ORDER.indexOf(a.tone) - SETUP_ORDER.indexOf(b.tone));
+      const items: W[] = [...halting.map(ofChip), ...setups.map(ofWord), ...chips.filter((c) => !isHalting(c)).map(ofChip), ...mech.filter((x) => !x.setup).map(ofWord)];
+      const { shown, more } = fitRow(items, this.ailMax, (w) => ailLabelWidth(w.text), (n) => ailLabelWidth(T.ailmentMore(n)), AIL_GAP, halting.length);
+      const word = (text: string, fill: number) => new Text({ text, style: { fill, fontSize: AIL_SIZE, stroke: { color: 0x000000, width: 3 } } });
+      const words = shown.map((w) => word(w.text, w.fill));
+      if (more) words.push(word(T.ailmentMore(more), AILMENT_MORE_FILL));
+      const widths = words.map((t) => ailLabelWidth(t.text));
+      let x = -(widths.reduce((a, b) => a + b, 0) + AIL_GAP * Math.max(0, words.length - 1)) / 2;
+      words.forEach((t, i) => {
+        t.anchor.set(0.5, 0);
+        t.x = x + widths[i] / 2;
+        x += widths[i] + AIL_GAP;
+        s.ail.addChild(t);
+      });
+    }
+  }
+
+  /** An enemy's whole picture (sprite, name, bar, words), for layout tests. */
+  enemyBoxOf(key: string): Container | null {
+    const s = this.slots.get(key);
+    return s && !s.box.destroyed ? s.box : null;
+  }
+
+  /** Where an enemy's ailment row stands (its slot's width, one line high), in its box's px. */
+  ailmentRowRect(key: string): Box | null {
+    const s = this.slots.get(key);
+    return s && !s.box.destroyed ? { x: -this.ailMax / 2, y: s.ail.y, width: this.ailMax, height: AIL_ROW_H } : null;
+  }
+
+  /** Where an enemy's intent line stands (anchored at its bottom), in its box's px; at least the row's width. */
+  intentRect(key: string): Box | null {
+    const s = this.slots.get(key);
+    if (!s || s.box.destroyed) return null;
+    const width = Math.max(this.ailMax, textWidth(s.intent.text, 12) + 6);
+    return { x: -width / 2, y: s.intent.y - INTENT_H, width, height: INTENT_H };
+  }
+
+  /**
+   * Where a hit's number and its tags stand on an enemy, in its box's px: the number at the body's middle, readable on a
+   * small sprite, and the tags side by side in one row just over it; pushed down only as far as it takes to keep them
+   * (and the number's drift) clear of the ailment row and the intent above the head.
+   */
+  popupLayout(key: string, text: string, o: PopOpts): { number: Box; tags: Box[] } | null {
+    const s = this.slots.get(key);
+    if (!s || s.box.destroyed) return null;
+    const size = popSize(o);
+    const tags = [o.crit && T_CRIT, o.weak && T_WEAK, o.resist && T_RESIST].filter((x): x is typeof T_CRIT => !!x);
+    const tagRow = tags.length ? TAG_ROW_H : 0;
+    const clear = s.ail.y + AIL_ROW_H + POP_CLEAR + POP_RISE + tagRow + size / 2;
+    const mid = Math.max(-s.body.height / 2, clear);
+    const w = textWidth(text, size);
+    const number = { x: -w / 2, y: mid - size / 2, width: w, height: size };
+    const widths = tags.map((g) => textWidth(g.text, TAG_SIZE));
+    let x = -(widths.reduce((a, b) => a + b, 0) + TAG_GAP * Math.max(0, widths.length - 1)) / 2;
+    const boxes = widths.map((tw) => { const b = { x, y: number.y - TAG_ROW_H, width: tw, height: TAG_ROW_H }; x += tw + TAG_GAP; return b; });
+    return { number, tags: boxes };
+  }
+
+  /** The ailment words above an enemy's head, in order (for tests). */
+  ailmentTexts(key: string): Text[] {
+    const s = this.slots.get(key);
+    return s && !s.ail.destroyed ? [...s.ail.children] as Text[] : [];
   }
 
   /** Set shown HP to the battle state's values (after a round). */
@@ -504,19 +671,23 @@ export class BattleView {
    * The number (or MISS) over an enemy, with small tags above it: 弱點！ for a weak point, 暴擊！ for a crit, 抗性 for a
    * resisted element. A crit's number is the biggest. Reduced motion keeps everything still; the words carry it.
    */
-  private popup(slot: Slot, text: string, color: number, o: { weak?: boolean; crit?: boolean; resist?: boolean; small?: boolean } = {}): void {
-    const size = o.crit ? 36 : o.weak ? 32 : o.small || o.resist ? 22 : 26;
+  private popup(slot: Slot, text: string, color: number, o: PopOpts = {}): void {
+    const size = popSize(o);
+    // On the body, clear of the ailment row and the intent above the head (popupLayout).
+    const at = this.popupLayout(slot.key, text, o)!;
     const t = new Text({ text, style: { fill: color, fontSize: size, fontWeight: 'bold', stroke: { color: 0x000000, width: 5 } } });
     t.anchor.set(0.5);
-    t.y = -slot.body.height - 12;
+    t.y = at.number.y + at.number.height / 2;
     t.scale.set(this.calm ? 1 : o.crit ? 1.9 : 1.6);
     slot.box.addChild(t);
     const parts: Text[] = [t];
     const tags = [o.crit && T_CRIT, o.weak && T_WEAK, o.resist && T_RESIST].filter((x): x is typeof T_CRIT => !!x);
     tags.forEach((g, i) => {
-      const tag = new Text({ text: g.text, style: { fill: g.fill, fontSize: 14, fontWeight: 'bold', stroke: { color: g.stroke, width: 4 } } });
+      const tag = new Text({ text: g.text, style: { fill: g.fill, fontSize: TAG_SIZE, fontWeight: 'bold', stroke: { color: g.stroke, width: 4 } } });
       tag.anchor.set(0.5);
-      tag.y = t.y - size + 6 - i * 16;
+      const r = at.tags[i];
+      tag.x = r.x + r.width / 2;
+      tag.y = r.y + r.height / 2;
       slot.box.addChild(tag);
       parts.push(tag);
     });
@@ -524,7 +695,7 @@ export class BattleView {
     if (!this.calm) {
       this.later(40, () => { if (!t.destroyed) t.scale.set(1.2); });
       this.later(80, () => { if (!t.destroyed) t.scale.set(1); });
-      this.later(200, () => { if (!t.destroyed) t.y -= 4; });
+      this.later(200, () => { if (!t.destroyed) t.y -= POP_RISE; });
     }
     this.later(600, () => { for (const x of parts) if (!x.destroyed) { slot.box.removeChild(x); x.destroy(); } });
   }
@@ -532,6 +703,14 @@ export class BattleView {
   private later(ms: number, fn: () => void): void {
     const id = setTimeout(() => { this.timers.delete(id); fn(); }, this.fast ? 0 : ms);
     this.timers.add(id);
+  }
+
+  /** A wait kept even in fast mode (a mechanic's moment), on the view's tracked timers so a new fight clears it. */
+  private hold(ms: number): Promise<void> {
+    return new Promise((r) => {
+      const id = setTimeout(() => { this.timers.delete(id); r(); }, ms);
+      this.timers.add(id);
+    });
   }
 
   private wait(ms: number): Promise<void> {

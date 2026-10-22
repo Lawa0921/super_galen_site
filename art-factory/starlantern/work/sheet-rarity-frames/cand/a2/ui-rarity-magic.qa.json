@@ -1,0 +1,42 @@
+{
+  "pass": true,
+  "reasons": [],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 8,
+  "holes": 0,
+  "magenta_spill": 0,
+  "center_clear": true,
+  "ring_closed": true,
+  "edge_repeat": {
+    "top": 0.267,
+    "bottom": 0.122,
+    "left": 0.155,
+    "right": 0.433
+  },
+  "edge_steps": {
+    "top": {
+      "seam": 1.6,
+      "interior": 0.347
+    },
+    "bottom": {
+      "seam": 0.733,
+      "interior": 0.227
+    },
+    "left": {
+      "seam": 0.933,
+      "interior": 0.587
+    },
+    "right": {
+      "seam": 2.6,
+      "interior": 0.68
+    }
+  },
+  "size": [
+    16,
+    16
+  ],
+  "slice": 5,
+  "block": 27.5
+}

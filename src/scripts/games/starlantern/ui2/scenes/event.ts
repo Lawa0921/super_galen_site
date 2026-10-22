@@ -1,18 +1,27 @@
 import { ITEMS } from '../../data/items';
+import { STORY } from '../../data/story.zh-TW';
+import { chainLength } from '../../data/story/chains';
+import { memoriesOf } from '../../engine/progression';
+import { fragmentName } from '../../data/story/fragments';
 import { T } from '../../data/text.zh-TW';
 import { weightOf } from '../../data/weights';
 import type { Content } from '../../engine/dungeon/rooms';
 import { altarAt } from '../../engine/events';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { itemWeight } from '../../engine/loot/item';
-import type { FullResult, MoveResult } from '../../engine/game';
+import { fragmentItem } from '../../engine/story/fragments';
+import { fragmentLines } from '../battleText';
+import type { FullResult, MoveResult, RuneFind } from '../../engine/game';
+import { RUNE_STACK } from '../../data/runes';
 import type { ItemInstance, Pos } from '../../engine/types';
 import { ART_BASE } from '../../render/artPaths';
+import type { ArtIndex } from '../../render/textures';
 import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { fillRich, gearLabel, gearPart, joinParts } from '../loot';
+import { gearIconUrl } from '../gearArt';
+import { fillRich, gearLabel, gearPart, joinParts, rarityClass } from '../loot';
 import { MenuView, confirmBox, richNodes, win, type Rich, type RichPart } from '../widgets';
 
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
@@ -68,10 +77,21 @@ const richLine = (r: Rich, cls = 'slx-event-text') => el('p', { class: cls }, ri
 export type ChestResult = Extract<MoveResult, { kind: 'chest' }>;
 
 /** 「打開寶箱：發光苔 ×2、鐵劍」 — the gear, when the chest held any, in its rarity colour. */
-export function chestLine(r: ChestResult): Rich {
-  return [T.map.chest(itemName(r.item), r.qty), ...(r.gear ? ['、', gearPart(r.gear)] : [])];
+/** A piece as part of a line, after its gear icon once that is published. */
+const gearOf = (host: EventHost, it: ItemInstance): RichPart => gearPart(it, gearIconUrl(host.ctx.art, it));
+
+export function chestLine(r: ChestResult, idx?: ArtIndex): Rich {
+  return [T.map.chest(itemName(r.item), r.qty), ...(r.gear ? ['、', gearPart(r.gear, idx && gearIconUrl(idx, r.gear))] : []), ...(r.fragments ?? []).flatMap((g) => ['、', fragmentName(fragmentItem(g) ?? '') ?? ''])];
 }
 const leaveItem = (): MenuItem => ({ id: 'leave', label: T.ui2.event.leave });
+
+/** The line for the rune a chest or vault held (plan 8f), in its tier's colour; null when it held none. */
+export function runeLine(r: RuneFind): Rich | null {
+  if (r.rune) return [{ text: T.rune.got(T.rune.label(r.rune.id, r.rune.tier)), cls: `slx-loot-rune ${rarityClass({ rarity: r.rune.tier })}` }];
+  const g = r.runeGold;
+  if (g) return [{ text: T.rune.overStack(T.rune.label(g.rune.id, g.rune.tier), RUNE_STACK, g.gold), cls: `slx-loot-rune ${rarityClass({ rarity: g.rune.tier })}` }];
+  return null;
+}
 
 export type StairsResult = Extract<MoveResult, { kind: 'stairs' }>;
 
@@ -81,8 +101,8 @@ export type StairsResult = Extract<MoveResult, { kind: 'stairs' }>;
  */
 export function stairsLayer(host: EventHost, r: StairsResult, go: () => void): Layer {
   const S = T.ui2.event.stairs;
-  const body = [line(S.level(r.level)), ...(r.warn ? [line(S.warn, 'slx-event-text slx-event-warn')] : [])];
-  return eventWindow(host, 'stairs', S.title(r.floor), body, [{ id: 'go', label: S.go }, { id: 'leave', label: S.stay }], () => { host.popAll(); go(); }, undefined, r.warn ? 1 : 0);
+  const body = [line(S.level(r.level)), ...(r.warn ? [line(S.warn, 'slx-event-text slx-event-warn')] : []), ...(r.rescue ? [line(T.ui2.rescue.waiting, 'slx-event-text slx-event-warn')] : [])];
+  return eventWindow(host, 'stairs', S.title(r.floor), body, [{ id: 'go', label: S.go }, { id: 'leave', label: S.stay }], () => { host.popAll(); go(); }, undefined, r.warn || r.rescue ? 1 : 0);
 }
 
 /** The window for a room event the party stepped on (fountain, merchant, altar, vault) or is about to step on (elite). */
@@ -103,7 +123,7 @@ export function eventLayer(host: EventHost, content: Content): Layer {
       const show = () => { gold.textContent = E.merchant.gold(g.state.gold); };
       show();
       const stock = (content.stock ?? []).filter((id) => ITEMS[id]);
-      return eventWindow(host, 'merchant', E.merchant.title, [line(E.merchant.desc), gold],
+      return eventWindow(host, 'merchant', E.merchant.title, [line(memoriesOf(g.state.party.roster.noel) >= chainLength('noel') ? STORY.merchant.found : STORY.merchant.lost), gold],
         [...stock.map((id) => ({ id, label: ITEMS[id].name, right: T.gold(ITEMS[id].price) })), leaveItem()], (id) => {
           const r = g.buy(content.at, id);
           if (!r.ok) { host.ctx.sfx.error(); host.say(T.reasons[r.reason] ?? T.reasons.invalid); return; }
@@ -150,23 +170,31 @@ function openVault(host: EventHost, at: Pos): void {
  */
 export function showPickUp(host: EventHost, r: MoveResult | null, vault = false): void {
   const { ctx } = host;
-  const full = (f: FullResult, opened?: Rich) => host.push(fullLayer(host, f, () => showPickUp(host, ctx.game.pickUpHere(), vault), opened));
+  const full = (f: FullResult, opened?: Rich, more: Rich[] = []) => host.push(fullLayer(host, f, () => showPickUp(host, ctx.game.pickUpHere(), vault), opened, more));
   if (r?.kind === 'full') { ctx.sfx.error(); full(r); return; }
   if (r?.kind === 'vault' || r?.kind === 'chest') {
     ctx.sfx.chest?.();
     host.refresh();
     const said = r.kind === 'vault'
-      ? fillRich(T.ui2.event.vault.opened, joinParts([...Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`), ...r.gear.map(gearPart)]))
-      : chestLine(r);
-    if (r.waiting) { full(r.waiting, said); return; }
-    host.say(said);
+      ? fillRich(T.ui2.event.vault.opened, joinParts([...Object.entries(r.loot).map(([id, n]) => `${itemName(id)} ×${n}`), ...r.gear.map((it) => gearOf(host, it))]))
+      : chestLine(r, ctx.art);
+    // The rune comes with the result of the opening alone, so it is told once: a retry for waiting gear never repeats it.
+    const rune = runeLine(r);
+    if (r.waiting) { full(r.waiting, said, rune ? [rune] : []); return; }
+    host.say(rune ? [...said, '\n', ...rune] : said);
     host.drop(r.kind === 'vault' ? r.gear : r.gear ? [r.gear] : []);
+    return;
+  }
+  if (r?.kind === 'glimmer') {
+    ctx.sfx.chest?.();
+    host.refresh();
+    host.say(fragmentLines(r.gained).join(''));
     return;
   }
   if (r?.kind === 'pickup') {
     ctx.sfx.chest?.();
     host.refresh();
-    host.say(fillRich(T.ui2.event.pickedUp, [gearPart(r.gear)]));
+    host.say(fillRich(T.ui2.event.pickedUp, [gearOf(host, r.gear)]));
     host.drop([r.gear]);
     return;
   }
@@ -190,22 +218,23 @@ function carriedItems(host: EventHost): Record<string, number> {
  *   none, nothing is offered but 放棄.
  * Once both fit, `retry` takes the pick-up (Game.pickUpHere through showPickUp; still not fitting opens this window again);
  * without it the line says to step on it again. `opened` is the loot line of a chest or vault that opened while its gear
- * stayed behind.
+ * stayed behind; `more` the lines after it (its rune, plan 8f).
  */
-export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, opened?: Rich): Layer {
+export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, opened?: Rich, more: Rich[] = []): Layer {
   const F = T.ui2.event.full;
   const { ctx } = host;
   const g = ctx.game;
   const gear = g.run?.loot.gear ?? [];
   const stuck = !!r.bag && gear.length === 0;   // no slot can be freed from here
-  const body: HTMLElement[] = opened ? [richLine(opened)] : [];
-  if (r.bag && r.gear) body.push(richLine(fillRich(F.bagDesc, [gearPart(r.gear)])));
+  const body: HTMLElement[] = [...(opened ? [richLine(opened)] : []), ...more.map((m) => richLine(m))];
+  if (r.bag && r.gear) body.push(richLine(fillRich(F.bagDesc, [gearOf(host, r.gear)])));
   if (r.need > 0 && r.item) body.push(line(F.desc(itemName(r.item), r.qty ?? 1, Number(fmtWeight(r.need)))));
-  else if (r.need > 0 && r.gear) body.push(richLine(fillRich((name) => F.gearHeavy(name, Number(fmtWeight(r.need))), [gearPart(r.gear)])));
+  else if (r.need > 0 && r.gear) body.push(richLine(fillRich((name) => F.gearHeavy(name, Number(fmtWeight(r.need))), [gearOf(host, r.gear)])));
+  if (r.fragments?.length) body.push(line(F.fragments(r.fragments.map(itemName).join('、'))));
   body.push(line(stuck ? F.noGear : r.bag ? F.whichGear : F.which, 'slx-event-ask'));
   const held = r.need > 0 && !stuck ? carriedItems(host) : {};
   const items: MenuItem[] = [
-    ...(stuck || !(r.bag || r.need > 0) ? [] : gear).map((it) => ({ id: `gear:${it.uid}`, label: gearLabel(it), cls: `slx-rarity-${it.rarity}` })),
+    ...(stuck || !(r.bag || r.need > 0) ? [] : gear).map((it) => ({ id: `gear:${it.uid}`, label: gearLabel(it), cls: rarityClass(it) })),
     ...Object.entries(held).map(([id, n]) => ({ id, label: itemName(id), right: `×${n}` })),
     { id: 'leave', label: F.keep },   // leaving it destroys nothing: it stays in the chest, the vault or on the ground
   ];
@@ -213,7 +242,7 @@ export function fullLayer(host: EventHost, r: FullResult, retry?: () => void, op
   return eventWindow(host, 'full', r.bag ? F.bagTitle(BAG_SIZE) : F.title, body, items, (id) => {
     const piece = gear.find((it) => `gear:${it.uid}` === id);
     const n = piece ? 1 : Math.min(held[id], Math.ceil(r.need / weightOf(id)));
-    const ask = piece ? fillRich(F.askGear, [gearPart(piece)]) : F.ask(itemName(id), n);
+    const ask = piece ? fillRich(F.askGear, [gearOf(host, piece)]) : F.ask(itemName(id), n);
     const box = confirmBox(ask, (yes) => {
       host.pop();
       if (!yes) return;

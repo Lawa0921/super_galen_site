@@ -1,4 +1,5 @@
-import { CHARACTERS } from '../../data/characters';
+import { CHARACTERS, titleOf } from '../../data/characters';
+import { artIdOf } from '../../ui/art';
 import { T } from '../../data/text.zh-TW';
 import { activeIds } from '../../engine/party';
 import type { CharacterId } from '../../engine/types';
@@ -7,7 +8,7 @@ import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import type { Scene, SceneCtx } from '../scene';
 import { backControl, win } from '../widgets';
-import { STATUS_TABS } from './statusTabs';
+import { STATUS_TABS, cueFrame, updateCues } from './statusTabs';
 
 /** Character sheet: a large standee on the left, tabbed pages on the right; Q/E (or the arrows) page through the members. */
 export class StatusScene implements Scene {
@@ -30,9 +31,11 @@ export class StatusScene implements Scene {
   enter(root: HTMLElement): void {
     const p = this.ctx.game.state.party;
     const arg = this.ctx.arg ?? '';
-    this.id = p.recruited.includes(arg as CharacterId) ? (arg as CharacterId) : (activeIds(p)[0] ?? p.recruited[0]);
-    // `tab:<id>` (the guild's skill-tree and talent entries): open that page, with its kept cursor brought into view.
-    const want = arg.startsWith('tab:') ? STATUS_TABS.findIndex((t) => t.id === arg.slice(4)) : -1;
+    // `tab:<id>` (the guild's skill-tree and talent entries) or `tab:<id>:<member>` (back from the workshop, plan 8g).
+    const [, tabId, who] = arg.startsWith('tab:') ? arg.split(':') : ['', '', arg];
+    this.id = p.recruited.includes(who as CharacterId) ? (who as CharacterId) : (p.recruited.includes('hero') ? 'hero' : (activeIds(p)[0] ?? p.recruited[0]));
+    // Open that page, with its kept cursor brought into view.
+    const want = tabId ? STATUS_TABS.findIndex((t) => t.id === tabId) : -1;
     if (want >= 0) { this.tab = want; STATUS_TABS[want].reveal?.(); }
     this.standee = el('div', { class: 'slx-status-art' });
     const arrow = (cls: string, text: string, a: UiAction) => {
@@ -47,7 +50,8 @@ export class StatusScene implements Scene {
     root.append(el('div', { class: 'slx-scene slx-status-scene' }, [
       this.standee,
       win('slx-status-plate', [arrow('slx-status-prev', '◀', 'prev'), this.nameEl, arrow('slx-status-next', '▶', 'next')]),
-      win('slx-status-panel', [this.tabsEl, this.bodyEl, this.hintEl]),
+      // The page pages with ▲/▼ cues, never a native scrollbar; the sheet keeps its place itself (render), so `keep` is idle.
+      win('slx-status-panel', [this.tabsEl, cueFrame('slx-status-frame', this.bodyEl, () => {}), this.hintEl]),
       backControl(() => this.onAction('cancel')),
     ]));
     this.render();
@@ -63,8 +67,18 @@ export class StatusScene implements Scene {
     if (a !== 'prev' && a !== 'next' && a !== 'cancel' && STATUS_TABS[this.tab].onAction?.(a, this.ctx, this.id)) { this.render(); return; }
     if (a === 'left' || a === 'right') { this.tab = (this.tab + (a === 'right' ? 1 : n - 1)) % n; this.ctx.sfx.cursor(); this.render(); return; }
     if (a === 'prev' || a === 'next') { this.page(a === 'next' ? 1 : -1); return; }
-    if (a === 'up' || a === 'down') { this.bodyEl.scrollTop = Math.max(0, this.bodyEl.scrollTop + (a === 'down' ? 32 : -32)); return; }
-    if (a === 'cancel') { this.ctx.sfx.cancel(); this.ctx.go(this.ctx.from ?? 'guild'); }
+    if (a === 'up' || a === 'down') {
+      this.bodyEl.scrollTop = Math.max(0, this.bodyEl.scrollTop + (a === 'down' ? 32 : -32));
+      updateCues(this.bodyEl);
+      return;
+    }
+    // Back from the workshop the sheet does not return to it: to the labyrinth or the guild, whichever opened them.
+    if (a === 'cancel') {
+      this.ctx.sfx.cancel();
+      const g = this.ctx.game;
+      const from = this.ctx.from === 'workshop' ? (g.phase === 'map' && !!g.run ? 'dungeon' : 'guild') : this.ctx.from;
+      this.ctx.go(from ?? 'guild');
+    }
   }
 
   private page(d: 1 | -1): void {
@@ -77,7 +91,8 @@ export class StatusScene implements Scene {
   /** Light rays and an aura in the member's colour behind the standee, rising motes in front; CSS animates them. */
   private drawStandee(): void {
     this.shownId = this.id;
-    const src = this.ctx.art.has(art.standee(this.id)) ? art.standee(this.id) : this.ctx.art.has(art.portrait(this.id, 'normal')) ? art.portrait(this.id, 'normal') : null;
+    const face = artIdOf(this.ctx.game.state.party.roster[this.id]);
+    const src = this.ctx.art.has(art.standee(face)) ? art.standee(face) : this.ctx.art.has(art.portrait(face, 'normal')) ? art.portrait(face, 'normal') : null;
     this.standee.className = `slx-status-art slx-aura-${this.id}`;
     this.standee.replaceChildren(
       el('div', { class: 'slx-status-rays' }),
@@ -92,7 +107,7 @@ export class StatusScene implements Scene {
     const def = CHARACTERS[this.id];
     const m = this.ctx.game.state.party.roster[this.id];
     if (this.shownId !== this.id) this.drawStandee();
-    this.nameEl.replaceChildren(el('span', { class: 'slx-status-title', text: def.title }), el('b', { text: def.name }), el('span', { text: `Lv ${m.level}` }));
+    this.nameEl.replaceChildren(el('span', { class: 'slx-status-title', text: titleOf(m) }), el('b', { text: def.name }), el('span', { text: `Lv ${m.level}` }));
     this.tabsEl.replaceChildren(...STATUS_TABS.map((t, i) => {
       const b = el('span', { class: i === this.tab ? 'slx-tab slx-tab-sel' : 'slx-tab', text: t.label, attrs: { role: 'tab', 'data-tab': t.id, 'aria-selected': String(i === this.tab) } });
       b.addEventListener('click', () => { this.tab = i; this.ctx.sfx.cursor(); this.render(); });
@@ -111,5 +126,6 @@ export class StatusScene implements Scene {
     this.bodyEl.scrollTop = same ? top : 0;
     this.drawn = { tab: this.tab, id: this.id };
     tab.shown?.(this.bodyEl);
+    updateCues(this.bodyEl);
   }
 }

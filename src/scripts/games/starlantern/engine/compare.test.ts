@@ -87,8 +87,21 @@ describe('itemLines', () => {
   it('shows the power and the lore of a legendary', () => {
     const lg = rollItem(mulberry32(3), { uid: 3, ilvl: 10, rarity: 'legendary', special: 'mire-whisper-gloves' });
     const lines = itemLines(lg);
-    expect(lines.find((l) => l.kind === 'power')!.text).toBe('衰弱咒必定使目標中毒（頭目減半）');
+    expect(lines.find((l) => l.kind === 'power')!.text).toBe('毒針必定使目標中毒（頭目減半）');
     expect(lines.at(-1)).toEqual({ kind: 'lore', text: SPECIALS['mire-whisper-gloves'].lore });
+  });
+
+  it('a starlit piece has a starlit line after its affixes and before its power', () => {
+    const lg = rollItem(mulberry32(3), { uid: 3, ilvl: 10, rarity: 'legendary', special: 'mire-whisper-gloves' });
+    const kinds = itemLines({ ...lg, starlit: true }).map((l) => l.kind);
+    const at = kinds.indexOf('starlit');
+    expect(itemLines({ ...lg, starlit: true })[at]).toEqual({ kind: 'starlit', text: T.gear.starlitLine });
+    expect(T.gear.starlitLine).toBe('星輝：所有詞綴皆為最大值，另多一條詞綴');
+    expect(kinds.lastIndexOf('affix')).toBe(at - 1);
+    expect(kinds[at + 1]).toBe('power');
+    expect(kinds.filter((k) => k === 'starlit')).toHaveLength(1);
+    // A plain piece has none.
+    expect(itemLines(lg).some((l) => l.kind === 'starlit')).toBe(false);
   });
 });
 

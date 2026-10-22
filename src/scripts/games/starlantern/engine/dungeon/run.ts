@@ -1,10 +1,12 @@
 import { CONDITIONS, type ConditionId } from '../../data/conditions';
+import type { Meetable } from '../../data/meetings';
 import { REGIONS, type RegionId } from '../../data/regions';
 import type { FloorMap } from '../map';
 import { mulberry32 } from '../rng';
-import type { BuffStat, ItemInstance } from '../types';
+import { GLIMMER_CHANCE } from '../../data/story/chains';
+import type { BuffStat, CharacterId, ItemInstance } from '../types';
 import { genFloor } from './gen';
-import { fillRooms, type Content } from './rooms';
+import { fillRooms, placeRescue, placeSpecial, type Content } from './rooms';
 
 /** A gate's destination: where it leads and the run condition there. */
 export interface Portal { region: RegionId; condition: ConditionId }
@@ -22,8 +24,12 @@ export interface Run {
   explored: Record<number, string[]>;
   /** The run pack: materials, gold and gear found this run; banked on a safe return, lost on a wipe. */
   loot: { items: Record<string, number>; gold: number; gear: ItemInstance[] };
-  /** Chest and vault contents, fixed the first time they are rolled (key `chest:`/`vault:`/`vault-rare:` + depth:x,y). */
-  rolls: Record<string, { item: string; qty: number }>;
+  /**
+   * Chest and vault contents, fixed the first time they are rolled (key `chest:`/`vault:`/`vault-rare:` + depth:x,y).
+   * A `frag:` key (`frag:depth:x,y`, or `frag:glimmer:x,y`) holds fragment item ids in `frags` (its `item` is empty, `qty` 0)
+   * until the spot pays them out.
+   */
+  rolls: Record<string, { item: string; qty: number; frags?: string[] }>;
   /** Chest and vault gear, fixed the first time it is rolled (key `chest:`/`vault:` + depth:x,y). */
   gearRolls: Record<string, ItemInstance | null>;
   /** Gear left in an opened chest or vault because it did not fit (weight or a bag slot), by spot (`depth:x,y`); taken with `pickUpHere`. */
@@ -34,12 +40,25 @@ export interface Run {
   altarBuffs: { stat: BuffStat; pct: number }[];
   /** Depths whose vault key the party holds. */
   keys: Set<number>;
+  /** Companions waiting to be rescued in this region, by the depth where they are met. */
+  rescues: Record<number, Meetable>;
+  /** Chains whose glimmer on a depth must hold their piece; set when the depth is first entered (before it is made). */
+  glimmers: Record<number, CharacterId[]>;
+  /** Memory drops taken so far; `memoryRng` seeds each from the run seed and this count. */
+  memoryDraws: number;
+  /** Chains that were given a piece on a depth this run. */
+  dropped: Record<number, CharacterId[]>;
+  /** Depths where a memory scene has already played this run; later pieces there wait in the handbook. */
+  played: number[];
+  /** Rune draws taken in battle so far (plan 8f); `runeRng` seeds each from the run seed, RUNE_SALT and this count. */
+  runeDraws: number;
 }
 
-export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number): Run {
+export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number, rescues: Record<number, Meetable> = {}): Run {
   return {
     seed, region, condition, startDepth, floors: new Map(), opened: new Set(), explored: {},
-    loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, waiting: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(),
+    loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, waiting: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(), rescues: { ...rescues },
+    glimmers: {}, memoryDraws: 0, dropped: {}, played: [], runeDraws: 0,
   };
 }
 
@@ -66,6 +85,11 @@ export function startDepths(region: RegionId, reached: number): number[] {
 /** Seed of one floor: a fixed mix of the run seed and the depth. */
 const floorSeed = (seed: number, depth: number): number => (Math.imul(seed ^ 0x5bd1e995, 0x9e3779b1) + Math.imul(depth, 0x85ebca6b)) >>> 0;
 
+/** Salts the rescue's own rng, so placing a rescue room moves nothing else on the floor. */
+const RESCUE_SALT = 0x6a09e667;
+/** Salts the glimmers' own rng, so placing them moves nothing else on the floor. */
+export const GLIMMER_SALT = 0x9b05688c;
+
 /** The floor at a depth of this run, generated on first visit and cached afterwards. */
 export function floorOf(run: Run, depth: number): RunFloor {
   const cached = run.floors.get(depth);
@@ -73,6 +97,11 @@ export function floorOf(run: Run, depth: number): RunFloor {
   const seed = floorSeed(run.seed, depth);
   const g = genFloor(seed, { depth, boss: isBossDepth(run.region, depth) });
   const f = fillRooms(g, mulberry32(seed ^ 0x27d4eb2f), CONDITIONS[run.condition]);
+  const who = run.rescues[depth];
+  if (who) placeRescue(f, g, mulberry32(seed ^ RESCUE_SALT), who);
+  const r = mulberry32(seed ^ GLIMMER_SALT);
+  if (r() < GLIMMER_CHANCE) placeSpecial(f, g, r, { kind: 'glimmer' });
+  for (const owner of run.glimmers[depth] ?? []) placeSpecial(f, g, r, { kind: 'glimmer', owner });
   run.floors.set(depth, f);
   return f;
 }

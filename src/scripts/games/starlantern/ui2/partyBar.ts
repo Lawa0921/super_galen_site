@@ -2,12 +2,27 @@ import { portraitImg, showMood } from '../ui/art';
 import { el } from '../ui/dom';
 import { T } from '../data/text.zh-TW';
 import type { Row } from '../engine/types';
+import type { AilmentChip } from '../engine/ailments';
+import type { MechWord } from '../engine/mechanics/index';
+import { bySeverity, fitRow, isHalting, textWidth } from '../render/ailmentStyle';
 import type { ArtIndex } from '../render/textures';
 
 const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' };
+/**
+ * A panel's ailment row in design px: the party bar is 632 wide in five columns with 4 px gaps (123.2 each), less the
+ * panel's 1 px borders, less 2 px to spare. A word is its text at 9 px plus 1 px padding and a 1 px rim each side.
+ */
+const AIL_ROW_W = 119;
+const ailWordWidth = (text: string): number => textWidth(text, 9) + 4;
 
 /** `row` shows a small 前／中／後 tag so the formation is visible during play. */
-export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row }
+export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row;
+  /** The art id of the face when it is not `key` (Rin after her oath). */
+  artId?: string;
+  /** Ailments held, shown as coloured words with their rounds under the bars; none (or empty) shows nothing. */
+  ailments?: AilmentChip[];
+  /** Her mechanic's words (「熱度3」「隱匿」), first in the same row as the ailments (plan 8c). */
+  mech?: MechWord[] }
 /** `miss` and `tp` only pop a word or number: no face, shake or glow. */
 export type PulseMood = 'attack' | 'hit' | 'heal' | 'ko' | 'miss' | 'tp';
 /**
@@ -116,6 +131,15 @@ export class PartyBar {
     setTimeout(() => { for (const x of extras) x.remove(); }, POP_MS);
   }
 
+  /** A mechanic's moment (暴走！, 還有。): its word in its colour rising off the panel, like MISS. */
+  cue(key: string, w: MechWord): void {
+    const p = this.panels.get(key);
+    if (!p) return;
+    const pop = el('span', { class: `slx-pm-cue slx-mech-${w.tone}`, text: w.text, attrs: { 'aria-hidden': 'true' } });
+    p.el.append(pop);
+    setTimeout(() => pop.remove(), POP_MS);
+  }
+
   /** MISS or a TP gain: a word or number rising off the panel and nothing else, so it never reads as a hit. */
   private quietPop(p: Panel, mood: 'miss' | 'tp', amount?: number): void {
     if (mood === 'tp' && !amount) return;
@@ -143,9 +167,31 @@ export class PartyBar {
     const m = p.member;
     if (!p.body.firstChild) {
       p.body.append(el('span', { class: 'slx-pm-name' }), el('span', { class: 'slx-pm-num' }), bar(0, 1, 'slx-bar-hp'),
-        el('span', { class: 'slx-pm-tp' }), bar(0, 1, 'slx-bar-tp'), bar(0, 1, 'slx-bar-limit'));
+        el('span', { class: 'slx-pm-tp' }), bar(0, 1, 'slx-bar-tp'), bar(0, 1, 'slx-bar-limit'), el('span', { class: 'slx-pm-ail' }));
     }
-    const [name, num, hp, tpNum, tp, limit] = [...p.body.children] as HTMLElement[];
+    const [name, num, hp, tpNum, tp, limit, ail] = [...p.body.children] as HTMLElement[];
+    // One line, by priority (plan 8c final): freeze and sleep (never folded), her mechanic's words, then the other ailments,
+    // the most severe first; what does not fit folds into +N. Widths are measured on the page (the row's own width and
+    // each word's), and estimated only where nothing is laid out (tests).
+    const chips = bySeverity(m.ailments ?? []);
+    const halting = chips.filter(isHalting);
+    const words = [
+      ...halting.map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
+      ...(m.mech ?? []).map((x) => el('span', { class: `slx-mech slx-mech-${x.tone}`, text: x.text })),
+      ...chips.filter((c) => !isHalting(c)).map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
+    ];
+    const moreEl = (n: number) => el('span', { class: 'slx-ail slx-ail-more', text: T.ailmentMore(n) });
+    ail.hidden = words.length === 0;
+    ail.replaceChildren(...words);
+    const probe = moreEl(words.length);
+    ail.append(probe);
+    // Layout px (offsetWidth, as clientWidth), not the scaled screen box.
+    const measured = ail.clientWidth > 0 && [...words, probe].every((w) => w.offsetWidth > 0);
+    const widthOf = (w: HTMLElement) => (measured ? w.offsetWidth : ailWordWidth(w.textContent ?? ''));
+    const moreW = measured ? probe.offsetWidth : 0;
+    probe.remove();
+    const { shown, more } = fitRow(words, measured ? ail.clientWidth : AIL_ROW_W, widthOf, (n) => (measured ? moreW : ailWordWidth(T.ailmentMore(n))), 1, halting.length);
+    ail.replaceChildren(...shown, ...(more ? [moreEl(more)] : []));
     tpNum.textContent = `TP ${m.tp}/${m.maxTp}`;
     name.replaceChildren(m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : []));
     num.textContent = `${m.hp}/${m.maxHp}`;
@@ -176,7 +222,7 @@ export class PartyBar {
 
   /** The face for the member's current HP (normal, dying or down). */
   private resetFace(p: Panel): void {
-    const face = portraitImg(this.art, p.member.key, p.member.hp, p.member.maxHp);
+    const face = portraitImg(this.art, p.member.artId ?? p.member.key, p.member.hp, p.member.maxHp);
     if (!face) { p.face?.remove(); p.face = null; return; }
     if (p.face && p.face.getAttribute('src') === face.getAttribute('src') && p.face.className === face.className) return;
     if (p.face) p.face.replaceWith(face); else p.el.prepend(face);

@@ -1,6 +1,11 @@
 import { CHARACTERS } from '../data/characters';
+import { STORY } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
+import { RUNES } from '../data/runes';
+import { SKILLS } from '../data/skills';
 import type { BattleEvent } from '../engine/combatant';
+import { SHARD_NAMES, TOWN_FRAGMENTS, fragmentName } from '../data/story/fragments';
+import type { FragmentGain } from '../engine/story/memories';
 import type { LevelUp } from '../engine/party';
 import type { Party } from '../engine/types';
 
@@ -20,13 +25,18 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
       case 'resist': return T.log.resist(nameOf(e.target));
       case 'buff': return T.log.buff(nameOf(e.target), e.stat, e.pct);
       case 'taunt': return T.log.taunt(nameOf(e.target));
-      case 'turret': return T.log.turret(nameOf(e.target));
       case 'asleep': return T.log.asleep(nameOf(e.actor));
       case 'no-tp': return T.log.noTp(nameOf(e.actor));
       case 'no-skill': return T.log.noSkill(nameOf(e.actor));
       case 'no-limit': return T.log.noLimit(nameOf(e.actor));
       case 'escape': return T.log.escape(e.success);
       case 'poison-tick': return T.log.poison(nameOf(e.target), e.amount);
+      case 'dot-tick': return T.log.dot(nameOf(e.target), e.status, e.amount);
+      case 'shield': return T.log.shield(nameOf(e.target), e.amount);
+      case 'mech': return T.log.mech(nameOf(e.actor), e.cue, e.amount);
+      case 'frozen': return T.log.frozen(nameOf(e.actor));
+      case 'survived': return STORY.survived;
+      case 'trigger': return T.log.trigger(nameOf(e.actor), RUNES[e.rune].name, SKILLS[e.skill]?.name ?? e.skill);
     }
   });
 }
@@ -40,4 +50,14 @@ export function levelUpLines(ups: LevelUp[], party: Party): { text: string; cls:
     if (u.points.skill > 0 || u.points.talent > 0) lines.push({ text: T.battle.points(who, u.points.skill, u.points.talent), cls: 'slx-levelup' });
   }
   return lines;
+}
+
+/** One line per memory piece, shard or town fragment a glimmer, boss or elite handed out. */
+export function fragmentLines(gained: FragmentGain[]): string[] {
+  return gained.map((g) => {
+    if (g.kind === 'piece') return T.ui2.memory.piece(CHARACTERS[g.id].name, g.n);
+    if (g.kind === 'shard') return T.ui2.memory.shard(SHARD_NAMES[g.grade]);
+    const item = TOWN_FRAGMENTS.find((f) => f.id === g.id)?.item ?? g.id;
+    return T.ui2.memory.town(fragmentName(item) ?? g.id);
+  });
 }

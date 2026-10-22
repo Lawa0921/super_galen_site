@@ -1,0 +1,29 @@
+{
+  "pass": true,
+  "reasons": [],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 0,
+  "magenta_spill": 0,
+  "subject": {
+    "long": 56,
+    "short": 52,
+    "mass": 0.34,
+    "box": [
+      6,
+      4,
+      58,
+      60
+    ],
+    "centre_off": 0.0
+  },
+  "block": 5.625,
+  "scale": 5.625,
+  "size": [
+    64,
+    64
+  ],
+  "spec": "gear-cell:6a8d64bae98b"
+}

@@ -14,16 +14,22 @@ import { SLOTS } from '../../engine/party';
 import type { GameState } from '../../engine/state';
 import type { AnyStat, GearSlot, ItemInstance, Rarity } from '../../engine/types';
 import { art } from '../../render/artPaths';
+import type { ArtIndex } from '../../render/textures';
 import { el } from '../../ui/dom';
-import { fillRich, gearLabel, gearPart, invested, joinParts } from '../loot';
+import { gearIconUrl } from '../gearArt';
+import { fillRich, gearLabel, gearPart, invested, joinParts, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { MenuView, confirmBox, richNodes, richText, win, type Rich, type RichPart } from '../widgets';
+import { GEAR_ROWS, MenuView, confirmBox, richNodes, richText, win, type Rich, type RichPart } from '../widgets';
+import { RUNE_FUSE_IN } from '../../data/runeEconomy';
+import { RUNES, RUNE_STACK, runeKey, parseRuneKey, type RuneRef } from '../../data/runes';
+import { bagRunes, fuseCostOf, fuseRunes, type RuneFuseFail } from '../../engine/runeTrade';
+import { bagCount, ownedCount } from '../../engine/sockets';
 import { FacilityScene, type Layer } from './facility';
 import { openCraft } from './forgeCraft';
 
-/** The forge's commands are its five tabs, in this order. */
-export const FORGE_TABS = ['dismantle', 'enhance', 'reroll', 'fuse', 'craft'] as const;
+/** The forge's commands are its six tabs, in this order (符文合成 since plan 8f). */
+export const FORGE_TABS = ['dismantle', 'enhance', 'reroll', 'fuse', 'craft', 'runes'] as const;
 export type ForgeTab = typeof FORGE_TABS[number];
 
 /**
@@ -45,15 +51,25 @@ export interface ForgeHost {
 /**
  * Gear rows for a forge list: the bag first, then (when `worn`) what each recruited member wears, in recruit order and
  * slot order, its wearer named after the label. Each row is `g<uid>`, in its rarity colour, struck through when marked junk.
+ * A piece listed but out of reach is greyed out with `blocked`'s reason in place of `right`. With `art`, a row carries
+ * the piece's gear icon once it is published (a special's own art only, never its base's).
  */
-export function forgeRows(s: GameState, o: { worn: boolean; filter?: (it: ItemInstance) => boolean; right: (it: ItemInstance) => string }): MenuItem[] {
+export function forgeRows(s: GameState, o: {
+  worn: boolean; filter?: (it: ItemInstance) => boolean; right: (it: ItemInstance) => string; blocked?: (it: ItemInstance) => string | undefined;
+  art?: ArtIndex;
+}): MenuItem[] {
   const keep = o.filter ?? (() => true);
-  const row = (it: ItemInstance, wearer?: string): MenuItem => ({
-    id: `g${it.uid}`,
-    label: wearer ? `${gearLabel(it)}${T.ui2.forge.wornBy(wearer)}` : gearLabel(it),
-    right: o.right(it),
-    cls: it.junk ? `slx-rarity-${it.rarity} slx-junk` : `slx-rarity-${it.rarity}`,
-  });
+  const row = (it: ItemInstance, wearer?: string): MenuItem => {
+    const reason = o.blocked?.(it);
+    const icon = o.art ? gearIconUrl(o.art, it) : undefined;
+    return {
+      id: `g${it.uid}`,
+      label: wearer ? `${gearLabel(it)}${T.ui2.forge.wornBy(wearer)}` : gearLabel(it),
+      cls: it.junk ? `${rarityClass(it)} slx-junk` : rarityClass(it),
+      ...(icon ? { icon, iconCls: 'slx-gear-ico' } : {}),
+      ...(reason ? { disabled: true, right: reason, note: reason } : { right: o.right(it) }),
+    };
+  };
   const rows = s.bag.filter(keep).map((it) => row(it));
   if (o.worn) {
     for (const id of s.party.recruited) {
@@ -67,7 +83,7 @@ export function forgeRows(s: GameState, o: { worn: boolean; filter?: (it: ItemIn
   return rows;
 }
 
-/** 鍛造屋: 分解, 強化, 重鑄, 合成 and 製作. Each tab's page arrives with its own task; until then it says so. */
+/** 鍛造屋: 分解, 強化, 重鑄, 合成, 製作 and 符文合成. Each tab's page arrives with its own task; until then it says so. */
 export class ForgeScene extends FacilityScene {
   constructor(ctx: SceneCtx, cps?: number) { super(ctx, 'forge', cps); }
 
@@ -86,6 +102,7 @@ export class ForgeScene extends FacilityScene {
     if (id === 'reroll') { rerollPage(this.host()); return; }
     if (id === 'fuse') { fusePage(this.host()); return; }
     if (id === 'craft') { openCraft(this.host()); return; }
+    if (id === 'runes') { runeFusePage(this.host()); return; }
     const label = T.ui2.forge.tabs[id as ForgeTab];
     if (label) void this.say(T.ui2.town.soon(label));
   }
@@ -116,15 +133,19 @@ export class ForgeScene extends FacilityScene {
   }
 }
 
-/** Gear whose loss cannot be undone: a named rarity, or anything invested in (enhanced, or with a reroll-locked affix). */
-const precious = (it: ItemInstance): boolean => it.rarity === 'legendary' || it.rarity === 'unique' || it.rarity === 'set' || invested(it);
+/**
+ * Gear whose loss cannot be undone: epic and up (a starlit piece is always legendary, unique or set), or anything invested
+ * in (enhanced, or with a reroll-locked affix).
+ */
+const precious = (it: ItemInstance): boolean =>
+  it.rarity === 'epic' || it.rarity === 'legendary' || it.rarity === 'unique' || it.rarity === 'set' || invested(it);
 /** A single piece asks first from rare up (or when invested in); a plain common or magic piece goes at once. */
 const asksFirst = (it: ItemInstance): boolean => it.rarity !== 'common' && it.rarity !== 'magic' || invested(it);
 
 /** A detail window's name line: the label, and the wearer when worn (a long row label is cut short, so the detail says it in full). */
 function nameLine(s: GameState, it: ItemInstance): HTMLElement {
   const member = findItem(s, it.uid)?.member;
-  return el('p', { class: `slx-name-line slx-rarity-${it.rarity}`, text: member ? `${gearLabel(it)}${T.ui2.forge.wornBy(CHARACTERS[member].name)}` : gearLabel(it) });
+  return el('p', { class: `slx-name-line ${rarityClass(it)}`, text: member ? `${gearLabel(it)}${T.ui2.forge.wornBy(CHARACTERS[member].name)}` : gearLabel(it) });
 }
 
 /** An essence tally as rich parts, each essence in the colour of its rarity. */
@@ -149,7 +170,7 @@ export function dismantlePage(h: ForgeHost): void {
   const rows = (): MenuItem[] => {
     const s = game.state;
     const marked = s.bag.filter((it) => it.junk).length;
-    const list = forgeRows(s, { worn: false, right: (it) => T.ui2.forge.yields(dismantleYield([it])) });
+    const list = forgeRows(s, { worn: false, art: h.ctx.art, right: (it) => T.ui2.forge.yields(dismantleYield([it])) });
     return marked ? [{ id: 'marked', label: T.ui2.forge.dismantleMarked(marked) }, ...list] : list;
   };
   if (!game.state.bag.length) { void h.say(T.ui2.forge.nothingToDismantle); return; }
@@ -186,7 +207,7 @@ ${T.ui2.forge.warnPrecious}`] : ask, (yes) => {
     },
     moved: () => h.ctx.sfx.cursor(),
     cancel: () => h.pop(),
-  }, 12);
+  }, GEAR_ROWS);
   h.push({ el: win('slx-list slx-forge-list slx-forge-pick', [v.el]), onAction: (a) => v.onAction(a) });
 }
 
@@ -253,7 +274,7 @@ function enhanceDetail(s: GameState, it: ItemInstance): HTMLElement[] {
  */
 export function enhancePage(h: ForgeHost): void {
   const game = h.ctx.game;
-  const rows = (): MenuItem[] => forgeRows(game.state, { worn: true, right: (it) => (it.enhance >= ENHANCE_MAX ? T.ui2.forge.maxed : `+${it.enhance}`) });
+  const rows = (): MenuItem[] => forgeRows(game.state, { worn: true, art: h.ctx.art, right: (it) => (it.enhance >= ENHANCE_MAX ? T.ui2.forge.maxed : `+${it.enhance}`) });
   if (!rows().length) { void h.say(T.ui2.forge.nothingToEnhance); return; }
   const info = win('slx-info');
   const find = (id?: string) => (id ? findItem(game.state, Number(id.slice(1)))?.it ?? null : null);
@@ -284,7 +305,7 @@ export function enhancePage(h: ForgeHost): void {
     },
     moved: () => { h.ctx.sfx.cursor(); show(); },
     cancel: () => { info.remove(); h.pop(); },
-  }, 12);
+  }, GEAR_ROWS);
   show();
   h.layerRoot.append(info);
   h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
@@ -312,10 +333,14 @@ export function rerollPage(h: ForgeHost): void {
   const affixText = (a: { key: AnyStat; value: number }) => T.gear.affix(a.key, a.value);
   const itemRows = (): MenuItem[] => forgeRows(game.state, {
     worn: true,
+    art: h.ctx.art,
     filter: (it) => it.affixes.length > 0,
     right: (it) => (it.locked !== undefined && it.affixes[it.locked] ? affixText(it.affixes[it.locked]) : F.unlocked),
+    // A starlit unique or set has no reroll at all: its values are at their maximum and its affixes cannot be swapped.
+    blocked: (it) => (it.starlit && (it.rarity === 'unique' || it.rarity === 'set') ? F.starlitMaxed : undefined),
   });
-  if (!itemRows().length) { void h.say(F.nothingToReroll); return; }
+  // Greyed rows (starlit uniques and sets) cannot be rerolled, so they alone are nothing to reroll.
+  if (!itemRows().some((r) => !r.disabled)) { void h.say(F.nothingToReroll); return; }
 
   /** Replace a list's rows in place, keeping the cursor on a live row. */
   const sync = (view: MenuView, next: MenuItem[]) => {
@@ -339,7 +364,7 @@ export function rerollPage(h: ForgeHost): void {
     pick: (row) => { const it = find(Number(row.id.slice(1))); if (it) openAffixes(it.uid); },
     moved: () => { h.ctx.sfx.cursor(); show(); },
     cancel: () => { info.remove(); h.pop(); },
-  }, 12);
+  }, GEAR_ROWS);
   shows.push(() => {
     const it = find(Number(itemsView.menu.current()?.id.slice(1)));
     info.replaceChildren(...(it ? [itemLine(it), ...affixLines(it)] : []));
@@ -375,8 +400,16 @@ export function rerollPage(h: ForgeHost): void {
       const methods = (): MenuItem[] => {
         const it = find(itemUid);
         if (!it) return [];
+        // A region material's row carries that material's icon once it is published.
         const row = (id: string, label: string): MenuItem => {
+          const mat = how(id).mat;
+          const icon = mat && h.ctx.art.has(art.icon(mat)) ? art.icon(mat) : undefined;
+          return { ...plainRow(id, label), ...(icon ? { icon } : {}) };
+        };
+        const plainRow = (id: string, label: string): MenuItem => {
           const o = how(id);
+          // A starlit piece's affixes are at their maximum: its value reroll is greyed out and says so (the engine refuses it).
+          if (!o.swap && it.starlit) return { id, label, disabled: true, right: F.starlitMaxed, note: F.starlitMaxed };
           const empty = o.swap && swapPool(it, index, o.mat).length === 0;
           return empty
             ? { id, label, disabled: true, right: T.reasons.none, note: T.reasons.none }
@@ -417,9 +450,11 @@ export function rerollPage(h: ForgeHost): void {
         const o = how(cur?.id ?? 'value');
         const lines = [itemLine(it), el('p', { text: F.rerollNow(affixText(it.affixes[index])) })];
         if (o.swap) lines.push(el('p', { text: F.rerollPool(swapPool(it, index, o.mat).map((k) => T.gear.statName[k]).join('、')) }));
+        else if (it.starlit) lines.push(el('p', { class: 'slx-desc', text: F.starlitMaxed }));
         else { const r = rerollRange(it, index); if (r) lines.push(el('p', { text: F.rerollRange(it.affixes[index].key, r[0], r[1]) })); }
-        lines.push(el('p', {}, richNodes(costText(game.state, rerollCost(it, o)))));
-        if (it.locked === undefined) lines.push(el('p', { class: 'slx-desc', text: F.lockWarn }));
+        const refused = !o.swap && it.starlit;
+        if (!refused) lines.push(el('p', {}, richNodes(costText(game.state, rerollCost(it, o)))));
+        if (it.locked === undefined && !refused) lines.push(el('p', { class: 'slx-desc', text: F.lockWarn }));
         info.replaceChildren(...lines);
       });
       show();
@@ -487,7 +522,7 @@ export function fusePage(h: ForgeHost): void {
     const picked = new Set<number>();
     const rows = (): MenuItem[] => [
       { id: 'go', label: F.fuseGo(picked.size), disabled: picked.size !== 3 },
-      ...forgeRows(game.state, { worn: false, filter: (it) => it.rarity === from, right: (it) => (picked.has(it.uid) ? F.picked : '') }),
+      ...forgeRows(game.state, { worn: false, art: h.ctx.art, filter: (it) => it.rarity === from, right: (it) => (picked.has(it.uid) ? F.picked : '') }),
     ];
     const v: MenuView = new MenuView(new Menu(rows()), {
       pick: (row) => {
@@ -500,7 +535,7 @@ export function fusePage(h: ForgeHost): void {
       },
       moved: () => h.ctx.sfx.cursor(),
       cancel: () => h.pop(),
-    }, 12);
+    }, GEAR_ROWS);
     h.push({ el: win('slx-list slx-forge-list slx-forge-pick', [v.el]), onAction: (a) => v.onAction(a) });
   }
 
@@ -549,4 +584,95 @@ export function fusePage(h: ForgeHost): void {
       if (r.ok) h.ctx.sfx.loot?.(r.out.item.rarity);
     };
   }
+}
+
+/** Why a rune fusion cannot go, in words (engine/runeTrade RuneFuseFail; gold and the rest read as T.reasons). */
+function runeFuseWhy(s: GameState, r: RuneRef, reason: RuneFuseFail | 'phase'): string {
+  const F = T.rune.fail;
+  if (reason === 'stock') return F.fuseStock(bagCount(s, r), RUNE_FUSE_IN);
+  if (reason === 'essence') return F.essence(MATERIALS[fuseCostOf(r)!.essence]?.name ?? '');
+  if (reason === 'full') return F.full(RUNE_STACK);
+  if (reason === 'top') return F.top;
+  return T.reasons[reason] ?? T.reasons.invalid;
+}
+
+/** A rune fusion as one line: 「3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）」. */
+function runeFuseLine(r: RuneRef): string {
+  const c = fuseCostOf(r)!;
+  return T.rune.fuseLine(RUNE_FUSE_IN, T.rune.label(r.id, r.tier), c.gold, MATERIALS[c.essence]?.name ?? c.essence, T.rune.label(c.to.id, c.to.tier));
+}
+
+/**
+ * 符文合成 (plan 8f Task 5): every rune in the bag that can fuse higher, one row each, 「擴散（普通）」 with 「持有 4」 on
+ * the right (持有 counts the socketed ones, plan 8f ruling 13). A row the bag cannot pay for shows the reason in place of
+ * 持有, in `slx-lack` (the 262px forge list has no room for both beside the label): 袋子 2／需要 3, the gold, the essence by
+ * name, or the next tier full. Such a row still takes the cursor, as 製作's rows do, so its recipe and bag count can be
+ * read; Enter on it says why and asks nothing. The detail follows the cursor: the fusion as one line, the bag's count,
+ * the reason when it cannot go, the socketed note and what the next tier does. Enter asks first (否 under the cursor), then
+ * fuses; the list stays open for the next one. With nothing to fuse, the tab says how fusion works.
+ */
+export function runeFusePage(h: ForgeHost): void {
+  const game = h.ctx.game;
+  const R = T.rune;
+  const fusable = (): RuneRef[] => bagRunes(game.state).filter((r) => fuseCostOf(r) !== undefined);
+  if (!fusable().length) { void h.say(R.fuseEmpty); return; }
+  const blocked = (r: RuneRef): string | undefined => { const f = fuseRunes(game.state, r); return f.ok ? undefined : runeFuseWhy(game.state, r, f.reason); };
+  const rows = (): MenuItem[] => fusable().map((r) => {
+    const why = blocked(r);
+    return {
+      id: `fuse:${runeKey(r)}`, label: R.label(r.id, r.tier), cls: rarityClass({ rarity: r.tier }),
+      ...(why ? { right: why, rightClass: 'slx-lack' } : { right: T.ui2.shop.owned(ownedCount(game.state, r)) }),
+    };
+  });
+  const refOf = (id?: string): RuneRef | null => (id ? parseRuneKey(id.slice(id.indexOf(':') + 1)) : null);
+  const info = win('slx-info slx-rune-fuse-info');
+  const show = () => {
+    const r = refOf(v.menu.current()?.id);
+    const c = r && fuseCostOf(r);
+    if (!r || !c) { info.replaceChildren(); return; }
+    const bag = bagCount(game.state, r);
+    const worn = ownedCount(game.state, r) - bag;
+    const why = blocked(r);
+    info.replaceChildren(
+      el('p', { class: `slx-name-line ${rarityClass({ rarity: r.tier })}`, text: R.label(r.id, r.tier) }),
+      el('p', { text: runeFuseLine(r) }),
+      el('p', { text: R.bag(bag) }),
+      ...(why ? [el('p', { class: 'slx-lack', text: why })] : []),
+      ...(worn > 0 ? [el('p', { class: 'slx-desc', text: R.socketedNote(worn) })] : []),
+      el('p', { class: 'slx-desc', text: RUNES[c.to.id].text(c.to.tier) }),
+    );
+  };
+  const sync = () => {
+    const next = rows();
+    v.menu.items.splice(0, v.menu.items.length, ...next);
+    if (v.menu.cursor >= next.length) v.menu.setCursor(Math.max(0, next.length - 1));
+    v.render(); show();
+  };
+  const run = (r: RuneRef) => {
+    const res = game.fuseRune(r);
+    if (!res.ok) { h.ctx.sfx.error(); void h.say(runeFuseWhy(game.state, r, res.reason)); return; }
+    if (fusable().length) sync(); else { info.remove(); h.pop(true); }
+    h.afterAct(res, (out) => [{ text: R.fused(R.label(out.id, out.tier)), cls: rarityClass({ rarity: out.tier }) }]);
+  };
+  const v: MenuView = new MenuView(new Menu(rows()), {
+    pick: (item) => {
+      const r = refOf(item.id);
+      if (!r) return;
+      // A row that cannot be fused says why and asks nothing (as 製作's rows the stores cannot cover).
+      const why = blocked(r);
+      if (why) { h.ctx.sfx.error(); void h.say(why); return; }
+      const box = confirmBox(R.askFuse(runeFuseLine(r)), (yes) => {
+        h.pop(!yes);
+        if (yes) run(r);
+      });
+      box.view.menu.setCursor(1);
+      box.view.render();
+      h.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+    },
+    moved: () => { h.ctx.sfx.cursor(); show(); },
+    cancel: () => { info.remove(); h.pop(); },
+  }, GEAR_ROWS);
+  show();
+  h.layerRoot.append(info);
+  h.push({ el: win('slx-list slx-forge-list', [v.el]), onAction: (a) => v.onAction(a) });
 }

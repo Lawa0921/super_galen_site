@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "npc-forge": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/npc-forge/cand/a2/npc-forge.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\npc-forge\\npc-forge-a2.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "subject cut by the canvas edge"
+        ],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "magenta_spill": 0,
+        "block": 8,
+        "size": [
+          133,
+          174
+        ]
+      },
+      "status": "qa_failed"
+    }
+  }
+}

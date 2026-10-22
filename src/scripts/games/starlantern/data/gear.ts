@@ -1,12 +1,14 @@
-import type { AnyStat, Effect, GearSlot, Rarity, Sheet, Target, Element } from '../engine/types';
+import type { AnyStat, Effect, GearSlot, Rarity, Sheet, SkillRules, Target, Element, WeaponKind } from '../engine/types';
 import type { RegionId } from './regions';
 
 export const GEAR_SLOTS: GearSlot[] = ['weapon', 'offhand', 'head', 'body', 'hands', 'feet', 'neck', 'ring'];
-export const RARITIES: Rarity[] = ['common', 'magic', 'rare', 'legendary', 'unique', 'set'];
-export const RARITY_RANK: Record<Rarity, number> = { common: 0, magic: 1, rare: 2, legendary: 3, unique: 4, set: 5 };
-export const AFFIX_COUNT = { magic: [1, 2], rare: [3, 4], legendary: [3, 3] } as const;
+export const RARITIES: Rarity[] = ['common', 'magic', 'rare', 'epic', 'legendary', 'unique', 'set'];
+export const RARITY_RANK: Record<Rarity, number> = { common: 0, magic: 1, rare: 2, epic: 3, legendary: 4, unique: 5, set: 6 };
+/** Plan 5g: the rarities a starlit drop can have (a legendary-tier special; ItemInstance.starlit). */
+export const STARLIT_RARITIES: readonly Rarity[] = ['legendary', 'unique', 'set'];
+export const AFFIX_COUNT = { magic: [1, 2], rare: [3, 4], epic: [4, 5], legendary: [3, 3] } as const;
 /** Lowest share of an affix's range a roll of this rarity can land on. */
-export const ROLL_FLOOR: Record<Rarity, number> = { common: 0, magic: 0, rare: 0.25, legendary: 0.5, unique: 0.9, set: 0.75 };
+export const ROLL_FLOOR: Record<Rarity, number> = { common: 0, magic: 0, rare: 0.25, epic: 0.5, legendary: 0.5, unique: 0.9, set: 0.75 };
 /**
  * The two loot balance knobs, tuned against engine/balance.test.ts tests 10–11 (a party in random gear keeps the bands;
  * a full rare kit does not one-round a boss). Change them only with those tests.
@@ -71,7 +73,7 @@ export function affixRange(key: AnyStat, ilvl: number): [number, number] {
 /** How a power rewrites the skill it names (applied by the battle engine). */
 export interface SkillMod {
   hits?: number; target?: Target; element?: Element; hpCost?: number; turns?: number; chance?: number;
-  /** Scales damage, heal and turret power. Never a buff's or debuff's percent: that is `buffPct`. */
+  /** Scales damage, heal and device power. Never a buff's or debuff's percent: that is `buffPct`. */
   powerPct?: number;
   /** Scales the percent of every buff and debuff the skill applies (not ones added by `extra`). */
   buffPct?: number;
@@ -82,6 +84,10 @@ export interface SkillMod {
   /** Added to a TP-costing skill's cost (floored at 1); a free skill stays free. */
   tpDelta?: number;
   extra?: Effect[];
+  /** A variant's label and rule (plan 8d): the label goes after the skill's name (・label), the rule after its words. */
+  notes?: { label: string; text: string }[];
+  /** Rules the variant writes on the skill, merged key by key (engine/types SkillRules). */
+  rules?: Partial<SkillRules>;
 }
 export interface PowerDef { id: string; skill: string; text: string; mod: SkillMod }
 
@@ -93,12 +99,12 @@ const POWER_LIST: PowerDef[] = [
   { id: 'lg-scarlet', skill: 'provoke', text: '挑釁額外使自己防禦 +25%，持續 3 回合', mod: { extra: [{ kind: 'buff', stat: 'def', pct: 25, turns: 3 }] } },
   { id: 'lg-selene', skill: 'moonlight', text: '月光改為治療全體，威力 60%', mod: { target: 'allies', powerPct: 60 } },
   { id: 'lg-safira', skill: 'blade-dance', text: '刃舞改為 4 段', mod: { hits: 4 } },
-  { id: 'lg-bobby', skill: 'turret', text: '砲台持續回合固定為 5（雙砲台的 +1 回合不再疊加）', mod: { turns: 5 } },
+  { id: 'lg-bobby', skill: 'turret', text: '砲台持續回合固定為 5（雙砲台的 +2 回合不再疊加）', mod: { turns: 5 } },
   { id: 'blaze-heart-sword', skill: 'flame-burst', text: '爆炎斬不再消耗 HP', mod: { hpCost: 0 } },
   { id: 'frost-bloom-neck', skill: 'ice-star', text: '冰之星彈改為打全體，威力 70%', mod: { target: 'enemies', powerPct: 70 } },
   { id: 'storm-thunder-bow', skill: 'aimed-shot', text: '瞄準射擊改為雷屬性，威力 120%', mod: { element: 'thunder', powerPct: 120 } },
-  { id: 'mire-whisper-gloves', skill: 'hex', text: '衰弱咒必定使目標中毒（頭目減半）', mod: { chance: 1 } },
-  { id: 'shade-silent-blade', skill: 'triple-slash', text: '三連刃改為 4 段', mod: { hits: 4 } },
+  { id: 'mire-whisper-gloves', skill: 'rin-venom-needle', text: '毒針必定使目標中毒（頭目減半）', mod: { chance: 1 } },
+  { id: 'shade-silent-blade', skill: 'rin-needle', text: '飛針改為 3 段', mod: { hits: 3 } },
   { id: 'iron-bulwark-plate', skill: 'iron-wall', text: '鐵壁改為作用全體，威力 50%', mod: { target: 'allies', buffPct: 50 } },
 ];
 export const POWERS: Record<string, PowerDef> = Object.fromEntries(POWER_LIST.map((p) => [p.id, p]));
@@ -106,6 +112,8 @@ export const POWERS: Record<string, PowerDef> = Object.fromEntries(POWER_LIST.ma
 export interface SpecialDef {
   id: string; name: string; rarity: 'legendary' | 'unique' | 'set'; slot: GearSlot; region: RegionId | null;
   source: 'any' | 'elite' | 'boss'; power?: string; fixed?: AnyStat[]; set?: string; lore: string;
+  /** Set on every weapon: what the hero's basic attack and mastery follow (data/equipment.ts weaponKindOf). */
+  weaponKind?: WeaponKind;
 }
 export interface SetDef {
   id: string; name: string; region: RegionId; pieces: string[]; two: Partial<Sheet>; four: Partial<Sheet>;
@@ -163,7 +171,15 @@ export const SETS: Record<string, SetDef> = Object.fromEntries(SET_DEFS.map((s) 
   id: s.id, name: `${s.stem}套裝`, region: s.region, pieces: s.slots.map((slot) => `${s.id}-${slot}`), two: s.two, four: s.four,
 }]));
 
-export const SPECIALS: Record<string, SpecialDef> = Object.fromEntries([...SPECIAL_LIST, ...SET_PIECES].map((s) => [s.id, s]));
+/** The kind of each legendary and unique weapon, by its name: 槍 and 叉 spear, 劍 sword, 杖 staff, 弓 bow, 刃 dagger. */
+const SPECIAL_WEAPON_KIND: Record<string, WeaponKind> = {
+  'lg-chizuru': 'spear', 'lg-liz': 'spear', 'blaze-heart-sword': 'sword', 'frost-winter-staff': 'staff',
+  'storm-thunder-bow': 'bow', 'shade-silent-blade': 'dagger',
+};
+/** Set weapons are all named "...之刃" and are swords. */
+const withKind = (s: SpecialDef): SpecialDef => s.slot !== 'weapon' ? s : { ...s, weaponKind: s.set ? 'sword' : SPECIAL_WEAPON_KIND[s.id] };
+
+export const SPECIALS: Record<string, SpecialDef> = Object.fromEntries([...SPECIAL_LIST, ...SET_PIECES].map(withKind).map((s) => [s.id, s]));
 
 /** A region's legendary and unique; set pieces are reached through SETS. */
 export function regionSpecials(region: RegionId): SpecialDef[] {

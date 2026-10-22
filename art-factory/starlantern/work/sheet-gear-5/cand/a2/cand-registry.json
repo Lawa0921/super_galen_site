@@ -1,0 +1,738 @@
+{
+  "assets": {
+    "gear-lg-safira-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-lg-safira-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 11,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 56,
+          "short": 51,
+          "mass": 0.71,
+          "box": [
+            4,
+            6,
+            60,
+            57
+          ],
+          "centre_off": 0.5
+        },
+        "block": 5.929,
+        "scale": 5.929,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "lg-safira"
+      },
+      "slot": "feet"
+    },
+    "gear-lg-safira": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-lg-safira.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 22,
+          "short": 20,
+          "mass": 0.725,
+          "box": [
+            2,
+            3,
+            24,
+            23
+          ],
+          "centre_off": 0.0
+        },
+        "block": 15.091,
+        "scale": 15.091,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "lg-safira"
+      },
+      "slot": "feet"
+    },
+    "gear-lg-bobby-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-lg-bobby-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 56,
+          "short": 52,
+          "mass": 0.741,
+          "box": [
+            4,
+            6,
+            60,
+            58
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.679,
+        "scale": 5.679,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "lg-bobby"
+      },
+      "slot": "hands"
+    },
+    "gear-lg-bobby": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-lg-bobby.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.76,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 14.455,
+        "scale": 14.455,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "lg-bobby"
+      },
+      "slot": "hands"
+    },
+    "gear-frost-bloom-neck-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-frost-bloom-neck-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "magenta_spill": 2,
+        "subject": {
+          "long": 56,
+          "short": 48,
+          "mass": 0.454,
+          "box": [
+            8,
+            4,
+            56,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.946,
+        "scale": 5.946,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "frost-bloom-neck"
+      },
+      "slot": "neck"
+    },
+    "gear-frost-bloom-neck": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-frost-bloom-neck.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 22,
+          "short": 19,
+          "mass": 0.469,
+          "box": [
+            3,
+            2,
+            22,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 15.136,
+        "scale": 15.136,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "frost-bloom-neck"
+      },
+      "slot": "neck"
+    },
+    "gear-storm-thunder-bow-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-storm-thunder-bow-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 8,
+        "magenta_spill": 1,
+        "subject": {
+          "long": 56,
+          "short": 55,
+          "mass": 0.266,
+          "box": [
+            4,
+            4,
+            59,
+            60
+          ],
+          "centre_off": 0.5
+        },
+        "block": 5.732,
+        "scale": 5.732,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "storm-thunder-bow"
+      },
+      "slot": "weapon",
+      "weapon_kind": "bow"
+    },
+    "gear-storm-thunder-bow": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-storm-thunder-bow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.262,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 14.591,
+        "scale": 14.591,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "storm-thunder-bow"
+      },
+      "slot": "weapon",
+      "weapon_kind": "bow"
+    },
+    "gear-mire-whisper-gloves-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-mire-whisper-gloves-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 56,
+          "short": 54,
+          "mass": 0.758,
+          "box": [
+            4,
+            5,
+            60,
+            59
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.768,
+        "scale": 5.768,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "mire-whisper-gloves"
+      },
+      "slot": "hands"
+    },
+    "gear-mire-whisper-gloves": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-mire-whisper-gloves.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.756,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 14.682,
+        "scale": 14.682,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "mire-whisper-gloves"
+      },
+      "slot": "hands"
+    },
+    "gear-shade-silent-blade-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-shade-silent-blade-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 56,
+          "short": 54,
+          "mass": 0.42,
+          "box": [
+            4,
+            5,
+            60,
+            59
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.696,
+        "scale": 5.696,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "shade-silent-blade"
+      },
+      "slot": "weapon",
+      "weapon_kind": "dagger"
+    },
+    "gear-shade-silent-blade": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-shade-silent-blade.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.415,
+          "box": [
+            2,
+            2,
+            24,
+            23
+          ],
+          "centre_off": 0.5
+        },
+        "block": 14.5,
+        "scale": 14.5,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "shade-silent-blade"
+      },
+      "slot": "weapon",
+      "weapon_kind": "dagger"
+    },
+    "gear-iron-bulwark-plate-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-iron-bulwark-plate-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 56,
+          "short": 56,
+          "mass": 0.823,
+          "box": [
+            4,
+            4,
+            60,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.982,
+        "scale": 5.982,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "iron-bulwark-plate"
+      },
+      "slot": "body"
+    },
+    "gear-iron-bulwark-plate": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-iron-bulwark-plate.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.831,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 15.227,
+        "scale": 15.227,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "iron-bulwark-plate"
+      },
+      "slot": "body"
+    },
+    "gear-blaze-ember-ring-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-blaze-ember-ring-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 56,
+          "short": 52,
+          "mass": 0.612,
+          "box": [
+            6,
+            4,
+            58,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 5.357,
+        "scale": 5.357,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "blaze-ember-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-blaze-ember-ring": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-blaze-ember-ring.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 22,
+          "short": 21,
+          "mass": 0.638,
+          "box": [
+            2,
+            2,
+            23,
+            24
+          ],
+          "centre_off": 0.5
+        },
+        "block": 13.636,
+        "scale": 13.636,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "blaze-ember-ring"
+      },
+      "slot": "ring"
+    },
+    "gear-frost-winter-staff-large": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-frost-winter-staff-large.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 56,
+          "short": 56,
+          "mass": 0.325,
+          "box": [
+            4,
+            4,
+            60,
+            60
+          ],
+          "centre_off": 0.0
+        },
+        "block": 6.161,
+        "scale": 6.161,
+        "size": [
+          64,
+          64
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "frost-winter-staff"
+      },
+      "slot": "weapon",
+      "weapon_kind": "staff"
+    },
+    "gear-frost-winter-staff": {
+      "final": "art-factory/starlantern/work/sheet-gear-5/cand/a2/gear-frost-winter-staff.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "subject": {
+          "long": 22,
+          "short": 22,
+          "mass": 0.326,
+          "box": [
+            2,
+            2,
+            24,
+            24
+          ],
+          "centre_off": 0.0
+        },
+        "block": 15.682,
+        "scale": 15.682,
+        "size": [
+          26,
+          26
+        ],
+        "spec": "gear-cell:cba070036b9c"
+      },
+      "status": "qa_passed",
+      "kind": "gear-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-gear-5\\sheet-gear-5-a2.png",
+        "cell": "frost-winter-staff"
+      },
+      "slot": "weapon",
+      "weapon_kind": "staff"
+    }
+  }
+}

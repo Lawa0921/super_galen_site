@@ -1,0 +1,125 @@
+{
+  "assets": {
+    "ui-starlit": {
+      "defringe": "strong",
+      "final": "art-factory/starlantern/work/sheet-starlit-1/cand/a3/ui-starlit.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-starlit-1\\sheet-starlit-1-a3.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "starlit corner star cut or too small",
+          "starlit star is not a four-point star"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "center_clear": true,
+        "ring_closed": false,
+        "edge_repeat": {
+          "top": 0.0,
+          "bottom": 0.0,
+          "left": 0.0,
+          "right": 0.0
+        },
+        "edge_steps": {
+          "top": {
+            "seam": 0.0,
+            "interior": 0.0
+          },
+          "bottom": {
+            "seam": 0.0,
+            "interior": 0.0
+          },
+          "left": {
+            "seam": 0.0,
+            "interior": 0.0
+          },
+          "right": {
+            "seam": 0.0,
+            "interior": 0.0
+          }
+        },
+        "stroke": [
+          0,
+          0
+        ],
+        "reach": {
+          "edge": 0,
+          "corner": 3
+        },
+        "stroke_colour": null,
+        "hue": null,
+        "saturation": null,
+        "chroma_share": 0.0,
+        "off_colour": 0,
+        "corner_px": [
+          3,
+          3,
+          3,
+          3
+        ],
+        "edge_cover": 0.0,
+        "outside": 0,
+        "stars": [
+          {
+            "px": 3,
+            "w": 2,
+            "h": 2,
+            "core": 1,
+            "arms": 2,
+            "diagonal": true,
+            "edge": false
+          },
+          {
+            "px": 3,
+            "w": 2,
+            "h": 2,
+            "core": 1,
+            "arms": 2,
+            "diagonal": true,
+            "edge": false
+          },
+          {
+            "px": 3,
+            "w": 2,
+            "h": 2,
+            "core": 1,
+            "arms": 2,
+            "diagonal": true,
+            "edge": false
+          },
+          {
+            "px": 3,
+            "w": 2,
+            "h": 2,
+            "core": 1,
+            "arms": 2,
+            "diagonal": true,
+            "edge": false
+          }
+        ],
+        "size": [
+          16,
+          16
+        ],
+        "slice": 5,
+        "role": "corners",
+        "pad": 1,
+        "tier_hue": null,
+        "spec": "nine-slice:2ab30baae894",
+        "block": 71.786
+      },
+      "status": "qa_failed",
+      "kind": "nine-slice",
+      "slice": 5,
+      "role": "corners",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-starlit-1\\sheet-starlit-1-a3.png",
+        "cell": "ui-starlit"
+      }
+    }
+  }
+}
