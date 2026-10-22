@@ -391,7 +391,8 @@ describe('A10 物品守恆（arena）', () => {
     expect(r.sameTiles(0)).toEqual([]);
   });
 
-  it('記錄剩餘窗口：房主已存入、chk 還在路上就 sever → 客人的最後 chk 仍有那 1 個；同一場重連時 retained 較新，不複製', () => {
+  // A10c：記錄「尚未解決」的窗口，不是驗證它被允許。已知 M-B3 限制，待使用者確認；要關掉它需要 M-C 的確認式 checkpoint（acknowledged checkpoints）。
+  it('A10c 記錄尚未解決的窗口（已知 M-B3 限制）：房主已存入、chk 還在路上就 sever → 客人的最後 chk 仍有那 1 個；同一場重連時 retained 較新，不複製', () => {
     const r = coopRig({ latencyMs: [50, 50] });
     const g = r.guests[0], hg = r.hostGame;
     const a = actorOf(r, g);
@@ -414,7 +415,7 @@ describe('A10 物品守恆（arena）', () => {
     r.net.sever(r.links[0]);
     r.run(100);
     const c = r.count('silver_coin');
-    expect(c.chests + c.lastChk[0]).toBe(2);          // 已知窗口（spec §5.7：不追求零窗口）
+    expect(c.chests + c.lastChk[0]).toBe(2);          // 已知 M-B3 限制，待使用者確認；需要確認式 checkpoint（M-C）才能關掉這個窗口
     r.reconnect(0);
     expect(until(r, () => g.state === 'live', 5000)).toBe(true);
     r.run(REST_MS);

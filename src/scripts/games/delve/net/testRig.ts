@@ -43,7 +43,7 @@ export interface Rig {
   run(ms: number, each?: () => void): void;
   /** 模擬客人分頁在背景：不呼叫他的 frame */
   pause(i: number, on: boolean): void;
-  /** 客人 i 同步集合內所有 chunk 與房主逐層（六層 + 箱子）比對的差異（空 = 一致）；pending 的 chunk 記成 layer 'pending' */
+  /** 客人 i 同步集合內所有 chunk 與房主逐層（六層 + 箱子）比對的差異（空 = 一致）；pending 的 chunk 記成 layer 'pending'；同步集合是空的記成 'emptySync' */
   sameTiles(i: number): { key: number; layer: string }[];
   count(item: ItemId): { host: number; guestsOnHost: number[]; drops: number; chests: number; lastChk: number[] };
   // ── 以下是測試方便用 ──
@@ -210,10 +210,12 @@ export function coopRig(o: RigOptions = {}): Rig {
       const g = guests[i], rep = g.game, sync = g.sync;
       if (!rep || !sync) return [{ key: -1, layer: 'noReplica' }];
       const hw = hostGame.world, gw = rep.world, out: { key: number; layer: string }[] = [];
+      let checked = 0;
       for (const cx of gw.residentColumns()) {
         for (let cy = 0; cy < gw.chunksY; cy++) {
           const key = gw.chunkIndex(cx, cy), st = sync.state(key);
           if (st === 'unsynced') continue;
+          checked++;
           if (st === 'pending') { out.push({ key, layer: 'pending' }); continue; }
           const a = hw.readChunk(cx, cy), b = gw.readChunk(cx, cy);
           if (!a || !b) { out.push({ key, layer: a ? 'guestMissing' : 'hostMissing' }); continue; }
@@ -221,6 +223,8 @@ export function coopRig(o: RigOptions = {}): Rig {
           if (chestSig(hostGame, key) !== chestSig(rep, key)) out.push({ key, layer: 'chests' });
         }
       }
+      // 同步集合是空的：什麼都沒比到，不能當成一致
+      if (checked === 0) out.push({ key: -1, layer: 'emptySync' });
       return out;
     },
     count(item) {
@@ -240,6 +244,8 @@ export function coopRig(o: RigOptions = {}): Rig {
   if (guests.length) {
     // 等全部 live，再多跑 1 秒讓興趣範圍內的欄同步完
     for (let t = 0; t < 10_000 && guests.some((g) => g.state !== 'live'); t += FRAME) rig.run(FRAME);
+    const stuck = guests.findIndex((g) => g.state !== 'live');
+    if (stuck >= 0) throw new Error(`coopRig: guest ${stuck} never reached live (state ${guests[stuck].state})`);
     rig.run(1000);
   }
   return rig;
