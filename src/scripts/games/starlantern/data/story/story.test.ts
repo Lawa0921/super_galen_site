@@ -3019,7 +3019,7 @@ describe('story depth Task 17: the town day to day', () => {
     const act4 = STORY.townLines.act4!;
     for (const t of act4) expect(t).not.toContain('一起回來');
     expect(act4.some((t) => /洛恩和凜/.test(t))).toBe(false);
-    const heavy = act4.filter((t) => /暗|熄|不再來|倒在他頭上|沒有那個歸來者/.test(t));
+    const heavy = act4.filter((t) => /暗|熄|不再來|倒在他頭上|那個歸來者/.test(t));
     expect(heavy.length * 2).toBeLessThan(act4.length);   // the light lines outnumber the heavy
   });
 });
