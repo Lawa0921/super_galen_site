@@ -76,8 +76,14 @@ export interface BattleState {
   triggers?: { by: string; skill: string; on: 'crit' | 'kill' | 'struck'; foe: string }[];
 }
 
-/** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
-export interface BattleScale { depth: number; region: RegionId; elite?: string; condition?: ConditionId }
+/** The difficulty a fight is measured or played at (spec §13 hook 1, plan 8h); the engine reads none of it yet. */
+export type Difficulty = 'normal' | 'nightmare' | 'hell';
+
+/**
+ * Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in
+ * `enemyIds`). `difficulty` is carried for the difficulty plans and read by no one: a fight is the same with or without it.
+ */
+export interface BattleScale { depth: number; region: RegionId; elite?: string; condition?: ConditionId; difficulty?: Difficulty }
 
 /**
  * `target` is the drawn one, which the engine plays (a taunt, a challenge or a cover turns it when the blow falls).

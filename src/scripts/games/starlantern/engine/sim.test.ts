@@ -6,7 +6,15 @@ import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
 import { LEGACY_LINEUP, MAX_LEVEL, SLOTS, STANDARD_LINEUP, rowOfCell, statsOf } from './party';
 import { mulberry32 } from './rng';
-import { KIT_ORDER, attackAll, kitParty, partyAt, setSimTrace, simBattle, winRate } from './sim';
+import { KIT_ORDER, attackAll, kitParty, lineupPolicies, partyAt, setSimTrace, simBattle, winRate } from './sim';
+import { readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+import { BANDS } from './bands';
+import { buildLineup } from './buildBands';
+import { buildTalents, buildTree } from './builds';
+import { buildOf } from '../data/builds';
+import { DEFAULT_POLICIES } from '../data/policies';
 import { heroTalents, heroTree } from './progression';
 import { fullParty } from './testing';
 import { CHARACTER_IDS } from '../data/characters';
@@ -216,5 +224,54 @@ describe('a lineup with runes (plan 8e Task 8)', () => {
     // A test hook never quietly mends a set: a second slot at Lv10, or a skill she does not know, throws.
     expect(() => partyAt(10, { runes: { noel: { 'fire-star': [spread, { id: 'ignite', tier: 'magic' }] } } })).toThrow();
     expect(() => partyAt(35, { runes: { noel: { moonlight: [spread] } } })).toThrow();
+  });
+});
+
+describe('a lineup wears a build (plan 8h Task 5a)', () => {
+  it('a lineup wears a build', () => {
+    const lineup = buildLineup('noel', 'meteor');
+    expect(lineup.build).toEqual({ noel: 'meteor' });
+    const meteor = buildOf('noel', 'meteor')!;
+    const p = partyAt(35, lineup);
+    const noel = p.roster.noel;
+    expect(noel.tree).toEqual(buildTree('noel', 35, meteor));
+    expect(noel.talents).toEqual(buildTalents('noel', 35, meteor));
+    expect(noel.sockets?.['fire-star']).toEqual(meteor.runes['fire-star'].map((id) => ({ id, tier: 'magic' })));
+    expect(noel.build).toBe('meteor');
+    // The others are as a lineup without a build has them.
+    const plain = partyAt(35, { ids: lineup.ids });
+    for (const id of lineup.ids!.filter((x) => x !== 'noel')) expect(p.roster[id], id).toEqual(plain.roster[id]);
+    // An epic set when asked; a lineup's own runes win over the build's (the one-rune probes).
+    expect(partyAt(35, { ...lineup, runeTier: 'epic' }).roster.noel.sockets?.['fire-star']?.[0]).toEqual({ id: 'spread', tier: 'epic' });
+    expect(partyAt(35, { ...lineup, runes: { noel: { 'ice-star': [{ id: 'thrift', tier: 'magic' }] } } }).roster.noel.sockets).toEqual({ 'ice-star': [{ id: 'thrift', tier: 'magic' }] });
+    // Policies: hers from the build, everyone else's the defaults; no build, none (the sim's own defaults).
+    const table = lineupPolicies(lineup)!;
+    expect(table.noel).toBe(meteor.policy);
+    for (const id of Object.keys(DEFAULT_POLICIES) as CharacterId[]) expect(table[id], id).toBe(DEFAULT_POLICIES[id]);
+    expect(lineupPolicies({ ids: lineup.ids })).toBeUndefined();
+    const own = { noel: [] };
+    expect(lineupPolicies({ ...lineup, policies: own })).toBe(own);
+    // Without a build nothing changes: no member carries a build.
+    for (const id of CHARACTER_IDS) expect(partyAt(35, { ids: [...CHARACTER_IDS] }).roster[id]).not.toHaveProperty('build');
+    // The hero wears his build's tree, row and weapon through `heroBuild`.
+    const hero = buildLineup('hero', 'mage');
+    expect(hero.heroBuild).toBe('mage');
+    expect(partyAt(35, hero).roster.hero.tree).toEqual(heroTree(35, 'mage'));
+  });
+
+  it('difficulty is carried and read by no one', () => {
+    const party = partyAt(20);
+    const s = (scale: object) => JSON.stringify(createBattle({ party, enemyIds: ['slime', 'slime'], inventory: {}, revealed: {}, scale: { depth: 5, region: 'mainline', ...scale } }));
+    expect(s({ difficulty: 'nightmare' })).toBe(s({}));
+    expect(s({ difficulty: 'hell' })).toBe(s({}));
+  });
+
+  it('every balance file is a normal band', () => {
+    const dir = dirname(fileURLToPath(import.meta.url));
+    const files = readdirSync(dir).filter((f) => /^balance.*\.test\.ts$/.test(f));
+    expect(files.length).toBeGreaterThan(3);
+    for (const f of files) expect(BANDS.normal, f).toContain(f);
+    expect(BANDS.normal).toContain('builds.bands.test.ts');
+    expect([BANDS.nightmare, BANDS.hell]).toEqual([[], []]);
   });
 });
