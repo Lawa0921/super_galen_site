@@ -55,6 +55,8 @@ import {
 } from './gear';
 import { MAX_BREATH, PlayerActor, SOLO_PID, type ActorInput, type GameMode, type Pid, type RemoteMotion } from './actor';
 export type { GameMode } from './actor';
+import { bestPick, type PlayerPose } from './pose';
+export type { PlayerPose } from './pose';
 import { CMD_PENDING, type Cmd, type CmdOp, type CmdResults } from './commands';
 // 角色檔 ↔ actor（addActor / removeActor）。save/ 也 import 本檔：兩邊都只在函式內用對方，循環 import 無妨
 import { applyCharacter, encodeExplored } from '../save/serialize';
@@ -1162,7 +1164,11 @@ export class DelveGame {
   setRemoteMotion(pid: Pid, m: RemoteMotion): void {
     const a = this.actors.get(pid);
     if (!a) throw new Error(`delve: no actor ${pid}`);
-    a.remote = { x: m.x, y: m.y, vx: m.vx, vy: m.vy, onGround: m.onGround, boating: m.boating, climbing: m.climbing, facing: m.facing };
+    const mt = m.mantle ?? null;
+    a.remote = {
+      x: m.x, y: m.y, vx: m.vx, vy: m.vy, onGround: m.onGround, boating: m.boating, climbing: m.climbing, facing: m.facing,
+      mantle: mt ? { p: mt.p, dir: mt.dir, edgeX: mt.edgeX, edgeY: mt.edgeY } : null,
+    };
   }
   /** 客人副本：房主送來的事件直接進佇列（不補 pid、不換算經驗：經驗來自房主的 char） */
   pushNetEvents(list: readonly DelveEvent[]): void {
@@ -2665,6 +2671,33 @@ export class DelveGame {
     this.events = k >= this.events.length ? [] : this.events.slice(k);
     this.evBase = keep;
     this.lvScan = Math.max(0, this.lvScan - k);
+  }
+
+  /**
+   * 畫玩家 pid 需要的全部（PlayerPose，M-C2 D1）：withActor 讀那個 actor，不呼叫 getState（每幀每人都叫，要輕）。
+   * 房主端的遠端 actor：攀邊來自客人回報（remote.mantle），其他照 actor 的狀態。沒有這個 pid → 丟例外。
+   */
+  poseOf(pid: Pid): PlayerPose {
+    const a = this.actors.get(pid);
+    if (!a) throw new Error(`delve: no actor ${pid}`);
+    return this.withActor(a, () => {
+      const p = this.player, atk = this.attack, mi = this.mining, fi = this.fishing;
+      const held = this.inventory.selectedStack();
+      const rm = this.isRemoteCur() ? a.remote?.mantle ?? null : null, km = this.motion.mantle ?? null;
+      const mantle = this.isRemoteCur()
+        ? (rm ? { ...rm } : null)
+        : km ? { p: km.t / km.dur, dir: km.dir, edgeX: km.edgeX, edgeY: km.edgeY } : null;
+      return {
+        x: p.x, y: p.y, vx: p.vx, vy: p.vy, onGround: p.onGround, gfxOffY: p.gfxOffY,
+        facing: this.facing, dead: this.dead, iframes: Math.max(0, this.iframes), boating: this.boating, climbing: Boolean(this.motion.climbing),
+        mantle,
+        liquidFrac: this.contact.frac,
+        held: held ? held.item : null,
+        attack: atk ? { item: atk.item, kind: atk.kind, angle: atk.angle, dir: atk.dir, at: this.time - atk.t, dur: atk.dur } : null,
+        mining: mi ? { x: mi.x, y: mi.y, progress: mi.need > 0 ? Math.min(1, mi.elapsed / mi.need) : 1, pick: bestPick(this.inventory.slots) } : null,
+        fishing: fi ? { state: fi.state, x: fi.x, y: fi.y, liquid: fi.liquid !== LIQ.NONE } : null,
+      };
+    });
   }
 
   getState(): DelveState {

@@ -3,7 +3,8 @@ import { UNLOAD_COLS } from '../engine/streaming';
 import type { Pid } from '../engine/actor';
 import type { DollLook } from '../engine/doll';
 import type { EnemyKind } from '../engine/enemies';
-import type { ItemId } from '../engine/items';
+import type { ItemId, WeaponKind } from '../engine/items';
+import type { PlayerPose } from '../engine/pose';
 import type { ProjKind } from '../engine/projectiles';
 import type { Stack } from '../engine/inventory';
 import type { DelveEvent } from '../engine/game';
@@ -46,6 +47,41 @@ export type ByeReason = 'leave' | 'closed' | 'timeout';
 export type ScoutMark = MapMarker;
 
 export const PS_GROUND = 1, PS_BOAT = 2, PS_CLIMB = 4;           // Ps.flags 位元
+/** WirePose 的 flags 位元（M-C2 D2） */
+export const POSE_GROUND = 1, POSE_BOAT = 2, POSE_CLIMB = 4, POSE_DEAD = 8, POSE_LEFT = 16;
+
+/**
+ * PlayerPose 的線上版本（M-C2 D2）：固定長度的陣列、數字保留 2 位小數、物品 / 武器種類 / 釣魚狀態照舊用字串。
+ * 解碼在 validate.ts decodePose（不合法 → null）。
+ */
+export type WireMantle = [p: number, dir: 1 | -1, edgeX: number, edgeY: number];
+export type WirePose = [
+  x: number, y: number, vx: number, vy: number, flags: number, gfxOffY: number, iframes: number, liquidFrac: number,
+  held: ItemId | null,
+  mantle: WireMantle | null,
+  attack: [item: ItemId, kind: WeaponKind, angle: number, dir: 1 | -1, at: number, dur: number] | null,
+  mining: [x: number, y: number, progress: number, pick: ItemId | null] | null,
+  fishing: [state: NonNullable<PlayerPose['fishing']>['state'], x: number, y: number, liquid: 0 | 1] | null,
+];
+export const WIRE_POSE_LEN = 13;
+/** 2 位小數 */
+const r2 = (v: number): number => Math.round(v * 100) / 100;
+export function encodeMantle(m: PlayerPose['mantle']): WireMantle | null {
+  return m ? [r2(Math.max(0, Math.min(1, m.p))), m.dir, r2(m.edgeX), r2(m.edgeY)] : null;
+}
+export function encodePose(p: PlayerPose): WirePose {
+  const flags = (p.onGround ? POSE_GROUND : 0) | (p.boating ? POSE_BOAT : 0) | (p.climbing ? POSE_CLIMB : 0)
+    | (p.dead ? POSE_DEAD : 0) | (p.facing < 0 ? POSE_LEFT : 0);
+  const a = p.attack, m = p.mining, f = p.fishing;
+  return [
+    r2(p.x), r2(p.y), r2(p.vx), r2(p.vy), flags, r2(p.gfxOffY), r2(p.iframes), r2(p.liquidFrac),
+    p.held,
+    encodeMantle(p.mantle),
+    a ? [a.item, a.kind, r2(a.angle), a.dir, r2(a.at), r2(a.dur)] : null,
+    m ? [m.x, m.y, r2(m.progress), m.pick] : null,
+    f ? [f.state, r2(f.x), r2(f.y), f.liquid ? 1 : 0] : null,
+  ];
+}
 
 export type WireChest = [key: number, slots: (Stack | null)[] | null, unlocked: 0 | 1];
 export interface WireBatch { chunk: number; rev: number; tiles: number[]; chests: WireChest[]; full: boolean }
@@ -57,8 +93,14 @@ export interface Welcome {
 export interface Ps {
   t: 'ps'; seq: number; tseq: number; x: number; y: number; vx: number; vy: number; flags: number;
   facing: 1 | -1; aim: [number, number]; mine: boolean; use: boolean; slot: number;
+  /** 正在攀上邊緣（M-C2）：[進度 0..1, 方向, 牆角 x, 牆角 y]；null = 沒有 */
+  mt: [number, 1 | -1, number, number] | null;
 }
-export interface WsPlayer { pid: Pid; x: number; y: number; vx: number; vy: number; facing: 1 | -1; hp: number; maxHp: number; mana: number; dead: boolean }
+export interface WsPlayer {
+  pid: Pid; x: number; y: number; vx: number; vy: number; facing: 1 | -1; hp: number; maxHp: number; mana: number; dead: boolean;
+  /** 畫這個玩家需要的全部（M-C2 D2） */
+  pose: WirePose;
+}
 export interface WsEnemy { id: number; kind: EnemyKind; x: number; y: number; dir: 1 | -1; hp: number; maxHp: number; state: string }
 export interface WsDrop { id: number; item: ItemId; count: number; x: number; y: number }
 export interface WsProj { id: number; kind: ProjKind; x: number; y: number; vx: number; vy: number; hostile: boolean }

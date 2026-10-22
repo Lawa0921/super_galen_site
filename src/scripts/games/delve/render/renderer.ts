@@ -41,6 +41,7 @@ import { toCanvas } from './pixel';
 import { boatBmp, BOAT_PX, BOAT_PY, BOAT_RAIL_ABOVE, BOAT_RAIL_Y } from './boatArt';
 import { waystoneBmp, waystoneGlyphBmp, STONE_PY, STONE_SINK } from './waystoneArt';
 import type { Waystone } from '../engine/waystones';
+import { bestPick } from '../engine/pose';
 import { bobberBmp, campfireBmp } from './fishArt';
 import { SettleLayer } from './settleDraw'; // [settle]
 import { FolkLayer } from './folkDraw';
@@ -827,16 +828,6 @@ export class Renderer {
     corners(ok ? '#ffffff' : '#e8701c', 0);
   }
 
-  /** 背包裡最好的鎬（挖掘時手上顯示它） */
-  private bestPickItem(): ItemId | null {
-    let best: ItemId | null = null, tier = -1;
-    for (const s of this.game.inventory.slots) {
-      const p = s ? ITEMS[s.item].pick : undefined;
-      if (s && p && p.speed > tier) { tier = p.speed; best = s.item; }
-    }
-    return best;
-  }
-
   /** 玩家動畫狀態機（climb / hang / mantle / swim / hurt / dead …）；e2e 讀 playerAnim */
   private readonly animator = new PlayerAnimator();
   /** 最近一次受傷的時間（clock 秒） */
@@ -946,7 +937,7 @@ export class Renderer {
     // 釣竿：手往前平舉（竿子從手往前上方斜出去、不會蓋到大頭）
     if (carry === 'rod') arms.front = st.fishing?.state === 'bite' ? 105 : 85;
     if (carry === 'pick') arms.front = (kind === 'jump' || kind === 'fall' ? 150 : 128) + (kind === 'walk' ? Math.round(Math.sin((local / 8) * Math.PI * 2) * 6) : 0);
-    const showPick = special ? null : st.mining ? this.bestPickItem() : carry === 'pick' ? held : null;
+    const showPick = special ? null : st.mining ? bestPick(g.inventory.slots) : carry === 'pick' ? held : null;
     if (carry === 'blade') blade = held;
     const heldOther = !special && !st.mining && !atk && held && carry !== 'rod' && ((!heldDef?.pick && !heldDef?.weapon) || carry === 'mini') ? held : null;
     // 火把 / 方塊：前手往前平舉（手在身體前面、離開臉）

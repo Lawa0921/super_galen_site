@@ -24,8 +24,10 @@ import type { Channel, NetLink, Payload } from './link';
 import {
   BOUNDARY_OPS, HOST_TIMEOUT_MS, PING_MS, PROTO, PS_BOAT, PS_CLIMB, PS_GROUND, PS_HZ,
   type ByeReason, type GuestCtrl, type HostCtrl, type Ps, type RejectReason, type Welcome, type WorldSnap,
-  type Ws, type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj,
+  type Ws, type WsDrop, type WsEnemy, type WsNpc, type WsProj, encodeMantle,
 } from './protocol';
+import { decodePose } from './validate';
+import { lerpPose, type PlayerPose } from '../engine/pose';
 import { decodeBulk } from './codec';
 import { ChunkSyncGuest, applyLiq } from './chunkSync';
 import { applyWorldSnap } from './snapshot';
@@ -43,7 +45,17 @@ export interface NetGuestOptions {
 export type GuestState = 'connecting' | 'syncing' | 'live' | 'ended';
 /** 最後一份 chk：upTo = 房主做這份 checkpoint 時處理到的 cmd seq */
 export interface Checkpoint { rev: number; character: DelveCharacter; upTo: number }
-export interface PeerView { pid: Pid; nick: string; look: DollLook | null; x: number; y: number; facing: 1 | -1; hp: number; maxHp: number; dead: boolean }
+export interface PeerView {
+  pid: Pid; nick: string; look: DollLook | null; x: number; y: number; facing: 1 | -1; hp: number; maxHp: number; dead: boolean;
+  /** 畫這個玩家用（M-C2）：x / y 與挖掘進度內插，其他欄位取較新那筆 */
+  pose: PlayerPose;
+}
+/** 客人自己的動作狀態用房主的（M-C2 D3）：最新一份、不內插 */
+export type OwnPose = Pick<PlayerPose, 'attack' | 'mining' | 'fishing' | 'iframes'>;
+/** 內插緩衝裡的一位玩家（ws 的 WsPlayer + 解好的 pose） */
+interface PeerSample { pid: Pid; x: number; y: number; facing: 1 | -1; hp: number; maxHp: number; dead: boolean; pose: PlayerPose }
+const lerpPeer = (a: PeerSample, b: PeerSample, k: number): PeerSample =>
+  ({ ...b, x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, pose: lerpPose(a.pose, b.pose, k) });
 
 export const END_TEXT: Readonly<Record<RejectReason | ByeReason | 'hostGone', string>> = Object.freeze({
   full: '房間已滿',
@@ -138,7 +150,9 @@ export class NetGuest {
   private wsTick = -Infinity;
   private wsTime = 0;
   private wsAt = 0;
-  private readonly players = new Interp<WsPlayer>();
+  private readonly players = new Interp<PeerSample>(undefined, lerpPeer);
+  /** 房主回報的、自己 pid 的最新一份（M-C2 D3）；還沒有 ws → null */
+  private own: OwnPose | null = null;
   private readonly enemyIp = new Interp<WsEnemy>();
   private readonly dropIp = new Interp<WsDrop>();
   private readonly projIp = new Interp<WsProj>();
@@ -166,6 +180,8 @@ export class NetGuest {
   get worldId(): string | null { return this.world; }
   /** chunk 同步狀態（測試 / 除錯用）；welcome 之前 null */
   get sync(): ChunkSyncGuest | null { return this.chunks; }
+  /** 自己的攻擊 / 挖掘 / 釣魚 / 無敵：房主 ws 裡自己 pid 的最新一份（M-C2 D3；客人副本不模擬這些）；還沒有 → null */
+  ownPose(): OwnPose | null { return this.own; }
   /** 最近一次 ping/pong 量到的往返時間（ms）；第一個 pong 到之前是 null */
   get rttMs(): number | null { return this.rtt; }
 
@@ -231,7 +247,7 @@ export class NetGuest {
       const info = this.peerInfo.get(s.pid);
       out.push({
         pid: s.pid, nick: info?.nick ?? '', look: info?.look ?? null, x: s.x, y: s.y, facing: s.facing,
-        hp: s.hp, maxHp: s.maxHp, dead: s.dead,
+        hp: s.hp, maxHp: s.maxHp, dead: s.dead, pose: s.pose,
       });
     }
     return out;
@@ -493,15 +509,22 @@ export class NetGuest {
     const seen = new Set<number | string>();
     for (const p of m.players) {
       if (!isObj(p) || typeof p.pid !== 'string') continue;
+      // pose 壞掉：只丟這一份 pose（自己的沿用上一份；別人這則不進內插緩衝，但不當成離開）
+      const pose = decodePose(p.pose);
       if (p.pid === this.me) {
         const a = game.local;
         if (fin(p.hp)) a.hp = p.hp;
         if (fin(p.mana)) a.mana = p.mana;
         a.dead = Boolean(p.dead);
+        if (pose) this.own = { attack: pose.attack, mining: pose.mining, fishing: pose.fishing, iframes: pose.iframes };
         continue;
       }
-      this.players.push(p.pid, at, p);
       seen.add(p.pid);
+      if (!pose || !fin(p.x) || !fin(p.y)) continue;
+      this.players.push(p.pid, at, {
+        pid: p.pid, x: p.x, y: p.y, facing: p.facing === -1 ? -1 : 1, hp: fin(p.hp) ? p.hp : 0, maxHp: fin(p.maxHp) ? p.maxHp : 0,
+        dead: Boolean(p.dead), pose,
+      });
     }
     this.players.retain(seen);
     const feed = <V extends { x: number; y: number }>(ip: Interp<V>, list: V[], key: (v: V) => number | string | null): void => {
@@ -528,7 +551,9 @@ export class NetGuest {
     this.wsTick = -Infinity;
     this.wsTime = 0;
     this.wsAt = 0;
-    for (const ip of [this.players, this.enemyIp, this.dropIp, this.projIp, this.npcIp] as Interp<{ x: number; y: number }>[]) ip.clear();
+    this.own = null;
+    const ips: { clear(): void }[] = [this.players, this.enemyIp, this.dropIp, this.projIp, this.npcIp];
+    for (const ip of ips) ip.clear();
   }
 
   /** 內插的「現在」= 最新一則 ws 的房主時間 + 它到達後經過的本地 ms */
@@ -586,9 +611,11 @@ export class NetGuest {
   private sendPs(use: boolean): void {
     const a = this.replica!.local, p = a.player;
     const flags = (p.onGround ? PS_GROUND : 0) | (a.boating ? PS_BOAT : 0) | (a.motion.climbing ? PS_CLIMB : 0);
+    const km = a.motion.mantle ?? null;
     const ps: Ps = {
       t: 'ps', seq: ++this.psSeq, tseq: this.tseq, x: p.x, y: p.y, vx: p.vx, vy: p.vy, flags, facing: a.facing,
       aim: [a.aimPx.x / TILE_SIZE, a.aimPx.y / TILE_SIZE], mine: a.miningHeld, use, slot: a.inventory.selected,
+      mt: km ? encodeMantle({ p: km.t / km.dur, dir: km.dir, edgeX: km.edgeX, edgeY: km.edgeY }) : null,
     };
     this.link.send('state', JSON.stringify(ps));
   }

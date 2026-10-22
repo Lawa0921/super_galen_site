@@ -17,6 +17,7 @@ import type { ActiveSkill } from './skills';
 import type { ExploredMap, MapMarker } from './explore';
 import type { Discovery } from './discovery';
 import type { AttackState, FishingState, MiningState } from './game';
+import type { PlayerPose } from './pose';
 
 /** 玩家 id（solo / host 的本地玩家 = SOLO_PID） */
 export type Pid = string;
@@ -40,8 +41,14 @@ export interface ActorInput {
   selected: number;
 }
 
-/** 客人回報的移動（房主 setRemoteMotion；C11）：身體左上角 px、速度 px/s、著地 / 坐船 / 抓繩、面向 */
-export interface RemoteMotion { x: number; y: number; vx: number; vy: number; onGround: boolean; boating: boolean; climbing: boolean; facing: 1 | -1 }
+/**
+ * 客人回報的移動（房主 setRemoteMotion；C11）：身體左上角 px、速度 px/s、著地 / 坐船 / 抓繩、面向；
+ * mantle = 正在攀上邊緣（ps.mt，M-C2；只給 poseOf 畫，不影響模擬），省略 = 沒有
+ */
+export interface RemoteMotion {
+  x: number; y: number; vx: number; vy: number; onGround: boolean; boating: boolean; climbing: boolean; facing: 1 | -1;
+  mantle?: PlayerPose['mantle'];
+}
 
 /** 角色檔身分（addActor 帶進來；removeActor 拍角色快照時沿用） */
 export interface ActorIdentity { id: string; nick: string; createdAt: number; rev: number }

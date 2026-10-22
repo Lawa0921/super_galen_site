@@ -64,7 +64,7 @@ describe('parseGuestCtrl', () => {
 });
 
 describe('parsePs', () => {
-  const base = { t: 'ps', seq: 1, tseq: 0, x: 10, y: -20, vx: 1, vy: 2, flags: 3, facing: 1, aim: [4, 5], mine: true, use: false, slot: 2 };
+  const base = { t: 'ps', seq: 1, tseq: 0, x: 10, y: -20, vx: 1, vy: 2, flags: 3, facing: 1, aim: [4, 5], mine: true, use: false, slot: 2, mt: null };
   const p = (o: Record<string, unknown>) => parsePs(JSON.stringify(o));
   it('合法通過', () => { expect(p(base)).toEqual(base); });
   it('非有限數 → null', () => {

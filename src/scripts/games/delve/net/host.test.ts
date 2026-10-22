@@ -126,7 +126,7 @@ function rig(world: 'arena' | 'infinite' = 'arena', maxGuests?: number, nick?: s
 
 /** 客人 p1 站在地上、左緣 x（px）的 ps */
 function psAt(seq: number, x: number, o: Record<string, unknown> = {}) {
-  return { t: 'ps', seq, tseq: 0, x, y: FLOOR * TILE_SIZE - PLAYER_H, vx: 0, vy: 0, flags: PS_GROUND, facing: 1, aim: [41, FLOOR], mine: false, use: false, slot: 0, ...o };
+  return { t: 'ps', seq, tseq: 0, x, y: FLOOR * TILE_SIZE - PLAYER_H, vx: 0, vy: 0, flags: PS_GROUND, facing: 1, aim: [41, FLOOR], mine: false, use: false, slot: 0, mt: null, ...o };
 }
 
 describe('NetHost 握手', () => {

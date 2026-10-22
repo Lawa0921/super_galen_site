@@ -21,7 +21,7 @@ import {
   BOUNDARY_OPS, BULK_HIGH_WATER, CHAR_HZ, CHK_MS, CMD_BURST, CMD_RATE, GUEST_TIMEOUT_MS, LIQ_HZ, LINGER_MS, LOOK_MS, MAX_GUESTS, NET_TILE_COLS, PING_MS, PROTO,
   PS_BOAT, PS_CLIMB, PS_GROUND, PS_STALE_MS, REPLACE_SILENT_MS, SAVE_DEBOUNCE_MS, SUM_PARK_MAX, WORLD_SIG_MS, WS_HZ,
   type ByeReason, type GuestCtrl, type HostCtrl, type PeerInfo, type Ps, type RejectReason, type WireBatch, type Ws,
-  type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj,
+  type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj, encodePose,
 } from './protocol';
 import { encodeBulk } from './codec';
 import { parseGuestCtrl, parsePs } from './validate';
@@ -193,6 +193,9 @@ export class NetHost {
         const inp = this.game.input(g.pid);
         inp.mining = false;
         inp.use = false;
+        // 沒有新的回報：攀邊的姿勢也收掉（不會一直卡在攀邊的樣子）
+        const a = this.game.actors.get(g.pid);
+        if (a?.remote) a.remote.mantle = null;
         g.released = true;
       }
     }
@@ -347,6 +350,7 @@ export class NetHost {
     const motion = {
       x: ps.x, y: ps.y, vx: ps.vx, vy: ps.vy, facing: ps.facing,
       onGround: (ps.flags & PS_GROUND) !== 0, boating: (ps.flags & PS_BOAT) !== 0, climbing: (ps.flags & PS_CLIMB) !== 0,
+      mantle: ps.mt ? { p: ps.mt[0], dir: ps.mt[1], edgeX: ps.mt[2], edgeY: ps.mt[3] } : null,
     };
     const dt = (this.now - g.prev.at) / 1000;
     if (checkMove(g.prev, motion, dt, { w: a.player.w, h: a.player.h }, this.game.env) !== 'ok') { a.teleSeq++; return; }
@@ -497,6 +501,7 @@ export class NetHost {
       players.push({
         pid: a.pid, x: p.x, y: p.y, vx: p.vx, vy: p.vy, facing: a.facing,
         hp: a.hp, maxHp: game.withActor(a, () => game.maxHp()), mana: a.mana, dead: a.dead,
+        pose: encodePose(game.poseOf(a.pid)),
       });
     }
     const enemies: [number, WsEnemy][] = game.enemies.map((e) => [cxOf(e.body), {

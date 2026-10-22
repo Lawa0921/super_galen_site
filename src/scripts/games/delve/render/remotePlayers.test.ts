@@ -9,6 +9,7 @@ import { createCharacter } from '../save/character';
 import { normalizeAppearance, type Appearance } from '../engine/appearance';
 import { plainLook, dollKey } from '../engine/doll';
 import type { PeerView } from '../net/guest';
+import type { PlayerPose } from '../engine/pose';
 import { PLAYER_H, PLAYER_W } from '../engine/constants';
 
 const sprites = (): Sprites => new Sprites(() => { throw new Error('no icons'); });
@@ -49,7 +50,11 @@ describe('hostRemoteViews', () => {
 });
 
 describe('GuestViews', () => {
-  const peer = (o: Partial<PeerView> = {}): PeerView => ({ pid: 'p2', nick: '乙', look: null, x: 0, y: 0, facing: 1, hp: 10, maxHp: 10, dead: false, ...o });
+  const pose: PlayerPose = {
+    x: 0, y: 0, vx: 0, vy: 0, onGround: true, gfxOffY: 0, facing: 1, dead: false, iframes: 0, boating: false, climbing: false,
+    mantle: null, liquidFrac: 0, held: null, attack: null, mining: null, fishing: null,
+  };
+  const peer = (o: Partial<PeerView> = {}): PeerView => ({ pid: 'p2', nick: '乙', look: null, x: 0, y: 0, facing: 1, hp: 10, maxHp: 10, dead: false, pose, ...o });
   it('由位置差算 vx / vy，第一幀為 0', () => {
     const gv = new GuestViews();
     expect(gv.views([peer({ x: 0 })], 0.1)[0].vx).toBe(0);
