@@ -62,7 +62,8 @@ export const DEVICE = { cap: 2, maxLevel: 3, levelPct: 25, coilShock: 0.3 } as c
  * skill as cast: `hits`, a turret's shots a run (雙管); `cures`, what a drone also cures (急救); `shock`, a mine's chance to
  * shock each foe it hits (連鎖).
  */
-export interface Device { skill: string; kind: DeviceKind; power: number; level: number; turns: number; hits?: number; cures?: AilmentId[]; shock?: number }
+/** `untracked`: set by no hand cast of hers (plan 8h Task 3 review), so a ledger split by skill credits it to no skill. */
+export interface Device { skill: string; kind: DeviceKind; power: number; level: number; turns: number; hits?: number; cures?: AilmentId[]; shock?: number; untracked?: true }
 
 /** The barriers Chizuru raises (spec §8.2): the guard (def and res for the party) and the purifying one. */
 export type BarrierKind = 'guard' | 'purify';

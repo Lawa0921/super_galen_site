@@ -468,6 +468,25 @@ describe('step ⑧ in the ledger (plan 8h Task 2)', () => {
     expect(g.bySkill!.barrier).toMatchObject({ shield: of(g, 'bobby').shield, casts: 1 });
   });
 
+  it('a device set by no hand cast gives a shield no skill', () => {
+    // 護盾產生器 set outside her own cast (a bare context: no one acting, as a trigger or an echo would be).
+    const bobby = member('bobby', 90, { mech: { kind: 'devices', devices: [], cap: 2 } });
+    applyEffect(bobby, bobby, SKILLS.barrier.effects[0], ctx(newLedger(), { cast: 'barrier' }));
+    expect(bobby.mech).toMatchObject({ devices: [{ skill: 'barrier', untracked: true }] });
+    const l = newLedger({ bySkill: true });
+    const foe = makeCombatant({ key: 'e0', side: 'enemy', max: { hp: 99999, tp: 0, atk: 60, def: 20, mag: 1, res: 20, spd: 1 } });
+    let s = makeBattle([bobby, member('noel', 50, { hp: 100 })], [foe], { intents: { e0: { kind: 'attack', target: 'noel' } } });
+    s = resolveRound(s, {}, constRng(0.5), l);
+    s = resolveRound({ ...s, intents: { e0: { kind: 'attack', target: 'noel' } } }, {}, constRng(0.5), l);
+    expect(of(l, 'bobby').shield).toBeGreaterThan(0);
+    expect(l.bySkill!.barrier?.shield ?? 0).toBe(0);
+    // Set by her own cast, it is 護盾產生器's (the review test above), and the device says nothing more.
+    const hand = makeBattle([member('bobby', 90, { mech: { kind: 'devices', devices: [], cap: 2 } })], [foe]);
+    const r = resolveRound(hand, { bobby: { kind: 'skill', skill: 'barrier' } }, constRng(0.5));
+    expect(r.party[0].mech).toMatchObject({ devices: [{ skill: 'barrier' }] });
+    expect((r.party[0].mech as { devices: object[] }).devices[0]).not.toHaveProperty('untracked');
+  });
+
   it('the ledger can split by skill', () => {
     expect(newLedger()).toEqual({ by: {} });
     const l = newLedger({ bySkill: true });

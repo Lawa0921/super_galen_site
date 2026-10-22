@@ -49,7 +49,7 @@ const ruled = (eff: Extract<Effect, { kind: 'device' }>): Partial<Device> => ({
 });
 
 /** Sets (or upgrades, or swaps in) a device from a `device` effect cast as `skill`. */
-export function placeDevice(c: Combatant, eff: Extract<Effect, { kind: 'device' }>, skill: string): void {
+export function placeDevice(c: Combatant, eff: Extract<Effect, { kind: 'device' }>, skill: string, tracked = true): void {
   const m = c.mech;
   if (m?.kind !== 'devices') return;
   const same = m.devices.filter((d) => d.kind === eff.device);
@@ -63,13 +63,14 @@ export function placeDevice(c: Combatant, eff: Extract<Effect, { kind: 'device' 
     up.power = eff.power;
     delete up.hits; delete up.cures; delete up.shock;
     Object.assign(up, ruled(eff));
+    if (tracked) delete up.untracked; else up.untracked = true;
     return;
   }
   if (m.devices.length >= m.cap) {
     const least = m.devices.reduce((best, d, i) => (d.turns < m.devices[best].turns ? i : best), 0);
     m.devices.splice(least, 1);
   }
-  m.devices.push({ skill, kind: eff.device, power: eff.power, level: 1, turns: eff.turns, ...ruled(eff) });
+  m.devices.push({ skill, kind: eff.device, power: eff.power, level: 1, turns: eff.turns, ...ruled(eff), ...(tracked ? {} : { untracked: true as const }) });
 }
 
 /** Whoever has the least HP for their max (the first of them on a tie), standing. */
@@ -103,7 +104,7 @@ export function runDevice(s: BattleState, c: Combatant, d: Device, ctx: EffectCo
       if (!t) return;
       act();
       const amount = healAmount(c, power);
-      t.shield = { amount: Math.max(amount, t.shield?.amount ?? 0), src: c.key, skill: d.skill };
+      t.shield = { amount: Math.max(amount, t.shield?.amount ?? 0), src: c.key, ...(d.untracked ? {} : { skill: d.skill }) };
       return;
     }
     case 'mine':

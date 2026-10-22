@@ -322,8 +322,10 @@ export interface TreeOpts { first?: readonly string[]; sides?: readonly string[]
 /**
  * `defaultTree`'s order with a build's choices (plan 8h Task 3): `opts.first` before DEFAULT_FIRST among the nodes learned
  * first; a pair whose B side is in `opts.sides` offers its B side in place of its A side; the ultimate of branch
- * `opts.capstone` (default DEFAULT_CAPSTONE), which, named, is learned first too (after `opts.first`) — the default's
- * upgrades would spend every point before it. With no opts it is the default build to the bit. The hero's is heroTree.
+ * `opts.capstone` (default DEFAULT_CAPSTONE). A named capstone is reached on purpose (the default's upgrades would spend
+ * every point before any ultimate): right after the firsts, the ultimate as soon as it can be taken, and until then, while
+ * its gate (or the tier below) still wants points, that branch's lower nodes (its chosen sides), lowest (rank, tier)
+ * first. With no opts it is the default build to the bit. The hero's is heroTree.
  */
 export function treeFor(id: CharacterId, level: number, memories: number, opts: TreeOpts): Record<string, number> {
   if (id === 'hero') return heroTree(level, 'balanced', memories);
@@ -335,9 +337,16 @@ export function treeFor(id: CharacterId, level: number, memories: number, opts: 
     const node = cell.pair && opts.sides?.includes(cell.pair.id) ? cell.pair : cell;
     if (tier < 4 || branch === capstone) nodes.push({ node, branch, tier });
   }));
-  // A build that names its ultimate's branch wants that ultimate: it comes after its own firsts, as soon as it can.
-  const ultimate = opts.capstone === undefined ? [] : tierNodes(TREES[id].branches[opts.capstone], 4).map((n) => n.id);
-  const firstIds = [...new Set([...(opts.first ?? []), ...ultimate, ...(DEFAULT_FIRST[id] ?? [])])];
+  const firstIds = [...new Set([...(opts.first ?? []), ...(DEFAULT_FIRST[id] ?? [])])];
+  // A named capstone: its ultimate, and the branch's lower nodes that open it (plan 8h Task 3 review).
+  const ultimate = opts.capstone === undefined ? undefined : nodes.find((x) => x.branch === opts.capstone && x.tier === 4);
+  const below = ultimate ? nodes.filter((x) => x.branch === ultimate.branch && x.tier < 4) : [];
+  const toCapstone = (L: number): (typeof nodes)[number][] => {
+    if (!ultimate || rankIn(tree, ultimate.node.id) > 0) return [];
+    const why = check(id, L, tree, ultimate.node.id, memories);
+    if (why === null) return [ultimate];
+    return why === 'gate' || why === 'req' ? [...below].sort(order) : [];
+  };
   const first = firstIds.map((n) => nodes.find((x) => x.node.id === n)).filter((x) => x !== undefined);
   const learned = (x: (typeof nodes)[number]) => {
     if (x.node.kind === 'active') return rankIn(tree, x.node.id) >= 1;
@@ -359,7 +368,7 @@ export function treeFor(id: CharacterId, level: number, memories: number, opts: 
       const upgrades = nodes.filter(learned).sort(order);
       const fresh = nodes.filter((x) => !upgrades.includes(x) && !unlearnedOld.includes(x)).sort(order);
       const early = unlearnedOld.filter((x) => !due.includes(x)).sort(byOld);
-      const pick = [due, firsts, upgrades, fresh, early]
+      const pick = [due, firsts, toCapstone(L), upgrades, fresh, early]
         .map((kind) => kind.find((x) => check(id, L, tree, x.node.id, memories) === null))
         .find((x) => x !== undefined);
       if (!pick) return tree;

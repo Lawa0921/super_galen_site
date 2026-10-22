@@ -7,7 +7,8 @@ import { SKILLS } from '../data/skills';
 import { BOARDS, CHAR_KEYSTONES, DEFAULT_KEYSTONES } from '../data/talents';
 import { T } from '../data/text.zh-TW';
 import { buildSockets, buildTalents, buildTree, partyPolicies, policyOf, policyText } from './builds';
-import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, validBuild } from './progression';
+import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, treeFor, validBuild } from './progression';
+import { TREES } from '../data/trees';
 import { socketCount } from './sockets';
 import { partyAt } from './sim';
 import type { CharacterId, Member } from './types';
@@ -63,6 +64,25 @@ describe('build data (plan 8h Task 3)', () => {
     for (const b of [build('noel', { sides: ['noel-star-heavy'], capstone: 2, first: ['hex'] })]) {
       for (const L of [5, 20, 35, 50]) expect(validBuild('noel', L, buildTree('noel', L, b), buildTalents('noel', L, b)), `${L}`).toBe(true);
     }
+  });
+
+  it('a named capstone is held by Lv 50, on every branch of every companion', () => {
+    // Why a branch's ultimate cannot be held by Lv 50 even when the build spends for it first (the point budget).
+    const CANNOT: Partial<Record<string, string>> = {};
+    for (const id of CHARACTER_IDS.filter((c) => c !== 'hero')) {
+      TREES[id].branches.forEach((branch, b) => {
+        const ult = branch.nodes[4].id;
+        const tree = treeFor(id, 50, 0, { capstone: b });
+        const key = `${id}:${b}`;
+        if (CANNOT[key]) expect(tree[ult] ?? 0, key).toBe(0);
+        else expect(tree[ult], `${key} ${ult}`).toBe(1);
+        expect(validBuild(id, 50, tree, defaultTalents(id, 50)), key).toBe(true);
+      });
+    }
+    // The way there keeps the build's sides.
+    const heavy = treeFor('noel', 50, 0, { capstone: 0, sides: ['noel-star-heavy'] });
+    expect([heavy.inferno, heavy['noel-star-twin'] ?? 0]).toEqual([1, 0]);
+    expect(heavy['noel-star-heavy']).toBeGreaterThan(0);
   });
 
   it('talents lean as asked', () => {

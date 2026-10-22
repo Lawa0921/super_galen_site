@@ -407,7 +407,8 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'device': {
       if (target !== actor) return;
-      placeDevice(actor, eff, ctx.cast ?? eff.device);
+      // Set by her own hand cast, a ledger split by skill credits its shields to that skill (plan 8h Task 3 review).
+      placeDevice(actor, eff, ctx.cast ?? eff.device, castOf(ctx, actor) !== undefined);
       return;
     }
     case 'overclock': {
