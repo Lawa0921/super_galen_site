@@ -15,6 +15,8 @@ import { clampToMax, respecPrice } from './town';
 import { bagCount, socketCount, socketRune, socketable, type SocketFail } from './sockets';
 import { chainLength } from '../data/story/chains';
 import type { CharacterId, Member, Party } from './types';
+import type { Action, BattleState } from './battle';
+import { choose } from './sim';
 
 /** The tree `b` lays out for `id` at `level` (the hero's from his HERO_BUILDS build). */
 export function buildTree(id: CharacterId, level: number, b: BuildDef, memories = 0): Record<string, number> {
@@ -242,4 +244,14 @@ export function followUp(s: GameState, ids: readonly CharacterId[]): GameState {
     }
   }
   return state;
+}
+
+/**
+ * The battle's 「自動」 (plan 8h ruling 15): what each of `who` does this round, by the party's policies (each member's
+ * followed build, else her standard one): `choose`, kept to `who`, so commands already given stay. A full gauge fires the
+ * ultimate first (choose). Draws nothing.
+ */
+export function autoActions(s: BattleState, p: Party, who: readonly string[]): Record<string, Action> {
+  const all = choose(s, p, partyPolicies(p));
+  return Object.fromEntries(who.flatMap((k) => (all[k] ? [[k, all[k]]] : [])));
 }

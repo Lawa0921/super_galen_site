@@ -1,10 +1,14 @@
 import { CHARACTERS } from '../data/characters';
 import { RESERVE_CAP, RUNES, RUNE_IDS, RUNE_NUMBERS, RUNE_TIERS, exclusiveGroupOf, parseRuneKey, type RuneRef, type RuneTier } from '../data/runes';
 import { T } from '../data/text.zh-TW';
-import { fromMember, runeView, skillCost, skillFor } from '../engine/battle';
+import { castNow, fromMember, runeView, skillCost, skillFor, type Action, type BattleState } from '../engine/battle';
+import { autoActions } from '../engine/builds';
+import type { Combatant } from '../engine/combatant';
+import { echoDef, echoOf } from '../engine/mechanics/echo';
+import { ITEMS } from '../data/items';
 import { battleReservePct, lastingBarrierLoss, WHEEL } from '../engine/mechanics/runes';
 import { statsOf } from '../engine/party';
-import { treeCost } from '../engine/progression';
+import { treeCost, ultimateFor } from '../engine/progression';
 import { runeNotes, runeWhy, skillTags } from '../engine/runes';
 import { ELEMENT_AILMENT } from '../engine/skills';
 import {
@@ -298,6 +302,39 @@ export function battleLine(def: SkillDef): string {
   } else if (heals.length) parts.push(W.battle.heal(joined(heals.map((e) => num(e.power)))));
   else if (devices.length) parts.push(joined(devices.map((e) => W.device(T.mech.device[e.device], Math.round(e.power)))));
   return parts.join(W.battle.sep);
+}
+
+/**
+ * 自動's note (plan 8h ruling 15): what each of `who` will do this round, read from the same `autoActions` the command
+ * plays: 「諾艾兒：火之星彈（敵方單體・威力 174・火）」 (her skill as she casts it now, `castNow`), 「攻擊」, 「殘響：…」,
+ * or 「絕技：…」 for a full gauge.
+ */
+export function autoLine(s: BattleState, party: Party, who: readonly string[]): string {
+  const acts = autoActions(s, party, who);
+  return T.cmd.policyNote(who.flatMap((k) => {
+    const c = s.party.find((x) => x.key === k);
+    const a = acts[k];
+    return c && a ? [T.cmd.policyPart(c.name, actText(s, c, a))] : [];
+  }));
+}
+
+/** One member's part of 自動's note: what `a` is, in the battle menu's words. */
+function actText(s: BattleState, c: Combatant, a: Action): string {
+  switch (a.kind) {
+    case 'skill': {
+      const def = skillFor(c, a.skill);
+      return def ? T.cmd.policySkill(def.name, battleLine(castNow(s, c, def))) : a.skill;
+    }
+    case 'ultimate': return T.cmd.ultimate(ultimateFor(c.defId as CharacterId, c.ranks, c).name);
+    case 'echo': {
+      const rec = a.rec ?? echoOf(s, s.round + 1);
+      return T.cmd.echo(rec ? echoDef(rec).name : undefined);
+    }
+    case 'defend': return T.cmd.defend;
+    case 'item': return ITEMS[a.item]?.name ?? a.item;
+    case 'escape': return T.cmd.escape;
+    case 'attack': return T.cmd.attack;
+  }
 }
 
 /** The max TP a fight leaves her when her working 常駐 runes hold some back (plan 8g ruling 9); else null. */

@@ -6,7 +6,7 @@ import { RUNE_SLOT_LEVELS } from '../data/runes';
 import { SKILLS } from '../data/skills';
 import { BOARDS, CHAR_KEYSTONES, DEFAULT_KEYSTONES } from '../data/talents';
 import { T } from '../data/text.zh-TW';
-import { applyBuild, applyCost, buildSockets, buildTalents, buildTree, followUp, partyPolicies, pitchOf, policyOf, policyText, runeSource } from './builds';
+import { applyBuild, applyCost, autoActions, buildSockets, buildTalents, buildTree, followUp, partyPolicies, pitchOf, policyOf, policyText, runeSource } from './builds';
 import { newGame, type GameState } from './state';
 import { STANDARD_LINEUP } from './party';
 import { respecPrice } from './town';
@@ -16,7 +16,12 @@ import { MAX_LEVEL } from './party';
 import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, newTree, treeFor, validBuild } from './progression';
 import { TREES } from '../data/trees';
 import { socketCount } from './sockets';
-import { partyAt } from './sim';
+import { choose, partyAt } from './sim';
+import { createBattle, resolveRound, type Action, type BattleState } from './battle';
+import { encounterTable } from './scaling';
+import { mulberry32 } from './rng';
+import { echoOf } from './mechanics/echo';
+import { LIMIT_MAX } from './battle';
 import type { CharacterId, Member } from './types';
 
 /** A build of `owner` with only what a test gives it. */
@@ -322,5 +327,62 @@ describe('apply and follow a build (plan 8h Task 6)', () => {
     expect(pitchOf(buildOf('noel', 'cycle')!)).toBe(buildOf('noel', 'cycle')!.intro);
     // Still applicable below it.
     expect(applyBuild(town(20), 'noel', 'meteor').ok).toBe(true);
+  });
+});
+
+describe('autoActions (plan 8h Task 8)', () => {
+  /** Who picks a command this round (the battle screen's actors). */
+  const actors = (b: BattleState) => b.party.filter((c) => c.alive && c.sleep === 0 && !c.frozen);
+  const firstRune = (id: CharacterId) => BUILDS[id][1].key;
+
+  it('auto keeps chosen commands and never picks what the engine refuses', () => {
+    // The standard five, each following her first rune build, Lv 35, depth 9 on the main road: its first group, then the boss.
+    const build = Object.fromEntries(STANDARD_LINEUP.map((id) => [id, firstRune(id)])) as Partial<Record<CharacterId, string>>;
+    const party = partyAt(35, { build, heroBuild: buildOf('hero', firstRune('hero'))!.hero }, 9);
+    expect(STANDARD_LINEUP.every((id) => party.roster[id].build === firstRune(id))).toBe(true);
+    const scale = { depth: 9, region: 'mainline' as const };
+    let rounds = 0;
+    for (const [enemyIds, boss] of [[encounterTable('mainline', 9)[0], false], [['lanterneater'], true]] as const) {
+      const rng = mulberry32(7919);
+      let b = createBattle({ party: structuredClone(party), enemyIds: [...enemyIds], boss, inventory: {}, revealed: {}, scale });
+      for (let r = 0; r < 60 && b.outcome === 'ongoing'; r++, rounds++) {
+        const [first, ...rest] = actors(b);
+        if (!first) { b = resolveRound(b, {}, rng); continue; }
+        const mine: Action = { kind: 'attack', target: b.enemies.find((e) => e.alive)!.key };
+        const auto = autoActions(b, party, rest.map((c) => c.key));
+        // Only who was asked, every one of them; the first member's command is never touched.
+        expect(Object.keys(auto).sort()).toEqual(rest.map((c) => c.key).sort());
+        // The hero repeats only what there is to repeat.
+        for (const [k, a] of Object.entries(auto)) if (a.kind === 'echo') expect(echoOf(b, b.round + 1), k).toBeTruthy();
+        b = resolveRound(b, { ...auto, [first.key]: mine }, rng);
+        expect(b.log.filter((e) => e.type === 'no-tp' || e.type === 'no-skill'), `round ${r}`).toEqual([]);
+      }
+    }
+    expect(rounds).toBeGreaterThan(2);
+  });
+
+  it("auto is the build's policy, and the standard one for who follows none", () => {
+    const meteor = buildOf('noel', 'meteor')!;
+    const party = partyAt(50, { build: { noel: 'meteor' } }, 9);
+    const b = createBattle({ party: structuredClone(party), enemyIds: encounterTable('mainline', 9)[0], boss: false, inventory: {}, revealed: {}, scale: { depth: 9, region: 'mainline' } });
+    const noel = b.party.find((c) => c.key === 'noel')!;
+    expect(noel.mech?.kind).toBe('heat');
+    if (noel.mech?.kind === 'heat') noel.mech.heat = 4;
+    noel.tp = noel.max.tp;
+    expect(meteor.policy[0]).toEqual({ kind: 'spend-at', gauge: 'heat', min: 4, skill: 'inferno' });
+    expect(autoActions(b, party, ['noel']).noel).toMatchObject({ kind: 'skill', skill: 'inferno' });
+    // Following nothing: what the sim's own player picks.
+    const plain = structuredClone(party);
+    delete plain.roster.noel.build;
+    const keys = actors(b).map((c) => c.key);
+    expect(autoActions(b, plain, keys)).toEqual(choose(b, plain));
+    // A full gauge fires the ultimate first.
+    noel.limit = LIMIT_MAX;
+    expect(autoActions(b, party, ['noel']).noel.kind).toBe('ultimate');
+    // The hero on 殘響 with nothing recorded does not pick it.
+    const echo = partyAt(35, { build: { hero: 'echo' }, heroBuild: buildOf('hero', 'echo')!.hero }, 9);
+    const e = createBattle({ party: structuredClone(echo), enemyIds: encounterTable('mainline', 9)[0], boss: false, inventory: {}, revealed: {}, scale: { depth: 9, region: 'mainline' } });
+    expect(echoOf(e, e.round + 1)).toBeFalsy();
+    expect(autoActions(e, echo, ['hero']).hero.kind).not.toBe('echo');
   });
 });

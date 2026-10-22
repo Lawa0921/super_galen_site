@@ -286,6 +286,20 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
   }
 }
 
+/** `def` with the abyss capstones' depth bonus in it (a skill without `abyss`, or no depth bonus, is `def` itself). */
+export function abyssDef(s: Pick<BattleState, 'abyss'>, def: SkillDef): SkillDef {
+  const bonus = def.abyss && s.abyss ? pctMod(def.id, 100 + s.abyss) : undefined;
+  return bonus ? patchSkill(def, bonus) : def;
+}
+
+/**
+ * `def` as `actor` casts it this moment, as `perform` casts it: the depth's bonus (`abyssDef`), then her mechanic
+ * (`castDef`: Noel's heat, Liz's coins, a barrier to release, a 同步). The battle menu's numbers read this (plan 8h ruling 11h).
+ */
+export function castNow(s: BattleState, actor: Combatant, def: SkillDef): SkillDef {
+  return castDef(s, actor, abyssDef(s, def));
+}
+
 /**
  * A skill as this combatant casts it: the tree's rank, then its mod nodes (stacked into one), then the hero's weapon
  * mastery, then every worn power that names it in the order worn; added effects (`extra`) last. The order is stated in engine/skills.ts `patchSkill`.
@@ -457,8 +471,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       let def = skillFor(actor, act.skill);
       if (!def || def.passive) return null;
       // The abyss capstones grow with the fight's depth, after the tree and the worn powers have had their say.
-      const bonus = def.abyss && s.abyss ? pctMod(def.id, 100 + s.abyss) : undefined;
-      if (bonus) def = patchSkill(def, bonus);
+      def = abyssDef(s, def);
       // Then the caster's mechanic (Noel's heat): the skill as she casts it now, at the TP she pays now.
       const raw = def;
       def = castDef(s, actor, def);

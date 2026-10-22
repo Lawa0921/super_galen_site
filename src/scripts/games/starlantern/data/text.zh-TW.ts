@@ -157,6 +157,13 @@ export const T = {
     noteWith: (line: string, desc: string) => `${line}　${desc}`,
     /** After the note when the record left a variant's mechanic extras out (8d final review). */
     echoDropped: '（機制效果不會重現）',
+    /** 自動 (plan 8h ruling 15): each member not commanded yet does what her build's policy (or the standard one) says. */
+    policy: '自動',
+    /** Its note: what each of them will do this round, as it will be done. */
+    policyNote: (parts: string[]) => parts.join('　'),
+    policyPart: (name: string, what: string) => `${name}：${what}`,
+    /** A skill in the note: its name and its numbers as she casts it now (battleLine). */
+    policySkill: (skill: string, line: string) => `${skill}（${line}）`,
   },
   battle: {
     win: '勝利！', lose: '全滅……', fled: '成功逃跑', cont: '繼續', poison: '毒', sleep: '睡眠',

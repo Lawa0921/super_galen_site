@@ -17,6 +17,8 @@ import { maxValue } from '../../src/scripts/games/starlantern/engine/loot/item';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { version8Save } from '../../src/scripts/games/starlantern/engine/testing';
 import { defaultTalents, defaultTree } from '../../src/scripts/games/starlantern/engine/progression';
+import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/engine/builds';
+import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
@@ -4081,6 +4083,59 @@ test.describe('starlantern', () => {
         expect(spill, `a list spills out of its window at ${vw}`).toEqual([]);
         await shot(page, `builds-workshop-${vw}`);
       }
+      expect(w.errors).toEqual([]);
+    });
+
+    test("auto fights a round by each member's build (plan 8h)", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const w = await setup(page, 7);
+      // The hero and Noel, who follows 暴走流星 at Lv 40; the foes made harmless and tough so the round can be read.
+      const meteor = buildOf('noel', 'meteor')!;
+      await page.evaluate(({ tree, talents }) => {
+        const g = (window as unknown as Dbg).__starlanternDebug.game;
+        const p = g.state.party;
+        p.recruited = ['hero', 'noel'];
+        p.grid = ['hero', null, null, null, null, null, 'noel', null, null];
+        p.roster.noel = { ...p.roster.noel, level: 40, tree, talents, build: 'meteor' };
+        g.state.runeTutorialSeen = true;
+      }, { tree: buildTree('noel', 40, meteor), talents: buildTalents('noel', 40, meteor) });
+      await depart(page, w);
+      for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+        await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+        await w.closeTalk();
+        if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+        if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+      }
+      await expect(page.locator('.slx-battle')).toBeVisible();
+      await page.evaluate(() => {
+        const g = (window as unknown as Dbg).__starlanternDebug.game;
+        for (const e of g.battle.enemies) { e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1; }
+      });
+      await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+      for (let i = 0; i < 12 && (await page.locator('.slx-bcmd [aria-selected=true]').getAttribute('data-id')) !== 'policy'; i++) await w.key('ArrowDown');
+      await expect(page.locator('.slx-bcmd [aria-selected=true] .slx-label')).toHaveText(T.cmd.policy);
+      const note = page.locator('.slx-bnote');
+      await expect(note).toContainText('洛恩：');
+      await expect(note).toContainText('諾艾兒：');
+      for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+        await page.setViewportSize({ width: vw, height: vh });
+        await page.waitForTimeout(150);
+        const screen = (await page.locator('.slx-screen').boundingBox())!;
+        const b = (await note.boundingBox())!;
+        expect(b.x, `the note inside the stage at ${vw}`).toBeGreaterThanOrEqual(screen.x - 0.5);
+        expect(b.x + b.width, `the note inside the stage at ${vw}`).toBeLessThanOrEqual(screen.x + screen.width + 0.5);
+        expect(b.y + b.height, `the note inside the stage at ${vw}`).toBeLessThanOrEqual(screen.y + screen.height + 0.5);
+        const over = await page.locator('.slx-bnote, .slx-bcmd [role=option]').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
+        expect(over, `wider than their box at ${vw}`).toEqual([]);
+        const small = await note.evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
+        expect(small).toBeGreaterThanOrEqual(12);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/auto-preview-${vw}.png` });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+      const round = () => page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.battle?.round ?? -1);
+      expect(await round()).toBe(0);
+      await w.key('Enter');                                   // 自動
+      await expect.poll(round, { timeout: 15000 }).toBe(1);
       expect(w.errors).toEqual([]);
     });
   });
