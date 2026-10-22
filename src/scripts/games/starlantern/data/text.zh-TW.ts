@@ -969,8 +969,12 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     from: { shop: '道具店有賣', drop: '打怪、寶箱掉落', legendary: '菁英、頭目掉落' },
     missing: (name: string, from: string) => `缺：${name}（${from}）`,
     later: (name: string, lv: number) => `${name}：Lv ${lv} 起`,
-    /** A hand-made change stopped her following a build. */
-    followEnded: (name: string) => `${name}不再跟隨建議配點。`,
+    /** A rune whose skill waits for the hero's memories (his abyss skills). */
+    laterMemories: (name: string, n: number) => `${name}：記憶 ${n} 段後`,
+    /** A rune the slot refused (常駐's reserve, or a clash with a rune already there). */
+    refused: (name: string) => `${name}：這一格裝不上`,
+    /** Changes by hand stopped them following their builds (several at once, in the order they stopped). */
+    followEnded: (names: string[]) => `${names.join('、')}不再跟隨建議配點。`,
     rule: {
       none: '沒有特別的規則：補血優先，其他時候放最強的招。',
       ensureBarrier: (names: string[], big: boolean, below?: number) =>

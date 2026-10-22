@@ -45,8 +45,7 @@ import { applyBuild, applyCost, followUp } from './builds';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
-/** `follow-ended`: a change by hand stopped `followEnded` following her build (plan 8h Task 6). */
-export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp' | 'banked' | 'tree-reworked' | 'follow-ended';
+export type Notice = 'save-reset' | 'wipe' | 'saved' | 'save-failed' | 'lamp' | 'banked' | 'tree-reworked';
 export type MoveResult =
   | { kind: 'ignored' } | { kind: 'blocked' } | { kind: 'moved' } | { kind: 'battle' } | { kind: 'boss' }
   | { kind: 'entrance' }
@@ -129,8 +128,11 @@ export class Game {
   /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
   private rescueAt: { at: Pos; who: Meetable } | null = null;
   notice: Notice | null = null;
-  /** Who stopped following her build, for the `follow-ended` notice. */
-  followEnded: CharacterId | null = null;
+  /**
+   * Who stopped following their builds since the town last said so, in order (plan 8h Task 6): a queue of its own, so a
+   * later notice ('banked') never drops it. The town reads and empties it.
+   */
+  followEnded: CharacterId[] = [];
   /** Memory scenes the screen should play now (not saved). */
   pending: SceneId[] = [];
   /** The scenes the town should play on this arrival, in order (not saved: a reload rebuilds it from the queue). */
@@ -804,8 +806,8 @@ export class Game {
     if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
     const r = this.apply(townRespec(this.state, id));
     if (!r.ok) return r;
-    const ended = this.endFollowing(id);
-    this.notice = this.storage && saveGame(this.storage, this.state) ? (ended ? 'follow-ended' : 'saved') : 'save-failed';
+    this.endFollowing(id);
+    this.notice = this.storage && saveGame(this.storage, this.state) ? 'saved' : 'save-failed';
     return r;
   }
 
@@ -836,16 +838,15 @@ export class Game {
   }
 
   /**
-   * A change by hand (a point, a side, a talent, a reset) ends her following a build (plan 8h ruling 2); the
-   * `follow-ended` notice names her. Whether she was following.
+   * A change by hand (a point, a side, a talent, a reset) ends her following a build (plan 8h ruling 2); she joins the
+   * `followEnded` queue the town reads. Whether she was following.
    */
   private endFollowing(id: CharacterId): boolean {
     const m = this.state.party.roster[id];
     if (!m?.build) return false;
     const { build: _gone, ...rest } = m;
     this.state = { ...this.state, party: { ...this.state.party, roster: { ...this.state.party.roster, [id]: rest } } };
-    this.notice = 'follow-ended';
-    this.followEnded = id;
+    if (!this.followEnded.includes(id)) this.followEnded.push(id);
     return true;
   }
 

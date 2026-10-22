@@ -11,6 +11,8 @@ import { newGame, type GameState } from './state';
 import { STANDARD_LINEUP } from './party';
 import { respecPrice } from './town';
 import type { RuneId, RuneRef, RuneTier } from '../data/runes';
+import { ABYSS_UNLOCK } from '../data/hero';
+import { MAX_LEVEL } from './party';
 import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, newTree, treeFor, validBuild } from './progression';
 import { TREES } from '../data/trees';
 import { socketCount } from './sockets';
@@ -230,6 +232,35 @@ describe('apply and follow a build (plan 8h Task 6)', () => {
     expect(at).toBeGreaterThan(5);
     expect(r5.later.filter((x) => x.skill === 'heaven-spear')).toEqual(exorcist.runes['heaven-spear'].map((id, i) => ({ skill: 'heaven-spear', id, level: Math.max(at, RUNE_SLOT_LEVELS[i]) })));
     expect(r5.missing.some((x) => x.skill === 'heaven-spear')).toBe(false);
+  });
+
+  it('a skill memories open is later by memories, not by a level past the cap (Task 6 review I1)', () => {
+    const s = town(35);
+    s.party.roster.hero = { ...s.party.roster.hero, level: 35, tree: heroTree(35, 'balanced', 0), talents: heroTalents(35, 'balanced') };
+    const r = ok(applyBuild(s, 'hero', 'sword'));
+    const sword = buildOf('hero', 'sword')!;
+    expect(r.later.filter((x) => x.skill === 'abyss-sword')).toEqual(sword.runes['abyss-sword'].map((id) => ({ skill: 'abyss-sword', id, memories: ABYSS_UNLOCK[0] })));
+    expect(r.later.every((x) => !('level' in x) || x.level <= MAX_LEVEL)).toBe(true);
+  });
+
+  it('a rune the slot refuses says why, not where to find it (Task 6 review)', () => {
+    // A hand-made build whose second rune clashes with the first (one shape a skill).
+    const list = BUILDS.noel as BuildDef[];
+    list.push(build('noel', { key: 'clash', runes: { 'fire-star': ['spread', 'focus'] } }));
+    try {
+      const r = ok(applyBuild(town(35, { 'spread@magic': 1, 'focus@magic': 1 }), 'noel', 'clash'));
+      expect(r.missing).toEqual([{ skill: 'fire-star', id: 'focus', refused: 'group' }]);
+    } finally { list.pop(); }
+  });
+
+  it('a build that only adds to her points is free (Task 6 review)', () => {
+    const meteor = buildOf('noel', 'meteor')!;
+    const s = town(35);
+    // What the build gives at Lv10 is part of what it gives at Lv35: no point would move.
+    s.party.roster.noel = { ...s.party.roster.noel, tree: buildTree('noel', 10, meteor), talents: buildTalents('noel', 10, meteor) };
+    const r = ok(applyBuild(s, 'noel', 'meteor'));
+    expect(r.cost).toBe(0);
+    expect(r.state.party.roster.noel.tree).toEqual(buildTree('noel', 35, meteor));
   });
 
   it('following spends the points and fills new slots at a level-up', () => {

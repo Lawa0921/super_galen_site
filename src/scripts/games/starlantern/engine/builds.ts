@@ -11,8 +11,9 @@ import type { PolicyRule, PolicyTable } from './policy';
 import { heroTalents, heroTree, learnedSkills, memoriesOf, talentsFor, treeFor } from './progression';
 import { MAX_LEVEL } from './party';
 import type { GameState } from './state';
-import { clampToMax, hasSpent, respecPrice } from './town';
-import { bagCount, socketCount, socketRune, socketable } from './sockets';
+import { clampToMax, respecPrice } from './town';
+import { bagCount, socketCount, socketRune, socketable, type SocketFail } from './sockets';
+import { chainLength } from '../data/story/chains';
 import type { CharacterId, Member, Party } from './types';
 
 /** The tree `b` lays out for `id` at `level` (the hero's from his HERO_BUILDS build). */
@@ -87,12 +88,19 @@ export function pitchOf(b: BuildDef): string {
 }
 
 /** A suggested rune the bag does not hold, and where one is found (plan 8h ruling 12). */
-export interface MissingRune { skill: string; id: RuneId; from: 'shop' | 'drop' | 'legendary' }
-/** A suggested rune whose slot is not open yet, or whose skill is not learned yet, and the level it can go in. */
-export interface LaterRune { skill: string; id: RuneId; level: number }
+/**
+ * A suggested rune the bag does not hold, and where one is found (`from`); or one the slot refused (`refused`: 常駐's TP
+ * reserve, or a clash with a rune already on the skill), which no shop would mend.
+ */
+export type MissingRune = { skill: string; id: RuneId; from: 'shop' | 'drop' | 'legendary' } | { skill: string; id: RuneId; refused: SocketFail };
+/**
+ * A suggested rune whose slot or skill is not open yet: the level it opens at, or (the hero's abyss skills) the memories
+ * it waits for.
+ */
+export type LaterRune = { skill: string; id: RuneId; level: number } | { skill: string; id: RuneId; memories: number };
 
 /** Where a rune is found: Orik's shop sells it, monsters and chests drop it, or (a legendary) elites and bosses. */
-export function runeSource(id: RuneId): MissingRune['from'] {
+export function runeSource(id: RuneId): 'shop' | 'drop' | 'legendary' {
   if ((RUNE_STOCK as readonly RuneId[]).includes(id)) return 'shop';
   return RUNES[id].group === 'legendary' ? 'legendary' : 'drop';
 }
@@ -110,9 +118,13 @@ function bestInBag(s: Pick<GameState, 'runes'>, id: RuneId): RuneRef | null {
 const laidOut = (m: Member, b: BuildDef): { tree: Record<string, number>; talents: Record<string, number> } =>
   ({ tree: buildTree(m.id, m.level, b, memoriesOf(m)), talents: buildTalents(m.id, m.level, b) });
 
+/** Whether any point of `now` would have to move to reach `to` (a node or talent `to` holds fewer ranks of). */
+const moves = (now: Record<string, number>, to: Record<string, number>): boolean => Object.keys(now).some((k) => (to[k] ?? 0) < now[k]);
+
 /**
  * What applying `key` to `id` would cost and whether it changes her tree or talents (the inn asks first when it does
- * either). The cost is the respec's, and only when she has spent points and the build would move them; a free respec pays.
+ * either). The cost is the respec's, and only when a point she spent would move (a build that only adds to her points is
+ * free); a free respec pays.
  */
 export function applyCost(s: GameState, id: CharacterId, key: string): { cost: number; changes: boolean } | null {
   const m = s.party.roster[id];
@@ -120,7 +132,7 @@ export function applyCost(s: GameState, id: CharacterId, key: string): { cost: n
   if (!m || !b || !s.party.recruited.includes(id)) return null;
   const { tree, talents } = laidOut(m, b);
   const changes = !sameRecord(tree, m.tree) || !sameRecord(talents, m.talents);
-  return { cost: changes && hasSpent(m) ? respecPrice(m) : 0, changes };
+  return { cost: moves(m.tree, tree) || moves(m.talents, talents) ? respecPrice(m) : 0, changes };
 }
 
 /**
@@ -139,7 +151,7 @@ export function applyBuild(s: GameState, id: CharacterId, key: string):
   const n = structuredClone(s);
   const old = n.party.roster[id];
   const member: Member = { ...old, ...laidOut(old, b), build: key };
-  if (price.changes && hasSpent(old)) delete member.freeRespec;
+  if (moves(old.tree, member.tree) || moves(old.talents, member.talents)) delete member.freeRespec;
   n.gold -= price.cost;
   // Every rune she wears back to the bag.
   const runes = { ...n.runes };
@@ -151,22 +163,30 @@ export function applyBuild(s: GameState, id: CharacterId, key: string):
   const known = socketable(member);
   const open = socketCount(member.level);
   for (const [skill, ids] of Object.entries(b.runes)) {
-    const learnAt = known.includes(skill) ? member.level : learnLevel(member, b, skill);
+    const opensAt = known.includes(skill) ? { level: member.level } : learnedAt(member, b, skill);
     ids.forEach((rid, slot) => {
-      const opens = Math.max(learnAt, RUNE_SLOT_LEVELS[slot]);
-      if (!known.includes(skill) || slot >= open) { later.push({ skill, id: rid, level: opens }); return; }
+      if (!known.includes(skill) || slot >= open) {
+        later.push('memories' in opensAt ? { skill, id: rid, memories: opensAt.memories } : { skill, id: rid, level: Math.max(opensAt.level, RUNE_SLOT_LEVELS[slot]) });
+        return;
+      }
       const ref = bestInBag(state, rid);
-      const put = ref && socketRune(state, id, skill, slot, ref);
-      if (put && put.ok) { state = put.state; placed.push(ref!); } else missing.push({ skill, id: rid, from: runeSource(rid) });
+      if (!ref) { missing.push({ skill, id: rid, from: runeSource(rid) }); return; }
+      const put = socketRune(state, id, skill, slot, ref);
+      if (put.ok) { state = put.state; placed.push(ref); } else missing.push({ skill, id: rid, refused: put.reason });
     });
   }
   return { ok: true, state, cost: price.cost, placed, missing, later };
 }
 
-/** The first level at or above hers at which `b` has `m` know `skill` (MAX_LEVEL + 1 when it never does). */
-function learnLevel(m: Member, b: BuildDef, skill: string): number {
-  for (let L = m.level; L <= MAX_LEVEL; L++) if (learnedSkills({ ...m, level: L, tree: buildTree(m.id, L, b, memoriesOf(m)) }).includes(skill)) return L;
-  return MAX_LEVEL + 1;
+/**
+ * When `b` has `m` know `skill`: the first level at or above hers, with her memories; else (the hero's abyss skills, Task 6
+ * review I1) the fewest memories with which some level does.
+ */
+function learnedAt(m: Member, b: BuildDef, skill: string): { level: number } | { memories: number } {
+  const knows = (L: number, mem: number) => learnedSkills({ ...m, level: L, tree: buildTree(m.id, L, b, mem) }).includes(skill);
+  for (let L = m.level; L <= MAX_LEVEL; L++) if (knows(L, memoriesOf(m))) return { level: L };
+  for (let mem = memoriesOf(m) + 1; mem <= chainLength(m.id); mem++) if (knows(MAX_LEVEL, mem)) return { memories: mem };
+  return { level: MAX_LEVEL };
 }
 
 /**

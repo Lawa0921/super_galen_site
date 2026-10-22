@@ -1362,13 +1362,21 @@ describe('apply and follow a build (plan 8h Task 6)', () => {
       g.notice = null;
       expect(act(g)).toBe(true);
       expect(g.state.party.roster.noel).not.toHaveProperty('build');
-      expect([g.notice, g.followEnded]).toEqual(['follow-ended', 'noel']);
+      expect(g.followEnded).toEqual(['noel']);
     };
     ends((g) => g.respec('noel').ok);
     ends((g) => g.swapVariant('noel', 'noel-star-heavy').ok);
     // Ten more levels of points, not yet spent (a level-up she would follow is not what this tests).
     ends((g) => { g.state.party.roster.noel.level = 45; return Object.keys(NODES).some((n) => NODES[n].owner === 'noel' && g.raiseNode('noel', n).ok); });
     ends((g) => { g.state.party.roster.noel.level = 45; return Object.keys(TALENT_NODES).some((n) => TALENT_NODES[n].owner === 'noel' && g.raiseTalent('noel', n).ok); });
+    // Several end before the town speaks: every one is queued, and a later notice ('banked') does not drop them.
+    const many = townGame();
+    many.state.party.roster.liz = { ...many.state.party.roster.liz, level: 35, tree: defaultTree('liz', 35), talents: defaultTalents('liz', 35) };
+    expect(many.applyBuild('noel', 'meteor').ok && many.applyBuild('liz', 'bleed').ok).toBe(true);
+    many.respec('noel');
+    many.respec('liz');
+    many.notice = 'banked';
+    expect(many.followEnded).toEqual(['noel', 'liz']);
     // Stopping by hand.
     const g = townGame();
     g.applyBuild('noel', 'meteor');
@@ -1391,8 +1399,10 @@ describe('apply and follow a build (plan 8h Task 6)', () => {
     set('noel', 'cycle');
     if (!g.state.party.recruited.includes('rin')) g.state.party.recruited.push('rin');
     set('rin', 'venom');
-    g.state.runes = { 'thunderclap@magic': 1 };
+    // 冰雷循環 suggests 雷之星彈 [蓄力, 感電, 雷鳴]: Lv20 opens its second slot, for 感電.
+    g.state.runes = { 'jolt@magic': 1 };
     g.state.party.roster.noel.sockets = { 'ice-star': [{ id: 'charge', tier: 'magic' }] };
+    const chizuru0 = structuredClone(g.state.party.roster.chizuru);
     stepOnto(g, plantAt(g, 'elite'));
     expect(killAll(g).outcome).toBe('win');
     const noel = g.state.party.roster.noel;
@@ -1400,11 +1410,16 @@ describe('apply and follow a build (plan 8h Task 6)', () => {
     expect(noel.tree).toEqual(buildTree('noel', 20, buildOf('noel', 'cycle')!));
     expect(noel.talents).toEqual(buildTalents('noel', 20, buildOf('noel', 'cycle')!));
     expect(noel.sockets?.['ice-star']).toEqual([{ id: 'charge', tier: 'magic' }]);   // what she wore stays
+    expect(noel.sockets?.['thunder-star']).toEqual([null, { id: 'jolt', tier: 'magic' }]);   // slot 0 wants 蓄力: none in the bag
+    expect(g.state.runes).toEqual({});
+    // On the bench, at half the exp, she reaches Lv20 too, and spends it her build's way.
     const rin = g.state.party.roster.rin;
-    if (rin.level > 19) expect(rin.tree).toEqual(buildTree('rin', rin.level, buildOf('rin', 'venom')!));
-    // A member who follows nothing keeps her points unspent.
+    expect(rin.level).toBe(20);
+    expect(rin.tree).toEqual(buildTree('rin', 20, buildOf('rin', 'venom')!));
+    // A member who follows nothing keeps her points as they were.
     const chizuru = g.state.party.roster.chizuru;
     expect(chizuru.build).toBeUndefined();
+    expect([chizuru.tree, chizuru.talents]).toEqual([chizuru0.tree, chizuru0.talents]);
   });
 });
 

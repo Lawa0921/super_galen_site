@@ -936,7 +936,8 @@ describe('the followed build in the save (plan 8h Task 6)', () => {
     // A save with no build field reads field for field as before.
     const g = newGame(undefined, 0, STANDARD_LINEUP);
     const plain = load(() => {});
-    if (plain.status === 'ok') expect(plain.state.party).toEqual(g.party);
+    expect(plain.status).toBe('ok');
+    expect((plain as Extract<typeof plain, { status: 'ok' }>).state.party).toEqual(g.party);
   });
 });
 

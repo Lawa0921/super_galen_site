@@ -81,10 +81,14 @@ export class TownScene implements Scene {
     const banked = game.banked;
     game.notice = null;
     game.banked = null;
+    // Whoever stopped following a build since (plan 8h Task 6): said after the notice, or in place of the day's line.
+    const ended = game.followEnded.splice(0);
+    const endedLine = ended.length ? T.build.followEnded(ended.map((id) => CHARACTERS[id].name)) : null;
+    const then = (first: Promise<void>) => { void first.then(() => (endedLine ? this.speak('', endedLine) : undefined)); };
     // A safe return (walking home, or the lamp, whose notice replaces 'banked') says what came home.
-    if (banked && (notice === 'banked' || notice === 'lamp')) void this.speak('', bankedLine(banked, this.ctx.art));
-    else if (notice === 'follow-ended') void this.speak('', T.build.followEnded(CHARACTERS[game.followEnded ?? 'hero'].name));
-    else if (notice) void this.speak('', T.notices[notice]);
+    if (banked && (notice === 'banked' || notice === 'lamp')) then(this.speak('', bankedLine(banked, this.ctx.art)));
+    else if (notice) then(this.speak('', T.notices[notice]));
+    else if (endedLine) void this.speak('', endedLine);
     else {
       // The day's line: the town's own, and from act 2 Rin's foreshadowing once she has joined.
       const stage = storyStage(game.state);
