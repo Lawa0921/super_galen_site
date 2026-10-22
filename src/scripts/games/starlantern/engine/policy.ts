@@ -40,10 +40,10 @@ export type PolicyRule =
   /** She keeps a beat and her last move was not `skill`: cast it. */
   | { kind: 'cast-unless-last'; skill: string }
   /**
-   * Cast `skill` whenever it can be cast; `big`: only while a boss or an elite stands; `once`: not when the battle log
-   * (`s.log`) holds an act of hers under that skill's name.
+   * Cast `skill` whenever it can be cast; `big`: only while a boss or an elite stands; `whileAbsent`: not while an
+   * effect she gave with it still holds (`holding`).
    */
-  | { kind: 'cast-when'; skill: string; big?: true; once?: true }
+  | { kind: 'cast-when'; skill: string; big?: true; whileAbsent?: true }
   /** The hero: echo the coming round's record when it is worth at least his strongest damage skill (power x reach). */
   | { kind: 'echo' };
 
@@ -67,6 +67,23 @@ export function reach(s: BattleState, def: SkillDef): number {
 }
 
 const shareOf = (c: Combatant) => c.hp / c.max.hp;
+
+/**
+ * Whether an effect `c` gave with `def` still holds (plan 8h Task 1 ruling): a moon hold while the moon is held; a buff
+ * while someone wears one of that stat and sign from her; a barrier while hers from this skill stands; a riposte while
+ * hers lasts. A skill with none of these leaves nothing to wait for.
+ */
+function holding(s: BattleState, c: Combatant, def: SkillDef): boolean {
+  return def.effects.some((e) => {
+    switch (e.kind) {
+      case 'moon': return e.hold !== undefined && !!s.moon?.hold;
+      case 'buff': return [...s.party, ...s.enemies].some((t) => t.alive && t.buffs.some((b) => b.src === c.key && b.stat === e.stat && Math.sign(b.pct) === Math.sign(e.pct)));
+      case 'barrier': return (s.barriers ?? []).some((b) => b.src === c.key && b.skill === def.id);
+      case 'riposte': return !!c.riposte;
+      default: return false;
+    }
+  });
+}
 
 /** The castable damage skills, strongest first; ties keep their order (a stable sort, as `choose` sorts). */
 const byPower = (castable: SkillDef[], power: (def: SkillDef) => number) =>
@@ -186,7 +203,7 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
       case 'cast-when': {
         const def = defOf(rule.skill);
         if (!def || (rule.big && !big())) break;
-        if (rule.once && s.log.some((e) => e.type === 'act' && e.actor === c.key && e.label.startsWith(def.name))) break;
+        if (rule.whileAbsent && holding(s, c, def)) break;
         return cast(rule.skill, aim(def));
       }
       case 'echo': {
