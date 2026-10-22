@@ -3000,3 +3000,26 @@ describe('story depth Task 16: the finale and the lantern festival', () => {
     expect(STORY.scenes.finale.summary).toMatch(/十段/);
   });
 });
+
+describe('story depth Task 17: the town day to day', () => {
+  const one = (pool: string[], re: RegExp, at: string) => expect(pool.filter((t) => re.test(t)), `${at} ${re}`).toHaveLength(1);
+  it('act 3 shows the paper on the guild door and the red pen; act 4 the three forms and Orik pouring; after, half a loaf (design §7.3-7.5)', () => {
+    const act3 = STORY.townLines.act3!;
+    one(act3, /霧就跟到哪/, 'act3');
+    one(act3, /紅筆短了一截/, 'act3');
+    const act4 = STORY.townLines.act4!;
+    one(act4, /登記表/, 'act4');
+    one(act4, /請你的/, 'act4');
+    const after = STORY.townLines.after!;
+    one(after, /半個|一半/, 'after');
+    expect(() => pinBeat('chat:hero:5', {}, /登記表/)).not.toThrow();
+    expect(linesWhen(STORY.scenes['chat:hero:5'].lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath: false }).find((l) => /登記表/.test(l.text))!.who).toBe('anna');
+  });
+  it('the act 4 town pool hands 「一起回來」 back and favours no one, and stays mostly light (design §7.7, ruling 15)', () => {
+    const act4 = STORY.townLines.act4!;
+    for (const t of act4) expect(t).not.toContain('一起回來');
+    expect(act4.some((t) => /洛恩和凜/.test(t))).toBe(false);
+    const heavy = act4.filter((t) => /暗|熄|不再來|倒在他頭上|沒有那個歸來者/.test(t));
+    expect(heavy.length * 2).toBeLessThan(act4.length);   // the light lines outnumber the heavy
+  });
+});

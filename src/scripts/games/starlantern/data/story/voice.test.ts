@@ -37,6 +37,8 @@ const POLISHED: string[] = [
   ...['rin-scarlet:2', 'rin-scarlet:3', 'rin-selene:2', 'rin-sylvie:2', 'chizuru-rin:2', 'chizuru-noel:2', 'noel-rin:2', 'safira-sylvie:3', 'liz-scarlet:3', 'noel-selene:3'].map((id) => `scenes.banter:${id}.`),
   // Task 16: the finale and the lantern festival (story depth plan Task 16)
   'finaleWait.', 'scenes.mem:hero:10.', 'scenes.finale.', 'scenes.epilogue.', 'endingTitle', 'finaleBossName',
+  // Task 17: the town's daily lines (story depth plan Task 17)
+  'townLines.', 'greet.', 'leads.', 'merchant.', 'absorb.', 'scenes.chat:hero:5.',
 ];
 
 type Scope = readonly string[];
