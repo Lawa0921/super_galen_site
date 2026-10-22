@@ -2697,6 +2697,7 @@ export class DelveGame {
         attack: atk ? { item: atk.item, kind: atk.kind, angle: atk.angle, dir: atk.dir, at: this.time - atk.t, dur: atk.dur } : null,
         mining: mi ? { x: mi.x, y: mi.y, progress: mi.need > 0 ? Math.min(1, mi.elapsed / mi.need) : 1, pick: bestPick(this.inventory.slots) } : null,
         fishing: fi ? { state: fi.state, x: fi.x, y: fi.y, liquid: fi.liquid !== LIQ.NONE } : null,
+        hurt: a.hurtSeq & 255,
       };
     });
   }
@@ -3042,6 +3043,8 @@ export class DelveGame {
     this.sleepReady = false;
     this.iframes = fall ? 0.4 : IFRAMES;
     this.sinceHit = 0;
+    // 受傷姿勢的計數：跟本地 renderer 的條件一樣（hurt 且沒有 cause）；純加法、不碰 RNG
+    if (!cause) this.cur.hurtSeq++;
     this.emit({ type: 'hurt', x: p.x + p.w / 2, y: p.y, amount, fall, ...(cause ? { cause } : {}) });
     if (this.recallT !== null) { const r = this.respawnPoint(); this.recallT = null; this.emit({ type: 'recall', phase: 'cancel', x: r.x, y: r.y }); }
     if (this.hp <= 0 && !this.tryUndying()) this.die();

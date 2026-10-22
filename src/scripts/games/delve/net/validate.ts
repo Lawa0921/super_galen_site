@@ -105,7 +105,8 @@ function mantleOf(v: unknown): NonNullable<PlayerPose['mantle']> | undefined {
 /** WirePose → PlayerPose（新物件、只拷貝已知欄位）；任何一格不合法 → null */
 export function decodePose(w: unknown): PlayerPose | null {
   if (!tup(w, WIRE_POSE_LEN)) return null;
-  const [x, y, vx, vy, flags, gfxOffY, iframes, liquidFrac, held, mt, atk, mi, fi] = w;
+  const [x, y, vx, vy, flags, gfxOffY, iframes, liquidFrac, held, mt, atk, mi, fi, hurt] = w;
+  if (!Number.isSafeInteger(hurt) || (hurt as number) < 0 || (hurt as number) > 255) return null;
   if (!px(x) || !px(y) || !fin(vx) || !fin(vy) || !fin(gfxOffY) || !fin(iframes) || iframes < 0 || !unit(liquidFrac)) return null;
   if (!Number.isSafeInteger(flags) || (flags as number) < 0 || ((flags as number) & ~POSE_FLAGS) !== 0) return null;
   if (held !== null && !item(held)) return null;
@@ -138,6 +139,6 @@ export function decodePose(w: unknown): PlayerPose | null {
     x, y, vx, vy, onGround: (f & POSE_GROUND) !== 0, gfxOffY,
     facing: (f & POSE_LEFT) !== 0 ? -1 : 1, dead: (f & POSE_DEAD) !== 0, iframes,
     boating: (f & POSE_BOAT) !== 0, climbing: (f & POSE_CLIMB) !== 0,
-    mantle, liquidFrac, held: held as ItemId | null, attack, mining, fishing,
+    mantle, liquidFrac, held: held as ItemId | null, attack, mining, fishing, hurt: hurt as number,
   };
 }

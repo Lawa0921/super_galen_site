@@ -222,6 +222,8 @@ export class PlayerActor {
   teleSeq = 0;
   /** 擊退每次 +1（房主 fanout 比對，送 knock 給客人） */
   knockSeq = 0;
+  /** 挨打（hurt 事件、沒有 cause）每次 +1：PlayerPose.hurt（M-C2；畫受傷姿勢用） */
+  hurtSeq = 0;
   /** 最近一次擊退的速度（px/s） */
   knockV = { vx: 0, vy: 0 };
 }

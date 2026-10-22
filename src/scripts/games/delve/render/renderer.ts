@@ -132,7 +132,7 @@ export class Renderer {
   camOverride: Cam | null = null;
   hidePlayer = false;
   /** 本地玩家的畫圖狀態（受傷時間由 hurt 事件設定）；遠端玩家每個 pid 一份 */
-  private readonly local: AvatarState = Object.assign(newAvatarState(), { autoHurt: false });
+  private readonly local: AvatarState = newAvatarState();
   private readonly remotes = new Map<Pid, AvatarState>();
   private readonly avatarWorld: AvatarWorld = { isClimbable: (tx, ty) => this.game.world.isClimbable(tx, ty) };
   /** 這一幀本地玩家的 pose（drawPlayer 算；船 / 釣線 / 輪廓光共用） */
@@ -148,7 +148,7 @@ export class Renderer {
   /** 其他玩家的來源（房主 / 客人各給一個）；null = 單機不畫 */
   setRemoteSource(fn: (() => RemoteView[]) | null): void { this.remoteSource = fn; }
   /** 客人：自己的動作狀態來源（NetGuest.ownPose）；本地玩家的攻擊 / 挖掘 / 釣魚 / 無敵用它 */
-  setOwnPose(fn: (() => OwnPose | null) | null): void { this.ownPose = fn; this.local.autoHurt = fn !== null; }
+  setOwnPose(fn: (() => OwnPose | null) | null): void { this.ownPose = fn; }
   /** 畫瞄準游標（標題背景關掉） */
   showCursor = true;
   /** 遠景不做生態區交界混色（標題背景的大像素下，混色的抖動圖樣像雜訊） */
@@ -850,13 +850,13 @@ export class Renderer {
    * （at = −t、時鐘 0：time − at 再減回來有浮點誤差，剛好落在整數幀的門檻會差一幀）；
    * 客人的攻擊 / 挖掘 / 釣魚 / 無敵改用房主回報的（D3），時鐘 = game.time（ws 帶來的房主時間）
    */
-  private poseNow(): { pose: PlayerPose; time: number } {
+  private poseNow(): { pose: PlayerPose; time: number; own: boolean } {
     const g = this.game, pose = g.poseOf(g.localPid);
     const own = this.ownPose?.();
-    if (own) { pose.attack = own.attack; pose.mining = own.mining; pose.fishing = own.fishing; pose.iframes = own.iframes; return { pose, time: g.time }; }
+    if (own) { pose.attack = own.attack; pose.mining = own.mining; pose.fishing = own.fishing; pose.iframes = own.iframes; pose.hurt = own.hurt; return { pose, time: g.time, own: true }; }
     const a = g.local.attack;
-    if (pose.attack && a) { pose.attack = { ...pose.attack, at: -a.t }; return { pose, time: 0 }; }
-    return { pose, time: g.time };
+    if (pose.attack && a) { pose.attack = { ...pose.attack, at: -a.t }; return { pose, time: 0, own: false }; }
+    return { pose, time: g.time, own: false };
   }
 
   private drawPlayer(ctx: CanvasRenderingContext2D, dt: number): void {
@@ -866,7 +866,11 @@ export class Renderer {
     // 紙娃娃：樣子沒變（key 一樣）就沿用快取的影格表 / 手臂
     const doll = g.doll();
     this.dollKey = doll.key;
+    // 單機 / 房主：受傷姿勢由 hurt 事件設定（onEvent）→ 計數先對齊，painter 不會晚一幀再設一次；客人看房主回報的計數
+    if (!this.ownPose) this.local.hurtSeen = pose.hurt;
     const o = drawAvatar(ctx, this.sprites, pose, doll.look, doll.key, this.local, dt, this.clock, this.avatarWorld, now.time);
+    // 客人還沒收到房主的回報（計數是副本自己的 0）→ 當成沒看過：第一份到的時候不算挨打
+    if (this.ownPose && !now.own) this.local.hurtSeen = null;
     this.playerAnim = o.anim;
     if (o.cue === 'grip') this.climbDust(false);
     if (o.cue) this.onCue?.(o.cue);

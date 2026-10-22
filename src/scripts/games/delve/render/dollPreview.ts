@@ -1,7 +1,7 @@
 // dollPreview.ts — 紙娃娃預覽（純 Bmp）：把一格動畫依遊戲裡的順序合成成一張圖
 //   後手臂 → 第一張（背飾 / 後髮 / 身體 / 腿 / 胸）→ 前手臂 → 第二張（臉 / 前髮 / 頭飾 / 前飾品）。
 //   客製化畫面、背包的紙娃娃、說明框的小預覽、圖庫用；遊戲中由 renderer 用快取的 canvas 做同樣的事。
-import { Bmp, rotPrep, rotate, toCanvas } from './pixel';
+import { Bmp, rotPrep, rotate } from './pixel';
 import type { DollLook } from '../engine/doll';
 import { ARMS_PAD, ARM_PIV, AV_FH, AV_FW, ROPE_X, avatarArm, avatarFrame, mantleArms, shoulderOf, type SheetAnim } from './avatarArt';
 import { hex } from './pixel';
@@ -20,20 +20,6 @@ function armAt(l: DollLook, key: string, back: boolean, deg: number): Bmp {
   if (!p) { p = rotPrep(avatarArm(l, back)); prepCache.set(k, p); if (prepCache.size > 64) prepCache.delete(prepCache.keys().next().value as string); }
   return rotate(p, ARM_PIV.x, ARM_PIV.y, -(deg * Math.PI) / 180, ARM_CANVAS);
 }
-
-const armCanvasCache = new Map<string, HTMLCanvasElement>();
-/** 遠端玩家用：依樣子（key）與角度（整數度）快取的手臂 canvas（64×64，軸心在中心）；不碰 Sprites 的手臂快取 */
-export function armCanvas(l: DollLook, key: string, back: boolean, deg: number): HTMLCanvasElement {
-  const d = Math.round(deg), k = `${key}:${back ? 1 : 0}:${d}`;
-  let c = armCanvasCache.get(k);
-  if (!c) {
-    c = toCanvas(armAt(l, key, back, d)) as HTMLCanvasElement;
-    armCanvasCache.set(k, c);
-    if (armCanvasCache.size > 256) armCanvasCache.delete(armCanvasCache.keys().next().value as string);
-  }
-  return c;
-}
-export { ARM_CANVAS };
 
 /** 一格完整的紙娃娃（面向右）；key = dollKey（手臂預處理的快取用） */
 export function dollPreview(l: DollLook, key: string, anim: SheetAnim, f: number): Bmp {

@@ -253,9 +253,9 @@ describe('單機玩家畫面回歸（M-C2 Task 2）', () => {
     for (const k of ['anim:idle', 'anim:walk', 'anim:jump', 'anim:fall', 'anim:climb', 'anim:mantle', 'anim:hurt', 'anim:swim',
       'atk:sword', 'atk:broadsword', 'atk:bow', 'atk:staff', 'atk:spear', 'atk:throw', 'mining', 'fish:flying', 'fish:floating', 'fish:bite',
       'boat', 'mantle', 'climbing', 'ropetop', 'rodTip', 'torchLight', 'coolLight', 'iframes']) expect(seen, k).toContain(k);
-    if (process.env.UPDATE_AVATAR_FIXTURE || !existsSync(FIXTURE)) {
-      writeFileSync(FIXTURE, JSON.stringify({ v: 1, n: frames.length, frames }) + '\n');
-    }
+    // 只有明講要重錄（UPDATE_AVATAR_FIXTURE=1）才寫；檔案不見 = 失敗（不會默默重錄成「現在的樣子」）
+    if (process.env.UPDATE_AVATAR_FIXTURE === '1') writeFileSync(FIXTURE, JSON.stringify({ v: 1, n: frames.length, frames }) + '\n');
+    expect(existsSync(FIXTURE), `${FIXTURE} 不見了（UPDATE_AVATAR_FIXTURE=1 重錄）`).toBe(true);
     const want = JSON.parse(readFileSync(FIXTURE, 'utf8')) as { n: number; frames: Frame[] };
     expect(frames.length).toBe(want.n);
     for (let i = 0; i < frames.length; i++) expect(JSON.parse(JSON.stringify(frames[i])), `frame ${i}`).toEqual(want.frames[i]);

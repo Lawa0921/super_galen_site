@@ -13,6 +13,7 @@ import { normalizeAppearance } from '../engine/appearance';
 import { plainLook, dollKey, type DollLook } from '../engine/doll';
 import type { PlayerPose } from '../engine/pose';
 import type { DelveGame } from '../engine/game';
+import type { OwnPose } from '../net/guest';
 import { FIXED_DT, PLAYER_H, PLAYER_W } from '../engine/constants';
 
 let restore: () => void = () => {};
@@ -23,7 +24,7 @@ const DT = 1 / 60;
 const look = (hairColor = 0): DollLook => plainLook({ ...normalizeAppearance(undefined), hairColor });
 const pose = (o: Partial<PlayerPose> = {}): PlayerPose => ({
   x: 0, y: 0, vx: 0, vy: 0, onGround: true, gfxOffY: 0, facing: 1, dead: false, iframes: 0, boating: false, climbing: false,
-  mantle: null, liquidFrac: 0, held: null, attack: null, mining: null, fishing: null, ...o,
+  mantle: null, liquidFrac: 0, held: null, attack: null, mining: null, fishing: null, hurt: 0, ...o,
 });
 
 // ── painter 單元（直接叫 drawAvatar） ──
@@ -161,13 +162,27 @@ describe('AvatarPainter：遠端玩家畫得跟本地一樣', () => {
 
   it('8 個不同外觀輪流畫 120 幀，本地玩家的 bakes.arms 在第 60 幀之後不再增加', () => {
     const s = scene();
-    // 7 位遠端（各一種樣子）都在走路（左右各半）：走路的循環 < 60 幀 → 之後每個角度都看過了，快取沒被別人清掉就不會再烘
-    for (let i = 1; i <= 7; i++) s.views.push(s.remote({ x: s.g.player.x + 40 * i, vx: i % 2 ? 90 : -90 }, `p${i}`, look(i)));
+    // 7 位遠端（各一種樣子）：走路（左右）、邊走邊挖（左右）、邊走邊揮劍 / 大劍 / 刺矛（每 30 幀重揮一次）——
+    // 都在走（待機的呼吸循環 > 60 幀，會在第 72 幀才第一次出現某些後手角度）；每種動作的循環都 < 60 幀
+    // → 之後每個角度都看過了，快取沒被別人清掉就不會再烘
+    const x0 = s.g.player.x;
+    const kinds: Partial<PlayerPose>[] = [
+      { vx: 90 }, { vx: -90 },
+      { vx: 90, held: 'copper_pickaxe', mining: { x: Math.floor(x0 / 16) - 3, y: 60, progress: 0.4, pick: 'copper_pickaxe' } },
+      { vx: -90, held: 'copper_pickaxe', mining: { x: Math.floor(x0 / 16) + 30, y: 60, progress: 0.4, pick: 'copper_pickaxe' } },
+      { vx: 90, held: 'wood_sword' }, { vx: -90, held: 'bone_greatsword' }, { vx: 90, held: 'iron_spear' },
+    ];
+    const weapon = { wood_sword: 'sword', bone_greatsword: 'broadsword', iron_spear: 'spear' } as const;
+    for (let i = 1; i <= 7; i++) s.views.push(s.remote({ x: x0 + 40 * i, ...kinds[i - 1] }, `p${i}`, look(i)));
     s.g.setMoveX(1);
     let at60 = -1;
     for (let f = 1; f <= 120; f++) {
       s.g.step(FIXED_DT);
-      for (const v of s.views) v.time = s.g.time;
+      for (const v of s.views) {
+        v.time = s.g.time;
+        const h = v.pose.held;
+        if (h && h in weapon) v.pose.attack = { item: h, kind: weapon[h as keyof typeof weapon], angle: -0.3, dir: 1, at: s.g.time - (f % 30) * DT, dur: 0.5 };
+      }
       s.frame();
       if (f === 60) at60 = s.r.sprites.bakes.arms;
     }
@@ -176,13 +191,69 @@ describe('AvatarPainter：遠端玩家畫得跟本地一樣', () => {
     expect(s.r.avatarDraws.size).toBe(7);
   });
 
-  it('遠端 iframes 從 0 變正 → 受傷姿勢（本地不自己判斷：由 hurt 事件設定）', () => {
+  it('只畫武器的那張手臂不分樣子：不同樣子拿同一把劍共用一張', () => {
+    const P = painter();
+    const b = look(5), kb = dollKey(b);
+    const before = P.sp.bakes.arms;
+    const c1 = P.sp.arm(P.l, P.key, false, null, 40, 'wood_sword', true).canvas;
+    expect(P.sp.arm(b, kb, false, null, 40, 'wood_sword', true).canvas).toBe(c1);
+    expect(P.sp.bakes.arms).toBe(before + 1);
+    // 帶袖子的手臂照樣依樣子分開
+    expect(P.sp.arm(b, kb, false, null, 40).canvas).not.toBe(P.sp.arm(P.l, P.key, false, null, 40).canvas);
+  });
+
+  it('遠端突進（iframes 上升、挨打計數不變）→ 不是受傷姿勢；遠端挨打（計數 +1）→ 受傷姿勢', () => {
     const P = painter(), st = newAvatarState();
-    expect(P.draw(pose({ x: 100, y: 100 }), st, 1).anim).toBe('idle');
-    expect(P.draw(pose({ x: 100, y: 100, iframes: 0.6 }), st, 1 + DT).anim).toBe('hurt');
-    const mine = Object.assign(newAvatarState(), { autoHurt: false });
-    P.draw(pose({ x: 100, y: 100 }), mine, 1);
-    expect(P.draw(pose({ x: 100, y: 100, iframes: 0.6 }), mine, 1 + DT).anim).not.toBe('hurt');
+    expect(P.draw(pose({ x: 100, y: 100, hurt: 4 }), st, 1).anim).toBe('idle');
+    // 突進 / 重生：無敵時間但計數沒變（閃爍那幾幀 out.anim 照樣回報）
+    for (let i = 1; i <= 10; i++) expect(P.draw(pose({ x: 100, y: 100, hurt: 4, iframes: 0.3 }), st, 1 + i * DT).anim).not.toBe('hurt');
+    // 挨打
+    expect(P.draw(pose({ x: 100, y: 100, hurt: 5, iframes: 0.6 }), st, 2).anim).toBe('hurt');
+    // 計數繞回 0（mod 256）也算變了
+    const w = newAvatarState();
+    P.draw(pose({ x: 100, y: 100, hurt: 255 }), w, 5);
+    expect(P.draw(pose({ x: 100, y: 100, hurt: 0, iframes: 0.6 }), w, 5 + DT).anim).toBe('hurt');
+  });
+
+  it('第一次看到的 pose 計數就不是 0 → 不算挨打', () => {
+    const P = painter(), st = newAvatarState();
+    expect(P.draw(pose({ x: 100, y: 100, hurt: 9, iframes: 0.6 }), st, 1).anim).not.toBe('hurt');
+    expect(P.draw(pose({ x: 100, y: 100, hurt: 9 }), st, 1 + DT).anim).not.toBe('hurt');
+  });
+
+  it('客人自己的身體：突進 → 不是受傷姿勢；房主回報挨打（ownPose.hurt 變了）→ 受傷姿勢', () => {
+    const s = scene();
+    let own: OwnPose | null = null;
+    s.r.setOwnPose(() => own);
+    s.frame();
+    // 還沒收到房主的 ws：之後第一份（計數已經是 3）不算挨打
+    own = { attack: null, mining: null, fishing: null, iframes: 0, hurt: 3 };
+    s.frame();
+    expect(s.r.playerAnim).not.toBe('hurt');
+    // 突進：房主回報的無敵時間上升，計數不變
+    own = { ...own, iframes: 0.3 };
+    for (let i = 0; i < 5; i++) { s.frame(); expect(s.r.playerAnim).not.toBe('hurt'); }
+    // 挨打
+    own = { ...own, iframes: 0.6, hurt: 4 };
+    s.frame();
+    expect(s.r.playerAnim).toBe('hurt');
+  });
+
+  it('單機的本地玩家：受傷姿勢只由 hurt 事件設定（計數變了也不會在下一幀再設一次）', () => {
+    const s = scene();
+    s.frame();
+    const R = s.R as unknown as { local: AvatarState };
+    // 計數變了但沒有 hurt 事件（例：測試直接改）→ 不會變成受傷姿勢
+    s.g.local.hurtSeq += 1;
+    s.frame();
+    expect(s.r.playerAnim).not.toBe('hurt');
+    // hurt 事件 → hurtAt = 當時的 clock（跟重構前一樣）
+    s.g.hurtPlayer(2, s.g.player.x + 40);
+    for (const e of s.g.drainEvents()) s.r.onEvent(e);
+    const at = R.local.hurtAt;
+    s.frame();
+    expect(s.r.playerAnim).toBe('hurt');
+    expect(R.local.hurtAt).toBe(at);
   });
 
   it('離開的 pid：畫圖狀態與 avatarDraws 一起丟掉；位置 = 腳底中心', () => {

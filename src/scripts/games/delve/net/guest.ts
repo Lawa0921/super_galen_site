@@ -51,7 +51,7 @@ export interface PeerView {
   pose: PlayerPose;
 }
 /** 客人自己的動作狀態用房主的（M-C2 D3）：最新一份、不內插 */
-export type OwnPose = Pick<PlayerPose, 'attack' | 'mining' | 'fishing' | 'iframes'>;
+export type OwnPose = Pick<PlayerPose, 'attack' | 'mining' | 'fishing' | 'iframes' | 'hurt'>;
 /** 內插緩衝裡的一位玩家（ws 的 WsPlayer + 解好的 pose） */
 interface PeerSample { pid: Pid; x: number; y: number; facing: 1 | -1; hp: number; maxHp: number; dead: boolean; pose: PlayerPose }
 const lerpPeer = (a: PeerSample, b: PeerSample, k: number): PeerSample =>
@@ -521,7 +521,7 @@ export class NetGuest {
         if (fin(p.hp)) a.hp = p.hp;
         if (fin(p.mana)) a.mana = p.mana;
         a.dead = Boolean(p.dead);
-        if (pose) this.own = { attack: pose.attack, mining: pose.mining, fishing: pose.fishing, iframes: pose.iframes };
+        if (pose) this.own = { attack: pose.attack, mining: pose.mining, fishing: pose.fishing, iframes: pose.iframes, hurt: pose.hurt };
         continue;
       }
       seen.add(p.pid);

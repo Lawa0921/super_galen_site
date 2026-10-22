@@ -99,3 +99,39 @@ describe('poseOf', () => {
     expect(bestPick([null, { item: 'torch', count: 3 }])).toBeNull();
   });
 });
+
+describe('PlayerPose.hurt（挨打計數，M-C2 Task 2 修正）', () => {
+  it('突進 / 重生給無敵時間但計數不變；挨打（hurt 且沒有 cause）才 +1；各 actor 分開算', () => {
+    const g = arena();
+    g.peaceful = true;
+    const h0 = g.poseOf(g.localPid).hurt;
+    expect(h0).toBe(0);
+    // 突進：iframes 上升、計數不變
+    g.addXp(2200);
+    for (const id of ['b_vigor', 'b_dash'] as const) g.learnSkill(id);
+    expect(g.useSkill('dash')).toBe(true);
+    expect(g.poseOf(g.localPid).iframes).toBeGreaterThan(0);
+    expect(g.poseOf(g.localPid).hurt).toBe(h0);
+    for (let i = 0; i < 60; i++) g.step(FIXED_DT);
+    // 挨打：+1（同一刻也發 hurt 事件、沒有 cause）
+    g.drainEvents();
+    expect(g.hurtPlayer(3, g.player.x + 40)).toBe(true);
+    const ev = g.drainEvents().filter((e) => e.type === 'hurt');
+    expect(ev.length).toBe(1);
+    expect('cause' in ev[0] && ev[0].cause).toBeFalsy();
+    expect(g.poseOf(g.localPid).hurt).toBe(h0 + 1);
+    // 別的 actor 不受影響
+    g.addActor('p2', createCharacter('乙', normalizeAppearance(undefined), 0));
+    expect(g.poseOf('p2').hurt).toBe(0);
+    // 致命一擊 +1；之後重生的無敵時間不算挨打
+    for (let i = 0; i < 90; i++) g.step(FIXED_DT);
+    g.hurtPlayer(99999, g.player.x + 40);
+    expect(g.dead).toBe(true);
+    const before = g.poseOf(g.localPid).hurt;
+    expect(before).toBe(h0 + 2);
+    for (let i = 0; i < 60 * 20 && g.dead; i++) g.step(FIXED_DT);
+    expect(g.dead).toBe(false);
+    expect(g.poseOf(g.localPid).iframes).toBeGreaterThan(0);
+    expect(g.poseOf(g.localPid).hurt).toBe(before);
+  });
+});

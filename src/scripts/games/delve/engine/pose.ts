@@ -18,6 +18,11 @@ export interface PlayerPose {
   /** 挖掘的 tile、進度 0..1、手上顯示的鎬（背包裡最好的） */
   mining: { x: number; y: number; progress: number; pick: ItemId | null } | null;
   fishing: { state: 'flying' | 'floating' | 'bite'; x: number; y: number; liquid: boolean } | null;
+  /**
+   * 受到一擊的計數（0..255 循環）：引擎發「hurt 且沒有 cause」（本地 renderer 當成挨打的那種）時 +1。
+   * 別人 / 客人自己的受傷姿勢看它有沒有變（突進 / 重生 / 不死的無敵時間不算挨打）
+   */
+  hurt: number;
 }
 
 export const WEAPON_KINDS: readonly WeaponKind[] = ['sword', 'broadsword', 'spear', 'bow', 'throw', 'boomerang', 'staff'];

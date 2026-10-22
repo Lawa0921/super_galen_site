@@ -62,8 +62,10 @@ export type WirePose = [
   attack: [item: ItemId, kind: WeaponKind, angle: number, dir: 1 | -1, at: number, dur: number] | null,
   mining: [x: number, y: number, progress: number, pick: ItemId | null] | null,
   fishing: [state: NonNullable<PlayerPose['fishing']>['state'], x: number, y: number, liquid: 0 | 1] | null,
+  /** 挨打計數 0..255 */
+  hurt: number,
 ];
-export const WIRE_POSE_LEN = 13;
+export const WIRE_POSE_LEN = 14;
 /** 2 位小數 */
 const r2 = (v: number): number => Math.round(v * 100) / 100;
 export function encodeMantle(m: PlayerPose['mantle']): WireMantle | null {
@@ -80,6 +82,7 @@ export function encodePose(p: PlayerPose): WirePose {
     a ? [a.item, a.kind, r2(a.angle), a.dir, r2(a.at), r2(a.dur)] : null,
     m ? [m.x, m.y, r2(m.progress), m.pick] : null,
     f ? [f.state, r2(f.x), r2(f.y), f.liquid ? 1 : 0] : null,
+    p.hurt & 255,
   ];
 }
 

@@ -15,7 +15,7 @@ const sprites = (): Sprites => new Sprites(() => { throw new Error('no icons'); 
 const app2 = (): Appearance => ({ ...normalizeAppearance(undefined), skin: 3 } as Appearance);
 const pose = (o: Partial<PlayerPose> = {}): PlayerPose => ({
   x: 0, y: 0, vx: 0, vy: 0, onGround: true, gfxOffY: 0, facing: 1, dead: false, iframes: 0, boating: false, climbing: false,
-  mantle: null, liquidFrac: 0, held: null, attack: null, mining: null, fishing: null, ...o,
+  mantle: null, liquidFrac: 0, held: null, attack: null, mining: null, fishing: null, hurt: 0, ...o,
 });
 
 function view(o: Partial<RemoteView> & { x?: number; y?: number; dead?: boolean } = {}): RemoteView {

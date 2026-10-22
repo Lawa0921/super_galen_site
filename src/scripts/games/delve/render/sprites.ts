@@ -572,7 +572,8 @@ export class Sprites {
    */
   arm(look: DollLook, key: string, back: boolean, pick: ItemId | null, deg: number, blade: ItemId | null = null, itemOnly = false): HeldDraw {
     const idx = angleIndex(deg, ARM_STEPS);
-    const pk = `${key}|${back ? 1 : 0}:${pick ?? ''}:${blade ?? ''}${itemOnly ? ':item' : ''}`;
+    // 只畫武器的那張跟樣子無關（armBmp itemOnly 不畫袖子）→ 不分樣子，8 個人一起打也不會佔 8 份
+    const pk = `${itemOnly ? '' : key}|${back ? 1 : 0}:${pick ?? ''}:${blade ?? ''}${itemOnly ? ':item' : ''}`;
     const ck = `${pk}:${idx}`;
     const size = 64;
     let c = lruGet(this.armCache, ck);

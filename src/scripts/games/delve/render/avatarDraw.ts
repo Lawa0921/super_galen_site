@@ -34,13 +34,14 @@ export interface AvatarState {
   /** 竿尖（世界 px；畫釣線用）；沒拿釣竿 = null */
   rodTip: { x: number; y: number } | null;
   rim: RimDraw | null;
-  /** pose.iframes 從 0 變正 → hurtAt = 現在（遠端玩家沒有 hurt 事件）；本地玩家由 hurt 事件設定 → false */
-  autoHurt: boolean;
-  /** 上一幀的 pose.iframes（autoHurt 用） */
-  lastIframes: number;
+  /**
+   * 上次看到的 pose.hurt（挨打計數）；null = 還沒看過。計數變了 → hurtAt = 現在（第一次看到不算）。
+   * 單機 / 房主的本地玩家由 hurt 事件設定 hurtAt，renderer 每幀先把它對齊成 pose.hurt（不會再觸發一次）
+   */
+  hurtSeen: number | null;
 }
 export function newAvatarState(): AvatarState {
-  return { animator: new PlayerAnimator(), hurtAt: -99, swingPhase: 0, facing: 1, rodTip: null, rim: null, autoHurt: true, lastIframes: 0 };
+  return { animator: new PlayerAnimator(), hurtAt: -99, swingPhase: 0, facing: 1, rodTip: null, rim: null, hurtSeen: null };
 }
 
 /** painter 要問世界的事（只傳函式，不傳整個 game） */
@@ -80,8 +81,9 @@ export function drawAvatar(
 ): AvatarDrawOut {
   const out: AvatarDrawOut = { anim: 'idle', cue: null, at: null, playerDraw: null, heldDraws: null, torches: [], cool: [] };
   st.rim = null;
-  if (st.autoHurt && pose.iframes > 0 && st.lastIframes <= 0 && !pose.dead) st.hurtAt = time;
-  st.lastIframes = pose.iframes;
+  // 受傷姿勢：挨打計數變了才算（突進 / 重生的無敵時間不算）
+  if (st.hurtSeen !== null && pose.hurt !== st.hurtSeen) st.hurtAt = time;
+  st.hurtSeen = pose.hurt;
   const p = { x: pose.x, y: pose.y, w: PLAYER_W, h: PLAYER_H };
   const mt = pose.mantle;
   // 船上：站著不動的姿勢（船在走、人不踏步）

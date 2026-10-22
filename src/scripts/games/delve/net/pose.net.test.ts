@@ -20,6 +20,7 @@ const pose = (o: Partial<PlayerPose> = {}): PlayerPose => ({
   attack: { item: 'wood_sword', kind: 'sword', angle: -1.57, dir: -1, at: 123.45, dur: 0.42 },
   mining: { x: 61, y: 60, progress: 0.5, pick: 'copper_pickaxe' },
   fishing: { state: 'bite', x: 400.5, y: 900.25, liquid: true },
+  hurt: 7,
   ...o,
 });
 const wire = (p: PlayerPose): unknown => JSON.parse(JSON.stringify(encodePose(p)));
@@ -74,6 +75,10 @@ describe('WirePose', () => {
     expect(decodePose(wire(pose({ mining: { x: 1, y: 2, progress: 1.2, pick: null } })))).toBeNull();
     expect(decodePose(wire(pose({ mining: { x: 1, y: 2, progress: 0.5, pick: 'nope' as never } })))).toBeNull();
     expect(decodePose(wire(pose({ fishing: { state: 'sleeping' as never, x: 0, y: 0, liquid: true } })))).toBeNull();
+    // 挨打計數：0..255 的整數（送出時 mod 256）
+    expect(decodePose(wire(pose({ hurt: 255 })))!.hurt).toBe(255);
+    expect(decodePose(wire(pose({ hurt: 257 })))!.hurt).toBe(1);
+    for (const h of [256, -1, 1.5, null]) expect(decodePose(bad(13, h))).toBeNull();
   });
 
   it('ps.mt：合法照收；壞的 → 整則 ps 丟掉', () => {
@@ -232,5 +237,27 @@ describe('M-C2 Task 2：遠端姿勢的時鐘與過時的攀邊', () => {
     climbing();
     host.onPs(rec, ps({ x: rec.prev.x + 5000 }));
     expect(a.remote!.mantle).toBeNull();
+  });
+});
+
+describe('M-C2 Task 2 修正：挨打計數上線', () => {
+  it('coopRig：房主讓客人挨一下 → 客人 ownPose().hurt 和另一位客人 peers() 的 pose.hurt 都 +1；突進的無敵時間不算', () => {
+    const r = coopRig({ guests: 2 });
+    const [a, b] = r.guests;
+    const hg = r.hostGame, pid = a.pid!;
+    r.run(300);
+    const h0 = a.ownPose()!.hurt;
+    const seen = (): number | undefined => b.peers().find((v) => v.pid === pid)?.pose.hurt;
+    expect(seen()).toBe(h0);
+    // 無敵時間但不是挨打（突進 / 重生那種）：計數不變
+    hg.actors.get(pid)!.iframes = 0.5;
+    r.run(200);
+    expect(a.ownPose()!.iframes).toBeGreaterThan(0);
+    expect(a.ownPose()!.hurt).toBe(h0);
+    hg.actors.get(pid)!.iframes = 0;
+    // 挨打
+    expect(hg.withActor(hg.actors.get(pid)!, () => hg.hurtPlayer(2, hg.actors.get(pid)!.player.x + 40))).toBe(true);
+    expect(until(r, () => a.ownPose()!.hurt === ((h0 + 1) & 255), 1000)).toBe(true);
+    expect(until(r, () => seen() === ((h0 + 1) & 255), 1000)).toBe(true);
   });
 });
