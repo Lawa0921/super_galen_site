@@ -5,7 +5,9 @@ import { credit, creditPrevented, lossOf, newLedger, totalOf, type Ledger } from
 import { mulberry32 } from './rng';
 import { encounterTable } from './scaling';
 import { choose, partyAt, simBattle } from './sim';
-import { applyEffect, type EffectContext } from './skills';
+import { applyEffect, healAmount, pctOf, type EffectContext } from './skills';
+import { skillFor } from './battle';
+import { SKILLS } from '../data/skills';
 import { constRng, makeBattle, makeCombatant } from './testing';
 import type { EnemyDef } from './types';
 import { ENEMIES } from '../data/enemies';
@@ -229,10 +231,11 @@ describe('the contribution ledger', () => {
       const s = makeBattle([P('chizuru'), P('noel'), P('selene', { alive: false, hp: 0 })], [E('e0')],
         { barriers: [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru' }] });
       syncWards(s);
-      expect(s.party.map((c) => c.ward)).toEqual([ward, ward, undefined]);
+      // The ward names the skill that raised it too (plan 8h Task 2 review).
+      expect(s.party.map((c) => c.ward)).toEqual([{ ...ward, skill: 'ward' }, { ...ward, skill: 'ward' }, undefined]);
       s.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru', boost: 2 }];
       syncWards(s);
-      expect(s.party[0].ward).toEqual({ def: 60, res: 60, src: 'chizuru' });
+      expect(s.party[0].ward).toEqual({ def: 60, res: 60, src: 'chizuru', skill: 'ward' });
       s.barriers = [{ skill: 'purify-ward', kind: 'purify', power: 30, turns: 2, src: 'chizuru' }];
       syncWards(s);
       expect(s.party.some((c) => 'ward' in c)).toBe(false);
@@ -244,7 +247,7 @@ describe('the contribution ledger', () => {
       // A round keeps them in step: the ward is on the members after it.
       const r = resolveRound(makeBattle([P('chizuru'), P('noel')], [E('e0', { sleep: 3 })],
         { barriers: [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru' }] }), {}, constRng(0.5));
-      expect(r.party.map((c) => c.ward)).toEqual([ward, ward]);
+      expect(r.party.map((c) => c.ward)).toEqual([{ ...ward, skill: 'ward' }, { ...ward, skill: 'ward' }]);
     });
 
     it('a round starts with the wards in step, so the first hit already meets them', () => {
@@ -379,5 +382,184 @@ describe('a lasting guard in the ledger (plan 8e Task 7)', () => {
     expect(prevented(P('noel', { auras: [aura] }))).toBe(byBuff);
     // Both, the same way: taking either away changes nothing, so neither is credited.
     expect(prevented(P('noel', { buffs: [buff], auras: [aura] }))).toBe(0);
+  });
+});
+
+describe('step ⑧ in the ledger (plan 8h Task 2)', () => {
+  const MAX = { hp: 300, tp: 99, atk: 40, def: 20, mag: 60, res: 20, spd: 10 };
+  const sync = { id: 'sync', tier: 'legendary' } as const;
+  const member = (key: string, spd: number, over: Partial<Combatant> = {}) => makeCombatant({ key, side: 'party', defId: key, ...over, max: { ...MAX, spd } });
+  const tough = () => makeCombatant({ key: 'e0', side: 'enemy', sleep: 9, max: { hp: 99999, tp: 0, atk: 1, def: 20, mag: 1, res: 20, spd: 1 } });
+
+  it("a sync's giver is credited with its lift", () => {
+    // Noel's fire star carries 同步 (+30%); Rin's 飛針 comes next: 65 a needle lifted to 85 (84.5 rounded: a lift that
+    // cannot be divided back to 65).
+    expect(pctOf(65, 130)).toBe(85);
+    const fight = (withSync: boolean) => {
+      const l = newLedger();
+      const s0 = makeBattle([member('noel', 90, withSync ? { runes: { 'fire-star': [sync] } } : {}), member('rin', 80)], [tough()]);
+      const r = resolveRound(s0, { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' }, rin: { kind: 'skill', skill: 'rin-needle', target: 'e0' } }, constRng(0.5), l);
+      return { l, r };
+    };
+    const { l, r } = fight(true);
+    const rolls = rollHit(member('rin', 80), tough(), { power: 65, element: 'phys', scale: 'atk', melee: false }, constRng(0.5))!;
+    const needle = (power: number) => hitAmount(member('rin', 80), tough(), { power, element: 'phys', scale: 'atk', melee: false }, rolls).amount;
+    const fire = hitAmount(member('noel', 90), tough(), SKILLS['fire-star'].effects[0] as DamageSpec, rolls).amount;
+    // Two needles: Rin keeps what 65 deals, Noel gets the rest.
+    expect(of(l, 'rin').damage).toBe(2 * needle(65));
+    expect(of(l, 'noel').damage).toBe(fire + 2 * (needle(85) - needle(65)));
+    // The two add up to what the foe lost.
+    expect(of(l, 'noel').damage + of(l, 'rin').damage).toBe(r.enemies[0].max.hp - r.enemies[0].hp);
+    // With no sync, the books are as they always were.
+    const plain = fight(false);
+    expect(of(plain.l, 'rin').damage).toBe(2 * needle(65));
+    expect(of(plain.l, 'noel').damage).toBe(fire);
+  });
+
+  it("a sync's giver is credited with a lifted heal", () => {
+    // Noel's sync, then Selene's 月光 on Rin: Selene keeps what the unlifted heal restores.
+    const l = newLedger();
+    const selene = member('selene', 80);
+    const s0 = makeBattle([member('noel', 90, { runes: { 'fire-star': [sync] } }), selene, member('rin', 1, { hp: 10 })], [tough()]);
+    const power = (SKILLS.moonlight.effects[0] as { power: number }).power;
+    const raw = healAmount(selene, power), lifted = healAmount(selene, pctOf(power, 130));
+    expect(lifted).toBeGreaterThan(raw);
+    const r = resolveRound(s0, { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' }, selene: { kind: 'skill', skill: 'moonlight', target: 'rin' } }, constRng(0.5), l);
+    expect(r.party[2].hp).toBe(10 + lifted);
+    expect(of(l, 'selene').healing).toBe(raw);
+    expect(of(l, 'noel').healing).toBe(lifted - raw);
+  });
+
+  it('a barrier is credited to its skill, a shield to the skill that gave it, and the books still balance', () => {
+    const foe = (_target: string) => makeCombatant({ key: 'e0', side: 'enemy', max: { hp: 99999, tp: 0, atk: 60, def: 20, mag: 1, res: 20, spd: 1 } });
+    const blow = (target: string) => ({ intents: { e0: { kind: 'attack' as const, target } } });
+    const both = (s0: BattleState, rounds: Record<string, import('./battle').Action>[]) => {
+      const split = newLedger({ bySkill: true }), plain = newLedger();
+      let a = s0, b = s0;
+      for (const acts of rounds) { a = resolveRound(a, acts, constRng(0.5), split); b = resolveRound(b, acts, constRng(0.5), plain); }
+      // The split never changes the totals, and no part is counted twice.
+      expect(split.by).toEqual(plain.by);
+      for (const k of ['damage', 'healing', 'prevented', 'shield'] as const) {
+        const parts = Object.values(split.bySkill!).reduce((n, c) => n + c[k], 0);
+        expect(parts, k).toBeLessThanOrEqual(Object.values(split.by).reduce((n, c) => n + c[k], 0));
+      }
+      return split;
+    };
+    // 守之結界 cast by hand, then a blow on Noel: what the ward spared her is 守之結界's.
+    const chizuru = member('chizuru', 90, { mech: { kind: 'barrier' } });
+    const w = both(makeBattle([chizuru, member('noel', 50)], [foe('noel')], blow('noel')), [{ chizuru: { kind: 'skill', skill: 'ward' } }]);
+    expect(of(w, 'chizuru').prevented).toBeGreaterThan(0);
+    expect(w.bySkill!.ward).toMatchObject({ prevented: of(w, 'chizuru').prevented, casts: 1 });
+    // A lasting 守之結界 (never cast): still 守之結界's.
+    const lasting = makeBattle([member('chizuru', 90, { mech: { kind: 'barrier' } }), member('noel', 50)], [foe('noel')], { ...blow('noel'), barriers: [{ skill: 'ward', kind: 'guard', power: 18, turns: 3, src: 'chizuru', lasting: true, lastingPct: 60 }] });
+    syncWards(lasting);
+    const l = both(lasting, [{}]);
+    expect(l.bySkill!.ward).toMatchObject({ prevented: of(l, 'chizuru').prevented, casts: 0 });
+    expect(of(l, 'chizuru').prevented).toBeGreaterThan(0);
+    // 月光 with 化盾 on Noel at full HP: the spill is a shield, and what it takes is 月光's.
+    const selene = member('selene', 90, { runes: { moonlight: [{ id: 'spill-shield', tier: 'legendary' }] } });
+    const m = both(makeBattle([selene, member('noel', 50)], [foe('noel')], blow('noel')), [{ selene: { kind: 'skill', skill: 'moonlight', target: 'noel' } }]);
+    expect(of(m, 'selene').shield).toBeGreaterThan(0);
+    expect(m.bySkill!.moonlight).toMatchObject({ shield: of(m, 'selene').shield, casts: 1 });
+    // Bobby's shield generator, run at the round's end, then a blow next round: 護盾產生器's.
+    const bobby = member('bobby', 90, { mech: { kind: 'devices', devices: [], cap: 2 } });
+    const g = both(makeBattle([bobby, member('noel', 50, { hp: 100 })], [foe('noel')], blow('noel')), [{ bobby: { kind: 'skill', skill: 'barrier' } }, {}]);
+    expect(of(g, 'bobby').shield).toBeGreaterThan(0);
+    expect(g.bySkill!.barrier).toMatchObject({ shield: of(g, 'bobby').shield, casts: 1 });
+  });
+
+  it('a device set by no hand cast gives a shield no skill', () => {
+    // 護盾產生器 set outside her own cast (a bare context: no one acting, as a trigger or an echo would be).
+    const bobby = member('bobby', 90, { mech: { kind: 'devices', devices: [], cap: 2 } });
+    applyEffect(bobby, bobby, SKILLS.barrier.effects[0], ctx(newLedger(), { cast: 'barrier' }));
+    expect(bobby.mech).toMatchObject({ devices: [{ skill: 'barrier', untracked: true }] });
+    const l = newLedger({ bySkill: true });
+    const foe = makeCombatant({ key: 'e0', side: 'enemy', max: { hp: 99999, tp: 0, atk: 60, def: 20, mag: 1, res: 20, spd: 1 } });
+    let s = makeBattle([bobby, member('noel', 50, { hp: 100 })], [foe], { intents: { e0: { kind: 'attack', target: 'noel' } } });
+    s = resolveRound(s, {}, constRng(0.5), l);
+    s = resolveRound({ ...s, intents: { e0: { kind: 'attack', target: 'noel' } } }, {}, constRng(0.5), l);
+    expect(of(l, 'bobby').shield).toBeGreaterThan(0);
+    expect(l.bySkill!.barrier?.shield ?? 0).toBe(0);
+    // Set by her own cast, it is 護盾產生器's (the review test above), and the device says nothing more.
+    const hand = makeBattle([member('bobby', 90, { mech: { kind: 'devices', devices: [], cap: 2 } })], [foe]);
+    const r = resolveRound(hand, { bobby: { kind: 'skill', skill: 'barrier' } }, constRng(0.5));
+    expect(r.party[0].mech).toMatchObject({ devices: [{ skill: 'barrier' }] });
+    expect((r.party[0].mech as { devices: object[] }).devices[0]).not.toHaveProperty('untracked');
+  });
+
+  it('a ledger that asks credits buff givers by what their buff added, and gauge feeding apart (plan 8h Task 5b, H3)', () => {
+    // Safira's 戰舞 (+25% atk) on Rin: Rin's hit, with and without it on the same rolls; the difference is Safira's.
+    const buff = { stat: 'atk' as const, pct: 25, turns: 3, src: 'safira' };
+    const rin = () => member('rin', 50, { buffs: [buff] });
+    const foe = () => makeCombatant({ key: 'e0', side: 'enemy', max: { hp: 99999, tp: 0, atk: 1, def: 20, mag: 1, res: 20, spd: 1 } });
+    const spec = { kind: 'damage' as const, power: 100, element: 'phys' as const, scale: 'atk' as const, melee: false };
+    const hit = (l: ReturnType<typeof newLedger>) => { applyEffect(rin(), foe(), spec, ctx(l)); return l; };
+    const plain = hit(newLedger());
+    const split = hit(newLedger({ buffGivers: true }));
+    const rolls = rollHit(rin(), foe(), spec, constRng(0.5))!;
+    const without = hitAmount(member('rin', 50), foe(), spec, rolls).amount;
+    expect(of(split, 'safira').damage).toBe(of(plain, 'rin').damage - without);
+    expect(of(split, 'rin').damage).toBe(without);
+    expect(of(split, 'safira').damage + of(split, 'rin').damage).toBe(of(plain, 'rin').damage);
+    expect(of(plain, 'safira').damage).toBe(0);   // a plain ledger (the gate's) is as it always was
+    // The giver's share goes to the buff's skill when a cast of hers gave it in a ledger that asks (plan 8h review).
+    const byGiver = newLedger({ bySkill: true, buffGivers: true });
+    applyEffect(member('rin', 50, { buffs: [{ ...buff, skill: 'war-dance' }] }), foe(), spec, ctx(byGiver));
+    expect(byGiver.bySkill!['war-dance']?.damage).toBe(of(split, 'safira').damage);
+    // ... and such a ledger tags the buff a hand cast gives; a plain one never does.
+    const dancer = member('safira', 90);
+    const target = member('rin', 50);
+    applyEffect(dancer, target, { kind: 'buff', stat: 'atk', pct: 25, turns: 3 }, ctx(newLedger({ bySkill: true, buffGivers: true }), { cast: 'war-dance', acting: 'safira' }));
+    expect(target.buffs[0]).toMatchObject({ src: 'safira', skill: 'war-dance' });
+    const plainTarget = member('rin', 50);
+    applyEffect(dancer, plainTarget, { kind: 'buff', stat: 'atk', pct: 25, turns: 3 }, ctx(newLedger(), { cast: 'war-dance', acting: 'safira' }));
+    expect(plainTarget.buffs[0]).not.toHaveProperty('skill');
+    // Her own buff is hers: nothing moves.
+    const self = newLedger({ buffGivers: true });
+    applyEffect(member('rin', 50, { buffs: [{ ...buff, src: 'rin' }] }), foe(), spec, ctx(self));
+    expect(Object.keys(self.by)).toEqual(['rin']);
+    // A def debuff on the foe from Sylvie: hers likewise.
+    const sunder = newLedger({ buffGivers: true });
+    applyEffect(member('rin', 50), makeCombatant({ key: 'e0', side: 'enemy', buffs: [{ stat: 'def', pct: -30, turns: 3, src: 'sylvie' }], max: { hp: 99999, tp: 0, atk: 1, def: 20, mag: 1, res: 20, spd: 1 } }), spec, ctx(sunder));
+    expect(of(sunder, 'sylvie').damage).toBeGreaterThan(0);
+    // Gauge fed to the party: counted apart, never in the totals.
+    const g = newLedger({ buffGivers: true });
+    const allies = [member('noel', 50), member('rin', 50, { limit: 95 })];
+    for (const t of allies) applyEffect(member('safira', 50), t, { kind: 'gauge', amount: 10 }, ctx(g));
+    expect(g.gauge).toEqual({ safira: 15 });
+    expect(g.by).toEqual({});
+    expect(newLedger()).not.toHaveProperty('gauge');
+  });
+
+  it('the ledger can split by skill', () => {
+    expect(newLedger()).toEqual({ by: {} });
+    const l = newLedger({ bySkill: true });
+    expect(l.bySkill).toEqual({});
+    const party = partyAt(35, { ids: ['hero', 'rin', 'chizuru', 'noel', 'selene'] });
+    let s = createBattle({ party, enemyIds: encounterTable('mainline', 5)[0], inventory: {}, revealed: {}, scale: { depth: 5, region: 'mainline' } });
+    const rng = mulberry32(7919);
+    const acts: { actor: string; label: string }[] = [];
+    for (let i = 0; i < 40 && s.outcome === 'ongoing'; i++) {
+      s = resolveRound(s, choose(s, party), rng, l);
+      for (const e of s.log) if (e.type === 'act') acts.push({ actor: e.actor, label: e.label });
+    }
+    const split = Object.entries(l.bySkill!);
+    expect(split.length).toBeGreaterThan(2);
+    const sum = (f: (c: { damage: number; healing: number; prevented: number; shield: number }) => number) => (xs: typeof split) => xs.reduce((n, [, c]) => n + f(c), 0);
+    // Every part of it is someone's: no skill's share is more than its owner's whole.
+    for (const [id, c] of split) {
+      const owner = SKILLS[id].owner;
+      expect(totalOf(c), id).toBeLessThanOrEqual(totalOf(of(l, owner)));
+      // As many casts as the log shows acts under that skill's name by its owner.
+      const name = skillFor(s.party.find((m) => m.defId === owner)!, id)!.name;
+      expect(c.casts, id).toBe(acts.filter((a) => a.actor === owner && a.label === name).length);
+    }
+    expect(sum(totalOf)(split)).toBeLessThanOrEqual(Object.values(l.by).reduce((n, c) => n + totalOf(c), 0));
+    // The same fight with a plain ledger credits the same members the same.
+    const plainL = newLedger();
+    let p = createBattle({ party, enemyIds: encounterTable('mainline', 5)[0], inventory: {}, revealed: {}, scale: { depth: 5, region: 'mainline' } });
+    const rng2 = mulberry32(7919);
+    for (let i = 0; i < 40 && p.outcome === 'ongoing'; i++) p = resolveRound(p, choose(p, party), rng2, plainL);
+    expect(plainL.by).toEqual(l.by);
   });
 });

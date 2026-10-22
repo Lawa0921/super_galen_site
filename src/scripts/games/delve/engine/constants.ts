@@ -68,3 +68,5 @@ export const SKY_SHAFT_K = 0.75;
 export const LAVA_LIGHT = 0.95;
 /** 一天長度（秒）。 */
 export const DAY_LENGTH = 600;
+/** 連線（host 模式）：遠端 actor 放置的觸及距離多給這麼多格（客人的位置落後半個 RTT；C14）。net/protocol.ts 轉出口 */
+export const REMOTE_REACH_SLACK = 1.5;

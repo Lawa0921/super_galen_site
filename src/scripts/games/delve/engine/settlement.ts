@@ -183,7 +183,7 @@ export interface Npc {
   /** 快取的路（世界改了 / 目的地換了才重算） */
   path?: { nodes: PathNode[]; rev: number; gx: number; gy: number | undefined } | null;
 }
-export interface NpcJSON { kind: NpcKind; x: number; y: number; core: number; home: number | null; talks?: number; }
+export interface NpcJSON { kind: NpcKind; x: number; y: number; core: number; home: number | null; talks?: number; /** 只有 toJSON({ ids: true })（連線的世界快照）才帶；存檔不帶 */ id?: number; }
 export interface PendingJSON { kind: NpcKind; core: number; at: number; }
 export interface SettlementJSON { cores: Core[]; npcs: NpcJSON[]; spawnCore: number | null; nextId: number; pending?: PendingJSON | null; invited?: NpcKind[]; idents?: Partial<Record<NpcKind, NpcIdent>>; }
 
@@ -224,6 +224,8 @@ export class Settlements {
   nextId = 1;
   private evals = new Map<number, Evaluation>();
   private evalRev = -1;
+  /** 客人副本（load 帶 trust）：只重算房間評估供顯示，不重新分配居民、不發事件——據點狀態一律以房主為準 */
+  private trusted = false;
   private evalT = 0;
   private moveInT = 0;
   /** 正在路上的居民（條件達成時排定，at = 抵達的遊戲時間） */
@@ -323,6 +325,7 @@ export class Settlements {
       const garden = this.npcs.some((n) => n.core === c.id && n.kind === 'gardener');
       this.evals.set(c.id, evaluate(w, c, garden));
     }
+    if (this.trusted) return;
     this.assignHomes(w);
     this.updateMoods();
     let total = 0, nx = 0, ny = 0;
@@ -681,7 +684,7 @@ export class Settlements {
   }
 
   // ── 存檔 ──
-  toJSON(): SettlementJSON {
+  toJSON(opts: { ids?: boolean } = {}): SettlementJSON {
     const r = (v: number): number => Math.round(v * 100) / 100;
     return {
       cores: this.cores.map((c) => ({ ...c })), spawnCore: this.spawnCore, nextId: this.nextId, pending: this.pending ? { ...this.pending } : null,
@@ -691,12 +694,15 @@ export class Settlements {
         // 睡著的人存成床邊站著（讀檔後依時段再躺回去）
         const o: NpcJSON = { kind: n.kind, x: r(n.body.x), y: r(n.body.y), core: n.core, home: n.home };
         if (n.talks) o.talks = n.talks;
+        if (opts.ids) o.id = n.id;
         return o;
       }),
     };
   }
   /** 讀檔：壞欄位丟掉（不讓存檔壞掉）；核心那格不是爐心了也丟掉 */
-  load(j: unknown, w: World): void {
+  /** trust = true：客人副本（核心那格的爐心還在等 chunk 同步，不驗；單機一律 false） */
+  load(j: unknown, w: World, trust = false): void {
+    this.trusted = trust;
     this.cores = []; this.npcs = []; this.spawnCore = null; this.evals.clear(); this.evalRev = -1; this.lastLevel.clear(); this.invited.clear(); this.idents = {};
     if (!j || typeof j !== 'object') { this.syncPins(w); return; }
     const o = j as Partial<SettlementJSON>;
@@ -709,11 +715,12 @@ export class Settlements {
     for (const k of Array.isArray(o.invited) ? o.invited : []) if (NPC_KINDS.includes(k) && NPCS[k].need.recruit) this.invited.add(k);
     const int = (v: unknown): v is number => Number.isInteger(v);
     let maxId = 0;
+    const fixed = new Set<Npc>();
     for (const c of Array.isArray(o.cores) ? o.cores : []) {
       if (!c || !int(c.id) || !int(c.x) || !int(c.y) || this.coreById(c.id)) continue;
       // 核心那一欄可能還沒常駐（讀檔時離玩家很遠 → 停放中）：先載入再看那格是不是爐心
       if (w.inBounds(c.x, c.y)) w.ensureColumn(chunkOfX(c.x));
-      if (w.getFg(c.x, c.y) !== T.HEARTH) continue;
+      if (!trust && w.getFg(c.x, c.y) !== T.HEARTH) continue;
       this.cores.push({ id: c.id, x: c.x, y: c.y });
       maxId = Math.max(maxId, c.id);
     }
@@ -725,6 +732,8 @@ export class Settlements {
       n.body.x = q.x; n.body.y = q.y;
       n.home = int(q.home) ? q.home : null;
       n.talks = int(q.talks) && q.talks > 0 ? q.talks : 0;
+      // 客人副本：居民 id 要與房主一致（ws 的 NPC 靠 id 配對）
+      if (trust && int(q.id) && q.id > 0) { n.id = q.id; fixed.add(n); }
       maxId = Math.max(maxId, n.id);
       this.npcs.push(n);
     }
@@ -732,8 +741,14 @@ export class Settlements {
     const pd = o.pending as Partial<PendingJSON> | null | undefined;
     this.pending = pd && NPC_KINDS.includes(pd.kind as NpcKind) && int(pd.core) && this.coreById(pd.core) && typeof pd.at === 'number' && Number.isFinite(pd.at)
       ? { kind: pd.kind as NpcKind, core: pd.core, at: pd.at } : null;
-    this.nextId = Math.max(int(o.nextId) ? o.nextId : 1, maxId + 1, this.nextId);
-    for (const n of this.npcs) n.id = this.nextId++;
+    if (trust) {
+      // 客人副本：nextId 與房主一致（不夾帶 makeNpc 白花掉的號碼）；沒帶 id 的才重新編號
+      this.nextId = Math.max(int(o.nextId) ? o.nextId : 1, maxId + 1);
+      for (const n of this.npcs) if (!fixed.has(n)) n.id = this.nextId++;
+    } else {
+      this.nextId = Math.max(int(o.nextId) ? o.nextId : 1, maxId + 1, this.nextId);
+      for (const n of this.npcs) n.id = this.nextId++;
+    }
     this.refresh(w, true);
   }
 }

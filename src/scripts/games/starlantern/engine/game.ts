@@ -41,6 +41,7 @@ import { castField, packEquip, packUnequip } from './field';
 import { moveRune, socketRune, unsocketRune, type SocketAt, type SocketFail } from './sockets';
 import type { RuneRef } from '../data/runes';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
+import { applyBuild, applyCost, followUp } from './builds';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
@@ -127,6 +128,11 @@ export class Game {
   /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
   private rescueAt: { at: Pos; who: Meetable } | null = null;
   notice: Notice | null = null;
+  /**
+   * Who stopped following their builds since the town last said so, in order (plan 8h Task 6): a queue of its own, so a
+   * later notice ('banked') never drops it. The town reads and empties it.
+   */
+  followEnded: CharacterId[] = [];
   /** Memory scenes the screen should play now (not saved). */
   pending: SceneId[] = [];
   /** The scenes the town should play on this arrival, in order (not saved: a reload rebuilds it from the queue). */
@@ -538,7 +544,11 @@ export class Game {
       const m = awarded.party.roster[id];
       return m.level !== before[id].level || m.exp !== before[id].exp;
     });
-    if (awarded) this.state.party = awarded.party;
+    if (awarded) {
+      const was = this.state.party;
+      this.state.party = awarded.party;
+      this.state = followUp(this.state, this.state.party.recruited, was);
+    }
     const story = this.state.story;
     story.pity = pityAfterFloor(this.state.party, story.pity, this.run.region, this.floor, this.run.dropped[this.floor] ?? []);
     const floor = this.changeFloor(this.floor + 1);
@@ -635,7 +645,11 @@ export class Game {
     }
     const survivors = b.party.filter((c) => c.alive).map((c) => c.key as CharacterId);
     const awarded = awardExp(this.state.party, rw.exp, survivors);
+    const was = this.state.party;
     this.state.party = awarded.party;
+    // Followers lay out their builds at their level and memories now; only the rune slots opened since the last fight
+    // take its runes from the bag, so one she emptied by hand stays empty (plan 8h ruling 13, final review I3).
+    this.state = followUp(this.state, this.state.party.recruited, was);
     // Rin's first won fight queues the first-return scene for the next arrival (Task 10b).
     this.state.story = afterWin(this.state.story, b.party.map((c) => c.key));
     if (elite) this.map().tiles[elite.y][elite.x] = 'floor';   // a beaten elite is gone
@@ -794,8 +808,49 @@ export class Game {
   respec(id: CharacterId): TownResult {
     if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
     const r = this.apply(townRespec(this.state, id));
-    if (r.ok) this.notice = this.storage && saveGame(this.storage, this.state) ? 'saved' : 'save-failed';
+    if (!r.ok) return r;
+    this.endFollowing(id);
+    this.notice = this.storage && saveGame(this.storage, this.state) ? 'saved' : 'save-failed';
     return r;
+  }
+
+  /** What applying build `key` to `id` would cost and change (builds `applyCost`), and why it cannot go (town only). */
+  canApplyBuild(id: CharacterId, key: string): { cost: number; changes: boolean; moves: boolean; strips: boolean; reason: 'invalid' | 'gold' | null } {
+    const price = this.phase === 'town' ? applyCost(this.state, id, key) : null;
+    if (!price) return { cost: 0, changes: false, moves: false, strips: false, reason: 'invalid' };
+    return { ...price, reason: this.state.gold < price.cost ? 'gold' : null };
+  }
+
+  /**
+   * One-click apply of a suggested build (plan 8h ruling 12; the rules: builds `applyBuild`): town only, saved at once like
+   * the inn's respec. She follows the build from then on.
+   */
+  applyBuild(id: CharacterId, key: string): ReturnType<typeof applyBuild> {
+    if (this.phase !== 'town') return { ok: false, reason: 'invalid' };
+    const r = applyBuild(this.state, id, key);
+    if (!r.ok) return r;
+    this.state = r.state;
+    this.notice = this.storage && saveGame(this.storage, this.state) ? 'saved' : 'save-failed';
+    return r;
+  }
+
+  /** She stops following her build (her points stay as they are). Saved at once in town. */
+  stopFollowing(id: CharacterId): void {
+    if (!this.endFollowing(id)) return;
+    if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+  }
+
+  /**
+   * A change by hand (a point, a side, a talent, a reset) ends her following a build (plan 8h ruling 2); she joins the
+   * `followEnded` queue the town reads. Whether she was following.
+   */
+  private endFollowing(id: CharacterId): boolean {
+    const m = this.state.party.roster[id];
+    if (!m?.build) return false;
+    const { build: _gone, ...rest } = m;
+    this.state = { ...this.state, party: { ...this.state.party, roster: { ...this.state.party.roster, [id]: rest } } };
+    if (!this.followEnded.includes(id)) this.followEnded.push(id);
+    return true;
   }
 
   /**
@@ -810,6 +865,7 @@ export class Game {
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
+    this.endFollowing(id);
     if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
   }
@@ -832,6 +888,7 @@ export class Game {
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
+    this.endFollowing(id);
     if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
   }
@@ -1061,6 +1118,7 @@ export class Game {
     if (!r.ok) return r;
     const party = this.state.party;
     this.state = { ...this.state, party: { ...party, roster: { ...party.roster, [id]: r.member } } };
+    this.endFollowing(id);
     if (this.phase === 'town' && !(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return { ok: true };
   }

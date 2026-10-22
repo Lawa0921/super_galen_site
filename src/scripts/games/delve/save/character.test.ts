@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CHARACTER_FORMAT, createCharacter, decodeCharacter, encodeCharacter, newId, newIdentity, validateCharacter, type DelveCharacter } from './character';
+import { CHARACTER_FORMAT, createCharacter, decodeCharacter, encodeCharacter, newId, newIdentity, validateCharacter, validateCharacterStrict, type DelveCharacter } from './character';
 import { DelveGame } from '../engine/game';
 import { snapshotGame } from './serialize';
 import { splitSnapshot } from './worldSave';
@@ -66,4 +66,29 @@ describe('DelveCharacter', () => {
     expect(newId()).toMatch(re); expect(newId()).not.toBe(newId());
   });
   it('newIdentity：暱稱旅人、rev 0', () => expect(newIdentity(7)).toMatchObject({ nick: '旅人', createdAt: 7, rev: 0 }));
+});
+
+describe('validateCharacterStrict（房主收客人角色用）', () => {
+  const cases: [string, Partial<DelveCharacter>][] = [
+    ['hp 過大', { combat: { hp: 1e9, baseMaxHp: 120, mana: 20 } }],
+    ['baseMaxHp 過大', { combat: { hp: 80, baseMaxHp: 999, mana: 20 } }],
+    ['mana 為負', { combat: { hp: 80, baseMaxHp: 120, mana: -1 } }],
+    ['裝備詞條不合法', {
+      equipment: { head: 'iron_helmet', body: null, legs: null, acc: [null, null, null, null, null] },
+      equipGear: { head: { rarity: 99 } as never, body: null, legs: null, acc: [null, null, null, null, null] } }],
+    ['buffsLeft 過久', { buffsLeft: { bless: 99999 } }],
+    ['undyingCd 過大', { undyingCd: 99999 }],
+    ['暱稱 17 字', { nick: 'x'.repeat(17) }],
+  ];
+  it('createCharacter 的結果通過', () => {
+    expect(() => validateCharacterStrict(createCharacter('阿明', normalizeAppearance({ race: 1 }), 0))).not.toThrow();
+    expect(() => validateCharacterStrict(good())).not.toThrow();
+  });
+  for (const [name, patch] of cases) {
+    it(`${name} → 嚴格版拋 SaveFormatError、寬鬆版不拋`, () => {
+      const c = { ...good(), ...patch };
+      expect(() => validateCharacterStrict(c)).toThrow(SaveFormatError);
+      expect(() => validateCharacter(c)).not.toThrow();
+    });
+  }
 });

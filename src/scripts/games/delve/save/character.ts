@@ -1,6 +1,6 @@
 // character.ts — 可攜的角色檔（co-op M-A）：角色隨身資料自世界存檔拆出，獨立編解碼與驗證。
 // 嚴格欄位壞了 = SaveFormatError('character: <欄位>')；寬鬆欄位各自正規化。gzip 由 storage 負責。
-import { SaveFormatError, isNum, validFishLog, validInventory, validLevels } from './serialize';
+import { SaveFormatError, isNum, strictGear, validFishLog, validInventory, validLevels } from './serialize';
 import { normalizeAppearance, type Appearance } from '../engine/appearance';
 import { Vanity, type VanityJSON } from '../engine/vanity';
 import { DelveGame } from '../engine/game';
@@ -12,7 +12,8 @@ import type { LevelsJSON } from '../engine/levels';
 import { Codex, type CodexJSON } from '../engine/codex';
 import { BUFFS, type BuffKind } from '../engine/folkDefs';
 import type { InventoryJSON } from '../engine/inventory';
-import type { ItemId } from '../engine/items';
+import { isItemId, type ItemId } from '../engine/items';
+import { MAX_HP_CAP } from '../engine/combat';
 
 /** 角色檔版本：1 = co-op 拆檔時的第一版；2 = 外觀上的服裝 / 頭飾 / 眼鏡已轉成時裝物品（讀到 1 → 進遊戲時轉換一次，寫回一律 2） */
 export const CHARACTER_FORMAT = 2;
@@ -94,6 +95,38 @@ export function validateCharacter(raw: unknown): DelveCharacter {
     undyingCd: isNum(raw.undyingCd) && raw.undyingCd >= 0 ? raw.undyingCd : 0,
     buffsLeft,
   };
+}
+
+/**
+ * 嚴格版（房主驗客人帶來的角色）：寬鬆版全部檢查，再加數值上限與逐件裝備詞條；
+ * 寬鬆版會悄悄修正的東西（暱稱過長、壞詞條被丟）在這裡一律拒絕。不合法 → SaveFormatError。
+ */
+export function validateCharacterStrict(raw: unknown): DelveCharacter {
+  const c = validateCharacter(raw);
+  const r = raw as Record<string, unknown>;
+  if (typeof r.nick !== 'string' || [...r.nick].length > MAX_NICK) throw bad('nick');
+  const { hp, baseMaxHp, mana } = c.combat;
+  if (hp < 0 || hp > 2 * MAX_HP_CAP) throw bad('combat.hp');
+  if (baseMaxHp < 1 || baseMaxHp > MAX_HP_CAP) throw bad('combat.baseMaxHp');
+  if (mana < 0 || mana > 1000) throw bad('combat.mana');
+  if (r.undyingCd !== undefined && !(isNum(r.undyingCd) && r.undyingCd >= 0 && r.undyingCd <= 3600)) throw bad('undyingCd');
+  if (isObj(r.buffsLeft)) {
+    for (const k of Object.keys(BUFFS) as BuffKind[]) {
+      const n = r.buffsLeft[k];
+      if (n !== undefined && !(isNum(n) && n <= 3600)) throw bad('buffsLeft');
+    }
+  }
+  // 裝備詞條：看原始輸入（寬鬆版會把壞詞條當普通裝備）
+  const eq = r.equipment as Record<string, unknown>, gj = r.equipGear as Record<string, unknown>;
+  const check = (item: unknown, gear: unknown, where: string): void => {
+    if (gear === undefined || gear === null) return;
+    if (!isItemId(item)) throw bad(`equipGear.${where}`);
+    try { strictGear(item, gear, where); } catch { throw bad(`equipGear.${where}`); }
+  };
+  for (const s of ['head', 'body', 'legs'] as const) check(eq[s], gj[s], s);
+  const accI = Array.isArray(eq.acc) ? eq.acc : [], accG = Array.isArray(gj.acc) ? gj.acc : [];
+  accG.forEach((g, i) => check(accI[i], g, `acc${i}`));
+  return c;
 }
 
 /** 新角色：隨身狀態 = 全新 DelveGame 的玩家初始狀態（取最小世界的快照），換上自己的身分與外觀。暱稱超過 MAX_NICK 字先截斷。 */

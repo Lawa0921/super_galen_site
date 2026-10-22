@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveRound, type Action, type BattleState } from '../battle';
-import type { Combatant } from '../combatant';
+import { hitAmount, type Combatant } from '../combatant';
 import { newLedger } from '../ledger';
 import { constRng, makeBattle, makeCombatant } from '../testing';
 import { SKILLS } from '../../data/skills';
@@ -206,7 +206,7 @@ describe('a lasting barrier (plan 8e Task 7)', () => {
     const lasting = { id: 'lasting', tier: 'magic' } as const;
     const s0 = makeBattle([chizuru({ runes: { ward: [lasting] } }), P('noel')], [foe({ sleep: 0, max: { hp: 99999, tp: 0, atk: 1, def: 20, mag: 1, res: 20, spd: 1 } })]);
     applyLasting(s0);
-    expect(s0.barriers).toEqual([{ skill: 'ward', kind: 'guard', power: 18, turns: 3, src: 'chizuru', lasting: true }]);
+    expect(s0.barriers).toEqual([{ skill: 'ward', kind: 'guard', power: 18, turns: 3, src: 'chizuru', lasting: true, lastingPct: 60 }]);
     expect(fieldWords(s0).map((w) => w.text).join()).toContain(T.mech.lasting);
     // Ten rounds on, still up, never counting down.
     let s = s0;
@@ -229,20 +229,48 @@ describe('a lasting barrier (plan 8e Task 7)', () => {
   });
 });
 
+describe("a lasting barrier's thunder (plan 8h Task 2, ruling 11d)", () => {
+  const lasting = { id: 'lasting', tier: 'magic' } as const;   // 60%
+  const spec = (power: number) => ({ power, element: 'thunder', scale: 'atk', melee: false } as const);
+  const bolts = (s: BattleState) => s.log.filter((e) => e.type === 'damage' && e.element === 'thunder').map((e) => (e as { amount: number }).amount);
+
+  it("a lasting barrier's thunder is at the lasting percent", () => {
+    const c = (over: Partial<Combatant> = {}) => chizuru({ ranks: { ward: 1, 'purify-ward': 1, 'chizuru-thunder-ward': 1 }, ...over });
+    const s0 = makeBattle([c({ runes: { ward: [lasting] } }), P('noel')], [foe()]);
+    applyLasting(s0);
+    expect(s0.barriers![0]).toMatchObject({ lasting: true, lastingPct: 60 });
+    // The node's 20 at 60%: 12.
+    expect(bolts(round(s0))).toEqual([hitAmount(c(), foe(), spec(pctOf(20, 60)), { variance: 1, crit: false, blocked: false }).amount]);
+    // A barrier she raised by hand strikes at the node's whole 20.
+    const plain = round(round(makeBattle([c(), P('noel')], [foe()]), cast('ward')));
+    expect(bolts(plain)).toEqual([hitAmount(c(), foe(), spec(20), { variance: 1, crit: false, blocked: false }).amount]);
+  });
+
+  it('a lasting and a cast barrier together strike once, at the higher percent', () => {
+    // 重結界: the lasting ward and a purifying barrier cast by hand stand together.
+    const c = (over: Partial<Combatant> = {}) => chizuru({ ranks: { ward: 1, 'purify-ward': 1, 'chizuru-thunder-ward': 1, 'chizuru-twin-ward': 1 }, ...over });
+    const s0 = makeBattle([c({ runes: { ward: [lasting] } }), P('noel')], [foe()]);
+    applyLasting(s0);
+    const both = round(s0, cast('purify-ward'));
+    expect(both.barriers!.map((b) => b.kind).sort()).toEqual(['guard', 'purify']);
+    expect(bolts(both)).toEqual([hitAmount(c(), foe(), spec(20), { variance: 1, crit: false, blocked: false }).amount]);
+  });
+});
+
 describe('a lasting barrier and 大結界 (plan 8e Task 7 review)', () => {
   it("大結界 doubles a lasting barrier for its own rounds, and adds none to it", () => {
     const lasting = { id: 'lasting', tier: 'magic' } as const;
     const s0 = makeBattle([chizuru({ runes: { ward: [lasting] } }), P('noel')], [foe()]);
     applyLasting(s0);
     let s = round(s0, cast('great-barrier'));
-    expect(s.barriers).toEqual([{ skill: 'ward', kind: 'guard', power: 18, turns: 3, src: 'chizuru', lasting: true, boost: 2, boostTurns: 2 }]);
+    expect(s.barriers).toEqual([{ skill: 'ward', kind: 'guard', power: 18, turns: 3, src: 'chizuru', lasting: true, lastingPct: 60, boost: 2, boostTurns: 2 }]);
     expect(s.party[1].ward?.def).toBe(36);
     // A release reads its own three rounds, not six.
     expect((castDef(s, s.party[0], SKILLS['exorcism-thrust']).effects[0] as { power: number }).power).toBe(pctOf(150, 100 + BARRIER.releasePct * 3));
     s = round(s);
     expect(s.barriers![0]).toMatchObject({ boost: 2, boostTurns: 1, turns: 3 });
     s = round(s);
-    expect(s.barriers).toEqual([{ skill: 'ward', kind: 'guard', power: 18, turns: 3, src: 'chizuru', lasting: true }]);
+    expect(s.barriers).toEqual([{ skill: 'ward', kind: 'guard', power: 18, turns: 3, src: 'chizuru', lasting: true, lastingPct: 60 }]);
     expect(s.party[1].ward?.def).toBe(18);
     expect(fieldWords(s).map((w) => w.text)).toContain(`守之結界・${T.mech.lasting}`);
     // A plain barrier boosted gains its rounds as before.

@@ -56,12 +56,14 @@ export function raiseBarrier(s: BattleState, c: Combatant, eff: Extract<Effect, 
 
 /**
  * 雷之結界: one thunder hit on every living foe, its rolls drawn as a hit's, its damage credited to the barrier's owner, down
- * or not. Ambient, like a tick: `dot`, so a sleeper sleeps on (Selene's 深眠); no keystone TP, no onLandedHit.
+ * or not. Ambient, like a tick: `dot`, so a sleeper sleeps on (Selene's 深眠); no keystone TP, no onLandedHit. A lasting
+ * barrier's thunder is at its 常駐 percent; with two barriers up it strikes once, at the higher (plan 8h ruling 11d).
  */
 function strike(s: BattleState, ctx: EffectContext, rng: Rng): void {
   const t = thunderOf(s);
   if (!t) return;
-  const spec = { power: t.power, element: 'thunder', scale: 'atk', melee: false } as const;
+  const pct = Math.max(...(s.barriers ?? []).map((b) => b.lastingPct ?? 100));
+  const spec = { power: pctOf(t.power, pct), element: 'thunder', scale: 'atk', melee: false } as const;
   const foes = s.enemies.filter((e) => e.alive);
   if (!foes.length) return;
   ctx.log.push({ type: 'act', actor: t.owner.key, label: T.mech.thunderWard });

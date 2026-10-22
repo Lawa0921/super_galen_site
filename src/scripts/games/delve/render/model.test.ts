@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   clampCamera, followCamera, FixedStepper, visibleChunks, ChunkLRU,
-  formatClock, depthLabel, blockedMessage, recipeRows, countLabel, cameraFocus, autostartPlan, biomeLabel, regionLabel } from './model';
+  formatClock, depthLabel, blockedMessage, recipeRows, countLabel, cameraFocus, autostartPlan, biomeLabel, regionLabel, stepsInFrame, inputAction, drainsEvents } from './model';
 import { Inventory } from '../engine/inventory';
 import { DAY_LENGTH } from '../engine/constants';
 
@@ -245,5 +245,36 @@ describe('biomeLabel', () => {
     expect(regionLabel(0, regions, 15, 15)).toBe('螢光菇林');
     expect(regionLabel(0, regions, 55, 55)).toBe('水晶洞');
     expect(regionLabel(2, regions, 0, 0)).toBe('雪原');
+  });
+});
+
+describe('stepsInFrame', () => {
+  it('單機：只有沒暫停、沒在對話才跑', () => {
+    expect(stepsInFrame('solo', false, false)).toBe(true);
+    expect(stepsInFrame('solo', true, false)).toBe(false);
+    expect(stepsInFrame('solo', false, true)).toBe(false);
+  });
+  it('連線（host／replica）：rAF 一律不跑模擬', () => {
+    for (const m of ['host', 'replica'] as const) for (const p of [false, true]) for (const k of [false, true]) expect(stepsInFrame(m, p, k)).toBe(false);
+  });
+});
+
+describe('inputAction / drainsEvents', () => {
+  it('單機：暫停或對話不碰輸入，其餘讀輸入；暫停時不消化事件', () => {
+    expect(inputAction('solo', false, false, false)).toBe('update');
+    expect(inputAction('solo', true, false, false)).toBe('none');
+    expect(inputAction('solo', false, true, true)).toBe('none');
+    expect(drainsEvents('solo', false)).toBe(true);
+    expect(drainsEvents('solo', true)).toBe(false);
+  });
+  it('連線：任何面板開著每幀放開按鍵，否則讀輸入；事件永遠消化', () => {
+    for (const m of ['host', 'replica'] as const) {
+      expect(inputAction(m, false, false, false)).toBe('update');
+      expect(inputAction(m, true, false, false)).toBe('release');
+      expect(inputAction(m, false, false, true)).toBe('release');
+      expect(inputAction(m, true, false, true)).toBe('release');
+      expect(drainsEvents(m, true)).toBe(true);
+      expect(drainsEvents(m, false)).toBe(true);
+    }
   });
 });

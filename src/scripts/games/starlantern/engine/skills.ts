@@ -1,4 +1,4 @@
-import { addBuff, dealDamage, hitAmount, isWeak, roll, rollHit, SLEEP_TURNS, stat, type BattleEvent, type Combatant } from './combatant';
+import { addBuff, dealDamage, hitAmount, isWeak, roll, rollHit, SLEEP_TURNS, stat, type BattleEvent, type Buff, type Combatant, type HitRolls } from './combatant';
 import type { SkillMod } from '../data/gear';
 import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
@@ -48,7 +48,15 @@ export interface EffectContext {
    * other time (devices, ticks, counters, echoes, reprises, triggered casts) sets off no trigger.
    */
   acting?: string;
+  /** While a trigger rune's free cast resolves (plan 8h ruling 11b): it takes nothing for her mechanic and no TP back. */
+  triggered?: true;
+  /** The TP 回氣 has given back in this action (plan 8h ruling 11c): never more, all told, than the action paid. */
+  regained?: number;
 }
+
+/** The skill a credit belongs to in a ledger split by skill: her own cast by hand, while it resolves (plan 8h ruling 9). */
+const castOf = (ctx: EffectContext, actor: Combatant): string | undefined =>
+  ctx.cast !== undefined && ctx.acting === actor.key && !ctx.triggered ? ctx.cast : undefined;
 
 /** A power's percentage of a number, rounded half away from zero so a debuff (-37.5) rounds as deep as a buff (37.5). */
 export const pctOf = (base: number, pct: number | undefined): number => {
@@ -257,14 +265,19 @@ function runeHit(actor: Combatant, target: Combatant, eff: Extract<Effect, { kin
     const n = Math.floor((hpLost * eff.drainPct) / 100);
     if (n > 0) {
       const gained = gainHp(actor, n);
-      credit(ctx.ledger, actor.key, 'healing', gained);
+      credit(ctx.ledger, actor.key, 'healing', gained, castOf(ctx, actor));
       ctx.log.push({ type: 'heal', target: actor.key, amount: gained });
     }
   }
   if (eff.tpPerHit !== undefined && actor.alive && actor.tp < actor.max.tp) {
-    const before = actor.tp;
-    actor.tp = Math.min(actor.max.tp, actor.tp + eff.tpPerHit);
-    ctx.log.push({ type: 'tp', target: actor.key, amount: actor.tp - before });
+    // Never more, over the whole action, than the TP it paid (plan 8h ruling 11c): a free cast gets nothing back.
+    const room = (ctx.triggered ? 0 : ctx.paid ?? 0) - (ctx.regained ?? 0);
+    const n = Math.min(eff.tpPerHit, room, actor.max.tp - actor.tp);
+    if (n > 0) {
+      actor.tp += n;
+      ctx.regained = (ctx.regained ?? 0) + n;
+      ctx.log.push({ type: 'tp', target: actor.key, amount: n });
+    }
   }
   if (!target.alive) return;
   // 餘波 on a crit makes the hit's own ailment of that kind sure (one try, the higher chance: spec §6.6 rule 3), and is
@@ -273,6 +286,28 @@ function runeHit(actor: Combatant, target: Combatant, eff: Extract<Effect, { kin
   if (after) (ctx.afterTried ??= []).push(`${target.key}:${after}`);
   for (const a of eff.onHit ?? []) inflictAilment(actor, target, a.status, a.status === after ? 1 : a.chance, ctx);
   if (after && !eff.onHit?.some((a) => a.status === after) && target.alive) inflictAilment(actor, target, after, 1, ctx);
+}
+
+/**
+ * A ledger that asks (`buffGivers`, plan 8h Task 5b, H3): each ally's attack buff on the hitter, and each ally's debuff on
+ * the foe's guard, taken away alone with the same rolls; what the hit would have lost less is that giver's, out of the
+ * hitter's `own` share. Returns what was given away. Nothing without such a ledger.
+ */
+function creditGivers(l: Ledger | undefined, a: Combatant, t: Combatant, eff: Extract<Effect, { kind: 'damage' }>, rolls: HitRolls, own: number): number {
+  if (!l?.buffGivers) return 0;
+  const guard = eff.scale === 'atk' ? 'def' : 'res';
+  const loss = (alt: Combatant, foe: Combatant) => lossOf(t, hitAmount(alt, foe, eff, rolls).amount);
+  const now = loss(a, t);
+  let given = 0;
+  const give = (b: Buff, without: number) => {
+    if (!b.src || b.src === a.key) return;
+    const n = Math.min(own - given, Math.max(0, now - without));
+    if (n > 0) { credit(l, b.src, 'damage', n, b.skill); given += n; }
+  };
+  a.buffs.forEach((b, i) => { if (b.stat === eff.scale && b.pct > 0) give(b, loss({ ...a, buffs: a.buffs.filter((_, j) => j !== i) }, t)); });
+  (a.auras ?? []).forEach((b, i) => { if (b.stat === eff.scale && b.pct > 0) give(b, loss({ ...a, auras: (a.auras ?? []).filter((_, j) => j !== i) }, t)); });
+  t.buffs.forEach((b, i) => { if (b.stat === guard && b.pct < 0) give(b, loss(a, { ...t, buffs: t.buffs.filter((_, j) => j !== i) })); });
+  return given;
 }
 
 function gainHp(t: Combatant, amount: number): number {
@@ -291,8 +326,13 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         if (!rolls) { ctx.log.push({ type: 'miss', target: target.key }); continue; }
         const { amount, mult, crit } = hitAmount(actor, target, eff, rolls);
         if (ctx.ledger) {
-          if (actor.side === 'party' && target.side === 'enemy') credit(ctx.ledger, actor.key, 'damage', lossOf(target, amount));
-          else if (actor.side === 'enemy' && target.side === 'party') creditPrevented(ctx.ledger, actor, target, eff, rolls, amount, ctx.redirect);
+          if (actor.side === 'party' && target.side === 'enemy') {
+            // A 同步's lift goes to its giver: the loss less what the power before it would have taken, the same rolls.
+            const loss = lossOf(target, amount);
+            const own = eff.lift ? Math.min(loss, lossOf(target, hitAmount(actor, target, { ...eff, power: eff.lift.from }, rolls).amount)) : loss;
+            credit(ctx.ledger, eff.lift?.by, 'damage', loss - own);
+            credit(ctx.ledger, actor.key, 'damage', own - creditGivers(ctx.ledger, actor, target, eff, rolls, own), castOf(ctx, actor));
+          } else if (actor.side === 'enemy' && target.side === 'party') creditPrevented(ctx.ledger, actor, target, eff, rolls, amount, ctx.redirect);
         }
         const hpBefore = target.hp;
         const lost = dealDamage(target, amount, { ledger: ctx.ledger, log: ctx.log });
@@ -318,13 +358,20 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       let bonus = 1 + (actor.x.heal ?? 0) / 100;
       if (actor.keystones.includes('moon-promise')) bonus *= 1 + MEMORY_KEYSTONE_VALUES.moonHealPct / 100;
       const full = healAmount(actor, eff.power, bonus);
+      const room = target.max.hp - target.hp;
       const amount = gainHp(target, full);
-      if (actor.side === 'party' && target.side === 'party') credit(ctx.ledger, actor.key, 'healing', amount);
+      if (actor.side === 'party' && target.side === 'party') {
+        // A 同步's lift goes to its giver: what the heal restored past what the power before it would have.
+        const own = eff.lift ? Math.min(amount, Math.max(0, Math.min(healAmount(actor, eff.lift.from, bonus), room))) : amount;
+        credit(ctx.ledger, eff.lift?.by, 'healing', amount - own);
+        credit(ctx.ledger, actor.key, 'healing', own, castOf(ctx, actor));
+      }
       ctx.log.push({ type: 'heal', target: target.key, amount });
       // 滿溢 (plan 8d): the spill shields, up to the cap, as the shield generator does (the bigger shield stays, now theirs).
       if (eff.overflowPct !== undefined && full > amount) {
         const shield = Math.min(full - amount, Math.floor((target.max.hp * eff.overflowPct) / 100));
-        if (shield > 0) target.shield = { amount: Math.max(shield, target.shield?.amount ?? 0), src: actor.key };
+        const skill = castOf(ctx, actor);
+        if (shield > 0) target.shield = { amount: Math.max(shield, target.shield?.amount ?? 0), src: actor.key, ...(skill ? { skill } : {}) };
       }
       return;
     }
@@ -370,7 +417,9 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       if (!target.alive) return;
       // troupe-step: her buffs on her own side last longer (a debuff on a foe does not).
       const more = actor.keystones.includes('troupe-step') && target.side === actor.side ? MEMORY_KEYSTONE_VALUES.troupeTurns : 0;
-      addBuff(target, { stat: eff.stat, pct: eff.pct, turns: eff.turns + more, src: actor.key });
+      // A ledger that credits buff givers learns which cast of hers gave it (plan 8h Task 5b review).
+      const skill = ctx.ledger?.buffGivers ? castOf(ctx, actor) : undefined;
+      addBuff(target, { stat: eff.stat, pct: eff.pct, turns: eff.turns + more, src: actor.key, ...(skill ? { skill } : {}) });
       ctx.log.push({ type: 'buff', target: target.key, stat: eff.stat, pct: eff.pct });
       return;
     }
@@ -382,7 +431,8 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'device': {
       if (target !== actor) return;
-      placeDevice(actor, eff, ctx.cast ?? eff.device);
+      // Set by her own hand cast, a ledger split by skill credits its shields to that skill (plan 8h Task 3 review).
+      placeDevice(actor, eff, ctx.cast ?? eff.device, castOf(ctx, actor) !== undefined);
       return;
     }
     case 'overclock': {
@@ -487,7 +537,11 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'gauge': {
       if (!target.alive || target.side !== 'party') return;
+      const before = target.limit;
       target.limit = Math.min(100, target.limit + eff.amount);
+      // Fed to another member: counted apart in a ledger that asks (plan 8h Task 5b, H3).
+      const gauge = ctx.ledger?.gauge;
+      if (gauge && target !== actor && target.limit > before) gauge[actor.key] = (gauge[actor.key] ?? 0) + target.limit - before;
       return;
     }
     case 'moon': {

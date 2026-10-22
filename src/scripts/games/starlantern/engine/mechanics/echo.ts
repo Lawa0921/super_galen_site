@@ -18,7 +18,21 @@ export const ECHO = { powerPct: 70 } as const;
 
 export type EchoRecord = NonNullable<BattleState['echo']>;
 
-const PLAIN: ReadonlySet<Effect['kind']> = new Set(['damage', 'heal', 'buff', 'inflict', 'cure', 'revive', 'taunt']);
+/** The plain effects: what an echo keeps and what a triggered cast plays (plan 8h ruling 11b). */
+export const PLAIN: ReadonlySet<Effect['kind']> = new Set(['damage', 'heal', 'buff', 'inflict', 'cure', 'revive', 'taunt']);
+
+/** The skill as cast without a 同步's lift (plan 8h ruling 11a): each lifted effect back at its power before. */
+function unlifted(def: SkillDef): SkillDef {
+  if (!def.effects.some((e) => (e.kind === 'damage' || e.kind === 'heal') && e.lift)) return def;
+  return {
+    ...def,
+    effects: def.effects.map((e) => {
+      if ((e.kind !== 'damage' && e.kind !== 'heal') || !e.lift) return e;
+      const { lift, ...rest } = e;
+      return { ...rest, power: lift.from };
+    }),
+  };
+}
 
 /** The record the hero can echo in `round` (by default the one being played): this round's or the last round's. */
 export function echoOf(s: BattleState, round = s.round): EchoRecord | null {
@@ -50,7 +64,8 @@ function withoutCastRunes(cast: SkillDef, paid: number, tpCost: number): { skill
 export const echo: MechModule = {
   after(s, c, act, def, ctx) {
     if (c.defId === 'hero' || act.kind !== 'skill' || !def || ctx.paid === undefined) return;
-    const cast = def as SkillDef;
+    // A sync's lift is not hers to keep (the duet's is: it was how she cast it).
+    const cast = unlifted(def as SkillDef);
     const base = SKILLS[cast.id] ?? cast;
     if (cast.mech || cast.passive || !base.effects.length || !base.effects.every((e) => PLAIN.has(e.kind))) return;
     const { skill, cost } = withoutCastRunes(cast, ctx.paid, c.x.tpCost ?? 0);

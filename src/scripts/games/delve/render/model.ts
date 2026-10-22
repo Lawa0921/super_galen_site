@@ -2,7 +2,7 @@
 import { RECIPES, canCraft, stationOk, type CraftContext, type Station } from '../engine/crafting';
 import type { Inventory, Stack } from '../engine/inventory';
 import type { ItemId } from '../engine/items';
-import type { BlockReason } from '../engine/game';
+import type { BlockReason, GameMode } from '../engine/game';
 import { CHUNK, DAY_LENGTH } from '../engine/constants';
 
 export interface Cam { x: number; y: number; }
@@ -53,6 +53,26 @@ export class FixedStepper {
   }
   /** 插值用：累加器剩餘比例 0..1 */
   get alpha(): number { return this.acc / this.dt; }
+}
+
+/** rAF 這一幀要不要跑模擬：只有單機、沒暫停、沒在對話時（連線時模擬由 NetLoop 跑，UI 暫停只放開按鍵） */
+export function stepsInFrame(mode: GameMode, paused: boolean, talking: boolean): boolean {
+  return mode === 'solo' && !paused && !talking;
+}
+
+/**
+ * rAF 這一幀對玩家輸入怎麼處理：
+ * 單機——暫停或對話中不碰（照舊）；連線——任何面板（選單／地圖／技能樹／衣櫥／轉生／NPC）開著就每幀放開按鍵，
+ * 否則才讀輸入（模擬照跑，面板裡按的鍵不能驅動角色，也不能在關閉後殘留）。
+ */
+export function inputAction(mode: GameMode, paused: boolean, talking: boolean, npcOpen: boolean): 'update' | 'release' | 'none' {
+  if (mode === 'solo') return paused || talking ? 'none' : 'update';
+  return paused || npcOpen ? 'release' : 'update';
+}
+
+/** 這一幀要不要消化事件：單機暫停時不消化（照舊）；連線時模擬在跑，事件每幀都要排掉 */
+export function drainsEvents(mode: GameMode, paused: boolean): boolean {
+  return mode !== 'solo' || !paused;
 }
 
 export interface ChunkRange { cx0: number; cy0: number; cx1: number; cy1: number; }

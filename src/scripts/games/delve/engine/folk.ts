@@ -83,6 +83,8 @@ export interface FolkNpc {
 
 export interface FolkTravellerJSON {
   key: string; role: FolkRole; x: number; y: number; visit?: number; since: number; leaveAt: number;
+  /** 只有 toJSON({ ids: true })（連線的世界快照）才帶；存檔不帶 */
+  id?: number;
   following?: boolean; safe?: boolean; leaving?: boolean; waiting?: boolean;
   /** 行商的剩餘庫存 / 探險者的血量 */
   left?: number[]; hp?: number;
@@ -547,7 +549,7 @@ export class FolkWorld {
   }
 
   // ── 存檔 ──
-  toJSON(): FolkJSON {
+  toJSON(opts: { ids?: boolean } = {}): FolkJSON {
     const r = (v: number): number => Math.round(v * 100) / 100;
     return {
       aff: { ...this.aff },
@@ -561,11 +563,13 @@ export class FolkWorld {
         if (n.waiting) o.waiting = true;
         if (n.left) o.left = [...n.left];
         if (n.hp !== undefined) o.hp = n.hp;
+        if (opts.ids) o.id = n.id;
         return o;
       }),
     };
   }
-  load(j: unknown, w: World): void {
+  /** trust = true：客人副本，旅人沿用房主的 id */
+  load(j: unknown, w: World, trust = false): void {
     this.aff = {}; this.affDay = {};
     this.enc = { nextTraveller: DAY_LENGTH * 0.25, nextStranded: DAY_LENGTH * 0.5, stranded: 0, visits: 0 };
     this.npcs = this.npcs.filter((n) => n.site >= 0);
@@ -590,6 +594,7 @@ export class FolkWorld {
       const tx = Math.floor(t.x / S), ty = Math.floor(t.y / S);
       const n = this.add(w, t.key, t.role, t.role === 'stranded' ? 'cave' : 'road', -1, { x0: tx - 3, x1: tx + 3 }, ty + 2, null);
       n.body.x = t.x; n.body.y = t.y;
+      if (trust && int(t.id) && t.id > 0) { n.id = t.id; this.nextId = Math.max(this.nextId, t.id + 1); } // 客人副本：旅人 id 與房主一致
       n.since = num(t.since) ? t.since : 0; n.leaveAt = num(t.leaveAt) ? t.leaveAt : 0;
       if (t.role === 'peddler') {
         n.visit = int(t.visit) ? t.visit : 0; n.stock = peddlerStock(this.seed, n.visit);

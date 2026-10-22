@@ -58,6 +58,30 @@ export interface CmdResults {
   marker: 'added' | 'removed' | 'full';
 }
 
+/**
+ * 客人副本 exec(localPid) 的回傳（C13）：指令已交給房主，先回一個型別中性、不觸發錯誤提示的值；
+ * 真正的成敗由房主執行後的事件（blocked…）經 ev 回來。
+ */
+const PENDING: { readonly [K in CmdOp]: CmdResults[K] } = {
+  craft: { ok: true }, swap: true, place: true, toss: true,
+  chestTake: true, chestTakeAll: 0, chestDeposit: true, chestClose: undefined,
+  equip: true, unequip: true, equipVanity: true, unequipVanity: true,
+  hideArmor: undefined, recolor: true, bodyLook: undefined, mirrorClose: undefined, rebirth: true,
+  lock: null, salvage: null, salvageAll: { count: 0, shard: 0, dust: 0 },
+  reroll: { ok: true }, upgrade: { ok: true }, ascend: { ok: true }, deepforge: { ok: true },
+  buy: true, sell: true, service: true, residentService: { ok: true, msg: '' },
+  folkBuy: true, folkSell: true, folkService: { ok: true, msg: '' },
+  acceptQuest: true, turnInQuest: true, refreshQuests: undefined,
+  // 重置：「什麼都沒退」= 成功、退回 0 點（ok:false 會讓技能樹面板顯示錯誤、播拒絕音效）
+  learnSkill: null, respec: { ok: true, refunded: 0 }, skill: true,
+  talk: true, talkAt: true,
+  travel: true, travelStone: true, spawnCore: true,
+  marker: 'added',
+};
+// 值裡的物件是共用的：整張表與每個物件都凍結（呼叫端改不動）
+for (const v of Object.values(PENDING)) if (v !== null && typeof v === 'object') Object.freeze(v);
+export const CMD_PENDING: { readonly [K in CmdOp]: CmdResults[K] } = Object.freeze(PENDING);
+
 /** 鄉民服務（folkDefs 沒有匯出清單） */
 export const FOLK_SERVICES = ['heal', 'bless', 'ward', 'minesong', 'forge', 'deepforge', 'hint', 'scout', 'invite', 'rescue'] as const satisfies readonly FolkService[];
 

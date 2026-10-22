@@ -53,12 +53,13 @@ describe("Bobby's devices", () => {
     const r = resolveRound(s0, {}, constRng(0.5), l);
     const b = s0.party[0];
     expect(r.party[1].hp).toBe(50 + heal(45, b));
-    expect(r.party[1].shield).toEqual({ amount: heal(40, b), src: 'bobby' });
+    // It names the device's skill too (plan 8h Task 2 review: a ledger split by skill credits the shield to it).
+    expect(r.party[1].shield).toEqual({ amount: heal(40, b), src: 'bobby', skill: 'barrier' });
     expect(r.party[2].hp).toBe(120);
     expect(l.by.bobby.healing).toBe(heal(45, b));
     // On a shield already there the bigger amount stays, and Bobby's generator becomes its source (plan 8c Task 6).
     const big = round(makeBattle([bobby([dev('shield', { skill: 'barrier', power: 40 })]), P('noel', { hp: 50, shield: { amount: 999, src: 'chizuru' } })], [foe('e0', { sleep: 9 })]));
-    expect(big.party[1].shield).toEqual({ amount: 999, src: 'bobby' });
+    expect(big.party[1].shield).toEqual({ amount: 999, src: 'bobby', skill: 'barrier' });
   });
 
   it('the coil shocks at thirty percent (a boss at half)', () => {

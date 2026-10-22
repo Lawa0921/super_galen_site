@@ -62,7 +62,7 @@ describe('addActor / removeActor', () => {
     const g = arena();
     const b = g.addActor('b', hero(), { x: 60, y: FLOOR - 1 });
     g.withActor(b, () => g.give('gold_bar' as ItemId, 3));
-    const ch = g.removeActor('b');
+    const ch = g.removeActor('b').character;
     expect(ch.inventory.slots.some((s) => s?.item === 'gold_bar' && s.count === 3)).toBe(true);
     expect(g.actors.has('b')).toBe(false);
     expect(g.actors.size).toBe(1);

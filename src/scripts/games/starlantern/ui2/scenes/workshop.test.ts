@@ -16,6 +16,9 @@ import { NO_ART } from '../../render/textures';
 import type { SceneName } from '../scene';
 import { reserveLine } from '../skillCard';
 import { WorkshopScene } from './workshop';
+import { BUILDS, buildOf, type BuildDef } from '../../data/builds';
+import { RUNES } from '../../data/runes';
+import { buildTalents, buildTree, policyText } from '../../engine/builds';
 import { DEFAULT_SETTINGS } from '../settings';
 
 const W = T.ui2.workshop;
@@ -432,5 +435,67 @@ describe('WorkshopScene: the rune tutorial (plan 8g Task 6)', () => {
     const none = setup(fresh(20, {}), 'noel:fire-star');
     expect(talk(none).hidden).toBe(true);
     expect(none.game.state.runeTutorialSeen).toBeUndefined();
+  });
+});
+
+describe('the workshop and the suggested builds (plan 8h Task 7)', () => {
+  const meteor = buildOf('noel', 'meteor')!;
+  /** Noel at Lv 35 following 暴走流星 (or nothing), 擴散 in 火之星彈's first slot, this bag. */
+  const follower = (build: string | undefined, runes: Record<string, number> = {}) => (g: Game) => {
+    noel(35, runes, buildTree('noel', 35, meteor))(g);
+    const m = g.state.party.roster.noel;
+    g.state.party.roster.noel = { ...m, talents: buildTalents('noel', 35, meteor), sockets: { 'fire-star': [R('spread')] }, ...(build ? { build } : {}) };
+  };
+
+  it('the workshop names the followed build and the missing runes', () => {
+    const w = setup(follower('meteor'), 'noel:fire-star');
+    expect(w.root.querySelector('.slx-ws-follow')!.textContent).toBe(W.following(meteor.name, policyText(meteor)[0]));
+    expect(w.root.querySelector('.slx-workshop')!.classList.contains('slx-ws-following')).toBe(true);
+    expect(w.root.querySelector('.slx-ws-lack')).toBeNull();          // only over the rune list
+    w.press('confirm', 'confirm');                                    // her slots, slot 1's runes
+    expect(w.focus()).toBe('runes');
+    const lack = w.root.querySelector('.slx-ws-runes .slx-ws-lack')!;
+    expect(lack.textContent).toBe(W.lacking([['點燃', T.build.from.drop], ['連擊', T.build.from.shop]]));
+    expect(lack.textContent).toBe('缺：點燃（打怪、寶箱掉落）、連擊（道具店有賣）');
+    // One in the bag is not lacking: 「可裝」, apart from what is (plan 8h final review).
+    const bag = setup(follower('meteor', { 'ignite@magic': 1 }), 'noel:fire-star');
+    bag.press('confirm', 'confirm');
+    const both = bag.root.querySelector('.slx-ws-lack')!.textContent!;
+    expect(both).toBe(`${W.lacking([['連擊', T.build.from.shop]])}　${W.ready([['點燃', W.inBag]])}`);
+    expect(both).toContain('可裝：點燃（袋子裡有）');
+    expect(both).not.toContain('缺：點燃');
+    // A skill the build suggests nothing for: no line.
+    const ice = setup(follower('meteor'), 'noel:ice-star');
+    expect(ice.skillCur()).toBe('ice-star');
+    ice.press('confirm', 'confirm');
+    expect(ice.focus()).toBe('runes');
+    expect(ice.root.querySelector('.slx-ws-lack')).toBeNull();
+    // Following nothing: neither line.
+    const free = setup(follower(undefined), 'noel:fire-star');
+    expect(free.root.querySelector('.slx-ws-follow')).toBeNull();
+    expect(free.root.querySelector('.slx-workshop')!.classList.contains('slx-ws-following')).toBe(false);
+    free.press('confirm', 'confirm');
+    expect(free.root.querySelector('.slx-ws-lack')).toBeNull();
+  });
+
+  it('a suggested rune the slot refuses says why, not that the bag has it (Task 7 review)', () => {
+    // A hand-made build whose second rune clashes with the first (one shape a skill).
+    const list = BUILDS.noel as BuildDef[];
+    list.push({ ...meteor, key: 'clash', runes: { 'fire-star': ['spread', 'focus'] } });
+    try {
+      const w = setup(follower('clash', { 'focus@magic': 1 }), 'noel:fire-star');
+      w.press('confirm', 'confirm');                                  // her slots, slot 1's runes
+      const line = w.root.querySelector('.slx-ws-lack')!.textContent!;
+      expect(line).toBe(W.refusedWhy(RUNES.focus.name, T.rune.fail.group(RUNES.spread.name)));
+      expect(line).not.toContain(W.inBag);
+      expect(line).not.toContain('缺');
+    } finally { list.pop(); }
+  });
+
+  it('every followed line fits the head on one line', () => {
+    // The head holds 50 characters of 12px; a build's name and its first rule stay under it.
+    for (const id of Object.keys(BUILDS) as CharacterId[]) {
+      for (const b of BUILDS[id]) expect([...W.following(b.name, policyText(b)[0])].length, `${id}/${b.key}`).toBeLessThanOrEqual(50);
+    }
   });
 });

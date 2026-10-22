@@ -455,7 +455,7 @@ export function validBossActive(v: unknown): EnemyKind | null {
 
 // ── 探索位元圖編碼快取：自動存檔每 30 秒一次；迷霧只會增加，揭露格數沒變 = 內容沒變，重用上次的 base64 ──
 const exploredCache = new WeakMap<ExploredMap, { count: number; b64: string; outer: OuterBitsSave | undefined }>();
-function encodeExplored(m: ExploredMap): { b64: string; outer: OuterBitsSave | undefined } {
+export function encodeExplored(m: ExploredMap): { b64: string; outer: OuterBitsSave | undefined } {
   const c = exploredCache.get(m);
   if (c && c.count === m.count) return c;
   const e = { count: m.count, b64: toBase64(m.encode()), outer: m.encodeOuter() };
@@ -629,7 +629,7 @@ export function validateChunk(ci: number, c: ChunkPayload): void {
 }
 
 /** 格子上的 gear：沒有 → undefined；有但不合法（或不是裝備）→ 存檔損毀 */
-function strictGear(item: ItemId, raw: unknown, where: string): Gear | undefined {
+export function strictGear(item: ItemId, raw: unknown, where: string): Gear | undefined {
   if (raw === undefined || raw === null) return undefined;
   const g = gearSlot(item) ? validGear(item, raw) : null;
   if (!g) throw new SaveFormatError(`${where}: gear`);
@@ -930,7 +930,7 @@ export class FarChunks {
       const { cx, cy } = w.chunkCoords(ci);
       if (w.parkChunk(cx, cy, d)) continue;
       const mod = w.modifiedChunks.has(ci), liq = w.liquidModified.has(ci);
-      w.writeChunk(cx, cy, d, false);
+      w.writeChunk(cx, cy, d, { journal: false });
       if (!mod) w.modifiedChunks.delete(ci);
       if (!liq) w.liquidModified.delete(ci);
       wrote.push(ci);

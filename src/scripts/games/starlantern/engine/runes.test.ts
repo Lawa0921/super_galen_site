@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { HIT_DESC, SKILLS } from '../data/skills';
 import { runeView, skillFor } from './battle';
 import { applyRunes, runeFits, runeNotes, runeStates, runeWhy, skillTags } from './runes';
-import { RUNES, RUNE_STACK, tiersOf, type RuneId, type RuneRef } from '../data/runes';
+import { RUNES, RUNE_NUMBERS, RUNE_STACK, tiersOf, type RuneId, type RuneRef } from '../data/runes';
 import { CHARACTER_IDS } from '../data/characters';
 import { INNATE, NODES, TREES } from '../data/trees';
 import { rulesOf } from '../data/characters';
@@ -57,6 +57,41 @@ describe('rune tags and fit (plan 8e Task 1)', () => {
     // Any skill takes 受擊觸發 and 同步; groups that do not exclude stand side by side.
     expect(runeFits(SKILLS.cleanse, 'on-struck', [])).toBeNull();
     expect(runeFits(star, 'regain', ['thrift', 'drain'])).toBeNull();
+  });
+
+  it("淬毒 is halved on a cast that strikes them all or at random (plan 8h ruling B2'')", () => {
+    const wide = RUNE_NUMBERS.venom.fixed.widePct;
+    expect(wide).toBe(50);
+    const chanceOn = (skill: string) => {
+      const d = applyRunes(SKILLS[skill], [], [{ id: 'venom', tier: 'magic' }]);
+      return (d.effects.find((e) => e.kind === 'inflict' && e.status === 'poison') as { chance: number }).chance;
+    };
+    expect(chanceOn('pierce')).toBe(0.3);                       // one foe: the whole chance
+    // An exact half, never rounded (the review: 12.5%, not 13%).
+    const common = applyRunes(SKILLS.sweep, [], [{ id: 'venom', tier: 'common' }]);
+    expect((common.effects.find((e) => e.kind === 'inflict') as { chance: number }).chance).toBe(0.125);
+    expect(chanceOn('sweep')).toBe(0.15);                       // all of them: half
+    expect(chanceOn('scatter-shot')).toBe(0.15);                // at random: half
+    // 擴散 makes a single-foe skill strike them all: halved too.
+    const spread = applyRunes(SKILLS.pierce, [], [{ id: 'venom', tier: 'magic' }, { id: 'spread', tier: 'magic' }]);
+    expect((spread.effects.find((e) => e.kind === 'inflict') as { chance: number }).chance).toBe(0.15);
+    expect(RUNES.venom.text('magic')).toContain(`${wide}%`);
+  });
+
+  it('a trigger rune needs a plain effect (plan 8h Task 2, ruling 11b)', () => {
+    // A triggered cast only plays the plain effects: a skill with none of them takes no trigger rune.
+    for (const r of ['on-struck', 'on-crit', 'on-kill'] as RuneId[]) {
+      for (const skill of ['turret', 'moon-recall', 'ward']) {
+        if (runeFits(SKILLS[skill], r, [])?.kind === 'needs') continue;   // its tags already say no
+        expect(runeFits(SKILLS[skill], r, []), `${r} ${skill}`).toEqual({ kind: 'plain' });
+      }
+    }
+    expect(runeWhy({ kind: 'plain' })).toBe(T.rune.why.plain);
+    expect(runeFits(SKILLS['blaze-ring'], 'on-struck', [])).toBeNull();
+    expect(runeFits(SKILLS.cleanse, 'on-struck', [])).toBeNull();   // a cure is plain
+    // Judged on the skill before runes (a mechanic extra beside a plain effect is fine: 挑釁・高喊).
+    expect(runeFits(skillFor({ powers: [], ranks: { provoke: 1, 'scarlet-provoke-shout': 1 } }, 'provoke')!, 'on-struck', [])).toBeNull();
+    expect(runeStates(SKILLS.turret, [{ id: 'on-struck', tier: 'magic' }])[0].miss).toEqual({ kind: 'plain' });
   });
 
   it('fit: the structural reasons', () => {

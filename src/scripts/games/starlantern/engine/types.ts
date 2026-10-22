@@ -17,6 +17,8 @@ export type AnyStat = StatKey | PrimaryKey | SecondaryKey;
 export type Sheet = Record<AnyStat, number>;
 export type Stats = Record<StatKey, number>;
 export type Row = 'front' | 'middle' | 'back';
+/** A 同步's lift on one effect (plan 8h ruling 11e): who gave it and the power before it. */
+export interface Lift { by: string; from: number }
 export type CharacterId = 'noel' | 'chizuru' | 'liz' | 'sylvie' | 'scarlet' | 'selene' | 'safira' | 'bobby' | 'rin' | 'hero';
 /** Who an action hits, seen from the actor's side. */
 /** `row`, `column` and `cross` are enemy area attacks shaped on the party grid around one chosen member. */
@@ -31,11 +33,12 @@ export type Effect =
    * Runes on the skill (plan 8e, engine/runes.ts applyRunes), every hit: `onHit`, an ailment's chance (點燃, 感電, 撕裂);
    * `aftermath`, a crit brings the element's ailment (餘波); `armorBreak`, no armor or block (破甲); `drainPct`, that share
    * of the damage heals the caster (吸血); `tpPerHit`, TP back to the caster (回氣).
+   * `lift` (battle only, plan 8h ruling 11e): a 同步 lifted this power; `by` gave it, `from` is the power before it.
    */
   | { kind: 'damage'; power: number; element: Element; scale: 'atk' | 'mag'; melee: boolean; hits?: number; crit?: 'always'; execute?: number; wounded?: number; scatter?: true; aimPct?: number;
-      onHit?: { status: AilmentId; chance: number }[]; aftermath?: true; armorBreak?: true; drainPct?: number; tpPerHit?: number }
+      onHit?: { status: AilmentId; chance: number }[]; aftermath?: true; armorBreak?: true; drainPct?: number; tpPerHit?: number; lift?: Lift }
   /** `overflowPct`: what the heal spills past max HP becomes a shield, up to this percent of max HP (the hero's 滿溢, plan 8d). */
-  | { kind: 'heal'; power: number; overflowPct?: number }
+  | { kind: 'heal'; power: number; overflowPct?: number; lift?: Lift }
   | { kind: 'restore'; hp?: number; tp?: number }
   | { kind: 'revive'; hpPct: number }
   | { kind: 'cure' }
@@ -244,6 +247,11 @@ export interface Member {
   freeRespec?: true;
   /** Runes socketed per skill id, slot by slot (plan 8e; engine/sockets.ts). Absent: none. */
   sockets?: Record<string, (RuneRef | null)[]>;
+  /**
+   * The suggested build she follows (plan 8h, data/builds.ts `key`): her policy is its policy, and a level-up spends her
+   * points its way. Absent: none (the standard policy). Nothing writes it before plan 8h Task 6.
+   */
+  build?: string;
 }
 export interface Party {
   /** 3x3 placement, cells 0-2 front, 3-5 middle, 6-8 back (see engine/formation.ts). */
