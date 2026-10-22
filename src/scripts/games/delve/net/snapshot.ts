@@ -17,7 +17,7 @@ export function snapshotWorld(game: DelveGame, visit: VisitSave | null): WorldSn
     bossActive: boss && boss.state !== 'leave' ? boss.kind : null,
     weather: game.weatherOverride ? { ...game.weatherOverride } : null,
     minedIce: [...game.minedIce].sort((a, b) => a - b),
-    settle: game.settle.toJSON(), folk: game.folk.toJSON(), quests: game.quests.toJSON(),
+    settle: game.settle.toJSON({ ids: true }), folk: game.folk.toJSON({ ids: true }), quests: game.quests.toJSON(),
     scoutMarks: game.scoutMarks.map((m) => ({ ...m })),
     perkDays: { ...game.perkDays }, scouted: [...game.scouted].sort(),
     stones: [...game.stonesUnlocked].sort((a, b) => a - b),
@@ -51,7 +51,7 @@ export function applyWorldSnap(game: DelveGame, snap: WorldSnap): void {
   game.syncDay();
   // 據點核心那格的爐心還在等 chunk 同步 → trust 不驗
   game.settle.load(snap.settle, w, true);
-  game.folk.load(snap.folk, w);
+  game.folk.load(snap.folk, w, true);
   game.quests.load(snap.quests);
   game.scoutMarks = snap.scoutMarks.map((m) => ({ ...m }));
   game.perkDays = { guide: snap.perkDays.guide, healer: game.perkDays.healer };

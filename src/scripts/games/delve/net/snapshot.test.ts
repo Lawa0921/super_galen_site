@@ -72,6 +72,23 @@ describe('snapshotWorld / applyWorldSnap', () => {
     expect(replica.settle.drainEvents()).toEqual([]);
   });
 
+  it('居民與旅人的 id / key 與房主一致（ws 靠 id 配對）；存檔輸出不帶 id', () => {
+    const host = arena({ mode: 'host' });
+    withResident(host);
+    const tr = host.debugEncounter('peddler', 5);
+    expect(tr).not.toBeNull();
+    const replica = arena({ localPid: 'p1', mode: 'replica' });
+    applyWorldSnap(replica, snapshotWorld(host, null));
+    expect(replica.settle.npc('merchant')!.id).toBe(host.settle.npc('merchant')!.id);
+    expect(replica.settle.nextId).toBe(host.settle.nextId);
+    const rt = replica.folk.byKey(tr!.key);
+    expect(rt).not.toBeNull();
+    expect(rt!.id).toBe(tr!.id);
+    expect(host.settle.toJSON().npcs.every((n) => !('id' in n))).toBe(true);
+    expect(host.folk.toJSON().travellers.every((n) => !('id' in n))).toBe(true);
+    expect(host.folk.toJSON().travellers.length).toBeGreaterThan(0);
+  });
+
   it('不送 chunk：改 200 格地形前後長度相同', () => {
     const host = arena({ mode: 'host' });
     const before = JSON.stringify(snapshotWorld(host, null)).length;
