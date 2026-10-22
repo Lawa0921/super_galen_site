@@ -345,7 +345,8 @@ export class Renderer {
     this.levelFx.onEvent(e);
     const mine = isMine(e, this.game.localPid);
     if (e.type === 'respawn' && mine) this.snapCamera();
-    if (e.type === 'hurt' && !e.cause) this.local.hurtAt = this.clock;
+    // 受傷姿勢：單機 / 房主看事件；客人只看房主回報的計數（ownPose.hurt），轉送回來的事件不再設一次
+    if (e.type === 'hurt' && !e.cause && !this.ownPose) this.local.hurtAt = this.clock;
     if (e.type === 'climb' && mine) this.climbDust(e.phase !== 'grab', e.phase === 'mantle' ? e : null);
     if (e.type === 'lightning') { this.bolt = { x: e.x * S + S / 2, seed: ++this.boltN }; this.lightDirty = true; }
     if (e.type === 'mine' && e.tile === T.ICE) this.fx.invalidate(this.game.world, [this.game.world.chunkIndex(Math.floor(e.x / CHUNK), Math.floor(e.y / CHUNK))]);
@@ -818,11 +819,11 @@ export class Renderer {
   // ── 前景物件 ─────────────────────────────────────────
   private drawMiningAndCursor(ctx: CanvasRenderingContext2D): void {
     const g = this.game, st = g.getState();
-    if (st.mining) {
-      const stage = Math.min(3, Math.floor(st.mining.progress * 4));
-      const c = this.atlas.crack(stage);
-      ctx.drawImage(this.atlas.canvas, c.sx, c.sy, S, S, st.mining.x * S, st.mining.y * S, S, S);
-    }
+    // 裂痕看每個玩家的 pose（客人副本不挖，getState().mining 一直是 null）：遠端 = 內插過的進度；
+    // 本地 = 這一幀 drawPlayer 用的那份（客人 = 房主回報的 ownPose；單機 / 房主 = poseOf，跟 getState 同值）
+    for (const v of this.remoteNow) if (v.pose.mining) this.drawCrack(ctx, v.pose.mining);
+    const mine = this.localPose?.mining;
+    if (mine) this.drawCrack(ctx, mine);
     const { x, y } = st.aim;
     if (!this.showCursor || !g.world.inBounds(x, y)) return;
     const ok = g.canReach(x, y);
@@ -838,6 +839,11 @@ export class Renderer {
     };
     corners('#0c0a12', 1);
     corners(ok ? '#ffffff' : '#e8701c', 0);
+  }
+  /** 挖掘裂痕：進度 0..1 → 4 階 */
+  private drawCrack(ctx: CanvasRenderingContext2D, m: { x: number; y: number; progress: number }): void {
+    const c = this.atlas.crack(Math.min(3, Math.floor(m.progress * 4)));
+    ctx.drawImage(this.atlas.canvas, c.sx, c.sy, S, S, m.x * S, m.y * S, S, S);
   }
 
   /** 目前的玩家動畫（e2e / debug） */

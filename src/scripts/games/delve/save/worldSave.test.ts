@@ -83,21 +83,22 @@ describe('world save format 10', () => {
     expect(data.header.folk).toEqual({ world: {}, quests: {}, scoutMarks: [], perkDays: { guide: -1, healer: -1 }, scouted: [], buffs: { bless: 35 } });
   });
 
-  it('visits LRU：第 9 個角色擠掉最久沒來的', () => {
+  it('visits LRU：第 17 個角色擠掉最久沒來的（上限 16：8 人同房 + 輪流來的朋友不互擠床）', () => {
+    expect(MAX_VISITS).toBe(16);
     let v: VisitMap = {};
-    for (let i = 0; i < 9; i++) v = upsertVisit(v, `c${i}`, { ...visit0, lastSeen: 100 + i });
-    expect(Object.keys(v)).toHaveLength(MAX_VISITS); expect(v.c0).toBeUndefined(); expect(v.c8).toBeDefined();
+    for (let i = 0; i < 17; i++) v = upsertVisit(v, `c${i}`, { ...visit0, lastSeen: 100 + i });
+    expect(Object.keys(v)).toHaveLength(MAX_VISITS); expect(v.c0).toBeUndefined(); expect(v.c16).toBeDefined();
   });
 
   it('upsertVisit 不改輸入；更新既有角色不擠掉別人；剛寫入的角色不會被自己擠掉', () => {
     const v: VisitMap = {};
-    for (let i = 0; i < 8; i++) v[`c${i}`] = { ...visit0, lastSeen: 100 + i };
+    for (let i = 0; i < 16; i++) v[`c${i}`] = { ...visit0, lastSeen: 100 + i };
     const snapshot = JSON.stringify(v);
     const u = upsertVisit(v, 'c0', { ...visit0, lastSeen: 200 });
     expect(JSON.stringify(v)).toBe(snapshot);
-    expect(Object.keys(u)).toHaveLength(8); expect(u.c0.lastSeen).toBe(200);
+    expect(Object.keys(u)).toHaveLength(16); expect(u.c0.lastSeen).toBe(200);
     const w = upsertVisit(v, 'late', { ...visit0, lastSeen: 1 });
-    expect(w.late).toBeDefined(); expect(w.c0).toBeUndefined(); expect(Object.keys(w)).toHaveLength(8);
+    expect(w.late).toBeDefined(); expect(w.c0).toBeUndefined(); expect(Object.keys(w)).toHaveLength(16);
   });
 
   describe('decodeWorld 驗證', () => {
@@ -138,12 +139,12 @@ describe('world save format 10', () => {
       for (const visits of [null, [], 'x', 3, undefined]) expect(() => decodeWorld(tamper({ visits }))).toThrow(SaveFormatError);
     });
 
-    it('超過 8 筆 visit → 只留 lastSeen 最新的 8 筆', () => {
+    it('超過 16 筆 visit → 只留 lastSeen 最新的 16 筆', () => {
       const good = base().header.visits.c1;
       const visits: Record<string, VisitSave> = {};
-      for (let i = 0; i < 11; i++) visits[`v${i}`] = { ...good, lastSeen: 1000 - i };
+      for (let i = 0; i < 19; i++) visits[`v${i}`] = { ...good, lastSeen: 1000 - i };
       const back = decodeWorld(tamper({ visits }));
-      expect(Object.keys(back.header.visits).sort()).toEqual(['v0', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7']);
+      expect(Object.keys(back.header.visits).sort()).toEqual(Array.from({ length: 16 }, (_, i) => `v${i}`).sort());
     });
 
     it('worldName 不是字串或超過 64 字 → 退回 seed', () => {
@@ -214,7 +215,7 @@ describe('world save format 10', () => {
     });
 
     it('held LRU 上限 32', () => {
-      // 有自己的上限，不跟 visits（8）共用：7 位在線客人每 30 秒的 held 不會擠掉剛斷線那位的
+      // 有自己的上限，不跟 visits（16）共用：7 位在線客人每 30 秒的 held 不會擠掉剛斷線那位的
       expect(MAX_HELD).toBe(32);
       expect(MAX_HELD).toBeGreaterThan(MAX_VISITS);
       const base = held('g', 1, 0);

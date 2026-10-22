@@ -219,7 +219,7 @@ describe('M-C2 Task 2：遠端姿勢的時鐘與過時的攀邊', () => {
     const a = r.hostGame.actors.get(pid)!;
     const ps = (o: Partial<Ps> = {}): Ps => ({
       t: 'ps', seq: rec.psSeq + 1, tseq: a.teleSeq - rec.teleBase, x: rec.prev.x, y: rec.prev.y, vx: 0, vy: 0, flags: PS_GROUND, facing: 1,
-      aim: [0, 0], mine: false, use: false, slot: 0, mt: [0.3, 1, 320, 944], ...o,
+      aim: [0, 0], mine: false, use: false, slot: 0, mt: [0.3, 1, rec.prev.x + a.player.w + 2, rec.prev.y + 6], ...o,
     });
     const climbing = (): void => { host.onPs(rec, ps()); expect(a.remote!.mantle).not.toBeNull(); };
     climbing();
@@ -237,6 +237,35 @@ describe('M-C2 Task 2：遠端姿勢的時鐘與過時的攀邊', () => {
     climbing();
     host.onPs(rec, ps({ x: rec.prev.x + 5000 }));
     expect(a.remote!.mantle).toBeNull();
+  });
+});
+
+describe('最終修正：ps.mt 的牆角要貼著身體', () => {
+  it('房主 onPs：mt 的牆角離客人回報的身體超過 2 格 → 當成 null（不畫飄在半空的攀邊）', () => {
+    const r = coopRig();
+    const gst = r.guests[0], pid = gst.pid!;
+    type HG = { pid: string; teleBase: number; psSeq: number; prev: { x: number; y: number; at: number } };
+    const host = r.host as unknown as { list: HG[]; onPs(g: HG, ps: Ps | null): void };
+    const rec = host.list.find((q) => q.pid === pid)!;
+    const a = r.hostGame.actors.get(pid)!, w = a.player.w, h = a.player.h, S = TILE_SIZE;
+    // 牆角 = 身體右上角往外 (dx, dy) px
+    const at = (dx: number, dy: number): Ps => ({
+      t: 'ps', seq: rec.psSeq + 1, tseq: a.teleSeq - rec.teleBase, x: rec.prev.x, y: rec.prev.y, vx: 0, vy: 0, flags: PS_GROUND, facing: 1,
+      aim: [0, 0], mine: false, use: false, slot: 0, mt: [0.3, 1, rec.prev.x + w + dx, rec.prev.y + dy],
+    });
+    const mantleAfter = (ps: Ps) => { host.onPs(rec, ps); return a.remote!.mantle; };
+    expect(mantleAfter(at(2, 6))).toEqual({ p: 0.3, dir: 1, edgeX: rec.prev.x + w + 2, edgeY: rec.prev.y + 6 });
+    // 剛好 2 格：照收
+    expect(mantleAfter(at(2 * S, 6))).not.toBeNull();
+    expect(mantleAfter(at(-w / 2, -2 * S))).not.toBeNull();
+    // 超過 2 格（右邊 / 頭頂上 / 腳底下 / 左邊）→ null
+    expect(mantleAfter(at(2 * S + 1, 6))).toBeNull();
+    expect(mantleAfter(at(-w / 2, -2 * S - 1))).toBeNull();
+    expect(mantleAfter(at(-w / 2, h + 2 * S + 1))).toBeNull();
+    expect(mantleAfter(at(-w - 2 * S - 1, 6))).toBeNull();
+    // ps 本身照收（位置、輸入）：只丟 mt
+    expect(rec.psSeq).toBeGreaterThan(0);
+    expect(mantleAfter(at(0, 0))).not.toBeNull();
   });
 });
 
@@ -259,5 +288,23 @@ describe('M-C2 Task 2 修正：挨打計數上線', () => {
     expect(hg.withActor(hg.actors.get(pid)!, () => hg.hurtPlayer(2, hg.actors.get(pid)!.player.x + 40))).toBe(true);
     expect(until(r, () => a.ownPose()!.hurt === ((h0 + 1) & 255), 1000)).toBe(true);
     expect(until(r, () => seen() === ((h0 + 1) & 255), 1000)).toBe(true);
+  });
+});
+
+describe('最終修正：ws 的玩家只帶 pose（位置 / 面向 / 死活不重複）', () => {
+  it('coopRig：客人的死活、別人的位置 / 面向 / 死活都從 pose 來', () => {
+    const r = coopRig({ guests: 2 });
+    const [a, b] = r.guests;
+    const hg = r.hostGame, pid = a.pid!, act = hg.actors.get(pid)!;
+    r.run(300);
+    const peer = () => b.peers().find((v) => v.pid === pid)!;
+    expect(peer().x).toBe(peer().pose.x);
+    expect(peer().y).toBe(peer().pose.y);
+    expect(peer().facing).toBe(peer().pose.facing);
+    expect(a.game!.local.dead).toBe(false);
+    // 房主把客人打死 → 客人自己的 dead、另一位客人看到的 dead 都是 true
+    hg.withActor(act, () => hg.hurtPlayer(9999, act.player.x + 40));
+    expect(act.dead).toBe(true);
+    expect(until(r, () => a.game!.local.dead && peer().dead && peer().pose.dead, 1000)).toBe(true);
   });
 });

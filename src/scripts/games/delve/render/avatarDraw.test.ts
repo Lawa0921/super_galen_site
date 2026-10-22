@@ -43,6 +43,7 @@ interface Priv {
   boatCanvas: HTMLCanvasElement | null; bobber: HTMLCanvasElement; remotes: Map<string, AvatarState>;
   drawRemotes(ctx: CanvasRenderingContext2D, dt: number): void; drawPlayer(ctx: CanvasRenderingContext2D, dt: number): void;
   drawBoats(ctx: CanvasRenderingContext2D): void; drawFishing(ctx: CanvasRenderingContext2D): void; drawPlayerRim(ctx: CanvasRenderingContext2D): void;
+  drawMiningAndCursor(ctx: CanvasRenderingContext2D): void;
 }
 function scene(): { g: DelveGame; r: Renderer; R: Priv; c: FakeCanvas; views: RemoteView[]; at: (o?: Partial<PlayerPose>) => PlayerPose; remote: (o?: Partial<PlayerPose>, pid?: string, l?: DollLook, time?: number) => RemoteView; frame: () => void } {
   const g = arenaGame();
@@ -239,6 +240,29 @@ describe('AvatarPainter：遠端玩家畫得跟本地一樣', () => {
     expect(s.r.playerAnim).toBe('hurt');
   });
 
+  it('客人自己的受傷姿勢只看 ownPose.hurt 計數：房主轉送回來的私人 hurt 事件不再設一次', () => {
+    const s = scene();
+    const R = s.R as unknown as { local: AvatarState; clock: number };
+    let own: OwnPose = { attack: null, mining: null, fishing: null, iframes: 0, hurt: 3 };
+    s.r.setOwnPose(() => own);
+    s.frame(); s.frame();
+    const hurt = { type: 'hurt' as const, x: 0, y: 0, amount: 2, fall: false, pid: s.g.localPid };
+    const before = R.local.hurtAt;
+    // 事件比計數先到：不動受傷時間、不是受傷姿勢
+    s.r.onEvent(hurt);
+    expect(R.local.hurtAt).toBe(before);
+    s.frame();
+    expect(s.r.playerAnim).not.toBe('hurt');
+    // 計數到了 → 受傷姿勢；之後才到的事件也不重設（不會從頭再演一次）
+    own = { ...own, iframes: 0.6, hurt: 4 };
+    s.frame();
+    expect(s.r.playerAnim).toBe('hurt');
+    const at = R.local.hurtAt;
+    s.frame();
+    s.r.onEvent(hurt);
+    expect(R.local.hurtAt).toBe(at);
+  });
+
   it('單機的本地玩家：受傷姿勢只由 hurt 事件設定（計數變了也不會在下一幀再設一次）', () => {
     const s = scene();
     s.frame();
@@ -268,6 +292,48 @@ describe('AvatarPainter：遠端玩家畫得跟本地一樣', () => {
     s.frame();
     expect(s.r.avatarDraws.has('p2')).toBe(false);
     expect(s.R.remotes.size).toBe(0);
+  });
+
+  // 裂痕：atlas 上的 crack 影格畫到 (x, y) 那格；回傳畫了哪幾格、第幾階
+  const cracks = (s: ReturnType<typeof scene>): { x: number; y: number; stage: number }[] => {
+    const atlas = s.r.atlas, src = [0, 1, 2, 3].map((k) => atlas.crack(k));
+    const out: { x: number; y: number; stage: number }[] = [];
+    for (const k of s.c.calls) {
+      if (k[0] !== 'drawImage' || k[1] !== atlas.canvas) continue;
+      const stage = src.findIndex((q) => q.sx === k[3] && q.sy === k[4]);
+      if (stage >= 0) out.push({ x: (k[7] as number) / 16, y: (k[8] as number) / 16, stage });
+    }
+    return out;
+  };
+  const mineFrame = (s: ReturnType<typeof scene>): void => { s.frame(); s.R.drawMiningAndCursor(s.c.ctx); };
+
+  it('客人自己的裂痕：畫房主回報的 ownPose.mining（副本的 getState().mining 一直是 null）', () => {
+    const s = scene();
+    s.r.setOwnPose(() => ({ attack: null, mining: { x: 5, y: 7, progress: 0.6, pick: 'copper_pickaxe' }, fishing: null, iframes: 0, hurt: 0 }));
+    expect(s.g.getState().mining).toBeNull();
+    mineFrame(s);
+    expect(cracks(s)).toEqual([{ x: 5, y: 7, stage: 2 }]);
+  });
+
+  it('隊友的裂痕：畫在他挖的那格、用他（內插過）的進度', () => {
+    const s = scene();
+    s.views.push(s.remote({ held: 'copper_pickaxe', mining: { x: 9, y: 3, progress: 0.3, pick: 'copper_pickaxe' } }));
+    s.views.push(s.remote({}, 'p3', look(2)));
+    mineFrame(s);
+    expect(cracks(s)).toEqual([{ x: 9, y: 3, stage: 1 }]);
+  });
+
+  it('單機的裂痕：跟 getState().mining 一樣（位置、階段）', () => {
+    const s = scene();
+    s.r.setRemoteSource(null);
+    const tx = Math.floor((s.g.player.x + s.g.player.w / 2) / 16), ty = Math.floor((s.g.player.y + s.g.player.h) / 16);
+    s.g.setAim(tx, ty);
+    s.g.setMining(true);
+    for (let i = 0; i < 20 && !(s.g.getState().mining && s.g.getState().mining!.progress > 0.3); i++) s.g.step(FIXED_DT);
+    const m = s.g.getState().mining!;
+    expect(m).not.toBeNull();
+    mineFrame(s);
+    expect(cracks(s)).toEqual([{ x: m.x, y: m.y, stage: Math.min(3, Math.floor(m.progress * 4)) }]);
   });
 
   it('遠端在暗處也畫輪廓光', () => {

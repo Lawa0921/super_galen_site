@@ -139,7 +139,7 @@ class DelveGame {
   1. 世界前段：時間、天氣、液體（`replica` 模式跳過液體）。
   2. 對每個 actor 跑 `stepActor(a, dt)`：移動、技能、生命值、挖掘、攻擊、使用、釣魚。這段就是現在 `game.ts:762-838` 的內容，只是把 `this.` 換成 `a.`。在 `host` 模式下，**客人 actor 的移動積分要跳過**，改成套用客人回報的位置（見 5.3）。
   3. 世界後段：`updateEntities`、`updateSettlements`、`updateFolk`（`replica` 模式只做內插，不跑 AI）。
-- `AiCtx`、`FolkHost`、`SettleHost` 改成提供 `players(): {pid, cx, cy, dead, wet}[]`。怪物鎖定最近的活著的玩家。只要有任何一個玩家在 `ACTIVE` 範圍內，怪物就活躍；離所有玩家都超過 `DESPAWN` 才消失。`trySpawn` 每次輪流挑一個玩家當中心。`MAX_ENEMIES` 是否要乘上人數倍率屬於調參，見 Q11。
+- `AiCtx`、`FolkHost`、`SettleHost` 改成提供 `players(): {pid, cx, cy, dead, wet}[]`。怪物鎖定最近的活著的玩家。只要有任何一個玩家在 `ACTIVE` 範圍內，怪物就活躍；離所有玩家都超過 `DESPAWN` 才消失。生怪依 M-C2 D8：每位活著的玩家有自己的生怪計時器（各自從慢漸快、重生後各自重來，睡覺時全部重來），以自己為中心生怪，上限算他那一帶的怪，另有全世界上限（詳見 §8 Q11）。`MAX_ENEMIES` 是否要乘上人數倍率屬於調參，見 Q11。
 - `liquids.blocked` 和 `playerOverlaps` 改成檢查任何一個 actor。
 - 睡覺：所有活著的 actor 都在床上（`sleepReady` 旗標）才開始倒數 `sleepT`。HUD 顯示「等待其他人 1/3」。
 - 事件：`DelveEvent` 加上 `pid?`。依類型分成**私人事件**（pickup、blocked、select、xp、levelup、hurt、talk、trade、quest、bubble、craft 等，只送給該 pid）和**公開事件**（mine、place、kill、hit、boss、liquid、lightning、sleep、door、chest 等，廣播給所有人）。`drainEvents(pid = localPid)` 只回傳本地需要的事件，房主另外用 `drainAll()` 拿到全部再分送。
@@ -152,12 +152,12 @@ class DelveGame {
 - **客人（replica）**：跑一個 `DelveGame`（mode `replica`）。世界由 seed 按欄生成（中央一次產生，外圍等進入自己的載入半徑才生成），再逐 chunk 套上房主的資料（5.6；2026-10-21 因無限世界修訂）。它**只積分本地 actor 的移動**（`stepPlayer`，對照本地的世界副本），其他東西全部照房主送來的快照內插。
   - **【建造者決定／提案】** 移動採客戶端權威，跟先備研究一致：客人每秒 20 次回報 `ps`。房主檢查兩件事：位移速度不能超過 `RUN_SPEED` 乘以技能和飾品上限再加容差，以及身體不能卡在實心方塊裡。不合理時送 `teleport` 把客人拉回去。Co-op 不需要 Gambetta 式的重播和修正。
   - 被擊退時，房主算出 `knock{vx, vy}` 送給客人，由客人套到自己的 body 上。傳送、回城、旅行、重生也都是房主送 `teleport`。
-  - 攻擊、挖掘、使用：客人在本地立刻播放揮擊動畫和挖掘裂紋（純外觀預測）。命中、破壞和產生掉落物都由房主根據該 actor 的 `input`（以 `ps` 裡的 `mine`、`use`、`aim`、`slot` 驅動）判定，大約晚半個 RTT。
+  - 攻擊、挖掘、使用：~~客人在本地立刻播放揮擊動畫和挖掘裂紋（純外觀預測）。~~（**已被下面的 D3 取代**：第一版客人自己的揮擊 / 裂紋用房主回報的，本地外觀預測留到 M-D。）命中、破壞和產生掉落物都由房主根據該 actor 的 `input`（以 `ps` 裡的 `mine`、`use`、`aim`、`slot` 驅動）判定，大約晚半個 RTT。
   - 遠端玩家、怪物、NPC 都以大約 100 ms 的延遲做內插（2 筆快照之間線性插值）。投射物用初速自己外推，有修正時再校正。
   - **【建造者決定】（M-C2 D1–D3，2026-10-22）遠端玩家畫得跟本地玩家一樣**：
-    - D1：房主在 `ws` 裡給每位玩家一份精簡的 `PlayerPose`（位置、速度、著地、朝向、死亡、無敵、船、攀爬、攀邊、液體比例、手持物、`attack`、`mining`、`fishing`），不用 `getState()`。揮擊進度在畫的時候用 `(time − at) / dur` 算；`mining.progress` 在兩筆之間線性內插。
-    - D2：`WsPlayer` 帶 `pose`（數字留 2 位小數）；`ps` 加 `mt`（攀邊狀態），房主才知道客人正在翻上邊緣。
-    - D3：客人畫自己時，移動相關的欄位用本地預測；`attack`、`mining`、`fishing`、`iframes` 用房主 `ws` 裡自己那一份（最新一筆、不內插）。所以客人自己的揮擊大約晚半個 RTT 才出現——上面「客人在本地立刻播放揮擊動畫」的外觀預測，第一版不做，留到 M-D。
+    - D1：房主在 `ws` 裡給每位玩家一份精簡的 `PlayerPose`（位置、速度、著地、朝向、死亡、無敵、船、攀爬、攀邊、液體比例、手持物、`attack`、`mining`、`fishing`、`hurt`（受擊計數）），不用 `getState()`。揮擊進度在畫的時候用 `(time − at) / dur` 算；`mining.progress` 在兩筆之間線性內插。
+    - D2：`WsPlayer` 帶 `pose`（數字留 2 位小數），另外只帶 `pid`、`hp`、`maxHp`、`mana`（往下取 2 位小數）——位置、速度、朝向、死亡只在 `pose` 裡，不重複帶；`ps` 加 `mt`（攀邊狀態），房主才知道客人正在翻上邊緣。
+    - D3：客人畫自己時，移動相關的欄位用本地預測；`attack`、`mining`、`fishing`、`iframes` 用房主 `ws` 裡自己那一份（最新一筆、不內插）。所以客人自己的揮擊大約晚一個 RTT 再加 50–100 ms（等下一則 ps 與下一則 ws）才出現——上面「客人在本地立刻播放揮擊動畫」的外觀預測，第一版不做，留到 M-D。
 - 房主的分頁在背景時，`requestAnimationFrame` 會停，世界也跟著凍結。見風險 R2。
 
 ### 5.4 通道與訊息協定

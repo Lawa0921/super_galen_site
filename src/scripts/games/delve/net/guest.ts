@@ -52,10 +52,12 @@ export interface PeerView {
 }
 /** 客人自己的動作狀態用房主的（M-C2 D3）：最新一份、不內插 */
 export type OwnPose = Pick<PlayerPose, 'attack' | 'mining' | 'fishing' | 'iframes' | 'hurt'>;
-/** 內插緩衝裡的一位玩家（ws 的 WsPlayer + 解好的 pose） */
-interface PeerSample { pid: Pid; x: number; y: number; facing: 1 | -1; hp: number; maxHp: number; dead: boolean; pose: PlayerPose }
-const lerpPeer = (a: PeerSample, b: PeerSample, k: number): PeerSample =>
-  ({ ...b, x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, pose: lerpPose(a.pose, b.pose, k) });
+/** 內插緩衝裡的一位玩家（ws 的 WsPlayer + 解好的 pose；位置 / 面向 / 死活都在 pose 裡，x / y = pose 的，給 Interp 用） */
+interface PeerSample { pid: Pid; x: number; y: number; hp: number; maxHp: number; pose: PlayerPose }
+const lerpPeer = (a: PeerSample, b: PeerSample, k: number): PeerSample => {
+  const pose = lerpPose(a.pose, b.pose, k);
+  return { ...b, x: pose.x, y: pose.y, pose };
+};
 
 export const END_TEXT: Readonly<Record<RejectReason | ByeReason | 'hostGone', string>> = Object.freeze({
   full: '房間已滿',
@@ -250,9 +252,10 @@ export class NetGuest {
       const s = this.players.sample(id, t);
       if (!s || s.pid === this.me) continue;
       const info = this.peerInfo.get(s.pid);
+      const p = s.pose;
       out.push({
-        pid: s.pid, nick: info?.nick ?? '', look: info?.look ?? null, x: s.x, y: s.y, facing: s.facing,
-        hp: s.hp, maxHp: s.maxHp, dead: s.dead, pose: s.pose,
+        pid: s.pid, nick: info?.nick ?? '', look: info?.look ?? null, x: p.x, y: p.y, facing: p.facing,
+        hp: s.hp, maxHp: s.maxHp, dead: p.dead, pose: p,
       });
     }
     return out;
@@ -520,16 +523,16 @@ export class NetGuest {
         const a = game.local;
         if (fin(p.hp)) a.hp = p.hp;
         if (fin(p.mana)) a.mana = p.mana;
-        a.dead = Boolean(p.dead);
-        if (pose) this.own = { attack: pose.attack, mining: pose.mining, fishing: pose.fishing, iframes: pose.iframes, hurt: pose.hurt };
+        // 死活在 pose 裡：這份壞掉就沿用上一份
+        if (pose) {
+          a.dead = pose.dead;
+          this.own = { attack: pose.attack, mining: pose.mining, fishing: pose.fishing, iframes: pose.iframes, hurt: pose.hurt };
+        }
         continue;
       }
       seen.add(p.pid);
-      if (!pose || !fin(p.x) || !fin(p.y)) continue;
-      this.players.push(p.pid, at, {
-        pid: p.pid, x: p.x, y: p.y, facing: p.facing === -1 ? -1 : 1, hp: fin(p.hp) ? p.hp : 0, maxHp: fin(p.maxHp) ? p.maxHp : 0,
-        dead: Boolean(p.dead), pose,
-      });
+      if (!pose) continue;
+      this.players.push(p.pid, at, { pid: p.pid, x: pose.x, y: pose.y, hp: fin(p.hp) ? p.hp : 0, maxHp: fin(p.maxHp) ? p.maxHp : 0, pose });
     }
     this.players.retain(seen);
     const feed = <V extends { x: number; y: number }>(ip: Interp<V>, list: V[], key: (v: V) => number | string | null): void => {

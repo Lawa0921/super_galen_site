@@ -17,12 +17,19 @@ import { LoopbackNet } from './loopback';
 import type { Channel, NetLink, Payload } from './link';
 import { decodeBulk } from './codec';
 import { columnSums } from './chunkSync';
-import { BOUNDARY_OPS, CHK_MS, LINGER_MS, NET_TILE_COLS, PROTO, PS_GROUND, SAVE_DEBOUNCE_MS, type BulkHead } from './protocol';
+import { BOUNDARY_OPS, CHK_MS, LINGER_MS, MAX_GUESTS, NET_TILE_COLS, PROTO, PS_GROUND, SAVE_DEBOUNCE_MS, WS_HZ, type BulkHead, type Ws } from './protocol';
+import { makeEnemy } from '../engine/enemies';
 import { NetHost } from './host';
 
 const FLOOR = 60;
 const BUILD = 'test-build';
 const FRAME = 1000 / 60;
+/**
+ * 8 人（房主 + 7 位客人都在挖 + 揮）、40 隻怪、20 個掉落物的一則 ws 上限（位元組）。逐項給額度：
+ * 一位玩家 230（量到 204：pose 帶 attack + mining；再留攀邊 / 釣魚的空間）、一隻怪 110（量到 102，kind 名字長短不一）、
+ * 一個掉落物 64（量到 56）、外框 100 → 7620。瘦身前量到 8101（players 重複帶位置 / 速度、座標沒取整）會超過
+ */
+const WS_BUDGET = 8 * 230 + 40 * 110 + 20 * 64 + 100;
 
 /** 平地小世界（同 actors.test.ts）：y ≥ 60 石頭；本地玩家站在 (40, 59)；出生點也在 (40, 59)；白天、和平 */
 function arena(): DelveGame {
@@ -672,5 +679,71 @@ describe('NetHost 垃圾訊息（Review Focus 3）', () => {
     expect(r.host.guests().map((i) => [i.pid, i.phase])).toEqual([['p1', 'live'], ['p2', 'live']]);
     expect(good.state.filter((m) => m.t === 'ws').length).toBeGreaterThan(ws0 + 5);
     expect(bad.of('ack').filter((m) => m.reason === 'rate').length).toBeGreaterThan(400);
+  });
+});
+
+describe('NetHost ws 大小（8 人，最終修正）', () => {
+  /** 房主 + 7 位客人都在挖 + 揮、附近 40 隻怪、20 個掉落物；數字都是沒取整的小數。回傳第 1 位客人收到的那則 ws（JSON 原文） */
+  function busyWs(): { raw: string; ws: Ws } {
+    const r = rig();
+    const gs = Array.from({ length: 7 }, () => r.join());
+    r.run(200);
+    const game = r.game;
+    let i = 0;
+    for (const a of game.actors.values()) {
+      const p = a.player;
+      p.x = 600 + i * 23.456789123; p.y = FLOOR * TILE_SIZE - p.h - 0.123456789; p.vx = 87.33333333 * (i % 2 ? 1 : -1); p.vy = -213.456789;
+      a.facing = i % 2 ? 1 : -1;
+      a.mana = 37.866666667; a.hp = 87.5 - i / 3;
+      a.attack = { item: 'wood_sword', kind: 'sword', t: 0.123456789, dur: 0.42, angle: -0.785398163, dir: 1, id: i + 1 };
+      a.mining = { x: 37 + i, y: FLOOR, elapsed: 0.2345678, need: 0.6666667 };
+      i++;
+    }
+    for (let k = 0; k < 40; k++) {
+      const e = makeEnemy(1000 + k, k % 2 ? 'night_walker' : 'gel_blob', 400 + k * 13.3333333, FLOOR * TILE_SIZE - 0.37);
+      e.body.vx = 70.123456; e.hp = 23.456; e.state = 'chase';
+      game.enemies.push(e);
+    }
+    for (let k = 0; k < 20; k++) {
+      game.drops.list.push({ id: 500 + k, item: 'dirt', count: 1 + k, age: 0, pickDelay: 0, grabbed: false,
+        body: { x: 450 + k * 17.77777, y: FLOOR * TILE_SIZE - 20.3333333, w: 10, h: 10, vx: 33.3333, vy: -120.1234, onGround: false, gfxOffY: 0 } });
+    }
+    // 不跑模擬（steps 0）：狀態原樣留著，只等下一則 ws
+    const g = gs[0], n0 = g.state.length;
+    for (let k = 0; k < 10 && g.state.length === n0; k++) r.tick(FRAME, 0);
+    const ws = g.state[g.state.length - 1] as unknown as Ws;
+    expect(ws.t).toBe('ws');
+    return { raw: JSON.stringify(ws), ws };
+  }
+
+  it('players 只帶 pid / hp / maxHp / mana / pose（位置、速度、面向、死活都在 pose 裡，不重複）；mana 取 2 位小數', () => {
+    const { ws } = busyWs();
+    expect(ws.players).toHaveLength(8);
+    for (const p of ws.players) {
+      expect(Object.keys(p).sort()).toEqual(['hp', 'mana', 'maxHp', 'pid', 'pose']);
+      expect(p.mana).toBe(37.86);
+      expect(p.pose[11]).not.toBeNull();   // mining
+      expect(p.pose[10]).not.toBeNull();   // attack
+    }
+  });
+
+  it('怪物 / 掉落物 / 投射物 / NPC 的座標與速度取 2 位小數', () => {
+    const { ws } = busyWs();
+    expect(ws.enemies).toHaveLength(40);
+    expect(ws.drops).toHaveLength(20);
+    const r2ok = (v: number): boolean => Math.round(v * 100) / 100 === v;
+    for (const e of ws.enemies) expect(r2ok(e.x) && r2ok(e.y)).toBe(true);
+    for (const d of ws.drops) expect(r2ok(d.x) && r2ok(d.y)).toBe(true);
+  });
+
+  it('一則 ws 的位元組在預算內（房主上傳 = 位元組 × 15 Hz × 7 位客人）', () => {
+    const { raw } = busyWs();
+    const bytes = new TextEncoder().encode(raw).length;
+    const kbps = (bytes * WS_HZ * MAX_GUESTS) / 1024;
+    const ws = JSON.parse(raw) as Ws, len = (v: unknown): number => new TextEncoder().encode(JSON.stringify(v)).length;
+    console.log(`[ws budget] 8 人 ws = ${bytes} B（players ${len(ws.players)}、enemies ${len(ws.enemies)}、drops ${len(ws.drops)}）；房主上傳 ≈ ${kbps.toFixed(1)} KB/s（${WS_HZ} Hz × ${MAX_GUESTS} 位客人）`);
+    console.log(`[ws budget] 一位玩家 ${len(ws.players[1])} B：${JSON.stringify(ws.players[1])}`);
+    console.log(`[ws budget] 一隻怪 ${len(ws.enemies[1])} B：${JSON.stringify(ws.enemies[1])}；一個掉落物 ${len(ws.drops[1])} B`);
+    expect(bytes).toBeLessThan(WS_BUDGET);
   });
 });

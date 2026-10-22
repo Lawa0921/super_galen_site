@@ -21,7 +21,7 @@ import {
   BOUNDARY_OPS, BULK_HIGH_WATER, CHAR_HZ, CHK_MS, CMD_BURST, CMD_RATE, GUEST_TIMEOUT_MS, LIQ_HZ, LINGER_MS, LOOK_MS, MAX_GUESTS, NET_TILE_COLS, PING_MS, PROTO,
   PS_BOAT, PS_CLIMB, PS_GROUND, PS_STALE_MS, REPLACE_SILENT_MS, SAVE_DEBOUNCE_MS, SUM_PARK_MAX, WORLD_SIG_MS, WS_HZ,
   type ByeReason, type GuestCtrl, type HostCtrl, type PeerInfo, type Ps, type RejectReason, type WireBatch, type Ws,
-  type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj, encodePose,
+  type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj, encodePose, floor2, r2,
 } from './protocol';
 import { encodeBulk } from './codec';
 import { parseGuestCtrl, parsePs } from './validate';
@@ -87,6 +87,8 @@ type Inbox = { g: Guest; ch: Channel; data: Payload } | { g: Guest; close: true 
 interface Linger { g: Guest; at: number }
 type Timer = 'ws' | 'liq' | 'char' | 'world' | 'look';
 const PERIOD: Record<Timer, number> = { ws: 1000 / WS_HZ, liq: 1000 / LIQ_HZ, char: 1000 / CHAR_HZ, world: WORLD_SIG_MS, look: LOOK_MS };
+/** ps.mt 的牆角最多離客人回報的身體（碰撞盒）幾 px：2 格 */
+const MANTLE_REACH = 2 * TILE_SIZE;
 
 const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object';
 /** 送出的角色：rev 換成 checkpoint rev、savedAt 歸 0（決定性） */
@@ -350,10 +352,14 @@ export class NetHost {
     g.psAt = this.now;
     g.released = false;
     if (a.dead) { dropMantle(); return; }
+    // 攀邊的牆角離回報的身體超過 MANTLE_REACH → 當成沒在攀（只畫用，不可信）
+    const w = a.player.w, h = a.player.h, mt = ps.mt;
+    const gap = (v: number, lo: number, hi: number): number => Math.max(lo - v, 0, v - hi);
+    const mtOk = mt !== null && gap(mt[2], ps.x, ps.x + w) <= MANTLE_REACH && gap(mt[3], ps.y, ps.y + h) <= MANTLE_REACH;
     const motion = {
       x: ps.x, y: ps.y, vx: ps.vx, vy: ps.vy, facing: ps.facing,
       onGround: (ps.flags & PS_GROUND) !== 0, boating: (ps.flags & PS_BOAT) !== 0, climbing: (ps.flags & PS_CLIMB) !== 0,
-      mantle: ps.mt ? { p: ps.mt[0], dir: ps.mt[1], edgeX: ps.mt[2], edgeY: ps.mt[3] } : null,
+      mantle: mt && mtOk ? { p: mt[0], dir: mt[1], edgeX: mt[2], edgeY: mt[3] } : null,
     };
     const dt = (this.now - g.prev.at) / 1000;
     if (checkMove(g.prev, motion, dt, { w: a.player.w, h: a.player.h }, this.game.env) !== 'ok') { a.teleSeq++; dropMantle(); return; }
@@ -500,23 +506,19 @@ export class NetHost {
     const cxOf = (b: { x: number; w: number }): number => chunkOfX(Math.floor((b.x + b.w / 2) / TILE_SIZE));
     const players: WsPlayer[] = [];
     for (const a of game.actors.values()) {
-      const p = a.player;
-      players.push({
-        pid: a.pid, x: p.x, y: p.y, vx: p.vx, vy: p.vy, facing: a.facing,
-        hp: a.hp, maxHp: game.withActor(a, () => game.maxHp()), mana: a.mana, dead: a.dead,
-        pose: encodePose(game.poseOf(a.pid)),
-      });
+      // 位置 / 速度 / 面向 / 死活都在 pose 裡（2 位小數），不重複帶
+      players.push({ pid: a.pid, hp: a.hp, maxHp: game.withActor(a, () => game.maxHp()), mana: floor2(a.mana), pose: encodePose(game.poseOf(a.pid)) });
     }
     const enemies: [number, WsEnemy][] = game.enemies.map((e) => [cxOf(e.body), {
-      id: e.id, kind: e.kind, x: e.body.x, y: e.body.y, dir: e.dir, hp: e.hp, maxHp: e.maxHp, state: e.state,
+      id: e.id, kind: e.kind, x: r2(e.body.x), y: r2(e.body.y), dir: e.dir, hp: e.hp, maxHp: e.maxHp, state: e.state,
     }]);
-    const drops: [number, WsDrop][] = game.drops.list.map((d) => [cxOf(d.body), { id: d.id, item: d.item, count: d.count, x: d.body.x, y: d.body.y }]);
+    const drops: [number, WsDrop][] = game.drops.list.map((d) => [cxOf(d.body), { id: d.id, item: d.item, count: d.count, x: r2(d.body.x), y: r2(d.body.y) }]);
     const proj: [number, WsProj][] = game.projectiles.list.map((q) => [cxOf(q.body), {
-      id: q.id, kind: q.kind, x: q.body.x, y: q.body.y, vx: q.body.vx, vy: q.body.vy, hostile: q.hostile,
+      id: q.id, kind: q.kind, x: r2(q.body.x), y: r2(q.body.y), vx: r2(q.body.vx), vy: r2(q.body.vy), hostile: q.hostile,
     }]);
     const npcs: [number, WsNpc][] = [
-      ...game.settle.npcs.map((n): [number, WsNpc] => [cxOf(n.body), { id: n.id, src: 0, x: n.body.x, y: n.body.y, dir: n.dir }]),
-      ...game.folk.npcs.map((n): [number, WsNpc] => [cxOf(n.body), { id: n.id, src: 1, x: n.body.x, y: n.body.y, dir: n.dir }]),
+      ...game.settle.npcs.map((n): [number, WsNpc] => [cxOf(n.body), { id: n.id, src: 0, x: r2(n.body.x), y: r2(n.body.y), dir: n.dir }]),
+      ...game.folk.npcs.map((n): [number, WsNpc] => [cxOf(n.body), { id: n.id, src: 1, x: r2(n.body.x), y: r2(n.body.y), dir: n.dir }]),
     ];
     return { players, enemies, drops, proj, npcs };
   }

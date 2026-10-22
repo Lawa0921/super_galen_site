@@ -5,7 +5,7 @@ import { test, expect, type Page } from '@playwright/test';
  * DELVE 線上合作雙瀏覽器端到端：兩個 context，房主在遊戲中「開放加入」，客人以 5 碼房號加入，
  * 打真的 /api/signal（e2e server 單程序 MemoryStore）+ 同機 WebRTC。
  * 驗證：雙方 2 名玩家、客人真實輸入放方塊房主端同格變更、雙方互相看到對方暱稱的名牌（客人看到的是房主角色的暱稱，不是「房主」）、
- * 房號貼上時帶空白與小寫照樣加入、客人拿鎬挖掘時房主端畫出他手上的鎬、客人離開房間後角色 savedAt > 0；
+ * 房號貼上時帶空白與小寫照樣加入、客人拿鎬時房主端畫出他手上的鎬、客人按住挖身邊那格 → 房主端看到他在挖並挖掉、客人離開房間後角色 savedAt > 0；
  * 3 位客人加入（4 人）→ 每一方都看到 4 名玩家；沒有 IndexedDB 時開著房從暫停選單匯入 → 舊房間關掉。
  */
 import type {} from '../../src/scripts/games/delve/render/session';
@@ -38,7 +38,6 @@ async function rightClickTile(page: Page, t: { x: number; y: number }): Promise<
   await page.waitForTimeout(80);
 }
 
-/** IndexedDB 'characters' 裡暱稱是 nick 的角色記錄的 savedAt（沒有 → -1） */
 /** 房主開房：暫停選單「開放加入」→ 回傳房號（收起選單） */
 async function openRoom(host: Page): Promise<string> {
   await host.click('#delve-menu-btn');
@@ -68,6 +67,7 @@ async function joinRoom(guest: Page, room: string, nick: string): Promise<void> 
   await guest.waitForFunction(() => window.__delveDebug?.coop?.phase === 'live', undefined, { timeout: 60000 });
 }
 
+/** IndexedDB 'characters' 裡暱稱是 nick 的角色記錄的 savedAt（沒有 → -1） */
 function charSavedAt(page: Page, nick: string): Promise<number> {
   return page.evaluate((nick) => new Promise<number>((ok, bad) => {
     const r = indexedDB.open('delve');
@@ -171,7 +171,7 @@ test.describe('delve — online co-op', () => {
       await rightClickTile(guest, target);
       await expect.poll(() => host.evaluate(({ x, y }) => window.__delveDebug!.game.world.getFg(x, y), target), { timeout: 15000 }).toBe(DIRT_FG);
 
-      // 房主給客人一把鐵鎬；客人拿著它按住左鍵挖腳下 → 房主端畫出客人手上的鎬（avatarDraws.get(客人).held）
+      // 房主給客人一把鐵鎬；客人選它 → 房主端畫出客人手上的鎬（avatarDraws.get(客人).held；沒在挖也算拿著）
       await host.evaluate((pid) => {
         const a = window.__delveDebug!.game.actors.get(pid as never);
         if (!a) throw new Error('host has no actor for guest');
@@ -182,25 +182,18 @@ test.describe('delve — online co-op', () => {
         const g = window.__delveDebug!.game;
         g.selectSlot(g.inventory.slots.findIndex((s: { item: string } | null) => s?.item === 'iron_pickaxe'));
       });
-      const heldOnHost = (): Promise<boolean> => host.evaluate((pid) => window.__delveDebug!.handle.renderer.avatarDraws.get(pid)?.held === true, guestPid);
-      // 腳下那一欄往下挖：挖穿一格就把游標移到下一格（滑鼠一直按著）
-      let dig = { x: feet.x + 1, y: feet.y + 1 };
-      const at0 = await tileScreen(guest, dig);
-      await guest.mouse.move(at0.sx, at0.sy);
+      await expect.poll(() => host.evaluate((pid) => window.__delveDebug!.handle.renderer.avatarDraws.get(pid)?.held === true, guestPid), { timeout: 20000 }).toBe(true);
+      // 真的挖：客人按住左鍵挖身邊、跟腳同一列的那格土塊（剛放下的 target，身體高度、觸及範圍內）
+      // → 房主端那位客人的 pose 有 mining（或那格已經在房主端被挖掉）
+      const at = await tileScreen(guest, target);
+      await guest.mouse.move(at.sx, at.sy);
       await guest.mouse.down({ button: 'left' });
-      let held = false;
-      for (let t = Date.now(); !held && Date.now() - t < 20000;) {
-        held = await heldOnHost();
-        if (held) break;
-        if (await guest.evaluate(({ x, y }) => window.__delveDebug!.game.world.getFg(x, y) === 0, dig)) {
-          dig = { x: dig.x, y: dig.y + 1 };
-          const at = await tileScreen(guest, dig);
-          await guest.mouse.move(at.sx, at.sy);
-        }
-        await guest.waitForTimeout(50);
-      }
+      await host.waitForFunction(({ pid, x, y }) => {
+        const g = window.__delveDebug!.game;
+        return g.poseOf(pid as never).mining !== null || g.world.getFg(x, y) === 0;
+      }, { pid: guestPid, ...target }, { timeout: 20000, polling: 'raf' });
+      await expect.poll(() => host.evaluate(({ x, y }) => window.__delveDebug!.game.world.getFg(x, y), target), { timeout: 15000 }).toBe(0);
       await guest.mouse.up({ button: 'left' });
-      expect(held).toBe(true);
 
       // 客人離開房間 → 回標題；離開時的最後一份 chk 帶新時間寫進 IDB（savedAt 嚴格變大）
       const savedBefore = await charSavedAt(guest, '客人');

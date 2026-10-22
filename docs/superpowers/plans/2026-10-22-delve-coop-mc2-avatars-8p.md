@@ -43,6 +43,7 @@
     attack: { item: ItemId; kind: WeaponKind; angle: number; dir: 1 | -1; at: number; dur: number } | null; // at = 世界時間秒
     mining: { x: number; y: number; progress: number; pick: ItemId | null } | null;
     fishing: { state: 'flying' | 'floating' | 'bite'; x: number; y: number; liquid: boolean } | null;
+    hurt: number; // 受擊計數 0..255（挨打才 +1；突進 / 重生的無敵時間不算）
   }
   ```
   - attack 的進度在畫的時候用 `(time − at) / dur` 算，揮擊在 60 fps 下才會平滑。

@@ -67,7 +67,9 @@ export type WirePose = [
 ];
 export const WIRE_POSE_LEN = 14;
 /** 2 位小數 */
-const r2 = (v: number): number => Math.round(v * 100) / 100;
+export const r2 = (v: number): number => Math.round(v * 100) / 100;
+/** 往下取 2 位小數（HUD 用 Math.floor 顯示的值：取完再 floor 跟原值一樣） */
+export const floor2 = (v: number): number => Math.floor(v * 100) / 100;
 export function encodeMantle(m: PlayerPose['mantle']): WireMantle | null {
   return m ? [r2(Math.max(0, Math.min(1, m.p))), m.dir, r2(m.edgeX), r2(m.edgeY)] : null;
 }
@@ -99,11 +101,13 @@ export interface Ps {
   /** 正在攀上邊緣（M-C2）：[進度 0..1, 方向, 牆角 x, 牆角 y]；null = 沒有 */
   mt: [number, 1 | -1, number, number] | null;
 }
+/** ws 裡的一位玩家：位置 / 速度 / 面向 / 死活只在 pose 裡（不重複帶）；mana 往下取 2 位小數 */
 export interface WsPlayer {
-  pid: Pid; x: number; y: number; vx: number; vy: number; facing: 1 | -1; hp: number; maxHp: number; mana: number; dead: boolean;
+  pid: Pid; hp: number; maxHp: number; mana: number;
   /** 畫這個玩家需要的全部（M-C2 D2） */
   pose: WirePose;
 }
+/** 怪物 / 掉落物 / 投射物 / NPC 的座標與速度：2 位小數（r2） */
 export interface WsEnemy { id: number; kind: EnemyKind; x: number; y: number; dir: 1 | -1; hp: number; maxHp: number; state: string }
 export interface WsDrop { id: number; item: ItemId; count: number; x: number; y: number }
 export interface WsProj { id: number; kind: ProjKind; x: number; y: number; vx: number; vy: number; hostile: boolean }

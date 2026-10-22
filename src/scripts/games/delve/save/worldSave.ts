@@ -44,7 +44,8 @@ import type { QuestLogJSON } from '../engine/quests';
 export const WORLD_FORMAT = 11;
 /** format 10 的世界檔第一次以 format 11 寫回前的備份槽後綴 */
 export const V10_BACKUP_SUFFIX = '.v10.bak';
-export const MAX_VISITS = 8;
+/** visits 上限：8 人同房 + 輪流來的朋友，彼此的床 / 位置不互擠（M-C2） */
+export const MAX_VISITS = 16;
 /** held（離線客人的角色）上限：比 visits 寬，在線的 7 位 + 最近斷線的都放得下 */
 export const MAX_HELD = 32;
 const MAX_WORLD_NAME = 64;

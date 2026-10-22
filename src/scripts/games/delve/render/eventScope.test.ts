@@ -1,6 +1,6 @@
 // eventScope.test.ts — 共玩時別人的事件不能觸發只屬於自己的表現（M-C2 D6）
 import { describe, it, expect, vi } from 'vitest';
-import { attackSfx, isMine, lifeEvent, type LifeIo } from './eventScope';
+import { HEAR_MARGIN, attackSfx, isMine, lifeEvent, offscreenOther, unlockToast, type LifeIo } from './eventScope';
 import { LevelFx } from './levelFx';
 import { CombatLayer } from './combatDraw';
 import { Renderer } from './renderer';
@@ -155,5 +155,33 @@ describe('CombatLayer 震動', () => {
     const { c, burst } = layer();
     c.onEvent(ev({ type: 'kill', kind: 'gel_blob', x: 10, y: 10, pid: 'g1' }));
     expect(burst).toHaveBeenCalled();
+  });
+});
+
+describe('unlockToast', () => {
+  it('開金寶箱 / 地城門的提示只給自己；別人的 → null（背包也不跟著刷新）', () => {
+    expect(unlockToast(ev({ type: 'unlock', x: 1, y: 2, item: 'golden_key', pid: 'h' }), 'h')).toBe('用金鑰匙打開了金寶箱');
+    expect(unlockToast(ev({ type: 'unlock', x: 1, y: 2, item: 'dungeon_key' }), 'h')).toBe('用地城鑰匙打開了門');
+    expect(unlockToast(ev({ type: 'unlock', x: 1, y: 2, item: 'golden_key', pid: 'g1' }), 'h')).toBeNull();
+    expect(unlockToast(ev({ type: 'mine', x: 1, y: 2, tile: 1, item: null }), 'h')).toBeNull();
+  });
+});
+
+describe('offscreenOther（別人的音效 / 提示依距離）', () => {
+  // 畫面 = tile [0, 40) × [0, 25)，往外 m 格都算附近
+  const near = (tx: number, ty: number, m: number): boolean => tx >= -m && tx < 40 + m && ty >= -m && ty < 25 + m;
+  const view = (pid: string, tx: number, ty: number) => ({ pid, pose: { x: tx * 16, y: ty * 16 } });
+  const views = [view('g1', 20, 10), view('g2', 400, 10)];
+  it('別人在畫面外 → 略過；在畫面內（含小邊界）→ 照放', () => {
+    expect(offscreenOther(ev({ type: 'attack', item: 'wood_sword', kind: 'sword', pid: 'g2' }), 'h', views, near)).toBe(true);
+    expect(offscreenOther(ev({ type: 'attack', item: 'wood_sword', kind: 'sword', pid: 'g1' }), 'h', views, near)).toBe(false);
+    expect(offscreenOther(ev({ type: 'mine', x: 400, y: 11, tile: 1, item: null, pid: 'g2' }), 'h', views, near)).toBe(true);
+    expect(offscreenOther(ev({ type: 'attack', item: 'wood_sword', kind: 'sword', pid: 'g3' }), 'h', [view('g3', 40 + HEAR_MARGIN - 2, 10)], near)).toBe(false);
+  });
+  it('自己的 / 沒 pid 的 / 不知道在哪的 / 世界層級的事件照舊', () => {
+    expect(offscreenOther(ev({ type: 'attack', item: 'wood_sword', kind: 'sword', pid: 'h' }), 'h', [view('h', 400, 10)], near)).toBe(false);
+    expect(offscreenOther(ev({ type: 'kill', kind: 'gel_blob', x: 9999, y: 9999 }), 'h', views, near)).toBe(false);
+    expect(offscreenOther(ev({ type: 'attack', item: 'wood_sword', kind: 'sword', pid: 'g9' }), 'h', views, near)).toBe(false);
+    expect(offscreenOther(ev({ type: 'boss', phase: 'spawn', kind: 'gel_blob', pid: 'g2' }), 'h', views, near)).toBe(false);
   });
 });

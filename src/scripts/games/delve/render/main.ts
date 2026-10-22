@@ -4,7 +4,7 @@ import { FIXED_DT } from '../engine/constants';
 import { LIQUID_BUDGET_MS } from '../engine/game';
 import { LIQ } from '../engine/liquidKind';
 import { Renderer } from './renderer';
-import { attackSfx, isMine, lifeEvent } from './eventScope';
+import { attackSfx, isMine, lifeEvent, offscreenOther, unlockToast } from './eventScope';
 import { Hud } from './hud';
 import { FixedStepper, blockedMessage, hintText, stepsInFrame, inputAction, drainsEvents } from './model';
 import { Minimap, FullMap } from './mapView';
@@ -269,6 +269,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
           onOtherBack: (nick) => hud.toast(`${nick} 回來了`, 1800, TOAST_LOW),
           nickOf: (pid) => renderer.remoteViews.find((v) => v.pid === pid)?.nick ?? '',
         })) { /* 死亡 / 甦醒 / 不滅：見 eventScope.lifeEvent */ }
+        else if (offscreenOther(e, game.localPid, renderer.remoteViews, (x, y, m) => renderer.nearView(x, y, m))) { /* 別人在畫面外：不放音效 / 提示 */ }
         else if (e.type === 'blocked') {
           const m = blockedMessage(e.reason);
           if (m) hud.toast(m);
@@ -286,7 +287,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
         }
         else if (e.type === 'boat') { sound.boat(e.on); if (e.on) hud.toast('坐上小木船：按跳下船'); }
         else if (e.type === 'hint') hud.toast(hintText(e.id));
-        else if (e.type === 'unlock') { hud.toast(e.item === 'golden_key' ? '用金鑰匙打開了金寶箱' : '用地城鑰匙打開了門'); invChanged = true; }
+        else if (e.type === 'unlock') { const t = unlockToast(e, game.localPid); if (t) { hud.toast(t); invChanged = true; } }
         else if (e.type === 'door') { /* 門的開關：只需要重畫（chunk dirty） */ }
         else if (e.type === 'attack') {
           if (attackSfx(e.kind, sound)) invChanged = true;
