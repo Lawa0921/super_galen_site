@@ -41,7 +41,7 @@ describe('the stylesheet (legibility Task 2a)', () => {
     // The stage is drawn by one transform: a scale by --slx-s, or (a touch phone held upright, Task 2b) turned first.
     const transforms = all.filter((r) => /(^|,)\s*\.slx-screen\s*(,|$)/.test(r.selector)).flatMap((r) => decls(r.body).filter(([k]) => k === 'transform').map(([, v]) => v));
     expect(transforms.length).toBeGreaterThan(0);
-    for (const t of transforms) expect(t, t).toMatch(/^(scale\(var\(--slx-s\)\)|translateX\([^)]*\) rotate\(90deg\) scale\(var\(--slx-s\)\))$/);
+    for (const t of transforms) expect(t, t).toMatch(/^(scale\(var\(--slx-s\)\)|translateX\(calc\(360px \* var\(--slx-s\)\)\) rotate\(90deg\) scale\(var\(--slx-s\)\))$/);
     // Each --slx-s is a whole number of device pixels at the DPR its query picks (the middle of its resolution range).
     const scales = all.flatMap((r) => decls(r.body).filter(([k]) => k === '--slx-s').map(([, v]) => ({ media: r.media, s: Number(v) })));
     expect(scales.length).toBeGreaterThan(10);
@@ -50,6 +50,8 @@ describe('the stylesheet (legibility Task 2a)', () => {
       const lo = media?.match(/min-resolution:\s*([\d.]+)dppx/), hi = media?.match(/max-resolution:\s*([\d.]+)dppx/);
       const d = lo && hi ? (Number(lo[1]) + Number(hi[1])) / 2 : 1;
       expect(Math.abs(s * d - Math.round(s * d)), `${media}: s ${s} at d ${d}`).toBeLessThan(1e-4);
+      // Never under 1x: where no crisp scale of 1 or more fits, the stage stays at 1x (readable over crisp, T2a ruling).
+      expect(s, `${media}: s ${s} under 1`).toBeGreaterThanOrEqual(1);
     }
     // No fractional scale() anywhere (grayscale( is not a scale).
     expect(css).not.toMatch(/(?<![\w-])scale\(\s*\d*\.\d/);

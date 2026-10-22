@@ -19,7 +19,7 @@ import { version8Save } from '../../src/scripts/games/starlantern/engine/testing
 import { defaultTalents, defaultTree } from '../../src/scripts/games/starlantern/engine/progression';
 import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/engine/builds';
 import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
-import { SWEEP, expectedMode, legibility, stageScale, sweep } from './starlantern-legibility';
+import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, legibility, snap, stageBox, stageScale, sweep } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
@@ -78,7 +78,7 @@ test.describe('starlantern', () => {
   };
 
   test('story portraits fit a 390x844 phone: no horizontal scroll, inside the screen, clear of the text', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+    await fitTo(page, 390, 844);
     await storySetting(page, 'all');
     await page.goto('/games/starlantern?seed=7&fast=1');
     await page.evaluate(() => localStorage.removeItem('starlantern-save'));
@@ -90,8 +90,8 @@ test.describe('starlantern', () => {
       if (await page.locator('.slx-talk:not([hidden])').count()) {
         if ((await faceFits(page)) !== null) {
           faces++;
-          const k = (await box(page))!.width / 640;
-          expect((await page.locator('.slx-talk:not([hidden]) img.slx-talk-face').first().boundingBox())!.height).toBeGreaterThanOrEqual(2 * 96 * k - 0.5);
+          // In stage px (legibility 2b): on the phone the stage is turned, so the screen's width is not its scale.
+          expect((await stageBox(page, page.locator('.slx-talk:not([hidden]) img.slx-talk-face').first())).height).toBeGreaterThanOrEqual(2 * 96 - 0.5);
           expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
         }
         await page.keyboard.press('z');
@@ -111,7 +111,7 @@ test.describe('starlantern', () => {
   // (legibility Task 2a). The page scrolls only as far as the stage overflows (legibility checks it).
   for (const [w, h] of [[1280, 720], [1366, 768], [2560, 1440], [1281, 721], [1919, 1081], [844, 390], [844, 340], [600, 400]] as const) {
     test(`fits a ${w}x${h} window at whole device pixels (legibility Task 2a) @dpr`, async ({ page }) => {
-      await page.setViewportSize({ width: w, height: h });
+      await fitTo(page, w, h);
       await page.goto('/games/starlantern');
       await expect(page.locator('.slx-title [role=option]').first()).toBeVisible();
       const env = await page.evaluate(() => ({ vw: innerWidth, vh: innerHeight, d: devicePixelRatio }));
@@ -119,13 +119,15 @@ test.describe('starlantern', () => {
       expect(mode.kind).toBe('scale');
       expect(mode.s).toBeCloseTo(expectedMode(env.vw, env.vh, env.d, false).s, 4);
       if (w === 1280) expect(mode.s).toBeCloseTo(({ 1: 2, 1.25: 1.6, 1.5: 2 } as Record<number, number>)[env.d], 4);
+      // 844x390 at 150%: K would be 1 (s 0.667, the text physically tiny), so the stage stays at 1x (readable over crisp).
+      if (w === 844 && h === 390) expect(mode.s).toBe(1);
       expect(await legibility(page)).toEqual([]);
     });
   }
 
   test('fullscreen keeps the whole-pixel scale (legibility Task 2a) @dpr', async ({ page }) => {
     await storySetting(page);
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     await page.goto('/games/starlantern');
     await expect(page.locator('.slx-title [role=option]').first()).toBeVisible();
     await page.locator('.slx-title [role=option]', { hasText: T.ui2.title.settings }).click();
@@ -133,6 +135,36 @@ test.describe('starlantern', () => {
     await page.locator('.slx-settings [data-id=fullscreen]').click();
     await expect.poll(() => page.evaluate(() => document.fullscreenElement === document.documentElement)).toBe(true);
     expect(await page.locator('#sl-screen').evaluate((e) => getComputedStyle(e).transform)).not.toBe('none');
+    expect(await legibility(page)).toEqual([]);
+  });
+
+  test('a touch phone held upright shows the stage turned, at whole device pixels (legibility Task 2b)', async ({ page }) => {
+    await page.goto('/games/starlantern');
+    for (const [w, h, d, s] of [[390, 844, 3, 1], [412, 915, 2.625, 3 / 2.625]] as const) {
+      await asPhone(page, { width: w, height: h, dpr: d });
+      await page.reload();
+      await expect(page.locator('.slx-title [role=option]').first()).toBeVisible();
+      const mode = await stageScale(page);
+      expect(mode.kind, `${w}x${h}@${d}`).toBe('sideways');
+      expect(mode.s, `${w}x${h}@${d}`).toBeCloseTo(s, 4);
+      // On screen the stage is 360 x 640 stage px, under the hint's 40px.
+      const b = (await box(page))!;
+      expect([b.width, b.height]).toEqual([expect.closeTo(360 * s, 1), expect.closeTo(640 * s, 1)]);
+      expect(b.y).toBeGreaterThanOrEqual(40);
+      expect(b.x + b.width).toBeLessThanOrEqual(w + 0.5);
+      const hint = await page.evaluate(() => { const cs = getComputedStyle(document.body, '::before'); return { content: cs.content, size: cs.fontSize }; });
+      expect(hint).toEqual({ content: '"請橫拿手機遊玩"', size: '12px' });
+      expect(await legibility(page)).toEqual([]);
+    }
+  });
+
+  test('a narrow desktop window keeps the stage upright at 1x and scrolls (legibility Task 2b) @dpr', async ({ page }) => {
+    await asDesktop(page, 390, 844);
+    await page.goto('/games/starlantern');
+    await expect(page.locator('.slx-title [role=option]').first()).toBeVisible();
+    expect(await stageScale(page)).toEqual({ kind: 'scale', s: 1 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(true);
+    expect(await page.evaluate(() => getComputedStyle(document.body, '::before').content)).toBe('none');   // no hint without touch
     expect(await legibility(page)).toEqual([]);
   });
 
@@ -985,8 +1017,41 @@ test.describe('starlantern', () => {
     });
   });
 
+  test("on a sideways phone the tree keeps the cursor's node whole while it walks down (legibility Task 2b)", async ({ page }) => {
+    await fitTo(page, 1280, 720);
+    const w = await setup(page, 7);
+    await legacyRoster(page);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.party.roster.noel.level = 20;
+    });
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+    await flipTo(page, CHARACTERS.noel.name);
+    await expect(page.locator('.slx-status-name')).toContainText(CHARACTERS.noel.name);
+    await asPhone(page);
+    expect(await stageScale(page)).toEqual({ kind: 'sideways', s: 1 });
+    const cur = page.locator('.slx-tree-node.slx-row-cur');
+    const seen: string[] = [];
+    for (let i = 0; i < 60; i++) {
+      const id = (await cur.getAttribute('data-node')) ?? '';
+      // The cursor's node shows whole inside the columns, below its branch's pinned name.
+      const cols = await stageBox(page, page.locator('.slx-tree-cols'));
+      const node = await stageBox(page, cur);
+      const head = await stageBox(page, page.locator('.slx-tree-branch', { has: cur }).locator('.slx-tree-branch-name'));
+      expect(node.y, `${id} under the pinned name`).toBeGreaterThanOrEqual(Math.max(cols.y, head.y + head.height) - 0.5);
+      expect(node.y + node.height, `${id} above the columns' bottom`).toBeLessThanOrEqual(cols.y + cols.height + 0.5);
+      if (seen.includes(id)) break;                       // the last node: down moves no further (or wraps)
+      seen.push(id);
+      await w.key('ArrowDown');
+    }
+    expect(seen.length, 'the walk went down several nodes').toBeGreaterThan(3);
+    expect(w.errors).toEqual([]);
+  });
+
   test('the tree shows pairs and swaps a side (plan 8d)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const shots = process.env.SL_SHOTS;
@@ -1054,26 +1119,26 @@ test.describe('starlantern', () => {
     const preview = page.locator('.slx-tree-info .slx-tree-preview');
     await expect(preview).toContainText('段數 2 → 1');
     for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
-      await page.setViewportSize({ width: vw, height: vh });
+      await fitTo(page, vw, vh);
       await page.waitForTimeout(150);
       expect(await preview.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), `the preview inside its line at ${vw}`).toBe(true);
       await shot(`tree-preview-${vw}`);
     }
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     await heavy.click();
     await expect(page.locator('.slx-tree-msg')).toHaveText(T.ui2.tree.swapped);
     expect(await noelTree()).toEqual({ 'fire-star': 1, 'noel-star-heavy': 2, 'ice-star': 1, 'noel-calm': 1 });
     await expect(heavy).toContainText('2／3');
 
     for (const [vw, vh, name] of [[844, 390, 'tree-844'], [390, 844, 'tree-390']] as const) {
-      await page.setViewportSize({ width: vw, height: vh });
+      await fitTo(page, vw, vh);
       expect(await fits(), name).toEqual([]);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), name).toBe(true);
       await shot(name);
     }
 
     // The skills page names the variant whole.
-    await page.setViewportSize({ width: 390, height: 844 });
+    await fitTo(page, 390, 844);
     await page.locator('[data-tab=skills]').click();
     const star = page.locator('.slx-tab-skills [data-skill=fire-star] .slx-skill-name');
     await expect(star).toHaveText('火之星彈・重星');
@@ -1081,7 +1146,7 @@ test.describe('starlantern', () => {
     await shot('skills-390');
 
     // And so does the battle menu.
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     await page.locator('.slx-back').click();
     await expect(page.locator('.slx-guild')).toBeVisible();
     await page.locator('.slx-back').click();
@@ -1109,7 +1174,7 @@ test.describe('starlantern', () => {
     const item = page.locator('.slx-bsub [role=option]').filter({ hasText: '火之星彈・重星' });
     await expect(item).toHaveCount(1);
     for (const [vw, vh, name] of [[1280, 720, 'battle-1280'], [844, 390, 'battle-844'], [390, 844, 'battle-390']] as const) {
-      await page.setViewportSize({ width: vw, height: vh });
+      await fitTo(page, vw, vh);
       expect(await item.locator('.slx-label').evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), name).toBe(true);
       await shot(name);
     }
@@ -1118,7 +1183,7 @@ test.describe('starlantern', () => {
   });
 
   test("chizuru's and selene's trees show their pairs and new nodes (plan 8d Task 5)", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const shots = process.env.SL_SHOTS;
@@ -1153,10 +1218,10 @@ test.describe('starlantern', () => {
     expect(await spills()).toEqual([]);
     expect(await branchNamesShown(page)).toBe(true);
     await shot('chizuru-tree-1280');
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     expect(await spills()).toEqual([]);
     await shot('chizuru-tree-844');
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
 
     await flipTo(page, CHARACTERS.selene.name);
     // 收回 now sits at the prayer branch's tier 2, under 月之再生.
@@ -1171,7 +1236,7 @@ test.describe('starlantern', () => {
     expect(await spills()).toEqual([]);
     expect(await branchNamesShown(page)).toBe(true);
     await shot('selene-tree-1280');
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     expect(await spills()).toEqual([]);
     await shot('selene-tree-844');
     expect(missing).toEqual([]);
@@ -1179,7 +1244,7 @@ test.describe('starlantern', () => {
   });
 
   test("liz's and sylvie's trees show their pairs and new nodes; 大手筆 heads 花錢 (plan 8d Task 6)", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const shots = process.env.SL_SHOTS;
@@ -1216,10 +1281,10 @@ test.describe('starlantern', () => {
     expect(await spills()).toEqual([]);
     expect(await branchNamesShown(page)).toBe(true);
     await shot('liz-tree-1280');
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     expect(await spills()).toEqual([]);
     await shot('liz-tree-844');
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     // 分期's number goes into 大手筆's own words on the skills page.
     await page.locator('[data-tab=skills]').click();
     await expect(page.locator('.slx-tab-skills [data-skill=fortune-strike] .slx-skill-name')).toHaveText('大手筆・分期');
@@ -1235,7 +1300,7 @@ test.describe('starlantern', () => {
     expect(await spills()).toEqual([]);
     expect(await branchNamesShown(page)).toBe(true);
     await shot('sylvie-tree-1280');
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     expect(await spills()).toEqual([]);
     await shot('sylvie-tree-844');
     expect(missing).toEqual([]);
@@ -1243,7 +1308,7 @@ test.describe('starlantern', () => {
   });
 
   test("scarlet's and safira's trees show their new nodes (plan 8d Task 7)", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const shots = process.env.SL_SHOTS;
@@ -1280,10 +1345,10 @@ test.describe('starlantern', () => {
     expect(await spills()).toEqual([]);
     expect(await branchNamesShown(page)).toBe(true);
     await shot('scarlet-tree-1280');
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     expect(await spills()).toEqual([]);
     await shot('scarlet-tree-844');
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     // 赤心's rule rides on 爆炎斬's own words on the skills page.
     await page.locator('[data-tab=skills]').click();
     await expect(page.locator('.slx-tab-skills [data-skill=flame-burst] .slx-skill-name')).toHaveText('爆炎斬・赤心');
@@ -1301,10 +1366,10 @@ test.describe('starlantern', () => {
     expect(await spills()).toEqual([]);
     expect(await branchNamesShown(page)).toBe(true);
     await shot('safira-tree-1280');
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     expect(await spills()).toEqual([]);
     await shot('safira-tree-844');
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     // 四拍 rewrites 刃舞's hits in its own words.
     await page.locator('[data-tab=skills]').click();
     await expect(page.locator('.slx-tab-skills [data-skill=blade-dance] .slx-desc')).toContainText('連砍 4 次');
@@ -1313,7 +1378,7 @@ test.describe('starlantern', () => {
   });
 
   test("bobby's and the hero's trees show their new nodes; a turret with both variants fits the battle menu (plan 8d Task 8)", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const shots = process.env.SL_SHOTS;
@@ -1356,18 +1421,18 @@ test.describe('starlantern', () => {
     expect(await spills()).toEqual([]);
     expect(await branchNamesShown(page)).toBe(true);
     await shot('bobby-tree-1280');
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     expect(await spills()).toEqual([]);
     await shot('bobby-tree-844');
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     // Both turret variants ride on one name on the skills page, whole at 390.
     await page.locator('[data-tab=skills]').click();
     const turretName = page.locator('.slx-tab-skills [data-skill=turret] .slx-skill-name');
     await expect(turretName).toHaveText('設置砲台・雙管・雙砲台');
-    await page.setViewportSize({ width: 390, height: 844 });
+    await fitTo(page, 390, 844);
     expect(await turretName.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5)).toBe(true);
     await shot('bobby-skills-390');
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     await page.locator('[data-tab=tree]').click();
 
     await flipTo(page, CHARACTERS.hero.name);
@@ -1382,12 +1447,12 @@ test.describe('starlantern', () => {
     expect(await spills()).toEqual([]);
     expect(await branchNamesShown(page)).toBe(true);
     await shot('hero-tree-1280');
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     expect(await spills()).toEqual([]);
     await shot('hero-tree-844');
 
     // The battle menu: Bobby's turret, both variants on its name, stays inside its row at 1280 and 390.
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     await page.locator('.slx-back').click();
     await expect(page.locator('.slx-guild')).toBeVisible();
     await page.locator('.slx-back').click();
@@ -1418,15 +1483,15 @@ test.describe('starlantern', () => {
     await item.hover();                                     // its note: the final numbers, then its words
     await expect(page.locator('.slx-bnote')).toHaveText(/^自身・砲台 威力 \d+　架一座砲台/);   // a device: its target and its power, as the card says
     for (const [vw, vh, name] of [[1280, 720, 'bobby-battle-1280'], [844, 390, 'bobby-battle-844'], [390, 844, 'bobby-battle-390']] as const) {
-      await page.setViewportSize({ width: vw, height: vh });
+      await fitTo(page, vw, vh);
       expect(await item.locator('.slx-label').evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), name).toBe(true);
       const rows = await page.locator('.slx-bsub [role=option]').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
       expect(rows, `battle skill rows wider than their box at ${vw}`).toEqual([]);
       await expect(item.locator('.slx-badge')).toBeVisible();
       // The field bar (Selene's moon) stands clear of the skill list's frame.
       if (await page.locator('.slx-fieldbar').isVisible()) {
-        const bar = (await page.locator('.slx-fieldbar').boundingBox())!;
-        const list = (await page.locator('.slx-bsub').boundingBox())!;
+        const bar = await stageBox(page, page.locator('.slx-fieldbar'));   // stage px: the phone turns the stage (legibility 2b)
+        const list = await stageBox(page, page.locator('.slx-bsub'));
         expect(bar.y + bar.height, `the field bar above the skill list at ${vw}`).toBeLessThanOrEqual(list.y + 0.5);
       }
       await shot(name);
@@ -1436,7 +1501,7 @@ test.describe('starlantern', () => {
   });
 
   test("no tree node's name wraps or spills, on any member's tree, at 1280 or 844 (8d Task 6 review)", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const w = await setup(page, 7);
     const ids = Object.keys(TREES);
     await page.evaluate((all) => {
@@ -1451,15 +1516,15 @@ test.describe('starlantern', () => {
       await flipTo(page, CHARACTERS[id as keyof typeof CHARACTERS].name);
       await expect(page.locator(`.slx-tree-node[data-node="${TREES[id as keyof typeof TREES].branches[0].nodes[0].id}"]`)).toBeVisible();
       for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
-        await page.setViewportSize({ width: vw, height: vh });
+        await fitTo(page, vw, vh);
         bad.push(...(await treeNameFaults(page)).map((n) => `${vw} ${n}`));
       }
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
     }
     expect(bad).toEqual([]);
 
     // A click on a row the columns cut off brings it whole into view, and moves nothing when it already shows.
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     await flipTo(page, CHARACTERS.sylvie.name);
     const cols = page.locator('.slx-tree-cols');
     // Scroll the columns so the first row they cut off shows only its top half.
@@ -1501,13 +1566,13 @@ test.describe('starlantern', () => {
     expect(await whole(under!)).toBe(false);
     await page.locator(`.slx-tree-node[data-node="${under}"]`).evaluate((n) => (n as HTMLElement).click());
     expect(await whole(under!)).toBe(true);
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     expect(await branchNamesShown(page)).toBe(true);
     expect(w.errors).toEqual([]);
   });
 
   test("rin's innate mark and her 熟記 show on the status pages (plan 8d Task 3)", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const shots = process.env.SL_SHOTS;
@@ -1533,16 +1598,16 @@ test.describe('starlantern', () => {
     await hone.click();
     await expect(page.locator('.slx-tree-info')).toContainText(T.ui2.tree.now('暗記只要 5 TP。'));
     await shot('rin-tree-1280');
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     await shot('rin-tree-844');
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     await page.locator('[data-tab=skills]').click();
     const mark = page.locator('.slx-tab-skills [data-skill=rin-mark]');
     await expect(mark.locator('.slx-skill-rank')).toHaveText(T.ui2.status.innate);
     await expect(mark.locator('.slx-skill-name')).toHaveText('暗記・不眨眼');
     await expect(mark.locator('.slx-skill-cost')).toHaveText(T.ui2.status.tp(5));
     await shot('rin-skills-1280');
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     expect(await mark.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5)).toBe(true);
     await shot('rin-skills-844');
     expect(missing).toEqual([]);
@@ -1709,7 +1774,7 @@ test.describe('starlantern', () => {
   });
 
   test("the guild points the way: Selene's lead first, then the next one, marked at the gate and kept in the handbook (6c Task 16)", async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     /** With SL_SHOTS=<dir> the run also leaves its screenshots there; otherwise this is a no-op (final review M-4). */
     const shots = process.env.SL_SHOTS;
     if (shots) mkdirSync(shots, { recursive: true });
@@ -1928,7 +1993,7 @@ test.describe('starlantern', () => {
    */
   const forgeOverlaps = (page: Page) => page.evaluate(() => {
     const screen = document.querySelector('#sl-screen')!.getBoundingClientRect();
-    const k = screen.width / 640;
+    const k = Math.hypot(...(({ a, b }) => [a, b])(new DOMMatrixReadOnly(getComputedStyle(document.querySelector('#sl-screen')!).transform)));   // the stage scale as drawn (legibility 2a)
     const boxOf = (e: Element) => { const r = e.getBoundingClientRect(); return { l: (r.left - screen.left) / k, r: (r.right - screen.left) / k, t: (r.top - screen.top) / k, b: (r.bottom - screen.top) / k }; };
     const name = (e: Element) => e.className.replace(/\s+/g, '.');
     const lists = [...document.querySelectorAll('.slx-forge .slx-layer.slx-list')];
@@ -2025,7 +2090,7 @@ test.describe('starlantern', () => {
     await page.locator('.slx-shop .slx-layer').last().locator('[data-id=mats]').click();
     const bounds = () => page.evaluate(() => {
       const screen = document.querySelector('#sl-screen')!.getBoundingClientRect();
-      const k = screen.width / 640;
+      const k = Math.hypot(...(({ a, b }) => [a, b])(new DOMMatrixReadOnly(getComputedStyle(document.querySelector('#sl-screen')!).transform)));   // the stage scale as drawn (legibility 2a)
       const box = (sel: string) => { const r = document.querySelector(sel)!.getBoundingClientRect(); return { l: (r.left - screen.left) / k, r: (r.right - screen.left) / k }; };
       return { list: box('.slx-mat-page > .slx-shop-list'), info: box('.slx-mat-page > .slx-info') };
     });
@@ -2149,7 +2214,7 @@ test.describe('starlantern', () => {
   });
 
   test('five members with five ailments each never cover an enemy HP bar, at 1280x720 or 844x390 (one line each)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
       page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
     const w = await setup(page, 7);
@@ -2193,7 +2258,7 @@ test.describe('starlantern', () => {
     const overlaps = () => page.evaluate(() => {
       const view = (window as unknown as { __starlanternDebug: { stage: any } }).__starlanternDebug.stage.battleView;
       const canvas = document.querySelector('#sl-canvas')!.getBoundingClientRect();
-      const k = canvas.width / 640;
+      const k = Math.hypot(...(({ a, b }) => [a, b])(new DOMMatrixReadOnly(getComputedStyle(document.querySelector('#sl-screen')!).transform)));   // the stage scale as drawn (legibility 2a)
       const keys: string[] = (window as unknown as { __starlanternDebug: { game: any } }).__starlanternDebug.game.battle.enemies.filter((e: any) => e.alive).map((e: any) => e.key);
       const bars = keys.map((key) => view.hpBarRect(key)).filter(Boolean)
         .map((r: { x: number; y: number; width: number; height: number }) => ({ left: canvas.left + r.x * k, top: canvas.top + r.y * k, right: canvas.left + (r.x + r.width) * k, bottom: canvas.top + (r.y + r.height) * k }));
@@ -2217,7 +2282,7 @@ test.describe('starlantern', () => {
   });
 
   test('ailments show as coloured words on the battle screen (plan 8b)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
@@ -2255,9 +2320,18 @@ test.describe('starlantern', () => {
     if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.waitForTimeout(800); await page.screenshot({ path: `${process.env.SL_SHOTS}/ailments-1280.png` }); }
     // At 1280 and on a phone: the words wrap within the panel's width just above it, on the screen; the panel keeps its height.
     const fits = () => row.evaluate((r) => {
-      const panel = r.closest('.slx-pm')!.getBoundingClientRect(), box = r.getBoundingClientRect();
-      const screen = document.querySelector('#sl-screen')!.getBoundingClientRect();
-      const bar = r.closest('.slx-partybar')!.getBoundingClientRect();
+      // Edges in stage px (legibility 2b): on a phone held upright the stage is turned, its top along the screen's right edge.
+      const scr = document.querySelector('#sl-screen')!.getBoundingClientRect();
+      const turned = scr.height > scr.width, k = turned ? scr.width / 360 : scr.width / 640;
+      const st = (e: Element) => {
+        const q = e.getBoundingClientRect();
+        return turned
+          ? { left: (q.top - scr.top) / k, right: (q.bottom - scr.top) / k, top: (scr.right - q.right) / k, bottom: (scr.right - q.left) / k, height: q.width / k }
+          : { left: (q.left - scr.left) / k, right: (q.right - scr.left) / k, top: (q.top - scr.top) / k, bottom: (q.bottom - scr.top) / k, height: q.height / k };
+      };
+      const panel = st(r.closest('.slx-pm')!), box = st(r);
+      const screen = { top: 0 };
+      const bar = st(r.closest('.slx-partybar')!);
       return {
         scroll: r.scrollWidth, client: r.clientWidth,
         within: box.left >= panel.left - 0.5 && box.right <= panel.right + 0.5,
@@ -2276,7 +2350,7 @@ test.describe('starlantern', () => {
     // Polled: a hit's number or effect may pass over a word for a moment.
     const settled = { within: true, above: true, height: true, seen: true };
     await expect.poll(fits, { timeout: 3000 }).toMatchObject(settled);
-    await page.setViewportSize({ width: 390, height: 844 });
+    await fitTo(page, 390, 844);
     await expect.poll(fits, { message: 'the ailment row wraps within its panel, above it, on the screen', timeout: 3000 }).toMatchObject(settled);
     const fit = await fits();
     expect(fit.scroll).toBeLessThanOrEqual(fit.client);
@@ -2286,7 +2360,7 @@ test.describe('starlantern', () => {
   });
 
   test('slow enemy and backdrop art never shows a stand-in block, and lands when it arrives', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     // Every enemy picture and backdrop is held back (a slow network) until the fight is on screen, then lands 3 s later.
     let release!: () => void;
     const held = new Promise<void>((r) => { release = r; });
@@ -2330,7 +2404,7 @@ test.describe('starlantern', () => {
   });
 
   test('heat and the mark show on the battle screen (plan 8c)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
@@ -2384,15 +2458,15 @@ test.describe('starlantern', () => {
     });
     expect(marked[0]).toBe('暗記');
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/mech-1280.png` }); }
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/mech-844.png` }); }
     // On a phone held upright the row still fits its panel on one line.
-    await page.setViewportSize({ width: 390, height: 844 });
+    await fitTo(page, 390, 844);
     const fit = await row.evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
     expect(fit.client).toBeGreaterThan(0);   // the row is there (a hidden row would pass vacuously)
     expect(fit.scroll).toBeLessThanOrEqual(fit.client);
     // Rin fells her marked foe: 還有。 pops over her, and she strikes again while a foe stands.
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     // Seed 7's first fight is two moss slimes: one to fell, one left standing for 還有。.
     expect(foes).toBeGreaterThanOrEqual(2);
     // Rin carries an ailment, so her ailment row stands above her panel for the cue to keep clear of.
@@ -2427,7 +2501,7 @@ test.describe('starlantern', () => {
   });
 
   test('the barrier and the moon show above the battle, and release spends the barrier (plan 8c)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
@@ -2479,9 +2553,9 @@ test.describe('starlantern', () => {
     await expect(bar).toContainText('月相：下弦→新月');
     await expect(page.locator('.slx-fieldbar .slx-mech-ward')).toHaveCount(1);
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/field-1280.png` }); }
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/field-844.png` }); }
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     // Release: 破邪突 spends the barrier (two rounds left: 120% power); the bar loses its barrier word.
     await play(['技能', SKILLS['exorcism-thrust'].name]);
     await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
@@ -2490,14 +2564,14 @@ test.describe('starlantern', () => {
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/release-1280.png` }); }
     await expect(page.locator('.slx-fieldbar .slx-mech-ward')).toHaveCount(0);
     await expect(bar).toContainText('月相');
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/release-844.png` }); }
     expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
   });
 
   test('coins and aim show on the battle screen (plan 8c)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
@@ -2541,9 +2615,9 @@ test.describe('starlantern', () => {
     });
     expect(words.slice(0, 2)).toEqual(['瞄準2', '估價']);   // the setups in their order: 暗記, 瞄準, 估價, 弱點
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/coins-aim-1280.png` }); }
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/coins-aim-844.png` }); }
-    await page.setViewportSize({ width: 390, height: 844 });
+    await fitTo(page, 390, 844);
     const row = page.locator('.slx-partybar [data-key=liz] .slx-pm-ail');
     const fit = await row.evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
     expect(fit.client).toBeGreaterThan(0);   // the row is there (a hidden row would pass vacuously)
@@ -2553,7 +2627,7 @@ test.describe('starlantern', () => {
   });
 
   test('embers and the beat show on the battle screen (plan 8c)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
@@ -2598,9 +2672,9 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-partybar [data-key=scarlet] .slx-pm-ail .slx-mech-embers')).toHaveCount(3);
     await expect(page.locator('.slx-partybar [data-key=safira] .slx-pm-ail .slx-mech-embers')).toHaveText('受護');
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/embers-beat-1280.png` }); }
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/embers-beat-844.png` }); }
-    await page.setViewportSize({ width: 390, height: 844 });
+    await fitTo(page, 390, 844);
     for (const key of ['scarlet', 'safira']) {
       const fit = await page.locator(`.slx-partybar [data-key=${key}] .slx-pm-ail`).evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
       expect(fit.client, key).toBeGreaterThan(0);
@@ -2611,7 +2685,7 @@ test.describe('starlantern', () => {
   });
 
   test('devices and the echo command show on the battle screen (plan 8c)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
     const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
@@ -2669,7 +2743,7 @@ test.describe('starlantern', () => {
       const def = { id: 'fire-star', name: '火之星彈', owner: 'noel', tp: 5, target: 'enemy', desc: '', effects: [{ kind: 'damage', power: 140, element: 'fire', scale: 'mag', melee: false }] };
       g.battle.echo = { by: 'noel', round: g.battle.round, def, cost: 5 };
     });
-    await page.setViewportSize({ width: 844, height: 390 });
+    await fitTo(page, 844, 390);
     // On to the next member and back, so the hero's list is drawn again with the record.
     await w.choose('.slx-bcmd', '防禦');
     await w.key('Escape');
@@ -2677,7 +2751,7 @@ test.describe('starlantern', () => {
     await expect(echo.locator('.slx-label')).toHaveText('殘響：火之星彈');
     await expect(echo).toHaveAttribute('aria-disabled', 'false');
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/devices-echo-844.png` }); }
-    await page.setViewportSize({ width: 390, height: 844 });
+    await fitTo(page, 390, 844);
     await expect(words).toHaveText(['砲台1・2', '盾機2・2', '中毒']);   // measured on the page: they still fit
     const fit = await page.locator('.slx-partybar [data-key=bobby] .slx-pm-ail').evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
     expect(fit.client).toBeGreaterThan(0);   // the row is there (a hidden row would pass vacuously)
@@ -2688,7 +2762,7 @@ test.describe('starlantern', () => {
 
   for (const [label, lineup] of [['a', ['hero', 'noel', 'chizuru', 'liz', 'sylvie']], ['b', ['scarlet', 'selene', 'safira', 'bobby', 'rin']]] as const) {
     test(`every mechanic beside the ailments, over four foes (plan 8c final, lineup ${label})`, async ({ page }) => {
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const missing: string[] = [];
       page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
       const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
@@ -2803,7 +2877,7 @@ test.describe('starlantern', () => {
   });
 
   test('two start, meet Selene, recall her', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     /** With SL_SHOTS=<dir> the run also leaves its screenshots there; otherwise this is a no-op. */
     const shot = async (name: string) => {
       if (!process.env.SL_SHOTS) return;
@@ -2900,9 +2974,9 @@ test.describe('starlantern', () => {
     await expect(talk.locator('.slx-talk-face')).toBeVisible();
     await shot('04b-rescue-talk');
     if (process.env.SL_SHOTS) {   // the same line inside a phone screen, for the record
-      await page.setViewportSize({ width: 390, height: 844 });
+      await fitTo(page, 390, 844);
       await shot('04c-rescue-talk-phone');
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
     }
     const join = /^瑟蕾（Lv\d+）加入了隊伍！$/;
     for (let i = 0; i < 12 && !join.test((await talk.locator('.slx-text').textContent()) ?? ''); i++) { await w.key('z'); await page.waitForTimeout(60); }
@@ -2996,7 +3070,7 @@ test.describe('starlantern', () => {
 
   test('B1: on a return to town, Noel and Rin talk among themselves after the chat, and the town menu waits for them', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
       page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
     const w = await setup(page, 7, { story: 'all' });
@@ -3048,7 +3122,7 @@ test.describe('starlantern', () => {
 
   test('in the labyrinth: wear a found piece, move a row and heal with a skill', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
       page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
     const w = await setup(page, 7, { story: 'all' });
@@ -3136,7 +3210,7 @@ test.describe('starlantern', () => {
 
   test("prologue, Rin's first memory, Selene, recall, handbook, Rin's reveal and Scarlet's fight", async ({ page }) => {
     test.setTimeout(300_000);
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     /** With SL_SHOTS=<dir> the run also leaves its screenshots there; otherwise this is a no-op. */
     const shots = process.env.SL_SHOTS;
     if (shots) mkdirSync(shots, { recursive: true });
@@ -3230,7 +3304,7 @@ test.describe('starlantern', () => {
     // Task 10a: the portrait stands at least twice its old 96px (on-screen, at the page's own scale), and clear of the text and the name plate.
     {
       const scr = (await box(page))!;
-      const k = scr.width / 640;
+      const k = (await stageScale(page)).s;   // the stage scale as drawn (legibility 2a)
       const face = (await page.locator('.slx-dungeon .slx-talk img.slx-talk-face').boundingBox())!;
       const textBox = (await memoryText.boundingBox())!;
       const nameBox = (await page.locator('.slx-dungeon .slx-talk .slx-name').boundingBox())!;
@@ -3539,7 +3613,7 @@ test.describe('starlantern', () => {
       ['epilogue', /第一頁/],
     ];
     for (const [width, height] of [[1280, 720], [390, 844]] as const) {
-      await page.setViewportSize({ width, height });
+      await fitTo(page, width, height);
       const w = await setup(page, 7);
       await page.evaluate(() => {
         const s = (window as unknown as Dbg).__starlanternDebug.game.state;
@@ -3605,7 +3679,7 @@ test.describe('starlantern', () => {
   });
 
   test('the first boss names its rune on the result, once, inside a phone screen (plan 8f)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const w = await setup(page, 7);
     await depart(page, w);
     // A boss put next to the party on depth 1: stepping on it starts a boss fight, the first this save has won.
@@ -3641,7 +3715,7 @@ test.describe('starlantern', () => {
     await expect(rune).toHaveClass(/slx-rarity-magic/);
     expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runesOpen)).toBe(true);
     for (const [vw, vh] of [[390, 844], [1280, 720]] as const) {
-      await page.setViewportSize({ width: vw, height: vh });
+      await fitTo(page, vw, vh);
       await page.waitForTimeout(150);
       const rows = await page.locator('.slx-result-lines p').evaluateAll((ps) => ps.map((p) => ({ t: p.textContent, over: p.scrollWidth > p.clientWidth })));
       expect(rows.filter((r) => r.over), `rows wider than the result at ${vw}`).toEqual([]);
@@ -3657,7 +3731,7 @@ test.describe('starlantern', () => {
     await w.key('z');                                       // the first page whole (a key finishes the typing)
     await expect(talk.locator('.slx-next')).toBeVisible();
     for (const [vw, vh] of [[390, 844], [844, 390], [1280, 720]] as const) {
-      await page.setViewportSize({ width: vw, height: vh });
+      await fitTo(page, vw, vh);
       await page.waitForTimeout(150);
       await expect(page.locator('.slx-battle .slx-msg')).toBeHidden();   // the foes' names gone with the fight
       const screen = (await page.locator('.slx-screen').boundingBox())!;
@@ -3674,7 +3748,7 @@ test.describe('starlantern', () => {
   });
 
   test('the shop sells and buys runes (plan 8f)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const missing: string[] = [];
     page.on('response', (r) => { if (r.status() === 404 && r.request().resourceType() === 'image') missing.push(r.url()); });
     const w = await setup(page, 7);
@@ -3705,11 +3779,11 @@ test.describe('starlantern', () => {
     };
     await fits('1280');
     if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/rune-shop-1280.png` });
-    await page.setViewportSize({ width: 390, height: 844 });
+    await fitTo(page, 390, 844);
     await page.waitForTimeout(150);
     await fits('390');
     if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/rune-shop-390.png` });
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     // Buy one 擴散 (100 G), then sell the 彈射 back (150 G).
     await list.locator('[data-id="buy:spread@common"]').click();
     await expect(page.locator('.slx-qty')).toBeVisible();
@@ -3731,7 +3805,7 @@ test.describe('starlantern', () => {
   });
 
   test('the forge fuses three runes into one (plan 8f)', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await fitTo(page, 1280, 720);
     const w = await setup(page, 7);
     await page.evaluate(() => {
       const g = (window as unknown as Dbg).__starlanternDebug.game;
@@ -3751,7 +3825,7 @@ test.describe('starlantern', () => {
     await expect(row.locator('.slx-right')).toHaveText('持有 3');
     await expect(page.locator('.slx-rune-fuse-info')).toContainText('3 個擴散（普通）＋30 G＋普通精華 → 擴散（魔法）');
     for (const [vw, vh] of [[390, 844], [1280, 720]] as const) {
-      await page.setViewportSize({ width: vw, height: vh });
+      await fitTo(page, vw, vh);
       await page.waitForTimeout(150);
       const over = await page.locator('.slx-forge-list [role=option], .slx-rune-fuse-info p').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
       expect(over, `rows wider than their box at ${vw}`).toEqual([]);
@@ -3772,7 +3846,7 @@ test.describe('starlantern', () => {
   test.describe('the skill workshop (plan 8g)', () => {
     /** Every workshop window inside the stage and every row, card cell and foot line inside its own box, at this size. */
     const inside = async (page: Page, vw: number, vh: number) => {
-      await page.setViewportSize({ width: vw, height: vh });
+      await fitTo(page, vw, vh);
       await page.waitForTimeout(150);
       const screen = await page.locator('.slx-screen').boundingBox();
       // Every window on screen (the tutorial's box is there but hidden unless it plays).
@@ -3788,7 +3862,7 @@ test.describe('starlantern', () => {
     };
 
     test('the skill workshop sockets a rune, after showing what it changes (plan 8g)', async ({ page }) => {
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const missing: string[] = [];
       page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
       const w = await setup(page, 7);
@@ -3819,7 +3893,7 @@ test.describe('starlantern', () => {
         await inside(page, vw, vh);
         if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-${vw}.png` });
       }
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       await w.key('Enter');                                   // socket it
       await expect(page.locator('.slx-ws-foot')).toContainText('火之星彈裝上了擴散（魔法）');
       await expect(page.locator('.slx-ws-skills [data-id=fire-star] .slx-right')).toHaveText('◆○');
@@ -3834,7 +3908,7 @@ test.describe('starlantern', () => {
     });
 
     test('the workshop card stays inside the stage at its fullest (plan 8g)', async ({ page }) => {
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const w = await setup(page, 7);
       // Chizuru at Lv 35: 守之結界 with three runes (常駐 and 除厄 among them), 淨之結界 with 常駐 too (the two-barrier
       // warning); Sylvie holds 雙重詠唱, whose move into 守之結界's third slot adds a line, takes one away and names her loss.
@@ -3866,12 +3940,12 @@ test.describe('starlantern', () => {
       await expect(page.locator('.slx-ws-card')).toContainText('兩個常駐結界只會留下一個');
       for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
         await inside(page, vw, vh);
-        const foot = await page.locator('.slx-ws-foot').boundingBox();
-        const card = await page.locator('.slx-ws-card').boundingBox();
+        const foot = await stageBox(page, page.locator('.slx-ws-foot'));   // stage px: the phone turns the stage (legibility 2b)
+        const card = await stageBox(page, page.locator('.slx-ws-card'));
         expect(foot!.y + foot!.height, `the foot shows whole at ${vw}`).toBeLessThanOrEqual(card!.y + card!.height + 0.5);
         if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-full-${vw}.png` });
       }
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const body = page.locator('.slx-ws-card-body');
       const room = await body.evaluate((b) => b.scrollHeight - b.clientHeight);
       expect(room, 'the fullest card needs its ▼').toBeGreaterThan(1);
@@ -3891,7 +3965,7 @@ test.describe('starlantern', () => {
     });
 
     test('the workshop moves a rune between members, by mouse (plan 8g)', async ({ page }) => {
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const w = await setup(page, 7);
       // Noel at Lv 20 knowing 火之星彈; Sylvie with 彈射 in 瞄準射擊's first slot; a magic 擴散 in the bag.
       await page.evaluate(() => {
@@ -3923,7 +3997,7 @@ test.describe('starlantern', () => {
         await inside(page, vw, vh);
         if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-move-${vw}.png` });
       }
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       await row.click();
       await expect(page.locator('.slx-ws-foot')).toContainText('從希爾薇・瞄準射擊移過來：彈射（魔法）');
       const sockets = await page.evaluate(() => {
@@ -3937,7 +4011,7 @@ test.describe('starlantern', () => {
     });
 
     test("the status page: columns line up across categories, the hero's branch names are whole, and the skills page leads to the workshop (plan 8g)", async ({ page }) => {
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const w = await setup(page, 7);
       await page.evaluate(() => {
         const s = (window as unknown as Dbg).__starlanternDebug.game.state;
@@ -3957,7 +4031,12 @@ test.describe('starlantern', () => {
         await closed.first().click();
       }
       const columns = async (vw: number) => {
-        const lefts = await page.locator('.slx-stat-table').evaluateAll((ts) => ts.map((t) => [...t.querySelectorAll('thead th')].map((th) => th.getBoundingClientRect().left)));
+        // Lefts in stage px (legibility 2b): turned on a phone, a column's left is its distance down from the screen's top.
+        const lefts = await page.locator('.slx-stat-table').evaluateAll((ts) => {
+          const scr = document.querySelector('#sl-screen')!.getBoundingClientRect();
+          const turned = scr.height > scr.width, k = turned ? scr.width / 360 : scr.width / 640;
+          return ts.map((t) => [...t.querySelectorAll('thead th')].map((th) => { const q = th.getBoundingClientRect(); return turned ? (q.top - scr.top) / k : (q.left - scr.left) / k; }));
+        });
         expect(lefts.length, `tables at ${vw}`).toBeGreaterThan(1);
         for (const l of lefts) {
           expect(l.length).toBe(lefts[0].length);
@@ -3972,7 +4051,7 @@ test.describe('starlantern', () => {
         expect(heads.filter((h) => h.over || h.ellipsis), `cut branch names at ${vw}`).toEqual([]);
       };
       for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
-        await page.setViewportSize({ width: vw, height: vh });
+        await fitTo(page, vw, vh);
         await page.waitForTimeout(150);
         await page.locator('.slx-tab[data-tab=stats]').click();
         await columns(vw);
@@ -3981,7 +4060,7 @@ test.describe('starlantern', () => {
         await branches(vw);
         if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/status-hero-tree-${vw}.png` });
       }
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       // The skills page: Noel's 火之星彈 with its dots and rune line; a click opens the workshop on it.
       await flipTo(page, '諾艾兒');
       await page.locator('.slx-tab[data-tab=skills]').click();
@@ -3989,13 +4068,13 @@ test.describe('starlantern', () => {
       await expect(fire.locator('.slx-skill-slots')).toHaveText('◆○');
       await expect(fire.locator('.slx-skill-rune')).toContainText('擴散（魔法）：');
       for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
-        await page.setViewportSize({ width: vw, height: vh });
+        await fitTo(page, vw, vh);
         await page.waitForTimeout(150);
         const over = await page.locator('.slx-tab-skills .slx-skill-head, .slx-tab-skills .slx-skill-rune').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
         expect(over, `the skills page spills at ${vw}`).toEqual([]);
         if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/status-skills-${vw}.png` });
       }
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       await fire.click();
       await expect(page.locator('.slx-workshop')).toBeVisible();
       await expect(page.locator('.slx-ws-name')).toContainText('諾艾兒');
@@ -4011,7 +4090,7 @@ test.describe('starlantern', () => {
     });
 
     test('the field menu, with the workshop on it, fits a landscape phone (plan 8g)', async ({ page }) => {
-      await page.setViewportSize({ width: 844, height: 390 });
+      await fitTo(page, 844, 390);
       const w = await setup(page, 11);
       await depart(page, w);
       await w.closeTalk();
@@ -4033,7 +4112,7 @@ test.describe('starlantern', () => {
     });
 
     test('the workshop tells the rune tutorial to a player who already holds runes (plan 8g)', async ({ page }) => {
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const w = await setup(page, 7);
       await page.evaluate(() => {
         const s = (window as unknown as Dbg).__starlanternDebug.game.state;
@@ -4048,7 +4127,7 @@ test.describe('starlantern', () => {
       await w.key('z');                                       // the first page whole
       await expect(talk.locator('.slx-next')).toBeVisible();
       for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
-        await page.setViewportSize({ width: vw, height: vh });
+        await fitTo(page, vw, vh);
         await page.waitForTimeout(150);
         const screen = (await page.locator('.slx-screen').boundingBox())!;
         const box = (await talk.boundingBox())!;
@@ -4058,7 +4137,7 @@ test.describe('starlantern', () => {
         expect(top, `the tutorial on top at ${vw}`).toBe(true);
         if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/workshop-tutorial-${vw}.png` });
       }
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       for (let i = 0; i < 12 && (await talk.isVisible()); i++) await w.key('z');
       await expect(talk).toBeHidden();
       expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.state.runeTutorialSeen)).toBe(true);
@@ -4068,7 +4147,7 @@ test.describe('starlantern', () => {
     });
 
     test('a skill with three runes and a reason in place of its TP fits the battle menu at 390 (plan 8g)', async ({ page }) => {
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const w = await setup(page, 7);
       // Liz at Lv 35: 一擲千金 with three working runes, and no coins at the fight's start (its reason replaces the TP). The
       // skills that can show a reason (coins, a barrier, devices) all have four-character names; this is the widest row.
@@ -4106,7 +4185,7 @@ test.describe('starlantern', () => {
       await expect(item.locator('.slx-badge')).toHaveText('◆◆◆');
       await expect(item.locator('.slx-right')).toHaveText('沒有銅板');
       for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
-        await page.setViewportSize({ width: vw, height: vh });
+        await fitTo(page, vw, vh);
         await page.waitForTimeout(150);
         const rows = await page.locator('.slx-bsub [role=option], .slx-bsub .slx-label').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
         expect(rows, `rows or names cut at ${vw}`).toEqual([]);
@@ -4120,7 +4199,7 @@ test.describe('starlantern', () => {
   test.describe('the suggested builds (plan 8h)', () => {
     /** Every window of `scene` inside the stage, and every row, card line and foot line inside its own box, at this size. */
     const inside = async (page: Page, scene: string, rows: string, vw: number, vh: number) => {
-      await page.setViewportSize({ width: vw, height: vh });
+      await fitTo(page, vw, vh);
       await page.waitForTimeout(150);
       const screen = (await page.locator('.slx-screen').boundingBox())!;
       for (const b of await page.locator(`${scene} .slx-win:not([hidden])`).evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, c: e.className }; }))) {
@@ -4143,7 +4222,7 @@ test.describe('starlantern', () => {
     const sizes = [[1280, 720], [844, 390], [390, 844]] as const;
 
     test('a suggested build applies from the inn, then the workshop shows what is still missing (plan 8h)', async ({ page }) => {
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const w = await setup(page, 7);
       // Noel at Lv 35 on the default tree and talents, 節流 on 冰之星彈 (the build takes it off), a magic 擴散 in the bag.
       await page.evaluate(({ tree, talents }) => {
@@ -4164,7 +4243,7 @@ test.describe('starlantern', () => {
       const rows = '.slx-builds [role=option], .slx-bd-card-body p, .slx-bd-card-body li, .slx-bd-rune, .slx-bd-foot p, .slx-bd-btn, .slx-builds .slx-keyhint';
       await legible(page, rows);
       for (const [vw, vh] of sizes) { await inside(page, '.slx-builds', rows, vw, vh); await shot(page, `builds-list-${vw}`); }
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       for (let i = 0; i < 4 && (await page.locator('.slx-bd-list [aria-selected=true]').getAttribute('data-id')) !== 'meteor'; i++) await w.key('ArrowDown');
       await expect(page.locator('.slx-bd-card-name')).toContainText('暴走流星');
       await expect(page.locator('.slx-bd-rune[data-rune=spread]')).toHaveAttribute('data-state', 'have');
@@ -4172,7 +4251,7 @@ test.describe('starlantern', () => {
       await legible(page, rows);
       for (const [vw, vh] of sizes) { await inside(page, '.slx-builds', rows, vw, vh); await shot(page, `builds-card-${vw}`); }
       // The card's ▼ scrolls it; the foot stays whole inside the card.
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const foot = (await page.locator('.slx-bd-foot').boundingBox())!;
       const card = (await page.locator('.slx-bd-card').boundingBox())!;
       expect(foot.y + foot.height).toBeLessThanOrEqual(card.y + card.height + 0.5);
@@ -4182,7 +4261,7 @@ test.describe('starlantern', () => {
       await expect(confirm).toContainText(' G');
       await expect(confirm).toContainText(T.ui2.builds.underLevel(35, 40));
       for (const [vw, vh] of sizes) { await inside(page, '.slx-builds', `${rows}, .slx-confirm p, .slx-confirm [role=option]`, vw, vh); await shot(page, `builds-confirm-${vw}`); }
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       await w.key('ArrowUp'); await w.key('Enter');           // 是
       await expect(page.locator('.slx-bd-msg')).toContainText('諾艾兒套用了暴走流星');
       await expect(page.locator('.slx-bd-msg')).toContainText('1 顆回到袋子');
@@ -4216,7 +4295,7 @@ test.describe('starlantern', () => {
     });
 
     test("auto fights a round by each member's build (plan 8h)", async ({ page }) => {
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const w = await setup(page, 7);
       // A full five, Noel following 暴走流星 at Lv 40 (the note's longest round); the foes harmless and tough.
       const meteor = buildOf('noel', 'meteor')!;
@@ -4247,10 +4326,10 @@ test.describe('starlantern', () => {
       for (const name of ['洛恩', '凜', '千鶴', '諾艾兒', '瑟蕾']) await expect(note).toContainText(`${name}：`);
       expect((await note.textContent())!.split('\n')).toHaveLength(5);   // one member a line
       for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
-        await page.setViewportSize({ width: vw, height: vh });
+        await fitTo(page, vw, vh);
         await page.waitForTimeout(150);
-        const screen = (await page.locator('.slx-screen').boundingBox())!;
-        const b = (await note.boundingBox())!;
+        const screen = { x: 0, y: 0, width: 640, height: 360 };   // stage px (legibility 2b)
+        const b = await stageBox(page, note);
         expect(b.x, `the note inside the stage at ${vw}`).toBeGreaterThanOrEqual(screen.x - 0.5);
         expect(b.x + b.width, `the note inside the stage at ${vw}`).toBeLessThanOrEqual(screen.x + screen.width + 0.5);
         expect(b.y + b.height, `the note inside the stage at ${vw}`).toBeLessThanOrEqual(screen.y + screen.height + 0.5);
@@ -4258,13 +4337,13 @@ test.describe('starlantern', () => {
         expect(over, `wider than their box at ${vw}`).toEqual([]);
         // The five lines fit the box, and the box keeps clear of the command window.
         expect(await note.evaluate((e) => e.scrollHeight - e.clientHeight), `the note's lines fit at ${vw}`).toBeLessThanOrEqual(0.5);
-        const cmd = (await page.locator('.slx-bcmd').boundingBox())!;
+        const cmd = await stageBox(page, page.locator('.slx-bcmd'));
         expect(cmd.x + cmd.width <= b.x || b.y + b.height <= cmd.y, `the note clear of the commands at ${vw}`).toBe(true);
         const small = await note.evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
         expect(small).toBeGreaterThanOrEqual(12);
         if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/auto-preview-${vw}.png` });
       }
-      await page.setViewportSize({ width: 1280, height: 720 });
+      await fitTo(page, 1280, 720);
       const round = () => page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.battle?.round ?? -1);
       expect(await round()).toBe(0);
       await w.key('Enter');                                   // 自動
@@ -4282,7 +4361,7 @@ test.describe('starlantern', () => {
     const errors = await sweep(page, [{ width: 1280, height: 720 }, { width: 844, height: 390 }, { width: 390, height: 844 }], async (name, size) => {
       const file = `${name}-${size.width}x${size.height}`;
       seen.push(file);
-      if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${file}.png` }); }   // windows fade in
+      if (shots) { await page.waitForTimeout(400); await snap(page, `${shots}/${file}.png`); }   // windows fade in
     });
     expect(seen).toHaveLength(SWEEP.length * 3);
     expect(errors).toEqual([]);

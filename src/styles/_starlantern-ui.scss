@@ -23,8 +23,8 @@ html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; back
 }
 
 // The stage scale --slx-s (legibility ruling 1): each stage pixel is a whole number K of device pixels, s = K / d at the
-// device pixel ratio d, with K = floor(min(vw·d / 640, vh·d / 360)) and s at most 6. Below d 2 any K from 1 (so s may be
-// under 1: one stage pixel, one device pixel); from d 2 only an s of 1 or more (else s = 1). The corner snaps to a device
+// device pixel ratio d, with K = floor(min(vw·d / 640, vh·d / 360)) and s at most 6, but never under 1: where no crisp s
+// of 1 or more fits, s is 1 (readable over crisp: a smaller stage makes the text physically tiny). The corner snaps to a device
 // pixel (--slx-px = 1/d px) with CSS round(); a browser without round() keeps the plain line before it.
 .slx-screen {
   --slx-s: 1;
@@ -62,8 +62,40 @@ $slx-dprs: 1, 1.1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.625, 2.75, 3;
   @media #{$res} {
     .slx-screen { --slx-d: #{$d}; --slx-px: #{math.div(1px, $d)}; }
   }
-  @for $k from if($d < 2, 1, math.ceil($d)) through math.floor(6 * $d) {
+  @for $k from math.ceil($d) through math.floor(6 * $d) {
     @media #{$res} and (min-width: #{math.div($slx-w * $k, $d)}) and (min-height: #{math.div($slx-h * $k, $d)}) {
+      .slx-screen { --slx-s: #{math.div($k, $d)}; }
+    }
+  }
+}
+
+// A touch phone held upright (legibility ruling 2): the stage is turned a quarter clockwise, so that turning the phone a
+// quarter counter-clockwise into landscape shows it upright, and scaled by the same rule with width and height swapped, under
+// 40px kept for the hint above it: K = floor(min(vw·d / 360, (vh − 40)·d / 640)). Only touch: a narrow desktop window keeps
+// the stage upright at 1x and scrolls.
+$slx-sideways: '(orientation: portrait) and (max-width: #{$slx-w - 1px}) and (pointer: coarse)';
+@media #{$slx-sideways} {
+  .slx-screen {
+    left: max(0px, calc((100vw - #{$slx-h} * var(--slx-s)) / 2));
+    left: max(0px, round(down, calc((100vw - #{$slx-h} * var(--slx-s)) / 2), var(--slx-px)));
+    top: max(40px, calc((100dvh - #{$slx-w} * var(--slx-s)) / 2));
+    top: max(40px, round(down, calc((100dvh - #{$slx-w} * var(--slx-s)) / 2), var(--slx-px)));
+    transform: translateX(calc(#{$slx-h} * var(--slx-s))) rotate(90deg) scale(var(--slx-s));
+  }
+  .slx-body::before {
+    content: '請橫拿手機遊玩';
+    position: fixed;
+    top: 12px;
+    left: 16px;
+    right: 16px;
+    color: $slx-ink;
+    font: 12px/16px 'Cubic 11', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+    text-align: center;
+  }
+}
+@each $d in $slx-dprs {
+  @for $k from math.ceil($d) through math.floor(6 * $d) {
+    @media #{$slx-sideways} and (min-resolution: #{$d - 0.005}dppx) and (max-resolution: #{$d + 0.005}dppx) and (min-width: #{math.div($slx-h * $k, $d)}) and (min-height: #{math.div($slx-w * $k, $d) + 40px}) {
       .slx-screen { --slx-s: #{math.div($k, $d)}; }
     }
   }
@@ -435,19 +467,6 @@ $slx-battle-left: 150px;
 .slx-keys b { min-width: 120px; font-weight: normal; color: $slx-gold; }
 .slx-keys .slx-hint { display: block; text-align: center; }
 
-// Phones held upright get a 640x360 screen shrunk to about a third: ask for landscape.
-@media (orientation: portrait) and (max-width: 600px) {
-  .slx-body::before {
-    content: '請將裝置轉為橫向，畫面會更大更好讀';
-    position: fixed;
-    top: 16px;
-    left: 16px;
-    right: 16px;
-    color: $slx-ink;
-    font: 14px/20px 'Cubic 11', sans-serif;
-    text-align: center;
-  }
-}
 
 // Party bar row tag
 .slx-pm-row { margin-left: 4px; padding: 0 2px; font-size: 9px; line-height: 10px; border: 1px solid currentColor; vertical-align: 1px; }

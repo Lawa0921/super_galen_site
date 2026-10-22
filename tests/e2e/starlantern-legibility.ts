@@ -1,4 +1,5 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, type CDPSession, type Locator, type Page } from '@playwright/test';
+import { writeFileSync } from 'node:fs';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
 import { SPECIALS, STARLIT_RARITIES } from '../../src/scripts/games/starlantern/data/gear';
 import { ENHANCE_MAX } from '../../src/scripts/games/starlantern/data/forge';
@@ -460,8 +461,7 @@ export async function sweep(page: Page, sizes: readonly SweepSize[], onScreen: (
   for (const s of SWEEP) {
     await s.visit(page, w);
     for (const size of sizes) {
-      await page.setViewportSize(size);
-      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await fitTo(page, size.width, size.height);   // 390x844: a touch phone held upright (Task 2b)
       await onScreen(s.name, size);
     }
   }
@@ -478,11 +478,12 @@ export const KNOWN_DPR = [1, 1.1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.625, 2.75, 3]
 
 /**
  * The stage scale ruling 1 (and, for a touch phone held upright, ruling 2) gives a `vw` x `vh` window at device pixel ratio
- * `d`: s·d whole, with K = floor(min(vw·d/640, vh·d/360)) device pixels per stage pixel, s = K/d at most 6; below 2 any
- * K ≥ 1, from 2 only K ≥ d (else s = 1); K = 0 gives s = 1. An unknown d: a whole CSS scale from 1 to 6.
+ * `d`: s·d whole, with K = floor(min(vw·d/640, vh·d/360)) device pixels per stage pixel, s = K/d at most 6, used only
+ * when s ≥ 1; when no crisp scale of 1 or more fits, s is exactly 1 (readable over crisp: a smaller stage makes the text
+ * physically tiny). An unknown d: a whole CSS scale from 1 to 6.
  */
 export function expectedMode(vw: number, vh: number, d: number, touch: boolean): StageMode {
-  const sideways = touch && vh > vw && vw < 640;
+  const sideways = touch && vh >= vw && vw < 640;
   const [w, h] = sideways ? [360, 640] : [640, 360];
   const [aw, ah] = sideways ? [vw, vh - 40] : [vw, vh];
   const kind = sideways ? 'sideways' : 'scale';
@@ -490,7 +491,7 @@ export function expectedMode(vw: number, vh: number, d: number, touch: boolean):
   if (known === undefined) return { kind, s: Math.max(1, Math.min(6, Math.floor(Math.min(aw / w, ah / h) + 1e-9))) };
   const K = Math.min(Math.floor(Math.min((aw * known) / w, (ah * known) / h) + 1e-9), Math.floor(6 * known + 1e-9));
   if (K < 1) return { kind, s: 1 };
-  if (known >= 2 && K < Math.ceil(known - 1e-9)) return { kind, s: 1 };
+  if (K < Math.ceil(known - 1e-9)) return { kind, s: 1 };   // no crisp scale of 1x or more: plain 1x
   return { kind, s: K / known };
 }
 
@@ -621,4 +622,49 @@ export async function legibility(page: Page, opts: { fontBlocked?: boolean } = {
     }
   }
   return out;
+}
+
+// ── Task 2b: a touch phone ──────────────────────────────────────────────────────────────────────────────────────────
+
+/** Pages now held as a phone, with the CDP session that made them one. */
+const phones = new WeakMap<Page, CDPSession>();
+
+/**
+ * Make `page` a touch phone held upright, mid-test (CDP: the device metrics as a mobile, touch on), so `(pointer: coarse)`,
+ * `devicePixelRatio` and `innerWidth` all read as on the phone. The probe of Task 2b found all three right.
+ */
+export async function asPhone(page: Page, { width = 390, height = 844, dpr = 3 } = {}): Promise<void> {
+  const cdp = phones.get(page) ?? await page.context().newCDPSession(page);
+  phones.set(page, cdp);
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: dpr, mobile: true });
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+}
+
+/** Back to a desktop window of `width` x `height` (mouse, devicePixelRatio of the project). */
+export async function asDesktop(page: Page, width: number, height: number): Promise<void> {
+  const cdp = phones.get(page);
+  if (cdp) {
+    phones.delete(page);
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+    await cdp.send('Emulation.clearDeviceMetricsOverride');
+    await cdp.detach().catch(() => undefined);
+  }
+  await page.setViewportSize({ width, height });
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+}
+
+/** The spec's window sizes: 390x844 is a touch phone held upright; any other size a desktop window. */
+export const fitTo = (page: Page, width: number, height: number): Promise<void> =>
+  (width === 390 && height === 844 ? asPhone(page) : asDesktop(page, width, height));
+
+/**
+ * A picture of the page as it shows now. On a phone it is taken through the phone's own CDP session: Playwright's
+ * page.screenshot puts back its own viewport for the picture, which would show the desktop layout instead.
+ */
+export async function snap(page: Page, path: string): Promise<void> {
+  const cdp = phones.get(page);
+  if (!cdp) { await page.screenshot({ path }); return; }
+  const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' });
+  writeFileSync(path, Buffer.from(data, 'base64'));
 }
