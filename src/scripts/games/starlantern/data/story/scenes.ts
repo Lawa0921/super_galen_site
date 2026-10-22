@@ -34,7 +34,7 @@ export const HOME_OWNERS: HomeOwner[] = ['chizuru', 'safira', 'sylvie', 'liz'];
 export const homeScene = (id: HomeOwner): SceneId => `home:${id}`;
 
 export const CHAT_COUNT: Record<CharacterId, number> = {
-  hero: 4, rin: 4, noel: 2, chizuru: 2, liz: 2, sylvie: 2, scarlet: 2, selene: 2, safira: 2, bobby: 2,
+  hero: 5, rin: 4, noel: 2, chizuru: 2, liz: 2, sylvie: 2, scarlet: 2, selene: 2, safira: 2, bobby: 2,
 };
 
 /**
@@ -44,11 +44,21 @@ export const CHAT_COUNT: Record<CharacterId, number> = {
  */
 export type BanterPair = `${CharacterId}-${CharacterId}`;
 export const BANTER_COUNT: Partial<Record<BanterPair, number>> = {
-  // B1's three fixtures, then B2 (lore ledger I-158): ids are frozen once shipped, so a pair only ever grows at the end.
-  'liz-scarlet': 2, 'noel-rin': 2, 'safira-sylvie': 2,
-  'bobby-chizuru': 1, 'bobby-liz': 1, 'bobby-noel': 1, 'bobby-sylvie': 1, 'chizuru-rin': 1, 'chizuru-safira': 1, 'chizuru-scarlet': 1,
-  'liz-noel': 1, 'liz-selene': 1, 'noel-selene': 2, 'rin-scarlet': 1, 'rin-sylvie': 1, 'safira-scarlet': 1, 'scarlet-selene': 1, 'selene-sylvie': 1,
+  // B1's three fixtures, then B2 (lore ledger I-158), then the story depth design's friction (§7.2–§7.4).
+  // 發佈之前編號可以重排；重排的舊編號列進 `RENUMBERED`，讀檔時丟掉它們的看過紀錄。發佈之後，一個配對只往後加。
+  'liz-scarlet': 3, 'noel-rin': 2, 'safira-sylvie': 3,
+  'bobby-chizuru': 2, 'bobby-liz': 1, 'bobby-noel': 1, 'bobby-sylvie': 2, 'chizuru-rin': 2, 'chizuru-safira': 1, 'chizuru-scarlet': 1,
+  'liz-noel': 1, 'liz-selene': 1, 'noel-selene': 3, 'rin-scarlet': 3, 'rin-sylvie': 2, 'safira-scarlet': 2, 'scarlet-selene': 1, 'selene-sylvie': 1,
+  'chizuru-noel': 2, 'rin-selene': 2,
 };
+/**
+ * Story depth (plan ruling 3): the four banters whose content moved one place on (`safira-sylvie:2` to `:3`, `liz-scarlet:2`
+ * to `:3`, `noel-selene:2` to `:3`, `rin-sylvie:1` to `:2`). Their old ids now hold new content, so a save of the older
+ * numbering forgets having heard them, once (`StoryState.ids` below `STORY_IDS`).
+ */
+export const RENUMBERED: readonly SceneId[] = ['banter:safira-sylvie:2', 'banter:liz-scarlet:2', 'banter:noel-selene:2', 'banter:rin-sylvie:1'];
+/** The story ids' numbering (plan ruling 3): 2 since the story depth renumbering; a save without it is numbering 1. */
+export const STORY_IDS = 2;
 export const BANTER_PAIRS: BanterPair[] = (Object.keys(BANTER_COUNT) as BanterPair[]).sort();
 export const banterScene = (pair: BanterPair, n: number): SceneId => `banter:${pair}:${n}`;
 /** The two of a banter scene, from its id. */
@@ -147,6 +157,8 @@ export const CHAT_GATE: Partial<Record<SceneId, StoryGate>> = {
   'chat:rin:2': { stage: 'act2' }, 'chat:rin:3': { stage: 'act3' }, 'chat:rin:4': { oath: true },
   // Task 8: Selene is met at depth 2; her 「您每一次，都把大家帶回來了」 waits for act 3, where coming back has its weight (I-64).
   'chat:selene:2': { stage: 'act3' },
+  // Story depth (design §7.4): Anna has stopped counting the papers on the guild door; it waits for act 4, when the town turns.
+  'chat:hero:5': { stage: 'act4' },
 };
 
 /** The gate's old name (B1), kept: a banter's gate is a `StoryGate`. */
@@ -158,9 +170,28 @@ export type BanterGate = StoryGate;
 export const BANTER_GATE: Partial<Record<SceneId, StoryGate>> = {
   // B2 (lore ledger §5): later chapters of a pair. A stage for time spent together, Rin's choice for the Rin who teases back,
   // a full memory for the one who has changed.
-  'banter:liz-noel:1': { stage: 'act3' }, 'banter:safira-sylvie:2': { stage: 'act3' },
-  'banter:noel-rin:2': { oath: true }, 'banter:rin-sylvie:1': { oath: true },
-  'banter:liz-scarlet:2': { full: 'scarlet' }, 'banter:noel-selene:2': { full: 'selene' },
+  'banter:liz-noel:1': { stage: 'act3' }, 'banter:noel-rin:2': { oath: true },
+  // Story depth (design §7.2–§7.4; lore ledger §5): the friction. Pieces for what one has learnt of the other; before her
+  // choice for what only fits then (missed, it holds nothing back); the confession for the seventh night.
+  'banter:chizuru-noel:1': { pieces: { noel: 1 } },
+  'banter:liz-scarlet:2': { stage: 'act2', pieces: { scarlet: 2 } },
+  'banter:safira-sylvie:2': { pieces: { safira: 2 } },
+  'banter:rin-sylvie:1': { stage: 'act3', beforeChoice: true },
+  'banter:rin-selene:1': { stage: 'act3', beforeChoice: true },
+  'banter:safira-scarlet:2': { stage: 'act3' },
+  'banter:noel-selene:2': { pieces: { noel: 3 } },
+  'banter:bobby-chizuru:2': { pieces: { bobby: 4, chizuru: 3 } },   // Task 4 ruling: Bobby's apology is her fourth piece
+  'banter:bobby-sylvie:2': { stage: 'act3' },
+  'banter:rin-scarlet:2': { oath: true, seen: ['rin-confess'] },
+  'banter:rin-scarlet:3': { full: 'scarlet', seen: ['banter:rin-scarlet:2'] },
+  'banter:rin-selene:2': { oath: true, full: 'selene' },
+  'banter:rin-sylvie:2': { oath: true },
+  'banter:chizuru-rin:2': { oath: true },
+  'banter:chizuru-noel:2': { full: 'noel' },
+  // the three moved ones keep their old gates, with a stage (design §7.4)
+  'banter:safira-sylvie:3': { stage: 'act3', full: 'safira' },
+  'banter:liz-scarlet:3': { stage: 'act3', full: 'scarlet' },
+  'banter:noel-selene:3': { stage: 'act3', full: 'selene' },
 };
 
 /**

@@ -8,6 +8,7 @@ import type { Game } from '../../engine/game';
 import type { ItemInstance } from '../../engine/types';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { storyStage } from '../../engine/story/events';
+import { bellkeeperPool } from '../../engine/story/keeper';
 import { el, itemName } from '../../ui/dom';
 import { gearIconUrl } from '../gearArt';
 import { fillRich, gearPart, joinParts } from '../loot';
@@ -94,10 +95,8 @@ export class TownScene implements Scene {
       const stage = storyStage(game.state);
       const chose = !!game.state.party.roster.rin?.oath;
       const rinSays = game.state.party.recruited.includes('rin') ? (chose ? STORY.rinOath : STORY.rinLines[stage] ?? []) : [];
-      // The bellkeeper is in town once his arrival scene has played (her choice only queues it for the next return, final
-      // review I-1); once the finale is won he speaks of what came after.
-      const arrived = game.state.story.seen.includes('bellkeeper-arrives');
-      const keeper = arrived ? (game.state.story.finaleCleared ? STORY.bellkeeper.after : STORY.bellkeeper.oath) : [];
+      // The bellkeeper once his arrival scene has played (engine/story/keeper.ts, story depth Task 4).
+      const keeper = bellkeeperPool(game.state);
       const pool = [
         ...STORY.townLines[stage].map((text) => ({ who: '', text })),
         ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),

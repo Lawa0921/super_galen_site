@@ -187,7 +187,7 @@ describe('story triggers', () => {
 
   it('a chat waits for the one before it, and a spent character offers none', () => {
     const s = base();
-    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:rin:1', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4');
+    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:hero:5', 'chat:rin:1', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4');
     expect(nextChat(s, {})).toBeNull();
     const t = base();
     t.story.seen.push('chat:rin:1', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4', 'chat:hero:2');   // the second was seen without the first: the first is the one offered
@@ -245,7 +245,7 @@ describe('chat gates', () => {
   it('a gated chat waits and the others still talk', () => {
     const s = met();
     rinSeen(s, 1);
-    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4');
+    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:hero:5');
     const gates = { 'chat:rin:2': { stage: 'act3' as const } };
     s.dungeon.reached.mainline = 2;   // act1
     expect(chatOpen(s, 'chat:rin:2', gates)).toBe(false);
@@ -261,7 +261,7 @@ describe('chat gates', () => {
 
   it('an oath-gated chat waits for her choice', () => {
     const s = met();
-    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4');
+    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:hero:5');
     rinSeen(s, 1);
     const gates = { 'chat:rin:2': { oath: true as const } };
     expect(chatOpen(s, 'chat:rin:2', gates)).toBe(false);
@@ -550,9 +550,10 @@ describe('town banter', () => {
   it('the pairs are sorted and never the hero; the three sample banters keep their ids and stay ungated (B2 adds the rest)', () => {
     // the shipped pairs, in their fixed tie-break order (B2): ids are frozen once shipped, so this list only ever grows
     expect(BANTER_PAIRS).toEqual([
-      'bobby-chizuru', 'bobby-liz', 'bobby-noel', 'bobby-sylvie', 'chizuru-rin', 'chizuru-safira', 'chizuru-scarlet', 'liz-noel', 'liz-scarlet',
-      'liz-selene', 'noel-rin', 'noel-selene', 'rin-scarlet', 'rin-sylvie', 'safira-scarlet', 'safira-sylvie', 'scarlet-selene', 'selene-sylvie',
-    ]);
+      'bobby-chizuru', 'bobby-liz', 'bobby-noel', 'bobby-sylvie', 'chizuru-noel', 'chizuru-rin', 'chizuru-safira', 'chizuru-scarlet', 'liz-noel',
+      'liz-scarlet', 'liz-selene', 'noel-rin', 'noel-selene', 'rin-scarlet', 'rin-selene', 'rin-sylvie', 'safira-scarlet', 'safira-sylvie',
+      'scarlet-selene', 'selene-sylvie',
+    ]);   // story depth Task 4: chizuru-noel and rin-selene
     for (const p of BANTER_PAIRS) {
       const [a, b] = p.split('-');
       expect(a < b, p).toBe(true);
@@ -595,6 +596,20 @@ describe('town banter', () => {
     expect(banterOpen(s, id, { [id]: { full: 'noel' } })).toBe(true);
     // no gate opens a banter whose two are not both met
     expect(banterOpen(base(), id, {})).toBe(false);
+  });
+
+  it('the seventh night opens after the confession, with Scarlet met (story depth Task 4)', () => {
+    const id: SceneId = 'banter:rin-scarlet:2';
+    const s = base();
+    expect(banterOpen(s, id)).toBe(false);   // Scarlet not met
+    meetAll(s, ['scarlet']);
+    s.party.roster.rin.oath = true;
+    s.story.seen.push('rin-reveal');
+    expect(banterOpen(s, id)).toBe(false);   // her choice made, the confession not heard yet
+    s.story.seen.push('rin-confess');
+    expect(banterOpen(s, id)).toBe(true);
+    s.party.roster.rin.oath = undefined;   // a save without her oath (by hand): the gate still asks for it
+    expect(banterOpen(s, id)).toBe(false);
   });
 
   it('a gate opens on each of its kinds (story depth)', () => {
@@ -805,7 +820,7 @@ describe('town banter', () => {
 
   it('an expired chat neither plays nor holds back the next one (story depth)', () => {
     const s = meetAll(base(), ['noel']);
-    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:rin:1', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4');
+    s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:hero:5', 'chat:rin:1', 'chat:rin:2', 'chat:rin:3', 'chat:rin:4');
     const gates = { 'chat:noel:1': { beforeChoice: true as const } };
     expect(nextChat(s, gates)).toBe('chat:noel:1');
     s.party.roster.rin.oath = true;

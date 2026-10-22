@@ -28,6 +28,9 @@ export interface ScriptLine {
   };
 }
 
+/** A line of the bellkeeper's pool in town (story depth Task 4): `returned`, once that townsfolk fragment is back. */
+export interface KeeperLine { text: string; if?: { returned?: TownFragmentId } }
+
 /**
  * What a scene's conditions are checked against. `seen` is the save's seen scenes; left out, nothing counts as seen (the one
  * caller in play, `ui2/story.ts`, always gives it; tests and the handbook readers that do not name it read it as empty).
@@ -422,6 +425,16 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'rin', mood: 'smile', text: '「再說，洛恩。你一個人，連繃帶都纏不好。」', if: { oath: true } },
     ],
     summary: '洛恩對凜說，碑上的那個人，每一次都是一個人走下去的。',
+  },
+  // Story depth Task 4 (design §7.4, pasted as it stands; plan ruling 10): act 4, the town turns. Anna keeps tearing down
+  // the papers on the guild door, and keeps the forms of the adventurers who stopped coming.
+  'chat:hero:5': {
+    lines: [
+      { who: 'anna', text: '「門口的紙，我又撕了一張。」' },
+      { who: 'hero', text: '「公會的人，少了幾個吧。」' },
+      { who: 'anna', text: '「三個。他們的登記表我也收好了──回來的時候，才有人喊得出名字。」' },
+    ],
+    summary: '安娜又撕掉了公會門口的一張紙。不再來的三個冒險者，她把登記表收好了，等他們回來的時候喊得出名字。',
   },
   // Task 7: Rin's choice (spec §5.2), the darkest scene. It plays alone at night, after her 7th piece and before the finale (U3).
   // It may come before or after the hero's 9th piece, so it does not say he is the lamp keeper (lore ledger I-50).
@@ -1377,8 +1390,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     ],
     summary: '諾艾兒要莉茲替她估價。莉茲說估不出來，不是因為無價，是因為不賣，要自己留著。',
   },
-  // Gated on Scarlet's full memories (ledger §5): the knight who guards by choice can say 「搞定」, and reports in Liz's own words.
-  'banter:liz-scarlet:2': {
+  // Story depth Task 4: moved from :2 (content unchanged). Gated on Scarlet's full memories (ledger §5), and act 3: the knight
+  // who guards by choice can say 「搞定」, and reports in Liz's own words.
+  'banter:liz-scarlet:3': {
     lines: [
       { who: 'scarlet', mood: 'serious', text: '「莉茲小姐，回報。剛才那個寶箱，搞定了。」' },
       { who: 'liz', mood: 'surprised', text: '「騎士大姊說『搞定』？！那手法、時間、陷阱呢？」' },
@@ -1417,8 +1431,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     ],
     summary: '諾艾兒要瑟蕾預言她的雷明天會不會更響。瑟蕾只說也許，月亮說的很響的東西，也許是雷雨。',
   },
-  // Gated on Selene's full memories (ledger §5): she says a future out loud and keeps it, and still finds the moon's loophole.
-  'banter:noel-selene:2': {
+  // Story depth Task 4: moved from :2 (content unchanged). Gated on Selene's full memories (ledger §5), and act 3: she says a
+  // future out loud and keeps it, and still finds the moon's loophole.
+  'banter:noel-selene:3': {
     lines: [
       { who: 'noel', mood: 'smug', text: '「瑟蕾，今天不准說『也許』。明天，本小姐贏不贏得了凜？」' },
       { who: 'selene', mood: 'foresee', text: '「贏得了。」' },
@@ -1437,8 +1452,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     ],
     summary: '夜裡，絲嘉蕾的鎧甲在走廊上一步一響。她以騎士的名譽保證會走輕一點，凜說，名譽也很吵。',
   },
-  // After her choice (oath gate): the two quiet ones (style bible pairing), and Rin asks him up.
-  'banter:rin-sylvie:1': {
+  // Story depth Task 4: moved from :1 (content unchanged). After her choice (oath gate): the two quiet ones (style bible
+  // pairing), and Rin asks him up.
+  'banter:rin-sylvie:2': {
     lines: [
       N('屋頂上，凜和希爾薇並肩蹲著，看著同一個方向，很久都沒有說話。'),
       { who: 'hero', text: '「吵架了？」' },
@@ -1457,8 +1473,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     ],
     summary: '莎菲拉教絲嘉蕾跳舞，絲嘉蕾跳得像在閱兵。她命令自己放軟，膝蓋不聽；莎菲拉說，全場最準的拍子是她的。',
   },
-  // Gated to act 3 (ledger §5): safira-sylvie:1's three ways out, now at Safira's one-woman show (B2 fix 1: her stage voice).
-  'banter:safira-sylvie:2': {
+  // Story depth Task 4: moved from :2 (content unchanged). Gated to act 3 and Safira's full memories: safira-sylvie:1's three
+  // ways out, now at Safira's one-woman show (B2 fix 1: her stage voice).
+  'banter:safira-sylvie:3': {
     lines: [
       { who: 'safira', mood: 'wink', text: '「各位觀眾──好吧，只有小希一位。今晚的特別公演，門票全免唷～」' },
       { who: 'sylvie', mood: 'serious', text: '「退路。一條。」' },
@@ -1486,6 +1503,135 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'sylvie', mood: 'smile', text: '「不用月亮。用鼻子。」' },
     ],
     summary: '瑟蕾讀到了今晚的晚餐，卻不肯說。希爾薇一口氣說了出來：她不用月亮，用鼻子。',
+  },
+
+  // ---- Story depth Task 4: the friction banters (design §7.2–§7.4, §8 sample 1), pasted as they stand (plan ruling 10).
+  // The writing tasks finalize them; a beat the design gives as stage direction is narration. ----
+  'banter:chizuru-noel:1': {
+    lines: [
+      { who: 'chizuru', text: '「諾艾兒姑娘，借而不告，謂之竊。那本書，何時歸還？」' },
+      { who: 'noel', text: '「本、本小姐有打算還的！等本小姐比誰都厲害的時候！」' },
+      { who: 'chizuru', text: '「那便是永遠不還了。」' },
+      { who: 'noel', mood: 'panic', text: '「妳、妳那是什麼意思！」' },
+    ],
+    summary: '千鶴說借而不告謂之竊，問諾艾兒那本書什麼時候還。諾艾兒說等她比老師厲害的時候，千鶴說那便是永遠不還了。',
+  },
+  'banter:chizuru-noel:2': {
+    lines: [
+      N('千鶴行了一禮：「聽聞令師平安。先前那句『謂之竊』，我收回。」'),
+      { who: 'noel', text: '「不、不用行禮啦！」' },
+      { who: 'chizuru', text: '「禮尚往來。」' },
+      { who: 'noel', text: '「那……本小姐也收回一句。千鶴的祝詞，很好聽。」' },
+    ],
+    summary: '千鶴聽說諾艾兒的老師平安，收回了那句「謂之竊」。諾艾兒也收回一句：千鶴的祝詞很好聽。',
+  },
+  'banter:liz-scarlet:2': {
+    lines: [
+      N('莉茲估著一片有名字的碎片：「交給公會只有謝禮，賣給收藏的翻三倍。」'),
+      { who: 'scarlet', text: '「那是某個人的記憶，請交還。」' },
+      { who: 'liz', text: '「騎士大姊，妳守的那扇門，門後還有人嗎？」' },
+      N('絲嘉蕾沒有回答。莉茲嘟囔著把碎片交了出去，謝禮兩枚銀幣，虧大了。'),
+    ],
+    summary: '莉茲想把一片有名字的碎片賣給收藏家，絲嘉蕾要她交還。莉茲問她守的門後還有沒有人，絲嘉蕾沒有回答。',
+  },
+  'banter:safira-sylvie:2': {
+    lines: [
+      N('莎菲拉單腳轉了三圈。'),
+      { who: 'safira', text: '「小希，剛才那一場我一個人衝第一個，帥不帥？」' },
+      { who: 'sylvie', text: '「妳一跑，後面的人就會跟。跟錯路的人，回不來。」' },
+      { who: 'safira', text: '「那、那就叫他們別跟呀。……好唷，下一場我數拍子，讓小希先走。」' },
+    ],
+    summary: '莎菲拉一個人衝在最前面，問希爾薇帥不帥。希爾薇說跟錯路的人回不來，莎菲拉答應下一場讓她先走。',
+  },
+  'banter:rin-sylvie:1': {
+    lines: [
+      N('夜裡的屋頂，希爾薇盯著巷子。凜從背後走近，一點聲音也沒有。'),
+      { who: 'sylvie', text: '「妳走路像在追獵物，腳跟不落地。在追什麼？」' },
+      { who: 'rin', text: '「不知道。等我知道了，第一個告訴妳。」' },
+      N('希爾薇往旁邊挪了一個位置。兩人一起盯著巷子，盯到一隻貓走過去。'),
+    ],
+    summary: '希爾薇問凜，走路像在追獵物，是在追什麼。凜說不知道，等她知道了，第一個告訴希爾薇。',
+  },
+  'banter:rin-selene:1': {
+    lines: [
+      { who: 'selene', text: '「凜，妳的明天，月亮說了一點點呢。──算了，請當作沒聽見。」' },
+      { who: 'rin', text: '「說一半就收回，比不說還吵。」' },
+      { who: 'selene', mood: 'wistful', text: '「那凜呢？每次都說『沒事』。」' },
+      N('凜想了一下，說：「沒事。」瑟蕾笑出聲來。'),
+    ],
+    summary: '瑟蕾說月亮讀到了凜的明天，又收了回去。凜嫌她吵，瑟蕾說凜每次都只說沒事，凜想了一下，還是說沒事。',
+  },
+  'banter:rin-selene:2': {
+    lines: [
+      { who: 'rin', text: '「瑟蕾，那把刀的事。早一點說，我就能早一點知道自己是什麼。」' },
+      { who: 'selene', mood: 'wistful', text: '「對不起……下一次看見什麼，我會先說。」' },
+      { who: 'rin', text: '「那現在說一個。我明天會怎樣？」' },
+      { who: 'selene', mood: 'smile', text: '「妳明天會多眨幾次眼。是我說的，不是月亮。」' },
+    ],
+    summary: '凜說，那把刀的事早一點說就好了。瑟蕾道歉，答應下一次先說，還替凜說了一個明天。',
+  },
+  'banter:safira-scarlet:2': {
+    lines: [
+      { who: 'scarlet', text: '「莎菲拉小姐，今天是追思日，請肅靜。」' },
+      { who: 'safira', text: '「我就是在追思呀。我們那裡，送人走是用跳的唷。小嘉那張臉，送得走誰呀？」' },
+      { who: 'scarlet', text: '「失禮了……」' },
+      N('絲嘉蕾踩著閱兵的步子下場，拍子準得讓莎菲拉笑出聲。'),
+    ],
+    summary: '追思日，絲嘉蕾要莎菲拉肅靜。莎菲拉說她們那裡送人走是用跳的，絲嘉蕾便踩著閱兵的步子下場陪她跳。',
+  },
+  'banter:bobby-chizuru:2': {
+    lines: [
+      { who: 'bobby', text: '「千鶴姊，燈是我家的人造錯的。迷宮奪走妳的那些年，對不起。」' },
+      { who: 'chizuru', text: '「道歉不必。但請容我，生氣一刻鐘。」' },
+      N('千鶴端坐閉眼，一動也不動，波比也不敢動。'),
+      N('一刻鐘後，千鶴起身，照樣替彈簧大人上緊發條：「好了，氣生完了。」'),
+    ],
+    summary: '波比替祖先向千鶴道歉。千鶴說不必道歉，只請她容自己生氣一刻鐘；一刻鐘後，她照樣替彈簧大人上緊發條。',
+  },
+  'banter:bobby-sylvie:2': {
+    lines: [
+      N('波比遞出一條箭袋背帶，希爾薇照樣說「不用」。'),
+      { who: 'bobby', text: '「希爾薇姊什麼都說不用。我做的東西，妳一次都沒用過。」' },
+      { who: 'sylvie', text: '「背帶很牢。明天就用。」' },
+      N('希爾薇已經把背帶背上了。波比哭了一下，又笑了，說還可以再加一個口袋。'),
+    ],
+    summary: '波比做的東西，希爾薇從來不用。這一次，希爾薇把箭袋背帶背上了，說明天就用。',
+  },
+  'banter:noel-selene:2': {
+    lines: [
+      { who: 'noel', text: '「瑟蕾的力量明明那麼強，不用，跟沒有一樣！」' },
+      { who: 'selene', text: '「有些力量，用一次，就會少掉一點自己呢。」' },
+      { who: 'noel', mood: 'panic', text: '「妳、妳怎麼知道──」' },
+      { who: 'selene', text: '「月亮說的。」' },
+    ],
+    summary: '諾艾兒不懂瑟蕾為什麼不用自己的力量。瑟蕾說有些力量用一次就會少掉一點自己，說的是她自己。',
+  },
+  'banter:rin-scarlet:2': {
+    lines: [
+      { who: 'rin', mood: 'normal', text: '「第七個晚上。妳的鎧甲今晚響了四十一次，比昨晚少了三次。」' },
+      { who: 'scarlet', mood: 'serious', text: '「我在練習不動。今晚是守夜表上的最後一班，總要守得像樣。」' },
+      { who: 'rin', mood: 'normal', text: '「守夜表排了七個晚上，一次都沒換人。妳守的不是門，是我。」' },
+      N('「是。」絲嘉蕾答得很乾脆。凜沒有回房，在她旁邊坐下。鎧甲每響一聲，凜就說一次「吵」，一直說到天亮。'),
+    ],
+    summary: '守夜表的第七個晚上。凜說絲嘉蕾守的不是門，是她；絲嘉蕾說是。凜在她旁邊坐下，一直說到天亮。',
+  },
+  'banter:rin-scarlet:3': {
+    lines: [
+      { who: 'scarlet', text: '「凜小姐，我想起來了。有人命令我活下去，我照做了。」' },
+      { who: 'rin', text: '「我收到的命令，我沒照做。」' },
+      { who: 'scarlet', text: '「嗯。……守夜表，我撕了。」' },
+      N('凜說前面歸她，後面歸自己。結果兩人都走到洛恩旁邊，把他夾在中間，三個人並排走。'),
+    ],
+    summary: '絲嘉蕾想起了要她活下去的命令，凜說她收到的命令沒有照做。守夜表撕了，三個人並排走。',
+  },
+  'banter:chizuru-rin:2': {
+    lines: [
+      { who: 'chizuru', text: '「凜姑娘，早安。」' },
+      { who: 'rin', text: '「早安。」' },
+      { who: 'chizuru', text: '「完整了……甚好。」' },
+      { who: 'rin', text: '「另外半句，早該說了。」' },
+    ],
+    summary: '凜第一次回了完整的早安。千鶴說，甚好。',
   },
 };
 
@@ -1810,14 +1956,18 @@ export const STORY = {
    * flattened bell to her (she hands it over in the finale, I-51). `after`: the society has ended; he says Lorne's name.
    */
   bellkeeper: {
+    // Story depth Task 4: each line a `KeeperLine`; the town's pool is `engine/story/keeper.ts` `bellkeeperPool`.
     oath: [
-      '從深處走出來的人。鐘響了，吾等便來。世世代代，都是如此。',
-      '吾等不是來動手的。那孩子的選擇，吾等……還不知道該怎麼回答。',
-      '那孩子領口的鐘，被敲平了。要還，也得由她自己來還。吾等不去取。',
+      { text: '從深處走出來的人。鐘響了，吾等便來。世世代代，都是如此。' },
+      { text: '吾等不是來動手的。那孩子的選擇，吾等……還不知道該怎麼回答。' },
+      { text: '那孩子領口的鐘，被敲平了。要還，也得由她自己來還。吾等不去取。' },
       // V3 voice pass: one human touch, never a joke (style bible §3 鐘守): the man he came to watch nodded to him.
-      '這幾天，我在鎮上看著你。你替旅館劈柴，替孩子撿球。球滾到我腳邊時，你也向我點了頭。……迷宮的意志，會做這些事嗎？',
-      '吾等怕了很久。怕霧，怕深處，也怕自己弄錯。',
-    ],
+      { text: '這幾天，我在鎮上看著你。你替旅館劈柴，替孩子撿球。球滾到我腳邊時，你也向我點了頭。……迷宮的意志，會做這些事嗎？' },
+      { text: '吾等怕了很久。怕霧，怕深處，也怕自己弄錯。' },
+      // Story depth (design §7.4; controller ruling b): his own hand, and the boy at the gate once Glen remembers him.
+      { text: '教那孩子不准眨眼的，是我。我的手，當年抖了。' },
+      { text: '守門的那個人想起來了。很多年前替吾等指路的少年，就是他。吾等欠他一句話。', if: { returned: 'glen' } },
+    ] as KeeperLine[],
     after: [
       '洛恩。最後那一聲鐘，是我敲的。靜鐘會散了，往後不必再有人等它響。',
       '吾等弄錯了很多年。……不，是我弄錯了。剩下的日子，我想拿來記住，不是拿來守。',

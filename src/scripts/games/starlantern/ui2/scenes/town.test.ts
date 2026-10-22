@@ -337,7 +337,7 @@ describe('TownScene story', () => {
     expect(keeper(fresh(false))).toEqual([]);
     const chose = keeper(fresh(true));
     expect(chose.length).toBeGreaterThan(0);
-    expect(chose.every((x) => STORY.bellkeeper.oath.includes(x))).toBe(true);
+    expect(chose.every((x) => STORY.bellkeeper.oath.some((l) => l.text === x))).toBe(true);   // story depth Task 4: KeeperLine
     const done = fresh(true);
     done.state.story.finaleCleared = true;
     const after = keeper(done);

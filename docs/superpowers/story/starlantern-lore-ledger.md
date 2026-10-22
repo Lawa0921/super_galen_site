@@ -304,11 +304,28 @@ spec：`docs/superpowers/specs/2026-10-17-starlantern-story-world-design.md`（�
 | （T9 不加 `CHAT_GATE`） | 希爾薇、諾艾兒、波比的第 2 段不設門檻：內容不依賴幕；會被第 5 片推翻的句子用 `if.notFull`／`if.full` 兩個版本（I-58、I-70）。 | 6c Task 9 |
 | （T10 不加 `CHAT_GATE`） | 莉茲（暗影 6）與絲嘉蕾（鋼鐵 8）都不在本道相遇，對話的位置是序章；兩人的對話內容不依賴幕，一次回城只播一段，自然分散；會被第 5 片推翻的句子用 `if.notFull`／`if.full`（I-76、I-79）。 | 6c Task 10 |
 | `BANTER_GATE['banter:liz-noel:1'] = { stage: 'act3' }` | 莉茲說「不賣，自己留著用」，要一起走過一段路才說得出口；第一幕、第二幕不播。 | B2 |
-| `BANTER_GATE['banter:safira-sylvie:2'] = { stage: 'act3' }` | 退路從三條變一條（I-159），是相處久了的變化；兩人都不在本道相遇，用幕當成時間。 | B2 |
+| `BANTER_GATE['banter:safira-sylvie:3'] = { stage: 'act3', full: 'safira' }` | 退路從三條變一條（I-159），是相處久了的變化；兩人都不在本道相遇，用幕當成時間。故事深度：內容從 `:2` 原樣搬來，加上莎菲拉集滿（她先在 `:2` 被說「跟錯路的人，回不來」，放下之後才有這一場）。 | B2；故事深度 Task 4 |
 | `BANTER_GATE['banter:noel-rin:2'] = { oath: true }` | 凜逗回去、用「呢」「吧」，是選擇之後的她（I-20、文風聖經 §3 凜）。 | B2 |
-| `BANTER_GATE['banter:rin-sylvie:1'] = { oath: true }` | 凜叫洛恩的名字、笑、邀他上來，是選擇之後的她（I-20）。 | B2 |
-| `BANTER_GATE['banter:liz-scarlet:2'] = { full: 'scarlet' }` | 絲嘉蕾放下「本分」、自己說「搞定」，在她最後一片之後（I-79、I-159）。 | B2 |
-| `BANTER_GATE['banter:noel-selene:2'] = { full: 'selene' }` | 瑟蕾第一次把明天說出口、不收回，在她最後一片之後（spec §6、I-159）。 | B2 |
+| `BANTER_GATE['banter:rin-sylvie:2'] = { oath: true }` | 凜叫洛恩的名字、笑、邀他上來，是選擇之後的她（I-20）。故事深度：內容從 `:1` 原樣搬來。 | B2；故事深度 Task 4 |
+| `BANTER_GATE['banter:liz-scarlet:3'] = { stage: 'act3', full: 'scarlet' }` | 絲嘉蕾放下「本分」、自己說「搞定」，在她最後一片之後（I-79、I-159）。故事深度：內容從 `:2` 原樣搬來，加上第三幕。 | B2；故事深度 Task 4 |
+| `BANTER_GATE['banter:noel-selene:3'] = { stage: 'act3', full: 'selene' }` | 瑟蕾第一次把明天說出口、不收回，在她最後一片之後（spec §6、I-159）。故事深度：內容從 `:2` 原樣搬來，加上第三幕。 | B2；故事深度 Task 4 |
+| `RENUMBERED`（`safira-sylvie:2`、`liz-scarlet:2`、`noel-selene:2`、`rin-sylvie:1`） | 故事深度設計 §9.3 第 11 點：發佈之前編號可以重排；重排的舊編號列進 `RENUMBERED`，讀檔時丟掉它們的看過紀錄（每份存檔一次，`STORY_IDS = 2`，計畫裁定 3）。發佈之後，一個配對只往後加。 | 故事深度 Task 4 |
+| `BANTER_GATE['banter:chizuru-noel:1'] = { pieces: { noel: 1 } }` | 千鶴說「借而不告，謂之竊」，要先知道諾艾兒的書是偷來的（她第一片之後）。**偏離設計（控制者裁定，Task 4）**：設計稿諾艾兒說「等本小姐比老師厲害的時候」，但老師要到她第四片才出現（`mem:noel:4`）；閘門照設計留早，台詞去掉「老師」，改成「等本小姐比誰都厲害的時候」，摩擦留在前面，不劇透。 | 故事深度 Task 4（設計 §7.2） |
+| `BANTER_GATE['banter:liz-scarlet:2'] = { stage: 'act2', pieces: { scarlet: 2 } }` | 莉茲問「妳守的那扇門，門後還有人嗎？」，要絲嘉蕾的門已經被提過（她第二片之後）；估價碎片是第二幕以後的事。 | 故事深度 Task 4（設計 §7.2） |
+| `BANTER_GATE['banter:safira-sylvie:2'] = { pieces: { safira: 2 } }` | 莎菲拉一個人衝在最前面、希爾薇說「跟錯路的人，回不來」：莎菲拉第二片之後，她帶頭的習慣才有來由。 | 故事深度 Task 4（設計 §7.2） |
+| `BANTER_GATE['banter:rin-sylvie:1'] = { stage: 'act3', beforeChoice: true }` | 希爾薇問凜「在追什麼」，凜說「等我知道了」：只在第三幕、凜選擇之前成立；錯過就跳過，不擋 `:2`（`gateExpired`）。`rin-confess` 裡希爾薇那一句依它看過與否分兩種讀法。 | 故事深度 Task 4（設計 §7.3） |
+| `BANTER_GATE['banter:rin-selene:1'] = { stage: 'act3', beforeChoice: true }` | 瑟蕾說月亮讀到了凜的明天、又收回，凜說「沒事」：凜選擇之前的她；第三幕起。修正一：不提刀。 | 故事深度 Task 4（設計 §7.3） |
+| `BANTER_GATE['banter:safira-scarlet:2'] = { stage: 'act3' }` | 追思日（新的鎮上習俗）：第三幕起，鎮上開始失去人。 | 故事深度 Task 4（設計 §7.3） |
+| `BANTER_GATE['banter:noel-selene:2'] = { pieces: { noel: 3 } }` | 「有些力量，用一次，就會少掉一點自己」：諾艾兒第三片之後，她的星火會燒掉自己的事才在她心上。 | 故事深度 Task 4（設計 §7.3） |
+| `BANTER_GATE['banter:bobby-chizuru:2'] = { pieces: { bobby: 4, chizuru: 3 } }` | 波比替祖先道歉、千鶴生氣一刻鐘：燈是誰造錯的、千鶴失去了多少年，兩邊都已經知道。**偏離設計（控制者裁定，Task 4）**：設計是 `bobby: 3`；替祖先道歉是波比第四片（`mem:bobby:4`）揭露的，所以改成 `bobby: 4`，台詞不動。千鶴照設計第三片。`story.test.ts` 的 `REVEALED` 把波比那一列照片數拆開，閒聊的 `pieces` 閘門只放行到那一片為止。 | 故事深度 Task 4（設計 §7.3） |
+| `BANTER_GATE['banter:bobby-sylvie:2'] = { stage: 'act3' }` | 希爾薇第一次收下波比做的東西：相處久了的變化，用幕當成時間。 | 故事深度 Task 4（設計 §7.3） |
+| `BANTER_GATE['banter:rin-scarlet:2'] = { oath: true, seen: ['rin-confess'] }` | 第七個晚上：絲嘉蕾從坦白那頓晚飯起守門（「我有我的做法」），這是守夜表上的第七個晚上（設計 §8 樣稿一）。 | 故事深度 Task 4（設計 §7.4） |
+| `BANTER_GATE['banter:rin-scarlet:3'] = { full: 'scarlet', seen: ['banter:rin-scarlet:2'] }` | 絲嘉蕾想起要她活下去的命令，守夜表撕了：她集滿之後，而且在第七個晚上之後。 | 故事深度 Task 4（設計 §7.4） |
+| `BANTER_GATE['banter:rin-selene:2'] = { oath: true, full: 'selene' }` | 凜要瑟蕾說那把刀的事：瑟蕾集滿（新月的結局想起來了），凜選擇之後。兩種先後都成立。 | 故事深度 Task 4（設計 §7.4） |
+| `BANTER_GATE['banter:chizuru-rin:2'] = { oath: true }` | 凜補上另外半句「早安」：選擇之後的她。 | 故事深度 Task 4（設計 §7.4） |
+| `BANTER_GATE['banter:chizuru-noel:2'] = { full: 'noel' }` | 千鶴聽說令師平安、收回「謂之竊」：諾艾兒集滿，老師的記憶已經交還（I-68）。 | 故事深度 Task 4（設計 §7.4） |
+| `CHAT_GATE['chat:hero:5'] = { stage: 'act4' }` | 安娜撕掉公會門口的紙、收好不再來的人的登記表：第四幕，鎮上變了。 | 故事深度 Task 4（設計 §7.4） |
+| `STORY.bellkeeper.oath` 的「指路的少年」那一句 `if: { returned: 'glen' }` | 鐘守說守門的少年替吾等指過路：葛倫的碎片交還、他自己想起來之後（控制者裁定 b）。 | 故事深度 Task 4（設計 §7.4、§9.3 第 7 點） |
 | （B2 其他閒聊不設門檻） | 兩人都相遇就能播；可能在任何一片之前、凜選擇前後播，所以凜照選擇之前的規則、各人照自己的揭露規則（`story.test.ts` 的 B1 區塊逐一讀法檢查）。B1 的三段不加門檻、編號不改。 | B2 |
 
 ---

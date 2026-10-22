@@ -14,7 +14,10 @@ import { handbook } from './handbook';
 import { arrivalScenes, onReturn, sceneDone } from './events';
 
 /** Rin's banters, in the pairs' fixed order: what her people page lists after her chats (B1, B2; ids are frozen once shipped). */
-const RIN_BANTERS: SceneId[] = ['banter:chizuru-rin:1', 'banter:noel-rin:1', 'banter:noel-rin:2', 'banter:rin-scarlet:1', 'banter:rin-sylvie:1'];
+const RIN_BANTERS: SceneId[] = [
+  'banter:chizuru-rin:1', 'banter:chizuru-rin:2', 'banter:noel-rin:1', 'banter:noel-rin:2', 'banter:rin-scarlet:1', 'banter:rin-scarlet:2',
+  'banter:rin-scarlet:3', 'banter:rin-selene:1', 'banter:rin-selene:2', 'banter:rin-sylvie:1', 'banter:rin-sylvie:2',
+];   // story depth Task 4 (I6): the friction banters and the moved rin-sylvie
 
 const withMemories = (s: GameState, id: CharacterId, n: number): GameState => {
   if (!s.party.recruited.includes(id)) s.party = meet(s.party, id, 1);
