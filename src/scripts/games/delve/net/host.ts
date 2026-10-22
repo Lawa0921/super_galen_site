@@ -1,6 +1,7 @@
 // host.ts — 房主端協定狀態機（co-op M-B3；spec §5.2–5.7；建造者決定 C6–C10、C14）。
 //   握手（hello → welcome + bulk snap → ready）、回覆 sum（整欄 col）、每位客人的 fanout（tiles／liq／ev／pub／teleport／knock）、
-//   ws／char／chk／world／look 的計時送出、cmd 權杖桶與 ack、ps 檢查、逾時與 PS_STALE_MS、離線時寫回 visit 與 retained。
+//   ws／char／chk／world／look 的計時送出、cmd 權杖桶與 ack、ps 檢查、逾時與 PS_STALE_MS、離線時寫回 visit 與 held。
+// M-C C1：chk 帶 upTo（處理到這位客人的第幾個 cmd seq）；客人寫好 checkpoint 回 chkAck，移除後收到涵蓋 held.rev 的 chkAck 就清掉 held。
 // 客人送來的一切都是不可信輸入：先過 validate.ts，不合法就丟掉，絕不拋例外到 frame 之外。
 // 決定性：不讀時鐘、不用 Math.random；時間一律是 frame(nowMs, …) 傳進來的值。送出的角色 savedAt 一律 0（寫檔的人自己蓋時間）。
 import type { DelveGame, DelveEvent } from '../engine/game';
@@ -12,10 +13,10 @@ import { OUTER_GEN_VERSION } from '../engine/chunkgen/index';
 import { chunkOfX } from '../engine/coords';
 import { LOAD_COLS } from '../engine/streaming';
 import { validateCharacterStrict, type DelveCharacter } from '../save/character';
-import type { VisitSave } from '../save/worldSave';
+import type { HeldChar, VisitSave } from '../save/worldSave';
 import type { Channel, NetLink, Payload } from './link';
 import {
-  BULK_HIGH_WATER, CHAR_HZ, CHK_MS, CMD_BURST, CMD_RATE, GUEST_TIMEOUT_MS, LIQ_HZ, LINGER_MS, LOOK_MS, MAX_GUESTS, NET_TILE_COLS, PING_MS, PROTO,
+  BOUNDARY_OPS, BULK_HIGH_WATER, CHAR_HZ, CHK_MS, CMD_BURST, CMD_RATE, GUEST_TIMEOUT_MS, LIQ_HZ, LINGER_MS, LOOK_MS, MAX_GUESTS, NET_TILE_COLS, PING_MS, PROTO,
   PS_BOAT, PS_CLIMB, PS_GROUND, PS_STALE_MS, REPLACE_SILENT_MS, SAVE_DEBOUNCE_MS, SUM_PARK_MAX, WORLD_SIG_MS, WS_HZ,
   type ByeReason, type GuestCtrl, type HostCtrl, type PeerInfo, type Ps, type RejectReason, type WireBatch, type Ws,
   type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj,
@@ -26,7 +27,12 @@ import { answerSum, chunkMessage, encodeLiq, wireBatch } from './chunkSync';
 import { checkMove } from './motion';
 import { snapshotWorld, worldSig } from './snapshot';
 
-export interface VisitStore { get(charId: string): VisitSave | undefined; put(charId: string, v: VisitSave): void }
+/** 世界檔裡各角色的 visit 與 held（正式版是 SplitSession，下一次存世界時寫進世界檔；C1） */
+export interface VisitStore {
+  get(charId: string): VisitSave | undefined; put(charId: string, v: VisitSave): void;
+  /** 離線客人房主最後那份角色（rev = checkpoint rev）；null = 清掉 */
+  getHeld(charId: string): HeldChar | undefined; putHeld(charId: string, h: HeldChar | null): void;
+}
 export interface NetHostOptions {
   build: string; worldId: string; visits: VisitStore;
   /** 跨邊界操作後 SAVE_DEBOUNCE_MS 防抖（spec §5.7） */
@@ -35,13 +41,7 @@ export interface NetHostOptions {
   maxGuests?: number;
 }
 export type GuestPhase = 'hello' | 'syncing' | 'live';
-export interface GuestInfo { pid: Pid; charId: string; nick: string; phase: GuestPhase; silentMs: number; rttMs: number | null }
-
-/** 跨邊界指令（物品進出世界 / 箱子 / 商店 / 鍛造）：同一幀結束時送 chk，並觸發存世界的防抖（C9） */
-export const BOUNDARY_OPS: ReadonlySet<CmdOp> = new Set<CmdOp>([
-  'chestTake', 'chestTakeAll', 'chestDeposit', 'toss', 'buy', 'sell', 'folkBuy', 'folkSell', 'service',
-  'residentService', 'folkService', 'reroll', 'upgrade', 'ascend', 'deepforge', 'salvage', 'salvageAll',
-]);
+export interface GuestInfo { pid: Pid; charId: string; nick: string; phase: GuestPhase; silentMs: number; rttMs: number | null; ackedRev: number }
 
 type BulkJob = { k: 'sum'; cx: number; sums: number[] } | { k: 'chunk'; key: number };
 
@@ -63,6 +63,8 @@ interface Guest {
   tokens: number; tokenAt: number;
   /** checkpoint rev（C9）：從 hello 角色的 rev 起算，每送一次 chk +1 */
   charRev: number; charSig: string; nextChk: number; chkNow: boolean;
+  /** 處理過的最大 cmd seq（chk.upTo）；客人 chkAck 過的最大 rev（C1） */
+  lastCmdSeq: number; ackedRev: number;
   tiles: WireBatch[]; ev: DelveEvent[]; pub: DelveEvent[];
   /** bulk 待送（依序）；chunk 去重 */
   jobs: BulkJob[]; chunkQ: Set<number>; liq: Set<number>;
@@ -70,7 +72,7 @@ interface Guest {
   parkedSums: Map<number, number[]>;
   /** ping：下次送出時間與最近一次 pong 算出的 RTT */
   nextPing: number; rttMs: number | null;
-  /** true = 已移出名單、連線留在 lingerQ 等 LINGER_MS 後關（期間只處理 pong） */
+  /** true = 已移出名單、連線留在 lingerQ 等 LINGER_MS 後關（期間只處理 pong 與 chkAck） */
   lingering: boolean;
 }
 
@@ -108,11 +110,9 @@ export class NetHost {
   private readonly maxGuests: number;
   private list: Guest[] = [];
   private inbox: Inbox[] = [];
-  /** reject / 帶 bye 的 remove 之後等 LINGER_MS 才關連線；lingerIn = 這些連線期間送來的訊息（目前只理 pong，Task 2 加 chkAck） */
+  /** reject / 送了 bye 或最後 chk 的 remove 之後等 LINGER_MS 才關連線；lingerIn = 這些連線期間送來的訊息（只理 pong 與 chkAck） */
   private lingerQ: Linger[] = [];
   private lingerIn: { g: Guest; ch: Channel; data: Payload }[] = [];
-  /** 離線客人最後的角色（C8）：同 charId 再加入時與 hello 帶來的取 rev 較大的 */
-  private readonly retained = new Map<string, { character: DelveCharacter; rev: number }>();
   private readonly lookKeys = new Map<Pid, string>();
   private readonly next: Record<Timer, number> = { ws: -Infinity, liq: -Infinity, char: -Infinity, world: -Infinity, look: -Infinity };
   private sig = 0;
@@ -144,7 +144,7 @@ export class NetHost {
     const g: Guest = {
       link, alive: true, phase: 'hello', pid: '', charId: '', nick: '', heardAt: this.opened ? this.now : null,
       teleBase: 0, teleSeen: 0, knockSeen: 0, psSeq: -1, psAt: 0, released: false, prev: { x: 0, y: 0, at: 0 },
-      tokens: CMD_BURST, tokenAt: 0, charRev: 0, charSig: '', nextChk: 0, chkNow: false,
+      tokens: CMD_BURST, tokenAt: 0, charRev: 0, charSig: '', nextChk: 0, chkNow: false, lastCmdSeq: 0, ackedRev: 0,
       tiles: [], ev: [], pub: [], jobs: [], chunkQ: new Set(), liq: new Set(),
       parkedSums: new Map(), nextPing: 0, rttMs: null, lingering: false,
     };
@@ -160,7 +160,7 @@ export class NetHost {
   frame(nowMs: number, steps: number): void {
     this.now = nowMs;
     this.sweepLinger();
-    if (!this.opened || this.closed) return;
+    if (!this.opened || this.closed) { this.saveIfDue(); return; }
     for (const g of this.list) if (g.heardAt === null) g.heardAt = nowMs;
     // ① 收件匣
     const inbox = this.inbox;
@@ -209,7 +209,7 @@ export class NetHost {
   guests(): GuestInfo[] {
     return this.list.map((g) => ({
       pid: g.pid, charId: g.charId, nick: g.nick, phase: g.phase,
-      silentMs: g.heardAt === null ? 0 : Math.max(0, this.now - g.heardAt), rttMs: g.rttMs,
+      silentMs: g.heardAt === null ? 0 : Math.max(0, this.now - g.heardAt), rttMs: g.rttMs, ackedRev: g.ackedRev,
     }));
   }
 
@@ -237,6 +237,7 @@ export class NetHost {
       case 'ping': this.sendCtrl(g, { t: 'pong', at: m.at }); return;
       case 'pong': g.rttMs = Math.max(0, this.now - m.at); return;
       case 'cmd': this.onCmd(g, m); return;
+      case 'chkAck': this.onChkAck(g, m.rev); return;
       case 'bye': this.remove(g, null); return;
     }
   }
@@ -253,14 +254,14 @@ export class NetHost {
     if (dup && this.now - (dup.heardAt ?? this.now) > REPLACE_SILENT_MS) this.remove(dup, 'timeout');
     if (this.list.filter((o) => o.alive && o.phase !== 'hello').length >= this.maxGuests) { this.reject(g, 'full'); return; }
     if (this.list.some((o) => o !== g && o.alive && o.phase !== 'hello' && o.charId === m.charId)) { this.reject(g, 'charInUse'); return; }
-    // C8：retained（房主最後那份）與 hello 帶來的取 rev 較大的
-    const kept = this.retained.get(m.charId);
+    // C1：held（世界檔裡房主最後那份）與 hello 帶來的取 rev 較大的
+    const kept = this.opts.visits.getHeld(m.charId);
     if (kept && kept.rev > character.rev) character = kept.character;
     let pid: Pid | null = null;
     for (let i = 1; i <= this.maxGuests && !pid; i++) if (!game.actors.has(`p${i}`)) pid = `p${i}`;
     if (!pid) { this.reject(g, 'full'); return; }
     try { game.addActor(pid, character, null, this.opts.visits.get(m.charId)); } catch { this.reject(g, 'char'); return; }
-    this.retained.delete(m.charId);
+    this.opts.visits.putHeld(m.charId, null);
     const a = game.actors.get(pid)!, now = this.now;
     Object.assign(g, {
       phase: 'syncing', pid, charId: m.charId, nick: m.nick,
@@ -268,7 +269,7 @@ export class NetHost {
       psSeq: -1, psAt: now, released: false, prev: { x: a.player.x, y: a.player.y, at: now },
       tokens: CMD_BURST, tokenAt: now, charRev: character.rev, nextChk: now + CHK_MS, chkNow: false, nextPing: now,
     } satisfies Partial<Guest>);
-    // 空字串：第一個 char 計時一到就送（房主可能改用 retained 那份較新的角色，客人手上只有 hello 那份）
+    // 空字串：第一個 char 計時一到就送（房主可能改用 held 那份較新的角色，客人手上只有 hello 那份）
     g.charSig = '';
     const players: PeerInfo[] = [];
     for (const p of game.actors.keys()) if (p !== pid) players.push({ pid: p, nick: this.nickOf(p), look: this.lookOf(p).look });
@@ -303,6 +304,8 @@ export class NetHost {
 
   private onCmd(g: Guest, m: Extract<GuestCtrl, { t: 'cmd' }>): void {
     const now = this.now;
+    // 被權杖桶擋下的也算「處理過」：它沒執行，下一份 chk 照樣反映它的（無）效果
+    g.lastCmdSeq = Math.max(g.lastCmdSeq, m.seq);
     g.tokens = Math.min(CMD_BURST, g.tokens + Math.max(0, now - g.tokenAt) * CMD_RATE / 1000);
     g.tokenAt = now;
     if (g.tokens < 1) { this.sendCtrl(g, { t: 'ack', seq: m.seq, ok: false, reason: 'rate' }); return; }
@@ -440,7 +443,7 @@ export class NetHost {
         g.chkNow = false;
         g.nextChk = now + CHK_MS;
         g.charRev++;
-        this.sendCtrl(g, { t: 'chk', rev: g.charRev, character: stamp(game.characterOf(g.pid, 0), g.charRev) });
+        this.sendCtrl(g, { t: 'chk', rev: g.charRev, character: stamp(game.characterOf(g.pid, 0), g.charRev), upTo: g.lastCmdSeq });
       }
     }
     if (due('world')) {
@@ -455,7 +458,12 @@ export class NetHost {
         this.broadcast({ t: 'look', pid, nick: this.nickOf(pid), look: l.look }, this.list.find((g) => g.alive && g.pid === pid) ?? null);
       }
     }
-    if (this.saveAt !== null && now >= this.saveAt) { this.saveAt = null; this.opts.requestSave?.(); }
+    this.saveIfDue();
+  }
+
+  /** 存世界的防抖到期 → requestSave（關房之後 flush 不跑，延遲中連線的 chkAck 清掉 held 也要存） */
+  private saveIfDue(): void {
+    if (this.saveAt !== null && this.now >= this.saveAt) { this.saveAt = null; this.opts.requestSave?.(); }
   }
 
   /** ws 的共用部分：所有玩家、加上帶欄號的怪物 / 掉落物 / 投射物 / NPC（每位客人再依 LOAD_COLS 過濾，C6） */
@@ -495,28 +503,41 @@ export class NetHost {
 
   // ── 移除 / 拒絕 ───────────────────────────────────
   /**
-   * 移除一位客人（bye / onClose / 逾時 / 關房）：最後的 chk（連線還開著才送）、removeActor、visits.put、retained、對其他客人送 gone。
-   * bye = 要送給他的 bye（null = 不送）。不立刻 close 連線（剛送出的訊息會被丟掉）：有送 bye 就進 lingerQ，LINGER_MS 後由房主關。
+   * 移除一位客人（bye / onClose / 逾時 / 關房）：最後的 chk（連線還開著才送）、removeActor、visits.put、putHeld、對其他客人送 gone。
+   * bye = 要送給他的 bye（null = 不送）。不立刻 close 連線（剛送出的訊息會被丟掉）：有送 bye 或最後的 chk 就進 lingerQ，
+   * LINGER_MS 後由房主關；這段時間收到涵蓋那份 chk 的 chkAck 就清掉 held（C1）。
    */
   private remove(g: Guest, bye: ByeReason | null): void {
     if (!g.alive) return;
     g.alive = false;
     this.list = this.list.filter((o) => o !== g);
+    let sentChk = false;
     if (g.phase !== 'hello' && this.game.actors.has(g.pid)) {
       let out: ReturnType<DelveGame['removeActor']> | null = null;
       try { out = this.game.removeActor(g.pid); } catch { out = null; }
       if (out) {
         g.charRev++;
         const character = stamp(out.character, g.charRev);
-        if (g.link.open) this.sendCtrl(g, { t: 'chk', rev: g.charRev, character });
+        if (g.link.open) { this.sendCtrl(g, { t: 'chk', rev: g.charRev, character, upTo: g.lastCmdSeq }); sentChk = true; }
         this.opts.visits.put(g.charId, out.visit);
-        this.retained.set(g.charId, { character, rev: g.charRev });
+        // at = removeActor 拍快照的時間（visit.lastSeen 就是它；房主自己不讀時鐘）
+        this.opts.visits.putHeld(g.charId, { rev: g.charRev, character, at: out.visit.lastSeen });
         this.saveSoon();
       }
       this.lookKeys.delete(g.pid);
       this.broadcast({ t: 'gone', pid: g.pid }, null);
     }
-    if (bye && g.link.open) { this.sendCtrl(g, { t: 'bye', reason: bye }); this.linger(g); }
+    if (!g.link.open) return;
+    if (bye) this.sendCtrl(g, { t: 'bye', reason: bye });
+    if (bye || sentChk) this.linger(g);
+  }
+
+  /** chkAck：正常連線或延遲中的都算。已移除的客人 ack 到 held 那份（或更新的）→ 清掉 held、存世界（C1） */
+  private onChkAck(g: Guest, rev: number): void {
+    g.ackedRev = Math.max(g.ackedRev, rev);
+    if (g.alive || !g.charId) return;
+    const held = this.opts.visits.getHeld(g.charId);
+    if (held && held.rev <= rev) { this.opts.visits.putHeld(g.charId, null); this.saveSoon(); }
   }
 
   private reject(g: Guest, reason: RejectReason): void {
@@ -532,7 +553,7 @@ export class NetHost {
     this.lingerQ.push({ g, at: this.now + LINGER_MS });
   }
 
-  /** 每個 frame 開頭：處理延遲中連線收到的訊息（目前只有 pong；Task 2 加 chkAck），再關掉到期的 */
+  /** 每個 frame 開頭：處理延遲中連線收到的訊息（pong 與 chkAck），再關掉到期的 */
   private sweepLinger(): void {
     const inbox = this.lingerIn;
     this.lingerIn = [];
@@ -541,6 +562,7 @@ export class NetHost {
       if (!it.g.lingering || it.ch !== 'ctrl' || !w) continue;
       const m = parseGuestCtrl(it.data, w.chunksY, { lo: chunkOfX(w.xMin), hi: chunkOfX(w.xMax - 1) });
       if (m && m.t === 'pong') it.g.rttMs = Math.max(0, this.now - m.at);
+      else if (m && m.t === 'chkAck') { try { this.onChkAck(it.g, m.rev); } catch { /* 不可信輸入：丟掉該則 */ } }
     }
     if (!this.lingerQ.length) return;
     const due = this.lingerQ.filter((l) => this.now >= l.at);

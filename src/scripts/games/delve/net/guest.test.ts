@@ -10,7 +10,7 @@ import { makeEnemy } from '../engine/enemies';
 import { normalizeAppearance } from '../engine/appearance';
 import { FixedStepper } from '../render/model';
 import { createCharacter, type DelveCharacter } from '../save/character';
-import type { VisitSave } from '../save/worldSave';
+import type { HeldChar, VisitSave } from '../save/worldSave';
 import { LoopbackNet } from './loopback';
 import type { Channel, NetLink, Payload } from './link';
 import { encodeBulk } from './codec';
@@ -69,8 +69,11 @@ class LateBulk implements NetLink {
 function rig(latency = 0, lateBulk = false) {
   const game = arena();
   const net = new LoopbackNet(latency ? { latencyMs: [latency, latency] } : {});
-  const visits = new Map<string, VisitSave>();
-  const host = new NetHost(game, { build: BUILD, worldId: 'w1', visits: { get: (k) => visits.get(k), put: (k, v) => { visits.set(k, v); } } });
+  const visits = new Map<string, VisitSave>(), held = new Map<string, HeldChar>();
+  const host = new NetHost(game, {
+    build: BUILD, worldId: 'w1',
+    visits: { get: (k) => visits.get(k), put: (k, v) => { visits.set(k, v); }, getHeld: (k) => held.get(k), putHeld: (k, h) => { if (h) held.set(k, h); else held.delete(k); } },
+  });
   host.open();
   const hs = new FixedStepper(), gs = new FixedStepper();
   let now = 0;
@@ -359,7 +362,7 @@ describe('NetGuest 重連', () => {
 });
 
 describe('NetGuest 重連拿到房主較新的角色', () => {
-  it('斷線前撿到但沒收到 chk → 重連時房主用 retained（rev 較新）→ 客人收到那份 char', () => {
+  it('斷線前撿到但沒收到 chk → 重連時房主用 held（rev 較新）→ 客人收到那份 char', () => {
     const r = rig();
     const g = r.join();
     r.run(1500);
@@ -408,7 +411,7 @@ describe('NetGuest checkpoint', () => {
   it('toss → onCheckpoint 一則（背包少了那格）；30 秒後再一則', () => {
     const r = rig();
     const calls: { c: DelveCharacter; rev: number }[] = [];
-    const g = r.join({ onCheckpoint: (c, rev) => calls.push({ c, rev }) });
+    const g = r.join({ onCheckpoint: (c, rev) => { calls.push({ c, rev }); } });
     r.run(1500);
     expect(calls).toEqual([]);
     const slot = g.game!.local.inventory.slots.findIndex((s) => s?.item === 'torch');
@@ -418,7 +421,7 @@ describe('NetGuest checkpoint', () => {
     expect(calls.length).toBe(1);
     expect(calls[0].c.inventory.slots[slot]).toBeNull();
     expect(calls[0].c.rev).toBe(calls[0].rev);
-    expect(g.lastCheckpoint).toEqual({ rev: calls[0].rev, character: calls[0].c });
+    expect(g.lastCheckpoint).toMatchObject({ rev: calls[0].rev, character: calls[0].c });
     r.run(CHK_MS);
     expect(calls.length).toBe(2);
     expect(calls[1].rev).toBeGreaterThan(calls[0].rev);
@@ -429,7 +432,7 @@ describe('NetGuest 主機離線', () => {
   it('host.close() → ended、主機已離線、lastCheckpoint 是最後那則', () => {
     const r = rig();
     const calls: { c: DelveCharacter; rev: number }[] = [];
-    const g = r.join({ onCheckpoint: (c, rev) => calls.push({ c, rev }) });
+    const g = r.join({ onCheckpoint: (c, rev) => { calls.push({ c, rev }); } });
     r.run(1500);
     r.host.close();
     r.tick(); r.tick();
@@ -437,14 +440,14 @@ describe('NetGuest 主機離線', () => {
     expect(g.endText).toBe('主機已離線');
     expect(END_TEXT.hostGone).toBe('主機已離線');
     expect(calls.length).toBe(1);
-    expect(g.lastCheckpoint).toEqual({ rev: calls[0].rev, character: calls[0].c });
+    expect(g.lastCheckpoint).toMatchObject({ rev: calls[0].rev, character: calls[0].c });
     expect(r.link.open).toBe(true);                // 連線由房主延遲關閉（LINGER_MS），客人不自己關
   });
 
   it('sever → ended、主機已離線、lastCheckpoint 是最後那則', () => {
     const r = rig();
     const calls: { c: DelveCharacter; rev: number }[] = [];
-    const g = r.join({ onCheckpoint: (c, rev) => calls.push({ c, rev }) });
+    const g = r.join({ onCheckpoint: (c, rev) => { calls.push({ c, rev }); } });
     r.run(1500);
     const slot = g.game!.local.inventory.slots.findIndex((s) => s?.item === 'torch');
     g.game!.act({ op: 'toss', slot });
@@ -454,7 +457,7 @@ describe('NetGuest 主機離線', () => {
     r.tick();
     expect(g.state).toBe('ended');
     expect(g.endText).toBe('主機已離線');
-    expect(g.lastCheckpoint).toEqual({ rev: calls[0].rev, character: calls[0].c });
+    expect(g.lastCheckpoint).toMatchObject({ rev: calls[0].rev, character: calls[0].c });
   });
 
   it('房主沉默超過 HOST_TIMEOUT_MS → ended hostGone', () => {
@@ -472,7 +475,7 @@ describe('NetGuest 主機離線', () => {
   it('leave → bye leave、ended 已離開；房主移除 actor；最後的 chk 收得到', () => {
     const r = rig();
     const calls: { c: DelveCharacter; rev: number }[] = [];
-    const g = r.join({ onCheckpoint: (c, rev) => calls.push({ c, rev }) });
+    const g = r.join({ onCheckpoint: (c, rev) => { calls.push({ c, rev }); } });
     r.run(1500);
     g.leave();
     expect(g.state).toBe('ended');

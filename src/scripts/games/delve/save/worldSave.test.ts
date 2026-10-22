@@ -5,7 +5,7 @@ import { readLegacyFixture } from './legacyFixture';
 import { validateCharacter } from './character';
 import {
   MAX_VISITS, WORLD_FORMAT, decodeAnySave, decodeWorld, encodeWorld, joinSplit, splitSnapshot, upsertVisit,
-  type VisitMap, type VisitSave, type WorldHeader,
+  type HeldChar, type HeldMap, type VisitMap, type VisitSave, type WorldHeader,
 } from './worldSave';
 
 const legacy = () => decodeSave(readLegacyFixture());
@@ -170,6 +170,57 @@ describe('world save format 10', () => {
       expect(() => decodeWorld(tamper({ combat: { bosses: 'x', kills: {}, peaceful: false } }))).toThrow(SaveFormatError);
       expect(() => decodeWorld(tamper({ combat: null }))).toThrow(SaveFormatError);
       expect(() => decodeWorld(tamper({ chests: 'x' }))).toThrow(SaveFormatError);
+    });
+  });
+
+  describe('held（co-op 離線客人的角色，C1）', () => {
+    const held = (id: string, rev: number, at: number): HeldChar => {
+      const { character } = splitSnapshot(legacy(), { ...who, id }, where, 99);
+      return { rev, character: { ...character, rev, savedAt: 0 }, at };
+    };
+
+    it('held round-trip', () => {
+      const h: HeldMap = { g1: held('g1', 7, 1000), g2: held('g2', 0, 2000) };
+      const { world } = splitSnapshot(legacy(), who, { ...where, held: h }, 99);
+      expect(world.header.held).toEqual(h);
+      const back = decodeWorld(encodeWorld(world));
+      expect(back.header.held).toEqual(h);
+      expect(back.header).toEqual(world.header);
+      // 沒有 held 的舊檔照讀（不升 format）
+      const { world: plain } = splitSnapshot(legacy(), who, where, 99);
+      expect(plain.header).not.toHaveProperty('held');
+      expect(decodeWorld(encodeWorld(plain)).header.held ?? {}).toEqual({});
+    });
+
+    it('不合法的 held 只丟那一筆', () => {
+      const w = splitSnapshot(legacy(), who, where, 99).world;
+      const good = held('g1', 3, 10);
+      const raw = {
+        g1: good,
+        badChar: { ...held('badChar', 1, 10), character: { nope: 1 } },
+        negRev: { ...held('negRev', 1, 10), rev: -1 },
+        fracRev: { ...held('fracRev', 1, 10), rev: 1.5 },
+        strRev: { ...held('strRev', 1, 10), rev: '2' },
+        noAt: { ...held('noAt', 1, 10), at: 'x' },
+        otherId: held('someoneElse', 1, 10),
+        'bad key!': good,
+        notObject: 7,
+      };
+      const back = decodeWorld(encodeWorld({ header: { ...w.header, held: raw } as unknown as WorldHeader, chunks: w.chunks }));
+      expect(Object.keys(back.header.held ?? {})).toEqual(['g1']);
+      expect(back.header.held!.g1).toEqual(good);
+      expect(back.header.seed).toBe('fixture-v9');
+    });
+
+    it('held LRU：第 9 筆擠掉 at 最舊的', () => {
+      const h: HeldMap = {};
+      for (let i = 0; i < 9; i++) h[`g${i}`] = held(`g${i}`, i, i === 4 ? 1 : 100 + i);
+      const { world } = splitSnapshot(legacy(), who, { ...where, held: h }, 99);
+      expect(Object.keys(world.header.held!)).toHaveLength(MAX_VISITS);
+      expect(world.header.held!.g4).toBeUndefined();
+      expect(world.header.held!.g0).toBeDefined();
+      expect(world.header.held!.g8).toBeDefined();
+      expect(Object.keys(h)).toHaveLength(9);          // 不改輸入
     });
   });
 

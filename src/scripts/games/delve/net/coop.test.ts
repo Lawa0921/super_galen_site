@@ -1,4 +1,4 @@
-// coop.test.ts — M-B3 驗收（Task 11）A1、A2、A6–A10：同一行程裡的房主 + 客人，經 LoopbackNet（arena 平地小世界）。
+// coop.test.ts — M-B3 驗收（Task 11）A1、A2、A6–A10（M-C 加 A10c／A10d 與確認式 checkpoint）：同一行程裡的房主 + 客人，經 LoopbackNet（arena 平地小世界）。
 // 每條結束前 run 到靜止，再斷言 sameTiles(i) 是 []（客人同步集合內每個 chunk 與房主逐層相等）。
 import { describe, it, expect } from 'vitest';
 import { T } from '../engine/tiles';
@@ -356,7 +356,7 @@ describe('A10 物品守恆（arena）', () => {
     expect(r.sameTiles(0)).toEqual([]);
   });
 
-  it('客人把 1 個 silver_coin 存進箱子（chk 到了）立刻 sever → 箱子 + 最後一次 chk === 1，重連後 retained 也不含那 1 個', () => {
+  it('客人把 1 個 silver_coin 存進箱子（chk 到了）立刻 sever → 箱子 + 最後一次 chk === 1，重連後 held 也不含那 1 個', () => {
     const r = coopRig();
     const g = r.guests[0], hg = r.hostGame;
     const a = actorOf(r, g);
@@ -381,7 +381,7 @@ describe('A10 物品守恆（arena）', () => {
     const c = r.count('silver_coin');
     expect(c.chests).toBe(1);
     expect(c.chests + c.lastChk[0]).toBe(1);
-    // 重連：房主 retained（rev 較新）也不含那 1 個
+    // 重連：房主 held（rev 較新）也不含那 1 個
     r.reconnect(0);
     expect(until(r, () => g.state === 'live', 5000)).toBe(true);
     r.run(REST_MS);
@@ -391,8 +391,8 @@ describe('A10 物品守恆（arena）', () => {
     expect(r.sameTiles(0)).toEqual([]);
   });
 
-  // A10c：記錄「尚未解決」的窗口，不是驗證它被允許。已知 M-B3 限制，待使用者確認；要關掉它需要 M-C 的確認式 checkpoint（acknowledged checkpoints）。
-  it('A10c 記錄尚未解決的窗口（已知 M-B3 限制）：房主已存入、chk 還在路上就 sever → 客人的最後 chk 仍有那 1 個；同一場重連時 retained 較新，不複製', () => {
+  // M-C（C1）：chk 在途中斷線 → 房主移除時把角色寫進世界檔的 held；房主重新整理（新的 NetHost、同一個 store）後客人重連，用 held 那份
+  it('A10c：chk 在途中斷線 → 房主重新載入世界後重連，總數仍是 1', () => {
     const r = coopRig({ latencyMs: [50, 50] });
     const g = r.guests[0], hg = r.hostGame;
     const a = actorOf(r, g);
@@ -414,12 +414,86 @@ describe('A10 物品守恆（arena）', () => {
     expect(until(r, () => r.count('silver_coin').chests === 1, 1000)).toBe(true);
     r.net.sever(r.links[0]);
     r.run(100);
-    const c = r.count('silver_coin');
-    expect(c.chests + c.lastChk[0]).toBe(2);          // 已知 M-B3 限制，待使用者確認；需要確認式 checkpoint（M-C）才能關掉這個窗口
+    // 客人手上的最後 chk 還有那 1 個，而且知道存入沒被 checkpoint 涵蓋
+    expect(r.count('silver_coin').lastChk[0]).toBe(1);
+    expect(g.unconfirmed).toBe(true);
+    const charId = r.chars[0].id;
+    expect(r.store.getHeld(charId)).toBeDefined();
+    // 房主重新整理：同一個遊戲與 store（世界檔）、新的 NetHost
+    r.rehost();
     r.reconnect(0);
     expect(until(r, () => g.state === 'live', 5000)).toBe(true);
     r.run(REST_MS);
     expect(invCount(g.game!, 'silver_coin') + r.count('silver_coin').chests).toBe(1);
+    expect(r.count('silver_coin').guestsOnHost[0]).toBe(0);
+    expect(r.store.getHeld(charId)).toBeUndefined();
     expect(r.sameTiles(0)).toEqual([]);
+  });
+
+  it('A10d：正常 chk 送達並 ack 後，held 被清掉', () => {
+    const r = coopRig();
+    const g = r.guests[0], hg = r.hostGame;
+    const a = actorOf(r, g);
+    hg.teleport(120, FLOOR - 1);
+    hg.withActor(a, () => hg.give('silver_coin', 1));
+    const cx = tileX(a.player) + 2;
+    hg.world.setFg(cx, FLOOR - 1, T.CHEST);
+    r.run(600);
+    g.game!.setAim(cx, FLOOR - 1);
+    g.game!.setUse(true);
+    r.run(200);
+    g.game!.setUse(false);
+    r.run(200);
+    g.game!.act({ op: 'chestDeposit', slot: slotOf(g.game!, 'silver_coin') });
+    r.run(500);
+    expect(r.count('silver_coin').chests).toBe(1);
+    expect(g.unconfirmed).toBe(false);
+    expect(r.host.guests()[0].ackedRev).toBe(g.lastCheckpoint!.rev);
+    const charId = r.chars[0].id;
+    g.leave();
+    r.run(3000);
+    expect(r.store.getHeld(charId)).toBeUndefined();
+    expect(r.hostGame.actors.has('p1')).toBe(false);
+    expect(r.count('silver_coin').lastChk[0]).toBe(0);
+  });
+});
+
+describe('確認式 checkpoint（C1）', () => {
+  it('chkAck 等 onCheckpoint 的 promise 完成才送', async () => {
+    const r = coopRig({ guests: 0 });
+    const waits: { rev: number; resolve: () => void }[] = [];
+    const g = r.join({ onCheckpoint: (_c, rev) => new Promise<void>((resolve) => { waits.push({ rev, resolve }); }) });
+    expect(until(r, () => g.state === 'live', 5000)).toBe(true);
+    r.run(1000);
+    const acked0 = r.host.guests()[0].ackedRev;
+    g.game!.act({ op: 'toss', slot: slotOf(g.game!, 'torch'), n: 1 });
+    expect(until(r, () => waits.length === 1, 1000)).toBe(true);
+    const rev = waits[0].rev;
+    r.run(500);
+    expect(r.host.guests()[0].ackedRev).toBe(acked0);
+    waits[0].resolve();
+    await Promise.resolve();
+    r.run(100);
+    expect(r.host.guests()[0].ackedRev).toBe(rev);
+  });
+
+  it('chk.upTo 跟上最後處理的 cmd', () => {
+    const r = coopRig();
+    const g = r.guests[0];
+    const seqs: number[] = [];
+    r.hostLinks[0].onMessage((ch, d) => {
+      if (ch !== 'ctrl' || typeof d !== 'string') return;
+      const m = JSON.parse(d) as { t: string; seq?: number };
+      if (m.t === 'cmd') seqs.push(m.seq!);
+    });
+    g.game!.act({ op: 'swap', a: 0, b: 1 });
+    g.game!.act({ op: 'swap', a: 0, b: 1 });
+    g.game!.act({ op: 'toss', slot: slotOf(g.game!, 'torch'), n: 1 });
+    expect(g.unconfirmed).toBe(true);
+    r.run(500);
+    expect(seqs.length).toBe(3);
+    expect(g.lastCheckpoint!.upTo).toBe(seqs[2]);
+    expect(g.unconfirmed).toBe(false);
+    expect(g.worldId).toBe('w-host');
   });
 });

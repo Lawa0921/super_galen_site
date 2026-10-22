@@ -12,13 +12,13 @@ import { normalizeAppearance } from '../engine/appearance';
 import { rollGear } from '../engine/gear';
 import { Rng } from '../engine/rng';
 import { createCharacter, type DelveCharacter } from '../save/character';
-import type { VisitSave } from '../save/worldSave';
+import type { HeldChar, VisitSave } from '../save/worldSave';
 import { LoopbackNet } from './loopback';
 import type { Channel, NetLink, Payload } from './link';
 import { decodeBulk } from './codec';
 import { columnSums } from './chunkSync';
-import { CHK_MS, NET_TILE_COLS, PROTO, PS_GROUND, type BulkHead } from './protocol';
-import { BOUNDARY_OPS, NetHost } from './host';
+import { BOUNDARY_OPS, CHK_MS, LINGER_MS, NET_TILE_COLS, PROTO, PS_GROUND, SAVE_DEBOUNCE_MS, type BulkHead } from './protocol';
+import { NetHost } from './host';
 
 const FLOOR = 60;
 const BUILD = 'test-build';
@@ -95,13 +95,16 @@ const hello = (c: DelveCharacter, o: Record<string, unknown> = {}) => ({ t: 'hel
 function rig(world: 'arena' | 'infinite' = 'arena', maxGuests?: number) {
   const game = world === 'arena' ? arena() : infinite();
   const net = new LoopbackNet();
-  const visits = new Map<string, VisitSave>();
+  const visits = new Map<string, VisitSave>(), held = new Map<string, HeldChar>();
   const puts: string[] = [];
   const saves: number[] = [];
   let now = 0;
   const host = new NetHost(game, {
     build: BUILD, worldId: 'w1', maxGuests,
-    visits: { get: (k) => visits.get(k), put: (k, v) => { puts.push(k); visits.set(k, v); } },
+    visits: {
+      get: (k) => visits.get(k), put: (k, v) => { puts.push(k); visits.set(k, v); },
+      getHeld: (k) => held.get(k), putHeld: (k, h) => { if (h) held.set(k, h); else held.delete(k); },
+    },
     requestSave: () => { saves.push(now); },
   });
   host.open();
@@ -118,7 +121,7 @@ function rig(world: 'arena' | 'infinite' = 'arena', maxGuests?: number) {
     tick(); tick();
     return g;
   };
-  return { game, net, host, visits, puts, saves, tick, run, connect, join, get now() { return now; } };
+  return { game, net, host, visits, held, puts, saves, tick, run, connect, join, get now() { return now; } };
 }
 
 /** 客人 p1 站在地上、左緣 x（px）的 ps */
@@ -454,7 +457,7 @@ describe('NetHost 逾時與關閉', () => {
     expect(r.host.guests()).toEqual([]);
   });
 
-  it('重連：retained 的角色 rev 較新 → 用房主那份；位置是斷線前的 visit', () => {
+  it('重連：held 的角色 rev 較新 → 用房主那份；位置是斷線前的 visit', () => {
     const r = rig();
     const c = hero({ rev: 3 });
     const g = r.join(c);
@@ -510,6 +513,71 @@ describe('NetHost 逾時與關閉', () => {
     expect(r.game.actors.size).toBe(1);
     expect(r.game.mode).toBe('solo');
     expect(r.puts.length).toBe(2);
+  });
+});
+
+describe('NetHost held 與 chkAck（C1）', () => {
+  it('chk.upTo = 處理過的最大 cmd seq；ackedRev 跟著 chkAck 走', () => {
+    const r = rig();
+    const g = r.join();
+    g.send({ t: 'cmd', seq: 4, cmd: { op: 'swap', a: 0, b: 1 } });
+    g.send({ t: 'cmd', seq: 9, cmd: { op: 'toss', slot: 0, n: 1 } });
+    r.tick(); r.tick();
+    const chk = g.last('chk') as unknown as { rev: number; upTo: number };
+    expect(chk.upTo).toBe(9);
+    expect(r.host.guests()[0].ackedRev).toBe(0);
+    g.send({ t: 'chkAck', rev: chk.rev });
+    r.tick(); r.tick();
+    expect(r.host.guests()[0].ackedRev).toBe(chk.rev);
+    g.send({ t: 'chkAck', rev: 0 });                    // 舊的 ack 不會倒退
+    r.tick(); r.tick();
+    expect(r.host.guests()[0].ackedRev).toBe(chk.rev);
+  });
+
+  it('客人 bye → 最後的 chk + held、連線延遲關閉；ack 舊 rev 不清、ack 最後那份才清', () => {
+    const r = rig();
+    const c = hero();
+    const g = r.join(c);
+    g.send({ t: 'bye', reason: 'leave' });
+    r.tick(); r.tick();
+    const fin = g.last('chk') as unknown as { rev: number };
+    expect(r.held.get(c.id)?.rev).toBe(fin.rev);
+    expect(r.host.lingering).toBe(1);
+    g.send({ t: 'chkAck', rev: fin.rev - 1 });
+    r.tick(); r.tick();
+    expect(r.held.get(c.id)?.rev).toBe(fin.rev);
+    g.send({ t: 'chkAck', rev: fin.rev });
+    r.tick(); r.tick();
+    expect(r.held.has(c.id)).toBe(false);
+    r.run(LINGER_MS);
+    expect(r.host.lingering).toBe(0);
+    expect(g.closed).toBe(true);
+  });
+
+  it('close 之後延遲中的連線送來最後那份的 chkAck → held 清掉、requestSave', () => {
+    const r = rig();
+    const c = hero();
+    const g = r.join(c);
+    r.host.close();
+    const saves0 = r.saves.length;
+    r.tick();
+    const fin = g.last('chk') as unknown as { rev: number };
+    expect(r.held.get(c.id)?.rev).toBe(fin.rev);
+    g.send({ t: 'chkAck', rev: fin.rev });
+    r.tick(); r.tick();
+    expect(r.held.has(c.id)).toBe(false);
+    r.run(SAVE_DEBOUNCE_MS + 100);
+    expect(r.saves.length).toBe(saves0 + 1);
+  });
+
+  it('重新加入：held 的 rev 較新就用它，加入成功後清掉', () => {
+    const r = rig();
+    const c = hero({ rev: 3 });
+    const kept = { ...c, rev: 8, inventory: { ...c.inventory, slots: c.inventory.slots.map(() => null) } };
+    r.held.set(c.id, { rev: 8, character: kept, at: 1 });
+    r.join(c);
+    expect(r.held.has(c.id)).toBe(false);
+    expect(r.game.actors.get('p1')!.inventory.slots.every((s) => s === null)).toBe(true);
   });
 });
 

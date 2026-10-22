@@ -25,6 +25,14 @@ export const GUEST_TIMEOUT_MS = 90_000, HOST_TIMEOUT_MS = 90_000, PS_STALE_MS = 
 export const INTERP_DELAY_MS = 100, CMD_RATE = 30, CMD_BURST = 60;
 /** M-C：reject / bye 之後房主多留連線這麼久才關（讓最後那則訊息送達）；ping 週期；每位客人停放的遠方 sum 上限；同角色舊連線沉默超過這麼久可被新 hello 取代 */
 export const LINGER_MS = 2000, PING_MS = 2000, SUM_PARK_MAX = 32, REPLACE_SILENT_MS = 5000;
+/**
+ * 跨邊界指令（物品進出世界 / 箱子 / 商店 / 鍛造）：房主同一幀結束時送 chk，並觸發存世界的防抖（C9）；
+ * 客人記下最後一個的 seq，chk.upTo 還沒涵蓋到它 = unconfirmed（M-C C1）
+ */
+export const BOUNDARY_OPS: ReadonlySet<Cmd['op']> = new Set<Cmd['op']>([
+  'chestTake', 'chestTakeAll', 'chestDeposit', 'toss', 'buy', 'sell', 'folkBuy', 'folkSell', 'service',
+  'residentService', 'folkService', 'reroll', 'upgrade', 'ascend', 'deepforge', 'salvage', 'salvageAll',
+]);
 /** 定義在 engine/constants.ts（引擎不依賴 net/）；這裡轉出口，既有的 import 不必改 */
 export { REMOTE_REACH_SLACK } from '../engine/constants';
 /** 興趣範圍（C6）：tiles／liq 用的欄數，比客人自己的 UNLOAD_COLS 多 2 欄 */
@@ -59,13 +67,13 @@ export interface Ws { t: 'ws'; tick: number; time: number; players: WsPlayer[]; 
 
 export type HostCtrl = Welcome | { t: 'reject'; reason: RejectReason } | { t: 'tiles'; tick: number; batches: WireBatch[] }
   | { t: 'ev'; list: DelveEvent[] } | { t: 'pub'; list: DelveEvent[] } | { t: 'ack'; seq: number; ok: boolean; reason?: string }
-  | { t: 'char'; rev: number; character: DelveCharacter } | { t: 'chk'; rev: number; character: DelveCharacter }
+  | { t: 'char'; rev: number; character: DelveCharacter } | { t: 'chk'; rev: number; character: DelveCharacter; upTo: number }
   | { t: 'look'; pid: Pid; nick: string; look: DollLook } | { t: 'gone'; pid: Pid }
   | { t: 'teleport'; x: number; y: number; tseq: number } | { t: 'knock'; vx: number; vy: number; dur: number }
   | { t: 'world'; snap: WorldSnap } | { t: 'bye'; reason: ByeReason } | { t: 'ping'; at: number } | { t: 'pong'; at: number };
 export type GuestCtrl = { t: 'hello'; proto: number; build: string; charId: string; nick: string; character: unknown }
   | { t: 'ready' } | { t: 'cmd'; seq: number; cmd: Cmd } | { t: 'sum'; cx: number; sums: number[] } | { t: 'bye'; reason: ByeReason }
-  | { t: 'ping'; at: number } | { t: 'pong'; at: number };
+  | { t: 'ping'; at: number } | { t: 'pong'; at: number } | { t: 'chkAck'; rev: number };
 
 /** spec §5.6 第 2 點：只有世界層級（Task 7 產生 / 套用） */
 export interface WorldSnap {

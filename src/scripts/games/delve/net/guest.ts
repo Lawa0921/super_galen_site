@@ -3,6 +3,7 @@
 //   chunk 同步（ChunkSyncGuest：tiles / col / chunk、updateInterest 送 sum）、液體、事件、角色、checkpoint、
 //   teleport / knock、ws 內插（怪物 / 掉落物 / 投射物 / NPC 寫進 replica 的列表，現有 renderer 直接畫）、
 //   樂觀放置與回滾（C14）、20 Hz 的 ps、逾時與重連。
+// M-C C1：chk 的 onCheckpoint 寫好（promise resolve）才回 chkAck；最後一個跨邊界 cmd 的 seq 還沒被 chk.upTo 涵蓋 = unconfirmed。
 // 客人信任房主（反目標：不做防作弊），但每則訊息的解析 / 套用失敗只丟掉那一則，絕不拋到 frame 之外。
 // 決定性：不讀時鐘、不用 Math.random；時間一律是 frame(nowMs, …) 傳進來的值。
 import { DelveGame, type DelveEvent } from '../engine/game';
@@ -21,7 +22,7 @@ import { chunkOfX } from '../engine/coords';
 import type { DelveCharacter } from '../save/character';
 import type { Channel, NetLink, Payload } from './link';
 import {
-  HOST_TIMEOUT_MS, PING_MS, PROTO, PS_BOAT, PS_CLIMB, PS_GROUND, PS_HZ,
+  BOUNDARY_OPS, HOST_TIMEOUT_MS, PING_MS, PROTO, PS_BOAT, PS_CLIMB, PS_GROUND, PS_HZ,
   type ByeReason, type GuestCtrl, type HostCtrl, type Ps, type RejectReason, type Welcome, type WorldSnap,
   type Ws, type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj,
 } from './protocol';
@@ -34,12 +35,14 @@ export interface NetGuestOptions {
   build: string;
   /** 最後一次 chk 的角色（沒有就是本地角色檔） */
   character: DelveCharacter;
-  /** C9：只把房主的 chk 交出去（M-C 寫 IDB）；絕不存本地預測狀態 */
-  onCheckpoint?: (c: DelveCharacter, rev: number) => void;
+  /** C9：只把房主的 chk 交出去（M-C 寫 IDB）；絕不存本地預測狀態。回傳 promise → resolve 之後才回 chkAck（reject 就不回） */
+  onCheckpoint?: (c: DelveCharacter, rev: number) => void | Promise<void>;
   /** 測試注入（gen 快取 / columnSource）；預設依 welcome 建 replica */
   createReplica?: (w: Welcome) => DelveGame;
 }
 export type GuestState = 'connecting' | 'syncing' | 'live' | 'ended';
+/** 最後一份 chk：upTo = 房主做這份 checkpoint 時處理到的 cmd seq */
+export interface Checkpoint { rev: number; character: DelveCharacter; upTo: number }
 export interface PeerView { pid: Pid; nick: string; look: DollLook | null; x: number; y: number; facing: 1 | -1; hp: number; maxHp: number; dead: boolean }
 
 export const END_TEXT: Readonly<Record<RejectReason | ByeReason | 'hostGone', string>> = Object.freeze({
@@ -101,7 +104,14 @@ export class NetGuest {
   private replica: DelveGame | null = null;
   private me: Pid | null = null;
   private chunks: ChunkSyncGuest | null = null;
-  private checkpoint: { rev: number; character: DelveCharacter } | null = null;
+  private checkpoint: Checkpoint | null = null;
+  /** 最後一個送出的跨邊界 cmd 的 seq（0 = 沒有 / welcome 時歸零：房主已經用 held 或 hello 那份角色接手） */
+  private boundarySeq = 0;
+  /** 最後一個 welcome 的 worldId */
+  private world: string | null = null;
+  /** leave 之後收到的那份 chk 的 rev，與已經送出 chkAck 的最大 rev */
+  private leaveChk: number | null = null;
+  private ackSent = -1;
   /** 這次 hello 帶的角色（welcome 時套到本地 actor） */
   private character: DelveCharacter;
   private inbox: Inbox[] = [];
@@ -147,7 +157,11 @@ export class NetGuest {
   get endText(): string | null { return this.text; }
   get game(): DelveGame | null { return this.replica; }
   get pid(): Pid | null { return this.me; }
-  get lastCheckpoint(): { rev: number; character: DelveCharacter } | null { return this.checkpoint; }
+  get lastCheckpoint(): Checkpoint | null { return this.checkpoint; }
+  /** 有跨邊界 cmd 還沒被房主的 chk 涵蓋（斷線時 = 那筆操作可能在房主世界裡生效了，但客人手上的角色不含它；C1） */
+  get unconfirmed(): boolean { return this.boundarySeq > (this.checkpoint?.upTo ?? 0); }
+  /** 最後加入的世界（welcome 之前 null） */
+  get worldId(): string | null { return this.world; }
   /** chunk 同步狀態（測試 / 除錯用）；welcome 之前 null */
   get sync(): ChunkSyncGuest | null { return this.chunks; }
   /** 最近一次 ping/pong 量到的往返時間（ms）；第一個 pong 到之前是 null */
@@ -221,12 +235,13 @@ export class NetGuest {
     return out;
   }
 
-  /** bye leave；state ended。房主最後的 chk 到了（或 LEAVE_GRACE_MS 後）再自己關連線 */
+  /** bye leave；state ended。房主最後的 chk 到了、chkAck 送出去之後（最晚 LEAVE_GRACE_MS）再自己關連線 */
   leave(): void {
     if (this.st === 'ended') return;
     this.ctrl({ t: 'bye', reason: 'leave' });
     this.end(END_TEXT.leave, false);
     this.closeAt = this.now + LEAVE_GRACE_MS;
+    this.leaveChk = null;
   }
 
   /** 用 lastCheckpoint（沒有就 opts.character）重新 hello；舊 replica 丟掉 */
@@ -245,6 +260,8 @@ export class NetGuest {
     this.early = [];
     this.heardAt = null;
     this.closeAt = null;
+    this.leaveChk = null;
+    this.ackSent = -1;
     this.tseq = 0;
     this.placeCd = 0;
     this.nextPs = -Infinity;
@@ -276,6 +293,7 @@ export class NetGuest {
   private sendCmd(cmd: Cmd): number {
     const seq = ++this.cmdSeq;
     this.ctrl({ t: 'cmd', seq, cmd });
+    if (BOUNDARY_OPS.has(cmd.op)) this.boundarySeq = seq;
     return seq;
   }
 
@@ -287,22 +305,25 @@ export class NetGuest {
     if (close && this.link.open) this.link.close('ended');
   }
 
-  /** leave 之後：只收最後的 chk，收到或逾時就關連線 */
+  /**
+   * leave 之後：只收最後的 chk。它的 chkAck 送出、而且 ctrl 已經送完（buffered 0：關連線會丟掉在途的訊息）才關連線；
+   * 最晚 LEAVE_GRACE_MS（onCheckpoint 一直沒完成、或房主沒送 chk）
+   */
   private drainAfterLeave(nowMs: number): void {
     if (this.closeAt === null) { this.inbox = []; return; }
     const inbox = this.inbox;
     this.inbox = [];
-    let done = nowMs >= this.closeAt;
     for (const it of inbox) {
       if (it.link !== this.link) continue;
       if ('close' in it) { this.closeAt = null; return; }
       if (it.ch !== 'ctrl' || typeof it.data !== 'string') continue;
       try {
         const m = JSON.parse(it.data) as HostCtrl;
-        if (isObj(m) && m.t === 'chk') { this.onChk(m); done = true; }
+        if (isObj(m) && m.t === 'chk' && fin(m.rev)) { this.leaveChk = m.rev; this.onChk(m); }
       } catch { /* 丟掉 */ }
     }
-    if (done) { this.closeAt = null; if (this.link.open) this.link.close('leave'); }
+    const acked = this.leaveChk !== null && this.ackSent >= this.leaveChk && this.link.buffered('ctrl') === 0;
+    if (acked || nowMs >= this.closeAt) { this.closeAt = null; if (this.link.open) this.link.close('leave'); }
   }
 
   // ── 收訊 ──────────────────────────────────────────
@@ -389,6 +410,9 @@ export class NetGuest {
     this.chunks = sync;
     this.worldSeen = false;
     this.me = m.pid;
+    this.world = typeof m.worldId === 'string' ? m.worldId : null;
+    // 房主已經用 held 或 hello 那份角色接手：之前沒被涵蓋的跨邊界操作已經有了結果（新連線的 upTo 從 0 起算）
+    this.boundarySeq = 0;
     this.resetWs();
     this.peerInfo.clear();
     if (Array.isArray(m.players)) {
@@ -429,10 +453,20 @@ export class NetGuest {
     }
   }
 
+  /** 先記下 lastCheckpoint，onCheckpoint 寫好（回傳 promise 就等它 resolve）之後、連線還開著才回 chkAck（C1） */
   private onChk(m: Extract<HostCtrl, { t: 'chk' }>): void {
     if (!fin(m.rev) || !isObj(m.character)) return;
-    this.checkpoint = { rev: m.rev, character: m.character };
-    this.opts.onCheckpoint?.(m.character, m.rev);
+    const rev = m.rev, link = this.link;
+    this.checkpoint = { rev, character: m.character, upTo: fin(m.upTo) ? m.upTo : 0 };
+    const ack = (): void => {
+      if (!link.open) return;
+      link.send('ctrl', JSON.stringify({ t: 'chkAck', rev } satisfies GuestCtrl));
+      if (link === this.link) this.ackSent = Math.max(this.ackSent, rev);
+    };
+    let r: unknown;
+    try { r = this.opts.onCheckpoint?.(m.character, rev); } catch { return; }   // 寫不進去：不 ack（房主留著 held）
+    if (r instanceof Promise) r.then(ack, () => { /* 寫入失敗：不 ack */ });
+    else ack();
   }
 
   /** C14：ack ok:false → 那格仍是樂觀放下的方塊、期間房主沒寫過 → 還原 */

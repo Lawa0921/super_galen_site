@@ -6,8 +6,8 @@
 import { SaveFormatError, applyCharacter, restoreBlocker, snapshotGame, type RestoreError, type SaveData } from './serialize';
 import { decodeCharacter, newId, newIdentity, type CharIdentity, type DelveCharacter } from './character';
 import {
-  V10_BACKUP_SUFFIX, characterState, decodeAnySave, encodeWorld, splitSnapshot,
-  type AnySave, type WorldData, type WorldHeader, type WorldIdentity,
+  V10_BACKUP_SUFFIX, characterState, decodeAnySave, encodeWorld, splitSnapshot, trimHeld, upsertVisit,
+  type AnySave, type HeldChar, type VisitSave, type WorldData, type WorldHeader, type WorldIdentity,
 } from './worldSave';
 import { GEN_VERSION } from '../engine/constants';
 import type { DelveGame } from '../engine/game';
@@ -46,7 +46,10 @@ export interface SplitStore {
   putCharacter(c: DelveCharacter): Promise<void>;
 }
 
-/** 一場遊戲的存檔身分：哪個存檔槽、哪個角色、哪個世界、世界上各角色的 visit */
+/**
+ * 一場遊戲的存檔身分：哪個存檔槽、哪個角色、哪個世界、世界上各角色的 visit 與 held。
+ * 也是開房時 NetHost 的 VisitStore（co-op C1）：get / put 是客人的 visit、getHeld / putHeld 是離線客人的角色，下一次存檔一起寫進世界檔。
+ */
 export class SplitSession {
   private who: CharIdentity;
   private where: WorldIdentity;
@@ -54,19 +57,35 @@ export class SplitSession {
   pendingBackup: string | null = null;
   constructor(who: CharIdentity, where: WorldIdentity, readonly slot: string) {
     this.who = { ...who };
-    this.where = { ...where, visits: { ...where.visits } };
+    this.where = { ...where, visits: { ...where.visits }, held: { ...where.held } };
   }
   static fresh(seed: string, now: number, slot: string): SplitSession {
     return new SplitSession(newIdentity(now), { worldId: newId(), worldName: seed, visits: {} }, slot);
   }
   static fromLoaded(world: WorldHeader, character: DelveCharacter, slot: string): SplitSession {
     const { id, nick, createdAt, rev } = character;
-    const s = new SplitSession({ id, nick, createdAt, rev }, { worldId: world.worldId, worldName: world.worldName, visits: world.visits }, slot);
+    const s = new SplitSession({ id, nick, createdAt, rev }, { worldId: world.worldId, worldName: world.worldName, visits: world.visits, held: world.held }, slot);
     if (world.format === 10) s.pendingBackup = V10_BACKUP_SUFFIX;
     return s;
   }
   get charId(): string { return this.who.id; }
   get nick(): string { return this.who.nick; }
+  get worldId(): string { return this.where.worldId; }
+  // ── VisitStore（NetHost）──
+  get(charId: string): VisitSave | undefined {
+    return Object.prototype.hasOwnProperty.call(this.where.visits, charId) ? this.where.visits[charId] : undefined;
+  }
+  put(charId: string, v: VisitSave): void { this.where = { ...this.where, visits: upsertVisit(this.where.visits, charId, v) }; }
+  getHeld(charId: string): HeldChar | undefined {
+    const held = this.where.held ?? {};
+    return Object.prototype.hasOwnProperty.call(held, charId) ? held[charId] : undefined;
+  }
+  /** null = 清掉；放進新的一筆時超過上限淘汰 at 最舊的（剛放的不淘汰） */
+  putHeld(charId: string, h: HeldChar | null): void {
+    const held = { ...this.where.held };
+    if (h) held[charId] = h; else delete held[charId];
+    this.where = { ...this.where, held: h ? trimHeld(held, undefined, charId) : held };
+  }
   /** rev + 1、更新 visits，回傳要寫的兩份資料 */
   snapshot(game: DelveGame, now: number): { world: WorldData; character: DelveCharacter } {
     return this.snapshotData(snapshotGame(game, now), now);
@@ -76,7 +95,7 @@ export class SplitSession {
     const next = { ...this.who, rev: this.who.rev + 1 };
     const out = splitSnapshot(data, next, this.where, now);
     this.who = next;
-    this.where = { ...this.where, visits: out.world.header.visits };
+    this.where = { ...this.where, visits: out.world.header.visits, held: { ...out.world.header.held } };
     return out;
   }
 }

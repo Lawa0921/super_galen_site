@@ -51,6 +51,10 @@ export function parseGuestCtrl(data: Payload, chunksY: number, cxRange: { lo: nu
       const at = get(o, 'at');
       return fin(at) ? { t: get(o, 't') as 'ping' | 'pong', at } : null;
     }
+    case 'chkAck': {
+      const rev = get(o, 'rev');
+      return Number.isSafeInteger(rev) && (rev as number) >= 0 ? { t: 'chkAck', rev: rev as number } : null;
+    }
     default: return null;
   }
 }

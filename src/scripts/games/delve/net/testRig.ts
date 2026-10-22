@@ -14,11 +14,11 @@ import type { ItemId } from '../engine/items';
 import type { Stack } from '../engine/inventory';
 import { FixedStepper } from '../render/model';
 import { createCharacter, type DelveCharacter } from '../save/character';
-import type { VisitSave } from '../save/worldSave';
+import type { HeldChar, VisitSave } from '../save/worldSave';
 import { LoopbackNet } from './loopback';
 import type { NetLink } from './link';
 import { decodeBulk } from './codec';
-import { NetHost } from './host';
+import { NetHost, type VisitStore } from './host';
 import { NetGuest } from './guest';
 import type { Welcome } from './protocol';
 
@@ -38,7 +38,9 @@ export interface RigOptions {
   game?: DelveGame;
 }
 export interface Rig {
-  net: LoopbackNet; host: NetHost; hostGame: DelveGame; guests: NetGuest[]; visits: Map<string, VisitSave>; checkpoints: DelveCharacter[][];
+  net: LoopbackNet; readonly host: NetHost; hostGame: DelveGame; guests: NetGuest[]; visits: Map<string, VisitSave>; checkpoints: DelveCharacter[][];
+  /** 房主的 VisitStore（visits + held，Map 版；模擬世界檔，rehost 沿用） */
+  store: VisitStore; held: Map<string, HeldChar>;
   /** 每 1000/60 ms：net.advance、host.frame（driveHost 時）、每位沒暫停的客人 guest.frame；each 在每一幀之後呼叫 */
   run(ms: number, each?: () => void): void;
   /** 模擬客人分頁在背景：不呼叫他的 frame */
@@ -61,8 +63,10 @@ export interface Rig {
   ps: number[];
   /** 每位客人收到的 col 回覆：欄與 diff 的 cy */
   cols: { cx: number; diff: number[] }[][];
-  /** 新客人加入（不跑幀） */
-  join(o?: { character?: DelveCharacter }): NetGuest;
+  /** 新客人加入（不跑幀）；onCheckpoint 另外再呼叫（回傳值當成 guest 的 onCheckpoint 回傳值） */
+  join(o?: { character?: DelveCharacter; onCheckpoint?: (c: DelveCharacter, rev: number) => void | Promise<void> }): NetGuest;
+  /** 模擬房主重新整理：同一個 hostGame 與 store、新的 NetHost 並 open（舊的不再驅動、不 close）；之後的 accept 走新的 */
+  rehost(): NetHost;
   /** 客人 i 換一條新連線重連（房主 accept 另一端） */
   reconnect(i: number): void;
   /** 客人 i 同步集合內、已 live 的欄（升冪） */
@@ -151,8 +155,13 @@ export function coopRig(o: RigOptions = {}): Rig {
       : (w: Welcome): DelveGame => new DelveGame({ seed: w.seed, gen: realGen(w.seed), bounds: w.bounds, peaceful: w.peaceful, localPid: w.pid, mode: 'replica' });
   const net = new LoopbackNet({ seed: o.seed ?? 'coop-rig', latencyMs: o.latencyMs, loss: o.loss });
   const visits = new Map<string, VisitSave>();
-  const host = new NetHost(hostGame, { build: BUILD, worldId: `w-${seed}`, visits: { get: (k) => visits.get(k), put: (k, v) => { visits.set(k, v); } } });
-  host.open();
+  const held = new Map<string, HeldChar>();
+  const store: VisitStore = {
+    get: (k) => visits.get(k), put: (k, v) => { visits.set(k, v); },
+    getHeld: (k) => held.get(k), putHeld: (k, h) => { if (h) held.set(k, h); else held.delete(k); },
+  };
+  const newHost = (): NetHost => { const h = new NetHost(hostGame, { build: BUILD, worldId: `w-${seed}`, visits: store }); h.open(); return h; };
+  let host = newHost();
   const hs = new FixedStepper();
   const guests: NetGuest[] = [], steppers: FixedStepper[] = [], paused: boolean[] = [];
   const links: NetLink[] = [], hostLinks: NetLink[] = [], chars: DelveCharacter[] = [], ps: number[] = [], checkpoints: DelveCharacter[][] = [];
@@ -175,7 +184,8 @@ export function coopRig(o: RigOptions = {}): Rig {
   };
 
   const rig: Rig = {
-    net, host, hostGame, guests, visits, checkpoints, links, hostLinks, chars, ps, cols,
+    net, hostGame, guests, visits, store, held, checkpoints, links, hostLinks, chars, ps, cols,
+    get host() { return host; },
     driveHost: true,
     get now() { return now; },
     run(ms, each) {
@@ -195,10 +205,14 @@ export function coopRig(o: RigOptions = {}): Rig {
       steppers[i] = new FixedStepper();
       const character = jo.character ?? hero();
       chars[i] = character;
-      const g = new NetGuest(pair(i), { build: BUILD, character, createReplica, onCheckpoint: (c) => { checkpoints[i].push(c); } });
+      const g = new NetGuest(pair(i), {
+        build: BUILD, character, createReplica,
+        onCheckpoint: (c, rev) => { checkpoints[i].push(c); return jo.onCheckpoint?.(c, rev); },
+      });
       guests.push(g);
       return g;
     },
+    rehost() { host = newHost(); return host; },
     reconnect(i) { guests[i].reconnect(pair(i)); },
     synced(i) {
       const g = guests[i], rep = g.game, sync = g.sync;

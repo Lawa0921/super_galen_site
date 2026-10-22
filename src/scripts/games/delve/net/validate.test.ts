@@ -55,6 +55,12 @@ describe('parseGuestCtrl', () => {
       expect(parse({ t })).toBeNull();
     }
   });
+  it('chkAck：rev 必須是 ≥ 0 的整數', () => {
+    expect(parse({ t: 'chkAck', rev: 7, junk: 1 })).toEqual({ t: 'chkAck', rev: 7 });
+    expect(parse({ t: 'chkAck', rev: 0 })).toEqual({ t: 'chkAck', rev: 0 });
+    for (const rev of [-1, 1.5, '3', null, undefined]) expect(parse({ t: 'chkAck', rev })).toBeNull();
+    expect(parse(null, '{"t":"chkAck","rev":1e999}')).toBeNull();
+  });
 });
 
 describe('parsePs', () => {
