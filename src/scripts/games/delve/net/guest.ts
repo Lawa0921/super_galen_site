@@ -58,7 +58,7 @@ export const END_TEXT: Readonly<Record<RejectReason | ByeReason | 'hostGone', st
 });
 
 /** leave 之後最多等這麼久收房主最後的 chk，再自己關連線 */
-const LEAVE_GRACE_MS = 2000;
+export const LEAVE_GRACE_MS = 2000;
 const PS_MS = 1000 / PS_HZ;
 /** welcome 之前最多留這麼多則 bulk（加入時房主在 bulk 只送一則 snap） */
 const EARLY_BULK_MAX = 4;

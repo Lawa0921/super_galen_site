@@ -42,8 +42,8 @@ export interface SplitStore {
   listCharacters(): Promise<CharacterMeta[]>;
   deleteWorld(slot: string): Promise<void>;
   deleteCharacter(id: string): Promise<void>;
-  /** 只寫角色檔（同 id 覆蓋） */
-  putCharacter(c: DelveCharacter): Promise<void>;
+  /** 只寫角色檔（同 id 覆蓋）；pendingWorld 沒給或 null 都會清掉記錄上的 pendingWorld（co-op C1） */
+  putCharacter(c: DelveCharacter, opts?: { pendingWorld?: string | null }): Promise<void>;
 }
 
 /**

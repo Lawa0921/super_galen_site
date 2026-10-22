@@ -49,6 +49,8 @@ export interface CharacterRecord {
   id: string; nick: string; savedAt: number; rev: number; data: Uint8Array;
   /** 列表顯示用（存檔時算好；舊記錄沒有 → listCharacters 解碼 data 補） */
   preview?: CharacterPreview;
+  /** co-op C1：斷線時有跨邊界操作沒被 checkpoint 涵蓋 → 那個世界的 id（標題顯示「待同步」）；一般存檔會清掉 */
+  pendingWorld?: string;
 }
 /**
  * 角色列表的小人像資料。look = 穿著（時裝欄 / 護甲 + 顏色，同遊戲裡的紙娃娃）；
@@ -56,10 +58,27 @@ export interface CharacterRecord {
  */
 export interface CharacterPreview { level: number; appearance: Appearance; look?: DollLook }
 /** 角色選單的一列 */
-export interface CharacterMeta { id: string; nick: string; savedAt: number; rev: number; level: number; appearance: Appearance; look?: DollLook }
+export interface CharacterMeta {
+  id: string; nick: string; savedAt: number; rev: number; level: number; appearance: Appearance; look?: DollLook;
+  pendingWorld?: string;
+}
 
 export function previewOf(c: DelveCharacter): CharacterPreview {
   return { level: levelForXp(c.levels.xp), appearance: c.appearance, look: characterLook(c) };
+}
+
+/** 角色記錄（putCharacter / putSplit 共用）：沒給 pendingWorld（或 null）就不帶這欄 = 清掉 */
+export function characterRecord(c: DelveCharacter, data: Uint8Array, pendingWorld?: string | null): CharacterRecord {
+  const rec: CharacterRecord = { id: c.id, nick: c.nick, savedAt: c.savedAt, rev: c.rev, data, preview: previewOf(c) };
+  if (typeof pendingWorld === 'string') rec.pendingWorld = pendingWorld;
+  return rec;
+}
+
+/** 角色選單的一列（listCharacters）：preview 是記錄上的或解碼補的 */
+export function characterMeta(r: CharacterRecord, preview: CharacterPreview): CharacterMeta {
+  const m: CharacterMeta = { id: r.id, nick: r.nick, savedAt: r.savedAt, rev: r.rev, ...preview };
+  if (typeof r.pendingWorld === 'string') m.pendingWorld = r.pendingWorld;
+  return m;
 }
 
 export function hasCompression(): boolean {
@@ -237,7 +256,7 @@ export const idbSplitStore: SplitStore = {
       if (!preview) {
         try { preview = previewOf(decodeCharacter(await decompress(asBytes(r.data)))); } catch { continue; } // 壞掉的舊記錄不列出
       }
-      out.push({ id: r.id, nick: r.nick, savedAt: r.savedAt, rev: r.rev, ...preview });
+      out.push(characterMeta(r, preview));
     }
     return out.sort((a, b) => b.savedAt - a.savedAt);
   },
@@ -250,10 +269,10 @@ export const idbSplitStore: SplitStore = {
     await withTx(CHAR_STORE, 'readwrite', (t) => { t.objectStore(CHAR_STORE).delete(id); return () => undefined; });
   },
 
-  /** 只寫角色記錄（同 id 覆蓋） */
-  async putCharacter(c) {
+  /** 只寫角色記錄（同 id 覆蓋）；opts.pendingWorld 沒給或 null → 清掉記錄上的 pendingWorld */
+  async putCharacter(c, opts) {
     const data = await compress(encodeCharacter(c));
-    const rec: CharacterRecord = { id: c.id, nick: c.nick, savedAt: c.savedAt, rev: c.rev, data, preview: previewOf(c) };
+    const rec = characterRecord(c, data, opts?.pendingWorld);
     await withTx(CHAR_STORE, 'readwrite', (t) => { t.objectStore(CHAR_STORE).put(rec); return () => undefined; });
   },
 
@@ -266,7 +285,7 @@ export const idbSplitStore: SplitStore = {
       ...(world.summary ? { summary: world.summary } : {}), charId: character.id, format: WORLD_FORMAT,
     };
     const rec: SlotRecord = { ...meta, data: wdata };
-    const crec: CharacterRecord = { id: character.id, nick: character.nick, savedAt, rev: character.rev, data: cdata, preview: previewOf(character) };
+    const crec = characterRecord(character, cdata);   // 單機存檔：清掉 pendingWorld
     await withTx([STORE, CHAR_STORE], 'readwrite', (t) => {
       t.objectStore(STORE).put(rec);
       t.objectStore(CHAR_STORE).put(crec);
