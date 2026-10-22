@@ -62,7 +62,7 @@ interface Guest {
   prev: { x: number; y: number; at: number };
   tokens: number; tokenAt: number;
   /** checkpoint rev（C9）：從 hello 角色的 rev 起算，每送一次 chk +1 */
-  charRev: number; charJson: string; nextChk: number; chkNow: boolean;
+  charRev: number; charSig: string; nextChk: number; chkNow: boolean;
   tiles: WireBatch[]; ev: DelveEvent[]; pub: DelveEvent[];
   /** bulk 待送（依序）；chunk 去重 */
   jobs: BulkJob[]; chunkQ: Set<number>; liq: Set<number>;
@@ -75,6 +75,16 @@ const PERIOD: Record<Timer, number> = { ws: 1000 / WS_HZ, liq: 1000 / LIQ_HZ, ch
 const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object';
 /** 送出的角色：rev 換成 checkpoint rev、savedAt 歸 0（決定性） */
 const stamp = (c: DelveCharacter, rev: number): DelveCharacter => ({ ...c, rev, savedAt: 0 });
+/**
+ * char 的變動比較鍵（C10）：buff 剩餘秒數每一步都在減，直接比 JSON 會讓 char 在 buff 生效期間每 200 ms 送一次。
+ * 改比 buff 的到期時間（time + 剩餘，四捨五入到整秒：buff 延長 / 新增才算變動）、undyingCd 取整秒（倒數中每秒至多一次）。
+ * 送出的角色本身不變（剩餘秒數照舊精確）；客人套角色時用自己的時鐘換回到期時間。
+ */
+function charKey(c: DelveCharacter, time: number): string {
+  const until: Record<string, number> = {};
+  for (const [k, left] of Object.entries(c.buffsLeft)) if (typeof left === 'number') until[k] = Math.round(time + left);
+  return JSON.stringify({ ...c, buffsLeft: until, undyingCd: Math.ceil(c.undyingCd) });
+}
 
 /** ack 的 ok / reason：結果不是 false / null / { ok: false } 就算成功；learnSkill 例外（null = 成功、字串 = 失敗原因） */
 function ackOf(op: CmdOp, res: unknown): { ok: boolean; reason?: string } {
@@ -123,7 +133,7 @@ export class NetHost {
     const g: Guest = {
       link, alive: true, phase: 'hello', pid: '', charId: '', nick: '', heardAt: this.opened ? this.now : null,
       teleBase: 0, teleSeen: 0, knockSeen: 0, psSeq: -1, psAt: 0, released: false, prev: { x: 0, y: 0, at: 0 },
-      tokens: CMD_BURST, tokenAt: 0, charRev: 0, charJson: '', nextChk: 0, chkNow: false,
+      tokens: CMD_BURST, tokenAt: 0, charRev: 0, charSig: '', nextChk: 0, chkNow: false,
       tiles: [], ev: [], pub: [], jobs: [], chunkQ: new Set(), liq: new Set(),
     };
     link.onMessage((ch, data) => { if (g.alive) this.inbox.push({ g, ch, data }); });
@@ -231,7 +241,7 @@ export class NetHost {
       tokens: CMD_BURST, tokenAt: now, charRev: character.rev, nextChk: now + CHK_MS, chkNow: false,
     } satisfies Partial<Guest>);
     // 空字串：第一個 char 計時一到就送（房主可能改用 retained 那份較新的角色，客人手上只有 hello 那份）
-    g.charJson = '';
+    g.charSig = '';
     const players: PeerInfo[] = [];
     for (const p of game.actors.keys()) if (p !== pid) players.push({ pid: p, nick: this.nickOf(p), look: this.lookOf(p).look });
     const w = game.world;
@@ -369,8 +379,8 @@ export class NetHost {
       }
       if (sendWs && g.phase === 'live') { ws ??= this.wsParts(); g.link.send('state', JSON.stringify(this.wsFor(g, ws))); }
       if (sendChar) {
-        const c = game.characterOf(g.pid, 0), json = JSON.stringify(c);
-        if (json !== g.charJson) { g.charJson = json; this.sendCtrl(g, { t: 'char', rev: g.charRev, character: stamp(c, g.charRev) }); }
+        const c = game.characterOf(g.pid, 0), key = charKey(c, game.time);
+        if (key !== g.charSig) { g.charSig = key; this.sendCtrl(g, { t: 'char', rev: g.charRev, character: stamp(c, g.charRev) }); }
       }
       if (g.chkNow || now >= g.nextChk) {
         g.chkNow = false;
@@ -470,7 +480,8 @@ export class NetHost {
     for (const o of this.list) if (o !== except && o.alive && o.phase !== 'hello') o.link.send('ctrl', s);
   }
 
-  private saveSoon(): void { this.saveAt = this.now + SAVE_DEBOUNCE_MS; }
+  /** 存世界的防抖：保留最早那次的到期時間（第一次觸發後最多 SAVE_DEBOUNCE_MS 就存），連續的跨邊界操作不會一直往後延 */
+  private saveSoon(): void { if (this.saveAt === null) this.saveAt = this.now + SAVE_DEBOUNCE_MS; }
 
   /** 房主端該 actor 身體中心所在的欄 */
   private colOf(pid: Pid): number {

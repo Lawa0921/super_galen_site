@@ -107,6 +107,8 @@ export class NetGuest {
   private inbox: Inbox[] = [];
   /** welcome 之前到的 bulk（ctrl 與 bulk 各自有序、彼此不保證順序：snap 可能比 welcome 先到）；welcome 建好副本後依序套上 */
   private early: Uint8Array[] = [];
+  /** 這個副本（welcome 之後）已經套過 ctrl 的 world：之後才到的加入 snap 是舊的，不再蓋世界層級 */
+  private worldSeen = false;
   private now = 0;
   private heardAt: number | null = null;
   /** leave 之後等最後的 chk 到這個時間（null = 不在等） */
@@ -320,7 +322,14 @@ export class NetGuest {
       case 'tiles': this.chunks!.onTiles(c.batches); return;
       case 'ev': game.pushNetEvents(c.list.filter((e) => !(e.pid === this.me && echoed(e)))); return;
       case 'pub': game.pushNetEvents(c.list.slice()); return;
-      case 'char': if (isObj(c.character)) game.applyNetCharacter(c.character); return;
+      case 'char': {
+        if (!isObj(c.character)) return;
+        // 快捷欄選取由客人權威（房主只跟著 ps.slot / place 的 slot）：房主那份落後半個 RTT，套角色時保留本地的，免得剛換的格被改回去
+        const sel = game.local.inventory.selected;
+        game.applyNetCharacter(c.character);
+        game.local.inventory.select(sel);
+        return;
+      }
       case 'chk': this.onChk(c); return;
       case 'ack': this.onAck(c); return;
       case 'teleport': {
@@ -342,7 +351,7 @@ export class NetGuest {
         a.player.vx = c.vx; a.player.vy = c.vy; a.knockT = c.dur;
         return;
       }
-      case 'world': if (isObj(c.snap)) applyWorldSnap(game, c.snap); return;
+      case 'world': if (isObj(c.snap)) { applyWorldSnap(game, c.snap); this.worldSeen = true; } return;
       case 'look': if (typeof c.pid === 'string') this.peerInfo.set(c.pid, { nick: String(c.nick ?? ''), look: isObj(c.look) ? c.look : null }); return;
       case 'gone': if (typeof c.pid === 'string') { this.peerInfo.delete(c.pid); this.players.delete(c.pid); } return;
     }
@@ -368,6 +377,7 @@ export class NetGuest {
     game.applyNetCharacter(this.character);
     this.replica = game;
     this.chunks = sync;
+    this.worldSeen = false;
     this.me = m.pid;
     this.resetWs();
     this.peerInfo.clear();
@@ -391,7 +401,14 @@ export class NetGuest {
       case 'snap': {
         if (this.st !== 'syncing') return;
         // 世界層級壞掉也照樣上線（之後的 world 重送會補上），不然會卡在 syncing 直到房主逾時
-        try { if (isObj(head.snap)) applyWorldSnap(game, head.snap as WorldSnap); } catch { /* 丟掉這份快照 */ }
+        // ctrl 與 bulk 彼此不保證順序：welcome 之後已經套過（較新的）world → 這份加入快照只套它的 visit
+        try {
+          if (isObj(head.snap)) {
+            const snap = head.snap as WorldSnap;
+            if (!this.worldSeen) applyWorldSnap(game, snap);
+            else if (isObj(snap.visit)) game.applyVisit(snap.visit);
+          }
+        } catch { /* 丟掉這份快照 */ }
         this.ctrl({ t: 'ready' });
         this.st = 'live';
         return;

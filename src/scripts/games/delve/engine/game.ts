@@ -56,7 +56,6 @@ import {
 import { MAX_BREATH, PlayerActor, SOLO_PID, type ActorInput, type GameMode, type Pid, type RemoteMotion } from './actor';
 export type { GameMode } from './actor';
 import { CMD_PENDING, type Cmd, type CmdOp, type CmdResults } from './commands';
-import { REMOTE_REACH_SLACK } from '../net/protocol';
 // 角色檔 ↔ actor（addActor / removeActor）。save/ 也 import 本檔：兩邊都只在函式內用對方，循環 import 無妨
 import { applyCharacter, encodeExplored } from '../save/serialize';
 import { characterState, type VisitSave } from '../save/worldSave';
@@ -89,7 +88,7 @@ import {
   SLAM_DIVE_BONUS, SLAM_KB, SLAM_PER_LEVEL, SLAM_RADIUS, gearBonus, type ActiveSkill, type LearnFail, type SkillId,
 } from './skills';
 import {
-  TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH, HOTBAR_SIZE, JUMP_SPEED, JUMP_HOLD,
+  TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH, HOTBAR_SIZE, JUMP_SPEED, JUMP_HOLD, REMOTE_REACH_SLACK,
 } from './constants';
 
 export interface DelveOptions {

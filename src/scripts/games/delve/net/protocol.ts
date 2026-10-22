@@ -22,7 +22,9 @@ export const MAX_GUESTS = 3;                    // MAX_PLAYERS 4（含房主）
 export const PS_HZ = 20, WS_HZ = 15, LIQ_HZ = 5, CHAR_HZ = 5;
 export const WORLD_SIG_MS = 1000, LOOK_MS = 1000, CHK_MS = 30_000, SAVE_DEBOUNCE_MS = 2000;
 export const GUEST_TIMEOUT_MS = 90_000, HOST_TIMEOUT_MS = 90_000, PS_STALE_MS = 500;   // C8
-export const INTERP_DELAY_MS = 100, CMD_RATE = 30, CMD_BURST = 60, REMOTE_REACH_SLACK = 1.5;
+export const INTERP_DELAY_MS = 100, CMD_RATE = 30, CMD_BURST = 60;
+/** 定義在 engine/constants.ts（引擎不依賴 net/）；這裡轉出口，既有的 import 不必改 */
+export { REMOTE_REACH_SLACK } from '../engine/constants';
 /** 興趣範圍（C6）：tiles／liq 用的欄數，比客人自己的 UNLOAD_COLS 多 2 欄 */
 export const NET_TILE_COLS = UNLOAD_COLS + 2;
 /** bulk 在途超過就排隊（R6） */

@@ -278,6 +278,58 @@ describe('NetGuest 樂觀放置', () => {
   });
 });
 
+describe('NetGuest 快捷欄選取', () => {
+  it('延遲 100 ms、buff 生效中連續換格 20 次 → 房主的 char 不會把選取改回去；房主最後跟上', () => {
+    const r = rig(100);
+    const g = r.join();
+    r.run(2500);
+    expect(g.state).toBe('live');
+    const a = r.game.actors.get('p1')!;
+    r.game.withActor(a, () => { r.game.buffs.bless = r.game.time + 120; });
+    r.run(600);
+    expect(g.game!.local.buffs.bless).toBeDefined();
+    const loc = g.game!.local;
+    let reverted = 0, last = 0;
+    for (let k = 0; k < 20; k++) {
+      last = (k * 3 + 1) % 10;
+      g.game!.selectSlot(last);
+      for (let i = 0; i < 24; i++) { r.tick(); if (loc.inventory.selected !== last) reverted++; }
+    }
+    expect(reverted).toBe(0);
+    r.run(600);
+    expect(loc.inventory.selected).toBe(last);
+    expect(a.inventory.selected).toBe(last);
+  });
+});
+
+describe('NetGuest 世界層級的先後', () => {
+  it('ctrl 的 world（較新）比 bulk 的加入 snap 先到 → snap 不蓋掉世界層級，只套它的 visit', () => {
+    const hg = arena();
+    hg.local.markers.push({ x: 33, y: 44 });
+    const old = snapshotWorld(hg, hg.visitOf(hg.localPid, 0));
+    hg.kills = { gel_blob: 5 };
+    hg.world.keysUsed = 2;
+    const fresh = snapshotWorld(hg, null);
+    const net = new LoopbackNet();
+    const p = net.pair();
+    p.host.onMessage((ch, d) => {
+      if (ch !== 'ctrl' || typeof d !== 'string' || (JSON.parse(d) as { t: string }).t !== 'hello') return;
+      p.host.send('ctrl', JSON.stringify({
+        t: 'welcome', pid: 'p1', worldId: 'w', seed: 'host', genVersion: GEN_VERSION, outerGenVersion: OUTER_GEN_VERSION,
+        bounds: 'legacy', w: 160, h: 100, time: 0, tick: 0, peaceful: true, you: { x: 640, y: 900 }, players: [],
+      }));
+      p.host.send('ctrl', JSON.stringify({ t: 'world', snap: fresh }));
+      p.host.send('bulk', encodeBulk({ t: 'snap', snap: old }));
+    });
+    const g = new NetGuest(p.guest, { build: BUILD, character: hero(), createReplica: () => arena() });
+    for (let i = 1; i <= 5; i++) { net.advance(FRAME); g.frame(i * FRAME, 1); }
+    expect(g.state).toBe('live');
+    expect(g.game!.kills).toEqual({ gel_blob: 5 });
+    expect(g.game!.world.keysUsed).toBe(2);
+    expect(g.game!.local.markers).toEqual([{ x: 33, y: 44 }]);
+  });
+});
+
 describe('NetGuest 重連', () => {
   it('rev 表在 welcome 重來：reconnect 之後 sync.rev(k) === 0，再同步一次後與房主一致', () => {
     const r = rig();

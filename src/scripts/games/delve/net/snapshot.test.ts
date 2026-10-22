@@ -117,6 +117,28 @@ describe('snapshotWorld / applyWorldSnap', () => {
     expect(replica.local.bed).toEqual({ x: 70, y: GROUND - 1 });
   });
 
+  it('之後重送的 world（visit null）不把房主的 spawnCore 寫到客人本地 actor；客人自己的照舊（爐心還在）', () => {
+    const host = arena({ mode: 'host' });
+    village(host);
+    const id = host.settle.cores[0].id;
+    // 房主設了重生爐心、客人沒有
+    host.settle.spawnCore = id;
+    const replica = arena({ localPid: 'p1', mode: 'replica' });
+    const v = host.visitOf(host.localPid);
+    applyWorldSnap(replica, snapshotWorld(host, { ...v, spawnCore: null }));
+    expect(replica.local.spawnCore).toBeNull();
+    applyWorldSnap(replica, snapshotWorld(host, null));
+    expect(replica.local.spawnCore).toBeNull();
+    expect(replica.settle.spawnCore).toBeNull();
+    // 反過來：客人設了、房主沒有
+    host.settle.spawnCore = null;
+    applyWorldSnap(replica, snapshotWorld(host, { ...v, spawnCore: id }));
+    expect(replica.local.spawnCore).toBe(id);
+    applyWorldSnap(replica, snapshotWorld(host, null));
+    expect(replica.local.spawnCore).toBe(id);
+    expect(replica.settle.spawnCore).toBe(id);
+  });
+
   it('perkDays.healer 不套到客人', () => {
     const host = arena({ mode: 'host' });
     host.perkDays = { guide: 5, healer: 7 };

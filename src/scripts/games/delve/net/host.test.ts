@@ -291,6 +291,38 @@ describe('NetHost cmd／ack／char／chk', () => {
     expect(r.saves.length).toBe(1);
   });
 
+  it('跨邊界 cmd 每秒一則、連續 10 秒 → 第一則後約 2 秒就存一次，之後也定期存（防抖有最長等待）', () => {
+    const r = rig();
+    const g = r.join();
+    r.run(200);
+    const t0 = r.now;
+    for (let i = 0; i < 10; i++) {
+      g.send({ t: 'cmd', seq: 1 + i, cmd: { op: 'toss', slot: 0, n: 1 } });
+      r.run(1000);
+    }
+    expect(r.saves.length).toBeGreaterThanOrEqual(3);
+    expect(r.saves[0] - t0).toBeLessThanOrEqual(2000 + 3 * FRAME);
+    for (let i = 1; i < r.saves.length; i++) expect(r.saves[i] - r.saves[i - 1]).toBeLessThanOrEqual(3000 + 3 * FRAME);
+  });
+
+  it('buff 生效中、其他欄位不變 → 不會每 200 ms 送一則 char；buff 延長才送（送出的剩餘秒數照舊精確）', () => {
+    const r = rig();
+    const g = r.join();
+    const a = r.game.actors.get('p1')!;
+    r.game.withActor(a, () => { r.game.buffs.bless = r.game.time + 120; });
+    r.run(1000);
+    const n0 = g.of('char').length;
+    expect(n0).toBeGreaterThan(0);
+    expect((g.last('char')!.character as DelveCharacter).buffsLeft.bless).toBeGreaterThan(100);
+    r.run(3000);
+    expect(g.of('char').length - n0).toBeLessThanOrEqual(1);
+    r.game.withActor(a, () => { r.game.buffs.bless = r.game.time + 300; });
+    r.run(400);
+    const left = (g.last('char')!.character as DelveCharacter).buffsLeft.bless!;
+    expect(left).toBeGreaterThan(299);
+    expect(left).toBeLessThanOrEqual(300);
+  });
+
   it('30 秒定時 chk', () => {
     const r = rig();
     const g = r.join();

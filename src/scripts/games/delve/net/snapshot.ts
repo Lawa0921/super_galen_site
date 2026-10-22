@@ -49,8 +49,12 @@ export function applyWorldSnap(game: DelveGame, snap: WorldSnap): void {
   game.tick = snap.tick;
   game.weatherOverride = snap.weather ? { ...snap.weather } : null;
   game.syncDay();
-  // 據點核心那格的爐心還在等 chunk 同步 → trust 不驗
+  // 據點核心那格的爐心還在等 chunk 同步 → trust 不驗。
+  // settle.load 會經 spawnLink 把房主的 spawnCore 寫到本地 actor：重生爐心是每個角色自己的（只由 visit 給），
+  // 所以重送（visit null）時保留本地的那份（爐心還在才留）
+  const keepCore = snap.visit ? null : game.local.spawnCore;
   game.settle.load(snap.settle, w, true);
+  if (!snap.visit) game.local.spawnCore = keepCore !== null && game.settle.coreById(keepCore) ? keepCore : null;
   game.folk.load(snap.folk, w, true);
   game.quests.load(snap.quests);
   game.scoutMarks = snap.scoutMarks.map((m) => ({ ...m }));
