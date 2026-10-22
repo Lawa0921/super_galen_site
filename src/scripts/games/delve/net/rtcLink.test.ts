@@ -12,8 +12,10 @@ class MockDc {
   onerror: (() => void) | null = null;
   peer: MockDc | null = null;
   sent: unknown[] = [];
+  throwAtSend = -1; // 第 N 次 send（0 起算）丟 OperationError
   constructor(readonly id: number, readonly opts: Record<string, unknown>) {}
   send(d: unknown): void {
+    if (this.sent.length === this.throwAtSend) throw new Error('OperationError');
     this.sent.push(d);
     const p = this.peer;
     if (!p) return;
@@ -35,6 +37,7 @@ class MockDc {
 
 class MockPc {
   connectionState = 'new';
+  closeCalls = 0;
   iceGatheringState = 'complete';
   localDescription: unknown = null;
   onconnectionstatechange: (() => void) | null = null;
@@ -51,6 +54,7 @@ class MockPc {
   addEventListener() { /* noop */ }
   removeEventListener() { /* noop */ }
   close(): void {
+    this.closeCalls++;
     this.connectionState = 'closed';
     for (const dc of this.dcs.values()) dc.close();
   }
@@ -224,5 +228,62 @@ describe('RtcLink', () => {
     const answer = await B.peer.createAnswer(offer);
     expect(JSON.parse(answer)).toMatchObject({ type: 'answer' });
     await A.peer.acceptAnswer(answer);
+  });
+
+  it('遠端關閉後本地 pc 與 channel 也被關掉；之後 close() 無害', async () => {
+    const { A, B } = pair();
+    await Promise.all([A.peer.waitOpen(), B.peer.waitOpen()]);
+    const b: string[] = [];
+    B.peer.link.onClose((r) => b.push(r));
+    A.peer.link.close('bye');
+    await flush();
+    expect(b).toEqual(['closed']);
+    expect(B.pc.connectionState).toBe('closed');
+    for (const dc of B.pc.dcs.values()) expect(dc.readyState).toBe('closed');
+    const calls = B.pc.closeCalls;
+    B.peer.link.close('linger');
+    expect(B.pc.closeCalls).toBe(calls);
+    expect(b).toEqual(['closed']);
+  });
+
+  it('failed 後 pc 被關', async () => {
+    const { A, B } = pair();
+    await Promise.all([A.peer.waitOpen(), B.peer.waitOpen()]);
+    A.pc.connectionState = 'failed';
+    A.pc.onconnectionstatechange?.();
+    expect(A.pc.closeCalls).toBe(1);
+  });
+
+  it('可靠通道 send 中途丟錯 → link 以 failed 關閉，對端不收到損毀訊息', async () => {
+    const { A, B } = pair();
+    await Promise.all([A.peer.waitOpen(), B.peer.waitOpen()]);
+    const a: string[] = [];
+    const got: unknown[] = [];
+    A.peer.link.onClose((r) => a.push(r));
+    B.peer.link.onMessage((ch, d) => got.push([ch, d]));
+    A.pc.dcs.get(0)!.throwAtSend = 1; // 第 2 片丟錯
+    A.peer.link.send('ctrl', 'y'.repeat(FRAG_BYTES * 3));
+    await flush();
+    expect(a).toEqual(['failed']);
+    expect(got).toEqual([]);
+    expect(A.pc.closeCalls).toBeGreaterThan(0);
+  });
+
+  it('waitOpen 在已關閉的 link 上立刻 reject', async () => {
+    const { A, B } = pair();
+    await Promise.all([A.peer.waitOpen(), B.peer.waitOpen()]);
+    A.peer.link.close();
+    await expect(A.peer.waitOpen()).rejects.toThrow('rtc closed');
+  });
+
+  it('onClose 回呼丟錯不影響其餘回呼與收尾', async () => {
+    const { A, B } = pair();
+    await Promise.all([A.peer.waitOpen(), B.peer.waitOpen()]);
+    const a: string[] = [];
+    A.peer.link.onClose(() => { throw new Error('boom'); });
+    A.peer.link.onClose((r) => a.push(r));
+    expect(() => A.peer.link.close('x')).not.toThrow();
+    expect(a).toEqual(['x']);
+    expect(A.pc.closeCalls).toBeGreaterThan(0);
   });
 });

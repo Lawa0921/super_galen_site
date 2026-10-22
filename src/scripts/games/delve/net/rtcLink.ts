@@ -35,11 +35,22 @@ export function createRtcPeer(makePc?: () => RTCPeerConnection): RtcPeer {
 
   const allOpen = () => CHANNELS.every((c) => dcs[c].readyState === 'open');
 
+  // 收尾：所有 channel 與 pc 一律關掉（冪等；任何關閉路徑都會走到，避免漏 pc）。
+  let tornDown = false;
+  function teardown(): void {
+    if (tornDown) return;
+    tornDown = true;
+    for (const c of CHANNELS) { try { dcs[c].close(); } catch { /* 已關 */ } }
+    try { pc.close(); } catch { /* 已關 */ }
+  }
+
+  // 回呼只觸發一次；單一 callback 丟錯不影響其餘與收尾。
   function fireClose(reason: string): void {
     if (closed) return;
     closed = true;
-    for (const w of [...openWaiters]) w();
-    for (const cb of closeCbs) cb(reason);
+    for (const w of [...openWaiters]) { try { w(); } catch { /* ignore */ } }
+    for (const cb of closeCbs) { try { cb(reason); } catch { /* ignore */ } }
+    teardown();
   }
 
   // 可靠通道重組：同通道有序，片段依序累積到 FINAL。
@@ -91,13 +102,13 @@ export function createRtcPeer(makePc?: () => RTCPeerConnection): RtcPeer {
       if (closed) return;
       const dc = dcs[ch];
       if (dc.readyState !== 'open') return;
+      if (ch === 'state') {
+        if (typeof data !== 'string' || data.length > STATE_MAX_BYTES) return;
+        if (enc.encode(data).byteLength > STATE_MAX_BYTES) return;
+        try { dc.send(data); } catch { /* 不可靠通道：丟包即可 */ }
+        return;
+      }
       try {
-        if (ch === 'state') {
-          if (typeof data !== 'string' || data.length > STATE_MAX_BYTES) return;
-          if (enc.encode(data).byteLength > STATE_MAX_BYTES) return;
-          dc.send(data);
-          return;
-        }
         const text = typeof data === 'string';
         const bytes = text ? enc.encode(data) : data;
         let off = 0;
@@ -111,16 +122,15 @@ export function createRtcPeer(makePc?: () => RTCPeerConnection): RtcPeer {
           off = end;
         } while (off < bytes.byteLength);
       } catch {
-        // channel 在送出瞬間關閉：視同丟包，onclose 會處理
+        // 可靠通道送不出去（佇列滿／正在關閉）：不能靜默丟訊息或留下半截片段，整條 link 關掉
+        fireClose('failed');
       }
     },
     onMessage(cb) { msgCbs.push(cb); },
     onClose(cb) { closeCbs.push(cb); },
     close(reason = 'closed') {
-      if (closed) return;
       fireClose(reason);
-      for (const c of CHANNELS) { try { dcs[c].close(); } catch { /* 已關 */ } }
-      try { pc.close(); } catch { /* 已關 */ }
+      teardown(); // 對端先關時 fireClose 已 no-op，這裡仍確保 pc 被關
     },
     buffered(ch) { return dcs[ch].bufferedAmount; },
   };
@@ -142,6 +152,7 @@ export function createRtcPeer(makePc?: () => RTCPeerConnection): RtcPeer {
       await pc.setRemoteDescription(JSON.parse(answer) as RTCSessionDescriptionInit);
     },
     waitOpen(timeoutMs = 20000) {
+      if (closed) return Promise.reject(new Error('rtc closed'));
       if (allOpen()) return Promise.resolve();
       return new Promise<void>((resolve, reject) => {
         const finish = () => {
