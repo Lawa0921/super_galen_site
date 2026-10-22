@@ -342,18 +342,21 @@ export class NetHost {
     if (!ps) return;
     const a = this.game.actors.get(g.pid);
     if (!a) return;
-    if (ps.tseq < a.teleSeq - g.teleBase || ps.seq <= g.psSeq) return;
+    // 攀邊姿勢只畫用：這則 ps 沒被採用（傳送後的舊 tseq / 死了 / checkMove 不過）→ 收掉，不會卡在攀邊的樣子
+    const dropMantle = (): void => { if (a.remote) a.remote.mantle = null; };
+    if (ps.tseq < a.teleSeq - g.teleBase) { dropMantle(); return; }
+    if (ps.seq <= g.psSeq) return;
     g.psSeq = ps.seq;
     g.psAt = this.now;
     g.released = false;
-    if (a.dead) return;
+    if (a.dead) { dropMantle(); return; }
     const motion = {
       x: ps.x, y: ps.y, vx: ps.vx, vy: ps.vy, facing: ps.facing,
       onGround: (ps.flags & PS_GROUND) !== 0, boating: (ps.flags & PS_BOAT) !== 0, climbing: (ps.flags & PS_CLIMB) !== 0,
       mantle: ps.mt ? { p: ps.mt[0], dir: ps.mt[1], edgeX: ps.mt[2], edgeY: ps.mt[3] } : null,
     };
     const dt = (this.now - g.prev.at) / 1000;
-    if (checkMove(g.prev, motion, dt, { w: a.player.w, h: a.player.h }, this.game.env) !== 'ok') { a.teleSeq++; return; }
+    if (checkMove(g.prev, motion, dt, { w: a.player.w, h: a.player.h }, this.game.env) !== 'ok') { a.teleSeq++; dropMantle(); return; }
     g.prev = { x: ps.x, y: ps.y, at: this.now };
     this.game.setRemoteMotion(g.pid, motion);
     const inp = this.game.input(g.pid);

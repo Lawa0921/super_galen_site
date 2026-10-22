@@ -5,7 +5,8 @@ import { T } from '../engine/tiles';
 import { TILE_SIZE } from '../engine/constants';
 import { lerpPose, type PlayerPose } from '../engine/pose';
 import type { NetGuest } from './guest';
-import { encodePose, WS_HZ } from './protocol';
+import { encodePose, INTERP_DELAY_MS, PS_GROUND, WS_HZ, type Ps } from './protocol';
+import { guestRemoteViews } from '../render/remotePlayers';
 import { decodePose, parsePs } from './validate';
 import { Interp } from './interp';
 import { coopRig, FRAME, FLOOR, type Rig } from './testRig';
@@ -170,5 +171,66 @@ describe('co-op：pose 上線', () => {
     // 400 ms ≈ 24 幀、ws 15 Hz ≈ 6 則：內插 → 幾乎每幀都不同
     expect(seen.length).toBeGreaterThan(15);
     expect(distinct).toBeGreaterThan(12);
+  });
+});
+
+describe('M-C2 Task 2：遠端姿勢的時鐘與過時的攀邊', () => {
+  it('客人畫別人：揮擊進度用跟身體內插同一個延遲時鐘（peerTime），不是最新的房主時間', () => {
+    const r = coopRig();
+    const g = r.guests[0], hg = r.hostGame;
+    // 房主自己往右走（每一步都是平滑的本地物理）：記下房主時間 → 位置
+    const hist: { t: number; x: number }[] = [];
+    hg.setMoveX(1);
+    r.run(600, () => hist.push({ t: hg.time, x: hg.local.player.x }));
+    const xAt = (t: number): number => {
+      let i = hist.findIndex((h) => h.t >= t);
+      if (i <= 0) i = 1;
+      const a = hist[i - 1], b = hist[i];
+      return a.x + ((b.x - a.x) * (t - a.t)) / (b.t - a.t);
+    };
+    // 穩定走路中的幾幀：peers() 的身體位置 = 房主在 peerTime 那一刻的位置；晚 INTERP_DELAY_MS 的時鐘差很多
+    let n = 0;
+    r.run(300, () => {
+      hist.push({ t: hg.time, x: hg.local.player.x });
+      const peer = g.peers().find((v) => v.pid === hg.localPid);
+      if (!peer) return;
+      const t = g.peerTime();
+      const [v] = guestRemoteViews([peer], t);
+      expect(v.time).toBe(t);
+      expect(Math.abs(v.pose.x - xAt(t))).toBeLessThan(1);
+      expect(Math.abs(v.pose.x - xAt(t + INTERP_DELAY_MS / 1000))).toBeGreaterThan(3);
+      n++;
+    });
+    hg.setMoveX(0);
+    expect(n).toBeGreaterThan(10);
+  });
+
+  it('房主 onPs：actor 死了 / ps 因傳送（tseq 舊）或 checkMove 被拒 → 收掉攀邊姿勢', () => {
+    const r = coopRig();
+    const gst = r.guests[0], pid = gst.pid!;
+    type HG = { pid: string; teleBase: number; psSeq: number; prev: { x: number; y: number; at: number } };
+    const host = r.host as unknown as { list: HG[]; onPs(g: HG, ps: Ps | null): void };
+    const rec = host.list.find((q) => q.pid === pid)!;
+    const a = r.hostGame.actors.get(pid)!;
+    const ps = (o: Partial<Ps> = {}): Ps => ({
+      t: 'ps', seq: rec.psSeq + 1, tseq: a.teleSeq - rec.teleBase, x: rec.prev.x, y: rec.prev.y, vx: 0, vy: 0, flags: PS_GROUND, facing: 1,
+      aim: [0, 0], mine: false, use: false, slot: 0, mt: [0.3, 1, 320, 944], ...o,
+    });
+    const climbing = (): void => { host.onPs(rec, ps()); expect(a.remote!.mantle).not.toBeNull(); };
+    climbing();
+    // 死了
+    a.dead = true;
+    host.onPs(rec, ps());
+    expect(a.remote!.mantle).toBeNull();
+    a.dead = false;
+    // 傳送之後還在送舊 tseq 的 ps
+    climbing();
+    a.teleSeq++;
+    host.onPs(rec, ps({ tseq: a.teleSeq - 1 - rec.teleBase }));
+    expect(a.remote!.mantle).toBeNull();
+    // checkMove 不通過（瞬移太遠）
+    climbing();
+    host.onPs(rec, ps({ x: rec.prev.x + 5000 }));
+    expect(a.remote!.mantle).toBeNull();
   });
 });

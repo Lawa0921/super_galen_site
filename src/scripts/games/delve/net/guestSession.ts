@@ -7,7 +7,7 @@
 import type { DelveGame } from '../engine/game';
 import type { DelveCharacter } from '../save/character';
 import type { NetLink } from './link';
-import { NetGuest, END_TEXT, LEAVE_GRACE_MS, type GuestState, type PeerView } from './guest';
+import { NetGuest, END_TEXT, LEAVE_GRACE_MS, type GuestState, type OwnPose, type PeerView } from './guest';
 import { NetLoop, type Ticker } from './loop';
 import { LINGER_MS } from './protocol';
 import { JoinError, joinRoom, type SignalApi } from './rtcSignal';
@@ -101,6 +101,10 @@ export class CoopGuestSession {
   get worldId(): string | null { return this.guest?.worldId ?? null; }
   get rttMs(): number | null { return this.guest?.rttMs ?? null; }
   peers(): PeerView[] { return this.guest?.peers() ?? []; }
+  /** peers() 內插用的時鐘（房主世界秒；畫別人揮擊用） */
+  peerTime(): number { return this.guest?.peerTime() ?? 0; }
+  /** 自己的攻擊 / 挖掘 / 釣魚 / 無敵（房主回報的；D3） */
+  ownPose(): OwnPose | null { return this.guest?.ownPose() ?? null; }
 
   onPhase(cb: (p: CoopGuestPhase) => void): void { this.cbs.push(cb); }
 

@@ -35,7 +35,8 @@ import { JOIN_ERROR_TEXT, JoinError, normalizeRoom, realSignalApi } from '../net
 import { createRtcPeer } from '../net/rtcLink';
 import { workerTicker } from '../net/workerTicker';
 import { DELVE_BUILD } from '../net/build';
-import { GuestViews, hostRemoteViews, type RemoteView } from './remotePlayers';
+import { guestRemoteViews, hostRemoteViews, type RemoteView } from './remotePlayers';
+import type { OwnPose } from '../net/guest';
 import { CoopUi, type CoopRow } from './coopUi';
 
 /** 進度條格數 */
@@ -290,7 +291,7 @@ export function bootDelve(root: HTMLElement): Session {
    * 上一場還開著房 / 還在朋友的房裡（例如沒有 IndexedDB 時從暫停選單匯入直接開局）→ 先關房 / 離開，
    * 舊的 NetHost / NetLoop 不會繼續跑被丟掉的那場；關房的 requestSave 存的還是上一場（split 在 enter 之後才換）。
    */
-  function enter(game: DelveGame, locks: PlayLocks, remotes: () => RemoteView[]): DelveHandle {
+  function enter(game: DelveGame, locks: PlayLocks, remotes: () => RemoteView[], ownPose?: () => OwnPose | null): DelveHandle {
     if (hostCoop) void closeHost();
     if (guestCoop) { void guestCoop.s.leave(); dropGuest(); }
     stopAutosave?.();
@@ -304,7 +305,7 @@ export function bootDelve(root: HTMLElement): Session {
     hudEl!.hidden = false;
     root.dataset.phase = 'playing';
     setMenu(false);
-    return startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden), onMirror: (open) => setMirror(game, open), onRebirth: () => setRebirth(game), remotes });
+    return startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden), onMirror: (open) => setMirror(game, open), onRebirth: () => setRebirth(game), remotes, ownPose });
   }
 
   function begin(game: DelveGame, s: SplitSession, locks: PlayLocks): void {
@@ -420,14 +421,8 @@ export function bootDelve(root: HTMLElement): Session {
     const guest = o.guest, game = guest.game;
     if (!game) throw new Error('coop guest: no replica');
     split = null;
-    // GuestViews 有狀態（用位置差算速度）：renderer 一幀只叫一次
-    const views = new GuestViews();
-    let last = performance.now();
-    handle = enter(game, locks, () => {
-      const t = performance.now(), dt = (t - last) / 1000;
-      last = t;
-      return views.views(guest.peers(), dt);
-    });
+    // 別人：內插過的 pose + 同一個延遲時鐘（揮擊進度跟身體同步）；自己的攻擊 / 挖掘 / 釣魚 / 無敵用房主回報的（D3）
+    handle = enter(game, locks, () => guestRemoteViews(guest.peers(), guest.peerTime()), () => guest.ownPose());
     guestCoop = { s: guest, room: o.room, nick: o.nick };
     root.dataset.coop = 'guest';
     say(toTitleBtn, '離開房間');

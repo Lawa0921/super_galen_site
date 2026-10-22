@@ -9,8 +9,7 @@ import { ARM_STEPS, FLAME_FRAMES, angleIndex } from './anim';
 import { PAL, PICK_METAL } from './textures';
 import { ITEMS, type ItemId } from '../engine/items';
 import { R as CR, WEAPON_METAL } from './combatArt';
-import { dollKey, plainLook, type DollLook } from '../engine/doll';
-import { DEFAULT_APPEARANCE } from '../engine/appearance';
+import type { DollLook } from '../engine/doll';
 import {
   ARMS_PAD, ARM_H, ARM_PIV, ARM_W, AV_FH, AV_FW, HAND_REACH, SHEET, avatarArm, avatarFrame, flatFrame, mantleArms, rimOf, sheetCell, shoulderOf, type FrameMeta,
 } from './avatarArt';
@@ -24,8 +23,20 @@ export const FH = AV_FH;
 export interface DollSheet { canvas: HTMLCanvasElement; meta: FrameMeta[]; key: string; ready: (i: number) => boolean; complete: boolean; }
 /** 換裝之後每幀最多花多少 ms 烘剩下的格子（要用的那格另外立刻烘） */
 export const SHEET_BAKE_BUDGET_MS = 2;
-/** 快取幾組不同樣子的影格表（換裝備來回切時不必重烘） */
-const SHEET_CACHE = 10;
+/** 快取幾組不同樣子的影格表（換裝備來回切時不必重烘；連線時最多 8 人各一組） */
+const SHEET_CACHE = 16;
+/** 手臂 / 攀邊快取上限（依紙娃娃 key 分開存，LRU：同時畫好幾種樣子也不會互相清掉） */
+const ARM_CACHE = 512, ARM_PREP = 64, GRIP_CACHE = 96;
+/** LRU：讀到就移到最後（Map 依插入順序） */
+function lruGet<V>(m: Map<string, V>, k: string): V | undefined {
+  const v = m.get(k);
+  if (v !== undefined) { m.delete(k); m.set(k, v); }
+  return v;
+}
+function lruSet<V>(m: Map<string, V>, k: string, v: V, max: number): void {
+  m.set(k, v);
+  while (m.size > max) m.delete(m.keys().next().value as string);
+}
 
 // ── 手臂 + 手持鎬 / 劍 ──────────────────────────────────
 // 手臂本身由 avatarArt.avatarArm 依紙娃娃的上衣畫；工具 / 刀身畫成「手在 y≈9」的位置（舊版手在 y≈12：整張往上移 3）
@@ -467,13 +478,10 @@ export class Sprites {
   private treeCache = new Map<string, TreeSprite>();
   private miniCache = new Map<string, HTMLCanvasElement>();
   private sheets = new Map<string, DollSheet>();
-  /** 攀上邊緣的手臂 / 手掌（依手的位置快取；一次攀爬只會用到十幾種） */
+  /** 攀上邊緣的手臂 / 手掌（依樣子 + 手的位置快取；一次攀爬只會用到十幾種） */
   private grips = new Map<string, { arms: HTMLCanvasElement; hands: HTMLCanvasElement }>();
   private weaponCache = new Map<string, HTMLCanvasElement>();
   private weaponPrep = new Map<string, Bmp>();
-  /** 目前的紙娃娃樣子 / key（setDoll 換） */
-  private look: DollLook = plainLook(DEFAULT_APPEARANCE);
-  private key = dollKey(this.look);
   /** 統計：烘過幾次影格表（效能檢查用） */
   readonly bakes = { sheets: 0, arms: 0 };
   /** 手持物精靈的不透明範圍（握點避開臉用；canvas → 每列左右界） */
@@ -499,37 +507,23 @@ export class Sprites {
     ];
   }
 
-  /** 換紙娃娃的樣子：key 一樣就什麼都不做；不一樣才讓手臂快取失效（影格表照 key 快取） */
-  setDoll(look: DollLook, key: string): void {
-    if (key === this.key) return;
-    this.look = look;
-    this.key = key;
-    this.armPrep.clear();
-    this.armCache.clear();
-    this.grips.clear();
-  }
-
-  /** 攀上邊緣：手臂（畫在頭後面）+ 手掌（畫在頭上面），hx / hy = 手在影格裡的位置；回傳的 canvas 要往左上偏 pad */
-  grip(meta: FrameMeta, fi: number, hx: number, hy: number): { arms: HTMLCanvasElement; hands: HTMLCanvasElement; pad: number } {
-    const k = `${fi}|${hx}|${hy}`;
-    let g = this.grips.get(k);
+  /**
+   * 攀上邊緣：手臂（畫在頭後面）+ 手掌（畫在頭上面），hx / hy = 手在影格裡的位置；回傳的 canvas 要往左上偏 pad。
+   * key = 紙娃娃 key（dollKey(look)）：不同樣子分開快取
+   */
+  grip(look: DollLook, key: string, meta: FrameMeta, fi: number, hx: number, hy: number): { arms: HTMLCanvasElement; hands: HTMLCanvasElement; pad: number } {
+    const k = `${key}|${fi}|${hx}|${hy}`;
+    let g = lruGet(this.grips, k);
     if (!g) {
-      const r = mantleArms(this.look, meta, hx, hy);
+      const r = mantleArms(look, meta, hx, hy);
       g = { arms: toCanvas(r.arms) as HTMLCanvasElement, hands: toCanvas(r.hands) as HTMLCanvasElement };
-      this.grips.set(k, g);
-      if (this.grips.size > 48) this.grips.delete(this.grips.keys().next().value as string);
+      lruSet(this.grips, k, g, GRIP_CACHE);
     }
     return { ...g, pad: ARMS_PAD };
   }
-  get dollKey(): string { return this.key; }
 
   /**
-   * 目前樣子的影格表（最多快取 SHEET_CACHE 組）。見 sheetFor。
-   */
-  dollSheet(need?: number): DollSheet { return this.sheetFor(this.look, this.key, need); }
-
-  /**
-   * 任意樣子的影格表（遠端玩家用；不動目前的 look / 手臂快取）。分幀烘焙：need = 這一幀要用的格子（沒烘過就立刻烘），
+   * 某個樣子的影格表（最多快取 SHEET_CACHE 組；本地 / 遠端玩家共用）。分幀烘焙：need = 這一幀要用的格子（沒烘過就立刻烘），
    * 其餘的格子每次呼叫在 SHEET_BAKE_BUDGET_MS 內往下烘；不給 need = 一次烘完（測試 / 工具用）。
    */
   sheetFor(look: DollLook, key: string, need?: number): DollSheet {
@@ -570,22 +564,25 @@ export class Sprites {
   }
   private queues = new Map<string, BakeQueue>();
 
-  shoulder(back: boolean): { x: number; y: number } { return shoulderOf(this.look.app.body, back); }
+  shoulder(look: DollLook, back: boolean): { x: number; y: number } { return shoulderOf(look.app.body, back); }
 
-  /** 旋轉後的手臂（含鎬 / 劍；袖子依紙娃娃的上衣）。回傳 canvas 與「軸心在 canvas 中的位置」 */
-  arm(back: boolean, pick: ItemId | null, deg: number, blade: ItemId | null = null, itemOnly = false): HeldDraw {
+  /**
+   * 旋轉後的手臂（含鎬 / 劍；袖子依紙娃娃的上衣）。回傳 canvas 與「軸心在 canvas 中的位置」。
+   * key = 紙娃娃 key：快取依樣子分開（LRU），好幾個樣子輪流畫也不會互相清掉
+   */
+  arm(look: DollLook, key: string, back: boolean, pick: ItemId | null, deg: number, blade: ItemId | null = null, itemOnly = false): HeldDraw {
     const idx = angleIndex(deg, ARM_STEPS);
-    const pk = `${back ? 1 : 0}:${pick ?? ''}:${blade ?? ''}${itemOnly ? ':item' : ''}`;
-    const key = `${pk}:${idx}`;
+    const pk = `${key}|${back ? 1 : 0}:${pick ?? ''}:${blade ?? ''}${itemOnly ? ':item' : ''}`;
+    const ck = `${pk}:${idx}`;
     const size = 64;
-    let c = this.armCache.get(key);
+    let c = lruGet(this.armCache, ck);
     if (!c) {
-      let prep = this.armPrep.get(pk);
-      if (!prep) { prep = rotPrep(armBmp(this.look, back, pick, blade, itemOnly)); this.armPrep.set(pk, prep); }
+      let prep = lruGet(this.armPrep, pk);
+      if (!prep) { prep = rotPrep(armBmp(look, back, pick, blade, itemOnly)); lruSet(this.armPrep, pk, prep, ARM_PREP); }
       const rad = -(idx / ARM_STEPS) * Math.PI * 2;
       c = this.track(rotate(prep, ARM_PIV.x, ARM_PIV.y, rad, size));
       this.bakes.arms++;
-      this.armCache.set(key, c);
+      lruSet(this.armCache, ck, c, ARM_CACHE);
     }
     return { canvas: c, ox: size / 2, oy: size / 2 };
   }

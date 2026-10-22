@@ -19,9 +19,9 @@ export class Nameplates {
         this.container.appendChild(t);
       }
       if (t.textContent !== v.nick) t.textContent = v.nick;
-      t.classList.toggle('is-dead', v.dead);
+      t.classList.toggle('is-dead', v.pose.dead);
       // 頭頂上方：碰撞盒頂再往上幾 px（CSS 把標籤的底邊對到 --y）
-      const p = worldToScreen(v.x + PLAYER_W / 2, v.y - 4);
+      const p = worldToScreen(v.pose.x + PLAYER_W / 2, v.pose.y - 4);
       t.style.setProperty('--x', `${Math.round(p.x)}px`);
       t.style.setProperty('--y', `${Math.round(p.y)}px`);
     }

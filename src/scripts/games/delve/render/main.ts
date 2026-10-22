@@ -26,6 +26,7 @@ import { NPCS } from '../engine/npcs';
 import { LEVEL_NAMES } from '../engine/settlement';
 import { Nameplates } from './nameplates';
 import type { RemoteView } from './remotePlayers';
+import type { OwnPose } from '../net/guest';
 
 /** 稀有 / 傳說的漁獲（釣到時多一聲鈴） */
 const FISH_RARE = new Set(FISH.filter((f) => f.rarity === 'rare' || f.rarity === 'legendary').map((f) => f.item));
@@ -91,6 +92,8 @@ export interface StartOptions {
   onRebirth?: () => void;
   /** 其他玩家（連線）：renderer 每幀叫一次，名牌用同一份；不給 = 不畫 */
   remotes?: () => RemoteView[];
+  /** 客人：自己的攻擊 / 挖掘 / 釣魚 / 無敵（房主回報的，M-C2 D3）；不給 = 單機 / 房主 */
+  ownPose?: () => OwnPose | null;
 }
 
 const WINDOW = 120;
@@ -107,8 +110,9 @@ export function startDelve(opts: StartOptions): DelveHandle {
   const stepper = new FixedStepper(FIXED_DT, 0.25);
   const sound = new SoundManager();
   renderer.onCue = () => sound.climbGrip();
-  // 遠端玩家：來源有狀態（客人的 GuestViews）→ renderer 一幀只叫一次，名牌讀 renderer.remoteViews（同一份）
+  // 遠端玩家：renderer 一幀只叫一次來源，名牌讀 renderer.remoteViews（同一份）
   renderer.setRemoteSource(opts.remotes ?? null);
+  renderer.setOwnPose(opts.ownPose ?? null);
   const wlabels = root.querySelector<HTMLElement>('#delve-wlabels');
   const nameplates = opts.remotes && wlabels ? new Nameplates(wlabels) : null;
   const ui = new ExploreUi(root, game, renderer.atlas);

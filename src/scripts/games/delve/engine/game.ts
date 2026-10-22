@@ -2687,8 +2687,9 @@ export class DelveGame {
       const mantle = this.isRemoteCur()
         ? (rm ? { ...rm } : null)
         : km ? { p: km.t / km.dur, dir: km.dir, edgeX: km.edgeX, edgeY: km.edgeY } : null;
+      // 遠端 actor 不跑 stepPlayer（位置是客人回報的）→ gfxOffY 沒人更新，舊值會讓腳底飄：一律 0
       return {
-        x: p.x, y: p.y, vx: p.vx, vy: p.vy, onGround: p.onGround, gfxOffY: p.gfxOffY,
+        x: p.x, y: p.y, vx: p.vx, vy: p.vy, onGround: p.onGround, gfxOffY: this.isRemoteCur() ? 0 : p.gfxOffY,
         facing: this.facing, dead: this.dead, iframes: Math.max(0, this.iframes), boating: this.boating, climbing: Boolean(this.motion.climbing),
         mantle,
         liquidFrac: this.contact.frac,

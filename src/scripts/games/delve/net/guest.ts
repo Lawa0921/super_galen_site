@@ -22,7 +22,7 @@ import { chunkOfX } from '../engine/coords';
 import type { DelveCharacter } from '../save/character';
 import type { Channel, NetLink, Payload } from './link';
 import {
-  BOUNDARY_OPS, HOST_TIMEOUT_MS, PING_MS, PROTO, PS_BOAT, PS_CLIMB, PS_GROUND, PS_HZ,
+  BOUNDARY_OPS, HOST_TIMEOUT_MS, INTERP_DELAY_MS, PING_MS, PROTO, PS_BOAT, PS_CLIMB, PS_GROUND, PS_HZ,
   type ByeReason, type GuestCtrl, type HostCtrl, type Ps, type RejectReason, type Welcome, type WorldSnap,
   type Ws, type WsDrop, type WsEnemy, type WsNpc, type WsProj, encodeMantle,
 } from './protocol';
@@ -182,6 +182,11 @@ export class NetGuest {
   get sync(): ChunkSyncGuest | null { return this.chunks; }
   /** 自己的攻擊 / 挖掘 / 釣魚 / 無敵：房主 ws 裡自己 pid 的最新一份（M-C2 D3；客人副本不模擬這些）；還沒有 → null */
   ownPose(): OwnPose | null { return this.own; }
+  /**
+   * peers() 取樣用的時鐘（房主世界時間，秒）：最新 ws 的房主時間 + 到達後經過的時間 − INTERP_DELAY_MS。
+   * 畫別人的揮擊進度要用它（(peerTime − attack.at) / dur），才會跟內插的身體同步
+   */
+  peerTime(): number { return (this.interpNow(this.now) - INTERP_DELAY_MS) / 1000; }
   /** 最近一次 ping/pong 量到的往返時間（ms）；第一個 pong 到之前是 null */
   get rttMs(): number | null { return this.rtt; }
 

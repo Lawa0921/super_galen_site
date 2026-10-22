@@ -2494,7 +2494,7 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     await waitGame(page);
     await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
     await page.waitForTimeout(200);
-    const k0 = await page.evaluate(() => window.__delveDebug!.handle.renderer.sprites.dollKey);
+    const k0 = await page.evaluate(() => window.__delveDebug!.handle.renderer.dollKey);
     // 選單裡不再有「角色外觀」（外觀改到梳妝台）
     await page.click('#delve-menu-btn');
     await expect(page.locator('#delve-menu')).toBeVisible();
@@ -2516,7 +2516,7 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     await page.click('#delve-wr-done');
     await expect(page.locator('#delve-wardrobe')).toBeHidden();
     await page.waitForTimeout(250);
-    const k1 = await page.evaluate(() => window.__delveDebug!.handle.renderer.sprites.dollKey);
+    const k1 = await page.evaluate(() => window.__delveDebug!.handle.renderer.dollKey);
     expect(k1).not.toBe(k0);
     const a1 = await page.evaluate(() => window.__delveDebug!.game.appearance);
     expect({ race: a1.race, outfit: a1.outfit, acc: a1.acc, glasses: a1.glasses }).toEqual({ race: a0.race, outfit: a0.outfit, acc: a0.acc, glasses: a0.glasses });
@@ -2525,7 +2525,7 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
   test('紙娃娃：戴頭盔 → 精靈快取 key 換了；外觀欄蓋過防具的樣子；隱藏開關；說明框試穿；存檔後還在', async ({ page }) => {
     await page.goto('/games/delve?seed=doll-e2e&autostart=1&fresh=1');
     await waitGame(page);
-    const key = (): Promise<string> => page.evaluate(() => window.__delveDebug!.handle.renderer.sprites.dollKey);
+    const key = (): Promise<string> => page.evaluate(() => window.__delveDebug!.handle.renderer.dollKey);
     await page.waitForTimeout(200);
     const k0 = await key();
     await page.evaluate(() => { window.__delveDebug!.game.equip('iron_helmet'); window.__delveDebug!.game.equip('iron_chestplate'); });
@@ -2649,13 +2649,14 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     await page.waitForTimeout(400);
     // 臉那一層（影格表第 3 列）裡眼睛 / 嘴的像素，在畫面緩衝上是不是還是一樣的顏色
     const face = (): Promise<{ n: number; bad: number }> => page.evaluate(() => {
-      const r = window.__delveDebug!.handle.renderer as unknown as { playerDraw: { fi: number; x: number; y: number; ox: number; oy: number; facing: number } | null; drawCam: { x: number; y: number }; buf: HTMLCanvasElement; sprites: { dollSheet(i?: number): { canvas: HTMLCanvasElement } } };
+      const r = window.__delveDebug!.handle.renderer as unknown as { playerDraw: { fi: number; x: number; y: number; ox: number; oy: number; facing: number } | null; drawCam: { x: number; y: number }; buf: HTMLCanvasElement; sprites: { sheetFor(look: unknown, key: string, i?: number): { canvas: HTMLCanvasElement } } };
       const pd = r.playerDraw;
       if (!pd) return { n: 0, bad: -1 };
       const FW = 52, FH = 54, t = document.createElement('canvas');
       t.width = FW; t.height = FH;
       const tc = t.getContext('2d')!;
-      tc.drawImage(r.sprites.dollSheet(pd.fi).canvas, pd.fi * FW, FH * 3, FW, FH, 0, 0, FW, FH);
+      const doll = window.__delveDebug!.game.doll();
+      tc.drawImage(r.sprites.sheetFor(doll.look, doll.key, pd.fi).canvas, pd.fi * FW, FH * 3, FW, FH, 0, 0, FW, FH);
       const fd = tc.getImageData(0, 0, FW, FH).data, bc = r.buf.getContext('2d')!, bd = bc.getImageData(0, 0, r.buf.width, r.buf.height);
       // 眼睛（紫羅蘭瞳 + 上眼瞼）與嘴（深紅 / 紅 / 舌頭）
       const want = new Set(['2c2450', '9a6ee0', '472819', '8c2038', 'c8344c', 'e890b0']);
