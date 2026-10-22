@@ -50,8 +50,11 @@ export type PolicyRule =
    * effect she gave with it still holds (`holding`).
    */
   | { kind: 'cast-when'; skill: string; big?: true; whileAbsent?: true }
-  /** The hero: echo the coming round's record when it is worth at least his strongest damage skill (power x reach). */
-  | { kind: 'echo' };
+  /**
+   * The hero: echo the coming round's record when it is worth at least his strongest damage skill (power x reach), or with
+   * `min`, at least that percent of it (an echo is a companion's skill at 70%: plan 8h Task 5b tuning).
+   */
+  | { kind: 'echo'; min?: number };
 
 export type PolicyTable = Readonly<Partial<Record<CharacterId, readonly PolicyRule[]>>>;
 
@@ -259,7 +262,7 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
         if (!rec || c.tp < rec.cost || !rec.def.effects.some((e) => e.kind === 'damage')) break;
         const worth = (d: SkillDef) => power(d) * reach(s, d);
         const best = Math.max(0, ...usable.filter(isDamage).map(worth));
-        if (worth(echoDef(rec)) >= best) return { action: { kind: 'echo', rec, target: first }, hold };
+        if (worth(echoDef(rec)) * 100 >= best * (rule.min ?? 100)) return { action: { kind: 'echo', rec, target: first }, hold };
         break;
       }
     }

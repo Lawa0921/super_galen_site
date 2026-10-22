@@ -66,13 +66,14 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       first: ['chizuru-thunder-ward'],
       // 雷鳴 and 感電 ride on 天之逆鉾, the blow the build is for; 連擊 on 貫槍 (the shop's) for the turns between.
       runes: { pierce: ['multistrike'], 'heaven-spear': ['thunderclap', 'jolt', 'charge'] },
-      policy: [{ kind: 'ensure-barrier', skills: ['ward'] }, { kind: 'release-at', min: 3, skill: 'heaven-spear' }, aoe] },
+      // Tuning round 1 (plan 8h Task 5b): released from two rounds left.
+      policy: [{ kind: 'ensure-barrier', skills: ['ward'] }, { kind: 'release-at', min: 2, skill: 'heaven-spear' }, aoe] },
   ],
   liz: [
     { key: 'jackpot', name: '一擲千金', intro: '雙刃快快賺銅板，存夠了就一擲千金！', scenario: 'crowd', capstone: 0,
       runes: { 'twin-slash': ['multistrike', 'regain'] },
-      // 雙刃 between the throws: it earns the coins (大手筆 would spend them).
-      policy: [{ kind: 'spend-at', gauge: 'coins', min: 8, skill: 'jackpot' }, { kind: 'cast-when', skill: 'twin-slash' }] },
+      // Between the throws the strongest cast earns the coins; 大手筆 waits for a full purse (tuning round 1).
+      policy: [{ kind: 'spend-at', gauge: 'coins', min: 8, skill: 'jackpot' }, { kind: 'spend-at', gauge: 'coins', min: 10, skill: 'fortune-strike' }, aoe] },
     { key: 'bleed', name: '撕裂快刀', intro: '雙刃加撕裂，一刀一刀讓牠流血流到見底。', scenario: 'boss',
       runes: { 'twin-slash': ['tear', 'multistrike'], pickpocket: ['tear'] },
       // 大手筆 waits for a full purse, so the torn blades come first.
@@ -85,7 +86,8 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       policy: [{ kind: 'spend-at', gauge: 'aim', min: 3, skill: 'starfall-arrow' }, aoe] },
     { key: 'wildfire', name: '燎原箭雨', intro: '箭雨帶火，整片一起燒掉。', scenario: 'crowd', capstone: 2,
       runes: { 'arrow-rain': ['flame', 'ignite', 'multistrike'] },
-      policy: [aoe] },
+      // 箭雨 every turn: the runes are on it (tuning round 1: the strongest pick never chose it).
+      policy: [{ kind: 'cast-when', skill: 'arrow-rain' }] },
   ],
   scarlet: [
     { key: 'riposte', name: '反擊之壁', intro: '來打我啊！挨一下，就燒一圈還給你們。', scenario: 'long', capstone: 2,
@@ -97,15 +99,18 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       // 代受 (on the way, 高喊), then 熾心, 赤心 and 回禮; 延長 does not take a cover, so 代受 takes 節流 (「依 fit」).
       first: ['scarlet-provoke-shout', 'cover', 'scarlet-ardent', 'scarlet-burst-heart', 'scarlet-thanks'],
       runes: { 'crimson-end': ['charge'], cover: ['thrift'] },
-      policy: [{ kind: 'ensure-cover', skill: 'cover' }, { kind: 'spend-at', gauge: 'embers', min: 40, of: 'maxHp', skill: 'crimson-end' }, aoe] },
+      // 紅蓮終焉 from a tenth of her max HP in embers (tuning round 1: at 40% it was never cast).
+      policy: [{ kind: 'ensure-cover', skill: 'cover' }, { kind: 'spend-at', gauge: 'embers', min: 10, of: 'maxHp', skill: 'crimson-end' }, aoe] },
   ],
   selene: [
     { key: 'fullmoon', name: '滿月聖女', intro: '月光照著大家，大補就留到滿月呢。', scenario: 'long', capstone: 1,
       runes: { moonlight: ['spread', 'dispel'] },
-      // The full moon's big heal is 月光 spread over everyone (滿月之癒 is the other branch's ultimate).
+      // The full moon's big heal is 月光 spread over everyone (滿月之癒 is the other branch's ultimate). Tuning round 1: no
+      // 收回 rule — 滿月之夜 holds the full moon past the end of every measured fight, so the moon never wanes for it to
+      // step back (controller ruling R5: dropped from coverage, reason in rune-value.md); heal from 70%.
       policy: [
-        { kind: 'cast-when', skill: 'full-moon-night', big: true, whileAbsent: true }, { kind: 'at-phase', phase: 'waning', skill: 'moon-recall' },
-        { kind: 'at-phase', phase: 'full', skill: 'moonlight' }, { kind: 'heal-below', pct: 60 }, aoe,
+        { kind: 'cast-when', skill: 'full-moon-night', big: true, whileAbsent: true },
+        { kind: 'at-phase', phase: 'full', skill: 'moonlight' }, { kind: 'heal-below', pct: 70 }, aoe,
       ] },
     { key: 'nightmare', name: '新月夢魘', intro: '新月來了，大家都睡吧。夢裡也有毒喔。', scenario: 'crowd', capstone: 2,
       // 夢境 deals no damage: 淬毒 goes on 月蝕, which strikes them all; 夢境 takes 節流 (「依 fit」).
@@ -147,7 +152,7 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
     { key: 'sword', name: '劍技', intro: '正面衝上去，劍技一路連斬。', scenario: 'boss', hero: 'sword',
       runes: { 'hero-slash': ['multistrike', 'tear'] }, policy: [aoe] },
     { key: 'mage', name: '星術', intro: '星火擴散開來，一次照亮整片。', scenario: 'crowd', hero: 'mage',
-      runes: { 'hero-flare': ['spread', 'ignite'] }, policy: [aoe] },
+      runes: { 'hero-flare': ['spread', 'ignite'] }, policy: [{ kind: 'heal-below', pct: 40 }, aoe] },
     { key: 'healer', name: '祈光', intro: '治癒照到每個人，誰都別倒下。', scenario: 'long', hero: 'healer',
       runes: { 'hero-mend': ['spread', 'dispel'] }, policy: [{ kind: 'heal-below', pct: 60 }, aoe] },
     { key: 'tank', name: '守護', intro: '站到最前面，傷害都衝著我來。', scenario: 'long', hero: 'tank',
@@ -155,7 +160,8 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       runes: { 'hero-guard': ['extend', 'thrift'] }, policy: [{ kind: 'ensure-taunt', skill: 'hero-guard' }, aoe] },
     // 連擊 on 劍技 (the shop's): more hits of his own bring more TP back, kept for the echo.
     { key: 'echo', name: '殘響', intro: '跟在大家後面，把最強的那一招再放一次。', scenario: 'boss', hero: 'balanced',
-      runes: { 'hero-slash': ['regain', 'multistrike'] }, policy: [{ kind: 'echo' }, aoe] },
+      // The echo from 40% of his strongest (tuning round 1: at 100% it never fired).
+      runes: { 'hero-slash': ['regain', 'multistrike'] }, policy: [{ kind: 'echo', min: 40 }, aoe] },
   ],
 };
 

@@ -984,6 +984,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       castWhen: (name: string, big: boolean, whileAbsent: boolean) =>
         `${big ? '有頭目或菁英時，' : ''}${whileAbsent ? `${name}的效果不在了就放` : `能放就放${name}`}。`,
       echo: '同伴剛放的招比自己最強的招還強時，用殘響重現它。',
+      echoAt: (pct: number) => `同伴剛放的招有自己最強的招的 ${pct}% 以上時，用殘響重現它。`,
     },
   },
   clear: { back: '繼續' },   // the Act 1 card's title and body are story copy: STORY.act1Card

@@ -452,6 +452,13 @@ describe('build policy rules (plan 8h Task 1)', () => {
     expect(at(r, sk('sweep'))).toEqual({ kind: 'echo', rec: r, target: 'e1' });
     expect(at(r, [])).toEqual({ kind: 'echo', rec: r, target: 'e1' });
     expect(at(r, sk('pierce'))).toBeNull();                                  // weaker than his strongest
+    // `min`: worth at least that share of his strongest (119 is 70% of 170; plan 8h Task 5b tuning).
+    const near = (min: number) => {
+      const s = makeBattle([P('hero', { defId: 'hero' }), P('chizuru')], [E('e0', { alive: false, hp: 0 }), E('e1')], { echo: r });
+      return run(s, s.party[0], sk('pierce'), [{ kind: 'echo', min }]).action;
+    };
+    expect(near(70)).toEqual({ kind: 'echo', rec: r, target: 'e1' });
+    expect(near(71)).toBeNull();
     expect(at(r, sk('sweep'), { tp: 4 })).toBeNull();                        // short of TP
     expect(at(undefined, sk('sweep'))).toBeNull();                           // nothing to echo
     expect(at(rec({ round: -1 }), sk('sweep'))).toBeNull();                  // too old for the coming round

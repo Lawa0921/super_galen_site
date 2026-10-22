@@ -151,5 +151,7 @@ describe('build data (plan 8h Task 3)', () => {
     expect(lines[4]).toContain('40');
     expect(lines[10]).toContain(T.mech.phase.full);
     expect(lines[13]).toContain(SKILLS['atoning-flame'].name);
+    // The echo's share, from its rule.
+    expect(policyText(build('hero', { policy: [{ kind: 'echo', min: 60 }] }))[0]).toContain('60');
   });
 });
