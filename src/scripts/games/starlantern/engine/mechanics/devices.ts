@@ -103,7 +103,7 @@ export function runDevice(s: BattleState, c: Combatant, d: Device, ctx: EffectCo
       if (!t) return;
       act();
       const amount = healAmount(c, power);
-      t.shield = { amount: Math.max(amount, t.shield?.amount ?? 0), src: c.key };
+      t.shield = { amount: Math.max(amount, t.shield?.amount ?? 0), src: c.key, skill: d.skill };
       return;
     }
     case 'mine':

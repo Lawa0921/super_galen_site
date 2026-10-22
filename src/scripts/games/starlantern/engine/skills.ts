@@ -348,7 +348,8 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
       // 滿溢 (plan 8d): the spill shields, up to the cap, as the shield generator does (the bigger shield stays, now theirs).
       if (eff.overflowPct !== undefined && full > amount) {
         const shield = Math.min(full - amount, Math.floor((target.max.hp * eff.overflowPct) / 100));
-        if (shield > 0) target.shield = { amount: Math.max(shield, target.shield?.amount ?? 0), src: actor.key };
+        const skill = castOf(ctx, actor);
+        if (shield > 0) target.shield = { amount: Math.max(shield, target.shield?.amount ?? 0), src: actor.key, ...(skill ? { skill } : {}) };
       }
       return;
     }

@@ -14,8 +14,10 @@ import { runeWhy, runeFits } from '../engine/runes';
 import { newGame, type GameState } from '../engine/state';
 import type { CharacterId, Member } from '../engine/types';
 import {
-  battleLine, cardOf, compareCards, previewOf, reserveLine, runeChoices, slotStates, withoutPowerClause, type RuneAction,
+  battleLine, cardOf, compareCards, previewOf, reserveLine, runeChoices, slotDots, slotStates, withoutPowerClause, type RuneAction,
 } from './skillCard';
+import { loadGame, saveGame } from '../engine/save';
+import { memoryStorage } from '../engine/testing';
 
 const W = T.ui2.workshop;
 const R = (id: RuneId, tier: RuneRef['tier'] = 'magic'): RuneRef => ({ id, tier });
@@ -352,6 +354,25 @@ describe('the skill card (plan 8g Task 3)', () => {
     learn(one, 'chizuru', { ward: 1, 'purify-ward': 1 });
     const alone = runeChoices(one, { id: 'chizuru', skill: 'ward', slot: 0 }).find((c) => c.source.ref.id === 'lasting')!;
     expect(alone.notes).not.toContain(W.barrierClash);
+  });
+
+  it('a trigger rune an older save put on a skill with no plain effect shows ◇, with its reason (plan 8h Task 2)', () => {
+    const s = stateAt(35, ['bobby', 'chizuru', 'selene']);
+    learn(s, 'bobby', { turret: 1 });
+    learn(s, 'chizuru', { ward: 1 });
+    learn(s, 'selene', { 'moon-recall': 1 });
+    const at: [CharacterId, string][] = [['bobby', 'turret'], ['chizuru', 'ward'], ['selene', 'moon-recall']];
+    for (const [id, skill] of at) s.party.roster[id] = { ...s.party.roster[id], sockets: { [skill]: [R('on-struck')] } };
+    const storage = memoryStorage();
+    saveGame(storage, s);
+    const loaded = loadGame(storage);
+    expect(loaded.status).toBe('ok');
+    const back = (loaded as Extract<typeof loaded, { status: 'ok' }>).state;
+    for (const [id, skill] of at) {
+      expect(member(back, id).sockets, `${id} ${skill}`).toEqual({ [skill]: [R('on-struck')] });
+      expect(slotDots(member(back, id), skill), `${id} ${skill}`).toMatch(/^◇/);
+      expect(slotStates(member(back, id), skill)[0]).toEqual({ state: 'off', ref: R('on-struck'), why: T.rune.why.plain });
+    }
   });
 
   it('slots tell what works', () => {

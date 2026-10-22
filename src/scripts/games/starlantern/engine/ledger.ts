@@ -63,7 +63,8 @@ export function creditPrevented(l: Ledger, a: Combatant, t: Combatant, spec: Dam
   (t.auras ?? []).forEach((b, i) => {
     if (b.stat === guard && b.pct > 0) credit(l, b.src, 'prevented', spared(t, { ...t, auras: (t.auras ?? []).filter((_, j) => j !== i) }));
   });
-  if (t.ward && t.ward[guard] > 0) credit(l, t.ward.src, 'prevented', spared(t, { ...t, ward: undefined }));
+  // The barrier's share goes to the skill that raised it in a ledger split by skill (plan 8h Task 2 review).
+  if (t.ward && t.ward[guard] > 0) credit(l, t.ward.src, 'prevented', spared(t, { ...t, ward: undefined }), t.ward.skill);
   a.buffs.forEach((b, i) => {
     if (b.stat === spec.scale && b.pct < 0) credit(l, b.src, 'prevented', spared(t, t, { ...a, buffs: a.buffs.filter((_, j) => j !== i) }));
   });

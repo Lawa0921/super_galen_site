@@ -707,6 +707,27 @@ describe('step ⑧: regain never profits (plan 8h Task 2, ruling 11c)', () => {
     expect(RUNES.regain.text('magic')).toContain('一次施放回復的總和不超過這招付的 TP');
   });
 
+  it('a cast and its reprise together give back no more than the cast paid', () => {
+    // Round 1 Noel casts 火之星彈 with 回聲 and 回氣 (2 a hit); round 2 she rests while Chizuru casts 貫槍 (5 TP, no
+    // 回氣), and the reprise strikes at the round's end.
+    const fight = (noelOver: Partial<Combatant>) => {
+      const noel = member('noel', { tp: 50, max: { ...MAX, spd: 90 }, runes: { 'fire-star': [T8('reprise', 'legendary'), T8('regain', 'epic')] }, ...noelOver });
+      // The foe sleeps through its turn, before Chizuru's blow wakes it: hers is the round's last action.
+      const s0 = makeBattle([noel, member('chizuru', { max: { ...MAX, spd: 50 } })], [tough('e0', { sleep: 9, max: { hp: 99999, tp: 0, atk: 1, def: 20, mag: 1, res: 20, spd: 70 } })]);
+      const paid = castCost(s0, noel, 'fire-star');
+      const [r1, r2] = play(s0, [{ noel: cast('fire-star', 'e0') }, { chizuru: cast('pierce', 'e0') }]);
+      expect(r2.log).toContainEqual({ type: 'act', actor: 'noel', label: T.rune.reprise('火之星彈') });
+      const back1 = r1.party[0].tp - (50 - paid), back2 = r2.party[0].tp - r1.party[0].tp;
+      return { paid, back1, back2 };
+    };
+    // 4 TP paid: the cast gives 2 back, the reprise the other 2.
+    const plain = fight({});
+    expect(plain).toEqual({ paid: 4, back1: 2, back2: 2 });
+    // At half the TP (2 paid) the cast already gave it all back: the reprise gives none, though Chizuru paid 5 this round.
+    const cheap = fight({ x: { tpCost: 50 } });
+    expect(cheap).toEqual({ paid: 2, back1: 2, back2: 0 });
+  });
+
   it('regain never pays more than the cast cost', () => {
     const combos: RuneId[][] = [['regain'], ['regain', 'multistrike'], ['regain', 'twin-cast'], ['regain', 'multistrike', 'twin-cast']];
     let tried = 0;

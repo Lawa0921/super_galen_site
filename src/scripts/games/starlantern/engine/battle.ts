@@ -705,7 +705,7 @@ export function syncWards(s: BattleState): void {
   const guard = (s.barriers ?? []).find((b) => b.kind === 'guard');
   const pct = guard ? barrierPower(guard) : 0;
   for (const c of s.party) {
-    if (guard && c.alive) c.ward = { def: pct, res: pct, src: guard.src };
+    if (guard && c.alive) c.ward = { def: pct, res: pct, src: guard.src, ...(guard.skill ? { skill: guard.skill } : {}) };
     else delete c.ward;
   }
 }

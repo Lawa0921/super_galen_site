@@ -231,10 +231,11 @@ describe('the contribution ledger', () => {
       const s = makeBattle([P('chizuru'), P('noel'), P('selene', { alive: false, hp: 0 })], [E('e0')],
         { barriers: [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru' }] });
       syncWards(s);
-      expect(s.party.map((c) => c.ward)).toEqual([ward, ward, undefined]);
+      // The ward names the skill that raised it too (plan 8h Task 2 review).
+      expect(s.party.map((c) => c.ward)).toEqual([{ ...ward, skill: 'ward' }, { ...ward, skill: 'ward' }, undefined]);
       s.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru', boost: 2 }];
       syncWards(s);
-      expect(s.party[0].ward).toEqual({ def: 60, res: 60, src: 'chizuru' });
+      expect(s.party[0].ward).toEqual({ def: 60, res: 60, src: 'chizuru', skill: 'ward' });
       s.barriers = [{ skill: 'purify-ward', kind: 'purify', power: 30, turns: 2, src: 'chizuru' }];
       syncWards(s);
       expect(s.party.some((c) => 'ward' in c)).toBe(false);
@@ -246,7 +247,7 @@ describe('the contribution ledger', () => {
       // A round keeps them in step: the ward is on the members after it.
       const r = resolveRound(makeBattle([P('chizuru'), P('noel')], [E('e0', { sleep: 3 })],
         { barriers: [{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'chizuru' }] }), {}, constRng(0.5));
-      expect(r.party.map((c) => c.ward)).toEqual([ward, ward]);
+      expect(r.party.map((c) => c.ward)).toEqual([{ ...ward, skill: 'ward' }, { ...ward, skill: 'ward' }]);
     });
 
     it('a round starts with the wards in step, so the first hit already meets them', () => {
@@ -427,6 +428,44 @@ describe('step ⑧ in the ledger (plan 8h Task 2)', () => {
     expect(r.party[2].hp).toBe(10 + lifted);
     expect(of(l, 'selene').healing).toBe(raw);
     expect(of(l, 'noel').healing).toBe(lifted - raw);
+  });
+
+  it('a barrier is credited to its skill, a shield to the skill that gave it, and the books still balance', () => {
+    const foe = (_target: string) => makeCombatant({ key: 'e0', side: 'enemy', max: { hp: 99999, tp: 0, atk: 60, def: 20, mag: 1, res: 20, spd: 1 } });
+    const blow = (target: string) => ({ intents: { e0: { kind: 'attack' as const, target } } });
+    const both = (s0: BattleState, rounds: Record<string, import('./battle').Action>[]) => {
+      const split = newLedger({ bySkill: true }), plain = newLedger();
+      let a = s0, b = s0;
+      for (const acts of rounds) { a = resolveRound(a, acts, constRng(0.5), split); b = resolveRound(b, acts, constRng(0.5), plain); }
+      // The split never changes the totals, and no part is counted twice.
+      expect(split.by).toEqual(plain.by);
+      for (const k of ['damage', 'healing', 'prevented', 'shield'] as const) {
+        const parts = Object.values(split.bySkill!).reduce((n, c) => n + c[k], 0);
+        expect(parts, k).toBeLessThanOrEqual(Object.values(split.by).reduce((n, c) => n + c[k], 0));
+      }
+      return split;
+    };
+    // 守之結界 cast by hand, then a blow on Noel: what the ward spared her is 守之結界's.
+    const chizuru = member('chizuru', 90, { mech: { kind: 'barrier' } });
+    const w = both(makeBattle([chizuru, member('noel', 50)], [foe('noel')], blow('noel')), [{ chizuru: { kind: 'skill', skill: 'ward' } }]);
+    expect(of(w, 'chizuru').prevented).toBeGreaterThan(0);
+    expect(w.bySkill!.ward).toMatchObject({ prevented: of(w, 'chizuru').prevented, casts: 1 });
+    // A lasting 守之結界 (never cast): still 守之結界's.
+    const lasting = makeBattle([member('chizuru', 90, { mech: { kind: 'barrier' } }), member('noel', 50)], [foe('noel')], { ...blow('noel'), barriers: [{ skill: 'ward', kind: 'guard', power: 18, turns: 3, src: 'chizuru', lasting: true, lastingPct: 60 }] });
+    syncWards(lasting);
+    const l = both(lasting, [{}]);
+    expect(l.bySkill!.ward).toMatchObject({ prevented: of(l, 'chizuru').prevented, casts: 0 });
+    expect(of(l, 'chizuru').prevented).toBeGreaterThan(0);
+    // 月光 with 化盾 on Noel at full HP: the spill is a shield, and what it takes is 月光's.
+    const selene = member('selene', 90, { runes: { moonlight: [{ id: 'spill-shield', tier: 'legendary' }] } });
+    const m = both(makeBattle([selene, member('noel', 50)], [foe('noel')], blow('noel')), [{ selene: { kind: 'skill', skill: 'moonlight', target: 'noel' } }]);
+    expect(of(m, 'selene').shield).toBeGreaterThan(0);
+    expect(m.bySkill!.moonlight).toMatchObject({ shield: of(m, 'selene').shield, casts: 1 });
+    // Bobby's shield generator, run at the round's end, then a blow next round: 護盾產生器's.
+    const bobby = member('bobby', 90, { mech: { kind: 'devices', devices: [], cap: 2 } });
+    const g = both(makeBattle([bobby, member('noel', 50, { hp: 100 })], [foe('noel')], blow('noel')), [{ bobby: { kind: 'skill', skill: 'barrier' } }, {}]);
+    expect(of(g, 'bobby').shield).toBeGreaterThan(0);
+    expect(g.bySkill!.barrier).toMatchObject({ shield: of(g, 'bobby').shield, casts: 1 });
   });
 
   it('the ledger can split by skill', () => {
