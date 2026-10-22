@@ -179,7 +179,7 @@ export const BANTER_GATE: Partial<Record<SceneId, StoryGate>> = {
   'banter:safira-sylvie:2': { pieces: { safira: 2 } },
   'banter:rin-sylvie:1': { stage: 'act3', beforeChoice: true },
   'banter:rin-selene:1': { stage: 'act3', beforeChoice: true },
-  'banter:safira-scarlet:2': { stage: 'act3' },
+  'banter:safira-scarlet:2': { stage: 'act3', pieces: { safira: 2 } },
   'banter:noel-selene:2': { pieces: { noel: 3 } },
   'banter:bobby-chizuru:2': { pieces: { bobby: 4, chizuru: 3 } },   // Task 4 ruling: Bobby's apology is her fourth piece
   'banter:bobby-sylvie:2': { stage: 'act3' },

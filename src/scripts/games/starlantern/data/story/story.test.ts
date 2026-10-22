@@ -2508,7 +2508,7 @@ describe('story depth Task 4: banters, gates and the hero\'s fifth chat', () => 
       'banter:safira-sylvie:2': { pieces: { safira: 2 } },
       'banter:rin-sylvie:1': { stage: 'act3', beforeChoice: true },
       'banter:rin-selene:1': { stage: 'act3', beforeChoice: true },
-      'banter:safira-scarlet:2': { stage: 'act3' },
+      'banter:safira-scarlet:2': { stage: 'act3', pieces: { safira: 2 } },
       'banter:noel-selene:2': { pieces: { noel: 3 } },
       'banter:bobby-chizuru:2': { pieces: { bobby: 4, chizuru: 3 } },   // Task 4 ruling 2 (design said bobby: 3)
       'banter:bobby-sylvie:2': { stage: 'act3' },
@@ -2812,16 +2812,17 @@ describe('story depth Task 12: the light banters keep their setups', () => {
 
 describe('story depth Task 13: the friction banters', () => {
   const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
-  // each banter's beat (plan Task 13), read as it plays: after her choice for none of these, so the base reading
+  // each banter's sting line (Task 13 review: the sting itself, not the setup), read as it plays (none waits for her choice)
   const beats: [SceneId, RegExp][] = [
     ['banter:liz-scarlet:2', /門後還有人/],
     ['banter:safira-sylvie:2', /後面的人就會跟/],
     ['banter:rin-sylvie:1', /追獵物/],
+    ['banter:rin-selene:1', /只說『沒事』/],
     ['banter:bobby-chizuru:2', /生氣一刻鐘/],
-    ['banter:bobby-sylvie:2', /背帶/],
+    ['banter:bobby-sylvie:2', /一次都沒用過/],
     ['banter:chizuru-noel:1', /借而不告/],
     ['banter:noel-selene:2', /少掉一點自己/],
-    ['banter:safira-scarlet:2', /追思/],
+    ['banter:safira-scarlet:2', /送得走誰/],
   ];
   it('each friction banter keeps its sting, and the sting is not the last line (design §4.3)', () => {
     for (const [id, re] of beats) {
@@ -2829,6 +2830,10 @@ describe('story depth Task 13: the friction banters', () => {
       const lines = linesWhen(STORY.scenes[id].lines, ALL);
       expect(re.test(lines[lines.length - 1].text), `${id}: the sting closes it`).toBe(false);
     }
+    expect(beats).toHaveLength(9);
+    // the plan's setup beats stay pinned too
+    expect(() => pinBeat('banter:safira-scarlet:2', {}, /追思/)).not.toThrow();
+    expect(() => pinBeat('banter:bobby-sylvie:2', {}, /背帶/)).not.toThrow();
   });
   it('rin-selene:1 does not name the knife yet (fix one), and no banter here preaches a choice', () => {
     expect(linesWhen(STORY.scenes['banter:rin-selene:1'].lines, ALL).map((l) => l.text).join('')).not.toMatch(/刀|短刃/);

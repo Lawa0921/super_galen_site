@@ -1518,9 +1518,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'scarlet', mood: 'serious', text: '「瑟蕾小姐。月亮若知道明天的事，請它先知會我一聲。」' },
       { who: 'selene', mood: 'smile', text: '「月亮可不歸騎士管。它連我說的話，也不太聽。」' },
       { who: 'scarlet', mood: 'serious', text: '「既然不聽指揮，那就排進守夜表。月亮排第一班。」' },
-      { who: 'selene', mood: 'smile', text: '「排得真好。只是月亮缺角的那幾晚，它會缺勤，請先排好代班。」' },
+      { who: 'selene', mood: 'smile', text: '「排得真好。只是它每個月總要請假幾晚，請先排好代班。」' },
     ],
-    summary: '絲嘉蕾要月亮先知會她明天的事。月亮不聽指揮，她就把月亮排進了守夜表；瑟蕾提醒，月亮缺角的那幾晚要排代班。',
+    summary: '絲嘉蕾要月亮先知會她明天的事。月亮不聽指揮，她就把月亮排進了守夜表；瑟蕾提醒，它每個月總要請假幾晚，要先排好代班。',
   },
   // Two ways of knowing (B2 fix 1, no weather): Selene will not say the dinner she has read; Sylvie smells it.
   'banter:selene-sylvie:1': {
@@ -1537,10 +1537,10 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   // The writing tasks finalize them; a beat the design gives as stage direction is narration. ----
   'banter:chizuru-noel:1': {
     lines: [
-      { who: 'noel', mood: 'smug', text: '「千鶴，看好了。本小姐的魔法書，封面的星星會自己發光！」' },
+      { who: 'noel', mood: 'smug', text: '「千鶴，看好了。本小姐借來的魔法書，封面的星星會自己發光！」' },
       { who: 'chizuru', mood: 'serious', text: '「確實好看。只是借而不告，謂之竊。此書何時歸還？」' },
       { who: 'noel', mood: 'panic', text: '「本、本小姐有打算還的！等本小姐比誰都厲害的時候！」' },
-      { who: 'chizuru', mood: 'solemn', text: '「那便是永遠不還了。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「那便是永遠不還了。在那之前，書角請勿再折。」' },
     ],
     summary: '諾艾兒向千鶴炫耀她的魔法書。千鶴說借而不告謂之竊，問她何時歸還；諾艾兒說等她比誰都厲害的時候，千鶴說那便是永遠不還了。',
   },
@@ -1558,7 +1558,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'liz', mood: 'scheming', text: '「這片碎片上刻著名字，好貨。交給公會只有謝禮，賣給收藏家，翻三倍。」' },
       { who: 'scarlet', mood: 'serious', text: '「那是某個人的記憶。請交還。」' },
       { who: 'liz', mood: 'normal', text: '「騎士大姊，妳守的那扇門，門後還有人嗎？」' },
-      N('絲嘉蕾沒有回答。莉茲嘟囔著把碎片交了出去，謝禮兩枚銀幣，虧大了。'),
+      N('絲嘉蕾沒有回答。莉茲又看了一眼那個名字，才交出去。謝禮兩枚銀幣，虧大了。'),
     ],
     summary: '莉茲想把刻著名字的碎片賣給收藏家，絲嘉蕾要她交還。莉茲問她守的門後還有沒有人；絲嘉蕾沒有回答，碎片還是交了出去。',
   },
@@ -1584,7 +1584,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'selene', mood: 'foresee', text: '「凜，妳的明天，月亮說了一點點呢。──算了，請當作沒聽見。」' },
       { who: 'rin', mood: 'normal', text: '「說一半就收回，比不說還吵。」' },
-      { who: 'selene', mood: 'wistful', text: '「凜也一樣。每次都只說『沒事』。」' },
+      { who: 'selene', mood: 'wistful', text: '「那換凜說一個？凜每次都只說『沒事』。」' },
       N('凜想了一下，說：「沒事。」瑟蕾笑出聲來。'),
     ],
     summary: '瑟蕾說月亮讀到了凜的明天，又收了回去。凜嫌她吵，瑟蕾說凜每次都只說沒事，凜想了一下，還是說沒事。',
@@ -1603,7 +1603,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'scarlet', mood: 'serious', text: '「莎菲拉小姐，今天是鎮上的追思日，請肅靜。」' },
       { who: 'safira', mood: 'wink', text: '「我也在想他們呀。我們那裡，送人走是用跳的唷。小嘉那張臉，送得走誰呀？」' },
       { who: 'scarlet', mood: 'shaken', text: '「失禮了……」' },
-      N('絲嘉蕾踩著閱兵的步子下場，拍子準得讓莎菲拉笑出聲。'),
+      N('絲嘉蕾踩著閱兵的步子，下場陪她跳。拍子準得讓莎菲拉笑出聲。'),
     ],
     summary: '追思日，絲嘉蕾要莎菲拉肅靜。莎菲拉說她們那裡送人走是用跳的，絲嘉蕾便踩著閱兵的步子下場陪她跳。',
   },
@@ -1620,7 +1620,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       N('波比遞出一條箭袋背帶，上面縫了七個口袋。希爾薇照樣說「不用」。'),
       { who: 'bobby', mood: 'sad', text: '「希爾薇姊什麼都說不用。我做的東西，妳一次都沒用過。」' },
-      { who: 'sylvie', mood: 'blush', text: '「很牢。明天就用。」' },
+      { who: 'sylvie', mood: 'blush', text: '「我以為好東西，該留給配得上的人。這條很牢，明天就用。」' },
       N('她已經背上了。波比哭了一下，又笑了，說還可以再加一個口袋。'),
     ],
     summary: '波比做的東西，希爾薇從來不用。這一次，希爾薇把箭袋背帶背上了，說明天就用。',
