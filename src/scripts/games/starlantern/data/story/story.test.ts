@@ -13,7 +13,7 @@ import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragme
 import { memoryPace } from '../../engine/story/expect';
 import { leadOpen } from '../../engine/story/leads';
 import type { StoryMood } from '../../render/artPaths';
-import { ACT_DEPTHS, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, RENUMBERED, sceneKind, STORY_IDS, type SceneId, type Stage, type StoryGate } from './scenes';
+import { ACT_DEPTHS, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage, type StoryGate } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
 
@@ -2509,9 +2509,6 @@ describe('story depth Task 4: banters, gates and the hero\'s fifth chat', () => 
       'banter:liz-scarlet:3': { stage: 'act3', full: 'scarlet' },
       'banter:noel-selene:3': { stage: 'act3', full: 'selene' },
     });
-    expect([...RENUMBERED]).toEqual(['banter:safira-sylvie:2', 'banter:liz-scarlet:2', 'banter:noel-selene:2', 'banter:rin-sylvie:1']);
-    for (const id of RENUMBERED) expect(isSceneId(id), id).toBe(true);   // the old ids are still scenes, with new content
-    expect(STORY_IDS).toBe(2);
     expect(CHAT_COUNT.hero).toBe(5);
     expect(CHAT_GATE['chat:hero:5']).toEqual({ stage: 'act4' });
     expect(STORY.scenes['chat:hero:5'].lines.map((l) => l.who)).toEqual(['anna', 'hero', 'anna']);

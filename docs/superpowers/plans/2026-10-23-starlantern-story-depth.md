@@ -12,7 +12,7 @@
   - `hero-alone`：在出發時播。這是一個新的播放點：`Game.departScene` 加上 `gate.ts` 的出發流程。
   - `epilogue`：終幕後第一次回城，排第一。
   - 一次回城最多播一場重的重大場景，其餘的留在佇列。
-- **舊存檔**：在 `Game.boot` 依序整理。換掉的閒聊編號用 `RENUMBERED` 加上 `story.ids` 版次處理，每份存檔只丟一次。
+- ~~**舊存檔**：在 `Game.boot` 依序整理。換掉的閒聊編號用 `RENUMBERED` 加上 `story.ids` 版次處理，每份存檔只丟一次。~~（**使用者裁定，Task 4 之後：遊戲還沒上線，舊存檔不必相容。本條作廢**）同一輪遊戲裡讀檔的一致性照舊要顧（例如 `settleBellkeeper` 在選擇與坦白之間不動存檔）。
 - **寫作**：沿用劇情打磨計畫的 R1–R8 與文風守門。設計稿的句子先由引擎任務原樣貼進資料，讓資料完整；之後由寫作任務照聖經定稿。
 
 **Tech Stack:** TypeScript、Vitest（happy-dom）、Playwright e2e、Git Bash。
@@ -43,12 +43,12 @@
    - **草稿的自我測試第二則要改寫**：它斷言「全劇本範圍內波比的『喔』超過三分之一」，那是現在的資料。Task 10 改寫波比之後，它會自己翻掉。改成與資料無關的寫法（見 Task 1）。
    - **劇本的部分**（瑟蕾、千鶴的打磨，以及 `meet.selene` 的釘子放寬）當成 Task 8 的起點。只有 `mem:selene:5` 的那一段丟掉，因為設計 §7.4 整段改寫它。
    - 理由：閘門的改動是對的，只是自我測試綁在一次性的資料上；文字草稿已經過一輪打磨，丟掉是浪費。
-3. **設計者裁定：換編號只丟一次**。
+3. ~~**設計者裁定：換編號只丟一次**~~（**使用者裁定，Task 4 之後：遊戲還沒上線，舊存檔不必相容。本條作廢**）。
    - `StoryState` 加一個可選欄位 `ids?: number`（劇情編號的版次）。`STORY_IDS = 2`，新遊戲就帶這個值。
    - 讀檔時，`(story.ids ?? 1) < STORY_IDS` 才把 `RENUMBERED` 從 `seen`、`fresh`、`queue` 拿掉，然後設成 `STORY_IDS`。
    - 理由：只照設計寫「讀檔就丟」，玩家聽過新的 `rin-sylvie:1` 之後，每次讀檔都會再丟一次、再重播一次。
    - 這不是存檔版本升級：沒有遷移，`isStory` 只多檢查「沒有，或是整數」。
-4. **設計者裁定：舊存檔的整理順序**是 `settleLoneMorning(settleRenumbered(settleConfess(settleBellkeeper(settleOpening(state)))))`（`settleLoneMorning` 見裁定 6）。
+4. ~~**設計者裁定：舊存檔的整理順序**~~（**使用者裁定，Task 4 之後：遊戲還沒上線，舊存檔不必相容。本條作廢**）（只保留第一點：`settleBellkeeper` 的防護，已在 Task 3 做好）。原本是 `settleLoneMorning(settleRenumbered(settleConfess(settleBellkeeper(settleOpening(state)))))`（`settleLoneMorning` 見裁定 6）。
    - `settleBellkeeper` 加一道防護：佇列裡有 `rin-confess`，就不動。新的流程裡，坦白播完才排鐘守。
    - `settleConfess`：凜已選擇，而 `rin-confess` 不在 `seen` 也不在 `queue`，這一定是舊存檔：把它算成看過，並標「新」。
    - 設計 §9.3 第 6 點的「過了選擇、鐘守還沒排入 → 正常排入坦白」在這個順序下不會發生：`settleBellkeeper` 先把那種存檔的鐘守算成看過了。在 `settleConfess` 的註解裡寫明。
@@ -70,7 +70,7 @@
      - `mem:hero:9` 與 `bellkeeper-arrives` 都已看過；
      - 佇列裡沒有 `ALONE` 的場景。
      - 不成立時，它留在佇列，等之後的出發。這樣它不會跑到第九片、或鐘守來到鎮上之前。
-   - **舊存檔**：已經看過第九片、條件都成立、卻沒排入的存檔，由 `Game.boot` 的 `settleLoneMorning` 排入。不這樣做的話，要多等一次回城才排入。
+   - ~~**舊存檔**：已經看過第九片、條件都成立、卻沒排入的存檔，由 `Game.boot` 的 `settleLoneMorning` 排入。~~（**使用者裁定，Task 4 之後：遊戲還沒上線，舊存檔不必相容。本條作廢**）
 7. **設計者裁定：出發的流程**。
    - `Game.departCheck(portal, startDepth)` 從 `depart` 抽出原本的三道檢查。`depart` 改用它，行為不變。
    - `gate.ts` 在玩家確定出發後：
@@ -238,14 +238,14 @@
 
 ## Review Focus
 
-1. **舊存檔停在第四幕中段**（凜已選擇，鐘守已看過或已排入）：讀檔後不補播坦白；手冊凜的頁面有「凜的坦白」標「新」；`rin-scarlet:2` 照常開放。測試：Task 5 的 `an old save past her choice counts the confession as seen and new, and opens the seventh night`。
-2. **新版存檔停在揭露與坦白之間**：讀檔不可以把鐘守算成看過，坦白與鐘守都要照順序在之後播。測試：Task 5 的 `a save between her choice and her confession keeps both waiting`。
+1. ~~**舊存檔停在第四幕中段**~~（**使用者裁定，Task 4 之後：遊戲還沒上線，舊存檔不必相容。本條作廢**） （凜已選擇，鐘守已看過或已排入）：讀檔後不補播坦白；手冊凜的頁面有「凜的坦白」標「新」；`rin-scarlet:2` 照常開放。測試：Task 5 的 `an old save past her choice counts the confession as seen and new, and opens the seventh night`。
+2. **存檔停在揭露與坦白之間**（同一輪遊戲的讀檔，照舊要顧）：讀檔不可以把鐘守算成看過，坦白與鐘守都要照順序在之後播。測試：Task 3 的 `an old save past her choice counts the bellkeeper's arrival as seen…`（最後兩個斷言：坦白排入、鐘守排入時都原樣回傳）。
 3. **出發被拒絕，或劇情設定是「不播」**：
    - 隊伍全倒、樓層沒解鎖：`hero-alone` 不播，留在佇列。
    - 設定「不播」：算看過，並標「新」，照常出發。
    - 測試：Task 3 的 `a refused departure keeps the lone morning waiting` 與 `the lone morning auto-plays when the story is off`。
 4. **還欠著坦白就打贏終幕**（揭露那一夜之後沒再回城就一路下到第三十層）：終幕前依序播坦白與鐘守；終幕之後佇列裡沒有任何一場重戲。測試：Task 3 的 `the finale plays the owed confession and the keeper before itself`。
-5. **聽過新的 `rin-sylvie:1` 之後再讀檔好幾次**：它不會再被丟掉、不會重播。測試：Task 5 的 `the renumbered ids are dropped once per save`。
+5. ~~**聽過新的 `rin-sylvie:1` 之後再讀檔好幾次**~~（**使用者裁定，Task 4 之後：遊戲還沒上線，舊存檔不必相容。本條作廢**） ：它不會再被丟掉、不會重播。測試：Task 5 的 `the renumbered ids are dropped once per save`。
 
 ---
 
@@ -254,14 +254,14 @@
 - `data/story/scenes.ts`：
   - `StoryGate`；新的 `SceneId`、`MajorScene`；
   - 句數上限表、`ALONE`、`HEAVY_MAJORS`、`DEPARTURE_SCENES`；
-  - `RENUMBERED`、`STORY_IDS`；
+  - ~~`RENUMBERED`、`STORY_IDS`~~（作廢：舊存檔不必相容）；
   - 新的閒聊數量與閘門、凍結註解。
 - `data/story.zh-TW.ts`：`ScriptLine.if.seen/notSeen`、`LineWhen.seen`、`KeeperLine`、新場景與全部改寫。
 - `data/story/voiceGates.ts`、`readAloud.ts`：讀法加入 `seen`、`AFTER_CHOICE`、重場景名單、助詞比例。
 - `engine/story/events.ts`：
   - `gateOpen`／`gateExpired`；
   - 閒聊排程、到達與獨播、觸發；
-  - `settleConfess`、`settleRenumbered`。
+  - ~~`settleConfess`、`settleRenumbered`~~（作廢）。
 - `engine/state.ts`：`StoryState.ids?`。
 - `engine/save.ts`：`isStory` 接受 `ids`。
 - `engine/game.ts`：`departCheck`、`departScene`、`sceneDone` 的 due、`finalePieces`、`boot`。
@@ -593,7 +593,7 @@
     | `rin-sylvie:1` | `rin-sylvie:2` |
 
   - 草稿：其餘的新內容，照設計 §7.2–§7.4 與 §8 樣稿一原樣貼。
-  - `RENUMBERED: readonly SceneId[]`：上面四個舊編號。`STORY_IDS = 2`。
+  - ~~`RENUMBERED: readonly SceneId[]`：上面四個舊編號。`STORY_IDS = 2`。~~（Task 4 做了，Task 5 取消時拿掉：沒有任何程式讀它們。）
   - 凍結註解改成設計 §9.3 第 11 點那一句：「發佈之前編號可以重排；重排的舊編號列進 `RENUMBERED`，讀檔時丟掉它們的看過紀錄。發佈之後，一個配對只往後加。」
   - `CHAT_COUNT.hero = 5`、`CHAT_GATE['chat:hero:5'] = { stage: 'act4' }`。草稿是設計 §7.4 的三句（安娜、洛恩、安娜）。
   - `story.zh-TW.ts`：
@@ -606,7 +606,7 @@
 - [ ] **Step 1：寫失敗的測試**
   - `story.test.ts` `the depth design's banters, gates and the hero's fifth chat`：
     - 照上表斷言 `BANTER_COUNT` 與 `BANTER_GATE`（`toEqual`）；
-    - `RENUMBERED` 正好是四個舊編號，而且每一個都還是 `isSceneId`；
+    - ~~`RENUMBERED` 正好是四個舊編號，而且每一個都還是 `isSceneId`；~~（作廢）
     - `CHAT_COUNT.hero === 5`。
   - `story.test.ts` `gates agree with her choice`：
     - 帶 `seen` 含 `rin-confess` 的閘門都有 `oath: true`；
@@ -634,7 +634,10 @@
 - [ ] **Step 5：收尾 G**，含 e2e（動到 `town.ts`）。
 - [ ] **Step 6：commit** `feat(starlantern): friction banters and the moved ones, the hero's fifth chat, the bellkeeper's line that waits for Glen`。
 
-### Task 5：舊存檔：坦白、換編號
+### Task 5：舊存檔：坦白、換編號（**取消**）
+
+> **使用者裁定（Task 4 之後）**：「舊存檔的問題不用管，我們根本還沒上線」。本任務整個不做：不加 `settleConfess`、`settleRenumbered`、`settleLoneMorning`、`story.ids`。Task 4 加的 `RENUMBERED`、`STORY_IDS` 已拿掉（沒有任何程式讀它們）。保留的是同一輪遊戲裡讀檔的一致性：`settleBellkeeper` 在坦白還在佇列時原樣回傳（Task 3）。計畫中既有的舊存檔整理（`settleOpening`、`settleBellkeeper`、`dropUnknownBanters`）早於本計畫，不動。下面的內容只留作紀錄。
+
 
 **Files:**
 - Modify: `engine/story/events.ts`、`engine/state.ts`（CRLF）、`engine/save.ts`（CRLF）、`engine/game.ts`（`boot` 一行）

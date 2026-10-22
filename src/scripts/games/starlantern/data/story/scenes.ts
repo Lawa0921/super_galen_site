@@ -45,20 +45,12 @@ export const CHAT_COUNT: Record<CharacterId, number> = {
 export type BanterPair = `${CharacterId}-${CharacterId}`;
 export const BANTER_COUNT: Partial<Record<BanterPair, number>> = {
   // B1's three fixtures, then B2 (lore ledger I-158), then the story depth design's friction (§7.2–§7.4).
-  // 發佈之前編號可以重排；重排的舊編號列進 `RENUMBERED`，讀檔時丟掉它們的看過紀錄。發佈之後，一個配對只往後加。
+  // 發佈之前編號可以重排（遊戲還沒上線，舊存檔不必相容：使用者裁定，故事深度 Task 5 取消）；發佈之後，一個配對只往後加。
   'liz-scarlet': 3, 'noel-rin': 2, 'safira-sylvie': 3,
   'bobby-chizuru': 2, 'bobby-liz': 1, 'bobby-noel': 1, 'bobby-sylvie': 2, 'chizuru-rin': 2, 'chizuru-safira': 1, 'chizuru-scarlet': 1,
   'liz-noel': 1, 'liz-selene': 1, 'noel-selene': 3, 'rin-scarlet': 3, 'rin-sylvie': 2, 'safira-scarlet': 2, 'scarlet-selene': 1, 'selene-sylvie': 1,
   'chizuru-noel': 2, 'rin-selene': 2,
 };
-/**
- * Story depth (plan ruling 3): the four banters whose content moved one place on (`safira-sylvie:2` to `:3`, `liz-scarlet:2`
- * to `:3`, `noel-selene:2` to `:3`, `rin-sylvie:1` to `:2`). Their old ids now hold new content, so a save of the older
- * numbering forgets having heard them, once (`StoryState.ids` below `STORY_IDS`).
- */
-export const RENUMBERED: readonly SceneId[] = ['banter:safira-sylvie:2', 'banter:liz-scarlet:2', 'banter:noel-selene:2', 'banter:rin-sylvie:1'];
-/** The story ids' numbering (plan ruling 3): 2 since the story depth renumbering; a save without it is numbering 1. */
-export const STORY_IDS = 2;
 export const BANTER_PAIRS: BanterPair[] = (Object.keys(BANTER_COUNT) as BanterPair[]).sort();
 export const banterScene = (pair: BanterPair, n: number): SceneId => `banter:${pair}:${n}`;
 /** The two of a banter scene, from its id. */
