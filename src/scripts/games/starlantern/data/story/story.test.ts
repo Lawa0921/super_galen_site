@@ -1613,23 +1613,25 @@ describe('Task 14: the finale', () => {
     for (const l of lines()) expect(l.if?.oath, l.text).toBeUndefined();   // U3: it always follows her choice
   });
 
-  // Story depth Task 16 (plan ruling 13: the twelve-line rule is retired; cap 16, fifteen in every party)
-  it('every party hears fifteen lines, one for each companion, and the beats in order', () => {
+  // Story depth Task 16 (plan ruling 13: the twelve-line rule is retired; cap 16, sixteen in every party after R8)
+  it('every party hears sixteen lines, one for each companion, and the beats in order', () => {
     let n = 0;
     for (const w of readings()) {
       const played = linesWhen(lines(), w);
-      expect(played.length, JSON.stringify(w)).toBe(15);
+      expect(played.length, JSON.stringify(w)).toBe(16);
       for (const c of COMPANIONS) expect(played.filter((l) => l.if?.met === c || l.if?.notMet === c).length, `${c} ${JSON.stringify(w)}`).toBe(1);
-      // 1 the wick; 2 the stake; 3-10 the eight; 11 his ten pieces; 12 the lamp; 13 the bell; 14 the keeper; 15 Rin
+      // 1 the wick; 2 the stake; 3-10 the eight; 11 his ten pieces; 12 the faces fading; 13 the lamp; 14 the bell; 15 the keeper; 16 Rin
       expect(played[0].who).toBe('hero');
       expect(played[1].who).toBe('hero');
       expect(played[10].who).toBe('hero');
       expect(played[10].text).toMatch(/十段/);
-      expect(played[14].who).toBe('rin');
+      expect(played[11].who).toBe('narrator');
+      expect(played[11].text).toMatch(/淡了/);
+      expect(played[15].who).toBe('rin');
       const lamp = played.findIndex((l) => l.text.includes('燈穩了下來'));
-      expect(lamp, 'the lamp line plays').toBe(11);
+      expect(lamp, 'the lamp line plays').toBe(12);
       expect(played.slice(0, lamp + 1).some((l) => l.who !== 'hero' && (l.who !== 'narrator' || /凜/.test(l.text))), 'he is not alone at the lamp').toBe(true);
-      for (const i of [0, 1, 10, 11, 12, 13, 14]) expect(played[i].if, `${i}`).toBeUndefined();
+      for (const i of [0, 1, 10, 11, 12, 13, 14, 15]) expect(played[i].if, `${i}`).toBeUndefined();
       expect(played.slice(2, 10).every((l) => l.if !== undefined)).toBe(true);
       expect(played[9].if?.met === 'bobby' || played[9].if?.notMet === 'bobby', 'Bobby closes the eight with the valve').toBe(true);
       n++;
@@ -2923,8 +2925,8 @@ describe('story depth Task 15: the banters after her choice', () => {
     // Task 15 review: told at the depth-30 rest, the seventh night never came (rin-scarlet:2 expired); :3 reads without it
     const without = W({ full: ['scarlet'], seen: ['rin-confess'] });
     expect(play('banter:rin-scarlet:3', without)).toHaveLength(4);
-    expect(() => pinBeat('banter:rin-scarlet:3', without, /還沒排就撕了/)).not.toThrow();
-    expect(play('banter:rin-scarlet:3', without).map((l) => l.text).join('')).not.toMatch(/守夜表，我撕了|第七個晚上/);
+    expect(() => pinBeat('banter:rin-scarlet:3', without, /守夜表，我撕了/)).not.toThrow();
+    expect(play('banter:rin-scarlet:3', without).map((l) => l.text).join('')).not.toMatch(/第七個晚上|……/);
     expect(play('banter:rin-scarlet:3', three).map((l) => l.text).join('')).not.toMatch(/選了人|不是命令/);   // fix five
     expect(() => pinBeat('banter:chizuru-rin:2', W(), /另外半句/)).not.toThrow();
     expect(play('banter:chizuru-rin:2', W()).find((l) => l.who === 'rin' && /早安/.test(l.text))).toBeDefined();
