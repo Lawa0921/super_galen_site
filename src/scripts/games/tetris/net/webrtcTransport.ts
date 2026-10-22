@@ -1,6 +1,6 @@
 import type { Transport } from './transport';
 
-const RTC_CONFIG: RTCConfiguration = {
+export const RTC_CONFIG:RTCConfiguration = {
   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
 };
 
