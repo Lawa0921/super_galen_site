@@ -140,7 +140,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('石板路的盡頭有一座鐘樓。小女孩每天坐在台階上，等那口大鐘響。'),
       N('「它不會響的。」大人們笑著摸她的頭，「它要是響了，我們就有工作了。」'),
       { who: 'hero', text: '「想起什麼了？」' },
-      { who: 'rin', text: '「……一座鐘。很安靜。我小時候，好像一直在等它響。」' },
+      { who: 'rin', text: '「是一座鐘……很安靜。我小時候，好像一直在等它響。」' },
     ],
     summary: '凜想起鐘樓下的童年。那口大鐘從來不響；大人說，它響了才有工作。',
   },
@@ -185,7 +185,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('守門的第幾年，她已經數不清了。那天夜裡，遠方那座從不響的鐘響了，領口的小銅鐘也跟著響。'),
       N('她想起臨行前，師父替她扣上銅鐘：「靜鐘會的信物。它響了，就是時候了。」'),
       N('師父把短刃交到她手上：「『凜』是妳的代號。鐘響了，就去殺那個從深處走出來的人。」'),
-      { who: 'rin', mood: 'averted', text: '「……別看我。一下就好。」' },
+      { who: 'rin', mood: 'averted', text: '「別看我……一下就好。」' },
     ],
     summary: '鐘自己響了。「凜」是刺客的代號；她的任務，是殺死從深處走出來的人。',
   },
@@ -197,11 +197,11 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('出口就在前面。她拔出短刃，刀尖離他的後頸，只剩一個呼吸的距離。'),
       N('就在那一瞬間，暮霧從四面八方湧上來。白色吞掉了光，吞掉了路，也吞掉了她記得的一切。'),
       N('最後剩下的，是一隻手。有人在霧裡抓住她的手腕，把她往光的方向拉。'),
-      { who: 'rin', mood: 'surprised', text: '「……那把劍。上面的紋路，我看過。」' },
+      { who: 'rin', mood: 'surprised', text: '「那把劍上的紋路，我看過。」' },
       { who: 'hero', mood: 'serious', text: '「凜？妳想起什麼了？」' },
       { who: 'rin', mood: 'sad', text: '「霧裡抓住我的那隻手……是你的。」' },
-      { who: 'rin', mood: 'sad', text: '「我追了那麼多層，追的人……原來──」' },
-      { who: 'hero', mood: 'serious', text: '「凜──」' },
+      { who: 'rin', mood: 'sad', text: '「我追了那麼多層，追的那個人，原來是──」' },
+      { who: 'hero', mood: 'serious', text: '「凜，等等──」' },
       N('她退了一步，又一步。短刃還在鞘裡，她的手卻一直握著刀柄，沒有放開。'),
     ],
     summary: '凜想起她追進迷宮，在出口前和目標一起被暮霧吞沒。那個人，就是洛恩。',
@@ -419,7 +419,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('深夜的月影旅館。窗外星燈的光很淡，淡得只照得到床邊那一截刀刃。'),
       N('洛恩睡著了。凜站在床邊，短刃出鞘，刀尖落在他的喉嚨上。'),
-      N('她數著他的呼吸。一下，又一下。'),
+      N('她數著他的呼吸，一下又一下。'),
       N('每數一下，就有一個一起回城的夜晚浮上來：瑪莎的熱湯、旅館的燈、走在她前面的那個背影。'),
       N('她沒有眨眼。先抖起來的，是刀尖。'),
       N('她收起短刃，靠著床腳坐下，一直坐到窗外發白。'),
@@ -428,9 +428,9 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'rin', mood: 'serious', text: '「洛恩，我是被派來殺你的。可是我不殺了──這是我自己決定的。」' },   // story polish ruling 10 (user-approved sample)
       N('洛恩看著那枚鐘，看了很久。他沒有問為什麼，像是早就知道它會被放在那裡。'),
       { who: 'hero', mood: 'smile', text: '「明天也一起回來吧。」' },
-      { who: 'rin', mood: 'smile', text: '「『凜』是他們給的代號。……可是，這個名字是我自己決定要用的。」' },
+      { who: 'rin', mood: 'smile', text: '「『凜』是他們給的代號。……這個名字是我自己決定要用的。」' },
     ],
-    summary: '深夜，凜的刀尖停在洛恩的喉嚨上，最後收了回去。天亮後她說出一切，選擇不殺他。洛恩只說：明天也一起回來吧。',
+    summary: '那天深夜，凜的刀尖停在洛恩的喉嚨上，最後收了回去。天亮後她說出一切，選擇不殺他。洛恩什麼也沒問。',
   },
   // Continuity fix 4 (spec §5.2, §3.6; lore ledger I-119): the arrival after her choice. The society struck its bell and her
   // flattened one did not answer: that is how they know. He is afraid, not cruel; the finale's truths stay the finale's.
@@ -439,10 +439,10 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('幾天後的清晨，傳送門廣場。一位穿長袍的老人站在門前，雙手捧著一口小小的鐘。'),
       { who: 'bellkeeper', text: '「吾等敲了三回鐘。那孩子領口的鐘，一回也沒有應。」' },
-      { who: 'rin', mood: 'guarded', text: '「……那枚鐘，我敲平了。洛恩，站到我後面。」' },
-      { who: 'bellkeeper', text: '「鐘不應，吾等便知道了。……所以，我來了。」' },
+      { who: 'rin', mood: 'guarded', text: '「那枚鐘，我敲平了。洛恩，站到我後面。」' },
+      { who: 'bellkeeper', text: '「鐘不應，吾等便知道了，所以我來了。」' },
       N('老人捧著鐘的手在發抖。他看的不是凜，是站在她身後的洛恩。'),
-      { who: 'bellkeeper', text: '「從深處走出來的人。我不動手。……我只是，想看清楚你。」' },
+      { who: 'bellkeeper', text: '「從深處走出來的人，我不動手。……我只是想看清楚你。」' },
     ],
     summary: '靜鐘會敲了三回鐘，凜領口那枚敲平的鐘沒有回應。鐘守來到鎮上，說他不動手，只想看清楚從深處走出來的人。',
   },
@@ -461,8 +461,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('旅館的後院。凜坐在井邊，一隻手一直按在領口那枚小銅鐘上。', false),
       N('旅館的後院。凜坐在井邊，手指碰了碰領口，又放了下來。', true),
       { who: 'hero', text: '「怎麼了？」' },
-      { who: 'rin', mood: 'guarded', text: '「……沒什麼。只是，不想聽見它響。」', if: { oath: false } },
-      { who: 'rin', mood: 'smile', text: '「手自己摸過去的。放心，那裡的鐘，已經不會響了。」', if: { oath: true } },
+      { who: 'rin', mood: 'guarded', text: '「沒什麼。只是不想聽見它響。」', if: { oath: false } },
+      { who: 'rin', mood: 'smile', text: '「手自己摸過去的。別擔心，那裡的鐘已經不會響了。」', if: { oath: true } },
     ],
     summary: '凜坐在旅館後院的井邊，手按著領口。洛恩問她怎麼了。',
   },
@@ -470,20 +470,20 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('凜在擦短刃。洛恩在她對面坐下，她的視線便落回刀刃上，再也沒有抬起來。', false),
       { who: 'rin', mood: 'averted', text: '「喂。你是人？」', if: { oath: false } },
-      { who: 'hero', mood: 'smile', text: '「我想是。會餓，會累，回來的時候也會想睡。」', if: { oath: false } },
+      { who: 'hero', mood: 'smile', text: '「我想是。我會餓也會累，回來的時候還會想睡。」', if: { oath: false } },
       N('凜在擦短刃。洛恩在她對面坐下，她停下手，抬起頭看著他。', true),
-      { who: 'rin', mood: 'blush', text: '「以前，我不敢看你的眼睛。現在，想多看一點。」', if: { oath: true } },
+      { who: 'rin', mood: 'blush', text: '「以前我不敢看你的眼睛，現在想多看一點。」', if: { oath: true } },
       N('洛恩沒有說話，也沒有移開視線。最後先眨眼的，是凜。', true),
     ],
     summary: '洛恩在擦短刃的凜對面坐下。她說了一句話，眼神說得更多。',
   },
   'chat:rin:4': {
     lines: [
-      { who: 'rin', mood: 'serious', text: '「洛恩。那枚銅鐘，扣上的時候還是好的。從霧裡出來，就裂了。」' },
-      { who: 'rin', text: '「我想，是你抓住我手腕的那一下。……所以，我把它敲平了。」' },
-      { who: 'rin', mood: 'smile', text: '「再也不會有鐘聲，叫我去殺誰。我們明天，也一起回來。」' },
+      { who: 'rin', mood: 'serious', text: '「洛恩，那枚銅鐘扣上的時候還是好的，從霧裡出來就裂了。」' },
+      { who: 'rin', text: '「我想是你抓住我手腕的那一下。……所以我把它敲平了。」' },
+      { who: 'rin', mood: 'smile', text: '「再也不會有鐘聲叫我去殺誰了。我們明天也一起回來。」' },
     ],
-    summary: '凜說，銅鐘是在霧裡裂的，在洛恩抓住她手腕的那一下。她把它敲平了，再也不會響。',
+    summary: '凜說銅鐘是在霧裡裂的，就在洛恩抓住她手腕的那一下。她把它敲平了，再也不會響。',
   },
   // Task 8: Selene (spec §6, §11.1). She fears that a spoken prophecy walks itself into being. Pieces 2 and 4 are the full
   // moon's bright ending, piece 5 the new moon's dark one; in it she knows the people by the lamp, and says 「我想看見」.
@@ -1726,13 +1726,13 @@ export const STORY = {
    */
   rinLines: {
     // V1 voice pass: her shadow, kept restrained (no jokes about her strangeness); one 「……」 at most per line, in half the lines at most.
-    act2: ['……沒什麼。', '喂，你走前面。我走後面。', '剛才，是不是有鐘在響？──沒事，聽錯了。'],
-    act3: ['別一直看我。看路。', '最近，夢裡一直有鐘聲。……沒事。', '沒事。問那麼多做什麼。'],
-    act4: ['今晚早點睡。門，記得鎖好。', '不要站在我背後。……也不要讓我站在你背後。', '沒事。不要問。'],
+    act2: ['沒什麼，別在意。', '喂，你走前面。我走後面。', '剛才是不是有鐘在響？──沒事，聽錯了。'],
+    act3: ['別一直看我。看路。', '最近夢裡一直有鐘聲。……沒事。', '沒事。問那麼多做什麼。'],
+    act4: ['今晚早點睡，門記得鎖好。', '不要站在我背後。……也不要讓我站在你背後。', '沒事。不要問。'],
   } as Partial<Record<Stage, string[]>>,
   /** Rin's lines in the town once she has made her choice; they replace `rinLines`. They read right before and after the finale. */
   rinOath: [
-    '洛恩，我們今天也一起回來了呢。',
+    '洛恩，我們今天也一個都沒少。',
     '我現在會眨眼了。看你的時候，還會多眨幾下。',
     '湯可以慢慢喝了。瑪莎說，明天還會有。所以，再一碗。',
     '洛恩，你走前面。──算了，並排走。',

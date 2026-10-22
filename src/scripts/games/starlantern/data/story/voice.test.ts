@@ -15,6 +15,8 @@ import {
 const POLISHED: string[] = [
   // Task 5: the opening and the first return
   'scenes.prologue.', 'scenes.prologue-inn.', 'scenes.first-return.', 'scenes.act1-after.', 'scenes.chat:hero:1.', 'scenes.chat:rin:1.', 'act1Card.',
+  // Task 6: Rin's line
+  'scenes.mem:rin:', 'scenes.chat:rin:2.', 'scenes.chat:rin:3.', 'scenes.chat:rin:4.', 'scenes.rin-reveal.', 'scenes.bellkeeper-arrives.', 'rinLines.', 'rinOath.', 'people.rin.',
 ];
 
 type Scope = readonly string[];
@@ -228,10 +230,16 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
     expect(speakerOf('scenes.prologue.lines.0.text', { who: 'narrator', text: '…' })).toBe('narrator');
   });
 
-  it("the plain-string pools count in the voice gates: Rin's 「回來了呢」 fails once her lines are polished (Task 6 fixes it)", () => {
-    const rin = particleBreaks(['rinLines.', 'rinOath.']);
-    expect(rin.some((x) => x.startsWith('rinOath.0:'))).toBe(true);
-    expect(particleBreaks([])).toEqual([]);
+  it("the plain-string pools count in the voice gates: a 「呢」 in Rin's town line is hers (Task 6 fixed the real one)", () => {
+    const saved = STORY.rinOath[0];
+    STORY.rinOath[0] = '洛恩，我們今天也回來了呢。';   // the line as it was before Task 6
+    try {
+      expect(particleBreaks(['rinOath.']).some((x) => x.startsWith('rinOath.0:'))).toBe(true);
+      expect(particleBreaks([])).toEqual([]);
+    } finally {
+      STORY.rinOath[0] = saved;
+    }
+    expect(particleBreaks(['rinOath.'])).toEqual([]);
   });
 
   it("budgetBreaks counts the narrator's 「……」 in a heavy scene, against a cap from the spoken lines (Task 4 review)", () => {
