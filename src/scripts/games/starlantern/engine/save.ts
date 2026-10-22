@@ -13,7 +13,8 @@ import { defaultTree, heroTree, memoriesOf, validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
 import { repairRuneFields } from './sockets';
 import { buildOf } from '../data/builds';
-import { isSceneId } from '../data/story/scenes';
+import { BANTER_PAIRS, isSceneId, type BanterPair } from '../data/story/scenes';
+import { MAX_WAITED } from './story/events';
 import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 import type { CharacterId, ItemInstance, Member, Slot } from './types';
@@ -92,7 +93,8 @@ function isStory(v: unknown): boolean {
   if (v.fresh.some((id) => !(v.seen as unknown[]).includes(id)) || v.queue.some((id) => (v.seen as unknown[]).includes(id))) return false;
   if (!isUniqueList(v.nodes, (x) => ACT_NODES.includes(x as string))) return false;
   if (!isUniqueList(v.returned, (x) => TOWN_FRAGMENTS.some((f) => f.id === x))) return false;
-  if (v.waited !== undefined && !(isObj(v.waited) && Object.values(v.waited).every((n) => Number.isInteger(n) && (n as number) >= 0))) return false;
+  // story depth Task 6: each banter pair's wait, a real pair only, a whole number up to MAX_WAITED (as `pity`'s 999)
+  if (v.waited !== undefined && !(isObj(v.waited) && Object.entries(v.waited).every(([k, n]) => BANTER_PAIRS.includes(k as BanterPair) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_WAITED))) return false;
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }
 

@@ -2929,8 +2929,8 @@ describe('the arrival queue', () => {
   /** The arrival without its banter (B1, B2): tests about the chat and the queue read this. */
   const talk = (g: Game): SceneId[] => g.arrival.filter((id) => !id.startsWith('banter:'));
   /**
-   * HERO_LINEUP's first open banter, which trails the chat. Story depth Task 6 review: among pairs alike, the one with more
-   * banters left goes first, so it is Noel and Selene's (three) before Liz and Selene's (one).
+   * HERO_LINEUP's first open banter, which trails the chat. Story depth Task 6: Noel and Selene's pair leads to one of the
+   * six designed payoffs (`noel-selene:3`, `BANTER_PAYOFFS`), so it goes ahead of Liz and Selene's.
    */
   const LINEUP_BANTER: SceneId = 'banter:noel-selene:1';
   const townGame = (start = HERO_LINEUP, storage = memoryStorage()) => {

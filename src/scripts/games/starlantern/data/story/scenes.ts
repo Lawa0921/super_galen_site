@@ -53,8 +53,10 @@ export const BANTER_COUNT: Partial<Record<BanterPair, number>> = {
 };
 export const BANTER_PAIRS: BanterPair[] = (Object.keys(BANTER_COUNT) as BanterPair[]).sort();
 /**
- * The six banters the story depth design pays off (its setup/payoff table; Task 6 third ruling). A pair whose next banter
- * is one of them, or leads to one, goes first in the banter pick (`engine/story/events.ts` `pickBanter`).
+ * The six closing banters the story depth design names in its ruling 9 (design §9.3 point 10: the payoffs gated on `oath`
+ * or `full`, every one heard before depth 30 in the scripted play); the plan's scheduling targets are built on this list.
+ * A pair whose next banter is one of them, or leads to one, goes first in the banter pick (`engine/story/events.ts`
+ * `pickBanter`; Task 6 third ruling). The §6 setup/payoff banters outside it are checked by the scripted plays too.
  */
 export const BANTER_PAYOFFS: ReadonlySet<SceneId> = new Set<SceneId>([
   'banter:rin-scarlet:3', 'banter:rin-selene:2', 'banter:safira-sylvie:3', 'banter:liz-scarlet:3', 'banter:noel-selene:3', 'banter:chizuru-noel:2',

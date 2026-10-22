@@ -936,6 +936,13 @@ describe('town banter', () => {
     expect(again.story.waited?.['liz-scarlet']).toBe(2);
     const heard = sceneDone(again, 'banter:liz-scarlet:1', 'played');
     expect(heard.story.waited?.['liz-scarlet'] ?? 0).toBe(0);
+    // Task 6 review: a pair no longer ready drops its wait at the next return (its :2 waits for act 2 here)
+    const later = returned(heard);
+    expect(later.story.waited?.['liz-scarlet']).toBeUndefined();
+    expect(later.story.waited?.['noel-rin']).toBe(3);
+    // and a wait never runs past the save's bound
+    const long = { ...later, story: { ...later.story, waited: { 'noel-rin': 999 } } };
+    expect(returned(long).story.waited?.['noel-rin']).toBe(999);
   });
 
   /**
@@ -945,6 +952,8 @@ describe('town banter', () => {
    * state after the last return, each payoff's opening and playing depth, and every return whose two banters shared a pair.
    */
   const PAYOFFS: SceneId[] = ['banter:rin-scarlet:3', 'banter:rin-selene:2', 'banter:safira-sylvie:3', 'banter:liz-scarlet:3', 'banter:noel-selene:3', 'banter:chizuru-noel:2'];
+  /** The design §6 setup/payoff banters outside ruling 9's six (Task 6 review): measured too. */
+  const SETUP_PAYOFFS: SceneId[] = ['banter:bobby-chizuru:2', 'banter:chizuru-rin:2', 'banter:safira-sylvie:2', 'banter:safira-sylvie:3', 'banter:rin-selene:2', 'banter:rin-scarlet:3'];
   const scriptedPlay = (depths: number[], afterFinale = 0) => {
     let s = base();
     s.story.seen.push('prologue-inn', 'first-return', 'act1-after');
@@ -967,7 +976,7 @@ describe('town banter', () => {
         if (!s.story.seen.includes('mem:hero:9') && !s.story.queue.includes('mem:hero:9')) s.story.queue.push('mem:hero:9');
       }
       s = { ...s, story: onReturn(s) };
-      for (const id of PAYOFFS) if (opened[id] === undefined && banterOpen(s, id)) {
+      for (const id of [...PAYOFFS, ...SETUP_PAYOFFS]) if (opened[id] === undefined && banterOpen(s, id)) {
         const [pair, n] = [id.split(':')[1], Number(id.split(':')[2])];
         const prev = `banter:${pair}:${n - 1}` as SceneId;
         if (n === 1 || s.story.seen.includes(prev) || gateExpired(s, BANTER_GATE[prev])) opened[id] = t;
@@ -998,13 +1007,14 @@ describe('town banter', () => {
         }
       }
     }
-    const report = PAYOFFS.map((id) => `${id}: opens ${opened[id] ?? '-'}, plays ${played[id] ?? '-'}`).join('\n');
-    return { s, report, samePair, trace, before };
+    const report = [...PAYOFFS, ...SETUP_PAYOFFS.filter((id) => !PAYOFFS.includes(id))].map((id) => `${id}: opens ${opened[id] ?? '-'}, plays ${played[id] ?? '-'}`).join('\n');
+    return { s, report, samePair, trace, before, played };
   };
 
   it('scripted play: every payoff banter plays before the finale', () => {
     const { s, report, samePair } = scriptedPlay(Array.from({ length: 29 }, (_, i) => i + 1));
     for (const id of PAYOFFS) expect(s.story.seen, report).toContain(id);
+    for (const id of SETUP_PAYOFFS) expect(s.story.seen, `§6: ${report}`).toContain(id);   // Task 6 review: the §6 ones too
     expect(samePair).toEqual([]);   // never one pair twice on a return (Task 6 review)
   });
 
@@ -1013,9 +1023,17 @@ describe('town banter', () => {
     // after the finale a return other than the festival's plays up to three banters, from two pairs at least. Measured
     // (task-6-report.md): four before the finale, the other two in the second and third returns after it.
     const depths = Array.from({ length: 15 }, (_, i) => 2 * i + 1);   // 1, 3, …, 29
-    const { s, report, trace, samePair, before } = scriptedPlay(depths, 3);
+    const { s, report, trace, samePair, before, played } = scriptedPlay(depths, 3);
     for (const id of PAYOFFS) expect(s.story.seen, `${report}\n${trace.join('\n')}`).toContain(id);
+    // Task 6 review: the §6 setup/payoffs outside the six, measured, no rule added: all but bobby-chizuru:2 land by the third
+    // return after the finale (its :1 is never heard before the finale here); it lands on the fifth
+    expect(SETUP_PAYOFFS.filter((id) => !s.story.seen.includes(id)), `§6: ${report}\n${trace.join('\n')}`).toEqual(['banter:bobby-chizuru:2']);
+    const five = scriptedPlay(depths, 5);
+    for (const id of SETUP_PAYOFFS) expect(five.s.story.seen, `§6: ${five.report}`).toContain(id);
+    expect(five.played['banter:bobby-chizuru:2']).toBe(105);
     expect(before.length, report).toBe(4);
+    // the two after the finale, on its second and third returns (the first is the festival's)
+    expect([played['banter:rin-selene:2'], played['banter:rin-scarlet:3']], report).toEqual([102, 103]);
     expect(samePair).toEqual([]);
   });
 

@@ -63,9 +63,12 @@ export function onReturn(s: GameState): StoryState {
   const ninth = story.seen.includes('mem:hero:9') || story.queue.includes('mem:hero:9');
   if (ninth && rin?.oath && !story.finaleCleared && owed('hero-alone')) story.queue.push('hero-alone');
   if (story.finaleCleared && owed('epilogue')) story.queue.push('epilogue');
-  // Task 6 review: one more return for every pair with a banter ready (the pick's tie-break: ready longest first)
-  const waited = { ...(story.waited ?? {}) };
-  for (const p of readyPairs({ ...s, story }, BANTER_GATE, BANTER_COUNT)) waited[p.pair] = (waited[p.pair] ?? 0) + 1;
+  // Task 6 review: one more return for every pair with a banter ready (the pick's tie-break: ready longest first). A pair
+  // no longer ready drops out, so its wait starts again when it is next ready. A banter that expires keeps its pair's wait:
+  // the pair was ready and unheard all along, and only its next banter changed. Capped at MAX_WAITED (the save's bound).
+  const prev = story.waited ?? {};
+  const waited: Partial<Record<BanterPair, number>> = {};
+  for (const p of readyPairs({ ...s, story }, BANTER_GATE, BANTER_COUNT)) waited[p.pair] = Math.min(MAX_WAITED, (prev[p.pair] ?? 0) + 1);
   story.waited = waited;
   return story;
 }
@@ -167,6 +170,9 @@ export function banterOpen(s: GameState, id: SceneId, gates: Partial<Record<Scen
   return gateOpen(s, gates[id]);
 }
 
+/** The most returns a banter pair's wait counts (`StoryState.waited`; the save's bound, as `pity`'s 999). */
+export const MAX_WAITED = 999;
+
 /** A pair with a banter ready now: its next one, how many it has heard (expired ones count), whether it has started, and how many it has left. */
 type Ready = { pair: BanterPair; id: SceneId; heard: number; started: boolean; left: number };
 /** Each pair with a banter ready now. */
@@ -192,10 +198,10 @@ function readyPairs(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, co
 }
 
 /**
- * The pick among ready pairs (story depth plan ruling 9, Task 6 review and rulings): a pair on the way to one of the six
- * designed payoffs (`BANTER_PAYOFFS`: its next banter is one, or leads to one) first of all; then a started pair; then the least heard; then the one ready longest
- * (`story.waited`); then the one with more banters left; then the fixed order. `skip`: a pair not to
- * pick (the first banter's, when a return plays two).
+ * The pick among ready pairs (story depth plan ruling 9, Task 6 review and rulings), in this order: (1) payoff, a pair on
+ * the way to one of the six designed payoffs (`BANTER_PAYOFFS`: its next banter is one, or leads to one); (2) started;
+ * (3) least heard; (4) ready longest (`story.waited`); (5) more banters left; (6) the fixed order. `skip`: a pair not to pick (the first banter's, when a
+ * return plays two or more).
  */
 function pickBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, count: Partial<Record<BanterPair, number>>, skip?: string): SceneId | null {
   const waited = (p: Ready) => s.story.waited?.[p.pair] ?? 0;
@@ -219,10 +225,10 @@ function pickBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, co
 }
 
 /**
- * The banter for a return to town (B1), picked without any rng (story depth plan ruling 9): a pair already started (one of
- * its banters seen) goes ahead of one not started, so a pair finishes what it starts; within each, the pair heard least,
- * then the one ready longest, then the one with more left, then the pairs' fixed order (`BANTER_PAIRS`; `pickBanter`). A pair offers its banters in order: one still gated holds back the ones
- * after it, like a chat. A heard banter is never offered again (the handbook replays it). An expired banter (`gateExpired`)
+ * The banter for a return to town (B1), picked without any rng (`pickBanter`, story depth Task 6): (1) a pair on the way
+ * to one of the six designed payoffs; (2) a pair already started, so a pair finishes what it starts; (3) the least heard;
+ * (4) the one ready longest; (5) the one with more left; (6) the pairs' fixed order (`BANTER_PAIRS`). A pair offers its
+ * banters in order: one still gated holds back the ones after it, like a chat. A heard banter is never offered again (the handbook replays it). An expired banter (`gateExpired`)
  * is passed over, as a chat is: counted as heard, never offered, holding nothing back, and starting nothing.
  */
 export function nextBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>> = BANTER_GATE, count: Partial<Record<BanterPair, number>> = BANTER_COUNT): SceneId | null {
