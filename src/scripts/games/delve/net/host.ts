@@ -1,9 +1,11 @@
 // host.ts — 房主端協定狀態機（co-op M-B3；spec §5.2–5.7；建造者決定 C6–C10、C14）。
 //   握手（hello → welcome + bulk snap → ready）、回覆 sum（整欄 col）、每位客人的 fanout（tiles／liq／ev／pub／teleport／knock）、
 //   ws／char／chk／world／look 的計時送出、cmd 權杖桶與 ack、ps 檢查、逾時與 PS_STALE_MS、離線時寫回 visit 與 held。
-// M-C C1：chk 帶 upTo（處理到這位客人的第幾個 cmd seq）；客人寫好 checkpoint 回 chkAck，移除後收到涵蓋 held.rev 的 chkAck 就清掉 held。
+// M-C C1：chk 帶 upTo（處理到這位客人的第幾個 cmd seq）。每送一份 chk 就把它寫成 held（送出但還沒 ack 的最新一份），
+//   客人寫好 checkpoint 回 chkAck，rev ≥ held.rev 就清掉 held；房主重新載入世界後，客人重進時 held 較新就用它。
 // 客人送來的一切都是不可信輸入：先過 validate.ts，不合法就丟掉，絕不拋例外到 frame 之外。
 // 決定性：不讀時鐘、不用 Math.random；時間一律是 frame(nowMs, …) 傳進來的值。送出的角色 savedAt 一律 0（寫檔的人自己蓋時間）。
+//   唯一例外：held.at 是牆鐘（Date.now，同 removeActor 的 lastSeen），只給世界檔的 LRU 用，不影響協定。
 import type { DelveGame, DelveEvent } from '../engine/game';
 import type { Pid } from '../engine/actor';
 import type { CmdOp } from '../engine/commands';
@@ -65,6 +67,8 @@ interface Guest {
   charRev: number; charSig: string; nextChk: number; chkNow: boolean;
   /** 處理過的最大 cmd seq（chk.upTo）；客人 chkAck 過的最大 rev（C1） */
   lastCmdSeq: number; ackedRev: number;
+  /** 加入時用了 held（比客人 hello 帶來的新）：ready 時馬上送 chk，讓客人把房主這份寫進去 */
+  chkOnLive: boolean;
   tiles: WireBatch[]; ev: DelveEvent[]; pub: DelveEvent[];
   /** bulk 待送（依序）；chunk 去重 */
   jobs: BulkJob[]; chunkQ: Set<number>; liq: Set<number>;
@@ -144,7 +148,7 @@ export class NetHost {
     const g: Guest = {
       link, alive: true, phase: 'hello', pid: '', charId: '', nick: '', heardAt: this.opened ? this.now : null,
       teleBase: 0, teleSeen: 0, knockSeen: 0, psSeq: -1, psAt: 0, released: false, prev: { x: 0, y: 0, at: 0 },
-      tokens: CMD_BURST, tokenAt: 0, charRev: 0, charSig: '', nextChk: 0, chkNow: false, lastCmdSeq: 0, ackedRev: 0,
+      tokens: CMD_BURST, tokenAt: 0, charRev: 0, charSig: '', nextChk: 0, chkNow: false, lastCmdSeq: 0, ackedRev: 0, chkOnLive: false,
       tiles: [], ev: [], pub: [], jobs: [], chunkQ: new Set(), liq: new Set(),
       parkedSums: new Map(), nextPing: 0, rttMs: null, lingering: false,
     };
@@ -160,7 +164,7 @@ export class NetHost {
   frame(nowMs: number, steps: number): void {
     this.now = nowMs;
     this.sweepLinger();
-    if (!this.opened || this.closed) { this.saveIfDue(); return; }
+    if (!this.opened || this.closed) return;
     for (const g of this.list) if (g.heardAt === null) g.heardAt = nowMs;
     // ① 收件匣
     const inbox = this.inbox;
@@ -232,7 +236,7 @@ export class NetHost {
     if (m.t === 'hello') { if (g.phase === 'hello') this.onHello(g, m); return; }
     if (g.phase === 'hello') return;                                          // 還沒加入：只收 hello
     switch (m.t) {
-      case 'ready': if (g.phase === 'syncing') g.phase = 'live'; return;
+      case 'ready': if (g.phase === 'syncing') { g.phase = 'live'; if (g.chkOnLive) { g.chkOnLive = false; g.chkNow = true; } } return;
       case 'sum': this.onSum(g, m.cx, m.sums); return;
       case 'ping': this.sendCtrl(g, { t: 'pong', at: m.at }); return;
       case 'pong': g.rttMs = Math.max(0, this.now - m.at); return;
@@ -256,18 +260,20 @@ export class NetHost {
     if (this.list.some((o) => o !== g && o.alive && o.phase !== 'hello' && o.charId === m.charId)) { this.reject(g, 'charInUse'); return; }
     // C1：held（世界檔裡房主最後那份）與 hello 帶來的取 rev 較大的
     const kept = this.opts.visits.getHeld(m.charId);
-    if (kept && kept.rev > character.rev) character = kept.character;
+    const useHeld = !!kept && kept.rev > character.rev;
+    if (kept && useHeld) character = kept.character;
     let pid: Pid | null = null;
     for (let i = 1; i <= this.maxGuests && !pid; i++) if (!game.actors.has(`p${i}`)) pid = `p${i}`;
     if (!pid) { this.reject(g, 'full'); return; }
     try { game.addActor(pid, character, null, this.opts.visits.get(m.charId)); } catch { this.reject(g, 'char'); return; }
-    this.opts.visits.putHeld(m.charId, null);
+    if (kept) { this.opts.visits.putHeld(m.charId, null); this.saveSoon(); }
     const a = game.actors.get(pid)!, now = this.now;
     Object.assign(g, {
       phase: 'syncing', pid, charId: m.charId, nick: m.nick,
       teleBase: a.teleSeq, teleSeen: a.teleSeq, knockSeen: a.knockSeq,
       psSeq: -1, psAt: now, released: false, prev: { x: a.player.x, y: a.player.y, at: now },
       tokens: CMD_BURST, tokenAt: now, charRev: character.rev, nextChk: now + CHK_MS, chkNow: false, nextPing: now,
+      chkOnLive: useHeld,
     } satisfies Partial<Guest>);
     // 空字串：第一個 char 計時一到就送（房主可能改用 held 那份較新的角色，客人手上只有 hello 那份）
     g.charSig = '';
@@ -443,7 +449,10 @@ export class NetHost {
         g.chkNow = false;
         g.nextChk = now + CHK_MS;
         g.charRev++;
-        this.sendCtrl(g, { t: 'chk', rev: g.charRev, character: stamp(game.characterOf(g.pid, 0), g.charRev), upTo: g.lastCmdSeq });
+        const character = stamp(game.characterOf(g.pid, 0), g.charRev);
+        this.sendCtrl(g, { t: 'chk', rev: g.charRev, character, upTo: g.lastCmdSeq });
+        // 送出但還沒 ack 的最新一份 = held：這份 chk 在途中丟了、房主又在發現斷線前重新載入世界，客人重進時照樣用它
+        this.opts.visits.putHeld(g.charId, { rev: g.charRev, character, at: Date.now() });
       }
     }
     if (due('world')) {
@@ -461,7 +470,7 @@ export class NetHost {
     this.saveIfDue();
   }
 
-  /** 存世界的防抖到期 → requestSave（關房之後 flush 不跑，延遲中連線的 chkAck 清掉 held 也要存） */
+  /** 存世界的防抖到期 → requestSave */
   private saveIfDue(): void {
     if (this.saveAt !== null && this.now >= this.saveAt) { this.saveAt = null; this.opts.requestSave?.(); }
   }
@@ -532,12 +541,19 @@ export class NetHost {
     if (bye || sentChk) this.linger(g);
   }
 
-  /** chkAck：正常連線或延遲中的都算。已移除的客人 ack 到 held 那份（或更新的）→ 清掉 held、存世界（C1） */
+  /**
+   * chkAck：正常連線或延遲中的都算。ack 到 held 那份（或更新的）→ 清掉 held（C1）。
+   * 還連著的客人只清記憶體、不另外存世界：檔裡留著的舊 held 無害（客人重進時 hello 帶的是 ack 過的那份，rev ≥ held.rev，不會被採用）。
+   * 已移除的客人要存（關房之後 loop 可能不再跑 → 直接 requestSave，不走防抖）。
+   */
   private onChkAck(g: Guest, rev: number): void {
     g.ackedRev = Math.max(g.ackedRev, rev);
-    if (g.alive || !g.charId) return;
+    if (!g.charId) return;
     const held = this.opts.visits.getHeld(g.charId);
-    if (held && held.rev <= rev) { this.opts.visits.putHeld(g.charId, null); this.saveSoon(); }
+    if (!held || held.rev > rev) return;
+    this.opts.visits.putHeld(g.charId, null);
+    if (g.alive) return;
+    if (this.closed) this.opts.requestSave?.(); else this.saveSoon();
   }
 
   private reject(g: Guest, reason: RejectReason): void {

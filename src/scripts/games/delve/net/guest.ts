@@ -105,8 +105,10 @@ export class NetGuest {
   private me: Pid | null = null;
   private chunks: ChunkSyncGuest | null = null;
   private checkpoint: Checkpoint | null = null;
-  /** 最後一個送出的跨邊界 cmd 的 seq（0 = 沒有 / welcome 時歸零：房主已經用 held 或 hello 那份角色接手） */
+  /** 這條連線上最後一個送出的跨邊界 cmd 的 seq（0 = 沒有；welcome 時歸零，舊連線的狀態改由 carry 帶著） */
   private boundarySeq = 0;
+  /** 重連前還是 unconfirmed：新連線收到第一份 chk（房主這份角色寫進去了）才算解除 */
+  private carry = false;
   /** 最後一個 welcome 的 worldId */
   private world: string | null = null;
   /** leave 之後收到的那份 chk 的 rev，與已經送出 chkAck 的最大 rev */
@@ -159,7 +161,7 @@ export class NetGuest {
   get pid(): Pid | null { return this.me; }
   get lastCheckpoint(): Checkpoint | null { return this.checkpoint; }
   /** 有跨邊界 cmd 還沒被房主的 chk 涵蓋（斷線時 = 那筆操作可能在房主世界裡生效了，但客人手上的角色不含它；C1） */
-  get unconfirmed(): boolean { return this.boundarySeq > (this.checkpoint?.upTo ?? 0); }
+  get unconfirmed(): boolean { return this.carry || this.boundarySeq > (this.checkpoint?.upTo ?? 0); }
   /** 最後加入的世界（welcome 之前 null） */
   get worldId(): string | null { return this.world; }
   /** chunk 同步狀態（測試 / 除錯用）；welcome 之前 null */
@@ -411,7 +413,8 @@ export class NetGuest {
     this.worldSeen = false;
     this.me = m.pid;
     this.world = typeof m.worldId === 'string' ? m.worldId : null;
-    // 房主已經用 held 或 hello 那份角色接手：之前沒被涵蓋的跨邊界操作已經有了結果（新連線的 upTo 從 0 起算）
+    // 新連線的 upTo 從 0 起算：舊連線沒被涵蓋的跨邊界操作改記在 carry，等這條連線的第一份 chk
+    this.carry = this.unconfirmed;
     this.boundarySeq = 0;
     this.resetWs();
     this.peerInfo.clear();
@@ -458,6 +461,7 @@ export class NetGuest {
     if (!fin(m.rev) || !isObj(m.character)) return;
     const rev = m.rev, link = this.link;
     this.checkpoint = { rev, character: m.character, upTo: fin(m.upTo) ? m.upTo : 0 };
+    this.carry = false;
     const ack = (): void => {
       if (!link.open) return;
       link.send('ctrl', JSON.stringify({ t: 'chkAck', rev } satisfies GuestCtrl));
@@ -465,7 +469,8 @@ export class NetGuest {
     };
     let r: unknown;
     try { r = this.opts.onCheckpoint?.(m.character, rev); } catch { return; }   // 寫不進去：不 ack（房主留著 held）
-    if (r instanceof Promise) r.then(ack, () => { /* 寫入失敗：不 ack */ });
+    const p = r as PromiseLike<void> | null | undefined;
+    if (typeof p?.then === 'function') p.then(ack, () => { /* 寫入失敗：不 ack */ });
     else ack();
   }
 

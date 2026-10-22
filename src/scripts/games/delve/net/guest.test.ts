@@ -421,7 +421,7 @@ describe('NetGuest checkpoint', () => {
     expect(calls.length).toBe(1);
     expect(calls[0].c.inventory.slots[slot]).toBeNull();
     expect(calls[0].c.rev).toBe(calls[0].rev);
-    expect(g.lastCheckpoint).toMatchObject({ rev: calls[0].rev, character: calls[0].c });
+    expect(g.lastCheckpoint).toEqual({ rev: calls[0].rev, character: calls[0].c, upTo: 1 });
     r.run(CHK_MS);
     expect(calls.length).toBe(2);
     expect(calls[1].rev).toBeGreaterThan(calls[0].rev);
@@ -440,7 +440,7 @@ describe('NetGuest 主機離線', () => {
     expect(g.endText).toBe('主機已離線');
     expect(END_TEXT.hostGone).toBe('主機已離線');
     expect(calls.length).toBe(1);
-    expect(g.lastCheckpoint).toMatchObject({ rev: calls[0].rev, character: calls[0].c });
+    expect(g.lastCheckpoint).toEqual({ rev: calls[0].rev, character: calls[0].c, upTo: 0 });
     expect(r.link.open).toBe(true);                // 連線由房主延遲關閉（LINGER_MS），客人不自己關
   });
 
@@ -457,7 +457,7 @@ describe('NetGuest 主機離線', () => {
     r.tick();
     expect(g.state).toBe('ended');
     expect(g.endText).toBe('主機已離線');
-    expect(g.lastCheckpoint).toMatchObject({ rev: calls[0].rev, character: calls[0].c });
+    expect(g.lastCheckpoint).toEqual({ rev: calls[0].rev, character: calls[0].c, upTo: 1 });
   });
 
   it('房主沉默超過 HOST_TIMEOUT_MS → ended hostGone', () => {

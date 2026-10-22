@@ -421,13 +421,63 @@ describe('A10 物品守恆（arena）', () => {
     expect(r.store.getHeld(charId)).toBeDefined();
     // 房主重新整理：同一個遊戲與 store（世界檔）、新的 NetHost
     r.rehost();
+    const chkN = r.checkpoints[0].length;
     r.reconnect(0);
+    // welcome 之後、新連線的第一份 chk 到之前：仍是 unconfirmed（客人存著的還是斷線前那份）
+    expect(until(r, () => g.game !== null, 5000)).toBe(true);
+    expect(r.checkpoints[0].length).toBe(chkN);
+    expect(g.unconfirmed).toBe(true);
+    // 房主用了 held → 上線時馬上送 chk：客人存下房主那份，unconfirmed 解除
+    expect(until(r, () => r.checkpoints[0].length > chkN, 2000)).toBe(true);
+    expect(g.unconfirmed).toBe(false);
+    expect(r.count('silver_coin').chests + r.count('silver_coin').lastChk[0]).toBe(1);
     expect(until(r, () => g.state === 'live', 5000)).toBe(true);
     r.run(REST_MS);
     expect(invCount(g.game!, 'silver_coin') + r.count('silver_coin').chests).toBe(1);
     expect(r.count('silver_coin').guestsOnHost[0]).toBe(0);
     expect(r.store.getHeld(charId)).toBeUndefined();
     expect(r.sameTiles(0)).toEqual([]);
+  });
+
+  it('A10e：跨邊界 chk 在途中丟了、房主在發現斷線前就重新載入世界（沒跑 remove）→ 重連，總數仍是 1', () => {
+    const r = coopRig({ latencyMs: [50, 50] });
+    const g = r.guests[0], hg = r.hostGame;
+    const a = actorOf(r, g);
+    hg.teleport(120, FLOOR - 1);
+    hg.withActor(a, () => hg.give('silver_coin', 1));
+    const cx = tileX(a.player) + 2;
+    hg.world.setFg(cx, FLOOR - 1, T.CHEST);
+    r.run(600);
+    g.game!.act({ op: 'toss', slot: slotOf(g.game!, 'torch'), n: 1 });
+    r.run(600);
+    expect(r.count('silver_coin').lastChk[0]).toBe(1);
+    g.game!.setAim(cx, FLOOR - 1);
+    g.game!.setUse(true);
+    r.run(300);
+    g.game!.setUse(false);
+    r.run(300);
+    const charId = r.chars[0].id;
+    g.game!.act({ op: 'chestDeposit', slot: slotOf(g.game!, 'silver_coin') });
+    // 房主執行存入、送出 chk（held 就是那份）的那一幀就停
+    expect(until(r, () => r.count('silver_coin').chests === 1, 1000)).toBe(true);
+    const held = r.store.getHeld(charId);
+    expect(held).toBeDefined();
+    expect(held!.character.inventory.slots.some((s) => s?.item === 'silver_coin')).toBe(false);
+    // 房主分頁重新整理：舊 NetHost 不再跑（沒有 remove）；世界檔讀回來時沒有客人的 actor
+    r.rehost();
+    hg.removeActor(a.pid);
+    r.net.sever(r.links[0]);                         // 在途的 chk 丟了
+    r.run(100);
+    expect(g.state).toBe('ended');
+    expect(r.count('silver_coin').lastChk[0]).toBe(1);
+    expect(g.unconfirmed).toBe(true);
+    r.reconnect(0);
+    expect(until(r, () => g.state === 'live', 5000)).toBe(true);
+    r.run(REST_MS);
+    expect(r.count('silver_coin').chests).toBe(1);
+    expect(invCount(g.game!, 'silver_coin') + r.count('silver_coin').chests).toBe(1);
+    expect(r.count('silver_coin').guestsOnHost[0]).toBe(0);
+    expect(g.unconfirmed).toBe(false);
   });
 
   it('A10d：正常 chk 送達並 ack 後，held 被清掉', () => {

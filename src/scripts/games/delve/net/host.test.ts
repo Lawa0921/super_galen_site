@@ -566,18 +566,52 @@ describe('NetHost held 與 chkAck（C1）', () => {
     g.send({ t: 'chkAck', rev: fin.rev });
     r.tick(); r.tick();
     expect(r.held.has(c.id)).toBe(false);
+    expect(r.saves.length).toBe(saves0 + 1);             // 關房後 loop 可能不再跑：直接存，不走防抖
     r.run(SAVE_DEBOUNCE_MS + 100);
     expect(r.saves.length).toBe(saves0 + 1);
   });
 
-  it('重新加入：held 的 rev 較新就用它，加入成功後清掉', () => {
+  it('重新加入：held 的 rev 較新就用它（清掉、存世界）；上線時馬上送 chk 讓客人寫進那份', () => {
     const r = rig();
     const c = hero({ rev: 3 });
     const kept = { ...c, rev: 8, inventory: { ...c.inventory, slots: c.inventory.slots.map(() => null) } };
     r.held.set(c.id, { rev: 8, character: kept, at: 1 });
-    r.join(c);
+    const g = r.connect();
+    g.send(hello(c));
+    r.tick(); r.tick();
     expect(r.held.has(c.id)).toBe(false);
     expect(r.game.actors.get('p1')!.inventory.slots.every((s) => s === null)).toBe(true);
+    expect(g.of('chk')).toEqual([]);
+    const saves0 = r.saves.length;
+    g.send({ t: 'ready' });
+    r.tick(); r.tick();
+    const chk = g.of('chk') as unknown as { rev: number; character: DelveCharacter }[];
+    expect(chk.length).toBe(1);
+    expect(chk[0].rev).toBe(9);
+    expect(chk[0].character.inventory.slots.every((s) => s === null)).toBe(true);
+    expect(r.held.get(c.id)?.rev).toBe(9);              // 送出、還沒 ack 的那份
+    r.run(SAVE_DEBOUNCE_MS + 100);
+    expect(r.saves.length).toBe(saves0 + 1);
+  });
+
+  it('held 不用時（hello 較新）不送加入 chk；每份 chk 都寫成 held，還連著的客人 ack 後清掉（不另外存世界）', () => {
+    const r = rig();
+    const c = hero({ rev: 20 });
+    r.held.set(c.id, { rev: 8, character: { ...c, rev: 8 }, at: 1 });
+    const g = r.join(c);
+    expect(g.of('chk')).toEqual([]);
+    expect(r.held.has(c.id)).toBe(false);
+    r.run(SAVE_DEBOUNCE_MS + 100);
+    const saves0 = r.saves.length;
+    r.run(CHK_MS);
+    const chk = g.last('chk') as unknown as { rev: number };
+    expect(chk.rev).toBe(21);
+    expect(r.held.get(c.id)?.rev).toBe(21);
+    g.send({ t: 'chkAck', rev: 21 });
+    r.tick(); r.tick();
+    expect(r.held.has(c.id)).toBe(false);
+    r.run(SAVE_DEBOUNCE_MS + 100);
+    expect(r.saves.length).toBe(saves0);
   });
 });
 
