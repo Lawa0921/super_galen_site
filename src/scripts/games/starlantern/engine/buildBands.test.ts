@@ -4,7 +4,8 @@ import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ABYSS } from '../data/hero';
 import {
-  BAND_EXCEPTIONS, BUILD_LEVELS, BUILD_SEEDS, DEEP_LINEUP, ONE_RUNE_EXCEPTIONS, UNCAST, UNCAST_BEFORE, buildLineup, firstRuneSkill, measureBuild, measureStandard,
+  BAND_EXCEPTIONS, BUILD_LEVELS, BUILD_SEEDS, DEEP_LINEUP, ONE_RUNE_EXCEPTIONS, ONE_RUNE_MAX, ONE_RUNE_MAX_LEGENDARY, UNCAST, UNCAST_BEFORE, WIN_SLACK_FIGHTS, buildLevels,
+  buildLineup, firstRuneSkill, measureBuild, measureStandard,
   scenarioFights, standardLineup,
 } from './buildBands';
 import { BUILDS, buildOf } from '../data/builds';
@@ -29,6 +30,8 @@ describe('rune band measurements (plan 8h Task 5a)', () => {
     const long = scenarioFights('long', 35);
     expect(long.map((f) => f.scale.elite)).toEqual(groups.map((g) => g[0]));
     expect(long.every((f) => f.seeds === 10)).toBe(true);
+    // E4: the healers' ordeal is the Lantern-eater two floors deeper.
+    expect(scenarioFights('ordeal', 35)).toEqual([{ enemyIds: ['lanterneater'], boss: true, scale: { depth: depth + 2, region: 'mainline' }, seeds: BUILD_SEEDS.boss }]);
     const general = scenarioFights('general', 35);
     expect(general.map((f) => f.enemyIds)).toEqual([...groups, ['lanterneater']]);
     expect(general.every((f) => f.seeds === 10)).toBe(true);
@@ -41,9 +44,11 @@ describe('rune band measurements (plan 8h Task 5a)', () => {
     const ids = ['rin-mark', 'rin-needle', 'rin-fan', 'rin-backstab', 'rin-veil', 'rin-execute'];
     const byLog: Record<string, number> = {};
     let acts = 0;
+    let kos = 0;
     const trace: SimTrace = {
       round(_a, before, after) {
         const rin = before.party.find((c) => c.key === 'rin');
+        kos += after.log.filter((e) => e.type === 'ko' && before.party.some((c) => c.key === e.target)).length;
         for (const id of ids) {
           const name = rin ? skillFor(rin, id)?.name : undefined;
           const n = after.log.filter((e) => e.type === 'act' && e.actor === 'rin' && e.label === name).length;
@@ -68,12 +73,24 @@ describe('rune band measurements (plan 8h Task 5a)', () => {
     for (const id of ids) expect(a.bySkill[id]?.casts ?? 0, id).toBe(byLog[id]);
     expect(seen.has('rin-execute')).toBe(true);
     expect(a.minBossRounds).toBeGreaterThan(0);
+    // The party's KOs over the fights, as the log shows them (the healers' band, ruling E4).
+    expect(a.partyKos).toBe(kos);
   });
 
   it('the standard and bare measurements are cached', () => {
     const one = measureStandard('rin', 'boss', 35);
     expect(measureStandard('rin', 'boss', 35)).toBe(one);
     expect(one).toEqual(measureBuild('rin', standardLineup('rin'), 'boss', 35));
+  });
+
+  it('the levels a build is measured at, and how it is judged (controller rulings E1-E4)', () => {
+    expect(WIN_SLACK_FIGHTS).toBe(2);
+    expect([ONE_RUNE_MAX, ONE_RUNE_MAX_LEGENDARY]).toEqual([1.6, 2.0]);
+    expect(buildLevels(buildOf('noel', 'meteor')!)).toEqual([50]);
+    expect(buildLevels(buildOf('bobby', 'factory')!)).toEqual([50]);
+    expect(buildLevels(buildOf('noel', 'cycle')!)).toEqual([35, 50]);
+    expect([buildOf('safira', 'festival')!.role, buildOf('hero', 'healer')!.role, buildOf('selene', 'fullmoon')!.role]).toEqual(['gauge', 'heal', 'heal']);
+    expect([buildOf('hero', 'healer')!.scenario, buildOf('selene', 'fullmoon')!.scenario]).toEqual(['ordeal', 'ordeal']);
   });
 
   it('every known exception is a real build, named for the controller, with a reason', () => {

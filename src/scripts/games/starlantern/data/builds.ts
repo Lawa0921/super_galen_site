@@ -14,14 +14,20 @@ import type { RuneId } from './runes';
 import type { KeystoneId } from './talents';
 import { T } from './text.zh-TW';
 
-/** Where a build is measured to shine (plan 8h ruling 7): a boss, a crowd, or a long fight. */
-export type BuildScenario = 'boss' | 'crowd' | 'long';
+/**
+ * Where a build is measured to shine (plan 8h ruling 7): a boss, a crowd, a long fight, or (a healer's, controller ruling
+ * E4) the ordeal: the boss two floors deeper.
+ */
+export type BuildScenario = 'boss' | 'crowd' | 'long' | 'ordeal';
 
 /**
  * One build. `first`: nodes learned before the default order reaches them; `sides`: B sides taken in place of their A
  * sides; `capstone`: the branch whose ultimate it takes; `talents` / `keystones`: the stats its normal talent nodes lean
  * on and its keystones; `runes`: the runes it suggests per skill, slot by slot; `hero`: the hero's HERO_BUILDS tree and
- * talents (his builds take those, not the fields above).
+ * talents (his builds take those, not the fields above). `minLevel`: the level it is suggested from (the inn says
+ * 「建議 Lv N 以上」, and the bands measure it from there; ruling E2). `role`: a support build judged on what it does for
+ * the party: `gauge` on the party's win rate (the gauge it feeds reported apart; E3), `heal` on the win rate and the
+ * party's KOs in its ordeal (E4).
  */
 export interface BuildDef {
   key: string; owner: CharacterId; name: string; intro: string;
@@ -29,6 +35,8 @@ export interface BuildDef {
   runes: Readonly<Record<string, readonly RuneId[]>>;
   policy: readonly PolicyRule[];
   scenario?: BuildScenario;
+  minLevel?: number;
+  role?: 'gauge' | 'heal';
 }
 
 /** A character's standard build: the default tree, talents and policy, no runes. */
@@ -49,7 +57,8 @@ const aoe: PolicyRule = { kind: 'strongest-damage', aoe: true, effective: true }
  */
 const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
   noel: [
-    { key: 'meteor', name: '暴走流星', intro: '火之星彈一口氣燒過去，熱度滿了就用業火暴走！', scenario: 'crowd', capstone: 0,
+    // From Lv40 (ruling E2): at Lv35 擴散 costs 火之星彈 more than the crowd repays.
+    { key: 'meteor', name: '暴走流星', intro: '火之星彈一口氣燒過去，熱度滿了就用業火暴走！', scenario: 'crowd', capstone: 0, minLevel: 40,
       runes: { 'fire-star': ['spread', 'ignite', 'multistrike'] },
       policy: [{ kind: 'spend-at', gauge: 'heat', min: 4, skill: 'inferno' }, aoe] },
     { key: 'cycle', name: '冰雷循環', intro: '雷之星彈蓄力猛攻，熱度一高就換冰之星彈降溫，順便凍住頭目。', scenario: 'boss',
@@ -94,12 +103,12 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       policy: [{ kind: 'cast-when', skill: 'arrow-rain' }] },
   ],
   scarlet: [
-    { key: 'riposte', name: '反擊之壁', intro: '來打我啊！挨一下，就燒一圈還給你們。', scenario: 'long', capstone: 2,
-      first: ['scarlet-burst-heart', 'blaze-ring'],
-      // 炎環斬 is fire already: 點燃 in place of the table's 灼焰; 連擊 (the shop's) on it too (「依 fit」).
-      // Tuning round 2: 火焰爆 is her hand-cast blow; it takes the fire runes too.
+    // Scarlet's one build swap (ruling E5): the 贖火 branch (capstone 2) fell a third short of the standard at Lv50, so the
+    // wall that burns back now stands on 烈焰 (紅蓮終焉's branch), 燎原 on the way; 受擊觸發 still answers every blow.
+    { key: 'riposte', name: '反擊之壁', intro: '來打我啊！挨一下，就燒一圈還給你們。', scenario: 'long', capstone: 1,
+      first: ['scarlet-burst-heart', 'blaze-ring', 'scarlet-ring-blaze'],
       runes: { 'blaze-ring': ['on-struck', 'ignite', 'multistrike'], 'flame-burst': ['ignite', 'multistrike', 'charge'] },
-      policy: [{ kind: 'ensure-taunt', skill: 'provoke' }, { kind: 'cast-when', skill: 'atoning-flame', big: true, whileAbsent: true }, aoe] },
+      policy: [{ kind: 'ensure-taunt', skill: 'provoke' }, aoe] },
     { key: 'ember', name: '紅蓮餘燼', intro: '替大家擋下的傷，全部存成餘燼，紅蓮終焉一次還給牠。', scenario: 'boss', capstone: 1,
       // 代受 (on the way, 高喊), then 熾心, 赤心 and 回禮; 延長 does not take a cover, so 代受 takes 節流 (「依 fit」).
       first: ['scarlet-provoke-shout', 'cover', 'scarlet-ardent', 'scarlet-burst-heart', 'scarlet-thanks'],
@@ -109,7 +118,8 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       policy: [{ kind: 'ensure-cover', skill: 'cover' }, { kind: 'spend-at', gauge: 'embers', min: 10, of: 'maxHp', skill: 'crimson-end' }, aoe] },
   ],
   selene: [
-    { key: 'fullmoon', name: '滿月聖女', intro: '月光照著大家，大補就留到滿月呢。', scenario: 'long', capstone: 1,
+    // A healer (ruling E4): judged in the ordeal on the party's win rate and KOs.
+    { key: 'fullmoon', name: '滿月聖女', intro: '月光照著大家，大補就留到滿月呢。', scenario: 'ordeal', capstone: 1, role: 'heal',
       runes: { moonlight: ['spread', 'dispel'] },
       // The full moon's big heal is 月光 spread over everyone (滿月之癒 is the other branch's ultimate). Tuning round 1: no
       // 收回 rule — 滿月之夜 holds the full moon past the end of every measured fight, so the moon never wanes for it to
@@ -129,14 +139,16 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       // Tuning round 2: 蓄力 on 刃舞; 切分音's 影步 is the other half of the dance.
       runes: { 'blade-dance': ['charge', 'multistrike', 'tear'], 'shadow-step': ['charge', 'multistrike'] },
       policy: [{ kind: 'cast-when', skill: 'mirage-step', whileAbsent: true }, { kind: 'alternate', repeat: true }, aoe] },
-    { key: 'festival', name: '祭典指揮', intro: '戰舞整場不停，拍手幫大家把絕技量表炒熱！', scenario: 'long', capstone: 1,
+    // A support build (ruling E3): judged on the party's win rate; the gauge it feeds is reported apart.
+    { key: 'festival', name: '祭典指揮', intro: '戰舞整場不停，拍手幫大家把絕技量表炒熱！', scenario: 'long', capstone: 1, role: 'gauge',
       first: ['clap', 'safira-clap-encore'],
       // No rune takes 拍手 (a free gauge skill); 常駐 keeps 戰舞 up; 連擊 (the shop's) on 刃舞 (「依 fit」).
       runes: { 'war-dance': ['lasting'], 'blade-dance': ['charge', 'multistrike', 'tear'] },
       policy: [{ kind: 'cast-unless-last', skill: 'clap' }, { kind: 'alternate', repeat: true }] },
   ],
   bobby: [
-    { key: 'factory', name: '砲台工廠', intro: '砲台一座一座架，改良到最好！', scenario: 'long',
+    // From Lv40 (ruling E2): at Lv35 the turrets it learns do less than the standard tree.
+    { key: 'factory', name: '砲台工廠', intro: '砲台一座一座架，改良到最好！', scenario: 'long', minLevel: 40,
       first: ['bobby-drone-aid', 'overclock'],
       // A turret deals its damage as a device, so 連擊 does not take it: 蓄力 in its place (「依 fit」).
       runes: { turret: ['extend', 'charge'] },
@@ -161,7 +173,7 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       runes: { 'abyss-sword': ['charge', 'multistrike', 'armor-break'] }, policy: [aoe] },
     { key: 'mage', name: '星術', intro: '星火擴散開來，一次照亮整片。', scenario: 'crowd', hero: 'mage',
       runes: { 'hero-flare': ['spread', 'charge', 'ignite'] }, policy: [{ kind: 'heal-below', pct: 40 }, aoe] },
-    { key: 'healer', name: '祈光', intro: '治癒照到每個人，誰都別倒下。', scenario: 'long', hero: 'healer',
+    { key: 'healer', name: '祈光', intro: '治癒照到每個人，誰都別倒下。', scenario: 'ordeal', hero: 'healer', role: 'heal',
       runes: { 'hero-mend': ['spread', 'dispel'] }, policy: [{ kind: 'heal-below', pct: 60 }, aoe] },
     { key: 'tank', name: '守護', intro: '站到最前面，傷害都衝著我來。', scenario: 'long', hero: 'tank',
       // 分享 needs a skill of buffs alone and 守勢 also taunts: 節流 in its place (「依 fit」).

@@ -23,8 +23,20 @@ export const BUILD_LEVELS = [35, 50] as const;
 export const BUILD_SEEDS = { boss: 40, crowd: 10, long: 10 } as const;
 /** A build in its scenario gives at least this much more per round than her standard (spec §12.4). */
 export const RUNE_VALUE_PCT = 20;
-/** One rune on a skill makes each cast of it at most this many times what the cast gives without it (spec §12.4). */
+/**
+ * One rune on a build's first skill makes her contribution per round at most this many times what it is without it
+ * (spec §12.4, read per round: controller ruling R1); a legendary rune at most ONE_RUNE_MAX_LEGENDARY (ruling B1).
+ */
 export const ONE_RUNE_MAX = 1.6;
+export const ONE_RUNE_MAX_LEGENDARY = 2.0;
+/**
+ * A build may win this many fights fewer than her standard and still pass, its contribution up a fifth (ruling E1: 2 of
+ * 40, read as two fights of the set, so a 30-fight crowd set allows 2 of 30).
+ */
+export const WIN_SLACK_FIGHTS = 2;
+
+/** The band levels a build is measured at: from its `minLevel` (ruling E2). */
+export const buildLevels = (b: BuildDef): number[] => BUILD_LEVELS.filter((l) => l >= (b.minLevel ?? 0));
 /** The ceiling's depths and seeds (plan 8h ruling 8). */
 export const CEILING_DEPTHS = [5, 10] as const;
 export const CEILING_SEEDS = 20;
@@ -37,11 +49,15 @@ export const DEEP_LINEUP: Lineup = { memories: 10, abyss: ABYSS.cap, heroBuild: 
  */
 export interface BuildRun {
   perRound: number; gaugePerRound: number; rate: number; rounds: number;
+  /** How many fights the set had. */
+  fights: number;
   bySkill: Record<string, { total: number; casts: number }>;
   /** The fewest rounds a boss fight of the set took (0 with no boss fight). */
   minBossRounds: number;
   /** Rounds a boss ended frozen (plan 8h ruling 10: never). */
   bossFrozen: number;
+  /** Party members felled over the fights (the healers' band, ruling E4). */
+  partyKos: number;
 }
 
 export interface BandFight { enemyIds: string[]; boss: boolean; scale: BattleScale; seeds: number }
@@ -62,6 +78,7 @@ export function scenarioFights(s: BuildScenario | 'general', level: number): Ban
     case 'crowd': return groups.map((g, i) => ({ enemyIds: [...g, ...groups[(i + 1) % groups.length]], boss: false, scale, seeds: BUILD_SEEDS.crowd }));
     case 'long': return groups.map((g) => ({ enemyIds: g, boss: false, scale: { ...scale, elite: g[0] }, seeds: BUILD_SEEDS.long }));
     case 'general': return [...groups.map((g) => ({ enemyIds: g, boss: false, scale, seeds: 10 })), { ...boss, seeds: 10 }];
+    case 'ordeal': return [{ ...boss, scale: { depth: depth + 2, region: 'mainline' } }];
   }
 }
 
@@ -76,7 +93,7 @@ export function measureBuild(owner: CharacterId, lineup: Lineup, scenario: Build
   const ledger = newLedger({ bySkill: true, buffGivers: true });
   const policies = lineupPolicies(lineup);
   const kit = kitParty(level, depth, 1, undefined, expectedEnhance(depth), { ...lineup, expect: true });
-  let rounds = 0, wins = 0, n = 0, minBoss = Infinity, frozen = 0;
+  let rounds = 0, wins = 0, n = 0, minBoss = Infinity, frozen = 0, kos = 0;
   const prev = setSimTrace({
     round(actions, before, after) {
       if (opts.forward) prev?.round(actions, before, after);
@@ -84,6 +101,7 @@ export function measureBuild(owner: CharacterId, lineup: Lineup, scenario: Build
       if (seen && a?.kind === 'skill') seen.add(a.skill);
       if (seen && a?.kind === 'echo') seen.add('echo');
       frozen += after.enemies.filter((e) => e.boss && e.frozen).length;
+      kos += after.log.filter((e) => e.type === 'ko' && before.party.some((c) => c.key === e.target)).length;
     },
     end(r) { if (opts.forward) prev?.end(r); },
   });
@@ -102,8 +120,8 @@ export function measureBuild(owner: CharacterId, lineup: Lineup, scenario: Build
   const mine = ledger.by[owner] ?? { damage: 0, healing: 0, prevented: 0, shield: 0 };
   const gauge = ledger.gauge?.[owner] ?? 0;
   return {
-    perRound: rounds ? totalOf(mine) / rounds : 0, gaugePerRound: rounds ? gauge / rounds : 0, rate: n ? wins / n : 0, rounds, bySkill,
-    minBossRounds: minBoss === Infinity ? 0 : minBoss, bossFrozen: frozen,
+    perRound: rounds ? totalOf(mine) / rounds : 0, gaugePerRound: rounds ? gauge / rounds : 0, rate: n ? wins / n : 0, rounds, fights: n, bySkill,
+    minBossRounds: minBoss === Infinity ? 0 : minBoss, bossFrozen: frozen, partyKos: kos,
   };
 }
 
@@ -203,6 +221,7 @@ export const UNCAST_BEFORE = ['cover', 'atoning-flame', 'clap', 'mirage-step', '
 /** The 11k skills no build casts, each with why (plan 8h Task 5b; controller ruling R5 for 收回). */
 export const UNCAST: Readonly<Record<string, string>> = {
   'emergency-repair': '全面整備 is the ultimate of the 整備 branch, and no build of Bobby\'s takes that branch (砲台工廠 and 電網 take 砲台 and 護盾).',
+  'atoning-flame': '贖火 is the ultimate of the 鐵壁 branch, and since Scarlet\'s one build swap (ruling E5) no build of hers takes that branch (反擊之壁 and 紅蓮餘燼 take 烈焰).',
   'moon-recall': '收回 steps the moon back from 下弦, but 滿月聖女 holds the full moon with 滿月之夜 past the end of every measured fight, so the moon never wanes for it (controller ruling R5: dropped from coverage).',
 };
 
@@ -210,27 +229,14 @@ export const UNCAST: Readonly<Record<string, string>> = {
  * Builds that fail the §12.4 band after tuning (plan 8h Task 5b, three rounds), kept as known exceptions for the
  * controller to decide; the band test checks each still fails (a fixed one must leave the list) and reports it.
  */
-export const BAND_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; reason: string }>> = {
-  'bobby/factory': { decider: 'controller', reason: 'Lv35 −35%: at Lv35 the turrets the build learns do less than the standard tree; its runes still pay (bare −50%). A tree round (no 急救/超頻 first) reached −17%, still short.' },
-  'hero/healer': { decider: 'controller', reason: 'a healer\'s worth is healing the party needs; in long fights at Lv35/50 the party takes too little for 治癒+擴散 to show (−11% / −39%).' },
-  'hero/mage': { decider: 'controller', reason: 'passes the +20% at both levels (+40% / +99%) but wins 27 of 30 Lv35 crowd fights against the standard\'s 28.' },
-  'noel/meteor': { decider: 'controller', reason: 'Lv35: +29% but wins 25 of 30 against 28, and the build without runes does more (+45%): 擴散 cuts 火之星彈 more than the crowd repays at Lv35; sets without 擴散 still fall below bare.' },
-  'rin/venom': { decider: 'controller', reason: 'passes the +20% at both levels (+226% / +171%) but wins 26 of 30 Lv35 crowd fights against the standard\'s 28.' },
-  'safira/festival': { decider: 'controller', reason: 'Lv50 +8%: her worth is the gauge she feeds the party (reported apart, about 40 a round), which the per-round band does not count.' },
-  'scarlet/riposte': { decider: 'controller', reason: 'Lv50 −34%: 贖火\'s branch trades away 紅蓮終焉, which carries the standard Scarlet at Lv50; policy and rune rounds closed only the Lv35 gap.' },
-  'selene/fullmoon': { decider: 'controller', reason: 'a healer\'s worth, as 祈光: the party takes too little in long fights for 月光+擴散 to show (−8% / −22%).' },
-};
+export const BAND_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; reason: string }>> = {};
 
 /**
  * Single runes over ONE_RUNE_MAX that only a §6.7 number would bring under (plan 8h Task 5b: BLOCKED, the controller's),
  * keyed `<owner>/<key> <skill>+<rune>`.
  */
 export const ONE_RUNE_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; reason: string }>> = {
-  'hero/sword abyss-sword+twin-cast': { decider: 'controller', reason: '雙重詠唱 casts the build\'s main blow twice: about 2x by construction (§6.7).' },
-  'hero/echo abyss-sword+twin-cast': { decider: 'controller', reason: '雙重詠唱 casts the main blow twice (§6.7).' },
-  'sylvie/wildfire arrow-rain+twin-cast': { decider: 'controller', reason: '雙重詠唱 on the one skill the build casts every turn (§6.7).' },
-  'sylvie/wildfire arrow-rain+venom': { decider: 'controller', reason: '淬毒 poisons every foe 箭雨 strikes; in a crowd its ticks are worth as much as the arrows (§6.7 venom chance).' },
-  'scarlet/ember flame-burst+on-struck': { decider: 'controller', reason: '受擊觸發 adds a free 火焰爆 for each blow she takes covering others (§6.7 trigger percent).' },
+  'sylvie/wildfire arrow-rain+venom': { decider: 'controller', reason: '淬毒 poisons every foe 箭雨 strikes, once a cast already (ruling B2 holds); in a crowd its ticks are worth as much as the arrows: only its chance (§6.7) would bring it under.' },
 };
 
 const f2 = (n: number) => n.toFixed(2);
@@ -239,7 +245,7 @@ export interface LevelResult { level: number; std: BuildRun; run: BuildRun; bare
 export interface BuildResult {
   key: string; tag: string; levels: LevelResult[];
   ceilings: { depth: number; mode: 'plain' | 'deep'; min: number }[];
-  oneRune: { label: string; ratio: number; perCast: number; casts: number; castsWithout: number }[];
+  oneRune: { label: string; ratio: number; perCast: number; casts: number; castsWithout: number; legendary: boolean }[];
 }
 export interface OwnerResult { builds: BuildResult[]; seen50: Set<string>; uncast: string[] }
 
@@ -254,14 +260,14 @@ export function bandResults(owner: CharacterId, say: (line: string) => void): Ow
   for (const b of BUILDS[owner].filter((x) => x.key !== 'standard') as BuildDef[]) {
     const tag = `${b.owner}/${b.key}`;
     const levels: LevelResult[] = [];
-    for (const level of BUILD_LEVELS) {
+    for (const level of buildLevels(b)) {
       const scenario = b.scenario!;
       const seen = new Set<string>();
       const std = measureStandard(owner, scenario, level);
       const run = measureBuild(owner, buildLineup(owner, b.key), scenario, level, seen);
       const bare = measureBuild(owner, bareLineup(owner, b.key), scenario, level);
       const pct = std.perRound ? ((run.perRound - std.perRound) * 100) / std.perRound : 0;
-      say(`${tag} Lv${level} ${scenario} standard ${f2(std.perRound)} build ${f2(run.perRound)} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%) bare ${f2(bare.perRound)} win ${f2(run.rate)}/${f2(std.rate)} gauge ${f2(run.gaugePerRound)}/${f2(std.gaugePerRound)} rounds ${run.rounds}/${std.rounds}`);
+      say(`${tag} Lv${level} ${scenario} standard ${f2(std.perRound)} build ${f2(run.perRound)} (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%) bare ${f2(bare.perRound)} win ${f2(run.rate)}/${f2(std.rate)} gauge ${f2(run.gaugePerRound)}/${f2(std.gaugePerRound)} rounds ${run.rounds}/${std.rounds} kos ${run.partyKos}/${std.partyKos}`);
       for (const [skill, s] of Object.entries(run.bySkill)) say(`skill ${tag} Lv${level} ${skill} casts ${s.casts} per-cast ${f2(s.casts ? s.total / s.casts : 0)}`);
       if (run.bossFrozen) say(`frozen ${tag} Lv${level} ${run.bossFrozen}`);
       const sockets = partyAt(level, { ...buildLineup(owner, b.key), expect: true }, parityDepth(level)).roster[owner].sockets ?? {};
@@ -286,7 +292,7 @@ export function bandResults(owner: CharacterId, say: (line: string) => void): Ow
       const ratio = without.perRound ? w.perRound / without.perRound : 0;
       const perCast = without.perCast ? w.perCast / without.perCast : 0;
       say(`one-rune ${tag} ${skill}+${r.id} ${f2(ratio)} per-cast ${f2(perCast)} casts ${w.casts}/${without.casts}`);
-      oneRune.push({ label: `${tag} ${skill}+${r.id}`, ratio, perCast, casts: w.casts, castsWithout: without.casts });
+      oneRune.push({ label: `${tag} ${skill}+${r.id}`, ratio, perCast, casts: w.casts, castsWithout: without.casts, legendary: RUNES[r.id].group === 'legendary' });
     }
     out.push({ key: b.key, tag, levels, ceilings, oneRune });
   }
