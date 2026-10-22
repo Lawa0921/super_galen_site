@@ -1,0 +1,35 @@
+{
+  "raw_seam": {
+    "x": {
+      "seam": 14.226,
+      "interior": 17.602,
+      "ratio": 0.808
+    }
+  },
+  "seamless_fix": "none",
+  "fixed_axes": "",
+  "cut": {},
+  "seam": {
+    "x": {
+      "seam": 14.226,
+      "interior": 17.602,
+      "ratio": 0.808
+    }
+  },
+  "frame": {
+    "x": 4.391
+  },
+  "reasons": [],
+  "top_join": {
+    "seam": 27.79,
+    "interior": 22.156,
+    "ratio": 1.254
+  },
+  "pass": true,
+  "size": [
+    62,
+    62
+  ],
+  "block": 20.226,
+  "wrap": "x"
+}

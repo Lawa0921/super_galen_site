@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { SoundManager as Bomber } from './bomber/audio/SoundManager';
 import { SoundManager as Tetris } from './tetris/audio/SoundManager';
 import { SoundManager as Delve } from './delve/audio/SoundManager';
+import { SoundManager as Starlantern } from './starlantern/audio/SoundManager';
 
 /**
  * 驗證三款遊戲的「音效音量」接線：SoundManager 的 master gain 必須等於
@@ -47,6 +48,7 @@ const CASES = [
   { name: 'bomber', Cls: Bomber, base: 1.0 },
   { name: 'tetris', Cls: Tetris, base: 0.22 },
   { name: 'delve', Cls: Delve, base: 0.6 },
+  { name: 'starlantern', Cls: Starlantern, base: 1.0 },
 ] as const;
 
 describe('遊戲 SFX master gain = BASE × sfxVolume', () => {

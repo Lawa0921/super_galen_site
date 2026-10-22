@@ -1,0 +1,200 @@
+import { BASE_RECIPES, CONSUMABLE_RECIPES, CRAFT_MAGIC_CHANCE, type Cost } from '../../data/forge';
+import { SETS, codexName } from '../../data/gear';
+import { ITEMS } from '../../data/items';
+import { REGIONS } from '../../data/regions';
+import { T } from '../../data/text.zh-TW';
+import { specialLines } from '../../engine/compare';
+import { baseCost, craftLevel, itemRecipeCost, setCost } from '../../engine/forge/craft';
+import { BAG_SIZE } from '../../engine/loot/bag';
+import type { GameState } from '../../engine/state';
+import type { GearSlot } from '../../engine/types';
+import { el } from '../../ui/dom';
+import { fillRich, gearPart } from '../loot';
+import { Menu, type MenuItem } from '../menu';
+import { MenuView, QtyView, confirmBox, richNodes, win, type Rich } from '../widgets';
+import { costText, lackingNames, type ForgeHost } from './forge';
+
+/** The most of one consumable a single craft makes, as in the shop. */
+const QTY_CAP = 99;
+
+/** A recipe row. A row the stores cannot cover stays selectable (its detail is still worth reading): its right text ends with （不足） in `slx-lack`. */
+function recipeRow(s: GameState, o: { id: string; label: string; cost: Cost; cls?: string; shop?: number }): MenuItem {
+  const short = lackingNames(s, o.cost).length > 0;
+  // The row is a short line (the gold); every material's have／need is in the detail beside the list.
+  const plain = T.ui2.forge.costGold(o.cost.gold);
+  const text = o.shop === undefined ? plain : T.ui2.forge.craftRow(o.shop, plain);
+  return { id: o.id, label: o.label, cls: o.cls, right: short ? `${text}${T.ui2.forge.lacking}` : text, rightClass: short ? 'slx-lack' : undefined };
+}
+
+/** The reason a craft is refused, with what is short named. Empty when the stores cover it. */
+function refusal(s: GameState, c: Cost): string {
+  const names = lackingNames(s, c);
+  if (!names.length) return '';
+  const matsShort = Object.entries(c.mats).some(([id, need]) => (s.inventory[id] ?? 0) < need);
+  return T.ui2.forge.craftLack(matsShort ? T.reasons.mats : T.reasons.gold, names);
+}
+
+const costLine = (s: GameState, c: Cost) => el('p', {}, richNodes([T.ui2.forge.craftNeed, ...costText(s, c)]));
+
+/**
+ * 製作: three categories. 消耗品 shows the shop price beside the craft cost and asks how many (a quantity box capped at
+ * what the stores can pay for, and at 99); 底材 is one row per slot and 套裝 is a set, then its pieces. Both of those
+ * ask first with 否 under the cursor. A row that cannot be paid for stays readable and says why when picked.
+ */
+export function openCraft(h: ForgeHost): void {
+  const game = h.ctx.game;
+  const F = T.ui2.forge;
+
+  /** One list layer sharing the page's detail window; the detail follows the cursor, Esc pops and runs `back`. */
+  function layer(info: HTMLElement, o: {
+    rows(): MenuItem[]; detail(id: string): HTMLElement[]; pick(it: MenuItem, refresh: () => void): void; back(): void;
+  }): { show(): void } {
+    const show = () => { const c = v.menu.current(); info.replaceChildren(...(c ? o.detail(c.id) : [])); };
+    const refresh = () => {
+      v.menu.items.splice(0, v.menu.items.length, ...o.rows());
+      if (v.menu.cursor >= v.menu.items.length) v.menu.setCursor(v.menu.items.length - 1);
+      v.render();
+      show();
+    };
+    const v: MenuView = new MenuView(new Menu(o.rows()), {
+      pick: (it) => o.pick(it, refresh),
+      moved: () => { h.ctx.sfx.cursor(); show(); },
+      cancel: () => { h.pop(); o.back(); },
+    }, 12);
+    show();
+    h.push({ el: win('slx-list slx-forge-list slx-craft-list', [v.el]), onAction: (a) => v.onAction(a) });
+    return { show };
+  }
+
+  /** Ask first (否 under the cursor), then run. */
+  const ask = (question: Rich, run: () => void) => {
+    const box = confirmBox(question, (yes) => {
+      h.pop(!yes);
+      if (yes) run();
+    });
+    box.view.menu.setCursor(1);
+    box.view.render();
+    h.push({ el: box.el, onAction: (a) => box.view.onAction(a) });
+  };
+  /** The shared refusals: a full bag, then whatever is short. True when the craft may go ahead. */
+  const ready = (cost: Cost, needsRoom: boolean): boolean => {
+    if (needsRoom && game.state.bag.length >= BAG_SIZE) { h.afterAct({ ok: false, reason: 'full' }, () => []); return false; }
+    const why = refusal(game.state, cost);
+    if (why) { h.ctx.sfx.error(); void h.say(why); return false; }
+    return true;
+  };
+
+  const newInfo = (): HTMLElement => { const info = win('slx-info slx-craft-info'); h.layerRoot.append(info); return info; };
+
+  const consumables = () => {
+    const info = newInfo();
+    layer(info, {
+      rows: () => Object.keys(CONSUMABLE_RECIPES).map((id) => recipeRow(game.state, { id, label: ITEMS[id]?.name ?? id, cost: itemRecipeCost(id, 1)!, shop: ITEMS[id]?.price ?? 0 })),
+      detail: (id) => [
+        el('p', { class: 'slx-name-line', text: ITEMS[id]?.name ?? id }),
+        el('p', { class: 'slx-desc', text: ITEMS[id]?.desc ?? '' }),
+        el('p', { text: F.craftShop(ITEMS[id]?.price ?? 0) }),
+        costLine(game.state, itemRecipeCost(id, 1)!),
+      ],
+      pick: (it, refresh) => {
+        const one = itemRecipeCost(it.id, 1)!;
+        if (!ready(one, false)) return;
+        const s = game.state;
+        const afford = [...Object.entries(one.mats).map(([m, n]) => Math.floor((s.inventory[m] ?? 0) / n)), ...(one.gold > 0 ? [Math.floor(s.gold / one.gold)] : [])];
+        const q = new QtyView(Math.min(QTY_CAP, ...afford), {
+          change: () => h.ctx.sfx.cursor(),
+          done: (n) => {
+            h.pop();
+            const r = game.craftItem(it.id, n);
+            if (r.ok) refresh();
+            h.afterAct(r, (out) => [F.craftedItem(ITEMS[out.id]?.name ?? out.id, out.qty)]);
+          },
+          cancel: () => h.pop(),
+        }, one.gold);
+        h.push({ el: q.el, onAction: (a) => q.onAction(a) });
+      },
+      back: () => info.remove(),
+    });
+  };
+
+  const bases = () => {
+    const info = newInfo();
+    const slots = Object.keys(BASE_RECIPES) as GearSlot[];
+    layer(info, {
+      rows: () => slots.map((slot) => recipeRow(game.state, { id: slot, label: T.slotKind[slot], cost: baseCost(game.state, slot) })),
+      detail: (id) => {
+        const slot = id as GearSlot;
+        return [
+          el('p', { class: 'slx-name-line', text: T.slotKind[slot] }),
+          el('p', { text: F.craftLevel(craftLevel(game.state)) }),
+          el('p', { text: F.magicChance(Math.round(CRAFT_MAGIC_CHANCE * 100)) }),
+          el('p', { class: 'slx-desc', text: F.craftBagRoom(Math.max(0, BAG_SIZE - game.state.bag.length)) }),
+          costLine(game.state, baseCost(game.state, slot)),
+        ];
+      },
+      pick: (it, refresh) => {
+        const slot = it.id as GearSlot;
+        const cost = baseCost(game.state, slot);
+        if (!ready(cost, true)) return;
+        ask([
+          ...fillRich(F.askCraftBase, [T.slotKind[slot]]),
+          `\n${F.craftLevel(craftLevel(game.state))}`,
+          `\n${F.magicChance(Math.round(CRAFT_MAGIC_CHANCE * 100))}`,
+          `\n${F.craftNeed}`,
+          ...costText(game.state, cost),
+        ], () => {
+          const r = game.craftBase(slot);
+          if (r.ok) refresh();
+          h.afterAct(r, (out) => fillRich(F.crafted, [gearPart(out.item)]));
+          if (r.ok) h.ctx.sfx.loot?.(r.out.item.rarity);
+        });
+      },
+      back: () => info.remove(),
+    });
+  };
+
+  const sets = () => {
+    const info = newInfo();
+    const setsLayer = layer(info, {
+      rows: () => Object.values(SETS).map((set): MenuItem => ({ id: set.id, label: codexName(set.id), right: REGIONS[set.region].name })),
+      detail: (id) => [
+        el('p', { class: 'slx-name-line', text: codexName(id) }),
+        ...specialLines(id).map((l) => el('p', { class: l.kind === 'lore' ? 'slx-desc' : '', text: l.text })),
+      ],
+      pick: (setRow) => {
+        layer(info, {
+          rows: () => SETS[setRow.id].pieces.map((id) => recipeRow(game.state, { id, label: codexName(id), cost: setCost(game.state, id)!, cls: 'slx-rarity-set' })),
+          detail: (id) => [
+            el('p', { class: 'slx-name-line slx-rarity-set', text: codexName(id) }),
+            ...specialLines(id).map((l) => el('p', { class: l.kind === 'lore' ? 'slx-desc' : '', text: l.text })),
+            el('p', { class: 'slx-desc', text: F.craftBagRoom(Math.max(0, BAG_SIZE - game.state.bag.length)) }),
+            costLine(game.state, setCost(game.state, id)!),
+          ],
+          pick: (it, refresh) => {
+            const cost = setCost(game.state, it.id)!;
+            if (!ready(cost, true)) return;
+            ask([
+              ...fillRich(F.askCraftSet, [{ text: codexName(it.id), cls: 'slx-rarity-set' }]),
+              `\n${F.craftNeed}`,
+              ...costText(game.state, cost),
+            ], () => {
+              const r = game.craftSet(it.id);
+              if (r.ok) refresh();
+              h.afterAct(r, (out) => fillRich(F.crafted, [gearPart(out.item)]));
+              if (r.ok) h.ctx.sfx.loot?.(r.out.item.rarity);
+            });
+          },
+          back: () => setsLayer.show(),
+        });
+      },
+      back: () => info.remove(),
+    });
+  };
+
+  const cats = new MenuView(new Menu((['item', 'base', 'set'] as const).map((id) => ({ id, label: F.craftCats[id] }))), {
+    pick: (it) => (it.id === 'item' ? consumables() : it.id === 'base' ? bases() : sets()),
+    moved: () => h.ctx.sfx.cursor(),
+    cancel: () => h.pop(),
+  }, 12);
+  h.push({ el: win('slx-list slx-forge-list', [cats.el]), onAction: (a) => cats.onAction(a) });
+}

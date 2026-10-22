@@ -1,0 +1,41 @@
+{
+  "raw_seam": {
+    "x": {
+      "seam": 20.113,
+      "interior": 23.79,
+      "ratio": 0.845
+    },
+    "y": {
+      "seam": 19.425,
+      "interior": 25.944,
+      "ratio": 0.749
+    }
+  },
+  "seamless_fix": "none",
+  "fixed_axes": "",
+  "cut": {},
+  "seam": {
+    "x": {
+      "seam": 20.113,
+      "interior": 23.79,
+      "ratio": 0.845
+    },
+    "y": {
+      "seam": 19.425,
+      "interior": 25.944,
+      "ratio": 0.749
+    }
+  },
+  "frame": {
+    "x": 1.676,
+    "y": 6.19
+  },
+  "reasons": [],
+  "pass": true,
+  "size": [
+    62,
+    62
+  ],
+  "block": 20.226,
+  "wrap": "xy"
+}

@@ -1,0 +1,140 @@
+import { describe, expect, it, vi } from 'vitest';
+import { Game } from '../../engine/game';
+import { constRng } from '../../engine/testing';
+import { NO_ART } from '../../render/textures';
+import type { ItemInstance } from '../../engine/types';
+import { TownScene } from './town';
+
+describe('TownScene', () => {
+  it('shows place, gold and the facility menu with a greeting', () => {
+    const game = new Game(constRng(0.5), null);
+    const root = document.createElement('div');
+    const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    expect(root.querySelector('.slx-place')!.textContent).toBe('邊境小鎮 露米亞');
+    expect(root.querySelector('.slx-gold')!.textContent).toBe('150 G');
+    expect([...root.querySelectorAll('[role=option]')].map((o) => o.textContent)).toEqual(['冒險者公會', '道具店', '旅館', '傳送門廣場', '鍛造屋', '設定']);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent!.length).toBeGreaterThan(0);
+  });
+
+  it('enters a facility or settings, and asks before returning to the title on cancel', () => {
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new TownScene({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    s.onAction('confirm');               // greeting closes
+    s.onAction('confirm');               // 冒險者公會
+    expect(go).toHaveBeenCalledWith('guild');
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');               // 設定
+    expect(go).toHaveBeenCalledWith('settings');
+    s.onAction('cancel');
+    expect(root.querySelector('.slx-confirm')!.textContent).toContain('標題');
+    expect(root.querySelector('.slx-confirm [aria-selected=true]')!.textContent).toBe('否');
+    s.onAction('confirm');               // 否
+    expect(root.querySelector('.slx-confirm')).toBeNull();
+    expect(go).not.toHaveBeenCalledWith('title');
+    s.onAction('cancel'); s.onAction('up'); s.onAction('confirm');
+    expect(go).toHaveBeenCalledWith('title');
+  });
+});
+
+describe('TownScene pointer', () => {
+  it('ignores a facility click while the greeting is still on screen', () => {
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new TownScene({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    const line = root.querySelector('.slx-talk .slx-text')!.textContent;
+    (root.querySelector('[data-id=guild]') as HTMLElement).click();
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe(line);
+    expect(go).not.toHaveBeenCalled();
+  });
+});
+
+describe('TownScene mouse', () => {
+  it('has a 返回 control that asks before going back to the title once the greeting is closed', () => {
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new TownScene({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    (root.querySelector('.slx-talk') as HTMLElement).click();
+    (root.querySelector('.slx-back') as HTMLElement).click();
+    (root.querySelector('.slx-confirm [data-id=yes]') as HTMLElement).click();
+    expect(go).toHaveBeenCalledWith('title');
+  });
+
+  it('鍛造屋 opens the forge', () => {
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const s = new TownScene({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    s.onAction('confirm');               // greeting closes
+    for (let i = 0; i < 4; i++) s.onAction('down');
+    s.onAction('confirm');               // 鍛造屋
+    expect(go).toHaveBeenCalledWith('forge');
+  });
+});
+
+describe('TownScene notices', () => {
+  it('tells the player about a wipe before anything else and clears the notice', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'wipe';
+    const root = document.createElement('div');
+    const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('全滅……冒險背包遺失在迷宮裡，身上的金幣也少了四分之一。');
+    expect(game.notice).toBeNull();
+  });
+
+  it('greets with what came home, mentions the lamp, and clears the haul', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'lamp';
+    game.banked = { items: { potion: 2, 'old-coin': 3 }, gold: 120, viaLamp: true, gear: [], overflow: [] };
+    const root = document.createElement('div');
+    const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('歸還之燈的光芒把隊伍帶回了城鎮。帶回了：回復藥 ×2、古代銀幣 ×3、120 G。');
+    expect(game.banked).toBeNull();
+    expect(game.notice).toBeNull();
+  });
+
+  it('greets a walk home the same way, without the lamp', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'banked';
+    game.banked = { items: {}, gold: 40, viaLamp: false, gear: [], overflow: [] };
+    const root = document.createElement('div');
+    const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('平安回城。帶回了：40 G。');
+    expect(game.banked).toBeNull();
+  });
+});
+
+describe('TownScene banked gear', () => {
+  const gearOf = (uid: number, base: string, rarity: ItemInstance['rarity']): ItemInstance => ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0 });
+  const enter = (game: Game) => {
+    const root = document.createElement('div');
+    new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity).enter(root);
+    return root;
+  };
+
+  it('names the gear that came home in its rarity colour', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'banked';
+    game.banked = { items: {}, gold: 40, viaLamp: false, gear: [gearOf(1, 'iron-sword', 'rare')], overflow: [] };
+    const root = enter(game);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('平安回城。帶回了：鐵劍・稀有、40 G。');
+    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-rare')!.textContent).toBe('鐵劍・稀有');
+  });
+
+  it('says plainly which gear was lost because the bag was full', () => {
+    const game = new Game(constRng(0.5), null);
+    game.notice = 'banked';
+    game.banked = { items: {}, gold: 0, viaLamp: false, gear: [gearOf(1, 'iron-sword', 'rare')], overflow: [gearOf(2, 'hunter-bow', 'magic'), gearOf(3, 'cloth-robe', 'common')] };
+    const root = enter(game);
+    const text = root.querySelector('.slx-talk .slx-text')!.textContent!;
+    expect(text).toContain('背包已滿（60 件），沒能帶回：獵弓・魔法、布袍。');
+    expect(root.querySelector('.slx-talk .slx-text .slx-rarity-magic')!.textContent).toBe('獵弓・魔法');
+  });
+});

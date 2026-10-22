@@ -1,0 +1,1028 @@
+@font-face {
+  font-family: 'Cubic 11';
+  src: url('/assets/fonts/cubic-11/Cubic_11.woff2') format('woff2');
+  font-display: swap;
+}
+
+$slx-w: 640px;
+$slx-h: 360px;
+$slx-ink: #f1ead8;
+$slx-dim: #b7ae9a;
+$slx-gold: #e8c46a;
+$slx-up: #8fe08f;
+$slx-down: #ff8a7a;
+// opaque so stacked windows never show the text underneath
+$slx-win: rgb(10, 14, 34);
+
+html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; background: #000; }
+// place-content centres the 640px track even when the window is narrower, so scale() shrinks around the window centre.
+.slx-body { display: grid; place-items: center; place-content: center; }
+
+.slx-screen {
+  position: relative;
+  width: $slx-w;
+  height: $slx-h;
+  overflow: hidden;
+  background: #05060c;
+  color: $slx-ink;
+  font: 12px/16px 'Cubic 11', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+  image-rendering: pixelated;
+  transform-origin: center;
+  user-select: none;
+}
+.slx-ui { position: absolute; inset: 0; }
+.slx-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: $slx-dim; }
+
+// Integer scales when the window has room; below 640x360 shrink proportionally.
+@each $k in 2, 3, 4, 5, 6 {
+  @media (min-width: $slx-w * $k) and (min-height: $slx-h * $k) {
+    .slx-screen { transform: scale($k); }
+  }
+}
+// Sass cannot divide viewport units by pixels, so step down in 5% increments: each rule applies once the
+// window is smaller than the previous step, and later (smaller) steps win.
+$slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3;
+@for $i from 2 through length($slx-steps) {
+  $prev: nth($slx-steps, $i - 1);
+  @media (max-width: $slx-w * $prev - 1px), (max-height: $slx-h * $prev - 1px) {
+    .slx-screen { transform: scale(nth($slx-steps, $i)); }
+  }
+}
+
+.slx-win {
+  position: absolute;
+  background: $slx-win;
+  border: 2px solid #c9a35a;
+  box-shadow: inset 0 0 0 1px #6e5a2e, 0 2px 8px rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  padding: 6px 8px;
+  animation: slx-open 0.12s ease-out;
+}
+// `scale` (not `transform`) so the opening animation keeps a window's own centring translate.
+@keyframes slx-open { from { scale: 1 0.2; opacity: 0; } to { scale: 1 1; opacity: 1; } }
+.slx-menu { list-style: none; margin: 0; padding: 0; }
+.slx-opt { position: relative; padding: 2px 8px 2px 16px; cursor: pointer; }
+.slx-opt[aria-disabled='true'] { color: #6f6a5c; cursor: default; }
+.slx-sel { color: $slx-gold; background: linear-gradient(90deg, rgba(232, 196, 106, 0.2), transparent); }
+.slx-sel::before { content: '▶'; position: absolute; left: 3px; font-size: 8px; animation: slx-nudge 0.6s steps(2) infinite; }
+@keyframes slx-nudge { 50% { transform: translateX(2px); } }
+.slx-talk { left: 12px; right: 12px; bottom: 10px; min-height: 52px; padding: 10px 12px 8px; }
+/* A multi-line message (the depth-clear reward and its level-ups) keeps its line breaks. */
+.slx-talk .slx-text { white-space: pre-line; }
+.slx-name { position: absolute; top: -9px; left: 10px; padding: 0 6px; background: $slx-win; border: 1px solid #c9a35a; color: $slx-gold; font-weight: normal; }
+.slx-confirm { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 200px; text-align: center; }
+.slx-confirm p { margin: 0 0 6px; white-space: pre-line; }
+@media (prefers-reduced-motion: reduce) { .slx-win, .slx-sel::before { animation: none; } }
+
+.slx-ui { transition: opacity 0.15s linear; }
+.slx-ui.slx-fade { opacity: 0; }
+.slx-scene { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, #1d2340, #05060c 70%); }
+.slx-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.slx-title .slx-logo { position: absolute; left: 50%; top: 40px; width: 360px; transform: translateX(-50%); }
+.slx-title .slx-logo-text { position: absolute; left: 0; right: 0; top: 70px; margin: 0; text-align: center; font-size: 48px; line-height: 56px; color: $slx-gold; font-weight: normal; text-shadow: 0 3px 0 #000; }
+.slx-title-menu { left: 50%; top: 220px; transform: translateX(-50%); min-width: 140px; }
+.slx-place { left: 12px; top: 10px; font-size: 16px; line-height: 20px; color: $slx-ink; }
+.slx-gold { right: 12px; top: 10px; color: $slx-gold; }
+.slx-town-menu { left: 12px; top: 56px; min-width: 150px; }
+
+// Generated window frame and cursor; switched on by ui2/main.ts only when the art is published.
+.slx-skinned {
+  .slx-win {
+    border: 8px solid transparent;
+    border-image: url('/assets/games/starlantern/ui/window.png') 7% / 8px round;
+    border-radius: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+  .slx-sel::before {
+    content: '';
+    top: 4px;
+    width: 8px;
+    height: 8px;
+    background: url('/assets/games/starlantern/ui/cursor.png') center / contain no-repeat;
+  }
+}
+
+.slx-npc { position: absolute; right: 0; bottom: 0; height: 330px; }
+.slx-cmd { left: 12px; top: 56px; min-width: 120px; }
+.slx-stage { position: absolute; inset: 0; pointer-events: none; }
+.slx-stage > * { pointer-events: auto; }
+.slx-layer { left: 150px; top: 56px; max-width: 300px; }
+.slx-opt { display: flex; align-items: center; gap: 4px; }
+.slx-ico { width: 12px; height: 12px; object-fit: contain; }
+.slx-right { margin-left: auto; padding-left: 12px; color: $slx-dim; }
+.slx-qty { left: 6px; top: 190px; width: 112px; text-align: center; }
+.slx-qty .slx-hint { white-space: pre-line; }
+.slx-qty-row { display: flex; justify-content: center; gap: 2px; }
+.slx-qty-total { margin-left: 10px; color: $slx-gold; }
+
+.slx-list { left: 150px; top: 56px; min-width: 170px; max-height: 240px; overflow: hidden; }
+.slx-list .slx-ico { width: 16px; height: 16px; }
+.slx-info { left: 340px; top: 56px; width: 180px; }
+.slx-info img { display: block; height: 120px; margin: 0 auto 4px; }
+.slx-desc { color: $slx-dim; margin: 2px 0; }
+.slx-junk-mat { color: #8a8a8a; }
+/* The material page (shop.ts sellMats) is one flex row of fixed columns, the list then its detail: a 454px row (it ends at
+   174 + 454 = 628, 12px short of the stage edge) holding a 290px list and the rest (156px) for the detail. The list cannot
+   grow, so a label too long for its row ends in an ellipsis (the detail names the material in full); the detail wraps. */
+.slx-shop .slx-layer.slx-mat-page { position: absolute; display: flex; align-items: flex-start; gap: 8px; width: 454px; max-width: none; }
+.slx-shop .slx-mat-page.slx-depth-1 { translate: 24px 16px; }
+.slx-shop .slx-mat-page > .slx-win { position: static; }
+.slx-shop .slx-mat-page > .slx-shop-list { flex: none; box-sizing: border-box; width: 290px; min-width: 0; }
+.slx-shop .slx-mat-page .slx-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slx-shop .slx-mat-page .slx-right { flex: none; white-space: nowrap; }
+.slx-shop .slx-mat-page > .slx-info.slx-mat-info { flex: 1 1 0; box-sizing: border-box; width: auto; min-width: 0; overflow-wrap: anywhere; }
+.slx-skills { margin: 4px 0; padding-left: 14px; }
+
+.slx-shop-list { min-width: 250px; }
+.slx-name-line { color: $slx-gold; margin: 0 0 2px; }
+
+.slx-night { position: absolute; inset: 0; display: grid; place-items: center; background: #000; color: $slx-ink; font-size: 16px; animation: slx-night 1.2s ease-in-out both; }
+@keyframes slx-night { 0% { opacity: 0; } 25%, 75% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .slx-night { animation: none; } }
+
+// Interface fixes after the first facility screenshots
+// ▲/▼ scroll a long list by mouse or touch (ui2/widgets.ts MenuView.scrollBy); padded so a finger can hit them.
+.slx-more { list-style: none; text-align: center; font-size: 8px; line-height: 10px; padding: 2px 0; color: $slx-dim; cursor: pointer; }
+.slx-more:hover { color: $slx-gold; }
+.slx-layer.slx-confirm { left: 50%; top: 45%; }
+.slx-list.slx-depth-1 { translate: 24px 16px; }
+.slx-list.slx-depth-2 { translate: 48px 32px; }
+.slx-list.slx-depth-3 { translate: 72px 48px; }
+.slx-shop-list { max-height: none; }
+.slx-shop .slx-info { left: 452px; width: 150px; max-height: 250px; overflow-y: auto; }
+.slx-shop-list { min-width: 266px; }
+.slx-shop-pages { min-width: 120px; }
+// Buy list preview: one line per active member, each changed stat coloured by direction (the arrows come from the words, not the colour).
+.slx-cmp-list { list-style: none; padding-left: 0; }
+.slx-cmp-member { margin: 0 0 3px; line-height: 13px; }
+.slx-cmp-member b { margin-right: 6px; color: $slx-gold; font-weight: normal; }
+.slx-cmp-member span { margin-right: 5px; white-space: nowrap; }
+.slx-cmp-member .slx-up { color: $slx-up; }
+.slx-cmp-member .slx-down { color: $slx-down; }
+// A reroll's result in the talk box: the new affix is green when it improved and red when it got worse.
+.slx-talk .slx-up { color: $slx-up; }
+.slx-talk .slx-down { color: $slx-down; }
+
+// Mouse and touch controls
+.slx-back { right: 92px; top: 10px; padding: 2px 10px; cursor: pointer; color: $slx-ink; }
+.slx-back:hover { color: $slx-gold; }
+.slx-back[inert] { color: $slx-dim; }
+.slx-talk { cursor: pointer; }
+.slx-next { position: absolute; right: 10px; bottom: 4px; color: $slx-gold; font-size: 8px; animation: slx-blink 0.8s steps(2) infinite; }
+@keyframes slx-blink { 50% { opacity: 0; } }
+.slx-qty-down, .slx-qty-up, .slx-qty-n { cursor: pointer; }
+.slx-qty-down:hover, .slx-qty-up:hover, .slx-qty-n:hover { color: $slx-gold; }
+.slx-talk:hover .slx-next { color: #fff; }
+@media (prefers-reduced-motion: reduce) { .slx-next { animation: none; } }
+
+.slx-canvas { position: absolute; inset: 0; width: 640px; height: 360px; image-rendering: pixelated; }
+
+// Labyrinth
+.slx-dungeon { background: transparent; }
+// A soft dark ring around the view: the party's lantern light, and it hides where the fog meets the screen edge.
+.slx-dungeon::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 58% 62% at 50% 44%, transparent 55%, rgba(3, 4, 10, 0.75) 100%); }
+.slx-floorname { left: 8px; top: 6px; }
+.slx-lamp { right: 8px; top: 6px; padding: 2px 10px; }
+.slx-lamp-green { color: $slx-up; }
+.slx-lamp-yellow { color: $slx-gold; }
+.slx-lamp-red { color: #ff7a6b; }
+.slx-menu-btn { right: 76px; top: 6px; padding: 2px 10px; cursor: pointer; }
+.slx-pad { position: absolute; right: 6px; bottom: 70px; width: 108px; height: 108px; }
+.slx-pad > .slx-win { box-sizing: border-box; width: 36px; height: 36px; padding: 0; display: grid; place-items: center; cursor: pointer; }
+.slx-pad-up { left: 36px; top: 0; }
+.slx-pad-down { left: 36px; top: 72px; }
+.slx-pad-left { left: 0; top: 36px; }
+.slx-pad-right { left: 72px; top: 36px; }
+.slx-pad > .slx-win:hover, .slx-menu-btn:hover { color: $slx-gold; }
+.slx-dungeon .slx-talk { bottom: 70px; right: 124px; }
+.slx-field-menu { left: 12px; top: 50px; }
+.slx-dungeon > .slx-back { right: 140px; top: 6px; }
+.slx-keyhint { position: absolute; left: 8px; bottom: 68px; margin: 0; font-size: 10px; line-height: 12px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
+.slx-title .slx-keyhint, .slx-town .slx-keyhint { bottom: 6px; }
+.slx-town:has(> .slx-talk:not([hidden])) .slx-keyhint { visibility: hidden; }
+// Run readouts: the condition badge under the floor name, the minimap under the lamp and menu button, the weight above the key hint.
+.slx-condition { left: 8px; top: 54px; padding: 2px 10px; cursor: help; color: #cfe6ff; }
+.slx-condition:hover, .slx-condition:focus-visible { color: $slx-gold; outline: none; }
+.slx-condition-tip { left: 8px; top: 92px; z-index: 5; max-width: 220px; padding: 4px 8px; font-size: 11px; line-height: 15px; pointer-events: none; }
+.slx-minimap { position: absolute; right: 8px; top: 46px; width: 120px; height: 88px; box-sizing: border-box; border: 1px solid rgba(201, 163, 90, 0.7); border-radius: 2px; image-rendering: pixelated; pointer-events: none; }
+.slx-weight { position: absolute; left: 8px; bottom: 82px; margin: 0; font-size: 11px; line-height: 14px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
+.slx-weight-heavy { color: $slx-gold; }
+.slx-weight-full { color: #ff7a6b; }
+
+// Party bar (labyrinth and battle)
+.slx-partybar { position: absolute; left: 4px; right: 4px; bottom: 2px; height: 62px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.slx-pm { display: flex; gap: 4px; align-items: center; padding: 3px 4px; background: $slx-win; border: 1px solid #6e5a2e; }
+.slx-pm img { width: 40px; height: 40px; object-fit: contain; }
+.slx-pm-body { display: grid; gap: 1px; min-width: 0; flex: 1; }
+.slx-pm-name { color: $slx-ink; white-space: nowrap; overflow: hidden; }
+.slx-pm-num { color: $slx-dim; font-size: 10px; line-height: 10px; }
+.slx-pm-tp { color: #8fb8ff; font-size: 10px; line-height: 10px; }
+.slx-bar { display: block; height: 4px; background: #2a2b38; box-shadow: inset 0 0 0 1px #000; }
+.slx-fill { display: block; height: 100%; }
+@for $k from 0 through 20 { .slx-fill-#{$k} { width: $k * 5%; } }
+.slx-bar-hp .slx-fill { background: #6fd36f; }
+.slx-bar-hp.slx-low .slx-fill { background: #ff6b5b; }
+.slx-bar-tp .slx-fill { background: #6fa7ff; }
+.slx-bar-limit .slx-fill { background: $slx-gold; }
+.slx-bar-full { box-shadow: 0 0 3px $slx-gold; }
+.slx-pm-active { border-color: $slx-gold; box-shadow: 0 0 0 1px $slx-gold; }
+.slx-pm-down { filter: grayscale(1) brightness(0.6); }
+// Party panel feedback (ui2/partyBar.ts pulse): a hard shake with a red flash for hits, a green glow for heals,
+// a sink for knockouts, a lift for acting, and the number that caused it rising off the panel.
+.slx-pm { position: relative; }
+.slx-pm-hit { animation: slx-pm-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1; }
+.slx-pm-hit::after, .slx-pm-heal::after { content: ''; position: absolute; inset: 0; pointer-events: none; animation: slx-pm-flash 0.4s ease-out forwards; }
+.slx-pm-hit::after { background: rgba(255, 50, 40, 0.6); }
+.slx-pm-heal::after { background: rgba(110, 230, 140, 0.45); }
+.slx-pm-hit img { animation: slx-pm-recoil 0.4s ease-out 1; }
+.slx-pm-heal { box-shadow: 0 0 10px #6fe08f; }
+.slx-pm-acting { animation: slx-pm-act 0.4s ease-out 1; box-shadow: 0 0 0 1px $slx-gold, 0 0 10px rgba(232, 196, 106, 0.8); }
+.slx-pm-ko { animation: slx-pm-ko 0.45s ease-in 1 forwards; }
+@keyframes slx-pm-shake {
+  0% { translate: 0 0; } 10% { translate: -7px 2px; } 25% { translate: 6px -2px; } 40% { translate: -5px 1px; }
+  55% { translate: 4px 0; } 70% { translate: -2px 0; } 85% { translate: 1px 0; } 100% { translate: 0 0; }
+}
+@keyframes slx-pm-flash { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slx-pm-recoil { 0% { scale: 1.25; filter: brightness(2.2) saturate(0.4); } 100% { scale: 1; filter: none; } }
+@keyframes slx-pm-act { 0% { translate: 0 0; } 35% { translate: 0 -8px; } 100% { translate: 0 0; } }
+@keyframes slx-pm-ko { 0% { translate: 0 0; } 30% { translate: 0 -4px; } 100% { translate: 0 6px; filter: grayscale(1) brightness(0.5); } }
+.slx-pm-pop {
+  position: absolute; right: 8px; top: -6px; z-index: 3;
+  font-size: 20px; line-height: 20px; color: #ff5a4a; pointer-events: none;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  animation: slx-pm-pop 0.9s ease-out forwards;
+}
+.slx-pm-pop-heal { color: #6fe08f; }
+@keyframes slx-pm-pop { 0% { scale: 1.8; translate: 0 6px; opacity: 1; } 20% { scale: 1; translate: 0 0; } 70% { opacity: 1; } 100% { translate: 0 -16px; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .slx-pm-hit, .slx-pm-acting, .slx-pm-ko, .slx-pm-hit img, .slx-pm-pop { animation: none; }
+}
+
+// Battle
+.slx-battle { background: transparent; }
+.slx-msg { left: 8px; right: 8px; top: 6px; min-height: 36px; white-space: pre-line; }
+.slx-bcmd { left: 6px; bottom: 70px; min-width: 132px; }
+.slx-who { color: $slx-gold; margin-bottom: 2px; }
+.slx-bsub { right: 6px; top: 64px; min-width: 200px; }
+.slx-bsub .slx-right { min-width: 40px; text-align: right; }
+.slx-result { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 260px; }
+// Many level-ups can outgrow the screen: the lines scroll, 繼續 always stays on screen.
+.slx-result-lines { max-height: 250px; overflow-y: auto; }
+// The target list sits over the (inert) command window so it never hides the enemies on the right.
+.slx-bsub.slx-btarget { right: auto; left: 6px; top: 96px; min-width: 132px; }
+.slx-bsub:not(.slx-btarget):has(~ .slx-btarget), .slx-bcmd:has(~ .slx-btarget) { visibility: hidden; }
+.slx-result h3 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
+.slx-result p { margin: 1px 0; }
+.slx-target { position: absolute; top: 118px; width: 12px; margin-left: -6px; text-align: center; color: $slx-gold; animation: slx-bob 0.6s ease-in-out infinite alternate; }
+@keyframes slx-bob { to { transform: translateY(4px); } }
+// One class per (enemy count, index): enemies stand at width * (i + 1) / (n + 1), as BattleView lays them out.
+// Must match BATTLE_LEFT in ui2/scenes/battle.ts.
+$slx-battle-left: 150px;
+@for $n from 1 through 4 {
+  @for $i from 0 through $n - 1 {
+    .slx-target-#{$n}-#{$i} { left: $slx-battle-left + (640px - $slx-battle-left) * ($i + 1) / ($n + 1); }
+  }
+}
+// Arrow height from the enemy's own sprite (battle.ts: slx-ty-{y / 10}).
+@for $k from 4 through 30 { .slx-ty-#{$k} { top: $k * 10px - 20px; } }
+@media (prefers-reduced-motion: reduce) { .slx-target { animation: none; } }
+
+// Ultimate cut-in (timings match CUTIN_MS = 1200 in ui/cutin.ts)
+.sl-cutin {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+.sl-cutin[hidden] { display: none; }
+.sl-cutin--on { animation: sl-cutin-dim 1.2s ease-out both; }
+.sl-cutin__lines {
+  position: absolute;
+  inset: -50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 236, 200, 0.22) 0deg 2deg, transparent 2deg 9deg);
+  mask-image: radial-gradient(circle, transparent 18%, #000 60%);
+  animation: sl-cutin-lines 1.2s linear both;
+}
+.sl-cutin__band {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  // wider than the screen so the tilted edges stay off-screen; offset by half the overflow to stay centred
+  position: absolute;
+  // percentages of the 640x360 screen (not vw/vh): the screen is scaled as a whole
+  left: -20%;
+  top: 33%;
+  width: 140%;
+  height: 34%;
+  background: linear-gradient(90deg, rgba(120, 20, 30, 0.95), rgba(217, 160, 70, 0.95) 50%, rgba(120, 20, 30, 0.95));
+  border-block: 4px solid $slx-gold;
+  transform: rotate(-8deg);
+  animation: sl-cutin-band 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.sl-cutin__face { height: 150%; transform: rotate(8deg); image-rendering: pixelated; }
+.sl-cutin__name {
+  transform: rotate(8deg);
+  color: #fff;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-shadow: 0 3px 0 #000, 0 0 18px rgba(255, 200, 120, 0.8);
+}
+.sl-cutin__flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: sl-cutin-flash 1.2s ease-out both; }
+@keyframes sl-cutin-dim {
+  0% { background: rgba(5, 6, 12, 0); }
+  15%, 80% { background: rgba(5, 6, 12, 0.75); }
+  100% { background: rgba(5, 6, 12, 0); }
+}
+@keyframes sl-cutin-band {
+  0% { transform: translateX(-120%) rotate(-8deg); }
+  22%, 78% { transform: translateX(0) rotate(-8deg); }
+  100% { transform: translateX(120%) rotate(-8deg); }
+}
+@keyframes sl-cutin-lines {
+  0% { opacity: 0; transform: rotate(0deg); }
+  20%, 80% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(20deg); }
+}
+@keyframes sl-cutin-flash {
+  0%, 78% { opacity: 0; }
+  86% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sl-cutin__band, .sl-cutin__lines, .sl-cutin__flash { animation: none; }
+  .sl-cutin__lines, .sl-cutin__flash { display: none; }
+  .sl-cutin__band { transform: rotate(-8deg); }
+}
+
+// Ending
+.slx-clear-card { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 360px; text-align: center; padding: 14px 18px; }
+.slx-clear-card h2 { margin: 0 0 8px; font-size: 20px; font-weight: normal; color: $slx-gold; }
+.slx-clear-card p { margin: 0 0 10px; }
+
+// Battle: 返回 under the message line; the description of the skill or item under the cursor covers the message line
+.slx-battle .slx-back { right: auto; left: 6px; top: 64px; }
+.slx-bnote { left: 8px; right: 8px; top: 6px; min-height: 36px; color: $slx-gold; background-color: #0a0e22; }
+
+// Settings
+.slx-bg-dim { filter: brightness(0.45); }
+.slx-settings { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 260px; }
+.slx-settings h3, .slx-keys h3 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
+.slx-settings .slx-right { min-width: 90px; text-align: right; color: $slx-ink; }
+.slx-hint { margin: 6px 0 0; color: $slx-dim; font-size: 10px; line-height: 12px; }
+.slx-keys { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 340px; cursor: pointer; }
+.slx-keys p { margin: 2px 0; display: flex; gap: 12px; }
+.slx-keys b { min-width: 120px; font-weight: normal; color: $slx-gold; }
+.slx-keys .slx-hint { display: block; text-align: center; }
+
+// Phones held upright get a 640x360 screen shrunk to about a third: ask for landscape.
+@media (orientation: portrait) and (max-width: 600px) {
+  .slx-body::before {
+    content: '請將裝置轉為橫向，畫面會更大更好讀';
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    color: $slx-ink;
+    font: 14px/20px 'Cubic 11', sans-serif;
+    text-align: center;
+  }
+}
+
+// Party bar row tag
+.slx-pm-row { margin-left: 4px; padding: 0 2px; font-size: 9px; line-height: 10px; border: 1px solid currentColor; vertical-align: 1px; }
+.slx-pm-row-front { color: #ff9a7a; }
+.slx-pm-row-middle { color: $slx-gold; }
+.slx-pm-row-back { color: #8fb8ff; }
+
+// Formation: 3x3 grid on the left (front row on top, nearest the enemies), rules on the right
+.slx-formation-grid { left: 10px; top: 10px; padding: 6px 10px; }
+.slx-formation-row { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+.slx-row-label { width: 16px; writing-mode: vertical-rl; letter-spacing: 2px; color: $slx-gold; }
+.slx-cell { box-sizing: border-box; width: 96px; height: 96px; display: grid; place-items: center; align-content: center; gap: 2px; border: 1px solid #6e5a2e; background: rgba(255, 255, 255, 0.04); cursor: pointer; }
+.slx-cell:hover { border-color: $slx-gold; }
+.slx-cell-empty { border-style: dashed; color: $slx-dim; }
+.slx-cell-sel { border: 2px solid $slx-gold; background: rgba(232, 196, 106, 0.16); box-shadow: 0 0 6px rgba(232, 196, 106, 0.6); }
+.slx-cell-face { width: 56px; height: 56px; object-fit: contain; }
+.slx-formation-info { left: 372px; top: 10px; right: 10px; bottom: 44px; }
+.slx-formation-info h3, .slx-status-panel h4, .slx-tab-ultimate h4 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
+.slx-formation-count { margin: 0 0 6px; font-size: 14px; }
+.slx-formation-rules { margin: 0; padding-left: 14px; color: $slx-ink; }
+.slx-formation-rules li { margin: 3px 0; }
+.slx-formation-msg { min-height: 16px; margin: 8px 0 0; color: $slx-down; }
+.slx-formation-pick { left: 372px; right: 10px; top: 10px; z-index: 2; }
+.slx-formation-scene > .slx-back, .slx-status-scene > .slx-back, .slx-equip-scene > .slx-back { right: 10px; top: auto; bottom: 10px; }
+
+// Character sheet: large standee left, tabbed pages right
+.slx-status-scene { background: radial-gradient(ellipse at 22% 60%, #2a2f55 0%, #0b0d1c 70%); }
+.slx-status-art { position: absolute; left: 0; bottom: 0; width: 250px; height: 360px; display: grid; place-items: end center; overflow: hidden; pointer-events: none; }
+.slx-status-standee {
+  position: relative;
+  height: 330px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 6px currentColor);
+  // slide in with a little overshoot, then breathe
+  animation: slx-standee-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.25) both, slx-standee-float 3.2s ease-in-out 0.5s infinite alternate;
+}
+@keyframes slx-standee-in { from { translate: -60px 0; opacity: 0; } to { translate: 0 0; opacity: 1; } }
+@keyframes slx-standee-float { from { translate: 0 0; } to { translate: 0 -6px; } }
+// Rays and glow sit behind the standee; the aura colour comes from the member class through currentColor.
+.slx-status-rays {
+  position: absolute; left: 50%; top: 42%; width: 520px; height: 520px; margin: -260px 0 0 -260px;
+  background: repeating-conic-gradient(from 0deg, currentColor 0deg 4deg, transparent 4deg 18deg);
+  mask-image: radial-gradient(circle, #000 0%, transparent 62%);
+  opacity: 0.22;
+  animation: slx-rays 26s linear infinite;
+}
+@keyframes slx-rays { to { rotate: 360deg; } }
+.slx-status-glow {
+  position: absolute; left: 50%; top: 45%; width: 300px; height: 300px; margin: -150px 0 0 -150px;
+  background: radial-gradient(circle, currentColor 0%, transparent 65%);
+  opacity: 0.32;
+  animation: slx-glow 2.6s ease-in-out infinite alternate;
+}
+@keyframes slx-glow { from { opacity: 0.2; scale: 0.92; } to { opacity: 0.4; scale: 1.05; } }
+.slx-mote { position: absolute; bottom: 20px; width: 3px; height: 3px; background: currentColor; box-shadow: 0 0 4px currentColor; opacity: 0; animation: slx-mote 4s linear infinite; }
+@keyframes slx-mote { 0% { translate: 0 0; opacity: 0; } 15% { opacity: 0.9; } 100% { translate: 12px -280px; opacity: 0; } }
+.slx-mote-0 { left: 30px; animation-delay: 0s; }
+.slx-mote-1 { left: 70px; animation-delay: 1.4s; animation-duration: 5s; }
+.slx-mote-2 { left: 110px; animation-delay: 0.7s; animation-duration: 3.6s; }
+.slx-mote-3 { left: 150px; animation-delay: 2.2s; }
+.slx-mote-4 { left: 190px; animation-delay: 3s; animation-duration: 4.6s; }
+.slx-mote-5 { left: 220px; animation-delay: 1.9s; animation-duration: 3.2s; }
+.slx-aura-scarlet { color: #ff5a3c; }
+.slx-aura-chizuru { color: #ff6f91; }
+.slx-aura-liz { color: #ffb347; }
+.slx-aura-noel { color: #4fd1c5; }
+.slx-aura-selene { color: #b48cff; }
+.slx-aura-sylvie { color: #7bd88f; }
+.slx-aura-safira { color: #ffd166; }
+.slx-aura-bobby { color: #6fa7ff; }
+@media (prefers-reduced-motion: reduce) {
+  .slx-status-standee, .slx-status-rays, .slx-status-glow, .slx-mote { animation: none; }
+  .slx-mote { display: none; }
+}
+// The name plate sits at the feet so the standee's face stays clear.
+.slx-status-plate { left: 10px; bottom: 10px; width: 226px; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 6px; }
+.slx-status-name, .slx-equip-name { display: grid; justify-items: center; line-height: 16px; }
+.slx-status-name b, .slx-equip-name b { font-size: 16px; font-weight: normal; color: $slx-gold; }
+.slx-status-title { color: $slx-dim; font-size: 10px; }
+.slx-status-arrow { padding: 2px 6px; cursor: pointer; color: $slx-ink; }
+.slx-status-arrow:hover { color: $slx-gold; }
+.slx-status-panel { left: 250px; top: 10px; right: 10px; bottom: 40px; display: flex; flex-direction: column; }
+.slx-tabs { display: flex; gap: 4px; border-bottom: 1px solid #6e5a2e; margin-bottom: 6px; }
+.slx-tab { padding: 2px 10px; cursor: pointer; color: $slx-dim; border-bottom: 2px solid transparent; }
+.slx-tab:hover { color: $slx-ink; }
+.slx-tab-sel { color: $slx-gold; border-bottom-color: $slx-gold; }
+.slx-status-body { flex: 1; overflow-y: auto; }
+.slx-status-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; margin-bottom: 6px; }
+.slx-status-facts p { margin: 1px 0; }
+.slx-stat-cat { margin-bottom: 2px; }
+.slx-stat-cat-head { position: relative; padding: 2px 6px 2px 18px; cursor: pointer; color: $slx-gold; border-bottom: 1px solid #3a3550; }
+.slx-stat-cat-head::before { content: '▸'; position: absolute; left: 5px; color: $slx-dim; }
+.slx-stat-cat-head[aria-expanded='true']::before { content: '▾'; }
+.slx-stat-cat-head:hover { color: #fff; }
+.slx-row-cur { background: linear-gradient(90deg, rgba(232, 196, 106, 0.22), transparent); box-shadow: inset 2px 0 0 $slx-gold; }
+.slx-stat-cat-head.slx-row-cur, .slx-stat-table .slx-row-cur th { color: #fff; }
+.slx-stat-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 4px; }
+.slx-stat-table th:first-child { width: 22%; }
+.slx-stat-table thead th { white-space: nowrap; font-size: 10px; }
+.slx-stat-table tbody tr { cursor: pointer; }
+.slx-stat-table .slx-zero th, .slx-stat-table .slx-zero td { color: #5f5a6e; }
+.slx-stat-table .slx-zero.slx-row-cur th { color: $slx-ink; }
+.slx-stat-table .slx-set { color: #5fd068; }
+.slx-stat-table .slx-primary { color: #6fa7ff; }
+.slx-stat-table .slx-talent { color: #c99bff; }
+.slx-stat-table .slx-capped, .slx-stat-table .slx-cap { color: #ffb36b; }
+.slx-stat-table th, .slx-stat-table td { padding: 1px 6px; text-align: right; font-weight: normal; }
+.slx-stat-table thead th { color: $slx-dim; border-bottom: 1px solid #3a3550; }
+.slx-stat-table tbody th { text-align: left; color: $slx-gold; }
+.slx-stat-table .slx-total { color: #fff; }
+.slx-stat-table .slx-gear { color: $slx-up; }
+.slx-gear-row { display: grid; grid-template-columns: 48px 1fr; gap: 0 8px; padding: 4px 0; border-bottom: 1px solid #2a2840; }
+.slx-gear-slot { color: $slx-gold; grid-row: span 2; }
+.slx-gear-bonus { color: #8fe08f; font-size: 10px; }
+.slx-gear-power { grid-column: 2; color: #ff9a3c; font-size: 10px; }
+.slx-gear-power.slx-line-off { color: $slx-dim; }
+// Rarity colours, the one source. Unique is 獨特（金） in spec §4: a deeper, warmer gold than rare's yellow.
+$slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, legendary: #ff9a3c, unique: #d4af37, set: #5fd068);
+@each $k, $c in $slx-rarity {
+  .slx-rarity-#{$k} { color: $c; }
+}
+.slx-skill { padding: 3px 0; border-bottom: 1px solid #2a2840; }
+.slx-skill-head { display: flex; gap: 10px; }
+.slx-skill-name { flex: 1; color: $slx-ink; }
+.slx-skill-cost { color: #6fa7ff; }
+.slx-skill-rank { color: $slx-dim; min-width: 40px; text-align: right; }
+.slx-skill .slx-desc { margin: 1px 0 0; }
+.slx-skill-target { color: $slx-dim; }
+.slx-skill-power { margin: 1px 0 0; color: #ff9a3c; font-size: 10px; }
+// Skill-tree tab: three branch columns of text rows (the skill rows' rule lines); a node's state only changes its text colour.
+// The columns scroll on their own so the notes for the cursor's node always stay in view below them.
+.slx-tab-tree { height: 100%; display: flex; flex-direction: column; }
+.slx-tree-top { flex: none; display: flex; justify-content: space-between; gap: 12px; line-height: 14px; }
+.slx-tree-left { color: $slx-gold; }
+.slx-tree-capstone { color: $slx-dim; }
+/* The tree columns and the talent board scroll inside a frame that carries their ▲/▼ cues on its right edge. */
+.slx-cue-frame { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.slx-cue-frame .slx-more { position: absolute; right: 0; z-index: 1; padding: 0 3px; background: $slx-win; }
+.slx-cue-frame .slx-more[hidden] { display: none; }
+/* ▼ sits just below the bottom-right corner (beside the notes), so it never covers a node. */
+.slx-cue-frame .slx-more-down { bottom: -12px; }
+/* The talent board's ▲ sits just above it, beside the gate line; the tree's sits inside over the branch headings' right
+   end (the line above it is the right-aligned capstone line), shown only once those headings have scrolled away. */
+.slx-talent-frame .slx-more-up { top: -12px; }
+.slx-tree-frame .slx-more-up { top: 0; }
+.slx-tree-cols { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 0 8px; }
+.slx-tree-branch { min-width: 0; }
+.slx-tree-branch-name { margin: 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; border-bottom: 1px solid #6e5a2e; white-space: nowrap; }
+.slx-tree-node { padding: 1px 3px; cursor: pointer; }
+.slx-tree-node .slx-skill-head { gap: 4px; line-height: 14px; }
+.slx-tree-node .slx-skill-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slx-tree-node .slx-skill-rank { min-width: 0; flex: none; }
+.slx-tree-node:hover .slx-skill-name { color: #fff; }
+.slx-tree-node-foot { display: flex; justify-content: space-between; gap: 4px; font-size: 10px; line-height: 12px; white-space: nowrap; }
+.slx-tree-kind { color: $slx-dim; flex: none; }
+.slx-tree-state { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.slx-node-learned .slx-tree-state { color: $slx-up; }
+.slx-node-open .slx-tree-state { color: #6fa7ff; }
+.slx-node-locked .slx-skill-name, .slx-node-locked .slx-skill-rank, .slx-node-locked .slx-tree-state { color: #77718a; }
+.slx-tree-info { flex: none; min-height: 45px; margin-top: 1px; padding-top: 2px; border-top: 1px solid #3a3550; line-height: 14px; }
+.slx-tree-info p { margin: 0; }
+.slx-tree-info-head { display: flex; flex-wrap: wrap; gap: 0 10px; color: $slx-dim; }
+.slx-tree-info-name { color: $slx-gold; }
+.slx-tree-change { display: flex; flex-wrap: wrap; gap: 0 12px; }
+.slx-tree-use { color: #6fa7ff; }
+.slx-tree-now { color: $slx-ink; }
+.slx-tree-next { color: $slx-up; }
+.slx-tree-msg { color: #ffb36b; }
+.slx-tab-talent { height: 100%; display: flex; flex-direction: column; }
+.slx-talent-top { flex: none; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 8px; line-height: 14px; white-space: nowrap; }
+.slx-talent-left { color: $slx-gold; }
+.slx-talent-count { color: $slx-ink; }
+.slx-talent-gate { flex-basis: 100%; color: $slx-dim; }
+.slx-talent-board { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6e5a2e transparent; }
+.slx-talent-row { display: grid; grid-template-columns: 12px repeat(4, minmax(0, 1fr)); border-bottom: 1px solid #2a2840; }
+/* The tier label reads top to bottom beside the row's three text lines. */
+.slx-talent-tier { writing-mode: vertical-rl; text-orientation: upright; font-size: 10px; line-height: 12px; color: $slx-dim; text-align: center; align-self: center; }
+.slx-talent-node { min-width: 0; padding: 1px 2px; cursor: pointer; }
+.slx-talent-row .slx-talent-node { border-left: 1px solid #2a2840; }
+.slx-talent-head { display: flex; justify-content: space-between; align-items: baseline; gap: 2px; line-height: 14px; }
+.slx-talent-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slx-talent-rank { flex: none; font-size: 10px; color: $slx-dim; }
+.slx-talent-node:hover .slx-talent-name { color: #fff; }
+.slx-talent-node p { margin: 0; }
+.slx-talent-sub { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; min-width: 0; font-size: 10px; line-height: 12px; }
+.slx-talent-per { flex: none; color: $slx-dim; white-space: nowrap; }
+.slx-talent-state { min-width: 0; font-size: 10px; line-height: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slx-talent-keys-head { margin: 2px 0 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; border-bottom: 1px solid #6e5a2e; }
+.slx-talent-keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 6px; }
+.slx-node-learned .slx-talent-state { color: $slx-up; }
+.slx-node-open .slx-talent-state { color: #6fa7ff; }
+.slx-node-maxed .slx-talent-state { color: $slx-gold; }
+.slx-node-locked .slx-talent-name, .slx-node-locked .slx-talent-rank, .slx-node-locked .slx-talent-state { color: #77718a; }
+.slx-talent-info { flex: none; min-height: 45px; margin-top: 1px; padding-top: 2px; border-top: 1px solid #3a3550; line-height: 14px; }
+.slx-talent-info p { margin: 0; }
+.slx-talent-info-head { display: flex; flex-wrap: wrap; gap: 0 10px; color: $slx-dim; }
+.slx-talent-info-name { color: $slx-gold; }
+.slx-talent-now { color: $slx-ink; }
+.slx-talent-msg { color: #ffb36b; }
+.slx-status-panel .slx-hint, .slx-formation-info .slx-hint { margin-top: 6px; }
+
+// Equipment, left to right: the bag (10 × 6), the paper doll (3 × 3) with the member's numbers below, the item detail.
+// Cells are text until gear art exists: the name's first four characters in its rarity colour and frame.
+.slx-equip-scene .slx-keyhint { bottom: 4px; }
+.slx-equip-head { left: 8px; top: 6px; right: 8px; display: flex; align-items: center; gap: 8px; padding: 2px 8px; }
+.slx-equip-face { width: 28px; height: 28px; object-fit: contain; }
+.slx-equip-title { margin-left: auto; font-size: 16px; color: $slx-gold; }
+.slx-bag, .slx-doll, .slx-equip-stats { padding: 4px 6px; }
+.slx-bag { left: 6px; top: 50px; }
+.slx-doll { left: 336px; top: 50px; }
+.slx-equip-stats { left: 336px; top: 218px; width: 122px; font-size: 10px; line-height: 14px; }
+.slx-item-detail { left: 490px; right: 6px; top: 50px; bottom: 44px; display: flex; flex-direction: column; }
+.slx-item-detail-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6e5a2e transparent; }
+/* The detail panel's scroll cues sit on its frame, over the content's corner, so showing one never shifts the lines. */
+.slx-item-detail .slx-more { position: absolute; right: 10px; padding: 0 2px; background: $slx-win; }
+.slx-item-detail .slx-more-up { top: 1px; }
+.slx-item-detail .slx-more-down { bottom: 1px; }
+.slx-item-detail .slx-more[hidden] { display: none; }
+.slx-bag:not(.slx-area-on), .slx-doll:not(.slx-area-on) { border-color: #8a7444; }
+.slx-area-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; line-height: 14px; color: $slx-dim; }
+.slx-area-on .slx-area-head { color: $slx-ink; }
+.slx-area-head.slx-area-target { color: $slx-gold; }
+.slx-bag-menu-btn { padding: 0 6px; border: 1px solid #6e5a2e; border-radius: 2px; color: $slx-ink; cursor: pointer; }
+.slx-bag-menu-btn:hover { color: $slx-gold; border-color: #c9a35a; }
+.slx-bag-grid { display: grid; grid-template-columns: repeat(10, 28px); grid-auto-rows: 28px; gap: 2px; }
+.slx-doll-grid { display: grid; grid-template-columns: repeat(3, 38px); grid-auto-rows: 38px; gap: 4px; }
+.slx-bag-cell, .slx-doll-slot {
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #3a3550;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.03);
+  text-align: center;
+  line-height: 12px;
+  word-break: break-all;
+  cursor: pointer;
+  transition: opacity 0.12s linear;
+}
+.slx-bag-cell[class*='slx-rarity-'], .slx-doll-slot[class*='slx-rarity-'] {
+  border-color: color-mix(in srgb, currentColor 55%, transparent);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.slx-bag-cell.slx-rarity-legendary, .slx-bag-cell.slx-rarity-unique, .slx-bag-cell.slx-rarity-set,
+.slx-doll-slot.slx-rarity-legendary, .slx-doll-slot.slx-rarity-unique, .slx-doll-slot.slx-rarity-set { text-shadow: 0 0 4px currentColor; }
+.slx-doll-slot.slx-slot-empty { color: $slx-dim; border-style: dashed; }
+.slx-doll-slot { align-content: center; }
+.slx-slot-tag { font-size: 10px; line-height: 10px; color: $slx-dim; text-shadow: none; }
+/* The enhance level, a corner mark apart from the name (the cell is too tight for "+n" after it). */
+.slx-enh { position: absolute; right: 0; bottom: 0; padding: 0 1px; font-size: 8px; line-height: 9px; color: $slx-gold; background: rgba(0, 0, 0, 0.7); text-shadow: none; }
+.slx-bag-cell:hover, .slx-doll-slot:hover { border-color: #c9a35a; }
+.slx-cur { z-index: 1; box-shadow: 0 0 0 1px rgba(232, 196, 106, 0.45); }
+.slx-area-on .slx-cur { box-shadow: 0 0 0 2px $slx-gold, 0 0 8px rgba(232, 196, 106, 0.6); animation: slx-cur-pulse 1.2s ease-in-out infinite; }
+@keyframes slx-cur-pulse { 50% { box-shadow: 0 0 0 2px $slx-gold, 0 0 3px rgba(232, 196, 106, 0.3); } }
+.slx-doll-slot.slx-doll-target { outline: 1px dashed $slx-gold; outline-offset: 2px; }
+.slx-bag-cell.slx-unfit { opacity: 0.28; }
+.slx-bag-cell.slx-junk { color: #8a8494; filter: grayscale(1); opacity: 0.55; text-decoration: line-through; }
+.slx-flash { animation: slx-cell-flash 0.45s ease-out; }
+@keyframes slx-cell-flash { from { background: rgba(232, 196, 106, 0.55); } }
+@media (prefers-reduced-motion: reduce) { .slx-area-on .slx-cur, .slx-flash { animation: none; } }
+.slx-stat-cell { display: flex; justify-content: space-between; }
+.slx-stat-cell.slx-up .slx-stat-now { color: $slx-up; }
+.slx-stat-cell.slx-down .slx-stat-now { color: $slx-down; }
+.slx-item-name { margin-bottom: 2px; line-height: 16px; color: $slx-gold; }
+.slx-item-meta { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-item-junk { margin-top: 2px; font-size: 10px; line-height: 12px; color: $slx-down; }
+.slx-item-lines { margin: 4px 0; padding: 3px 0; border-top: 1px solid #2a2840; border-bottom: 1px solid #2a2840; }
+.slx-line { margin: 0; line-height: 14px; }
+.slx-line-affix { color: #9fc0ff; }
+.slx-line-power { color: #ff9a3c; }
+.slx-line-set { color: $slx-dim; }
+.slx-line-set.slx-line-on { color: $slx-up; }
+.slx-line-off .slx-line-dim { opacity: 0.45; }
+.slx-line-note { display: block; font-size: 10px; line-height: 12px; color: #ffc4a8; }
+.slx-equip-notice { position: absolute; left: 8px; bottom: 18px; margin: 0; font-size: 10px; line-height: 12px; color: #ff8a7a; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
+.slx-line-lore { margin-top: 2px; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-cmp-head { margin-bottom: 2px; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-cmp-row { display: flex; justify-content: space-between; gap: 6px; line-height: 14px; }
+.slx-cmp-label { color: $slx-gold; }
+.slx-up .slx-cmp-after { color: $slx-up; }
+.slx-down .slx-cmp-after { color: $slx-down; }
+.slx-item-detail .slx-hint, .slx-item-detail .slx-desc { margin: 4px 0 0; }
+.slx-bag-menu { left: 96px; top: 96px; min-width: 200px; z-index: 2; }
+
+// Impact: the whole screen jolts (translate composes with the scale transform), heavy hits redden the edges
+.slx-shake-s { animation: slx-shake-s 0.25s linear 1; }
+.slx-shake-l { animation: slx-shake-l 0.42s linear 1; }
+@keyframes slx-shake-s { 0%, 100% { translate: 0 0; } 25% { translate: -3px 1px; } 50% { translate: 3px -1px; } 75% { translate: -2px 0; } }
+@keyframes slx-shake-l {
+  0%, 100% { translate: 0 0; } 10% { translate: -9px 4px; } 22% { translate: 8px -4px; } 34% { translate: -7px 3px; }
+  46% { translate: 6px -2px; } 60% { translate: -4px 1px; } 75% { translate: 2px 0; } 88% { translate: -1px 0; }
+}
+.slx-vignette { position: absolute; inset: 0; z-index: 30; pointer-events: none; background: radial-gradient(ellipse at center, transparent 45%, rgba(220, 20, 20, 0.55) 100%); animation: slx-vignette 0.6s ease-out forwards; }
+@keyframes slx-vignette { 0% { opacity: 1; } 100% { opacity: 0; } }
+// The attack's effect drawn over the struck member's face
+.slx-pm-fx { position: absolute; left: -6px; top: -10px; width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; pointer-events: none; z-index: 2; animation: slx-pm-fx 0.42s ease-out forwards; }
+@keyframes slx-pm-fx { 0% { scale: 0.4; opacity: 1; rotate: -20deg; } 40% { scale: 1.25; opacity: 1; } 100% { scale: 1.4; opacity: 0; rotate: 10deg; } }
+.slx-pm-pop-big { font-size: 28px; line-height: 28px; top: -14px; }
+.slx-pm-weak { position: absolute; left: 46px; top: -16px; z-index: 3; font-size: 12px; color: #ffd166; text-shadow: 1px 1px 0 #7a1a10, -1px -1px 0 #7a1a10, 1px -1px 0 #7a1a10, -1px 1px 0 #7a1a10; animation: slx-pm-pop 0.9s ease-out forwards; }
+// Stat pops (ui2/partyBar.ts): a crit burns orange and larger, a resisted hit gets a cold 抗性 tag, an evaded attack a
+// pale MISS that drifts up without any shake, and TP regen a small quiet blue number. Tags stack: the second sits higher.
+.slx-pm-pop-crit { font-size: 30px; line-height: 30px; top: -16px; color: #ff9a3c; }
+.slx-pm-crit, .slx-pm-resist { position: absolute; left: 46px; top: -16px; z-index: 3; font-size: 12px; animation: slx-pm-pop 0.9s ease-out forwards; }
+.slx-pm-crit { color: #ffb35c; text-shadow: 1px 1px 0 #5a1a00, -1px -1px 0 #5a1a00, 1px -1px 0 #5a1a00, -1px 1px 0 #5a1a00; }
+.slx-pm-resist { color: #c8d6e6; text-shadow: 1px 1px 0 #1a2a3a, -1px -1px 0 #1a2a3a, 1px -1px 0 #1a2a3a, -1px 1px 0 #1a2a3a; }
+.slx-pm-tag-1 { top: -30px; }
+.slx-pm-miss {
+  position: absolute; right: 8px; top: -4px; z-index: 3; pointer-events: none;
+  font-size: 15px; line-height: 15px; letter-spacing: 1px; color: #d8d4e6;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  animation: slx-pm-miss 0.9s ease-out forwards;
+}
+@keyframes slx-pm-miss { 0% { translate: -6px 0; opacity: 0; } 20% { translate: 0 0; opacity: 1; } 70% { opacity: 1; } 100% { translate: 0 -12px; opacity: 0; } }
+.slx-pm-pop-tp { font-size: 12px; line-height: 12px; top: 14px; color: #8fb8ff; }
+@media (prefers-reduced-motion: reduce) {
+  .slx-pm-weak, .slx-pm-crit, .slx-pm-resist, .slx-pm-miss { animation: none; }
+}
+// Gear in loot lines: the name in its rarity colour; the rarer pieces glow, and battle results slide each piece in.
+.slx-gear-drop.slx-rarity-legendary, .slx-gear-drop.slx-rarity-unique, .slx-gear-drop.slx-rarity-set,
+.slx-loot-gear.slx-rarity-legendary, .slx-loot-gear.slx-rarity-unique, .slx-loot-gear.slx-rarity-set { text-shadow: 0 0 6px currentColor; }
+.slx-result .slx-loot-gear { animation: slx-loot-in 0.35s ease-out both; }
+.slx-result .slx-loot-left { color: $slx-dim; }
+@keyframes slx-loot-in { from { translate: -8px 0; opacity: 0; } to { translate: 0 0; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .slx-result .slx-loot-gear { animation: none; } }
+// Drop light pillar (lootFx.showPillar): a column of the best piece's rarity colour (currentColor from .slx-rarity-*) rising
+// from where the loot is, Diablo-style. Gradients and animation only, like the element flashes; it shows no object.
+// The pillar element is a point at the foot of the beam, placed by its host (below). Width and height are custom
+// properties set by the rarity classes. The look ends with slx-pillar-life (lootFx removes it).
+.slx-pillar {
+  --slx-pillar-w: 36px; --slx-pillar-h: 104px;
+  position: absolute; width: 0; height: 0; pointer-events: none; mix-blend-mode: screen;
+  animation: slx-pillar-life 1.2s linear forwards;
+}
+.slx-pillar.slx-rarity-rare { --slx-pillar-w: 48px; --slx-pillar-h: 136px; }
+// Labyrinth: on the party's tile. MapView keeps the party's 48 px cell in the middle of the 640 x 296 map view and draws
+// the party standing at 95% of its cell, so the feet are at 296 / 2 + 48 * 0.45 = 170 px.
+.slx-dungeon > .slx-pillar { left: 50%; top: 170px; }
+// Battle: on the result window, where the loot is listed (the defeated enemies are gone, and their place is under the
+// window). It stands on the window's top edge and rises above it; the burst spreads behind the lines.
+.slx-result > .slx-pillar { left: 50%; top: 0; }
+// The beam: a white core in a soft column of colour that thins toward the top.
+.slx-pillar::before {
+  content: ''; position: absolute; left: calc(var(--slx-pillar-w) / -2); bottom: 0; width: var(--slx-pillar-w); height: var(--slx-pillar-h);
+  background:
+    linear-gradient(to top, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 85%) 50% 100% / 16% 100% no-repeat,
+    radial-gradient(ellipse 50% 100% at 50% 100%, currentColor, transparent);
+  transform-origin: 50% 100%;
+  animation: slx-pillar-rise 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+// The pool of light on the ground where it stands.
+.slx-pillar::after {
+  content: ''; position: absolute; left: calc(var(--slx-pillar-w) * -1.5); top: -12px; width: calc(var(--slx-pillar-w) * 3); height: 24px;
+  background: radial-gradient(closest-side, currentColor, transparent);
+  animation: slx-pillar-pool 1.2s ease-out both;
+}
+@keyframes slx-pillar-rise { from { scale: 0.3 0; opacity: 0; } 60% { opacity: 1; } to { scale: 1 1; opacity: 1; } }
+@keyframes slx-pillar-pool { from { scale: 0.4; opacity: 0; } 25% { scale: 1; opacity: 0.9; } to { scale: 1.15; opacity: 0.5; } }
+@keyframes slx-pillar-life { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+// Legendary, unique and set (spec §8 傳說另有特殊演出): a wider beam up to the top of the view, a flash and a ring of
+// light bursting from its foot, all over within 1.1 s; confirm or cancel ends it sooner (lootFx.skipPillar).
+.slx-pillar-legend { --slx-pillar-w: 72px; --slx-pillar-h: 200px; animation-duration: 1.1s; }
+.slx-pillar-legend::before { animation: slx-pillar-rise 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) both, slx-pillar-throb 0.35s ease-in-out 0.4s 2 alternate; }
+.slx-pillar-burst {
+  position: absolute; left: -150px; top: -150px; width: 300px; height: 300px;
+  background:
+    radial-gradient(closest-side, transparent 62%, currentColor 70%, transparent 78%),
+    radial-gradient(closest-side, rgba(255, 255, 255, 0.85), currentColor 30%, transparent 70%);
+  animation: slx-pillar-burst 0.65s ease-out 0.12s both;
+}
+@keyframes slx-pillar-throb { from { filter: brightness(1); } to { filter: brightness(1.6); } }
+@keyframes slx-pillar-burst { from { scale: 0.15; opacity: 1; } to { scale: 1.5; opacity: 0; } }
+// Reduced motion: no rise, no burst; the beam stands still and fades.
+@media (prefers-reduced-motion: reduce) {
+  .slx-pillar { animation: slx-pillar-fade 0.6s ease-out forwards; }
+  .slx-pillar-legend { animation-duration: 0.9s; }
+  .slx-pillar::before, .slx-pillar::after { animation: none; }
+  .slx-pillar-burst { display: none; }
+}
+@keyframes slx-pillar-fade { 0%, 40% { opacity: 0.85; } 100% { opacity: 0; } }
+// A member at a quarter of their HP or less keeps warning
+.slx-pm-danger { animation: slx-pm-danger 0.9s ease-in-out infinite alternate; }
+// A hit or an action on a low-HP member still shakes or lifts it (same weight, so these come after).
+.slx-pm-danger.slx-pm-hit { animation: slx-pm-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1; }
+.slx-pm-danger.slx-pm-acting { animation: slx-pm-act 0.4s ease-out 1; }
+.slx-pm-danger.slx-pm-ko { animation: slx-pm-ko 0.45s ease-in 1 forwards; }
+@keyframes slx-pm-danger { from { box-shadow: inset 0 0 0 1px rgba(255, 70, 60, 0.4); } to { box-shadow: inset 0 0 0 2px #ff463c, 0 0 8px rgba(255, 70, 60, 0.7); } }
+
+// Action cut-ins (battle.ts actionCutIn): the colour band takes the member's aura colour through currentColor
+.slx-acut { position: absolute; z-index: 40; pointer-events: none; }
+.slx-acut-band { position: absolute; inset: 0; background: linear-gradient(100deg, #000 0 6%, currentColor 6% 94%, #000 94%); }
+.slx-acut-band::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(0, 0, 0, 0.25) 0 6px, transparent 6px 18px); }
+.slx-acut-pic { position: absolute; overflow: hidden; }
+.slx-acut-pic img { image-rendering: pixelated; }
+// Bust: a slanted card with the upper body and the move's name
+.slx-acut-bust { width: 320px; height: 120px; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); }
+.slx-acut-bust.slx-acut-left { left: -8px; top: 92px; animation: slx-acut-left 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.slx-acut-bust.slx-acut-right { right: -8px; top: 132px; animation: slx-acut-right 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.slx-acut-bust .slx-acut-pic { left: 30px; top: 0; width: 130px; height: 120px; }
+.slx-acut-bust .slx-acut-pic img { width: 150px; height: 150px; object-fit: cover; object-position: 50% 0; translate: -10px -8px; }
+.slx-acut-right .slx-acut-pic { left: auto; right: 30px; }
+.slx-acut-label { position: absolute; top: 40px; left: 168px; font-size: 26px; line-height: 30px; color: #fff; white-space: nowrap; rotate: -6deg; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000; }
+.slx-acut-right .slx-acut-label { left: 24px; }
+// Eye strip: a thin band across the face for a plain attack
+.slx-acut-eyes { left: 50%; width: 420px; height: 100px; margin-left: -210px; clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%); }
+.slx-acut-eyes.slx-acut-top { top: 84px; animation: slx-acut-left 0.42s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.slx-acut-eyes.slx-acut-bottom { top: 186px; animation: slx-acut-right 0.42s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+.slx-acut-eyes .slx-acut-pic { left: 26px; right: 26px; top: 4px; bottom: 4px; }
+.slx-acut-eyes .slx-acut-pic img { width: 100%; height: 368px; object-fit: cover; object-position: 50% 0; translate: 0 -118px; }
+// Each face sits at a different height: offsets frame brows to mouth (checked with a crop simulation of this CSS).
+.slx-acut-eyes.slx-aura-scarlet .slx-acut-pic img { translate: 0 -138px; }
+.slx-acut-eyes.slx-aura-chizuru .slx-acut-pic img { translate: 0 -112px; }
+.slx-acut-eyes.slx-aura-liz .slx-acut-pic img { translate: 0 -150px; }
+.slx-acut-eyes.slx-aura-noel .slx-acut-pic img { translate: 0 -146px; }
+.slx-acut-eyes.slx-aura-selene .slx-acut-pic img { translate: 0 -128px; }
+.slx-acut-eyes.slx-aura-sylvie .slx-acut-pic img { translate: 0 -128px; }
+.slx-acut-eyes.slx-aura-safira .slx-acut-pic img { translate: 0 -120px; }
+.slx-acut-eyes.slx-aura-bobby .slx-acut-pic img { translate: 0 -130px; }
+@keyframes slx-acut-left { 0% { translate: -110% 0; } 22% { translate: 6px 0; } 30%, 78% { translate: 0 0; opacity: 1; } 100% { translate: 40% 0; opacity: 0; } }
+@keyframes slx-acut-right { 0% { translate: 110% 0; } 22% { translate: -6px 0; } 30%, 78% { translate: 0 0; opacity: 1; } 100% { translate: -40% 0; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .slx-shake-s, .slx-shake-l, .slx-pm-danger, .slx-pm-fx, .slx-pm-weak, .slx-eflash, .slx-vignette { animation: none; }
+  .slx-eflash { display: none; }
+  .slx-acut { display: none; }
+}
+
+// Element flash over the whole screen when a party member takes fire, ice or thunder (battle.ts impact)
+.slx-eflash { position: absolute; inset: 0; z-index: 29; pointer-events: none; mix-blend-mode: screen; animation: slx-eflash 0.3s ease-out forwards; }
+.slx-eflash-fire { background: radial-gradient(ellipse at 50% 100%, rgba(255, 140, 40, 0.75), rgba(255, 60, 0, 0.25) 70%); }
+.slx-eflash-ice { background: radial-gradient(ellipse at 50% 100%, rgba(160, 235, 255, 0.75), rgba(80, 160, 255, 0.25) 70%); }
+.slx-eflash-thunder { background: rgba(255, 255, 230, 0.85); animation: slx-eflash-twice 0.3s steps(1) forwards; }
+@keyframes slx-eflash { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slx-eflash-twice { 0% { opacity: 1; } 25% { opacity: 0.1; } 50% { opacity: 0.8; } 75%, 100% { opacity: 0; } }
+
+// Cut-in extras: a white flash on entry, stripes that run, speed lines behind the bust, a punch on the move's name
+.slx-acut::before { content: ''; position: absolute; inset: 0; z-index: 5; background: #fff; pointer-events: none; animation: slx-acut-flash 0.18s ease-out forwards; }
+@keyframes slx-acut-flash { from { opacity: 0.9; } to { opacity: 0; } }
+.slx-acut-band::after { animation: slx-acut-run 0.5s linear infinite; background-size: 40px 100%; }
+@keyframes slx-acut-run { from { background-position: 0 0; } to { background-position: 40px 0; } }
+.slx-acut-bust .slx-acut-band::before {
+  content: ''; position: absolute; inset: -40% -10%;
+  background: repeating-conic-gradient(from 0deg at 20% 50%, rgba(255, 255, 255, 0.35) 0deg 2deg, transparent 2deg 10deg);
+  mix-blend-mode: overlay;
+}
+.slx-acut-label { animation: slx-acut-punch 0.3s cubic-bezier(0.2, 1.6, 0.4, 1) 0.08s both; }
+@keyframes slx-acut-punch { from { scale: 2.2; opacity: 0; } to { scale: 1; opacity: 1; } }
+.slx-acut-pic { filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.6)); }
+@media (prefers-reduced-motion: reduce) { .slx-eflash { display: none; } }
+
+// Animated 4-frame effect over a struck member's face (partyBar pulse fxAnim): the sheet is 400% wide, stepped frame by frame
+.slx-pm-fxa {
+  // larger than the face and centred on the panel, so the blow reads at a glance
+  position: absolute; left: 50%; top: 50%; z-index: 2; width: 104px; height: 104px; margin: -60px 0 0 -52px; pointer-events: none;
+  background: no-repeat 0 0 / 400% 100%; image-rendering: pixelated;
+  animation: slx-fxa-run 0.28s steps(4, jump-none) forwards, slx-fxa-fade 0.36s ease-in forwards;
+}
+.slx-pm-fxa-pierce { width: 200px; height: 84px; margin: -42px 0 0 -100px; }
+@keyframes slx-fxa-run { from { background-position: 0% 0; } to { background-position: 100% 0; } }
+@keyframes slx-fxa-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+.slx-pm-fxa-slash { background-image: url('/assets/games/starlantern/fx/slash-anim.png'); }
+.slx-pm-fxa-pierce { background-image: url('/assets/games/starlantern/fx/pierce-anim.png'); }
+.slx-pm-fxa-strike { background-image: url('/assets/games/starlantern/fx/strike-anim.png'); }
+.slx-pm-fxa-fire { background-image: url('/assets/games/starlantern/fx/fire-anim.png'); }
+.slx-pm-fxa-ice { background-image: url('/assets/games/starlantern/fx/ice-anim.png'); }
+.slx-pm-fxa-thunder { background-image: url('/assets/games/starlantern/fx/thunder-anim.png'); }
+.slx-pm-fxa-heal { background-image: url('/assets/games/starlantern/fx/heal-anim.png'); }
+.slx-pm-fxa-buff { background-image: url('/assets/games/starlantern/fx/buff-anim.png'); }
+@media (prefers-reduced-motion: reduce) { .slx-pm-fxa { animation: slx-fxa-fade 0.36s ease-in forwards; } }
+
+// Encounter: a white flash, then six bars slam shut from alternating sides (red for the boss)
+.slx-encounter { position: absolute; inset: 0; z-index: 60; pointer-events: none; animation: slx-enc-flash 0.52s linear forwards; }
+@keyframes slx-enc-flash { 0% { background: rgba(255, 255, 255, 0.9); } 18% { background: rgba(255, 255, 255, 0); } 100% { background: rgba(0, 0, 0, 0); } }
+// Width, not translate: a painted bar never leaves unrasterized tiles behind mid-animation.
+.slx-enc-bar { position: absolute; left: 0; width: 0; height: calc(100% / 6 + 1px); background: #05060c; animation: slx-enc-bar 0.32s cubic-bezier(0.6, 0, 0.9, 0.4) forwards; }
+@for $i from 0 through 5 {
+  .slx-enc-bar-#{$i} { top: calc(100% / 6 * #{$i}); animation-delay: #{0.12 + $i * 0.03}s; }
+}
+.slx-enc-bar:nth-child(even) { left: auto; right: 0; }
+.slx-encounter-boss .slx-enc-bar { background: #3a0608; box-shadow: inset 0 -2px 0 #c0242a; }
+.slx-encounter-boss { animation-name: slx-enc-flash-boss; }
+@keyframes slx-enc-flash-boss { 0% { background: rgba(255, 40, 40, 0.85); } 22% { background: rgba(255, 40, 40, 0); } 100% { background: rgba(0, 0, 0, 0); } }
+
+// HP lost this moment: a white ghost behind the bar that slides down to the new value
+.slx-bar { position: relative; }
+.slx-bar .slx-fill { position: relative; z-index: 1; }
+.slx-ghost { position: absolute; left: 0; top: 0; height: 100%; background: #fff4e0; transition: width 0.45s ease-in; }
+
+// A picked menu row flashes
+.slx-picked { animation: slx-picked 0.22s ease-out 1; }
+@keyframes slx-picked { 0% { background: rgba(255, 255, 255, 0.55); color: #fff; } 100% { background: rgba(232, 196, 106, 0.2); } }
+
+// Level-ups shine in the results
+.slx-result .slx-levelup { color: $slx-gold; background: linear-gradient(90deg, transparent, rgba(232, 196, 106, 0.35), transparent) no-repeat -200% 0 / 60% 100%; animation: slx-levelup 1.2s ease-out 0.2s 2; }
+@keyframes slx-levelup { to { background-position: 300% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .slx-enc-bar, .slx-encounter, .slx-picked, .slx-result .slx-levelup { animation: none; }
+  .slx-ghost { transition: none; }
+}
+
+// Banners across the middle of the battle: 遭遇！ / 頭目出現！ on arrival, 勝利！ before the rewards
+.slx-banner { position: absolute; left: 0; right: 0; top: 132px; z-index: 45; height: 64px; pointer-events: none; display: grid; place-items: center; overflow: hidden; }
+.slx-banner::before {
+  content: ''; position: absolute; inset: 8px -20px; skew: -14deg 0;
+  background: linear-gradient(90deg, transparent, rgba(10, 14, 34, 0.92) 12%, rgba(10, 14, 34, 0.92) 88%, transparent);
+  border-block: 2px solid $slx-gold;
+  animation: slx-banner-band 1.1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+.slx-banner-text {
+  position: relative; font-size: 34px; line-height: 40px; letter-spacing: 6px; color: #fff; skew: -10deg 0;
+  text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 0 14px rgba(232, 196, 106, 0.8);
+  animation: slx-banner-text 1.1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+}
+.slx-banner-boss::before { background: linear-gradient(90deg, transparent, rgba(80, 6, 10, 0.94) 12%, rgba(80, 6, 10, 0.94) 88%, transparent); border-color: #ff4a3c; }
+.slx-banner-boss .slx-banner-text { color: #ffd0c8; text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 0 0 16px rgba(255, 60, 40, 0.9); }
+.slx-banner-win::before { background: linear-gradient(90deg, transparent, rgba(60, 44, 8, 0.92) 12%, rgba(60, 44, 8, 0.92) 88%, transparent); }
+.slx-banner-win .slx-banner-text { color: #ffe9a8; font-size: 40px; }
+@keyframes slx-banner-band { 0% { translate: -110% 0; } 18%, 82% { translate: 0 0; } 100% { translate: 110% 0; opacity: 0; } }
+@keyframes slx-banner-text { 0% { scale: 2.4; opacity: 0; } 22% { scale: 1; opacity: 1; } 82% { scale: 1; opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 60px 0; } }
+@media (prefers-reduced-motion: reduce) { .slx-banner::before, .slx-banner-text { animation: none; } }
+
+// Portal plaza (plan 4): three cards side by side. Approved art drops in through .slx-portal-art / .slx-portal-icon
+// (gate.ts portalArt); until then the cards are words only.
+.slx-layer.slx-portals { position: absolute; left: 12px; right: 12px; top: 48px; bottom: 6px; max-width: none; display: flex; flex-direction: column; gap: 4px; }
+.slx-portal-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.slx-portals .slx-portal { position: relative; display: flex; flex-direction: column; gap: 0; overflow: hidden; cursor: pointer; transition: translate 0.12s ease-out; }
+.slx-portals .slx-portal-on { border-color: $slx-gold; box-shadow: inset 0 0 0 1px $slx-gold, 0 0 10px rgba(232, 196, 106, 0.55); translate: 0 -3px; }
+// The banner is a strip of the 180x110 card art at its own pixel size (object-fit: none, no resampling), so the art stays crisp
+// at every integer screen scale. Each region moves the strip onto its focal point (portal, castle, peak); x = (card - 180) / 2.
+.slx-portal-art { display: block; flex: none; width: 100%; height: 32px; object-fit: none; object-position: 50% -36px; image-rendering: pixelated; margin-bottom: 2px; }
+.slx-portal-mainline .slx-portal-art { object-position: 50% -40px; }
+.slx-portal-blaze .slx-portal-art { object-position: 50% -14px; }
+.slx-portal-frost .slx-portal-art { object-position: 50% -22px; }
+.slx-portal-storm .slx-portal-art { object-position: 50% -30px; }
+.slx-portal-mire .slx-portal-art { object-position: 50% -40px; }
+.slx-portal-shade .slx-portal-art { object-position: 50% -36px; }
+.slx-portal-iron .slx-portal-art { object-position: 50% -34px; }
+.slx-portal-name { font-size: 16px; line-height: 18px; color: $slx-ink; }
+.slx-portal-on .slx-portal-name { color: $slx-gold; }
+.slx-portal-trait { display: flex; align-items: center; gap: 4px; }
+.slx-portal-icon { width: 16px; height: 16px; image-rendering: pixelated; }
+.slx-portal-affinity, .slx-portal-desc { color: $slx-dim; }
+.slx-portal-desc { font-size: 10px; line-height: 12px; letter-spacing: -0.2px; }
+// Names break at the 、 between them, not inside a name.
+.slx-portal-monsters { margin-top: 2px; word-break: keep-all; overflow-wrap: anywhere; }
+.slx-portal-label { margin-top: 2px; color: $slx-dim; }
+.slx-portal-cond .slx-portal-label, .slx-portal-monsters .slx-portal-label { margin: 0 6px 0 0; word-break: normal; }
+.slx-portal-cond { margin-top: 2px; }
+.slx-portal-cond b { font-weight: normal; color: $slx-gold; }
+.slx-portal-drop { margin-top: 2px; }
+// What the material is for: dim note (10px like the other notes), one line in its short form; if longer it wraps, never clipped.
+.slx-portal-drop-use { color: $slx-dim; font-size: 10px; line-height: 12px; letter-spacing: -0.2px; overflow-wrap: anywhere; }
+// The list takes the room the card has left. When every item is obtained it can outgrow that: it then scrolls (wheel, or ↑↓ on the chosen card)
+// with a thin visible bar, instead of being cut off.
+.slx-portal-gear { margin-top: 2px; flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: $slx-gold transparent; }
+// Obtained names take their rarity colour (.slx-rarity-*); unobtained ones are dimmed. A first line wraps rather than being cut.
+.slx-codex-item { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; overflow-wrap: anywhere; }
+// Unobtained names are dimmed.
+.slx-codex-unknown { color: $slx-dim; }
+.slx-codex-more { margin: 0; text-align: right; font-size: 10px; line-height: 12px; color: $slx-gold; }
+.slx-codex-silhouette, .slx-codex-icon { width: 14px; height: 14px; align-self: center; image-rendering: pixelated; }
+.slx-codex-silhouette { filter: brightness(0); }
+.slx-portal-general { margin-top: 2px; color: #c9b8ff; }
+// A dim note like the others (10px), so the card keeps a few px of room under its gear list.
+.slx-portal-depth { margin-top: auto; padding-top: 1px; color: $slx-dim; font-size: 10px; line-height: 12px; text-align: right; }
+.slx-portal-hint { margin: 0; text-align: center; font-size: 10px; line-height: 12px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; }
+.slx-layer.slx-depths { left: 50%; top: 84px; translate: -50% 0; min-width: 200px; max-width: none; }
+.slx-depths .slx-ico { width: 48px; height: 27px; object-fit: cover; }
+.slx-gate .slx-confirm p { white-space: pre-line; }
+@media (prefers-reduced-motion: reduce) { .slx-portals .slx-portal { transition: none; } }
+
+// Event rooms: one window over the labyrinth; the pad and lower windows are inert while it is open.
+.slx-layer.slx-event { left: 50%; top: 40px; translate: -50% 0; width: 300px; max-width: none; }
+.slx-event-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.slx-event-title { font-size: 14px; line-height: 18px; color: $slx-gold; }
+.slx-event-art { width: 32px; height: 32px; image-rendering: pixelated; }
+.slx-event p { margin: 0 0 4px; }
+.slx-event-gold { color: $slx-gold; text-align: right; }
+.slx-event-cost { color: #ff9a8a; }
+.slx-event-gain { color: $slx-up; }
+.slx-event-ask { color: $slx-gold; }
+.slx-event-warn { color: #ff7a6b; }
+.slx-confirm-warn { color: #ff7a6b; }
+.slx-event .slx-menu { margin-top: 2px; }
+.slx-event-elite { border-color: #ff7a6b; }
+.slx-full { border-color: #ff7a6b; }
+.slx-full .slx-event-title { color: #ff9a8a; }
+
+// A trap: the screen flashes red once.
+.slx-flash-hurt { position: absolute; inset: 0; z-index: 40; pointer-events: none; background: rgba(220, 30, 20, 0.5); animation: slx-flash-hurt 0.45s ease-out forwards; }
+@keyframes slx-flash-hurt { from { opacity: 1; } to { opacity: 0; } }
+
+// The run condition crosses the screen on arrival from the plaza (same band as the battle banners, held longer).
+.slx-banner-condition { top: 124px; height: 80px; grid-template-rows: auto auto; align-content: center; gap: 2px; }
+.slx-banner-condition::before { animation: slx-banner-cond-band 2s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+// Opacity is held at every stop: with only the last stop the eased fade would thin the band out almost at once.
+@keyframes slx-banner-cond-band { 0% { translate: -110% 0; opacity: 1; } 16%, 84% { translate: 0 0; opacity: 1; } 100% { translate: 110% 0; opacity: 0; } }
+.slx-banner-condition .slx-banner-text { font-size: 26px; line-height: 32px; letter-spacing: 4px; animation-duration: 2s; }
+.slx-banner-sub { position: relative; font-size: 12px; line-height: 16px; color: $slx-ink; skew: -10deg 0; text-shadow: 0 1px 0 #000, 0 0 3px #000; animation: slx-banner-text 2s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
+@media (prefers-reduced-motion: reduce) { .slx-flash-hurt { animation: none; opacity: 0.3; } .slx-banner-condition::before, .slx-banner-sub { animation: none; } }
+
+// Forge (ui2/scenes/forge.ts): the five tabs are the command window; a tab's gear list and its detail reuse .slx-list and .slx-info,
+// widened for gear labels with a wearer. Gear marked junk is struck through in its rarity colour; a cost the party cannot pay is .slx-lack.
+// Fixed columns: every forge list has a fixed border-box width, whatever its labels, and a label too long for its row ends in
+// an ellipsis (the detail beside it names the piece in full). So a list can never grow under its detail window. A list at
+// depth n sits 24n px right of its left edge (.slx-depth-n), so each list's right edge is left + 24n + width:
+// - enhance: 150 + 262 = 412, before the detail at 420;
+// - reroll: the item list 150 + 262 = 412, then the affix and method lists 174 / 198 + 250 = 424 / 448, all before the detail at 456;
+// - craft: the categories 150 + 262 = 412, then the recipe lists 124 / 148 + 256 = 380 / 404, all before the detail at 436;
+// Dismantle and fuse (.slx-forge-pick) are where a piece is chosen to be destroyed and have no detail pane, so their labels are
+// never cut: the list grows to fit (at least 262px, at most 430px, so the deepest fuse list at 198 ends by 628) and the label
+// keeps its full width (name, +n and rarity word); the right column (yields, costs) gives way and wraps instead.
+.slx-forge .slx-list { box-sizing: border-box; width: 262px; min-width: 0; max-width: none; max-height: 260px; }
+.slx-forge .slx-list .slx-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slx-forge .slx-list .slx-right { flex: none; white-space: nowrap; }
+.slx-forge .slx-list.slx-forge-pick { width: max-content; min-width: 262px; max-width: 430px; }
+.slx-forge .slx-forge-pick .slx-label { flex: none; overflow: visible; }
+.slx-forge .slx-forge-pick .slx-right { flex: 1 1 auto; min-width: 0; white-space: normal; text-align: right; }
+// A window's border is 8px a side (16px across) on top of 8px padding a side: a 188px detail at 420px ends at the 640px edge.
+.slx-forge .slx-info { left: 420px; width: 188px; max-height: 260px; overflow-y: auto; }
+.slx-forge .slx-reroll-list { width: 250px; }
+.slx-forge .slx-info.slx-reroll-info { left: 456px; width: 152px; }
+.slx-forge .slx-craft-list { left: 100px; width: 256px; }
+.slx-forge .slx-info.slx-craft-info { left: 436px; width: 172px; }
+.slx-forge .slx-label.slx-junk { text-decoration: line-through; opacity: 0.6; }
+// Reroll and fusion stack three or four windows; those under the top one (facility.ts marks them slx-under) darken,
+// so the open list or confirm reads cleanly. A filter, not opacity: the windows stay opaque, so one list's text never shows
+// through another. The forge's detail window is not a layer and stays bright. The shop dims the same way; its material page
+// is a layer holding two windows (list and detail), so the windows inside a marked layer darken too.
+.slx-forge, .slx-shop {
+  .slx-win.slx-under, .slx-under > .slx-win { filter: brightness(0.45) saturate(0.5); transition: filter 0.12s ease-out; }
+}
+.slx-lack { color: $slx-down; }
+.slx-forge .slx-info .slx-cmp-row.slx-up { color: $slx-up; }

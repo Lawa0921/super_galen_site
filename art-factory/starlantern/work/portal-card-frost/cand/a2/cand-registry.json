@@ -1,0 +1,19 @@
+{
+  "assets": {
+    "portal-card-frost": {
+      "final": "art-factory/starlantern/work/portal-card-frost/cand/a2/portal-card-frost.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\portal-card-frost\\portal-card-frost-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "seam": 58.3003367003367,
+        "block": 8.909,
+        "size": [
+          180,
+          110
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

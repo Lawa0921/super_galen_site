@@ -1,0 +1,29 @@
+{
+  "tool": "codex",
+  "name": "keypose1.png",
+  "started": "2026-10-14T09:19:03+00:00",
+  "finished": "2026-10-14T09:22:35+00:00",
+  "argv_without_prompt": [
+    "C:\\Users\\bag57\\AppData\\Roaming\\npm\\codex.CMD",
+    "exec",
+    "--skip-git-repo-check",
+    "-s",
+    "workspace-write",
+    "--image=C:\\Users\\bag57\\.codex\\worktrees\\4182\\super_galen_site\\art-factory\\lantern-hollow\\runs\\pixellab\\knight\\ref-codex.png"
+  ],
+  "prompt_file": "keypose1.prompt.txt",
+  "prompt_sha256": "7ebfb5339ffd6e485d4072655bc1d96d74c59fd46832318a2eb6d36b0038546c",
+  "inputs": [
+    {
+      "path": "C:\\Users\\bag57\\.codex\\worktrees\\4182\\super_galen_site\\art-factory\\lantern-hollow\\runs\\pixellab\\knight\\ref-codex.png",
+      "sha256": "3f7dfd22db3fe645b6b3cabbbc27cfa9118f8db1bdf25f5d7667d2bc8bd5382f"
+    }
+  ],
+  "returncode": 0,
+  "output": "keypose1.png",
+  "output_sha256": "e1dd88b73945ddbe18ef45adb63990a342db42016b0e2713150419cada70eafa",
+  "status": "gate_passed",
+  "visual_review": "pending",
+  "runtime_publish_allowed": false,
+  "gate": "keypose1.gate.json"
+}

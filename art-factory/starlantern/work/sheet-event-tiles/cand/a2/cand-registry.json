@@ -1,0 +1,214 @@
+{
+  "assets": {
+    "tile-event-fountain": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-event-tiles/cand/a2/tile-event-fountain.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          38,
+          46
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "neutralize_tint": true
+    },
+    "tile-event-merchant": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-event-tiles/cand/a2/tile-event-merchant.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          47,
+          48
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "neutralize_tint": true
+    },
+    "tile-event-altar": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-event-tiles/cand/a2/tile-event-altar.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          42,
+          42
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "neutralize_tint": true
+    },
+    "tile-event-elite": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-event-tiles/cand/a2/tile-event-elite.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          51,
+          49
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "neutralize_tint": true
+    },
+    "tile-event-vault": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-event-tiles/cand/a2/tile-event-vault.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          46,
+          43
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "neutralize_tint": true
+    },
+    "tile-event-vault-open": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-event-tiles/cand/a2/tile-event-vault-open.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          45,
+          50
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "neutralize_tint": true
+    },
+    "tile-event-key": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-event-tiles/cand/a2/tile-event-key.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "subject": [
+          36,
+          33
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "neutralize_tint": true
+    },
+    "tile-event-trap": {
+      "defringe": "strong",
+      "deblend": true,
+      "final": "art-factory/starlantern/work/sheet-event-tiles/cand/a2/tile-event-trap.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-event-tiles\\sheet-event-tiles-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "subject": [
+          50,
+          45
+        ],
+        "block": 7,
+        "size": [
+          62,
+          62
+        ]
+      },
+      "status": "qa_passed",
+      "neutralize_tint": true
+    }
+  }
+}

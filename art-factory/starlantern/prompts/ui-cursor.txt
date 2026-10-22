@@ -1,0 +1,1 @@
+A tiny pixel art menu cursor: a gold arrow pointing right with a dark outline, about 12 art pixels tall, 16-bit JRPG style, strict square pixel grid, no anti-aliasing. Centred on a perfectly flat solid pure magenta #FF00FF background with empty space around it. No text. Generate the image once with the image tool; do not post-process, resize, quantize or regenerate it.
