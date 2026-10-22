@@ -212,10 +212,23 @@ describe('speakerOf', () => {
   it('a missing story face falls back to normal', () => {
     const { game } = mk();
     expect(speakerOf('noel', game.state, ART, 'smile').face).toBe(art.portrait('noel', 'normal'));
-    expect(speakerOf('noel', game.state, ART, 'sad').face).toBe(art.portrait('noel', 'down'));
-    const bare: ArtIndex = { has: (u) => u === art.portrait('noel', 'normal') };
-    expect(speakerOf('noel', game.state, bare, 'sad').face).toBe(art.portrait('noel', 'normal'));
     expect(speakerOf('liz', game.state, { has: () => false }, 'smile').face).toBeUndefined();
+  });
+
+  it('a serious or sad line with no art for that face shows the name plate alone, never a smiling normal (final review, story depth)', () => {
+    // A companion's normal portrait often smiles: borrowed for a grave line it says the opposite. Until the art pipeline
+    // brings her serious and sad faces (user approval, plan leftovers), the line has no portrait at all.
+    const { game } = mk();
+    for (const mood of ['serious', 'sad'] as const) {
+      const said = speakerOf('noel', game.state, ART, mood);
+      expect(said.name, mood).toBe(CHARACTERS.noel.name);
+      expect(said.face, mood).toBeUndefined();
+      const withIt: ArtIndex = { has: (u) => ART.has(u) || u === art.portrait('noel', mood) };
+      expect(speakerOf('noel', game.state, withIt, mood).face, mood).toBe(art.portrait('noel', mood));
+    }
+    // The faces on disk still show: Lorne's and Rin's sad.
+    expect(speakerOf('hero', game.state, ART, 'sad').face).toBe(art.portrait('hero', 'sad'));
+    expect(speakerOf('noel', game.state, ART, 'normal').face).toBe(art.portrait('noel', 'normal'));
   });
 
   it('a face with no art yet shows normal; one with art shows itself', () => {

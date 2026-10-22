@@ -88,7 +88,6 @@ const rank = (id: SceneId): number => {
   if (id === 'act2') return 1;
   if (id === 'act3') return 2;
   if (id === 'act4') return 3;
-  if (id === 'rin-confess') return 3.4;
   if (id === 'bellkeeper-arrives') return 3.5;
   if (id.startsWith('mem:hero:')) return 4 + Number(id.slice('mem:hero:'.length)) / 1000;
   if (id.startsWith('home:')) return 6;

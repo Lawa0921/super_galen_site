@@ -491,9 +491,12 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // Rin's `guarded` belongs here after her oath (style bible §3: it is kept for the bellkeeper).
   // Story depth ruling (a): he is her master and the knife in the market (I-10, I-167). She calls him 「師父」 once and never
   // speaks to him again; he will not say Lorne's name. No reconciling.
+  // Final review: owed at the finale (no return between her choice and depth 30, plan ruling 8) it plays at the bottom, his
+  // tenth piece in hand (`full: 'hero'`, as rin-confess reads): the keeper is already waiting at the lamp, not in town.
   'bellkeeper-arrives': {
     lines: [
-      N('幾天後的清晨，傳送門廣場。一位穿長袍的老人站在門前，雙手捧著一口小小的鐘。'),
+      { who: 'narrator', text: '幾天後的清晨，傳送門廣場。一位穿長袍的老人站在門前，雙手捧著一口小小的鐘。', if: { notFull: 'hero' } },
+      { who: 'narrator', text: '星燈之底，燈座前的石階上。穿長袍的老人已經等在那裡，雙手捧著一口小小的鐘。', if: { full: 'hero' } },
       { who: 'bellkeeper', text: '「吾等敲了三回鐘。那孩子領口的鐘，一回也沒有應。」' },
       { who: 'rin', mood: 'guarded', text: '「那枚鐘，我敲平了。洛恩，站到我後面。」' },
       { who: 'bellkeeper', text: '「站在目標身後一步，是我教妳的站法。妳卻站到了他的前面。」' },
@@ -502,9 +505,10 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'bellkeeper', text: '「那張臉，吾等記得。很多年前在市集裡，從背後刺進你的，是吾等的刀──是我的刀。」' },
       { who: 'bellkeeper', text: '「從深處走出來的人，殺了也會再回來。吾等怕的，就是這個。這一回我不動手，只想看清楚你。」' },
       { who: 'hero', mood: 'serious', text: '「我叫洛恩。名單上要寫的話，就寫這個。」' },
-      N('老人沒有應那個名字，把鐘抱緊，轉身走進了鎮裡。凜沒有再看他一眼。'),
+      { who: 'narrator', text: '老人沒有應那個名字，把鐘抱緊，轉身走進了鎮裡。凜沒有再看他一眼。', if: { notFull: 'hero' } },
+      { who: 'narrator', text: '老人沒有應那個名字，把鐘抱緊，退進燈座旁的暗處。凜沒有再看他一眼。', if: { full: 'hero' } },
     ],
-    summary: '鐘守來到鎮上。他是凜的師父，也是很多年前在市集裡殺死洛恩的人。這一回他不動手，洛恩報上了名字。',
+    summary: '鐘守來了。他是凜的師父，也是很多年前在市集裡殺死洛恩的人。這一回他不動手，洛恩報上了名字。',
   },
   // Story depth Task 2 (design §7.4, the row's nine beats; plan ruling 10): the morning after his ninth piece, when he means
   // to go down alone. It plays on a departure, never on an arrival. Beat 6 reads five ways (Scarlet met or not, her second
@@ -555,7 +559,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'rin', mood: 'averted', text: '「喂。你是人？」', if: { oath: false } },
       { who: 'hero', mood: 'smile', text: '「我想是。我會餓也會累，回來的時候還會想睡。」', if: { oath: false } },
       N('凜在擦短刃。洛恩在她對面坐下，她停下手，抬起頭看著他。', true),
-      { who: 'rin', mood: 'blush', text: '「以前我不敢看你的眼睛，現在想多看一點。」', if: { oath: true } },
+      { who: 'rin', mood: 'smile', text: '「以前我不敢看你的眼睛，現在敢了。」', if: { oath: true } },   // final review: courage, not a confession
       N('洛恩沒有說話，也沒有移開視線。最後先眨眼的，是凜。', true),
     ],
     summary: '洛恩在擦短刃的凜對面坐下。她說了一句話，眼神說得更多。',
@@ -831,7 +835,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       // V2: Bobby, if met, offers a machine for it; she keeps the squirrel off. Without her, Lorne counts and is corrected.
       { who: 'bobby', mood: 'excited', text: '「希爾薇姊，我做一台自動削箭機給妳好不好？會喀啦喀啦轉的喔！」', if: { met: 'bobby' } },
       { who: 'hero', text: '「那是第三十支了。」', if: { notMet: 'bobby' } },
-      { who: 'sylvie', mood: 'serious', text: '「不用。松鼠，退後三步。箭筒要滿，只剩一支的時候，什麼都護不住。」', if: { met: 'bobby' } },
+      { who: 'sylvie', mood: 'serious', text: '「不用。松鼠，回樹上去。箭筒要滿，只剩一支的時候，什麼都護不住。」', if: { met: 'bobby' } },
       { who: 'sylvie', mood: 'serious', text: '「三十一。箭筒要滿。只剩一支的時候，什麼都護不住。」', if: { notMet: 'bobby' } },
     ],
     summary: '天亮前，希爾薇在廣場削箭。她說箭筒要滿，只剩一支的時候，什麼都護不住。',
@@ -1138,7 +1142,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   finale: {
     lines: [
       { who: 'hero', mood: 'resolve', text: '「這一輪走過的每一天，就是這一次的燈芯。送到這裡就好。」' },
-      { who: 'hero', mood: 'serious', text: '「燈要的是記憶。交出去的，就回不來了。」' },
+      { who: 'hero', mood: 'serious', text: '「這盞燈只收記憶，收了就不還。」' },   // final review: hero-alone already says 「燈要的是記憶」
       { who: 'selene', mood: 'smile', text: '「洛恩先生，上弦那一夜經過洞窟的人，是您。這一段月光，請燈收下。」', if: { met: 'selene', notFull: 'selene' } },
       { who: 'selene', mood: 'smile', text: '「銀盆裡很多人喊著的那個名字，是你呢。這一次，不是月亮說的。」', if: { met: 'selene', full: 'selene' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有一段光在讀月亮。瑟蕾，還沒找到妳，但我記住妳了。」', if: { notMet: 'selene' } },
@@ -1166,7 +1170,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'hero', mood: 'distant', text: '「燈座上刻著：閥初次點火，須一段不歸之光。波比，造燈那一族的孩子，這道閥我替妳補上。」', if: { notMet: 'bobby' } },
       // The cost (ruling d): the ten pieces he found, given as the light that does not come back; 「要回來」 kept (mem:hero:10).
       { who: 'hero', mood: 'resolve', text: '「那就用我找回來的那十段記憶。我答應過那個人要回來……我回來了。」' },
-      N('光從劍上流進燈裡。那些他一張也不肯忘的臉，一張一張淡了。'),
+      // Final review: whose memories the lamp kept. It took his ten as the light that does not come back, and so none of theirs.
+      N('光從劍上流進燈裡。那些他一張也不肯忘的臉，一張一張淡了。燈收下他的十段，大家交出去的，一段也沒拿走。'),
       N('凜的手疊上他握著燈鑰的手。燈穩了下來，碎片的光回到每一個弄丟它的人身上。暮霧散了。天亮時，沒有一個人鬆開手。'),
       // Ruling a: she hands the flattened bell over without a word; the keeper says the truth himself (story polish ruling 7).
       N('回到鎮上，凜把敲平的鐘交給鐘守，一句話也沒說。他敲響結社的鐘，最後一聲。'),
@@ -1576,7 +1581,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'chizuru', mood: 'solemn', text: '「禮尚往來。」' },
       { who: 'noel', mood: 'blush', text: '「那……本小姐也收回一句。『比誰都厲害』那句先不算，千鶴的祝詞就比我厲害。」' },
     ],
-    summary: '千鶴聽說諾艾兒的老師平安，收回了那句「謂之竊」。諾艾兒也收回一句：千鶴的祝詞很好聽。',
+    summary: '千鶴聽說諾艾兒的老師平安，收回了那句「謂之竊」。諾艾兒也收回一句：千鶴的祝詞，比她厲害。',
   },
   'banter:liz-scarlet:2': {
     lines: [
@@ -1657,7 +1662,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'noel', mood: 'panic', text: '「妳、妳怎麼知道──」' },
       { who: 'selene', mood: 'smile', text: '「月亮說的。」' },
     ],
-    summary: '諾艾兒不懂瑟蕾為什麼不用自己的力量。瑟蕾說有些力量用一次就會少掉一點自己，說的是她自己。',
+    summary: '諾艾兒不懂瑟蕾為什麼不用自己的力量。瑟蕾說有些力量用一次就會少掉一點自己：她說的是自己，諾艾兒卻以為在說她。',
   },
   'banter:rin-scarlet:2': {
     lines: [
@@ -1735,7 +1740,7 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   selene: [
     '瑟蕾。在本道的水晶洞窟遇見她，被怪物圍著，還在讀月相。她叫我洛恩先生，話說到一半常收回去，說那是月亮說的。',
     '她是讀月亮的占星師，怕說出口的預言會自己成真。滿月的夜裡，她看過燈重新亮起。那些結局，是她自己交給迷宮的。',
-    '新月的夜裡，她看過一道背影在出口前倒下，燈也熄了。她說滿月裡站在燈旁邊的，就是我們。現在她叫我洛恩，說她想看見。',
+    '新月的夜裡，她看過一道背影在出口前倒下，燈也熄了。她說滿月裡站在燈旁邊的，就是我們。她不再叫我洛恩先生，說她想看見。',
   ],
   chizuru: [
     '千鶴。在霜凍之地的冰裡找到她，出冰的第一件事，是向倒下的怪物行禮。她說只睡了幾天，叫我洛恩大人。',
@@ -1756,7 +1761,7 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   noel: [
     '諾艾兒。在雷鳴之地亂放雷，魔力見底，眼神空空的，頭髮還被自己劈蓬了。自稱本小姐，叫我歸來者，不准我笑。',
     '她偷了老師的魔法書，逃進迷宮。書裡的星火，用一次就燒掉施法者的一段記憶。她的失憶，是自己燒的。',
-    '老師不讓她念那一頁，是為了保護她。她撕下那一頁，連同記憶還給了流浪商人──她的老師。現在她叫我洛恩，叫之前會先臉紅。',
+    '老師不讓她念那一頁，是為了保護她。她撕下那一頁，連同記憶還給了流浪商人──她的老師。現在她喊我的名字之前，會先臉紅。',
   ],
   bobby: [
     '波比。在本道的星燈神殿，她趴在倒下的古代機兵身上修東西，怪物圍過來都沒發現。她叫我洛恩哥，她的一下下從來不是一下下。',
@@ -1773,7 +1778,7 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   scarlet: [
     '絲嘉蕾。在鋼鐵要塞的城門前，她和機兵一起把劍對著我們，撐過三個回合才收劍。她叫我洛恩閣下，道歉時要我們先回報傷勢。',
     '她是騎士，以劍起誓要做某個人的盾。鋼鐵要塞是她的國家，被迷宮吞了下去。她說城門快破的那一夜，她轉身逃了。',
-    '她立誓守護的，是一起練劍長大的公主。那一夜吹的是撤退的號角，是公主要她活下去。現在她叫我洛恩，站到了我旁邊。',
+    '她立誓守護的，是一起練劍長大的公主。那一夜吹的是撤退的號角，是公主要她活下去。她不再叫我閣下，站到了我旁邊。',
   ],
 };
 

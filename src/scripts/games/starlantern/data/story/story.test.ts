@@ -576,7 +576,7 @@ describe('the script gates', () => {
     expect(face('mem:rin:7', 'rin', '那把劍')).toBe('surprised');
     expect(face('mem:hero:10', 'hero', '是燈鑰')).toBe('resolve');
     expect(face('rin-reveal', 'rin', '派來殺你')).toBe('serious');   // story polish Task 2: the choice line, by its beat
-    expect(face('chat:rin:3', 'rin', '', true)).toBe('blush');
+    expect(face('chat:rin:3', 'rin', '', true)).toBe('smile');   // final review: 「現在敢了」 is courage, not a blush (romance neutral)
     expect(face('prologue', 'rin', '')).toBe('guarded');
   });
 
@@ -1766,8 +1766,9 @@ describe('continuity fixes (plan 6c Task 15 Step 6)', () => {
 
   it("fix 4: the bellkeeper comes to town afraid, says how the society knew, and keeps the finale's truths", () => {
     const lines = linesOf('bellkeeper-arrives');
-    expect(lines.length).toBeLessThanOrEqual(lineCap('bellkeeper-arrives'));   // story depth Task 7: the ten beats of design §7.4 (cap 6 -> 10, Task 2)
-    for (const l of lines) expect(l.if, l.text).toBeUndefined();   // one reading: it always follows her choice
+    for (const r of sceneReadings('bellkeeper-arrives')) expect(r.lines.length).toBeLessThanOrEqual(lineCap('bellkeeper-arrives'));   // story depth Task 7: the ten beats of design §7.4 (cap 6 -> 10, Task 2)
+    // it always follows her choice; the final review adds only where it plays: in town, or at the lamp when owed at the finale
+    for (const l of lines) if (l.if) expect(Object.keys(l.if).every((k) => k === 'full' || k === 'notFull') && (l.if.full ?? l.if.notFull) === 'hero', l.text).toBe(true);
     const his = textOf(lines.filter((l) => l.who === 'bellkeeper'));
     expect(his).toMatch(/那孩子/);
     expect(his).toMatch(/沒有應|不應/);   // her flattened bell no longer answers the society's: that is how they know
@@ -3096,5 +3097,57 @@ describe('story depth Task 18: the townsfolk returns and the bellkeeper', () => 
       expect(s.dots, `${who}: ${s.dots} of ${s.lines}`).toBeLessThanOrEqual(Math.max(1, Math.floor(s.lines / 6)));
     }
     expect([...oath(), ...STORY.bellkeeper.after].filter((t) => t.includes('……')).length).toBeLessThanOrEqual(1);   // the finale holds his other one
+  });
+});
+
+describe('story depth: the final review', () => {
+  const all = (w: Partial<LineWhen> = {}): LineWhen => ({ met: [...CHARACTER_IDS], full: [], returned: [], oath: true, seen: [], ...w });
+  const text = (lines: ScriptLine[]) => lines.map((l) => l.text).join('');
+
+  it("the keeper's arrival read at floor 30 waits at the lamp, not in town; 「師父」 and her silence stay, nobody forgives", () => {
+    const L = STORY.scenes['bellkeeper-arrives'].lines;
+    const town = linesWhen(L, all());
+    const lamp = linesWhen(L, all({ full: ['hero'] }));   // owed at the finale, his tenth in hand (plan ruling 8)
+    for (const [at, r] of [['town', town], ['lamp', lamp]] as const) {
+      expect(r.length, at).toBeLessThanOrEqual(lineCap('bellkeeper-arrives'));
+      const master = r.findIndex((l) => l.who === 'rin' && /師父/.test(l.text));
+      expect(master, at).toBeGreaterThan(0);
+      expect(r.filter((l) => l.who === 'rin' && /師父/.test(l.text)), at).toHaveLength(1);
+      expect(r.slice(master + 1).some((l) => l.who === 'rin'), at).toBe(false);
+      expect(text(r), at).not.toMatch(/原諒|和好|和解/);
+      expect(text(r.filter((l) => l.who === 'bellkeeper')), at).toMatch(/市集/);
+      expect(r.some((l) => l.who === 'hero' && /我叫洛恩/.test(l.text)), at).toBe(true);
+      expect(r[r.length - 1].text, at).toMatch(/沒有再看他一眼/);
+    }
+    expect(text(town)).toMatch(/傳送門廣場/);
+    expect(text(lamp)).not.toMatch(/傳送門廣場|鎮裡|鎮上|幾天後/);
+    expect(lamp[0].text).toMatch(/燈/);
+  });
+
+  it('the finale says the lamp kept his ten and none of theirs, inside sixteen lines', () => {
+    for (const r of sceneReadings('finale')) {
+      expect(r.lines.length).toBeLessThanOrEqual(16);
+      const kept = r.lines.filter((l) => /一段也沒拿走/.test(l.text));
+      expect(kept).toHaveLength(1);
+      expect(kept[0].who).toBe('narrator');
+      expect(r.lines.indexOf(kept[0])).toBeGreaterThan(r.lines.findIndex((l) => l.who === 'hero' && /十段/.test(l.text)));
+      expect(text(r.lines)).not.toMatch(/燈要的是記憶/);   // the lone morning says it; the finale says it its own way
+    }
+    expect(text(STORY.scenes['hero-alone'].lines)).toMatch(/燈要的是記憶/);
+  });
+
+  it("Rin after her choice dares to look at him; none of her lines reads as a confession (romance neutral)", () => {
+    expect(() => pinBeat('chat:rin:3', { oath: true }, /現在敢了/)).not.toThrow();
+    const rin = storyTexts().filter((t) => speakerOf(t.key, t.line) === 'rin').map((t) => t.text);
+    for (const t of rin) expect(t).not.toMatch(/想多看|喜歡你|愛你|想你|只看著你/);
+    expect(STORY.rinOath.some((t) => /多眨幾下/.test(t))).toBe(true);   // the blinking stays
+  });
+
+  it('each says it her own way: Sylvie never backs anyone off three steps; one handbook page says 「現在她叫我洛恩」', () => {
+    for (const t of storyTexts().filter((x) => speakerOf(x.key, x.line) === 'sylvie')) expect(t.text).not.toMatch(/退後三步/);
+    expect(text(STORY.scenes['rin-confess'].lines)).toMatch(/退後三步/);   // Scarlet's
+    const pages = Object.values(STORY.people).flat().filter((t) => t.includes('現在她叫我洛恩'));
+    expect(pages).toHaveLength(1);
+    expect(STORY.people.rin.some((t) => t.includes('現在她叫我洛恩'))).toBe(true);
   });
 });

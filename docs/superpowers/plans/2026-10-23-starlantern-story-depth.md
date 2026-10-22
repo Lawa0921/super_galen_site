@@ -1028,3 +1028,14 @@
   - 釘子有沒有被改成什麼都不釘；
   - 帳本與劇本是否一致；
   - 戀愛中立。
+
+---
+
+## 收尾後的待辦（故事深度最終審查，2026-10-23）
+
+- **夥伴的嚴肅與難過表情（要使用者核准）**：`render/artPaths.ts` 的 `PUBLISHED_FACES` 只有洛恩與凜有劇情表情。夥伴的 `normal` 立繪好幾張是笑臉，借給 `serious`／`sad` 的台詞會說反話。
+  - 暫時的做法（已做）：`ui2/story.ts` 的 `faceOrder`。`serious`、`sad` 沒有自己的立繪時不顯示頭像，只留名牌（`ui2/story.test.ts`）。
+  - 長期的修法：照美術管線補每位夥伴的 `serious`、`sad`。流程是 mockup → asset contract → 生成 → 後處理 → QA → 核准，再登記進 `PUBLISHED_FACES`；**風格要使用者核准**。
+  - 其他偏重的表情（`shaken`、`hushed`、`solemn`、`wistful`、`guarded`）目前照舊退回 `normal`，補圖時一起看。
+- **帳本的舊引文**：約 98 處是早期字句的轉述（帳本開頭的註記；清單 `task-20-ledger-quotes.txt`），可以之後一次逐字同步。
+- **介面守門**：需要物件參數的模板（例 `T.ui2.workshop.giver`、`T.forge.use`）沒有被呼叫，只靠原始碼掃描檢查「……」與「還有。」。

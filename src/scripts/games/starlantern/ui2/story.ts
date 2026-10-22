@@ -34,9 +34,13 @@ export const NPC_FACILITY: Partial<Record<NpcId, 'guild' | 'shop' | 'inn' | 'gat
   anna: 'guild', orik: 'shop', marta: 'inn', glen: 'gate', doran: 'forge',
 };
 
-/** Faces to try for a mood, best first. Sad falls back to down and then normal; any other face straight to normal (never another feeling). */
-const faceOrder = (mood: StoryMood): StoryMood[] =>
-  mood === 'normal' ? ['normal'] : mood === 'sad' ? ['sad', 'down', 'normal'] : [mood, 'normal'];
+/**
+ * Faces to try for a mood, best first. A serious or sad line takes its own face or none (final review, story depth): a
+ * companion's normal portrait often smiles, and a smile on a grave line says the opposite, so until the art pipeline
+ * brings those faces the line shows its name plate alone. Any other face falls back to normal (never another feeling).
+ */
+const GRAVE = new Set<StoryMood>(['serious', 'sad']);
+const faceOrder = (mood: StoryMood): StoryMood[] => (mood === 'normal' ? ['normal'] : GRAVE.has(mood) ? [mood] : [mood, 'normal']);
 
 /** Who speaks: the name plate, and the face when there is published art for it. */
 export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: StoryMood = 'normal'): { name: string; face?: string } {

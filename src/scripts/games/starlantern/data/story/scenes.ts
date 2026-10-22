@@ -164,8 +164,6 @@ export const CHAT_GATE: Partial<Record<SceneId, StoryGate>> = {
   'chat:hero:5': { stage: 'act4' },
 };
 
-/** The gate's old name (B1), kept: a banter's gate is a `StoryGate`. */
-export type BanterGate = StoryGate;
 /**
  * Banters that wait (B1), used like `CHAT_GATE` (`StoryGate`). A banter with no entry is open as soon as both of its two are
  * met; no gate can open it sooner. Every entry needs a reason in the lore ledger.

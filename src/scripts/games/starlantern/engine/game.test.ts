@@ -37,8 +37,8 @@ import { learnedSkills } from './progression';
 import { TALENT_NODES } from '../data/talents';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
-import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, type SceneId } from '../data/story/scenes';
-import { STORY } from '../data/story.zh-TW';
+import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, lineCap, type SceneId } from '../data/story/scenes';
+import { STORY, linesWhen } from '../data/story.zh-TW';
 import { chainLength } from '../data/story/chains';
 import { SKILLS } from '../data/skills';
 import { RUNE_DROP, RUNE_SELL } from '../data/runeEconomy';
@@ -3545,6 +3545,30 @@ describe('the finale', () => {
     expect(g.state.story.seen).toEqual(expect.arrayContaining(['rin-confess', 'bellkeeper-arrives', 'finale']));
     g.restartAfterClear();
     expect(g.arrival[0]).toBe('epilogue');   // the festival, first on the return after the ending
+  });
+
+  // Final review: no return between her choice and the finale, so the keeper's arrival is owed and plays at the bottom, his
+  // tenth piece in hand. It reads its lamp lines: he is already waiting there, not standing at the town's gate.
+  it('owed at the finale, the keeper waits at the lamp, not in town; she says 「師父」 and nothing more', () => {
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.party.roster.rin.oath = true;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal');
+      x.state.story.queue = ['rin-confess'];
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toContain('bellkeeper-arrives');
+    expect(memoriesOf(g.state.party.roster.hero)).toBe(chainLength('hero'));
+    const lines = linesWhen(STORY.scenes['bellkeeper-arrives'].lines, { met: g.state.party.recruited, full: ['hero'], returned: g.state.story.returned, oath: true, seen: g.state.story.seen });
+    expect(lines.length).toBeLessThanOrEqual(lineCap('bellkeeper-arrives'));
+    const said = lines.map((l) => l.text).join('');
+    expect(said).toMatch(/燈座/);
+    expect(said).not.toMatch(/傳送門廣場|鎮裡|幾天後/);
+    const master = lines.findIndex((l) => l.who === 'rin' && /師父/.test(l.text));
+    expect(master).toBeGreaterThan(0);
+    expect(lines.slice(master + 1).some((l) => l.who === 'rin')).toBe(false);
+    expect(said).not.toMatch(/原諒|和好|和解/);
   });
 
   it('a lone morning still owed at the finale counts as seen and new', () => {
