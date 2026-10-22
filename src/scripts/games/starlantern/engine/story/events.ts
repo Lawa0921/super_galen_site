@@ -192,8 +192,9 @@ function readyPairs(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, co
 }
 
 /**
- * The pick among ready pairs (story depth plan ruling 9, Task 6 review): a started pair first; then the least heard; then
- * the one ready longest (`story.waited`); then the one with more banters left; then the fixed order. `skip`: a pair not to
+ * The pick among ready pairs (story depth plan ruling 9, Task 6 review and ruling): a started pair first; then the least
+ * heard; then a pair whose next banter is its last, its payoff; then the one ready longest (`story.waited`); then the one
+ * with more banters left; then the fixed order. `skip`: a pair not to
  * pick (the first banter's, when a return plays two).
  */
 function pickBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, count: Partial<Record<BanterPair, number>>, skip?: string): SceneId | null {
@@ -202,8 +203,10 @@ function pickBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, co
   for (const p of readyPairs(s, gates, count)) {
     if (p.pair === skip) continue;
     if (!best) { best = p; continue; }
+    const payoff = (r: Ready) => r.left === 1 && (count[r.pair] ?? 0) > 1;   // its next banter is the last of a chain: its payoff
     const better = p.started !== best.started ? p.started
       : p.heard !== best.heard ? p.heard < best.heard
+      : payoff(p) !== payoff(best) ? payoff(p)
       : waited(p) !== waited(best) ? waited(p) > waited(best)
       : p.left > best.left;
     if (better) best = p;

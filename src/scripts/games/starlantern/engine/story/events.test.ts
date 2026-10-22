@@ -944,7 +944,7 @@ describe('town banter', () => {
    * state after the last return, each payoff's opening and playing depth, and every return whose two banters shared a pair.
    */
   const PAYOFFS: SceneId[] = ['banter:rin-scarlet:3', 'banter:rin-selene:2', 'banter:safira-sylvie:3', 'banter:liz-scarlet:3', 'banter:noel-selene:3', 'banter:chizuru-noel:2'];
-  const scriptedPlay = (depths: number[]) => {
+  const scriptedPlay = (depths: number[], afterFinale = 0) => {
     let s = base();
     s.story.seen.push('prologue-inn', 'first-return', 'act1-after');
     s.story.act1Cleared = true;
@@ -982,8 +982,23 @@ describe('town banter', () => {
       if (s.story.queue.includes('hero-alone') && s.story.seen.includes('mem:hero:9') && s.story.seen.includes('bellkeeper-arrives')
         && !ALONE.some((id) => s.story.queue.includes(id))) s = sceneDone(s, 'hero-alone', 'played');
     }
+    // The finale (Game.finalePieces): it answers a lone morning still owed; then the returns after it, the first one heavy
+    // (`afterFinale`: no banter), each one numbered 100 + k in `played`.
+    const before = PAYOFFS.filter((id) => s.story.seen.includes(id));
+    if (afterFinale > 0) {
+      s = { ...s, story: { ...s.story, finaleCleared: true, seen: [...s.story.seen, 'finale', ...(s.story.seen.includes('hero-alone') ? [] : ['hero-alone' as SceneId])], queue: s.story.queue.filter((q) => q !== 'hero-alone') } };
+      for (let k = 1; k <= afterFinale; k++) {
+        s = { ...s, story: onReturn(s) };
+        const arrival = arrivalScenes(s, { chat: true, afterFinale: k === 1 });
+        trace.push(`after ${k}: ${arrival.join(' ')}`);
+        for (const id of arrival) {
+          if (id.startsWith('banter:') && played[id] === undefined) played[id] = 100 + k;
+          s = sceneDone(s, id, 'played');
+        }
+      }
+    }
     const report = PAYOFFS.map((id) => `${id}: opens ${opened[id] ?? '-'}, plays ${played[id] ?? '-'}`).join('\n');
-    return { s, report, samePair, trace };
+    return { s, report, samePair, trace, before };
   };
 
   it('scripted play: every payoff banter plays before the finale', () => {
@@ -992,14 +1007,30 @@ describe('town banter', () => {
     expect(samePair).toEqual([]);   // never one pair twice on a return (Task 6 review)
   });
 
-  it('scripted play, a return every second depth: the payoffs it can land, measured (Task 6 review)', () => {
-    // Target (Task 6 review): every payoff by the finale. Within the rules it cannot be met: of 15 returns, 7 play a heavy
-    // scene or play alone (no banter), so about 13 banters play in all, against 37 written and the six payoffs' chains.
-    // The rules are not loosened; the shortfall is pinned here, measured, for the controller's ruling (task-6-report.md).
-    const { s, report, samePair, trace } = scriptedPlay(Array.from({ length: 15 }, (_, i) => 2 * i + 1));   // 1, 3, …, 29
-    const missing = PAYOFFS.filter((id) => !s.story.seen.includes(id));
-    expect(missing, `${report}\n${trace.join('\n')}`).toEqual(['banter:rin-scarlet:3', 'banter:rin-selene:2', 'banter:liz-scarlet:3', 'banter:chizuru-noel:2']);
-    expect(samePair).toEqual([]);
+  it('scripted play, a return every second depth: payoffs before the finale and after it, measured (Task 6 ruling)', () => {
+    // Controller ruling: heavy returns stay banter-free; a pair whose next banter is its payoff goes first (above the
+    // ready-longest and more-left tie-breaks); what is still unheard at the finale plays on the returns after it. Target:
+    // every payoff by the finale or within three returns after it. Measured within those rules (task-6-report.md): two land
+    // before the finale and none in the next three returns (the first is the festival's, heavy; the next two play four
+    // banters in all, none a payoff yet); all six land by the twelfth return after it. Pinned, not loosened.
+    const depths = Array.from({ length: 15 }, (_, i) => 2 * i + 1);   // 1, 3, …, 29
+    const three = scriptedPlay(depths, 3);
+    const heard = PAYOFFS.filter((id) => three.s.story.seen.includes(id));
+    expect(three.before, `${three.report}\n${three.trace.join('\n')}`).toEqual(['banter:safira-sylvie:3', 'banter:noel-selene:3']);
+    expect(heard).toEqual(three.before);
+    expect(three.samePair).toEqual([]);
+    // none is lost: the game goes on after the finale, and every payoff is heard by the twelfth return after it
+    const twelve = scriptedPlay(depths, 12);
+    for (const id of PAYOFFS) expect(twelve.s.story.seen, twelve.report).toContain(id);
+    expect(twelve.samePair).toEqual([]);
+  });
+
+  it('a pair whose next banter is its payoff goes ahead of the ready-longest and the one with more left (Task 6 ruling)', () => {
+    const s = allChatsSeen(meetAll(base(), ['noel', 'liz', 'scarlet']));
+    s.story.seen.push('banter:noel-rin:1', 'banter:liz-scarlet:1');   // both started, one heard each
+    const count: Partial<Record<BanterPair, number>> = { 'noel-rin': 2, 'liz-scarlet': 3 };
+    s.story.waited = { 'liz-scarlet': 5 };
+    expect(nextBanter(s, {}, count)).toBe('banter:noel-rin:2');   // its last: the payoff, though liz-scarlet waited longer and has more left
   });
 
   it('every pair counted has at least one banter', () => {
