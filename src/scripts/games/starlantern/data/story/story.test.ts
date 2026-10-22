@@ -1127,7 +1127,7 @@ describe('Task 10b: why the two of them go down together', () => {
     expect(p[0].text).toBe('黎明前的傳送門廣場。暮霧貼著石板流動，西邊高地上的星燈，淡得像快燒盡的燭火。');
     // story polish Task 5 (ruling 7): Glen tells the grip, Anna puts the medicine and the lamp on the guild's account
     expect(p[2].who).toBe('glen');
-    expect(() => pinBeat('prologue', {}, /拖了出來.*三步就倒/)).not.toThrow();
+    expect(() => pinBeat('prologue', {}, /拖了出來.*三步就倒.*手腕/)).not.toThrow();
     expect(p[10].who).toBe('anna');
     expect(() => pinBeat('prologue', {}, /歸還之燈.*公會的帳/)).not.toThrow();
     expect(p[11].text).toBe('從那天起，鎮上的人叫他「歸來者」──唯一從迷宮深處走出來的人。');
