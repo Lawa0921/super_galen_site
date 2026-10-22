@@ -4014,7 +4014,7 @@ test.describe('starlantern', () => {
     test('a suggested build applies from the inn, then the workshop shows what is still missing (plan 8h)', async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 720 });
       const w = await setup(page, 7);
-      // Noel at Lv 35 on the default tree and talents, a magic 擴散 in the bag.
+      // Noel at Lv 35 on the default tree and talents, 節流 on 冰之星彈 (the build takes it off), a magic 擴散 in the bag.
       await page.evaluate(({ tree, talents }) => {
         const s = (window as unknown as Dbg).__starlanternDebug.game.state;
         s.gold = 5000;
@@ -4022,7 +4022,7 @@ test.describe('starlantern', () => {
         s.runeTutorialSeen = true;   // read already: the tutorial has its own test
         s.runes = { 'spread@magic': 1 };
         if (!s.party.recruited.includes('noel')) s.party.recruited = [...s.party.recruited, 'noel'];
-        s.party.roster.noel = { ...s.party.roster.noel, level: 35, tree, talents };
+        s.party.roster.noel = { ...s.party.roster.noel, level: 35, tree, talents, sockets: { 'ice-star': [{ id: 'thrift', tier: 'magic' }] } };
       }, { tree: defaultTree('noel', 35), talents: defaultTalents('noel', 35) });
       await w.choose('.slx-town', '旅館');
       await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
@@ -4049,13 +4049,15 @@ test.describe('starlantern', () => {
       const confirm = page.locator('.slx-builds .slx-confirm');
       await expect(confirm).toContainText('回到袋子');
       await expect(confirm).toContainText(' G');
+      await expect(confirm).toContainText(T.ui2.builds.underLevel(35, 40));
       for (const [vw, vh] of sizes) { await inside(page, '.slx-builds', `${rows}, .slx-confirm p, .slx-confirm [role=option]`, vw, vh); await shot(page, `builds-confirm-${vw}`); }
       await page.setViewportSize({ width: 1280, height: 720 });
       await w.key('ArrowUp'); await w.key('Enter');           // 是
       await expect(page.locator('.slx-bd-msg')).toContainText('諾艾兒套用了暴走流星');
+      await expect(page.locator('.slx-bd-msg')).toContainText('1 顆回到袋子');
       await expect(page.locator('.slx-bd-list [data-id=meteor] .slx-right')).toHaveText(T.ui2.builds.following);
       const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('starlantern-save') ?? '{}'));
-      expect([saved.party.roster.noel.build, saved.party.roster.noel.sockets['fire-star'][0]]).toEqual(['meteor', { id: 'spread', tier: 'magic' }]);
+      expect([saved.party.roster.noel.build, saved.party.roster.noel.sockets['fire-star'][0], saved.runes]).toEqual(['meteor', { id: 'spread', tier: 'magic' }, { 'thrift@magic': 1 }]);
       // Back to the inn (no new greeting), out to the guild's workshop on 火之星彈.
       await w.key('Escape');
       await expect(page.locator('.slx-inn')).toBeVisible();

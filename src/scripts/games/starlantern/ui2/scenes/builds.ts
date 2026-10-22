@@ -61,12 +61,13 @@ function treeMarks(m: Member, b: BuildDef): { ultimates: string[]; sides: string
  * applying costs), the buttons under it.
  *
  * Keys, the one place they are defined:
- * - ↑↓ move in the list; ←→ (or Tab) between the buttons when there are two (the build she follows: 停止跟隨, 套用).
- * - Enter does the button under the cursor. 套用 asks first (the inn's confirm) when it costs gold or lays out her tree or
- *   talents anew (plan 8h ruling 12); a build that only fills runes applies at once.
+ * - ↑↓ move in the list; ←→ (or Tab) between the buttons when there are two (the build she follows: 套用, 停止跟隨).
+ * - Enter does the button under the cursor; a row itself only picks (Task 7 review). 套用 asks first (the inn's confirm)
+ *   when it costs gold, changes her tree or talents, or takes a worn rune off its slot (plan 8h ruling 12); a build that
+ *   only fills runes applies at once. 停止跟隨 always asks first.
  * - R/F scroll the card. Q/E change member. Esc leaves: to the status sheet's tree tab when it opened this, else back.
- * - The mouse: hovering a row moves the cursor there, a click is that plus Enter; a touch tap on a row not picked yet
- *   only picks it. The buttons take a click. Under the confirm box nothing else takes the pointer.
+ * - The mouse and touch: hovering or tapping a row moves the cursor there; the buttons take a click. Under the confirm box
+ *   nothing else takes the pointer.
  *
  * In town everything applies. In the labyrinth (`phase === 'map'` with a run) the screen only reads: the buttons are grey,
  * the foot says 回城後才能套用, and Q/E pass over the members on the field.
@@ -78,9 +79,6 @@ export class BuildsScene implements Scene {
   private actAt = 0;
   private msg = '';
   private refused = '';
-  /** The row a touch tap picked: a second tap on it does it (plan 8g ruling 11). Any other action clears it. */
-  private armed = '';
-  private pressedBy = '';
   private cardTop = 0;
   private box: ReturnType<typeof confirmBox> | null = null;
 
@@ -93,6 +91,7 @@ export class BuildsScene implements Scene {
   private footWhy!: HTMLElement;
   private footMsg!: HTMLElement;
   private backEl!: HTMLElement;
+  private hintEl!: HTMLElement;
   private view: MenuView | null = null;
   private viewKey = '';
 
@@ -114,9 +113,8 @@ export class BuildsScene implements Scene {
       el('div', { class: 'slx-bd-foot', attrs: { role: 'status', 'aria-live': 'polite' } }, [this.btns, this.footWhy, this.footMsg]),
     ]);
     this.backEl = backControl(() => this.onAction('cancel'));
-    this.sceneEl = el('div', { class: 'slx-scene slx-builds' }, [
-      this.head, this.listWin, this.cardWin, el('p', { class: 'slx-keyhint', text: B.hint }), this.backEl,
-    ]);
+    this.hintEl = el('p', { class: 'slx-keyhint' });
+    this.sceneEl = el('div', { class: 'slx-scene slx-builds' }, [this.head, this.listWin, this.cardWin, this.hintEl, this.backEl]);
     root.append(this.sceneEl);
     this.render();
   }
@@ -125,7 +123,6 @@ export class BuildsScene implements Scene {
 
   onAction(a: UiAction): void {
     if (this.box) { this.box.view.onAction(a); return; }
-    this.armed = '';
     switch (a) {
       case 'prev': case 'next': this.page(a === 'next' ? 1 : -1); return;
       case 'scrollUp': case 'scrollDown': this.scrollCard(a === 'scrollDown' ? CARD_STEP : -CARD_STEP); return;
@@ -159,8 +156,13 @@ export class BuildsScene implements Scene {
     return k !== undefined && buildOf(this.id, k) ? k : undefined;
   }
   private get build(): BuildDef { return buildOf(this.id, this.key) ?? BUILDS[this.id][0]; }
-  /** The buttons of the card: the build she follows can be stopped, and applied again to fill its runes. */
-  private get acts(): Act[] { return this.followed === this.key ? ['stop', 'apply'] : ['apply']; }
+  /** The buttons of the card: the build she follows can be applied again (to fill its runes) and stopped. */
+  private get acts(): Act[] { return this.followed === this.key ? ['apply', 'stop'] : ['apply']; }
+  /** 「目前 Lv N，建議 Lv M 以上」 when she is below the build's suggested level, else ''. */
+  private get under(): string {
+    const min = this.build.minLevel;
+    return min !== undefined && this.member.level < min ? B.underLevel(this.member.level, min) : '';
+  }
 
   private page(d: 1 | -1): void {
     const list = this.members;
@@ -188,18 +190,24 @@ export class BuildsScene implements Scene {
 
   private act(what: Act): void {
     if (!this.town) { this.refuse(B.townOnly); return; }
-    if (what === 'stop') { this.stop(); return; }
+    const name = CHARACTERS[this.id].name;
+    if (what === 'stop') { this.ask(B.askStop(name, this.build.name), () => this.stop()); return; }
     const c = this.game.canApplyBuild(this.id, this.key);
     if (c.reason) { this.refuse(T.reasons[c.reason] ?? T.reasons.invalid); return; }
-    if (c.cost > 0 || c.changes) { this.ask(c.cost); return; }
+    if (c.cost > 0 || c.changes || c.strips) {
+      const notes = [c.moves ? B.reassign : c.changes ? B.addPoints : '', c.strips ? B.strip(name) : '', this.under].filter((n) => n);
+      this.ask(B.askApply(name, this.build.name, c.cost, notes), () => this.apply());
+      return;
+    }
     this.apply();
   }
 
-  private ask(cost: number): void {
+  /** The inn's confirm, on 否 first; `yes` runs on 是. */
+  private ask(question: string, yes: () => void): void {
     this.ctx.sfx.confirm();
-    const box = confirmBox(B.askApply(CHARACTERS[this.id].name, this.build.name, cost), (yes) => {
+    const box = confirmBox(question, (ok) => {
       this.closeBox();
-      if (yes) this.apply(); else this.ctx.sfx.cancel();
+      if (ok) yes(); else this.ctx.sfx.cancel();
     });
     box.view.menu.setCursor(1); box.view.render();
     this.box = box;
@@ -221,7 +229,7 @@ export class BuildsScene implements Scene {
   private apply(): void {
     const r = this.game.applyBuild(this.id, this.key);
     if (!r.ok) { this.refuse(T.reasons[r.reason] ?? T.reasons.invalid); return; }
-    this.done(B.applied(CHARACTERS[this.id].name, this.build.name, r.placed.length, r.missing.length), 'apply');
+    this.done(B.applied(CHARACTERS[this.id].name, this.build.name, r.placed.length, r.missing.length, r.returned), 'apply');
   }
 
   private stop(): void {
@@ -291,18 +299,16 @@ export class BuildsScene implements Scene {
     }
     this.viewKey = sig;
     this.view = new MenuView(new Menu(items, at), {
+      // A row only picks (Task 7 review): what it does is on the buttons.
       pick: (it) => {
-        // A touch tap on a row not picked yet only picks it; the second tap on it does its button.
-        const touch = this.pressedBy === 'touch';
-        this.pressedBy = '';
-        if (it.id !== this.key) { this.key = it.id; this.reset(); this.render(); }
-        if (touch && this.armed !== it.id) { this.armed = it.id; this.ctx.sfx.cursor(); return; }
-        this.armed = '';
-        this.act(this.acts[this.actAt]);
+        if (it.id === this.key) return;
+        this.key = it.id;
+        this.reset();
+        this.ctx.sfx.cursor();
+        this.render();
       },
       moved: () => {
         const now = this.view?.menu.current()?.id;
-        this.armed = '';
         if (!now || now === this.key) return;
         this.key = now;
         this.reset();
@@ -311,9 +317,6 @@ export class BuildsScene implements Scene {
         this.renderFoot();
       },
     }, LIST_ROWS);
-    // What pressed a row: read by `pick` above (a click event may carry no pointerType: Safari).
-    this.view.el.addEventListener('pointerdown', (e) => { this.pressedBy = e.pointerType; }, true);
-    this.view.el.addEventListener('click', (e) => { this.pressedBy = (e as PointerEvent).pointerType || this.pressedBy; }, true);
     this.listWin.replaceChildren(el('div', { class: 'slx-area-head', text: B.listHead }), this.view.el);
   }
 
@@ -328,10 +331,11 @@ export class BuildsScene implements Scene {
     const out: HTMLElement[] = [
       el('div', { class: 'slx-bd-card-name' }, [el('b', { text: b.name }), ...(following ? [el('span', { class: 'slx-bd-tag', text: B.following })] : [])]),
       el('p', { class: 'slx-bd-intro', text: pitchOf(b) }),
+      ...(this.under ? [el('p', { class: 'slx-bd-under', text: this.under })] : []),
       ...(b.scenario ? [el('p', { class: 'slx-bd-scenario', text: B.scenario[b.scenario] })] : []),
       // What is in reach and what is missing first (the user: 「缺什麼直接寫出來」), then the play and the tree.
       el('h5', { class: 'slx-bd-sub', text: B.runesHead }),
-      ...(skills.length ? [el('p', { class: 'slx-bd-legend', text: `${B.have}　${B.lack}` })] : [el('p', { text: B.noRunes })]),
+      ...(skills.length ? [el('p', { class: 'slx-bd-legend', text: B.have })] : [el('p', { text: B.noRunes })]),
       ...skills.map((skill) => el('div', { class: 'slx-bd-skill' }, [
         el('span', { class: 'slx-bd-skill-name', text: SKILLS[skill]?.name ?? skill }),
         ...rows.filter((r) => r.skill === skill).map((r) => el('span', {
@@ -346,7 +350,7 @@ export class BuildsScene implements Scene {
       el('p', { class: 'slx-bd-tree', text: ultimates.length ? B.ultimate(ultimates) : B.noUltimate }),
       ...(sides.length ? [el('p', { class: 'slx-bd-tree', text: B.sides(sides) })] : []),
       el('p', { class: 'slx-bd-follow', text: following ? B.followingNow : B.follow }),
-      ...(price ? [el('p', { class: 'slx-bd-cost', text: price.cost > 0 ? B.cost(price.cost) : price.changes ? B.costFree : B.costFill })] : []),
+      ...(price ? [el('p', { class: 'slx-bd-cost', text: price.cost > 0 ? B.cost(price.cost) : price.changes ? B.costFree : price.strips ? B.costStrip : B.costFill })] : []),
     ];
     this.cardBody.replaceChildren(...out);
     this.cardBody.scrollTop = this.cardTop;
@@ -378,6 +382,7 @@ export class BuildsScene implements Scene {
       return btn;
     }));
     this.footWhy.textContent = off ? B.townOnly : this.refused;
+    this.hintEl.textContent = acts.length > 1 ? B.hint : B.hintOne;
     this.footMsg.textContent = this.msg;
   }
 }

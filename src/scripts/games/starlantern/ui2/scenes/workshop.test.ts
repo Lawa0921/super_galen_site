@@ -16,7 +16,8 @@ import { NO_ART } from '../../render/textures';
 import type { SceneName } from '../scene';
 import { reserveLine } from '../skillCard';
 import { WorkshopScene } from './workshop';
-import { BUILDS, buildOf } from '../../data/builds';
+import { BUILDS, buildOf, type BuildDef } from '../../data/builds';
+import { RUNES } from '../../data/runes';
 import { buildTalents, buildTree, policyText } from '../../engine/builds';
 import { DEFAULT_SETTINGS } from '../settings';
 
@@ -472,6 +473,20 @@ describe('the workshop and the suggested builds (plan 8h Task 7)', () => {
     expect(free.root.querySelector('.slx-workshop')!.classList.contains('slx-ws-following')).toBe(false);
     free.press('confirm', 'confirm');
     expect(free.root.querySelector('.slx-ws-lack')).toBeNull();
+  });
+
+  it('a suggested rune the slot refuses says why, not that the bag has it (Task 7 review)', () => {
+    // A hand-made build whose second rune clashes with the first (one shape a skill).
+    const list = BUILDS.noel as BuildDef[];
+    list.push({ ...meteor, key: 'clash', runes: { 'fire-star': ['spread', 'focus'] } });
+    try {
+      const w = setup(follower('clash', { 'focus@magic': 1 }), 'noel:fire-star');
+      w.press('confirm', 'confirm');                                  // her slots, slot 1's runes
+      const line = w.root.querySelector('.slx-ws-lack')!.textContent!;
+      expect(line).toBe(W.refusedWhy(RUNES.focus.name, T.rune.fail.group(RUNES.spread.name)));
+      expect(line).not.toContain(W.inBag);
+      expect(line).not.toContain('缺');
+    } finally { list.pop(); }
   });
 
   it('every followed line fits the head on one line', () => {

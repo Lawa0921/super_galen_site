@@ -474,6 +474,8 @@ export const T = {
       lacking: (items: [string, string][]) => `缺：${items.map(([name, where]) => `${name}（${where}）`).join('、')}`,
       /** In place of where a lacking rune is found: one is in the bag already. */
       inBag: '袋子裡有',
+      /** Over the rune list, a suggested rune the slot refuses (Task 7 review): why, in place of where it is. */
+      refusedWhy: (name: string, why: string) => `${name}裝不上：${why}`,
     },
     /** The status screen's skill-tree tab. */
     tree: {
@@ -751,12 +753,21 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       stopped: (name: string, build: string) => `${name}不再跟隨${build}，配點維持現在的樣子。`,
       apply: (cost: number) => `套用（${cost} G）`,
       applyFree: '套用（免費）',
-      applied: (name: string, build: string, placed: number, missing: number) =>
-        `${name}套用了${build}：鑲上 ${placed} 顆符文${missing ? `，還缺 ${missing} 顆` : ''}。`,
+      applied: (name: string, build: string, placed: number, missing: number, returned: number) =>
+        `${name}套用了${build}：鑲上 ${placed} 顆符文${missing ? `，還缺 ${missing} 顆` : ''}${returned ? `，${returned} 顆回到袋子` : ''}。`,
       townOnly: '回城後才能套用',
-      /** The confirm (plan 8h ruling 12): the price, the tree laid out anew, her other runes back to the bag. */
-      askApply: (name: string, build: string, cost: number) =>
-        `要讓${name}套用${build}嗎？${cost === 0 ? '免費' : `需要 ${cost} G`}。\n技能樹與天賦會照這套重新分配，${name}身上其他的符文會回到袋子。`,
+      /** The confirm (plan 8h ruling 12, Task 7 review): the price, then a line for each thing it changes (`notes`). */
+      askApply: (name: string, build: string, cost: number, notes: string[]) =>
+        `要讓${name}套用${build}嗎？${cost === 0 ? '免費' : `需要 ${cost} G`}。${notes.map((n) => `\n${n}`).join('')}`,
+      /** Points she spent move. */
+      reassign: '技能樹與天賦會照這套重新分配。',
+      /** No point moves, some are added. */
+      addPoints: '會照這套補上技能點與天賦點。',
+      /** A rune she wears would not be back in its slot. */
+      strip: (name: string) => `${name}身上其他的符文會回到袋子。`,
+      /** Below the build's suggested level (ruling E2): on the card and in the confirm. */
+      underLevel: (lv: number, min: number) => `目前 Lv ${lv}，建議 Lv ${min} 以上`,
+      askStop: (name: string, build: string) => `要讓${name}停止跟隨${build}嗎？\n配點維持現在的樣子，之後升級要自己配點。`,
       /** Where the build is measured to shine (data/builds.ts BuildScenario). */
       scenario: { boss: '擅長：頭目戰', crowd: '擅長：一次對付一大群', long: '擅長：打得久的戰鬥', ordeal: '擅長：更深處的頭目戰' },
       policyHead: '打法',
@@ -767,18 +778,21 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       sides: (names: string[]) => `二選一：${names.join('、')}`,
       runesHead: '建議符文',
       noRunes: '不裝符文。',
-      /** The marks of the rune rows. */
-      have: '◆ 鑲得上（鑲著或袋子裡有）', lack: '○ 缺',
+      /** The mark of a rune in reach (a missing one says 缺 on its own row). */
+      have: '◆ 鑲得上（鑲著或袋子裡有）',
       /** What applying costs: the respec's price when her points move; free when they only grow or stay. */
       cost: (n: number) => `費用：${n} G（技能樹與天賦重新分配）`,
       costFree: '費用：免費（技能樹與天賦照這套補上）',
       costFill: '費用：免費（技能樹不變，只補符文）',
+      costStrip: '費用：免費（技能樹不變，有些符文會回到袋子）',
       /** The tree tab, following nothing with points left (plan 8h ruling 14). */
       unspentHint: '不想自己配？旅館的『建議配點』可以一鍵套用',
       /** The tree tab's way in, and the build she follows. */
       entry: 'Tab 建議配點',
       followTag: (name: string) => `跟隨：${name}`,
       hint: '↑↓ 選擇　←→ 換按鈕　Enter 決定　Q/E 換人　R/F 捲動　Esc 返回',
+      /** One button: no ←→. */
+      hintOne: '↑↓ 選擇　Enter 決定　Q/E 換人　R/F 捲動　Esc 返回',
     },
     gate: {
       reroll: '重抽傳送門',
@@ -1034,7 +1048,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         `先用${name}記住${below !== undefined ? `剩不到 ${below}% HP 的` : ''}${big ? '頭目或菁英' : '敵人'}。`,
       alternate: (repeat: boolean) => (repeat ? '跟著拍子換招，只剩一招時照樣出招。' : '跟著拍子換招。'),
       spendAt: (gauge: string, min: number, name: string, ofMaxHp: boolean) =>
-        `${gauge}${ofMaxHp ? `累積到最大 HP 的 ${min}%` : `到 ${min}`}就放${name}，之前先留著。`,
+        `${gauge}${ofMaxHp ? `累積到最大 HP 的 ${min}%` : `到 ${min}`} 就放${name}，之前先留著。`,
       healBelow: (pct: number) => `有人 HP 低於 ${pct}% 就先補血。`,
       strongest: (aoe: boolean) => (aoe ? '其他時候放打得最多的招（看威力，也看打到幾個）。' : '其他時候放威力最高的招。'),
       ensureTaunt: (name: string) => `挑釁快結束就再用${name}。`,

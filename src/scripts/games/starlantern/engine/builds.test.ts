@@ -6,7 +6,7 @@ import { RUNE_SLOT_LEVELS } from '../data/runes';
 import { SKILLS } from '../data/skills';
 import { BOARDS, CHAR_KEYSTONES, DEFAULT_KEYSTONES } from '../data/talents';
 import { T } from '../data/text.zh-TW';
-import { applyBuild, buildSockets, buildTalents, buildTree, followUp, partyPolicies, pitchOf, policyOf, policyText, runeSource } from './builds';
+import { applyBuild, applyCost, buildSockets, buildTalents, buildTree, followUp, partyPolicies, pitchOf, policyOf, policyText, runeSource } from './builds';
 import { newGame, type GameState } from './state';
 import { STANDARD_LINEUP } from './party';
 import { respecPrice } from './town';
@@ -261,6 +261,34 @@ describe('apply and follow a build (plan 8h Task 6)', () => {
     const r = ok(applyBuild(s, 'noel', 'meteor'));
     expect(r.cost).toBe(0);
     expect(r.state.party.roster.noel.tree).toEqual(buildTree('noel', 35, meteor));
+  });
+
+  it('applyCost says when a worn rune would come off, and when points only grow (Task 7 review)', () => {
+    const meteor = buildOf('noel', 'meteor')!;
+    // Following it, 擴散 in its slot: nothing moves, nothing comes off.
+    const on = ok(applyBuild(town(35, { 'spread@magic': 1 }), 'noel', 'meteor')).state;
+    expect(applyCost(on, 'noel', 'meteor')).toEqual({ cost: 0, changes: false, moves: false, strips: false });
+    // Her tree is the build's, but she wears a rune it does not suggest: it would come off.
+    const worn = structuredClone(on);
+    worn.party.roster.noel.sockets = { 'fire-star': [R('spread')], 'ice-star': [R('thrift')] };
+    expect(applyCost(worn, 'noel', 'meteor')).toEqual({ cost: 0, changes: false, moves: false, strips: true });
+    const r = ok(applyBuild(worn, 'noel', 'meteor'));
+    expect([r.returned, r.state.runes]).toEqual([1, { 'thrift@magic': 1 }]);
+    // A suggested rune in another slot of the skill comes off its slot too.
+    const moved = structuredClone(on);
+    moved.party.roster.noel.sockets = { 'fire-star': [null, R('spread')] };
+    expect(applyCost(moved, 'noel', 'meteor')!.strips).toBe(true);
+    expect(ok(applyBuild(moved, 'noel', 'meteor')).returned).toBe(0);   // it goes back in, to the first slot
+    // Points only added (the build at Lv10 is part of it at Lv35): changes, no point moves, free.
+    const grow = town(35);
+    grow.party.roster.noel = { ...grow.party.roster.noel, tree: buildTree('noel', 10, meteor), talents: buildTalents('noel', 10, meteor) };
+    expect(applyCost(grow, 'noel', 'meteor')).toEqual({ cost: 0, changes: true, moves: false, strips: false });
+    // From the default tree: points move, at the respec's price.
+    expect(applyCost(town(35), 'noel', 'meteor')).toEqual({ cost: respecPrice(town(35).party.roster.noel), changes: true, moves: true, strips: false });
+  });
+
+  it('a policy sentence spaces its number (Task 7 review)', () => {
+    expect(policyText(buildOf('noel', 'meteor')!)[0]).toBe(`熱度到 4 就放${SKILLS.inferno.name}，之前先留著。`);
   });
 
   it('following spends the points and fills new slots at a level-up', () => {

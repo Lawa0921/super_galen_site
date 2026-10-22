@@ -3,7 +3,7 @@ import { BUILDS, buildOf } from '../../data/builds';
 import { CHARACTERS } from '../../data/characters';
 import { SKILLS } from '../../data/skills';
 import { T } from '../../data/text.zh-TW';
-import { applyCost, policyText, pitchOf } from '../../engine/builds';
+import { applyCost, buildTalents, buildTree, policyText, pitchOf } from '../../engine/builds';
 import { Game } from '../../engine/game';
 import { STANDARD_LINEUP, activeIds } from '../../engine/party';
 import { defaultTalents, defaultTree } from '../../engine/progression';
@@ -34,9 +34,10 @@ function setup(prep: (g: Game) => void = () => undefined, arg = 'noel', from: Sc
   const buttons = () => [...root.querySelectorAll<HTMLElement>('.slx-bd-btn')];
   const foot = () => root.querySelector('.slx-bd-foot')!.textContent!;
   const confirm = () => root.querySelector<HTMLElement>('.slx-confirm');
+  const keyhint = () => root.querySelector('.slx-builds .slx-keyhint')!.textContent!;
   /** The cursor onto build `key`. */
   const to = (key: string) => { for (let i = 0; i < 8 && cur() !== key; i++) press('down'); expect(cur()).toBe(key); };
-  return { game, go, sfx, root, s, press, name, rows, cur, card, rune, buttons, foot, confirm, to };
+  return { game, go, sfx, root, s, press, name, rows, cur, card, rune, buttons, foot, confirm, keyhint, to };
 }
 
 /** Noel at `level`, default tree and talents (points spent), this bag. */
@@ -79,13 +80,18 @@ describe('BuildsScene (plan 8h Task 7)', () => {
     expect(ignite.textContent).toContain(T.build.missing('點燃', T.build.from.drop));
     expect(ignite.textContent).toContain('打怪、寶箱掉落');
     expect(w.rune('fire-star', 'multistrike')!.textContent).toContain(T.build.missing('連擊', T.build.from.shop));
-    // The legend, the tree's destination, what following means, and the price.
+    // The legend (its ◆ only: 缺 is said once, on the row), what following means, and the price.
     expect(card).toContain(B.have);
-    expect(card).toContain(B.lack);
+    expect(w.root.querySelector('.slx-bd-legend')!.textContent).not.toContain('缺');
     expect(card).toContain(B.follow);
     const cost = applyCost(w.game.state, 'noel', 'meteor')!.cost;
     expect(cost).toBeGreaterThan(0);
     expect(w.buttons()[0].textContent).toBe(B.apply(cost));
+    // Below the build's suggested level, the card says so.
+    expect(card).toContain(B.underLevel(35, 40));
+    const high = setup(noel(45));
+    high.to('meteor');
+    expect(high.root.querySelector('.slx-bd-under')).toBeNull();
     // The standard build: no runes.
     w.press('up');
     expect(w.card()).toContain(B.noRunes);
@@ -134,9 +140,10 @@ describe('BuildsScene (plan 8h Task 7)', () => {
     w.press('confirm');
     const box = w.confirm()!;
     expect(box).not.toBeNull();
-    expect(box.textContent).toContain(B.askApply(CHARACTERS.noel.name, meteor.name, cost));
     expect(box.textContent).toContain(`${cost} G`);
-    expect(box.textContent).toContain('回到袋子');
+    expect(box.textContent).toContain(B.reassign);
+    expect(box.textContent).toContain(B.underLevel(35, 40));   // below 暴走流星's suggested level
+    expect(box.textContent).not.toContain('回到袋子');           // she wears nothing
     expect(w.root.querySelector('.slx-bd-list')!.closest('[inert]')).not.toBeNull();   // the screen waits under it
     expect(box.querySelector('[aria-selected=true]')!.textContent).toBe('否');
     w.press('confirm');                                         // 否
@@ -147,19 +154,54 @@ describe('BuildsScene (plan 8h Task 7)', () => {
     expect(m.build).toBe('meteor');
     expect(m.sockets?.['fire-star']?.[0]).toEqual({ id: 'spread', tier: 'magic' });
     expect(w.game.state.gold).toBe(5000 - cost);
-    expect(w.foot()).toContain(B.applied(CHARACTERS.noel.name, meteor.name, 1, 2));
+    expect(w.foot()).toContain(B.applied(CHARACTERS.noel.name, meteor.name, 1, 2, 0));
     expect(w.rows().find((r) => r.dataset.id === 'meteor')!.textContent).toContain(B.following);
     expect(w.card()).toContain(B.followingNow);
     expect(w.game.notice).toBeNull();                           // saved, and said here: nothing for the town to repeat
   });
 
+  it('runes coming off ask first, even when her tree is the build\'s (Task 7 review)', () => {
+    const w = setup((g) => {
+      noel(35, { 'spread@magic': 1 })(g);
+      g.applyBuild('noel', 'meteor'); g.notice = null;
+      g.state.party.roster.noel.sockets = { ...g.state.party.roster.noel.sockets, 'ice-star': [{ id: 'thrift', tier: 'magic' }] };
+    });
+    expect(w.cur()).toBe('meteor');
+    expect(w.card()).toContain(B.costStrip);
+    expect(w.card()).not.toContain(B.costFill);
+    w.press('confirm');                                         // 套用 (the first button)
+    const box = w.confirm()!;
+    expect(box).not.toBeNull();
+    expect(box.textContent).toContain(B.strip(CHARACTERS.noel.name));
+    expect(box.textContent).not.toContain(B.reassign);
+    expect(box.textContent).not.toContain(B.addPoints);
+    w.press('up', 'confirm');                                   // 是
+    expect(w.game.state.runes).toEqual({ 'thrift@magic': 1 });
+    expect(w.foot()).toContain(B.applied(CHARACTERS.noel.name, meteor.name, 1, 2, 1));
+  });
+
+  it('points only added: the confirm says it fills them in (Task 7 review)', () => {
+    const w = setup((g) => {
+      noel(35)(g);
+      g.state.party.roster.noel = { ...g.state.party.roster.noel, tree: buildTree('noel', 10, meteor), talents: buildTalents('noel', 10, meteor) };
+    });
+    w.to('meteor');
+    expect(w.card()).toContain(B.costFree);
+    w.press('confirm');
+    const box = w.confirm()!;
+    expect(box.textContent).toContain(B.addPoints);
+    expect(box.textContent).toContain('補上技能點');
+    expect(box.textContent).not.toContain('重新分配');
+  });
+
   it('a build that only fills runes applies at once, and gold short is refused', () => {
     const s = setup((g) => { noel(35)(g); g.applyBuild('noel', 'meteor'); g.notice = null; g.state.runes = { 'ignite@magic': 1 }; });
     expect(s.cur()).toBe('meteor');
-    // The build she follows: 停止跟隨 first, then 套用 (free: her tree does not move).
-    expect(s.buttons().map((b) => b.dataset.act)).toEqual(['stop', 'apply']);
-    expect(s.buttons()[1].textContent).toBe(B.applyFree);
-    s.press('right', 'confirm');
+    // The build she follows: 套用 first (free: nothing moves, nothing comes off), then 停止跟隨.
+    expect(s.buttons().map((b) => b.dataset.act)).toEqual(['apply', 'stop']);
+    expect(s.buttons()[0].textContent).toBe(B.applyFree);
+    expect(s.card()).toContain(B.costFill);
+    s.press('confirm');
     expect(s.confirm()).toBeNull();
     expect(s.game.state.party.roster.noel.sockets?.['fire-star']?.[1]).toEqual({ id: 'ignite', tier: 'magic' });
     expect(s.game.state.party.roster.noel.build).toBe('meteor');
@@ -189,18 +231,32 @@ describe('BuildsScene (plan 8h Task 7)', () => {
     expect(w.rune('fire-star', 'ignite')!.dataset.state).toBe('lack');
   });
 
-  it('stop following', () => {
+  it('stop following is its own button, and asks first', () => {
     const w = setup((g) => { noel(35)(g); g.applyBuild('noel', 'meteor'); g.notice = null; });
     expect(w.cur()).toBe('meteor');                             // it opens on the build she follows
     expect(w.card()).toContain(B.followingNow);
-    expect(w.buttons()[0].textContent).toBe(B.stopFollow);
-    const tree = { ...w.game.state.party.roster.noel.tree };
+    expect(w.buttons().map((b) => b.textContent)).toEqual([B.applyFree, B.stopFollow]);
+    expect(w.keyhint()).toBe(B.hint);                           // two buttons: ←→ between them
+    // Enter or a click on the row of the build she follows never stops it.
+    w.rows().find((r) => r.dataset.id === 'meteor')!.click();
     w.press('confirm');
+    expect(w.game.state.party.roster.noel.build).toBe('meteor');
+    const tree = { ...w.game.state.party.roster.noel.tree };
+    w.press('right', 'confirm');                                // 停止跟隨: asked first
+    const box = w.confirm()!;
+    expect(box.textContent).toContain(B.askStop(CHARACTERS.noel.name, meteor.name));
+    expect(box.querySelector('[aria-selected=true]')!.textContent).toBe('否');
+    w.press('confirm');                                         // 否
+    expect(w.game.state.party.roster.noel.build).toBe('meteor');
+    w.buttons()[1].click();
+    w.press('up', 'confirm');                                   // 是
     expect(w.game.state.party.roster.noel.build).toBeUndefined();
     expect(w.game.state.party.roster.noel.tree).toEqual(tree);   // her points stay
     expect(w.foot()).toContain(B.stopped(CHARACTERS.noel.name, meteor.name));
     expect(w.game.followEnded).toEqual([]);                     // said here, not again in town
     expect(w.rows().find((r) => r.dataset.id === 'meteor')!.textContent).not.toContain(B.following);
+    expect(w.keyhint()).toBe(B.hintOne);                        // one button: no ←→
+    expect(w.keyhint()).not.toContain('←→');
   });
 
   it('Q/E change member, Esc goes back where it came from', () => {
@@ -223,7 +279,7 @@ describe('BuildsScene (plan 8h Task 7)', () => {
     expect([...seen].sort()).toEqual([...activeIds(field.game.state.party)].sort());
   });
 
-  it('the mouse moves and picks; a touch tap only picks the row the first time', () => {
+  it('a row only picks: the mouse and a touch tap move the cursor, the buttons act (Task 7 review)', () => {
     const w = setup(noel(35));
     const row = () => w.rows().find((r) => r.dataset.id === 'meteor')!;
     row().dispatchEvent(new Event('pointermove'));
@@ -237,13 +293,15 @@ describe('BuildsScene (plan 8h Task 7)', () => {
     w.press('up');
     tap();
     expect(w.cur()).toBe('meteor');
-    expect(w.confirm()).toBeNull();
     tap();
-    expect(w.confirm()).not.toBeNull();
-    // 返回 and the buttons take clicks; nothing under the confirm box does.
-    w.press('cancel');
+    row().click();
     expect(w.confirm()).toBeNull();
+    // The buttons take clicks; nothing under the confirm box does.
     w.buttons()[0].click();
     expect(w.confirm()).not.toBeNull();
+    w.rows().find((r) => r.dataset.id === 'standard')!.click();
+    expect(w.cur()).toBe('meteor');
+    w.press('cancel');
+    expect(w.confirm()).toBeNull();
   });
 });

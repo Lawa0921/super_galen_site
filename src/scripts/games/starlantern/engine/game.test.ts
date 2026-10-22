@@ -1342,13 +1342,13 @@ describe('apply and follow a build (plan 8h Task 6)', () => {
     const storage = memoryStorage();
     const g = townGame(storage);
     const want = g.canApplyBuild('noel', 'meteor');
-    expect(want).toEqual({ cost: 25 * 35, changes: true, reason: null });
+    expect(want).toEqual({ cost: 25 * 35, changes: true, moves: true, strips: false, reason: null });
     const r = g.applyBuild('noel', 'meteor');
     expect(r.ok).toBe(true);
     expect(g.notice).toBe('saved');
     expect(Game.boot(calm(), storage).state.party.roster.noel.build).toBe('meteor');
     // Again: nothing changes, nothing to pay.
-    expect(g.canApplyBuild('noel', 'meteor')).toEqual({ cost: 0, changes: false, reason: null });
+    expect(g.canApplyBuild('noel', 'meteor')).toEqual({ cost: 0, changes: false, moves: false, strips: false, reason: null });
     expect(g.canApplyBuild('noel', 'nope').reason).toBe('invalid');
     const map = inMap();
     expect(map.applyBuild('noel', 'meteor')).toEqual({ ok: false, reason: 'invalid' });

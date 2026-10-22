@@ -178,7 +178,7 @@ export interface RuneChoice {
 }
 
 /** Why the engine turned a socketing down, in the words of T.rune.fail. */
-function failWhy(reason: SocketFail | 'empty', s: GameState, at: SocketAt, ref: RuneRef, from?: SocketAt): string {
+export function failWhy(reason: SocketFail | 'empty', s: GameState, at: SocketAt, ref: RuneRef, from?: SocketAt): string {
   const F = T.rune.fail;
   switch (reason) {
     case 'reserve': return F.reserve(RESERVE_CAP);

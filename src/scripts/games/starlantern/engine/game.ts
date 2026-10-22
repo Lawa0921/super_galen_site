@@ -811,10 +811,10 @@ export class Game {
     return r;
   }
 
-  /** What applying build `key` to `id` would cost, whether it changes her tree or talents, and why it cannot go (town only). */
-  canApplyBuild(id: CharacterId, key: string): { cost: number; changes: boolean; reason: 'invalid' | 'gold' | null } {
+  /** What applying build `key` to `id` would cost and change (builds `applyCost`), and why it cannot go (town only). */
+  canApplyBuild(id: CharacterId, key: string): { cost: number; changes: boolean; moves: boolean; strips: boolean; reason: 'invalid' | 'gold' | null } {
     const price = this.phase === 'town' ? applyCost(this.state, id, key) : null;
-    if (!price) return { cost: 0, changes: false, reason: 'invalid' };
+    if (!price) return { cost: 0, changes: false, moves: false, strips: false, reason: 'invalid' };
     return { ...price, reason: this.state.gold < price.cost ? 'gold' : null };
   }
 

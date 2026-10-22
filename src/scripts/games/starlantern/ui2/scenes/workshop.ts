@@ -6,14 +6,14 @@ import { fromMember, skillFor } from '../../engine/battle';
 import { policyText, runeSource } from '../../engine/builds';
 import { lastingBarrierLoss } from '../../engine/mechanics/runes';
 import { activeIds } from '../../engine/party';
-import { bagCount, socketCount, socketable, type SocketAt, type SocketFail } from '../../engine/sockets';
+import { bagCount, socketCount, socketRune, socketable, type SocketAt, type SocketFail } from '../../engine/sockets';
 import type { CharacterId, Member } from '../../engine/types';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import type { GameState } from '../../engine/state';
-import { cardOf, compareCards, previewOf, reserveLine, runeChoices, slotDots, slotStates, type Card, type RuneAction, type RuneChoice } from '../skillCard';
+import { cardOf, compareCards, failWhy, previewOf, reserveLine, runeChoices, slotDots, slotStates, type Card, type RuneAction, type RuneChoice } from '../skillCard';
 import { textCps } from '../settings';
 import { Dialogue, MenuView, backControl, win } from '../widgets';
 import { cueFrame, updateCues } from './statusTabs';
@@ -375,17 +375,25 @@ export class WorkshopScene implements Scene {
 
   /**
    * Over the rune list (plan 8h ruling 14): the runes her build suggests for this skill's open slots that are not in them,
-   * each with where it is found, or that the bag holds one already; '' when nothing is lacking or she follows no build.
+   * each with where it is found, or that the bag holds one already; a rune in the bag that its slot would refuse says why
+   * instead (Task 7 review). '' when nothing is lacking or she follows no build.
    */
   private lacking(): string {
     const b = this.followed;
     if (!b) return '';
     const s = this.game.state;
     const worn = (this.member.sockets?.[this.skill] ?? []).flatMap((r) => (r ? [r.id] : []));
-    const items = (b.runes[this.skill] ?? []).slice(0, this.open).filter((id) => !worn.includes(id)).map((id): [string, string] => [
-      RUNES[id].name, tiersOf(id).some((tier) => bagCount(s, { id, tier }) > 0) ? W.inBag : T.build.from[runeSource(id)],
-    ]);
-    return items.length ? W.lacking(items) : '';
+    const lack: [string, string][] = [];
+    const refused: string[] = [];
+    (b.runes[this.skill] ?? []).slice(0, this.open).forEach((id, slot) => {
+      if (worn.includes(id)) return;
+      const tier = [...tiersOf(id)].reverse().find((t) => bagCount(s, { id, tier: t }) > 0);
+      if (tier === undefined) { lack.push([RUNES[id].name, T.build.from[runeSource(id)]]); return; }
+      const put = socketRune(s, this.id, this.skill, slot, { id, tier });
+      if (put.ok) lack.push([RUNES[id].name, W.inBag]);
+      else refused.push(W.refusedWhy(RUNES[id].name, failWhy(put.reason, s, { id: this.id, skill: this.skill, slot }, { id, tier })));
+    });
+    return [...(lack.length ? [W.lacking(lack)] : []), ...refused].join('　');
   }
 
   /** ◆ a working rune, ◇ a rune that does nothing, ○ an empty slot; slots not open yet are not drawn (skillCard slotDots). */

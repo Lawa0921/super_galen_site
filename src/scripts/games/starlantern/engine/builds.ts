@@ -121,41 +121,26 @@ const laidOut = (m: Member, b: BuildDef): { tree: Record<string, number>; talent
 /** Whether any point of `now` would have to move to reach `to` (a node or talent `to` holds fewer ranks of). */
 const moves = (now: Record<string, number>, to: Record<string, number>): boolean => Object.keys(now).some((k) => (to[k] ?? 0) < now[k]);
 
-/**
- * What applying `key` to `id` would cost and whether it changes her tree or talents (the inn asks first when it does
- * either). The cost is the respec's, and only when a point she spent would move (a build that only adds to her points is
- * free); a free respec pays.
- */
-export function applyCost(s: GameState, id: CharacterId, key: string): { cost: number; changes: boolean } | null {
-  const m = s.party.roster[id];
-  const b = buildOf(id, key);
-  if (!m || !b || !s.party.recruited.includes(id)) return null;
-  const { tree, talents } = laidOut(m, b);
-  const changes = !sameRecord(tree, m.tree) || !sameRecord(talents, m.talents);
-  return { cost: moves(m.tree, tree) || moves(m.talents, talents) ? respecPrice(m) : 0, changes };
+/** Each worn rune, by its key, and how many of it. */
+function wornCounts(m: Member): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const cells of Object.values(m.sockets ?? {})) for (const r of cells) if (r) out[runeKey(r)] = (out[runeKey(r)] ?? 0) + 1;
+  return out;
 }
 
 /**
- * One-click apply (plan 8h ruling 12): her tree and talents become the build's at her level (the respec's price when they
- * move points she spent; a free respec pays and is used up); every rune she wears goes back to the bag; then, skill by
- * skill in the build's order, each open slot takes the best tier of its suggested rune the bag holds. Nothing is taken
- * from a teammate. `missing`: suggested runes the bag lacks, and where they are found; `later`: those whose slot or skill
- * is not open yet, with the level it opens. She follows the build from then on. Never changes `s`; draws nothing.
+ * `b` laid out on `id` (plan 8h ruling 12), gold aside: her tree and talents become the build's at her level; every rune
+ * she wears goes back to the bag; then, skill by skill in the build's order, each open slot takes the best tier of its
+ * suggested rune the bag holds. Nothing is taken from a teammate. Never changes `s`.
  */
-export function applyBuild(s: GameState, id: CharacterId, key: string):
-  { ok: true; state: GameState; cost: number; placed: RuneRef[]; missing: MissingRune[]; later: LaterRune[] } | { ok: false; reason: 'invalid' | 'gold' } {
-  const price = applyCost(s, id, key);
-  if (!price) return { ok: false, reason: 'invalid' };
-  if (s.gold < price.cost) return { ok: false, reason: 'gold' };
-  const b = buildOf(id, key)!;
+function lay(s: GameState, id: CharacterId, b: BuildDef): { state: GameState; placed: RuneRef[]; missing: MissingRune[]; later: LaterRune[] } {
   const n = structuredClone(s);
   const old = n.party.roster[id];
-  const member: Member = { ...old, ...laidOut(old, b), build: key };
+  const member: Member = { ...old, ...laidOut(old, b), build: b.key };
   if (moves(old.tree, member.tree) || moves(old.talents, member.talents)) delete member.freeRespec;
-  n.gold -= price.cost;
   // Every rune she wears back to the bag.
   const runes = { ...n.runes };
-  for (const cells of Object.values(old.sockets ?? {})) for (const r of cells) if (r) runes[runeKey(r)] = (runes[runeKey(r)] ?? 0) + 1;
+  for (const [k, c] of Object.entries(wornCounts(old))) runes[k] = (runes[k] ?? 0) + c;
   delete member.sockets;
   clampToMax(member);
   let state: GameState = { ...n, runes, party: { ...n.party, roster: { ...n.party.roster, [id]: member } } };
@@ -175,7 +160,46 @@ export function applyBuild(s: GameState, id: CharacterId, key: string):
       if (put.ok) { state = put.state; placed.push(ref); } else missing.push({ skill, id: rid, refused: put.reason });
     });
   }
-  return { ok: true, state, cost: price.cost, placed, missing, later };
+  return { state, placed, missing, later };
+}
+
+/**
+ * What applying `key` to `id` would cost, and what it would change (the screen asks first when it costs, changes her
+ * tree or talents, or takes a worn rune off its slot). `cost`: the respec's, only when a point she spent would move
+ * (`moves`; a build that only adds to her points is free); a free respec pays. `changes`: her tree or talents differ.
+ * `strips`: a rune she wears would not be back in the same slot afterwards (Task 7 review).
+ */
+export function applyCost(s: GameState, id: CharacterId, key: string): { cost: number; changes: boolean; moves: boolean; strips: boolean } | null {
+  const m = s.party.roster[id];
+  const b = buildOf(id, key);
+  if (!m || !b || !s.party.recruited.includes(id)) return null;
+  const { tree, talents } = laidOut(m, b);
+  const changes = !sameRecord(tree, m.tree) || !sameRecord(talents, m.talents);
+  const moved = moves(m.tree, tree) || moves(m.talents, talents);
+  const after = lay(s, id, b).state.party.roster[id];
+  const strips = Object.entries(m.sockets ?? {}).some(([skill, cells]) => cells.some((r, i) => {
+    const now = after.sockets?.[skill]?.[i];
+    return !!r && !(now && now.id === r.id && now.tier === r.tier);
+  }));
+  return { cost: moved ? respecPrice(m) : 0, changes, moves: moved, strips };
+}
+
+/**
+ * One-click apply (plan 8h ruling 12; the layout: `lay`), at `applyCost`'s price; a free respec pays and is used up.
+ * `missing`: suggested runes the bag lacks, and where they are found; `later`: those whose slot or skill is not open yet,
+ * with the level it opens; `returned`: how many of her worn runes ended in the bag. She follows the build from then on.
+ * Never changes `s`; draws nothing.
+ */
+export function applyBuild(s: GameState, id: CharacterId, key: string):
+  { ok: true; state: GameState; cost: number; placed: RuneRef[]; missing: MissingRune[]; later: LaterRune[]; returned: number } | { ok: false; reason: 'invalid' | 'gold' } {
+  const price = applyCost(s, id, key);
+  if (!price) return { ok: false, reason: 'invalid' };
+  if (s.gold < price.cost) return { ok: false, reason: 'gold' };
+  const r = lay(s, id, buildOf(id, key)!);
+  const worn = wornCounts(s.party.roster[id]);
+  const kept = wornCounts(r.state.party.roster[id]);
+  const returned = Object.entries(worn).reduce((t, [k, c]) => t + Math.max(0, c - (kept[k] ?? 0)), 0);
+  return { ok: true, state: { ...r.state, gold: r.state.gold - price.cost }, cost: price.cost, placed: r.placed, missing: r.missing, later: r.later, returned };
 }
 
 /**
