@@ -24,6 +24,8 @@ import { FolkUi } from './folkUi';
 import { WaystoneUi } from './waystoneUi';
 import { NPCS } from '../engine/npcs';
 import { LEVEL_NAMES } from '../engine/settlement';
+import { Nameplates } from './nameplates';
+import type { RemoteView } from './remotePlayers';
 
 /** 稀有 / 傳說的漁獲（釣到時多一聲鈴） */
 const FISH_RARE = new Set(FISH.filter((f) => f.rarity === 'rare' || f.rarity === 'legendary').map((f) => f.item));
@@ -87,6 +89,8 @@ export interface StartOptions {
   onMirror?: (open: boolean) => void;
   /** 用了轉生之藥：開種族選單（確定換族才呼叫 game.rebirth 消耗） */
   onRebirth?: () => void;
+  /** 其他玩家（連線）：renderer 每幀叫一次，名牌用同一份；不給 = 不畫 */
+  remotes?: () => RemoteView[];
 }
 
 const WINDOW = 120;
@@ -103,6 +107,10 @@ export function startDelve(opts: StartOptions): DelveHandle {
   const stepper = new FixedStepper(FIXED_DT, 0.25);
   const sound = new SoundManager();
   renderer.onCue = () => sound.climbGrip();
+  // 遠端玩家：來源有狀態（客人的 GuestViews）→ renderer 一幀只叫一次，名牌讀 renderer.remoteViews（同一份）
+  renderer.setRemoteSource(opts.remotes ?? null);
+  const wlabels = root.querySelector<HTMLElement>('#delve-wlabels');
+  const nameplates = opts.remotes && wlabels ? new Nameplates(wlabels) : null;
   const ui = new ExploreUi(root, game, renderer.atlas);
   const calendar = new CalendarUi(root, game);
   const settleUi = new SettleUi(root, game, renderer, renderer.atlas, (m) => hud.toast(m, 2400), () => hud.setInventory(true));
@@ -383,6 +391,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       if (invChanged) hud.refresh();
     }
     renderer.render((paused && game.mode === 'solo') || talkPaused ? 0 : dt);
+    nameplates?.update(renderer.remoteViews, (x, y) => renderer.worldToScreen(x, y));
     hud.tick();
     levels.tick(dt);
     ui.tick(dt);
@@ -474,6 +483,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
       levels.destroy();
       sound.destroy();
       hud.destroy();
+      nameplates?.destroy();
+      renderer.setRemoteSource(null);
       renderer.destroy();
     },
   };

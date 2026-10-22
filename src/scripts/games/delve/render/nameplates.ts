@@ -6,7 +6,7 @@ export class Nameplates {
   private tags = new Map<string, HTMLElement>();
   constructor(private readonly container: HTMLElement) {}
 
-  update(views: RemoteView[], worldToScreen: (x: number, y: number) => { x: number; y: number }): void {
+  update(views: readonly RemoteView[], worldToScreen: (x: number, y: number) => { x: number; y: number }): void {
     const seen = new Set<string>();
     for (const v of views) {
       if (!v.nick) continue;

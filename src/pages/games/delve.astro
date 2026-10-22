@@ -69,6 +69,11 @@ const lang: Language = defaultLang;
 
       <div class="delve-wlabels" id="delve-wlabels" aria-hidden="true"></div>
 
+      <div class="delve-coop-box" id="delve-coop-box" hidden aria-label="連線">
+        <p class="delve-chip" id="delve-room-chip"></p>
+        <ul class="delve-players" id="delve-players" aria-label="房裡的玩家"></ul>
+      </div>
+
       <section class="delve-panel delve-panel--settle" id="delve-settle" hidden aria-label="據點">
         <header class="delve-panel-head">
           <h2 id="delve-settle-title">據點</h2>
@@ -246,6 +251,7 @@ const lang: Language = defaultLang;
         <button class="delve-btn" id="delve-calendar-btn" type="button">日曆與天氣</button>
         <button class="delve-btn" id="delve-settle-menu" type="button">據點與查房</button>
         <button class="delve-btn" id="delve-quests-menu" type="button">委託清單</button>
+        <button class="delve-btn" id="delve-coop" type="button">開放加入</button>
         <button class="delve-btn" id="delve-save" type="button">立即存檔</button>
         <button class="delve-btn" id="delve-export" type="button">匯出存檔 .delve</button>
         <button class="delve-btn" id="delve-import-menu" type="button">匯入存檔</button>
@@ -396,6 +402,23 @@ const lang: Language = defaultLang;
           <div class="delve-tpanel-btns">
             <button class="delve-btn" id="delve-worlds-back" type="button" data-nav>回角色列表</button>
             <button class="delve-btn delve-btn--main" id="delve-new" type="button" data-nav>新世界</button>
+          </div>
+          <button class="delve-btn delve-tpanel-join" id="delve-join-open" type="button" data-nav>加入朋友的世界</button>
+        </div>
+      </section>
+
+      <section class="delve-tpanel" data-tpanel="join" id="delve-joinpanel" hidden role="dialog" aria-modal="true" aria-labelledby="delve-joinpanel-h">
+        <div class="delve-tpanel-box">
+          <h2 class="delve-tpanel-h" id="delve-joinpanel-h"><span class="delve-tpanel-icon" data-icon="new"></span>加入朋友的世界</h2>
+          <label class="delve-field" for="delve-room">
+            <span class="delve-field-label">房號</span>
+          </label>
+          <input class="delve-input delve-input--room" id="delve-room" type="text" maxlength="5" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="房號" />
+          <p class="delve-field-hint">請朋友在遊戲中打開選單、按「開放加入」，把畫面上的 5 碼房號告訴你。用目前選的角色加入。</p>
+          <p class="delve-msg" id="delve-join-msg" role="status"></p>
+          <div class="delve-tpanel-btns">
+            <button class="delve-btn" id="delve-join-back" type="button">返回</button>
+            <button class="delve-btn delve-btn--main" id="delve-join" type="button">加入</button>
           </div>
         </div>
       </section>
@@ -1997,6 +2020,30 @@ const lang: Language = defaultLang;
     text-shadow: var(--text-outline);
   }
   .delve-nameplate.is-dead { color: #c8c0cc; opacity: 0.6; }
+  /* 連線 HUD（左下）：房號 + 玩家名單；只顯示資訊，不擋點擊（選擇器保持單一 class：.delve [hidden] 要蓋得過 display） */
+  .delve-coop-box {
+    position: absolute;
+    left: 10px;
+    bottom: 14px;
+    display: grid;
+    gap: 6px;
+    justify-items: start;
+  }
+  .delve-hud > .delve-coop-box { pointer-events: none; }
+  .delve-coop-box > .delve-chip { margin: 0; cursor: default; color: #fff4c0; }
+  .delve-players { margin: 0; padding: 0; list-style: none; font-size: 16px; line-height: 1.35; color: var(--ink); text-shadow: var(--text-outline); }
+  .delve-players > li.is-self { color: #fff4c0; }
+  .delve[data-touch='1'] .delve-coop-box { bottom: 180px; }
+  /* 客人：存檔 / 匯出 / 匯入 / 難度 / 開放加入都是房主的事 */
+  .delve[data-coop='guest'] #delve-save,
+  .delve[data-coop='guest'] #delve-export,
+  .delve[data-coop='guest'] #delve-import-menu,
+  .delve[data-coop='guest'] #delve-peaceful,
+  .delve[data-coop='guest'] #delve-coop { display: none; }
+  /* 標題：世界列表的「加入朋友的世界」、房號輸入、角色列的「待同步」 */
+  .delve-tpanel-box--list > .delve-tpanel-join { flex: none; margin-top: 10px; }
+  .delve-input--room { text-transform: uppercase; letter-spacing: 6px; }
+  .delve-trow-badge { display: inline-block; margin-left: 8px; padding: 0 6px; font-size: 14px; line-height: 1.4; color: #2a1810; background: #ffd86a; text-shadow: none; white-space: nowrap; }
   .delve-say { color: #2a1810; background: #fff4c0; text-shadow: none; }
   .delve-say.is-help { color: #fff4c0; background: #8c2038; text-shadow: var(--text-outline); }
   .delve-say.delve-talk-hint { color: #fff4c0; background: #2c4486; text-shadow: var(--text-outline); }

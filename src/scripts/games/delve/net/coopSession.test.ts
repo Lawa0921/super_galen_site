@@ -155,6 +155,34 @@ describe('CoopHostSession／CoopGuestSession', { timeout: 20_000 }, () => {
     expect(e.signal.calls.get).toBeGreaterThan(before.get);
   });
 
+  it('stopJoin：不再輪詢信令、已在房裡的客人照樣連著；reopenJoin 恢復輪詢', async () => {
+    const e = setup();
+    const g = await e.joined('乙');
+    e.host.stopJoin();
+    expect(e.host.joining).toBe(false);
+    expect(e.host.room).toBe('ABCDE');
+    await e.run(500);
+    const before = e.signal.calls.get;
+    await e.run(10_000);
+    expect(e.signal.calls.get).toBe(before);
+    expect(e.host.joining).toBe(false);
+    expect(g.s.phase).toBe('live');
+    expect(e.host.players().filter((p) => !p.self && p.phase === 'live')).toHaveLength(1);
+    expect(e.hostGame.mode).toBe('host');
+    e.host.reopenJoin();
+    expect(e.host.joining).toBe(true);
+    await e.run(4000);
+    expect(e.signal.calls.get).toBeGreaterThan(before);
+  });
+
+  it('還沒 tick 就 stopJoin：下一次 tick 不會又重新開放', async () => {
+    const e = setup();
+    await e.host.open();
+    e.host.stopJoin();
+    await e.run(FRAME * 3);
+    expect(e.host.joining).toBe(false);
+  });
+
   it('createRoom 回來前 loop 已經 tick（頁面開超過 JOIN_IDLE_MS）→ 仍在開放加入，客人進得來', async () => {
     const e = setup();
     let give!: (room: string) => void;

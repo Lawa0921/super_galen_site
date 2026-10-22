@@ -118,6 +118,13 @@ export class RoomHost {
     this.lastPollAt = -Infinity;
   }
 
+  /** 停止加入（不收新客人）：停掉輪詢、放棄進行中的那一輪；房號與已在握手 / 已連上的客人不動，reopen 可再開 */
+  stopJoin(): void {
+    this.passGen++;
+    this.running = false;
+    this.isJoining = false;
+  }
+
   close(): void {
     this.passGen++;
     this.running = false;

@@ -43,6 +43,8 @@ export interface TitleHandlers {
   onLook(): void;
   /** 新角色面板的體型（0 女、1 男） */
   onBody(body: number): void;
+  /** 加入朋友的世界：房號是原始輸入（session 做 normalizeRoom） */
+  onJoin(room: string): void;
 }
 
 export interface TitleUiOptions {
@@ -54,12 +56,13 @@ export interface TitleUiOptions {
 }
 
 /** 標題的面板（data-tpanel 的值）與它的上一層（null = 主選單） */
-export type TitlePanel = 'chars' | 'newchar' | 'worlds' | 'newworld' | 'settings';
+export type TitlePanel = 'chars' | 'newchar' | 'worlds' | 'newworld' | 'join' | 'settings';
 const PANELS: Record<TitlePanel, { sel: string; parent: TitlePanel | null }> = {
   chars: { sel: '#delve-charpanel', parent: null },
   newchar: { sel: '#delve-newchar', parent: 'chars' },
   worlds: { sel: '#delve-worldpanel', parent: 'chars' },
   newworld: { sel: '#delve-newpanel', parent: 'worlds' },
+  join: { sel: '#delve-joinpanel', parent: 'worlds' },
   settings: { sel: '#delve-settings', parent: null },
 };
 
@@ -218,7 +221,17 @@ export class TitleUi {
     });
     click('#delve-newchar-create', () => void this.createCharacter());
     click('#delve-new', () => { this.clearMsg(); this.showPanel('newworld'); });
-    for (const id of ['#delve-chars-back', '#delve-newchar-cancel', '#delve-worlds-back', '#delve-new-cancel', '#delve-settings-close']) {
+    // 世界列表 → 加入朋友的世界（房號）
+    click('#delve-join-open', () => {
+      const room = this.$<HTMLInputElement>('#delve-room');
+      if (room) room.value = '';
+      this.setJoinMsg('');
+      this.clearMsg();
+      this.showPanel('join');
+    });
+    click('#delve-join', () => this.join());
+    this.on(this.$('#delve-room'), 'keydown', (e) => { if ((e as KeyboardEvent).key === 'Enter') { e.preventDefault(); this.o.sound.uiConfirm(); this.join(); } });
+    for (const id of ['#delve-chars-back', '#delve-newchar-cancel', '#delve-worlds-back', '#delve-new-cancel', '#delve-join-back', '#delve-settings-close']) {
       click(id, () => this.back(), 'back');
     }
     this.wireList('#delve-charlist', '.delve-char-row', '.delve-char-del', null, (row) => this.pickCharacter(row.dataset.id ?? ''),
@@ -366,6 +379,7 @@ export class TitleUi {
     if (name === 'worlds') return this.$('#delve-worldlist [data-nav]') ?? this.$('#delve-new');
     if (name === 'newchar') return this.$('#delve-nick');
     if (name === 'newworld') return this.$('#delve-seed');
+    if (name === 'join') return this.$('#delve-room');
     return this.$('#delve-vol');
   }
   private charRow(id: string): HTMLElement | null {
@@ -381,7 +395,7 @@ export class TitleUi {
     const parent = PANELS[name].parent;
     if (!parent) { this.closePanel(); return; }
     // 焦點回到「打開這一層」的那個東西
-    const from = name === 'newchar' ? this.$('#delve-newchar-open') : name === 'newworld' ? this.$('#delve-new') : null;
+    const from = name === 'newchar' ? this.$('#delve-newchar-open') : name === 'newworld' ? this.$('#delve-new') : name === 'join' ? this.$('#delve-join-open') : null;
     this.showPanel(parent, from);
   }
 
@@ -398,6 +412,16 @@ export class TitleUi {
   }
 
   get panelOpen(): boolean { return this.panel !== null; }
+
+  /** 加入面板的訊息（房號格式不對、加入失敗、連線結束的原因） */
+  setJoinMsg(msg: string): void {
+    const m = this.$('#delve-join-msg');
+    if (m) m.textContent = msg;
+  }
+
+  private join(): void {
+    this.h.onJoin(this.$<HTMLInputElement>('#delve-room')?.value ?? '');
+  }
 
   private clearMsg(): void {
     const m = this.$('#delve-title-msg');
@@ -495,14 +519,14 @@ export class TitleUi {
     return b;
   }
 
-  /** 角色列表：小人像 + 「暱稱 · Lv · 最後遊玩」+ 刪除 */
+  /** 角色列表：小人像 + 「暱稱 · Lv · 最後遊玩」（+「待同步」：上次在朋友的世界斷線時最後一筆交易沒確認，C1）+ 刪除 */
   setCharacters(list: CharacterMeta[]): void {
     const box = this.$('#delve-charlist');
     if (!box) return;
     const now = Date.now();
     const rows = list.map((c) => {
       const line = characterLine(c, now);
-      const row = this.rowEl('delve-char-row', line);
+      const row = this.rowEl('delve-char-row', c.pendingWorld ? `${line}，待同步` : line);
       row.dataset.id = c.id;
       const doll = document.createElement('canvas');
       doll.className = 'delve-char-doll';
@@ -512,7 +536,14 @@ export class TitleUi {
       const btns = document.createElement('span');
       btns.className = 'delve-trow-btns';
       btns.append(this.rowBtn('delve-char-del', '刪除', `刪除角色「${c.nick}」`, true));
-      row.append(doll, this.rowLine('delve-char-line', line), btns);
+      const text = this.rowLine('delve-char-line', line);
+      if (c.pendingWorld) {
+        const badge = document.createElement('span');
+        badge.className = 'delve-trow-badge';
+        badge.textContent = '待同步';
+        text.append(badge);
+      }
+      row.append(doll, text, btns);
       return row;
     });
     this.renderList(box, 'id', rows, '還沒有角色，先建立一個吧');

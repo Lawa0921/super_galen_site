@@ -61,6 +61,13 @@ export class CoopHostSession {
     else this.rooms.reopen(this.now);
   }
 
+  /** 停止加入（不收新客人；已在房裡的客人照樣連著、NetHost 繼續跑）。reopenJoin 可再開 */
+  stopJoin(): void {
+    if (this.closing) return;
+    this.stampJoin = false;   // 還沒 tick 過：下一次 tick 不要又重新開放
+    this.rooms.stopJoin();
+  }
+
   /** 自己排第一；客人依加入順序（hello 階段的 pid / nick 還是空字串） */
   players(): CoopPlayer[] {
     const me: CoopPlayer = { pid: this.game.localPid, nick: this.deps.nick, self: true, rttMs: null, phase: 'live' };
