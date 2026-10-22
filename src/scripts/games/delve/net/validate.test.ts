@@ -46,6 +46,15 @@ describe('parseGuestCtrl', () => {
     expect((r as { polluted?: unknown } | null)?.polluted).toBeUndefined();
     expect(Object.getPrototypeOf(r)).toBe(Object.prototype);
   });
+  it('ping / pong：at 必須是有限數（1e999 解析成 Infinity → 拒絕）', () => {
+    expect(parse({ t: 'ping', at: 12.5 })).toEqual({ t: 'ping', at: 12.5 });
+    expect(parse({ t: 'pong', at: 0 })).toEqual({ t: 'pong', at: 0 });
+    for (const t of ['ping', 'pong']) {
+      expect(parse(null, `{"t":"${t}","at":1e999}`)).toBeNull();
+      expect(parse(null, `{"t":"${t}","at":"1"}`)).toBeNull();
+      expect(parse({ t })).toBeNull();
+    }
+  });
 });
 
 describe('parsePs', () => {

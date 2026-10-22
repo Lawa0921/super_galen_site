@@ -244,14 +244,14 @@ export class NetHost {
   private onHello(g: Guest, m: Extract<GuestCtrl, { t: 'hello' }>): void {
     const game = this.game;
     if (m.proto !== PROTO || m.build !== this.opts.build) { this.reject(g, 'proto'); return; }
-    // 同 charId 的舊連線已經逾時（還沒輪到 ④）→ 先移除
-    // （RTC 常常沒及時報斷線，所以不等 GUEST_TIMEOUT_MS：沉默超過 REPLACE_SILENT_MS 就讓新連線取代）
-    const dup = this.list.find((o) => o !== g && o.alive && o.phase !== 'hello' && o.charId === m.charId);
-    if (dup && this.now - (dup.heardAt ?? this.now) > REPLACE_SILENT_MS) this.remove(dup, 'timeout');
-    if (this.list.filter((o) => o.alive && o.phase !== 'hello').length >= this.maxGuests) { this.reject(g, 'full'); return; }
     let character: DelveCharacter;
     try { character = validateCharacterStrict(m.character); } catch { this.reject(g, 'char'); return; }
     if (character.id !== m.charId) { this.reject(g, 'char'); return; }
+    // 同 charId 的舊連線沉默太久 → 新連線取代（RTC 常常沒及時報斷線，所以不等 GUEST_TIMEOUT_MS）。
+    // 放在 proto / 角色檔驗證之後：不合法的 hello 不能趕走合法的舊客人；移除後它不再佔名額，才輪到 full 判斷
+    const dup = this.list.find((o) => o !== g && o.alive && o.phase !== 'hello' && o.charId === m.charId);
+    if (dup && this.now - (dup.heardAt ?? this.now) > REPLACE_SILENT_MS) this.remove(dup, 'timeout');
+    if (this.list.filter((o) => o.alive && o.phase !== 'hello').length >= this.maxGuests) { this.reject(g, 'full'); return; }
     if (this.list.some((o) => o !== g && o.alive && o.phase !== 'hello' && o.charId === m.charId)) { this.reject(g, 'charInUse'); return; }
     // C8：retained（房主最後那份）與 hello 帶來的取 rev 較大的
     const kept = this.retained.get(m.charId);
@@ -284,17 +284,21 @@ export class NetHost {
     this.broadcast({ t: 'look', pid, nick: g.nick, look: look.look }, g);
   }
 
-  /** sum：興趣範圍內照舊依序回（同 cx 已排著就換掉它的 sums）；範圍外先停放，走近才回 */
+  /** sum：興趣範圍內照舊依序回；範圍外先停放，走近才回；超過 2 倍範圍直接丟。每個 cx 只留最新一筆（排著的、停放的都算） */
   private onSum(g: Guest, cx: number, sums: number[]): void {
-    if (Math.abs(cx - this.colOf(g.pid)) <= NET_TILE_COLS) {
-      g.parkedSums.delete(cx);
-      const job = g.jobs.find((j) => j.k === 'sum' && j.cx === cx);
-      if (job && job.k === 'sum') job.sums = sums; else g.jobs.push({ k: 'sum', cx, sums });
-      return;
-    }
+    const d = Math.abs(cx - this.colOf(g.pid));
     g.parkedSums.delete(cx);                                                  // 先 delete 再 set：排到最新
+    if (d <= NET_TILE_COLS) { this.queueSum(g, cx, sums); return; }
+    g.jobs = g.jobs.filter((j) => !(j.k === 'sum' && j.cx === cx));          // 排著的舊 sums 作廢
+    if (d > 2 * NET_TILE_COLS) return;
     g.parkedSums.set(cx, sums);
     while (g.parkedSums.size > SUM_PARK_MAX) g.parkedSums.delete(g.parkedSums.keys().next().value!);
+  }
+
+  /** 排進 jobs；同 cx 已排著的 sum 就換掉它的 sums（保留位置） */
+  private queueSum(g: Guest, cx: number, sums: number[]): void {
+    const job = g.jobs.find((j) => j.k === 'sum' && j.cx === cx);
+    if (job && job.k === 'sum') job.sums = sums; else g.jobs.push({ k: 'sum', cx, sums });
   }
 
   private onCmd(g: Guest, m: Extract<GuestCtrl, { t: 'cmd' }>): void {
@@ -402,7 +406,7 @@ export class NetHost {
         const gcx = this.colOf(g.pid);
         for (const [cx, sums] of [...g.parkedSums]) {
           const d = Math.abs(cx - gcx);
-          if (d <= NET_TILE_COLS) { g.parkedSums.delete(cx); g.jobs.push({ k: 'sum', cx, sums }); }
+          if (d <= NET_TILE_COLS) { g.parkedSums.delete(cx); this.queueSum(g, cx, sums); }
           else if (d > 2 * NET_TILE_COLS) g.parkedSums.delete(cx);
         }
       }
@@ -492,7 +496,7 @@ export class NetHost {
   // ── 移除 / 拒絕 ───────────────────────────────────
   /**
    * 移除一位客人（bye / onClose / 逾時 / 關房）：最後的 chk（連線還開著才送）、removeActor、visits.put、retained、對其他客人送 gone。
-   * bye = 要送給他的 bye（null = 不送）。不主動 close 連線（剛送出的訊息會被丟掉），由客人收到 bye 後自己關。
+   * bye = 要送給他的 bye（null = 不送）。不立刻 close 連線（剛送出的訊息會被丟掉）：有送 bye 就進 lingerQ，LINGER_MS 後由房主關。
    */
   private remove(g: Guest, bye: ByeReason | null): void {
     if (!g.alive) return;
