@@ -178,7 +178,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:rin:4': {
     lines: [
       // Story depth ruling (a): the list is copied from the order's old book; only its last line is the master's (I-09).
-      N('一張泛黃的名單，抄自一本更舊的書。抄來的名字都劃著線，只有最後一道是師父自己劃的，劃得很深。'),
+      N('一張泛黃的名單，抄自一本更舊的書。抄來的名字都劃著線，只有最後一道，是師父很多年前自己劃的，劃得很深。'),
       N('師父擱下筆：「從深處走出來的，不是人，是迷宮的意志。它走到哪裡，暮霧就跟到哪裡。」'),
       { who: 'rin', mood: 'averted', text: '「名單上的人，我一個都不認得。……一個都不。」' },
       N('洛恩問她怎麼了。她說沒事，第一次沒有看著他的眼睛回答。'),
@@ -451,13 +451,13 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('她收起短刃，靠著床腳坐下，一直坐到窗外發白。'),
       N('洛恩醒來時，桌上放著一枚裂開的小銅鐘。凜直直看著他的眼睛，把鐘樓、名單、石門和出口前那一刀，全都說了。'),
       { who: 'rin', mood: 'serious', text: '「洛恩，我是被派來殺你的。可是我不殺了──這是我自己決定的。」' },   // story polish ruling 10 (user-approved sample)
-      { who: 'rin', mood: 'serious', text: '「昨晚先抖的是刀尖。收刀的不是身體，是我。」' },   // answers first-return's 「身體自己動的」
+      { who: 'rin', mood: 'serious', text: '「昨晚收刀的不是身體，是我。」' },   // answers first-return's 「身體自己動的」
       { who: 'rin', mood: 'smile', text: '「『凜』是他們給的代號。……這個名字是我自己決定要用的。」' },
-      { who: 'hero', mood: 'sad', text: '「我早就覺得不對勁了。一直沒問，是怕一問，妳就走了。」' },
+      { who: 'hero', mood: 'sad', text: '「我早就覺得不對勁了。一直沒問下去，是怕一問，妳就走了。」' },
       N('凜沒有回答，也沒有移開視線。'),
       { who: 'hero', mood: 'smile', text: '「明天也一起回來吧。」' },
     ],
-    summary: '那天深夜，凜的刀尖停在洛恩的喉嚨上，最後收了回去。天亮後她說出一切，選擇不殺他。洛恩說，他一直沒問，是怕她走。',
+    summary: '那天深夜，凜的刀尖停在洛恩的喉嚨上，最後收了回去。天亮後她說出一切，選擇不殺他。洛恩說，他一直沒問下去，是怕她走。',
   },
   // Story depth Task 2 (design §8 sample 2, pasted as it stands; plan ruling 10): her confession, at the dinner of the
   // return after her reveal. It plays alone; the writing task finalizes it.
@@ -494,7 +494,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'rin', mood: 'surprised', text: '「師父。」' },
       N('老人捧著鐘的手在發抖。他看的不是凜，是站在她身後的洛恩。'),
       { who: 'bellkeeper', text: '「那張臉，吾等記得。很多年前在市集裡，從背後刺進你的，是吾等的刀──是我的刀。」' },
-      { who: 'bellkeeper', text: '「從深處走出來的人，吾等殺了你，你卻又回來了，所以吾等才怕。這一回我不動手，只想看清楚你。」' },
+      { who: 'bellkeeper', text: '「從深處走出來的人，殺了也會再回來。吾等怕的，就是這個。這一回我不動手，只想看清楚你。」' },
       { who: 'hero', mood: 'serious', text: '「我叫洛恩。名單上要寫的話，就寫這個。」' },
       N('老人沒有應那個名字，把鐘抱緊，轉身走進了鎮裡。凜沒有再看他一眼。'),
     ],
