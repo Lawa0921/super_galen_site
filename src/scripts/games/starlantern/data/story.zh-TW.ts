@@ -219,18 +219,18 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('冒險者公會。洛恩把一塊石頭放上櫃台，那是從本道第四層的牆上敲下來的。'),
       N('石頭裡有光，細得像葉脈，全都往同一個方向流──往下。'),
-      { who: 'anna', text: '「這紋路……西邊高地的星燈，基座上刻的就是這個。」' },
-      { who: 'hero', mood: 'serious', text: '「有幾條是灰的。摸上去，會聽見不認識的人在說話。」' },
+      { who: 'anna', text: '「這紋路我認得。西邊高地的星燈，基座上刻的就是這個。」' },
+      { who: 'hero', mood: 'serious', text: '「有幾條光是灰的，牆都是順著那幾條長出來的。摸上去，會聽見不認識的人在說話。」' },
       { who: 'anna', text: '「公會的老人說過：山上那道光只是燈罩，真正在燒的燈芯，在迷宮的最底下。」' },
-      { who: 'anna', text: '「迷宮的牆如果是燈的根……那它是在燈壞掉之後，才長出來的。」' },
+      { who: 'anna', text: '「光壞掉的地方，牆就長出來。所以迷宮是燈壞了以後，才長出來的。」' },
       { who: 'hero', mood: 'serious', text: '「燈芯還在燒嗎？」' },
       { who: 'anna', text: '「光柱一年比一年暗。……還在燒，可是快燒完了。」' },
       N('月影旅館。瑪莎端上熱湯，凜捧起碗，一口氣喝到見底，眉頭也沒有皺一下。'),
-      { who: 'marta', text: '「慢點，孩子，那是剛起鍋的。」' },
-      { who: 'rin', text: '「……湯要趁熱喝完。不然，就沒有了。」' },
+      { who: 'marta', text: '「孩子，慢慢喝，那是剛起鍋的。」' },
+      { who: 'rin', text: '「湯要趁熱喝完。不然……就沒有了。」' },
       N('洛恩看著她空掉的碗，什麼也沒說。'),
     ],
-    summary: '第四層的牆裡流著星燈的光。燈芯在迷宮最底下，迷宮是燈壞掉之後長出來的。凜喝湯的樣子有點不對勁。',
+    summary: '第四層的牆裡流著星燈的光，牆順著灰掉的光長。燈芯在迷宮最底下，迷宮是燈壞了以後才長出來的。凜喝湯的樣子有點不對勁。',
   },
   act3: {
     lines: [
@@ -238,13 +238,13 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'anna', text: '「替你的碎片建檔的時候，我總覺得，這些字我在哪裡讀過。」' },
       N('泛黃的一頁。找到的地點：傳送門廣場。身上的東西：一把刻著怪紋路的劍。'),
       N('記得的最後一句話，只有一個字：「洛」。'),
-      { who: 'anna', text: '「比我出生還早。後面還有，每隔幾十年就一筆。……我數到第七筆，就數不下去了。」' },
+      { who: 'anna', text: '「比我出生還早。後面每隔幾十年就有一筆，我數到第七筆，就數不下去了。」' },
       N('每一筆的最後一欄，不是「回到迷宮，未歸」，就是「死亡」。'),
       { who: 'anna', text: '「寫著死亡的那幾筆，邊上都有人補了同一個名字。不是人名，是一個結社。」' },
       { who: 'anna', text: '「『靜鐘會』。老冒險者說，他們不搶錢，也不搶碎片。只要一條命。」' },
-      { who: 'hero', mood: 'sad', text: '「……我被殺過。不只一次。」' },
+      { who: 'hero', mood: 'sad', text: '「我被殺過……不只一次。」' },
       N('安娜闔上登記簿，把今年那一張登記表抽出來，放在最上面。'),
-      { who: 'anna', text: '「你這一張，最後一欄我還空著。……我打算一直空著。」' },
+      { who: 'anna', text: '「你這一張的最後一欄，我還空著。我打算一直空著。」' },
       N('回旅館的路上，洛恩第一次停下腳步，回頭看了一眼身後的暮霧。'),
     ],
     summary: '公會最舊的登記簿裡，記著好幾個和洛恩一模一樣的人，有幾筆死於「靜鐘會」之手。安娜說，他這一張的最後一欄會一直空著。',
@@ -253,19 +253,19 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('本道第十六層。崩落的牆後面，埋著一整座城：石板街、屋頂、乾掉的噴泉。'),
       N('廣場中央的石碑，刻滿和洛恩的劍上一樣的紋路。沒有人教過他，他卻讀得出來。'),
-      { who: 'hero', mood: 'distant', text: '「『艾斯特拉。此燈收逝者之記憶，點之為光，使其長明。』」' },
-      { who: 'hero', mood: 'distant', text: '「『戰後，眾人欲忘，盡傾悲傷於燈。光遂變質，燈根生為迷宮。』」' },
-      { who: 'hero', mood: 'distant', text: '「『一人自願下行，以己之記憶為燈芯。後人稱之守燈人。』」' },
-      { who: 'hero', mood: 'distant', text: '「『芯盡，其人被吐還地面，一無所記；終將復歸深處，再點此燈。』」' },
+      { who: 'hero', mood: 'distant', text: '「『艾斯特拉之燈，收逝者之記憶，點之為光，長明不滅。』」' },
+      N('碑上接著說：打完仗以後，大家想忘記，把悲傷全倒進了燈裡。光變了質，燈的根長成了迷宮。'),
+      { who: 'hero', mood: 'distant', text: '「『一人自願下行，以己之記憶為燈芯，後人稱之守燈人。』」' },
+      { who: 'hero', mood: 'distant', text: '「燈芯燒完了，那個人就被吐回地面，什麼都不記得。然後，再自己走回去點燈。」' },
       N('冒險者公會。安娜聽完，翻開那本舊登記簿，指著邊上一行褪色的小字。'),
       { who: 'anna', text: '「靜鐘會的人說，那個走出來的人『走到哪裡，暮霧就跟到哪裡』。」' },
       { who: 'anna', text: '「他們看反了。不是有人走出來，霧才變濃。是燈芯快燒完了，霧才變濃。」' },
-      { who: 'hero', mood: 'sad', text: '「……那我為什麼，讀得懂那塊碑？」' },
+      { who: 'hero', mood: 'sad', text: '「那我……為什麼讀得懂那塊碑？」' },
       // Rin's lines know whether she has made her choice: act 4 may play before her reveal or after it (U1).
       { who: 'narrator', text: '凜一直站在門邊。她的手按著刀柄，像是在等某個聲音。', if: { oath: false } },
-      { who: 'rin', mood: 'guarded', text: '「……我出去走走。這裡太安靜了。」', if: { oath: false } },
-      { who: 'rin', mood: 'sad', text: '「我等過那口鐘響。……等的，原來是一個誤會。」', if: { oath: true } },
-      { who: 'rin', mood: 'serious', text: '「洛恩。他們錯了。……你不是霧。」', if: { oath: true } },
+      { who: 'rin', mood: 'guarded', text: '「我出去走走，這裡太安靜了。」', if: { oath: false } },
+      { who: 'rin', mood: 'sad', text: '「我等過那口鐘響，等的原來是一個誤會。」', if: { oath: true } },
+      { who: 'rin', mood: 'serious', text: '「洛恩，他們錯了。……你不是霧。」', if: { oath: true } },
     ],
     summary: '地底的古城艾斯特拉。石碑說，有人自願當燈芯，叫守燈人。霧變濃是因為燈芯快燒完，靜鐘會看反了。洛恩讀得懂碑文。',
   },
@@ -292,7 +292,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('秋天的獵場。他蹲在草裡，把細繩繞成活結，繫在兩棵樹之間。'),
       N('「不用殺牠。」老獵人說，「讓牠慢下來、站不穩，剩下的交給同伴。」'),
-      { who: 'hero', mood: 'distant', text: '「絆住，不是為了殺。……手還記得。」' },
+      { who: 'hero', mood: 'distant', text: '「把牠絆住，是為了讓牠慢下來，不是為了殺。我的手還記得。」' },
       { who: 'hero', mood: 'sad', text: '「劍、繩結……都有人教過我。那些人，我一個也想不起來。」' },
     ],
     summary: '洛恩想起老獵人教他設陷阱：不用殺，讓牠慢下來就好。',
@@ -310,7 +310,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('那年秋天，他走出迷宮時，遠方的鐘正好響完最後一聲。他回過頭，什麼也沒看見。'),
       N('幾天後的夜裡，巷子裡背後一涼。他倒進暮霧裡，耳邊又響起那口鐘。'),
-      { who: 'hero', mood: 'sad', text: '「……我死過。在那條巷子裡。」' },
+      { who: 'hero', mood: 'sad', text: '「我死過……就在那條巷子裡。」' },
       N('凜的手按住了領口的小銅鐘，按得很緊，像是怕它響。'),
     ],
     summary: '洛恩想起遠方響過一次鐘。幾天後的夜裡，他死在巷子裡。',
@@ -318,7 +318,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:hero:6': {
     lines: [
       N('石塔頂上，有人指著夜空，一顆一顆念星星的名字。他跟著念，念錯了就重來。'),
-      N('「火、冰、雷，都在星星裡。」那人說，「叫得出名字，它們就會回應你。」'),
+      N('「火、冰和雷都在星星裡。」那人說，「叫得出名字，它們就會回應你。」'),
       { who: 'hero', mood: 'serious', text: '「那座塔，鎮上沒有。那片天上的星星，位置也不對。」' },
       { who: 'hero', mood: 'distant', text: '「教我劍、盾、繩結和星星的人……也許，不是同一輩子遇見的。」' },
     ],
@@ -328,7 +328,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('遠方的鐘又響過一次。一季還沒過完，市集的人群裡，他看見了拿刀的人。'),
       N('然後是黑暗。他在很深很深的地方醒來，什麼都不記得，只看得見頭頂一點光。'),
-      { who: 'hero', mood: 'sad', text: '「死了，就在最底下醒來，再走上來一次。……這條路，我走過不只一次。」' },
+      { who: 'hero', mood: 'sad', text: '「死了以後，就在最底下醒來，再走上來一次。這條路，我走過不只一次。」' },
       { who: 'hero', mood: 'serious', text: '「拿刀的那個人，手在發抖。……他們在怕什麼？」' },
     ],
     summary: '洛恩又想起一次死亡，和死後在最深處醒來、再往上走的路。拿刀的人，手在發抖。',
@@ -352,7 +352,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('有幾次，他在鎮上住了下來，交了朋友，學了本事。然後底下有什麼在拉他，他就走回深處。'),
       N('也有幾次，遠方的鐘響了。他在鎮上還住不滿一季，靜鐘會的刀就到了背後。'),
       N('死了的那幾次，他在最底下的黑暗裡躺了幾十年。醒來時手裡只有那把劍，再從頭往上走。'),
-      { who: 'hero', mood: 'sad', text: '「……想起來了。我是守燈人。」' },
+      { who: 'hero', mood: 'sad', text: '「想起來了……我是守燈人。」' },
       { who: 'hero', mood: 'serious', text: '「我在上面活過的日子，就是下一次的燈芯。」' },
       { who: 'narrator', text: '凜站在光照不到的地方，手緊緊按著領口的小銅鐘。', if: { oath: false } },
       { who: 'narrator', text: '凜走到他身邊，什麼也沒說，只是抓住了他的袖口。', if: { oath: true } },
@@ -393,7 +393,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'hero', text: '「睡不著？」' },
       { who: 'rin', mood: 'serious', text: '「看門。總覺得，有什麼會從那裡走出來。」' },
     ],
-    summary: '深夜，凜坐在旅館窗邊盯著傳送門。她說，總覺得有什麼會從那裡走出來。',
+    summary: '那天深夜，凜坐在旅館窗邊盯著傳送門。她總覺得，有什麼會從那裡走出來。',
   },
   'chat:hero:3': {
     lines: [
@@ -406,9 +406,9 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'chat:hero:4': {
     lines: [
       { who: 'hero', mood: 'serious', text: '「凜。碑上那個人，每一次都是一個人走下去的。」' },
-      { who: 'rin', mood: 'averted', text: '「……為什麼跟我說這個。」', if: { oath: false } },
+      { who: 'rin', mood: 'averted', text: '「為什麼跟我說這個？」', if: { oath: false } },
       { who: 'narrator', text: '她轉身上樓，走到一半停了一下，沒有回頭。', if: { oath: false } },
-      { who: 'rin', mood: 'serious', text: '「這一次，不是一個人。你下去的地方，我也去。我們一起回來。」', if: { oath: true } },
+      { who: 'rin', mood: 'serious', text: '「這一次，不是一個人。你下去的地方，我也去。」', if: { oath: true } },
       { who: 'rin', mood: 'smile', text: '「再說，洛恩。你一個人，連繃帶都纏不好。」', if: { oath: true } },
     ],
     summary: '洛恩對凜說，碑上的那個人，每一次都是一個人走下去的。',
@@ -1452,9 +1452,9 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
 const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   // Task 6
   hero: [
-    '洛恩。安娜替我取的名字，因為我醒來時只念得出一個「洛」字。我從迷宮深處走出來，手上握著一把刻著紋路的劍。',
+    '洛恩是安娜替我取的名字，因為我醒來時只念得出一個「洛」字。我從迷宮深處走出來，手上握著一把刻著紋路的劍。',
     '我的手記得的事比我多：劍怎麼放出去、繩結怎麼絆住、盾怎麼推回來。我也記得，自己死在一條巷子裡。',
-    '我是守燈人，從艾斯特拉走下去的那一個。這把劍是燈鑰，燈芯是我在地面上活過的日子。這一次，我想和大家一起回來。',
+    '我是守燈人，從艾斯特拉走下去的那一個。這把劍是燈鑰，燈芯是我在地面上活過的日子。這一次，我想和大家一起回到鎮上。',
   ],
   // Task 7: segment 3 unlocks with her 7th piece, before the reveal (the handbook opens in the dungeon): no choice (F6).
   rin: [

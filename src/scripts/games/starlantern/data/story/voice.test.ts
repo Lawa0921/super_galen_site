@@ -17,6 +17,8 @@ const POLISHED: string[] = [
   'scenes.prologue.', 'scenes.prologue-inn.', 'scenes.first-return.', 'scenes.act1-after.', 'scenes.chat:hero:1.', 'scenes.chat:rin:1.', 'act1Card.',
   // Task 6: Rin's line
   'scenes.mem:rin:', 'scenes.chat:rin:2.', 'scenes.chat:rin:3.', 'scenes.chat:rin:4.', 'scenes.rin-reveal.', 'scenes.bellkeeper-arrives.', 'rinLines.', 'rinOath.', 'people.rin.',
+  // Task 7: Lorne's memories and the acts
+  ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `scenes.mem:hero:${n}.`), 'scenes.chat:hero:2.', 'scenes.chat:hero:3.', 'scenes.chat:hero:4.', 'scenes.act2.', 'scenes.act3.', 'scenes.act4.', 'people.hero.', 'truths.',
 ];
 
 type Scope = readonly string[];
