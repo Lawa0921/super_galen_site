@@ -577,7 +577,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('滿月的夜。銀盆裡的水自己亮了起來，映出一道從地底往上走的背影。'),
       N('很多人在喊同一個名字。那個從深處走出來的人走過的地方，一盞很大的燈重新亮了。'),
-      { who: 'selene', mood: 'foresee', text: '「那是滿月給我看的結局，又亮又暖。」' },
+      { who: 'selene', mood: 'foresee', text: '「那是滿月給我看的結局。很亮也很暖。」' },
       { who: 'selene', mood: 'wistful', text: '「那個人的臉，我沒有看清楚。也許是我不敢看吧。」' },
     ],
     summary: '滿月的夜，瑟蕾在水盆裡看見一個光明的結局：從深處走出來的人被很多人記住，燈重新亮了。',
@@ -609,7 +609,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('新月的夜，銀盆裡沒有月亮。那道往上走的背影，在出口前倒下了，背後插著一把短刃。'),
       N('燈等不到人，熄了。暮霧漫上來，吞掉了每一個人。滿月裡那些人的臉，這時才一張一張清楚了。'),
       { who: 'selene', mood: 'sad', text: '「凜，插在背後的那把刀……我早就看見了。是我一直沒有說出口。」', if: { oath: true } },
-      { who: 'selene', mood: 'smile', text: '「站在燈旁邊的那群人，是你們。洛恩，我想看見我們走到那一天。」', if: { oath: true } },
+      { who: 'selene', mood: 'smile', text: '「站在燈旁邊的那群人，是你們，凜也在。洛恩，我想看見我們走到那一天。」', if: { oath: true } },
       { who: 'narrator', text: '瑟蕾抬起頭，看著站在洛恩身後一步的凜，看了很久，什麼也沒有說。', if: { oath: false } },
       { who: 'selene', mood: 'wistful', text: '「站在燈旁邊的那群人……是你們。洛恩，我想看見我們走到那一天。」', if: { oath: false } },
     ],
@@ -676,7 +676,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('出發的清晨。神主解下拜殿前的鈴，繫在她的槍穗上。'),
       N('「帶著吧。」神主說，「回不來也無妨。在妳守著的地方掛上它，那裡就是神社。」'),
-      { who: 'chizuru', mood: 'solemn', text: '「神主大人，早就知道我可能回不去了。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「神主大人早就知道，我可能回不去了。」' },
       { who: 'chizuru', mood: 'smile', text: '「洛恩大人，回城之後，我想在鎮邊蓋一座小祠，為此處的人掛上這枚鈴。」' },
     ],
     summary: '槍穗上的鈴，是神主託付給千鶴的。她決定在露米亞的鎮邊蓋一座小祠，為了現在的人。',
