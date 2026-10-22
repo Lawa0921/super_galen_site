@@ -1,3 +1,5 @@
+@use 'sass:math';
+
 @font-face {
   font-family: 'Cubic 11';
   src: url('/assets/fonts/cubic-11/Cubic_11.woff2') format('woff2');
@@ -15,11 +17,23 @@ $slx-down: #ff8a7a;
 $slx-win: rgb(10, 14, 34);
 
 html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; background: #000; }
-// place-content centres the 640px track even when the window is narrower, so scale() shrinks around the window centre.
-.slx-body { display: grid; place-items: center; place-content: center; }
+// A window smaller than the stage at 1x: the stage stays at 1x and the page scrolls to it (legibility ruling 1).
+@media (max-width: $slx-w - 1px), (max-height: $slx-h - 1px) {
+  html:has(.slx-body), .slx-body { overflow: auto; }
+}
 
+// The stage scale --slx-s (legibility ruling 1): each stage pixel is a whole number K of device pixels, s = K / d at the
+// device pixel ratio d, with K = floor(min(vw·d / 640, vh·d / 360)) and s at most 6. Below d 2 any K from 1 (so s may be
+// under 1: one stage pixel, one device pixel); from d 2 only an s of 1 or more (else s = 1). The corner snaps to a device
+// pixel (--slx-px = 1/d px) with CSS round(); a browser without round() keeps the plain line before it.
 .slx-screen {
-  position: relative;
+  --slx-s: 1;
+  --slx-px: 1px;
+  position: absolute;
+  left: max(0px, calc((100vw - #{$slx-w} * var(--slx-s)) / 2));
+  left: max(0px, round(down, calc((100vw - #{$slx-w} * var(--slx-s)) / 2), var(--slx-px)));
+  top: max(0px, calc((100dvh - #{$slx-h} * var(--slx-s)) / 2));
+  top: max(0px, round(down, calc((100dvh - #{$slx-h} * var(--slx-s)) / 2), var(--slx-px)));
   width: $slx-w;
   height: $slx-h;
   overflow: hidden;
@@ -27,25 +41,31 @@ html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; back
   color: $slx-ink;
   font: 12px/16px 'Cubic 11', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
   image-rendering: pixelated;
-  transform-origin: center;
+  transform-origin: 0 0;
+  transform: scale(var(--slx-s));
   user-select: none;
 }
 .slx-ui { position: absolute; inset: 0; }
 .slx-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: $slx-dim; }
 
-// Integer scales when the window has room; below 640x360 shrink proportionally.
+// A device pixel ratio the list below does not know: a whole CSS scale, 1 to 6.
 @each $k in 2, 3, 4, 5, 6 {
   @media (min-width: $slx-w * $k) and (min-height: $slx-h * $k) {
-    .slx-screen { transform: scale($k); }
+    .slx-screen { --slx-s: #{$k}; }
   }
 }
-// Sass cannot divide viewport units by pixels, so step down in 5% increments: each rule applies once the
-// window is smaller than the previous step, and later (smaller) steps win.
-$slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3;
-@for $i from 2 through length($slx-steps) {
-  $prev: nth($slx-steps, $i - 1);
-  @media (max-width: $slx-w * $prev - 1px), (max-height: $slx-h * $prev - 1px) {
-    .slx-screen { transform: scale(nth($slx-steps, $i)); }
+// The ratios of common screens and Windows / browser zoom steps: every K for each, smallest first, so the largest that
+// fits wins. They come after the whole scales above and override them.
+$slx-dprs: 1, 1.1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.625, 2.75, 3;
+@each $d in $slx-dprs {
+  $res: '(min-resolution: #{$d - 0.005}dppx) and (max-resolution: #{$d + 0.005}dppx)';
+  @media #{$res} {
+    .slx-screen { --slx-d: #{$d}; --slx-px: #{math.div(1px, $d)}; }
+  }
+  @for $k from if($d < 2, 1, math.ceil($d)) through math.floor(6 * $d) {
+    @media #{$res} and (min-width: #{math.div($slx-w * $k, $d)}) and (min-height: #{math.div($slx-h * $k, $d)}) {
+      .slx-screen { --slx-s: #{math.div($k, $d)}; }
+    }
   }
 }
 

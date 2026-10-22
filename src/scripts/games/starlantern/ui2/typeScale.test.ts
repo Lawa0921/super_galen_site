@@ -1,0 +1,59 @@
+// @vitest-environment node
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import * as sass from 'sass';
+import { describe, expect, it } from 'vitest';
+
+/**
+ * The static guard of the legibility plan (2026-10-23) over the compiled stylesheet: what the CSS itself promises,
+ * whatever page shows it. Task 2a: the stage scale.
+ */
+const SCSS = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..', 'styles', '_starlantern-ui.scss');
+const css = sass.compile(SCSS, { logger: sass.Logger.silent }).css;
+
+interface Rule { media: string | null; selector: string; body: string }
+
+/** Every style rule of `text` with the @media it sits in (the stylesheet nests no deeper than one @media). */
+function rules(text: string, media: string | null = null): Rule[] {
+  const out: Rule[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const open = text.indexOf('{', i);
+    if (open < 0) break;
+    const head = text.slice(i, open).trim();
+    let depth = 1, j = open + 1;
+    while (depth > 0 && j < text.length) { if (text[j] === '{') depth++; else if (text[j] === '}') depth--; j++; }
+    const inner = text.slice(open + 1, j - 1);
+    if (head.startsWith('@media')) out.push(...rules(inner, head.slice(6).trim()));
+    else if (!head.startsWith('@')) out.push({ media, selector: head, body: inner });
+    i = j;
+  }
+  return out;
+}
+
+/** The declarations of a rule body, as [property, value]. */
+const decls = (body: string): [string, string][] =>
+  body.split(';').map((d) => d.trim()).filter(Boolean).map((d) => { const k = d.indexOf(':'); return [d.slice(0, k).trim(), d.slice(k + 1).trim()]; });
+
+describe('the stylesheet (legibility Task 2a)', () => {
+  it('the stage scale is whole device pixels', () => {
+    const all = rules(css);
+    // The stage is drawn by one transform: a scale by --slx-s, or (a touch phone held upright, Task 2b) turned first.
+    const transforms = all.filter((r) => /(^|,)\s*\.slx-screen\s*(,|$)/.test(r.selector)).flatMap((r) => decls(r.body).filter(([k]) => k === 'transform').map(([, v]) => v));
+    expect(transforms.length).toBeGreaterThan(0);
+    for (const t of transforms) expect(t, t).toMatch(/^(scale\(var\(--slx-s\)\)|translateX\([^)]*\) rotate\(90deg\) scale\(var\(--slx-s\)\))$/);
+    // Each --slx-s is a whole number of device pixels at the DPR its query picks (the middle of its resolution range).
+    const scales = all.flatMap((r) => decls(r.body).filter(([k]) => k === '--slx-s').map(([, v]) => ({ media: r.media, s: Number(v) })));
+    expect(scales.length).toBeGreaterThan(10);
+    for (const { media, s } of scales) {
+      expect(Number.isFinite(s), `${media}: ${s}`).toBe(true);
+      const lo = media?.match(/min-resolution:\s*([\d.]+)dppx/), hi = media?.match(/max-resolution:\s*([\d.]+)dppx/);
+      const d = lo && hi ? (Number(lo[1]) + Number(hi[1])) / 2 : 1;
+      expect(Math.abs(s * d - Math.round(s * d)), `${media}: s ${s} at d ${d}`).toBeLessThan(1e-4);
+    }
+    // No fractional scale() anywhere (grayscale( is not a scale).
+    expect(css).not.toMatch(/(?<![\w-])scale\(\s*\d*\.\d/);
+    // The origin snaps to whole device pixels: the CSS round() reaches the browser as written.
+    expect(css).toContain('round(down,');
+  });
+});

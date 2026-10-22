@@ -19,9 +19,14 @@ import { version8Save } from '../../src/scripts/games/starlantern/engine/testing
 import { defaultTalents, defaultTree } from '../../src/scripts/games/starlantern/engine/progression';
 import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/engine/builds';
 import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
-import { SWEEP, sweep } from './starlantern-legibility';
+import { SWEEP, expectedMode, legibility, stageScale, sweep } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
+
+// Every test ends on a screen that reads clearly: whole-pixel scale and, once its scene is done, 12/24px Cubic 11 (legibility plan).
+test.afterEach(async ({ page }, info) => {
+  expect(await legibility(page, { fontBlocked: info.annotations.some((a) => a.type === 'font-blocked') })).toEqual([]);
+});
 
 const box = (page: Page) => page.locator('#sl-screen').boundingBox();
 
@@ -102,25 +107,36 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-title')).toBeVisible();
   });
 
-  for (const [w, h, scale] of [[1280, 720, 2], [1366, 768, 2], [2560, 1440, 4], [390, 844, 0.6], [320, 568, 0.5]] as const) {
-    test(`fits a ${w}x${h} window without scrolling`, async ({ page }) => {
+  // Whole device pixels per stage pixel at every size, at 100% here and at 125% and 150% in the chromium-dpr projects
+  // (legibility Task 2a). The page scrolls only as far as the stage overflows (legibility checks it).
+  for (const [w, h] of [[1280, 720], [1366, 768], [2560, 1440], [1281, 721], [1919, 1081], [844, 390], [844, 340], [600, 400]] as const) {
+    test(`fits a ${w}x${h} window at whole device pixels (legibility Task 2a) @dpr`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: h });
       await page.goto('/games/starlantern');
-      await expect(page.locator('#sl-screen')).toBeVisible();
-      const b = (await box(page))!;
-      expect(b.width).toBeCloseTo(640 * scale, 0);
-      expect(b.height).toBeCloseTo(360 * scale, 0);
-      expect(b.x).toBeGreaterThanOrEqual(0);
-      expect(b.y).toBeGreaterThanOrEqual(0);
-      expect(b.x + b.width).toBeLessThanOrEqual(w + 0.5);
-      expect(b.y + b.height).toBeLessThanOrEqual(h + 0.5);
-      const scroll = await page.evaluate(() => ({ x: document.documentElement.scrollWidth, y: document.documentElement.scrollHeight, w: innerWidth, h: innerHeight }));
-      expect(scroll.x).toBeLessThanOrEqual(scroll.w);
-      expect(scroll.y).toBeLessThanOrEqual(scroll.h);
+      await expect(page.locator('.slx-title [role=option]').first()).toBeVisible();
+      const env = await page.evaluate(() => ({ vw: innerWidth, vh: innerHeight, d: devicePixelRatio }));
+      const mode = await stageScale(page);
+      expect(mode.kind).toBe('scale');
+      expect(mode.s).toBeCloseTo(expectedMode(env.vw, env.vh, env.d, false).s, 4);
+      if (w === 1280) expect(mode.s).toBeCloseTo(({ 1: 2, 1.25: 1.6, 1.5: 2 } as Record<number, number>)[env.d], 4);
+      expect(await legibility(page)).toEqual([]);
     });
   }
 
-  test('uses the pixel font and still renders when it fails to load', async ({ page }) => {
+  test('fullscreen keeps the whole-pixel scale (legibility Task 2a) @dpr', async ({ page }) => {
+    await storySetting(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto('/games/starlantern');
+    await expect(page.locator('.slx-title [role=option]').first()).toBeVisible();
+    await page.locator('.slx-title [role=option]', { hasText: T.ui2.title.settings }).click();
+    await expect(page.locator('.slx-settings')).toBeVisible();
+    await page.locator('.slx-settings [data-id=fullscreen]').click();
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement === document.documentElement)).toBe(true);
+    expect(await page.locator('#sl-screen').evaluate((e) => getComputedStyle(e).transform)).not.toBe('none');
+    expect(await legibility(page)).toEqual([]);
+  });
+
+  test('uses the pixel font and still renders when it fails to load', { annotation: { type: 'font-blocked' } }, async ({ page }) => {
     await page.goto('/games/starlantern');
     // A face only downloads once something asks for it; load it explicitly, then confirm it resolved.
     expect(await page.evaluate(async () => (await document.fonts.load('12px "Cubic 11"')).length)).toBeGreaterThan(0);

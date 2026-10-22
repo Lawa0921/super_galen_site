@@ -10,7 +10,7 @@ import { cardOf, compareCards } from '../skillCard';
 import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
-import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView } from './statusTabs';
+import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView, revealIn } from './statusTabs';
 import { StatusScene } from './status';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
@@ -1978,5 +1978,44 @@ describe('the tree tab and the suggested builds (plan 8h Task 7)', () => {
     s.enter(document.createElement('div'));
     s.onAction('cancel');
     expect(go).toHaveBeenCalledWith('guild');
+  });
+});
+
+describe('revealIn in stage px (legibility Task 2a)', () => {
+  it('revealIn scrolls by stage px at 1.6x and sideways (legibility Task 2a)', () => {
+    const screen = document.createElement('div'); screen.className = 'slx-screen';
+    const pane = document.createElement('div'); pane.className = 'slx-tree-cols';
+    const node = document.createElement('div');
+    pane.append(node); screen.append(pane); document.body.append(screen);
+    const box = (left: number, top: number, right: number, bottom: number) =>
+      ({ left, top, right, bottom, x: left, y: top, width: right - left, height: bottom - top, toJSON: () => ({}) }) as DOMRect;
+    const rects = new Map<Element, DOMRect>();
+    const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) { return rects.get(this) ?? box(0, 0, 0, 0); });
+    const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(1000);
+    const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(200);
+    try {
+      // 1.6x, the stage at (128, 72): the columns span stage y 100-300, the node 290-330, so 30 stage px (48 screen px) below.
+      rects.set(screen, box(128, 72, 128 + 1024, 72 + 576));
+      rects.set(pane, box(128, 72 + 160, 128 + 1024, 72 + 480));
+      rects.set(node, box(140, 72 + 464, 300, 72 + 528));
+      revealIn(pane, node, null);
+      expect(pane.scrollTop).toBe(30);
+      // Above: the node at stage y 80-110, 20 stage px over the columns' top.
+      pane.scrollTop = 50;
+      rects.set(node, box(140, 72 + 128, 300, 72 + 176));
+      revealIn(pane, node, null);
+      expect(pane.scrollTop).toBe(30);
+      // Turned at 2x: the stage's top runs down the screen's right edge (x 720). Columns at stage y 100-300 are x 120-520;
+      // the node at stage y 290-330 is x 60-140: 30 stage px below, though nothing is below on screen.
+      rects.set(screen, box(0, 0, 720, 1280));
+      rects.set(pane, box(120, 0, 520, 1280));
+      rects.set(node, box(60, 100, 140, 400));
+      pane.scrollTop = 0;
+      revealIn(pane, node, null);
+      expect(pane.scrollTop).toBe(30);
+    } finally {
+      rect.mockRestore(); sh.mockRestore(); ch.mockRestore();
+      screen.remove();
+    }
   });
 });

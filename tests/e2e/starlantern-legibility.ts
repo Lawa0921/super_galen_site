@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
 import { SPECIALS, STARLIT_RARITIES } from '../../src/scripts/games/starlantern/data/gear';
 import { ENHANCE_MAX } from '../../src/scripts/games/starlantern/data/forge';
@@ -466,4 +466,159 @@ export async function sweep(page: Page, sizes: readonly SweepSize[], onScreen: (
     }
   }
   return w.errors;
+}
+
+// ── Task 2a: the stage scale and the guard ───────────────────────────────────────────────────────────────────────────
+
+export type Rect = { x: number; y: number; width: number; height: number };
+export type StageMode = { kind: 'scale' | 'sideways'; s: number };
+
+/** The device pixel ratios the stylesheet knows (ruling 1); any other gets a whole CSS scale. */
+export const KNOWN_DPR = [1, 1.1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.625, 2.75, 3] as const;
+
+/**
+ * The stage scale ruling 1 (and, for a touch phone held upright, ruling 2) gives a `vw` x `vh` window at device pixel ratio
+ * `d`: s·d whole, with K = floor(min(vw·d/640, vh·d/360)) device pixels per stage pixel, s = K/d at most 6; below 2 any
+ * K ≥ 1, from 2 only K ≥ d (else s = 1); K = 0 gives s = 1. An unknown d: a whole CSS scale from 1 to 6.
+ */
+export function expectedMode(vw: number, vh: number, d: number, touch: boolean): StageMode {
+  const sideways = touch && vh > vw && vw < 640;
+  const [w, h] = sideways ? [360, 640] : [640, 360];
+  const [aw, ah] = sideways ? [vw, vh - 40] : [vw, vh];
+  const kind = sideways ? 'sideways' : 'scale';
+  const known = KNOWN_DPR.find((k) => Math.abs(k - d) < 0.005);
+  if (known === undefined) return { kind, s: Math.max(1, Math.min(6, Math.floor(Math.min(aw / w, ah / h) + 1e-9))) };
+  const K = Math.min(Math.floor(Math.min((aw * known) / w, (ah * known) / h) + 1e-9), Math.floor(6 * known + 1e-9));
+  if (K < 1) return { kind, s: 1 };
+  if (known >= 2 && K < Math.ceil(known - 1e-9)) return { kind, s: 1 };
+  return { kind, s: K / known };
+}
+
+/** The stage's scale as drawn: read from the computed transform matrix of #sl-screen. */
+export const stageScale = (page: Page): Promise<StageMode> => page.evaluate(() => {
+  const m = new DOMMatrixReadOnly(getComputedStyle(document.getElementById('sl-screen')!).transform);
+  return Math.abs(m.b) > 1e-6 ? { kind: 'sideways' as const, s: Math.hypot(m.a, m.b) } : { kind: 'scale' as const, s: m.a };
+});
+
+/** `target`'s box in stage px (0..640 x 0..360), whatever the stage's scale or turn. */
+export const stageBox = async (page: Page, target: Locator): Promise<Rect> => {
+  const mode = await stageScale(page);
+  const scr: Rect = await page.locator('#sl-screen').evaluate((e) => e.getBoundingClientRect().toJSON());
+  const r: Rect = await target.evaluate((e) => e.getBoundingClientRect().toJSON());
+  const s = mode.s;
+  if (mode.kind === 'scale') return { x: (r.x - scr.x) / s, y: (r.y - scr.y) / s, width: r.width / s, height: r.height / s };
+  return { x: (r.y - scr.y) / s, y: (scr.x + scr.width - (r.x + r.width)) / s, width: r.height / s, height: r.width / s };
+};
+
+/** Scenes (their root's second class) whose text Tasks 3–6 have yet to bring to 12/24px: the text checks skip them. */
+export const PENDING_SCENES: string[] = ['slx-title', 'slx-town', 'slx-facility', 'slx-settings-scene', 'slx-formation-scene', 'slx-clear', 'slx-dungeon', 'slx-battle', 'slx-status-scene', 'slx-equip-scene', 'slx-workshop', 'slx-builds'];
+
+/** The windows ruling 8 centres: their top-left must sit on a whole stage pixel. */
+const CENTRED = ['.slx-confirm', '.slx-layer.slx-confirm', '.slx-result', '.slx-settings', '.slx-keys', '.slx-clear-card', '.slx-title-menu', '.slx-depths', '.slx-event'];
+
+type DomNode = { nodeId: number; nodeType: number; nodeName: string; nodeValue: string; children?: DomNode[]; attributes?: string[] };
+
+/**
+ * What keeps the screen from reading clearly, as a list of problems (empty: it reads clearly). Nothing to check before
+ * the game is ready. The scale is the one `expectedMode` gives; the stage's corner sits on a whole device pixel; the page
+ * scrolls no further than the stage overflows; in a scene not pending, every text is 12 or 24px Cubic 11 at weight 400
+ * with an even leading, and the centred windows sit on whole stage pixels; and (chromium, the font not blocked) every
+ * text is drawn with Cubic 11 itself, as the browser reports it.
+ */
+export async function legibility(page: Page, opts: { fontBlocked?: boolean } = {}): Promise<string[]> {
+  if (page.isClosed()) return [];
+  const ready = await page.evaluate(() => !!document.getElementById('sl-screen') && document.getElementById('sl-ui')?.dataset.ready === 'true').catch(() => false);
+  if (!ready) return [];
+  const out: string[] = [];
+  const env = await page.evaluate(() => {
+    const scr = document.getElementById('sl-screen')!;
+    const r = scr.getBoundingClientRect();
+    const root = document.documentElement;
+    const scene = document.querySelector('#sl-ui > .slx-scene');
+    return {
+      vw: innerWidth, vh: innerHeight, d: devicePixelRatio, touch: matchMedia('(pointer: coarse)').matches,
+      x: r.x + scrollX, y: r.y + scrollY, right: r.right + scrollX, bottom: r.bottom + scrollY,
+      sw: root.scrollWidth, sh: root.scrollHeight, cw: root.clientWidth, ch: root.clientHeight,
+      moving: scr.getAnimations().length > 0, scene: scene?.classList[1] ?? '',
+    };
+  });
+  const want = expectedMode(env.vw, env.vh, env.d, env.touch);
+  const got = await stageScale(page);
+  if (got.kind !== want.kind || Math.abs(got.s - want.s) > 1e-4) out.push(`stage scale ${got.kind} ${got.s}, want ${want.kind} ${want.s} at ${env.vw}x${env.vh}@${env.d}`);
+  const whole = (v: number) => Math.abs(v - Math.round(v)) < 0.02;
+  if (!env.moving && KNOWN_DPR.some((k) => Math.abs(k - env.d) < 0.005) && !(whole(env.x * env.d) && whole(env.y * env.d))) out.push(`stage corner ${env.x},${env.y} is not on a device pixel at d ${env.d}`);
+  const overX = Math.max(0, Math.ceil(env.right - env.cw - 0.01)), overY = Math.max(0, Math.ceil(env.bottom - env.ch - 0.01));
+  if (env.sw - env.cw > overX) out.push(`the page scrolls ${env.sw - env.cw}px across, the stage overflows ${overX}px`);
+  if (env.sh - env.ch > overY) out.push(`the page scrolls ${env.sh - env.ch}px down, the stage overflows ${overY}px`);
+
+  if (!PENDING_SCENES.includes(env.scene)) {
+    // Let the finite animations (a window opening, a fade) end first, for at most 500ms.
+    await page.evaluate(() => Promise.race([
+      Promise.all(document.getAnimations().filter((a) => Number.isFinite(Number(a.effect?.getComputedTiming().endTime ?? Infinity))).map((a) => a.finished.catch(() => undefined))),
+      new Promise((r) => setTimeout(r, 500)),
+    ]));
+    out.push(...await page.evaluate(() => {
+      const bad: string[] = [];
+      const check = (where: string, cs: CSSStyleDeclaration) => {
+        const size = parseFloat(cs.fontSize), lh = cs.lineHeight === 'normal' ? NaN : parseFloat(cs.lineHeight);
+        const family = cs.fontFamily.split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+        if (cs.fontSize !== '12px' && cs.fontSize !== '24px') bad.push(`${where}: font-size ${cs.fontSize}`);
+        if (cs.fontWeight !== '400') bad.push(`${where}: font-weight ${cs.fontWeight}`);
+        if (family !== 'Cubic 11') bad.push(`${where}: font ${family}`);
+        if (!(lh - size >= 0 && (lh - size) % 2 === 0)) bad.push(`${where}: line-height ${cs.lineHeight} at ${cs.fontSize}`);
+      };
+      const name = (e: Element) => `${e.tagName.toLowerCase()}.${[...e.classList].join('.')} "${(e.textContent ?? '').trim().slice(0, 20)}"`;
+      const screen = document.getElementById('sl-screen')!;
+      const walker = document.createTreeWalker(screen, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const e = n.parentElement!;
+        if (!n.textContent?.trim() || !e.checkVisibility({ visibilityProperty: true })) continue;
+        check(name(e), getComputedStyle(e));
+      }
+      for (const e of screen.querySelectorAll('*')) {
+        if (!e.checkVisibility({ visibilityProperty: true })) continue;
+        for (const pseudo of ['::before', '::after']) {
+          const cs = getComputedStyle(e, pseudo);
+          if (!/^["'].*\S.*["']$/.test(cs.content)) continue;   // text content only (not none, '' or an image)
+          check(`${name(e)}${pseudo}`, cs);
+        }
+      }
+      return bad;
+    }));
+    for (const sel of CENTRED) {
+      for (const win of await page.locator(`#sl-screen ${sel}:visible`).all()) {
+        const b = await stageBox(page, win);
+        if (!whole(b.x) || !whole(b.y)) out.push(`${sel} at stage ${b.x},${b.y}: not on a whole stage pixel`);
+      }
+    }
+  }
+
+  // The fonts the browser really drew with (chromium only): a missing glyph or an unloaded font shows here.
+  if (!opts.fontBlocked && page.context().browser()?.browserType().name() === 'chromium') {
+    const cdp = await page.context().newCDPSession(page);
+    try {
+      await cdp.send('DOM.enable');
+      await cdp.send('CSS.enable');
+      const { root } = await cdp.send('DOM.getDocument', { depth: -1 }) as unknown as { root: DomNode };
+      const withText: DomNode[] = [];
+      const find = (n: DomNode, inside: boolean) => {
+        const attrs = n.attributes ?? [];
+        const here = inside || attrs.some((a, i) => i % 2 === 0 && a === 'id' && attrs[i + 1] === 'sl-screen');
+        if (here && n.nodeType === 1 && (n.children ?? []).some((c) => c.nodeType === 3 && c.nodeValue.trim())) withText.push(n);
+        for (const c of n.children ?? []) find(c, here);
+      };
+      find(root, false);
+      for (const n of withText) {
+        const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId: n.nodeId }) as unknown as { fonts: { familyName: string; glyphCount: number }[] };
+        const other = fonts.filter((f) => f.familyName !== 'Cubic 11');
+        if (other.length) {
+          const text = (n.children ?? []).filter((c) => c.nodeType === 3).map((c) => c.nodeValue.trim()).join(' ').slice(0, 20);
+          out.push(`"${text}" drawn with ${other.map((f) => `${f.familyName} (${f.glyphCount})`).join(', ')}`);
+        }
+      }
+    } finally {
+      await cdp.detach().catch(() => undefined);
+    }
+  }
+  return out;
 }

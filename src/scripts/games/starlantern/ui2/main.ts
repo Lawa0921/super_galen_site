@@ -79,7 +79,7 @@ export async function mountNext(): Promise<void> {
     stage, fast,
     settings: settingsStore,
     vibrate: (ms: number) => { if (settings.vibrate) { try { navigator.vibrate?.(ms); } catch { /* not supported */ } } },
-    fullscreen: () => toggleFullscreen(document.getElementById('sl-screen') ?? document.documentElement),
+    fullscreen: () => toggleFullscreen(document.documentElement),   // the page, not #sl-screen: :fullscreen sets transform: none (legibility 2a)
   };
   const router = new Router(ui, make, ctx);
   bindUiInput(window, (a) => { sfx.ensure(); router.onAction(a); });
