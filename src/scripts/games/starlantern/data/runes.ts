@@ -70,7 +70,8 @@ export const RUNE_NUMBERS: Record<RuneId, { tier: Record<string, readonly number
   jolt: { tier: { chance: [30, 35, 40, 45] }, fixed: {} },
   tear: { tier: { chance: [30, 35, 40, 45] }, fixed: {} },
   frostbite: { tier: { chance: [20, 25, 30, 35] }, fixed: {} },
-  venom: { tier: { chance: [25, 30, 35, 40] }, fixed: {} },
+  // Plan 8h Task 5b ruling B2': 12 less at every tier (淬毒 on 箭雨 1.81 -> 1.57 of her per-round at the magic tier).
+  venom: { tier: { chance: [13, 18, 23, 28] }, fixed: {} },
   aftermath: { tier: { effect: [100, 105, 110, 115] }, fixed: { tpFlat: 1 } },
   'on-crit': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },
   'on-kill': { tier: { pct: [50, 60, 70, 80] }, fixed: {} },

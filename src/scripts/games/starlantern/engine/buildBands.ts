@@ -235,9 +235,7 @@ export const BAND_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; r
  * Single runes over ONE_RUNE_MAX that only a §6.7 number would bring under (plan 8h Task 5b: BLOCKED, the controller's),
  * keyed `<owner>/<key> <skill>+<rune>`.
  */
-export const ONE_RUNE_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; reason: string }>> = {
-  'sylvie/wildfire arrow-rain+venom': { decider: 'controller', reason: '淬毒 poisons every foe 箭雨 strikes, once a cast already (ruling B2 holds); in a crowd its ticks are worth as much as the arrows: only its chance (§6.7) would bring it under.' },
-};
+export const ONE_RUNE_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; reason: string }>> = {};
 
 const f2 = (n: number) => n.toFixed(2);
 
