@@ -6,6 +6,7 @@ import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
 import { FOUND_LINE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
+import { pinBeat, storyTexts, type Text } from './voiceGates';
 import type { CharacterId } from '../../engine/types';
 import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
 import { memoryPace } from '../../engine/story/expect';
@@ -240,27 +241,6 @@ describe('story data', () => {
 });
 
 // ---- The gates every line of the script must pass (plan 6c Task 2) ----
-
-interface Text { key: string; text: string; line?: ScriptLine }
-/** Every string leaf of STORY, keyed by its path; a scene line's text carries its ScriptLine. Skips who, mood, if and scene titles (interface labels). */
-function storyTexts(): Text[] {
-  const out: Text[] = [];
-  const walk = (v: unknown, path: string[], line?: ScriptLine): void => {
-    if (typeof v === 'string') { out.push({ key: path.join('.'), text: v, ...(line ? { line } : {}) }); return; }
-    if (Array.isArray(v)) { v.forEach((x, i) => walk(x, [...path, String(i)])); return; }
-    if (v && typeof v === 'object') {
-      const o = v as Record<string, unknown>;
-      const isLine = typeof o.who === 'string' && typeof o.text === 'string';
-      for (const [k, x] of Object.entries(o)) {
-        if (k === 'who' || k === 'mood' || k === 'if') continue;
-        if (k === 'title' && path.length === 2 && path[0] === 'scenes') continue;
-        walk(x, [...path, k], isLine && k === 'text' ? (o as unknown as ScriptLine) : undefined);
-      }
-    }
-  };
-  for (const [k, v] of Object.entries(STORY)) walk(v, [k]);
-  return out;
-}
 
 const writtenBy = (written: string[], key: string): boolean => written.some((w) => (/[.:]$/.test(w) ? key.startsWith(w) : key === w));
 /** Spec quotes missing from a category that is entirely written (every key under the prefix, so narrower entries count too). */
@@ -567,13 +547,14 @@ describe('the script gates', () => {
       expect(after[intro].text, id).toContain(name);
       for (const l of [...before, ...after.slice(0, intro)]) expect(l.text, `${id}: ${l.text}`).not.toContain(name);
     }
-    // Liz says her own name now (story polish Task 1, ruling 2): the plan's four lines, word for word.
-    expect(STORY.meet.liz.after).toEqual([
-      { who: 'narrator', text: '洛恩遞過乾糧。她兩口就吞了下去，連膝上的碎屑都撿起來吃掉。' },
-      { who: 'liz', mood: 'smile', text: '「活過來了！我是莉茲，尋寶獵人。金幣真的不要？你們這群怪人。」' },
-      { who: 'liz', mood: 'hushed', text: '「我是來把錢帶回家的。……可是家人的臉，一張也想不起來了。」' },
-      { who: 'liz', mood: 'scheming', text: '「好啦，不說這個。老大，讓我跟著你們吧，分紅好商量。」' },
-    ]);
+    // Liz says her own name now (story polish Task 1, ruling 2), by its beats (Task 3, ruling 11): the ration in the
+    // narration, her name in her own line, the family she cannot picture, the cover-up.
+    const liz = STORY.meet.liz.after;
+    expect(liz.length).toBeLessThanOrEqual(4);
+    expect(liz.filter((l) => l.who === 'narrator' && /乾糧/.test(l.text))).toHaveLength(1);
+    expect(liz[introIndex('liz')].text).toMatch(/我是莉茲/);
+    expect(liz.filter((l) => l.who === 'liz' && l.mood === 'hushed' && /家人的臉/.test(l.text))).toHaveLength(1);
+    expect(liz.filter((l) => l.who === 'liz' && /老大/.test(l.text))).toHaveLength(1);
     // introIndex finds her first line that says her name, and nothing else.
     expect(introIndex('selene')).toBe(STORY.meet.selene.after.findIndex((l) => l.who === 'selene' && l.text.includes(CHARACTERS.selene.name)));
   });
@@ -1794,13 +1775,6 @@ describe('V1 voice pass: the two of them, livelier (style bible §2.2 to §2.5)'
     }
   });
 
-  it("「還有。」 is Rin's tic: always with a full stop, and rare (four times at most across V1's scenes)", () => {
-    const V1: SceneId[] = [...LIGHT, ...HEAVY];
-    const texts = [...V1.flatMap((id) => STORY.scenes[id].lines.map((l) => l.text)), ...Object.values(STORY.rinLines).flat(), ...STORY.rinOath];
-    const uses = texts.flatMap((t) => t.match(/還有[。，]/g) ?? []);
-    expect(uses.filter((u) => u !== '還有。'), 'punctuation').toEqual([]);
-    expect(uses.length).toBeLessThanOrEqual(4);
-  });
 });
 
 /** What a companion never says where her own memories may not be whole: a chat guest's line (V2) or a banter's (B1). */
@@ -2289,7 +2263,7 @@ describe('B2: what they say to each other (the banter content)', () => {
     expect(BANTER_GATE['banter:noel-rin:2']).toEqual({ oath: true });
     const rin = STORY.scenes['banter:noel-rin:2'].lines.filter((l) => l.who === 'rin');
     expect(rin.length).toBeGreaterThan(0);
-    expect(rin.some((l) => /[呢吧]|我們|洛恩/.test(l.text))).toBe(true);
+    expect(rin.some((l) => /吧|我們|洛恩/.test(l.text))).toBe(true);   // story polish ruling 5: 吧, never 呢
     // and every other Rin banter that waits for nothing keeps her from before (story.test B1 checks each reading)
     for (const id of ids().filter((x) => twoOf(x).includes('rin') && !BANTER_GATE[x]?.oath)) {
       for (const l of STORY.scenes[id].lines.filter((x) => x.who === 'rin')) expect(l.text, id).not.toMatch(/洛恩|我們|[呢吧啦喔囉嘛耶]|！|……|還有/);
@@ -2341,19 +2315,22 @@ describe('story polish Task 2: the S1 lines', () => {
     STORY.scenes[scene].lines.filter((l) => l.who === who && (who === 'narrator' ? l.text.includes(text) : l.text === text));
 
   it('the S1 lines read whole (story polish Task 2)', () => {
-    const finals: [SceneId, ScriptLine['who'], string][] = [
-      ['prologue-inn', 'narrator', '她手腕上還留著一圈發青的指痕。'],
-      ['prologue-inn', 'rin', '「我什麼都不記得，你是我唯一的線索。另外，你說了三次夢話。很吵。」'],
-      ['prologue-inn', 'rin', '「吵是吵。反正我能去的地方，也只剩迷宮了。」'],
-      ['rin-reveal', 'rin', '「洛恩，我是被派來殺你的。可是我不殺了──這是我自己決定的。」'],
-      ['mem:bobby:4', 'bobby', '「這些機兵，是我家的人造的。每修好一台，就像替祖先道一次歉。」'],
-      ['chat:bobby:2', 'bobby', '「嘿嘿，彈簧上得太緊，它自己從鍋子裡轉出去了！瑪莎阿姨，再一次，一下下就好喔！」'],
-      ['mem:hero:9', 'hero', '「被殺了那麼多次，還是一直往上走。原來我一直都想回來。」'],
-      ['chat:scarlet:2', 'scarlet', '「洛恩閣下，盾本來就是用來受傷的，替人擋刀也是騎士的職責。只是總覺得……我還欠著某個人。」'],
-      ['chat:sylvie:2', 'sylvie', '「新芽，我看過了。今晚我睡床。換你守窗。」'],
-      ['mem:liz:5', 'liz', '「想起來了，是爸爸！……奇怪，這張臉，我最近好像在鎮上見過？」'],
+    // Task 3 (ruling 11): each final pinned by its beat, a key noun or fact, not by its wording.
+    const beats: [SceneId, Partial<LineWhen>, RegExp][] = [
+      ['prologue-inn', {}, /發青的指痕/],
+      ['prologue-inn', {}, /線索.*夢話/],
+      ['prologue-inn', {}, /只剩迷宮/],
+      ['rin-reveal', {}, /派來殺你/],
+      ['mem:bobby:4', {}, /祖先.*道.*歉/],
+      ['chat:bobby:2', {}, /彈簧/],
+      ['mem:hero:9', {}, /想回來/],
+      ['chat:scarlet:2', {}, /欠著/],
+      ['chat:sylvie:2', { full: ['sylvie'] }, /睡床/],
+      ['mem:liz:5', {}, /鎮上見過/],
+      ['mem:liz:5', { returned: ['orik'] }, /紅帽子/],
     ];
-    for (const [scene, who, text] of finals) expect(said(scene, who, text), `${scene} ${who} ${text}`).toHaveLength(1);
+    for (const [scene, reading, re] of beats) expect(() => pinBeat(scene, reading, re), `${scene} ${re}`).not.toThrow();
+    expect(said('chat:sylvie:2', 'sylvie', '「新芽，我看過了。今晚我睡床。換你守窗。」')).toHaveLength(1);   // TELEGRAPH_OK holds it word for word
     // The old wordings are gone (audit A3, A6–A10).
     const all = storyTexts().map((t) => t.text).join('｜');
     for (const old of ['只剩下面', '彈簧上太緊', '看過了。今晚，去睡床', '原來我一直，想回來', '我被派來殺你。我現在選擇不要', '像是不知道他在哪裡，就睡不著']) expect(all, old).not.toContain(old);

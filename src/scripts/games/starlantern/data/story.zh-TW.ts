@@ -105,7 +105,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // player's: the grip, each other's only lead, one lamp, the debt, and the pull she takes for instinct (her 7th piece pays it).
   'prologue-inn': {
     lines: [
-      N('深夜的月影旅館。洛恩從夢裡驚醒，看見窗邊的凜還睜著眼，臉朝著他的床。好像不確定他在哪裡，她就睡不著。'),
+      N('深夜的月影旅館。洛恩從夢裡驚醒，看見窗邊的凜還睜著眼，臉朝著他的床。她好像不確定他在哪裡，就睡不著。'),
       N('她手腕上還留著一圈發青的指痕。那幾根手指，葛倫怎麼掰也掰不開，直到洛恩昏了過去。他把自己的手，悄悄縮回被子裡。'),
       { who: 'hero', mood: 'normal', text: '「妳是唯一和我一起出來的人。我以前是誰，也許妳看過。」' },
       { who: 'rin', mood: 'guarded', text: '「我什麼都不記得，你是我唯一的線索。另外，你說了三次夢話。很吵。」' },
@@ -114,7 +114,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'hero', mood: 'surprised', text: '「為什麼？妳不是嫌我吵？」' },
       { who: 'rin', mood: 'serious', text: '「公會說，一起下去的，算同一盞燈。一個人下去，就沒有燈帶你回來。」' },
       { who: 'rin', mood: 'sad', text: '「吵是吵。反正我能去的地方，也只剩迷宮了。」' },
-      { who: 'rin', mood: 'normal', text: '「還有。你走路的樣子，我好像在哪裡看過。」' },
+      { who: 'rin', mood: 'normal', text: '「另外，你走路的樣子，我好像在哪裡看過。」' },
     ],
     summary: '旅館的第一夜。兩人都欠著公會，又只有彼此是自己的線索。同一盞燈的兩個人，決定一起下去。',
   },
@@ -127,7 +127,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'hero', mood: 'smile', text: '「那一下，謝謝。」' },
       { who: 'rin', mood: 'guarded', text: '「不用謝。身體自己動的。想了，就來不及了。」' },
       N('她看著自己那隻手，像是不認得它。指尖碰到領口的小銅鐘，停了一下，才收回來。'),
-      { who: 'rin', mood: 'normal', text: '「還有。那個繃帶，纏成那樣，不如不纏。」' },
+      { who: 'rin', mood: 'normal', text: '「另外，那個繃帶，纏成那樣，不如不纏。」' },
       N('她拆掉繃帶，三兩下重新纏好。緊得洛恩倒吸了一口氣。'),
       { who: 'rin', mood: 'normal', text: '「太鬆會掉。太緊，是故意的。」' },
       { who: 'hero', mood: 'smile', text: '「那就，下次也拜託了。」' },
@@ -453,7 +453,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'rin', mood: 'normal', text: '「喂。手腕上的印子退了。那時候，你為什麼抓著不放？」' },
       { who: 'hero', mood: 'smile', text: '「記不得了。我的手，好像比我還固執。」' },
-      N('「下次不用。會痛。還有。指甲，剪一剪。」凜說完就上樓了。走到樓梯轉角，她回頭看了他一眼。'),
+      N('「下次不用。會痛。另外，指甲剪一剪。」凜說完就上樓了。走到樓梯轉角，她回頭看了他一眼。'),
     ],
     summary: '凜手腕上的指痕退了。她問洛恩那時候為什麼不放手，他說記不得，他的手比他還固執。',
   },
