@@ -1310,8 +1310,8 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:safira-sylvie:1': {
     lines: [
       N('黃昏的廣場。莎菲拉拉著希爾薇的手腕，硬是把她拖到石板中央。'),
-      { who: 'safira', mood: 'wink', text: '「來，小希，右腳、左腳、轉──妳的眼睛在看哪裡呀？」' },
-      { who: 'sylvie', mood: 'serious', text: '「退路。三條。」' },
+      { who: 'safira', mood: 'wink', text: '「小希，右腳、左腳、轉──妳的眼睛在看哪裡呀？」' },
+      { who: 'sylvie', mood: 'serious', text: '「找退路。這裡有三條。」' },
       { who: 'safira', mood: 'laugh', text: '「跳舞不用退路唷！欸，小洛你看，她真的從第三條溜走了～」' },
     ],
     summary: '莎菲拉硬把希爾薇拖到廣場上學跳舞。希爾薇只顧著找退路，最後從第三條溜走了。',
@@ -1331,7 +1331,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'liz', mood: 'scheming', text: '「騎士大姊，剛才那個寶箱，我三兩下就搞定了。」' },
       { who: 'scarlet', mood: 'serious', text: '「『搞定』是指什麼？請完整回報：開鎖的手法、所花的時間、有無陷阱。」' },
-      { who: 'liz', mood: 'smile', text: '「手法，商業機密。時間，一眨眼。陷阱，拆了──零件還能賣兩枚銀幣。」' },
+      { who: 'liz', mood: 'smile', text: '「手法是商業機密，時間是一眨眼，陷阱拆了──零件還能賣兩枚銀幣。」' },
       // B2: the knight wins the last word at the merchant's own game (and sets up liz-scarlet:2's 「公帳」).
       { who: 'scarlet', mood: 'serious', text: '「回報收到。……那兩枚銀幣，請列入隊伍的公帳。」' },
     ],
@@ -1351,17 +1351,17 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   // Liz's livelihood against Bobby's improvements; the flaw becomes the selling point.
   'banter:bobby-liz:1': {
     lines: [
-      { who: 'bobby', mood: 'excited', text: '「莉茲姊，妳看，自動開鎖機！插進鎖孔，喀啦一聲就開了喔。」' },
-      { who: 'liz', mood: 'surprised', text: '「等等。那我的飯碗呢？」' },
+      { who: 'bobby', mood: 'excited', text: '「莉茲姊妳看，自動開鎖機！插進鎖孔，喀啦一聲就開了！」' },
+      { who: 'liz', mood: 'surprised', text: '「等等。那我的飯碗怎麼辦？」' },
       { who: 'bobby', mood: 'grin', text: '「嘿嘿，放心！它開一次要半天，還會卡住喔。」' },
-      { who: 'liz', mood: 'scheming', text: '「那好。賣給公會，叫『防盜鎖測試機』，一台十枚銀幣。成交？」' },
+      { who: 'liz', mood: 'scheming', text: '「那正好。賣給公會，就叫『防盜鎖測試機』，一台十枚銀幣，成交？」' },
     ],
     summary: '波比做了一台自動開鎖機，莉茲擔心飯碗不保。聽說它開一次要半天，莉茲決定把它當成防盜鎖的測試機來賣。',
   },
   // Bobby builds Noel's notebook beast exactly as drawn (chat:noel:1's 雷獸), and it turns out to be what it always was.
   'banter:bobby-noel:1': {
     lines: [
-      { who: 'bobby', mood: 'excited', text: '「諾艾兒姊，我照妳筆記本上的雷獸，做了一隻會動的喔。」' },
+      { who: 'bobby', mood: 'excited', text: '「諾艾兒姊，我照妳筆記本上的雷獸，做了一隻會動的。」' },
       { who: 'noel', mood: 'smug', text: '「哼，眼光不錯嘛。本小姐的雷獸，可是威風凜凜的──」' },
       N('機關喀啦一聲站起來，伸了個懶腰，「喵」地叫了一聲。'),
       { who: 'noel', mood: 'panic', text: '「為、為什麼會喵？！是雷鳴！那叫雷鳴啦！」' },
@@ -1371,9 +1371,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   // Why 「松鼠」 (chat:sylvie:1): Sylvie answers with an animal's habits, and Bobby's pocket agrees with her.
   'banter:bobby-sylvie:1': {
     lines: [
-      { who: 'bobby', mood: 'surprised', text: '「希爾薇姊，妳老是叫我松鼠。我才不像松鼠喔！」' },
-      { who: 'sylvie', mood: 'serious', text: '「手停不下來。到處撿東西。藏進口袋。」' },
-      { who: 'bobby', mood: 'excited', text: '「那些是零件！螺絲、彈簧，還有這顆──咦，口袋裡怎麼有核桃？」' },
+      { who: 'bobby', mood: 'surprised', text: '「希爾薇姊，妳老是叫我松鼠。我才不像松鼠！」' },
+      { who: 'sylvie', mood: 'serious', text: '「手停不下來，看到什麼都撿，撿了就往口袋藏。」' },
+      { who: 'bobby', mood: 'excited', text: '「那些是零件！螺絲和彈簧，還有這顆──咦，口袋裡怎麼有核桃？」' },
       { who: 'sylvie', mood: 'smile', text: '「妳撿的。冬天快到了。」' },
     ],
     summary: '波比抗議希爾薇老叫她松鼠。希爾薇說她手停不下來、什麼都往口袋藏；波比的口袋裡，翻出了一顆核桃。',
@@ -1391,10 +1391,10 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   // Safira hands out nicknames (B2 fix 1, not a dance lesson): Chizuru takes 「小鶴」 for a rank and answers with a title of her own.
   'banter:chizuru-safira:1': {
     lines: [
-      { who: 'safira', mood: 'wink', text: '「小鶴，早呀～今天也站得端端正正，像一根槍唷。」' },
-      { who: 'chizuru', mood: 'bewildered', text: '「『小鶴』，此為何種稱號？莫非是我睡著的時候，此處封的官位？」' },
+      { who: 'safira', mood: 'wink', text: '「早呀，小鶴～今天也站得端端正正，像一根槍唷。」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「『小鶴』是何種稱號？莫非是我睡著的時候，此處封的官位？」' },
       { who: 'safira', mood: 'laugh', text: '「哈哈，是我封的唷！小洛也有一個，他到現在都還不肯應呀～」' },
-      { who: 'chizuru', mood: 'solemn', text: '「承蒙賜封。禮尚往來──今後，便稱莎菲拉姑娘為『舞姬大人』。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「承蒙賜封。禮尚往來，今後便稱莎菲拉姑娘為『舞姬大人』。」' },
     ],
     summary: '莎菲拉叫千鶴「小鶴」，千鶴以為是一個官位。聽說是莎菲拉封的，她恭恭敬敬地回贈了一個：「舞姬大人」。',
   },
@@ -1433,9 +1433,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:liz-selene:1': {
     lines: [
       { who: 'liz', mood: 'scheming', text: '「瑟蕾，談筆生意。妳讀月亮，我來擺攤。一次十枚銅板，分妳四成。」' },
-      { who: 'selene', mood: 'foresee', text: '「月亮說，它不太想做生意呢。」' },
+      { who: 'selene', mood: 'foresee', text: '「月亮說，它不太想做生意。」' },
       { who: 'liz', mood: 'scheming', text: '「那月亮的那一份，我另外算給它。它收銅板，還是收銀幣？」' },
-      { who: 'selene', mood: 'smile', text: '「月亮說，它要八成呢。──是月亮說的，不是我說的。」' },
+      { who: 'selene', mood: 'smile', text: '「月亮說，它要八成。──是月亮說的，不是我說的。」' },
     ],
     summary: '莉茲想替瑟蕾擺占卜攤，連月亮的那一份都打算另外算。瑟蕾說，月亮要八成。',
   },
@@ -1452,10 +1452,10 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   // Noel wants a prophecy about her lightning; Selene hedges (也許, the bible pairing) and the moon gives a weather report.
   'banter:noel-selene:1': {
     lines: [
-      { who: 'noel', mood: 'smug', text: '「瑟蕾，替本小姐讀一下月亮。明天，本小姐的雷會不會更響？」' },
+      { who: 'noel', mood: 'smug', text: '「瑟蕾，替本小姐讀一下月亮。本小姐的雷，明天會不會更響？」' },
       { who: 'selene', mood: 'foresee', text: '「也許呢。月亮說，明天會有很響的東西。」' },
       { who: 'noel', mood: 'smug', text: '「哼，聽到沒？月亮也站在本小姐這邊！」' },
-      { who: 'selene', mood: 'wistful', text: '「也許是雷雨呢。剛才那句，就當作天氣預報吧──衣服記得收。」' },
+      { who: 'selene', mood: 'wistful', text: '「也許是雷雨。剛才那句，就當作天氣預報吧──衣服記得收。」' },
     ],
     summary: '諾艾兒要瑟蕾預言她的雷明天會不會更響。瑟蕾只說也許，月亮說的很響的東西，也許是雷雨。',
   },
@@ -1476,9 +1476,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       N('夜裡的旅館走廊。絲嘉蕾每走一步，鎧甲就「鏘」地響一聲。'),
       { who: 'rin', mood: 'normal', text: '「吵。」' },
       { who: 'scarlet', mood: 'serious', text: '「失禮了。以騎士的名譽保證，接下來的每一步，都會很輕。」' },
-      { who: 'rin', mood: 'normal', text: '「剛才那一步，鏘。名譽，也很吵。」' },
+      { who: 'rin', mood: 'normal', text: '「剛才那一步，鏘。名譽這東西，也很吵。」' },
     ],
-    summary: '夜裡，絲嘉蕾的鎧甲在走廊上一步一響。她以騎士的名譽保證會走輕一點，凜說，名譽也很吵。',
+    summary: '絲嘉蕾的鎧甲夜裡在走廊上一步一響。她以騎士的名譽保證會走輕一點，凜說名譽也很吵。',
   },
   // Story depth Task 4: moved from :1 (content unchanged). After her choice (oath gate): the two quiet ones (style bible
   // pairing), and Rin asks him up.
@@ -1495,8 +1495,8 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:safira-scarlet:1': {
     lines: [
       N('廣場上，莎菲拉數著拍子。絲嘉蕾跟在她身後，每一步都踩得像在閱兵。'),
-      { who: 'safira', mood: 'laugh', text: '「小嘉，跳舞要軟一點呀！妳這樣，怪物看了都想立正～」' },
-      { who: 'scarlet', mood: 'serious', text: '「遵命。全身，放軟。──報告，膝蓋拒絕服從。」' },
+      { who: 'safira', mood: 'laugh', text: '「跳舞要軟一點呀，小嘉！妳這樣，怪物看了都想立正～」' },
+      { who: 'scarlet', mood: 'serious', text: '「遵命。全身放軟──報告：膝蓋拒絕服從。」' },
       { who: 'safira', mood: 'wink', text: '「哈哈，好老實的膝蓋！算了，就照妳的跳。全場最準的拍子，是妳的唷～」' },
     ],
     summary: '莎菲拉教絲嘉蕾跳舞，絲嘉蕾跳得像在閱兵。她命令自己放軟，膝蓋不聽；莎菲拉說，全場最準的拍子是她的。',
@@ -1517,8 +1517,8 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'scarlet', mood: 'serious', text: '「瑟蕾小姐。月亮若知道明天的事，請它先知會我一聲。」' },
       { who: 'selene', mood: 'smile', text: '「月亮不歸騎士管呢。它連我說的話，也不太聽。」' },
-      { who: 'scarlet', mood: 'serious', text: '「既然不聽指揮，那就排進守夜表。月亮，第一班。」' },
-      { who: 'selene', mood: 'smile', text: '「排得真好呢。它每晚都醒著，正好給守夜的人作伴吧。」' },
+      { who: 'scarlet', mood: 'serious', text: '「既然不聽指揮，那就排進守夜表。月亮排第一班。」' },
+      { who: 'selene', mood: 'smile', text: '「排得真好。它每晚都醒著，正好給守夜的人作伴吧。」' },
     ],
     summary: '絲嘉蕾要月亮先知會她明天的事。月亮不聽指揮，她就把月亮排進了守夜表。',
   },
@@ -1526,7 +1526,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:selene-sylvie:1': {
     lines: [
       { who: 'selene', mood: 'foresee', text: '「今晚的晚餐，我已經讀到了呢。可是說出口，就不靈了。」' },
-      { who: 'sylvie', mood: 'serious', text: '「南瓜湯。烤魚。魚，煎過頭了。」' },
+      { who: 'sylvie', mood: 'serious', text: '「南瓜湯，還有烤魚。魚煎過頭了。」' },
       { who: 'selene', mood: 'surprised', text: '「月亮也告訴妳了？」' },
       { who: 'sylvie', mood: 'smile', text: '「不用月亮。用鼻子。」' },
     ],

@@ -2795,3 +2795,17 @@ describe('story depth Task 11: Liz and Scarlet', () => {
     expect(after[home].text).toMatch(/你們不要/);
   });
 });
+
+describe('story depth Task 12: the light banters keep their setups', () => {
+  const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
+  it('the half 「早安」, the spring lord and the 「吵」 stay where the later scenes call them back (design §6, 16, 17; sample one)', () => {
+    expect(() => pinBeat('banter:chizuru-rin:1', {}, /另外半句/)).not.toThrow();
+    const rin = linesWhen(STORY.scenes['banter:chizuru-rin:1'].lines, ALL).filter((l) => l.who === 'rin');
+    expect(rin.some((l) => /明天/.test(l.text))).toBe(true);   // the other half, tomorrow
+    expect(() => pinBeat('banter:bobby-chizuru:1', {}, /彈簧大人/)).not.toThrow();
+    expect(linesWhen(STORY.scenes['banter:bobby-chizuru:1'].lines, ALL).find((l) => /彈簧大人/.test(l.text))!.who).toBe('chizuru');
+    const loud = linesWhen(STORY.scenes['banter:rin-scarlet:1'].lines, ALL);
+    expect(loud.filter((l) => l.who === 'rin' && /吵/.test(l.text)).length).toBeGreaterThan(0);
+    expect(() => pinBeat('banter:rin-scarlet:1', {}, /鎧甲/)).not.toThrow();   // the armour that is loud
+  });
+});
