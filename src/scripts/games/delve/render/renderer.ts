@@ -14,6 +14,7 @@ import { armAngles, carryArm, carryStyle, flameFrame, heldCarryArm, swingAngle, 
 import { clearShiftAll, faceGuard } from './heldLayout';
 import { skinRamp } from './avatarPalette';
 import { FW, FH, Sprites } from './sprites';
+import { RemotePlayers, type RemoteView } from './remotePlayers';
 import { PlayerAnimator, atRopeTop, blinkAt, type PlayerAnim } from './playerAnim';
 import { MANTLE_KNEE_X, mantleLean, ROPE_HAND_HI, SHEET, type SheetAnim } from './avatarArt';
 import { previewArms } from './dollPreview';
@@ -129,6 +130,10 @@ export class Renderer {
   /** 標題畫面背景：鏡頭由外部指定（世界 px，左上角），不跟玩家；不畫玩家 */
   camOverride: Cam | null = null;
   hidePlayer = false;
+  private remote = new RemotePlayers();
+  private remoteSource: (() => RemoteView[]) | null = null;
+  /** 其他玩家的來源（房主 / 客人各給一個）；null = 單機不畫 */
+  setRemoteSource(fn: (() => RemoteView[]) | null): void { this.remoteSource = fn; }
   /** 畫瞄準游標（標題背景關掉） */
   showCursor = true;
   /** 遠景不做生態區交界混色（標題背景的大像素下，混色的抖動圖樣像雜訊） */
@@ -489,6 +494,8 @@ export class Renderer {
     this.combat.drawWorld(ctx, vb, this.glowSeen);
     this.settleLayer.drawWorld(ctx, vb, this.clock); // [settle]
     this.folkLayer.drawWorld(ctx, vb, this.clock);
+    // 其他玩家（連線時）：畫在本地玩家後面；ctx 已經是世界座標，toPx 不必再換
+    if (this.remoteSource && !this.hidePlayer) this.remote.draw(ctx, this.sprites, this.remoteSource(), dt, (x, y) => ({ x, y }));
     this.drawPlayer(ctx, dt);
     ph.sprites = this.lap();
     const tl = performance.now();

@@ -25,7 +25,7 @@ export interface DollSheet { canvas: HTMLCanvasElement; meta: FrameMeta[]; key: 
 /** 換裝之後每幀最多花多少 ms 烘剩下的格子（要用的那格另外立刻烘） */
 export const SHEET_BAKE_BUDGET_MS = 2;
 /** 快取幾組不同樣子的影格表（換裝備來回切時不必重烘） */
-const SHEET_CACHE = 6;
+const SHEET_CACHE = 10;
 
 // ── 手臂 + 手持鎬 / 劍 ──────────────────────────────────
 // 手臂本身由 avatarArt.avatarArm 依紙娃娃的上衣畫；工具 / 刀身畫成「手在 y≈9」的位置（舊版手在 y≈12：整張往上移 3）
@@ -524,15 +524,19 @@ export class Sprites {
   get dollKey(): string { return this.key; }
 
   /**
-   * 目前樣子的影格表（最多快取 SHEET_CACHE 組）。分幀烘焙：need = 這一幀要用的格子（沒烘過就立刻烘），
+   * 目前樣子的影格表（最多快取 SHEET_CACHE 組）。見 sheetFor。
+   */
+  dollSheet(need?: number): DollSheet { return this.sheetFor(this.look, this.key, need); }
+
+  /**
+   * 任意樣子的影格表（遠端玩家用；不動目前的 look / 手臂快取）。分幀烘焙：need = 這一幀要用的格子（沒烘過就立刻烘），
    * 其餘的格子每次呼叫在 SHEET_BAKE_BUDGET_MS 內往下烘；不給 need = 一次烘完（測試 / 工具用）。
    */
-  dollSheet(need?: number): DollSheet {
+  sheetFor(look: DollLook, key: string, need?: number): DollSheet {
     let fresh = false;
-    let s = this.sheets.get(this.key);
-    if (s) { this.sheets.delete(this.key); this.sheets.set(this.key, s); }
+    let s = this.sheets.get(key);
+    if (s) { this.sheets.delete(key); this.sheets.set(key, s); }
     if (!s) {
-      const look = this.look, key = this.key;
       const canvas = document.createElement('canvas');
       canvas.width = AV_FW * SHEET.total; canvas.height = AV_FH * 4;
       const ctx = canvas.getContext('2d');
@@ -555,12 +559,12 @@ export class Sprites {
       s = sheet;
       fresh = true;
     }
-    const q = this.queues.get(this.key);
+    const q = this.queues.get(key);
     if (q && !s.complete) {
       if (need === undefined) { while (!q.done) q.pump(1e9); }
       // 換裝那一幀只烘要用的那一格；之後每幀在預算內往下烘
       else { q.need(need); if (!fresh) q.pump(SHEET_BAKE_BUDGET_MS); }
-      if (q.done) { s.complete = true; this.queues.delete(this.key); }
+      if (q.done) { s.complete = true; this.queues.delete(key); }
     }
     return s;
   }
