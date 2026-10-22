@@ -126,12 +126,13 @@ test.describe('delve — online co-op', () => {
       await rightClickTile(guest, target);
       await expect.poll(() => host.evaluate(({ x, y }) => window.__delveDebug!.game.world.getFg(x, y), target), { timeout: 15000 }).toBe(DIRT_FG);
 
-      // 客人離開房間 → 回標題；角色已存（savedAt > 0）
+      // 客人離開房間 → 回標題；離開時的最後一份 chk 帶新時間寫進 IDB（savedAt 嚴格變大）
+      const savedBefore = await charSavedAt(guest, '客人');
       await guest.click('#delve-menu-btn');
       await expect(guest.locator('#delve-to-title')).toHaveText('離開房間');
       await guest.click('#delve-to-title');
       await expect(guest.locator('#delve-tmenu')).toBeVisible({ timeout: 30000 });
-      await expect.poll(() => charSavedAt(guest, '客人'), { timeout: 15000 }).toBeGreaterThan(0);
+      await expect.poll(() => charSavedAt(guest, '客人'), { timeout: 10000 }).toBeGreaterThan(Math.max(savedBefore, 0));
 
       expect(errors).toEqual([]);
     } finally {

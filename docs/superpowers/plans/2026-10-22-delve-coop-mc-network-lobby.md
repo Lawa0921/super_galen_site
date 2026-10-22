@@ -35,10 +35,10 @@
 
 - **C1 確認收到的 checkpoint，同時讓保留角色寫進存檔**
   - `chk` 多帶 `upTo`，代表房主已經處理到這位客人的第幾個 cmd seq。
-  - 客人把 checkpoint 寫進 IDB 之後，回 `chkAck{rev}`。
-  - 房主移除客人時，把那份角色存進世界檔的 `held[charId]`。原本的 `retained` 只放在記憶體，M-C 改成透過 `VisitStore` 寫進世界存檔，房主重新整理也不會丟。
-  - 客人重進時，`held.rev` 比 hello 帶來的大，就用 held。收到 rev ≥ held.rev 的 `chkAck` 時清掉 held。
-  - 斷線時如果還有跨邊界操作沒被 checkpoint 涵蓋（`unconfirmed`），客人存最後一份 chk，並在角色記錄標上 `pendingWorld`。標題畫面會顯示「待同步」，選這個角色時跳確認。
+  - 房主每送一份 chk（定時、跨邊界、撿起、離開前最後一份）就把它寫成世界檔的 `held[charId]`（送出但還沒 ack 的最新一份），透過 `VisitStore` 寫進世界存檔，房主重新整理也不會丟。
+  - 客人把 checkpoint 寫進 IDB 之後回 `chkAck{rev}`；房主收到 rev ≥ held.rev 的 `chkAck`（連線中或延遲關閉中都算）就清掉 held。
+  - 客人重進時，`held.rev` 比 hello 帶來的大就用 held；held 在同步（syncing）期間保留，客人 ready 後房主立刻送一份 chk，讓客人把房主這份寫進 IDB。
+  - 斷線時如果還有跨邊界操作沒被 checkpoint 涵蓋（`unconfirmed`），客人存最後一份 chk，並在角色記錄標上 `pendingWorld`；`unconfirmed` 會跨過 welcome 保留，直到新連線的第一份 chk 到達才清。標題畫面會顯示「待同步」，選這個角色時跳確認。
   - **剩下的窗口**：客人沒回原世界，先在別的世界玩，最後一筆跨邊界操作可能重複或消失。依反目標（朋友間不防作弊）接受，UI 會明白告知。
 - **C2 `sum` 洪水**
   - 離客人超過 `NET_TILE_COLS` 欄的 `sum`，先停在 `parkedSums`（以 cx 去重，上限 `SUM_PARK_MAX = 32`，超過丟最舊的）。客人走近時才處理，超過 `2 × NET_TILE_COLS` 直接丟（客人那邊也已經卸載，回來時會重送）。
