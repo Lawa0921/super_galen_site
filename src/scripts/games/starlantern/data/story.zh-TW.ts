@@ -848,7 +848,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('深夜的書房。老師上了鎖的書櫃，被一根髮夾撬開了。'),
       N('她抱出一本封面嵌著星星的書。翻開來，紙上的字像火一樣在跳。'),
       { who: 'noel', mood: 'smug', text: '「哼，老師最寶貝的書，本小姐一眼就挑中了。」' },
-      { who: 'noel', mood: 'pout', text: '「……幹嘛那樣看我。是借的啦，只是沒說一聲。」' },
+      { who: 'noel', mood: 'pout', text: '「幹嘛那樣看我。是借的啦，只是沒說一聲。」' },
     ],
     summary: '諾艾兒想起自己撬開老師的書櫃，抱走了一本封面嵌著星星的魔法書。',
   },
@@ -856,8 +856,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('老師一把闔上那本書，壓住了她的手：「這一頁，不准念。」'),
       N('她甩開那隻手，抱著書跑出門，一路跑進了迷宮。'),
-      { who: 'noel', mood: 'pout', text: '「小氣鬼。……老師一定是怕本小姐太厲害。」' },
-      { who: 'noel', mood: 'sad', text: '「……可是那時候，老師的手好冰。」' },
+      { who: 'noel', mood: 'pout', text: '「小氣鬼。老師一定是怕本小姐太厲害。」' },
+      { who: 'noel', mood: 'sad', text: '「可是那時候，老師的手好冰。」' },
     ],
     summary: '老師不准諾艾兒念書裡的一頁。她甩開老師的手，抱著書逃進了迷宮。',
   },
@@ -865,26 +865,28 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('迷宮裡，怪物撲了上來。她念出那一頁，掌心開出一朵藍白色的星火。'),
       N('她低頭看著自己的手。剛才是從哪裡跑進來的，她想不起來了。'),
-      { who: 'noel', mood: 'panic', text: '「……不是迷宮偷走的。是我自己，用那一頁燒掉的。」' },
+      { who: 'noel', mood: 'panic', text: '「不是迷宮偷走的……是我自己，用那一頁燒掉的。」' },
       { who: 'hero', mood: 'serious', text: '「那一頁，別再念了。」' },
     ],
     summary: '書裡的星火，每用一次就燒掉施法者的一段記憶。諾艾兒的失憶，是她自己燒掉的。',
   },
+  // Story depth design §7.6 (fix six): the absolution is in the memory; the turn is hers, now. She tears the page out to hand
+  // it back herself, and drops back to 「我」 (she means it). The rain joke is gone: there is no rain in the labyrinth. I-67.
   'mem:noel:4': {
     lines: [
       N('出走的前一夜，她從門縫看見書房的燈還亮著。老師在那本書的空白處寫字。'),
       N('「此術以記憶為薪。」老師低聲說，「那孩子要是學了，會連自己是誰都燒掉。」'),
-      { who: 'noel', mood: 'sad', text: '「老師不教我，不是小氣……是怕我把自己燒光。」' },
-      { who: 'noel', mood: 'panic', text: '「我、我才沒有哭。是這裡的雨太大了。」' },
+      { who: 'noel', mood: 'sad', text: '「老師不教我，不是小氣，是怕我把自己燒光。」' },
+      N('她把那一頁撕下來，摺得整整齊齊，收進最裡面的口袋：「這一頁，我要親手還給老師。」'),
     ],
-    summary: '老師不讓諾艾兒念那一頁，是怕她把自己燒光。老師一直在保護她。',
+    summary: '老師不讓諾艾兒念那一頁，是怕她把自己燒光。她撕下那一頁，決定親手還給老師。',
   },
   'mem:noel:5': {
     lines: [
       N('迷宮的入口。有人提著燈，一遍又一遍喊著她的名字，走進了暮霧。'),
-      N('岔路口亮著一盞攤燈。諾艾兒把碎片裡的另一段光，放進流浪商人的掌心。'),
-      { who: 'merchant', text: '「……諾艾兒。啊，我想起來了。比起那本書，妳平安，就夠了。」' },
-      { who: 'noel', mood: 'smile', text: '「……老師。對不起。我回來了。」' },
+      N('岔路口亮著一盞攤燈。諾艾兒把碎片裡的另一段光，連同那一頁，放進流浪商人的掌心。'),
+      { who: 'merchant', text: '「諾艾兒──啊，我想起來了。比起那本書，妳平安就夠了。」' },
+      { who: 'noel', mood: 'smile', text: '「老師，對不起。我回來了。」' },
     ],
     summary: '老師為了找諾艾兒也走進迷宮，成了失憶的流浪商人。她把老師的記憶還給他，師徒在攤前重逢。',
   },
@@ -892,9 +894,9 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('深夜的月影旅館。諾艾兒指尖點著一朵小電光，在筆記本上又寫又畫。'),
       { who: 'rin', text: '「那隻貓，畫得不錯。」' },   // V2: ungated, so it may play on either side of her oath: no guarded face, no particle
-      { who: 'noel', mood: 'panic', text: '「那、那是雷獸！我的召喚獸啦！不准看……也不准再說貓！」' },
+      { who: 'noel', mood: 'panic', text: '「那、那是雷獸！我的召喚獸啦！不准看，也不准再說貓！」' },
     ],
-    summary: '深夜，諾艾兒點著小電光畫筆記。凜說她的貓畫得不錯，她慌著說那是雷獸，不准看。',
+    summary: '諾艾兒深夜點著小電光畫筆記。凜說她的貓畫得不錯，她慌著說那是雷獸，不准看。',
   },
   'chat:noel:2': {
     lines: [
@@ -903,11 +905,13 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'noel', mood: 'smug', text: '「喂，歸來者！下一層的怪，全交給本小姐。本小姐的雷，可是很貴的。」', if: { notFull: 'noel' } },
       { who: 'noel', mood: 'blush', text: '「洛、洛恩。下一層，我的雷借你們用。……免費。」', if: { full: 'noel' } },
       // V2: Liz, if met, prices the lightning (style bible pairing); once Noel's memories are whole, the free offer floors her.
-      { who: 'liz', mood: 'scheming', text: '「很貴？我估一下喔。小魔女這種雷，一發兩枚銅板。」', if: { met: 'liz', notFull: 'noel' } },
+      { who: 'liz', mood: 'scheming', text: '「很貴？我來估估看。小魔女這種雷，一發兩枚銅板。」', if: { met: 'liz', notFull: 'noel' } },
       { who: 'liz', mood: 'surprised', text: '「免費？小魔女，妳是不是被自己的雷劈到了？」', if: { met: 'liz', full: 'noel' } },
       { who: 'noel', mood: 'pout', text: '「才、才兩枚？！本小姐的雷，最少也要三枚！」', if: { met: 'liz', notFull: 'noel' } },
       { who: 'noel', mood: 'blush', text: '「吵、吵死了！借你們用，就是借你們用！」', if: { met: 'liz', full: 'noel' } },
-      { who: 'hero', text: '「好。一起回來。」', if: { notMet: 'liz' } },
+      // Story depth plan Task 10 (ruling 15): the script's 「一起回來」 are the reveal's, chat:rin:4's and the finale's.
+      { who: 'hero', text: '「好。記在公會的帳上。」', if: { notMet: 'liz', notFull: 'noel' } },
+      { who: 'hero', text: '「好。這次就不記帳了。」', if: { notMet: 'liz', full: 'noel' } },
     ],
     summary: '出發前，諾艾兒搶先擋在洛恩前面，說下一層交給她的雷。',
   },
@@ -917,8 +921,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('山谷裡的小工坊，牆上掛滿了扳手。小女孩踮起腳，打開一只上了鎖的鐵箱。'),
       N('箱底壓著半張發黃的圖，畫著一道衝上天的光柱。'),
-      { who: 'bobby', mood: 'excited', text: '「那是星燈喔。我家的祖先，畫過星燈的圖！」' },
-      { who: 'bobby', mood: 'grin', text: '「嘿嘿，只看到半張。……剩下的，我得一片一片想起來喔。」' },
+      { who: 'bobby', mood: 'excited', text: '「那是星燈！我家的祖先，畫過星燈的圖！」' },
+      { who: 'bobby', mood: 'grin', text: '「嘿嘿，只看到半張。剩下的，我得一片一片想起來。」' },
     ],
     summary: '波比想起家裡鐵箱底的半張舊圖。圖上畫的，是星燈。',
   },
@@ -926,7 +930,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('山谷外的村子。她報出家裡的名號，村裡卻沒有一個人聽過。'),
       N('家裡最老的工匠只是笑：「被忘掉，是我們自己選的。祖先做錯了事，後人就躲起來。」'),
-      { who: 'bobby', mood: 'sad', text: '「被時間忘掉的一族……說的就是我們家喔。」' },
+      { who: 'bobby', mood: 'sad', text: '「被時間忘掉的一族，說的就是我們家。」' },
       { who: 'bobby', mood: 'serious', text: '「洛恩哥，祖先到底做錯了什麼？……那時候，我沒敢問。」' },
     ],
     summary: '波比的一族被時間遺忘了。家裡的老工匠說，祖先做錯了事，後人才躲了起來。',
@@ -936,7 +940,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('構造圖又拼上了一角。燈的開口畫得好大，大得像一張嘴。'),
       N('旁邊是祖先的字：「無論何種記憶，皆可收納。」底下另一個筆跡，只寫了兩個字：「錯了。」'),
       { who: 'bobby', mood: 'focused', text: '「什麼記憶都能裝……所以，連不該裝的，也全裝進去了。」' },
-      { who: 'bobby', mood: 'sad', text: '「洛恩哥。這張圖……我第一次，沒辦法說它畫得好。」' },
+      { who: 'bobby', mood: 'sad', text: '「洛恩哥，這張圖，我第一次沒辦法說它畫得好。」' },
     ],
     summary: '構造圖上，祖先把星燈造得什麼記憶都能裝。旁邊有人補了兩個字：錯了。',
   },
@@ -952,15 +956,15 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:bobby:5': {
     lines: [
       N('最後一角拼上了。整張構造圖在她眼前亮起來，齒輪和管線，一條一條連上。'),
-      { who: 'bobby', mood: 'excited', text: '「看懂了。祖先錯在燈芯這裡──沒有閥，什麼都吞，也什麼都還不回來。」' },
+      { who: 'bobby', mood: 'excited', text: '「看懂了。燈芯少一道閥，什麼都吞，什麼都還不回來。閥第一次點火，要一段不回來的光。」' },
       { who: 'hero', text: '「修得好嗎？」' },
       { who: 'bobby', mood: 'smile', text: '「祖先造錯的東西，我來修好。」' },
     ],
-    summary: '波比讀懂了整張構造圖，找到祖先造錯的地方。她說，她來修好。',
+    summary: '波比讀懂了整張構造圖：燈芯少一道閥，第一次點火要一段不回來的光。她說她來修好。',
   },
   'chat:bobby:1': {
     lines: [
-      { who: 'bobby', mood: 'excited', text: '「洛恩哥，劍借我看一下下！這紋路刻得好深，刻的人一定熬了好幾個晚上喔！」' },
+      { who: 'bobby', mood: 'excited', text: '「洛恩哥，劍借我看一下下！這紋路刻得好深，刻的人一定熬了好幾個晚上！」' },
       { who: 'hero', text: '「妳上一次說『一下下』，是午飯前。」' },
       { who: 'bobby', mood: 'grin', text: '「嘿嘿，再一下下！這不是刻好看的喔。是有人很認真、很認真地做過它。」' },
     ],
@@ -1722,12 +1726,12 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   noel: [
     '諾艾兒。在雷鳴之地亂放雷，魔力見底，眼神空空的，頭髮還被自己劈蓬了。自稱本小姐，叫我歸來者，不准我笑。',
     '她偷了老師的魔法書，逃進迷宮。書裡的星火，用一次就燒掉施法者的一段記憶。她的失憶，是自己燒的。',
-    '老師不讓她念那一頁，是為了保護她。流浪商人就是她的老師，他們在攤前重逢了。現在她叫我洛恩，叫之前會先臉紅。',
+    '老師不讓她念那一頁，是為了保護她。她撕下那一頁，連同記憶還給了流浪商人──她的老師。現在她叫我洛恩，叫之前會先臉紅。',
   ],
   bobby: [
     '波比。在本道的星燈神殿，她趴在倒下的古代機兵身上修東西，怪物圍過來都沒發現。她叫我洛恩哥，她的一下下從來不是一下下。',
     '她家是替星燈造機關的工匠一族，被時間忘了。碎片拼出星燈的構造圖：祖先把燈造得什麼記憶都能裝。',
-    '她修機兵，是想替祖先道歉。現在她讀懂了整張構造圖，說祖先造錯的地方，她要親手修好。',
+    '她修機兵，是想替祖先道歉。她讀懂了整張構造圖：燈芯少一道閥。祖先造錯的地方，她要親手修好。',
   ],
   // Task 10: Lorne's notes on Liz and Scarlet (I-58). Liz's last page unlocks with her 5th piece whether or not Orik's
   // fragment is back, so it stops at her father's face (揭露表).
@@ -1830,12 +1834,12 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
       N(FOUND_LINE),
       N('星燈神殿的石柱之間，倒著一台古代機兵。一個少女趴在它的胸口，扳手轉個不停。'),
       { who: 'bobby', mood: 'focused', text: '「這顆螺絲，再半圈──再半圈就好──好，接上了喔！」' },
-      { who: 'rin', text: '「後面。三隻。」' },   // a meeting plays unfiltered and may come after her oath: no guarded face
+      { who: 'rin', text: '「後面有三隻。」' },   // a meeting plays unfiltered and may come after her oath: no guarded face
     ],
     after: [
-      { who: 'bobby', mood: 'grin', text: '「嘿嘿，剛才有人說『三隻』？我還以為是在數螺絲喔。」' },
+      { who: 'bobby', mood: 'grin', text: '「嘿嘿，剛才有人說『三隻』？我還以為是在數螺絲。」' },
       { who: 'hero', text: '「我是洛恩。妳一個人在這裡修這個？」' },
-      { who: 'bobby', mood: 'excited', text: '「它是古代的機兵喔。關節的齒輪到現在都還咬得好好的──啊，你那把劍，紋路好漂亮！」' },
+      { who: 'bobby', mood: 'excited', text: '「它是古代的機兵，關節的齒輪到現在都還咬得好好的──啊，你那把劍，紋路好漂亮！」' },
       { who: 'bobby', mood: 'smile', text: '「我是波比，技師。洛恩哥，帶上我吧！那把劍，借我看一下下就好喔。」' },
     ],
   },

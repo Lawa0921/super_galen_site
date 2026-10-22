@@ -2730,3 +2730,36 @@ describe('story depth Task 9: Safira and Sylvie', () => {
     expect(lines[lines.length - 1].who).toBe('safira');
   });
 });
+
+describe('story depth Task 10: Noel and Bobby', () => {
+  const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
+  const lines = (id: SceneId, w: LineWhen = ALL) => linesWhen(STORY.scenes[id].lines, w);
+  const who = (id: SceneId, re: RegExp) => lines(id).find((l) => re.test(l.text))!.who;
+
+  it("Noel's fourth piece turns now: she owns why her teacher refused, tears out the page and means to hand it back (design §7.6)", () => {
+    expect(lines('mem:noel:4')).toHaveLength(4);
+    expect(() => pinBeat('mem:noel:4', {}, /怕我把自己燒光/)).not.toThrow();
+    expect(who('mem:noel:4', /怕我把自己燒光/)).toBe('noel');
+    expect(() => pinBeat('mem:noel:4', {}, /撕下/)).not.toThrow();
+    expect(who('mem:noel:4', /撕下/)).toBe('narrator');
+    expect(() => pinBeat('mem:noel:4', {}, /親手還給老師/)).not.toThrow();
+    expect(lines('mem:noel:4').some((l) => /雨/.test(l.text))).toBe(false);   // there is no rain in the labyrinth
+    // her fifth piece gives the page back with his memory
+    expect(lines('mem:noel:5')[1].text).toMatch(/那一頁/);
+    expect(() => pinBeat('mem:noel:5', {}, /那一頁/)).not.toThrow();
+  });
+
+  it("Bobby's fifth piece plants the valve rule the finale pays: its first lighting takes a light that does not come back (design fix four)", () => {
+    const five = lines('mem:bobby:5');
+    expect(five).toHaveLength(4);
+    expect(() => pinBeat('mem:bobby:5', {}, /閥第一次點火/)).not.toThrow();
+    const valve = five.find((l) => /閥第一次點火/.test(l.text))!;
+    expect(valve.who).toBe('bobby');
+    expect(valve.text).toMatch(/不回來的光/);
+    for (const l of five) if (l.who === 'bobby') expect(l.text).not.toMatch(/喔/);   // no 「喔」 in her memories
+  });
+
+  it('chat:noel:2 hands the script\'s 「一起回來」 back to the finale (ruling 15)', () => {
+    for (const t of storyTexts().filter((x) => x.key.startsWith('scenes.chat:noel:2.'))) expect(t.text, t.key).not.toContain('一起回來');
+  });
+});

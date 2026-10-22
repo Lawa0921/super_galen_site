@@ -23,6 +23,8 @@ const POLISHED: string[] = [
   'meet.selene.', 'meet.chizuru.', 'scenes.mem:selene:', 'scenes.mem:chizuru:', 'scenes.chat:selene:', 'scenes.chat:chizuru:', 'scenes.home:chizuru.', 'people.selene.', 'people.chizuru.',
   // Task 9: Safira and Sylvie (story depth plan Task 9)
   'meet.safira.', 'meet.sylvie.', 'scenes.mem:safira:', 'scenes.mem:sylvie:', 'scenes.chat:safira:', 'scenes.chat:sylvie:', 'scenes.home:safira.', 'scenes.home:sylvie.', 'people.safira.', 'people.sylvie.',
+  // Task 10: Noel and Bobby (story depth plan Task 10)
+  'meet.noel.', 'meet.bobby.', 'scenes.mem:noel:', 'scenes.mem:bobby:', 'scenes.chat:noel:', 'scenes.chat:bobby:', 'people.noel.', 'people.bobby.',
 ];
 
 type Scope = readonly string[];
