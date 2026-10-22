@@ -2753,6 +2753,7 @@ describe('story depth Task 10: Noel and Bobby', () => {
     const five = lines('mem:bobby:5');
     expect(five).toHaveLength(4);
     expect(() => pinBeat('mem:bobby:5', {}, /閥第一次點火/)).not.toThrow();
+    expect(five.filter((l) => /閥第一次點火/.test(l.text))).toHaveLength(1);
     const valve = five.find((l) => /閥第一次點火/.test(l.text))!;
     expect(valve.who).toBe('bobby');
     expect(valve.text).toMatch(/不回來的光/);

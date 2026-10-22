@@ -640,7 +640,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('山腰的神社，石階兩旁積著雪。神主替她繫好袖帶，把長槍交到她手上。'),
       N('「去封住迷宮的裂口吧。」神主說，「春祭之前，回來。」'),
-      { who: 'chizuru', mood: 'solemn', text: '「是。……不過是幾日前的事，記得這般清楚。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「是。不過是幾日前的事，記得這般清楚。」' },
       { who: 'chizuru', mood: 'smile', text: '「洛恩大人，春祭時請務必來看。神社的石階有九十九級，請先備好腳力。」' },
     ],
     summary: '千鶴想起神主送她出發：去封住迷宮的裂口，春祭之前回來。她以為那只是幾天前的事。',
@@ -686,7 +686,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       // Read right before and after any of her pieces: the words she wrote stay true (I-58).
       { who: 'chizuru', mood: 'bewildered', text: '「洛恩大人，公會要我寫下『記得的最後一句話』。寫完之後，我向那張表行了一禮。」' },
       { who: 'hero', text: '「表格也要行禮？」' },
-      { who: 'chizuru', mood: 'solemn', text: '「我寫的是『春祭之前，回來。』……是送我出門的人說的，自然要行禮。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「我寫的是『春祭之前，回來。』那是送我出門的人說的，自然要行禮。」' },
     ],
     summary: '千鶴在公會的登記表上，寫下送她出門的人說的話：春祭之前，回來。',
   },
@@ -699,7 +699,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'chizuru', mood: 'solemn', text: '「拆不得。不記得是何時繫上的，只是每日聽它響一回，心便定了。」', if: { met: 'bobby', notFull: 'chizuru' } },
       { who: 'chizuru', mood: 'solemn', text: '「拆不得。這是神主大人託付的鈴。每日聽它響一回，心便定了。」', if: { met: 'bobby', full: 'chizuru' } },
       { who: 'chizuru', mood: 'solemn', text: '「不記得是何時繫上的。只是每日聽它響一回，心便定了。」', if: { notMet: 'bobby', notFull: 'chizuru' } },
-      { who: 'chizuru', mood: 'solemn', text: '「是神主大人託付的鈴。……每日聽它響一回，心便定了。」', if: { notMet: 'bobby', full: 'chizuru' } },
+      { who: 'chizuru', mood: 'solemn', text: '「是神主大人託付的鈴。每日聽它響一回，心便定了。」', if: { notMet: 'bobby', full: 'chizuru' } },
     ],
     summary: '千鶴每天清晨搖一次槍穗上的鈴，聽它響完，心就定了。',
   },
@@ -877,7 +877,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('出走的前一夜，她從門縫看見書房的燈還亮著。老師在那本書的空白處寫字。'),
       N('「此術以記憶為薪。」老師低聲說，「那孩子要是學了，會連自己是誰都燒掉。」'),
       { who: 'noel', mood: 'sad', text: '「老師不教我，不是小氣，是怕我把自己燒光。」' },
-      N('她把那一頁撕下來，摺得整整齊齊，收進最裡面的口袋：「這一頁，我要親手還給老師。」'),
+      N('她把那一頁撕下來，摺得整整齊齊，收進最裡面的口袋：「這一頁，我不念了。我要親手還給老師。」'),
     ],
     summary: '老師不讓諾艾兒念那一頁，是怕她把自己燒光。她撕下那一頁，決定親手還給老師。',
   },
@@ -931,7 +931,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('山谷外的村子。她報出家裡的名號，村裡卻沒有一個人聽過。'),
       N('家裡最老的工匠只是笑：「被忘掉，是我們自己選的。祖先做錯了事，後人就躲起來。」'),
       { who: 'bobby', mood: 'sad', text: '「被時間忘掉的一族，說的就是我們家。」' },
-      { who: 'bobby', mood: 'serious', text: '「洛恩哥，祖先到底做錯了什麼？……那時候，我沒敢問。」' },
+      { who: 'bobby', mood: 'serious', text: '「洛恩哥，那時候我沒敢問：祖先到底做錯了什麼？」' },
     ],
     summary: '波比的一族被時間遺忘了。家裡的老工匠說，祖先做錯了事，後人才躲了起來。',
   },
@@ -956,7 +956,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:bobby:5': {
     lines: [
       N('最後一角拼上了。整張構造圖在她眼前亮起來，齒輪和管線，一條一條連上。'),
-      { who: 'bobby', mood: 'excited', text: '「看懂了。燈芯少一道閥，什麼都吞，什麼都還不回來。閥第一次點火，要一段不回來的光。」' },
+      { who: 'bobby', mood: 'serious', text: '「看懂了。燈芯少一道閥，只會吞，不會還。可是閥第一次點火，要一段不回來的光。」' },
       { who: 'hero', text: '「修得好嗎？」' },
       { who: 'bobby', mood: 'smile', text: '「祖先造錯的東西，我來修好。」' },
     ],
@@ -1768,7 +1768,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
     after: [
       { who: 'selene', mood: 'smile', text: '「謝謝各位。我是瑟蕾，讀月亮的人。剛才那句『會有人經過』，是月亮說的，不是我說的呢。」' },
       { who: 'hero', text: '「我是洛恩。那月亮有沒有說，妳怎麼一個人在這裡？」' },
-      { who: 'selene', mood: 'wistful', text: '「月亮沒說。我好像把很重要的東西，忘在這座迷宮裡了。……洛恩先生，請讓我同行吧。」' },
+      { who: 'selene', mood: 'wistful', text: '「月亮沒說。我好像把很重要的東西，忘在這座迷宮裡了。洛恩先生，請讓我同行吧。」' },
       N('凜比洛恩先開了口：「可以。」瑟蕾眨了眨眼，輕輕笑出聲來。'),   // V1 fix 1: her verdict, and Selene's answer to it
     ],
   },
