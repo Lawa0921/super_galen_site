@@ -3,7 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ABYSS } from '../data/hero';
-import { BUILD_LEVELS, BUILD_SEEDS, DEEP_LINEUP, buildLineup, measureBuild, measureStandard, scenarioFights, standardLineup } from './buildBands';
+import {
+  BAND_EXCEPTIONS, BUILD_LEVELS, BUILD_SEEDS, DEEP_LINEUP, ONE_RUNE_EXCEPTIONS, UNCAST, UNCAST_BEFORE, buildLineup, firstRuneSkill, measureBuild, measureStandard,
+  scenarioFights, standardLineup,
+} from './buildBands';
+import { BUILDS, buildOf } from '../data/builds';
+import type { CharacterId } from './types';
 import { parityDepth } from './parity';
 import { encounterTable } from './scaling';
 import { setSimTrace, type SimTrace } from './sim';
@@ -69,6 +74,24 @@ describe('rune band measurements (plan 8h Task 5a)', () => {
     const one = measureStandard('rin', 'boss', 35);
     expect(measureStandard('rin', 'boss', 35)).toBe(one);
     expect(one).toEqual(measureBuild('rin', standardLineup('rin'), 'boss', 35));
+  });
+
+  it('every known exception is a real build, named for the controller, with a reason', () => {
+    for (const [tag, e] of Object.entries(BAND_EXCEPTIONS)) {
+      const [owner, key] = tag.split('/') as [CharacterId, string];
+      expect(buildOf(owner, key), tag).toBeDefined();
+      expect([e.decider, e.reason.length > 0], tag).toEqual(['controller', true]);
+    }
+    for (const [label, e] of Object.entries(ONE_RUNE_EXCEPTIONS)) {
+      const [tag, pair] = label.split(' ');
+      const [owner, key] = tag.split('/') as [CharacterId, string];
+      expect(buildOf(owner, key), label).toBeDefined();
+      expect(pair.startsWith(`${firstRuneSkill(owner, key)}+`), label).toBe(true);
+      expect([e.decider, e.reason.length > 0], label).toEqual(['controller', true]);
+    }
+    // The uncast list holds only skills no build casts, each with a reason; 全面整備 is an ultimate no build takes.
+    for (const [skill, why] of Object.entries(UNCAST)) expect(UNCAST_BEFORE.includes(skill) && why.length > 0, skill).toBe(true);
+    for (const b of BUILDS.bobby) expect(b.capstone === undefined || b.capstone !== 1, b.key).toBe(true);
   });
 
   it("the deep lineup is balance.test.ts's", () => {

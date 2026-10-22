@@ -197,23 +197,63 @@ export function measureOneRune(owner: CharacterId, key: string, rune: RuneRef | 
   return out;
 }
 
-/** Skills the sim never cast before step ⑧ (plan 8h ruling 11k): each build that plays one should now cast it. */
+/** Skills the sim never cast before step ⑧ (plan 8h ruling 11k), and 赤心's 火焰爆: each build that plays one casts it. */
 export const UNCAST_BEFORE = ['cover', 'atoning-flame', 'clap', 'mirage-step', 'barrier', 'overclock', 'emergency-repair', 'moon-recall', 'full-moon-night', 'jackpot', 'flame-burst'];
+
+/** The 11k skills no build casts, each with why (plan 8h Task 5b; controller ruling R5 for 收回). */
+export const UNCAST: Readonly<Record<string, string>> = {
+  'emergency-repair': '全面整備 is the ultimate of the 整備 branch, and no build of Bobby\'s takes that branch (砲台工廠 and 電網 take 砲台 and 護盾).',
+  'moon-recall': '收回 steps the moon back from 下弦, but 滿月聖女 holds the full moon with 滿月之夜 past the end of every measured fight, so the moon never wanes for it (controller ruling R5: dropped from coverage).',
+};
+
+/**
+ * Builds that fail the §12.4 band after tuning (plan 8h Task 5b, three rounds), kept as known exceptions for the
+ * controller to decide; the band test checks each still fails (a fixed one must leave the list) and reports it.
+ */
+export const BAND_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; reason: string }>> = {
+  'bobby/factory': { decider: 'controller', reason: 'Lv35 −35%: at Lv35 the turrets the build learns do less than the standard tree; its runes still pay (bare −50%). A tree round (no 急救/超頻 first) reached −17%, still short.' },
+  'hero/healer': { decider: 'controller', reason: 'a healer\'s worth is healing the party needs; in long fights at Lv35/50 the party takes too little for 治癒+擴散 to show (−11% / −39%).' },
+  'hero/mage': { decider: 'controller', reason: 'passes the +20% at both levels (+40% / +99%) but wins 27 of 30 Lv35 crowd fights against the standard\'s 28.' },
+  'noel/meteor': { decider: 'controller', reason: 'Lv35: +29% but wins 25 of 30 against 28, and the build without runes does more (+45%): 擴散 cuts 火之星彈 more than the crowd repays at Lv35; sets without 擴散 still fall below bare.' },
+  'rin/venom': { decider: 'controller', reason: 'passes the +20% at both levels (+226% / +171%) but wins 26 of 30 Lv35 crowd fights against the standard\'s 28.' },
+  'safira/festival': { decider: 'controller', reason: 'Lv50 +8%: her worth is the gauge she feeds the party (reported apart, about 40 a round), which the per-round band does not count.' },
+  'scarlet/riposte': { decider: 'controller', reason: 'Lv50 −34%: 贖火\'s branch trades away 紅蓮終焉, which carries the standard Scarlet at Lv50; policy and rune rounds closed only the Lv35 gap.' },
+  'selene/fullmoon': { decider: 'controller', reason: 'a healer\'s worth, as 祈光: the party takes too little in long fights for 月光+擴散 to show (−8% / −22%).' },
+};
+
+/**
+ * Single runes over ONE_RUNE_MAX that only a §6.7 number would bring under (plan 8h Task 5b: BLOCKED, the controller's),
+ * keyed `<owner>/<key> <skill>+<rune>`.
+ */
+export const ONE_RUNE_EXCEPTIONS: Readonly<Record<string, { decider: 'controller'; reason: string }>> = {
+  'hero/sword abyss-sword+twin-cast': { decider: 'controller', reason: '雙重詠唱 casts the build\'s main blow twice: about 2x by construction (§6.7).' },
+  'hero/echo abyss-sword+twin-cast': { decider: 'controller', reason: '雙重詠唱 casts the main blow twice (§6.7).' },
+  'sylvie/wildfire arrow-rain+twin-cast': { decider: 'controller', reason: '雙重詠唱 on the one skill the build casts every turn (§6.7).' },
+  'sylvie/wildfire arrow-rain+venom': { decider: 'controller', reason: '淬毒 poisons every foe 箭雨 strikes; in a crowd its ticks are worth as much as the arrows (§6.7 venom chance).' },
+  'scarlet/ember flame-burst+on-struck': { decider: 'controller', reason: '受擊觸發 adds a free 火焰爆 for each blow she takes covering others (§6.7 trigger percent).' },
+};
 
 const f2 = (n: number) => n.toFixed(2);
 
+export interface LevelResult { level: number; std: BuildRun; run: BuildRun; bare: BuildRun; idle: string[] }
+export interface BuildResult {
+  key: string; tag: string; levels: LevelResult[];
+  ceilings: { depth: number; mode: 'plain' | 'deep'; min: number }[];
+  oneRune: { label: string; ratio: number; perCast: number; casts: number; castsWithout: number }[];
+}
+export interface OwnerResult { builds: BuildResult[]; seen50: Set<string>; uncast: string[] }
+
 /**
- * Every rune band number of `owner`'s rune builds (plan 8h Task 5a/5b), one line each through `say`: each build x level
- * in its scenario against her standard, its skills, idle socketed skills, frozen bosses; its ceiling; one rune at a time
- * on its first skill (her contribution per round, controller ruling R1); her 11k skills never cast. Returns how many
- * build x level cells were measured.
+ * Every rune band number of `owner`'s rune builds (plan 8h Tasks 5a/5b), reported one line each through `say`: each build x
+ * level in its scenario against her standard, its skills, idle socketed skills, frozen bosses; its ceiling; one rune at a
+ * time on its first skill (her contribution per round, controller ruling R1); her 11k skills no build cast at Lv50.
  */
-export function reportBuilds(owner: CharacterId, say: (line: string) => void): number {
-  const builds: BuildDef[] = BUILDS[owner].filter((b) => b.key !== 'standard');
-  const seenAll = new Set<string>();
-  let measured = 0;
-  for (const b of builds) {
+export function bandResults(owner: CharacterId, say: (line: string) => void): OwnerResult {
+  const seen50 = new Set<string>();
+  const out: BuildResult[] = [];
+  for (const b of BUILDS[owner].filter((x) => x.key !== 'standard') as BuildDef[]) {
     const tag = `${b.owner}/${b.key}`;
+    const levels: LevelResult[] = [];
     for (const level of BUILD_LEVELS) {
       const scenario = b.scenario!;
       const seen = new Set<string>();
@@ -227,22 +267,30 @@ export function reportBuilds(owner: CharacterId, say: (line: string) => void): n
       const sockets = partyAt(level, { ...buildLineup(owner, b.key), expect: true }, parityDepth(level)).roster[owner].sockets ?? {};
       const idle = Object.keys(sockets).filter((s) => !seen.has(s));
       if (idle.length) say(`idle-rune ${tag} Lv${level} ${idle.join(' ')}`);
-      for (const s of seen) seenAll.add(s);
-      if (run.rounds > 0 && std.rounds > 0) measured++;
+      if (level === BUILD_LEVELS[1]) for (const s of seen) seen50.add(s);
+      levels.push({ level, std, run, bare, idle });
     }
+    const ceilings: BuildResult['ceilings'] = [];
     for (const depth of CEILING_DEPTHS) {
-      for (const mode of ['plain', 'deep'] as const) say(`ceiling ${tag} d${depth} ${mode} min ${Math.min(...measureCeiling(owner, b.key, depth, mode))}`);
+      for (const mode of ['plain', 'deep'] as const) {
+        const min = Math.min(...measureCeiling(owner, b.key, depth, mode));
+        say(`ceiling ${tag} d${depth} ${mode} min ${min}`);
+        ceilings.push({ depth, mode, min });
+      }
     }
     const skill = firstRuneSkill(owner, b.key);
     const without = measureOneRune(owner, b.key, null);
+    const oneRune: BuildResult['oneRune'] = [];
     for (const r of oneRuneCandidates(owner, b.key)) {
       const w = measureOneRune(owner, b.key, r);
       const ratio = without.perRound ? w.perRound / without.perRound : 0;
       const perCast = without.perCast ? w.perCast / without.perCast : 0;
       say(`one-rune ${tag} ${skill}+${r.id} ${f2(ratio)} per-cast ${f2(perCast)} casts ${w.casts}/${without.casts}`);
+      oneRune.push({ label: `${tag} ${skill}+${r.id}`, ratio, perCast, casts: w.casts, castsWithout: without.casts });
     }
+    out.push({ key: b.key, tag, levels, ceilings, oneRune });
   }
-  const mine = UNCAST_BEFORE.filter((s) => SKILLS[s]?.owner === owner && !seenAll.has(s));
-  if (mine.length) say(`uncast ${owner} ${mine.join(' ')}`);
-  return measured;
+  const uncast = UNCAST_BEFORE.filter((s) => SKILLS[s]?.owner === owner && !seen50.has(s));
+  if (uncast.length) say(`uncast ${owner} ${uncast.join(' ')}`);
+  return { builds: out, seen50, uncast };
 }
