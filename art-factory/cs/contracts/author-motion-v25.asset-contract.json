@@ -1,0 +1,49 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "cs-author-motion-v25",
+  "category": "3d_game_assets",
+  "status": "rejected-for-direct-weapon-motion",
+  "screen_id": "cs-first-person-rifle",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "opaque_background",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_background",
+    "candidate_profiles": [
+      "opaque_background"
+    ],
+    "confidence": "high",
+    "rationale": "Diagnostic renders of existing licensed native arm animation; no new runtime art.",
+    "clarifying_question": null
+  },
+  "source": {
+    "path": "art-factory/cs/runs/run-20261006-v11-fps-arms-source/raw/extracted/FPS ARMS RIG 1 test anim.blend",
+    "sha256": "81bed56c1718957171cb6c16ee5b77f7067ccd0d3c39ec0ff052d25322e05d75",
+    "provenance": "art-factory/cs/runs/run-20261006-v11-fps-arms-source/qa/provenance.json",
+    "author": "para",
+    "license": "CC0-1.0",
+    "texture": "art-factory/cs/runs/run-20261006-v11-fps-arms-source/raw/extracted/new_diff.png"
+  },
+  "scope": "Classify the original whole-arm action at frames1,28,55 using the untouched author camera and one fixed external overview. Preserve source mesh/weights/bones/constraints/action. Do not assume a gun, glove or garment is supplied.",
+  "preview_material_policy": "Original source diffuse through neutral rough Principled shader and neutral QA lighting; no new texture painting, no source .blend save, no exports.",
+  "qa_gates": [
+    "source_hash_before_after",
+    "original_active_action",
+    "six_source_renders",
+    "independent_action_semantics_review"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "forbidden_content": [
+    "runtime use of this diagnostic",
+    "parameter grids",
+    "skin hiding",
+    "generated placeholder gloves",
+    "inferred weapon contact approval"
+  ],
+  "lifecycle_status": "rejected",
+  "review": "art-factory/cs/runs/run-20261007-v25-author-motion/qa/review.json",
+  "source_mesh_rig_retained": true
+}

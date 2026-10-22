@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_fps_arms_v29",
+  "status": "published-local",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "category": "character_equipment_parts",
+  "postprocess_profile": "character_equipment_parts",
+  "mode_inference_decision": {
+    "selected_profile": "character_equipment_parts",
+    "confidence": "high",
+    "rationale": "Licensed 3D hand anatomy and author rig assembled onto an existing licensed rifle. Project glTF export and contact gates extend the equipment profile.",
+    "clarifying_question": null
+  },
+  "screen_id": "cs-first-person-rifle",
+  "screen_breakdown": {
+    "views": [
+      "right-grip",
+      "left-support",
+      "hip-1440x900",
+      "ads-1440x900",
+      "reload"
+    ],
+    "assembly": [
+      "existing CC0 rifle body and anchors",
+      "CC0 FPS hand anatomy",
+      "source-authored finger curl and arm IK",
+      "licensed material finish after pose validation"
+    ],
+    "generation_order": [
+      "whole rifle contact pose",
+      "first-person framing",
+      "surface finish",
+      "animation integration"
+    ]
+  },
+  "source_mode": "Verified CC0 author source; original Blender pose assembly, no placeholder anatomy",
+  "source": {
+    "author": "para; MakeHuman team upstream",
+    "page": "https://opengameart.org/content/fps-arms-rigged-only",
+    "license": "CC0-1.0",
+    "blend": "art-factory/cs/runs/run-20261006-v11-fps-arms-source/raw/extracted/FPS ARMS RIG 1.blend",
+    "sha256": "5c41f224f40525fa2f09c1168b3df638fc0b401ba5e59ae7fad6f88369fd6f82",
+    "intake": "art-factory/cs/runs/run-20261006-v11-fps-arms-source/qa/intake-review.json"
+  },
+  "rifle": {
+    "path": "art-factory/cs/runs/run-20261007-v29-fps-arms/raw/rifle-v5.glb",
+    "prior_runtime_path": "public/assets/games/cs/rifle.glb",
+    "sha256": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c"
+  },
+  "surface_sources": [
+    {
+      "source_page": "https://polyhaven.com/a/brown_leather",
+      "author": "Rob Tuytel",
+      "license": "CC0-1.0",
+      "provenance": "art-factory/cs/runs/run-20261007-v29-fps-arms/raw/brown_leather/provenance.json",
+      "usage": "Glove leather albedo, OpenGL normal and roughness, resized from original 4K maps; original files retained"
+    },
+    {
+      "source_page": "https://polyhaven.com/a/fabric_pattern_05",
+      "license": "CC0-1.0",
+      "provenance": "art-factory/cs/runs/run-20261003-v5-detail/texture-sources.json",
+      "usage": "Sleeve normal/roughness, existing project olive cloth palette"
+    }
+  ],
+  "pose_review": {
+    "candidate": "contact-c",
+    "independent_reviewer": "combat_feedback_audit",
+    "result": "pass for complete static grip and hip/ADS framing only",
+    "runtime_publish_allowed": false
+  },
+  "run": "art-factory/cs/runs/run-20261007-v29-fps-arms",
+  "candidate_only_until": [
+    "all five digits anatomical",
+    "palms and fingers wrap actual gun surfaces",
+    "trigger finger fits guard",
+    "no camera clipping",
+    "no center obstruction",
+    "weapon body/UV/material/anchor parity",
+    "resource ownership",
+    "browser assembly",
+    "independent visual review"
+  ],
+  "alpha_policy": "Opaque glTF PBR; review renders may use native film transparency. No chroma key.",
+  "texture_budget": "Preserve three original 2048x2048 rifle images exactly; five added hand/sleeve maps are 1024x1024 WebP.",
+  "forbidden": [
+    "RR license-unverified source",
+    "V18-V27 rejected cloth/hand grids",
+    "placeholder geometry as hands",
+    "flat-color fake gloves",
+    "baked UI text",
+    "unmeasured FPS claims"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "external_deployment_allowed": false,
+  "publication_scope": "local_repository",
+  "review": "art-factory/cs/runs/run-20261007-v29-fps-arms/qa/review.json"
+}

@@ -114,7 +114,7 @@ export const zh_CN = {
   lang_name: '繁体中文',
   site: {
     title: 'SuperGalen\'s Dungeon',
-    description: '這是我的個人部落格，展示作品集、履歷和有趣的互動专案'
+    description: 'Galen 的 RPG 风格个人网站：分享 AI、Codex 与游戏开发的技术日志，还有打开浏览器就能直接游玩的网页小游戏，以及公会成员的个人介绍页面。'
   },
   common: {
     confirm: '确认',

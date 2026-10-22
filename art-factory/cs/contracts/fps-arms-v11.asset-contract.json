@@ -1,0 +1,19 @@
+{
+  "schema": "cs-fps-arms-v11-source-intake",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "scope": "Inspect and render the author's existing CC0 rigged arms. No weapon assembly or runtime publication.",
+  "author": "para",
+  "source_page": "https://lpc.opengameart.org/content/fps-arms-rigged-only",
+  "source_download": "https://lpc.opengameart.org/sites/default/files/fps%20arms.7z",
+  "archive_sha256": "31f6c7bd5caea8856c4aafca8461f38a3c8bfdd3d8f05c898e403b9475e54562",
+  "license": "CC0-1.0",
+  "upstream_credit": "MakeHuman team, as identified by the author",
+  "run": "art-factory/cs/runs/run-20261006-v11-fps-arms-source",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "inspection": ["Blender auto execution disabled", "bone parents and constraints", "weights per finger", "referenced unweighted vertices", "source visual render"],
+  "preview_material_policy": "Use original source diffuse texture with a neutral rough Principled preview shader. No source blend is saved or overwritten.",
+  "not_accepted_by_intake": ["CS2-level appearance", "glove/sleeve treatment", "gun contact", "animation quality", "skin export fidelity", "performance"]
+}

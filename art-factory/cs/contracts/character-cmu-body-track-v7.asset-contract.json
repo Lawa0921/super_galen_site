@@ -1,0 +1,43 @@
+{
+  "asset_id": "browser-cs-cmu-body-track-v7",
+  "status": "development-forward-locomotion-accepted-formal-art-pending",
+  "source_bake": "art-factory/cs/runs/run-20261005-v7-cmu-contact/candidate/contact-v2.json",
+  "source_sha256": "398df5472852e85081b49ed6579f22ed1576ece24dd14ab07ed2ea2e562986c6",
+  "method": "Same consumer phase for current torso/root residual; per-leg contact-time warp only. One six-harmonic root correction is solved offline in whitened coefficient space, followed by dual-leg mount preflight/IK. No runtime IK or skinned vertex scans.",
+  "fixed_limits": {
+    "total_baseline_relative_downward_m": 0.04,
+    "correction_x_m": [
+      -0.06,
+      0.06
+    ],
+    "correction_z_m": [
+      -0.06,
+      0.06
+    ],
+    "harmonics": 6,
+    "max_sweeps": 5000,
+    "sample_reach_margin_m": "0.001 * 4 * mix * (1-mix), plus original two-bone margin",
+    "whole_shoe_penetration_m": 0.002,
+    "max_hand_error_m": 1e-06,
+    "phase_intervals": 256,
+    "blend_knots": 21,
+    "build_downward_guard_m": 0.0005,
+    "storage_decimal_places": 6
+  },
+  "gates": [
+    "middle blend first",
+    "dense consumer phase and blend validation",
+    "world contact slip and knee direction",
+    "baseline-relative head/weapon displacement and velocity",
+    "independent continuous visual review",
+    "two-pose runtime cost"
+  ],
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "assembly_human_review": "pending",
+  "license": "Inherited CMU free-use permission; no direct resale of original or converted motion data.",
+  "reference": "Current runtime cycles-v3 sampled through its compiler (including run phaseOffset=.5); contact-v2 phaseOffset=0 already aligned. Pure source offset discrepancy measured <=7.86 micrometres; candidate final total Y remeasured against current runtime.",
+  "development_integration_allowed": true,
+  "candidate": "art-factory/cs/runs/run-20261005-v7-cmu-body-track/candidate/body-compact-v1.json",
+  "candidate_sha256": "15132eadb5a63f972399717233b9e4e85af8f810403fc3d930280f1cced9866b"
+}

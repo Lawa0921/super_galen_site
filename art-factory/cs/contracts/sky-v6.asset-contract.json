@@ -1,0 +1,75 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "asset_id": "cs_daylight_sky",
+  "screen_id": "browser_cs_game_room",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "category": "environment_background",
+  "source_mode": "official_cc0_hdri",
+  "source_asset": "https://polyhaven.com/a/kloofendal_38d_partly_cloudy_puresky",
+  "authors": [
+    "Greg Zaal (Photography)",
+    "Jarod Guest (Processing)"
+  ],
+  "license": "CC0-1.0",
+  "license_url": "https://polyhaven.com/license",
+  "mode_inference_decision": {
+    "profile": "opaque_background",
+    "confidence": "high",
+    "rationale": "A source HDR equirectangular daytime sky for the 3D scene, without alpha, horizon buildings or baked UI text."
+  },
+  "processing_policy": {
+    "source_resolution": "1k",
+    "preserve_source_hdr_pixels": true,
+    "alpha": "opaque",
+    "rotation": "Rigid yaw alignment of measured source sun to WORLD_SUN; source elevation must be within 2 degrees.",
+    "runtime_pmrem": "Retain reviewed procedural scene and viewmodel PMREM; replacing the environment was visually rejected for crushed shadows.",
+    "forbidden": [
+      "web preview as runtime source",
+      "painted clouds",
+      "unregistered public asset",
+      "changing authoritative map or gameplay"
+    ]
+  },
+  "budget": {
+    "candidate_bytes_max": 1500000,
+    "runtime_new_light_sources_max": 0,
+    "runtime_new_per_frame_passes_max": 0,
+    "minimum_fps_evidence": "Same native hardware gameplay and fixed-FX runs with p95 no worse than the current 18.5ms gate."
+  },
+  "qa_gates": [
+    "official_md5_size",
+    "source_sha256",
+    "HDR dimensions and finite values",
+    "measured bright-sun direction",
+    "actual-player sky and material captures",
+    "independent visual review",
+    "native gameplay performance",
+    "registered published-path hash"
+  ],
+  "candidate_root": "art-factory/cs/runs/run-20261004-v6-sky",
+  "selected_source_manifest": "art-factory/cs/runs/run-20261004-v6-sky/kloofendal_38d_partly_cloudy_puresky-1k/source-manifest.json",
+  "selected_source_sha256": "78882f3e560d7f6f2856f5ff071c52da51098507c391fdbb811dc9f79c403704",
+  "measured_sun_elevation_degrees": 37.9510006386505,
+  "background_rotation_y": -1.8861421782004313,
+  "background_intensity": 1.6,
+  "rejected_candidates": [
+    {
+      "source": "Qwantani Noon Pure Sky 2K",
+      "reason": "Measured HDR sun elevation 49.8327 degrees differs from the world light; date/GPS inference was not reliable.",
+      "evidence": "art-factory/cs/runs/run-20261004-v6-sky/qa/source-mechanical.json"
+    },
+    {
+      "source": "Kloofendal HDR as background and environment",
+      "reason": "Unnormalized environment crushes shadow and weapon detail.",
+      "evidence": "art-factory/cs/runs/run-20261004-v6-sky/qa/probe/capture.json"
+    }
+  ],
+  "status": "published_locally",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "external_deployment": false,
+  "publication_scope": "local_repository",
+  "visual_review": "art-factory/cs/runs/run-20261004-v6-sky/qa/visual-review.json"
+}

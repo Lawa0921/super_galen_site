@@ -1,0 +1,40 @@
+{
+  "schema": "cs-wall-detail-v9",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "screen_id": "cs-west-courtyard-player",
+  "scope": "One candidate-only same-resolution wall baseColor refinement. Reuse approved2K source, deterministic1K Lanczos resample and conservative unsharp. No geometry, UV, lighting, normal/ARM or sampler changes.",
+  "source": "public/assets/games/cs/environment.glb",
+  "source_sha256": "f81726b730da62009562c563791bd6bb0f9b18f5e8a70c84c87a0abb29f8f610",
+  "source_asset": "https://polyhaven.com/a/modular_fort_01",
+  "source_license": "CC0-1.0",
+  "source_author": "Rico Cilliers",
+  "source_image_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/modular_fort_01/modular_fort_01_wall_diff_2k.jpg",
+  "source_image_cache": "art-factory/cs/runs/run-20261006-v8-wall-sharpness/raw/modular_fort_01_wall_diff_2k.jpg",
+  "source_image_md5": "6d2fef7d56387ea281ceaf6d3238e048",
+  "source_image_bytes": 3768092,
+  "source_mode": "Deterministic postprocessing of the already licensed and reviewed source photograph; no invented texture detail or upscale.",
+  "run": "art-factory/cs/runs/run-20261007-v9-wall-detail-1k",
+  "postprocess": {
+    "format": "WebP", "quality": 93, "method": 6, "size": [1024, 1024],
+    "color_space": "sRGB", "resample": "LANCZOS",
+    "unsharp": {"radius": 0.7, "percent": 50, "threshold": 3},
+    "rationale": "Single conservative subpixel contrast restoration after2:1 downsample. Parameters fixed before rendering; no candidate grid. Inspect halo, moire and moving-camera shimmer before acceptance."
+  },
+  "budget": {
+    "additional_draw_calls": 0, "additional_triangles": 0, "additional_textures": 0,
+    "additional_glb_bytes_max": 200000, "additional_gpu_rgba8_full_mip_bytes_max": 0
+  },
+  "gates": [
+    "Pinned licensed source integrity", "Geometry and29 other images byte-identical",
+    "Material/sampler/node/UV/collision parity", "Exactly1024x1024 and zero extra RGBA8 mip residency",
+    "Matched actual-renderer close/front/oblique/far/ground/courtyard views at high and low quality",
+    "Independent visible-benefit and artifact review", "Moving-camera shimmer and normal gameplay before runtime integration",
+    "Isolated valid cost comparison; invalid or noisy timing cannot count as performance acceptance"
+  ],
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "stop_rule": "Reject if same1K visual benefit is weak or introduces halo/moire/shimmer. Do not fall back to rejected1536/2K assets, add detail geometry, relax measured gates or claim existing low-FPS issue fixed."
+}

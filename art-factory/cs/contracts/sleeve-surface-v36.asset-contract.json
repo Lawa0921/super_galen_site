@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_fps_sleeve_surface_v36",
+  "status": "published",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "screen_id": "cs-first-person-viewmodel",
+  "scope": "Surface and shading only for the shared FPS sleeve material MakeHuman_authored_FPS_uniform_CC0 in pistol/smg/rifle/sniper. No geometry, skin, rig, animation, UV or BIN change (earlier geometry attempts v18/v21/v23 stay rejected). Lighting in view-lighting.ts/renderer.ts is unchanged.",
+  "source_mode": "Licensed source + deterministic postprocess. Tiling detail from Poly Haven CC0 'rough_linen' (photography colormass, processing Rico Cilliers), 2K nor_gl/ao/diff JPG, md5 verified against the Poly Haven files API. Existing licensed baked fold albedo/normal (V33) re-used; no generated or hand-painted pixels.",
+  "raw": {
+    "root": "art-factory/cs/runs/run-20261010-v36-sleeve-surface/raw/polyhaven-rough_linen",
+    "url": "https://polyhaven.com/a/rough_linen",
+    "license": "CC0",
+    "sha256": {
+      "rough_linen_nor_gl_2k.jpg": "c5733ad50cfe0f90c546f3d4076590c1c78a4fd1a83c967cc9c92dc8175b99e6",
+      "rough_linen_ao_2k.jpg": "277399dfd364393c506fb35f7b868a2d3c0c388400439c327829cf787bc7c315",
+      "rough_linen_diff_2k.jpg": "e71016e08dfebea1dd4e8a2a675e3b617a889a782af782f1abb795906f4db1b4"
+    },
+    "compared_alternative": "art-factory/cs/runs/run-20261010-v36-sleeve-surface/raw/polyhaven-denim_fabric_05 (CC0, rejected: twill below texel resolution at 512)"
+  },
+  "postprocess": {
+    "script": "art-factory/cs/source/cook_cs_sleeve_surface_v36.mjs",
+    "steps": [
+      "Full seamless 2K tile resized to 512 (Lanczos3); no crop, so tiling is preserved",
+      "R = clamp(0.8 * ((ao/mean ao) * (diff luma / wrap-around Gaussian(24px) luma))^1.4, 0, 0.88): weave cavity and yarn slub",
+      "GB = OpenGL tangent normal XY, gain 1.4 about 0.5",
+      "JPEG q90, 4:4:4 chroma (packed data channels must not be chroma-subsampled), stored as shared/fps/<sha256>.jpg",
+      "GLB JSON only: occlusionTexture (strength 0.5, KHR_texture_transform scale 2), normalTexture.scale 1.8, material extras csFabricDetail; BIN byte-exact, all other JSON deep-equal"
+    ],
+    "runtime_shader": "src/scripts/games/cs/fabric-detail.ts (onBeforeCompile; cache key cs-fabric-detail-v36): albedo *= (bakedAlbedo/atlasMean)^(foldContrast-1) * mix(1, R/cavityMean, albedoStrength); tangent normal xy += (GB*2-1)*normalStrength",
+    "params": {
+      "normalStrength": 1,
+      "albedoStrength": 0.6,
+      "cavityMean": 0.785,
+      "foldContrast": 2.2,
+      "atlasMean": 0.557
+    },
+    "detail_image": {
+      "uri": "shared/fps/300afbabc3e67182fc799d399ff961613bc47b8de477d8561f8fecec8513fecb.jpg",
+      "bytes": 155754,
+      "px": 512
+    }
+  },
+  "alpha_policy": "opaque cloth; chroma-key and alpha QA inapplicable",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "selected_candidate": "e-linen512",
+  "budget": {
+    "runtime_bytes_max": 32000000,
+    "new_texture_max_px": 1024,
+    "new_texture_px": 512,
+    "new_draw_calls": 0,
+    "new_materials": 0
+  },
+  "gates": [
+    "Four FPS GLBs share one sealed detail image, identical transform/params (unit: fabric-detail-asset.test.ts)",
+    "BIN chunk byte-exact; only sleeve material, appended image/texture/sampler and extensionsUsed differ (cook asserts)",
+    "Shader patch validated before mutation, survives cloneModel (unit: fabric-detail.test.ts)",
+    "Same-camera real GameRenderer captures before/after: hip sun, hip shade, ADS, reload, move, smg, sniper, pistol; high and low quality",
+    "No WebGL program errors, unchanged viewmodel draw count per view",
+    "Runtime bundle <= 32,000,000 bytes"
+  ],
+  "candidates": {
+    "a-linen512": "rejected: repeat 3, weak strengths; weave barely visible at hip distance",
+    "a-linen1k": "rejected: 1024 detail 862,556 bytes pushes bundle to 32,568,860 (> budget)",
+    "b-linen512": "rejected: readable weave but bright slub streaks read as scratches; folds not strengthened",
+    "c-denim512": "rejected: twill pitch below 512 texel resolution, averages into blotchy blur",
+    "d-linen512": "rejected after independent review: conditional pass but blotchy dark patches and cooler/dirtier hue (fold contrast 3, albedo 0.8)",
+    "e-linen512": "selected: fold contrast 2.2, albedo 0.6, gain 1.4, slub ceiling 0.88 (addresses d review: fewer blotches, hue closer to baseline)"
+  },
+  "qa": {
+    "capture_script": "art-factory/cs/source/capture_cs_sleeve_v36.mjs",
+    "before": "art-factory/cs/runs/run-20261010-v36-sleeve-surface/qa/before",
+    "candidate": "art-factory/cs/runs/run-20261010-v36-sleeve-surface/qa/try-e512",
+    "after_published": "art-factory/cs/runs/run-20261010-v36-sleeve-surface/qa/after",
+    "rejected_root": "art-factory/cs/runs/run-20261010-v36-sleeve-surface/rejected"
+  },
+  "known_limits": [
+    "No sewn cuff hem or seam line: adding one would require new geometry or painted pixels, both out of scope for this surface pass.",
+    "Weave is magnified linen at 512 px; individual threads are not resolved at hip distance, it reads as canvas grain and slub mottling.",
+    "Detail direction follows the existing V33 UV atlas, so the weave runs diagonal to the forearm in places.",
+    "Not CS2-equivalent: no sheen/fuzz term, no camo/print, no wear edges, baked fold albedo has minor blotches that the contrast boost makes more visible."
+  ]
+}

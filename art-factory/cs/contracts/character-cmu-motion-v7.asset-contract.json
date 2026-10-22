@@ -1,0 +1,50 @@
+{
+  "schema": "cs-character-cmu-motion-v7-contract",
+  "asset_id": "browser-cs-cmu-motion-v7",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "licensed-motion-capture-data",
+  "postprocess_profile": "character_equipment_parts",
+  "mode_inference_decision": {
+    "selected_profile": "character_equipment_parts",
+    "confidence": "high",
+    "rationale": "Existing skinned character receives licensed skeletal motion; no bitmap or replacement geometry is generated.",
+    "clarifying_question": null
+  },
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-cmu-motion",
+  "status": "absolute-segment-direction-verified-art-contact-loop-pending",
+  "official_source": "https://mocap.cs.cmu.edu/",
+  "source_files": {
+    "16.asf": "2323f876564610f84bfbec9b90b8ebffb57515673b7f4a45b0fb0849af465bdb",
+    "16_31.amc": "25f37eb959b54e9a0f69920020b944f4f7b2899eb98675ce15e82ccc1ad714b5",
+    "16_35.amc": "28e83b8ee8ff46e15cb7d41d5e77faaefe3e06cf165f05fb18dd348457bdf387"
+  },
+  "source_brief": "Test official subject 16 walk (31) and run/jog (35), both 120 Hz. Replace rejected bounding run clips only if source reconstruction and target silhouette pass.",
+  "license": {
+    "verification": "Verified and archived official-home.html; free use including commercial games, no direct resale of motion data or converted motion data. This is the CMU site's own use permission, not a CC0 claim.",
+    "acknowledgment": "Motion data obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217."
+  },
+  "alpha_policy": "Not applicable: motion data only; existing character materials and textures remain unchanged.",
+  "retarget_scope": {
+    "method": "Absolute segment bases, source ASF direction and anatomical reference to target child offset and rest-model +X reference.",
+    "mapped_leg_segments": ["thigh_l", "calf_l", "foot_l", "thigh_r", "calf_r", "foot_r"],
+    "body": "Root/lowerback/upperback rest deltas move pelvis/spine_01/spine_02; spine_03 world facing remains the calibrated frozen rifle rest.",
+    "translation": "Source mean hip height/lateral offset scaled by total leg length; recorded root XZ travel is removed for in-place review only.",
+    "toe_articulation": "Not transferred; target ball has no child bone and requires a separately validated anatomical terminal direction.",
+    "contact": "Not accepted: source captures and target shoes have different offsets; observed target penetration up to 11.7 mm.",
+    "loop": "Full recordings play once. No seamless loop, engine-speed retiming, start/stop, strafe or runtime integration accepted."
+  },
+  "requirements": [
+    "Download only official HTTPS files with normal certificate verification; verify bytes and SHA-256 before processing.",
+    "Preserve raw files and source/license evidence outside runtime.",
+    "Reconstruct root and all fixed hip offsets, bone axes, channel order and lengths using a verified ASF/AMC convention.",
+    "TDD: synthetic known rotations, nonzero bone axes, ordered root rotations, missing channels and malformed hierarchy; cross-check true source poses before retargeting.",
+    "Use 0.0254/0.45 meters per source length unit, verified by official CMU documentation.",
+    "Retarget actual leg segment directions using calibrated anatomical bases; raw world-space rest deltas are insufficient for CMU's 20-degree rest splay. Preserve hierarchy, local bone positions/scales, hands and rifle.",
+    "Inspect full motion continuously and source-target poses, then assess cycle extraction, contact, start/stop and full gameplay cost separately.",
+    "Do not treat a short recorded clip as a seamless loop or normalize away defects to force visual acceptance."
+  ],
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "external_deployment_allowed": false
+}

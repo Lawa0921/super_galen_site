@@ -1,0 +1,37 @@
+{
+  "schema": "cs-character-locomotion-v7-contract",
+  "asset_id": "browser-cs-world-locomotion-v7",
+  "project_id": "super_galen_site",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "character_equipment_parts",
+  "source": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "source_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "source_contracts": [
+    "art-factory/cs/contracts/character-gait-v7.asset-contract.json",
+    "art-factory/cs/contracts/rifle-grip-v7.asset-contract.json",
+    "art-factory/cs/contracts/character-lod-v7.asset-contract.json"
+  ],
+  "source_license": "Reuse existing source and provenance; no new geometry, textures or skeleton changes.",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-world-gait",
+  "status": "finite-cruise-and-frozen-upper-body-candidate-natural-motion-pending",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "external_deployment_allowed": false,
+  "requirements": [
+    "Drive locomotion from actual displacement; movement intent against a wall must not advance a walking cycle.",
+    "World-space stance anchors survive forward, backward, strafe and heading changes without planted-foot sliding.",
+    "Swing planning preserves position continuity across starts, stops, mid-swing redirection and restart.",
+    "Explicit reset policy for spawn, round change, teleport and invalid/discontinuous time; pause must not accumulate motion.",
+    "Stride/cadence and contact targets must be checked on the real skin at engine slow/run speeds 2.6/5.3 m/s.",
+    "Keep rifle palm/finger constraints and actual muzzle alignment; no legacy rigid-bone animation on skin actors.",
+    "Keep body/shoe vertex streams, sole calibration and LOD source bytes exact.",
+    "Measure five simultaneously animated actors in the real scene before accepting runtime cost."
+  ],
+  "scope_limits": [
+    "Flat-ground calibration first; slopes, jumping and complete aim/flinch channels remain part of the overall goal and require their own evidence.",
+    "Existing clothing fit and full-grip limitations are not waived by movement checks.",
+    "No CS2-equivalence or acceptable-FPS claim until complete gameplay evidence exists."
+  ],
+  "evidence_manifest": "art-factory/cs/runs/run-20261005-v7-world-gait/manifest.json"
+}

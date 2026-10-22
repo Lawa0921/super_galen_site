@@ -1,0 +1,35 @@
+{
+  "asset_id": "browser-cs-shoulder-contact-v7",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "offline-diagnostics-of-existing-licensed-character-and-rifle",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-shoulder-contact",
+  "status": "rejected-collision-elbow-shape-and-continuity",
+  "development_integration_allowed": false,
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "assembly_human_review": "not-ready",
+  "method": "Actual weighted shoulder triangle and authored rifle rear cap; wrist lower-bound geometry; bounded torso, released shoulder reference, authored/minimum-wrist elbow probes. CPU surface crossing and alpha QA remain offline.",
+  "limits": {
+    "pitch_samples_rad": [-1.45, -1, -0.6, 0, 0.6, 1, 1.54],
+    "torso_limit_rad": 0.35,
+    "support_hand_slide_weapon_local_m": 0.08,
+    "release_offset_limit_actor_m": 0.3,
+    "weighted_contact_iterations_max": 24,
+    "contact_target_error_m": 0.00005
+  },
+  "source_character": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "source_character_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "source_weapon": "public/assets/games/cs/rifle.glb",
+  "source_weapon_sha256": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c",
+  "source_calibration": "art-factory/cs/runs/run-20261004-v7-rifle-grip/calibration-v17-thumb-patch.json",
+  "source_calibration_sha256": "a643bc94b294e916e8f6ff61366af456684802bb975dc8a8c8a060deba62551f",
+  "visual_gate": "FAIL: lower wrist angle and reachable endpoints do not establish natural shoulders/elbows or continuous animation.",
+  "not_verified": [
+    "accepted full-range animation and pitch/locomotion/impact blending",
+    "complete surface collision, containment, coplanar contacts, visibility and head clearance",
+    "recalibrated support hand and all-finger grip",
+    "runtime lifecycle and new aim gameplay performance",
+    "formal asset publication and complete CS2-quality goal"
+  ],
+  "next": "Use an authored continuous elbow path with whole-arm collision cost and appropriate wrist/grip orientation; retain the released torso reference without iterating arm-deformed shoulder skin. Do not tune displacement or minimize wrist bend alone."
+}

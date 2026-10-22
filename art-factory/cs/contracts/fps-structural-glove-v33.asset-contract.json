@@ -1,0 +1,61 @@
+{
+  "schema": "asset-contract-v1",
+  "asset_id": "cs_fps_structural_glove_v33",
+  "status": "candidate-preview-only-cuff-refinement-pending",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "parent_contract": "art-factory/cs/contracts/character-v33.asset-contract.json",
+  "source": {
+    "title": "Gloves for fps game",
+    "author": "bobeer",
+    "url": "https://skfb.ly/6TICP",
+    "license": "CC BY 4.0",
+    "provenance": "art-factory/cs/runs/run-20261008-v33-character/qa/bobeer-glove-provenance.json",
+    "raw": "art-factory/cs/runs/run-20261008-v33-character/raw/bobeer-glove-pbr",
+    "handedness": "Historical glove_left.obj is target R by anatomical axes. Do not use filename to infer chirality."
+  },
+  "source_blend": "art-factory/cs/runs/run-20261008-v33-character/candidate/fps-rig-rifle-glove-source-left-g/rifle-glove-prototype.blend",
+  "candidate": "art-factory/cs/runs/run-20261008-v33-character/candidate/fps-glove-pack-d/rifle.glb",
+  "changes": [
+    "Rebind licensed pads, finger panels and original UV/PBR to existing 48-bone FPS rig.",
+    "Cut cuff in target hand-axis plane, retain old wrist as an overlapping inner gasket, close the new cuff with paired rim and adjacent-edge cap fan.",
+    "Register the index pad to actual world-space trigger mesh with constant R-clavicle translation across 61 frames.",
+    "Mirror source explicitly for left hand; retain the 48 rest bones, original gun/cloth and right-hand geometry; replace only 19 left reload channels with sampled fixed-length IK and independent digits.",
+    "Use a hand-bound glove collar and smooth inner-wrist weights; bounded 1.5mm radial fit is still visually insufficient."
+  ],
+  "budget": {
+    "scope": "Rifle two-hand prototype; two glove/gasket separations add two primitives to the stage5 model.",
+    "joints": 48,
+    "rifle_triangles": 37013,
+    "rifle_primitives": 8,
+    "additional_primitives": 2,
+    "max_texture_dimension": 1024,
+    "projected_runtime_bytes": 31690470,
+    "runtime_bundle_limit": 32000000,
+    "performance_acceptance": false
+  },
+  "qa": {
+    "offline_deformation": "art-factory/cs/runs/run-20261008-v33-character/qa/fps-rig-rifle-glove-source-left-g-L-deformation.json",
+    "source_review": "art-factory/cs/runs/run-20261008-v33-character/qa/review-glove-bind-h.json",
+    "actual_renderer": "art-factory/cs/runs/run-20261008-v33-character/qa/glove-pack-d-bounds-timeline/report.json",
+    "pack_manifest": "art-factory/cs/runs/run-20261008-v33-character/candidate/fps-glove-pack-d/manifest.json",
+    "historical_audit_correction": "art-factory/cs/runs/run-20261008-v33-character/qa/reload-audit-correction.json",
+    "contact": "art-factory/cs/runs/run-20261008-v33-character/qa/fps-rig-rifle-glove-source-left-g-contact-full.json",
+    "checkpoint": "art-factory/cs/runs/run-20261008-v33-character/qa/glove-both-g-preview-checkpoint.json"
+  },
+  "rejected": [
+    "uniform-grain A/B",
+    "open/point derivative source",
+    "bind A-G"
+  ],
+  "remaining": [
+    "left wrist/sleeve transition art refinement",
+    "other three weapons",
+    "full-body refinement",
+    "continuous weapon clearance",
+    "performance acceptance",
+    "unified two-hand art review"
+  ],
+  "runtime_path": null,
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false
+}

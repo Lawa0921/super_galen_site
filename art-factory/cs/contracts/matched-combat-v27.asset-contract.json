@@ -1,0 +1,64 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "cs-matched-combat-v27",
+  "category": "3d_game_assets",
+  "status": "qa_failed",
+  "lifecycle_status": "qa_failed",
+  "screen_id": "cs-first-person-rifle",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "opaque_background",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_background",
+    "candidate_profiles": [
+      "opaque_background"
+    ],
+    "confidence": "high",
+    "rationale": "Opaque diagnostic renders of an editable native scene using licensed existing 3D assets; no runtime export.",
+    "clarifying_question": null
+  },
+  "sources": [
+    {
+      "path": "art-factory/cs/runs/run-20261004-v7-character-rig/candidate/full-body-source.blend",
+      "sha256": "ff79aa7758774277fece1866c470883d79af3b665765fc914c31e23e0ed4b4d3",
+      "provenance": "art-factory/cs/runs/run-20261004-v7-character-rig",
+      "state": "Original matched body/garments; prior fit QA failed, not production approved"
+    },
+    {
+      "path": "art-factory/cs/runs/run-20261003-v5-detail/raw/rifle.blend",
+      "sha256": "4f9bcda6f344762f67fdca916b43a24e54d9b3b01be4177a9e55a5b418615023",
+      "provenance": "art-factory/cs/runs/run-20261003-v3-characters/m4a1-source.json",
+      "license": "CC0",
+      "author": "nisu"
+    }
+  ],
+  "scope": "Original 53-bone whole-body+clothing+rifle integration with three authored poses and fixed FPS/external cameras; no claim of complete animation or production quality.",
+  "allowed_transforms": [
+    "rigid body placement",
+    "original pose-bone rotations",
+    "rigid rifle placement",
+    "source image path resolution and packing",
+    "neutral diagnostic cameras and lighting"
+  ],
+  "qa_gates": [
+    "source hashes unchanged",
+    "Original vertex positions/topology/UV/weights/rest/hierarchy plus named modifier properties unchanged",
+    "joint and bone length continuity",
+    "three native keyed poses",
+    "FPS and external cuff/contact renders",
+    "independent visual review"
+  ],
+  "forbidden_content": [
+    "runtime export before visual acceptance",
+    "new skin masks",
+    "placeholder hands",
+    "retopology or cloth parameter grids",
+    "claiming proxy contact as surface acceptance"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "review": "art-factory/cs/runs/run-20261007-v27-matched-combat/qa/review.json",
+  "native_candidate_created": true
+}

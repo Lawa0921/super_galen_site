@@ -1,0 +1,22 @@
+{
+  "asset_id": "browser-cs-elbow-path-v7",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "offline-animation-of-existing-licensed-assets",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-elbow-path",
+  "status": "continuous-low-ready-candidate-extreme-aim-rejected",
+  "development_integration_allowed": false,
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "assembly_human_review": "not-ready",
+  "source_character": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "source_character_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "source_weapon": "public/assets/games/cs/rifle.glb",
+  "source_weapon_sha256": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c",
+  "source_calibration": "art-factory/cs/runs/run-20261004-v7-rifle-grip/calibration-v17-thumb-patch.json",
+  "source_calibration_sha256": "a643bc94b294e916e8f6ff61366af456684802bb975dc8a8c8a060deba62551f",
+  "method": "Unwrapped authored elbow swivel; smoothstep blends bounded left clavicle protraction and both elbow directions. Head follows via bounded actor-space neck/head rotation. Weapon release and support slide retain the previous diagnostic reference.",
+  "limits": {"support_slide_weapon_m": 0.08, "torso_rad": 0.25, "extra_head_rad": 0.65, "left_clavicle_rad": 0.3, "left_swivel_endpoint_rad": -1.0471975511965976, "right_swivel_endpoint_rad": -1.3089969389957472},
+  "accepted_evidence": ["31 downward samples solve with stable grip and bore", "16 fine-step checks cover old seam, curve, head and torso boundaries", "forward/reverse pose independence", "limited visual low-ready candidate at -0.6 and 0 radians", "10 preview controls/layout operations and 7 playback screenshots"],
+  "not_verified": ["full-range natural shoulder-fired aim; extreme -1.45 and +1.54 remain visually rejected", "continuous upward visual coverage", "complete collision/containment/coplananarity/camera visibility and face/rifle clearance", "recalibrated support-hand fingers", "composition with locomotion, recoil and hit reactions", "new aim runtime performance; existing gameplay measurements do not include this candidate", "formal art publication and CS2-quality goal"],
+  "next": "Retain the continuous elbow and bounded head math. Author a coordinated shoulder-fired stance for the actual gameplay pitch range, then compose it with locomotion without restoring all bones. Do not add further release displacement solely to hide intersections."
+}

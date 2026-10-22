@@ -1,0 +1,62 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "cs-ground-batch-v26",
+  "category": "3d_game_assets",
+  "status": "published",
+  "screen_id": "cs-old-quarter-ground",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "opaque_background",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_background",
+    "candidate_profiles": [
+      "opaque_background"
+    ],
+    "confidence": "high",
+    "rationale": "Batch four already identical accepted ground materials without new art.",
+    "clarifying_question": null
+  },
+  "source": {
+    "runtime": "public/assets/games/cs/environment.glb",
+    "sha256": "50aa2539c63bb7204db992f11e5500def412e172302f967bff8b6b9bcce09685",
+    "raw": "art-factory/cs/runs/run-20261007-v26-ground-batch/raw/environment-v24.glb",
+    "provenance": "art-factory/cs/contracts/ground-continuity-v24.asset-contract.json",
+    "license": "Prior accepted original geometry and verified CC0 Poly Haven maps; no new source art."
+  },
+  "candidate": "art-factory/cs/runs/run-20261007-v26-ground-batch/candidate/environment.glb",
+  "processing": {
+    "mesh": "Decode all894 vertices, transform POSITION and inverse-transpose NORMAL into ground foundation node space; preserve UV/COLOR and triangle order, offset indices. Keep source nodes25..28 names/TRS, retain node25 mesh; remove three redundant meshes and explicitly remap node mesh indices.",
+    "material": "Use original material16; require exact semantic equality except names. Keep unused definitions rather than remapping unrelated materials.",
+    "preservation": "Append attributes/BIN only; preserve original payload prefix and all non-ground geometry/image bytes. 452 ground triangles,75368 total,35 to32 GLB primitives. World position error <=2e-6m, normal angle <=1e-5degrees, UV/COLOR float values exact.",
+    "budget": "No new texture or shader attribute variant; <50KB file growth. Culling tradeoff: merged ground may process additional vertices when old slab buckets would cull. No FPS claim from primitive count alone."
+  },
+  "qa_gates": [
+    "source_hash",
+    "identical_exclusively_used_ground_materials",
+    "static_positive_TRS",
+    "exact_topology_uv_color",
+    "world_position_normal_tolerance",
+    "non_ground_payload_preservation",
+    "35_to32_primitives",
+    "actual_full_frame_draw_counter",
+    "high_low_shadow_ssao_frustum_views",
+    "independent_review",
+    "background_performance_regression",
+    "published_path_qa"
+  ],
+  "historical_tool_boundary": "V24 is a one-shot process of its preserved original raw source; do not feed the merged V26 structure into patch_ground or overwrite any V24 candidate/evidence.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "external_deployment_allowed": false,
+  "forbidden_content": [
+    "new placeholder art",
+    "new textures",
+    "changed collisions",
+    "unmeasured FPS improvement claims"
+  ],
+  "review": "art-factory/cs/runs/run-20261007-v26-ground-batch/qa/review.json",
+  "lifecycle_status": "published",
+  "publication_scope": "local_repository",
+  "published_sha256": "a54f2b3bff7896f8f54b17e2dbdf89a7c2a560066295e2d992dea42ac2d5d186"
+}

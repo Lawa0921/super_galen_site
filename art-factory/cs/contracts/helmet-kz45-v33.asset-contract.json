@@ -1,0 +1,36 @@
+{
+  "asset_id": "cs_helmet_kz45_v33",
+  "status": "rejected-fit-and-art-direction",
+  "style_guide": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "screen_id": "cs_world_character",
+  "source_provenance": "art-factory/cs/runs/run-20261008-v33-character/qa/mindfront-helmet-provenance.json",
+  "mode": "licensed_3d_equipment_module",
+  "source_approval": "Official pack and embedded asset license inspected by root and independent inventory agent; source eligible for candidate work only.",
+  "requirements": [
+    "Real helmet shell, inner rim and buckle/retention modules",
+    "Shared existing53-joint body skeleton; rigid head binding",
+    "Preserve body geometry and original encoded body maps",
+    "No helmet/face/eyewear intersection in reviewed poses",
+    "Actual renderer closeup and full gameplay distance comparison",
+    "Maximum40000character triangles and12primitives; full runtime32000000bytes remains enforced"
+  ],
+  "candidate_path": "art-factory/cs/runs/run-20261008-v33-character/candidate/kit-k-shell-a/soldier.glb",
+  "runtime_path": null,
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "qa": {
+    "views": "art-factory/cs/runs/run-20261008-v33-character/qa/kit-k-shell-a",
+    "review": "art-factory/cs/runs/run-20261008-v33-character/qa/kit-k-shell-a-review.json",
+    "knownIssues": [
+      "178 head surface crossings",
+      "154 rail surface crossings",
+      "Whole bundle exceeds32MB before new credits",
+      "Classic silhouette direction under review"
+    ],
+    "passed": [
+      "All source-to-cooked primitive attributes sealed",
+      "Existing F eyes/eyewear material restored and retained"
+    ],
+    "priorReview": "art-factory/cs/runs/run-20261008-v33-character/qa/kit-i-helmet-b-review.json"
+  }
+}

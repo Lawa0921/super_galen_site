@@ -1,0 +1,70 @@
+{
+  "schema": "cs-character-textures-v7-contract",
+  "project_id": "super_galen_site",
+  "asset_id": "browser-cs-character-textures-v7-review-candidate",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_contracts": [
+    "art-factory/cs/contracts/character-fit-v7.asset-contract.json"
+  ],
+  "source_sha256": "09b21c722e861aa84418b7d58f9b3bb305d78add79d44fb597f5a89887b53a39",
+  "candidate_root": "art-factory/cs/runs/run-20261004-v7-character-textures/candidate",
+  "qa_root": "art-factory/cs/runs/run-20261004-v7-character-textures/qa",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "assembly_agent_review": "passed_texture_only_comparison; inherited_clothing_fit_failed",
+  "lifecycle_status": "approved",
+  "runtime_publish_allowed": false,
+  "mode_inference_decision": {
+    "selected_profile": "character_equipment_parts",
+    "confidence": "high",
+    "rationale": "Deterministic texture-only optimization of licensed fitted 3D apparel; no new painted art"
+  },
+  "processing": {
+    "max_dimension": 1024,
+    "image_dimension_exceptions": {
+      "7:Tactical_Vest": 2048
+    },
+    "exception_reason": "1K vest baseColor failed predeclared full-image and UV-used MASK coverage limits; retain 2K rather than modify cutoff or alpha",
+    "encoding": "PNG, no lossy normal compression",
+    "base_color": "BOX averaging in linear light with premultiplied alpha, then unpremultiply and encode sRGB",
+    "normal": "BOX average tangent vectors then normalize; neutral +Z fallback for zero vector",
+    "alpha": "Preserve source alpha and material modes/cutoffs; record changed coverage and inspect actual GLB",
+    "unchanged_dimensions": "Keep original image bytes; never upscale",
+    "preserve": [
+      "all non-image bufferView bytes",
+      "meshes",
+      "accessors",
+      "skins",
+      "nodes",
+      "materials",
+      "texture samplers",
+      "source files"
+    ]
+  },
+  "alpha_coverage_limits": {
+    "absolute_fraction": 0.005,
+    "relative_fraction": 0.01,
+    "scope": "both full image and top-left UV-used footprint, cutoff 0.5"
+  },
+  "candidate_sha256": "db60715e8ae73e0ffe13533f1b9d5e03c11a85957cafb8eda19d12fee09718ce",
+  "rejected_sha256": "35603252c24ac9f1b9562d6ad72faf4806037fbd3162656caf518ff29dd98417",
+  "gates": [
+    "TDD normal/alpha/invariants and refusal cases",
+    "actual candidate streams and source hash",
+    "six-view true GLTFLoader comparison plus teeth/vest texture-space evidence",
+    "independent visual review"
+  ],
+  "limitations": [
+    "Existing vest intersections remain rejected",
+    "No runtime publication",
+    "Estimated texture payload is not measured GPU memory",
+    "No gameplay FPS claim"
+  ],
+  "known_unverified": [
+    "No actual open-mouth render",
+    "No candidate gameplay FPS or measured GPU memory",
+    "No full gameplay skeletal motion envelope"
+  ]
+}

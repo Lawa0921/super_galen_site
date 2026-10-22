@@ -1,0 +1,46 @@
+{
+  "schema": "cs-wrist-chain-v16",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "parent_contract": "art-factory/cs/contracts/native-pose-v15.asset-contract.json",
+  "screen_id": "cs-first-person-rifle",
+  "mode": "licensed-native-rig-whole-pose-authoring",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "scope": "Reauthor shoulder frame, gun placements, whole palms and fixed-length arm chains together. Preserve licensed meshes, source rest/weights/UV/hierarchy and finger local curls. No runtime replacement until full visual/contact/motion/material gates pass.",
+  "design": "Choose the elbow analytically on the two-sphere intersection circle to minimize deviation from the source forearm/palm neutral relationship. Camera-space elbow-height and body-side halfspaces prevent lifted or crossed elbows. Reload left palm points upward along magazine; right wrist and palm follow the grip and trigger levels. Optical sight alignment remains required, but prior artistic eye relief and hip offsets may change coherently.",
+  "limits": "Numeric neutral-axis error is a source-pose metric, not an anatomical medical limit. Source scale remains provisional. Three discrete authored poses are not a continuous animation. No local finger/contact/roll parameter grid.",
+  "gates": [
+    "meaningful TDD for nearest neutral elbow, fixed bone lengths, side/height constraints and invalid/unreachable cases",
+    "source rest/weights/UV/topology/constraints preserved",
+    "fresh native pose rendering and whole-arm outside views",
+    "clear grip and magazine support with natural shoulder/elbow/wrist chain",
+    "perspective/frustum/near-plane and ADS center-ray checks",
+    "surface crossing and independent visual review before promotion"
+  ],
+  "status": "pose-progress-rejected-open-roots-and-contacts",
+  "scene": "art-factory/cs/runs/run-20261007-v16-wrist-chain/raw/study2-grip-axis.blend",
+  "review": "art-factory/cs/runs/run-20261007-v16-wrist-chain/qa/study2-grip-axis/review.json",
+  "source_invariant_scope": {
+    "exact_fields": [
+      "skin vertex coordinates and polygon vertex IDs",
+      "vertex group names and per-vertex weights",
+      "UV layer loop coordinates",
+      "bone parent names and rest matrices",
+      "constraint names/types/mute/enabled values"
+    ],
+    "not_covered": [
+      "materials",
+      "modifiers",
+      "shape keys",
+      "other constraint parameters"
+    ],
+    "intentional_changes": [
+      "body/arm/skin transforms",
+      "gun transform",
+      "pose bone transforms",
+      "animation actions and keys"
+    ],
+    "source_file": "Original input blend hash unchanged before/after build; candidate only preserves enumerated fields."
+  }
+}

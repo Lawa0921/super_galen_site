@@ -1,0 +1,84 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "breach-point-perimeter-v7",
+  "category": "3d_game_assets",
+  "state": "published",
+  "runtime_publish_allowed": true,
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "approved-cc0-polyhaven-original-1k",
+  "source_review": {
+    "asset": "Modular Fort 01",
+    "creator": "Rico Cilliers",
+    "asset_page": "https://polyhaven.com/a/modular_fort_01",
+    "license": "CC0-1.0",
+    "license_page": "https://polyhaven.com/license",
+    "node": "modular_fort_01_wall_thin_straight_04",
+    "source_gltf": "art-factory/cs/runs/run-20261004-v6-architecture/raw/source/modular_fort_01_1k.gltf",
+    "source_gltf_sha256": "829ac97d4c5c5672d3055d772e0ef4b545ad93cb4b639296f34e3ddf04cf9faf",
+    "texture_resolution": [
+      1024,
+      1024
+    ],
+    "source_triangles": 622,
+    "source_uv_sets": 2,
+    "source_material_slots": [
+      "modular_fort_01_wall_1",
+      "modular_fort_01_trim_1"
+    ]
+  },
+  "assembly_policy": {
+    "base": "accepted V5 assembly with V6 approved cobblestone ground and official round tower",
+    "replace_entire_call": "building('perimeter_west_1')",
+    "host_residue_allowed": false,
+    "new_geometry": "unmodified licensed wall mesh; only source length axis scaled approximately 1.1",
+    "target_bounds": {
+      "max_x": -24.0,
+      "min_y": 0.0,
+      "min_z": -20.1,
+      "max_z": -11.9
+    },
+    "player_height_coverage_m": [
+      0.0,
+      2.6
+    ],
+    "crenellation_sky_gaps": "intentionally preserved above low wall",
+    "preserve": [
+      "all other buildings",
+      "four ground materials",
+      "both official tower materials",
+      "nine colliders",
+      "map-data"
+    ],
+    "materials": "accepted 24 same-named materials exact full semantic parity; new wall retains both original distinct materials and original 1K source maps",
+    "no_new_collision": true
+  },
+  "qa_gates": [
+    "whole_host_absence",
+    "real_triangle_yz_coverage",
+    "source_solid_state_report",
+    "triangles_and_both_uvs",
+    "glb_roundtrip",
+    "accepted_material_full_semantics",
+    "nine_collider_logical_bytes",
+    "bounded_budget",
+    "independent_visual_review",
+    "true_renderer_capture",
+    "performance"
+  ],
+  "budget": {
+    "triangles_max_delta": 8000,
+    "draw_calls_max": 35,
+    "bytes_max_delta": 2500000
+  },
+  "candidate": "art-factory/cs/runs/run-20261004-v7-perimeter/candidate/environment-perimeter-v7.glb",
+  "review": "candidate-only handoff; root owns true renderer, independent art review and performance; no publication",
+  "measured_source_closed_solid": false,
+  "measured_source_boundary_edges": 26,
+  "mechanical_qa": "art-factory/cs/runs/run-20261004-v7-perimeter/qa/perimeter-v7-mechanical.json",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "root_acceptance": "art-factory/cs/runs/run-20261004-v7-perimeter/qa/root-acceptance.json",
+  "publication_scope": "local_repository",
+  "external_deployment": false
+}

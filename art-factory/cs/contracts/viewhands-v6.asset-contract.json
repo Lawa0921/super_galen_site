@@ -1,0 +1,192 @@
+{
+  "schema": "cs-viewhands-v6-contract",
+  "project_id": "super_galen_site",
+  "asset_id": "browser-cs-viewhands-v6",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "mode_inference_decision": {
+    "selected_profile": "character_equipment_parts",
+    "candidate_profiles": [
+      "character_equipment_parts",
+      "opaque_background"
+    ],
+    "confidence": "high",
+    "rationale": "The asset is an articulated first-person hand and sleeve assembly parented to existing weapon view_hands nodes; CPU renders are review evidence only.",
+    "clarifying_question": null
+  },
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "official_blender_cc0_human_base_meshes_v1.4.1_plus_reviewed_cc0_weapon_blend",
+  "source_provenance": {
+    "human_base_meshes_name": "Blender Human Base Meshes v1.4.1",
+    "download_url": "https://download.blender.org/demo/asset-bundles/human-base-meshes/human-base-meshes-bundle-v1.4.1.zip",
+    "license_evidence_urls": [
+      "https://www.blender.org/download/demo-files/",
+      "https://developer.blender.org/docs/release_notes/3.6/asset_bundles/"
+    ],
+    "download_sha256": "811f43accbb31a88266d932f8f5563b2d13586fca0ba2693aad1f5fe582b3515",
+    "license_note": "Blender official demo asset bundle; license evidence is retained in the v6 run provenance record."
+  },
+  "runtime_root": "public/assets/games/cs",
+  "candidate_root": "art-factory/cs/runs/run-20261004-v6-hands/candidate",
+  "source_root": "art-factory/cs/runs/run-20261004-v6-hands/raw",
+  "build_scripts": [
+    "art-factory/cs/source/build_cs_viewhands_v6.py",
+    "art-factory/cs/source/qa_cs_viewhands_v6.py",
+    "art-factory/cs/source/render_cs_viewhands_v6.py",
+    "art-factory/cs/source/build_cs_viewhands_v6_trigger_checkpoint8.py",
+    "art-factory/cs/source/qa_cs_viewhands_v6_harmonic_checkpoint8.py"
+  ],
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "scope": {
+    "checkpoint": "rifle-only",
+    "follow_up": "Apply the accepted rig and material treatment to pistol, smg, and sniper only after rifle review.",
+    "preserve_weapon_body": true,
+    "preserve_weapon_body_uv_pbr": true,
+    "preserve_existing_magazine_slide_bolt_nodes": true,
+    "rifle_weapon_body_source_node": "M4A1_nisu_CC0_author_mesh",
+    "rifle_magazine_policy": "separate existing connected-component or material-island geometry from the reviewed source; never create a replacement magazine",
+    "rifle_bolt_policy": "separate only when a natural existing source component is found; otherwise record limitation"
+  },
+  "node_interface": {
+    "root": "view_hands",
+    "children": [
+      "support_hand",
+      "trigger_hand"
+    ],
+    "side_mapping": {
+      "support_hand": "left",
+      "trigger_hand": "right"
+    },
+    "origins": "each hand origin is at its wrist/palm transition",
+    "required_metadata": [
+      "rest_position",
+      "rest_rotation",
+      "finger_direction",
+      "palm_normal",
+      "grip_contact_region"
+    ],
+    "required_anchors": [
+      "muzzle",
+      "ejection_port"
+    ],
+    "basis": "GLB Y-up, XZ ground, forward -Z; preserve v5 weapon-local anchor coordinates and axes"
+  },
+  "budgets": {
+    "hands_total_triangles_target": 12000,
+    "hands_total_triangles_hard_limit": 15000,
+    "hands_per_weapon_draw_calls_hard_limit": 4,
+    "complete_rifle_glb_bytes_hard_limit": 5242880,
+    "hand_material_slots_target": 2,
+    "textures_must_be_embedded": true
+  },
+  "quality_gates": [
+    "official_source_zip_sha256_and_license_evidence",
+    "source_blend_portable_with_packed_images",
+    "support_and_trigger_hand_nodes_present_with_rest_metadata",
+    "anatomical_palm_knuckle_thumb_and_finger_continuity",
+    "glove_and_sleeve_materials_have_distinct_packed_normal_roughness_treatment",
+    "both_hands_contact_rifle_without_floating_fingers",
+    "rifle_author_geometry_unchanged",
+    "existing_magazine_connected_component_preserved_and_named",
+    "bolt_component_preserved_or_limitation_recorded",
+    "muzzle_and_ejection_anchor_position_and_basis_match_v5",
+    "glb_embedded_images",
+    "triangle_draw_and_size_budget",
+    "cpu_close_render_two_angles_and_macro_review"
+  ],
+  "checkpoint8_algorithmic_contact": {
+    "scope": "rifle-only trigger_hand candidate; support_hand and other weapons remain excluded",
+    "contact_model": "source_topology_skin_patch_signed_clearance_against_closed_target",
+    "legacy_centroid_gate": "rejected_with_counterexamples",
+    "minimum_connected_skin_vertices": 3,
+    "patch_gap_max_m": 0.003,
+    "cap_penetration_max_m": 0.002,
+    "isolated_vertex_near_target": "must_fail",
+    "target_components": {
+      "trigger": "unique closed authored rifle component 53",
+      "grip": "closed authored rifle grip component"
+    },
+    "weights": {
+      "method": "geodesic_RBF_anchored_weighted_graph_harmonic",
+      "adjacency": "authored_mesh_edges",
+      "forbidden_shortcuts": [
+        "x_coordinate_slabs",
+        "boundary_wrist_equals_one",
+        "cross_digit_nearest_two"
+      ]
+    },
+    "solver": {
+      "method": "bounded_least_squares_hand_6dof_plus_MCP_PIP_DIP",
+      "evaluation_cap": 1200,
+      "joint_chain": "DIP_end_effector_chain_count_3_use_stretch_false",
+      "reach_margin_m": 0.003,
+      "normalized_edge_ratio_max": 1.8,
+      "normalized_edge_over_limit_count": 0
+    },
+    "evidence": [
+      "art-factory/cs/runs/run-20261004-v6-hands/checkpoint-8-trigger/qa/milestone-a-report.json",
+      "art-factory/cs/runs/run-20261004-v6-hands/checkpoint-8-trigger/qa/milestone-b-harmonic.json"
+    ],
+    "validation_status": "REJECTED: see checkpoint-8-trigger/qa/independent-review.json; historical claims are not acceptance"
+  },
+  "forbidden_content": [
+    "placeholder_geometry",
+    "fake_replacement_magazine",
+    "weapon_body_uv_or_pbr_reauthoring",
+    "runtime_publication_before_review",
+    "valve_or_cs2_proprietary_assets"
+  ],
+  "checkpoint9_offline_diagnostics": {
+    "status": "in_progress_not_pose_or_asset_approved",
+    "source_probe": "runs/run-20261004-v6-hands/checkpoint-9-trigger/raw/source-probe.json",
+    "geometry_provenance_limit": "Trigger68 and grip284 actual imported GLB triangles exactly match source-derived triangles; hand bind/rest/export correspondence still unverified.",
+    "coordinate_chain": "runtime_rifle_root = G * S(explicit diagnostic scale) * FK_DQS(source_hand_local); scale once; no extra Rx90 or source object placement",
+    "bone_frame": "local Y along phalanx; X = Y cross source palm +Y; local Z = X cross Y",
+    "landmark_fit": "local solid thickness chords, signed-inside verified, maximum 25mm shift; anatomical candidate still needs visual review",
+    "seeds": "distinct opposite palmar sides, nearest-digit segment membership, finite axial/radial bounds; no missing-side fallback",
+    "weights": "bounded surface graph Laplacian energy with exact pins, per-bone BVLS then row normalization; not volume/cotangent FEM BBW",
+    "influence_gate": {
+      "all_digit_caps_required": true,
+      "own_chain_mean_min": 0.8,
+      "own_chain_vertex_min": 0.55,
+      "other_digit_mean_max": 0.1,
+      "other_digit_vertex_max": 0.2,
+      "independent_palm_wrist_mean_min": 0.6
+    },
+    "pose_gate": {
+      "all_five_actual_skin_contacts": true,
+      "skin_surface_gap_max_m": 0.003,
+      "all_supplied_skin_vertices_penetration_max_m": 0.002,
+      "edge_ratio_min": 0.5555555555555556,
+      "edge_ratio_max": 1.8,
+      "compression_limit_basis": "conservative reciprocal diagnostic, not a measured universal skin strain law",
+      "solver_convergence_required": true,
+      "finite_joint_and_base_bounds_required": true,
+      "actual_objective_evaluation_cap_including_numerical_jacobian": 1200,
+      "actual_palm_skin_contact_required": true,
+      "weapon_proxy_penetration_max_m": 0.00025
+    },
+    "known_limits": [
+      "Rig stress60/80 still fails compression and/or stretch gates.",
+      "No finger self-collision gate yet.",
+      "No new hand runtime asset approved.",
+      "DQS and scale probes remain diagnostic; no asset publication based only on contacts or convergence.",
+      "Actual full-weapon proper crossings and nonadjacent self crossings are measured separately; coplanar overlap and full containment remain untested.",
+      "Finger ordering/spacing residual is soft steering, not a self-collision gate."
+    ],
+    "diagnostic_scales": [
+      0.85,
+      0.925,
+      1.0
+    ],
+    "rejected_legacy_scale": {
+      "value": 0.62,
+      "reason": "127mm wrist-middle-tip, visibly undersized; legacy five-contact solutions have palm gap 26-28mm."
+    },
+    "selected_next_diagnostic_scale": 0.85,
+    "diagnostic_scale_results": "All 3 scales rejected; .85 selected only for next limited guard/finger-spacing probe.",
+    "collision_proxies": "Five separate convex envelopes of actual imported receiver/guard component vertices; conservative, non-runtime, does not close the whole trigger opening."
+  }
+}

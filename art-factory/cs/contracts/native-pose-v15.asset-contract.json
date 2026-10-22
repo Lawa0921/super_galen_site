@@ -1,0 +1,60 @@
+{
+  "schema": "cs-native-pose-v15",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_contract": "art-factory/cs/contracts/surface-viewmodel-v14.asset-contract.json",
+  "run": "art-factory/cs/runs/run-20261007-v15-native-pose",
+  "screen_id": "cs-first-person-rifle",
+  "scope": "Editable whole-pose native Blender authoring with original licensed rig, rifle and runtime viewmodel camera. Finite visually authored postures, not contact-point numerical fitting.",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "source_policy": "Retain all original4103 vertices,8152 triangles,50 bones,UVs,weights,rest matrices and bone parents exactly. Preserve20 original constraints with mute=true for independent native pose editing. No destructive edit-mode roundtrip, reparenting, normalization or loose-vertex cleanup in the authoring master.",
+  "coordinates": "Original source world including Zpi; T(body_origin) Rx(-pi/2) S(.09). Rifle remains Y-up,-Z forward. Presentation root separately uses runtime scale .62, hip/ADS offsets and Three Euler XYZ reload rotation. No exporter-axis compensation in saved scene.",
+  "camera": "58 degree vertical perspective,near .01,far10,1440x900. Assert Blender projection against a tested runtime projection. Hip/ADS/reload-lowered root placements are keyed markers, not a reload animation or complete camera-envelope approval.",
+  "surface_regions": "Use reviewed v14 original first-web cleft seed3392/3393/3394/3417, rifle upper rear1686/1687/1714/1715 and opposite42-face scope. Single prior pixel/bary points are not mandatory targets. Overlay collection is diagnostic and excluded from render/runtime.",
+  "appearance": "Original licensed skin texture is diagnostic only. Tactical sleeves/gloves require source provenance and independent review before runtime use.",
+  "gates": [
+    "source hashes and exact original topology/weights/UV/rest/hierarchy",
+    "native fixed bone lengths and connected wrist/elbow endpoints",
+    "runtime camera matrix parity",
+    "independent whole-pose views",
+    "anatomical contact and full hand/weapon/self-intersection clearance",
+    "GLB export and evaluated-skin parity",
+    "complete animation/camera/aspect envelope",
+    "finished licensed glove/sleeve materials",
+    "runtime resource and sustained gameplay budgets"
+  ],
+  "not_completion": "A usable native authoring scene and passing camera tests do not approve the pose or establish CS2-quality gameplay. Rejected study images and source must remain evidence outside runtime.",
+  "optical_candidate": {
+    "evidence": "art-factory/cs/runs/run-20261007-v15-native-pose/qa/sight-frame-eye85.json",
+    "native_scene": "art-factory/cs/runs/run-20261007-v15-native-pose/raw/study2-optical-eye85.blend",
+    "status": "single static optical view only; no arm/animation/runtime acceptance",
+    "design_eye_relief_camera_m": 0.085,
+    "scale": 0.62,
+    "source_points": "Rear component42 circle center; front component59 top four vertices mean; named original FBX ownership verified."
+  },
+  "proportion_calibration": {
+    "evidence": "art-factory/cs/runs/run-20261007-v15-native-pose/qa/proportion-review-v1.json",
+    "asset_conversion": ".09 is provisional, inherited from v12; not upstream physical metadata.",
+    "next_architecture": "Camera-local body/arms root and independent gun root; preserve source rig/rest/weights and no bone stretching.",
+    "acceptance": "Ratios, shoulder/stock frame, full skin contacts, reach and camera cuts must pass together; no single ratio authorizes scaling."
+  },
+  "fixed_shoulder_candidate": {
+    "scene": "art-factory/cs/runs/run-20261007-v15-native-pose/raw/study3-fixed-shoulders.blend",
+    "report": "art-factory/cs/runs/run-20261007-v15-native-pose/qa/study3-fixed-shoulders/review.json",
+    "status": "fixed-shoulder-architecture-pass-framing-and-grip-rejected",
+    "body": "Mopt @ T(derived) @ Ry(-55deg) @ Rx(-90deg) @ S(.09) @ original_arm_world; body stays fixed camera-local.",
+    "gun": "Independent Mopt @ T(pivot+offset) @ Rxyz @ T(-pivot); only ADS is the accepted optical base.",
+    "source_preservation": "Bone hierarchy/rest, mesh/weights/UV/constraints preserved. Body/gun object parents and pose keys intentionally changed; original source files preserved.",
+    "limits": "Hip/reload placements rejected as offscreen. Full grip, motion, export, materials and runtime performance remain unapproved."
+  },
+  "screen_framed_candidate": {
+    "contract": "art-factory/cs/contracts/screen-framed-pose-v15.asset-contract.json",
+    "scene": "art-factory/cs/runs/run-20261007-v15-native-pose/raw/study4-screen-framed-palms.blend",
+    "review": "art-factory/cs/runs/run-20261007-v15-native-pose/qa/study4-screen-framed-palms/review.json",
+    "status": "hip-reload-framing-pass-whole-pose-and-contact-rejected",
+    "runtime_publish_allowed": false
+  }
+}

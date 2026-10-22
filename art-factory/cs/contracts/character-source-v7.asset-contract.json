@@ -1,0 +1,92 @@
+{
+  "schema": "cs-character-source-v7-contract",
+  "project_id": "super_galen_site",
+  "asset_id": "browser-cs-character-source-v7",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "source_mode": "official_makehuman_community_asset_packs_candidate_only",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "target_brief": "CS2-like realistic tactical male, 7-8 heads tall, complete gloves and forearms; aesthetic and fit remain untested",
+  "source_root": "art-factory/cs/runs/run-20261004-v7-character-source/raw",
+  "candidate_root": "art-factory/cs/runs/run-20261004-v7-character-source/candidate",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "lifecycle_status": "raw_generated",
+  "qa_status": "static_source_integrity_passed; Blender fit, visual realism and runtime suitability untested",
+  "selected_glove_variants": [2, 3, 4, 5],
+  "excluded_glove_variant": "gloves_1: pack page CC0 conflicts with MHCLO author Unknown / license AGPL3",
+  "selected_sources": [
+    {
+      "pack": "makehuman_system_assets",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html",
+      "mirror1": "https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+      "download_url": "https://files.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip",
+      "page_license": "CC0",
+      "target": "male_generic and male1591 proxies plus young_caucasian_male skin; hm08 basemesh and rig remain MPFB dependencies"
+    },
+    {
+      "pack": "suits03",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/suits03.html",
+      "mirror1": "https://files2.makehumancommunity.org/asset_packs/suits03/suits03_cc-by.zip",
+      "download_url": "https://files.makehumancommunity.org/asset_packs/suits03/suits03_cc-by.zip",
+      "page_license": "CC-BY version unspecified",
+      "page_author": "Elvaerwyn",
+      "selected_mhclo_license": "CC BY 4.0",
+      "selected_mhclo_author": "Elvaerwyn + Punkduck",
+      "item_pages": ["https://www.makehumancommunity.org/node/1953", "https://www.makehumancommunity.org/node/1954"],
+      "target": "elvs_emt_uniform_jacket_male and elvs_emt_uniform_pants_male"
+    },
+    {
+      "pack": "equipment03",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/equipment03.html",
+      "mirror1": "https://files2.makehumancommunity.org/asset_packs/equipment03/equipment03_cc-by.zip",
+      "download_url": "https://files.makehumancommunity.org/asset_packs/equipment03/equipment03_cc-by.zip",
+      "page_license": "CC-BY version unspecified",
+      "page_author": "Mindfront",
+      "selected_mhclo_license": "CC BY 4.0",
+      "selected_mhclo_author": "Mindfront (Sweden)",
+      "item_pages": ["https://www.makehumancommunity.org/node/848"],
+      "target": "mindfront_tactical_vest_male"
+    },
+    {
+      "pack": "gloves01",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/gloves01.html",
+      "mirror1": "https://files2.makehumancommunity.org/asset_packs/gloves01/gloves01_cc0.zip",
+      "download_url": "https://files.makehumancommunity.org/asset_packs/gloves01/gloves01_cc0.zip",
+      "page_license": "CC0",
+      "page_author": "culturalibre",
+      "target": "culturalibre_hero-heroine_gloves_2..5 only; verify forearm extent"
+    },
+    {
+      "pack": "shoes03",
+      "page": "https://static.makehumancommunity.org/assets/assetpacks/shoes03.html",
+      "mirror1": "https://files2.makehumancommunity.org/asset_packs/shoes03/shoes03_ccby.zip",
+      "download_url": "https://files.makehumancommunity.org/asset_packs/shoes03/shoes03_ccby.zip",
+      "page_license": "CC-BY version unspecified",
+      "page_author": "Mindfront",
+      "selected_mhclo_license": "CC BY 4.0",
+      "selected_mhclo_author": "Mindfront (Sweden)",
+      "item_pages": ["https://www.makehumancommunity.org/node/624"],
+      "target": "mindfront_shoes_biker_boots_male"
+    }
+  ],
+  "source_entry_gates": [
+    "downloaded_zip_bytes_sha256_recorded",
+    "zip_member_paths_resolve_inside_run_raw",
+    "only_selected_target_mesh_material_texture_and_body_proxy_extracted; rig_dependency_identified_readonly",
+    "obj_vertices_faces_uv_bounds_and_mhclo_mapping_recorded",
+    "texture_channels_and_image_dimensions_recorded",
+    "cc_by_author_and_exact_license_version_verified_or_component_blocked"
+  ],
+  "assembly_acceptance_gates": [
+    "rig_weights_and_clothing_fit_verified_in_blender",
+    "independent_art_qa_and_renderer_review_for_realism_complete_gloves_forearms_and_7_to_8_head_ratio"
+  ],
+  "forbidden_content": [
+    "Valve or CS2 proprietary art",
+    "unreviewed runtime publication",
+    "executing remote addon or script",
+    "source-code license conflated with graphic-asset license"
+  ]
+}

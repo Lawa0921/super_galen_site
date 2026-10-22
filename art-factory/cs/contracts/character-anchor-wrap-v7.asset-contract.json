@@ -1,0 +1,24 @@
+{
+  "asset_id": "browser-cs-anchor-wrap-v7",
+  "status": "two-fixed-anchor-fits-rejected-no-retry",
+  "screen_id": "cs-third-person-character",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-anchor-wrap",
+  "source_mode": "Two fixed, previously measured palm anchors plus one bounded sequential fit per long finger; original licensed mesh and rig preserved",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "requirements": [
+    "Do not rerun or alter any sealed packet; use recorded calibrationLeft from x-10-z0 and x-20-z-10 only",
+    "Use original long-finger angles and splay from hand-wrap calibration-start, preserving its corrected thumb, body and right-hand commands",
+    "Per fixed anchor, four long fingers each get one search of at most400 evaluations; MCP20..65, PIP10..70, DIP0.25..0.75PIP capped45, original splay plus/minus12 degrees",
+    "No splay-domain drift relative to previous fitted poses; no adaptive anchors, new seed retries or second coordinate passes",
+    "Fixed weapon, right hand, left palm/wrist/forearm and thumb within each fit; source geometry, local positions/scales and parentage preserved",
+    "Each long finger needs at least two reviewed phalange patches with3 unique vertices and2 faces within1.5mm, opposing normals and nearest signed distance at least-0.25mm",
+    "All final visible hand/gun, left inter-finger, arm/gun, torso/gun and left forearm/torso transverse crossings must be zero, and fixed transforms must hold",
+    "Reload final serialized calibration and reproduce pose, contact counts and collision metrics; perform independent natural-grip visual review",
+    "Passing this subset does not settle thumb patch review, right pinky support, containment/coplanarity, death release/drop or runtime performance; no automatic runtime promotion",
+    "If both predetermined anchors fail, preserve evidence and stop this parameterization before considering wrist orientation as a new structural variable"
+  ],
+  "assembly_human_review": "rejected-no-distributed-contact-or-natural-wrap"
+}

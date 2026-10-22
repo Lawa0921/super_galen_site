@@ -380,8 +380,23 @@ const localeMap: Record<Language, string> = {
   }
 
   @media (max-width: 768px) {
+    .site-header {
+      padding: 0.75rem 1rem;
+    }
+
+    .header-content {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+    }
+
+    .site-title {
+      font-size: 1rem;
+      white-space: nowrap;
+    }
+
     .article-container {
-      padding: 5rem 1rem 1rem;
+      padding: 8rem 1rem 1rem;
     }
 
     .post-title {
@@ -393,11 +408,13 @@ const localeMap: Record<Language, string> = {
     }
 
     .header-nav {
+      justify-content: space-between;
       gap: 1rem;
     }
 
     .nav-link {
       font-size: 0.85rem;
+      white-space: nowrap;
     }
   }
 </style>

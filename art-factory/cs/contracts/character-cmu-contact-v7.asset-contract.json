@@ -1,0 +1,20 @@
+{
+  "asset_id": "browser-cs-cmu-contact-v7",
+  "status": "offline-contact-candidate-pending",
+  "source_contract": "art-factory/cs/contracts/character-cmu-cycle-v7.asset-contract.json",
+  "source_bake": "art-factory/cs/runs/run-20261005-v7-cmu-cycles/candidate/cycles-v3.json",
+  "source_sha256": "dcc7fdbc7064aed904f0af91504911ad40de834eac63fe9a9401ec7168154c59",
+  "processing": "Preserve captured foot world orientation and toe articulation; offline material-point slip integration and sole-envelope height correction, two-leg reach preflight, then bake the existing twelve rotation channels.",
+  "gates": {
+    "whole_shoe_penetration_m": 0.002,
+    "contact_clearance_m": 0.0015,
+    "maximum_pelvis_drop_m": 0.04,
+    "hand_weapon_relative_error_m": 0.000001,
+    "runtime_consumer": "Revalidate dense phases, loop value/velocity and actual controller blends; keyframe-only agreement is insufficient.",
+    "visual": "Side/front/three-quarter walk, run and mixed speeds; reject knee inversion, flattened flight, foot skating or new hand/rifle drift."
+  },
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "assembly_human_review": "pending",
+  "license": "Inherited CMU free-use permission; no direct resale of original or converted motion data."
+}

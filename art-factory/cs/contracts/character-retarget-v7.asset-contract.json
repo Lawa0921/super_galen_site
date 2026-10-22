@@ -1,0 +1,42 @@
+{
+  "schema": "cs-character-retarget-v7-contract",
+  "asset_id": "browser-cs-lower-body-retarget-v7",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "character_equipment_parts",
+  "source_mode": "licensed-animation-retarget",
+  "source_contract": "art-factory/cs/contracts/character-motion-source-v7.asset-contract.json",
+  "motion_source": "art-factory/cs/runs/run-20261005-v7-motion-source/raw/UAL1_Standard.glb",
+  "motion_sha256": "69591853d817488edaa8fd9bf8fc1d821eaeaf789f8627b3cd23b41c4ed67997",
+  "target_source": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "target_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-retarget",
+  "clips": ["Idle_Loop", "Walk_Loop", "Jog_Fwd_Loop", "Sprint_Loop"],
+  "rotation_mask": ["thigh_l", "calf_l", "foot_l", "ball_l", "thigh_r", "calf_r", "foot_r", "ball_r"],
+  "body_variant": {
+    "query": "pelvis=1",
+    "additional_source_rotations": ["pelvis", "spine_01", "spine_02"],
+    "upper_body_compensation": "Map source root rest delta to target spine_03 so the frozen rifle/chest facing stays steady.",
+    "visual_translation": "Model-frame source pelvis XYZ delta from rest, scaled by measured total leg length; convert through the fixed visual pi facing layer.",
+    "intent": "One finite pelvis/lower-back trial for Jog. Reject the clip for tactical running if the exaggerated bounding silhouette persists."
+  },
+  "status": "walk-idle-contact-pending-jog-sprint-rejected",
+  "clip_disposition": {
+    "Idle_Loop": "Contact candidate only; feet float 5.5–11.1 mm in the pelvis/lower-back trial.",
+    "Walk_Loop": "Direction improved; contact correction still required (up to 19.1 mm penetration).",
+    "Jog_Fwd_Loop": "Rejected for tactical running after one pelvis/lower-back trial: bounding silhouette and excessive leg tuck persist.",
+    "Sprint_Loop": "Rejected for tactical running: exaggerated split and tuck silhouette. Do not invest further contact tuning in this clip."
+  },
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "external_deployment_allowed": false,
+  "requirements": [
+    "Respect source and target rest-axis differences; never copy raw local quaternion tracks.",
+    "Keep target bone parents, local translation/scale, skin and all source GLB bytes unchanged.",
+    "Preserve the frozen rifle neutral rest and validate actual hand/muzzle transforms.",
+    "Do not apply source root displacement on top of engine actor movement.",
+    "Measure real skinned shoe penetration, loop seam and contact drift; raw rotation playback is not contact acceptance.",
+    "Inspect continuous motion and held-gun silhouette before gameplay integration.",
+    "Verify full five-actor runtime cost and the complete gameplay movement/aim/hit channels before animation publication."
+  ]
+}

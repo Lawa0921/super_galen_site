@@ -59,6 +59,9 @@ export class WebRtcTransport implements Transport {
   private closeCb: (() => void) | null = null;
 
   constructor() {
+    if (typeof RTCPeerConnection !== 'function') {
+      throw new Error('此瀏覽器不支援 WebRTC 連線，請使用支援的瀏覽器重試');
+    }
     this.pc = new RTCPeerConnection(RTC_CONFIG);
     // Guest 端：對方建立的 datachannel 由此收到
     this.pc.ondatachannel = (e) => {
