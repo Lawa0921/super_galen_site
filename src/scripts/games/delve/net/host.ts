@@ -266,7 +266,9 @@ export class NetHost {
     for (let i = 1; i <= this.maxGuests && !pid; i++) if (!game.actors.has(`p${i}`)) pid = `p${i}`;
     if (!pid) { this.reject(g, 'full'); return; }
     try { game.addActor(pid, character, null, this.opts.visits.get(m.charId)); } catch { this.reject(g, 'char'); return; }
-    if (kept) { this.opts.visits.putHeld(m.charId, null); this.saveSoon(); }
+    // 用了 held：先不清（客人存著的還是斷線前那份）；上線時的 chk 會蓋成更新的 rev，它的 ack 才清掉。
+    // 沒用（hello 較新）：held 已經過時，清掉
+    if (kept && !useHeld) { this.opts.visits.putHeld(m.charId, null); this.saveSoon(); }
     const a = game.actors.get(pid)!, now = this.now;
     Object.assign(g, {
       phase: 'syncing', pid, charId: m.charId, nick: m.nick,
