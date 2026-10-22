@@ -8,6 +8,7 @@ import { MATERIALS } from './materials';
 import { SETS } from './gear';
 import type { RegionId } from './regions';
 import { RUNES, type RuneId, type RuneTier, type Tag } from './runes';
+import { numeral } from './numeral';
 import { CHARACTERS } from './characters';
 import type { MaterialUse } from '../engine/forge/uses';
 import type { MaterialKind } from '../engine/types';
@@ -42,7 +43,7 @@ const TARGETS: Record<Target, string> = {
 const STAT_NAME: Record<AnyStat, string> = {
   ...STAT,
   str: '力量', int: '智力', agi: '敏捷', wil: '意志',
-  crit: '暴擊率', critDmg: '暴擊傷害', vuln: '弱點傷害', eliteDmg: '對精英傷害', multi: '連擊率',
+  crit: '暴擊率', critDmg: '暴擊傷害', vuln: '弱點傷害', eliteDmg: '對菁英傷害', multi: '連擊率',
   armor: '護甲', evasion: '閃避', block: '格擋率', meleeDR: '近戰減傷', rangedDR: '遠程減傷',
   fireRes: '火抗', iceRes: '冰抗', thunderRes: '雷抗', fireDmg: '火焰傷害', iceDmg: '冰霜傷害', thunderDmg: '雷電傷害',
   poisonRes: '毒抗', sleepRes: '睡眠抗性',
@@ -72,7 +73,7 @@ const pair = (a: number, b: number): [string, string] => {
 const home = (viaLamp: boolean) => (viaLamp ? '歸還之燈的光芒把隊伍帶回了城鎮。' : '平安回城。');
 
 const FORGE_GROUP: Record<RegionId, string> = {
-  mainline: '', blaze: '火焰系', frost: '冰霜系', storm: '雷鳴系', mire: '毒抗與恢復系', shade: '暴擊系', iron: '防禦系',
+  mainline: '', blaze: '火焰系', frost: '冰霜系', storm: '雷鳴系', mire: '毒抗與回復系', shade: '暴擊系', iron: '防禦系',
 };
 const SLOT_KIND = { ...SLOT, ring: '戒指' } as Record<Slot | 'ring', string>;
 
@@ -262,7 +263,7 @@ export const T = {
   ui2: {
     battle: { survive: (left: number) => `撐過去！還有 ${left} 回合` },
     memory: {
-      piece: (name: string, n: number) => `找回了${name}的記憶（第 ${n} 片）。`,
+      piece: (name: string, n: number) => `找回了${name}的記憶（第${numeral(n)}片）。`,
       shard: (name: string) => `撿到了${name}。`,
       town: (name: string) => `撿到了${name}。`,
     },
@@ -760,7 +761,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         title: '寶庫', locked: '厚重的寶庫上了鎖。需要這一層的鑰匙。', ready: '用這一層的鑰匙可以打開寶庫。', open: '開啟',
         opened: (list: string) => `打開寶庫：${list}`, failed: '寶庫打不開。需要這一層的鑰匙。',
       },
-      elite: { title: '精英怪', desc: '房間中央有一隻強大的敵人（★）。', ask: '要挑戰嗎？', fight: '挑戰' },
+      elite: { title: '菁英怪', desc: '房間中央有一隻強大的敵人（★）。', ask: '要挑戰嗎？', fight: '挑戰' },
       trap: {
         hurt: (n: number) => `陷阱！全隊受到 ${n} 點傷害。`,
         poison: (n: number, tp: number) => `毒氣陷阱！全隊受到 ${n} 點傷害${tp > 0 ? `，TP 最多減少 ${tp}` : ''}。`,

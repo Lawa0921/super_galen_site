@@ -3,6 +3,7 @@ import type { CharacterId } from '../engine/types';
 import { MOODS_OF, type StoryMood } from '../render/artPaths';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { MEETINGS, type Meetable } from './meetings';
+import { numeral } from './numeral';
 import { CHAINS } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
 import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
@@ -66,11 +67,9 @@ function written<T>(v: T | undefined, what: string): T {
 }
 
 const nameOf = (id: CharacterId): string => CHARACTERS[id].name;
-/** 1 to 10 in Chinese numerals: story text carries no Arabic digits. */
-export const numeral = (n: number): string => {
-  if (!Number.isInteger(n) || n < 1 || n > 10) throw new Error(`numeral(${n}): only 1 to 10`);
-  return '一二三四五六七八九十'[n - 1];
-};
+// `numeral` lives in its own module so the interface text can use it without importing the script (story polish Task 4:
+// text.zh-TW -> story.zh-TW -> artPaths -> skills -> text.zh-TW would be a cycle); the script re-exports it.
+export { numeral } from './numeral';
 
 const MAJOR_TITLES: Record<MajorScene, string> = {
   prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', 'bellkeeper-arrives': '鐘守來到鎮上', finale: '終幕',
@@ -594,7 +593,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:chizuru:5': {
     lines: [
       N('出發的清晨。神主解下拜殿前的鈴，繫在她的槍穗上。'),
-      N('「帶著吧。」神主說，「回不來也無妨。在你守著的地方掛上它，那裡就是神社。」'),
+      N('「帶著吧。」神主說，「回不來也無妨。在妳守著的地方掛上它，那裡就是神社。」'),
       { who: 'chizuru', mood: 'solemn', text: '「神主大人，早就知道我可能回不去了。」' },
       { who: 'chizuru', mood: 'smile', text: '「洛恩大人，回城之後，我想在鎮邊蓋一座小祠。為了此處的人，掛上這枚鈴。」' },
     ],
@@ -622,11 +621,11 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '千鶴每天清晨搖一次槍穗上的鈴，聽它響完，心就定了。',
   },
-  // Task 8: Safira (spec §6, §11.2). One member of her troupe in each piece, the leader last: 「你要繼續跳。」
+  // Task 8: Safira (spec §6, §11.2). One member of her troupe in each piece, the leader last: 「妳要繼續跳。」
   'mem:safira:1': {
     lines: [
       N('沙丘上的營火。鼓手敲著皮鼓，她赤著腳，在火光裡轉圈。'),
-      N('「慢了半拍！」鼓手笑著喊，「跟上我的鼓，別讓鼓跟著你跑！」'),
+      N('「慢了半拍！」鼓手笑著喊，「跟上我的鼓，別讓鼓跟著妳跑！」'),
       { who: 'safira', mood: 'laugh', text: '「哈哈，那個大鬍子，打起鼓來比誰都兇。是我們舞團的鼓手啦。」' },
       { who: 'safira', mood: 'sad', text: '「……可是，鼓聲是哪一天停的，我想不起來。」' },
     ],
@@ -662,11 +661,11 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:safira:5': {
     lines: [
       N('蜃樓裡的城燒了起來，火順著沙丘一路燒開。團長抓住她的手臂，把她推向那道快要合上的光。'),
-      N('「進來是我選的，不是你的錯。」團長說，「你要繼續跳。」'),
+      N('「進來是我選的，不是妳的錯。」團長說，「妳要繼續跳。」'),
       { who: 'safira', mood: 'sad', text: '「……這片火海，原來就是那片沙漠啊。團長那一推，害我一路跳到了這裡。」' },
       { who: 'safira', mood: 'smile', text: '「小洛，回城之後來廣場看囉。舞團最後的那支舞，我替大家跳完。」' },
     ],
-    summary: '團長在最後一刻把莎菲拉推出了蜃樓：你要繼續跳。她要在露米亞的廣場，跳完舞團最後的那支舞。',
+    summary: '團長在最後一刻把莎菲拉推出了蜃樓：妳要繼續跳。她要在露米亞的廣場，跳完舞團最後的那支舞。',
   },
   'chat:safira:1': {
     lines: [
@@ -962,7 +961,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     summary: '深夜，莉茲把分到的錢收進舊布袋。洛恩問她，家裡是不是有人在等。',
   },
   // Task 10: Scarlet (spec §6). The iron fortress was her kingdom; she believes she turned and fled from her gate. Her last
-  // piece is the princess's order: 「你不是盾，你是我的朋友。活下去。」 From there she guards by choice, not by oath.
+  // piece is the princess's order: 「妳不是盾，妳是我的朋友。活下去。」 From there she guards by choice, not by oath.
   'mem:scarlet:1': {
     lines: [
       N('石造的大殿，火盆燒得正旺。她單膝跪地，把劍橫舉過頭頂。'),
@@ -1002,7 +1001,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:scarlet:5': {
     lines: [
       N('城門快要倒下的時候，公主抓住她的手臂，把她推進了撤退的密道。'),
-      N('「這是命令。」公主說，「你不是盾，你是我的朋友。活下去。」'),
+      N('「這是命令。」公主說，「妳不是盾，妳是我的朋友。活下去。」'),
       { who: 'scarlet', mood: 'sad', text: '「那些號角，是撤退的號角。……我不是逃走的。是她，要我活下去。」' },
       { who: 'scarlet', mood: 'smile', text: '「洛恩閣下……不，洛恩。今後我擋在前面，不是為了誓言，是我自己選的。」' },
     ],
@@ -1431,8 +1430,8 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
   for (const id of MAJOR_SCENES) scene(id, MAJOR_TITLES[id]);
   for (const id of CHARACTER_IDS) {
     const name = nameOf(id);
-    CHAINS[id].pieces.forEach((_, i) => scene(memScene(id, i + 1), `${name}・第 ${i + 1} 片`));
-    for (let n = 1; n <= CHAT_COUNT[id]; n++) scene(`chat:${id}:${n}`, `${name}・對話 ${n}`);
+    CHAINS[id].pieces.forEach((_, i) => scene(memScene(id, i + 1), `${name}・第${numeral(i + 1)}片`));
+    for (let n = 1; n <= CHAT_COUNT[id]; n++) scene(`chat:${id}:${n}`, `${name}・對話${numeral(n)}`);
   }
   for (const f of TOWN_FRAGMENTS) out[`town:${f.id}`] = { title: `${f.npc}的記憶`, ...TOWN_SCENES[f.id] };
   for (const c of HOME_OWNERS) out[homeScene(c)] = { title: `${nameOf(c)}・${HOME_TITLES[c]}`, ...HOME[c] };
@@ -1440,7 +1439,7 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
     for (let n = 1; n <= (BANTER_COUNT[p] ?? 0); n++) {
       const id = banterScene(p, n);
       const [a, b] = banterTwo(id);
-      out[id] = { title: `${nameOf(a)}與${nameOf(b)}・閒聊 ${n}`, ...written(BANTER[id], id) };
+      out[id] = { title: `${nameOf(a)}與${nameOf(b)}・閒聊${numeral(n)}`, ...written(BANTER[id], id) };
     }
   }
   return out;
@@ -1479,7 +1478,7 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   safira: [
     '莎菲拉。在熾焰之地的火裡一個人跳劍舞，把怪物叫成舞伴。她叫我小洛，說要教我跟上拍子，我還沒答應。',
     '她是流浪舞團的舞者。碎片裡有打鼓的、吹笛的、縫衣裳的團員。她說，是她先看見沙漠裡那座蜃樓的城。',
-    '走進蜃樓是團長選的，團長把她推了出來：「你要繼續跳。」她要在鎮上的廣場，跳完舞團最後的那支舞。',
+    '走進蜃樓是團長選的，團長把她推了出來：「妳要繼續跳。」她要在鎮上的廣場，跳完舞團最後的那支舞。',
   ],
   // Task 9: Lorne's notes on Sylvie, Noel and Bobby. Each segment is placed at her meeting: no act content (I-58).
   sylvie: [
@@ -1671,7 +1670,7 @@ export function introIndex(id: Meetable): number {
 export const STORY = {
   scenes: buildScenes(),
   /**
-   * The town's line of the day, said under the town's own name (Task 12; lore ledger I-96 to I-101). Everyone is pretending
+   * The town's line of the day, told by the narrator with no name plate (Task 12; lore ledger I-96 to I-101; story polish ruling 8, I-163). Everyone is pretending
    * all is well (spec §3.3). Unconditional: no companion but Rin, no townsfolk secret, and before `after` neither Rin's
    * choice nor the society's end. Act 2 seeds that Lorne has noticed her (§5.2, I-57) without her looking away (I-54);
    * act 4 may come before or after her choice, so it says nothing her choice would undo.

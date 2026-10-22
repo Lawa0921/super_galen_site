@@ -276,6 +276,16 @@ describe('TownScene story', () => {
     expect(t.root.querySelector('.slx-talk .slx-name')!.textContent).not.toBe(CHARACTERS.rin.name);
   });
 
+  it("the town's own day line is narration, with no name plate (story polish ruling 8)", () => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.arrival = [];
+    const t = open(game, 'all', () => 0);   // the pool's first line: the town's own
+    expect(t.text()).toBe(STORY.townLines.prologue[0]);
+    const plate = t.root.querySelector('.slx-talk .slx-name') as HTMLElement;
+    expect(plate.hidden || plate.textContent === '').toBe(true);
+    expect(plate.textContent).not.toBe('露米亞');
+  });
+
   it('after her choice Rin speaks her oath lines', () => {
     const game = Game.fresh(constRng(0.5), null);
     game.arrival = [];

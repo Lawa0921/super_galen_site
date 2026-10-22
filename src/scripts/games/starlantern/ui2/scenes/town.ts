@@ -76,7 +76,6 @@ export class TownScene implements Scene {
       // A broken scene must not lock the town: say so in the console and carry on to the day's line.
       console.error('starlantern: arrival scene failed', e);
     }
-    const t = T.ui2.town;
     const notice = game.notice;
     const banked = game.banked;
     game.notice = null;
@@ -85,7 +84,8 @@ export class TownScene implements Scene {
     if (banked && (notice === 'banked' || notice === 'lamp')) void this.speak('', bankedLine(banked, this.ctx.art));
     else if (notice) void this.speak('', T.notices[notice]);
     else {
-      // The day's line: the town's own, and from act 2 Rin's foreshadowing once she has joined.
+      // The day's line: the town's own, told by the narrator with no plate (story polish ruling 8), and from act 2 Rin's
+      // foreshadowing once she has joined.
       const stage = storyStage(game.state);
       const chose = !!game.state.party.roster.rin?.oath;
       const rinSays = game.state.party.recruited.includes('rin') ? (chose ? STORY.rinOath : STORY.rinLines[stage] ?? []) : [];
@@ -94,7 +94,7 @@ export class TownScene implements Scene {
       const arrived = game.state.story.seen.includes('bellkeeper-arrives');
       const keeper = arrived ? (game.state.story.finaleCleared ? STORY.bellkeeper.after : STORY.bellkeeper.oath) : [];
       const pool = [
-        ...STORY.townLines[stage].map((text) => ({ who: t.place.split(' ').pop() ?? '', text })),
+        ...STORY.townLines[stage].map((text) => ({ who: '', text })),
         ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),
         ...keeper.map((text) => ({ who: NPC_NAMES.bellkeeper, text })),
       ];

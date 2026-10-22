@@ -37,7 +37,7 @@ export const KEYSTONES: Record<KeystoneId, { name: string; desc: string }> = {
   'taunt-guard': { name: '堅守', desc: `挑釁中受到的攻擊傷害 −${V.tauntGuardPct}%` },
   'moon-promise': { name: '我想看見', desc: `她不再害怕看見明天。她施放的回復 +${M.moonHealPct}%` },
   'small-shrine': { name: '小小的祠', desc: `鈴掛在哪裡，哪裡就是她守著的神社。戰鬥開始時，全隊防禦 +${M.shrineDefPct}%，持續 ${M.shrineTurns} 回合` },
-  'troupe-step': { name: '你要繼續跳', desc: `團長推她出去的那一步，她替大家跳下去。她施放的增益多持續 ${M.troupeTurns} 回合` },
+  'troupe-step': { name: '妳要繼續跳', desc: `團長推她出去的那一步，她替大家跳下去。她施放的增益多持續 ${M.troupeTurns} 回合` },
   'carried-out': { name: '先把人帶出去', desc: `危險還沒碰到人，她的箭就先到了。對滿血目標的傷害 +${M.fullHpPct}%` },
   'teachers-gift': { name: '平安就夠了', desc: `老師要的不是那本書，是她平安。她不再拿自己的記憶去換魔法。她的技能 TP 消耗 −${M.tpCostPct}%` },
   blueprint: { name: '我來修好', desc: `構造圖拼齊了，每一顆齒輪都找到了自己的位置。裝置效果 +${M.devicePct}%` },

@@ -3,8 +3,9 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { CHARACTERS } from './characters';
-import { NPC_NAMES } from './story.zh-TW';
+import { CHARACTERS, CHARACTER_IDS } from './characters';
+import { NPC_NAMES, STORY } from './story.zh-TW';
+import { SCENE_IDS } from './story/scenes';
 
 /** The starlantern folder: this file sits in its `data/`. */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -42,5 +43,34 @@ describe('terms (story polish)', () => {
     expect(texts.some((t) => t.file.endsWith('.test.ts'))).toBe(false);
     const found = texts.flatMap(({ file, text }) => NAME_TYPOS.filter((typo) => text.includes(typo)).map((typo) => `${file}: ${typo}`));
     expect(found).toEqual([]);
+  });
+
+  it('banned forms stay out of the game text', () => {
+    // Style bible §4.2's 「不要寫成」 column, §4.3, and the Taiwanese forms of story polish ruling 8 (菁英, 回復).
+    const BANNED: (string | RegExp)[] = [
+      '盧米亞', '露米婭', '星之燈', '星燈塔', '星燈地城', '黃昏之霧', '暮色霧氣', '傳送廣場', '門前廣場', '月光旅館', '冒險公會', '鐵匠鋪',
+      '雜貨店', '碎片市場', '記憶結晶', '記憶水晶', '失憶名冊', '靜之鐘會', '寂鐘會', '守鐘人', '艾斯特拉城', '食燈獸', '燈食之獸', '守燈者',
+      /(?<!點)燈守(?!夜)/, '燈之鑰', '回城燈', '藥水', '回歸者', '空殼人', '破鐘之刺客', '冰原', '火山',
+      '精英', '恢復', '視頻', '信息', '質量', '土豆', '靠譜', '給力', '大丈夫', '歐尼醬',
+    ];
+    // the gate catches what it guards, and lets the compound through
+    expect(/(?<!點)燈守(?!夜)/.test('守燈人不叫燈守')).toBe(true);
+    expect(/(?<!點)燈守(?!夜)/.test('他點燈守夜')).toBe(false);
+    const found = sourceTexts().flatMap(({ file, text }) =>
+      BANNED.filter((b) => (typeof b === 'string' ? text.includes(b) : b.test(text))).map((b) => `${file}: ${String(b)}`));
+    expect(found).toEqual([]);
+  });
+
+  it('past figures speak to her as 妳', () => {
+    // A woman's memories: what the narrator quotes the past saying to her; her handbook page's quotes (story polish ruling 8).
+    const out: string[] = [];
+    const quotes = (t: string): string[] => [...t.matchAll(/「([^」]*)」/g)].map((m) => m[1]);
+    for (const c of CHARACTER_IDS.filter((id) => id !== 'hero')) {
+      for (const id of SCENE_IDS.filter((s) => s.startsWith(`mem:${c}:`))) {
+        for (const l of STORY.scenes[id].lines) if (l.who === 'narrator') for (const q of quotes(l.text)) if (q.includes('你')) out.push(`${id}: ${q}`);
+      }
+      for (const [i, t] of STORY.people[c].entries()) for (const q of quotes(t)) if (q.includes('你')) out.push(`people.${c}.${i}: ${q}`);
+    }
+    expect(out).toEqual([]);
   });
 });

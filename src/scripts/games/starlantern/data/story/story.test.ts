@@ -7,6 +7,7 @@ import { MEETINGS } from '../meetings';
 import { FOUND_LINE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
 import { pinBeat, storyTexts, type Text } from './voiceGates';
+import { T } from '../text.zh-TW';
 import type { CharacterId } from '../../engine/types';
 import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
 import { memoryPace } from '../../engine/story/expect';
@@ -391,8 +392,8 @@ const SPEC_QUOTES: [string, string][] = [
   ['scenes.rin-reveal.', '明天也一起回來吧。'],
   ['scenes.rin-reveal.', '這個名字是我自己決定要用的。'],
   ['scenes.mem:rin:', '從深處走出來的，不是人'],
-  ['scenes.mem:scarlet:', '你不是盾，你是我的朋友。活下去。'],
-  ['scenes.mem:safira:', '你要繼續跳。'],
+  ['scenes.mem:scarlet:', '妳不是盾，妳是我的朋友。活下去。'],   // story polish ruling 8: 妳
+  ['scenes.mem:safira:', '妳要繼續跳。'],
   ['scenes.mem:bobby:', '祖先造錯的東西，我來修好。'],
   ['scenes.mem:selene:', '我想看見'],
   ['scenes.town:marta.', '現在想記住的事變多了'],
@@ -775,7 +776,7 @@ const REVEALED: { who: string; re: RegExp; piece: number; heard?: true }[] = [
   { who: 'selene', re: /我想看見|新月/, piece: 5 },
   { who: 'chizuru', re: /不在了/, piece: 4 },
   { who: 'chizuru', re: /託付/, piece: 5 },
-  { who: 'safira', re: /團長|你要繼續跳|做決定的/, piece: 4 },
+  { who: 'safira', re: /團長|[你妳]要繼續跳|做決定的/, piece: 4 },
   // Task 9
   { who: 'sylvie', re: /林子|守林|帶出去|帶出來|種子|種下|空地|新綠|發芽/, piece: 1, heard: true },   // the mire was her forest (1); the seed and its clearing (5) (fix round 1)
   { who: 'noel', re: /洛恩/, piece: 5 },
@@ -840,7 +841,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
       // nobody is found before her own piece; the leader may stand beside the camel driver in piece 4 (she decides there)
       for (const other of MEMBERS.slice(i + 1)) if (!(i === 3 && other === '團長')) expect(own, `mem:safira:${i + 1} ${other}`).not.toContain(other);
     });
-    expect(textOf('mem:safira:4')).not.toContain('你要繼續跳');
+    expect(textOf('mem:safira:4')).not.toMatch(/[你妳]要繼續跳/);
     for (const t of spokenBy('safira')) expect(t.text, t.key).not.toContain('洛恩');
     expect(spokenBy('safira').some((t) => t.text.includes('小洛'))).toBe(true);
   });
@@ -1085,7 +1086,7 @@ describe('Task 10: Liz, Scarlet and the survive line', () => {
     }
     expect(spokenBy('scarlet').some((t) => t.text.includes('洛恩閣下'))).toBe(true);
     expect(linesOf('mem:scarlet:5').some((l) => l.who === 'scarlet' && /洛恩(?!閣下)/.test(l.text))).toBe(true);
-    const QUOTE = '你不是盾，你是我的朋友。活下去。';
+    const QUOTE = '妳不是盾，妳是我的朋友。活下去。';
     for (const t of storyTexts()) if (t.text.includes(QUOTE)) expect(t.key, t.key).toMatch(/^scenes\.mem:scarlet:5\./);
     expect(textOf('mem:scarlet:5')).toContain(QUOTE);
     for (const n of [1, 2, 3, 4]) expect(textOf(memScene('scarlet', n)), `mem:scarlet:${n}`).not.toMatch(/朋友|活下去|撤退/);
@@ -1538,7 +1539,7 @@ describe('Task 14: the finale', () => {
     expect(['smile', 'normal', 'blush', 'serious', 'sad']).toContain(rin.mood);
     expect(L.filter((l) => l.who === 'rin').length).toBe(1);
     // no companion speaks a line nobody else gets: one line each, and none of her pieces' verbatim lines but Bobby's echo
-    for (const q of ['我想看見', '你要繼續跳', '你不是盾，你是我的朋友。活下去。']) for (const l of L) expect(l.text).not.toContain(q);
+    for (const q of ['我想看見', '妳要繼續跳', '妳不是盾，妳是我的朋友。活下去。']) for (const l of L) expect(l.text).not.toContain(q);
   });
 
   it('the ending card stands alone, under the finale boss and the ending title', () => {
@@ -2305,6 +2306,22 @@ describe('B2: what they say to each other (the banter content)', () => {
       const lines = linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: [], oath: true });
       expect(lines.at(-1)!.who, id).not.toBe('hero');
     }
+  });
+});
+
+describe('story polish Task 4: numerals in titles and notices', () => {
+  it('scene titles carry no Arabic digits', () => {
+    for (const id of SCENE_IDS) expect(STORY.scenes[id].title, id).not.toMatch(/[0-9]/);
+    expect(STORY.scenes['mem:selene:1'].title).toBe('瑟蕾・第一片');
+    expect(STORY.scenes['mem:hero:10'].title).toBe('洛恩・第十片');
+    expect(STORY.scenes['chat:selene:1'].title.endsWith('・對話一')).toBe(true);
+    const banter = SCENE_IDS.find((id) => id.startsWith('banter:') && id.endsWith(':1'))!;
+    expect(STORY.scenes[banter].title.endsWith('・閒聊一')).toBe(true);
+  });
+
+  it('the memory notice counts in Chinese numerals', () => {
+    expect(T.ui2.memory.piece('凜', 2)).toBe('找回了凜的記憶（第二片）。');
+    expect(T.ui2.memory.piece('洛恩', 10)).toBe('找回了洛恩的記憶（第十片）。');
   });
 });
 
