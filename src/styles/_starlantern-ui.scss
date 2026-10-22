@@ -129,6 +129,8 @@ $slx-steps: 1, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4,
 // A list's heading row (the rune shop's 收購, plan 8f): no cursor lands on it, and it reads as a heading, not a greyed item.
 .slx-opt .slx-label.slx-list-head { color: $slx-gold; font-size: 10px; letter-spacing: 2px; border-bottom: 1px solid rgba(232, 196, 106, 0.35); }
 .slx-qty-row { display: flex; justify-content: center; gap: 2px; }
+.slx-qty-down { margin-right: 4px; }
+.slx-qty-up { margin-left: 4px; }
 .slx-qty-total { margin-left: 10px; color: $slx-gold; }
 
 .slx-list { left: 150px; top: 56px; min-width: 170px; max-height: 240px; overflow: hidden; }
@@ -554,11 +556,11 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-status-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; margin-bottom: 6px; }
 .slx-status-facts p { margin: 1px 0; }
 .slx-stat-cat { margin-bottom: 2px; }
-.slx-stat-cat-head { position: relative; padding: 2px 6px 2px 18px; cursor: pointer; color: $slx-gold; border-bottom: 1px solid #3a3550; }
+.slx-stat-cat-head { position: relative; padding: 2px 6px 2px 20px; cursor: pointer; color: $slx-gold; border-bottom: 1px solid #3a3550; }
 .slx-stat-cat-head::before { content: '→'; position: absolute; left: 5px; color: $slx-dim; }
 .slx-stat-cat-head[aria-expanded='true']::before { content: '↓'; }
 .slx-stat-cat-head:hover { color: #fff; }
-.slx-stat-affinity { margin: 0; padding: 2px 6px 2px 18px; color: $slx-dim; }
+.slx-stat-affinity { margin: 0; padding: 2px 6px 2px 20px; color: $slx-dim; }
 .slx-row-cur { background: linear-gradient(90deg, rgba(232, 196, 106, 0.22), transparent); box-shadow: inset 2px 0 0 $slx-gold; }
 .slx-stat-cat-head.slx-row-cur, .slx-stat-table .slx-row-cur th { color: #fff; }
 /* Fixed layout (plan 8g Task 5): the row names take 22%, the total 11%, and the source columns share the rest evenly, so

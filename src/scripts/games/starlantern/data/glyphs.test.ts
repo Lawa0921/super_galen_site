@@ -37,13 +37,14 @@ function sources(): { file: string; text: string }[] {
 const COMMENT = /\/\*[\s\S]*?\*\/|(?<![:'"\\])\/\/[^\n]*/g;
 
 /**
- * Each character above U+007E in `text` with its line: escapes decoded first (`\uXXXX` and `\u{…}`; in a stylesheet also
+ * Each character above U+007E in `text` with its line: escapes decoded first (`\uXXXX`, `\u{…}` and `\xNN`; in a stylesheet also
  * CSS's `\XXXX`), then comments dropped (their line breaks kept, so the lines still count true).
  */
 function charsOf(file: string, text: string): { ch: string; line: number }[] {
   let t = text
     .replace(/\\u\{([0-9a-fA-F]{1,6})\}/g, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/\\u([0-9a-fA-F]{4})/g, (_, h: string) => String.fromCodePoint(parseInt(h, 16)));
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/\\x([0-9a-fA-F]{2})/g, (_, h: string) => String.fromCodePoint(parseInt(h, 16)));
   if (file.endsWith('.scss')) t = t.replace(/\\([0-9a-fA-F]{1,6}) ?/g, (_, h: string) => String.fromCodePoint(parseInt(h, 16)));
   t = t.replace(COMMENT, (c) => c.replace(/[^\n]/g, ''));
   const out: { ch: string; line: number }[] = [];
@@ -61,6 +62,7 @@ describe('glyphs (legibility Task 1)', () => {
   it('finds a character written as an escape, and skips comments', () => {
     expect(charsOf('ui2/x.ts', "const a = '\\u25B6';").map((c) => hex(c.ch))).toEqual(['U+25B6']);
     expect(charsOf('ui2/x.ts', "const a = '\\u{1F600}';").map((c) => hex(c.ch))).toEqual(['U+1F600']);
+    expect(charsOf('ui2/x.ts', "const a = '\\xB6';").map((c) => hex(c.ch))).toEqual(['U+00B6']);
     expect(charsOf('styles/x.scss', ".a::before { content: '\\25B8'; }").map((c) => hex(c.ch))).toEqual(['U+25B8']);
     expect(charsOf('ui2/x.ts', '// ▶ a note\n/* ◀ */ const b = 1;\nconst c = "▾";')).toEqual([{ ch: '▾', line: 3 }]);
     // A URL's `//` is not a comment.

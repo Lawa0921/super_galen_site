@@ -2,6 +2,10 @@ import { expect, type Page } from '@playwright/test';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
 import { SPECIALS, STARLIT_RARITIES } from '../../src/scripts/games/starlantern/data/gear';
 import { ENHANCE_MAX } from '../../src/scripts/games/starlantern/data/forge';
+import { RUNES, runeKey, tiersOf, type RuneId } from '../../src/scripts/games/starlantern/data/runes';
+import { STORY } from '../../src/scripts/games/starlantern/data/story.zh-TW';
+import { T } from '../../src/scripts/games/starlantern/data/text.zh-TW';
+import { BAG_SIZE } from '../../src/scripts/games/starlantern/engine/loot/bag';
 import { LEGACY_GRID, LEGACY_LINEUP } from '../../src/scripts/games/starlantern/engine/party';
 import type { ItemInstance } from '../../src/scripts/games/starlantern/engine/types';
 import { gearLabel } from '../../src/scripts/games/starlantern/ui2/loot';
@@ -25,9 +29,9 @@ export interface SweepSize { width: number; height: number }
 type Dbg = { __starlanternDebug: { game: any; go(name: string, arg?: string): Promise<void> } };
 
 /** Run `fn` on the live game in the page. */
-const game = <T>(page: Page, fn: string) => page.evaluate((src) => {
+const game = <R>(page: Page, fn: string) => page.evaluate((src) => {
   const g = (window as unknown as Dbg).__starlanternDebug.game;
-  return new Function('g', src)(g) as T;
+  return new Function('g', src)(g) as R;
 }, fn);
 
 /** `__starlanternDebug.go`: straight to a scene, as the router would go there. */
@@ -49,7 +53,15 @@ export const longestGear = (): Omit<ItemInstance, 'uid'> => {
   return all.reduce((a, b) => (gearLabel({ ...b, uid: 0 }).length > gearLabel({ ...a, uid: 0 }).length ? b : a));
 };
 
-/** A new game (story off) on `seed`, with the legacy five, the hero and Rin recruited; the longest gear and a rare in the bag. */
+/** Every rune at every tier it comes in, three of each: the longest rune lists the shop, the forge and the workshop can show. */
+const ALL_RUNES: Record<string, number> = Object.fromEntries(
+  (Object.keys(RUNES) as RuneId[]).flatMap((id) => tiersOf(id).map((tier) => [runeKey({ id, tier }), 3] as const)));
+
+/**
+ * A new game (story off) on `seed`, set up so every screen has its longest content: the legacy five, the hero and Rin
+ * recruited; Noel at Lv 20 knowing 火之星彈 (two rune slots open); runes open with every rune in the bag and the rune
+ * tutorial still unread; the longest gear, a rare with affixes (for 重鑄) and three magic pieces (for 合成) in the bag.
+ */
 export const startSweepGame = async (page: Page, seed = 7): Promise<SpecHelpers> => {
   await page.addInitScript(() => {
     if (localStorage.getItem('starlantern-settings') === null) localStorage.setItem('starlantern-settings', JSON.stringify({ volume: 70, textSpeed: 'mid', vibrate: true, story: 'none' }));
@@ -73,17 +85,22 @@ export const startSweepGame = async (page: Page, seed = 7): Promise<SpecHelpers>
   await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('新遊戲');
   await key('Enter');
   await expect(page.locator('.slx-town')).toBeVisible(); await closeTalk();
-  await page.evaluate(([ids, grid, long]) => {
+  await page.evaluate(([ids, grid, long, runes]) => {
     const g = (window as unknown as Dbg).__starlanternDebug.game;
-    const p = g.state.party;
+    const s = g.state;
+    const p = s.party;
     p.recruited = [...ids, 'hero', 'rin'];
     p.grid = grid;
-    g.state.gold = 5000;
-    Object.assign(g.state.inventory, { potion: 3, moss: 4, 'essence-common': 6, 'essence-magic': 2 });
-    g.state.bag.push({ ...long, uid: g.mintUid() });
+    p.roster.noel = { ...p.roster.noel, level: 20, tree: { 'fire-star': 1 } };
+    s.gold = 5000;
+    s.runesOpen = true;
+    s.runes = runes;
+    Object.assign(s.inventory, { potion: 3, moss: 4, 'essence-common': 6, 'essence-magic': 2 });
+    s.bag.push({ ...long, uid: g.mintUid() });
     // A rare with affixes: something the forge can reroll even when the longest piece is a starlit unique or set.
-    g.state.bag.push({ uid: g.mintUid(), base: 'iron-sword', rarity: 'rare', ilvl: 4, enhance: 3, affixes: [{ key: 'atk', value: 3 }, { key: 'crit', value: 2 }, { key: 'hp', value: 9 }] });
-  }, [LEGACY_LINEUP, LEGACY_GRID.map((c) => (c === 'selene' ? 'hero' : c)), longestGear()] as const);
+    s.bag.push({ uid: g.mintUid(), base: 'iron-sword', rarity: 'rare', ilvl: 4, enhance: 3, affixes: [{ key: 'atk', value: 3 }, { key: 'crit', value: 2 }, { key: 'hp', value: 9 }] });
+    for (let i = 0; i < 3; i++) s.bag.push({ uid: g.mintUid(), base: 'iron-sword', rarity: 'magic', ilvl: 2, enhance: 0, affixes: [{ key: 'atk', value: 2 }] });
+  }, [LEGACY_LINEUP, LEGACY_GRID.map((c) => (c === 'selene' ? 'hero' : c)), longestGear(), ALL_RUNES] as const);
   return { errors, key, closeTalk, choose };
 };
 
@@ -91,6 +108,11 @@ export const startSweepGame = async (page: Page, seed = 7): Promise<SpecHelpers>
 const facility = async (page: Page, w: SpecHelpers, scene: string, cls: string) => {
   await go(page, scene);
   await expect(page.locator(cls)).toBeVisible(); await w.closeTalk();
+};
+
+/** Confirm through a dialogue of many pages (closeTalk stops after six). */
+const readAll = async (page: Page, w: SpecHelpers) => {
+  for (let i = 0; i < 40 && (await page.locator('.slx-talk:not([hidden])').isVisible()); i++) await w.key('z');
 };
 
 /** Walk the dungeon with encounters held off, along `keys`. */
@@ -126,19 +148,57 @@ const toStairs = (page: Page) => page.evaluate(() => {
   return [];
 });
 
+/**
+ * Put `tile` on the `nth` plain floor tile of the map that has plain floor to its left, and stand the party there,
+ * facing it: the key that steps onto it is returned. With `content`, the floor's contents gain that event there.
+ */
+const placeBeside = (page: Page, tile: string, nth = 0, content?: string) => page.evaluate(({ tile, nth, content }) => {
+  const g = (window as unknown as Dbg).__starlanternDebug.game;
+  const tiles: string[][] = g.map().tiles;
+  const spots: { x: number; y: number }[] = [];
+  tiles.forEach((row, y) => row.forEach((t, x) => { if (t === 'floor' && row[x - 1] === 'floor') spots.push({ x, y }); }));
+  const at = spots[nth % spots.length];
+  tiles[at.y][at.x] = tile;
+  if (content) g.run.floors.get(g.floor).contents.push({ kind: content, at, room: -1 });
+  g.pos = { x: at.x - 1, y: at.y };
+  g.encounter = 0;
+  return { at, spots: spots.length };
+}, { tile, nth, content });
+
+/** Put plain floor back where `placeBeside` put a tile. */
+const unplace = (page: Page, at: { x: number; y: number }) => page.evaluate((at) => {
+  const g = (window as unknown as Dbg).__starlanternDebug.game;
+  g.map().tiles[at.y][at.x] = 'floor';
+}, at);
+
 /** In battle: defend for each member until the command menu is for someone the test can use again. */
 const commandMenu = async (page: Page) => {
   for (let i = 0; i < 80 && !(await page.locator('.slx-bcmd [role=option]').count()); i++) await page.waitForTimeout(50);
   await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
 };
 
+/** The chests the sweep put down, taken up again before it walks to the stairs. */
+const chests: { x: number; y: number }[] = [];
+
+const HANDBOOK_TABS = ['memories', 'people', 'leads', 'town', 'codex', 'truths'] as const;
+
 /**
- * The sweep's screens, in the order one game reaches them: the menus by `go`, then a portal run (the dungeon, its menu,
- * the stairs, a fight and its result). Each visit leaves its screen showing.
+ * The sweep's screens, in the order one game reaches them: the menus by `go`, then a portal run (the departure prompt,
+ * the dungeon, its menu and handbook, three event windows with art, the stairs, a fight, its lists and result) and the
+ * finale card. Each visit leaves its screen showing.
  */
 export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<void> }[] = [
   { name: 'title', visit: async (page) => { await go(page, 'title'); await expect(page.locator('.slx-title [role=option]').first()).toBeVisible(); } },
-  { name: 'town', visit: async (page, w) => facility(page, w, 'town', '.slx-town') },
+  {
+    // The town's greeting, before it is closed: the dialogue box.
+    name: 'talk', visit: async (page, w) => {
+      await go(page, 'town');
+      const talk = page.locator('.slx-town .slx-talk');
+      await expect(talk).toBeVisible();
+      if (!(await talk.locator('.slx-next').isVisible())) await w.key('z');   // the line whole
+    },
+  },
+  { name: 'town', visit: async (page, w) => { await w.closeTalk(); await expect(page.locator('.slx-town')).toBeVisible(); } },
   { name: 'guild', visit: async (page, w) => facility(page, w, 'guild', '.slx-guild') },
   {
     name: 'shop-buy', visit: async (page, w) => {
@@ -171,6 +231,14 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       await expect(page.locator('.slx-shop [role=option]', { hasText: gearLabel({ ...longestGear(), uid: 0 }) })).toBeVisible();
     },
   },
+  {
+    name: 'shop-runes', visit: async (page, w) => {
+      await w.key('Escape'); await w.key('Escape');
+      await expect(page.locator('.slx-shop .slx-list')).toHaveCount(0);
+      await page.locator('.slx-shop .slx-cmd [data-id=runes]').click();
+      await expect(page.locator('.slx-shop .slx-list [role=option]').first()).toBeVisible();
+    },
+  },
   { name: 'inn', visit: async (page, w) => facility(page, w, 'inn', '.slx-inn') },
   {
     name: 'portals', visit: async (page, w) => {
@@ -185,7 +253,7 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       await expect(page.locator('.slx-depths [role=option]').first()).toBeVisible();
     },
   },
-  ...(['enhance', 'reroll', 'craft'] as const).map((tab) => ({
+  ...(['dismantle', 'enhance', 'reroll', 'fuse', 'craft', 'runes'] as const).map((tab) => ({
     name: `forge-${tab}`, visit: async (page: Page, w: SpecHelpers) => {
       await facility(page, w, 'forge', '.slx-forge');
       await page.locator(`.slx-forge .slx-cmd [data-id=${tab}]`).click();
@@ -207,17 +275,53 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   })),
   { name: 'equip', visit: async (page) => { await go(page, 'equip'); await expect(page.locator('.slx-equip-scene')).toBeVisible(); } },
-  { name: 'handbook', visit: async (page) => { await go(page, 'handbook'); await expect(page.locator('.slx-handbook')).toBeVisible(); } },
-  { name: 'workshop', visit: async (page) => { await go(page, 'workshop'); await expect(page.locator('.slx-workshop')).toBeVisible(); } },
+  ...HANDBOOK_TABS.map((tab, i) => ({
+    name: i === 0 ? 'handbook' : `handbook-${tab}`, visit: async (page: Page) => {
+      if (i === 0) await go(page, 'handbook');
+      else await page.locator('.slx-handbook [role=tab]').nth(i).click();
+      await expect(page.locator('.slx-handbook [role=tab]').nth(i)).toHaveAttribute('aria-selected', 'true');
+    },
+  })),
+  {
+    // The first workshop visit with runes in the bag tells the rune tutorial (plan 8g).
+    name: 'rune-tutorial', visit: async (page, w) => {
+      await go(page, 'workshop');
+      const talk = page.locator('.slx-workshop .slx-talk');
+      await expect(talk).toBeVisible();
+      if (!(await talk.locator('.slx-next').isVisible())) await w.key('z');
+      await expect(talk.locator('.slx-next')).toBeVisible();
+    },
+  },
+  {
+    name: 'workshop', visit: async (page, w) => {
+      await readAll(page, w);
+      await expect(page.locator('.slx-workshop .slx-ws-skills')).toBeVisible();
+    },
+  },
+  {
+    // Noel at Lv 20: two slots open on 火之星彈, and slot 1's list holds every rune.
+    name: 'workshop-runes', visit: async (page, w) => {
+      await go(page, 'workshop', 'noel:fire-star');
+      await expect(page.locator('.slx-ws-skills [aria-selected=true]')).toHaveAttribute('data-id', 'fire-star');
+      await w.key('Enter');                                   // her slots
+      await w.key('Enter');                                   // slot 1's runes
+      await expect(page.locator('.slx-ws-runes [role=option]').first()).toBeVisible();
+    },
+  },
   { name: 'builds', visit: async (page) => { await go(page, 'builds'); await expect(page.locator('.slx-builds')).toBeVisible(); } },
-  // The act 1 clear card: `go` shows it without changing the game (the finale needs a cleared game).
+  // The act 1 clear card: `go` shows it without changing the game.
   { name: 'clear', visit: async (page) => { await go(page, 'clear'); await expect(page.locator('.slx-clear [role=option]').first()).toBeVisible(); } },
   {
-    name: 'dungeon', visit: async (page, w) => {
+    name: 'confirm', visit: async (page, w) => {
       await facility(page, w, 'gate', '.slx-gate');
       await w.key('Enter');                                   // 選擇傳送門
       await expect(page.locator('.slx-portal')).toHaveCount(3);
       await w.key('Enter'); await w.key('Enter');             // the mainline card, depth 1
+      await expect(page.locator('.slx-confirm')).toBeVisible();
+    },
+  },
+  {
+    name: 'dungeon', visit: async (page, w) => {
       await w.key('ArrowUp'); await w.key('Enter');           // 是
       await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
     },
@@ -229,9 +333,56 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
-    name: 'stairs', visit: async (page, w) => {
+    name: 'handbook-dungeon', visit: async (page, w) => {
+      await w.choose('.slx-field-menu', T.ui2.dungeon.handbook);
+      await expect(page.locator('.slx-handbook .slx-hint')).toHaveText(T.ui2.handbook.hintReadonly);
+    },
+  },
+  {
+    name: 'event-altar', visit: async (page, w) => {
       await w.key('Escape');
-      await expect(page.locator('.slx-field-menu')).toHaveCount(0);
+      await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+      await placeBeside(page, 'altar', 0, 'altar');
+      await w.key('ArrowRight');
+      await expect(page.locator('.slx-event-altar .slx-event-art')).toBeVisible();
+    },
+  },
+  {
+    name: 'event-elite', visit: async (page, w) => {
+      await w.key('Escape');                                  // 離開: the party stays on the altar
+      await expect(page.locator('.slx-event-altar')).toHaveCount(0);
+      await placeBeside(page, 'elite', 5);
+      await w.key('ArrowRight');                              // seen from the doorway: asked before the fight
+      await expect(page.locator('.slx-event-elite .slx-event-art')).toBeVisible();
+    },
+  },
+  {
+    // A chest whose gear does not fit a full bag: the 背包已滿 window offers the run pack's gear to throw away.
+    name: 'event-chest-full', visit: async (page, w) => {
+      await w.key('Escape');                                  // 離開: no fight
+      await expect(page.locator('.slx-event-elite')).toHaveCount(0);
+      await unplace(page, await game<{ x: number; y: number }>(page, 'return { x: g.pos.x + 1, y: g.pos.y };'));
+      await game(page, `
+        const mk = (r) => ({ uid: g.mintUid(), base: 'iron-sword', rarity: r, ilvl: 2, enhance: 0, affixes: [{ key: 'atk', value: 2 }] });
+        g.run.loot.gear.push(mk('magic'), mk('rare'), mk('common'));
+        while (g.state.bag.length + g.run.loot.gear.length < ${BAG_SIZE}) g.state.bag.push(mk('common'));
+      `);
+      const full = page.locator('.slx-full');
+      for (let n = 11; n < 80 && !(await full.isVisible()); n += 3) {
+        chests.push((await placeBeside(page, 'chest', n)).at);
+        await w.key('ArrowRight');
+        await w.closeTalk();
+      }
+      await expect(full).toContainText(T.ui2.event.full.bagTitle(BAG_SIZE));
+      await expect(full.locator('[role=option]').first()).toBeVisible();
+    },
+  },
+  {
+    name: 'stairs', visit: async (page, w) => {
+      await w.key('Escape');                                  // 放棄: the gear stays in the chest
+      await w.closeTalk();
+      await expect(page.locator('.slx-full')).toHaveCount(0);
+      for (const at of chests.splice(0)) await unplace(page, at);   // the tried chests no longer block the way
       const keys = await toStairs(page);
       expect(keys.length).toBeGreaterThan(0);
       await walk(page, keys);
@@ -284,6 +435,18 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
         else await page.waitForTimeout(50);
       }
       await expect(page.locator('.slx-result')).toBeVisible();
+    },
+  },
+  {
+    // The ending card: the game as the finale left it (no scenes owed), shown by `go`.
+    name: 'finale', visit: async (page, w) => {
+      await game(page, "g.cleared = 'finale'; g.finale = { pieces: [] };");
+      await go(page, 'clear');
+      const card = page.locator('.slx-clear [role=option]');
+      for (let i = 0; i < 60 && !(await card.first().isVisible()); i++) {
+        if (await page.locator('.slx-talk:not([hidden])').isVisible()) await w.key('z'); else await page.waitForTimeout(50);
+      }
+      await expect(page.locator('.slx-clear')).toContainText(STORY.endingTitle);
     },
   },
 ];
