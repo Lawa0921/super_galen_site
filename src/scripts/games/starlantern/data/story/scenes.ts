@@ -52,6 +52,13 @@ export const BANTER_COUNT: Partial<Record<BanterPair, number>> = {
   'chizuru-noel': 2, 'rin-selene': 2,
 };
 export const BANTER_PAIRS: BanterPair[] = (Object.keys(BANTER_COUNT) as BanterPair[]).sort();
+/**
+ * The six banters the story depth design pays off (its setup/payoff table; Task 6 third ruling). A pair whose next banter
+ * is one of them, or leads to one, goes first in the banter pick (`engine/story/events.ts` `pickBanter`).
+ */
+export const BANTER_PAYOFFS: ReadonlySet<SceneId> = new Set<SceneId>([
+  'banter:rin-scarlet:3', 'banter:rin-selene:2', 'banter:safira-sylvie:3', 'banter:liz-scarlet:3', 'banter:noel-selene:3', 'banter:chizuru-noel:2',
+]);
 export const banterScene = (pair: BanterPair, n: number): SceneId => `banter:${pair}:${n}`;
 /** The two of a banter scene, from its id. */
 export const banterTwo = (id: SceneId): [CharacterId, CharacterId] => id.split(':')[1].split('-') as [CharacterId, CharacterId];

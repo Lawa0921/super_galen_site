@@ -1,6 +1,6 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { chainLength } from '../../data/story/chains';
-import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, HEAVY_MAJORS, HOME_OWNERS, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAYOFFS, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, HEAVY_MAJORS, HOME_OWNERS, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
 import type { CharacterId } from '../types';
@@ -192,8 +192,8 @@ function readyPairs(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, co
 }
 
 /**
- * The pick among ready pairs (story depth plan ruling 9, Task 6 review and rulings): a pair whose next banter is the last
- * of its chain, its payoff, first of all; then a started pair; then the least heard; then the one ready longest
+ * The pick among ready pairs (story depth plan ruling 9, Task 6 review and rulings): a pair on the way to one of the six
+ * designed payoffs (`BANTER_PAYOFFS`: its next banter is one, or leads to one) first of all; then a started pair; then the least heard; then the one ready longest
  * (`story.waited`); then the one with more banters left; then the fixed order. `skip`: a pair not to
  * pick (the first banter's, when a return plays two).
  */
@@ -203,7 +203,11 @@ function pickBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, co
   for (const p of readyPairs(s, gates, count)) {
     if (p.pair === skip) continue;
     if (!best) { best = p; continue; }
-    const payoff = (r: Ready) => r.left === 1 && (count[r.pair] ?? 0) > 1;   // its next banter is the last of a chain: its payoff
+    // Task 6 third ruling: one of the six designed payoffs is its next banter, or further on in its chain
+    const payoff = (r: Ready) => [...BANTER_PAYOFFS].some((id) => {
+      const n = Number(id.split(':')[2]);
+      return banterTwo(id).join('-') === r.pair && n <= (count[r.pair] ?? 0) && n >= Number(r.id.split(':')[2]);
+    });
     const better = payoff(p) !== payoff(best) ? payoff(p)
       : p.started !== best.started ? p.started
       : p.heard !== best.heard ? p.heard < best.heard

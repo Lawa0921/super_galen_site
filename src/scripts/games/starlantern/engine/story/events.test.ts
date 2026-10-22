@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ACT_DEPTHS, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, HEAVY_ARRIVAL, isHeavyArrival, type BanterPair, type SceneId } from '../../data/story/scenes';
+import { ACT_DEPTHS, ALONE, BANTER_COUNT, BANTER_PAYOFFS, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, HEAVY_ARRIVAL, isHeavyArrival, type BanterPair, type SceneId } from '../../data/story/scenes';
 import { chainLength } from '../../data/story/chains';
 import { CHARACTER_IDS } from '../../data/characters';
 import { meet } from '../party';
@@ -803,18 +803,19 @@ describe('town banter', () => {
     expect(nextBanter(s, gates, count)).toBeNull();   // the expired one is never offered
   });
 
-  it('an expired banter counts toward its pair\'s heard; its pair\'s payoff still ranks first (story depth Task 1 review, Task 6 ruling)', () => {
+  it('an expired banter counts toward its pair\'s heard: the other pair goes first (story depth Task 1 review)', () => {
     const count: Partial<Record<BanterPair, number>> = { 'noel-rin': 2, 'rin-sylvie': 2 };
     const gates = { 'banter:noel-rin:1': { beforeChoice: true as const } };
     const s = meetAll(base(), ['noel', 'sylvie']);
     expect(nextBanter(s, gates, count)).toBe('banter:noel-rin:1');   // both heard none: the fixed order
     s.party.roster.rin.oath = true;   // noel-rin:1 expired, never heard: it counts as heard
-    // Task 6 ruling: so noel-rin:2 is the last of its pair, its payoff, and the payoff ranks first
-    expect(nextBanter(s, gates, count)).toBe('banter:noel-rin:2');
-    s.story.seen.push('banter:noel-rin:2');
     expect(nextBanter(s, gates, count)).toBe('banter:rin-sylvie:1');
     s.story.seen.push('banter:rin-sylvie:1');
+    // story depth Task 6 (ruling 9): rin-sylvie has started, noel-rin has not (its expired one starts nothing); neither pair
+    // leads to a designed payoff (third ruling), so the payoff rule does not enter
     expect(nextBanter(s, gates, count)).toBe('banter:rin-sylvie:2');
+    s.story.seen.push('banter:rin-sylvie:2');
+    expect(nextBanter(s, gates, count)).toBe('banter:noel-rin:2');
   });
 
   it('a seen gate naming two scenes opens only once both are seen (story depth Task 1 review)', () => {
@@ -875,11 +876,9 @@ describe('town banter', () => {
     const gates = { 'banter:rin-sylvie:1': { beforeChoice: true as const } };
     const s = allChatsSeen(meetAll(base(), ['sylvie', 'liz', 'scarlet']));
     s.party.roster.rin.oath = true;   // rin-sylvie:1 expired unheard; :2 is open
-    // Task 6 ruling: :2 is rin-sylvie's payoff, and the payoff ranks first, though the pair has not started (an expired
-    // banter starts nothing; liz-scarlet, a pair of one, has no payoff to go first with)
+    expect(nextBanter(s, gates, count)).toBe('banter:liz-scarlet:1');   // not started: the order still decides (no designed payoff in this count)
+    s.story.seen.push('banter:liz-scarlet:1');
     expect(nextBanter(s, gates, count)).toBe('banter:rin-sylvie:2');
-    s.story.seen.push('banter:rin-sylvie:2');
-    expect(nextBanter(s, gates, count)).toBe('banter:liz-scarlet:1');
   });
 
   it('a quiet return plays two banters when more than two pairs are ready', () => {
@@ -1009,34 +1008,42 @@ describe('town banter', () => {
     expect(samePair).toEqual([]);   // never one pair twice on a return (Task 6 review)
   });
 
-  it('scripted play, a return every second depth: payoffs before the finale and after it, measured (Task 6 rulings)', () => {
-    // Controller rulings: heavy returns stay banter-free; a pair whose next banter is its payoff ranks first; after the finale
-    // a return other than the festival's plays up to three banters, from two pairs at least. Target: every payoff by the
-    // finale or within three returns after it. Measured within those rules (task-6-report.md): three before the finale,
-    // none in the three returns after it (the festival's plays none; the next two play six, all payoffs of other pairs or
-    // the first links of these chains), all six by the seventh. Pinned, not loosened.
+  it('scripted play, a return every second depth: every payoff by the finale or within three returns after it (Task 6 rulings)', () => {
+    // Controller rulings: heavy returns stay banter-free; a pair on the way to one of the six designed payoffs ranks first;
+    // after the finale a return other than the festival's plays up to three banters, from two pairs at least. Measured
+    // (task-6-report.md): four before the finale, the other two in the second and third returns after it.
     const depths = Array.from({ length: 15 }, (_, i) => 2 * i + 1);   // 1, 3, …, 29
-    const three = scriptedPlay(depths, 3);
-    expect(three.before, `${three.report}\n${three.trace.join('\n')}`).toEqual(['banter:rin-selene:2', 'banter:safira-sylvie:3', 'banter:noel-selene:3']);
-    expect(PAYOFFS.filter((id) => three.s.story.seen.includes(id))).toEqual(three.before);
-    expect(three.samePair).toEqual([]);
-    const seven = scriptedPlay(depths, 7);   // none is lost: all six by the seventh return after the finale
-    for (const id of PAYOFFS) expect(seven.s.story.seen, seven.report).toContain(id);
+    const { s, report, trace, samePair, before } = scriptedPlay(depths, 3);
+    for (const id of PAYOFFS) expect(s.story.seen, `${report}\n${trace.join('\n')}`).toContain(id);
+    expect(before.length, report).toBe(4);
+    expect(samePair).toEqual([]);
+  });
+
+  it('the six designed payoffs, and a pair on the way to one, go first; another pair\'s last banter does not (Task 6 third ruling)', () => {
+    expect([...BANTER_PAYOFFS].sort()).toEqual([...PAYOFFS].sort());
+    const s = allChatsSeen(meetAll(base(), ['noel', 'liz', 'scarlet']));
+    s.story.seen.push('banter:noel-rin:1');   // noel-rin started; its :2 is its last, but no designed payoff
+    expect(nextBanter(s)).toBe('banter:liz-scarlet:1');   // liz-scarlet leads to its payoff (:3): first, though not started
+    s.story.seen.push('banter:liz-scarlet:1');
+    const pace = nextBanter(s);
+    expect(['banter:rin-scarlet:1', 'banter:liz-scarlet:2']).toContain(pace);   // still on the way to a payoff
+    expect(pace).not.toBe('banter:noel-rin:2');
   });
 
   it('a pair whose next banter is its payoff goes ahead of the ready-longest and the one with more left (Task 6 ruling)', () => {
+    // third ruling: "payoff" is one of the six designed ones (BANTER_PAYOFFS), or on the way to one
     const s = allChatsSeen(meetAll(base(), ['noel', 'liz', 'scarlet']));
-    s.story.seen.push('banter:noel-rin:1', 'banter:liz-scarlet:1');   // both started, one heard each
+    s.story.seen.push('banter:noel-rin:1');   // noel-rin started; it waited longer
     const count: Partial<Record<BanterPair, number>> = { 'noel-rin': 2, 'liz-scarlet': 3 };
-    s.story.waited = { 'liz-scarlet': 5 };
-    expect(nextBanter(s, {}, count)).toBe('banter:noel-rin:2');   // its last: the payoff, though liz-scarlet waited longer and has more left
-    // second ruling: the payoff ranks first of all, above a started pair and above the least heard
-    const t = allChatsSeen(meetAll(base(), ['noel', 'liz', 'scarlet', 'selene']));
+    s.story.waited = { 'noel-rin': 5 };
+    expect(nextBanter(s, {}, count)).toBe('banter:liz-scarlet:1');   // on the way to liz-scarlet:3, ahead of started, waited and more-left
+    // the payoff itself, above a started pair and the least heard
+    const t = allChatsSeen(meetAll(base(), ['noel', 'selene']));
     t.party.roster.rin.oath = true;   // rin-selene:1 expired: :2, her payoff, is ready and the pair has not started
     t.party.roster.selene.memories = chainLength('selene');
-    t.story.seen.push('banter:liz-scarlet:1');   // liz-scarlet started, heard one
+    t.story.seen.push('banter:noel-rin:1');   // noel-rin started, heard one
     const gates = { 'banter:rin-selene:1': { beforeChoice: true as const } };
-    expect(nextBanter(t, gates, { 'liz-scarlet': 3, 'rin-selene': 2 })).toBe('banter:rin-selene:2');
+    expect(nextBanter(t, gates, { 'noel-rin': 2, 'rin-selene': 2 })).toBe('banter:rin-selene:2');
   });
 
   it('after the finale, a return other than the festival\'s plays up to three banters, from two pairs at least (Task 6 ruling)', () => {
