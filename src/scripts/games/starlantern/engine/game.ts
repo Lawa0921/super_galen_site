@@ -1195,6 +1195,10 @@ export class Game {
     this.arrival = this.arrival.filter((s) => s !== id);
     this.pending = this.pending.filter((s) => s !== id);
     this.state = sceneDone(this.state, id, how);
+    // Inside the finale, a scene its own list covers never waits in the queue (Task 3 review): the keeper her confession
+    // queues is the finale's to play, and leaving the ending early must not leave him for the town after the festival.
+    const covered = this.finale?.pieces;
+    if (covered) this.state.story.queue = this.state.story.queue.filter((q) => !covered.includes(q));
     this.saveInTown();
     return true;
   }
@@ -1227,8 +1231,9 @@ export class Game {
    * confession if it still waits, and the bellkeeper's arrival if it waits or the confession does (the finale hands her bell
    * to him; continuity fix 4; story depth plan ruling 8: playing the confession queues him, and the finale plays him itself).
    * Then the hero pieces this fight filled in and any still waiting in the queue from an earlier floor (depth 25's top-up),
-   * in piece order. What is taken leaves the queue, so the town does not play it again. A lone morning still waiting is
-   * answered by the finale: it counts as seen, and new, so the handbook offers it.
+   * in piece order. What is taken leaves the queue, so the town does not play it again. A lone morning not seen yet is
+   * answered by the finale, queued or not (no return may have come between her choice, his ninth piece and the bottom;
+   * design §9.3.5): it counts as seen, and new, so the handbook offers it.
    */
   private finalePieces(gained: FragmentGain[]): SceneId[] {
     const story = this.state.story;
@@ -1242,9 +1247,9 @@ export class Game {
     const taken = new Set<SceneId>([...acts, ...confess, ...keeper]);
     story.queue = story.queue.filter((id) => !id.startsWith('mem:hero:') && !taken.has(id));
     for (const id of DEPARTURE_SCENES) {
-      if (!story.queue.includes(id)) continue;
       story.queue = story.queue.filter((q) => q !== id);
-      if (!story.seen.includes(id)) story.seen.push(id);
+      if (story.seen.includes(id)) continue;
+      story.seen.push(id);
       if (!story.fresh.includes(id)) story.fresh.push(id);
     }
     const filled = gained.flatMap((g) => (g.kind === 'piece' && g.id === 'hero' ? [memScene('hero', g.n)] : []));

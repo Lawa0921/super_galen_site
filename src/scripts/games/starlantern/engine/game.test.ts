@@ -3556,6 +3556,67 @@ describe('the finale', () => {
     expect(g.state.story.fresh).toContain('hero-alone');
   });
 
+  // Task 3 review (Important): a lone morning never queued, because no return came between her choice, his ninth piece
+  // and the finale, is answered by the finale all the same (design §9.3.5): seen, and new.
+  it('a single dive from depth 25 to the finale counts the lone morning as seen and new', () => {
+    const g = run(25, (x) => {
+      x.state.party.roster.hero.memories = 8;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives');
+      x.state.story.queue = [];
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(heroMemories(g)).toEqual(['mem:hero:9']);   // the top-up, waiting for a return that never comes
+    expect(g.state.story.queue).not.toContain('hero-alone');
+    for (let f = 25; f < FINALE_DEPTH; f++) expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: f + 1 });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).not.toContain('hero-alone');
+    expect(g.state.story.queue).not.toContain('hero-alone');
+    expect(g.state.story.seen).toContain('hero-alone');
+    expect(g.state.story.fresh).toContain('hero-alone');
+  });
+
+  it('departing right after the reveal: the finale plays the confession and the keeper, and counts the lone morning as seen and new', () => {
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal', 'mem:hero:9');
+      x.state.story.queue = ['rin-confess'];
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toEqual(['rin-confess', 'bellkeeper-arrives', 'mem:hero:10']);
+    expect(g.state.story.seen).toContain('hero-alone');
+    expect(g.state.story.fresh).toContain('hero-alone');
+    expect(g.state.story.queue).not.toContain('hero-alone');
+  });
+
+  // Task 3 review (minor): the keeper her confession queues inside the finale is the finale's own scene: it never waits in
+  // the queue, so leaving the ending early cannot leave him for the town after the festival.
+  it('the finale keeps the scenes it covers out of the queue, even if the ending is left early', () => {
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal', 'mem:hero:9');
+      x.state.story.queue = ['rin-confess'];
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.sceneDone('rin-confess', 'played')).toBe(true);
+    expect(g.state.story.queue).not.toContain('bellkeeper-arrives');
+    expect(g.sceneDone('bellkeeper-arrives', 'played')).toBe(true);   // still the finale's to play
+    const left = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal', 'mem:hero:9');
+      x.state.story.queue = ['rin-confess'];
+    });
+    stepOnto(left, left.map().boss!);
+    killAll(left);
+    left.sceneDone('rin-confess', 'played');
+    left.restartAfterClear();   // the ending left before the keeper played
+    expect(left.state.story.queue).not.toContain('bellkeeper-arrives');
+    expect(left.arrival).not.toContain('bellkeeper-arrives');
+  });
+
   it('a queued piece of someone else stays queued', () => {
     const g = run(FINALE_DEPTH, (x) => { x.state.story.queue.push('mem:rin:1'); });
     stepOnto(g, g.map().boss!);
@@ -3574,7 +3635,8 @@ describe('the finale', () => {
     expect(g.sceneDone('finale', 'played')).toBe(true);
     expect(g.sceneDone('mem:hero:8', 'played')).toBe(false);   // not one of hers
     expect(g.state.story.seen).toEqual(expect.arrayContaining(['mem:hero:9', 'mem:hero:10', 'finale']));
-    expect(g.state.story.fresh).toEqual(['mem:hero:10']);   // only the auto one reads as new
+    // only the auto one reads as new, and the lone morning the finale answered (Task 3 review: seen and new, queued or not)
+    expect(g.state.story.fresh).toEqual(['hero-alone', 'mem:hero:10']);
     g.restartAfterClear();
     expect([g.phase, g.finale, g.cleared]).toEqual(['town', null, null]);
     expect(g.sceneDone('finale', 'played')).toBe(false);
