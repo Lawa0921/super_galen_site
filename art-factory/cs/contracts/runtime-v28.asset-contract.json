@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_runtime_v28",
+  "status": "published-local",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "design_plan": "docs/superpowers/plans/2026-10-07-cs-runtime-v28.md",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "external_deployment_allowed": false,
+  "screens": [
+    {
+      "screen_id": "cs-armory",
+      "postprocess_profile": "hard_alpha_icon",
+      "source_mode": "studio render of existing published, licensed CC0 weapon GLBs; exclude view_hands",
+      "assets": [
+        "pistol",
+        "smg",
+        "rifle",
+        "sniper"
+      ],
+      "size": [
+        768,
+        384
+      ],
+      "alpha_policy": "Native Blender film transparency, no chroma key needed. Antialiased silhouette; no text or background.",
+      "source_registry": "art-factory/cs/manifests/asset_registry.json",
+      "runtime_pattern": "public/assets/games/cs/armory/{weapon}.webp",
+      "gates": [
+        "source hash and license lineage",
+        "dimensions",
+        "transparent border",
+        "nonempty unclipped silhouette",
+        "all four weapons recognisable",
+        "runtime hash and browser loading"
+      ]
+    },
+    {
+      "screen_id": "cs-old-quarter-market",
+      "postprocess_profile": "gltf_pbr",
+      "source_mode": "Existing published V26 baseline plus original Blender market with existing licensed CC0 PBR materials",
+      "source_sha256": "a54f2b3bff7896f8f54b17e2dbdf89a7c2a560066295e2d992dea42ac2d5d186",
+      "runtime_pattern": "public/assets/games/cs/environment.glb",
+      "alpha_policy": "Opaque scene; overhead awnings remain outside player clearance",
+      "map_source": "src/scripts/games/cs/map-data.json",
+      "gates": [
+        "14 exact visual collider bounds",
+        "V26 baseline geometry and ground preserved",
+        "spawn/site/flank navigation",
+        "world ray impacts",
+        "no more than 90000 triangles",
+        "no more than 32 primitives",
+        "no added texture images",
+        "actual gameplay views",
+        "25 exact stair and terrace solids",
+        "player radius and step support",
+        "AI elevated flank and plant",
+        "final compacted GLB reopen parity"
+      ]
+    }
+  ],
+  "forbidden": [
+    "unlicensed assets",
+    "rejected hand candidates",
+    "mockup crops",
+    "placeholder production art",
+    "baked localizable text",
+    "unbounded FX allocations"
+  ],
+  "run": "art-factory/cs/runs/run-20261007-v28-runtime",
+  "category": "environment_bundle",
+  "postprocess_profile": "opaque_background",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_background",
+    "candidate_profiles": [
+      "opaque_background"
+    ],
+    "confidence": "high",
+    "rationale": "Opaque original environment with licensed PBR; project glTF gates extend the opaque profile. Transparent thumbnails have their own contract.",
+    "clarifying_question": null
+  },
+  "armory_contract": "art-factory/cs/contracts/armory-v28.asset-contract.json",
+  "publication_scope": "local_repository",
+  "review": "art-factory/cs/runs/run-20261007-v28-runtime/qa/review.json"
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "cs-character-motion-source-v7-contract",
+  "asset_id": "browser-cs-motion-reference-v7",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "official-licensed-animation-data",
+  "postprocess_profile": "character_equipment_parts",
+  "source_page": "https://quaternius.com/packs/universalanimationlibrary.html",
+  "download_gateway": "https://quaternius.itch.io/universal-animation-library/purchase",
+  "source_license": "CC0-1.0 as declared by the official product page; preserve the downloaded license and original archive",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-motion-source",
+  "intended_use": "Inspect free Standard animations, then retarget suitable locomotion onto the existing 53-bone character. Do not replace the character, clothing, material style or weapon calibration with the source mannequin.",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "external_deployment_allowed": false,
+  "status": "official-source-inventoried-retarget-pending",
+  "gates": [
+    "Official download and archive hash",
+    "Actual free clip inventory and embedded license",
+    "Rest-axis/scale and bone mapping",
+    "Loop continuity and cadence at engine speeds",
+    "Planted-foot drift and ground contact",
+    "Rifle grip and muzzle alignment",
+    "Continuous motion visual review",
+    "Five-actor gameplay performance"
+  ]
+}

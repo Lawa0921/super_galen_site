@@ -1,0 +1,104 @@
+---
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import '@styles/_cs.scss';
+import { ARMORY, UTILITY, currency } from '../../scripts/games/cs/armory';
+import { GRENADES } from '../../scripts/games/cs/grenades';
+import { WEAPONS } from '../../scripts/games/cs/engine';
+---
+<BaseLayout title="Breach Point — 網頁版 CS | Dungeon Arcade" description="原創 3D 第一人稱戰術射擊。帶領電腦隊友，買槍、攻守爆破點，贏下四個回合。">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
+  <main id="cs-root" class="cs" data-phase="menu">
+    <canvas id="cs-canvas" aria-label="Breach Point 3D 對戰場景"></canvas>
+    <aside id="cs-candidate-notice" class="cs-candidate-notice" hidden>角色候選檢查 · 走跑循環已接入<br />接地、轉向與受擊動畫仍在調整</aside>
+    <div class="cs-scope" aria-hidden="true"></div>
+    <div class="cs-grain" aria-hidden="true"></div>
+    <section id="cs-menu" class="cs-menu">
+      <header class="cs-menu-top"><a href="/games">← DUNGEON ARCADE</a><span>TACTICAL SHOOTER <b>01 / SOLO</b></span></header>
+      <div class="cs-intro">
+        <p class="cs-eyebrow"><span></span> 突入行動 / 單人戰術射擊</p>
+        <h1>BREACH<br /><em>POINT.</em></h1>
+        <p class="cs-tagline">一個目標。每一發，都算數。</p>
+        <p class="cs-description">帶領小隊穿越舊城街區。控制交火角度，<br />搶下爆破點，或者守住最後一秒。</p>
+        <div class="cs-team-select" role="group" aria-label="選擇陣營">
+          <button data-team="attack" aria-pressed="true"><span>01 / ATTACK</span><strong>攻方</strong><small>安裝炸彈 · 突破防線</small></button>
+          <button data-team="defend" aria-pressed="false"><span>02 / DEFEND</span><strong>守方</strong><small>保護據點 · 拆除炸彈</small></button>
+        </div>
+        <button id="cs-start" class="cs-primary" disabled><span>進入行動</span><span aria-hidden="true">↗</span></button>
+        <div id="cs-loading" role="status">正在載入舊城街區與裝備…</div>
+        <div id="cs-load-error" role="alert" hidden><p id="cs-error-text">場景載入失敗，請重試。</p><button id="cs-retry">重新載入</button></div>
+        <p id="cs-device-notice">本作需要鍵盤與滑鼠。請使用桌面瀏覽器遊玩。</p>
+        <div class="cs-menu-options"><button id="cs-settings-open">設定 / SETTINGS</button><button id="cs-help-open">操作說明 / CONTROLS</button></div>
+      </div>
+      <aside class="cs-mission"><span class="cs-eyebrow">DEPLOYMENT BRIEF</span><h2>OLD <b>QUARTER</b></h2><p>舊城街區 / 日間</p><dl><div><dt>作戰規模</dt><dd>3 vs 3</dd></div><div><dt>任務</dt><dd>雙點爆破</dd></div><div><dt>勝利條件</dt><dd>先取 4 回合</dd></div></dl><p class="cs-mission-note">你 ＋ 2 名電腦隊友<br />對抗 3 名電腦敵人</p></aside>
+      <footer class="cs-menu-footer"><span>SUPERGALEN / FIELD OPERATIONS</span><span>原創 CS 風格遊戲 · 非 Valve 官方作品 · <a href="/assets/games/cs/character-credits.txt" target="_blank" rel="noopener">角色素材授權</a></span></footer>
+    </section>
+    <section id="cs-hud" class="cs-hud" aria-label="對戰狀態" hidden>
+      <div id="cs-allies" class="cs-allies" aria-hidden="true"></div>
+      <div class="cs-top-hud"><div class="cs-round"><span id="cs-team">攻方</span><small id="cs-round-number">ROUND 01</small></div><div class="cs-score"><b id="cs-score-attack">0</b><div><span id="cs-phase-label">準備階段</span><strong id="cs-timer">00:12</strong></div><b id="cs-score-defend">0</b></div><button id="cs-pause-open" aria-label="暫停遊戲">ESC / 暫停</button></div>
+      <div class="cs-radar"><canvas id="cs-radar" width="184" height="208" aria-label="戰術地圖：隊友位置與 A B 爆破點"></canvas><span>OLD QUARTER</span></div>
+      <div id="cs-feed" class="cs-feed" aria-live="polite"></div>
+      <div id="cs-objective" class="cs-objective">前往爆破點 A 或 B</div>
+      <div id="cs-crosshair" class="cs-crosshair" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div id="cs-hitmarker" class="cs-hitmarker" aria-hidden="true">×</div>
+      <div id="cs-hit-feedback" class="cs-hit-feedback"></div>
+      <div class="cs-damage-direction" aria-hidden="true"><i data-direction="front"></i><i data-direction="right"></i><i data-direction="back"></i><i data-direction="left"></i></div>
+      <div id="cs-damage" class="cs-damage" aria-hidden="true"></div>
+      <div id="cs-flash" class="cs-flash" aria-hidden="true"><canvas id="cs-afterimage" width="320" height="180"></canvas><i id="cs-flash-white"></i></div>
+      <div id="cs-action" class="cs-action" aria-live="polite"></div>
+      <section id="cs-death" class="cs-death" aria-label="死亡與觀戰" hidden>
+        <p class="cs-eyebrow">你已陣亡 / ELIMINATED</p>
+        <p id="cs-death-summary" role="status"></p>
+        <div class="cs-spectating"><button id="cs-spectate-prev" aria-label="上一位隊友">←</button><div><span>正在觀戰</span><strong id="cs-spectating-name" aria-live="polite"></strong><p id="cs-spectating-details"></p></div><button id="cs-spectate-next" aria-label="下一位隊友">→</button></div>
+        <p class="cs-spectate-hint">左右方向鍵切換隊友 · 下一回合重新出發</p>
+      </section>
+      <progress id="cs-interaction" max="1" value="0" hidden aria-label="裝彈或拆彈進度"></progress>
+      <div class="cs-bottom-hud"><div class="cs-vitals"><span>生命 <b id="cs-health">100</b></span><span>護甲 <b id="cs-armor">0</b></span><strong id="cs-money">$2400</strong></div><p class="cs-key-hint">WASD 移動 · CTRL 蹲下 · R 換彈 · 4／滾輪 投擲物 · E 互動 · B 購買 · TAB 計分板</p><div class="cs-weapon"><div id="cs-utility" class="cs-utility" role="list" aria-label="投擲物">{UTILITY.map(item => <span role="listitem" data-grenade={item.id} data-count="0" title={GRENADES[item.id].name}><img src={`/assets/games/cs/hud/${item.id}.webp`} width="34" height="34" alt={GRENADES[item.id].name} /><b id={`cs-utility-${item.id}`}>0</b></span>)}</div><span id="cs-weapon-name">P9 手槍</span><div><b id="cs-ammo">12</b><span>/ <span id="cs-reserve">60</span></span></div></div></div>
+    </section>
+    <section id="cs-shop" class="cs-overlay" aria-label="購買裝備" hidden>
+      <div class="cs-panel cs-shop-panel">
+        <header class="cs-armory-header">
+          <div><p class="cs-eyebrow">FIELD ARMORY / 回合整備</p><h2>選擇你的<span>突破方式。</span></h2><p>一次裝備一把武器 · 購買立即扣款，不退回舊槍費用</p></div>
+          <div class="cs-armory-budget"><span>可用資金</span><strong id="cs-shop-money">$2,400</strong><small>整備時間 <b id="cs-shop-timer">12</b>s</small></div>
+        </header>
+        <div class="cs-armory-heading"><span>01 / 武器</span><span>單發傷害為未計護甲的基礎值</span></div>
+        <div class="cs-shop-grid">
+          {ARMORY.map(item => { const weapon=WEAPONS[item.id]; return (
+            <button class="cs-weapon-card" data-buy={item.id} aria-describedby={`cs-offer-${item.id}`}>
+              <span class="cs-card-category">{item.code} / {item.category}</span>
+              <span class="cs-card-photo"><img src={`/assets/games/cs/armory/${item.id}.webp`} width="768" height="384" alt="" decoding="async" /></span>
+              <span class="cs-card-title"><strong>{weapon.name}</strong><b>{weapon.price ? currency(weapon.price) : '免費'}</b></span>
+              <span class="cs-card-role">{item.role}</span>
+              <span class="cs-card-stats"><span>單發傷害 <b>{weapon.damage}</b></span><span>彈匣 <b>{weapon.magazine}</b></span><span>換彈 <b>{weapon.reload}s</b></span></span>
+              <span class="cs-card-offer" id={`cs-offer-${item.id}`} data-offer={item.id}>選擇裝備</span>
+            </button>
+          ); })}
+        </div>
+        <div class="cs-armory-support">
+          <div><span class="cs-eyebrow">02 / PROTECTION</span><h3>戰術護甲</h3><p>補滿至 100 · 吸收部分命中傷害</p></div>
+          <button data-buy="armor" aria-describedby="cs-offer-armor"><strong>購買護甲 <b>$650</b></strong><span id="cs-offer-armor" data-offer="armor">選擇裝備</span></button>
+        </div>
+        <div class="cs-armory-heading"><span>03 / 投擲物</span><span>HE 與煙霧各 1、閃光 2 · 存活保留到下回合，陣亡遺失</span></div>
+        <div class="cs-utility-grid">
+          {UTILITY.map(item => { const grenade = GRENADES[item.id]; return (
+            <button class="cs-utility-card" data-buy={item.id} aria-describedby={`cs-offer-${item.id}`}>
+              <img src={`/assets/games/cs/hud/${item.id}.webp`} width="64" height="64" alt="" decoding="async" />
+              <span class="cs-utility-text"><span class="cs-card-category">{item.category}</span><strong>{grenade.name} <b>{currency(grenade.price)}</b></strong><span class="cs-card-role">{item.role}</span></span>
+              <span class="cs-card-offer" id={`cs-offer-${item.id}`} data-offer={item.id}>選擇裝備</span>
+            </button>
+          ); })}
+        </div>
+        <footer class="cs-armory-footer">
+          <div><span>目前配置</span><strong id="cs-shop-loadout">P9 手槍 · 無護甲</strong><p id="cs-shop-status" role="status">點選武器即可裝備。陣亡後，下回合恢復手槍。</p></div>
+          <button id="cs-deploy" class="cs-primary"><span>開始行動</span><span aria-hidden="true">→</span></button>
+        </footer>
+      </div>
+    </section>
+    <section id="cs-pause" class="cs-overlay" hidden><div class="cs-panel cs-pause-panel"><p class="cs-eyebrow">OPERATION ON HOLD</p><h2>喘口氣。<br /><span>戰場等你回來。</span></h2><p id="cs-pause-reason">單人遊戲已暫停。</p><button id="cs-resume" class="cs-primary">繼續行動 →</button><button id="cs-pause-settings" class="cs-secondary">調整設定</button><button id="cs-quit" class="cs-secondary">返回主選單</button><a href="/games">離開至遊戲室 ↗</a></div></section>
+    <section id="cs-result" class="cs-overlay cs-result" hidden><div class="cs-panel"><p id="cs-result-eyebrow" class="cs-eyebrow">ROUND COMPLETE</p><h2 id="cs-result-title">回合結束</h2><p id="cs-result-reason"></p><div id="cs-result-score" class="cs-result-score"></div><p id="cs-next-round"></p><button id="cs-restart" class="cs-primary" hidden>再來一場 →</button><button id="cs-result-menu" class="cs-secondary" hidden>返回主選單</button></div></section>
+    <section id="cs-scoreboard" class="cs-overlay cs-scoreboard" hidden><div class="cs-panel"><p class="cs-eyebrow">SQUAD REPORT / 按住 TAB</p><h2>作戰紀錄</h2><table><thead><tr><th>隊員</th><th>陣營</th><th>擊殺</th><th>陣亡</th><th>狀態</th></tr></thead><tbody id="cs-score-rows"></tbody></table></div></section>
+    <dialog id="cs-settings" class="cs-dialog"><form method="dialog"><button class="cs-dialog-close" aria-label="關閉設定">×</button><p class="cs-eyebrow">PREFERENCES</p><h2>操作設定</h2><label>滑鼠靈敏度 <input id="cs-sensitivity" type="range" min="0.3" max="2.5" value="1" step="0.1" /></label><label>音效音量 <input id="cs-volume" type="range" min="0" max="1" value="0.6" step="0.05" /></label><label>畫面品質 <select id="cs-quality"><option value="high">高 · 動態陰影</option><option value="low">低 · 效能優先</option></select></label><p>設定會儲存在這個瀏覽器。</p><button class="cs-primary">完成</button></form></dialog>
+    <dialog id="cs-help" class="cs-dialog"><form method="dialog"><button class="cs-dialog-close" aria-label="關閉說明">×</button><p class="cs-eyebrow">FIELD MANUAL</p><h2>如何遊玩</h2><dl class="cs-controls"><div><dt>W A S D</dt><dd>前後左右移動</dd></div><div><dt>滑鼠 / 左鍵</dt><dd>瞄準 / 射擊</dd></div><div><dt>右鍵</dt><dd>穩定瞄準 / 狙擊開鏡</dd></div><div><dt>R / Shift / Space</dt><dd>換彈 / 慢走 / 跳躍</dd></div><div><dt>按住左 Ctrl</dt><dd>蹲下：更準、更矮、移動較慢</dd></div><div><dt>E 持續按住</dt><dd>安裝 3 秒 / 拆彈 5 秒</dd></div><div><dt>B / Tab / Esc</dt><dd>購買 / 計分板 / 暫停</dd></div><div><dt>4 / 滾輪 · 1</dt><dd>切換投擲物 / 回到槍</dd></div><div><dt>投擲物：左鍵 / 右鍵</dt><dd>按住拉環，放開遠投 / 近拋；同按為中距</dd></div></dl><p>攻方攜帶炸彈前往 A 或 B，站定按住 E。炸彈安裝 35 秒後爆炸。守方要在爆炸前拆除；移動會中斷互動。陣亡後觀戰，下一回合重新出發。先拿 4 回合的隊伍獲勝。</p><button class="cs-primary">準備好了</button></form></dialog>
+  </main>
+  <script>import { boot } from '../../scripts/games/cs/client'; boot();</script>
+</BaseLayout>

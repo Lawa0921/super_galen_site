@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Dungeon Arcade — Dungeon Bomber', () => {
   test('solo page loads, inits engine, and responds to input', async ({ page, browserName, isMobile }) => {
-    test.skip(browserName !== 'chromium' || isMobile, 'Keyboard gameplay smoke runs on desktop Chromium only');
+    test.skip(browserName !== 'chromium', 'WebGL Pixi game smoke runs on chromium only');
 
     // 1. 收集 console errors
     const consoleErrors: string[] = [];
@@ -16,6 +16,14 @@ test.describe('Dungeon Arcade — Dungeon Bomber', () => {
 
     // 導向 solo 模式（繞過模式選單）
     await page.goto('/games/bomber?mode=solo');
+    if (isMobile) {
+      await expect(page.locator('#touch-notice')).toBeVisible();
+      await expect(page.locator('#mode-select')).toHaveCount(0);
+      await page.locator('.touch-notice-back').click();
+      await expect(page).toHaveURL(/\/games\/?$/);
+      expect(consoleErrors).toHaveLength(0);
+      return;
+    }
     await expect(page.locator('#bomber-canvas')).toBeVisible();
 
     // 2. 等待 Pixi 初始化 + __bomberDebug hook 掛上（最多 20s）

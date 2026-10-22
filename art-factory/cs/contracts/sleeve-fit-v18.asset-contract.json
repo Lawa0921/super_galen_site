@@ -1,0 +1,27 @@
+{
+  "schema": "cs-sleeve-fit-v18",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "parent_contract": "art-factory/cs/contracts/head-frame-v17.asset-contract.json",
+  "source_contract": "art-factory/cs/contracts/character-source-v7.asset-contract.json",
+  "screen_id": "cs-first-person-rifle",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "source_mode": "existing_licensed_human_authored_clothing_adaptation",
+  "status": "fit-improved-still-rejected",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "design": "Adapt existing recorded MakeHuman jacket mesh to the FPS armature rest space using explicit semantic shoulder/upperarm/forearm correspondence. Preserve authored cloth topology/UV/material provenance, avoid placeholder tube caps, and leave existing skin and rifle unchanged. Candidate only; source color/fit/PBR and final camera remain unapproved.",
+  "gates": [
+    "inspect actual saved source clothing, rig, weights and packed texture availability",
+    "explicit coordinate/bone mapping and deterministic deformation helper with RED/GREEN tests",
+    "preserve original input files and original FPS skin/rig/gun",
+    "record each original cloth face/UV and normalized mapped weights",
+    "render complete shoulder and first-person hip/ADS/reload to inspect fit, skin intersections and cuffs",
+    "do not claim source uniform color, incomplete PBR or unreviewed fit is final tactical art"
+  ],
+  "lifecycle_status": "qa_failed",
+  "scene": "art-factory/cs/runs/run-20261007-v18-sleeve-fit/raw/study3-preserved-anchor.blend",
+  "review": "art-factory/cs/runs/run-20261007-v18-sleeve-fit/qa/study3-preserved-anchor/review.json",
+  "next": "Retain source garment and actual-FPS skin-surface mapping as authoring tools. Freeze study3 as rejected evidence. Next make one coherent sleeve-only corrective shape for residual hip/ADS left-elbow breakthrough, cuff rings and shoulder volume, using current source topology and measured posed surfaces, not scalar/angle grids, camera changes or skin masks. Maintain centered ADS and readable hip/reload, then recheck six original views and crossings. Tactical materials/gloves, hand/rifle contacts, stock proportions, continuous animation, runtime integration and sustained performance remain unfinished."
+}

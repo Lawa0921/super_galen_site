@@ -1,0 +1,75 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "breach-point-old-quarter-v3",
+  "category": "3d_game_assets",
+  "source_mode": "original-blender-environment-character-and-licensed-cc0-weapons",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "opaque_background",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_background",
+    "candidate_profiles": [
+      "opaque_background"
+    ],
+    "confidence": "high",
+    "rationale": "Opaque authored 3D geometry with offline CC0 texture maps; no 2D UI cutout or chroma key.",
+    "clarifying_question": null
+  },
+  "source_review": {
+    "user_direction": "CS2／CS:GO：寫實建築、材質與槍械",
+    "modeling": "Existing user authorization to use their 3D modeling software remains in force.",
+    "textures": "Five Poly Haven CC0 sources reviewed against official asset pages and license; original maps, hashes and URLs retained in texture-sources.json.",
+    "license_url": "https://polyhaven.com/license",
+    "weapons": {
+      "author": "3DModelsCC0 / nisu",
+      "license": "CC0",
+      "source_pages": [
+        "https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack",
+        "https://opengameart.org/content/m4a1-assault-rifle"
+      ]
+    }
+  },
+  "screen_ids": [
+    "first-person-combat",
+    "world-actors",
+    "map-overview"
+  ],
+  "visual_targets": [
+    "Sand-colored old-town architecture with enclosed streets, doors, balconies, awnings and distinct A/B landmarks",
+    "PBR color, normal and roughness on major wall/ground/wood/metal surfaces, at least 256 pixels per meter",
+    "Human-proportioned 1.8m soldiers with restrained tactical colors and limited team patches",
+    "Recognizable pistol/SMG/carbine/sniper silhouettes and anatomically plausible gloved first-person hands",
+    "Readable directional shadows, cool sky fill, contact shading and preserved sky detail"
+  ],
+  "geometry_contract": "Y-up GLB, ground XZ, forward -Z; collision geometry must agree with map-data.json; decorative detail must remain outside walkable clearances.",
+  "performance_targets": {
+    "environment_draw_calls_max": 140,
+    "environment_triangles_max": 250000,
+    "total_runtime_bytes_max": 28000000
+  },
+  "alpha_policy": "Opaque 3D materials, alpha only if needed for a specifically recorded fence/cloth asset.",
+  "forbidden_content": [
+    "Valve asset extraction",
+    "third_party_logo",
+    "flat-untextured-placeholder-surfaces",
+    "block-character-proportions",
+    "unregistered-runtime-assets"
+  ],
+  "qa_gates": [
+    "source_license_and_hash",
+    "glb_header",
+    "pbr_maps_present",
+    "collision_matches_map",
+    "character_bounds",
+    "view_hands_isolation",
+    "three_gameplay_camera_reviews",
+    "runtime_frame_budget"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "functional_hud_exception": "The scope aperture and reticle are CSS geometry aligned to the camera ray, not a generated art asset. No localizable text is baked into the scope or card.",
+  "publication_scope": "local_repository",
+  "external_deployment_allowed": false,
+  "bundle_qa": "art-factory/cs/runs/run-20261003-v3-environment/qa/bundle-integrity.json"
+}

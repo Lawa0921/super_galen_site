@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_rifle_model_detail_v30",
+  "status": "published-local",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "category": "character_equipment_parts",
+  "postprocess_profile": "character_equipment_parts",
+  "mode_inference_decision": {
+    "selected_profile": "character_equipment_parts",
+    "confidence": "high",
+    "rationale": "Refine the approved CC0 anatomical mesh and licensed PBR surfaces as authored 3D glove and garment geometry.",
+    "clarifying_question": null
+  },
+  "screen_id": "cs-first-person-rifle",
+  "screen_breakdown": {
+    "views": [
+      "right-grip",
+      "left-fingers",
+      "cuffs",
+      "hip",
+      "ads",
+      "reload-grip",
+      "reload-magazine",
+      "reload-chamber"
+    ],
+    "parts": [
+      "anatomical fingers",
+      "glove back panels",
+      "overlapping sleeve cuff",
+      "garment volume and compression folds"
+    ],
+    "generation_order": [
+      "inspect source topology",
+      "author detailed candidate",
+      "closeup review",
+      "native assembly",
+      "performance and publication"
+    ]
+  },
+  "source_mode": "Existing verified CC0 para/MakeHuman anatomical mesh and Poly Haven leather/fabric maps; original Blender garment tailoring and derived surface construction.",
+  "sources": [
+    "art-factory/cs/contracts/fps-arms-v29.asset-contract.json",
+    "art-factory/cs/runs/run-20261007-v29-fps-arms/candidate/material-c/rifle-finished.blend",
+    "art-factory/cs/runs/run-20261007-v29-fps-arms/raw/rifle-v5.glb"
+  ],
+  "target": "public/assets/games/cs/rifle.glb",
+  "source_blend": "art-factory/cs/runs/run-20261007-v29-fps-arms/candidate/material-c/rifle-finished.blend",
+  "source_blend_sha256": "408341003a75f6aa2451712b540668d6e1645d11f5c3ad218687cadb837ce976",
+  "toolchain": {
+    "gltf_transform_version": "4.5.1",
+    "package": "art-factory/cs/tooling/gltf-transform/package.json",
+    "lockfile": "art-factory/cs/tooling/gltf-transform/package-lock.json",
+    "install": "npm ci --prefix art-factory/cs/tooling/gltf-transform --ignore-scripts --no-audit --no-fund"
+  },
+  "budget": {
+    "triangles_max": 48000,
+    "primitives_max": 5,
+    "new_textures": 0,
+    "bundle_bytes_max": 28000000
+  },
+  "qa_gates": [
+    "original gun arrays images and anchors exact",
+    "palm anchors and camera framing retained",
+    "smooth finger silhouette with readable joints",
+    "no visible contact penetration or floating fingers",
+    "cuff overlap and garment folds visible in native framing",
+    "no open sleeve cut in reload",
+    "valid normals UVs bounds and finite coordinates",
+    "no new textures or draw primitives",
+    "independent closeup and browser review",
+    "native high/low sustained sample and CS regressions"
+  ],
+  "alpha_policy": "Opaque 3D PBR. No chroma key or texture-generated anatomy.",
+  "forbidden": [
+    "placeholder hands or glove pads",
+    "painting model details onto screenshot",
+    "unverified source models",
+    "uniform mesh subdivision as the only improvement",
+    "unbounded runtime geometry or material counts"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "external_deployment_allowed": false,
+  "publication_scope": "local_repository",
+  "review": "art-factory/cs/runs/run-20261007-v30-model-detail/qa/review.json"
+}

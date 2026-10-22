@@ -1,0 +1,24 @@
+{
+  "schema": "cs-cloth-corrective-v19",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "parent_contract": "art-factory/cs/contracts/sleeve-fit-v18.asset-contract.json",
+  "screen_id": "cs-first-person-rifle",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "source_mode": "licensed_garment_corrective_shape",
+  "status": "rejected-shared-rest-corrective-route",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "design": "Derive a cloth-only rest-space corrective from actual saved linear-skinning maps and hip/ADS/reload crossing segment endpoints/midpoints. Couple adjacent vertex displacements with an edge Laplacian energy, lambda4, crossing seed plus2rings inside original arm-influenced domain, all other vertices fixed. Preserve garment weights, source topology/UV/materials, FPS skin/rig/gun and camera. 1.5mm local witness clearance, maximum .5raw total rest move, at most3 correspondence updates from original rest; reject infeasible/excess move/oscillation. No finger/camera/scalar parameter grids or skin masks.",
+  "gates": [
+    "linear-skinning affine maps reproduce actual Blender cloth vertices in all three poses before correction",
+    "minimum-displacement halfspace solver has success, boundary, dependent and infeasible regression tests",
+    "source and candidate geometry changes bounded and reported, without treating local normal constraints as solid containment",
+    "actual evaluated cloth/skin crossings and six original renders independently reviewed",
+    "rescue-source color/PBR, cuff/shoulder naturalness, continuous animation and runtime performance remain separate unproven gates"
+  ],
+  "lifecycle_status": "qa_failed",
+  "review": "art-factory/cs/runs/run-20261007-v19-cloth-corrective/qa/study2-round1-review/review.json",
+  "next": "Close shared-rest QP/correspondence route; do not tune lambda, raise displacement limit or repeat plane grids. Use untouched V18 study3 as Basis. Next author two left-elbow-only pose-specific shape keys, hip_left_elbow and ads_left_elbow, with fixed boundary/falloff; reload Basis. Freeze bones/weights/skin/gun/camera/UV/materials. Require zero new orientation reversals, degenerates and slivers, edge-ratio<=2 with p95 reported, and max rest move<=.5raw. Review same six views, actual left-elbow ROI crossings, and fixed50% hip-ADS and hip-reload intermediate states. If this fails, move to sleeve-only retopology and same-side weight transfer; do not remake full rig without evidence. Cuffs, shoulder volume, gloves/PBR, hand/gun contacts, stock proportions, continuous animation, map/lighting and sustained runtime performance remain unfinished."
+}

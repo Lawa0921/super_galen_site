@@ -1,0 +1,24 @@
+{
+  "asset_id": "browser-cs-grip-reach-v7",
+  "status": "measured-fixed-palm-gaps-support-anchor-study-next",
+  "screen_id": "cs-third-person-character",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-grip-reach",
+  "source_mode": "Read-only measurement of previously licensed skinned character, rifle and frozen failed hand-wrap calibrations",
+  "mode_inference_decision": "Diagnostic measurement and browser overlay, no production art generation",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "requirements": [
+    "Do not alter or rerun sealed hand-wrap or hand-entry experiments",
+    "Measure source-start and frozen hand-wrap candidate once each; no angle optimization or candidate export",
+    "After the frozen-pose diagnosis, measure exactly four predefined corners: all four long fingers at MCP20/65 by PIP10/70 degrees, DIP=min(45,0.75PIP), preserving each wrap splay. These are rejected-or-unapproved diagnostic poses, never new fit seeds or a feasibility proof",
+    "Report geometric distance in metres and normal opposition in degrees separately; no score used as distance",
+    "Use reviewed long-finger face IDs and actual deformed triangles; preserve IDs, unique-vertex counts and nearest weapon surface evidence",
+    "Measure wrist, palm support point, bone origins, segment lengths and patch centroids in world and weapon-local frames",
+    "Record fixed weapon and right hand invariants; retain mesh/UV/weights and runtime hashes",
+    "Treat nearest authored surface queries and dominant-weight region selection as limited evidence, not containment or feasibility proof",
+    "Independently review measured direction before authorizing any structurally different pose experiment"
+  ],
+  "assembly_human_review": "not-ready-diagnostic-only"
+}

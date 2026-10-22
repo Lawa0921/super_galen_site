@@ -1,0 +1,198 @@
+{
+  "label": "codex-v1",
+  "views": [
+    {
+      "quality": "high",
+      "name": "smoke-near-5m",
+      "setup": "smoke:4:11",
+      "time": 4,
+      "smokes": 1,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "high",
+      "name": "smoke-mid-12m",
+      "setup": "smoke:4:11",
+      "time": 4,
+      "smokes": 1,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "high",
+      "name": "smoke-wall",
+      "setup": "smoke:2.6:12.5",
+      "time": 4,
+      "smokes": 1,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "high",
+      "name": "smoke-inside",
+      "setup": "smoke:4:11",
+      "time": 4,
+      "smokes": 1,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "high",
+      "name": "smoke-fading",
+      "setup": "smoke:4:11",
+      "time": 17.2,
+      "smokes": 1,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "high",
+      "name": "he-0.03s",
+      "setup": "he:4:17",
+      "time": 1.65,
+      "smokes": 0,
+      "blasts": [
+        "he@1.62"
+      ],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "high",
+      "name": "he-0.12s",
+      "setup": "he:4:17",
+      "time": 1.75,
+      "smokes": 0,
+      "blasts": [
+        "he@1.62"
+      ],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "high",
+      "name": "he-0.7s",
+      "setup": "he:4:17",
+      "time": 2.333,
+      "smokes": 0,
+      "blasts": [
+        "he@1.62"
+      ],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "high",
+      "name": "he-3s",
+      "setup": "he:4:17",
+      "time": 4.633,
+      "smokes": 0,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "low",
+      "name": "smoke-near-5m",
+      "setup": "smoke:4:11",
+      "time": 4,
+      "smokes": 1,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "low",
+      "name": "smoke-mid-12m",
+      "setup": "smoke:4:11",
+      "time": 4,
+      "smokes": 1,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "low",
+      "name": "smoke-wall",
+      "setup": "smoke:2.6:12.5",
+      "time": 4,
+      "smokes": 1,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "low",
+      "name": "smoke-inside",
+      "setup": "smoke:4:11",
+      "time": 4,
+      "smokes": 1,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "low",
+      "name": "smoke-fading",
+      "setup": "smoke:4:11",
+      "time": 17.2,
+      "smokes": 1,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "low",
+      "name": "he-0.03s",
+      "setup": "he:4:17",
+      "time": 1.65,
+      "smokes": 0,
+      "blasts": [
+        "he@1.62"
+      ],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "low",
+      "name": "he-0.12s",
+      "setup": "he:4:17",
+      "time": 1.75,
+      "smokes": 0,
+      "blasts": [
+        "he@1.62"
+      ],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "low",
+      "name": "he-0.7s",
+      "setup": "he:4:17",
+      "time": 2.333,
+      "smokes": 0,
+      "blasts": [
+        "he@1.62"
+      ],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "low",
+      "name": "he-3s",
+      "setup": "he:4:17",
+      "time": 4.633,
+      "smokes": 0,
+      "blasts": [],
+      "calls": 6,
+      "triangles": 43881
+    }
+  ],
+  "errors": []
+}

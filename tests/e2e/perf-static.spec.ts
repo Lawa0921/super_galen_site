@@ -79,6 +79,58 @@ test.describe('靜態頁面效能守則', () => {
     expect(gsapTags).toBe(0);
   });
 
+  test('BaseLayout theme restores the saved preference before the game menu appears', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.addInitScript(() => localStorage.setItem('theme', 'light'));
+    await page.goto('/games/cs', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await expect(page.locator('#cs-start')).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  for (const denial of ['read', 'access'] as const) {
+    test(`BaseLayout theme falls back without a page error when storage ${denial} is denied`, async ({ page }) => {
+      const errors: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.addInitScript(mode => {
+        const deny = () => { throw new DOMException('Theme storage denied', 'SecurityError'); };
+        if (mode === 'access') Object.defineProperty(window, 'localStorage', { get: deny });
+        else Storage.prototype.getItem = deny;
+      }, denial);
+      await page.goto('/games/cs', { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+      await expect(page.locator('#cs-start')).toBeVisible();
+      expect(errors).toEqual([]);
+    });
+  }
+
+  for (const route of ['/', '/journal/']) {
+    test(`shared theme restores the saved preference on ${route}`, async ({ page }) => {
+      const errors: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.addInitScript(() => localStorage.setItem('theme', 'light'));
+      await page.goto(route);
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+      expect(errors).toEqual([]);
+    });
+
+    test(`shared theme handles denied preference reads on ${route}`, async ({ page }) => {
+      const errors: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.addInitScript(() => {
+        const getItem = Storage.prototype.getItem;
+        Storage.prototype.getItem = function(key: string) {
+          if (key === 'theme') throw new DOMException('Theme storage denied', 'SecurityError');
+          return getItem.call(this, key);
+        };
+      });
+      await page.goto(route);
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+      expect(errors).toEqual([]);
+    });
+  }
+
   test('favicon 應為輕量檔案', async ({ page }) => {
     await page.goto('/en/');
     const size: number = await page.evaluate(async () => {
@@ -131,8 +183,9 @@ test.describe('journal / guild 列表頁腳本瘦身', () => {
     await page.waitForLoadState('domcontentloaded');
     await assertNoBannedScripts(page);
 
-    if (page.viewportSize()!.width <= 1024) {
-      await page.locator('#mobile-menu-toggle').click();
+    // 行動版會把共用控制移入選單，先走使用者可操作的展開流程。
+    if (await page.locator('#mobile-menu-toggle').isVisible()) {
+      await page.click('#mobile-menu-toggle');
       await expect(page.locator('#mobile-menu')).toBeVisible();
     }
 

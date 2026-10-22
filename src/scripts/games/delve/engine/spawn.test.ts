@@ -1,0 +1,187 @@
+// spawn.test.ts — 棲地判定、生成表、生成點
+import { describe, it, expect } from 'vitest';
+import { World, BIOME } from './world';
+import { T, W } from './tiles';
+import { LIQ } from './liquidKind';
+import { Rng } from './rng';
+import { habitatAt, spawnTable, pickEntry, findSpot, spawnCap, spawnChance, spawnInterval, isFirstNight, inHouse, SPAWN_INTERVAL, NEAR_SPAWN_TILES, type Habitat } from './spawn';
+import { DAY_LENGTH } from './constants';
+import { NATURAL_KINDS } from './enemies';
+import { TILE_SIZE as S } from './constants';
+
+function world(): { w: World } {
+  const w = new World(80, 120);
+  for (let x = 0; x < 80; x++) w.surface[x] = 20;
+  for (let y = 20; y < 120; y++) for (let x = 0; x < 80; x++) w.setFg(x, y, T.STONE);
+  w.layers = { rock: new Int16Array(80).fill(40), deep: new Int16Array(80).fill(60), molten: new Int16Array(80).fill(100) };
+  return { w };
+}
+const kinds = (h: Habitat): string[] => spawnTable(h).map((e) => e.kind);
+
+describe('棲地', () => {
+  it('地表 / 地下 / 洞穴層 / 熔岩深淵 / 地城 / 菇林', () => {
+    const { w } = world();
+    const src = { world: w, night: false };
+    expect(habitatAt(src, 10, 18).zone).toBe('surface');
+    expect(habitatAt(src, 10, 40).zone).toBe('underground');
+    expect(habitatAt(src, 10, 70).zone).toBe('cavern');
+    expect(habitatAt(src, 10, 105).zone).toBe('molten');
+    w.setWall(30, 40, W.DUNGEON_WALL_GREEN);
+    expect(habitatAt(src, 30, 40).zone).toBe('dungeon');
+    w.setFg(50, 41, T.MUSHROOM_GRASS);
+    expect(habitatAt(src, 50, 40).mushroom).toBe(true);
+  });
+  it('生成表依棲地 / 生態區 / 晝夜不同', () => {
+    const base: Habitat = { zone: 'surface', biome: BIOME.FOREST, mushroom: false, night: false };
+    expect(kinds(base)).toEqual(['gel_blob']);
+    expect(kinds({ ...base, night: true })).toContain('night_walker');
+    expect(kinds({ ...base, night: true })).toContain('dusk_owl');
+    expect(kinds({ ...base, biome: BIOME.SNOW })).toContain('frost_blob');
+    expect(kinds({ ...base, biome: BIOME.SNOW, night: true })).toContain('frost_wolf');
+    expect(kinds({ ...base, biome: BIOME.DESERT })).toContain('sand_scorpion');
+    expect(kinds({ ...base, biome: BIOME.JUNGLE })).toContain('thorn_hornet');
+    expect(kinds({ ...base, zone: 'underground', biome: BIOME.JUNGLE })).toContain('snap_vine');
+    expect(kinds({ ...base, zone: 'cavern' })).toEqual(expect.arrayContaining(['cave_bat', 'rock_crab']));
+    expect(kinds({ ...base, zone: 'cavern', mushroom: true })).toContain('spore_walker');
+    expect(kinds({ ...base, zone: 'dungeon' })).toEqual(['bone_knight', 'cursed_skull']);
+    expect(kinds({ ...base, zone: 'molten' })).toEqual(['ember_imp', 'magma_bat']);
+    expect(spawnCap({ ...base, night: true })).toBeGreaterThan(spawnCap(base));
+  });
+  it('每種一般怪物都出現在某個生成表裡', () => {
+    const all = new Set<string>();
+    for (const zone of ['surface', 'underground', 'cavern', 'molten', 'dungeon'] as const) {
+      for (const biome of [0, 1, 2, 3]) for (const night of [false, true]) for (const mushroom of [false, true]) for (const water of [false, true]) {
+        for (const k of kinds({ zone, biome, night, mushroom, water })) all.add(k);
+      }
+    }
+    for (const k of NATURAL_KINDS) expect(all.has(k), k).toBe(true);
+  });
+  it('pickEntry 依權重', () => {
+    const r = new Rng('w');
+    const t = [{ kind: 'gel_blob' as const, weight: 9 }, { kind: 'cave_bat' as const, weight: 1 }];
+    let n = 0;
+    for (let i = 0; i < 2000; i++) if (pickEntry(t, r)!.kind === 'gel_blob') n++;
+    expect(n / 2000).toBeGreaterThan(0.85);
+  });
+});
+
+describe('棲地：世界的每欄深度層（world.layersAt）', () => {
+  /** 舊介面（HabitatSource 帶 layers 陣列）的參考實作：中央的結果必須逐點相同 */
+  function oldHabitat(w: World, layers: { deep: Int16Array; molten: Int16Array }, night: boolean, x: number, y: number): Habitat {
+    const cx = Math.max(0, Math.min(w.width - 1, x));
+    const biome = w.biomeAt(cx);
+    let mushroom = false;
+    for (let yy = y - 2; yy <= y + 4 && !mushroom; yy++) for (let xx = x - 3; xx <= x + 3; xx++) if (w.getFg(xx, yy) === T.MUSHROOM_GRASS) { mushroom = true; break; }
+    let zone: Habitat['zone'];
+    if (w.getWall(x, y) >= W.DUNGEON_WALL_BLUE && w.getWall(x, y) <= W.DUNGEON_WALL_PINK) zone = 'dungeon';
+    else if (y >= layers.molten[cx]) zone = 'molten';
+    else if (y >= layers.deep[cx]) zone = 'cavern';
+    else if (y <= w.surfaceAt(cx) + 6) zone = 'surface';
+    else zone = 'underground';
+    let water = false;
+    for (let yy = y - 4; yy <= y + 4 && !water; yy++) water = w.getLiquidType(x, yy) === LIQ.WATER && w.getLiquid(x, yy) >= 200;
+    return { zone, biome, mushroom, night, water };
+  }
+  it('habitatAt({ world, night }) 在中央與舊介面逐點相同（同一個世界、50 個點）', () => {
+    const w = new World(80, 120);
+    const rock = new Int16Array(80), deep = new Int16Array(80), molten = new Int16Array(80);
+    for (let x = 0; x < 80; x++) {
+      w.surface[x] = 18 + (x % 7); w.biome[x] = x % 4;
+      rock[x] = 35 + (x % 5); deep[x] = 55 + ((x * 3) % 11); molten[x] = 95 + ((x * 5) % 13);
+      for (let y = w.surface[x]; y < 120; y++) w.setFg(x, y, T.STONE);
+    }
+    w.layers = { rock, deep, molten };
+    for (let x = 30; x < 36; x++) for (let y = 40; y < 46; y++) { w.setFg(x, y, T.AIR); w.setWall(x, y, W.DUNGEON_WALL_GREEN); }
+    for (let x = 50; x < 56; x++) w.setFg(x, 70, T.MUSHROOM_GRASS);
+    for (let x = 10; x < 16; x++) for (let y = 60; y < 66; y++) { w.setFg(x, y, T.AIR); w.setLiquid(x, y, 255, LIQ.WATER); }
+    let s = 7;
+    const rnd = (n: number): number => { s = (Math.imul(s, 1103515245) + 12345) >>> 0; return (s >>> 8) % n; };
+    const zones = new Set<string>();
+    for (let k = 0; k < 50; k++) {
+      const x = rnd(80), y = rnd(120), night = k % 2 === 1;
+      const want = oldHabitat(w, { deep, molten }, night, x, y);
+      expect(habitatAt({ world: w, night }, x, y), `(${x}, ${y})`).toEqual(want);
+      zones.add(want.zone);
+    }
+    expect(zones.size).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('生成點', () => {
+  it('地面型找得到站立點（腳下實心、身體所在是空的）；飛行型要空中；植物要貼著方塊', () => {
+    const { w } = world();
+    // 洞：x 10..20、y 30..35
+    for (let y = 30; y <= 35; y++) for (let x = 10; x <= 20; x++) w.setFg(x, y, T.AIR);
+    const s = findSpot(w, 'night_walker', 14, 31)!;
+    expect(s).not.toBeNull();
+    expect(s.y).toBe(36 * S);
+    expect(findSpot(w, 'night_walker', 40, 40)).toBeNull();
+    expect(findSpot(w, 'cave_bat', 14, 32)).not.toBeNull();
+    expect(findSpot(w, 'snap_vine', 10, 33)).not.toBeNull();
+  });
+  it('有木板牆的地方算房子', () => {
+    const { w } = world();
+    w.setWall(5, 5, W.PLANK_WALL);
+    expect(inHouse(w, 5, 5)).toBe(true);
+    expect(inHouse(w, 6, 5)).toBe(false);
+  });
+});
+
+describe('生成平衡（第一夜 / 出生點附近 / 生成間隔漸進）', () => {
+  const night: Habitat = { zone: 'surface', biome: BIOME.FOREST, mushroom: false, night: true };
+  it('第一夜：地表夜晚上限 3、機率降低', () => {
+    expect(spawnCap(night, { firstNight: true, nearSpawn: true })).toBe(3);
+    expect(spawnCap(night, { firstNight: true, nearSpawn: false })).toBe(3);
+    expect(spawnChance(night, { firstNight: true, nearSpawn: true })).toBeLessThan(spawnChance(night));
+  });
+  it('之後的夜晚：出生點附近上限比遠方低；遠方維持 8', () => {
+    expect(spawnCap(night, { firstNight: false, nearSpawn: true })).toBe(5);
+    expect(spawnCap(night, { firstNight: false, nearSpawn: false })).toBe(8);
+    expect(spawnCap(night)).toBe(8);
+    expect(NEAR_SPAWN_TILES).toBeGreaterThan(0);
+  });
+  it('白天 / 地下不受第一夜影響', () => {
+    const day: Habitat = { ...night, night: false };
+    expect(spawnCap(day, { firstNight: true, nearSpawn: true })).toBe(4);
+    expect(spawnCap({ ...night, zone: 'cavern' }, { firstNight: true, nearSpawn: true })).toBe(7);
+  });
+  it('第一夜 = 遊戲開始後的第一個夜晚（第一天傍晚到第二天清晨）', () => {
+    expect(isFirstNight(DAY_LENGTH * 0.85)).toBe(true);
+    expect(isFirstNight(DAY_LENGTH * 1.1)).toBe(true);
+    expect(isFirstNight(DAY_LENGTH * 1.85)).toBe(false);
+  });
+  it('生成間隔：剛開始 / 剛重生較慢，逐漸加快到 SPAWN_INTERVAL', () => {
+    expect(spawnInterval(0)).toBeGreaterThanOrEqual(2);
+    expect(spawnInterval(30)).toBeLessThan(spawnInterval(0));
+    expect(spawnInterval(30)).toBeGreaterThan(SPAWN_INTERVAL);
+    expect(spawnInterval(600)).toBe(SPAWN_INTERVAL);
+    for (let t = 0; t < 300; t += 7) expect(spawnInterval(t + 7)).toBeLessThanOrEqual(spawnInterval(t));
+  });
+});
+
+describe('季節 / 天氣對生成的影響', () => {
+  const base: Habitat = { zone: 'surface', biome: BIOME.FOREST, mushroom: false, night: true };
+  const weight = (h: Habitat, kind: string): number => {
+    const t = spawnTable(h), tot = t.reduce((a, e) => a + e.weight, 0);
+    return (t.find((e) => e.kind === kind)?.weight ?? 0) / tot;
+  };
+  it('雨夜（雨 / 雷雨）地表：亡者比例更高、上限與機率更高', () => {
+    const rain: Habitat = { ...base, weather: 'rain' };
+    expect(weight(rain, 'night_walker')).toBeGreaterThan(weight(base, 'night_walker'));
+    expect(spawnCap(rain)).toBeGreaterThan(spawnCap(base));
+    expect(spawnChance(rain)).toBeGreaterThan(spawnChance(base));
+    expect(spawnCap({ ...base, weather: 'storm' })).toBeGreaterThan(spawnCap(base));
+    // 地下不受天氣影響
+    const ug: Habitat = { ...base, zone: 'underground', weather: 'rain' };
+    expect(spawnCap(ug)).toBe(spawnCap({ ...ug, weather: undefined }));
+  });
+  it('冬天森林地表會出現霜系怪；春天白天史萊姆比較多', () => {
+    expect(kinds({ ...base, night: false, season: 3 })).toContain('frost_blob');
+    expect(kinds({ ...base, season: 3 })).toContain('frost_wolf');
+    expect(kinds({ ...base, night: false, season: 1 })).not.toContain('frost_blob');
+    const day: Habitat = { ...base, night: false };
+    expect(spawnChance({ ...day, season: 0 })).toBeGreaterThan(spawnChance({ ...day, season: 1 }));
+    const desert: Habitat = { ...day, biome: BIOME.DESERT };
+    expect(weight({ ...desert, season: 0 }, 'gel_blob')).toBeGreaterThan(weight({ ...desert, season: 1 }, 'gel_blob'));
+  });
+});

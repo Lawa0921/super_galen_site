@@ -1,0 +1,59 @@
+{
+  "asset_id": "browser-cs-directional-motion-v7",
+  "status": "native-directional-candidate-ground-contact-rejected",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "character_equipment_parts",
+  "source_mode": "licensed-human-motion-capture",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-directional-motion",
+  "source_page": "https://mocap.cs.cmu.edu/search.php?subjectnumber=69",
+  "source_files": [
+    "69.asf",
+    "69_34.amc",
+    "69_42.amc",
+    "69_48.amc"
+  ],
+  "source_descriptions": {
+    "69_34.amc": "walk backwards and turn",
+    "69_42.amc": "walk sideways and turn (repeated)",
+    "69_48.amc": "walk sideways and turn (opposite direction)"
+  },
+  "source_rate_hz": 120,
+  "source_license": "CMU free-use permission verified from official home/FAQ/info pages; commercial product inclusion allowed, direct resale of raw or converted motion prohibited.",
+  "source_character": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "source_character_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "source_forward_motion": "art-factory/cs/runs/run-20261005-v7-cmu-body-track/candidate/body-compact-v1.json",
+  "source_forward_motion_sha256": "15132eadb5a63f972399717233b9e4e85af8f810403fc3d930280f1cced9866b",
+  "requirements": [
+    "Use true sideways/backward source segments, preserving travel relative to facing instead of rotating every clip into forward walking",
+    "Select stable travel intervals away from turns and record their frame bounds, orientation and stride",
+    "Keep skeleton hierarchy, bone lengths, character/weapon asset bytes and frozen grip unchanged",
+    "Closed loops need value/velocity continuity and real posed shoe/ground checks",
+    "Direction must use resolved displacement in actor-facing coordinates; walls, pauses and teleports must not advance gait",
+    "Verify direction/speed transitions and all five actors in gameplay before DEV integration"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "development_integration_allowed": false,
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "source_ingest": "art-factory/cs/runs/run-20261005-v7-directional-motion/qa/source-ingest-v1.json",
+  "source_hashes": {
+    "69.asf": "c3019031ae5789b1d43d3bba424229ac544ccc68bb8c06e7d67bf75b1c41605f",
+    "69_34.amc": "fd1f088508d732471285ddbf49af55721bddac64306f46246e84891ab4295ea3",
+    "69_42.amc": "c02813b88a0c34a61ab978d8cedd8909aa0f67422d558a21541083534c811f7a",
+    "69_48.amc": "1cd218c7e52c4b01b4c625d8987f40b3292435632b4db8bc360ad1d08579186e",
+    "official-subject69.html": "84ffc380018ba6678db383d707374b56bd8fc4e623b5f3bb670cde7e5725a4a2",
+    "official-home.html": "4ac0024566573a10c87b668c826c2c44014b032ae57cbc5fbef2794b80c21cbc",
+    "official-faq.html": "518f04f07d7b0e0e8b605089f1033320d3ad5aa092f9d164f2c76c484a3f4f4e",
+    "official-info.html": "61a09feeb4424de2273189806f19c8fc54f22fcf8cb94071740633da42d9bada"
+  },
+  "basis": "Captured heading removed using constant mean yaw; actor-local right=-sourceX, forward=sourceZ.",
+  "basis_correction": "Old source-windows-v1/cycle-search-v1 diagnostic names right/left were reversed. Source +X is anatomical left. Final source 69_42=left, 69_48=right. Retain original evidence unchanged.",
+  "native_candidate_review": "art-factory/cs/runs/run-20261005-v7-directional-motion/qa/independent-review-v1.json",
+  "remaining": [
+    "Resolve posed shoe ground contact and support slip",
+    "Validate native world displacement and direction transitions",
+    "Provide or derive verified motions for 1.3/2.6/5.3 m/s; no automatic high-speed replay",
+    "Direction/speed consumer and five-actor gameplay remain unimplemented"
+  ]
+}

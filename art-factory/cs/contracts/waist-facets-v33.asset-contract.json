@@ -1,0 +1,16 @@
+{
+  "schema": "asset-contract-v1",
+  "asset_id": "cs_waist_source_facets_v33",
+  "status": "qa_failed",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "scope": "Waist belt only, separate from rejected C/D cummerbund and carrier",
+  "source": "Public stage7 combat_trouser triangles and exact exported skin rows; original editable F rig",
+  "allowed_repairs": ["Clip actual source facets to waist height", "Unique boundary seam stitching within 0.5mm", "Fill independently measured small interior source holes without adding skin vertices"],
+  "gates": ["Surface annulus with two boundary loops and Euler characteristic zero", "Closed offset shell with no nonmanifold edges", "Preserve all public geometry except old 36-triangle zero-height belt", "Actual game 360-pose signed gap, transverse crossing, full-body contact and visual review", "Total actor <=40000 triangles, 12 primitives and package <=32000000 bytes"],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not_requested_candidate_failed",
+  "candidate": "art-factory/cs/runs/run-20261008-v33-character/candidate/kit-n-waist-facets-e/soldier.glb",
+  "review": "art-factory/cs/runs/run-20261008-v33-character/qa/waist-facets-e-review.json",
+  "rejection_reason": "Garment contact passed but the source-facet shell has 81 static self-crossings and animated self-crossings. Generic small-hole repair is not accepted.",
+  "runtime_publish_allowed": false
+}

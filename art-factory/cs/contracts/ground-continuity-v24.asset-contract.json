@@ -1,0 +1,86 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "cs-ground-continuity-v24",
+  "category": "3d_game_assets",
+  "status": "published",
+  "screen_id": "cs-old-quarter-ground",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "opaque_background",
+  "mode_inference_decision": {
+    "selected_profile": "opaque_background",
+    "candidate_profiles": [
+      "opaque_background"
+    ],
+    "confidence": "high",
+    "rationale": "Opaque existing licensed GLB ground surface; deterministic mesh alignment and interpolation of approved material factors.",
+    "clarifying_question": null
+  },
+  "source": {
+    "runtime": "public/assets/games/cs/environment.glb",
+    "sha256": "f81726b730da62009562c563791bd6bb0f9b18f5e8a70c84c87a0abb29f8f610",
+    "raw": "art-factory/cs/runs/run-20261007-v24-ground-continuity/raw/environment-baseline.glb",
+    "geometry": "User-authorized original Blender environment; existing V5 ground inside accepted V7 perimeter bundle.",
+    "textures": "art-factory/cs/runs/run-20261004-v6-environment/texture-sources-v6.json",
+    "license": "Existing verified Poly Haven Cobblestone Pavement CC0 maps; no new source art.",
+    "source_mode": "approved_source_alignment_and_material_factor_interpolation"
+  },
+  "processing": {
+    "geometry": "Close the 12 mm gaps of the existing 12 by 14 four-meter slabs. Align shared positions and UVs without adding or removing triangles. Preserve indices, normals, node transforms and non-ground geometry.",
+    "color": "Linear glTF tint interpolation: u=gx/12, v=gz/14. Existing ground0/1/2 factors receive weights (0.30+0.25u, 0.40-0.25u-0.10v, 0.30+0.10v). This affine field has no diagonal gradient folds or repeating cell islands. Other ground vertices retain their original material factors.",
+    "encoding": "Append FLOAT VEC3 COLOR_0; append FLOAT ground POSITION/TEXCOORD_0 only for slab-containing primitives. Preserve every original BIN byte and original accessor/bufferView; no compact or whole-scene re-export.",
+    "texture_policy": "All image bytes, PBR fields except four ground factors, texture density 2.5 m, UV orientation, indices, normal accessors, nodes and collision bounds remain unchanged.",
+    "budget": "Same 75,368 triangles and 35 primitives; zero new textures/materials/draws. Under 30 KB GLB growth. Extra vertex attribute and shader variant have nonzero cost, to be measured after visual acceptance."
+  },
+  "qa_gates": [
+    "source_sha256",
+    "168_complete_slabs",
+    "shared_position_and_uv_continuity",
+    "non_slab_position_and_factor_preservation",
+    "all_original_bin_bytes_preserved",
+    "non_ground_json_unchanged",
+    "indices_normals_images_unchanged",
+    "no_affine_diagonal_gradient_fold",
+    "same_triangle_primitive_texture_counts",
+    "background_true_renderer_spawn_courtyard_close_and_movement",
+    "independent_visual_review",
+    "background_performance_regression_gate",
+    "published_path_hash_and_reference_check"
+  ],
+  "forbidden_content": [
+    "Valve assets",
+    "new procedural dirt artwork",
+    "fake seam strips",
+    "new collision geometry",
+    "runtime placeholder art"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "external_deployment_allowed": false,
+  "publication_scope": "local_repository",
+  "candidate": "art-factory/cs/runs/run-20261007-v24-ground-continuity/candidate/environment.glb",
+  "scope_note": "Finite ground continuity repair only. Does not establish CS2 parity, solve repeated cobblestone photography, fix hands or prove frame-presentation latency.",
+  "performance_gate": {
+    "native_gameplay_ms_per_variant": 120000,
+    "quality": "high",
+    "viewport": [
+      1440,
+      900
+    ],
+    "dpr": 1,
+    "candidate_raf_p95_ms_max": 18.5,
+    "same_render_scale_required": true,
+    "validity": "hardware D3D11, real move/turn/fire/aim/reload, no pause/hidden/context or page error/HMR contamination",
+    "limits": "Non-regression evidence for this sampled workload only; no causal speedup or presentation-latency claim."
+  },
+  "qa_result": {
+    "review": "art-factory/cs/runs/run-20261007-v24-ground-continuity/qa/review.json",
+    "runtime_sha256": "50aa2539c63bb7204db992f11e5500def412e172302f967bff8b6b9bcce09685",
+    "published_bundle_qa": "art-factory/cs/runs/run-20261007-v24-ground-continuity/qa/published-bundle-integrity.json",
+    "chromium_regression": "55 passed",
+    "vitest": "1442 tests / 138 files passed",
+    "python": "327 passed",
+    "build": "passed"
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "id": "character-fixed-wrist-v7",
+  "status": "full-grip-rejected",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "sourceAuthorization": "Same original GLB and CC0 rifle as the envelope contract; pose-only; no geometry, weights, materials or topology changes.",
+  "sources": {
+    "calibration": "art-factory/cs/runs/run-20261005-v7-envelope-grip/candidate/calibration-v1.json",
+    "baseline": "art-factory/cs/runs/run-20261005-v7-envelope-grip/qa/study-v1/report.json",
+    "skin": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+    "weapon": "public/assets/games/cs/rifle.glb",
+    "patches": "art-factory/cs/runs/run-20261005-v7-hand-wrap/qa/patch-review-v1/report.json"
+  },
+  "hashes": {
+    "calibration": "872d89528c0cb0e92b91bd3fce570eeb601c3667fbe714ec038eb278ef9c1f80",
+    "baseline": "65970665b58fe777fdcd61b2b81c9f433a425110513b8668f9c27369abdcfec1",
+    "skin": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+    "weapon": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c",
+    "patches": "92a95eb60c2f714999a3b83c8bc7e636e8da020123adcee4d1547244514adbc2"
+  },
+  "order": [
+    "thumb",
+    "index",
+    "middle",
+    "ring",
+    "pinky"
+  ],
+  "maxEvaluationsPerDigit": 400,
+  "maxTotalEvaluations": 2000,
+  "fitsPerDigit": 1,
+  "frozen": [
+    "Both wrists, all non-left-finger bones, weapon, body commands, right finger commands, command axes and order",
+    "Original source pad face IDs and all contact/crossing thresholds"
+  ],
+  "domainsDegrees": {
+    "thumb": [
+      [
+        -20,
+        20
+      ],
+      [
+        0,
+        70
+      ],
+      [
+        0,
+        70
+      ]
+    ],
+    "longFinger": "Existing fitWrapFinger: MCP20..65, PIP10..70, DIP .25..min(.75 PIP,45), splay +/-12 from original."
+  },
+  "gates": [
+    "Palm + mixed boundary minimum 1–2mm and zero crossings",
+    "Zero all-hand/weapon and inter-finger transverse crossings",
+    "Each long finger: at least two segments with >=3 vertices and >=2 faces passing distance1.5mm, dot<=-.5, sign>=-.25mm",
+    "One actual browser IK verification and multi-view visual review; offline search cannot approve publication"
+  ],
+  "limitations": [
+    "One static pose only; no transition sweep or containment proof.",
+    "Thumb has no prior distributed-contact gate; its pad distances are diagnostic."
+  ],
+  "result": {
+    "evaluations": 1869,
+    "palmMinimumM": 0.00104866871243664,
+    "leftCrossings": 4,
+    "passingLongFingerSegments": {
+      "index": 0,
+      "middle": 1,
+      "ring": 1,
+      "pinky": 1
+    },
+    "runtimeChanged": false,
+    "candidate": "art-factory/cs/runs/run-20261006-v7-fixed-wrist/candidate/calibration-v1.json"
+  }
+}

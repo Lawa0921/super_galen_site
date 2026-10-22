@@ -1,0 +1,23 @@
+{
+  "schema": "cs-direct-fk-grip-v13",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_contract": "art-factory/cs/contracts/fps-arms-v11.asset-contract.json",
+  "scope": "One rifle hip anatomy/contact checkpoint from the approved CC0 mesh and existing weights, followed by actual hip/ADS/fire captures.",
+  "run": "art-factory/cs/runs/run-20261006-v13-direct-fk-grip",
+  "screen_id": "cs-first-person-rifle",
+  "postprocess_profile": "gltf_pbr",
+  "mode_inference_decision": "Existing approved licensed 3D geometry; offline bone posing and GLB packaging, not new bitmap generation.",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "rig_policy": "Preserve source weight groups and relative influence ratios, normalizing positive sums, and keep the full object frame. Remove source IK and finger copy constraints in an isolated copy. Reparent hand controls to forearms without changing rest matrices, then write deform poses explicitly. A closed-form two-segment layout selects the authored outward elbow direction offline; no runtime IK, iterative search, fresh rigging, inferred weights or bone stretching. elbow_outward_direction is a direction, not a pole point. body_origin explicitly authors shoulder placement for reachable wrists; clavicle/deltoid poses remain at rest.",
+  "node_policy": "One dual-arm armature under view_hands; no rigid support_hand translation. Reload requires a later arms-only clip.",
+  "source_cleanup": "Remove only the five known face-unused vertices; preserve all 8152 visible triangles, UV and normalized relative weights.",
+  "material_checkpoint": "Original source skin and texture. Tactical glove/sleeve treatment remains required before any publication.",
+  "frame_policy": "Keep source_arm_world, which already includes source Z-pi rotation. Do not add a second yaw. Targets are pre-export gun coordinates.",
+  "gates": ["source hashes and license", "rest matrices and weight preservation", "proper frames and fixed chain lengths", "continuous shoulder-elbow-wrist chain", "source-to-GLB skin parity", "actual skin/weapon nearest-face contact evidence", "independent anatomy and contact review", "hip ADS fire captures", "clone isolation", "runtime byte/draw/resource budget"],
+  "budget": {"hands_triangles": 8152, "hands_draw_calls_target": 2, "weapon_glb_bytes_max": 5242880},
+  "not_completion": ["A static pose is not a completed reload or full weapon set", "Nearest-face signed normal distance alone does not prove watertight penetration", "Candidate rendering is not performance acceptance", "No runtime replacement until pose, material, animation and budget gates pass"]
+}

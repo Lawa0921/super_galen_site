@@ -1,0 +1,70 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "asset_id": "cs_environment_wall_material_ab",
+  "screen_id": "browser_cs_game_room",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "metadata_postprocess_of_reviewed_licensed_environment",
+  "source_asset": "art-factory/cs/runs/run-20261004-v6-architecture/candidate/environment-architecture.glb",
+  "source_sha256": "a7fc59b39997abe7c8a425b59bb1774b86c900bab13378112b1308cd5afdc6a1",
+  "source_provenance": [
+    "art-factory/cs/runs/run-20261003-v3-environment/texture-sources.json",
+    "art-factory/cs/runs/run-20261004-v6-environment/texture-sources-v6.json",
+    "art-factory/cs/runs/run-20261004-v6-architecture/source-manifest.json"
+  ],
+  "mode_inference_decision": {
+    "profile": "existing_3d_material_metadata",
+    "confidence": "high",
+    "rationale": "No new pixels or geometry; compare the source author's unused .82 roughness setting as an art adjustment, plus an optional translation of existing PBR UVs."
+  },
+  "candidate_root": "art-factory/cs/runs/run-20261004-v6-wall-material",
+  "variants": [
+    "roughness",
+    "roughness-and-phase"
+  ],
+  "processing_policy": {
+    "materials": [
+      "aged_sand_plaster",
+      "ochre_plaster",
+      "sunbleached_plaster"
+    ],
+    "roughness_factor": 0.82,
+    "uv_phase": "Optional fixed per-material offset, identical for base/normal/MR; preserve 2m scale and vertical weather direction.",
+    "binary_chunk": "byte-identical",
+    "lighting": "unchanged",
+    "forbidden": [
+      "new textures",
+      "geometry/collision change",
+      "runtime copy before review",
+      "rotation of weather streaks",
+      "changing other materials"
+    ]
+  },
+  "qa_gates": [
+    "real source RED/GREEN postprocess tests",
+    "unchanged source/binary/mesh/node/image/texture counts",
+    "only whitelisted material metadata differs",
+    "PBR channel alignment",
+    "actual renderer fixed-view A/B",
+    "independent review",
+    "native performance if selected",
+    "published hash if selected"
+  ],
+  "budget": {
+    "new_draw_calls": 0,
+    "new_textures": 0,
+    "new_triangles": 0,
+    "additional_bytes_max": 2000
+  },
+  "status": "roughness_published_locally",
+  "selected_variant": "roughness",
+  "rejected_variant": {
+    "name": "roughness-and-phase",
+    "reason": "Per-material phase leaves same-material 2m repetition intact and makes central stains more conspicuous in close views."
+  },
+  "runtime_publish_allowed": true,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "external_deployment": false,
+  "publication_scope": "local_repository"
+}

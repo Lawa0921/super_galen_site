@@ -233,27 +233,32 @@ test.describe('購買頁籤 (Web3)', () => {
 });
 
 test.describe('語言切換功能', () => {
-  test('應該顯示語言切換器', async ({ page }) => {
+  async function openLanguageMenu(page: Page) {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
-    if (page.viewportSize()!.width <= 1024) {
+    await expect(page.locator('#page-loader')).toBeHidden();
+    // The responsive menu uses a width breakpoint, including narrow desktop windows.
+    if (await page.evaluate(() => innerWidth <= 1024)) {
       await page.locator('#mobile-menu-toggle').click();
       await expect(page.locator('#mobile-menu')).toBeVisible();
+      await expect(page.locator('#mobile-language-container #language-switcher')).toBeVisible();
     }
-    await expect(page.locator('.language-switcher')).toBeVisible();
+    await expect(page.locator('#language-switcher')).toBeVisible();
+    await page.locator('#language-current').click();
+    await expect(page.locator('#language-dropdown')).toHaveClass(/show/);
+  }
+
+  test('應該顯示語言切換器', async ({ page }) => {
+    await openLanguageMenu(page);
+    await expect(page.locator('#language-dropdown .language-option[data-lang="en"]')).toBeVisible();
   });
 
   test('點擊語言應該導航到對應路徑', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
-
-    // 點擊英文連結
-    const enLink = page.locator('.language-switcher a[href*="/en/"]');
-    if (await enLink.isVisible()) {
-      await enLink.click();
-      await page.waitForLoadState('domcontentloaded');
-      await expect(page).toHaveURL(/\/en\//);
-    }
+    await openLanguageMenu(page);
+    const enLink = page.locator('#language-dropdown .language-option[data-lang="en"]');
+    await expect(enLink).toBeVisible();
+    await enLink.click();
+    await expect(page).toHaveURL(/\/en\//);
   });
 
   test('各語言版本應該可用', async ({ page }) => {
@@ -448,13 +453,23 @@ test.describe('故事頁籤', () => {
   });
 
   test('應該顯示書本結構', async ({ page }) => {
-    const spine = page.locator('.book-spine');
-    await expect(spine).toBeAttached();
-    // 手機採單頁版型，書脊仍在 DOM 中但依設計隱藏。
-    if (page.viewportSize()!.width <= 640) {
-      await expect(spine).toBeHidden();
+    await expect(page.locator('.book')).toBeVisible();
+    const leftPage = page.locator('.page-left');
+    await expect(leftPage).toBeVisible();
+    if (await page.evaluate(() => innerWidth <= 640)) {
+      await expect(page.locator('.book-spine')).toBeHidden();
+      await expect(page.locator('.page-right')).toBeHidden();
+      const number = leftPage.locator('.page-number');
+      await expect(number).toHaveText(/\d/);
+      const before = await number.textContent();
+      const bounds = await leftPage.boundingBox();
+      expect(bounds).not.toBeNull();
+      // The page margin turns the page; the scrollable content intentionally does not.
+      await leftPage.click({ position: { x: bounds!.width - 8, y: bounds!.height - 16 } });
+      await expect(number).not.toHaveText(before!);
     } else {
-      await expect(spine).toBeVisible();
+      await expect(page.locator('.book-spine')).toBeVisible();
+      await expect(page.locator('.page-right')).toBeVisible();
     }
   });
 });

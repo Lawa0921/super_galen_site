@@ -1,0 +1,77 @@
+Breach Point — Asset credits
+
+Tactical vest: “Tactical_Vest_male” by Mindfront (Sweden).
+Source: MakeHuman Community equipment03 pack
+https://static.makehumancommunity.org/assets/assetpacks/equipment03.html
+License: Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/
+Modified for this game: fitted anatomy, reduced mesh density, texture atlas,
+material conversion, skin weights and placement around the combat uniform.
+The original author does not endorse this game.
+
+Body, eyes and GameEngine rig: MakeHuman Team;
+skin and male_casualsuit01 garments: Data Collection AB, Joel Palmius and Jonas Hauquier.
+CC0 1.0. https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html
+Modified geometry, tailored uniform, tactical equipment and runtime skeleton.
+Garment UVs and authored folds retained; cloth colors neutralized for team tint,
+covered body surfaces masked and back cloth fitted under the tactical carrier.
+
+First-person anatomical arms: para, “FPS Arms Rigged Only”, CC0 1.0.
+https://lpc.opengameart.org/content/fps-arms-rigged-only
+Modified glove and sleeve surfaces, reconstructed skin weights, weapon grips
+and authored skeletal reload animations for all four weapon types.
+
+Leather and fabric surfaces: Poly Haven, CC0 1.0.
+https://polyhaven.com/a/brown_leather
+https://polyhaven.com/a/fabric_pattern_05
+Materials resized and adjusted for real-time rendering.
+
+Walking and running: motion data obtained from mocap.cs.cmu.edu.
+The database was created with funding from NSF EIA-0196217.
+https://mocap.cs.cmu.edu/
+Retargeted and edited for this game's character. Original or converted motion
+data may not be resold directly, including as part of a motion-data collection.
+
+Pistol, SMG and sniper weapon meshes: 3DModelsCC0, CC0.
+https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack
+Source gun geometry, UVs and PBR images are retained in the pistol arm revision.
+
+M4A1 rifle: nisu, CC0.
+https://opengameart.org/content/m4a1-assault-rifle
+Source geometry, UVs and PBR maps converted and fitted to the first-person rig.
+
+C4 and HE, flashbang and smoke grenade models: 3DModelsCC0, CC0.
+https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack
+Models converted and scaled for the game; PBR maps resized and repacked.
+Grenade HUD icons are transparent renders of these models.
+
+Sleeve fabric detail: Poly Haven, rough_linen, CC0 1.0.
+https://polyhaven.com/a/rough_linen
+Plaster detail: Dimitrios Savva / Poly Haven, white_stucco_02, CC0 1.0.
+https://polyhaven.com/a/white_stucco_02
+Source maps resized and packed for real-time detail shading.
+
+Utility particle masks in this stage: Kenney, Particle Pack, CC0 1.0.
+https://kenney.nl/assets/particle-pack
+Source masks packed into a linear-data atlas. Current-stage integration authorized; final art review pending.
+
+This is an original CS-style game, not an official Valve product.
+
+V33 first-person cloth detail: baked from the licensed MakeHuman
+male_casualsuit01 garment (CC0), with authored projection and normal QA.
+Reviewed FPS topology, hand rig, grips and reload animation are retained.
+
+Wraparound eyewear: punkduck, Sport-Sunglasses.
+Source: MakeHuman Community glasses02 pack
+https://static.makehumancommunity.org/assets/assetpacks/glasses02.html
+License: Creative Commons Attribution 3.0 Unported
+https://creativecommons.org/licenses/by/3.0/
+Modified for this game: unit conversion, fitted rigid temple articulation,
+head skin binding, graphite tint and lossless WebP texture conversion.
+Source UVs and smoked-lens alpha retained. The author does not endorse this game.
+V33 eye repair restores the MakeHuman source PNG alpha and material sidedness.
+
+V33 helmet coating: original generated material source, built-in image_gen.
+Neutral composite coating tile; deterministic albedo grading and artistic
+normal/roughness conversion. Source and exact prompt retained in the art factory.
+Geometry, original equipment and all non-helmet materials remain unchanged.

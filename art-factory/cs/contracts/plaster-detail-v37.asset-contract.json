@@ -1,0 +1,48 @@
+{
+  "schema": "cs-plaster-detail-v37",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "scope": "Near-range stucco grain and world-space weathering on the three plaster wall materials of environment.glb. JSON-only GLB edit (BIN byte-exact) plus one shared detail map; runtime onBeforeCompile patch in src/scripts/games/cs/plaster-detail.ts. No geometry, UV, collision, lighting or other-material changes.",
+  "run": "art-factory/cs/runs/run-20261010-v37-plaster-detail",
+  "source_asset": "https://polyhaven.com/a/white_stucco_02",
+  "source_license": "CC0-1.0",
+  "source_license_url": "https://polyhaven.com/license",
+  "source_author": "Dimitrios Savva",
+  "source_maps": {
+    "nor_gl": { "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_stucco_02/white_stucco_02_nor_gl_2k.jpg", "md5": "22ad831b8d075eefbc9169774a49e5f0" },
+    "ao": { "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_stucco_02/white_stucco_02_ao_2k.jpg", "md5": "8398650648356523f086a84f77d09441" },
+    "diff": { "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_stucco_02/white_stucco_02_diff_2k.jpg", "md5": "46667ca70dc3bcb3ec96f6da86502577" }
+  },
+  "source_cache": "art-factory/cs/runs/run-20261010-v37-plaster-detail/raw/polyhaven-white_stucco_02/ (md5 asserted against the Poly Haven files API by the cook)",
+  "postprocess": {
+    "script": "art-factory/cs/source/cook_cs_plaster_detail_v37.mjs",
+    "steps": "Whole 2k scan Lanczos to 1024 (no crop, stays seamless); wrap-around Gaussian high-pass sigma 48 on normal XY and luminance; pack R = AO x luminance high-pass cavity, GB = high-passed normal XY x1.6; JPEG q76 4:4:4 mozjpeg.",
+    "tile_metres": 0.9, "texels_per_metre": 1138, "khr_texture_transform_scale": 2.2222,
+    "procedural": "Macro brightness/hue variation, rotated second base-map read (anti-tiling), rising-damp grime by world height and rain streaks are computed in the shader from world position; no painted pixels."
+  },
+  "runtime": {
+    "detail_map": "public/assets/games/cs/shared/env/b08530ba58303b5c6c3ddbcb655c0f4f4d04a191f7066a3002941e8ba1674cb3.jpg",
+    "environment_sha256": "e9fff760c165cb15670c3f88b2d2b3bc754c73f68a891989884f589eb199a6f7",
+    "params": { "normalStrength": 1.0, "albedoStrength": 0.3, "cavityMean": 0.749, "roughnessStrength": 0.5, "macroStrength": 0.22, "macroScale": 0.12, "macroBlend": 0.6, "grimeHeight": 2.2, "grimeStrength": 0.55, "streakStrength": 0.38 },
+    "occlusion_strength": 0.35
+  },
+  "budget": { "additional_draw_calls": 0, "additional_triangles": 0, "additional_textures": 1, "additional_bytes_max": 800000, "additional_bytes_actual": 597463, "bundle_cap_bytes": 34000000 },
+  "gates": [
+    "Pinned CC0 source with md5 matching the Poly Haven API",
+    "BIN chunk byte-exact; only the three plaster materials, one image/texture/sampler and extensionsUsed differ (asserted by the cook)",
+    "Shader patch unit tests (anchors present, one detail fetch, grime by world height, validator ranges)",
+    "Asset tests: shared sealed detail, valid extras, no extra mesh/primitive, bundle <= 34 MB",
+    "Same-camera real-renderer captures near 0.6 m / base 1 m / mid 5 m / street at high and low quality; draw calls identical",
+    "Published native capture equals candidate capture (low pixel-identical, high <= 2.2 mean diff from SSAO/shadow noise)"
+  ],
+  "rejected": {
+    "a-stucco1k": "JPEG q88 917 KB exceeded the +0.8 MB allowance",
+    "b-stucco1k-q76": "Cavity albedo 0.55 read as dark pepper speckles at 0.6 m",
+    "c-tuned": "Macro variation and grime invisible at street distance (value noise clustered near 0.5)",
+    "d-macro": "Streak threshold 0.55 gave barcode-like stripe density across whole facades"
+  },
+  "runtime_publish_allowed": true,
+  "external_deployment_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "known_gaps": "Grime is height-only (no per-building ground, sill or roof-edge awareness); streaks are noise columns not tied to sills; no decals, edge wear, plaster patches or chipped corners; shaded walls show grain only weakly; base trim/stone/dome materials unchanged."
+}

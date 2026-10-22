@@ -39,6 +39,18 @@ test.describe('Dungeon Arcade Audio', () => {
     await expect(sfxSlider).toBeVisible();
   });
 
+  test('first native speaker click opens the panel and subsequent clicks toggle it', async ({ page }) => {
+    const speaker = page.locator('.arcade-bgm-icon');
+    const panel = page.locator('.arcade-bgm-panel');
+    await speaker.click();
+    await expect(panel).toBeVisible();
+    await expect(page.locator('.arcade-bgm-toggle')).toHaveAttribute('aria-expanded', 'true');
+    await speaker.click();
+    await expect(panel).toBeHidden();
+    await speaker.click();
+    await expect(panel).toBeVisible();
+  });
+
   // ── 3. 音樂 slider=80 → audio.volume 0.7-0.9、paused=false（bug 迴歸） ──
   test('音樂 slider=80 → 音量生效、不卡 0、持久化、全域', async ({ page }) => {
     // 點鈕：開面板 + 作為首次 gesture 解鎖 autoplay
@@ -184,11 +196,10 @@ test.describe('Dungeon Arcade Audio', () => {
   });
 });
 
-// ── 8. 三款遊戲頁面板存在且 track 正確 ──
+// ── 8. 兩款遊戲頁面板存在且 track 正確 ──
 for (const [name, path] of [
   ['tetris', '/games/tetris'],
   ['bomber', '/games/bomber'],
-  ['witchrun', '/games/witchrun'],
 ] as const) {
   test(`${name} 頁面板存在且 track 含 /${name}.mp3`, async ({ page }) => {
     await page.addInitScript(() => {

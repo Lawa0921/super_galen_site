@@ -49,7 +49,8 @@ export async function GET(context: APIContext) {
       title: post.data.title,
       pubDate: post.data.date,
       description: post.data.description || '',
-      link: `/${lang}/blog/${post.id}/`,
+      // 文章只有繁中原文；語系版文章頁為 noindex，所以各語系 feed 都連到可索引的無前綴原文
+      link: `/journal/${post.id}/`,
       categories: post.data.categories,
       author: post.data.author || 'Galen',
     })),

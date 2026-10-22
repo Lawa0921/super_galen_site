@@ -1,0 +1,32 @@
+{
+  "schema": "cs-rr-hands-v22",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "screen_id": "cs-first-person-rifle",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "source_mode": "official_free_package_license_intake",
+  "status": "raw_generated",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "asset_generation_manual_review": true,
+  "assembly_human_review": "not-ready",
+  "source": {
+    "author": "RRFreelance",
+    "page": "https://rrfreelance.itch.io/first-person-hands-with-gloves",
+    "file": "FPHands.unitypackage",
+    "price": "Official page offers a free download without contribution",
+    "license": "unverified; free download is not evidence of reuse permission",
+    "page_caveat": "Purchase page says unity only; distinguish compatibility from license only with explicit evidence"
+  },
+  "design": "Quarantine one unchanged official package, inspect its file inventory and licensing before extracting selected authored rigged hand/glove geometry and textures. Do not execute included scripts, install Unity, use credentials, pay, contact the author, or integrate into runtime. No modification/rendering of artwork until source reuse permission is verified.",
+  "gates": [
+    "ordinary official free download, no bypass of login, paywall or technical restriction",
+    "record SHA256 and archive inventory without exposing signed download URLs or tokens",
+    "verify explicit license permits this Three.js/browser game use; unknown or Unity-only terms block use",
+    "safe extraction rejects absolute paths, traversal, links and duplicate logical paths",
+    "inspect source rig, skinning, authored textures and animations before any retargeting",
+    "later assembly requires actual viewmodel poses, material/geometry budgets and headless browser review"
+  ],
+  "decision": "quarantined-license-unverified",
+  "decision_evidence": "art-factory/cs/runs/run-20261007-v22-rr-hands/qa/license-review.json"
+}

@@ -1,18 +1,43 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * 遊戲廳與排行榜涵蓋所有裝置；鍵盤遊戲煙霧測試使用桌面 Chromium。
+ * 遊戲廳 + 模式選單煙霧測試。啟動遊戲需 WebGL，故 chromium-only。
  */
 test.describe('Dungeon Arcade — hall & mode select', () => {
-  test('hall lists Battle Tetris and links into the game', async ({ page }) => {
+
+  test('hall lists only the four available games', async ({ page }) => {
     await page.goto('/games');
     await expect(page.getByText('DUNGEON ARCADE')).toBeVisible();
-    await expect(page.locator('a[href="/games/tetris"]')).toBeVisible();
+    await expect(page.locator('.card-wall a.card')).toHaveCount(4);
+    for (const game of ['tetris', 'bomber', 'cs', 'delve']) {
+      await expect(page.locator(`.card-wall a[href="/games/${game}"]`)).toBeVisible();
+    }
+    await expect(page.locator('a[href="/games/witchrun"], a[href="/games/defense"]')).toHaveCount(0);
   });
 
+  for (const game of ['witchrun', 'defense']) {
+    test(`removed game ${game} returns 404 for direct links`, async ({ request }) => {
+      for (const path of [`/games/${game}`, `/games/${game}/`]) {
+        const response = await request.get(path);
+        expect(response.status(), path).toBe(404);
+      }
+    });
+  }
+
   test('mode-select appears with no param and starts vs-AI on pick', async ({ page, browserName, isMobile }) => {
-    test.skip(browserName !== 'chromium' || isMobile, 'Keyboard gameplay smoke runs on desktop Chromium only');
+    test.skip(!isMobile && browserName !== 'chromium', 'Keyboard gameplay smoke runs on desktop Chromium only');
     await page.goto('/games/tetris');
+    if (isMobile) {
+      await expect(page.locator('#touch-notice')).toBeVisible();
+      await expect(page.locator('#mode-select')).toBeHidden();
+      await page.locator('.mm-tab[data-tab="leaderboard"]').click();
+      await expect(page.locator('#panel-leaderboard')).toBeVisible();
+      await page.locator('.mm-tab[data-tab="profile"]').click();
+      await expect(page.locator('#panel-profile')).toBeVisible();
+      await page.locator('a.tetris-back[href="/games"]').click();
+      await expect(page).toHaveURL(/\/games\/?$/);
+      return;
+    }
     await expect(page.locator('#mode-select')).toBeVisible();
 
     await page.locator('[data-mode="ai"][data-diff="hard"]').click();

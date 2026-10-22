@@ -1,0 +1,19 @@
+{
+  "schema": "asset-contract-v1",
+  "asset_id": "cs_carrier_measured_surface_fit_v33",
+  "status": "qa_failed",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "parent_contract": "art-factory/cs/contracts/carrier-v33.asset-contract.json",
+  "source_blend_sha256": "71ff4b499e0f4e7afa2e1c9ec3cf40a076bb094d6ef6283830967527381eca36",
+  "source_mode": "Editable authored B carrier modules; actual garment intersection and interpolated original weights for closed waist and cummerbund shells",
+  "changes": ["Continuous closed waist belt with measured shirt fit", "Closed cummerbund wrapping below the front/rear plate bags", "Thin sewn webbing with separated face/edge normals"],
+  "preserve": ["B plate bags/pockets/shoulders", "Stage7 skeleton and unrelated geometry/materials", "All first-person assets"],
+  "gates": ["No missing garment section intersections", "No silently pruned skin influences", "New geometry finite, nondegenerate, closed", "Actor <=40000 triangles, <=12 primitives; package <=32000000 bytes", "Actual runtime pose matrices and deformed garment contact audit, explicitly scoped", "Front/back/side/near and walk/run/aim visual review", "Independent read-only review"],
+  "contact_scope": "New belt and cummerbund against the original garment. This does not certify all carrier/arm/weapon intersections.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not_requested_candidate_failed",
+  "candidate": "art-factory/cs/runs/run-20261008-v33-character/candidate/kit-m-carrier-d/soldier.glb",
+  "review": "art-factory/cs/runs/run-20261008-v33-character/qa/carrier-surface-fit-review.json",
+  "rejection_reason": "Source positions and weights interpolated separately do not reproduce barycentric posed garment; measured 16.54mm oracle error and garment crossings. C/D have identical fitted geometry and skin, so both are rejected.",
+  "runtime_publish_allowed": false
+}

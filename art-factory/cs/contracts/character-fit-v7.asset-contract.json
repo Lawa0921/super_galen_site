@@ -1,0 +1,94 @@
+{
+  "schema": "cs-character-fit-v7-contract",
+  "project_id": "super_galen_site",
+  "asset_id": "browser-cs-character-footwear-fit-v7-review-candidate",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_contracts": [
+    "art-factory/cs/contracts/character-source-v7.asset-contract.json",
+    "art-factory/cs/contracts/character-kit-source-v7.asset-contract.json",
+    "art-factory/cs/contracts/footwear-source-v7.asset-contract.json"
+  ],
+  "candidate_root": "art-factory/cs/runs/run-20261004-v7-character-fit/candidate",
+  "qa_root": "art-factory/cs/runs/run-20261004-v7-character-fit/qa",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "assembly_agent_review": "failed_vest_shirt_overlap_and_new_vest_distortion; sock_trim_footwear_limited_pass",
+  "lifecycle_status": "qa_failed",
+  "runtime_publish_allowed": false,
+  "candidate": {
+    "body": "male_generic proxy over MPFB hm08 male basemesh",
+    "rig": "MPFB v2.0.17 GameEngine, 53 joints, hm08 weight source",
+    "outfit": [
+      "CC0 male_casualsuit01 dark long-sleeve shirt/trousers",
+      "Mindfront tactical vest, original and rejected bounded-fit comparison",
+      "CC0 MakeHuman shoes04 low-cut lace-up shoes/socks, local upper-sock trim"
+    ],
+    "eyes": "CC0 MakeHuman high-poly eyes with original brown iris/pupil texture",
+    "mouth": ["CC0 teeth_base", "CC0 tongue01"],
+    "hands": "anatomical bare hands; superhero gauntlet excluded",
+    "height_m": 1.7305,
+    "retained_technical_glb": "candidate/sock-trim-review.glb",
+    "retained_technical_glb_sha256": "09b21c722e861aa84418b7d58f9b3bb305d78add79d44fb597f5a89887b53a39",
+    "retained_source_blend": "candidate/sock-trim-source.blend",
+    "baseline_glb": "candidate/shoes-only-review.glb",
+    "rejected_vest_fit_glb": "candidate/vest-fit-review.glb",
+    "rejected_vest_fit_glb_sha256": "cd2d2eb3b555165e51132ce71192b8f4fc7d2f894267d17fc408139a198a87e3",
+    "rejected_vest_fit_source_blend": "candidate/vest-fit-source.blend",
+    "gloved_forearms_glb": null
+  },
+  "tooling": {
+    "blender": "5.2.1 LTS",
+    "mpfb_commit": "80919fa4682335c41847f761a4d79dcad4124732",
+    "execution": "isolated user resources/extensions, factory startup, disable autoexec, offline mode, four CPU threads",
+    "license_separation": "MPFB program code GPL-3.0-or-later remains isolated tooling; bundled rig/weights and system art are CC0 asset data."
+  },
+  "provenance_and_modifications": "art-factory/cs/runs/run-20261004-v7-character-fit/source-provenance-and-modifications.json",
+  "qa_evidence": [
+    "qa/assessment.md",
+    "qa/shoes-assembly.json",
+    "qa/field-vs-shoes-glb-geometry.json",
+    "qa/shoes-layer-diagnostic.json",
+    "qa/shoes-only-uv-alpha.json",
+    "qa/shoes-only-glb-mechanical.json",
+    "qa/sock-trim-geometry.json",
+    "qa/sock-trim-invariants.json",
+    "qa/sock-trim-deformation.json",
+    "qa/sock-trim-glb-mechanical.json",
+    "qa/vest-surface-analysis.json",
+    "qa/vest-fit-geometry.json",
+    "qa/vest-fit-glb-buffers.json",
+    "qa/vest-fit-deformation.json",
+    "qa/vest-fit-glb-mechanical.json",
+    "qa/shoes-only-front.png",
+    "qa/shoes-only-side.png",
+    "qa/shoes-only-back.png",
+    "qa/shoes-only-shoes.png",
+    "qa/sock-trim-front.png",
+    "qa/sock-trim-side.png",
+    "qa/sock-trim-back.png",
+    "qa/sock-trim-shoes.png"
+  ],
+  "external_review_evidence": [
+    "art-factory/cs/runs/run-20261004-v7-character-browser/qa/shoes-only-v1/occlusion-probe.json",
+    "art-factory/cs/runs/run-20261004-v7-character-browser/qa/sock-trim-v1-fit-poses/",
+    "art-factory/cs/runs/run-20261004-v7-character-browser/qa/vest-fit-v1-fit-poses/"
+  ],
+  "known_failures": [
+    "blue shirt still interrupts original/fit vest back webbing and worsens under bounded arm pose",
+    "bounded vest push adds hard outward shoulder corners, floating side/back bands and jagged points",
+    "actual vest GLB oriented triangle multiset changes 18 old and 18 new triangles; cause not established",
+    "low-cut shoes and local sock trim have only limited rest and foot +/-0.2 rad independent visual pass",
+    "civilian shirt/trousers and bare hands are not confirmed tactical or CS2 art direction",
+    "82,108 triangles, seven draws and 65.4 MB GLB have no approved runtime/performance budget",
+    "full gameplay animation, actual gameplay renderer and independent art gates remain open"
+  ],
+  "forbidden": [
+    "runtime publication",
+    "CS2 quality claim",
+    "recolored superhero gloves as tactical gloves",
+    "placeholder geometry/material replacement",
+    "further nearest-surface vest inflation in this package"
+  ]
+}
