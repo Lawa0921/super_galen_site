@@ -8,6 +8,7 @@ function fakeWorker() {
     sent: [] as number[],
     terminated: 0,
     onmessage: null as ((e: { data: unknown }) => void) | null,
+    onerror: null as ((e: unknown) => void) | null,
     postMessage(ms: number) { w.sent.push(ms); },
     terminate() { w.terminated++; },
   };
@@ -63,6 +64,49 @@ describe('workerTicker', () => {
     vi.advanceTimersByTime(25);
     expect(cb).toHaveBeenCalledTimes(2);
     t.stop();
+  });
+});
+
+describe('workerTicker 失敗保護', () => {
+  it('error 事件 → 改用 setInterval 繼續跳', () => {
+    vi.useFakeTimers();
+    const w = fakeWorker();
+    const t = workerTicker(() => w);
+    const cb = vi.fn();
+    t.start(cb, 10);
+    w.onerror!(new Event('error'));
+    expect(w.terminated).toBe(1);
+    vi.advanceTimersByTime(35);
+    expect(cb).toHaveBeenCalledTimes(3);
+    t.stop();
+  });
+
+  it('worker 一直沒訊息 → 看門狗後退回 setInterval', () => {
+    vi.useFakeTimers();
+    const w = fakeWorker();
+    const t = workerTicker(() => w);
+    const cb = vi.fn();
+    t.start(cb, 10);
+    vi.advanceTimersByTime(249);
+    expect(cb).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1 + 30); // 250ms 看門狗觸發，之後每 10ms 一次
+    expect(w.terminated).toBe(1);
+    expect(cb).toHaveBeenCalledTimes(3);
+    t.stop();
+  });
+
+  it('正常 worker：看門狗不觸發、不重複跳', () => {
+    vi.useFakeTimers();
+    const w = fakeWorker();
+    const t = workerTicker(() => w);
+    const cb = vi.fn();
+    t.start(cb, 10);
+    w.onmessage!({ data: 0 });
+    vi.advanceTimersByTime(1000);
+    expect(w.terminated).toBe(0);
+    expect(cb).toHaveBeenCalledTimes(1);
+    t.stop();
+    expect(w.terminated).toBe(1);
   });
 });
 

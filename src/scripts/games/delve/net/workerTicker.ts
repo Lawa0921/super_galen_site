@@ -5,6 +5,7 @@ import { intervalTicker, type Ticker } from './loop';
 export interface TickWorker {
   postMessage(ms: number): void;
   onmessage: ((e: { data: unknown }) => void) | null;
+  onerror: ((e: unknown) => void) | null;
   terminate(): void;
 }
 
@@ -28,16 +29,27 @@ export function workerTicker(make?: () => TickWorker): Ticker {
   });
   let worker: TickWorker | null = null;
   let fallback: Ticker | null = null;
+  let dog: ReturnType<typeof setTimeout> | null = null;
   let gen = 0; // stop 之後才送達的訊息要丟掉
-  const halt = () => {
-    gen++;
+  const killWorker = () => {
+    if (dog !== null) { clearTimeout(dog); dog = null; }
     if (worker) {
       worker.onmessage = null;
+      worker.onerror = null;
       worker.postMessage(0);
       worker.terminate();
       worker = null;
     }
+  };
+  const halt = () => {
+    gen++;
+    killWorker();
     if (fallback) { fallback.stop(); fallback = null; }
+  };
+  const useFallback = (cb: (nowMs: number) => void, everyMs: number) => {
+    killWorker();
+    fallback = intervalTicker();
+    fallback.start(cb, everyMs);
   };
   return {
     start(cb, everyMs) {
@@ -46,13 +58,20 @@ export function workerTicker(make?: () => TickWorker): Ticker {
       try {
         w = build();
       } catch {
-        fallback = intervalTicker();
-        fallback.start(cb, everyMs);
+        useFallback(cb, everyMs);
         return;
       }
       worker = w;
       const mine = gen;
-      w.onmessage = () => { if (mine === gen) cb(performance.now()); };
+      w.onmessage = () => {
+        if (mine !== gen) return;
+        if (dog !== null) { clearTimeout(dog); dog = null; } // 有心跳了，看門狗解除
+        cb(performance.now());
+      };
+      // Worker 非同步失敗（CSP、載入失敗）不會丟在建構式，要靠 error 事件
+      w.onerror = () => { if (mine === gen) useFallback(cb, everyMs); };
+      // 一直沒有訊息也算失敗：一次性看門狗
+      dog = setTimeout(() => { dog = null; if (mine === gen) useFallback(cb, everyMs); }, Math.max(250, 3 * everyMs));
       w.postMessage(everyMs);
     },
     stop: halt,
