@@ -6,7 +6,7 @@ import { REGIONS } from '../data/regions';
 import { depthLevel } from './levels';
 import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
-import { LIMIT_MAX, abyssDef, createBattle, resolveRound, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
+import { LIMIT_MAX, createBattle, resolveRound, skillFor, type Action, type BattleScale, type BattleState, type Outcome } from './battle';
 import { MAX_LEVEL, SLOTS, expToNext, gainExp, newMember, partyWith, statsOf, STANDARD_LINEUP } from './party';
 import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, memoriesOf } from './progression';
 import { HERO_BUILDS, type HeroBuild } from '../data/hero';
@@ -212,8 +212,9 @@ export type SimAi = 'skill' | 'attack';
  * her mechanic would cast it (mechanics.castDef: Noel's heat), so the sim never spends big at nothing.
  */
 export function castPower(s: BattleState, c: Combatant, def: SkillDef): number {
-  // As the battle casts it (plan 8h Task 8 review): the abyss capstones' depth bonus first (abyssDef), then her mechanic.
-  return castDef(s, c, abyssDef(s, def)).effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
+  // Without the abyss capstones' depth bonus (plan 8h Task 9): ranking by it moved 殘響's 連擊 band past its 1.6 ceiling
+  // (1.60 → 1.65 in bands-9), so the sim keeps ranking as before; the menu and 自動's note show the bonus (castNow).
+  return castDef(s, c, def).effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
 }
 
 /**

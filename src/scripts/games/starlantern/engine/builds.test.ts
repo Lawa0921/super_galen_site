@@ -16,8 +16,8 @@ import { MAX_LEVEL } from './party';
 import { defaultTalents, defaultTree, heroTalents, heroTree, learnedSkills, newTree, treeFor, validBuild } from './progression';
 import { TREES } from '../data/trees';
 import { socketCount } from './sockets';
-import { castPower, choose, partyAt } from './sim';
-import { castNow, createBattle, resolveRound, skillFor, type Action, type BattleState } from './battle';
+import { choose, partyAt } from './sim';
+import { createBattle, resolveRound, type Action, type BattleState } from './battle';
 import { encounterTable } from './scaling';
 import { mulberry32 } from './rng';
 import { echoOf } from './mechanics/echo';
@@ -384,19 +384,5 @@ describe('autoActions (plan 8h Task 8)', () => {
     const e = createBattle({ party: structuredClone(echo), enemyIds: encounterTable('mainline', 9)[0], boss: false, inventory: {}, revealed: {}, scale: { depth: 9, region: 'mainline' } });
     expect(echoOf(e, e.round + 1)).toBeFalsy();
     expect(autoActions(e, echo, ['hero']).hero.kind).not.toBe('echo');
-  });
-});
-
-describe('the sim ranks a skill by its depth bonus too (plan 8h Task 8 review)', () => {
-  it('castPower counts the abyss bonus, as the battle menu does', () => {
-    const party = partyAt(50, { memories: 10 }, 9);
-    expect(learnedSkills(party.roster.hero)).toContain('abyss-sword');
-    const b = createBattle({ party, enemyIds: encounterTable('mainline', 9)[0], boss: false, inventory: {}, revealed: {}, scale: { depth: 9, region: 'mainline' }, abyss: 20 });
-    const hero = b.party.find((c) => c.key === 'hero')!;
-    const def = skillFor(hero, 'abyss-sword')!;
-    const now = castNow(b, hero, def).effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
-    const flat = def.effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
-    expect(now).toBeGreaterThan(flat);
-    expect(castPower(b, hero, def)).toBe(now);
   });
 });

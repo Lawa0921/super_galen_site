@@ -372,7 +372,8 @@ describe('the reworked trees (plan 8d Task 9)', () => {
    * controller's 8d Task 9 ruling (a):
    * - selene-moon-bright (月光・凝光): the numeric side of a pair whose other side, 群照, changes the target; choosing
    *   between the two is the rule.
-   * - safira-clap-encore (拍手・安可): low impact, never cast by the sim. Revisit when runes land.
+   * - safira-clap-encore (拍手・安可): 由祭典指揮 build 量到（plan 8h Task 5b）: the 祭典指揮 build learns 安可 and casts
+   *   拍手, and its value is measured there (plan 8h ruling 11i).
    */
   const NUMBERS_ONLY_OK = ['chizuru-ward-long', 'sylvie-sunder-deep', 'selene-dream-deep', 'liz-twin-haggle', 'sylvie-aim-rapid',
     'selene-moon-bright', 'safira-clap-encore'];
