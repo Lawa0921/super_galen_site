@@ -35,7 +35,8 @@ const isDamage = (e: Effect): e is Damage => e.kind === 'damage';
 const num = (v: number): string => String(Math.round(v));
 /** The values of one row: one when they agree, 「／」 between them when the effects differ. */
 const joined = (vals: string[]): string => [...new Set(vals)].join(W.join);
-const pct = (chance: number): number => Math.round(chance * 100);
+/** A chance in percent, to a tenth (淬毒's exact half on a wide cast reads 12.5%). */
+const pct = (chance: number): number => Math.round(chance * 1000) / 10;
 
 /** Each ailment once, at its highest chance. */
 function strongest(list: { status: keyof typeof T.ailment; chance: number }[]): [keyof typeof T.ailment, number][] {

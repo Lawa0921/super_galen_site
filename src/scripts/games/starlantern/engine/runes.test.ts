@@ -67,6 +67,9 @@ describe('rune tags and fit (plan 8e Task 1)', () => {
       return (d.effects.find((e) => e.kind === 'inflict' && e.status === 'poison') as { chance: number }).chance;
     };
     expect(chanceOn('pierce')).toBe(0.3);                       // one foe: the whole chance
+    // An exact half, never rounded (the review: 12.5%, not 13%).
+    const common = applyRunes(SKILLS.sweep, [], [{ id: 'venom', tier: 'common' }]);
+    expect((common.effects.find((e) => e.kind === 'inflict') as { chance: number }).chance).toBe(0.125);
     expect(chanceOn('sweep')).toBe(0.15);                       // all of them: half
     expect(chanceOn('scatter-shot')).toBe(0.15);                // at random: half
     // 擴散 makes a single-foe skill strike them all: halved too.

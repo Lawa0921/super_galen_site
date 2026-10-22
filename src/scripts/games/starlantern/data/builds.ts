@@ -61,7 +61,7 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
     { key: 'meteor', name: '暴走流星', intro: '火之星彈一口氣燒過去，熱度滿了就用業火暴走！', scenario: 'crowd', capstone: 0, minLevel: 40,
       runes: { 'fire-star': ['spread', 'ignite', 'multistrike'] },
       policy: [{ kind: 'spend-at', gauge: 'heat', min: 4, skill: 'inferno' }, aoe] },
-    { key: 'cycle', name: '冰雷循環', intro: '雷之星彈蓄力猛攻，熱度一高就換冰之星彈降溫，順便讓頭目發寒。', scenario: 'boss',
+    { key: 'cycle', name: '冰雷循環', intro: '雷之星彈蓄力猛攻，熱度一高就換冰之星彈降溫，冰正好是頭目的弱點。', scenario: 'boss',
       // Tuning round 2: the boss shrugs off fire and fears ice, so the heat comes from the thunder star; 連擊 (the shop's)
       // on the ice star that cools her.
       runes: { 'ice-star': ['charge', 'multistrike'], 'thunder-star': ['charge', 'jolt', 'thunderclap'] },
@@ -105,7 +105,7 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
   scarlet: [
     // Scarlet's one build swap (ruling E5): the 贖火 branch (capstone 2) fell a third short of the standard at Lv50, so the
     // wall that burns back now stands on 烈焰 (紅蓮終焉's branch), 燎原 on the way; 受擊觸發 still answers every blow.
-    { key: 'riposte', name: '反擊之壁', intro: '來打我啊！挨一下，就燒一圈還給你們。', scenario: 'long', capstone: 1,
+    { key: 'riposte', name: '反擊之壁', intro: '來打我啊！每挨一下，炎環就自己燒一圈還給你們。', scenario: 'long', capstone: 1,
       first: ['scarlet-burst-heart', 'blaze-ring', 'scarlet-ring-blaze'],
       runes: { 'blaze-ring': ['on-struck', 'ignite', 'multistrike'], 'flame-burst': ['ignite', 'multistrike', 'charge'] },
       policy: [{ kind: 'ensure-taunt', skill: 'provoke' }, aoe] },
@@ -160,7 +160,7 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
   rin: [
     // The review: alone with a boss, 飛針's 擊倒觸發 never fired (nothing falls before the boss does); the runes go on 處決,
     // the blow the build is for, and the line says what they do.
-    { key: 'silent', name: '無聲處決', intro: '先暗記，再用處決收尾：一刀不夠就兩刀，盔甲也擋不住。', scenario: 'boss',
+    { key: 'silent', name: '無聲處決', intro: '先暗記，再用處決收尾：一出手就是兩刀，盔甲也擋不住。', scenario: 'boss',
       first: ['rin-mark-steady', 'rin-execute'],
       runes: { 'rin-execute': ['charge', 'multistrike', 'armor-break'] },
       policy: [{ kind: 'ensure-mark', skill: 'rin-mark' }, { kind: 'execute-below', pct: 35, skill: 'rin-execute' }, aoe] },

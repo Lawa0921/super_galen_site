@@ -258,7 +258,7 @@ export function applyRunes(core: SkillDef, extra: Effect[], refs: readonly RuneR
 
   // 淬毒 on a cast that strikes them all or at random: its `widePct` of the chance (plan 8h ruling B2'').
   const wide = out.target === 'enemies' || out.effects.some((e) => e.kind === 'damage' && e.scatter);
-  for (const a of once) if (a.widePct !== undefined && wide) a.chance = Math.round(a.chance * a.widePct) / 100;
+  for (const a of once) if (a.widePct !== undefined && wide) a.chance = (a.chance * a.widePct) / 100;
   // An ailment the skill (or its extra) already has is folded into the rune's of the same ailment, highest chance.
   const runeStatus = new Set([...onHit, ...once].map((a) => a.status));
   const folded = (list: Effect[]) => list.filter((e) => {

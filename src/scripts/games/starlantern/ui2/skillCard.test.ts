@@ -375,6 +375,12 @@ describe('the skill card (plan 8g Task 3)', () => {
     }
   });
 
+  it("淬毒's halved chance on a wide cast reads exactly (plan 8h 5b re-review)", () => {
+    const s = stateAt(35, ['chizuru'], { 'venom@common': 1 });
+    const on = ok(socketRune(s, 'chizuru', 'sweep', 0, R('venom', 'common')));
+    expect(cardOf(member(on, 'chizuru'), 'sweep')!.adds).toContain(W.add.inflict(12.5, T.ailment.poison));
+  });
+
   it('slots tell what works', () => {
     const s = stateAt(35, ['noel'], { 'spread@magic': 1 });
     learn(s, 'noel', { 'flame-wave': 1, 'noel-wave-focus': 1 });

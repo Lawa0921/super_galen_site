@@ -25,6 +25,8 @@ describe.skipIf(!on)('the rune bands: noel (plan 8h)', () => {
       const fails = b.levels.flatMap((l) => {
         const why: string[] = [];
         const at = `Lv${l.level}`;
+        // Every role: each skill that holds a rune is cast (a trigger's cast counts; 常駐 works uncast).
+        if (l.idle.length) why.push(`${at} runes on skills never cast: ${l.idle.join(' ')}`);
         if (role === 'heal') {
           // E4: the party wins as often and loses no more members in the ordeal; her contribution is reported only.
           if (l.run.wins < l.std.wins) why.push(`${at} wins ${l.run.wins} < ${l.std.wins} of ${l.run.fights}`);
@@ -40,8 +42,6 @@ describe.skipIf(!on)('the rune bands: noel (plan 8h)', () => {
           if (l.run.wins < l.std.wins - WIN_SLACK_FIGHTS) why.push(`${at} wins ${l.run.wins} < ${l.std.wins} - ${WIN_SLACK_FIGHTS} of ${l.run.fights}`);
         }
         if (l.run.perRound <= l.bare.perRound) why.push(`${at} runes do not pay: ${l.run.perRound.toFixed(1)} <= bare ${l.bare.perRound.toFixed(1)}`);
-        // Every skill that holds a rune is cast (a trigger's cast counts; 常駐 works uncast).
-        if (l.idle.length) why.push(`${at} runes on skills never cast: ${l.idle.join(' ')}`);
         return why;
       });
       const known = BAND_EXCEPTIONS[b.tag];
