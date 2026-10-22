@@ -19,6 +19,7 @@ import { version8Save } from '../../src/scripts/games/starlantern/engine/testing
 import { defaultTalents, defaultTree } from '../../src/scripts/games/starlantern/engine/progression';
 import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/engine/builds';
 import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
+import { SWEEP, sweep } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
@@ -4254,5 +4255,20 @@ test.describe('starlantern', () => {
       await expect.poll(round, { timeout: 15000 }).toBe(1);
       expect(w.errors).toEqual([]);
     });
+  });
+
+  test('screen sweep (legibility Task 0) @sweep', async ({ page }) => {
+    // Every main screen at the three sizes, one picture each when SL_SHOTS is set. Task 0 only takes the pictures.
+    test.setTimeout(300_000);
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const seen: string[] = [];
+    const errors = await sweep(page, [{ width: 1280, height: 720 }, { width: 844, height: 390 }, { width: 390, height: 844 }], async (name, size) => {
+      const file = `${name}-${size.width}x${size.height}`;
+      seen.push(file);
+      if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/${file}.png` }); }   // windows fade in
+    });
+    expect(seen).toHaveLength(SWEEP.length * 3);
+    expect(errors).toEqual([]);
   });
 });
