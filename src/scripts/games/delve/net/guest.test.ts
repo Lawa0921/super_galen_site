@@ -14,6 +14,7 @@ import type { VisitSave } from '../save/worldSave';
 import { LoopbackNet } from './loopback';
 import type { Channel, NetLink, Payload } from './link';
 import { encodeBulk } from './codec';
+import { snapshotWorld } from './snapshot';
 import { CHK_MS, INTERP_DELAY_MS, WS_HZ } from './protocol';
 import { NetHost } from './host';
 import { END_TEXT, NetGuest, type GuestState, type NetGuestOptions } from './guest';
@@ -467,6 +468,29 @@ describe('NetGuest 拒絕與版本', () => {
     expect(s.g.state).toBe('syncing');
     expect(s.made).toBe(1);
     expect(s.g.game!.local.buffs.bless).toBe(5060);
+  });
+
+  it('bulk snap 比 welcome 先到（兩條可靠通道彼此不保證順序）→ 先留著，welcome 之後套上 → live、送 ready', () => {
+    const net = new LoopbackNet();
+    const p = net.pair();
+    const got: string[] = [];
+    p.host.onMessage((ch, d) => {
+      if (ch !== 'ctrl' || typeof d !== 'string') return;
+      const m = JSON.parse(d) as { t: string };
+      got.push(m.t);
+      if (m.t !== 'hello') return;
+      // 先送 bulk 的 snap，再送 ctrl 的 welcome（零延遲：依送出順序到達）
+      p.host.send('bulk', encodeBulk({ t: 'snap', snap: snapshotWorld(arena(), null) }));
+      p.host.send('ctrl', JSON.stringify({
+        t: 'welcome', pid: 'p1', worldId: 'w', seed: 'host', genVersion: GEN_VERSION, outerGenVersion: OUTER_GEN_VERSION,
+        bounds: 'legacy', w: 160, h: 100, time: 0, tick: 0, peaceful: true, you: { x: 640, y: 900 }, players: [],
+      }));
+    });
+    const g = new NetGuest(p.guest, { build: BUILD, character: hero(), createReplica: () => arena() });
+    for (let i = 1; i <= 5; i++) { net.advance(FRAME); g.frame(i * FRAME, 1); }
+    expect(g.state).toBe('live');
+    net.advance(FRAME);
+    expect(got.slice(0, 2)).toEqual(['hello', 'ready']);
   });
 
   it('outerGenVersion 不同 → 一樣', () => {

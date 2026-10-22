@@ -57,6 +57,8 @@ export const END_TEXT: Readonly<Record<RejectReason | ByeReason | 'hostGone', st
 /** leave 之後最多等這麼久收房主最後的 chk，再自己關連線 */
 const LEAVE_GRACE_MS = 2000;
 const PS_MS = 1000 / PS_HZ;
+/** welcome 之前最多留這麼多則 bulk（加入時房主在 bulk 只送一則 snap） */
+const EARLY_BULK_MAX = 4;
 
 type Inbox = { link: NetLink; ch: Channel; data: Payload } | { link: NetLink; close: true };
 /** 樂觀放置（C14）：ack 回來前記著；since = 放下那一刻的 sync.writes */
@@ -103,6 +105,8 @@ export class NetGuest {
   /** 這次 hello 帶的角色（welcome 時套到本地 actor） */
   private character: DelveCharacter;
   private inbox: Inbox[] = [];
+  /** welcome 之前到的 bulk（ctrl 與 bulk 各自有序、彼此不保證順序：snap 可能比 welcome 先到）；welcome 建好副本後依序套上 */
+  private early: Uint8Array[] = [];
   private now = 0;
   private heardAt: number | null = null;
   /** leave 之後等最後的 chk 到這個時間（null = 不在等） */
@@ -231,6 +235,7 @@ export class NetGuest {
     this.st = 'connecting';
     this.text = null;
     this.inbox = this.inbox.filter((it) => it.link === link);   // 舊連線的丟掉；新連線已到的留著
+    this.early = [];
     this.heardAt = null;
     this.closeAt = null;
     this.tseq = 0;
@@ -293,7 +298,12 @@ export class NetGuest {
 
   // ── 收訊 ──────────────────────────────────────────
   private handle(ch: Channel, data: Payload): void {
-    if (ch === 'bulk') { if (data instanceof Uint8Array) this.onBulk(data); return; }
+    if (ch === 'bulk') {
+      if (!(data instanceof Uint8Array)) return;
+      if (!this.replica) { if (this.st === 'connecting' && this.early.length < EARLY_BULK_MAX) this.early.push(data); return; }
+      this.onBulk(data);
+      return;
+    }
     if (typeof data !== 'string') return;
     const m = JSON.parse(data) as unknown;
     if (!isObj(m) || typeof m.t !== 'string') return;
@@ -365,6 +375,10 @@ export class NetGuest {
       for (const q of m.players) if (isObj(q) && typeof q.pid === 'string') this.peerInfo.set(q.pid, { nick: String(q.nick ?? ''), look: isObj(q.look) ? q.look : null });
     }
     this.st = 'syncing';
+    // 比 welcome 先到的 bulk（snap）：現在有副本了，依到達順序套上
+    const early = this.early;
+    this.early = [];
+    for (const d of early) { try { this.onBulk(d); } catch { /* 只丟這一則 */ } }
   }
 
   private onBulk(bytes: Uint8Array): void {
