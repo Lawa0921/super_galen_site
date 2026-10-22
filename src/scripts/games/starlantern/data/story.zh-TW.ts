@@ -1431,7 +1431,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'scarlet', mood: 'serious', text: '「莉茲小姐，回報。剛才那個寶箱，搞定了。」' },
       { who: 'liz', mood: 'surprised', text: '「騎士大姊說『搞定』？！那手法、時間、陷阱呢？」' },
-      { who: 'scarlet', mood: 'smile', text: '「手法，商業機密。陷阱，先拆了。零件賣了兩枚銀幣，已列入公帳。」' },
+      { who: 'scarlet', mood: 'smile', text: '「手法屬於商業機密，時間大約一眨眼。陷阱已拆，零件賣了兩枚銀幣，已列入公帳。」' },
       { who: 'liz', mood: 'scheming', text: '「才兩枚？虧大了。──好啦，第一次，給妳及格。」' },
     ],
     summary: '這一次，是絲嘉蕾說寶箱搞定了，回報得和莉茲當初一模一樣。莉茲嫌她賣便宜了，還是給了及格。',
@@ -1452,7 +1452,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'noel', mood: 'smug', text: '「喂，凜！今天又是本小姐贏。服不服，這次就不用問了吧。」' },
       { who: 'rin', mood: 'smile', text: '「不服。」' },
       { who: 'noel', mood: 'panic', text: '「咦？！妳、妳什麼時候學會不甘心了？」' },
-      { who: 'rin', mood: 'smile', text: '「跟妳學的呢。明天再比一次吧。」' },
+      { who: 'rin', mood: 'smile', text: '「跟妳學的。明天再比一次吧。」' },
     ],
     summary: '諾艾兒又宣布自己贏了。這一次，凜說她不服，是跟諾艾兒學的，明天再比一次。',
   },
@@ -1470,7 +1470,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   // future out loud and keeps it, and still finds the moon's loophole.
   'banter:noel-selene:3': {
     lines: [
-      { who: 'noel', mood: 'smug', text: '「瑟蕾，今天不准說『也許』。明天，本小姐贏不贏得了凜？」' },
+      { who: 'noel', mood: 'smug', text: '「瑟蕾，今天不准說『也許』。本小姐明天贏不贏得了凜？」' },
       { who: 'selene', mood: 'foresee', text: '「贏得了。」' },
       { who: 'noel', mood: 'panic', text: '「咦？！妳、妳竟然直接說了？不收回？」' },
       { who: 'selene', mood: 'smile', text: '「不收回呢。只是月亮沒說，比的是什麼。」' },
@@ -1513,7 +1513,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:safira-sylvie:3': {
     lines: [
       { who: 'safira', mood: 'wink', text: '「各位觀眾──好吧，只有小希一位。今晚的特別公演，門票全免唷～」' },
-      { who: 'sylvie', mood: 'serious', text: '「退路。一條。」' },
+      { who: 'sylvie', mood: 'serious', text: '「退路只找了一條。」' },
       { who: 'safira', mood: 'surprised', text: '「咦，只找一條？另外兩條呢？」' },
       { who: 'sylvie', mood: 'smile', text: '「今天不找了。坐著看。」' },
     ],
@@ -1554,9 +1554,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:chizuru-noel:2': {
     lines: [
       N('千鶴行了一禮：「聽聞令師平安。先前那句『謂之竊』，我收回。」'),
-      { who: 'noel', text: '「不、不用行禮啦！」' },
-      { who: 'chizuru', text: '「禮尚往來。」' },
-      { who: 'noel', text: '「那……本小姐也收回一句。千鶴的祝詞，很好聽。」' },
+      { who: 'noel', mood: 'panic', text: '「不、不用行禮啦！」' },
+      { who: 'chizuru', mood: 'solemn', text: '「禮尚往來。」' },
+      { who: 'noel', mood: 'blush', text: '「那……本小姐也收回一句。千鶴的祝詞，很好聽。」' },
     ],
     summary: '千鶴聽說諾艾兒的老師平安，收回了那句「謂之竊」。諾艾兒也收回一句：千鶴的祝詞很好聽。',
   },
@@ -1598,12 +1598,12 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   },
   'banter:rin-selene:2': {
     lines: [
-      { who: 'rin', text: '「瑟蕾，那把刀的事。早一點說，我就能早一點知道自己是什麼。」' },
-      { who: 'selene', mood: 'wistful', text: '「對不起……下一次看見什麼，我會先說。」' },
-      { who: 'rin', text: '「那現在說一個。我明天會怎樣？」' },
+      { who: 'rin', mood: 'serious', text: '「瑟蕾，出口前那一刀，妳看見過吧。早一點說，我就能早一點知道自己是什麼。」' },
+      { who: 'selene', mood: 'wistful', text: '「對不起。下一次看見什麼，我會先說。」' },
+      { who: 'rin', mood: 'normal', text: '「那現在說一個。我明天會怎樣？」' },
       { who: 'selene', mood: 'smile', text: '「妳明天會多眨幾次眼。是我說的，不是月亮。」' },
     ],
-    summary: '凜說，那把刀的事早一點說就好了。瑟蕾道歉，答應下一次先說，還替凜說了一個明天。',
+    summary: '凜問瑟蕾，出口前那一刀是不是早就看見了。瑟蕾道歉，答應下一次先說，還替凜說了一個明天。',
   },
   'banter:safira-scarlet:2': {
     lines: [
@@ -1652,19 +1652,19 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   },
   'banter:rin-scarlet:3': {
     lines: [
-      { who: 'scarlet', text: '「凜小姐，我想起來了。有人命令我活下去，我照做了。」' },
-      { who: 'rin', text: '「我收到的命令，我沒照做。」' },
-      { who: 'scarlet', text: '「嗯。……守夜表，我撕了。」' },
+      { who: 'scarlet', mood: 'serious', text: '「凜小姐，我想起來了。有人命令我活下去，我照做了。」' },
+      { who: 'rin', mood: 'serious', text: '「我收到的命令，我沒照做。」' },
+      { who: 'scarlet', mood: 'smile', text: '「嗯。……守夜表，我撕了。」' },
       N('凜說前面歸她，後面歸自己。結果兩人都走到洛恩旁邊，把他夾在中間，三個人並排走。'),
     ],
     summary: '絲嘉蕾想起了要她活下去的命令，凜說她收到的命令沒有照做。守夜表撕了，三個人並排走。',
   },
   'banter:chizuru-rin:2': {
     lines: [
-      { who: 'chizuru', text: '「凜姑娘，早安。」' },
-      { who: 'rin', text: '「早安。」' },
-      { who: 'chizuru', text: '「完整了……甚好。」' },
-      { who: 'rin', text: '「另外半句，早該說了。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「凜姑娘，早安。」' },
+      { who: 'rin', mood: 'normal', text: '「早安。」' },
+      { who: 'chizuru', mood: 'smile', text: '「完整了……甚好。」' },
+      { who: 'rin', mood: 'averted', text: '「另外半句，早該說了。」' },
     ],
     summary: '凜第一次回了完整的早安。千鶴說，甚好。',
   },

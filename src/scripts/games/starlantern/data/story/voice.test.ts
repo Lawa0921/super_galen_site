@@ -33,6 +33,8 @@ const POLISHED: string[] = [
   ...['chizuru-noel:1', 'liz-scarlet:2', 'safira-sylvie:2', 'rin-sylvie:1', 'rin-selene:1', 'safira-scarlet:2', 'noel-selene:2', 'bobby-chizuru:2', 'bobby-sylvie:2'].map((id) => `scenes.banter:${id}.`),
   // Task 14: Rin's confession and the lone morning (story depth plan Task 14)
   'scenes.rin-confess.', 'scenes.hero-alone.',
+  // Task 15: the banters after her choice, and the payoffs (story depth plan Task 15); with it every banter is polished
+  ...['rin-scarlet:2', 'rin-scarlet:3', 'rin-selene:2', 'rin-sylvie:2', 'chizuru-rin:2', 'chizuru-noel:2', 'noel-rin:2', 'safira-sylvie:3', 'liz-scarlet:3', 'noel-selene:3'].map((id) => `scenes.banter:${id}.`),
 ];
 
 type Scope = readonly string[];
@@ -419,6 +421,12 @@ describe('voice gates over the polished script (story polish)', () => {
       .filter((t) => t.text.replace(/你們/g, '').includes('你') && !TO_HIM.test(t.text))
       .map((t) => `${t.key}: ${t.text}`);
     expect(out).toEqual([]);
+  });
+
+  it('every banter is polished (story depth Task 15)', () => {
+    const banters = SCENE_IDS.filter((id) => id.startsWith('banter:'));
+    expect(banters.length).toBeGreaterThan(30);
+    for (const id of banters) expect(isPolished(`scenes.${id}.lines.0.text`), id).toBe(true);
   });
 
   it('POLISHED names real keys', () => {

@@ -2893,3 +2893,29 @@ describe('story depth Task 14: her confession and the lone morning', () => {
     expect(STORY.scenes['chat:scarlet:2'].lines.some((l) => l.who === 'hero' && l.text.includes('不必替我擋'))).toBe(true);
   });
 });
+
+describe('story depth Task 15: the banters after her choice', () => {
+  const W = (o: Partial<LineWhen> = {}): LineWhen => ({ met: [...CHARACTER_IDS], full: [], returned: [], oath: true, seen: [], ...o });
+  const play = (id: SceneId, w: LineWhen) => linesWhen(STORY.scenes[id].lines, w);
+  it("rin-selene:2 opens on what Rin can know in either reading of Selene's fifth piece, and closes on her own words (design §6, 7)", () => {
+    const w = W({ full: ['selene'] });
+    const lines = play('banter:rin-selene:2', w);
+    expect(lines[0].who).toBe('rin');
+    expect(lines[0].text).toMatch(/出口前那一刀/);
+    expect(lines[0].text).toMatch(/看見過吧/);   // she asks: in the silent reading Selene never told her
+    expect(lines[lines.length - 1].who).toBe('selene');
+    expect(() => pinBeat('banter:rin-selene:2', w, /是我說的，不是月亮/)).not.toThrow();
+    expect(lines[lines.length - 1].text).toMatch(/是我說的，不是月亮/);
+    expect(lines.find((l) => /對不起/.test(l.text))!.text).not.toContain('……');   // the ruled budget
+  });
+  it('the seventh night, the torn watch rota and the whole 「早安」 keep their beats; Rin never says 呢', () => {
+    expect(() => pinBeat('banter:rin-scarlet:2', W({ seen: ['rin-confess'] }), /第七個晚上/)).not.toThrow();
+    expect(() => pinBeat('banter:rin-scarlet:2', W({ seen: ['rin-confess'] }), /妳守的不是門，是我/)).not.toThrow();
+    const three = W({ full: ['scarlet'], seen: ['rin-confess', 'banter:rin-scarlet:2'] });
+    expect(() => pinBeat('banter:rin-scarlet:3', three, /守夜表，我撕了/)).not.toThrow();
+    expect(play('banter:rin-scarlet:3', three).map((l) => l.text).join('')).not.toMatch(/選了人|不是命令/);   // fix five
+    expect(() => pinBeat('banter:chizuru-rin:2', W(), /另外半句/)).not.toThrow();
+    expect(play('banter:chizuru-rin:2', W()).find((l) => l.who === 'rin' && /早安/.test(l.text))).toBeDefined();
+    for (const t of storyTexts()) if (t.line?.who === 'rin') expect(t.text, t.key).not.toMatch(/呢(?=[。！？～」，]|……|──)/);
+  });
+});
