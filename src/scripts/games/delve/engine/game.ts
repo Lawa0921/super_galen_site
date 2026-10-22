@@ -1025,7 +1025,7 @@ export class DelveGame {
     a.markers = v.markers.map((m) => ({ x: m.x, y: m.y }));
     if (v.discovery) a.discovery.load(v.discovery); else a.discovery.visit(f.x, f.y);
     // 床頭還在才留（peekFg：不載入遠方的欄）
-    a.bed = v.bed && w.inBounds(v.bed.x, v.bed.y) && w.peekFg(v.bed.x, v.bed.y) === T.BED_HEAD ? { ...v.bed } : null;
+    a.bed = v.bed && w.inBounds(v.bed.x, v.bed.y) && (this.mode === 'replica' || w.peekFg(v.bed.x, v.bed.y) === T.BED_HEAD) ? { ...v.bed } : null; // 客人副本：床所在的 chunk 多半還沒同步，信任房主
     a.spawnCore = v.spawnCore;
   }
   /** 客人副本：把房主給的 visit 套到本地 actor（迷霧 / 標記 / 發現 / 床 / 重生爐心 / 位置 / 呼吸燃燒蜂蜜）；與 addActor 帶 visit 同一套 */

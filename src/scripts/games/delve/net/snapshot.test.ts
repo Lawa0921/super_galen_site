@@ -30,6 +30,13 @@ function village(g: DelveGame): void {
   g.selectSlot(0);
   expect(g.tryPlace(60, GROUND - 1)).toBe(true);
 }
+/** 等居民搬進來（白天，商人最先到） */
+function withResident(g: DelveGame): void {
+  village(g);
+  g.settle.arriveDelay = 0;
+  steps(g, 60 * 13);
+  expect(g.settle.npc('merchant')).not.toBeNull();
+}
 function quest(id: string) {
   return { id, giver: 'guide', giverName: 'G', kind: 'slay' as const, title: 't', desc: 'd', n: 3, enemy: 'gel_blob' as const, reward: { xp: 1, coins: 1 } };
 }
@@ -37,9 +44,9 @@ function quest(id: string) {
 describe('snapshotWorld / applyWorldSnap', () => {
   it('往返：據點、委託、傳送碑、擊殺、鎖箱、天氣、時間都等於房主', () => {
     const host = arena({ mode: 'host' });
-    village(host);
-    steps(host, 30);
+    withResident(host);
     expect(host.settle.cores.length).toBe(1);
+    expect(host.settle.npc('merchant')!.home).not.toBeNull();
     expect(host.quests.accept(quest('q1') as never)).toBe(true);
     host.stonesUnlocked.add(1);
     host.kills = { gel_blob: 2 };
@@ -49,6 +56,8 @@ describe('snapshotWorld / applyWorldSnap', () => {
     const replica = arena({ localPid: 'p1', mode: 'replica' });
     applyWorldSnap(replica, snapshotWorld(host, null));
     expect(replica.settle.toJSON()).toEqual(host.settle.toJSON());
+    // 居民的家保留房主的；副本不重新分配、不發事件（tile 還沒同步也一樣）
+    expect(replica.settle.npc('merchant')!.home).toBe(host.settle.npc('merchant')!.home);
     expect(replica.quests.toJSON()).toEqual(host.quests.toJSON());
     expect([...replica.stonesUnlocked]).toEqual([...host.stonesUnlocked]);
     expect(replica.kills).toEqual(host.kills);
@@ -57,9 +66,13 @@ describe('snapshotWorld / applyWorldSnap', () => {
     expect(replica.weather().kind).toBe('rain');
     expect(replica.time).toBe(host.time);
     expect(replica.tick).toBe(host.tick);
+    steps(replica, 10);
+    replica.settle.refresh(replica.world, true);
+    expect(replica.settle.npc('merchant')!.home).toBe(host.settle.npc('merchant')!.home);
+    expect(replica.settle.drainEvents()).toEqual([]);
   });
 
-  it('不送 chunk：改 200 個 chunk 前後長度相同', () => {
+  it('不送 chunk：改 200 格地形前後長度相同', () => {
     const host = arena({ mode: 'host' });
     const before = JSON.stringify(snapshotWorld(host, null)).length;
     for (let k = 0; k < 200; k++) host.world.setFg(10 + (k % 100), 20 + Math.floor(k / 100) * 20, T.STONE);
@@ -78,6 +91,15 @@ describe('snapshotWorld / applyWorldSnap', () => {
     expect(replica.local.explored.has(60, 59)).toBe(true);
   });
 
+  it('visit 的床在客人副本信任房主（床的 chunk 還沒同步）', () => {
+    const host = arena({ mode: 'host' });
+    const replica = arena({ localPid: 'p1', mode: 'replica' });
+    const v = host.visitOf(host.localPid);
+    v.bed = { x: 70, y: GROUND - 1 };
+    applyWorldSnap(replica, snapshotWorld(host, v));
+    expect(replica.local.bed).toEqual({ x: 70, y: GROUND - 1 });
+  });
+
   it('perkDays.healer 不套到客人', () => {
     const host = arena({ mode: 'host' });
     host.perkDays = { guide: 5, healer: 7 };
@@ -91,11 +113,11 @@ describe('snapshotWorld / applyWorldSnap', () => {
 describe('worldSig', () => {
   it('NPC 走動、time 不同 → 相同；接委託 → 不同', () => {
     const host = arena({ mode: 'host' });
-    village(host);
-    steps(host, 30);
+    withResident(host);
     const a = snapshotWorld(host, null);
     const sig = worldSig(a);
     expect(worldSig({ ...a, time: a.time + 100, tick: a.tick + 9 })).toBe(sig);
+    for (const n of host.settle.npcs) n.body.x += 40;
     steps(host, 120);
     expect(worldSig(snapshotWorld(host, null))).toBe(sig);
     host.quests.accept(quest('q2') as never);

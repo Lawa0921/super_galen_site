@@ -224,6 +224,8 @@ export class Settlements {
   nextId = 1;
   private evals = new Map<number, Evaluation>();
   private evalRev = -1;
+  /** 客人副本（load 帶 trust）：只重算房間評估供顯示，不重新分配居民、不發事件——據點狀態一律以房主為準 */
+  private trusted = false;
   private evalT = 0;
   private moveInT = 0;
   /** 正在路上的居民（條件達成時排定，at = 抵達的遊戲時間） */
@@ -323,6 +325,7 @@ export class Settlements {
       const garden = this.npcs.some((n) => n.core === c.id && n.kind === 'gardener');
       this.evals.set(c.id, evaluate(w, c, garden));
     }
+    if (this.trusted) return;
     this.assignHomes(w);
     this.updateMoods();
     let total = 0, nx = 0, ny = 0;
@@ -698,6 +701,7 @@ export class Settlements {
   /** 讀檔：壞欄位丟掉（不讓存檔壞掉）；核心那格不是爐心了也丟掉 */
   /** trust = true：客人副本（核心那格的爐心還在等 chunk 同步，不驗；單機一律 false） */
   load(j: unknown, w: World, trust = false): void {
+    this.trusted = trust;
     this.cores = []; this.npcs = []; this.spawnCore = null; this.evals.clear(); this.evalRev = -1; this.lastLevel.clear(); this.invited.clear(); this.idents = {};
     if (!j || typeof j !== 'object') { this.syncPins(w); return; }
     const o = j as Partial<SettlementJSON>;
@@ -735,6 +739,7 @@ export class Settlements {
       ? { kind: pd.kind as NpcKind, core: pd.core, at: pd.at } : null;
     this.nextId = Math.max(int(o.nextId) ? o.nextId : 1, maxId + 1, this.nextId);
     for (const n of this.npcs) n.id = this.nextId++;
+    if (trust && int(o.nextId)) this.nextId = o.nextId; // 客人副本：與房主一致（NPC 的 id 不存檔，重新編號不影響）
     this.refresh(w, true);
   }
 }
