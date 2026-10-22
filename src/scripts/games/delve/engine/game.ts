@@ -1028,6 +1028,13 @@ export class DelveGame {
     a.bed = v.bed && w.inBounds(v.bed.x, v.bed.y) && w.peekFg(v.bed.x, v.bed.y) === T.BED_HEAD ? { ...v.bed } : null;
     a.spawnCore = v.spawnCore;
   }
+  /** 客人副本：把房主給的 visit 套到本地 actor（迷霧 / 標記 / 發現 / 床 / 重生爐心 / 位置 / 呼吸燃燒蜂蜜）；與 addActor 帶 visit 同一套 */
+  applyVisit(v: VisitSave, pid: Pid = this.localPid): void {
+    const a = this.actors.get(pid);
+    if (!a) throw new Error(`delve: no actor ${pid}`);
+    this.withActor(a, () => { this.enterVisit(a, v); this.applyVisitVitals(v); });
+  }
+
   private applyVisitVitals(v: VisitSave): void {
     this.breath = Math.max(0, Math.min(MAX_BREATH, v.vitals.breath));
     this.burning = Math.max(0, Math.min(BURN_TIME, v.vitals.burning));

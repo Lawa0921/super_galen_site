@@ -1,0 +1,104 @@
+// net/snapshot.test.ts — 世界層級快照：往返、不送 chunk、visit 套本地、worldSig 的敏感度。
+import { describe, expect, it } from 'vitest';
+import { DelveGame } from '../engine/game';
+import { T, W } from '../engine/tiles';
+import { FIXED_DT } from '../engine/constants';
+import { buildHouse } from '../engine/houseFixture';
+import { applyWorldSnap, snapshotWorld, worldSig } from './snapshot';
+
+const SMALL = { width: 200, height: 100 };
+const GROUND = 60;
+
+function arena(opts: { localPid?: string; mode?: 'solo' | 'host' | 'replica' } = {}): DelveGame {
+  const g = new DelveGame({ seed: 'snap', ...SMALL, peaceful: true, ...opts });
+  const w = g.world;
+  g.liquids.setSprings([]);
+  for (let y = 0; y < w.height; y++) for (let x = 0; x < w.width; x++) { w.setFg(x, y, y >= GROUND ? T.STONE : T.AIR); w.setWall(x, y, W.NONE); w.setLiquid(x, y, 0, 0); }
+  g.teleport(60, GROUND - 1);
+  g.setDate({ hour: 12 });
+  for (let i = 0; i < 5; i++) g.step(FIXED_DT);
+  g.drainEvents();
+  return g;
+}
+function steps(g: DelveGame, n: number): void { for (let i = 0; i < n; i++) g.step(FIXED_DT); }
+/** 據點：房子 + 爐心 */
+function village(g: DelveGame): void {
+  buildHouse(g.world, 50, GROUND - 6, 8, 5);
+  g.give('hearth', 1);
+  const i = g.inventory.slots.findIndex((s) => s?.item === 'hearth');
+  g.inventory.swap(i, 0);
+  g.selectSlot(0);
+  expect(g.tryPlace(60, GROUND - 1)).toBe(true);
+}
+function quest(id: string) {
+  return { id, giver: 'guide', giverName: 'G', kind: 'slay' as const, title: 't', desc: 'd', n: 3, enemy: 'gel_blob' as const, reward: { xp: 1, coins: 1 } };
+}
+
+describe('snapshotWorld / applyWorldSnap', () => {
+  it('往返：據點、委託、傳送碑、擊殺、鎖箱、天氣、時間都等於房主', () => {
+    const host = arena({ mode: 'host' });
+    village(host);
+    steps(host, 30);
+    expect(host.settle.cores.length).toBe(1);
+    expect(host.quests.accept(quest('q1') as never)).toBe(true);
+    host.stonesUnlocked.add(1);
+    host.kills = { gel_blob: 2 };
+    host.world.unlocked.add(host.world.idx(70, GROUND - 1));
+    host.world.keysUsed = 1;
+    host.forceWeather('rain');
+    const replica = arena({ localPid: 'p1', mode: 'replica' });
+    applyWorldSnap(replica, snapshotWorld(host, null));
+    expect(replica.settle.toJSON()).toEqual(host.settle.toJSON());
+    expect(replica.quests.toJSON()).toEqual(host.quests.toJSON());
+    expect([...replica.stonesUnlocked]).toEqual([...host.stonesUnlocked]);
+    expect(replica.kills).toEqual(host.kills);
+    expect([...replica.world.unlocked]).toEqual([...host.world.unlocked]);
+    expect(replica.world.keysUsed).toBe(1);
+    expect(replica.weather().kind).toBe('rain');
+    expect(replica.time).toBe(host.time);
+    expect(replica.tick).toBe(host.tick);
+  });
+
+  it('不送 chunk：改 200 個 chunk 前後長度相同', () => {
+    const host = arena({ mode: 'host' });
+    const before = JSON.stringify(snapshotWorld(host, null)).length;
+    for (let k = 0; k < 200; k++) host.world.setFg(10 + (k % 100), 20 + Math.floor(k / 100) * 20, T.STONE);
+    expect(JSON.stringify(snapshotWorld(host, null)).length).toBe(before);
+  });
+
+  it('visit 套到本地：markers 與已揭露的格', () => {
+    const host = arena({ mode: 'host' });
+    const replica = arena({ localPid: 'p1', mode: 'replica' });
+    const other = arena({ mode: 'host' });
+    other.local.explored.revealDisc(60, 59, 3);
+    other.local.markers.push({ x: 33, y: 44 });
+    const v = other.visitOf(other.localPid);
+    applyWorldSnap(replica, snapshotWorld(host, v));
+    expect(replica.local.markers).toEqual([{ x: 33, y: 44 }]);
+    expect(replica.local.explored.has(60, 59)).toBe(true);
+  });
+
+  it('perkDays.healer 不套到客人', () => {
+    const host = arena({ mode: 'host' });
+    host.perkDays = { guide: 5, healer: 7 };
+    const replica = arena({ localPid: 'p1', mode: 'replica' });
+    applyWorldSnap(replica, snapshotWorld(host, null));
+    expect(replica.perkDays.guide).toBe(5);
+    expect(replica.perkDays.healer).not.toBe(7);
+  });
+});
+
+describe('worldSig', () => {
+  it('NPC 走動、time 不同 → 相同；接委託 → 不同', () => {
+    const host = arena({ mode: 'host' });
+    village(host);
+    steps(host, 30);
+    const a = snapshotWorld(host, null);
+    const sig = worldSig(a);
+    expect(worldSig({ ...a, time: a.time + 100, tick: a.tick + 9 })).toBe(sig);
+    steps(host, 120);
+    expect(worldSig(snapshotWorld(host, null))).toBe(sig);
+    host.quests.accept(quest('q2') as never);
+    expect(worldSig(snapshotWorld(host, null))).not.toBe(sig);
+  });
+});

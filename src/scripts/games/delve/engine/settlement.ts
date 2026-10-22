@@ -696,7 +696,8 @@ export class Settlements {
     };
   }
   /** 讀檔：壞欄位丟掉（不讓存檔壞掉）；核心那格不是爐心了也丟掉 */
-  load(j: unknown, w: World): void {
+  /** trust = true：客人副本（核心那格的爐心還在等 chunk 同步，不驗；單機一律 false） */
+  load(j: unknown, w: World, trust = false): void {
     this.cores = []; this.npcs = []; this.spawnCore = null; this.evals.clear(); this.evalRev = -1; this.lastLevel.clear(); this.invited.clear(); this.idents = {};
     if (!j || typeof j !== 'object') { this.syncPins(w); return; }
     const o = j as Partial<SettlementJSON>;
@@ -713,7 +714,7 @@ export class Settlements {
       if (!c || !int(c.id) || !int(c.x) || !int(c.y) || this.coreById(c.id)) continue;
       // 核心那一欄可能還沒常駐（讀檔時離玩家很遠 → 停放中）：先載入再看那格是不是爐心
       if (w.inBounds(c.x, c.y)) w.ensureColumn(chunkOfX(c.x));
-      if (w.getFg(c.x, c.y) !== T.HEARTH) continue;
+      if (!trust && w.getFg(c.x, c.y) !== T.HEARTH) continue;
       this.cores.push({ id: c.id, x: c.x, y: c.y });
       maxId = Math.max(maxId, c.id);
     }
