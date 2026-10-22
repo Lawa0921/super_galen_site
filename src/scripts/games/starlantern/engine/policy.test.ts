@@ -278,6 +278,8 @@ describe('build policy rules (plan 8h Task 1)', () => {
     expect(at()).toEqual(skill('cover', 'rin'));
     expect(at({ cover: { ally: 'rin', turns: 2 } })).toBeNull();
     expect(at({}, sk('pierce'))).toBeNull();
+    // A cover on an ally who has fallen covers no one.
+    expect(at({ cover: { ally: 'liz', turns: 2 } })).toEqual(skill('cover', 'rin'));
     // A tie keeps the party order; the share, not the HP, decides.
     const tie = makeBattle([P('scarlet'), P('noel', { hp: 50 }), P('rin', { hp: 50 })], [E('e0')]);
     expect(run(tie, tie.party[0], sk('cover'), rule).action).toEqual(skill('cover', 'noel'));
@@ -386,30 +388,56 @@ describe('build policy rules (plan 8h Task 1)', () => {
     expect(barrier([{ skill: 'ward', kind: 'guard', power: 30, turns: 2, src: 'hero' }])).toEqual(skill('ward'));
   });
 
-  it('cast-when whileAbsent recasts only once her effect is gone, round after round', () => {
+  it('cast-when whileAbsent: a self skill reads her own buffs, 贖火 its riposte, a barrier only from that skill', () => {
+    const step: PolicyRule[] = [{ kind: 'cast-when', skill: 'mirage-step', whileAbsent: true }];
+    const s = makeBattle([P('safira'), P('hero', { buffs: [{ stat: 'spd', pct: 30, turns: 2, src: 'safira' }] })], [E('e0')]);
+    expect(run(s, s.party[0], sk('mirage-step'), step).action).toEqual(skill('mirage-step'));   // the hero's buff is not her step
+    const flame: PolicyRule[] = [{ kind: 'cast-when', skill: 'atoning-flame', whileAbsent: true }];
+    const riposte = (over: Partial<Combatant>) => {
+      const st = makeBattle([P('scarlet', over), P('hero', { riposte: { power: 80, turns: 2 } })], [E('e0')]);
+      return run(st, st.party[0], sk('atoning-flame'), flame).action;
+    };
+    expect(riposte({})).toEqual(skill('atoning-flame'));
+    expect(riposte({ riposte: { power: 80, turns: 1 } })).toBeNull();
+    const ward: PolicyRule[] = [{ kind: 'cast-when', skill: 'ward', whileAbsent: true }];
+    const other = makeBattle([P('chizuru', { mech: { kind: 'barrier' } })], [E('e0')], { barriers: [{ skill: 'purify-ward', kind: 'purify', power: 30, turns: 2, src: 'chizuru' }] });
+    expect(run(other, other.party[0], sk('ward'), ward).action).toEqual(skill('ward'));
+  });
+
+  /**
+   * `who` casts `rule.skill` under `rule` (whileAbsent) in a real fight against a boss too big to fall: each round she casts
+   * it exactly when `holds` is false, and she casts it at least twice with held rounds between.
+   */
+  function holdLoop(who: CharacterId, learn: string, holds: (s: BattleState) => boolean) {
     const party = partyAt(30, { ids: ['hero', 'safira', 'chizuru', 'selene', 'scarlet'] });
-    party.roster.safira.tree = { ...party.roster.safira.tree, 'mirage-step': 1 };
-    const policies = { safira: [{ kind: 'cast-when', skill: 'mirage-step', whileAbsent: true }] as PolicyRule[] };
+    party.roster[who].tree = { ...party.roster[who].tree, [learn]: 1 };
+    const policies = { [who]: [{ kind: 'cast-when', skill: learn, whileAbsent: true }] as PolicyRule[] };
     let s = createBattle({ party, enemyIds: ['lanterneater'], boss: true, inventory: {}, revealed: {}, scale: { depth: 3, region: 'mainline' } });
-    s.enemies[0].max.hp = s.enemies[0].hp = 1e7;   // a fight long enough to see the step run out
+    s.enemies[0].max.hp = s.enemies[0].hp = 1e7;   // a fight long enough to see the effect run out
     const rng = mulberry32(7919);
     const casts: number[] = [];
     let held = 0;
-    for (let r = 0; r < 12 && s.outcome === 'ongoing'; r++) {
-      const safira = s.party.find((c) => c.key === 'safira')!;
-      if (!safira.alive) break;
-      safira.tp = safira.max.tp;   // TP and the gauge are not what this test is about
-      safira.limit = 0;
-      const stepping = safira.buffs.some((b) => b.stat === 'spd' && b.pct > 0 && b.src === 'safira');
+    for (let r = 0; r < 14 && s.outcome === 'ongoing'; r++) {
+      const me = s.party.find((c) => c.key === who)!;
+      if (!me.alive) break;
+      me.tp = me.max.tp;   // TP and the gauge are not what this test is about
+      me.limit = 0;
+      const on = holds(s);
       const acts = choose(s, party, policies);
-      expect(acts.safira.kind === 'skill' && acts.safira.skill === 'mirage-step', `round ${s.round + 1}`).toBe(!stepping);
-      if (stepping) held++;
+      expect(acts[who].kind === 'skill' && (acts[who] as { skill: string }).skill === learn, `${who} round ${s.round + 1}`).toBe(!on);
+      if (on) held++;
       else casts.push(s.round + 1);
       s = resolveRound(s, acts, rng);
     }
-    expect(casts.length).toBeGreaterThanOrEqual(2);   // cast, then again after it ran out
-    expect(held).toBeGreaterThanOrEqual(2);          // and not while it held
-    expect(casts[1] - casts[0]).toBeGreaterThan(1);
+    expect(casts.length, who).toBeGreaterThanOrEqual(2);   // cast, then again after it ran out
+    expect(held, who).toBeGreaterThanOrEqual(2);          // and not while it held
+    expect(casts[1] - casts[0], who).toBeGreaterThan(1);
+  }
+
+  it('cast-when whileAbsent recasts only once her effect is gone, round after round', () => {
+    holdLoop('safira', 'mirage-step', (s) => s.party.find((c) => c.key === 'safira')!.buffs.some((b) => b.stat === 'spd' && b.pct > 0 && b.src === 'safira'));
+    holdLoop('selene', 'full-moon-night', (s) => !!s.moon?.hold);
+    holdLoop('chizuru', 'ward', (s) => (s.barriers ?? []).some((b) => b.src === 'chizuru' && b.skill === 'ward'));
   });
 
   it('echo', () => {

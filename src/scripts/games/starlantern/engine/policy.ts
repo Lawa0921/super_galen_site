@@ -70,14 +70,18 @@ const shareOf = (c: Combatant) => c.hp / c.max.hp;
 
 /**
  * Whether an effect `c` gave with `def` still holds (plan 8h Task 1 ruling): a moon hold while the moon is held; a buff
- * while someone wears one of that stat and sign from her; a barrier while hers from this skill stands; a riposte while
- * hers lasts. A skill with none of these leaves nothing to wait for.
+ * while one it was cast on (her, for a self skill) wears one of that stat and sign from her; a barrier while hers from
+ * this skill stands; a riposte while hers lasts. A skill with none of these leaves nothing to wait for.
  */
 function holding(s: BattleState, c: Combatant, def: SkillDef): boolean {
   return def.effects.some((e) => {
     switch (e.kind) {
       case 'moon': return e.hold !== undefined && !!s.moon?.hold;
-      case 'buff': return [...s.party, ...s.enemies].some((t) => t.alive && t.buffs.some((b) => b.src === c.key && b.stat === e.stat && Math.sign(b.pct) === Math.sign(e.pct)));
+      case 'buff': {
+        // Only where the skill puts it: a self skill reads her own buffs, a foe skill the foes', any other her side's.
+        const on = def.target === 'self' ? [c] : def.target === 'enemy' || def.target === 'enemies' ? s.enemies : s.party;
+        return on.some((t) => t.alive && t.buffs.some((x) => x.src === c.key && x.stat === e.stat && Math.sign(x.pct) === Math.sign(e.pct)));
+      }
       case 'barrier': return (s.barriers ?? []).some((b) => b.src === c.key && b.skill === def.id);
       case 'riposte': return !!c.riposte;
       default: return false;
@@ -175,7 +179,9 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
       }
       case 'ensure-cover': {
         const ally = lowest(c.key);
-        if (!c.cover && ally && has(rule.skill)) return cast(rule.skill, ally.key);
+        // A cover over an ally who has fallen covers no one.
+        const covering = !!c.cover && s.party.some((m) => m.alive && m.key === c.cover?.ally);
+        if (!covering && ally && has(rule.skill)) return cast(rule.skill, ally.key);
         break;
       }
       case 'release-at': {
