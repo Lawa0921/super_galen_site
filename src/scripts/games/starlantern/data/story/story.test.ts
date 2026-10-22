@@ -2764,3 +2764,34 @@ describe('story depth Task 10: Noel and Bobby', () => {
     for (const t of storyTexts().filter((x) => x.key.startsWith('scenes.chat:noel:2.'))) expect(t.text, t.key).not.toContain('一起回來');
   });
 });
+
+describe('story depth Task 11: Liz and Scarlet', () => {
+  const ALL: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };
+  const lines = (id: SceneId) => linesWhen(STORY.scenes[id].lines, ALL);
+
+  it("Scarlet's last piece turns now: the horns were the retreat, and she moves her shield to stand beside him (design §7.6)", () => {
+    const five = lines('mem:scarlet:5');
+    expect(five).toHaveLength(4);
+    expect(() => pinBeat('mem:scarlet:5', {}, /撤退的號角/)).not.toThrow();
+    expect(five.find((l) => /撤退的號角/.test(l.text))!.who).toBe('scarlet');
+    expect(() => pinBeat('mem:scarlet:5', {}, /站到他旁邊/)).not.toThrow();
+    expect(five.find((l) => /站到他旁邊/.test(l.text))!.who).toBe('narrator');
+    // the first plain 「洛恩」 comes after the narrated pause, and she does not preach a choice
+    const beside = five.findIndex((l) => /站到他旁邊/.test(l.text));
+    const named = five.findIndex((l) => l.who === 'scarlet' && /洛恩(?!閣下)/.test(l.text));
+    expect(named).toBeGreaterThan(beside);
+    expect(five.map((l) => l.text).join('')).not.toMatch(/選/);
+  });
+
+  it('Liz meets them as the others do: Lorne gives his name before hers, and her 「帶回家」 answers their turning down the gold', () => {
+    const after = STORY.meet.liz.after;
+    const intro = introIndex('liz');
+    const named = after.findIndex((l) => /「我是洛恩/.test(l.text));
+    expect(named).toBeGreaterThan(-1);
+    expect(named).toBeLessThan(intro);
+    expect(after[intro].text).toMatch(/金幣真的不要/);
+    const home = after.findIndex((l) => l.who === 'liz' && /帶回家/.test(l.text));
+    expect(home).toBe(intro + 1);
+    expect(after[home].text).toMatch(/你們不要/);
+  });
+});
