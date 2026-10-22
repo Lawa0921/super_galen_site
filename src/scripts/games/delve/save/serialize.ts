@@ -455,7 +455,7 @@ export function validBossActive(v: unknown): EnemyKind | null {
 
 // ── 探索位元圖編碼快取：自動存檔每 30 秒一次；迷霧只會增加，揭露格數沒變 = 內容沒變，重用上次的 base64 ──
 const exploredCache = new WeakMap<ExploredMap, { count: number; b64: string; outer: OuterBitsSave | undefined }>();
-function encodeExplored(m: ExploredMap): { b64: string; outer: OuterBitsSave | undefined } {
+export function encodeExplored(m: ExploredMap): { b64: string; outer: OuterBitsSave | undefined } {
   const c = exploredCache.get(m);
   if (c && c.count === m.count) return c;
   const e = { count: m.count, b64: toBase64(m.encode()), outer: m.encodeOuter() };

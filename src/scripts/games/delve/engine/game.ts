@@ -54,11 +54,13 @@ import {
   salvageYield, upgradeCost, upgradeGear, weaponDamage, affixDef, pickSpeed, MAX_PLUS, STAT_CAPS, type AffixId, type Cost, type Gear, type GearTotals, type LootSource,
 } from './gear';
 import { MAX_BREATH, PlayerActor, SOLO_PID, type ActorInput, type GameMode, type Pid } from './actor';
+export type { GameMode } from './actor';
 import type { Cmd, CmdOp, CmdResults } from './commands';
 // 角色檔 ↔ actor（addActor / removeActor）。save/ 也 import 本檔：兩邊都只在函式內用對方，循環 import 無妨
-import { applyCharacter, snapshotGame } from '../save/serialize';
-import { characterState, splitSnapshot } from '../save/worldSave';
-import type { DelveCharacter } from '../save/character';
+import { applyCharacter, encodeExplored } from '../save/serialize';
+import { characterState, type VisitSave } from '../save/worldSave';
+import { CHARACTER_FORMAT, type DelveCharacter } from '../save/character';
+import { fromBase64 } from './base64';
 import { ENEMIES, makeEnemy, stepEnemy, type AiCtx, type Enemy, type EnemyKind } from './enemies';
 import {
   ACTIVE, BED_SAFE, DEFAULT_VIEW_HALF, DESPAWN, MAX_ENEMIES, NEAR_SPAWN_TILES, SPAWN_MAX, findSpot, habitatAt, homeNear, inHouse,
@@ -103,6 +105,10 @@ export interface DelveOptions {
   bounds?: WorldBounds;
   /** 中央以外的欄由誰生成（省略 = 無限世界用外圍生成器 OuterGen；測試可注入） */
   columnSource?: ColumnSource;
+  /** 本機玩家的 pid（省略 = SOLO_PID 'h'） */
+  localPid?: Pid;
+  /** 單機 / 房主 / 客人副本（省略 = 'solo'） */
+  mode?: GameMode;
 }
 
 export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden'
@@ -532,8 +538,10 @@ export class DelveGame {
   readonly actors = new Map<Pid, PlayerActor>();
   /** 本機玩家（solo / host = 'h'） */
   localPid: Pid = SOLO_PID;
-  /** 單機 / 房主 / 客人（M-B1 只有 solo） */
+  /** 單機 / 房主 / 客人副本（可變：開房 / 關房時 NetHost 會改） */
   mode: GameMode = 'solo';
+  /** 這一步的天氣特效中心（stepWorld 在 actor 迴圈前算一次） */
+  private wxAnchor: PlayerActor | null = null;
   /** 目前在處理的 actor：下面的相容 accessor 都讀寫它（M-B1 Task 1 恆等於 local） */
   cur!: PlayerActor;
   get local(): PlayerActor { return this.actors.get(this.localPid)!; }
@@ -793,7 +801,9 @@ export class DelveGame {
   private lvScan = 0;
 
   constructor(opts: DelveOptions = {}) {
-    const me = new PlayerActor(SOLO_PID);
+    this.localPid = opts.localPid ?? SOLO_PID;
+    this.mode = opts.mode ?? 'solo';
+    const me = new PlayerActor(this.localPid);
     this.actors.set(me.pid, me);
     this.cur = me;
     // settle.spawnCore（存檔欄位）= 目前 actor（cur）的重生爐心；step 外 cur = 本地玩家，存檔照舊。exec(pid) 切到別人時讀寫他的（B10）
@@ -961,10 +971,11 @@ export class DelveGame {
     try { return fn(); } finally { this.worldDepth--; }
   }
   /**
-   * 加入一個玩家：套上角色檔（applyCharacter，同讀檔），站在 at（腳底 tile；省略 = respawnPoint 的規則：
+   * 加入一個玩家：套上角色檔（applyCharacter，同讀檔），站在 at（腳底 tile；省略 / null = respawnPoint 的規則：
    * 據點爐心 > 世界出生點，新 actor 沒有床）。新 actor 只收得到加入之後的事件。
+   * 帶 visit（這個角色上次在這個世界的足跡）→ 先載入那一帶，身體放回 visit.pos，並還原迷霧 / 標記 / 發現 / 床 / 重生爐心 / 呼吸燃燒蜂蜜；at 被忽略。
    */
-  addActor(pid: Pid, character: DelveCharacter, at?: { x: number; y: number }): PlayerActor {
+  addActor(pid: Pid, character: DelveCharacter, at?: { x: number; y: number } | null, visit?: VisitSave): PlayerActor {
     if (this.actors.has(pid)) throw new Error(`delve: actor ${pid} already exists`);
     const a = new PlayerActor(pid);
     a.who = { id: character.id, nick: character.nick, createdAt: character.createdAt, rev: character.rev };
@@ -977,6 +988,7 @@ export class DelveGame {
     this.actors.set(pid, a);
     this.evRead.set(pid, this.evBase + this.events.length);
     this.withActor(a, () => {
+      if (visit) { this.enterVisit(a, visit); applyCharacter(this, characterState(character, this.time)); this.applyVisitVitals(visit); return; }
       const p = at ?? this.respawnPoint();
       this.teleport(p.x, p.y);
       this.aim = { x: p.x, y: p.y + 1 };
@@ -988,19 +1000,105 @@ export class DelveGame {
     });
     return a;
   }
-  /** 移除一個玩家（不能是本地玩家）：先把還沒換算的經驗記上，再以它為 cur 拍角色快照回傳 */
-  removeActor(pid: Pid): DelveCharacter {
+  /** addActor 帶 visit（cur = a）：載入那一帶、身體放回去、還原迷霧 / 標記 / 發現 / 床 / 重生爐心 */
+  private enterVisit(a: PlayerActor, v: VisitSave): void {
+    const w = this.world, p = a.player;
+    this.ensureAround(Math.floor((v.pos.x + p.w / 2) / TILE_SIZE));
+    p.x = v.pos.x; p.y = v.pos.y; p.vx = v.pos.vx; p.vy = v.pos.vy;
+    const f = this.feetTile();
+    this.aim = { x: f.x, y: f.y + 1 };
+    this.aimPx = { x: (f.x + 0.5) * TILE_SIZE, y: (f.y + 1.5) * TILE_SIZE };
+    this.lastTile = { x: -1, y: -1 };
+    let explored: ExploredMap | null = null;
+    if (v.explored) {
+      try { explored = ExploredMap.decode(fromBase64(v.explored), w.width, w.height, v.exploredOuter, w); } catch { explored = null; }
+    }
+    if (explored) a.explored = explored;
+    else { a.explored = new ExploredMap(w.width, w.height, undefined, w); a.explored.revealDisc(f.x, f.y, REVEAL_RADIUS + 6); }
+    a.markers = v.markers.map((m) => ({ x: m.x, y: m.y }));
+    if (v.discovery) a.discovery.load(v.discovery); else a.discovery.visit(f.x, f.y);
+    // 床頭還在才留（peekFg：不載入遠方的欄）
+    a.bed = v.bed && w.inBounds(v.bed.x, v.bed.y) && w.peekFg(v.bed.x, v.bed.y) === T.BED_HEAD ? { ...v.bed } : null;
+    a.spawnCore = v.spawnCore;
+  }
+  private applyVisitVitals(v: VisitSave): void {
+    this.breath = Math.max(0, Math.min(MAX_BREATH, v.vitals.breath));
+    this.burning = Math.max(0, Math.min(BURN_TIME, v.vitals.burning));
+    this.honeyT = Math.max(0, Math.min(HONEY_TIME, v.vitals.honey));
+  }
+  /** 移除一個玩家（不能是本地玩家）：先把還沒換算的經驗記上，再回傳他的角色與這個世界的足跡（visit） */
+  removeActor(pid: Pid): { character: DelveCharacter; visit: VisitSave } {
     if (pid === this.localPid) throw new Error('delve: cannot remove the local actor');
-    const a = this.actors.get(pid);
-    if (!a) throw new Error(`delve: no actor ${pid}`);
+    if (!this.actors.has(pid)) throw new Error(`delve: no actor ${pid}`);
     this.flushLevels();
     const now = Date.now();
-    const who = a.who ?? { id: pid, nick: pid, createdAt: now, rev: 0 };
-    const character = this.withActor(a, () => splitSnapshot(snapshotGame(this, now), who, { worldId: 'x', worldName: 'x', visits: {} }, now).character);
+    const out = { character: this.characterOf(pid, now), visit: this.visitOf(pid, now) };
     this.actors.delete(pid);
     this.evRead.delete(pid);
     this.trimEvents();
-    return character;
+    return out;
+  }
+  /**
+   * 某個玩家的角色檔：直接從 actor 欄位組出來，不經 snapshotGame（C10：不序列化整個世界）。
+   * 欄位對應同 splitSnapshot(snapshotGame)；死亡中 = 重生後的狀態（滿血滿魔）。測試證明兩條路徑相等（savedAt 除外）。
+   */
+  characterOf(pid: Pid, now: number = Date.now()): DelveCharacter {
+    const a = this.actors.get(pid);
+    if (!a) throw new Error(`delve: no actor ${pid}`);
+    return this.withActor(a, () => {
+      const who = a.who ?? { id: pid, nick: pid, createdAt: now, rev: 0 };
+      const r2 = (v: number): number => Math.round(v * 100) / 100;
+      const dead = this.dead;
+      const buffsLeft: Partial<Record<BuffKind, number>> = {};
+      for (const [k, until] of Object.entries(this.buffs) as [BuffKind, number][]) {
+        const left = until - this.time;
+        if (left > 0) buffsLeft[k] = left;
+      }
+      const eq = this.equipment;
+      return {
+        cformat: CHARACTER_FORMAT, id: who.id, nick: who.nick, createdAt: who.createdAt, savedAt: now, rev: who.rev,
+        appearance: { ...this.appearance },
+        vanity: this.vanity.toJSON(),
+        inventory: this.inventory.toJSON(),
+        equipment: eq.toJSON(), equipGear: eq.gearJSON(),
+        combat: { hp: r2(dead ? this.maxHp() : this.hp), baseMaxHp: this.baseMaxHp, mana: r2(dead ? this.maxMana() : this.mana) },
+        levels: this.levels.toJSON(),
+        codex: this.codex.toJSON(),
+        fishLog: { ...this.fishLog },
+        undyingCd: this.undyingCd > 0 ? r2(this.undyingCd) : 0,
+        buffsLeft,
+      };
+    });
+  }
+  /** 某個玩家在這個世界的足跡（位置 / 床 / 重生爐心 / 迷霧 / 標記 / 發現 / 呼吸燃燒蜂蜜）；欄位對應同 splitSnapshot。死亡中 = 重生點 */
+  visitOf(pid: Pid, now: number = Date.now()): VisitSave {
+    const a = this.actors.get(pid);
+    if (!a) throw new Error(`delve: no actor ${pid}`);
+    return this.withActor(a, () => {
+      const r2 = (v: number): number => Math.round(v * 100) / 100;
+      const p = this.player;
+      let pos = { x: p.x, y: p.y, vx: p.vx, vy: p.vy };
+      if (this.dead) {
+        const r = this.respawnPoint();
+        pos = { x: r.x * TILE_SIZE + TILE_SIZE / 2 - p.w / 2, y: (r.y + 1) * TILE_SIZE - p.h, vx: 0, vy: 0 };
+      }
+      const fog = encodeExplored(this.explored);
+      return {
+        pos, bed: this.bed ? { ...this.bed } : null, spawnCore: this.cur.spawnCore,
+        explored: fog.b64, markers: this.markers.map((m) => ({ x: m.x, y: m.y })), discovery: this.discovery.toJSON(),
+        vitals: { breath: r2(this.breath), burning: r2(Math.max(0, this.burning)), honey: r2(Math.max(0, this.honeyT)) },
+        lastSeen: now,
+        ...(fog.outer ? { exploredOuter: { chunks: [...fog.outer.chunks], data: fog.outer.data } } : {}),
+      };
+    });
+  }
+  /** 天氣特效的中心：本地活著 = 本地；非單機時本地死了 = 第一個活著的 actor；單機死亡沒有（現行行為） */
+  private weatherAnchor(): PlayerActor | null {
+    const l = this.local;
+    if (!l.dead) return l;
+    if (this.mode === 'solo') return null;
+    for (const a of this.actors.values()) if (!a.dead) return a;
+    return null;
   }
   /** 某個玩家的輸入（房主餵遠端輸入；本地輸入用 setMoveX… 也可以用 input(localPid)） */
   input(pid: Pid): ActorInput {
@@ -1172,6 +1270,7 @@ export class DelveGame {
     }
     // 每個玩家依序（本地第一個）：死掉的倒數重生、活著的跑玩家段
     const alive: PlayerActor[] = [];
+    this.wxAnchor = this.weatherAnchor();
     for (const a of actors) {
       this.withActor(a, () => {
         if (a.dead) this.updateDeath(dt);
@@ -1211,8 +1310,8 @@ export class DelveGame {
     this.updateFall();
     this.updateLiquid(dt);
     this.updateVitals(dt);
-    // 天氣特效（落雷 / 雨水補池）以本地玩家為中心，只跑一次（B5）
-    if (this.cur === this.local) this.inWorld(() => this.updateWeatherFx(dt));
+    // 天氣特效（落雷 / 雨水補池）以天氣錨點為中心，只跑一次（B5、C17）
+    if (this.cur === this.wxAnchor) this.inWorld(() => this.updateWeatherFx(dt));
     this.updateRecall(dt);
     this.updateExploration();
     this.touchStones();
@@ -1458,9 +1557,12 @@ export class DelveGame {
     const all = plan.tiles.map(([tx, ty]) => { const tid = this.world.getFg(tx, ty); return { tx, ty, tid, drops: this.dropsFor(tid, tx, ty) }; });
     for (const { tx, ty, tid, drops } of all) {
       this.world.setFg(tx, ty, T.AIR);
-      if (tid === T.BED_HEAD && this.bed && this.bed.x === tx && this.bed.y === ty) {
-        this.bed = null;
-        this.emit({ type: 'spawn', set: false, x: this.spawn.x, y: this.spawn.y });
+      if (tid === T.BED_HEAD) {
+        // 床是每個角色自己的重生點：把它設成重生點的每個人都清掉，各自收到提示（C17）
+        for (const a of this.actors.values()) {
+          if (!a.bed || a.bed.x !== tx || a.bed.y !== ty) continue;
+          this.withActor(a, () => { a.bed = null; this.emit({ type: 'spawn', set: false, x: this.spawn.x, y: this.spawn.y }); });
+        }
       }
       if (tid === T.HEARTH) {
         const lost = this.settle.coreAt(tx, ty);
@@ -1959,7 +2061,9 @@ export class DelveGame {
     const sig = w ? w.ready * 100 + w.total : 0;
     if (sig === this.sleepWaitSig) return;
     this.sleepWaitSig = sig;
-    if (w) this.inWorld(() => this.emit({ type: 'sleep', phase: 'wait', ready: w.ready, total: w.total }));
+    // 沒人在等了（取消 / 離床）也通知一次 ready 0，HUD 才收得掉提示
+    const total = w ? w.total : [...this.actors.values()].filter((a) => !a.dead).length;
+    this.inWorld(() => this.emit({ type: 'sleep', phase: 'wait', ready: w ? w.ready : 0, total }));
   }
   private updateSleep(dt: number): void {
     if (this.sleepT === null) return;
@@ -3775,7 +3879,14 @@ export class DelveGame {
     n.dir = this.playerCenter().x >= n.body.x + n.body.w / 2 ? 1 : -1;
     // 據點的藥師：每天第一次說話送一次祝福
     const day = dayIndexOf(this.time);
-    if (n.kind === 'healer' && this.perkDays.healer !== day) { this.perkDays.healer = day; this.giveBuff('bless'); }
+    // 每個玩家每天一次（C16）：本地 actor 讀寫 perkDays.healer（存檔欄位），其他人用 healerDay
+    if (n.kind === 'healer') {
+      const mine = this.cur === this.local;
+      if ((mine ? this.perkDays.healer : this.cur.healerDay) !== day) {
+        if (mine) this.perkDays.healer = day; else this.cur.healerDay = day;
+        this.giveBuff('bless');
+      }
+    }
     this.emit({ type: 'talk', kind: n.kind, line });
   }
   /** debug / e2e：和某位居民說話（等同右鍵點他） */
@@ -4367,7 +4478,7 @@ export class DelveGame {
   }
   private questKill(kind: EnemyKind): void {
     for (const q of this.quests.onKill(kind)) {
-      this.emit({ type: 'quest', phase: this.quests.ready(q) ? 'ready' : 'progress', id: q.def.id, title: q.def.title, progress: q.progress, n: q.def.n });
+      this.inWorld(() => this.emit({ type: 'quest', phase: this.quests.ready(q) ? 'ready' : 'progress', id: q.def.id, title: q.def.title, progress: q.progress, n: q.def.n }));
     }
   }
   /** 收集 / 探索 / 護送的進度；剛達成的發 ready 事件 */
@@ -4377,11 +4488,11 @@ export class DelveGame {
     for (const q of [...this.quests.active]) {
       if (q.def.kind !== 'escort' || !q.def.target || this.folk.byKey(q.def.target)) continue;
       this.quests.active = this.quests.active.filter((a) => a !== q);
-      this.emit({ type: 'quest', phase: 'failed', id: q.def.id, title: q.def.title });
+      this.inWorld(() => this.emit({ type: 'quest', phase: 'failed', id: q.def.id, title: q.def.title }));
     }
     const before = new Map(this.quests.active.map((q) => [q.def.id, this.quests.ready(q)]));
     this.quests.refresh((it) => this.inventory.count(it), (r) => this.discovery.isFound(r), (k) => Boolean(this.folk.byKey(k)?.safe));
-    for (const q of this.quests.active) if (this.quests.ready(q) && !before.get(q.def.id)) this.emit({ type: 'quest', phase: 'ready', id: q.def.id, title: q.def.title });
+    for (const q of this.quests.active) if (this.quests.ready(q) && !before.get(q.def.id)) this.inWorld(() => this.emit({ type: 'quest', phase: 'ready', id: q.def.id, title: q.def.title }));
   }
   // ── 地標 ──
   /** 領地標：第一次 → 獎勵 + 文字 + 線索；之後只顯示文字 */
