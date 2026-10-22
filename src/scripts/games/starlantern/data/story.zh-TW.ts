@@ -1132,7 +1132,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // burn this round's days and says what the lamp takes; each companion gives a memory of him anyway, believing it lost (met),
   // or Lorne hears her in the lamp and names her (not met); Bobby closes the eight with her valve and its rule (her fifth
   // piece); Lorne pays its first light with the ten pieces he found; Rin's hand on his; the bell, handed over without a word,
-  // and the keeper's last; Rin's last word. Fifteen lines at most; the three 「……」 are Lorne's, the keeper's and Rin's.
+  // and the keeper's last; Rin's last word. Sixteen lines in every party (R8: the faces fading after his cost); the three 「……」 are
+  // Lorne's, the keeper's and Rin's.
   // Address forms that change with a full chain (Selene, Noel, Scarlet, and Bobby's ancestors) read both ways.
   finale: {
     lines: [
@@ -1142,13 +1143,13 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'selene', mood: 'smile', text: '「銀盆裡很多人喊著的那個名字，是你呢。這一次，不是月亮說的。」', if: { met: 'selene', full: 'selene' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有一段光在讀月亮。瑟蕾，還沒找到妳，但我記住妳了。」', if: { notMet: 'selene' } },
       { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，冰碎之後頭一句聽見的，是『站得起來嗎？』謹以此段，奉於燈前。」', if: { met: 'chizuru', notFull: 'chizuru' } },
-      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，鈴掛在哪裡，哪裡便是神社。我守的，是此處的人。這一段，奉於燈前。」', if: { met: 'chizuru', full: 'chizuru' } },
+      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，『站得起來嗎？』是活人對我說的第一句。鈴在此處，此處便是神社。謹以此段，奉於燈前。」', if: { met: 'chizuru', full: 'chizuru' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有人還在念沒念完的祝詞。千鶴，封印可以停下了。」', if: { notMet: 'chizuru' } },
       { who: 'safira', mood: 'smile', text: '「小洛，在火裡陪我跳完一整首的，是你。這一拍，送給燈唷。」', if: { met: 'safira', notFull: 'safira' } },
-      { who: 'safira', mood: 'smile', text: '「我把大家一個一個想過了。小洛，這次我不跑在最前面。這一拍，送給燈唷。」', if: { met: 'safira', full: 'safira' } },
+      { who: 'safira', mood: 'smile', text: '「在火裡陪我跳完一整首的是小洛。這次我停下來，一拍一拍想過了，才送給燈唷。」', if: { met: 'safira', full: 'safira' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有人一個人跳著舞，等誰接上拍子。莎菲拉，我會去接。」', if: { notMet: 'safira' } },
       { who: 'sylvie', mood: 'unguarded', text: '「毒藤是你割斷的。這一段，給燈。」', if: { met: 'sylvie', notFull: 'sylvie' } },
-      { who: 'sylvie', mood: 'unguarded', text: '「新芽是我自己種的。今天換我讓人守。這一段，給燈。」', if: { met: 'sylvie', full: 'sylvie' } },
+      { who: 'sylvie', mood: 'unguarded', text: '「毒藤是你割斷的，我收下了。新芽是我自己種的。這一段，給燈。」', if: { met: 'sylvie', full: 'sylvie' } },
       { who: 'hero', mood: 'distant', text: '「燈裡還有一支箭在射。希爾薇，不用再一個人守了。」', if: { notMet: 'sylvie' } },
       { who: 'noel', mood: 'pout', text: '「哼。喂，歸來者，『一起回去吧』是你先說的。這一句，本小姐借給燈。」', if: { met: 'noel', notFull: 'noel' } },
       { who: 'noel', mood: 'blush', text: '「『一起回去吧』，是你先說的，洛恩。這一句，我自己交出去。」', if: { met: 'noel', full: 'noel' } },
@@ -1157,7 +1158,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'scarlet', mood: 'smile', text: '「城門前，你問我在守什麼。我現在答得出來了，洛恩。」', if: { met: 'scarlet', full: 'scarlet' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有個騎士還守著城門，不肯轉身。絲嘉蕾，劍可以放下了。」', if: { notMet: 'scarlet' } },
       { who: 'liz', mood: 'smile', text: '「老大在寶庫遞給我的那塊乾糧，我估過了──無價。這種好貨，借燈用用。」', if: { met: 'liz', notFull: 'liz' } },
-      { who: 'liz', mood: 'smile', text: '「老大，我算清楚了：回家就是還債。這一段，借燈用用。」', if: { met: 'liz', full: 'liz' } },
+      { who: 'liz', mood: 'smile', text: '「老大遞的那塊乾糧，無價。無價的不借，送燈。回家的債，我自己去還。」', if: { met: 'liz', full: 'liz' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有人數著吃不下的金幣。莉茲，家裡有人在等。」', if: { notMet: 'liz' } },
       // The valve and its rule (Bobby's fifth piece, design fix four): her ancestors made the key too, when her chain is whole.
       { who: 'bobby', mood: 'focused', text: '「洛恩哥，做這把劍的，是我家的人。閥裝好了，這次真的一下下。只是第一次點火，要一段不回來的光。」', if: { met: 'bobby', full: 'bobby' } },
