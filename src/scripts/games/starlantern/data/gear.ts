@@ -131,14 +131,14 @@ const SPECIAL_LIST: SpecialDef[] = [
   legendary(['lg-liz', '三叉刃', 'weapon', null, '多出的那一道刃，是莉茲用來說服別人的第三句話。']),
   legendary(['lg-sylvie', '破甲箭袋', 'offhand', null, '袋中的箭頭刻著細溝，專挑鎧甲的縫隙。']),
   legendary(['lg-scarlet', '挑戰者紋章', 'neck', null, '誰佩上它，誰就成了所有敵人的頭號目標，也成了最硬的那面牆。']),
-  legendary(['lg-selene', '滿月頭冠', 'head', null, '滿月之夜鑄成，月光不再只照一人。']),
+  legendary(['lg-selene', '滿月頭冠', 'head', null, '鑄於滿月之夜。從此月光照著的，不只一個人。']),
   legendary(['lg-safira', '四拍舞靴', 'feet', null, '舞步多了一拍，刀光便多了一道。']),
   legendary(['lg-bobby', '長效齒輪手套', 'hands', null, '波比在齒輪裡多裝了一圈彈簧，砲台因此不容易停下。']),
 
   legendary(['blaze-heart-sword', '灼心之劍', 'weapon', 'blaze', '劍心仍在燃燒，持劍者卻不再被火舌反噬。']),
   unique(['blaze-ember-ring', '餘燼指環', 'ring', 'blaze', '火焰熄滅之後，只剩餘燼還記得溫度。'], ['fireDmg', 'fireRes', 'atk']),
   unique(['frost-winter-staff', '永冬權杖', 'weapon', 'frost', '權杖所指之處，季節停在最冷的那一天。'], ['mag', 'iceDmg', 'int']),
-  legendary(['frost-bloom-neck', '霜華頸鍊', 'neck', 'frost', '一朵冰花凝在鍊墜，綻放時整片霜凍之地都為之震動。']),
+  legendary(['frost-bloom-neck', '霜華頸鍊', 'neck', 'frost', '一朵冰花凝在鍊墜上。它綻開的那一刻，整片霜凍之地都安靜了下來。']),
   legendary(['storm-thunder-bow', '疾雷之弓', 'weapon', 'storm', '弦響之前，雷聲已先一步落地。']),
   unique(['storm-swift-boots', '迅雷之靴', 'feet', 'storm', '穿上它的人，總是比雷聲先到。'], ['spd', 'agi', 'evasion']),
   unique(['mire-miasma-mask', '瘴氣面具', 'head', 'mire', '面具內側浸滿沼氣，戴久了連毒也學會了客氣。'], ['poisonRes', 'hp', 'armor']),
@@ -164,7 +164,7 @@ const SET_DEFS: { id: string; stem: string; region: RegionId; slots: GearSlot[];
 
 const SET_PIECES: SpecialDef[] = SET_DEFS.flatMap((s) => s.slots.map((slot): SpecialDef => ({
   id: `${s.id}-${slot}`, name: `${s.stem}${NOUN[slot]}`, rarity: 'set', slot, region: s.region, source: 'any', set: s.id,
-  fixed: s.theme.slice(0, slot === 'weapon' || slot === 'body' ? 3 : 2), lore: `${s.stem}套裝的一件，湊齊整套才顯出真正的力量。`,
+  fixed: s.theme.slice(0, slot === 'weapon' || slot === 'body' ? 3 : 2), lore: `${s.stem}套裝的其中一件。湊齊一整套，才看得出它真正的本事。`,
 })));
 
 export const SETS: Record<string, SetDef> = Object.fromEntries(SET_DEFS.map((s) => [s.id, {

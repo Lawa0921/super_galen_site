@@ -425,7 +425,7 @@ describe('gear from chests and the vault', () => {
     const box = root.querySelector('.slx-full')!;
     expect(box.textContent).toContain('打開寶庫');
     expect(box.textContent).toContain('獵弓・獨特 放不下');
-    expect(box.textContent).toContain('冒險背包裡沒有裝備可以丟');
+    expect(box.textContent).toContain('冒險背包裡沒有能丟的裝備');
     expect(box.textContent).not.toContain('回城');   // the labyrinth is new every trip: no coming back for it
     expect(options()).toEqual(['先留在這裡']);
     expect(box.textContent).not.toContain('放棄');   // leaving it there destroys nothing

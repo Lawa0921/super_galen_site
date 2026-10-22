@@ -6,6 +6,9 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { NPC_NAMES, STORY } from './story.zh-TW';
 import { SCENE_IDS } from './story/scenes';
+import { dots, opensOnDots, telegraphBreaks } from './story/voiceGates';
+import { T } from './text.zh-TW';
+import { SPECIALS } from './gear';
 
 /** The starlantern folder: this file sits in its `data/`. */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -32,6 +35,34 @@ function sourceTexts(): { file: string; text: string }[] {
     if (/^starlantern.*\.astro$/.test(name)) out.push({ file: `pages/games/${name}`, text: readFileSync(join(PAGES, name), 'utf8') });
   }
   return out;
+}
+
+/**
+ * The interface keys plan 8h owns (story depth SDD `off-limits.md`): this plan never edits them, so the voice guard does not
+ * read them either; rough lines there are listed for after the merge (story depth Task 19 report).
+ */
+const OFF_LIMITS = [
+  'T.cmd.', 'T.rune.', 'T.build.', 'T.ui2.workshop.', 'T.ui2.tree.', 'T.ui2.builds.', 'T.clear.',
+  // the inn's tail sits in 8h's hunk: its builds line and the lines around it
+  'T.ui2.inn.builds', 'T.ui2.inn.respecSaveFailed', 'T.ui2.inn.morning', 'T.ui2.inn.saved', 'T.ui2.inn.saveFailed', 'T.ui2.inn.nobodyDown', 'T.ui2.inn.revived',
+];
+
+/**
+ * What the player reads as a sentence outside the script (story depth Task 19): every plain string of `T` that ends a
+ * sentence (。！？), outside `OFF_LIMITS`; each scene's title as the handbook and the scene plate show it; each special's lore.
+ * Templates are left to the source scan above (their numbers are passed in).
+ */
+function uiSentences(): { key: string; text: string }[] {
+  const out: { key: string; text: string }[] = [];
+  const walk = (v: unknown, path: string): void => {
+    if (typeof v === 'string') { if (/[。！？]/.test(v)) out.push({ key: path, text: v }); return; }
+    if (Array.isArray(v)) { v.forEach((x, i) => walk(x, `${path}.${i}`)); return; }
+    if (v && typeof v === 'object' && !(v instanceof RegExp)) for (const [k, x] of Object.entries(v)) walk(x, `${path}.${k}`);
+  };
+  walk(T, 'T');
+  for (const id of SCENE_IDS) out.push({ key: `STORY.scenes.${id}.title`, text: STORY.scenes[id].title });
+  for (const s of Object.values(SPECIALS)) out.push({ key: `SPECIALS.${s.id}.lore`, text: s.lore ?? '' });
+  return out.filter((s) => !OFF_LIMITS.some((p) => s.key.startsWith(p)));
 }
 
 /** Misspellings of the cast's names, as they have turned up or easily could (audit A4, A5). */
@@ -68,6 +99,43 @@ describe('terms (story polish)', () => {
     const found = sourceTexts().flatMap(({ file, text }) =>
       BANNED.filter((b) => (typeof b === 'string' ? text.includes(b) : b.test(text))).map((b) => `${file}: ${String(b)}`));
     expect(found).toEqual([]);
+  });
+
+  it('interface sentences open on no 「……」 and say no 「還有。」 but Rin\'s own cue (story depth Task 19)', () => {
+    // The source, so templates count too: no quote and no literal opens on 「……」.
+    for (const file of ['data/text.zh-TW.ts', 'data/gear.ts']) {
+      const text = sourceTexts().find((t) => t.file === file)!.text;
+      expect(text.match(/「……/g) ?? [], file).toEqual([]);
+      expect(text.match(/['`]……/g) ?? [], file).toEqual([]);
+      // 「還有。」 is retired from her lines (story polish ruling 3), but it stays the name of her mechanic's moment (plan 8
+      // ruling a): the cue that pops when she fells her mark, and its log line. Nothing else says it.
+      const again = text.split('\n').filter((l) => l.includes('還有。'));
+      expect(again.every((l) => /again/.test(l)), again.join('\n')).toBe(true);
+      expect(again.length, file).toBe(file === 'data/text.zh-TW.ts' ? 2 : 0);
+    }
+    expect(T.mech.cue.again).toBe('還有。');
+  });
+
+  it('the interface\'s sentences read as whole sentences, the story text it shows too (story depth Task 19)', () => {
+    const out: string[] = [];
+    for (const { key, text } of uiSentences()) {
+      if (key === 'T.mech.cue.again') continue;   // Rin's 「還有。」, the name of her mechanic's moment (test above)
+      for (const why of telegraphBreaks(text)) out.push(`${key}: ${why}: ${text}`);
+      if (dots(text) > 1) out.push(`${key}: two 「……」: ${text}`);
+      if (opensOnDots(text)) out.push(`${key}: opens on 「……」: ${text}`);
+    }
+    expect(out).toEqual([]);
+    // the walk reaches what the player reads: notices, the handbook, a scene's title, a gear's lore
+    const keys = uiSentences().map((s) => s.key);
+    for (const k of ['T.notices.wipe', 'T.ui2.handbook.empty', 'T.ui2.equip.full', 'STORY.scenes.rin-reveal.title', 'SPECIALS.lg-noel.lore']) expect(keys, k).toContain(k);
+    for (const k of keys) expect(OFF_LIMITS.some((p) => k.startsWith(p)), k).toBe(false);
+  });
+
+  it("a townsperson's fragment goes back to 本人, she or he (story depth Task 19)", () => {
+    // Anna and Marta are women: the exchange never says 他 of the owner.
+    expect(T.ui2.exchange.giveAsk('瑪莎的記憶碎片')).not.toMatch(/他|她/);
+    expect(T.ui2.exchange.giveAsk('瑪莎的記憶碎片')).toContain('瑪莎的記憶碎片');
+    expect(T.ui2.exchange.giveFail.invalid).not.toMatch(/他|她/);
   });
 
   it('past figures speak to her as 妳', () => {

@@ -163,7 +163,7 @@ describe('ForgeScene', () => {
 
   it('keeps the reasons the shop and the gate use apart from the forge ones', () => {
     expect(T.reasons.locked).toBe('尚未解鎖');
-    expect(T.reasons).toMatchObject({ mats: '素材不足', max: '已經強化到最高了', affixLocked: '這件裝備的重鑄已鎖定在標著（重鑄鎖定）的詞綴，其他詞綴不可重鑄', none: '沒有可以換的詞綴' });
+    expect(T.reasons).toMatchObject({ mats: '素材不足', max: '已經強化到最高了', affixLocked: '這件裝備只能重鑄標著（重鑄鎖定）的詞綴，其他詞綴不可重鑄', none: '沒有可以換的詞綴' });
   });
 
   it('no element carries a style attribute', () => {
