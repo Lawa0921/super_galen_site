@@ -465,11 +465,15 @@ export class World {
     const c = this.col(x >> 5);
     return c !== null && c.frozen[(y << 5) | (x & 31)] === 1;
   }
-  /** 設定 / 取消結冰（霜系統用；不標 dirty——呼叫端自己決定重畫哪些 chunk） */
+  /** 設定 / 取消結冰（霜系統用；不標 dirty——呼叫端自己決定重畫哪些 chunk）。值有變 → 該 chunk 進 netLiquid（D5：結冰跟著液體走） */
   setFrozen(x: number, y: number, on: boolean): void {
     if (!this.inBounds(x, y)) return;
     const c = this.col(x >> 5);
-    if (c !== null) c.frozen[(y << 5) | (x & 31)] = on ? 1 : 0;
+    if (c === null) return;
+    const i = (y << 5) | (x & 31), v = on ? 1 : 0;
+    if (c.frozen[i] === v) return;
+    c.frozen[i] = v;
+    this.netLiquid.add(this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK)));
   }
   /** (x,y) 的材質變體 0..2（世界外 / 沒常駐照座標雜湊——同一個雜湊） */
   variantAt(x: number, y: number): number {
