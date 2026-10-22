@@ -8,6 +8,7 @@ import type { DelveGame, DelveEvent } from '../engine/game';
 import { DASH_TIME, PULSE_RADIUS, SLAM_RADIUS } from '../engine/skills';
 import { T } from '../engine/tiles';
 import { TILE_SIZE as S } from '../engine/constants';
+import { isMine } from './eventScope';
 
 interface Ring { x: number; y: number; t: number; dur: number; r0: number; r1: number; colors: readonly string[]; ground: boolean; }
 interface Pillar { t: number; dur: number; }
@@ -34,11 +35,13 @@ export class LevelFx {
       this.pillars.push({ t: 0, dur: 1.3 });
       this.rings.push({ x: p.x + p.w / 2, y: p.y + p.h / 2, t: 0, dur: 0.7, r0: 4, r1: 56, colors: GOLD, ground: false });
     } else if (e.type === 'skill' && e.phase === 'start' && e.skill === 'dash') {
+      if (!isMine(e, this.game.localPid)) return; // 別人的衝刺：殘影畫在本地玩家身上是錯的
       this.dashLeft = DASH_TIME + 0.08;
       this.dashDir = this.game.facing;
     } else if (e.type === 'skill' && e.phase === 'land' && e.skill === 'slam') {
       this.rings.push({ x: e.x, y: e.y, t: 0, dur: 0.38, r0: 6, r1: SLAM_RADIUS * S, colors: ['#f2e2b0', '#d8ba76', '#966139'], ground: true });
     } else if (e.type === 'skill' && e.phase === 'start' && e.skill === 'pulse') {
+      if (!isMine(e, this.game.localPid)) return;
       const c = { x: p.x + p.w / 2, y: p.y + p.h / 2 };
       this.rings.push({ x: c.x, y: c.y, t: 0, dur: 0.9, r0: 8, r1: PULSE_RADIUS * S, colors: ['#cceaf8', '#4aaeb0', '#1f6474'], ground: false });
       this.rings.push({ x: c.x, y: c.y, t: -0.18, dur: 0.9, r0: 8, r1: PULSE_RADIUS * S * 0.7, colors: ['#4aaeb0', '#1f6474'], ground: false });

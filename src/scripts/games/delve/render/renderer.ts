@@ -42,6 +42,7 @@ import type { Waystone } from '../engine/waystones';
 import { bobberBmp, campfireBmp } from './fishArt';
 import { SettleLayer } from './settleDraw'; // [settle]
 import { FolkLayer } from './folkDraw';
+import { isMine } from './eventScope';
 
 const S = TILE_SIZE;
 /** 已解鎖傳送碑的小光源：強度 / 色（青） */
@@ -342,9 +343,10 @@ export class Renderer {
   onEvent(e: DelveEvent): void {
     this.combat.onEvent(e);
     this.levelFx.onEvent(e);
-    if (e.type === 'respawn') this.snapCamera();
+    const mine = isMine(e, this.game.localPid);
+    if (e.type === 'respawn' && mine) this.snapCamera();
     if (e.type === 'hurt' && !e.cause) this.local.hurtAt = this.clock;
-    if (e.type === 'climb') this.climbDust(e.phase !== 'grab', e.phase === 'mantle' ? e : null);
+    if (e.type === 'climb' && mine) this.climbDust(e.phase !== 'grab', e.phase === 'mantle' ? e : null);
     if (e.type === 'lightning') { this.bolt = { x: e.x * S + S / 2, seed: ++this.boltN }; this.lightDirty = true; }
     if (e.type === 'mine' && e.tile === T.ICE) this.fx.invalidate(this.game.world, [this.game.world.chunkIndex(Math.floor(e.x / CHUNK), Math.floor(e.y / CHUNK))]);
     if ((e.type === 'mine' || e.type === 'place') && this.nearView(e.x, e.y, LIGHT_MARGIN)) this.lightDirty = true;
