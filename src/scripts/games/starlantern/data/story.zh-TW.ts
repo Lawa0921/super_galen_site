@@ -481,7 +481,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'hero', mood: 'serious', text: '「那天早上她就說了。這一趟下去，她還是走在我後面。」' },
       { who: 'scarlet', mood: 'serious', text: '「我明白了。那麼……我有我的做法。」', if: { met: 'scarlet' } },
       { who: 'marta', text: '「湯要涼了。孩子，坐下。這碗是妳的，一直都是。」', if: { notFull: 'hero' } },
-      { who: 'narrator', text: '洛恩把瑪莎塞進行囊的那壺湯倒了一碗，推到凜的面前。', if: { full: 'hero' } },
+      { who: 'narrator', text: '洛恩把瑪莎硬塞進行囊的那壺湯熱了，倒一碗，推到凜的面前。', if: { full: 'hero' } },
       N('凜坐下了。這一次，她把湯喝得很慢。'),
     ],
     summary: '凜當著大家說出自己本來是靜鐘會派來殺洛恩的人。絲嘉蕾擋在洛恩身前，莉茲要她還一句實話；最後她坐下來，把湯喝得很慢。',
@@ -512,7 +512,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'hero-alone': {
     lines: [
       N('天還沒亮，洛恩揹好劍，走到門邊。門口坐著一個人。'),
-      N('凜背靠著房門，短刃橫在膝上。跟回城的那一夜一樣，從那裡看得見他。'),
+      N('凜背靠著房門，短刃橫在膝上。跟第一次回城的那一夜一樣，從那裡看得見他。'),
       { who: 'rin', mood: 'serious', text: '「要出去，得先過我這裡。」' },
       { who: 'hero', mood: 'sad', text: '「燈要的是記憶。妳們跟下去，交出去的就回不來了。」' },
       { who: 'rin', mood: 'serious', text: '「你說過，下次也拜託我。這就是下次。」' },
@@ -1591,7 +1591,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'selene', mood: 'foresee', text: '「凜，妳的明天，月亮說了一點點呢。──算了，請當作沒聽見。」' },
       { who: 'rin', mood: 'normal', text: '「說一半就收回，比不說還吵。」' },
-      { who: 'selene', mood: 'wistful', text: '「那換凜說一個？凜每次都只說『沒事』。」' },
+      { who: 'selene', mood: 'wistful', text: '「那換凜說一個？妳每次都只說『沒事』。」' },
       N('凜想了一下，說：「沒事。」瑟蕾笑出聲來。'),
     ],
     summary: '瑟蕾說月亮讀到了凜的明天，又收了回去。凜嫌她吵，瑟蕾說凜每次都只說沒事，凜想了一下，還是說沒事。',
