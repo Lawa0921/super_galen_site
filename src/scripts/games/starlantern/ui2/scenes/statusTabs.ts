@@ -25,6 +25,7 @@ import { cancelSpend, clickSpend, pressSpend, type SpendState } from '../spendPr
 import { battleTp, cardOf, compareCards, slotDots, slotStates } from '../skillCard';
 import { RUNES, type RuneRef } from '../../data/runes';
 import { socketable } from '../../engine/sockets';
+import { buildOf } from '../../data/builds';
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 
@@ -552,6 +553,36 @@ function treeNotes(ctx: SceneCtx, id: CharacterId): HTMLElement {
   ]);
 }
 
+/**
+ * The suggested builds on `id` (plan 8h Task 7). In the labyrinth the screen pages over the members on the field alone, so
+ * for one on the bench: the error cue and a note, as the workshop's way in (Task 5 review of plan 8g).
+ */
+function toBuilds(ctx: SceneCtx, id: CharacterId): void {
+  settle();
+  const g = ctx.game;
+  if (g.phase === 'map' && !!g.run && !activeIds(g.state.party).includes(id)) {
+    ctx.sfx.error();
+    treeView.msg = T.ui2.status.fieldOnly;
+    return;
+  }
+  ctx.sfx.confirm();
+  ctx.go('builds', id);
+}
+
+/**
+ * The tree tab's line about the suggested builds: the build she follows, or (following nothing, with skill or talent points
+ * left; plan 8h ruling 14) where a click lays them all out; and the way in.
+ */
+function buildsLine(ctx: SceneCtx, id: CharacterId, redraw: (change?: () => void) => void): HTMLElement {
+  const m = ctx.game.state.party.roster[id];
+  const followed = m.build === undefined ? undefined : buildOf(id, m.build);
+  const unspent = skillPointsLeft(m) > 0 || talentPointsLeft(m) > 0;
+  const note = followed ? T.ui2.builds.followTag(followed.name) : unspent ? T.ui2.builds.unspentHint : '';
+  const go = el('span', { class: 'slx-tree-builds-go', text: T.ui2.builds.entry, attrs: { role: 'button' } });
+  go.addEventListener('click', () => { if (!locked(go)) redraw(() => toBuilds(ctx, id)); });
+  return el('div', { class: 'slx-tree-builds' }, [el('span', { class: 'slx-tree-builds-note', text: note }), go]);
+}
+
 const tree: StatusTab = {
   id: 'tree',
   label: T.ui2.status.tabs.tree,
@@ -632,6 +663,7 @@ const tree: StatusTab = {
         el('span', { class: 'slx-tree-left', text: t.left(skillPointsLeft(m)) }),
         el('span', { class: 'slx-tree-capstone', text: capstone.length ? t.capstone(capstone.map(nodeName).join('、')) : t.noCapstone(rulesOf(id).capstones) }),
       ]),
+      buildsLine(ctx, id, redraw),
       cueFrame('slx-tree-frame', colsEl, (top) => { treeView.top = top; }),
       treeNotes(ctx, id),
     ]);
@@ -646,6 +678,10 @@ const tree: StatusTab = {
     }
     if (a === 'confirm') {
       pressTree(ctx, id);
+      return true;
+    }
+    if (a === 'swap') {
+      toBuilds(ctx, id);
       return true;
     }
     return false;

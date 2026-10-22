@@ -72,11 +72,11 @@ export class StatusScene implements Scene {
       updateCues(this.bodyEl);
       return;
     }
-    // Back from the workshop the sheet does not return to it: to the labyrinth or the guild, whichever opened them.
+    // Back from the workshop (or the suggested builds) the sheet does not return to it: to the labyrinth or the guild, whichever opened them.
     if (a === 'cancel') {
       this.ctx.sfx.cancel();
       const g = this.ctx.game;
-      const from = this.ctx.from === 'workshop' ? (g.phase === 'map' && !!g.run ? 'dungeon' : 'guild') : this.ctx.from;
+      const from = this.ctx.from === 'workshop' || this.ctx.from === 'builds' ? (g.phase === 'map' && !!g.run ? 'dungeon' : 'guild') : this.ctx.from;
       this.ctx.go(from ?? 'guild');
     }
   }

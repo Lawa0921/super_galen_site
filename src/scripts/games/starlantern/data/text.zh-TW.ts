@@ -468,6 +468,12 @@ export const T = {
       added: (line: string) => `＋${line}`,
       lost: (line: string) => `−${line}`,
       hint: '↑↓ 選擇　Enter 決定　Tab 切換欄　Q/E 換人　R/F 捲動卡片　Esc 返回',
+      /** Under the title while she follows a suggested build (plan 8h): its name and the first rule of its play. */
+      following: (name: string, line: string) => `跟隨：${name}——${line}`,
+      /** Over the rune list: the runes her build suggests for this skill not in its slots yet, each with where it is. */
+      lacking: (items: [string, string][]) => `缺：${items.map(([name, where]) => `${name}（${where}）`).join('、')}`,
+      /** In place of where a lacking rune is found: one is in the bag already. */
+      inBag: '袋子裡有',
     },
     /** The status screen's skill-tree tab. */
     tree: {
@@ -729,6 +735,50 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       respecSaveFailed: (name: string) => `${name}的配點已重置，但存檔失敗了……瀏覽器不允許儲存。`,
       morning: '──隔天早上', saved: '已存檔。', saveFailed: '存檔失敗了……瀏覽器不允許儲存。',
       nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
+      /** Plan 8h: the suggested builds screen, after 重置配點. */
+      builds: '建議配點',
+    },
+    /** The suggested builds screen (plan 8h Task 7): each build of a member, what it does and lacks; apply and follow. */
+    builds: {
+      title: '建議配點', listHead: '配點方案',
+      /** Beside the name of the build she follows. */
+      following: '跟隨中',
+      /** What applying starts (plan 8h ruling 2: following is off until a build is applied). */
+      follow: '套用之後會跟隨這套：升級時自動照這套配點，新開的符文槽也從袋子補上。自己動手配點就會停止跟隨。',
+      /** On the card of the build she follows: what it does, and how to stop it. */
+      followingNow: '正在跟隨這套：升級時自動照這套配點，新開的符文槽從袋子補上。按「停止跟隨」或自己動手配點就會停下來。',
+      stopFollow: '停止跟隨',
+      stopped: (name: string, build: string) => `${name}不再跟隨${build}，配點維持現在的樣子。`,
+      apply: (cost: number) => `套用（${cost} G）`,
+      applyFree: '套用（免費）',
+      applied: (name: string, build: string, placed: number, missing: number) =>
+        `${name}套用了${build}：鑲上 ${placed} 顆符文${missing ? `，還缺 ${missing} 顆` : ''}。`,
+      townOnly: '回城後才能套用',
+      /** The confirm (plan 8h ruling 12): the price, the tree laid out anew, her other runes back to the bag. */
+      askApply: (name: string, build: string, cost: number) =>
+        `要讓${name}套用${build}嗎？${cost === 0 ? '免費' : `需要 ${cost} G`}。\n技能樹與天賦會照這套重新分配，${name}身上其他的符文會回到袋子。`,
+      /** Where the build is measured to shine (data/builds.ts BuildScenario). */
+      scenario: { boss: '擅長：頭目戰', crowd: '擅長：一次對付一大群', long: '擅長：打得久的戰鬥', ordeal: '擅長：更深處的頭目戰' },
+      policyHead: '打法',
+      /** The tree the build lays out at the top level: its ultimate and the B sides it takes. */
+      treeHead: (lv: number) => `技能樹（練到 Lv ${lv}）`,
+      ultimate: (names: string[]) => `絕技：${names.join('、')}`,
+      noUltimate: '絕技：不學',
+      sides: (names: string[]) => `二選一：${names.join('、')}`,
+      runesHead: '建議符文',
+      noRunes: '不裝符文。',
+      /** The marks of the rune rows. */
+      have: '◆ 鑲得上（鑲著或袋子裡有）', lack: '○ 缺',
+      /** What applying costs: the respec's price when her points move; free when they only grow or stay. */
+      cost: (n: number) => `費用：${n} G（技能樹與天賦重新分配）`,
+      costFree: '費用：免費（技能樹與天賦照這套補上）',
+      costFill: '費用：免費（技能樹不變，只補符文）',
+      /** The tree tab, following nothing with points left (plan 8h ruling 14). */
+      unspentHint: '不想自己配？旅館的『建議配點』可以一鍵套用',
+      /** The tree tab's way in, and the build she follows. */
+      entry: 'Tab 建議配點',
+      followTag: (name: string) => `跟隨：${name}`,
+      hint: '↑↓ 選擇　←→ 換按鈕　Enter 決定　Q/E 換人　R/F 捲動　Esc 返回',
     },
     gate: {
       reroll: '重抽傳送門',
