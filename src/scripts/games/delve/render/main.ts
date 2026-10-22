@@ -4,7 +4,7 @@ import { FIXED_DT } from '../engine/constants';
 import { LIQUID_BUDGET_MS } from '../engine/game';
 import { LIQ } from '../engine/liquidKind';
 import { Renderer } from './renderer';
-import { isMine, lifeEvent } from './eventScope';
+import { attackSfx, isMine, lifeEvent } from './eventScope';
 import { Hud } from './hud';
 import { FixedStepper, blockedMessage, hintText, stepsInFrame, inputAction, drainsEvents } from './model';
 import { Minimap, FullMap } from './mapView';
@@ -264,6 +264,10 @@ export function startDelve(opts: StartOptions): DelveHandle {
           onDeath: () => { sound.death(); hud.setInventory(false); },
           onRespawn: () => hud.toast('你甦醒了'),
           onUndying: () => { sound.undying(); hud.toast('不滅：撐住了致命一擊！', 2200, TOAST_HIGH); },
+          onSleepStart: () => { sound.sleep(); hud.setInventory(false); },
+          onOtherDown: (nick) => hud.toast(`${nick} 倒下了`, 1800, TOAST_LOW),
+          onOtherBack: (nick) => hud.toast(`${nick} 回來了`, 1800, TOAST_LOW),
+          nickOf: (pid) => renderer.remoteViews.find((v) => v.pid === pid)?.nick ?? '',
         })) { /* 死亡 / 甦醒 / 不滅：見 eventScope.lifeEvent */ }
         else if (e.type === 'blocked') {
           const m = blockedMessage(e.reason);
@@ -285,9 +289,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'unlock') { hud.toast(e.item === 'golden_key' ? '用金鑰匙打開了金寶箱' : '用地城鑰匙打開了門'); invChanged = true; }
         else if (e.type === 'door') { /* 門的開關：只需要重畫（chunk dirty） */ }
         else if (e.type === 'attack') {
-          if (e.kind === 'bow') sound.bow(); else if (e.kind === 'staff') sound.magic();
-          else if (e.kind === 'throw' || e.kind === 'boomerang') sound.throwSfx(); else sound.swing(e.kind === 'broadsword');
-          if (e.kind === 'throw' || e.kind === 'bow') invChanged = true;
+          if (attackSfx(e.kind, sound)) invChanged = true;
         }
         else if (e.type === 'hit') sound.enemyHit(e.crit);
         else if (e.type === 'kill') sound.enemyDeath();
@@ -297,8 +299,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'bubble') sound.bubble();
         else if (e.type === 'liquidtool') { sound.splash(false, e.liquid === LIQ.LAVA); invChanged = true; }
         else if (e.type === 'sleep') {
-          if (e.phase === 'start') { sound.sleep(); hud.setInventory(false); }
-          else if (e.phase === 'wait') { /* 等待人數由 HUD 每幀讀 game.sleepWaiting() */ }
+          if (e.phase === 'wait') { /* 等待人數由 HUD 每幀讀 game.sleepWaiting() */ }
           else { sound.wake(); hud.toast(`早安——${game.dateText()}`, 2400); }
         }
         else if (e.type === 'lightning') sound.thunder(e.dist);

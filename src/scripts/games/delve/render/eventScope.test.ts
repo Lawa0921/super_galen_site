@@ -1,6 +1,6 @@
 // eventScope.test.ts — 共玩時別人的事件不能觸發只屬於自己的表現（M-C2 D6）
 import { describe, it, expect, vi } from 'vitest';
-import { isMine, lifeEvent, type LifeIo } from './eventScope';
+import { attackSfx, isMine, lifeEvent, type LifeIo } from './eventScope';
 import { LevelFx } from './levelFx';
 import { CombatLayer } from './combatDraw';
 import { Renderer } from './renderer';
@@ -8,7 +8,10 @@ import { arenaGame } from '../net/testRig';
 import type { DelveEvent } from '../engine/game';
 
 const ev = (e: unknown): DelveEvent => e as DelveEvent;
-const io = (): LifeIo => ({ onDeath: vi.fn(), onRespawn: vi.fn(), onUndying: vi.fn() });
+const io = (nicks: Record<string, string> = { g1: '小明' }): LifeIo => ({
+  onDeath: vi.fn(), onRespawn: vi.fn(), onUndying: vi.fn(), onSleepStart: vi.fn(),
+  onOtherDown: vi.fn(), onOtherBack: vi.fn(), nickOf: (pid) => nicks[pid] ?? '',
+});
 
 describe('isMine', () => {
   it('isMine：沒有 pid / 自己 / 別人', () => {
@@ -39,6 +42,43 @@ describe('lifeEvent', () => {
     lifeEvent(ev({ type: 'undying', x: 0, y: 0, pid: 'g1' }), 'h', o);
     expect(o.onUndying).not.toHaveBeenCalled();
     expect(lifeEvent(ev({ type: 'attack', kind: 'sword', pid: 'g1' }), 'h', o)).toBe(false);
+  });
+});
+
+describe('睡覺 / 隊友提示 / 揮擊音效', () => {
+  it('別人就寢不關我的背包、不放睡覺音效；自己的與無 pid 的會；wake 不攔', () => {
+    const o = io();
+    expect(lifeEvent(ev({ type: 'sleep', phase: 'start', pid: 'g1' }), 'h', o)).toBe(true);
+    expect(o.onSleepStart).not.toHaveBeenCalled();
+    lifeEvent(ev({ type: 'sleep', phase: 'start', pid: 'h' }), 'h', o);
+    lifeEvent(ev({ type: 'sleep', phase: 'start' }), 'h', o);
+    expect(o.onSleepStart).toHaveBeenCalledTimes(2);
+    expect(lifeEvent(ev({ type: 'sleep', phase: 'wake' }), 'h', o)).toBe(false);
+  });
+  it('隊友倒下 / 回來：低調提示帶暱稱，沒有暱稱用「隊友」；自己的不提示', () => {
+    const o = io();
+    lifeEvent(ev({ type: 'death', x: 0, y: 0, pid: 'g1' }), 'h', o);
+    lifeEvent(ev({ type: 'respawn', x: 0, y: 0, pid: 'g1' }), 'h', o);
+    lifeEvent(ev({ type: 'death', x: 0, y: 0, pid: 'g2' }), 'h', o);
+    expect(o.onOtherDown).toHaveBeenNthCalledWith(1, '小明');
+    expect(o.onOtherBack).toHaveBeenCalledWith('小明');
+    expect(o.onOtherDown).toHaveBeenNthCalledWith(2, '隊友');
+    const mine = io();
+    lifeEvent(ev({ type: 'death', x: 0, y: 0 }), 'h', mine);
+    expect(mine.onOtherDown).not.toHaveBeenCalled();
+  });
+  it('別人的 attack 仍播揮擊音效（走 main.ts 實際用的 attackSfx）', () => {
+    const s = { bow: vi.fn(), magic: vi.fn(), throwSfx: vi.fn(), swing: vi.fn() };
+    // 別人的 attack 不被 lifeEvent 攔截 → 一定落到 attackSfx
+    const e = ev({ type: 'attack', kind: 'broadsword', pid: 'g1' });
+    expect(lifeEvent(e, 'h', io())).toBe(false);
+    expect(attackSfx((e as { kind: string }).kind, s)).toBe(false);
+    expect(s.swing).toHaveBeenCalledWith(true);
+    expect(attackSfx('bow', s)).toBe(true);
+    expect(s.bow).toHaveBeenCalled();
+    attackSfx('staff', s); attackSfx('boomerang', s);
+    expect(s.magic).toHaveBeenCalled();
+    expect(s.throwSfx).toHaveBeenCalled();
   });
 });
 
