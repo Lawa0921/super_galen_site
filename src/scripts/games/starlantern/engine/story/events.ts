@@ -192,9 +192,9 @@ function readyPairs(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, co
 }
 
 /**
- * The pick among ready pairs (story depth plan ruling 9, Task 6 review and ruling): a started pair first; then the least
- * heard; then a pair whose next banter is its last, its payoff; then the one ready longest (`story.waited`); then the one
- * with more banters left; then the fixed order. `skip`: a pair not to
+ * The pick among ready pairs (story depth plan ruling 9, Task 6 review and rulings): a pair whose next banter is the last
+ * of its chain, its payoff, first of all; then a started pair; then the least heard; then the one ready longest
+ * (`story.waited`); then the one with more banters left; then the fixed order. `skip`: a pair not to
  * pick (the first banter's, when a return plays two).
  */
 function pickBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, count: Partial<Record<BanterPair, number>>, skip?: string): SceneId | null {
@@ -204,9 +204,9 @@ function pickBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, co
     if (p.pair === skip) continue;
     if (!best) { best = p; continue; }
     const payoff = (r: Ready) => r.left === 1 && (count[r.pair] ?? 0) > 1;   // its next banter is the last of a chain: its payoff
-    const better = p.started !== best.started ? p.started
+    const better = payoff(p) !== payoff(best) ? payoff(p)
+      : p.started !== best.started ? p.started
       : p.heard !== best.heard ? p.heard < best.heard
-      : payoff(p) !== payoff(best) ? payoff(p)
       : waited(p) !== waited(best) ? waited(p) > waited(best)
       : p.left > best.left;
     if (better) best = p;
@@ -255,9 +255,28 @@ export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: bo
   // A second banter (story depth plan ruling 9, with its pre-authorized fallback): nothing owed in the queue, not the return
   // after the finale, three pairs or more ready; a chat may be due (the fallback lifts only "no chat", Task 6 review). It is
   // picked as if the first were heard, and never from the first one's pair.
+  if (banter && s.story.finaleCleared && !o.afterFinale) return [...list, ...(chat ? [chat] : []), ...afterFinaleBanters(s, banter)];
   const quiet = !!banter && list.length === 0 && !o.afterFinale && openPairs(s) >= 3;
   const second = quiet ? pickBanter({ ...s, story: { ...s.story, seen: [...s.story.seen, banter] } }, BANTER_GATE, BANTER_COUNT, banterTwo(banter).join('-')) : null;
   return [...list, ...(chat ? [chat] : []), ...(banter ? [banter] : []), ...(second ? [second] : [])];
+}
+
+/**
+ * After the finale (Task 6 ruling), a return other than the festival's plays up to three banters, picked in order (payoff
+ * first), each as if the ones before were heard, and from two pairs at least: two of one pair only with a third from
+ * another, else the second comes from another pair, or there is only the first.
+ */
+function afterFinaleBanters(s: GameState, first: SceneId): SceneId[] {
+  const pairOf = (id: SceneId) => banterTwo(id).join('-');
+  const heard = (ids: SceneId[]): GameState => ({ ...s, story: { ...s.story, seen: [...s.story.seen, ...ids] } });
+  const second = pickBanter(heard([first]), BANTER_GATE, BANTER_COUNT);
+  if (!second) return [first];
+  const same = pairOf(second) === pairOf(first);
+  const third = pickBanter(heard([first, second]), BANTER_GATE, BANTER_COUNT, same ? pairOf(first) : undefined);
+  if (third) return [first, second, third];
+  if (!same) return [first, second];
+  const other = pickBanter(heard([first]), BANTER_GATE, BANTER_COUNT, pairOf(first));
+  return other ? [first, other] : [first];
 }
 
 /**
