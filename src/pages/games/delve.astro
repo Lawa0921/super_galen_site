@@ -1,0 +1,2105 @@
+---
+/**
+ * /games/delve — DELVE 深掘：2D 沙盒挖掘建造（單機、Canvas2D、程式產生像素材質）。
+ * 引擎在 src/scripts/games/delve/engine（純邏輯），本頁只放標題 / HUD 骨架與樣式。
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { defaultLang, type Language } from '@i18n/index';
+import DelveLevels from '@components/delve/DelveLevels.astro';
+
+const lang: Language = defaultLang;
+---
+
+<BaseLayout title="Dungeon Arcade — DELVE 深掘" description="網頁 2D 沙盒：挖礦、合成、建造，在瀏覽器裡往地底深掘" lang={lang}>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap" />
+
+  <main class="delve" id="delve-root" data-phase="title" data-title="press">
+    <canvas id="delve-canvas" class="delve-canvas" aria-label="DELVE 遊戲畫面"></canvas>
+
+    <div class="delve-hud" id="delve-hud" hidden>
+      <div class="delve-hotbar" id="delve-hotbar" role="toolbar" aria-label="快捷欄"></div>
+      <div class="delve-held" id="delve-held" aria-live="polite"></div>
+      <div class="delve-status" id="delve-status"></div>
+      <button class="delve-clock" id="delve-clock" type="button" data-testid="hud-clock"><span class="delve-clock-text" id="delve-clock-text"></span></button>
+      <div class="delve-vitals" id="delve-vitals" aria-label="生命">
+        <canvas class="delve-hearts" id="delve-hearts" width="51" height="10"></canvas>
+        <span class="delve-hp-text" id="delve-hp-text"></span>
+        <canvas class="delve-mana" id="delve-mana" width="41" height="5" hidden aria-label="魔力"></canvas>
+        <span class="delve-undying" id="delve-undying" hidden data-testid="undying"></span>
+        <span class="delve-buffs" id="delve-buffs" hidden data-testid="buffs"></span>
+      </div>
+      <div class="delve-boss" id="delve-boss" hidden>
+        <span class="delve-boss-name" id="delve-boss-name"></span>
+        <canvas class="delve-boss-bar" id="delve-boss-bar" width="160" height="8"></canvas>
+      </div>
+      <p class="delve-sleepwait" id="delve-sleepwait" hidden role="status" aria-live="polite" data-testid="sleepwait"></p>
+      <div class="delve-death" id="delve-death" hidden role="status" aria-live="assertive">
+        <p class="delve-death-title">你倒下了</p>
+        <p class="delve-death-msg" id="delve-death-msg"></p>
+      </div>
+      <div class="delve-tip" id="delve-tip" hidden role="tooltip"></div>
+      <div class="delve-corner">
+        <button class="delve-chip delve-chip--zoom" id="delve-zoom-out" type="button" aria-label="縮小（看到更多格子）">－<kbd class="delve-kbd">-</kbd></button>
+        <button class="delve-chip delve-chip--zoom" id="delve-zoom-in" type="button" aria-label="放大">＋<kbd class="delve-kbd">=</kbd></button>
+        <button class="delve-chip" id="delve-inv-btn" type="button">背包<kbd class="delve-kbd">E</kbd></button>
+        <button class="delve-chip" id="delve-map-btn" type="button">地圖<kbd class="delve-kbd">M</kbd></button>
+        <button class="delve-chip" id="delve-journal-btn" type="button">日誌<kbd class="delve-kbd">J</kbd></button>
+        <button class="delve-chip delve-chip--settle" id="delve-settle-btn" type="button">據點<kbd class="delve-kbd">B</kbd></button>
+        <button class="delve-chip delve-chip--house" id="delve-house-btn" type="button" aria-pressed="false">查房<kbd class="delve-kbd">H</kbd></button>
+        <button class="delve-chip delve-chip--quests" id="delve-quests-btn" type="button" aria-pressed="false">委託<kbd class="delve-kbd">L</kbd></button>
+        <button class="delve-chip delve-chip--aim" id="delve-aim-btn" type="button" aria-pressed="false">自動瞄準</button>
+        <button class="delve-chip" id="delve-menu-btn" type="button">選單<kbd class="delve-kbd">Esc</kbd></button>
+      </div>
+
+      <div class="delve-minimap" id="delve-minimap" data-zoom="2">
+        <canvas class="delve-minimap-canvas" id="delve-minimap-canvas" width="120" height="80" aria-label="小地圖（點一下開全地圖）"></canvas>
+        <div class="delve-minimap-btns">
+          <button class="delve-mm-btn" id="delve-mm-out" type="button" aria-label="小地圖縮小">－</button>
+          <span class="delve-mm-label">地圖<kbd class="delve-kbd">N</kbd></span>
+          <button class="delve-mm-btn" id="delve-mm-in" type="button" aria-label="小地圖放大">＋</button>
+        </div>
+      </div>
+
+      <div class="delve-banner" id="delve-banner" aria-live="polite">
+        <span class="delve-banner-sub" id="delve-banner-sub"></span>
+        <span class="delve-banner-title" id="delve-banner-title"></span>
+      </div>
+
+      <div class="delve-wlabels" id="delve-wlabels" aria-hidden="true"></div>
+
+      <section class="delve-panel delve-panel--settle" id="delve-settle" hidden aria-label="據點">
+        <header class="delve-panel-head">
+          <h2 id="delve-settle-title">據點</h2>
+          <button class="delve-x" id="delve-settle-close" type="button" aria-label="關閉據點面板">×</button>
+        </header>
+        <div class="delve-settle-body" id="delve-settle-body"></div>
+      </section>
+
+      <section class="delve-panel delve-panel--stone" id="delve-stone" hidden aria-label="傳送碑">
+        <header class="delve-panel-head">
+          <h2 id="delve-stone-title">傳送碑</h2>
+          <button class="delve-x" id="delve-stone-close" type="button" aria-label="關閉傳送碑面板">×</button>
+        </header>
+        <p class="delve-hint" id="delve-stone-note"></p>
+        <ul class="delve-stone-list" id="delve-stone-list"></ul>
+      </section>
+
+      <section class="delve-panel delve-panel--npc" id="delve-npc" hidden aria-label="居民">
+        <header class="delve-panel-head">
+          <h2 id="delve-npc-title">居民</h2>
+          <button class="delve-x" id="delve-npc-close" type="button" aria-label="關閉居民面板">×</button>
+        </header>
+        <div class="delve-npc-body" id="delve-npc-body"></div>
+      </section>
+
+      <section class="delve-panel delve-panel--npc delve-panel--folk" id="delve-folk" hidden aria-label="NPC" data-testid="folk-panel">
+        <header class="delve-panel-head">
+          <h2 id="delve-folk-title">NPC</h2>
+          <button class="delve-x" id="delve-folk-close" type="button" aria-label="關閉 NPC 面板">×</button>
+        </header>
+        <div class="delve-npc-body" id="delve-folk-body"></div>
+      </section>
+
+      <section class="delve-panel delve-panel--quests" id="delve-quests" hidden aria-label="委託清單">
+        <header class="delve-panel-head">
+          <h2>委託清單</h2>
+          <button class="delve-x" id="delve-quests-close" type="button" aria-label="關閉委託清單">×</button>
+        </header>
+        <div class="delve-quests-body" id="delve-quests-body"></div>
+      </section>
+
+      <section class="delve-panel delve-panel--journal" id="delve-journal" hidden aria-label="探險日誌">
+        <header class="delve-panel-head">
+          <h2>探險日誌</h2>
+          <button class="delve-x" id="delve-journal-close" type="button" aria-label="關閉日誌">×</button>
+        </header>
+        <div class="delve-journal-body" id="delve-journal-body"></div>
+      </section>
+
+      <section class="delve-panel delve-panel--calendar" id="delve-calendar" hidden aria-label="日曆與天氣">
+        <header class="delve-panel-head">
+          <h2>日曆與天氣</h2>
+          <button class="delve-x" id="delve-calendar-close" type="button" aria-label="關閉日曆">×</button>
+        </header>
+        <div class="delve-cal-body" id="delve-calendar-body"></div>
+      </section>
+
+      <section class="delve-lore" id="delve-lore" hidden role="dialog" aria-labelledby="delve-lore-title">
+        <div class="delve-lore-box">
+          <p class="delve-lore-kicker" id="delve-lore-kicker"></p>
+          <h2 class="delve-lore-title" id="delve-lore-title"></h2>
+          <p class="delve-lore-text" id="delve-lore-text"></p>
+          <button class="delve-btn delve-lore-close" id="delve-lore-close" type="button">收起</button>
+        </div>
+      </section>
+
+      <section class="delve-panel" id="delve-inv" hidden aria-label="背包與合成">
+        <header class="delve-panel-head">
+          <h2>背包</h2>
+          <button class="delve-x" id="delve-inv-close" type="button" aria-label="關閉">×</button>
+        </header>
+        <p class="delve-hint">點一格再點另一格可以搬移 / 交換；滑鼠停在道具上（觸控：長按）看說明</p>
+        <div class="delve-inv-grid" id="delve-inv-grid"></div>
+        <div class="delve-gear-actions" id="delve-gear-actions">
+          <button class="delve-btn delve-btn--sm" id="delve-lock-btn" type="button" hidden>鎖定</button>
+          <button class="delve-btn delve-btn--sm" id="delve-salvage-btn" type="button" hidden>分解</button>
+          <button class="delve-btn delve-btn--sm" id="delve-forge-btn" type="button" hidden>鍛造</button>
+          <button class="delve-btn delve-btn--sm delve-btn--danger" id="delve-salvage-all" type="button">分解所有普通</button>
+          <span class="delve-mats" id="delve-mats" data-testid="mats"></span>
+        </div>
+        <h2 class="delve-craft-title">裝備</h2>
+        <p class="delve-hint">選背包裡的防具 / 飾品 / 時裝再點格子（或按「裝上」、右鍵背包格）；點格子卸下。外觀欄只改樣子，數值看防具。</p>
+        <div class="delve-doll-row">
+          <figure class="delve-doll" id="delve-doll" data-testid="doll-preview">
+            <canvas class="delve-doll-canvas" id="delve-doll-canvas" width="52" height="54" aria-label="角色紙娃娃預覽"></canvas>
+            <figcaption class="delve-doll-cap">目前的樣子</figcaption>
+          </figure>
+          <div class="delve-equip-cols">
+            <div class="delve-equip-col">
+              <h3 class="delve-equip-h">防具 · 飾品</h3>
+              <div class="delve-equip" id="delve-equip"></div>
+            </div>
+            <div class="delve-equip-col">
+              <h3 class="delve-equip-h">外觀（時裝）</h3>
+              <div class="delve-vanity" id="delve-vanity"></div>
+            </div>
+            <div class="delve-hide-wrap">
+              <span class="delve-equip-h" id="delve-hide-h">隱藏防具的樣子</span>
+              <div class="delve-hide-row" id="delve-hide-row" role="group" aria-labelledby="delve-hide-h"></div>
+            </div>
+          </div>
+          <button class="delve-btn delve-equip-btn" id="delve-equip-btn" type="button" hidden>裝上</button>
+        </div>
+        <h2 class="delve-craft-title">能力總覽</h2>
+        <div class="delve-stats" id="delve-stats" data-testid="stats-panel"></div>
+        <h2 class="delve-craft-title">合成</h2>
+        <p class="delve-hint" id="delve-station"></p>
+        <ul class="delve-recipes" id="delve-recipes"></ul>
+      </section>
+
+      <section class="delve-panel delve-panel--chest" id="delve-chest" hidden aria-label="箱子">
+        <header class="delve-panel-head">
+          <h2>箱子</h2>
+          <button class="delve-x" id="delve-chest-close" type="button" aria-label="關閉箱子">×</button>
+        </header>
+        <p class="delve-hint">點箱子裡的格子拿走；點背包的格子把整堆放進箱子</p>
+        <div class="delve-inv-grid" id="delve-chest-grid"></div>
+        <button class="delve-btn delve-chest-takeall" id="delve-chest-takeall" type="button">全部拿取</button>
+      </section>
+
+      <section class="delve-panel delve-panel--forge" id="delve-forge" hidden aria-label="鍛造台">
+        <header class="delve-panel-head">
+          <h2>鍛造台</h2>
+          <button class="delve-x" id="delve-forge-close" type="button" aria-label="關閉鍛造台">×</button>
+        </header>
+        <p class="delve-hint" id="delve-forge-station"></p>
+        <div class="delve-forge-item" id="delve-forge-item"></div>
+        <h3 class="delve-forge-h">強化 / 升階</h3>
+        <div class="delve-forge-ops" id="delve-forge-ops"></div>
+        <h3 class="delve-forge-h">洗煉：換掉一條詞條</h3>
+        <ul class="delve-forge-affixes" id="delve-forge-affixes"></ul>
+        <p class="delve-hint" id="delve-forge-mats"></p>
+      </section>
+
+      <section class="delve-confirm" id="delve-salvage-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="delve-sc-title" aria-describedby="delve-sc-msg">
+        <div class="delve-menu-box">
+          <h2 id="delve-sc-title">分解裝備？</h2>
+          <p class="delve-confirm-msg" id="delve-sc-msg"></p>
+          <div class="delve-confirm-btns">
+            <button class="delve-btn" id="delve-sc-cancel" type="button">取消</button>
+            <button class="delve-btn delve-btn--danger" id="delve-sc-ok" type="button">分解</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="delve-touch" aria-hidden="true">
+        <div class="delve-joy" id="delve-joy"><span class="delve-joy-knob"></span></div>
+        <button class="delve-jump" id="delve-jump" type="button" tabindex="-1">跳</button>
+      </div>
+      <div class="delve-toast" id="delve-toast" role="status" aria-live="polite"></div>
+      <DelveLevels />
+    </div>
+
+    <section class="delve-map" id="delve-map" hidden aria-label="全地圖">
+      <canvas class="delve-map-canvas" id="delve-map-canvas" aria-label="地圖：拖曳移動、滾輪縮放、點一下放標記"></canvas>
+      <header class="delve-map-head">
+        <h2>地圖</h2>
+        <p class="delve-map-info" id="delve-map-info"></p>
+        <div class="delve-map-btns">
+          <button class="delve-chip" id="delve-map-out" type="button" aria-label="地圖縮小">－</button>
+          <button class="delve-chip" id="delve-map-in" type="button" aria-label="地圖放大">＋</button>
+          <button class="delve-chip" id="delve-map-center" type="button">回到玩家</button>
+          <button class="delve-chip" id="delve-map-close" type="button">關閉<kbd class="delve-kbd">M</kbd></button>
+        </div>
+      </header>
+      <p class="delve-map-help">拖曳移動 · 滾輪 / 雙指縮放 · 點一下放置或移除標記（最多 20 個）</p>
+    </section>
+
+    <section class="delve-menu" id="delve-menu" hidden aria-label="選單">
+      <div class="delve-menu-box">
+        <h2>暫停</h2>
+        <button class="delve-btn" id="delve-resume" type="button">繼續遊戲</button>
+        <button class="delve-btn" id="delve-peaceful" type="button" aria-pressed="false">難度：一般</button>
+        <button class="delve-btn" id="delve-help-btn" type="button">操作說明</button>
+        <button class="delve-btn" id="delve-calendar-btn" type="button">日曆與天氣</button>
+        <button class="delve-btn" id="delve-settle-menu" type="button">據點與查房</button>
+        <button class="delve-btn" id="delve-quests-menu" type="button">委託清單</button>
+        <button class="delve-btn" id="delve-save" type="button">立即存檔</button>
+        <button class="delve-btn" id="delve-export" type="button">匯出存檔 .delve</button>
+        <button class="delve-btn" id="delve-import-menu" type="button">匯入存檔</button>
+        <button class="delve-btn" id="delve-to-title" type="button">回到標題</button>
+        <a class="delve-btn delve-btn--ghost" href="/games">回遊戲廳</a>
+        <p class="delve-msg" id="delve-menu-msg" role="status"></p>
+        <p class="delve-note">每 30 秒與離開頁面時自動存在這個瀏覽器。瀏覽器（尤其 iOS Safari）可能清除網站資料，重要的世界請匯出備份。</p>
+      </div>
+    </section>
+
+    <section class="delve-help" id="delve-help" hidden role="dialog" aria-modal="true" aria-labelledby="delve-help-title">
+      <div class="delve-menu-box delve-help-box">
+        <h2 id="delve-help-title">操作說明</h2>
+        <ul class="delve-help-list delve-help-list--keys">
+          <li><kbd class="delve-help-key">A</kbd><kbd class="delve-help-key">D</kbd><span>左右移動</span></li>
+          <li><kbd class="delve-help-key">Space</kbd><span>跳躍（W / S 爬繩、S 穿過平台）</span></li>
+          <li><kbd class="delve-help-key">左鍵</kbd><span>挖掘；拿武器時攻擊</span></li>
+          <li><kbd class="delve-help-key">右鍵</kbd><span>放置方塊 / 開箱 / 使用道具</span></li>
+          <li><kbd class="delve-help-key">1–0</kbd><span>換快捷欄（或滾輪）；開局第 3 格是木劍</span></li>
+          <li><kbd class="delve-help-key">E</kbd><span>背包與合成</span></li>
+          <li><kbd class="delve-help-key">G</kbd><span>丟出手上那一格（丟的人 1.5 秒內撿不回來）</span></li>
+          <li><kbd class="delve-help-key">M</kbd><span>地圖（N 小地圖、J 日誌）</span></li>
+          <li><kbd class="delve-help-key">B</kbd><span>據點面板（H 查房模式：看哪間房可以住人）</span></li>
+          <li><kbd class="delve-help-key">T</kbd><span>和身邊的人對話（靠近 NPC 再按）</span></li>
+          <li><kbd class="delve-help-key">L</kbd><span>委託清單</span></li>
+          <li><kbd class="delve-help-key">K</kbd><span>角色 / 技能樹（升級拿技能點；Q 突進、F 震地、R 尋礦感知）</span></li>
+        </ul>
+        <ul class="delve-help-list delve-help-list--touch">
+          <li><span class="delve-help-key">搖桿</span><span>左下拖曳移動</span></li>
+          <li><span class="delve-help-key">跳</span><span>右下按鈕跳躍</span></li>
+          <li><span class="delve-help-key">點格子</span><span>挖掘或放置；拿武器時點畫面攻擊</span></li>
+          <li><span class="delve-help-key">快捷欄</span><span>點一下換格；開局第 3 格是木劍</span></li>
+          <li><span class="delve-help-key">背包</span><span>右上「背包」看道具與合成</span></li>
+          <li><span class="delve-help-key">地圖</span><span>右上「地圖」或點小地圖</span></li>
+          <li><span class="delve-help-key">技能</span><span>右上「技能」分配技能點；學會的主動技能在跳躍鍵旁</span></li>
+        </ul>
+        <p class="delve-note">晚上怪物比較多：先蓋個小屋、放張床當重生點。放下「據點爐心」、把房子補齊門 / 燈 / 桌椅 / 床，就會有居民搬來。之後可從選單的「操作說明」再打開。</p>
+        <button class="delve-btn delve-btn--main" id="delve-help-close" type="button">知道了</button>
+      </div>
+    </section>
+
+    <section class="delve-confirm" id="delve-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="delve-confirm-title" aria-describedby="delve-confirm-msg">
+      <div class="delve-menu-box">
+        <h2 id="delve-confirm-title">確定嗎？</h2>
+        <p class="delve-confirm-msg" id="delve-confirm-msg"></p>
+        <div class="delve-confirm-btns">
+          <button class="delve-btn" id="delve-confirm-cancel" type="button">取消</button>
+          <button class="delve-btn delve-btn--danger" id="delve-confirm-ok" type="button">確定</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="delve-loading" id="delve-loading" hidden role="status" aria-live="polite">
+      <div class="delve-loading-box">
+        <canvas class="delve-loading-logo" id="delve-loading-logo" width="1" height="1" aria-hidden="true"></canvas>
+        <p class="delve-loading-en" aria-hidden="true">GENERATING WORLD</p>
+        <p class="delve-loading-text" id="delve-loading-text">生成世界中…</p>
+        <div class="delve-gen-frame">
+          <canvas class="delve-gen-map" id="delve-gen-map" width="280" height="80" aria-hidden="true"></canvas>
+        </div>
+        <ol class="delve-gen-phases" id="delve-gen-phases" aria-label="生成階段">
+          {['地形', '洞穴', '礦脈', '地城', '草木', '液體'].map((p) => <li class="delve-gen-phase">{p}</li>)}
+        </ol>
+        <div class="delve-progress" id="delve-progress" role="progressbar" aria-label="世界生成進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          {Array.from({ length: 20 }, () => <span class="delve-progress-cell"></span>)}
+        </div>
+        <p class="delve-loading-stage" id="delve-loading-stage"></p>
+        <p class="delve-loading-tip" id="delve-loading-tip"></p>
+      </div>
+    </div>
+
+    <section class="delve-title" id="delve-title" aria-labelledby="delve-title-h">
+      <div class="delve-tt">
+        <header class="delve-tt-head">
+          <h1 class="delve-tt-h" id="delve-title-h">
+            <canvas class="delve-logo" id="delve-logo" width="1" height="1" aria-hidden="true"></canvas>
+            <span class="delve-sr">DELVE 深掘</span>
+          </h1>
+          <p class="delve-tt-kanji" aria-hidden="true">深掘</p>
+          <p class="delve-tagline">DIG · CRAFT · BUILD</p>
+        </header>
+
+        <button class="delve-press" id="delve-press" type="button">
+          <span class="delve-press-keys">按任意鍵開始</span><span class="delve-press-touch">點一下開始</span>
+          <span class="delve-press-en" aria-hidden="true">PRESS ANY KEY</span>
+        </button>
+        <nav class="delve-tmenu" id="delve-tmenu" aria-label="主選單">
+          <button class="delve-ti delve-ti--continue" id="delve-continue" type="button" hidden data-icon="continue">
+            <span class="delve-ti-text"><span class="delve-ti-label">繼續冒險</span><span class="delve-ti-sub" id="delve-continue-sub"></span></span>
+          </button>
+          <button class="delve-ti delve-ti--new" id="delve-start" type="button" data-icon="new"><span class="delve-ti-text"><span class="delve-ti-label">開始遊戲</span></span></button>
+          <button class="delve-ti" id="delve-import" type="button" data-icon="import"><span class="delve-ti-text"><span class="delve-ti-label">匯入存檔</span></span></button>
+          <div class="delve-ti-row delve-ti-row--two">
+            <button class="delve-ti" id="delve-help-open" type="button" data-icon="help"><span class="delve-ti-text"><span class="delve-ti-label">操作說明</span></span></button>
+            <button class="delve-ti" id="delve-settings-btn" type="button" data-icon="settings"><span class="delve-ti-text"><span class="delve-ti-label">設定</span></span></button>
+          </div>
+          <a class="delve-ti delve-ti--ghost" id="delve-back" href="/games" data-icon="back"><span class="delve-ti-text"><span class="delve-ti-label">返回遊戲廳</span></span></a>
+        </nav>
+        <input id="delve-import-file" type="file" accept=".delve,application/x-delve-save,application/gzip" hidden />
+        <p class="delve-msg delve-tt-msg" id="delve-title-msg" role="status"></p>
+        <button class="delve-btn delve-btn--main" id="delve-upgrade-new" type="button" hidden>開始新世界</button>
+
+        <footer class="delve-tt-foot">
+          <p class="delve-tt-credit">所有美術與音效皆以程式即時生成</p>
+          <p class="delve-tt-note">存檔只留在這個瀏覽器；iOS Safari 等可能清除網站資料，重要的世界請匯出備份。</p>
+          <p class="delve-tt-keys" aria-hidden="true"><kbd>↑</kbd><kbd>↓</kbd> 選擇　<kbd>Enter</kbd> 確定　<kbd>Esc</kbd> 返回</p>
+        </footer>
+      </div>
+
+      <section class="delve-tpanel" id="delve-charpanel" data-tpanel="chars" hidden role="dialog" aria-modal="true" aria-labelledby="delve-charpanel-h">
+        <div class="delve-tpanel-box delve-tpanel-box--list">
+          <h2 class="delve-tpanel-h" id="delve-charpanel-h"><span class="delve-tpanel-icon" data-icon="look"></span>選擇角色</h2>
+          <div class="delve-tlist" id="delve-charlist" aria-label="角色列表"></div>
+          <div class="delve-tpanel-btns">
+            <button class="delve-btn" id="delve-chars-back" type="button" data-nav>返回</button>
+            <button class="delve-btn delve-btn--main" id="delve-newchar-open" type="button" data-nav>新角色</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="delve-tpanel" id="delve-newchar" data-tpanel="newchar" hidden role="dialog" aria-modal="true" aria-labelledby="delve-newchar-h">
+        <div class="delve-tpanel-box">
+          <h2 class="delve-tpanel-h" id="delve-newchar-h"><span class="delve-tpanel-icon" data-icon="look"></span>新角色</h2>
+          <label class="delve-field" for="delve-nick">
+            <span class="delve-field-label">暱稱</span>
+          </label>
+          <input class="delve-input" id="delve-nick" type="text" maxlength="16" placeholder="旅人" autocomplete="off" spellcheck="false" />
+          <span class="delve-field-label" id="delve-body-h">體型</span>
+          <div class="delve-seg2" id="delve-body" role="radiogroup" aria-labelledby="delve-body-h">
+            <button class="delve-seg2-btn" id="delve-body-f" type="button" role="radio" aria-checked="true" data-body="0">女</button>
+            <button class="delve-seg2-btn" id="delve-body-m" type="button" role="radio" aria-checked="false" data-body="1">男</button>
+          </div>
+          <div class="delve-newlook">
+            <canvas class="delve-newlook-doll" id="delve-new-doll" width="52" height="54" aria-hidden="true"></canvas>
+            <button class="delve-btn" id="delve-new-look" type="button">更換外觀</button>
+          </div>
+          <div class="delve-tpanel-btns">
+            <button class="delve-btn" id="delve-newchar-cancel" type="button">返回</button>
+            <button class="delve-btn delve-btn--main" id="delve-newchar-create" type="button">建立</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="delve-tpanel" id="delve-worldpanel" data-tpanel="worlds" hidden role="dialog" aria-modal="true" aria-labelledby="delve-worldpanel-h">
+        <div class="delve-tpanel-box delve-tpanel-box--list">
+          <h2 class="delve-tpanel-h" id="delve-worldpanel-h"><span class="delve-tpanel-icon" data-icon="new"></span><span id="delve-world-who">選擇世界</span></h2>
+          <div class="delve-tlist" id="delve-worldlist" aria-label="世界列表"></div>
+          <div class="delve-tpanel-btns">
+            <button class="delve-btn" id="delve-worlds-back" type="button" data-nav>回角色列表</button>
+            <button class="delve-btn delve-btn--main" id="delve-new" type="button" data-nav>新世界</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="delve-tpanel" id="delve-newpanel" data-tpanel="newworld" hidden role="dialog" aria-modal="true" aria-labelledby="delve-newpanel-h">
+        <div class="delve-tpanel-box">
+          <h2 class="delve-tpanel-h" id="delve-newpanel-h"><span class="delve-tpanel-icon" data-icon="new"></span>新世界</h2>
+          <label class="delve-field" for="delve-seed">
+            <span class="delve-field-label">世界名稱（種子）</span>
+          </label>
+          <div class="delve-field-row">
+            <input class="delve-input" id="delve-seed" type="text" maxlength="32" placeholder="留空＝隨機命名" autocomplete="off" spellcheck="false" />
+            <button class="delve-ibtn" id="delve-dice" type="button" aria-label="擲骰子：隨機世界名稱" data-icon="dice"></button>
+          </div>
+          <p class="delve-field-hint">同一個名稱永遠生成同一個世界，可以分享給朋友一起比較。</p>
+          <span class="delve-field-label" id="delve-diff-h">難度</span>
+          <div class="delve-seg2" id="delve-diff" role="radiogroup" aria-labelledby="delve-diff-h">
+            <button class="delve-seg2-btn" id="delve-diff-normal" type="button" role="radio" aria-checked="true">普通</button>
+            <button class="delve-seg2-btn" id="delve-diff-peaceful" type="button" role="radio" aria-checked="false">和平</button>
+          </div>
+          <p class="delve-field-hint" id="delve-diff-hint"></p>
+          <div class="delve-tpanel-btns">
+            <button class="delve-btn" id="delve-new-cancel" type="button">返回</button>
+            <button class="delve-btn delve-btn--main" id="delve-create" type="button">開始冒險</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="delve-tpanel" id="delve-settings" data-tpanel="settings" hidden role="dialog" aria-modal="true" aria-labelledby="delve-settings-h">
+        <div class="delve-tpanel-box">
+          <h2 class="delve-tpanel-h" id="delve-settings-h"><span class="delve-tpanel-icon" data-icon="settings"></span>設定</h2>
+          <div class="delve-set">
+            <label class="delve-field-label" for="delve-vol">音效音量</label>
+            <div class="delve-set-ctl">
+              <input class="delve-range" id="delve-vol" type="range" min="0" max="100" step="5" />
+              <output class="delve-set-val" id="delve-vol-val" for="delve-vol"></output>
+            </div>
+          </div>
+          <div class="delve-set">
+            <span class="delve-field-label" id="delve-zp-h">預設縮放</span>
+            <div class="delve-set-ctl" role="group" aria-labelledby="delve-zp-h">
+              <button class="delve-ibtn" id="delve-zp-dec" type="button" aria-label="縮小（看到更多格子）">－</button>
+              <output class="delve-set-val delve-set-val--wide" id="delve-zp-val" aria-live="polite"></output>
+              <button class="delve-ibtn" id="delve-zp-inc" type="button" aria-label="放大">＋</button>
+            </div>
+          </div>
+          <div class="delve-set">
+            <span class="delve-field-label" id="delve-aim-h">觸控自動瞄準</span>
+            <div class="delve-set-ctl">
+              <button class="delve-switch" id="delve-aim-pref" type="button" role="switch" aria-checked="false" aria-labelledby="delve-aim-h">關</button>
+            </div>
+          </div>
+          <p class="delve-field-hint">縮放在遊戲中也能用 - / = 調整；自動瞄準會攻擊最近的怪物（手機適用）。</p>
+          <div class="delve-tpanel-btns delve-tpanel-btns--one">
+            <button class="delve-btn delve-btn--main" id="delve-settings-close" type="button">完成</button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="delve-tpanel delve-wr" id="delve-wardrobe" hidden role="dialog" aria-modal="true" aria-labelledby="delve-wr-h">
+      <div class="delve-tpanel-box delve-wr-box">
+        <h2 class="delve-tpanel-h" id="delve-wr-h"><span class="delve-tpanel-icon" data-icon="look"></span><span id="delve-wr-title">角色外觀</span></h2>
+        <div class="delve-wr-body">
+          <div class="delve-wr-stage">
+            <canvas class="delve-wr-doll" id="delve-wr-doll" aria-label="角色預覽（輪播待機、走路、爬繩、攀上邊緣）"></canvas>
+            <p class="delve-wr-cap" id="delve-wr-cap" aria-hidden="true"></p>
+            <button class="delve-btn" id="delve-wr-turn" type="button">轉向</button>
+          </div>
+          <div class="delve-wr-rows" id="delve-wr-rows"></div>
+        </div>
+        <p class="delve-field-hint delve-wr-keys"><kbd>↑</kbd><kbd>↓</kbd> 選項　<kbd>←</kbd><kbd>→</kbd> 切換　<kbd>Enter</kbd> 完成　<kbd>Esc</kbd> 取消</p>
+        <div class="delve-tpanel-btns delve-wr-btns">
+          <button class="delve-btn" id="delve-wr-random" type="button">隨機</button>
+          <button class="delve-btn" id="delve-wr-cancel" type="button">取消</button>
+          <button class="delve-btn delve-btn--main" id="delve-wr-done" type="button">完成</button>
+        </div>
+      </div>
+    </section>
+
+    <canvas class="delve-wipe" id="delve-wipe" hidden aria-hidden="true"></canvas>
+  </main>
+</BaseLayout>
+
+<script>
+  import { bootDelve } from '@scripts/games/delve/render/session';
+
+  const root = document.getElementById('delve-root');
+  if (root) {
+    try {
+      bootDelve(root);
+    } catch (err) {
+      console.error('[delve] boot failed', err);
+    }
+  }
+</script>
+
+<style is:global>
+  .delve {
+    /* 全部取自遊戲的統一色票（render/pixel.ts） */
+    --ink: #f2e2b0;
+    --dim: #b07a4b;
+    --gold: #ffd86a;
+    --outline: #0c0a12;
+    /* 像素單位：main.ts 依畫面美術像素大小設 data-px（1–3） */
+    --px: 2px;
+    /* 斜面外框（左上亮、右下暗）＋ 1 單位黑描邊 */
+    --bv-hi: #966139;
+    --bv-lo: #2a1810;
+    --bv-bg: #472819;
+    /* 中文：DotGothic16 點陣字（16px 原生格），缺字時退回系統字 */
+    --cjk: 'DotGothic16', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+    --pixel: 'Press Start 2P', 'DotGothic16', monospace;
+    /* 1px 實心描邊（不模糊） */
+    --text-outline: 1px 0 0 var(--outline), -1px 0 0 var(--outline), 0 1px 0 var(--outline), 0 -1px 0 var(--outline),
+      1px 1px 0 var(--outline), -1px -1px 0 var(--outline), 1px -1px 0 var(--outline), -1px 1px 0 var(--outline);
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    overflow: hidden;
+    background: #120c08;
+    color: var(--ink);
+    font-family: var(--cjk);
+    font-size: 16px;
+    -webkit-font-smoothing: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .delve-canvas {
+    position: absolute;
+    inset: 0;
+    /* 標題背景（direct 模式）設 --cw / --ch = 整數倍放大後的尺寸；遊戲中是 100% */
+    width: var(--cw, 100%);
+    height: var(--ch, 100%);
+    display: block;
+    touch-action: none;
+    image-rendering: pixelated;
+    cursor: crosshair;
+  }
+  .delve[data-px='1'] { --px: 1px; }
+  .delve[data-px='3'] { --px: 3px; }
+  .delve [hidden] { display: none; }
+
+  /* ── 像素外框：同一套斜面（實心 border + 無模糊外描邊） ── */
+  .delve-slot,
+  .delve-chip,
+  .delve-panel,
+  .delve-x,
+  .delve-recipe,
+  .delve-toast,
+  .delve-sleepwait,
+  .delve-menu-box,
+  .delve-btn {
+    border: var(--px) solid;
+    border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi);
+    border-radius: 0;
+    background: var(--bv-bg);
+    box-shadow: 0 0 0 var(--px) var(--outline);
+  }
+  .delve button { font: inherit; color: inherit; }
+
+  /* ── HUD ── */
+  .delve-hud { position: absolute; inset: 0; pointer-events: none; }
+  .delve-hud > * { pointer-events: auto; }
+  .delve-hud > .delve-toast,
+  .delve-hud > .delve-sleepwait,
+  .delve-hud > .delve-held,
+  .delve-hud > .delve-status { pointer-events: none; }
+
+  .delve-hotbar {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    gap: calc(var(--px) * 3);
+  }
+  .delve-slot {
+    --bv-hi: #623924;
+    --bv-bg: #2a1810;
+    --bv-lo: #1c1424;
+    position: relative;
+    width: calc(var(--px) * 22);
+    height: calc(var(--px) * 22);
+    padding: 0;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+  }
+  .delve-slot.is-selected { --bv-hi: #fff4c0; --bv-lo: #e8701c; --bv-bg: #623924; }
+  .delve-slot.is-picked { --bv-hi: #cceaf8; --bv-lo: #2c4486; --bv-bg: #18204a; }
+  .delve-slot-icon { width: calc(var(--px) * 16); height: calc(var(--px) * 16); image-rendering: pixelated; }
+  .delve-slot-count {
+    position: absolute;
+    right: 1px;
+    bottom: 1px;
+    font-family: var(--pixel);
+    font-size: 8px;
+    line-height: 8px;
+    color: #ffffff;
+    text-shadow: var(--text-outline);
+  }
+  .delve-slot-key {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    font-family: var(--pixel);
+    font-size: 8px;
+    line-height: 8px;
+    color: var(--dim);
+    text-shadow: var(--text-outline);
+  }
+  .delve-held {
+    position: absolute;
+    top: calc(var(--px) * 22 + 18px);
+    left: 12px;
+    font-size: 16px;
+    text-shadow: var(--text-outline);
+  }
+  .delve-status {
+    position: absolute;
+    top: calc(var(--px) * 22 + 40px);
+    left: 12px;
+    font-size: 16px;
+    color: var(--ink);
+    text-shadow: var(--text-outline);
+  }
+  /* HUD 日期時鐘：狀態列下方，點一下打開日曆（天氣小圖示 12×12 原生、整數倍放大） */
+  .delve-clock {
+    position: absolute;
+    top: calc(var(--px) * 22 + 62px);
+    left: 10px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 0 2px;
+    border: 0;
+    background: none;
+    font-size: 16px;
+    color: #fff4c0;
+    text-shadow: var(--text-outline);
+    cursor: pointer;
+  }
+  .delve-clock-icon { width: calc(var(--px) * 12); height: calc(var(--px) * 12); image-rendering: pixelated; }
+  .delve-clock:focus-visible { outline: var(--px) solid var(--gold); }
+  .delve-corner { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; }
+  .delve-chip {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 6px 10px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .delve-chip:hover,
+  .delve-x:hover,
+  .delve-btn:hover,
+  .delve-btn:focus-visible,
+  .delve-recipe.is-ready:hover { --bv-hi: #fff4c0; --bv-lo: #a83a10; }
+  .delve-kbd {
+    font-family: var(--pixel);
+    font-size: 8px;
+    color: #d8ba76;
+  }
+  .delve-keys--touch { display: none; }
+  /* 觸控裝置：不顯示鍵盤提示 */
+  @media (pointer: coarse) {
+    .delve-kbd,
+    .delve-keys { display: none; }
+    .delve-keys.delve-keys--touch { display: block; }
+  }
+  .delve[data-touch='1'] .delve-kbd { display: none; }
+
+  .delve-panel {
+    position: absolute;
+    top: calc(var(--px) * 22 + 92px);
+    left: 10px;
+    width: min(480px, calc(100vw - 20px));
+    max-height: calc(100vh - var(--px) * 22 - 102px);
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .delve-panel h2 { margin: 0; font-size: 16px; font-weight: 400; color: var(--gold); text-shadow: var(--text-outline); }
+  /* 日曆面板 */
+  .delve-panel--calendar { width: min(420px, calc(100vw - 20px)); }
+  .delve-cal-body { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .delve-cal-date { margin: 0; font-size: 16px; color: #fff4c0; text-shadow: var(--text-outline); }
+  .delve-cal-fc { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .delve-cal-wx {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 6px;
+    border: var(--px) solid;
+    border-color: #623924 #1c1424 #1c1424 #623924;
+    background: #2a1810;
+  }
+  .delve-cal-wx-label { font-size: 16px; color: var(--ink); }
+  .delve-cal-icon { width: calc(var(--px) * 12); height: calc(var(--px) * 12); image-rendering: pixelated; }
+  .delve-cal-sky { display: flex; flex-direction: column; gap: 6px; }
+  .delve-cal-moon-row { display: flex; gap: 8px; align-items: center; }
+  .delve-cal-moon { width: calc(var(--px) * 16); height: calc(var(--px) * 16); image-rendering: pixelated; background: #18204a; }
+  .delve-cal-line { margin: 0; font-size: 16px; color: #d8ba76; line-height: 1.4; }
+  .delve-cal-note { margin: 0; font-size: 16px; color: #b07a4b; line-height: 1.5; }
+  .delve-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: calc(var(--px) * 2); }
+  .delve-cal-day {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    border: var(--px) solid;
+    border-color: #623924 #1c1424 #1c1424 #623924;
+    background: #472819;
+    font-family: var(--pixel);
+    font-size: 8px;
+    color: #f2e2b0;
+  }
+  .delve-cal-day.is-past { background: #2a1810; color: #7c4c2e; }
+  .delve-cal-day.is-today { border-color: #fff4c0 #e8701c #e8701c #fff4c0; background: #623924; color: #fff4c0; }
+  .delve-panel-head { display: flex; justify-content: space-between; align-items: center; }
+  .delve-x { width: 32px; height: 32px; padding: 0; font-family: var(--pixel); font-size: 16px; cursor: pointer; }
+  .delve-hint { margin: 8px 0; font-size: 16px; line-height: 1.5; color: #d8ba76; }
+  .delve-inv-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: calc(var(--px) * 2); }
+  .delve-inv-grid .delve-slot { width: 100%; height: auto; aspect-ratio: 1; }
+  .delve-craft-title { margin-top: 14px; }
+  .delve-panel--chest { width: min(480px, calc(100vw - 20px)); }
+  .delve-chest-takeall { margin-top: 10px; width: 100%; }
+  /* 箱子面板：寬螢幕放在背包右邊，窄螢幕疊在背包上方 */
+  @media (min-width: 1000px) {
+    .delve-panel--chest { left: calc(min(480px, 100vw - 20px) + 22px); }
+  }
+  @media (max-width: 999px) {
+    .delve[data-chest='1'] .delve-panel--chest { z-index: 5; }
+  }
+  .delve-chip--zoom { padding: 6px 8px; }
+  .delve-loading {
+    position: absolute;
+    inset: 0;
+    z-index: 45;
+    display: grid;
+    place-items: center;
+  }
+  .delve-loading-text { margin: 0; font-family: var(--cjk); font-size: 16px; color: var(--gold); text-align: center; text-shadow: var(--text-outline); }
+  .delve-recipes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .delve-recipe {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    row-gap: 4px;
+    align-items: center;
+    padding: 6px;
+    --bv-hi: #472819;
+    --bv-bg: #2a1810;
+    --bv-lo: #1c1424;
+    color: #966139;
+    text-align: left;
+    cursor: pointer;
+  }
+  .delve-recipe .delve-slot-icon { grid-row: span 2; width: 32px; height: 32px; }
+  .delve-recipe.is-ready { --bv-hi: #966139; --bv-bg: #472819; --bv-lo: #2a1810; color: var(--ink); }
+  .delve-recipe:disabled { cursor: not-allowed; }
+  .delve-recipe:disabled .delve-slot-icon { filter: grayscale(1) brightness(0.6); }
+  .delve-recipe-name { font-size: 16px; }
+  .delve-recipe-need { font-size: 16px; color: #b07a4b; line-height: 1.25; }
+  .delve-recipe.is-ready .delve-recipe-need { color: #d8ba76; }
+
+  .delve-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 26px;
+    transform: translate(-50%, 12px);
+    padding: 8px 12px;
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.2s steps(2), transform 0.2s steps(2);
+  }
+  .delve-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ── 觸控按鍵（粗指標或首次觸控後顯示） ── */
+  .delve-touch { display: none; }
+  .delve[data-touch='1'] .delve-touch { display: block; }
+  @media (pointer: coarse) {
+    .delve-touch { display: block; }
+  }
+  .delve-joy {
+    --kx: 0px;
+    --ky: 0px;
+    position: absolute;
+    left: 22px;
+    bottom: 28px;
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.28);
+    background: rgba(0, 0, 0, 0.28);
+    touch-action: none;
+  }
+  .delve-joy-knob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 52px;
+    height: 52px;
+    margin: -26px 0 0 -26px;
+    border-radius: 50%;
+    background: rgba(255, 220, 150, 0.55);
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    transform: translate(var(--kx), var(--ky));
+  }
+  .delve-jump {
+    position: absolute;
+    right: 26px;
+    bottom: 44px;
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 204, 85, 0.35);
+    font-size: 16px;
+    touch-action: none;
+  }
+
+  /* ── 選單 ── */
+  .delve-menu {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    background: rgba(5, 3, 2, 0.6);
+  }
+  .delve-menu-box {
+    width: min(340px, calc(100vw - 32px));
+    padding: 18px;
+    display: grid;
+    gap: 10px;
+    --bv-bg: #2a1810;
+  }
+  .delve-menu-box h2 { margin: 0 0 6px; font-size: 16px; font-weight: 400; color: var(--gold); text-align: center; text-shadow: var(--text-outline); }
+  .delve-btn {
+    display: block;
+    padding: 10px 14px;
+    font-size: 16px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .delve-btn--main { --bv-hi: #ffd86a; --bv-bg: #a83a10; --bv-lo: #6c1e14; color: #ffffff; text-shadow: var(--text-outline); }
+  .delve-btn--ghost { --bv-bg: #1c1424; }
+  .delve-msg { min-height: 1.2em; margin: 4px 0 0; font-size: 16px; color: #93cc50; line-height: 1.4; }
+  .delve-note { margin: 4px 0 0; font-size: 16px; line-height: 1.5; color: #b07a4b; }
+
+  /* ── 操作說明（第一次進遊戲 / 選單「操作說明」） ── */
+  .delve-help {
+    position: absolute;
+    inset: 0;
+    z-index: 35;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: rgba(5, 3, 2, 0.6);
+  }
+  .delve-help-box { width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; }
+  .delve-help-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .delve-help-list li { display: flex; align-items: center; gap: 8px; font-size: 16px; line-height: 1.4; color: var(--ink); }
+  .delve-help-list li > span:last-child { flex: 1; }
+  .delve-help-key {
+    flex: none;
+    min-width: 28px;
+    padding: 3px 6px;
+    font-family: var(--pixel);
+    font-size: 10px;
+    text-align: center;
+    color: var(--gold);
+    background: #1c1424;
+    border: 2px solid #7c4c2e;
+  }
+  .delve-help-list--touch { display: none; }
+  @media (pointer: coarse) {
+    .delve-help-list--keys { display: none; }
+    .delve-help-list--touch { display: grid; }
+  }
+  .delve[data-touch='1'] .delve-help-list--keys { display: none; }
+  .delve[data-touch='1'] .delve-help-list--touch { display: grid; }
+
+  /* ── 覆蓋確認 ── */
+  .delve-confirm {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: rgba(5, 3, 2, 0.72);
+  }
+  .delve-confirm-msg { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink); }
+  .delve-confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  .delve-btn--danger { --bv-hi: #e8701c; --bv-bg: #6c1e14; --bv-lo: #1c1424; }
+  .delve-btn--danger:hover,
+  .delve-btn--danger:focus-visible { --bv-hi: #fff4c0; --bv-bg: #a83a10; }
+
+  /* ── 標題：即時場景（#delve-canvas）在後面，前面是字標 + 像素選單 ── */
+  .delve-title {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    overflow-x: hidden;
+    overflow-y: auto;
+    text-align: center;
+  }
+  .delve-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .delve-tt {
+    box-sizing: border-box;
+    min-height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    justify-items: center;
+    align-items: center;
+    gap: 12px;
+    padding: clamp(12px, 4vh, 44px) 16px 14px;
+  }
+  .delve-tt-head { display: grid; justify-items: center; gap: 6px; }
+  .delve-tt-h { margin: 0; line-height: 0; }
+  .delve-logo { display: block; image-rendering: pixelated; }
+  .delve-tt-kanji {
+    margin: 0;
+    font-size: 32px;
+    line-height: 1;
+    letter-spacing: 6px;
+    color: #fff4c0;
+    text-shadow: 2px 2px 0 #6c1e14, 4px 4px 0 var(--outline), var(--text-outline);
+  }
+  /* 標語：絕不換行；暗色底板，不會被背景的冰柱 / 樹葉蓋住 */
+  .delve-tagline {
+    margin: 0;
+    padding: 2px 8px;
+    font-family: var(--pixel);
+    font-size: 8px;
+    line-height: 16px;
+    white-space: nowrap;
+    color: #c2e478;
+    letter-spacing: 4px;
+    text-shadow: var(--text-outline);
+    background: #0c0a12;
+    box-shadow: 0 0 0 2px #2a1810;
+  }
+
+  /* 選單：像素外框按鈕，懸停 / 焦點時亮框 + 左側金色游標（steps 跳動） */
+  .delve-tmenu { box-sizing: border-box; width: min(428px, 100%); display: grid; gap: 8px; padding-left: 28px; }
+  .delve-ti {
+    --bv-hi: #966139;
+    --bv-lo: #2a1810;
+    --bv-bg: #472819;
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 6px 12px;
+    border: 2px solid;
+    border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi);
+    border-radius: 0;
+    background: var(--bv-bg);
+    box-shadow: 0 0 0 2px var(--outline), 0 4px 0 2px var(--outline);
+    font: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    text-align: left;
+    text-decoration: none;
+    text-shadow: var(--text-outline);
+    cursor: pointer;
+  }
+  .delve-ti[hidden] { display: none; }
+  .delve-ti:hover,
+  .delve-ti:focus-visible { --bv-hi: #fff4c0; --bv-lo: #a83a10; --bv-bg: #623924; color: #fff4c0; outline: none; }
+  .delve-ti:active { transform: translateY(2px); box-shadow: 0 0 0 2px var(--outline), 0 2px 0 2px var(--outline); }
+  .delve-ti-cursor {
+    position: absolute;
+    left: -30px;
+    top: 50%;
+    width: 14px;
+    height: 18px;
+    margin-top: -9px;
+    image-rendering: pixelated;
+    visibility: hidden;
+  }
+  .delve-ti:hover .delve-ti-cursor,
+  .delve-ti:focus-visible .delve-ti-cursor { visibility: visible; animation: delve-cursor 0.8s steps(1) infinite; }
+  @keyframes delve-cursor { 50% { transform: translateX(4px); } }
+  .delve-ti-icon { flex: none; width: 24px; height: 24px; image-rendering: pixelated; }
+  .delve-ti-text { display: grid; gap: 2px; min-width: 0; }
+  .delve-ti-label { line-height: 1.25; }
+  .delve-ti-sub { display: grid; gap: 0; color: #f2e2b0; }
+  .delve-ti-sub:empty { display: none; }
+  .delve-ti-line { font-size: 16px; line-height: 1.35; overflow-wrap: break-word; }
+  .delve-ti-line + .delve-ti-line { color: #f2b888; }
+  .delve-ti--continue,
+  .delve[data-save='0'] .delve-ti--new { --bv-hi: #ffd86a; --bv-bg: #a83a10; --bv-lo: #6c1e14; color: #ffffff; }
+  .delve-ti--continue:hover,
+  .delve-ti--continue:focus-visible,
+  .delve[data-save='0'] .delve-ti--new:hover,
+  .delve[data-save='0'] .delve-ti--new:focus-visible { --bv-hi: #fff4c0; --bv-bg: #e8701c; --bv-lo: #6c1e14; }
+  .delve-ti--continue .delve-ti-icon { width: 36px; height: 36px; }
+  .delve-ti--ghost { --bv-hi: #423f54; --bv-lo: #0c0a12; --bv-bg: #1c1424; color: #b4b9c8; }
+  .delve-ti-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .delve-tt-msg { max-width: 420px; margin: 0; text-shadow: var(--text-outline); }
+  .delve-tt-msg:empty { display: none; }
+  .delve-tt-foot { display: grid; gap: 2px; max-width: 640px; }
+  .delve-tt-foot p { margin: 0; font-size: 16px; line-height: 1.4; text-shadow: var(--text-outline); }
+  .delve-tt-credit { color: #c2e478; }
+  .delve-tt-note { color: #d8ba76; }
+  .delve-tt-keys { color: #c99660; }
+  .delve-tt-keys kbd {
+    display: inline-block;
+    min-width: 12px;
+    margin: 0 2px;
+    padding: 0 4px;
+    font-family: var(--pixel);
+    font-size: 8px;
+    line-height: 16px;
+    color: var(--gold);
+    background: #1c1424;
+    border: 2px solid #7c4c2e;
+    text-shadow: none;
+  }
+  .delve[data-touch='1'] .delve-tt-keys { display: none; }
+  @media (pointer: coarse) { .delve-tt-keys { display: none; } }
+
+  /* 面板（角色 / 新角色 / 世界 / 新世界 / 設定）：2 px 棋盤抖動的暗幕 + 像素框 */
+  .delve-tpanel {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: repeating-conic-gradient(#0c0a12 0% 25%, transparent 0% 50%) 0 0 / 4px 4px;
+  }
+  .delve-tpanel[hidden] { display: none; }
+  .delve-tpanel-box {
+    box-sizing: border-box;
+    width: min(440px, 100%);
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    display: grid;
+    gap: 8px;
+    padding: 18px;
+    text-align: left;
+    border: 2px solid;
+    border-color: #966139 #1c1424 #1c1424 #966139;
+    background: #2a1810;
+    box-shadow: 0 0 0 2px var(--outline), 6px 6px 0 2px var(--outline);
+  }
+  .delve-tpanel-h { display: flex; gap: 8px; align-items: center; margin: 0 0 4px; font-size: 16px; font-weight: 400; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-tpanel-icon { display: inline-flex; }
+  .delve-field { display: block; }
+  .delve-field-label { font-size: 16px; color: #f2e2b0; }
+  .delve-field-row { display: flex; gap: 8px; align-items: stretch; }
+  .delve-field-hint { margin: 0 0 4px; font-size: 16px; line-height: 1.45; color: #c99660; }
+  .delve-input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    border: 2px solid;
+    border-color: #0c0a12 #966139 #966139 #0c0a12;
+    border-radius: 0;
+    background: #1c1424;
+    box-shadow: 0 0 0 2px var(--outline);
+  }
+  .delve-input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .delve-input::placeholder { color: #7c4c2e; }
+  .delve-ibtn {
+    --bv-hi: #966139;
+    --bv-lo: #2a1810;
+    --bv-bg: #472819;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 2px solid;
+    border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi);
+    border-radius: 0;
+    background: var(--bv-bg);
+    box-shadow: 0 0 0 2px var(--outline);
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .delve-ibtn .delve-ti-icon { width: 24px; height: 24px; }
+  .delve-ibtn:hover,
+  .delve-ibtn:focus-visible { --bv-hi: #fff4c0; --bv-lo: #a83a10; outline: none; }
+  .delve-ibtn:disabled { --bv-hi: #472819; --bv-bg: #2a1810; color: #623924; cursor: not-allowed; }
+  .delve-seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .delve-seg2-btn {
+    --bv-hi: #623924;
+    --bv-lo: #1c1424;
+    --bv-bg: #2a1810;
+    min-height: 44px;
+    border: 2px solid;
+    border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi);
+    border-radius: 0;
+    background: var(--bv-bg);
+    box-shadow: 0 0 0 2px var(--outline);
+    font-size: 16px;
+    color: #b07a4b;
+    cursor: pointer;
+  }
+  .delve-seg2-btn[aria-checked='true'] { --bv-hi: #ffd86a; --bv-bg: #a83a10; --bv-lo: #6c1e14; color: #ffffff; text-shadow: var(--text-outline); }
+  .delve-seg2-btn:hover,
+  .delve-seg2-btn:focus-visible { --bv-hi: #fff4c0; outline: none; color: #fff4c0; }
+  .delve-tpanel-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  /* ── 新世界：角色預覽 ── */
+  .delve-newlook { display: flex; gap: 10px; align-items: center; }
+  .delve-newlook-doll { width: 108px; height: 112px; image-rendering: pixelated; border: 2px solid; border-color: #1c1424 #966139 #966139 #1c1424; background: #18204a; }
+  .delve-newlook .delve-btn { flex: 1; min-height: 44px; }
+  /* ── 角色 / 世界列表：列表在面板裡捲動（底部按鈕固定看得到）；每列是可聚焦的像素框（同選單項），右邊是匯出 / 刪除小鈕 ── */
+  .delve-tpanel-box--list { width: min(520px, 100%); display: flex; flex-direction: column; overflow: hidden; }
+  .delve-tpanel-box--list > .delve-tpanel-h,
+  .delve-tpanel-box--list > .delve-tpanel-btns { flex: none; }
+  .delve-tlist { flex: 0 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-auto-rows: max-content; align-content: start; gap: 10px; margin: 0 -6px; padding: 4px 6px 6px; }
+  .delve-tlist-empty { margin: 0; padding: 14px 4px; font-size: 16px; line-height: 1.45; color: #c99660; text-align: center; }
+  .delve-trow {
+    --bv-hi: #966139;
+    --bv-lo: #2a1810;
+    --bv-bg: #472819;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: 48px;
+    padding: 4px 6px 4px 10px;
+    border: 2px solid;
+    border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi);
+    background: var(--bv-bg);
+    box-shadow: 0 0 0 2px var(--outline);
+    font-size: 16px;
+    color: var(--ink);
+    text-align: left;
+    text-shadow: var(--text-outline);
+    cursor: pointer;
+  }
+  .delve-trow:hover,
+  .delve-trow:focus-visible { --bv-hi: #fff4c0; --bv-lo: #a83a10; --bv-bg: #623924; color: #fff4c0; outline: none; }
+  .delve-char-row { grid-template-columns: auto minmax(0, 1fr) auto; padding-left: 6px; }
+  /* 小人像：畫布 52×54、1 倍（含 2 px 邊框） */
+  .delve-char-doll { display: block; width: 56px; height: 58px; image-rendering: pixelated; border: 2px solid; border-color: #1c1424 #966139 #966139 #1c1424; background: #18204a; }
+  /* 只在「 · 」之間換行（每一項本身不拆開）；超長的世界名才逐字斷 */
+  .delve-trow-line { min-width: 0; line-height: 1.35; word-break: keep-all; overflow-wrap: anywhere; }
+  .delve-trow-btns { display: flex; gap: 8px; }
+  .delve-trow-btn { min-width: 56px; min-height: 40px; padding: 4px 8px; text-shadow: var(--text-outline); }
+  /* 窄螢幕：世界列的匯出 / 刪除移到第二行靠右（世界資訊有整行可以換行） */
+  @media (max-width: 520px) {
+    .delve-world-row { grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 6px 6px 6px 10px; }
+    .delve-world-row .delve-trow-btns { justify-content: flex-end; }
+  }
+  /* 面板開著時，標題訊息（錯誤 / 匯出完成）浮在畫面上緣（不蓋住底部按鈕），不會被暗幕蓋住 */
+  .delve[data-tpanel] .delve-tt-msg { position: absolute; z-index: 6; left: 16px; right: 16px; top: 8px; max-width: 488px; margin: 0 auto; padding: 8px 12px; background: #1c1424; box-shadow: 0 0 0 2px var(--outline); }
+  /* ── 角色外觀（客製化）── */
+  .delve-wr { z-index: 45; }
+  .delve-wr-box { width: min(760px, 100%); }
+  .delve-wr-body { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; }
+  .delve-wr-stage { display: grid; gap: 6px; justify-items: center; position: sticky; top: 0; }
+  .delve-wr-btns { grid-template-columns: 1fr 1fr 1.4fr; }
+  .delve-wr-note { margin: 0; padding: 4px; font-size: 16px; line-height: 1.4; color: #c99660; align-self: center; }
+  .delve-wr-doll { width: 340px; height: 352px; image-rendering: pixelated; border: 2px solid; border-color: #0c0a12 #966139 #966139 #0c0a12; background: repeating-conic-gradient(#18204a 0% 25%, #2c2450 0% 50%) 0 0 / 16px 16px; box-shadow: 0 0 0 2px var(--outline); }
+  .delve-wr-blurb { grid-column: 1 / -1; margin: 0; padding: 4px; font-size: 16px; line-height: 1.4; color: #c99660; }
+  .delve-wr-cap { margin: 0; min-height: 1.2em; font-size: 16px; color: #94c8ee; text-shadow: var(--text-outline); }
+  .delve-wr-stage .delve-btn { width: 100%; min-height: 44px; }
+  .delve-wr-rows { display: grid; gap: 4px; }
+  .delve-wr-group { margin: 6px 0 0; font-size: 16px; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-wr-group:first-child { margin-top: 0; }
+  .delve-wr-row { display: grid; grid-template-columns: 4.5em 40px 1fr 40px; gap: 6px; align-items: center; min-height: 44px; padding: 0 4px; border: 2px solid transparent; }
+  .delve-wr-row:focus-visible, .delve-wr-row:focus { outline: none; border-color: var(--gold); background: #472819; }
+  .delve-wr-label { font-size: 16px; color: #f2e2b0; }
+  .delve-wr-arrow { width: 40px; min-height: 40px; color: #ffd86a; }
+  .delve-wr-val { display: flex; gap: 8px; align-items: center; justify-content: center; font-size: 16px; color: #ffffff; text-shadow: var(--text-outline); }
+  .delve-wr-swatch { width: 20px; height: 20px; image-rendering: pixelated; box-shadow: 0 0 0 2px var(--outline); }
+  .delve-wr .delve-tpanel-btns { position: sticky; bottom: -18px; margin: 0 -18px -18px; padding: 10px 18px 18px; background: #2a1810; border-top: 2px solid #472819; }
+  @media (min-width: 900px) and (min-height: 521px) {
+    .delve-wr-box { width: min(980px, 100%); }
+    .delve-wr-rows { grid-template-columns: 1fr 1fr; column-gap: 16px; }
+    .delve-wr-group { grid-column: 1 / -1; }
+  }
+  .delve-wr-keys kbd { display: inline-block; min-width: 1.4em; padding: 0 4px; margin: 0 2px; border: 2px solid #966139; background: #1c1424; color: #f2e2b0; font: inherit; text-align: center; }
+  @media (max-width: 640px), (max-height: 520px) and (orientation: landscape) {
+    .delve-wr-box { padding: 12px; }
+    .delve-wr .delve-tpanel-btns { bottom: -12px; margin: 0 -12px -12px; padding: 8px 12px 12px; }
+    .delve-wr-body { grid-template-columns: 1fr; }
+    /* 手機：預覽固定在面板上方，選項在下面捲動（改下面的選項也看得到角色） */
+    .delve-wr-stage { position: sticky; top: -12px; z-index: 2; margin: -12px -12px 0; padding: 12px 12px 6px; background: #2a1810; border-bottom: 2px solid #472819; grid-template-columns: auto 1fr; align-items: center; justify-items: stretch; }
+    .delve-wr-doll { width: 172px; height: 178px; grid-row: span 3; }
+    .delve-wr-note { display: none; }
+    .delve-wr-row { grid-template-columns: 4em 44px 1fr 44px; }
+    .delve-wr-arrow { width: 44px; min-height: 44px; }
+    .delve-wr-keys { display: none; }
+  }
+  /* 預覽倍率（畫布 56×58，含 2px 邊框）：桌面 6×、641–768px 4×；≤640px 與矮橫放（預覽固定蓋在選項上）3×（上面 640px 區塊）——一律整數倍 */
+  @media (min-width: 641px) and (max-width: 768px) {
+    .delve-wr-doll { width: 228px; height: 236px; }
+  }
+  /* 橫放手機（矮螢幕、寬度夠）：預覽放左邊、選項在右邊捲動——預覽不再蓋住選項列 */
+  @media (min-width: 641px) and (max-height: 520px) and (orientation: landscape) {
+    .delve-wr-body { grid-template-columns: auto 1fr; }
+    .delve-wr-stage { position: static; margin: 0; padding: 0; border-bottom: 0; background: none; grid-template-columns: 1fr; justify-items: center; }
+    .delve-wr-doll { width: 116px; height: 120px; grid-row: auto; }
+  }
+  /* 手機：紙娃娃 + 隱藏開關在左、防具 / 外觀欄在右（觸控版背包只有 ~190px 高：整組不用捲就看得到） */
+  @media (max-width: 640px) {
+    .delve .delve-doll-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); grid-template-areas: "doll armor" "hide vanity" "btn btn"; gap: 6px 8px; align-items: start; }
+    .delve .delve-doll { grid-area: doll; padding: 2px; }
+    .delve .delve-doll-canvas { width: 52px; height: 54px; }
+    .delve .delve-doll-cap { display: none; }
+    .delve .delve-equip-cols { display: contents; }
+    .delve .delve-equip-col:first-child { grid-area: armor; }
+    .delve .delve-equip-col:nth-child(2) { grid-area: vanity; }
+    .delve .delve-hide-wrap { grid-area: hide; }
+    .delve .delve-doll-row .delve-equip-h { display: none; }
+    .delve .delve-equip-btn { grid-area: btn; }
+    .delve .delve-doll-row .delve-equip { grid-template-columns: repeat(4, 40px); gap: 2px; width: auto; }
+    /* 外觀欄 5 格（頭 / 身 / 腿 / 背 / 飾品）排成一列：高度和防具欄一樣、不用捲；間距 1px 才塞得進 360px 寬的手機 */
+    .delve .delve-vanity { grid-template-columns: repeat(5, 40px); gap: 1px; width: auto; }
+    .delve .delve-doll-row .delve-equip .delve-slot,
+    .delve .delve-vanity .delve-slot { width: 40px; height: 40px; min-height: 0; aspect-ratio: auto; }
+    .delve .delve-vanity .delve-slot-icon,
+    .delve .delve-doll-row .delve-equip .delve-slot-icon { width: 32px; height: 32px; }
+    .delve .delve-hide-row { gap: 2px; }
+    .delve .delve-hide { flex: 1; min-width: 0; min-height: 40px; padding: 0; flex-direction: column; justify-content: center; gap: 0; }
+  }
+  .delve-tpanel-btns--one { grid-template-columns: 1fr; }
+  .delve-tpanel-btns .delve-btn { min-height: 44px; }
+  .delve-set { display: grid; grid-template-columns: 7.5em 1fr; gap: 10px; align-items: center; min-height: 44px; }
+  .delve-set-ctl { display: flex; gap: 8px; align-items: center; }
+  .delve-set-val { min-width: 3.5em; font-size: 16px; color: var(--gold); text-align: center; text-shadow: var(--text-outline); }
+  .delve-set-val--wide { flex: 1; }
+  .delve-switch {
+    --bv-hi: #623924;
+    --bv-lo: #1c1424;
+    --bv-bg: #2a1810;
+    min-width: 72px;
+    min-height: 44px;
+    border: 2px solid;
+    border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi);
+    border-radius: 0;
+    background: var(--bv-bg);
+    box-shadow: 0 0 0 2px var(--outline);
+    font-size: 16px;
+    color: #b07a4b;
+    cursor: pointer;
+  }
+  .delve-switch[aria-checked='true'] { --bv-hi: #cceaf8; --bv-bg: #1f6474; --bv-lo: #18204a; color: #ffffff; }
+  .delve-switch:hover,
+  .delve-switch:focus-visible { --bv-hi: #fff4c0; outline: none; }
+  /* 像素滑桿：凹槽 + 方塊把手（無圓角、無模糊） */
+  .delve-range { flex: 1; min-width: 0; height: 44px; margin: 0; background: transparent; appearance: none; -webkit-appearance: none; cursor: pointer; }
+  .delve-range::-webkit-slider-runnable-track { height: 8px; background: #1c1424; border: 2px solid; border-color: #0c0a12 #623924 #623924 #0c0a12; }
+  .delve-range::-webkit-slider-thumb {
+    width: 16px;
+    height: 28px;
+    margin-top: -12px;
+    border: 2px solid;
+    border-color: #fff4c0 #a83a10 #a83a10 #fff4c0;
+    border-radius: 0;
+    background: #ffd86a;
+    box-shadow: 0 0 0 2px #0c0a12;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .delve-range::-moz-range-track { height: 8px; background: #1c1424; border: 2px solid; border-color: #0c0a12 #623924 #623924 #0c0a12; }
+  .delve-range::-moz-range-thumb { width: 12px; height: 24px; border: 2px solid; border-color: #fff4c0 #a83a10 #a83a10 #fff4c0; border-radius: 0; background: #ffd86a; box-shadow: 0 0 0 2px #0c0a12; }
+  .delve-range:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+
+  /* 開始畫面（按任意鍵開始）→ 選單：字標 steps 由上往下現身、選單 steps 滑入 */
+  .delve-press {
+    grid-row: 2;
+    align-self: center;
+    display: grid;
+    gap: 6px;
+    justify-items: center;
+    min-height: 44px;
+    padding: 10px 18px;
+    border: 0;
+    background: none;
+    font-size: 16px;
+    color: #fff4c0;
+    text-shadow: 2px 2px 0 #6c1e14, var(--text-outline);
+    cursor: pointer;
+    animation: delve-blink 1.2s steps(1) infinite;
+  }
+  .delve-press-keys { font-size: 32px; line-height: 1.1; letter-spacing: 4px; }
+  .delve-press-touch { display: none; font-size: 32px; line-height: 1.1; letter-spacing: 4px; }
+  .delve[data-touch='1'] .delve-press-keys { display: none; }
+  .delve[data-touch='1'] .delve-press-touch { display: inline; }
+  .delve-press-en { font-family: var(--pixel); font-size: 8px; letter-spacing: 4px; color: #ffa93a; }
+  .delve-press:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+  @keyframes delve-blink { 70% { visibility: hidden; } }
+  .delve-tmenu { grid-row: 2; }
+  .delve[data-title='press'] .delve-tmenu,
+  .delve[data-title='press'] .delve-tt-keys { display: none; }
+  .delve[data-title='menu'] .delve-press { display: none; }
+  .delve-tt-head { animation: delve-logo-in 0.9s steps(9) 0.5s both; }
+  .delve[data-title='menu'] .delve-tmenu { animation: delve-menu-in 0.32s steps(5) both; }
+  /* 由下往上現身：字先出來，鎬頭 / 火焰 / 餘燼最後 */
+  @keyframes delve-logo-in { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(-40px); } }
+  @keyframes delve-menu-in { from { transform: translateY(24px); clip-path: inset(0 0 100% 0); } to { transform: none; clip-path: inset(-12px -60px); } }
+  .delve[data-reduced='1'] .delve-tt-head,
+  .delve[data-reduced='1'] .delve-tmenu,
+  .delve[data-reduced='1'] .delve-press,
+  .delve[data-reduced='1'] .delve-ti-cursor { animation: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .delve-tt-head,
+    .delve-tmenu,
+    .delve-press,
+    .delve-ti-cursor { animation: none; }
+  }
+  /* 寬螢幕：字標 + 選單放左欄，右邊留給洞窟場景（主角在那裡挖礦） */
+  @media (min-width: 900px) and (min-height: 521px) and (orientation: landscape) {
+    .delve-tt { justify-items: start; padding-left: clamp(24px, 6vw, 110px); padding-right: 16px; }
+    .delve-tt-head { justify-items: start; }
+    .delve-tt-kanji { padding-left: 6px; }
+    .delve-press { justify-self: start; justify-items: start; padding-left: 4px; }
+    .delve-tmenu { padding-left: 36px; margin-left: -36px; }
+    .delve-tt-foot { text-align: left; }
+  }
+  /* 直式手機：字標在上、洞窟在中間、選單 / 開始提示靠下 */
+  @media (orientation: portrait) {
+    .delve-tmenu,
+    .delve-press { align-self: end; }
+    .delve-tt { gap: 10px; }
+  }
+  /* 大螢幕：選單字 32 px（DotGothic16 的整數倍）、圖示 48 px */
+  @media (min-width: 1600px) and (min-height: 900px) {
+    .delve-tmenu { width: 560px; gap: 12px; }
+    .delve .delve-ti { font-size: 32px; min-height: 72px; gap: 14px; }
+    .delve-ti-icon { width: 48px; height: 48px; }
+    .delve-ti--continue .delve-ti-icon { width: 60px; height: 60px; }
+    .delve-ti-line { font-size: 16px; }
+    .delve-tt-kanji { font-size: 48px; letter-spacing: 8px; }
+    .delve-ti-cursor { width: 28px; height: 36px; margin-top: -18px; left: -40px; }
+  }
+  @media (max-height: 520px) and (orientation: landscape) {
+    .delve-tmenu,
+    .delve-press { grid-row: 1; grid-column: 2; }
+    .delve-press-keys,
+    .delve-press-touch { font-size: 16px; }
+    .delve .delve-tagline { font-size: 8px; line-height: 16px; letter-spacing: 4px; }
+    .delve .delve-tt-kanji { font-size: 32px; letter-spacing: 4px; }
+  }
+
+  /* 轉場：低解析抖動畫布（每格 8 CSS px，整數倍放大） */
+  .delve-wipe {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 44;
+    width: var(--wipe-w, 100%);
+    height: var(--wipe-h, 100%);
+    image-rendering: pixelated;
+    pointer-events: none;
+  }
+  .delve-loading-box {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+    padding: 16px 20px;
+    border: 2px solid;
+    border-color: #966139 #1c1424 #1c1424 #966139;
+    background: #2a1810;
+    box-shadow: 0 0 0 2px var(--outline), 6px 6px 0 2px var(--outline);
+  }
+  .delve-progress {
+    display: grid;
+    grid-template-columns: repeat(20, 1fr);
+    gap: 2px;
+    width: min(320px, 70vw);
+    padding: 4px;
+    background: #0c0a12;
+    border: 2px solid;
+    border-color: #0c0a12 #623924 #623924 #0c0a12;
+  }
+  .delve-progress-cell { height: 12px; background: #2a1810; }
+  .delve-progress-cell.is-on { background: #ffa93a; box-shadow: inset 0 -2px 0 #e8701c, inset 0 2px 0 #ffd86a; }
+  .delve-loading-stage { min-height: 1.4em; margin: 0; font-family: var(--cjk); font-size: 16px; color: #d8ba76; text-shadow: var(--text-outline); }
+  .delve-loading-logo { display: block; image-rendering: pixelated; margin-bottom: 4px; }
+  .delve-loading-en { margin: 0; font-family: var(--pixel); font-size: 8px; line-height: 16px; letter-spacing: 4px; color: #ffa93a; text-shadow: var(--text-outline); animation: delve-blink 1.2s steps(1) infinite; }
+  .delve-loading-tip { max-width: 320px; margin: 4px 0 0; font-family: var(--cjk); font-size: 16px; line-height: 1.45; color: #b07a4b; text-align: center; }
+  .delve[data-reduced='1'] .delve-loading-en { animation: none; }
+  /* 生成畫面的地層剖面（genSection.ts）：280×80 像素，整數倍放大 */
+  .delve-gen-frame {
+    padding: 2px;
+    background: #0c0a12;
+    border: 2px solid;
+    border-color: #0c0a12 #623924 #623924 #0c0a12;
+    line-height: 0;
+  }
+  .delve-gen-map { display: block; width: 280px; height: 80px; image-rendering: pixelated; }
+  .delve-gen-phases {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .delve-gen-phase {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 4px;
+    font-family: var(--cjk);
+    font-size: 16px;
+    line-height: 24px;
+    color: #623924;
+  }
+  .delve-gen-phase::before { content: ''; width: 6px; height: 6px; background: #472819; box-shadow: 0 0 0 2px #0c0a12; }
+  .delve-gen-phase[data-state='done'] { color: #93cc50; }
+  .delve-gen-phase[data-state='done']::before { background: #93cc50; }
+  .delve-gen-phase[data-state='now'] { color: #ffd86a; text-shadow: var(--text-outline); }
+  .delve-gen-phase[data-state='now']::before { background: #ffa93a; animation: delve-blink 0.5s steps(1) infinite; }
+  .delve[data-reduced='1'] .delve-gen-phase[data-state='now']::before { animation: none; }
+  @media (min-width: 700px) and (min-height: 620px) {
+    .delve-gen-map { width: 560px; height: 160px; }
+    .delve-progress { width: 560px; }
+    .delve-loading-tip { max-width: 560px; }
+  }
+
+  @media (min-width: 700px) {
+    .delve-tagline { font-size: 16px; line-height: 24px; letter-spacing: 6px; }
+    .delve-ti-icon { width: 36px; height: 36px; }
+    .delve-ti--continue .delve-ti-icon { width: 48px; height: 48px; }
+    .delve-ti-cursor { width: 21px; height: 27px; margin-top: -13px; left: -34px; }
+    .delve-tmenu { padding-left: 36px; }
+  }
+  /* 矮畫面（橫放手機）：字標在左、選單在右 */
+  @media (max-height: 520px) and (orientation: landscape) {
+    .delve-tt { grid-template-columns: 1fr minmax(0, 1.1fr); grid-template-rows: 1fr auto; column-gap: 20px; padding: 10px 16px 8px; }
+    .delve-tt-head { grid-row: 1; grid-column: 1; }
+    .delve-tmenu { grid-row: 1; grid-column: 2; gap: 6px; }
+    .delve-tt-msg,
+    .delve-tt > .delve-btn { grid-column: 1 / -1; }
+    .delve-tt-foot { grid-row: 2; grid-column: 1 / -1; }
+    .delve-tt-note { display: none; }
+    .delve-tt-kanji { font-size: 16px; letter-spacing: 4px; }
+    .delve-ti { min-height: 40px; padding: 2px 10px; }
+    .delve-ti-icon { width: 24px; height: 24px; }
+    .delve-ti--continue .delve-ti-icon { width: 24px; height: 24px; }
+  }
+
+  /* ── 小地圖（右上，角落按鈕下方）：原生 120×80 美術像素，整數倍放大 ── */
+  .delve-minimap {
+    --mm: var(--px);
+    position: absolute;
+    top: 58px;
+    right: 10px;
+    display: grid;
+    gap: 4px;
+    justify-items: end;
+  }
+  .delve[data-px='3'] .delve-minimap { --mm: 2px; }
+  .delve-minimap-canvas {
+    width: calc(var(--mm) * 120);
+    height: calc(var(--mm) * 80);
+    image-rendering: pixelated;
+    cursor: pointer;
+    border: var(--px) solid;
+    border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi);
+    box-shadow: 0 0 0 var(--px) var(--outline);
+    background: #0c0a12;
+  }
+  .delve-minimap-btns { display: flex; gap: 4px; align-items: center; }
+  .delve-mm-label { font-size: 16px; color: #d8ba76; text-shadow: var(--text-outline); display: flex; gap: 4px; align-items: center; }
+  .delve-mm-btn {
+    width: 28px;
+    height: 24px;
+    padding: 0;
+    font-size: 16px;
+    cursor: pointer;
+    border: var(--px) solid;
+    border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi);
+    background: var(--bv-bg);
+    box-shadow: 0 0 0 var(--px) var(--outline);
+  }
+  .delve-mm-btn:hover { --bv-hi: #fff4c0; --bv-lo: #a83a10; }
+
+  /* ── 發現橫幅：上方置中，像素外框 + 金字；進場 / 退場用 steps() ── */
+  .delve-banner {
+    position: absolute;
+    top: 22%;
+    left: 50%;
+    display: grid;
+    gap: 2px;
+    justify-items: center;
+    min-width: min(360px, calc(100vw - 32px));
+    padding: 10px 22px 12px;
+    border: calc(var(--px) * 2) solid;
+    border-color: #ffd86a #6c1e14 #6c1e14 #ffd86a;
+    background: #2a1810;
+    box-shadow: 0 0 0 var(--px) var(--outline), calc(var(--px) * 3) calc(var(--px) * 3) 0 0 var(--outline);
+    transform: translate(-50%, -16px);
+    opacity: 0;
+    transition: opacity 0.3s steps(3), transform 0.3s steps(3);
+    pointer-events: none;
+  }
+  .delve-banner.is-on { opacity: 1; transform: translate(-50%, 0); }
+  .delve-banner-sub { font-size: 16px; color: #d8ba76; letter-spacing: 4px; }
+  .delve-banner-title { font-size: 32px; line-height: 1.1; color: var(--gold); text-shadow: 2px 2px 0 #a83a10, var(--text-outline); }
+
+  /* ── 碑文：石碑色的面板 ── */
+  .delve-lore {
+    position: absolute;
+    left: 50%;
+    bottom: 90px;
+    width: min(520px, calc(100vw - 24px));
+    transform: translateX(-50%);
+    z-index: 6;
+  }
+  .delve-lore-box {
+    display: grid;
+    gap: 8px;
+    padding: 14px 18px;
+    border: calc(var(--px) * 2) solid;
+    border-color: #b4b9c8 #2c2838 #2c2838 #b4b9c8;
+    background: #423f54;
+    box-shadow: 0 0 0 var(--px) var(--outline), calc(var(--px) * 3) calc(var(--px) * 3) 0 0 var(--outline);
+  }
+  .delve-lore-kicker { margin: 0; font-size: 16px; color: #a2c8b0; }
+  .delve-lore-title { margin: 0; font-size: 16px; font-weight: 400; color: #fff4c0; text-shadow: var(--text-outline); }
+  .delve-lore-text { margin: 0; font-size: 16px; line-height: 1.7; color: var(--ink); text-shadow: var(--text-outline); white-space: pre-line; }
+  .delve-lore-close { justify-self: end; padding: 6px 14px; }
+
+  /* ── 探險日誌（右側面板） ── */
+  .delve-panel--journal { left: auto; right: 10px; width: min(440px, calc(100vw - 20px)); }
+  .delve-journal-body { display: grid; gap: 10px; margin-top: 8px; }
+  .delve-j-top { display: grid; gap: 6px; }
+  .delve-j-big { font-size: 16px; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-j-facts { margin: 0; font-size: 16px; color: #d8ba76; }
+  .delve-seg { display: flex; gap: var(--px); }
+  .delve-seg-cell { width: calc(var(--px) * 6); height: calc(var(--px) * 5); background: #1c1424; box-shadow: inset 0 0 0 var(--px) #2a1810; }
+  .delve-seg-cell.is-on { background: #93cc50; box-shadow: inset 0 calc(var(--px) * -1) 0 0 #468a34, inset 0 var(--px) 0 0 #c2e478; }
+  .delve-j-cats { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .delve-j-cat-head { display: flex; gap: 8px; align-items: center; }
+  .delve-j-cat-name { min-width: 6em; font-size: 16px; color: var(--ink); }
+  .delve-j-count { min-width: 4em; font-size: 16px; color: var(--gold); }
+  .delve-j-names { margin: 2px 0 0; font-size: 16px; line-height: 1.4; color: #b07a4b; }
+  .delve-j-h { margin: 4px 0 0; font-size: 16px; font-weight: 400; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-j-lore { margin: 0; padding-left: 2em; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; font-size: 16px; color: #966139; }
+  .delve-j-lore-btn { padding: 0; border: 0; background: none; font-size: 16px; color: #cceaf8; cursor: pointer; text-align: left; }
+  .delve-j-lore-btn:hover { color: #fff4c0; }
+  .delve-j-unknown { color: #623924; }
+  .delve-j-treasures { display: flex; flex-wrap: wrap; gap: 6px; }
+  .delve-j-treasure { display: grid; place-items: center; width: calc(var(--px) * 20); height: calc(var(--px) * 20); background: #1c1424; box-shadow: 0 0 0 var(--px) #472819; }
+  .delve-j-treasure .delve-slot-icon { filter: brightness(0); opacity: 0.6; }
+  .delve-j-treasure.is-got { background: #472819; box-shadow: 0 0 0 var(--px) #ffd86a; }
+  .delve-j-treasure.is-got .delve-slot-icon { filter: none; opacity: 1; }
+
+  /* ── 全地圖 ── */
+  .delve-map { position: absolute; inset: 0; z-index: 15; background: #0c0a12; }
+  .delve-map-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; touch-action: none; cursor: grab; }
+  .delve-map-head {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    align-items: center;
+    pointer-events: none;
+  }
+  .delve-map-head > * { pointer-events: auto; }
+  .delve-map-head h2 { margin: 0; font-size: 16px; font-weight: 400; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-map-info { margin: 0; flex: 1; font-size: 16px; color: #d8ba76; text-shadow: var(--text-outline); }
+  .delve-map-btns { display: flex; gap: 6px; }
+  .delve-map-help {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    margin: 0;
+    transform: translateX(-50%);
+    font-size: 16px;
+    color: #d8ba76;
+    text-shadow: var(--text-outline);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .delve[data-map='1'] .delve-touch { display: none; }
+
+
+  /* ── 生命 / 魔力（上方置中）、首領血條、死亡畫面、道具說明 ── */
+  .delve-vitals {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    pointer-events: none;
+  }
+  .delve-hearts { height: calc(var(--px) * 11); width: auto; image-rendering: pixelated; }
+  .delve-hearts[data-rows='2'] { height: calc(var(--px) * 20); }
+  .delve-hp-text { font-family: var(--pixel); font-size: 8px; color: #fff4c0; text-shadow: var(--text-outline); }
+  .delve-mana { width: calc(var(--px) * 41); height: calc(var(--px) * 5); image-rendering: pixelated; }
+  .delve-boss {
+    position: absolute;
+    left: 50%;
+    bottom: 70px;
+    transform: translateX(-50%);
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    pointer-events: none;
+  }
+  .delve-sleepwait {
+    position: absolute;
+    left: 50%;
+    bottom: 110px;
+    transform: translateX(-50%);
+    margin: 0;
+    padding: 8px 12px;
+    font-size: 16px;
+    color: #fff4c0;
+    text-shadow: var(--text-outline);
+    white-space: nowrap;
+  }
+  .delve-boss-name { font-size: 16px; color: #cceaf8; text-shadow: var(--text-outline); }
+  .delve-boss-bar { width: calc(var(--px) * 160); height: calc(var(--px) * 8); image-rendering: pixelated; }
+  .delve-death {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    gap: 10px;
+    text-align: center;
+    background: rgba(44, 8, 6, 0.45);
+    pointer-events: none;
+    z-index: 8;
+  }
+  .delve-death-title { margin: 0; font-size: 32px; color: #e8701c; text-shadow: 3px 3px 0 #6c1e14, var(--text-outline); letter-spacing: 6px; }
+  .delve-death-msg { margin: 0; font-size: 16px; color: #f2e2b0; text-shadow: var(--text-outline); }
+  .delve-tip {
+    --tx: 0px;
+    --ty: 0px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(var(--tx), var(--ty));
+    z-index: 12;
+    max-width: min(320px, calc(100vw - 24px));
+    padding: 6px 10px;
+    border: var(--px) solid;
+    border-color: #b4b9c8 #1c1424 #1c1424 #b4b9c8;
+    background: #18204a;
+    box-shadow: 0 0 0 var(--px) var(--outline);
+    pointer-events: none;
+  }
+  .delve-tip p { margin: 0; font-size: 16px; line-height: 1.35; color: #cceaf8; }
+  .delve-tip .delve-tip-name { color: #ffd86a; text-shadow: var(--text-outline); }
+  .delve-equip-row { display: flex; gap: 8px; align-items: center; }
+  .delve-equip { display: grid; grid-template-columns: repeat(8, calc(var(--px) * 20)); gap: calc(var(--px) * 2); }
+  .delve-equip .delve-slot { width: calc(var(--px) * 20); height: calc(var(--px) * 20); }
+  .delve-slot--armor { --bv-bg: #1c1424; }
+  .delve-slot--acc { --bv-bg: #18204a; }
+  .delve-slot-label { position: absolute; left: 2px; top: 1px; font-size: 16px; line-height: 16px; color: #472819; }
+  .delve-slot--acc .delve-slot-label { color: #2c4486; }
+  .delve-slot.is-filled .delve-slot-label { display: none; }
+  .delve-equip-btn { padding: 6px 10px; }
+  /* ── 紙娃娃：預覽 + 防具 / 外觀欄並排 ── */
+  .delve-doll-row { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+  .delve-doll { margin: 0; display: grid; justify-items: center; gap: 2px; padding: 4px; border: var(--px) solid; border-color: #1c1424 #623924 #623924 #1c1424; background: #18204a; }
+  .delve-doll-canvas { width: calc(var(--px) * 52); height: calc(var(--px) * 54); image-rendering: pixelated; }
+  .delve-doll-cap { font-size: 16px; color: #94c8ee; }
+  .delve-equip-cols { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; flex: 1; min-width: 0; }
+  .delve-doll-row .delve-equip { grid-template-columns: repeat(4, calc(var(--px) * 20)); }
+  .delve-hide-wrap { flex-basis: 100%; display: grid; gap: 4px; }
+  .delve-equip-col { display: grid; gap: 4px; }
+  .delve-equip-h { margin: 0; font-size: 16px; font-weight: 400; color: #f2e2b0; }
+  /* 外觀欄 5 格：3 欄 × 2 列（和左邊防具 · 飾品欄同高） */
+  .delve-vanity { display: grid; grid-template-columns: repeat(3, calc(var(--px) * 20)); gap: calc(var(--px) * 2); }
+  .delve-vanity .delve-slot { width: calc(var(--px) * 20); height: calc(var(--px) * 20); --bv-bg: #2c2450; }
+  .delve-vanity .delve-slot-label { color: #7a5a8c; }
+  .delve-hide-row { display: flex; gap: calc(var(--px) * 2); }
+  .delve-hide {
+    --bv-hi: #623924; --bv-lo: #1c1424; --bv-bg: #2a1810;
+    display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+    min-width: 44px; min-height: 32px; padding: 2px 6px;
+    border: var(--px) solid; border-color: var(--bv-hi) var(--bv-lo) var(--bv-lo) var(--bv-hi); border-radius: 0;
+    background: var(--bv-bg); box-shadow: 0 0 0 var(--px) var(--outline); font-size: 16px; color: #c99660; cursor: pointer;
+  }
+  .delve-hide-eye { width: 18px; height: 12px; image-rendering: pixelated; }
+  .delve-hide[aria-pressed='true'] { --bv-bg: #6c1e14; --bv-hi: #a83a10; color: #fff4c0; }
+  .delve-hide:hover, .delve-hide:focus-visible { --bv-hi: #fff4c0; outline: none; }
+  .delve-tip-doll { display: block; width: 160px; height: 166px; margin: 4px 0 2px; image-rendering: pixelated; border: 2px solid; border-color: #1c1424 #623924 #623924 #1c1424; background: #18204a; }
+  .delve-tip-dollcap { color: #94c8ee; }
+  .delve-stats { color: #cceaf8; }
+  .delve-chip--aim[aria-pressed='true'] { --bv-hi: #cceaf8; --bv-bg: #1f6474; --bv-lo: #18204a; }
+  .delve[data-boss='1'] .delve-toast { bottom: 110px; }
+
+  /* ── 裝備稀有度：普通白 / 優良綠 / 稀有藍 / 史詩紫 / 傳說橙 / 神話流光（全部取自統一色票） ── */
+  .delve [data-rarity='0'] { --rar: #858aa0; --rar-lo: #423f54; --rar-t: #ffffff; }
+  .delve [data-rarity='1'] { --rar: #93cc50; --rar-lo: #2d672e; --rar-t: #93cc50; }
+  .delve [data-rarity='2'] { --rar: #5c9ce0; --rar-lo: #2c4486; --rar-t: #5c9ce0; }
+  .delve [data-rarity='3'] { --rar: #9a6ee0; --rar-lo: #463c78; --rar-t: #9a6ee0; }
+  .delve [data-rarity='4'] { --rar: #ffa93a; --rar-lo: #a83a10; --rar-t: #ffa93a; }
+  .delve [data-rarity='5'] { --rar: #fff4c0; --rar-lo: #e8701c; --rar-t: #fff4c0; }
+  .delve-slot[data-rarity] { box-shadow: 0 0 0 var(--px) var(--outline), inset 0 0 0 var(--px) var(--rar-lo); }
+  .delve-slot[data-rarity]:not([data-rarity='0']):not(.is-selected):not(.is-picked) { --bv-hi: var(--rar); --bv-lo: var(--rar-lo); }
+  @keyframes delve-mythic-border {
+    0% { border-color: #fff4c0 #e8701c #e8701c #fff4c0; }
+    25% { border-color: #93cc50 #2c4486 #2c4486 #93cc50; }
+    50% { border-color: #5c9ce0 #463c78 #463c78 #5c9ce0; }
+    75% { border-color: #9a6ee0 #a83a10 #a83a10 #9a6ee0; }
+  }
+  @keyframes delve-mythic-text {
+    0% { color: #fff4c0; }
+    25% { color: #ffd86a; }
+    50% { color: #93cc50; }
+    75% { color: #9a6ee0; }
+  }
+  .delve-slot[data-rarity='5']:not(.is-selected):not(.is-picked),
+  .delve-tip[data-rarity='5'] { animation: delve-mythic-border 1.2s steps(1) infinite; }
+  .delve .delve-rar[data-rarity='5'] { animation: delve-mythic-text 1.2s steps(1) infinite; }
+  .delve[data-reduced='1'] [data-rarity='5'] { animation: none; }
+  .delve .delve-rar[data-rarity] { color: var(--rar-t); text-shadow: var(--text-outline); }
+  /* 鎖定：右上角一個像素小鎖（鎖身 + 鎖環） */
+  .delve-slot.is-locked::after {
+    content: '';
+    position: absolute;
+    top: calc(var(--px) * 3);
+    right: calc(var(--px) * 2);
+    width: calc(var(--px) * 4);
+    height: calc(var(--px) * 3);
+    background: #ffd86a;
+    box-shadow: 0 0 0 var(--px) #0c0a12;
+  }
+  .delve-slot.is-locked::before {
+    content: '';
+    position: absolute;
+    top: var(--px);
+    right: calc(var(--px) * 3);
+    width: calc(var(--px) * 2);
+    height: calc(var(--px) * 2);
+    border: var(--px) solid #ffd86a;
+    border-bottom: 0;
+  }
+  .delve-tip[data-rarity] { border-color: var(--rar) var(--rar-lo) var(--rar-lo) var(--rar); }
+  .delve-tip .delve-tip-name.delve-rar { color: var(--rar-t); }
+  .delve-tip .is-rarity { color: var(--rar-t); }
+  .delve-tip .is-base { color: #b4b9c8; }
+  .delve-tip .is-affix { color: #cceaf8; }
+  .delve-tip .is-unique { color: #ffa93a; text-shadow: var(--text-outline); }
+  .delve-tip .is-head { margin-top: 4px; color: #d8ba76; }
+  .delve-tip .is-up { color: #93cc50; }
+  .delve-tip .is-down { color: #e8701c; }
+  .delve-tip .is-note { color: #858aa0; }
+  .delve-gear-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+  .delve-btn--sm { display: inline-block; padding: 4px 8px; }
+  .delve-btn--sm:disabled { color: #623924; cursor: not-allowed; }
+  .delve-mats { margin-left: auto; font-size: 16px; color: #cceaf8; text-shadow: var(--text-outline); }
+  .delve-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 14px; margin: 6px 0 0; }
+  .delve-stat { display: flex; justify-content: space-between; gap: 8px; font-size: 16px; line-height: 1.4; }
+  .delve-stat-k { color: #d8ba76; }
+  .delve-stat-v { color: #cceaf8; }
+  .delve-stat.is-gear .delve-stat-v { color: #93cc50; }
+  .delve-stat--wide { grid-column: 1 / -1; }
+  /* 鍛造台面板：寬螢幕放在背包右邊，窄螢幕疊在背包上 */
+  .delve-panel--forge { width: min(440px, calc(100vw - 20px)); z-index: 6; }
+  @media (min-width: 1000px) {
+    .delve-panel--forge { left: calc(min(480px, 100vw - 20px) + 22px); }
+  }
+  .delve-forge-item { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px; background: #1c1424; box-shadow: inset 0 0 0 var(--px) #472819; }
+  .delve-forge-manage { display: flex; gap: 6px; margin-left: auto; }
+  .delve-undying { font-family: var(--cjk); font-size: 16px; line-height: 18px; color: #b4b9c8; text-shadow: var(--text-outline); }
+  .delve-undying.is-ready { color: #ffd86a; }
+  .delve-j-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+  .delve-j-nav .delve-btn { padding: 4px 8px; }
+  .delve-j-affix-fx { color: #858aa0; }
+  .delve-j-affix.is-got .delve-j-affix-fx { color: #b4b9c8; }
+  .delve-forge-item .delve-slot-icon { width: 32px; height: 32px; }
+  .delve-forge-name { margin: 0; font-size: 16px; }
+  .delve-forge-meta { margin: 0; font-size: 16px; color: #b07a4b; }
+  .delve-forge-h { margin: 12px 0 4px; font-size: 16px; font-weight: 400; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-forge-affixes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .delve-forge-affix { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 16px; color: #cceaf8; }
+  .delve-forge-affix.is-unique { color: #ffa93a; }
+  .delve-forge-ops { display: grid; gap: 6px; }
+  .delve-forge-op { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; text-align: left; }
+  .delve-cost { font-size: 16px; color: #d8ba76; }
+  .delve-forge-op:disabled { color: #7c4c2e; cursor: not-allowed; }
+  .delve-forge-op:disabled .delve-cost { color: #623924; }
+  /* 日誌：裝備圖鑑 */
+  .delve-j-affixes { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 0; padding: 0; list-style: none; }
+  .delve-j-affix { padding: 0 6px; font-size: 16px; line-height: 1.5; color: #623924; background: #1c1424; box-shadow: inset 0 0 0 var(--px) #2a1810; }
+  .delve-j-affix.is-got { color: #cceaf8; box-shadow: inset 0 0 0 var(--px) #2c4486; }
+  .delve-j-affix.is-unique.is-got { color: #ffa93a; box-shadow: inset 0 0 0 var(--px) #a83a10; }
+  .delve-j-gear { display: grid; place-items: center; width: calc(var(--px) * 20); height: calc(var(--px) * 20); background: #1c1424; box-shadow: 0 0 0 var(--px) #2a1810; }
+  .delve-j-gear .delve-slot-icon { filter: grayscale(1) brightness(0.3); }
+  .delve-j-gear[data-rarity] { background: #2a1810; box-shadow: 0 0 0 var(--px) var(--rar); }
+  .delve-j-gear[data-rarity] .delve-slot-icon { filter: none; }
+  @media (max-width: 640px) {
+    .delve-panel--forge { padding: 8px; }
+    .delve-panel--forge .delve-hint { margin: 4px 0; }
+    .delve-forge-h { margin: 8px 0 2px; }
+    .delve-forge-op { padding: 6px 8px; }
+    .delve-forge-affix { grid-template-columns: 1fr; gap: 2px; }
+    .delve-forge-affix .delve-btn--sm { justify-self: start; }
+  }
+
+  @media (max-width: 640px) {
+    .delve-hotbar { gap: 2px; left: 6px; top: 6px; }
+    .delve-slot { --px: 2px; width: 36px; height: 36px; }
+    .delve-slot-icon { width: 16px; height: 16px; }
+    .delve-hotbar .delve-slot-icon { width: 32px; height: 32px; }
+    .delve-slot-key { display: none; }
+    /* 背包 / 選單移到右上角（快捷欄下方一列），不擋畫面中右側 */
+    .delve-corner { top: 46px; right: 6px; gap: 4px; }
+    .delve-chip { padding: 4px 8px; }
+    .delve-held { top: 48px; left: 8px; }
+    .delve-status { top: 70px; left: 8px; }
+    /* 背包面板在角落按鈕與狀態列下方，不覆蓋它們 */
+    .delve-panel { top: 100px; left: 6px; width: calc(100vw - 12px); max-height: calc(100vh - 260px); }
+    .delve-corner { left: 6px; justify-content: flex-end; flex-wrap: wrap; }
+    .delve-chip { gap: 2px; padding: 4px 6px; }
+    .delve-chip--zoom { padding: 4px 6px; }
+    .delve-held { top: 84px; }
+    .delve-status { top: 106px; max-width: calc(100vw - 150px); line-height: 1.3; }
+    .delve-clock { top: 152px; left: 6px; }
+    .delve-minimap { top: 84px; right: 6px; }
+    .delve-panel { top: 196px; max-height: calc(100vh - 360px); }
+    .delve-panel--journal { left: 6px; right: 6px; width: auto; }
+    .delve-banner { top: 30%; padding: 8px 12px; }
+    .delve-banner-title { font-size: 16px; }
+    .delve-lore { bottom: 200px; }
+    .delve-map-help { white-space: normal; width: calc(100vw - 24px); text-align: center; bottom: 10px; }
+    .delve-map-info { flex-basis: 100%; order: 3; }
+    .delve-vitals { top: auto; bottom: 170px; left: auto; right: 10px; transform: none; justify-items: end; }
+    .delve-boss { bottom: 150px; }
+    .delve-boss-bar { width: calc(100vw - 40px); height: 12px; }
+    .delve-equip { grid-template-columns: repeat(8, 1fr); width: 100%; }
+    .delve-equip .delve-slot { width: 100%; height: auto; aspect-ratio: 1; }
+    .delve-equip .delve-slot-icon { width: 32px; height: 32px; }
+    .delve-equip-row { flex-wrap: wrap; }
+    .delve-death-title { font-size: 24px; }
+  }
+
+  /* ── 觸控：所有可點的東西至少 40×40 CSS px；提示文字跟著像素大小放大、放在虛擬按鍵上方 ── */
+  .delve[data-touch='1'] .delve-chip { min-width: 40px; min-height: 40px; }
+  .delve[data-touch='1'] .delve-hotbar .delve-slot { width: 40px; height: 40px; }
+  .delve[data-touch='1'] .delve-hotbar .delve-slot-icon { width: 32px; height: 32px; }
+  .delve[data-touch='1'] .delve-mm-btn,
+  .delve[data-touch='1'] #delve-mm-in,
+  .delve[data-touch='1'] #delve-mm-out { min-width: 40px; min-height: 40px; }
+  .delve[data-touch='1'] .delve-clock { min-height: 40px; }
+  .delve[data-touch='1'] .delve-x { width: 40px; height: 40px; }
+  .delve[data-touch='1'] .delve-toast { font-size: max(18px, calc(var(--px) * 9)); padding: 10px 14px; width: max-content; max-width: calc(100vw - 32px); }
+  /* 橫放手機：快捷欄 10 格 × 40px，右上角按鈕收緊，兩者不重疊 */
+  @media (max-width: 999px) {
+    .delve[data-touch='1'] .delve-hotbar { gap: 2px; left: 6px; top: 6px; }
+    .delve[data-touch='1'] .delve-corner { gap: 2px; right: 6px; }
+    .delve[data-touch='1'] .delve-chip { padding: 2px 5px; }
+  }
+  @media (min-width: 641px) and (max-width: 999px) {
+    .delve[data-touch='1'] .delve-vitals { top: 52px; }
+  }
+  @media (max-width: 640px) {
+    .delve[data-touch='1'] .delve-inv-grid { grid-template-columns: repeat(8, 1fr); }
+  }
+  /* 直立手機：快捷欄 2 排 × 5 格（每格 44px），下面的 HUD 往下讓一排 */
+  @media (max-width: 460px) {
+    .delve[data-touch='1'] .delve-hotbar { display: grid; grid-template-columns: repeat(5, 44px); gap: 3px; }
+    .delve[data-touch='1'] .delve-hotbar .delve-slot { width: 44px; height: 44px; }
+    .delve[data-touch='1'] .delve-corner { top: 100px; }
+    .delve[data-touch='1'] .delve-held { top: 146px; }
+    .delve[data-touch='1'] .delve-status { top: 168px; }
+    .delve[data-touch='1'] .delve-clock { top: 214px; }
+    .delve[data-touch='1'] .delve-minimap { top: 146px; }
+    .delve[data-touch='1'] .delve-panel { top: 262px; max-height: calc(100vh - 470px); }
+    /* 直立：提示放在虛擬搖桿 / 跳躍鍵上方 */
+    .delve[data-touch='1'] .delve-toast { bottom: 196px; }
+    .delve[data-touch='1'][data-boss='1'] .delve-toast { bottom: 236px; }
+  }
+
+  /* ── 據點 / 居民 ── */
+  .delve-chip--house[aria-pressed='true'] { --bv-hi: #c2e478; --bv-bg: #2d672e; --bv-lo: #16301e; }
+  .delve-panel--settle,
+  .delve-panel--npc { left: auto; right: 10px; width: min(460px, calc(100vw - 20px)); }
+  /* 傳送碑面板：已解鎖的碑一列一顆（名字 / 方向與距離），目前這顆標「你在這裡」 */
+  .delve-panel--stone { left: auto; right: 10px; width: min(380px, calc(100vw - 20px)); }
+  .delve-stone-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .delve-stone-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; text-align: left; }
+  .delve-stone-name { font-size: 16px; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-stone-dist { font-size: 16px; color: #cceaf8; }
+  .delve-stone-item.is-here { --bv-hi: #4aaeb0; --bv-bg: #1f6474; --bv-lo: #16301e; }
+  .delve-stone-item.is-here .delve-stone-dist { color: #fff4c0; }
+  .delve-stone-item:disabled:not(.is-here) .delve-stone-name { color: #966139; }
+  .delve-settle-body,
+  .delve-npc-body { display: grid; gap: 8px; margin-top: 8px; }
+  .delve-st-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .delve-st-lv { padding: 2px 8px; font-family: var(--pixel); font-size: 16px; color: #fff4c0; background: #a83a10; box-shadow: 0 0 0 var(--px) var(--outline); text-shadow: var(--text-outline); }
+  .delve-st-score { font-size: 16px; color: #d8ba76; }
+  .delve-st-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 0; }
+  .delve-st-cell { display: flex; justify-content: space-between; gap: 6px; padding: 4px 6px; background: #2a1810; box-shadow: inset 0 0 0 var(--px) #472819; }
+  .delve-st-cell dt { font-size: 16px; color: #b07a4b; }
+  .delve-st-cell dd { margin: 0; font-size: 16px; color: var(--gold); }
+  .delve-st-needs,
+  .delve-st-perks,
+  .delve-st-res,
+  .delve-st-rooms,
+  .delve-shop { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .delve-st-need { font-size: 16px; color: #e890b0; }
+  .delve-st-need.is-ok { color: #93cc50; }
+  .delve-st-perk { display: grid; grid-template-columns: 7.5em 1fr; gap: 6px; font-size: 16px; color: #7c4c2e; }
+  .delve-st-perk.is-on { color: var(--ink); }
+  .delve-st-perk.is-on .delve-st-perk-name { color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-st-perk-desc { color: inherit; }
+  .delve-st-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .delve-st-npc { display: flex; gap: 8px; align-items: center; padding: 4px; background: #2a1810; box-shadow: inset 0 0 0 var(--px) #472819; }
+  .delve-st-npc.is-wait { opacity: 1; background: #1c1424; }
+  .delve-st-npc-info { display: grid; gap: 2px; }
+  .delve-st-npc-name { font-size: 16px; color: var(--gold); }
+  .delve-st-npc.is-wait .delve-st-npc-name { color: #966139; }
+  .delve-st-npc-mood { font-size: 16px; color: #cceaf8; }
+  .delve-st-npc-note,
+  .delve-npc-note { margin: 0; font-size: 16px; line-height: 1.35; color: #b07a4b; }
+  .delve-st-room { font-size: 16px; line-height: 1.35; color: #e890b0; }
+  .delve-st-room.is-ok { color: #93cc50; }
+  .delve-npc-face { width: calc(var(--px) * 52); height: calc(var(--px) * 34); image-rendering: pixelated; background: #18204a; box-shadow: 0 0 0 var(--px) var(--outline); flex: none; }
+  .delve-npc-head { display: flex; gap: 10px; align-items: flex-start; }
+  .delve-npc-info { display: grid; gap: 4px; }
+  .delve-npc-line { margin: 0; font-size: 16px; line-height: 1.45; color: #fff4c0; text-shadow: var(--text-outline); }
+  .delve-npc-intro,
+  .delve-npc-mood { margin: 0; font-size: 16px; line-height: 1.4; color: #d8ba76; }
+  .delve-shop-row { grid-template-columns: 36px 1fr; }
+  .delve-sell-row { display: grid; grid-template-columns: 32px 1fr auto auto; gap: 6px; align-items: center; font-size: 16px; }
+  .delve-sell-row .delve-slot-icon { width: 32px; height: 32px; }
+  /* 世界上的標籤（查房 / 對話泡泡）：--x / --y = 畫面座標（CSS px），往上置中 */
+  .delve-hud > .delve-wlabels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .delve-room-tag,
+  .delve-say {
+    --x: 0px;
+    --y: 0px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    --w: 260px;
+    transform: translate(calc(var(--x) - 50%), calc(var(--y) - 100% - 4px));
+    max-width: var(--w);
+    padding: 2px 6px;
+    font-size: 16px;
+    line-height: 1.3;
+    white-space: normal;
+    text-align: center;
+    box-shadow: 0 0 0 var(--px) var(--outline);
+    text-shadow: var(--text-outline);
+  }
+  .delve-room-tag.is-ok { color: #ffffff; background: #2d672e; }
+  .delve-room-tag.is-bad { color: #fff4c0; background: #8c2038; }
+  .delve-say { color: #2a1810; background: #fff4c0; text-shadow: none; }
+  .delve-say.is-help { color: #fff4c0; background: #8c2038; text-shadow: var(--text-outline); }
+  .delve-say.delve-talk-hint { color: #fff4c0; background: #2c4486; text-shadow: var(--text-outline); }
+  .delve-buffs { font-size: 16px; line-height: 1.3; color: #c2e478; text-shadow: var(--text-outline); }
+  /* ── 世界 NPC 面板 / 委託清單 ── */
+  .delve-panel--quests { left: auto; right: 10px; width: min(460px, calc(100vw - 20px)); }
+  .delve-quests-body { display: grid; gap: 8px; margin-top: 8px; }
+  .delve-quest-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .delve-quest { display: grid; gap: 4px; padding: 6px 8px; background: #2a1810; box-shadow: inset 0 0 0 var(--px) #472819; }
+  .delve-quest.is-offer { background: #1c1424; }
+  .delve-quest.is-ready { box-shadow: inset 0 0 0 var(--px) #93cc50; }
+  .delve-quest .delve-btn { justify-self: start; }
+  .delve-quest-title { font-size: 16px; color: var(--gold); text-shadow: var(--text-outline); }
+  .delve-quest.is-ready .delve-quest-title { color: #c2e478; }
+  .delve-quest-desc,
+  .delve-quest-prog,
+  .delve-quest-where { font-size: 16px; line-height: 1.4; color: #d8ba76; }
+  .delve-quest-reward { font-size: 16px; line-height: 1.4; color: #93cc50; }
+  .delve-folk-aff { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+  .delve-folk-aff-tier { font-size: 16px; color: #ffc8dc; text-shadow: var(--text-outline); }
+  .delve-folk-aff-note { font-size: 16px; color: #d8ba76; }
+  .delve-folk-svc { display: grid; gap: 6px; }
+  .delve-folk-svc .delve-btn { text-align: left; white-space: normal; line-height: 1.35; }
+  .delve-folk-msg { margin: 0; padding: 6px 8px; font-size: 16px; line-height: 1.4; color: #fff4c0; background: #2d672e; box-shadow: 0 0 0 var(--px) var(--outline); text-shadow: var(--text-outline); }
+  .delve-shop-row.is-locked .delve-recipe-name { color: #966139; }
+  .delve-shop-row.is-locked .delve-recipe-need { color: #e890b0; }
+  .delve-npc-face.is-dwarf { background: #2a1810; }
+  .delve-chip--quests[aria-pressed='true'] { --bv-hi: #ffd86a; --bv-bg: #a83a10; --bv-lo: #472819; }
+  /* 1279px 以下角落按鈕排不下「委託」：改用 L 鍵或選單裡的「委託清單」 */
+  @media (max-width: 1279px) {
+    .delve-chip--quests { display: none; }
+  }
+  .delve[data-fpanel='1'] .delve-touch { display: none; }
+  /* 桌機：右側的據點 / 居民 / NPC / 委託面板放在小地圖下面（不蓋小地圖），高度到畫面底部為止 */
+  @media (min-width: 641px) and (min-height: 521px) {
+    .delve-panel--settle,
+    .delve-panel--npc,
+    .delve-panel--stone,
+    .delve-panel--quests { top: 256px; max-height: calc(100vh - 266px); }
+    /* 觸控時小地圖的 －/地圖/＋ 按鈕比較高（40px）：面板再往下讓一點 */
+    .delve[data-touch='1'] .delve-panel--settle,
+    .delve[data-touch='1'] .delve-panel--npc,
+    .delve[data-touch='1'] .delve-panel--quests { top: 272px; max-height: calc(100vh - 282px); }
+  }
+  /* 直立手機：面板開著時收起小地圖 / 時鐘 / 狀態列，面板從角落按鈕下面一直到生命值上面（不蓋生命） */
+  @media (max-width: 460px) {
+    .delve[data-touch='1'][data-fpanel='1'] .delve-minimap,
+    .delve[data-touch='1'][data-fpanel='1'] .delve-clock,
+    .delve[data-touch='1'][data-fpanel='1'] .delve-status,
+    .delve[data-touch='1'][data-fpanel='1'] .delve-held,
+    .delve[data-touch='1'][data-spanel='1'] .delve-minimap,
+    .delve[data-touch='1'][data-spanel='1'] .delve-clock,
+    .delve[data-touch='1'][data-spanel='1'] .delve-status,
+    .delve[data-touch='1'][data-spanel='1'] .delve-held { display: none; }
+    .delve[data-touch='1'][data-fpanel='1'] .delve-panel--folk,
+    .delve[data-touch='1'][data-fpanel='1'] .delve-panel--quests,
+    .delve[data-touch='1'][data-spanel='1'] .delve-panel--settle,
+    .delve[data-touch='1'][data-spanel='1'] .delve-panel--npc { top: 146px; max-height: calc(100vh - 371px); }
+  }
+  .delve-j-npcs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .delve-j-npc { display: grid; justify-items: center; gap: 2px; width: calc(var(--px) * 46); font-size: 16px; color: #b07a4b; text-align: center; }
+  .delve-j-npc.is-got { color: var(--gold); }
+  .delve-j-npc .delve-npc-face { width: calc(var(--px) * 52); height: calc(var(--px) * 34); }
+  .delve-j-npc:not(.is-got) .delve-npc-face { filter: brightness(0); }
+  .delve-j-furn { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
+  .delve-j-furn li { display: grid; grid-template-columns: 32px 1fr; gap: 6px; align-items: center; font-size: 16px; line-height: 1.25; color: #d8ba76; }
+  .delve-j-furn .delve-slot-icon { width: 32px; height: 32px; }
+  .delve-j-furn small { font-size: 16px; color: #966139; }
+  /* 手機：角落按鈕放不下 → 據點 / 查房改從選單或點爐心打開 */
+  @media (max-width: 640px), (max-height: 520px) and (orientation: landscape) {
+    .delve-chip--settle,
+    .delve-chip--house,
+    .delve-chip--quests { display: none; }
+  }
+  @media (max-width: 640px) {
+    .delve-st-grid { grid-template-columns: repeat(2, 1fr); }
+    .delve-j-furn { grid-template-columns: 1fr; }
+    .delve-st-perk { grid-template-columns: 6.5em 1fr; }
+    .delve-npc-face { width: 52px; height: 34px; }
+    .delve-sell-row { grid-template-columns: 32px 1fr auto; }
+    .delve-sell-row .delve-btn:last-child { grid-column: 3; }
+  }
+
+  /* ── HUD 版面（桌機 641–1599px）：角落按鈕不能蓋到生命 / 快捷欄 ──
+     自動瞄準是觸控用的：滑鼠操作時不顯示；生命在 1600px 以下改放左側時鐘下方；1279px 以下角落按鈕不顯示按鍵提示 */
+  @media (pointer: fine) {
+    .delve:not([data-touch='1']) .delve-chip--aim { display: none; }
+  }
+  @media (min-width: 641px) and (max-width: 1599px) {
+    .delve:not([data-touch='1']) .delve-vitals { top: calc(var(--px) * 22 + 100px); left: 10px; transform: none; justify-items: start; }
+  }
+  @media (min-width: 641px) and (max-width: 1279px) {
+    .delve:not([data-touch='1']) .delve-corner .delve-kbd { display: none; }
+    .delve:not([data-touch='1']) .delve-corner { gap: 6px; }
+  }
+  /* 面板開著時：提示框移到面板旁邊 / 下方（不蓋面板內容）；觸控鍵收起來（橫放手機的跳鍵不會蓋住面板） */
+  .delve[data-panel-side='right'] .delve-toast { left: calc((100vw - min(480px, 100vw - 20px) - 10px) / 2); }
+  .delve[data-panel-side='left'] .delve-toast { left: calc(100vw - (100vw - min(480px, 100vw - 20px) - 10px) / 2); }
+  .delve[data-spanel='1'] .delve-touch { display: none; }
+  @media (max-width: 900px), (max-height: 520px) {
+    .delve[data-panel-side] .delve-toast,
+    .delve[data-touch='1'][data-panel-side] .delve-toast { left: 50%; bottom: 8px; width: max-content; max-width: calc(100vw - 60px); }
+  }
+  @media (max-height: 520px) and (orientation: landscape) {
+    /* 橫放手機：面板放在畫面中間的生命值右邊（不蓋生命），小地圖先收起來 */
+    .delve[data-spanel='1'] .delve-panel--settle,
+    .delve[data-spanel='1'] .delve-panel--npc,
+    .delve[data-fpanel='1'] .delve-panel--folk,
+    .delve[data-fpanel='1'] .delve-panel--quests { top: 50px; bottom: 54px; left: calc(50% + 64px); right: 6px; width: auto; max-height: none; z-index: 9; }
+    .delve[data-spanel='1'] .delve-minimap,
+    .delve[data-fpanel='1'] .delve-minimap { display: none; }
+  }
+  /* 提示訊息避開開著的面板（folkUi.dodgeToast 依面板位置決定）：面板下面 / 面板左邊 / 面板上方 */
+  .delve[data-toast-dodge='below'] .delve-toast,
+  .delve[data-touch='1'][data-toast-dodge='below'][data-panel-side] .delve-toast { left: 50%; bottom: 8px; width: max-content; max-width: calc(100vw - 60px); }
+  .delve[data-toast-dodge='left'] .delve-toast,
+  .delve[data-touch='1'][data-toast-dodge='left'][data-panel-side] .delve-toast { left: var(--toast-cx); bottom: 8px; width: max-content; max-width: calc(var(--toast-max) - 36px); }
+  /* 觸控版的提示原本靠左（DelveLevels 的 left: 10px、不位移）：避開面板時改回置中 */
+  .delve[data-touch='1'][data-toast-dodge] .delve-hud .delve-toast { transform: translate(-50%, 12px); }
+  .delve[data-touch='1'][data-toast-dodge] .delve-hud .delve-toast.is-on { transform: translate(-50%, 0); }
+  .delve[data-touch='1'][data-toast-dodge='left'] .delve-hud .delve-toast { left: var(--toast-cx); bottom: 8px; max-width: calc(var(--toast-max) - 36px); }
+  .delve[data-touch='1'][data-toast-dodge='below'] .delve-hud .delve-toast { left: 50%; bottom: 8px; max-width: calc(100vw - 60px); }
+  .delve[data-touch='1'][data-toast-dodge='above'] .delve-hud .delve-toast { left: 50%; bottom: var(--toast-bottom); max-width: calc(100vw - 60px); }
+  .delve[data-toast-dodge='above'] .delve-toast,
+  .delve[data-touch='1'][data-toast-dodge='above'][data-panel-side] .delve-toast { left: 50%; bottom: var(--toast-bottom); width: max-content; max-width: calc(100vw - 60px); }
+</style>

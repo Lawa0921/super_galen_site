@@ -1,0 +1,140 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "breach-point-closed-facade-v6-v2",
+  "category": "3d_game_assets",
+  "scope": "candidate-only offline V2 assembly replacing perimeter_west_1 player-side facade; V1 retained as rejected evidence",
+  "source_mode": "approved-cc0-polyhaven-geometry-with-accepted-architecture-material-derivatives",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_review": {
+    "asset": "Modular Fort 01",
+    "node": "modular_fort_01_wall_thin_straight_04",
+    "creator": "Rico Cilliers",
+    "asset_page": "https://polyhaven.com/a/modular_fort_01",
+    "license": "CC0-1.0",
+    "license_page": "https://polyhaven.com/license",
+    "source_manifest": "art-factory/cs/runs/run-20261004-v6-architecture/source-manifest.json",
+    "resolution": "1k",
+    "source_gltf_sha256": "829ac97d4c5c5672d3055d772e0ef4b545ad93cb4b639296f34e3ddf04cf9faf",
+    "source_vertices": 577,
+    "source_triangles": 622,
+    "source_material_slots": [
+      "modular_fort_01_wall_1",
+      "modular_fort_01_trim_1"
+    ],
+    "source_uv_layers": [
+      "UVMap",
+      "UVMap.001"
+    ],
+    "runtime_publish_allowed": false
+  },
+  "assembly_policy": {
+    "base_assembly": "V6 architecture assembly using accepted V5 ground and official round tower",
+    "replacement_target": "perimeter_west_1",
+    "player_side": "+X inner boundary face selected from map bounds and measured world normals",
+    "basis_transform": "Rx(-90deg) from imported glTF source into V5 authoring basis",
+    "target_bounds_v5": {
+      "min": [
+        -26.549777985,
+        0.0,
+        -19.70511961
+      ],
+      "max": [
+        -24.0,
+        8.605535508,
+        -12.29488039
+      ]
+    },
+    "preserve": [
+      "west_1 host +X shell rim outside measured replacement coverage",
+      "other west_1 shell faces",
+      "west_1 base/cornice/coping",
+      "west_1 roof/service details",
+      "all other scene geometry",
+      "all nine V5 colliders",
+      "map routes",
+      "accepted ground",
+      "accepted round tower"
+    ],
+    "remove": [
+      "west_1 player-side door/window pieces",
+      "west_1 player-side pipeline and straps",
+      "west_1 horizontal belt courses cropped only over replacement coverage"
+    ],
+    "no_new_collision": true,
+    "no_runtime_publish": true,
+    "host_face_policy": "remove only the measured central +X face polygons overlapping source coverage; restore retained source-material rim strips outside coverage; no placeholder art; z-fighting gate required",
+    "material_policy": "rebind the source wall two slots to accepted architecture_fort_wall/architecture_fort_trim maps after tower import, then copy exact accepted public scalar PBR properties and verify texture-reference semantics by same-name material",
+    "accepted_material_reference": "public/assets/games/cs/environment.glb",
+    "v1_rejection_evidence": [
+      "art-factory/cs/runs/run-20261004-v6-closed-facade-v2/qa/v1-host-face-coverage-red.json",
+      "art-factory/cs/runs/run-20261004-v6-closed-facade-v2/qa/v1-material-parity-red.json"
+    ]
+  },
+  "geometry_budget": {
+    "replacement_source_triangles_max": 622,
+    "added_triangles_max": 622,
+    "total_draw_calls_max": 35,
+    "collider_count": 9,
+    "three_plaster_roughness_factor": 0.82,
+    "candidate_bytes_max": 9140936,
+    "source_material_slots_final": [
+      "architecture_fort_wall",
+      "architecture_fort_trim"
+    ]
+  },
+  "candidate_targets": {
+    "glb": "art-factory/cs/runs/run-20261004-v6-closed-facade-v2/candidate/environment-closed-facade.glb",
+    "packed_source": "art-factory/cs/runs/run-20261004-v6-closed-facade-v2/raw/environment-closed-facade.blend",
+    "cpu_view": null
+  },
+  "qa_gates": [
+    "candidate_contract_before_build",
+    "source_sha256_and_license_provenance",
+    "source_node_577_vertices_622_triangles",
+    "source_uv_and_two_material_slots_preserved",
+    "world_bounds_and_player_front_polarity_measured",
+    "removed_names_and_face_ids_recorded",
+    "nine_colliders_unchanged",
+    "map_geometry_not_written",
+    "added_triangle_budget",
+    "total_draw_call_budget",
+    "three_plaster_roughness_factor_0.82",
+    "packed_blend_and_glb_roundtrip",
+    "cpu_player_view_checkpoint",
+    "assembly_human_review",
+    "v1_host_face_coverage_red_evidence",
+    "v1_material_parity_red_evidence",
+    "host_face_coverage_and_rim_restoration",
+    "z_fighting_absent_at_replacement_plane",
+    "accepted_public_same_name_material_scalar_parity",
+    "accepted_public_texture_reference_semantics",
+    "candidate_bytes_within_public_plus_1_5mb",
+    "no_new_collision",
+    "cpu_builder_max_4_threads"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-submitted-rejected-by-independent-qa",
+  "runtime_publish_allowed": false,
+  "status": "rejected",
+  "notes": [
+    "V1 remains under run-20261004-v6-closed-facade and is not overwritten.",
+    "V2 source geometry remains 577 vertices/622 triangles/two UV layers; only runtime material deduplication changes the final material slots.",
+    "No runtime approval is implied by this candidate.",
+    "Build-time contract and candidate bytes remain preserved; this status records subsequent independent rejection. Do not publish or rerun this assembly as an approved asset."
+  ],
+  "candidate_only": true,
+  "independent_review": "art-factory/cs/runs/run-20261004-v6-closed-facade-v2/qa/independent-review.json",
+  "build_time_contract_commit": "ebed0d56",
+  "final_materials": {
+    "source_resolution": "1k",
+    "runtime_resolution": [
+      256,
+      256
+    ],
+    "postprocess": "JPEG quality82 then WebP quality90, reused from accepted architecture",
+    "normal_scale": 0.55,
+    "tint": "accepted architecture_fort_wall/trim baseColorFactor",
+    "approval": "rejected facade; existing tower acceptance does not approve large close-up facade use"
+  }
+}

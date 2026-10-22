@@ -1,0 +1,27 @@
+{
+  "asset_id": "browser-cs-cmu-support-v7",
+  "status": "rejected-baseline-relative-downward-limit",
+  "source_contract": "art-factory/cs/contracts/character-cmu-contact-v7.asset-contract.json",
+  "source_bake": "art-factory/cs/runs/run-20261005-v7-cmu-contact/candidate/contact-v2.json",
+  "processing": "Resample lower torso at supporting-leg source phase using a smooth contact partition and a common quaternion tangent frame; preserve global chest world orientation; align source travel, solve both legs offline, retain runtime two-pose sampling.",
+  "gates": {
+    "whole_shoe_penetration_m": 0.002,
+    "maximum_total_pelvis_drop_m": 0.04,
+    "hand_weapon_relative_error_m": 1e-06,
+    "required_evidence": [
+      "middle-blend falsification before full bake",
+      "pure endpoint fidelity",
+      "dense consumer phases and blends",
+      "body/head/weapon displacement and velocity",
+      "support handoff and loop continuity",
+      "continuous visual review",
+      "runtime cost before integration"
+    ],
+    "stop_condition": "Reject support-body approach if middle blend still exceeds the unchanged reach gate or support handoff creates body/weapon discontinuities; do not iterate arbitrary warp parameters."
+  },
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "assembly_human_review": "pending",
+  "license": "Inherited CMU free-use permission; no direct resale of original or converted motion data.",
+  "decision": "art-factory/cs/runs/run-20261005-v7-cmu-support/manifest.json"
+}

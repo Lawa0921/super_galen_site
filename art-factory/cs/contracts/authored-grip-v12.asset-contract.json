@@ -1,0 +1,18 @@
+{
+  "schema": "cs-authored-grip-v12",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "scope": "Rifle-only authored first-person grip using para's existing CC0 mesh, bone weights and finger controls; preserve a single dual-arm skeleton.",
+  "source_contract": "art-factory/cs/contracts/fps-arms-v11.asset-contract.json",
+  "run": "art-factory/cs/runs/run-20261006-v12-authored-grip",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "rig_policy": "Preserve author constraints in Blender. Bake the evaluated deform transforms only in an export duplicate. No new auto-rig or optimization solver.",
+  "node_policy": "One arms mesh/armature under view_hands. Do not create support_hand: the legacy WeaponRig must not rigidly translate a skinned forearm. Subsequent reload will use a separately authored arms-only clip.",
+  "source_cleanup": "Remove five vertices unused by faces (2049, 2050, 2071, 4101, 4102); four are unweighted, while 2071 has valid weights but no attached faces or edges. Normalize existing relative bone weights, max four influences. Preserve topology, UV and bone chains of visible geometry.",
+  "material_checkpoint": "Original source skin/texture first, to review anatomy and placement. Tactical glove/sleeve treatment remains required before publication.",
+  "gates": ["source hash and license", "visible topology preserved", "constraint bake and GLB skin fidelity", "weapon geometry and anchors preserved", "actual skin contact and crossing review", "matched camera hip ADS fire", "clone isolation and GPU/CPU cost"],
+  "budget": {"hands_triangles": 8152, "hands_draw_calls_target": 2, "weapon_glb_bytes_max": 5242880},
+  "not_completion": ["static grip is not authored reload", "source or mechanical acceptance is not CS2 quality", "headless rendering is not normal visible browser performance acceptance"]
+}

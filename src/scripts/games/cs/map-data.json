@@ -1,0 +1,30 @@
+{
+  "name": "舊城街區 / OLD QUARTER",
+  "bounds": { "x": 24, "z": 28 },
+  "sites": [{ "id": "A", "x": -15, "z": -16, "radius": 3.4 }, { "id": "B", "x": 15, "z": -16, "radius": 3.4 }],
+  "obstacles": [
+    { "id": "warehouse", "minX": -6, "maxX": 6, "minZ": -4, "maxZ": 4, "height": 7.8, "surface": "stone" },
+    { "id": "container-west", "minX": -22, "maxX": -10, "minZ": 1, "maxZ": 4, "height": 6.8, "surface": "stone" },
+    { "id": "container-east", "minX": 10, "maxX": 22, "minZ": -4, "maxZ": -1, "height": 8.6, "surface": "stone" },
+    { "id": "container-southwest", "minX": -16, "maxX": -10, "minZ": 10, "maxZ": 13, "height": 6.2, "surface": "stone" },
+    { "id": "container-southeast", "minX": 10, "maxX": 16, "minZ": 11, "maxZ": 14, "height": 6.8, "surface": "stone" },
+    { "id": "crates-a", "minX": -20, "maxX": -17, "minZ": -12, "maxZ": -9, "height": 1.6, "surface": "wood" },
+    { "id": "crates-b", "minX": 16, "maxX": 19, "minZ": -13, "maxZ": -10, "height": 1.6, "surface": "wood" },
+    { "id": "container-northwest", "minX": -6, "maxX": -3, "minZ": -19, "maxZ": -13, "height": 7.8, "surface": "stone" },
+    { "id": "container-northeast", "minX": 3, "maxX": 6, "minZ": -16, "maxZ": -10, "height": 8.4, "surface": "stone" },
+    { "id": "market-screen", "minX": -2, "maxX": 2, "minZ": 8, "maxZ": 16, "height": 4.8, "surface": "stone" },
+    { "id": "crates-market-west", "minX": -10, "maxX": -6, "minZ": 12, "maxZ": 14, "height": 1.6, "surface": "wood" },
+    { "id": "crates-market-east", "minX": 6, "maxX": 10, "minZ": 10, "maxZ": 12, "height": 1.6, "surface": "wood" },
+    { "id": "crates-site-a", "minX": -13, "maxX": -10, "minZ": -21, "maxZ": -19, "height": 1.6, "surface": "wood" },
+    { "id": "crates-site-b", "minX": 10, "maxX": 13, "minZ": -21, "maxZ": -19, "height": 1.6, "surface": "wood" },
+    { "id": "crates-a-inner", "minX": -10, "maxX": -8, "minZ": -20, "maxZ": -17, "height": 1.6, "surface": "wood" },
+    { "id": "crates-b-inner", "minX": 8, "maxX": 10, "minZ": -20, "maxZ": -17, "height": 1.6, "surface": "wood" },
+    { "id": "crates-mid-a", "minX": -10, "maxX": -8, "minZ": -1, "maxZ": 2, "height": 1.6, "surface": "wood" },
+    { "id": "crates-mid-b", "minX": 8, "maxX": 10, "minZ": -1, "maxZ": 2, "height": 1.6, "surface": "wood" }
+  ],
+  "elevations": [
+    { "id": "east-terrace", "minX": 16, "maxX": 22, "minZ": 6, "maxZ": 16, "startHeight": 2.4, "endHeight": 2.4, "steps": 0 },
+    { "id": "east-stairs-south", "minX": 18, "maxX": 22, "minZ": 16, "maxZ": 22, "startHeight": 2.4, "endHeight": 0, "steps": 12 },
+    { "id": "east-stairs-north", "minX": 18, "maxX": 22, "minZ": 1, "maxZ": 6, "startHeight": 0, "endHeight": 2.4, "steps": 12 }
+  ]
+}

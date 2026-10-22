@@ -1,0 +1,53 @@
+{
+  "status": "quarantined-license-unverified",
+  "lifecycle_status": "raw_generated",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "official_page": "https://rrfreelance.itch.io/first-person-hands-with-gloves",
+  "package_sha256": "a6f0baea9ecd4cc83cdadfc1abb72dacb9952e4e1abe2f43d4d7d88069f4bd37",
+  "package_bytes": 260223600,
+  "ordinary_free_download": true,
+  "paid": false,
+  "logged_in": false,
+  "scripts_executed": false,
+  "artwork_extracted": false,
+  "inventory": {
+    "archive_members": 624,
+    "logical_assets": 136,
+    "extensions": {
+      ".prefab": 40,
+      ".png": 31,
+      "(directory)": 22,
+      ".tga": 6,
+      ".fbx": 8,
+      ".mat": 21,
+      ".anim": 1,
+      ".unity": 2,
+      ".controller": 3,
+      ".shader": 1,
+      ".txt": 1
+    }
+  },
+  "license_findings": [
+    "Official asset and author pages do not state a reuse license.",
+    "Only included documentation is FirstPersonHands_notes.txt, describing setup/versions/animation editing without explicit distribution or non-Unity use terms.",
+    "Official purchase page describes unity only; compatibility vs license meaning remains unknown.",
+    "Unity Asset Store terms were not assumed to cover a download acquired through itch.io."
+  ],
+  "independent_review": {
+    "reviewer": "/root/combat_feedback_audit",
+    "scope": "Read-only official page/author page and official Unity terms; no applicable itch asset license established."
+  },
+  "source_web_pages": [
+    "https://rrfreelance.itch.io/first-person-hands-with-gloves",
+    "https://rrfreelance.itch.io/first-person-hands-with-gloves/purchase",
+    "https://rrfreelance.itch.io/"
+  ],
+  "excluded_alternatives": [
+    "Sketchfab JUST and Sebastian Ferrari sources require an accessible original download/license; no login or viewer extraction attempted.",
+    "PSX/retro CC0 alternatives do not match the chosen realism direction.",
+    "Commercial product listings were not purchased; no budget authorization.",
+    "Rigs derived from named commercial games are not a verified independent source."
+  ],
+  "next": "Do not render, retarget or publish the quarantined package without explicit applicable reuse terms. Continue existing authorized source authoring independently."
+}

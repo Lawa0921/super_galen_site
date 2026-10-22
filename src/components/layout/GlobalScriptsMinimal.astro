@@ -11,7 +11,8 @@
 <!-- 主題初始化（避免 FOUC） -->
 <script is:inline>
   (function() {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
+    let savedTheme = 'dark';
+    try { savedTheme = localStorage.getItem('theme') || 'dark'; } catch {}
     document.documentElement.setAttribute('data-theme', savedTheme);
   })();
 </script>

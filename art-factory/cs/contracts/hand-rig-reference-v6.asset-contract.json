@@ -1,0 +1,28 @@
+{
+  "schema": "cs-source-inspection-contract-v1",
+  "project_id": "super_galen_site",
+  "asset_id": "wrad-arms-rig-reference-v6",
+  "category": "3d_game_assets",
+  "postprocess_profile": "character_equipment_parts",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "scope": "Inspect a human-authored CC0 hand armature as an alternative to more automatic landmark/weight guesses. Retro source appearance is not approved as CS2-style runtime art.",
+  "source": {
+    "author": "wwwriks",
+    "url": "https://github.com/wwwriks/wrad-arms",
+    "commit": "f3987244176c33d2c20d4f9e139980af12684d87",
+    "license": "CC0-1.0",
+    "license_url": "https://github.com/wwwriks/wrad-arms/blob/f3987244176c33d2c20d4f9e139980af12684d87/LICENSE"
+  },
+  "source_root": "art-factory/cs/runs/run-20261004-v6-hand-rig-reference/raw",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not_applicable_source_inspection_only",
+  "qa_gates": [
+    "pinned_source_commit_and_file_hashes",
+    "source_license_saved",
+    "glb_skin_joint_and_animation_inventory",
+    "actual_finger_joint_hierarchy_not_marketing_claim",
+    "no_runtime_reference_or_publication"
+  ],
+  "forbidden_content": ["executing_embedded_blender_scripts", "automatic_replacement_of_realistic_source_mesh"]
+}

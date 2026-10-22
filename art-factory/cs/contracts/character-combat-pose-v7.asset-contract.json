@@ -1,0 +1,59 @@
+{
+  "asset_id": "browser-cs-combat-pose-v7",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "bounded-animation-of-existing-licensed-character",
+  "source_character": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "source_character_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "source_locomotion": "art-factory/cs/runs/run-20261005-v7-cmu-body-track/candidate/body-compact-v1.json",
+  "source_locomotion_sha256": "15132eadb5a63f972399717233b9e4e85af8f810403fc3d930280f1cced9866b",
+  "method": "Existing hit strength and 220 ms decay drive a bounded actor-frame rotation, distributed over three spine joints. Restore base before locomotion, then apply hit. Exact quaternion powers avoid small-angle nlerp bias.",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-combat-pose",
+  "status": "development-bounded-hit-accepted-aim-pending",
+  "development_integration_allowed": true,
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "limits": {
+    "impact": [
+      0,
+      1
+    ],
+    "max_pitch_rad": 0.1,
+    "max_roll_rad": 0.035,
+    "spine_weights": [
+      0.2,
+      0.3,
+      0.5
+    ],
+    "shoe_displacement_m": 1e-09,
+    "weapon_relative_hand_error_m": 1e-06,
+    "orientation_error_rad": 1e-06
+  },
+  "performance_acceptance": {
+    "scope": "Finite real gameplay sample on the current Intel D3D11 device; assesses sustained low frame rate, not a guarantee of zero dropped frames.",
+    "definition": "This run's finite DEV acceptance criteria, recorded after inspecting the sample; not a previously agreed or universal performance target.",
+    "mean_ms_max": 18,
+    "p95_ms_max": 20,
+    "frames_over_25ms_fraction_max": 0.01,
+    "worst_ms_max": 50,
+    "known_observation": "High quality had one 33.3 ms frame during turning among 623 frames; retain this observation rather than rerunning to select a cleaner sample."
+  },
+  "gates": [
+    "True engine hit produces a visible bounded reaction and returns to base",
+    "Pause, duplicate frame, round reset and death do not accumulate transforms",
+    "Real skinned shoes, hands, bone hierarchy and local positions/scales remain invariant",
+    "Before/after moving and stationary visual inspection",
+    "Full Vitest, CS Chromium, build and isolated five-bot gameplay performance"
+  ],
+  "rejected": {
+    "full_spine_aim": "qa/probe-v1/rejection.json",
+    "reason": "Full aiming angles caused excessive torso bending. Runtime hit API has no aim channel. Shoulder/arm aim remains a separate task."
+  },
+  "remaining": [
+    "Shoulder/arm aim and limited head follow",
+    "Directional locomotion, turns and start/stop transitions",
+    "Existing finger grip and clothing/model quality",
+    "Complete CS2-quality goal and formal art publication"
+  ]
+}

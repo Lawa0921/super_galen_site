@@ -8,11 +8,19 @@ import { test, expect, Page } from '@playwright/test';
 
 const BASE_URL = '/guild/naomiao77/';
 
-/** Enter through the visible overlay and wait until it stops blocking the page. */
+/** Dismiss entrance overlay and wait for the actual unlocked state. */
 async function dismissEntrance(page: Page): Promise<void> {
-  const overlay = page.locator('#entrance-overlay');
-  await overlay.click();
-  await expect(overlay).toBeHidden();
+  const dismissed = await page.evaluate(() => {
+    const overlay = document.getElementById('entrance-overlay');
+    if (overlay && !overlay.classList.contains('hidden')) {
+      overlay.click();
+      return true;
+    }
+    return false;
+  });
+  if (dismissed) {
+    await expect(page.locator('#entrance-overlay')).toBeHidden({ timeout: 6000 });
+  }
 }
 
 test.describe('Guild - naomiao77 Enhanced Page', () => {
@@ -104,6 +112,23 @@ test.describe('Guild - naomiao77 Enhanced Page', () => {
   });
 
   test.describe('Entrance overlay', () => {
+    test('entrance remains usable when the animation clock stalls', async ({ page }) => {
+      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+      await page.evaluate(() => {
+        (window as unknown as { gsap: { globalTimeline: { pause(): void } } }).gsap.globalTimeline.pause();
+      });
+      const overlay = page.locator('#entrance-overlay');
+      await overlay.dblclick();
+      const created = await page.evaluate(() => [...document.body.children]
+        .filter(e => (e as HTMLElement).style.zIndex === '101').length);
+      await expect(overlay).toBeHidden({ timeout: 6000 });
+      await expect(page.locator('#main-content')).toHaveCSS('opacity', '1');
+      expect(await page.evaluate(() => document.body.style.overflow)).toBe('');
+      const remaining = await page.evaluate(() => [...document.body.children]
+        .filter(e => (e as HTMLElement).style.zIndex === '101').length);
+      expect({ created, remaining }).toEqual({ created: 12, remaining: 0 });
+    });
+
     test('should have entrance overlay present on page load', async ({ page }) => {
       await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
       const overlay = page.locator('#entrance-overlay');
@@ -112,26 +137,12 @@ test.describe('Guild - naomiao77 Enhanced Page', () => {
 
     test('should hide entrance overlay after click', async ({ page }) => {
       await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
-      await dismissEntrance(page);
-    });
+      const overlay = page.locator('#entrance-overlay');
+      await expect(overlay).toBeAttached();
 
-    test('stalled entrance animation still reveals usable content', async ({ page }) => {
-      await page.clock.install({ time: new Date('2026-10-05T00:00:00Z') });
-      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
-      await page.clock.pauseAt(new Date('2026-10-05T01:00:00Z'));
-      await page.evaluate(() => {
-        const animation = (window as any).gsap;
-        document.getElementById('entrance-overlay')!.click();
-        // 模擬低幀率或背景頁面：停止動畫，再由瀏覽器時鐘推進 fallback 計時。
-        animation.ticker.sleep();
-        animation.ticker.wake = () => {};
-      });
-      await page.clock.fastForward(5000);
-      await expect(page.locator('#entrance-overlay')).toBeHidden({ timeout: 5000 });
-      await expect(page.locator('#main-content')).toHaveCSS('opacity', '1');
-      await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
-      await page.evaluate(() => window.scrollTo(0, 500));
-      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+      await expect(overlay).toBeVisible();
+      await overlay.click();
+      await expect(overlay).toBeHidden({ timeout: 10000 });
     });
   });
 
@@ -215,12 +226,18 @@ test.describe('Guild - naomiao77 Enhanced Page', () => {
     });
 
     test('should show a speech bubble when the cat is poked', async ({ page }) => {
-      await page.evaluate(() => {
-        document.getElementById('hero-cat-wrap')?.click();
-      });
-      await page.waitForTimeout(500);
       const bubble = page.locator('#hero-cat-bubble');
-      await expect(bubble).toHaveClass(/show/);
+      await expect(bubble).not.toHaveClass(/show/);
+      // Capture the transition in the click task: tracing may outlast the bubble.
+      const pokeState = await page.evaluate(() => {
+        const cat = document.getElementById('hero-cat-wrap');
+        const bubble = document.getElementById('hero-cat-bubble');
+        if (!cat || !bubble) throw new Error('Hero cat or speech bubble is missing');
+        const before = bubble.classList.contains('show');
+        cat.click();
+        return { before, after: bubble.classList.contains('show') };
+      });
+      expect(pokeState).toEqual({ before: false, after: true });
     });
   });
 

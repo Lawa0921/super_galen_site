@@ -12,9 +12,9 @@
 
 ## 四大區塊（依 2026 年開發重心排序）
 
-### 1. /games — 遊戲聚落（目前最活躍）
-- 頁面：`src/pages/games/{index,tetris,bomber,witchrun,defense}.astro` + `leaderboard.astro`
-- 引擎邏輯：`src/scripts/games/{tetris,bomber,witchrun,defense}/` ——單元測試最密集的地方（AI、lockstep 連線、matchmaking、replay）
+### 1. /games — 遊戲聚落（2026-10-17 更新）
+- 頁面：`src/pages/games/{index,tetris,bomber,cs,delve}.astro` + `leaderboard.astro`
+- 引擎邏輯：`src/scripts/games/{tetris,bomber,cs,delve}/` ——單元測試最密集的地方（AI、lockstep 連線、matchmaking、replay）
 - 連線 API：`src/pages/api/_bomber-match.ts、_ffa-match.ts、_leaderboard.ts、_queue.ts`（線上功能需 Upstash env，本機有記憶體 fallback）
 - 各遊戲進度與未 merge 分支 → memory 的 `project_*` 條目
 

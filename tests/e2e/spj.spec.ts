@@ -113,15 +113,30 @@ test.describe('SPJ Guild Page (High-Vis Tavern)', () => {
 
   test('should show social profile card at the end', async ({ page }) => {
     await page.click('#intro-overlay');
-    await expect(page.locator('#dialogue-text')).toHaveAttribute('data-index', '0');
+    const dialogue = page.locator('#dialogue-text');
+    await expect(dialogue).toHaveAttribute('data-index', '0');
 
     const socialCard = page.locator('#social-card');
     await expect(socialCard).toBeAttached();
     await expect(socialCard).toHaveCSS('opacity', '0');
 
-    // Firefox clamps a single wheel delta; reach the actual end of the story track.
-    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-    await expect(page.locator('#dialogue-text')).toHaveAttribute('data-index', '7');
+    // Wheel delta is not a guaranteed scroll distance across browsers.
+    await page.evaluate(() => {
+      window.scrollTo({
+        top: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight),
+        behavior: 'instant',
+      });
+    });
+    await expect.poll(() => page.evaluate(() => {
+      const end = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) - window.innerHeight;
+      return Math.abs(window.scrollY - Math.max(0, end));
+    })).toBeLessThanOrEqual(1);
+    const lastBeat = await page.evaluate(() => {
+      // @ts-ignore
+      return window.__scriptBeatCount - 1;
+    });
+    expect(lastBeat).toBeGreaterThan(0);
+    await expect(dialogue).toHaveAttribute('data-index', String(lastBeat));
 
     await expect(socialCard).toHaveCSS('opacity', '1');
     await expect(page.locator('#social-card .social-card-name')).toContainText('SPJ');

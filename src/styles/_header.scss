@@ -105,6 +105,14 @@ input:checked + .slider:before {
     transform: rotate(180deg);
 }
 
+/* 首頁 h1 外框：只提供語意，外觀沿用 .site-title */
+.site-title-heading {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+}
+
 /* 網站標題 */
 .site-title {
     font-size: 1.5rem;

@@ -1,0 +1,70 @@
+{
+  "asset_id": "browser-cs-palm-roll-v7",
+  "status": "five-fixed-palm-roll-poses-rejected-no-retry",
+  "screen_id": "cs-third-person-character",
+  "screen_breakdown_path": "art-factory/cs/manifests/asset_screen_breakdown_plan.json",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-palm-roll",
+  "source_mode": "Diagnostic rotation of an existing licensed character rig; no new geometry or pixels authored",
+  "postprocess_profile": "ui_mockup_only",
+  "mode_inference_decision": {
+    "selected_profile": "ui_mockup_only",
+    "confidence": "high",
+    "rationale": "Offline 3D pose review screenshots only; no publishable output"
+  },
+  "source_brief": "Test whether hand-long-axis rotation improves distributed pad support after two fixed-anchor fits failed.",
+  "sources": {
+    "calibration": {
+      "path": "art-factory/cs/runs/run-20261005-v7-anchor-wrap/candidate/primary-fit-v1.json",
+      "sha256": "10544a8ab86415c18c76620495d1c0263ede8d3824b28cd7180410896e7b51b0"
+    },
+    "reviewedPatches": {
+      "path": "art-factory/cs/runs/run-20261005-v7-hand-wrap/qa/patch-review-v1/report.json",
+      "sha256": "92a95eb60c2f714999a3b83c8bc7e636e8da020123adcee4d1547244514adbc2"
+    },
+    "baselineMeasure": {
+      "path": "art-factory/cs/runs/run-20261005-v7-anchor-wrap/qa/fit-v1/report.json",
+      "sha256": "a3819f0e01e7c90c10a4ce023789733ff929ad8df8c7561357e02db8b8cb07b6"
+    },
+    "character": {
+      "path": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+      "sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1"
+    },
+    "rifle": {
+      "path": "public/assets/games/cs/rifle.glb",
+      "sha256": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c"
+    }
+  },
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "rejected-no-natural-distributed-grip",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "degrees": [
+    -10,
+    -5,
+    0,
+    5,
+    10
+  ],
+  "fit_evaluations": 0,
+  "exported_glbs": 0,
+  "alpha_policy": "Opaque diagnostic screenshots; chroma key inapplicable.",
+  "requirements": [
+    "One measurement per prescribed pose; only hands.l.palmRoll changes in absolute radians about posed targetLong, not the gun barrel.",
+    "Freeze primary fitted finger/body/right-hand commands, weapon matrix, right wrist, left palm world anchor/target, source topology, skin weights, local positions/scales and parentage.",
+    "Left wrist and elbow transforms may change through existing IK; palm center/target drift must remain at most 0.000002m.",
+    "Do not run or import an optimizer, change anchors, refit fingers, change the prescribed grid, export candidates, or modify any sealed packet.",
+    "Each long finger requires two reviewed phalange patches, each with3 unique vertices and2 faces within1.5mm, opposing normals<=-0.5 and nearest signed distance>=-0.25mm.",
+    "Measure actual reviewed pad vertices against actual weapon faces, including normal, face ID and negative nearest-face diagnostics; signed nearest face is not a containment proof.",
+    "Measure all hand/gun, inter-finger, arm/gun, torso/gun and left forearm/torso sampled crossings; full skin/coplanar containment remains outside this subset.",
+    "Use actual palm-to-weapon face normals. skinNormalAngle uses a rotating wantedNormal and cannot prove agreement with the fixed gun surface.",
+    "Zero pose must reproduce the sealed primary reach result; unsolved poses must be marked unavailable without screenshots of the previous pose.",
+    "Capture inner/top/bottom/upper views and independently inspect natural wrap, wrist distortion, support and clipping.",
+    "After these five poses stop this orientation study. Numerical improvement or a subset pass is not runtime or CS2-quality approval.",
+    "One extra zero-reference measurement for serialization guard correction only. No negative-angle repetition, new angle, search or gate relaxation."
+  ],
+  "diagnostic_protocol_correction": "art-factory/cs/runs/run-20261005-v7-palm-roll/qa/protocol-correction-v1.json",
+  "verification": "art-factory/cs/runs/run-20261005-v7-palm-roll/qa/verification-v1.json",
+  "joint_summary": "art-factory/cs/runs/run-20261005-v7-palm-roll/qa/joint-summary-v1.json"
+}

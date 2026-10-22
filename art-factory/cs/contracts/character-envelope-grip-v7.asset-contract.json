@@ -1,0 +1,57 @@
+{
+  "asset_id": "browser-cs-envelope-grip-v7",
+  "status": "palm-stage-passed-full-grip-rejected",
+  "screen_id": "cs-third-person-character",
+  "screen_breakdown_path": "art-factory/cs/manifests/asset_screen_breakdown_plan.json",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-envelope-grip",
+  "source_mode": "Existing authorized CC0 character and rifle; pose-only correction with unchanged geometry/weights",
+  "postprocess_profile": "ui_mockup_only",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "independent-review-rejected-full-grip",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "alpha_policy": "Existing source materials retained; opaque diagnostic captures, no new runtime images.",
+  "design": "Add the independently checked directional clearance bound to the original left clearanceM. Rebuild the real stance and solve arms. Original selected face is a frame reference, not a claim that the palm centre touches the gun.",
+  "displacementM": 0.005898191998524384,
+  "maxDisplacementM": 0.03,
+  "candidateCount": 1,
+  "optimizerEvaluations": 0,
+  "exportedGlbs": 0,
+  "requirements": [
+    "Use a new calibration and fresh stance; only left clearanceM changes among pose controls. Keep all 39 finger commands and all wrist frame vectors unchanged.",
+    "Validate true posed strict hand_l triangles (every vertex weight>=0.5) and mixed boundary triangles (some>=0.5, some<0.5). No reliance on rigid prediction after IK.",
+    "Whole included palm surface minimum clearance is at least 1mm and at most 2mm; no transverse crossings. This replaces the insufficient single-anchor contact criterion.",
+    "Degenerate weapon triangles remain in directional prediction. At final QA certify their separation independently, never silently omit them.",
+    "Preserve source geometry/weights/binds/parents/local positions/scales, gun and every non-left-arm world matrix; confirm both IK arms solved.",
+    "Full grip still requires two qualifying segments on each long finger under existing 1.5mm distributed-contact gate and no hand/digit/interfinger/body crossings.",
+    "One full candidate measurement and six views. A passing palm stage does not approve the full character or permit runtime/development publication."
+  ],
+  "sources": [
+    {
+      "key": "report",
+      "path": "art-factory/cs/runs/run-20261005-v7-oblique-grip/qa/study-v1/report.json",
+      "expected": "63a6a330b7e3a02aad959ddec3464b337a575d211986e34d40480bb851cd7812",
+      "recorded": "63a6a330b7e3a02aad959ddec3464b337a575d211986e34d40480bb851cd7812",
+      "current": "63a6a330b7e3a02aad959ddec3464b337a575d211986e34d40480bb851cd7812",
+      "match": true
+    },
+    {
+      "key": "skin",
+      "path": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+      "expected": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+      "recorded": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+      "current": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+      "match": true
+    },
+    {
+      "key": "rifle",
+      "path": "public/assets/games/cs/rifle.glb",
+      "expected": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c",
+      "recorded": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c",
+      "current": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c",
+      "match": true
+    }
+  ]
+}

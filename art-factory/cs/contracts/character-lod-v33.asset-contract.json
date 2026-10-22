@@ -1,0 +1,39 @@
+{
+  "schema": "cs-character-rigid-lod-v33",
+  "screen_id": "cs-world-actors",
+  "source": "public/assets/games/cs/soldier.glb",
+  "source_sha256": "37f7a5ffa26aabd187fb53e16136cf42f609dceebc811ffaa0f906835359f5a4",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "mode": "deterministic index-only reduction of existing licensed full-body source",
+  "runtime_publish_allowed": false,
+  "status": "rejected-for-runtime",
+  "near_asset": "exact original stage6 geometry, maps, skeleton and animation",
+  "far_asset": "Per-primitive u16 indices; shared immutable attributes. Never merge materials.",
+  "protected": [
+    "all triangles with blended weights or different joint IDs",
+    "UV and normal seams",
+    "primitive borders",
+    "all original attributes and rig"
+  ],
+  "trial": {
+    "target_ratio": 0.5,
+    "combined_error_limit_m": 0.002,
+    "minimum_apparent_distance_m": 8,
+    "hysteresis_return_m": 7,
+    "reference_fov_degrees": 78
+  },
+  "acceptance": [
+    "source and primitive hashes",
+    "protected triangle multiset unchanged",
+    "no new reversed faces",
+    "finite bidirectional surface samples",
+    "actual game pose/distance/scope views",
+    "same-context live-shadow ABBA draw and GPU profile",
+    "runtime tests and public-path review before publication"
+  ],
+  "limitations": [
+    "sampled surface distance is not a global Hausdorff proof",
+    "fixed-scene GPU cost is not live game FPS acceptance"
+  ],
+  "rejection_report": "art-factory\\cs\\runs\\run-20261008-v33-character\\qa\\rigid-lod-checkpoint.json"
+}

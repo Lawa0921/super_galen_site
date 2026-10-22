@@ -1,0 +1,23 @@
+{
+  "asset_id": "browser-cs-hand-wrap-v7",
+  "status": "bounded-candidate-failed-no-retry",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "parent_contract": "art-factory/cs/contracts/character-hand-entry-v7.asset-contract.json",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-hand-wrap",
+  "source_mode": "bounded pose revision of previously licensed skinned character and rifle; no mesh/UV/weights edit",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready-distributed-contact-failed",
+  "runtime_publish_allowed": false,
+  "development_integration_allowed": false,
+  "external_deployment_allowed": false,
+  "requirements": [
+    "Inspect source-specific palmar patches for each segment before fitting",
+    "Fixed weapon, right hand, left palm/wrist and corrected left thumb; start four long fingers from original palm-support calibration",
+    "One bounded search per long finger, at most 400 evaluations; MCP 20..65, PIP 10..70, DIP coupled 0.25..0.75 of PIP and capped at45 degrees, splay original plus/minus12 degrees",
+    "At least two phalanges per long finger, each with three distinct palmar vertices and two faces within1.5mm and opposing weapon normals",
+    "Zero sampled visible transverse intersections with gun and other fingers, no excessive curl, four-view natural wrap",
+    "Preserve old sealed packet; archive once if this bounded candidate fails rather than repeatedly retuning seeds",
+    "Containment/coplanarity, right pinky second contact and revised death/drop remain required before runtime integration"
+  ],
+  "measured_result": "art-factory/cs/runs/run-20261005-v7-hand-wrap/qa/fit-v1/report.json"
+}

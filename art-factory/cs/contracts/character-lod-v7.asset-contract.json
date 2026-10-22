@@ -1,0 +1,52 @@
+{
+  "schema": "cs-character-lod-v7-contract",
+  "asset_id": "browser-cs-character-lod-v7",
+  "project_id": "super_galen_site",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "postprocess_profile": "character_equipment_parts",
+  "source": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+  "source_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "source_contracts": ["art-factory/cs/contracts/character-layers-v7.asset-contract.json", "art-factory/cs/contracts/character-gait-v7.asset-contract.json"],
+  "source_license": "Mindfront tactical vest CC BY 4.0; source attribution and prior modifications remain in the layers provenance registry.",
+  "modification": "Source-derived distant vest triangle indices only. Teeth/tongue omission was deferred; no new art or source vertex changes.",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-character-lod",
+  "status": "development-neutral-candidate-only",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "implementation": {
+    "artifact": "Pinned-source Uint16 vest index buffers; original GLB remains byte-identical.",
+    "tool": "meshoptimizer 1.3.0, MIT, offline simplifyWithAttributes; npm archive SHA512 verified, no runtime dependency.",
+    "method": "Index-only simplification, LockBorder + Regularize, normal/UV attributes. v2 locks the original one-ring around v1 opposing faces; original vertex streams remain exact. No permissive pruning or vertex remapping.",
+    "goal": "Explore roughly half the vest triangles for distant actors; error/visual gates take precedence over target count.",
+    "protected": ["All original vertex streams, material/texture bytes, 53 bones and skin weights", "Body palm/finger vertex IDs and shoe contact surface", "Unchanged near-distance index buffers"]
+  },
+  "qa": [
+    "Artifact source hash, valid index domain and triangles, deterministic regeneration and attribute identity.",
+    "Independent skinned multi-pose/multi-view comparison; no new seam gaps, inverted faces, obvious clothing/body intersection or silhouette loss.",
+    "Near/far threshold hysteresis, camera reset, source isolation and geometry resource lifetime.",
+    "Same five-bot scene, camera and quality; count submitted triangles and compare complete repeated GPU-query samples.",
+    "Keep default public runtime unchanged until full character acceptance."
+  ],
+  "accepted_diagnostic": {
+    "candidate": "art-factory/cs/runs/run-20261005-v7-character-lod/candidate/vest-half-v2.u16",
+    "sha256": "67f4cb45ad3d49bae863a4748ebf087c32c2d3df4b59a4a00c94ed49e1fc2b79",
+    "source_triangles": 37056,
+    "triangles": 18528,
+    "vertex_streams_shared": true,
+    "extra_index_bytes": 111168,
+    "orientation_gate": "Zero opposing triangles against posed authored normals, at eleven recorded poses. Sign test with nonzero normal requirement; not an all-pose intersection proof.",
+    "surface_gate": "Seven finite samples per triangle in each direction; maximum observed position error 0.508 mm. Not analytic Hausdorff.",
+    "normal_diagnostic": "Nearest-face angles can select the opposite thin sheet/component; retain these measurements as diagnostics, not the winding gate.",
+    "runtime_scope": "DEV plus skinCandidate=1 only; frozen rifle pose, no production character replacement.",
+    "switching": "At reference vertical FOV 78 degrees: enter at 8m, return below 7m; adjust apparent distance by current camera FOV. Fixed actor scale 1.",
+    "ownership": "Shared source attributes; source-owned distinct index geometry retained in disposal resources, independent per-actor mesh assignment.",
+    "performance": "Five-bot submitted triangles fall 17.93% low / 18.22% high. GPU timing varied substantially; no FPS acceptance or GPU-speedup claim."
+  },
+  "rejected": [
+    { "candidate": "vest-half-v1.u16", "reason": "Two opposing triangles versus authored normals; retained only as a pinned reconstruction seed and rejection evidence." },
+    { "candidate": "vest-far-v1.u16", "reason": "39 opposing triangles. A one-ring guard attempt still yielded six, so the 30% proposal was deferred and never loaded by runtime." }
+  ],
+  "remaining": ["Full character fit and grip", "Gameplay gait/aim/turn integration", "Temporal transition and shadow/SSAO visual comparison", "Natural gameplay performance acceptance", "Continuous-pose intersections", "Human assembly review"]
+}

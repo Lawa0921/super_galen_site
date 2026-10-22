@@ -45,10 +45,10 @@ const attributes = [
 ];
 ---
 
-<BaseLayout title={pageTitle} description={pageDescription} lang={lang}>
+<BaseLayout title={pageTitle} description={pageDescription} lang={lang} hreflang>
   <header class="site-header">
       <nav class="site-nav">
-        <a href={`/${lang}/`} class="site-title">SuperGalen's Dungeon</a>
+        <h1 class="site-title-heading"><a href={`/${lang}/`} class="site-title">SuperGalen's Dungeon</a></h1>
 
         <!-- 漢堡選單按鈕（只在行動版顯示） -->
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="開啟選單">

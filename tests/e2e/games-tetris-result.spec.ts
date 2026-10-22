@@ -1,6 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 
-test.skip(({ isMobile }) => isMobile, 'Tetris gameplay requires a physical keyboard');
+test.beforeEach(({ isMobile }) => {
+  test.skip(isMobile, '桌面鍵盤與連線流程；觸控替代入口另由 games-tetris-mobile 驗證');
+});
 
 const ready = async (page: Page) => {
   await expect(page.locator('#tetris-canvas')).toBeVisible();
@@ -29,21 +31,22 @@ test.describe('SOLO 結束畫面 + 重玩', () => {
 });
 
 test.describe('線上 lobby', () => {
-  test('建立房間 → lobby 顯示房號 + 複製 + 取消', async ({ page }) => {
+  test('建立房間 → 顯示房號或能力錯誤，並可取消', async ({ page }) => {
     await page.goto('/games/tetris');
-    const supportsWebRtc = await page.evaluate(() => typeof RTCPeerConnection !== 'undefined');
+    const supportsWebRtc = await page.evaluate(() => typeof RTCPeerConnection === 'function');
     await page.locator('[data-mode="online"]').click();
     await page.locator('#online-create').click();
     await expect(page.locator('#online-lobby')).toBeVisible({ timeout: 12000 });
-    if (!supportsWebRtc) {
-      await expect(page.locator('#lobby-wait')).toContainText('連線失敗');
-      await page.locator('#lobby-cancel').click();
-      await expect(page.locator('#mode-select')).toBeVisible();
-      return;
+    if (supportsWebRtc) {
+      await expect(page.locator('#lobby-code')).not.toHaveText('·····');
+      await expect(page.locator('#lobby-copy')).toBeVisible();
+    } else {
+      await expect(page.locator('#lobby-wait')).toContainText('不支援 WebRTC');
+      await expect(page.locator('#lobby-wait')).not.toHaveClass(/pending/);
     }
-    await expect(page.locator('#lobby-code')).not.toHaveText('·····');
-    await expect(page.locator('#lobby-copy')).toBeVisible();
     await expect(page.locator('#lobby-cancel')).toBeVisible();
+    await page.locator('#lobby-cancel').click();
+    await expect(page.locator('#mode-select')).toBeVisible();
   });
 
   test('WebRTC 初始化失敗仍顯示錯誤與可用的取消入口', async ({ page }) => {

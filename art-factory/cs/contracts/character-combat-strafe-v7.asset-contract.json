@@ -1,0 +1,50 @@
+{
+  "asset_id": "browser-cs-combat-strafe-v7",
+  "status": "visual-and-deformation-rejected",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "candidate_root": "art-factory/cs/runs/run-20261005-v7-combat-strafe",
+  "source_character_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+  "license_evidence": "art-factory/cs/runs/run-20261005-v7-directional-motion/qa/source-ingest-v1.json",
+  "source_sets": [
+    {
+      "subject": 127,
+      "files": [
+        "127.asf",
+        "127_13.amc",
+        "127_14.amc"
+      ],
+      "purpose": "Official run side-step left/right candidates; actual direction must be measured"
+    },
+    {
+      "subject": 78,
+      "files": [
+        "78.asf",
+        "78_24.amc",
+        "78_29.amc",
+        "78_30.amc"
+      ],
+      "purpose": "Defensive straight/no-stop and repeated lateral travel; actual speed and heading must be measured"
+    }
+  ],
+  "requirements": [
+    "Do not accelerate the accepted slow right clip to three times its native cadence",
+    "Target actual collision-resolved combat lateral motion near 1.3 m/s before runtime integration",
+    "Pin official source bytes, skeleton association, framerate and semantic rows",
+    "Select sustained directional windows, not isolated speed peaks",
+    "Retargeted candidate must preserve hierarchy, grip, skin shape, ground contact and loop continuity",
+    "Baked data and transitions must be verified before runtime use"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-ready",
+  "development_integration_allowed": false,
+  "runtime_publish_allowed": false,
+  "external_deployment_allowed": false,
+  "verification": "art-factory/cs/runs/run-20261005-v7-combat-strafe/qa/verification-v1.json",
+  "next_action": "Use native-speed forward/oblique lower-body locomotion with an independent aim frame; validate actual torsion, mesh clearance and contact before baking.",
+  "rejection": "art-factory/cs/runs/run-20261005-v7-combat-strafe/rejection.md",
+  "retained_candidates": [
+    "CMU 78 source posture rejected",
+    "69_48 frontal stride geometry rejected",
+    "partial right toe correction deformation rejected"
+  ]
+}

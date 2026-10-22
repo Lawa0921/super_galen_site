@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_grenades_v37",
+  "status": "candidate-published-for-integration",
+  "screen_id": "cs-world-and-viewmodel",
+  "source_mode": "Third-party CC0 author 3D models (3DModelsCC0 'Free CC0 Guns & Explosives pack'); author geometry, UVs and PBR maps preserved; no generated or hand-painted art",
+  "source": {
+    "author": "3DModelsCC0",
+    "license": "CC0 1.0 (public domain dedication)",
+    "source_page": "https://3dmodelscc0.itch.io/free-cc0-guns-explosives-pack",
+    "archive": "art-factory/cs/runs/run-20261003-v3-weapons/raw/guns-explosives.rar",
+    "archive_sha256": "275679f1f8c7d22aa413c04012571a92e6c7b266ed7174125b64b9d8533f7a1a",
+    "archive_bytes": 162200198,
+    "license_record": "art-factory/cs/runs/run-20261003-v3-weapons/qa/weapon-pack-report.json (same archive, sha matches)",
+    "extract_command": "tar.exe -xf guns-explosives.rar \"Guns&Explosives/FragGrenade\" \"Guns&Explosives/Flashbang\" \"Guns&Explosives/Smoke_Grenade\"",
+    "extracted_to": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/",
+    "versioning": "art-factory/cs/runs/run-20261010-v37-grenades/.gitignore keeps the 2048px author PNGs local-only; their SHA256 values are recorded here and in qa/source-manifest.json",
+    "assets": {
+      "he_grenade": {
+        "fbx": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/FragGrenade/FragGrenadeModel.fbx",
+        "fbx_sha256": "5a2291975c949a4237f493a5e552f2d20f99720d13b6c649ccbde9054d7e3d54",
+        "maps": {
+          "base_color": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/FragGrenade/FragGrenade_Base_Color.png",
+            "sha256": "d720c094efc7b1c0498937f25b944bb2a0f36264957343fe5ce0178d64224aba",
+            "bytes": 4591882,
+            "size": [
+              2048,
+              2048
+            ]
+          },
+          "metallic": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/FragGrenade/FragGrenade_Metallic.png",
+            "sha256": "c79f843cfdbf9561b97a3db5e76afa2438fb137f28fff44597befd4349d9a47b",
+            "bytes": 442376,
+            "size": [
+              2048,
+              2048
+            ]
+          },
+          "roughness": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/FragGrenade/FragGrenade_Roughness.png",
+            "sha256": "93aff09e314588e46549ca61aa40da3ae1f72e4dbaaddd3fa4f3241f770b2d94",
+            "bytes": 3196622,
+            "size": [
+              2048,
+              2048
+            ]
+          },
+          "normal": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/FragGrenade/FragGrenade_Normal_DirectX.png",
+            "sha256": "1c7ca2494486da13f9f614f452611dbb5345d32d16410b5cf78bf998346ebf8a",
+            "bytes": 3806293,
+            "size": [
+              2048,
+              2048
+            ]
+          },
+          "height_unused": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/FragGrenade/FragGrenade_Height.png",
+            "sha256": "3c38b3c9e2905b2811276ab3a6177ef66280fab563641d2c2ece76b22176b052",
+            "bytes": 427722,
+            "note": "glTF core has no height channel; not used"
+          }
+        },
+        "derived_512_maps": {
+          "base_color": {
+            "path": "art-factory/cs/runs/run-20261010-v37-grenades/raw/pbr-processed/he_grenade/base_color.png",
+            "sha256": "45169c12e61f19eab91b926f14725614eeb1e485c6d729eeac1a3ddaf5127897"
+          },
+          "metallic_roughness": {
+            "path": "art-factory/cs/runs/run-20261010-v37-grenades/raw/pbr-processed/he_grenade/metallic_roughness.png",
+            "sha256": "cfd00c59045bb04ab220b2a30842fd708c5c3794f1b0cc96b86e36fd32316fb3"
+          },
+          "normal": {
+            "path": "art-factory/cs/runs/run-20261010-v37-grenades/raw/pbr-processed/he_grenade/normal.png",
+            "sha256": "d17484b3f46c05157462a674aed869db493331c87588c15c7c6c145acebe89c1"
+          }
+        }
+      },
+      "flashbang": {
+        "fbx": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/Flashbang/Flashbang.fbx",
+        "fbx_sha256": "0f4e17ce6a608e6b3b793e132f998a899538fae86fe79a0db8e02c00a2249ec2",
+        "maps": {
+          "base_color": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/Flashbang/Flashbang_Base_Color.png",
+            "sha256": "72586d722c8de4437e6aec39ccf51dd1847ed327c59f9a5ecef9e5adecca3a86",
+            "bytes": 1491562,
+            "size": [
+              2048,
+              2048
+            ]
+          },
+          "metallic": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/Flashbang/Flashbang_Metallic.png",
+            "sha256": "e2175705c85fc4c20a360a39eb2328d94747a1a7968d1e877d39e715f2cf5110",
+            "bytes": 902193,
+            "size": [
+              2048,
+              2048
+            ]
+          },
+          "roughness": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/Flashbang/Flashbang_Roughness.png",
+            "sha256": "a768c71d5945f21f2eb3a38798ad5ad3b579936b018f56ce3fa7ce0521da74fe",
+            "bytes": 1766542,
+            "size": [
+              2048,
+              2048
+            ]
+          },
+          "normal": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/Flashbang/Flashbang_Normal_DirectX.png",
+            "sha256": "e12cb5788196de336db5f9eb8420af28365d414fe2eb2478fed9af6b8c426cd4",
+            "bytes": 1485582,
+            "size": [
+              2048,
+              2048
+            ]
+          }
+        },
+        "derived_512_maps": {
+          "base_color": {
+            "path": "art-factory/cs/runs/run-20261010-v37-grenades/raw/pbr-processed/flashbang/base_color.png",
+            "sha256": "587bc177bee30c1e2310d47d8a6c6fb7a2764b3928ad94fc655668ffddc2b4cf"
+          },
+          "metallic_roughness": {
+            "path": "art-factory/cs/runs/run-20261010-v37-grenades/raw/pbr-processed/flashbang/metallic_roughness.png",
+            "sha256": "27a420026c3364b58bcb5bd510e7d52f3380f1af489e6931f21c4a0896f7c91e"
+          },
+          "normal": {
+            "path": "art-factory/cs/runs/run-20261010-v37-grenades/raw/pbr-processed/flashbang/normal.png",
+            "sha256": "b7cfe95c85716e3475fd7b0e21ed5a80237ff32c4395b9bdac37d08049fe4f67"
+          }
+        }
+      },
+      "smoke_grenade": {
+        "fbx": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/Smoke_Grenade/Smoke_Grenade.fbx",
+        "fbx_sha256": "11fd11c9fc0cd9eda9290736d295c4b8ad444093cf796fbcceb601992caead1d",
+        "maps": {
+          "base_color": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/Smoke_Grenade/Smoke_Grenade_Base_Color.png",
+            "sha256": "a61d9ad8fb039dc2840133489600032643d313433fa1c5a44d71a2c557849048",
+            "bytes": 2096904,
+            "size": [
+              2048,
+              2048
+            ]
+          },
+          "metallic": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/Smoke_Grenade/Smoke_Grenade_Metallic.png",
+            "sha256": "2b048a47e7b1f7bc6e21cf5cbc9d7ed804c99414bf54ead557c91c7685384410",
+            "bytes": 357749,
+            "size": [
+              2048,
+              2048
+            ]
+          },
+          "roughness": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/Smoke_Grenade/Smoke_Grenade_Roughness.png",
+            "sha256": "e0aee5fc6d6ab626cc8df864e7a34790e4f01b7110152e6144b0539fa796e4d2",
+            "bytes": 1759509,
+            "size": [
+              2048,
+              2048
+            ]
+          },
+          "normal": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/Smoke_Grenade/Smoke_Grenade_Normal_DirectX.png",
+            "sha256": "85a7c4e7d02de44dda6ede74c0d6896c4cf8169e2f263e0fa440ed4b91041d1d",
+            "bytes": 6012054,
+            "size": [
+              2048,
+              2048
+            ]
+          },
+          "height_unused": {
+            "source": "art-factory/cs/runs/run-20261010-v37-grenades/raw/third-party/extracted/Guns&Explosives/Smoke_Grenade/Smoke_Grenade_Height.png",
+            "sha256": "ff313fcca77bd994b1701a994d7cfdf5694af7d55353a652672f60caf7b1021a",
+            "bytes": 1343497,
+            "note": "glTF core has no height channel; not used"
+          }
+        },
+        "derived_512_maps": {
+          "base_color": {
+            "path": "art-factory/cs/runs/run-20261010-v37-grenades/raw/pbr-processed/smoke_grenade/base_color.png",
+            "sha256": "b4de00401f14505b7de092c277dfda8818a59f120b4418b2142da59831a69859"
+          },
+          "metallic_roughness": {
+            "path": "art-factory/cs/runs/run-20261010-v37-grenades/raw/pbr-processed/smoke_grenade/metallic_roughness.png",
+            "sha256": "ae02b633f2214a2601ca6902570b5e157805083ecd66b5510ccbbbe3ba221093"
+          },
+          "normal": {
+            "path": "art-factory/cs/runs/run-20261010-v37-grenades/raw/pbr-processed/smoke_grenade/normal.png",
+            "sha256": "b678dea45e796a2b53b5b56fd81b6daec0823c99c8c1c3decd63a015a27f358c"
+          }
+        }
+      }
+    }
+  },
+  "postprocess_profile": "blender_fbx_to_gltf_webp",
+  "alpha_policy": "Opaque PBR model; HUD icons are transparent RGBA renders with mechanical alpha QA",
+  "processing": [
+    "Blender 5.2 --background --factory-startup: import author FBX (body + Pin meshes)",
+    "Bake author world transform, translate bbox centre (body+pin) to origin, uniform scale to target height along Blender +Z (= glTF +Y): he_grenade 0.115 m, flashbang 0.13 m, smoke_grenade 0.14 m (scale factors in qa/source-manifest.json)",
+    "Root node per grenade = body mesh with identity TRS; pin child node <id>_pin with translation = pin bbox centre, no rotation/scale",
+    "Author 2048px maps box-downscaled to 512px; Metallic -> B, Roughness -> G (R=1) packed metallicRoughness; DirectX normal green channel inverted to OpenGL; Height maps unused (no glTF core channel)",
+    "One material per grenade (author Mat / Mat.1 / Mat.2 slots share one texture set; pin UVs map into the same atlas)",
+    "No decimation (all grenades <= 6k triangles)",
+    "glTF export (Y-up, -Z forward) -> candidate/grenades-blender.glb; @gltf-transform/cli@4.5.0 webp --quality 90 --effort 75 -> candidate/grenades.glb (EXT_texture_webp) -> copied to runtime",
+    "HUD icons: Blender EEVEE orthographic 3/4 render of the runtime GLB, film_transparent, model yawed 180 deg so author-printed lettering faces away, 640px box-downscaled to 160px, WebP q90 RGBA"
+  ],
+  "tools": [
+    "art-factory/cs/source/convert_cs_grenades_v37.py",
+    "art-factory/cs/source/optimize_cs_grenades_v37.ps1",
+    "art-factory/cs/source/qa_cs_grenades_v37.py"
+  ],
+  "gates": [
+    "Three root nodes he_grenade / flashbang / smoke_grenade with identity TRS and bbox centre at origin",
+    "Heights along +Y: he 0.11-0.12, flashbang 0.125-0.135, smoke 0.135-0.145 m",
+    "<id>_pin child node present",
+    "Textures WebP, longest edge <= 512, baseColor + metallicRoughness + normal per material",
+    "GLB < 900 KB target, < 1.2 MB hard",
+    "<= 6000 triangles per grenade, 3 materials",
+    "HUD icons 160x160 RGBA WebP, transparent border/corners, >= 4px margin, no interior semi-alpha haze, no text overlay, total < 40 KB"
+  ],
+  "qa": {
+    "mechanical": "art-factory/cs/runs/run-20261010-v37-grenades/qa/mechanical-qa.json",
+    "mechanical_all_pass": true,
+    "checks_passed": "48/48",
+    "per_asset": {
+      "he_grenade": {
+        "triangles": 3642,
+        "bbox_size_xyz_m": [
+          0.06142,
+          0.115,
+          0.07173
+        ],
+        "pin_translation": [
+          0.00487,
+          0.0342,
+          -0.01329
+        ]
+      },
+      "flashbang": {
+        "triangles": 5562,
+        "bbox_size_xyz_m": [
+          0.04464,
+          0.13,
+          0.05024
+        ],
+        "pin_translation": [
+          0.00565,
+          0.04651,
+          -0.00894
+        ]
+      },
+      "smoke_grenade": {
+        "triangles": 2810,
+        "bbox_size_xyz_m": [
+          0.06037,
+          0.14,
+          0.06932
+        ],
+        "pin_translation": [
+          0.0078,
+          0.05417,
+          -0.01309
+        ]
+      }
+    },
+    "renders": [
+      "art-factory/cs/runs/run-20261010-v37-grenades/qa/model-he_grenade.png",
+      "art-factory/cs/runs/run-20261010-v37-grenades/qa/model-flashbang.png",
+      "art-factory/cs/runs/run-20261010-v37-grenades/qa/model-smoke_grenade.png"
+    ],
+    "render_verdict": "Re-imported runtime GLB renders cleanly: author UV/PBR intact, pins seated correctly in the spoon/fuze, normal maps read correctly (no inverted bevels). 512px maps are adequate at first-person hand distance; smoke-grenade spoon texture is visibly blocky/pixelated close up (low author texel density in that UV island, also present at source scale), and body lettering softens slightly. Flashbang reads very pale under neutral light.",
+    "hud_icon_qa": "art-factory/cs/runs/run-20261010-v37-grenades/qa/hud-icon-qa.json",
+    "hud_icon_pngs": [
+      "art-factory/cs/runs/run-20261010-v37-grenades/qa/hud-he.png",
+      "art-factory/cs/runs/run-20261010-v37-grenades/qa/hud-flash.png",
+      "art-factory/cs/runs/run-20261010-v37-grenades/qa/hud-smoke.png"
+    ],
+    "hud_icon_note": "Deterministic derivative renders of the CC0 models; no added text. Author-printed lettering turned away from camera; the HE spoon is mostly hidden from that side."
+  },
+  "asset_generation_manual_review": false,
+  "human_review": "pending",
+  "runtime_publish_allowed": true,
+  "runtime": {
+    "glb": {
+      "path": "public/assets/games/cs/grenades.glb",
+      "bytes": 671952,
+      "sha256": "7d3bb84c39087424018624897038224d1375b0ac00e3241b17979d6ba47171e7"
+    },
+    "hud_icons": {
+      "he": {
+        "path": "public/assets/games/cs/hud/he.webp",
+        "bytes": 2626
+      },
+      "flash": {
+        "path": "public/assets/games/cs/hud/flash.webp",
+        "bytes": 2968
+      },
+      "smoke": {
+        "path": "public/assets/games/cs/hud/smoke.webp",
+        "bytes": 2146
+      }
+    }
+  },
+  "review": {
+    "date": "2026-10-10",
+    "status": "human review pending",
+    "in_game_screenshots": "art-factory/cs/runs/run-20261010-v37-grenades/qa/ (to be added by coordinator)"
+  }
+}

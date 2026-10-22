@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_city_extension_v32",
+  "status": "published",
+  "category": "3d_game_assets",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "design": "docs/superpowers/specs/2026-10-08-cs-city-extension-design.md",
+  "screen_id": "cs-city-perimeter",
+  "source_mode": "Approved original Blender architecture and new original collection assets; existing verified CC0 PBR payloads and fort geometry retained.",
+  "source_script": "art-factory/cs/source/author_cs_city_v32.py",
+  "postprocess_script": "art-factory/cs/source/cook_cs_city_v32.py",
+  "source_blend": "art-factory/cs/runs/run-20261008-v32-city-extension/raw/city-kit.blend",
+  "source_base_glb": "art-factory/cs/runs/run-20261008-v32-city-extension/raw/environment-v31.glb",
+  "baseline_sha256": "74e3307a2053b7ac36f1f2a1920052fd815ca696144fa15aab43c1d169c788c8",
+  "map_source": "src/scripts/games/cs/map-data.json",
+  "map_source_sha256": "45159e6662a17003a640b28c2488955dfce04ba218bab8ff3db912940fdf1b71",
+  "units": "meters",
+  "up": "Y",
+  "movement_bounds": {
+    "x": 24,
+    "z": 28
+  },
+  "ground_bounds": {
+    "x": 84,
+    "z": 88
+  },
+  "first_ring_translation_m": 8,
+  "collision_policy": "Existing movement/nav bounds and 14 obstacles/25 terrain solids unchanged. Authored exterior building shells and low stone plinths share sealed ray proxies across AI visibility and bullet impacts. Thin ironwork, window trim, roof equipment and dome/tower ornament are visual detail.",
+  "budget": {
+    "environment_triangles_max": 150000,
+    "environment_primitives_max": 32,
+    "environment_bytes_max": 18000000,
+    "runtime_bytes_max": 28000000,
+    "new_runtime_textures": 0
+  },
+  "preservation": {
+    "source_face_matching": "one-to-one whole-triangle assignment with complete owner multiplicity",
+    "old_faces_checked_in_order": 83734,
+    "position_world_tolerance_m": 0.00001,
+    "other_attribute_tolerance": 0.000002,
+    "materials_images": "payload exact",
+    "collider_nodes": "exact"
+  },
+  "alpha_policy": "Opaque glTF geometry and PBR; chroma key inapplicable.",
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "runtime_publish_allowed": true,
+  "external_deployment_allowed": false,
+  "publication_scope": "local_repository",
+  "qa_gates": [
+    "TDD",
+    "source ownership",
+    "protected streams",
+    "108 eye rays and 9 ground rays",
+    "Blender disk reopen",
+    "15 native browser views",
+    "independent review",
+    "full unit and Python tests",
+    "CS Chromium E2E",
+    "build",
+    "native 180s high/low gameplay"
+  ],
+  "review": "art-factory/cs/runs/run-20261008-v32-city-extension/qa/review.json"
+}

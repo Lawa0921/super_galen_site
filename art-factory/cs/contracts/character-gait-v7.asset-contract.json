@@ -1,0 +1,170 @@
+{
+  "schema": "cs-character-gait-v7-contract",
+  "asset_id": "browser-cs-character-gait-v7",
+  "project_id": "super_galen_site",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_mode": "Existing licensed character skin and source-derived motion; no new visual asset published.",
+  "character": "art-factory/cs/runs/run-20261004-v7-character-fabric/candidate/fabric-budget.glb",
+  "character_sha256": "06f2d364168d6f1a12cb534ba217b0d0022d3f2a504c404258a5ded032a81639",
+  "candidate_root": "art-factory/cs/runs/run-20261004-v7-skin-gait",
+  "runtime_publish_allowed": false,
+  "assembly_human_review": "pending",
+  "external_deployment_allowed": false,
+  "status": "rifle-and-locomotion-candidate-pass-grip-turn-runtime-incomplete",
+  "requirements": [
+    "Keep the complete 53-bone hierarchy, source isolation and authored bone lengths.",
+    "World-space stance anchors and continuous swing phases, with actual skinned sole verification.",
+    "Preflight both legs after the complete FK pose before applying either IK solve.",
+    "Define sole contact from original surface patches, not ankle/ball origins or arbitrary rigid heel probes.",
+    "Preserve weapon/hand constraints and verify animation, gameplay and performance before runtime integration."
+  ],
+  "next_method": "Reduce distant skinned geometry cost while preserving calibrated contact regions, then implement real gait/turn/reset and natural gameplay performance acceptance.",
+  "sole_weight_candidate": {
+    "status": "bounded-pose-payload-and-local-visual-pass",
+    "candidate": "art-factory/cs/runs/run-20261004-v7-skin-gait/candidate/sole-weights-v1.glb",
+    "source_patch_diagnostics": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/response-v1/contact-patches.json",
+    "calf_to_foot": "All 224 downward lower-envelope source faces per shoe as edit core, including the two isolated strict faces; contact anchors remain the reviewed 81/16 patches.",
+    "calf_feather_surface_distance_m": 0.03,
+    "ball_to_foot": "Reviewed 16-face heel core; preserve original forefoot ball weights exactly.",
+    "heel_feather_surface_distance_m": 0.04,
+    "feather": "Smoothstep by shortest same-side triangle-edge distance, exact bind-position duplicates welded for equal factors.",
+    "allowed_payload": "shoes04 WEIGHTS_0 packed FLOAT values; JOINTS_0 may populate one originally zero-weight slot at source vertices 417,499,1188,1270 only. Four slots remain fixed; no discarded nonzero influence.",
+    "receiver_slot_vertex_ids": [
+      417,
+      499,
+      1188,
+      1270
+    ],
+    "invariants": [
+      "Every GLB byte outside the declared weight accessor and four declared zero-weight joint bytes is identical, including JSON and embedded images.",
+      "Weights finite, nonnegative, partition of unity within float32 error; unchanged rows byte-exact.",
+      "Exact-position UV-seam duplicates have equal factors and identical resulting weights.",
+      "Mirrored geometry has matching transfer factors; source left/right authored weights may differ.",
+      "Rest skin max position delta below 0.001 mm. Contact patch foot-only drift below 0.001 mm.",
+      "Ball-only heel drift below 0.001 mm; forefoot ball response preserved.",
+      "No inverted or collapsed triangles relative to the same-pose rigid-foot prediction in bounded foot/ball probes.",
+      "Combined knee/ankle and shoe/cuff seam still require visual review; no gait or runtime acceptance inferred."
+    ],
+    "verification": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/sole-weight-verification-v1.json"
+  },
+  "verification": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/verification.json",
+  "manifest": "art-factory/cs/runs/run-20261004-v7-skin-gait/manifest.json",
+  "steady_gait_verification": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/steady-verification-v1.json",
+  "steady_gait_review": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/steady-independent-review-v1.json",
+  "steady_gait_preview": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/gait-preview.html",
+  "steady_calibration": {
+    "capture": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/steady-v5/capture.json",
+    "source": "Corrected sole-weights-v1 candidate; original anatomical 81-face forefoot and 16-face heel patches.",
+    "cases": 8,
+    "frames": 1928,
+    "cell_step_degrees": 0.25,
+    "integration_substeps": 32,
+    "walk": {
+      "cycle_distance_m": 0.6,
+      "duty": 0.62,
+      "lift_m": 0.085,
+      "drop_m": 0.06
+    },
+    "run": {
+      "cycle_distance_m": 1.3,
+      "duty": 0.42,
+      "lift_m": 0.14,
+      "drop_m": 0.06
+    },
+    "limitations": [
+      "Flat-ground constant-speed calibration only; start, stop/settle, turning, teleport and profile transitions pending.",
+      "Upper-body weapon grip, aim and flinch are not integrated in this preview.",
+      "Contact cell masks are finite samples, not an analytic exhaustive lower envelope.",
+      "Episode metric measures one vertex continuously inside a 0.5mm ground band, not every point throughout stance.",
+      "The unsolved-frame track reset is code-reviewed; the real capture contains no unsolved frames.",
+      "Runtime soldier unchanged; no new gameplay E2E or runtime FPS acceptance.",
+      "Overall CS2 quality goal remains unachieved."
+    ]
+  },
+  "stop_gait_verification": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/stop-verification-v1.json",
+  "stop_gait_review": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/stop-independent-review-v1.json",
+  "stop_gait_preview": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/stop-preview.html",
+  "stop_calibration": {
+    "capture": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/stop-v2/capture.json",
+    "first_stage_seconds": 0.18,
+    "replant_seconds": 0.24,
+    "lift_m": 0.045,
+    "neutral_deadzone_m": 0.015,
+    "cases": 56,
+    "frames": 2904,
+    "limitations": [
+      "Stop-only, fixed heading, flat ground and stationary body; start/restart, turning, teleport and runtime integration pending.",
+      "Snapshot is copied but not deep-frozen; callers must treat the plan as read-only and supply independent output objects.",
+      "C0 at capture and segment boundaries; no promise of velocity continuity at the abrupt stop instant.",
+      "Static visual samples do not prove no perceptual velocity pop over the whole animation.",
+      "Upper-body weapon grip, aim and flinch remain separate candidates.",
+      "Runtime soldier unchanged; no new gameplay E2E or FPS acceptance; overall CS2 goal remains incomplete."
+    ]
+  },
+  "start_gait_verification": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/start-verification-v1.json",
+  "start_gait_review": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/start-independent-review-v1.json",
+  "locomotion_preview": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/locomotion-preview.html",
+  "start_calibration": {
+    "capture": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/start-v1/capture.json",
+    "initial_offset_limit_m": 0.015,
+    "initial_cycle": "duty/2",
+    "first_swing_distance": "cycleDistance/2",
+    "first_swing_lift": "profile.lift/2",
+    "cases": 40,
+    "frames": 4960,
+    "limitations": [
+      "Flat ground and fixed heading only; turn, reset, profile switching and moving before settling completes remain pending.",
+      "The plan is copied but not deep-frozen; caller preserves monotonic travel and independent output objects.",
+      "The barrier is simulated in a diagnostic page, not a formal engine collision test.",
+      "Static views do not prove the complete animation has no perceptual speed discontinuity.",
+      "Upper-body weapon assembly and existing incomplete v17 pinky grip are separate work.",
+      "Runtime soldier unchanged; no new actual gameplay FPS acceptance; overall CS2 goal incomplete."
+    ]
+  },
+  "rifle_gait_verification": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/rifle-gait-verification-v1.json",
+  "rifle_gait_review": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/rifle-gait-independent-review-v1.json",
+  "armed_locomotion_preview": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/locomotion-preview.html?rifle=1",
+  "rifle_assembly": {
+    "capture": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/rifle-gait-v1/capture.json",
+    "source_sha256": "ceed6a8d8936bdf1eef464f8ed50d602fc7a2255bf1d483f2d423ddd953113e1",
+    "rifle_sha256": "d05c45cd422d5d00e3572001605a97065b98e8f68bae8a28e6d2aa896211a37c",
+    "calibration_sha256": "a643bc94b294e916e8f6ff61366af456684802bb975dc8a8c8a060deba62551f",
+    "pose_order": "Single FK; both legs and arms preflight; legs solve; arms solve; index solve.",
+    "clearance_scale": "Actor world scale only",
+    "fullGripGatePassed": false,
+    "partial_pose_refusal": {
+      "solved": false,
+      "armReachable": [
+        true,
+        true
+      ],
+      "canvasUnchanged": true,
+      "recovered": true
+    },
+    "limitations": [
+      "Existing v17 full grip gate remains false; pinky and other weapon poses remain incomplete.",
+      "Fixed heading and flat ground only; turn, airborne, reset and restarting before settle completes remain pending.",
+      "Hand reference delta is measured in weapon-root local metres, not world metres.",
+      "Unit fixture covers palms; real GLB capture covers index success and rejection.",
+      "Static views do not prove full dynamic continuity or five-bot gameplay FPS.",
+      "Runtime soldier unchanged; CS2 quality goal incomplete."
+    ]
+  },
+  "runtime_neutral_diagnostic": {
+    "status": "local-neutral-rifle-gameplay-diagnostic-pass-animation-performance-incomplete",
+    "verification": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/runtime-gameplay-verification-v1.json",
+    "independent_review": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/runtime-gameplay-independent-review-v1.json",
+    "preview_url": "http://localhost:4002/games/cs?skinCandidate=1",
+    "runtime_publish_allowed": false,
+    "profile": "art-factory/cs/runs/run-20261004-v7-skin-gait/qa/runtime-neutral-v3/profile.json",
+    "limitations": [
+      "Development opt-in only. Public soldier unchanged; production code/binary exclusion verified.",
+      "Neutral rifle bots only; gait, turning, aim, hit animation and team appearance remain incomplete.",
+      "Frozen v17 full grip and pinky gates remain false.",
+      "GPU fence benchmark is serialized rendering, not natural gameplay FPS. Completion wall includes 8ms polling.",
+      "GPU times vary substantially across repeats. Candidate cost was higher in both paired comparisons; acceptable performance not established.",
+      "Profile captures the prior renderer snapshot; the final delta is load-time high-light-state compile, not a steady-render change.",
+      "Full site and other browsers were not rerun; the 33 passing E2Es cover the three CS Chromium files only."
+    ]
+  }
+}

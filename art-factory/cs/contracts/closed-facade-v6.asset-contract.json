@@ -1,0 +1,104 @@
+{
+  "schema": "asset-contract-v1",
+  "project_id": "super_galen_site",
+  "bundle_id": "breach-point-closed-facade-v6",
+  "category": "3d_game_assets",
+  "scope": "candidate-only offline assembly replacing perimeter_west_1 player-side facade",
+  "source_mode": "approved-cc0-polyhaven-gltf-with-original-pbr-materials",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_review": {
+    "asset": "Modular Fort 01",
+    "node": "modular_fort_01_wall_thin_straight_04",
+    "creator": "Rico Cilliers",
+    "asset_page": "https://polyhaven.com/a/modular_fort_01",
+    "license": "CC0-1.0",
+    "license_page": "https://polyhaven.com/license",
+    "source_manifest": "art-factory/cs/runs/run-20261004-v6-architecture/source-manifest.json",
+    "resolution": "1k",
+    "source_gltf_sha256": "829ac97d4c5c5672d3055d772e0ef4b545ad93cb4b639296f34e3ddf04cf9faf",
+    "source_vertices": 577,
+    "source_triangles": 622,
+    "source_material_slots": [
+      "modular_fort_01_wall_1",
+      "modular_fort_01_trim_1"
+    ],
+    "source_uv_layers": [
+      "UVMap",
+      "UVMap.001"
+    ],
+    "runtime_publish_allowed": false
+  },
+  "assembly_policy": {
+    "base_assembly": "V6 architecture assembly using accepted V5 ground and official round tower",
+    "replacement_target": "perimeter_west_1",
+    "player_side": "+X inner boundary face selected from map bounds and measured world normals",
+    "basis_transform": "Rx(-90deg) from imported glTF source into V5 authoring basis",
+    "target_bounds_v5": {
+      "min": [
+        -26.549777985,
+        0.0,
+        -19.70511961
+      ],
+      "max": [
+        -24.0,
+        8.605535508,
+        -12.29488039
+      ]
+    },
+    "preserve": [
+      "other west_1 shell faces",
+      "west_1 base/cornice/coping",
+      "west_1 roof/service details",
+      "all other scene geometry",
+      "all nine V5 colliders",
+      "map routes",
+      "accepted ground",
+      "accepted round tower"
+    ],
+    "remove": [
+      "west_1 player-side door/window pieces",
+      "west_1 player-side pipeline and straps",
+      "west_1 horizontal belt courses overlapping replacement",
+      "west_1 +X shell faces overlapping replacement"
+    ],
+    "no_new_collision": true,
+    "no_runtime_publish": true
+  },
+  "geometry_budget": {
+    "replacement_source_triangles_max": 622,
+    "added_triangles_max": 622,
+    "total_draw_calls_max": 35,
+    "collider_count": 9,
+    "three_plaster_roughness_factor": 0.82
+  },
+  "candidate_targets": {
+    "glb": "art-factory/cs/runs/run-20261004-v6-closed-facade/candidate/environment-closed-facade.glb",
+    "packed_source": "art-factory/cs/runs/run-20261004-v6-closed-facade/raw/environment-closed-facade.blend",
+    "cpu_view": "art-factory/cs/runs/run-20261004-v6-closed-facade/qa/closed-facade-site-a.png"
+  },
+  "qa_gates": [
+    "candidate_contract_before_build",
+    "source_sha256_and_license_provenance",
+    "source_node_577_vertices_622_triangles",
+    "source_uv_and_two_material_slots_preserved",
+    "world_bounds_and_player_front_polarity_measured",
+    "removed_names_and_face_ids_recorded",
+    "nine_colliders_unchanged",
+    "map_geometry_not_written",
+    "added_triangle_budget",
+    "total_draw_call_budget",
+    "three_plaster_roughness_factor_0.82",
+    "packed_blend_and_glb_roundtrip",
+    "cpu_player_view_checkpoint",
+    "assembly_human_review"
+  ],
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "not-submitted-rejected-by-independent-qa",
+  "runtime_publish_allowed": false,
+  "status": "rejected",
+  "independent_review": "art-factory/cs/runs/run-20261004-v6-closed-facade/qa/independent-review.json",
+  "build_time_contract_commit": "a469a05c004612b6b51b9f6a8be1642eac52021b",
+  "notes": [
+    "Build-time contract and candidate bytes remain preserved; this status records subsequent independent rejection. Do not publish or rerun this assembly as an approved asset."
+  ]
+}

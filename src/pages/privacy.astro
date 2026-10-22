@@ -1,0 +1,200 @@
+---
+/**
+ * 隱私權政策頁（/privacy/）
+ * - 公開可存取，但 noindex，並由 astro.config.mjs 的 sitemap filter 排除（見 src/i18n/seo.ts）
+ * - 也作為 Google OAuth 應用程式「Claude GSC MCP」的隱私權政策網址
+ * - 內容依 repo 實際行為撰寫；新增追蹤、cookie 或第三方服務時須同步更新本頁
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { defaultLang, type Language } from '@i18n/index';
+
+const lang: Language = defaultLang;
+const lastUpdated = '2026-10-14';
+const contactEmail = 'bag571ivy3470@gmail.com';
+---
+
+<BaseLayout
+  title="隱私權政策｜SuperGalen's Dungeon"
+  description="SuperGalen's Dungeon 與 Claude GSC MCP 的隱私權政策"
+  lang={lang}
+  noindex
+>
+  <main class="privacy-page">
+    <article class="privacy-card">
+      <a class="privacy-back" href="/">← 回到 SuperGalen's Dungeon</a>
+      <h1>隱私權政策</h1>
+      <p class="privacy-meta">最後更新：<time datetime={lastUpdated}>{lastUpdated}</time></p>
+
+      <p>
+        本政策說明 SuperGalen's Dungeon（https://www.supergalen.com，以下稱「本站」）以及站長個人使用的工具「Claude GSC MCP」如何處理資料。本站由站長 Galen 個人經營。
+      </p>
+
+      <h2>一、本站的資料處理</h2>
+      <h3>不使用分析與廣告追蹤</h3>
+      <p>
+        本站未安裝 Google Analytics、Vercel Analytics 或任何流量分析、廣告與跨站追蹤程式；本站自身不設定廣告或追蹤用 cookie。部分頁面嵌入的第三方內容（見下方「主機與第三方資源」）可能由該服務依其政策設定 cookie。
+      </p>
+
+      <h3>瀏覽器本機儲存</h3>
+      <ul>
+        <li>
+          第一方 cookie <code>SuperGalenGameState</code>：保存首頁遊戲化介面的 HP / MP / SP / 金幣等數值，有效期 365 天，僅供前端程式讀寫，本站伺服器不讀取或保存。
+        </li>
+        <li>
+          localStorage：保存佈景主題、語言、音樂與遊戲設定、遊戲最佳紀錄及互動頁面進度等，只存在您的瀏覽器中。
+        </li>
+      </ul>
+      <p>您可隨時透過瀏覽器清除這些資料，清除後僅會恢復預設設定。</p>
+
+      <h3>主機與第三方資源</h3>
+      <ul>
+        <li>本站由 Vercel 託管，Vercel 為提供服務可能處理連線所需的 IP 位址、瀏覽器資訊等標準請求紀錄。</li>
+        <li>
+          部分頁面會從以下來源載入字型、程式庫或素材：cdnjs（Cloudflare）、jsDelivr、unpkg、esm.sh、cdn.tailwindcss.com、Google Fonts，以及個別公會頁使用的 ui-avatars.com（頭像備援圖）與 actions.google.com（音效檔）。載入時這些服務會收到您的 IP 位址與瀏覽器資訊，並依其各自的隱私權政策處理。
+        </li>
+        <li>
+          部分公會成員頁嵌入第三方內容：YouTube 影片（www.youtube.com，cmy_fantasy、jiuliyue、lubu、zorio 頁）、TradingView 圖表（cryptohot 頁）、Apple Podcasts 播放器（e_nian 頁）。這些服務可能依其政策設定 cookie，並收到您的 IP 位址與瀏覽器資訊。
+        </li>
+        <li>
+          christine 公會頁的聯絡表單由 formsubmit.co 代為寄送給該成員，您填寫的內容會送交 formsubmit.co，本站不保存。
+        </li>
+      </ul>
+
+      <h3>您主動使用的功能</h3>
+      <ul>
+        <li>
+          電子報訂閱：首頁的訂閱表單由 follow.it 提供，您填寫的 Email 會直接送交 follow.it 處理，本站不保存。
+        </li>
+        <li>
+          Web3 錢包與連線對戰遊戲：連接錢包（如 MetaMask）後，錢包地址、您設定的暱稱、對戰戰績與積分會保存在排行榜資料庫（Upstash Redis）並公開顯示於排行榜；排隊配對時，會在 Redis 暫存玩家 id、暱稱與積分，約 15 秒未續約即自動過期；建立連線所需的訊號資料暫存約 5 分鐘後自動過期。
+        </li>
+        <li>
+          連線對戰採瀏覽器點對點（WebRTC）連線：建立連線時會使用 Google 的 STUN 伺服器（stun.l.google.com），Google 會收到玩家的 IP 位址；點對點連線也會讓對戰雙方的瀏覽器得知彼此的 IP 位址。
+        </li>
+        <li>
+          呼叫對戰相關 API（排隊配對、回報結果）時，伺服器會在記憶體中以 IP 位址做短暫的防濫用頻率限制，不寫入資料庫。
+        </li>
+      </ul>
+
+      <h2>二、Claude GSC MCP</h2>
+      <p>
+        「Claude GSC MCP」是站長個人使用的工具，並非提供給公眾的服務。
+      </p>
+      <ul>
+        <li>僅在站長本人透過 Google OAuth 授權後，以唯讀方式存取站長自己的 Google Search Console 資料。</li>
+        <li>資料僅用於分析站長自有網站的搜尋成效（例如曝光、點擊、查詢字詞與索引狀態）。</li>
+        <li>資料不會分享、販售或提供給任何第三方，也不會用於訓練 AI 或機器學習模型。</li>
+        <li>OAuth token 只保存在站長的本機電腦，不會上傳到任何伺服器。</li>
+        <li>
+          可隨時於 Google 帳戶的「第三方存取權」頁面（<a href="https://myaccount.google.com/connections" rel="noopener" target="_blank">myaccount.google.com/connections</a>）撤銷授權。
+        </li>
+      </ul>
+      <p>
+        Claude GSC MCP 對 Google API 所取得資訊的使用與傳輸，遵守 Google API Services User Data Policy，包括其中的 Limited Use 要求。
+      </p>
+
+      <h2>三、聯絡方式</h2>
+      <p>
+        對本政策有任何疑問，或需要查詢、刪除與您相關的資料，請來信：<a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+      </p>
+
+      <h2>四、政策更新</h2>
+      <p>本政策如有修改，會更新於本頁並調整上方「最後更新」日期。</p>
+
+      <section class="privacy-en" lang="en">
+        <h2>English Summary</h2>
+        <p>Last updated: {lastUpdated}</p>
+        <p>
+          <strong>This website.</strong> SuperGalen's Dungeon does not use Google Analytics, Vercel Analytics, or any analytics, advertising, or cross-site tracking scripts, and the site itself does not set advertising or tracking cookies. A first-party cookie (<code>SuperGalenGameState</code>) and localStorage keep game-style UI values, preferences, game records, and interactive page progress in your browser only. The site is hosted on Vercel. Some pages load fonts, libraries, or media from cdnjs (Cloudflare), jsDelivr, unpkg, esm.sh, cdn.tailwindcss.com, Google Fonts, ui-avatars.com, and actions.google.com, which receive standard request data (such as IP address and user agent).
+        </p>
+        <p>
+          <strong>Third-party embeds.</strong> Some guild member pages embed third-party content: YouTube videos (www.youtube.com), a TradingView chart, and an Apple Podcasts player. These services may set their own cookies and receive your IP address and browser information under their own policies. One guild page uses a contact form delivered by formsubmit.co.
+        </p>
+        <p>
+          <strong>Optional features.</strong> The newsletter form is handled by follow.it. If you connect a Web3 wallet to play online games, your wallet address, nickname, and match results are stored in the leaderboard database (Upstash Redis) and shown publicly. While matchmaking, your player id, nickname, and rating are kept in Redis for about 15 seconds unless renewed. Online matches use peer-to-peer WebRTC connections: a Google STUN server (stun.l.google.com) is used to set up the connection, so Google receives players' IP addresses, and both players can see each other's IP addresses. When you call the match APIs (matchmaking and result reporting), your IP address is used briefly in server memory for rate limiting and is not stored in the database.
+        </p>
+        <p>
+          <strong>Claude GSC MCP.</strong> Claude GSC MCP is a personal tool used only by the site owner. With the owner's own authorization, it accesses the owner's own Google Search Console data with read-only access, solely to analyze the search performance of the owner's websites. The data is not shared with, sold, or transferred to any third party, and is not used to train AI or machine learning models. OAuth tokens are stored only on the owner's local computer. Access can be revoked at any time from the Google Account "Third-party apps &amp; services" page. Use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.
+        </p>
+        <p>
+          <strong>Contact:</strong> <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+        </p>
+      </section>
+    </article>
+  </main>
+</BaseLayout>
+
+<style>
+  .privacy-page {
+    min-height: 100vh;
+    padding: 4rem 1rem;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    color: #e2e8f0;
+  }
+
+  .privacy-card {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    border-radius: 12px;
+    line-height: 1.8;
+  }
+
+  .privacy-card h1 {
+    margin: 1rem 0 0.25rem;
+    font-size: 2rem;
+  }
+
+  .privacy-card h2 {
+    margin: 2rem 0 0.75rem;
+    font-size: 1.35rem;
+    color: #93c5fd;
+  }
+
+  .privacy-card h3 {
+    margin: 1.25rem 0 0.5rem;
+    font-size: 1.05rem;
+  }
+
+  .privacy-card ul {
+    padding-left: 1.25rem;
+  }
+
+  .privacy-card li + li {
+    margin-top: 0.5rem;
+  }
+
+  .privacy-card a {
+    color: #60a5fa;
+    word-break: break-word;
+  }
+
+  .privacy-card code {
+    padding: 0 0.3rem;
+    background: rgba(148, 163, 184, 0.15);
+    border-radius: 4px;
+  }
+
+  .privacy-meta {
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+
+  .privacy-en {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.3);
+  }
+
+  @media (max-width: 600px) {
+    .privacy-page {
+      padding: 2rem 0.75rem;
+    }
+
+    .privacy-card {
+      padding: 1.5rem 1.1rem;
+    }
+  }
+</style>

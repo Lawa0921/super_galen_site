@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "asset_id": "cs_character_kit_source_v7",
+  "category": "character_equipment_parts",
+  "state": "raw_source_only",
+  "runtime_publish_allowed": false,
+  "asset_generation_manual_review": false,
+  "assembly_human_review": "pending",
+  "style_source": "docs/superpowers/specs/2026-10-03-browser-cs-design.md",
+  "source_report": "art-factory/cs/runs/run-20261004-v7-character-kit-source/qa/source-provenance.json",
+  "intent": "Restore complete human head components and evaluate a plain long-sleeve dark shirt/trousers under licensed tactical vest. This is a candidate civilian field outfit, not a declared military uniform.",
+  "selected": [
+    "male_casualsuit01",
+    "eyes/high-poly",
+    "eyes/low-poly",
+    "eyes/materials/brown",
+    "teeth/teeth_base",
+    "tongue/tongue01"
+  ],
+  "source_license": "CC0 explicit2020 headers",
+  "source_gate": "Archive SHA and every extracted member verified; MHCLO/MHMAT release headers read",
+  "rejected_direction": [
+    "male_worksuit01 thumbnail is denim bib overalls with short sleeves, not a suitable tactical upper layer",
+    "EMT medical markings and superhero gauntlet silhouettes are not approved for runtime"
+  ],
+  "assembly_gates": [
+    "Correct anatomy including eyes and mouth components",
+    "Fit/occlusion with vest/boots, no visible body gaps or cloth poke-through",
+    "Export MASK and alpha semantics match source",
+    "Actual GLB front/side/back/head/hands renders",
+    "Skin deformation and per-actor independent rig",
+    "Separate draw/triangles/textures/bytes optimization and runtime perf before publish"
+  ],
+  "external_deployment": false,
+  "raw_preservation": "Source members remain byte-identical to the ZIP, including upstream trailing spaces/blank EOF. Whitespace checks apply to authored contract/QA; source integrity uses member SHA and exact bytes.",
+  "reproduce": "Use source/ingest_cs_character_v7.py with source-provenance.json archive SHA and prefixes; extraction utility is already covered by six tests."
+}

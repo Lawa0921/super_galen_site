@@ -1,0 +1,30 @@
+{
+  "label": "codex-v2",
+  "views": [
+    {
+      "quality": "high",
+      "name": "he-0.12s",
+      "setup": "he:4:17",
+      "time": 1.75,
+      "smokes": 0,
+      "blasts": [
+        "he@1.62"
+      ],
+      "calls": 6,
+      "triangles": 43881
+    },
+    {
+      "quality": "low",
+      "name": "he-0.12s",
+      "setup": "he:4:17",
+      "time": 1.75,
+      "smokes": 0,
+      "blasts": [
+        "he@1.62"
+      ],
+      "calls": 6,
+      "triangles": 43881
+    }
+  ],
+  "errors": []
+}

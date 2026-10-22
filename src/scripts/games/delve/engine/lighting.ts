@@ -1,0 +1,298 @@
+// lighting.ts — 可分離掃描光照（RGB 三通道，交錯存放 r,g,b）。
+// 1) 寫入發光量（天空光：地表線以上、無背牆、不擋光的格吃 skyColor；天光井：地表直通下去的豎井上段吃漸淡的天光；
+//    tile 光依 LIGHT_RGB_LUT 上色；動態光可帶色相）
+// 2) 兩輪 blur：每輪對每欄做下→上、上→下，對每列做左→右、右→左；
+//    每個通道各自攜帶 v：v<cell 取 cell，否則（v ≥ 門檻）寫回 cell；離開該格時 v *= 該格該通道的衰減
+//    （空氣 0.91、實心 0.56 三通道相同；深水 / 深蜂蜜用各自的 RGB 三元組 → 越深越藍 / 越琥珀）。
+//    地下的空氣衰減更快：每欄地表下 LIGHT_DEEP_START 格起往 LIGHT_AIR_DECAY_DEEP 線性過渡（洞穴的光池較小、暗處真的暗）。
+// 液體：熔岩發紅橘光（量 / 128，最多 LAVA_LIGHT）；地表的水只有最上面那格（上方沒有液體）吃天空光。
+// 只算視窗 + margin 外框。輸出 row-major：data[i] = 三通道最大值（揭露 / 舊呼叫端用）、rgb[i*3+k]。
+import type { World, TileWindow } from './world';
+import { BLOCKS_LIGHT_LUT, LIGHT_RGB_LUT, CRYSTAL_ALT_HUE, T } from './tiles';
+import { LIQ } from './liquidKind';
+import {
+  LIGHT_AIR_DECAY, LIGHT_SOLID_DECAY, LIGHT_CUTOFF, LIGHT_MARGIN, DAY_LENGTH, LIGHT_WATER_DECAY, LIGHT_HONEY_DECAY, LAVA_LIGHT,
+  SKY_SHAFT_LEN, SKY_SHAFT_K, LIGHT_SECRET_DECAY, LIGHT_AIR_DECAY_DEEP, LIGHT_DEEP_START, LIGHT_DEEP_FULL,
+} from './constants';
+
+/** 每欄地表下 depth 格的空氣衰減（地表附近 LIGHT_AIR_DECAY → 深處 LIGHT_AIR_DECAY_DEEP，中間線性） */
+export function airDecayAt(depth: number): number {
+  if (depth <= LIGHT_DEEP_START) return LIGHT_AIR_DECAY;
+  if (depth >= LIGHT_DEEP_FULL) return LIGHT_AIR_DECAY_DEEP;
+  return LIGHT_AIR_DECAY + (LIGHT_AIR_DECAY_DEEP - LIGHT_AIR_DECAY) * ((depth - LIGHT_DEEP_START) / (LIGHT_DEEP_FULL - LIGHT_DEEP_START));
+}
+/** 深度參考地表的平滑半徑（欄）：湖岸 / 懸崖那種一欄就差 20 幾格的地表，不會在光照上切出一條直線 */
+export const DEPTH_SMOOTH_R = 8;
+/**
+ * 「地下有多深」用的參考地表：每欄地表高度在 ±DEPTH_SMOOTH_R 欄內的平均（四捨五入；邊緣怎麼夾交給 surfaceAt，
+ * 例如 world.surfaceAt 夾到邊欄）。out[i] 對應第 x0 + i 欄，共 w 欄。O(w + 2R) 次 surfaceAt。
+ */
+export function depthSurface(surfaceAt: (x: number) => number, x0: number, w: number, out: Int32Array): void {
+  const R = DEPTH_SMOOTH_R, span = 2 * R + 1;
+  let sum = 0;
+  for (let x = x0 - R; x <= x0 + R; x++) sum += surfaceAt(x);
+  for (let i = 0; i < w; i++) {
+    out[i] = Math.round(sum / span);
+    const x = x0 + i;
+    sum += surfaceAt(x + R + 1) - surfaceAt(x - R);
+  }
+}
+/** 單一欄的參考地表（同 depthSurface） */
+export function depthSurfaceAt(surfaceAt: (x: number) => number, x: number): number {
+  const R = DEPTH_SMOOTH_R;
+  let sum = 0;
+  for (let k = x - R; k <= x + R; k++) sum += surfaceAt(k);
+  return Math.round(sum / (2 * R + 1));
+}
+/** airDecayAt 的查表（depth 0..LIGHT_DEEP_FULL） */
+const AIR_DECAY_LUT = Float32Array.from({ length: LIGHT_DEEP_FULL + 1 }, (_, d) => airDecayAt(d));
+
+export type LightRGB = readonly [number, number, number];
+export interface LightRect { x: number; y: number; w: number; h: number; }
+/** 動態點光源：v = 強度（最大通道），c = 色相（最大通道 1；省略 = 白光） */
+export interface PointLight { x: number; y: number; v: number; c?: LightRGB; }
+export interface LightOptions {
+  /** 天空亮度 0..1（見 skyBrightness）；skyColor 省略時天空光 = (sky, sky, sky) */
+  sky: number;
+  /** 天空光 RGB（已含亮度，見 sky.ts skyColor） */
+  skyColor?: LightRGB;
+  margin?: number;
+  lights?: readonly PointLight[];
+}
+
+/** 熔岩光色相 */
+export const LAVA_HUE: LightRGB = [1, 0.5, 0.2];
+
+export class LightMap {
+  /** 交錯 RGB（i*3 + 通道） */
+  readonly rgb: Float32Array;
+  constructor(
+    readonly x0: number, readonly y0: number,
+    readonly w: number, readonly h: number,
+    /** 每格三通道最大值 */
+    readonly data: Float32Array,
+    rgb?: Float32Array,
+  ) {
+    if (rgb) this.rgb = rgb;
+    else {
+      this.rgb = new Float32Array(data.length * 3);
+      for (let i = 0; i < data.length; i++) this.rgb[i * 3] = this.rgb[i * 3 + 1] = this.rgb[i * 3 + 2] = data[i];
+    }
+  }
+  get(tx: number, ty: number): number {
+    const lx = tx - this.x0, ly = ty - this.y0;
+    if (lx < 0 || ly < 0 || lx >= this.w || ly >= this.h) return 0;
+    return this.data[ly * this.w + lx];
+  }
+  getRGB(tx: number, ty: number): [number, number, number] {
+    const lx = tx - this.x0, ly = ty - this.y0;
+    if (lx < 0 || ly < 0 || lx >= this.w || ly >= this.h) return [0, 0, 0];
+    const i = (ly * this.w + lx) * 3;
+    return [this.rgb[i], this.rgb[i + 1], this.rgb[i + 2]];
+  }
+}
+
+export class LightEngine {
+  private buf = new Float32Array(0);
+  private decay = new Float32Array(0);
+  private colEnd = new Int32Array(0);
+  private depthRef = new Int32Array(0);
+  private colSurf = new Int32Array(0);
+  /** 視窗的格資料（world.window 的可重用暫存） */
+  private win: TileWindow | undefined;
+
+  compute(world: World, view: LightRect, opts: LightOptions): LightMap {
+    const margin = opts.margin ?? LIGHT_MARGIN;
+    const x0 = Math.max(world.xMin, Math.floor(view.x) - margin);
+    const y0 = Math.max(0, Math.floor(view.y) - margin);
+    const x1 = Math.min(world.xMax, Math.ceil(view.x + view.w) + margin);
+    const y1 = Math.min(world.height, Math.ceil(view.y + view.h) + margin);
+    const w = Math.max(0, x1 - x0), h = Math.max(0, y1 - y0);
+    const n = w * h, n3 = n * 3;
+    if (this.buf.length < n3) { this.buf = new Float32Array(n3); this.decay = new Float32Array(n3); }
+    if (this.colEnd.length < w) { this.colEnd = new Int32Array(w); this.depthRef = new Int32Array(w); this.colSurf = new Int32Array(w); }
+    const L = this.buf, D = this.decay, CE = this.colEnd, DS = this.depthRef, CS = this.colSurf;
+    const surf = world.surfaceY;
+    const sc = opts.skyColor ?? [opts.sky, opts.sky, opts.sky];
+    const sr = sc[0], sg = sc[1], sb = sc[2];
+    const skyOn = sr > 0 || sg > 0 || sb > 0;
+    const surfaceAt = (x: number): number => world.surfaceAt(x);
+    depthSurface(surfaceAt, x0, w, DS);
+    for (let lx = 0; lx < w; lx++) CS[lx] = world.surfaceAt(x0 + lx);
+    // 視窗多讀上面一列（液面判斷看上一格）
+    const wy0 = Math.max(0, y0 - 1);
+    const win = (this.win = world.window(x0, wy0, w, Math.max(0, y1 - wy0), this.win));
+    const { fg, wall, liquid: LQ, liquidType: LT, variant: VAR } = win;
+
+    // ── 天光井：每欄從世界頂端往下走到第一個擋光 / 有液體的格（只在視窗靠近地表時需要）──
+    //    視窗以上的列逐欄走 getter（同一欄連續讀），視窗內的列讀視窗
+    for (let lx = 0; lx < w; lx++) {
+      const s = CS[lx], x = x0 + lx;
+      CE[lx] = -1;
+      if (!skyOn || y0 > s + SKY_SHAFT_LEN) continue;
+      const yEnd = Math.min(y1, s + SKY_SHAFT_LEN), yAbove = Math.min(yEnd, wy0);
+      let y = 0;
+      for (; y < yAbove; y++) if (BLOCKS_LIGHT_LUT[world.getFg(x, y)] === 1 || world.getLiquid(x, y) > 0) break;
+      if (y === yAbove) {
+        for (; y < yEnd; y++) {
+          const wi = (y - wy0) * w + lx;
+          if (BLOCKS_LIGHT_LUT[fg[wi]] === 1 || LQ[wi] > 0) break;
+        }
+      }
+      CE[lx] = y;
+    }
+
+    // ── Scan：發光 + 衰減遮罩（視窗座標：wi = (y - wy0) * w + lx）──
+    for (let ly = 0; ly < h; ly++) {
+      const y = y0 + ly;
+      const row = (y - wy0) * w;
+      const canSky = y <= surf;
+      for (let lx = 0; lx < w; lx++) {
+        const wi = row + lx;
+        const id = fg[wi];
+        const i = (ly * w + lx) * 3;
+        const solid = BLOCKS_LIGHT_LUT[id] === 1;
+        let d: number;
+        if (solid) d = id === T.CRACKED_STONE ? LIGHT_SECRET_DECAY : LIGHT_SOLID_DECAY;
+        else {
+          const dep = y - DS[lx];
+          d = dep <= LIGHT_DEEP_START ? LIGHT_AIR_DECAY : dep >= LIGHT_DEEP_FULL ? LIGHT_AIR_DECAY_DEEP : AIR_DECAY_LUT[dep];
+        }
+        D[i] = d; D[i + 1] = d; D[i + 2] = d;
+        const t3 = id * 3;
+        let er = LIGHT_RGB_LUT[t3], eg = LIGHT_RGB_LUT[t3 + 1], eb = LIGHT_RGB_LUT[t3 + 2];
+        if (id === T.CRYSTAL && (VAR[wi] & 1) === 1) {
+          const v = Math.max(er, eg, eb);
+          er = v * CRYSTAL_ALT_HUE[0]; eg = v * CRYSTAL_ALT_HUE[1]; eb = v * CRYSTAL_ALT_HUE[2];
+        }
+        const lq = LQ[wi];
+        let under = false;
+        if (lq) {
+          const lt = LT[wi];
+          if (lt === LIQ.LAVA) {
+            const le = LAVA_LIGHT * Math.min(1, lq / 128);
+            if (le * LAVA_HUE[0] > er) er = le * LAVA_HUE[0];
+            if (le * LAVA_HUE[1] > eg) eg = le * LAVA_HUE[1];
+            if (le * LAVA_HUE[2] > eb) eb = le * LAVA_HUE[2];
+          } else if (lq > 128 && !solid) {
+            const dd = lt === LIQ.WATER ? LIGHT_WATER_DECAY : LIGHT_HONEY_DECAY;
+            D[i] = dd[0]; D[i + 1] = dd[1]; D[i + 2] = dd[2];
+          }
+          under = y > 0 && LQ[wi - w] > 0;
+        }
+        if (skyOn && !solid && !under) {
+          let k = 0;
+          if (canSky && wall[wi] === 0) k = 1;
+          else if (y < CE[lx] || (y === CE[lx] && lq > 0)) {
+            // 天光井：地表之上（無牆）全亮；地表之下（可以有背牆）往下線性變淡
+            const s = y - CS[lx];
+            k = s <= 0 ? (wall[wi] === 0 ? 1 : 0) : SKY_SHAFT_K * Math.max(0, 1 - s / SKY_SHAFT_LEN);
+          }
+          if (k > 0) {
+            if (sr * k > er) er = sr * k;
+            if (sg * k > eg) eg = sg * k;
+            if (sb * k > eb) eb = sb * k;
+          }
+        }
+        L[i] = er; L[i + 1] = eg; L[i + 2] = eb;
+      }
+    }
+    if (opts.lights) {
+      for (const p of opts.lights) {
+        const lx = Math.floor(p.x) - x0, ly = Math.floor(p.y) - y0;
+        if (lx < 0 || ly < 0 || lx >= w || ly >= h) continue;
+        const i = (ly * w + lx) * 3, c = p.c;
+        const r = p.v * (c ? c[0] : 1), g = p.v * (c ? c[1] : 1), b = p.v * (c ? c[2] : 1);
+        if (r > L[i]) L[i] = r;
+        if (g > L[i + 1]) L[i + 1] = g;
+        if (b > L[i + 2]) L[i + 2] = b;
+      }
+    }
+
+    // ── Blur：兩輪四向掃描（三通道同一趟） ──
+    for (let pass = 0; pass < 2; pass++) {
+      for (let lx = 0; lx < w; lx++) {
+        blurLine3(L, D, lx, w, h);                       // 上 → 下
+        blurLine3(L, D, lx + (h - 1) * w, -w, h);        // 下 → 上
+      }
+      for (let ly = 0; ly < h; ly++) {
+        blurLine3(L, D, ly * w, 1, w);                   // 左 → 右
+        blurLine3(L, D, ly * w + w - 1, -1, w);          // 右 → 左
+      }
+    }
+    const data = new Float32Array(n);
+    for (let i = 0, j = 0; i < n; i++, j += 3) {
+      const r = L[j], g = L[j + 1], b = L[j + 2];
+      data[i] = r > g ? (r > b ? r : b) : (g > b ? g : b);
+    }
+    return new LightMap(x0, y0, w, h, data, L.slice(0, n3));
+  }
+}
+
+function blurLine3(L: Float32Array, D: Float32Array, start: number, stride: number, count: number): void {
+  let vr = 0, vg = 0, vb = 0;
+  let i = start * 3;
+  const s3 = stride * 3;
+  for (let k = 0; k < count; k++, i += s3) {
+    const cr = L[i], cg = L[i + 1], cb = L[i + 2];
+    if (vr < cr) vr = cr; else if (vr >= LIGHT_CUTOFF) L[i] = vr;
+    if (vg < cg) vg = cg; else if (vg >= LIGHT_CUTOFF) L[i + 1] = vg;
+    if (vb < cb) vb = cb; else if (vb >= LIGHT_CUTOFF) L[i + 2] = vb;
+    vr *= D[i]; vg *= D[i + 1]; vb *= D[i + 2];
+  }
+}
+
+/**
+ * 玩家身邊「輪廓微光」可以照到的格：從玩家格出發，經由不擋光的格 4 向擴散（半徑 r 內），
+ * 再加上與這些格 4 鄰相接的擋光格（看得到的牆面）。牆後的封閉空間（密室）不會被標到。
+ * out 為 rect 範圍的 row-major（1 = 可照），先清 0。
+ */
+export function ambientReach(world: World, px: number, py: number, r: number, rect: LightRect, out: Uint8Array): void {
+  out.fill(0);
+  const { x: rx, y: ry, w: rw, h: rh } = rect;
+  px = Math.floor(px); py = Math.floor(py);
+  if (px < rx || py < ry || px >= rx + rw || py >= ry + rh || !world.inBounds(px, py)) return;
+  const r2 = r * r;
+  const queue = REACH_Q.length >= rw * rh ? REACH_Q : (REACH_Q = new Int32Array(rw * rh));
+  let head = 0, tail = 0;
+  const start = (py - ry) * rw + (px - rx);
+  out[start] = 2;
+  queue[tail++] = start;
+  while (head < tail) {
+    const li = queue[head++];
+    const lx = li % rw, ly = (li - lx) / rw;
+    const x = lx + rx, y = ly + ry;
+    if (BLOCKS_LIGHT_LUT[world.getFg(x, y)] === 1 && li !== start) continue; // 牆面：標記但不往裡擴散
+    for (let k = 0; k < 4; k++) {
+      const nx = lx + NB_X[k], ny = ly + NB_Y[k];
+      if (nx < 0 || ny < 0 || nx >= rw || ny >= rh) continue;
+      const ni = ny * rw + nx;
+      if (out[ni]) continue;
+      const wx = nx + rx, wy = ny + ry;
+      if (wx < world.xMin || wy < 0 || wx >= world.xMax || wy >= world.height) continue;
+      const dx = wx - px, dy = wy - py;
+      if (dx * dx + dy * dy > r2) continue;
+      out[ni] = 2;
+      queue[tail++] = ni;
+    }
+  }
+  for (let i = 0; i < out.length; i++) if (out[i]) out[i] = 1;
+}
+let REACH_Q = new Int32Array(0);
+const NB_X = [1, -1, 0, 0], NB_Y = [0, 0, 1, -1];
+
+/**
+ * 天空亮度：t 為遊戲內經過秒數，一天 DAY_LENGTH 秒；t=0 為午夜、0.5 天為正午。
+ * 分段線性（不用三角函數）：夜 0.12，日出前後各 twilight 漸亮，日落前後各 twilight 漸暗（預設 0.2~0.3 / 0.7~0.8 天）。
+ * 日出 / 日落 / 曙暮光由曆法（calendar.sunTimes）每天餵入。（天空光的「顏色」見 sky.ts skyColor）
+ */
+export function skyBrightness(t: number, sunrise = 0.25, sunset = 0.75, twilight = 0.05): number {
+  const NIGHT = 0.12;
+  let p = (t % DAY_LENGTH) / DAY_LENGTH;
+  if (p < 0) p += 1;
+  const a = sunrise - twilight, b = sunrise + twilight, c = sunset - twilight, d = sunset + twilight;
+  if (p < a || p >= d) return NIGHT;
+  if (p < b) return NIGHT + (1 - NIGHT) * ((p - a) / (b - a));
+  if (p < c) return 1;
+  return 1 - (1 - NIGHT) * ((p - c) / (d - c));
+}
