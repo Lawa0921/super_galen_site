@@ -1046,7 +1046,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       // Until her last piece the faces at home are gone; after it she has her father's, but the text still does not name him.
       N('深夜的旅館房間。莉茲把今天分到的錢收進一只舊布袋，袋口綁了一個又一個死結。'),
       { who: 'hero', text: '「綁成這樣，賊都會放棄。家裡有人在等？」' },
-      { who: 'liz', mood: 'hushed', text: '「嗯。臉想不起來。可是，一定有人在等。」', if: { notFull: 'liz' } },
+      { who: 'liz', mood: 'hushed', text: '「嗯。臉想不起來，可是一定有人在等。」', if: { notFull: 'liz' } },
       { who: 'liz', mood: 'smile', text: '「嗯。爸爸的臉，想起來了。這些錢，我要親手交到他手上。」', if: { full: 'liz' } },
     ],
     summary: '莉茲深夜把分到的錢收進舊布袋。洛恩問她，家裡是不是有人在等。',
@@ -1085,7 +1085,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('王城的庭院。公主提著木劍追著她跑，裙襬沾滿了草屑。'),
       N('「別叫我殿下。」公主笑著說，「在這裡，我們只是一起練劍的人。」'),
       { who: 'scarlet', mood: 'sad', text: '「我立誓守護的人，是公主殿下。她總是不讓我這樣叫她。」' },
-      { who: 'scarlet', mood: 'shaken', text: '「而我卻把她一個人，留在了城門後面。」' },
+      { who: 'scarlet', mood: 'shaken', text: '「而我卻把她一個人留在了城門後面。」' },
     ],
     summary: '絲嘉蕾想起誓言守護的人：和她一起練劍長大的公主。她以為，自己把公主丟在了城門後面。',
   },
@@ -1096,7 +1096,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       N('城門快要倒下的時候，公主把她推進撤退的密道：「這是命令。妳不是盾，妳是我的朋友。活下去。」'),
       { who: 'scarlet', mood: 'sad', text: '「那些號角，是撤退的號角。她要我活下去，我卻一直想替人死。」' },
-      N('絲嘉蕾把盾從洛恩身前移開，站到他旁邊，停了一下。'),
+      N('絲嘉蕾把盾從洛恩身前移開，站到他旁邊。她停了一下，才開口。'),
       { who: 'scarlet', mood: 'serious', text: '「洛恩，從今天起，我站這裡。」' },
     ],
     summary: '公主下令絲嘉蕾撤退，要她活下去。她不是逃走的。她把盾從洛恩身前移開，站到他旁邊。',
@@ -1116,7 +1116,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('回城的路上，絲嘉蕾的盾上，又多了一道新的凹痕。'),
       { who: 'hero', text: '「盾比我還常受傷。剛才那一下，不必替我擋。」' },
       { who: 'scarlet', mood: 'serious', text: '「洛恩閣下，盾本來就是用來受傷的，替人擋刀也是騎士的職責。只是總覺得……我還欠著某個人。」', if: { notFull: 'scarlet' } },
-      { who: 'scarlet', mood: 'smile', text: '「洛恩，受傷是盾的本分。替你擋下，不是本分，是我想這麼做。」', if: { full: 'scarlet' } },
+      { who: 'scarlet', mood: 'smile', text: '「洛恩，我是站在你旁邊擋的，不算替你。順手而已。」', if: { full: 'scarlet' } },
     ],
     summary: '絲嘉蕾又替洛恩擋下了一擊。洛恩說不必，她說了自己的理由。',
   },
@@ -1287,7 +1287,7 @@ const HOME: Record<HomeOwner, Written> = {
   liz: {
     lines: [
       { who: 'narrator', text: '傍晚的道具店。莉茲推開店門，取下門後那頂紅帽子，戴在頭上。', if: { notReturned: 'orik' } },
-      { who: 'orik', text: '「喂，那頂不賣！店裡什麼都賣，就它不賣。它一直掛在門後。妳這張臉，老頭子我怎麼想不起來。」', if: { notReturned: 'orik' } },
+      { who: 'orik', text: '「喂，那頂不賣！店裡什麼都賣，就它不賣。它一直掛在門後。奇怪，妳這張臉，老頭子我怎麼就是想不起來？」', if: { notReturned: 'orik' } },
       { who: 'liz', mood: 'hushed', text: '「沒關係。等你想起來，我再戴。」', if: { notReturned: 'orik' } },
       { who: 'narrator', text: '她把帽子掛回門後，回頭笑了一下。櫃檯後面的人撓著頭，也跟著笑了。', if: { notReturned: 'orik' } },
       { who: 'narrator', text: '傍晚的道具店。莉茲推開店門，從門後取下那頂紅帽子戴上，深深吸了一口氣。', if: { returned: 'orik' } },
@@ -1746,7 +1746,7 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   scarlet: [
     '絲嘉蕾。在鋼鐵要塞的城門前，她和機兵一起把劍對著我們，撐過三個回合才收劍。她叫我洛恩閣下，道歉時要我們先回報傷勢。',
     '她是騎士，以劍起誓要做某個人的盾。鋼鐵要塞是她的國家，被迷宮吞了下去。她說城門快破的那一夜，她轉身逃了。',
-    '她立誓守護的，是一起練劍長大的公主。那一夜的號角，是公主要她活下去。現在她叫我洛恩，站到了我旁邊。',
+    '她立誓守護的，是一起練劍長大的公主。那一夜吹的是撤退的號角，是公主要她活下去。現在她叫我洛恩，站到了我旁邊。',
   ],
 };
 
@@ -1860,7 +1860,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
       // meeting cap is four lines); her 「帶回家」 answers their turning down the gold.
       N('洛恩遞過乾糧：「我是洛恩。先吃點東西。」她兩口就吞了下去，連膝上的碎屑都撿起來吃掉。'),
       { who: 'liz', mood: 'smile', text: '「活過來了！我是莉茲，尋寶獵人。金幣真的不要？你們這群怪人。」' },
-      { who: 'liz', mood: 'hushed', text: '「你們不要，我可要帶回家。只是家人的臉，我一張也想不起來了。」' },
+      { who: 'liz', mood: 'hushed', text: '「你們不要，我就全帶回家了。只是家人的臉，我一張也想不起來了。」' },
       // V2 fix 1 (controller ruling): her cover-up joke, in its own box after a turn word, never in the quiet line (bible §2.2).
       { who: 'liz', mood: 'scheming', text: '「好啦，不說這個。老大，讓我跟著你們吧，分紅好商量。」' },
     ],
