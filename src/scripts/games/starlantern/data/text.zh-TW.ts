@@ -159,8 +159,8 @@ export const T = {
     echoDropped: '（機制效果不會重現）',
     /** 自動 (plan 8h ruling 15): each member not commanded yet does what her build's policy (or the standard one) says. */
     policy: '自動',
-    /** Its note: what each of them will do this round, as it will be done. */
-    policyNote: (parts: string[]) => parts.join('　'),
+    /** Its note: what each of them will do this round, as it will be done, one member a line. */
+    policyNote: (parts: string[]) => parts.join('\n'),
     policyPart: (name: string, what: string) => `${name}：${what}`,
     /** A skill in the note: its name and its numbers as she casts it now (battleLine). */
     policySkill: (skill: string, line: string) => `${skill}（${line}）`,

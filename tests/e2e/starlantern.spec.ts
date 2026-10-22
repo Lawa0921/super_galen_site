@@ -4089,13 +4089,13 @@ test.describe('starlantern', () => {
     test("auto fights a round by each member's build (plan 8h)", async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 720 });
       const w = await setup(page, 7);
-      // The hero and Noel, who follows 暴走流星 at Lv 40; the foes made harmless and tough so the round can be read.
+      // A full five, Noel following 暴走流星 at Lv 40 (the note's longest round); the foes harmless and tough.
       const meteor = buildOf('noel', 'meteor')!;
       await page.evaluate(({ tree, talents }) => {
         const g = (window as unknown as Dbg).__starlanternDebug.game;
         const p = g.state.party;
-        p.recruited = ['hero', 'noel'];
-        p.grid = ['hero', null, null, null, null, null, 'noel', null, null];
+        p.recruited = ['hero', 'rin', 'chizuru', 'noel', 'selene'];
+        p.grid = ['hero', 'rin', null, 'chizuru', null, null, 'noel', 'selene', null];
         p.roster.noel = { ...p.roster.noel, level: 40, tree, talents, build: 'meteor' };
         g.state.runeTutorialSeen = true;
       }, { tree: buildTree('noel', 40, meteor), talents: buildTalents('noel', 40, meteor) });
@@ -4115,8 +4115,8 @@ test.describe('starlantern', () => {
       for (let i = 0; i < 12 && (await page.locator('.slx-bcmd [aria-selected=true]').getAttribute('data-id')) !== 'policy'; i++) await w.key('ArrowDown');
       await expect(page.locator('.slx-bcmd [aria-selected=true] .slx-label')).toHaveText(T.cmd.policy);
       const note = page.locator('.slx-bnote');
-      await expect(note).toContainText('洛恩：');
-      await expect(note).toContainText('諾艾兒：');
+      for (const name of ['洛恩', '凜', '千鶴', '諾艾兒', '瑟蕾']) await expect(note).toContainText(`${name}：`);
+      expect((await note.textContent())!.split('\n')).toHaveLength(5);   // one member a line
       for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
         await page.setViewportSize({ width: vw, height: vh });
         await page.waitForTimeout(150);
@@ -4127,6 +4127,10 @@ test.describe('starlantern', () => {
         expect(b.y + b.height, `the note inside the stage at ${vw}`).toBeLessThanOrEqual(screen.y + screen.height + 0.5);
         const over = await page.locator('.slx-bnote, .slx-bcmd [role=option]').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => e.textContent));
         expect(over, `wider than their box at ${vw}`).toEqual([]);
+        // The five lines fit the box, and the box keeps clear of the command window.
+        expect(await note.evaluate((e) => e.scrollHeight - e.clientHeight), `the note's lines fit at ${vw}`).toBeLessThanOrEqual(0.5);
+        const cmd = (await page.locator('.slx-bcmd').boundingBox())!;
+        expect(cmd.x + cmd.width <= b.x || b.y + b.height <= cmd.y, `the note clear of the commands at ${vw}`).toBe(true);
         const small = await note.evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
         expect(small).toBeGreaterThanOrEqual(12);
         if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/auto-preview-${vw}.png` });

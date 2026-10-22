@@ -5,7 +5,7 @@ import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
 import { STORY } from '../../data/story.zh-TW';
 import { CHARACTERS } from '../../data/characters';
-import { LIMIT_MAX, castNow, intentLabel, runeView, skillFor, type Action, type BattleState } from '../../engine/battle';
+import { LIMIT_MAX, intentLabel, runeView, skillFor, type Action, type BattleState } from '../../engine/battle';
 import { autoActions } from '../../engine/builds';
 import type { Combatant } from '../../engine/combatant';
 import { ailmentChips, type AilmentChip } from '../../engine/ailments';
@@ -22,7 +22,7 @@ import { fragmentItem } from '../../engine/story/fragments';
 import { gearIconUrl } from '../gearArt';
 import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
 import { RUNE_SLOT_LEVELS, RUNE_STACK } from '../../data/runes';
-import { autoLine, battleLine, withoutPowerClause } from '../skillCard';
+import { autoLine, battleLine, shownDef, withoutPowerClause } from '../skillCard';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
@@ -297,8 +297,9 @@ export class BattleScene implements Scene {
    * the words' power multiplier goes, so one line never shows two kinds of 威力 (plan 8g final review).
    */
   private noteOf(sk: SkillDef, actor: Combatant): string {
-    // As she casts it this moment, as perform does (plan 8h ruling 11h): the depth's bonus, then her heat, coins or barrier.
-    const shown = castNow(this.state, actor, sk);
+    // As she casts it this moment, as perform does (plan 8h ruling 11h): the depth's bonus, then her heat, coins or barrier;
+    // and Safira's beat, which the engine adds on each hit (shownDef).
+    const shown = shownDef(this.state, actor, sk);
     const final = shown.effects.some((e) => e.kind === 'damage' || e.kind === 'heal' || e.kind === 'device');
     return T.cmd.noteWith(battleLine(shown), final ? withoutPowerClause(sk.desc) : sk.desc);
   }
@@ -404,6 +405,8 @@ export class BattleScene implements Scene {
     if (!text) { this.note?.remove(); this.note = null; return; }
     if (!this.note) { this.note = win('slx-bnote'); this.body.append(this.note); }
     this.note.textContent = text;
+    // 自動's note: one member a line (plan 8h Task 8 review).
+    this.note.classList.toggle('slx-bnote-lines', text.includes('\n'));
   }
 
   private sfxAdapter(): SoundManager {

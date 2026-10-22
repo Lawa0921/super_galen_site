@@ -398,6 +398,9 @@ $slx-battle-left: 150px;
 // Battle: 返回 under the message line; the description of the skill or item under the cursor covers the message line
 .slx-battle .slx-back { right: auto; left: 6px; top: 64px; }
 .slx-bnote { left: 8px; right: 8px; top: 6px; min-height: 36px; color: $slx-gold; background-color: #0a0e22; }
+// 自動's note, one member a line (plan 8h Task 8 review): right of the command window, so a five-member round never covers it.
+.slx-bnote.slx-bnote-lines { left: 200px; white-space: pre-line; line-height: 16px; }
+.slx-battle:has(.slx-bnote-lines) .slx-fieldbar { visibility: hidden; }
 
 // Settings
 .slx-bg-dim { filter: brightness(0.45); }

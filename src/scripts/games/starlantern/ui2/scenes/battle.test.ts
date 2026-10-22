@@ -17,6 +17,7 @@ import { autoActions } from '../../engine/builds';
 import { castPower } from '../../engine/sim';
 import { castDef } from '../../engine/mechanics/index';
 import { LIMIT_MAX } from '../../engine/battle';
+import { hitAmount, type DamageSpec } from '../../engine/combatant';
 import { ultimateFor } from '../../engine/progression';
 import { skillFor } from '../../engine/battle';
 import { ECHO, echoDef } from '../../engine/mechanics/echo';
@@ -1431,6 +1432,8 @@ describe('BattleScene: 自動 (plan 8h Task 8)', () => {
     const want = autoActions(b, party, who);
     // The note is the round 自動 plays, member by member.
     expect(note(w)).toBe(autoLine(b, party, who));
+    expect(note(w).split('\n')).toHaveLength(who.length);   // one member a line
+    expect(w.root.querySelector('.slx-bnote')!.classList.contains('slx-bnote-lines')).toBe(true);
     const chizuru = b.party.find((c) => c.key === 'chizuru')!;
     expect(want.chizuru.kind).toBe('ultimate');
     expect(note(w)).toContain(T.cmd.policyPart(chizuru.name, T.cmd.ultimate(ultimateFor('chizuru', chizuru.ranks, chizuru).name)));
@@ -1493,5 +1496,41 @@ describe('BattleScene: 自動 (plan 8h Task 8)', () => {
     }, '千鶴', 'heaven-spear');
     expect(spear.text.startsWith('敵方單體・威力 429・物理')).toBe(true);
     expect(engine(spear.w, 'chizuru', 'heaven-spear').power).toBe(429);
+  });
+});
+
+describe("BattleScene: Safira's beat in her numbers (plan 8h Task 8 review)", () => {
+  /** Safira leads; her 刃舞 note at `beat`, and the engine's hit at that beat. */
+  const at = (beat: number) => {
+    const w = setup((g) => {
+      g.state.party.roster.safira.tree = { ...g.state.party.roster.safira.tree, 'blade-dance': 1 };
+      const c = g.battle!.party.find((x) => x.key === 'safira')!;
+      c.ranks = { ...c.ranks, 'blade-dance': 1 };
+      c.mech = { kind: 'beat', beat, last: '' } as never;
+    }, {}, ['safira', 'rin', 'chizuru', 'noel', 'selene']);
+    for (let k = 0; k < 9 && w.root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'skill'; k++) w.s.onAction('down');
+    w.s.onAction('confirm');
+    for (let k = 0; k < 12 && w.root.querySelector('.slx-bsub .slx-sel')?.getAttribute('data-id') !== 'blade-dance'; k++) w.s.onAction('down');
+    expect(w.root.querySelector('.slx-bsub .slx-sel')?.getAttribute('data-id')).toBe('blade-dance');
+    const text = w.root.querySelector('.slx-bnote')!.textContent!;
+    const shown = Number(/威力 (\d+)/.exec(text)![1]);
+    const b = w.game.battle!;
+    const c = b.party.find((x) => x.key === 'safira')!;
+    const foe = b.enemies[0];
+    const spec = skillFor(c, 'blade-dance')!.effects.find((e) => e.kind === 'damage') as unknown as DamageSpec;
+    const r = { variance: 1, crit: false, blocked: false };
+    // What one hit of hers does at this beat, and what a hit of the shown power does with no beat at all.
+    const real = hitAmount(c, foe, spec, r).amount;
+    const flat = hitAmount({ ...c, mech: { kind: 'beat', beat: 0, last: '' } } as never, foe, { ...spec, power: shown }, r).amount;
+    return { shown, real, flat, base: spec.power };
+  };
+
+  it('the menu power at beat 0 is the skill\'s own, and at beat 3 it carries the beat, as the engine hits', () => {
+    const zero = at(0);
+    expect(zero.shown).toBe(zero.base);
+    expect(zero.flat).toBe(zero.real);
+    const three = at(3);
+    expect(three.shown).toBe(Math.round((three.base * 130) / 100));
+    expect(three.flat).toBe(three.real);
   });
 });

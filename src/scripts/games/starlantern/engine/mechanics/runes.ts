@@ -7,11 +7,11 @@
  */
 import type { CharacterId, Element, SkillDef } from '../types';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from '../skills';
-import { castOnce, skillFor, syncWards, type BattleState } from '../battle';
+import { abyssDef, castOnce, skillFor, syncWards, type BattleState } from '../battle';
 import type { Buff, Combatant } from '../combatant';
 import { raiseBarrier } from './barrier';
 import type { Rng } from '../rng';
-import { isInnate, pctMod, skillRank, treeSkills } from '../progression';
+import { isInnate, skillRank, treeSkills } from '../progression';
 import { RESERVE_CAP, RUNES } from '../../data/runes';
 import { PLAIN } from './echo';
 import { T } from '../../data/text.zh-TW';
@@ -132,8 +132,7 @@ export function runTriggers(s: BattleState, ctx: EffectContext, rng: Rng): void 
     let def = skillFor({ ...c, runes: { ...c.runes, [t.skill]: (c.runes?.[t.skill] ?? []).filter((r) => r !== rune) } }, t.skill);
     const pct = skillFor(c, t.skill)?.runeRules?.trigger?.pct;
     if (!def || !rune || pct === undefined) continue;
-    const bonus = def.abyss && s.abyss ? pctMod(def.id, 100 + s.abyss) : undefined;
-    if (bonus) def = patchSkill(def, bonus);
+    def = abyssDef(s, def);
     def = patchSkill(def, { powerPct: pct, buffPct: pct });
     def = { ...def, effects: def.effects.filter((e) => PLAIN.has(e.kind)) };
     if (def.runeRules) {

@@ -5,7 +5,8 @@ import { castNow, fromMember, runeView, skillCost, skillFor, type Action, type B
 import { autoActions } from '../engine/builds';
 import type { Combatant } from '../engine/combatant';
 import { echoDef, echoOf } from '../engine/mechanics/echo';
-import { ITEMS } from '../data/items';
+import { BEAT } from '../engine/mech';
+import { pctOf } from '../engine/skills';
 import { battleReservePct, lastingBarrierLoss, WHEEL } from '../engine/mechanics/runes';
 import { statsOf } from '../engine/party';
 import { treeCost, ultimateFor } from '../engine/progression';
@@ -306,8 +307,8 @@ export function battleLine(def: SkillDef): string {
 
 /**
  * 自動's note (plan 8h ruling 15): what each of `who` will do this round, read from the same `autoActions` the command
- * plays: 「諾艾兒：火之星彈（敵方單體・威力 174・火）」 (her skill as she casts it now, `castNow`), 「攻擊」, 「殘響：…」,
- * or 「絕技：…」 for a full gauge.
+ * plays, one member a line: 「諾艾兒：火之星彈（敵方單體・威力 174・火）」 (her skill as the menu shows it, `shownDef`),
+ * 「攻擊」, 「殘響：…」, or 「絕技：…」 for a full gauge.
  */
 export function autoLine(s: BattleState, party: Party, who: readonly string[]): string {
   const acts = autoActions(s, party, who);
@@ -323,7 +324,7 @@ function actText(s: BattleState, c: Combatant, a: Action): string {
   switch (a.kind) {
     case 'skill': {
       const def = skillFor(c, a.skill);
-      return def ? T.cmd.policySkill(def.name, battleLine(castNow(s, c, def))) : a.skill;
+      return def ? T.cmd.policySkill(def.name, battleLine(shownDef(s, c, def))) : a.skill;
     }
     case 'ultimate': return T.cmd.ultimate(ultimateFor(c.defId as CharacterId, c.ranks, c).name);
     case 'echo': {
@@ -331,10 +332,22 @@ function actText(s: BattleState, c: Combatant, a: Action): string {
       return T.cmd.echo(rec ? echoDef(rec).name : undefined);
     }
     case 'defend': return T.cmd.defend;
-    case 'item': return ITEMS[a.item]?.name ?? a.item;
     case 'escape': return T.cmd.escape;
-    case 'attack': return T.cmd.attack;
+    // An attack (choose never picks an item).
+    default: return T.cmd.attack;
   }
+}
+
+/**
+ * `def` as the battle menu shows it (plan 8h Task 8 review): as she casts it now (`castNow`), and for Safira her beat on
+ * each hit, which the engine adds per hit (combatant.ts hitAmount: 1 + BEAT.pctPer x beat), not in castDef. Display only.
+ */
+export function shownDef(s: BattleState, c: Combatant, def: SkillDef): SkillDef {
+  const now = castNow(s, c, def);
+  const beat = c.mech?.kind === 'beat' && c.defId === 'safira' ? c.mech.beat : 0;
+  if (beat <= 0) return now;
+  const pct = 100 + BEAT.pctPer * beat;
+  return { ...now, effects: now.effects.map((e) => (e.kind === 'damage' ? { ...e, power: pctOf(e.power, pct) } : e)) };
 }
 
 /** The max TP a fight leaves her when her working 常駐 runes hold some back (plan 8g ruling 9); else null. */
