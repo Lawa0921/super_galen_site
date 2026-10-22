@@ -92,6 +92,7 @@ function isStory(v: unknown): boolean {
   if (v.fresh.some((id) => !(v.seen as unknown[]).includes(id)) || v.queue.some((id) => (v.seen as unknown[]).includes(id))) return false;
   if (!isUniqueList(v.nodes, (x) => ACT_NODES.includes(x as string))) return false;
   if (!isUniqueList(v.returned, (x) => TOWN_FRAGMENTS.some((f) => f.id === x))) return false;
+  if (v.waited !== undefined && !(isObj(v.waited) && Object.values(v.waited).every((n) => Number.isInteger(n) && (n as number) >= 0))) return false;
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }
 

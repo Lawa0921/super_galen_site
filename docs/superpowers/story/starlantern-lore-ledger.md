@@ -310,7 +310,7 @@ spec：`docs/superpowers/specs/2026-10-17-starlantern-story-world-design.md`（�
 | `BANTER_GATE['banter:liz-scarlet:3'] = { stage: 'act3', full: 'scarlet' }` | 絲嘉蕾放下「本分」、自己說「搞定」，在她最後一片之後（I-79、I-159）。故事深度：內容從 `:2` 原樣搬來，加上第三幕。 | B2；故事深度 Task 4 |
 | `BANTER_GATE['banter:noel-selene:3'] = { stage: 'act3', full: 'selene' }` | 瑟蕾第一次把明天說出口、不收回，在她最後一片之後（spec §6、I-159）。故事深度：內容從 `:2` 原樣搬來，加上第三幕。 | B2；故事深度 Task 4 |
 | 換編號（`safira-sylvie:2`→`:3`、`liz-scarlet:2`→`:3`、`noel-selene:2`→`:3`、`rin-sylvie:1`→`:2`） | 發佈之前編號可以重排；遊戲還沒上線，舊存檔不必相容（使用者裁定），所以不設 `RENUMBERED`、不整理舊存檔。發佈之後，一個配對只往後加。 | 故事深度 Task 4、5 |
-| `BANTER_GATE['banter:chizuru-noel:1'] = { pieces: { noel: 1 } }` | 千鶴說「借而不告，謂之竊」，要先知道諾艾兒的書是偷來的（她第一片之後）。**偏離設計（控制者裁定，Task 4）**：設計稿諾艾兒說「等本小姐比老師厲害的時候」，但老師要到她第四片才出現（`mem:noel:4`）；閘門照設計留早，台詞去掉「老師」，改成「等本小姐比誰都厲害的時候」，摩擦留在前面，不劇透。 | 故事深度 Task 4（設計 §7.2） |
+| `BANTER_GATE['banter:chizuru-noel:1'] = { pieces: { noel: 1 } }` | 千鶴說「借而不告，謂之竊」，要先知道諾艾兒的書是偷來的（她第一片之後）。**偏離設計（控制者裁定，Task 4）**：設計稿諾艾兒說「等本小姐比老師厲害的時候」，「老師」在她第一片就出現了（Task 6 審查更正），但在她集滿之前，閒聊的守門（`GUEST_NEVER`）不讓她自己說「老師」；閘門照設計留早，台詞去掉「老師」，改成「等本小姐比誰都厲害的時候」，摩擦留在前面，不劇透。 | 故事深度 Task 4（設計 §7.2） |
 | `BANTER_GATE['banter:liz-scarlet:2'] = { stage: 'act2', pieces: { scarlet: 2 } }` | 莉茲問「妳守的那扇門，門後還有人嗎？」，要絲嘉蕾的門已經被提過（她第二片之後）；估價碎片是第二幕以後的事。 | 故事深度 Task 4（設計 §7.2） |
 | `BANTER_GATE['banter:safira-sylvie:2'] = { pieces: { safira: 2 } }` | 莎菲拉一個人衝在最前面、希爾薇說「跟錯路的人，回不來」：莎菲拉第二片之後，她帶頭的習慣才有來由。 | 故事深度 Task 4（設計 §7.2） |
 | `BANTER_GATE['banter:rin-sylvie:1'] = { stage: 'act3', beforeChoice: true }` | 希爾薇問凜「在追什麼」，凜說「等我知道了」：只在第三幕、凜選擇之前成立；錯過就跳過，不擋 `:2`（`gateExpired`）。`rin-confess` 裡希爾薇那一句依它看過與否分兩種讀法。 | 故事深度 Task 4（設計 §7.3） |

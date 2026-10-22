@@ -912,10 +912,10 @@ const REVEALED: { who: string; re: RegExp; piece: number; heard?: true }[] = [
   { who: 'liz', re: /爸爸|父親|歐里克|臉想起來/, piece: 5, heard: true },
   { who: 'scarlet', re: /洛恩(?!閣下)/, piece: 5 },
   // her oath, her kingdom, her turning away, the princess and the retreat (1-5) (Task 4 review: by piece)
-  { who: 'scarlet', re: /起誓|誓言/, piece: 1, heard: true },
+  { who: 'scarlet', re: /起誓|立誓|誓言/, piece: 1, heard: true },   // 立誓: her oath is her first piece's (Task 6 review)
   { who: 'scarlet', re: /國家|王國/, piece: 2, heard: true },
   { who: 'scarlet', re: /轉身|逃|號角/, piece: 3, heard: true },
-  { who: 'scarlet', re: /立誓|王城|公主|殿下/, piece: 4, heard: true },
+  { who: 'scarlet', re: /王城|公主|殿下/, piece: 4, heard: true },
   { who: 'scarlet', re: /朋友|活下去|撤退|密道/, piece: 5, heard: true },
 ];
 
@@ -2217,6 +2217,11 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
         const words = (GUEST_NEVER[c]?.source ?? '').split('|').filter((w) => w && !/^洛恩|^歸來者$/.test(w));
         for (const w of words) if (summary.includes(w) && !known(w)) out.push(`${id}: the summary tells what ${c} never says before her chain is whole: ${w}`);
       }
+      // Task 6 review: and nothing a piece undoes, as the lines (an earlier piece's: never; her last one's: not once she is whole)
+      for (const c of two) {
+        const whole = gate.full === c;
+        for (const r of UNDONE.filter((x) => x.who === c)) if ((whole || r.piece < 5) && r.re.test(summary)) out.push(`${id}: the summary says what piece ${r.piece} undoes: ${r.re}`);
+      }
     }
     const others = COMPANIONS.filter((c) => !two.includes(c));
     const returnedAll = TOWN_FRAGMENTS.map((f) => f.id);
@@ -2361,6 +2366,14 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
     expect(banterBreaks(cn, fine, { pieces: { noel: 1 } }, '諾艾兒說，等她比老師厲害的時候就還。').join(' | ')).toMatch(/summary tells what noel/);
     expect(banterBreaks(cn, fine, { pieces: { noel: 1 } }, '諾艾兒說，等她比誰都厲害的時候就還。')).toEqual([]);
     expect(banterBreaks(bc, sorry, { pieces: { bobby: 4 } }, '波比替祖先道歉。')).toEqual([]);   // the gate's pieces reveal it
+    // Task 6 review: the summary meets the UNDONE rows too (here: 「洛恩閣下」 is undone by her last piece)
+    const lsc = 'banter:liz-scarlet:3' as SceneId;
+    const plain = [L('liz', '「走吧。」'), L('scarlet', '「收到。」')];
+    expect(banterBreaks(lsc, plain, { full: 'scarlet' }, '絲嘉蕾叫他洛恩閣下。').join(' | ')).toMatch(/summary .*undoes/);
+    expect(banterBreaks(lsc, plain, {}, '絲嘉蕾叫他洛恩閣下。')).toEqual([]);
+    expect(banterBreaks(cn, fine, {}, '諾艾兒說，她忘了怎麼進來迷宮的。').join(' | ')).toMatch(/summary .*undoes/);   // undone by an earlier piece: never
+    // Task 6 review: 立誓 is her first piece's
+    expect(banterBreaks(lsc, [L('liz', '「立誓了？」'), L('scarlet', '「收到。」')], { pieces: { scarlet: 1 } })).toEqual([]);
     // fix round 1: Rin's faces and her eyes in a banter her oath does not gate
     expect(breaks([L('noel', '「喂。」'), L('rin', '「嗯。」', 'smile')])).toMatch(/Rin wears smile in a banter/);
     expect(breaks([L('noel', '「喂。」'), L('rin', '「嗯。」', 'serious')])).not.toMatch(/Rin wears/);

@@ -673,16 +673,16 @@ describe('town banter', () => {
     const story = ['prologue-inn', 'first-return', 'act1-after', 'mem:hero:7', 'town:orik', 'mem:noel:2', 'home:safira'];
     expect(order.slice(0, 7)).toEqual(story);
     expect(order[7]).toMatch(/^chat:/);
-    // story depth Task 6 (ruling 9 and its fallback): a light return with three pairs or more ready plays two banters, last
-    expect(order.slice(8).every((id) => id.startsWith('banter:'))).toBe(true);
-    expect(order).toHaveLength(10);
-    expect(order.filter((id) => id.startsWith('banter:'))).toHaveLength(2);
-    // with no chat due, the banters still come last
+    // story depth Task 6 review: something owed in the queue, so one banter, last (two only with nothing queued)
+    expect(order[8]).toMatch(/^banter:/);
+    expect(order).toHaveLength(9);
+    expect(order.filter((id) => id.startsWith('banter:'))).toHaveLength(1);
+    // with no chat due, the banter still comes last
     allChatsSeen(s);
     const quiet = arrivalScenes(s, { chat: true });
     expect(quiet.slice(0, 7)).toEqual(story);
-    expect(quiet.slice(7).every((id) => id.startsWith('banter:'))).toBe(true);
-    expect(quiet).toHaveLength(9);
+    expect(quiet[7]).toMatch(/^banter:/);
+    expect(quiet).toHaveLength(8);
   });
 
   it('no light banter after a heavy arrival: an act, the bellkeeper, a closing memory piece, her reveal or the finale return; it waits for the next return', () => {
@@ -760,10 +760,11 @@ describe('town banter', () => {
       played.push(id);
       s.story.seen.push(id);
     }
-    // story depth Task 6 (ruling 9): a pair already started finishes first
+    // story depth Task 6 (ruling 9, and the review's tie-break): a pair already started finishes first; among pairs not
+    // started and heard alike, the one with more banters left
     expect(played).toEqual([
-      'banter:liz-scarlet:1', 'banter:noel-rin:1', 'banter:noel-rin:2', 'banter:noel-rin:3',
-      'banter:safira-sylvie:1', 'banter:safira-sylvie:2',
+      'banter:noel-rin:1', 'banter:noel-rin:2', 'banter:noel-rin:3',
+      'banter:safira-sylvie:1', 'banter:safira-sylvie:2', 'banter:liz-scarlet:1',
     ]);
     expect(nextBanter(s, {}, count)).toBeNull();   // all played: none repeats on a return (the handbook replays them)
   });
@@ -892,12 +893,13 @@ describe('town banter', () => {
     const pair = allChatsSeen(meetAll(base(), ['liz', 'scarlet']));   // liz-scarlet and rin-scarlet
     expect(openPairs(pair)).toBe(2);
     expect(arrivalScenes(pair, { chat: true }).filter((id) => id.startsWith('banter:'))).toHaveLength(1);
-    // ruling 9's pre-authorized fallback (Task 6 report): a light return with a chat, or a light scene queued, plays two too
+    // ruling 9's pre-authorized fallback (Task 6 report) lifts only the no-chat condition: a chat due still plays two
     const chatty = meetAll(base(), ['noel', 'safira', 'sylvie', 'liz', 'scarlet']);
     expect(arrivalScenes(chatty, { chat: true }).filter((id) => id.startsWith('banter:'))).toHaveLength(2);
+    // something in the queue: one banter (Task 6 review)
     const queued = allChatsSeen(meetAll(base(), ['noel', 'safira', 'sylvie', 'liz', 'scarlet']));
     queued.story.queue = ['mem:noel:2'];
-    expect(arrivalScenes(queued, { chat: true }).filter((id) => id.startsWith('banter:'))).toHaveLength(2);
+    expect(arrivalScenes(queued, { chat: true }).filter((id) => id.startsWith('banter:'))).toHaveLength(1);
     // a heavy scene: none; the return after the finale: none
     queued.story.queue = ['act2'];
     queued.story.seen = queued.story.seen.filter((id) => id !== 'act2');
@@ -907,15 +909,51 @@ describe('town banter', () => {
     expect(arrivalScenes(s, { chat: false })).toEqual([]);
   });
 
-  it('scripted play: every payoff banter plays before the finale', () => {
-    const PAYOFFS: SceneId[] = ['banter:rin-scarlet:3', 'banter:rin-selene:2', 'banter:safira-sylvie:3', 'banter:liz-scarlet:3', 'banter:noel-selene:3', 'banter:chizuru-noel:2'];
+  it('the second banter of a return is never the same pair as the first (Task 6 review)', () => {
+    const s = allChatsSeen(meetAll(base(), ['liz', 'scarlet', 'noel', 'safira', 'sylvie']));
+    s.party.roster.scarlet.memories = chainLength('scarlet');
+    s.story.nodes = ['act2', 'act3'];
+    s.story.seen.push('act2', 'act3', 'banter:liz-scarlet:1');
+    const banters = arrivalScenes(s, { chat: true }).filter((id) => id.startsWith('banter:'));
+    expect(banters[0]).toBe('banter:liz-scarlet:2');   // started: first
+    expect(banters).toHaveLength(2);
+    expect(banters[1].split(':')[1]).not.toBe('liz-scarlet');   // its :3 is ready too, but waits for another return
+  });
+
+  it('among equals, the pair ready longest goes first, then the one with more banters left (Task 6 review)', () => {
+    const s = allChatsSeen(meetAll(base(), ['noel', 'liz', 'scarlet']));
+    const even: Partial<Record<BanterPair, number>> = { 'liz-scarlet': 1, 'noel-rin': 1 };
+    expect(nextBanter(s, {}, even)).toBe('banter:liz-scarlet:1');   // all equal: the fixed order
+    s.story.waited = { 'noel-rin': 2, 'liz-scarlet': 1 };
+    expect(nextBanter(s, {}, even)).toBe('banter:noel-rin:1');   // ready longer
+    s.story.waited = {};
+    expect(nextBanter(s, {}, { 'liz-scarlet': 1, 'noel-rin': 3 })).toBe('banter:noel-rin:1');   // more left
+    // a return counts the wait of every pair with a banter ready; playing one of its banters resets it
+    const back = returned(s);
+    expect(back.story.waited).toEqual(expect.objectContaining({ 'liz-scarlet': 1, 'noel-rin': 1, 'rin-scarlet': 1 }));
+    const again = returned(back);
+    expect(again.story.waited?.['liz-scarlet']).toBe(2);
+    const heard = sceneDone(again, 'banter:liz-scarlet:1', 'played');
+    expect(heard.story.waited?.['liz-scarlet'] ?? 0).toBe(0);
+  });
+
+  /**
+   * A scripted play (story depth Task 6): a return to town at each depth in `depths`, everyone met at her `MEETINGS` depth,
+   * memories by `memoryPace` (the hero's ninth piece the depth-25 top-up, queued for the return as takePieces does), every
+   * arrival scene played, and the lone morning played at the next departure once `departScene` would offer it. Returns the
+   * state after the last return, each payoff's opening and playing depth, and every return whose two banters shared a pair.
+   */
+  const PAYOFFS: SceneId[] = ['banter:rin-scarlet:3', 'banter:rin-selene:2', 'banter:safira-sylvie:3', 'banter:liz-scarlet:3', 'banter:noel-selene:3', 'banter:chizuru-noel:2'];
+  const scriptedPlay = (depths: number[]) => {
     let s = base();
     s.story.seen.push('prologue-inn', 'first-return', 'act1-after');
     s.story.act1Cleared = true;
     const pace = Object.fromEntries(CHARACTER_IDS.map((id) => [id, memoryPace(id)])) as Record<CharacterId, number[]>;
     const opened: Partial<Record<SceneId, number>> = {};
     const played: Partial<Record<SceneId, number>> = {};
-    for (let t = 1; t <= 29; t++) {
+    const samePair: string[] = [];
+    const trace: string[] = [];
+    for (const t of depths) {
       s.dungeon.reached.mainline = Math.max(s.dungeon.reached.mainline, t);
       for (const m of MEETINGS) if (t >= m.depth && !s.party.recruited.includes(m.id)) s.party = meet(s.party, m.id, 1);
       for (const id of CHARACTER_IDS) {
@@ -923,7 +961,6 @@ describe('town banter', () => {
         const n = pace[id].filter((d) => d <= t).length;
         s.party.roster[id].memories = id === 'hero' ? Math.min(n, 8) : n;
       }
-      // the hero's ninth piece, the depth-25 top-up: queued for the return, as takePieces does
       if (t >= 25 && (s.party.roster.hero.memories ?? 0) < 9) {
         s.party.roster.hero.memories = 9;
         if (!s.story.seen.includes('mem:hero:9') && !s.story.queue.includes('mem:hero:9')) s.story.queue.push('mem:hero:9');
@@ -934,16 +971,35 @@ describe('town banter', () => {
         const prev = `banter:${pair}:${n - 1}` as SceneId;
         if (n === 1 || s.story.seen.includes(prev) || gateExpired(s, BANTER_GATE[prev])) opened[id] = t;
       }
-      for (const id of arrivalScenes(s, { chat: true })) {
+      const arrival = arrivalScenes(s, { chat: true });
+      trace.push(`${t}: ${arrival.join(' ')} (pairs ready ${openPairs(s)})`);
+      const pairs = arrival.filter((id) => id.startsWith('banter:')).map((id) => id.split(':')[1]);
+      if (new Set(pairs).size !== pairs.length) samePair.push(`${t}: ${pairs.join(', ')}`);
+      for (const id of arrival) {
         if (id.startsWith('banter:') && played[id] === undefined) played[id] = t;
         s = sceneDone(s, id, 'played');
       }
-      // the next departure plays the lone morning once its time has come (Game.departScene)
       if (s.story.queue.includes('hero-alone') && s.story.seen.includes('mem:hero:9') && s.story.seen.includes('bellkeeper-arrives')
         && !ALONE.some((id) => s.story.queue.includes(id))) s = sceneDone(s, 'hero-alone', 'played');
     }
     const report = PAYOFFS.map((id) => `${id}: opens ${opened[id] ?? '-'}, plays ${played[id] ?? '-'}`).join('\n');
+    return { s, report, samePair, trace };
+  };
+
+  it('scripted play: every payoff banter plays before the finale', () => {
+    const { s, report, samePair } = scriptedPlay(Array.from({ length: 29 }, (_, i) => i + 1));
     for (const id of PAYOFFS) expect(s.story.seen, report).toContain(id);
+    expect(samePair).toEqual([]);   // never one pair twice on a return (Task 6 review)
+  });
+
+  it('scripted play, a return every second depth: the payoffs it can land, measured (Task 6 review)', () => {
+    // Target (Task 6 review): every payoff by the finale. Within the rules it cannot be met: of 15 returns, 7 play a heavy
+    // scene or play alone (no banter), so about 13 banters play in all, against 37 written and the six payoffs' chains.
+    // The rules are not loosened; the shortfall is pinned here, measured, for the controller's ruling (task-6-report.md).
+    const { s, report, samePair, trace } = scriptedPlay(Array.from({ length: 15 }, (_, i) => 2 * i + 1));   // 1, 3, …, 29
+    const missing = PAYOFFS.filter((id) => !s.story.seen.includes(id));
+    expect(missing, `${report}\n${trace.join('\n')}`).toEqual(['banter:rin-scarlet:3', 'banter:rin-selene:2', 'banter:liz-scarlet:3', 'banter:chizuru-noel:2']);
+    expect(samePair).toEqual([]);
   });
 
   it('every pair counted has at least one banter', () => {

@@ -2928,8 +2928,11 @@ describe('the arrival queue', () => {
   };
   /** The arrival without its banter (B1, B2): tests about the chat and the queue read this. */
   const talk = (g: Game): SceneId[] => g.arrival.filter((id) => !id.startsWith('banter:'));
-  /** HERO_LINEUP has met Liz and Selene: theirs is the first open banter in the pairs' order (B2), so it trails the chat. */
-  const LINEUP_BANTER: SceneId = 'banter:liz-selene:1';
+  /**
+   * HERO_LINEUP's first open banter, which trails the chat. Story depth Task 6 review: among pairs alike, the one with more
+   * banters left goes first, so it is Noel and Selene's (three) before Liz and Selene's (one).
+   */
+  const LINEUP_BANTER: SceneId = 'banter:noel-selene:1';
   const townGame = (start = HERO_LINEUP, storage = memoryStorage()) => {
     const g = new Game(calm(), storage, undefined, 0, start);
     g.state.dungeon.reached.mainline = 3;
@@ -3123,8 +3126,8 @@ describe('the arrival queue', () => {
     inRun(g);
     g.returnToTown();
     // story depth Task 6 (ruling 9's fallback): three pairs ready on a light return, so a second banter follows the first
-    expect(g.arrival.filter((id) => id.startsWith('banter:'))[0]).toBe('banter:liz-scarlet:1');
-    expect(g.arrival.filter((id) => id.startsWith('banter:'))).toHaveLength(2);
+    // the second, never the first one's pair (Task 6 review): Rin and Scarlet's, with as many left, ahead of Noel and Rin's
+    expect(g.arrival.filter((id) => id.startsWith('banter:'))).toEqual(['banter:liz-scarlet:1', 'banter:rin-scarlet:1']);
     // a save that holds a heard banter loads too
     expect(g.sceneDone('banter:liz-scarlet:1', 'played')).toBe(true);
     expect(loadGame(storage).status).toBe('ok');

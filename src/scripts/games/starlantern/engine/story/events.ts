@@ -63,6 +63,10 @@ export function onReturn(s: GameState): StoryState {
   const ninth = story.seen.includes('mem:hero:9') || story.queue.includes('mem:hero:9');
   if (ninth && rin?.oath && !story.finaleCleared && owed('hero-alone')) story.queue.push('hero-alone');
   if (story.finaleCleared && owed('epilogue')) story.queue.push('epilogue');
+  // Task 6 review: one more return for every pair with a banter ready (the pick's tie-break: ready longest first)
+  const waited = { ...(story.waited ?? {}) };
+  for (const p of readyPairs({ ...s, story }, BANTER_GATE, BANTER_COUNT)) waited[p.pair] = (waited[p.pair] ?? 0) + 1;
+  story.waited = waited;
   return story;
 }
 
@@ -163,11 +167,13 @@ export function banterOpen(s: GameState, id: SceneId, gates: Partial<Record<Scen
   return gateOpen(s, gates[id]);
 }
 
-/** Each pair with a banter ready now: its next one, how many it has heard (expired ones count), and whether it has started. */
-function readyPairs(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, count: Partial<Record<BanterPair, number>>): { id: SceneId; heard: number; started: boolean }[] {
+/** A pair with a banter ready now: its next one, how many it has heard (expired ones count), whether it has started, and how many it has left. */
+type Ready = { pair: BanterPair; id: SceneId; heard: number; started: boolean; left: number };
+/** Each pair with a banter ready now. */
+function readyPairs(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, count: Partial<Record<BanterPair, number>>): Ready[] {
   const seen = new Set<SceneId>(s.story.seen);
   const pairs = count === BANTER_COUNT ? BANTER_PAIRS : (Object.keys(count) as BanterPair[]).sort();
-  const out: { id: SceneId; heard: number; started: boolean }[] = [];
+  const out: Ready[] = [];
   for (const pair of pairs) {
     let heard = 0;
     let started = false;
@@ -180,24 +186,40 @@ function readyPairs(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, co
       if (!next && open && banterOpen(s, id, gates)) next = id;
       open = false;
     }
-    if (next) out.push({ id: next, heard, started });
+    if (next) out.push({ pair, id: next, heard, started, left: (count[pair] ?? 0) - heard });
   }
   return out;
 }
 
 /**
+ * The pick among ready pairs (story depth plan ruling 9, Task 6 review): a started pair first; then the least heard; then
+ * the one ready longest (`story.waited`); then the one with more banters left; then the fixed order. `skip`: a pair not to
+ * pick (the first banter's, when a return plays two).
+ */
+function pickBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>>, count: Partial<Record<BanterPair, number>>, skip?: string): SceneId | null {
+  const waited = (p: Ready) => s.story.waited?.[p.pair] ?? 0;
+  let best: Ready | null = null;
+  for (const p of readyPairs(s, gates, count)) {
+    if (p.pair === skip) continue;
+    if (!best) { best = p; continue; }
+    const better = p.started !== best.started ? p.started
+      : p.heard !== best.heard ? p.heard < best.heard
+      : waited(p) !== waited(best) ? waited(p) > waited(best)
+      : p.left > best.left;
+    if (better) best = p;
+  }
+  return best?.id ?? null;
+}
+
+/**
  * The banter for a return to town (B1), picked without any rng (story depth plan ruling 9): a pair already started (one of
  * its banters seen) goes ahead of one not started, so a pair finishes what it starts; within each, the pair heard least,
- * then the pairs' fixed order (`BANTER_PAIRS`). A pair offers its banters in order: one still gated holds back the ones
+ * then the one ready longest, then the one with more left, then the pairs' fixed order (`BANTER_PAIRS`; `pickBanter`). A pair offers its banters in order: one still gated holds back the ones
  * after it, like a chat. A heard banter is never offered again (the handbook replays it). An expired banter (`gateExpired`)
  * is passed over, as a chat is: counted as heard, never offered, holding nothing back, and starting nothing.
  */
 export function nextBanter(s: GameState, gates: Partial<Record<SceneId, StoryGate>> = BANTER_GATE, count: Partial<Record<BanterPair, number>> = BANTER_COUNT): SceneId | null {
-  let best: { id: SceneId; heard: number; started: boolean } | null = null;
-  for (const p of readyPairs(s, gates, count)) {
-    if (!best || (p.started && !best.started) || (p.started === best.started && p.heard < best.heard)) best = p;
-  }
-  return best?.id ?? null;
+  return pickBanter(s, gates, count);
 }
 
 /** How many pairs have a banter ready now (story depth plan ruling 9: a quiet return plays two when three or more do). */
@@ -227,11 +249,11 @@ export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: bo
   const chat = (o.slot ?? ((st: GameState) => nextChat(st, CHAT_GATE, heavyList)))(s);
   const heavy = !!o.afterFinale || [...list, ...(chat ? [chat] : [])].some(isHeavyArrival);
   const banter = heavy ? null : nextBanter(s);
-  // A second banter (story depth plan ruling 9, with its pre-authorized fallback): on a return that is not heavy, with three
-  // pairs or more ready, picked as if the first were heard. Ruling 9 first asked for an empty queue and no chat as well; the
-  // scripted play then left payoffs unheard by depth 30 (Task 6 report), so the fallback widened it to any light return.
-  const quiet = !!banter && !o.afterFinale && openPairs(s) >= 3;
-  const second = quiet ? nextBanter({ ...s, story: { ...s.story, seen: [...s.story.seen, banter] } }) : null;
+  // A second banter (story depth plan ruling 9, with its pre-authorized fallback): nothing owed in the queue, not the return
+  // after the finale, three pairs or more ready; a chat may be due (the fallback lifts only "no chat", Task 6 review). It is
+  // picked as if the first were heard, and never from the first one's pair.
+  const quiet = !!banter && list.length === 0 && !o.afterFinale && openPairs(s) >= 3;
+  const second = quiet ? pickBanter({ ...s, story: { ...s.story, seen: [...s.story.seen, banter] } }, BANTER_GATE, BANTER_COUNT, banterTwo(banter).join('-')) : null;
   return [...list, ...(chat ? [chat] : []), ...(banter ? [banter] : []), ...(second ? [second] : [])];
 }
 
@@ -258,6 +280,11 @@ export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' |
   if (!story.seen.includes(id)) story.seen.push(id);
   if (how === 'auto' && !story.fresh.includes(id)) story.fresh.push(id);
   const queueOnce = (next: SceneId): void => { if (!story.seen.includes(next) && !story.queue.includes(next)) story.queue.push(next); };
+  // Task 6 review: a banter heard, its pair's wait starts again
+  if (id.startsWith('banter:') && story.waited) {
+    const { [banterTwo(id).join('-') as BanterPair]: _, ...rest } = story.waited;
+    story.waited = rest;
+  }
   // Story depth: once she has told the table, her bell no longer answering the society's brings its keeper to town on the
   // next arrival (continuity fix 4, spec §5.2), once.
   if (id === 'rin-confess') queueOnce('bellkeeper-arrives');
