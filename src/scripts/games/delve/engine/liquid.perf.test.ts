@@ -9,6 +9,6 @@ it('LiquidSim 基準：舊世界出生點 ±200 欄全醒，120 步', () => {
   const t: number[] = [];
   for (let k = 0; k < 120; k++) { const t0 = performance.now(); g.liquids.step(); t.push(performance.now() - t0); }
   t.sort((a, b) => a - b);
-  console.info('[liquid baseline] median ms/step', t[60].toFixed(3));
+  console.info('[liquid baseline] median ms/step', t[60].toFixed(3), 'processed cells (last step)', g.liquids.stats.processed);
   expect(t[60]).toBeLessThan(50);
 }, 60_000);

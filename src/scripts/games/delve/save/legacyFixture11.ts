@@ -17,56 +17,55 @@ const CHEST_X = 2055;
 const EAST_X = WORLD_W + SEA_W + 300; // 東外圍 v1 陸地段（海之後）
 const WEST_X = -700;                  // 西外圍陸地
 
-/** buildLegacyFixture11 做的改動的確切座標與內容（Task 16 驗「改動保留」）。座標在 build 時定下，之後只讀。 */
-export const FIXTURE11_EDITS: {
-  dug: [x: number, y: number][];
-  planks: [x: number, y: number][];
-  chest: { x: number; y: number; items: Stack[] };
-} = {
-  dug: [],
-  planks: [],
-  chest: {
-    x: CHEST_X, y: 0, // y 於 build 時填入
-    items: [
+const CENTRAL_SURFACE = 229; // 中央 x=2050..2060 的地表 y（種子 fixture-v11 的舊生成器，測試會驗證）
+const centralDug: [number, number][] = [];
+for (let x = 2050; x <= 2060; x++) for (let y = CENTRAL_SURFACE - 3; y <= CENTRAL_SURFACE; y++) if (!(x === CHEST_X && y === CENTRAL_SURFACE)) centralDug.push([x, y]);
+
+/**
+ * buildLegacyFixture11 做的改動的確切座標與內容（凍結常數；Task 16 驗「改動保留」）。
+ * dug 只含真的是 AIR 的格（箱子那格不在其中）；planks 是 PLANKS；箱子在 (chest.x, chest.y)。
+ */
+export const FIXTURE11_EDITS: Readonly<{
+  dug: readonly (readonly [x: number, y: number])[];
+  planks: readonly (readonly [x: number, y: number])[];
+  chest: Readonly<{ x: number; y: number; items: readonly Stack[] }>;
+}> = Object.freeze({
+  dug: Object.freeze([...centralDug, [WEST_X, 243] as const]),
+  planks: Object.freeze([0, 1, 2, 3, 4].map((i) => [EAST_X + i, 305] as const)),
+  chest: Object.freeze({
+    x: CHEST_X, y: CENTRAL_SURFACE,
+    items: Object.freeze([
       { item: 'copper_coin', count: 37 },
       { item: 'silver_bow', count: 1, gear: { rarity: 3, ilvl: 3, plus: 1, affixes: [{ id: 'keen', tier: 3, value: 12 }] } },
-    ],
-  },
-};
+    ] as Stack[]),
+  }),
+});
 
 export function buildLegacyFixture11(): DelveGame {
   const g = new DelveGame({ seed: FIXTURE11_SEED, peaceful: true });
   const w = g.world;
   g.drainAll();
-  const edits = FIXTURE11_EDITS;
-  edits.dug.length = 0; edits.planks.length = 0;
-
-  // 中央 x=2050..2060：地表以上 3 格到地表挖空，放一個箱子
+  // 中央 x=2050..2060：地表以上 3 格到地表挖空，放一個箱子（地表那格 = 箱子所在）
   for (let x = 2050; x <= 2060; x++) g.ensureAround(x);
   for (let x = 2050; x <= 2060; x++) {
     const s = w.surfaceAt(x);
-    for (let y = s - 3; y <= s; y++) { w.setFg(x, y, T.AIR); edits.dug.push([x, y]); }
+    if (s !== CENTRAL_SURFACE) throw new Error(`fixture11: surface(${x}) = ${s}`);
+    for (let y = s - 3; y <= s; y++) w.setFg(x, y, T.AIR);
   }
-  const cy = w.surfaceAt(CHEST_X);
-  w.setFg(CHEST_X, cy, T.CHEST);
-  const slots = w.chests.get(w.idx(CHEST_X, cy));
+  const { x: cx, y: cy } = FIXTURE11_EDITS.chest;
+  w.setFg(cx, cy, T.CHEST);
+  const slots = w.chests.get(w.idx(cx, cy));
   if (!slots) throw new Error('fixture11: chest slots missing');
-  edits.chest.y = cy;
-  edits.chest.items.forEach((s, i) => { slots[i] = structuredClone(s); });
+  FIXTURE11_EDITS.chest.items.forEach((st, k) => { slots[k] = structuredClone(st); });
 
-  // 東外圍：5 格木板（落在地表上方一格）
+  // 東外圍：5 格木板
   g.ensureAround(EAST_X + 10);
-  for (let x = EAST_X; x < EAST_X + 5; x++) {
-    const y = w.surfaceAt(x) - 1;
-    w.setFg(x, y, T.PLANKS);
-    edits.planks.push([x, y]);
-  }
+  for (const [x, y] of FIXTURE11_EDITS.planks) w.setFg(x, y, T.PLANKS);
 
   // 西外圍：挖一格地表
   g.ensureAround(WEST_X);
-  const wy = w.surfaceAt(WEST_X);
-  w.setFg(WEST_X, wy, T.AIR);
-  edits.dug.push([WEST_X, wy]);
+  const [wx, wy] = FIXTURE11_EDITS.dug[FIXTURE11_EDITS.dug.length - 1];
+  w.setFg(wx, wy, T.AIR);
 
   // 傳送碑 1 與 −1
   for (const id of [1, -1]) {
