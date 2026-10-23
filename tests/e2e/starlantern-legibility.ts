@@ -512,7 +512,7 @@ export const stageBox = async (page: Page, target: Locator): Promise<Rect> => {
 };
 
 /** Scenes (their root's second class) whose text Tasks 3–6 have yet to bring to 12/24px: the text checks skip them. */
-export const PENDING_SCENES: string[] = ['slx-status-scene', 'slx-equip-scene', 'slx-workshop', 'slx-builds'];
+export const PENDING_SCENES: string[] = ['slx-equip-scene', 'slx-workshop', 'slx-builds'];
 
 /** The windows ruling 8 centres: their top-left must sit on a whole stage pixel. */
 const CENTRED = ['.slx-confirm', '.slx-layer.slx-confirm', '.slx-result', '.slx-settings', '.slx-keys', '.slx-clear-card', '.slx-title-menu', '.slx-depths', '.slx-event'];

@@ -593,11 +593,19 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 // The name plate sits at the feet so the standee's face stays clear.
 .slx-status-plate { left: 10px; bottom: 10px; width: 226px; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 6px; }
 .slx-status-name, .slx-equip-name { display: grid; justify-items: center; line-height: 16px; }
-.slx-status-name b, .slx-equip-name b { font-size: 16px; font-weight: normal; color: $slx-gold; }
-.slx-status-title { color: $slx-dim; font-size: 10px; }
-.slx-status-arrow { padding: 2px 6px; cursor: pointer; color: $slx-ink; }
+.slx-status-name b, .slx-equip-name b { font-size: $slx-fs; font-weight: normal; color: $slx-gold; }
+.slx-status-title { color: $slx-dim; font-size: $slx-fs; }
+.slx-status-arrow { padding: 0 6px; cursor: pointer; color: $slx-ink; }   // no vertical padding: the plate stays 40px under the wide panel (legibility T5)
 .slx-status-arrow:hover { color: $slx-gold; }
 .slx-status-panel { left: 250px; top: 10px; right: 10px; bottom: 40px; display: flex; flex-direction: column; }
+// The tree and talent pages take the whole width, above the name plate, the standee hidden (legibility ruling 6).
+.slx-status-wide .slx-status-panel { left: 10px; bottom: 52px; }
+.slx-status-wide .slx-status-art { visibility: hidden; }
+// Its name plate in one line (title, name, level), so the plate stays under the panel's bottom at 52px.
+.slx-status-wide .slx-status-name { grid-auto-flow: column; align-items: baseline; gap: 0 6px; }
+// The wide talent page keeps three board rows in view at 12px: its top lines on one line, the hint closer below.
+.slx-status-wide .slx-talent-gate { flex-basis: auto; }
+.slx-status-wide .slx-status-panel .slx-hint { margin-top: 2px; }
 .slx-tabs { display: flex; gap: 4px; border-bottom: 1px solid #6e5a2e; margin-bottom: 6px; }
 .slx-tab { padding: 2px 10px; cursor: pointer; color: $slx-dim; border-bottom: 2px solid transparent; }
 .slx-tab:hover { color: $slx-ink; }
@@ -615,7 +623,7 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-hb-list { flex: 1 1 44%; min-width: 0; }
 .slx-hb-detail { flex: 1 1 56%; min-width: 0; overflow-y: auto; }
 .slx-hb-solo .slx-hb-detail { display: none; }
-.slx-hb-detail h4 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
+.slx-hb-detail h4 { margin: 0 0 4px; font-size: $slx-fs; font-weight: normal; color: $slx-gold; }
 .slx-hb-detail p { margin: 0 0 6px; }
 .slx-hb-detail .slx-dim { color: $slx-dim; }
 .slx-handbook .slx-fresh { color: $slx-gold; }
@@ -637,7 +645,7 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-stat-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 4px; }
 .slx-stat-table thead th:first-child { width: 22%; }
 .slx-stat-table thead th:last-child { width: 11%; }
-.slx-stat-table thead th { white-space: nowrap; font-size: 10px; text-align: center; }
+.slx-stat-table thead th { white-space: nowrap; font-size: $slx-fs; text-align: center; }
 .slx-stat-table tbody tr { cursor: pointer; }
 .slx-stat-table .slx-zero th, .slx-stat-table .slx-zero td { color: #5f5a6e; }
 .slx-stat-table .slx-zero.slx-row-cur th { color: $slx-ink; }
@@ -648,15 +656,15 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-stat-table .slx-capped, .slx-stat-table .slx-cap { color: #ffb36b; }
 .slx-stat-table th, .slx-stat-table td { padding: 1px 1px; text-align: right; font-weight: normal; }
 .slx-stat-table thead th:first-child { text-align: left; }
-.slx-stat-table td { font-size: 11px; }
+.slx-stat-table td { font-size: $slx-fs; }
 .slx-stat-table thead th { color: $slx-dim; border-bottom: 1px solid #3a3550; }
 .slx-stat-table tbody th { text-align: left; color: $slx-gold; }
 .slx-stat-table .slx-total { color: #fff; }
 .slx-stat-table .slx-gear { color: $slx-up; }
 .slx-gear-row { display: grid; grid-template-columns: 48px 1fr; gap: 0 8px; padding: 4px 0; border-bottom: 1px solid #2a2840; }
 .slx-gear-slot { color: $slx-gold; grid-row: span 2; }
-.slx-gear-bonus { color: #8fe08f; font-size: 10px; }
-.slx-gear-power { grid-column: 2; color: #ff9a3c; font-size: 10px; }
+.slx-gear-bonus { color: #8fe08f; font-size: $slx-fs; }
+.slx-gear-power { grid-column: 2; color: #ff9a3c; font-size: $slx-fs; }
 .slx-gear-power.slx-line-off { color: $slx-dim; }
 // Rarity colours, the one source. Unique is crimson like its frame art (#d8283a; user-approved G1, 2026-10-20), a
 // lighter tint for small text: 6.98:1 on the window, ΔE 20 from the cannot-afford red $slx-down (ui2/rarity.test.ts).
@@ -670,21 +678,21 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-skill-ico { float: left; width: 16px; height: 16px; margin-right: 4px; object-fit: contain; image-rendering: pixelated; }
 .slx-tree-node .slx-skill-ico { width: 14px; height: 14px; margin-right: 2px; }
 .slx-skill-name { flex: 1; color: $slx-ink; }
-.slx-tab-skills .slx-skill-name-long { min-width: 0; font-size: 11px; letter-spacing: -0.5px; white-space: nowrap; }
+.slx-tab-skills .slx-skill-name-long { min-width: 0; white-space: nowrap; }
 .slx-skill-cost { color: #6fa7ff; }
 .slx-skill-rank { color: $slx-dim; min-width: 40px; text-align: right; }
 .slx-skill .slx-desc { margin: 1px 0 0; }
 .slx-skill-target { color: $slx-dim; }
 // 迷宮中可用: a small green word right after the name; the name gives up its spare width so the word sits beside it.
 .slx-skill-name:has(+ .slx-field-tag) { flex: 0 1 auto; }
-.slx-field-tag { flex: 1; color: #5fd068; font-size: 10px; white-space: nowrap; }
-.slx-skill-power { margin: 1px 0 0; color: #ff9a3c; font-size: 10px; }
+.slx-field-tag { flex: 1; color: #5fd068; font-size: $slx-fs; white-space: nowrap; }
+.slx-skill-power { margin: 1px 0 0; color: #ff9a3c; font-size: $slx-fs; }
 // A skill that takes runes (plan 8g Task 5): its slot dots after the name, a line for each rune, a click opens the workshop.
 .slx-skill-runed { cursor: pointer; }
 .slx-skills-note { margin: 0 0 2px; font-size: $slx-fs; color: $slx-down; }
 .slx-skill-runed:hover .slx-skill-name { color: #fff; }
 .slx-skill-slots { flex: none; color: $slx-gold; letter-spacing: 1px; white-space: nowrap; }
-.slx-skill-rune { margin: 1px 0 0; font-size: 10px; line-height: 12px; color: #9fc1ff; }
+.slx-skill-rune { margin: 1px 0 0; font-size: $slx-fs; line-height: 14px; color: #9fc1ff; }
 .slx-skill-rune.slx-line-off { color: $slx-dim; }
 .slx-skill-rune .slx-line-note { margin-left: 4px; color: $slx-down; }
 // Skill-tree tab: three branch columns of text rows (the skill rows' rule lines); a node's state only changes its text colour.
@@ -707,31 +715,29 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 // Each column is as tall as the longest (stretch), so its branch name, pinned at the top (sticky), never meets its column's end.
 .slx-tree-cols { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 0 8px; }
 .slx-tree-cols.slx-tree-wide { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0 4px; }
-.slx-tree-wide .slx-tree-branch-name { font-size: 10px; line-height: 12px; }
 // Five branches: the name on one line and its points on the next, each whole (no ellipsis).
 .slx-tree-branch-title, .slx-tree-branch-pts { display: block; }
 .slx-tree-branch-pts { color: $slx-dim; text-indent: -0.5em; }   // the full-width 「（」 brings its own space: flush with the name
 .slx-tree-wide .slx-tree-node { padding: 1px 2px; }
-.slx-tree-wide .slx-tree-node .slx-skill-head { gap: 0 2px; font-size: 10px; flex-wrap: wrap; }
+.slx-tree-wide .slx-tree-node .slx-skill-head { gap: 0 2px; flex-wrap: wrap; }
 .slx-tree-wide .slx-tree-node .slx-skill-name { flex: 0 1 auto; max-width: 100%; }
 .slx-tree-wide .slx-tree-kind { display: none; }   // the notes under the columns name the kind
 .slx-tree-wide .slx-node-locked .slx-tree-state { display: none; }   // a locked node is dimmed; the notes give its reason when the cursor is on it
-.slx-tree-wide .slx-tree-node-foot { gap: 2px; font-size: 9px; }
+.slx-tree-wide .slx-tree-node-foot { gap: 2px; }
 .slx-tree-branch { min-width: 0; }
 .slx-tree-branch-name { position: sticky; top: 0; z-index: 1; margin: 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; background: $slx-win; border-bottom: 1px solid #6e5a2e; white-space: nowrap; }
 .slx-tree-node { padding: 1px 3px; cursor: pointer; }
 .slx-tree-node .slx-skill-head { gap: 2px; line-height: 14px; }   // 2px: a variant's seven characters (瞄準射擊・一擊) fit beside the rank at 844
 .slx-tree-node .slx-skill-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.slx-tree-node .slx-skill-name-long { font-size: 10px; letter-spacing: -0.5px; }
 .slx-tree-node .slx-skill-rank { min-width: 0; flex: none; }
 .slx-tree-node:hover .slx-skill-name { color: #fff; }
-.slx-tree-node-foot { display: flex; justify-content: space-between; gap: 4px; font-size: 10px; line-height: 12px; white-space: nowrap; }
+.slx-tree-node-foot { display: flex; justify-content: space-between; gap: 4px; font-size: $slx-fs; line-height: 14px; white-space: nowrap; }
 .slx-tree-kind { color: $slx-dim; flex: none; }
 .slx-tree-state { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .slx-node-learned .slx-tree-state { color: $slx-up; }
 .slx-node-open .slx-tree-state { color: #6fa7ff; }
 // Plan 8d: a pair is two rows of one tier with 二選一 between them; the empty side of a taken pair can take its points over.
-.slx-tree-pair-tag { font-size: 9px; line-height: 10px; color: $slx-dim; text-align: center; }
+.slx-tree-pair-tag { font-size: $slx-fs; line-height: 14px; color: $slx-dim; text-align: center; }
 .slx-node-swap .slx-tree-state { color: #ffb36b; }
 .slx-tree-node .slx-skill-name-variant { white-space: normal; overflow: visible; }
 .slx-skill-name-variant > span { display: inline-block; white-space: nowrap; }
@@ -746,8 +752,8 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-tree-now { color: $slx-ink; }
 .slx-tree-next { color: $slx-up; }
 // A variant's preview (plan 8g Task 8): the card's changed rows, wrapping inside the notes.
-.slx-tree-warn { margin: 2px 0 0; color: #ffb36b; font-size: 11px; line-height: 14px; white-space: normal; overflow-wrap: anywhere; }
-.slx-tree-preview { margin: 2px 0 0; color: #9fc1ff; font-size: 11px; line-height: 14px; white-space: normal; overflow-wrap: anywhere; }
+.slx-tree-warn { margin: 2px 0 0; color: #ffb36b; font-size: $slx-fs; line-height: 14px; white-space: normal; overflow-wrap: anywhere; }
+.slx-tree-preview { margin: 2px 0 0; color: #9fc1ff; font-size: $slx-fs; line-height: 14px; white-space: normal; overflow-wrap: anywhere; }
 .slx-tree-reason { color: $slx-dim; }
 .slx-tree-msg { color: #ffb36b; }
 .slx-tab-talent { height: 100%; display: flex; flex-direction: column; }
@@ -756,26 +762,26 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-talent-count { color: $slx-ink; }
 .slx-talent-gate { flex-basis: 100%; color: $slx-dim; }
 .slx-talent-board { flex: 1; min-height: 0; overflow-y: auto; }
-.slx-talent-row { display: grid; grid-template-columns: 12px repeat(4, minmax(0, 1fr)); border-bottom: 1px solid #2a2840; }
+.slx-talent-row { display: grid; grid-template-columns: 14px repeat(4, minmax(0, 1fr)); border-bottom: 1px solid #2a2840; }
 /* The tier label reads top to bottom beside the row's three text lines. */
-.slx-talent-wide .slx-talent-row { grid-template-columns: 12px repeat(6, minmax(0, 1fr)); }
-.slx-talent-wide .slx-talent-head { font-size: 10px; }
-.slx-talent-wide .slx-talent-sub { font-size: 9px; }
-.slx-talent-wide .slx-talent-per { display: none; }   // the notes under the board carry the per-rank bonus
-.slx-talent-tier { writing-mode: vertical-rl; text-orientation: upright; font-size: 10px; line-height: 12px; color: $slx-dim; text-align: center; align-self: center; }
+.slx-talent-wide .slx-talent-row { grid-template-columns: 14px repeat(6, minmax(0, 1fr)); }
+// Six columns: on the narrow sheet the notes under the board carry the per-rank bonus; the whole-width page has room for it.
+.slx-talent-wide .slx-talent-per { display: none; }
+.slx-status-wide .slx-talent-wide .slx-talent-per { display: inline; }
+.slx-talent-tier { writing-mode: vertical-rl; text-orientation: upright; font-size: $slx-fs; line-height: 14px; color: $slx-dim; text-align: center; align-self: center; }
 .slx-talent-node { min-width: 0; padding: 1px 2px; cursor: pointer; }
 .slx-talent-row .slx-talent-node { border-left: 1px solid #2a2840; }
 .slx-talent-head { display: flex; justify-content: space-between; align-items: baseline; gap: 2px; line-height: 14px; }
 .slx-talent-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.slx-talent-rank { flex: none; font-size: 10px; color: $slx-dim; }
+.slx-talent-rank { flex: none; color: $slx-dim; }
 .slx-talent-node:hover .slx-talent-name { color: #fff; }
 .slx-talent-node p { margin: 0; }
-.slx-talent-sub { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; min-width: 0; font-size: 10px; line-height: 12px; }
+.slx-talent-sub { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; min-width: 0; font-size: $slx-fs; line-height: 14px; }
 .slx-talent-per { flex: none; color: $slx-dim; white-space: nowrap; }
-.slx-talent-state { min-width: 0; font-size: 10px; line-height: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slx-talent-state { min-width: 0; font-size: $slx-fs; line-height: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .slx-talent-keys-head { margin: 2px 0 0; font-size: 12px; line-height: 14px; font-weight: normal; color: $slx-gold; border-bottom: 1px solid #6e5a2e; }
 .slx-talent-keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 6px; }
-.slx-talent-memkey { display: flex; flex-direction: column; margin-top: 2px; font-size: 11px; line-height: 13px; }
+.slx-talent-memkey { display: flex; flex-direction: column; margin-top: 2px; font-size: $slx-fs; line-height: 14px; }
 .slx-talent-memkey-name { color: $slx-gold; }
 .slx-talent-memkey-desc { color: $slx-dim; }
 .slx-memkey-awake .slx-talent-memkey-desc { color: $slx-up; }

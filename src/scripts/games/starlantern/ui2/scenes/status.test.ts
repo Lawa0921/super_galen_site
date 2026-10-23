@@ -11,7 +11,7 @@ import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView, revealIn } from './statusTabs';
-import { StatusScene } from './status';
+import { StatusScene, WIDE_TABS } from './status';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
 import { RUNES, type RuneRef } from '../../data/runes';
@@ -58,6 +58,18 @@ describe('StatusScene', () => {
     expect(root.querySelector('[data-stat=atk] .slx-gear')!.textContent).toMatch(/^\+\d+$/);   // the sword's bonus
     expect(body()).toContain('站位 前排');
     expect(body()).toContain('近戰（100%）');
+  });
+
+  it('the tree and talent pages take the whole width; the other pages keep the standee (legibility Task 5)', () => {
+    const { root } = setup('scarlet');
+    const scene = root.querySelector('.slx-status-scene')!;
+    expect([...WIDE_TABS].sort()).toEqual(['talent', 'tree']);
+    for (const t of STATUS_TABS) {
+      (root.querySelector(`[data-tab=${t.id}]`) as HTMLElement).click();
+      expect(scene.classList.contains('slx-status-wide'), t.id).toBe(WIDE_TABS.has(t.id));
+    }
+    // Opened straight on a wide page (the guild's 技能樹 entry), it is wide from the start.
+    expect(setup('tab:tree').root.querySelector('.slx-status-scene')!.classList.contains('slx-status-wide')).toBe(true);
   });
 
   it('a tab: arg opens that tab on the first active member, with the cursor revealed', () => {

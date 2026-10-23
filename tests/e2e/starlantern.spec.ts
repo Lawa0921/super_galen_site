@@ -841,7 +841,7 @@ test.describe('starlantern', () => {
       return { rows: b.height / row.height, cut, keyCap: document.querySelector('[data-node=noel-k2] .slx-talent-state')!.textContent };
     };
     const fit = await page.evaluate(measure, false);
-    expect(fit.rows).toBeGreaterThanOrEqual(3);
+    expect(fit.rows, `${fit.rows} rows`).toBeGreaterThanOrEqual(3);
     expect(fit.keyCap).toBe('關鍵已滿');
     expect(fit.cut).toEqual([]);
 
@@ -1497,6 +1497,47 @@ test.describe('starlantern', () => {
       await shot(name);
     }
     expect(missing).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('on the wide pages every column fits at 12px (legibility Task 5)', async ({ page }) => {
+    test.setTimeout(180_000);
+    await fitTo(page, 1280, 720);
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const w = await setup(page, 7);
+    const ids = Object.keys(TREES);
+    // The fullest sheets: everyone recruited at Lv 50 with every memory (the hero's included), so every branch shows.
+    await page.evaluate(([all, chains]) => {
+      const p = (window as unknown as Dbg).__starlanternDebug.game.state.party;
+      for (const id of all) if (!p.recruited.includes(id)) p.recruited.push(id);
+      for (const id of p.recruited) { p.roster[id].level = 50; p.roster[id].memories = chains[id] ?? 0; }
+    }, [ids, Object.fromEntries(ids.map((id) => [id, chainLength(id as keyof typeof CHAINS)]))] as const);
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+    await expect(page.locator('.slx-status-scene')).toHaveClass(/slx-status-wide/);
+    const bad: string[] = [];
+    for (const id of ids) {
+      await flipTo(page, CHARACTERS[id as keyof typeof CHARACTERS].name);
+      for (const tab of ['tree', 'talent'] as const) {
+        await page.locator(`[data-tab=${tab}]`).click();
+        await expect(page.locator('.slx-status-scene')).toHaveClass(/slx-status-wide/);
+        for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+          await fitTo(page, vw, vh);
+          const over = await page.locator('.slx-tree-node .slx-skill-name, .slx-talent-name').evaluateAll((els) =>
+            els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => (e.textContent ?? '').trim()));
+          bad.push(...over.map((t) => `${id} ${tab} ${vw}: ${t}`));
+          const panel = await stageBox(page, page.locator('.slx-status-panel'));
+          for (const other of ['.slx-status-plate', '.slx-status-scene > .slx-back']) {
+            if (!apart(panel, await stageBox(page, page.locator(other)))) bad.push(`${id} ${tab} ${vw}: the panel meets ${other}`);
+          }
+          if (shots && vw === 1280) await snap(page, `${shots}/full-${id}-${tab}-1280.png`);
+        }
+        await fitTo(page, 1280, 720);
+      }
+    }
+    expect(bad).toEqual([]);
     expect(w.errors).toEqual([]);
   });
 
