@@ -137,66 +137,97 @@ export const DAWN_PLACE: Place = PL.innDawn;
 
 /**
  * Story L spec §4.4.1: the beats between two memories of a night, in their fixed order (the companions by `CHARACTER_IDS`,
- * four each, then eight of narration). `engine/story/nights.ts` `nextBeat` walks it from the save's cursor (`story.beat`).
+ * six each, then twelve of narration). `engine/story/nights.ts` `nextBeat` walks it from the save's cursor (`story.beat`).
  */
-export interface NightBeats { lines: ScriptLine[] }
+export interface NightBeats { lines: NightBeat[] }
 /**
- * The night's beats (story L Task 8; style bible §1.3.1; lore ledger I-191): forty light lines in their fixed order. Each
- * companion has four: two of herself, two that take up whoever has just told a memory without touching what it was (so no
- * 你 or 妳 for that one, no name that changes with her pieces, no other companion named: anyone may not be met yet). Then
- * eight of the deep night. Any of them may play at any stage, before or after Rin's choice, so none leans on either.
+ * Story L Task 8 (cold read): a beat's tone. `quiet` (a warm drink, a door kept, a night sound, a small touch) may follow any
+ * memory; `lively` (a joke, a show-off, clapping) only a warm one (`engine/story/nights.ts` `nextBeat`). The written pool
+ * tags every line; a line with no tone (a test's pool) fits either.
  */
+export type BeatTone = 'quiet' | 'lively';
+export interface NightBeat extends ScriptLine { tone?: BeatTone }
+/**
+ * The night's beats (story L Task 8; style bible §1.3.1; lore ledger I-191). Each companion has six, in `CHARACTER_IDS` order,
+ * then twelve of the deep night. Each line carries its tone (cold read, 2026-10-24): `quiet` (a drink, a door kept, a night
+ * sound, a small touch) may follow any memory; `lively` (a joke, a show-off, clapping) only a warm one. None touches what a
+ * memory told, says 你 or 妳 to whoever told it, names another companion (anyone may not be met yet), or leans on a stage
+ * or on Rin's choice.
+ */
+const Q = (who: CharacterId, text: string, mood?: StoryMood): NightBeat => ({ who, text, tone: 'quiet', ...(mood ? { mood } : {}) });
+const J = (who: CharacterId, text: string, mood?: StoryMood): NightBeat => ({ who, text, tone: 'lively', ...(mood ? { mood } : {}) });
+const QN = (text: string): NightBeat => ({ who: 'narrator', text, tone: 'quiet' });
 export const NIGHT_BEATS: NightBeats = {
   lines: [
-    // Noel: loud, 本小姐, and a kindness she will not own
-    { who: 'noel', mood: 'smug', text: '「哼，本小姐才沒有在聽。只是剛好睡不著，剛好坐在這裡而已！」' },
-    { who: 'noel', mood: 'smug', text: '「本小姐在畫樓下那隻雷獸。牠剛才打了個呵欠，很有威嚴！」' },
-    { who: 'noel', mood: 'panic', text: '「手帕借妳──借你──哎，誰要就拿去！本小姐才不是特地帶的！」' },
-    { who: 'noel', mood: 'pout', text: '「說完了？那本小姐的厲害事蹟就留到明天講。今晚……先不搶了。」' },
-    // Chizuru: the year she fell asleep in, taken for this one
-    { who: 'chizuru', mood: 'bewildered', text: '「近來的被子真輕。我們那時候，冬天得壓三層棉被，翻身前還得先跟神明打聲招呼。」' },
-    { who: 'chizuru', mood: 'bewildered', text: '「城裡的守夜人，最近改敲梆子了？去年還是打鼓的。」' },
-    { who: 'chizuru', mood: 'smile', text: '「說了這麼久，喉嚨想必乾了。請用茶，小心燙口。」' },
-    { who: 'chizuru', mood: 'solemn', text: '「容我合掌一次。說出口的心裡話，要有人替它收好，這是我們那裡的規矩。」' },
+    // Noel: loud by day; at night a kindness she will not own
+    J('noel', '「本小姐在畫樓下那隻貓，叫牠雷獸大人！牠剛才打了個呵欠，很有威嚴！」', 'smug'),
+    Q('noel', '「哼，本小姐才沒有在聽。只是剛好睡不著，剛好坐在這裡而已。」', 'pout'),
+    Q('noel', '「手帕借妳──借你──哎，誰要就拿去。本小姐才不是特地帶的。」', 'panic'),
+    Q('noel', '「燈太暗了，本小姐點一盞小雷光。很小的，不會吵到人。」'),
+    Q('noel', '「說完了？那本小姐的厲害事蹟就留到明天講。今晚……先不搶了。」', 'pout'),
+    Q('noel', '「本小姐要睡了。睡著之前，誰都不准先走。」', 'blush'),
+    // Chizuru: the rites of her shrine, kept in a room at the inn; and the year she fell asleep in
+    J('chizuru', '「近來的被子真輕。我們那時候，冬天得壓三層棉被，翻身前還得先跟神明打聲招呼。」', 'bewildered'),
+    J('chizuru', '「鎮上的守夜人，最近改敲梆子了？去年還是打鼓的。」', 'bewildered'),
+    Q('chizuru', '「香點上了。煙往窗外飄，今晚的風很溫和。」', 'solemn'),
+    Q('chizuru', '「我摺了一張護符，放在枕邊。說過心事的人，夜裡要有東西守著。」'),
+    Q('chizuru', '「我在紙上記下今天的日子。一天一道，明天再添一道。」'),
+    Q('chizuru', '「容我合掌一次。說出口的心裡話，要有人替它收好，這是我們那裡的規矩。」', 'solemn'),
     // Liz: a price on everything but one
-    { who: 'liz', mood: 'scheming', text: '「宵夜的麵包我先收起來了。不是要賣，是怕明天有人肚子餓──好啦，算你們便宜。」' },
-    { who: 'liz', mood: 'scheming', text: '「瑪莎說這張床墊值三枚銀幣。我躺過了，頂多兩枚，明天找她殺價。」' },
-    { who: 'liz', mood: 'smile', text: '「這杯熱的不算錢。今晚的帳，我先劃掉。」' },
-    { who: 'liz', mood: 'hushed', text: '「聽完要付錢嗎？不用啦。這種東西，我估不出價。」' },
-    // Sylvie: the wind, the soup, the blankets, and the insects that say nothing is out there
-    { who: 'sylvie', text: '「窗縫在灌冷風，我拿布塞起來了。誰再打開，自己去睡走廊。」' },
-    { who: 'sylvie', text: '「瑪莎的湯鹹了一點。明天下去前多裝一袋水，不然走到第三層就有人喊渴。」' },
-    { who: 'sylvie', text: '「多的被子在櫃子最下面。半夜會變冷，蓋好再睡。」' },
-    { who: 'sylvie', mood: 'alert', text: '「外面的蟲還在叫，代表附近沒東西在走動。安心睡啦。」' },
-    // Scarlet: the night as a duty, reported
-    { who: 'scarlet', mood: 'serious', text: '「盾已經擦了三遍。再擦一遍，應該就能拿來當鏡子用。」' },
-    { who: 'scarlet', mood: 'serious', text: '「門閂我檢查了三次，結果相同：它很牢固。回報完畢。」' },
-    { who: 'scarlet', mood: 'serious', text: '「回報收到。這件事我不會再提，也不會讓任何人再提。」' },
-    { who: 'scarlet', text: '「說完了就請休息。門口由我負責，今晚沒有任何東西進得來。」' },
+    J('liz', '「瑪莎說這張床墊值三枚銀幣。我躺過了，頂多兩枚，明天找她殺價。」', 'scheming'),
+    J('liz', '「宵夜的麵包我先收起來了。不是要賣，是怕明天有人肚子餓──好啦，算你們便宜。」', 'scheming'),
+    Q('liz', '「這杯熱的不算錢。今晚的帳，我先劃掉。」'),
+    Q('liz', '「我在數今天的銅板。數錢的聲音，比較好睡。」'),
+    Q('liz', '「這盞燈的油我算過了，還能點到半夜。點著吧，不心疼。」'),
+    Q('liz', '「聽完要付錢嗎？不用啦。這種東西，我估不出價。」', 'hushed'),
+    // Sylvie: she reads the night; the wind, the insects, the tracks
+    J('sylvie', '「瑪莎的湯鹹了一點。明天下去前多裝一袋水，不然走到第三層就有人喊渴。」'),
+    Q('sylvie', '「窗縫在灌冷風，我拿布塞起來了。誰再打開，自己去睡走廊。」'),
+    Q('sylvie', '「多的被子在櫃子最下面。半夜會變冷，蓋好再睡。」'),
+    Q('sylvie', '「風停了，樹葉也不動了。明天是好天氣。」', 'alert'),
+    Q('sylvie', '「後院有腳印，小小的一串，是貓。不用管牠。」', 'alert'),
+    Q('sylvie', '「外面的蟲還在叫，代表附近沒東西在走動。安心睡啦。」'),
+    // Scarlet: a soldier's watch, kept to the letter
+    J('scarlet', '「盾已經擦了三遍。再擦一遍，應該就能拿來當鏡子用。」', 'serious'),
+    Q('scarlet', '「門閂我檢查了三次，結果相同：它很牢固。回報完畢。」', 'serious'),
+    Q('scarlet', '「靴子擺在門邊了，鞋尖朝外。有事的話，我穿上就能走。」', 'serious'),
+    Q('scarlet', '「我聽到了。這些話我會守著，一個字也不會傳出去。」', 'serious'),
+    Q('scarlet', '「下一班守夜是我。蠟燭剪短了，剛好點到換班。」'),
+    Q('scarlet', '「說完了就請休息。門口由我負責，今晚沒有任何東西進得來。」'),
     // Selene: the moon says it, and then she takes it back
-    { who: 'selene', mood: 'foresee', text: '「今晚的月亮缺了右邊一角。不是壞兆頭……大概不是。」' },
-    { who: 'selene', mood: 'wistful', text: '「我在窗邊數星星，數到一半，忘了數到哪裡。這不算預言，請別記下來。」' },
-    { who: 'selene', mood: 'smile', text: '「月亮剛才也在聽。它不會說出去的，我也不會呢。」' },
-    { who: 'selene', mood: 'foresee', text: '「月亮往西邊走了一點。今晚大家都睡得著──啊，這句不算。」' },
+    J('selene', '「今晚的月亮缺了右邊一角。不是壞兆頭──大概不是。」', 'foresee'),
+    J('selene', '「月亮往西邊走了一點。今晚大家都睡得著──啊，這句不算。」', 'foresee'),
+    Q('selene', '「月亮剛才也在聽。它不會說出去的，我也不會呢。」', 'smile'),
+    Q('selene', '「我把窗簾拉開一點。月光照進來，比燈溫柔。」', 'wistful'),
+    Q('selene', '「我在窗邊數星星，數到一半，忘了數到哪裡。這不算預言，請別記下來。」', 'wistful'),
+    Q('selene', '「今晚的月亮，適合說話。說完了，也適合睡覺。」'),
     // Safira: on the beat, even sitting down
-    { who: 'safira', mood: 'wink', text: '「睡不著？那來跳一小段呀──不跳？坐著打拍子也算唷～」' },
-    { who: 'safira', mood: 'laugh', text: '「一、二──小洛，你的腳在桌子底下跟著拍子，我看見了唷。」' },
-    { who: 'safira', mood: 'smile', text: '「說完了？掌聲送給說故事的人～一、二──拍！」' },
-    { who: 'safira', mood: 'smile', text: '「這一段停在這裡，剛剛好。下一拍，誰想接都可以唷。」' },
+    J('safira', '「睡不著？那來跳一小段啊──不跳？坐著打拍子也算喔。」', 'wink'),
+    J('safira', '「一、二──小洛，你的腳在桌子底下跟著拍子，我看見了喔。」', 'laugh'),
+    Q('safira', '「說完啦？最後一拍，我輕輕敲在桌上，就當收尾。」', 'smile'),
+    Q('safira', '「這一段停在這裡，剛剛好。下一拍，誰想接都可以喔。」', 'smile'),
+    Q('safira', '「我坐這裡，不吵你們。今晚我的腳也想休息一下。」'),
+    Q('safira', '「一、二、三──數到八就會想睡了。我小時候都這樣數。」', 'smile'),
     // Bobby: out loud, one step after another
-    { who: 'bobby', mood: 'focused', text: '「這扇窗會叫，是因為鉸鏈乾了。先上油，再把螺絲鎖緊，然後──對了，然後是去睡覺。」' },
-    { who: 'bobby', mood: 'excited', text: '「我把瑪莎的湯勺改好了，攪一下會自己轉三圈喔！等一下下，我拿給大家看！」' },
-    { who: 'bobby', text: '「聽完以後，我腦袋裡的齒輪轉得好慢。先讓它停一下下，等它自己轉回來。」' },
-    { who: 'bobby', mood: 'grin', text: '「洛恩哥，我想好要說什麼了。第一件，說出來的人很厲害。第二件……我還在想。」' },
+    J('bobby', '「我把瑪莎的湯勺改好了，攪一下會自己轉三圈喔！等一下下，我拿給大家看！」', 'excited'),
+    J('bobby', '「這扇窗會叫，是因為鉸鏈乾了。先上油，再把螺絲鎖緊，然後──對了，然後是去睡覺。」', 'focused'),
+    Q('bobby', '「我把蠟燭的芯剪平了。火不跳，影子就不晃，大家比較好睡。」', 'focused'),
+    Q('bobby', '「聽完以後，我腦袋裡的齒輪轉得好慢。先讓它停一下下，等它自己轉回來。」'),
+    Q('bobby', '「我小聲一點收工具。一支一支放回去，不會吵到人。」'),
+    Q('bobby', '「洛恩哥，我想好要說什麼了。第一件，說出來的人很厲害。第二件……我還在想。」', 'grin'),
     // the deep night itself
-    N('樓下的貓跳上窗台，在玻璃上按了兩個梅花印，又跳下去了。'),
-    N('瑪莎提著燈走過走廊，在每一扇門前停一下，聽聽裡面還有沒有聲音。'),
-    N('遠處傳來守夜人的梆子，敲了兩下。鎮上的窗戶又暗了一扇。'),
-    N('風把窗框吹得喀喀響，桌上的燈火跟著歪了一下。'),
-    N('爐火裡的柴塌了一塊，火星往上竄了一下，又安靜下來。'),
-    N('樓梯的第三階吱了一聲。不知道是誰下樓倒水，還是那隻貓。'),
-    N('窗外下起小雨，打在屋簷上，一滴一滴，不急不慢。'),
-    N('走廊盡頭，瑪莎的房門底下還透著光，筆尖沙沙地響。'),
+    QN('樓下的貓跳上窗台，在玻璃上按了兩個梅花印，又跳下去了。'),
+    QN('瑪莎提著燈走過走廊，在每一扇門前停一下，聽聽裡面還有沒有聲音。'),
+    QN('遠處傳來守夜人的梆子，敲了兩下。鎮上的窗戶又暗了一扇。'),
+    QN('風把窗框吹得喀喀響，桌上的燈火跟著歪了一下。'),
+    QN('爐火裡的柴塌了一塊，火星往上竄了一下，又安靜下來。'),
+    QN('樓梯的第三階吱了一聲。不知道是誰下樓倒水，還是那隻貓。'),
+    QN('窗外下起小雨，打在屋簷上，一滴一滴，不急不慢。'),
+    QN('走廊盡頭，瑪莎的房門底下還透著光，筆尖沙沙地響。'),
+    QN('隔壁房的鼾聲停了一下，又接上了。'),
+    QN('桌上的茶涼了，杯緣留著一圈淡淡的水痕。'),
+    QN('月光從窗縫斜斜照進來，落在地板上，慢慢挪了一寸。'),
+    QN('有人把一條毯子輕輕搭在椅背上，又走開了。'),
   ],
 };
 
@@ -259,7 +290,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       NP('石板路的盡頭有一座鐘樓。小女孩每天坐在台階上，等那口大鐘響。'),
       NP('「它不會響的。」大人們笑著摸她的頭，「它要是響了，我們就有工作了。」'),
       { who: 'rin', text: '「一座很大的鐘，從來不響。我好像每天都坐在下面等它。」' },
-      N('她從門邊的地板上站起來。手停在半空，像在等誰來摸她的頭。'),
+      N('她抬頭看了一眼，好像在等誰的手放上來。'),
     ],
     summary: '凜想起鐘樓下的童年。那口大鐘從來不響；大人說，它響了才有工作。',
   },
@@ -415,7 +446,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       NP('秋天的獵場。他蹲在草裡，把細繩繞成活結，繫在兩棵樹之間。'),
       NP('「不用殺牠。」老獵人說，「讓牠慢下來、站不穩，剩下的交給同伴。」'),
       { who: 'hero', mood: 'distant', text: '「絆住牠，不是為了殺。這件事，我的手還記得。」' },
-      N('那天晚上，洛恩在旅館後院拉了幾道細繩。半夜有東西絆了一跤，叫了一聲就跑了。誰也沒受傷。'),
+      N('當晚洛恩在後院拉了幾道細繩。半夜有東西絆了一跤，叫了一聲就跑了。誰也沒受傷。'),
     ],
     summary: '洛恩想起老獵人教他設陷阱：不用殺，讓牠慢下來就好。',
   },
@@ -703,7 +734,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('滿月的夜。銀盆裡的水自己亮了起來，映出一道從地底往上走的背影。'),
       NP('很多人在喊同一個名字。那個從深處走出來的人走過的地方，一盞很大的燈重新亮了。'),
-      { who: 'selene', mood: 'foresee', text: '「那是滿月給我看的結局。很亮也很暖。」' },
+      { who: 'selene', mood: 'foresee', text: '「滿月給我看的結局……好亮好暖喔。」' },
       N('瑟蕾偷偷看了一眼燈下的洛恩，又趕快轉頭，去找窗外的月亮。'),
     ],
     summary: '滿月的夜，瑟蕾在水盆裡看見一個光明的結局：從深處走出來的人被很多人記住，燈重新亮了。',
@@ -873,8 +904,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('蜃樓裡的城燒了起來，火順著沙丘一路燒開。團長把她推向那道快要合上的光。'),
       NP('「進來是我選的，不是妳的錯。」團長說，「妳要繼續跳。」'),
-      N('熾焰之地的火海，原來就是那片沙漠。在房裡轉著圈的莎菲拉停下腳步，腳踝上的銅環第一次一聲也沒響。'),
-      { who: 'safira', mood: 'sad', text: '「小洛，等我一下。我想就這樣站著，把他們一個一個想一遍。……想完了，再去廣場替大家跳完。」' },
+      N('莎菲拉在房裡轉著圈，忽然停下腳步。腳踝上的銅環，這次一聲也沒響。'),
+      { who: 'safira', mood: 'sad', text: '「小洛，熾焰之地那片火海……就是我們的沙漠。等我一下，我想把他們一個一個想一遍。想完了，再去廣場替大家跳完。」' },
     ],
     summary: '團長在最後一刻把莎菲拉推出了蜃樓：妳要繼續跳。她第一次停下腳步，把團員一個一個想一遍，再去廣場替大家跳完。',
   },
@@ -1010,7 +1041,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:noel:5': {
     lines: [
       NP('迷宮的入口。有人提著燈，一遍又一遍喊著她的名字，走進了暮霧。'),
-      N('下一趟下去，岔路口的攤燈還亮著。諾艾兒把碎片裡的另一段光，連同那一頁，放進流浪商人的掌心。'),
+      N('隔天一早，她跑到流浪商人的攤子前，把那一頁和裹著老師記憶的碎片，一起塞進他手裡。'),
       { who: 'merchant', text: '「諾艾兒──啊，我想起來了。比起那本書，妳平安就夠了。」' },
       { who: 'noel', mood: 'smile', text: '「老師，對不起。我回來了。」' },
     ],
@@ -1192,7 +1223,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('鋼鐵的城牆上飄著紅旗。城下的街道，擠滿了趕集的人。'),
       NP('那一夜，暮霧從城牆的裂縫湧了進來。怪物跟著霧，爬上了城牆。'),
-      { who: 'scarlet', mood: 'sad', text: '「鋼鐵要塞，是我的國家。迷宮把它整個吞了下去。」' },
+      { who: 'scarlet', mood: 'sad', text: '「那座要塞……是我家。」' },
+      N('絲嘉蕾把盾轉過來，用袖口擦了擦上面的紋章。'),
       { who: 'scarlet', mood: 'serious', text: '「洛恩閣下，我們相遇的那扇城門，就是我的崗位。」' },
     ],
     summary: '鋼鐵要塞曾經是絲嘉蕾的國家。暮霧湧進城牆的那一夜，迷宮把它整個吞了下去。',

@@ -3291,10 +3291,11 @@ describe('story L: the group scenes (Task 7)', () => {
 // Story L Task 8 (spec §4.4.1; style bible §1.3.1): the beat between two memories of a night. Any of them may play at any stage,
 // before or after Rin's choice, with anyone not met yet, between any two memories: so each says nothing that leans on those.
 describe('story L: the night beats (Task 8)', () => {
-  it('the night beats: four a companion, eight narrations, light, no memory named, not dawn', () => {
+  it('the night beats: six a companion, twelve narrations, light, no memory named, not dawn', () => {
+    // cold read (2026-10-24): sized for the quiet-only nights; forty was the spec's first count (spec §4.4.1)
     const lines = NIGHT_BEATS.lines;
-    expect(lines).toHaveLength(40);
-    expect(lines.map((l) => l.who)).toEqual([...COMPANIONS.flatMap((c) => [c, c, c, c]), ...Array<string>(8).fill('narrator')]);
+    expect(lines).toHaveLength(60);
+    expect(lines.map((l) => l.who)).toEqual([...COMPANIONS.flatMap((c) => Array<string>(6).fill(c)), ...Array<string>(12).fill('narrator')]);
     const SECRETS = /守燈人|靜鐘會|艾斯特拉|燈芯|刺客|代號|信物|派來殺|要殺|鐘守|師父|名單/;
     const others = (who: string) => [...COMPANIONS.filter((c) => c !== who).map((c) => CHARACTERS[c].name), '凜'];
     for (const l of lines) {
@@ -3327,13 +3328,38 @@ describe('story L: the night beats (Task 8)', () => {
   it('each companion keeps her own voice in the beats: who says them can be told apart', () => {
     const by = (c: CharacterId) => NIGHT_BEATS.lines.filter((l) => l.who === c).map((l) => l.text).join('');
     expect(by('noel')).toMatch(/本小姐/);
-    expect(by('safira')).toMatch(/唷|～/);
+    expect(by('safira')).not.toMatch(/唷|～/);   // cold read: anime-translation; 喔 and 啦 instead
     expect(by('safira')).toMatch(/小洛/);
+    expect(by('safira')).toMatch(/拍/);
     expect(by('bobby')).toMatch(/洛恩哥|一下下/);
     expect(by('selene')).toMatch(/月亮/);
     expect(by('scarlet')).toMatch(/回報/);
     expect(by('liz')).toMatch(/錢|價|銀幣/);
     expect(by('sylvie')).toMatch(/風|湯|蟲|被子/);   // spec §7.1: food, weather, the wild
     expect(by('chizuru')).toMatch(/我們那時候|最近|去年|近來/);   // spec §7.2: the year she fell asleep in
+    // cold read: no two share a role. Sylvie reads the night, Scarlet keeps a soldier's watch; Chizuru keeps her rites,
+    // Liz counts and prices; only Liz pours a drink
+    expect(by('sylvie')).toMatch(/蟲/);
+    expect(by('sylvie')).toMatch(/腳印/);
+    expect(by('scarlet')).toMatch(/門閂/);
+    expect(by('scarlet')).toMatch(/靴子/);
+    expect(by('chizuru')).toMatch(/香|護符/);
+    expect(by('liz')).toMatch(/銅板|算過/);
+    for (const c of COMPANIONS) if (c !== 'liz') expect(by(c), c).not.toMatch(/茶|熱的/);
+  });
+
+  it('each beat is tagged quiet or lively: enough quiet ones for the heavy nights, the night itself always quiet', () => {
+    const lines = NIGHT_BEATS.lines;
+    for (const l of lines) expect(['quiet', 'lively'], `${l.who}: ${l.text}`).toContain(l.tone);
+    for (const l of lines.filter((x) => x.who === 'narrator')) expect(l.tone, l.text).toBe('quiet');
+    for (const c of COMPANIONS) {
+      const theirs = lines.filter((l) => l.who === c);
+      expect(theirs.filter((l) => l.tone === 'quiet').length, c).toBeGreaterThanOrEqual(4);
+      expect(theirs.filter((l) => l.tone === 'lively').length, c).toBeGreaterThanOrEqual(1);
+    }
+    // the lines the cold read named: the soup ladle and the clapping are lively only
+    expect(lines.find((l) => l.text.includes('湯勺'))!.tone).toBe('lively');
+    expect(lines.some((l) => l.text.includes('掌聲'))).toBe(false);
+    expect(lines.filter((l) => l.tone === 'quiet')).toHaveLength(47);
   });
 });

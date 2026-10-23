@@ -10,7 +10,8 @@ import type { CharacterId } from '../types';
 import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, nextReaction, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyPieces, storyStage, toldCount, afterWin } from './events';
 import { constRng, withTold } from '../testing';
 import { Game } from '../game';
-import { DAWN_BACKLOG, dawnMemory, eveMemories, planNight } from './nights';
+import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, planNight } from './nights';
+import { memoryTone } from '../../data/story/tone';
 import { NIGHT_BEATS } from '../../data/story.zh-TW';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
@@ -974,6 +975,8 @@ describe('town banter', () => {
   const REACT = { act2: 'group:act2', act3: 'group:act3', act4: 'group:act4' } as const;
   /** One night: when, the pieces the day owed, the night's memories (the eve's too), and the beats between them. */
   interface NightCount { at: string; owed: SceneId[]; night: SceneId[]; beats: number; alone: boolean }
+  /** A beat taken between two memories (story L Task 8): where, the memory before and its tone, the pool index (-1: none). */
+  interface BeatTaken { at: string; prev: SceneId; heavy: boolean; i: number; tone?: 'quiet' | 'lively' }
   /** A return as the script played it, from the state it started in (review: cross-checked against `Game.arrive`). */
   interface ArriveCheck { at: number; state: GameState; afterFinale: boolean; tonight: SceneId[]; dawn?: SceneId; arrival: SceneId[]; night: SceneId[] }
   /** A departure as the script played it, from the state it started in (cross-checked against `Game.departScenes`). */
@@ -993,6 +996,16 @@ describe('town banter', () => {
     const dawns: SceneId[] = [];
     const arrivals: ArriveCheck[] = [];
     const departures: DepartCheck[] = [];
+    /** Every beat the playthrough takes, as `Game.takeBeat` would (story L Task 8): its pool index, its tone, the memory before. */
+    const beats: BeatTaken[] = [];
+    /** The beats between `ids`, a night's (or the eve's) memories in play order, moving the cursor as `Game.takeBeat` does. */
+    const beatNight = (at: string, ids: SceneId[]) => {
+      for (let k = 1; k < ids.length; k++) {
+        const r = nextBeat(s, ids[k - 1], ids[k]);
+        beats.push({ at, prev: ids[k - 1], heavy: memoryTone(ids[k - 1]) === 'heavy', i: r ? r.at : -1, tone: r?.line.tone });
+        if (r) s = { ...s, story: { ...s.story, beat: (r.at + 1) % NIGHT_BEATS.lines.length } };
+      }
+    };
     /** Where each act, each group scene and the lone morning played: the return's depth (100 + k after the finale), or 'finale'. */
     const where: Partial<Record<SceneId, number | 'finale'>> = {};
     const late4 = depths.find((t) => t > ACT_DEPTHS.act4) ?? Infinity;
@@ -1053,6 +1066,7 @@ describe('town banter', () => {
       const pairs = day.filter((id) => id.startsWith('banter:')).map((id) => id.split(':')[1]);
       if (at < 100 && new Set(pairs).size !== pairs.length) samePair.push(`${at}: ${pairs.join(', ')}`);
       nights.push({ at: String(at), owed: plan.before, night: plan.night, beats: Math.max(0, plan.night.length - 1), alone: day.some((id) => ALONE.includes(id)) });
+      beatNight(String(at), plan.night);
       for (const id of [...plan.before, ...daytime, ...group, ...plan.night]) play(id, at);
     };
     /** A departure, as `Game.departScenes` offers: the dawn, the eve and its memories, then the lone morning. */
@@ -1078,6 +1092,7 @@ describe('town banter', () => {
         s = { ...s, story: { ...s.story, tonight: (s.story.tonight ?? []).filter((id) => !eve.includes(id)) } };
         trace.push(`${at} departs: finale-eve | ${eve.join(' ') || '-'}`);
         nights.push({ at: `eve ${at}`, owed: [], night: eve, beats: Math.max(0, eve.length - 1), alone: false });
+        beatNight(`eve ${at}`, eve);
         for (const id of eve) play(id, at);
       }
       if (s.story.queue.includes('hero-alone') && s.story.seen.includes('mem:hero:9') && s.story.seen.includes('bellkeeper-arrives')) {
@@ -1107,6 +1122,7 @@ describe('town banter', () => {
     const eveOwed = !s.story.seen.includes('finale-eve');
     const eve = eveOwed ? eveMemories(s) : [];
     if (eveOwed) nights.push({ at: 'eve finale', owed: [], night: eve, beats: Math.max(0, eve.length - 1), alone: false });
+    if (eveOwed) beatNight('eve finale', eve);
     s = { ...s, story: { ...s.story, finaleCleared: true, queue: s.story.queue.filter((id) => !DEPARTURE_SCENES.includes(id)) } };
     if (!s.story.seen.includes('hero-alone')) s = { ...s, story: { ...s.story, seen: [...s.story.seen, 'hero-alone'], fresh: [...s.story.fresh, 'hero-alone'] } };
     const finale: SceneId[] = [...(eveOwed ? ['finale-eve' as SceneId, ...eve] : []), ...acts, ...confess, ...keeper, ...heroPieces, 'finale'];
@@ -1115,7 +1131,7 @@ describe('town banter', () => {
     const unplayed = [...(s.story.untold ?? [])];
     for (let k = 1; k <= afterFinale; k++) arrive(100 + k, k === 1);
     const report = [...PAYOFFS, ...SETUP_PAYOFFS.filter((id) => !PAYOFFS.includes(id))].map((id) => `${id}: opens ${opened[id] ?? '-'}, plays ${played[id] ?? '-'}`).join('\n');
-    return { s, report, samePair, trace, before, played, nights, late, where, unplayed, oath, atLastReturn, dawns, arrivals, departures };
+    return { s, report, samePair, trace, before, played, nights, late, where, unplayed, oath, atLastReturn, dawns, arrivals, departures, beats };
   };
 
   it('scripted play: every payoff banter plays before the finale', () => {
@@ -1257,6 +1273,19 @@ describe('town banter', () => {
     const beats = r.nights.reduce((a, n) => a + n.beats, 0);
     expect(beats, tell(r)).toBeLessThanOrEqual(NIGHT_BEATS.lines.length || 40);
   });
+
+  // Story L Task 8 (cold read): a beat fits the memory before it, and one playthrough never hears a beat twice.
+  for (const [name, depths] of [['every floor', EVERY_FLOOR], ['every 2nd floor', EVERY_SECOND], ['every 3rd floor', EVERY_THIRD]] as const) {
+    it(`scripted play (${name}): every beat is taken, quiet after a heavy memory, and none twice in one playthrough`, () => {
+      const r = scriptedPlay([...depths], 3);
+      const tell2 = `${r.beats.map((b) => `${b.at} ${b.prev}${b.heavy ? '(heavy)' : ''} -> ${b.i} ${b.tone ?? '-'}`).join('\n')}`;
+      expect(r.beats.length, tell2).toBe(r.nights.reduce((a, n) => a + n.beats, 0));
+      expect(r.beats.filter((b) => b.i < 0), tell2).toEqual([]);
+      expect(r.beats.filter((b) => b.heavy && b.tone !== 'quiet'), tell2).toEqual([]);
+      const seen = r.beats.map((b) => b.i);
+      expect(new Set(seen).size, tell2).toBe(seen.length);
+    });
+  }
 
   it('the six designed payoffs, and a pair on the way to one, go first; another pair\'s last banter does not (Task 6 third ruling)', () => {
     expect([...BANTER_PAYOFFS].sort()).toEqual([...PAYOFFS].sort());

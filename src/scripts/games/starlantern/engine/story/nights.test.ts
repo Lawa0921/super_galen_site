@@ -196,6 +196,41 @@ describe('story L: the night planner (Task 3a)', () => {
       const again = JSON.parse(JSON.stringify(s)) as GameState;
       expect(nextBeat(again, m('noel', 1), m('safira', 1), pool)).toEqual(nextBeat(s, m('noel', 1), m('safira', 1), pool));
     });
+
+    // Story L Task 8 (cold read): a beat fits the memory it follows. After a heavy memory only a quiet beat; a lively one
+    // (a joke, a show-off, clapping) only after a warm memory. An untagged line fits either.
+    it('after a heavy memory only a quiet beat; a lively one only after a warm memory; the cursor skips ahead to it', () => {
+      const Q = (text: string): ScriptLine & { tone: 'quiet' } => ({ who: 'narrator', text, tone: 'quiet' });
+      const J = (text: string): ScriptLine & { tone: 'lively' } => ({ who: 'narrator', text, tone: 'lively' });
+      const toned: NightBeats = { lines: [J('j0'), J('j1'), Q('q2'), J('j3'), Q('q4')] };
+      const s = untold([m('noel', 1), m('safira', 1)]);
+      const heavy = (id: SceneId) => (id === m('noel', 1) ? 'heavy' as const : 'warm' as const);
+      // the memory before is heavy: the lively lines are passed over, from the cursor on
+      expect(nextBeat(s, m('noel', 1), m('safira', 1), toned, heavy)).toEqual({ line: Q('q2'), at: 2 });
+      s.story.beat = 3;
+      expect(nextBeat(s, m('noel', 1), m('safira', 1), toned, heavy)).toEqual({ line: Q('q4'), at: 4 });
+      s.story.beat = 0;
+      // the memory before is warm: any line fits, the cursor's first
+      expect(nextBeat(s, m('safira', 1), m('noel', 1), toned, heavy)).toEqual({ line: J('j0'), at: 0 });
+      expect(nextBeat(s, m('noel', 1), m('safira', 1), toned, allWarm)).toEqual({ line: J('j0'), at: 0 });
+      // only the one before counts: a heavy memory after a lively beat does not hold it back
+      expect(nextBeat(s, m('safira', 1), m('noel', 1), toned, allWarm)?.line.tone).toBe('lively');
+      // a pool with no quiet line has nothing after a heavy memory; an untagged line fits either
+      expect(nextBeat(s, m('noel', 1), m('safira', 1), { lines: [J('j0'), J('j1')] }, allHeavy)).toBeNull();
+      expect(nextBeat(s, m('noel', 1), m('safira', 1), { lines: [J('j0'), { who: 'narrator', text: 'n1' }] }, allHeavy)).toEqual({ line: { who: 'narrator', text: 'n1' }, at: 1 });
+      // the real pool: its memory tones by default, and a reload picks the same
+      const sad = (['mem:rin:6', 'mem:hero:5'] as SceneId[]);
+      for (const id of sad) {
+        const st = untold([id, m('safira', 1)]);
+        for (let at = 0; at < NIGHT_BEATS.lines.length; at++) {
+          st.story.beat = at;
+          const r = nextBeat(st, id, m('safira', 1));
+          expect(r, `${id} from ${at}`).not.toBeNull();
+          expect(r!.line.tone, `${id} from ${at}: ${r!.line.text}`).toBe('quiet');
+          expect(nextBeat(JSON.parse(JSON.stringify(st)) as GameState, id, m('safira', 1))).toEqual(r);
+        }
+      }
+    });
   });
 
   it("eveMemories picks up to three companions' pieces by the night order", () => {

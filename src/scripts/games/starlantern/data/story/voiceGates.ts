@@ -10,7 +10,7 @@ import { GROUP_GATE, GROUP_MIN_LINES, lineCap, type GroupScene, type SceneId } f
 export interface Text { key: string; text: string; line?: ScriptLine }
 /**
  * Every string leaf of STORY, keyed by its path, and the night's beats (`nightBeats.<i>.text`, story L Task 8); a line's text
- * carries its ScriptLine. Skips who, mood, if and scene titles (interface labels).
+ * carries its ScriptLine. Skips who, mood, if, a beat's tone and scene titles (interface labels).
  */
 export function storyTexts(): Text[] {
   const out: Text[] = [];
@@ -21,7 +21,7 @@ export function storyTexts(): Text[] {
       const o = v as Record<string, unknown>;
       const isLine = typeof o.who === 'string' && typeof o.text === 'string';
       for (const [k, x] of Object.entries(o)) {
-        if (k === 'who' || k === 'mood' || k === 'if') continue;
+        if (k === 'who' || k === 'mood' || k === 'if' || k === 'tone') continue;   // a beat's tone is a tag, not text (story L Task 8)
         if (k === 'title' && path.length === 2 && path[0] === 'scenes') continue;
         walk(x, [...path, k], isLine && k === 'text' ? (o as unknown as ScriptLine) : undefined);
       }
