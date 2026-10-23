@@ -191,7 +191,13 @@ export class PartyBar {
     const moreW = measured ? probe.offsetWidth : 0;
     probe.remove();
     const { shown, more } = fitRow(words, measured ? ail.clientWidth : AIL_ROW_W, widthOf, (n) => (measured ? moreW : ailWordWidth(T.ailmentMore(n))), 1, halting.length);
-    ail.replaceChildren(...shown, ...(more ? [moreEl(more)] : []));
+    // Whatever folds stays discoverable: the whole row, in its order, as the panel's title (the row lets the pointer
+    // through) and the +N's.
+    const all = more ? words.map((w) => w.textContent ?? '').join('、') : '';
+    const moreWord = more ? moreEl(more) : null;
+    if (moreWord) moreWord.title = all;
+    if (all) p.el.title = all; else p.el.removeAttribute('title');
+    ail.replaceChildren(...shown, ...(moreWord ? [moreWord] : []));
     tpNum.textContent = `TP ${m.tp}/${m.maxTp}`;
     name.replaceChildren(m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : []));
     num.textContent = `${m.hp}/${m.maxHp}`;

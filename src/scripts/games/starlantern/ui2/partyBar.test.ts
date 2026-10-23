@@ -245,6 +245,25 @@ describe('PartyBar mechanics (plan 8c)', () => {
     expect(texts.length - 2 + Number(texts.at(-1)!.slice(1))).toBe(5);
   });
 
+  it('a folded ailment stays discoverable: the panel and its +N name every word of the row (legibility leftover)', () => {
+    const bar = new PartyBar(NO_ART);
+    const five = [{ id: 'poison' }, { id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }, { id: 'shock', turns: 2 }, { id: 'chill', turns: 2 }] as const;
+    bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度5' }], ailments: [...five] })]);
+    const panel = bar.el.querySelector<HTMLElement>('[data-key=noel]')!;
+    const row = panel.querySelector<HTMLElement>('.slx-pm-ail')!;
+    // At 12px only one ailment fits beside her mechanic word; the rest fold into +N.
+    const shown = [...row.children].map((c) => c.textContent);
+    expect(shown).toEqual(['熱度5', '流血×2', '+4']);
+    // The whole row, in its order, on the panel's title (the row itself lets the pointer through) and on the +N.
+    const all = '熱度5、流血×2、灼燒3、中毒、感電2、冰緩2';
+    expect(panel.title).toBe(all);
+    expect(row.querySelector<HTMLElement>('.slx-ail-more')!.title).toBe(all);
+    // Nothing folded: no title.
+    bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度0' }], ailments: [{ id: 'burn', turns: 2 }] })]);
+    expect(row.querySelector('.slx-ail-more')).toBeNull();
+    expect(panel.hasAttribute('title')).toBe(false);
+  });
+
   it('words that do not fit the line fold into +N too, after the ones that do (plan 8c Task 5)', () => {
     const bar = new PartyBar(NO_ART);
     const words = [{ tone: 'embers', text: '餘燼500' }, { tone: 'beat', text: '拍子4・終幕' }, { tone: 'embers', text: '贖火4' }] as const;
