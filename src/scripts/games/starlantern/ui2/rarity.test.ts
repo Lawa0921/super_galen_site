@@ -288,16 +288,17 @@ describe('mechanic colours (plan 8c)', () => {
     expect(css).toContain('.slx-pm-cue');
   });
 
-  it('a cue stands at the bottom right of its panel, over the hit effects', () => {
+  it('a cue stands at the top right of its panel, over the hit effects (legibility Task 4)', () => {
     const css = compile(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss')).css;
     const rule = (sel: string) => [...css.matchAll(new RegExp(`(?:^|\\n|\\})\\s*${sel.replace('.', '\\.')}\\s*\\{([^}]*)\\}`, 'g'))].map((m) => m[1]).join(';');
     const z = (sel: string) => Number(/z-index:\s*(\d+)/.exec(rule(sel))?.[1] ?? NaN);
     const cue = rule('.slx-pm-cue');
     expect(cue).toMatch(/right:/);
     expect(cue).not.toMatch(/left:/);
-    // From the panel's bottom right, over the bars: clear of the HP digits and of the ailment row above the panel.
-    expect(cue).toMatch(/bottom:\s*\d+(px)?;/);
-    expect(cue).not.toMatch(/top:/);
+    // From the panel's top right, over the name line (at 12px on a 14px line it no longer fits under the TP line): clear of
+    // the HP digits, the TP line and the ailment row above the panel (the e2e 'heat and the mark' test measures it).
+    expect(cue).toMatch(/top:\s*0(px)?;/);
+    expect(cue).not.toMatch(/bottom:/);
     expect(z('.slx-pm-cue')).toBeGreaterThan(z('.slx-pm-fx'));
     expect(z('.slx-pm-cue')).toBeGreaterThan(z('.slx-pm-fxa'));
   });

@@ -103,21 +103,7 @@ export function groupOf(selector: string): Group {
 
 /** Rules (as the compiled CSS writes their selector) whose screens Tasks 4–6 bring to 12/24px; each list only shrinks. */
 export const PENDING: Record<'T4' | 'T5' | 'T6', string[]> = {
-  T4: [
-    '.slx-pm-pop-tp',
-    '.slx-acut-label',
-    '.slx-ail, .slx-mech',
-    '.slx-badge',
-    '.slx-pm-cue',
-    '.slx-pm-miss',
-    '.slx-pm-num',
-    '.slx-pm-pop',
-    '.slx-pm-pop-big',
-    '.slx-pm-pop-crit',
-    '.slx-pm-row',
-    '.slx-pm-tp',
-    '.slx-result h3',
-  ],
+  T4: [],
   T5: [
     '.slx-field-tag',
     '.slx-gear-bonus',

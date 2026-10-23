@@ -216,7 +216,8 @@ describe('PartyBar after the oath', () => {
     bar.update([m('scarlet', 30, { ailments: [...five] })]);
     const row = bar.el.querySelector<HTMLElement>('[data-key=scarlet] .slx-pm-ail')!;
     const words = [...row.children].map((c) => [c.className, c.textContent]);
-    expect(words).toEqual([['slx-ail slx-ail-bleed', '流血×2'], ['slx-ail slx-ail-burn', '灼燒3'], ['slx-ail slx-ail-poison', '中毒'], ['slx-ail slx-ail-more', '+2']]);
+    // At 12px (legibility Task 4) two words fit the panel's line before the +N.
+    expect(words).toEqual([['slx-ail slx-ail-bleed', '流血×2'], ['slx-ail slx-ail-burn', '灼燒3'], ['slx-ail slx-ail-more', '+3']]);
     bar.update([m('scarlet', 30, { ailments: [{ id: 'chill', turns: 2 }, { id: 'freeze' }, { id: 'sleep', turns: 1 }] })]);
     expect([...row.children].map((c) => c.textContent)).toEqual(['凍結', '睡眠1', '冰緩2']);   // all fit: no +N
   });
@@ -249,8 +250,9 @@ describe('PartyBar mechanics (plan 8c)', () => {
     const words = [{ tone: 'embers', text: '餘燼500' }, { tone: 'beat', text: '拍子4・終幕' }, { tone: 'embers', text: '贖火4' }] as const;
     bar.update([m('scarlet', 30, { mech: [...words], ailments: [{ id: 'poison' }] })]);
     const row = bar.el.querySelector<HTMLElement>('[data-key=scarlet] .slx-pm-ail')!;
+    // At 12px (legibility Task 4) the second word no longer fits beside the +N.
     expect([...row.children].map((c) => [c.className, c.textContent])).toEqual([
-      ['slx-mech slx-mech-embers', '餘燼500'], ['slx-mech slx-mech-beat', '拍子4・終幕'], ['slx-ail slx-ail-more', '+2'],
+      ['slx-mech slx-mech-embers', '餘燼500'], ['slx-ail slx-ail-more', '+3'],
     ]);
     // Words that fit, but leave no room for the ailments' +N: the last word folds in with them (plan 8c Task 6).
     bar.update([m('scarlet', 30, { mech: [{ tone: 'devices', text: '砲台Lv1・2' }, { tone: 'devices', text: '護盾機Lv2・2' }], ailments: [{ id: 'poison' }] })]);

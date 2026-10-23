@@ -38,8 +38,11 @@ export const BATTLE_LEFT = 150;
 export const BATTLE_ART_WAIT_MS = 1500;
 const BANNER_MS = 1100;
 const WIN_MS = 1000;
-/** Height kept clear for the party bar; must match the .slx-partybar box in _starlantern-ui.scss. */
-export const BATTLE_BOTTOM = 66;
+/**
+ * Height kept clear for the party bar; must match the .slx-partybar box in _starlantern-ui.scss. 70, not 66, since the
+ * ailment words above each panel are 12px on a 14px line (legibility Task 4): the foes' HP bars stand 4px higher.
+ */
+export const BATTLE_BOTTOM = 70;
 
 interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 type Pending = { kind: 'attack' } | { kind: 'skill'; skill: string } | { kind: 'item'; item: string } | { kind: 'ultimate' } | { kind: 'echo'; rec: NonNullable<BattleState['echo']> };

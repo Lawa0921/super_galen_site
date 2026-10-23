@@ -13,6 +13,7 @@ import { AILMENT_FILL, AILMENT_MORE_FILL, bySeverity, fitRow, isHalting, textWid
 import { MECH_FILL } from './mechStyle';
 import type { MechCue, MechTone, MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
+import { pixelText } from './pixelText';
 
 
 /** Colours of regional variants: the element's for fire, ice and thunder; by region for the element-less ones. */
@@ -84,14 +85,14 @@ const AIL_UNDER_INTENT = 2;
 const AIL_GAP = 4;
 /** The party's setups on a foe, in the order a crowded row keeps them: 暗記, 瞄準, 估價, 弱點. */
 const SETUP_ORDER: readonly MechTone[] = ['mark', 'aim', 'coins', 'expose'];
-const AIL_SIZE = 11;
+const AIL_SIZE = 12;
 /** Room kept between two enemies' ailment rows: each row fits its slot less this. */
 const AIL_SLOT_MARGIN = 6;
-/** An ailment row's height (11 px words with their stroke); an intent's (12 px text with its stroke). */
+/** An ailment row's height and an intent's: 12 px words with their outline (legibility Task 4: the pixel font's grid). */
 const AIL_ROW_H = 14;
-const INTENT_H = 15;
+const INTENT_H = 14;
 /** A hit's tags (暴擊！ 弱點！ 抗性) stand side by side in one row of this height just over the number. */
-const TAG_SIZE = 14;
+const TAG_SIZE = 12;
 const TAG_ROW_H = 16;
 const TAG_GAP = 4;
 /** A hit number drifts up this far while it shows; it and its tags keep this much more clear of the ailment row. */
@@ -99,7 +100,8 @@ const POP_RISE = 4;
 const POP_CLEAR = 3;
 type Box = { x: number; y: number; width: number; height: number };
 type PopOpts = { weak?: boolean; crit?: boolean; resist?: boolean; small?: boolean };
-const popSize = (o: PopOpts): number => (o.crit ? 36 : o.weak ? 32 : o.small || o.resist ? 22 : 26);
+/** A hit's number is 24px (a crit stays the biggest by its pop scale and its colour); a small word (MISS) 12px (legibility Task 4). */
+const popSize = (o: PopOpts): 12 | 24 => (o.small ? 12 : 24);
 /** A label's width at the ailment font size, estimated without measuring (render/ailmentStyle.ts `textWidth`). */
 export const ailLabelWidth = (text: string): number => textWidth(text, AIL_SIZE);
 /** Nothing in the picture may rise above the message window. */
@@ -231,13 +233,13 @@ export class BattleView {
       const maxH = (bottom > 0 ? usable : size.height) * (e.boss ? (bottom > 0 ? 0.62 : 0.7) : 0.45);
       const elite = e.tint === 'elite';
       const name = elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
-      const label = new Text({ text: name, style: { fill: 0xffffff, fontSize: 14, stroke: { color: 0x000000, width: 3 } } });
+      const label = pixelText(name, 12, 0xffffff);
       label.anchor.set(0.5, 0);
       const lift = bottom > 0 ? NAME_LIFT : 0;
       label.y = -lift;
       const bar = new Graphics();
       bar.y = 19 - lift;
-      const intent = new Text({ text: '', style: { fill: 0xffe08a, fontSize: 12, stroke: { color: 0x000000, width: 3 } } });
+      const intent = pixelText('', 12, 0xffe08a);
       intent.anchor.set(0.5, 1);
       const ail = new Container();
       box.addChild(body, label, bar, ail, intent);
@@ -470,7 +472,7 @@ export class BattleView {
       const setups = mech.filter((x) => x.setup).sort((a, b) => SETUP_ORDER.indexOf(a.tone) - SETUP_ORDER.indexOf(b.tone));
       const items: W[] = [...halting.map(ofChip), ...setups.map(ofWord), ...chips.filter((c) => !isHalting(c)).map(ofChip), ...mech.filter((x) => !x.setup).map(ofWord)];
       const { shown, more } = fitRow(items, this.ailMax, (w) => ailLabelWidth(w.text), (n) => ailLabelWidth(T.ailmentMore(n)), AIL_GAP, halting.length);
-      const word = (text: string, fill: number) => new Text({ text, style: { fill, fontSize: AIL_SIZE, stroke: { color: 0x000000, width: 3 } } });
+      const word = (text: string, fill: number) => pixelText(text, AIL_SIZE, fill);
       const words = shown.map((w) => word(w.text, w.fill));
       if (more) words.push(word(T.ailmentMore(more), AILMENT_MORE_FILL));
       const widths = words.map((t) => ailLabelWidth(t.text));
@@ -675,7 +677,7 @@ export class BattleView {
     const size = popSize(o);
     // On the body, clear of the ailment row and the intent above the head (popupLayout).
     const at = this.popupLayout(slot.key, text, o)!;
-    const t = new Text({ text, style: { fill: color, fontSize: size, fontWeight: 'bold', stroke: { color: 0x000000, width: 5 } } });
+    const t = pixelText(text, size, color);
     t.anchor.set(0.5);
     t.y = at.number.y + at.number.height / 2;
     t.scale.set(this.calm ? 1 : o.crit ? 1.9 : 1.6);
@@ -683,7 +685,7 @@ export class BattleView {
     const parts: Text[] = [t];
     const tags = [o.crit && T_CRIT, o.weak && T_WEAK, o.resist && T_RESIST].filter((x): x is typeof T_CRIT => !!x);
     tags.forEach((g, i) => {
-      const tag = new Text({ text: g.text, style: { fill: g.fill, fontSize: TAG_SIZE, fontWeight: 'bold', stroke: { color: g.stroke, width: 4 } } });
+      const tag = pixelText(g.text, TAG_SIZE, g.fill, g.stroke);
       tag.anchor.set(0.5);
       const r = at.tags[i];
       tag.x = r.x + r.width / 2;

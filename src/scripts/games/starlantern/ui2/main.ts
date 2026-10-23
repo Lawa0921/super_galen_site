@@ -7,6 +7,7 @@ import { TextureBank, loadManifest } from '../render/textures';
 import { bindUiInput, toggleFullscreen } from './input';
 import { loadSettings, saveSettings, type Settings } from './settings';
 import { Stage } from './stage';
+import { loadPixelFont } from './fonts';
 import { Router, type SceneName } from './scene';
 import { TitleScene } from './scenes/title';
 import { TownScene } from './scenes/town';
@@ -33,6 +34,9 @@ function safeStorage(): Storage | null {
 export async function mountNext(): Promise<void> {
   const ui = document.getElementById('sl-ui');
   if (!ui) return;
+  // The pixel font starts loading first (at most 3 s), alongside everything else: the Pixi layer draws its words once, in
+  // whatever face is ready, so the title waits for it with the menu art (legibility Task 4).
+  const font = loadPixelFont();
   const storage = safeStorage();
   const q = new URLSearchParams(location.search);
   const seed = seedFrom(q.get('seed'), Date.now());
@@ -87,7 +91,7 @@ export async function mountNext(): Promise<void> {
   // The game art streams in afterwards without re-entering a scene, so no key press is ever dropped.
   const urls = [...(await loadManifest())];
   const menuArt = urls.filter((u) => /\/(scene|npc)\/|\/ui\/(logo|window|cursor)\.png$/.test(u));
-  await bank.preload(menuArt);
+  await Promise.all([bank.preload(menuArt), font]);
   void bank.preload(urls.filter((u) => !menuArt.includes(u)));
   document.getElementById('sl-screen')?.classList.toggle('slx-skinned', bank.has(art.window) && bank.has(art.cursor));
   (window as unknown as { __starlanternDebug?: unknown }).__starlanternDebug = {

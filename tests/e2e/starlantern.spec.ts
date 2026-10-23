@@ -2215,6 +2215,61 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test('the party bar shows every line whole at 12px (legibility Task 4)', async ({ page }) => {
+    await fitTo(page, 1280, 720);
+    const w = await setup(page, 7);
+    await legacyRoster(page);
+    await depart(page, w);
+    for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+      await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+      await w.closeTalk();
+      if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+      if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+    }
+    await expect(page.locator('.slx-battle')).toBeVisible();
+    // The widest numbers a panel shows: 9999 HP on all five.
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      for (const m of g.battle.party) { m.max.hp = 9999; m.hp = 9999; }
+      for (const e of g.battle.enemies) { e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1; }
+    });
+    for (let i = 0; i < 60 && (await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.battle?.round ?? -1)) === 0; i++) {
+      if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+      else await page.waitForTimeout(50);
+    }
+    await expect(page.locator('.slx-partybar .slx-pm-num').first()).toContainText('9999');
+    for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
+      await fitTo(page, vw, vh);
+      const faults = await page.locator('.slx-partybar .slx-pm').evaluateAll((ps) => ps.flatMap((p) => {
+        const body = p.querySelector<HTMLElement>('.slx-pm-body')!;
+        const out = body.scrollHeight > body.clientHeight ? [`body ${body.scrollHeight}>${body.clientHeight}`] : [];
+        for (const sel of ['.slx-pm-name', '.slx-pm-num', '.slx-pm-tp']) {
+          const e = p.querySelector<HTMLElement>(sel)!;
+          if (e.scrollWidth > e.clientWidth + 0.5) out.push(`${sel} "${e.textContent}" ${e.scrollWidth}>${e.clientWidth}`);
+        }
+        return out;
+      }));
+      expect(faults, `at ${vw}x${vh}`).toEqual([]);
+    }
+    expect(w.errors).toEqual([]);
+  });
+
+  test('the title still comes when the pixel font is slow (legibility Task 4)', { annotation: { type: 'font-blocked' } }, async ({ page }) => {
+    // Timed from the document (the font's preload holds the load event itself back), against the same page with the font
+    // on time: the slow font may add at most 3.5s (the game waits 3s for it). The page's own boot is not the font's doing.
+    const title = page.locator('.slx-title [role=option]').first();
+    const timeToTitle = async () => {
+      await page.goto('/games/starlantern', { waitUntil: 'domcontentloaded' });
+      const t = Date.now();
+      await expect(title).toBeVisible({ timeout: 10_000 });
+      return Date.now() - t;
+    };
+    const onTime = await timeToTitle();
+    await page.route('**/Cubic_11.woff2', async (r) => { await new Promise((ok) => setTimeout(ok, 5000)); await r.continue().catch(() => undefined); });
+    const slow = await timeToTitle();
+    expect(slow - onTime, `the title took ${slow}ms with the font 5s late, ${onTime}ms with it on time`).toBeLessThan(3500);
+  });
+
   test('five members with five ailments each never cover an enemy HP bar, at 1280x720 or 844x390 (one line each)', async ({ page }) => {
     await fitTo(page, 1280, 720);
     const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
@@ -2254,7 +2309,8 @@ test.describe('starlantern', () => {
     for (const row of await page.locator('.slx-partybar .slx-pm-ail').all()) {
       const words = await row.locator('.slx-mech, .slx-ail').allTextContents();
       const mech = /^(熱度|銅板|餘燼|拍子)\d+$/.test(words[0]) ? [words[0]] : [];
-      expect(words).toEqual(mech.length ? [...mech, '流血×2', '灼燒2', '+3'] : ['流血×2', '灼燒2', '中毒', '+2']);
+      // At 12px (legibility Task 4) fewer words fit the panel's line before the +N.
+      expect(words).toEqual(mech.length ? [...mech, '流血×2', '+4'] : ['流血×2', '灼燒2', '+3']);
     }
     /** Every member word against every living enemy's HP bar (design px, mapped onto the canvas as drawn). */
     const overlaps = () => page.evaluate(() => {
@@ -2276,7 +2332,7 @@ test.describe('starlantern', () => {
       await page.waitForTimeout(300);
       const r = await overlaps();
       expect(r.bars, `${size.width}x${size.height}`).toBeGreaterThan(0);
-      expect(r.chips, `${size.width}x${size.height}`).toBe(20);
+      expect(r.chips, `${size.width}x${size.height}`).toBe(15);   // three words a row at 12px (legibility Task 4), +N included
       expect(r.hits, `${size.width}x${size.height}`).toEqual([]);
       if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.screenshot({ path: `${process.env.SL_SHOTS}/five-by-five-${size.width}.png` }); }
     }
@@ -2317,7 +2373,7 @@ test.describe('starlantern', () => {
     const row = page.locator(`.slx-partybar [data-key=${who}] .slx-pm-ail`);
     await expect(row).toBeVisible();
     // One line, the most severe first; what does not fit is counted in +N.
-    expect(await row.locator('.slx-ail').allTextContents()).toEqual(['流血×2', '灼燒2', '中毒', '+2']);
+    expect(await row.locator('.slx-ail').allTextContents()).toEqual(['流血×2', '灼燒2', '+3']);   // at 12px (legibility Task 4)
     expect(await page.locator('.slx-partybar .slx-ail img, .slx-partybar .slx-pm-ail img').count()).toBe(0);
     if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.waitForTimeout(800); await page.screenshot({ path: `${process.env.SL_SHOTS}/ailments-1280.png` }); }
     // At 1280 and on a phone: the words wrap within the panel's width just above it, on the screen; the panel keeps its height.
@@ -2730,7 +2786,7 @@ test.describe('starlantern', () => {
     }
     await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
     const words = page.locator('.slx-partybar [data-key=bobby] .slx-pm-ail').locator('.slx-mech, .slx-ail');
-    await expect(words).toHaveText(['砲台1・2', '盾機2・2', '中毒']);
+    await expect(words).toHaveText(['砲台1・2', '+2']);
     // The hero's command list: 殘響, greyed with nothing to repeat; then named once Noel's skill is on record.
     const heroTurn = async () => {
       for (let i = 0; i < 6 && !((await page.locator('.slx-bcmd .slx-who').textContent()) ?? '').startsWith('洛恩'); i++) await w.choose('.slx-bcmd', '防禦');
@@ -2754,7 +2810,7 @@ test.describe('starlantern', () => {
     await expect(echo).toHaveAttribute('aria-disabled', 'false');
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/devices-echo-844.png` }); }
     await fitTo(page, 390, 844);
-    await expect(words).toHaveText(['砲台1・2', '盾機2・2', '中毒']);   // measured on the page: they still fit
+    await expect(words).toHaveText(['砲台1・2', '+2']);   // measured on the page: they still fit
     const fit = await page.locator('.slx-partybar [data-key=bobby] .slx-pm-ail').evaluate((r) => ({ scroll: r.scrollWidth, client: r.clientWidth }));
     expect(fit.client).toBeGreaterThan(0);   // the row is there (a hidden row would pass vacuously)
     expect(fit.scroll).toBeLessThanOrEqual(fit.client);

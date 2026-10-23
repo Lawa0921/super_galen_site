@@ -25,9 +25,12 @@ export const AILMENT_SEVERITY: readonly AilmentShown[] = ['freeze', 'sleep', 'bl
 export const bySeverity = (chips: readonly AilmentChip[]): AilmentChip[] =>
   [...chips].sort((a, b) => AILMENT_SEVERITY.indexOf(a.id) - AILMENT_SEVERITY.indexOf(b.id));
 
-/** A label's width at `size` px, estimated without measuring (no canvas or layout needed): a CJK character is a full em, anything else (digits, ×, +) 0.6 em. */
+/**
+ * A label's width at `size` px, estimated without measuring (no canvas or layout needed), as Cubic 11 advances it
+ * (unitsPerEm 1200): a CJK character 1300 units (13/12 em), anything else (digits, ×, +) 800 units (8/12 em).
+ */
 export const textWidth = (text: string, size: number): number =>
-  [...text].reduce((w, ch) => w + (ch.charCodeAt(0) > 0x2e80 ? size : size * 0.6), 0);
+  [...text].reduce((w, ch) => w + (ch.charCodeAt(0) > 0x2e80 ? (size * 13) / 12 : (size * 8) / 12), 0);
 
 /** Freeze and sleep cost a turn: a row never folds them away (plan 8c final). */
 export const isHalting = (c: AilmentChip): boolean => c.id === 'freeze' || c.id === 'sleep';

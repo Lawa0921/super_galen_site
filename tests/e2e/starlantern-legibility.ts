@@ -512,7 +512,7 @@ export const stageBox = async (page: Page, target: Locator): Promise<Rect> => {
 };
 
 /** Scenes (their root's second class) whose text Tasks 3–6 have yet to bring to 12/24px: the text checks skip them. */
-export const PENDING_SCENES: string[] = ['slx-dungeon', 'slx-battle', 'slx-status-scene', 'slx-equip-scene', 'slx-workshop', 'slx-builds'];
+export const PENDING_SCENES: string[] = ['slx-status-scene', 'slx-equip-scene', 'slx-workshop', 'slx-builds'];
 
 /** The windows ruling 8 centres: their top-left must sit on a whole stage pixel. */
 const CENTRED = ['.slx-confirm', '.slx-layer.slx-confirm', '.slx-result', '.slx-settings', '.slx-keys', '.slx-clear-card', '.slx-title-menu', '.slx-depths', '.slx-event'];
@@ -585,6 +585,23 @@ export async function legibility(page: Page, opts: { fontBlocked?: boolean } = {
           check(`${name(e)}${pseudo}`, cs);
         }
       }
+      return bad;
+    }));
+    // The Pixi layer's text (the labyrinth's markers, the battle's names, intents, ailments and numbers): the pixel font too.
+    out.push(...await page.evaluate(() => {
+      type Node = { children?: Node[]; text?: unknown; style?: { fontFamily?: string | string[]; fontSize?: number; fontWeight?: string }; destroyed?: boolean };
+      const stage = (window as unknown as { __starlanternDebug?: { stage?: { mapView?: { root: Node }; battleView?: { root: Node } } } }).__starlanternDebug?.stage;
+      const bad: string[] = [];
+      const walk = (n: Node) => {
+        if (n.destroyed) return;
+        if (typeof n.text === 'string' && n.style) {
+          // Pixi may hand the family list back as one CSS string, its names quoted.
+          const fam = (Array.isArray(n.style.fontFamily) ? n.style.fontFamily[0] : String(n.style.fontFamily ?? '').split(',')[0]).trim().replace(/^['"]|['"]$/g, '');
+          if (fam !== 'Cubic 11' || ![12, 24].includes(n.style.fontSize ?? 0) || !['normal', '400'].includes(String(n.style.fontWeight))) bad.push(`pixi "${n.text}": ${fam} ${n.style.fontSize}px ${n.style.fontWeight}`);
+        }
+        for (const c of n.children ?? []) walk(c);
+      };
+      for (const r of [stage?.mapView?.root, stage?.battleView?.root]) if (r) walk(r);
       return bad;
     }));
     for (const sel of CENTRED) {

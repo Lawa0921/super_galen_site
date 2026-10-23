@@ -198,7 +198,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-ico { width: 12px; height: 12px; object-fit: contain; }
 .slx-right { margin-left: auto; padding-left: 12px; color: $slx-dim; }
 // ◆ for each working rune after a skill's name in the battle menu (plan 8g Task 7), in the rune's own blue.
-.slx-badge { flex: none; margin-left: 2px; font-size: 9px; letter-spacing: 1px; color: #9fc1ff; }
+.slx-badge { flex: none; margin-left: 2px; font-size: $slx-fs; line-height: 14px; letter-spacing: 1px; color: #9fc1ff; }
 .slx-qty { left: 6px; top: 190px; width: 112px; text-align: center; }
 .slx-qty .slx-hint { white-space: pre-line; }
 .slx-qty .slx-qty-note { margin: 6px 0 0; }   // 「袋子 m」 under a rune's count (plan 8f)
@@ -317,10 +317,11 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-partybar { position: absolute; left: 4px; right: 4px; bottom: 2px; height: 62px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
 .slx-pm { display: flex; gap: 4px; align-items: center; padding: 3px 4px; background: $slx-win; border: 1px solid #6e5a2e; }
 .slx-pm img { width: 40px; height: 40px; object-fit: contain; }
-.slx-pm-body { display: grid; gap: 1px; min-width: 0; flex: 1; }
-.slx-pm-name { color: $slx-ink; white-space: nowrap; overflow: hidden; }
-.slx-pm-num { color: $slx-dim; font-size: 10px; line-height: 10px; }
-.slx-pm-tp { color: #8fb8ff; font-size: 10px; line-height: 10px; }
+// Three 14px lines and three 4px bars fill the panel's 54px exactly, with no gap (legibility ruling 7, at the 14px leading).
+.slx-pm-body { display: grid; gap: 0; min-width: 0; flex: 1; }
+.slx-pm-name { color: $slx-ink; white-space: nowrap; overflow: hidden; line-height: 14px; }
+.slx-pm-num { color: $slx-dim; font-size: $slx-fs; line-height: 14px; }
+.slx-pm-tp { color: #8fb8ff; font-size: $slx-fs; line-height: 14px; }
 .slx-bar { display: block; height: 4px; background: #2a2b38; box-shadow: inset 0 0 0 1px #000; }
 .slx-fill { display: block; height: 100%; }
 @for $k from 0 through 20 { .slx-fill-#{$k} { width: $k * 5%; } }
@@ -352,7 +353,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 @keyframes slx-pm-ko { 0% { translate: 0 0; } 30% { translate: 0 -4px; } 100% { translate: 0 6px; filter: grayscale(1) brightness(0.5); } }
 .slx-pm-pop {
   position: absolute; right: 8px; top: -6px; z-index: 3;
-  font-size: 20px; line-height: 20px; color: #ff5a4a; pointer-events: none;
+  font-size: $slx-fs-big; line-height: 24px; color: #ff5a4a; pointer-events: none;
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
   animation: slx-pm-pop 0.9s ease-out forwards;
 }
@@ -368,7 +369,8 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 // The field bar (plan 8c): the barrier up and the moon, as words under the message window's right end.
 .slx-fieldbar { position: absolute; right: 10px; top: 70px; z-index: 2; display: flex; gap: 2px; pointer-events: none; }
 .slx-fieldbar[hidden] { display: none; }
-.slx-bcmd { left: 6px; bottom: 70px; min-width: 132px; }
+// Above the party bar and the ailment words over it (12px on a 14px line, legibility Task 4), so it hides no word.
+.slx-bcmd { left: 6px; bottom: 82px; min-width: 132px; }
 .slx-who { color: $slx-gold; margin-bottom: 2px; }
 .slx-bsub { right: 6px; top: 64px; min-width: 200px; }
 // With the field bar up (a barrier, the moon), the skill list opens under it rather than on its words (Task 7 review).
@@ -380,9 +382,9 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 // The target list sits over the (inert) command window so it never hides the enemies on the right.
 .slx-bsub.slx-btarget { right: auto; left: 6px; top: 96px; min-width: 132px; }
 .slx-bsub:not(.slx-btarget):has(~ .slx-btarget), .slx-bcmd:has(~ .slx-btarget) { visibility: hidden; }
-.slx-result h3 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
+.slx-result h3 { margin: 0 0 4px; font-size: $slx-fs; font-weight: normal; color: $slx-gold; }
 .slx-result p { margin: 1px 0; }
-.slx-target { position: absolute; top: 118px; width: 12px; margin-left: -6px; text-align: center; color: $slx-gold; animation: slx-bob 0.6s ease-in-out infinite alternate; }
+.slx-target { position: absolute; top: 118px; width: 12px; margin-left: -6px; text-align: center; color: $slx-gold; animation: slx-bob 0.6s steps(2) infinite alternate; }   // two whole-pixel stops (ruling 8)
 @keyframes slx-bob { to { transform: translateY(4px); } }
 // One class per (enemy count, index): enemies stand at width * (i + 1) / (n + 1), as BattleView lays them out.
 // Must match BATTLE_LEFT in ui2/scenes/battle.ts.
@@ -494,7 +496,9 @@ $slx-battle-left: 150px;
 
 
 // Party bar row tag
-.slx-pm-row { margin-left: 4px; padding: 0 2px; font-size: 9px; line-height: 10px; border: 1px solid currentColor; vertical-align: 1px; }
+// The row tag boxed inside the 14px name line: a 14px box, border included, so the name line (and the panel) keep their height
+// and its border is never clipped by the name's overflow (legibility Task 4).
+.slx-pm-row { display: inline-block; box-sizing: border-box; height: 14px; margin-left: 4px; padding: 0 2px; font-size: $slx-fs; line-height: 14px; border: 1px solid currentColor; vertical-align: top; }
 .slx-pm-row-front { color: #ff9a7a; }
 .slx-pm-row-middle { color: $slx-gold; }
 .slx-pm-row-back { color: #8fb8ff; }
@@ -508,7 +512,7 @@ $slx-battle-left: 150px;
 $slx-ailment: (poison: #b889fe, sleep: #c1c5d6, burn: #fe8a57, freeze: #92ebfd, chill: #8ea8fe, shock: #ffe845, bleed: #ff5c74);
 .slx-pm-ail { position: absolute; left: 0; right: 0; bottom: 100%; z-index: 3; margin-bottom: 1px; display: flex; flex-wrap: nowrap; gap: 1px; overflow: hidden; pointer-events: none; }
 .slx-pm-ail[hidden] { display: none; }
-.slx-ail, .slx-mech { flex: none; padding: 0 1px; font-size: 9px; line-height: 10px; border: 1px solid currentColor; white-space: nowrap; background: rgba($slx-win, 0.92); }
+.slx-ail, .slx-mech { flex: none; padding: 0 1px; font-size: $slx-fs; line-height: 14px; border: 1px solid currentColor; white-space: nowrap; background: rgba($slx-win, 0.92); }
 // Character mechanics (plan 8c): the same word look as an ailment, in their own colours (render/mechStyle.ts MECH_FILL).
 $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: #4ac2ff, purify: #d6ff7b, moon: #e6c6ff, coins: #d3ae46, aim: #ff9bb8, embers: #ff3c2a, beat: #3fd8c4, devices: #c0a081, plain: #f1ead8);
 @each $k, $c in $slx-mech {
@@ -923,35 +927,36 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
 // The attack's effect drawn over the struck member's face
 .slx-pm-fx { position: absolute; left: -6px; top: -10px; width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; pointer-events: none; z-index: 2; animation: slx-pm-fx 0.42s ease-out forwards; }
 @keyframes slx-pm-fx { 0% { scale: 0.4; opacity: 1; rotate: -20deg; } 40% { scale: 1.25; opacity: 1; } 100% { scale: 1.4; opacity: 0; rotate: 10deg; } }
-.slx-pm-pop-big { font-size: 28px; line-height: 28px; top: -14px; }
+.slx-pm-pop-big { font-size: $slx-fs-big; line-height: 24px; top: -14px; }
 .slx-pm-weak { position: absolute; left: 46px; top: -16px; z-index: 3; font-size: 12px; color: #ffd166; text-shadow: 1px 1px 0 #7a1a10, -1px -1px 0 #7a1a10, 1px -1px 0 #7a1a10, -1px 1px 0 #7a1a10; animation: slx-pm-pop 0.9s ease-out forwards; }
 // Stat pops (ui2/partyBar.ts): a crit burns orange and larger, a resisted hit gets a cold 抗性 tag, an evaded attack a
 // pale MISS that drifts up without any shake, and TP regen a small quiet blue number. Tags stack: the second sits higher.
-.slx-pm-pop-crit { font-size: 30px; line-height: 30px; top: -16px; color: #ff9a3c; }
+.slx-pm-pop-crit { font-size: $slx-fs-big; line-height: 24px; top: -16px; color: #ff9a3c; }
 .slx-pm-crit, .slx-pm-resist { position: absolute; left: 46px; top: -16px; z-index: 3; font-size: 12px; animation: slx-pm-pop 0.9s ease-out forwards; }
 .slx-pm-crit { color: #ffb35c; text-shadow: 1px 1px 0 #5a1a00, -1px -1px 0 #5a1a00, 1px -1px 0 #5a1a00, -1px 1px 0 #5a1a00; }
 .slx-pm-resist { color: #c8d6e6; text-shadow: 1px 1px 0 #1a2a3a, -1px -1px 0 #1a2a3a, 1px -1px 0 #1a2a3a, -1px 1px 0 #1a2a3a; }
 .slx-pm-tag-1 { top: -30px; }
 .slx-pm-miss {
   position: absolute; right: 8px; top: -4px; z-index: 3; pointer-events: none;
-  font-size: 15px; line-height: 15px; letter-spacing: 1px; color: #d8d4e6;
+  font-size: $slx-fs; line-height: 14px; letter-spacing: 1px; color: #d8d4e6;
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
   animation: slx-pm-miss 0.9s ease-out forwards;
 }
 @keyframes slx-pm-miss { 0% { translate: -6px 0; opacity: 0; } 20% { translate: 0 0; opacity: 1; } 70% { opacity: 1; } 100% { translate: 0 -12px; opacity: 0; } }
 // A mechanic's moment (暴走！, 還有。): a word in its colour rising off the panel like MISS, with no shake; from the
-// panel's bottom right, over the bars, so it covers neither the HP digits nor the ailment row above the panel, and over
-// the hit effects (.slx-pm-fx, .slx-pm-fxa) so a blow landing at the same moment never hides it.
+// panel's top right, over the name line (at 12px with a 14px leading it no longer fits the 11px under the TP line: legibility
+// Task 4), so it covers neither the HP digits, the TP line nor the ailment row above the panel, and over the hit effects
+// (.slx-pm-fx, .slx-pm-fxa) so a blow landing at the same moment never hides it.
 .slx-pm-cue {
-  position: absolute; right: 4px; bottom: 0; z-index: 4; pointer-events: none; white-space: nowrap;
-  font-size: 10px; line-height: 10px; padding: 0 2px; border: 1px solid currentColor; background: rgba($slx-win, 0.92);
+  position: absolute; right: 4px; top: 0; z-index: 4; pointer-events: none; white-space: nowrap;
+  font-size: $slx-fs; line-height: 14px; padding: 0 2px; border: 1px solid currentColor; background: rgba($slx-win, 0.92);
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
   animation: slx-pm-cue 0.9s ease-out forwards;
 }
 // Readable from its first frame (fast mode holds it only a moment) over the bars, clear of the TP line above them; it
 // holds there, then rises as it fades.
 @keyframes slx-pm-cue { 0% { translate: 0 0; opacity: 1; } 70% { translate: 0 0; opacity: 1; } 100% { translate: 0 -10px; opacity: 0; } }
-.slx-pm-pop-tp { font-size: 12px; line-height: 12px; top: 14px; color: #8fb8ff; }
+.slx-pm-pop-tp { font-size: $slx-fs; line-height: 14px; top: 14px; color: #8fb8ff; }
 @media (prefers-reduced-motion: reduce) {
   .slx-pm-weak, .slx-pm-crit, .slx-pm-resist, .slx-pm-miss, .slx-pm-cue { animation: none; }
 }
@@ -1048,7 +1053,7 @@ $slx-starlit: #bff6ff;
 .slx-acut-bust .slx-acut-pic { left: 30px; top: 0; width: 130px; height: 120px; }
 .slx-acut-bust .slx-acut-pic img { width: 150px; height: 150px; object-fit: cover; object-position: 50% 0; translate: -10px -8px; }
 .slx-acut-right .slx-acut-pic { left: auto; right: 30px; }
-.slx-acut-label { position: absolute; top: 40px; left: 168px; font-size: 26px; line-height: 30px; color: #fff; white-space: nowrap; rotate: -6deg; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000; }
+.slx-acut-label { position: absolute; top: 40px; left: 168px; font-size: $slx-fs-big; line-height: 28px; color: #fff; white-space: nowrap; rotate: -6deg; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000; }   // 24px display (ruling 3)
 .slx-acut-right .slx-acut-label { left: 24px; }
 // Eye strip: a thin band across the face for a plain attack
 .slx-acut-eyes { left: 50%; width: 420px; height: 100px; margin-left: -210px; clip-path: polygon(4% 0, 100% 0, 96% 100%, 0 100%); }
