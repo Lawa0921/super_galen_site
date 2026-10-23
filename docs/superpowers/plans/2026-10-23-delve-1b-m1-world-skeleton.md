@@ -19,7 +19,8 @@
 3. **舊外圍 v1（OuterGen）在舊世界的範圍內「不存成 chunk」，繼續由 `engine/legacy/chunkgen` 即時生成**（作者對 spec §5 步驟 3 的解讀，見文末「規格模糊處」）。v1 本來就是純 (seed, x, y) 的分區塊生成器，重算結果逐格相同；把它烘焙成 chunk 會讓存檔與記憶體隨探索距離線性變大（走到 30,000 格 ≈ 7 萬個 chunk ≈ 400 MB 停放資料，遠超 4 MB 目標）。「已知最遠點」照 spec 決定舊範圍的終點（接縫位置）。
 4. **gen2 的版本號在 M1 是 `GEN2_VERSION = 0`（未發佈，輸出可變）**；`genVersion 8` 代表「gen2 或烘焙世界」，`header.outerGen` 寫 gen2 版本號；每片已進入的地塊在存檔記 `[side, i, ver, culture]`。M2 開旗標時改成 1 並凍結。
 5. **旗標**：`localStorage['delve.gen2'] === '1'` 或網址 `?gen2=1`（`?gen2=0` 清掉）；只控制「新世界用 gen2」與「讀到 v7 舊世界時烘焙升級」。讀 genVersion 8 的存檔不看旗標（程式碼在、資料自足）。測試走 `DelveOptions.worldGen`。
-6. **只有正式尺寸（4200×1200）的舊世界會烘焙**；200×100 的小測試世界（`__fixtures__/format9.delve`、`format10.delve`）判定為不適用、照舊載入。另在 Task 1 凍結一份正式尺寸的 format 11 / v7 fixture 給烘焙測試用。
+6. **只有正式尺寸（4200×1200）的舊世界會烘焙**；200×100 的小測試世界（`__fixtures__/format9.delve`、`format10.delve`）判定為不適用、照舊載入。另在 Task 1 凍結一份正式尺寸的 format 11 / v7 fixture 給烘焙測試用。（spec §5 已依裁決 P15a 修訂。）
+7. **中間狀態（裁決 P16）**：Task 3 → Task 4 之間旗標關閉的 v1 海遠景會暫時混成叢林（`NB` 夾值）、Task 17 → Task 18 之間旗標開啟的連線會建錯副本；兩者只存在於分支中間的 commit，分支整條合併，接受。若要拆開合併，這兩對必須一起進。
 
 ## Global Constraints
 
@@ -30,18 +31,19 @@
 - DELVE 介面文字寫死繁體中文（不走 i18n）。
 - 美術程式化像素，顏色只取 `render/pixel.ts` 的 `PALETTE_HEX`；禁 `!important`、禁行內樣式。
 - 不准用裸的 `git stash`（要用就 `git stash push -u -m "<tag>"` 並以 SHA apply）。
-- 確定性：`engine/gen2/**` 與 `engine/legacy/chunkgen/` 的非測試檔不得出現 `Math.random`、`Math.sin/cos/pow/exp/log/sqrt/hypot`、`**`（註解也不行，用 `//`）；隨機一律走 `engine/noise.ts` 的整數雜湊。
+- 測試本體不得只有註解：計畫裡寫成 `/* 描述 */` 的地方都要寫成具體斷言（裁決 P9）；空本體、吞例外、對純函式量 store 寫入次數這類永遠不會失敗的測試，審查一律退回。
+- 確定性：`engine/gen2/**`、`engine/genPrims.ts` 與 `engine/legacy/chunkgen/` 的非測試檔不得出現 `Math.random`、`Math.sin/cos/pow/exp/log/sqrt/hypot`、`**`（註解也不行，用 `//`）；隨機一律走 `engine/noise.ts` 的整數雜湊。
 - tile id 只能附加、上限 256（M1 不新增 tile）。
 - 旗標關閉時：新世界寫 `genVersion 7`、走舊生成器；舊世界照舊載入、不烘焙。
 - 版面數值（spec §4.1 / §8，原文）：海寬 480–1200，第一道海 480–700，每道海 1–3 座島、島寬 40–160；大陸 2400–5200，由 2–4 個地區組成、地區寬 700–1500；家鄉約 4200、出生點 x ≈ 2100；海面每 300 格一個槽位、每槽必有一點。
-- 效能（spec §4.3）：32×32 區塊生成中位數 ≤ 現有 OuterGen 的 2 倍、最壞 ≤ 8 ms；客人加入不需生成家鄉整片。
+- 效能（spec §4.3，有約束力）：32×32 區塊生成中位數 ≤ 現有 OuterGen 的 2 倍、最壞 ≤ 8 ms；客人加入不需生成家鄉整片。自動測試的門檻放寬到 3×（機器負載容忍），但 2× 由 Task 12 報告裡的閒置機器實測把關（裁決 P5）。
 - gen2 程式碼的版本閘門慣例：新功能寫 `if (ver >= N)`；改既有功能保留舊分支（M1 期間 ver 0 尚未凍結）。
 
 ## Review Focus
 
 1. **旗標關閉的預設路徑被改到**：OCEAN 與 World 模式改動後，舊世界外圍 v1 的 chunk 位元組、新世界的 genVersion、載入舊檔的結果都要與現在相同 → Task 3 的 v1 海欄位元組釘選測試、Task 17 的「預設新世界仍是 genVersion 7」測試。
 2. **搜刮過的 gen2 結構寶箱在卸載 / 存讀後被重新填滿（或沒搜過的寶箱消失）**：玩家最常碰到的物件 bug → Task 9 的卸載 / 重載測試、Task 15 的存讀測試。
-3. **烘焙途中失敗或備份失敗**：原 v7 檔必須原封不動、下次能重試 → Task 16 的失敗注入測試。
+3. **烘焙途中失敗或備份失敗**：原 v7 檔必須原封不動、下次能重試 → Task 16 的失敗注入測試（`onStage` 真的丟錯、store 備份 / 寫入丟錯）與 Task 17 的 `upgradeSlot` 失敗後重試測試。
 4. **接縫位置漏掉玩家知道的地方**：玩家站在 v1 海上、剛好在段落邊界、在西側負 x、或只有迷霧 / 傳送碑在遠處時，接縫不能切進已知範圍 → Task 16 的 `legacyRange` 邊界測試。
 5. **較新或不認得的生成器版本存檔**：必須明確拒絕並給中文訊息，絕不靜默用目前的生成器疊舊改動（spec §5）→ Task 15 的版本比對測試。
 
@@ -56,7 +58,8 @@
 
 | 路徑 | 職責 |
 |------|------|
-| `engine/legacy/worldgen.ts`、`engine/legacy/gen/*`、`engine/legacy/chunkgen/*` | 搬來的舊生成器（內容不變；v1 `OuterGen` 加 `regionAt`） |
+| `engine/legacy/worldgen.ts`、`engine/legacy/gen/*`、`engine/legacy/chunkgen/*` | 搬來的舊生成器（輸出不變；v1 `OuterGen` 加 `regionAt`、海區 biome 改 OCEAN（Task 3）、共用 primitives 改從 `engine/genPrims.ts` import（Task 8，雜湊釘住）） |
+| `engine/genPrims.ts` | v1 與 gen2 共用的生成 primitives（`ColNoise`、洞穴 / 礦噪聲取樣、樹 / 仙人掌繪製）；不含任何材質 / 礦種規則（裁決 P10） |
 | `engine/regionInfo.ts` | `RegionInfo` / `Side` / `RegionKind` / `CultureId` 型別（World 與 gen2 共用、無相依） |
 | `engine/gen2/index.ts` | `Gen2Source`、`GEN2_VERSION`、`GEN2_MIN_VERSION` |
 | `engine/gen2/layout.ts` | 地塊序列、地區、海的島與槽位、文化指派、tier |
@@ -87,7 +90,7 @@
 - Create: `save/worldSave.v11v7.freeze.test.ts`、`save/__fixtures__/format11-v7.delve`、`save/legacyFixture11.ts`
 
 **Interfaces:**
-- Produces: `buildLegacyFixture11(): DelveGame`（正式尺寸、seed `'fixture-v11'`）；`FIXTURE11_PATH`、`FIXTURE11_WHO`、`FIXTURE11_WHERE`（同 `worldSave.v10.freeze.test.ts` 的形狀）。
+- Produces: `buildLegacyFixture11(): DelveGame`（正式尺寸、seed `'fixture-v11'`）；`FIXTURE11_PATH`、`FIXTURE11_WHO`、`FIXTURE11_WHERE`（同 `worldSave.v10.freeze.test.ts` 的形狀）；`FIXTURE11_EDITS: { dug: [x: number, y: number][]; planks: [x: number, y: number][]; chest: { x: number; y: number; items: Stack[] } }`（下面 Step 7 那些改動的確切座標與內容，Task 16 用它驗「改動保留」）。
 
 - [ ] **Step 1: 寫 LiquidSim 基準測試**
 
@@ -113,17 +116,15 @@ Expected: PASS，輸出 `[liquid baseline] median ms/step …`。
 - [ ] **Step 3: 寫 decodeLiquidRle 失敗測試**
 
 ```ts
-it('decodeLiquidRle 先加總 run 長度再配置：總長不符直接丟錯、不配置 n 大小的緩衝', () => {
-  const big = 50_000_000;
-  expect(() => decodeLiquidRle(encodeLiquidRle(new Uint8Array(4), new Uint8Array(4)), big)).toThrow(SaveFormatError);
-  const spy = vi.spyOn(globalThis, 'Uint8Array');
-  try { decodeLiquidRle(Uint8Array.from([4, 0, 0]), big); } catch { /* 預期 */ }
-  expect(spy.mock.calls.some((c) => c[0] === big)).toBe(false);
-  spy.mockRestore();
+it('decodeLiquidRle 先加總 run 長度再配置：總長不符直接丟 SaveFormatError、不先配置 n 大小的緩衝', () => {
+  const rle4 = encodeLiquidRle(new Uint8Array(4), new Uint8Array(4));        // run 總長 4
+  expect(() => decodeLiquidRle(rle4, 50_000_000)).toThrow(SaveFormatError);
+  expect(() => decodeLiquidRle(rle4, 2 ** 33)).toThrow(SaveFormatError);    // 現在：new Uint8Array(2 ** 33) 先丟 RangeError
 });
 ```
+（裁決 P8：不用 spy、不用 try / catch——那種寫法在 spy 沒有靜態 `.from` 時會吞掉錯誤而空過。）
 
-- [ ] **Step 4: 跑它確認失敗** — Run: `npx vitest run src/scripts/games/delve/save/serialize.liquid.test.ts`；Expected: FAIL（現在先配置 `new Uint8Array(n)`）。
+- [ ] **Step 4: 跑它確認失敗** — Run: `npx vitest run src/scripts/games/delve/save/serialize.liquid.test.ts`；Expected: FAIL，第二個斷言收到 `RangeError: Invalid typed array length`（不是 SaveFormatError）。
 
 - [ ] **Step 5: 實作** — `decodeLiquidRle(bytes, n)` 先掃一遍 varint 長度與欄位合法性並加總，總和 ≠ n 就丟 `SaveFormatError`，確認後才配置兩個 `Uint8Array(n)` 並第二遍填值。錯誤訊息沿用現有字串。
 
@@ -151,13 +152,14 @@ git commit -m "test(delve): liquid baseline, v11/v7 fixture; fix(delve): decodeL
 - Move（`git mv`，含同資料夾的測試）：`engine/worldgen.ts` → `engine/legacy/worldgen.ts`；`engine/gen/` → `engine/legacy/gen/`；`engine/chunkgen/` → `engine/legacy/chunkgen/`；`engine/worldgen.*.test.ts` → `engine/legacy/`
 - Modify：所有 import 這些路徑的檔（`engine/world.ts`、`engine/game.ts`、`engine/discovery.ts`、`engine/waystones.ts`、`engine/index.ts`、`render/session.ts`、`render/titleModel.ts`、`net/host.ts`、`net/guest.ts`、`net/testRig.ts` 及測試；以 `tsc` 錯誤清單為準）
 - Modify: `engine/legacy/chunkgen/chunkgen.test.ts:261-270`（grep 測試的資料夾路徑）
+- Modify: `engine/flatAccess.test.ts:20`（`excluded()` 的豁免路徑；字串路徑 tsc 抓不到，裁決 P1）
 
 **Interfaces:**
 - Produces：舊模組的新路徑（`engine/legacy/worldgen`、`engine/legacy/gen/*`、`engine/legacy/chunkgen`），匯出名稱不變。不留轉接檔（re-export shim）。
 
 - [ ] **Step 1: `git mv` 三組檔案**（`worldgen.ts` 是 CRLF，`git mv` 保留位元組）。
-- [ ] **Step 2: 修 import** — 依 `rtk proxy npx tsc --noEmit -p . 2>&1 | grep "games/delve"` 逐一修到沒有輸出；`legacy/` 內部的相對路徑（`'../world'` → `'../../world'` 等）一起修。`chunkgen.test.ts` 的 `join(... 'engine', 'chunkgen')` 改成 `'engine', 'legacy', 'chunkgen'`。
-- [ ] **Step 3: 全套測試** — Run: `npx vitest run src/scripts/games/delve`；Expected: 全綠、測試數與搬移前相同。
+- [ ] **Step 2: 修 import** — 依 `rtk proxy npx tsc --noEmit -p . 2>&1 | grep "games/delve"` 逐一修到沒有輸出；`legacy/` 內部的相對路徑（`'../world'` → `'../../world'` 等）一起修。`chunkgen.test.ts` 的 `join(... 'engine', 'chunkgen')` 改成 `'engine', 'legacy', 'chunkgen'`。`flatAccess.test.ts` 的 `rel === 'engine/worldgen.ts' || rel.startsWith('engine/gen/')` 改成 `rel.startsWith('engine/legacy/')`（其他豁免不動）。最後 `grep -rn "engine/worldgen\|engine/gen/\|engine/chunkgen" src/scripts/games/delve` 只能剩註解。
+- [ ] **Step 3: 全套測試** — Run: `npx vitest run src/scripts/games/delve`；Expected: 全綠（含 `flatAccess.test.ts`「扁平存取清零」）、測試數與搬移前相同。
 - [ ] **Step 4: tsc** — Run: `rtk proxy npx tsc --noEmit -p .`；Expected: 773 個錯誤、`games/delve` 0 個。
 - [ ] **Step 5: Commit** — `refactor(delve): move legacy generators into engine/legacy`。說明：M1 的預設路徑仍靜態 import 它們（旗標關閉時新世界照舊用），M2 才改動態 import。
 
@@ -168,11 +170,12 @@ git commit -m "test(delve): liquid baseline, v11/v7 fixture; fix(delve): decodeL
 **驗證過的事實（寫進 commit 說明）：** v1 `OuterProfile.info()` 海區（`ZONE_SEA`）目前 `biome = FOREST`。`OuterFiller.column()` 對海欄只看 `I.kind === ZONE_SEA`（表層沙），`plants()` 跳過 `kind !== ZONE_LAND`，沙灘用的是陸地段的生態——所以把海欄的 biome 改成 OCEAN **不改變任何 fill 位元組**；`save/`、`net/` 完全沒有存或傳 biome（grep `biome` 0 筆）；`outerRegions` 與 `Waystones` 看的是 `zoneAt` 不是 biome；外圍結冰只標重畫、讀檔依日期重算。只有 `biomeAt` 的消費者行為會變，而那正是要修的「海上遠景是森林」。
 
 **Files:**
-- Modify: `engine/world.ts:21`（`BIOME`）、`engine/legacy/chunkgen/profile.ts:155-160`（海區 biome）、`engine/spawn.ts:96-104,146-165`、`render/model.ts:281`（`BIOME_NAMES`）
-- Test: `engine/legacy/chunkgen/chunkgen.test.ts`、`engine/spawn.test.ts`、`engine/weather.test.ts`、`engine/frost.test.ts`、`engine/fishing.test.ts`、`render/ambient.test.ts`、`render/model.test.ts`
+- Modify: `engine/world.ts:21`（`BIOME`）、`engine/legacy/chunkgen/profile.ts:155-160`（海區 biome）、`engine/spawn.ts:96-104,146-165`、`render/model.ts:281`（`BIOME_NAMES`）、`engine/fishing.ts`（`OCEAN_FISH` 海洋表）
+- Test: `engine/legacy/chunkgen/chunkgen.test.ts`、`engine/spawn.test.ts`、`engine/weather.test.ts`、`engine/frost.test.ts`（`freezeSeason` 在 `engine/calendar.ts`）、`engine/fishing.test.ts`、`render/ambient.test.ts`、`render/model.test.ts`
 
 **Interfaces:**
 - Produces: `BIOME.OCEAN = 4`（`BiomeId` 自動含 4）；`biomeLabel(4) === '海洋'`。
+- Produces（`fishing.ts`，裁決 P15c）：`export const OCEAN_FISH: readonly ItemId[] = ['silver_minnow', 'moonlit_eel', 'thunder_ray', 'mistfin', 'petal_koi']`——M1 的海洋表 = 現有、海上釣得到的魚種（不限生態的水魚），不新增物品；`FISH` 條目不改。
 
 - [ ] **Step 1: 寫 v1 海欄位元組釘選測試（改動前的行為）**
 
@@ -203,13 +206,17 @@ for (let d = 0; d < 112; d++) expect(freezeSeason(d, BIOME.OCEAN, 0.5)).toBe(fal
 const items = catchCandidates({ ...ctx, biome: BIOME.OCEAN, zone: 'surface' }).map((c) => c.item);
 for (const fresh of ['reed_perch', 'brook_trout', 'frost_char', 'oasis_koi', 'mud_whisker', 'sun_bream', 'ember_salmon', 'old_whiskers']) expect(items).not.toContain(fresh);
 expect(items).toContain('silver_minnow');
+// 海洋表：所有季節 × 時段 × 天氣、釣力 100、大水池的聯集 = OCEAN_FISH ∪ 垃圾 ∪ 木箱
+const union = new Set(allCombos(ctx).flatMap((c) => catchCandidates({ ...c, biome: BIOME.OCEAN, zone: 'surface', power: 100, pool: 200 }).map((e) => e.item)));
+expect([...union].sort()).toEqual([...OCEAN_FISH, 'soggy_boot', 'wood', 'wooden_crate', 'iron_crate', 'golden_crate'].sort());
 expect(ambientKind({ ...amb, outdoors: true, biome: BIOME.OCEAN, sky: 0.2 })).toBeNull();
 expect(biomeLabel(BIOME.OCEAN)).toBe('海洋');
 ```
-（`hab(o)` / `ctx` / `amb` = 各測試檔裡的最小建構輔助：`Habitat` / `CatchCtx` / `AmbientContext` 的預設值再蓋上 o。）
+（`hab(o)` / `ctx` / `amb` = 各測試檔裡的最小建構輔助：`Habitat` / `CatchCtx` / `AmbientContext` 的預設值再蓋上 o；`allCombos(ctx)` = 4 季 × 全部時段 × 全部天氣的 `CatchCtx` 清單，寫在 fishing.test.ts 內。）
 
 - [ ] **Step 4: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine src/scripts/games/delve/render/ambient.test.ts src/scripts/games/delve/render/model.test.ts`；Expected: FAIL（`BIOME.OCEAN` undefined）。
-- [ ] **Step 5: 實作** — `BIOME` 加 `OCEAN: 4`；v1 `info()` 海區 `biome = BIOME.OCEAN`；`surfaceTable` 開頭 `if (biome === BIOME.OCEAN) return;`；`aquaticTable` 在叢林判斷之後加 `else if (h.biome === BIOME.OCEAN && h.zone === 'surface') out.push({ kind: 'razor_fin', weight: 6, group: [2, 4] })`；`BIOME_NAMES` 加 `'海洋'`。天氣、結冰、釣魚、環境粒子不需改碼（現有分支對 4 的行為就是上面斷言的），測試把行為釘住。M1 的海洋釣魚 = 不限生態的條目；海洋專屬魚種要新物品與美術，留 M2。
+- [ ] **Step 5: 實作** — `BIOME` 加 `OCEAN: 4`；v1 `info()` 海區 `biome = BIOME.OCEAN`；`surfaceTable` 開頭 `if (biome === BIOME.OCEAN) return;`；`aquaticTable` 在叢林判斷之後加 `else if (h.biome === BIOME.OCEAN && h.zone === 'surface') out.push({ kind: 'razor_fin', weight: 6, group: [2, 4] })`；`BIOME_NAMES` 加 `'海洋'`。`fishing.ts` 加 `OCEAN_FISH`（只是命名現有條目、`FISH` 不動）。天氣、結冰、釣魚、環境粒子不需改其他碼（現有分支對 4 的行為就是上面斷言的），測試把行為釘住。海洋表在 M1 交付（spec §8 已依 P15c 修訂）：沿用現有海上魚種、不新增物品；海洋專屬魚種要新物品與美術，留 M2。
+- 中間狀態（P16）：這個 commit 到 Task 4 之前，旗標關閉時 v1 海的遠景暫時混成叢林（`BiomeField` 把 4 夾成 3）；接受，Task 3 與 Task 4 必須一起合併。
 - [ ] **Step 6: 跑測試** — 同 Step 4；Expected: PASS，`V1_SEA_HASH` 仍 PASS。
 - [ ] **Step 7: Commit** — `feat(delve): BIOME.OCEAN; v1 sea columns report OCEAN (fill bytes unchanged)`。
 
@@ -218,11 +225,12 @@ expect(biomeLabel(BIOME.OCEAN)).toBe('海洋');
 ### Task 4: OCEAN（畫面端）：海的遠景組、混合、地下主題
 
 **Files:**
-- Modify: `render/background.ts:397-414`（三張色表加 `4`）、`:566`（`SKY_TINT[4]`）、`:612-617`（`sets[4]`）；`render/bgBlend.ts:17`（`NB = 5`）；`render/underground.ts:18,61-62`
+- Modify: `render/background.ts:397-414`（三張色表加 `4`）、`:566`（`SKY_TINT[4]`）、`:621-624`（`sets[4]`）；`render/bgBlend.ts:17`（`NB = 5`）；`render/underground.ts:18,61-62`
 - Test: `render/background.sun.test.ts`（或新 `render/background.ocean.test.ts`）、`render/bgBlend.test.ts`、`render/underground.test.ts`
 
 **Interfaces:**
-- Produces: `buildSeaHorizon(seed: number): IndexedLayer`（遠：海平線 + 2–4 座遠方島影）、`buildSwells(seed: number): IndexedLayer`（中：低浪帶）、`buildSeaNear(seed: number): IndexedLayer`（近：浪頂碎白），都在 `background.ts`。
+- Produces: `buildSeaHorizon(seed: number): IndexedLayer`（遠：海平線 + 2–4 座遠方島影）、`buildSwells(seed: number): IndexedLayer`（中：低浪帶）、`buildSeaNear(seed: number): IndexedLayer`（近：浪頂碎白），都在 `background.ts`；測試用的 `Background.layerFor(biome: number, k: number): IndexedLayer` 與 `export` 的 `BIOME_DAY / BIOME_LITE / BIOME_DARK / SKY_TINT`。
+- 本 Task 結束 Task 3 開出的中間狀態（P16）。
 
 - [ ] **Step 1: 寫失敗測試**
 
@@ -349,6 +357,7 @@ expect(gen.regionAt(-1 - SEA_W - 5)).toMatchObject({ kind: 'wild', side: -1, ind
   }
   ```
   東側 gen2 涵蓋 `x ≥ east.x`、西側涵蓋 `x < west.x`；新世界 `east.x = 4200`、`west.x = 0`、兩側 `start = 'sea'`、`home = [0, 4200)`。每側地塊序號 i = 1, 2, …，從 `start` 開始海 / 大陸交替；家鄉是 `(0, 0)`。
+- **海與島的 RegionInfo 由 Layout 產生（裁決 P12，唯一擁有者）**：海地塊的 `regions = [海本身, 島 1, 島 2, …]`。海本身 `{ kind: 'sea', variant: SEA, biome: OCEAN, index: 0, x0: m.x0, x1: m.x1 }`；第 j 座島 `{ kind: 'island', variant: ISLAND, biome: FOREST, index: j, x0: 島.x0, x1: 島.x1 }`；兩者的 landmass / side / tier / culture 取該海地塊（culture null）。`regionAt(x)` 在島範圍內回島、否則回海本身。`slots` 是同一道海的槽位清單（`SeaSlot`，依 x 排序、`k` 從 0 起）。後續 Task 只讀這些，不自己再造。
 
 **版面規則（凍結對象，M2 起不得改輸出）：**
 - 海寬：該側第一道 gen2 海 480–700；第 k 道（k ≥ 2）480–`min(1200, 700 + 100(k−1))`。槽位數 `ceil(海寬 / 300)`，均分（最後一槽吃餘數）。島數 1–`min(3, 槽位數)`，挑不同槽；島寬 40–`min(160, 槽寬 − 80)`，置中 ± `floor(槽寬 / 10)`。其他槽的 `poi` 依雜湊 50% `shipwreck`、50% `crate`（`reef`、`sea_ruin` 留 M2）。
@@ -381,7 +390,18 @@ it('交替、寬度範圍、地區鋪滿', () => {
     }
   }
 });
-it('海的島與槽位', () => { /* 每道海：槽寬 ≤ 300、槽鋪滿海；1–3 座島、寬 40–160、在自己的槽內；每槽恰一個 poi；島槽 poi = 'island' */ });
+it('海的島與槽位、海 / 島的 RegionInfo', () => { for (const seed of SEEDS20) for (const side of [1, -1] as const) for (const i of [1, 3, 5, 7]) {
+  const m = L(seed).landmass(side, i), n = Math.ceil((m.x1 - m.x0) / 300);
+  expect(m.slots).toHaveLength(n); expect(m.slots[0].x0).toBe(m.x0); expect(m.slots.at(-1)!.x1).toBe(m.x1);
+  m.slots.forEach((s, k) => { expect(s.k).toBe(k); expect(s.x1 - s.x0).toBeLessThanOrEqual(300); if (k) expect(s.x0).toBe(m.slots[k - 1].x1); });
+  expect(m.islands.length).toBeGreaterThanOrEqual(1); expect(m.islands.length).toBeLessThanOrEqual(Math.min(3, n));
+  for (const d of m.islands) { const s = m.slots[d.slot]; expect(d.x1 - d.x0).toBeGreaterThanOrEqual(40); expect(d.x1 - d.x0).toBeLessThanOrEqual(160);
+    expect(d.x0).toBeGreaterThanOrEqual(s.x0); expect(d.x1).toBeLessThanOrEqual(s.x1); expect(s.poi).toBe('island'); }
+  expect(m.slots.filter((s) => s.poi === 'island')).toHaveLength(m.islands.length);
+  expect(m.regions[0]).toMatchObject({ kind: 'sea', index: 0, x0: m.x0, x1: m.x1, biome: BIOME.OCEAN, variant: VARIANT.SEA });
+  m.islands.forEach((d, j) => { expect(m.regions[j + 1]).toMatchObject({ kind: 'island', index: j + 1, x0: d.x0, x1: d.x1, variant: VARIANT.ISLAND, tier: m.tier });
+    expect(L(seed).regionAt((d.x0 + d.x1) >> 1)!.kind).toBe('island'); });
+  const free = m.slots.find((s) => s.poi !== 'island'); if (free) expect(L(seed).regionAt(free.x0 + 1)!.kind).toBe('sea'); } });
 it('文化：第一片東西大陸恰一片霧竹、20 個種子兩側都出現過；之後相鄰大陸文化不同；tier', () => {
   const sides = new Set<number>();
   for (const seed of SEEDS20) { const lay = L(seed), e = lay.landmass(1, 2), w = lay.landmass(-1, 2);
@@ -392,17 +412,31 @@ it('文化：第一片東西大陸恰一片霧竹、20 個種子兩側都出現�
     expect(e.kind === 'continent' && e.regions.every((r) => r.kind === (e.culture ? 'culture' : 'wild'))).toBe(true); }
   expect(sides.size).toBe(2);
 });
-it('家鄉：[0,4200)、出生森林、兩端海灘、四種生態都在', () => { /* regionAt(2100).variant === SPAWN；regionAt(0/4199).variant === BEACH；biome 集合 = {0,1,2,3} */ });
+it('家鄉：[0,4200)、出生森林、兩端海灘、四種生態都在', () => { for (const seed of SEEDS20) { const lay = L(seed), h = lay.landmassAt(SPAWN_X)!;
+  expect(h).toMatchObject({ side: 0, i: 0, kind: 'home', x0: 0, x1: 4200, tier: 0 });
+  expect(lay.regionAt(SPAWN_X)).toMatchObject({ variant: VARIANT.SPAWN, x0: 1680, x1: 2520, biome: BIOME.FOREST });
+  expect(lay.regionAt(0)).toMatchObject({ variant: VARIANT.BEACH, x1: 70 }); expect(lay.regionAt(4199)).toMatchObject({ variant: VARIANT.BEACH, x0: 4130 });
+  expect(new Set(h.regions.map((r) => r.biome))).toEqual(new Set([0, 1, 2, 3])); expect(h.regions.every((r) => r.kind === 'home')).toBe(true); } });
 it('鎖覆寫文化並往後推', () => { const locks = new LockTable(); const free = L('s');
   const c1 = free.landmass(1, 2).culture; locks.lock(1, 2, { ver: 0, culture: c1 ? null : 'mistbamboo' });
   const lay = L('s', locks); expect(lay.landmass(1, 2).culture).toBe(c1 ? null : 'mistbamboo');
   expect(lay.landmass(1, 4).culture).not.toBe(lay.landmass(1, 2).culture); });
-it('regionAt 與 landmassAt 一致、與查詢順序無關、跨實例相同', () => { /* x ∈ [−60000, 60000) 每 97 格；正序 / 倒序兩個實例的結果 toEqual */ });
+it('regionAt 與 landmassAt 一致、與查詢順序無關、跨實例相同', () => { const xs: number[] = []; for (let x = -60_000; x < 60_000; x += 97) xs.push(x);
+  const a = L('ord'), b = L('ord'), fa = xs.map((x) => a.regionAt(x)), fb = [...xs].reverse().map((x) => b.regionAt(x)).reverse();
+  expect(fb).toEqual(fa);
+  xs.forEach((x, k) => { const m = a.landmassAt(x)!, r = fa[k]!; expect(r.x0).toBeLessThanOrEqual(x); expect(r.x1).toBeGreaterThan(x);
+    expect(m.regions).toContainEqual(r); expect([r.side, r.landmass]).toEqual([m.side, m.i]); }); });
 it('烘焙原點：東側從大陸開始時第一片是 tier 1 的大陸', () => {
   const lay = new Layout('s', { home: null, east: { x: 10_000, start: 'continent', seaY: 345, shore: 340 }, west: { x: -1_000, start: 'sea', seaY: 331, shore: 320 } }, new LockTable(), 0);
   expect(lay.landmass(1, 1)).toMatchObject({ kind: 'continent', x0: 10_000, tier: 1 }); expect(lay.landmassAt(5_000)).toBeNull();
 });
-// locks.test.ts：toJSON 排序、fromJSON 往返、壞資料（非陣列 / side 非 −1|0|1 / ver 非非負整數 / culture 不在清單）丟 RangeError、frozen 時 lock 回 false 且不記
+// locks.test.ts
+it('LockTable', () => { const t = new LockTable();
+  expect(t.lock(1, 3, { ver: 0, culture: null })).toBe(true); expect(t.lock(-1, 2, { ver: 0, culture: 'mistbamboo' })).toBe(true); expect(t.lock(1, 3, { ver: 0, culture: null })).toBe(false);
+  expect(t.toJSON()).toEqual([[-1, 2, 0, 'mistbamboo'], [1, 3, 0, null]]);
+  expect(LockTable.fromJSON(t.toJSON()).toJSON()).toEqual(t.toJSON());
+  for (const bad of ['x', [[2, 1, 0, null]], [[1, 1, -1, null]], [[1, 1, 0.5, null]], [[1, 1, 0, 'atlantis']]]) expect(() => LockTable.fromJSON(bad)).toThrow(RangeError);
+  const f = LockTable.fromJSON([], { frozen: true }); expect(f.lock(1, 1, { ver: 0, culture: null })).toBe(false); expect(f.get(1, 1)).toBeUndefined(); });
 ```
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2`；Expected: FAIL（模組不存在）。
@@ -419,11 +453,12 @@ it('烘焙原點：東側從大陸開始時第一片是 tier 1 的大陸', () =>
 - Test: `engine/gen2/profile.test.ts`
 
 **Interfaces:**
-- Consumes: `Layout`、`Landmass`、`VARIANT`（Task 6）。
+- Consumes: `Layout`、`Landmass`、`VARIANT`、`SideOrigin`、海 / 島的 `RegionInfo`（Task 6）；`vnoise1` / `hash2` / `seedInt`（`engine/noise.ts`，不 import legacy）。
 - Produces：
   ```ts
   export const SEA_Y = 341, CAVERN_BASE = 560, MOLTEN_BASE = 1010, LAVA_Y = MOLTEN_BASE + 40;
-  export const BLEND_W = 40, SHORE_RAMP = 100, BEACH_W = 40, SEA_DEPTH = 46, ISLAND_RAMP = 20, SPAWN_FLAT = 60;
+  export const BLEND_W = 40, SHORE_RAMP = 100, BEACH_W = 40, SEA_DEPTH = 46, ISLAND_RAMP = 20, SPAWN_FLAT = 60, SPAWN_RAMP = 40;
+  export const AMP: Readonly<Record<number, number>>;   // 鍵 = VARIANT 的每一個值（7 個），見下
   export const COL_SEA = 0, COL_BEACH = 1, COL_LAND = 2, COL_ISLAND = 3;
   export interface ColInfo2 { kind: 0 | 1 | 2 | 3; surface: number; waterTop: number; biome: number; rock: number; deep: number; molten: number; region: RegionInfo }
   export class Profile2 {
@@ -433,7 +468,13 @@ it('烘焙原點：東側從大陸開始時第一片是 tier 1 的大陸', () =>
     layersAt(x: number): ColumnLayers; regionAt(x: number): RegionInfo | null;
   }
   ```
-- 規則：陸地地表 = `seaY − 7 − round(RELIEF[biome] × AMP[variant] × n(x))`，`n` 同 v1 的兩層 `vnoise1`；`RELIEF` 沿用 v1（森林 14、沙漠 8、雪 28、叢林 12），`AMP = { PLAIN: 0.5, HILLS: 1, HIGH: 1.8 }`；地區交界 `BLEND_W` 內振幅與基準線性內插；SPAWN 地區在 `SPAWN_X ± SPAWN_FLAT` 振幅 0。海：水面 `seaY`、海床 `seaY + SEA_DEPTH ± 8`，離岸 `SHORE_RAMP` 內線性爬升到岸邊地表；陸地離水 `BEACH_W` 內是沙灘。島：台地 `seaY − (3..10)`，兩側 `ISLAND_RAMP` 斜到海床。`seaY` / 岸高取 `SideOrigin`（新世界兩側都是 `SEA_Y`）。層線比照 v1（rock = surface + 18 ± 8、deep = CAVERN_BASE ± 16、molten = MOLTEN_BASE ± 12，夾住順序）。
+- 規則：陸地地表 = `seaY − 7 − round(RELIEF[biome] × AMP[variant] × n(x))`，`n` 同 v1 的兩層 `engine/noise.ts` `vnoise1`；`RELIEF` 沿用 v1（森林 14、沙漠 8、雪 28、叢林 12）；地區交界 `BLEND_W` 內振幅與基準線性內插。
+- `AMP` 對 Task 6 會產生的**每一個** variant 都有值（裁決 P3）：`{ PLAIN: 0.5, HILLS: 1, HIGH: 1.8, SPAWN: 0.5, BEACH: 0.3, ISLAND: 0, SEA: 0 }`（島與海的地形走下面的專用規則，0 只是讓查表不會 undefined）。
+- 出生平地（P3）：`|x − SPAWN_X| ≤ SPAWN_FLAT` 振幅 0；`SPAWN_FLAT < |x − SPAWN_X| ≤ SPAWN_FLAT + SPAWN_RAMP` 振幅從 0 線性升到 `AMP.SPAWN`；之外照常。這樣 ±60 邊緣也滿足相鄰欄差 ≤ 4。
+- 海：水面 `seaY`、海床 `seaY + SEA_DEPTH ± 8`，離岸 `SHORE_RAMP` 內線性爬升到岸邊地表；陸地離水 `BEACH_W` 內是沙灘。島：台地 `seaY − (3..10)`，兩側 `ISLAND_RAMP` 斜到海床（島欄的形狀在這裡；島的表層材質與樹歸 Task 11，P12）。`seaY` / 岸高取 `SideOrigin`（新世界兩側都是 `SEA_Y`）。
+- 接縫（P13，烘焙世界專用）：`start: 'sea'` → 第一道海從 `shore`（v1 陸地內側一格的地表）斜下到海床。`start: 'continent'` → 第一片大陸緊貼 v1 的海：從 `x = origin.x` 起 `SHORE_RAMP` 格內地表從 `shore`（= v1 接縫內側一格的海床）線性爬升到陸地地表，地表在 `seaY` 以下的欄 `waterTop = seaY`（延續 v1 的海、深度與 v1 海床相接）、`kind = SEA`；之後 `BEACH_W` 格沙灘、再來才是陸地。
+- 層線比照 v1（rock = surface + 18 ± 8、deep = CAVERN_BASE ± 16、molten = MOLTEN_BASE ± 12，夾住順序）。
+- `ColInfo2.region` 不可為 null：`info(x)` 只對 gen2 範圍內的 x 呼叫，範圍外丟 RangeError；`regionAt(x)` 才回 `RegionInfo | null`。
 
 - [ ] **Step 1: 寫失敗測試**
 
@@ -442,14 +483,34 @@ const P = (seed = 'p') => new Profile2(seed, new Layout(seed, newWorldOrigin(SEA
 it('層線順序與範圍', () => { for (let x = -40000; x < 40000; x += 97) { const i = P().info(x);
   expect(i.surface).toBeGreaterThanOrEqual(1); expect(i.surface).toBeLessThan(i.rock); expect(i.rock).toBeLessThan(i.deep);
   expect(i.deep).toBeLessThan(i.molten); expect(i.molten).toBeLessThan(1200); } });
-it('出生點 ±60 平坦', () => { const p = P(); const s = p.surfaceAt(SPAWN_X); for (let x = SPAWN_X - 60; x <= SPAWN_X + 60; x++) expect(p.surfaceAt(x)).toBe(s); });
+it('出生點 ±60 平坦、±100 內相鄰差 ≤ 4', () => { for (const seed of SEEDS20) { const p = P(seed), s = p.surfaceAt(SPAWN_X);
+  for (let x = SPAWN_X - 60; x <= SPAWN_X + 60; x++) expect(p.surfaceAt(x)).toBe(s);
+  for (let x = SPAWN_X - 101; x <= SPAWN_X + 100; x++) expect(Math.abs(p.surfaceAt(x + 1) - p.surfaceAt(x))).toBeLessThanOrEqual(4); } });
+it('AMP 涵蓋每個 variant', () => { for (const v of Object.values(VARIANT)) expect(AMP[v]).toBeTypeOf('number'); });
 it('相鄰欄地表差 ≤ 4（洞穴不會從側面挖到水）', () => { const p = P(); for (let x = -30000; x < 30000; x++) expect(Math.abs(p.surfaceAt(x + 1) - p.surfaceAt(x))).toBeLessThanOrEqual(4); });
-it('海：水面 = seaY、海床在水面下 ≥ 2；島台地在水面上；biome', () => { /* 走前 6 道海每格：kind SEA → waterTop === SEA_Y && surface ≥ SEA_Y + 2 && biomeAt === OCEAN；ISLAND → surface < SEA_Y && biome FOREST && regionAt.kind === 'island' */ });
-it('沙灘：陸地離水 40 格內 kind = BEACH', () => { /* 家鄉兩端 x ∈ [0,40) 與 [4160,4200) */ });
+it('海：水面 = seaY、海床在水面下 ≥ 2；島台地在水面上；biome', () => { const lay = new Layout('p', newWorldOrigin(SEA_Y, SEA_Y - 7), new LockTable(), 0), p = new Profile2('p', lay, 1200); let isl = 0;
+  for (const side of [1, -1] as const) for (const i of [1, 3, 5]) { const m = lay.landmass(side, i);
+    for (let x = m.x0; x < m.x1; x++) { const c = p.info(x);
+      if (c.kind === COL_SEA) { expect(c.waterTop).toBe(SEA_Y); expect(c.surface).toBeGreaterThanOrEqual(SEA_Y + 2); expect(p.biomeAt(x)).toBe(BIOME.OCEAN); }
+      if (c.kind === COL_ISLAND) { isl++; expect(c.surface).toBeLessThan(SEA_Y); expect(c.biome).toBe(BIOME.FOREST); expect(c.region.kind).toBe('island'); } } }
+  expect(isl).toBeGreaterThan(0); });
+it('沙灘：陸地離水 40 格內 kind = BEACH', () => { const p = P();
+  for (let x = 0; x < 40; x++) expect(p.info(x).kind).toBe(COL_BEACH); for (let x = 4160; x < 4200; x++) expect(p.info(x).kind).toBe(COL_BEACH);
+  expect(p.info(200).kind).toBe(COL_LAND); });
 it('快取不改變結果', () => { const a = P('c'), b = P('c'); const xs = [...Array(3000)].map((_, k) => ((k * 7919) % 60000) - 30000);
   for (const x of xs) expect(a.info(x)).toEqual(b.info(x)); for (const x of [...xs].reverse()) expect(a.info(x)).toEqual(b.info(x)); });
-it('烘焙原點：第一道海從 shore 高度斜下', () => { /* origin.east = { x: 9000, start: 'sea', seaY: 346, shore: 330 }：surfaceAt(9000) 接近 330、waterTopAt(9050) === 346 */ });
+const PO = (east: SideOrigin) => new Profile2('o', new Layout('o', { home: null, east, west: { x: -1000, start: 'sea', seaY: 331, shore: 320 } }, new LockTable(), 0), 1200);
+it('烘焙原點（海開始）：第一道海從 shore 高度斜下', () => { const p = PO({ x: 9000, start: 'sea', seaY: 346, shore: 330 });
+  expect(Math.abs(p.surfaceAt(9000) - 330)).toBeLessThanOrEqual(2); expect(p.waterTopAt(9050)).toBe(346);
+  for (let x = 9000; x < 9000 + SHORE_RAMP; x++) expect(Math.abs(p.surfaceAt(x + 1) - p.surfaceAt(x))).toBeLessThanOrEqual(4); });
+it('烘焙原點（大陸開始，P13）：從 v1 海床爬升、延續水面、接沙灘再接陸地', () => { const p = PO({ x: 9000, start: 'continent', seaY: 346, shore: 392 });
+  expect(Math.abs(p.surfaceAt(9000) - 392)).toBeLessThanOrEqual(2); expect(p.waterTopAt(9000)).toBe(346); expect(p.info(9000).kind).toBe(COL_SEA);
+  for (let x = 9000; x < 9000 + SHORE_RAMP + BEACH_W; x++) expect(Math.abs(p.surfaceAt(x + 1) - p.surfaceAt(x))).toBeLessThanOrEqual(4);
+  const firstDry = [...Array(SHORE_RAMP + BEACH_W)].map((_, k) => 9000 + k).find((x) => p.waterTopAt(x) === null)!;
+  expect(p.info(firstDry).kind).toBe(COL_BEACH); expect(p.info(9000 + SHORE_RAMP + BEACH_W + 5).kind).toBe(COL_LAND);
+  expect(p.regionAt(9000)!.kind).toMatch(/^(wild|culture)$/); });
 ```
+（`SEEDS20` 同 Task 6。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/profile.test.ts`；Expected: FAIL。
 - [ ] **Step 3: 實作** — 如上規則；`info` 以 `x >> 5` 為鍵整段算 32 欄存進 `Int16Array` / `Uint8Array`（region 物件另存陣列），Map 超過 64 段整個清掉。
@@ -461,8 +522,9 @@ it('烘焙原點：第一道海從 shore 高度斜下', () => { /* origin.east =
 ### Task 8: gen2 填格與 Gen2Source（材質、洞穴、主坑道、礦、海、熔岩線、樹）
 
 **Files:**
-- Create: `engine/gen2/fill.ts`、`engine/gen2/caves.ts`、`engine/gen2/index.ts`
-- Modify: `engine/legacy/chunkgen/chunkgen.test.ts:261-270`（禁用 API 測試延伸到 `engine/gen2/**`）
+- Create: `engine/genPrims.ts`（裁決 P10：v1 與 gen2 共用的 primitives）、`engine/gen2/fill.ts`、`engine/gen2/caves.ts`、`engine/gen2/index.ts`
+- Modify: `engine/legacy/chunkgen/fill.ts`（`ColNoise`、洞穴 / 入口 / 礦噪聲取樣、樹 / 仙人掌繪製改從 `engine/genPrims.ts` import；v1 的材質與礦種規則留在原檔；輸出由 `V1_FILL_HASH` 釘住）
+- Modify: `engine/legacy/chunkgen/chunkgen.test.ts:261-270`（禁用 API 測試延伸到 `engine/gen2/**` 與 `engine/genPrims.ts`；新增 `V1_FILL_HASH`）
 - Test: `engine/gen2/fill.test.ts`、`engine/gen2/testUtil.ts`（測試共用，後面的 Task 都用：`fillCol(src: ColumnSource, cx: number): Column`、`bytes(c: Column): Uint8Array`、`worldOf(src: ColumnSource): World`（4200×1200、infinite、`central: 'source'`）、`loadColumns(w: World, x0: number, x1: number): void`、`sampleRegions(src: Gen2Source, o: { home: boolean; perSide: number }): RegionInfo[]`（陸地地區）、`bfsReachesDepth(w, x, y, deepAt: (x: number) => number, xLo: number, xHi: number): boolean`（4 鄰空氣 BFS）、`liquidInvariant(w: World, x0: number, x1: number): { x: number; y: number }[]`（違規格））
 
 **Interfaces:**
@@ -482,43 +544,76 @@ it('烘焙原點：第一道海從 shore 高度斜下', () => { /* origin.east =
   }
   ```
   `regionAt` 在 gen2 範圍外丟 RangeError（只會被 `BakedSource` 在範圍內呼叫）。
-- Produces（`caves.ts`）：`shaftX(seed: number, r: RegionInfo): number`（地區內離兩端 ≥ 120 格、離 SPAWN_X ≥ 100；海與島地區回 NaN）；`shaftOffset(seed: number, r: RegionInfo, y: number): number`（三角波：每列水平移 1、振幅 12）。
+- Produces（`caves.ts`）：`shaftX(seed: number, r: RegionInfo): number`——離兩端至少 `margin = min(120, floor((r.x1 − r.x0) / 4))` 格、離 SPAWN_X ≥ 100（裁決 P4）；BEACH 地區、海與島地區回 NaN；`shaftOffset(seed: number, r: RegionInfo, y: number): number`（三角波：每列水平移 1、振幅 12）。
+- Produces（`engine/genPrims.ts`，P10）：`class ColNoise`（從 v1 原樣搬來，不是複製）、`spagHit(n: ColNoise, y, depthFrac): boolean` / `cavernHit(...)` / `entranceHit(...)`（v1 的門檻常數跟著搬）、`oreNoise(x, y, s): number`（只回噪聲值，不決定礦種）、`plantTree(col, x, groundY, biome, rng)` / `plantCactus(...)`。v1 `OuterFiller` 與 gen2 `Filler2` 都 import 這一份；兩邊各自保留自己的材質表與「哪個噪聲值換成哪種礦、能替換哪些格」的規則。
 
-**填格規則：** 表層材質同 v1（森林草 + 泥、沙漠沙 6 + 砂岩、雪 5、叢林叢林草 + 泥巴；海床沙 3、沙灘沙 4）；岩層 / 深層岩 / 玄武岩與牆同 v1；噪聲洞穴用 v1 的義大利麵 + 大洞窟參數（`ColNoise` 從 `legacy/chunkgen/fill` 複製一份到 `gen2/fill.ts`，不 import legacy），地表下 6 格內不挖（海與島的欄 8 格）、地表入口欄除外；主坑道：每個陸地地區一條，從 `surface(shaftX) − 1` 到 `deep + 12`，坑道中心 `shaftX + shaftOffset(y)`，每列挖寬 2（中心與 +1）、高 4 的空氣（之字形坡道，走得下去），底端挖半徑 6 的圓室；礦同 v1 門檻與深度帶；海水 = 水面到海床前一格滿格靜止；熔岩：`y ≥ LAVA_Y` 的空氣格填滿熔岩（全世界同一條水平線 → 不會有階梯狀熔岩）；樹 / 仙人掌同 v1（陸地與島），出生點 ±3 不長樹。`fill` 依地塊的 ver（鎖 / latestVer）傳進每個 pass（`ctx.ver`），M1 沒有版本分支。
+**填格規則：** 表層材質（gen2 自己的表，數值與 v1 相同）：森林草 + 泥、沙漠沙 6 + 砂岩、雪 5、叢林叢林草 + 泥巴；海床沙 3、沙灘沙 4；岩層 / 深層岩 / 玄武岩與牆同 v1；噪聲洞穴用 `genPrims` 的義大利麵 + 大洞窟取樣，地表下 6 格內不挖（海與島的欄 8 格）、地表入口欄除外；主坑道：每個**非沙灘的陸地地區**一條（P4：沙灘只有 70 格寬，豁免），從 `surface(shaftX) − 1` 到 `deep + 12`，坑道中心 `shaftX + shaftOffset(y)`，每列挖寬 2（中心與 +1）、高 4 的空氣（之字形坡道，走得下去），底端挖半徑 6 的圓室；礦用 `oreNoise` 與 v1 的門檻 / 深度帶，但**只替換石頭類格**（石、深層岩），海床與沙灘的沙一律不換成礦（P10：不帶過 v1「銅換掉海床沙」的 carry bug）；海水 = 水面到海床前一格滿格靜止；熔岩：`y ≥ LAVA_Y` 的空氣格填滿熔岩（全世界同一條水平線 → 不會有階梯狀熔岩）；樹 / 仙人掌用 `genPrims` 繪製、只長在陸地欄，出生點 ±3 不長樹。島欄在本 Task 只填與海床相同的底層材質（沙 / 石），島的表層材質與樹歸 Task 11（P12）。`fill` 依地塊的 ver（鎖 / latestVer）傳進每個 pass（`ctx.ver`），M1 沒有版本分支。
 
-- [ ] **Step 1: 寫失敗測試**
+- [ ] **Step 1: 先釘住 v1 輸出（抽 primitives 之前，P10）**
 
 ```ts
-it('確定性與順序無關：正序 / 倒序 / 另一實例位元組相同；子範圍分段填 = 整欄', () => { /* 比照 v1 (1)(1b)，cx ∈ [−400..−360] ∪ [60..70] ∪ [131..150] */ });
-it('主坑道：每個陸地地區從地表走得到洞穴層', () => {
+// chunkgen.test.ts
+it('v1 fill 位元組雜湊固定（陸地 + 海 + 沙灘 + 西側）', () => { const gen = new OuterGen('v1-pin', F); let h = 0x811c9dc5;
+  for (const cx of [131, 132, 140, 146, 147, 150, 160, 200, 260, -1, -5, -16, -17, -40, -90]) h = fnv1a(bytes(filled(gen, cx)), h);
+  expect(h).toBe(V1_FILL_HASH); });   // 先放 0、跑一次取現值貼上、再跑 PASS
+```
+然後把 `ColNoise` 等 primitives 從 `legacy/chunkgen/fill.ts` 搬到 `engine/genPrims.ts`、v1 改 import；`V1_FILL_HASH` 與 `V1_SEA_HASH`（Task 3）都必須仍 PASS 才進 Step 2。
+
+- [ ] **Step 2: 寫失敗測試**
+
+```ts
+const CXS = [...range(-400, -360), ...range(60, 71), ...range(131, 151)];
+it('確定性與順序無關：正序 / 倒序 / 另一實例位元組相同；子範圍分段填 = 整欄', () => {
+  const a = new Gen2Source('det'), b = new Gen2Source('det'), fwd = CXS.map((cx) => bytes(fillCol(a, cx)));
+  expect([...CXS].reverse().map((cx) => bytes(fillCol(b, cx))).reverse()).toEqual(fwd);
+  for (const cx of [-380, 65, 140]) { const parts = new Column(cx, 1200); a.fill(parts, cx * 32, cx * 32 + 11); a.fill(parts, cx * 32 + 11, cx * 32 + 32);
+    expect(bytes(parts)).toEqual(bytes(fillCol(a, cx))); } });
+it('主坑道：每個非沙灘的陸地地區都有、且從地表走得到洞穴層（P4）', () => {
   const src = new Gen2Source('shaft'); const w = worldOf(src); const s = seedInt('shaft', 'g2-shaft');
-  for (const r of sampleRegions(src, { home: true, perSide: 3 })) {
-    const sx = shaftX(s, r);
+  const regs = sampleRegions(src, { home: true, perSide: 3 });
+  for (const r of regs.filter((q) => q.variant === VARIANT.BEACH)) expect(shaftX(s, r)).toBeNaN();
+  for (const r of regs.filter((q) => q.variant !== VARIANT.BEACH)) {
+    const sx = shaftX(s, r), m = Math.min(120, Math.floor((r.x1 - r.x0) / 4));
+    expect(Number.isFinite(sx)).toBe(true); expect(sx).toBeGreaterThanOrEqual(r.x0 + m); expect(sx).toBeLessThan(r.x1 - m);
     loadColumns(w, sx - 20, sx + 20);
     expect(bfsReachesDepth(w, sx, src.surfaceAt(sx) - 1, (x) => src.layersAt(x).deep, sx - 20, sx + 20)).toBe(true);
     for (let y = src.surfaceAt(sx); y < src.layersAt(sx).deep; y++) expect(Math.abs(shaftOffset(s, r, y + 1) - shaftOffset(s, r, y))).toBeLessThanOrEqual(1);
   }
 });
-it('礦在對的層：陸地每 10 欄裡銅 / 鐵 / 銀 / 金都出現在對的深度帶', () => { /* 比照 v1 (5) */ });
+it('礦在對的層：陸地銅 / 鐵 / 銀 / 金都出現、各在自己的深度帶', () => { const src = new Gen2Source('ore'), seen = new Set<number>();
+  for (let cx = 160; cx < 230; cx += 7) { const col = fillCol(src, cx); for (let x = cx * 32; x < cx * 32 + 32; x++) { const L = src.layersAt(x);
+    for (let y = 0; y < 1200; y++) { const t = col.fg[li(x, y)]; if (!ORES.has(t)) continue; seen.add(t);
+      expect(y).toBeGreaterThanOrEqual(ORE_BAND[t](L)[0]); expect(y).toBeLessThan(ORE_BAND[t](L)[1]); } } }
+  expect(seen).toEqual(ORES); });
+it('海床與沙灘的沙不會被換成礦（P10）', () => { const src = new Gen2Source('sand'), sea = src.layout.landmass(1, 1);
+  for (let x = sea.x0; x < sea.x1; x += 3) { if (src.profile.info(x).kind !== COL_SEA) continue; const col = fillCol(src, x >> 5), s = src.surfaceAt(x);
+    for (let y = s; y < s + 3; y++) expect(col.fg[li(x, y)]).toBe(T.SAND); } });
 it('靜態液體不變量：海與熔岩格的下方與左右都是實心或液體（水 / 熔岩各自滿格）', () => {
   const w = worldOf(new Gen2Source('liq')); loadColumns(w, 4150, 4200 + 1400);
   expect(liquidInvariant(w, 4150, 4200 + 1400)).toEqual([]);          // 回傳違規格清單
 });
-it('熔岩表面在 LAVA_Y：沒有熔岩格的上方是空氣卻在 LAVA_Y 以下（不會有階梯）', () => { /* 掃 10 欄 */ });
-it('出生點站得住：(SPAWN_X, surface) 是實心、上方 4 格空氣、±3 沒有樹幹', () => {});
+it('熔岩表面在 LAVA_Y：LAVA_Y 以下沒有空氣、LAVA_Y 以上沒有熔岩（不會有階梯）', () => { const src = new Gen2Source('lava');
+  for (const cx of [20, 70, 140, 190, -50]) { const col = fillCol(src, cx); for (let x = cx * 32; x < cx * 32 + 32; x++) for (let y = 0; y < 1200; y++) {
+    if (y >= LAVA_Y) expect(col.fg[li(x, y)] !== T.AIR || col.liquidType[li(x, y)] === LIQ.LAVA).toBe(true);
+    else expect(col.liquidType[li(x, y)]).not.toBe(LIQ.LAVA); } } });
+it('出生點站得住：腳下實心、上方 2 格空氣、±3 沒有樹幹（P9）', () => { for (const seed of SEEDS5) { const src = new Gen2Source(seed), s = src.surfaceAt(SPAWN_X), col = fillCol(src, SPAWN_X >> 5);
+  expect(isSolidTile(col.fg[li(SPAWN_X, s)])).toBe(true);
+  expect(col.fg[li(SPAWN_X, s - 1)]).toBe(T.AIR); expect(col.fg[li(SPAWN_X, s - 2)]).toBe(T.AIR);
+  for (let x = SPAWN_X - 3; x <= SPAWN_X + 3; x++) for (let y = s - 12; y < s; y++) expect(col.fg[li(x, y)]).not.toBe(T.TREE); } });
 it('版本鎖：fill 過的地塊被鎖成 ver 0；recordLocks: false 不鎖', () => {
   const src = new Gen2Source('lk'); fillCol(src, 140);
   expect(src.locks.get(1, 1)).toEqual({ ver: 0, culture: null }); expect(src.locks.get(0, 0)).toBeUndefined();
   const rep = new Gen2Source('lk', { recordLocks: false }); fillCol(rep, 140); expect(rep.locks.toJSON()).toEqual([]);
 });
-// chunkgen.test.ts (6)：再掃 engine/gen2 底下（遞迴）所有非 .test.ts 的 .ts，banned regex 不得命中；檔案數 ≥ 5
+// chunkgen.test.ts (6)：再掃 engine/gen2 底下（遞迴）所有非 .test.ts 的 .ts 與 engine/genPrims.ts，banned regex 不得命中；gen2 檔案數 ≥ 5
+// 同一個測試再加：engine/gen2/** 沒有一個檔 import 'legacy/'（expect(hits).toEqual([])）
 ```
-（`fillCol` 填的 cx = 140 在第一道東海，涉及 `(1, 1)`；家鄉 `(0, 0)` 只在填到 [0, 4200) 時才鎖。）
+（`fillCol` 填的 cx = 140 在第一道東海，涉及 `(1, 1)`；家鄉 `(0, 0)` 只在填到 [0, 4200) 時才鎖。`range(a, b)`、`SEEDS5`、`ORES = new Set([T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE])`、`ORE_BAND[t](layers) → [yMin, yMax)`（照 v1 的深度帶寫成表）、`isSolidTile` 寫在 `testUtil.ts` 或測試檔內；tile 名稱以 `engine/tiles.ts` 實際名稱為準。）
 
-- [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2 src/scripts/games/delve/engine/legacy/chunkgen`；Expected: FAIL。
-- [ ] **Step 3: 實作** `fill.ts`（`Filler2.fill(col, x0, x1, ver)`）、`caves.ts`、`index.ts`（組 Layout / Profile2 / Filler2；`objectsIn` 先回 `[]`，Task 9 接上）。`index.ts` 檔頭註解寫清楚版本閘門慣例。
-- [ ] **Step 4: 跑測試** — 同 Step 2；Expected: PASS。
-- [ ] **Step 5: Commit** — `feat(delve): gen2 fill — materials, caves, per-region main shaft, ores, static sea and lava line`。
+- [ ] **Step 3: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2 src/scripts/games/delve/engine/legacy/chunkgen`；Expected: gen2 測試 FAIL、`V1_FILL_HASH` / `V1_SEA_HASH` PASS。
+- [ ] **Step 4: 實作** `fill.ts`（`Filler2.fill(col, x0, x1, ver)`，import `engine/genPrims.ts`，不 import legacy）、`caves.ts`、`index.ts`（組 Layout / Profile2 / Filler2；`objectsIn` 先回 `[]`，Task 9 接上）。`index.ts` 檔頭註解寫清楚版本閘門慣例。
+- [ ] **Step 5: 跑測試** — 同 Step 3；Expected: 全 PASS（含兩個 v1 雜湊）。
+- [ ] **Step 6: Commit** — `feat(delve): gen2 fill — shared gen primitives, materials, caves, per-region main shaft, ores, static sea and lava line`（說明 v1 只換 import、雜湊釘住）。
 
 ---
 
@@ -542,7 +637,8 @@ it('版本鎖：fill 過的地塊被鎖成 ver 0；recordLocks: false 不鎖', (
   }
   export interface BpCtx { seed: string; s: number; id: number; slotX0: number; slotX1: number; region: RegionInfo; profile: Profile2; ver: number }
   export function structureId(side: Side, i: number, region: number, slot: number, layer: 0 | 1 | 2): number;
-  export function slotOf(id: number, layout: Layout): { x0: number; x1: number; region: RegionInfo; layer: 0 | 1 | 2 };  // structureId 的反查（測試用 slotOf(b.id, src.layout)）
+  // 陸地：region = 地區 index、slot = 陸地槽序號；海（P12）：region = 0（海本身）、slot = SeaSlot.k、layer = BP_SURFACE
+  export function slotOf(id: number, layout: Layout): { x0: number; x1: number; region: RegionInfo; layer: 0 | 1 | 2 };  // structureId 的反查；陸地槽與海槽都要能反查（Task 11 的藍圖也走這裡）
   export function depthFrac(p: Profile2, x: number, y: number): number;
   export function stamp(col: Column, bp: Blueprint, x0: number, x1: number): void;
   export class BlueprintIndex {
@@ -550,9 +646,10 @@ it('版本鎖：fill 過的地塊被鎖成 ver 0；recordLocks: false 不鎖', (
     overlapping(x0: number, x1: number): Blueprint[];   // 依 (layer, id) 排序；LRU 256 份
   }
   ```
-- Produces（structures）：`buildCabin(c: BpCtx): Blueprint | null`、`buildRuin(c: BpCtx): Blueprint | null`。
+- Produces（structures）：`buildCabin(c: BpCtx, o?: { force?: boolean }): Blueprint | null`、`buildRuin(c: BpCtx, o?: { force?: boolean }): Blueprint | null`（`force` 時不回 null，P11）。
 
-**槽位規則：** 每個陸地地區切成寬 `LAND_SLOT_W` 的槽（最後一槽吃餘數）；每槽各層至多一份藍圖，外框必須在 `[slotX0 + 8, slotX1 − 8)` 內（所以只要看與 [x0, x1) 相交的槽）。表層：遺跡 30%、湖 15%（Task 10）、其他空；地下層：小屋 40%、地下湖 15%（Task 10）；深層：熔岩池 20%（Task 10）。含 `shaftX` 的槽表層與地下層都空；家鄉含 `SPAWN_X ± 80` 的槽全空。**小屋**（照舊生成器的形狀、但不用 tileRunner）：寬 9–15、高 6–8，y ∈ [surface + 26, molten − 30]，木板外殼 + 木板牆、兩端 3 格高門洞、兩側各一條 14–30 格長的 3 格高直坑道、工作台、箱子（`'cabin'`）、火把、蜘蛛網、陶罐。**遺跡**：寬 12–18、高 7–9，底 = 寬度內地表平均，起伏 > 5 或雪原就不放（回 null）；石磚殘屋一側坍塌、上方清空、下方補該生態的土、箱子（`'ruin'`）、陶罐。`fill` 在材質 / 洞穴 / 礦 / 液體之後依序 `stamp`，樹根落在任何表層藍圖外框內就不長。`objectsIn(x0, x1)` = 相交藍圖中 x ∈ [x0, x1) 的箱子，內容 `chestLoot(seed, x, y, kind, depthFrac)`，`depthFrac = clamp((y − surface) / (height − surface))`。
+**槽位規則：** 每個陸地地區（kind `home` / `wild` / `culture`；海與島地區**不進**陸地槽位格，P12）切成寬 `LAND_SLOT_W` 的槽（最後一槽吃餘數）；每槽各層至多一份藍圖，外框必須在 `[slotX0 + 8, slotX1 − 8)` 內（外框寬含小屋兩側坑道；所以只要看與 [x0, x1) 相交的槽）。表層：遺跡 30%、湖 15%（Task 10）、其他空；地下層：小屋 40%、地下湖 15%（Task 10）；深層：熔岩池 20%（Task 10）。含 `shaftX` 的槽表層與地下層都空；家鄉含 `SPAWN_X ± 80` 的槽全空。
+**保證槽（裁決 P11）：** 每片**非家鄉**的大陸保證 ≥ 1 間小屋與 ≥ 1 座遺跡。做法：大陸的合格槽（不含 shaftX、地區非 BEACH）依 x 排序，起點 `g = hash2(side, i, s) % 合格槽數`；小屋的保證槽 = 從 g 往後第一個 `buildCabin` 不回 null 的槽、遺跡的保證槽 = 從 g + 1 往後第一個 `buildRuin` 不回 null 的槽（各自在槽內依序試 3 個候選 x：置中、±槽寬 / 4）；全部合格槽都失敗時改用 `force: true` 放在 g 槽（遺跡無視起伏 / 雪原門檻、地基補土整平；小屋無視其他回 null 的條件）。保證槽的那一層不再擲機率；其他槽照上面的機率。家鄉不保證。**小屋**（照舊生成器的形狀、但不用 tileRunner）：寬 9–15、高 6–8，y ∈ [surface + 26, molten − 30]，木板外殼 + 木板牆、兩端 3 格高門洞、兩側各一條 14–30 格長的 3 格高直坑道、工作台、箱子（`'cabin'`）、火把、蜘蛛網、陶罐。**遺跡**：寬 12–18、高 7–9，底 = 寬度內地表平均，起伏 > 5 或雪原就不放（回 null）；石磚殘屋一側坍塌、上方清空、下方補該生態的土、箱子（`'ruin'`）、陶罐。`fill` 在材質 / 洞穴 / 礦 / 液體之後依序 `stamp`，樹根落在任何表層藍圖外框內就不長。`objectsIn(x0, x1)` = 相交藍圖中 x ∈ [x0, x1) 的箱子，內容 `chestLoot(seed, x, y, kind, depthFrac)`，`depthFrac = clamp((y − surface) / (height − surface))`。
 
 - [ ] **Step 1: 寫失敗測試**
 
@@ -570,12 +667,18 @@ it('stamp 分段蓋 = 整欄蓋（跨欄藍圖）', () => { const b = all.find((
   const whole = fillCol(src, cx), parts = new Column(cx, 1200); src.fill(parts, cx * 32, b.x + 1); src.fill(parts, b.x + 1, cx * 32 + 32);
   expect(bytes(parts)).toEqual(bytes(whole)); });
 it('overlapping 回傳所有與範圍相交的藍圖', () => { for (const [a, z] of [[4100, 4300], [-3000, -2900], [2000, 2032]]) expect(idx.overlapping(a, z)).toEqual(all.filter((b) => b.x < z && b.x + b.w > a)); });
-it('出現率與排除區', () => { const lands = [src.layout.landmass(1, 2), src.layout.landmass(1, 4), src.layout.landmass(1, 6), src.layout.landmass(-1, 2), src.layout.landmass(-1, 4), src.layout.landmass(-1, 6)];
-  for (const m of [...lands, HOME]) { const in_ = all.filter((b) => b.x >= m.x0 && b.x < m.x1);
-    expect(in_.some((b) => b.kind === 'cabin')).toBe(true); expect(in_.some((b) => b.kind === 'ruin')).toBe(true); }
+it('保證槽（P11）：每片非家鄉大陸 ≥ 1 小屋 + ≥ 1 遺跡（5 個種子、確定）；排除區', () => { for (const seed of SEEDS5) {
+  const g = new Gen2Source(seed), bps = new BlueprintIndex(seed, g.layout, g.profile).overlapping(-40_000, 40_000);
+  for (const side of [1, -1] as const) for (const i of [2, 4, 6]) { const m = g.layout.landmass(side, i), in_ = bps.filter((b) => b.x >= m.x0 && b.x < m.x1);
+    expect(in_.filter((b) => b.kind === 'cabin').length).toBeGreaterThanOrEqual(1); expect(in_.filter((b) => b.kind === 'ruin').length).toBeGreaterThanOrEqual(1); } }
   expect(all.filter((b) => b.x < SPAWN_X + 80 && b.x + b.w > SPAWN_X - 80)).toEqual([]);
-  /* 對每個地區：含 shaftX 的槽沒有 layer 0 / 1 的藍圖 */ });
-it('主坑道在蓋上結構後仍走得到洞穴層', () => { /* 同 Task 8 的 bfsReachesDepth 迴圈，src 用含藍圖的 Gen2Source */ });
+  const s = seedInt('bp', 'g2-shaft');
+  for (const b of all.filter((q) => q.layer !== BP_DEEP)) { const r = slotOf(b.id, src.layout); const sx = shaftX(s, r.region);
+    if (Number.isFinite(sx)) expect(sx >= r.x0 && sx < r.x1).toBe(false); }
+  for (const b of all.filter((q) => ['cabin', 'ruin'].includes(q.kind))) expect(['home', 'wild', 'culture']).toContain(slotOf(b.id, src.layout).region.kind); });
+it('主坑道在蓋上結構後仍走得到洞穴層', () => { const w = worldOf(src), s = seedInt('bp', 'g2-shaft');
+  for (const r of sampleRegions(src, { home: true, perSide: 3 }).filter((q) => q.variant !== VARIANT.BEACH)) { const sx = shaftX(s, r);
+    loadColumns(w, sx - 20, sx + 20); expect(bfsReachesDepth(w, sx, src.surfaceAt(sx) - 1, (x) => src.layersAt(x).deep, sx - 20, sx + 20)).toBe(true); } });
 it('objectsIn：箱子在箱子 tile 上、內容 = chestLoot', () => { const b = all.find((q) => q.kind === 'cabin')!, c = b.chests[0], col = fillCol(src, c.x >> 5);
   expect(col.fg[li(c.x, c.y)]).toBe(T.CHEST);
   expect(src.objectsIn((c.x >> 5) * 32, (c.x >> 5) * 32 + 32).find((o) => o.x === c.x && o.y === c.y)!.slots).toEqual(chestLoot('bp', c.x, c.y, 'cabin', depthFrac(src.profile, c.x, c.y))); });
@@ -634,14 +737,14 @@ it('每份液體藍圖的水面 / 熔岩面是一條水平線', () => { for (con
 
 **Files:**
 - Create: `engine/gen2/structures/shipwreck.ts`、`engine/gen2/structures/crate.ts`
-- Modify: `engine/gen2/blueprint.ts`（海的槽位：`SeaSlot.poi` → 藍圖）、`engine/gen2/fill.ts`（島的表層與樹）
+- Modify: `engine/gen2/blueprint.ts`（海的槽位：`SeaSlot.poi` → 藍圖；`BlueprintIndex` 走海槽，id 用 Task 9 的海槽 `structureId`，`slotOf` 反查海槽）、`engine/gen2/fill.ts`（島的表層與樹——本 Task 是島地形的唯一擁有者，裁決 P12）
 - Test: `engine/gen2/sea.test.ts`
 
 **Interfaces:**
-- Consumes: `SeaSlot`、`IslandInfo`（Task 6）。
-- Produces: `buildShipwreck(c: BpCtx): Blueprint`、`buildCrate(c: BpCtx): Blueprint`（`BpCtx.slotX0/slotX1` 用海槽的範圍）。
+- Consumes: `SeaSlot`、`IslandInfo`、海 / 島 `RegionInfo`（Task 6）；海槽版 `structureId` / `slotOf`（Task 9）；`plantTree`（`engine/genPrims.ts`）。
+- Produces: `buildShipwreck(c: BpCtx): Blueprint`、`buildCrate(c: BpCtx): Blueprint`（`BpCtx.slotX0/slotX1` 用海槽的範圍、`region` = 海本身）。
 
-**規則：** 島 = Profile2 的島欄（Task 7）+ 沙灘沙、台地草、照森林規則長樹。沉船：寬 18–26、半埋在海床（船底在海床下 2 格），船殼 `T.PLANKS` + `T.BEAM` 桅杆殘段、牆 `W.DARK_PLANK_WALL`，船內格保留水（liq = KEEP），一個箱子（M1 用 `'ruin'` 戰利品）；置中於槽 ± `floor(槽寬 / 10)`。漂流箱：水面上一列 3 格 `T.PLANKS`（y = waterTop − 1）+ 上面一個箱子（`'cabin'` 戰利品，M1 沿用；專用「少量物資」表留 M2）。珊瑚礁、海底遺跡、燈塔 / 隱士 / 沉船島三種有建物的島留 M2（spec §9 M2「島種類」）。
+**規則：** 島 = Profile2 的島欄形狀（Task 7）+ 本 Task 填的表層：離水 4 格內沙灘沙、其餘台地草 + 泥、照森林規則用 `plantTree` 長樹（Task 8 對島欄只填底層）。沉船：寬 18–26、半埋在海床（船底在海床下 2 格），船殼 `T.PLANKS` + `T.BEAM` 桅杆殘段、牆 `W.DARK_PLANK_WALL`，船內格保留水（liq = KEEP），一個箱子（M1 用 `'ruin'` 戰利品）；置中於槽 ± `floor(槽寬 / 10)`。漂流箱：水面上一列 3 格 `T.PLANKS`（y = waterTop − 1）+ 上面一個箱子（`'cabin'` 戰利品，M1 沿用；專用「少量物資」表留 M2）。珊瑚礁、海底遺跡、燈塔 / 隱士 / 沉船島三種有建物的島留 M2（spec §9 M2「島種類」）。
 
 - [ ] **Step 1: 寫失敗測試**
 
@@ -651,13 +754,25 @@ it('每道海的每個槽恰有一個點', () => { for (const seed of SEEDS5) { 
     for (const s of sea.slots) { const bps = idx.overlapping(s.x0, s.x1).filter((b) => b.x >= s.x0 && b.x < s.x1);
       if (s.poi === 'island') { expect(bps).toEqual([]); expect(sea.islands.some((d) => d.slot === s.k)).toBe(true); }
       else { expect(bps).toHaveLength(1); expect(bps[0].kind).toBe(s.poi); } } } } });
-it('沉船在水面下、有箱子；漂流箱的木板在 waterTop − 1、箱子在 waterTop − 2', () => { /* 取第一份 shipwreck：b.y > waterTopAt(b.x) 且 chests.length === 1；第一份 crate：fillCol 後 (cx, waterTop−1) 三格 PLANKS、(chest.x, waterTop−2) 是 CHEST */ });
+it('沉船在水面下、有箱子；漂流箱的木板在 waterTop − 1、箱子在 waterTop − 2', () => { const src = new Gen2Source('wreck'), bps = new BlueprintIndex('wreck', src.layout, src.profile).overlapping(-40_000, 40_000);
+  const sw = bps.find((b) => b.kind === 'shipwreck')!, wt = src.waterTopAt(sw.x)!;
+  expect(sw.y).toBeGreaterThan(wt); expect(sw.chests).toHaveLength(1); expect(slotOf(sw.id, src.layout).region.kind).toBe('sea');
+  const cr = bps.find((b) => b.kind === 'crate')!, c = cr.chests[0], top = src.waterTopAt(c.x)!, col = fillCol(src, c.x >> 5);
+  expect(c.y).toBe(top - 2); expect(col.fg[li(c.x, top - 2)]).toBe(T.CHEST);
+  expect([-1, 0, 1].map((d) => col.fg[li(c.x + d, top - 1)])).toEqual([T.PLANKS, T.PLANKS, T.PLANKS]); });
 it('海上的靜態液體不變量（含沉船與漂流箱的欄）', () => { const src = new Gen2Source('sea'), w = worldOf(src), sea = src.layout.landmass(1, 1);
   loadColumns(w, sea.x0, sea.x1); expect(liquidInvariant(w, sea.x0, sea.x1)).toEqual([]); });
-it('島：台地在水面上、表層有草或沙、regionAt.kind = island', () => { const src = new Gen2Source('isl'), d = src.layout.landmass(1, 1).islands[0], x = (d.x0 + d.x1) >> 1, col = fillCol(src, x >> 5);
-  expect(src.surfaceAt(x)).toBeLessThan(src.waterTopAt(x - (d.x1 - d.x0)) ?? Infinity); expect([T.GRASS, T.SAND]).toContain(col.fg[li(x, src.surfaceAt(x))]);
-  expect(src.regionAt(x).kind).toBe('island'); });
+it('島：台地在水面上、表層有草或沙、regionAt.kind = island；多數島有樹', () => { const src = new Gen2Source('isl'); let treed = 0, n = 0;
+  for (const i of [1, 3, 5]) for (const d of src.layout.landmass(1, i).islands) { n++; const x = (d.x0 + d.x1) >> 1, col = fillCol(src, x >> 5);
+    expect(src.waterTopAt(x)).toBeNull(); expect(src.surfaceAt(x)).toBeLessThan(SEA_Y);
+    expect([T.GRASS, T.SAND]).toContain(col.fg[li(x, src.surfaceAt(x))]); expect(src.regionAt(x).kind).toBe('island');
+    const w = worldOf(src); loadColumns(w, d.x0, d.x1); if (rangeHas(w, d.x0, d.x1, T.TREE)) treed++; }
+  expect(treed).toBeGreaterThan(n / 2); });
+it('slotOf 反查海槽（P12）', () => { const src = new Gen2Source('sid'), bps = new BlueprintIndex('sid', src.layout, src.profile).overlapping(4200, 4200 + 3000);
+  for (const b of bps.filter((q) => q.kind === 'shipwreck' || q.kind === 'crate')) { const s = slotOf(b.id, src.layout);
+    expect(s.region.kind).toBe('sea'); expect(b.x).toBeGreaterThanOrEqual(s.x0); expect(b.x + b.w).toBeLessThanOrEqual(s.x1); } });
 ```
+（漂流箱的箱子在三格木板的中間；`rangeHas(w, x0, x1, tile)` = 範圍內地表以上有沒有該 tile，寫在測試檔內。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/sea.test.ts`；Expected: FAIL。
 - [ ] **Step 3: 實作** 如上。
@@ -692,14 +807,18 @@ it('每個版本都有雜湊', () => { for (let v = GEN2_MIN_VERSION; v <= GEN2_
 - [ ] **Step 3: 寫效能測試（寬鬆門檻、輸出實際比值）**
 
 ```ts
-it('每欄 fill：中位數 ≤ 3 × v1（目標 2×）、最壞 ≤ 40 ms（38 個 chunk 一欄 → 每 chunk 遠低於 8 ms）', () => {
-  /* v1: OuterGen('perf', F) 在 cx 160..199 填欄；gen2: Gen2Source('perf') 在同一批 cx + 家鄉 cx 20..59（含藍圖）；各先暖機 10 欄 */
+it('每欄 fill：中位數 ≤ 3 × v1（負載容忍；spec 的 2× 由 Step 4 實測把關）、最壞 ≤ 40 ms（38 個 chunk 一欄 → 每 chunk 遠低於 8 ms）', () => {
+  const v1 = new OuterGen('perf', F), g2 = new Gen2Source('perf');
+  const time = (src: ColumnSource, cxs: number[]) => { for (const cx of cxs.slice(0, 10)) fillCol(src, cx);   // 暖機
+    return cxs.map((cx) => { const t0 = performance.now(); fillCol(src, cx); return performance.now() - t0; }).sort((a, b) => a - b); };
+  const t1 = time(v1, range(160, 200)), t2 = time(g2, [...range(160, 200), ...range(20, 60)]);
+  const m1 = t1[t1.length >> 1], m2 = t2[t2.length >> 1], worst = t2.at(-1)!;
   console.info('[gen2 perf] median ratio', (m2 / m1).toFixed(2), 'worst ms', worst.toFixed(2));
   expect(m2).toBeLessThanOrEqual(3 * m1); expect(worst).toBeLessThanOrEqual(40);
 });
 ```
 
-- [ ] **Step 4: 跑效能測試** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/gen2.perf.test.ts`；Expected: PASS；把比值記進 commit 說明。比值 > 2 時先查 `Profile2` 快取命中與藍圖 LRU，再決定是否接受（回報，不阻擋）。
+- [ ] **Step 4: 閒置機器實測（裁決 P5，有約束力）** — 關掉 dev server 與其他重負載後 Run: `npx vitest run src/scripts/games/delve/engine/gen2/gen2.perf.test.ts` 三次；取三次 `median ratio` 的中位數，連同機器狀態寫進 Task 報告與 commit 說明。**該值必須 ≤ 2.00、`worst ms` 換算每 chunk ≤ 8 ms，否則 Task 12 判定失敗**：先查 `Profile2` 快取命中與藍圖 LRU、改到達標，不能只回報了事。（自動測試的 3× 只是避免 CI / 忙碌機器誤判。）
 - [ ] **Step 5: Commit** — `test(delve): gen2 per-version chunk hash lock and perf budget`。
 
 ---
@@ -708,8 +827,8 @@ it('每欄 fill：中位數 ≤ 3 × v1（目標 2×）、最壞 ≤ 40 ms（38 
 
 **Files:**
 - Create: `engine/worldBoot.ts`
-- Modify: `engine/game.ts:97-115`（`DelveOptions.worldGen`）、`:524-540`（`dungeonZone` / `layers` 可為 null、`genVersion`、`genKind`）、`:810-899`（建構子改吃 `WorldContent`）、`:832`（傳送碑用 `surfaceAt`）；`engine/waystones.ts`（`LandQuery`）；`engine/constants.ts`（`GEN_VERSION_V2 = 8`）
-- Test: `engine/game.gen2.test.ts`（新）、`engine/waystones.test.ts`
+- Modify: `engine/game.ts:97-115`（`DelveOptions.worldGen`）、`:524-540`（`dungeonZone` / `layers` 可為 null、`genVersion`、`genKind`）、`:810-899`（建構子改吃 `WorldContent`）、`:832`（傳送碑用 `surfaceAt`）；`engine/waystones.ts`（`LandQuery`）；`engine/constants.ts`（`GEN_VERSION_V2 = 8`）；`engine/discovery.ts`（裁決 P2：`setOuter` 改吃回傳陣列的函式、`outerRegions` 包成陣列；`visit` 逐一處理陣列——從 Task 14 移來，讓本 Task 單獨就能編譯）；`engine/game.ts` 的 `outerRegion` 型別
+- Test: `engine/game.gen2.test.ts`（新）、`engine/waystones.test.ts`、`engine/discovery.test.ts`
 
 **Interfaces:**
 - Consumes: `Gen2Source`（Task 8–11）。
@@ -722,7 +841,7 @@ it('每欄 fill：中位數 ≤ 3 × v1（目標 2×）、最壞 ≤ 40 ms（38 
     tablets: { x: number; y: number; id: number }[]; relics: GenResult['relics']; springs: SpringSpec[];
     villages: VillageInfo[]; halls: HallInfo[]; landmarks: LandmarkInfo[];
     regions: Region[] | null;                                   // null = 建構子照舊 buildRegions
-    outer: ((x: number, y: number) => Region[]) | null;        // 外圍 / gen2 地區查詢（Task 14 接 gen2）
+    outer: ((x: number, y: number) => Region[]) | null;        // 外圍 / gen2 地區查詢（本 Task：legacy = 包成陣列的 outerRegions、gen2 = null；Task 14 接 gen2）
     land: LandQuery | null;                                     // 傳送碑
   }
   export function bootLegacy(seed: string, gen: GenResult, opts: { bounds: WorldBounds; source: ColumnSource | null }): WorldContent;
@@ -730,6 +849,7 @@ it('每欄 fill：中位數 ≤ 3 × v1（目標 2×）、最壞 ≤ 40 ms（38 
   ```
 - Produces（`game.ts`）：`DelveOptions.worldGen?: WorldGenSpec`；`readonly genVersion: number`（legacy = `GEN_VERSION` 7、其他 = `GEN_VERSION_V2` 8）；`readonly genKind: 'legacy' | 'gen2' | 'baked'`；`gen2(): Gen2Source | null`（gen2 世界 = world.source；烘焙世界 = `BakedSource.gen2`；舊世界 null）。
 - Produces（`waystones.ts`）：`interface LandQuery { width: number; isLand(x: number): boolean; surfaceAt(x: number): number }`；`v1LandQuery(p: OuterProfile): LandQuery`（`isLand = zoneAt(x).kind === 'land'`）；`gen2LandQuery(src: Gen2Source): LandQuery`（`regionAt(x).kind` 是 `wild` / `culture`）。`Waystones` 建構子第三參數改吃 `LandQuery | null`；演算法不變。
+- Produces（`discovery.ts`，P2）：`Discovery.setOuter(fn: ((x: number, y: number) => Region[]) | null): void`；`outerRegions(seed, profile)` 改回傳 `(x, y) => Region[]`（0 或 1 個，id / 名字不變）。Task 14 在這之上加 `gen2Regions`。
 
 `bootGen2`：`new World(4200, 1200, { bounds: 'infinite', source, central: 'source' })`，`source = new Gen2Source(seed, { locks: LockTable.fromJSON(spec.locks ?? [], { frozen: replica }), recordLocks: !replica })`；`spawn = { x: SPAWN_X, y: source.surfaceAt(SPAWN_X) − 1 }`；`world.surfaceY = SEA_Y + 30`、`rockY = SEA_Y + 60`、`cavernY = CAVERN_BASE − 16`、`moltenY = MOLTEN_BASE − 12`；其餘內容空陣列 / null、`regions: []`。gen2 世界要求正式尺寸：`opts.width` / `opts.height` 有給且不是 4200 / 1200 → 丟 RangeError。
 
@@ -748,10 +868,18 @@ it('gen2 世界：不建中央、只載入出生點附近、站在地上、genVe
   g.teleport(4200 + 100, SEA_Y - 2); g.step(FIXED_DT); expect(g.world.biomeAt(4300)).toBe(BIOME.OCEAN);
 });
 it('gen2 世界只接受正式尺寸', () => { expect(() => new DelveGame({ seed: 'x', width: 200, height: 100, worldGen: { kind: 'gen2' } })).toThrow(RangeError); });
-// waystones.test.ts：改寫前先錄下舊世界碑 ±1..±6 的 (x, y)（同一個 seed），改成 v1LandQuery 後 toEqual；gen2 世界的碑 1 落在大陸（regionAt.kind ∈ wild|culture）
+// waystones.test.ts
+it('改成 LandQuery 後舊世界碑位置不變；gen2 碑落在大陸', () => { const g = new DelveGame({ seed: 'ws' });
+  expect([1, 2, 3, 4, 5, 6, -1, -2, -3, -4, -5, -6].map((id) => { const s = g.waystones.byId(id)!; return [s.x, s.y]; })).toEqual(WS_BEFORE);   // 改寫前跑一次錄下
+  const g2 = new DelveGame({ seed: 'ws', worldGen: { kind: 'gen2' } });
+  for (const id of [1, -1, 2, -2]) expect(['wild', 'culture']).toContain(g2.world.regionAt(g2.waystones.byId(id)!.x).kind); });
+// discovery.test.ts（P2，從 Task 14 移來）
+it('outerRegions 包成陣列後 id / 名字不變', () => { const f = outerRegions('od', profile);
+  expect([4210, 4800, 6000, -10, -900].map((x) => f(x, 300).map((r) => [r.id, r.name]))).toEqual(OUTER_BEFORE);   // 改寫前錄下（單一 Region → [[id, name]]、null → []）
+  const d = new Discovery([]); d.setOuter(f); expect(d.visit(4800, 300).map((r) => r.id)).toEqual(OUTER_BEFORE[1].map(([id]) => id)); });
 ```
 
-- [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/game.gen2.test.ts src/scripts/games/delve/engine/waystones.test.ts`；Expected: FAIL。
+- [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/game.gen2.test.ts src/scripts/games/delve/engine/waystones.test.ts src/scripts/games/delve/engine/discovery.test.ts`；Expected: FAIL（`WS_BEFORE` / `OUTER_BEFORE` 要在改碼前先錄、先 PASS）。
 - [ ] **Step 3: 實作** — 建構子 821-871 的「生成 → 欄位」搬進 `bootLegacy`（行為逐行不變），`DelveGame` 只讀 `WorldContent`；`worldGen.kind === 'gen2'` 走 `bootGen2`、完全不 import / 呼叫 `generateWorld`；`stoneX` 的 y 改 `this.world.surfaceAt(stoneX) − 1`（舊世界值相同）。
 - [ ] **Step 4: 跑測試** — 同 Step 2，再跑 `npx vitest run src/scripts/games/delve`；Expected: 全綠。
 - [ ] **Step 5: Commit** — `feat(delve): world boot for legacy and gen2 worlds; waystones take a land query`。
@@ -761,11 +889,12 @@ it('gen2 世界只接受正式尺寸', () => { expect(() => new DelveGame({ seed
 ### Task 14: gen2 地區的發現與命名
 
 **Files:**
-- Modify: `engine/discovery.ts`（`NAMES` 加 `sea` / `island` / `shipwreck`；`setOuter` 改回傳陣列；`load` 接受 gen2 id；新增 `gen2Regions`；`outerRegions` 包成陣列）、`engine/worldBoot.ts`（`bootGen2.outer`）、`engine/game.ts`（`outerRegion` 型別）
+- Modify: `engine/discovery.ts`（`NAMES` 加 `sea` / `island` / `shipwreck`；`load` 接受 gen2 id；新增 `gen2Regions`）、`engine/worldBoot.ts`（`bootGen2.outer`）
 - Test: `engine/discovery.test.ts`
 
 **Interfaces:**
-- Produces：`GEN2_REGION_BASE = 2 ** 32`；`gen2RegionId(side: Side, i: number, index: number, sub: number): number` = `BASE + (((i × 2 + (side < 0 ? 1 : 0)) × 64 + index) × 64 + sub)`（sub 0 = 地區本身、1.. = 槽位結構 `slot × 3 + layer + 1`）；`isGen2RegionId(id: number): boolean`；`gen2Regions(seed: string, src: Gen2Source): (x: number, y: number) => Region[]`（先結構、後地區）；`Discovery.setOuter(fn: ((x: number, y: number) => Region[]) | null)`。
+- Consumes: 陣列版 `Discovery.setOuter` 與 `outerRegions`（Task 13，P2）；Cabin 藍圖（Task 9）；海 / 島 RegionInfo（Task 6）。
+- Produces：`GEN2_REGION_BASE = 2 ** 32`；`gen2RegionId(side: Side, i: number, index: number, sub: number): number` = `BASE + (((i × 2 + (side < 0 ? 1 : 0)) × 64 + index) × 64 + sub)`（sub 0 = 地區本身、1.. = 槽位結構 `slot × 3 + layer + 1`）；`isGen2RegionId(id: number): boolean`（`BASE ≤ id < BASE + 2 ** 26`、整數）；`gen2Regions(seed: string, src: Gen2Source): (x: number, y: number) => Region[]`（先結構、後地區）。
 - 命名：家鄉出生森林「家鄉林地」、兩端「西岸沙灘」/「東岸沙灘」、其他照 `NAMES[生態]`；每側第一道 gen2 海「東方大海」/「西方大海」、之後「東境・」/「西境・」+ `NAMES.sea`；島 `NAMES.island`；荒野地區「東境・」/「西境・」+ `NAMES[生態]`；霧竹地區 `CULTURES.mistbamboo.prefixes[h] + suffixes[h]`（例：「雲隱山」「白霧谷」「竹之里」）；小屋 / 遺跡沿用 `NAMES.cabin` / `NAMES.ruin`，沉船 `NAMES.shipwreck`。範圍：地區 = 欄範圍、y < deep(x)；結構 = 外框（`rectHit`）。
 
 - [ ] **Step 1: 寫失敗測試**
@@ -777,15 +906,16 @@ it('gen2 地區 id 唯一、在 gen2 範圍內、跨實例穩定；名字確定'
     if (seen.has(r.id)) expect(seen.get(r.id)).toBe(r.name); else seen.set(r.id, r.name); }
   for (let x = -30_000; x < 30_000; x += 977) expect(q2(x, 300).map((r) => [r.id, r.name])).toEqual(q(x, 300).map((r) => [r.id, r.name]));
   expect(q(SPAWN_X, 300)[0].name).toBe('家鄉林地'); expect(q(5, 300)[0].name).toBe('西岸沙灘'); });
-it('在小屋裡 visit：先回小屋、再回所在地區；再 visit 不重複', () => { const cab = firstCabin(src), d = new Discovery([]); d.setOuter(q);
+it('在淺層小屋裡 visit：先回小屋、再回所在地區；再 visit 不重複', () => { const cab = shallowCabin(src), d = new Discovery([]); d.setOuter(q);
   const got = d.visit(cab.x + 1, cab.y + 1); expect(got).toHaveLength(2); expect(got[0].kind).toBe('cabin'); expect(got[1].cat).toBe('land');
   expect(d.visit(cab.x + 1, cab.y + 1)).toEqual([]); });
 it('load 接受 gen2 id、丟掉亂數 id', () => { const d = new Discovery([]); d.load({ regions: [gen2RegionId(1, 2, 0, 0), 12345678901] } as never); expect([...d.found]).toEqual([gen2RegionId(1, 2, 0, 0)]); });
 it('霧竹大陸的地區名用霧竹命名池', () => { const m = [src.layout.landmass(1, 2), src.layout.landmass(-1, 2)].find((l) => l.culture === 'mistbamboo')!;
   for (const r of m.regions) { const n = q(r.x0 + 5, 300).at(-1)!.name; expect(CULTURES.mistbamboo.suffixes.some((s) => n.endsWith(s))).toBe(true); } });
-it('舊世界外圍地區照舊（outerRegions 包成陣列後 id / 名字不變）', () => { /* 改寫前錄下 outerRegions(seed, profile)(x, 300) 在 x ∈ {4210, 4800, 6000, −10, −900} 的 [id, name]，改寫後 toEqual */ });
+it('海與島的名字', () => { expect(q(4300, 300).at(-1)!.name).toBe('東方大海'); expect(q(-300, 300).at(-1)!.name).toBe('西方大海');
+  const d = src.layout.landmass(1, 1).islands[0]; expect(q((d.x0 + d.x1) >> 1, 300).at(-1)!.name).toBe(NAMES.island); });
 ```
-（`firstCabin(src)` = 第一份 cabin 藍圖的外框，寫在測試檔內。）
+（`shallowCabin(src)` = 依 x 排序的第一份 cabin 藍圖中，整個外框都在地區範圍內（`b.y + b.h ≤ min(deep(x))`，x ∈ [b.x, b.x + b.w)）的那一份的外框，寫在測試檔內（裁決 P14：深層小屋在 `deep` 以下、只會回 1 個 region）。「舊世界外圍地區照舊」的測試已移到 Task 13。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/discovery.test.ts`；Expected: FAIL。
 - [ ] **Step 3: 實作** 如上。
@@ -822,13 +952,19 @@ it('舊世界外圍地區照舊（outerRegions 包成陣列後 id / 名字不變
 ```ts
 it('gen2 世界存讀往返：genVersion 8、outerGen = GEN2_VERSION、鎖、改過的 chunk、搜刮過的結構箱子都保留；沒改過的 chunk 重算相同', () => {
   const g = new DelveGame({ seed: 'sv', worldGen: { kind: 'gen2' } });
-  /* 傳送到一間小屋（找法同 Task 9）→ 搜刮箱子、挖一格；snapshotGame → encodeSave → restoreGame */
+  const cab = new BlueprintIndex('sv', g.gen2()!.layout, g.gen2()!.profile).overlapping(4200, 40_000).find((b) => b.kind === 'cabin')!, c = cab.chests[0];
+  g.teleport(c.x, c.y - 1); g.step(FIXED_DT); const k = g.world.idx(c.x, c.y);
+  g.world.chests.get(k)![0] = null; g.world.touchChest(c.x, c.y); g.world.setFg(c.x + 2, c.y, T.AIR); g.world.touch(c.x + 2, c.y);
+  const data = decodeSave(encodeSave(snapshotGame(g, 1)));
   expect(data.header.genVersion).toBe(8); expect(data.header.outerGen).toBe(GEN2_VERSION);
   expect(data.header.gen2!.locks).toEqual(g.gen2()!.locks.toJSON());
-  /* 讀回：genKind gen2、挖的格是空氣、箱子第 0 格仍是 null、出生點附近沒改過的 chunk 與原遊戲 readChunk 相同 */
+  const r = restoreGame(data); expect(r.ok).toBe(true); const h = (r as RestoreOk).game;
+  expect(h.genKind).toBe('gen2'); h.world.ensureColumn(c.x >> 5);
+  expect(h.world.getFg(c.x + 2, c.y)).toBe(T.AIR); expect(h.world.chests.get(k)![0]).toBeNull();
+  for (const cy of [8, 10, 12]) expect(h.world.readChunk(SPAWN_X >> 5, cy)).toEqual(g.world.readChunk(SPAWN_X >> 5, cy));
 });
 it('舊世界 v7 的存檔位元組不變（沒有 gen2 欄位、genVersion 7）', () => { const g = new DelveGame({ seed: 'v7', width: 160, height: 100 }), h = snapshotGame(g, 1).header;
-  expect(h.genVersion).toBe(7); expect('gen2' in h).toBe(false); expect(encodeSave(snapshotGame(g, 1))).toEqual(BYTES_BEFORE /* 改動前錄下 */); });
+  expect(h.genVersion).toBe(7); expect('gen2' in h).toBe(false); expect(fnv1a(encodeSave(snapshotGame(g, 1)), 0x811c9dc5)).toBe(V7_SAVE_HASH); });   // 改動前跑一次錄下
 it('genBlocker 真值表', () => { const ok8 = { format: 9, genVersion: 8, outerGen: 0, bounds: 'infinite' as const, gen2: { locks: [] } };
   expect(genBlocker({ format: 9, genVersion: 7, outerGen: 2, bounds: 'infinite' })).toMatchObject({ error: 'gen_version', newer: false });
   expect(genBlocker({ format: 9, genVersion: 7, outerGen: 1, bounds: 'infinite' })).toBeNull();
@@ -844,9 +980,12 @@ it('restoreErrorMessage：newer → newerGeneratorMsg；舊版 → oldGeneratorM
 it('importWorld 接受 v8 世界檔、拒絕較新版本', async () => { const store = fakeSplitStore();
   expect(await importWorld(store, gen2WorldBytes, 1)).toHaveProperty('slot');
   expect(await importWorld(store, gen2WorldBytesWith({ outerGen: 5 }), 1)).toEqual({ error: newerGeneratorMsg }); });
-it('世界檔（format 11）的 gen2 欄位經 splitSnapshot / decodeWorld / joinSplit 往返不變', () => { /* saveSplitGame(gen2Game) → decodeWorld(encodeWorld(world)).header.gen2 toEqual 原 gen2；joinSplit 後 header.gen2 相同 */ });
+it('世界檔（format 11）的 gen2 欄位經 splitSnapshot / decodeWorld / joinSplit 往返不變', () => { const g = gen2Game();
+  const want = snapshotGame(g, 1).header.gen2!, { world, character } = saveSplitGame(g, 1);
+  const back = decodeWorld(encodeWorld(world)); expect(back.header.gen2).toEqual(want);
+  expect(joinSplit(back, character).header.gen2).toEqual(want); expect(back.header.genVersion).toBe(8); });
 ```
-（`BYTES_BEFORE` 在改 `snapshotGame` 之前跑一次錄下；`fakeSplitStore` 用 `split.test.ts` 既有的假 store；`gen2WorldBytes(With)` = 一個 gen2 遊戲經 `saveSplitGame` + `encodeWorld`，With 版本改寫 header 欄位後再編碼。）
+（`V7_SAVE_HASH` 在改 `snapshotGame` 之前跑一次錄下（`fnv1a` 從 `net/codec`，P9：不貼整串位元組）；`gen2Game()` = 一個已走動、有鎖的 gen2 遊戲；`saveSplitGame` 的回傳形狀、`decodeSave` / `RestoreOk` / `setFg` / `touch` 的確切名稱以 `save/` 與 `engine/world.ts` 實際為準；`fakeSplitStore` 用 `split.test.ts` 既有的假 store；`gen2WorldBytes(With)` = 一個 gen2 遊戲經 `saveSplitGame` + `encodeWorld`，With 版本改寫 header 欄位後再編碼。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/save`；Expected: FAIL。
 - [ ] **Step 3: 實作** — `snapshotGame`：`genVersion: game.genVersion`、`outerGen: w.source ? w.source.version : 0`（舊世界照舊）、`genKind !== 'legacy'` 時加 `gen2: { locks }`（B6：舊世界不寫新欄位）。`restoreGame`：`genVersion 8` 時 `worldGen = { kind: 'gen2', locks: h.gen2.locks }`、不傳 `gen`。`restoreBlocker` 的版本段落改呼叫 `genBlocker`，其餘檢查不動。
@@ -863,7 +1002,7 @@ it('世界檔（format 11）的 gen2 欄位經 splitSnapshot / decodeWorld / joi
 - Test: `save/bake.test.ts`、`save/legacyMeta.test.ts`、`engine/discovery.test.ts`
 
 **Interfaces:**
-- Consumes: `restoreSplit`、`splitSnapshot`、`snapshotGame`、`OuterGen` / `OuterProfile`（v1）、`Gen2Source`、`Layout`、`SideOrigin`。
+- Consumes: `restoreSplit`、`splitSnapshot`、`snapshotGame`、`OuterGen` / `OuterProfile`（v1）、`Gen2Source`、`Layout`、`SideOrigin`；`FIXTURE11_EDITS`（Task 1）；`worldOf` / `loadColumns` / `liquidInvariant`（`engine/gen2/testUtil.ts`）。
 - Produces：
   ```ts
   // save/bake.ts
@@ -871,7 +1010,9 @@ it('世界檔（format 11）的 gen2 欄位經 splitSnapshot / decodeWorld / joi
   export function bakeApplies(h: { genVersion: number; width: number; height: number }): boolean;   // genVersion 7 且 4200×1200
   export function farthestKnown(h: WorldHeader, p: OuterProfile, stones: Waystones): { east: number; west: number };
   export function legacyRange(h: WorldHeader, p: OuterProfile, stones: Waystones): { east: SideOrigin; west: SideOrigin };
-  export function bakeWorld(world: WorldData, character: DelveCharacter, gen: GenResult, now: number): WorldData;
+  export type BakeStage = 'restore' | 'snapshot' | 'meta' | 'split';
+  export function bakeWorld(world: WorldData, character: DelveCharacter, gen: GenResult, now: number, onStage?: (s: BakeStage) => void): WorldData;
+  // 純函式：不改 world / character（測試以 structuredClone 前後比對）；onStage 在每段開始前呼叫，給失敗注入用（裁決 P7）
   // save/legacyMeta.ts
   export interface LegacyMeta { frame: CentralFrame; surfaceY: number; rockY: number; cavernY: number; moltenY: number;
     surface: Int16Array; biome: Uint8Array; layers: GenLayers; spawn: { x: number; y: number };
@@ -889,7 +1030,7 @@ it('世界檔（format 11）的 gen2 欄位經 splitSnapshot / decodeWorld / joi
   }
   // engine/discovery.ts
   export type RegionShape = { t: 'rect' } | { t: 'ellipse' } | { t: 'cols'; top: 'zero' | 'rock' | 'deep' | 'molten'; bot: 'deep' | 'molten' | 'H' };
-  // Region 加選填 shape（buildRegions 填）；RegionJSON = Region 去掉 contains、加 shape；regionFromJSON(j, layers, H): Region
+  // Region 加選填 shape（buildRegions 填）；RegionJSON = Region 去掉 contains、加 shape；toRegionJSON(r: Region): RegionJSON；regionFromJSON(j, layers, H): Region
   // engine/world.ts
   readonly bakedQuiet: Set<number>;   // 烘焙後沒被碰過的中央 chunk；touch / touchLiquidAt / touchChest / markModified / writeChunk(journal) 會刪鍵
   ```
@@ -899,7 +1040,7 @@ it('世界檔（format 11）的 gen2 欄位經 splitSnapshot / decodeWorld / joi
 1. 備份：不在烘焙時寫任何東西；session 讀到烘焙結果後設 `pendingBackup = V7_BACKUP_SUFFIX`，第一次 `saveSplit` 先 `backupSlot(slot, slot + '.v7.bak')` 成功才寫（沿用 v10 的機制）。
 2. 用舊生成器重建：`restoreSplit(world, character, { gen })` 得到舊世界遊戲 L；把中央所有 chunk 標成 `modifiedChunks` + `liquidModified`；`snapshotGame(L)`；`header.chests` 因此含全部中央箱子；附帶資料 → `encodeLegacyMeta(L)`。
 3. 舊外圍：`legacyRange` 取「已知最遠點」——世界檔與每個 visit 裡的外圍 chunk 鍵（`chunks`、`liquids.chunks`）的欄範圍、外圍迷霧 chunk、已發現的 v1 外圍地區（`outerRegionId` → 那一段）、已解鎖傳送碑的 x、每個 visit 的位置、地上掉落物——東西兩側各取最遠；點在中央或 v1 海 → 舊範圍到 v1 海的末端、gen2 從 `'continent'` 開始；點在 v1 陸地段 → 舊範圍到那一段末端、gen2 從 `'sea'` 開始。v1 範圍內的 chunk 不存，繼續由 v1 即時生成（決定 3）。
-4. 接縫：gen2 的 `SideOrigin.seaY = frame.edgeR + 1`（西側 `edgeL + 1`，與 v1 海平面相同）、`shore = v1 surfaceAt(接縫內側一格)`。
+4. 接縫：gen2 的 `SideOrigin.seaY = frame.edgeR + 1`（西側 `edgeL + 1`，與 v1 海平面相同）、`shore = v1 surfaceAt(接縫內側一格)`——`start: 'sea'` 時那是 v1 陸地地表，`start: 'continent'` 時那是 v1 海床；兩種的地形銜接規則在 Task 7（P13），本 Task 的接縫測試兩種都驗。
 5. 文化：gen2 從接縫起算第 c = 1 片大陸套同一套指派規則。
 6. 依生成順序的 id：區域清單（`RegionJSON`）、村莊 / 地廳順序（NPC 好感鍵）、陶罐鑰匙都存進 `LegacyMeta`，之後不再重算。
 - 標頭改成 `genVersion 8`、`outerGen = GEN2_VERSION`、`gen2 = { locks: [], bake, legacy }`；`bake.quiet` = 中央 chunk 中原本不在 `chunks ∪ liquids.chunks` 的鍵（玩家沒碰過 → 液體是生成器靜置後的狀態 → 讀檔 / 載入 / 接縫都不喚醒）；之後每次存檔寫回目前的 `bakedQuiet`。
@@ -919,35 +1060,69 @@ it('legacyRange：改過的 chunk 在 v1 陸地段中間 / 段末前一格 → �
   expect(legacyRange(hdr({ pos: ws.x0 + 3 }), profile, stones).west).toMatchObject({ x: ws.x0, start: 'sea' }); });
 it('legacyRange：只有迷霧 / 只有傳送碑 / 只有已發現地區在遠處，也算進去', () => { const s = seg(4);
   for (const h of [hdr({ fogAtX: s.x0 + 10 }), hdr({ stone: stoneIn(s) }), hdr({ region: outerRegionId(s.k + 1, 1) })]) expect(legacyRange(h, profile, stones).east.x).toBe(s.x1); });
+// 檔案層級共用：
+const L = (restoreSplit(fixtureWorld, char, { gen }) as RestoreOk).game, B = (restoreSplit(baked, char) as RestoreOk).game;
 it('烘焙前後逐格相同', () => {
-  /* fixture format11-v7 → L = restoreSplit(w, char, { gen }).game；B = restoreSplit(bakeWorld(w, char, gen, 1), char).game */
   for (let cx = 0; cx < 132; cx++) { B.world.ensureColumn(cx); for (let cy = 0; cy < 38; cy++) expect(B.world.readChunk(cx, cy)).toEqual(L.world.readChunk(cx, cy)); }
   expect(sortedChests(B.world)).toEqual(sortedChests(L.world)); expect([...B.world.potDrops]).toEqual([...L.world.potDrops]);
   for (let x = range.west.x; x < range.east.x; x += 7) { expect(B.world.surfaceAt(x)).toBe(L.world.surfaceAt(x)); expect(B.world.biomeAt(x)).toBe(L.world.biomeAt(x)); expect(B.world.layersAt(x)).toEqual(L.world.layersAt(x)); }
   for (const cx of [-3, -10, 140, 150]) { B.world.ensureColumn(cx); L.world.ensureColumn(cx); for (let cy = 0; cy < 38; cy++) expect(B.world.readChunk(cx, cy)).toEqual(L.world.readChunk(cx, cy)); }
   expect(B.regions.map((r) => [r.id, r.name, r.x, r.y, r.w, r.h])).toEqual(L.regions.map((r) => [r.id, r.name, r.x, r.y, r.w, r.h]));
-  expect(B.spawn).toEqual(L.spawn); for (const id of [0, 1, -1, 2, -2]) expect(B.waystones.byId(id)).toEqual(L.waystones.byId(id));
+  expect(B.spawn).toEqual(L.spawn); for (const id of [0, 1, -1]) expect(B.waystones.byId(id)).toEqual(L.waystones.byId(id));
+  // ±2 在這份 fixture 裡已經過接縫（裁決 P6）：落在 gen2 陸地
+  expect(B.waystones.byId(2)!.x).toBeGreaterThanOrEqual(range.east.x); expect(B.waystones.byId(-2)!.x).toBeLessThan(range.west.x);
+  for (const id of [2, -2]) expect(['wild', 'culture']).toContain(B.world.regionAt(B.waystones.byId(id)!.x).kind);
   expect(B.villages).toEqual(L.villages); expect(B.halls).toEqual(L.halls);
 });
-it('玩家的改動保留（fixture 的挖洞、木板、箱子內容）', () => { /* Task 1 fixture 的三處改動在 B 裡逐格存在；箱子兩組物品在 */ });
-it('接縫外是 gen2', () => { const e = range.east; expect(B.world.regionAt(e.x + (e.start === 'sea' ? 5 : 0)).kind).toBe(e.start === 'sea' ? 'sea' : 'wild' /* 或 culture */);
+it('玩家的改動保留（fixture 的挖洞、木板、箱子內容）', () => { const E = FIXTURE11_EDITS;
+  for (const [x, y] of E.dug) { B.world.ensureColumn(x >> 5); expect(B.world.getFg(x, y)).toBe(T.AIR); }
+  for (const [x, y] of E.planks) { B.world.ensureColumn(x >> 5); expect(B.world.getFg(x, y)).toBe(T.PLANKS); }
+  expect(B.world.chests.get(B.world.idx(E.chest.x, E.chest.y))!.filter(Boolean)).toEqual(E.chest.items); });
+it('接縫外是 gen2', () => { const e = range.east; expect(B.world.regionAt(e.x + (e.start === 'sea' ? 5 : 0)).kind).toMatch(e.start === 'sea' ? /^sea$/ : /^(wild|culture)$/);
   if (e.start === 'sea') expect(B.world.source!.waterTopAt!(e.x + 50)).toBe(frame.edgeR + 1);
   const c1 = [(B.gen2()!).layout.landmass(1, e.start === 'sea' ? 2 : 1), B.gen2()!.layout.landmass(-1, range.west.start === 'sea' ? 2 : 1)];
   expect(c1.filter((m) => m.culture === 'mistbamboo')).toHaveLength(1); });
-it('烘焙世界讀檔不必跑舊生成器、genKind baked、存回再讀一樣', () => { /* restoreSplit(baked, char) 不傳 gen → ok、genKind 'baked'；saveSplitGame → encodeWorld → restoreSplit 再比中央 10 個抽樣 chunk 與箱子 */ });
+it('烘焙世界讀檔不必跑舊生成器、genKind baked、存回再讀一樣', () => { const r = restoreSplit(baked, char);   // 不傳 gen
+  expect(r.ok).toBe(true); const B1 = (r as RestoreOk).game; expect(B1.genKind).toBe('baked');
+  const { world: w2 } = saveSplitGame(B1, 2), B2 = (restoreSplit(decodeWorld(encodeWorld(w2)), char) as RestoreOk).game;
+  for (const [cx, cy] of SAMPLE10) { B1.world.ensureColumn(cx); B2.world.ensureColumn(cx); expect(B2.world.readChunk(cx, cy)).toEqual(B1.world.readChunk(cx, cy)); }
+  expect(sortedChests(B2.world)).toEqual(sortedChests(B1.world)); });
 it('安靜 chunk：讀檔後沒有任何安靜 chunk 被喚醒；在安靜 chunk 挖一格 → 從 bakedQuiet 移除且被喚醒', () => {
-  /* B.step 一刻後 B.liquids 的喚醒集合 ∩ bakedQuiet 的 chunk = ∅；B.mine 一格（安靜 chunk）→ bakedQuiet 不含該 chunk、liquids 喚醒了那一格 */ });
-it('失敗注入：backupSlot 丟錯 → 不呼叫 putSplit、原 v7 記錄不變；bakeWorld 丟錯 → 什麼都沒寫', async () => {
-  const store = fakeSplitStore({ backupThrows: true }); const s = SplitSession.fromLoaded(bakedHeader, char, 'w-1'); s.pendingBackup = V7_BACKUP_SUFFIX;
-  await expect(saveSplit(store, s, B, 2)).rejects.toThrow(); expect(store.putCalls).toBe(0); expect(store.slot('w-1')).toEqual(originalBytes);
-  expect(() => bakeWorld(corruptWorld, char, gen, 1)).toThrow(); expect(store.writes).toBe(0); });
+  B.step(FIXED_DT); expect(awakeChunks(B).filter((k) => B.world.bakedQuiet.has(k))).toEqual([]);
+  const [x, y] = solidInQuietChunk(B), ck = B.world.chunkKeyAt(x, y); B.mine(x, y);
+  expect(B.world.bakedQuiet.has(ck)).toBe(false); expect(B.liquids.isAwake(x, y)).toBe(true); });
+it('失敗注入（裁決 P7）：烘焙中途丟錯 → 丟出、輸入原封不動；備份或寫入丟錯 → 原 v7 記錄位元組不變', async () => {
+  const before = structuredClone(fixtureWorld);
+  for (const stage of ['restore', 'snapshot', 'meta', 'split'] as const)
+    expect(() => bakeWorld(fixtureWorld, char, gen, 1, (s) => { if (s === stage) throw new Error('inject ' + s); })).toThrow('inject ' + stage);
+  expect(fixtureWorld).toEqual(before);
+  for (const fail of [{ backupThrows: true }, { putThrows: true }]) {
+    const store = fakeSplitStore({ ...fail, slots: { 'w-1': originalBytes } }), s = SplitSession.fromLoaded(baked, char, 'w-1'); s.pendingBackup = V7_BACKUP_SUFFIX;
+    await expect(saveSplit(store, s, B, 2)).rejects.toThrow(); expect(store.slot('w-1')).toEqual(originalBytes);
+    if (fail.backupThrows) expect(store.putCalls).toBe(0); else expect(store.slot('w-1' + V7_BACKUP_SUFFIX)).toEqual(originalBytes); } });
+it('接縫（P13）：兩種接縫都沒有空氣縫、沒有液體牆', () => {
+  for (const h of [hdr({ pos: 4300 }), hdr({ chunkAtX: (seg(2).x0 + seg(2).x1) >> 1 })]) { const rg = legacyRange(h, profile, stones);
+    const src = new BakedSource('fixture-v11', meta, { ...bakeInfo, east: rg.east, west: rg.west }, new LockTable(), false), w = worldOf(src);
+    for (const sx of [rg.east.x, rg.west.x]) { loadColumns(w, sx - 40, sx + 40);
+      expect(Math.abs(src.surfaceAt(sx) - src.surfaceAt(sx - 1))).toBeLessThanOrEqual(4);
+      expect(liquidInvariant(w, sx - 40, sx + 40)).toEqual([]); } }
+  expect(new Set([legacyRange(hdr({ pos: 4300 }), profile, stones).east.start, legacyRange(hdr({ chunkAtX: (seg(2).x0 + seg(2).x1) >> 1 }), profile, stones).east.start])).toEqual(new Set(['continent', 'sea'])); });
 it('小尺寸 fixture（format9 / format10）判定不適用，照舊載入', () => { for (const h of [fixture9.header, fixture10.header]) expect(bakeApplies(h)).toBe(false); });
 // 測試檔內的輔助：hdr(o) = 以 fixture 的 WorldHeader 為底、只放 o 指定的那一種已知點（pos / chunkAtX / fogAtX / stone / region）的合成標頭；
 // stones = 舊世界的 Waystones；stoneIn(s) = 落在段 s 內的碑 id；sortedChests(w) = [...w.chests] 依鍵排序；range = legacyRange(fixture)；
-// frame = frameOf(L.world)；fakeSplitStore({ backupThrows }) 記錄 putCalls / writes；corruptWorld = chunks 少一塊的 WorldData。
+// frame = frameOf(L.world)；fakeSplitStore({ backupThrows, putThrows, slots }) 記錄 putCalls、丟錯時不改任何記錄；fixtureWorld / char / originalBytes = 讀進來的 format11-v7 fixture；
+// baked = bakeWorld(fixtureWorld, char, gen, 1)；meta / bakeInfo = baked 標頭裡的 legacy / bake 解碼；SAMPLE10 = 中央 10 個固定 (cx, cy)；
+// awakeChunks(g) = g.liquids 目前喚醒格所在的 chunk 鍵；solidInQuietChunk(g) = 第一個安靜 chunk 裡、旁邊有液體的實心格；
+// RestoreOk / chunkKeyAt / isAwake / mine 的確切名稱以現有 API 為準。
 it('大小量測（回報、不阻擋）', () => { const bytes = gzipSync(encodeWorld(baked)).length; console.info('[bake size] gzip bytes', bytes, 'snapshot ms', ms); expect(bytes).toBeLessThan(16 * 1024 * 1024); });
-// legacyMeta.test.ts：encode → JSON.stringify → parse → decode 往返 toEqual；壞資料（surface 長度不對、未知欄位型別）丟 SaveFormatError
-// discovery.test.ts：buildRegions 的每個 Region 經 RegionJSON 往返後 contains 在 4200×1200 每 13 格抽樣結果相同
+// legacyMeta.test.ts
+it('LegacyMeta 往返與壞資料', () => { const j = encodeLegacyMeta(L), m = decodeLegacyMeta(JSON.parse(JSON.stringify(j)));
+  expect(m).toEqual(decodeLegacyMeta(j)); expect(m.surface).toHaveLength(4200); expect(m.regions).toHaveLength(L.regions.length);
+  for (const bad of [{ ...j, surface: j.surface.slice(4) }, { ...j, villages: 'x' }, { ...j, frame: null }]) expect(() => decodeLegacyMeta(bad)).toThrow(SaveFormatError); });
+// discovery.test.ts
+it('Region 經 RegionJSON 往返後 contains 相同', () => { for (const r of L.regions) { const q = regionFromJSON(JSON.parse(JSON.stringify(toRegionJSON(r))), L.layers!, 1200);
+  for (let x = 0; x < 4200; x += 13) for (let y = 0; y < 1200; y += 13) if (q.contains(x, y) !== r.contains(x, y)) throw new Error(`${r.id} @ ${x},${y}`);
+  expect([q.id, q.name, q.x, q.y, q.w, q.h]).toEqual([r.id, r.name, r.x, r.y, r.w, r.h]); } });
 ```
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/save/bake.test.ts src/scripts/games/delve/save/legacyMeta.test.ts src/scripts/games/delve/engine/discovery.test.ts`；Expected: FAIL。
@@ -961,12 +1136,20 @@ it('大小量測（回報、不阻擋）', () => { const bytes = gzipSync(encode
 
 **Files:**
 - Create: `render/gen2Flag.ts`、`tests/e2e/delve-gen2.spec.ts`
-- Modify: `render/session.ts:595-625`（`generate` 只給舊生成器用）、`:697-714`（`newWorldWith`）、`:783-834`（`openLegacy` / `openSplit` 用 `genBlocker`、v8 不生成、v7 + 旗標 → 烘焙）
-- Test: `render/gen2Flag.test.ts`
+- Modify: `render/session.ts:595-625`（`generate` 只給舊生成器用）、`:697-714`（`newWorldWith`）、`:783-834`（`openLegacy` / `openSplit` 用 `genBlocker`、v8 不生成、v7 + 旗標 → 烘焙）；`save/bake.ts`（`upgradeSlot`：session 的升級路徑抽成可測的函式，裁決 P7）
+- Test: `render/gen2Flag.test.ts`、`save/upgrade.test.ts`（新）
 
 **Interfaces:**
 - Produces: `gen2Flag(search: string, store: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null): boolean`（`?gen2=1` 寫入 `'delve.gen2' = '1'` 並回 true；`?gen2=0` 刪鍵回 false；都沒有 → 看 store；store 丟例外 → false）。
-- Consumes: `bakeApplies`、`bakeWorld`、`V7_BACKUP_SUFFIX`（Task 16）、`genBlocker`（Task 15）。
+- Produces（`save/bake.ts`，P7）：
+  ```ts
+  export const UPGRADE_FAILED_MSG = '世界升級失敗，原本的存檔沒有改動：';
+  export function upgradeSlot(store: SplitStore, slot: string, character: DelveCharacter, gen: GenResult, now: number, bake?: typeof bakeWorld):
+    Promise<{ ok: true; game: DelveGame; session: SplitSession } | { ok: false; message: string }>;
+  // 從 store 讀 slot 的世界檔 → bake（預設 bakeWorld）→ restoreSplit；成功時 session.pendingBackup = V7_BACKUP_SUFFIX；任何丟錯都回 { ok: false, message: UPGRADE_FAILED_MSG + 原因 }，且不寫 store
+  ```
+- Consumes: `bakeApplies`、`bakeWorld`、`V7_BACKUP_SUFFIX`（Task 16）、`genBlocker`（Task 15）、format11-v7 fixture（Task 1）。
+- 中間狀態（P16）：本 Task 到 Task 18 之前，旗標開啟時房主仍送 `genVersion 7`、客人會靜默建出舊世界副本；旗標關閉不受影響。接受，Task 17 與 Task 18 必須一起合併。
 
 - [ ] **Step 1: 寫失敗測試**
 
@@ -974,6 +1157,18 @@ it('大小量測（回報、不阻擋）', () => { const bytes = gzipSync(encode
 it('gen2Flag', () => { const s = fakeStore();
   expect(gen2Flag('', s)).toBe(false); expect(gen2Flag('?gen2=1', s)).toBe(true); expect(gen2Flag('', s)).toBe(true);
   expect(gen2Flag('?gen2=0', s)).toBe(false); expect(gen2Flag('', s)).toBe(false); expect(gen2Flag('', throwingStore())).toBe(false); });
+```
+```ts
+// save/upgrade.test.ts（P7；fixture = Task 1 的 format11-v7，gen = generateWorld('fixture-v11')，逾時 120 s）
+it('烘焙失敗 → 不開局、存檔原封不動；重試成功 → baked，第一次存檔先備份原檔', async () => {
+  const store = fakeSplitStore({ slots: { 'w-1': originalBytes } });
+  const bad = await upgradeSlot(store, 'w-1', char, gen, 1, () => { throw new Error('boom'); });
+  expect(bad).toEqual({ ok: false, message: UPGRADE_FAILED_MSG + 'boom' });
+  expect(store.putCalls).toBe(0); expect(store.slot('w-1')).toEqual(originalBytes); expect(store.slot('w-1' + V7_BACKUP_SUFFIX)).toBeUndefined();
+  const ok = await upgradeSlot(store, 'w-1', char, gen, 1); if (!ok.ok) throw new Error(ok.message);
+  expect(ok.game.genKind).toBe('baked'); expect(ok.session.pendingBackup).toBe(V7_BACKUP_SUFFIX); expect(store.slot('w-1')).toEqual(originalBytes);
+  await saveSplit(store, ok.session, ok.game, 2);
+  expect(store.slot('w-1' + V7_BACKUP_SUFFIX)).toEqual(originalBytes); expect(store.slot('w-1')).not.toEqual(originalBytes); });
 ```
 ```ts
 // tests/e2e/delve-gen2.spec.ts（LF）
@@ -991,8 +1186,8 @@ test('?gen2=1：新世界走 gen2、能往東走到海', async ({ page }) => {
 });
 ```
 
-- [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/render/gen2Flag.test.ts` 與 `npx playwright test tests/e2e/delve-gen2.spec.ts --project=chromium`；Expected: FAIL。
-- [ ] **Step 3: 實作** — session 啟動時讀一次 `gen2Flag(location.search, safeLocalStorage())`。`newWorldWith`：旗標開 → 不呼叫 `generate`，直接 `new DelveGame({ seed, peaceful, appearance, worldGen: { kind: 'gen2' } })`。`openSplit`：先 `genBlocker`；`genVersion 8` → 不生成、直接 `restoreSplit`；`genVersion 7` 且旗標開且 `bakeApplies` → `generate`（照舊顯示進度，標題文字「升級舊世界中…」）→ `bakeWorld` → `restoreSplit(baked, character)` → `session.pendingBackup = V7_BACKUP_SUFFIX`；失敗回報「世界升級失敗，原本的存檔沒有改動：…」並不開局。旗標關 → 路徑完全照舊。
+- [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/render/gen2Flag.test.ts src/scripts/games/delve/save/upgrade.test.ts` 與 `npx playwright test tests/e2e/delve-gen2.spec.ts --project=chromium`；Expected: 兩個單元測試 FAIL（flag-off 的 e2e 在 Task 13 之後本來就會過，是護欄）。
+- [ ] **Step 3: 實作** — session 啟動時讀一次 `gen2Flag(location.search, safeLocalStorage())`。`newWorldWith`：旗標開 → 不呼叫 `generate`，直接 `new DelveGame({ seed, peaceful, appearance, worldGen: { kind: 'gen2' } })`。`openSplit`：先 `genBlocker`；`genVersion 8` → 不生成、直接 `restoreSplit`；`genVersion 7` 且旗標開且 `bakeApplies` → `generate`（照舊顯示進度，標題文字「升級舊世界中…」）→ `upgradeSlot(idbSplitStore, slot, character, gen, Date.now())`；`ok: false` → `say(msgEl, message)` 並不開局（session 不另寫訊息字串）。旗標關 → 路徑完全照舊。
 - [ ] **Step 4: 跑測試** — 同 Step 2，加跑 `npx playwright test tests/e2e/delve.spec.ts --project=chromium`；Expected: 全 PASS。
 - [ ] **Step 5: Commit** — `feat(delve): gen2 dev flag for new worlds and legacy upgrade`。
 
@@ -1017,22 +1212,28 @@ test('?gen2=1：新世界走 gen2、能往東走到海', async ({ page }) => {
 - [ ] **Step 1: 寫失敗測試**
 
 ```ts
-it('gen2 世界：客人加入時副本不建中央、genKind gen2、出生點附近的 chunk 雜湊與房主相同', async () => {
-  const rig = coopRig({ world: 'gen2' }); await rig.join();
-  expect(rig.guest.replica!.genKind).toBe('gen2'); expect(rig.guest.replica!.world.isResident(0)).toBe(false);
-  /* 跑 120 刻後比對房主與客人常駐欄的 columnSums */
+it('gen2 世界：客人加入時副本不建中央、genKind gen2、出生點附近的 chunk 與房主相同', async () => {
+  const rig = coopRig({ world: 'gen2' }); rig.run(2000); const gg = rig.guests[0].game!;
+  expect(gg.genKind).toBe('gen2'); expect(gg.world.isResident(0)).toBe(false);
+  rig.run(120 * FRAME); expect(rig.sameTiles(0)).toEqual([]);
+  expect(columnSums(gg.world, SPAWN_X >> 5)).toEqual(columnSums(rig.hostGame.world, SPAWN_X >> 5));
 });
 it('outerGen 不同 → 客人以 END_TEXT.gen 結束', async () => { const rig = coopRig({ world: 'gen2', tamperWelcome: (m) => ({ ...m, outerGenVersion: 9 }) });
-  await rig.join(); expect(rig.guest.endText).toBe(END_TEXT.gen); expect(rig.guest.replica).toBeNull(); });
+  rig.run(2000); expect(rig.guests[0].endText).toBe(END_TEXT.gen); expect(rig.guests[0].game).toBeNull(); });
 it('coopGenOk 真值表', () => { const g = { kind: 'gen2' as const, locks: [] };
   expect(coopGenOk({ genVersion: 7, outerGenVersion: 1 })).toBe(true); expect(coopGenOk({ genVersion: 7, outerGenVersion: 2 })).toBe(false);
   expect(coopGenOk({ genVersion: 8, outerGenVersion: 0, gen2: g })).toBe(true); expect(coopGenOk({ genVersion: 8, outerGenVersion: 1, gen2: g })).toBe(false);
   expect(coopGenOk({ genVersion: 8, outerGenVersion: 0 })).toBe(false); expect(coopGenOk({ genVersion: 8, outerGenVersion: 0, gen2: { ...g, locks: [[1, 1, 5, null]] } })).toBe(false); });
 it('烘焙世界：legacy bulk 比 welcome 先到 / 後到都能加入；副本 genKind baked；中央 chunk 經同步後與房主相同', async () => {
-  for (const order of ['bulkFirst', 'welcomeFirst'] as const) { const rig = coopRig({ world: 'baked', deliver: order }); await rig.join(); rig.run(120);
-    expect(rig.guest.replica!.genKind).toBe('baked'); expect(columnSums(rig.guest.replica!.world, 65)).toEqual(columnSums(rig.host.game.world, 65)); } });
-it('舊世界連線不變（現有 coop 測試照跑）', () => { /* 不另寫：Step 4 跑整個 net/ 資料夾 */ });
+  for (const order of ['bulkFirst', 'welcomeFirst'] as const) { const rig = coopRig({ world: 'baked', deliver: order }); rig.run(2000 + 120 * FRAME);
+    expect(rig.guests[0].game!.genKind).toBe('baked'); expect(columnSums(rig.guests[0].game!.world, 65)).toEqual(columnSums(rig.hostGame.world, 65)); } });
+it('舊世界連線不變：Welcome 位元組與改動前相同（P9）', () => { let seen: Welcome | null = null;
+  const rig = coopRig({ world: 'real', tamperWelcome: (m) => (seen = m) }); rig.run(2000);
+  expect(seen!.genVersion).toBe(7); expect(seen!.outerGenVersion).toBe(OUTER_GEN_VERSION); expect('gen2' in seen!).toBe(false);
+  expect(fnv1a(utf8(JSON.stringify(seen)), 0x811c9dc5)).toBe(LEGACY_WELCOME_HASH);   // 改 host.ts 前跑一次錄下
+  expect(rig.guests[0].game!.genKind).toBe('legacy'); });
 ```
+（`FRAME`、`sameTiles`、`hostGame`、`guests[i]` 是 testRig 現有成員；`guests[i].game` / `endText` 以 `NetGuest` 實際的公開 getter 為準（`replica` 是 private）；`columnSums` 從 testRig 或 `net/codec` 取；`world: 'baked'` 的房主用 Task 16 的 format11-v7 fixture 烘焙一次、在檔案內共用（逾時 120 s）。現有 coop 測試仍由 Step 4 整個 `net/` 資料夾覆蓋。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/net/coop.gen2.test.ts`；Expected: FAIL。
 - [ ] **Step 3: 實作** 如上。
@@ -1067,7 +1268,7 @@ it('舊世界連線不變（現有 coop 測試照跑）', () => { /* 不另寫�
 | §5 舊世界烘焙 1–6、大小量測、旗標後面 | 16、17 |
 | §5 連線版本一致 | 18 |
 | §5 carry：`decodeLiquidRle`、LiquidSim 基準、`OuterProfile.info` 快取 | 1；快取見下 |
-| §8 OCEAN 遠景、海槽位 300、島 / 沉船 / 漂流箱 | 4、6、11 |
+| §8 OCEAN 遠景、海洋釣魚表、海槽位 300、島 / 沉船 / 漂流箱 | 3、4、6、11 |
 
 ## 規格模糊處與作者裁決
 
@@ -1075,7 +1276,26 @@ it('舊世界連線不變（現有 coop 測試照跑）', () => { /* 不另寫�
 2. **「相鄰大陸不重複」+「約 1:1」**：裁決為荒野也算池中一項、一律不重複 → 目前兩項池就是嚴格交替（正好 1:1）；之後加文化時改成「排除前一片後均勻挑」。
 3. **`OuterProfile.info(x)` 快取「若 v2 沿用」**：v2 不沿用 v1 側寫 → 不改 v1（保持其輸出凍結）；gen2 的 `Profile2` 內建欄快取。
 4. **海上點位**：M1 做槽位機制 + 島 + 沉船 + 漂流箱；珊瑚礁、海底遺跡、三種有建物的島、海洋專屬魚種與海鳥留 M2。「每道海至少一座有建物的島」因此 M1 尚未滿足（M2 的島種類）。
-5. **小尺寸 fixture 走升級路徑**：format9 / format10 fixture 是 200×100 有界世界，無法烘焙成 4200 寬的 gen2 世界 → 裁決為判定不適用並照舊載入；改用 Task 1 凍結的正式尺寸 format 11 / v7 fixture 驗證烘焙。
+5. **小尺寸 fixture 走升級路徑**：format9 / format10 fixture 是 200×100 有界世界，無法烘焙成 4200 寬的 gen2 世界 → 判定不適用並照舊載入；改用 Task 1 凍結的正式尺寸 format 11 / v7 fixture 驗證烘焙。spec §5 已據此修訂（P15a）。
 6. **讀 genVersion 8 存檔是否受旗標限制**：裁決為不受限（旗標只管建立與升級）。
-7. **「32×32 區塊」效能單位**：World 以 32×1200 欄生成；測試量每欄並與 v1 每欄比（中位數目標 2×、測試門檻 3×），最壞值換算成每 chunk 遠低於 8 ms。
-8. **大地圖畫外圍地區名稱**（spec §4.2 提到的 carry）不在 §9 M1 列 → 留 M2。
+7. **「32×32 區塊」效能單位**：World 以 32×1200 欄生成；測試量每欄並與 v1 每欄比（測試門檻 3×），spec 的 2× 由 Task 12 的閒置機器實測把關、不達標 Task 12 失敗（P5）；最壞值換算成每 chunk 遠低於 8 ms。
+8. **大地圖畫外圍地區名稱**（spec §4.2 提到的 carry）不在 §9 M1 列 → 留 M2；spec §9 M2 列已加上（P15b）。
+
+## Preflight 裁決（P1–P16，掃描見 `.superpowers/sdd/2026-10-23-delve-1b-m1-world-skeleton/preflight-scan.md`）
+
+- **P1** Task 2 一併改 `engine/flatAccess.test.ts` 的豁免路徑為 `engine/legacy/`（字串路徑 tsc 抓不到）。
+- **P2** `Discovery.setOuter` 改吃陣列、`outerRegions` 包陣列移到 Task 13（Task 13 要能單獨編譯），Task 14 只加 gen2。
+- **P3** Task 7 出生平地 ±60、外側 40 欄線性升回振幅；`AMP` 對每個 VARIANT 都有值。
+- **P4** Task 8 主坑道邊距 `min(120, floor(寬 / 4))`、沙灘地區豁免；測試 = 每個非沙灘陸地地區都有坑道。
+- **P5** spec 2× 有約束力：自動測試門檻 3× 並印比值，Task 12 報告必須有 ≤ 2× 的閒置機器實測，否則 Task 12 失敗。
+- **P6** Task 16 傳送碑相等只驗 0 / ±1；±2 驗「在接縫外的 gen2 陸地上」。
+- **P7** Task 16 失敗注入要真的丟（`bakeWorld` 的 `onStage`、store 備份 / 寫入丟錯）並驗原 v7 位元組不變；Task 17 加 `upgradeSlot` 失敗不動存檔、重試成功的測試。
+- **P8** Task 1 的 `decodeLiquidRle` 測試改成 `toThrow(SaveFormatError)`（n = 2 ** 33），不用 spy / try-catch。
+- **P9** 計畫中所有只有註解的測試本體都要寫成具體斷言（已在 Task 6–18 寫出）；Task 18「舊世界連線不變」驗 Welcome 雜湊、Task 8「出生點站得住」驗腳下實心 + 上方 2 格空氣。
+- **P10** 不把 v1 原樣複製進 gen2：共用 primitives 抽到 `engine/genPrims.ts`、v1 輸出以 `V1_FILL_HASH` 釘住；gen2 的材質 / 礦規則是自己的，不准把海床沙換成銅。
+- **P11** Task 9 每片非家鄉大陸保證 ≥ 1 小屋 + ≥ 1 遺跡（保證槽 + 後備放置），其他槽照機率；測試確定。
+- **P12** 島的擁有者：Task 6 產生海 / 島 RegionInfo 與海槽清單；Task 9 的 `structureId` / `slotOf` 涵蓋海槽、島不進陸地槽位格；Task 11 擁有島的表層與樹（Task 8 不長島樹）。
+- **P13** Task 7 加「大陸緊貼 v1 海」的接縫地形規則；Task 16 加兩種接縫都沒有空氣縫 / 液體牆的測試。
+- **P14** Task 14 的小屋 visit 測試用整個外框在地區範圍內的淺層小屋。
+- **P15** spec 修訂：(a) §5 format9 / 10 小 fixture 照舊載入、烘焙用正式尺寸 fixture 驗；(b) §9 M2 加大地圖外圍地區名稱；(c) §8 海洋釣魚表留在 M1（Task 3 `OCEAN_FISH`），沿用現有海上魚種、不新增物品。
+- **P16** 接受中間狀態 Task 3 → 4（海遠景暫混叢林）與 Task 17 → 18（旗標開啟的連線）；分支整條合併，兩對不可拆開。
