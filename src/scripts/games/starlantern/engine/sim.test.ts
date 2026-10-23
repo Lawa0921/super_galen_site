@@ -294,6 +294,8 @@ describe('a lineup wears a build (plan 8h Task 5a)', () => {
     for (const f of files) expect(BANDS.normal, f).toContain(f);
     for (const f of readdirSync(dir).filter((x) => /^builds\.bands\..*\.test\.ts$/.test(x))) expect(BANDS.normal, f).toContain(f);
     for (const f of BANDS.normal) expect(readdirSync(dir), f).toContain(f);
-    expect([BANDS.nightmare, BANDS.hell]).toEqual([[], []]);
+    // The difficulty bands (difficulty plan Task 5a): one opt-in file a tier, and the file is there.
+    expect([BANDS.nightmare, BANDS.hell]).toEqual([['tierBands.nightmare.test.ts'], ['tierBands.hell.test.ts']]);
+    for (const f of [...BANDS.nightmare, ...BANDS.hell]) expect(readdirSync(dir), f).toContain(f);
   });
 });

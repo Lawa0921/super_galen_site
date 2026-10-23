@@ -7,7 +7,10 @@ import { BUILDS, buildOf } from '../data/builds';
 import { STANDARD_LINEUP } from './party';
 import { ODD_LINEUPS } from './sim';
 import { encounterTable } from './scaling';
-import { BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, baselineLine, measureCell, pullsApart, roadCell, tierLineup, TIER_SEEDS, type TierRun } from './tierBands';
+import { BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, bandCells, baselineLine, hasTriggerOrLasting, measureCell, normalTwin, pullsApart, roadCell, tierLineup, TIER_SEEDS, type TierCell, type TierRun } from './tierBands';
+import { AFFIX_IDS } from '../data/affixes';
+import { CHARACTER_IDS } from '../data/characters';
+import { ENHANCE_MAX } from '../data/forge';
 import type { CharacterId } from './types';
 
 describe('difficulty band measurements (difficulty plan Task 0)', () => {
@@ -100,5 +103,90 @@ describe('difficulty band measurements (difficulty plan Task 0)', () => {
     expect(pullsApart(run(0.30, 10), run(0.21, 8))).toBe(false);
     expect(pullsApart(run(0.30, 10), run(0.21, 8.1))).toBe(false);
     expect(pullsApart(run(0.12, 3.35), run(0.12, 2.82))).toBe(false);
+  });
+
+  it('the band cells are as the spec lists', () => {
+    const groups = (d: number) => encounterTable('mainline', d).length;
+    const pair = (a: readonly unknown[] | undefined) => a?.length;
+    const shape = (cs: TierCell[]) => cs.map((c) => `${c.kind}/${c.difficulty}/${c.lineup.runeTier ?? 'bare'}`);
+    // N1: every group of the main road at 10/15/20/25, one a cell, a crowd, magic.
+    const n1 = bandCells('N1');
+    expect(n1.length).toBe(15);
+    expect(n1.length).toBe([10, 15, 20, 25].reduce((a, d) => a + groups(d), 0));
+    expect(new Set(shape(n1))).toEqual(new Set(['crowd/nightmare/magic']));
+    expect(n1.every((c) => c.groups.length === 1 && c.region === 'mainline' && !c.affixes)).toBe(true);
+    // N2: every group at 10 and 20, its first foe an elite, x each affix alone.
+    const n2 = bandCells('N2');
+    expect(n2.length).toBe(48);
+    expect(n2.length).toBe((groups(10) + groups(20)) * AFFIX_IDS.length);
+    expect(new Set(shape(n2))).toEqual(new Set(['elite/nightmare/magic']));
+    expect(n2.every((c) => pair(c.affixes) === 1)).toBe(true);
+    // N3: the Lantern-eater at 10/20/25 x each affix.
+    const n3 = bandCells('N3');
+    expect(n3.length).toBe(18);
+    expect(new Set(shape(n3))).toEqual(new Set(['boss/nightmare/magic']));
+    expect(n3.every((c) => pair(c.affixes) === 1 && c.groups[0][0] === 'lanterneater')).toBe(true);
+    // N4: N1 and N3, bare.
+    const n4 = bandCells('N4');
+    expect(n4.length).toBe(33);
+    expect(n4.every((c) => !c.lineup.build && !c.lineup.runeTier && c.difficulty === 'nightmare')).toBe(true);
+    expect(n4.map((c) => ({ ...c, lineup: undefined }))).toEqual([...n1, ...n3].map((c) => ({ ...c, lineup: undefined, label: c.label!.replace('magic', 'bare') })));
+    // N5: each odd lineup in each of its regions at 15, the hero on the fill's build, its row as the table has it.
+    const n5 = bandCells('N5');
+    expect(n5.length).toBe(Object.values(ODD_LINEUPS).reduce((a, o) => a + o.regions.length, 0));
+    expect(n5.length).toBe(5);
+    let i = 0;
+    for (const odd of Object.values(ODD_LINEUPS)) for (const region of odd.regions) {
+      const c = n5[i++];
+      expect([c.depth, c.region, c.kind, c.difficulty, c.lineup.runeTier]).toEqual([15, region, 'crowd', 'nightmare', 'magic']);
+      expect(c.groups).toEqual(encounterTable(region, 15));
+      expect(c.lineup.ids).toEqual(odd.ids);
+      expect(c.lineup.heroBuild).toBe(odd.fill);
+      expect(c.lineup.heroRow).toBe(odd.heroRow);
+    }
+    // N6: the five regions with a rider at 10 and 20, every group of the floor.
+    const n6 = bandCells('N6');
+    expect(n6.map((c) => `${c.region}${c.depth}`)).toEqual(['blaze10', 'blaze20', 'frost10', 'frost20', 'storm10', 'storm20', 'shade10', 'shade20', 'iron10', 'iron20']);
+    expect(n6.every((c) => c.kind === 'crowd' && c.lineup.runeTier === 'magic' && c.groups.length === encounterTable(c.region, c.depth).length)).toBe(true);
+    // H1: every group of the main road at 20/25/30, rare, with a trigger or a lasting rune in the party.
+    const h1 = bandCells('H1');
+    expect(h1.length).toBe(11);
+    expect(new Set(shape(h1))).toEqual(new Set(['crowd/hell/rare']));
+    for (const c of h1) expect(hasTriggerOrLasting(c.lineup, 50), c.label).toBe(true);
+    // H2: the Lantern-eater at 25/30 x the 15 pairs of affixes, ten seeds each.
+    const h2 = bandCells('H2');
+    expect(h2.length).toBe(30);
+    expect(new Set(shape(h2))).toEqual(new Set(['boss/hell/rare']));
+    expect(h2.every((c) => pair(c.affixes) === 2 && c.affixes![0] !== c.affixes![1] && c.seeds === 10)).toBe(true);
+    expect(new Set(h2.map((c) => c.affixes!.join('+'))).size).toBe(15);
+    // H3: H1 and H2 at magic, then again bare.
+    const h3 = bandCells('H3');
+    expect(h3.length).toBe(82);
+    expect(h3.slice(0, 41).every((c) => c.lineup.runeTier === 'magic')).toBe(true);
+    expect(h3.slice(41).every((c) => !c.lineup.runeTier && !c.lineup.build)).toBe(true);
+    // H4: every rune build of every member in turn at the epic tier, rare kits at +ENHANCE_MAX, the bosses of H2, ten seeds.
+    const h4 = bandCells('H4');
+    const runeBuilds = CHARACTER_IDS.reduce((a, id) => a + BUILDS[id].filter((b) => b.key !== 'standard').length, 0);
+    expect(runeBuilds).toBe(23);
+    expect(h4.length).toBe(690);
+    expect(h4.length).toBe(runeBuilds * 30);
+    expect(h4.every((c) => c.kind === 'boss' && c.difficulty === 'hell' && c.lineup.runeTier === 'epic' && c.rarity === 'rare' && c.enhance === ENHANCE_MAX && c.seeds === 10)).toBe(true);
+  });
+
+  it('a trigger or a lasting rune is read from the runes a build sockets at the level', () => {
+    // Chizuru's 穩守 sockets 常駐 on 結界; 斯嘉蕾's 反擊 an on-struck trigger; 席菈's 滿月 neither.
+    expect(hasTriggerOrLasting({ ids: ['chizuru'], build: { chizuru: 'steady' }, runeTier: 'rare' }, 50)).toBe(true);
+    expect(hasTriggerOrLasting({ ids: ['scarlet'], build: { scarlet: 'riposte' }, runeTier: 'rare' }, 50)).toBe(true);
+    expect(hasTriggerOrLasting({ ids: ['selene'], build: { selene: 'fullmoon' }, runeTier: 'rare' }, 50)).toBe(false);
+    expect(hasTriggerOrLasting({ ids: ['chizuru'] }, 50)).toBe(false);
+  });
+
+  it('a twin is the same cell on Normal', () => {
+    for (const c of [bandCells('N2')[0], bandCells('H2')[3], bandCells('N5')[0], bandCells('H4')[0]]) {
+      const t = normalTwin(c);
+      expect(t.difficulty).toBeUndefined();
+      expect(t.affixes).toBeUndefined();
+      expect({ ...t, difficulty: c.difficulty, affixes: c.affixes }).toEqual(c);
+    }
   });
 });
