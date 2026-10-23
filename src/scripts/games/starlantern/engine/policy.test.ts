@@ -601,20 +601,40 @@ describe('cure-ailment (difficulty plan Task 2, builds only)', () => {
   };
 
   it('a build cures what its cure can cure', () => {
-    // The ally with the most her cure removes: A (poison and burn) over B (a chill alone).
-    const A = { poison: true, burn: { tick: 4, turns: 2, src: 'e0' } };
+    // The ally with the most tier ailments her cure removes: A (burn and bleed) over B (a chill alone).
+    const A = { burn: { tick: 4, turns: 2, src: 'e0' }, bleed: [{ tick: 3, turns: 2, src: 'e0' }] };
     const B = { chill: 1 };
     expect(at([B, A])).toEqual({ kind: 'skill', skill: 'cleanse', target: 'm1' });
     // Ties go in party order; she counts herself.
     expect(at([B, B])).toEqual({ kind: 'skill', skill: 'cleanse', target: 'm0' });
-    expect(at([{}], undefined, { sleep: 2 })).toEqual({ kind: 'skill', skill: 'cleanse', target: 'selene' });
+    expect(at([{}], undefined, { shock: 2 })).toEqual({ kind: 'skill', skill: 'cleanse', target: 'selene' });
     // Nothing her cure removes (a freeze guard is no ailment; a fallen ally is not cured): the rule does not hold.
-    expect(at([{ freezeGuard: 2 }, { alive: false, poison: true }])).toBeNull();
+    expect(at([{ freezeGuard: 2 }, { alive: false, burn: { tick: 4, turns: 2, src: 'e0' } }])).toBeNull();
     // Not castable (no TP: choose leaves it out of castable): the rule does not hold, the next one is read.
     expect(at([A], sk('moon-rain'))).toBeNull();
     const s = makeBattle([P('selene'), P('m0', A)], [E('e0')]);
     expect(run(s, s.party[0], sk('moon-rain'), [...rule, { kind: 'heal-below', pct: 101 }]).action?.kind).toBe('skill');
     // It reads the skill as she casts it: a skill with no cure never holds.
     expect(run(s, s.party[0], sk('moon-rain'), [{ kind: 'cure-ailment', skill: 'moon-rain' }]).action).toBeNull();
+  });
+
+  it('it cures only what tier enemies inflict, never poison or sleep (controller ruling: Normal builds do not move)', () => {
+    // Poison and sleep, which Normal enemies inflict, never set it off; alongside a tier ailment they do not count.
+    expect(at([{ poison: true }, { sleep: 2 }])).toBeNull();
+    expect(at([{}], undefined, { poison: true, sleep: 2 })).toBeNull();
+    expect(at([{ poison: true, sleep: 2, chill: 1 }, { burn: { tick: 4, turns: 2, src: 'e0' }, shock: 1 }])).toEqual({ kind: 'skill', skill: 'cleanse', target: 'm1' });
+    // Each tier ailment alone sets it off.
+    for (const o of [{ burn: { tick: 4, turns: 2, src: 'e0' } }, { bleed: [{ tick: 3, turns: 2, src: 'e0' }] }, { shock: 1 }, { chill: 2 }]) {
+      expect(at([o]), JSON.stringify(o)).toEqual({ kind: 'skill', skill: 'cleanse', target: 'm0' });
+    }
+    // In a real Nightmare fight: the frost rider chills the party (frost group 0, seed 1, round 1), and she cures it.
+    const party = partyAt(38, {}, 10);
+    let st = createBattle({ party, enemyIds: encounterTable('frost', 10)[0], inventory: {}, revealed: {}, scale: { depth: 10, region: 'frost', difficulty: 'nightmare' } });
+    st = resolveRound(st, choose(st, party), mulberry32(1));
+    const chilled = st.party.filter((c) => c.alive && c.chill);
+    expect(chilled.length).toBeGreaterThan(0);
+    const selene = st.party.find((c) => c.key === 'selene')!;
+    const act = run(st, selene, sk('cleanse'), rule).action;
+    expect(act).toEqual({ kind: 'skill', skill: 'cleanse', target: chilled[0].key });
   });
 });
