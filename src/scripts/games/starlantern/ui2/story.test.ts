@@ -69,6 +69,43 @@ describe('playScene', () => {
     expect(talk.el.hidden).toBe(true);
   });
 
+  it('a scene whose run throws still leaves the dialogue clean: no hold, no veil, no card, box away (review 1)', async () => {
+    const { talk, ctx } = mk();
+    const screen = document.createElement('div');
+    screen.append(talk.el);
+    stage('mem:rin:1', [
+      { who: 'narrator', past: true, text: '一', place: { text: '月影旅館・深夜', night: true } },
+      { who: 'rin', text: '二' },
+    ]);
+    const real = talk.say.bind(talk);
+    vi.spyOn(talk, 'say').mockImplementationOnce(real).mockImplementationOnce(() => { throw new Error('boom'); });
+    const p = playScene(talk, 'mem:rin:1', ctx);
+    expect(talk.el.classList.contains('slx-talk--memory')).toBe(true);
+    p.onAction('confirm');
+    await expect(p.done).rejects.toThrow('boom');
+    expect(talk.el.classList.contains('slx-talk--memory')).toBe(false);
+    expect(screen.querySelector('.slx-veil.slx-on')).toBeNull();
+    expect(screen.querySelector('.slx-place-card')).toBeNull();
+    expect(talk.el.hidden).toBe(true);
+    // not held any more: a plain line closes the box again on confirm
+    void real('', '三');
+    talk.onAction('confirm');
+    expect(talk.el.hidden).toBe(true);
+  });
+
+  it("a scene's first narration line shows no face left over from before the scene (review 2)", async () => {
+    const { talk, ctx } = mk();
+    void talk.say('', '地城的一句。', { src: '/left-over.png', side: 'left' });
+    stage('chat:liz:1', [{ who: 'narrator', text: '一' }, { who: 'rin', text: '二' }, { who: 'narrator', text: '三' }]);
+    const p = playScene(talk, 'chat:liz:1', ctx);
+    expect(talk.el.querySelector('img')).toBeNull();
+    p.onAction('confirm'); await tick();
+    p.onAction('confirm'); await tick();
+    expect(talk.el.querySelector('.slx-talk-face--dim')).not.toBeNull();   // once a face has shown in the scene, it is kept
+    p.onAction('confirm');
+    await p.done;
+  });
+
   it('a skipped scene shows its summary with no face', async () => {
     const { talk, ctx } = mk();
     stage('chat:liz:1', [{ who: 'hero', text: '一' }, { who: 'narrator', text: '二' }]);

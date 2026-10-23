@@ -107,7 +107,8 @@ export class TownScene implements Scene {
    * The day's line: the town's own, told by the narrator with no plate (story polish ruling 8), from act 2 Rin's
    * foreshadowing once she has joined, and the bellkeeper once his arrival scene has played (engine/story/keeper.ts, story
    * depth Task 4). `draw`: pick with the game rng; otherwise by the gold and the scenes seen, which change from one return
-   * to the next (staging S2: no draw the old code did not make).
+   * to the next (staging S2: no draw the old code did not make). A return that changes neither repeats the last pick: the
+   * save keeps no count of returns or visits to mix in, and none is added just for this (staging review 3).
    */
   private dayLine(draw: boolean): { who: string; text: string } {
     const s = this.ctx.game.state;

@@ -221,7 +221,12 @@ export class Dialogue {
    * While held (a scene playing, staging S4) the box stays up between lines: confirming a line keeps it and its face on
    * screen for the next one, so nothing blinks out. Unhold, then `close()`, when the scene is over.
    */
-  hold(on: boolean): void { this.held = on; }
+  hold(on: boolean): void {
+    this.held = on;
+    // A scene starts with no face of its own: one left on the box from before it (a labyrinth line) is not kept by its
+    // first narration line (staging review 2).
+    if (on) { this.face?.remove(); this.face = null; }
+  }
 
   /** Puts the box and its face away, unless a line is still waiting to be read. */
   close(): void {

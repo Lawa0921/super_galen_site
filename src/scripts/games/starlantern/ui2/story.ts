@@ -59,7 +59,8 @@ export const NEAR_FACE: Partial<Record<StoryMood, StoryMood[]>> = {
 /**
  * Art ids whose normal is calm enough to stand in for any heavy face (staging S3, by eye on the published art): Rin's,
  * both looks, a level gaze. Lorne's normal carries a soft smile, so in a heavy scene it is no stand-in: like a
- * companion's, his line then shows its name plate alone.
+ * companion's, his line then shows its name plate alone. That is intentional (staging review 5): 19 heavy lines of his show no
+ * portrait rather than a smile. The real fix is art, a second face wave for Lorne and Rin (serious, distant, guarded).
  */
 export const CALM_NORMALS: ReadonlySet<string> = new Set(['rin', 'rin-oath']);
 /**
@@ -127,21 +128,25 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
   talk.hold(true);
 
   const run = async (): Promise<'done' | 'skipped'> => {
-    for (const line of lines) {
-      if (summary) break;
-      // Only a memory's remembered past wears the memory look; its present lines are any scene's (staging S5).
-      talk.setStyle(line.past ? 'memory' : 'plain');
-      // Where it happens, from the line that says so (staging S6); a line with no place keeps the card up.
-      if (line.place) talk.setPlace(line.place);
-      await sayLine(talk, line, ctx, first, undefined, heavy);
+    try {
+      for (const line of lines) {
+        if (summary) break;
+        // Only a memory's remembered past wears the memory look; its present lines are any scene's (staging S5).
+        talk.setStyle(line.past ? 'memory' : 'plain');
+        // Where it happens, from the line that says so (staging S6); a line with no place keeps the card up.
+        if (line.place) talk.setPlace(line.place);
+        await sayLine(talk, line, ctx, first, undefined, heavy);
+      }
+      if (summary) await summary;
+      return summary ? 'skipped' : 'done';
+    } finally {
+      // Ended, skipped or thrown: the screen gets its everyday look back and the box is let go (staging review 1).
+      finished = true;
+      talk.setStyle('plain');
+      talk.setPlace(null);
+      talk.hold(false);
+      talk.close();
     }
-    if (summary) await summary;
-    finished = true;
-    talk.setStyle('plain');
-    talk.setPlace(null);
-    talk.hold(false);
-    talk.close();
-    return summary ? 'skipped' : 'done';
   };
   const done = run();
 
