@@ -60,6 +60,36 @@ describe('save', () => {
       expect(loadGame(st).status, String(bad)).toBe('corrupt');
     }
   });
+  it("a story's banter waits load only for real pairs, as whole numbers up to 999 (story depth Task 6 review)", () => {
+    const status = (waited: unknown) => {
+      const g = newGame();
+      (g.story as unknown as Record<string, unknown>).waited = waited;
+      return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+    };
+    expect(status(undefined)).toBe('ok');
+    expect(status({})).toBe('ok');
+    expect(status({ 'liz-scarlet': 3, 'noel-rin': 0, 'rin-selene': 999 })).toBe('ok');
+    expect(status({ 'scarlet-liz': 1 })).toBe('corrupt');   // not a pair (unsorted)
+    expect(status({ 'hero-rin': 1 })).toBe('corrupt');      // never a pair
+    expect(status({ 'liz-scarlet': 1000 })).toBe('corrupt');
+    expect(status({ 'liz-scarlet': -1 })).toBe('corrupt');
+    expect(status({ 'liz-scarlet': 1.5 })).toBe('corrupt');
+    expect(status({ 'liz-scarlet': '2' })).toBe('corrupt');
+    expect(status([1, 2])).toBe('corrupt');
+  });
+  it("a story's confession place loads only as the dinner or the depth-30 rest (Task 15 review)", () => {
+    const status = (confession: unknown) => {
+      const g = newGame();
+      (g.story as unknown as Record<string, unknown>).confession = confession;
+      return loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+    };
+    expect(status(undefined)).toBe('ok');
+    expect(status('dinner')).toBe('ok');
+    expect(status('depth30')).toBe('ok');
+    expect(status('lunch')).toBe('corrupt');
+    expect(status(1)).toBe('corrupt');
+  });
+
   it('reports an empty slot', () => {
     expect(loadGame(memoryStorage())).toEqual({ status: 'empty' });
   });
@@ -912,6 +942,32 @@ describe('the runes-open flag in the save (plan 8f Task 1)', () => {
       expect(r.state).not.toHaveProperty('runesOpen');
       expect(validRuneFields(r.state as unknown as Record<string, unknown>)).toBe(true);
     }
+  });
+});
+
+describe('the followed build in the save (plan 8h Task 6)', () => {
+  it('an unknown build id is dropped, not corrupt', () => {
+    const load = (edit: (raw: Record<string, any>) => void) => {
+      const g = newGame(undefined, 0, STANDARD_LINEUP);
+      const st = memoryStorage();
+      const raw = JSON.parse(JSON.stringify(g));
+      edit(raw);
+      st.setItem(SAVE_KEY, JSON.stringify(raw));
+      return loadGame(st);
+    };
+    for (const bad of ['nope', 'jackpot', 7, null, { key: 'meteor' }]) {
+      const r = load((raw) => { raw.party.roster.noel.build = bad; });
+      expect(r.status, String(bad)).toBe('ok');
+      if (r.status === 'ok') expect(r.state.party.roster.noel, String(bad)).not.toHaveProperty('build');
+    }
+    const kept = load((raw) => { raw.party.roster.noel.build = 'meteor'; });
+    expect(kept.status).toBe('ok');
+    if (kept.status === 'ok') expect(kept.state.party.roster.noel.build).toBe('meteor');
+    // A save with no build field reads field for field as before.
+    const g = newGame(undefined, 0, STANDARD_LINEUP);
+    const plain = load(() => {});
+    expect(plain.status).toBe('ok');
+    expect((plain as Extract<typeof plain, { status: 'ok' }>).state.party).toEqual(g.party);
   });
 });
 

@@ -14,7 +14,9 @@ import { EQUIPMENT, WEAPON_KINDS, weaponKindOf } from '../data/equipment';
 import { expectedMemories } from './story/expect';
 import { mulberry32 } from './rng';
 import { socketCount, socketable } from './sockets';
-import type { RuneRef } from '../data/runes';
+import type { RuneRef, RuneTier } from '../data/runes';
+import { buildOf } from '../data/builds';
+import { buildSockets, buildTalents, buildTree } from './builds';
 import type { Ledger } from './ledger';
 import type { Combatant } from './combatant';
 import { applyPolicy, type PolicyTable } from './policy';
@@ -26,6 +28,9 @@ import { terrainOf } from './dungeon/run';
 import { advance } from './encounter';
 import { DELTA, posKey, tileAt, type FloorMap } from './map';
 import type { BuffStat, CharacterId, GearSlot, Member, Party, Pos, Rarity, Row, SkillDef } from './types';
+import { choose } from './choose';
+/** The sim's player and its damage ranking live in engine/choose.ts (the battle's 自動 reads them without the sim). */
+export { castPower, choose } from './choose';
 import type { RegionId } from '../data/regions';
 
 /** The eight members as CHARACTER_IDS ordered them before Rin: kitParty drew their gear in this order, and still does. */
@@ -59,8 +64,33 @@ export const ODD_LINEUPS: Record<'noHeal' | 'noTank' | 'allMagic' | 'allPhys', {
 /**
  * `runes`: a fixed rune set a member wears, skill by skill (plan 8e Task 8, spec §13 point 3: the rune bands of step ⑧).
  * The bands field none.
+ * `build` (plan 8h Task 5a): a suggested build a member wears (data/builds.ts key): its tree, talents and sockets at
+ * `runeTier` (default magic), and its policy (`lineupPolicies`); a `runes` set of hers replaces its sockets. The hero's
+ * row and weapon follow `heroBuild`, which the caller sets to the build's `hero`. The Normal bands wear none.
  */
-export interface Lineup { ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number; expect?: boolean; armHero?: boolean; policies?: PolicyTable; runes?: Partial<Record<CharacterId, Record<string, RuneRef[]>>> }
+export interface Lineup {
+  ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number; expect?: boolean; armHero?: boolean; policies?: PolicyTable;
+  runes?: Partial<Record<CharacterId, Record<string, RuneRef[]>>>; build?: Partial<Record<CharacterId, string>>; runeTier?: RuneTier;
+}
+
+/**
+ * The policies a lineup's fights are played with: its own `policies`; else, with builds, the defaults with each wearer's
+ * build policy over hers; else undefined (the sim's defaults).
+ */
+export function lineupPolicies(l: Lineup): PolicyTable | undefined {
+  if (l.policies) return l.policies;
+  if (!l.build) return undefined;
+  const table: Partial<Record<CharacterId, PolicyTable[CharacterId]>> = { ...DEFAULT_POLICIES };
+  for (const [id, key] of Object.entries(l.build) as [CharacterId, string][]) table[id] = wornBuild(id, key).policy;
+  return table;
+}
+
+/** `id`'s build `key`; an unknown one throws (a test hook mends nothing). */
+function wornBuild(id: CharacterId, key: string) {
+  const b = buildOf(id, key);
+  if (!b) throw new Error(`${id} has no build ${key}`);
+  return b;
+}
 
 /**
  * A fresh party with everyone at `level`, held to the real level cap, each with the default tree and talents of that
@@ -77,13 +107,15 @@ export function partyAt(level: number, lineup: Lineup = {}, depth = 1): Party {
     const hero = id === 'hero';
     const e = expected?.[id];
     const memories = memoriesOf({ id, memories: hero ? lineup.memories ?? e?.memories ?? 0 : e?.memories ?? 0 });
+    const worn = lineup.build?.[id] === undefined ? undefined : wornBuild(id, lineup.build[id]!);
     const m: Member = {
       ...newMember(id), level,
       ...(hero || e ? { memories } : {}),
       ...(e && e.absorbed.length > 0 ? { absorbed: e.absorbed } : {}),
       ...(e?.oath && memories === e.memories ? { oath: true as const } : {}),
-      tree: hero ? heroTree(level, build, memories) : defaultTree(id, level),
-      talents: hero ? heroTalents(level, build) : defaultTalents(id, level),
+      tree: worn ? buildTree(id, level, worn, memories) : hero ? heroTree(level, build, memories) : defaultTree(id, level),
+      talents: worn ? buildTalents(id, level, worn) : hero ? heroTalents(level, build) : defaultTalents(id, level),
+      ...(worn ? { build: worn.key } : {}),
     };
     if (hero && lineup.armHero) {
       const base = HERO_BUILDS[build].weapon;
@@ -92,6 +124,7 @@ export function partyAt(level: number, lineup: Lineup = {}, depth = 1): Party {
     }
     const sockets = lineup.runes?.[id];
     if (sockets) m.sockets = wornRunes(m, sockets);
+    else if (worn) m.sockets = buildSockets(m, worn, lineup.runeTier ?? 'magic');
     const s = statsOf(m);
     p.roster[id] = { ...m, hp: s.hp, tp: s.tp };
   }
@@ -137,37 +170,6 @@ export function kitParty(level: number, depth: number, seed: number, rarity?: Ra
   return p;
 }
 
-/**
- * A plain player that follows each member's policy (spec §12.5, plan 8a Task 4): the ultimate when the gauge is full, then
- * the member's policy rules (engine/policy.ts, which read only the new mechanics), then a heal when someone is under half
- * HP, else the strongest affordable damage skill by `castPower`, else attack. A skill a `spend-at` rule holds back is left
- * out of the heal and damage picks. It draws nothing.
- */
-export function choose(s: BattleState, party: Party, policies: PolicyTable = DEFAULT_POLICIES): Record<string, Action> {
-  const out: Record<string, Action> = {};
-  const foes = s.enemies.filter((e) => e.alive);
-  const hurt = s.party.filter((c) => c.alive && c.hp < c.max.hp / 2).sort((a, b) => a.hp - b.hp)[0];
-  for (const c of s.party.filter((x) => x.alive)) {
-    const target = foes[0]?.key ?? '';
-    const id = c.key as CharacterId;
-    if (c.limit >= LIMIT_MAX) { out[c.key] = { kind: 'ultimate', target }; continue; }
-    // Each skill as this member casts it (worn powers) and at the TP they pay for it now (her mechanic included).
-    const skills = learnedSkills(party.roster[id]).flatMap((sk) => skillFor(c, sk) ?? [])
-      .filter((sk) => !sk.passive && castCost(s, c, sk.id) <= c.tp && !whyNot(s, c, sk));
-    const power = (def: SkillDef) => castPower(s, c, def);
-    const { action, hold } = applyPolicy(s, c, skills, policies[id] ?? [], power);
-    if (action) { out[c.key] = action; continue; }
-    const usable = hold.length ? skills.filter((sk) => !hold.includes(sk.id)) : skills;
-    const heal = usable.find((sk) => sk.effects.some((e) => e.kind === 'heal'));
-    if (hurt && heal) { out[c.key] = { kind: 'skill', skill: heal.id, target: hurt.key }; continue; }
-    const dmg = usable
-      .filter((sk) => sk.effects.some((e) => e.kind === 'damage'))
-      .sort((a, b) => power(b) - power(a))[0];
-    out[c.key] = dmg ? { kind: 'skill', skill: dmg.id, target } : { kind: 'attack', target };
-  }
-  return out;
-}
-
 /** The playtest bot's player (全員攻擊): every living member attacks the first living enemy, nothing else. */
 export function attackAll(s: BattleState): Record<string, Action> {
   const target = s.enemies.find((e) => e.alive)?.key ?? '';
@@ -176,14 +178,6 @@ export function attackAll(s: BattleState): Record<string, Action> {
 
 /** Who picks the party's actions in a simulated fight: `skill` is `choose`, `attack` is `attackAll`. */
 export type SimAi = 'skill' | 'attack';
-
-/**
- * What `def` is worth as `c` casts it now, for ranking damage skills: the damage effects' power x hits of the skill as
- * her mechanic would cast it (mechanics.castDef: Noel's heat), so the sim never spends big at nothing.
- */
-export function castPower(s: BattleState, c: Combatant, def: SkillDef): number {
-  return castDef(s, c, def).effects.reduce((n, e) => n + (e.kind === 'damage' ? e.power * (e.hits ?? 1) : 0), 0);
-}
 
 /**
  * A test-only observer of `simBattle`: each round's party actions with the state going in and the state coming out (the
@@ -196,8 +190,15 @@ export interface SimTrace {
 
 let simTrace: SimTrace | null = null;
 
-/** Installs (or with `null` removes) the observer every later `simBattle` reports to (the sim gate, plan 8a Task 1). */
-export function setSimTrace(t: SimTrace | null): void { simTrace = t; }
+/**
+ * Installs (or with `null` removes) the observer every later `simBattle` reports to (the sim gate, plan 8a Task 1); returns
+ * the one it replaces, so a measurement can watch too and put it back (plan 8h Task 5a).
+ */
+export function setSimTrace(t: SimTrace | null): SimTrace | null {
+  const was = simTrace;
+  simTrace = t;
+  return was;
+}
 
 /**
  * How a simulated fight is watched and played: `ledger` is credited with every member's contribution (spec §12.6); it
@@ -231,7 +232,7 @@ export function winRate(level: number, groups: string[][], boss: boolean, seeds 
   let wins = 0, loss = 0, n = 0;
   for (const g of groups) for (let k = 1; k <= seeds; k++) {
     const party = kitSeed === undefined ? partyAt(level, lineup, scale?.depth ?? 1) : kitParty(level, scale?.depth ?? 1, kitSeed, undefined, kitEnhance, lineup);
-    const r = simBattle(party, g, boss, k * 7919, scale, altar, ai, lineup.abyss, undefined, { policies: lineup.policies });
+    const r = simBattle(party, g, boss, k * 7919, scale, altar, ai, lineup.abyss, undefined, { policies: lineupPolicies(lineup) });
     n++; loss += r.hpLoss; if (r.outcome === 'win') wins++;
   }
   return { rate: wins / n, hpLoss: loss / n };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RESERVE_CAP, RUNE_IDS, RUNES, tiersOf, type RuneId, type RuneRef } from '../data/runes';
+import { RESERVE_CAP, RUNE_IDS, RUNE_NUMBERS, RUNES, tiersOf, type RuneId, type RuneRef } from '../data/runes';
 import { SKILLS } from '../data/skills';
 import { CHARACTERS } from '../data/characters';
 import { T } from '../data/text.zh-TW';
@@ -14,8 +14,10 @@ import { runeWhy, runeFits } from '../engine/runes';
 import { newGame, type GameState } from '../engine/state';
 import type { CharacterId, Member } from '../engine/types';
 import {
-  battleLine, cardOf, compareCards, previewOf, reserveLine, runeChoices, slotStates, withoutPowerClause, type RuneAction,
+  battleLine, cardOf, compareCards, previewOf, reserveLine, runeChoices, slotDots, slotStates, withoutPowerClause, type RuneAction,
 } from './skillCard';
+import { loadGame, saveGame } from '../engine/save';
+import { memoryStorage } from '../engine/testing';
 
 const W = T.ui2.workshop;
 const R = (id: RuneId, tier: RuneRef['tier'] = 'magic'): RuneRef => ({ id, tier });
@@ -125,7 +127,7 @@ describe('the skill card (plan 8g Task 3)', () => {
               }
               if (ch.source.ref.id === 'twin-cast' && slotStates(member(game.state, id), skill)[slot].state === 'on') {
                 seen.twin = true;
-                expect(card.adds).toContain(W.add.twice);
+                expect(card.adds).toContain(W.add.twice(RUNE_NUMBERS['twin-cast'].fixed.secondPct));
               }
               if (ch.source.kind === 'socket') {
                 moves++;
@@ -193,7 +195,7 @@ describe('the skill card (plan 8g Task 3)', () => {
     const fromChizuru = list.find((c) => c.source.kind === 'socket' && c.source.at.id === 'chizuru')!;
     expect(fromChizuru.source).toEqual({ kind: 'socket', ref: R('spread'), at: { id: 'chizuru', skill: 'pierce', slot: 0 } });
     const pierce = skillFor(fromMember(member(s, 'chizuru'), 0), 'pierce')!.name;
-    expect(fromChizuru.giver!.startsWith(`移走後 ${CHARACTERS.chizuru.name}・${pierce}：目標 敵方全體 → 敵方單體；`)).toBe(true);
+    expect(fromChizuru.giver!.startsWith(`移走後，${CHARACTERS.chizuru.name}的${pierce}：目標 敵方全體 → 敵方單體；`)).toBe(true);
     const own = list.find((c) => c.source.kind === 'socket' && c.source.at.id === 'noel')!;
     expect(own.source).toEqual({ kind: 'socket', ref: R('drain'), at: { id: 'noel', skill: 'ice-star', slot: 0 } });
     // Each bag row: the count, and 持有 split.
@@ -237,9 +239,9 @@ describe('the skill card (plan 8g Task 3)', () => {
       .find((c) => c.source.kind === 'socket' && c.source.at.id === 'sylvie' && c.source.at.slot === slot)!;
     const tp = (st: GameState) => cardOf(member(st, 'sylvie'), 'aimed-shot')!.rows.find((r) => r.key === 'tp')!.text;
     const after = ok(previewOf(s, { id: 'noel', skill: 'fire-star', slot: 0 }, { kind: 'move', from: { id: 'sylvie', skill: 'aimed-shot', slot: 0 } }));
-    expect(pick(0).giver).toBe(`移走後 ${CHARACTERS.sylvie.name}・${aimed}：TP ${tp(s)} → ${tp(after)}；少了「${W.add.twice}」`);
+    expect(pick(0).giver).toBe(`移走後，${CHARACTERS.sylvie.name}的${aimed}：TP ${tp(s)} → ${tp(after)}；少了「${W.add.twice(RUNE_NUMBERS['twin-cast'].fixed.secondPct)}」`);
     const bounce = RUNES.bounce.mod('magic').bounce!;
-    expect(pick(1).giver).toBe(`移走後 ${CHARACTERS.sylvie.name}・${aimed}：少了「${W.add.bounce(bounce.bounces, bounce.dropPct)}」`);
+    expect(pick(1).giver).toBe(`移走後，${CHARACTERS.sylvie.name}的${aimed}：少了「${W.add.bounce(bounce.bounces, bounce.dropPct)}」`);
   });
 
   it('a move between two slots of one skill names no giver', () => {
@@ -352,6 +354,31 @@ describe('the skill card (plan 8g Task 3)', () => {
     learn(one, 'chizuru', { ward: 1, 'purify-ward': 1 });
     const alone = runeChoices(one, { id: 'chizuru', skill: 'ward', slot: 0 }).find((c) => c.source.ref.id === 'lasting')!;
     expect(alone.notes).not.toContain(W.barrierClash);
+  });
+
+  it('a trigger rune an older save put on a skill with no plain effect shows ◇, with its reason (plan 8h Task 2)', () => {
+    const s = stateAt(35, ['bobby', 'chizuru', 'selene']);
+    learn(s, 'bobby', { turret: 1 });
+    learn(s, 'chizuru', { ward: 1 });
+    learn(s, 'selene', { 'moon-recall': 1 });
+    const at: [CharacterId, string][] = [['bobby', 'turret'], ['chizuru', 'ward'], ['selene', 'moon-recall']];
+    for (const [id, skill] of at) s.party.roster[id] = { ...s.party.roster[id], sockets: { [skill]: [R('on-struck')] } };
+    const storage = memoryStorage();
+    saveGame(storage, s);
+    const loaded = loadGame(storage);
+    expect(loaded.status).toBe('ok');
+    const back = (loaded as Extract<typeof loaded, { status: 'ok' }>).state;
+    for (const [id, skill] of at) {
+      expect(member(back, id).sockets, `${id} ${skill}`).toEqual({ [skill]: [R('on-struck')] });
+      expect(slotDots(member(back, id), skill), `${id} ${skill}`).toMatch(/^◇/);
+      expect(slotStates(member(back, id), skill)[0]).toEqual({ state: 'off', ref: R('on-struck'), why: T.rune.why.plain });
+    }
+  });
+
+  it("淬毒's halved chance on a wide cast reads exactly (plan 8h 5b re-review)", () => {
+    const s = stateAt(35, ['chizuru'], { 'venom@common': 1 });
+    const on = ok(socketRune(s, 'chizuru', 'sweep', 0, R('venom', 'common')));
+    expect(cardOf(member(on, 'chizuru'), 'sweep')!.adds).toContain(W.add.inflict(12.5, T.ailment.poison));
   });
 
   it('slots tell what works', () => {

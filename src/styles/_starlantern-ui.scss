@@ -398,6 +398,9 @@ $slx-battle-left: 150px;
 // Battle: 返回 under the message line; the description of the skill or item under the cursor covers the message line
 .slx-battle .slx-back { right: auto; left: 6px; top: 64px; }
 .slx-bnote { left: 8px; right: 8px; top: 6px; min-height: 36px; color: $slx-gold; background-color: #0a0e22; }
+// 自動's note, one member a line (plan 8h Task 8 review): right of the command window, so a five-member round never covers it.
+.slx-bnote.slx-bnote-lines { left: 200px; white-space: pre-line; line-height: 16px; }
+.slx-battle:has(.slx-bnote-lines) .slx-fieldbar { visibility: hidden; }
 
 // Settings
 .slx-bg-dim { filter: brightness(0.45); }
@@ -1293,3 +1296,63 @@ $slx-starlit: #bff6ff;
 .slx-ws-foot p { margin: 0; white-space: normal; overflow-wrap: anywhere; }
 .slx-ws-why { color: $slx-down; }
 .slx-ws-msg { color: $slx-up; }
+
+// Plan 8h Task 7: the workshop names the build she follows on a line under its title (the windows below step down to
+// make room), and over the rune list what that build still lacks on this skill. New text is 12px at least.
+.slx-ws-head { row-gap: 0; flex-wrap: wrap; }
+.slx-ws-follow { flex: 0 0 100%; margin: 0; font-size: 12px; line-height: 14px; color: $slx-dim; white-space: normal; overflow-wrap: anywhere; }
+.slx-ws-following .slx-ws-skills, .slx-ws-following .slx-ws-card, .slx-ws-following .slx-ws-slots { top: 56px; }
+.slx-ws-lack { flex: none; margin: 0 0 4px; font-size: 12px; line-height: 14px; color: $slx-down; white-space: normal; overflow-wrap: anywhere; }
+
+// The status sheet's tree tab: the build she follows, or the hint toward the suggested builds, and the way in. The gutter
+// at its right end is the columns' ▲ (as on .slx-tree-top).
+.slx-tree-builds { flex: none; display: flex; align-items: center; gap: 8px; padding-right: 16px; margin-top: 2px; font-size: 12px; line-height: 14px; }
+.slx-tree-builds-note { flex: 1 1 auto; min-width: 0; color: $slx-dim; white-space: normal; overflow-wrap: anywhere; }
+.slx-tree-builds-go { flex: none; padding: 1px 6px; border: 1px solid #8a7444; border-radius: 2px; color: $slx-gold; white-space: nowrap; cursor: pointer; }
+.slx-tree-builds-go:hover { border-color: $slx-gold; }
+
+// The suggested builds (plan 8h Task 7), left to right: the member's builds, then the card of the one under the cursor (its
+// body scrolling under ▲/▼ above a foot with the buttons that always shows). All its text is 12px at least.
+.slx-builds .slx-keyhint { bottom: 8px; font-size: 12px; line-height: 14px; }
+.slx-builds > .slx-back { right: 10px; top: auto; bottom: 4px; }
+.slx-bd-head { left: 8px; top: 6px; right: 8px; display: flex; align-items: center; gap: 8px; padding: 2px 8px; }
+.slx-bd-name { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.slx-bd-title { margin-left: auto; flex: none; font-size: 16px; color: $slx-gold; }
+.slx-bd-list, .slx-bd-card { top: 42px; bottom: 40px; padding: 4px 6px; display: flex; flex-direction: column; }
+.slx-bd-list { left: 6px; width: 150px; }
+.slx-bd-card { left: 170px; right: 6px; }
+.slx-bd-list .slx-opt { display: flex; align-items: baseline; padding-right: 4px; }
+.slx-bd-list .slx-opt .slx-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slx-bd-list .slx-opt .slx-right { flex: none; padding-left: 6px; color: $slx-up; }
+.slx-bd-card-frame { flex: 1 1 auto; min-height: 0; }
+.slx-bd-card-frame > .slx-more-up { top: 0; }
+.slx-bd-card-frame > .slx-more-down { bottom: 0; }
+.slx-bd-card-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; padding-right: 12px; font-size: 12px; line-height: 16px; }
+.slx-bd-card-body::-webkit-scrollbar { display: none; }
+.slx-bd-card-body p { margin: 2px 0 0; white-space: normal; overflow-wrap: anywhere; }
+.slx-bd-card-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; color: $slx-gold; }
+.slx-bd-card-name b { font-size: 16px; font-weight: normal; }
+.slx-bd-tag { color: $slx-up; }
+.slx-bd-scenario { color: $slx-gold; }
+.slx-bd-under { color: #ffb36b; }
+.slx-bd-sub { margin: 6px 0 0; font-size: 12px; line-height: 16px; font-weight: normal; color: $slx-dim; }
+.slx-bd-policy { list-style: none; margin: 0; padding: 0; }
+.slx-bd-policy li { white-space: normal; overflow-wrap: anywhere; }
+.slx-bd-legend { color: $slx-dim; }
+.slx-bd-skill { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; margin-top: 2px; }
+.slx-bd-skill-name { flex: 0 0 100%; color: $slx-ink; }
+.slx-bd-rune { white-space: nowrap; }
+.slx-bd-lack { color: $slx-down; }
+.slx-bd-later { color: $slx-dim; }
+.slx-bd-follow { color: $slx-dim; }
+.slx-bd-cost { color: $slx-gold; }
+.slx-bd-foot { flex: none; margin-top: 2px; padding-top: 4px; border-top: 1px solid rgba(232, 196, 106, 0.35); font-size: 12px; line-height: 14px; }
+.slx-bd-foot p { margin: 2px 0 0; white-space: normal; overflow-wrap: anywhere; }
+.slx-bd-btns { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.slx-bd-btn { position: relative; padding: 2px 8px 2px 16px; border: 1px solid #8a7444; border-radius: 2px; white-space: nowrap; cursor: pointer; }
+.slx-bd-btn.slx-sel { border-color: $slx-gold; }
+.slx-bd-btn[aria-disabled='true'] { color: #6f6a5c; cursor: default; }
+.slx-bd-why { color: $slx-down; }
+.slx-bd-note { color: $slx-dim; }
+.slx-bd-note:empty { display: none; }
+.slx-bd-msg { color: $slx-up; }

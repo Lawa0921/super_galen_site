@@ -7,7 +7,7 @@ import { constRng, memoryStorage, plainItem, version8Save, withNode } from './te
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { P, TREES, V } from '../data/trees';
+import { NODES, P, TREES, V } from '../data/trees';
 import { mulberry32 } from './rng';
 import { rollPortals, validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
@@ -30,11 +30,16 @@ import { BOSS_LEGENDARY, chestHasGear, GEAR_CHANCE, mix, RARE_MATERIALS, rollBos
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy, unequip } from './town';
-import { defaultTree, memoriesOf } from './progression';
+import { defaultTalents, defaultTree, memoriesOf } from './progression';
+import { buildTalents, buildTree } from './builds';
+import { buildOf } from '../data/builds';
+import { learnedSkills } from './progression';
+import { TALENT_NODES } from '../data/talents';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
-import { ACT_DEPTHS, FINALE_BOSS, FINALE_DEPTH, type SceneId } from '../data/story/scenes';
+import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, lineCap, type SceneId } from '../data/story/scenes';
 import { STORY } from '../data/story.zh-TW';
+import { linesOf } from '../ui2/story';
 import { chainLength } from '../data/story/chains';
 import { SKILLS } from '../data/skills';
 import { RUNE_DROP, RUNE_SELL } from '../data/runeEconomy';
@@ -201,6 +206,55 @@ describe('departing', () => {
     expect(tryAt(MAIN, 2)).toBe(false);
     g.state.dungeon.reached.mainline = 3;
     expect([1, 2, 3, 4].map((d) => tryAt(MAIN, d))).toEqual([true, true, true, false]);   // the mainline keeps its shortcuts
+  });
+
+  // Story depth Task 3 (plan rulings 6, 7): the lone morning plays on a departure, once its time has come.
+  describe('the lone morning at the gate (story depth Task 3)', () => {
+    const ready = (prep: (g: Game) => void = () => {}) => {
+      const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
+      Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+      g.state.story.seen.push('rin-reveal', 'rin-confess', 'mem:hero:9', 'bellkeeper-arrives');
+      g.state.story.queue = ['hero-alone'];
+      prep(g);
+      return g;
+    };
+
+    it('departing with the lone morning queued: departScene names it, and it is due', () => {
+      const g = ready();
+      expect(g.departScene()).toBe('hero-alone');
+      expect(g.sceneDone('hero-alone', 'played')).toBe(true);
+      expect(g.departScene()).toBeNull();
+      expect(g.state.story.seen).toContain('hero-alone');
+      expect(g.state.story.queue).not.toContain('hero-alone');
+      expect(g.sceneDone('hero-alone', 'played')).toBe(false);   // not due twice
+    });
+
+    it('the lone morning waits for the ninth piece and the keeper', () => {
+      const drop = (g: Game, id: SceneId) => { g.state.story.seen = g.state.story.seen.filter((x) => x !== id); };
+      const nine = ready((g) => { drop(g, 'mem:hero:9'); g.state.story.queue.push('mem:hero:9'); });
+      expect(nine.departScene()).toBeNull();
+      expect(nine.sceneDone('hero-alone', 'played')).toBe(false);
+      const keeper = ready((g) => { drop(g, 'bellkeeper-arrives'); g.state.story.queue.push('bellkeeper-arrives'); });
+      expect(keeper.departScene()).toBeNull();
+      const alone = ready((g) => { g.state.story.queue.push('rin-confess'); });
+      expect(alone.departScene()).toBeNull();
+      expect(ready().departScene()).toBe('hero-alone');
+      const out = ready();
+      expect(out.depart(MAIN, 1)).toEqual({ ok: true });
+      expect(out.departScene()).toBeNull();   // only in town
+    });
+
+    it('a refused departure keeps the lone morning waiting', () => {
+      const g = ready((x) => { for (const id of activeIds(x.state.party)) x.state.party.roster[id].hp = 0; });
+      expect(g.departCheck(MAIN, 1)).toBe('party-down');
+      expect(g.departScene()).toBe('hero-alone');
+      expect(g.state.story.queue).toContain('hero-alone');
+      const ok = ready();
+      expect(ok.departCheck(MAIN, 2)).toBe('locked');
+      expect(ok.departCheck(MAIN, 1)).toBeNull();
+      expect(ok.state.story.queue).toContain('hero-alone');   // asking changes nothing
+      expect(ok.phase).toBe('town');
+    });
   });
 });
 
@@ -1323,6 +1377,100 @@ describe('depth-clear exp', () => {
     g.depart(MAIN, 1);
     expect(downstairs(g, g.map().down!)).toEqual({ kind: 'floor', floor: 2 });
     expect(g.state.dungeon.reached.mainline).toBe(5);
+  });
+});
+
+describe('apply and follow a build (plan 8h Task 6)', () => {
+  const townGame = (storage = memoryStorage()) => {
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
+    const noel = g.state.party.roster.noel;
+    g.state.party.roster.noel = { ...noel, level: 35, tree: defaultTree('noel', 35), talents: defaultTalents('noel', 35) };
+    g.state.gold = 5000;
+    return g;
+  };
+
+  it('apply is town only, saved at once, and says what it costs first', () => {
+    const storage = memoryStorage();
+    const g = townGame(storage);
+    const want = g.canApplyBuild('noel', 'meteor');
+    expect(want).toEqual({ cost: 25 * 35, changes: true, moves: true, strips: false, reason: null });
+    const r = g.applyBuild('noel', 'meteor');
+    expect(r.ok).toBe(true);
+    expect(g.notice).toBe('saved');
+    expect(Game.boot(calm(), storage).state.party.roster.noel.build).toBe('meteor');
+    // Again: nothing changes, nothing to pay.
+    expect(g.canApplyBuild('noel', 'meteor')).toEqual({ cost: 0, changes: false, moves: false, strips: false, reason: null });
+    expect(g.canApplyBuild('noel', 'nope').reason).toBe('invalid');
+    const map = inMap();
+    expect(map.applyBuild('noel', 'meteor')).toEqual({ ok: false, reason: 'invalid' });
+    expect(map.canApplyBuild('noel', 'meteor').reason).toBe('invalid');
+  });
+
+  it('a manual point ends following', () => {
+    const ends = (act: (g: Game) => boolean) => {
+      const g = townGame();
+      expect(g.applyBuild('noel', 'meteor').ok).toBe(true);
+      g.notice = null;
+      expect(act(g)).toBe(true);
+      expect(g.state.party.roster.noel).not.toHaveProperty('build');
+      expect(g.followEnded).toEqual(['noel']);
+    };
+    ends((g) => g.respec('noel').ok);
+    ends((g) => g.swapVariant('noel', 'noel-star-heavy').ok);
+    // Ten more levels of points, not yet spent (a level-up she would follow is not what this tests).
+    ends((g) => { g.state.party.roster.noel.level = 45; return Object.keys(NODES).some((n) => NODES[n].owner === 'noel' && g.raiseNode('noel', n).ok); });
+    ends((g) => { g.state.party.roster.noel.level = 45; return Object.keys(TALENT_NODES).some((n) => TALENT_NODES[n].owner === 'noel' && g.raiseTalent('noel', n).ok); });
+    // Several end before the town speaks: every one is queued, and a later notice ('banked') does not drop them.
+    const many = townGame();
+    many.state.party.roster.liz = { ...many.state.party.roster.liz, level: 35, tree: defaultTree('liz', 35), talents: defaultTalents('liz', 35) };
+    expect(many.applyBuild('noel', 'meteor').ok && many.applyBuild('liz', 'bleed').ok).toBe(true);
+    many.respec('noel');
+    many.respec('liz');
+    many.notice = 'banked';
+    expect(many.followEnded).toEqual(['noel', 'liz']);
+    // Stopping by hand.
+    const g = townGame();
+    g.applyBuild('noel', 'meteor');
+    g.stopFollowing('noel');
+    expect(g.state.party.roster.noel).not.toHaveProperty('build');
+    // A refused spend ends nothing.
+    const h = townGame();
+    h.applyBuild('noel', 'meteor');
+    expect(h.raiseNode('noel', 'nope').ok).toBe(false);
+    expect(h.state.party.roster.noel.build).toBe('meteor');
+  });
+
+  it('a won fight levels a follower up on her build, and a benched one too', () => {
+    const g = inMap(1);
+    // Noel follows 冰雷循環 at Lv19, a hair from Lv20; Rin, on the bench, follows 千針毒 the same way.
+    const set = (id: CharacterId, key: string) => {
+      const m = g.state.party.roster[id];
+      g.state.party.roster[id] = { ...m, level: 19, exp: expToNext(19) - 1, tree: buildTree(id, 19, buildOf(id, key)!), talents: buildTalents(id, 19, buildOf(id, key)!), build: key };
+    };
+    set('noel', 'cycle');
+    if (!g.state.party.recruited.includes('rin')) g.state.party.recruited.push('rin');
+    set('rin', 'venom');
+    // 冰雷循環 suggests 雷之星彈 [蓄力, 感電, 雷鳴]: Lv20 opens its second slot, for 感電.
+    g.state.runes = { 'jolt@magic': 1 };
+    g.state.party.roster.noel.sockets = { 'ice-star': [{ id: 'charge', tier: 'magic' }] };
+    const chizuru0 = structuredClone(g.state.party.roster.chizuru);
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(killAll(g).outcome).toBe('win');
+    const noel = g.state.party.roster.noel;
+    expect(noel.level).toBe(20);
+    expect(noel.tree).toEqual(buildTree('noel', 20, buildOf('noel', 'cycle')!));
+    expect(noel.talents).toEqual(buildTalents('noel', 20, buildOf('noel', 'cycle')!));
+    expect(noel.sockets?.['ice-star']).toEqual([{ id: 'charge', tier: 'magic' }]);   // what she wore stays
+    expect(noel.sockets?.['thunder-star']).toEqual([null, { id: 'jolt', tier: 'magic' }]);   // slot 0 wants 蓄力: none in the bag
+    expect(g.state.runes).toEqual({});
+    // On the bench, at half the exp, she reaches Lv20 too, and spends it her build's way.
+    const rin = g.state.party.roster.rin;
+    expect(rin.level).toBe(20);
+    expect(rin.tree).toEqual(buildTree('rin', 20, buildOf('rin', 'venom')!));
+    // A member who follows nothing keeps her points as they were.
+    const chizuru = g.state.party.roster.chizuru;
+    expect(chizuru.build).toBeUndefined();
+    expect([chizuru.tree, chizuru.talents]).toEqual([chizuru0.tree, chizuru0.talents]);
   });
 });
 
@@ -2781,8 +2929,11 @@ describe('the arrival queue', () => {
   };
   /** The arrival without its banter (B1, B2): tests about the chat and the queue read this. */
   const talk = (g: Game): SceneId[] => g.arrival.filter((id) => !id.startsWith('banter:'));
-  /** HERO_LINEUP has met Liz and Selene: theirs is the first open banter in the pairs' order (B2), so it trails the chat. */
-  const LINEUP_BANTER: SceneId = 'banter:liz-selene:1';
+  /**
+   * HERO_LINEUP's first open banter, which trails the chat. Story depth Task 6: Noel and Selene's pair leads to one of the
+   * six designed payoffs (`noel-selene:3`, `BANTER_PAYOFFS`), so it goes ahead of Liz and Selene's.
+   */
+  const LINEUP_BANTER: SceneId = 'banter:noel-selene:1';
   const townGame = (start = HERO_LINEUP, storage = memoryStorage()) => {
     const g = new Game(calm(), storage, undefined, 0, start);
     g.state.dungeon.reached.mainline = 3;
@@ -2975,7 +3126,9 @@ describe('the arrival queue', () => {
     expect(g.state.story.queue).toEqual([]);
     inRun(g);
     g.returnToTown();
-    expect(g.arrival.filter((id) => id.startsWith('banter:'))).toEqual(['banter:liz-scarlet:1']);
+    // story depth Task 6 (ruling 9's fallback): three pairs ready on a light return, so a second banter follows the first
+    // the second, never the first one's pair (Task 6 review): Rin and Scarlet's, with as many left, ahead of Noel and Rin's
+    expect(g.arrival.filter((id) => id.startsWith('banter:'))).toEqual(['banter:liz-scarlet:1', 'banter:rin-scarlet:1']);
     // a save that holds a heard banter loads too
     expect(g.sceneDone('banter:liz-scarlet:1', 'played')).toBe(true);
     expect(loadGame(storage).status).toBe('ok');
@@ -3009,8 +3162,10 @@ describe('the arrival queue', () => {
     g.phase = 'clear';
     g.cleared = 'finale';
     g.restartAfterClear();
+    expect(g.arrival[0]).toBe('epilogue');   // story depth Task 3: the festival comes first on the return after the ending
     expect(g.arrival.some((id) => id.startsWith('banter:'))).toBe(false);
     expect(chatsOf(g)).toHaveLength(1);   // the chat still comes
+    expect(g.sceneDone('epilogue', 'played')).toBe(true);   // the player hears the festival before going back down
     inRun(g);
     g.returnToTown();
     expect(g.arrival.at(-1)).toBe('banter:noel-rin:1');
@@ -3374,6 +3529,124 @@ describe('the finale', () => {
     expect(g.state.story.queue).not.toContain('bellkeeper-arrives');
   });
 
+  // Story depth Task 3 (plan ruling 8): what the finale owes is played before it; nothing heavy is left for the town.
+  it('the finale plays the owed confession and the keeper before itself', () => {
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal');
+      x.state.story.queue = ['rin-confess'];
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toEqual(['rin-confess', 'bellkeeper-arrives', 'mem:hero:10']);
+    expect(g.state.story.queue).not.toContain('rin-confess');
+    for (const id of g.finale!.pieces) expect(g.sceneDone(id, 'played'), id).toBe(true);
+    expect(g.sceneDone('finale', 'played')).toBe(true);
+    expect(g.state.story.queue.filter((id) => HEAVY_MAJORS.has(id) || ALONE.includes(id))).toEqual([]);
+    expect(g.state.story.seen).toEqual(expect.arrayContaining(['rin-confess', 'bellkeeper-arrives', 'finale']));
+    g.restartAfterClear();
+    expect(g.arrival[0]).toBe('epilogue');   // the festival, first on the return after the ending
+  });
+
+  // Final review: no return between her choice and the finale, so the keeper's arrival is owed and plays at the bottom, his
+  // tenth piece in hand. It reads its lamp lines: he is already waiting there, not standing at the town's gate.
+  it('owed at the finale, the keeper waits at the lamp, not in town; she says 「師父」 and nothing more', () => {
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.party.roster.rin.oath = true;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal');
+      x.state.story.queue = ['rin-confess'];
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toContain('bellkeeper-arrives');
+    expect(memoriesOf(g.state.party.roster.hero)).toBe(chainLength('hero'));
+    const lines = linesOf('bellkeeper-arrives', g.state);   // the reading the game plays, from its own state (re-review)
+    expect(lines.length).toBeLessThanOrEqual(lineCap('bellkeeper-arrives'));
+    const said = lines.map((l) => l.text).join('');
+    expect(said).toMatch(/燈座/);
+    expect(said).not.toMatch(/傳送門廣場|鎮裡|幾天後/);
+    const master = lines.findIndex((l) => l.who === 'rin' && /師父/.test(l.text));
+    expect(master).toBeGreaterThan(0);
+    expect(lines.slice(master + 1).some((l) => l.who === 'rin')).toBe(false);
+    expect(said).not.toMatch(/原諒|和好|和解/);
+  });
+
+  it('a lone morning still owed at the finale counts as seen and new', () => {
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.story.seen.push('rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'mem:hero:9');
+      x.state.story.queue.push('hero-alone');
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).not.toContain('hero-alone');
+    expect(g.state.story.queue).not.toContain('hero-alone');
+    expect(g.state.story.seen).toContain('hero-alone');
+    expect(g.state.story.fresh).toContain('hero-alone');
+  });
+
+  // Task 3 review (Important): a lone morning never queued, because no return came between her choice, his ninth piece
+  // and the finale, is answered by the finale all the same (design §9.3.5): seen, and new.
+  it('a single dive from depth 25 to the finale counts the lone morning as seen and new', () => {
+    const g = run(25, (x) => {
+      x.state.party.roster.hero.memories = 8;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives');
+      x.state.story.queue = [];
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(heroMemories(g)).toEqual(['mem:hero:9']);   // the top-up, waiting for a return that never comes
+    expect(g.state.story.queue).not.toContain('hero-alone');
+    for (let f = 25; f < FINALE_DEPTH; f++) expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: f + 1 });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).not.toContain('hero-alone');
+    expect(g.state.story.queue).not.toContain('hero-alone');
+    expect(g.state.story.seen).toContain('hero-alone');
+    expect(g.state.story.fresh).toContain('hero-alone');
+  });
+
+  it('departing right after the reveal: the finale plays the confession and the keeper, and counts the lone morning as seen and new', () => {
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal', 'mem:hero:9');
+      x.state.story.queue = ['rin-confess'];
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toEqual(['rin-confess', 'bellkeeper-arrives', 'mem:hero:10']);
+    expect(g.state.story.seen).toContain('hero-alone');
+    expect(g.state.story.fresh).toContain('hero-alone');
+    expect(g.state.story.queue).not.toContain('hero-alone');
+  });
+
+  // Task 3 review (minor): the keeper her confession queues inside the finale is the finale's own scene: it never waits in
+  // the queue, so leaving the ending early cannot leave him for the town after the festival.
+  it('the finale keeps the scenes it covers out of the queue, even if the ending is left early', () => {
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal', 'mem:hero:9');
+      x.state.story.queue = ['rin-confess'];
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.sceneDone('rin-confess', 'played')).toBe(true);
+    expect(g.state.story.queue).not.toContain('bellkeeper-arrives');
+    expect(g.sceneDone('bellkeeper-arrives', 'played')).toBe(true);   // still the finale's to play
+    const left = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 9;
+      x.state.story.seen.push('prologue', 'prologue-inn', 'first-return', 'rin-reveal', 'mem:hero:9');
+      x.state.story.queue = ['rin-confess'];
+    });
+    stepOnto(left, left.map().boss!);
+    killAll(left);
+    left.sceneDone('rin-confess', 'played');
+    left.restartAfterClear();   // the ending left before the keeper played
+    expect(left.state.story.queue).not.toContain('bellkeeper-arrives');
+    expect(left.arrival).not.toContain('bellkeeper-arrives');
+  });
+
   it('a queued piece of someone else stays queued', () => {
     const g = run(FINALE_DEPTH, (x) => { x.state.story.queue.push('mem:rin:1'); });
     stepOnto(g, g.map().boss!);
@@ -3392,7 +3665,8 @@ describe('the finale', () => {
     expect(g.sceneDone('finale', 'played')).toBe(true);
     expect(g.sceneDone('mem:hero:8', 'played')).toBe(false);   // not one of hers
     expect(g.state.story.seen).toEqual(expect.arrayContaining(['mem:hero:9', 'mem:hero:10', 'finale']));
-    expect(g.state.story.fresh).toEqual(['mem:hero:10']);   // only the auto one reads as new
+    // only the auto one reads as new, and the lone morning the finale answered (Task 3 review: seen and new, queued or not)
+    expect(g.state.story.fresh).toEqual(['hero-alone', 'mem:hero:10']);
     g.restartAfterClear();
     expect([g.phase, g.finale, g.cleared]).toEqual(['town', null, null]);
     expect(g.sceneDone('finale', 'played')).toBe(false);
@@ -3967,5 +4241,39 @@ describe('fusing runes in the game (plan 8f Task 5)', () => {
     expect([back.runes, back.gold]).toEqual([{ 'spread@magic': 1 }, 70]);
     expect(g.fuseRune(spread)).toEqual({ ok: false, reason: 'stock' });
     expect(g.fuseRune({ id: 'spread', tier: 'epic' })).toEqual({ ok: false, reason: 'top' });
+  });
+});
+
+describe('following between fights (plan 8h final review)', () => {
+  it('a memory gained between wins sends the runes of a skill her build drops back to the bag (I1)', () => {
+    const g = inMap(1);
+    const mage = buildOf('hero', 'mage')!;
+    const h = g.state.party.roster.hero;
+    g.state.party.roster.hero = { ...h, level: 31, exp: 0, memories: 7, tree: buildTree('hero', 31, mage, 7), talents: buildTalents('hero', 31, mage), build: 'mage',
+      sockets: { 'abyss-sword': [{ id: 'thrift', tier: 'magic' }] } };
+    g.state.runes = {};
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(killAll(g).outcome).toBe('win');
+    expect(g.state.party.roster.hero.sockets?.['abyss-sword']).toEqual([{ id: 'thrift', tier: 'magic' }]);   // a win: nothing moves
+    g.state.party.roster.hero.memories = 8;   // a memory between wins
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(killAll(g).outcome).toBe('win');
+    const hero = g.state.party.roster.hero;
+    expect(learnedSkills(hero)).not.toContain('abyss-sword');
+    expect(hero.sockets?.['abyss-sword'] ?? []).toEqual([]);
+    expect(g.state.runes).toEqual({ 'thrift@magic': 1 });
+  });
+
+  it('a rune she took off by hand stays off after a win (I3)', () => {
+    const g = inMap(1);
+    const meteor = buildOf('noel', 'meteor')!;
+    const m = g.state.party.roster.noel;
+    g.state.party.roster.noel = { ...m, level: 35, exp: 0, tree: buildTree('noel', 35, meteor), talents: buildTalents('noel', 35, meteor), build: 'meteor',
+      sockets: { 'fire-star': [null, { id: 'ignite', tier: 'magic' }] } };
+    g.state.runes = { 'spread@magic': 1 };
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(killAll(g).outcome).toBe('win');
+    expect(g.state.party.roster.noel.sockets?.['fire-star']).toEqual([null, { id: 'ignite', tier: 'magic' }]);
+    expect(g.state.runes).toEqual({ 'spread@magic': 1 });
   });
 });

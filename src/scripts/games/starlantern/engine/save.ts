@@ -12,7 +12,9 @@ import { MAX_LEVEL, SLOTS, slotsFor } from './party';
 import { defaultTree, heroTree, memoriesOf, validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
 import { repairRuneFields } from './sockets';
-import { isSceneId } from '../data/story/scenes';
+import { buildOf } from '../data/builds';
+import { BANTER_PAIRS, isSceneId, type BanterPair } from '../data/story/scenes';
+import { MAX_WAITED } from './story/events';
 import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 import type { CharacterId, ItemInstance, Member, Slot } from './types';
@@ -91,6 +93,9 @@ function isStory(v: unknown): boolean {
   if (v.fresh.some((id) => !(v.seen as unknown[]).includes(id)) || v.queue.some((id) => (v.seen as unknown[]).includes(id))) return false;
   if (!isUniqueList(v.nodes, (x) => ACT_NODES.includes(x as string))) return false;
   if (!isUniqueList(v.returned, (x) => TOWN_FRAGMENTS.some((f) => f.id === x))) return false;
+  // story depth Task 6: each banter pair's wait, a real pair only, a whole number up to MAX_WAITED (as `pity`'s 999)
+  if (v.confession !== undefined && v.confession !== 'dinner' && v.confession !== 'depth30') return false;   // story depth Task 15 review
+  if (v.waited !== undefined && !(isObj(v.waited) && Object.entries(v.waited).every(([k, n]) => BANTER_PAIRS.includes(k as BanterPair) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_WAITED))) return false;
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }
 
@@ -124,6 +129,7 @@ function isValid(d: Record<string, unknown>): boolean {
     if (!isCount(m.exp) || !isCount(m.hp) || !isCount(m.tp)) return false;
     if (!validMemory(id, m)) return false;
     if (m.freeRespec !== undefined && m.freeRespec !== true) return false;
+    if (m.build !== undefined && !(typeof m.build === 'string' && buildOf(id, m.build))) return false;
     if (!validBuild(id, m.level as number, m.tree, m.talents, memoriesOf(m as Pick<Member, 'id' | 'memories'>))) return false;
   }
   // Every uid once, bag and worn together, and all of them below nextUid.
@@ -200,6 +206,19 @@ export function migrate8to9(d: Record<string, unknown>): void {
   d.version = 9;
 }
 
+/**
+ * A followed build that is not one of the member's own suggested builds is dropped (plan 8h Task 6): she then follows
+ * nothing, and the save is not corrupt. Members the save cannot read are left for the validation to refuse.
+ */
+function repairBuildField(d: Record<string, unknown>): void {
+  const roster = isObj(d.party) && isObj(d.party.roster) ? d.party.roster : null;
+  if (!roster) return;
+  for (const id of CHARACTER_IDS) {
+    const m = roster[id];
+    if (isObj(m) && m.build !== undefined && !(typeof m.build === 'string' && buildOf(id, m.build))) delete m.build;
+  }
+}
+
 export function loadGame(storage: SaveStorage): LoadResult {
   let raw: string | null;
   try { raw = storage.getItem(SAVE_KEY); } catch { return { status: 'empty' }; }
@@ -215,6 +234,7 @@ export function loadGame(storage: SaveStorage): LoadResult {
   dropUnknownBanters(data);
   // Rune fields that break the rules are put right, never a corrupt save (plan 8e ruling 19); isValid leaves them alone.
   repairRuneFields(data);
+  repairBuildField(data);
   if (!isValid(data)) { backup(storage, raw); return { status: 'corrupt' }; }
   const state = data as unknown as GameState;
   // The game never writes a codex id twice; a hand-edited save that does is tidied rather than refused.

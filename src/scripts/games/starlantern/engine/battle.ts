@@ -15,7 +15,7 @@ import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
-import { credit, lossOf, type Ledger } from './ledger';
+import { countCast, credit, lossOf, type Ledger } from './ledger';
 import { AIM, barrierPower, type Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
 import { COINS } from './mechanics/coins';
@@ -23,7 +23,7 @@ import { payHp } from './mechanics/embers';
 import { echoDef, echoOf } from './mechanics/echo';
 import { applyLasting, runTriggers } from './mechanics/runes';
 import { T } from '../data/text.zh-TW';
-import type { RuneRef } from '../data/runes';
+import { RUNE_NUMBERS, type RuneRef } from '../data/runes';
 import { applyRunes, bounceNext, runeStates, type RuneMiss } from './runes';
 import { isInnate, keystonesOf, mechKnob, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
@@ -70,13 +70,20 @@ export interface BattleState {
   /** 同步 (plan 8e): the next other ally's skill this round is `pct`% stronger (engine/mechanics/runes.ts). */
   sync?: { pct: number; by: string };
   /** 回聲 (plan 8e): each strikes `target` with `effects` at the end of `round`, its caster and its foe still standing. */
-  reprises?: { by: string; target: string; round: number; name: string; effects: Effect[] }[];
+  /** `tpLeft`: the 回氣 its cast had still not given back, all its hits may give (plan 8h ruling 11c). */
+  reprises?: { by: string; target: string; round: number; name: string; effects: Effect[]; tpLeft?: number }[];
   /** Trigger runes set off in this action, cast after it (plan 8e Task 6; engine/mechanics/runes.ts runTriggers). */
   triggers?: { by: string; skill: string; on: 'crit' | 'kill' | 'struck'; foe: string }[];
 }
 
-/** Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in `enemyIds`). */
-export interface BattleScale { depth: number; region: RegionId; elite?: string; condition?: ConditionId }
+/** The difficulty a fight is measured or played at (spec §13 hook 1, plan 8h); the engine reads none of it yet. */
+export type Difficulty = 'normal' | 'nightmare' | 'hell';
+
+/**
+ * Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in
+ * `enemyIds`). `difficulty` is carried for the difficulty plans and read by no one: a fight is the same with or without it.
+ */
+export interface BattleScale { depth: number; region: RegionId; elite?: string; condition?: ConditionId; difficulty?: Difficulty }
 
 /**
  * `target` is the drawn one, which the engine plays (a taunt, a challenge or a cover turns it when the blow falls).
@@ -279,6 +286,20 @@ function resolveTargets(s: BattleState, actor: Combatant, target: Target | null,
   }
 }
 
+/** `def` with the abyss capstones' depth bonus in it (a skill without `abyss`, or no depth bonus, is `def` itself). */
+export function abyssDef(s: Pick<BattleState, 'abyss'>, def: SkillDef): SkillDef {
+  const bonus = def.abyss && s.abyss ? pctMod(def.id, 100 + s.abyss) : undefined;
+  return bonus ? patchSkill(def, bonus) : def;
+}
+
+/**
+ * `def` as `actor` casts it this moment, as `perform` casts it: the depth's bonus (`abyssDef`), then her mechanic
+ * (`castDef`: Noel's heat, Liz's coins, a barrier to release, a 同步). The battle menu's numbers read this (plan 8h ruling 11h).
+ */
+export function castNow(s: BattleState, actor: Combatant, def: SkillDef): SkillDef {
+  return castDef(s, actor, abyssDef(s, def));
+}
+
 /**
  * A skill as this combatant casts it: the tree's rank, then its mod nodes (stacked into one), then the hero's weapon
  * mastery, then every worn power that names it in the order worn; added effects (`extra`) last. The order is stated in engine/skills.ts `patchSkill`.
@@ -410,6 +431,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
   delete ctx.lastHit;   // burn and bleed ride only on a hit of this action
   delete ctx.afterTried;   // 餘波's tries of this action (plan 8e)
   delete ctx.paid;
+  delete ctx.regained;
   delete ctx.coverBlow;
   let sentTo: Combatant | undefined;   // a challenger or a cover is reached wherever she stands
   if (actor.side === 'enemy') {
@@ -449,8 +471,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       let def = skillFor(actor, act.skill);
       if (!def || def.passive) return null;
       // The abyss capstones grow with the fight's depth, after the tree and the worn powers have had their say.
-      const bonus = def.abyss && s.abyss ? pctMod(def.id, 100 + s.abyss) : undefined;
-      if (bonus) def = patchSkill(def, bonus);
+      def = abyssDef(s, def);
       // Then the caster's mechanic (Noel's heat): the skill as she casts it now, at the TP she pays now.
       const raw = def;
       def = castDef(s, actor, def);
@@ -461,6 +482,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       payHp(actor, def);
       payMech(s, actor, def, ctx);
       s.log.push({ type: 'act', actor: actor.key, label: def.name });
+      if (actor.side === 'party') countCast(ctx.ledger, def.id);
       ctx.cast = def.id;   // a barrier remembers the skill that raised it
       delete ctx.struck;
       const scatter = def.effects.some((e) => e.kind === 'damage' && e.scatter);
@@ -494,6 +516,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       if (!rec) return null;
       if (actor.tp < rec.cost) { s.log.push({ type: 'no-tp', actor: actor.key }); return null; }
       actor.tp -= rec.cost;
+      ctx.paid = rec.cost;   // what 回氣 may give back (plan 8h ruling 11c)
       delete ctx.acting;   // an echo's blows set off no trigger rune (plan 8e ruling 11)
       const def = echoDef(rec);
       s.log.push({ type: 'act', actor: actor.key, label: T.cmd.echoAct(def.name) });
@@ -535,7 +558,9 @@ function bounceCast(s: BattleState, actor: Combatant, def: SkillDef, first: Comb
     if (!next) return;
     hit.add(next.key);
     const before = ctx.lastHit;
-    for (const eff of def.effects) if (eff.kind === 'damage') applyEffect(actor, next, { ...eff, power: pctOf(eff.power, 100 - dropPct * n) }, ctx);
+    const drop = (p: number) => pctOf(p, 100 - dropPct * n);
+    // A 同步's lift drops with it (plan 8h ruling 11e).
+    for (const eff of def.effects) if (eff.kind === 'damage') applyEffect(actor, next, { ...eff, power: drop(eff.power), ...(eff.lift ? { lift: { ...eff.lift, from: drop(eff.lift.from) } } : {}) }, ctx);
     // A bounce that is dodged ends the chain: it only goes on from a foe it struck.
     if (!landedOn(ctx, before, next)) return;
   }
@@ -575,8 +600,11 @@ function twinCast(s: BattleState, actor: Combatant, cast: SkillDef, raw: SkillDe
   const again = { type: 'act' as const, actor: actor.key, label: T.rune.again(cast.name) };
   // The mechanic is paid again (controller ruling, Task 5 review): the second cast is the skill as her resource stands
   // now (一擲千金 throws the coins she holds now, 天之逆鉾 finds no barrier left to release), and spends it again.
+  // At `secondPct` of the power (plan 8h Task 5b ruling B1); a 同步's lift is scaled with it.
+  const pct = RUNE_NUMBERS['twin-cast'].fixed.secondPct;
   const second = (): SkillDef => {
-    const def = castDef(s, actor, raw);
+    const full = patchSkill(castDef(s, actor, raw), { powerPct: pct });
+    const def = { ...full, effects: full.effects.map((e) => ((e.kind === 'damage' || e.kind === 'heal') && e.lift ? { ...e, lift: { ...e.lift, from: pctOf(e.lift.from, pct) } } : e)) };
     // The mechanic's cue (Safira's finale) was said for the first cast; paying again says nothing more.
     const said = s.log.length;
     payMech(s, actor, def, ctx);
@@ -699,7 +727,7 @@ export function syncWards(s: BattleState): void {
   const guard = (s.barriers ?? []).find((b) => b.kind === 'guard');
   const pct = guard ? barrierPower(guard) : 0;
   for (const c of s.party) {
-    if (guard && c.alive) c.ward = { def: pct, res: pct, src: guard.src };
+    if (guard && c.alive) c.ward = { def: pct, res: pct, src: guard.src, ...(guard.skill ? { skill: guard.skill } : {}) };
     else delete c.ward;
   }
 }

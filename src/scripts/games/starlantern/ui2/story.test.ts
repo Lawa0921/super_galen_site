@@ -6,10 +6,10 @@ import { STORY, linesWhen, type LineWhen, type ScriptLine } from '../data/story.
 import { T } from '../data/text.zh-TW';
 import { Game } from '../engine/game';
 import { constRng } from '../engine/testing';
-import { allArtUrls, art } from '../render/artPaths';
+import { allArtUrls, art, NORMAL_SMILES } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { Dialogue } from './widgets';
-import { linesOf, playAndRecord, playScene, shouldPlay, speakerOf, type StoryCtx } from './story';
+import { linesOf, playAndRecord, playLines, playScene, shouldPlay, speakerOf, type StoryCtx } from './story';
 
 const ART: ArtIndex = (() => { const set = new Set([...allArtUrls(), art.npc('guild', 'normal')]); return { has: (u: string) => set.has(u) }; })();
 const mk = () => {
@@ -108,6 +108,23 @@ describe('playScene', () => {
     expect(texts()).toEqual(['甲', '乙', '丙']);
   });
 
+  it('a scene line waits on a scene the save has seen (story depth Task 1)', async () => {
+    const { game, talk, ctx } = mk();
+    stage('chat:liz:1', [
+      { who: 'rin', text: '看過', if: { seen: 'banter:rin-sylvie:1' } },
+      { who: 'rin', text: '沒看過', if: { notSeen: 'banter:rin-sylvie:1' } },
+    ]);
+    const s = game.state;
+    expect(s.story.seen).not.toContain('banter:rin-sylvie:1');
+    expect(linesOf('chat:liz:1', s).map((l) => l.text)).toEqual(['沒看過']);
+    s.story.seen.push('banter:rin-sylvie:1');
+    expect(linesOf('chat:liz:1', s).map((l) => l.text)).toEqual(['看過']);
+    const p = playScene(talk, 'chat:liz:1', ctx);   // the player reads the save as it is
+    expect(shown(talk)).toBe('看過');
+    p.onAction('confirm');
+    await expect(p.done).resolves.toBe('done');
+  });
+
   it('linesWhen keeps a line only when every one of its conditions holds', () => {
     const none: LineWhen = { met: [], full: [], returned: [], oath: false };
     const ls: ScriptLine[] = [
@@ -122,6 +139,42 @@ describe('playScene', () => {
     expect(t({})).toEqual(['無', '未遇']);
     expect(t({ met: ['liz'], full: ['liz'], returned: ['anna'] })).toEqual(['無', '遇', '滿', '歸']);
     expect(t({ met: ['liz'], oath: true })).toEqual(['無', '遇', '兩']);
+  });
+});
+
+describe('playLines (story polish Task 1)', () => {
+  const two: ScriptLine[] = [{ who: 'rin', text: '一' }, { who: 'hero', text: '二' }];
+  const plates = async (plate?: (line: ScriptLine, i: number) => string | undefined) => {
+    const { talk, ctx } = mk();
+    const p = playLines(talk, two, ctx, plate);
+    const seen: { name: string; side: string | null }[] = [];
+    for (let i = 0; i < two.length; i++) {
+      const face = talk.el.querySelector('.slx-talk-face');
+      seen.push({ name: nameOf(talk).textContent ?? '', side: face ? (face.classList.contains('slx-talk-face--left') ? 'left' : 'right') : null });
+      p.onAction('confirm');
+      await tick();
+    }
+    await expect(p.done).resolves.toBe('done');
+    return seen;
+  };
+
+  it('playLines plays each line with its plate and face, the first speaker on the left', async () => {
+    expect(await plates()).toEqual([{ name: CHARACTERS.rin.name, side: 'left' }, { name: CHARACTERS.hero.name, side: 'right' }]);
+    // A plate given for a line replaces the name only: the face stays where it was.
+    expect(await plates((_l, i) => (i === 0 ? '？？？' : undefined))).toEqual([{ name: '？？？', side: 'left' }, { name: CHARACTERS.hero.name, side: 'right' }]);
+  });
+
+  it('cancel stops playLines with skipped and no summary', async () => {
+    const { talk, ctx } = mk();
+    const say = vi.spyOn(talk, 'say');
+    const p = playLines(talk, two, ctx);
+    expect(shown(talk)).toBe('一');
+    p.onAction('cancel');
+    await expect(p.done).resolves.toBe('skipped');
+    p.onAction('confirm');            // a key after the end does nothing
+    await tick();
+    expect(say.mock.calls.map((c) => c[1])).toEqual(['一']);   // nothing more said: no summary, no second line
+    expect(shown(talk)).not.toBe(T.ui2.story.skipped(''));
   });
 });
 
@@ -159,10 +212,44 @@ describe('speakerOf', () => {
   it('a missing story face falls back to normal', () => {
     const { game } = mk();
     expect(speakerOf('noel', game.state, ART, 'smile').face).toBe(art.portrait('noel', 'normal'));
-    expect(speakerOf('noel', game.state, ART, 'sad').face).toBe(art.portrait('noel', 'down'));
-    const bare: ArtIndex = { has: (u) => u === art.portrait('noel', 'normal') };
-    expect(speakerOf('noel', game.state, bare, 'sad').face).toBe(art.portrait('noel', 'normal'));
     expect(speakerOf('liz', game.state, { has: () => false }, 'smile').face).toBeUndefined();
+  });
+
+  it('a serious or sad line with no art for that face shows the name plate alone, never a smiling normal (final review, story depth)', () => {
+    // A companion's normal portrait often smiles: borrowed for a grave line it says the opposite. Until the art pipeline
+    // brings her serious and sad faces (user approval, plan leftovers), the line has no portrait at all.
+    const { game } = mk();
+    for (const mood of ['serious', 'sad'] as const) {
+      const said = speakerOf('noel', game.state, ART, mood);
+      expect(said.name, mood).toBe(CHARACTERS.noel.name);
+      expect(said.face, mood).toBeUndefined();
+      const withIt: ArtIndex = { has: (u) => ART.has(u) || u === art.portrait('noel', mood) };
+      expect(speakerOf('noel', game.state, withIt, mood).face, mood).toBe(art.portrait('noel', mood));
+    }
+    // The faces on disk still show: Lorne's and Rin's sad.
+    expect(speakerOf('hero', game.state, ART, 'sad').face).toBe(art.portrait('hero', 'sad'));
+    expect(speakerOf('noel', game.state, ART, 'normal').face).toBe(art.portrait('noel', 'normal'));
+  });
+
+  it('only a companion whose normal portrait smiles loses it on a grave line; Lorne and Rin keep theirs (re-review of the final fixes)', () => {
+    const { game } = mk();
+    // Rin's and Lorne's normal faces do not smile: a serious line keeps the portrait (「要出去，得先過我這裡」).
+    expect(speakerOf('rin', game.state, ART, 'serious').face).toBe(art.portrait('rin', 'normal'));
+    expect(speakerOf('hero', game.state, ART, 'serious').face).toBe(art.portrait('hero', 'normal'));
+    expect(speakerOf('hero', game.state, ART, 'distant').face).toBe(art.portrait('hero', 'normal'));
+    game.state.party.roster.rin.oath = true;
+    expect(speakerOf('rin', game.state, ART, 'serious').face).toBe(art.portrait('rin-oath', 'normal'));
+    // A companion's heavy faces count as grave too: Chizuru's solemn, Scarlet's vow and shaken, Selene's wistful.
+    for (const [who, mood] of [['chizuru', 'solemn'], ['scarlet', 'vow'], ['scarlet', 'shaken'], ['selene', 'wistful'], ['sylvie', 'serious']] as const) {
+      const said = speakerOf(who, game.state, ART, mood);
+      expect(said.face, `${who} ${mood}`).toBeUndefined();
+      expect(said.name).toBe(CHARACTERS[who].name);
+    }
+    // A plain or light line keeps her smiling normal face.
+    expect(speakerOf('chizuru', game.state, ART, 'normal').face).toBe(art.portrait('chizuru', 'normal'));
+    expect(speakerOf('chizuru', game.state, ART, 'bewildered').face).toBe(art.portrait('chizuru', 'normal'));
+    // The flag is data: every companion whose normal art smiles, and never Lorne or Rin.
+    expect([...NORMAL_SMILES].sort()).toEqual(['bobby', 'chizuru', 'liz', 'noel', 'safira', 'scarlet', 'selene', 'sylvie']);
   });
 
   it('a face with no art yet shows normal; one with art shows itself', () => {

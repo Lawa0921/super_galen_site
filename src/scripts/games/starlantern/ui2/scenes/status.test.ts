@@ -4,7 +4,8 @@ import { CHARACTERS, OATH_TITLE, rulesOf } from '../../data/characters';
 import { newMember, statsOf, LEGACY_LINEUP } from '../../engine/party';
 import type { AnyStat, CharacterId, Member } from '../../engine/types';
 import { STAT_CATEGORIES } from '../../engine/stats';
-import { raiseNode, raiseTalent, swapPair } from '../../engine/progression';
+import { defaultTalents, defaultTree, raiseNode, raiseTalent, skillPointsLeft, swapPair, talentPointsLeft } from '../../engine/progression';
+import { buildOf } from '../../data/builds';
 import { cardOf, compareCards } from '../skillCard';
 import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
@@ -1913,5 +1914,69 @@ describe('the skills page and the workshop (plan 8g Task 5)', () => {
     }
     // Three branches stay one line, one span.
     expect(w.root.querySelector('.slx-tree-branch-name span')).toBeNull();
+  });
+});
+
+describe('the tree tab and the suggested builds (plan 8h Task 7)', () => {
+  beforeEach(() => resetTreeView());
+  /** Scarlet at `level` with `tree` and `talents`, on the tree tab; `prep` after. */
+  const onTree = (level: number, tree: Record<string, number>, talents: Record<string, number>, prep: (g: Game) => void = () => undefined) => {
+    const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, LEGACY_LINEUP);
+    game.state.party.roster.scarlet = { ...game.state.party.roster.scarlet, level, tree, talents };
+    prep(game);
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
+    const s = new StatusScene({ game, art: NO_ART, sfx, go, hasSave: () => false, newGame: vi.fn(), from: 'guild', arg: 'tab:tree:scarlet' });
+    s.enter(root);
+    const line = () => root.querySelector('.slx-tree-builds');
+    return { game, go, root, s, sfx, line };
+  };
+
+  it('unspent points point to the suggested builds', () => {
+    // Points left and following nothing: the hint, and the way in.
+    const left = onTree(20, defaultTree('scarlet', 10), defaultTalents('scarlet', 20));
+    expect(skillPointsLeft(left.game.state.party.roster.scarlet)).toBeGreaterThan(0);
+    expect(left.line()!.textContent).toContain(T.ui2.builds.unspentHint);
+    // Talent points alone count too.
+    const talents = onTree(20, defaultTree('scarlet', 20), {});
+    expect(talents.line()!.textContent).toContain(T.ui2.builds.unspentHint);
+    // Every point spent: the way in stays, the hint goes.
+    const spent = onTree(20, defaultTree('scarlet', 20), defaultTalents('scarlet', 20));
+    expect(skillPointsLeft(spent.game.state.party.roster.scarlet)).toBe(0);
+    expect(talentPointsLeft(spent.game.state.party.roster.scarlet)).toBe(0);
+    expect(spent.line()!.textContent).not.toContain(T.ui2.builds.unspentHint);
+    expect(spent.line()!.querySelector('.slx-tree-builds-go')!.textContent).toBe(T.ui2.builds.entry);
+    // Following a build: no hint, its name instead.
+    const following = onTree(20, defaultTree('scarlet', 10), {}, (g) => { g.state.party.roster.scarlet.build = 'riposte'; });
+    expect(following.line()!.textContent).not.toContain(T.ui2.builds.unspentHint);
+    expect(following.line()!.textContent).toContain(T.ui2.builds.followTag(buildOf('scarlet', 'riposte')!.name));
+  });
+
+  it('Tab or a click opens the suggested builds on her; back from them the sheet still returns to where it came from', () => {
+    const w = onTree(20, defaultTree('scarlet', 20), defaultTalents('scarlet', 20));
+    w.s.onAction('swap');
+    expect(w.go).toHaveBeenLastCalledWith('builds', 'scarlet');
+    w.line()!.querySelector<HTMLElement>('.slx-tree-builds-go')!.click();
+    expect(w.go).toHaveBeenCalledTimes(2);
+    expect(w.go).toHaveBeenLastCalledWith('builds', 'scarlet');
+    // In the labyrinth, one on the bench: the error cue and a note, nothing opens.
+    const bench = onTree(20, defaultTree('scarlet', 20), defaultTalents('scarlet', 20), (g) => {
+      g.phase = 'map'; Object.assign(g, { run: {} });
+      g.state.party.recruited.push('sylvie');
+      g.state.party.roster.sylvie = { ...g.state.party.roster.sylvie, level: 20 };
+    });
+    for (let i = 0; i < 8 && !bench.root.querySelector('.slx-status-name')!.textContent!.includes(CHARACTERS.sylvie.name); i++) bench.s.onAction('next');
+    bench.s.onAction('swap');
+    expect(bench.go).not.toHaveBeenCalled();
+    expect(bench.sfx.error).toHaveBeenCalled();
+    expect(bench.root.querySelector('.slx-tree-msg')!.textContent).toBe(T.ui2.status.fieldOnly);
+    // Back from the builds screen, Esc leaves the sheet as back from the workshop: to the guild in town.
+    const back = new Game(constRng(0.5), memoryStorage(), undefined, 0, LEGACY_LINEUP);
+    const go = vi.fn();
+    const s = new StatusScene({ game: back, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), from: 'builds', arg: 'tab:tree:scarlet' });
+    s.enter(document.createElement('div'));
+    s.onAction('cancel');
+    expect(go).toHaveBeenCalledWith('guild');
   });
 });

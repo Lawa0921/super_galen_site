@@ -11,6 +11,10 @@ import { MEETINGS } from '../../data/meetings';
 import { T } from '../../data/text.zh-TW';
 import { meet } from '../../engine/party';
 import { STORY } from '../../data/story.zh-TW';
+import { chainLength } from '../../data/story/chains';
+import { activeIds } from '../../engine/party';
+import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
+import { linesOf } from '../story';
 
 function setup(prep?: (g: Game) => void, art: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
@@ -213,6 +217,64 @@ describe('GateScene: the portal plaza', () => {
     expect(go).not.toHaveBeenCalled();
     expect(game.phase).toBe('town');
     expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('出戰成員全部倒下，無法出發');
+  });
+});
+
+// Story depth Task 3 (plan ruling 7): the lone morning plays at the gate, after the departure is confirmed and allowed.
+describe('GateScene: the lone morning (story depth Task 3)', () => {
+  const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+  const lone = (story: StoryMode, prep: (g: Game) => void = () => {}) => {
+    const game = new Game(constRng(0.5), null);
+    game.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }];
+    Object.assign(game.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    game.state.story.seen.push('rin-reveal', 'rin-confess', 'mem:hero:9', 'bellkeeper-arrives');
+    game.state.story.queue = ['hero-alone'];
+    prep(game);
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' as const, story }) };
+    const s = new GateScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+    s.enter(root);
+    s.onAction('confirm');   // greeting
+    s.onAction('confirm');   // 選擇傳送門
+    s.onAction('confirm');   // the mainline
+    s.onAction('confirm');   // 第 1 層
+    s.onAction('up'); s.onAction('confirm');   // 是
+    return { game, go, root, s };
+  };
+  const text = (root: HTMLElement) => root.querySelector('.slx-talk .slx-text')?.textContent;
+
+  it('confirming a departure with the lone morning queued plays it at the gate, then goes to the dungeon', async () => {
+    const { game, go, root, s } = lone('all');
+    await tick();
+    expect(go).not.toHaveBeenCalled();
+    expect(root.querySelector('.slx-confirm')).toBeNull();
+    expect(root.querySelector('.slx-depths')).toBeNull();
+    expect(root.querySelector('.slx-portal')).toBeNull();
+    const first = linesOf('hero-alone', game.state)[0].text;
+    expect(text(root)).toBe(first);
+    for (let i = 0; i < 20 && !go.mock.calls.length; i++) { s.onAction('confirm'); await tick(); }
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(game.phase).toBe('map');
+    expect(game.state.story.seen).toContain('hero-alone');
+    expect(game.state.story.fresh).not.toContain('hero-alone');
+  });
+
+  it('the lone morning auto-plays when the story is off', async () => {
+    const { game, go } = lone('none');
+    await tick();
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(game.state.story.seen).toContain('hero-alone');
+    expect(game.state.story.fresh).toContain('hero-alone');
+  });
+
+  it('a refused departure plays nothing', async () => {
+    const { game, go, root } = lone('all', (g) => { for (const id of activeIds(g.state.party)) g.state.party.roster[id].hp = 0; });
+    await tick();
+    expect(go).not.toHaveBeenCalled();
+    expect(text(root)).toBe('出戰成員全部倒下，無法出發');
+    expect(game.state.story.queue).toContain('hero-alone');
+    expect(game.state.story.seen).not.toContain('hero-alone');
   });
 });
 

@@ -73,7 +73,8 @@ describe('applyEffect', () => {
   it('puts taunt and a device on the actor', () => {
     const a = party({ mech: { kind: 'devices', devices: [], cap: 2 } });
     applyEffect(a, a, { kind: 'taunt', turns: 3 }, ctx());
-    applyEffect(a, a, { kind: 'device', device: 'turret', power: 70, turns: 3 }, { ...ctx(), cast: 'turret' });
+    // Her own cast (she is acting): a device a ledger split by skill can credit (plan 8h Task 3 review).
+    applyEffect(a, a, { kind: 'device', device: 'turret', power: 70, turns: 3 }, { ...ctx(), cast: 'turret', acting: a.key });
     expect([a.taunt, a.mech]).toEqual([3, { kind: 'devices', devices: [{ skill: 'turret', kind: 'turret', power: 70, level: 1, turns: 3 }], cap: 2 }]);
   });
   it('applies buffs to the target', () => {

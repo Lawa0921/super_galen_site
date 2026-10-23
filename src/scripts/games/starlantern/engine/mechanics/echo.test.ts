@@ -182,3 +182,45 @@ describe("the hero's echo of a skill with runes (plan 8e Task 3)", () => {
     expect(echoOf(c)!.cost).toBe(3);
   });
 });
+
+describe("the hero's echo and step ⑧ (plan 8h Task 2)", () => {
+  const sync = { id: 'sync', tier: 'legendary' } as const;
+  const pierce = (SKILLS.pierce.effects[0] as { power: number }).power;   // 170
+  /** Round 1: Noel (fastest) casts her fire star with 同步, then Chizuru her 貫槍; round 2: the hero echoes it. */
+  const fight = (noelRunes: boolean, extra: Partial<BattleState> = {}) => {
+    const noel = P('noel', { max: { ...MAX, spd: 90 }, ...(noelRunes ? { runes: { 'fire-star': [sync] } } : {}) });
+    const chizuru = P('chizuru', { max: { ...MAX, spd: 80 } });
+    const s0 = makeBattle([hero(), noel, chizuru], [foe()], extra);
+    const r1 = resolveRound(s0, { noel: { kind: 'skill', skill: 'fire-star', target: 'e0' }, chizuru: { kind: 'skill', skill: 'pierce', target: 'e0' } }, constRng(0.5));
+    const r2 = resolveRound(r1, { hero: { kind: 'echo', target: 'e0' } }, constRng(0.5));
+    return { r1, r2 };
+  };
+  const heroHits = (r: BattleState) => r.log.filter((e, i) => e.type === 'damage' && r.log.slice(0, i).some((x) => x.type === 'act' && x.actor === 'hero')).map((e) => (e as { amount: number }).amount);
+
+  it('the echo does not copy a sync', () => {
+    const { r1, r2 } = fight(true);
+    // Chizuru's 貫槍 was lifted 30% (her hit is bigger than without the sync) ...
+    const chizuruHit = (r: BattleState) => (r.log.find((e, i) => e.type === 'damage' && r.log.slice(0, i).some((x) => x.type === 'act' && x.actor === 'chizuru')) as { amount: number }).amount;
+    expect(chizuruHit(r1)).toBeGreaterThan(chizuruHit(fight(false).r1));
+    // ... but the record is 貫槍 as she would have cast it with no sync: 170, and the echo 119.
+    expect((echoOf(r1)!.def.effects[0] as { power: number }).power).toBe(pierce);
+    expect((echoDef(echoOf(r1)!).effects[0] as { power: number }).power).toBe(119);
+    const spec = { power: 119, element: 'phys', scale: 'atk', melee: true } as const;
+    expect(heroHits(r2)).toEqual([hitAmount(hero(), foe(), spec, { variance: 1, crit: false, blocked: false }).amount]);
+  });
+
+  it('the echo keeps a duet but not a sync', () => {
+    // A duet (20%) stands over the round as well, Noel's own (so her fire star leaves it for Chizuru): the record keeps
+    // the duet's lift only.
+    const { r1 } = fight(true, { duet: { pct: 20, by: 'noel' } });
+    expect((echoOf(r1)!.def.effects[0] as { power: number }).power).toBe(pctOf(pierce, 120));
+  });
+
+  it('the echo never carries the abyss bonus', () => {
+    // In an abyss fight (+20%) the echo of a plain skill lands at its record x 70%, nothing more.
+    const rec = { by: 'chizuru', round: 1, def: SKILLS.pierce, cost: SKILLS.pierce.tp };
+    const r = resolveRound(makeBattle([hero()], [foe()], { round: 1, echo: rec, abyss: 20 }), { hero: { kind: 'echo', target: 'e0' } }, constRng(0.5));
+    const spec = { power: pctOf(pierce, 70), element: 'phys', scale: 'atk', melee: true } as const;
+    expect(heroHits(r)).toEqual([hitAmount(hero(), foe(), spec, { variance: 1, crit: false, blocked: false }).amount]);
+  });
+});

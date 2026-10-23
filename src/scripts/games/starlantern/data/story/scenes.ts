@@ -18,7 +18,8 @@ export type Stage = 'prologue' | 'act1' | 'act2' | 'act3' | 'act4' | 'after';
 export const STAGES: Stage[] = ['prologue', 'act1', 'act2', 'act3', 'act4', 'after'];
 
 export type SceneId =
-  | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'bellkeeper-arrives' | 'finale'
+  | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'rin-confess' | 'bellkeeper-arrives' | 'hero-alone'
+  | 'finale' | 'epilogue'
   | `mem:${CharacterId}:${number}` | `chat:${CharacterId}:${number}` | `town:${TownFragmentId}` | `home:${HomeOwner}`
   | `banter:${BanterPair}:${number}`;
 
@@ -33,7 +34,7 @@ export const HOME_OWNERS: HomeOwner[] = ['chizuru', 'safira', 'sylvie', 'liz'];
 export const homeScene = (id: HomeOwner): SceneId => `home:${id}`;
 
 export const CHAT_COUNT: Record<CharacterId, number> = {
-  hero: 4, rin: 4, noel: 2, chizuru: 2, liz: 2, sylvie: 2, scarlet: 2, selene: 2, safira: 2, bobby: 2,
+  hero: 5, rin: 4, noel: 2, chizuru: 2, liz: 2, sylvie: 2, scarlet: 2, selene: 2, safira: 2, bobby: 2,
 };
 
 /**
@@ -43,12 +44,23 @@ export const CHAT_COUNT: Record<CharacterId, number> = {
  */
 export type BanterPair = `${CharacterId}-${CharacterId}`;
 export const BANTER_COUNT: Partial<Record<BanterPair, number>> = {
-  // B1's three fixtures, then B2 (lore ledger I-158): ids are frozen once shipped, so a pair only ever grows at the end.
-  'liz-scarlet': 2, 'noel-rin': 2, 'safira-sylvie': 2,
-  'bobby-chizuru': 1, 'bobby-liz': 1, 'bobby-noel': 1, 'bobby-sylvie': 1, 'chizuru-rin': 1, 'chizuru-safira': 1, 'chizuru-scarlet': 1,
-  'liz-noel': 1, 'liz-selene': 1, 'noel-selene': 2, 'rin-scarlet': 1, 'rin-sylvie': 1, 'safira-scarlet': 1, 'scarlet-selene': 1, 'selene-sylvie': 1,
+  // B1's three fixtures, then B2 (lore ledger I-158), then the story depth design's friction (§7.2–§7.4).
+  // 發佈之前編號可以重排（遊戲還沒上線，舊存檔不必相容：使用者裁定，故事深度 Task 5 取消）；發佈之後，一個配對只往後加。
+  'liz-scarlet': 3, 'noel-rin': 2, 'safira-sylvie': 3,
+  'bobby-chizuru': 2, 'bobby-liz': 1, 'bobby-noel': 1, 'bobby-sylvie': 2, 'chizuru-rin': 2, 'chizuru-safira': 1, 'chizuru-scarlet': 1,
+  'liz-noel': 1, 'liz-selene': 1, 'noel-selene': 3, 'rin-scarlet': 3, 'rin-sylvie': 2, 'safira-scarlet': 2, 'scarlet-selene': 1, 'selene-sylvie': 1,
+  'chizuru-noel': 2, 'rin-selene': 2,
 };
 export const BANTER_PAIRS: BanterPair[] = (Object.keys(BANTER_COUNT) as BanterPair[]).sort();
+/**
+ * The six closing banters the story depth design names in its ruling 9 (design §9.3 point 10: the payoffs gated on `oath`
+ * or `full`, every one heard before depth 30 in the scripted play); the plan's scheduling targets are built on this list.
+ * A pair whose next banter is one of them, or leads to one, goes first in the banter pick (`engine/story/events.ts`
+ * `pickBanter`; Task 6 third ruling). The §6 setup/payoff banters outside it are checked by the scripted plays too.
+ */
+export const BANTER_PAYOFFS: ReadonlySet<SceneId> = new Set<SceneId>([
+  'banter:rin-scarlet:3', 'banter:rin-selene:2', 'banter:safira-sylvie:3', 'banter:liz-scarlet:3', 'banter:noel-selene:3', 'banter:chizuru-noel:2',
+]);
 export const banterScene = (pair: BanterPair, n: number): SceneId => `banter:${pair}:${n}`;
 /** The two of a banter scene, from its id. */
 export const banterTwo = (id: SceneId): [CharacterId, CharacterId] => id.split(':')[1].split('-') as [CharacterId, CharacterId];
@@ -58,13 +70,24 @@ export const banterTwo = (id: SceneId): [CharacterId, CharacterId] => id.split('
  * first arrival in town after a won fight (Task 10b: why the two of them go down together; lore ledger I-81 to I-86).
  * `bellkeeper-arrives` is the arrival after Rin's reveal: the society learns of her choice and its keeper comes to town
  * (continuity fix 4; lore ledger I-119).
+ * Story depth (design §7.4, §7.5): `rin-confess` is her confession at the dinner of the return after her reveal;
+ * `hero-alone` the morning he means to go down alone, played on a departure; `epilogue` the lantern festival, the first
+ * return after the finale (controller ruling d: pulled from 6e into the main line).
  */
-export type MajorScene = 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'bellkeeper-arrives' | 'finale';
-export const MAJOR_SCENES: MajorScene[] = ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'bellkeeper-arrives', 'finale'];
-/** The two short scenes of the opening: ten lines each at most (Task 10b). */
-const OPENING_SCENES = new Set<SceneId>(['prologue-inn', 'first-return']);
-/** The bellkeeper's arrival is a short scene: six lines at most (continuity fix 4). */
-const BELLKEEPER_CAP = 6;
+export type MajorScene =
+  | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'rin-confess' | 'bellkeeper-arrives' | 'hero-alone'
+  | 'finale' | 'epilogue';
+export const MAJOR_SCENES: MajorScene[] = [
+  'prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale', 'epilogue',
+];
+/**
+ * The major scenes whose cap is not twelve: Act 1's close; the two short scenes of the opening (Task 10b); and, from the
+ * story depth design (§7.4, §7.5), the bellkeeper's arrival (6 -> 10), the lone morning, the finale (12 -> 16) and the festival
+ * (six core lines and at most ten more, affinity spec §8.5).
+ */
+const MAJOR_CAPS: Partial<Record<MajorScene, number>> = {
+  'act1-after': 3, 'prologue-inn': 10, 'first-return': 10, 'bellkeeper-arrives': 10, 'rin-confess': 12, 'hero-alone': 10, finale: 16, epilogue: 16,
+};
 
 /** Every scene id, in a fixed order: major scenes, then memories, chats, returns, homecomings and banters (B1). */
 export const SCENE_IDS: SceneId[] = [
@@ -94,7 +117,7 @@ const LONG_MEMORIES = new Set<SceneId>(['mem:hero:9', 'mem:hero:10', 'mem:rin:7'
 /** The most lines a scene may have (spec §8.2, §17). */
 export function lineCap(id: SceneId): number {
   switch (sceneKind(id)) {
-    case 'major': return id === 'act1-after' ? 3 : OPENING_SCENES.has(id) ? 10 : id === 'bellkeeper-arrives' ? BELLKEEPER_CAP : 12;
+    case 'major': return MAJOR_CAPS[id as MajorScene] ?? 12;
     case 'memory': return LONG_MEMORIES.has(id) ? 12 : 4;
     case 'chat': return 3;
     case 'town': return 8;
@@ -104,31 +127,72 @@ export function lineCap(id: SceneId): number {
 }
 
 /**
- * Chats that wait: a later `stage`, and/or Rin's choice (`oath`). A chat with no entry is open as soon as the person is met.
+ * What a chat, a banter (and from the story depth plan, a return line) waits on; every kind it names has to hold
+ * (`engine/story/events.ts` `gateOpen`):
+ * - `stage`: the story has reached that stage;
+ * - `oath`: Rin has made her choice;
+ * - `full`: that one holds all of her memories;
+ * - `beforeChoice`: Rin has not made her choice yet. Once she has, the gate is expired (`gateExpired`): the scene never
+ *   plays, and it no longer holds back the ones after it (it counts as passed, never as seen);
+ * - `pieces`: each one named holds at least that many memory pieces;
+ * - `seen`: every scene named has been seen.
+ */
+export interface StoryGate {
+  stage?: Stage;
+  oath?: true;
+  full?: CharacterId;
+  beforeChoice?: true;
+  pieces?: Partial<Record<CharacterId, number>>;
+  seen?: SceneId[];
+  /** Story depth Task 15 review: where Rin's confession was told (`StoryState.confession`); the other place expires it. */
+  confession?: 'dinner';
+}
+
+/**
+ * Chats that wait (`StoryGate`). A chat with no entry is open as soon as the person is met.
  * `position` in the story tests reads it; `nextChat` reads it from Task 3. The first chat of anyone is never gated.
  * Every entry needs a reason in the lore ledger.
  */
-export const CHAT_GATE: Partial<Record<SceneId, { stage?: Stage; oath?: true }>> = {
+export const CHAT_GATE: Partial<Record<SceneId, StoryGate>> = {
   // Task 6: Lorne's chats follow the acts (lore ledger I-47).
   'chat:hero:2': { stage: 'act2' }, 'chat:hero:3': { stage: 'act3' }, 'chat:hero:4': { stage: 'act4' },
   // Task 7: Rin's chats. She looks away only from her 4th piece (act 3); her last chat is her choice (lore ledger I-54).
   'chat:rin:2': { stage: 'act2' }, 'chat:rin:3': { stage: 'act3' }, 'chat:rin:4': { oath: true },
   // Task 8: Selene is met at depth 2; her 「您每一次，都把大家帶回來了」 waits for act 3, where coming back has its weight (I-64).
   'chat:selene:2': { stage: 'act3' },
+  // Story depth (design §7.4): Anna has stopped counting the papers on the guild door; it waits for act 4, when the town turns.
+  'chat:hero:5': { stage: 'act4' },
 };
 
 /**
- * Banters that wait (B1), used like `CHAT_GATE`: a later `stage`, Rin's choice (`oath`), and/or one of the two holding all of
- * her memories (`full`). A banter with no entry is open as soon as both of its two are met; no gate can open it sooner.
- * Every entry needs a reason in the lore ledger.
+ * Banters that wait (B1), used like `CHAT_GATE` (`StoryGate`). A banter with no entry is open as soon as both of its two are
+ * met; no gate can open it sooner. Every entry needs a reason in the lore ledger.
  */
-export interface BanterGate { stage?: Stage; oath?: true; full?: CharacterId }
-export const BANTER_GATE: Partial<Record<SceneId, BanterGate>> = {
+export const BANTER_GATE: Partial<Record<SceneId, StoryGate>> = {
   // B2 (lore ledger §5): later chapters of a pair. A stage for time spent together, Rin's choice for the Rin who teases back,
   // a full memory for the one who has changed.
-  'banter:liz-noel:1': { stage: 'act3' }, 'banter:safira-sylvie:2': { stage: 'act3' },
-  'banter:noel-rin:2': { oath: true }, 'banter:rin-sylvie:1': { oath: true },
-  'banter:liz-scarlet:2': { full: 'scarlet' }, 'banter:noel-selene:2': { full: 'selene' },
+  'banter:liz-noel:1': { stage: 'act3' }, 'banter:noel-rin:2': { oath: true },
+  // Story depth (design §7.2–§7.4; lore ledger §5): the friction. Pieces for what one has learnt of the other; before her
+  // choice for what only fits then (missed, it holds nothing back); the confession for the seventh night.
+  'banter:chizuru-noel:1': { pieces: { noel: 1 } },
+  'banter:liz-scarlet:2': { stage: 'act2', pieces: { scarlet: 2 } },
+  'banter:safira-sylvie:2': { pieces: { safira: 2 } },
+  'banter:rin-sylvie:1': { stage: 'act3', beforeChoice: true },
+  'banter:rin-selene:1': { stage: 'act3', beforeChoice: true },
+  'banter:safira-scarlet:2': { stage: 'act3', pieces: { safira: 2 } },
+  'banter:noel-selene:2': { pieces: { noel: 3 } },
+  'banter:bobby-chizuru:2': { pieces: { bobby: 4, chizuru: 3 } },   // Task 4 ruling: Bobby's apology is her fourth piece
+  'banter:bobby-sylvie:2': { stage: 'act3' },
+  'banter:rin-scarlet:2': { oath: true, seen: ['rin-confess'], confession: 'dinner' },
+  'banter:rin-scarlet:3': { oath: true, full: 'scarlet', seen: ['rin-confess'] },
+  'banter:rin-selene:2': { oath: true, full: 'selene' },
+  'banter:rin-sylvie:2': { oath: true },
+  'banter:chizuru-rin:2': { oath: true },
+  'banter:chizuru-noel:2': { full: 'noel' },
+  // the three moved ones keep their old gates, with a stage (design §7.4)
+  'banter:safira-sylvie:3': { stage: 'act3', full: 'safira' },
+  'banter:liz-scarlet:3': { stage: 'act3', full: 'scarlet' },
+  'banter:noel-selene:3': { stage: 'act3', full: 'selene' },
 };
 
 /**
@@ -143,6 +207,27 @@ export const CLOSING_PIECES: SceneId[] = CHARACTER_IDS.flatMap((id) => {
   return (id === 'hero' || id === 'rin' ? [n - 1, n] : [n]).map((k) => memScene(id, k));
 });
 /**
+ * Story depth Task 3 (plan ruling 5). `ALONE`: a scene that plays by itself on its arrival (the reveal first); the chat and
+ * the banter wait for the next return. `HEAVY_MAJORS`: one of them an arrival, the first in play order; the others stay in
+ * the queue for the next return. `DEPARTURE_SCENES`: played on a departure (`Game.departScene`), never on an arrival.
+ */
+export const ALONE: readonly SceneId[] = ['rin-reveal', 'rin-confess'];
+export const HEAVY_MAJORS: ReadonlySet<SceneId> = new Set<SceneId>(['act2', 'act3', 'act4', 'bellkeeper-arrives', 'epilogue']);
+export const DEPARTURE_SCENES: readonly SceneId[] = ['hero-alone'];
+
+// ---- Light or heavy (style bible §2.2; moved here from voiceGates.ts in story depth Task 3: the engine reads it) ----
+
+const HEAVY_SCENES = new Set<SceneId>([
+  'prologue', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale', 'epilogue',
+  'chat:rin:2', 'chat:rin:3', 'chat:rin:4', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4',
+]);
+/** Whether a scene is heavy: every memory, every townsfolk return, and the scenes the bible names. */
+export function heavyScene(id: SceneId): boolean {
+  const kind = sceneKind(id);
+  return kind === 'memory' || kind === 'town' || HEAVY_SCENES.has(id);
+}
+
+/**
  * B1 ruling (fix round 1): no light banter after a heavy arrival. A return whose arrival (the queue, and the scene in the chat
  * slot) holds one of these plays no banter; the banter waits for the next return (it is never queued, so nothing is lost). An
  * entry ending in `:` is a prefix (6d's `romance:<c>`); any other is an exact id. Rin's reveal plays alone anyway; the return
@@ -150,5 +235,5 @@ export const CLOSING_PIECES: SceneId[] = CHARACTER_IDS.flatMap((id) => {
  * (a companion's happy after-story; the warm line comes last), middle memory pieces, `first-return`, `act1-after`.
  * 6d adds its heavy scenes here.
  */
-export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'bellkeeper-arrives', ...ACT_NODES, ...CLOSING_PIECES, 'finale', 'epilogue', 'romance:'];
+export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', ...ACT_NODES, ...CLOSING_PIECES, 'finale', 'epilogue', 'romance:'];
 export const isHeavyArrival = (id: string): boolean => HEAVY_ARRIVAL.some((h) => (h.endsWith(':') ? id.startsWith(h) : id === h));

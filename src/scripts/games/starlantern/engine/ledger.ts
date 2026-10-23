@@ -5,17 +5,40 @@
 import { hitAmount, type Combatant, type DamageSpec, type HitRolls } from './combatant';
 
 export interface Contribution { damage: number; healing: number; prevented: number; shield: number }
-export interface Ledger { by: Record<string, Contribution> }
-
-export function newLedger(): Ledger {
-  return { by: {} };
+/**
+ * `bySkill` (plan 8h ruling 9), only when asked for: each skill's share of what its caster did while she cast it by hand
+ * (not a triggered cast, an echo or a reprise), and how many times she cast it.
+ */
+export interface Ledger {
+  by: Record<string, Contribution>; bySkill?: Record<string, Contribution & { casts: number }>;
+  /**
+   * Measurement only (plan 8h Task 5b, H3): `buffGivers` credits an ally's attack buff on the hitter, or a debuff on the
+   * foe's guard, with what it added to each hit (taken away alone, the same rolls), the hitter keeping the rest; `gauge`
+   * counts the gauge each member fed the others, apart from the totals. The sim gate's ledger asks for neither.
+   */
+  buffGivers?: true; gauge?: Record<string, number>;
 }
 
-/** Adds `n` of `kind` to `key`; nothing without a ledger, without a key, or for nothing gained. */
-export function credit(l: Ledger | undefined, key: string | undefined, kind: keyof Contribution, n: number): void {
+export function newLedger(opts: { bySkill?: true; buffGivers?: true } = {}): Ledger {
+  return { by: {}, ...(opts.bySkill ? { bySkill: {} } : {}), ...(opts.buffGivers ? { buffGivers: true as const, gauge: {} } : {}) };
+}
+
+const empty = (): Contribution => ({ damage: 0, healing: 0, prevented: 0, shield: 0 });
+
+/**
+ * Adds `n` of `kind` to `key`; nothing without a ledger, without a key, or for nothing gained. With `skill` (the cast it
+ * came from) and a ledger that splits by skill, that skill's share gets it too.
+ */
+export function credit(l: Ledger | undefined, key: string | undefined, kind: keyof Contribution, n: number, skill?: string): void {
   if (!l || !key || !(n > 0)) return;
-  const c = l.by[key] ?? (l.by[key] = { damage: 0, healing: 0, prevented: 0, shield: 0 });
+  const c = l.by[key] ?? (l.by[key] = empty());
   c[kind] += n;
+  if (skill && l.bySkill) (l.bySkill[skill] ??= { ...empty(), casts: 0 })[kind] += n;
+}
+
+/** One more cast of `skill` by hand, in a ledger that splits by skill. */
+export function countCast(l: Ledger | undefined, skill: string): void {
+  if (l?.bySkill) (l.bySkill[skill] ??= { ...empty(), casts: 0 }).casts += 1;
 }
 
 export function totalOf(c: Contribution): number {
@@ -48,7 +71,8 @@ export function creditPrevented(l: Ledger, a: Combatant, t: Combatant, spec: Dam
   (t.auras ?? []).forEach((b, i) => {
     if (b.stat === guard && b.pct > 0) credit(l, b.src, 'prevented', spared(t, { ...t, auras: (t.auras ?? []).filter((_, j) => j !== i) }));
   });
-  if (t.ward && t.ward[guard] > 0) credit(l, t.ward.src, 'prevented', spared(t, { ...t, ward: undefined }));
+  // The barrier's share goes to the skill that raised it in a ledger split by skill (plan 8h Task 2 review).
+  if (t.ward && t.ward[guard] > 0) credit(l, t.ward.src, 'prevented', spared(t, { ...t, ward: undefined }), t.ward.skill);
   a.buffs.forEach((b, i) => {
     if (b.stat === spec.scale && b.pct < 0) credit(l, b.src, 'prevented', spared(t, t, { ...a, buffs: a.buffs.filter((_, j) => j !== i) }));
   });

@@ -13,6 +13,7 @@ import { learnedSkills, pctMod, skillRank } from './progression';
 import type { Rng } from './rng';
 import { abyssPct } from './scaling';
 import { applyEffect, patchSkill, type EffectContext } from './skills';
+import { RUNE_NUMBERS } from '../data/runes';
 import type { GameState } from './state';
 import { takeOffInto, wearFrom, type WearResult } from './town';
 import { SKILLS } from '../data/skills';
@@ -122,10 +123,12 @@ export function castField(
     for (const eff of def.effects) if (FIELD_EFFECTS.has(eff.kind)) applyEffect(caster, t, eff, ctx);
   }
   // 雙重詠唱 (plan 8e): its TP is already doubled, so it casts twice here too: on the same members, or on another fallen
-  // one for a revive (none left, nothing). The once-a-cast runes (輪轉, 同步, 回聲) only act in battle.
+  // one for a revive (none left, nothing); the second at its percent of power, as in battle (plan 8h ruling B1). The
+  // once-a-cast runes (輪轉, 同步, 回聲) only act in battle.
   if (def.runeRules?.twice) {
     const again = def.target === 'deadAlly' ? ids.filter((id) => !team.get(id)!.alive).slice(0, 1) : targets;
-    for (const id of again) for (const eff of def.effects) if (FIELD_EFFECTS.has(eff.kind)) applyEffect(caster, team.get(id)!, eff, ctx);
+    const second = patchSkill(def, { powerPct: RUNE_NUMBERS['twin-cast'].fixed.secondPct });
+    for (const id of again) for (const eff of second.effects) if (FIELD_EFFECTS.has(eff.kind)) applyEffect(caster, team.get(id)!, eff, ctx);
     targets = [...targets, ...again.filter((id) => !targets.includes(id))];
   }
 

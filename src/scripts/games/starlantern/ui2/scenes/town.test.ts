@@ -105,6 +105,16 @@ describe('TownScene notices', () => {
     expect(game.notice).toBeNull();
   });
 
+  it('says who stopped following her build, after any other notice (plan 8h Task 6)', () => {
+    const game = new Game(constRng(0.5), null);
+    game.followEnded = ['noel', 'liz'];
+    const root = document.createElement('div');
+    const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe(T.build.followEnded([CHARACTERS.noel.name, CHARACTERS.liz.name]));
+    expect(game.followEnded).toEqual([]);
+  });
+
   it('greets with what came home, mentions the lamp, and clears the haul', () => {
     const game = new Game(constRng(0.5), null);
     game.notice = 'lamp';
@@ -276,6 +286,16 @@ describe('TownScene story', () => {
     expect(t.root.querySelector('.slx-talk .slx-name')!.textContent).not.toBe(CHARACTERS.rin.name);
   });
 
+  it("the town's own day line is narration, with no name plate (story polish ruling 8)", () => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.arrival = [];
+    const t = open(game, 'all', () => 0);   // the pool's first line: the town's own
+    expect(t.text()).toBe(STORY.townLines.prologue[0]);
+    const plate = t.root.querySelector('.slx-talk .slx-name') as HTMLElement;
+    expect(plate.hidden || plate.textContent === '').toBe(true);
+    expect(plate.textContent).not.toBe('露米亞');
+  });
+
   it('after her choice Rin speaks her oath lines', () => {
     const game = Game.fresh(constRng(0.5), null);
     game.arrival = [];
@@ -317,19 +337,21 @@ describe('TownScene story', () => {
     expect(keeper(fresh(false))).toEqual([]);
     const chose = keeper(fresh(true));
     expect(chose.length).toBeGreaterThan(0);
-    expect(chose.every((x) => STORY.bellkeeper.oath.includes(x))).toBe(true);
+    expect(chose.every((x) => STORY.bellkeeper.oath.some((l) => l.text === x))).toBe(true);   // story depth Task 4: KeeperLine
     const done = fresh(true);
     done.state.story.finaleCleared = true;
     const after = keeper(done);
     expect(after.length).toBeGreaterThan(0);
     expect(after.every((x) => STORY.bellkeeper.after.includes(x))).toBe(true);
 
-    // Final review I-1: her choice queues his arrival for the next return; until that scene has played he is not in town,
-    // however often the town's day line is drawn in this stay.
+    // Final review I-1: her choice queues his arrival (story depth Task 3: once she has confessed); until that scene has
+    // played he is not in town, however often the town's day line is drawn in this stay.
     const waiting = fresh(false);
     Object.assign(waiting.state.party.roster.rin, { memories: 7 });
     waiting.state = sceneDone(waiting.state, 'rin-reveal', 'played');
     expect(waiting.state.party.roster.rin.oath).toBe(true);
+    expect(keeper(waiting)).toEqual([]);
+    waiting.state = sceneDone(waiting.state, 'rin-confess', 'played');
     expect(waiting.state.story.queue).toContain('bellkeeper-arrives');
     expect(keeper(waiting)).toEqual([]);
     waiting.state = sceneDone(waiting.state, 'bellkeeper-arrives', 'played');

@@ -5,6 +5,7 @@ import { T } from '../data/text.zh-TW';
 import type { AilmentId } from './ailments';
 import type { Combatant } from './combatant';
 import { ELEMENT_AILMENT, patchSkill, pctOf } from './skills';
+import { PLAIN } from './mechanics/echo';
 import type { Effect, Element, RuneRules, SkillDef, Target } from './types';
 
 /**
@@ -51,7 +52,9 @@ export type RuneMiss =
   | { kind: 'needs'; needs: Tag[][]; hint?: true }
   | { kind: 'group'; other: RuneId }
   | { kind: 'same'; id: RuneId }
-  | { kind: 'revive' } | { kind: 'scatter' } | { kind: 'pure' } | { kind: 'no-heal' };
+  | { kind: 'revive' } | { kind: 'scatter' } | { kind: 'pure' } | { kind: 'no-heal' }
+  /** A trigger rune on a skill with no plain effect: its free cast would do nothing (plan 8h ruling 11b). */
+  | { kind: 'plain' };
 
 /** The structural reasons beyond tags (plan 8e ruling 7), or null. */
 function structural(def: SkillDef, rune: RuneId): RuneMiss | null {
@@ -62,6 +65,7 @@ function structural(def: SkillDef, rune: RuneId): RuneMiss | null {
   if (rune === 'share' && !def.effects.every((e) => e.kind === 'buff' && e.pct > 0)) return { kind: 'pure' };
   if (rune === 'lasting' && !def.effects.every(isBuff)) return { kind: 'pure' };
   if (rune === 'spill-shield' && !def.effects.some((e) => e.kind === 'heal')) return { kind: 'no-heal' };
+  if (RUNES[rune].group === 'trigger' && !def.effects.some((e) => PLAIN.has(e.kind))) return { kind: 'plain' };
   return null;
 }
 
@@ -100,6 +104,7 @@ export function runeWhy(m: RuneMiss): string {
     case 'scatter': return W.scatter;
     case 'pure': return W.pure;
     case 'no-heal': return W.noHeal;
+    case 'plain': return W.plain;
   }
 }
 
@@ -122,7 +127,7 @@ export function runeStates(def: SkillDef, refs: readonly RuneRef[], core: SkillD
 
 const RUNE_ORDER = Object.keys(RUNES) as RuneId[];
 type Damage = Extract<Effect, { kind: 'damage' }>;
-type Ailment = { status: AilmentId; chance: number };
+type Ailment = { status: AilmentId; chance: number; widePct?: number };
 
 /** Percent factors multiplied in a fixed order (sorted), so the result never depends on the slots (plan 8e ruling 5). */
 const product = (factors: number[]): number => [...factors].sort((a, b) => a - b).reduce((acc, f) => (acc * f) / 100, 100);
@@ -251,6 +256,9 @@ export function applyRunes(core: SkillDef, extra: Effect[], refs: readonly RuneR
     }
   }
 
+  // 淬毒 on a cast that strikes them all or at random: its `widePct` of the chance (plan 8h ruling B2'').
+  const wide = out.target === 'enemies' || out.effects.some((e) => e.kind === 'damage' && e.scatter);
+  for (const a of once) if (a.widePct !== undefined && wide) a.chance = (a.chance * a.widePct) / 100;
   // An ailment the skill (or its extra) already has is folded into the rune's of the same ailment, highest chance.
   const runeStatus = new Set([...onHit, ...once].map((a) => a.status));
   const folded = (list: Effect[]) => list.filter((e) => {

@@ -1,17 +1,19 @@
 import { CHARACTERS } from '../../data/characters';
-import { RESERVE_CAP, RUNES, RUNE_SLOT_LEVELS, runeKey, type RuneRef } from '../../data/runes';
+import { buildOf } from '../../data/builds';
+import { RESERVE_CAP, RUNES, RUNE_SLOT_LEVELS, runeKey, tiersOf, type RuneRef } from '../../data/runes';
 import { T } from '../../data/text.zh-TW';
 import { fromMember, skillFor } from '../../engine/battle';
+import { bestInBag, policyText, runeSource } from '../../engine/builds';
 import { lastingBarrierLoss } from '../../engine/mechanics/runes';
 import { activeIds } from '../../engine/party';
-import { socketCount, socketable, type SocketAt, type SocketFail } from '../../engine/sockets';
+import { bagCount, socketCount, socketRune, socketable, type SocketAt, type SocketFail } from '../../engine/sockets';
 import type { CharacterId, Member } from '../../engine/types';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import type { GameState } from '../../engine/state';
-import { cardOf, compareCards, previewOf, reserveLine, runeChoices, slotDots, slotStates, type Card, type RuneAction, type RuneChoice } from '../skillCard';
+import { cardOf, compareCards, failWhy, previewOf, reserveLine, runeChoices, slotDots, slotStates, type Card, type RuneAction, type RuneChoice } from '../skillCard';
 import { textCps } from '../settings';
 import { Dialogue, MenuView, backControl, win } from '../widgets';
 import { cueFrame, updateCues } from './statusTabs';
@@ -25,6 +27,11 @@ const CARD_STEP = 36;
 /** Rows of the skill list and the rune list on screen; longer lists scroll with the cursor. */
 const SKILL_ROWS = 13;
 const RUNE_ROWS = 12;
+/**
+ * Rows the 「缺：…」 line over the rune list may take (plan 8h): it wraps in the narrow column. With a followed build's line
+ * under the title, both lists lose one row more.
+ */
+const LACK_ROWS = 3;
 
 const label = (r: RuneRef): string => T.rune.label(r.id, r.tier);
 /** Whether the player holds any rune: in the bag, or in anyone's slot. */
@@ -347,13 +354,47 @@ export class WorkshopScene implements Scene {
       return b;
     };
     const held = reserveLine(m);
+    const b = this.followed;
+    this.sceneEl.classList.toggle('slx-ws-following', !!b);
     this.head.replaceChildren(
       arrow('◀', 'prev'),
       el('div', { class: 'slx-ws-name' }, [el('b', { text: CHARACTERS[this.id].name }), el('span', { text: `Lv ${m.level}` })]),
       arrow('▶', 'next'),
       ...(held ? [el('span', { class: 'slx-ws-reserve', text: held })] : []),
       el('span', { class: 'slx-ws-title', text: W.title }),
+      // The build she follows, its name and the first rule of its play (plan 8h ruling 14), on a line of its own.
+      ...(b ? [el('p', { class: 'slx-ws-follow', text: W.following(b.name, policyText(b)[0]) })] : []),
     );
+  }
+
+  /** The suggested build she follows, if it is one of hers. */
+  private get followed() {
+    const k = this.member.build;
+    return k === undefined ? undefined : buildOf(this.id, k);
+  }
+
+  /**
+   * Over the rune list (plan 8h ruling 14): the runes her build suggests for this skill's open slots that are not in them.
+   * 「缺：…」 what the bag lacks, with where it is found; 「可裝：…（袋子裡有）」 what the bag holds (final review); a rune
+   * in the bag that its slot would refuse says why instead (Task 7 review). '' when nothing is missing or she follows none.
+   */
+  private lacking(): string {
+    const b = this.followed;
+    if (!b) return '';
+    const s = this.game.state;
+    const worn = (this.member.sockets?.[this.skill] ?? []).flatMap((r) => (r ? [r.id] : []));
+    const lack: [string, string][] = [];
+    const ready: [string, string][] = [];
+    const refused: string[] = [];
+    (b.runes[this.skill] ?? []).slice(0, this.open).forEach((id, slot) => {
+      if (worn.includes(id)) return;
+      const ref = bestInBag(s, id);
+      if (!ref) { lack.push([RUNES[id].name, T.build.from[runeSource(id)]]); return; }
+      const put = socketRune(s, this.id, this.skill, slot, ref);
+      if (put.ok) ready.push([RUNES[id].name, W.inBag]);
+      else refused.push(W.refusedWhy(RUNES[id].name, failWhy(put.reason, s, { id: this.id, skill: this.skill, slot }, ref)));
+    });
+    return [...(lack.length ? [W.lacking(lack)] : []), ...(ready.length ? [W.ready(ready)] : []), ...refused].join('　');
   }
 
   /** ◆ a working rune, ◇ a rune that does nothing, ○ an empty slot; slots not open yet are not drawn (skillCard slotDots). */
@@ -391,7 +432,7 @@ export class WorkshopScene implements Scene {
           this.ctx.sfx.cursor();
           this.render();
         },
-      }, SKILL_ROWS);
+      }, this.followed ? SKILL_ROWS - 1 : SKILL_ROWS);
       this.skillsWin.replaceChildren(el('div', { class: 'slx-area-head', text: W.skillsHead }), this.skillView.el);
     } else {
       this.skillView.menu.setCursor(Math.max(0, skills.indexOf(this.skill)));
@@ -465,7 +506,8 @@ export class WorkshopScene implements Scene {
       ...(moves.length ? [{ id: 'head:others', label: W.fromOthers, disabled: true, cls: 'slx-list-head' }] : []),
       ...moves.map(row),
     ];
-    const key = `${this.id}|${this.skill}|${this.slot}|${items.map((it) => `${it.id}:${it.right}:${it.cls ?? ''}`).join(',')}`;
+    const lack = this.lacking();
+    const key = `${this.id}|${this.skill}|${this.slot}|${lack}|${items.map((it) => `${it.id}:${it.right}:${it.cls ?? ''}`).join(',')}`;
     // The same row when it is still there, else the first: a list is only built anew when it opens.
     const idx = Math.max(0, items.findIndex((it) => it.id === this.runeCur));
     if (!this.runeView || key !== this.runeKeyOf) {
@@ -497,13 +539,14 @@ export class WorkshopScene implements Scene {
           this.ctx.sfx.cursor();
           this.renderCard();
         },
-      }, RUNE_ROWS) : null;
+      }, RUNE_ROWS - (this.followed ? 1 : 0) - (lack ? LACK_ROWS : 0)) : null;
       // What pressed a row: read by `pick` above (a click event may carry no pointerType: Safari).
       this.runeView?.el.addEventListener('pointerdown', (e) => { this.pressedBy = e.pointerType; }, true);
       this.runeView?.el.addEventListener('click', (e) => { this.pressedBy = (e as PointerEvent).pointerType || this.pressedBy; }, true);
       const empty = !open ? T.rune.fail.closed : choices.length ? '' : W.emptyBag;
       this.slotsWin.replaceChildren(el('div', { class: 'slx-ws-runes' }, [
         el('div', { class: 'slx-area-head', text: W.pick(this.slot + 1) }),
+        ...(lack ? [el('p', { class: 'slx-ws-lack', text: lack })] : []),
         ...(this.runeView ? [this.runeView.el] : []),
         ...(empty ? [el('p', { class: 'slx-desc', text: empty })] : []),
       ]));

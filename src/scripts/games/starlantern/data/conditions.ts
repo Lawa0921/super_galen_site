@@ -17,6 +17,6 @@ export const CONDITIONS: Record<ConditionId, ConditionDef> = {
   bounty: { ...base, id: 'bounty', name: '豐收', desc: '寶箱多 1 個，素材掉落 +50%', extraChests: 1, dropMul: 1.5, rarityMul: 1.5 },
   fierce: { ...base, id: 'fierce', name: '兇暴', desc: '敵人攻擊 +20%，經驗值 +30%', enemyAtkMul: 1.2, expMul: 1.3, rarityMul: 1.25 },
   calm: { ...base, id: 'calm', name: '靜謐', desc: '遇敵率 -40%，陷阱 +1', encounterMul: 0.6, extraTraps: 1 },
-  starfall: { ...base, id: 'starfall', name: '星落', desc: '每層必有 1 個精英怪，金幣 +50%', goldMul: 1.5, eliteEveryFloor: true },
+  starfall: { ...base, id: 'starfall', name: '星落', desc: '每層必有 1 個菁英怪，金幣 +50%', goldMul: 1.5, eliteEveryFloor: true },
   plain: { ...base, id: 'plain', name: '平穩', desc: '沒有特殊效果' },
 };
