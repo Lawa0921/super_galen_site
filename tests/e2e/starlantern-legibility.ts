@@ -263,8 +263,26 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
-    name: 'guild', visit: async (page, w) => {
+    // Story L: a memory told at night in town, after the day's line: the night's card, its veil, the memory's past.
+    name: 'night-memory', visit: async (page, w) => {
       await readAll(page, w);   // the inn night and the day's line after it
+      await page.evaluate(() => {
+        const d = (window as unknown as { __starlanternDebug: { game: { arrival: string[]; night: string[] } } }).__starlanternDebug;
+        d.game.arrival = [];
+        d.game.night = ['mem:rin:1'];
+      });
+      await go(page, 'town');
+      await expect(page.locator('.slx-town .slx-talk')).toBeVisible();
+      await w.key('z');   // the day's line
+      if (!(await page.locator('.slx-town .slx-place-card').isVisible())) await w.key('z');   // the line whole first
+      await expect(page.locator('.slx-town .slx-place-card')).toHaveText('月影旅館・夜');
+      await expect(page.locator('.slx-town .slx-veil-night.slx-on')).toHaveCount(1);
+      if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+    },
+  },
+  {
+    name: 'guild', visit: async (page, w) => {
+      await readAll(page, w);   // the night's memory
       await storyOff(page);
       await facility(page, w, 'guild', '.slx-guild');
     },

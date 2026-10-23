@@ -3427,6 +3427,66 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  // Story L Task 3c: a piece found in the labyrinth is told that night in town, after the day's lines, under the night's card;
+  // the town comes back only when the night is over. Once on a desktop window, once on a touch phone held upright (sideways
+  // stage), where every line of the night fits its box.
+  for (const phone of [false, true]) {
+    test(`a memory found in the labyrinth is told that night in town, under the night card (story L)${phone ? ', on a phone' : ''}`, async ({ page }) => {
+      test.setTimeout(120_000);
+      await fitTo(page, 1280, 720);
+      const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+        page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+      const w = await setup(page, 7, { story: 'all' });
+      const playOut = async () => {
+        for (let quiet = 0, i = 0; quiet < 4 && i < 400; i++) {
+          if (await page.locator('.slx-talk').first().isVisible()) { quiet = 0; await page.keyboard.press('z'); await page.waitForTimeout(30); }
+          else if ((await page.locator('.slx-cmd-hidden').count()) > 0) { quiet = 0; await page.waitForTimeout(60); }
+          else { quiet++; await page.waitForTimeout(60); }
+        }
+        await expect(page.locator('.slx-talk').first()).toBeHidden();
+      };
+      await playOut();   // the prologue and the inn night
+      await depart(page, w);
+      // Rin's first piece, as her glimmer would have given it (the 2b test steps on the real one), and a lamp home.
+      await game((g) => { g.state.party.roster.rin.memories = 1; g.state.story.untold = ['mem:rin:1']; g.state.inventory['return-lamp'] = 1; });
+      if (phone) await asPhone(page);
+      await lampHome(page, w);
+      expect(await game((g) => [...g.night])).toEqual([memScene('rin', 1)]);
+      const first = STORY.scenes[memScene('rin', 1)].lines[0].text;
+      const text = page.locator('.slx-town .slx-talk .slx-text');
+      const steps: { text: string; card: string | null; menuHidden: boolean; fits: boolean }[] = [];
+      for (let i = 0; i < 200; i++) {
+        const talk = await page.locator('.slx-town .slx-talk').isVisible();
+        const menuHidden = ((await page.locator('.slx-town-menu').getAttribute('class')) ?? '').includes('slx-cmd-hidden');
+        if (!talk && !menuHidden) break;
+        if (talk) {
+          if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) { await w.key('z'); await page.waitForTimeout(30); continue; }   // the line whole
+          const card = await page.locator('.slx-town .slx-place-card').count() ? await page.locator('.slx-town .slx-place-card').textContent() : null;
+          const fits = await text.evaluate((e) => e.scrollHeight <= e.clientHeight + 1);
+          steps.push({ text: (await text.textContent()) ?? '', card, menuHidden, fits });
+          await w.key('z');
+        }
+        await page.waitForTimeout(40);
+      }
+      const at = steps.findIndex((x) => x.text === first);
+      expect(at, JSON.stringify(steps.map((x) => x.text))).toBeGreaterThan(0);   // the day's lines came first
+      const night = steps.slice(at);
+      expect(night.length).toBeGreaterThanOrEqual(3);
+      for (const x of night) {
+        expect(x.card, x.text).toBe('月影旅館・夜');
+        expect(x.menuHidden, x.text).toBe(true);
+        if (phone) expect(x.fits, `${x.text} fits its box`).toBe(true);
+      }
+      await expect(page.locator('.slx-town-menu')).not.toHaveClass(/slx-cmd-hidden/);
+      await expect(page.locator('.slx-town .slx-place-card')).toHaveCount(0);
+      const st = await game((g) => ({ seen: g.state.story.seen, untold: g.state.story.untold, night: g.night }));
+      expect(st.seen).toContain(memScene('rin', 1));
+      expect(st.untold).toEqual([]);
+      expect(st.night).toEqual([]);
+      expect(w.errors).toEqual([]);
+    });
+  }
+
   test('B1: on a return to town, Noel and Rin talk among themselves after the chat, and the town menu waits for them', async ({ page }) => {
     test.setTimeout(120_000);
     await fitTo(page, 1280, 720);

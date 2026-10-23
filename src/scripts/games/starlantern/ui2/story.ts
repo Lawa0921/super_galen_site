@@ -1,8 +1,8 @@
 import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { chainLength } from '../data/story/chains';
-import { MAJOR_SCENES, heavyScene, type SceneId } from '../data/story/scenes';
+import { MAJOR_SCENES, heavyScene, sceneKind, type SceneId } from '../data/story/scenes';
 import { WARM_MOODS } from '../data/story/tone';
-import { NPC_NAMES, STORY, linesWhen, type NpcId, type ScriptLine, type Speaker } from '../data/story.zh-TW';
+import { NIGHT_PLACE, NPC_NAMES, STORY, linesWhen, type NpcId, type Place, type ScriptLine, type Speaker } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import type { Game } from '../engine/game';
 import { storyPieces } from '../engine/story/events';
@@ -114,17 +114,21 @@ function sayLine(talk: Dialogue, line: ScriptLine, ctx: StoryCtx, first: Speaker
   return talk.say(plate ?? sp.name, line.text, face);
 }
 
+/** How a caller sets a scene (story L plan ruling 3): `place`, the card up from its first line (a line's own place replaces it). */
+export interface SceneOpts { place?: Place }
+
 /**
  * Plays a scene in the dialogue box. While it plays the caller hands every action to `onAction`:
  * confirm turns the page, cancel (Esc, X, right click) stops and shows the summary instead.
  */
-export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void } {
+export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOpts = {}): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void } {
   let finished = false;
   let summary: Promise<void> | null = null;
   const lines = linesOf(id, ctx.game.state);
   const first = firstSpeaker(lines);
   const heavy = heavyScene(id);
   talk.hold(true);
+  if (o.place) talk.setPlace(o.place);
 
   const run = async (): Promise<'done' | 'skipped'> => {
     try {
@@ -198,7 +202,7 @@ export function playLines(talk: Dialogue, lines: ScriptLine[], ctx: StoryCtx, pl
  * Plays scene `id` and records it with the game: played or skipped as the player chose, or `auto` (nothing shown) when the
  * story setting skips it. Every screen that plays a due scene goes through here, so none writes its own copy of this.
  */
-export function playAndRecord(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: Promise<void>; onAction(a: UiAction): void } {
+export function playAndRecord(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOpts = {}): { done: Promise<void>; onAction(a: UiAction): void } {
   if (!shouldPlay(id, ctx.mode)) {
     ctx.game.sceneDone(id, 'auto');
     return { done: Promise.resolve(), onAction() {} };
@@ -206,6 +210,30 @@ export function playAndRecord(talk: Dialogue, id: SceneId, ctx: StoryCtx): { don
   // A scene that fails is still recorded (as auto, so it reads as new in the handbook) and the error goes on to the caller.
   const failed = (e: unknown): never => { ctx.game.sceneDone(id, 'auto'); throw e; };
   let p: ReturnType<typeof playScene>;
-  try { p = playScene(talk, id, ctx); } catch (e) { return failed(e); }
+  try { p = playScene(talk, id, ctx, o); } catch (e) { return failed(e); }
   return { done: p.done.then((how) => { ctx.game.sceneDone(id, how === 'done' ? 'played' : 'skipped'); }, failed), onAction: p.onAction };
+}
+
+/**
+ * Story L spec §4.5, §4.4.1: plays `ids` as a night, through the caller's `play` (each screen plays and records a scene its
+ * own way): a memory under the night's card (`NIGHT_PLACE`), any other scene under its own, and between two memories the
+ * night's beat (`Game.takeBeat`), said by `beat`. A memory the story setting does not show is recorded (auto) with no beat
+ * around it.
+ */
+export async function playNight(ids: SceneId[], ctx: StoryCtx, play: (id: SceneId, o: SceneOpts) => Promise<void>, beat: (line: ScriptLine) => Promise<void>): Promise<void> {
+  let prev: SceneId | null = null;
+  for (const id of ids) {
+    const memory = sceneKind(id) === 'memory';
+    const show = shouldPlay(id, ctx.mode);
+    const line = show && memory && prev ? ctx.game.takeBeat(prev, id) : null;
+    if (line) await beat(line);
+    await play(id, memory ? { place: NIGHT_PLACE } : {});
+    if (show) prev = memory ? id : null;
+  }
+}
+
+/** The night's beat (spec §4.4.1): one line with its speaker's plate and face, the night's card kept up. */
+export function playBeat(talk: Dialogue, line: ScriptLine, ctx: StoryCtx): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void } {
+  talk.setPlace(NIGHT_PLACE);
+  return playLines(talk, [line], ctx);
 }

@@ -7,11 +7,13 @@ import type { ItemInstance } from '../../engine/types';
 import { TownScene } from './town';
 import { CHARACTERS } from '../../data/characters';
 import type { SceneId } from '../../data/story/scenes';
-import { NPC_NAMES, STORY } from '../../data/story.zh-TW';
+import { NIGHT_BEATS, NPC_NAMES, STORY, type ScriptLine } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { linesOf } from '../story';
 import { sceneDone } from '../../engine/story/events';
+import { meet } from '../../engine/party';
+import type { CharacterId } from '../../engine/types';
 
 describe('TownScene', () => {
   it('shows place, gold and the facility menu with a greeting', () => {
@@ -474,5 +476,147 @@ describe('TownScene story', () => {
     t.s.onAction('confirm');           // the day line closes
     expect(t.menu().hasAttribute('inert')).toBe(false);
     err.mockRestore();
+  });
+});
+
+describe('TownScene: the night (story L Task 3c)', () => {
+  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
+  const open = (game: Game, story: StoryMode = 'all') => {
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, story }) };
+    const s = new TownScene({ game, art: NO_ART, sfx, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+    s.enter(root);
+    const menu = () => root.querySelector('.slx-town-menu') as HTMLElement;
+    const text = () => root.querySelector('.slx-talk .slx-text')!.textContent;
+    const plate = () => root.querySelector('.slx-talk .slx-name')!.textContent;
+    const card = () => root.querySelector('.slx-place-card')?.textContent ?? null;
+    const night = () => !!root.querySelector('.slx-veil-night.slx-on');
+    const settle = () => new Promise((r) => setTimeout(r, 0));
+    /** Confirm through `id`'s lines, checking each is up in turn. */
+    const through = async (id: SceneId, each?: () => void) => {
+      for (const l of linesOf(id, game.state)) {
+        expect(text()).toBe(l.text);
+        each?.();
+        s.onAction('confirm'); await settle();
+      }
+    };
+    return { root, s, menu, text, plate, card, night, settle, through };
+  };
+  /** A game in town with the opening behind it, `ids` met and holding those pieces untold. */
+  const setup = (ids: SceneId[]) => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.state.story.queue = [];
+    game.state.story.seen = ['prologue', 'prologue-inn'];
+    game.arrival = [];
+    for (const id of ids) {
+      const [, c, k] = id.split(':') as [string, CharacterId, string];
+      if (!game.state.party.recruited.includes(c)) game.state.party = meet(game.state.party, c, 1);
+      game.state.party.roster[c].memories = Math.max(game.state.party.roster[c].memories ?? 0, Number(k));
+    }
+    game.state.story.untold = [...ids];
+    return game;
+  };
+  const withBeats = async (lines: ScriptLine[], fn: () => Promise<void>) => {
+    NIGHT_BEATS.lines.push(...lines);
+    try { await fn(); } finally { NIGHT_BEATS.lines.splice(0); }
+  };
+
+  it("the night plays after the day's lines, under the night card", async () => {
+    const game = setup(['mem:liz:1']);
+    game.state.story.queue = ['act1-after'];
+    game.arrival = ['act1-after'];
+    game.night = ['mem:liz:1'];
+    game.state.story.tonight = ['mem:liz:1'];
+    game.notice = 'banked';
+    game.banked = { items: {}, gold: 40, viaLamp: false, gear: [], overflow: [] };
+    const t = open(game);
+    await t.through('act1-after');
+    expect(t.text()).toBe('平安回城。帶回了：40 G。');
+    expect(t.card()).toBeNull();
+    t.s.onAction('confirm'); await t.settle();
+    expect(t.text()).not.toBe(linesOf('mem:liz:1', game.state)[0].text);   // the day's line, before the night
+    expect([t.card(), t.night()]).toEqual([null, false]);
+    t.s.onAction('confirm'); await t.settle();
+    await t.through('mem:liz:1', () => {
+      expect([t.card(), t.night()]).toEqual(['月影旅館・夜', true]);
+      expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(true);
+      expect(t.root.querySelector('.slx-place')!.classList.contains('slx-cmd-hidden')).toBe(true);
+    });
+    expect([t.card(), t.night()]).toEqual([null, false]);
+    expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);
+    expect(t.menu().hasAttribute('inert')).toBe(false);
+    expect(game.state.story.seen).toContain('mem:liz:1');
+    expect(game.state.story.untold).toEqual([]);
+    expect(game.night).toEqual([]);
+  });
+
+  it("a beat sits between two night memories, with its speaker's plate", async () => {
+    await withBeats([{ who: 'selene', text: '水燒好了。' }, { who: 'narrator', text: '窗外起風了。' }], async () => {
+      const game = setup(['mem:liz:1', 'mem:noel:1']);
+      game.state.party = meet(game.state.party, 'selene', 1);
+      game.night = ['mem:liz:1', 'mem:noel:1'];
+      game.state.story.tonight = [...game.night];
+      const t = open(game);
+      t.s.onAction('confirm'); await t.settle();   // the day's line
+      await t.through('mem:liz:1');
+      expect(t.text()).toBe('水燒好了。');
+      expect(t.plate()).toBe(CHARACTERS.selene.name);
+      expect([t.card(), t.night()]).toEqual(['月影旅館・夜', true]);
+      expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(true);
+      expect(game.state.story.beat).toBe(1);
+      t.s.onAction('confirm'); await t.settle();
+      await t.through('mem:noel:1', () => expect(t.card()).toBe('月影旅館・夜'));
+      expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);
+      expect(game.state.story.seen).toEqual(expect.arrayContaining(['mem:liz:1', 'mem:noel:1']));
+    });
+  });
+
+  it('owed pieces play first under the night card, then the act with its own card', async () => {
+    await withBeats([{ who: 'narrator', text: '窗外起風了。' }], async () => {
+      const game = setup(['mem:hero:3', 'mem:rin:2']);
+      game.state.story.queue = ['act2'];
+      game.arrival = ['mem:hero:3', 'mem:rin:2', 'act2'];
+      game.state.story.tonight = ['mem:hero:3', 'mem:rin:2'];
+      const t = open(game);
+      await t.through('mem:hero:3', () => expect([t.card(), t.night()]).toEqual(['月影旅館・夜', true]));
+      // no beat between the owed ones: they lead into the act
+      await t.through('mem:rin:2', () => expect(t.card()).toBe('月影旅館・夜'));
+      expect(t.text()).toBe(linesOf('act2', game.state)[0].text);
+      expect(t.card()).toBe(linesOf('act2', game.state)[0].place!.text);
+      expect(game.state.story.beat).toBeUndefined();
+    });
+  });
+
+  it("the reveal's night: Rin's pieces, then the reveal, then the day's line", async () => {
+    const game = setup(['mem:rin:6', 'mem:rin:7']);
+    game.state.story.seen.push('mem:rin:1', 'mem:rin:2', 'mem:rin:3', 'mem:rin:4', 'mem:rin:5');
+    game.state.story.queue = ['rin-reveal'];
+    game.arrival = ['mem:rin:6', 'mem:rin:7', 'rin-reveal'];
+    game.state.story.tonight = ['mem:rin:6', 'mem:rin:7'];
+    const t = open(game);
+    await t.through('mem:rin:6', () => expect(t.card()).not.toBeNull());
+    await t.through('mem:rin:7');
+    await t.through('rin-reveal');
+    expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);   // the day's line is up
+    expect(t.card()).toBeNull();
+    expect(game.state.story.seen).toEqual(expect.arrayContaining(['mem:rin:6', 'mem:rin:7', 'rin-reveal']));
+    t.s.onAction('confirm');
+    expect(t.menu().hasAttribute('inert')).toBe(false);
+  });
+
+  it('the story setting skips the night but keeps it new', async () => {
+    const game = setup(['mem:liz:1']);
+    game.night = ['mem:liz:1'];
+    game.state.story.tonight = ['mem:liz:1'];
+    const t = open(game, 'major');
+    await t.settle();
+    expect(t.card()).toBeNull();
+    t.s.onAction('confirm'); await t.settle();   // the day's line
+    expect(t.card()).toBeNull();
+    expect(t.menu().hasAttribute('inert')).toBe(false);
+    expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);
+    expect(game.state.story.seen).toContain('mem:liz:1');
+    expect(game.state.story.fresh).toContain('mem:liz:1');
+    expect(game.state.story.untold).toEqual([]);
   });
 });

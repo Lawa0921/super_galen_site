@@ -126,6 +126,8 @@ const PL = {
   edgeMorning: { text: '鎮邊・清晨' }, squareDusk: { text: '廣場・黃昏' }, square: { text: '廣場' }, festival: { text: '廣場・星燈祭之夜', night: true },
   depth16: { text: '本道第十六層' }, depth30: { text: '第三十層・燈前' }, lampBase: { text: '星燈之底' },
 } satisfies Record<string, Place>;
+/** Story L plan ruling 3: the night's card, over a return's memories (the owed ones before the day's scene, and the night's). */
+export const NIGHT_PLACE: Place = PL.innNight;
 
 /**
  * Story L spec §4.4.1: the beats between two memories of a night, in their fixed order (the companions by `CHARACTER_IDS`,

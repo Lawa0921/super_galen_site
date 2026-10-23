@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CHARACTERS } from '../data/characters';
 import { MAJOR_SCENES, type SceneId } from '../data/story/scenes';
 import { chainLength } from '../data/story/chains';
-import { STORY, linesWhen, type LineWhen, type ScriptLine } from '../data/story.zh-TW';
+import { NIGHT_PLACE, STORY, linesWhen, type LineWhen, type ScriptLine } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import { Game } from '../engine/game';
 import { constRng, withTold } from '../engine/testing';
@@ -153,6 +153,36 @@ describe('playScene', () => {
     p.onAction('confirm');
     await p.done;
     expect([card(), night()]).toEqual([null, false]);
+  });
+
+  it("a place given to playScene shows from the first line, and a line's own place replaces it (story L)", async () => {
+    const { talk, ctx } = mk();
+    const screen = document.createElement('div');
+    screen.append(talk.el);
+    const card = () => screen.querySelector('.slx-place-card')?.textContent ?? null;
+    const night = () => !!screen.querySelector('.slx-veil-night.slx-on');
+    stage('mem:liz:1', [
+      { who: 'narrator', past: true, text: '一' },
+      { who: 'liz', text: '二', place: { text: '道具店・傍晚' } },
+    ]);
+    const p = playScene(talk, 'mem:liz:1', ctx, { place: NIGHT_PLACE });
+    expect([card(), night()]).toEqual(['月影旅館・夜', true]);
+    p.onAction('confirm'); await tick();
+    expect([card(), night()]).toEqual(['道具店・傍晚', false]);
+    p.onAction('confirm');
+    await p.done;
+    expect([card(), night()]).toEqual([null, false]);
+    // playAndRecord hands it on, and records the scene
+    const { talk: t2, ctx: c2 } = mk();
+    const s2 = document.createElement('div');
+    s2.append(t2.el);
+    stage('chat:liz:1', [{ who: 'narrator', text: '三' }]);
+    c2.game.arrival = ['chat:liz:1'];
+    const r = playAndRecord(t2, 'chat:liz:1', c2, { place: NIGHT_PLACE });
+    expect(s2.querySelector('.slx-place-card')?.textContent).toBe('月影旅館・夜');
+    r.onAction('confirm');
+    await r.done;
+    expect(c2.game.state.story.seen).toContain('chat:liz:1');
   });
 
   it('cancel skips the rest and shows the summary', async () => {
