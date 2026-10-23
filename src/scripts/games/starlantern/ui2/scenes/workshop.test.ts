@@ -499,3 +499,16 @@ describe('the workshop and the suggested builds (plan 8h Task 7)', () => {
     }
   });
 });
+
+describe('WorkshopScene: a rune line at 12px (legibility T6 review)', () => {
+  it("keeps each stat with its value on one line: 「TP +1」 and 「威力 115%」 never break inside", () => {
+    const w = setup(noel(20, { 'rime@epic': 1 }), 'noel:fire-star');
+    w.press('confirm', 'confirm');
+    expect(w.runeCur()).toBe('bag:rime@epic');
+    const line = w.root.querySelector('.slx-ws-rune-text')!;
+    expect(line.textContent).toContain(RUNES.rime.text('epic'));
+    const nb = [...line.querySelectorAll('.slx-nb')].map((s) => s.textContent);
+    expect(nb.some((t) => /^TP \+1/.test(t ?? '')), nb.join(' | ')).toBe(true);
+    expect(nb.some((t) => /^威力 115%/.test(t ?? '')), nb.join(' | ')).toBe(true);
+  });
+});

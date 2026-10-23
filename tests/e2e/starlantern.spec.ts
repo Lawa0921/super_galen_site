@@ -1589,10 +1589,17 @@ test.describe('starlantern', () => {
   test('equip, workshop and builds fit at 12px (legibility Task 6)', async ({ page }) => {
     test.setTimeout(180_000);
     await fitTo(page, 1280, 720);
-    const w = await startSweepGame(page, 7);
     // The fullest screens: the longest gear worn (its +10 mark on a doll slot) and in the bag; Noel at Lv 50 following
     // 暴走流星, 火之星彈 holding the three longest runes (two of them do nothing there: their reasons get lines of their own).
     const long = longestGear();
+    // The longest gear's art left out of the manifest: a special with no art of its own keeps its name as text for good
+    // (gearArt.ts), the case its +10 must not cover (T6 review). Unlisted art is never asked for, so nothing 404s.
+    await page.route('**/assets/games/starlantern/manifest.json', async (route) => {
+      const res = await route.fetch();
+      const json = await res.json() as { urls: string[] };
+      await route.fulfill({ response: res, json: { ...json, urls: json.urls.filter((u) => !u.includes(`/gear/${long.special}`)) } });
+    });
+    const w = await startSweepGame(page, 7);
     const gs = Object.values(EQUIPMENT).find((b) => b.id === long.base)!.slot;
     await page.evaluate(([long, slot]) => {
       const g = (window as unknown as Dbg).__starlanternDebug.game;
@@ -1636,6 +1643,28 @@ test.describe('starlantern', () => {
         // A cell's name (shown until its gear art comes) wraps inside the cell, never wider than it.
         const wide = await page.locator('.slx-bag-cell, .slx-doll-slot').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => (e.textContent ?? '').trim()));
         bad.push(...wide.map((t) => `equip ${vw}: cell "${t}" spills sideways`));
+        // A piece with no art of its own keeps its name as text for good (gearArt.ts): its +10 never covers that name
+        // (T6 review). The longest gear is such a special, worn and in the bag.
+        const covered = await page.locator('.slx-equip-scene .slx-enh').evaluateAll((marks) => marks.flatMap((m) => {
+          // A text run's box is the font's content area (taller than the 14px line); its 12px glyph cell is that box less
+          // 1.5 stage px on each side, scaled as the stage is (turned or not).
+          const t = new DOMMatrixReadOnly(getComputedStyle(document.getElementById('sl-screen')!).transform);
+          const k = 1.5 * Math.hypot(t.a, t.b);
+          const cell = m.parentElement!, e = m.getBoundingClientRect();
+          const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+          const hit: string[] = [];
+          for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+            if (m.contains(n) || !n.textContent?.trim()) continue;
+            const r = document.createRange(); r.selectNodeContents(n);
+            for (const q of r.getClientRects()) {
+              if (Math.min(e.right, q.right - k) - Math.max(e.left, q.left + k) > 0.5 && Math.min(e.bottom, q.bottom - k) - Math.max(e.top, q.top + k) > 0.5) hit.push(n.textContent.trim());
+            }
+          }
+          return hit.length ? [`${[...new Set(hit)].join('')} under ${m.textContent}`] : [];
+        }));
+        bad.push(...covered.map((c) => `equip ${vw}: ${c}`));
+        const textMarks = await page.locator('.slx-equip-scene .slx-enh').evaluateAll((marks) => marks.filter((m) => !m.parentElement!.querySelector('img')).length);
+        if (textMarks < 2) bad.push(`equip ${vw}: ${textMarks} enhanced text-name cells (the longest gear, worn and in the bag, is one)`);
         for (const enh of await page.locator('.slx-equip-scene .slx-enh').all()) {
           const e = await stageBox(page, enh), c = await stageBox(page, enh.locator('xpath=..'));
           if (e.x < c.x - 0.5 || e.y < c.y - 0.5 || e.x + e.width > c.x + c.width + 0.5 || e.y + e.height > c.y + c.height + 0.5) bad.push(`equip ${vw}: ${await enh.textContent()} leaves its cell`);

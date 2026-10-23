@@ -35,6 +35,12 @@ const DETAIL_STEP = 36;
 const DETAIL_WHEEL_UNIT = [1, 12, DETAIL_STEP];
 /** A cell without published gear art carries text: the first four characters of the name. */
 const short = (s: string): string => [...s].slice(0, 4).join('');
+/**
+ * The name of a piece with no art (a special without its own picture keeps it for good, gearArt.ts): the first four
+ * characters. With a +n mark, the mark takes a row of its own under one clipped line of name, never over it; the cell's
+ * title and the detail pane give the name whole (T6 review).
+ */
+const nameTag = (it: ItemInstance, cls = ''): HTMLElement => el('span', { class: `slx-equip-cellname${cls ? ` ${cls}` : ''}`, text: short(itemName(it)) });
 /** The enhance level as a small corner mark of its own: a 28px cell has no room for it after the name. Empty at +0. */
 const enhTag = (it: ItemInstance): HTMLElement[] => (it.enhance > 0 ? [el('span', { class: 'slx-enh', text: T.enhanceTag(it.enhance) })] : []);
 const fits = (it: ItemInstance, slot: Slot): boolean => slotsFor(itemSlot(it)).includes(slot);
@@ -389,10 +395,11 @@ export class EquipScene implements Scene {
       if (this.bagKeys[i] !== key) {
         this.bagKeys[i] = key;
         const pic = it ? framedGear(this.ctx.art, it) : [];
-        c.replaceChildren(...(it ? [...(pic.length ? pic : [short(itemName(it))]), ...enhTag(it)] : []));
-        if (pic.length) c.setAttribute('title', gearLabel(it!));
+        c.replaceChildren(...(it ? [...(pic.length ? pic : [nameTag(it)]), ...enhTag(it)] : []));
+        if (it) c.setAttribute('title', gearLabel(it));
         else c.removeAttribute('title');
       }
+      c.classList.toggle('slx-equip-textcell', !!c.querySelector(':scope > .slx-equip-cellname'));
       c.setAttribute('aria-label', it ? gearLabel(it) : T.ui2.equip.emptyCell);
       c.setAttribute('aria-selected', String(i === this.bagCur));
     });
@@ -415,11 +422,13 @@ export class EquipScene implements Scene {
         this.dollKeys[i] = key;
         const pic = it ? framedGear(this.ctx.art, it) : [];
         if (pic.length) c.replaceChildren(...pic, ...enhTag(it!));
-        else if (it) c.replaceChildren(el('span', { class: 'slx-slot-tag', text: T.slot[slot] }), el('span', { class: 'slx-slot-name', text: short(itemName(it)) }), ...enhTag(it));
+        // A text name: the slot's word over it, unless an enhance mark needs that row (the slot is in the title then).
+        else if (it) c.replaceChildren(...(it.enhance > 0 ? [] : [el('span', { class: 'slx-slot-tag', text: T.slot[slot] })]), nameTag(it, 'slx-slot-name'), ...enhTag(it));
         else c.textContent = T.slot[slot];
-        if (pic.length) c.setAttribute('title', label);
+        if (it) c.setAttribute('title', label);
         else c.removeAttribute('title');
       }
+      c.classList.toggle('slx-equip-textcell', !!c.querySelector(':scope > .slx-equip-cellname'));
       c.setAttribute('aria-label', label);
       c.setAttribute('aria-selected', String(i === this.dollCur));
     });

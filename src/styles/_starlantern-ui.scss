@@ -858,6 +858,11 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-slot-tag { font-size: $slx-fs; line-height: 14px; color: $slx-dim; text-shadow: none; }
 /* The enhance level, a corner mark apart from the name (the cell is too tight for "+n" after it). */
 .slx-enh { position: absolute; z-index: 4; right: 0; bottom: 0; padding: 0 1px; font-size: $slx-fs; line-height: 14px; color: $slx-gold; background: rgba(0, 0, 0, 0.7); text-shadow: none; }
+// A piece with no art keeps its name as text for good (gearArt.ts). Its +n mark is then a row of its own under the name,
+// never over it, and the name keeps to one clipped line; the cell's title and the detail pane give it whole (T6 review).
+.slx-equip-textcell { grid-template-columns: 100%; align-content: center; }
+.slx-equip-textcell > .slx-enh { position: static; justify-self: end; padding: 0; background: none; }
+.slx-equip-textcell:has(> .slx-enh) > .slx-equip-cellname { max-width: 100%; overflow: hidden; white-space: nowrap; }
 .slx-bag-cell:hover, .slx-doll-slot:hover { border-color: #c9a35a; }
 .slx-cur { z-index: 1; box-shadow: 0 0 0 1px rgba(232, 196, 106, 0.45); }
 .slx-area-on .slx-cur { box-shadow: 0 0 0 2px $slx-gold, 0 0 8px rgba(232, 196, 106, 0.6); animation: slx-cur-pulse 1.2s ease-in-out infinite; }
