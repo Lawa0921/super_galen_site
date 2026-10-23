@@ -24,6 +24,7 @@ export abstract class FacilityScene implements Scene {
   private cmdWin!: HTMLElement;
   private back!: HTMLElement;
   private gold!: HTMLElement;
+  private place!: HTMLElement;
   private npc: HTMLImageElement | null = null;
   private talk: Dialogue;
   private moodTimer: ReturnType<typeof setTimeout> | null = null;
@@ -59,7 +60,7 @@ export abstract class FacilityScene implements Scene {
     this.stage = el('div', { class: 'slx-stage' });
     this.back = backControl(() => this.onAction('cancel'));
     root.append(el('div', { class: `slx-scene slx-facility slx-${this.id}` }, [
-      ...bg, ...(this.npc ? [this.npc] : []), win('slx-place', [document.createTextNode(f.place)]), this.gold, this.back, this.cmdWin, this.stage, this.talk.el,
+      ...bg, ...(this.npc ? [this.npc] : []), (this.place = win('slx-place', [document.createTextNode(f.place)])), this.gold, this.back, this.cmdWin, this.stage, this.talk.el,
     ]));
     this.refresh();
     // Coming back from one of the guild's own screens (or settings) is not a new visit: no greeting.
@@ -188,10 +189,11 @@ export abstract class FacilityScene implements Scene {
     const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
     this.playing = p;
     this.talking = true;
-    this.cmdWin.classList.add('slx-cmd-hidden');
+    // The place plate and the gold go with the command window (staging S1): a scene may be set elsewhere (its own card).
+    for (const e of [this.cmdWin, this.place, this.gold]) e.classList.add('slx-cmd-hidden');
     this.syncInert();
     // A scene that throws is reported and treated as over, so the caller carries on (the guild still pays the reward line).
-    return p.done.catch((e) => { console.error('starlantern: facility scene failed', e); }).finally(() => { this.playing = null; this.talking = false; this.cmdWin.classList.remove('slx-cmd-hidden'); this.syncInert(); });
+    return p.done.catch((e) => { console.error('starlantern: facility scene failed', e); }).finally(() => { this.playing = null; this.talking = false; for (const e of [this.cmdWin, this.place, this.gold]) e.classList.remove('slx-cmd-hidden'); this.syncInert(); });
   }
 
   protected fail(reason: string): void {
