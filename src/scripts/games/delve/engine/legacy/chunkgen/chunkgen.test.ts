@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { OuterGen, OUTER_GEN_VERSION, frameOf, SEA_W, SEG_W, SEG_JITTER, type CentralFrame, type OuterSegment } from './index';
-import { ColNoise } from './fill';
+import { ColNoise } from '../../genPrims';
 import { Column, li } from '../../column';
 import { vnoise2, fbm2 } from '../../noise';
 import { World, BIOME, LIQ } from '../../world';
@@ -261,16 +261,23 @@ describe('chunkgen：外圍生成器 v0', () => {
     expect(seen.size).toBe(4);
   });
 
-  it('(6) 禁用 API：chunkgen 與共用 primitives（engine/genPrims.ts）的原始碼沒有 Math.random / 超越函數 / 次方運算子', () => {
+  it('(6) 禁用 API：chunkgen、engine/gen2（遞迴）與共用 primitives（engine/genPrims.ts）的原始碼沒有 Math.random / 超越函數 / 次方運算子；gen2 不 import legacy', () => {
     const engine = join(process.cwd(), 'src', 'scripts', 'games', 'delve', 'engine');
     const dir = join(engine, 'legacy', 'chunkgen');
     const files = readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
     expect(files.sort()).toEqual(['fill.ts', 'index.ts', 'profile.ts']);
+    const g2 = join(engine, 'gen2');
+    const g2files = (readdirSync(g2, { recursive: true }) as string[])
+      .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts')).map((f) => join(g2, f));
+    expect(g2files.length).toBeGreaterThanOrEqual(5);
     const banned = /Math\.random|Math\.sin|Math\.cos|Math\.pow|Math\.exp|Math\.log|Math\.sqrt|Math\.hypot|\*\*/;
-    for (const path of [...files.map((f) => join(dir, f)), join(engine, 'genPrims.ts')]) {
+    for (const path of [...files.map((f) => join(dir, f)), ...g2files, join(engine, 'genPrims.ts')]) {
       const src = readFileSync(path, 'utf8');
       expect(banned.exec(src)?.[0] ?? null, path).toBeNull();
     }
+    const legacyImports = [...g2files, ...(readdirSync(g2, { recursive: true }) as string[]).filter((f) => f.endsWith('.test.ts')).map((f) => join(g2, f))]
+      .filter((path) => /from\s+['"][^'"]*legacy\//.test(readFileSync(path, 'utf8')));
+    expect(legacyImports).toEqual([]);
   });
 
   it('(7) 效能：height 1200 的 fill 20 欄中位數 ≤ 8 ms', () => {

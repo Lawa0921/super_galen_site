@@ -1,55 +1,21 @@
 // fill.ts — 外圍生成器 v0 寫格子（B9）：海 / 沙灘 / 四種生態的表層、深度層（泥土 / 岩層 / 深層岩 / 玄武岩 + 各自的牆）、
 // 洞穴（義大利麵 + 洞穴層大洞窟 + 地表入口）、熔岩深淵的熔岩、礦、樹 / 仙人掌。
-// 每一格只由 (seed, x, y) 決定：所有雜訊都是 engine/noise.ts 的值雜訊（ColNoise 是同一個公式、只把格點值沿 y 快取），
-// 跨欄的東西（樹冠）由「掃 [x0 − 3, x1 + 3) 的樹根、只畫進 [x0, x1)」保證與先填哪一欄無關。
+// 每一格只由 (seed, x, y) 決定：噪聲取樣、洞穴 / 入口門檻與樹 / 仙人掌繪製是 engine/genPrims.ts 與 gen2 共用的一份（P10），
+// 這裡只留 v1 自己的材質表、礦的深度帶與替換規則（輸出由 chunkgen.test.ts 的 V1_FILL_HASH / V1_SEA_HASH 釘住）。
+// 跨欄的東西（樹冠）由 growPlants「掃 [x0 − 3, x1 + 3) 的樹根、只畫進 [x0, x1)」保證與先填哪一欄無關。
 // 本資料夾的檔案（測試以外）不得出現連續兩個星號（測試會 grep），註解一律用 //。
-import { seedInt, hash2, vnoise1 } from '../../noise';
+import { seedInt } from '../../noise';
 import { T, W } from '../../tiles';
 import { LIQ, LIQ_MAX } from '../../liquidKind';
 import { BIOME } from '../../world';
 import { li, type Column } from '../../column';
+import { ColNoise, CavernNoise, NO_DIG, ORE_THR, spagNoise, spagHit, cavernHit, entranceHit, oreNoise, growPlants, type PlantSite } from '../../genPrims';
 import { OuterProfile, ZONE_SEA, ZONE_BEACH, ZONE_LAND, type ColumnInfo } from './profile';
 
-const smooth = (t: number): number => t * t * (3 - 2 * t);
-
-// vnoise2(x, y, cell, s) 固定 x、沿 y 取樣：與 noise.ts 的 vnoise2 逐位元相同（同樣的運算順序），只是格點雜湊在同一格內重用
-export class ColNoise {
-  private fx = 0; private gx = 0; private sx = 0;
-  private gy = 0x7fffffff;
-  private a = 0; private b = 0; private c = 0; private d = 0;
-  constructor(readonly cell: number, readonly s: number) {}
-  setX(x: number): void {
-    this.fx = x / this.cell;
-    this.gx = Math.floor(this.fx);
-    this.sx = smooth(this.fx - this.gx);
-    this.gy = 0x7fffffff;
-  }
-  at(y: number): number {
-    const fy = y / this.cell, gy = Math.floor(fy);
-    if (gy !== this.gy) {
-      const gx = this.gx, s = this.s;
-      this.gy = gy;
-      this.a = hash2(gx, gy, s); this.b = hash2(gx + 1, gy, s);
-      this.c = hash2(gx, gy + 1, s); this.d = hash2(gx + 1, gy + 1, s);
-    }
-    const sx = this.sx, sy = smooth(fy - gy), a = this.a, b = this.b, c = this.c, d = this.d;
-    return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
-  }
-}
-
-// 義大利麵洞穴：|vnoise2(x, y, 48) − 0.5| < SPAG_THR（越深越寬，到熔岩線加 SPAG_GROW）
-const SPAG_CELL = 48, SPAG_THR = 0.035, SPAG_GROW = 0.015;
-// 洞穴層大洞窟：fbm2(x, y, 64) > CAVERN_THR
-const CAVERN_CELL = 64, CAVERN_THR = 0.68;
-// 地表入口：vnoise1(x, 40) > ENTRANCE_THR 的欄，義大利麵從地表就開始挖（其他地方地表下 6 格內不挖）
-const ENTRANCE_CELL = 40, ENTRANCE_THR = 0.85, NO_DIG = 6;
 // 熔岩深淵：洞底在熔岩線下 LAVA_BELOW 格以下的空氣填熔岩
 const LAVA_BELOW = 40;
-// 礦：vnoise2(x, y, 6) > 門檻（深度層越厚的礦門檻越高，每層的礦量差不多）
-const ORE_CELL = 6, THR_CU = 0.76, THR_FE = 0.83, THR_AG = 0.86, THR_AU = 0.88;
-// 樹：hash2(x, 0) < 機率、而且是左右各 3 格內最小的（→ 樹根間距 ≥ 4）
-const TREE_REACH = 3;
-const P_TREE_FOREST = 0.3, P_TREE_JUNGLE = 0.45, P_CACTUS = 0.25;
+// 礦：genPrims 的 vnoise2(x, y, 6) 場 > ORE_THR（深度層越厚的礦門檻越高，每層的礦量差不多）
+const { CU: THR_CU, FE: THR_FE, AG: THR_AG, AU: THR_AU } = ORE_THR;
 
 // 一格是不是「天然實心」（洞穴 / 礦只動這些）
 const NATURAL = new Uint8Array(256);
@@ -57,8 +23,7 @@ for (const t of [T.DIRT, T.GRASS, T.STONE, T.SAND, T.SANDSTONE, T.SNOW, T.MUD, T
 
 export class OuterFiller {
   private readonly spag: ColNoise;
-  private readonly cav1: ColNoise;
-  private readonly cav2: ColNoise;
+  private readonly cav: CavernNoise;
   private readonly oreCu: ColNoise;
   private readonly oreFe: ColNoise;
   private readonly oreAg: ColNoise;
@@ -69,14 +34,12 @@ export class OuterFiller {
 
   constructor(seed: string, readonly profile: OuterProfile) {
     const sCave = seedInt(seed, 'outer-cave'), sCavern = seedInt(seed, 'outer-cavern');
-    this.spag = new ColNoise(SPAG_CELL, sCave);
-    // fbm2(x, y, cell, s) = vnoise2(cell, s) × 0.68 + vnoise2(cell × 0.4, s + 7) × 0.32
-    this.cav1 = new ColNoise(CAVERN_CELL, sCavern);
-    this.cav2 = new ColNoise(CAVERN_CELL * 0.4, sCavern + 7);
-    this.oreCu = new ColNoise(ORE_CELL, seedInt(seed, 'outer-ore-copper'));
-    this.oreFe = new ColNoise(ORE_CELL, seedInt(seed, 'outer-ore-iron'));
-    this.oreAg = new ColNoise(ORE_CELL, seedInt(seed, 'outer-ore-silver'));
-    this.oreAu = new ColNoise(ORE_CELL, seedInt(seed, 'outer-ore-gold'));
+    this.spag = spagNoise(sCave);
+    this.cav = new CavernNoise(sCavern);
+    this.oreCu = oreNoise(seedInt(seed, 'outer-ore-copper'));
+    this.oreFe = oreNoise(seedInt(seed, 'outer-ore-iron'));
+    this.oreAg = oreNoise(seedInt(seed, 'outer-ore-silver'));
+    this.oreAu = oreNoise(seedInt(seed, 'outer-ore-gold'));
     this.sEnt = seedInt(seed, 'outer-entrance');
     this.sTree = seedInt(seed, 'outer-tree');
     this.sCactus = seedInt(seed, 'outer-cactus');
@@ -88,7 +51,7 @@ export class OuterFiller {
     this.plants(col, x0, x1);
   }
 
-  isEntrance(x: number): boolean { return vnoise1(x, ENTRANCE_CELL, this.sEnt) > ENTRANCE_THR; }
+  isEntrance(x: number): boolean { return entranceHit(x, this.sEnt); }
 
   private column(col: Column, x: number, I: ColumnInfo): void {
     if (I.kind !== ZONE_SEA && I.kind !== ZONE_BEACH && I.kind !== ZONE_LAND) return;
@@ -113,7 +76,7 @@ export class OuterFiller {
     const entrance = I.kind === ZONE_LAND && this.isEntrance(x);
     const caveTop = entrance ? S : Math.max(rock, S + NO_DIG);
     const spanInv = 1 / Math.max(1, molten - rock);
-    this.spag.setX(x); this.cav1.setX(x); this.cav2.setX(x);
+    this.spag.setX(x); this.cav.setX(x);
     this.oreCu.setX(x); this.oreFe.setX(x); this.oreAg.setX(x); this.oreAu.setX(x);
     const midRock = rock + ((deep - rock) >> 1);
     for (let y = Math.max(0, S); y < H; y++) {
@@ -131,10 +94,9 @@ export class OuterFiller {
       let air = false;
       if (y >= caveTop) {
         const k = y <= rock ? 0 : y >= molten ? 1 : (y - rock) * spanInv;
-        const n = this.spag.at(y) - 0.5;
-        if (n < SPAG_THR + SPAG_GROW * k && n > -(SPAG_THR + SPAG_GROW * k)) air = true;
+        if (spagHit(this.spag, y, k)) air = true;
       }
-      if (!air && y >= deep && this.cav1.at(y) * 0.68 + this.cav2.at(y) * 0.32 > CAVERN_THR) air = true;
+      if (!air && y >= deep && cavernHit(this.cav, y)) air = true;
       if (air) {
         if (y >= molten + LAVA_BELOW) { liq[i] = LIQ_MAX; lt[i] = LIQ.LAVA; }
         continue;
@@ -150,66 +112,12 @@ export class OuterFiller {
     }
   }
 
-  // 樹根：hash2(x, 0) < p 而且是左右 TREE_REACH 格內最小（同值時 x 小的贏）→ 間距 ≥ TREE_REACH + 1
-  private isRoot(x: number, s: number, p: number): boolean {
-    const h = hash2(x, 0, s);
-    if (h >= p) return false;
-    for (let dx = -TREE_REACH; dx <= TREE_REACH; dx++) {
-      if (dx === 0) continue;
-      const o = hash2(x + dx, 0, s);
-      if (o < h || (o === h && dx < 0)) return false;
-    }
-    return true;
-  }
-
-  // 樹 / 仙人掌：掃 [x0 − 3, x1 + 3) 的樹根，只畫進 [x0, x1)；先畫全部樹幹、再畫樹冠（樹冠只蓋空氣）
+  // 樹 / 仙人掌（genPrims.growPlants）：只長在陸地欄、入口欄不長
   private plants(col: Column, x0: number, x1: number): void {
-    const fg = col.fg, liq = col.liquid, H = col.height;
-    const trees: number[] = [];
-    for (let rx = x0 - TREE_REACH; rx < x1 + TREE_REACH; rx++) {
+    const site = (rx: number): PlantSite | null => {
       const I = this.profile.info(rx);
-      if (I.kind !== ZONE_LAND || this.isEntrance(rx)) continue;
-      if (I.biome === BIOME.DESERT) {
-        if (rx < x0 || rx >= x1 || !this.isRoot(rx, this.sCactus, P_CACTUS)) continue;
-        const hc = 2 + Math.floor(hash2(rx, 1, this.sCactus) * 4);
-        for (let k = 1; k <= hc; k++) {
-          const y = I.surface - k;
-          if (y < 1) break;
-          const i = li(rx, y);
-          if (fg[i] === T.AIR && liq[i] === 0) fg[i] = T.CACTUS;
-        }
-        continue;
-      }
-      if (I.biome !== BIOME.FOREST && I.biome !== BIOME.JUNGLE) continue;
-      const jungle = I.biome === BIOME.JUNGLE;
-      if (!this.isRoot(rx, this.sTree, jungle ? P_TREE_JUNGLE : P_TREE_FOREST)) continue;
-      const hh = hash2(rx, 1, this.sTree), hr = hash2(rx, 2, this.sTree);
-      const h = jungle ? 9 + Math.floor(hh * 7) : 5 + Math.floor(hh * 7);
-      const r = 2 + Math.floor(hr * 2);
-      const top = I.surface - h;
-      if (top - r - 1 < 1) continue;
-      trees.push(rx, top, r);
-      if (rx < x0 || rx >= x1) continue;
-      for (let y = top; y < I.surface && y < H; y++) {
-        const i = li(rx, y);
-        if (fg[i] === T.AIR && liq[i] === 0) fg[i] = T.WOOD;
-      }
-    }
-    for (let n = 0; n < trees.length; n += 3) {
-      const rx = trees[n], top = trees[n + 1], r = trees[n + 2];
-      for (let dx = -r; dx <= r; dx++) {
-        const xx = rx + dx;
-        if (xx < x0 || xx >= x1) continue;
-        const ax = dx < 0 ? -dx : dx;
-        for (let dy = -r; dy <= r; dy++) {
-          const ay = dy < 0 ? -dy : dy;
-          if (ax + ay > r) continue;
-          const yy = top + dy;
-          if (yy < 0 || yy >= H) continue;
-          const i = li(xx, yy);
-          if (fg[i] === T.AIR && liq[i] === 0) fg[i] = T.LEAVES;
-        }
-      }
-    }
+      return I.kind !== ZONE_LAND || this.isEntrance(rx) ? null : I;
+    };
+    growPlants(col, x0, x1, site, this.sTree, this.sCactus);
   }
 }
