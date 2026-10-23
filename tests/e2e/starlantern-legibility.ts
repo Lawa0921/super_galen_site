@@ -523,7 +523,7 @@ type DomNode = { nodeId: number; nodeType: number; nodeName: string; nodeValue: 
  * What keeps the screen from reading clearly, as a list of problems (empty: it reads clearly). Nothing to check before
  * the game is ready. The scale is the one `expectedMode` gives; the stage's corner sits on a whole device pixel; the page
  * scrolls no further than the stage overflows; in a scene not pending, every text is 12 or 24px Cubic 11 at weight 400
- * with an even leading, and the centred windows sit on whole stage pixels; and (chromium, the font not blocked) every
+ * with an even leading of 14px or more, and the centred windows sit on whole stage pixels; and (chromium, the font not blocked) every
  * text is drawn with Cubic 11 itself, as the browser reports it.
  */
 export async function legibility(page: Page, opts: { fontBlocked?: boolean } = {}): Promise<string[]> {
@@ -566,7 +566,8 @@ export async function legibility(page: Page, opts: { fontBlocked?: boolean } = {
         if (cs.fontSize !== '12px' && cs.fontSize !== '24px') bad.push(`${where}: font-size ${cs.fontSize}`);
         if (cs.fontWeight !== '400') bad.push(`${where}: font-weight ${cs.fontWeight}`);
         if (family !== 'Cubic 11') bad.push(`${where}: font ${family}`);
-        if (!(lh - size >= 0 && (lh - size) % 2 === 0)) bad.push(`${where}: line-height ${cs.lineHeight} at ${cs.fontSize}`);
+        // An even leading of 14px or more at 12px (Cubic 11 draws 11px glyphs in a 12px cell: 12px lines touch), 24 or more at 24px.
+        if (!(lh >= Math.max(14, size) && (lh - size) % 2 === 0)) bad.push(`${where}: line-height ${cs.lineHeight} at ${cs.fontSize}`);
       };
       const name = (e: Element) => `${e.tagName.toLowerCase()}.${[...e.classList].join('.')} "${(e.textContent ?? '').trim().slice(0, 20)}"`;
       const screen = document.getElementById('sl-screen')!;
@@ -610,7 +611,10 @@ export async function legibility(page: Page, opts: { fontBlocked?: boolean } = {
       };
       find(root, false);
       for (const n of withText) {
-        const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId: n.nodeId }) as unknown as { fonts: { familyName: string; glyphCount: number }[] };
+        // A node the page removed since the snapshot (a battle redraws its panels) has nothing left to draw: skip it.
+        const got = await cdp.send('CSS.getPlatformFontsForNode', { nodeId: n.nodeId }).catch((e: Error) => { if (/Could not find node/.test(e.message)) return null; throw e; });
+        if (!got) continue;
+        const { fonts } = got as unknown as { fonts: { familyName: string; glyphCount: number }[] };
         const other = fonts.filter((f) => f.familyName !== 'Cubic 11');
         if (other.length) {
           const text = (n.children ?? []).filter((c) => c.nodeType === 3).map((c) => c.nodeValue.trim()).join(' ').slice(0, 20);

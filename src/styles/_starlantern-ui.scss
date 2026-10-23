@@ -235,7 +235,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 
 // Interface fixes after the first facility screenshots
 // ▲/▼ scroll a long list by mouse or touch (ui2/widgets.ts MenuView.scrollBy); padded so a finger can hit them.
-.slx-more { list-style: none; text-align: center; font-size: $slx-fs; line-height: 12px; padding: 2px 0; color: $slx-dim; cursor: pointer; }
+.slx-more { list-style: none; text-align: center; font-size: $slx-fs; line-height: 14px; padding: 2px 0; color: $slx-dim; cursor: pointer; }
 .slx-more:hover { color: $slx-gold; }
 .slx-layer.slx-confirm { left: 50%; top: 45%; }
 .slx-list.slx-depth-1 { translate: 24px 16px; }
@@ -263,7 +263,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-back:hover { color: $slx-gold; }
 .slx-back[inert] { color: $slx-dim; }
 .slx-talk { cursor: pointer; }
-.slx-next { position: absolute; right: 10px; bottom: 4px; color: $slx-gold; font-size: $slx-fs; line-height: 12px; animation: slx-blink 0.8s steps(2) infinite; }
+.slx-next { position: absolute; right: 10px; bottom: 4px; color: $slx-gold; font-size: $slx-fs; line-height: 14px; animation: slx-blink 0.8s steps(2) infinite; }
 @keyframes slx-blink { 50% { opacity: 0; } }
 .slx-qty-down, .slx-qty-up, .slx-qty-n { cursor: pointer; }
 .slx-qty-down:hover, .slx-qty-up:hover, .slx-qty-n:hover { color: $slx-gold; }
@@ -1166,7 +1166,7 @@ $slx-starlit: #bff6ff;
 // (gate.ts portalArt); until then the cards are words only.
 .slx-layer.slx-portals { position: absolute; left: 12px; right: 12px; top: 48px; bottom: 6px; max-width: none; display: flex; flex-direction: column; gap: 4px; }
 .slx-portal-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.slx-portals .slx-portal { position: relative; display: flex; flex-direction: column; gap: 0; overflow: hidden; line-height: 12px; cursor: pointer; transition: translate 0.12s ease-out; }
+.slx-portals .slx-portal { position: relative; display: flex; flex-direction: column; gap: 0; overflow: hidden; line-height: 14px; cursor: pointer; transition: translate 0.12s ease-out; }
 .slx-portals .slx-portal-on { border-color: $slx-gold; box-shadow: inset 0 0 0 1px $slx-gold, 0 0 10px rgba(232, 196, 106, 0.55); translate: 0 -3px; }
 // The banner is a strip of the 180x110 card art at its own pixel size (object-fit: none, no resampling), so the art stays crisp
 // at every integer screen scale. Each region moves the strip onto its focal point (portal, castle, peak); x = (card - 180) / 2.
@@ -1178,13 +1178,13 @@ $slx-starlit: #bff6ff;
 .slx-portal-mire .slx-portal-art { object-position: 50% -40px; }
 .slx-portal-shade .slx-portal-art { object-position: 50% -36px; }
 .slx-portal-iron .slx-portal-art { object-position: 50% -34px; }
-.slx-portal-name { font-size: $slx-fs; line-height: 12px; color: $slx-ink; }
-.slx-portal-on .slx-portal-name { color: $slx-gold; }
+.slx-portal-name { font-size: $slx-fs; line-height: 14px; color: $slx-gold; }   // the card's title: gold, its hierarchy at 12px (legibility T3)
+.slx-portal-on .slx-portal-name { color: #fff3c4; }
 // 6c Task 16: someone was sighted beyond this portal: a small text marker on the name's line (no shape), so the card keeps
 // its height. The guild's lead is gold, and its card gets a gold inner edge: a box-shadow, because the skinned frame's
 // border-image wins over border-color (fix round 1). Chosen and lead together keep both edges and the glow.
 .slx-portal-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
-.slx-portal-sighting { margin-left: auto; font-size: $slx-fs; line-height: 12px; color: #a9d4ff; white-space: nowrap; }
+.slx-portal-sighting { margin-left: auto; font-size: $slx-fs; line-height: 14px; color: #a9d4ff; white-space: nowrap; }
 .slx-portal-lead-tag { color: $slx-gold; }
 .slx-portals .slx-portal-lead { box-shadow: inset 0 0 0 2px rgba(232, 196, 106, 0.8), inset 0 0 14px rgba(232, 196, 106, 0.35); }
 .slx-portals .slx-portal-lead.slx-portal-on { box-shadow: inset 0 0 0 2px $slx-gold, inset 0 0 14px rgba(232, 196, 106, 0.35), 0 0 10px rgba(232, 196, 106, 0.55); }
@@ -1195,20 +1195,24 @@ $slx-starlit: #bff6ff;
 // Names break at the 、 between them, not inside a name.
 .slx-portal-monsters { margin-top: 2px; word-break: keep-all; overflow-wrap: anywhere; }
 .slx-portal-label { margin-top: 2px; color: $slx-dim; }
-.slx-portal-cond .slx-portal-label, .slx-portal-monsters .slx-portal-label { margin: 0 6px 0 0; word-break: normal; }
+.slx-portal-monsters .slx-portal-label { margin: 0 6px 0 0; word-break: normal; }
+// The condition: its gold name, then its effect on the same line (legibility T3).
 .slx-portal-cond { margin-top: 2px; }
-.slx-portal-cond b { font-weight: normal; color: $slx-gold; }
+.slx-portal-cond b { margin-right: 6px; font-weight: normal; color: $slx-gold; }
+.slx-portal-cond .slx-portal-desc { color: $slx-dim; }
 .slx-portal-drop { margin-top: 2px; }
 // What the material is for: dim note (10px like the other notes), one line in its short form; if longer it wraps, never clipped.
-.slx-portal-drop-use { color: $slx-dim; font-size: $slx-fs; line-height: 12px; overflow-wrap: anywhere; }
+.slx-portal-drop-use { color: $slx-dim; font-size: $slx-fs; line-height: 14px; overflow-wrap: anywhere; }
 // The list takes the room the card has left. When every item is obtained it can outgrow that: it then scrolls (wheel, or ↑↓ on the chosen card)
 // with a thin visible bar, instead of being cut off.
 .slx-portal-gear { margin-top: 2px; flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: $slx-gold transparent; }
 // Obtained names take their rarity colour (.slx-rarity-*); unobtained ones are dimmed. A first line wraps rather than being cut.
-.slx-codex-item { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; overflow-wrap: anywhere; }
+// The region's pieces in one run of names joined by 、 (legibility T3: the card fits at 12px with a 14px leading).
+.slx-codex-item { display: inline; }
+.slx-codex-item + .slx-codex-item::before { content: '、'; color: $slx-dim; }
 // Unobtained names are dimmed.
 .slx-codex-unknown { color: $slx-dim; }
-.slx-codex-more { margin: 0; text-align: right; font-size: $slx-fs; line-height: 12px; color: $slx-gold; }
+.slx-codex-more { margin: 0; text-align: right; font-size: $slx-fs; line-height: 14px; color: $slx-gold; }
 // The gear icon (26 x 26) once obtained, else its silhouette art (28 x 28, made from the icon): each at its own size.
 .slx-codex-silhouette, .slx-codex-icon { flex: none; align-self: center; image-rendering: pixelated; }
 .slx-codex-icon { width: 26px; height: 26px; }
@@ -1217,10 +1221,12 @@ $slx-starlit: #bff6ff;
 // the names below read as notes (10px) so the 28px heading still leaves room for all three names in the card.
 .slx-portal-gear-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .slx-codex-pics { display: flex; gap: 2px; }
-.slx-portal-gear:has(.slx-codex-pics) .slx-codex-item { font-size: $slx-fs; line-height: 12px; }
+.slx-portal-gear:has(.slx-codex-pics) .slx-codex-item { font-size: $slx-fs; line-height: 14px; }
 .slx-portal-general { margin-top: 2px; color: #c9b8ff; }
 // A dim note like the others (10px), so the card keeps a few px of room under its gear list.
-.slx-portal-depth { margin-top: auto; padding-top: 1px; color: $slx-dim; font-size: $slx-fs; line-height: 12px; text-align: right; }
+.slx-portal-depth { margin-top: auto; padding-top: 1px; color: $slx-dim; font-size: $slx-fs; line-height: 14px; text-align: right; }
+// With the banner strip shown, the deepest depth sits on it, at its bottom right, so the card gains a line (legibility T3).
+.slx-portal:has(.slx-portal-art) .slx-portal-depth { position: absolute; top: 16px; right: 10px; margin: 0; padding: 0 2px; color: $slx-ink; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; }
 .slx-portal-hint { margin: 0; text-align: center; font-size: $slx-fs; line-height: 14px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; }
 .slx-layer.slx-depths { left: 50%; top: 84px; translate: round(down, -50%, 1px) 0; min-width: 200px; max-width: none; }
 .slx-depths .slx-ico { width: 48px; height: 27px; object-fit: cover; }

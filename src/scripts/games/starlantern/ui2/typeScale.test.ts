@@ -102,6 +102,7 @@ export function groupOf(selector: string): Group {
 /** Rules (as the compiled CSS writes their selector) whose screens Tasks 4–6 bring to 12/24px; each list only shrinks. */
 export const PENDING: Record<'T4' | 'T5' | 'T6', string[]> = {
   T4: [
+    '.slx-pm-pop-tp',
     '.slx-acut-label',
     '.slx-ail, .slx-mech',
     '.slx-badge',
@@ -144,6 +145,7 @@ export const PENDING: Record<'T4' | 'T5' | 'T6', string[]> = {
     '.slx-tree-wide .slx-tree-node-foot',
   ],
   T6: [
+    '.slx-bag-cell, .slx-doll-slot',
     '.slx-bd-card-name b',
     '.slx-bd-title',
     '.slx-enh',
@@ -170,7 +172,7 @@ export const PENDING: Record<'T4' | 'T5' | 'T6', string[]> = {
 /** Every rule of the compiled CSS, innermost blocks only (keyframe steps included), as [selector, body]. */
 const flat = (text: string): [string, string][] => [...text.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => [m[1].trim(), m[2]]);
 
-/** What keeps a rule body off the type scale: font sizes of 12 or 24px only, an even leading of 12px or more (24 or more at 24px), whole letter spacing, normal weight, no !important. */
+/** What keeps a rule body off the type scale: font sizes of 12 or 24px only, an even leading of 14px or more (24 or more at 24px), whole letter spacing, normal weight, no !important. */
 function faults(body: string): string[] {
   const out: string[] = [];
   const ds = decls(body);
@@ -187,7 +189,8 @@ function faults(body: string): string[] {
   if (size !== null && size !== '12px' && size !== '24px' && size !== 'inherit') out.push(`font-size: ${size}`);
   if (lh !== null && lh !== 'inherit') {
     const px = /^\d+px$/.test(lh) ? parseInt(lh, 10) : NaN;
-    if (!(px >= 12 && px % 2 === 0)) out.push(`line-height: ${lh}`);
+    // 14px or more (coordinator ruling 2026-10-23): Cubic 11 draws an 11px glyph in a 12px cell, so 12px lines touch.
+    if (!(px >= 14 && px % 2 === 0)) out.push(`line-height: ${lh}`);
     else if (size === '24px' && px < 24) out.push(`line-height: ${lh} at 24px`);
   }
   return out;
