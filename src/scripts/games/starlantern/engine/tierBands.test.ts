@@ -10,7 +10,7 @@ import { depthLevel, encounterTable } from './scaling';
 import { MAX_LEVEL } from './party';
 import { rollCrowdAffix } from './tiers';
 import { TIERS } from '../data/difficulty';
-import { CURVE, cellCrowdAffix, BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, TIER_BANDS, bandCells, bandMisses, baselineLine, frozenMisses, hasTriggerOrLasting, hellReportCells, measureCell, nightmareTwins, normalTwin, pullsApart, roadCell, tierLineup, TIER_SEEDS, withTrigger, type BandId, type BandRun, type TierCell, type TierRun } from './tierBands';
+import { CURVE, cellCrowdAffix, BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, TIER_BANDS, bandCells, bandMisses, baselineLine, frozenMisses, hasTriggerOrLasting, hellReportCells, measureCell, SHALLOW_HELL_BARE, shallowHellMisses, nightmareTwins, normalTwin, pullsApart, roadCell, tierLineup, TIER_SEEDS, withTrigger, type BandId, type BandRun, type TierCell, type TierRun } from './tierBands';
 import { AFFIX_IDS } from '../data/affixes';
 import { CHARACTER_IDS } from '../data/characters';
 import { ENHANCE_MAX } from '../data/forge';
@@ -319,6 +319,15 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
     // No bare boss fight measured is a miss, not a pass (T4-T5 review).
     const noBare = fill('H3', () => run(0, 0.9)).filter((m) => m.cell.lineup.runeTier || m.cell.kind === 'crowd');
     expect(bandMisses('H3', only('H3', noBare))).toEqual(['H3 d25: no bare boss fight measured']);
+  });
+
+  it('shallow Hell: the bare boss at d15 and d20 pooled at most .40; rare and crowds reported only (controller ruling)', () => {
+    expect(SHALLOW_HELL_BARE).toEqual({ depths: [15, 20], bareRate: 0.40 });
+    const hr = (rate: (c: TierCell) => number): BandRun[] => hellReportCells().map((cell) => ({ cell, run: run(rate(cell), 0.9), twin: run(1, 0.1), nightmare: run(1, 0.2) }));
+    const bare = (c: TierCell) => c.kind === 'boss' && !c.lineup.runeTier;
+    expect(shallowHellMisses(hr((c) => (bare(c) ? 0.4 : 0)))).toEqual([]);
+    expect(shallowHellMisses(hr((c) => (bare(c) && c.depth === 20 ? 0.45 : bare(c) ? 0.3 : 1)))).toEqual(['HR d20: bare boss rate 0.450 > 0.4']);
+    expect(shallowHellMisses(hr(() => 1).filter((m) => !bare(m.cell) || m.cell.depth !== 15))).toEqual(['HR d15: no bare boss fight measured', 'HR d20: bare boss rate 1.000 > 0.4']);
   });
 
   it('HE: a depth pooled at .75, and no pair under .40', () => {

@@ -57,7 +57,7 @@ export const TIERS: Record<Difficulty, TierDef> = {
     enemy: [
       { hp: 1.2, atk: 1.4, chanceMul: 2, chanceCap: 0.75 },
       { hp: 1.2, atk: 1.4, chanceMul: 2, chanceCap: 0.75, bossHp: 1.5, bossAtk: 1.25 },
-      { hp: 1.2, atk: 1.2, chanceMul: 2, chanceCap: 0.75, bossHp: 0.85, bossAtk: 1.2 },
+      { hp: 1.2, atk: 1.2, chanceMul: 2, chanceCap: 0.75, bossHp: 0.85, bossAtk: 1.3 },
       { hp: 1.2, atk: 1.4, chanceMul: 2, chanceCap: 0.75 },
     ],
     rider: 0.4, eliteAffixes: 2, bossAffixes: 2, reward: 1.5, runeDrop: 1.5,

@@ -281,6 +281,26 @@ export function hellReportCells(): TierCell[] {
   return [...groupCells(15, 'crowd', 'hell', 'rare'), ...bosses, ...bosses.map(bareOf)];
 }
 
+/**
+ * Shallow Hell's one assertion (controller ruling after Task 6b, its one tuning round on the d20–24 boss factors): the bare
+ * default pooled at most .40 against the Hell boss at d15 and d20, as H3 holds it at d25. The rare rows and the d15 crowds
+ * stay reported only.
+ */
+export const SHALLOW_HELL_BARE = { depths: [15, 20], bareRate: 0.40 } as const;
+
+/** What shallow Hell misses of SHALLOW_HELL_BARE over `runs` (hellReportCells measured); no bare boss fight is a miss. */
+export function shallowHellMisses(runs: readonly BandRun[]): string[] {
+  return SHALLOW_HELL_BARE.depths.flatMap((d) => {
+    const bare = pooled(runs.filter((m) => m.cell.kind === 'boss' && m.cell.depth === d && !m.cell.lineup.runeTier).map((m) => m.run));
+    if (!bare.fights) return [`HR d${d}: no bare boss fight measured`];
+    return bare.rate > SHALLOW_HELL_BARE.bareRate ? [`HR d${d}: bare boss rate ${f3(bare.rate)} > ${SHALLOW_HELL_BARE.bareRate}`] : [];
+  });
+}
+
+let hellReportRuns: BandRun[] | undefined;
+/** hellReportCells measured once (with their Nightmare twins) and kept, as measureBand keeps a band's. */
+export const measureHellReport = (): BandRun[] => (hellReportRuns ??= measureCells(hellReportCells(), true));
+
 /** The cells of a band (spec §6.2; difficulty plan Task 5a, rulings 12–14; the controller ruling of 2026-10-23). */
 export function bandCells(band: BandId): TierCell[] {
   switch (band) {

@@ -6,7 +6,7 @@
  * one `[hell]` line a cell, the pooled lines of each band, then the crowd gap of each depth (rare and magic against bare).
  */
 import { describe, expect, it } from 'vitest';
-import { HELL_BANDS, bandCells, bandLine, bandMisses, frozenMisses, gapLine, hellReportCells, measureBand, measureCells, poolOf, pooled, pooledLines } from './tierBands';
+import { HELL_BANDS, bandCells, bandLine, bandMisses, frozenMisses, gapLine, measureBand, measureHellReport, poolOf, pooled, pooledLines, shallowHellMisses } from './tierBands';
 
 const on = process.env.BANDS === '1';
 const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0';
@@ -34,7 +34,7 @@ describe.skipIf(!on)('the Hell bands (difficulty plan Tasks 5a-5b)', () => {
       say(gapLine(d, bare, at(h3.slice(0, crowd)), 'magic'));
     }
     // Hell below d25 (T4-T5 review): reachable but under no band; every cell and each depth's pool, reported only.
-    const below = measureCells(hellReportCells(), true);
+    const below = measureHellReport();
     for (const m of below) {
       say(bandLine('HR', m.cell.label!, m.run, m.twin));
       expect(m.run.fights, `HR ${m.cell.label}`).toBeGreaterThan(0);
@@ -42,8 +42,13 @@ describe.skipIf(!on)('the Hell bands (difficulty plan Tasks 5a-5b)', () => {
     // The bosses split by lineup: rare with a trigger (as H2) and the bare default (as H3; its intent .40 or less).
     for (const [d, kind, tier] of [[15, 'crowd', 'rare'], [15, 'boss', 'rare'], [15, 'boss', 'bare'], [20, 'boss', 'rare'], [20, 'boss', 'bare']] as const) {
       const p = poolOf(below.filter((m) => m.cell.depth === d && m.cell.kind === kind && (m.cell.lineup.runeTier ?? 'bare') === tier));
-      say(`HR d${d} ${kind} ${tier} pooled rate ${p.run.rate.toFixed(3)} loss ${p.run.hpLoss.toFixed(3)} (normal loss ${p.twin.hpLoss.toFixed(3)}, nightmare loss ${p.nightmare.hpLoss.toFixed(3)}) reported only`);
+      say(`HR d${d} ${kind} ${tier} pooled rate ${p.run.rate.toFixed(3)} loss ${p.run.hpLoss.toFixed(3)} (normal loss ${p.twin.hpLoss.toFixed(3)}, nightmare loss ${p.nightmare.hpLoss.toFixed(3)})${tier === 'bare' && kind === 'boss' ? ' asserted (HS)' : ' reported only'}`);
     }
+    for (const line of shallowHellMisses(below)) say(`miss ${line}`);
+  }, 3_000_000);
+
+  it('HS the bare default loses the Hell boss at d15 and d20 too (controller ruling after Task 6b)', () => {
+    expect(shallowHellMisses(measureHellReport())).toEqual([]);
   }, 3_000_000);
 
   it('H1 Hell crowds are won with rare runes, harder than Nightmare', () => {
