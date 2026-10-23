@@ -17,6 +17,7 @@ export class LockTable {
     this.frozen = opts?.frozen ?? false;
   }
 
+  // 回凍結的物件：呼叫端改不到表內的鎖
   get(side: Side, i: number): LandLock | undefined {
     return this.map.get(key(side, i))?.lock;
   }
@@ -30,7 +31,7 @@ export class LockTable {
   private put(side: Side, i: number, l: LandLock): boolean {
     const k = key(side, i);
     if (this.map.has(k)) return false;
-    this.map.set(k, { side, i, lock: { ver: l.ver, culture: l.culture } });
+    this.map.set(k, { side, i, lock: Object.freeze({ ver: l.ver, culture: l.culture }) });
     return true;
   }
 

@@ -16,6 +16,12 @@ describe('LockTable', () => {
     expect(t.lock(1, 2, { ver: 3, culture: null })).toBe(false);
     expect(t.get(1, 2)).toEqual({ ver: 0, culture: 'mistbamboo' });
     expect(t.get(-1, 2)).toBeUndefined();
+    const g = t.get(1, 2)!;
+    expect(Object.isFrozen(g)).toBe(true);
+    expect(() => { (g as { ver: number }).ver = 9; }).toThrow(TypeError);
+    expect(t.toJSON()).toEqual([[1, 2, 0, 'mistbamboo']]);
+    const src = { ver: 0, culture: null }; t.lock(-1, 4, src); src.ver = 7;
+    expect(t.get(-1, 4)).toEqual({ ver: 0, culture: null });
   });
 
   it('toJSON 依 side 再依 i 數值排序', () => {

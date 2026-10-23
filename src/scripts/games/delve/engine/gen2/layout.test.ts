@@ -128,13 +128,22 @@ describe('gen2 Layout', () => {
       snowSides.add(outerW.biome === BIOME.SNOW ? 'w' : 'e');
       const deserts = R.filter((r) => r.biome === BIOME.DESERT); expect(deserts).toHaveLength(1);
       const d = deserts[0], dw = d.x1 - d.x0; expect(dw).toBeGreaterThanOrEqual(315); expect(dw).toBeLessThanOrEqual(420);
-      if (d.x1 <= 1680) { expect(d.x0 - outerW.x1).toBeGreaterThanOrEqual(84); desertSides.add('w'); }
-      else { expect(d.x0).toBeGreaterThanOrEqual(2520); expect(outerE.x0 - d.x1).toBeGreaterThanOrEqual(84); desertSides.add('e'); }
+      if (d.x1 <= 1680) { expect(d.x0 - outerW.x1).toBeGreaterThanOrEqual(84); expect(1680 - d.x1).toBeGreaterThanOrEqual(84); desertSides.add('w'); }
+      else { expect(d.x0 - 2520).toBeGreaterThanOrEqual(84); expect(outerE.x0 - d.x1).toBeGreaterThanOrEqual(84); desertSides.add('e'); }
       for (const r of R) if (r.biome === BIOME.FOREST && r.variant !== VARIANT.BEACH && r.variant !== VARIANT.SPAWN)
         expect([VARIANT.PLAIN, VARIANT.HILLS]).toContain(r.variant);
       expect(R.filter((r) => r.variant === VARIANT.SPAWN)).toHaveLength(1);
     }
     expect(snowSides.size).toBe(2); expect(desertSides.size).toBe(2);
+  });
+
+  it('家鄉除兩端海灘外每個地區都 ≥ 84 寬（SEEDS20 + 300 個雜湊種子）', () => {
+    const seeds = [...SEEDS20, ...Array.from({ length: 300 }, (_, k) => `h${(Math.imul(k + 1, 2654435761) >>> 0).toString(36)}`)];
+    for (const seed of seeds) {
+      const R = L(seed).landmassAt(SPAWN_X)!.regions;
+      for (const r of R) if (r.variant !== VARIANT.BEACH) expect(r.x1 - r.x0, `${seed} [${r.x0}, ${r.x1})`).toBeGreaterThanOrEqual(84);
+      expect(R.filter((r) => r.variant === VARIANT.BEACH)).toHaveLength(2);
+    }
   });
 
   it('鎖覆寫文化並往後推', () => { const locks = new LockTable(); const free = L('s');
@@ -191,7 +200,7 @@ describe('gen2 cultures', () => {
 
 describe('gen2 禁用 API', () => {
   it('engine/gen2 非測試檔不得用 Math.random / 浮點超越函數 / **', () => {
-    const dir = join(process.cwd(), 'src', 'scripts', 'games', 'delve', 'engine', 'gen2');
+    const dir = __dirname;
     const files = readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
     expect(files).toEqual(expect.arrayContaining(['layout.ts', 'locks.ts', 'cultures.ts']));
     const banned = /Math\.random|Math\.sin|Math\.cos|Math\.pow|Math\.exp|Math\.log|Math\.sqrt|Math\.hypot|\*\*/;

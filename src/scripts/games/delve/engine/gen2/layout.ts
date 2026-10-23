@@ -207,7 +207,7 @@ export class Layout {
   // ── 家鄉 ──
 
   // 兩端各 70 格海灘；出生森林 [1680, 2520)；一側外圍雪原（420–546）、另一側叢林（504–630）；
-  // 沙漠（315–420）隨機在一側，與該側外圍之間至少 84 格森林；其餘補森林（PLAIN / HILLS）。
+  // 沙漠（315–420）隨機在一側，與該側外圍、與出生森林之間都至少 84 格森林（家鄉除海灘外每個地區 ≥ 84 寬）；其餘補森林（PLAIN / HILLS）。
   private buildHome(hs: number, hx0: number, hx1: number): Landmass {
     const h = (k: number): number => hash2(0, k, hs);
     const hv = (k: number): number => HOME_VARIANTS[Math.floor(h(k) * 2)];
@@ -226,10 +226,10 @@ export class Layout {
       [bE, hx1, BIOME.FOREST, VARIANT.BEACH],
     ];
     if (desertWest) {
-      const d0 = pick(h(5), hx0 + BEACH_W + wo + DESERT_GAP, hx0 + SPAWN_X0 - dw);
+      const d0 = pick(h(5), hx0 + BEACH_W + wo + DESERT_GAP, hx0 + SPAWN_X0 - dw - DESERT_GAP);
       fixed.push([d0, d0 + dw, BIOME.DESERT, hv(8)]);
     } else {
-      const d1 = pick(h(5), hx0 + SPAWN_X1 + dw, bE - eo - DESERT_GAP);
+      const d1 = pick(h(5), hx0 + SPAWN_X1 + dw + DESERT_GAP, bE - eo - DESERT_GAP);
       fixed.push([d1 - dw, d1, BIOME.DESERT, hv(8)]);
     }
     fixed.sort((p, q) => p[0] - q[0]);
