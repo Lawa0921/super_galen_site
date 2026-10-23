@@ -78,7 +78,15 @@ REDO = {
     'char-noel-portrait-sad': SAD_HARD,
     'char-bobby-portrait-sad': SAD_HARD,
 }
-REDO_ATTEMPTS = 2     # a redo id ends at a2: its wave-1 a1 plus this one
+# Appended from attempt 2 on, after looking at a1 (runs/2026-10-24-faces-wave2/notes.md), like party.NOTES.
+WAVE2_NOTES = {
+    'char-hero-portrait-distant': (' Revision: his eyes stay open and level, looking off past the viewer into the far distance (not downward), '
+                                   'the pupils small and unfocused, brows raised a little, lips slightly parted, as if listening to a voice only he can hear; '
+                                   'it must look clearly different from a sad face.'),
+    'char-rin-oath-portrait-serious': (' Revision: make it unmistakably different from the calm first image: brows clearly lowered and angled down toward '
+                                       'the nose, eyes narrowed a little and locked straight on the viewer, mouth a tight short line; readable at small size.'),
+}
+REDO_ATTEMPTS = 2    # a redo id ends at a2: its wave-1 a1 plus this one
 SIZE_TOL = 6         # art pixels the face's canvas may differ from the base portrait's on either axis
 PALETTE_DIST = 24     # RGB distance under which a colour counts as one of the base portrait's
 PALETTE_SHARE = 0.8   # below this share of base-palette pixels the face is flagged for the reviewer (warning only)
@@ -107,6 +115,7 @@ def jobs(reg=None, cids=None, wave=1):
     if wave == 1:
         return [_job(reg, c, m, FACES[m]) for c in (cids or COMPANIONS) if has(c) for m in WAVE1[c]]
     out = [_job(reg, c, m, WAVE2_FACES[(c, m)]) for c in WAVE2 if has(c) and (not cids or c in cids) for m in WAVE2[c]]
+    for j in out: j['prompt'] += WAVE2_NOTES.get(j['id'], '')
     for aid, face in REDO.items():
         c, m = aid[5:].rsplit('-portrait-', 1)
         if has(c) and (not cids or c in cids): out.append(_job(reg, c, m, face))

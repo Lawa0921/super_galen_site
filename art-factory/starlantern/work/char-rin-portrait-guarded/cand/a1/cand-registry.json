@@ -1,0 +1,29 @@
+{
+  "assets": {
+    "char-rin-portrait-guarded": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-rin-portrait-guarded/cand/a1/char-rin-portrait-guarded.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-guarded\\a1\\char-rin-portrait-guarded-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

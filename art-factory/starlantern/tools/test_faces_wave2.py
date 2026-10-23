@@ -64,3 +64,10 @@ def test_review_has_a_real_line_for_every_new_face():
     import review_faces as R
     for aid in by_id():
         assert aid in R.WAVE2_LINES and R.WAVE2_LINES[aid][1].startswith('「')
+
+
+def test_second_attempts_carry_the_revision_from_reviewing_the_first():
+    j = by_id()
+    assert 'Revision:' in j['char-hero-portrait-distant']['prompt'] and 'not downward' in j['char-hero-portrait-distant']['prompt']
+    assert 'Revision:' in j['char-rin-oath-portrait-serious']['prompt']
+    assert 'Revision:' not in j['char-rin-portrait-serious']['prompt']

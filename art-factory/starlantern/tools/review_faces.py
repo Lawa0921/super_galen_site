@@ -210,12 +210,13 @@ def wave2(run):
     for j in new:
         aid, cid = j['id'], j['cid']; mood, text, scene = WAVE2_LINES[aid]
         base = PUB / f'{cid}-portrait.png'; bw, bh = Image.open(base).size; bsrc = _copy(base, img, f'{cid}-portrait.png')
-        tiles.append((f'{cid} normal', Image.open(base).convert('RGBA')))
+        if not any(t[0] == f'{cid} normal' for t in tiles): tiles.append((f'{cid} normal', Image.open(base).convert('RGBA')))
         nat, dbl, qas = [_fig(bsrc, bw, bh, 'normal（已發佈）')], [_fig(bsrc, bw * 2, bh * 2, 'normal 2×')], []
         for c in _cands(aid):
             png = c / f'{aid}.png'; w, h = Image.open(png).size; src = _copy(png, img, f'{aid}-{c.name}.png')
             q, m, gen = _cand_qa(aid, c)
-            nat.append(_fig(src, w, h, f'{mood} {MOOD_ZH[mood]}（{c.name}）')); dbl.append(_fig(src, w * 2, h * 2, f'{mood} {c.name} 2×'))
+            pick = '，選定' if reg.get(aid, {}).get('chosen_attempt') == c.name else ''
+            nat.append(_fig(src, w, h, f'{mood} {MOOD_ZH[mood]}（{c.name}{pick}）')); dbl.append(_fig(src, w * 2, h * 2, f'{mood} {c.name}{pick} 2×'))
             qas.append(f'<p class="qa"><b>{html.escape(gen)} {c.name}</b>：{_qa(q, m)}</p>')
             tiles.append((f'{cid} {mood} {c.name}', Image.open(png).convert('RGBA')))
         if len(nat) == 1: qas.append('<p class="qa bad">沒有候選（見 notes.md）。</p>')

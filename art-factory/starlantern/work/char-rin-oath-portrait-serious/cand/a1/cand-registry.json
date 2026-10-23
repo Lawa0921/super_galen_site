@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "char-rin-oath-portrait-serious": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-serious/cand/a1/char-rin-oath-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-serious\\a1\\char-rin-oath-portrait-serious-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 11,
+        "size": [
+          101,
+          113
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}
