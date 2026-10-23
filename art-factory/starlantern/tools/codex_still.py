@@ -6,7 +6,7 @@ Each call writes <name>.gen.json next to the output; art_registry.py sync collec
 """
 from datetime import datetime, timezone
 from pathlib import Path
-import argparse, hashlib, json, shutil, subprocess, sys, time
+import argparse, base64, hashlib, json, os, shutil, subprocess, sys, time
 import numpy as np
 from PIL import Image
 
@@ -23,8 +23,9 @@ def _sha(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def _now(): return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
 
-def codex_command(prompt, images=(), codex='codex'):
-    argv = [codex, 'exec', '--skip-git-repo-check', '-s', 'workspace-write']
+def codex_command(prompt, images=(), codex='codex', model=None):
+    """model=None keeps the codex config default; a name overrides it for this one call only (config is never edited)."""
+    argv = [codex, 'exec', '--skip-git-repo-check', '-s', 'workspace-write'] + (['-m', model] if model else [])
     argv += [f'--image={Path(p).resolve()}' for p in images]
     return argv + [prompt]
 
@@ -39,13 +40,13 @@ def newest_generated(since, root=GENERATED):
     return max(found, key=lambda p: p.stat().st_mtime) if found else None
 
 
-def run_codex(prompt, workdir, name, images=(), runner=subprocess.run, codex=None, generated_root=GENERATED, timeout=900):
+def run_codex(prompt, workdir, name, images=(), runner=subprocess.run, codex=None, generated_root=GENERATED, timeout=900, model=None):
     """Run one codex image_gen call in workdir; returns the .gen.json record (output may be None on failure)."""
     workdir = Path(workdir); workdir.mkdir(parents=True, exist_ok=True)
     if (workdir/name).exists(): raise FileExistsError(f'{workdir/name} exists; use a new name for a new generation')
     full = prompt.rstrip() + COPY_SUFFIX.format(gen=generated_root, name=name)
     (workdir/f'{Path(name).stem}.prompt.txt').write_text(full, encoding='utf-8')
-    argv = codex_command(full, images, codex or shutil.which('codex') or 'codex')
+    argv = codex_command(full, images, codex or shutil.which('codex') or 'codex', model)
     start = time.time()
     with open(workdir/f'{Path(name).stem}.codex.log', 'w', encoding='utf-8') as log:
         proc = runner(argv, cwd=str(workdir), stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, timeout=timeout,
@@ -55,12 +56,86 @@ def run_codex(prompt, workdir, name, images=(), runner=subprocess.run, codex=Non
         fallback = newest_generated(start - 2, generated_root)  # 2 s slack for file-time granularity
         if fallback is not None: shutil.copyfile(fallback, out)
     record = {'tool': 'codex', 'name': name, 'started': datetime.fromtimestamp(start, timezone.utc).isoformat(timespec='seconds'),
-              'finished': _now(), 'argv_without_prompt': argv[:-1], 'prompt_file': f'{Path(name).stem}.prompt.txt',
+              'finished': _now(), 'model': model, 'argv_without_prompt': argv[:-1], 'prompt_file': f'{Path(name).stem}.prompt.txt',
               'prompt_sha256': hashlib.sha256(full.encode('utf-8')).hexdigest(),
               'inputs': [{'path': str(Path(p).resolve()), 'sha256': _sha(p)} for p in images],
               'returncode': getattr(proc, 'returncode', None), 'output': name if out.exists() else None,
               'output_sha256': _sha(out) if out.exists() else None, 'status': 'generated' if out.exists() else 'no_output',
               'visual_review': 'pending', 'runtime_publish_allowed': False}
+    write_record(workdir, name, record)
+    return record
+
+
+GEMINI_ENV = Path.home()/'.gemini'/'.env'
+GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'
+
+
+def gemini_key(env_file=GEMINI_ENV):
+    """GEMINI_API_KEY from the environment, else from ~/.gemini/.env. Read at call time; never logged or recorded."""
+    key = os.environ.get('GEMINI_API_KEY')
+    if key: return key
+    for line in Path(env_file).read_text(encoding='utf-8').splitlines() if Path(env_file).exists() else []:
+        k, sep, v = line.strip().partition('=')
+        if sep and k.strip() == 'GEMINI_API_KEY': return v.strip().strip('"\'')
+    raise RuntimeError('GEMINI_API_KEY not found in the environment or ~/.gemini/.env')
+
+
+def gemini_http(url, body, headers, timeout=600):
+    import urllib.request
+    req = urllib.request.Request(url, data=json.dumps(body).encode('utf-8'), headers={**headers, 'Content-Type': 'application/json'})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode('utf-8'))
+
+
+def _gemini_scrub(obj):
+    """The request/response for the log: inline image bytes replaced by their size and sha256."""
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            if k in ('inlineData', 'inline_data') and isinstance(v, dict) and 'data' in v:
+                raw = base64.b64decode(v['data'])
+                out[k] = {**{a: b for a, b in v.items() if a != 'data'}, 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+            else:
+                out[k] = _gemini_scrub(v)
+        return out
+    return [_gemini_scrub(v) for v in obj] if isinstance(obj, list) else obj
+
+
+def run_gemini(prompt, workdir, name, images=(), model=None, http=None, key=None):
+    """One Gemini image generateContent call (user ruling 2026-10-23: codex has no image tool on this account). Same
+    records as run_codex: <stem>.prompt.txt, <stem>.gemini.log (no image bytes, no key) and <stem>.gen.json."""
+    if not model: raise ValueError('the gemini backend needs --model (an image model id from the API model list)')
+    workdir = Path(workdir); workdir.mkdir(parents=True, exist_ok=True)
+    if (workdir/name).exists(): raise FileExistsError(f'{workdir/name} exists; use a new name for a new generation')
+    stem = Path(name).stem
+    (workdir/f'{stem}.prompt.txt').write_text(prompt, encoding='utf-8')
+    parts = [{'text': prompt}] + [{'inline_data': {'mime_type': 'image/png', 'data': base64.b64encode(Path(p).read_bytes()).decode()}} for p in images]
+    body = {'contents': [{'role': 'user', 'parts': parts}], 'generationConfig': {'responseModalities': ['TEXT', 'IMAGE']}}
+    start = time.time(); error = None; resp = {}; k = key or gemini_key()
+    try:
+        resp = (http or gemini_http)(GEMINI_URL.format(model=model), body, {'x-goog-api-key': k})
+    except Exception as e:  # noqa: BLE001 - the record says what failed; the caller decides whether to retry
+        error = f'{type(e).__name__}: {getattr(e, "code", "")} {str(e)[:300]}'.replace(k, '***')
+    out = workdir/name; text = []
+    for c in resp.get('candidates', []):
+        for part in (c.get('content') or {}).get('parts', []):
+            d = part.get('inlineData') or part.get('inline_data')
+            if d and d.get('data') and not out.exists():
+                out.write_bytes(base64.b64decode(d['data']))
+            elif part.get('text'):
+                text.append(part['text'])
+    if out.exists() and Image.open(out).format != 'PNG':
+        Image.open(out).convert('RGB').save(out, 'PNG')
+    log = {'request': _gemini_scrub(body), 'response': _gemini_scrub(resp), 'error': error}
+    (workdir/f'{stem}.gemini.log').write_text(json.dumps(log, indent=2, ensure_ascii=False), encoding='utf-8')
+    record = {'tool': 'gemini', 'model': model, 'generator': f'gemini/{model}', 'model_version': resp.get('modelVersion'),
+              'name': name, 'started': datetime.fromtimestamp(start, timezone.utc).isoformat(timespec='seconds'), 'finished': _now(),
+              'prompt_file': f'{stem}.prompt.txt', 'prompt_sha256': hashlib.sha256(prompt.encode('utf-8')).hexdigest(),
+              'inputs': [{'path': str(Path(p).resolve()), 'sha256': _sha(p)} for p in images],
+              'usage': resp.get('usageMetadata'), 'cost_reported': None, 'text': ' '.join(text)[:500] or None, 'error': error,
+              'finish_reasons': [c.get('finishReason') for c in resp.get('candidates', [])],
+              'output': name if out.exists() else None, 'output_sha256': _sha(out) if out.exists() else None,
+              'status': 'generated' if out.exists() else 'no_output', 'visual_review': 'pending', 'runtime_publish_allowed': False}
     write_record(workdir, name, record)
     return record
 
@@ -190,6 +265,8 @@ def main(argv=None):
     g.add_argument('--name', required=True, help='output PNG file name inside workdir (new name per attempt)')
     g.add_argument('--prompt-file', required=True, type=Path)
     g.add_argument('--image', action='append', default=[], type=Path, help='reference image (passed as --image=PATH)')
+    g.add_argument('--model', help='model for this call only (codex: default is the codex config model; gemini: required)')
+    g.add_argument('--backend', choices=['codex', 'gemini'], default='codex', help='image generator (gemini: user ruling 2026-10-23)')
     for p in (g, sub.add_parser('postprocess', help='re-run postprocess + gate on an existing raw PNG')):
         p.add_argument('--height-range', type=_range, help='accepted art-pixel height, e.g. 54-62')
         strips = p.add_mutually_exclusive_group()
@@ -199,7 +276,8 @@ def main(argv=None):
     sub.choices['postprocess'].add_argument('--raw', required=True, type=Path)
     args = ap.parse_args(argv)
     if args.command == 'generate':
-        record = run_codex(args.prompt_file.read_text(encoding='utf-8'), args.workdir, args.name, args.image)
+        run = run_gemini if args.backend == 'gemini' else run_codex
+        record = run(args.prompt_file.read_text(encoding='utf-8'), args.workdir, args.name, args.image, model=args.model)
         if record['output'] is None: print(json.dumps(record, ensure_ascii=False)); return 2
         raw = args.workdir/args.name
     else:

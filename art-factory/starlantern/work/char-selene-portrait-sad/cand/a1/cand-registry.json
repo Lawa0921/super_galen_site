@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "char-selene-portrait-sad": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-selene-portrait-sad/cand/a1/char-selene-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-sad\\a1\\char-selene-portrait-sad-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "block": 10,
+        "size": [
+          123,
+          114
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

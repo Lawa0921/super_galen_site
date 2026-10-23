@@ -43,10 +43,116 @@ describe('playScene', () => {
     p.onAction('confirm');
     await tick();
     expect(shown(talk)).toBe('三');
-    expect(talk.el.querySelector('img')).toBeNull();
+    // Narration keeps the last speaker's face, dimmed (staging S4).
+    const kept = talk.el.querySelector('.slx-talk-face--right');
+    expect(kept).not.toBeNull();
+    expect(kept!.classList.contains('slx-talk-face--dim')).toBe(true);
     p.onAction('confirm');
     await expect(p.done).resolves.toBe('done');
     expect(talk.busy()).toBe(false);
+    expect(talk.el.hidden).toBe(true);           // the scene over, the box goes
+    expect(talk.el.querySelector('img')).toBeNull();
+  });
+
+  it('the box stays up between the lines of a scene (staging S4)', async () => {
+    const { talk, ctx } = mk();
+    stage('chat:liz:1', [{ who: 'hero', text: '一' }, { who: 'narrator', text: '二' }, { who: 'rin', text: '三' }]);
+    const p = playScene(talk, 'chat:liz:1', ctx);
+    for (let i = 0; i < 2; i++) {
+      p.onAction('confirm');
+      expect(talk.el.hidden, `after line ${i + 1}`).toBe(false);
+      await tick();
+    }
+    expect(talk.el.querySelectorAll('img')).toHaveLength(1);   // Rin's face replaced Lorne's kept one
+    p.onAction('confirm');
+    await p.done;
+    expect(talk.el.hidden).toBe(true);
+  });
+
+  it('a scene whose run throws still leaves the dialogue clean: no hold, no veil, no card, box away (review 1)', async () => {
+    const { talk, ctx } = mk();
+    const screen = document.createElement('div');
+    screen.append(talk.el);
+    stage('mem:rin:1', [
+      { who: 'narrator', past: true, text: '一', place: { text: '月影旅館・深夜', night: true } },
+      { who: 'rin', text: '二' },
+    ]);
+    const real = talk.say.bind(talk);
+    vi.spyOn(talk, 'say').mockImplementationOnce(real).mockImplementationOnce(() => { throw new Error('boom'); });
+    const p = playScene(talk, 'mem:rin:1', ctx);
+    expect(talk.el.classList.contains('slx-talk--memory')).toBe(true);
+    p.onAction('confirm');
+    await expect(p.done).rejects.toThrow('boom');
+    expect(talk.el.classList.contains('slx-talk--memory')).toBe(false);
+    expect(screen.querySelector('.slx-veil.slx-on')).toBeNull();
+    expect(screen.querySelector('.slx-place-card')).toBeNull();
+    expect(talk.el.hidden).toBe(true);
+    // not held any more: a plain line closes the box again on confirm
+    void real('', '三');
+    talk.onAction('confirm');
+    expect(talk.el.hidden).toBe(true);
+  });
+
+  it("a scene's first narration line shows no face left over from before the scene (review 2)", async () => {
+    const { talk, ctx } = mk();
+    void talk.say('', '地城的一句。', { src: '/left-over.png', side: 'left' });
+    stage('chat:liz:1', [{ who: 'narrator', text: '一' }, { who: 'rin', text: '二' }, { who: 'narrator', text: '三' }]);
+    const p = playScene(talk, 'chat:liz:1', ctx);
+    expect(talk.el.querySelector('img')).toBeNull();
+    p.onAction('confirm'); await tick();
+    p.onAction('confirm'); await tick();
+    expect(talk.el.querySelector('.slx-talk-face--dim')).not.toBeNull();   // once a face has shown in the scene, it is kept
+    p.onAction('confirm');
+    await p.done;
+  });
+
+  it('a skipped scene shows its summary with no face', async () => {
+    const { talk, ctx } = mk();
+    stage('chat:liz:1', [{ who: 'hero', text: '一' }, { who: 'narrator', text: '二' }]);
+    const p = playScene(talk, 'chat:liz:1', ctx);
+    p.onAction('cancel');
+    await tick();
+    expect(talk.el.querySelector('img')).toBeNull();
+    p.onAction('confirm');
+    await p.done;
+    expect(talk.el.hidden).toBe(true);
+  });
+
+  it('a heavy scene shows the near face for a mood without art; a light one the old fallback (staging S3)', async () => {
+    const { talk, ctx } = mk();
+    const src = () => talk.el.querySelector('.slx-talk-face')?.getAttribute('src');
+    stage('mem:noel:3', [{ who: 'noel', mood: 'panic', text: '一' }]);
+    const heavy = playScene(talk, 'mem:noel:3', ctx);
+    expect(src()).toBe(art.portrait('noel', 'sad'));
+    heavy.onAction('confirm');
+    await heavy.done;
+    stage('chat:noel:1', [{ who: 'noel', mood: 'panic', text: '二' }]);
+    const light = playScene(talk, 'chat:noel:1', ctx);
+    expect(src()).toBe(art.portrait('noel', 'normal'));
+    light.onAction('confirm');
+    await light.done;
+  });
+
+  it("a line's place puts up the scene's card, a later one changes it, and the scene's end takes it down (staging S6)", async () => {
+    const { talk, ctx } = mk();
+    const screen = document.createElement('div');
+    screen.append(talk.el);
+    const card = () => screen.querySelector('.slx-place-card')?.textContent ?? null;
+    const night = () => !!screen.querySelector('.slx-veil-night.slx-on');
+    stage('chat:liz:1', [
+      { who: 'narrator', text: '一', place: { text: '月影旅館・深夜', night: true } },
+      { who: 'hero', text: '二' },
+      { who: 'narrator', text: '三', place: { text: '月影旅館・清晨' } },
+    ]);
+    const p = playScene(talk, 'chat:liz:1', ctx);
+    expect([card(), night()]).toEqual(['月影旅館・深夜', true]);
+    p.onAction('confirm'); await tick();
+    expect([card(), night()]).toEqual(['月影旅館・深夜', true]);   // a line with no place keeps the card
+    p.onAction('confirm'); await tick();
+    expect([card(), night()]).toEqual(['月影旅館・清晨', false]);
+    p.onAction('confirm');
+    await p.done;
+    expect([card(), night()]).toEqual([null, false]);
   });
 
   it('cancel skips the rest and shows the summary', async () => {
@@ -61,13 +167,32 @@ describe('playScene', () => {
     expect(talk.busy()).toBe(false);
   });
 
-  it('memory scenes use the memory style and give it back', async () => {
+  it('only the past lines of a memory wear the memory style, and it is given back (staging S5)', async () => {
     const { talk, ctx } = mk();
     const p = playScene(talk, 'mem:hero:1', ctx);
-    expect(talk.el.classList.contains('slx-talk--memory')).toBe(true);
-    for (let i = 0; i < STORY.scenes['mem:hero:1'].lines.length; i++) { p.onAction('confirm'); await tick(); }
+    const styles: boolean[] = [];
+    for (let i = 0; i < STORY.scenes['mem:hero:1'].lines.length; i++) {
+      styles.push(talk.el.classList.contains('slx-talk--memory'));
+      p.onAction('confirm');
+      await tick();
+    }
     await p.done;
+    expect(styles).toEqual(STORY.scenes['mem:hero:1'].lines.map((l) => !!l.past));
+    expect(styles).toEqual([true, true, false, false]);
     expect(talk.el.classList.contains('slx-talk--memory')).toBe(false);
+  });
+
+  it("a memory's present line shows the normal portrait look; a past line the memory one (staging S5)", async () => {
+    const { talk, ctx } = mk();
+    stage('mem:rin:1', [{ who: 'narrator', past: true, text: '一' }, { who: 'hero', text: '二' }, { who: 'rin', text: '三' }]);
+    const p = playScene(talk, 'mem:rin:1', ctx);
+    expect(talk.el.classList.contains('slx-talk--memory')).toBe(true);
+    p.onAction('confirm'); await tick();
+    expect(talk.el.classList.contains('slx-talk--memory')).toBe(false);
+    expect(talk.el.querySelector('.slx-talk-face')).not.toBeNull();
+    p.onAction('confirm'); await tick();
+    p.onAction('confirm');
+    await p.done;
   });
 
   it('lines whose condition fails are left out', () => {
@@ -164,6 +289,18 @@ describe('playLines (story polish Task 1)', () => {
     expect(await plates((_l, i) => (i === 0 ? '？？？' : undefined))).toEqual([{ name: '？？？', side: 'left' }, { name: CHARACTERS.hero.name, side: 'right' }]);
   });
 
+  it("playLines keeps the box up between lines and narration keeps the last face, dimmed (staging S4)", async () => {
+    const { talk, ctx } = mk();
+    const p = playLines(talk, [{ who: 'rin', text: '一' }, { who: 'narrator', text: '二' }], ctx);
+    p.onAction('confirm');
+    expect(talk.el.hidden).toBe(false);
+    await tick();
+    expect(talk.el.querySelector('.slx-talk-face--dim')).not.toBeNull();
+    p.onAction('confirm');
+    await expect(p.done).resolves.toBe('done');
+    expect(talk.el.hidden).toBe(true);
+  });
+
   it('cancel stops playLines with skipped and no summary', async () => {
     const { talk, ctx } = mk();
     const say = vi.spyOn(talk, 'say');
@@ -218,12 +355,14 @@ describe('speakerOf', () => {
   it('a serious or sad line with no art for that face shows the name plate alone, never a smiling normal (final review, story depth)', () => {
     // A companion's normal portrait often smiles: borrowed for a grave line it says the opposite. Until the art pipeline
     // brings her serious and sad faces (user approval, plan leftovers), the line has no portrait at all.
+    // Wave 1 (2026-10-23) brought most of them; the art index here leaves Noel's sad out to keep the rule in view.
     const { game } = mk();
+    const noSad: ArtIndex = { has: (u) => ART.has(u) && u !== art.portrait('noel', 'sad') };
     for (const mood of ['serious', 'sad'] as const) {
-      const said = speakerOf('noel', game.state, ART, mood);
+      const said = speakerOf('noel', game.state, noSad, mood);
       expect(said.name, mood).toBe(CHARACTERS.noel.name);
       expect(said.face, mood).toBeUndefined();
-      const withIt: ArtIndex = { has: (u) => ART.has(u) || u === art.portrait('noel', mood) };
+      const withIt: ArtIndex = { has: (u) => noSad.has(u) || u === art.portrait('noel', mood) };
       expect(speakerOf('noel', game.state, withIt, mood).face, mood).toBe(art.portrait('noel', mood));
     }
     // The faces on disk still show: Lorne's and Rin's sad.
@@ -239,11 +378,14 @@ describe('speakerOf', () => {
     expect(speakerOf('hero', game.state, ART, 'distant').face).toBe(art.portrait('hero', 'normal'));
     game.state.party.roster.rin.oath = true;
     expect(speakerOf('rin', game.state, ART, 'serious').face).toBe(art.portrait('rin-oath', 'normal'));
-    // A companion's heavy faces count as grave too: Chizuru's solemn, Scarlet's vow and shaken, Selene's wistful.
+    // A companion's heavy faces count as grave too: Chizuru's solemn, Scarlet's vow and shaken, Selene's wistful. Without
+    // their art (and their fallbacks') no portrait; wave 1 (2026-10-23) published them, so they show (storyFaces.test.ts).
+    const bare: ArtIndex = { has: (u) => ART.has(u) && !/-portrait-(serious|sad|solemn|vow|shaken|wistful)\.png$/.test(u) };
     for (const [who, mood] of [['chizuru', 'solemn'], ['scarlet', 'vow'], ['scarlet', 'shaken'], ['selene', 'wistful'], ['sylvie', 'serious']] as const) {
-      const said = speakerOf(who, game.state, ART, mood);
+      const said = speakerOf(who, game.state, bare, mood);
       expect(said.face, `${who} ${mood}`).toBeUndefined();
       expect(said.name).toBe(CHARACTERS[who].name);
+      expect(speakerOf(who, game.state, ART, mood).face, `${who} ${mood}`).toBe(art.portrait(who, mood));
     }
     // A plain or light line keeps her smiling normal face.
     expect(speakerOf('chizuru', game.state, ART, 'normal').face).toBe(art.portrait('chizuru', 'normal'));

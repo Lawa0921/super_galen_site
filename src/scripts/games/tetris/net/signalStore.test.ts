@@ -85,3 +85,30 @@ describe('getSignalStore 環境選擇', () => {
     expect(() => mod.getSignalStore({ UPSTASH_REDIS_REST_TOKEN: 'tok' })).toThrow();
   });
 });
+
+describe('UpstashStore 請求路徑', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubFetch(): string[] {
+    const paths: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      paths.push(url.replace('https://x.upstash.io/', ''));
+      return new Response(JSON.stringify({ result: 'OK' }), { status: 200 });
+    }));
+    return paths;
+  }
+
+  it('寫入一般值 → SET 帶 TTL', async () => {
+    const { UpstashStore } = await import('./signalStore');
+    const paths = stubFetch();
+    await new UpstashStore('https://x.upstash.io', 'tok').set('sig:R:offer', 'v', 300);
+    expect(paths).toEqual(['set/sig%3AR%3Aoffer/v?EX=300']);
+  });
+
+  it('寫入空字串（清槽）→ 改成 DEL：Upstash REST 的 SET 不收空值（會回 400）', async () => {
+    const { UpstashStore } = await import('./signalStore');
+    const paths = stubFetch();
+    await new UpstashStore('https://x.upstash.io', 'tok').set('sig:R:offer', '', 300);
+    expect(paths).toEqual(['del/sig%3AR%3Aoffer']);
+  });
+});

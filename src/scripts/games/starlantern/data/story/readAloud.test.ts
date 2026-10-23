@@ -7,7 +7,7 @@ describe('readAloud (story polish Task 3)', () => {
   it("prints a scene's readings with plates", () => {
     const out = readAloud(['scenes.prologue-inn.']);
     expect(out).toContain('［輕］');
-    expect(out).toContain('凜：「我什麼都不記得');
+    expect(out).toContain('凜：「不認識。我什麼都不記得');
     const narration = out.split('\n').filter((l) => l.includes('發青的指痕'));
     expect(narration).toHaveLength(1);
     expect(narration[0].startsWith('她手腕上')).toBe(true);   // the narrator's line has no plate before it

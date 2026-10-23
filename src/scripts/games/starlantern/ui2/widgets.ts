@@ -161,6 +161,8 @@ export class Dialogue {
   private face: HTMLImageElement | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private resolve: (() => void) | null = null;
+  /** A scene is playing (staging S4): a confirmed line leaves the box and its face up until the next line or `close()`. */
+  private held = false;
 
   /** `onClose` runs synchronously when a line is dismissed, so owners can unlock their windows before the next click. */
   constructor(private charsPerSecond: number, private onClose?: () => void) {
@@ -173,17 +175,79 @@ export class Dialogue {
 
   busy(): boolean { return this.resolve !== null; }
 
-  /** `memory` dims the box for a remembered scene; `plain` is the everyday look. */
+  /**
+   * `memory` dims the box for a remembered line; `plain` is the everyday look. Memory also fades a sepia veil in over the
+   * screen behind the box (staging S5), and plain fades it out: the veil is the box's sibling, made the first time it is
+   * needed in a scene, so whatever screen plays the memory (the labyrinth, a battle's result, the town) goes back in time.
+   */
   setStyle(style: 'plain' | 'memory'): void {
     this.el.classList.toggle('slx-talk--memory', style === 'memory');
+    this.veil('slx-veil-past', style === 'memory');
   }
 
-  /** `face` puts a portrait on the box's left or right edge for this line; a line without one shows no image. */
-  say(name: string, text: string | Rich, face?: { src: string; side: 'left' | 'right' }): Promise<void> {
-    this.stop();
+  /**
+   * Where the scene is (staging S6): a one-line card in the screen's top corner (where the town's place plate stands, put
+   * away while a scene plays), and with `night` a veil that dims the screen. `null` takes both down.
+   */
+  setPlace(place: { text: string; night?: true } | null): void {
+    const parent = this.el.parentElement;
+    let card = this.card();
+    if (!place) card?.remove();
+    else if (parent) {
+      if (!card) parent.insertBefore((card = win('slx-place-card', [])), this.el);
+      card.textContent = place.text;
+    }
+    this.veil('slx-veil-night', !!place?.night);
+  }
+
+  /** The place card on the box's screen, if one is up. */
+  private card(): HTMLElement | null {
+    return this.el.parentElement?.querySelector<HTMLElement>(':scope > .slx-place-card') ?? null;
+  }
+
+  /** The veil `cls` just under the box (and under the place card), on or off; none is made only to be off, nor while the box has no screen. */
+  private veil(cls: string, on: boolean): void {
+    const parent = this.el.parentElement;
+    let v = parent?.querySelector<HTMLElement>(`:scope > .${cls}`) ?? null;
+    if (!v && on && parent) {
+      v = el('div', { class: `slx-veil ${cls}`, attrs: { 'aria-hidden': 'true' } });
+      parent.insertBefore(v, this.card() ?? this.el);
+      void v.offsetWidth;   // the off state first, so the fade in runs
+    }
+    v?.classList.toggle('slx-on', on);
+  }
+
+  /**
+   * While held (a scene playing, staging S4) the box stays up between lines: confirming a line keeps it and its face on
+   * screen for the next one, so nothing blinks out. Unhold, then `close()`, when the scene is over.
+   */
+  hold(on: boolean): void {
+    this.held = on;
+    // A scene starts with no face of its own: one left on the box from before it (a labyrinth line) is not kept by its
+    // first narration line (staging review 2).
+    if (on) { this.face?.remove(); this.face = null; }
+  }
+
+  /** Puts the box and its face away, unless a line is still waiting to be read. */
+  close(): void {
+    if (this.resolve) return;
+    this.el.hidden = true;
     this.face?.remove();
     this.face = null;
-    if (face) {
+  }
+
+  /**
+   * `face` puts a portrait on the box's left or right edge for this line; a line without one shows no image. `'keep'` (a
+   * narration line in a scene, staging S4) keeps the face already up, dimmed, so the speaker stays in the picture.
+   */
+  say(name: string, text: string | Rich, face?: { src: string; side: 'left' | 'right' } | 'keep'): Promise<void> {
+    this.stop();
+    if (face === 'keep') this.face?.classList.add('slx-talk-face--dim');
+    else {
+      this.face?.remove();
+      this.face = null;
+    }
+    if (face && face !== 'keep') {
       this.face = el('img', { class: `slx-talk-face slx-talk-face--${face.side}`, attrs: { src: face.src, alt: '', draggable: 'false' } });
       this.el.prepend(this.face);
     }
@@ -215,9 +279,11 @@ export class Dialogue {
     if (this.timer) { this.complete(); return true; }
     const r = this.resolve;
     this.resolve = null;
-    this.el.hidden = true;
-    this.face?.remove();
-    this.face = null;
+    if (!this.held) {
+      this.el.hidden = true;
+      this.face?.remove();
+      this.face = null;
+    }
     this.onClose?.();
     r();
     return true;

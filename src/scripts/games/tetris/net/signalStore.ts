@@ -45,6 +45,8 @@ export class UpstashStore implements SignalStore {
   }
 
   async set(key: string, value: string, ttlSec: number): Promise<void> {
+    // 空字串 = 清槽：Upstash REST 的 SET 路徑不收空值（回 400），改用 DEL；讀回一樣是 null（呼叫端把 '' 與 null 同樣當空槽）
+    if (value === '') return this.del(key);
     // SET key value EX ttl
     await this.cmd(`set/${encodeURIComponent(key)}/${encodeURIComponent(value)}?EX=${ttlSec}`);
   }

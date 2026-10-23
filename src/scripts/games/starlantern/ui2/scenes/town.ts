@@ -20,6 +20,8 @@ import { playAndRecord, storyCtx } from '../story';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge', 'handbook', 'settings'] as const;
+/** The notices of a return home: the day's line still follows them (staging S2). The others are about the interface. */
+const RETURNS: ReadonlySet<NonNullable<Game['notice']>> = new Set(['banked', 'lamp', 'wipe']);
 
 /**
  * 「平安回城。帶回了：回復藥 ×2、鐵劍、120 G。」 — the lamp's own words replace 平安回城 when it brought the party home.
@@ -40,6 +42,8 @@ export class TownScene implements Scene {
   private view!: MenuView;
   private menuWin!: HTMLElement;
   private backEl!: HTMLElement;
+  /** The place plate and the gold: the town's HUD, put away while a story scene plays (staging S1). */
+  private hud: HTMLElement[] = [];
   private talk: Dialogue;
   private root!: HTMLElement;
   private ask: MenuView | null = null;
@@ -58,8 +62,7 @@ export class TownScene implements Scene {
     const bg = this.ctx.art.has(art.scene('town')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('town'), alt: '' } })] : [];
     root.append(el('div', { class: 'slx-scene slx-town' }, [
       ...bg,
-      win('slx-place', [document.createTextNode(t.place)]),
-      win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)]),
+      ...(this.hud = [win('slx-place', [document.createTextNode(t.place)]), win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)])]),
       (this.menuWin = win('slx-town-menu', [this.view.el])),
       (this.backEl = backControl(() => this.onAction('cancel'))),
       el('p', { class: 'slx-keyhint', text: T.ui2.hints.town }),
@@ -68,7 +71,12 @@ export class TownScene implements Scene {
     void this.arrive();
   }
 
-  /** The queued scenes play first, with the menu out of the way; then the notice, or the day's line. */
+  /**
+   * The queued scenes play first, with the menu out of the way; then the notice, who stopped following a build, and the
+   * day's line. A return home (`RETURNS`) used to replace the day's line with what came home, and a return is nearly every
+   * visit, so about 60 written lines (the town's, Rin's, the bellkeeper's) were almost never seen: now it follows the
+   * notice (staging S2). Only an interface notice (saved, save failed...) still stands alone.
+   */
   private async arrive(): Promise<void> {
     const game = this.ctx.game;
     try {
@@ -84,43 +92,53 @@ export class TownScene implements Scene {
     // Whoever stopped following a build since (plan 8h Task 6): said after the notice, or in place of the day's line.
     const ended = game.followEnded.splice(0);
     const endedLine = ended.length ? T.build.followEnded(ended.map((id) => CHARACTERS[id].name)) : null;
-    const then = (first: Promise<void>) => { void first.then(() => (endedLine ? this.speak('', endedLine) : undefined)); };
+    const says: { who: string; text: string | Rich }[] = [];
     // A safe return (walking home, or the lamp, whose notice replaces 'banked') says what came home.
-    if (banked && (notice === 'banked' || notice === 'lamp')) then(this.speak('', bankedLine(banked, this.ctx.art)));
-    else if (notice) then(this.speak('', T.notices[notice]));
-    else if (endedLine) void this.speak('', endedLine);
-    else {
-      // The day's line: the town's own, told by the narrator with no plate (story polish ruling 8), and from act 2 Rin's
-      // foreshadowing once she has joined.
-      const stage = storyStage(game.state);
-      const chose = !!game.state.party.roster.rin?.oath;
-      const rinSays = game.state.party.recruited.includes('rin') ? (chose ? STORY.rinOath : STORY.rinLines[stage] ?? []) : [];
-      // The bellkeeper once his arrival scene has played (engine/story/keeper.ts, story depth Task 4).
-      const keeper = bellkeeperPool(game.state);
-      const pool = [
-        ...STORY.townLines[stage].map((text) => ({ who: '', text })),
-        ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),
-        ...keeper.map((text) => ({ who: NPC_NAMES.bellkeeper, text })),
-      ];
-      const pick = pool[Math.floor(game.rng() * pool.length)];
-      void this.speak(pick.who, pick.text);
-    }
+    if (banked && (notice === 'banked' || notice === 'lamp')) says.push({ who: '', text: bankedLine(banked, this.ctx.art) });
+    else if (notice) says.push({ who: '', text: T.notices[notice] });
+    if (endedLine) says.push({ who: '', text: endedLine });
+    // The day's line. With nothing before it, it is drawn from the game rng as it always was; after a notice it is picked
+    // without a draw, so the rng stream (the next portal roll, the next run's seed) is what it was before staging S2.
+    if (!notice || RETURNS.has(notice)) says.push(this.dayLine(says.length === 0));
+    void (async () => { for (const l of says) await this.speak(l.who, l.text); })();
   }
 
-  /** Plays one arrival scene with the menu hidden (the 96px face stands over its last row) and records it. */
+  /**
+   * The day's line: the town's own, told by the narrator with no plate (story polish ruling 8), from act 2 Rin's
+   * foreshadowing once she has joined, and the bellkeeper once his arrival scene has played (engine/story/keeper.ts, story
+   * depth Task 4). `draw`: pick with the game rng; otherwise by the gold and the scenes seen, which change from one return
+   * to the next (staging S2: no draw the old code did not make). A return that changes neither repeats the last pick: the
+   * save keeps no count of returns or visits to mix in, and none is added just for this (staging review 3).
+   */
+  private dayLine(draw: boolean): { who: string; text: string } {
+    const s = this.ctx.game.state;
+    const stage = storyStage(s);
+    const chose = !!s.party.roster.rin?.oath;
+    const rinSays = s.party.recruited.includes('rin') ? (chose ? STORY.rinOath : STORY.rinLines[stage] ?? []) : [];
+    const pool = [
+      ...STORY.townLines[stage].map((text) => ({ who: '', text })),
+      ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),
+      ...bellkeeperPool(s).map((text) => ({ who: NPC_NAMES.bellkeeper, text })),
+    ];
+    const i = draw ? Math.floor(this.ctx.game.rng() * pool.length) : (s.gold + s.story.seen.length) % pool.length;
+    return pool[i];
+  }
+
+  /**
+   * Plays one arrival scene with the menu hidden (the face stands over its last row) and records it. The HUD goes too
+   * (staging S1): the place plate would say 露米亞 over an inn at night, and the gold has nothing to do with a scene.
+   */
   private async playScene(id: SceneId): Promise<void> {
     this.menuWin.setAttribute('inert', '');
     this.backEl.setAttribute('inert', '');
-    this.menuWin.classList.add('slx-cmd-hidden');
-    this.backEl.classList.add('slx-cmd-hidden');
+    for (const e of [this.menuWin, this.backEl, ...this.hud]) e.classList.add('slx-cmd-hidden');
     try {
       const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
       this.playing = p;
       await p.done;
     } finally {
       this.playing = null;
-      this.menuWin.classList.remove('slx-cmd-hidden');
-      this.backEl.classList.remove('slx-cmd-hidden');
+      for (const e of [this.menuWin, this.backEl, ...this.hud]) e.classList.remove('slx-cmd-hidden');
     }
   }
 

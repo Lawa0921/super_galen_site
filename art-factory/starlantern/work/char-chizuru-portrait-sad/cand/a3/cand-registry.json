@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "char-chizuru-portrait-sad": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-sad/cand/a3/char-chizuru-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-sad\\a3\\char-chizuru-portrait-sad-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 27,
+        "block": 7,
+        "size": [
+          133,
+          129
+        ]
+      },
+      "status": "qa_passed",
+      "generator": "gemini/gemini-3-pro-image",
+      "defringe": "strong",
+      "neutralize_tint": true
+    }
+  }
+}

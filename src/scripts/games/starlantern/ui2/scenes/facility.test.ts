@@ -128,9 +128,12 @@ describe('FacilityScene story', () => {
     c.game.arrival = ['prologue'];
     const done = s.scene('prologue');
     const cmd = root.querySelector('.slx-cmd') as HTMLElement;
+    const hud = [root.querySelector('.slx-place')!, root.querySelector('.slx-gold')!];
     expect(cmd.classList.contains('slx-cmd-hidden')).toBe(true);
+    for (const e of hud) expect(e.classList.contains('slx-cmd-hidden'), e.className).toBe(true);   // staging S1: the HUD too
     s.onAction('cancel'); await new Promise((r) => setTimeout(r, 0)); s.onAction('confirm');
     await done;
     expect(cmd.classList.contains('slx-cmd-hidden')).toBe(false);
+    for (const e of hud) expect(e.classList.contains('slx-cmd-hidden'), e.className).toBe(false);
   });
 });

@@ -184,11 +184,28 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 // A remembered scene: a dark vignette, a pale tint and washed-out faces. After the skin so its shadow wins.
 .slx-talk--memory, .slx-skinned .slx-talk--memory { background: color-mix(in srgb, $slx-win 78%, $slx-dim); color: $slx-dim; box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.8), 0 2px 8px rgba(0, 0, 0, 0.5); }
 .slx-talk--memory .slx-talk-face { filter: sepia(0.55) saturate(0.7) brightness(0.85); }
+// Narration keeps the last speaker's face, dimmed (story staging S4): she is still there, not speaking.
+.slx-talk-face { transition: filter 0.2s linear; }
+.slx-talk-face--dim { filter: brightness(0.55) saturate(0.6); }
+.slx-talk--memory .slx-talk-face--dim { filter: sepia(0.55) saturate(0.5) brightness(0.5); }
+// Veils between the screen and the box (story staging S5, S6), made by the dialogue as the box's sibling: a memory's
+// remembered past fades a sepia wash in over whatever screen plays it, and back out for the present lines; a night scene
+// dims the town. Painted in DOM order, so the box (after the veil) stays on top.
+.slx-veil { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.45s linear; }
+.slx-veil.slx-on { opacity: 1; }
+.slx-veil-past { background: rgba(46, 30, 12, 0.4); backdrop-filter: sepia(0.8) saturate(0.6) brightness(0.7); }
+.slx-veil-night { background: rgba(4, 8, 30, 0.58); }
+.slx-dungeon .slx-veil { z-index: 1; }
+// Where a scene is (story staging S6): a one-line card where the place plate stands, 12px on the type scale.
+.slx-place-card { left: 12px; top: 10px; padding: 3px 10px; font-size: $slx-fs; line-height: 16px; letter-spacing: 1px; color: $slx-ink; white-space: nowrap; }
+.slx-dungeon .slx-place-card { z-index: 1; }
+.slx-talk { transition: background-color 0.45s linear, color 0.45s linear; }
+@media (prefers-reduced-motion: reduce) { .slx-veil, .slx-talk, .slx-talk-face { transition: none; } }
 
 .slx-npc { position: absolute; right: 0; bottom: 0; height: 330px; }
 .slx-cmd { left: 12px; top: 56px; min-width: 120px; }
 /* While a story scene plays in a facility or the town, its face stands where the command window is: hide the window, keep its place. */
-.slx-facility .slx-cmd.slx-cmd-hidden, .slx-town .slx-town-menu.slx-cmd-hidden, .slx-town .slx-back.slx-cmd-hidden, .slx-dungeon .slx-pad.slx-cmd-hidden, .slx-dungeon .slx-weight.slx-cmd-hidden, .slx-dungeon .slx-keyhint.slx-cmd-hidden { visibility: hidden; }
+.slx-facility .slx-cmd.slx-cmd-hidden, .slx-town .slx-town-menu.slx-cmd-hidden, .slx-town .slx-back.slx-cmd-hidden, .slx-town .slx-place.slx-cmd-hidden, .slx-town .slx-gold.slx-cmd-hidden, .slx-facility .slx-place.slx-cmd-hidden, .slx-facility .slx-gold.slx-cmd-hidden, .slx-dungeon .slx-pad.slx-cmd-hidden, .slx-dungeon .slx-weight.slx-cmd-hidden, .slx-dungeon .slx-keyhint.slx-cmd-hidden { visibility: hidden; }
 .slx-stage { position: absolute; inset: 0; pointer-events: none; }
 .slx-stage > * { pointer-events: auto; }
 .slx-layer { left: 150px; top: 56px; max-width: 300px; }

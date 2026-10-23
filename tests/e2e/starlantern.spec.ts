@@ -47,7 +47,9 @@ const faceFits = async (page: Page): Promise<number | null> => {
   const face = (await faceEl.first().boundingBox())!;
   const talk = (await page.locator('.slx-talk:not([hidden])').first().boundingBox())!;
   const text = (await page.locator('.slx-talk:not([hidden]) .slx-text').first().boundingBox())!;
-  const name = await page.locator('.slx-talk:not([hidden]) .slx-name:not([hidden])').first().boundingBox();
+  // A narration line keeps the last speaker's face with no name plate (story staging S4): the plate is optional.
+  const plate = page.locator('.slx-talk:not([hidden]) .slx-name:not([hidden])');
+  const name = (await plate.count()) ? await plate.first().boundingBox() : null;
   expect(face.y, 'portrait top inside the screen').toBeGreaterThanOrEqual(scr.y - 0.5);
   expect(face.x, 'portrait left inside the screen').toBeGreaterThanOrEqual(scr.x - 0.5);
   expect(face.x + face.width, 'portrait right inside the screen').toBeLessThanOrEqual(scr.x + scr.width + 0.5);
@@ -2345,7 +2347,7 @@ test.describe('starlantern', () => {
     const answered = assetResponses(page);
     const w = await setup(page, 7);
     const manifest = await page.evaluate(async () => (await (await fetch('/assets/games/starlantern/manifest.json')).json()).urls as string[]);
-    expect(manifest.length).toBe(410);
+    expect(manifest.length).toBe(428);   // 410 + the companion talking faces, wave 1 (18; user approval 2026-10-23)
     // Every file the manifest lists answers 200.
     for (const u of manifest) expect((await page.request.get(u)).status(), u).toBe(200);
     // Walk the screens that show the new art (equipment, shop, forge, portal codex) with every sample piece in the bag.
@@ -3616,9 +3618,10 @@ test.describe('starlantern', () => {
     const memoryTalk = page.locator('.slx-dungeon .slx-talk.slx-talk--memory');
     for (let i = 0; i < 14 && !(await memoryTalk.isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
     await expect(memoryTalk).toBeVisible();
-    // The memory may open on narration (no face): advance to Rin's first spoken line, then her portrait must be on the box.
+    // The memory opens on its remembered past (narration, no face): advance to Rin's first spoken line, said now (story
+    // staging S5: the plain look), then her portrait must be on the box.
     const rinFirst = STORY.scenes[memScene('rin', 1)].lines.find((l) => l.who === 'rin')!;
-    const memoryText = page.locator('.slx-dungeon .slx-talk.slx-talk--memory .slx-text');
+    const memoryText = page.locator('.slx-dungeon .slx-talk:not([hidden]) .slx-text');
     for (let i = 0; i < 20 && !((await memoryText.textContent()) ?? '').includes(rinFirst.text); i++) { await w.key('z'); await page.waitForTimeout(60); }
     await expect(memoryText).toHaveText(rinFirst.text);
     await expect(page.locator('.slx-dungeon .slx-talk .slx-name')).toHaveText(CHARACTERS.rin.name);
@@ -3643,7 +3646,7 @@ test.describe('starlantern', () => {
     // Every line of the memory, wrapped or not: whenever a portrait shows it fits (the tall dungeon box is the risk that capped its size).
     {
       let tallest = 0;
-      for (let i = 0; i < 60 && (await memoryTalk.isVisible()); i++) {
+      for (let i = 0; i < 60 && (await page.locator('.slx-dungeon .slx-talk:not([hidden])').isVisible()); i++) {
         tallest = Math.max(tallest, (await faceFits(page)) ?? 0);
         await w.key('z'); await page.waitForTimeout(40);
       }
