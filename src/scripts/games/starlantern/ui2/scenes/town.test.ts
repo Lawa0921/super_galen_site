@@ -139,6 +139,95 @@ describe('TownScene notices', () => {
   });
 });
 
+describe("TownScene: the day's line after a return (staging S2)", () => {
+  const open = (game: Game) => {
+    const root = document.createElement('div');
+    const s = new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+    s.enter(root);
+    const text = () => root.querySelector('.slx-talk .slx-text')!.textContent;
+    const menu = () => root.querySelector('.slx-town-menu') as HTMLElement;
+    const settle = () => new Promise((r) => setTimeout(r, 0));
+    return { s, root, text, menu, settle };
+  };
+  const counted = () => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.arrival = [];
+    const rng = vi.fn(() => 0.5);
+    Object.assign(game, { rng });
+    return { game, rng };
+  };
+
+  it('a walk home says what came home, then the day line, without a draw from the game rng', async () => {
+    const { game, rng } = counted();
+    game.notice = 'banked';
+    game.banked = { items: {}, gold: 40, viaLamp: false, gear: [], overflow: [] };
+    const t = open(game);
+    expect(t.text()).toBe('平安回城。帶回了：40 G。');
+    t.s.onAction('confirm'); await t.settle();
+    expect(STORY.townLines.prologue).toContain(t.text());
+    expect(t.menu().hasAttribute('inert')).toBe(true);    // the menu waits for the day line too
+    t.s.onAction('confirm'); await t.settle();
+    expect(t.menu().hasAttribute('inert')).toBe(false);
+    expect(rng).not.toHaveBeenCalled();
+  });
+
+  it('the lamp and a wipe are returns too: the day line follows them', async () => {
+    for (const notice of ['lamp', 'wipe'] as const) {
+      const { game } = counted();
+      game.notice = notice;
+      const t = open(game);
+      expect(t.text()).toBe(T.notices[notice]);
+      t.s.onAction('confirm'); await t.settle();
+      expect(STORY.townLines.prologue, notice).toContain(t.text());
+    }
+  });
+
+  it("Rin's lines can come after a notice too (the act 2 pool, not only the town's)", async () => {
+    const said = new Set<string>();
+    for (let gold = 0; gold < 40; gold++) {
+      const { game } = counted();
+      game.state.story.nodes.push('act2');
+      game.state.gold = gold;
+      game.notice = 'banked';
+      game.banked = { items: {}, gold: 1, viaLamp: false, gear: [], overflow: [] };
+      const t = open(game);
+      t.s.onAction('confirm'); await t.settle();
+      said.add(t.text()!);
+    }
+    expect([...said].some((x) => (STORY.rinLines.act2 ?? []).includes(x))).toBe(true);
+    expect([...said].every((x) => [...STORY.townLines.act2, ...(STORY.rinLines.act2 ?? [])].includes(x))).toBe(true);
+  });
+
+  it('who stopped following a build is said after the notice, and the day line still comes last', async () => {
+    const { game } = counted();
+    game.notice = 'banked';
+    game.banked = { items: {}, gold: 40, viaLamp: false, gear: [], overflow: [] };
+    game.followEnded = ['noel'];
+    const t = open(game);
+    t.s.onAction('confirm'); await t.settle();
+    expect(t.text()).toBe(T.build.followEnded([CHARACTERS.noel.name]));
+    t.s.onAction('confirm'); await t.settle();
+    expect(STORY.townLines.prologue).toContain(t.text());
+  });
+
+  it('a save notice is not a return: no day line after it', async () => {
+    const { game, rng } = counted();
+    game.notice = 'saved';
+    const t = open(game);
+    expect(t.text()).toBe(T.notices.saved);
+    t.s.onAction('confirm'); await t.settle();
+    expect(t.menu().hasAttribute('inert')).toBe(false);
+    expect(rng).not.toHaveBeenCalled();
+  });
+
+  it('with no notice the day line is drawn from the game rng as before, once', () => {
+    const { game, rng } = counted();
+    const t = open(game);
+    expect(STORY.townLines.prologue).toContain(t.text());
+    expect(rng).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('TownScene banked gear', () => {
   const gearOf = (uid: number, base: string, rarity: ItemInstance['rarity']): ItemInstance => ({ uid, base, rarity, ilvl: 3, affixes: [], enhance: 0 });
   const enter = (game: Game, artIdx: ArtIndex = NO_ART) => {

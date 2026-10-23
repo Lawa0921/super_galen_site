@@ -20,6 +20,8 @@ import { playAndRecord, storyCtx } from '../story';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge', 'handbook', 'settings'] as const;
+/** The notices of a return home: the day's line still follows them (staging S2). The others are about the interface. */
+const RETURNS: ReadonlySet<NonNullable<Game['notice']>> = new Set(['banked', 'lamp', 'wipe']);
 
 /**
  * 「平安回城。帶回了：回復藥 ×2、鐵劍、120 G。」 — the lamp's own words replace 平安回城 when it brought the party home.
@@ -69,7 +71,12 @@ export class TownScene implements Scene {
     void this.arrive();
   }
 
-  /** The queued scenes play first, with the menu out of the way; then the notice, or the day's line. */
+  /**
+   * The queued scenes play first, with the menu out of the way; then the notice, who stopped following a build, and the
+   * day's line. A return home (`RETURNS`) used to replace the day's line with what came home, and a return is nearly every
+   * visit, so about 60 written lines (the town's, Rin's, the bellkeeper's) were almost never seen: now it follows the
+   * notice (staging S2). Only an interface notice (saved, save failed...) still stands alone.
+   */
   private async arrive(): Promise<void> {
     const game = this.ctx.game;
     try {
@@ -85,27 +92,35 @@ export class TownScene implements Scene {
     // Whoever stopped following a build since (plan 8h Task 6): said after the notice, or in place of the day's line.
     const ended = game.followEnded.splice(0);
     const endedLine = ended.length ? T.build.followEnded(ended.map((id) => CHARACTERS[id].name)) : null;
-    const then = (first: Promise<void>) => { void first.then(() => (endedLine ? this.speak('', endedLine) : undefined)); };
+    const says: { who: string; text: string | Rich }[] = [];
     // A safe return (walking home, or the lamp, whose notice replaces 'banked') says what came home.
-    if (banked && (notice === 'banked' || notice === 'lamp')) then(this.speak('', bankedLine(banked, this.ctx.art)));
-    else if (notice) then(this.speak('', T.notices[notice]));
-    else if (endedLine) void this.speak('', endedLine);
-    else {
-      // The day's line: the town's own, told by the narrator with no plate (story polish ruling 8), and from act 2 Rin's
-      // foreshadowing once she has joined.
-      const stage = storyStage(game.state);
-      const chose = !!game.state.party.roster.rin?.oath;
-      const rinSays = game.state.party.recruited.includes('rin') ? (chose ? STORY.rinOath : STORY.rinLines[stage] ?? []) : [];
-      // The bellkeeper once his arrival scene has played (engine/story/keeper.ts, story depth Task 4).
-      const keeper = bellkeeperPool(game.state);
-      const pool = [
-        ...STORY.townLines[stage].map((text) => ({ who: '', text })),
-        ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),
-        ...keeper.map((text) => ({ who: NPC_NAMES.bellkeeper, text })),
-      ];
-      const pick = pool[Math.floor(game.rng() * pool.length)];
-      void this.speak(pick.who, pick.text);
-    }
+    if (banked && (notice === 'banked' || notice === 'lamp')) says.push({ who: '', text: bankedLine(banked, this.ctx.art) });
+    else if (notice) says.push({ who: '', text: T.notices[notice] });
+    if (endedLine) says.push({ who: '', text: endedLine });
+    // The day's line. With nothing before it, it is drawn from the game rng as it always was; after a notice it is picked
+    // without a draw, so the rng stream (the next portal roll, the next run's seed) is what it was before staging S2.
+    if (!notice || RETURNS.has(notice)) says.push(this.dayLine(says.length === 0));
+    void (async () => { for (const l of says) await this.speak(l.who, l.text); })();
+  }
+
+  /**
+   * The day's line: the town's own, told by the narrator with no plate (story polish ruling 8), from act 2 Rin's
+   * foreshadowing once she has joined, and the bellkeeper once his arrival scene has played (engine/story/keeper.ts, story
+   * depth Task 4). `draw`: pick with the game rng; otherwise by the gold and the scenes seen, which change from one return
+   * to the next (staging S2: no draw the old code did not make).
+   */
+  private dayLine(draw: boolean): { who: string; text: string } {
+    const s = this.ctx.game.state;
+    const stage = storyStage(s);
+    const chose = !!s.party.roster.rin?.oath;
+    const rinSays = s.party.recruited.includes('rin') ? (chose ? STORY.rinOath : STORY.rinLines[stage] ?? []) : [];
+    const pool = [
+      ...STORY.townLines[stage].map((text) => ({ who: '', text })),
+      ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),
+      ...bellkeeperPool(s).map((text) => ({ who: NPC_NAMES.bellkeeper, text })),
+    ];
+    const i = draw ? Math.floor(this.ctx.game.rng() * pool.length) : (s.gold + s.story.seen.length) % pool.length;
+    return pool[i];
   }
 
   /**
