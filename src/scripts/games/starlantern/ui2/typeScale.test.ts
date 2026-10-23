@@ -59,8 +59,10 @@ describe('the stylesheet (legibility Task 2a)', () => {
     expect(decls(body.body)).toEqual(expect.arrayContaining([['container-name', 'slx-view'], ['container-type', 'size'], ['height', '100dvh']]));
     for (const { media } of scales.filter((x) => x.media)) expect(media, 'a size condition on the page box, not the window').toMatch(/@container slx-view [^&]*\(min-width: [\d.]+px\) and \(min-height: [\d.]+px\)/);
     for (const { media } of scales.filter((x) => x.media)) expect(media).not.toMatch(/@media[^&]*(min|max)-(width|height)/);
-    const place = all.filter((r) => r.selector === '.slx-screen').flatMap((r) => decls(r.body).filter(([k]) => k === 'left' || k === 'top').map(([, v]) => v));
-    for (const v of place) expect(v, v).toMatch(/100cq[wh]/);
+    // The last left and top of each rule win (the lines before them are fallbacks for older browsers: vw/dvh, no round()).
+    const place = all.filter((r) => r.selector === '.slx-screen').flatMap((r) => ['left', 'top'].flatMap((k) => decls(r.body).filter(([p]) => p === k).map(([, v]) => v).slice(-1)));
+    expect(place.length).toBeGreaterThanOrEqual(4);
+    for (const v of place) expect(v, v).toMatch(/^max\(\d+px, round\(down, .*100cq[wh]/);
     // Ratios up to 4 (phones at 3.5 and 4 too); no --slx-d left over.
     const mids = new Set(scales.map(({ media }) => { const lo = media?.match(/min-resolution:\s*([\d.]+)dppx/), hi = media?.match(/max-resolution:\s*([\d.]+)dppx/); return lo && hi ? (Number(lo[1]) + Number(hi[1])) / 2 : 1; }));
     for (const d of [1.25, 1.5, 2, 3, 3.5, 4]) expect(mids.has(d), `d ${d}`).toBe(true);
@@ -101,6 +103,79 @@ export function groupOf(selector: string): Group {
 
 /** Rules (as the compiled CSS writes their selector) whose screens Tasks 4–6 bring to 12/24px; each list only shrinks. */
 export const PENDING: Record<'T4' | 'T5' | 'T6', string[]> = {
+  T4: [
+    '.slx-pm-pop-tp',
+    '.slx-acut-label',
+    '.slx-ail, .slx-mech',
+    '.slx-badge',
+    '.slx-pm-cue',
+    '.slx-pm-miss',
+    '.slx-pm-num',
+    '.slx-pm-pop',
+    '.slx-pm-pop-big',
+    '.slx-pm-pop-crit',
+    '.slx-pm-row',
+    '.slx-pm-tp',
+    '.slx-result h3',
+  ],
+  T5: [
+    '.slx-field-tag',
+    '.slx-gear-bonus',
+    '.slx-gear-power',
+    '.slx-hb-detail h4',
+    '.slx-skill-power',
+    '.slx-skill-rune',
+    '.slx-stat-table td',
+    '.slx-stat-table thead th',
+    '.slx-status-name b, .slx-equip-name b',
+    '.slx-status-title',
+    '.slx-tab-skills .slx-skill-name-long',
+    '.slx-talent-memkey',
+    '.slx-talent-rank',
+    '.slx-talent-state',
+    '.slx-talent-sub',
+    '.slx-talent-tier',
+    '.slx-talent-wide .slx-talent-head',
+    '.slx-talent-wide .slx-talent-sub',
+    '.slx-tree-node .slx-skill-name-long',
+    '.slx-tree-node-foot',
+    '.slx-tree-pair-tag',
+    '.slx-tree-preview',
+    '.slx-tree-warn',
+    '.slx-tree-wide .slx-tree-branch-name',
+    '.slx-tree-wide .slx-tree-node .slx-skill-head',
+    '.slx-tree-wide .slx-tree-node-foot',
+  ],
+  T6: [
+    '.slx-bag-cell, .slx-doll-slot',
+    '.slx-bd-card-name b',
+    '.slx-bd-title',
+    '.slx-enh',
+    '.slx-equip-notice',
+    '.slx-equip-stats',
+    '.slx-equip-title',
+    '.slx-slot-tag',
+    '.slx-ws-adds',
+    '.slx-ws-foot',
+    '.slx-ws-giver',
+    '.slx-ws-note, .slx-ws-owned',
+    '.slx-ws-reserve',
+    '.slx-ws-rune-text',
+    '.slx-ws-sub',
+    '.slx-ws-swapout',
+    '.slx-ws-table',
+    '.slx-ws-table thead th',
+    '.slx-ws-tags',
+    '.slx-ws-title',
+    '.slx-ws-warn',
+  ],
+};
+
+/**
+ * PENDING as it stood when Task 3 froze it (T4 13, T5 26, T6 21): PENDING may only lose selectors. Growing a list means
+ * editing this baseline too, in plain sight (T3 review).
+ */
+const BASELINE: Readonly<Record<'T4' | 'T5' | 'T6', readonly string[]>> = {
   T4: [
     '.slx-pm-pop-tp',
     '.slx-acut-label',
@@ -215,6 +290,7 @@ describe('the type scale (legibility Task 3)', () => {
 
   it('the pending lists only shrink', () => {
     const all = flat(css);
+    for (const [g, list] of Object.entries(PENDING)) for (const sel of list) expect(BASELINE[g as keyof typeof BASELINE], `${sel} is new on PENDING.${g}`).toContain(sel);
     for (const [g, list] of Object.entries(PENDING)) {
       for (const sel of list) {
         const found = all.filter(([s]) => s === sel);

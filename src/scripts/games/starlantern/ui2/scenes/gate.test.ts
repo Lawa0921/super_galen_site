@@ -309,6 +309,12 @@ describe('GateScene: region-only gear on the portal cards', () => {
     expect(ring.title).toBe('餘燼指環（未取得）');
   });
 
+  it('the 限定裝備 heading counts what is obtained, so nothing rests on the art alone (T3 review)', () => {
+    const label = (c: HTMLElement) => c.querySelector('.slx-portal-gear-head .slx-portal-label')!.textContent;
+    expect(label(setup().cards()[1])).toBe('限定裝備 0／3');
+    expect(label(setup((g) => { g.state.codex.push('blaze-heart-sword', 'set-blaze'); }).cards()[1])).toBe('限定裝備 2／3');
+  });
+
   it('the condition is its gold name and its effect on one line, with no label (legibility T3)', () => {
     const { cards } = setup();
     const cond = cards()[1].querySelector('.slx-portal-cond')!;
@@ -365,7 +371,7 @@ describe('GateScene: region-only gear on the portal cards', () => {
     const blaze = unknown.root.querySelector('.slx-portal-blaze')!;
     const order = [...blaze.querySelectorAll('.slx-codex-pics img')].map((i) => i.getAttribute('data-special'));
     expect(order).toEqual([...blaze.querySelectorAll('.slx-codex-item')].map((i) => i.getAttribute('data-special')));
-    expect(blaze.querySelector('.slx-portal-gear-head > .slx-portal-label')!.textContent).toBe(T.ui2.gate.gear);
+    expect(blaze.querySelector('.slx-portal-gear-head > .slx-portal-label')!.textContent).toBe(T.ui2.gate.gearCount(0, 3));   // with its count (T3 review)
     // Obtained but its gear art not published: the name alone.
     const knownNoArt = setup((g) => { g.state.codex.push('blaze-ember-ring'); }, { has: (u) => u === art.gearSilhouette('blaze-ember-ring') });
     expect(pic(knownNoArt, 'blaze-ember-ring')).toBeNull();

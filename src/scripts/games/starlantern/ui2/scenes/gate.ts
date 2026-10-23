@@ -94,7 +94,8 @@ class PortalCards {
         : [];
     });
     return el('div', { class: 'slx-portal-gear-head' }, [
-      el('div', { class: 'slx-portal-label', text: T.ui2.gate.gear }),
+      // The count says what is obtained in words too, whatever art is published (T3 review).
+      el('div', { class: 'slx-portal-label', text: T.ui2.gate.gearCount(ids.filter(known).length, ids.length) }),
       ...(pics.length ? [el('div', { class: 'slx-codex-pics' }, pics)] : []),
     ]);
   }
