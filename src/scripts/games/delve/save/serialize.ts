@@ -629,7 +629,7 @@ export function gen2Save(game: DelveGame): Gen2Save {
   if (game.genKind !== 'baked') return { locks };
   if (!(b instanceof BakedSource)) { invariantBroken('snapshotGame: baked world has no baked source'); return { locks }; }
   const quiet = encodeDeltas([...w.bakedQuiet].sort((p, q) => p - q));
-  return { locks, bake: { east: { ...b.bake.east }, west: { ...b.bake.west }, frame: { ...b.bake.frame }, quiet }, legacy: encodeLegacyMeta(game) };
+  return { locks, bake: { east: { ...b.bake.east }, west: { ...b.bake.west }, frame: { ...b.bake.frame }, quiet, v1: b.bake.v1 }, legacy: encodeLegacyMeta(game) };
 }
 
 // ── base64（engine/base64.ts；這裡轉出給既有的呼叫端） ───────────────

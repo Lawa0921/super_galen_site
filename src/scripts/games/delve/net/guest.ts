@@ -25,7 +25,7 @@ import { chunkOfX } from '../engine/coords';
 import type { DelveCharacter } from '../save/character';
 import { genBlocker } from '../save/genCheck';
 import { SAVE_FORMAT, SaveFormatError } from '../save/serialize';
-import { validBakeInfo } from '../save/bake';
+import { validBakeInfo, type BakeInfo } from '../save/bake';
 import { decodeLegacyMeta, type LegacyMeta } from '../save/legacyMeta';
 import type { Channel, NetLink, Payload } from './link';
 import {
@@ -116,7 +116,8 @@ function soloBlock(item: ItemId): number | null {
 
 /**
  * 房主世界的生成器能不能用這個客人的程式重現（Task 18；save/genCheck 的 genBlocker 判版本）：
- * genVersion 7 = 外圍 OUTER_GEN_VERSION、不帶描述；genVersion 8 = outerGen GEN2_VERSION、帶描述（kind 對、鎖表合法、每個鎖 ≤ GEN2_VERSION）；其他 false
+ * genVersion 7 = 外圍 OUTER_GEN_VERSION、不帶描述；genVersion 8 = outerGen GEN2_VERSION、帶描述（kind 對、鎖表合法、每個鎖 ≤ GEN2_VERSION；
+ * 烘焙世界的 bake.v1 = OUTER_GEN_VERSION）；其他 false（bake 其餘欄位在建副本時由 validBakeInfo 驗）
  */
 export function coopGenOk(m: Pick<Welcome, 'genVersion' | 'outerGenVersion' | 'gen2'>): boolean {
   const v = m.genVersion, o = m.outerGenVersion, g = m.gen2 as unknown;
@@ -124,7 +125,12 @@ export function coopGenOk(m: Pick<Welcome, 'genVersion' | 'outerGenVersion' | 'g
   if (v !== GEN_VERSION_V2 || o !== GEN2_VERSION || !isObj(g) || (g.kind !== 'gen2' && g.kind !== 'baked')) return false;
   let locks: LockJSON;
   try { locks = LockTable.fromJSON(g.locks).toJSON(); } catch { return false; }
-  return genBlocker({ format: SAVE_FORMAT, genVersion: v, outerGen: o, bounds: 'infinite', gen2: { locks } }) === null;
+  let bake: BakeInfo | undefined;
+  if (g.kind === 'baked') {
+    if (!isObj(g.bake) || !Number.isInteger(g.bake.v1)) return false;
+    bake = { v1: g.bake.v1 } as BakeInfo;   // genBlocker 只看 v1
+  }
+  return genBlocker({ format: SAVE_FORMAT, genVersion: v, outerGen: o, bounds: 'infinite', gen2: { locks, bake } }) === null;
 }
 
 /** welcome → 副本：舊世界照舊；gen2 = 不建中央的 Gen2Source；烘焙世界 = BakedSource（meta 來自 legacy bulk）。鎖表在副本裡凍結 */

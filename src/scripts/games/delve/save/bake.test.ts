@@ -8,7 +8,7 @@ import { generateWorld } from '../engine/legacy/worldgen';
 import { T } from '../engine/tiles';
 import { CHUNK, FIXED_DT, GEN_VERSION_V2, TILE_SIZE } from '../engine/constants';
 import { X_LIMIT, chunkKey } from '../engine/coords';
-import { OuterGen, OuterProfile, SEA_W, SEG_W, frameOf } from '../engine/legacy/chunkgen';
+import { OUTER_GEN_VERSION, OuterGen, OuterProfile, SEA_W, SEG_W, frameOf } from '../engine/legacy/chunkgen';
 import { outerRegionId } from '../engine/discovery';
 import { GEN2_VERSION, Gen2Source } from '../engine/gen2';
 import { LockTable } from '../engine/gen2/locks';
@@ -26,7 +26,8 @@ import { SplitSession, V7_BACKUP_SUFFIX, saveSplit } from './split';
 import { fakeSplitStore } from './testUtil';
 import { FIXTURE11_EDITS, FIXTURE11_PATH, FIXTURE11_SEED, FIXTURE11_WHO } from './legacyFixture11';
 import { readLegacyFixture } from './legacyFixture';
-import { bakeApplies, bakeWorld, farthestKnown, legacyRange, validBakeInfo } from './bake';
+import { bakeApplies, bakeWorld, farthestKnown, legacyRange, validBakeInfo, type BakeInfo } from './bake';
+import { genBlocker } from './genCheck';
 
 // 讀檔時有沒有跑舊生成器：generateWorld 包一層計數（其餘照原樣）
 const genCalls = vi.hoisted(() => ({ n: 0 }));
@@ -181,6 +182,25 @@ describe('舊世界烘焙（Task 16）', { timeout: 120_000 }, () => {
     // 這個世界沒來過的角色拿來烘焙：不替它留下 visit
     const other = bakeWorld(fixtureWorld, { ...char, id: 'other-char' }, gen, 1);
     expect(other.header.visits).toEqual(fixtureWorld.header.visits);
+  });
+
+  it('烘焙存檔記下 v1 外圍生成器版本：bake.v1 = OUTER_GEN_VERSION；v1 不同 → genBlocker / restoreSplit 拒絕（較新 → newer）；缺 / 壞 v1 → 損毀', () => {
+    const g = baked.header.gen2!;
+    expect(g.bake!.v1).toBe(OUTER_GEN_VERSION);
+    expect(genBlocker(baked.header)).toBeNull();
+    const withV1 = (v1: number) => ({ ...baked, header: { ...baked.header, gen2: { ...g, bake: { ...g.bake!, v1 } as BakeInfo } } });
+    const newer = genBlocker(withV1(OUTER_GEN_VERSION + 1).header);
+    expect(newer).toMatchObject({ error: 'gen_version', saveGenVersion: GEN_VERSION_V2, newer: true });
+    expect(newer!.message).toMatch(/outer generator v2/);
+    expect(genBlocker(withV1(OUTER_GEN_VERSION - 1).header)).toMatchObject({ error: 'gen_version', newer: false });
+    // 整條讀檔路徑：存得出去、讀得回來（形狀合法），開局前被版本擋下
+    const r = restoreSplit(decodeWorld(encodeWorld(withV1(OUTER_GEN_VERSION + 1))), char);
+    expect(r).toMatchObject({ ok: false, error: 'gen_version', newer: true });
+    for (const bad of [undefined, 1.5, '1', -1]) {
+      const b: Record<string, unknown> = { ...g.bake };
+      if (bad === undefined) delete b.v1; else b.v1 = bad;
+      expect(() => validBakeInfo(b), `v1 ${String(bad)}`).toThrow(SaveFormatError);
+    }
   });
 
   it('烘焙前後逐格相同', () => {

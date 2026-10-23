@@ -11,6 +11,7 @@ import { END_TEXT, NetGuest, coopGenOk } from './guest';
 import { LoopbackNet } from './loopback';
 import { SaveFormatError } from '../save/serialize';
 import type { Welcome } from './protocol';
+import type { BakeInfo } from '../save/bake';
 import { coopRig, FRAME } from './testRig';
 
 const utf8 = (s: string): Uint8Array => new TextEncoder().encode(s);
@@ -45,7 +46,19 @@ describe('Task 18 連線：版本描述、gen2 客人不生成家鄉、烘焙世
     // 舊世界不帶描述；其他版本一律不行
     expect(coopGenOk({ genVersion: 7, outerGenVersion: 1, gen2: g })).toBe(false);
     expect(coopGenOk({ genVersion: 9, outerGenVersion: 0, gen2: g })).toBe(false);
+    // 烘焙世界：bake.v1（舊外圍生成器版本）必須 = 客人的 OUTER_GEN_VERSION；沒有 bake → 不行
+    const bk = (bake?: Partial<BakeInfo>) => ({ kind: 'baked' as const, locks: [], ...(bake ? { bake: bake as BakeInfo } : {}) });
+    expect(coopGenOk({ genVersion: 8, outerGenVersion: 0, gen2: bk({ v1: OUTER_GEN_VERSION }) })).toBe(true);
+    expect(coopGenOk({ genVersion: 8, outerGenVersion: 0, gen2: bk({ v1: OUTER_GEN_VERSION + 1 }) })).toBe(false);
+    expect(coopGenOk({ genVersion: 8, outerGenVersion: 0, gen2: bk({ v1: OUTER_GEN_VERSION - 1 }) })).toBe(false);
+    expect(coopGenOk({ genVersion: 8, outerGenVersion: 0, gen2: bk({}) })).toBe(false);
+    expect(coopGenOk({ genVersion: 8, outerGenVersion: 0, gen2: bk() })).toBe(false);
   });
+
+  it('烘焙世界：房主的 bake.v1 比客人新 → 客人以 END_TEXT.gen 結束', () => {
+    const rig = coopRig({ world: 'baked', tamperWelcome: (m) => ({ ...m, gen2: { ...m.gen2!, bake: { ...m.gen2!.bake!, v1: OUTER_GEN_VERSION + 1 } } }) });
+    rig.run(2000); expect(rig.guests[0].endText).toBe(END_TEXT.gen); expect(rig.guests[0].game).toBeNull();
+  }, 120_000);
 
   it('建副本：描述不合法（RangeError / SaveFormatError）→ 世界版本不同；其他例外是程式錯誤，不冒充版本不同', () => {
     const run = (err: Error): NetGuest => {

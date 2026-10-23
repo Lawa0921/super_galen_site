@@ -11,7 +11,7 @@
 // bake.quiet = 中央 chunk 中原本不在 chunks ∪ liquids.chunks 的鍵（玩家沒碰過 → 液體是舊生成器靜置後的狀態 → 讀檔 / 載入 / 接縫都不喚醒）。
 import { CHUNK, GEN_VERSION, GEN_VERSION_V2, PLAYER_W, TILE_SIZE, WORLD_H, WORLD_W } from '../engine/constants';
 import { X_LIMIT, chunkXY } from '../engine/coords';
-import { OuterGen, SEA_W, SEG_W, frameOf, type CentralFrame, type OuterProfile } from '../engine/legacy/chunkgen';
+import { OUTER_GEN_VERSION, OuterGen, SEA_W, SEG_W, frameOf, type CentralFrame, type OuterProfile } from '../engine/legacy/chunkgen';
 import { OUTER_REGION_BASE, isOuterRegionId } from '../engine/discovery';
 import { GEN2_VERSION } from '../engine/gen2';
 import type { SideOrigin } from '../engine/gen2/layout';
@@ -24,8 +24,11 @@ import { encodeLegacyMeta } from './legacyMeta';
 import { decodeWorld, restoreSplit, splitSnapshot, whereOf, whoOf, type WorldData, type WorldHeader } from './worldSave';
 import { SplitSession, V7_BACKUP_SUFFIX, type SplitStore } from './split';
 
-/** 烘焙資訊（存檔 header.gen2.bake）：兩側接縫、舊中央框、還沒被碰過的中央 chunk（差分編碼的 chunk 鍵） */
-export interface BakeInfo { east: SideOrigin; west: SideOrigin; frame: CentralFrame; quiet: number[] /* 差分編碼的 chunk 鍵 */ }
+/**
+ * 烘焙資訊（存檔 header.gen2.bake）：兩側接縫、舊中央框、還沒被碰過的中央 chunk（差分編碼的 chunk 鍵）、
+ * v1 = 烘焙時的舊外圍生成器版本（OUTER_GEN_VERSION；接縫內的舊外圍繼續由它即時生成 → 讀檔 / 連線版本不同就拒絕，genCheck）
+ */
+export interface BakeInfo { east: SideOrigin; west: SideOrigin; frame: CentralFrame; quiet: number[] /* 差分編碼的 chunk 鍵 */; v1: number }
 export type BakeStage = 'restore' | 'snapshot' | 'meta' | 'split';
 
 /** 這個世界要不要烘焙：舊生成器（genVersion 7）且正式尺寸（format 9 / 10 的 200×100 小測試世界不適用，照舊載入） */
@@ -108,7 +111,7 @@ export function bakeWorld(world: WorldData, character: DelveCharacter, gen: GenR
   onStage?.('meta');
   const legacy = encodeLegacyMeta(L);
   const range = legacyRange(h, src.profile, L.waystones);
-  const bake: BakeInfo = { east: range.east, west: range.west, frame: frameOf(w), quiet: encodeDeltas(quiet.sort((a, b) => a - b)) };
+  const bake: BakeInfo = { east: range.east, west: range.west, frame: frameOf(w), quiet: encodeDeltas(quiet.sort((a, b) => a - b)), v1: OUTER_GEN_VERSION };
 
   onStage?.('split');
   const header = { ...data.header, genVersion: GEN_VERSION_V2, bounds: 'infinite' as const, outerGen: GEN2_VERSION, gen2: { locks: [], bake, legacy } };
@@ -150,10 +153,12 @@ const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 
 
 /**
  * 存檔的 gen2.bake → BakeInfo；形狀不對 / 接縫沒包住中央或到了 ±X_LIMIT / 安靜 chunk 不是中央鍵 /
- * bake.frame 與 legacy 的 frame 不同（給了 legacyFrame 時）→ SaveFormatError。回傳副本
+ * bake.frame 與 legacy 的 frame 不同（給了 legacyFrame 時）/ v1 不是非負整數 → SaveFormatError。回傳副本
+ * （v1 只驗形狀；與目前 OUTER_GEN_VERSION 不同是版本問題，由 genCheck 的 genBlocker 判 newer / 舊版）
  */
 export function validBakeInfo(v: unknown, legacyFrame?: CentralFrame): BakeInfo {
   if (!isObj(v)) throw new SaveFormatError('gen2.bake');
+  if (!Number.isInteger(v.v1) || (v.v1 as number) < 0) throw new SaveFormatError('gen2.bake.v1');
   const f = v.frame;
   if (!isObj(f) || !['width', 'height', 'edgeL', 'edgeR', 'cavernY', 'moltenY'].every((k) => Number.isInteger(f[k]))
     || (f.width as number) < CHUNK || (f.height as number) < CHUNK) throw new SaveFormatError('gen2.bake.frame');
@@ -178,5 +183,5 @@ export function validBakeInfo(v: unknown, legacyFrame?: CentralFrame): BakeInfo 
     k += d;
     if ((i > 0 && d === 0) || k >= total) throw new SaveFormatError('gen2.bake.quiet key');
   });
-  return { east: side(v.east, 1), west: side(v.west, -1), frame, quiet: [...q] };
+  return { east: side(v.east, 1), west: side(v.west, -1), frame, quiet: [...q], v1: v.v1 as number };
 }
