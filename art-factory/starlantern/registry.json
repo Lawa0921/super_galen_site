@@ -25774,6 +25774,970 @@
       "chosen_attempt": "a1",
       "source_id": "sheet-icons-1",
       "batch": "gear-5d-skills"
+    },
+    "char-scarlet-portrait-serious": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-serious/char-scarlet-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-serious\\a3\\char-scarlet-portrait-serious-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          108,
+          115
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a3",
+      "source_id": "char-scarlet-portrait-serious",
+      "batch": "faces-scarlet",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-serious.png",
+      "depends_on": [
+        "char-scarlet-portrait",
+        "char-scarlet-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          108,
+          115
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 0.998
+      },
+      "rejected_attempts": {
+        "a2": "Gemini (gemini-3-pro-image) candidate, kept as evidence: the user chose codex for every face (2026-10-23, 「當然是用 codex 的」).",
+        "a1": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md."
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-scarlet-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-sad/char-scarlet-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-sad\\a4\\char-scarlet-portrait-sad-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          108,
+          115
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a4",
+      "source_id": "char-scarlet-portrait-sad",
+      "batch": "faces-scarlet",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-sad.png",
+      "depends_on": [
+        "char-scarlet-portrait",
+        "char-scarlet-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          108,
+          115
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 0.999
+      },
+      "rejected_attempts": {
+        "a2": "Gemini (gemini-3-pro-image) candidate, kept as evidence: the user chose codex for every face (2026-10-23, 「當然是用 codex 的」).",
+        "a3": "codex with the first sad prompt: the sadness read too faintly at game size; redone with the strengthened sad prompt (inner brows raised, tear, mouth corners down, head tilted down).",
+        "a1": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md."
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-chizuru-portrait-serious": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-serious/char-chizuru-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-serious\\a4\\char-chizuru-portrait-serious-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "block": 9,
+        "size": [
+          127,
+          123
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a4",
+      "source_id": "char-chizuru-portrait-serious",
+      "batch": "faces-chizuru",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-serious.png",
+      "depends_on": [
+        "char-chizuru-portrait",
+        "char-chizuru-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          127,
+          123
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 9,
+        "base_block": 9,
+        "palette_share": 0.999
+      },
+      "rejected_attempts": {
+        "a3": "Gemini (gemini-3-pro-image) candidate, kept as evidence: the user chose codex for every face (2026-10-23, 「當然是用 codex 的」).",
+        "a1": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md.",
+        "a2": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md."
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-chizuru-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-sad/char-chizuru-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-sad\\a5\\char-chizuru-portrait-sad-a5.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 13,
+        "block": 9,
+        "size": [
+          127,
+          123
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a5",
+      "source_id": "char-chizuru-portrait-sad",
+      "batch": "faces-chizuru",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-sad.png",
+      "depends_on": [
+        "char-chizuru-portrait",
+        "char-chizuru-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          127,
+          123
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 9,
+        "base_block": 9,
+        "palette_share": 0.999
+      },
+      "rejected_attempts": {
+        "a3": "Gemini (gemini-3-pro-image) candidate, kept as evidence: the user chose codex for every face (2026-10-23, 「當然是用 codex 的」).",
+        "a4": "codex with the first sad prompt: the sadness read too faintly at game size; redone with the strengthened sad prompt (inner brows raised, tear, mouth corners down, head tilted down).",
+        "a1": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md.",
+        "a2": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md."
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-scarlet-portrait-vow": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-vow/char-scarlet-portrait-vow.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-vow\\a1\\char-scarlet-portrait-vow-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          108,
+          115
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-scarlet-portrait-vow",
+      "batch": "faces-scarlet",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-vow.png",
+      "depends_on": [
+        "char-scarlet-portrait",
+        "char-scarlet-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          108,
+          115
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 0.998
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-scarlet-portrait-shaken": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-shaken/char-scarlet-portrait-shaken.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-shaken\\a1\\char-scarlet-portrait-shaken-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          108,
+          115
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-scarlet-portrait-shaken",
+      "batch": "faces-scarlet",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-shaken.png",
+      "depends_on": [
+        "char-scarlet-portrait",
+        "char-scarlet-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          108,
+          115
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 0.998
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-chizuru-portrait-solemn": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-solemn/char-chizuru-portrait-solemn.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-solemn\\a1\\char-chizuru-portrait-solemn-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 13,
+        "block": 9,
+        "size": [
+          127,
+          123
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-chizuru-portrait-solemn",
+      "batch": "faces-chizuru",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-solemn.png",
+      "depends_on": [
+        "char-chizuru-portrait",
+        "char-chizuru-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          127,
+          123
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 9,
+        "base_block": 9,
+        "palette_share": 0.999
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-sylvie-portrait-serious": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-serious/char-sylvie-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-serious\\a1\\char-sylvie-portrait-serious-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-sylvie-portrait-serious",
+      "batch": "faces-sylvie",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-serious.png",
+      "depends_on": [
+        "char-sylvie-portrait",
+        "char-sylvie-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          122,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.998
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-sylvie-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-sad/char-sylvie-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-sad\\a1\\char-sylvie-portrait-sad-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-sylvie-portrait-sad",
+      "batch": "faces-sylvie",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-sad.png",
+      "depends_on": [
+        "char-sylvie-portrait",
+        "char-sylvie-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          122,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.996
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-selene-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-selene-portrait-sad/char-selene-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-sad\\a1\\char-selene-portrait-sad-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "block": 10,
+        "size": [
+          123,
+          114
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-selene-portrait-sad",
+      "batch": "faces-selene",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-sad.png",
+      "depends_on": [
+        "char-selene-portrait",
+        "char-selene-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          123,
+          114
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.999
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-selene-portrait-wistful": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-selene-portrait-wistful/char-selene-portrait-wistful.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-wistful\\a1\\char-selene-portrait-wistful-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 11,
+        "block": 10,
+        "size": [
+          123,
+          114
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-selene-portrait-wistful",
+      "batch": "faces-selene",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-wistful.png",
+      "depends_on": [
+        "char-selene-portrait",
+        "char-selene-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          123,
+          114
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.999
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-safira-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-safira-portrait-sad/char-safira-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-sad\\a1\\char-safira-portrait-sad-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 9,
+        "size": [
+          121,
+          122
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-safira-portrait-sad",
+      "batch": "faces-safira",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-sad.png",
+      "depends_on": [
+        "char-safira-portrait",
+        "char-safira-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          121,
+          122
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 9,
+        "base_block": 9,
+        "palette_share": 0.998
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-bobby-portrait-serious": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-bobby-portrait-serious/char-bobby-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-serious\\a1\\char-bobby-portrait-serious-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-bobby-portrait-serious",
+      "batch": "faces-bobby",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-serious.png",
+      "depends_on": [
+        "char-bobby-portrait",
+        "char-bobby-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          122,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.998
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-bobby-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-bobby-portrait-sad/char-bobby-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-sad\\a1\\char-bobby-portrait-sad-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-bobby-portrait-sad",
+      "batch": "faces-bobby",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-sad.png",
+      "depends_on": [
+        "char-bobby-portrait",
+        "char-bobby-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          122,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.996
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-liz-portrait-serious": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-liz-portrait-serious/char-liz-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-serious\\a1\\char-liz-portrait-serious-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          102,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-liz-portrait-serious",
+      "batch": "faces-liz",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-serious.png",
+      "depends_on": [
+        "char-liz-portrait",
+        "char-liz-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          102,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.999
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-liz-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-liz-portrait-sad/char-liz-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-sad\\a1\\char-liz-portrait-sad-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          102,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-liz-portrait-sad",
+      "batch": "faces-liz",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-sad.png",
+      "depends_on": [
+        "char-liz-portrait",
+        "char-liz-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          102,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.997
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-liz-portrait-hushed": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-liz-portrait-hushed/char-liz-portrait-hushed.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-hushed\\a1\\char-liz-portrait-hushed-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          102,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-liz-portrait-hushed",
+      "batch": "faces-liz",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-hushed.png",
+      "depends_on": [
+        "char-liz-portrait",
+        "char-liz-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          102,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.998
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+    },
+    "char-noel-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-noel-portrait-sad/char-noel-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-sad\\a1\\char-noel-portrait-sad-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 10,
+        "size": [
+          118,
+          119
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-noel-portrait-sad",
+      "batch": "faces-noel",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-sad.png",
+      "depends_on": [
+        "char-noel-portrait",
+        "char-noel-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          118,
+          119
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.998
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     }
   },
   "requa_log": [

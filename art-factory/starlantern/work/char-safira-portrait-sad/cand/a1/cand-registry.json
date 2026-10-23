@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "char-safira-portrait-sad": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-safira-portrait-sad/cand/a1/char-safira-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-sad\\a1\\char-safira-portrait-sad-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 9,
+        "size": [
+          121,
+          122
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

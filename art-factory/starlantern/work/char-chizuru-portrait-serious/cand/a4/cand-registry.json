@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "char-chizuru-portrait-serious": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-serious/cand/a4/char-chizuru-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-serious\\a4\\char-chizuru-portrait-serious-a4.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "block": 9,
+        "size": [
+          127,
+          123
+        ]
+      },
+      "status": "qa_passed",
+      "defringe": null,
+      "neutralize_tint": null
+    }
+  }
+}

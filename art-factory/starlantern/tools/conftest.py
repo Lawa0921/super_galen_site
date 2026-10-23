@@ -5,7 +5,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _temp_prompts(tmp_path_factory, monkeypatch):
-    import batch, gear_art, party, portal
+    import batch, faces, gear_art, party, portal
     d = tmp_path_factory.mktemp('prompts')
-    for mod in (batch, gear_art, party, portal):
+    for mod in (batch, faces, gear_art, party, portal):
         monkeypatch.setattr(mod, 'PROMPTS', d)
