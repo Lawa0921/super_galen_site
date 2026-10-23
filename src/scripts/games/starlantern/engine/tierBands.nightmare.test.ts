@@ -22,6 +22,7 @@ describe.skipIf(!on)('the Nightmare bands (difficulty plan Tasks 5a-5b)', () => 
       }
       say(bandLine(band, 'all', pooled(runs.map((m) => m.run)), pooled(runs.map((m) => m.twin))));
       for (const line of pooledLines(band, measureBand)) say(line);
+      for (const line of bandMisses(band, measureBand)) say(`miss ${line}`);
     }
     // The crowd gap a depth: N1 (magic) against N4's crowd cells (bare), every group of the floor pooled.
     const n4 = measureBand('N4');

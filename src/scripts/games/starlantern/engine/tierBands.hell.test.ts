@@ -22,6 +22,7 @@ describe.skipIf(!on)('the Hell bands (difficulty plan Tasks 5a-5b)', () => {
       }
       say(bandLine(band, 'all', pooled(runs.map((m) => m.run)), pooled(runs.map((m) => m.twin))));
       for (const line of pooledLines(band, measureBand)) say(line);
+      for (const line of bandMisses(band, measureBand)) say(`miss ${line}`);
     }
     // The crowd gap a depth (report only): H1 (rare) and H3's magic crowd cells against H3's bare ones, every group pooled.
     const h3 = measureBand('H3');
