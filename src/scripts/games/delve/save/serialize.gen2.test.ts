@@ -8,11 +8,12 @@ import { GEN2_VERSION } from '../engine/gen2';
 import { SPAWN_X } from '../engine/gen2/layout';
 import { fnv1a } from '../net/codec';
 import {
-  COMPAT_GEN, SaveFormatError, decodeSave, encodeSave, restoreGame, snapshotGame, validGen2,
+  COMPAT_GEN, SaveFormatError, decodeSave, encodeSave, restoreGame, snapshotGame, validGen2, worldGenFor,
   type RestoreResult,
 } from './serialize';
 import { genBlocker } from './genCheck';
 import { decodeWorld, encodeWorld, joinSplit, saveSplitGame } from './worldSave';
+import { newerGeneratorMsg, restoreErrorMessage } from './split';
 
 type RestoreOk = Extract<RestoreResult, { ok: true }>;
 /** 改動 snapshotGame 之前（base ce5e6f6d6）錄下：seed 'v7'、160×100、savedAt 1 的存檔位元組 fnv1a */
@@ -113,7 +114,9 @@ describe('gen2 存檔', () => {
 
   it('genBlocker 真值表', () => {
     const ok8 = { format: 9, genVersion: 8, outerGen: 0, bounds: 'infinite' as const, gen2: { locks: [] } };
-    expect(genBlocker({ format: 9, genVersion: 7, outerGen: 2, bounds: 'infinite' })).toMatchObject({ error: 'gen_version', newer: false });
+    // fix round 1 裁決（推翻計畫真值表的 newer: false）：外圍生成器比 v1 新 = 較新的存檔
+    expect(genBlocker({ format: 9, genVersion: 7, outerGen: 2, bounds: 'infinite' })).toMatchObject({ error: 'gen_version', newer: true });
+    expect(genBlocker({ format: 9, genVersion: 7, outerGen: 0, bounds: 'infinite' })).toMatchObject({ error: 'gen_version', newer: false });
     expect(genBlocker({ format: 9, genVersion: 7, outerGen: 1, bounds: 'infinite' })).toBeNull();
     expect(genBlocker({ format: 9, genVersion: 7 })).toBeNull();
     expect(genBlocker({ ...ok8, outerGen: 1 })).toMatchObject({ newer: true });
@@ -149,6 +152,28 @@ describe('gen2 存檔', () => {
     // 未知的較新 genVersion：gen2 欄位長什麼樣都不管（不會被當成損毀），一律「請更新」
     const v9 = restoreGame(encodeSave({ ...legacy, header: { ...legacy.header, genVersion: 9, gen2: { locks: 'future' } as never } }));
     expect(v9).toMatchObject({ ok: false, error: 'gen_version', saveGenVersion: 9, newer: true });
+  });
+
+  it('worldGenFor：v8 → gen2（存檔的鎖）；v8 沒有鎖表 → SaveFormatError，絕不退回 legacy', () => {
+    expect(worldGenFor({ genVersion: 7 })).toEqual({ kind: 'legacy' });
+    expect(worldGenFor({ genVersion: 8, gen2: { locks: [[0, 0, 0, null]] } })).toEqual({ kind: 'gen2', locks: [[0, 0, 0, null]] });
+    expect(() => worldGenFor({ genVersion: 8 })).toThrow(SaveFormatError);
+  });
+
+  it('v7 存檔的 outerGen 比 v1 新 → restoreErrorMessage 是「請更新」', () => {
+    const g = new DelveGame({ seed: 'v7', width: 160, height: 100 }), snap = snapshotGame(g, 1);
+    const r = restoreGame(encodeSave({ ...snap, header: { ...snap.header, bounds: 'infinite', outerGen: 2 } }));
+    expect(r).toMatchObject({ ok: false, error: 'gen_version', saveGenVersion: 7, newer: true });
+    expect(restoreErrorMessage(r as Extract<RestoreResult, { ok: false }>)).toBe(newerGeneratorMsg);
+  });
+
+  it('SaveData 路徑：genVersion > 8 的未驗證 gen2 不留在還原後的 header 上', () => {
+    const g = new DelveGame({ seed: 'v7', width: 160, height: 100 }), snap = snapshotGame(g, 1);
+    const data = { ...snap, header: { ...snap.header, genVersion: 9, gen2: { locks: 'future' } as never } };
+    const r = restoreGame(data, { allowGenMismatch: true });
+    if (!r.ok) throw new Error(r.message);
+    expect('gen2' in r.header).toBe(false);
+    expect('gen2' in data.header).toBe(false);
   });
 
   it('世界檔（format 11）的 gen2 欄位經 splitSnapshot / decodeWorld / joinSplit 往返不變', () => {

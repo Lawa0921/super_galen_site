@@ -94,6 +94,7 @@ import { BUFFS, type BuffKind } from '../engine/folkDefs';
 import { validStoneIds } from '../engine/waystones';
 import { LockTable, type LockJSON } from '../engine/gen2/locks';
 import { genBlocker } from './genCheck';
+import type { WorldGenSpec } from '../engine/worldBoot';
 
 export const SAVE_FORMAT = 9;
 /** 可以遷移的舊生成器版本（定義在 genCheck.ts；這裡轉出給既有的呼叫端） */
@@ -1004,12 +1005,26 @@ export function restoreBlocker(h: SaveHeader, opts: RestoreOptions = {}): Extrac
     return { ok: false, error: 'size', message: `bad size ${h.width}x${h.height}` };
   }
   // gen2 世界只有正式尺寸（DelveGame 的 gen2 開機只接受 WORLD_W × WORLD_H）
-  if (h.genVersion === GEN_VERSION_V2 && (h.width !== WORLD_W || h.height !== WORLD_H)) {
+  if (!gen2SizeOk(h)) {
     return { ok: false, error: 'size', message: `gen2 world must be ${WORLD_W}x${WORLD_H}, got ${h.width}x${h.height}` };
   }
   // 中央鍵要在範圍內；外圍鍵只在 bounds 有值（format 11 的無限世界）時合法
   for (const ci of h.chunks) if (!chunkKeyOk(ci, h)) return { ok: false, error: 'size', message: `chunk ${ci} out of range` };
   return null;
+}
+
+/**
+ * 存檔要用哪個生成器開機：genVersion 8 → gen2（鎖表來自存檔）；其他 → legacy。
+ * genVersion 8 卻沒有 gen2 鎖表 → SaveFormatError（spec §5：絕不退回舊生成器重算 gen2 世界的改動）
+ */
+export function worldGenFor(h: Pick<SaveHeader, 'genVersion' | 'gen2'>): WorldGenSpec {
+  if (h.genVersion !== GEN_VERSION_V2) return { kind: 'legacy' };
+  if (!h.gen2) throw new SaveFormatError('gen2 world without lock table');
+  return { kind: 'gen2', locks: h.gen2.locks };
+}
+/** gen2 世界（genVersion 8）只有正式尺寸 WORLD_W × WORLD_H（DelveGame 的 gen2 開機只接受這個大小）；其他版本不限 */
+export function gen2SizeOk(h: { genVersion: number; width: number; height: number }): boolean {
+  return h.genVersion !== GEN_VERSION_V2 || (h.width === WORLD_W && h.height === WORLD_H);
 }
 
 /** 角色隨身的狀態（restoreGame 與 split.planNewWorld 共用 applyCharacter 套到遊戲上） */
@@ -1089,8 +1104,9 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       data.header.appearance = normalizeAppearance(data.header.appearance);
       data.header.vanity = Vanity.fromJSON(data.header.vanity).toJSON();
       data.header.levels = validLevels(data.header.levels);
+      // 只留驗證過的 gen2（genVersion > 8 不讀 → 拿掉原值，還原後的 header 不帶未驗證的資料）
       const g2 = gen2Field(data.header.genVersion, data.header.gen2);
-      if (g2.gen2) data.header.gen2 = g2.gen2;
+      if (g2.gen2) data.header.gen2 = g2.gen2; else delete data.header.gen2;
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
@@ -1098,10 +1114,14 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   const h = data.header;
   const blocked = restoreBlocker(h, opts);
   if (blocked) return blocked;
+  let spec: WorldGenSpec;
+  try { spec = worldGenFor(h); } catch (e) {
+    return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
+  }
   // gen2 世界（genVersion 8）：依存檔的鎖表開機（不需預先生成；gen / bounds / source 覆寫不適用）。
   // 沒有 bounds 的存檔（format ≤ 10）：正式尺寸 → 無限世界、小尺寸的測試世界 → 有界（CONFLICT-2）
-  const game = h.genVersion === GEN_VERSION_V2 && h.gen2
-    ? new DelveGame({ seed: h.seed, appearance: h.appearance, worldGen: { kind: 'gen2', locks: h.gen2.locks } })
+  const game = spec.kind === 'gen2'
+    ? new DelveGame({ seed: h.seed, appearance: h.appearance, worldGen: spec })
     : new DelveGame({
       seed: h.seed, width: h.width, height: h.height, gen: opts.gen, appearance: h.appearance,
       bounds: opts.bounds ?? h.bounds ?? defaultBounds(h.width, h.height), columnSource: opts.source,

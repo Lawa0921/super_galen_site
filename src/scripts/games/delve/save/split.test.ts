@@ -13,7 +13,7 @@ import type { VisitStore } from '../net/host';
 import { levelForXp } from '../engine/levels';
 import type { LockJSON } from '../engine/gen2/locks';
 import {
-  CHARACTER_CORRUPT_MSG, CHARACTER_MISSING_MSG, NO_CHARACTER_MSG, WORLD_CORRUPT_MSG, SplitSession, commitMigration, importWorld, newWorldSlot,
+  BAD_SIZE_MSG, CHARACTER_CORRUPT_MSG, CHARACTER_MISSING_MSG, NO_CHARACTER_MSG, WORLD_CORRUPT_MSG, SplitSession, commitMigration, importWorld, newWorldSlot,
   planContinue, planNewWorld, planPlay, saveSplit, newerGeneratorMsg, oldGeneratorMsg, restoreErrorMessage,
   type SlotRead, type SplitStore,
 } from './split';
@@ -442,7 +442,13 @@ describe('生成器版本（Task 15）', () => {
     expect(await importWorld(st2, gen2WorldBytesWith({ gen2: { locks } }), 1)).toEqual({ error: newerGeneratorMsg });
     expect(await importWorld(st2, gen2WorldBytesWith({ genVersion: 9 }), 1)).toEqual({ error: newerGeneratorMsg });
     expect(await importWorld(st2, gen2WorldBytesWith({ genVersion: 6, gen2: undefined }), 1)).toEqual({ error: oldGeneratorMsg(6) });
-    expect(st2.log).toEqual([]);
+    // v8 不是正式尺寸 → 大小不對；v7 世界檔帶 gen2 → 損毀
+    expect(await importWorld(st2, gen2WorldBytesWith({ height: 1216 }), 1)).toEqual({ error: BAD_SIZE_MSG });
+    const { world: v7, character: v7c } = SplitSession.fresh('v7imp', 1, 'tmp').snapshot(small('v7imp'), 10);
+    expect(await importWorld(st2, exportFile({ ...v7, header: { ...v7.header, gen2: { locks: [] } } }, v7c), 1)).toEqual({ error: WORLD_CORRUPT_MSG });
+    expect(await importWorld(st2, exportFile(v7, v7c), 1)).toHaveProperty('slot');   // 同一份不帶 gen2 → 照收
+    expect(st2.log.filter((l) => !l.startsWith('putSplit'))).toEqual([]);
+    expect(st2.log.filter((l) => l.startsWith('putSplit'))).toHaveLength(1);
   }, 60000);
 
   it('importWorld：v8 的舊合併檔（format 9）保留 genVersion 8，不被改標成 7', async () => {

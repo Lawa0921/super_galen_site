@@ -3,7 +3,7 @@
 // format 10 的世界檔：讀進來時 SplitSession.pendingBackup = V10_BACKUP_SUFFIX，第一次 saveSplit 先備份成
 //   slot + '.v10.bak'、成功才寫 format 11（備份丟錯就整個丟出、原檔不動；寫成功後清空，之後不再備份）。
 // 多世界 × 多角色：任何角色都能進任何世界（planPlay）；匯入一律開新槽（importWorld），不動既有世界。
-import { SaveFormatError, applyCharacter, restoreBlocker, snapshotGame, type RestoreError, type SaveData } from './serialize';
+import { SaveFormatError, applyCharacter, gen2SizeOk, restoreBlocker, snapshotGame, type RestoreError, type SaveData } from './serialize';
 import { decodeCharacter, newId, newIdentity, type CharIdentity, type DelveCharacter } from './character';
 import {
   V10_BACKUP_SUFFIX, characterState, decodeAnySave, encodeWorld, splitSnapshot, trimHeld, upsertVisit,
@@ -234,6 +234,7 @@ export async function importWorld(store: SplitStore, bytes: Uint8Array, now: num
   if (!imported) return { error: NO_CHARACTER_MSG };
   const gen = genBlocker(header);
   if (gen) return { error: restoreErrorMessage(gen) };
+  if (!gen2SizeOk(header)) return { error: BAD_SIZE_MSG };
   let local: DelveCharacter | null = null;
   const cb = await store.getCharacter(imported.id);
   if (cb) {

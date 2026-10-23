@@ -1,6 +1,7 @@
 // genCheck.ts — 讀檔 / 匯入 / 連線共用的生成器版本比對（純函式，不必生成世界）。
 // 規則（spec §5：版本不符時拒絕或升級，絕不靜默用目前的生成器疊在舊改動上）：
-//   · genVersion 7（舊生成器）：outerGen 沒有或 = OUTER_GEN_VERSION（外圍 v1）。
+//   · genVersion 7（舊生成器）：outerGen 沒有或 = OUTER_GEN_VERSION（外圍 v1）；比 v1 新 = newer（fix round 1 裁決：
+//     推翻計畫真值表的 newer: false——外圍生成器較新的存檔要請玩家更新，不是說它是舊版）。
 //   · genVersion 8（gen2）：無限世界（bounds = 'infinite'）、有 gen2 欄位、outerGen 與每個地塊鎖的 ver 都在
 //     [GEN2_MIN_VERSION, GEN2_VERSION]；超過上限 = 較新版本（newer：請玩家更新遊戲）。
 //   · 其他版本：format ≤ 5 的 COMPAT_GEN 可遷移；allowGenMismatch（測試用）放行；比 8 新 = newer。
@@ -22,7 +23,7 @@ export function genBlocker(h: GenHeader, opts: { allowGenMismatch?: boolean } = 
   const v = h.genVersion;
   if (v === GEN_VERSION) {
     if (h.outerGen !== undefined && h.outerGen !== OUTER_GEN_VERSION) {
-      return block(v, false, `save outer generator v${h.outerGen}, current outer generator v${OUTER_GEN_VERSION}`);
+      return block(v, h.outerGen > OUTER_GEN_VERSION, `save outer generator v${h.outerGen}, current outer generator v${OUTER_GEN_VERSION}`);
     }
     return null;
   }
