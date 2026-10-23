@@ -1,4 +1,4 @@
-// gen2 — 無限世界生成器 v2：Layout（版面）→ Profile2（每欄側寫）→ Filler2（寫格子）。World 的 ColumnSource。
+// gen2 — 無限世界生成器 v2：Layout（版面）→ Profile2（每欄側寫）→ BlueprintIndex（結構藍圖）→ Filler2（寫格子）。World 的 ColumnSource。
 //
 // 版本閘門慣例（GEN2_VERSION / 地塊鎖）：
 // - 每片地塊第一次被 fill 涉及時上鎖（LockTable 記 [side, i, ver, culture]），之後永遠用那個 ver 的規則生成，
@@ -13,6 +13,8 @@ import { Layout, newWorldOrigin, type Landmass, type LayoutOrigin } from './layo
 import { LockTable } from './locks';
 import { Profile2, SEA_Y } from './profile';
 import { Filler2, FILL_REACH } from './fill';
+import { BlueprintIndex, depthFrac } from './blueprint';
+import { chestLoot } from '../loot';
 
 export const GEN2_VERSION = 0, GEN2_MIN_VERSION = 0;
 
@@ -35,15 +37,17 @@ export class Gen2Source implements ColumnSource {
   readonly layout: Layout;
   readonly profile: Profile2;
   readonly locks: LockTable;
+  readonly blueprints: BlueprintIndex;
   private readonly filler: Filler2;
   private readonly recordLocks: boolean;
 
-  constructor(seed: string, opts: Gen2Options = {}) {
+  constructor(private readonly seed: string, opts: Gen2Options = {}) {
     this.locks = opts.locks ?? new LockTable();
     this.recordLocks = opts.recordLocks ?? true;
     this.layout = new Layout(seed, opts.origin ?? newWorldOrigin(SEA_Y, NEW_SHORE), this.locks, opts.latestVer ?? GEN2_VERSION);
     this.profile = new Profile2(seed, this.layout, WORLD_H);
-    this.filler = new Filler2(seed, this.layout, this.profile);
+    this.blueprints = new BlueprintIndex(seed, this.layout, this.profile);
+    this.filler = new Filler2(seed, this.layout, this.profile, this.blueprints);
   }
 
   // 寫入第 col.cx 欄中 world x ∈ [x0, x1) 的格（任意子範圍；col 是新建的空欄）。先把這段讀得到的地塊上鎖
@@ -72,8 +76,14 @@ export class Gen2Source implements ColumnSource {
     if (!r) throw new RangeError(`gen2: x ${x} is outside gen2`);
     return r;
   }
-  // 生成物件（箱子）：Task 9 接上
-  objectsIn(_x0: number, _x1: number): GenChest[] { return []; }
+  // 生成物件：與 [x0, x1) 相交的藍圖裡 x ∈ [x0, x1) 的箱子，內容 = chestLoot(seed, x, y, kind, depthFrac)（每次回新的 slots）
+  objectsIn(x0: number, x1: number): GenChest[] {
+    const out: GenChest[] = [];
+    for (const b of this.blueprints.overlapping(x0, x1)) for (const c of b.chests) {
+      if (c.x >= x0 && c.x < x1) out.push({ x: c.x, y: c.y, slots: chestLoot(this.seed, c.x, c.y, c.kind, depthFrac(this.profile, c.x, c.y)) });
+    }
+    return out;
+  }
   // 這一欄是不是地表洞穴入口（陸地欄、義大利麵從地表就開始挖）
   isEntrance(x: number): boolean { return this.filler.isEntrance(x); }
 }

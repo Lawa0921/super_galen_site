@@ -223,7 +223,7 @@ describe('gen2 fill / Gen2Source', () => {
       expect(src.layersAt(x)).toEqual(src.profile.layersAt(x));
       expect(src.waterTopAt(x)).toBe(src.profile.waterTopAt(x));
     }
-    expect(src.objectsIn(0, 4200)).toEqual([]);
+    expect(src.objectsIn(SPAWN_X - 80, SPAWN_X + 80)).toEqual([]);
     expect(() => src.regionAt(2_000_000)).toThrow(RangeError);
   });
 });

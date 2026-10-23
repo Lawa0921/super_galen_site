@@ -54,7 +54,7 @@ export class Profile2 {
   private readonly spawnX: number | null;
   private readonly cache = new Map<number, Seg>();
 
-  constructor(seed: string, private readonly layout: Layout, private readonly height: number) {
+  constructor(seed: string, private readonly layout: Layout, readonly height: number) {
     this.sRelief = seedInt(seed, 'g2-relief');
     this.sFloor = seedInt(seed, 'g2-floor');
     this.sPlat = seedInt(seed, 'g2-plateau');

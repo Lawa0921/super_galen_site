@@ -1,5 +1,5 @@
 // fill.ts — gen2 寫格子：表層材質（gen2 自己的表）、深度層與牆、噪聲洞穴 + 地表入口、每個地區的主坑道、礦（只換石頭類）、
-// 靜止的海水、熔岩線（LAVA_Y 以下的空氣全是熔岩）、樹 / 仙人掌（只長在陸地欄）。
+// 靜止的海水、熔岩線（LAVA_Y 以下的空氣全是熔岩）、結構藍圖（blueprint.ts，依 (layer, id) 序蓋）、樹 / 仙人掌（只長在陸地欄、不長在表層藍圖外框內）。
 // 噪聲取樣與樹 / 仙人掌繪製來自 engine/genPrims.ts（與 v1 同一份，P10）；這裡只有 gen2 的材質與礦的規則。不 import legacy。
 // 每一格只由 (seed, x, y) 決定：跨欄的東西（樹冠、坑道）由「掃 [x0 − 觸及範圍, x1 + 觸及範圍)、只畫進 [x0, x1)」保證與先填哪一段無關。
 // 每個 pass 收到它所屬地塊的 ctx.ver（鎖 / latestVer）；M1 只有 ver 0，沒有版本分支（新規則寫 if (ctx.ver >= N)）。
@@ -14,6 +14,7 @@ import { ColNoise, CavernNoise, NO_DIG, ORE_THR, spagNoise, spagHit, cavernHit, 
 import { COL_SEA, COL_BEACH, COL_LAND, COL_ISLAND, LAVA_Y, type ColInfo2, type Profile2 } from './profile';
 import { HOME_X0, SPAWN_X, type Layout } from './layout';
 import { SHAFT_HALF, SHAFT_REACH, carveShaft, hasShaft, shaftOf, type Shaft } from './caves';
+import { BP_SURFACE, stamp, type Blueprint, type BlueprintIndex } from './blueprint';
 
 // 每個 pass 的上下文：該地塊的版面版本
 export interface FillCtx { ver: number }
@@ -39,7 +40,7 @@ const NO_DIG_SEA = 8;
 const SPAWN_NO_TREE = 3, SPAWN_NO_ENTRANCE = 8;
 // 樹根離 shaftX 這麼近不長：坑道各列的範圍 + 樹冠半徑 3（樹幹不會懸在挖開的地表上、樹葉不會蓋住坑道口）
 const SHAFT_NO_TREE = SHAFT_HALF + 3;
-// 一段 fill 讀得到的範圍：坑道觸及範圍 ≥ 樹的觸及範圍（genPrims.growPlants 掃 [x0 − 3, x1 + 3)）
+// 一段 fill 讀得到的範圍：坑道觸及範圍 ≥ 樹的觸及範圍（genPrims.growPlants 掃 [x0 − 3, x1 + 3)）；藍圖外框不超出自己的槽，不另外算
 export const FILL_REACH = SHAFT_REACH;
 
 // 礦只換這些格（石頭類；沙 / 泥土 / 雪 / 玄武岩不換，P10）
@@ -61,7 +62,7 @@ export class Filler2 {
   // 地區 → 坑道（RegionInfo 是 Layout 的同一個物件）
   private readonly shafts = new Map<RegionInfo, Shaft | null>();
 
-  constructor(seed: string, private readonly layout: Layout, private readonly profile: Profile2) {
+  constructor(seed: string, private readonly layout: Layout, private readonly profile: Profile2, private readonly blueprints: BlueprintIndex) {
     this.spag = spagNoise(seedInt(seed, 'g2-cave'));
     this.cav = new CavernNoise(seedInt(seed, 'g2-cavern'));
     this.oreCu = oreNoise(seedInt(seed, 'g2-ore-copper'));
@@ -80,7 +81,10 @@ export class Filler2 {
   fill(col: Column, x0: number, x1: number): void {
     for (let x = x0; x < x1; x++) this.column(col, x, this.profile.info(x), this.ctxAt(x));
     this.shaftPass(col, x0, x1);
-    this.plants(col, x0, x1);
+    // 結構：在材質 / 洞穴 / 礦 / 液體 / 坑道之後依 (layer, id) 序蓋；多取 FILL_REACH 給樹根判斷外框
+    const bps = this.blueprints.overlapping(x0 - FILL_REACH, x1 + FILL_REACH);
+    for (const b of bps) stamp(col, b, x0, x1);
+    this.plants(col, x0, x1, bps.filter((b) => b.layer === BP_SURFACE));
   }
 
   // 地表洞穴入口：陸地欄、入口噪聲、不在出生點附近
@@ -168,9 +172,10 @@ export class Filler2 {
     return sh;
   }
 
-  // ── 樹 / 仙人掌（genPrims.growPlants）：只長在陸地欄；入口欄、出生點 ±3、坑道上方不長 ──
-  private plants(col: Column, x0: number, x1: number): void {
-    const site = (rx: number): PlantSite | null => (this.profile.regionAt(rx) ? this.plantSite(rx, this.ctxAt(rx)) : null);
+  // ── 樹 / 仙人掌（genPrims.growPlants）：只長在陸地欄；入口欄、出生點 ±3、坑道上方、表層藍圖外框內不長 ──
+  private plants(col: Column, x0: number, x1: number, surface: Blueprint[]): void {
+    const inBp = (rx: number): boolean => surface.some((b) => rx >= b.x && rx < b.x + b.w);
+    const site = (rx: number): PlantSite | null => (this.profile.regionAt(rx) && !inBp(rx) ? this.plantSite(rx, this.ctxAt(rx)) : null);
     growPlants(col, x0, x1, site, this.sTree, this.sCactus);
   }
 
