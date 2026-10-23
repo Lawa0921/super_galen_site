@@ -4029,7 +4029,7 @@ test.describe('starlantern', () => {
       ['hero-alone', /得先過我這裡/],
       [banter('rin', 'scarlet', 2), /第七個晚上/],
       [banter('noel', 'selene', 2), /少掉一點自己/],
-      ['group:act2', /看得見又不說/],   // story L Task 9: a group scene, replayed from its act's truth page
+      ['group:act2', /看到又不講/],   // story L Task 9: a group scene, replayed from its act's truth page
       ['group:act3', /四十二步/],   // story L Task 10
       ['group:act4', /不會有人難過/],   // story L Task 11
       ['finale-cost', /那十段記憶/],

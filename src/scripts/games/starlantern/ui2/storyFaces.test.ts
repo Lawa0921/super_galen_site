@@ -157,7 +157,7 @@ describe('faces in a heavy scene (staging S3)', () => {
       }
     }
     expect(smiling).toEqual([]);
-    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(409);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line
+    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(411);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line
     // 395 character lines. Before S3 the 15 heavy lines of a non-glad mood without art showed a companion's smile, and 60
     // heavy lines of Lorne and Rin their normal: 75 lines, which now take a near face (35), Rin's calm normal (17) or no
     // portrait (23). A glad mood still borrows the smile (22). The light scenes are as they were.
@@ -166,7 +166,8 @@ describe('faces in a heavy scene (staging S3)', () => {
       // story L Task 9, group:act2 (nine lines): exact +3, near +1 (Selene's foresee), Rin's calm normal +2, a glad mood +3
       // story L Task 10, group:act3 (nine lines): exact +6, near +1 (Sylvie's alert), Rin's calm normal +1, Bobby's grin +1
       // story L Task 11, group:act4 (nine lines): exact +7, near +1 (Lorne's distant), Safira's laugh +1
-      'heavy exact': 109, 'heavy near': 36, 'heavy calm-normal': 20, 'heavy hidden': 22, 'heavy smiling-normal': 23,
+      // cold read fixes: act 4's two lines more (Liz's price of running, a glad mood; Liz breaking, sad), Noel's jab glad now
+      'heavy exact': 109, 'heavy near': 36, 'heavy calm-normal': 20, 'heavy hidden': 22, 'heavy smiling-normal': 25,
       'light exact': 91, 'light calm-normal': 6, 'light smiling-normal': 102,
     });
   });

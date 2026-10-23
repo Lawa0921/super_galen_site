@@ -1424,12 +1424,12 @@ describe('story L: told pieces and the met gate (Task 1)', () => {
     expect(toldCount(base(), 'noel')).toBe(0);
   });
 
-  it('group ids are kind group, capped at twelve, heavy', () => {
+  it('group ids are kind group, capped at fourteen, heavy', () => {
     expect(groupScene('act2')).toBe('group:act2');
     for (const node of ['act2', 'act3', 'act4'] as const) {
       const id = groupScene(node);
       expect(sceneKind(id)).toBe('group');
-      expect(lineCap(id)).toBe(12);
+      expect(lineCap(id)).toBe(14);   // twelve in spec §5.1; fourteen since the cold read (room for a reaction after the turn)
       expect(heavyScene(id)).toBe(true);
     }
     expect(GROUP_MIN_LINES).toBe(8);

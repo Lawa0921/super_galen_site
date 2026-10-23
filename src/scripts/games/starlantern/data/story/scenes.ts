@@ -143,7 +143,7 @@ export function lineCap(id: SceneId): number {
     case 'town': return 8;
     case 'home': return 4;
     case 'banter': return 4;
-    case 'group': return 12;
+    case 'group': return 14;   // story L cold read (2026-10-24): room for a reaction after the turn (spec §5.1 said twelve)
   }
 }
 

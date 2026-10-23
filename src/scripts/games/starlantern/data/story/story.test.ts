@@ -3262,7 +3262,7 @@ describe('story L: the group scenes (Task 7)', () => {
     expect(groupShapeBreaks('group:act2', good())).toEqual([]);
     const flags = (lines: ScriptLine[], id: Parameters<typeof groupShapeBreaks>[0] = 'group:act2') => groupShapeBreaks(id, lines).join(' | ');
     expect(flags(good().slice(1, 8).map((l, i): ScriptLine => (i === 0 ? { ...l, place: card } : l)))).toMatch(/7 lines/);
-    expect(flags([...good().slice(0, 7), ...good().slice(1, 7), good()[7]])).toMatch(/14 lines/);
+    expect(flags([...good().slice(0, 7), ...good().slice(1, 7), good().slice(1, 2)[0], good()[7]])).toMatch(/15 lines/);   // cap 14 since the cold read
     expect(flags(good().map((l, i): ScriptLine => (i === 2 ? { ...l, if: { met: 'noel' } } : l)))).toMatch(/one reading/);
     expect(flags(good().map((l): ScriptLine => (l.who === 'noel' ? { ...l, who: 'rin' } : l)))).toMatch(/2 speakers/);
     expect(flags(good().map((l): ScriptLine => (l.who === 'hero' ? { ...l, who: 'selene' } : l)))).toMatch(/Lorne/);
@@ -3328,9 +3328,13 @@ describe('story L: the group scenes (Task 7)', () => {
   it('group:act2 keeps its beats: Rin sells tomorrow, Noel at Selene, the coin Lorne catches, the sleeve; he keeps no shard (Task 9)', () => {
     const id = 'group:act2';
     expect(REACTIONS.act2).toBe(id);
-    for (const re of [/明天賣/, /銅板/, /袖/, /看得見又不說/, /自己說/]) pinBeat(id, {}, re);
+    for (const re of [/明天賣/, /銅板/, /袖/, /看到又不講/, /自己說/, /問問月亮/]) pinBeat(id, {}, re);
     expect(said(id, /明天賣/)?.who).toBe('rin');
-    expect(said(id, /看得見又不說/)?.who).toBe('noel');
+    expect(said(id, /看到又不講/)?.who).toBe('noel');
+    expect(said(id, /銅板/)?.who).toBe('narrator');   // the coin is hers, taken out before she speaks (cold read)
+    expect(said(id, /問問月亮/)?.who).toBe('selene');
+    expect(STORY.scenes[id].lines.findIndex((l) => /銅板/.test(l.text))).toBeLessThan(STORY.scenes[id].lines.findIndex((l) => /問問月亮/.test(l.text)));
+    expect(STORY.scenes[id].lines.at(-1)!.text).toMatch(/凜.*包好.*袖/);   // Rin keeps to selling: her share wrapped, last
     expect(said(id, /自己說/)?.who).toBe('hero');
     expect(said(id, /袖/)?.who).toBe('narrator');
     // review fix 16: the grey shard Lorne kept is cut; he takes none
@@ -3342,12 +3346,13 @@ describe('story L: the group scenes (Task 7)', () => {
   it('group:act3 keeps its beats: Sylvie saw the collar, Lorne will not ask, forty-two steps, the door (Task 10)', () => {
     const id = 'group:act3';
     expect(REACTIONS.act3).toBe(id);
-    for (const re of [/領口/, /不問/, /四十二/, /門邊/]) pinBeat(id, {}, re);
+    for (const re of [/領口/, /不問。/, /四十二/, /門邊/]) pinBeat(id, {}, re);
     expect(said(id, /領口/)?.who).toBe('sylvie');
-    expect(said(id, /不問/)?.who).toBe('hero');
+    expect(said(id, /不問。/)?.who).toBe('hero');
     expect(said(id, /四十二/)?.who).toBe('rin');
     expect(said(id, /門邊/)?.who).toBe('narrator');
-    expect(STORY.scenes[id].lines.at(-1)!.text).toMatch(/門邊/);
+    expect(STORY.scenes[id].lines.at(-1)!.text).toMatch(/凜和希爾薇並排坐在門邊/);
+    expect(said(id, /領口/)!.text).toMatch(/回頭看樓梯/);   // she reads as afraid of being followed (cold read)
   });
 
   it('group:act3 never ties the bell to the society, nor says 殺 or 刺客: they take her for the hunted (Task 10, spec §6.2)', () => {
@@ -3368,6 +3373,12 @@ describe('story L: the group scenes (Task 7)', () => {
     // she sits down first, and the purse is still on the table at dawn: the last line, an action
     expect(STORY.scenes[id].lines.at(-1)!.text).toMatch(/坐.*天亮/);
     expect(STORY.scenes[id].lines.some((l) => l.who === 'rin')).toBe(false);   // Rin is on the roof (spec §6.4)
+    // cold read: someone breaks after his lie, and Safira had picked up the bundle she puts down
+    const lines = STORY.scenes[id].lines;
+    const lie = lines.findIndex((l) => /一個人的/.test(l.text));
+    expect(['liz', 'safira']).toContain(lines[lie + 1].who);
+    expect(lines.findIndex((l) => /拎起包袱/.test(l.text))).toBeLessThan(lie);
+    expect(lines.at(-1)!.text).toMatch(/放下剛拎起的包袱/);
   });
 
   it('group:act4 never says he is the keeper, and the song only says what the stone says (Task 11, spec §6.3)', () => {
