@@ -155,5 +155,8 @@ export interface WorldSnap {
 /** bulk 的標頭（payload 另外帶） */
 export type BulkHead = { t: 'snap'; snap: WorldSnap } | { t: 'col'; cx: number; revs: number[]; diff: { cy: number; chests: WireChest[] }[] }
   | { t: 'chunk'; key: number; rev: number; chests: WireChest[] } | { t: 'liq'; chunks: number[] }
-  /** 烘焙世界加入時（welcome 之後、snap 之前）：payload = LegacyMetaJSON 的 UTF-8 JSON */
+  /**
+   * 烘焙世界加入時（welcome 之後、snap 之前）：payload = LegacyMetaJSON 的 UTF-8 JSON（約 85 KB）。
+   * 同 snap 直接送、不走 BULK_HIGH_WATER 的排隊，靠 rtcLink 分片
+   */
   | { t: 'legacy' };

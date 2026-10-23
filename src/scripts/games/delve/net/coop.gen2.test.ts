@@ -1,11 +1,15 @@
 // coop.gen2.test.ts — Task 18：連線帶生成器描述（Welcome.gen2）。gen2 客人只生成自己附近（不建中央、不生成家鄉整片）；
 // 烘焙世界的 LegacyMeta 由 legacy bulk 帶過去（比 welcome 先到 / 後到都行）；舊世界的 Welcome 位元組不變（裁決 P9）。
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { OUTER_GEN_VERSION } from '../engine/legacy/chunkgen/index';
 import { SPAWN_X } from '../engine/gen2/layout';
+import { normalizeAppearance } from '../engine/appearance';
+import { createCharacter, type DelveCharacter } from '../save/character';
 import { fnv1a } from './codec';
 import { columnSums } from './chunkSync';
-import { END_TEXT, coopGenOk } from './guest';
+import { END_TEXT, NetGuest, coopGenOk } from './guest';
+import { LoopbackNet } from './loopback';
+import { SaveFormatError } from '../save/serialize';
 import type { Welcome } from './protocol';
 import { coopRig, FRAME } from './testRig';
 
@@ -22,6 +26,9 @@ describe('Task 18 連線：版本描述、gen2 客人不生成家鄉、烘焙世
     expect(hostLocks.length).toBeGreaterThan(0); expect(gg.gen2()!.locks.toJSON()).toEqual(hostLocks);
     rig.run(120 * FRAME); expect(rig.sameTiles(0)).toEqual([]);
     expect(columnSums(gg.world, SPAWN_X >> 5)).toEqual(columnSums(rig.hostGame.world, SPAWN_X >> 5));
+    // 一致是客人自己生成出來的：房主回的每一則 col 都沒有要補的 chunk（沒傳任何地形資料）
+    expect(rig.cols[0].length).toBeGreaterThan(0);
+    expect(rig.cols[0].every((c) => c.diff.length === 0)).toBe(true);
   }, 120_000);
 
   it('outerGen 不同 → 客人以 END_TEXT.gen 結束', () => {
@@ -38,6 +45,29 @@ describe('Task 18 連線：版本描述、gen2 客人不生成家鄉、烘焙世
     // 舊世界不帶描述；其他版本一律不行
     expect(coopGenOk({ genVersion: 7, outerGenVersion: 1, gen2: g })).toBe(false);
     expect(coopGenOk({ genVersion: 9, outerGenVersion: 0, gen2: g })).toBe(false);
+  });
+
+  it('建副本：描述不合法（RangeError / SaveFormatError）→ 世界版本不同；其他例外是程式錯誤，不冒充版本不同', () => {
+    const run = (err: Error): NetGuest => {
+      const net = new LoopbackNet(), p = net.pair();
+      const c: DelveCharacter = { ...createCharacter('丁', normalizeAppearance(undefined), 0), id: `build-${err.name}` };
+      const g = new NetGuest(p.guest, { build: 'b', character: c, createReplica: () => { throw err; } });
+      const w: Welcome = {
+        t: 'welcome', pid: 'p1', worldId: 'w', seed: 's', genVersion: 8, outerGenVersion: 0, bounds: 'infinite', w: 4200, h: 1200,
+        time: 0, tick: 0, peaceful: true, you: { x: 0, y: 0 }, players: [], gen2: { kind: 'gen2', locks: [] },
+      };
+      p.host.send('ctrl', JSON.stringify(w));
+      net.flush();
+      g.frame(FRAME, 1);
+      return g;
+    };
+    expect(run(new RangeError('bad lock')).endText).toBe(END_TEXT.gen);
+    expect(run(new SaveFormatError('bad bake')).endText).toBe(END_TEXT.gen);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const bug = run(new TypeError('engine bug'));
+    expect(bug.endText).toBeNull(); expect(bug.state).toBe('connecting');
+    expect(err).toHaveBeenCalledWith('[delve] guest replica build failed', expect.any(TypeError));
+    err.mockRestore();
   });
 
   it('烘焙世界：legacy bulk 比 welcome 先到 / 後到都能加入；副本 genKind baked；中央 chunk 經同步後與房主相同', () => {
@@ -68,6 +98,23 @@ describe('Task 18 連線：版本描述、gen2 客人不生成家鄉、烘焙世
     expect(liveStale).toBe(0);
     expect(columnSums(gw, 65)).toEqual(columnSums(hg.world, 65));
     expect(rig.sameTiles(0)).toEqual([]);
+  }, 120_000);
+
+  it('烘焙世界：legacy bulk 晚到（過了 char 計時）期間的 ctrl 不丟——房主用 held 那份較新的角色，副本的背包與房主相同', () => {
+    const rig = coopRig({ world: 'baked', guests: 0, deliver: 'welcomeFirst', bulkDelayFrames: 30 });
+    const c: DelveCharacter = { ...createCharacter('丙', normalizeAppearance(undefined), 0), id: 'late-legacy-char' };
+    const kept: DelveCharacter = JSON.parse(JSON.stringify(c)) as DelveCharacter;
+    kept.rev = c.rev + 5;
+    const slot = kept.inventory.slots.findIndex((s) => s === null);
+    kept.inventory.slots[slot] = { item: 'copper_coin', count: 37 };
+    rig.held.set(c.id, { rev: kept.rev, character: kept, at: 1 });
+    const g = rig.join({ character: c });
+    for (let t = 0; t < 10_000 && g.state !== 'live'; t += FRAME) rig.run(FRAME);
+    expect(g.state).toBe('live');
+    rig.run(4000);
+    const host = rig.hostGame.actors.get(g.pid!)!.inventory.count('copper_coin');
+    expect(host).toBe(c.inventory.slots.reduce((n, s) => n + (s?.item === 'copper_coin' ? s.count : 0), 0) + 37);
+    expect(g.game!.local.inventory.count('copper_coin')).toBe(host);
   }, 120_000);
 
   it('舊世界連線不變：Welcome 位元組與改動前相同（P9）', () => {

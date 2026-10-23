@@ -24,7 +24,7 @@ import { LockTable, type LockJSON } from '../engine/gen2/locks';
 import { chunkOfX } from '../engine/coords';
 import type { DelveCharacter } from '../save/character';
 import { genBlocker } from '../save/genCheck';
-import { SAVE_FORMAT } from '../save/serialize';
+import { SAVE_FORMAT, SaveFormatError } from '../save/serialize';
 import { validBakeInfo } from '../save/bake';
 import { decodeLegacyMeta, type LegacyMeta } from '../save/legacyMeta';
 import type { Channel, NetLink, Payload } from './link';
@@ -162,6 +162,8 @@ export class NetGuest {
   private early: Uint8Array[] = [];
   /** 烘焙世界：welcome 到了、legacy bulk 還沒到（維持 connecting，legacy 一到就建副本） */
   private waitLegacy: Welcome | null = null;
+  /** 等 legacy 期間到的、要副本才能處理的 ctrl（到達順序；建好副本後重放） */
+  private lateCtrl: HostCtrl[] = [];
   /** 這個副本（welcome 之後）已經套過 ctrl 的 world：之後才到的加入 snap 是舊的，不再蓋世界層級 */
   private worldSeen = false;
   private now = 0;
@@ -314,6 +316,7 @@ export class NetGuest {
     this.inbox = this.inbox.filter((it) => it.link === link);   // 舊連線的丟掉；新連線已到的留著
     this.early = [];
     this.waitLegacy = null;
+    this.lateCtrl = [];
     this.heardAt = null;
     this.closeAt = null;
     this.leaveChk = null;
@@ -410,7 +413,13 @@ export class NetGuest {
       case 'pong': if (fin(c.at)) this.rtt = Math.max(0, this.now - c.at); return;
     }
     const game = this.replica;
-    if (!game) return;
+    // 烘焙世界等 legacy bulk 的期間（welcome 已到、副本還沒建）：要副本的 ctrl 依序留著，建好副本後重放（第一份 char 只送一次）
+    if (!game) { if (this.waitLegacy) this.lateCtrl.push(c); return; }
+    this.onReplicaCtrl(game, c);
+  }
+
+  /** 要有副本才能處理的 ctrl（tiles / ev / pub / char / chk / ack / teleport / knock / world / look / gone） */
+  private onReplicaCtrl(game: DelveGame, c: HostCtrl): void {
     switch (c.t) {
       case 'tiles': this.chunks!.onTiles(c.batches); return;
       case 'ev': game.pushNetEvents(c.list.filter((e) => !(e.pid === this.me && echoed(e)))); return;
@@ -471,15 +480,24 @@ export class NetGuest {
     this.end(END_TEXT.gen, true);
   }
 
-  /** 建副本（legacy = 烘焙世界的 legacy bulk）；gen2 / 烘焙世界的描述或 LegacyMeta 壞掉 → 同生成器不符 */
+  /**
+   * 建副本（legacy = 烘焙世界的 legacy bulk）。gen2 / 烘焙世界：legacy bulk 解不開、描述不合法（SaveFormatError / RangeError：
+   * bake、鎖表、尺寸）→ 同生成器不符；其他例外是程式錯誤 → console.error 後照舊往外丟（handle 只丟掉這一則）
+   */
   private build(m: Welcome, legacy: Uint8Array | null): void {
     const make = this.opts.createReplica ?? defaultReplica;
     let game: DelveGame;
     if (m.gen2) {
+      let meta: LegacyMeta | undefined;
+      // legacy bulk 是房主的資料：UTF-8 / JSON / LegacyMeta 任一層壞掉都算描述壞掉
       try {
-        const meta = legacy ? decodeLegacyMeta(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(decodeBulk(legacy)!.payload))) : undefined;
-        game = make(m, meta);
+        meta = legacy ? decodeLegacyMeta(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(decodeBulk(legacy)!.payload))) : undefined;
       } catch { this.genMismatch(); return; }
+      try { game = make(m, meta); } catch (e) {
+        if (e instanceof SaveFormatError || e instanceof RangeError) { this.genMismatch(); return; }
+        console.error('[delve] guest replica build failed', e);
+        throw e;
+      }
     } else game = make(m);
     const sync = new ChunkSyncGuest(game.world);
     sync.reset();
@@ -504,6 +522,13 @@ export class NetGuest {
       for (const q of m.players) if (isObj(q) && typeof q.pid === 'string') this.peerInfo.set(q.pid, { nick: String(q.nick ?? ''), look: isObj(q.look) ? q.look : null });
     }
     this.st = 'syncing';
+    // 等 legacy 期間到的 ctrl（都在 legacy bulk 之前到）：依到達順序重放，與一般加入時 welcome 之後馬上處理的效果相同
+    const late = this.lateCtrl;
+    this.lateCtrl = [];
+    for (const c of late) {
+      if (this.isEnded()) return;
+      try { this.onReplicaCtrl(game, c); } catch { /* 只丟這一則 */ }
+    }
     // 比 welcome 先到的 bulk（snap）：現在有副本了，依到達順序套上
     const early = this.early;
     this.early = [];

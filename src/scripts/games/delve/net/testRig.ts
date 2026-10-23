@@ -46,9 +46,10 @@ export interface RigOptions {
   tamperWelcome?: (m: Welcome) => Welcome;
   /**
    * 測試鉤子：welcome（ctrl）與烘焙世界的 legacy bulk 誰先到客人。bulkFirst = welcome（與之後的 ctrl）擋到 legacy bulk 到了才放；
-   * welcomeFirst = 所有 bulk 擋到客人處理過 welcome 的那一幀之後才放
+   * welcomeFirst = 所有 bulk 擋到客人處理過 welcome 之後 bulkDelayFrames 幀（預設 1）才放
    */
   deliver?: 'bulkFirst' | 'welcomeFirst';
+  bulkDelayFrames?: number;
 }
 export interface Rig {
   net: LoopbackNet; readonly host: NetHost; hostGame: DelveGame; guests: NetGuest[]; visits: Map<string, VisitSave>; checkpoints: DelveCharacter[][];
@@ -159,8 +160,9 @@ class GateLink implements NetLink {
   private held: [Channel, Payload][] = [];
   private welcomed = false;
   private legacy = false;
-  /** welcomeFirst：客人處理過 welcome 的那一幀之後才放 bulk */
+  /** welcomeFirst：客人處理過 welcome 之後 bulkDelayFrames 幀才放 bulk */
   private passBulk = false;
+  private sinceWelcome = 0;
   constructor(private readonly inner: NetLink, private readonly o: RigOptions) {
     inner.onMessage((ch, d) => this.recv(ch, d));
   }
@@ -171,7 +173,10 @@ class GateLink implements NetLink {
   close(reason?: string): void { this.inner.close(reason); }
   buffered(ch: Channel): number { return this.inner.buffered(ch); }
   /** 每幀（客人 frame 之後） */
-  tick(): void { if (this.o.deliver === 'welcomeFirst' && this.welcomed && !this.passBulk) { this.passBulk = true; this.release(); } }
+  tick(): void {
+    if (this.o.deliver !== 'welcomeFirst' || !this.welcomed || this.passBulk) return;
+    if (++this.sinceWelcome >= (this.o.bulkDelayFrames ?? 1)) { this.passBulk = true; this.release(); }
+  }
   private emit(ch: Channel, d: Payload): void { for (const cb of this.cbs.slice()) cb(ch, d); }
   private release(): void { const h = this.held; this.held = []; for (const [ch, d] of h) this.emit(ch, d); }
   private recv(ch: Channel, data: Payload): void {
