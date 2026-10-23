@@ -333,7 +333,7 @@ export function encodeLiquidRle(amount: Uint8Array, type: Uint8Array): Uint8Arra
 }
 /** 解 RLE；長度不符 / 種類不合法 / 量與種類不一致 → SaveFormatError */
 export function decodeLiquidRle(bytes: Uint8Array, n: number): { amount: Uint8Array; type: Uint8Array } {
-  const amount = new Uint8Array(n), type = new Uint8Array(n);
+  // 第一遍：只驗證並加總 run 長度（不配置）；總和 ≠ n 就丟，避免惡意 n 先配置巨大緩衝
   let p = 0, i = 0;
   while (p < bytes.length) {
     let len = 0, shift = 0, b: number;
@@ -344,10 +344,19 @@ export function decodeLiquidRle(bytes: Uint8Array, n: number): { amount: Uint8Ar
     if (p + 2 > bytes.length) throw new SaveFormatError('liquids: truncated');
     const a = bytes[p++], t = bytes[p++];
     if (t > LIQ.HONEY || (a === 0) !== (t === 0) || a > LIQ_MAX || len < 1 || i + len > n) throw new SaveFormatError('liquids: bad cell');
-    amount.fill(a, i, i + len); type.fill(t, i, i + len);
     i += len;
   }
   if (i !== n) throw new SaveFormatError(`liquids: ${i} cells != ${n}`);
+  // 第二遍：確認後才配置並填值
+  const amount = new Uint8Array(n), type = new Uint8Array(n);
+  p = 0; i = 0;
+  while (p < bytes.length) {
+    let len = 0, shift = 0, b: number;
+    do { b = bytes[p++]; len |= (b & 0x7f) << shift; shift += 7; } while (b & 0x80);
+    const a = bytes[p++], t = bytes[p++];
+    amount.fill(a, i, i + len); type.fill(t, i, i + len);
+    i += len;
+  }
   return { amount, type };
 }
 /** chunk 清單的液體（依序每 chunk CHUNK*CHUNK 格，越界補 0） */

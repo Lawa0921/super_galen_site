@@ -5,7 +5,7 @@ import { T, W, SOLID_LUT } from '../engine/tiles';
 import { LIQ } from '../engine/world';
 import { CHUNK, GEN_VERSION } from '../engine/constants';
 import {
-  encodeSave, decodeSave, serializeGame, restoreGame, snapshotGame, SAVE_FORMAT, encodeLiquidRle, decodeLiquidRle,
+  encodeSave, decodeSave, serializeGame, restoreGame, snapshotGame, SAVE_FORMAT, encodeLiquidRle, decodeLiquidRle, SaveFormatError,
 } from './serialize';
 
 const SMALL = { width: 160, height: 100 };
@@ -118,3 +118,12 @@ describe('存檔格式 6（液體）', { timeout: 180_000 }, () => {
   });
 });
 
+
+describe('decodeLiquidRle 配置前驗證', () => {
+  it('decodeLiquidRle 先加總 run 長度再配置：總長不符直接丟 SaveFormatError、不先配置 n 大小的緩衝', () => {
+    const rle4 = encodeLiquidRle(new Uint8Array(4), new Uint8Array(4)); // run 總長 4
+    expect(() => decodeLiquidRle(rle4, 50_000_000)).toThrow(SaveFormatError);
+    expect(() => decodeLiquidRle(rle4, 2 ** 33)).toThrow(SaveFormatError); // 舊版：new Uint8Array(2 ** 33) 先丟 RangeError
+    expect(() => decodeLiquidRle(rle4, 2 ** 40)).toThrow(SaveFormatError); // Node 24 上 2 ** 33 能（惰性）配置，2 ** 40 才會在舊版丟 RangeError
+  });
+});
