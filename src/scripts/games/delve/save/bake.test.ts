@@ -7,7 +7,7 @@ import { gzipSync } from 'node:zlib';
 import { generateWorld } from '../engine/legacy/worldgen';
 import { T } from '../engine/tiles';
 import { CHUNK, FIXED_DT, GEN_VERSION_V2, TILE_SIZE } from '../engine/constants';
-import { chunkKey } from '../engine/coords';
+import { X_LIMIT, chunkKey } from '../engine/coords';
 import { OuterGen, OuterProfile, SEA_W, SEG_W, frameOf } from '../engine/legacy/chunkgen';
 import { outerRegionId } from '../engine/discovery';
 import { GEN2_VERSION, Gen2Source } from '../engine/gen2';
@@ -340,12 +340,18 @@ describe('舊世界烘焙（Task 16）', { timeout: 120_000 }, () => {
         const gx = sx === rg.east.x ? sx : sx - 1, ox = sx === rg.east.x ? gx + 1 : gx - 1;
         const g2 = new Gen2Source(FIXTURE11_SEED, { origin: { home: null, east: rg.east, west: rg.west }, recordLocks: false });
         const rawCol = (x: number): Column => { const c = new Column(x >> 5, 1200); g2.fill(c, x, x + 1); return c; };
-        const rg2 = rawCol(gx), ro = rawCol(ox);
+        const rg2 = rawCol(gx), ro = rawCol(ox), chestYs = new Set(g2.objectsIn(gx, gx + 1).map((c) => c.y));
         for (let y = 0; y < 1200; y++) {
           for (const x of [sx - 2, sx - 1, sx, sx + 1]) {
             if (src.inLegacy(x) && (w.getFg(x, y) !== v1w.getFg(x, y) || w.getLiquid(x, y) !== v1w.getLiquid(x, y))) throw new Error(`v1 side changed ${x},${y}`);
           }
-          if (w.getFg(gx, y) !== rg2.fg[li(gx, y)]) { expect(w.getFg(gx, y)).toBe(T.STONE); sealed++; }
+          if (w.getFg(gx, y) !== rg2.fg[li(gx, y)]) {
+            // 只封空氣格 / 本來有液體的格，不封生成物件那格
+            expect(w.getFg(gx, y)).toBe(T.STONE);
+            expect(rg2.fg[li(gx, y)] === T.AIR || rg2.liquid[li(gx, y)] > 0).toBe(true);
+            expect(chestYs.has(y)).toBe(false);
+            sealed++;
+          }
           if (w.getFg(ox, y) !== ro.fg[li(ox, y)] || w.getLiquid(ox, y) !== ro.liquid[li(ox, y)]) throw new Error(`gen2 beyond seam column changed ${ox},${y}`);
         }
       }
@@ -377,6 +383,46 @@ describe('舊世界烘焙（Task 16）', { timeout: 120_000 }, () => {
     const r = restoreSplit(holed, char);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toBe('format');
+  });
+
+  it('接縫封口不碰箱子 / 門等非空氣格（箱子照樣登錄），只封空氣格', () => {
+    const src = new BakedSource(FIXTURE11_SEED, meta, bakeInfo, new LockTable(), false);
+    const vx = bakeInfo.west.x, gx = vx - 1;
+    const inner = new Column(vx >> 5, 1200, false);
+    new OuterGen(FIXTURE11_SEED, frame).fill(inner, vx, vx + 1);
+    const ys: number[] = [];
+    for (let y = 0; y < 1200 && ys.length < 3; y++) if (inner.liquid[li(vx, y)] > 0 && inner.fg[li(vx, y)] === T.AIR) ys.push(y);
+    expect(ys).toHaveLength(3);
+    const [yChest, yDoor, yAir] = ys;
+    // gen2 那一欄在這三列放箱子 / 開著的門 / 空氣（都沒有液體），箱子由 objectsIn 回報
+    const g2 = src.gen2, fill0 = g2.fill.bind(g2), objs0 = g2.objectsIn.bind(g2);
+    g2.fill = (col, a, b) => {
+      fill0(col, a, b);
+      if (gx < a || gx >= b) return;
+      for (const [y, t] of [[yChest, T.CHEST], [yDoor, T.DOOR_OPEN], [yAir, T.AIR]] as const) { col.fg[li(gx, y)] = t; col.liquid[li(gx, y)] = 0; col.liquidType[li(gx, y)] = 0; }
+    };
+    g2.objectsIn = (a, b) => [...objs0(a, b), ...(gx >= a && gx < b ? [{ x: gx, y: yChest, slots: [{ item: 'copper_coin' as const, count: 3 }] }] : [])];
+    const w = worldOf(src);
+    w.ensureColumn(gx >> 5);
+    expect(w.getFg(gx, yChest)).toBe(T.CHEST);
+    expect(w.getFg(gx, yDoor)).toBe(T.DOOR_OPEN);
+    expect(w.getFg(gx, yAir)).toBe(T.STONE);
+    expect(w.chests.get(w.idx(gx, yChest))?.[0]).toEqual({ item: 'copper_coin', count: 3 });
+  });
+
+  it('烘焙結果自己先過讀檔驗證：已知點逼近 X_LIMIT（接縫會到 X_LIMIT 以外）→ bakeWorld 丟錯、輸入不動', () => {
+    const id = FIXTURE11_WHO.id, v = fixtureWorld.header.visits[id];
+    const far: typeof fixtureWorld = { ...fixtureWorld, header: { ...fixtureWorld.header, visits: { [id]: { ...v, markers: [{ x: X_LIMIT - 1, y: 300 }] } } } };
+    expect(legacyRange(far.header, profile, stones).east.x).toBeGreaterThanOrEqual(X_LIMIT);
+    const before = structuredClone(far);
+    expect(() => bakeWorld(far, char, gen, 1)).toThrow(/does not validate.*side x/);
+    expect(far).toEqual(before);
+  });
+
+  it('bake.frame 與 legacy.frame 不同 → 損毀', () => {
+    const g = baked.header.gen2!;
+    expect(() => validGen2({ ...g, bake: { ...g.bake, frame: { ...g.bake!.frame, edgeR: g.bake!.frame.edgeR + 1 } } })).toThrow(SaveFormatError);
+    expect(() => validBakeInfo(g.bake, { ...meta.frame, width: 4232 })).toThrow(SaveFormatError);
   });
 
   it('小尺寸 fixture（format9 / format10）判定不適用，照舊載入', () => {

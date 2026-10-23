@@ -150,11 +150,11 @@ export function decodeLegacyMeta(v: unknown): LegacyMeta {
   if (!isObj(j.layers)) throw new SaveFormatError('legacy: layers');
   const layers: GenLayers = { rock: b64ToI16(j.layers.rock, W, 'rock'), deep: b64ToI16(j.layers.deep, W, 'deep'), molten: b64ToI16(j.layers.molten, W, 'molten') };
   const regions = j.regions.map((r, i) => {
-    try { regionFromJSON(r, layers, f.height); } catch (e) {
+    // 存正規化後的結果（regionFromJSON 只取需要的欄位、shape 重建），不是存檔原樣
+    try { return toRegionJSON(regionFromJSON(r, layers, f.height)); } catch (e) {
       if (e instanceof RangeError) throw new SaveFormatError(`legacy: regions[${i}]: ${e.message}`);
       throw e;
     }
-    return copy(r);
   });
   // 地區 id = 陣列索引（Discovery 以 id 查清單）
   regions.forEach((r, i) => { if (r.id !== i) throw new SaveFormatError(`legacy: regions[${i}].id`); });

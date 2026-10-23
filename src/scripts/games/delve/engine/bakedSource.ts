@@ -6,6 +6,7 @@
 //   · 接縫封口：v1 與 gen2 的地下（洞穴、熔岩層）各算各的，接縫兩側的液體不會剛好對上。緊貼接縫的那一欄 gen2
 //     （west.x − 1、east.x）裡，凡是與 v1 內側那一欄的同列格「兩格都不是實心、至少一格有液體、又不是同種滿格」的格，改成石頭、
 //     清掉液體：接縫上不會有液體牆（流進另一側的空氣），v1 那一側一格都不改（舊範圍與舊世界逐格相同）。
+//     只封空氣格與本來就有液體的格；生成物件（objectsIn 的箱子）那格、門 / 平台 / 植物等其他非實心格一律不動。
 import { Column, li, type ColumnLayers, type ColumnSource, type GenChest } from './column';
 import { T, SOLID_LUT } from './tiles';
 import { LIQ_MAX } from './liquidKind';
@@ -34,6 +35,10 @@ export class BakedSource implements ColumnSource {
     this.lo = bake.west.x;
     this.hi = bake.east.x;
     if (!(this.lo <= 0 && this.hi >= this.W)) throw new RangeError(`baked source: legacy range [${this.lo}, ${this.hi}) must cover [0, ${this.W})`);
+    const f = meta.frame, g = bake.frame;
+    if (f.width !== g.width || f.height !== g.height || f.edgeL !== g.edgeL || f.edgeR !== g.edgeR || f.cavernY !== g.cavernY || f.moltenY !== g.moltenY) {
+      throw new RangeError('baked source: bake.frame differs from legacy.frame');
+    }
     this.v1 = new OuterGen(seed, bake.frame);
     this.gen2 = new Gen2Source(seed, { origin: { home: null, east: bake.east, west: bake.west }, locks, recordLocks });
   }
@@ -68,10 +73,14 @@ export class BakedSource implements ColumnSource {
       this.v1.fill(v, vx, vx + 1);
       this.inner.set(vx, v);
     }
+    // 生成物件那幾格（箱子：World 載入時會以 tile 登錄）不封
+    const keep = new Set<number>();
+    for (const c of this.gen2.objectsIn(gx, gx + 1)) keep.add(c.y);
     for (let y = 0; y < col.height; y++) {
       const i = li(gx, y), j = li(vx, y);
-      if (SOLID_LUT[col.fg[i]] === 1 || SOLID_LUT[v.fg[j]] === 1) continue;
+      if (SOLID_LUT[v.fg[j]] === 1 || keep.has(y)) continue;
       const a = col.liquid[i], b = v.liquid[j];
+      if (col.fg[i] !== T.AIR && a === 0) continue;
       if (a === 0 && b === 0) continue;
       if (a === LIQ_MAX && b === LIQ_MAX && col.liquidType[i] === v.liquidType[j]) continue;
       col.fg[i] = T.STONE;

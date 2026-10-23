@@ -18,7 +18,7 @@ import type { SideOrigin } from '../engine/gen2/layout';
 import type { Waystones } from '../engine/waystones';
 import type { GenResult } from '../engine/legacy/worldgen';
 import type { DelveCharacter } from './character';
-import { SaveFormatError, encodeDeltas, snapshotGame } from './serialize';
+import { SaveFormatError, encodeDeltas, snapshotGame, validGen2 } from './serialize';
 import { encodeLegacyMeta } from './legacyMeta';
 import { restoreSplit, splitSnapshot, whereOf, whoOf, type WorldData, type WorldHeader } from './worldSave';
 
@@ -112,13 +112,21 @@ export function bakeWorld(world: WorldData, character: DelveCharacter, gen: GenR
   const header = { ...data.header, genVersion: GEN_VERSION_V2, bounds: 'infinite' as const, outerGen: GEN2_VERSION, gen2: { locks: [], bake, legacy } };
   const out = splitSnapshot({ header, chunks: data.chunks }, whoOf(character), whereOf(h), now).world;
   if (r.freshVisit) out.header.visits = { ...h.visits };
+  // 自己先過一次讀檔時的驗證（validGen2：bake 的接縫範圍、bake.frame = legacy.frame、LegacyMeta 每個欄位）：
+  // 寫出去之後才讀不回來就太遲了 → 在這裡丟（原 v7 存檔沒被動過，可以重試）
+  try { validGen2(JSON.parse(JSON.stringify(out.header.gen2))); } catch (e) {
+    throw new Error(`bakeWorld: baked header does not validate: ${e instanceof Error ? e.message : String(e)}`);
+  }
   return out;
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
-/** 存檔的 gen2.bake → BakeInfo；形狀不對 / 接縫沒包住中央 / 安靜 chunk 不是中央鍵 → SaveFormatError。回傳副本 */
-export function validBakeInfo(v: unknown): BakeInfo {
+/**
+ * 存檔的 gen2.bake → BakeInfo；形狀不對 / 接縫沒包住中央或到了 ±X_LIMIT / 安靜 chunk 不是中央鍵 /
+ * bake.frame 與 legacy 的 frame 不同（給了 legacyFrame 時）→ SaveFormatError。回傳副本
+ */
+export function validBakeInfo(v: unknown, legacyFrame?: CentralFrame): BakeInfo {
   if (!isObj(v)) throw new SaveFormatError('gen2.bake');
   const f = v.frame;
   if (!isObj(f) || !['width', 'height', 'edgeL', 'edgeR', 'cavernY', 'moltenY'].every((k) => Number.isInteger(f[k]))
@@ -127,6 +135,9 @@ export function validBakeInfo(v: unknown): BakeInfo {
     width: f.width as number, height: f.height as number, edgeL: f.edgeL as number, edgeR: f.edgeR as number,
     cavernY: f.cavernY as number, moltenY: f.moltenY as number,
   };
+  if (legacyFrame && (Object.keys(frame) as (keyof CentralFrame)[]).some((k) => frame[k] !== legacyFrame[k])) {
+    throw new SaveFormatError('gen2.bake.frame != legacy.frame');
+  }
   const side = (s: unknown, dir: 1 | -1): SideOrigin => {
     if (!isObj(s) || !Number.isInteger(s.x) || !Number.isInteger(s.seaY) || !Number.isInteger(s.shore)
       || (s.start !== 'sea' && s.start !== 'continent')) throw new SaveFormatError('gen2.bake side');

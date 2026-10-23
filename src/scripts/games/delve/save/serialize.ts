@@ -252,9 +252,9 @@ export function validGen2(v: unknown): Gen2Save | undefined {
   }
   if ((o.bake === undefined) !== (o.legacy === undefined)) throw new SaveFormatError('gen2: bake and legacy go together');
   if (o.bake === undefined) return { locks };
-  const bake = validBakeInfo(o.bake);
-  // 只驗證（解得開、每個欄位合法）；存檔照原樣帶著 JSON，讀檔開機時再解一次（worldGenFor）
-  decodeLegacyMeta(o.legacy);
+  // legacy 只驗證（解得開、每個欄位合法）；存檔照原樣帶著 JSON，讀檔開機時再解一次（worldGenFor）。bake.frame 必須 = legacy.frame
+  const meta = decodeLegacyMeta(o.legacy);
+  const bake = validBakeInfo(o.bake, meta.frame);
   return { locks, bake, legacy: o.legacy as LegacyMetaJSON };
 }
 /** header.gen2 依 genVersion：8 → 必有（validGen2）；< 8 → 必無；> 8（較新版）→ 不讀（genBlocker 會回較新版本） */
