@@ -109,7 +109,9 @@ const firstSpeaker = (lines: ScriptLine[]): Speaker | undefined => lines.find((l
 /** Says one line in the box: its speaker's plate (or `plate`, when given), and the face on its side. `heavy`: see `faceOrder`. */
 function sayLine(talk: Dialogue, line: ScriptLine, ctx: StoryCtx, first: Speaker | undefined, plate?: string, heavy = false): Promise<void> {
   const sp = speakerOf(line.who, ctx.game.state, ctx.art, line.mood, heavy);
-  return talk.say(plate ?? sp.name, line.text, sp.face ? { src: sp.face, side: line.who === first ? 'left' : 'right' } : undefined);
+  // Narration keeps the last speaker's face up, dimmed (staging S4): the scene stays peopled between her lines.
+  const face = sp.face ? { src: sp.face, side: line.who === first ? 'left' as const : 'right' as const } : line.who === 'narrator' ? 'keep' as const : undefined;
+  return talk.say(plate ?? sp.name, line.text, face);
 }
 
 /**
@@ -123,6 +125,7 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
   const first = firstSpeaker(lines);
   const heavy = heavyScene(id);
   talk.setStyle(sceneKind(id) === 'memory' ? 'memory' : 'plain');
+  talk.hold(true);
 
   const run = async (): Promise<'done' | 'skipped'> => {
     for (const line of lines) {
@@ -132,6 +135,8 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
     if (summary) await summary;
     finished = true;
     talk.setStyle('plain');
+    talk.hold(false);
+    talk.close();
     return summary ? 'skipped' : 'done';
   };
   const done = run();
@@ -158,15 +163,18 @@ export function playLines(talk: Dialogue, lines: ScriptLine[], ctx: StoryCtx, pl
   let stop = (): void => {};
   const stopped = new Promise<'skipped'>((r) => { stop = () => r('skipped'); });
   const first = firstSpeaker(lines);
+  talk.hold(true);
 
   const run = async (): Promise<'done' | 'skipped'> => {
     for (const [i, line] of lines.entries()) {
       const said = sayLine(talk, line, ctx, first, plate?.(line, i)).then(() => 'said' as const);
       if ((await Promise.race([said, stopped])) === 'skipped') return 'skipped';
     }
+    talk.close();
     return 'done';
   };
-  const done = run().finally(() => { finished = true; });
+  // Skipped, the line on screen stays for the caller's next one; done, the box goes as it would after any last line.
+  const done = run().finally(() => { finished = true; talk.hold(false); });
 
   return {
     done,

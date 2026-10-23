@@ -43,10 +43,42 @@ describe('playScene', () => {
     p.onAction('confirm');
     await tick();
     expect(shown(talk)).toBe('三');
-    expect(talk.el.querySelector('img')).toBeNull();
+    // Narration keeps the last speaker's face, dimmed (staging S4).
+    const kept = talk.el.querySelector('.slx-talk-face--right');
+    expect(kept).not.toBeNull();
+    expect(kept!.classList.contains('slx-talk-face--dim')).toBe(true);
     p.onAction('confirm');
     await expect(p.done).resolves.toBe('done');
     expect(talk.busy()).toBe(false);
+    expect(talk.el.hidden).toBe(true);           // the scene over, the box goes
+    expect(talk.el.querySelector('img')).toBeNull();
+  });
+
+  it('the box stays up between the lines of a scene (staging S4)', async () => {
+    const { talk, ctx } = mk();
+    stage('chat:liz:1', [{ who: 'hero', text: '一' }, { who: 'narrator', text: '二' }, { who: 'rin', text: '三' }]);
+    const p = playScene(talk, 'chat:liz:1', ctx);
+    for (let i = 0; i < 2; i++) {
+      p.onAction('confirm');
+      expect(talk.el.hidden, `after line ${i + 1}`).toBe(false);
+      await tick();
+    }
+    expect(talk.el.querySelectorAll('img')).toHaveLength(1);   // Rin's face replaced Lorne's kept one
+    p.onAction('confirm');
+    await p.done;
+    expect(talk.el.hidden).toBe(true);
+  });
+
+  it('a skipped scene shows its summary with no face', async () => {
+    const { talk, ctx } = mk();
+    stage('chat:liz:1', [{ who: 'hero', text: '一' }, { who: 'narrator', text: '二' }]);
+    const p = playScene(talk, 'chat:liz:1', ctx);
+    p.onAction('cancel');
+    await tick();
+    expect(talk.el.querySelector('img')).toBeNull();
+    p.onAction('confirm');
+    await p.done;
+    expect(talk.el.hidden).toBe(true);
   });
 
   it('a heavy scene shows the near face for a mood without art; a light one the old fallback (staging S3)', async () => {
@@ -177,6 +209,18 @@ describe('playLines (story polish Task 1)', () => {
     expect(await plates()).toEqual([{ name: CHARACTERS.rin.name, side: 'left' }, { name: CHARACTERS.hero.name, side: 'right' }]);
     // A plate given for a line replaces the name only: the face stays where it was.
     expect(await plates((_l, i) => (i === 0 ? '？？？' : undefined))).toEqual([{ name: '？？？', side: 'left' }, { name: CHARACTERS.hero.name, side: 'right' }]);
+  });
+
+  it("playLines keeps the box up between lines and narration keeps the last face, dimmed (staging S4)", async () => {
+    const { talk, ctx } = mk();
+    const p = playLines(talk, [{ who: 'rin', text: '一' }, { who: 'narrator', text: '二' }], ctx);
+    p.onAction('confirm');
+    expect(talk.el.hidden).toBe(false);
+    await tick();
+    expect(talk.el.querySelector('.slx-talk-face--dim')).not.toBeNull();
+    p.onAction('confirm');
+    await expect(p.done).resolves.toBe('done');
+    expect(talk.el.hidden).toBe(true);
   });
 
   it('cancel stops playLines with skipped and no summary', async () => {

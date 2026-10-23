@@ -161,6 +161,8 @@ export class Dialogue {
   private face: HTMLImageElement | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private resolve: (() => void) | null = null;
+  /** A scene is playing (staging S4): a confirmed line leaves the box and its face up until the next line or `close()`. */
+  private held = false;
 
   /** `onClose` runs synchronously when a line is dismissed, so owners can unlock their windows before the next click. */
   constructor(private charsPerSecond: number, private onClose?: () => void) {
@@ -178,12 +180,32 @@ export class Dialogue {
     this.el.classList.toggle('slx-talk--memory', style === 'memory');
   }
 
-  /** `face` puts a portrait on the box's left or right edge for this line; a line without one shows no image. */
-  say(name: string, text: string | Rich, face?: { src: string; side: 'left' | 'right' }): Promise<void> {
-    this.stop();
+  /**
+   * While held (a scene playing, staging S4) the box stays up between lines: confirming a line keeps it and its face on
+   * screen for the next one, so nothing blinks out. Unhold, then `close()`, when the scene is over.
+   */
+  hold(on: boolean): void { this.held = on; }
+
+  /** Puts the box and its face away, unless a line is still waiting to be read. */
+  close(): void {
+    if (this.resolve) return;
+    this.el.hidden = true;
     this.face?.remove();
     this.face = null;
-    if (face) {
+  }
+
+  /**
+   * `face` puts a portrait on the box's left or right edge for this line; a line without one shows no image. `'keep'` (a
+   * narration line in a scene, staging S4) keeps the face already up, dimmed, so the speaker stays in the picture.
+   */
+  say(name: string, text: string | Rich, face?: { src: string; side: 'left' | 'right' } | 'keep'): Promise<void> {
+    this.stop();
+    if (face === 'keep') this.face?.classList.add('slx-talk-face--dim');
+    else {
+      this.face?.remove();
+      this.face = null;
+    }
+    if (face && face !== 'keep') {
       this.face = el('img', { class: `slx-talk-face slx-talk-face--${face.side}`, attrs: { src: face.src, alt: '', draggable: 'false' } });
       this.el.prepend(this.face);
     }
@@ -215,9 +237,11 @@ export class Dialogue {
     if (this.timer) { this.complete(); return true; }
     const r = this.resolve;
     this.resolve = null;
-    this.el.hidden = true;
-    this.face?.remove();
-    this.face = null;
+    if (!this.held) {
+      this.el.hidden = true;
+      this.face?.remove();
+      this.face = null;
+    }
     this.onClose?.();
     r();
     return true;

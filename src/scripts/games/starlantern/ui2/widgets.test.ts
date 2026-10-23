@@ -395,6 +395,49 @@ describe('Dialogue faces', () => {
     expect(d.el.querySelector('img')).toBeNull();
   });
 
+  it("a narration line can keep the last speaker's face, dimmed; the next face replaces it (staging S4)", () => {
+    const d = new Dialogue(Infinity);
+    void d.say('洛恩', '走吧。', { src: '/a.png', side: 'left' });
+    const face = d.el.querySelector('img')!;
+    void d.say('', '風很冷。', 'keep');
+    expect(d.el.querySelector('img')).toBe(face);
+    expect(face.classList.contains('slx-talk-face--dim')).toBe(true);
+    void d.say('凜', '嗯。', { src: '/b.png', side: 'right' });
+    const next = d.el.querySelectorAll('img');
+    expect(next).toHaveLength(1);
+    expect(next[0].getAttribute('src')).toBe('/b.png');
+    expect(next[0].classList.contains('slx-talk-face--dim')).toBe(false);
+  });
+
+  it('keep with no face before shows no image', () => {
+    const d = new Dialogue(Infinity);
+    void d.say('', '風很冷。', 'keep');
+    expect(d.el.querySelector('img')).toBeNull();
+  });
+
+  it('held, the box stays up between lines with its face; close() puts it away (staging S4)', async () => {
+    const closed = vi.fn();
+    const d = new Dialogue(Infinity, closed);
+    d.hold(true);
+    const said = d.say('洛恩', '走吧。', { src: '/a.png', side: 'left' });
+    d.onAction('confirm');
+    await said;
+    expect(closed).toHaveBeenCalledTimes(1);
+    expect(d.el.hidden).toBe(false);
+    expect(d.el.querySelector('img')).not.toBeNull();
+    d.hold(false);
+    d.close();
+    expect(d.el.hidden).toBe(true);
+    expect(d.el.querySelector('img')).toBeNull();
+  });
+
+  it('close() leaves a line that is still waiting alone', () => {
+    const d = new Dialogue(Infinity);
+    void d.say('洛恩', '走吧。');
+    d.close();
+    expect(d.el.hidden).toBe(false);
+  });
+
   it('memory style marks the box', () => {
     const d = new Dialogue(Infinity);
     d.setStyle('memory');
