@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
+import type { EnemyDef } from './types';
 import { CONDITIONS } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
@@ -421,10 +423,17 @@ describe("a fight's difficulty in scaleEnemy (difficulty plan Task 1)", () => {
   const [NIGHT_WOLF_HP, NIGHT_WOLF_ATK, NIGHT_WOLF_MAG] = [851, 251, 57];
 
   it('no tier is the old enemy', () => {
-    // Guard (green before the implementation): a null tier is the call without one.
+    // Guard (green before the implementation): a null tier is the call without one, and both are the enemies as they
+    // were before any tier code: a SHA-256 of every enemy x region x depth 1/5/10/25 x elite, recorded at 29fc255ca (the
+    // difficulty plan's base; T0-T1 review, minor 1: equal to each other alone would pass a x1 path).
+    const all: EnemyDef[] = [];
     for (const def of Object.values(ENEMIES)) for (const r of Object.values(REGIONS)) for (const d of [1, 5, 10, 25]) {
-      for (const elite of [false, true]) expect(scaleEnemy(def, d, r, elite, plain, null), `${def.id} ${r.id} d${d}`).toEqual(scaleEnemy(def, d, r, elite, plain));
+      for (const elite of [false, true]) {
+        expect(scaleEnemy(def, d, r, elite, plain, null), `${def.id} ${r.id} d${d}`).toEqual(scaleEnemy(def, d, r, elite, plain));
+        all.push(scaleEnemy(def, d, r, elite));
+      }
     }
+    expect(createHash('sha256').update(JSON.stringify(all)).digest('hex')).toBe('8adea5577db5e02f5647cf2ccaea2f3f1ba25482c96dc2b8c441147b43d17b19');
   });
 
   it('a tier scales hp, atk and mag, not def, mdf or spd', () => {
@@ -459,8 +468,9 @@ describe("a fight's difficulty in scaleEnemy (difficulty plan Task 1)", () => {
 
   it('a tier pays more exp and gold, rounded once', () => {
     const t = TIERS.nightmare;
-    // An enemy and depth where rounding twice would be off by one: the tier must round once.
+    // An enemy and depth where rounding twice would be off by one, for exp and for gold: the tier must round once.
     let found = false;
+    let foundGold = false;
     for (const def of Object.values(ENEMIES)) for (let d = 1; d <= 30; d++) {
       const reward = rewardGrowth(def, d);
       const once = Math.round(def.exp * reward * plain.expMul * t.reward);
@@ -469,8 +479,10 @@ describe("a fight's difficulty in scaleEnemy (difficulty plan Task 1)", () => {
       expect(got.exp, `${def.id} d${d} exp`).toBe(once);
       expect(got.gold, `${def.id} d${d} gold`).toBe(Math.round(def.gold * reward * plain.goldMul * t.reward));
       if (once !== twice) found = true;
+      if (Math.round(def.gold * reward * plain.goldMul * t.reward) !== Math.round(Math.round(def.gold * reward * plain.goldMul) * t.reward)) foundGold = true;
     }
     expect(found).toBe(true);
+    expect(foundGold).toBe(true);
   });
 });
 

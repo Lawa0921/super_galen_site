@@ -4,6 +4,9 @@
  * Normal. Opt-in (BANDS=1, npm run test:starlantern:bands -- tierBands.baseline); every number reported with
  * BALANCE_REPORT set, one `[tiers-base]` line a cell (engine/__fixtures__/tiers/baseline.normal.txt keeps them sorted).
  */
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, baselineLine, feasibility, feasibilityLine, normalRoad } from './tierBands';
 
@@ -12,12 +15,22 @@ const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0
 const say = (line: string) => { if (report) console.info(`[tiers-base] ${line}`); };
 
 describe.skipIf(!on)('the difficulty bands: the Normal baseline (difficulty plan Task 0)', () => {
-  it('every baseline cell is measured on Normal', () => {
+  it('every baseline cell is measured on Normal; the bare default as the fixture keeps it', () => {
+    const lines: string[] = [];
     for (const depth of BASELINE_DEPTHS) for (const tier of BASELINE_TIERS) for (const kind of ['crowd', 'boss'] as const) {
       const r = normalRoad(depth, kind, tier);
-      say(baselineLine(depth, tier, kind, r));
+      const line = baselineLine(depth, tier, kind, r);
+      say(line);
+      lines.push(`[tiers-base] ${line}`);
       expect(r.fights, `d${depth} ${tier} ${kind}`).toBeGreaterThan(0);
     }
+    // The bare default on Normal does not move (T0-T1 review, minor 5): its lines are the fixture's, sorted as it keeps
+    // them. The build cells are reported, not pinned: a build's own policy may change (Task 2 gave the cure builds a
+    // cure-ailment rule, which moved the magic and rare crowds at depths 15, 25 and 30; the fixture keeps Task 0's lines).
+    const bare = (l: string) => l.includes(' bare ');
+    const fixture = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '__fixtures__/tiers/baseline.normal.txt'), 'utf8');
+    expect(lines.filter(bare).sort()).toEqual(fixture.replace(/\r/g, '').trimEnd().split('\n').filter(bare));
+    expect(lines.filter(bare)).toHaveLength(BASELINE_DEPTHS.length * 2);
   }, 3_000_000);
 
   it('magic runes already pull apart from bare on Normal, at every boss', () => {

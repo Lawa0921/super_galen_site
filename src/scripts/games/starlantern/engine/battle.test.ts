@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { createHash } from 'node:crypto';
 import { STORY_FIGHT_ROUNDS, LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, intentLabel, resolveRound, rewards, skillCost, skillFor, turnOrder, writeBack } from './battle';
 import { WEAPON_MASTERY_PCT } from '../data/equipment';
 import { RIN_DAWN, SKY_LANTERN, ULTIMATES, skyForm, HERO_ULTIMATES } from '../data/ultimates';
@@ -1130,7 +1131,14 @@ describe('character mechanics (plan 8c)', () => {
 });
 
 describe('Normal takes no new path (difficulty plan Task 1)', () => {
-  // Guard (green before the implementation): 'normal' and no difficulty are the same fight, draw for draw.
+  // Guard (green before the implementation): 'normal' and no difficulty are the same fight, draw for draw, and both are
+  // the fight as it was before any tier code: the draws and a SHA-256 of the final state, recorded at 29fc255ca (the
+  // difficulty plan's base) with this same play (T0-T1 review, minor 1: equal to each other alone would pass a x1 path).
+  const BEFORE_TIERS = [
+    '100:edd6aa7d325a733c32991bf99ee742edea953806fbe316c679fde16ffdc921c8',
+    '142:059a9a42be4a3aa30f0bc3be73da7b86b8eedc60b5cad759fe6813b4bfc06549',
+    '356:e0f8ce703e830bf5be81b994db0d480c30c94c01efd644ba895ecfee8198e660',
+  ];
   it('Normal and no difficulty are the same fight', () => {
     const main10 = encounterTable('mainline', 10)[0];
     const cases: { label: string; ids: string[]; boss: boolean; scale: { depth: number; region: 'mainline' | 'mire'; elite?: string } }[] = [
@@ -1138,7 +1146,7 @@ describe('Normal takes no new path (difficulty plan Task 1)', () => {
       { label: 'mire d5', ids: encounterTable('mire', 5)[0], boss: false, scale: { depth: 5, region: 'mire' } },
       { label: 'boss d10', ids: ['lanterneater'], boss: true, scale: { depth: 10, region: 'mainline' } },
     ];
-    for (const c of cases) {
+    cases.forEach((c, i) => {
       const party = partyAt(Math.min(50, depthLevel(c.scale.depth)), {}, c.scale.depth);
       const start = (difficulty?: 'normal') => createBattle({ party, enemyIds: c.ids, boss: c.boss, inventory: {}, revealed: {}, scale: { ...c.scale, ...(difficulty ? { difficulty } : {}) } });
       expect(JSON.stringify(start('normal')), c.label).toBe(JSON.stringify(start()));
@@ -1154,7 +1162,8 @@ describe('Normal takes no new path (difficulty plan Task 1)', () => {
       const b = play();
       expect(a.draws, c.label).toBeGreaterThan(0);
       expect(a, c.label).toEqual(b);
-    }
+      expect(`${b.draws}:${createHash('sha256').update(b.state).digest('hex')}`, c.label).toBe(BEFORE_TIERS[i]);
+    });
   });
 });
 

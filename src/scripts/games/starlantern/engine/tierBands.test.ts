@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { BUILDS, buildOf } from '../data/builds';
 import { STANDARD_LINEUP } from './party';
+import { ODD_LINEUPS } from './sim';
 import { encounterTable } from './scaling';
 import { BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, baselineLine, measureCell, pullsApart, roadCell, tierLineup, TIER_SEEDS, type TierRun } from './tierBands';
 import type { CharacterId } from './types';
@@ -45,6 +46,13 @@ describe('difficulty band measurements (difficulty plan Task 0)', () => {
     expect(fill.ids).toEqual(ids);
     expect(buildOf('hero', fill.build!.hero!)!.hero).toBe('healer');
     expect(fill.heroBuild).toBe('healer');
+    // Every fill of the odd lineups resolves at every level a cell is measured at (Lv 38 and the cap); none throws.
+    for (const [k, odd] of Object.entries(ODD_LINEUPS)) for (const level of [38, 50]) for (const kind of ['crowd', 'boss'] as const) {
+      const l = tierLineup(level, kind, 'magic', odd.ids, odd.fill);
+      expect(l.heroBuild, `${k} Lv${level} ${kind}`).toBe(odd.fill);
+    }
+    // A fill the hero has no build for throws (the balanced hero's only rune build is 殘響, which is no fill).
+    expect(() => tierLineup(50, 'crowd', 'magic', ['hero'], 'tank-x' as never)).toThrow(/no rune build for the fill/);
     // Bare: the default, no build and no runes.
     const bare = tierLineup(38, 'crowd', 'bare');
     expect(bare.build).toBeUndefined();

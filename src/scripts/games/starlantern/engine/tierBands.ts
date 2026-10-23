@@ -30,7 +30,12 @@ const scenarioOf = (kind: CellKind): BuildScenario => (kind === 'boss' ? 'boss' 
  */
 function pickBuild(id: CharacterId, level: number, scenario: BuildScenario, heroFill?: HeroBuild): BuildDef | undefined {
   const runeBuilds = BUILDS[id].filter((b) => b.key !== 'standard' && (b.minLevel ?? 0) <= level);
-  if (id === 'hero' && heroFill) return runeBuilds.find((b) => b.hero === heroFill);
+  if (id === 'hero' && heroFill) {
+    // A fill with no build would quietly field the standard hero (T0-T1 review, minor 4): a test hook mends nothing.
+    const fill = runeBuilds.find((b) => b.hero === heroFill);
+    if (!fill) throw new Error(`the hero has no rune build for the fill ${heroFill} at Lv ${level}`);
+    return fill;
+  }
   return runeBuilds.find((b) => b.scenario === scenario) ?? runeBuilds[0];
 }
 
@@ -91,7 +96,7 @@ export function measureCell(c: TierCell): TierRun {
         ...(c.kind === 'elite' ? { elite: g[0] } : {}),
         ...(c.difficulty ? { difficulty: c.difficulty } : {}),
         ...(c.affixes ? { affixes: c.affixes } : {}),
-      } as BattleScale;
+      } as BattleScale;   // TODO(difficulty plan Task 3): drop the cast once BattleScale carries `affixes` (T0-T1 review, minor 3).
       for (let k = 1; k <= seeds; k++) {
         const r = simBattle(structuredClone(kit), g, c.kind === 'boss', k * 7919, scale, undefined, 'skill', c.lineup.abyss, undefined, { policies });
         n++;
