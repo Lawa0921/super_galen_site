@@ -111,8 +111,8 @@ export function bootDelve(root: HTMLElement): Session {
 
   let storage: Storage | undefined;
   try { storage = globalThis.localStorage; } catch { storage = undefined; }
-  /** 1b M1 開發旗標（啟動時讀一次）：新世界用 gen2、讀到舊世界（v7）時烘焙升級；讀 genVersion 8 的存檔不看它 */
-  const gen2 = gen2Flag(location.search, storage ?? null);
+  /** 1b M1 開發旗標（啟動時讀一次、只在開發版有效）：新世界用 gen2、讀到舊世界（v7）時烘焙升級；讀 genVersion 8 的存檔不看它 */
+  const gen2 = gen2Flag(location.search, storage ?? null, import.meta.env.DEV);
   // 這頁沒有遊戲廳的音量面板：自己把存著的音效音量發布出去（SoundManager 跟著它）
   publishVolume(readVolume(storage));
 
