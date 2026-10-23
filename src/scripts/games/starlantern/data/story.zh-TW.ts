@@ -189,7 +189,7 @@ export const NIGHT_BEATS: NightBeats = {
     Q('sylvie', '「外面的蟲還在叫，代表附近沒東西在走動。安心睡啦。」'),
     // Scarlet: a soldier's watch, kept to the letter
     J('scarlet', '「盾已經擦了三遍。再擦一遍，應該就能拿來當鏡子用。」', 'serious'),
-    Q('scarlet', '「門閂我檢查了三次，結果相同：它很牢固。回報完畢。」', 'serious'),
+    Q('scarlet', '「門閂檢查了三次，三次都很牢。回報完畢。」', 'serious'),
     Q('scarlet', '「靴子擺在門邊了，鞋尖朝外。有事的話，我穿上就能走。」', 'serious'),
     Q('scarlet', '「我聽到了。這些話我會守著，一個字也不會傳出去。」', 'serious'),
     Q('scarlet', '「下一班守夜是我。蠟燭剪短了，剛好點到換班。」'),
@@ -977,7 +977,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'chat:safira:2': {
     lines: [
       { who: 'safira', mood: 'wink', text: '「凜凜，妳走路都沒聲音，天生是跳舞的料呀。跳一拍就好～」' },
-      { who: 'rin', text: '「一拍之後，會有第二拍。然後第三拍。」' },   // ungated: may play after her oath, where guarded is the bellkeeper's
+      { who: 'rin', text: '「一拍過了，就有第二拍。再來第三拍。」' },   // ungated: may play after her oath, where guarded is the bellkeeper's
       { who: 'safira', mood: 'laugh', text: '「哈哈，被算得一清二楚！那換小洛上台──欸，主角別跑呀！」' },
     ],
     summary: '莎菲拉想教凜跳舞，被一口回絕。她轉頭找洛恩，洛恩跑了。',
@@ -1656,7 +1656,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'scarlet', mood: 'serious', text: '「莉茲小姐，回報。剛才那個寶箱，搞定了。」' },
       { who: 'liz', mood: 'surprised', text: '「騎士大姊說『搞定』？！那手法、時間、陷阱呢？」' },
-      { who: 'scarlet', mood: 'smile', text: '「手法屬於商業機密，時間大約一眨眼。陷阱已拆，零件賣了兩枚銀幣，已列入公帳。」' },
+      { who: 'scarlet', mood: 'smile', text: '「怎麼拆的，是商業機密，時間大約一眨眼。陷阱已拆，零件賣了兩枚銀幣，已列入公帳。」' },
       { who: 'liz', mood: 'scheming', text: '「才兩枚？虧大了。──好啦，第一次，給妳及格。」' },
     ],
     summary: '這一次，是絲嘉蕾說寶箱搞定了，回報得和莉茲當初一模一樣。莉茲嫌她賣便宜了，還是給了及格。',
