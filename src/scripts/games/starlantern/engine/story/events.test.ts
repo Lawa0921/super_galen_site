@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ACT_DEPTHS, ALONE, EVE_DEPTH, BANTER_COUNT, BANTER_PAYOFFS, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, GROUP_MIN_LINES, HEAVY_ARRIVAL, REACTIONS, groupScene, heavyScene, isHeavyArrival, lineCap, memScene, sceneKind, type BanterPair, type SceneId } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, ALONE, DEPARTURE_SCENES, EVE_DEPTH, FINALE_DEPTH, BANTER_COUNT, BANTER_PAYOFFS, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, GROUP_MIN_LINES, HEAVY_ARRIVAL, REACTIONS, groupScene, heavyScene, isHeavyArrival, lineCap, memScene, sceneKind, type BanterPair, type SceneId } from '../../data/story/scenes';
 import { chainLength } from '../../data/story/chains';
 import { CHARACTER_IDS } from '../../data/characters';
 import { meet } from '../party';
@@ -9,6 +9,8 @@ import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, nextReaction, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyPieces, storyStage, toldCount, afterWin } from './events';
 import { withTold } from '../testing';
+import { DAWN_BACKLOG, dawnMemory, eveMemories, planNight } from './nights';
+import { NIGHT_BEATS } from '../../data/story.zh-TW';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
 const base = (): GameState => {
@@ -949,72 +951,158 @@ describe('town banter', () => {
   });
 
   /**
-   * A scripted play (story depth Task 6): a return to town at each depth in `depths`, everyone met at her `MEETINGS` depth,
-   * memories by `memoryPace` (the hero's ninth piece the depth-25 top-up, queued for the return as takePieces does), every
-   * arrival scene played, and the lone morning played at the next departure once `departScene` would offer it. Returns the
-   * state after the last return, each payoff's opening and playing depth, and every return whose two banters shared a pair.
+   * A scripted play (story depth Task 6; story L Task 6): a return to town at each depth in `depths`. Everyone is met at her
+   * `MEETINGS` depth (`route: 'mainline-first'`: Selene and Bobby on the main road at theirs, the others together on the
+   * first return past act 4's depth, as a player who takes the main road to act 4 first). Each one holds what `memoryPace`
+   * has dropped by that depth (Lorne up to eight, then nine from the depth-25 top-up); a new piece goes to the end of
+   * `untold`, by depth and then `CHARACTER_IDS`. Each return plays as `Game.arrive` does: `onReturn`, the day
+   * (`arrivalScenes`, with the three group scenes registered), the night (`planNight`); the owed pieces first, then the day,
+   * the group scene, the night, each through `sceneDone`, and the dawn's pick is kept (`dawnMemory`). Each departure plays
+   * as `Game.departScenes` would offer: the dawn's one memory (controller ruling 2026-10-24; not on the eve's own
+   * departure), the night before the descent and its memories (`eveMemories`), then the lone morning. After the last return the finale
+   * plays as `Game.finalePieces` does (the pieces of the last dive held untold, the eve as its fallback, any act owed,
+   * Lorne's pieces and his tenth), then `afterFinale` returns, numbered 100 + k in `played`.
+   * Returns the state after it all, each payoff's opening and playing depth, every return whose two banters shared a pair,
+   * every night's count, every owed piece played late, where each act and group scene played, and the memories left
+   * untold once the finale is over.
    */
   const PAYOFFS: SceneId[] = ['banter:rin-scarlet:3', 'banter:rin-selene:2', 'banter:safira-sylvie:3', 'banter:liz-scarlet:3', 'banter:noel-selene:3', 'banter:chizuru-noel:2'];
   /** The design §6 setup/payoff banters outside ruling 9's six (Task 6 review): measured too. */
   const SETUP_PAYOFFS: SceneId[] = ['banter:bobby-chizuru:2', 'banter:chizuru-rin:2', 'banter:safira-sylvie:2', 'banter:safira-sylvie:3', 'banter:rin-selene:2', 'banter:rin-scarlet:3'];
-  const scriptedPlay = (depths: number[], afterFinale = 0) => {
+  /** The three group scenes, registered as the writing tasks will register them (story L spec §5.3). */
+  const REACT = { act2: 'group:act2', act3: 'group:act3', act4: 'group:act4' } as const;
+  /** One night: when, the pieces the day owed, the night's memories (the eve's too), and the beats between them. */
+  interface NightCount { at: string; owed: SceneId[]; night: SceneId[]; beats: number; alone: boolean }
+  const scriptedPlay = (depths: number[], afterFinale = 0, route: 'all' | 'mainline-first' = 'all') => {
     let s = base();
     s.story.seen.push('prologue-inn', 'first-return', 'act1-after');
     s.story.act1Cleared = true;
+    s.story.untold = [];
     const pace = Object.fromEntries(CHARACTER_IDS.map((id) => [id, memoryPace(id)])) as Record<CharacterId, number[]>;
     const opened: Partial<Record<SceneId, number>> = {};
     const played: Partial<Record<SceneId, number>> = {};
     const samePair: string[] = [];
     const trace: string[] = [];
-    for (const t of depths) {
-      s.dungeon.reached.mainline = Math.max(s.dungeon.reached.mainline, t);
-      for (const m of MEETINGS) if (t >= m.depth && !s.party.recruited.includes(m.id)) s.party = meet(s.party, m.id, 1);
+    const nights: NightCount[] = [];
+    const late: string[] = [];
+    const dawns: SceneId[] = [];
+    const dawnsAt: Record<number, number> = {};
+    /** Where each act and each group scene played: the return's depth (100 + k after the finale), or 'finale'. */
+    const where: Partial<Record<SceneId, number | 'finale'>> = {};
+    const late4 = depths.find((t) => t > ACT_DEPTHS.act4) ?? Infinity;
+    const metBy = (id: CharacterId, t: number): boolean => {
+      const m = MEETINGS.find((x) => x.id === id);
+      if (!m) return true;
+      return route === 'all' || m.region === 'mainline' ? t >= m.depth : t >= late4;
+    };
+    /** What `id` holds at depth `t`: her pace; Lorne at most eight, nine from depth 25 (the top-up). */
+    const heldAt = (id: CharacterId, t: number): number => {
+      const n = pace[id].filter((d) => d <= t).length;
+      return id === 'hero' ? (t >= 25 ? 9 : Math.min(n, 8)) : n;
+    };
+    /** Meet whoever is due and take the pieces dropped by depth `t`: held at once, untold until a night tells them. */
+    const take = (t: number) => {
+      for (const m of MEETINGS) if (metBy(m.id, t) && !s.party.recruited.includes(m.id)) s.party = meet(s.party, m.id, 1);
+      const gained: { id: CharacterId; k: number; d: number }[] = [];
       for (const id of CHARACTER_IDS) {
         if (!s.party.recruited.includes(id)) continue;
-        const n = pace[id].filter((d) => d <= t).length;
-        s.party.roster[id].memories = id === 'hero' ? Math.min(n, 8) : n;
-        // story L plan ruling 2: until Task 6 brings the nights, a companion's piece is told the moment it is held (as it
-        // played in the labyrinth before story L). Lorne's and Rin's gates read what they hold.
-        if (id !== 'hero' && id !== 'rin') for (let k = 1; k <= n; k++) if (!s.story.seen.includes(memScene(id, k))) s.story.seen.push(memScene(id, k));
+        const had = s.party.roster[id].memories ?? 0;
+        const n = heldAt(id, t);
+        for (let k = had + 1; k <= n; k++) gained.push({ id, k, d: id === 'hero' && k === 9 ? 25 : (pace[id][k - 1] ?? t) });
+        s.party.roster[id].memories = Math.max(had, n);
       }
-      if (t >= 25 && (s.party.roster.hero.memories ?? 0) < 9) {
-        s.party.roster.hero.memories = 9;
-        if (!s.story.seen.includes('mem:hero:9') && !s.story.queue.includes('mem:hero:9')) s.story.queue.push('mem:hero:9');
+      gained.sort((a, b) => a.d - b.d || CHARACTER_IDS.indexOf(a.id) - CHARACTER_IDS.indexOf(b.id));
+      s = { ...s, story: { ...s.story, untold: [...(s.story.untold ?? []), ...gained.map((g) => memScene(g.id, g.k))] } };
+    };
+    /** `c`'s pieces held and not told yet. */
+    const untoldOf = (c: CharacterId): SceneId[] => Array.from({ length: s.party.roster[c]?.memories ?? 0 }, (_, i) => memScene(c, i + 1)).filter((id) => !s.story.seen.includes(id));
+    /** Plays `id`, first checking that no piece it needs is still untold (spec §4.3's table). */
+    const play = (id: SceneId, at: number | 'finale') => {
+      if ((['act2', 'act3', 'act4', 'bellkeeper-arrives'] as SceneId[]).includes(id)) {
+        const owed = [...untoldOf('hero'), ...untoldOf('rin')].filter((m) => !(at === 'finale' && m.startsWith('mem:hero:')));
+        if (owed.length) late.push(`${at}: ${id} before ${owed.join(' ')}`);
       }
+      if (ALONE.includes(id) && untoldOf('rin').length) late.push(`${at}: ${id} before ${untoldOf('rin').join(' ')}`);
+      if (id === 'hero-alone' && !s.story.seen.includes('mem:hero:9')) late.push(`${at}: hero-alone before mem:hero:9`);
+      if (id.startsWith('banter:') && played[id] === undefined && at !== 'finale') played[id] = at;
+      if ((ACT_NODES as SceneId[]).includes(id) || id.startsWith('group:')) where[id] = at;
+      s = sceneDone(s, id, 'played', REACT);
+    };
+    /** A return to town, as `Game.arrive` and the town play it. */
+    const arrive = (at: number, afterFinaleReturn: boolean) => {
       s = { ...s, story: onReturn(s) };
-      for (const id of [...PAYOFFS, ...SETUP_PAYOFFS]) if (opened[id] === undefined && banterOpen(s, id)) {
+      if (at < 100) for (const id of [...PAYOFFS, ...SETUP_PAYOFFS]) if (opened[id] === undefined && banterOpen(s, id)) {
         const [pair, n] = [id.split(':')[1], Number(id.split(':')[2])];
         const prev = `banter:${pair}:${n - 1}` as SceneId;
-        if (n === 1 || s.story.seen.includes(prev) || gateExpired(s, BANTER_GATE[prev])) opened[id] = t;
+        if (n === 1 || s.story.seen.includes(prev) || gateExpired(s, BANTER_GATE[prev])) opened[id] = at;
       }
-      const arrival = arrivalScenes(s, { chat: true });
-      trace.push(`${t}: ${arrival.join(' ')} (pairs ready ${openPairs(s)})`);
-      const pairs = arrival.filter((id) => id.startsWith('banter:')).map((id) => id.split(':')[1]);
-      if (new Set(pairs).size !== pairs.length) samePair.push(`${t}: ${pairs.join(', ')}`);
-      for (const id of arrival) {
-        if (id.startsWith('banter:') && played[id] === undefined) played[id] = t;
-        s = sceneDone(s, id, 'played');
+      const day = arrivalScenes(s, { chat: true, afterFinale: afterFinaleReturn, reactions: REACT });
+      const plan = planNight(s, day);
+      const dawn = dawnMemory(s, [...plan.before, ...plan.night]);
+      s = { ...s, story: { ...s.story, tonight: [...plan.before, ...plan.night], dawn: dawn ?? undefined } };
+      const group = day.filter((id) => id.startsWith('group:'));
+      const daytime = day.filter((id) => !id.startsWith('group:'));
+      trace.push(`${at}: ${plan.before.length ? `[${plan.before.join(' ')}] ` : ''}${daytime.join(' ')}${group.length ? ` | ${group.join(' ')}` : ''} | night ${plan.night.join(' ') || '-'} (untold ${(s.story.untold ?? []).length}, pairs ready ${openPairs(s)})`);
+      const pairs = day.filter((id) => id.startsWith('banter:')).map((id) => id.split(':')[1]);
+      if (at < 100 && new Set(pairs).size !== pairs.length) samePair.push(`${at}: ${pairs.join(', ')}`);
+      nights.push({ at: String(at), owed: plan.before, night: plan.night, beats: Math.max(0, plan.night.length - 1), alone: day.some((id) => ALONE.includes(id)) });
+      for (const id of [...plan.before, ...daytime, ...group, ...plan.night]) play(id, at);
+    };
+    /** A departure, as `Game.departScenes` offers: the eve and its memories, then the lone morning. */
+    const depart = (at: number) => {
+      const alone = ALONE.some((id) => s.story.queue.includes(id));
+      const untold = s.story.untold ?? [];
+      const dawn = s.story.dawn;
+      if (!(!alone && s.story.queue.includes('finale-eve')) && dawn && untold.includes(dawn) && untold.length >= DAWN_BACKLOG) {
+        trace.push(`${at} departs: dawn ${dawn}`);
+        dawns.push(dawn);
+        dawnsAt[at] = (dawnsAt[at] ?? 0) + 1;
+        play(dawn, at);
       }
-      if (s.story.queue.includes('hero-alone') && s.story.seen.includes('mem:hero:9') && s.story.seen.includes('bellkeeper-arrives')
-        && !ALONE.some((id) => s.story.queue.includes(id))) s = sceneDone(s, 'hero-alone', 'played');
+      if (alone) return;
+      if (s.story.queue.includes('finale-eve')) {
+        play('finale-eve', at);
+        const eve = eveMemories(s);
+        s = { ...s, story: { ...s.story, tonight: (s.story.tonight ?? []).filter((id) => !eve.includes(id)) } };
+        trace.push(`${at} departs: finale-eve | ${eve.join(' ') || '-'}`);
+        nights.push({ at: `eve ${at}`, owed: [], night: eve, beats: Math.max(0, eve.length - 1), alone: false });
+        for (const id of eve) play(id, at);
+      }
+      if (s.story.queue.includes('hero-alone') && s.story.seen.includes('mem:hero:9') && s.story.seen.includes('bellkeeper-arrives')) {
+        trace.push(`${at} departs: hero-alone`);
+        play('hero-alone', at);
+      }
+    };
+    for (const t of depths) {
+      s.dungeon.reached.mainline = Math.max(s.dungeon.reached.mainline, t);
+      take(t);
+      arrive(t, false);
+      depart(t);
     }
-    // The finale (Game.finalePieces): it answers a lone morning still owed; then the returns after it, the first one heavy
-    // (`afterFinale`: no banter), each one numbered 100 + k in `played`.
     const before = PAYOFFS.filter((id) => s.story.seen.includes(id));
-    if (afterFinale > 0) {
-      s = { ...s, story: { ...s.story, finaleCleared: true, seen: [...s.story.seen, 'finale', ...(s.story.seen.includes('hero-alone') ? [] : ['hero-alone' as SceneId])], queue: s.story.queue.filter((q) => q !== 'hero-alone') } };
-      for (let k = 1; k <= afterFinale; k++) {
-        s = { ...s, story: onReturn(s) };
-        const arrival = arrivalScenes(s, { chat: true, afterFinale: k === 1 });
-        trace.push(`after ${k}: ${arrival.join(' ')}`);
-        for (const id of arrival) {
-          if (id.startsWith('banter:') && played[id] === undefined) played[id] = 100 + k;
-          s = sceneDone(s, id, 'played');
-        }
-      }
-    }
+    const atLastReturn = [...(s.story.untold ?? [])];
+    // The finale (Game.finalePieces): the last dive's pieces held untold, then its own list, then the finale.
+    s.dungeon.reached.mainline = FINALE_DEPTH;
+    take(FINALE_DEPTH);
+    const oath = !!s.party.roster.rin.oath;
+    const acts = ACT_NODES.filter((node) => !s.story.seen.includes(node));
+    const confess: SceneId[] = s.story.queue.includes('rin-confess') ? ['rin-confess'] : [];
+    const keeper: SceneId[] = s.story.queue.includes('bellkeeper-arrives') || confess.length ? ['bellkeeper-arrives'] : [];
+    const heroPieces = [...(s.story.untold ?? []).filter((id) => id.startsWith('mem:hero:')), 'mem:hero:10' as SceneId];
+    s = { ...s, story: { ...s.story, untold: (s.story.untold ?? []).filter((id) => !id.startsWith('mem:hero:')), queue: s.story.queue.filter((id) => !id.startsWith('mem:hero:') && !acts.includes(id as never) && !confess.includes(id) && !keeper.includes(id)) } };
+    s.party.roster.hero.memories = 10;
+    const eveOwed = !s.story.seen.includes('finale-eve');
+    const eve = eveOwed ? eveMemories(s) : [];
+    if (eveOwed) nights.push({ at: 'eve finale', owed: [], night: eve, beats: Math.max(0, eve.length - 1), alone: false });
+    s = { ...s, story: { ...s.story, finaleCleared: true, queue: s.story.queue.filter((id) => !DEPARTURE_SCENES.includes(id)) } };
+    if (!s.story.seen.includes('hero-alone')) s = { ...s, story: { ...s.story, seen: [...s.story.seen, 'hero-alone'], fresh: [...s.story.fresh, 'hero-alone'] } };
+    const finale: SceneId[] = [...(eveOwed ? ['finale-eve' as SceneId, ...eve] : []), ...acts, ...confess, ...keeper, ...heroPieces, 'finale'];
+    trace.push(`finale: ${finale.join(' ')}`);
+    for (const id of finale) play(id, 'finale');
+    const unplayed = [...(s.story.untold ?? [])];
+    for (let k = 1; k <= afterFinale; k++) arrive(100 + k, k === 1);
     const report = [...PAYOFFS, ...SETUP_PAYOFFS.filter((id) => !PAYOFFS.includes(id))].map((id) => `${id}: opens ${opened[id] ?? '-'}, plays ${played[id] ?? '-'}`).join('\n');
-    return { s, report, samePair, trace, before, played };
+    return { s, report, samePair, trace, before, played, nights, late, where, unplayed, oath, atLastReturn, dawns, dawnsAt };
   };
 
   it('scripted play: every payoff banter plays before the finale', () => {
@@ -1026,8 +1114,8 @@ describe('town banter', () => {
 
   it('scripted play, a return every second depth: every payoff by the finale or within three returns after it (Task 6 rulings)', () => {
     // Controller rulings: heavy returns stay banter-free; a pair on the way to one of the six designed payoffs ranks first;
-    // after the finale a return other than the festival's plays up to three banters, from two pairs at least. Measured
-    // (task-6-report.md): four before the finale, the other two in the second and third returns after it.
+    // after the finale a return other than the festival's plays up to three banters, from two pairs at least. Story L
+    // (task-4-6-report.md): one before the finale, the other five in the second and third returns after it.
     const depths = Array.from({ length: 15 }, (_, i) => 2 * i + 1);   // 1, 3, …, 29
     const { s, report, trace, samePair, before, played } = scriptedPlay(depths, 3);
     for (const id of PAYOFFS) expect(s.story.seen, `${report}\n${trace.join('\n')}`).toContain(id);
@@ -1037,10 +1125,74 @@ describe('town banter', () => {
     const five = scriptedPlay(depths, 5);
     for (const id of SETUP_PAYOFFS) expect(five.s.story.seen, `§6: ${five.report}`).toContain(id);
     expect(five.played['banter:bobby-chizuru:2']).toBe(105);
-    expect(before.length, report).toBe(4);
-    // the two after the finale, on its second and third returns (the first is the festival's)
-    expect([played['banter:rin-selene:2'], played['banter:rin-scarlet:3']], report).toEqual([102, 103]);
+    // Story L Task 6 (controller ruling 2026-10-24): the payoffs wait for the pieces told at night, so the count before the
+    // finale is a measured pin (it was 4 before story L); the guarantee is the one above, every payoff by the third return
+    // after the finale. Measured: Selene's before it (depth 29), Scarlet's on the third return after it.
+    expect(before.length, report).toBe(1);
+    expect([played['banter:rin-selene:2'], played['banter:rin-scarlet:3']], report).toEqual([29, 103]);
     expect(samePair).toEqual([]);
+  });
+
+  // ---- Story L Task 6 (controller rulings 2026-10-23 and 2026-10-24): the scripted plays through the nights ----
+
+  const EVERY_FLOOR = Array.from({ length: 29 }, (_, i) => i + 1);         // 1, 2, …, 29
+  const EVERY_SECOND = Array.from({ length: 15 }, (_, i) => 2 * i + 1);    // 1, 3, …, 29
+  const EVERY_THIRD = Array.from({ length: 10 }, (_, i) => 3 * i + 1);     // 1, 4, …, 28
+  /**
+   * The three players and the most memories each may leave untold once the finale is over. Spec §13: 3, 8 and 15. The
+   * player who returns every third floor is held to 20 by the controller's ruling of 2026-10-24: one who returns that
+   * seldom chooses to skip town, and every piece left stays readable in the handbook as 新 (measured 19 with the dawn).
+   */
+  const PLAYERS: [string, number[], number][] = [['every floor', EVERY_FLOOR, 3], ['every 2nd floor', EVERY_SECOND, 8], ['every 3rd floor', EVERY_THIRD, 20]];
+  const tell = (r: ReturnType<typeof scriptedPlay>) => r.trace.join('\n');
+
+  for (const [name, depths, most] of PLAYERS) {
+    it(`scripted play (${name}): unplayed memories after the finale ≤ ${most}`, () => {
+      const r = scriptedPlay(depths);
+      expect(r.oath, 'her choice is made before the finale').toBe(true);
+      expect(r.unplayed.length, `${r.unplayed.join(' ')}\n${tell(r)}`).toBeLessThanOrEqual(most);
+    });
+
+    it(`scripted play (${name}): no night plays more than three memories beyond the owed ones, and a dawn one at most`, () => {
+      const r = scriptedPlay(depths, 3);
+      for (const n of r.nights) expect(n.night.length, `${n.at}\n${tell(r)}`).toBeLessThanOrEqual(3);
+      for (const [at, k] of Object.entries(r.dawnsAt)) expect(k, `dawn ${at}`).toBeLessThanOrEqual(1);
+      // controller ruling 3 (2026-10-23): a reveal or confession night, its owed pieces and all, stays small
+      for (const n of r.nights.filter((x) => x.alone)) expect(n.owed.length + n.night.length, `${n.at}\n${tell(r)}`).toBeLessThanOrEqual(5);
+    });
+
+    it(`scripted play (${name}): no owed memory is ever late`, () => {
+      const r = scriptedPlay(depths, 3);
+      expect(r.late, tell(r)).toEqual([]);
+    });
+
+    it(`scripted play (${name}): each group scene plays on its act's arrival, and none after the finale`, () => {
+      const r = scriptedPlay(depths, 3);
+      for (const node of ACT_NODES) expect(r.where[groupScene(node)], `${node}\n${tell(r)}`).toBe(r.where[node]);
+    });
+  }
+
+  it('scripted play (mainline-first): the group scenes played are recorded; each one missed has expired, none plays late', () => {
+    // Controller ruling 2026-10-24: a player who rushes the main road skips the scenes that need the companions met
+    // on the side roads. Recorded in task-4-6-report.md. A group that plays still plays inside its two chances.
+    for (const depths of [EVERY_FLOOR, EVERY_SECOND]) {
+      const r = scriptedPlay(depths, 3, 'mainline-first');
+      for (const node of ACT_NODES) {
+        const g = r.where[groupScene(node)];
+        if (g === undefined) continue;
+        const act = r.where[node] as number;
+        expect([act, depths[depths.indexOf(act) + 1]], `${node}\n${tell(r)}`).toContain(g);
+      }
+      expect(Object.keys(r.s.story.reacts ?? {}), tell(r)).toEqual([]);
+      expect(r.late, tell(r)).toEqual([]);
+    }
+  });
+
+  it('scripted play (every floor): the beats of one playthrough fit the pool', () => {
+    // spec §4.4.1: forty lines; the pool is written in Task 8, so until then the spec's forty is the bound
+    const r = scriptedPlay(EVERY_FLOOR, 3);
+    const beats = r.nights.reduce((a, n) => a + n.beats, 0);
+    expect(beats, tell(r)).toBeLessThanOrEqual(NIGHT_BEATS.lines.length || 40);
   });
 
   it('the six designed payoffs, and a pair on the way to one, go first; another pair\'s last banter does not (Task 6 third ruling)', () => {
