@@ -93,7 +93,6 @@ class IndexedLayer {
   private ctx: CanvasRenderingContext2D | null;
   private img: ImageData | null = null;
   private key = '';
-  private tops: Int16Array | null = null;
   /** 分界帶用的抖動版（WIPE_LEVELS 階，用到才烘；色票換了重烘） */
   private lv = document.createElement('canvas');
   private lvKey = '';
@@ -107,15 +106,6 @@ class IndexedLayer {
     this.canvas = document.createElement('canvas');
     this.canvas.width = w; this.canvas.height = h;
     this.ctx = this.canvas.getContext('2d');
-  }
-  /** 每欄第一個不透明像素的列（整欄透明 = h）；剪影建好後不變，算一次快取 */
-  topRow(x: number): number {
-    if (!this.tops) {
-      const t = new Int16Array(this.w).fill(this.h);
-      for (let xx = 0; xx < this.w; xx++) for (let y = 0; y < this.h; y++) if (this.idx[y * this.w + xx]) { t[xx] = y; break; }
-      this.tops = t;
-    }
-    return this.tops[((x % this.w) + this.w) % this.w];
   }
   /**
    * 各階抖動版的圖集（同一張畫布、往下疊 WIPE_LEVELS 份：第 l 份 = 圖層像素依 1×1 Bayer（圖層座標）挖空）。
@@ -698,12 +688,9 @@ export class Background {
     const aa = Math.max(-0.1, Math.min(1.1, a));
     const bx = W * (0.1 + 0.8 * Math.max(0, Math.min(1, aa))), by = Hh * (0.46 - 0.38 * Math.sin(Math.PI * aa));
     const img = sunUp ? this.sun : this.moons[(v.moon ?? 4) & 7] ?? this.moon;
-    // 日 / 月不躲在山後：日出 / 日落（含曙暮光）時若弧線低於這一帶剪影的稜線，抬到稜線上方（日輪 + 光環整個露出）
-    const ridge = this.ridgeY(v, plan, Math.round(bx - 15), Math.round(bx + 15));
-    const lift = Math.min(by, ridge - (sunUp ? 18 : 12));
-    const sy = Math.max(img.height / 2 - 4, lift);
+    // 日 / 月的位置只看時間（無限遠，不跟遠景剪影的視差走）；日出 / 日落時會落到山後（剪影畫在它前面）
     // 厚雲 / 雨雪：看不到日月
-    if (cover < 0.7) ctx.drawImage(img, snapPx(bx - img.width / 2), snapPx(sy - img.height / 2));
+    if (cover < 0.7) ctx.drawImage(img, snapPx(bx - img.width / 2), snapPx(by - img.height / 2));
     // 閃電：天頂到地平線的鋸齒（在遠景後面）
     if (v.bolt && wx.flash > 0) {
       const bh = Math.max(40, Math.min(Hh, Math.round(Hh * 0.62)));
@@ -791,23 +778,6 @@ export class Background {
       this.span(ctx, p.R, f, by0, B.base, Math.max(0, bx1), W, Hh, v, fx, W);
       if (bx1 > 0 && bx0 < W) this.band(ctx, p.R, f, by0, bx0, Hh, v);
     }
-  }
-
-  /** 遠 / 中 / 近三層剪影在螢幕欄 x0..x1 之間的最高稜線（螢幕 y，美術 px） */
-  private ridgeY(v: BgView, plan: LayerPlan[], x0: number, x1: number): number {
-    const midY = v.camY + v.viewH / 2;
-    const layerY = (f: number, lift: number): number => snapPx(v.viewH / 2 + (v.horizonY - midY) * f - lift);
-    const factors: [number, number][] = [[0.12, layerY(0.22, 30)], [0.28, layerY(0.42, 22)], [0.5, layerY(0.62, -14)]];
-    let best = Infinity;
-    for (let k = 0; k < 3; k++) {
-      const p = plan[k];
-      for (const L of p.front === Infinity ? [p.L] : p.front === -Infinity ? [p.R] : [p.L, p.R]) {
-        const sw = L.w, off = -(((snapPx(v.camX * factors[k][0]) % sw) + sw) % sw);
-        const top = factors[k][1] - L.h;
-        for (let x = x0; x <= x1; x++) best = Math.min(best, top + L.topRow(x - off));
-      }
-    }
-    return best;
   }
 
   /** 只在螢幕欄 [x0, x1) 畫一層（含下方填色）：直接取來源子矩形，不用 clip */

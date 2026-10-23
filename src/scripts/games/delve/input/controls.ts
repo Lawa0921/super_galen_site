@@ -146,9 +146,12 @@ export function attachControls(o: ControlsOptions): Controls {
     aimAt(p.x, p.y);
     const aim = game.getState().aim;
     const wp = o.screenToWorld(p.x, p.y);
-    // 點到人（居民 / 村民 / 矮人 / 旅人）：立刻對話，不會挖到他腳下的地（點一下太快也接得到）
-    if (game.act({ op: 'talkAt', px: wp.x, py: wp.y })) { e.preventDefault(); return; }
-    const intent = touchIntent(game.inventory.selectedStack(), game.world.getFg(aim.x, aim.y), game.settle.npcAtPx(wp.x, wp.y) !== null || game.folk.atPx(wp.x, wp.y) !== null);
+    // 點到人（居民 / 村民 / 矮人 / 旅人）：立刻對話，不會挖到他腳下的地（點一下太快也接得到）。
+    // 先在本地確認手指下真的有人才送 talkAt：連線客人的 act 一律回 CMD_PENDING（talkAt = true），
+    // 不先擋的話每次點擊都會被當成「對話成功」吃掉，客人用觸控就挖不了、用不了道具
+    const person = game.settle.npcAtPx(wp.x, wp.y) !== null || game.folk.atPx(wp.x, wp.y) !== null;
+    if (person && game.act({ op: 'talkAt', px: wp.x, py: wp.y })) { e.preventDefault(); return; }
+    const intent = touchIntent(game.inventory.selectedStack(), game.world.getFg(aim.x, aim.y), person);
     if (intent === 'place' || intent === 'use') game.setUse(true);
     else game.setMining(true);
     e.preventDefault();
