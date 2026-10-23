@@ -58,9 +58,12 @@ const validMemory = (id: CharacterId, m: Record<string, unknown>): boolean => {
   if (m.oath !== undefined && !(m.oath === true && id === 'rin' && m.memories === chainLength('rin'))) return false;
   return true;
 };
-/** A boss-kill key: `region:depth`, a known region and a depth from 1 to MAX_DEPTH. */
+/**
+ * A boss-kill key: `region:depth`, a known region and a depth from 1 to MAX_DEPTH; a Nightmare or Hell kill has its tier
+ * in front (`nightmare:region:depth`, engine/tiers.ts bossKey). Normal's keys never carry one.
+ */
 const isBossKey = (k: string): boolean => {
-  const m = /^([a-z]+):(\d{1,4})$/.exec(k);
+  const m = /^(?:(?:nightmare|hell):)?([a-z]+):(\d{1,4})$/.exec(k);
   return !!m && has(REGIONS, m[1]) && Number(m[2]) >= 1 && Number(m[2]) <= MAX_DEPTH;
 };
 

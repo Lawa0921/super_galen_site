@@ -2,6 +2,7 @@ import { favouredRegions } from '../data/meetings';
 import type { ActNode, BanterPair, SceneId } from '../data/story/scenes';
 import type { TownFragmentId } from '../data/story/fragments';
 import type { RegionId } from '../data/regions';
+import type { Difficulty } from './battle';
 import type { Portal } from './dungeon/run';
 import type { AutoJunk } from './loot/bag';
 import { newParty, START_LINEUP } from './party';
@@ -21,6 +22,11 @@ export interface DungeonProgress {
   bossKills: Record<string, number>;
   /** The three gates open in town: the mainline first, then two regions. Rerolled on every arrival in town. */
   portals: Portal[];
+  /**
+   * The tier last chosen at the gates (difficulty plan ruling 21); absent until the player has seen the tier row, and
+   * then written, Normal included. Derived unlocks are not stored (engine/tiers.ts tierUnlocked).
+   */
+  tier?: Difficulty;
 }
 
 export const newReached = (): Record<RegionId, number> => ({ mainline: 1, blaze: 1, frost: 1, storm: 1, mire: 1, shade: 1, iron: 1 });

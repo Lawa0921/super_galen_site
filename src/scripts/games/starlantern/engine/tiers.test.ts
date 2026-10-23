@@ -7,7 +7,8 @@ import { createBattle } from './battle';
 import { mix } from './loot/drops';
 import { mulberry32 } from './rng';
 import { partyAt } from './sim';
-import { AFFIX_SALT, affixRng, rollAffixes, rollCrowdAffix } from './tiers';
+import { newGame } from './state';
+import { AFFIX_SALT, affixRng, bossKey, HELL_BOSS_DEPTH, NIGHTMARE_DEPTH, rollAffixes, rollCrowdAffix, tierUnlocked } from './tiers';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -144,6 +145,48 @@ describe('a Hell crowd may wear one affix (controller ruling 2026-10-23)', () =>
     // Not on an elite's fight, nor on a boss fight.
     expect(fight('hell', { crowdAffix, elite: 'wolf', affixes: ['swift', 'rend'] }).enemies.map((e) => e.affixes)).toEqual([['swift', 'rend'], undefined]);
     expect(fight('hell', { crowdAffix }, true, ['lanterneater']).enemies.map((e) => e.affixes)).toEqual([undefined]);
+  });
+});
+
+describe('unlocking the tiers (difficulty plan Task 6a, rulings 19-20)', () => {
+  it('Nightmare opens at main-road depth 10', () => {
+    expect(NIGHTMARE_DEPTH).toBe(10);
+    const s = newGame(mulberry32(1));
+    expect(tierUnlocked(s, 'normal')).toBe(true);
+    s.dungeon.reached.mainline = 9;
+    expect(tierUnlocked(s, 'nightmare')).toBe(false);
+    // Another region's depth does not count, however deep.
+    for (const r of ['blaze', 'frost', 'storm', 'mire', 'shade', 'iron'] as const) s.dungeon.reached[r] = 30;
+    expect(tierUnlocked(s, 'nightmare')).toBe(false);
+    s.dungeon.reached.mainline = 10;
+    expect(tierUnlocked(s, 'nightmare')).toBe(true);
+    expect(tierUnlocked(s, 'hell')).toBe(false);
+  });
+  it('Hell needs the finale and the Nightmare depth-25 boss', () => {
+    expect(HELL_BOSS_DEPTH).toBe(25);
+    const s = newGame(mulberry32(1));
+    s.dungeon.reached.mainline = 30;
+    s.story.finaleCleared = true;
+    expect(tierUnlocked(s, 'hell')).toBe(false);
+    // The Normal kill of the same boss does not count.
+    s.dungeon.bossKills['mainline:25'] = 3;
+    expect(tierUnlocked(s, 'hell')).toBe(false);
+    s.dungeon.bossKills['nightmare:mainline:25'] = 1;
+    expect(tierUnlocked(s, 'hell')).toBe(true);
+    // The kill without the finale is not enough.
+    s.story.finaleCleared = false;
+    expect(tierUnlocked(s, 'hell')).toBe(false);
+    // A Hell kill there is not the Nightmare one.
+    s.story.finaleCleared = true;
+    delete s.dungeon.bossKills['nightmare:mainline:25'];
+    s.dungeon.bossKills['hell:mainline:25'] = 1;
+    expect(tierUnlocked(s, 'hell')).toBe(false);
+  });
+  it('bossKey keeps the Normal key', () => {
+    expect(bossKey('normal', 'mainline', 25)).toBe('mainline:25');
+    expect(bossKey(undefined, 'mainline', 25)).toBe('mainline:25');
+    expect(bossKey('nightmare', 'mainline', 25)).toBe('nightmare:mainline:25');
+    expect(bossKey('hell', 'blaze', 10)).toBe('hell:blaze:10');
   });
 });
 

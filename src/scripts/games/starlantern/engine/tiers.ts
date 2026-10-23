@@ -4,8 +4,11 @@
  * (fleeing, a reload). No counter, nothing on `Run`; `game.rng`, the loot and rune streams never draw for them.
  */
 import { AFFIX_EXCLUDE, AFFIX_IDS, type AffixId } from '../data/affixes';
+import type { RegionId } from '../data/regions';
+import type { Difficulty } from './battle';
 import { mix } from './loot/drops';
 import { mulberry32, type Rng } from './rng';
+import type { GameState } from './state';
 import type { Pos } from './types';
 
 /** The affixes' salt: SHA-256's second initial word, used nowhere else in the engine. */
@@ -51,4 +54,27 @@ export function rollCrowdAffix(seed: number, depth: number, at: Pos, chance: num
   if (rng() >= chance) return undefined;
   const pick = rng();
   return { pick, id: AFFIX_IDS[Math.floor(rng() * AFFIX_IDS.length)] };
+}
+
+/** The main-road depth whose reaching opens Nightmare (spec §4.1). */
+export const NIGHTMARE_DEPTH = 10;
+/** The main-road depth whose boss, beaten on Nightmare after the finale, opens Hell (spec §4.1). */
+export const HELL_BOSS_DEPTH = 25;
+
+/**
+ * A boss-kill key (ruling 20): Normal's (or a story fight's, `undefined`) `region:depth` as it always was; a higher tier's
+ * `tier:region:depth`, so its first kill has first-kill odds of its own.
+ */
+export function bossKey(t: Difficulty | undefined, region: RegionId, depth: number): string {
+  return t === undefined || t === 'normal' ? `${region}:${depth}` : `${t}:${region}:${depth}`;
+}
+
+/**
+ * Whether `t` can be chosen (ruling 19), derived from the save alone, no flag: Normal always; Nightmare once the main road
+ * reached NIGHTMARE_DEPTH; Hell once the finale is won and the Nightmare main-road HELL_BOSS_DEPTH boss beaten.
+ */
+export function tierUnlocked(s: GameState, t: Difficulty): boolean {
+  if (t === 'normal') return true;
+  if (t === 'nightmare') return s.dungeon.reached.mainline >= NIGHTMARE_DEPTH;
+  return s.story.finaleCleared && (s.dungeon.bossKills[bossKey('nightmare', 'mainline', HELL_BOSS_DEPTH)] ?? 0) > 0;
 }

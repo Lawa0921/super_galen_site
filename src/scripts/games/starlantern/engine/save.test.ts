@@ -417,6 +417,13 @@ describe('save v4 codex, boss kills and auto junk', () => {
     const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) }));
     expect(r.status === 'ok' && r.state.codex).toEqual(['lg-noel', 'set-blaze']);
   });
+  it('a tier key loads (difficulty plan Task 6a-prime: a Nightmare or Hell kill is written as tier:region:depth)', () => {
+    expect(bad((g) => { g.dungeon.bossKills = { 'nightmare:mainline:25': 1, 'hell:blaze:10': 2, 'mainline:25': 1 }; })).toBe('ok');
+    expect(bad((g) => { g.dungeon.bossKills = { 'normal:mainline:5': 1 }; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.bossKills = { 'nightmare:nowhere:5': 1 }; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.bossKills = { 'nightmare:mainline:0': 1 }; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.bossKills = { 'easy:mainline:5': 1 }; })).toBe('corrupt');
+  });
 
   it('turns gear base ids left in the inventory into common bag items on load', () => {
     const g = newGame();
