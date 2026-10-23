@@ -395,6 +395,84 @@ describe('Dialogue faces', () => {
     expect(d.el.querySelector('img')).toBeNull();
   });
 
+  it("a narration line can keep the last speaker's face, dimmed; the next face replaces it (staging S4)", () => {
+    const d = new Dialogue(Infinity);
+    void d.say('洛恩', '走吧。', { src: '/a.png', side: 'left' });
+    const face = d.el.querySelector('img')!;
+    void d.say('', '風很冷。', 'keep');
+    expect(d.el.querySelector('img')).toBe(face);
+    expect(face.classList.contains('slx-talk-face--dim')).toBe(true);
+    void d.say('凜', '嗯。', { src: '/b.png', side: 'right' });
+    const next = d.el.querySelectorAll('img');
+    expect(next).toHaveLength(1);
+    expect(next[0].getAttribute('src')).toBe('/b.png');
+    expect(next[0].classList.contains('slx-talk-face--dim')).toBe(false);
+  });
+
+  it('keep with no face before shows no image', () => {
+    const d = new Dialogue(Infinity);
+    void d.say('', '風很冷。', 'keep');
+    expect(d.el.querySelector('img')).toBeNull();
+  });
+
+  it('held, the box stays up between lines with its face; close() puts it away (staging S4)', async () => {
+    const closed = vi.fn();
+    const d = new Dialogue(Infinity, closed);
+    d.hold(true);
+    const said = d.say('洛恩', '走吧。', { src: '/a.png', side: 'left' });
+    d.onAction('confirm');
+    await said;
+    expect(closed).toHaveBeenCalledTimes(1);
+    expect(d.el.hidden).toBe(false);
+    expect(d.el.querySelector('img')).not.toBeNull();
+    d.hold(false);
+    d.close();
+    expect(d.el.hidden).toBe(true);
+    expect(d.el.querySelector('img')).toBeNull();
+  });
+
+  it('close() leaves a line that is still waiting alone', () => {
+    const d = new Dialogue(Infinity);
+    void d.say('洛恩', '走吧。');
+    d.close();
+    expect(d.el.hidden).toBe(false);
+  });
+
+  it('memory style fades a sepia veil in over the screen behind the box, and out again (staging S5)', () => {
+    const scene = document.createElement('div');
+    const d = new Dialogue(Infinity);
+    scene.append(d.el);
+    d.setStyle('memory');
+    const veil = scene.querySelector('.slx-veil-past')!;
+    expect(veil).not.toBeNull();
+    expect(veil.nextElementSibling).toBe(d.el);               // under the box, over everything before it
+    expect(veil.classList.contains('slx-on')).toBe(true);
+    d.setStyle('plain');
+    expect(veil.parentElement).toBe(scene);                  // it stays, to fade out
+    expect(veil.classList.contains('slx-on')).toBe(false);
+    d.setStyle('memory');
+    expect(scene.querySelectorAll('.slx-veil-past')).toHaveLength(1);
+  });
+
+  it('a place card shows where the scene is, over the screen and under the box; night dims the screen (staging S6)', () => {
+    const scene = document.createElement('div');
+    const d = new Dialogue(Infinity);
+    scene.append(d.el);
+    d.setPlace({ text: '月影旅館・深夜', night: true });
+    const card = scene.querySelector('.slx-place-card')!;
+    expect(card.textContent).toBe('月影旅館・深夜');
+    const night = scene.querySelector('.slx-veil-night')!;
+    expect(night.classList.contains('slx-on')).toBe(true);
+    d.setStyle('memory');                                    // a veil made later still goes under the card
+    expect([...scene.children].map((e) => e.classList[0] === 'slx-veil' ? e.classList[1] : e.classList[1] ?? e.classList[0])).toEqual(['slx-veil-night', 'slx-veil-past', 'slx-place-card', 'slx-talk']);
+    d.setPlace({ text: '月影旅館・清晨' });
+    expect(scene.querySelectorAll('.slx-place-card')).toHaveLength(1);
+    expect(scene.querySelector('.slx-place-card')!.textContent).toBe('月影旅館・清晨');
+    expect(night.classList.contains('slx-on')).toBe(false);
+    d.setPlace(null);
+    expect(scene.querySelector('.slx-place-card')).toBeNull();
+  });
+
   it('memory style marks the box', () => {
     const d = new Dialogue(Infinity);
     d.setStyle('memory');

@@ -98,6 +98,8 @@ export async function mountNext(): Promise<void> {
     get game() { return game; }, stage,
     /** Tests only: straight to a scene, as the router goes there; it changes nothing in the game. */
     go: (name: SceneName, arg?: string) => router.go(name, arg),
+    /** Tests only: the live settings (the sweep plays a scene with the story on, story staging S5/S6). */
+    settings: settingsStore,
   };
   ui.dataset.ready = 'true';
   await router.go('title');

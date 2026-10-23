@@ -62,6 +62,8 @@ function uiSentences(): { key: string; text: string }[] {
   };
   walk(T, 'T');
   for (const id of SCENE_IDS) out.push({ key: `STORY.scenes.${id}.title`, text: STORY.scenes[id].title });
+  // Story staging S6: a scene's location cards are interface text too.
+  for (const id of SCENE_IDS) STORY.scenes[id].lines.forEach((l, i) => { if (l.place) out.push({ key: `STORY.scenes.${id}.lines.${i}.place`, text: l.place.text }); });
   for (const s of Object.values(SPECIALS)) out.push({ key: `SPECIALS.${s.id}.lore`, text: s.lore ?? '' });
   return out;
 }
@@ -128,7 +130,7 @@ describe('terms (story polish)', () => {
     expect(out).toEqual([]);
     // the walk reaches what the player reads: notices, the handbook, a scene's title, a gear's lore
     const keys = uiSentences().map((s) => s.key);
-    for (const k of ['T.notices.wipe', 'T.ui2.handbook.empty', 'T.ui2.equip.full', 'STORY.scenes.rin-reveal.title', 'SPECIALS.lg-noel.lore']) expect(keys, k).toContain(k);
+    for (const k of ['T.notices.wipe', 'T.ui2.handbook.empty', 'T.ui2.equip.full', 'STORY.scenes.rin-reveal.title', 'SPECIALS.lg-noel.lore', 'STORY.scenes.prologue-inn.lines.0.place']) expect(keys, k).toContain(k);
     // Task 20: 8h's keys, the inn's tail, templates and strings with no full stop are read too
     for (const k of ['T.rune.fuseEmpty', 'T.ui2.builds.followingNow', 'T.ui2.inn.nobodyDown', 'T.rune.got(string)', 'T.ui2.exchange.giveAsk(string)', 'T.ui2.formation.title']) expect(keys, k).toContain(k);
   });
