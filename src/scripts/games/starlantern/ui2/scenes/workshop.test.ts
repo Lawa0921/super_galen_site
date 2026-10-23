@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+import { compile } from 'sass';
 import { describe, expect, it, vi } from 'vitest';
 import { CHARACTERS } from '../../data/characters';
 import { RUNE_SLOT_LEVELS, type RuneRef } from '../../data/runes';
@@ -510,5 +512,9 @@ describe('WorkshopScene: a rune line at 12px (legibility T6 review)', () => {
     const nb = [...line.querySelectorAll('.slx-nb')].map((s) => s.textContent);
     expect(nb.some((t) => /^TP \+1/.test(t ?? '')), nb.join(' | ')).toBe(true);
     expect(nb.some((t) => /^威力 115%/.test(t ?? '')), nb.join(' | ')).toBe(true);
+    // ... and the stylesheet keeps those spans on one line there, as in the card's table.
+    const css = compile(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss')).css;
+    const nowrap = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([, , body]) => /white-space:\s*nowrap/.test(body)).flatMap(([, sel]) => sel.split(',').map((x) => x.trim()));
+    expect(nowrap).toContain('.slx-ws-rune-text .slx-nb');
   });
 });

@@ -1371,7 +1371,8 @@ $slx-starlit: #bff6ff;
 .slx-ws-card-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; color: $slx-gold; }
 .slx-ws-tags { font-size: $slx-fs; color: $slx-dim; }
 // Each tag and each part of a card value stays on one line: 「消耗 TP」, 「84（每個目標）」.
-.slx-ws-tag, .slx-ws-table .slx-nb { white-space: nowrap; }
+// A rune line's stat and value too (「TP +1。」, T6 review).
+.slx-ws-tag, .slx-ws-table .slx-nb, .slx-ws-rune-text .slx-nb { white-space: nowrap; }
 .slx-ws-table { width: 100%; margin-top: 2px; border-collapse: collapse; table-layout: fixed; font-size: $slx-fs; line-height: 14px; }
 // 48px holds 「HP 消耗」 on one line and leaves each value column 110px (「防禦與魔防 +32%」 is 100px at 12px).
 .slx-ws-table th { width: 48px; text-align: left; font-weight: normal; color: $slx-dim; }
