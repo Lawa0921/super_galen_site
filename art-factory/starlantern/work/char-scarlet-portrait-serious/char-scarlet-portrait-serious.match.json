@@ -7,10 +7,10 @@
     115
   ],
   "size_delta": [
-    -1,
-    -1
+    0,
+    0
   ],
-  "block": 9,
-  "base_block": 9,
-  "palette_share": 0.987
+  "block": 11,
+  "base_block": 11,
+  "palette_share": 0.998
 }

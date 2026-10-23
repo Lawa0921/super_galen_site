@@ -4,7 +4,7 @@
       "allow_edge": [
         "bottom"
       ],
-      "generator": "codex",
+      "generator": "codex/gpt-6-astra",
       "final": "art-factory/starlantern/work/char-chizuru-portrait-serious/cand/a4/char-chizuru-portrait-serious.png",
       "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-serious\\a4\\char-chizuru-portrait-serious-a4.png",
       "qa": {
@@ -23,7 +23,9 @@
           123
         ]
       },
-      "status": "qa_passed"
+      "status": "qa_passed",
+      "defringe": null,
+      "neutralize_tint": null
     }
   }
 }

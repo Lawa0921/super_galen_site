@@ -7,10 +7,10 @@
     123
   ],
   "size_delta": [
-    6,
-    6
+    0,
+    0
   ],
-  "block": 7,
-  "base_block": 7,
-  "palette_share": 0.997
+  "block": 9,
+  "base_block": 9,
+  "palette_share": 0.999
 }

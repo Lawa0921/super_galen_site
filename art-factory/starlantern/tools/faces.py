@@ -25,10 +25,25 @@ import party as P  # noqa: E402
 
 REPO, AF, RAW, PROMPTS, TOOLS = P.REPO, P.AF, P.RAW, P.PROMPTS, P.TOOLS
 COMPANIONS = ['selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet']
-# Spec 10.5: `sad` reuses the published hero / Rin sentence; `serious` is the spec's core sentence.
+# Spec 10.5 sentences. `sad` was strengthened after the sample (user 2026-10-23): the spec's hero/Rin sentence read too
+# faintly at game size, so it now asks for the cues that survive the downscale; `hushed` and `shaken` carry them too.
+READ = 'the expression must stay clearly readable when the portrait is shown at small size'
 FACES = {
     'serious': 'a firm, focused look, brows level and slightly lowered, lips pressed together, steady eyes looking straight ahead',
-    'sad': P.FACES['sad'],
+    'sad': ('quietly sad and downcast: the inner ends of the eyebrows raised and drawn together, eyes lowered and wet with a single small tear '
+            f'on one cheek, the corners of the mouth clearly turned down, head tilted slightly down; {READ}'),
+    'vow': 'formal and resolute, chin up, eyes steady, a gloved hand raised to her chest in an oath',
+    'shaken': ('eyes wide and unsteady, the inner ends of the eyebrows raised and knitted together, lips parted, composure cracking; '
+               f'{READ}'),
+    'solemn': 'eyes closed, head slightly bowed, a composed prayerful calm',
+    'wistful': 'a faint, distant smile with lowered eyes, as if holding back words',
+    'hushed': ('suddenly quiet, a small still sadness: eyes lowered, the inner ends of the eyebrows raised a little, lips closed with the corners '
+               f'turned down a little; {READ}'),
+}
+# Wave 1 (runs/expressions-proposal.md): the faces that give every hidden grave line a portrait, plus Liz's `hushed`.
+WAVE1 = {
+    'scarlet': ['serious', 'sad', 'vow', 'shaken'], 'chizuru': ['serious', 'sad', 'solemn'], 'sylvie': ['serious', 'sad'],
+    'selene': ['sad', 'wistful'], 'safira': ['sad'], 'bobby': ['serious', 'sad'], 'liz': ['serious', 'sad', 'hushed'], 'noel': ['sad'],
 }
 SIZE_TOL = 6          # art pixels the face's canvas may differ from the base portrait's on either axis
 PALETTE_DIST = 24     # RGB distance under which a colour counts as one of the base portrait's
@@ -45,7 +60,8 @@ def jobs(reg=None, cids=COMPANIONS):
     for c in cids:
         pid, sid = f'char-{c}-portrait', f'char-{c}-standee'
         if not (reg.get(pid, {}).get('raw') and reg.get(sid, {}).get('raw')): continue
-        for m, face in FACES.items():
+        for m in WAVE1[c]:
+            face = FACES[m]
             out.append(dict(id=f'{pid}-{m}', cid=c, mood=m, base=pid, deps=[pid, sid], batch=f'faces-{c}',
                             images=[Path(reg[pid]['raw']), Path(reg[sid]['raw'])], block=reg[pid]['qa']['block'], prompt=(
                 f'Square bust portrait in pixel art of exactly the same girl as the first attached portrait, same framing, head size, palette, hair and outfit '
@@ -122,10 +138,20 @@ def postprocess_flags(generator):
     return {'defringe': 'strong', 'neutralize_tint': True} if generator.startswith('gemini') else {}
 
 
+def registry_fields(generator):
+    """What a postprocess writes to the asset's entry: the generator, and the repair flags reset to that generator's own."""
+    return {'generator': generator, 'defringe': None, 'neutralize_tint': None, **postprocess_flags(generator)}
+
+
 def generator_of(raw):
     gen = Path(raw).with_name(f'{Path(raw).stem}.gen.json')
     rec = json.loads(gen.read_text(encoding='utf-8')) if gen.exists() else {}
-    return rec.get('generator') or ('codex' + (f'/{rec["model"]}' if rec.get('model') else ''))
+    if rec.get('generator'): return rec['generator']
+    model = rec.get('model')
+    log = Path(raw).with_name(f'{Path(raw).stem}.codex.log')
+    if not model and log.exists():   # the config default: codex prints the model it used in its log header
+        model = next((l.split(':', 1)[1].strip() for l in log.read_text(encoding='utf-8', errors='replace').splitlines()[:12] if l.startswith('model:')), None)
+    return 'codex' + (f'/{model}' if model else '')
 
 
 def selected(argv):
@@ -173,7 +199,7 @@ def process_attempt(reg, job, raw, workdir):
     from PIL import Image as _I
     breg = _registry()[job['base']]
     block = scaled_block(job['block'], _I.open(breg['raw']).width, _I.open(raw).width)
-    gen = generator_of(raw); reg.set(job['id'], generator=gen, **postprocess_flags(gen))
+    reg.set(job['id'], **registry_fields(generator_of(raw)))
     q = A.process(reg, job['id'], raw, 'sprite', workdir=workdir, block=block)[job['id']]
     m = match_qa(Path(workdir) / f'{job["id"]}.png', REPO / breg['final'], block, q['block'])
     (Path(workdir) / f'{job["id"]}.match.json').write_text(json.dumps(m, indent=2), encoding='utf-8')
