@@ -3366,17 +3366,18 @@ describe('story L: the group scenes (Task 7)', () => {
   it('group:act4 keeps its beats: the purse, Scarlet goes, the song breaks off, his lie, Safira at Scarlet, she sits first, dawn (Task 11)', () => {
     const id = 'group:act4';
     expect(REACTIONS.act4).toBe(id);
-    for (const re of [/錢袋/, /燈芯，我去/, /提燈的人/, /一個人的/, /坐/, /難過/, /天亮/]) pinBeat(id, {}, re);
+    // third cold read: his lie is the song's one lamp-bearer, 「那就我」 (was 「本來就是一個人的」, too neat)
+    for (const re of [/錢袋/, /燈芯，我去/, /提燈的人/, /那就我/, /坐/, /難過/, /天亮/]) pinBeat(id, {}, re);
     expect(said(id, /燈芯，我去/)?.who).toBe('scarlet');
     expect(said(id, /提燈的人/)?.who).toBe('chizuru');
-    expect(said(id, /一個人的/)?.who).toBe('hero');
+    expect(said(id, /那就我/)?.who).toBe('hero');
     expect(said(id, /難過/)?.who).toBe('safira');
     // she sits down first, and the purse is still on the table at dawn: the last line, an action
     expect(STORY.scenes[id].lines.at(-1)!.text).toMatch(/坐.*天亮/);
     expect(STORY.scenes[id].lines.some((l) => l.who === 'rin')).toBe(false);   // Rin is on the roof (spec §6.4)
     // cold read: someone breaks after his lie, and Safira had picked up the bundle she puts down
     const lines = STORY.scenes[id].lines;
-    const lie = lines.findIndex((l) => /一個人的/.test(l.text));
+    const lie = lines.findIndex((l) => /那就我/.test(l.text));
     expect(['liz', 'safira']).toContain(lines[lie + 1].who);
     expect(lines.findIndex((l) => /拎起包袱/.test(l.text))).toBeLessThan(lie);
     expect(lines.at(-1)!.text).toMatch(/放下剛拎起的包袱/);
