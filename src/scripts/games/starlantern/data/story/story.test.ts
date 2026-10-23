@@ -3338,6 +3338,24 @@ describe('story L: the group scenes (Task 7)', () => {
     // the guild's debt was crossed off in act 1 (I-84, I-96): Rin sells so that nobody owes anybody
     expect(STORY.scenes[id].lines.map((l) => l.text).join('')).not.toMatch(/欠(公會|著|的|錢|帳)/);
   });
+
+  it('group:act3 keeps its beats: Sylvie saw the collar, Lorne will not ask, forty-two steps, the door (Task 10)', () => {
+    const id = 'group:act3';
+    expect(REACTIONS.act3).toBe(id);
+    for (const re of [/領口/, /不問/, /四十二/, /門邊/]) pinBeat(id, {}, re);
+    expect(said(id, /領口/)?.who).toBe('sylvie');
+    expect(said(id, /不問/)?.who).toBe('hero');
+    expect(said(id, /四十二/)?.who).toBe('rin');
+    expect(said(id, /門邊/)?.who).toBe('narrator');
+    expect(STORY.scenes[id].lines.at(-1)!.text).toMatch(/門邊/);
+  });
+
+  it('group:act3 never ties the bell to the society, nor says 殺 or 刺客: they take her for the hunted (Task 10, spec §6.2)', () => {
+    const all = [...STORY.scenes['group:act3'].lines.map((l) => l.text), STORY.scenes['group:act3'].summary].join('');
+    expect(all.includes('鐘') && all.includes('靜鐘會'), all).toBe(false);
+    expect(all).not.toMatch(/殺|刺客|林子/);
+    expect(all).toMatch(/被人追/);   // the misreading, said aloud: she is the one hunted
+  });
 });
 
 // Story L Task 8 (spec §4.4.1; style bible §1.3.1): the beat between two memories of a night. Any of them may play at any stage,

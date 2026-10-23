@@ -441,6 +441,25 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '晚飯桌上攤著無主的碎片。凜要賣，諾艾兒要吸，瑟蕾想丟銅板，被洛恩接住。諾艾兒藏起一片，他看見了。',
   },
+  // Story L Task 10 (spec §6.2; lore ledger I-194): the night of act 3. Sylvie would ask Rin, Bobby would rather not know,
+  // Lorne will not. They take her for one the society hunts too, never the one it sent; she comes back with the water.
+  'group:act3': {
+    lines: [
+      at(PL.innDeepNight, N('月影旅館，深夜。凜提著水桶下樓打水，房裡剩下洛恩、希爾薇、波比，和一盞燈。')),
+      { who: 'sylvie', mood: 'alert', text: '「她在簿子前按住了領口。兔子聽見狗叫，耳朵也是那樣貼下去的。洛恩，你去問，她只聽你的。」' },
+      { who: 'hero', mood: 'sad', text: '「不問。她想說的時候，自己會說。」' },
+      { who: 'bobby', mood: 'serious', text: '「等一下，我想想看。凜姊要是也被人追，她一定不想說。那我們一問，她就非說不可了。所以不要問。」' },
+      { who: 'sylvie', mood: 'serious', text: '「有人盯著你，盯了好幾輩子。旁邊的人什麼都不說，你們兩個又不肯開口，這樣要我怎麼守？」' },
+      { who: 'bobby', mood: 'grin', text: '「那、那我去幫她的鐘換個舌頭好了。裂成那樣，敲了也不會響。先拆下來，再──」' },
+      N('門響了。凜提著水桶站在門口，沒有人知道她聽見了多少。'),
+      { who: 'rin', mood: 'guarded', text: '「要問什麼？」' },
+      { who: 'hero', mood: 'smile', text: '「問妳水打了沒。」' },
+      { who: 'rin', mood: 'normal', text: '「打了。來回四十二步。」' },
+      { who: 'sylvie', mood: 'serious', text: '「今晚起，我也睡門口。守夜一人一半，誰都別想多扛。」' },
+      N('門邊多鋪了一床被子。兩個人並排坐著，一個看著床上的洛恩，一個看著她。波比把被子拉過了頭。'),
+    ],
+    summary: '登記簿那一夜。希爾薇要洛恩去問凜，波比說不要問，洛恩不問。凜打水回來，希爾薇把被子鋪到了門邊。',
+  },
   // Task 6: Lorne's memories (spec §4, §3.4, §3.6, §4.6, §8.4). Pieces 1–8 hint; piece 9 names the keeper, piece 10 the key.
   'mem:hero:1': {
     lines: [

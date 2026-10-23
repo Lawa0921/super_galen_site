@@ -34,7 +34,7 @@ export const groupScene = (node: ActNode): GroupScene => `group:${node}`;
  * The group scenes written and playable, by the act they follow (story L Tasks 9-11 register each one with its script; each
  * is in `SCENE_IDS` too). Its gate, `GROUP_GATE`, is further down.
  */
-export const REACTIONS: Partial<Record<ActNode, GroupScene>> = { act2: 'group:act2' };
+export const REACTIONS: Partial<Record<ActNode, GroupScene>> = { act2: 'group:act2', act3: 'group:act3' };
 
 export const memScene = (id: CharacterId, n: number): SceneId => `mem:${id}:${n}`;
 

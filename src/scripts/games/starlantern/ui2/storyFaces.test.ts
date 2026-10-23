@@ -74,7 +74,7 @@ describe('companion grave faces', () => {
     const heavy = lines.filter((l) => NORMAL_SMILES.has(l.who) && l.mood && GRAVE.has(l.mood));
     const s = state();
     const hidden = heavy.filter((l) => !speakerOf(l.who, s, ART, l.mood).face).map((l) => `${l.who} ${l.mood} ${l.text}`);
-    expect(heavy).toHaveLength(101);   // story polish M: memories end on an action now, not on a said wound (107 -> 100); story L group:act2 +1
+    expect(heavy).toHaveLength(104);   // story polish M: memories end on an action now, not on a said wound (107 -> 100); story L group:act2 +1, group:act3 +3
     expect(hidden).toEqual([]);
     // Liz's hushed lines are not grave but used to borrow her smile: all 7 now have the hushed face (story polish M: her meeting has none).
     const hushed = lines.filter((l) => l.who === 'liz' && l.mood === 'hushed');
@@ -157,14 +157,15 @@ describe('faces in a heavy scene (staging S3)', () => {
       }
     }
     expect(smiling).toEqual([]);
-    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(391);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line
+    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(400);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line
     // 395 character lines. Before S3 the 15 heavy lines of a non-glad mood without art showed a companion's smile, and 60
     // heavy lines of Lorne and Rin their normal: 75 lines, which now take a near face (35), Rin's calm normal (17) or no
     // portrait (23). A glad mood still borrows the smile (22). The light scenes are as they were.
     expect(tally).toEqual({
       // story polish M: the present halves of the early memories end on an action, so fewer heavy companion lines
       // story L Task 9, group:act2 (nine lines): exact +3, near +1 (Selene's foresee), Rin's calm normal +2, a glad mood +3
-      'heavy exact': 96, 'heavy near': 34, 'heavy calm-normal': 19, 'heavy hidden': 22, 'heavy smiling-normal': 21,
+      // story L Task 10, group:act3 (nine lines): exact +6, near +1 (Sylvie's alert), Rin's calm normal +1, Bobby's grin +1
+      'heavy exact': 102, 'heavy near': 35, 'heavy calm-normal': 20, 'heavy hidden': 22, 'heavy smiling-normal': 22,
       'light exact': 91, 'light calm-normal': 6, 'light smiling-normal': 102,
     });
   });
