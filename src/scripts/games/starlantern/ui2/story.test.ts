@@ -49,6 +49,21 @@ describe('playScene', () => {
     expect(talk.busy()).toBe(false);
   });
 
+  it('a heavy scene shows the near face for a mood without art; a light one the old fallback (staging S3)', async () => {
+    const { talk, ctx } = mk();
+    const src = () => talk.el.querySelector('.slx-talk-face')?.getAttribute('src');
+    stage('mem:noel:3', [{ who: 'noel', mood: 'panic', text: '一' }]);
+    const heavy = playScene(talk, 'mem:noel:3', ctx);
+    expect(src()).toBe(art.portrait('noel', 'sad'));
+    heavy.onAction('confirm');
+    await heavy.done;
+    stage('chat:noel:1', [{ who: 'noel', mood: 'panic', text: '二' }]);
+    const light = playScene(talk, 'chat:noel:1', ctx);
+    expect(src()).toBe(art.portrait('noel', 'normal'));
+    light.onAction('confirm');
+    await light.done;
+  });
+
   it('cancel skips the rest and shows the summary', async () => {
     const { talk, ctx } = mk();
     stage('chat:liz:1', [{ who: 'hero', text: '一' }, { who: 'rin', text: '二' }], '兩人說了幾句話。');

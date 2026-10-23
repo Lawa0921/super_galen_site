@@ -57,7 +57,8 @@ export const PUBLISHED_FACES: Record<string, StoryMood[]> = {
 /**
  * Art ids whose `normal` portrait smiles (story depth final review, checked by eye on the published art): every companion.
  * Lorne's and Rin's normal faces are calm, so they are not here. A grave line of theirs shows its own face or a mapped near
- * one (ui2/story.ts `GRAVE_FALLBACK`), never the smiling normal; with neither published it shows no portrait.
+ * one (ui2/story.ts `GRAVE_FALLBACK`), never the smiling normal; with neither published it shows no portrait. In a heavy
+ * scene (staging S3) Lorne's normal, whose calm carries a soft smile, is no stand-in either: see ui2/story.ts `CALM_NORMALS`.
  */
 export const NORMAL_SMILES: ReadonlySet<string> = new Set(['selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet']);
 

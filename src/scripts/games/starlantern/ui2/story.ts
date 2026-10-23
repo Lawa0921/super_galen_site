@@ -1,6 +1,6 @@
 import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { chainLength } from '../data/story/chains';
-import { MAJOR_SCENES, sceneKind, type SceneId } from '../data/story/scenes';
+import { MAJOR_SCENES, heavyScene, sceneKind, type SceneId } from '../data/story/scenes';
 import { NPC_NAMES, STORY, linesWhen, type NpcId, type ScriptLine, type Speaker } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import type { Game } from '../engine/game';
@@ -43,24 +43,49 @@ export const GRAVE: ReadonlySet<StoryMood> = new Set<StoryMood>(['serious', 'sad
 export const GRAVE_FALLBACK: Partial<Record<StoryMood, StoryMood[]>> = {
   shaken: ['sad'], solemn: ['serious'], vow: ['serious'], distant: ['wistful', 'sad'], wistful: ['sad'],
 };
+/** The glad faces (staging S3): a smiling normal says the same thing, so any scene may borrow it for them. */
+export const HAPPY: ReadonlySet<StoryMood> = new Set<StoryMood>(['smile', 'laugh', 'wink', 'grin', 'excited', 'smug', 'scheming', 'blush']);
+/**
+ * The nearest face for a mood that is neither glad nor normal (staging S3, 2026-10-23), tried in order in a heavy scene:
+ * a fright reads as sorrow, a start or a frown as gravity, a vision as longing. The grave faces keep their
+ * `GRAVE_FALLBACK`.
+ */
+export const NEAR_FACE: Partial<Record<StoryMood, StoryMood[]>> = {
+  ...GRAVE_FALLBACK,
+  panic: ['sad'], unguarded: ['sad'], hushed: ['sad'], averted: ['sad'],
+  surprised: ['serious'], bewildered: ['serious'], focused: ['serious'], alert: ['serious'], guarded: ['serious'], resolve: ['serious'], pout: ['serious'],
+  foresee: ['wistful', 'sad'],
+};
+/**
+ * Art ids whose normal is calm enough to stand in for any heavy face (staging S3, by eye on the published art): Rin's,
+ * both looks, a level gaze. Lorne's normal carries a soft smile, so in a heavy scene it is no stand-in: like a
+ * companion's, his line then shows its name plate alone.
+ */
+export const CALM_NORMALS: ReadonlySet<string> = new Set(['rin', 'rin-oath']);
 /**
  * Faces to try for a mood, best first. Sad falls back to down and then normal; any other face straight to normal. But a
  * speaker whose normal portrait smiles (`NORMAL_SMILES`: the companions) takes a grave face of her own, then its
- * `GRAVE_FALLBACK`, or none: with no such art the line shows its name plate alone (story depth final review).
+ * `GRAVE_FALLBACK`, or none: with no such art the line shows its name plate alone (story depth final review). In a
+ * `heavy` scene (staging S3) a mood that is not glad takes its `NEAR_FACE` instead of the normal, and only a calm normal
+ * (`CALM_NORMALS`) is left as the last resort; a light scene keeps the old order.
  */
-const faceOrder = (mood: StoryMood, artId: string): StoryMood[] => {
+const faceOrder = (mood: StoryMood, artId: string, heavy: boolean): StoryMood[] => {
   if (mood === 'normal') return ['normal'];
   if (GRAVE.has(mood) && NORMAL_SMILES.has(artId)) return [mood, ...(GRAVE_FALLBACK[mood] ?? [])];
+  if (heavy && !HAPPY.has(mood) && mood !== 'down') {
+    const near: StoryMood[] = mood === 'sad' ? ['sad', 'down'] : [mood, ...(NEAR_FACE[mood] ?? [])];
+    return CALM_NORMALS.has(artId) ? [...near, 'normal'] : near;
+  }
   return mood === 'sad' ? ['sad', 'down', 'normal'] : [mood, 'normal'];
 };
 
-/** Who speaks: the name plate, and the face when there is published art for it. */
-export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: StoryMood = 'normal'): { name: string; face?: string } {
+/** Who speaks: the name plate, and the face when there is published art for it. `heavy`: the line is in a heavy scene (`faceOrder`). */
+export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: StoryMood = 'normal', heavy = false): { name: string; face?: string } {
   if (who === 'narrator') return { name: '' };
   if (who in CHARACTERS) {
     const id = who as CharacterId;
     const artId = artIdOf(s.party.roster[id] ?? { id, oath: undefined });
-    const face = faceOrder(mood, artId).map((m) => art.portrait(artId, m)).find((u) => index.has(u));
+    const face = faceOrder(mood, artId, heavy).map((m) => art.portrait(artId, m)).find((u) => index.has(u));
     return face ? { name: CHARACTERS[id].name, face } : { name: CHARACTERS[id].name };
   }
   const npc = who as NpcId;
@@ -81,9 +106,9 @@ export function linesOf(id: SceneId, s: GameState): ScriptLine[] {
 /** The first one to speak in `lines`: they stand on the left, everyone else on the right. */
 const firstSpeaker = (lines: ScriptLine[]): Speaker | undefined => lines.find((l) => l.who !== 'narrator')?.who;
 
-/** Says one line in the box: its speaker's plate (or `plate`, when given), and the face on its side. */
-function sayLine(talk: Dialogue, line: ScriptLine, ctx: StoryCtx, first: Speaker | undefined, plate?: string): Promise<void> {
-  const sp = speakerOf(line.who, ctx.game.state, ctx.art, line.mood);
+/** Says one line in the box: its speaker's plate (or `plate`, when given), and the face on its side. `heavy`: see `faceOrder`. */
+function sayLine(talk: Dialogue, line: ScriptLine, ctx: StoryCtx, first: Speaker | undefined, plate?: string, heavy = false): Promise<void> {
+  const sp = speakerOf(line.who, ctx.game.state, ctx.art, line.mood, heavy);
   return talk.say(plate ?? sp.name, line.text, sp.face ? { src: sp.face, side: line.who === first ? 'left' : 'right' } : undefined);
 }
 
@@ -96,12 +121,13 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
   let summary: Promise<void> | null = null;
   const lines = linesOf(id, ctx.game.state);
   const first = firstSpeaker(lines);
+  const heavy = heavyScene(id);
   talk.setStyle(sceneKind(id) === 'memory' ? 'memory' : 'plain');
 
   const run = async (): Promise<'done' | 'skipped'> => {
     for (const line of lines) {
       if (summary) break;
-      await sayLine(talk, line, ctx, first);
+      await sayLine(talk, line, ctx, first, undefined, heavy);
     }
     if (summary) await summary;
     finished = true;
