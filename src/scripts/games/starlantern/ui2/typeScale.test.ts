@@ -74,3 +74,151 @@ describe('the stylesheet (legibility Task 2a)', () => {
     expect(css).toContain('round(down,');
   });
 });
+
+// ── Task 3: the 12/24 type scale ─────────────────────────────────────────────────────────────────────────────────────
+
+type Group = 'T3' | 'T4' | 'T5' | 'T6';
+/** The class prefixes of the later tasks' screens (legibility plan Task 3); anything else belongs to Task 3. */
+const PREFIXES: [Exclude<Group, 'T3'>, string[]][] = [
+  ['T6', ['slx-equip', 'slx-bag', 'slx-doll', 'slx-enh', 'slx-slot-tag', 'slx-ws', 'slx-workshop', 'slx-bd', 'slx-builds']],
+  ['T5', ['slx-status', 'slx-stat', 'slx-tab', 'slx-tabs', 'slx-tree', 'slx-talent', 'slx-skill', 'slx-field-tag', 'slx-gear-row', 'slx-gear-slot', 'slx-gear-bonus', 'slx-gear-power', 'slx-hb', 'slx-handbook', 'slx-memkey']],
+  ['T4', ['slx-pm', 'slx-partybar', 'slx-battle', 'slx-bsub', 'slx-bcmd', 'slx-bnote', 'slx-badge', 'slx-result', 'slx-acut', 'sl-cutin', 'slx-ail', 'slx-mech', 'slx-fieldbar', 'slx-msg', 'slx-who', 'slx-target']],
+];
+const ORDER: Group[] = ['T3', 'T4', 'T5', 'T6'];
+
+/**
+ * The task a rule's selector belongs to: each comma-separated part on its own (a class token equal to a prefix, or
+ * starting with it and a dash; T6 before T5 before T4; none: T3), and of the parts the earliest task.
+ */
+export function groupOf(selector: string): Group {
+  const part = (p: string): Group => {
+    const tokens = [...p.matchAll(/\.([\w-]+)/g)].map((m) => m[1]);
+    for (const [g, prefixes] of PREFIXES) if (tokens.some((t) => prefixes.some((x) => t === x || t.startsWith(`${x}-`)))) return g;
+    return 'T3';
+  };
+  return selector.split(',').map((p) => part(p.trim())).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b))[0];
+}
+
+/** Rules (as the compiled CSS writes their selector) whose screens Tasks 4–6 bring to 12/24px; each list only shrinks. */
+export const PENDING: Record<'T4' | 'T5' | 'T6', string[]> = {
+  T4: [
+    '.slx-acut-label',
+    '.slx-ail, .slx-mech',
+    '.slx-badge',
+    '.slx-pm-cue',
+    '.slx-pm-miss',
+    '.slx-pm-num',
+    '.slx-pm-pop',
+    '.slx-pm-pop-big',
+    '.slx-pm-pop-crit',
+    '.slx-pm-row',
+    '.slx-pm-tp',
+    '.slx-result h3',
+  ],
+  T5: [
+    '.slx-field-tag',
+    '.slx-gear-bonus',
+    '.slx-gear-power',
+    '.slx-hb-detail h4',
+    '.slx-skill-power',
+    '.slx-skill-rune',
+    '.slx-stat-table td',
+    '.slx-stat-table thead th',
+    '.slx-status-name b, .slx-equip-name b',
+    '.slx-status-title',
+    '.slx-tab-skills .slx-skill-name-long',
+    '.slx-talent-memkey',
+    '.slx-talent-rank',
+    '.slx-talent-state',
+    '.slx-talent-sub',
+    '.slx-talent-tier',
+    '.slx-talent-wide .slx-talent-head',
+    '.slx-talent-wide .slx-talent-sub',
+    '.slx-tree-node .slx-skill-name-long',
+    '.slx-tree-node-foot',
+    '.slx-tree-pair-tag',
+    '.slx-tree-preview',
+    '.slx-tree-warn',
+    '.slx-tree-wide .slx-tree-branch-name',
+    '.slx-tree-wide .slx-tree-node .slx-skill-head',
+    '.slx-tree-wide .slx-tree-node-foot',
+  ],
+  T6: [
+    '.slx-bd-card-name b',
+    '.slx-bd-title',
+    '.slx-enh',
+    '.slx-equip-notice',
+    '.slx-equip-stats',
+    '.slx-equip-title',
+    '.slx-slot-tag',
+    '.slx-ws-adds',
+    '.slx-ws-foot',
+    '.slx-ws-giver',
+    '.slx-ws-note, .slx-ws-owned',
+    '.slx-ws-reserve',
+    '.slx-ws-rune-text',
+    '.slx-ws-sub',
+    '.slx-ws-swapout',
+    '.slx-ws-table',
+    '.slx-ws-table thead th',
+    '.slx-ws-tags',
+    '.slx-ws-title',
+    '.slx-ws-warn',
+  ],
+};
+
+/** Every rule of the compiled CSS, innermost blocks only (keyframe steps included), as [selector, body]. */
+const flat = (text: string): [string, string][] => [...text.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => [m[1].trim(), m[2]]);
+
+/** What keeps a rule body off the type scale: font sizes of 12 or 24px only, an even leading of 12px or more (24 or more at 24px), whole letter spacing, normal weight, no !important. */
+function faults(body: string): string[] {
+  const out: string[] = [];
+  const ds = decls(body);
+  let size: string | null = null, lh: string | null = null;
+  for (const [k, v] of ds) {
+    if (/!important/.test(v)) out.push(`${k}: ${v} (!important)`);
+    if (k === 'font-size') size = v;
+    if (k === 'line-height') lh = v;
+    if (k === 'font') { const m = v.match(/(?:^|\s)([\d.]+[a-z%]+)(?:\/([\d.]+[a-z%]*|normal))?\s/); if (m) { size = m[1]; if (m[2]) lh = m[2]; } }
+    if (k === 'letter-spacing' && !/^(0|0px|[1-9]\d*px|normal)$/.test(v)) out.push(`letter-spacing: ${v}`);
+    if (k === 'font-weight' && !/^(normal|400)$/.test(v)) out.push(`font-weight: ${v}`);
+    if (k === 'font' && /\b(bold|bolder|[5-9]00)\b/.test(v)) out.push(`font: ${v} (weight)`);
+  }
+  if (size !== null && size !== '12px' && size !== '24px' && size !== 'inherit') out.push(`font-size: ${size}`);
+  if (lh !== null && lh !== 'inherit') {
+    const px = /^\d+px$/.test(lh) ? parseInt(lh, 10) : NaN;
+    if (!(px >= 12 && px % 2 === 0)) out.push(`line-height: ${lh}`);
+    else if (size === '24px' && px < 24) out.push(`line-height: ${lh} at 24px`);
+  }
+  return out;
+}
+
+describe('the type scale (legibility Task 3)', () => {
+  it('sorts selectors into their tasks', () => {
+    expect(groupOf('.slx-win')).toBe('T3');
+    expect(groupOf('.slx-battle .slx-talk')).toBe('T4');
+    expect(groupOf('.slx-status-scene .slx-skill-name')).toBe('T5');
+    expect(groupOf('.slx-ws-card .slx-skill-name')).toBe('T6');   // T6 before T5 inside one part
+    expect(groupOf('.slx-pm-name, .slx-hint')).toBe('T3');         // the earliest task of the parts
+    expect(groupOf('.slx-tabs')).toBe('T5');
+    expect(groupOf('.slx-tablet')).toBe('T3');                     // a prefix must end at a dash or the token's end
+  });
+
+  it('every declaration keeps the 12/24 type scale', () => {
+    const pending = new Set(Object.values(PENDING).flat());
+    const bad = flat(css).filter(([sel]) => !pending.has(sel)).flatMap(([sel, body]) => faults(body).map((f) => `${groupOf(sel)} ${sel} { ${f} }`));
+    expect(bad).toEqual([]);
+  });
+
+  it('the pending lists only shrink', () => {
+    const all = flat(css);
+    for (const [g, list] of Object.entries(PENDING)) {
+      for (const sel of list) {
+        const found = all.filter(([s]) => s === sel);
+        expect(found.length, `${sel} is still in the CSS`).toBeGreaterThan(0);
+        expect(found.some(([, body]) => faults(body).length > 0), `${sel} is fixed: take it off PENDING.${g}`).toBe(true);
+        expect(groupOf(sel), sel).toBe(g);
+      }
+    }
+  });
+});

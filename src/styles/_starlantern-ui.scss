@@ -6,6 +6,11 @@
   font-display: swap;
 }
 
+// The type scale (legibility ruling 3): every text is 12px or 24px, the pixel font's own grid. 24px is for display words
+// only (place names, the night, banners, cut-in names, the ending's title); everything else is 12px.
+$slx-fs: 12px;
+$slx-fs-big: 24px;
+
 $slx-w: 640px;
 $slx-h: 360px;
 $slx-ink: #f1ead8;
@@ -43,13 +48,15 @@ html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; back
   overflow: hidden;
   background: #05060c;
   color: $slx-ink;
-  font: 12px/16px 'Cubic 11', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+  font: #{$slx-fs}/16px 'Cubic 11', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
   image-rendering: pixelated;
   transform-origin: 0 0;
   transform: scale(var(--slx-s));
   user-select: none;
 }
 .slx-ui { position: absolute; inset: 0; }
+// One weight: the pixel font has no bold, and a browser's fake bold smears its pixels (ruling 3).
+.slx-screen :where(b, strong, th, h1, h2, h3, h4, h5, h6) { font-weight: normal; }
 .slx-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: $slx-dim; }
 
 // A device pixel ratio the list below does not know: a whole CSS scale, 1 to 6.
@@ -138,7 +145,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-talk-face { position: absolute; bottom: calc(100% + 12px); width: 192px; height: 192px; object-fit: contain; pointer-events: none; }
 .slx-talk-face--left { left: 10px; }
 .slx-talk-face--right { right: 10px; }
-.slx-confirm { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 200px; text-align: center; }
+.slx-confirm { left: 50%; top: 50%; translate: round(down, -50%, 1px) round(down, -50%, 1px); min-width: 200px; text-align: center; }
 .slx-confirm p { margin: 0 0 6px; white-space: pre-line; }
 @media (prefers-reduced-motion: reduce) { .slx-win, .slx-sel::before { animation: none; } }
 
@@ -147,9 +154,10 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-scene { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, #1d2340, #05060c 70%); }
 .slx-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .slx-title .slx-logo { position: absolute; left: 50%; top: 40px; width: 360px; transform: translateX(-50%); }
-.slx-title .slx-logo-text { position: absolute; left: 0; right: 0; top: 70px; margin: 0; text-align: center; font-size: 48px; line-height: 56px; color: $slx-gold; font-weight: normal; text-shadow: 0 3px 0 #000; }
-.slx-title-menu { left: 50%; top: 220px; transform: translateX(-50%); min-width: 140px; }
-.slx-place { left: 12px; top: 10px; font-size: 16px; line-height: 20px; color: $slx-ink; }
+.slx-title .slx-logo-text { position: absolute; left: 0; right: 0; top: 70px; margin: 0; text-align: center; font-size: $slx-fs-big; line-height: 28px; color: $slx-gold; font-weight: normal; text-shadow: 0 3px 0 #000; }
+.slx-title-menu { left: 50%; top: 220px; translate: round(down, -50%, 1px) 0; min-width: 140px; }
+// The place plate stays 36px tall at 24px (a 24px line, 4px padding), above the windows that start at 48px (the portal cards).
+.slx-place { left: 12px; top: 10px; padding: 4px 10px; font-size: $slx-fs-big; line-height: 24px; color: $slx-ink; }
 .slx-gold { right: 12px; top: 10px; color: $slx-gold; }
 .slx-town-menu { left: 12px; top: 56px; min-width: 150px; }
 
@@ -190,7 +198,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-qty .slx-hint { white-space: pre-line; }
 .slx-qty .slx-qty-note { margin: 6px 0 0; }   // 「袋子 m」 under a rune's count (plan 8f)
 // A list's heading row (the rune shop's 收購, plan 8f): no cursor lands on it, and it reads as a heading, not a greyed item.
-.slx-opt .slx-label.slx-list-head { color: $slx-gold; font-size: 10px; letter-spacing: 2px; border-bottom: 1px solid rgba(232, 196, 106, 0.35); }
+.slx-opt .slx-label.slx-list-head { color: $slx-gold; font-size: $slx-fs; letter-spacing: 2px; border-bottom: 1px solid rgba(232, 196, 106, 0.35); }
 .slx-qty-row { display: flex; justify-content: center; gap: 2px; }
 .slx-qty-down { margin-right: 4px; }
 .slx-qty-up { margin-left: 4px; }
@@ -221,13 +229,13 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-shop-list { min-width: 250px; }
 .slx-name-line { color: $slx-gold; margin: 0 0 2px; }
 
-.slx-night { position: absolute; inset: 0; display: grid; place-items: center; background: #000; color: $slx-ink; font-size: 16px; animation: slx-night 1.2s ease-in-out both; }
+.slx-night { position: absolute; inset: 0; display: grid; place-items: center; background: #000; color: $slx-ink; font-size: $slx-fs-big; line-height: 28px; animation: slx-night 1.2s ease-in-out both; }
 @keyframes slx-night { 0% { opacity: 0; } 25%, 75% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .slx-night { animation: none; } }
 
 // Interface fixes after the first facility screenshots
 // ▲/▼ scroll a long list by mouse or touch (ui2/widgets.ts MenuView.scrollBy); padded so a finger can hit them.
-.slx-more { list-style: none; text-align: center; font-size: 8px; line-height: 10px; padding: 2px 0; color: $slx-dim; cursor: pointer; }
+.slx-more { list-style: none; text-align: center; font-size: $slx-fs; line-height: 12px; padding: 2px 0; color: $slx-dim; cursor: pointer; }
 .slx-more:hover { color: $slx-gold; }
 .slx-layer.slx-confirm { left: 50%; top: 45%; }
 .slx-list.slx-depth-1 { translate: 24px 16px; }
@@ -241,7 +249,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-shop-pages { min-width: 120px; }
 // Buy list preview: one line per active member, each changed stat coloured by direction (the arrows come from the words, not the colour).
 .slx-cmp-list { list-style: none; padding-left: 0; }
-.slx-cmp-member { margin: 0 0 3px; line-height: 13px; }
+.slx-cmp-member { margin: 0 0 3px; line-height: 14px; }
 .slx-cmp-member b { margin-right: 6px; color: $slx-gold; font-weight: normal; }
 .slx-cmp-member span { margin-right: 5px; white-space: nowrap; }
 .slx-cmp-member .slx-up { color: $slx-up; }
@@ -255,7 +263,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-back:hover { color: $slx-gold; }
 .slx-back[inert] { color: $slx-dim; }
 .slx-talk { cursor: pointer; }
-.slx-next { position: absolute; right: 10px; bottom: 4px; color: $slx-gold; font-size: 8px; animation: slx-blink 0.8s steps(2) infinite; }
+.slx-next { position: absolute; right: 10px; bottom: 4px; color: $slx-gold; font-size: $slx-fs; line-height: 12px; animation: slx-blink 0.8s steps(2) infinite; }
 @keyframes slx-blink { 50% { opacity: 0; } }
 .slx-qty-down, .slx-qty-up, .slx-qty-n { cursor: pointer; }
 .slx-qty-down:hover, .slx-qty-up:hover, .slx-qty-n:hover { color: $slx-gold; }
@@ -288,15 +296,15 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 // The ten-line field menu covers the condition badge and the weight line: hide them, so no sliver shows at its edge.
 .slx-dungeon:has(.slx-field-menu) .slx-condition, .slx-dungeon:has(.slx-field-menu) .slx-weight, .slx-dungeon:has(.slx-field-menu) .slx-keyhint { visibility: hidden; }
 .slx-dungeon > .slx-back { right: 140px; top: 6px; }
-.slx-keyhint { position: absolute; left: 8px; bottom: 68px; margin: 0; font-size: 10px; line-height: 12px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
+.slx-keyhint { position: absolute; left: 8px; bottom: 68px; margin: 0; font-size: $slx-fs; line-height: 14px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
 .slx-title .slx-keyhint, .slx-town .slx-keyhint { bottom: 6px; }
 .slx-town:has(> .slx-talk:not([hidden])) .slx-keyhint { visibility: hidden; }
 // Run readouts: the condition badge under the floor name, the minimap under the lamp and menu button, the weight above the key hint.
 .slx-condition { left: 8px; top: 54px; padding: 2px 10px; cursor: help; color: #cfe6ff; }
 .slx-condition:hover, .slx-condition:focus-visible { color: $slx-gold; outline: none; }
-.slx-condition-tip { left: 8px; top: 92px; z-index: 5; max-width: 220px; padding: 4px 8px; font-size: 11px; line-height: 15px; pointer-events: none; }
+.slx-condition-tip { left: 8px; top: 92px; z-index: 5; max-width: 220px; padding: 4px 8px; font-size: $slx-fs; line-height: 16px; pointer-events: none; }
 .slx-minimap { position: absolute; right: 8px; top: 46px; width: 120px; height: 88px; box-sizing: border-box; border: 1px solid rgba(201, 163, 90, 0.7); border-radius: 2px; image-rendering: pixelated; pointer-events: none; }
-.slx-weight { position: absolute; left: 8px; bottom: 82px; margin: 0; font-size: 11px; line-height: 14px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
+.slx-weight { position: absolute; left: 8px; bottom: 84px; margin: 0; font-size: $slx-fs; line-height: 14px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
 .slx-weight-heavy { color: $slx-gold; }
 .slx-weight-full { color: #ff7a6b; }
 
@@ -361,7 +369,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 // With the field bar up (a barrier, the moon), the skill list opens under it rather than on its words (Task 7 review).
 .slx-battle:has(.slx-fieldbar:not([hidden])) .slx-bsub:not(.slx-btarget) { top: 86px; }
 .slx-bsub .slx-right { min-width: 40px; text-align: right; }
-.slx-result { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 260px; }
+.slx-result { left: 50%; top: 50%; translate: round(down, -50%, 1px) round(down, -50%, 1px); min-width: 260px; }
 // Many level-ups can outgrow the screen: the lines scroll, 繼續 always stays on screen.
 .slx-result-lines { max-height: 250px; overflow-y: auto; }
 // The target list sits over the (inert) command window so it never hides the enemies on the right.
@@ -423,9 +431,10 @@ $slx-battle-left: 150px;
 .sl-cutin__name {
   transform: rotate(8deg);
   color: #fff;
-  font-size: 36px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: $slx-fs-big;
+  line-height: 28px;
+  font-weight: normal;
+  letter-spacing: 2px;
   text-shadow: 0 3px 0 #000, 0 0 18px rgba(255, 200, 120, 0.8);
 }
 .sl-cutin__flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: sl-cutin-flash 1.2s ease-out both; }
@@ -456,8 +465,8 @@ $slx-battle-left: 150px;
 }
 
 // Ending
-.slx-clear-card { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 360px; text-align: center; padding: 14px 18px; }
-.slx-clear-card h2 { margin: 0 0 8px; font-size: 20px; font-weight: normal; color: $slx-gold; }
+.slx-clear-card { left: 50%; top: 50%; translate: round(down, -50%, 1px) round(down, -50%, 1px); width: 360px; text-align: center; padding: 14px 18px; }
+.slx-clear-card h2 { margin: 0 0 8px; font-size: $slx-fs-big; line-height: 28px; font-weight: normal; color: $slx-gold; }
 .slx-clear-card p { margin: 0 0 10px; }
 
 // Battle: 返回 under the message line; the description of the skill or item under the cursor covers the message line
@@ -469,11 +478,11 @@ $slx-battle-left: 150px;
 
 // Settings
 .slx-bg-dim { filter: brightness(0.45); }
-.slx-settings { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 260px; }
-.slx-settings h3, .slx-keys h3 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
+.slx-settings { left: 50%; top: 50%; translate: round(down, -50%, 1px) round(down, -50%, 1px); min-width: 260px; }
+.slx-settings h3, .slx-keys h3 { margin: 0 0 4px; font-size: $slx-fs; font-weight: normal; color: $slx-gold; }
 .slx-settings .slx-right { min-width: 90px; text-align: right; color: $slx-ink; }
-.slx-hint { margin: 6px 0 0; color: $slx-dim; font-size: 10px; line-height: 12px; }
-.slx-keys { left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 340px; cursor: pointer; }
+.slx-hint { margin: 6px 0 0; color: $slx-dim; font-size: $slx-fs; line-height: 14px; }
+.slx-keys { left: 50%; top: 50%; translate: round(down, -50%, 1px) round(down, -50%, 1px); min-width: 340px; cursor: pointer; }
 .slx-keys p { margin: 2px 0; display: flex; gap: 12px; }
 .slx-keys b { min-width: 120px; font-weight: normal; color: $slx-gold; }
 .slx-keys .slx-hint { display: block; text-align: center; }
@@ -515,8 +524,8 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-cell-sel { border: 2px solid $slx-gold; background: rgba(232, 196, 106, 0.16); box-shadow: 0 0 6px rgba(232, 196, 106, 0.6); }
 .slx-cell-face { width: 56px; height: 56px; object-fit: contain; }
 .slx-formation-info { left: 372px; top: 10px; right: 10px; bottom: 44px; }
-.slx-formation-info h3, .slx-status-panel h4, .slx-tab-ultimate h4 { margin: 0 0 4px; font-size: 16px; font-weight: normal; color: $slx-gold; }
-.slx-formation-count { margin: 0 0 6px; font-size: 14px; }
+.slx-formation-info h3, .slx-status-panel h4, .slx-tab-ultimate h4 { margin: 0 0 4px; font-size: $slx-fs; font-weight: normal; color: $slx-gold; }
+.slx-formation-count { margin: 0 0 6px; font-size: $slx-fs; }
 .slx-formation-rules { margin: 0; padding-left: 14px; color: $slx-ink; }
 .slx-formation-rules li { margin: 3px 0; }
 .slx-formation-msg { min-height: 16px; margin: 8px 0 0; color: $slx-down; }
@@ -663,7 +672,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-skill-power { margin: 1px 0 0; color: #ff9a3c; font-size: 10px; }
 // A skill that takes runes (plan 8g Task 5): its slot dots after the name, a line for each rune, a click opens the workshop.
 .slx-skill-runed { cursor: pointer; }
-.slx-skills-note { margin: 0 0 2px; font-size: 11px; color: $slx-down; }
+.slx-skills-note { margin: 0 0 2px; font-size: $slx-fs; color: $slx-down; }
 .slx-skill-runed:hover .slx-skill-name { color: #fff; }
 .slx-skill-slots { flex: none; color: $slx-gold; letter-spacing: 1px; white-space: nowrap; }
 .slx-skill-rune { margin: 1px 0 0; font-size: 10px; line-height: 12px; color: #9fc1ff; }
@@ -875,8 +884,8 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
 .slx-item-name { margin-bottom: 2px; line-height: 16px; }
 // Gold only for a name with no rarity (an empty cell or slot); gear keeps its .slx-rarity-* colour.
 .slx-item-name:not([class*='slx-rarity-']) { color: $slx-gold; }
-.slx-item-meta { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 10px; line-height: 12px; color: $slx-dim; }
-.slx-item-junk { margin-top: 2px; font-size: 10px; line-height: 12px; color: $slx-down; }
+.slx-item-meta { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: $slx-fs; line-height: 14px; color: $slx-dim; }
+.slx-item-junk { margin-top: 2px; font-size: $slx-fs; line-height: 14px; color: $slx-down; }
 .slx-item-lines { margin: 4px 0; padding: 3px 0; border-top: 1px solid #2a2840; border-bottom: 1px solid #2a2840; }
 .slx-line { margin: 0; line-height: 14px; }
 .slx-line-affix { color: #9fc0ff; }
@@ -884,10 +893,10 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
 .slx-line-set { color: $slx-dim; }
 .slx-line-set.slx-line-on { color: $slx-up; }
 .slx-line-off .slx-line-dim { opacity: 0.45; }
-.slx-line-note { display: block; font-size: 10px; line-height: 12px; color: #ffc4a8; }
+.slx-line-note { display: block; font-size: $slx-fs; line-height: 14px; color: #ffc4a8; }
 .slx-equip-notice { position: absolute; left: 8px; bottom: 18px; margin: 0; font-size: 10px; line-height: 12px; color: #ff8a7a; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
-.slx-line-lore { margin-top: 2px; font-size: 10px; line-height: 12px; color: $slx-dim; }
-.slx-cmp-head { margin-bottom: 2px; font-size: 10px; line-height: 12px; color: $slx-dim; }
+.slx-line-lore { margin-top: 2px; font-size: $slx-fs; line-height: 14px; color: $slx-dim; }
+.slx-cmp-head { margin-bottom: 2px; font-size: $slx-fs; line-height: 14px; color: $slx-dim; }
 .slx-cmp-row { display: flex; justify-content: space-between; gap: 6px; line-height: 14px; }
 .slx-cmp-label { color: $slx-gold; }
 .slx-up .slx-cmp-after { color: $slx-up; }
@@ -1141,14 +1150,14 @@ $slx-starlit: #bff6ff;
   animation: slx-banner-band 1.1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
 }
 .slx-banner-text {
-  position: relative; font-size: 34px; line-height: 40px; letter-spacing: 6px; color: #fff; skew: -10deg 0;
+  position: relative; font-size: $slx-fs-big; line-height: 28px; letter-spacing: 6px; color: #fff; skew: -10deg 0;
   text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 0 14px rgba(232, 196, 106, 0.8);
   animation: slx-banner-text 1.1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
 }
 .slx-banner-boss::before { background: linear-gradient(90deg, transparent, rgba(80, 6, 10, 0.94) 12%, rgba(80, 6, 10, 0.94) 88%, transparent); border-color: #ff4a3c; }
 .slx-banner-boss .slx-banner-text { color: #ffd0c8; text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 0 0 16px rgba(255, 60, 40, 0.9); }
 .slx-banner-win::before { background: linear-gradient(90deg, transparent, rgba(60, 44, 8, 0.92) 12%, rgba(60, 44, 8, 0.92) 88%, transparent); }
-.slx-banner-win .slx-banner-text { color: #ffe9a8; font-size: 40px; }
+.slx-banner-win .slx-banner-text { color: #ffe9a8; font-size: $slx-fs-big; }
 @keyframes slx-banner-band { 0% { translate: -110% 0; } 18%, 82% { translate: 0 0; } 100% { translate: 110% 0; opacity: 0; } }
 @keyframes slx-banner-text { 0% { scale: 2.4; opacity: 0; } 22% { scale: 1; opacity: 1; } 82% { scale: 1; opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 60px 0; } }
 @media (prefers-reduced-motion: reduce) { .slx-banner::before, .slx-banner-text { animation: none; } }
@@ -1157,11 +1166,11 @@ $slx-starlit: #bff6ff;
 // (gate.ts portalArt); until then the cards are words only.
 .slx-layer.slx-portals { position: absolute; left: 12px; right: 12px; top: 48px; bottom: 6px; max-width: none; display: flex; flex-direction: column; gap: 4px; }
 .slx-portal-row { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.slx-portals .slx-portal { position: relative; display: flex; flex-direction: column; gap: 0; overflow: hidden; cursor: pointer; transition: translate 0.12s ease-out; }
+.slx-portals .slx-portal { position: relative; display: flex; flex-direction: column; gap: 0; overflow: hidden; line-height: 12px; cursor: pointer; transition: translate 0.12s ease-out; }
 .slx-portals .slx-portal-on { border-color: $slx-gold; box-shadow: inset 0 0 0 1px $slx-gold, 0 0 10px rgba(232, 196, 106, 0.55); translate: 0 -3px; }
 // The banner is a strip of the 180x110 card art at its own pixel size (object-fit: none, no resampling), so the art stays crisp
 // at every integer screen scale. Each region moves the strip onto its focal point (portal, castle, peak); x = (card - 180) / 2.
-.slx-portal-art { display: block; flex: none; width: 100%; height: 32px; object-fit: none; object-position: 50% -36px; image-rendering: pixelated; margin-bottom: 2px; }
+.slx-portal-art { display: block; flex: none; width: 100%; height: 24px; object-fit: none; object-position: 50% -36px; image-rendering: pixelated; margin-bottom: 2px; }
 .slx-portal-mainline .slx-portal-art { object-position: 50% -40px; }
 .slx-portal-blaze .slx-portal-art { object-position: 50% -14px; }
 .slx-portal-frost .slx-portal-art { object-position: 50% -22px; }
@@ -1169,20 +1178,20 @@ $slx-starlit: #bff6ff;
 .slx-portal-mire .slx-portal-art { object-position: 50% -40px; }
 .slx-portal-shade .slx-portal-art { object-position: 50% -36px; }
 .slx-portal-iron .slx-portal-art { object-position: 50% -34px; }
-.slx-portal-name { font-size: 16px; line-height: 18px; color: $slx-ink; }
+.slx-portal-name { font-size: $slx-fs; line-height: 12px; color: $slx-ink; }
 .slx-portal-on .slx-portal-name { color: $slx-gold; }
 // 6c Task 16: someone was sighted beyond this portal: a small text marker on the name's line (no shape), so the card keeps
 // its height. The guild's lead is gold, and its card gets a gold inner edge: a box-shadow, because the skinned frame's
 // border-image wins over border-color (fix round 1). Chosen and lead together keep both edges and the glow.
 .slx-portal-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
-.slx-portal-sighting { margin-left: auto; font-size: 10px; line-height: 12px; color: #a9d4ff; white-space: nowrap; }
+.slx-portal-sighting { margin-left: auto; font-size: $slx-fs; line-height: 12px; color: #a9d4ff; white-space: nowrap; }
 .slx-portal-lead-tag { color: $slx-gold; }
 .slx-portals .slx-portal-lead { box-shadow: inset 0 0 0 2px rgba(232, 196, 106, 0.8), inset 0 0 14px rgba(232, 196, 106, 0.35); }
 .slx-portals .slx-portal-lead.slx-portal-on { box-shadow: inset 0 0 0 2px $slx-gold, inset 0 0 14px rgba(232, 196, 106, 0.35), 0 0 10px rgba(232, 196, 106, 0.55); }
 .slx-portal-trait { display: flex; align-items: center; gap: 4px; }
 .slx-portal-icon { width: 16px; height: 16px; image-rendering: pixelated; }
 .slx-portal-affinity, .slx-portal-desc { color: $slx-dim; }
-.slx-portal-desc { font-size: 10px; line-height: 12px; letter-spacing: -0.2px; }
+.slx-portal-desc { font-size: $slx-fs; line-height: 14px; }
 // Names break at the 、 between them, not inside a name.
 .slx-portal-monsters { margin-top: 2px; word-break: keep-all; overflow-wrap: anywhere; }
 .slx-portal-label { margin-top: 2px; color: $slx-dim; }
@@ -1191,7 +1200,7 @@ $slx-starlit: #bff6ff;
 .slx-portal-cond b { font-weight: normal; color: $slx-gold; }
 .slx-portal-drop { margin-top: 2px; }
 // What the material is for: dim note (10px like the other notes), one line in its short form; if longer it wraps, never clipped.
-.slx-portal-drop-use { color: $slx-dim; font-size: 10px; line-height: 12px; letter-spacing: -0.2px; overflow-wrap: anywhere; }
+.slx-portal-drop-use { color: $slx-dim; font-size: $slx-fs; line-height: 12px; overflow-wrap: anywhere; }
 // The list takes the room the card has left. When every item is obtained it can outgrow that: it then scrolls (wheel, or ↑↓ on the chosen card)
 // with a thin visible bar, instead of being cut off.
 .slx-portal-gear { margin-top: 2px; flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: $slx-gold transparent; }
@@ -1199,7 +1208,7 @@ $slx-starlit: #bff6ff;
 .slx-codex-item { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; overflow-wrap: anywhere; }
 // Unobtained names are dimmed.
 .slx-codex-unknown { color: $slx-dim; }
-.slx-codex-more { margin: 0; text-align: right; font-size: 10px; line-height: 12px; color: $slx-gold; }
+.slx-codex-more { margin: 0; text-align: right; font-size: $slx-fs; line-height: 12px; color: $slx-gold; }
 // The gear icon (26 x 26) once obtained, else its silhouette art (28 x 28, made from the icon): each at its own size.
 .slx-codex-silhouette, .slx-codex-icon { flex: none; align-self: center; image-rendering: pixelated; }
 .slx-codex-icon { width: 26px; height: 26px; }
@@ -1208,20 +1217,20 @@ $slx-starlit: #bff6ff;
 // the names below read as notes (10px) so the 28px heading still leaves room for all three names in the card.
 .slx-portal-gear-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .slx-codex-pics { display: flex; gap: 2px; }
-.slx-portal-gear:has(.slx-codex-pics) .slx-codex-item { font-size: 10px; line-height: 12px; }
+.slx-portal-gear:has(.slx-codex-pics) .slx-codex-item { font-size: $slx-fs; line-height: 12px; }
 .slx-portal-general { margin-top: 2px; color: #c9b8ff; }
 // A dim note like the others (10px), so the card keeps a few px of room under its gear list.
-.slx-portal-depth { margin-top: auto; padding-top: 1px; color: $slx-dim; font-size: 10px; line-height: 12px; text-align: right; }
-.slx-portal-hint { margin: 0; text-align: center; font-size: 10px; line-height: 12px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; }
-.slx-layer.slx-depths { left: 50%; top: 84px; translate: -50% 0; min-width: 200px; max-width: none; }
+.slx-portal-depth { margin-top: auto; padding-top: 1px; color: $slx-dim; font-size: $slx-fs; line-height: 12px; text-align: right; }
+.slx-portal-hint { margin: 0; text-align: center; font-size: $slx-fs; line-height: 14px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; }
+.slx-layer.slx-depths { left: 50%; top: 84px; translate: round(down, -50%, 1px) 0; min-width: 200px; max-width: none; }
 .slx-depths .slx-ico { width: 48px; height: 27px; object-fit: cover; }
 .slx-gate .slx-confirm p { white-space: pre-line; }
 @media (prefers-reduced-motion: reduce) { .slx-portals .slx-portal { transition: none; } }
 
 // Event rooms: one window over the labyrinth; the pad and lower windows are inert while it is open.
-.slx-layer.slx-event { left: 50%; top: 40px; translate: -50% 0; width: 300px; max-width: none; }
+.slx-layer.slx-event { left: 50%; top: 40px; translate: round(down, -50%, 1px) 0; width: 300px; max-width: none; }
 .slx-event-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.slx-event-title { font-size: 14px; line-height: 18px; color: $slx-gold; }
+.slx-event-title { font-size: $slx-fs; line-height: 16px; color: $slx-gold; }
 .slx-event-art { width: 32px; height: 32px; image-rendering: pixelated; }
 .slx-event p { margin: 0 0 4px; }
 .slx-event-gold { color: $slx-gold; text-align: right; }
@@ -1244,7 +1253,7 @@ $slx-starlit: #bff6ff;
 .slx-banner-condition::before { animation: slx-banner-cond-band 2s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
 // Opacity is held at every stop: with only the last stop the eased fade would thin the band out almost at once.
 @keyframes slx-banner-cond-band { 0% { translate: -110% 0; opacity: 1; } 16%, 84% { translate: 0 0; opacity: 1; } 100% { translate: 110% 0; opacity: 0; } }
-.slx-banner-condition .slx-banner-text { font-size: 26px; line-height: 32px; letter-spacing: 4px; animation-duration: 2s; }
+.slx-banner-condition .slx-banner-text { font-size: $slx-fs-big; line-height: 28px; letter-spacing: 4px; animation-duration: 2s; }
 .slx-banner-sub { position: relative; font-size: 12px; line-height: 16px; color: $slx-ink; skew: -10deg 0; text-shadow: 0 1px 0 #000, 0 0 3px #000; animation: slx-banner-text 2s cubic-bezier(0.2, 0.9, 0.3, 1) forwards; }
 @media (prefers-reduced-motion: reduce) { .slx-flash-hurt { animation: none; opacity: 0.3; } .slx-banner-condition::before, .slx-banner-sub { animation: none; } }
 

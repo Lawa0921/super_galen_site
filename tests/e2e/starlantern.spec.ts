@@ -1765,7 +1765,7 @@ test.describe('starlantern', () => {
           expect(c.clipped, `${at} card clipped`).toBeLessThanOrEqual(1);
           expect(c.depthBelow, `${at} depth line clipped`).toBeLessThanOrEqual(0.5);
           expect(c.art?.loaded, `${at} banner art`).toBe(true);
-          expect(c.art!.h, `${at} banner height`).toBeGreaterThanOrEqual(28);
+          expect(c.art!.h, `${at} banner height`).toBeGreaterThanOrEqual(24);   // legibility ruling 8: the strip gives up 8px for 12px text
           if (c.region === 'mainline') continue;
           expect(c.gear!.items, at).toBe(3); expect(c.gear!.over, `${at} overflow`).toBeLessThanOrEqual(1); expect(c.gear!.more).toBe(false);
         }
