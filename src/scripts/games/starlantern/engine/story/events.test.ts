@@ -8,7 +8,8 @@ import { memoryPace } from './expect';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, nextReaction, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyPieces, storyStage, toldCount, afterWin } from './events';
-import { withTold } from '../testing';
+import { constRng, withTold } from '../testing';
+import { Game } from '../game';
 import { DAWN_BACKLOG, dawnMemory, eveMemories, planNight } from './nights';
 import { NIGHT_BEATS } from '../../data/story.zh-TW';
 
@@ -973,6 +974,10 @@ describe('town banter', () => {
   const REACT = { act2: 'group:act2', act3: 'group:act3', act4: 'group:act4' } as const;
   /** One night: when, the pieces the day owed, the night's memories (the eve's too), and the beats between them. */
   interface NightCount { at: string; owed: SceneId[]; night: SceneId[]; beats: number; alone: boolean }
+  /** A return as the script played it, from the state it started in (review: cross-checked against `Game.arrive`). */
+  interface ArriveCheck { at: number; state: GameState; afterFinale: boolean; tonight: SceneId[]; dawn?: SceneId; arrival: SceneId[]; night: SceneId[] }
+  /** A departure as the script played it, from the state it started in (cross-checked against `Game.departScenes`). */
+  interface DepartCheck { at: number; state: GameState; scenes: SceneId[]; eve: SceneId[] }
   const scriptedPlay = (depths: number[], afterFinale = 0, route: 'all' | 'mainline-first' = 'all') => {
     let s = base();
     s.story.seen.push('prologue-inn', 'first-return', 'act1-after');
@@ -986,6 +991,8 @@ describe('town banter', () => {
     const nights: NightCount[] = [];
     const late: string[] = [];
     const dawns: SceneId[] = [];
+    const arrivals: ArriveCheck[] = [];
+    const departures: DepartCheck[] = [];
     /** Where each act, each group scene and the lone morning played: the return's depth (100 + k after the finale), or 'finale'. */
     const where: Partial<Record<SceneId, number | 'finale'>> = {};
     const late4 = depths.find((t) => t > ACT_DEPTHS.act4) ?? Infinity;
@@ -1028,6 +1035,7 @@ describe('town banter', () => {
     };
     /** A return to town, as `Game.arrive` and the town play it. */
     const arrive = (at: number, afterFinaleReturn: boolean) => {
+      const from = structuredClone(s);
       s = { ...s, story: onReturn(s) };
       if (at < 100) for (const id of [...PAYOFFS, ...SETUP_PAYOFFS]) if (opened[id] === undefined && banterOpen(s, id)) {
         const [pair, n] = [id.split(':')[1], Number(id.split(':')[2])];
@@ -1040,6 +1048,7 @@ describe('town banter', () => {
       s = { ...s, story: { ...s.story, tonight: [...plan.before, ...plan.night], dawn: dawn ?? undefined } };
       const group = day.filter((id) => id.startsWith('group:'));
       const daytime = day.filter((id) => !id.startsWith('group:'));
+      arrivals.push({ at, state: from, afterFinale: afterFinaleReturn, tonight: [...plan.before, ...plan.night], dawn: dawn ?? undefined, arrival: [...plan.before, ...daytime], night: [...group, ...plan.night] });
       trace.push(`${at}: ${plan.before.length ? `[${plan.before.join(' ')}] ` : ''}${daytime.join(' ')}${group.length ? ` | ${group.join(' ')}` : ''} | night ${plan.night.join(' ') || '-'} (untold ${(s.story.untold ?? []).length}, pairs ready ${openPairs(s)})`);
       const pairs = day.filter((id) => id.startsWith('banter:')).map((id) => id.split(':')[1]);
       if (at < 100 && new Set(pairs).size !== pairs.length) samePair.push(`${at}: ${pairs.join(', ')}`);
@@ -1048,6 +1057,8 @@ describe('town banter', () => {
     };
     /** A departure, as `Game.departScenes` offers: the dawn, the eve and its memories, then the lone morning. */
     const depart = (at: number) => {
+      const check: DepartCheck = { at, state: structuredClone(s), scenes: [], eve: [] };
+      departures.push(check);
       const alone = ALONE.some((id) => s.story.queue.includes(id));
       const untold = s.story.untold ?? [];
       const dawn = s.story.dawn;
@@ -1055,12 +1066,15 @@ describe('town banter', () => {
       if (!alone && !s.story.queue.includes('finale-eve') && dawn && untold.includes(dawn) && untold.length >= DAWN_BACKLOG) {
         trace.push(`${at} departs: dawn ${dawn}`);
         dawns.push(dawn);
+        check.scenes.push(dawn);
         play(dawn, at);
       }
       if (alone) return;
       if (s.story.queue.includes('finale-eve')) {
+        check.scenes.push('finale-eve');
         play('finale-eve', at);
         const eve = eveMemories(s);
+        check.eve = eve;
         s = { ...s, story: { ...s.story, tonight: (s.story.tonight ?? []).filter((id) => !eve.includes(id)) } };
         trace.push(`${at} departs: finale-eve | ${eve.join(' ') || '-'}`);
         nights.push({ at: `eve ${at}`, owed: [], night: eve, beats: Math.max(0, eve.length - 1), alone: false });
@@ -1068,6 +1082,7 @@ describe('town banter', () => {
       }
       if (s.story.queue.includes('hero-alone') && s.story.seen.includes('mem:hero:9') && s.story.seen.includes('bellkeeper-arrives')) {
         trace.push(`${at} departs: hero-alone`);
+        check.scenes.push('hero-alone');
         play('hero-alone', at);
       }
     };
@@ -1100,7 +1115,7 @@ describe('town banter', () => {
     const unplayed = [...(s.story.untold ?? [])];
     for (let k = 1; k <= afterFinale; k++) arrive(100 + k, k === 1);
     const report = [...PAYOFFS, ...SETUP_PAYOFFS.filter((id) => !PAYOFFS.includes(id))].map((id) => `${id}: opens ${opened[id] ?? '-'}, plays ${played[id] ?? '-'}`).join('\n');
-    return { s, report, samePair, trace, before, played, nights, late, where, unplayed, oath, atLastReturn, dawns };
+    return { s, report, samePair, trace, before, played, nights, late, where, unplayed, oath, atLastReturn, dawns, arrivals, departures };
   };
 
   it('scripted play: every payoff banter plays before the finale', () => {
@@ -1194,6 +1209,45 @@ describe('town banter', () => {
       }
       expect(Object.keys(r.s.story.reacts ?? {}), tell(r)).toEqual([]);
       expect(r.late, tell(r)).toEqual([]);
+    }
+  });
+
+  it('scripted play: the script plays each return and departure as the real engine does (review)', () => {
+    // `scriptedPlay` reimplements `Game.arrive` and `Game.departScenes`; on the very states each scripted play reached, the
+    // engine must pick the same night, dawn, arrival and night order, the same departure scenes and the same eve.
+    type Engine = { arrive(afterFinale?: boolean): void };
+    Object.assign(REACTIONS, REACT);
+    try {
+      let arrivals = 0;
+      let departures = 0;
+      for (const [depths, route] of [[EVERY_FLOOR, 'all'], [EVERY_SECOND, 'all'], [EVERY_THIRD, 'all'], [EVERY_FLOOR, 'mainline-first'], [EVERY_SECOND, 'mainline-first']] as const) {
+        const r = scriptedPlay([...depths], 3, route);
+        for (const a of r.arrivals) {
+          const g = new Game(constRng(0.99), null, structuredClone(a.state));
+          (g as unknown as Engine).arrive(a.afterFinale);
+          const label = `${route} ${depths.length} returns, at ${a.at}`;
+          expect(g.state.story.tonight, label).toEqual(a.tonight);
+          expect(g.state.story.dawn, label).toBe(a.dawn);
+          expect(g.arrival, label).toEqual(a.arrival);
+          expect(g.night, label).toEqual(a.night);
+          arrivals++;
+        }
+        for (const d of r.departures) {
+          const g = new Game(constRng(0.99), null, structuredClone(d.state));
+          const label = `${route} ${depths.length} returns, departing ${d.at}`;
+          expect(g.departScenes(), label).toEqual(d.scenes);
+          if (d.scenes.includes('finale-eve')) {
+            expect(g.sceneDone('finale-eve', 'played'), label).toBe(true);
+            expect(g.eve, label).toEqual(d.eve);
+            expect(g.departScenes(), label).toEqual(d.scenes.filter((id) => id === 'hero-alone'));
+          }
+          departures++;
+        }
+      }
+      expect(arrivals).toBeGreaterThan(80);
+      expect(departures).toBeGreaterThan(60);
+    } finally {
+      for (const k of Object.keys(REACT)) delete REACTIONS[k as keyof typeof REACT];
     }
   });
 
