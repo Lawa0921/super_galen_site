@@ -4809,9 +4809,13 @@ test.describe('starlantern', () => {
     expect(await view<string[]>("return v.ailmentTexts('e0').map((t) => t.text);")).toEqual([affix.name]);
     await w.choose('.slx-bcmd', '攻擊');
     await expect(page.locator('.slx-btarget [aria-selected=true]')).toHaveAttribute('data-id', 'e0');
-    await expect(page.locator('.slx-bnote')).toHaveText(T.ui2.tier.affixLine(affix.name, affix.line));
+    // The note: the foe's whole intent first (the picture may shorten it), then its affix.
+    const lines = (await page.locator('.slx-bnote').textContent())!.split('\n');
+    expect(lines.at(-1)).toBe(T.ui2.tier.affixLine(affix.name, affix.line));
+    expect(lines.slice(0, -1).every((l) => l.startsWith('◆ ')), JSON.stringify(lines)).toBe(true);
     await w.key('ArrowDown');
-    await expect(page.locator('.slx-bnote')).toHaveCount(0);   // its escort wears none
+    const escort = page.locator('.slx-bnote');                // its escort wears none: at most its intent
+    if (await escort.count()) expect((await escort.textContent())!).not.toContain(affix.line);
 
     // The longest case, on Hell.
     await run(`g.battle = null; g.run = null; g.phase = 'town';
@@ -4857,6 +4861,7 @@ test.describe('starlantern', () => {
           if (meets(r, v.nameRect(o))) out.push(k + ' row on ' + o + ' name');
         }
         for (const q of rows) if (q.k !== k && meets(r, q.r)) out.push(k + ' row on ' + q.k + ' row');
+        for (const o of keys) if (o !== k && meets(v.nameRect(k), v.nameRect(o))) out.push(k + ' name on ' + o + ' name');
       }
       return out;`);
     expect(clash).toEqual([]);
@@ -4865,7 +4870,7 @@ test.describe('starlantern', () => {
     await w.choose('.slx-bcmd', '攻擊');
     const note = page.locator('.slx-bnote');
     await expect(note).toHaveClass(/slx-bnote-lines/);
-    expect((await note.textContent())!.split('\n')).toHaveLength(2);
+    expect((await note.textContent())!.split('\n').filter((l) => !l.startsWith('◆ '))).toHaveLength(2);   // two affixes after the intent
     for (const [width, height] of [[1280, 720], [844, 390], [390, 844]] as const) {
       await fitTo(page, width, height);
       const b = await stageBox(page, note);

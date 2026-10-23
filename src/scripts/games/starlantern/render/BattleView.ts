@@ -9,7 +9,8 @@ import type { Combatant } from '../engine/combatant';
 import type { WeaponKind } from '../engine/types';
 import { art, enemyArt, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
-import { AFFIX_FILL, AILMENT_FILL, AILMENT_MORE_FILL, bySeverity, fitRow, isHalting, textWidth } from './ailmentStyle';
+import { AFFIX_FILL, AILMENT_FILL, AILMENT_MORE_FILL, bySeverity, fitLabel, fitRow, isHalting, textWidth } from './ailmentStyle';
+import { NAME_PREFIXES } from '../engine/scaling';
 import { MECH_FILL } from './mechStyle';
 import type { MechCue, MechTone, MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
@@ -93,6 +94,34 @@ const AIL_ROW_H = 14;
 const INTENT_H = 14;
 /** A name's line under the feet: 12 px words on the pixel font's 14 px grid. */
 const NAME_H = 14;
+/** Room kept between two foes' names, and between two intents: each fits its slot less this. */
+const LABEL_SLOT_MARGIN = 4;
+
+/**
+ * A foe's name for its slot (legibility follow-up of the difficulty plan): whole when it fits; else without 深層 and its
+ * region (the floor's badge and the message line carry them); else cut with 「…」 before its letter. ★ always stays.
+ */
+export function slotName(name: string, max: number): string {
+  const star = name.startsWith('★') ? '★' : '';
+  const rest = name.slice(star.length);
+  const m = / ([A-Z])$/.exec(rest);
+  const body = m ? rest.slice(0, -2) : rest;
+  const parts = body.split('・');
+  let i = 0;
+  while (i < parts.length - 1 && NAME_PREFIXES.includes(parts[i])) i++;
+  const bare = `${star}${parts.slice(i).join('・')}`;
+  return fitLabel([name, m ? `${bare} ${m[1]}` : bare], max, ailLabelWidth, { head: bare, tail: m ? m[1] : '' });
+}
+
+/**
+ * A foe's intent for its slot: whole when it fits; else without its area (（十字）); else the skill alone, marked; else the
+ * skill alone; else cut. The whole intent is the target note's first line.
+ */
+export function slotIntent(label: string, max: number): string {
+  const noArea = label.replace(/（[^）]*）/, '');
+  const skill = noArea.split(' → ')[0];
+  return fitLabel([`◆ ${label}`, `◆ ${noArea}`, `◆ ${skill}`, skill], max, ailLabelWidth, { head: skill });
+}
 /** A hit's tags (暴擊！ 弱點！ 抗性) stand side by side in one row of this height just over the number. */
 const TAG_SIZE = 12;
 const TAG_ROW_H = 16;
@@ -141,6 +170,8 @@ export class BattleView {
   private size = { width: 640, height: 360 };
   /** How wide one enemy's ailment row may be: its slot, less a margin. */
   private ailMax = Infinity;
+  /** How wide one enemy's name or intent may be: its slot, less a margin. */
+  private labelMax = Infinity;
   private lit = new Map<string, ColorMatrixFilter>();
   /** Tint, glow and outline filters of the current battle, destroyed on the next setup. */
   private tintFilters: Filter[] = [];
@@ -229,6 +260,7 @@ export class BattleView {
     const n = state.enemies.length;
     const slotW = (size.width - left) / (n + 1);
     this.ailMax = slotW - AIL_SLOT_MARGIN;
+    this.labelMax = slotW - LABEL_SLOT_MARGIN;
     const usable = size.height - bottom;
     const ground = bottom > 0 ? usable - 28 : size.height * 0.85;   // 28 px under the feet for the name and the HP bar
     state.enemies.forEach((e, i) => {
@@ -238,7 +270,7 @@ export class BattleView {
       const maxH = (bottom > 0 ? usable : size.height) * (e.boss ? (bottom > 0 ? 0.62 : 0.7) : 0.45);
       const elite = e.tint === 'elite';
       const name = elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
-      const label = pixelText(name, 12, 0xffffff);
+      const label = pixelText(slotName(name, this.labelMax), 12, 0xffffff);
       label.anchor.set(0.5, 0);
       const lift = bottom > 0 ? NAME_LIFT : 0;
       label.y = -lift;
@@ -462,7 +494,7 @@ export class BattleView {
 
   /** What each enemy will do next ({} hides them all, e.g. while a round plays). */
   showIntents(byKey: Record<string, string>): void {
-    for (const [k, s] of this.slots) if (!s.intent.destroyed) s.intent.text = byKey[k] ? `◆ ${byKey[k]}` : '';
+    for (const [k, s] of this.slots) if (!s.intent.destroyed) s.intent.text = byKey[k] ? slotIntent(byKey[k], this.labelMax) : '';
   }
 
   /**

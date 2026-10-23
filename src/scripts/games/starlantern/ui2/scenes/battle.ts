@@ -230,9 +230,14 @@ export class BattleScene implements Scene {
     else this.ctx.stage?.battleView.showAilments?.(chips, words);
   }
 
-  /** A foe's affixes for the target note, one a line (Task 7b); none when it has none, so the note stays away. */
-  private affixNote(e: Combatant): string | undefined {
-    return e.affixes?.length ? e.affixes.map((a) => T.ui2.tier.affixLine(AFFIXES[a].name, AFFIXES[a].line)).join('\n') : undefined;
+  /**
+   * A foe's target note, a line each: its whole intent (the picture may shorten it to fit its slot), then its affixes
+   * (Task 7b). None when it has neither, so the note stays away.
+   */
+  private targetNote(e: Combatant): string | undefined {
+    const intent = intentLabel(this.state, e.key);
+    const lines = [...(intent ? [T.ui2.battle.intentNote(intent)] : []), ...(e.affixes ?? []).map((a) => T.ui2.tier.affixLine(AFFIXES[a].name, AFFIXES[a].line))];
+    return lines.length ? lines.join('\n') : undefined;
   }
 
   /** 返回 shows only when cancel would do something: close a sub-list or go back to the previous member. */
@@ -361,7 +366,7 @@ export class BattleScene implements Scene {
     if (target === 'enemy') {
       const living = this.state.enemies.filter((e) => e.alive);
       if (living.length === 1) { this.finish(p, living[0].key); return; }
-      this.subList(living.map((e) => ({ id: e.key, label: e.name, ...(e.affixes?.length ? { note: this.affixNote(e) } : {}) })), (it) => this.finish(p, it.id), 'slx-bsub slx-btarget');
+      this.subList(living.map((e) => { const note = this.targetNote(e); return { id: e.key, label: e.name, ...(note ? { note } : {}) }; }), (it) => this.finish(p, it.id), 'slx-bsub slx-btarget');
       return;
     }
     if (target === 'ally' || target === 'deadAlly') {

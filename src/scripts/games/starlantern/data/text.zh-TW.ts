@@ -270,7 +270,11 @@ export const T = {
     crit: '（暴擊）',
   },
   ui2: {
-    battle: { survive: (left: number) => `撐過去！還有 ${left} 回合` },
+    battle: {
+      survive: (left: number) => `撐過去！還有 ${left} 回合`,
+      /** A foe's whole intent in the target note (the picture may shorten it to fit its slot): marked as over its head. */
+      intentNote: (label: string) => `◆ ${label}`,
+    },
     memory: {
       piece: (name: string, n: number) => `找回了${name}的記憶（第${numeral(n)}片）。`,
       shard: (name: string) => `撿到了${name}。`,

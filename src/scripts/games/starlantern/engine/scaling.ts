@@ -120,6 +120,11 @@ const SKILL_SCALES_IN: ReadonlySet<RegionId> = new Set<RegionId>(['iron']);
 
 /** Name prefix of a region's variants: 「熾焰・荊棘狼」. */
 const PREFIX: Record<RegionId, string> = { mainline: '', blaze: '熾焰', frost: '霜凍', storm: '雷鳴', mire: '腐毒', shade: '暗影', iron: '鋼鐵' };
+/**
+ * The words `scaleEnemy` puts before a name (深層, a region's prefix): a battle label too long for its slot drops them first
+ * (render/BattleView.ts), since the floor's badge and the message line already say them. Read by the picture only.
+ */
+export const NAME_PREFIXES: readonly string[] = ['深層', ...Object.values(PREFIX).filter(Boolean)];
 
 /**
  * Region traits as plain stat changes (spec §3.0): mire monsters are tough, storm ones fast, iron ones armoured but

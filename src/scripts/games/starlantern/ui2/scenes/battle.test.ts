@@ -7,7 +7,7 @@ import { NO_ART } from '../../render/textures';
 import { art } from '../../render/artPaths';
 import { chainLength } from '../../data/story/chains';
 import { BattleScene } from './battle';
-import { STORY_FIGHT_ROUNDS } from '../../engine/battle';
+import { STORY_FIGHT_ROUNDS, intentLabel } from '../../engine/battle';
 import { LEGACY_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
@@ -1654,19 +1654,25 @@ describe('BattleScene affixes (difficulty plan Task 7b)', () => {
   };
   const stageWith = (showAilments: ReturnType<typeof vi.fn>) => ({ show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, highlight: vi.fn(), showIntents: vi.fn(), syncHp: vi.fn(), showAilments, play: vi.fn() } });
 
-  it('the target note says each affix in a line', () => {
-    const { s, root } = setup(affixed);
+  it('the target note says the foe\'s whole intent, then each affix in a line', () => {
+    // The picture may shorten an intent to fit its slot (legibility follow-up); the note keeps it whole.
+    const { s, root, game } = setup(affixed);
+    const b = game.battle!;
+    if (b.intents) delete b.intents.e1;                       // the second foe: no plan to show
     s.onAction('confirm');                                   // 攻擊: whom?
     expect(root.querySelector('.slx-btarget [aria-selected=true]')!.getAttribute('data-id')).toBe('e0');
+    const intent = intentLabel(b, 'e0');
+    expect(intent).not.toBe('');
     const note = root.querySelector('.slx-bnote')!;
-    expect(note.textContent!.split('\n')).toEqual([T.ui2.tier.affixLine(AFFIXES.scorch.name, AFFIXES.scorch.line), T.ui2.tier.affixLine(AFFIXES.frostbind.name, AFFIXES.frostbind.line)]);
+    expect(note.textContent!.split('\n')).toEqual([T.ui2.battle.intentNote(intent), T.ui2.tier.affixLine(AFFIXES.scorch.name, AFFIXES.scorch.line), T.ui2.tier.affixLine(AFFIXES.frostbind.name, AFFIXES.frostbind.line)]);
     expect(note.classList.contains('slx-bnote-lines')).toBe(true);
-    s.onAction('down');                                      // a foe with no affixes: no note, as before
+    s.onAction('down');                                      // no affixes and no plan: no note
     expect(root.querySelector('.slx-bnote')).toBeNull();
-    const plain = setup((g) => { const b = g.battle!; if (b.enemies.length < 2) b.enemies.push({ ...structuredClone(b.enemies[0]), key: 'e1' }); });
+    // A plain foe: its intent alone, one line.
+    const plain = setup((g) => { const pb = g.battle!; if (pb.enemies.length < 2) pb.enemies.push({ ...structuredClone(pb.enemies[0]), key: 'e1' }); });
     plain.s.onAction('confirm');
     expect(plain.root.querySelector('.slx-btarget')).not.toBeNull();
-    expect(plain.root.querySelector('.slx-bnote')).toBeNull();
+    expect(plain.root.querySelector('.slx-bnote')!.textContent).toBe(T.ui2.battle.intentNote(intentLabel(plain.game.battle!, 'e0')));
   });
 
   it('the picture gets each foe\'s affix names; a fight without affixes calls it as before', () => {

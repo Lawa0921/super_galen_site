@@ -12,6 +12,9 @@ import type { MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
 import { enemyArt } from './artPaths';
 import { T } from '../data/text.zh-TW';
+import { ENEMIES } from '../data/enemies';
+import { REGIONS } from '../data/regions';
+import { CHARACTERS } from '../data/characters';
 
 const sfx = { hit: vi.fn(), weak: vi.fn(), heal: vi.fn(), ko: vi.fn() } as unknown as SoundManager;
 /** Five ailments, as the battle hands them over (the fixed chip order). */
@@ -414,7 +417,7 @@ describe('BattleView text (legibility Task 4)', () => {
     expect(size(T.battle.pop.crit)).toBe(12);             // its tag
     expect(size(T.battle.pop.miss)).toBe(12);             // a small word
     expect(size('e0')).toBe(12);                          // a name
-    expect(size('◆ 攻擊 → 絲嘉蕾')).toBe(12);              // an intent
+    expect(size('◆ 攻擊')).toBe(12);                      // an intent (four foes: its target does not fit the slot)
   });
 
   it('ailment rows of four enemies at 12px stay inside their slots', () => {
@@ -668,5 +671,87 @@ describe('BattleView affixes (difficulty plan Task 7b)', () => {
         expect(rect.y, `${label} ${k} under the message window`).toBeGreaterThanOrEqual(52);
       }
     }
+  });
+});
+
+describe('BattleView names and intents fit their slots (legibility, difficulty plan follow-up)', () => {
+  type R = { x: number; y: number; width: number; height: number };
+  const meets = (a: R, b: R) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  // The longest names a deep fight can give: ★, 深層, a region's prefix, the longest enemy name and a letter.
+  const longestBase = Object.values(ENEMIES).map((e) => e.name).reduce((a, b) => (ailLabelWidth(b) > ailLabelWidth(a) ? b : a));
+  const LONG_NAME = (i: number) => `★深層・熾焰・${longestBase} ${String.fromCharCode(65 + i)}`;
+  // The longest intent: the longest enemy or region skill name, an area, and the longest member's name.
+  const skills = [...Object.values(ENEMIES).flatMap((e) => e.skills.map((k) => k.name)), ...Object.values(REGIONS).flatMap((r) => (r.skill ? [r.skill.name] : []))];
+  const longestSkill = skills.reduce((a, b) => (ailLabelWidth(b) > ailLabelWidth(a) ? b : a));
+  const longestMember = Object.values(CHARACTERS).map((c) => c.name).reduce((a, b) => (ailLabelWidth(b) > ailLabelWidth(a) ? b : a));
+  const LONG_INTENT = `${longestSkill}（十字） → ${longestMember}`;
+  const fight = (n: number) => makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], Array.from({ length: n }, (_, i) => makeCombatant({ key: `e${i}`, side: 'enemy', name: LONG_NAME(i) })));
+  const textRect = (view: BattleView, key: string, text: string, y: number, h: number): R => {
+    const box = view.enemyBoxOf(key)!;
+    const w = ailLabelWidth(text);
+    return { x: box.x - w / 2, y: box.y + y, width: w, height: h };
+  };
+  const banks: [string, TextureBank][] = [
+    ['tall', bank],
+    ['bat', { get: () => new Texture({ source: new TextureSource({ width: 119, height: 65 }) }), has: () => true } as unknown as TextureBank],
+  ];
+
+  it('names never meet each other, nor intents each other, for one to five deep foes at 844x390 and 1280x720', () => {
+    // Both sizes show the same 640x360 stage (ui2/stage.ts), so one layout per foe count stands for both.
+    for (const [label, b] of banks) for (let n = 1; n <= 5; n++) {
+      const view = new BattleView(true, b);
+      view.setup(fight(n), { width: 640, height: 360 }, 1, 150, 70);
+      const keys = Array.from({ length: n }, (_, i) => `e${i}`);
+      view.showIntents(Object.fromEntries(keys.map((k) => [k, LONG_INTENT])));
+      const slotW = (640 - 150) / (n + 1);
+      const names = keys.map((k) => view.nameRect(k)!);
+      const intents = keys.map((k) => textRect(view, k, view.intentText(k), view.intentRect(k)!.y, view.intentRect(k)!.height));
+      keys.forEach((k, i) => {
+        expect(names[i].width, `${label} ${n} foes: ${k}'s name inside its slot`).toBeLessThanOrEqual(slotW - 4);
+        expect(intents[i].width, `${label} ${n} foes: ${k}'s intent inside its slot`).toBeLessThanOrEqual(slotW - 4);
+        expect(view.intentText(k), `${label} ${n}`).not.toBe('');
+        keys.forEach((o, j) => {
+          if (j <= i) return;
+          expect(meets(names[i], names[j]), `${label} ${n} foes: ${k} / ${o} names`).toBe(false);
+          expect(meets(intents[i], intents[j]), `${label} ${n} foes: ${k} / ${o} intents`).toBe(false);
+        });
+      });
+    }
+  });
+
+  it('a name too long drops 深層 and the region first, then cuts with 「…」, keeping its star and letter', () => {
+    const one = new BattleView(true, bank);
+    one.setup(fight(1), { width: 640, height: 360 }, 1, 150, 70);
+    expect(one.nameOf('e0')).toBe(LONG_NAME(0));                       // room enough: the whole name
+    const five = new BattleView(true, bank);
+    five.setup(fight(5), { width: 640, height: 360 }, 1, 150, 70);
+    const shown = five.nameOf('e2');
+    expect(shown).not.toContain('深層');
+    expect(shown).not.toContain('熾焰');
+    expect(shown.startsWith('★')).toBe(true);
+    expect(shown.endsWith('C')).toBe(true);                            // the letter that tells it from its twins
+    // A short regional name keeps everything.
+    const short = new BattleView(true, bank);
+    short.setup(makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], Array.from({ length: 5 }, (_, i) => makeCombatant({ key: `e${i}`, side: 'enemy', name: `熾焰・蝙蝠` }))), { width: 640, height: 360 }, 1, 150, 70);
+    expect(short.nameOf('e0')).toBe('熾焰・蝙蝠');
+    // Cut when even the bare name does not fit: 「…」 before the letter.
+    const cut = new BattleView(true, bank);
+    cut.setup(makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], Array.from({ length: 5 }, (_, i) => makeCombatant({ key: `e${i}`, side: 'enemy', name: `★深層・暗影・很長很長很長的名字 ${String.fromCharCode(65 + i)}` }))), { width: 640, height: 360 }, 1, 150, 70);
+    expect(cut.nameOf('e1')).toMatch(/^★很長.*…B$/);
+  });
+
+  it('an intent too long drops its area, then its target, then its mark, then cuts', () => {
+    const one = new BattleView(true, bank);
+    one.setup(fight(1), { width: 640, height: 360 }, 1, 150, 70);
+    one.showIntents({ e0: '暮色搖籃曲（十字） → 千鶴' });
+    expect(one.intentText('e0')).toBe('◆ 暮色搖籃曲（十字） → 千鶴');   // room enough: as before
+    const five = new BattleView(true, bank);
+    five.setup(fight(5), { width: 640, height: 360 }, 1, 150, 70);
+    five.showIntents({ e0: '暮色搖籃曲（十字） → 千鶴', e1: '攻擊 → 絲嘉蕾', e2: '暮色搖籃曲（十字）' });
+    expect(five.intentText('e0')).toBe('暮色搖籃曲');                    // its name whole, before any cut
+    expect(five.intentText('e1')).toBe('◆ 攻擊');
+    expect(five.intentText('e2')).toBe('暮色搖籃曲');
+    five.showIntents({});
+    expect(five.intentText('e0')).toBe('');
   });
 });
