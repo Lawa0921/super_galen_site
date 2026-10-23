@@ -331,22 +331,26 @@ describe('掉落物放不下時留在地上（不吞道具）', () => {
 describe('blocked 提示可重現', () => {
   const reachEvents = (g: DelveGame): number =>
     g.drainEvents().filter((e) => e.type === 'blocked' && e.reason === 'reach').length;
+  // 瞄準半空中太遠的石頭（不是遠處的地板：方向挖掘會挖瞄準方向上觸及範圍內的地板）
+  const farStones = (g: DelveGame): void => { g.world.setFg(60 + REACH_TILES + 4, 50, T.STONE); g.world.setFg(60 + REACH_TILES + 5, 50, T.STONE); };
   it('同一格持續被擋只提示一次；換格再回來會再提示', () => {
     const g = arena();
+    farStones(g);
     g.setMining(true);
-    g.setAim(60 + REACH_TILES + 4, 60);
+    g.setAim(60 + REACH_TILES + 4, 50);
     runFor(g, 0.5);
     expect(reachEvents(g)).toBe(1);
-    g.setAim(60 + REACH_TILES + 5, 60);
+    g.setAim(60 + REACH_TILES + 5, 50);
     runFor(g, 0.1);
-    g.setAim(60 + REACH_TILES + 4, 60);
+    g.setAim(60 + REACH_TILES + 4, 50);
     runFor(g, 0.1);
     expect(reachEvents(g)).toBe(2);
   });
   it('同一格按住超過冷卻時間會再提示一次', () => {
     const g = arena();
+    farStones(g);
     g.setMining(true);
-    g.setAim(60 + REACH_TILES + 4, 60);
+    g.setAim(60 + REACH_TILES + 4, 50);
     runFor(g, 0.5);
     expect(reachEvents(g)).toBe(1);
     runFor(g, 2);

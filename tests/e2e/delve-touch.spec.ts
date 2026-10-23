@@ -166,11 +166,14 @@ test.describe('delve — 手機觸控', () => {
       const at = await tileScreen(guest, target);
       expect(at.top).toBe('delve-canvas');
       await touchDown(cdp, at);
-      await expect.poll(() => fgAt(host, target), { timeout: 15000 }).toBe(0);
+      await expect.poll(() => fgAt(host, target), { timeout: 15000, intervals: [50] }).toBe(0);
       await touchUp(cdp);
 
+      // 方向挖掘：按住的那一下挖掉土塊之後會沿著方向繼續挖（可能挖到它下面的地板）→ 放之前房主把地板補回來（放置要有支撐）
+      await host.evaluate((f) => { const w = window.__delveDebug!.game.world; for (let x = f.x - 1; x <= f.x + 4; x++) w.setFg(x, f.y + 1, 3); }, feet);
       // 客人拿土塊點那格 → 房主端放下
       await guest.waitForFunction(({ x, y }) => window.__delveDebug!.game.world.getFg(x, y) === 0, target, { timeout: 15000 });
+      await guest.waitForFunction((f) => window.__delveDebug!.game.world.getFg(f.x + 2, f.y + 1) === 3, feet, { timeout: 15000 });
       await selectItem(guest, 'dirt');
       await tap(guest, cdp, await tileScreen(guest, target));
       await expect.poll(() => fgAt(host, target), { timeout: 15000 }).toBe(DIRT_FG);
