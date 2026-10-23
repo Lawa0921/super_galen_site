@@ -11,7 +11,7 @@ import { MAX_BREATH, type Pid } from '../engine/actor';
 import type { CmdOp } from '../engine/commands';
 import type { DollLook } from '../engine/doll';
 import { GEN_VERSION, TILE_SIZE } from '../engine/constants';
-import { OUTER_GEN_VERSION } from '../engine/chunkgen/index';
+import { OUTER_GEN_VERSION } from '../engine/legacy/chunkgen/index';
 import { chunkOfX } from '../engine/coords';
 import { LOAD_COLS } from '../engine/streaming';
 import { validateCharacterStrict, type DelveCharacter } from '../save/character';

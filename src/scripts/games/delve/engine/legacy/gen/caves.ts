@@ -5,9 +5,9 @@
 //   · carveNoiseTunnels：「義大利麵」雜訊隧道（|n − 0.5| < t 的細帶），由低頻遮罩決定哪裡密、哪裡是實心岩區
 //   · carveChamber：巨大的圓頂洞室（雜訊邊界 + 較平的地板）
 import type { GenGrid } from './grid';
-import { Rng } from '../rng';
-import { T, SOLID_LUT } from '../tiles';
-import { FbmField, NoiseField, vnoise1 } from '../noise';
+import { Rng } from '../../rng';
+import { T, SOLID_LUT } from '../../tiles';
+import { FbmField, NoiseField, vnoise1 } from '../../noise';
 
 /** 圓形筆刷挖空：只挖實心格（air / 裝飾不動），可用 keep 保護特定 tile */
 export function carveDisc(world: GenGrid, cx: number, cy: number, r: number, keep?: (id: number) => boolean): void {

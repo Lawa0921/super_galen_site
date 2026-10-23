@@ -4,8 +4,8 @@
 // 呼叫端一律走與儲存無關的 API（getter / window / forEachChunk / tileXY / readChunk…）；鍵見 engine/coords.ts。
 import { CHUNK } from './constants';
 import { tileKey, tileXY as keyToXY, chunkKey, chunkXY, chunkOfX, localX, X_LIMIT, type WorldBounds } from './coords';
-import type { GenLayers } from './worldgen';
-import type { GenGrid } from './gen/grid';
+import type { GenLayers } from './legacy/worldgen';
+import type { GenGrid } from './legacy/gen/grid';
 import { Column, COLUMN_LAYERS, variantHash, type ChunkData, type ColumnLayers, type ColumnSource } from './column';
 import { SOLID_LUT, PLATFORM_LUT, CLIMB_LUT, T } from './tiles';
 import { cloneStack, type Stack } from './inventory';

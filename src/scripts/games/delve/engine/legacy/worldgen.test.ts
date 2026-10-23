@@ -1,11 +1,11 @@
 // worldgen.test.ts
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, tileRunner, type GenResult } from './worldgen';
-import { BIOME } from './world';
+import { BIOME } from '../world';
 import { GenGrid } from './gen/grid';
-import { Rng } from './rng';
-import { T, W, isSolidTile, tileDef, floorOk, ceilOk, isChestTile } from './tiles';
-import { WORLD_W, WORLD_H, PLAYER_H, TILE_SIZE } from './constants';
+import { Rng } from '../rng';
+import { T, W, isSolidTile, tileDef, floorOk, ceilOk, isChestTile } from '../tiles';
+import { WORLD_W, WORLD_H, PLAYER_H, TILE_SIZE } from '../constants';
 
 function hashBytes(...arrs: Uint8Array[]): number {
   let h = 2166136261;

@@ -2,7 +2,7 @@
 // 像素抖動轉場 + 分段生成世界的進度、選單（存檔 / 匯出 / 匯入 / 回到標題）、自動存檔、debug 鉤。
 // 存檔身分 = 目前的存檔槽（多世界）＋ 目前的角色：標題選角色 → 選 / 建世界；新世界永遠另開存檔槽，匯入也是。
 import { DelveGame } from '../engine/game';
-import { generateWorldSteps, GEN_STAGE_COUNT, type GenResult } from '../engine/worldgen';
+import { generateWorldSteps, GEN_STAGE_COUNT, type GenResult } from '../engine/legacy/worldgen';
 import { GEN_VERSION } from '../engine/constants';
 import { restoreGame, COMPAT_GEN, type SaveData } from '../save/serialize';
 import {

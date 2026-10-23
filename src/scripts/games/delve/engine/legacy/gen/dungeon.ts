@@ -14,12 +14,12 @@
 //      房間之間不會再被洞穴打穿；再把所有房間 / 走廊外擴 SHELL 格填滿地城磚（厚磚殼），挖空內部、鋪背景牆、
 //      放平台 / 門 / 家具 / 裝飾 / 箱子。
 import type { GenGrid } from './grid';
-import { Rng, subSeed } from '../rng';
-import { T, SOLID_LUT } from '../tiles';
-import { chestLoot, type Drop } from '../loot';
-import type { ItemId } from '../items';
+import { Rng, subSeed } from '../../rng';
+import { T, SOLID_LUT } from '../../tiles';
+import { chestLoot, type Drop } from '../../loot';
+import type { ItemId } from '../../items';
 import type { ReservedZone } from '../worldgen';
-import type { Stack } from '../inventory';
+import type { Stack } from '../../inventory';
 
 export interface DungeonOptions {
   seed: string;

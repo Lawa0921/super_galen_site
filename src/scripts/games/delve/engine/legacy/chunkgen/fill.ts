@@ -3,11 +3,11 @@
 // 每一格只由 (seed, x, y) 決定：所有雜訊都是 engine/noise.ts 的值雜訊（ColNoise 是同一個公式、只把格點值沿 y 快取），
 // 跨欄的東西（樹冠）由「掃 [x0 − 3, x1 + 3) 的樹根、只畫進 [x0, x1)」保證與先填哪一欄無關。
 // 本資料夾的檔案（測試以外）不得出現連續兩個星號（測試會 grep），註解一律用 //。
-import { seedInt, hash2, vnoise1 } from '../noise';
-import { T, W } from '../tiles';
-import { LIQ, LIQ_MAX } from '../liquidKind';
-import { BIOME } from '../world';
-import { li, type Column } from '../column';
+import { seedInt, hash2, vnoise1 } from '../../noise';
+import { T, W } from '../../tiles';
+import { LIQ, LIQ_MAX } from '../../liquidKind';
+import { BIOME } from '../../world';
+import { li, type Column } from '../../column';
 import { OuterProfile, ZONE_SEA, ZONE_BEACH, ZONE_LAND, type ColumnInfo } from './profile';
 
 const smooth = (t: number): number => t * t * (3 - 2 * t);

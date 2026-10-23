@@ -1,7 +1,7 @@
 // worldgen.settlements.many.test.ts — 20 個種子：村落數量分布、村落 / 地廳 / 隧道完全不會淹水、地下湖的地標放置率
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, type GenResult } from './worldgen';
-import { T } from './tiles';
+import { T } from '../tiles';
 
 const SEEDS = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'folk-e2e', 'zeta7', 'omega', 's1', 's2', 's3', 's4', 'world',
   'npc-village', 'dwarf-deep', 'kappa', 'lambda', 'sigma', 'tau', 'upsilon'];

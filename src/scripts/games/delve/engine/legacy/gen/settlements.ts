@@ -6,9 +6,9 @@
 //     長桌、橫貫大廳的礦車軌道與兩側鑿出的軌道隧道（通往附近洞穴）、軌道上一台滿載的礦車（一次性發現物）。
 //   回傳結構矩形 + NPC 要站的位置（engine/folk.ts 用來安排村民 / 矮人）。
 import type { GenGrid } from './grid';
-import { BIOME } from '../world';
-import { subSeed, type Rng } from '../rng';
-import { T, W, SOLID_LUT } from '../tiles';
+import { BIOME } from '../../world';
+import { subSeed, type Rng } from '../../rng';
+import { T, W, SOLID_LUT } from '../../tiles';
 
 export interface GenRect { x: number; y: number; w: number; h: number; }
 export interface VillageHouse {

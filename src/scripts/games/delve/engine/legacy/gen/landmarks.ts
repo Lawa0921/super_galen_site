@@ -7,7 +7,7 @@
 //   找不到合適地板的地點就不放（不硬塞進牆裡）。
 import type { GenGrid } from './grid';
 import type { Structure } from '../worldgen';
-import { T, W, SOLID_LUT } from '../tiles';
+import { T, W, SOLID_LUT } from '../../tiles';
 
 export interface LandmarkInfo { x: number; y: number; tile: number; /** 所屬地點的結構種類（獎勵 / 文案依它挑） */ site: string; }
 

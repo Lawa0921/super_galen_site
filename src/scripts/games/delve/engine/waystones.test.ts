@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 import {
   SPAWN_STONE, STONE_EVERY, STONE_JITTER, STONE_FIRST, Waystones, validStoneIds, type Waystone,
 } from './waystones';
-import { OuterProfile, SEA_W, type CentralFrame } from './chunkgen';
+import { OuterProfile, SEA_W, type CentralFrame } from './legacy/chunkgen';
 import { DelveGame, PRIVATE_EVENTS, type DelveEvent } from './game';
-import { generateWorld, type GenResult } from './worldgen';
+import { generateWorld, type GenResult } from './legacy/worldgen';
 import { FIXED_DT, TILE_SIZE, WORLD_W } from './constants';
 import { chunkOfX } from './coords';
 import { overlapsSolid } from './physics';

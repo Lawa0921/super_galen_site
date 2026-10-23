@@ -1,9 +1,9 @@
 // profile.ts — 外圍生成器 v0 的「每欄」側寫（B9）：區域（中央 / 海 / 陸地生態段）、地表、水面、生態、深度層線。
 // 全部是 (seed, x) 的純函式：只用 engine/noise.ts 的整數雜湊 + 四則運算（不用亂數、不用超越函數），
 // 任一欄的結果與先問哪一欄無關。注意：本資料夾的檔案（測試以外）不得出現連續兩個星號（測試會 grep），註解一律用 //。
-import { seedInt, hash2, vnoise1 } from '../noise';
-import { BIOME, type BiomeId } from '../world';
-import type { ColumnLayers } from '../column';
+import { seedInt, hash2, vnoise1 } from '../../noise';
+import { BIOME, type BiomeId } from '../../world';
+import type { ColumnLayers } from '../../column';
 
 // 海寬 / 生態段寬 / 段寬抖動 / 海床平均深 / 海床靠岸斜坡寬
 export const SEA_W = 480, SEG_W = 900, SEG_JITTER = 120, SEA_DEPTH = 46, SHORE_RAMP = 100;

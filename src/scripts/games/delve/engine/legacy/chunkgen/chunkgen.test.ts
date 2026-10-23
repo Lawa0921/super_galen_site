@@ -4,11 +4,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { OuterGen, OUTER_GEN_VERSION, frameOf, SEA_W, SEG_W, SEG_JITTER, type CentralFrame, type OuterSegment } from './index';
 import { ColNoise } from './fill';
-import { Column, li } from '../column';
-import { vnoise2, fbm2 } from '../noise';
-import { World, BIOME, LIQ } from '../world';
-import { T } from '../tiles';
-import { CHUNK } from '../constants';
+import { Column, li } from '../../column';
+import { vnoise2, fbm2 } from '../../noise';
+import { World, BIOME, LIQ } from '../../world';
+import { T } from '../../tiles';
+import { CHUNK } from '../../constants';
 
 const H = 1200;
 const F: CentralFrame = { width: 4200, height: H, edgeL: 330, edgeR: 345, cavernY: 560, moltenY: 1010 };
@@ -259,7 +259,7 @@ describe('chunkgen：外圍生成器 v0', () => {
   });
 
   it('(6) 禁用 API：chunkgen 的原始碼沒有 Math.random / 超越函數 / 次方運算子', () => {
-    const dir = join(process.cwd(), 'src', 'scripts', 'games', 'delve', 'engine', 'chunkgen');
+    const dir = join(process.cwd(), 'src', 'scripts', 'games', 'delve', 'engine', 'legacy', 'chunkgen');
     const files = readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
     expect(files.sort()).toEqual(['fill.ts', 'index.ts', 'profile.ts']);
     const banned = /Math\.random|Math\.sin|Math\.cos|Math\.pow|Math\.exp|Math\.log|Math\.sqrt|Math\.hypot|\*\*/;

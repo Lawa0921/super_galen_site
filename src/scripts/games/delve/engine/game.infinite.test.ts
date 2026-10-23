@@ -2,8 +2,8 @@
 // 遠方重生、外圍發現、據點 pin、記憶體上限。預設尺寸、固定種子；世界只生成一次（gen 共用）。
 import { describe, expect, it } from 'vitest';
 import { DelveGame } from './game';
-import { generateWorld, type GenResult } from './worldgen';
-import { OuterGen, frameOf, SEA_W } from './chunkgen';
+import { generateWorld, type GenResult } from './legacy/worldgen';
+import { OuterGen, frameOf, SEA_W } from './legacy/chunkgen';
 import { X_LIMIT, chunkOfX } from './coords';
 import { CHUNK, FIXED_DT, TILE_SIZE, WORLD_H, WORLD_W } from './constants';
 import { LIQ } from './liquidKind';

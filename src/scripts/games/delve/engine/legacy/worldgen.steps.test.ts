@@ -1,8 +1,8 @@
 // worldgen.steps.test.ts — 分段生成（標題畫面顯示生成進度用）與一次生成完全相同
 import { describe, it, expect } from 'vitest';
 import { generateWorld, generateWorldSteps, GEN_STAGE_COUNT, type GenResult } from './worldgen';
-import { DelveGame } from './game';
-import { serializeGame, restoreGame } from '../save/serialize';
+import { DelveGame } from '../game';
+import { serializeGame, restoreGame } from '../../save/serialize';
 
 function hash(...arrs: ArrayLike<number>[]): number {
   let h = 2166136261;

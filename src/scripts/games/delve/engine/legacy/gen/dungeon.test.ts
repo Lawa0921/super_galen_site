@@ -1,7 +1,7 @@
 // dungeon.test.ts — 地城：結構、房型、門與鑰匙的可解性（房間圖模擬 + tile 層級的洪水填充）、確定性
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, type GenResult } from '../worldgen';
-import { T, SOLID_LUT, tileDef, isDungeonBrick, TIER_GOLD, ceilOk, floorOk } from '../tiles';
+import { T, SOLID_LUT, tileDef, isDungeonBrick, TIER_GOLD, ceilOk, floorOk } from '../../tiles';
 import type { DungeonInfo } from './dungeon';
 
 const SEEDS = ['alpha', 'dungeon-b', 'dungeon-c'];

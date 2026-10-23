@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import { DelveGame } from '../engine/game';
 import { T } from '../engine/tiles';
 import { FIXED_DT, WORLD_W } from '../engine/constants';
-import { SEA_W } from '../engine/chunkgen';
+import { SEA_W } from '../engine/legacy/chunkgen';
 import type { Stack } from '../engine/inventory';
 
 export const FIXTURE11_SEED = 'fixture-v11';

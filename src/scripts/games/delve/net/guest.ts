@@ -17,7 +17,7 @@ import { ITEMS, type ItemId } from '../engine/items';
 import { T, tileDef, isSolidTile, isInteractive, isBedTile, isChestTile, isDoorTile } from '../engine/tiles';
 import { PAIR_OF_LEFT } from '../engine/furniture';
 import { CHUNK, FIXED_DT, GEN_VERSION, PLACE_COOLDOWN, TILE_SIZE } from '../engine/constants';
-import { OUTER_GEN_VERSION } from '../engine/chunkgen/index';
+import { OUTER_GEN_VERSION } from '../engine/legacy/chunkgen/index';
 import { chunkOfX } from '../engine/coords';
 import type { DelveCharacter } from '../save/character';
 import type { Channel, NetLink, Payload } from './link';

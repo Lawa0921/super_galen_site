@@ -1,11 +1,11 @@
 // worldgen.settlements.test.ts — 地表村落、矮人地廳、地標（gen/settlements.ts、gen/landmarks.ts）
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, type GenResult } from './worldgen';
-import { BIOME, World } from './world';
-import { T, W, isSolidTile } from './tiles';
+import { BIOME, World } from '../world';
+import { T, W, isSolidTile } from '../tiles';
 import { landmarkFor } from './gen/landmarks';
-import { buildRegions } from './discovery';
-import { checkRoom } from './housing';
+import { buildRegions } from '../discovery';
+import { checkRoom } from '../housing';
 
 const overlap = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }): boolean =>
   a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;

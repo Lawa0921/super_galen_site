@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { ColumnCache, horizonSurfaceAt } from './colCache';
 import { World } from '../engine/world';
-import { OuterGen, SEA_W, type CentralFrame } from '../engine/chunkgen';
+import { OuterGen, SEA_W, type CentralFrame } from '../engine/legacy/chunkgen';
 
 describe('ColumnCache', () => {
   it('值與原函式相同（含負 x、小數 x 取 floor）', () => {

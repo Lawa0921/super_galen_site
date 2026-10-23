@@ -5,11 +5,11 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { World, LIQ, type TileWindow } from './world';
 import { T } from './tiles';
-import type { GenGrid } from './gen/grid';
+import type { GenGrid } from './legacy/gen/grid';
 import { LightEngine } from './lighting';
 import { LiquidSim } from './liquid';
 import { LIQ_MAX } from './liquidKind';
-import { generateWorld, type GenResult } from './worldgen';
+import { generateWorld, type GenResult } from './legacy/worldgen';
 
 const SKIP = typeof process !== 'undefined' && process.env.DELVE_SKIP_PERF === '1';
 

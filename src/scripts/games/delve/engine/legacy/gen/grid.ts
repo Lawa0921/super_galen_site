@@ -2,15 +2,15 @@
 // 這是 Task 5 之前的扁平 World 整份搬過來（含與儲存無關的 API，LiquidSim 的靜置也跑在它上面）；
 // 遊戲世界（engine/world.ts 的 World）改成區塊欄儲存，生成完由 World.fromGen 複製中央區。
 // 只有舊生成器（worldgen.ts、gen/**）與生成畫面的剖面取樣（render/genSection.ts）碰它。
-import { CHUNK } from '../constants';
-import { tileKey, tileXY as keyToXY, chunkKey, chunkXY, chunkOfX, localX } from '../coords';
+import { CHUNK } from '../../constants';
+import { tileKey, tileXY as keyToXY, chunkKey, chunkXY, chunkOfX, localX } from '../../coords';
 import type { GenLayers } from '../worldgen';
-import { SOLID_LUT, PLATFORM_LUT, CLIMB_LUT, T } from '../tiles';
-import type { Stack } from '../inventory';
-import { CHEST_SLOTS, type Drop } from '../loot';
-import { LIQ, LIQ_MAX } from '../liquidKind';
-import { variantHash } from '../column';
-import { BIOME, type ChestSlots, type ChunkPayload, type FlagLayer, type TileWindow } from '../world';
+import { SOLID_LUT, PLATFORM_LUT, CLIMB_LUT, T } from '../../tiles';
+import type { Stack } from '../../inventory';
+import { CHEST_SLOTS, type Drop } from '../../loot';
+import { LIQ, LIQ_MAX } from '../../liquidKind';
+import { variantHash } from '../../column';
+import { BIOME, type ChestSlots, type ChunkPayload, type FlagLayer, type TileWindow } from '../../world';
 
 function allocWindow(n: number): TileWindow {
   return {

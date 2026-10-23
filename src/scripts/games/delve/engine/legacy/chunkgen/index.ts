@@ -1,6 +1,6 @@
 // chunkgen — 外圍分區塊生成器（B9）：中央 [0, width) 以外的欄由這裡產生，任一格只由 (seed, x, y) 決定。
 // World 以 ColumnSource 的身分呼叫 fill(col, x0, x1)（中央區已由呼叫端排除），每欄資料（地表 / 生態 / 深度層）也問這裡。
-import type { Column, ColumnLayers, ColumnSource } from '../column';
+import type { Column, ColumnLayers, ColumnSource } from '../../column';
 import { OuterProfile, type CentralFrame } from './profile';
 import { OuterFiller } from './fill';
 

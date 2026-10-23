@@ -17,7 +17,7 @@ function listTs(dir: string, out: string[] = []): string[] {
 
 /** 允許直接碰扁平層的檔：World 本身、舊生成器、生成過程的分段繪製、測試 */
 function excluded(rel: string): boolean {
-  return rel === 'engine/world.ts' || rel === 'engine/worldgen.ts' || rel.startsWith('engine/gen/')
+  return rel === 'engine/world.ts' || rel.startsWith('engine/legacy/')
     || rel.endsWith('.test.ts') || rel === 'render/genSection.ts';
 }
 

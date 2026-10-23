@@ -9,11 +9,11 @@
 //   世界邊緣就整個放棄；淹到的可替換植物 / 藤蔓 / 蜘蛛網清掉。
 //   最後用 LiquidSim.settle 把不穩定的邊緣（下方 / 左右還能流的格）靜置，世界載入時就是靜止的。
 import type { GenGrid } from './grid';
-import { LIQ, LIQ_MAX } from '../liquidKind';
-import { T, W, SOLID_LUT, tileDef } from '../tiles';
-import { Rng, subSeed } from '../rng';
-import { vnoise1, seedInt } from '../noise';
-import { LiquidSim, SPRING_RATE, type SpringSpec } from '../liquid';
+import { LIQ, LIQ_MAX } from '../../liquidKind';
+import { T, W, SOLID_LUT, tileDef } from '../../tiles';
+import { Rng, subSeed } from '../../rng';
+import { vnoise1, seedInt } from '../../noise';
+import { LiquidSim, SPRING_RATE, type SpringSpec } from '../../liquid';
 
 export interface LiquidGenStats {
   ms: number;

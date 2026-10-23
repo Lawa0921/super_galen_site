@@ -7,10 +7,10 @@
 //     會跳「發現」並存進 found，但不算進日誌的總數與完成度（stats 只看中央的 regions）。
 import { Rng } from './rng';
 import { seedInt, hash2 } from './noise';
-import { SEA_W, type OuterProfile } from './chunkgen/profile';
+import { SEA_W, type OuterProfile } from './legacy/chunkgen/profile';
 import { BIOME } from './world';
-import type { BiomeSegment, Structure, GenLayers } from './worldgen';
-import type { DungeonInfo, RoomKind } from './gen/dungeon';
+import type { BiomeSegment, Structure, GenLayers } from './legacy/worldgen';
+import type { DungeonInfo, RoomKind } from './legacy/gen/dungeon';
 import { ITEMS, isItemId, type ItemId } from './items';
 import { LORE } from './lore';
 import { TILE_SIZE } from './constants';

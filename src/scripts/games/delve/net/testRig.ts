@@ -6,7 +6,7 @@ import { DelveGame } from '../engine/game';
 import { T, W } from '../engine/tiles';
 import { BIOME, LIQ } from '../engine/world';
 import { li, type Column, type ColumnLayers, type ColumnSource } from '../engine/column';
-import { generateWorld, type GenResult } from '../engine/worldgen';
+import { generateWorld, type GenResult } from '../engine/legacy/worldgen';
 import { chunkOfX } from '../engine/coords';
 import { CHUNK } from '../engine/constants';
 import { normalizeAppearance } from '../engine/appearance';

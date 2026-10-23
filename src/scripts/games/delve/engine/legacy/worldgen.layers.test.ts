@@ -1,8 +1,8 @@
 // worldgen.layers.test.ts — 深度層、洞穴網路連通、生態區有機形狀（隨深度收窄 / 不到世界底部）、熔岩深淵、確定性
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, type GenResult } from './worldgen';
-import { BIOME } from './world';
-import { T, W, SOLID_LUT, tileDef } from './tiles';
+import { BIOME } from '../world';
+import { T, W, SOLID_LUT, tileDef } from '../tiles';
 
 function hashBytes(...arrs: ArrayLike<number>[]): number {
   let h = 2166136261;

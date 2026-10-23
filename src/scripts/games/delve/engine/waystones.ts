@@ -6,7 +6,7 @@
 //   位置全部是 (seed, id) 的純函式（只用整數雜湊 + 四則運算），near() 由 x 範圍算 k、不掃描。
 import { hash2, seedInt } from './noise';
 import { X_LIMIT } from './coords';
-import { SEA_W, type OuterProfile } from './chunkgen';
+import { SEA_W, type OuterProfile } from './legacy/chunkgen';
 
 export const SPAWN_STONE = 0, STONE_EVERY = 1600, STONE_JITTER = 150, STONE_FIRST = 200;
 /** 落在海上時最多往外推幾格找陸地（v0 的碑一律在海後 ≥ 50 格，用不到；找不到 = 這顆不存在） */

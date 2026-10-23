@@ -2,7 +2,7 @@
 // 用測試用 ColumnSource（依座標雜湊寫 STONE / DIRT / AIR）建 bounds: 'infinite' 的小世界。
 import { describe, it, expect } from 'vitest';
 import { World, LIQ } from './world';
-import { GenGrid } from './gen/grid';
+import { GenGrid } from './legacy/gen/grid';
 import { Column, li, variantHash, type ColumnSource, type ColumnLayers } from './column';
 import { T, W } from './tiles';
 import { CHUNK } from './constants';

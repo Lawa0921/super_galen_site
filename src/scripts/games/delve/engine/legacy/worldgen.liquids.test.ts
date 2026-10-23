@@ -2,10 +2,10 @@
 // 叢林蜂巢（蜂巢殼 + 蜂蜜）；生成時已靜置（載入後不會大流動）、確定性、不淹進建築 / 出生點、效能。
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, type GenResult } from './worldgen';
-import { LIQ, BIOME } from './world';
-import { T, W, SOLID_LUT } from './tiles';
-import { LiquidSim } from './liquid';
-import { GEN_VERSION } from './constants';
+import { LIQ, BIOME } from '../world';
+import { T, W, SOLID_LUT } from '../tiles';
+import { LiquidSim } from '../liquid';
+import { GEN_VERSION } from '../constants';
 
 function hashBytes(...arrs: ArrayLike<number>[]): number {
   let h = 2166136261;

@@ -8,22 +8,22 @@
 // 沙漠淚滴、雪原往下收窄成冰洞、叢林鼓起再收）→ 迷你生態區 → 礦脈群 → 熔岩深淵細節 → 草 → 出生點 → 結構
 // （礦坑、小屋、遺跡、地城）→ 樹 → 地表裝飾 → 地下裝飾 → 浮空島 → 珍寶 / 古碑 → 液體（生成器 v5，見 gen/liquids.ts：
 // 湖 / 池塘 / 綠洲 / 地下湖 / 熔岩囊與熔岩湖 / 叢林蜂巢，最後靜置）。
-import { BIOME, type BiomeId } from './world';
+import { BIOME, type BiomeId } from '../world';
 import { GenGrid } from './gen/grid';
-import { Rng, subSeed } from './rng';
-import { T, W, SOLID_LUT, DUNGEON_COLORS } from './tiles';
-import { WORLD_W, WORLD_H } from './constants';
-import { chestLoot, type ChestKind } from './loot';
-import { FbmField, NoiseField, fbm2, seedInt, vnoise1 } from './noise';
+import { Rng, subSeed } from '../rng';
+import { T, W, SOLID_LUT, DUNGEON_COLORS } from '../tiles';
+import { WORLD_W, WORLD_H } from '../constants';
+import { chestLoot, type ChestKind } from '../loot';
+import { FbmField, NoiseField, fbm2, seedInt, vnoise1 } from '../noise';
 import { carveChamber, carveNetwork, carveNoiseTunnels, perlinWorm, carveDisc, paintBlob, noisePockets, fillTinyPockets } from './gen/caves';
 import { generateDungeon, type DungeonInfo } from './gen/dungeon';
 import { createLiquidGen, type LiquidGenStats } from './gen/liquids';
 import { placeVillages, placeDwarfHalls, type VillageInfo, type HallInfo } from './gen/settlements';
 import { placeLandmarks, type LandmarkInfo } from './gen/landmarks';
-import type { SpringSpec } from './liquid';
-import { LORE_SITES, type LoreSite } from './lore';
-import type { ItemId } from './items';
-import type { Stack } from './inventory';
+import type { SpringSpec } from '../liquid';
+import { LORE_SITES, type LoreSite } from '../lore';
+import type { ItemId } from '../items';
+import type { Stack } from '../inventory';
 
 export interface GenOptions {
   width?: number; height?: number;

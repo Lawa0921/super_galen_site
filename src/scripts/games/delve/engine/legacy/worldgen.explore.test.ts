@@ -2,9 +2,9 @@
 // 更大更寬的地城（厚磚殼、房間之間沒有天然洞穴）
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, type GenResult } from './worldgen';
-import { T, W, SOLID_LUT, LIGHT_LUT, isDungeonBrick } from './tiles';
-import { LORE } from './lore';
-import type { ItemId } from './items';
+import { T, W, SOLID_LUT, LIGHT_LUT, isDungeonBrick } from '../tiles';
+import { LORE } from '../lore';
+import type { ItemId } from '../items';
 
 const SEEDS = ['alpha', 'beta'];
 
