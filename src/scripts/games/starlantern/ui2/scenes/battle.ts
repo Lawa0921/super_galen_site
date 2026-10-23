@@ -76,10 +76,8 @@ export class BattleScene implements Scene {
   private actLine = '';
   private cutins = 0;
   private shakeTimer: ReturnType<typeof setTimeout> | null = null;
-  /** Tells a played memory after the result window. */
+  /** Says the rescue and the rune tutorial after the result window. */
   private talk: Dialogue;
-  /** The memory scene on screen, if any: it takes the actions while it plays. */
-  private playing: ReturnType<typeof playAndRecord> | null = null;
   /** The rune tutorial is on screen (plan 8g Task 6): the dialogue takes the actions. */
   private tutoring = false;
   /** Who was rescued, speaking and joining after 繼續 (story polish Task 1): the dialogue takes the actions. */
@@ -126,7 +124,6 @@ export class BattleScene implements Scene {
 
   onAction(a: UiAction): void {
     if (this.rescue) { this.rescue.onAction(a); return; }
-    if (this.playing) { this.playing.onAction(a); return; }
     if (this.tutoring) { this.talk.onAction(a); return; }
     if (this.busy) return;
     // Confirm or cancel ends a legendary drop's moment first (fast mode never waits on it).
@@ -593,29 +590,6 @@ export class BattleScene implements Scene {
     setTimeout(() => this.renderResult(end, false), WIN_MS);
   }
 
-  /** The memory pieces this win brought that play now (the rest were recorded as new when found). */
-  private memoriesToPlay(end: BattleEnd): SceneId[] {
-    return (end.fragments ?? []).flatMap((g) => (g.kind === 'piece' && g.play ? [memScene(g.id, g.n)] : []));
-  }
-
-  /** Plays the memories one by one with the result window out of the way. A scene that fails is reported and skipped: it must never lock the way out. */
-  private async playMemories(ids: SceneId[]): Promise<void> {
-    const box = this.body.querySelector<HTMLElement>('.slx-result');
-    if (box) box.hidden = true;
-    if (ids.length) this.msg.hidden = true;   // the foes' names go with the fight (Task 6 review)
-    for (const id of ids) {
-      try {
-        const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
-        this.playing = p;
-        await p.done;
-      } catch (e) {
-        console.error('starlantern: memory scene failed', e);
-      } finally {
-        this.playing = null;
-      }
-    }
-  }
-
   /** The rune tutorial, told by the narrator with the result window out of the way; once read, its flag is set. */
   private async runeTutorial(): Promise<void> {
     const box = this.body.querySelector<HTMLElement>('.slx-result');
@@ -623,7 +597,7 @@ export class BattleScene implements Scene {
     this.msg.hidden = true;
     this.talk.setStyle('plain');
     this.tutoring = true;
-    // A tutorial that fails is reported and over: it must never lock the way out (as a memory).
+    // A tutorial that fails is reported and over: it must never lock the way out.
     try {
       for (const line of T.rune.tutorial(RUNE_SLOT_LEVELS, T.ui2.guild.workshop, T.ui2.dungeon.workshop)) await this.talk.say('', line);
       this.ctx.game.seeRuneTutorial();
@@ -683,14 +657,14 @@ export class BattleScene implements Scene {
         this.picked = true;
         this.ctx.sfx.confirm();
         if (end.outcome === 'lose') { this.ctx.go('town'); return; }
-        const scenes = this.memoriesToPlay(end);
-        // The battle that first gave a rune tells the rune tutorial once, after its memories (plan 8g ruling 13).
+        // The battle that first gave a rune tells the rune tutorial once (plan 8g ruling 13). A memory piece found here is
+        // only a line in the list: it is told at night in town (story L spec §4.2).
         const tutorial = !!end.runes?.length && !this.ctx.game.state.runeTutorialSeen;
-        if (!end.met && scenes.length === 0 && !tutorial) { this.leave(); return; }
-        // Who was rescued speaks first, in the dialogue box, and joins after her last line; then the memories (Task 1).
+        if (!end.met && !tutorial) { this.leave(); return; }
+        // Who was rescued speaks first, in the dialogue box, and joins after her last line; then the rune tutorial (Task 1).
         if (end.met) { this.body.querySelector<HTMLElement>('.slx-result')!.hidden = true; this.msg.hidden = true; this.rescue = playRescue(this.talk, end.met, storyCtx(this.ctx)); }
         const met = (this.rescue?.done ?? Promise.resolve()).catch((e) => console.error('starlantern: rescue failed', e)).finally(() => { this.rescue = null; });
-        void met.then(() => this.playMemories(scenes)).then(() => (tutorial ? this.runeTutorial() : undefined)).then(() => this.leave());
+        void met.then(() => (tutorial ? this.runeTutorial() : undefined)).then(() => this.leave());
       },
     });
     // A held or repeated key must not skip the rewards: accept input after a short beat.

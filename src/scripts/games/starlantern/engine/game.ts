@@ -35,6 +35,8 @@ import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { nextLead } from './story/leads';
 import { afterWin, arrivalScenes, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
+import { NIGHT_BEATS, type ScriptLine } from '../data/story.zh-TW';
+import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, planNight, restoreNight } from './story/nights';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeFail, RerollOpts } from './forge/cost';
@@ -114,6 +116,9 @@ function openStairs(m: FloorMap): void {
   m.boss = null;
 }
 
+/** Story L spec §5: a group scene, the reaction slot's (it plays as the night's first item). */
+const isGroup = (id: SceneId): boolean => id.startsWith('group:');
+
 export class Game {
   state: GameState;
   phase: Phase = 'town';
@@ -141,10 +146,20 @@ export class Game {
    * later notice ('banked') never drops it. The town reads and empties it.
    */
   followEnded: CharacterId[] = [];
-  /** Memory scenes the screen should play now (not saved). */
+  /** Scenes the screen should play now (not saved): a returned townsfolk fragment. A memory never waits here (story L). */
   pending: SceneId[] = [];
   /** The scenes the town should play on this arrival, in order (not saved: a reload rebuilds it from the queue). */
   arrival: SceneId[] = [];
+  /**
+   * Story L spec §4.5, §4.6: this return's night, the memories the town tells after the day's notices, in order. Not saved:
+   * `story.tonight` keeps the picks, and a reload rebuilds it from what tonight still holds untold.
+   */
+  night: SceneId[] = [];
+  /**
+   * Story L spec §4.8: the eve's memories, up to three companions' (`eveMemories`), picked when its line is said on a
+   * departure, or by the finale's fallback. Not saved: a reload after the line leaves them untold.
+   */
+  eve: SceneId[] = [];
   /** Whether this arrival's portal reroll is spent (not saved): `boot` sets it, so a reload grants none; `toTown` and `wipe` clear it. */
   private rerolled = false;
   /**
@@ -190,7 +205,12 @@ export class Game {
     }
     if (r.status === 'ok' && previous?.notice === 'tree-reworked') g.notice = 'tree-reworked';
     g.rerolled = true;
-    g.arrival = arrivalScenes(g.state, { chat: false });
+    const day = arrivalScenes(g.state, { chat: false });
+    // Story L spec §4.6: the night is not picked again; what tonight still holds untold plays, the owed ones first. A
+    // group scene the reaction slot holds again leads the night (spec §5.3).
+    const plan = restoreNight(g.state, day);
+    g.arrival = [...plan.before, ...day.filter((id) => !isGroup(id))];
+    g.night = [...day.filter(isGroup), ...plan.night];
     return g;
   }
 
@@ -232,16 +252,22 @@ export class Game {
   }
 
   /**
-   * The scene a departure plays first (story depth plan ruling 6): the first `DEPARTURE_SCENES` waiting in the queue, in town,
-   * once his ninth piece and the bellkeeper's arrival are both seen and no scene that plays alone is waiting. Otherwise null,
-   * and it keeps waiting for a later departure.
+   * The scenes a departure plays first, in order, in town and with no scene that plays alone waiting; the others keep
+   * waiting for a later departure. Story L spec §4.8: the night before the descent, whenever it is queued; then the lone
+   * morning (story depth plan ruling 6), once his ninth piece and the bellkeeper's arrival are both seen.
    */
-  departScene(): SceneId | null {
+  departScenes(): SceneId[] {
     const story = this.state.story;
-    if (this.phase !== 'town') return null;
-    if (!story.seen.includes('mem:hero:9') || !story.seen.includes('bellkeeper-arrives')) return null;
-    if (ALONE.some((id) => story.queue.includes(id))) return null;
-    return DEPARTURE_SCENES.find((id) => story.queue.includes(id)) ?? null;
+    if (this.phase !== 'town') return [];
+    const ready = (id: SceneId): boolean => id !== 'hero-alone' || (story.seen.includes('mem:hero:9') && story.seen.includes('bellkeeper-arrives'));
+    const alone = ALONE.some((id) => story.queue.includes(id));
+    const scenes = alone ? [] : DEPARTURE_SCENES.filter((id) => story.queue.includes(id) && ready(id));
+    // 【控制者裁定 2026-10-24】 The dawn before departure: the return's pick, while still untold and the backlog is at
+    // least DAWN_BACKLOG; the eve takes its own departure. It comes before the lone morning. A reveal or confession still
+    // waiting (`ALONE`) blocks it: that morning is Lorne's and Rin's silence; the piece stays untold, still 新.
+    const untold = story.untold ?? [];
+    const dawn = !alone && story.dawn && untold.includes(story.dawn) && untold.length >= DAWN_BACKLOG && !scenes.includes('finale-eve') ? story.dawn : null;
+    return dawn ? [dawn, ...scenes] : scenes;
   }
 
   /** The tier the next departure plays at (difficulty plan ruling 18): the one last chosen, Normal until then. */
@@ -267,7 +293,9 @@ export class Game {
     if (refused) return { ok: false, reason: refused };
     this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited), this.tier());
     this.pending = [];
+    this.eve = [];
     this.finale = null;
+    delete this.state.story.dawn;   // a departure leaves no dawn pick behind: the next return picks again
     if (this.state.story.fed) {   // Marta's meal counts against the altar cap like any altar buff, and is eaten
       this.run.altarBuffs.push({ ...PERKS.meal });
       this.state.story.fed = false;
@@ -363,8 +391,12 @@ export class Game {
     return { kind: 'glimmer', gained: [gainOf(item)!] };
   }
 
-  /** Gives each chain in `ids` its next piece, in order, and works out which memory scenes play now, wait in the handbook, or queue. */
-  private takePieces(ids: CharacterId[], topUp = false, finale = false): FragmentGain[] {
+  /**
+   * Gives each chain in `ids` its next piece, in order. Its effects land now (the count, the stats, the pity reset); its scene
+   * waits in `story.untold`, in pickup order, for a night in town or the handbook (story L spec §4.2). The finale fight's hero
+   * pieces are the finale's own (`finalePieces`): neither untold nor seen.
+   */
+  private takePieces(ids: CharacterId[], finale = false): FragmentGain[] {
     if (ids.length === 0) return [];
     const run = this.run!;
     const story = this.state.story;
@@ -373,17 +405,8 @@ export class Game {
     (run.dropped[this.floor] ??= []).push(...ids);
     for (const id of ids) story.pity[id] = 0;   // a piece resets its chain's count now, so leaving the floor any way keeps it
     return applied.gained.map(({ id, n }) => {
-      const scene = memScene(id, n);
-      if (finale && id === 'hero') return { kind: 'piece' as const, id, n, play: false };   // the finale plays these itself: neither queued nor seen
-      let play = false;
-      // A top-up (and anyone else's piece in the finale fight) waits in the queue for the next return to town.
-      if (topUp || finale) story.queue.push(scene);
-      else if (!run.played.includes(this.floor)) { play = true; run.played.push(this.floor); this.pending.push(scene); }
-      else {
-        if (!story.seen.includes(scene)) story.seen.push(scene);
-        if (!story.fresh.includes(scene)) story.fresh.push(scene);
-      }
-      return { kind: 'piece' as const, id, n, play };
+      if (!(finale && id === 'hero')) (story.untold ??= []).push(memScene(id, n));
+      return { kind: 'piece' as const, id, n };
     });
   }
 
@@ -719,8 +742,7 @@ export class Game {
       const source = b.boss ? 'boss' : 'elite';
       const rng = memoryRng(run);
       const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source }, rng);
-      const topUp = b.boss && run.region === 'mainline' && this.floor === 25 && ids.every((id) => id === 'hero');
-      fragments = this.takePieces(ids, topUp, finale);
+      fragments = this.takePieces(ids, finale);
       if (finale) this.finale = { pieces: this.finalePieces(fragments) };
       // Ownerless and townsfolk fragments ride in the run pack like materials; one that does not fit is left behind.
       for (const gain of lootFragments(this.state, run, { region: run.region, depth: this.floor, source }, rng)) {
@@ -1225,18 +1247,58 @@ export class Game {
    * finale, one of its own scenes. It leaves that list and the story queue; town saves at once.
    */
   sceneDone(id: SceneId, how: 'played' | 'skipped' | 'auto'): boolean {
-    const due = this.arrival.includes(id) || this.pending.includes(id) || (this.finale !== null && (id === 'finale' || this.finale.pieces.includes(id)))
-      || id === this.departScene();
+    const due = this.arrival.includes(id) || this.night.includes(id) || this.eve.includes(id) || this.pending.includes(id)
+      || (this.finale !== null && (id === 'finale' || this.finale.pieces.includes(id))) || this.departScenes().includes(id);
     if (!due) return false;
+    // Story L spec §4.8: the eve's line said on a departure, its memories are picked (they stay untold until each is told).
+    const eve = id === 'finale-eve' && !this.finale;
     this.arrival = this.arrival.filter((s) => s !== id);
+    this.night = this.night.filter((s) => s !== id);
+    this.eve = this.eve.filter((s) => s !== id);
     this.pending = this.pending.filter((s) => s !== id);
     this.state = sceneDone(this.state, id, how);
+    if (eve) {
+      this.eve = eveMemories(this.state);
+      const story = this.state.story;
+      if (story.tonight) story.tonight = story.tonight.filter((t) => !this.eve.includes(t));
+      delete story.dawn;   // the eve takes its own departure: no dawn after it, nor on a reload
+    }
     // Inside the finale, a scene its own list covers never waits in the queue (Task 3 review): the keeper her confession
     // queues is the finale's to play, and leaving the ending early must not leave him for the town after the festival.
     const covered = this.finale?.pieces;
     if (covered) this.state.story.queue = this.state.story.queue.filter((q) => !covered.includes(q));
     this.saveInTown();
     return true;
+  }
+
+  /**
+   * Story L spec §4.7: the handbook played a memory still untold. It is told: seen (not new: the player chose to read it),
+   * out of `untold` and tonight's picks. Town saves at once; the labyrinth waits for the next save in town. False, and nothing
+   * changes, for anything not untold.
+   */
+  tellEarly(id: SceneId): boolean {
+    const story = this.state.story;
+    if (!story.untold?.includes(id)) return false;
+    story.untold = story.untold.filter((u) => u !== id);
+    if (story.tonight) story.tonight = story.tonight.filter((u) => u !== id);
+    if (story.dawn === id) delete story.dawn;
+    if (!story.seen.includes(id)) story.seen.push(id);
+    this.night = this.night.filter((u) => u !== id);   // a night that held it skips it, and calls no one else
+    this.eve = this.eve.filter((u) => u !== id);
+    this.saveInTown();
+    return true;
+  }
+
+  /**
+   * Story L spec §4.4.1: the beat said between memories `prev` and `next` of a night, or null when there is none (no pool,
+   * or no line fits). The cursor moves past it, so a reload gives the next line, not the same one; town saves at once.
+   */
+  takeBeat(prev: SceneId, next: SceneId): ScriptLine | null {
+    const r = nextBeat(this.state, prev, next);
+    if (!r) return null;
+    this.state.story.beat = (r.at + 1) % NIGHT_BEATS.lines.length;
+    this.saveInTown();
+    return r.line;
   }
 
   /** The handbook opened a scene: it is no longer new. Town saves at once. */
@@ -1249,10 +1311,23 @@ export class Game {
     if (this.phase === 'town' && this.storage && !saveGame(this.storage, this.state)) this.notice = 'save-failed';
   }
 
-  /** What a return to town queues: acts reached, Rin's reveal; then the arrival, with one chat and one banter (B1). */
+  /**
+   * What a return to town queues: acts reached, Rin's reveal; then the arrival, with one chat and one banter (B1). Story L
+   * spec §4.6: then the night (`planNight`), kept in `story.tonight`; the memories the day owes lead the arrival.
+   */
   private arrive(afterFinale = false): void {
     this.state.story = onReturn(this.state);
-    this.arrival = arrivalScenes(this.state, { chat: true, afterFinale });
+    const day = arrivalScenes(this.state, { chat: true, afterFinale });
+    const plan = planNight(this.state, day);
+    this.state.story.tonight = [...plan.before, ...plan.night];
+    // 【控制者裁定 2026-10-24】 the dawn before the next departure, picked now and saved with the return
+    const dawn = dawnMemory(this.state, [...plan.before, ...plan.night]);
+    if (dawn) this.state.story.dawn = dawn;
+    else delete this.state.story.dawn;
+    // Story L spec §4.5: a group scene in the reaction slot is the night's first item, after the day's notices.
+    const group = day.filter(isGroup);
+    this.arrival = [...plan.before, ...day.filter((id) => !isGroup(id))];
+    this.night = [...group, ...plan.night];
     this.leadSaid = false;
   }
 
@@ -1270,6 +1345,8 @@ export class Game {
    * in piece order. What is taken leaves the queue, so the town does not play it again. A lone morning not seen yet is
    * answered by the finale, queued or not (no return may have come between her choice, his ninth piece and the bottom;
    * design §9.3.5): it counts as seen, and new, so the handbook offers it.
+   * Story L spec §4.8: the night before the descent, when no departure told it, comes first of all, its line and then up to
+   * three companions' untold memories (`eve`, `eveMemories`).
    */
   private finalePieces(gained: FragmentGain[]): SceneId[] {
     const story = this.state.story;
@@ -1279,17 +1356,25 @@ export class Game {
     const confess: SceneId[] = story.queue.includes('rin-confess') ? ['rin-confess'] : [];
     const keeper: SceneId[] = story.queue.includes('bellkeeper-arrives') || confess.length ? ['bellkeeper-arrives'] : [];
     const heroNo = (id: SceneId) => Number(id.slice('mem:hero:'.length));
-    const queued = story.queue.filter((id) => id.startsWith('mem:hero:'));
+    // story L spec §4.8: his pieces still untold (depth 25's top-up) are the finale's to play, and leave untold and tonight
+    const untoldHero = (story.untold ?? []).filter((id) => id.startsWith('mem:hero:'));
+    if (story.untold) story.untold = story.untold.filter((id) => !id.startsWith('mem:hero:'));
+    if (story.tonight) story.tonight = story.tonight.filter((id) => !id.startsWith('mem:hero:'));
+    delete story.dawn;   // no departure is left before the town
+    const queued = [...story.queue.filter((id) => id.startsWith('mem:hero:')), ...untoldHero];
     const taken = new Set<SceneId>([...acts, ...confess, ...keeper]);
     story.queue = story.queue.filter((id) => !id.startsWith('mem:hero:') && !taken.has(id));
+    const eveOwed = !story.seen.includes('finale-eve');
+    this.eve = eveOwed ? eveMemories(this.state) : [];
     for (const id of DEPARTURE_SCENES) {
       story.queue = story.queue.filter((q) => q !== id);
-      if (story.seen.includes(id)) continue;
+      if (id === 'finale-eve' || story.seen.includes(id)) continue;   // the eve is played, not counted
       story.seen.push(id);
       if (!story.fresh.includes(id)) story.fresh.push(id);
     }
     const filled = gained.flatMap((g) => (g.kind === 'piece' && g.id === 'hero' ? [memScene('hero', g.n)] : []));
-    return [...acts, ...confess, ...keeper, ...[...new Set([...queued, ...filled])].sort((a, b) => heroNo(a) - heroNo(b))];
+    const eve: SceneId[] = eveOwed ? ['finale-eve', ...this.eve] : [];
+    return [...eve, ...acts, ...confess, ...keeper, ...[...new Set([...queued, ...filled])].sort((a, b) => heroNo(a) - heroNo(b))];
   }
 
   /** The mainline's depth 3 holds the story boss: beating it ends Act 1. */

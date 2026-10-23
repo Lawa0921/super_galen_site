@@ -1,4 +1,4 @@
-import { STORY } from '../../data/story.zh-TW';
+import { STORY, type ScriptLine } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { storyStage } from '../../engine/story/events';
 import type { SceneId } from '../../data/story/scenes';
@@ -8,7 +8,7 @@ import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
-import { NPC_FACILITY, playAndRecord, storyCtx } from '../story';
+import { NPC_FACILITY, playAndRecord, playBeat, playNight, storyCtx, type SceneOpts } from '../story';
 import { Dialogue, MenuView, backControl, win, type Rich } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate' | 'forge';
@@ -32,7 +32,7 @@ export abstract class FacilityScene implements Scene {
   /** A line `sayThen` holds for the next box: the dialogue's close brings it up at once, in place of unlocking the menu. */
   private then: string | Rich | null = null;
   /** The story scene on screen, if any: it takes the actions while it plays. */
-  private playing: ReturnType<typeof playAndRecord> | null = null;
+  private playing: { onAction(a: UiAction): void } | null = null;
 
   constructor(protected ctx: SceneCtx, protected id: FacilityId, cps = textCps(ctx)) {
     this.talk = new Dialogue(cps, () => {
@@ -184,9 +184,9 @@ export abstract class FacilityScene implements Scene {
   }
 
   /** Plays story scene `id` in this facility's dialogue box and records it; resolves when it ends or the player skips it. */
-  protected play(id: SceneId): Promise<void> {
+  protected play(id: SceneId, o: SceneOpts = {}): Promise<void> {
     this.then = null;
-    const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
+    const p = playAndRecord(this.talk, id, storyCtx(this.ctx), o);
     this.playing = p;
     this.talking = true;
     // The place plate and the gold go with the command window (staging S1): a scene may be set elsewhere (its own card).
@@ -194,6 +194,22 @@ export abstract class FacilityScene implements Scene {
     this.syncInert();
     // A scene that throws is reported and treated as over, so the caller carries on (the guild still pays the reward line).
     return p.done.catch((e) => { console.error('starlantern: facility scene failed', e); }).finally(() => { this.playing = null; this.talking = false; for (const e of [this.cmdWin, this.place, this.gold]) e.classList.remove('slx-cmd-hidden'); this.syncInert(); });
+  }
+
+  /** Story L: plays `ids` as a night in this facility's box (`playNight`): memories under the night's card, a beat between two. */
+  protected tellNight(ids: SceneId[]): Promise<void> {
+    return playNight(ids, storyCtx(this.ctx), (id, o) => this.play(id, o), (line) => this.beat(line));
+  }
+
+  /** The night's beat between two memories (`playBeat`), with the command window, the plate and the gold put away. */
+  private beat(line: ScriptLine): Promise<void> {
+    this.then = null;
+    const p = playBeat(this.talk, line, storyCtx(this.ctx));
+    this.playing = p;
+    this.talking = true;
+    for (const e of [this.cmdWin, this.place, this.gold]) e.classList.add('slx-cmd-hidden');
+    this.syncInert();
+    return p.done.then(() => {}, (e) => { console.error('starlantern: facility beat failed', e); }).finally(() => { this.playing = null; this.talking = false; for (const e of [this.cmdWin, this.place, this.gold]) e.classList.remove('slx-cmd-hidden'); this.syncInert(); });
   }
 
   protected fail(reason: string): void {

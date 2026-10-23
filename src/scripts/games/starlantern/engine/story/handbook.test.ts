@@ -11,6 +11,7 @@ import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { handbook } from './handbook';
+import { withTold } from '../testing';
 import { arrivalScenes, onReturn, sceneDone } from './events';
 
 /** Rin's banters, in the pairs' fixed order: what her people page lists after her chats (B1, B2; ids are frozen once shipped). */
@@ -64,12 +65,25 @@ describe("the adventurer's handbook", () => {
 
   it('people pages unlock with the pieces', () => {
     const len = chainLength('noel');
-    const segs = (n: number) => handbook(withMemories(fresh(), 'noel', n)).people.find((p) => p.id === 'noel')!.segments;
+    const segs = (n: number) => handbook(withTold(fresh(), 'noel', n)).people.find((p) => p.id === 'noel')!.segments;   // story L: told
     expect(segs(0)).toEqual(STORY.people.noel.slice(0, 1));
     expect(segs(Math.ceil(len / 2) - 1)).toEqual(STORY.people.noel.slice(0, 1));
     expect(segs(Math.ceil(len / 2))).toEqual(STORY.people.noel.slice(0, 2));
     expect(segs(len - 1)).toEqual(STORY.people.noel.slice(0, 2));
     expect(segs(len)).toEqual(STORY.people.noel);
+  });
+
+  it("a person's page opens by the pieces told (story L Task 1)", () => {
+    const len = chainLength('noel');
+    const half = Math.ceil(len / 2);
+    const page = (s: GameState) => handbook(s).people.find((p) => p.id === 'noel')!.segments;
+    const held = withMemories(fresh(), 'noel', len);   // all held, none told
+    expect(page(held)).toEqual(STORY.people.noel.slice(0, 1));
+    expect(page(withTold(held, 'noel', half))).toEqual(STORY.people.noel.slice(0, 2));
+    expect(page(withTold(held, 'noel', len))).toEqual(STORY.people.noel);
+    // Lorne reads what he holds
+    const hero = withMemories(fresh(), 'hero', chainLength('hero'));
+    expect(handbook(hero).people.find((p) => p.id === 'hero')!.segments).toEqual(STORY.people.hero);
   });
 
   it("people pages carry the title, and Rin's changes with her oath", () => {
@@ -89,7 +103,7 @@ describe("the adventurer's handbook", () => {
     expect(segs()).toEqual(STORY.people.rin);
     expect(segs()[3]).toMatch(/不做了.*自己決定/);   // story polish Task 2: the choice, in the reveal's new words
     // the others keep three pages, whatever her oath
-    expect(handbook(withMemories(s, 'noel', chainLength('noel'))).people.find((p) => p.id === 'noel')!.segments).toHaveLength(3);
+    expect(handbook(withTold(s, 'noel', chainLength('noel'))).people.find((p) => p.id === 'noel')!.segments).toHaveLength(3);
   });
 
   it('a homecoming is replayed from her own page', () => {
@@ -254,6 +268,28 @@ describe("the adventurer's handbook", () => {
     }
   });
 
+  it("a group scene sits on its act's truth page, after the act (story L spec §5.1)", () => {
+    const scenes = STORY.scenes as Record<string, { title: string; summary: string; lines: unknown[] }>;
+    // a stand-in for each one not written yet (story L Tasks 9-11 write them); a written one is put back as it was
+    const ids = ['group:act2', 'group:act3', 'group:act4'];
+    const written = Object.fromEntries(ids.map((id) => [id, scenes[id]]));
+    for (const id of ids) scenes[id] ??= { title: id, summary: '', lines: [] };
+    try {
+      const s = everything();
+      s.story.seen.push('group:act2', 'group:act3', 'group:act4');
+      s.story.fresh = ['group:act3'];
+      const page = (stage: string) => handbook(s).truths.find((t) => t.stage === stage)!.scenes;
+      expect(page('act2').map((e) => e.scene)).toEqual(['act2', 'group:act2']);
+      expect(page('act3').map((e) => [e.scene, e.fresh])).toEqual([['act3', false], ['group:act3', true]]);
+      expect(page('act4').map((e) => e.scene)).toEqual(['act4', 'group:act4', 'finale-eve']);
+      // one missed (never seen) is simply not listed
+      s.story.seen = s.story.seen.filter((id) => id !== 'group:act2');
+      expect(page('act2').map((e) => e.scene)).toEqual(['act2']);
+    } finally {
+      for (const id of ids) if (written[id]) scenes[id] = written[id]; else delete scenes[id];
+    }
+  });
+
   it('a banter is replayable from the page of each of its two, once seen: after her chats, before her homecoming (B1)', () => {
     const s = withMemories(withMemories(fresh(), 'safira', 0), 'sylvie', 0);
     const id: SceneId = 'banter:safira-sylvie:1';
@@ -288,13 +324,39 @@ describe("the adventurer's handbook", () => {
     expect(h3.people.find((p) => p.id === 'rin')!.scenes.map((e) => e.scene)).toEqual(['prologue-inn']);   // not the first return, unseen
   });
 
-  it('a piece is replayable only when it is found and seen: a found piece may still be queued', () => {
+  it('a piece is playable when it is found and seen, or found and untold (story L spec §4.7)', () => {
     const s = withMemories(fresh(), 'noel', 2);
     s.story.seen = [memScene('noel', 1)];
-    s.story.queue = [memScene('noel', 2)];
+    s.story.untold = [memScene('noel', 2)];
     const noel = handbook(s).memories.find((m) => m.id === 'noel')!;
     expect(noel.pieces.map((p) => p.found)).toEqual([true, true, false, false, false]);
     expect(noel.pieces.map((p) => p.seen)).toEqual([true, false, false, false, false]);
+    expect(noel.pieces.map((p) => p.untold)).toEqual([false, true, false, false, false]);
+  });
+
+  it('an untold piece is playable and new; a character row is new while any is (story L Task 4)', () => {
+    const s = withMemories(withMemories(fresh(), 'noel', 3), 'selene', 1);
+    s.story.seen = [memScene('noel', 1), memScene('selene', 1)];
+    s.story.untold = [memScene('noel', 3), memScene('noel', 2)];
+    const page = (id: CharacterId) => handbook(s).memories.find((m) => m.id === id)!;
+    const noel = page('noel');
+    expect(noel.pieces.map((p) => p.untold)).toEqual([false, true, true, false, false]);
+    expect(noel.pieces.map((p) => p.fresh)).toEqual([false, true, true, false, false]);   // untold reads as new
+    expect(noel.fresh).toBe(true);
+    expect(page('selene').fresh).toBe(false);            // told and opened: nothing new
+    // told one by one, the row stays new while any is untold, then it is not
+    s.story.untold = [memScene('noel', 3)];
+    s.story.seen.push(memScene('noel', 2));
+    expect(page('noel').fresh).toBe(true);
+    s.story.untold = [];
+    s.story.seen.push(memScene('noel', 3));
+    expect(page('noel').fresh).toBe(false);
+    expect(page('noel').pieces.every((p) => !p.untold)).toBe(true);
+    // a piece the story setting skipped (auto) is seen and new: the row is new for it as well
+    s.story.fresh = [memScene('noel', 3)];
+    expect(page('noel').fresh).toBe(true);
+    // an unmet one has no row to mark
+    expect(page('bobby').fresh).toBe(false);
   });
 
   it('a set piece is listed under its set only, never under the specials too', () => {

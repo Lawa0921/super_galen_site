@@ -3392,6 +3392,102 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test('a memory found in the labyrinth shows its caption and the map stays (story L)', async ({ page }) => {
+    await fitTo(page, 1280, 720);
+    /** Runs `fn` in the page on the live game (the debug hook), with one serialisable argument. */
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7);
+    await depart(page, w);
+    // Rin's glimmer on the first floor: stand two cells off in a straight line, step twice.
+    const glimmer = await game((g) => {
+      const c = g.run.floors.get(g.floor).contents.find((x: any) => x.kind === 'glimmer' && x.owner === 'rin');
+      if (!c) return null;
+      const open = (x: number, y: number) => ['floor', 'door'].includes(g.map().tiles[y]?.[x]);
+      for (const [key, dx, dy] of [['ArrowRight', 1, 0], ['ArrowLeft', -1, 0], ['ArrowDown', 0, 1], ['ArrowUp', 0, -1]] as const) {
+        const far = { x: c.at.x - 2 * dx, y: c.at.y - 2 * dy };
+        if (open(far.x, far.y) && open(c.at.x - dx, c.at.y - dy)) { g.pos = far; g.encounter = 0; return { key, at: c.at }; }
+      }
+      return null;
+    });
+    expect(glimmer, "a straight way to Rin's glimmer on floor 1").not.toBeNull();
+    await page.keyboard.press(glimmer!.key);
+    await game((g) => { g.encounter = 0; });
+    await page.keyboard.press(glimmer!.key);
+    const caption = page.locator('.slx-dungeon .slx-talk:not([hidden]) .slx-text');
+    await expect(caption).toHaveText(T.ui2.memory.recalled(CHARACTERS.rin.name));
+    await expect(page.locator('.slx-talk--memory')).toHaveCount(0);
+    for (let i = 0; i < 6 && (await page.locator('.slx-dungeon .slx-talk').isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
+    await expect(page.locator('.slx-dungeon .slx-talk')).toBeHidden();
+    await expect(page.locator('.slx-talk--memory')).toHaveCount(0);   // no memory scene follows the caption
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    await expect(page.locator('.slx-dungeon .slx-pad')).not.toHaveClass(/slx-cmd-hidden/);
+    const st = await game((g) => ({ phase: g.phase, untold: g.state.story.untold, seen: g.state.story.seen, memories: g.state.party.roster.rin.memories }));
+    expect(st).toMatchObject({ phase: 'map', untold: [memScene('rin', 1)], memories: 1 });
+    expect(st.seen).not.toContain(memScene('rin', 1));
+    expect(w.errors).toEqual([]);
+  });
+
+  // Story L Task 3c: a piece found in the labyrinth is told that night in town, after the day's lines, under the night's card;
+  // the town comes back only when the night is over. Once on a desktop window, once on a touch phone held upright (sideways
+  // stage), where every line of the night fits its box.
+  for (const phone of [false, true]) {
+    test(`a memory found in the labyrinth is told that night in town, under the night card (story L)${phone ? ', on a phone' : ''}`, async ({ page }) => {
+      test.setTimeout(120_000);
+      await fitTo(page, 1280, 720);
+      const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+        page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+      const w = await setup(page, 7, { story: 'all' });
+      const playOut = async () => {
+        for (let quiet = 0, i = 0; quiet < 4 && i < 400; i++) {
+          if (await page.locator('.slx-talk').first().isVisible()) { quiet = 0; await page.keyboard.press('z'); await page.waitForTimeout(30); }
+          else if ((await page.locator('.slx-cmd-hidden').count()) > 0) { quiet = 0; await page.waitForTimeout(60); }
+          else { quiet++; await page.waitForTimeout(60); }
+        }
+        await expect(page.locator('.slx-talk').first()).toBeHidden();
+      };
+      await playOut();   // the prologue and the inn night
+      await depart(page, w);
+      // Rin's first piece, as her glimmer would have given it (the 2b test steps on the real one), and a lamp home.
+      await game((g) => { g.state.party.roster.rin.memories = 1; g.state.story.untold = ['mem:rin:1']; g.state.inventory['return-lamp'] = 1; });
+      if (phone) await asPhone(page);
+      await lampHome(page, w);
+      expect(await game((g) => [...g.night])).toEqual([memScene('rin', 1)]);
+      const first = STORY.scenes[memScene('rin', 1)].lines[0].text;
+      const text = page.locator('.slx-town .slx-talk .slx-text');
+      const steps: { text: string; card: string | null; menuHidden: boolean; fits: boolean }[] = [];
+      for (let i = 0; i < 200; i++) {
+        const talk = await page.locator('.slx-town .slx-talk').isVisible();
+        const menuHidden = ((await page.locator('.slx-town-menu').getAttribute('class')) ?? '').includes('slx-cmd-hidden');
+        if (!talk && !menuHidden) break;
+        if (talk) {
+          if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) { await w.key('z'); await page.waitForTimeout(30); continue; }   // the line whole
+          const card = await page.locator('.slx-town .slx-place-card').count() ? await page.locator('.slx-town .slx-place-card').textContent() : null;
+          const fits = await text.evaluate((e) => e.scrollHeight <= e.clientHeight + 1);
+          steps.push({ text: (await text.textContent()) ?? '', card, menuHidden, fits });
+          await w.key('z');
+        }
+        await page.waitForTimeout(40);
+      }
+      const at = steps.findIndex((x) => x.text === first);
+      expect(at, JSON.stringify(steps.map((x) => x.text))).toBeGreaterThan(0);   // the day's lines came first
+      const night = steps.slice(at);
+      expect(night.length).toBeGreaterThanOrEqual(3);
+      for (const x of night) {
+        expect(x.card, x.text).toBe('月影旅館・夜');
+        expect(x.menuHidden, x.text).toBe(true);
+        if (phone) expect(x.fits, `${x.text} fits its box`).toBe(true);
+      }
+      await expect(page.locator('.slx-town-menu')).not.toHaveClass(/slx-cmd-hidden/);
+      await expect(page.locator('.slx-town .slx-place-card')).toHaveCount(0);
+      const st = await game((g) => ({ seen: g.state.story.seen, untold: g.state.story.untold, night: g.night }));
+      expect(st.seen).toContain(memScene('rin', 1));
+      expect(st.untold).toEqual([]);
+      expect(st.night).toEqual([]);
+      expect(w.errors).toEqual([]);
+    });
+  }
+
   test('B1: on a return to town, Noel and Rin talk among themselves after the chat, and the town menu waits for them', async ({ page }) => {
     test.setTimeout(120_000);
     await fitTo(page, 1280, 720);
@@ -3614,51 +3710,16 @@ test.describe('starlantern', () => {
     await shot('04-map-glimmer-marker');
     await game((g) => { g.encounter = 0; });
     await page.keyboard.press(glimmer!.key);
-    // What the glimmer held, line by line, and then the memory scene in its own look.
-    const memoryTalk = page.locator('.slx-dungeon .slx-talk.slx-talk--memory');
-    for (let i = 0; i < 14 && !(await memoryTalk.isVisible()); i++) { await w.key('z'); await page.waitForTimeout(60); }
-    await expect(memoryTalk).toBeVisible();
-    // The memory opens on its remembered past (narration, no face): advance to Rin's first spoken line, said now (story
-    // staging S5: the plain look), then her portrait must be on the box.
-    const rinFirst = STORY.scenes[memScene('rin', 1)].lines.find((l) => l.who === 'rin')!;
-    const memoryText = page.locator('.slx-dungeon .slx-talk:not([hidden]) .slx-text');
-    for (let i = 0; i < 20 && !((await memoryText.textContent()) ?? '').includes(rinFirst.text); i++) { await w.key('z'); await page.waitForTimeout(60); }
-    await expect(memoryText).toHaveText(rinFirst.text);
-    await expect(page.locator('.slx-dungeon .slx-talk .slx-name')).toHaveText(CHARACTERS.rin.name);
-    await expect(page.locator('.slx-dungeon .slx-talk img.slx-talk-face[src$="/char/rin-portrait.png"]')).toBeVisible();   // her memory is spoken with her portrait on the box
-    // Task 10a: the portrait stands at least twice its old 96px (on-screen, at the page's own scale), and clear of the text and the name plate.
-    {
-      const scr = (await box(page))!;
-      const k = (await stageScale(page)).s;   // the stage scale as drawn (legibility 2a)
-      const face = (await page.locator('.slx-dungeon .slx-talk img.slx-talk-face').boundingBox())!;
-      const textBox = (await memoryText.boundingBox())!;
-      const nameBox = (await page.locator('.slx-dungeon .slx-talk .slx-name').boundingBox())!;
-      expect(face.height).toBeGreaterThanOrEqual(2 * 96 * k - 0.5);
-      expect(face.width).toBeGreaterThanOrEqual(2 * 96 * k - 0.5);
-      const clear = (a: { x: number; y: number; width: number; height: number }, b: typeof a) => a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y;
-      expect(clear(face, textBox), 'portrait clear of the dialogue text').toBe(true);
-      expect(clear(face, nameBox), 'portrait clear of the name plate').toBe(true);
-      expect(face.y).toBeGreaterThanOrEqual(scr.y - 0.5);
-      expect(face.x).toBeGreaterThanOrEqual(scr.x - 0.5);
-      expect(face.x + face.width).toBeLessThanOrEqual(scr.x + scr.width + 0.5);
-    }
-    await shot('03-memory-scene');
-    // Every line of the memory, wrapped or not: whenever a portrait shows it fits (the tall dungeon box is the risk that capped its size).
-    {
-      let tallest = 0;
-      for (let i = 0; i < 60 && (await page.locator('.slx-dungeon .slx-talk:not([hidden])').isVisible()); i++) {
-        tallest = Math.max(tallest, (await faceFits(page)) ?? 0);
-        await w.key('z'); await page.waitForTimeout(40);
-      }
-      expect(tallest, 'at least one memory line showed a portrait').toBeGreaterThan(0);
-    }
+    // Story L: the glimmer says who remembered something, and no memory plays here; it is told at night in town.
+    await expect(page.locator('.slx-dungeon .slx-talk:not([hidden]) .slx-text')).toHaveText(T.ui2.memory.recalled(CHARACTERS.rin.name));
+    await shot('03-memory-caption');
     await playOut();
     await expect(page.locator('.slx-talk--memory')).toHaveCount(0);
     await expect(page.locator('.slx-dungeon')).toBeVisible();
-    const rin1 = await game((g) => ({ memories: g.state.party.roster.rin.memories, seen: g.state.story.seen, fresh: g.state.story.fresh }));
+    const rin1 = await game((g) => ({ memories: g.state.party.roster.rin.memories, seen: g.state.story.seen, untold: g.state.story.untold }));
     expect(rin1.memories).toBe(1);
-    expect(rin1.seen).toContain(memScene('rin', 1));
-    expect(rin1.fresh).not.toContain(memScene('rin', 1));
+    expect(rin1.untold).toEqual([memScene('rin', 1)]);
+    expect(rin1.seen).not.toContain(memScene('rin', 1));
 
     // 4. Both at Lv4, down to floor 2, and Selene waits in a room there.
     await game((g) => { g.state.party.roster.hero.level = 4; g.state.party.roster.rin.level = 4; });
@@ -3787,6 +3848,8 @@ test.describe('starlantern', () => {
         if (!g.state.story.seen.includes(id)) g.state.story.seen.push(id);
         if (!g.state.story.fresh.includes(id)) g.state.story.fresh.push(id);
       }
+      g.state.story.untold = (g.state.story.untold ?? []).filter((id: string) => !ids.includes(id));   // story L: told, so no longer untold
+      g.state.story.tonight = (g.state.story.tonight ?? []).filter((id: string) => !ids.includes(id));
     }, [memScene('rin', 1), 'prologue', 'chat:hero:1']);
     await page.locator('.slx-town [data-id=handbook]').click();
     await expect(page.locator('.slx-handbook')).toBeVisible();
@@ -3803,7 +3866,41 @@ test.describe('starlantern', () => {
     await hbRow(CHARACTERS.rin.name).click();
     await expect(hbRow(STORY.scenes[memScene('rin', 1)].title).locator('.slx-fresh')).toHaveCount(1);
     await hbRow(STORY.scenes[memScene('rin', 1)].title).click();
-    await replay();
+    // Story L: her memory no longer plays in the labyrinth, so its portrait checks are made on the handbook's replay.
+    // The memory opens on its remembered past (narration, no face): advance to Rin's first spoken line, said now (story
+    // staging S5: the plain look), then her portrait must be on the box.
+    await expect(page.locator('.slx-handbook .slx-talk.slx-talk--memory')).toBeVisible();
+    {
+      const rinFirst = STORY.scenes[memScene('rin', 1)].lines.find((l) => l.who === 'rin')!;
+      const memoryText = page.locator('.slx-handbook .slx-talk:not([hidden]) .slx-text');
+      for (let i = 0; i < 20 && !((await memoryText.textContent()) ?? '').includes(rinFirst.text); i++) { await w.key('z'); await page.waitForTimeout(60); }
+      await expect(memoryText).toHaveText(rinFirst.text);
+      await expect(page.locator('.slx-handbook .slx-talk .slx-name')).toHaveText(CHARACTERS.rin.name);
+      await expect(page.locator('.slx-handbook .slx-talk img.slx-talk-face[src$="/char/rin-portrait.png"]')).toBeVisible();
+      // Task 10a: the portrait stands at least twice its old 96px (on-screen, at the page's own scale), and clear of the text and the name plate.
+      const scr = (await box(page))!;
+      const k = (await stageScale(page)).s;   // the stage scale as drawn (legibility 2a)
+      const face = (await page.locator('.slx-handbook .slx-talk img.slx-talk-face').boundingBox())!;
+      const textBox = (await memoryText.boundingBox())!;
+      const nameBox = (await page.locator('.slx-handbook .slx-talk .slx-name').boundingBox())!;
+      expect(face.height).toBeGreaterThanOrEqual(2 * 96 * k - 0.5);
+      expect(face.width).toBeGreaterThanOrEqual(2 * 96 * k - 0.5);
+      const clear = (a: { x: number; y: number; width: number; height: number }, b: typeof a) => a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y;
+      expect(clear(face, textBox), 'portrait clear of the dialogue text').toBe(true);
+      expect(clear(face, nameBox), 'portrait clear of the name plate').toBe(true);
+      expect(face.y).toBeGreaterThanOrEqual(scr.y - 0.5);
+      expect(face.x).toBeGreaterThanOrEqual(scr.x - 0.5);
+      expect(face.x + face.width).toBeLessThanOrEqual(scr.x + scr.width + 0.5);
+      await shot('03-memory-scene');
+      // Every line of the memory, wrapped or not: whenever a portrait shows it fits.
+      let tallest = 0;
+      for (let i = 0; i < 60 && (await page.locator('.slx-handbook.slx-hb-playing').count()) > 0; i++) {
+        if (await page.locator('.slx-handbook .slx-talk:not([hidden])').isVisible()) tallest = Math.max(tallest, (await faceFits(page)) ?? 0);
+        await w.key('z'); await page.waitForTimeout(40);
+      }
+      expect(tallest, 'at least one memory line showed a portrait').toBeGreaterThan(0);
+    }
+    await expect(page.locator('.slx-handbook.slx-hb-playing')).toHaveCount(0);
     await expect(page.locator('.slx-hb-list .slx-fresh')).toHaveCount(0);
     await page.locator('.slx-back').click();   // from the piece list back to the memories
     for (const [tab, name] of [['people', '12-handbook-people'], ['town', '13-handbook-town'], ['codex', '14-handbook-codex']] as const) {
@@ -3933,6 +4030,9 @@ test.describe('starlantern', () => {
       ['hero-alone', /得先過我這裡/],
       [banter('rin', 'scarlet', 2), /第七個晚上/],
       [banter('noel', 'selene', 2), /少掉一點自己/],
+      ['group:act2', /看到又不講/],   // story L Task 9: a group scene, replayed from its act's truth page
+      ['group:act3', /四十二步/],   // story L Task 10
+      ['group:act4', /不會有人難過/],   // story L Task 11
       ['finale-cost', /那十段記憶/],
       ['finale', /一張一張淡了/],
       ['epilogue', /第一頁/],
@@ -3950,6 +4050,9 @@ test.describe('starlantern', () => {
         s.story.confession = 'dinner';
         s.story.finaleCleared = true;
         s.story.seen = ['prologue', 'prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'banter:rin-scarlet:2', 'banter:noel-selene:2', 'finale', 'epilogue'];
+        // story L: the acts' truth pages open, each with its group scene after the act
+        s.story.nodes = ['act2', 'act3', 'act4'];
+        s.story.seen.push('act2', 'act3', 'act4', 'group:act2', 'group:act3', 'group:act4');
         s.story.fresh = [];
         s.story.queue = [];
       });
@@ -3995,6 +4098,7 @@ test.describe('starlantern', () => {
       await readThrough();
       await page.locator('.slx-back').click();
       await hbTab(H.tabs.truths).click();
+      for (const stage of ['act2', 'act3', 'act4'] as const) { await pickRow(H.stages[stage]); await readThrough(); }   // each act, then its group scene (story L)
       await pickRow(H.stages.after);   // the finale, then the lantern festival (story depth ruling 12)
       await readThrough();
       expect([...reached].sort(), `${width}`).toEqual(BEATS.map(([scene]) => scene).sort());

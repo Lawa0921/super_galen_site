@@ -12,9 +12,10 @@ import { capacity, carried, formatWeight } from '../../data/weights';
 import { materialUses } from '../../engine/forge/uses';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
+import { sceneKind, type SceneId } from '../../data/story/scenes';
+import { DAWN_PLACE, STORY } from '../../data/story.zh-TW';
 import type { Difficulty } from '../../engine/battle';
 import { HELL_BOSS_DEPTH, NIGHTMARE_DEPTH, tierUnlocked } from '../../engine/tiers';
-import { STORY } from '../../data/story.zh-TW';
 import { REGION_TRAITS_FROM, depthLevel, encounterTable } from '../../engine/scaling';
 import { ART_BASE, art, codexArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -342,23 +343,36 @@ export class GateScene extends FacilityScene {
     this.push({ el: win('slx-depths', [el('div', { class: 'slx-who', text: `${REGIONS[p.region].name}　${T.ui2.gate.depthTitle}` }), v.el]), onAction: (a) => v.onAction(a) });
   }
 
+  /**
+   * The departure's own scenes, in order (`Game.departScenes`). Story L spec §4.8: once the eve's line is said, its memories
+   * (`Game.eve`) are told as a night, under the night's card, with a beat between two. 【控制者裁定 2026-10-24】 The dawn
+   * before departure is a memory: it is told under the dawn's card.
+   */
+  private async departure(ids: SceneId[]): Promise<void> {
+    for (const id of ids) {
+      await this.play(id, sceneKind(id) === 'memory' ? { place: DAWN_PLACE } : {});
+      if (id === 'finale-eve') await this.tellNight([...this.ctx.game.eve]);
+    }
+  }
+
   private askDepart(p: Portal, n: number): void {
     const box = confirmBox(T.ui2.gate.ask(REGIONS[p.region].name, n, CONDITIONS[p.condition].name, tierWord(this.ctx.game.tier())), (yes) => {
       this.pop();
       if (!yes) return;
-      // Story depth plan ruling 7: a departure that may go first plays the scene it owes (the lone morning), with every
-      // window closed so the dialogue box is not under the cards; refused, nothing plays and the scene keeps waiting.
+      // Story depth plan ruling 7: a departure that may go first plays the scenes it owes (story L: the night before the
+      // descent, then the lone morning), with every window closed so the dialogue box is not under the cards; refused,
+      // nothing plays and the scenes keep waiting.
       const refused = this.ctx.game.departCheck(p, n);
       if (refused) { this.popAll(); this.fail(refused); return; }
-      const owed = this.ctx.game.departScene();
+      const owed = this.ctx.game.departScenes();
       const go = (): void => {
         const r = this.ctx.game.depart(p, n);
         if (!r.ok) { this.popAll(); this.fail(r.reason); return; }
         this.ctx.go('dungeon');
       };
-      if (!owed) { go(); return; }
+      if (!owed.length) { go(); return; }
       this.popAll();
-      void this.play(owed).then(go);
+      void this.departure(owed).then(go);
     });
     // Over the limit before setting out (the consumables alone): say so, but let the party go.
     const now = carried(this.ctx.game.state), cap = capacity(this.ctx.game.state.party);

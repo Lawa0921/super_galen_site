@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { constRng } from '../../engine/testing';
 import { NO_ART, type ArtIndex } from '../../render/textures';
@@ -11,11 +11,13 @@ import { MEETINGS } from '../../data/meetings';
 import { T } from '../../data/text.zh-TW';
 import { CONDITIONS } from '../../data/conditions';
 import { meet } from '../../engine/party';
-import { STORY } from '../../data/story.zh-TW';
+import { DAWN_PLACE, NIGHT_BEATS, STORY } from '../../data/story.zh-TW';
 import { chainLength } from '../../data/story/chains';
 import { activeIds } from '../../engine/party';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { linesOf } from '../story';
+import { handbook } from '../../engine/story/handbook';
+import { planNight } from '../../engine/story/nights';
 import { HELL_BOSS_DEPTH } from '../../engine/tiers';
 
 function setup(prep?: (g: Game) => void, art: ArtIndex = NO_ART) {
@@ -458,6 +460,139 @@ describe('GateScene: the leads (6c Task 16)', () => {
     expect(T.ui2.rescue.waiting).toBe('這層好像還有別人。');
     const texts = [T.ui2.rescue.waiting, T.ui2.gate.lead, T.ui2.gate.leadAt(3), T.ui2.gate.sighted(3), ...Object.values(STORY.leads)];
     for (const t of texts) expect(t).not.toMatch(/求救|求助|呼救|訊號|救命/);
+  });
+});
+
+// Story L Task 3d: the night before the descent plays on the departure that owes it, then the lone morning.
+// story L Task 8: the pool is written now; a test that sets its own (or none) gets the written one back after it
+const WRITTEN_BEATS = [...NIGHT_BEATS.lines];
+describe('GateScene: the night before the descent (story L Task 3d)', () => {
+  afterEach(() => { NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, ...WRITTEN_BEATS); });
+  const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+  it('departing plays each departure scene in order under its card, then leaves', async () => {
+    NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, { who: 'narrator', text: '樓下的貓叫了一聲。' });
+    try {
+      const game = new Game(constRng(0.5), null);
+      game.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }];
+      Object.assign(game.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+      game.state.party.roster.hero.memories = 9;
+      game.state.story.seen.push('rin-reveal', 'rin-confess', 'mem:hero:9', 'bellkeeper-arrives');
+      game.state.story.queue = ['finale-eve', 'hero-alone'];
+      for (const c of ['selene', 'noel'] as const) {
+        game.state.party = meet(game.state.party, c, 1);
+        game.state.party.roster[c].memories = 1;
+      }
+      game.state.story.untold = ['mem:selene:1', 'mem:noel:1'];
+      const go = vi.fn();
+      const root = document.createElement('div');
+      const settings = { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' as const, story: 'all' as const }) };
+      const s = new GateScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+      s.enter(root);
+      s.onAction('confirm');   // greeting
+      s.onAction('confirm');   // 選擇傳送門
+      s.onAction('confirm');   // the mainline
+      s.onAction('confirm');   // 第 1 層
+      s.onAction('up'); s.onAction('confirm');   // 是
+      await tick();
+      const text = () => root.querySelector('.slx-talk .slx-text')?.textContent;
+      const card = () => root.querySelector('.slx-place-card')?.textContent ?? null;
+      const said: { text: string | null | undefined; card: string | null }[] = [];
+      for (let i = 0; i < 40 && !go.mock.calls.length; i++) { said.push({ text: text(), card: card() }); s.onAction('confirm'); await tick(); }
+      expect(go).toHaveBeenCalledWith('dungeon');
+      const eveLine = STORY.scenes['finale-eve'].lines[0].text;
+      const selene = linesOf('mem:selene:1', game.state).map((l) => l.text);
+      const noel = linesOf('mem:noel:1', game.state).map((l) => l.text);
+      const lone = linesOf('hero-alone', game.state).map((l) => l.text);
+      expect(said.map((x) => x.text)).toEqual([eveLine, ...selene, '樓下的貓叫了一聲。', ...noel, ...lone]);
+      // the eve, its memories and the beat between them under the night card; the lone morning under its own
+      const night = said.slice(0, 1 + selene.length + 1 + noel.length);
+      expect(night.every((x) => x.card === '月影旅館・夜'), JSON.stringify(night)).toBe(true);
+      expect(said[night.length].card).toBe(STORY.scenes['hero-alone'].lines[0].place?.text ?? null);
+      expect(game.state.story.seen).toEqual(expect.arrayContaining(['finale-eve', 'mem:selene:1', 'mem:noel:1', 'hero-alone']));
+      expect(game.state.story.untold).toEqual([]);
+      expect(game.phase).toBe('map');
+    } finally {
+      NIGHT_BEATS.lines.splice(0);
+    }
+  });
+
+  it("the eve's memories, once watched (or cut short), are told: never 新 in the handbook, never picked again (story L ruling)", async () => {
+    const game = new Game(constRng(0.5), null);
+    game.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }];
+    Object.assign(game.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    game.state.story.seen.push('rin-reveal', 'rin-confess', 'bellkeeper-arrives');
+    game.state.story.queue = ['finale-eve'];
+    for (const c of ['selene', 'noel', 'bobby'] as const) {
+      game.state.party = meet(game.state.party, c, 1);
+      game.state.party.roster[c].memories = 1;
+    }
+    const watched = ['mem:selene:1', 'mem:noel:1', 'mem:bobby:1'] as const;
+    game.state.story.untold = [...watched];
+    game.state.story.tonight = ['mem:selene:1'];
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' as const, story: 'all' as const }) };
+    const s = new GateScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+    s.enter(root);
+    s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm');
+    s.onAction('up'); s.onAction('confirm');
+    await tick();
+    // the eve's line and its first memory read through; the second cut short (the summary, then on); the third read through
+    let cut = false;
+    for (let i = 0; i < 40 && !go.mock.calls.length; i++) {
+      const text = root.querySelector('.slx-talk .slx-text')?.textContent ?? '';
+      if (!cut && game.state.story.seen.includes(watched[0]) && text === linesOf(game.eve[0] ?? watched[1], game.state)[0].text) { cut = true; s.onAction('cancel'); await tick(); }
+      s.onAction('confirm');
+      await tick();
+    }
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(cut).toBe(true);
+    const story = game.state.story;
+    for (const id of watched) {
+      expect(story.seen, id).toContain(id);
+      expect(story.fresh, id).not.toContain(id);
+      expect(story.untold, id).not.toContain(id);
+      expect(story.tonight ?? [], id).not.toContain(id);
+    }
+    const h = handbook(game.state);
+    for (const c of ['selene', 'noel', 'bobby'] as const) {
+      const page = h.memories.find((m) => m.id === c)!;
+      expect(page.fresh, c).toBe(false);
+      expect(page.pieces[0], c).toMatchObject({ seen: true, untold: false, fresh: false });
+    }
+    // a later night never picks them again
+    expect(planNight(game.state, []).night).toEqual([]);
+  });
+  it('the dawn before departure plays its one memory under the dawn card, then the party leaves (controller ruling 2026-10-24)', async () => {
+    const game = new Game(constRng(0.5), null);
+    game.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }];
+    for (const c of ['selene', 'noel', 'bobby', 'liz'] as const) {
+      game.state.party = meet(game.state.party, c, 1);
+      game.state.party.roster[c].memories = 1;
+    }
+    game.state.story.untold = ['mem:selene:1', 'mem:noel:1', 'mem:bobby:1', 'mem:liz:1'];
+    game.state.story.dawn = 'mem:noel:1';
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' as const, story: 'all' as const }) };
+    const s = new GateScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+    s.enter(root);
+    s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm');
+    s.onAction('up'); s.onAction('confirm');
+    await tick();
+    const said: { text: string | null | undefined; card: string | null }[] = [];
+    for (let i = 0; i < 20 && !go.mock.calls.length; i++) {
+      said.push({ text: root.querySelector('.slx-talk .slx-text')?.textContent, card: root.querySelector('.slx-place-card')?.textContent ?? null });
+      s.onAction('confirm'); await tick();
+    }
+    expect(go).toHaveBeenCalledWith('dungeon');
+    const lines = linesOf('mem:noel:1', game.state).map((l) => l.text);
+    expect(said.map((x) => x.text)).toEqual(lines);
+    expect(said.every((x) => x.card === DAWN_PLACE.text), JSON.stringify(said)).toBe(true);
+    expect(DAWN_PLACE.text).toBe('月影旅館・清晨');
+    expect(game.state.story.seen).toContain('mem:noel:1');
+    expect(game.state.story.untold).toEqual(['mem:selene:1', 'mem:bobby:1', 'mem:liz:1']);
+    expect(game.state.story.dawn).toBeUndefined();
   });
 });
 

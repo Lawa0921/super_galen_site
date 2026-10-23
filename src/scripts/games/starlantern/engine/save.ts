@@ -14,10 +14,11 @@ import { SAVE_VERSION, type GameState } from './state';
 import { repairRuneFields } from './sockets';
 import { tierUnlocked } from './tiers';
 import { buildOf } from '../data/builds';
-import { BANTER_PAIRS, isSceneId, type BanterPair } from '../data/story/scenes';
+import { BANTER_PAIRS, GROUP_GATE, isSceneId, type BanterPair } from '../data/story/scenes';
 import { MAX_WAITED } from './story/events';
 import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
+import { NIGHT_BEATS } from '../data/story.zh-TW';
 import type { CharacterId, ItemInstance, Member, Slot } from './types';
 
 export const SAVE_KEY = 'starlantern-save';
@@ -99,6 +100,15 @@ function isStory(v: unknown): boolean {
   if (!isUniqueList(v.returned, (x) => TOWN_FRAGMENTS.some((f) => f.id === x))) return false;
   // story depth Task 6: each banter pair's wait, a real pair only, a whole number up to MAX_WAITED (as `pity`'s 999)
   if (v.confession !== undefined && v.confession !== 'dinner' && v.confession !== 'depth30') return false;   // story depth Task 15 review
+  // story L: untold memories, each once, never seen nor queued; tonight's picks among them
+  if (v.untold !== undefined && !(isUniqueList(v.untold, (x) => isSceneId(x) && x.startsWith('mem:')) && v.untold.every((id) => !(v.seen as unknown[]).includes(id) && !(v.queue as unknown[]).includes(id)))) return false;
+  if (v.tonight !== undefined && !(isUniqueList(v.tonight, isSceneId) && v.tonight.every((id) => ((v.untold ?? []) as unknown[]).includes(id)))) return false;
+  // story L: the beat cursor, a line of the pool (none while the pool is empty)
+  if (v.beat !== undefined && !(Number.isInteger(v.beat) && (v.beat as number) >= 0 && (v.beat as number) < NIGHT_BEATS.lines.length)) return false;
+  // story L (controller ruling 2026-10-24): the dawn's pick, an untold memory that is not one of tonight's
+  if (v.dawn !== undefined && !(isSceneId(v.dawn) && v.dawn.startsWith('mem:') && ((v.untold ?? []) as unknown[]).includes(v.dawn) && !((v.tonight ?? []) as unknown[]).includes(v.dawn))) return false;
+  // story L: a group scene's chances, one of the three groups not yet seen, 0 or 1
+  if (v.reacts !== undefined && !(isObj(v.reacts) && Object.entries(v.reacts).every(([k, n]) => Object.hasOwn(GROUP_GATE, k) && !(v.seen as unknown[]).includes(k) && (n === 0 || n === 1)))) return false;
   if (v.waited !== undefined && !(isObj(v.waited) && Object.entries(v.waited).every(([k, n]) => BANTER_PAIRS.includes(k as BanterPair) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_WAITED))) return false;
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }
@@ -143,6 +153,12 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!isStory(d.story)) return false;
   // Rin's reveal is only ever queued once she holds all her pieces; the oath it sets needs them (see validMemory).
   if ((d.story as { queue: unknown[] }).queue.includes('rin-reveal') && memoriesOf((p.roster as Record<string, Member>).rin) !== chainLength('rin')) return false;
+  // story L: an untold piece is one she has met and holds (`mem:<c>:<k>`, k up to her pieces)
+  const untold = ((d.story as { untold?: string[] }).untold ?? []);
+  if (!untold.every((id) => {
+    const [, c, k] = id.split(':');
+    return (p.recruited as unknown[]).includes(c) && Number(k) <= memoriesOf((p.roster as Record<string, Member>)[c]);
+  })) return false;
   const g = d.dungeon;
   if (!isObj(g) || !isObj(g.reached)) return false;
   const reached = g.reached;

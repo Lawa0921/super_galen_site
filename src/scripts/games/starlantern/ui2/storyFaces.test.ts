@@ -60,7 +60,7 @@ describe('companion grave faces', () => {
     expect(face('rin', 'sad')).toBe(art.portrait('rin', 'sad'));
   });
 
-  it('every heavy companion line in the script now shows a face (100 lines, 0 hidden)', () => {
+  it('every heavy companion line in the script now shows a face (106 lines, 0 hidden)', () => {
     const lines: ScriptLine[] = [];
     const seen = new Set<unknown>();
     const walk = (o: unknown): void => {
@@ -74,7 +74,7 @@ describe('companion grave faces', () => {
     const heavy = lines.filter((l) => NORMAL_SMILES.has(l.who) && l.mood && GRAVE.has(l.mood));
     const s = state();
     const hidden = heavy.filter((l) => !speakerOf(l.who, s, ART, l.mood).face).map((l) => `${l.who} ${l.mood} ${l.text}`);
-    expect(heavy).toHaveLength(100);   // story polish M: memories end on an action now, not on a said wound (107 -> 100)
+    expect(heavy).toHaveLength(106);   // story polish M: memories end on an action now, not on a said wound (107 -> 100); story L group:act2 +1, group:act3 +3, group:act4 +7; story L Tasks 12-13: chat:sylvie:1 and :2 read one way (-2), chat:chizuru:2 waits for Bobby (-2); story L Tasks 14-15 net 0 (the finale's Selene wistful and second Scarlet vow +2, hero-alone's Scarlet -2), then the cold read's silent Scarlet in the finale (-1)
     expect(hidden).toEqual([]);
     // Liz's hushed lines are not grave but used to borrow her smile: all 7 now have the hushed face (story polish M: her meeting has none).
     const hushed = lines.filter((l) => l.who === 'liz' && l.mood === 'hushed');
@@ -157,14 +157,24 @@ describe('faces in a heavy scene (staging S3)', () => {
       }
     }
     expect(smiling).toEqual([]);
-    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(382);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line
+    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(400);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line; story L Tasks 12-13: -6 (chat:sylvie:1 without Bobby, :2 one reading, chat:chizuru:2 without the reading that has not met Bobby); story L Tasks 14-15: -4 (chat:selene:2 -2, hero-alone -2, rin-confess -1, the finale +1); the cold read: Scarlet's silent fallback is narration (-1)
     // 395 character lines. Before S3 the 15 heavy lines of a non-glad mood without art showed a companion's smile, and 60
     // heavy lines of Lorne and Rin their normal: 75 lines, which now take a near face (35), Rin's calm normal (17) or no
     // portrait (23). A glad mood still borrows the smile (22). The light scenes are as they were.
     expect(tally).toEqual({
       // story polish M: the present halves of the early memories end on an action, so fewer heavy companion lines
-      'heavy exact': 93, 'heavy near': 33, 'heavy calm-normal': 17, 'heavy hidden': 22, 'heavy smiling-normal': 18,
-      'light exact': 91, 'light calm-normal': 6, 'light smiling-normal': 102,
+      // story L Task 9, group:act2 (nine lines): exact +3, near +1 (Selene's foresee), Rin's calm normal +2, a glad mood +3
+      // story L Task 10, group:act3 (nine lines): exact +6, near +1 (Sylvie's alert), Rin's calm normal +1, Bobby's grin +1
+      // story L Task 11, group:act4 (nine lines): exact +7, near +1 (Lorne's distant), Safira's laugh +1
+      // cold read fixes: act 4's two lines more (Liz's price of running, a glad mood; Liz breaking, sad), Noel's jab glad now
+      // story L Tasks 14-15: the finale's Selene wistful and Scarlet vow (exact +2, glad smiles -2), Noel's whole-chain blush gone
+      // (a glad smile -1, her pout hidden +1), Bobby's third reading (near +1); hero-alone's Scarlet two lines fewer (exact -2),
+      // rin-confess's Sylvie one fewer (near -1); the cold read: Scarlet's silent fallback is narration (exact -1)
+      'heavy exact': 108, 'heavy near': 36, 'heavy calm-normal': 20, 'heavy hidden': 23, 'heavy smiling-normal': 22,
+      // story L Tasks 12-13: light exact -5 (Bobby's and Sylvie's lines in chat:sylvie:1, Sylvie's bed line in :2, two of
+      // Chizuru's bell lines), Lorne's smiling normal -1 (his two stand-ins gone, the tofu line moved to chat:sylvie:1)
+      // story L Task 15: chat:selene:2 reads one way, two of Selene's lines fewer
+      'light exact': 86, 'light calm-normal': 6, 'light smiling-normal': 99,
     });
   });
 });

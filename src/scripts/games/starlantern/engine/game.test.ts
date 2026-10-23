@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { Game, type BattleEnd, type MoveResult } from './game';
 import { STORY_FIGHT_ROUNDS, type Difficulty } from './battle';
 import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
@@ -20,7 +20,7 @@ import { ENEMIES } from '../data/enemies';
 import { CHARACTERS } from '../data/characters';
 import { handbook } from './story/handbook';
 import { SETS } from '../data/gear';
-import { activeIds, expToNext, gainExp, MAX_LEVEL, meet, newMember, rowOfCell, statsOf, LEGACY_LINEUP, START_LINEUP } from './party';
+import { activeIds, expToNext, gainExp, MAX_LEVEL, meet, memoryStats, newMember, rowOfCell, statsOf, LEGACY_LINEUP, START_LINEUP } from './party';
 import { depthClearExp, empower, encounterGroup, groupCap } from './scaling';
 import { favouredRegions } from '../data/meetings';
 import { MAX_ACTIVE } from './formation';
@@ -39,8 +39,10 @@ import { learnedSkills } from './progression';
 import { TALENT_NODES } from '../data/talents';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
-import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, lineCap, type SceneId } from '../data/story/scenes';
-import { STORY } from '../data/story.zh-TW';
+import type { FragmentGain } from './story/memories';
+import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, lineCap, memScene, REACTIONS, type SceneId } from '../data/story/scenes';
+import { NIGHT_BEATS, STORY, type ScriptLine } from '../data/story.zh-TW';
+import { dawnMemory, planNight } from './story/nights';
 import { linesOf } from '../ui2/story';
 import { chainLength } from '../data/story/chains';
 import { SKILLS } from '../data/skills';
@@ -227,11 +229,11 @@ describe('departing', () => {
       return g;
     };
 
-    it('departing with the lone morning queued: departScene names it, and it is due', () => {
+    it('departing with the lone morning queued: departScenes names it, and it is due', () => {
       const g = ready();
-      expect(g.departScene()).toBe('hero-alone');
+      expect(g.departScenes()).toEqual(['hero-alone']);
       expect(g.sceneDone('hero-alone', 'played')).toBe(true);
-      expect(g.departScene()).toBeNull();
+      expect(g.departScenes()).toEqual([]);
       expect(g.state.story.seen).toContain('hero-alone');
       expect(g.state.story.queue).not.toContain('hero-alone');
       expect(g.sceneDone('hero-alone', 'played')).toBe(false);   // not due twice
@@ -240,22 +242,22 @@ describe('departing', () => {
     it('the lone morning waits for the ninth piece and the keeper', () => {
       const drop = (g: Game, id: SceneId) => { g.state.story.seen = g.state.story.seen.filter((x) => x !== id); };
       const nine = ready((g) => { drop(g, 'mem:hero:9'); g.state.story.queue.push('mem:hero:9'); });
-      expect(nine.departScene()).toBeNull();
+      expect(nine.departScenes()).toEqual([]);
       expect(nine.sceneDone('hero-alone', 'played')).toBe(false);
       const keeper = ready((g) => { drop(g, 'bellkeeper-arrives'); g.state.story.queue.push('bellkeeper-arrives'); });
-      expect(keeper.departScene()).toBeNull();
+      expect(keeper.departScenes()).toEqual([]);
       const alone = ready((g) => { g.state.story.queue.push('rin-confess'); });
-      expect(alone.departScene()).toBeNull();
-      expect(ready().departScene()).toBe('hero-alone');
+      expect(alone.departScenes()).toEqual([]);
+      expect(ready().departScenes()).toEqual(['hero-alone']);
       const out = ready();
       expect(out.depart(MAIN, 1)).toEqual({ ok: true });
-      expect(out.departScene()).toBeNull();   // only in town
+      expect(out.departScenes()).toEqual([]);   // only in town
     });
 
     it('a refused departure keeps the lone morning waiting', () => {
       const g = ready((x) => { for (const id of activeIds(x.state.party)) x.state.party.roster[id].hp = 0; });
       expect(g.departCheck(MAIN, 1)).toBe('party-down');
-      expect(g.departScene()).toBe('hero-alone');
+      expect(g.departScenes()).toEqual(['hero-alone']);
       expect(g.state.story.queue).toContain('hero-alone');
       const ok = ready();
       expect(ok.departCheck(MAIN, 2)).toBe('locked');
@@ -2361,13 +2363,13 @@ describe('glimmers and memory pieces', () => {
     const c = floorOf(g.run!, 1).contents.find((x) => x.kind === 'glimmer' && x.owner === 'rin')!;
     expect(c).toBeDefined();
     const r = stepOnto(g, c.at);
-    expect(r).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin', n: 1, play: true }] });
+    expect(r).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin', n: 1 }] });
     expect(memoriesOf(g.state.party.roster.rin)).toBe(1);
     expect(tileAt(g.map(), c.at)).toBe('floor');
     expect(floorOf(g.run!, 1).contents.some((x) => x.kind === 'glimmer' && x.owner === 'rin')).toBe(false);
     expect(g.run!.dropped[1]).toEqual(['rin']);
-    expect(g.run!.played).toEqual([1]);
-    expect(g.pending).toEqual(['mem:rin:1']);
+    expect(g.state.story.untold).toEqual(['mem:rin:1']);   // story L: told at night in town, not here
+    expect(g.pending).toEqual([]);
     expect(g.run!.memoryDraws).toBe(1);
   });
 
@@ -2394,7 +2396,7 @@ describe('glimmers and memory pieces', () => {
     const g = run(duo, 5, (x) => finished(x, 'rin'));
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'hero', n: 1, play: true }]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'hero', n: 1 }]);
     expect(memoriesOf(g.state.party.roster.hero)).toBe(1);
     expect(g.run!.dropped[5]).toEqual(['hero']);
   });
@@ -2406,16 +2408,17 @@ describe('glimmers and memory pieces', () => {
     expect((end.fragments ?? []).filter((f) => f.kind === 'piece')).toEqual([]);
   });
 
-  it('the second memory on a floor waits in the handbook', () => {
+  it('the second memory on a floor waits to be told too, after the first (story L)', () => {
     const g = run(duo, 5);
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'rin', n: 1, play: true }]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'rin', n: 1 }]);
     const r = stepOnto(g, plantGlimmer(g, 'rin'));
-    expect(r).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin', n: 2, play: false }] });
-    expect(g.state.story.fresh).toContain('mem:rin:2');
-    expect(g.state.story.seen).toContain('mem:rin:2');
-    expect(g.pending).toEqual(['mem:rin:1']);
+    expect(r).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin', n: 2 }] });
+    expect(g.state.story.fresh).not.toContain('mem:rin:2');
+    expect(g.state.story.seen).not.toContain('mem:rin:2');
+    expect(g.state.story.untold).toEqual(['mem:rin:1', 'mem:rin:2']);
+    expect(g.pending).toEqual([]);
   });
 
   it('descending raises the pity of the chains that found nothing', () => {
@@ -2457,44 +2460,48 @@ describe('glimmers and memory pieces', () => {
     expect(g.state.story.pity).toEqual({ rin: 0, hero: 1 });
   });
 
-  it('scenes waiting to play do not outlive the run', () => {
+  it('scenes waiting to play do not outlive the run; an untold memory does (story L)', () => {
     const g = run(duo, 1);
     stepOnto(g, floorOf(g.run!, 1).contents.find((x) => x.kind === 'glimmer' && x.owner === 'rin')!.at);
-    expect(g.pending).toEqual(['mem:rin:1']);
+    expect(g.pending).toEqual([]);
+    expect(g.state.story.untold).toEqual(['mem:rin:1']);
     g.state.inventory['return-lamp'] = 1;
     g.useReturnLamp();
     expect(g.pending).toEqual([]);
+    expect(g.state.story.untold).toEqual(['mem:rin:1']);   // it waits for the night
     const h = run(duo, 1);
-    h.pending.push('mem:rin:1');
+    h.pending.push('town:orik');
     h.pos = { ...h.map().entrance };
     h.encounter = 99;
     h.move('right');
     for (const m of h.battle!.party) { m.hp = 0; m.alive = false; }
     h.submitRound({});
     expect(h.pending).toEqual([]);
-    h.pending.push('mem:rin:1');
+    h.pending.push('town:orik');
     h.state.dungeon.reached.mainline = 3;
     expect(h.depart(MAIN, 1)).toEqual({ ok: true });
     expect(h.pending).toEqual([]);
   });
 
-  it("the depth-25 boss queues the hero's top-up memories", () => {
+  it("the depth-25 boss's top-up memories wait untold (story L)", () => {
     const g = run(duo, 25, (x) => { x.state.party.roster.hero.memories = 5; });
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
     expect(memoriesOf(g.state.party.roster.hero)).toBe(9);
-    expect(end.fragments!.filter((f) => f.kind === 'piece' && f.id === 'hero').map((f) => f.kind === 'piece' && [f.n, f.play])).toEqual([[6, false], [7, false], [8, false], [9, false]]);
-    expect(g.state.story.queue.filter((id) => id.startsWith('mem:'))).toEqual(['mem:hero:6', 'mem:hero:7', 'mem:hero:8', 'mem:hero:9']);
+    expect(end.fragments!.filter((f) => f.kind === 'piece' && f.id === 'hero').map((f) => f.kind === 'piece' && f.n)).toEqual([6, 7, 8, 9]);
+    expect(g.state.story.queue.filter((id) => id.startsWith('mem:'))).toEqual([]);
+    expect(g.state.story.untold).toEqual(['mem:hero:6', 'mem:hero:7', 'mem:hero:8', 'mem:hero:9']);
     expect(g.state.story.seen.some((id) => id.startsWith('mem:hero'))).toBe(false);
     expect(g.pending).toEqual([]);
   });
 
-  it('a single hero piece owed at depth 25 is queued too', () => {
+  it('a single hero piece owed at depth 25 waits untold too (story L)', () => {
     const g = run(duo, 25, (x) => { x.state.party.roster.hero.memories = 8; });
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'hero', n: 9, play: false }]);
-    expect(g.state.story.queue).toContain('mem:hero:9');
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'hero', n: 9 }]);
+    expect(g.state.story.untold).toEqual(['mem:hero:9']);
+    expect(g.state.story.queue).not.toContain('mem:hero:9');
     expect(g.state.story.seen).not.toContain('mem:hero:9');
     expect(g.pending).toEqual([]);
   });
@@ -2503,7 +2510,7 @@ describe('glimmers and memory pieces', () => {
     const g = run(duo, 3, (x) => { x.state.party.roster.rin.memories = 1; });
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'rin', n: 2, play: true }]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'rin', n: 2 }]);
     expect(memoriesOf(g.state.party.roster.rin)).toBe(2);
     expect(g.phase).toBe('clear');
   });
@@ -3183,7 +3190,9 @@ describe('the arrival queue', () => {
     const g = inRun(townGame());
     g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
     wipeOut(g);
-    expect(g.arrival).toEqual(['act2', 'chat:hero:1']);
+    // story L Task 9: act 2's group scene takes the chat's place, the first thing of the night
+    expect(g.arrival).toEqual(['act2']);
+    expect(g.night[0]).toBe('group:act2');
     expect(g.state.story.queue).toEqual(['act2']);
     expect(g.state.story.nodes).toEqual(['act2']);
   });
@@ -3231,7 +3240,10 @@ describe('the arrival queue', () => {
     g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
     g.returnToTown();
     expect(g.sceneDone('act2', 'played')).toBe(true);
-    expect(g.arrival).toEqual(['chat:hero:1']);   // act 2 is heavy: no banter on that return (B1)
+    // act 2 is heavy: no banter on that return (B1); and its group scene takes the chat's place (story L Task 9)
+    expect(g.arrival).toEqual([]);
+    expect(g.night[0]).toBe('group:act2');
+    expect(g.sceneDone('group:act2', 'played')).toBe(true);
     inRun(g);
     g.returnToTown();
     expect(g.arrival).toEqual(['chat:hero:1', LINEUP_BANTER]);   // B2: the lineup's banter, last (B1)
@@ -3303,13 +3315,13 @@ describe('the arrival queue', () => {
     expect(g.state.story.fresh).toEqual(['act2']);
   });
 
-  it('a dungeon memory is done from pending, and is not saved on the road', () => {
+  it('a returned fragment is done from pending, and is not saved on the road (story L: no memory is pending)', () => {
     const storage = memoryStorage();
     const g = inRun(townGame(duo, storage));
-    g.pending.push('mem:rin:1');
-    expect(g.sceneDone('mem:rin:1', 'played')).toBe(true);
+    g.pending.push('town:orik');
+    expect(g.sceneDone('town:orik', 'played')).toBe(true);
     expect(g.pending).toEqual([]);
-    expect(g.state.story.seen).toContain('mem:rin:1');
+    expect(g.state.story.seen).toContain('town:orik');
     expect(loadGame(storage).status).toBe('empty');   // only a town save follows a scene done
   });
 
@@ -3324,13 +3336,16 @@ describe('the arrival queue', () => {
     expect(saved.status === 'ok' && saved.state.story.fresh).toEqual([]);
   });
 
-  it('a pending memory is dropped on a return, a wipe and a depart, but the queue is kept', () => {
+  it('a pending scene is dropped on a return, a wipe and a depart, but the queue and the untold are kept', () => {
     const g = inRun(townGame(duo));
-    g.state.story.queue = ['mem:hero:7'];
-    g.pending.push('mem:rin:1');
+    g.state.story.queue = ['act2'];
+    g.state.party.roster.rin.memories = 1;
+    g.state.story.untold = ['mem:rin:1'];
+    g.pending.push('town:orik');
     g.returnToTown();
     expect(g.pending).toEqual([]);
-    expect(g.state.story.queue).toEqual(['mem:hero:7']);
+    expect(g.state.story.queue).toEqual(['act2']);
+    expect(g.state.story.untold).toEqual(['mem:rin:1']);
   });
 });
 
@@ -3471,8 +3486,8 @@ describe('the finale', () => {
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
     expect(memoriesOf(g.state.party.roster.hero)).toBe(10);
-    expect(g.finale).toEqual({ pieces: heroPieces(3, 10) });
-    expect(end.fragments!.filter((f) => f.kind === 'piece').every((f) => f.kind === 'piece' && !f.play)).toBe(true);
+    expect(g.finale).toEqual({ pieces: ['finale-eve', ...heroPieces(3, 10)] });   // story L: the eve no departure told comes first
+    expect(end.fragments!.filter((f) => f.kind === 'piece').every((f) => f.kind === 'piece' && f.id === 'hero')).toBe(true);
     expect([g.phase, g.cleared, g.state.story.finaleCleared]).toEqual(['clear', 'finale', true]);
     // The finale plays them, so nothing is marked seen, new or waiting for the town or the screen.
     expect(g.state.story.seen.some((id) => id.startsWith('mem:hero:'))).toBe(false);
@@ -3489,7 +3504,7 @@ describe('the finale', () => {
     stepOnto(g, g.map().boss!);
     killAll(g);
     expect([g.phase, g.cleared]).toEqual(['clear', 'finale']);
-    expect(g.finale).toEqual({ pieces: heroPieces(1, 10) });
+    expect(g.finale).toEqual({ pieces: ['finale-eve', ...heroPieces(1, 10)] });
     expect(memoriesOf(g.state.party.roster.hero)).toBe(10);
   });
 
@@ -3513,16 +3528,18 @@ describe('the finale', () => {
     expect([g.phase, g.cleared, g.finale]).toEqual(['map', null, null]);
   });
 
-  it('memories still queued from depth 25 play before the finale', () => {
+  it('memories still untold from depth 25 play before the finale (story L)', () => {
     const g = run(25, (x) => { x.state.party.roster.hero.memories = 5; });
     stepOnto(g, g.map().boss!);
     killAll(g);
-    expect(heroMemories(g)).toEqual(heroPieces(6, 9));   // owed at depth 25, waiting for the next return to town
+    expect(heroMemories(g)).toEqual([]);
+    expect(g.state.story.untold).toEqual(heroPieces(6, 9));   // owed at depth 25, waiting for a night in town
     for (let f = 25; f < FINALE_DEPTH; f++) expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: f + 1 });
     stepOnto(g, g.map().boss!);
     killAll(g);
-    expect(g.finale).toEqual({ pieces: heroPieces(6, 10) });
+    expect(g.finale).toEqual({ pieces: ['finale-eve', ...heroPieces(6, 10)] });
     expect(heroMemories(g)).toEqual([]);
+    expect(g.state.story.untold).toEqual([]);   // the finale's now
     expect([g.phase, g.cleared]).toEqual(['clear', 'finale']);
   });
 
@@ -3536,7 +3553,7 @@ describe('the finale', () => {
     });
     stepOnto(g, g.map().boss!);
     killAll(g);
-    expect(g.finale!.pieces).toEqual(['act4', 'mem:hero:9', 'mem:hero:10']);
+    expect(g.finale!.pieces).toEqual(['finale-eve', 'act4', 'mem:hero:9', 'mem:hero:10']);
     expect(g.state.story.queue).not.toContain('act4');
     for (const id of g.finale!.pieces) expect(g.sceneDone(id, 'played'), id).toBe(true);
     expect(g.sceneDone('finale', 'played')).toBe(true);
@@ -3552,7 +3569,7 @@ describe('the finale', () => {
     });
     stepOnto(g, g.map().boss!);
     killAll(g);
-    expect(g.finale!.pieces.slice(0, 3)).toEqual(['act3', 'act4', 'mem:hero:1']);
+    expect(g.finale!.pieces.slice(0, 4)).toEqual(['finale-eve', 'act3', 'act4', 'mem:hero:1']);
     expect(g.state.story.nodes).toEqual(['act2', 'act3', 'act4']);   // their truth pages open with them
     for (const id of g.finale!.pieces) g.sceneDone(id, 'auto');
     g.sceneDone('finale', 'auto');
@@ -3569,7 +3586,7 @@ describe('the finale', () => {
     });
     stepOnto(g, g.map().boss!);
     killAll(g);
-    expect(g.finale!.pieces).toEqual(['act4', 'bellkeeper-arrives', 'mem:hero:10']);
+    expect(g.finale!.pieces).toEqual(['finale-eve', 'act4', 'bellkeeper-arrives', 'mem:hero:10']);
     expect(g.state.story.queue).not.toContain('bellkeeper-arrives');
   });
 
@@ -3582,7 +3599,7 @@ describe('the finale', () => {
     });
     stepOnto(g, g.map().boss!);
     killAll(g);
-    expect(g.finale!.pieces).toEqual(['rin-confess', 'bellkeeper-arrives', 'mem:hero:10']);
+    expect(g.finale!.pieces).toEqual(['finale-eve', 'rin-confess', 'bellkeeper-arrives', 'mem:hero:10']);
     expect(g.state.story.queue).not.toContain('rin-confess');
     for (const id of g.finale!.pieces) expect(g.sceneDone(id, 'played'), id).toBe(true);
     expect(g.sceneDone('finale', 'played')).toBe(true);
@@ -3640,7 +3657,7 @@ describe('the finale', () => {
     });
     stepOnto(g, g.map().boss!);
     killAll(g);
-    expect(heroMemories(g)).toEqual(['mem:hero:9']);   // the top-up, waiting for a return that never comes
+    expect(g.state.story.untold).toEqual(['mem:hero:9']);   // the top-up, waiting for a return that never comes (story L: untold)
     expect(g.state.story.queue).not.toContain('hero-alone');
     for (let f = 25; f < FINALE_DEPTH; f++) expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: f + 1 });
     stepOnto(g, g.map().boss!);
@@ -3659,7 +3676,7 @@ describe('the finale', () => {
     });
     stepOnto(g, g.map().boss!);
     killAll(g);
-    expect(g.finale!.pieces).toEqual(['rin-confess', 'bellkeeper-arrives', 'mem:hero:10']);
+    expect(g.finale!.pieces).toEqual(['finale-eve', 'rin-confess', 'bellkeeper-arrives', 'mem:hero:10']);
     expect(g.state.story.seen).toContain('hero-alone');
     expect(g.state.story.fresh).toContain('hero-alone');
     expect(g.state.story.queue).not.toContain('hero-alone');
@@ -3691,12 +3708,13 @@ describe('the finale', () => {
     expect(left.arrival).not.toContain('bellkeeper-arrives');
   });
 
-  it('a queued piece of someone else stays queued', () => {
-    const g = run(FINALE_DEPTH, (x) => { x.state.story.queue.push('mem:rin:1'); });
+  it('an untold piece of someone else stays untold (story L)', () => {
+    const g = run(FINALE_DEPTH, (x) => { x.state.story.untold = ['mem:rin:1']; });
     stepOnto(g, g.map().boss!);
     killAll(g);
-    expect(g.state.story.queue).toContain('mem:rin:1');
-    expect(g.finale!.pieces.every((id) => id.startsWith('mem:hero:'))).toBe(true);
+    expect(g.state.story.untold).toEqual(['mem:rin:1']);
+    expect(g.finale!.pieces[0]).toBe('finale-eve');   // story L: the eve, with no companion's piece to tell
+    expect(g.finale!.pieces.slice(1).every((id) => id.startsWith('mem:hero:'))).toBe(true);
   });
 
   it('the finale and its memories are due only while the finale is', () => {
@@ -4319,6 +4337,612 @@ describe('following between fights (plan 8h final review)', () => {
     expect(killAll(g).outcome).toBe('win');
     expect(g.state.party.roster.noel.sockets?.['fire-star']).toEqual([null, { id: 'ignite', tier: 'magic' }]);
     expect(g.state.runes).toEqual({ 'spread@magic': 1 });
+  });
+});
+
+describe('story L: pieces wait to be told (Task 2a)', () => {
+  const duo: CharacterId[] = ['hero', 'rin'];
+  const run = (depth: number, tweak: (g: Game) => void = () => {}, storage = memoryStorage()) => {
+    const g = new Game(calm(), storage, undefined, 0, duo);
+    g.state.dungeon.reached.mainline = Math.max(3, depth);
+    tweak(g);
+    expect(g.depart(MAIN, depth)).toEqual({ ok: true });
+    return g;
+  };
+  /** A glimmer for `owner` on an open cell, as the floor would have made it. */
+  const plantGlimmer = (g: Game, owner?: CharacterId): Pos => {
+    const m = g.map();
+    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+      if (m.tiles[y][x] !== 'floor' || (x === g.pos.x && y === g.pos.y)) continue;
+      m.tiles[y][x] = 'glimmer';
+      floorOf(g.run!, g.floor).contents.push({ kind: 'glimmer', at: { x, y }, room: 0, ...(owner ? { owner } : {}) });
+      return { x, y };
+    }
+    throw new Error('no cell for a glimmer');
+  };
+  const pieceIds = (gained: readonly FragmentGain[] | undefined) => (gained ?? []).flatMap((f) => (f.kind === 'piece' ? [memScene(f.id, f.n)] : []));
+  const mems = (ids: readonly SceneId[]) => ids.filter((id) => id.startsWith('mem:'));
+
+  it('every piece taken goes to untold in pickup order, and none is pending', () => {
+    const g = run(5);
+    const r = stepOnto(g, plantGlimmer(g, 'rin'));
+    expect(r).toEqual({ kind: 'glimmer', gained: [expect.objectContaining({ kind: 'piece', id: 'rin', n: 1 })] });
+    stepOnto(g, g.map().boss!);
+    const end = killAll(g);
+    const boss = pieceIds(end.fragments);
+    expect(boss.length).toBeGreaterThan(0);
+    expect(g.state.story.untold).toEqual(['mem:rin:1', ...boss]);
+    expect(g.pending).toEqual([]);
+    for (const list of [g.state.story.seen, g.state.story.queue, g.state.story.fresh]) expect(mems(list)).toEqual([]);
+  });
+
+  it('a piece still counts at once: memoriesOf and the memory stats rise at pickup', () => {
+    const g = run(1);
+    const before = { n: memoriesOf(g.state.party.roster.rin), stats: memoryStats(g.state.party.roster.rin) };
+    stepOnto(g, plantGlimmer(g, 'rin'));
+    expect(memoriesOf(g.state.party.roster.rin)).toBe(before.n + 1);
+    expect(memoryStats(g.state.party.roster.rin)).not.toEqual(before.stats);
+    expect(g.state.story.untold).toEqual(['mem:rin:1']);
+  });
+
+  it('the depth-25 top-up waits in untold, in piece order', () => {
+    const g = run(25, (x) => { x.state.party.roster.hero.memories = 5; });
+    stepOnto(g, g.map().boss!);
+    const end = killAll(g);
+    expect(pieceIds(end.fragments).filter((id) => id.startsWith('mem:hero:'))).toEqual(['mem:hero:6', 'mem:hero:7', 'mem:hero:8', 'mem:hero:9']);
+    expect(mems(g.state.story.untold ?? []).filter((id) => id.startsWith('mem:hero:'))).toEqual(['mem:hero:6', 'mem:hero:7', 'mem:hero:8', 'mem:hero:9']);
+    expect(mems(g.state.story.queue)).toEqual([]);
+    expect(mems(g.state.story.seen)).toEqual([]);
+  });
+
+  it("the finale fight's hero pieces are the finale's; anyone else's waits in untold", () => {
+    const g = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = 8;
+      Object.assign(x.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+      for (const node of ['act2', 'act3', 'act4'] as const) { x.state.story.nodes.push(node); x.state.story.seen.push(node); }
+    });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toEqual(['finale-eve', 'mem:hero:9', 'mem:hero:10']);
+    expect(g.state.story.untold ?? []).toEqual([]);
+    // the hero full: the boss pays Selene's next piece, and it waits to be told
+    const h = run(FINALE_DEPTH, (x) => {
+      x.state.party.roster.hero.memories = chainLength('hero');
+      Object.assign(x.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+      for (const node of ['act2', 'act3', 'act4'] as const) { x.state.story.nodes.push(node); x.state.story.seen.push(node); }
+      x.state.party = meet(x.state.party, 'selene', 30);
+    });
+    stepOnto(h, h.map().boss!);
+    const end = killAll(h);
+    const paid = pieceIds(end.fragments);
+    expect(paid.length).toBeGreaterThan(0);
+    expect(paid.every((id) => !id.startsWith('mem:hero:'))).toBe(true);
+    expect(h.state.story.untold).toEqual(paid);
+    // story L Task 3d: the eve the finale falls back to tells it, still untold until it is told
+    expect(h.eve.length).toBeGreaterThan(0);
+    expect(h.eve.every((id) => paid.includes(id))).toBe(true);
+    expect(h.finale!.pieces.filter((id) => id.startsWith('mem:'))).toEqual(h.eve);
+  });
+
+  it('tellEarly tells an untold piece: seen, not new, out of untold and tonight; anything else is refused', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, duo);
+    g.state.party.roster.rin.memories = 2;
+    g.state.story.untold = ['mem:rin:1', 'mem:rin:2'];
+    g.state.story.tonight = ['mem:rin:1'];
+    const before = JSON.stringify(g.state);
+    expect(g.tellEarly('mem:rin:3')).toBe(false);
+    expect(g.tellEarly('act2')).toBe(false);
+    expect(JSON.stringify(g.state)).toBe(before);
+    expect(g.tellEarly('mem:rin:1')).toBe(true);
+    expect(g.state.story.seen).toContain('mem:rin:1');
+    expect(g.state.story.fresh).not.toContain('mem:rin:1');
+    expect(g.state.story.untold).toEqual(['mem:rin:2']);
+    expect(g.state.story.tonight).toEqual([]);
+    expect(g.tellEarly('mem:rin:1')).toBe(false);   // told already
+    const saved = loadGame(storage);   // in town: saved at once
+    expect(saved.status === 'ok' && saved.state.story.untold).toEqual(['mem:rin:2']);
+    // in the labyrinth it waits for the next save in town
+    const road = memoryStorage();
+    const h = run(1, (x) => { x.state.party.roster.rin.memories = 1; x.state.story.untold = ['mem:rin:1']; }, road);
+    expect(h.tellEarly('mem:rin:1')).toBe(true);
+    expect(loadGame(road).status).toBe('empty');
+  });
+});
+
+// story L Task 8: the pool is written now; a test that sets its own (or none) gets the written one back after it
+const WRITTEN_BEATS = [...NIGHT_BEATS.lines];
+describe('story L: the night in the game (Task 3b)', () => {
+  afterEach(() => { NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, ...WRITTEN_BEATS); });
+  const duo: CharacterId[] = ['hero', 'rin'];
+  /** A game in town, the opening behind it, whose untold memories are `list` (each owner met, the earlier pieces told). */
+  const withUntold = (list: SceneId[], storage = memoryStorage(), tweak: (g: Game) => void = () => {}) => {
+    const g = new Game(calm(), storage, undefined, 0, duo);
+    g.state.story.queue = [];
+    g.state.story.seen = ['prologue', 'prologue-inn'];
+    for (const id of list) {
+      const [, c, k] = id.split(':') as [string, CharacterId, string];
+      if (!g.state.party.recruited.includes(c)) g.state.party = meet(g.state.party, c, 1);
+      const m = g.state.party.roster[c];
+      m.memories = Math.max(m.memories ?? 0, Number(k));
+      for (let n = 1; n < Number(k); n++) if (!list.includes(memScene(c, n)) && !g.state.story.seen.includes(memScene(c, n))) g.state.story.seen.push(memScene(c, n));
+    }
+    g.state.story.untold = [...list];
+    tweak(g);
+    return g;
+  };
+  /** Out through the mainline at depth 1 and straight back in by the entrance. */
+  const trip = (g: Game) => {
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+  };
+  const five: SceneId[] = ['mem:hero:3', 'mem:selene:1', 'mem:noel:1', 'mem:safira:1', 'mem:bobby:1'];
+
+  it('a return plans the night and saves it in tonight', () => {
+    const g = withUntold(five);
+    trip(g);
+    // backlog 5, cap 2: Lorne first
+    expect(g.night).toHaveLength(2);
+    expect(g.night[0]).toBe('mem:hero:3');
+    expect(g.state.story.tonight).toEqual(g.night);
+    expect(g.arrival.filter((id) => id.startsWith('mem:'))).toEqual([]);
+    expect(g.night).toEqual(planNight(g.state, g.arrival).night);
+    // told at night, a memory is done: seen, out of untold and tonight
+    expect(g.sceneDone(g.night[0], 'played')).toBe(true);
+    expect(g.state.story.seen).toContain('mem:hero:3');
+    expect(g.state.story.untold).not.toContain('mem:hero:3');
+    expect(g.state.story.tonight).not.toContain('mem:hero:3');
+    expect(g.night).not.toContain('mem:hero:3');
+    expect(g.sceneDone('mem:noel:2', 'played')).toBe(false);   // nothing anyone holds
+  });
+
+  it('a reload mid-night plays the rest of tonight, no more', () => {
+    const storage = memoryStorage();
+    const g = withUntold(five, storage);
+    trip(g);
+    const night = [...g.night];
+    expect(night).toHaveLength(2);
+    g.sceneDone(night[0], 'played');   // town saves at once
+    const b = Game.boot(calm(), storage);
+    expect(b.night).toEqual(night.slice(1));
+    expect(b.arrival.filter((id) => id.startsWith('mem:'))).toEqual([]);
+    expect(b.sceneDone(night[1], 'played')).toBe(true);
+    expect(b.night).toEqual([]);
+    expect(Game.boot(calm(), storage).night).toEqual([]);
+  });
+
+  it('a new return replaces tonight; what was not played stays untold', () => {
+    const g = withUntold(five);
+    trip(g);
+    const [first, second] = g.night;
+    g.sceneDone(first, 'played');
+    trip(g);
+    expect(g.state.story.untold).toContain(second);
+    expect(g.state.story.untold).not.toContain(first);
+    expect(g.state.story.tonight).toEqual(g.night);
+    expect(g.night).not.toContain(first);
+  });
+
+  it('a lamp return and a wipe have a night too', () => {
+    const lamp = withUntold(five);
+    lamp.state.inventory['return-lamp'] = 1;
+    expect(lamp.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(lamp.useReturnLamp()).toBe(true);
+    expect(lamp.night).toHaveLength(2);
+    expect(lamp.state.story.tonight).toEqual(lamp.night);
+    const wiped = withUntold(five);
+    expect(wiped.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(stepOnto(wiped, plantAt(wiped, 'elite')).kind).toBe('battle');
+    for (const c of wiped.battle!.party) { c.hp = 0; c.alive = false; }
+    expect(wiped.submitRound({})!.end!.outcome).toBe('lose');
+    expect(wiped.phase).toBe('town');
+    expect(wiped.night).toHaveLength(2);
+    expect(wiped.state.story.tonight).toEqual(wiped.night);
+  });
+
+  it('owed pieces lead the arrival, ahead of the act', () => {
+    const g = withUntold(['mem:selene:1', 'mem:hero:3', 'mem:rin:2', 'mem:noel:1']);
+    g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
+    trip(g);
+    expect(g.arrival.slice(0, 3)).toEqual(['mem:hero:3', 'mem:rin:2', 'act2']);
+    expect(g.night).toEqual(['group:act2', 'mem:selene:1']);   // backlog 2, cap 1; act 2's group scene first (story L Task 9)
+    expect(g.state.story.tonight).toEqual(['mem:hero:3', 'mem:rin:2', 'mem:selene:1']);
+    // a reload puts the owed ones back ahead of the act
+    const storage = memoryStorage();
+    saveGame(storage, g.state);
+    const b = Game.boot(calm(), storage);
+    expect(b.arrival.slice(0, 3)).toEqual(['mem:hero:3', 'mem:rin:2', 'act2']);
+    expect(b.night).toEqual(['group:act2', 'mem:selene:1']);
+  });
+
+  it("untold hero pieces join the finale's list in piece order and leave untold", () => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, duo);
+    g.state.dungeon.reached.mainline = FINALE_DEPTH;
+    g.state.party.roster.hero.memories = 8;
+    Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    for (const node of ['act2', 'act3', 'act4'] as const) { g.state.story.nodes.push(node); g.state.story.seen.push(node); }
+    g.state.story.untold = ['mem:hero:8', 'mem:hero:7'];
+    g.state.story.tonight = ['mem:hero:8'];
+    expect(g.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces.filter((id) => id.startsWith('mem:hero:'))).toEqual(['mem:hero:7', 'mem:hero:8', 'mem:hero:9', 'mem:hero:10']);
+    expect(g.state.story.untold).toEqual([]);
+    expect(g.state.story.tonight).toEqual([]);
+  });
+
+  it('takeBeat moves the cursor and saves it; a reload gives the next line, not the same one', () => {
+    const lines: ScriptLine[] = [{ who: 'narrator', text: '一' }, { who: 'narrator', text: '二' }];
+    NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, ...lines);
+    try {
+      const storage = memoryStorage();
+      const g = withUntold(five, storage);
+      expect(g.takeBeat('mem:selene:1', 'mem:noel:1')).toEqual(lines[0]);
+      expect(g.state.story.beat).toBe(1);
+      const b = Game.boot(calm(), storage);
+      expect(b.state.story.beat).toBe(1);
+      expect(b.takeBeat('mem:selene:1', 'mem:noel:1')).toEqual(lines[1]);
+      expect(b.state.story.beat).toBe(0);   // past the end, back to the start
+    } finally {
+      NIGHT_BEATS.lines.splice(0);
+    }
+    // no pool, no beat, and the cursor stays where it was
+    const g = withUntold(five);
+    expect(g.takeBeat('mem:selene:1', 'mem:noel:1')).toBeNull();
+    expect(g.state.story.beat).toBeUndefined();
+  });
+});
+
+describe('story L: the night before the descent (Task 3d)', () => {
+  const duo: CharacterId[] = ['hero', 'rin'];
+  /** In town after her choice, the keeper's arrival behind them; `untold` held and untold, the earlier pieces told. */
+  const eveGame = (untold: SceneId[], queue: SceneId[] = ['finale-eve'], storage: ReturnType<typeof memoryStorage> | null = null) => {
+    const g = new Game(calm(), storage, undefined, 0, duo);
+    Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    g.state.story.seen = ['prologue', 'prologue-inn', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives'];
+    for (let k = 1; k <= chainLength('rin'); k++) g.state.story.seen.push(memScene('rin', k));
+    g.state.story.queue = [...queue];
+    for (const id of untold) {
+      const [, c, k] = id.split(':') as [string, CharacterId, string];
+      if (!g.state.party.recruited.includes(c)) g.state.party = meet(g.state.party, c, 1);
+      g.state.party.roster[c].memories = Math.max(g.state.party.roster[c].memories ?? 0, Number(k));
+    }
+    g.state.story.untold = [...untold];
+    return g;
+  };
+  const four: SceneId[] = ['mem:selene:1', 'mem:noel:1', 'mem:safira:1', 'mem:bobby:1', 'mem:sylvie:1', 'mem:liz:1', 'mem:scarlet:1'];
+
+  it("the first departure after it is queued plays the eve, then up to three companions' memories, under the night card", () => {
+    const g = eveGame(four);
+    g.state.story.tonight = ['mem:selene:1'];
+    expect(g.departScenes()).toEqual(['finale-eve']);
+    expect(g.eve).toEqual([]);
+    expect(g.sceneDone('finale-eve', 'played')).toBe(true);
+    expect(g.eve).toHaveLength(3);
+    expect(g.eve.every((id) => four.includes(id))).toBe(true);
+    expect(g.state.story.untold).toEqual(four);          // still untold until each is told
+    expect(g.state.story.tonight).toEqual([]);           // the town's night does not hold them as well
+    expect(g.departScenes()).toEqual([]);
+    const [first] = g.eve;
+    expect(g.sceneDone(first, 'played')).toBe(true);
+    expect(g.state.story.seen).toContain(first);
+    expect(g.state.story.untold).not.toContain(first);
+    expect(g.eve).not.toContain(first);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.eve).toEqual([]);                           // what the eve did not tell waits for a night or the handbook
+    expect(g.state.story.untold).toEqual(four.filter((id) => id !== first));
+  });
+
+  it('the eve comes before the lone morning when both are owed', () => {
+    const g = eveGame(four, ['hero-alone', 'finale-eve']);
+    g.state.party.roster.hero.memories = 9;
+    g.state.story.seen.push('mem:hero:9');
+    expect(g.departScenes()).toEqual(['finale-eve', 'hero-alone']);
+    expect(g.sceneDone('finale-eve', 'played')).toBe(true);
+    expect(g.departScenes()).toEqual(['hero-alone']);
+    const alone = eveGame(four, ['finale-eve', 'rin-confess']);
+    expect(alone.departScenes()).toEqual([]);
+    const away = eveGame(four);
+    expect(away.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(away.departScenes()).toEqual([]);             // only in town
+    expect(away.state.story.queue).toContain('finale-eve');
+  });
+
+  it("a reload after the eve's line: it does not play again, and its unplayed memories stay untold", () => {
+    const storage = memoryStorage();
+    const g = eveGame(four, ['finale-eve'], storage);
+    expect(g.sceneDone('finale-eve', 'played')).toBe(true);   // town saves at once
+    const picks = [...g.eve];
+    const b = Game.boot(calm(), storage);
+    expect(b.departScenes()).toEqual([]);
+    expect(b.state.story.seen).toContain('finale-eve');
+    expect(b.eve).toEqual([]);
+    expect(b.state.story.untold).toEqual(four);
+    expect(b.sceneDone(picks[0], 'played')).toBe(false);
+  });
+
+  it('the finale falls back to the eve first, then the acts, the confession and the keeper, then Lorne\'s pieces, then the finale', () => {
+    const g = eveGame(['mem:selene:1', 'mem:noel:1', 'mem:hero:8'], ['act4', 'rin-confess']);
+    g.state.story.seen = g.state.story.seen.filter((id) => id !== 'rin-confess' && id !== 'bellkeeper-arrives');
+    g.state.story.seen.push('act2', 'act3');
+    g.state.story.nodes = ['act2', 'act3', 'act4'];
+    g.state.dungeon.reached.mainline = FINALE_DEPTH;
+    expect(g.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toEqual(['finale-eve', 'mem:selene:1', 'mem:noel:1', 'act4', 'rin-confess', 'bellkeeper-arrives', 'mem:hero:8', 'mem:hero:9', 'mem:hero:10']);
+    expect(g.eve).toEqual(['mem:selene:1', 'mem:noel:1']);
+    expect(g.state.story.queue).not.toContain('finale-eve');
+    for (const id of [...g.finale!.pieces, 'finale'] as SceneId[]) expect(g.sceneDone(id, 'played'), id).toBe(true);
+    expect(g.state.story.seen).toEqual(expect.arrayContaining(['finale-eve', 'mem:selene:1', 'mem:noel:1']));
+    // once the eve has played on a departure, the finale does not play it again
+    const h = eveGame(['mem:selene:1'], ['rin-confess']);
+    h.state.story.seen = h.state.story.seen.filter((id) => id !== 'rin-confess' && id !== 'bellkeeper-arrives');
+    h.state.story.seen.push('act2', 'act3', 'act4', 'finale-eve');
+    h.state.story.nodes = ['act2', 'act3', 'act4'];
+    h.state.party.roster.hero.memories = 9;
+    h.state.dungeon.reached.mainline = FINALE_DEPTH;
+    expect(h.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(h, h.map().boss!);
+    killAll(h);
+    expect(h.finale!.pieces).toEqual(['rin-confess', 'bellkeeper-arrives', 'mem:hero:10']);
+    expect(h.eve).toEqual([]);
+  });
+});
+
+describe('story L: the reaction slot in the game (Task 5)', () => {
+  const duo: CharacterId[] = ['hero', 'rin'];
+  const R = { act2: 'group:act2', act3: 'group:act3', act4: 'group:act4' } as const;
+  /** The three group scenes registered for the length of `fn` (their scripts come with the writing tasks). */
+  const registered = (fn: () => void) => {
+    Object.assign(REACTIONS, R);
+    try { fn(); } finally { for (const k of Object.keys(R)) delete REACTIONS[k as keyof typeof R]; }
+  };
+  /** In town, the opening behind it, `ids` met, the main road reached to act 2's depth and `untold` held untold. */
+  const inTown = (ids: CharacterId[], untold: SceneId[], storage: ReturnType<typeof memoryStorage> | null = null) => {
+    const g = new Game(calm(), storage, undefined, 0, duo);
+    g.state.story.queue = [];
+    g.state.story.seen = ['prologue', 'prologue-inn'];
+    for (const c of ids) if (!g.state.party.recruited.includes(c)) g.state.party = meet(g.state.party, c, 1);
+    for (const id of untold) {
+      const [, c, k] = id.split(':') as [string, CharacterId, string];
+      if (!g.state.party.recruited.includes(c)) g.state.party = meet(g.state.party, c, 1);
+      g.state.party.roster[c].memories = Math.max(g.state.party.roster[c].memories ?? 0, Number(k));
+    }
+    g.state.story.untold = [...untold];
+    g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
+    return g;
+  };
+  const trip = (g: Game) => {
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+  };
+  const four: SceneId[] = ['mem:safira:1', 'mem:bobby:1', 'mem:selene:1', 'mem:noel:1'];
+
+  it("the group scene is the night's first item, after the day's notices", () => registered(() => {
+    const storage = memoryStorage();
+    const g = inTown(['selene', 'noel'], four, storage);
+    trip(g);
+    expect(g.arrival).toEqual(['act2']);                         // the day: the act, no chat, no banter
+    expect(g.night[0]).toBe('group:act2');                       // the night: the group first
+    expect(g.night.slice(1)).toEqual(['mem:selene:1', 'mem:noel:1']);   // backlog 4, cap 2: the group's two go ahead
+    expect(g.state.story.tonight).toEqual(['mem:selene:1', 'mem:noel:1']);   // tonight keeps memories only
+    expect(g.sceneDone('act2', 'played')).toBe(true);
+    expect(g.state.story.reacts).toEqual({ 'group:act2': 0 });
+    // a reload after the act: the slot is filled again, still the night's first item
+    const b = Game.boot(calm(), storage);
+    expect(b.arrival).toEqual([]);
+    expect(b.night).toEqual(['group:act2', 'mem:selene:1', 'mem:noel:1']);
+    expect(b.sceneDone('group:act2', 'played')).toBe(true);
+    expect(b.state.story.reacts).toEqual({});
+    expect(b.state.story.seen).toContain('group:act2');
+    expect(b.night).toEqual(['mem:selene:1', 'mem:noel:1']);
+    // the next return has its chat back, and no group
+    trip(b);
+    expect(b.arrival.concat(b.night).some((id) => id.startsWith('group:'))).toBe(false);
+    expect(b.arrival.some((id) => id.startsWith('chat:') || id.startsWith('banter:'))).toBe(true);
+  }));
+
+  it('with its cast not met the arrival is as before, and the group waits one return', () => registered(() => {
+    const g = inTown(['selene'], ['mem:safira:1', 'mem:bobby:1', 'mem:selene:1', 'mem:liz:1']);   // Noel not met
+    trip(g);
+    expect(g.night.some((id) => id.startsWith('group:'))).toBe(false);
+    for (const id of [...g.arrival]) g.sceneDone(id, 'played');
+    expect(g.state.story.reacts).toEqual({ 'group:act2': 0 });
+    g.state.party = meet(g.state.party, 'noel', 1);
+    trip(g);
+    expect(g.state.story.reacts).toEqual({ 'group:act2': 1 });
+    expect(g.night[0]).toBe('group:act2');
+    expect(g.arrival.some((id) => id.startsWith('chat:') || id.startsWith('banter:'))).toBe(false);
+  }));
+
+  it("the finale's list never holds a group scene, and none follows it", () => registered(() => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, duo);
+    for (const c of ['liz', 'scarlet', 'chizuru', 'safira'] as const) g.state.party = meet(g.state.party, c, 1);
+    Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    g.state.party.roster.hero.memories = 9;
+    g.state.story.seen = ['prologue', 'prologue-inn', 'act2', 'act3', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'mem:hero:9', 'finale-eve', 'hero-alone'];
+    g.state.story.nodes = ['act2', 'act3'];
+    g.state.story.queue = [];
+    g.state.dungeon.reached.mainline = FINALE_DEPTH;
+    expect(g.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toContain('act4');
+    expect(g.finale!.pieces.some((id) => id.startsWith('group:'))).toBe(false);
+    for (const id of [...g.finale!.pieces, 'finale'] as SceneId[]) expect(g.sceneDone(id, 'played'), id).toBe(true);
+    expect(g.state.story.reacts ?? {}).toEqual({});
+    g.restartAfterClear();
+    expect(g.phase).toBe('town');
+    expect([...g.arrival, ...g.night].some((id) => id.startsWith('group:'))).toBe(false);
+  }));
+});
+
+describe('story L: the dawn before departure (controller ruling 2026-10-24)', () => {
+  const duo: CharacterId[] = ['hero', 'rin'];
+  /** In town, the opening behind it, `untold` held and untold (each owner met, the earlier pieces told). */
+  const inTown = (untold: SceneId[], storage: ReturnType<typeof memoryStorage> | null = null) => {
+    const g = new Game(calm(), storage, undefined, 0, duo);
+    g.state.story.queue = [];
+    g.state.story.seen = ['prologue', 'prologue-inn'];
+    for (const id of untold) {
+      const [, c, k] = id.split(':') as [string, CharacterId, string];
+      if (!g.state.party.recruited.includes(c)) g.state.party = meet(g.state.party, c, 1);
+      g.state.party.roster[c].memories = Math.max(g.state.party.roster[c].memories ?? 0, Number(k));
+      for (let n = 1; n < Number(k); n++) if (!untold.includes(memScene(c, n)) && !g.state.story.seen.includes(memScene(c, n))) g.state.story.seen.push(memScene(c, n));
+    }
+    g.state.story.untold = [...untold];
+    return g;
+  };
+  const trip = (g: Game) => {
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+  };
+  const eight: SceneId[] = ['mem:selene:1', 'mem:noel:1', 'mem:safira:1', 'mem:bobby:1', 'mem:sylvie:1', 'mem:liz:1', 'mem:scarlet:1', 'mem:chizuru:1'];
+
+  it('a return that leaves four or more untold after its night saves one dawn memory; the departure plays it first', () => {
+    const g = inTown(eight);
+    trip(g);
+    expect(g.night).toHaveLength(3);                       // backlog 8, cap 3: five left
+    const dawn = g.state.story.dawn!;
+    expect(dawn).toBe(dawnMemory(g.state, [...g.arrival.filter((id) => id.startsWith('mem:')), ...g.night]));
+    expect(g.night).not.toContain(dawn);
+    expect(g.state.story.untold).toContain(dawn);
+    expect(dawn.split(':')[1]).not.toBe(g.night[g.night.length - 1].split(':')[1]);
+    for (const id of [...g.arrival, ...g.night]) g.sceneDone(id, 'played');
+    expect(g.departScenes()).toEqual([dawn]);              // exactly one
+    expect(g.sceneDone(dawn, 'played')).toBe(true);
+    expect(g.state.story.seen).toContain(dawn);
+    expect(g.state.story.fresh).not.toContain(dawn);
+    expect(g.state.story.untold).not.toContain(dawn);
+    expect(g.state.story.dawn).toBeUndefined();
+    expect(g.departScenes()).toEqual([]);
+    // a small backlog leaves no dawn
+    const few = inTown(eight.slice(0, 5));
+    trip(few);
+    expect(few.state.story.dawn).toBeUndefined();
+    expect(few.departScenes()).toEqual([]);
+  });
+
+  it('the dawn is saved with the return: a reload offers the same one', () => {
+    const storage = memoryStorage();
+    const g = inTown(eight, storage);
+    trip(g);
+    for (const id of [...g.arrival, ...g.night]) g.sceneDone(id, 'played');   // town saves at each
+    const dawn = g.state.story.dawn!;
+    const b = Game.boot(calm(), storage);
+    expect(b.state.story.dawn).toBe(dawn);
+    expect(b.departScenes()).toEqual([dawn]);
+    expect(b.sceneDone(dawn, 'played')).toBe(true);
+    expect(Game.boot(calm(), storage).departScenes()).toEqual([]);
+  });
+
+  it('the eve takes priority on its own departure; the dawn goes before the lone morning', () => {
+    const g = inTown(eight);
+    trip(g);
+    for (const id of [...g.arrival, ...g.night]) g.sceneDone(id, 'played');
+    const dawn = g.state.story.dawn!;
+    Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    g.state.story.queue = ['finale-eve'];
+    expect(g.departScenes()).toEqual(['finale-eve']);
+    g.state.story.seen.push('finale-eve', 'bellkeeper-arrives', 'mem:hero:9');
+    g.state.party.roster.hero.memories = 9;
+    g.state.story.queue = ['hero-alone'];
+    expect(g.departScenes()).toEqual([dawn, 'hero-alone']);
+  });
+
+  it("the eve's line said clears the dawn: its own departure plays none, reloaded or not (review)", () => {
+    const storage = memoryStorage();
+    const g = inTown(eight, storage);
+    trip(g);
+    for (const id of [...g.arrival, ...g.night]) g.sceneDone(id, 'played');
+    const dawn = g.state.story.dawn!;
+    expect(dawn).toBeDefined();
+    Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    g.state.story.queue = ['finale-eve'];
+    expect(g.departScenes()).toEqual(['finale-eve']);
+    expect(g.sceneDone('finale-eve', 'played')).toBe(true);   // town saves at once
+    expect(g.state.story.dawn).toBeUndefined();
+    expect(g.departScenes()).toEqual([]);
+    const b = Game.boot(calm(), storage);
+    expect(b.state.story.dawn).toBeUndefined();
+    expect(b.departScenes()).toEqual([]);
+    expect(b.state.story.untold).toContain(dawn);           // not told: still 新 in the handbook
+  });
+
+  it('a reveal or confession waiting blocks the dawn: the piece stays untold and new (controller ruling 2026-10-24)', () => {
+    const g = inTown(eight);
+    trip(g);
+    for (const id of [...g.arrival, ...g.night]) g.sceneDone(id, 'played');
+    const dawn = g.state.story.dawn!;
+    expect(g.departScenes()).toEqual([dawn]);
+    for (const alone of ['rin-reveal', 'rin-confess'] as SceneId[]) {
+      g.state.story.queue = [alone];
+      expect(g.departScenes(), alone).toEqual([]);
+      expect(g.sceneDone(dawn, 'played'), alone).toBe(false);   // not due either
+    }
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.state.story.untold).toContain(dawn);           // untold: the handbook still marks it 新
+    expect(g.state.story.seen).not.toContain(dawn);
+    expect(g.state.story.dawn).toBeUndefined();
+  });
+
+  it('the dawn pick goes once told some other way, once the backlog is under four, and on departing', () => {
+    const g = inTown(eight);
+    trip(g);
+    for (const id of [...g.arrival, ...g.night]) g.sceneDone(id, 'played');
+    const dawn = g.state.story.dawn!;
+    // read early in the handbook: it is told, and no other piece takes its place
+    expect(g.tellEarly(dawn)).toBe(true);
+    expect(g.state.story.dawn).toBeUndefined();
+    expect(g.departScenes()).toEqual([]);
+    // a backlog under four at the departure: none
+    const h = inTown(eight);
+    trip(h);
+    for (const id of [...h.arrival, ...h.night]) h.sceneDone(id, 'played');
+    const other = (h.state.story.untold ?? []).filter((id) => id !== h.state.story.dawn);
+    h.tellEarly(other[0]);
+    h.tellEarly(other[1]);
+    expect(h.state.story.untold).toHaveLength(3);
+    expect(h.departScenes()).toEqual([]);
+    // a departure leaves no pick behind
+    expect(h.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(h.state.story.dawn).toBeUndefined();
+  });
+});
+
+describe('story L: a group scene missed expires cleanly (controller ruling 2026-10-24)', () => {
+  it('its cast never met in its two chances: no trace in the queue, the seen, the night or the save, and meeting them later brings nothing back', () => {
+    const R = { act2: 'group:act2', act3: 'group:act3', act4: 'group:act4' } as const;
+    Object.assign(REACTIONS, R);
+    try {
+      const storage = memoryStorage();
+      const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+      g.state.story.queue = [];
+      g.state.story.seen = ['prologue', 'prologue-inn'];
+      g.state.party = meet(g.state.party, 'selene', 1);   // Noel never met
+      g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
+      const trip = () => { expect(g.depart(MAIN, 1)).toEqual({ ok: true }); expect(g.returnToTown()).toBe(true); for (const id of [...g.arrival, ...g.night]) g.sceneDone(id, 'played'); };
+      trip();   // act 2's arrival: the first chance
+      expect(g.state.story.reacts).toEqual({ 'group:act2': 0 });
+      trip();   // the second
+      expect(g.state.story.reacts).toEqual({ 'group:act2': 1 });
+      trip();   // expired
+      const everywhere = () => [...g.state.story.queue, ...g.state.story.seen, ...g.state.story.fresh, ...(g.state.story.tonight ?? []), ...g.arrival, ...g.night, ...Object.keys(g.state.story.reacts ?? {})];
+      expect(everywhere().filter((id) => id.startsWith('group:'))).toEqual([]);
+      const r = loadGame(storage);
+      expect(r.status).toBe('ok');
+      expect(r.status === 'ok' && r.state.story.reacts).toEqual({});
+      // Noel met afterwards: act 2's group stays gone
+      g.state.party = meet(g.state.party, 'noel', 1);
+      trip();
+      trip();
+      expect(everywhere().filter((id) => id.startsWith('group:'))).toEqual([]);
+      expect(handbook(g.state).truths.find((t) => t.stage === 'act2')!.scenes.map((e) => e.scene)).toEqual(['act2']);
+      expect(Game.boot(calm(), storage).night.filter((id) => id.startsWith('group:'))).toEqual([]);
+    } finally {
+      for (const k of ['act2', 'act3', 'act4'] as const) delete REACTIONS[k];
+    }
   });
 });
 

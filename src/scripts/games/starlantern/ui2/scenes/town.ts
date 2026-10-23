@@ -1,6 +1,6 @@
 import { CHARACTERS } from '../../data/characters';
-import type { SceneId } from '../../data/story/scenes';
-import { NPC_NAMES, STORY } from '../../data/story.zh-TW';
+import { sceneKind, type SceneId } from '../../data/story/scenes';
+import { NIGHT_PLACE, NPC_NAMES, STORY, type ScriptLine } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { art } from '../../render/artPaths';
 import type { ArtIndex } from '../../render/textures';
@@ -16,7 +16,7 @@ import type { UiAction } from '../input';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
-import { playAndRecord, storyCtx } from '../story';
+import { playAndRecord, playBeat, playNight, shouldPlay, storyCtx, type SceneOpts } from '../story';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge', 'handbook', 'settings'] as const;
@@ -47,11 +47,15 @@ export class TownScene implements Scene {
   private talk: Dialogue;
   private root!: HTMLElement;
   private ask: MenuView | null = null;
-  /** The story scene on screen, if any: it takes the actions while it plays. */
-  private playing: ReturnType<typeof playAndRecord> | null = null;
+  /** The story scene (or a night's beat) on screen, if any: it takes the actions while it plays. */
+  private playing: { onAction(a: UiAction): void } | null = null;
+  /** Story L: a night is still to be told after the day's lines, so closing them leaves the menu shut. */
+  private nightAhead = false;
+  /** Story L: the night is on; the HUD and the menu stay away from its first memory to its last. */
+  private inNight = false;
 
   constructor(private ctx: SceneCtx, charsPerSecond = textCps(ctx)) {
-    this.talk = new Dialogue(charsPerSecond, () => { if (this.playing) return; this.menuWin?.removeAttribute('inert'); this.backEl?.removeAttribute('inert'); });
+    this.talk = new Dialogue(charsPerSecond, () => { if (this.playing || this.nightAhead) return; this.menuWin?.removeAttribute('inert'); this.backEl?.removeAttribute('inert'); });
   }
 
   enter(root: HTMLElement): void {
@@ -76,11 +80,14 @@ export class TownScene implements Scene {
    * day's line. A return home (`RETURNS`) used to replace the day's line with what came home, and a return is nearly every
    * visit, so about 60 written lines (the town's, Rin's, the bellkeeper's) were almost never seen: now it follows the
    * notice (staging S2). Only an interface notice (saved, save failed...) still stands alone.
+   * Story L spec §4.5: the night comes last (`playNight`). A memory the day owes (Lorne's, Rin's) is in the day's list,
+   * ahead of the scene that needs it, under the night's card all the same: it is the night of the return.
    */
   private async arrive(): Promise<void> {
     const game = this.ctx.game;
+    this.nightAhead = game.night.some((id) => shouldPlay(id, storyCtx(this.ctx).mode));
     try {
-      for (const id of [...game.arrival]) await this.playScene(id);
+      for (const id of [...game.arrival]) await this.playScene(id, sceneKind(id) === 'memory' ? { place: NIGHT_PLACE } : {});
     } catch (e) {
       // A broken scene must not lock the town: say so in the console and carry on to the day's line.
       console.error('starlantern: arrival scene failed', e);
@@ -100,7 +107,45 @@ export class TownScene implements Scene {
     // The day's line. With nothing before it, it is drawn from the game rng as it always was; after a notice it is picked
     // without a draw, so the rng stream (the next portal roll, the next run's seed) is what it was before staging S2.
     if (!notice || RETURNS.has(notice)) says.push(this.dayLine(says.length === 0));
-    void (async () => { for (const l of says) await this.speak(l.who, l.text); })();
+    for (const l of says) await this.speak(l.who, l.text);
+    await this.playNight();
+  }
+
+  /**
+   * Story L spec §4.5, §4.4.1: the night's memories, after the day's lines, under the night's card (`NIGHT_PLACE`) with the
+   * town put away until the last one ends. Between two memories the night's beat (`Game.takeBeat`), with its speaker's
+   * plate and face. One the story setting does not show is recorded as auto (new in the handbook), with no beat around it.
+   */
+  private async playNight(): Promise<void> {
+    const shown = this.nightAhead;
+    if (shown) { this.inNight = true; this.putAway(true); }
+    try {
+      await playNight([...this.ctx.game.night], storyCtx(this.ctx), (id, o) => this.playScene(id, o), (line) => this.sayBeat(line));
+    } catch (e) {
+      console.error('starlantern: night scene failed', e);
+    } finally {
+      this.nightAhead = false;
+      this.inNight = false;
+      this.talk.setPlace(null);
+      if (shown) {
+        this.putAway(false);
+        this.menuWin.removeAttribute('inert');
+        this.backEl.removeAttribute('inert');
+      }
+    }
+  }
+
+  /** The beat between two memories (spec §4.4.1): one line, the night's card kept up. */
+  private async sayBeat(line: ScriptLine): Promise<void> {
+    const p = playBeat(this.talk, line, storyCtx(this.ctx));
+    this.playing = p;
+    try { await p.done; } finally { this.playing = null; }
+  }
+
+  /** The menu, 返回 and the HUD out of the way of a story scene (staging S1), or back. */
+  private putAway(on: boolean): void {
+    if (on) { this.menuWin.setAttribute('inert', ''); this.backEl.setAttribute('inert', ''); }
+    for (const e of [this.menuWin, this.backEl, ...this.hud]) e.classList.toggle('slx-cmd-hidden', on);
   }
 
   /**
@@ -128,17 +173,17 @@ export class TownScene implements Scene {
    * Plays one arrival scene with the menu hidden (the face stands over its last row) and records it. The HUD goes too
    * (staging S1): the place plate would say 露米亞 over an inn at night, and the gold has nothing to do with a scene.
    */
-  private async playScene(id: SceneId): Promise<void> {
-    this.menuWin.setAttribute('inert', '');
-    this.backEl.setAttribute('inert', '');
-    for (const e of [this.menuWin, this.backEl, ...this.hud]) e.classList.add('slx-cmd-hidden');
+  private async playScene(id: SceneId, o: SceneOpts = {}): Promise<void> {
+    // One the story setting does not show is only recorded (auto): the town stays as it is.
+    if (!shouldPlay(id, storyCtx(this.ctx).mode)) { await playAndRecord(this.talk, id, storyCtx(this.ctx), o).done; return; }
+    this.putAway(true);
     try {
-      const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
+      const p = playAndRecord(this.talk, id, storyCtx(this.ctx), o);
       this.playing = p;
       await p.done;
     } finally {
       this.playing = null;
-      for (const e of [this.menuWin, this.backEl, ...this.hud]) e.classList.remove('slx-cmd-hidden');
+      if (!this.inNight) this.putAway(false);
     }
   }
 

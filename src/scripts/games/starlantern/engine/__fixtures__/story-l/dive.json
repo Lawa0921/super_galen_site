@@ -1,0 +1,51 @@
+{
+  "memories": {
+    "hero": 2,
+    "rin": 2,
+    "noel": 0,
+    "chizuru": 0,
+    "liz": 0,
+    "sylvie": 0,
+    "scarlet": 0,
+    "selene": 0,
+    "safira": 0,
+    "bobby": 0
+  },
+  "oath": null,
+  "memoryDraws": [
+    7,
+    0,
+    0,
+    11
+  ],
+  "pity": {
+    "rin": 0,
+    "hero": 0
+  },
+  "trail": [
+    "1:map",
+    "2:map",
+    "3:map",
+    "3:boss:clear",
+    "1:map",
+    "2:map",
+    "3:map",
+    "4:map",
+    "5:map",
+    "5:boss:town",
+    "1:map",
+    "2:map",
+    "3:map",
+    "4:map",
+    "5:town",
+    "1:map",
+    "2:map",
+    "3:map",
+    "4:map",
+    "5:map",
+    "5:boss:map"
+  ],
+  "fights": 21,
+  "rounds": 92,
+  "battleLog": "008cdb818ef7884ceead113e45d06909c5c29a2f966091bbb5aba9d7476c6b96"
+}

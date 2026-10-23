@@ -228,8 +228,9 @@ describe('glimmers', () => {
     }
   });
 
-  it('a new run starts with no glimmers, drops or plays', () => {
+  it('a new run starts with no glimmers or drops, and keeps no played depths (story L)', () => {
     const run = newRun(1, 'mainline', 'plain', 1);
-    expect(run).toMatchObject({ glimmers: {}, memoryDraws: 0, dropped: {}, played: [] });
+    expect(run).toMatchObject({ glimmers: {}, memoryDraws: 0, dropped: {} });
+    expect(run).not.toHaveProperty('played');   // a memory never plays in the labyrinth now
   });
 });

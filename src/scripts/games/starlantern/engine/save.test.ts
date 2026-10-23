@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
 import { SAVE_VERSION, newGame, type GameState } from './state';
 import { STANDARD_LINEUP } from './party';
@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import type { CharacterId } from './types';
 import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
+import { NIGHT_BEATS } from '../data/story.zh-TW';
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -1043,6 +1044,147 @@ describe('the rune tutorial flag in the save (plan 8g Task 1)', () => {
       const r = loadGame(st);
       if (r.status !== 'ok') throw new Error(`load: ${r.status}`);
       expect(r.state).not.toHaveProperty('runeTutorialSeen');
+    }
+  });
+});
+
+describe('story L: untold and tonight in the save (Task 2a)', () => {
+  /** A game with Rin's first two pieces held and untold. */
+  const held = (): GameState => {
+    const g = newGame();
+    g.party.roster.rin.memories = 2;
+    g.story.untold = ['mem:rin:2', 'mem:rin:1'];
+    g.story.tonight = ['mem:rin:1'];
+    return g;
+  };
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+
+  it('untold and tonight save and load; absent reads as empty', () => {
+    const st = memoryStorage();
+    const g = held();
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r.status).toBe('ok');
+    expect(r.status === 'ok' && [r.state.story.untold, r.state.story.tonight]).toEqual([['mem:rin:2', 'mem:rin:1'], ['mem:rin:1']]);
+    const bare = newGame();
+    expect(bare.story.untold).toBeUndefined();
+    expect(status(bare)).toBe('ok');
+  });
+
+  it('a save is refused when untold repeats, is seen, is queued, is not a memory, or is past what she holds; or tonight is outside untold', () => {
+    const cases: [string, (g: GameState) => void][] = [
+      ['untold repeats', (g) => { g.story.untold = ['mem:rin:1', 'mem:rin:1']; g.story.tonight = []; }],
+      ['untold is seen', (g) => { g.story.seen.push('mem:rin:1'); }],
+      ['untold is queued', (g) => { g.story.queue.push('mem:rin:2'); }],
+      ['untold is not a memory', (g) => { g.story.untold = ['mem:rin:1', 'act2']; }],
+      ['untold is past what she holds', (g) => { g.party.roster.rin.memories = 1; g.story.untold = ['mem:rin:2']; g.story.tonight = []; }],
+      ['tonight is outside untold', (g) => { g.story.tonight = ['mem:rin:1', 'mem:hero:1']; }],
+    ];
+    expect(status(held())).toBe('ok');
+    for (const [name, mut] of cases) {
+      const g = held();
+      mut(g);
+      expect(status(g), name).toBe('corrupt');
+    }
+    // and one not met holds nothing to tell
+    const stranger = newGame();
+    stranger.story.untold = ['mem:noel:1'];
+    expect(status(stranger), 'not met').toBe('corrupt');
+  });
+});
+
+// story L Task 8: the pool is written now; a test that sets its own (or none) gets the written one back after it
+const WRITTEN_BEATS = [...NIGHT_BEATS.lines];
+describe('story L: the beat cursor in the save (Task 3b)', () => {
+  afterEach(() => { NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, ...WRITTEN_BEATS); });
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+
+  it('beat saves and loads; a cursor past the pool is refused', () => {
+    NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, { who: 'narrator', text: '一' }, { who: 'narrator', text: '二' });
+    try {
+      const st = memoryStorage();
+      const g = newGame();
+      g.story.beat = 1;
+      expect(saveGame(st, g)).toBe(true);
+      const r = loadGame(st);
+      expect(r.status === 'ok' && r.state.story.beat).toBe(1);
+      for (const bad of [2, -1, 0.5, '1', null]) {
+        const b = newGame();
+        (b.story as { beat?: unknown }).beat = bad;
+        expect(status(b), String(bad)).toBe('corrupt');
+      }
+      expect(status(newGame())).toBe('ok');   // absent reads as 0
+    } finally {
+      NIGHT_BEATS.lines.splice(0);
+    }
+    // with no pool written there is no cursor to keep
+    const g = newGame();
+    g.story.beat = 0;
+    expect(status(g)).toBe('corrupt');
+  });
+});
+
+describe('story L: the reaction slot in the save (Task 5)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+
+  it('reacts saves and loads; a seen or unknown group, or a value other than 0 and 1, is refused', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.story.reacts = { 'group:act2': 0, 'group:act4': 1 };
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && r.state.story.reacts).toEqual({ 'group:act2': 0, 'group:act4': 1 });
+    expect(status(newGame())).toBe('ok');   // absent reads as empty
+    const empty = newGame();
+    empty.story.reacts = {};
+    expect(status(empty)).toBe('ok');
+    const cases: [string, unknown, string[]?][] = [
+      ['an unknown group', { 'group:act1': 0 }],
+      ['not a group', { act2: 0 }],
+      ['a value of 2', { 'group:act2': 2 }],
+      ['a value of -1', { 'group:act2': -1 }],
+      ['a string', { 'group:act2': '0' }],
+      ['not an object', ['group:act2']],
+      ['null', null],
+      ['a seen group', { 'group:act2': 0 }, ['group:act2']],
+    ];
+    for (const [name, reacts, seen] of cases) {
+      const b = newGame();
+      (b.story as { reacts?: unknown }).reacts = reacts;
+      if (seen) b.story.seen.push(...(seen as never[]));
+      expect(status(b), name).toBe('corrupt');
+    }
+  });
+});
+
+describe('story L: the dawn pick in the save (controller ruling 2026-10-24)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  /** Rin's first three pieces held and untold, the third the dawn's. */
+  const held = (): GameState => {
+    const g = newGame();
+    g.party.roster.rin.memories = 3;
+    g.story.untold = ['mem:rin:1', 'mem:rin:2', 'mem:rin:3'];
+    g.story.tonight = ['mem:rin:1'];
+    g.story.dawn = 'mem:rin:3';
+    return g;
+  };
+
+  it('dawn saves and loads; one outside untold, in tonight, or not a memory is refused', () => {
+    const st = memoryStorage();
+    expect(saveGame(st, held())).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && r.state.story.dawn).toBe('mem:rin:3');
+    expect(status(newGame())).toBe('ok');   // absent: no dawn
+    const cases: [string, (g: GameState) => void][] = [
+      ['outside untold', (g) => { g.story.untold = ['mem:rin:1', 'mem:rin:2']; }],
+      ['in tonight', (g) => { g.story.tonight = ['mem:rin:1', 'mem:rin:3']; }],
+      ['not a memory', (g) => { (g.story as { dawn?: unknown }).dawn = 'act2'; }],
+      ['not a scene', (g) => { (g.story as { dawn?: unknown }).dawn = 3; }],
+    ];
+    for (const [name, mut] of cases) {
+      const g = held();
+      mut(g);
+      expect(status(g), name).toBe('corrupt');
     }
   });
 });

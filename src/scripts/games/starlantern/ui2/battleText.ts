@@ -56,12 +56,20 @@ export function levelUpLines(ups: LevelUp[], party: Party): { text: string; cls:
   return lines;
 }
 
-/** One line per memory piece, shard or town fragment a glimmer, boss or elite handed out. */
+/**
+ * One line per shard or town fragment a glimmer, boss or elite handed out, and one caption per person who remembered
+ * something, however many of her pieces came at once (story L spec §4.2: 「〇〇想起了什麼。」, where her first piece fell).
+ */
 export function fragmentLines(gained: FragmentGain[]): string[] {
-  return gained.map((g) => {
-    if (g.kind === 'piece') return T.ui2.memory.piece(CHARACTERS[g.id].name, g.n);
-    if (g.kind === 'shard') return T.ui2.memory.shard(SHARD_NAMES[g.grade]);
+  const told = new Set<string>();
+  return gained.flatMap((g) => {
+    if (g.kind === 'piece') {
+      if (told.has(g.id)) return [];
+      told.add(g.id);
+      return [T.ui2.memory.recalled(CHARACTERS[g.id].name)];
+    }
+    if (g.kind === 'shard') return [T.ui2.memory.shard(SHARD_NAMES[g.grade])];
     const item = TOWN_FRAGMENTS.find((f) => f.id === g.id)?.item ?? g.id;
-    return T.ui2.memory.town(fragmentName(item) ?? g.id);
+    return [T.ui2.memory.town(fragmentName(item) ?? g.id)];
   });
 }

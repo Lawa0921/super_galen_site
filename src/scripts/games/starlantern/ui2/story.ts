@@ -1,10 +1,11 @@
 import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { chainLength } from '../data/story/chains';
-import { MAJOR_SCENES, heavyScene, type SceneId } from '../data/story/scenes';
-import { NPC_NAMES, STORY, linesWhen, type NpcId, type ScriptLine, type Speaker } from '../data/story.zh-TW';
+import { MAJOR_SCENES, heavyScene, sceneKind, type SceneId } from '../data/story/scenes';
+import { WARM_MOODS } from '../data/story/tone';
+import { NIGHT_PLACE, NPC_NAMES, STORY, linesWhen, type NpcId, type Place, type ScriptLine, type Speaker } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import type { Game } from '../engine/game';
-import { memoriesOf } from '../engine/progression';
+import { storyPieces } from '../engine/story/events';
 import type { GameState } from '../engine/state';
 import type { CharacterId } from '../engine/types';
 import { NORMAL_SMILES, art, type StoryMood } from '../render/artPaths';
@@ -23,10 +24,10 @@ export interface StoryCtx { game: Game; art: ArtIndex; mode: StoryMode }
 export const storyCtx = (ctx: SceneCtx): StoryCtx => ({ game: ctx.game, art: ctx.art, mode: ctx.settings?.get().story ?? DEFAULT_SETTINGS.story });
 
 const MAJOR = new Set<SceneId>(MAJOR_SCENES);
-/** Whether a scene starts by itself: every one, only the major ones, or none. */
+/** Whether a scene starts by itself: every one, only the major ones (a group scene counts as one, story L spec §5.1), or none. */
 export function shouldPlay(id: SceneId, mode: StoryMode): boolean {
   if (mode === 'all') return true;
-  return mode === 'major' && MAJOR.has(id);
+  return mode === 'major' && (MAJOR.has(id) || sceneKind(id) === 'group');
 }
 
 /** The town people who have a published face: the facility keeper each one stands in. */
@@ -43,8 +44,8 @@ export const GRAVE: ReadonlySet<StoryMood> = new Set<StoryMood>(['serious', 'sad
 export const GRAVE_FALLBACK: Partial<Record<StoryMood, StoryMood[]>> = {
   shaken: ['sad'], solemn: ['serious'], vow: ['serious'], distant: ['wistful', 'sad'], wistful: ['sad'],
 };
-/** The glad faces (staging S3): a smiling normal says the same thing, so any scene may borrow it for them. */
-export const HAPPY: ReadonlySet<StoryMood> = new Set<StoryMood>(['smile', 'laugh', 'wink', 'grin', 'excited', 'smug', 'scheming', 'blush']);
+/** The glad faces (staging S3): a smiling normal says the same thing, so any scene may borrow it for them (story L: `WARM_MOODS`). */
+export const HAPPY: ReadonlySet<StoryMood> = WARM_MOODS;
 /**
  * The nearest face for a mood that is neither glad nor normal (staging S3, 2026-10-23), tried in order in a heavy scene:
  * a fright reads as sorrow, a start or a frown as gravity, a vision as longing. The grave faces keep their
@@ -97,10 +98,8 @@ export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: Sto
 
 /** A scene's lines without the ones whose condition does not hold for this game. */
 export function linesOf(id: SceneId, s: GameState): ScriptLine[] {
-  const full = CHARACTER_IDS.filter((c) => {
-    const m = s.party.roster[c];
-    return !!m && memoriesOf(m) >= chainLength(c);
-  });
+  // story L spec §4.9: a companion is full once her last piece is told; Lorne and Rin once they hold it all.
+  const full = CHARACTER_IDS.filter((c) => !!s.party.roster[c] && storyPieces(s, c) >= chainLength(c));
   return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath, seen: s.story.seen });
 }
 
@@ -115,17 +114,21 @@ function sayLine(talk: Dialogue, line: ScriptLine, ctx: StoryCtx, first: Speaker
   return talk.say(plate ?? sp.name, line.text, face);
 }
 
+/** How a caller sets a scene (story L plan ruling 3): `place`, the card up from its first line (a line's own place replaces it). */
+export interface SceneOpts { place?: Place }
+
 /**
  * Plays a scene in the dialogue box. While it plays the caller hands every action to `onAction`:
  * confirm turns the page, cancel (Esc, X, right click) stops and shows the summary instead.
  */
-export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void } {
+export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOpts = {}): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void } {
   let finished = false;
   let summary: Promise<void> | null = null;
   const lines = linesOf(id, ctx.game.state);
   const first = firstSpeaker(lines);
   const heavy = heavyScene(id);
   talk.hold(true);
+  if (o.place) talk.setPlace(o.place);
 
   const run = async (): Promise<'done' | 'skipped'> => {
     try {
@@ -199,7 +202,7 @@ export function playLines(talk: Dialogue, lines: ScriptLine[], ctx: StoryCtx, pl
  * Plays scene `id` and records it with the game: played or skipped as the player chose, or `auto` (nothing shown) when the
  * story setting skips it. Every screen that plays a due scene goes through here, so none writes its own copy of this.
  */
-export function playAndRecord(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: Promise<void>; onAction(a: UiAction): void } {
+export function playAndRecord(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOpts = {}): { done: Promise<void>; onAction(a: UiAction): void } {
   if (!shouldPlay(id, ctx.mode)) {
     ctx.game.sceneDone(id, 'auto');
     return { done: Promise.resolve(), onAction() {} };
@@ -207,6 +210,30 @@ export function playAndRecord(talk: Dialogue, id: SceneId, ctx: StoryCtx): { don
   // A scene that fails is still recorded (as auto, so it reads as new in the handbook) and the error goes on to the caller.
   const failed = (e: unknown): never => { ctx.game.sceneDone(id, 'auto'); throw e; };
   let p: ReturnType<typeof playScene>;
-  try { p = playScene(talk, id, ctx); } catch (e) { return failed(e); }
+  try { p = playScene(talk, id, ctx, o); } catch (e) { return failed(e); }
   return { done: p.done.then((how) => { ctx.game.sceneDone(id, how === 'done' ? 'played' : 'skipped'); }, failed), onAction: p.onAction };
+}
+
+/**
+ * Story L spec §4.5, §4.4.1: plays `ids` as a night, through the caller's `play` (each screen plays and records a scene its
+ * own way): a memory under the night's card (`NIGHT_PLACE`), any other scene under its own, and between two memories the
+ * night's beat (`Game.takeBeat`), said by `beat`. A memory the story setting does not show is recorded (auto) with no beat
+ * around it.
+ */
+export async function playNight(ids: SceneId[], ctx: StoryCtx, play: (id: SceneId, o: SceneOpts) => Promise<void>, beat: (line: ScriptLine) => Promise<void>): Promise<void> {
+  let prev: SceneId | null = null;
+  for (const id of ids) {
+    const memory = sceneKind(id) === 'memory';
+    const show = shouldPlay(id, ctx.mode);
+    const line = show && memory && prev ? ctx.game.takeBeat(prev, id) : null;
+    if (line) await beat(line);
+    await play(id, memory ? { place: NIGHT_PLACE } : {});
+    if (show) prev = memory ? id : null;
+  }
+}
+
+/** The night's beat (spec §4.4.1): one line with its speaker's plate and face, the night's card kept up. */
+export function playBeat(talk: Dialogue, line: ScriptLine, ctx: StoryCtx): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void } {
+  talk.setPlace(NIGHT_PLACE);
+  return playLines(talk, [line], ctx);
 }

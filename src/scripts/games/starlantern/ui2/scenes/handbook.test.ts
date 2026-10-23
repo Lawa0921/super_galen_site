@@ -6,7 +6,9 @@ import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { Game } from '../../engine/game';
 import { meet } from '../../engine/party';
-import { constRng } from '../../engine/testing';
+import type { SaveStorage } from '../../engine/save';
+import { restoreNight } from '../../engine/story/nights';
+import { constRng, memoryStorage } from '../../engine/testing';
 import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
@@ -18,8 +20,8 @@ import { HELL_BOSS_DEPTH, NIGHTMARE_DEPTH } from '../../engine/tiers';
 
 const H = T.ui2.handbook;
 
-function setup(arg?: string, prep?: (g: Game) => void, artIndex: ArtIndex = NO_ART) {
-  const game = new Game(constRng(0.5), null);
+function setup(arg?: string, prep?: (g: Game) => void, artIndex: ArtIndex = NO_ART, storage: SaveStorage | null = null) {
+  const game = new Game(constRng(0.5), storage);
   prep?.(game);
   const root = document.createElement('div');
   const go = vi.fn();
@@ -85,19 +87,77 @@ describe('HandbookScene', () => {
     expect(t.game.state.story.fresh).toEqual([]);
   });
 
-  it('a found piece still waiting in the queue is not replayable, and a missing one shows ？？？ with its hint', () => {
+  it('a found piece still untold is playable and new, and a missing one shows ？？？ with its hint (story L)', () => {
     const t = setup(undefined, (g) => {
       meetAll(g, ['noel'], 2);
       g.state.story.seen = [memScene('noel', 1)];
-      g.state.story.queue = [memScene('noel', 2)];
+      g.state.story.untold = [memScene('noel', 2)];
     });
+    expect(t.fresh(CHARACTERS.noel.name)).toBe(true);   // her row is new while a piece is untold
     t.pick(CHARACTERS.noel.name);
     const labels = t.labels();
-    expect(labels[0]).toBe(STORY.scenes[memScene('noel', 1)].title);
-    expect(labels.slice(1)).toEqual(Array(4).fill(H.unknown));
-    expect(t.rows()[1].textContent).not.toBe(H.unknown);   // the hint sits beside it
-    t.rows()[1].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(labels.slice(0, 2)).toEqual([STORY.scenes[memScene('noel', 1)].title, STORY.scenes[memScene('noel', 2)].title]);
+    expect(t.fresh(labels[0])).toBe(false);
+    expect(t.fresh(labels[1])).toBe(true);
+    expect(labels.slice(2)).toEqual(Array(3).fill(H.unknown));
+    expect(t.rows()[2].textContent).not.toBe(H.unknown);   // the hint sits beside it
+    t.rows()[2].dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(t.root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(true);
+  });
+
+  it('playing an untold piece tells it: seen, not new, out of untold (story L Task 4)', async () => {
+    const piece = memScene('noel', 2);
+    const storage = memoryStorage();
+    const t = setup(undefined, (g) => {
+      meetAll(g, ['noel'], 2);
+      g.state.story.seen = [memScene('noel', 1)];
+      g.state.story.untold = [piece];
+      g.state.story.tonight = [piece];
+    }, NO_ART, storage);
+    const done = vi.spyOn(t.game, 'sceneDone');
+    t.pick(CHARACTERS.noel.name);
+    const title = STORY.scenes[piece].title;
+    t.pick(title);
+    expect(t.root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(false);
+    await t.skipScene();
+    const story = t.game.state.story;
+    expect(story.seen).toContain(piece);
+    expect(story.fresh).not.toContain(piece);
+    expect(story.untold).toEqual([]);
+    expect(story.tonight).toEqual([]);
+    expect(done).not.toHaveBeenCalled();                 // a handbook read moves nothing else
+    expect(t.fresh(title)).toBe(false);
+    t.s.onAction('cancel');
+    expect(t.fresh(CHARACTERS.noel.name)).toBe(false);
+    // in town it is saved at once
+    expect(Game.boot(constRng(0.5), storage).state.story.seen).toContain(piece);
+    // a told piece read again stays told, and only its 新 mark moves
+    t.game.state.story.fresh = [piece];
+    t.pick(CHARACTERS.noel.name);
+    t.pick(title);
+    await t.skipScene();
+    expect(t.game.state.story.fresh).toEqual([]);
+    expect(t.game.state.story.seen.filter((id) => id === piece)).toHaveLength(1);
+  });
+
+  it('a piece told early in the handbook is skipped that night (story L Task 4)', async () => {
+    const [first, second] = [memScene('noel', 1), memScene('selene', 1)];
+    const t = setup('dungeon', (g) => {
+      g.phase = 'map';   // read in the labyrinth: told now, saved with the next save in town
+      meetAll(g, ['noel', 'selene'], 1);
+      g.state.story.untold = [first, second, memScene('hero', 1)];
+      g.state.story.tonight = [first, second];
+      g.night = [first, second];
+    });
+    t.pick(CHARACTERS.noel.name);
+    t.pick(STORY.scenes[first].title);
+    await t.skipScene();
+    const s = t.game.state;
+    expect(s.story.untold).toEqual([second, memScene('hero', 1)]);
+    expect(s.story.tonight).toEqual([second]);
+    expect(t.game.night).toEqual([second]);
+    // the night left: only the rest, and nobody in its place
+    expect(restoreNight(s, [])).toEqual({ before: [], night: [second] });
   });
 
   it("the prologue, Rin's reveal, a chat and a return can be replayed from their tabs", async () => {

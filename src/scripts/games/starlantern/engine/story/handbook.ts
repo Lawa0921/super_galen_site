@@ -4,7 +4,7 @@ import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from '../../data/story/fragments';
-import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, banterScene, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
+import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, banterScene, groupScene, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { memoriesOf } from '../progression';
@@ -12,10 +12,15 @@ import type { GameState } from '../state';
 import type { CharacterId, Element } from '../types';
 import { MEETINGS } from '../../data/meetings';
 import { followedLeads, nextLead, type Lead } from './leads';
+import { storyPieces } from './events';
 
-/** `seen` is what makes a piece replayable: a found piece can still be waiting in the story queue. */
-export interface PiecePage { n: number; scene: SceneId; found: boolean; seen: boolean; fresh: boolean; hint: string }
-export interface MemoryPage { id: CharacterId; met: boolean; pieces: PiecePage[] }
+/**
+ * A found piece plays when it is told (`seen`) or still untold (story L spec §4.7: the handbook may tell it early). `fresh` is
+ * the 新 mark: opened by the story setting's auto-skip and not read since, or untold.
+ */
+export interface PiecePage { n: number; scene: SceneId; found: boolean; seen: boolean; untold: boolean; fresh: boolean; hint: string }
+/** `fresh`: her row's 新 mark, while any piece of hers is new (untold, or not read since an auto-skip). */
+export interface MemoryPage { id: CharacterId; met: boolean; fresh: boolean; pieces: PiecePage[] }
 /** A scene the handbook can replay: only scenes already seen are listed. */
 export interface SceneEntry { scene: SceneId; title: string; fresh: boolean }
 export interface PersonPage { id: CharacterId; met: boolean; title: string; segments: string[]; scenes: SceneEntry[] }
@@ -49,20 +54,22 @@ function entryMaker(s: GameState) {
 /** Everything the adventurer's handbook shows, from the state alone. */
 export function handbook(s: GameState): Handbook {
   const { entry, entries, fresh, seen } = entryMaker(s);
+  const untold = new Set<SceneId>(s.story.untold ?? []);
   const memories = CHARACTER_IDS.map((id): MemoryPage => {
     const have = memoriesOf(s.party.roster[id]);
-    return {
-      id, met: s.party.recruited.includes(id),
-      pieces: CHAINS[id].pieces.map((_, i) => {
-        const scene = memScene(id, i + 1);
-        return { n: i + 1, scene, found: i + 1 <= have, seen: seen.has(scene), fresh: fresh.has(scene), hint: hintOf(id, i) };
-      }),
-    };
+    const met = s.party.recruited.includes(id);
+    const pieces = CHAINS[id].pieces.map((_, i): PiecePage => {
+      const scene = memScene(id, i + 1);
+      const found = i + 1 <= have;
+      const waits = found && untold.has(scene);
+      return { n: i + 1, scene, found, seen: seen.has(scene), untold: waits, fresh: fresh.has(scene) || waits, hint: hintOf(id, i) };
+    });
+    return { id, met, fresh: met && pieces.some((p) => p.found && (p.seen || p.untold) && p.fresh), pieces };
   });
   const people = CHARACTER_IDS.map((id): PersonPage => {
     const m = s.party.roster[id];
     const met = s.party.recruited.includes(id);
-    const have = memoriesOf(m);
+    const have = storyPieces(s, id);   // story L spec §4.9: a companion's page opens by her pieces told
     const len = chainLength(id);
     // Rin's fourth page tells her choice: it opens with her oath, not with a piece (continuity fix 3).
     const k = !met ? 0 : id === 'rin' && m.oath ? 4 : have >= len ? 3 : have >= Math.ceil(len / 2) ? 2 : 1;
@@ -105,9 +112,15 @@ export function handbook(s: GameState): Handbook {
       default: return s.story.nodes.includes(stage) && seen.has(TRUTH_SCENE[stage]);
     }
   };
-  // The after page replays the finale, then the lantern festival (story depth plan ruling 12).
+  // The after page replays the finale, then the lantern festival (story depth plan ruling 12). Story L: an act's page
+  // replays its group scene after the act (spec §5.1), and the act 4 page then the night before the descent.
+  const pageScenes = (stage: Stage): SceneId[] => {
+    if (stage === 'after') return ['finale', 'epilogue'];
+    if (stage === 'act2' || stage === 'act3' || stage === 'act4') return [TRUTH_SCENE[stage], groupScene(stage), ...(stage === 'act4' ? ['finale-eve' as const] : [])];
+    return [TRUTH_SCENE[stage]];
+  };
   const truths = STAGES.map((stage): TruthPage => ({
-    stage, unlocked: open(stage), text: open(stage) ? STORY.truths[stage] : null, scenes: entries(stage === 'after' ? ['finale', 'epilogue'] : [TRUTH_SCENE[stage]]),
+    stage, unlocked: open(stage), text: open(stage) ? STORY.truths[stage] : null, scenes: entries(pageScenes(stage)),
   }));
   const followed = followedLeads(s);
   const leads: LeadsPage = { current: nextLead(s), followed, allMet: followed.length === MEETINGS.length };

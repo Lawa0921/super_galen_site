@@ -3,12 +3,15 @@
 // Read by `voice.test.ts` (the gates), `story.test.ts` (pins) and `readAloud.ts` (the read-aloud dump).
 import type { CharacterId } from '../../engine/types';
 import { CHARACTERS, CHARACTER_IDS } from '../characters';
-import { NPC_NAMES, STORY, linesWhen, type LineWhen, type NpcId, type ScriptLine, type Speaker } from '../story.zh-TW';
+import { NIGHT_BEATS, NPC_NAMES, STORY, linesWhen, type LineWhen, type NpcId, type ScriptLine, type Speaker } from '../story.zh-TW';
 import type { TownFragmentId } from './fragments';
-import { type SceneId } from './scenes';
+import { GROUP_GATE, GROUP_MIN_LINES, lineCap, type GroupScene, type SceneId } from './scenes';
 
 export interface Text { key: string; text: string; line?: ScriptLine }
-/** Every string leaf of STORY, keyed by its path; a scene line's text carries its ScriptLine. Skips who, mood, if and scene titles (interface labels). */
+/**
+ * Every string leaf of STORY, keyed by its path, and the night's beats (`nightBeats.<i>.text`, story L Task 8); a line's text
+ * carries its ScriptLine. Skips who, mood, if, a beat's tone and scene titles (interface labels).
+ */
 export function storyTexts(): Text[] {
   const out: Text[] = [];
   const walk = (v: unknown, path: string[], line?: ScriptLine): void => {
@@ -18,13 +21,14 @@ export function storyTexts(): Text[] {
       const o = v as Record<string, unknown>;
       const isLine = typeof o.who === 'string' && typeof o.text === 'string';
       for (const [k, x] of Object.entries(o)) {
-        if (k === 'who' || k === 'mood' || k === 'if') continue;
+        if (k === 'who' || k === 'mood' || k === 'if' || k === 'tone') continue;   // a beat's tone is a tag, not text (story L Task 8)
         if (k === 'title' && path.length === 2 && path[0] === 'scenes') continue;
         walk(x, [...path, k], isLine && k === 'text' ? (o as unknown as ScriptLine) : undefined);
       }
     }
   };
   for (const [k, v] of Object.entries(STORY)) walk(v, [k]);
+  walk(NIGHT_BEATS.lines, ['nightBeats']);
   return out;
 }
 
@@ -164,7 +168,6 @@ export { heavyScene } from './scenes';
 
 /** A sentence particle `p` (a character or a class) at the end of a sentence or clause. */
 export const SENTENCE_PARTICLE = (p: string): RegExp => new RegExp(`${p}(?=[。！？～」，]|……|──)`);
-const ALL_PARTICLES = '[呢吧啦喔囉嘛耶唷呀]';
 
 /** Each voice's particle budget: `mark` at most `maxShare` of their lines, `perScene` a scene, none in a heavy scene; `never` at all. */
 export const VOICE: Partial<Record<Speaker, { mark?: RegExp; maxShare?: number; perScene?: number; heavyNone?: boolean; never?: RegExp }>> = {
@@ -172,10 +175,24 @@ export const VOICE: Partial<Record<Speaker, { mark?: RegExp; maxShare?: number; 
   selene: { mark: SENTENCE_PARTICLE('呢'), maxShare: 1 / 3, perScene: 1 },
   liz: { mark: SENTENCE_PARTICLE('啦'), maxShare: 1 / 3 },
   rin: { never: SENTENCE_PARTICLE('呢') },
-  sylvie: { never: SENTENCE_PARTICLE(ALL_PARTICLES) },
+  // story L spec §7.1: a grumbling hunter now, so 啦 and 欸 come back, a fifth of her lines at most and none in a heavy scene;
+  // the other particles stay out of her mouth
+  sylvie: { mark: SENTENCE_PARTICLE('[啦欸]'), maxShare: 1 / 5, heavyNone: true, never: SENTENCE_PARTICLE('[呢吧喔囉嘛耶唷呀]') },
   scarlet: { never: SENTENCE_PARTICLE('[喔啦唷呀耶嘛]') },
   chizuru: { never: SENTENCE_PARTICLE('[喔啦唷呀耶嘛]') },
 };
+
+/**
+ * Story L spec §7.1 (Task 12): what a grumbling hunter talks about. A third of Sylvie's light lines at least name one of
+ * them: food, weather, the wind, tracks, prey.
+ */
+export const SYLVIE_WORLD = /吃|乾糧|湯|餓|雨|風|天氣|冷|熱|腳印|足跡|下風|獵物|兔|鹿|鳥/;
+/**
+ * Story L spec §7.2 (Task 13): Chizuru's old-style markers. Polite and whole, not classical: one a line at most, a quarter
+ * of her lines at most. 吾等, 謹以 and 奉於 read as translation and are never hers (`CHIZURU_NEVER`).
+ */
+export const CHIZURU_ARCHAIC = /此處|此物|莫非|甚好|謹以|何方|奉於/;
+export const CHIZURU_NEVER = /吾等|謹以|奉於/;
 
 // ---- Readings ----
 
@@ -244,4 +261,29 @@ export function pinBeat(id: SceneId, reading: Partial<LineWhen>, re: RegExp): vo
   const w: LineWhen = { ...BASE, ...reading };
   const hits = linesWhen(STORY.scenes[id].lines, w).filter((l) => re.test(l.text));
   if (hits.length !== 1) throw new Error(`pinBeat: ${id} ${JSON.stringify(reading)} has ${hits.length} lines matching ${re}${hits.map((h) => `\n  ${h.text}`).join('')}`);
+}
+
+// ---- Group scenes (story L spec §5.1, §6) ----
+
+/**
+ * Why a group scene's lines are not the shape spec §5.1 and §6 give it, or [] when they are: eight lines to its cap; one
+ * reading (no line has a condition); three to five speakers, Lorne one of them; every companion who speaks is in its cast
+ * (the ones its gate meets, and Rin, who is not at the act 4 table: §6.4); a location card on the first line; the last line
+ * narration, a thing seen (§6: the end is an action, not a conclusion). The town's people may speak; they count as speakers.
+ */
+export function groupShapeBreaks(id: GroupScene, lines: ScriptLine[]): string[] {
+  const out: string[] = [];
+  if (lines.length < GROUP_MIN_LINES || lines.length > lineCap(id)) out.push(`${id}: ${lines.length} lines, not ${GROUP_MIN_LINES} to ${lineCap(id)}`);
+  if (lines.some((l) => l.if)) out.push(`${id}: more than one reading (a line has a condition)`);
+  const speakers = [...new Set(lines.filter((l) => l.who !== 'narrator').map((l) => l.who))];
+  if (speakers.length < 3 || speakers.length > 5) out.push(`${id}: ${speakers.length} speakers, not three to five`);
+  if (!speakers.includes('hero')) out.push(`${id}: Lorne does not speak`);
+  const cast: string[] = [...(GROUP_GATE[id].met ?? []), ...(id === 'group:act4' ? [] : ['rin'])];
+  for (const who of speakers) {
+    if (who === 'hero' || !(CHARACTER_IDS as string[]).includes(who)) continue;
+    if (!cast.includes(who)) out.push(`${id}: ${who} is not in its cast (${cast.join(', ')})`);
+  }
+  if (!lines[0]?.place) out.push(`${id}: the first line carries no location card`);
+  if (lines.length && lines[lines.length - 1].who !== 'narrator') out.push(`${id}: the last line is not narration`);
+  return out;
 }

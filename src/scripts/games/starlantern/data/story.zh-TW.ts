@@ -6,7 +6,7 @@ import { MEETINGS, type Meetable } from './meetings';
 import { numeral } from './numeral';
 import { CHAINS } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
-import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
 
 export type NpcId = 'anna' | 'orik' | 'marta' | 'glen' | 'doran' | 'merchant' | 'bellkeeper';
 export const NPC_NAMES: Record<NpcId, string> = {
@@ -96,8 +96,12 @@ const nameOf = (id: CharacterId): string => CHARACTERS[id].name;
 export { numeral } from './numeral';
 
 const MAJOR_TITLES: Record<MajorScene, string> = {
-  prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', 'rin-confess': '凜的坦白', 'bellkeeper-arrives': '鐘守來到鎮上', 'hero-alone': '一個人的清晨', finale: '終幕',
+  prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', 'rin-confess': '凜的坦白', 'bellkeeper-arrives': '鐘守來到鎮上', 'hero-alone': '一個人的清晨', 'finale-eve': '下潛前的那一夜', finale: '終幕',
   epilogue: '星燈祭',
+};
+/** Story L spec §5.1: what each group scene is called in the handbook, on its act's truth page after the act. */
+export const GROUP_TITLES: Record<GroupScene, string> = {
+  'group:act2': '第二幕之後・碎片的價錢', 'group:act3': '第三幕之後・問不問', 'group:act4': '第四幕之後・桌上的錢袋',
 };
 /** What each homecoming is called in the handbook, after her name (continuity fix 2). */
 const HOME_TITLES: Record<HomeOwner, string> = { chizuru: '鎮邊的小祠', safira: '廣場上的最後一支舞', sylvie: '窗外的新芽', liz: '店門口' };
@@ -126,6 +130,106 @@ const PL = {
   edgeMorning: { text: '鎮邊・清晨' }, squareDusk: { text: '廣場・黃昏' }, square: { text: '廣場' }, festival: { text: '廣場・星燈祭之夜', night: true },
   depth16: { text: '本道第十六層' }, depth30: { text: '第三十層・燈前' }, lampBase: { text: '星燈之底' },
 } satisfies Record<string, Place>;
+/** Story L plan ruling 3: the night's card, over a return's memories (the owed ones before the day's scene, and the night's). */
+export const NIGHT_PLACE: Place = PL.innNight;
+/** 【控制者裁定 2026-10-24】 The card the dawn before departure tells its one memory under. */
+export const DAWN_PLACE: Place = PL.innDawn;
+
+/**
+ * Story L spec §4.4.1: the beats between two memories of a night, in their fixed order (the companions by `CHARACTER_IDS`,
+ * six each, then twelve of narration). `engine/story/nights.ts` `nextBeat` walks it from the save's cursor (`story.beat`).
+ */
+export interface NightBeats { lines: NightBeat[] }
+/**
+ * Story L Task 8 (cold read): a beat's tone. `quiet` (a warm drink, a door kept, a night sound, a small touch) may follow any
+ * memory; `lively` (a joke, a show-off, clapping) only a warm one (`engine/story/nights.ts` `nextBeat`). The written pool
+ * tags every line; a line with no tone (a test's pool) fits either.
+ */
+export type BeatTone = 'quiet' | 'lively';
+export interface NightBeat extends ScriptLine { tone?: BeatTone }
+/**
+ * The night's beats (story L Task 8; style bible §1.3.1; lore ledger I-191). Each companion has six, in `CHARACTER_IDS` order,
+ * then twelve of the deep night. Each line carries its tone (cold read, 2026-10-24): `quiet` (a drink, a door kept, a night
+ * sound, a small touch) may follow any memory; `lively` (a joke, a show-off, clapping) only a warm one. None touches what a
+ * memory told, says 你 or 妳 to whoever told it, names another companion (anyone may not be met yet), or leans on a stage
+ * or on Rin's choice.
+ */
+const Q = (who: CharacterId, text: string, mood?: StoryMood): NightBeat => ({ who, text, tone: 'quiet', ...(mood ? { mood } : {}) });
+const J = (who: CharacterId, text: string, mood?: StoryMood): NightBeat => ({ who, text, tone: 'lively', ...(mood ? { mood } : {}) });
+const QN = (text: string): NightBeat => ({ who: 'narrator', text, tone: 'quiet' });
+export const NIGHT_BEATS: NightBeats = {
+  lines: [
+    // Noel: loud by day; at night a kindness she will not own
+    J('noel', '「本小姐在畫樓下那隻貓，叫牠雷獸大人！牠剛才打了個呵欠，很有威嚴！」', 'smug'),
+    Q('noel', '「哼，本小姐才沒有在聽。只是剛好睡不著，剛好坐在這裡而已。」', 'pout'),
+    Q('noel', '「手帕借妳──借你──哎，誰要就拿去。本小姐才不是特地帶的。」', 'panic'),
+    Q('noel', '「燈太暗了，本小姐點一盞小雷光。很小的，不會吵到人。」'),
+    Q('noel', '「說完了？那本小姐的厲害事蹟就留到明天講。今晚……先不搶了。」', 'pout'),
+    Q('noel', '「本小姐要睡了。睡著之前，誰都不准先走。」', 'blush'),
+    // Chizuru: the rites of her shrine, kept in a room at the inn; and the year she fell asleep in
+    J('chizuru', '「近來的被子真輕。我們那時候，冬天得壓三層棉被，翻身前還得先跟神明打聲招呼。」', 'bewildered'),
+    J('chizuru', '「鎮上的守夜人，最近改敲梆子了？去年還是打鼓的。」', 'bewildered'),
+    Q('chizuru', '「香點上了。煙往窗外飄，今晚的風很溫和。」', 'solemn'),
+    Q('chizuru', '「我摺了一張護符，放在枕邊。說過心事的人，夜裡要有東西守著。」'),
+    Q('chizuru', '「我在紙上記下今天的日子。一天一道，明天再添一道。」'),
+    Q('chizuru', '「容我合掌一次。說出口的心裡話，要有人替它收好，這是我們那裡的規矩。」', 'solemn'),
+    // Liz: a price on everything but one
+    J('liz', '「瑪莎說這張床墊值三枚銀幣。我躺過了，頂多兩枚，明天找她殺價。」', 'scheming'),
+    J('liz', '「宵夜的麵包我先收起來了。不是要賣，是怕明天有人肚子餓──好啦，算你們便宜。」', 'scheming'),
+    Q('liz', '「這杯熱的不算錢。今晚的帳，我先劃掉。」'),
+    Q('liz', '「我在數今天的銅板。數錢的聲音，比較好睡。」'),
+    Q('liz', '「這盞燈的油我算過了，還能點到半夜。點著吧，不心疼。」'),
+    Q('liz', '「聽完要付錢嗎？不用啦。這種東西，我估不出價。」', 'hushed'),
+    // Sylvie: she reads the night; the wind, the insects, the tracks
+    J('sylvie', '「瑪莎的湯鹹了一點。明天下去前多裝一袋水，不然走到第三層就有人喊渴。」'),
+    Q('sylvie', '「窗縫在灌冷風，我拿布塞起來了。誰再打開，自己去睡走廊。」'),
+    Q('sylvie', '「多的被子在櫃子最下面。半夜會變冷，蓋好再睡。」'),
+    Q('sylvie', '「風停了，樹葉也不動了。明天是好天氣。」', 'alert'),
+    Q('sylvie', '「後院有腳印，小小的一串，是貓。不用管牠。」', 'alert'),
+    Q('sylvie', '「外面的蟲還在叫，代表附近沒東西在走動。安心睡啦。」'),
+    // Scarlet: a soldier's watch, kept to the letter
+    J('scarlet', '「盾已經擦了三遍。再擦一遍，應該就能拿來當鏡子用。」', 'serious'),
+    Q('scarlet', '「門閂檢查了三次，三次都很牢。回報完畢。」', 'serious'),
+    Q('scarlet', '「靴子擺在門邊了，鞋尖朝外。有事的話，我穿上就能走。」', 'serious'),
+    Q('scarlet', '「我聽到了。這些話我會守著，一個字也不會傳出去。」', 'serious'),
+    Q('scarlet', '「下一班守夜是我。蠟燭剪短了，剛好點到換班。」'),
+    Q('scarlet', '「說完了就請休息。門口由我負責，今晚沒有任何東西進得來。」'),
+    // Selene: the moon says it, and then she takes it back
+    J('selene', '「今晚的月亮缺了右邊一角。不是壞兆頭──大概不是。」', 'foresee'),
+    J('selene', '「月亮往西邊走了一點。今晚大家都睡得著──啊，這句不算。」', 'foresee'),
+    Q('selene', '「月亮剛才也在聽。它不會說出去的，我也不會呢。」', 'smile'),
+    Q('selene', '「我把窗簾拉開一點。月光照進來，比燈溫柔。」', 'wistful'),
+    Q('selene', '「我在窗邊數星星，數到一半，忘了數到哪裡。這不算預言，請別記下來。」', 'wistful'),
+    Q('selene', '「今晚的月亮，適合說話。說完了，也適合睡覺。」'),
+    // Safira: on the beat, even sitting down
+    J('safira', '「睡不著？那來跳一小段啊──不跳？坐著打拍子也算喔。」', 'wink'),
+    J('safira', '「一、二──小洛，你的腳在桌子底下跟著拍子，我看見了喔。」', 'laugh'),
+    Q('safira', '「說完啦？最後一拍，我輕輕敲在桌上，就當收尾。」', 'smile'),
+    Q('safira', '「這一段停在這裡，剛剛好。下一拍，誰想接都可以喔。」', 'smile'),
+    Q('safira', '「我坐這裡，不吵你們。今晚我的腳也想休息一下。」'),
+    Q('safira', '「一、二、三──數到八就會想睡了。我小時候都這樣數。」', 'smile'),
+    // Bobby: out loud, one step after another
+    J('bobby', '「我把瑪莎的湯勺改好了，攪一下會自己轉三圈喔！等一下下，我拿給大家看！」', 'excited'),
+    J('bobby', '「這扇窗會叫，是因為鉸鏈乾了。先上油，再把螺絲鎖緊，然後──對了，然後是去睡覺。」', 'focused'),
+    Q('bobby', '「我把蠟燭的芯剪平了。火不跳，影子就不晃，大家比較好睡。」', 'focused'),
+    Q('bobby', '「聽完以後，我腦袋裡的齒輪轉得好慢。先讓它停一下下，等它自己轉回來。」'),
+    Q('bobby', '「我小聲一點收工具。一支一支放回去，不會吵到人。」'),
+    Q('bobby', '「洛恩哥，我想好要說什麼了。第一件，說出來的人很厲害。第二件……我還在想。」', 'grin'),
+    // the deep night itself
+    QN('樓下的貓跳上窗台，在玻璃上按了兩個梅花印，又跳下去了。'),
+    QN('瑪莎提著燈走過走廊，在每一扇門前停一下，聽聽裡面還有沒有聲音。'),
+    QN('遠處傳來守夜人的梆子，敲了兩下。鎮上的窗戶又暗了一扇。'),
+    QN('風把窗框吹得喀喀響，桌上的燈火跟著歪了一下。'),
+    QN('爐火裡的柴塌了一塊，火星往上竄了一下，又安靜下來。'),
+    QN('樓梯的第三階吱了一聲。不知道是誰下樓倒水，還是那隻貓。'),
+    QN('窗外下起小雨，打在屋簷上，一滴一滴，不急不慢。'),
+    QN('走廊盡頭，瑪莎的房門底下還透著光，筆尖沙沙地響。'),
+    QN('隔壁房的鼾聲停了一下，又接上了。'),
+    QN('桌上的茶涼了，杯緣留著一圈淡淡的水痕。'),
+    QN('月光從窗縫斜斜照進來，落在地板上，慢慢挪了一寸。'),
+    QN('有人把一條毯子輕輕搭在椅背上，又走開了。'),
+  ],
+};
 
 /** The finished script, scene by scene (plan 6c). Read the style bible and the lore ledger before adding to it. */
 const SCRIPT: Partial<Record<SceneId, Written>> = {
@@ -186,7 +290,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       NP('石板路的盡頭有一座鐘樓。小女孩每天坐在台階上，等那口大鐘響。'),
       NP('「它不會響的。」大人們笑著摸她的頭，「它要是響了，我們就有工作了。」'),
       { who: 'rin', text: '「一座很大的鐘，從來不響。我好像每天都坐在下面等它。」' },
-      N('她拍掉膝上的灰站起來。手停在半空，像在等誰來摸她的頭。'),
+      N('她抬頭看了一眼，好像在等誰的手放上來。'),
     ],
     summary: '凜想起鐘樓下的童年。那口大鐘從來不響；大人說，它響了才有工作。',
   },
@@ -287,7 +391,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('泛黃的一頁。找到的地點：傳送門廣場。身上的東西：一把刻著怪紋路的劍。記得的最後一句話：「洛」。'),
       { who: 'anna', text: '「比我出生還早。每隔幾十年就有一筆，名字每次都不一樣，地點、那把劍和那個『洛』字，從來沒變過。」' },
       // Story depth design §7.3: the last entry's name is the last line on her list (I-09, I-168); true before and after her choice.
-      N('凜湊過來看那幾個名字。看到最後一筆，她按住了領口的小銅鐘。'),
+      N('凜湊過來看那幾個名字。樓上有人走過，她猛地回頭看樓梯口，手按住了領口的小銅鐘。'),
       N('每一筆的最後一欄，不是「回到迷宮，未歸」，就是「死亡」。洛恩數著「死亡」，數到第四筆，就不數了。'),
       { who: 'hero', mood: 'smile', text: '「看來我很難殺。」' },
       N('安娜沒有笑。她指著「死亡」旁邊的小字。每一筆，都補著同一個名字。'),
@@ -308,15 +412,74 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'hero', mood: 'distant', text: '「燈芯燒完了，那個人就被吐回地面，什麼都不記得。然後，又會被引著走回深處，再點一次燈。」' },
       at(PL.guild, N('冒險者公會。安娜聽完，翻開那本舊登記簿，指著邊上一行褪色的小字。')),
       { who: 'anna', text: '「靜鐘會的人說，那個走出來的人『走到哪裡，暮霧就跟到哪裡』。」' },
-      { who: 'anna', text: '「他們看反了。不是有人走出來，霧才變濃。是燈芯快燒完了，霧才變濃。」' },
+      { who: 'anna', text: '「霧濃是燈快乾了。這筆帳，別記在你頭上。」' },
       { who: 'hero', mood: 'sad', text: '「那我……為什麼讀得懂那塊碑？」' },
       // Rin's lines know whether she has made her choice: act 4 may play before her reveal or after it (U1).
-      { who: 'narrator', text: '凜一直站在門邊。她的手按著刀柄，像是在等某個聲音。', if: { oath: false } },
-      { who: 'rin', mood: 'guarded', text: '「我出去走走，這裡太安靜了。」', if: { oath: false } },
+      { who: 'rin', mood: 'guarded', text: '「我去外面看看。」', if: { oath: false } },
       { who: 'rin', mood: 'sad', text: '「我等過那口鐘響，等的原來是一個誤會。」', if: { oath: true } },
       { who: 'rin', mood: 'serious', text: '「洛恩，他們錯了。……你不是霧。」', if: { oath: true } },
     ],
     summary: '地底的古城艾斯特拉。石碑說，有人自願當燈芯，叫守燈人。霧變濃是因為燈芯快燒完，靜鐘會看反了。洛恩讀得懂碑文。',
+  },
+  // Story L Task 9 (spec §6.1; lore ledger I-193): the night of act 2, its first thing. Rin would sell, Noel would absorb,
+  // Selene leaves it to a coin until Lorne catches it. One reading; the last line is what the finale calls back.
+  'group:act2': {
+    lines: [
+      at(PL.innDinner, N('月影旅館的晚飯。碗收走以後，桌上攤開一塊布，布上是找不到主人的碎片。瑟蕾拿起一片，對著燈看了很久。')),
+      { who: 'rin', mood: 'serious', text: '「一共十一片。明天全部拿去交易所換錢，照人頭分，誰也不欠誰。」' },
+      { who: 'noel', mood: 'smug', text: '「換錢？裡面是光耶！吸進去，本小姐的雷能再亮一倍。」' },
+      { who: 'rin', mood: 'serious', text: '「吸進去，別人的東西就長在妳身上。」' },
+      { who: 'noel', mood: 'smug', text: '「說得好像妳很懂。」' },
+      { who: 'rin', mood: 'normal', text: '「不懂。所以明天賣。」' },
+      { who: 'noel', mood: 'smug', text: '「瑟蕾，妳盯著那片看了那麼久，一定看到了什麼吧？看到又不講，很賊耶。」' },
+      N('瑟蕾摸出一枚銅板。'),
+      { who: 'selene', mood: 'foresee', text: '「那就……問問月亮吧。」' },
+      N('她把它往上一彈。洛恩伸手接住，放回她的手心。'),
+      { who: 'hero', mood: 'smile', text: '「妳自己說。」' },
+      { who: 'selene', mood: 'smile', text: '「不賣也不吸。我那一份，請瑪莎收進廚房的抽屜，等它的主人。」' },
+      N('凜把自己那份包好，擱在腳邊。大家看著瑟蕾的時候，諾艾兒把一片滑進了袖子；洛恩看見了，什麼也沒說。'),
+    ],
+    summary: '晚飯桌上攤著無主的碎片。凜要賣，諾艾兒要吸，瑟蕾想丟銅板，被洛恩接住。諾艾兒藏起一片，他看見了。',
+  },
+  // Story L Task 10 (spec §6.2; lore ledger I-194): the night of act 3. Sylvie would ask Rin, Bobby would rather not know,
+  // Lorne will not. They take her for one the society hunts too, never the one it sent; she comes back with the water.
+  'group:act3': {
+    lines: [
+      at(PL.innDeepNight, N('月影旅館，深夜。凜把窗閂扣好，才提著水桶下樓打水。房裡剩下洛恩、希爾薇、波比，和一盞燈。')),
+      { who: 'sylvie', mood: 'alert', text: '「樓上一有腳步聲，她就按住領口回頭看。兔子聽見狗叫，就是那個樣子。洛恩，你去問，她只聽你的。」' },
+      { who: 'hero', mood: 'sad', text: '「不問。她想說的時候，自己會說。」' },
+      { who: 'bobby', mood: 'sad', text: '「凜姊如果也被人追，一定不想講吧。我們一問……她、她就非講不可了耶。那、那還是不要問。」' },
+      { who: 'sylvie', mood: 'serious', text: '「有人盯你盯了好幾輩子。凜不講，你也不問，那我要怎麼守？」' },
+      { who: 'bobby', mood: 'grin', text: '「那、那我去幫她修修那個鐘好了。她每晚都在擦，一定是哪裡怪怪的。先拆下來，再──」' },
+      N('門響了。凜提著水桶站在門口，沒有人知道她聽見了多少。'),
+      { who: 'rin', mood: 'guarded', text: '「要問什麼？」' },
+      { who: 'hero', mood: 'smile', text: '「問妳水打了沒。」' },
+      { who: 'rin', mood: 'normal', text: '「打了。來回四十二步。」' },
+      { who: 'sylvie', mood: 'serious', text: '「今晚起，我也睡門口。地板硬就硬，守夜一人一半，誰都別想多扛。」' },
+      N('凜和希爾薇並排坐在門邊，中間多了一床被子。凜看著床上的洛恩，希爾薇看著凜。波比把被子拉過了頭。'),
+    ],
+    summary: '登記簿那一夜。希爾薇要洛恩去問凜，波比說不要問，洛恩不問。凜打水回來，希爾薇把被子鋪到了門邊。',
+  },
+  // Story L Task 11 (spec §6.3; lore ledger I-195): after act 4, Rin on the roof either side of her choice. Chizuru's festival
+  // song breaks off on the line the stone said; Liz would buy him out, Safira would run, Scarlet would go in his place.
+  'group:act4': {
+    lines: [
+      at(PL.guildClosed, N('冒險者公會，打烊以後。安娜回家了，舊登記簿還攤在桌上。凜一個人上了屋頂。')),
+      { who: 'chizuru', mood: 'solemn', text: '「『春祭的燈，誰提下去？提燈的人，不留名字──』」' },
+      N('歌停在那一句。莉茲把錢袋重重擱上桌；莎菲拉從椅背上拎起包袱，甩上了肩。'),
+      { who: 'liz', mood: 'serious', text: '「我算過了。這一袋，夠在鎮上頂一間小店，外加三年的租金。老大，不下去了，你來顧店。」' },
+      { who: 'safira', mood: 'laugh', text: '「開什麼店，乾脆走遠一點！明天一早往南，霧總不能追到天涯海角吧。」' },
+      { who: 'liz', mood: 'scheming', text: '「跑路最貴啦。妳那個包袱，撐不過十天的伙食錢。店至少天天有進帳。」' },
+      { who: 'scarlet', mood: 'vow', text: '「燈要燈芯，我去。盾本來就是拿來用掉的。」' },
+      { who: 'liz', mood: 'serious', text: '「騎士大姊，妳把自己算成零，這帳要怎麼對？」' },
+      { who: 'scarlet', mood: 'serious', text: '「帳不用對。要有人去，騎士排第一個。」' },
+      { who: 'safira', mood: 'sad', text: '「那妳去當燈芯，就不會有人難過了嗎？」' },
+      { who: 'hero', mood: 'distant', text: '「歌裡只有一個提燈的。那就我。」' },
+      { who: 'liz', mood: 'sad', text: '「一個人你個頭啦！錢都擺上桌了，你還要自己下去？」' },
+      { who: 'chizuru', mood: 'sad', text: '「那首歌的後半，提燈的那位沒有回來。我從小唱到大……那一段，我不唱了。」' },
+      N('莎菲拉放下剛拎起的包袱，第一個坐了回去。莉茲沒有收回那袋錢，它在桌上放了一整夜，天亮時還在。'),
+    ],
+    summary: '打烊後的公會。千鶴的祭典歌唱到一半就停了。莉茲把錢袋放上桌要他別下去，絲嘉蕾說她去當燈芯。',
   },
   // Task 6: Lorne's memories (spec §4, §3.4, §3.6, §4.6, §8.4). Pieces 1–8 hint; piece 9 names the keeper, piece 10 the key.
   'mem:hero:1': {
@@ -333,7 +496,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       NP('下著雪的院子。他握著一把木劍，手凍得發紅，一遍又一遍地揮。'),
       NP('有人從背後扶正他的手腕：「太緊了。劍是放出去的，不是抓著的。」'),
       { who: 'hero', mood: 'smile', text: '「難怪我老是握太緊。」' },
-      N('他照著那句話，把握劍的手鬆開一點。這一劍，比剛才快。'),
+      N('他拿起靠在床邊的劍，照著那句話，把手鬆開一點。劍尖不晃了。'),
     ],
     summary: '洛恩想起雪地裡有人教他握劍：劍是放出去的，不是抓著的。',
   },
@@ -342,7 +505,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       NP('秋天的獵場。他蹲在草裡，把細繩繞成活結，繫在兩棵樹之間。'),
       NP('「不用殺牠。」老獵人說，「讓牠慢下來、站不穩，剩下的交給同伴。」'),
       { who: 'hero', mood: 'distant', text: '「絆住牠，不是為了殺。這件事，我的手還記得。」' },
-      N('那天紮營，洛恩在營地四周拉了幾道細繩。半夜有東西絆了一跤，叫了一聲就跑了。誰也沒受傷。'),
+      N('當晚洛恩在後院拉了幾道細繩。半夜有東西絆了一跤，叫了一聲就跑了。誰也沒受傷。'),
     ],
     summary: '洛恩想起老獵人教他設陷阱：不用殺，讓牠慢下來就好。',
   },
@@ -507,8 +670,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'narrator', text: '沒有人動。瑪莎端著湯鍋站在廚房門口，也沒有動。', if: { notMet: 'scarlet', notFull: 'hero' } },
       { who: 'narrator', text: '沒有人動。火堆劈啪響了一聲，誰也沒有去撥。', if: { notMet: 'scarlet', full: 'hero' } },
       { who: 'scarlet', mood: 'vow', text: '「凜小姐，請退後三步。這一次，誰也別想從他背後過去。」', if: { met: 'scarlet' } },
-      { who: 'sylvie', mood: 'alert', text: '「屋頂上那一晚，我說過了。妳走路，像在追獵物。」', if: { met: 'sylvie', seen: 'banter:rin-sylvie:1' } },
-      { who: 'sylvie', mood: 'alert', text: '「我一直覺得，妳走路像在追獵物。」', if: { met: 'sylvie', notSeen: 'banter:rin-sylvie:1' } },
+      // Story L Task 15 (spec §10): one reading, heard on the roof or not
+      { who: 'sylvie', mood: 'alert', text: '「我一直覺得，妳走路像在追獵物。」', if: { met: 'sylvie' } },
       { who: 'rin', mood: 'serious', text: '「妳說對了。那時候，我自己也不知道在追什麼。」', if: { met: 'sylvie' } },
       { who: 'liz', mood: 'serious', text: '「所以這一路，妳一直欠我們一句實話。我們背靠背打的時候，妳的刀朝著哪邊？」', if: { met: 'liz' } },
       { who: 'rin', mood: 'serious', text: '「是我欠的。今天還給你們。」', if: { met: 'liz' } },
@@ -554,11 +717,10 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'rin', mood: 'serious', text: '「要出去，得先過我這裡。」' },
       { who: 'hero', mood: 'sad', text: '「燈要的是記憶。妳們跟下去，交出去的就回不來了。」' },
       { who: 'rin', mood: 'serious', text: '「你說過，下次也拜託我。這就是下次。」' },
-      // Scarlet gives him back his own words from chat:scarlet:2 (「不必替我擋」), as he said them; her address follows her memories.
-      { who: 'scarlet', mood: 'vow', text: '「『不必替我擋』，是閣下說的。這一句，原封不動奉還。」', if: { met: 'scarlet', seen: 'chat:scarlet:2', notFull: 'scarlet' } },
-      { who: 'scarlet', mood: 'vow', text: '「『不必替我擋』，是你說的，洛恩。這一句，原封不動奉還。」', if: { met: 'scarlet', seen: 'chat:scarlet:2', full: 'scarlet' } },
-      { who: 'scarlet', mood: 'vow', text: '「盾還在，輪不到閣下一個人去擋。」', if: { met: 'scarlet', notSeen: 'chat:scarlet:2', notFull: 'scarlet' } },
-      { who: 'scarlet', mood: 'vow', text: '「盾還在，輪不到你一個人去擋，洛恩。」', if: { met: 'scarlet', notSeen: 'chat:scarlet:2', full: 'scarlet' } },
+      // Scarlet gives him back his own words from chat:scarlet:2 (「不必替我擋」), as he said them. Story L Task 15 (spec §10):
+      // she names him neither way, so her memories no longer split the line; only the chat heard or not does.
+      { who: 'scarlet', mood: 'vow', text: '「『不必替我擋』。這一句，原封不動奉還。」', if: { met: 'scarlet', seen: 'chat:scarlet:2' } },
+      { who: 'scarlet', mood: 'vow', text: '「盾還在，輪不到誰一個人去擋。」', if: { met: 'scarlet', notSeen: 'chat:scarlet:2' } },
       { who: 'narrator', text: '房門外傳來腳步聲，不只一個人的。', if: { notMet: 'scarlet' } },
       N('走廊上，大家都醒著。瑪莎披著外套，端著熱湯站在樓梯口。'),
       { who: 'marta', text: '「真要走，也先吃了再走。吃飽了，就不想走了。」' },
@@ -566,6 +728,14 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('那一天，洛恩沒有一個人出門。天亮以後，大家一起下去了。'),
     ],
     summary: '天還沒亮，洛恩想一個人下迷宮，門口的凜、走廊上的夥伴和端著熱湯的瑪莎，誰也沒讓他一個人走。',
+  },
+  // Story L (spec §4.8): the night before the descent, on the first departure once her choice is made and the main road
+  // reaches depth 26. One frame line, shown, not said (Task 8): no lamp goes out; up to three companions' untold memories follow.
+  'finale-eve': {
+    lines: [
+      at(NIGHT_PLACE, N('下到最後一層的前一晚。月影旅館的燈，一盞也沒有熄。')),
+    ],
+    summary: '下到最後一層的前一晚，旅館裡沒有人睡得著。',
   },
   // Task 7: Rin's chats. 2 waits for act 2, 3 for act 3 (she looks away only from her 4th piece), 4 for her choice.
   // 2 and 3 can be delayed past her choice (one chat per return): each reading has its own lines.
@@ -614,7 +784,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       NP('山丘上的石屋。銀盆裡盛著水，水面映著月亮。村裡的人排著隊，來問明天的事。'),
       NP('她說那座橋會塌。從那天起，沒有人走那座橋，也沒有人去修。入秋的第一場雨，橋塌了。'),
       { who: 'selene', mood: 'sad', text: '「月亮說的。……是月亮說的吧？」' },
-      N('洛恩沒有說話，只是把提燈往她那邊挪近了一點。'),
+      N('洛恩沒有說話，只是把桌上的燈往她那邊挪近了一點。'),
     ],
     summary: '瑟蕾想起自己是讀月相的占星師。她說橋會塌，橋就塌了。她開始害怕自己說出口的預言。',
   },
@@ -622,8 +792,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('滿月的夜。銀盆裡的水自己亮了起來，映出一道從地底往上走的背影。'),
       NP('很多人在喊同一個名字。那個從深處走出來的人走過的地方，一盞很大的燈重新亮了。'),
-      { who: 'selene', mood: 'foresee', text: '「那是滿月給我看的結局。很亮也很暖。」' },
-      N('瑟蕾偷偷看了一眼走在最前面的洛恩，又趕快抬頭看天頂。'),
+      { who: 'selene', mood: 'foresee', text: '「滿月給我看的結局……好亮好暖喔。」' },
+      N('瑟蕾偷偷看了一眼燈下的洛恩，又趕快轉頭，去找窗外的月亮。'),
     ],
     summary: '滿月的夜，瑟蕾在水盆裡看見一個光明的結局：從深處走出來的人被很多人記住，燈重新亮了。',
   },
@@ -632,7 +802,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       NP('迷宮的入口，暮霧從門縫裡吐出來。她捧著銀盆，在霧前跪下。'),
       NP('她把盆裡的水倒進霧裡：「看見的，我不要了。就讓未來自己走過來吧。」'),
       { who: 'hero', text: '「是妳自己交出去的？」' },
-      { who: 'selene', mood: 'sad', text: '「兩種結局，我都看見了……我怕一開口，就替所有人選了其中一個。」' },
+      { who: 'selene', mood: 'sad', text: '「兩種結局，我都看見了。我怕一開口，就替所有人選了其中一個。」' },
     ],
     summary: '瑟蕾想起，她看見的結局不是被迷宮奪走的，是她自己交出去的。她怕自己的話替所有人選了未來。',
   },
@@ -670,12 +840,11 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'chat:selene:2': {
     lines: [
-      // Her last piece can come before this chat (one chat per return): after it she calls him 「洛恩」 (I-22, I-58).
-      { who: 'selene', mood: 'foresee', text: '「洛恩先生，今晚的月亮很好說話。替您讀一件未來的事吧，什麼都可以──早餐除外。」', if: { notFull: 'selene' } },
-      { who: 'selene', mood: 'foresee', text: '「洛恩，今晚的月亮很好說話。替你讀一件未來的事吧，什麼都可以──早餐除外。」', if: { full: 'selene' } },
+      // Her last piece can come before this chat (one chat per return), and it turns 「洛恩先生／您」 into 「洛恩／你」 (I-22,
+      // I-58). Story L Task 15 (spec §10): she names him neither way here, so it reads one way.
+      { who: 'selene', mood: 'foresee', text: '「今晚的月亮很好說話。想讀哪一件未來的事？什麼都可以──早餐除外。」' },
       { who: 'hero', text: '「明天大家有沒有都回來。」' },
-      { who: 'selene', mood: 'smile', text: '「那一件，不用讀月亮也知道呢。您每一次，都把大家帶回來了。」', if: { notFull: 'selene' } },
-      { who: 'selene', mood: 'smile', text: '「那一件，不用讀月亮也知道呢。你每一次，都把大家帶回來了。」', if: { full: 'selene' } },
+      { who: 'selene', mood: 'smile', text: '「那一件，不用讀月亮也知道呢。每一次，大家都是跟著同一個人回來的。」' },
     ],
     summary: '瑟蕾問洛恩想知道什麼未來。他只想知道明天大家有沒有都回來。',
   },
@@ -685,8 +854,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('山腰的神社，石階兩旁積著雪。神主替她繫好袖帶，把長槍交到她手上。'),
       NP('「去封住迷宮的裂口吧。」神主說，「春祭之前，回來。」'),
-      { who: 'chizuru', mood: 'solemn', text: '「不過是幾日前的事。春祭之前，須得歸山。」' },
-      N('千鶴抬頭看了看迷宮的天頂，像在找太陽，好算出今天是幾月幾日。'),
+      { who: 'chizuru', mood: 'solemn', text: '「明明是前幾天的事。春祭之前，我得回山上去。」' },
+      N('千鶴推開窗看了看天色，掐著手指算今天是幾月幾日。算到一半，又從頭算起。'),
     ],
     summary: '千鶴想起神主送她出發：去封住迷宮的裂口，春祭之前回來。她以為那只是幾天前的事。',
   },
@@ -695,7 +864,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       NP('迷宮深處，寒氣從石縫裡湧出來。她把槍插進冰面，閉上眼睛，念起封印的祝詞。'),
       NP('冰順著槍柄往上爬，爬上她的手、她的袖子。祝詞念到最後一句，她的呼吸也結成了霜。'),
       { who: 'chizuru', mood: 'sad', text: '「封印沒有念完。最後一句，凍在嘴裡了。」' },
-      N('千鶴把槍插進石縫，閉上眼睛，從第一句重新念起。凜在旁邊等，一直等到她念完。'),
+      N('千鶴把槍靠在窗邊，閉上眼睛，從第一句重新念起。凜坐在門邊等，一直等到她念完。'),
     ],
     summary: '千鶴想起封印的儀式。祝詞念到最後一句，她和槍一起被凍進了冰裡。',
   },
@@ -703,7 +872,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('從冰裡看出去，世界像隔著一層水。有人提著燈從冰前走過，又有人走過。'),
       NP('起初是草鞋與皮甲，後來是她沒見過的長靴與鐵扣。走過的人，衣裳換了好幾回樣式。'),
-      { who: 'chizuru', mood: 'bewildered', text: '「幾日之間，換不了這麼多回衣裳。」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「才幾天而已，衣裳的樣式不會換這麼多回。」' },
       N('千鶴低頭看自己的袖帶。那條紅色，褪得比她以為的還要淡。'),
     ],
     summary: '千鶴想起冰外走過的冒險者，衣裳換了好幾回樣式。她在冰裡待的，不只幾天。',
@@ -722,29 +891,27 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       NP('出發的清晨。神主解下拜殿前的鈴，繫在她的槍穗上。'),
       NP('「帶著吧。」神主說，「回不來也無妨。在妳守著的地方掛上它，那裡就是神社。」'),
       { who: 'chizuru', mood: 'solemn', text: '「神主大人早就知道，我可能回不去了。」' },
-      { who: 'chizuru', mood: 'smile', text: '「洛恩大人，回城之後，我想在鎮邊蓋一座小祠，為此處的人掛上這枚鈴。」' },
+      { who: 'chizuru', mood: 'smile', text: '「洛恩大人，我想在鎮邊蓋一座小祠，為此處的人掛上這枚鈴。」' },
     ],
     summary: '槍穗上的鈴，是神主託付給千鶴的。她決定在露米亞的鎮邊蓋一座小祠，為了現在的人。',
   },
   'chat:chizuru:1': {
     lines: [
       // Read right before and after any of her pieces: the words she wrote stay true (I-58).
-      { who: 'chizuru', mood: 'bewildered', text: '「洛恩大人，公會要我寫下『記得的最後一句話』。寫完之後，我向那張表行了一禮。」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「洛恩大人，公會的表要寫『記得的最後一句話』。我寫好之後，向那張表行了一禮。」' },
       { who: 'hero', text: '「表格也要行禮？」' },
-      { who: 'chizuru', mood: 'solemn', text: '「我寫的是『春祭之前，回來。』那是送我出門的人說的，自然要行禮。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「我寫的是『春祭之前，回來。』送我出門的人說的話，自然要行禮。城裡最近連這個規矩都不講了嗎？」' },
     ],
     summary: '千鶴在公會的登記表上，寫下送她出門的人說的話：春祭之前，回來。',
   },
   'chat:chizuru:2': {
     lines: [
       at(PL.edgeMorning, N('清晨的鎮邊。千鶴搖了搖槍穗上的小鈴，閉上眼睛，等它響完。')),
-      // V2: Bobby, if met, wants to take it apart (style bible pairing); Chizuru's answer reads both ways either way.
-      { who: 'bobby', mood: 'excited', text: '「千鶴姊，那個鈴好好聽喔！裡面藏了什麼機關？借我拆開看看！」', if: { met: 'bobby' } },
-      { who: 'hero', text: '「那個鈴，是神社的？」', if: { notMet: 'bobby' } },
-      { who: 'chizuru', mood: 'solemn', text: '「拆不得。不記得是何時繫上的，只是每日聽它響一回，心便定了。」', if: { met: 'bobby', notFull: 'chizuru' } },
-      { who: 'chizuru', mood: 'solemn', text: '「拆不得。這是神主大人託付的鈴。每日聽它響一回，心便定了。」', if: { met: 'bobby', full: 'chizuru' } },
-      { who: 'chizuru', mood: 'solemn', text: '「不記得是何時繫上的。只是每日聽它響一回，心便定了。」', if: { notMet: 'bobby', notFull: 'chizuru' } },
-      { who: 'chizuru', mood: 'solemn', text: '「是神主大人託付的鈴。每日聽它響一回，心便定了。」', if: { notMet: 'bobby', full: 'chizuru' } },
+      // Story L Task 13 (spec §10): it waits for Bobby (`CHAT_GATE`), who wants to take the bell apart (style bible pairing);
+      // the reading without her is gone. Chizuru's answer still turns on her last piece, which tells her who tied the bell.
+      { who: 'bobby', mood: 'excited', text: '「千鶴姊，那個鈴好好聽喔！裡面藏了什麼機關？借我拆開看看！」' },
+      { who: 'chizuru', mood: 'solemn', text: '「拆不得。城裡最近流行把東西拆開來看嗎？這鈴是何時繫上的，我也記不得了，只知道每天聽它響一回，心就定了。」', if: { notFull: 'chizuru' } },
+      { who: 'chizuru', mood: 'solemn', text: '「拆不得。這是神主大人託付的鈴，每天聽它響一回，心就定了。」', if: { full: 'chizuru' } },
     ],
     summary: '千鶴每天清晨搖一次槍穗上的鈴，聽它響完，心就定了。',
   },
@@ -763,7 +930,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       NP('乾掉的河床。吹笛的少年跟在她後面，笛聲斷斷續續。水袋已經空了兩天。'),
       NP('她先看見了。地平線上浮著一座城，屋頂閃閃發亮。她喊著「那裡有城」，第一個跑了過去。'),
       { who: 'safira', mood: 'sad', text: '「笛子是我教他吹的。他什麼都學我，連往哪裡跑，也學我。」' },
-      N('那一整天，莎菲拉都走在隊伍的最後面。'),
+      N('莎菲拉把椅子往後拖，一直拖到所有人的背後，才坐下。'),
     ],
     summary: '沙漠裡，莎菲拉第一個看見蜃樓裡的城，第一個跑了過去。吹笛的少年跟在她後面。',
   },
@@ -792,8 +959,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('蜃樓裡的城燒了起來，火順著沙丘一路燒開。團長把她推向那道快要合上的光。'),
       NP('「進來是我選的，不是妳的錯。」團長說，「妳要繼續跳。」'),
-      N('腳下這片火海，原來就是那片沙漠。莎菲拉停下腳步，腳踝上的銅環第一次一聲也沒響。'),
-      { who: 'safira', mood: 'sad', text: '「小洛，等我一下。我想就這樣站著，把他們一個一個想一遍。……想完了，再去廣場替大家跳完。」' },
+      N('莎菲拉在房裡轉著圈，忽然停下腳步。腳踝上的銅環，這次一聲也沒響。'),
+      { who: 'safira', mood: 'sad', text: '「小洛，熾焰之地那片火海……就是我們的沙漠。等我一下，我想把他們一個一個想一遍。想完了，再去廣場替大家跳完。」' },
     ],
     summary: '團長在最後一刻把莎菲拉推出了蜃樓：妳要繼續跳。她第一次停下腳步，把團員一個一個想一遍，再去廣場替大家跳完。',
   },
@@ -808,7 +975,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'chat:safira:2': {
     lines: [
       { who: 'safira', mood: 'wink', text: '「凜凜，妳走路都沒聲音，天生是跳舞的料呀。跳一拍就好～」' },
-      { who: 'rin', text: '「一拍之後，會有第二拍。然後第三拍。」' },   // ungated: may play after her oath, where guarded is the bellkeeper's
+      { who: 'rin', text: '「一拍過了，就有第二拍。再來第三拍。」' },   // ungated: may play after her oath, where guarded is the bellkeeper's
       { who: 'safira', mood: 'laugh', text: '「哈哈，被算得一清二楚！那換小洛上台──欸，主角別跑呀！」' },
     ],
     summary: '莎菲拉想教凜跳舞，被一口回絕。她轉頭找洛恩，洛恩跑了。',
@@ -819,8 +986,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('綠得發亮的林子。她在樹皮上刻下小小的箭頭，一棵接一棵，指向林外的路。'),
       NP('「迷了路，就跟著箭頭走。」她對林子裡的孩子說，「走到底，就出得去。」'),
-      { who: 'sylvie', mood: 'sad', text: '「這箭頭是我刻的。那時候，這片沼澤還是林子。」' },
-      N('她蹲在一截爛掉的樹幹前，用指尖把箭頭上的泥，一點一點擦乾淨。'),
+      { who: 'sylvie', mood: 'sad', text: '「沼澤裡那些箭頭，是我刻的。那時候，那裡還是林子。」' },
+      N('她從箭袋裡摸出一塊帶回來的樹皮，用指尖把箭頭上的泥，一點一點擦乾淨。'),
     ],
     summary: '希爾薇在沼澤的枯木上，認出自己刻的箭頭。腐毒沼澤，以前是她守的林子。',
   },
@@ -828,8 +995,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('那一年，霧從林子深處漫了出來。樹從根開始發灰，一棵接著一棵。'),
       NP('她拉滿了弓，卻不知道該對著什麼射。霧是射不死的。'),
-      { who: 'sylvie', mood: 'serious', text: '「這裡以前有路。我閉著眼睛都走得出去。」' },
-      N('希爾薇對著沼澤的霧拉滿了弓。找了很久，還是把弦放了。'),
+      { who: 'sylvie', mood: 'serious', text: '「沼澤那一帶，以前到處都是路。我閉著眼睛都走得出去。」' },
+      N('希爾薇拿起弓，對著黑漆漆的窗外拉滿。找了很久，還是把弦放了。'),
     ],
     summary: '暮霧吞掉了希爾薇的林子。她拉滿了弓，卻沒有東西可以射。',
   },
@@ -838,7 +1005,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       NP('她在霧裡牽著一個抱著嬰兒的女人，踩著樹上的箭頭，一棵一棵往外走。'),
       NP('林子邊上透進了光。她把那一家人推出去，自己轉身，又鑽回霧裡。'),
       { who: 'sylvie', mood: 'serious', text: '「才一家。林子裡的人，不只這些。」' },
-      N('她說完就站了起來，背好弓，往沼澤更深的地方看。'),
+      N('她說完就站了起來，背好弓，走到門口，又坐了回來。'),
     ],
     summary: '希爾薇在霧裡把一家人帶到林外，又轉身回去。她說才一家而已。',
   },
@@ -864,27 +1031,23 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'chat:sylvie:1': {
     lines: [
-      // Read right before and after any of her pieces: the quiver is from her meeting, not from a memory (I-58).
-      at(PL.plazaBeforeDawn, N('天還沒亮，傳送門廣場的石階上。希爾薇在削箭桿，腳邊的箭筒插得滿滿的。')),
-      // V2: Bobby, if met, offers a machine for it; she keeps the squirrel off. Without her, Lorne counts and is corrected.
-      { who: 'bobby', mood: 'excited', text: '「希爾薇姊，我做一台自動削箭機給妳好不好？會喀啦喀啦轉的喔！」', if: { met: 'bobby' } },
-      { who: 'hero', text: '「那是第三十支了。」', if: { notMet: 'bobby' } },
-      { who: 'sylvie', mood: 'serious', text: '「不用。松鼠，回樹上去。箭筒要滿，只剩一支的時候，什麼都護不住。」', if: { met: 'bobby' } },
-      { who: 'sylvie', mood: 'serious', text: '「三十一。箭筒要滿。只剩一支的時候，什麼都護不住。」', if: { notMet: 'bobby' } },
+      // Story L Task 12 (spec §10): the bed, moved here from chat:sylvie:2, one reading. Her reason is a hunter's (a soft bed
+      // hears nothing); that she thinks she has no right to it stays under the line until her last piece (I-58, I-196).
+      at(PL.innDeepNight, N('深夜的月影旅館。希爾薇把被子摺得方方正正，像一塊豆腐，自己卻抱著弓，靠在窗邊的牆上。')),
+      { who: 'hero', text: '「那塊豆腐，是摺來看的？」' },
+      { who: 'sylvie', mood: 'serious', text: '「床太軟，一躺下去，風聲都聽不見了。總要有人醒著，聽外面有沒有東西在走。」' },
     ],
-    summary: '天亮前，希爾薇在廣場削箭。她說箭筒要滿，只剩一支的時候，什麼都護不住。',
+    summary: '希爾薇在深夜把被子摺成一塊豆腐，自己抱著弓靠在窗邊。她說床太軟，總要有人醒著聽外面的動靜。',
   },
   'chat:sylvie:2': {
     lines: [
-      // Until her last piece she thinks she has no right to the bed; after it, her seed has sprouted in the clearing (I-58, I-66).
-      // The sprouting itself is `home:sylvie`'s (continuity fix 2): here she has seen it, and takes the bed.
-      { place: PL.innDeepNight, who: 'narrator', text: '深夜的月影旅館。希爾薇把被子摺得方方正正，像一塊豆腐，自己卻抱著弓，靠在窗邊的牆上。', if: { notFull: 'sylvie' } },
-      { place: PL.innDeepNight, who: 'narrator', text: '深夜的月影旅館。被子摺得方方正正。希爾薇抱著弓靠在窗邊，又看了一眼樓下空地上的新芽。', if: { full: 'sylvie' } },
-      { who: 'hero', text: '「那塊豆腐，是摺來看的？」' },
-      { who: 'sylvie', mood: 'sad', text: '「床留給該睡的人。……我在這裡就好。」', if: { notFull: 'sylvie' } },
-      { who: 'sylvie', mood: 'smile', text: '「新芽，我看過了。今晚我睡床。換你守窗。」', if: { full: 'sylvie' } },
+      // Story L Task 12 (spec §10): it waits for her memories told whole (`CHAT_GATE`), so it reads one way: her seed has
+      // sprouted in the clearing (`home:sylvie`, continuity fix 2), she has seen it, and she takes the bed chat:sylvie:1 left.
+      { place: PL.innDeepNight, who: 'narrator', text: '深夜的月影旅館。被子又摺成了豆腐。希爾薇抱著弓靠在窗邊，往樓下空地上的新芽看了一眼。' },
+      { who: 'hero', text: '「今晚也醒著聽風？」' },
+      { who: 'sylvie', mood: 'smile', text: '「新芽，我看過了。今晚我睡床。換你守窗。」' },
     ],
-    summary: '希爾薇深夜抱著弓，靠在旅館的窗邊。洛恩問她不睡嗎。',
+    summary: '希爾薇看過樓下空地上的新芽，第一次去睡床，換洛恩守窗。',
   },
   // Task 9: Noel (spec §6, §7.5). She stole her teacher's book; its star fire burns the caster's own memory; the teacher
   // forbade it to protect her. Her last piece holds the teacher's memory too: she gives it back at the merchant's stall.
@@ -929,7 +1092,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:noel:5': {
     lines: [
       NP('迷宮的入口。有人提著燈，一遍又一遍喊著她的名字，走進了暮霧。'),
-      N('岔路口亮著一盞攤燈。諾艾兒把碎片裡的另一段光，連同那一頁，放進流浪商人的掌心。'),
+      N('隔天一早，她跑到流浪商人的攤子前，把那一頁和裹著老師記憶的碎片，一起塞進他手裡。'),
       { who: 'merchant', text: '「諾艾兒──啊，我想起來了。比起那本書，妳平安就夠了。」' },
       { who: 'noel', mood: 'smile', text: '「老師，對不起。我回來了。」' },
     ],
@@ -1001,11 +1164,11 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:bobby:5': {
     lines: [
       N('最後一角拼上了。整張構造圖在她眼前亮起來，齒輪和管線，一條一條連上。'),
-      { who: 'bobby', mood: 'serious', text: '「看懂了。燈芯少一道閥，只會吞，不會還。可是閥第一次點火，要一段不回來的光。」' },
+      { who: 'bobby', mood: 'serious', text: '「看懂了。燈芯少一道閥，只會吞，不會還。可是閥第一次點火，要一段回不來的光。」' },
       { who: 'hero', text: '「修得好嗎？」' },
       { who: 'bobby', mood: 'smile', text: '「祖先造錯的東西，我來修好。」' },
     ],
-    summary: '波比讀懂了整張構造圖：燈芯少一道閥，第一次點火要一段不回來的光。她說她來修好。',
+    summary: '波比讀懂了整張構造圖：燈芯少一道閥，第一次點火要一段回不來的光。她說她來修好。',
   },
   'chat:bobby:1': {
     lines: [
@@ -1111,7 +1274,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('鋼鐵的城牆上飄著紅旗。城下的街道，擠滿了趕集的人。'),
       NP('那一夜，暮霧從城牆的裂縫湧了進來。怪物跟著霧，爬上了城牆。'),
-      { who: 'scarlet', mood: 'sad', text: '「這座要塞，是我的國家。迷宮把它整個吞了下去。」' },
+      { who: 'scarlet', mood: 'sad', text: '「那座要塞……是我家。」' },
+      N('絲嘉蕾把盾轉過來，用袖口擦了擦上面的紋章。'),
       { who: 'scarlet', mood: 'serious', text: '「洛恩閣下，我們相遇的那扇城門，就是我的崗位。」' },
     ],
     summary: '鋼鐵要塞曾經是絲嘉蕾的國家。暮霧湧進城牆的那一夜，迷宮把它整個吞了下去。',
@@ -1158,6 +1322,8 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'chat:scarlet:2': {
     lines: [
       // Until her last piece she calls him 「洛恩閣下」 and shields him as a duty; after it, 「洛恩」, by choice (I-26).
+      // Story L Task 15: spec §10 meant to write the 「閣下」 off, but the two readings split on what her last piece undoes (the
+      // debt, the duty), so both stay.
       N('回城的路上，絲嘉蕾的盾上，又多了一道新的凹痕。'),
       { who: 'hero', text: '「盾比我還常受傷。剛才那一下，不必替我擋。」' },
       { who: 'scarlet', mood: 'serious', text: '「洛恩閣下，盾本來就是用來受傷的，替人擋刀也是騎士的職責。只是總覺得……我還欠著某個人。」', if: { notFull: 'scarlet' } },
@@ -1166,50 +1332,61 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     summary: '絲嘉蕾又替洛恩擋下了一擊。洛恩說不必，她說了自己的理由。',
   },
   // Task 14: the finale (spec §8.4, §3.4, §3.6, §6; lore ledger I-109 to I-115), rewritten by story depth Task 16 (design §7.5,
-  // ruling d). It opens where the hero's 10th piece ends and always follows Rin's choice (U3): no `if.oath`. Lorne means to
-  // burn this round's days and says what the lamp takes; each companion gives a memory of him anyway, believing it lost (met),
-  // or Lorne hears her in the lamp and names her (not met); Bobby closes the eight with her valve and its rule (her fifth
-  // piece); Lorne pays its first light with the ten pieces he found; Rin's hand on his; the bell, handed over without a word,
-  // and the keeper's last; Rin's last word. Sixteen lines in every party (R8: the faces fading after his cost); the three 「……」 are
-  // Lorne's, the keeper's and Rin's.
-  // Address forms that change with a full chain (Selene, Noel, Scarlet, and Bobby's ancestors) read both ways.
+  // ruling d) and story L Task 14 (spec §9). It opens where the hero's 10th piece ends and always follows Rin's choice (U3): no
+  // `if.oath`. Lorne means to burn this round's days and says what the lamp takes; each companion gives a night she shared
+  // with him anyway, believing it lost (met), or Lorne hears her in the lamp and names her (not met); Bobby closes the eight
+  // with her valve and its rule (her fifth piece); Lorne pays its first light with the ten pieces he found; Rin's hand on his;
+  // the bell, handed over without a word, and the keeper's last; Rin's last word. Seventeen lines in every party (R8: the
+  // faces fading after his cost; story L Task 14 cold read: one line more, why the lamp took none of theirs); the two 「……」
+  // are Lorne's and Rin's.
   finale: {
     lines: [
       { who: 'hero', mood: 'resolve', text: '「這一輪走過的每一天，就是這一次的燈芯。送到這裡就好。」' },
       { who: 'hero', mood: 'serious', text: '「這盞燈只收記憶，收了就不還。」' },   // final review: hero-alone already says 「燈要的是記憶」
-      { who: 'selene', mood: 'smile', text: '「洛恩先生，上弦那一夜經過洞窟的人，是您。這一段月光，請燈收下。」', if: { met: 'selene', notFull: 'selene' } },
-      { who: 'selene', mood: 'smile', text: '「銀盆裡很多人喊著的那個名字，是你呢。這一次，不是月亮說的。」', if: { met: 'selene', full: 'selene' } },
+      // Story L Task 14 (spec §9): each one gives back a night she shared with him. Seen: the group scene she was in, and what it
+      // left on the table (`if.seen`; a group scene can expire, spec §5.2). Missed: one of the nights at the inn, the habit her
+      // night beats show (style bible §2.2: no two share a role). Not met: Lorne hears her in the lamp (I-112). No reading
+      // turns on her pieces, so none names him in a way that does; none gives back the minute they met.
+      { who: 'selene', mood: 'wistful', text: '「那枚銅板我還收著，再也不丟了。我自己說──這一段，給燈。」', if: { met: 'selene', seen: 'group:act2' } },
+      { who: 'selene', mood: 'smile', text: '「看月亮的時候，我總會順便看看，明天大家回不回得來。這次不問月亮了──這一段，給燈。」', if: { met: 'selene', notSeen: 'group:act2' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有一段光在讀月亮。瑟蕾，還沒找到妳，但我記住妳了。」', if: { notMet: 'selene' } },
-      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，冰碎之後頭一句聽見的，是『站得起來嗎？』謹以此段，奉於燈前。」', if: { met: 'chizuru', notFull: 'chizuru' } },
-      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，『站得起來嗎？』是活人對我說的第一句。鈴在此處，此處便是神社。謹以此段，奉於燈前。」', if: { met: 'chizuru', full: 'chizuru' } },
-      { who: 'hero', mood: 'distant', text: '「燈裡有人還在念沒念完的祝詞。千鶴，封印可以停下了。」', if: { notMet: 'chizuru' } },
-      { who: 'safira', mood: 'smile', text: '「小洛，在火裡陪我跳完一整首的，是你。這一拍，送給燈唷。」', if: { met: 'safira', notFull: 'safira' } },
-      { who: 'safira', mood: 'smile', text: '「在火裡陪我跳完一整首的是小洛。這次我停下來，一拍一拍想過了，才送給燈唷。」', if: { met: 'safira', full: 'safira' } },
-      { who: 'hero', mood: 'distant', text: '「燈裡有人一個人跳著舞，等誰接上拍子。莎菲拉，我會去接。」', if: { notMet: 'safira' } },
-      { who: 'sylvie', mood: 'unguarded', text: '「毒藤是你割斷的。這一段，給燈。」', if: { met: 'sylvie', notFull: 'sylvie' } },
-      { who: 'sylvie', mood: 'unguarded', text: '「毒藤是你割斷的。這一段，給燈。新芽是我自己種的。」', if: { met: 'sylvie', full: 'sylvie' } },
-      { who: 'hero', mood: 'distant', text: '「燈裡還有一支箭在射。希爾薇，不用再一個人守了。」', if: { notMet: 'sylvie' } },
-      { who: 'noel', mood: 'pout', text: '「哼。喂，歸來者，『一起回去吧』是你先說的。這一句，本小姐借給燈。」', if: { met: 'noel', notFull: 'noel' } },
-      { who: 'noel', mood: 'blush', text: '「『一起回去吧』，是你先說的，洛恩。這一句，我自己交出去。」', if: { met: 'noel', full: 'noel' } },
+      { who: 'noel', mood: 'pout', text: '「袖子裡這一片，藏到今天了。拿去吧，本小姐自己交出去。」', if: { met: 'noel', seen: 'group:act2' } },
+      { who: 'noel', mood: 'pout', text: '「旅館的燈一暗，都是本小姐點小雷光，你每次都說剛好。這次不點雷光了，這一段，本小姐親手交出去。」', if: { met: 'noel', notSeen: 'group:act2' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有人快把自己的雷燒乾了。諾艾兒，一起回去吧。」', if: { notMet: 'noel' } },
-      { who: 'scarlet', mood: 'vow', text: '「洛恩閣下，城門前閣下問我在守什麼。以騎士的名譽，這一段交給燈。」', if: { met: 'scarlet', notFull: 'scarlet' } },
-      { who: 'scarlet', mood: 'smile', text: '「城門前，你問我在守什麼。我現在答得出來了，洛恩。」', if: { met: 'scarlet', full: 'scarlet' } },
-      { who: 'hero', mood: 'distant', text: '「燈裡有個騎士還守著城門，不肯轉身。絲嘉蕾，劍可以放下了。」', if: { notMet: 'scarlet' } },
-      { who: 'liz', mood: 'smile', text: '「老大在寶庫遞給我的那塊乾糧，我估過了──無價。這種好貨，借燈用用。」', if: { met: 'liz', notFull: 'liz' } },
-      { who: 'liz', mood: 'smile', text: '「老大遞的那塊乾糧，無價。無價的不借，送燈。回家的債，我自己去還。」', if: { met: 'liz', full: 'liz' } },
+      { who: 'sylvie', mood: 'unguarded', text: '「你不肯問，我就去睡了門邊。今晚不用守了──這一段，給燈。」', if: { met: 'sylvie', seen: 'group:act3' } },
+      { who: 'sylvie', mood: 'unguarded', text: '「我靠窗聽風的那些晚上，你都睡得很沉。那些風聲，給燈。」', if: { met: 'sylvie', notSeen: 'group:act3' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡還有一支箭在射。希爾薇，不用再一個人守了。」', if: { notMet: 'sylvie' } },
+      { who: 'liz', mood: 'smile', text: '「老大，錢袋還擺在公會的桌上，一枚都沒少。回去記得拿。」', if: { met: 'liz', seen: 'group:act4' } },
+      { who: 'liz', mood: 'smile', text: '「老大，這枚是我每晚數的第一枚銅板。這次不數了，給燈。」', if: { met: 'liz', notSeen: 'group:act4' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有人數著吃不下的金幣。莉茲，家裡有人在等。」', if: { notMet: 'liz' } },
-      // The valve and its rule (Bobby's fifth piece, design fix four): her ancestors made the key too, when her chain is whole.
-      { who: 'bobby', mood: 'focused', text: '「洛恩哥，做這把劍的，是我家的人。閥裝好了，這次真的一下下。只是第一次點火，要一段不回來的光。」', if: { met: 'bobby', full: 'bobby' } },
-      { who: 'bobby', mood: 'focused', text: '「燈芯少一道閥，只會吞，不會還──好，裝上了！洛恩哥，第一次點火，要一段不回來的光。」', if: { met: 'bobby', notFull: 'bobby' } },
+      { who: 'safira', mood: 'smile', text: '「我坐得好好的，哪裡也不去。小洛，你也別跑。」', if: { met: 'safira', seen: 'group:act4' } },
+      { who: 'safira', mood: 'smile', text: '「小洛，你的腳在桌子底下偷偷跟著我的拍子，我都看見了。最後這一拍，敲在燈上。」', if: { met: 'safira', notSeen: 'group:act4' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡有人一個人跳著舞，等誰接上拍子。莎菲拉，我會去接。」', if: { notMet: 'safira' } },
+      { who: 'scarlet', mood: 'vow', text: '「想替你當燈芯，被罵回來兩次。好，我不替你──我站你旁邊。」', if: { met: 'scarlet', seen: 'group:act4' } },
+      // Cold read: the fallback's eight were one template; Scarlet, who reports everything, says nothing here.
+      { who: 'narrator', text: '絲嘉蕾沒有開口。她把盾靠上燈座，站到洛恩身側，行了一個騎士禮。', if: { met: 'scarlet', notSeen: 'group:act4' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡有個騎士還守著城門，不肯轉身。絲嘉蕾，劍可以放下了。」', if: { notMet: 'scarlet' } },
+      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，祭歌的後半我改了。我們那時候沒人敢改，我改成：提燈的人，會回來。那一夜，交給燈。」', if: { met: 'chizuru', seen: 'group:act4' } },
+      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，我每晚在紙上添一道。冰裡的日子數不清，跟大家過的，一道一道都在。這一段，交給燈。」', if: { met: 'chizuru', notSeen: 'group:act4' } },
+      { who: 'hero', mood: 'distant', text: '「燈裡有人還在念沒念完的祝詞。千鶴，封印可以停下了。」', if: { notMet: 'chizuru' } },
+      // The valve and its rule (Bobby's fifth piece, design fix four) close the eight in every reading. Her whole chain keeps its
+      // own line: her family made his sword (I-46, foreshadowing 14), a fact only her pieces give her, so it is the one place
+      // the finale still reads a chain. Before it: seen, the bell she did not take apart; missed, the wicks she trims each night.
+      { who: 'bobby', mood: 'focused', text: '「洛恩哥，做這把劍的，是我家的人。閥裝好了，這次真的一下下。只是第一次點火，要一段回不來的光。」', if: { met: 'bobby', full: 'bobby' } },
+      { who: 'bobby', mood: 'focused', text: '「這個閥我拆拆裝裝幾十次了，凜姊的鐘倒是一次也沒碰──好，裝上了！只是第一次點火，要一段回不來的光。」', if: { met: 'bobby', notFull: 'bobby', seen: 'group:act3' } },
+      { who: 'bobby', mood: 'focused', text: '「旅館的蠟燭，我都替它們剪芯，剪平了，火才不跳。閥也一樣──好，裝上了！只是第一次點火，要一段回不來的光。」', if: { met: 'bobby', notFull: 'bobby', notSeen: 'group:act3' } },
       { who: 'hero', mood: 'distant', text: '「燈座上刻著：閥初次點火，須一段不歸之光。波比，造燈那一族的孩子，這道閥我替妳補上。」', if: { notMet: 'bobby' } },
       // The cost (ruling d): the ten pieces he found, given as the light that does not come back; 「要回來」 kept (mem:hero:10).
       { who: 'hero', mood: 'resolve', text: '「那就用我找回來的那十段記憶。我答應過那個人要回來……我回來了。」' },
       // Final review: whose memories the lamp kept. It took his ten as the light that does not come back, and so none of theirs.
-      N('光從劍上流進燈裡。那些他一張也不肯忘的臉，一張一張淡了。燈收下他的十段，大家交出去的，一段也沒拿走。'),
-      N('凜的手疊上他握著燈鑰的手。燈穩了下來，碎片的光回到每一個弄丟它的人身上。暮霧散了。天亮時，沒有一個人鬆開手。'),
+      N('光從劍上流進燈裡。十段記憶裡那些他一張也不肯忘的臉，一張一張淡了，再也不會回到他身上。'),
+      // Cold read (story L Task 14): the gifts were not wasted. The lamp takes the keeper's ten and nothing of theirs; they keep
+      // what they held out, and will tell it back to him (the festival: Marta reads him the diary).
+      N('燈只收下他的十段。大家遞出去的，原封不動留在她們手裡──往後總得有人說給他聽。'),
+      N('凜的手疊上他握著燈鑰的手。燈穩了下來，碎片的光回到每一個弄丟它的人身上，他的除外。暮霧散了。天亮時，沒有一個人鬆開手。'),
       // Ruling a: she hands the flattened bell over without a word; the keeper says the truth himself (story polish ruling 7).
-      N('回到鎮上，凜把敲平的鐘交給鐘守，一句話也沒說。他敲響結社的鐘，最後一聲。'),
-      { who: 'bellkeeper', text: '「吾等殺的一直是守燈人。每殺一次，燈就晚一次點亮。……是我殺的。靜鐘會，散了。」' },
+      N('回到鎮上，凜把那枚再也敲不響的小銅鐘還給鐘守，一句話也沒說。他敲響結社的鐘，最後一聲。'),
+      { who: 'bellkeeper', text: '「每殺一個守燈人，燈就晚一輪亮……我們管那叫守住。市集那一刀，也是我。靜鐘會，到此為止。」' },
       // Coordinator ruling (T14): Rin closes the game, echoing Lorne's line from her reveal; 「大家」 makes it everyone's.
       { who: 'rin', mood: 'smile', text: '「洛恩，明天……大家也一起回來吧。」' },
     ],
@@ -1324,9 +1501,9 @@ const HOME: Record<HomeOwner, Written> = {
   chizuru: {
     lines: [
       at(PL.edgeMorning, N('幾天後的清晨，鎮邊。一座小小的祠立在路旁，屋簷下掛著那枚鈴。')),
-      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，祠雖小，鈴一響，此處便是神社了。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，祠是小了點，可是鈴一響，此處就是神社了。」' },
       N('賣菜的老婆婆路過，合了合掌，又在祠前放了一根白蘿蔔。風一吹，鈴響了一聲。'),
-      { who: 'chizuru', mood: 'smile', text: '「第一份供品，甚好。春祭時，請務必來看。……這一回，我會等到春祭。」' },
+      { who: 'chizuru', mood: 'smile', text: '「第一份供品是白蘿蔔，我們那裡也是這樣供的。春祭時請務必來看。……這一回，我會等到春祭。」' },
     ],
     summary: '千鶴在露米亞的鎮邊蓋了一座小祠，掛上神主託付的鈴。鈴一響，這裡就是她為現在的人守著的神社。',
   },
@@ -1344,7 +1521,7 @@ const HOME: Record<HomeOwner, Written> = {
       at(PL.innDawn, N('幾天後的清晨，月影旅館。希爾薇站在窗邊，看著樓下那塊空地，看了很久。')),
       N('她種下的那顆種子，冒出了兩片小小的葉子。旁邊插著三支箭，圍成一圈，像在站崗。'),
       { who: 'sylvie', mood: 'surprised', text: '「發芽了。」' },
-      { who: 'sylvie', mood: 'smile', text: '「洛恩，林子會從這裡重新長起來。」' },
+      { who: 'sylvie', mood: 'smile', text: '「洛恩，林子會從這裡重新長起來。先得跟後院那隻貓講好，不准在這裡挖。」' },
     ],
     summary: '希爾薇種在旅館窗外空地的種子發芽了。她說林子會從這裡重新長起來。',
   },
@@ -1370,12 +1547,12 @@ const HOME: Record<HomeOwner, Written> = {
  * piece: Rin keeps her rules from before her choice, and each keeps her own reveal rules (story.test, B1). B2 writes the rest.
  */
 const BANTER: Partial<Record<SceneId, Written>> = {
-  // Safira's register (唷, 呀, ～) and her nickname for Sylvie, 「小希」 (sample §3, §7); Sylvie is terse and counts exits.
+  // Safira's register (唷, 呀, ～) and her nickname for Sylvie, 「小希」 (sample §3, §7); Sylvie counts exits like a hunter (story L).
   'banter:safira-sylvie:1': {
     lines: [
       at(PL.squareDusk, N('黃昏的廣場。莎菲拉拉著希爾薇的手腕，硬是把她拖到石板中央。')),
       { who: 'safira', mood: 'wink', text: '「小希，右腳、左腳、轉──妳的眼睛在看哪裡呀？」' },
-      { who: 'sylvie', mood: 'serious', text: '「找退路。這裡有三條。」' },
+      { who: 'sylvie', mood: 'serious', text: '「找退路。這裡有三條，下風那條最好溜。」' },
       { who: 'safira', mood: 'laugh', text: '「跳舞不用退路唷！欸，小洛你看，她真的從第三條溜走了～」' },
     ],
     summary: '莎菲拉硬把希爾薇拖到廣場上學跳舞。希爾薇只顧著找退路，最後從第三條溜走了。',
@@ -1402,13 +1579,14 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     summary: '莉茲說寶箱三兩下就搞定了，絲嘉蕾要她照規矩完整回報。拆下來的零件能賣兩枚銀幣，絲嘉蕾要她列入公帳。',
   },
   // ---- B2: what they say to each other (lore ledger I-158 to I-160). Pairs in BANTER_PAIRS order. ----
-  // Chizuru out of her time (B2 fix 1): she asks which god drives the toy, takes 「彈簧」 for its name, and volunteers to tend it.
+  // Chizuru out of her time (B2 fix 1; story L Task 13): she takes the toy for the town's latest way of housing a god, takes
+  // 「彈簧」 for its name, and volunteers to tend it.
   'banter:bobby-chizuru:1': {
     lines: [
       at(PL.forgeDoor, N('鍛造屋門口。波比上緊發條，小木人便「喀、喀」地自己走了起來。')),
-      { who: 'chizuru', mood: 'bewildered', text: '「此物自己會走。波比姑娘，驅使它的，是何方神靈？」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「這東西自己會走？波比姑娘，城裡最近都把神明請進木頭裡嗎？」' },
       { who: 'bobby', mood: 'grin', text: '「嘿嘿，是彈簧喔！上緊了就會走，鬆了就會停。」' },
-      { who: 'chizuru', mood: 'solemn', text: '「彈簧大人，記下了。明日起，每日清晨由我替它上緊一回。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「彈簧大人，我記下了。從明天起，每天早上由我替祂上緊一回。」' },
     ],
     summary: '波比的發條小木人自己走了起來。千鶴問是哪一位神靈在驅使它，聽說是彈簧，便決定每天早上替「彈簧大人」上緊發條。',
   },
@@ -1436,18 +1614,18 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:bobby-sylvie:1': {
     lines: [
       { who: 'bobby', mood: 'surprised', text: '「希爾薇姊，妳老是叫我松鼠。我才不像松鼠！」' },
-      { who: 'sylvie', mood: 'serious', text: '「手停不下來，看到什麼都撿，撿了就往口袋藏。」' },
+      { who: 'sylvie', mood: 'serious', text: '「手停不下來，看到什麼都撿，撿了就往口袋塞。入冬前的松鼠就長這樣。」' },
       { who: 'bobby', mood: 'excited', text: '「那些是零件！螺絲和彈簧，還有這顆──咦，口袋裡怎麼有核桃？」' },
-      { who: 'sylvie', mood: 'smile', text: '「妳撿的。冬天快到了。」' },
+      { who: 'sylvie', mood: 'smile', text: '「妳自己撿的啦。今年核桃熟得早，冬天會很冷，多藏幾顆也好。」' },
     ],
     summary: '波比抗議希爾薇老叫她松鼠。希爾薇說她手停不下來、什麼都往口袋藏；波比的口袋裡，翻出了一顆核桃。',
   },
   // Chizuru's morning greeting and Rin's half of it. Ungated: Rin's two words hold before and after her choice.
   'banter:chizuru-rin:1': {
     lines: [
-      { who: 'chizuru', mood: 'serious', text: '「凜姑娘。同行之人，清晨當互道早安，心才定得下來。容我先說：早安。」' },
+      { who: 'chizuru', mood: 'serious', text: '「凜姑娘，早安。我們那裡，一起出門的人早上都要互道早安，一天才走得順。」' },
       { who: 'rin', mood: 'normal', text: '「早。」' },
-      { who: 'chizuru', mood: 'bewildered', text: '「凜姑娘，那是半句。另外半句，何在？」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「那才半句。另外半句去哪裡了？」' },
       { who: 'rin', mood: 'normal', text: '「明天再說。」' },
     ],
     summary: '千鶴要和凜每天早上互道早安。凜只說了一個「早」，另外半句，她說明天再說。',
@@ -1456,18 +1634,19 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:chizuru-safira:1': {
     lines: [
       { who: 'safira', mood: 'wink', text: '「早呀，小鶴～今天也站得端端正正，像一根槍唷。」' },
-      { who: 'chizuru', mood: 'bewildered', text: '「『小鶴』是何種稱號？莫非是我睡著的時候，此處封的官位？」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「『小鶴』是什麼稱號？我才睡了幾天，城裡又新封了官位嗎？」' },
       { who: 'safira', mood: 'laugh', text: '「哈哈，是我封的唷！小洛也有一個，他到現在都還不肯應呀～」' },
-      { who: 'chizuru', mood: 'solemn', text: '「承蒙賜封。禮尚往來，今後便稱莎菲拉姑娘為『舞姬大人』，品階比小鶴高一等。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「多謝賜封。那我也回贈一個：莎菲拉姑娘就叫『舞姬大人』，比小鶴高一等。」' },
     ],
     summary: '莎菲拉叫千鶴「小鶴」，千鶴以為是一個官位。聽說是莎菲拉封的，她恭恭敬敬地回贈了一個：「舞姬大人」。',
   },
-  // Two formal people bow to each other and cannot stop (style bible pairing); Lorne ends it by sitting down.
+  // Two formal people bow to each other and cannot stop (style bible pairing); Chizuru claims the last bow by the manners of
+  // her day (story L Task 13). Lorne ends it by sitting down.
   'banter:chizuru-scarlet:1': {
     lines: [
       at(PL.innDoor, N('旅館門口。千鶴行了一禮，絲嘉蕾回了一禮，千鶴又回了一禮。')),
       { who: 'scarlet', mood: 'serious', text: '「千鶴小姐，依騎士禮節，最後一禮該由我行。請您先起身。」' },
-      { who: 'chizuru', mood: 'solemn', text: '「不可。依神社的規矩，最後一禮該由我行。絲嘉蕾姑娘，請先起身。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「不，最後一禮該由我行。我們那時候，騎士見了巫女，是要先下馬的。」' },
       N('最後是洛恩先拉開椅子坐下。兩人對看一眼，一起朝他行了一禮。'),
     ],
     summary: '千鶴和絲嘉蕾在旅館門口互相行禮，誰都不肯收尾。最後洛恩先坐下，兩人一起朝他行了一禮。',
@@ -1488,7 +1667,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'scarlet', mood: 'serious', text: '「莉茲小姐，回報。剛才那個寶箱，搞定了。」' },
       { who: 'liz', mood: 'surprised', text: '「騎士大姊說『搞定』？！那手法、時間、陷阱呢？」' },
-      { who: 'scarlet', mood: 'smile', text: '「手法屬於商業機密，時間大約一眨眼。陷阱已拆，零件賣了兩枚銀幣，已列入公帳。」' },
+      { who: 'scarlet', mood: 'smile', text: '「怎麼拆的，是商業機密，時間大約一眨眼。陷阱已拆，零件賣了兩枚銀幣，已列入公帳。」' },
       { who: 'liz', mood: 'scheming', text: '「才兩枚？虧大了。──好啦，第一次，給妳及格。」' },
     ],
     summary: '這一次，是絲嘉蕾說寶箱搞定了，回報得和莉茲當初一模一樣。莉茲嫌她賣便宜了，還是給了及格。',
@@ -1550,7 +1729,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       N('屋頂上，凜和希爾薇並肩蹲著，看著同一個方向，很久都沒有說話。'),
       { who: 'hero', text: '「吵架了？」' },
-      { who: 'sylvie', mood: 'serious', text: '「沒有。在看貓。」' },
+      { who: 'sylvie', mood: 'serious', text: '「沒吵。在看貓等老鼠，牠蹲在下風處半天了，還算懂。」' },
       { who: 'rin', mood: 'smile', text: '「牠剛才打了一個呵欠。洛恩，你也上來看。這裡還蹲得下一個。」' },
     ],
     summary: '凜和希爾薇蹲在屋頂上，很久都沒說話。洛恩以為她們吵架了，其實她們在看貓。',
@@ -1570,9 +1749,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:safira-sylvie:3': {
     lines: [
       { who: 'safira', mood: 'wink', text: '「各位觀眾──好吧，只有小希一位。今晚的特別公演，門票全免唷～」' },
-      { who: 'sylvie', mood: 'serious', text: '「退路只找了一條。」' },
+      { who: 'sylvie', mood: 'serious', text: '「欸，退路我只找了一條，夠用了。」' },
       { who: 'safira', mood: 'surprised', text: '「咦，只找一條？另外兩條呢？」' },
-      { who: 'sylvie', mood: 'smile', text: '「今天不找了。坐著看。」' },
+      { who: 'sylvie', mood: 'smile', text: '「今天不找了。晚風是暖的，坐著看就好。」' },
     ],
     summary: '莎菲拉辦了一場只有希爾薇一個觀眾的公演。希爾薇只找了一條退路，另外兩條，她說今天不找了。',
   },
@@ -1590,9 +1769,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:selene-sylvie:1': {
     lines: [
       { who: 'selene', mood: 'foresee', text: '「今晚的晚餐，我已經讀到了呢。可是說出口，就不靈了。」' },
-      { who: 'sylvie', mood: 'serious', text: '「南瓜湯，還有烤魚。魚煎過頭了。」' },
+      { who: 'sylvie', mood: 'serious', text: '「南瓜湯，還有烤魚。魚又煎過頭了，瑪莎每次都這樣。」' },
       { who: 'selene', mood: 'surprised', text: '「月亮也告訴妳了？」' },
-      { who: 'sylvie', mood: 'smile', text: '「不用月亮。用鼻子。」' },
+      { who: 'sylvie', mood: 'smile', text: '「不用月亮啦。用鼻子聞就知道。」' },
     ],
     summary: '瑟蕾讀到了今晚的晚餐，卻不肯說。希爾薇一口氣說了出來：她不用月亮，用鼻子。',
   },
@@ -1602,17 +1781,17 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:chizuru-noel:1': {
     lines: [
       { who: 'noel', mood: 'smug', text: '「千鶴，看好了。本小姐借來的魔法書，封面的星星會自己發光！」' },
-      { who: 'chizuru', mood: 'serious', text: '「確實好看。只是借而不告，謂之竊。此書何時歸還？」' },
+      { who: 'chizuru', mood: 'serious', text: '「確實好看。可是神主大人教過：借而不告，謂之竊。這本書什麼時候還？」' },
       { who: 'noel', mood: 'panic', text: '「我、我有打算還的！等我比誰都厲害的時候！」' },
-      { who: 'chizuru', mood: 'solemn', text: '「那便是永遠不還了。在那之前，書角請勿再折。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「那就是永遠不還了。至少書角別再折，這麼白的紙，我們那時候一張要一枚銀幣。」' },
     ],
     summary: '諾艾兒向千鶴炫耀她的魔法書。千鶴說借而不告謂之竊，問她何時歸還；諾艾兒說等她比誰都厲害的時候，千鶴說那便是永遠不還了。',
   },
   'banter:chizuru-noel:2': {
     lines: [
-      N('千鶴行了一禮：「聽聞令師平安。先前那句『謂之竊』，我收回。」'),
+      N('千鶴行了一禮：「聽說妳的老師平安。先前那句『謂之竊』，我收回。」'),
       { who: 'noel', mood: 'panic', text: '「不、不用行禮啦！」' },
-      { who: 'chizuru', mood: 'solemn', text: '「禮尚往來。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「禮尚往來，我們那裡都是這樣。」' },
       { who: 'noel', mood: 'blush', text: '「那……本小姐也收回一句。『比誰都厲害』那句先不算，千鶴的祝詞就比我厲害。」' },
     ],
     summary: '千鶴聽說諾艾兒的老師平安，收回了那句「謂之竊」。諾艾兒也收回一句：千鶴的祝詞，比她厲害。',
@@ -1674,9 +1853,9 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   'banter:bobby-chizuru:2': {
     lines: [
       { who: 'bobby', mood: 'sad', text: '「千鶴姊，燈是我家的人造錯的。迷宮奪走妳的那些年，對不起。」' },
-      { who: 'chizuru', mood: 'serious', text: '「道歉不必。但請容我，生氣一刻鐘。」' },
+      { who: 'chizuru', mood: 'serious', text: '「道歉就不必了。不過，請讓我生氣一刻鐘。」' },
       N('千鶴端坐閉眼，一動也不動。波比也不敢動，連彈簧大人都停了。'),
-      N('一刻鐘後，千鶴起身，照樣替彈簧大人上緊發條：「氣生完了。今日也請多指教。」'),
+      N('一刻鐘後，千鶴起身，照樣替彈簧大人上緊發條：「氣生完了。今天也請多指教。」'),
     ],
     summary: '波比替祖先向千鶴道歉。千鶴說不必道歉，只請她容自己生氣一刻鐘；一刻鐘後，她照樣替彈簧大人上緊發條。',
   },
@@ -1684,7 +1863,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       N('波比遞出一條箭袋背帶，上面縫了七個口袋。希爾薇照樣說「不用」。'),
       { who: 'bobby', mood: 'sad', text: '「希爾薇姊什麼都說不用。我做的東西，妳一次都沒用過。」' },
-      { who: 'sylvie', mood: 'blush', text: '「我以為好東西，該留給配得上的人。這條很牢，明天就用。」' },
+      { who: 'sylvie', mood: 'blush', text: '「好東西沾了泥可惜，我捨不得用。明天要下雨，正好試試它防不防水。」' },
       N('她已經背上了。波比哭了一下，又笑了，說還可以再加一個口袋。'),
     ],
     summary: '波比做的東西，希爾薇從來不用。這一次，希爾薇把箭袋背帶背上了，說明天就用。',
@@ -1722,7 +1901,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'chizuru', mood: 'solemn', text: '「凜姑娘，早安。」' },
       { who: 'rin', mood: 'normal', text: '「早安。」' },
-      { who: 'chizuru', mood: 'smile', text: '「完整了……甚好。」' },
+      { who: 'chizuru', mood: 'smile', text: '「完整了。這樣一來，今天一定走得順。」' },
       { who: 'rin', mood: 'averted', text: '「另外半句，早該說了。」' },
     ],
     summary: '凜第一次回了完整的早安。千鶴說，甚好。',
@@ -1734,6 +1913,8 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
   // Plan 6c wrote every scene (Task 14 removed the drafts): a scene without its SCRIPT entry is a bug, not a draft.
   const scene = (id: SceneId, title: string): void => { out[id] = { title, ...written(SCRIPT[id], id) }; };
   for (const id of MAJOR_SCENES) scene(id, MAJOR_TITLES[id]);
+  // story L: a group scene is in the script once it is registered (Tasks 9-11 write it and register it together)
+  for (const node of ACT_NODES) { const id = REACTIONS[node]; if (id) scene(id, GROUP_TITLES[id]); }
   for (const id of CHARACTER_IDS) {
     const name = nameOf(id);
     CHAINS[id].pieces.forEach((_, i) => scene(memScene(id, i + 1), `${name}・第${numeral(i + 1)}片`));
@@ -1788,7 +1969,7 @@ const PEOPLE: Partial<Record<CharacterId, string[]>> = {
   ],
   // Task 9: Lorne's notes on Sylvie, Noel and Bobby. Each segment is placed at her meeting: no act content (I-58).
   sylvie: [
-    '希爾薇。在腐毒沼澤被毒藤纏住，箭筒只剩一支箭，還在射。話很少，只說路怎麼走、風往哪吹、哪些東西能吃。',
+    '希爾薇。在腐毒沼澤被毒藤纏住，箭筒只剩一支箭，還在射。嘴上什麼都嫌：路難走、風向不對、乾糧難吃，嫌完了照樣把大家帶好。',
     '腐毒沼澤，以前是她守的林子。霧來的時候，她牽著一家人走出去，又回頭了。她說林子是在她眼前死的。',
     '人全出來之後，她才回頭，帶出了林子最後一顆種子。她想交給我替她種，我沒收。她說這一顆要自己種。',
   ],
@@ -1851,7 +2032,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
     after: [
       N('冰碎了。巫女跌了出來，拄著長槍站穩，第一件事是朝倒下的怪物鄭重行了一禮。'),
       { who: 'hero', text: '「站得起來嗎？看來可以，還有空跟怪物鞠躬。」' },
-      { who: 'chizuru', mood: 'bewildered', text: '「失禮了，逝者當以禮相送。我是千鶴，奉神社之命封印裂口。春祭之前須得歸山，敢問下山的路在哪一邊？」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「失禮了，倒下的也得好好送走。我是千鶴，神社派我來封這道裂口。春祭快到了，請問下山的路往哪邊？」' },
       { who: 'rin', text: '「這裡沒有山下。只有樓下。」' },
       N('千鶴愣了很久，抬頭看那片石頭天頂。然後把長槍扛上肩，跟在凜後面走了。'),
     ],
@@ -1880,7 +2061,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
     ],
     after: [
       N('洛恩割斷了毒藤。她把箭一支一支撿回來，順手拎起一條被射穿的蛇，掂了掂。'),
-      { who: 'sylvie', text: '「希爾薇。謝了──這個，晚上能吃。」' },
+      { who: 'sylvie', text: '「希爾薇。謝了──這條晚上烤來吃，比乾糧強。」' },
       { who: 'hero', text: '「蛇就不用了。那妳知道哪條路比較不會被吃掉嗎？」' },
       { who: 'sylvie', mood: 'serious', text: '「這片沼澤的路，我認得。你們的腳印太深，獵物隔三棵樹就聽得見。踩我踩過的地方。」' },
       N('她走在最前面，弓一直沒有放下。那條蛇掛在她腰上，晃了一路。'),

@@ -90,7 +90,7 @@ describe('fragment loot', () => {
     expect(weightOf('tf-orik')).toBe(FRAGMENT_WEIGHT);
     expect(fragmentItem({ kind: 'town', id: 'orik' })).toBe('tf-orik');
     expect(fragmentItem({ kind: 'shard', grade: 'vivid' })).toBe(SHARD_IDS.vivid);
-    expect(fragmentItem({ kind: 'piece', id: 'rin', n: 1, play: false })).toBeUndefined();
+    expect(fragmentItem({ kind: 'piece', id: 'rin', n: 1 })).toBeUndefined();
     expect(ids.length).toBeGreaterThan(0);
   });
 });

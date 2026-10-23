@@ -49,8 +49,6 @@ export interface Run {
   memoryDraws: number;
   /** Chains that were given a piece on a depth this run. */
   dropped: Record<number, CharacterId[]>;
-  /** Depths where a memory scene has already played this run; later pieces there wait in the handbook. */
-  played: number[];
   /** Rune draws taken in battle so far (plan 8f); `runeRng` seeds each from the run seed, RUNE_SALT and this count. */
   runeDraws: number;
   /**
@@ -64,7 +62,7 @@ export function newRun(seed: number, region: RegionId, condition: ConditionId, s
   return {
     seed, region, condition, startDepth, floors: new Map(), opened: new Set(), explored: {},
     loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, waiting: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(), rescues: { ...rescues },
-    glimmers: {}, memoryDraws: 0, dropped: {}, played: [], runeDraws: 0,
+    glimmers: {}, memoryDraws: 0, dropped: {}, runeDraws: 0,
     ...(difficulty && difficulty !== 'normal' ? { difficulty } : {}),
   };
 }

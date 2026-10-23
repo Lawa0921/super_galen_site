@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ACT_DEPTHS, ALONE, BANTER_COUNT, BANTER_PAYOFFS, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, HEAVY_ARRIVAL, isHeavyArrival, type BanterPair, type SceneId } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, ALONE, DEPARTURE_SCENES, EVE_DEPTH, FINALE_DEPTH, BANTER_COUNT, BANTER_PAYOFFS, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, GROUP_MIN_LINES, HEAVY_ARRIVAL, REACTIONS, groupScene, heavyScene, isHeavyArrival, lineCap, memScene, sceneKind, type BanterPair, type SceneId } from '../../data/story/scenes';
 import { chainLength } from '../../data/story/chains';
 import { CHARACTER_IDS } from '../../data/characters';
 import { meet } from '../party';
@@ -7,7 +7,12 @@ import { MEETINGS } from '../../data/meetings';
 import { memoryPace } from './expect';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
-import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyStage, afterWin } from './events';
+import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, nextReaction, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyPieces, storyStage, toldCount, afterWin } from './events';
+import { constRng, withTold } from '../testing';
+import { Game } from '../game';
+import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, planNight } from './nights';
+import { memoryTone } from '../../data/story/tone';
+import { NIGHT_BEATS } from '../../data/story.zh-TW';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
 const base = (): GameState => {
@@ -107,23 +112,24 @@ describe('story triggers', () => {
   });
 
   it('a homecoming waits for her last piece and plays once, behind the story and ahead of the chat', () => {
-    const s = withMemories(base(), 'sylvie', chainLength('sylvie') - 1);
+    // story L: her last piece told, not only held (so it is never still waiting in the queue beside her homecoming)
+    let s = withTold(base(), 'sylvie', chainLength('sylvie') - 1);
     s.story.seen.push('chat:hero:1');
     expect(onReturn(s).queue).toEqual([]);
-    s.party.roster.sylvie.memories = chainLength('sylvie');
-    s.story.queue = ['mem:sylvie:5', 'act3'];
+    s = withTold(s, 'sylvie', chainLength('sylvie'));
+    s.story.queue = ['act3'];
     const back = returned(s);
-    expect(back.story.queue).toEqual(['mem:sylvie:5', 'act3', 'home:sylvie']);
+    expect(back.story.queue).toEqual(['act3', 'home:sylvie']);
     const order = arrivalScenes(back, { chat: true });
-    expect(order.slice(0, 3)).toEqual(['act3', 'mem:sylvie:5', 'home:sylvie']);
-    expect(order[3]).toMatch(/^chat:/);
+    expect(order.slice(0, 2)).toEqual(['act3', 'home:sylvie']);
+    expect(order[2]).toMatch(/^chat:/);
     expect(returned(back).story.queue.filter((x) => x === 'home:sylvie')).toHaveLength(1);   // waiting, not doubled
     expect(onReturn(sceneDone(back, 'home:sylvie', 'played')).queue).not.toContain('home:sylvie');
   });
 
   it('only the endings the town holds have a homecoming', () => {
     let s = base();
-    for (const id of ['selene', 'noel', 'bobby', 'scarlet', 'chizuru', 'safira', 'liz'] as CharacterId[]) s = withMemories(s, id, chainLength(id));
+    for (const id of ['selene', 'noel', 'bobby', 'scarlet', 'chizuru', 'safira', 'liz'] as CharacterId[]) s = withTold(s, id, chainLength(id));
     s = withMemories(s, 'hero', chainLength('hero'));
     expect(onReturn(s).queue).toEqual(['home:chizuru', 'home:safira', 'home:liz']);
   });
@@ -358,6 +364,8 @@ describe('story depth: when the scenes play (Task 3)', () => {
   it('a heavy arrival gives the chat slot to a light chat', () => {
     const s = meetAll(base(), ['sylvie']);
     s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:rin:1', 'chat:sylvie:1', 'act2', 'act3');
+    // story L Task 12: her second chat waits for her memories told whole (CHAT_GATE)
+    s.story.seen.push(...[1, 2, 3, 4, 5].map((n) => `mem:sylvie:${n}` as SceneId));
     s.story.nodes = ['act2', 'act3', 'act4'];
     expect(nextChat(s)).toBe('chat:rin:2');   // tied at one each: Rin first, and her chat is heavy
     s.story.queue = ['act4'];
@@ -421,7 +429,7 @@ describe('story depth: when the scenes play (Task 3)', () => {
   });
 
   it('the festival is the first scene after the finale', () => {
-    const s = withMemories(base(), 'liz', chainLength('liz'));
+    const s = withTold(base(), 'liz', chainLength('liz'));
     s.story.finaleCleared = true;
     const back = returned(s);
     expect(back.story.queue).toContain('epilogue');
@@ -584,7 +592,7 @@ describe('town banter', () => {
   });
 
   it('a gate holds a banter back, as CHAT_GATE does: stage, oath, a full memory', () => {
-    const s = meetAll(base(), ['noel']);
+    let s = meetAll(base(), ['noel']);
     const id: SceneId = 'banter:noel-rin:1';
     expect(banterOpen(s, id, { [id]: { stage: 'act2' } })).toBe(false);
     expect(nextBanter(s, { [id]: { stage: 'act2' } })).toBeNull();
@@ -594,7 +602,7 @@ describe('town banter', () => {
     s.party.roster.rin.oath = true;
     expect(banterOpen(s, id, { [id]: { stage: 'act2', oath: true } })).toBe(true);
     expect(banterOpen(s, id, { [id]: { full: 'noel' } })).toBe(false);
-    s.party.roster.noel.memories = chainLength('noel');
+    s = withTold(s, 'noel', chainLength('noel'));
     expect(banterOpen(s, id, { [id]: { full: 'noel' } })).toBe(true);
     // no gate opens a banter whose two are not both met
     expect(banterOpen(base(), id, {})).toBe(false);
@@ -617,7 +625,7 @@ describe('town banter', () => {
   });
 
   it('a gate opens on each of its kinds (story depth)', () => {
-    const s = meetAll(base(), ['noel', 'bobby', 'chizuru']);
+    let s = meetAll(base(), ['noel', 'bobby', 'chizuru']);
     const id: SceneId = 'banter:noel-rin:1';
     const chat: SceneId = 'chat:noel:2';
     // before her choice: open until she makes it, closed after
@@ -626,13 +634,13 @@ describe('town banter', () => {
     // pieces: each named one holds at least that many
     expect(banterOpen(s, id, { [id]: { pieces: { noel: 1 } } })).toBe(false);
     expect(chatOpen(s, chat, { [chat]: { pieces: { noel: 1 } } })).toBe(false);
-    s.party.roster.noel.memories = 1;
+    s = withTold(s, 'noel', 1);
     expect(banterOpen(s, id, { [id]: { pieces: { noel: 1 } } })).toBe(true);
     expect(chatOpen(s, chat, { [chat]: { pieces: { noel: 1 } } })).toBe(true);
-    s.party.roster.bobby.memories = 3;
+    s = withTold(s, 'bobby', 3);
     expect(banterOpen(s, id, { [id]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(false);   // only one of the two at three
     expect(chatOpen(s, chat, { [chat]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(false);
-    s.party.roster.chizuru.memories = 3;
+    s = withTold(s, 'chizuru', 3);
     expect(banterOpen(s, id, { [id]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(true);
     expect(chatOpen(s, chat, { [chat]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(true);
     // seen: every named scene already seen
@@ -649,7 +657,7 @@ describe('town banter', () => {
     expect(chatOpen(s, chat, { [chat]: { stage: 'act2' } })).toBe(true);
     expect(banterOpen(s, id, { [id]: { full: 'noel' } })).toBe(false);
     expect(chatOpen(s, chat, { [chat]: { full: 'noel' } })).toBe(false);
-    s.party.roster.noel.memories = chainLength('noel');
+    s = withTold(s, 'noel', chainLength('noel'));
     expect(banterOpen(s, id, { [id]: { full: 'noel' } })).toBe(true);
     expect(chatOpen(s, chat, { [chat]: { full: 'noel' } })).toBe(true);
     expect(banterOpen(s, id, { [id]: { oath: true } })).toBe(false);
@@ -913,8 +921,7 @@ describe('town banter', () => {
   });
 
   it('the second banter of a return is never the same pair as the first (Task 6 review)', () => {
-    const s = allChatsSeen(meetAll(base(), ['liz', 'scarlet', 'noel', 'safira', 'sylvie']));
-    s.party.roster.scarlet.memories = chainLength('scarlet');
+    const s = withTold(allChatsSeen(meetAll(base(), ['liz', 'scarlet', 'noel', 'safira', 'sylvie'])), 'scarlet', chainLength('scarlet'));
     s.story.nodes = ['act2', 'act3'];
     s.story.seen.push('act2', 'act3', 'banter:liz-scarlet:1');
     const banters = arrivalScenes(s, { chat: true }).filter((id) => id.startsWith('banter:'));
@@ -948,69 +955,189 @@ describe('town banter', () => {
   });
 
   /**
-   * A scripted play (story depth Task 6): a return to town at each depth in `depths`, everyone met at her `MEETINGS` depth,
-   * memories by `memoryPace` (the hero's ninth piece the depth-25 top-up, queued for the return as takePieces does), every
-   * arrival scene played, and the lone morning played at the next departure once `departScene` would offer it. Returns the
-   * state after the last return, each payoff's opening and playing depth, and every return whose two banters shared a pair.
+   * A scripted play (story depth Task 6; story L Task 6): a return to town at each depth in `depths`. Everyone is met at her
+   * `MEETINGS` depth (`route: 'mainline-first'`: Selene and Bobby on the main road at theirs, the others together on the
+   * first return past act 4's depth, as a player who takes the main road to act 4 first). Each one holds what `memoryPace`
+   * has dropped by that depth (Lorne up to eight, then nine from the depth-25 top-up); a new piece goes to the end of
+   * `untold`, by depth and then `CHARACTER_IDS`. Each return plays as `Game.arrive` does: `onReturn`, the day
+   * (`arrivalScenes`, with the three group scenes registered), the night (`planNight`); the owed pieces first, then the day,
+   * the group scene, the night, each through `sceneDone`, and the dawn's pick is kept (`dawnMemory`). Each departure plays
+   * as `Game.departScenes` would offer: the dawn's one memory (controller ruling 2026-10-24; not on the eve's own
+   * departure, nor while a reveal or confession waits), the night before the descent and its memories (`eveMemories`),
+   * then the lone morning. After the last return the finale plays as `Game.finalePieces` does (the pieces of the last dive held untold, the eve as its fallback, any act owed,
+   * Lorne's pieces and his tenth), then `afterFinale` returns, numbered 100 + k in `played`.
+   * Returns the state after it all, each payoff's opening and playing depth, every return whose two banters shared a pair,
+   * every night's count, every owed piece played late, where each act and group scene played, and the memories left
+   * untold once the finale is over.
    */
   const PAYOFFS: SceneId[] = ['banter:rin-scarlet:3', 'banter:rin-selene:2', 'banter:safira-sylvie:3', 'banter:liz-scarlet:3', 'banter:noel-selene:3', 'banter:chizuru-noel:2'];
   /** The design §6 setup/payoff banters outside ruling 9's six (Task 6 review): measured too. */
   const SETUP_PAYOFFS: SceneId[] = ['banter:bobby-chizuru:2', 'banter:chizuru-rin:2', 'banter:safira-sylvie:2', 'banter:safira-sylvie:3', 'banter:rin-selene:2', 'banter:rin-scarlet:3'];
-  const scriptedPlay = (depths: number[], afterFinale = 0) => {
+  /** The three group scenes, registered as the writing tasks will register them (story L spec §5.3). */
+  const REACT = { act2: 'group:act2', act3: 'group:act3', act4: 'group:act4' } as const;
+  /** One night: when, the pieces the day owed, the night's memories (the eve's too), and the beats between them. */
+  interface NightCount { at: string; owed: SceneId[]; night: SceneId[]; beats: number; alone: boolean }
+  /** A beat taken between two memories (story L Task 8): where, the memory before and its tone, the pool index (-1: none). */
+  interface BeatTaken { at: string; prev: SceneId; heavy: boolean; i: number; tone?: 'quiet' | 'lively' }
+  /** A return as the script played it, from the state it started in (review: cross-checked against `Game.arrive`). */
+  interface ArriveCheck { at: number; state: GameState; afterFinale: boolean; tonight: SceneId[]; dawn?: SceneId; arrival: SceneId[]; night: SceneId[] }
+  /** A departure as the script played it, from the state it started in (cross-checked against `Game.departScenes`). */
+  interface DepartCheck { at: number; state: GameState; scenes: SceneId[]; eve: SceneId[] }
+  const scriptedPlay = (depths: number[], afterFinale = 0, route: 'all' | 'mainline-first' = 'all') => {
     let s = base();
     s.story.seen.push('prologue-inn', 'first-return', 'act1-after');
     s.story.act1Cleared = true;
+    s.story.untold = [];
     const pace = Object.fromEntries(CHARACTER_IDS.map((id) => [id, memoryPace(id)])) as Record<CharacterId, number[]>;
     const opened: Partial<Record<SceneId, number>> = {};
     const played: Partial<Record<SceneId, number>> = {};
     const samePair: string[] = [];
     const trace: string[] = [];
-    for (const t of depths) {
-      s.dungeon.reached.mainline = Math.max(s.dungeon.reached.mainline, t);
-      for (const m of MEETINGS) if (t >= m.depth && !s.party.recruited.includes(m.id)) s.party = meet(s.party, m.id, 1);
+    const nights: NightCount[] = [];
+    const late: string[] = [];
+    const dawns: SceneId[] = [];
+    const arrivals: ArriveCheck[] = [];
+    const departures: DepartCheck[] = [];
+    /** Every beat the playthrough takes, as `Game.takeBeat` would (story L Task 8): its pool index, its tone, the memory before. */
+    const beats: BeatTaken[] = [];
+    /** The beats between `ids`, a night's (or the eve's) memories in play order, moving the cursor as `Game.takeBeat` does. */
+    const beatNight = (at: string, ids: SceneId[]) => {
+      for (let k = 1; k < ids.length; k++) {
+        const r = nextBeat(s, ids[k - 1], ids[k]);
+        beats.push({ at, prev: ids[k - 1], heavy: memoryTone(ids[k - 1]) === 'heavy', i: r ? r.at : -1, tone: r?.line.tone });
+        if (r) s = { ...s, story: { ...s.story, beat: (r.at + 1) % NIGHT_BEATS.lines.length } };
+      }
+    };
+    /** Where each act, each group scene and the lone morning played: the return's depth (100 + k after the finale), or 'finale'. */
+    const where: Partial<Record<SceneId, number | 'finale'>> = {};
+    const late4 = depths.find((t) => t > ACT_DEPTHS.act4) ?? Infinity;
+    const metBy = (id: CharacterId, t: number): boolean => {
+      const m = MEETINGS.find((x) => x.id === id);
+      if (!m) return true;
+      return route === 'all' || m.region === 'mainline' ? t >= m.depth : t >= late4;
+    };
+    /** What `id` holds at depth `t`: her pace; Lorne at most eight, nine from depth 25 (the top-up). */
+    const heldAt = (id: CharacterId, t: number): number => {
+      const n = pace[id].filter((d) => d <= t).length;
+      return id === 'hero' ? (t >= 25 ? 9 : Math.min(n, 8)) : n;
+    };
+    /** Meet whoever is due and take the pieces dropped by depth `t`: held at once, untold until a night tells them. */
+    const take = (t: number) => {
+      for (const m of MEETINGS) if (metBy(m.id, t) && !s.party.recruited.includes(m.id)) s.party = meet(s.party, m.id, 1);
+      const gained: { id: CharacterId; k: number; d: number }[] = [];
       for (const id of CHARACTER_IDS) {
         if (!s.party.recruited.includes(id)) continue;
-        const n = pace[id].filter((d) => d <= t).length;
-        s.party.roster[id].memories = id === 'hero' ? Math.min(n, 8) : n;
+        const had = s.party.roster[id].memories ?? 0;
+        const n = heldAt(id, t);
+        for (let k = had + 1; k <= n; k++) gained.push({ id, k, d: id === 'hero' && k === 9 ? 25 : (pace[id][k - 1] ?? t) });
+        s.party.roster[id].memories = Math.max(had, n);
       }
-      if (t >= 25 && (s.party.roster.hero.memories ?? 0) < 9) {
-        s.party.roster.hero.memories = 9;
-        if (!s.story.seen.includes('mem:hero:9') && !s.story.queue.includes('mem:hero:9')) s.story.queue.push('mem:hero:9');
+      gained.sort((a, b) => a.d - b.d || CHARACTER_IDS.indexOf(a.id) - CHARACTER_IDS.indexOf(b.id));
+      s = { ...s, story: { ...s.story, untold: [...(s.story.untold ?? []), ...gained.map((g) => memScene(g.id, g.k))] } };
+    };
+    /** `c`'s pieces held and not told yet. */
+    const untoldOf = (c: CharacterId): SceneId[] => Array.from({ length: s.party.roster[c]?.memories ?? 0 }, (_, i) => memScene(c, i + 1)).filter((id) => !s.story.seen.includes(id));
+    /** Plays `id`, first checking that no piece it needs is still untold (spec §4.3's table). */
+    const play = (id: SceneId, at: number | 'finale') => {
+      if ((['act2', 'act3', 'act4', 'bellkeeper-arrives'] as SceneId[]).includes(id)) {
+        const owed = [...untoldOf('hero'), ...untoldOf('rin')].filter((m) => !(at === 'finale' && m.startsWith('mem:hero:')));
+        if (owed.length) late.push(`${at}: ${id} before ${owed.join(' ')}`);
       }
+      if (ALONE.includes(id) && untoldOf('rin').length) late.push(`${at}: ${id} before ${untoldOf('rin').join(' ')}`);
+      if (id.startsWith('banter:') && played[id] === undefined && at !== 'finale') played[id] = at;
+      if ((ACT_NODES as SceneId[]).includes(id) || id.startsWith('group:') || id === 'hero-alone') where[id] = at;
+      s = sceneDone(s, id, 'played', REACT);
+    };
+    /** A return to town, as `Game.arrive` and the town play it. */
+    const arrive = (at: number, afterFinaleReturn: boolean) => {
+      const from = structuredClone(s);
       s = { ...s, story: onReturn(s) };
-      for (const id of [...PAYOFFS, ...SETUP_PAYOFFS]) if (opened[id] === undefined && banterOpen(s, id)) {
+      if (at < 100) for (const id of [...PAYOFFS, ...SETUP_PAYOFFS]) if (opened[id] === undefined && banterOpen(s, id)) {
         const [pair, n] = [id.split(':')[1], Number(id.split(':')[2])];
         const prev = `banter:${pair}:${n - 1}` as SceneId;
-        if (n === 1 || s.story.seen.includes(prev) || gateExpired(s, BANTER_GATE[prev])) opened[id] = t;
+        if (n === 1 || s.story.seen.includes(prev) || gateExpired(s, BANTER_GATE[prev])) opened[id] = at;
       }
-      const arrival = arrivalScenes(s, { chat: true });
-      trace.push(`${t}: ${arrival.join(' ')} (pairs ready ${openPairs(s)})`);
-      const pairs = arrival.filter((id) => id.startsWith('banter:')).map((id) => id.split(':')[1]);
-      if (new Set(pairs).size !== pairs.length) samePair.push(`${t}: ${pairs.join(', ')}`);
-      for (const id of arrival) {
-        if (id.startsWith('banter:') && played[id] === undefined) played[id] = t;
-        s = sceneDone(s, id, 'played');
+      const day = arrivalScenes(s, { chat: true, afterFinale: afterFinaleReturn, reactions: REACT });
+      const plan = planNight(s, day);
+      const dawn = dawnMemory(s, [...plan.before, ...plan.night]);
+      s = { ...s, story: { ...s.story, tonight: [...plan.before, ...plan.night], dawn: dawn ?? undefined } };
+      const group = day.filter((id) => id.startsWith('group:'));
+      const daytime = day.filter((id) => !id.startsWith('group:'));
+      arrivals.push({ at, state: from, afterFinale: afterFinaleReturn, tonight: [...plan.before, ...plan.night], dawn: dawn ?? undefined, arrival: [...plan.before, ...daytime], night: [...group, ...plan.night] });
+      trace.push(`${at}: ${plan.before.length ? `[${plan.before.join(' ')}] ` : ''}${daytime.join(' ')}${group.length ? ` | ${group.join(' ')}` : ''} | night ${plan.night.join(' ') || '-'} (untold ${(s.story.untold ?? []).length}, pairs ready ${openPairs(s)})`);
+      const pairs = day.filter((id) => id.startsWith('banter:')).map((id) => id.split(':')[1]);
+      if (at < 100 && new Set(pairs).size !== pairs.length) samePair.push(`${at}: ${pairs.join(', ')}`);
+      nights.push({ at: String(at), owed: plan.before, night: plan.night, beats: Math.max(0, plan.night.length - 1), alone: day.some((id) => ALONE.includes(id)) });
+      beatNight(String(at), plan.night);
+      for (const id of [...plan.before, ...daytime, ...group, ...plan.night]) play(id, at);
+    };
+    /**
+     * A departure, as `Game.departScenes` offers: the dawn, the eve and its memories, then the lone morning. A copy of the
+     * engine's rule; 'the script plays each return and departure as the real engine does' checks it against
+     * `Game.departScenes` on every state it starts from (final review: the copy must not drift).
+     */
+    const depart = (at: number) => {
+      const check: DepartCheck = { at, state: structuredClone(s), scenes: [], eve: [] };
+      departures.push(check);
+      const alone = ALONE.some((id) => s.story.queue.includes(id));
+      const untold = s.story.untold ?? [];
+      const dawn = s.story.dawn;
+      // 【控制者裁定 2026-10-24】 a reveal or confession waiting blocks the dawn; so does the eve's own departure
+      if (!alone && !s.story.queue.includes('finale-eve') && dawn && untold.includes(dawn) && untold.length >= DAWN_BACKLOG) {
+        trace.push(`${at} departs: dawn ${dawn}`);
+        dawns.push(dawn);
+        check.scenes.push(dawn);
+        play(dawn, at);
       }
-      if (s.story.queue.includes('hero-alone') && s.story.seen.includes('mem:hero:9') && s.story.seen.includes('bellkeeper-arrives')
-        && !ALONE.some((id) => s.story.queue.includes(id))) s = sceneDone(s, 'hero-alone', 'played');
+      if (alone) return;
+      if (s.story.queue.includes('finale-eve')) {
+        check.scenes.push('finale-eve');
+        play('finale-eve', at);
+        const eve = eveMemories(s);
+        check.eve = eve;
+        s = { ...s, story: { ...s.story, tonight: (s.story.tonight ?? []).filter((id) => !eve.includes(id)) } };
+        trace.push(`${at} departs: finale-eve | ${eve.join(' ') || '-'}`);
+        nights.push({ at: `eve ${at}`, owed: [], night: eve, beats: Math.max(0, eve.length - 1), alone: false });
+        beatNight(`eve ${at}`, eve);
+        for (const id of eve) play(id, at);
+      }
+      if (s.story.queue.includes('hero-alone') && s.story.seen.includes('mem:hero:9') && s.story.seen.includes('bellkeeper-arrives')) {
+        trace.push(`${at} departs: hero-alone`);
+        check.scenes.push('hero-alone');
+        play('hero-alone', at);
+      }
+    };
+    for (const t of depths) {
+      s.dungeon.reached.mainline = Math.max(s.dungeon.reached.mainline, t);
+      take(t);
+      arrive(t, false);
+      depart(t);
     }
-    // The finale (Game.finalePieces): it answers a lone morning still owed; then the returns after it, the first one heavy
-    // (`afterFinale`: no banter), each one numbered 100 + k in `played`.
     const before = PAYOFFS.filter((id) => s.story.seen.includes(id));
-    if (afterFinale > 0) {
-      s = { ...s, story: { ...s.story, finaleCleared: true, seen: [...s.story.seen, 'finale', ...(s.story.seen.includes('hero-alone') ? [] : ['hero-alone' as SceneId])], queue: s.story.queue.filter((q) => q !== 'hero-alone') } };
-      for (let k = 1; k <= afterFinale; k++) {
-        s = { ...s, story: onReturn(s) };
-        const arrival = arrivalScenes(s, { chat: true, afterFinale: k === 1 });
-        trace.push(`after ${k}: ${arrival.join(' ')}`);
-        for (const id of arrival) {
-          if (id.startsWith('banter:') && played[id] === undefined) played[id] = 100 + k;
-          s = sceneDone(s, id, 'played');
-        }
-      }
-    }
+    const atLastReturn = [...(s.story.untold ?? [])];
+    // The finale (Game.finalePieces): the last dive's pieces held untold, then its own list, then the finale.
+    s.dungeon.reached.mainline = FINALE_DEPTH;
+    take(FINALE_DEPTH);
+    const oath = !!s.party.roster.rin.oath;
+    const acts = ACT_NODES.filter((node) => !s.story.seen.includes(node));
+    const confess: SceneId[] = s.story.queue.includes('rin-confess') ? ['rin-confess'] : [];
+    const keeper: SceneId[] = s.story.queue.includes('bellkeeper-arrives') || confess.length ? ['bellkeeper-arrives'] : [];
+    const heroPieces = [...(s.story.untold ?? []).filter((id) => id.startsWith('mem:hero:')), 'mem:hero:10' as SceneId];
+    s = { ...s, story: { ...s.story, untold: (s.story.untold ?? []).filter((id) => !id.startsWith('mem:hero:')), queue: s.story.queue.filter((id) => !id.startsWith('mem:hero:') && !acts.includes(id as never) && !confess.includes(id) && !keeper.includes(id)) } };
+    s.party.roster.hero.memories = 10;
+    const eveOwed = !s.story.seen.includes('finale-eve');
+    const eve = eveOwed ? eveMemories(s) : [];
+    if (eveOwed) nights.push({ at: 'eve finale', owed: [], night: eve, beats: Math.max(0, eve.length - 1), alone: false });
+    if (eveOwed) beatNight('eve finale', eve);
+    s = { ...s, story: { ...s.story, finaleCleared: true, queue: s.story.queue.filter((id) => !DEPARTURE_SCENES.includes(id)) } };
+    if (!s.story.seen.includes('hero-alone')) s = { ...s, story: { ...s.story, seen: [...s.story.seen, 'hero-alone'], fresh: [...s.story.fresh, 'hero-alone'] } };
+    const finale: SceneId[] = [...(eveOwed ? ['finale-eve' as SceneId, ...eve] : []), ...acts, ...confess, ...keeper, ...heroPieces, 'finale'];
+    trace.push(`finale: ${finale.join(' ')}`);
+    for (const id of finale) play(id, 'finale');
+    const unplayed = [...(s.story.untold ?? [])];
+    for (let k = 1; k <= afterFinale; k++) arrive(100 + k, k === 1);
     const report = [...PAYOFFS, ...SETUP_PAYOFFS.filter((id) => !PAYOFFS.includes(id))].map((id) => `${id}: opens ${opened[id] ?? '-'}, plays ${played[id] ?? '-'}`).join('\n');
-    return { s, report, samePair, trace, before, played };
+    return { s, report, samePair, trace, before, played, nights, late, where, unplayed, oath, atLastReturn, dawns, arrivals, departures, beats };
   };
 
   it('scripted play: every payoff banter plays before the finale', () => {
@@ -1022,8 +1149,8 @@ describe('town banter', () => {
 
   it('scripted play, a return every second depth: every payoff by the finale or within three returns after it (Task 6 rulings)', () => {
     // Controller rulings: heavy returns stay banter-free; a pair on the way to one of the six designed payoffs ranks first;
-    // after the finale a return other than the festival's plays up to three banters, from two pairs at least. Measured
-    // (task-6-report.md): four before the finale, the other two in the second and third returns after it.
+    // after the finale a return other than the festival's plays up to three banters, from two pairs at least. Story L
+    // (task-4-6-report.md): one before the finale, the other five in the second and third returns after it.
     const depths = Array.from({ length: 15 }, (_, i) => 2 * i + 1);   // 1, 3, …, 29
     const { s, report, trace, samePair, before, played } = scriptedPlay(depths, 3);
     for (const id of PAYOFFS) expect(s.story.seen, `${report}\n${trace.join('\n')}`).toContain(id);
@@ -1033,11 +1160,145 @@ describe('town banter', () => {
     const five = scriptedPlay(depths, 5);
     for (const id of SETUP_PAYOFFS) expect(five.s.story.seen, `§6: ${five.report}`).toContain(id);
     expect(five.played['banter:bobby-chizuru:2']).toBe(105);
-    expect(before.length, report).toBe(4);
-    // the two after the finale, on its second and third returns (the first is the festival's)
-    expect([played['banter:rin-selene:2'], played['banter:rin-scarlet:3']], report).toEqual([102, 103]);
+    // Story L Task 6 (controller ruling 2026-10-24): the payoffs wait for the pieces told at night, so the count before the
+    // finale is a measured pin (it was 4 before story L); the guarantee is the one above, every payoff by the third return
+    // after the finale. Measured: Selene's before it (depth 29), Scarlet's on the third return after it. Controller
+    // ruling 2026-10-24 (a waiting reveal or confession blocks the dawn): Chizuru and Noel's payoff now lands before the
+    // finale too (depth 29), so two do.
+    expect(before.length, report).toBe(2);
+    expect([played['banter:rin-selene:2'], played['banter:chizuru-noel:2'], played['banter:rin-scarlet:3']], report).toEqual([29, 29, 103]);
     expect(samePair).toEqual([]);
   });
+
+  // ---- Story L Task 6 (controller rulings 2026-10-23 and 2026-10-24): the scripted plays through the nights ----
+
+  const EVERY_FLOOR = Array.from({ length: 29 }, (_, i) => i + 1);         // 1, 2, …, 29
+  const EVERY_SECOND = Array.from({ length: 15 }, (_, i) => 2 * i + 1);    // 1, 3, …, 29
+  const EVERY_THIRD = Array.from({ length: 10 }, (_, i) => 3 * i + 1);     // 1, 4, …, 28
+  /**
+   * The three players and the most memories each may leave untold once the finale is over. Spec §13: 3, 8 and 15. The
+   * player who returns every third floor is held to 20 by the controller's ruling of 2026-10-24: one who returns that
+   * seldom chooses to skip town, and every piece left stays readable in the handbook as 新 (measured 19 with the dawn).
+   */
+  const PLAYERS: [string, number[], number][] = [['every floor', EVERY_FLOOR, 3], ['every 2nd floor', EVERY_SECOND, 8], ['every 3rd floor', EVERY_THIRD, 20]];
+  const tell = (r: ReturnType<typeof scriptedPlay>) => r.trace.join('\n');
+
+  for (const [name, depths, most] of PLAYERS) {
+    it(`scripted play (${name}): unplayed memories after the finale ≤ ${most}`, () => {
+      const r = scriptedPlay(depths);
+      expect(r.oath, 'her choice is made before the finale').toBe(true);
+      expect(r.unplayed.length, `${r.unplayed.join(' ')}\n${tell(r)}`).toBeLessThanOrEqual(most);
+    });
+
+    it(`scripted play (${name}): no night plays more than three memories beyond the owed ones, and the dawn plays`, () => {
+      const r = scriptedPlay(depths, 3);
+      for (const n of r.nights) expect(n.night.length, `${n.at}\n${tell(r)}`).toBeLessThanOrEqual(3);
+      expect(r.dawns.length, tell(r)).toBeGreaterThan(0);   // one a departure at most, by construction
+      // controller ruling 3 (2026-10-23): a reveal or confession night, its owed pieces and all, stays small
+      for (const n of r.nights.filter((x) => x.alone)) expect(n.owed.length + n.night.length, `${n.at}\n${tell(r)}`).toBeLessThanOrEqual(5);
+    });
+
+    it(`scripted play (${name}): no owed memory is ever late, and the lone morning plays on a departure`, () => {
+      const r = scriptedPlay(depths, 3);
+      expect(r.late, tell(r)).toEqual([]);
+      // review: the lone morning plays in town, not folded into the finale (measured: on the departure from depth 25)
+      expect(typeof r.where['hero-alone'], tell(r)).toBe('number');
+      expect(r.where['hero-alone'], tell(r)).not.toBe('finale');
+    });
+
+    it(`scripted play (${name}): each group scene plays on its act's arrival, and none after the finale`, () => {
+      const r = scriptedPlay(depths, 3);
+      for (const node of ACT_NODES) {
+        expect(typeof r.where[node], `${node}\n${tell(r)}`).toBe('number');   // the act played on a return, not the finale
+        expect(r.where[groupScene(node)], `${node}\n${tell(r)}`).toBe(r.where[node]);
+      }
+    });
+  }
+
+  it('scripted play (mainline-first): the group scenes played are recorded; each one missed has expired, none plays late', () => {
+    // Controller ruling 2026-10-24: a player who rushes the main road skips the scenes that need the companions met
+    // on the side roads. Recorded in task-4-6-report.md. A group that plays still plays inside its two chances.
+    // Measured: every floor plays none of the three (acts 2 and 3 before their casts are met; act 4's second chance falls
+    // on the reveal day); every 2nd floor plays only act 4's, on its own arrival (21).
+    const measured: [number[], Partial<Record<SceneId, number>>][] = [[EVERY_FLOOR, {}], [EVERY_SECOND, { 'group:act4': 21 }]];
+    for (const [depths, want] of measured) {
+      const r = scriptedPlay(depths, 3, 'mainline-first');
+      const played = Object.fromEntries(ACT_NODES.map((node) => [groupScene(node), r.where[groupScene(node)]]).filter(([, at]) => at !== undefined));
+      expect(played, tell(r)).toEqual(want);
+      for (const [g, at] of Object.entries(played)) {
+        const act = r.where[g.slice('group:'.length) as SceneId] as number;
+        expect([act, depths[depths.indexOf(act) + 1]], `${g}\n${tell(r)}`).toContain(at);   // inside its two chances
+      }
+      expect(Object.keys(r.s.story.reacts ?? {}), tell(r)).toEqual([]);
+      expect(r.late, tell(r)).toEqual([]);
+    }
+  });
+
+  it('scripted play: the script plays each return and departure as the real engine does (review)', () => {
+    // `scriptedPlay` reimplements `Game.arrive` and `Game.departScenes`; on the very states each scripted play reached, the
+    // engine must pick the same night, dawn, arrival and night order, the same departure scenes and the same eve.
+    type Engine = { arrive(afterFinale?: boolean): void };
+    Object.assign(REACTIONS, REACT);
+    try {
+      let arrivals = 0;
+      let departures = 0;
+      let dawned = 0;
+      let eves = 0;
+      for (const [depths, route] of [[EVERY_FLOOR, 'all'], [EVERY_SECOND, 'all'], [EVERY_THIRD, 'all'], [EVERY_FLOOR, 'mainline-first'], [EVERY_SECOND, 'mainline-first']] as const) {
+        const r = scriptedPlay([...depths], 3, route);
+        for (const a of r.arrivals) {
+          const g = new Game(constRng(0.99), null, structuredClone(a.state));
+          (g as unknown as Engine).arrive(a.afterFinale);
+          const label = `${route} ${depths.length} returns, at ${a.at}`;
+          expect(g.state.story.tonight, label).toEqual(a.tonight);
+          expect(g.state.story.dawn, label).toBe(a.dawn);
+          expect(g.arrival, label).toEqual(a.arrival);
+          expect(g.night, label).toEqual(a.night);
+          arrivals++;
+        }
+        for (const d of r.departures) {
+          const g = new Game(constRng(0.99), null, structuredClone(d.state));
+          const label = `${route} ${depths.length} returns, departing ${d.at}`;
+          expect(g.departScenes(), label).toEqual(d.scenes);
+          if (d.scenes.includes('finale-eve')) {
+            expect(g.sceneDone('finale-eve', 'played'), label).toBe(true);
+            expect(g.eve, label).toEqual(d.eve);
+            expect(g.departScenes(), label).toEqual(d.scenes.filter((id) => id === 'hero-alone'));
+          }
+          departures++;
+          if (d.scenes.some((id) => id.startsWith('mem:'))) dawned++;
+          if (d.scenes.includes('finale-eve')) eves++;
+        }
+      }
+      expect(arrivals).toBeGreaterThan(80);
+      expect(departures).toBeGreaterThan(60);
+      // final review: the cross-check covers each branch of the copied rule, the dawn and the eve, not only plain departures
+      expect(dawned).toBeGreaterThan(10);
+      expect(eves).toBeGreaterThanOrEqual(3);
+    } finally {
+      for (const k of Object.keys(REACT)) delete REACTIONS[k as keyof typeof REACT];
+    }
+  });
+
+  it('scripted play (every floor): the beats of one playthrough fit the pool', () => {
+    // spec §4.4.1: forty lines; the pool is written in Task 8, so until then the spec's forty is the bound
+    const r = scriptedPlay(EVERY_FLOOR, 3);
+    const beats = r.nights.reduce((a, n) => a + n.beats, 0);
+    expect(beats, tell(r)).toBeLessThanOrEqual(NIGHT_BEATS.lines.length || 40);
+  });
+
+  // Story L Task 8 (cold read): a beat fits the memory before it, and one playthrough never hears a beat twice.
+  for (const [name, depths] of [['every floor', EVERY_FLOOR], ['every 2nd floor', EVERY_SECOND], ['every 3rd floor', EVERY_THIRD]] as const) {
+    it(`scripted play (${name}): every beat is taken, quiet after a heavy memory, and none twice in one playthrough`, () => {
+      const r = scriptedPlay([...depths], 3);
+      const tell2 = `${r.beats.map((b) => `${b.at} ${b.prev}${b.heavy ? '(heavy)' : ''} -> ${b.i} ${b.tone ?? '-'}`).join('\n')}`;
+      expect(r.beats.length, tell2).toBe(r.nights.reduce((a, n) => a + n.beats, 0));
+      expect(r.beats.filter((b) => b.i < 0), tell2).toEqual([]);
+      expect(r.beats.filter((b) => b.heavy && b.tone !== 'quiet'), tell2).toEqual([]);
+      const seen = r.beats.map((b) => b.i);
+      expect(new Set(seen).size, tell2).toBe(seen.length);
+    });
+  }
 
   it('the six designed payoffs, and a pair on the way to one, go first; another pair\'s last banter does not (Task 6 third ruling)', () => {
     expect([...BANTER_PAYOFFS].sort()).toEqual([...PAYOFFS].sort());
@@ -1094,7 +1355,7 @@ describe('town banter', () => {
 
 describe('the confession remembers where it was told (Task 15 review, controller ruling)', () => {
   const confessed = (heroPieces: number): GameState => {
-    let s = withMemories(base(), 'scarlet', 5);
+    let s = withTold(base(), 'scarlet', 5);
     s = withMemories(s, 'hero', heroPieces);
     s.party.roster.rin.oath = true;
     s.story.seen.push('rin-reveal', 'banter:rin-scarlet:1');
@@ -1118,5 +1379,270 @@ describe('the confession remembers where it was told (Task 15 review, controller
     const s = base();
     s.party.roster.rin.oath = true;
     expect(sceneDone(s, 'rin-confess', 'auto').story.confession).toBe('dinner');
+  });
+});
+
+describe('story L: told pieces and the met gate (Task 1)', () => {
+  it("a companion's full and pieces read the pieces told, not held", () => {
+    let s = withMemories(base(), 'safira', 2);
+    s = withTold(s, 'safira', 1);
+    expect(gateOpen(s, { pieces: { safira: 2 } })).toBe(false);
+    s = withTold(s, 'safira', 2);
+    expect(gateOpen(s, { pieces: { safira: 2 } })).toBe(true);
+    const len = chainLength('safira');
+    let f = withTold(withMemories(base(), 'safira', len), 'safira', len - 1);
+    expect(gateOpen(f, { full: 'safira' })).toBe(false);
+    expect(storyPieces(f, 'safira')).toBe(len - 1);
+    f = withTold(f, 'safira', len);
+    expect(gateOpen(f, { full: 'safira' })).toBe(true);
+  });
+
+  it('the hero and Rin read the pieces held', () => {
+    const len = chainLength('hero');
+    const s = withTold(withMemories(base(), 'hero', len), 'hero', len - 1);
+    expect(gateOpen(s, { full: 'hero' })).toBe(true);
+    expect(storyPieces(s, 'hero')).toBe(len);
+    const r = withMemories(base(), 'rin', 4);
+    expect(toldCount(r, 'rin')).toBe(0);
+    expect(gateOpen(r, { pieces: { rin: 4 } })).toBe(true);
+  });
+
+  it('the reveal still queues once Rin holds all seven, some untold', () => {
+    const s = withTold(withMemories(base(), 'rin', chainLength('rin')), 'rin', chainLength('rin') - 2);
+    expect(toldCount(s, 'rin')).toBe(chainLength('rin') - 2);
+    expect(onReturn(s).queue).toContain('rin-reveal');
+  });
+
+  it('a homecoming waits for her last piece told', () => {
+    const len = chainLength('sylvie');
+    const s = withTold(withMemories(base(), 'sylvie', len), 'sylvie', len - 1);
+    expect(onReturn(s).queue).not.toContain('home:sylvie');
+    expect(onReturn(withTold(s, 'sylvie', len)).queue).toContain('home:sylvie');
+  });
+
+  it('a met gate opens once every one named is met', () => {
+    const s = base();
+    expect(gateOpen(s, { met: ['selene', 'noel'] })).toBe(false);
+    s.party = meet(s.party, 'selene', 1);
+    expect(gateOpen(s, { met: ['selene', 'noel'] })).toBe(false);
+    s.party = meet(s.party, 'noel', 1);
+    expect(gateOpen(s, { met: ['selene', 'noel'] })).toBe(true);
+    expect(gateOpen(s, { met: [] })).toBe(true);
+  });
+
+  it('toldCount counts her memory scenes in seen, in any order', () => {
+    const s = withMemories(base(), 'noel', 3);
+    s.story.seen.push('mem:noel:1', 'mem:noel:3', 'mem:selene:2', 'chat:noel:1');
+    expect(toldCount(s, 'noel')).toBe(2);
+    expect(toldCount(base(), 'noel')).toBe(0);
+  });
+
+  it('group ids are kind group, capped at fourteen, heavy', () => {
+    expect(groupScene('act2')).toBe('group:act2');
+    for (const node of ['act2', 'act3', 'act4'] as const) {
+      const id = groupScene(node);
+      expect(sceneKind(id)).toBe('group');
+      expect(lineCap(id)).toBe(14);   // twelve in spec §5.1; fourteen since the cold read (room for a reaction after the turn)
+      expect(heavyScene(id)).toBe(true);
+    }
+    expect(GROUP_MIN_LINES).toBe(8);
+  });
+
+  it('GROUP_GATE matches the cast table', () => {
+    expect(GROUP_GATE).toEqual({
+      'group:act2': { met: ['selene', 'noel'] },
+      'group:act3': { met: ['sylvie', 'bobby'], beforeChoice: true },
+      'group:act4': { met: ['liz', 'scarlet', 'chizuru', 'safira'] },
+    });
+    expect(REACTIONS).toEqual({});   // no group scene is written yet (Task 9-11 register them)
+  });
+});
+
+describe('story L: pieces wait to be told (Task 2a)', () => {
+  it('sceneDone takes a memory out of untold and tonight', () => {
+    const s = withMemories(base(), 'rin', 2);
+    s.story.untold = ['mem:rin:1', 'mem:rin:2'];
+    s.story.tonight = ['mem:rin:1'];
+    const done = sceneDone(s, 'mem:rin:1', 'played');
+    expect(done.story.untold).toEqual(['mem:rin:2']);
+    expect(done.story.tonight).toEqual([]);
+    expect(done.story.seen).toContain('mem:rin:1');
+    expect(sceneDone(base(), 'act2', 'played').story.untold).toBeUndefined();   // nothing added where there was nothing
+  });
+
+  it('the lone morning counts a ninth piece still untold', () => {
+    const s = withMemories(base(), 'hero', 9);
+    s.party.roster.rin.oath = true;
+    expect(onReturn(s).queue).not.toContain('hero-alone');
+    s.story.untold = ['mem:hero:9'];
+    expect(onReturn(s).queue).toContain('hero-alone');
+  });
+});
+
+describe('story L: the night before the descent (Task 3d)', () => {
+  /** Her choice made, the acts and the keeper behind them, the main road reached to `reached`. */
+  const chose = (reached: number): GameState => {
+    const s = withMemories(base(), 'rin', chainLength('rin'));
+    s.party.roster.rin.oath = true;
+    s.story.seen.push('rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'act2', 'act3', 'act4');
+    s.story.nodes = ['act2', 'act3', 'act4'];
+    s.dungeon.reached.mainline = reached;
+    return s;
+  };
+
+  it('the eve is queued once her choice is made and the main road reaches twenty-six, never on an arrival', () => {
+    const s = returned(chose(EVE_DEPTH));
+    expect(EVE_DEPTH).toBe(26);
+    expect(s.story.queue).toEqual(['finale-eve']);
+    expect(arrivalScenes(s, { chat: true })).not.toContain('finale-eve');
+    expect(arrivalScenes(s, { chat: false })).not.toContain('finale-eve');
+    expect(returned(s).story.queue.filter((id) => id === 'finale-eve')).toHaveLength(1);   // once
+    const told = chose(28);
+    told.story.seen.push('finale-eve');
+    expect(returned(told).story.queue).not.toContain('finale-eve');
+    const after = chose(30);
+    after.story.act1Cleared = true;
+    after.story.finaleCleared = true;
+    expect(returned(after).story.queue).not.toContain('finale-eve');
+  });
+
+  it('not before her choice, nor below twenty-six', () => {
+    expect(returned(chose(EVE_DEPTH - 1)).story.queue).not.toContain('finale-eve');
+    const before = chose(29);
+    delete before.party.roster.rin.oath;
+    before.story.seen = before.story.seen.filter((id) => id !== 'rin-reveal' && id !== 'rin-confess' && id !== 'bellkeeper-arrives');
+    expect(returned(before).story.queue).not.toContain('finale-eve');
+  });
+});
+
+describe('story L: the reaction slot (Task 5)', () => {
+  const R = { act2: 'group:act2', act3: 'group:act3', act4: 'group:act4' } as const;
+  const kinds = (ids: SceneId[]) => ids.filter((id) => id.startsWith('chat:') || id.startsWith('banter:'));
+  /** In town with `ids` met (Lorne and Rin are), the act `node` reached and queued, the acts before it played. */
+  const at = (node: 'act2' | 'act3' | 'act4' | null, ids: CharacterId[]): GameState => {
+    const s = base();
+    for (const id of ids) withMemories(s, id, 0);
+    if (node) {
+      s.dungeon.reached.mainline = ACT_DEPTHS[node];
+      for (const n of ['act2', 'act3', 'act4'] as const) {
+        if (ACT_DEPTHS[n] > ACT_DEPTHS[node]) continue;
+        s.story.nodes.push(n);
+        if (n === node) s.story.queue.push(n); else s.story.seen.push(n);
+      }
+    }
+    return s;
+  };
+  const done = (s: GameState, id: SceneId): GameState => sceneDone(s, id, 'played', R);
+
+  it('group:act2 plays on the arrival act2 plays, its cast met, and takes the chat and banter', () => {
+    const s = at('act2', ['selene', 'noel', 'liz']);
+    const day = arrivalScenes(s, { chat: true, reactions: R });
+    expect(day).toEqual(['act2', 'group:act2']);
+    expect(kinds(day)).toEqual([]);
+    // the registry empty (no script yet), the arrival is what it was
+    expect(arrivalScenes(s, { chat: true })).not.toContain('group:act2');
+    expect(kinds(arrivalScenes(s, { chat: true })).length).toBeGreaterThan(0);
+    expect(nextReaction(s, ['act2'], R)).toBe('group:act2');
+    // the act said, it holds its group's chances; the group said, they are spent
+    const after = done(s, 'act2');
+    expect(after.story.reacts).toEqual({ 'group:act2': 0 });
+    const heard = done(after, 'group:act2');
+    expect(heard.story.reacts).toEqual({});
+    expect(heard.story.seen).toContain('group:act2');
+    // the chat and the banter come back on the next return
+    const next = returned(heard);
+    const nextDay = arrivalScenes(next, { chat: true, reactions: R });
+    expect(nextDay).not.toContain('group:act2');
+    expect(kinds(nextDay).length).toBeGreaterThan(0);
+  });
+
+  it('a group scene waits for its cast one more return, then expires', () => {
+    // act 2's arrival: Noel not met, so no group, and the chat slot is as before
+    let s = at('act2', ['selene']);
+    const day = arrivalScenes(s, { chat: true, reactions: R });
+    expect(day).not.toContain('group:act2');
+    expect(day).toEqual(arrivalScenes(s, { chat: true }));
+    s = done(s, 'act2');
+    expect(s.story.reacts).toEqual({ 'group:act2': 0 });
+    // the next return: its second chance
+    s = returned(s);
+    expect(s.story.reacts).toEqual({ 'group:act2': 1 });
+    const met = withMemories(structuredClone(s), 'noel', 0);
+    expect(arrivalScenes(met, { chat: true, reactions: R })).toEqual(['group:act2']);
+    expect(arrivalScenes(s, { chat: true, reactions: R })).not.toContain('group:act2');   // still not met
+    // one more return: gone, met or not
+    s = returned(s);
+    expect(s.story.reacts).toEqual({});
+    withMemories(s, 'noel', 0);
+    expect(arrivalScenes(s, { chat: true, reactions: R })).not.toContain('group:act2');
+    expect(nextReaction(s, [], R)).toBeNull();
+  });
+
+  it("a group scene's second chance is lost when the next act plays", () => {
+    const s = at('act3', ['selene', 'noel']);
+    s.story.reacts = { 'group:act2': 1 };
+    // the next act in the day: the group before it is passed over (and act 3's own needs Sylvie and Bobby)
+    expect(nextReaction(s, ['act3'], R)).toBeNull();
+    const day = arrivalScenes(s, { chat: true, reactions: R });
+    expect(day[0]).toBe('act3');
+    expect(day).not.toContain('group:act2');
+    const zero = structuredClone(s);
+    zero.story.reacts = { 'group:act2': 0 };
+    expect(nextReaction(zero, ['act3'], R)).toBeNull();
+    // and once the next act is said, the earlier group is gone: a reload does not bring it back after it
+    const after = done(s, 'act3');
+    expect(after.story.reacts).toEqual({ 'group:act3': 0 });
+    expect(arrivalScenes(after, { chat: false, reactions: R })).toEqual([]);
+    // with act 3's cast met as well, act 3's own group plays
+    const cast = at('act3', ['selene', 'noel', 'sylvie', 'bobby']);
+    cast.story.reacts = { 'group:act2': 0 };
+    expect(nextReaction(cast, ['act3'], R)).toBe('group:act3');
+  });
+
+  it("group:act3 expires on Rin's choice", () => {
+    const s = at('act3', ['sylvie', 'bobby']);
+    expect(nextReaction(s, ['act3'], R)).toBe('group:act3');
+    s.party.roster.rin.oath = true;
+    expect(nextReaction(s, ['act3'], R)).toBeNull();
+    s.story.reacts = { 'group:act3': 1 };
+    expect(nextReaction(s, [], R)).toBeNull();
+    expect(arrivalScenes(s, { chat: false, reactions: R })).not.toContain('group:act3');
+  });
+
+  it('no reaction on a reveal or a confession arrival, and that arrival spends a chance', () => {
+    const s = at(null, ['selene', 'noel']);
+    withMemories(s, 'rin', chainLength('rin'));
+    s.story.seen.push('act2');
+    s.story.nodes = ['act2'];
+    s.dungeon.reached.mainline = ACT_DEPTHS.act2;
+    s.story.reacts = { 'group:act2': 0 };
+    const reveal = returned(s);
+    expect(reveal.story.queue).toEqual(['rin-reveal']);
+    expect(arrivalScenes(reveal, { chat: true, reactions: R })).toEqual(['rin-reveal']);
+    expect(reveal.story.reacts).toEqual({ 'group:act2': 1 });
+    const confess = returned(done(reveal, 'rin-reveal'));
+    expect(arrivalScenes(confess, { chat: true, reactions: R })).toEqual(['rin-confess']);
+    expect(confess.story.reacts).toEqual({});
+  });
+
+  it('a reload fills the reaction slot but no chat', () => {
+    const s = at(null, ['selene', 'noel']);
+    s.story.seen.push('act2');
+    s.story.nodes = ['act2'];
+    s.dungeon.reached.mainline = ACT_DEPTHS.act2;
+    s.story.reacts = { 'group:act2': 0 };
+    expect(arrivalScenes(s, { chat: false, reactions: R })).toEqual(['group:act2']);
+    expect(arrivalScenes(s, { chat: false })).toEqual([]);
+    expect(arrivalScenes(s, { chat: true, reactions: R })).toEqual(['group:act2']);
+  });
+
+  it('after the finale no act opens a chance and no group is offered (spec §4.8, §5.3)', () => {
+    const s = at('act4', ['liz', 'scarlet', 'chizuru', 'safira']);
+    s.story.act1Cleared = true;
+    s.story.finaleCleared = true;
+    expect(nextReaction(s, ['act4'], R)).toBeNull();
+    expect(done(s, 'act4').story.reacts ?? {}).toEqual({});
+    s.story.reacts = { 'group:act4': 0 };
+    expect(nextReaction(s, [], R)).toBeNull();
   });
 });

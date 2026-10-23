@@ -264,8 +264,43 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
-    name: 'guild', visit: async (page, w) => {
+    // Story L: a memory told at night in town, after the day's line: the night's card, its veil, the memory's past.
+    name: 'night-memory', visit: async (page, w) => {
       await readAll(page, w);   // the inn night and the day's line after it
+      await page.evaluate(() => {
+        const d = (window as unknown as { __starlanternDebug: { game: { arrival: string[]; night: string[] } } }).__starlanternDebug;
+        d.game.arrival = [];
+        d.game.night = ['mem:rin:1'];
+      });
+      await go(page, 'town');
+      await expect(page.locator('.slx-town .slx-talk')).toBeVisible();
+      await w.key('z');   // the day's line
+      if (!(await page.locator('.slx-town .slx-place-card').isVisible())) await w.key('z');   // the line whole first
+      await expect(page.locator('.slx-town .slx-place-card')).toHaveText('月影旅館・夜');
+      await expect(page.locator('.slx-town .slx-veil-night.slx-on')).toHaveCount(1);
+      if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+    },
+  },
+  {
+    // Story L: a group scene, the first thing of the night, under its own card (the inn's dinner, not the night's).
+    name: 'group-scene', visit: async (page, w) => {
+      await readAll(page, w);   // the night's memory
+      await page.evaluate(() => {
+        const d = (window as unknown as { __starlanternDebug: { game: { arrival: string[]; night: string[] } } }).__starlanternDebug;
+        d.game.arrival = [];
+        d.game.night = ['group:act2'];
+      });
+      await go(page, 'town');
+      await expect(page.locator('.slx-town .slx-talk')).toBeVisible();
+      await w.key('z');   // the day's line
+      if (!(await page.locator('.slx-town .slx-place-card').isVisible())) await w.key('z');   // the line whole first
+      await expect(page.locator('.slx-town .slx-place-card')).toHaveText('月影旅館・晚飯');
+      if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+    },
+  },
+  {
+    name: 'guild', visit: async (page, w) => {
+      await readAll(page, w);   // the group scene
       await storyOff(page);
       await facility(page, w, 'guild', '.slx-guild');
     },
@@ -353,6 +388,24 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   })),
   {
+    // Story L: a memory piece found and still untold is listed and marked 新 (and so is its owner's row); reading it tells it.
+    name: 'handbook-new', visit: async (page) => {
+      await page.evaluate(() => {
+        const d = (window as unknown as { __starlanternDebug: { game: { state: { party: { roster: { rin: { memories?: number } } }; story: { seen: string[]; untold?: string[] } } } } }).__starlanternDebug;
+        const { story, party } = d.game.state;
+        const k = [1, 2, 3, 4, 5, 6, 7].find((n) => !story.seen.includes(`mem:rin:${n}`) && !(story.untold ?? []).includes(`mem:rin:${n}`));
+        if (!k) return;
+        party.roster.rin.memories = Math.max(party.roster.rin.memories ?? 0, k);
+        story.untold = [...(story.untold ?? []), `mem:rin:${k}`];
+      });
+      await go(page, 'handbook');
+      const rin = page.locator('.slx-handbook .slx-hb-list [role=option][data-id=rin]');
+      await expect(rin.locator('.slx-fresh')).toHaveText(T.ui2.handbook.fresh);
+      await rin.click();
+      await expect(page.locator('.slx-handbook .slx-hb-list [role=option] .slx-fresh').first()).toHaveText(T.ui2.handbook.fresh);
+    },
+  },
+  {
     // The first workshop visit with runes in the bag tells the rune tutorial (plan 8g).
     name: 'rune-tutorial', visit: async (page, w) => {
       await go(page, 'workshop');
@@ -432,8 +485,50 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
-    name: 'dungeon', visit: async (page, w) => {
+    // Story L (controller ruling 2026-10-24): the dawn before departure, one memory told at the gate under the dawn's card.
+    name: 'dawn', visit: async (page, w) => {
+      await page.evaluate(() => {
+        const d = (window as unknown as { __starlanternDebug: { game: { state: { party: { recruited: string[]; roster: Record<string, { memories?: number }> }; story: { seen: string[]; untold?: string[]; dawn?: string } } }; settings: { get(): object; set(s: object): void } } }).__starlanternDebug;
+        d.settings.set({ ...d.settings.get(), story: 'all' });
+        const { story, party } = d.game.state;
+        const ids = party.recruited.filter((c) => c !== 'hero' && c !== 'rin' && !story.seen.includes(`mem:${c}:1`) && !(story.untold ?? []).includes(`mem:${c}:1`)).slice(0, 4);
+        for (const c of ids) party.roster[c].memories = Math.max(party.roster[c].memories ?? 0, 1);
+        story.untold = [...(story.untold ?? []), ...ids.map((c) => `mem:${c}:1`)];
+        story.dawn = `mem:${ids[0]}:1`;
+      });
       await w.key('ArrowUp'); await w.key('Enter');           // 是
+      await expect(page.locator('.slx-gate .slx-talk')).toBeVisible();
+      await expect(page.locator('.slx-gate .slx-place-card')).toHaveText('月影旅館・清晨');
+      if (!(await page.locator('.slx-gate .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+    },
+  },
+  {
+    // Story L: the night before the descent, said at the gate on the departure that owes it, under the night's card.
+    name: 'eve', visit: async (page, w) => {
+      // The dawn's memory read, the party sets out; straight back by the entrance, then to the gate's question again.
+      await readAll(page, w);
+      await expect(page.locator('.slx-dungeon')).toBeVisible();
+      await page.evaluate(() => (window as unknown as { __starlanternDebug: { game: { returnToTown(): boolean } } }).__starlanternDebug.game.returnToTown());
+      await facility(page, w, 'gate', '.slx-gate');
+      await w.key('Enter');                                   // 選擇傳送門
+      await expect(page.locator('.slx-portal').first()).toBeVisible();
+      await w.key('Enter'); await w.key('Enter');             // the mainline card, depth 1
+      await expect(page.locator('.slx-confirm')).toBeVisible();
+      await page.evaluate(() => {
+        const d = (window as unknown as { __starlanternDebug: { game: { state: { story: { queue: string[] } } }; settings: { get(): object; set(s: object): void } } }).__starlanternDebug;
+        d.settings.set({ ...d.settings.get(), story: 'all' });
+        d.game.state.story.queue.push('finale-eve');
+      });
+      await w.key('ArrowUp'); await w.key('Enter');           // 是
+      await expect(page.locator('.slx-gate .slx-talk')).toBeVisible();
+      await expect(page.locator('.slx-gate .slx-place-card')).toHaveText('月影旅館・夜');
+      if (!(await page.locator('.slx-gate .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+    },
+  },
+  {
+    name: 'dungeon', visit: async (page, w) => {
+      await readAll(page, w);                                 // the eve, then the party sets out
+      await storyOff(page);
       await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
     },
   },

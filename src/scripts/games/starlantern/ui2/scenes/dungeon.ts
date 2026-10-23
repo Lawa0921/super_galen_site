@@ -6,7 +6,6 @@ import { ITEMS } from '../../data/items';
 import type { Meetable } from '../../data/meetings';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { T } from '../../data/text.zh-TW';
-import { memScene, sceneKind, type SceneId } from '../../data/story/scenes';
 import { floorOf } from '../../engine/dungeon/run';
 import type { FragmentGain } from '../../engine/story/memories';
 import { BAG_SIZE } from '../../engine/loot/bag';
@@ -26,7 +25,7 @@ import { textCps } from '../settings';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich } from '../widgets';
 import { fragmentLines, levelUpLines } from '../battleText';
-import { playAndRecord, speakerOf, storyCtx } from '../story';
+import { speakerOf, storyCtx } from '../story';
 import { meetingPlate } from '../rescue';
 import { STORY } from '../../data/story.zh-TW';
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
@@ -61,8 +60,6 @@ export class DungeonScene implements Scene {
   private layers: Layer[] = [];
   private talk: Dialogue;
   private leaving = false;
-  /** The memory scene on screen, if any: it takes the actions while it plays. */
-  private playing: ReturnType<typeof playAndRecord> | null = null;
   /** Set on exit, so a line waiting on an earlier one (the depth-clear reward) never speaks on a scene that has gone. */
   private exited = false;
   /** Counts the lines said, so a follow-up line can tell that a newer one took its turn. */
@@ -100,7 +97,6 @@ export class DungeonScene implements Scene {
     this.ctx.stage?.show('map');
     this.refresh();
     if (this.ctx.from === 'gate') this.conditionBanner();
-    void this.flushPending();   // a memory still waiting from before (the settings screen, a battle) plays now
   }
 
   exit(): void {
@@ -114,7 +110,6 @@ export class DungeonScene implements Scene {
 
   onAction(a: UiAction): void {
     if (this.leaving) return;
-    if (this.playing) { this.playing.onAction(a); return; }
     // Confirm or cancel ends a legendary drop's moment first (fast mode never waits on it); directions always step.
     if (!this.ctx.fast && skipPillar(this.body, a)) return;
     if (this.talk.busy()) { this.talk.onAction(a); return; }
@@ -288,35 +283,14 @@ export class DungeonScene implements Scene {
     this.refresh();
   }
 
-  /** What a glimmer held, one line at a time, then the memory scene of a piece that plays now. A glimmer always holds a piece or a shard. */
+  /**
+   * What a glimmer held, one line at a time (a glimmer always holds a piece or a shard). A piece is a caption only: who
+   * remembered something. Its memory is told at night in town (story L spec §4.2).
+   */
   private async found(gained: FragmentGain[]): Promise<void> {
     for (const line of fragmentLines(gained)) {
       await this.say(line);
       if (this.exited) return;
-    }
-    for (const g of gained) {
-      if (g.kind !== 'piece' || !g.play) continue;
-      await this.memory(memScene(g.id, g.n));
-      if (this.exited) return;
-    }
-  }
-
-  /**
-   * Plays one memory scene and records it, with the pad out of the way (the portrait stands over it). A scene that fails
-   * is reported in the console and the labyrinth carries on: it must never lock the screen.
-   */
-  private async memory(id: SceneId): Promise<void> {
-    this.hideHud(true);
-    try {
-      const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
-      this.playing = p;
-      await p.done;
-    } catch (e) {
-      console.error('starlantern: memory scene failed', e);
-    } finally {
-      this.playing = null;
-      this.hideHud(false);
-      this.syncInert();
     }
   }
 
@@ -325,22 +299,9 @@ export class DungeonScene implements Scene {
     for (const e of [this.pad, this.weightEl, this.hintEl]) e.classList.toggle('slx-cmd-hidden', on);
   }
 
-  /** Memory scenes the game still holds as due: leaving the floor drops them, so they play before the party goes. */
-  private waitingMemories(): SceneId[] {
-    return this.ctx.game.pending.filter((id) => sceneKind(id) === 'memory');
-  }
-
-  private async flushPending(): Promise<void> {
-    for (const id of this.waitingMemories()) {
-      await this.memory(id);
-      if (this.exited) return;
-    }
-  }
-
-  /** Runs `go` now, or once the memories still waiting have played. */
+  /** Runs `go`: nothing waits in the labyrinth any more (story L: memories are told at night in town). */
   private beforeLeaving(go: () => void): void {
-    if (this.waitingMemories().length === 0) { go(); return; }
-    void this.flushPending().then(() => { if (!this.exited) go(); });
+    go();
   }
 
   /** The finale's room before Rin has made her choice: what is missing is said once and the party stays where it stands. */

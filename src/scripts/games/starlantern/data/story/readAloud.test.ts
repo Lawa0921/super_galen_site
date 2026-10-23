@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { STORY, type ScriptLine } from '../story.zh-TW';
-import { dumpStory, readAloud } from './readAloud';
+import { dumpStory, readAloud, readAloudBlind } from './readAloud';
 
 describe('readAloud (story polish Task 3)', () => {
   it("prints a scene's readings with plates", () => {
@@ -66,6 +66,41 @@ describe('readAloud (story polish Task 3)', () => {
     } finally {
       scene.lines = saved;
     }
+  });
+
+  it('the blind dump shows no plate and keeps a key apart (story L Task 7)', () => {
+    const keys = ['scenes.prologue-inn.', 'scenes.first-return.'];
+    const { text, key } = readAloudBlind(keys);
+    // no name plate, no speaker table, no title or summary to give anyone away
+    for (const name of ['凜', '洛恩']) expect(text).not.toMatch(new RegExp(`^(\\[\\d+\\] )?${name}：`, 'm'));
+    expect(text).toMatch(/^？：「/m);
+    expect(text).not.toContain('| 說話者');
+    expect(text).not.toContain('摘要：');
+    expect(text).not.toContain('旅館的第一夜');
+    expect(text).not.toContain('scenes.prologue-inn');
+    expect(text.split('\n').some((l) => l.startsWith('她手腕上還留著'))).toBe(true);   // narration has no plate anyway
+    // ten spoken lines numbered [1] to [10], each once, in the order they are said
+    const ten = Array.from({ length: 10 }, (_, i) => i + 1);
+    expect([...text.matchAll(/^\[(\d+)\] ？：/gm)].map((m) => Number(m[1]))).toEqual(ten);
+    // the key, apart, says who says each numbered line
+    const rows = [...key.matchAll(/^\[(\d+)\] (凜|洛恩)：(.+)$/gm)];
+    expect(rows.map((r) => Number(r[1]))).toEqual(ten);
+    for (const r of rows) expect(text).toContain(`[${r[1]}] ？：${r[3]}`);
+    expect(key).not.toContain('？：');
+    // a fixed draw: the same lines every time (no Math.random)
+    expect(readAloudBlind(keys)).toEqual({ text, key });
+    // fewer than ten spoken lines: every one is numbered
+    const few = readAloudBlind(['scenes.prologue-inn.']);
+    const said = STORY.scenes['prologue-inn'].lines.filter((l) => l.who !== 'narrator').length;
+    expect(said).toBeLessThan(10);
+    expect([...few.text.matchAll(/^\[(\d+)\] ？：/gm)]).toHaveLength(said);
+  });
+
+  it('writes the blind dump and its key apart when STORY_DUMP_BLIND is set (story L Task 7)', () => {
+    const write = vi.fn();
+    expect(dumpStory({ STORY_DUMP: 'b.md', STORY_DUMP_KEYS: 'scenes.prologue-inn.', STORY_DUMP_BLIND: '1' }, write)).toBe(true);
+    const blind = readAloudBlind(['scenes.prologue-inn.']);
+    expect(write.mock.calls).toEqual([['b.md', blind.text], ['b.md.key.md', blind.key]]);
   });
 
   it('writes the dump when STORY_DUMP is set', () => {

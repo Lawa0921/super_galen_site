@@ -11,9 +11,9 @@ import type { Run } from '../dungeon/run';
 /** Floors cleared without a piece, per chain. */
 export type Pity = Partial<Record<CharacterId, number>>;
 
-/** What a drop source hands out. `play` is filled by the game (Task 5); the rules here always say false. */
+/** What a drop source hands out. A piece's scene waits in `story.untold` (story L); the labyrinth only says who remembered. */
 export type FragmentGain =
-  | { kind: 'piece'; id: CharacterId; n: number; play: boolean }
+  | { kind: 'piece'; id: CharacterId; n: number }
   | { kind: 'shard'; grade: ShardGrade }
   | { kind: 'town'; id: TownFragmentId };
 

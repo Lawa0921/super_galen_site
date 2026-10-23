@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { CHARACTER_IDS } from '../characters';
 import { MEETINGS } from '../meetings';
 import { STORY, type ScriptLine, type Speaker } from '../story.zh-TW';
-import { SCENE_IDS, type SceneId } from './scenes';
+import { BANTER_GATE, CHAT_GATE, SCENE_IDS, type SceneId } from './scenes';
 import {
-  AFTER_CHOICE, CONNECTIVES, ELLIPSIS, INTERJECTIONS, SENTENCE_PARTICLE, TELEGRAPH_OK, VOCATIVES, VOICE, WORD_LISTS_AT_TASK3,
+  AFTER_CHOICE, CHIZURU_ARCHAIC, CHIZURU_NEVER, CONNECTIVES, ELLIPSIS, SYLVIE_WORLD, INTERJECTIONS, SENTENCE_PARTICLE, TELEGRAPH_OK, VOCATIVES, VOICE, WORD_LISTS_AT_TASK3,
   dots, heavyScene, opensOnDots, pinBeat, readingsOf, sceneReadings, speakerOf, storyTexts, telegraphBreaks, type Text,
 } from './voiceGates';
 
@@ -42,6 +42,12 @@ const POLISHED: string[] = [
   // Task 18: the townsfolk returns and the bellkeeper (story depth plan Task 18). `town.` (each return's handbook line and
   // its thanks at the counter) was story polish Task 12a's and no depth task listed it; it belongs with the returns.
   'scenes.town:', 'bellkeeper.', 'town.',
+  // Story L Task 3d: the night before the descent, its frame line (Task 8 finalizes it under the same gates)
+  'scenes.finale-eve.',
+  // Story L Task 8: the beats between a night's memories (the memories' present lines were polished above)
+  'nightBeats.',
+  // Story L Tasks 9-11: the group scenes, each as it is written and registered
+  'scenes.group:',
   // Difficulty plan Task 7a: Glen's one line when Nightmare opens.
   'tierUnlock',
 ];
@@ -303,6 +309,44 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
     expect(particleBreaks(everything).includes(`bobby: ${marked} of ${said.length} lines carry ${VOICE.bobby!.mark}`)).toBe(over);
   });
 
+  it('Sylvie may say 啦 or 欸 in a fifth of her lines, none in a heavy scene (story L Task 7, spec §7.1)', () => {
+    const v = VOICE.sylvie!;
+    expect(v.mark?.test('「這個能吃啦。」')).toBe(true);
+    expect(v.mark?.test('「欸，蘿蔔切太大塊了。」')).toBe(true);
+    expect(v.maxShare).toBe(1 / 5);
+    expect(v.heavyNone).toBe(true);
+    expect(v.never?.test('「風向不對吧。」')).toBe(true);   // the other particles stay out of her mouth
+    expect(v.never?.test('「這個能吃啦。」')).toBe(false);
+    // the budget as it bites, on her real lines: one 啦 in a light scene passes, one in a heavy scene does not, and past a
+    // fifth of all her lines the share fails
+    const hers = storyTexts().filter((t) => t.line && t.line.who === 'sylvie' && t.key.startsWith('scenes.'));
+    const heavy = (t: Text) => heavyScene(t.key.split('.')[1] as SceneId);
+    const light = hers.filter((t) => !heavy(t));
+    const grave = hers.find(heavy)!;
+    const whole = storyTexts().filter((t) => speakerOf(t.key, t.line) === 'sylvie');
+    const all = whole.length;
+    const already = whole.filter((t) => v.mark!.test(t.text)).length;   // the ones she says today, in the beats too
+    const over = Math.floor(all / 5) + 1;
+    const unmarked = light.filter((t) => !v.mark!.test(t.text));
+    expect(unmarked.length, 'enough light lines of hers to go over a fifth').toBeGreaterThanOrEqual(over - already);
+    const saved = hers.map((t) => t.line!.text);
+    const say = (ts: Text[]) => { for (const t of ts) t.line!.text = '「這個能吃啦。」'; };
+    const sylvieBreaks = () => particleBreaks(POLISHED).filter((x) => x.includes('sylvie'));
+    try {
+      say([unmarked[0]]);
+      expect(already + 1, 'one more is still within a fifth').toBeLessThanOrEqual(all / 5);
+      expect(sylvieBreaks()).toEqual([]);
+      say([grave]);
+      expect(sylvieBreaks().some((x) => x.includes('in a heavy scene'))).toBe(true);
+      hers.forEach((t, i) => { t.line!.text = saved[i]; });
+      say(unmarked.slice(0, over - already));
+      expect(sylvieBreaks().some((x) => x.startsWith(`sylvie: ${over} of ${all} lines carry`))).toBe(true);
+    } finally {
+      hers.forEach((t, i) => { t.line!.text = saved[i]; });
+    }
+    expect(sylvieBreaks()).toEqual([]);
+  });
+
   it('readings cover a seen condition (story depth Task 1)', () => {
     const lines: ScriptLine[] = [
       { who: 'rin', text: '「看過了。」', if: { seen: 'banter:rin-sylvie:1' } },
@@ -347,7 +391,28 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
   });
 });
 
+/** Story L spec §8: what points a memory's present line at the labyrinth. 「這裡」 and Chizuru's 「此處」 are let be. */
+const LABYRINTH_HERE = /這片|這座|腳下|這一層|天頂/;
+/** The memory lines said now (not `past`) that point at the labyrinth, though a memory is told at night in town. */
+const labyrinthBreaks = (texts: Text[]): string[] =>
+  texts.filter((t) => t.key.startsWith('scenes.mem:') && t.line && !t.line.past && LABYRINTH_HERE.test(t.text)).map((t) => `${t.key}: ${t.text}`);
+
 describe('voice gates over the polished script (story polish)', () => {
+  it("a memory's present lines do not point at the labyrinth (story L Task 8)", () => {
+    // the gate itself: a present line that stands in the labyrinth is caught; the past, 「這裡」 and 「此處」 are not
+    const t = (key: string, line: ScriptLine): Text => ({ key, text: line.text, line });
+    const now = (text: string): ScriptLine => ({ who: 'narrator', text });
+    expect(labyrinthBreaks([t('scenes.mem:safira:5.lines.2.text', now('腳下這片火海，原來就是那片沙漠。'))])).toHaveLength(1);
+    expect(labyrinthBreaks([t('scenes.mem:sylvie:1.lines.2.text', { who: 'sylvie', text: '「這箭頭是我刻的。那時候，這片沼澤還是林子。」' })])).toHaveLength(1);
+    expect(labyrinthBreaks([t('scenes.mem:chizuru:1.lines.3.text', now('千鶴抬頭看了看迷宮的天頂。'))])).toHaveLength(1);
+    expect(labyrinthBreaks([t('scenes.mem:safira:5.lines.0.text', { who: 'narrator', text: '腳下這片沙漠燒了起來。', past: true })])).toEqual([]);
+    expect(labyrinthBreaks([t('scenes.mem:scarlet:5.lines.3.text', { who: 'scarlet', text: '「從今天起，我站這裡。」' })])).toEqual([]);
+    expect(labyrinthBreaks([t('scenes.mem:chizuru:5.lines.3.text', { who: 'chizuru', text: '「為此處的人掛上這枚鈴。」' })])).toEqual([]);
+    expect(labyrinthBreaks([t('scenes.act2.lines.0.text', now('腳下這片石板。'))])).toEqual([]);   // only memories
+    // the script: every memory's present half is said at night in town (spec §8)
+    expect(labyrinthBreaks(storyTexts())).toEqual([]);
+  });
+
   it('polished lines are whole sentences', () => {
     const out = polishedTexts().flatMap((t) => telegraphBreaks(t.text).map((why) => `${t.key}: ${why}: ${t.text}`));
     expect(out).toEqual([]);
@@ -452,5 +517,93 @@ describe('voice gates over the polished script (story polish)', () => {
     const keys = storyTexts().map((t) => t.key);
     for (const p of POLISHED) expect(keys.some((k) => k.startsWith(p)), p).toBe(true);
     expect(CHARACTER_IDS.length).toBe(10);
+  });
+});
+
+// Story L Tasks 12 and 13 (spec §7.1, §7.2): Sylvie and Chizuru no longer share Rin's and Scarlet's deadpan. Sylvie is a
+// grumbling hunter (food, weather, tracks); Chizuru's joke is the year she fell asleep in, said politely, not classically.
+describe('story L: Sylvie and Chizuru in their new voices (Tasks 12, 13)', () => {
+  /** Every string a speaker says, with whether the scene it plays in is heavy (a meeting and a night beat are light). */
+  const saidBy = (who: Speaker): (Text & { heavy: boolean })[] => storyTexts()
+    .filter((t) => speakerOf(t.key, t.line) === who)
+    .map((t) => {
+      const [top, id] = t.key.split('.');
+      return { ...t, heavy: top === 'scenes' && heavyScene(id as SceneId) };
+    });
+
+  it("Sylvie's light lines talk food, weather, wind, tracks or prey in a third of them (Task 12)", () => {
+    // the gate itself
+    for (const ok of ['「又是乾糧。」', '「風轉北了。」', '「這腳印還是濕的。」', '「湯太鹹。」']) expect(SYLVIE_WORLD.test(ok), ok).toBe(true);
+    for (const no of ['「不用。」', '「找退路。」', '「沒有。在看貓。」']) expect(SYLVIE_WORLD.test(no), no).toBe(false);
+    const light = saidBy('sylvie').filter((t) => !t.heavy);
+    expect(light.length).toBeGreaterThanOrEqual(15);
+    const world = light.filter((t) => SYLVIE_WORLD.test(t.text));
+    expect(world.length * 3, `${world.length} of ${light.length}:\n${light.filter((t) => !SYLVIE_WORLD.test(t.text)).map((t) => t.text).join('\n')}`).toBeGreaterThanOrEqual(light.length);
+    // and not only in the night beats (written for it in Task 8): her meeting, chats and banters too
+    const scenes = light.filter((t) => !t.key.startsWith('nightBeats.'));
+    const inScenes = scenes.filter((t) => SYLVIE_WORLD.test(t.text));
+    expect(inScenes.length * 3, `${inScenes.length} of ${scenes.length}:\n${scenes.filter((t) => !SYLVIE_WORLD.test(t.text)).map((t) => t.text).join('\n')}`).toBeGreaterThanOrEqual(scenes.length);
+    // she grumbles out loud: 啦 or 欸 in a few light lines (within her fifth, `VOICE.sylvie`)
+    expect(light.filter((t) => VOICE.sylvie!.mark!.test(t.text)).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("Sylvie is no clipped deadpan: 「另外，」 is Rin's, and only 「不用。」 is two characters (Task 12)", () => {
+    for (const t of saidBy('sylvie')) expect(t.text, t.key).not.toMatch(/另外，/);
+    // her light lines are mostly whole sentences with something in them: no more than a quarter of them under eight characters
+    const light = saidBy('sylvie').filter((t) => !t.heavy && t.line);
+    const clipped = light.filter((t) => [...inner(t.text).replace(/[。！？，、]/g, '')].length < 8);
+    expect(clipped.length * 4, clipped.map((t) => t.text).join(' ')).toBeLessThanOrEqual(light.length);
+  });
+
+  it('chat:sylvie:2 waits for her memories told whole; chat:sylvie:1 reads one way and keeps the bed (Task 12, spec §10)', () => {
+    expect(CHAT_GATE['chat:sylvie:2']).toEqual({ full: 'sylvie' });
+    for (const n of [1, 2]) for (const l of STORY.scenes[`chat:sylvie:${n}` as SceneId].lines) expect(l.if, `chat:sylvie:${n}: ${l.text}`).toBeUndefined();
+    expect(STORY.scenes['chat:sylvie:1'].lines.some((l) => l.who === 'bobby')).toBe(false);
+    expect(STORY.scenes['chat:sylvie:1'].lines.map((l) => l.text).join('')).toMatch(/床/);
+    expect(() => pinBeat('chat:sylvie:2', { full: ['sylvie'] }, /睡床/)).not.toThrow();
+  });
+
+  it("Chizuru's old-style markers are at most one a line and a quarter of her lines (Task 13)", () => {
+    const hers = saidBy('chizuru');
+    const count = (t: string) => (t.match(new RegExp(CHIZURU_ARCHAIC.source, 'g')) ?? []).length;
+    expect(count('「此處便是此處。」')).toBe(2);   // the gate itself
+    for (const t of hers) expect(count(t.text), `${t.key}: ${t.text}`).toBeLessThanOrEqual(1);
+    const marked = hers.filter((t) => count(t.text) > 0);
+    expect(marked.length * 4, marked.map((t) => t.text).join('\n')).toBeLessThanOrEqual(hers.length);
+  });
+
+  it('Chizuru never says 吾等, 謹以 or 奉於 (Task 13)', () => {
+    expect(CHIZURU_NEVER.test('「謹以此段，奉於燈前。」')).toBe(true);
+    for (const t of saidBy('chizuru')) expect(t.text, t.key).not.toMatch(CHIZURU_NEVER);
+  });
+
+  it('before her third piece is told she never says decades (Task 13, spec §7.2)', () => {
+    // a chat or banter line of hers that can play before her third piece: neither her full chain, nor a gate on three pieces
+    const before = (id: SceneId, l: ScriptLine): boolean => {
+      const gate = CHAT_GATE[id] ?? BANTER_GATE[id];
+      if (gate?.full === 'chizuru' || (gate?.pieces?.chizuru ?? 0) >= 3) return false;
+      return l.if?.full !== 'chizuru';
+    };
+    const ids = SCENE_IDS.filter((id) => /^chat:chizuru:|^banter:.*chizuru/.test(id));
+    expect(ids.length).toBeGreaterThanOrEqual(8);
+    for (const id of ids) for (const l of STORY.scenes[id].lines) {
+      if (l.who === 'chizuru' && before(id, l)) expect(l.text, `${id}: ${l.text}`).not.toMatch(/幾十年|好幾十年|數十年/);
+    }
+    for (const l of [...STORY.meet.chizuru.before, ...STORY.meet.chizuru.after]) expect(l.text).not.toMatch(/幾十年|數十年/);
+  });
+
+  it('chat:chizuru:2 waits for Bobby, and so reads no way without her (Task 13, spec §10)', () => {
+    expect(CHAT_GATE['chat:chizuru:2']).toEqual({ met: ['bobby'] });
+    const lines = STORY.scenes['chat:chizuru:2'].lines;
+    expect(lines.some((l) => l.if?.notMet === 'bobby')).toBe(false);
+    expect(lines.filter((l) => l.if).length).toBe(2);   // her bell, before and after her last piece
+  });
+
+  it("Chizuru's joke is the year she fell asleep in: her light lines say so, and she says 東西, not 玩意兒 (Task 13)", () => {
+    const light = saidBy('chizuru').filter((t) => !t.heavy);
+    const ERA = /我們那時候|我們那裡|最近|近來|去年|今年|城裡.{0,4}(流行|改|新)/;
+    const era = light.filter((t) => ERA.test(t.text));
+    expect(era.length * 3, `${era.length} of ${light.length}`).toBeGreaterThanOrEqual(light.length);
+    for (const t of saidBy('chizuru')) expect(t.text, t.key).not.toMatch(/玩意兒/);
   });
 });

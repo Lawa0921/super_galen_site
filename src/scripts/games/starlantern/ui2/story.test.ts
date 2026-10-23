@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CHARACTERS } from '../data/characters';
 import { MAJOR_SCENES, type SceneId } from '../data/story/scenes';
 import { chainLength } from '../data/story/chains';
-import { STORY, linesWhen, type LineWhen, type ScriptLine } from '../data/story.zh-TW';
+import { NIGHT_PLACE, STORY, linesWhen, type LineWhen, type ScriptLine } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import { Game } from '../engine/game';
-import { constRng } from '../engine/testing';
+import { constRng, withTold } from '../engine/testing';
 import { allArtUrls, art, NORMAL_SMILES } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { Dialogue } from './widgets';
@@ -155,6 +155,36 @@ describe('playScene', () => {
     expect([card(), night()]).toEqual([null, false]);
   });
 
+  it("a place given to playScene shows from the first line, and a line's own place replaces it (story L)", async () => {
+    const { talk, ctx } = mk();
+    const screen = document.createElement('div');
+    screen.append(talk.el);
+    const card = () => screen.querySelector('.slx-place-card')?.textContent ?? null;
+    const night = () => !!screen.querySelector('.slx-veil-night.slx-on');
+    stage('mem:liz:1', [
+      { who: 'narrator', past: true, text: '一' },
+      { who: 'liz', text: '二', place: { text: '道具店・傍晚' } },
+    ]);
+    const p = playScene(talk, 'mem:liz:1', ctx, { place: NIGHT_PLACE });
+    expect([card(), night()]).toEqual(['月影旅館・夜', true]);
+    p.onAction('confirm'); await tick();
+    expect([card(), night()]).toEqual(['道具店・傍晚', false]);
+    p.onAction('confirm');
+    await p.done;
+    expect([card(), night()]).toEqual([null, false]);
+    // playAndRecord hands it on, and records the scene
+    const { talk: t2, ctx: c2 } = mk();
+    const s2 = document.createElement('div');
+    s2.append(t2.el);
+    stage('chat:liz:1', [{ who: 'narrator', text: '三' }]);
+    c2.game.arrival = ['chat:liz:1'];
+    const r = playAndRecord(t2, 'chat:liz:1', c2, { place: NIGHT_PLACE });
+    expect(s2.querySelector('.slx-place-card')?.textContent).toBe('月影旅館・夜');
+    r.onAction('confirm');
+    await r.done;
+    expect(c2.game.state.story.seen).toContain('chat:liz:1');
+  });
+
   it('cancel skips the rest and shows the summary', async () => {
     const { talk, ctx } = mk();
     stage('chat:liz:1', [{ who: 'hero', text: '一' }, { who: 'rin', text: '二' }], '兩人說了幾句話。');
@@ -231,6 +261,24 @@ describe('playScene', () => {
     expect(texts()).toEqual(['甲', '丙']);
     s.party.roster.rin.memories = chainLength('rin');
     expect(texts()).toEqual(['甲', '乙', '丙']);
+  });
+
+  it("linesOf reads a companion's full from the pieces told (story L Task 1)", () => {
+    const { game } = mk();
+    // story L Task 12: chat:sylvie:2 now waits for her told whole and reads one way; Chizuru's bell still reads both ways
+    const len = chainLength('chizuru');
+    const s = withTold(game.state, 'chizuru', len - 1);
+    s.party.roster.chizuru.memories = len;   // all held, one untold
+    const notFull = STORY.scenes['chat:chizuru:2'].lines.filter((l) => l.if?.notFull === 'chizuru').map((l) => l.text);
+    const full = STORY.scenes['chat:chizuru:2'].lines.filter((l) => l.if?.full === 'chizuru').map((l) => l.text);
+    expect(notFull.length).toBeGreaterThan(0);
+    const texts = linesOf('chat:chizuru:2', s).map((l) => l.text);
+    for (const t of notFull) expect(texts).toContain(t);
+    for (const t of full) expect(texts).not.toContain(t);
+    const told = withTold(s, 'chizuru', len);
+    const after = linesOf('chat:chizuru:2', told).map((l) => l.text);
+    for (const t of full) expect(after).toContain(t);
+    for (const t of notFull) expect(after).not.toContain(t);
   });
 
   it('a scene line waits on a scene the save has seen (story depth Task 1)', async () => {
@@ -420,6 +468,16 @@ describe('shouldPlay', () => {
     expect(shouldPlay('mem:hero:1', 'major')).toBe(false);
     expect(shouldPlay('chat:liz:1', 'major')).toBe(false);
     expect(shouldPlay('town:anna', 'none')).toBe(false);
+  });
+
+  it('a group scene plays under major only (story L Task 5, spec §5.1)', () => {
+    for (const id of ['group:act2', 'group:act3', 'group:act4'] as SceneId[]) {
+      expect(shouldPlay(id, 'all'), id).toBe(true);
+      expect(shouldPlay(id, 'major'), id).toBe(true);
+      expect(shouldPlay(id, 'none'), id).toBe(false);
+    }
+    expect(shouldPlay('mem:selene:1', 'major')).toBe(false);
+    expect(shouldPlay('banter:noel-rin:1', 'major')).toBe(false);
   });
 });
 

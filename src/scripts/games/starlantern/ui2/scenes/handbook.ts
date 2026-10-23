@@ -128,7 +128,7 @@ export class HandbookScene implements Scene {
     if (this.sub === null) {
       return {
         key: 'memories', rows: pages.map((m): MenuItem => m.met
-          ? { id: m.id, label: CHARACTERS[m.id].name, right: H.pieces(m.pieces.filter((p) => p.found).length, chainLength(m.id)), ...(m.pieces.some((p) => p.found && p.seen && p.fresh) ? freshRight(true) : {}) }
+          ? { id: m.id, label: CHARACTERS[m.id].name, right: H.pieces(m.pieces.filter((p) => p.found).length, chainLength(m.id)), ...freshRight(m.fresh) }
           : { id: m.id, label: H.unknown }),
         pick: (id) => { if (pages.find((m) => m.id === id)!.met) { this.sub = id as CharacterId; this.render(); } else this.ctx.sfx.error(); },
         detail: () => [], solo: true, shown: (id) => (id ? { id: id as CharacterId, met: pages.find((m) => m.id === id)!.met } : null),
@@ -138,8 +138,8 @@ export class HandbookScene implements Scene {
     const page = pages.find((m) => m.id === who)!;
     return {
       key: `memories/${who}`,
-      // Only a piece that is found AND seen can be played again; one still waiting in the queue is not yet told.
-      rows: page.pieces.map((p): MenuItem => p.found && p.seen
+      // A found piece plays once told, or while it is still untold (story L spec §4.7: reading it here tells it, and it is new).
+      rows: page.pieces.map((p): MenuItem => p.found && (p.seen || p.untold)
         ? { id: p.scene, label: STORY.scenes[p.scene].title, ...freshRight(p.fresh) }
         : { id: `hint:${p.n}`, label: H.unknown, right: p.hint }),
       pick: (id) => this.pickScene(id),
@@ -322,7 +322,8 @@ export class HandbookScene implements Scene {
 
   /**
    * Plays scenes seen before, one after another, and drops each one's 新 mark as it ends. It never goes through sceneDone,
-   * so no progress, reward or flag moves.
+   * so no progress, reward or flag moves. Story L spec §4.7: a memory still untold is told by this read (`Game.tellEarly`):
+   * seen, not new, out of the untold list and tonight's picks; a night that held it skips it.
    */
   private async replay(ids: SceneId | SceneId[]): Promise<void> {
     this.sceneEl.classList.add('slx-hb-playing');
@@ -333,7 +334,7 @@ export class HandbookScene implements Scene {
         const p = playScene(this.talk, id, storyCtx(this.ctx));
         this.playing = p;
         await p.done;
-        this.ctx.game.markRead(id);
+        if (!this.ctx.game.tellEarly(id)) this.ctx.game.markRead(id);
       }
     } catch (e) {
       console.error('starlantern: handbook replay failed', e);

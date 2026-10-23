@@ -1,5 +1,5 @@
 import { favouredRegions } from '../data/meetings';
-import type { ActNode, BanterPair, SceneId } from '../data/story/scenes';
+import type { ActNode, BanterPair, GroupScene, SceneId } from '../data/story/scenes';
 import type { TownFragmentId } from '../data/story/fragments';
 import type { RegionId } from '../data/regions';
 import type { Difficulty } from './battle';
@@ -50,6 +50,25 @@ export interface StoryState {
   waited?: Partial<Record<BanterPair, number>>;
   /** Story depth Task 15 review: where Rin told the table (`rin-confess`), at dinner or at the depth-30 rest before the finale. */
   confession?: 'dinner' | 'depth30';
+  /**
+   * Story L spec §4.1, §11: memory pieces taken and not told yet, in pickup order. Absent reads as empty. A piece's effects
+   * land at pickup; only its scene waits here, for a night in town or the handbook.
+   */
+  untold?: SceneId[];
+  /** Story L: the memories this return's night picked (a subset of `untold`), so a reload plays the same ones. Absent reads as empty. */
+  tonight?: SceneId[];
+  /** Story L spec §4.4.1: the cursor into `NIGHT_BEATS`, the next beat between two memories. Absent reads as 0. */
+  beat?: number;
+  /**
+   * Story L spec §5.2, §11: a group scene's chances left. Its act said, it is 0; the next return makes it 1, the one after
+   * removes it (expired), and so does the group said, or the next act said. Absent reads as empty.
+   */
+  reacts?: Partial<Record<GroupScene, 0 | 1>>;
+  /**
+   * 【控制者裁定 2026-10-24】 The dawn before departure: the one untold memory (not one of tonight's) the next departure
+   * tells, picked on the return (`dawnMemory`) so a reload offers the same one. Absent: none.
+   */
+  dawn?: SceneId;
 }
 
 /** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */
