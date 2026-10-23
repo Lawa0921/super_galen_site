@@ -2,6 +2,8 @@
 // 規則：讀檔（planContinue / planPlay）永遠不寫；遷移 = 先備份、備份成功才 putSplit；每次存檔只有一次 putSplit（一個 transaction）。
 // format 10 的世界檔：讀進來時 SplitSession.pendingBackup = V10_BACKUP_SUFFIX，第一次 saveSplit 先備份成
 //   slot + '.v10.bak'、成功才寫 format 11（備份丟錯就整個丟出、原檔不動；寫成功後清空，之後不再備份）。
+// 烘焙過的舊世界（save/bake.ts，Task 16）走同一個機制：session 讀到烘焙結果後 pendingBackup = V7_BACKUP_SUFFIX，
+//   第一次 saveSplit 先把原本的 v7 記錄備份成 slot + '.v7.bak'。
 // 多世界 × 多角色：任何角色都能進任何世界（planPlay）；匯入一律開新槽（importWorld），不動既有世界。
 import { SaveFormatError, applyCharacter, gen2SizeOk, restoreBlocker, snapshotGame, type RestoreError, type SaveData } from './serialize';
 import { decodeCharacter, newId, newIdentity, type CharIdentity, type DelveCharacter } from './character';
@@ -15,6 +17,8 @@ import type { DelveGame } from '../engine/game';
 import type { CharacterMeta, SaveSummary, SlotMeta } from './storage';
 
 export const BACKUP_SUFFIX = '.v9.bak';
+/** 舊世界（genVersion 7）烘焙成 genVersion 8 後第一次存檔前的備份槽後綴（原本的 v7 記錄原封複製） */
+export const V7_BACKUP_SUFFIX = '.v7.bak';
 export const CHARACTER_MISSING_MSG = '找不到這個世界的角色檔，沒有讀取也沒有修改任何存檔。';
 export const CHARACTER_CORRUPT_MSG = '角色檔已損毀，沒有讀取也沒有修改任何存檔。';
 export const WORLD_CORRUPT_MSG = '讀取失敗：這不是有效的 DELVE 存檔，或檔案已損毀 / 不完整。';
@@ -250,7 +254,7 @@ function putData(store: SplitStore, s: SplitSession, data: SaveData, now: number
   return store.putSplit(s.slot, { bytes: encodeWorld(world), seed: world.header.seed, summary }, character);
 }
 
-/** 存檔；s.pendingBackup 有值（format 10 的世界）→ 先 backupSlot 成功才 putSplit，putSplit 成功後清空 */
+/** 存檔；s.pendingBackup 有值（format 10 的世界 / 剛烘焙的 v7 世界）→ 先 backupSlot 成功才 putSplit，putSplit 成功後清空 */
 export async function saveSplit(store: SplitStore, s: SplitSession, game: DelveGame, now: number, summary?: SaveSummary): Promise<SlotMeta> {
   const suffix = s.pendingBackup;
   if (suffix) await store.backupSlot(s.slot, s.slot + suffix);

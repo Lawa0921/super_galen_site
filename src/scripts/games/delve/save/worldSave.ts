@@ -3,6 +3,7 @@
 //   visit.exploredOuter = 中央框外的迷霧（非空才寫）；header.stones = 已解鎖的傳送碑（世界共用，非空才寫）。decodeWorld 接受 10 與 11（header.format 保留讀到的值）；
 //   splitSnapshot 一律寫 11。format 10 的檔第一次存檔前先備份成 slot + V10_BACKUP_SUFFIX（save/split.ts）。
 // gen2 世界（genVersion 8）：header.gen2 = 地塊鎖表（同 serialize.ts SaveHeader.gen2；8 必有、7 必無，驗證同 decodeSave 的 gen2Field）。
+//   烘焙過的舊世界（Task 16）也是 genVersion 8：gen2 另有 bake（接縫 / 安靜 chunk）與 legacy（舊生成器的附帶資料），兩者同時有。
 // 存檔 = snapshotGame()（format 9 的完整 header）→ splitSnapshot() 切成「世界 + 角色」；
 // 讀檔 = joinSplit() 拼回 format-9 形狀的 SaveData → 交給現行 restoreGame()（restoreSplit 包好這兩步；存檔用 saveSplitGame）。
 //   角色第一次來這個世界（沒有 visit）→ restoreGame 的 freshVisit：出生點、只揭露出生點周圍、沒有標記 / 床 / 重生核心。
@@ -173,6 +174,15 @@ export function splitSnapshot(data: SaveData, who: CharIdentity, where: WorldIde
     ...(h.gen2 ? { gen2: h.gen2 } : {}),
   };
   return { world: { header, chunks: data.chunks }, character };
+}
+
+/** 角色 → splitSnapshot 的 who（身分四欄） */
+export function whoOf(c: DelveCharacter): CharIdentity {
+  return { id: c.id, nick: c.nick, createdAt: c.createdAt, rev: c.rev };
+}
+/** 世界 header → splitSnapshot 的 where（世界身分 + 各角色的 visit / held；同 SplitSession.fromLoaded） */
+export function whereOf(h: WorldHeader): WorldIdentity {
+  return { worldId: h.worldId, worldName: h.worldName, visits: h.visits, held: h.held };
 }
 
 /** 角色的 buff 剩餘秒數 → 這個世界的絕對到期時間 */

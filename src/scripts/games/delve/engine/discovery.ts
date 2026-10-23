@@ -5,6 +5,8 @@
 //   · Discovery：已發現的地區、讀過的碑文、拿到的珍寶、最深紀錄、移動距離 → 日誌統計與完成度。
 //   · 外圍（B13）：每個 v0 生態段與兩片海各是一個惰性地區（cat land），id = OUTER_REGION_BASE + zigzag(段號, 側)；
 //     會跳「發現」並存進 found，但不算進日誌的總數與完成度（stats 只看中央的 regions）。
+//   · RegionJSON（Task 16）：烘焙過的舊世界把 buildRegions 的清單存進存檔（id 依生成順序，之後不再重算）；
+//     contains 函式換成可存的形狀 RegionShape（buildRegions 填 shape），regionFromJSON 以深度層線重建出逐格相同的 contains。
 import { Rng } from './rng';
 import { seedInt, hash2 } from './noise';
 import { SEA_W, type OuterProfile } from './legacy/chunkgen/profile';
@@ -38,7 +40,17 @@ export interface Region {
   /** 地圖上名字 / 圖示的錨點（tile）；x = -1 表示橫跨整個世界（跟著畫面置中） */
   ax: number; ay: number;
   contains(x: number, y: number): boolean;
+  /** contains 的可存形狀（buildRegions 填；外圍 / gen2 地區不存檔、沒有） */
+  shape?: RegionShape;
 }
+
+/**
+ * 地區範圍的形狀：rect / ellipse = 外接框（x, y, w, h）；cols = 欄範圍 [x, x + w)、y 介於 top(x) 與 bot(x) 之間，
+ * top / bot 取該欄的深度層線（zero = 0、H = 世界高度；層線在 [0, W) 之外夾到邊欄）
+ */
+export type RegionShape = { t: 'rect' } | { t: 'ellipse' } | { t: 'cols'; top: 'zero' | 'rock' | 'deep' | 'molten'; bot: 'deep' | 'molten' | 'H' };
+/** 存檔用的地區（Region 去掉 contains、shape 必有） */
+export type RegionJSON = Omit<Region, 'contains' | 'shape'> & { shape: RegionShape };
 
 export interface RegionSource {
   seed: string;
@@ -115,6 +127,18 @@ const ellipseHit = (x0: number, y0: number, w: number, h: number) => {
   };
 };
 
+/** 形狀 → contains（buildRegions 與 regionFromJSON 共用：讀回來的地區逐格相同） */
+function containsOf(shape: RegionShape, x0: number, y0: number, w: number, h: number, layers: GenLayers, H: number): (x: number, y: number) => boolean {
+  if (shape.t === 'rect') return rectHit(x0, y0, w, h);
+  if (shape.t === 'ellipse') return ellipseHit(x0, y0, w, h);
+  const W = layers.deep.length;
+  const line = (a: Int16Array) => (x: number): number => a[Math.max(0, Math.min(W - 1, x))];
+  const top = shape.top === 'zero' ? (): number => 0 : line(layers[shape.top]);
+  const bot = shape.bot === 'H' ? (): number => H : line(layers[shape.bot]);
+  const x1 = x0 + w;
+  return (x: number, y: number): boolean => x >= x0 && x < x1 && y >= top(x) && y < bot(x);
+}
+
 const STRUCT_CAT: Partial<Record<string, RegionCat>> = {
   cabin: 'site', mineshaft: 'site', ruin: 'site', sky_island: 'site', frozen_lake: 'site', lake_bed: 'site', oasis: 'site',
   hive: 'cave', underground_lake: 'cave',
@@ -127,13 +151,13 @@ export function buildRegions(src: RegionSource): Region[] {
   const { width: W, height: H, layers } = src;
   const nm = new Namer(src.seed);
   const out: Region[] = [];
-  const add = (r: Omit<Region, 'id' | 'ax' | 'ay'> & { ax?: number; ay?: number }): void => {
-    out.push({ ...r, ax: r.ax ?? Math.floor(r.x + r.w / 2), ay: r.ay ?? Math.floor(r.y + r.h / 2), id: out.length });
+  // contains 一律由 shape 建（containsOf），存檔讀回來（regionFromJSON）逐格相同
+  const add = (r: Omit<Region, 'id' | 'ax' | 'ay' | 'contains' | 'shape'> & { ax?: number; ay?: number; shape: RegionShape }): void => {
+    out.push({ ...r, ax: r.ax ?? Math.floor(r.x + r.w / 2), ay: r.ay ?? Math.floor(r.y + r.h / 2), id: out.length, contains: containsOf(r.shape, r.x, r.y, r.w, r.h, layers, H) });
   };
   const clampX = (x: number): number => Math.max(0, Math.min(W - 1, x));
-  /** 欄範圍 [x0,x1)、y 介於 top(x) 與 bot(x) 之間 */
-  const cols = (x0: number, x1: number, top: (x: number) => number, bot: (x: number) => number) => (x: number, y: number): boolean =>
-    x >= x0 && x < x1 && y >= top(x) && y < bot(x);
+  /** 欄範圍 [x, x + w)、y 介於 top 與 bot 的層線之間 */
+  const cols = (top: 'zero' | 'rock' | 'deep' | 'molten', bot: 'deep' | 'molten' | 'H'): RegionShape => ({ t: 'cols', top, bot });
   const deep = (x: number): number => layers.deep[clampX(x)];
 
   // ── 地域：海岸、森林段、沙漠 / 雪原 / 叢林 ──
@@ -161,18 +185,18 @@ export function buildRegions(src: RegionSource): Region[] {
     for (let x = l.x0; x < l.x1; x++) top = Math.min(top, src.surface[clampX(x)]);
     let bot = 0;
     for (let x = l.x0; x < l.x1; x++) bot = Math.max(bot, deep(x));
-    add({ cat: 'land', kind: l.kind, name: l.name, x: l.x0, y: 0, w: l.x1 - l.x0, h: bot, ay: Math.max(4, top - 14), contains: cols(l.x0, l.x1, () => 0, deep) });
+    add({ cat: 'land', kind: l.kind, name: l.name, x: l.x0, y: 0, w: l.x1 - l.x0, h: bot, ay: Math.max(4, top - 14), shape: cols('zero', 'deep') });
   }
 
   // ── 地層 ──
   const minOf = (a: Int16Array): number => { let m = H; for (let i = 0; i < a.length; i++) m = Math.min(m, a[i]); return m; };
   const maxOf = (a: Int16Array): number => { let m = 0; for (let i = 0; i < a.length; i++) m = Math.max(m, a[i]); return m; };
   add({ cat: 'depth', kind: 'rock_layer', name: nm.fixed('地底岩層'), x: 0, y: minOf(layers.rock), w: W, h: H - minOf(layers.rock),
-    ax: -1, ay: maxOf(layers.rock) + 12, contains: cols(0, W, (x) => layers.rock[x], deep) });
+    ax: -1, ay: maxOf(layers.rock) + 12, shape: cols('rock', 'deep') });
   add({ cat: 'depth', kind: 'cavern_layer', name: nm.fixed('洞穴層'), x: 0, y: minOf(layers.deep), w: W, h: H - minOf(layers.deep),
-    ax: -1, ay: maxOf(layers.deep) + 12, contains: cols(0, W, deep, (x) => layers.molten[x]) });
+    ax: -1, ay: maxOf(layers.deep) + 12, shape: cols('deep', 'molten') });
   add({ cat: 'depth', kind: 'molten', name: nm.fixed('熔岩深淵'), x: 0, y: minOf(layers.molten), w: W, h: H - minOf(layers.molten),
-    ax: -1, ay: maxOf(layers.molten) + 12, contains: cols(0, W, (x) => layers.molten[x], () => H) });
+    ax: -1, ay: maxOf(layers.molten) + 12, shape: cols('molten', 'H') });
 
   // ── 結構 / 迷你生態區 / 洞窟 ──
   for (const s of src.structures) {
@@ -186,21 +210,53 @@ export function buildRegions(src: RegionSource): Region[] {
     const rx = s.x - pad, ry = s.y - padY, rw = s.w + pad * 2, rh = s.h + padY;
     add({ cat, kind: s.kind, name: nm.pick(list), x: rx, y: ry, w: rw, h: rh,
       ax: s.x + (s.w >> 1), ay: s.y + (s.h >> 1),
-      contains: round ? ellipseHit(rx, ry, rw, rh) : rectHit(rx, ry, rw, rh) });
+      shape: { t: round ? 'ellipse' : 'rect' } });
   }
 
   // ── 地城 + 重要房間 ──
   const d = src.dungeon;
   if (d) {
     const b = d.bbox;
-    add({ cat: 'dungeon', kind: 'dungeon', name: nm.pick(NAMES.dungeon), x: b.x, y: b.y, w: b.w, h: b.h, contains: rectHit(b.x, b.y, b.w, b.h) });
+    add({ cat: 'dungeon', kind: 'dungeon', name: nm.pick(NAMES.dungeon), x: b.x, y: b.y, w: b.w, h: b.h, shape: { t: 'rect' } });
     for (const r of d.rooms) {
       const list = ROOM_NAMES[r.kind];
       if (!list) continue;
-      add({ cat: 'dungeon', kind: `dungeon_${r.kind}`, name: nm.pick(list), x: r.x, y: r.y, w: r.w, h: r.h, contains: rectHit(r.x, r.y, r.w, r.h) });
+      add({ cat: 'dungeon', kind: `dungeon_${r.kind}`, name: nm.pick(list), x: r.x, y: r.y, w: r.w, h: r.h, shape: { t: 'rect' } });
     }
   }
   return out;
+}
+
+/** 地區 → 存檔用的 RegionJSON（沒有 shape 的地區（外圍 / gen2）不能存 → RangeError） */
+export function toRegionJSON(r: Region): RegionJSON {
+  if (!r.shape) throw new RangeError(`region ${r.id} has no shape`);
+  const { id, cat, kind, name, x, y, w, h, ax, ay } = r;
+  return { id, cat, kind, name, x, y, w, h, ax, ay, shape: { ...r.shape } };
+}
+
+const TOPS: readonly string[] = ['zero', 'rock', 'deep', 'molten'], BOTS: readonly string[] = ['deep', 'molten', 'H'];
+/** 存檔的 RegionJSON → Region（contains 由 shape + 深度層線重建）；形狀 / 欄位不合法 → RangeError */
+export function regionFromJSON(j: unknown, layers: GenLayers, H: number): Region {
+  if (!j || typeof j !== 'object' || Array.isArray(j)) throw new RangeError('region: not an object');
+  const o = j as Record<string, unknown>;
+  const int = (k: string): number => {
+    const v = o[k];
+    if (!Number.isInteger(v)) throw new RangeError(`region: ${k}`);
+    return v as number;
+  };
+  const id = int('id'), x = int('x'), y = int('y'), w = int('w'), h = int('h'), ax = int('ax'), ay = int('ay');
+  if (id < 0 || w < 0 || h < 0) throw new RangeError('region: range');
+  if (typeof o.cat !== 'string' || !(CATEGORY_ORDER as readonly string[]).includes(o.cat)) throw new RangeError('region: cat');
+  if (typeof o.kind !== 'string' || typeof o.name !== 'string') throw new RangeError('region: kind / name');
+  const sh = o.shape;
+  if (!sh || typeof sh !== 'object') throw new RangeError('region: shape');
+  const q = sh as { t?: unknown; top?: unknown; bot?: unknown };
+  let shape: RegionShape;
+  if (q.t === 'rect' || q.t === 'ellipse') shape = { t: q.t };
+  else if (q.t === 'cols' && typeof q.top === 'string' && TOPS.includes(q.top) && typeof q.bot === 'string' && BOTS.includes(q.bot)) {
+    shape = { t: 'cols', top: q.top as 'zero' | 'rock' | 'deep' | 'molten', bot: q.bot as 'deep' | 'molten' | 'H' };
+  } else throw new RangeError('region: shape');
+  return { id, cat: o.cat as RegionCat, kind: o.kind, name: o.name, x, y, w, h, ax, ay, shape, contains: containsOf(shape, x, y, w, h, layers, H) };
 }
 
 // ── 外圍地區（B13） ──────────────────────────────────────

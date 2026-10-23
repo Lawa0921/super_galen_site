@@ -177,6 +177,8 @@ export class LiquidSim {
   get queuedCount(): number { return this.qs[0].len + this.qs[1].len + this.qs[2].len; }
   /** 所有活躍格（佇列 + 溢出區） */
   get activeCount(): number { return this.queuedCount + this.over[0].size + this.over[1].size + this.over[2].size; }
+  /** (x,y) 是否醒著（已排入佇列或溢出區） */
+  isAwake(x: number, y: number): boolean { return this.inQ.get(x, y) === 1; }
 
   /** tile 鍵 → (this.kx, this.ky)，就地解碼、不配置物件（與 coords.ts tileXY 同一套算術：中央 / 外圍兩段） */
   private keyXY(k: number): void {

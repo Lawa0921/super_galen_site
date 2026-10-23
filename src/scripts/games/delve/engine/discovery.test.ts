@@ -1,6 +1,7 @@
 // discovery.test.ts — 地區 / 地標（由 worldgen 推導、依種子命名）、首次進入的發現、日誌統計、存檔 JSON
 import { describe, it, expect } from 'vitest';
-import { buildRegions, Discovery, CATEGORY_LABEL, outerRegions, gen2Regions, NAMES, gen2RegionId, isGen2RegionId, isOuterRegionId, type RegionSource, type Region } from './discovery';
+import { buildRegions, Discovery, CATEGORY_LABEL, outerRegions, gen2Regions, NAMES, gen2RegionId, isGen2RegionId, isOuterRegionId, regionFromJSON, toRegionJSON, type RegionSource, type Region } from './discovery';
+import { DelveGame } from './game';
 import { Gen2Source } from './gen2';
 import { SPAWN_X } from './gen2/layout';
 import { CULTURES } from './gen2/cultures';
@@ -191,5 +192,26 @@ describe('gen2Regions', () => {
     expect(q(wx, 300).at(-1)!.name).toBe('西方大海');
     const d = src.layout.landmass(1, 1).islands[0];
     expect(NAMES.island).toContain(q((d.x0 + d.x1) >> 1, 300).at(-1)!.name);
+  });
+});
+
+// Task 16：烘焙世界把舊地區清單存成 RegionJSON（形狀取代 contains 函式），讀回後 contains 要逐格相同
+describe('RegionJSON', { timeout: 120_000 }, () => {
+  const L = new DelveGame({ seed: 'fixture-v11' });
+  it('Region 經 RegionJSON 往返後 contains 相同', () => {
+    expect(L.regions.length).toBeGreaterThan(30);
+    expect(new Set(L.regions.map((r) => toRegionJSON(r).shape.t))).toEqual(new Set(['rect', 'ellipse', 'cols']));
+    for (const r of L.regions) {
+      const q = regionFromJSON(JSON.parse(JSON.stringify(toRegionJSON(r))), L.layers!, 1200);
+      for (let x = 0; x < 4200; x += 13) for (let y = 0; y < 1200; y += 13) if (q.contains(x, y) !== r.contains(x, y)) throw new Error(`${r.id} @ ${x},${y}`);
+      expect([q.id, q.name, q.x, q.y, q.w, q.h]).toEqual([r.id, r.name, r.x, r.y, r.w, r.h]);
+      expect([q.cat, q.kind, q.ax, q.ay]).toEqual([r.cat, r.kind, r.ax, r.ay]);
+    }
+  });
+  it('壞的 RegionJSON 丟 RangeError', () => {
+    const j = toRegionJSON(L.regions[0]);
+    for (const bad of [null, { ...j, shape: { t: 'blob' } }, { ...j, name: 3 }, { ...j, cat: 'x' }, { ...j, shape: { t: 'cols', top: 'zero', bot: 'zero' } }]) {
+      expect(() => regionFromJSON(bad, L.layers!, 1200)).toThrow(RangeError);
+    }
   });
 });

@@ -108,6 +108,12 @@ export class World {
   private readonly liquidDirty = new Set<number>();
   /** 生成後液體被改過的 chunk（存檔用；與 modifiedChunks 分開，流動不會讓 tile 被存） */
   readonly liquidModified = new Set<number>();
+  /**
+   * 烘焙過的舊世界（Task 16）：烘焙後還沒被碰過的中央 chunk。它們照樣存（modifiedChunks / liquidModified），但液體是
+   * 舊生成器靜置後的狀態 → 讀檔 / 載入 / 接縫都不喚醒。touch / touchLiquidAt / touchChest / markModified / writeChunk（journal）刪鍵。
+   * 其他世界恆為空
+   */
+  readonly bakedQuiet = new Set<number>();
   /** 液體有變動的 chunk（網路同步用；drainNetLiquid 取走。與 renderer 的 liquidDirty 互不影響；卸載的欄刪掉） */
   private readonly netLiquid = new Set<number>();
   /** 前景 / 背景牆 / 半格與箱子的編輯日誌（chunk 鍵；touch / touchChest / writeChunk 記。讀檔還原、液體、結冰不記） */
@@ -349,7 +355,7 @@ export class World {
     this.dirty.add(k);
     this.liquidDirty.add(k);
     this.netLiquid.add(k);
-    if (journal) this.edits.markFull(k);
+    if (journal) { this.edits.markFull(k); this.bakedQuiet.delete(k); }
     if (cx > this.cxLo) this.dirty.add(this.chunkIndex(cx - 1, cy));
     if (cx < this.cxHi) this.dirty.add(this.chunkIndex(cx + 1, cy));
     if (cy > 0) this.dirty.add(this.chunkIndex(cx, cy - 1));
@@ -773,6 +779,7 @@ export class World {
     this.liquidDirty.add(ci);
     this.liquidModified.add(ci);
     this.netLiquid.add(ci);
+    if (this.bakedQuiet.size) this.bakedQuiet.delete(ci);
   }
   /** (x,y) 的液體層要重畫（不標已修改：外圍的結冰由日期重算，不必存 / 停放） */
   markLiquidDirty(x: number, y: number): void {
@@ -806,13 +813,16 @@ export class World {
   /** (x,y) 的 chunk 標為已修改（箱子內容變動等不改 tile 的修改；不需重畫） */
   markModified(x: number, y: number): void {
     if (!this.inBounds(x, y) || this.col(x >> 5) === null) return;
-    this.modifiedChunks.add(this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK)));
+    const ci = this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK));
+    this.modifiedChunks.add(ci);
+    this.bakedQuiet.delete(ci);
   }
   /** (x,y) 的箱子內容 / 解鎖變了：markModified 再記一筆箱子項目（tile 鍵）。沒常駐 = 什麼都不做 */
   touchChest(x: number, y: number): void {
     if (!this.inBounds(x, y) || this.col(x >> 5) === null) return;
     const ci = this.chunkIndex(chunkOfX(x), Math.floor(y / CHUNK));
     this.modifiedChunks.add(ci);
+    this.bakedQuiet.delete(ci);
     this.edits.chest(ci, this.idx(x, y));
   }
   setWall(x: number, y: number, id: number): boolean {
@@ -851,6 +861,7 @@ export class World {
     const cx = chunkOfX(x), cy = Math.floor(y / CHUNK);
     const ci = this.chunkIndex(cx, cy);
     this.modifiedChunks.add(ci);
+    this.bakedQuiet.delete(ci);
     this.dirty.add(ci);
     // 接邊依賴 4 鄰：邊緣格變動也要讓鄰 chunk 重畫（鄰欄夾在邊界內；有界世界與扁平時代相同）
     const lx = localX(x), ly = y - cy * CHUNK;

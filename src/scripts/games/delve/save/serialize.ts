@@ -52,6 +52,8 @@
 //   header.gen2 = { locks：地塊鎖表（engine/gen2/locks.ts LockJSON，依 side, i 排序）}。genVersion 8 必有 gen2、7 必無（否則損毀）；
 //   比 8 新的 genVersion 不讀 gen2（形狀可能不同），交給 genBlocker 回「較新版本」。讀檔前 restoreBlocker 以 save/genCheck.ts genBlocker 比對版本，
 //   gen2 世界依存檔的鎖表重建生成器（鎖表在 Gen2Source / Layout 建構前載入），不需預先生成。
+//   烘焙過的舊世界（save/bake.ts）：header.gen2 另有 bake（接縫 / 舊中央框 / 安靜 chunk 的差分鍵）與 legacy（LegacyMeta JSON），
+//   兩者同時有（只有一個 = 損毀）；中央每個 chunk 都在 chunks / liquids 裡，讀檔不跑舊生成器、安靜 chunk 不喚醒。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
@@ -95,6 +97,9 @@ import { validStoneIds } from '../engine/waystones';
 import { LockTable, type LockJSON } from '../engine/gen2/locks';
 import { genBlocker } from './genCheck';
 import type { WorldGenSpec } from '../engine/worldBoot';
+import { BakedSource } from '../engine/bakedSource';
+import { validBakeInfo, type BakeInfo } from './bake';
+import { decodeLegacyMeta, encodeLegacyMeta, type LegacyMetaJSON } from './legacyMeta';
 
 export const SAVE_FORMAT = 9;
 /** 可以遷移的舊生成器版本（定義在 genCheck.ts；這裡轉出給既有的呼叫端） */
@@ -231,18 +236,26 @@ export interface SaveHeader {
   /** gen2 世界才有（genVersion 8 必有、7 必無） */
   gen2?: Gen2Save;
 }
-/** gen2 世界的存檔欄位（Task 16 加 bake / legacy） */
-export interface Gen2Save { locks: LockJSON }
-/** gen2 欄位：沒有 = undefined；形狀不對 / 鎖表不合法 → 存檔損毀；回傳正規化（排序）的副本 */
+/** gen2 世界的存檔欄位；bake + legacy 同時有 = 烘焙過的舊世界（save/bake.ts：接縫 / 安靜 chunk、舊生成器的附帶資料） */
+export interface Gen2Save { locks: LockJSON; bake?: BakeInfo; legacy?: LegacyMetaJSON }
+/** gen2 欄位：沒有 = undefined；形狀不對 / 鎖表不合法 / bake 與 legacy 只有一個或壞掉 → 存檔損毀；回傳正規化（排序）的副本 */
 export function validGen2(v: unknown): Gen2Save | undefined {
   if (v === undefined) return undefined;
   if (!v || typeof v !== 'object' || Array.isArray(v)) throw new SaveFormatError('gen2');
+  const o = v as { locks?: unknown; bake?: unknown; legacy?: unknown };
+  let locks: LockJSON;
   try {
-    return { locks: LockTable.fromJSON((v as { locks?: unknown }).locks).toJSON() };
+    locks = LockTable.fromJSON(o.locks).toJSON();
   } catch (e) {
     if (e instanceof RangeError) throw new SaveFormatError(`gen2: ${e.message}`);
     throw e;
   }
+  if ((o.bake === undefined) !== (o.legacy === undefined)) throw new SaveFormatError('gen2: bake and legacy go together');
+  if (o.bake === undefined) return { locks };
+  const bake = validBakeInfo(o.bake);
+  // 只驗證（解得開、每個欄位合法）；存檔照原樣帶著 JSON，讀檔開機時再解一次（worldGenFor）
+  decodeLegacyMeta(o.legacy);
+  return { locks, bake, legacy: o.legacy as LegacyMetaJSON };
 }
 /** header.gen2 依 genVersion：8 → 必有（validGen2）；< 8 → 必無；> 8（較新版）→ 不讀（genBlocker 會回較新版本） */
 export function gen2Field(genVersion: number, v: unknown): Pick<SaveHeader, 'gen2'> {
@@ -454,8 +467,8 @@ export function validHalves(v: unknown): number[] | undefined {
   if (!Array.isArray(v)) return undefined;
   return v.filter((d) => Number.isInteger(d) && d >= 0).slice(0, 2_000_000);
 }
-/** 升冪 tile 鍵 → 差分（第一個是絕對值，之後是與前一個的差） */
-function encodeDeltas(keys: readonly number[]): number[] {
+/** 升冪 tile / chunk 鍵 → 差分（第一個是絕對值，之後是與前一個的差） */
+export function encodeDeltas(keys: readonly number[]): number[] {
   const out: number[] = [];
   let last = 0;
   for (const i of keys) { out.push(i - last); last = i; }
@@ -596,7 +609,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       // B6：只在不是預設值時才寫（有界世界 / 沒有外圍迷霧 → 位元組與之前相同）
       // gen2 世界：outerGen = Gen2Source.version（GEN2_VERSION）、gen2.locks = 地塊鎖表
       ...(w.bounds === 'infinite' ? { bounds: 'infinite' as const, outerGen: w.source ? w.source.version : 0 } : {}),
-      ...(game.genKind !== 'legacy' ? { gen2: { locks: gen2Locks(game) } } : {}),
+      ...(game.genKind !== 'legacy' ? { gen2: gen2Save(game) } : {}),
       ...(fog.outer ? { exploredOuter: { chunks: [...fog.outer.chunks], data: fog.outer.data } } : {}),
       ...(game.stonesUnlocked.size ? { stones: [...game.stonesUnlocked].sort((a, b) => a - b) } : {}),
     },
@@ -604,11 +617,18 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
   };
 }
 
-/** gen2 / 烘焙世界的鎖表（不該沒有 gen2 生成器：沒有 → 空表並大聲說） */
-function gen2Locks(game: DelveGame): LockJSON {
+/**
+ * gen2 / 烘焙世界的 header.gen2：鎖表（不該沒有 gen2 生成器：沒有 → 空表並大聲說）；
+ * 烘焙世界另寫 bake（接縫、舊中央框、目前的 bakedQuiet）與 legacy（存檔帶進來的那份 LegacyMeta）
+ */
+function gen2Save(game: DelveGame): Gen2Save {
   const src = game.gen2();
-  if (!src) { invariantBroken(`snapshotGame: ${game.genKind} world has no gen2 source`); return []; }
-  return src.locks.toJSON();
+  if (!src) { invariantBroken(`snapshotGame: ${game.genKind} world has no gen2 source`); return { locks: [] }; }
+  const locks = src.locks.toJSON(), w = game.world, b = w.source;
+  if (game.genKind !== 'baked') return { locks };
+  if (!(b instanceof BakedSource)) { invariantBroken('snapshotGame: baked world has no baked source'); return { locks }; }
+  const quiet = encodeDeltas([...w.bakedQuiet].sort((p, q) => p - q));
+  return { locks, bake: { east: { ...b.bake.east }, west: { ...b.bake.west }, frame: { ...b.bake.frame }, quiet }, legacy: encodeLegacyMeta(game) };
 }
 
 // ── base64（engine/base64.ts；這裡轉出給既有的呼叫端） ───────────────
@@ -1020,7 +1040,11 @@ export function restoreBlocker(h: SaveHeader, opts: RestoreOptions = {}): Extrac
 export function worldGenFor(h: Pick<SaveHeader, 'genVersion' | 'gen2'>): WorldGenSpec {
   if (h.genVersion !== GEN_VERSION_V2) return { kind: 'legacy' };
   if (!h.gen2) throw new SaveFormatError('gen2 world without lock table');
-  return { kind: 'gen2', locks: h.gen2.locks };
+  const { locks, bake, legacy } = h.gen2;
+  // 烘焙過的舊世界：bake + legacy（validGen2 保證兩者同時有）→ 不跑舊生成器，附帶資料由存檔解出來
+  if (bake && legacy) return { kind: 'baked', locks, bake, meta: decodeLegacyMeta(legacy) };
+  if (bake || legacy) throw new SaveFormatError('gen2: bake and legacy go together');
+  return { kind: 'gen2', locks };
 }
 /** gen2 世界（genVersion 8）只有正式尺寸 WORLD_W × WORLD_H（DelveGame 的 gen2 開機只接受這個大小）；其他版本不限 */
 export function gen2SizeOk(h: { genVersion: number; width: number; height: number }): boolean {
@@ -1118,9 +1142,18 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   try { spec = worldGenFor(h); } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
   }
+  // 烘焙世界的中央沒有生成器：每個中央 chunk 都要有存檔的格子與液體，缺一塊就是損毀（不然那裡讀出來是一片空氣）
+  if (spec.kind === 'baked') {
+    const liq = new Set(h.liquids?.chunks ?? []), have = new Set(h.chunks.filter((ci) => data.chunks.has(ci)));
+    const n = Math.ceil(h.width / CHUNK) * Math.ceil(h.height / CHUNK);
+    for (let ci = 0; ci < n; ci++) {
+      if (!have.has(ci) || !liq.has(ci)) return { ok: false, error: 'format', message: `baked world is missing central chunk ${ci}` };
+    }
+  }
   // gen2 世界（genVersion 8）：依存檔的鎖表開機（不需預先生成；gen / bounds / source 覆寫不適用）。
   // 沒有 bounds 的存檔（format ≤ 10）：正式尺寸 → 無限世界、小尺寸的測試世界 → 有界（CONFLICT-2）
-  const game = spec.kind === 'gen2'
+  // 烘焙過的舊世界（baked）同樣不需預先生成：中央每個 chunk 都在存檔裡（下面整塊寫入 / 停放），安靜 chunk 不喚醒（wakeChunk）
+  const game = spec.kind !== 'legacy'
     ? new DelveGame({ seed: h.seed, appearance: h.appearance, worldGen: spec })
     : new DelveGame({
       seed: h.seed, width: h.width, height: h.height, gen: opts.gen, appearance: h.appearance,
@@ -1184,7 +1217,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     const { cx, cy } = w.chunkCoords(ci);
     // 停放的 chunk 走近載入時才整塊喚醒
     if (far.isFar(cx)) continue;
-    game.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
+    game.wakeChunk(cx, cy);
   }
   for (const i of h.unlocked ?? []) {
     if (!validTileKey(i, h)) continue;
@@ -1281,7 +1314,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   // 遠方的存檔 chunk 停放（據點核心那幾欄接著由 settle.load 載入、蓋回來）；途中變成常駐的欄改成直接寫入 → 喚醒液體
   for (const ci of far.park()) {
     const { cx, cy } = w.chunkCoords(ci);
-    game.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
+    game.wakeChunk(cx, cy);
   }
   game.settle.load(h.settle, w);
   game.folk.load(h.folk?.world, w);

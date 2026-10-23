@@ -26,13 +26,23 @@ export function v1LandQuery(p: OuterProfile): LandQuery {
   return { width: p.frame.width, isLand: (x) => p.zoneAt(x).kind === 'land', surfaceAt: (x) => p.surfaceAt(x) };
 }
 
-/** gen2：陸地 = 大陸的地區（wild / culture；家鄉、海、島都不算）；不屬 gen2 的欄（烘焙世界的舊範圍、±X_LIMIT 外）不算。width = 東側原點 */
+/** gen2：陸地 = 大陸的地區（wild / culture；家鄉、海、島都不算）；不屬 gen2 的欄（烘焙世界的舊範圍、±X_LIMIT 外）不算。
+ *  width = 東側原點（只適用新世界：家鄉 [0, 4200)、西側原點 0；烘焙世界兩側原點不同，用 bakedLandQuery 包住它） */
 export function gen2LandQuery(src: Gen2Source): LandQuery {
   return {
     width: src.layout.origin.east.x,
     isLand: (x) => { const r = src.profile.regionAt(x); return r !== null && (r.kind === 'wild' || r.kind === 'culture'); },
     surfaceAt: (x) => src.surfaceAt(x),
   };
+}
+
+/**
+ * 烘焙過的舊世界：舊範圍 [lo, hi) 內問 v1（inner）、範圍外問 gen2（outer）。width = 舊世界的中央框寬（不是 gen2 的原點）：
+ * 碑的 d 基準不變 → 舊範圍內的碑與舊世界逐格相同，接縫外的碑照同一套演算法推到 gen2 陸地上（兩側邊界都由 lo / hi 決定）
+ */
+export function bakedLandQuery(width: number, lo: number, hi: number, inner: LandQuery, outer: LandQuery): LandQuery {
+  const pick = (x: number): LandQuery => (x >= lo && x < hi ? inner : outer);
+  return { width, isLand: (x) => pick(x).isLand(x), surfaceAt: (x) => pick(x).surfaceAt(x) };
 }
 
 /** 碑的 footprint：2 格寬、3 格高；(x, y) = 左上格 */
