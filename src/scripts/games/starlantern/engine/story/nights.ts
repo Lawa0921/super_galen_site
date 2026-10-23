@@ -100,17 +100,7 @@ export function continuing(s: GameState, c: CharacterId, day: SceneId[]): boolea
  */
 export function pickMemories(s: GameState, day: SceneId[], n: number, exclude: SceneId[] = [], tone: ToneOf = memoryTone): SceneId[] {
   if (n <= 0) return [];
-  const untold = (s.story.untold ?? []).filter((id) => !exclude.includes(id));
-  const byOwner = new Map<CharacterId, SceneId[]>();
-  for (const id of untold) byOwner.set(ownerOf(id), [...(byOwner.get(ownerOf(id)) ?? []), id]);
-  const cands: SceneId[] = [];
-  const tierOf = new Map<CharacterId, number>();
-  for (const [c, list] of byOwner) {
-    cands.push(...[...list].sort((a, b) => pieceNo(a) - pieceNo(b)).slice(0, keyed(c) ? 2 : 1));
-    tierOf.set(c, keyed(c) ? 1 : continuing(s, c, day) ? 2 : 3);
-  }
-  const ranked = cands.sort((a, b) => tierOf.get(ownerOf(a))! - tierOf.get(ownerOf(b))! || untold.indexOf(a) - untold.indexOf(b)
-    || CHARACTER_IDS.indexOf(ownerOf(a)) - CHARACTER_IDS.indexOf(ownerOf(b)));
+  const ranked = rankMemories(s, day, exclude);
   const count = (list: SceneId[], c: CharacterId) => list.filter((id) => ownerOf(id) === c).length;
   // A second piece of one: Lorne's or Rin's only, after her first, with someone else in the night to stand between.
   const fits = (list: SceneId[], id: SceneId): boolean => {
@@ -135,6 +125,44 @@ export function pickMemories(s: GameState, day: SceneId[], n: number, exclude: S
     if (warm) picks = [...rest, warm];
   }
   return arrange(picks);
+}
+
+/**
+ * Spec §4.4's ranking of the untold memories (leaving out `exclude`): each one's lowest untold piece, and Lorne's and Rin's
+ * next one too; by tier (Lorne and Rin; where the day's talk picks up, `continuing`; the rest), then pickup order, then
+ * the roster's order. The night (`pickMemories`) and the dawn (`dawnMemory`) take from it.
+ */
+export function rankMemories(s: GameState, day: SceneId[], exclude: SceneId[] = []): SceneId[] {
+  const untold = (s.story.untold ?? []).filter((id) => !exclude.includes(id));
+  const byOwner = new Map<CharacterId, SceneId[]>();
+  for (const id of untold) byOwner.set(ownerOf(id), [...(byOwner.get(ownerOf(id)) ?? []), id]);
+  const cands: SceneId[] = [];
+  const tierOf = new Map<CharacterId, number>();
+  for (const [c, list] of byOwner) {
+    cands.push(...[...list].sort((a, b) => pieceNo(a) - pieceNo(b)).slice(0, keyed(c) ? 2 : 1));
+    tierOf.set(c, keyed(c) ? 1 : continuing(s, c, day) ? 2 : 3);
+  }
+  return cands.sort((a, b) => tierOf.get(ownerOf(a))! - tierOf.get(ownerOf(b))! || untold.indexOf(a) - untold.indexOf(b)
+    || CHARACTER_IDS.indexOf(ownerOf(a)) - CHARACTER_IDS.indexOf(ownerOf(b)));
+}
+
+/** 【控制者裁定 2026-10-24】 The dawn before departure plays one memory only while this many or more are still untold. */
+export const DAWN_BACKLOG = 4;
+
+/**
+ * 【控制者裁定 2026-10-24】 The dawn before departure: one memory told on the departure after a return, when `DAWN_BACKLOG`
+ * or more are left untold once that return's night (`night`: its owed pieces and its memories, in play order) is told. By
+ * the scheduler's order (`rankMemories`), a warm one first when there is one, never one of the night's last memory's owner.
+ * Null when none. Pure: `Game.arrive` keeps the pick in `story.dawn`, so a reload offers the same one.
+ */
+export function dawnMemory(s: GameState, night: SceneId[], tone: ToneOf = memoryTone): SceneId | null {
+  const told = night.filter((id) => id.startsWith('mem:'));
+  const after: GameState = { ...s, story: { ...s.story, seen: [...s.story.seen, ...told], untold: (s.story.untold ?? []).filter((id) => !told.includes(id)) } };
+  if ((after.story.untold ?? []).length < DAWN_BACKLOG) return null;
+  const last = told.length ? ownerOf(told[told.length - 1]) : null;
+  // one's lowest piece only (Lorne's and Rin's next one waits behind it), and never the night's last owner
+  const ranked = rankMemories(after, []).filter((id, i, all) => ownerOf(id) !== last && all.findIndex((x) => ownerOf(x) === ownerOf(id)) === i);
+  return ranked.find((id) => tone(id) === 'warm') ?? ranked[0] ?? null;
 }
 
 /** The closing pieces last; then no one twice running: the later one trades places with the next of someone else. */

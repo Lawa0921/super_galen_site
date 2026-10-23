@@ -34,7 +34,7 @@ import { rollPortals } from './portals';
 import { nextLead } from './story/leads';
 import { afterWin, arrivalScenes, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
 import { NIGHT_BEATS, type ScriptLine } from '../data/story.zh-TW';
-import { eveMemories, nextBeat, planNight, restoreNight } from './story/nights';
+import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, planNight, restoreNight } from './story/nights';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeFail, RerollOpts } from './forge/cost';
@@ -250,9 +250,14 @@ export class Game {
    */
   departScenes(): SceneId[] {
     const story = this.state.story;
-    if (this.phase !== 'town' || ALONE.some((id) => story.queue.includes(id))) return [];
+    if (this.phase !== 'town') return [];
     const ready = (id: SceneId): boolean => id !== 'hero-alone' || (story.seen.includes('mem:hero:9') && story.seen.includes('bellkeeper-arrives'));
-    return DEPARTURE_SCENES.filter((id) => story.queue.includes(id) && ready(id));
+    const scenes = ALONE.some((id) => story.queue.includes(id)) ? [] : DEPARTURE_SCENES.filter((id) => story.queue.includes(id) && ready(id));
+    // 【控制者裁定 2026-10-24】 The dawn before departure: the return's pick, while still untold and the backlog is at
+    // least DAWN_BACKLOG; the eve takes its own departure. It comes before the lone morning.
+    const untold = story.untold ?? [];
+    const dawn = story.dawn && untold.includes(story.dawn) && untold.length >= DAWN_BACKLOG && !scenes.includes('finale-eve') ? story.dawn : null;
+    return dawn ? [dawn, ...scenes] : scenes;
   }
 
   /** Start a new run through a gate: a fresh labyrinth every time. */
@@ -263,6 +268,7 @@ export class Game {
     this.pending = [];
     this.eve = [];
     this.finale = null;
+    delete this.state.story.dawn;   // a departure leaves no dawn pick behind: the next return picks again
     if (this.state.story.fed) {   // Marta's meal counts against the altar cap like any altar buff, and is eaten
       this.run.altarBuffs.push({ ...PERKS.meal });
       this.state.story.fed = false;
@@ -1236,6 +1242,7 @@ export class Game {
     if (!story.untold?.includes(id)) return false;
     story.untold = story.untold.filter((u) => u !== id);
     if (story.tonight) story.tonight = story.tonight.filter((u) => u !== id);
+    if (story.dawn === id) delete story.dawn;
     if (!story.seen.includes(id)) story.seen.push(id);
     this.night = this.night.filter((u) => u !== id);   // a night that held it skips it, and calls no one else
     this.eve = this.eve.filter((u) => u !== id);
@@ -1274,6 +1281,10 @@ export class Game {
     const day = arrivalScenes(this.state, { chat: true, afterFinale });
     const plan = planNight(this.state, day);
     this.state.story.tonight = [...plan.before, ...plan.night];
+    // 【控制者裁定 2026-10-24】 the dawn before the next departure, picked now and saved with the return
+    const dawn = dawnMemory(this.state, [...plan.before, ...plan.night]);
+    if (dawn) this.state.story.dawn = dawn;
+    else delete this.state.story.dawn;
     // Story L spec §4.5: a group scene in the reaction slot is the night's first item, after the day's notices.
     const group = day.filter(isGroup);
     this.arrival = [...plan.before, ...day.filter((id) => !isGroup(id))];
@@ -1310,6 +1321,7 @@ export class Game {
     const untoldHero = (story.untold ?? []).filter((id) => id.startsWith('mem:hero:'));
     if (story.untold) story.untold = story.untold.filter((id) => !id.startsWith('mem:hero:'));
     if (story.tonight) story.tonight = story.tonight.filter((id) => !id.startsWith('mem:hero:'));
+    delete story.dawn;   // no departure is left before the town
     const queued = [...story.queue.filter((id) => id.startsWith('mem:hero:')), ...untoldHero];
     const taken = new Set<SceneId>([...acts, ...confess, ...keeper]);
     story.queue = story.queue.filter((id) => !id.startsWith('mem:hero:') && !taken.has(id));

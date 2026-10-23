@@ -12,7 +12,8 @@ import { capacity, carried, formatWeight } from '../../data/weights';
 import { materialUses } from '../../engine/forge/uses';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
-import type { SceneId } from '../../data/story/scenes';
+import { sceneKind, type SceneId } from '../../data/story/scenes';
+import { DAWN_PLACE } from '../../data/story.zh-TW';
 import { REGION_TRAITS_FROM, depthLevel, encounterTable } from '../../engine/scaling';
 import { ART_BASE, art, codexArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -265,11 +266,12 @@ export class GateScene extends FacilityScene {
 
   /**
    * The departure's own scenes, in order (`Game.departScenes`). Story L spec §4.8: once the eve's line is said, its memories
-   * (`Game.eve`) are told as a night, under the night's card, with a beat between two.
+   * (`Game.eve`) are told as a night, under the night's card, with a beat between two. 【控制者裁定 2026-10-24】 The dawn
+   * before departure is a memory: it is told under the dawn's card.
    */
   private async departure(ids: SceneId[]): Promise<void> {
     for (const id of ids) {
-      await this.play(id);
+      await this.play(id, sceneKind(id) === 'memory' ? { place: DAWN_PLACE } : {});
       if (id === 'finale-eve') await this.tellNight([...this.ctx.game.eve]);
     }
   }

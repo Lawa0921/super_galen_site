@@ -4,7 +4,7 @@ import { memScene, type SceneId } from '../../data/story/scenes';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
-import { continuing, eveMemories, nextBeat, nightCap, owedPieces, pickMemories, planNight, restoreNight, type NightBeats } from './nights';
+import { DAWN_BACKLOG, continuing, dawnMemory, eveMemories, nextBeat, nightCap, owedPieces, pickMemories, planNight, restoreNight, type NightBeats } from './nights';
 
 /** A new game with the prologue behind it. */
 const base = (): GameState => {
@@ -236,5 +236,34 @@ describe('story L: the reaction slot and the night (Task 5)', () => {
     expect(pickMemories(s, ['group:act2'], 2)).toEqual([m('selene', 2), m('noel', 1)]);
     expect(pickMemories(s, [], 2)).toEqual([m('safira', 1), m('selene', 2)]);
     expect(planNight(s, ['group:act2']).night).toEqual([m('selene', 2), m('noel', 1)]);
+  });
+});
+
+describe('story L: the dawn before departure (controller ruling 2026-10-24)', () => {
+  it('no dawn below a backlog of four once the night is told', () => {
+    expect(DAWN_BACKLOG).toBe(4);
+    const s = untold([m('selene', 1), m('noel', 1), m('safira', 1), m('bobby', 1), m('liz', 1)]);
+    expect(dawnMemory(s, [m('selene', 1), m('noel', 1)], allHeavy)).toBeNull();   // three left
+    expect(dawnMemory(s, [m('selene', 1)], allHeavy)).toBe(m('noel', 1));        // four left: waited longest
+    expect(dawnMemory(untold([m('selene', 1), m('noel', 1), m('safira', 1)]), [], allHeavy)).toBeNull();
+  });
+
+  it("the dawn picks by the scheduler order, a warm one first, never the owner of the night's last memory", () => {
+    const s = untold([m('safira', 1), m('bobby', 1), m('liz', 1), m('sylvie', 1), m('noel', 1)]);
+    expect(dawnMemory(s, [], allHeavy)).toBe(m('safira', 1));                     // waited longest
+    expect(dawnMemory(s, [], (id) => (id === m('liz', 1) ? 'warm' : 'heavy'))).toBe(m('liz', 1));   // a warm one first
+    // the night's last memory was Safira's: her next piece is not the dawn's, even ranked first
+    const two = untold([m('safira', 1), m('safira', 2), m('bobby', 1), m('liz', 1), m('sylvie', 1), m('noel', 1)]);
+    expect(dawnMemory(two, [m('safira', 1)], allHeavy)).toBe(m('bobby', 1));
+    expect(dawnMemory(two, [m('bobby', 1), m('safira', 1)], (id) => (id === m('safira', 2) ? 'warm' : 'heavy'))).toBe(m('liz', 1));
+    // the scheduler's own order: Lorne first
+    expect(dawnMemory(untold([m('selene', 1), m('noel', 1), m('safira', 1), m('hero', 3)]), [], allHeavy)).toBe(m('hero', 3));
+  });
+
+  it('dawnMemory is pure: the same state gives the same pick, nothing written', () => {
+    const s = untold([m('safira', 1), m('bobby', 1), m('liz', 1), m('sylvie', 1), m('noel', 1)]);
+    const before = JSON.stringify(s);
+    expect(dawnMemory(s, [m('noel', 1)])).toBe(dawnMemory(s, [m('noel', 1)]));
+    expect(JSON.stringify(s)).toBe(before);
   });
 });

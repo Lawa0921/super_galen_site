@@ -101,6 +101,8 @@ function isStory(v: unknown): boolean {
   if (v.tonight !== undefined && !(isUniqueList(v.tonight, isSceneId) && v.tonight.every((id) => ((v.untold ?? []) as unknown[]).includes(id)))) return false;
   // story L: the beat cursor, a line of the pool (none while the pool is empty)
   if (v.beat !== undefined && !(Number.isInteger(v.beat) && (v.beat as number) >= 0 && (v.beat as number) < NIGHT_BEATS.lines.length)) return false;
+  // story L (controller ruling 2026-10-24): the dawn's pick, an untold memory that is not one of tonight's
+  if (v.dawn !== undefined && !(isSceneId(v.dawn) && v.dawn.startsWith('mem:') && ((v.untold ?? []) as unknown[]).includes(v.dawn) && !((v.tonight ?? []) as unknown[]).includes(v.dawn))) return false;
   // story L: a group scene's chances, one of the three groups not yet seen, 0 or 1
   if (v.reacts !== undefined && !(isObj(v.reacts) && Object.entries(v.reacts).every(([k, n]) => Object.hasOwn(GROUP_GATE, k) && !(v.seen as unknown[]).includes(k) && (n === 0 || n === 1)))) return false;
   if (v.waited !== undefined && !(isObj(v.waited) && Object.entries(v.waited).every(([k, n]) => BANTER_PAIRS.includes(k as BanterPair) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_WAITED))) return false;

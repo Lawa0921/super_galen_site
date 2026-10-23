@@ -128,6 +128,8 @@ const PL = {
 } satisfies Record<string, Place>;
 /** Story L plan ruling 3: the night's card, over a return's memories (the owed ones before the day's scene, and the night's). */
 export const NIGHT_PLACE: Place = PL.innNight;
+/** 【控制者裁定 2026-10-24】 The card the dawn before departure tells its one memory under. */
+export const DAWN_PLACE: Place = PL.innDawn;
 
 /**
  * Story L spec §4.4.1: the beats between two memories of a night, in their fixed order (the companions by `CHARACTER_IDS`,

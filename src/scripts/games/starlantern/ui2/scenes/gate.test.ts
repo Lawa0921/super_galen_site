@@ -11,7 +11,7 @@ import { MEETINGS } from '../../data/meetings';
 import { T } from '../../data/text.zh-TW';
 import { CONDITIONS } from '../../data/conditions';
 import { meet } from '../../engine/party';
-import { NIGHT_BEATS, STORY } from '../../data/story.zh-TW';
+import { DAWN_PLACE, NIGHT_BEATS, STORY } from '../../data/story.zh-TW';
 import { chainLength } from '../../data/story/chains';
 import { activeIds } from '../../engine/party';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
@@ -558,5 +558,36 @@ describe('GateScene: the night before the descent (story L Task 3d)', () => {
     }
     // a later night never picks them again
     expect(planNight(game.state, []).night).toEqual([]);
+  });
+  it('the dawn before departure plays its one memory under the dawn card, then the party leaves (controller ruling 2026-10-24)', async () => {
+    const game = new Game(constRng(0.5), null);
+    game.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }];
+    for (const c of ['selene', 'noel', 'bobby', 'liz'] as const) {
+      game.state.party = meet(game.state.party, c, 1);
+      game.state.party.roster[c].memories = 1;
+    }
+    game.state.story.untold = ['mem:selene:1', 'mem:noel:1', 'mem:bobby:1', 'mem:liz:1'];
+    game.state.story.dawn = 'mem:noel:1';
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' as const, story: 'all' as const }) };
+    const s = new GateScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+    s.enter(root);
+    s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm');
+    s.onAction('up'); s.onAction('confirm');
+    await tick();
+    const said: { text: string | null | undefined; card: string | null }[] = [];
+    for (let i = 0; i < 20 && !go.mock.calls.length; i++) {
+      said.push({ text: root.querySelector('.slx-talk .slx-text')?.textContent, card: root.querySelector('.slx-place-card')?.textContent ?? null });
+      s.onAction('confirm'); await tick();
+    }
+    expect(go).toHaveBeenCalledWith('dungeon');
+    const lines = linesOf('mem:noel:1', game.state).map((l) => l.text);
+    expect(said.map((x) => x.text)).toEqual(lines);
+    expect(said.every((x) => x.card === DAWN_PLACE.text), JSON.stringify(said)).toBe(true);
+    expect(DAWN_PLACE.text).toBe('月影旅館・清晨');
+    expect(game.state.story.seen).toContain('mem:noel:1');
+    expect(game.state.story.untold).toEqual(['mem:selene:1', 'mem:bobby:1', 'mem:liz:1']);
+    expect(game.state.story.dawn).toBeUndefined();
   });
 });

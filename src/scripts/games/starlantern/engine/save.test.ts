@@ -1113,3 +1113,35 @@ describe('story L: the reaction slot in the save (Task 5)', () => {
     }
   });
 });
+
+describe('story L: the dawn pick in the save (controller ruling 2026-10-24)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  /** Rin's first three pieces held and untold, the third the dawn's. */
+  const held = (): GameState => {
+    const g = newGame();
+    g.party.roster.rin.memories = 3;
+    g.story.untold = ['mem:rin:1', 'mem:rin:2', 'mem:rin:3'];
+    g.story.tonight = ['mem:rin:1'];
+    g.story.dawn = 'mem:rin:3';
+    return g;
+  };
+
+  it('dawn saves and loads; one outside untold, in tonight, or not a memory is refused', () => {
+    const st = memoryStorage();
+    expect(saveGame(st, held())).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && r.state.story.dawn).toBe('mem:rin:3');
+    expect(status(newGame())).toBe('ok');   // absent: no dawn
+    const cases: [string, (g: GameState) => void][] = [
+      ['outside untold', (g) => { g.story.untold = ['mem:rin:1', 'mem:rin:2']; }],
+      ['in tonight', (g) => { g.story.tonight = ['mem:rin:1', 'mem:rin:3']; }],
+      ['not a memory', (g) => { (g.story as { dawn?: unknown }).dawn = 'act2'; }],
+      ['not a scene', (g) => { (g.story as { dawn?: unknown }).dawn = 3; }],
+    ];
+    for (const [name, mut] of cases) {
+      const g = held();
+      mut(g);
+      expect(status(g), name).toBe('corrupt');
+    }
+  });
+});

@@ -58,6 +58,11 @@ export interface StoryState {
    * removes it (expired), and so does the group said, or the next act said. Absent reads as empty.
    */
   reacts?: Partial<Record<GroupScene, 0 | 1>>;
+  /**
+   * 【控制者裁定 2026-10-24】 The dawn before departure: the one untold memory (not one of tonight's) the next departure
+   * tells, picked on the return (`dawnMemory`) so a reload offers the same one. Absent: none.
+   */
+  dawn?: SceneId;
 }
 
 /** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */

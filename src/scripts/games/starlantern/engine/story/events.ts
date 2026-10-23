@@ -375,6 +375,7 @@ export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' |
   // story L: a memory told leaves the untold list and tonight's picks
   if (story.untold) story.untold = story.untold.filter((u) => u !== id);
   if (story.tonight) story.tonight = story.tonight.filter((u) => u !== id);
+  if (story.dawn === id) delete story.dawn;   // the dawn's pick, told
   const queueOnce = (next: SceneId): void => { if (!story.seen.includes(next) && !story.queue.includes(next)) story.queue.push(next); };
   const at = ACT_NODES.indexOf(id as ActNode);
   if (at >= 0 || id.startsWith('group:')) {

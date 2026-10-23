@@ -426,8 +426,35 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
+    // Story L (controller ruling 2026-10-24): the dawn before departure, one memory told at the gate under the dawn's card.
+    name: 'dawn', visit: async (page, w) => {
+      await page.evaluate(() => {
+        const d = (window as unknown as { __starlanternDebug: { game: { state: { party: { recruited: string[]; roster: Record<string, { memories?: number }> }; story: { seen: string[]; untold?: string[]; dawn?: string } } }; settings: { get(): object; set(s: object): void } } }).__starlanternDebug;
+        d.settings.set({ ...d.settings.get(), story: 'all' });
+        const { story, party } = d.game.state;
+        const ids = party.recruited.filter((c) => c !== 'hero' && c !== 'rin' && !story.seen.includes(`mem:${c}:1`) && !(story.untold ?? []).includes(`mem:${c}:1`)).slice(0, 4);
+        for (const c of ids) party.roster[c].memories = Math.max(party.roster[c].memories ?? 0, 1);
+        story.untold = [...(story.untold ?? []), ...ids.map((c) => `mem:${c}:1`)];
+        story.dawn = `mem:${ids[0]}:1`;
+      });
+      await w.key('ArrowUp'); await w.key('Enter');           // 是
+      await expect(page.locator('.slx-gate .slx-talk')).toBeVisible();
+      await expect(page.locator('.slx-gate .slx-place-card')).toHaveText('月影旅館・清晨');
+      if (!(await page.locator('.slx-gate .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+    },
+  },
+  {
     // Story L: the night before the descent, said at the gate on the departure that owes it, under the night's card.
     name: 'eve', visit: async (page, w) => {
+      // The dawn's memory read, the party sets out; straight back by the entrance, then to the gate's question again.
+      await readAll(page, w);
+      await expect(page.locator('.slx-dungeon')).toBeVisible();
+      await page.evaluate(() => (window as unknown as { __starlanternDebug: { game: { returnToTown(): boolean } } }).__starlanternDebug.game.returnToTown());
+      await facility(page, w, 'gate', '.slx-gate');
+      await w.key('Enter');                                   // 選擇傳送門
+      await expect(page.locator('.slx-portal').first()).toBeVisible();
+      await w.key('Enter'); await w.key('Enter');             // the mainline card, depth 1
+      await expect(page.locator('.slx-confirm')).toBeVisible();
       await page.evaluate(() => {
         const d = (window as unknown as { __starlanternDebug: { game: { state: { story: { queue: string[] } } }; settings: { get(): object; set(s: object): void } } }).__starlanternDebug;
         d.settings.set({ ...d.settings.get(), story: 'all' });
