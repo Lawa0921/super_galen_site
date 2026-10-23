@@ -1665,7 +1665,7 @@ describe('Task 14: the finale', () => {
       expect(played[11].who).toBe('narrator');
       expect(played[11].text).toMatch(/淡了/);
       expect(played[12].who).toBe('narrator');
-      expect(played[12].text).toMatch(/一段也沒收/);
+      expect(played[12].text).toMatch(/原封不動/);
       expect(played[16].who).toBe('rin');
       const lamp = played.findIndex((l) => l.text.includes('燈穩了下來'));
       expect(lamp, 'the lamp line plays').toBe(13);
@@ -1711,7 +1711,7 @@ describe('Task 14: the finale', () => {
     expect(L[L.length - 2].who).toBe('bellkeeper');
     // story L Task 14 cold read: in his own 「我們」 now, the society's 「吾等」 dropped as it ends; the society's crime is
     // said here first (spec §3.6), his own knife is a callback to his arrival (bellkeeper-arrives: 「是我的刀」)
-    expect(tail[2]).toMatch(/一直在殺的，是守燈人/);
+    expect(tail[2]).toMatch(/每殺一個守燈人/);
     expect(tail[2]).toMatch(/晚一輪亮/);
     expect(tail[2]).toMatch(/到此為止/);
     // Rin's last word echoes Lorne's from her reveal (「明天也一起回來吧。」), for everyone: after her choice she names him
@@ -2999,7 +2999,8 @@ describe('story depth Task 16: the finale and the lantern festival', () => {
       expect(L.filter((l) => l.who === 'bellkeeper'), at).toHaveLength(1);
       const keeper = L.find((l) => l.who === 'bellkeeper')!;
       // story L Task 14 cold read: his own words now, not the society's 「吾等」; the market knife calls back his arrival
-      expect(keeper.text).toMatch(/市集裡那一刀，也是我/);
+      expect(keeper.text).toMatch(/市集那一刀，也是我/);
+      expect(keeper.text).toMatch(/守住/);   // the last cold read: his motive, the mist he thought he held off
       expect(keeper.text).toMatch(/到此為止/);
       expect(keeper.text).not.toMatch(/吾等/);
       expect(L.filter((l) => l.who === 'rin'), at).toHaveLength(1);
@@ -3178,9 +3179,12 @@ describe('story depth: the final review', () => {
     for (const r of sceneReadings('finale')) {
       // story L Task 14 cold read: seventeen, the line that says why (what they held out was kept for him, not the lamp)
       expect(r.lines.length).toBeLessThanOrEqual(17);
-      const kept = r.lines.filter((l) => /一段也沒收/.test(l.text));
+      // the last cold read: theirs stay in their hands, to be told back to him; his faces do not come back
+      const kept = r.lines.filter((l) => /原封不動/.test(l.text));
       expect(kept[0]?.text).toMatch(/只收下他的十段/);
-      expect(kept[0]?.text).toMatch(/留給他/);
+      expect(kept[0]?.text).toMatch(/說給他聽/);
+      expect(r.lines.find((l) => /淡了/.test(l.text))?.text).toMatch(/再也不會回到他身上/);
+      expect(r.lines.find((l) => /碎片的光/.test(l.text))?.text).toMatch(/他的除外/);
       expect(kept).toHaveLength(1);
       expect(kept[0].who).toBe('narrator');
       expect(r.lines.indexOf(kept[0])).toBeGreaterThan(r.lines.findIndex((l) => l.who === 'hero' && /十段/.test(l.text)));
