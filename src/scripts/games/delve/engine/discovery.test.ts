@@ -1,6 +1,7 @@
 // discovery.test.ts — 地區 / 地標（由 worldgen 推導、依種子命名）、首次進入的發現、日誌統計、存檔 JSON
 import { describe, it, expect } from 'vitest';
-import { buildRegions, Discovery, CATEGORY_LABEL, type RegionSource, type Region } from './discovery';
+import { buildRegions, Discovery, CATEGORY_LABEL, outerRegions, type RegionSource, type Region } from './discovery';
+import { OuterProfile, type CentralFrame } from './legacy/chunkgen';
 import { BIOME } from './world';
 import { LORE } from './lore';
 
@@ -121,5 +122,28 @@ describe('Discovery 格網（負 x）', () => {
     expect(d.regionsAt(-150, 100).map((r) => r.id)).toEqual([0]);
     expect(d.regionsAt(4093 * 64 + 10, 10)).toEqual([]);
     expect(d.regionsAt(4094 * 64 + 10, 10)).toEqual([]);
+  });
+});
+
+// ── 外圍地區（裁決 P2：outerRegions 回傳陣列；Task 14 在這之上加 gen2Regions） ──
+const OUTER_FRAME: CentralFrame = { width: 4200, height: 1200, edgeL: 300, edgeR: 310, cavernY: 600, moltenY: 1000 };
+const profile = new OuterProfile('od', OUTER_FRAME);
+/** 改寫前（outerRegions 回傳單一 Region | null）錄下：單一 Region → [[id, name]]、null → [] */
+const OUTER_BEFORE: [number, string][][] = [
+  [[1073741824, '東方大海']], [[1073741826, '東境・晨霧林地']], [[1073741828, '東境・白寂雪原']],
+  [[1073741825, '西方大海']], [[1073741827, '西境・松鼠丘陵']],
+];
+
+describe('outerRegions（陣列）', () => {
+  it('outerRegions 包成陣列後 id / 名字不變', () => {
+    const f = outerRegions('od', profile);
+    expect([4210, 4800, 6000, -10, -900].map((x) => f(x, 300).map((r) => [r.id, r.name]))).toEqual(OUTER_BEFORE);
+    const d = new Discovery([]);
+    d.setOuter(f);
+    expect(d.visit(4800, 300).map((r) => r.id)).toEqual(OUTER_BEFORE[1].map(([id]) => id));
+    // 中央 / 洞穴層線以下 → 空陣列；再走一次不重複發現
+    expect(f(2100, 300)).toEqual([]);
+    expect(f(4800, 1100)).toEqual([]);
+    expect(d.visit(4800, 300)).toEqual([]);
   });
 });

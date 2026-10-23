@@ -11,6 +11,8 @@ import { chunkOfX, defaultBounds, type WorldBounds } from './coords';
 import { OuterGen, frameOf } from './legacy/chunkgen';
 import { LOAD_COLS, planStreaming } from './streaming';
 import { generateWorld, type GenResult, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './legacy/worldgen';
+import { bootGen2, bootLegacy, type WorldContent, type WorldGenSpec } from './worldBoot';
+import { Gen2Source } from './gen2';
 import type { DungeonInfo } from './legacy/gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
 import { T, W, TIER_UNBREAKABLE, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
@@ -31,7 +33,7 @@ import {
   FISH, POOL_COUNT_MAX, biteDelay, biteWindow, canFishIn, crateLoot, fishingPower, rollCatch, timeSlot, type DepthZone, type TimeSlot,
 } from './fishing';
 import { ExploredMap, toggleMarker, type MapMarker } from './explore';
-import { Discovery, buildRegions, outerRegions, type Region, type RegionCat } from './discovery';
+import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
 import { EQUIP_SLOTS, type EquipSlot } from './equipment';
 import {
   BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
@@ -92,6 +94,7 @@ import {
 } from './skills';
 import {
   TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH, HOTBAR_SIZE, JUMP_SPEED, JUMP_HOLD, REMOTE_REACH_SLACK,
+  GEN_VERSION, GEN_VERSION_V2, WORLD_W, WORLD_H,
 } from './constants';
 
 export interface DelveOptions {
@@ -112,6 +115,8 @@ export interface DelveOptions {
   localPid?: Pid;
   /** 單機 / 房主 / 客人副本（省略 = 'solo'） */
   mode?: GameMode;
+  /** 世界生成器（省略 = legacy 舊生成器）。gen2 = 無限世界生成器 v2：只接受正式尺寸、忽略 gen / bounds / columnSource */
+  worldGen?: WorldGenSpec;
 }
 
 export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden'
@@ -526,8 +531,9 @@ export class DelveGame {
   readonly biomes: readonly BiomeSegment[];
   readonly structures: readonly Structure[];
   readonly landforms: readonly Landform[];
-  readonly dungeonZone: ReservedZone;
-  readonly layers: GenLayers;
+  /** 地城保留區 / 深度層線（舊生成器的輸出；gen2 世界沒有 = null，層線一律走 world.layersAt） */
+  readonly dungeonZone: ReservedZone | null;
+  readonly layers: GenLayers | null;
   /** 地城（房間 / 門 / 鑰匙位置）；小世界沒有 */
   readonly dungeon: DungeonInfo | null;
   /** 所有古碑（id = 碑文編號） */
@@ -538,6 +544,10 @@ export class DelveGame {
   readonly springs: readonly SpringSpec[];
   /** 地區 / 地標（依種子命名） */
   readonly regions: readonly Region[];
+  /** 世界生成器版本（存檔 header 的 genVersion）：legacy = GEN_VERSION（7）、gen2 / 烘焙 = GEN_VERSION_V2（8） */
+  readonly genVersion: number;
+  /** 世界的生成方式：legacy = 舊生成器、gen2 = 新建的 gen2 世界、baked = 舊世界烘焙成 gen2（Task 16） */
+  readonly genKind: 'legacy' | 'gen2' | 'baked';
   // ── 玩家（PlayerActor）──────────────────────────────────
   /** 所有玩家角色（插入順序 = 處理順序；本地 actor 永遠第一個） */
   readonly actors = new Map<Pid, PlayerActor>();
@@ -722,7 +732,7 @@ export class DelveGame {
   /** 已解鎖的傳送碑 id（世界層級、所有 actor 共用；不含 0：出生點那顆恆解鎖；存檔內容） */
   readonly stonesUnlocked = new Set<number>();
   /** 外圍地區（無限世界的海 / 生態段；所有 actor 的 Discovery 共用同一個查詢與快取） */
-  private readonly outerRegion: ((x: number, y: number) => Region | null) | null;
+  private readonly outerRegion: ((x: number, y: number) => Region[]) | null;
   /** 地表村落 / 矮人地廳（世界生成） */
   readonly villages: readonly VillageInfo[];
   readonly halls: readonly HallInfo[];
@@ -817,25 +827,39 @@ export class DelveGame {
     this.settle.spawnLink = { get: () => this.cur.spawnCore, set: (v) => { this.cur.spawnCore = v; } };
     this.seed = String(opts.seed ?? 'delve');
     this.appearance = normalizeAppearance(opts.appearance);
-    // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
-    const pre = opts.gen && (opts.width === undefined || opts.gen.world.width === opts.width) && (opts.height === undefined || opts.gen.world.height === opts.height) ? opts.gen : null;
-    const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
-    // 舊生成器的扁平格 → 區塊欄儲存。正式尺寸的世界無限（中央以外由外圍生成器產生），小尺寸的測試世界有界（B5）
-    const bounds = opts.bounds ?? defaultBounds(gen.world.width, gen.world.height);
-    const source = opts.columnSource ?? (bounds === 'infinite' ? new OuterGen(this.seed, frameOf(gen.world)) : null);
-    this.world = World.fromGen(gen.world, gen.layers, { bounds, source });
+    const spec: WorldGenSpec = opts.worldGen ?? { kind: 'legacy' };
+    let content: WorldContent;
+    if (spec.kind === 'gen2') {
+      // gen2 世界只有正式尺寸（版面以家鄉 [0, 4200) 為準）
+      if ((opts.width !== undefined && opts.width !== WORLD_W) || (opts.height !== undefined && opts.height !== WORLD_H)) {
+        throw new RangeError(`delve: gen2 worlds are ${WORLD_W}x${WORLD_H} (got ${opts.width ?? WORLD_W}x${opts.height ?? WORLD_H})`);
+      }
+      content = bootGen2(this.seed, spec, this.mode === 'replica');
+    } else {
+      // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
+      const pre = opts.gen && (opts.width === undefined || opts.gen.world.width === opts.width) && (opts.height === undefined || opts.gen.world.height === opts.height) ? opts.gen : null;
+      const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
+      // 舊生成器的扁平格 → 區塊欄儲存。正式尺寸的世界無限（中央以外由外圍生成器產生），小尺寸的測試世界有界（B5）
+      const bounds = opts.bounds ?? defaultBounds(gen.world.width, gen.world.height);
+      const source = opts.columnSource ?? (bounds === 'infinite' ? new OuterGen(this.seed, frameOf(gen.world)) : null);
+      content = bootLegacy(this.seed, gen, { bounds, source });
+    }
+    this.genKind = spec.kind;
+    this.genVersion = spec.kind === 'legacy' ? GEN_VERSION : GEN_VERSION_V2;
+    this.world = content.world;
     // 客人副本：卸載的欄不停放（D4：回來時由房主重新同步）
     if (this.mode === 'replica') this.world.noPark = true;
-    this.outerRegion = source instanceof OuterGen ? outerRegions(this.seed, source.profile) : null;
-    // 傳送碑：出生點那顆在 spawn.x + 7 的生成地表上（中央每欄陣列：挖掘 / 蓋東西不會讓碑移動）；外圍的由外圍側寫算（有界世界沒有）
-    const stoneX = gen.spawn.x + 7;
-    this.waystones = new Waystones(this.seed, { x: stoneX, y: this.world.surface[stoneX] - 1 }, source instanceof OuterGen ? source.profile : null);
+    this.outerRegion = content.outer;
+    // 傳送碑：出生點那顆在 spawn.x + 7 的生成地表上（舊世界 = 中央每欄陣列、gen2 = source 的側寫：挖掘 / 蓋東西不會讓碑移動）；
+    // 外圍的由陸地查詢算（有界世界沒有）
+    const stoneX = content.spawn.x + 7;
+    this.waystones = new Waystones(this.seed, { x: stoneX, y: this.world.surfaceAt(stoneX) - 1 }, content.land);
     this.liquids = new LiquidSim(this.world);
     // 液體反應（熔岩遇水 / 蜂蜜）不在任何活著的玩家站的格子凝成黑曜石 / 脆蜜塊（不把人封進方塊；液體本身照樣流過去）
     this.liquids.blocked = (x, y) => this.tileOverlapsPlayer(x, y, true);
     // 泉水瀑布（無限源 + 滲水石排水）
-    this.springs = gen.springs;
-    this.liquids.setSprings(gen.springs);
+    this.springs = content.springs;
+    this.liquids.setSprings(content.springs);
     const w = this.world;
     this.env = {
       isSolid: (x, y) => w.isSolid(x, y),
@@ -847,28 +871,28 @@ export class DelveGame {
       contactAt: (b) => liquidContact(w, b),
       liquidAt: (x, y) => ({ amount: w.getLiquid(x, y), type: w.getLiquidType(x, y) }),
     };
-    this.spawn = gen.spawn;
-    this.biomes = gen.biomes;
-    this.structures = gen.structures;
-    this.landforms = gen.landforms;
-    this.dungeonZone = gen.dungeonZone;
-    this.layers = gen.layers;
-    // 每欄深度層線：系統一律走 world.layersAt(x)（預先生成的世界也補上）
-    this.world.layers = gen.layers;
-    this.dungeon = gen.dungeon;
-    this.tablets = gen.tablets;
-    this.relics = gen.relics;
-    for (const t of gen.tablets) this.tabletAt.set(this.world.idx(t.x, t.y), t.id);
-    this.regions = buildRegions({
-      seed: this.seed, width: this.world.width, height: this.world.height, spawn: gen.spawn,
-      surface: this.world.surface, layers: gen.layers, biomes: gen.biomes, structures: gen.structures, dungeon: gen.dungeon,
-    });
+    this.spawn = content.spawn;
+    this.biomes = content.biomes;
+    this.structures = content.structures;
+    this.landforms = content.landforms;
+    this.dungeonZone = content.dungeonZone;
+    this.layers = content.layers;
+    // 每欄深度層線：系統一律走 world.layersAt(x)（舊世界由 World.fromGen 設好；gen2 問 source）
+    this.dungeon = content.dungeon;
+    this.tablets = content.tablets;
+    this.relics = content.relics;
+    for (const t of content.tablets) this.tabletAt.set(this.world.idx(t.x, t.y), t.id);
+    const L = content.layers;
+    this.regions = content.regions ?? (L ? buildRegions({
+      seed: this.seed, width: this.world.width, height: this.world.height, spawn: content.spawn,
+      surface: this.world.surface, layers: L, biomes: content.biomes, structures: content.structures, dungeon: content.dungeon,
+    }) : []);
     this.explored = new ExploredMap(this.world.width, this.world.height, undefined, this.world);
-    this.villages = gen.villages ?? [];
-    this.halls = gen.halls ?? [];
-    this.landmarks = gen.landmarks ?? [];
+    this.villages = content.villages;
+    this.halls = content.halls;
+    this.landmarks = content.landmarks;
     for (const l of this.landmarks) this.landmarkAt.set(this.world.idx(l.x, l.y), l);
-    this.discovery = new Discovery(this.regions, { loreTotal: gen.tablets.length, landmarks: [...this.landmarkAt.keys()] });
+    this.discovery = new Discovery(this.regions, { loreTotal: content.tablets.length, landmarks: [...this.landmarkAt.keys()] });
     this.discovery.setOuter(this.outerRegion);
     // 據點核心範圍的欄 pin 住（無限世界：居民在那裡活動，不卸載）
     this.settle.attach(this.world);
@@ -896,6 +920,12 @@ export class DelveGame {
     this.discovery.visit(this.spawn.x, this.spawn.y);
     // 曆法：雪原的湖在春天開局時仍是冰
     this.refreshSeason();
+  }
+
+  /** gen2 生成器：gen2 世界 = world.source；烘焙世界 = BakedSource.gen2（Task 16）；舊世界 null */
+  gen2(): Gen2Source | null {
+    const s = this.world.source;
+    return s instanceof Gen2Source ? s : null;
   }
 
   /** 換掉探索狀態（存檔還原用） */

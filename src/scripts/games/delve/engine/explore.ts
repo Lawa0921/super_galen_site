@@ -123,6 +123,7 @@ export class ExploredMap {
     if (b[i >> 3] & m) return false;
     b[i >> 3] |= m;
     this.count++;
+    // [0, width) = 家鄉框（舊世界的中央、gen2 的家鄉 HOME_X0..HOME_X1 同一段）：source 模式照樣適用
     if (x >= 0 && x < this.width) this.central++;
     return true;
   }

@@ -6,6 +6,7 @@ import { Column, li, type ColumnSource, type ColumnLayers, type GenChest } from 
 import type { RegionInfo } from './regionInfo';
 import { cloneStack, type Stack } from './inventory';
 import { T, W } from './tiles';
+import { GenGrid } from './legacy/gen/grid';
 
 function hash(x: number, y: number): number {
   let h = Math.imul(x, 0x27d4eb2d) ^ Math.imul(y + 977, 0x165667b1);
@@ -148,5 +149,15 @@ describe("World central: 'source'", () => {
     const plain: ColumnSource = { version: 1, fill: () => {}, surfaceAt: () => 10, biomeAt: () => BIOME.DESERT, layersAt: () => ({ rock: 1, deep: 2, molten: 3 }) };
     const pw = new World(64, 64, { bounds: 'infinite', source: plain, central: 'source' });
     expect(pw.regionAt(500)).toMatchObject({ kind: 'home', landmass: 0, biome: BIOME.DESERT, x0: 0, x1: 64 });
+  });
+
+  it("World.fromGen 不接受 central: 'source'（舊生成器的格只能進 arrays 模式）：明確的 Error、不是 RangeError", () => {
+    const grid = new GenGrid(64, 64);
+    const layers = { rock: new Int16Array(64), deep: new Int16Array(64), molten: new Int16Array(64) };
+    const opts = { bounds: 'infinite' as const, source: new ObjSource(), central: 'source' as const };
+    expect(() => World.fromGen(grid, layers, opts)).toThrow(/fromGen.*central: 'source'/);
+    expect(() => World.fromGen(grid, layers, opts)).not.toThrow(RangeError);
+    // arrays 模式照舊
+    expect(World.fromGen(grid, layers, { bounds: 'infinite', source: new ObjSource() }).surface.length).toBe(64);
   });
 });

@@ -1,12 +1,14 @@
 // waystones.ts — 傳送碑（B10）：世界物件、不是 tile（舊世界中央區一格都不會變）。
 //   · id 0 = 出生點那顆（呼叫端給位置：spawn.x + 7 的生成地表上），永遠是解鎖的。
-//   · 外圍（只有無限世界、有外圍側寫 profile 時）：每側第 k 顆（k ≥ 1）離中央邊欄 d = SEA_W + STONE_FIRST + (k − 1) × STONE_EVERY
+//   · 外圍（只有無限世界、有陸地查詢 LandQuery 時）：每側第 k 顆（k ≥ 1）離中央邊欄 d = SEA_W + STONE_FIRST + (k − 1) × STONE_EVERY
 //     + 抖動（±STONE_JITTER，由 (seed, 側, k) 雜湊），y = 地表 − 1；落在海上就往遠離中央的方向推到第一個陸地欄。
 //     id：東 +k、西 −k；名字「東境第 k 碑」/「西境第 k 碑」。
 //   位置全部是 (seed, id) 的純函式（只用整數雜湊 + 四則運算），near() 由 x 範圍算 k、不掃描。
+//   陸地 / 地表由 LandQuery 提供（v1 外圍側寫 = v1LandQuery、gen2 = gen2LandQuery）；演算法兩者相同。
 import { hash2, seedInt } from './noise';
 import { X_LIMIT } from './coords';
 import { SEA_W, type OuterProfile } from './legacy/chunkgen';
+import type { Gen2Source } from './gen2';
 
 export const SPAWN_STONE = 0, STONE_EVERY = 1600, STONE_JITTER = 150, STONE_FIRST = 200;
 /** 落在海上時最多往外推幾格找陸地（v0 的碑一律在海後 ≥ 50 格，用不到；找不到 = 這顆不存在） */
@@ -16,29 +18,46 @@ const MAX_UNLOCKED = 4096;
 
 export interface Waystone { id: number; x: number; y: number /* 底座下方那格的上一格（站立 tile） */; name: string; }
 
+/** 碑的陸地查詢：width = 中央框寬（外圍 d 的基準：東 x = width + d、西 x = −1 − d）；isLand = 這一欄能立碑；surfaceAt = 地表 */
+export interface LandQuery { width: number; isLand(x: number): boolean; surfaceAt(x: number): number }
+
+/** v1 外圍側寫：陸地 = zoneAt(x).kind === 'land' */
+export function v1LandQuery(p: OuterProfile): LandQuery {
+  return { width: p.frame.width, isLand: (x) => p.zoneAt(x).kind === 'land', surfaceAt: (x) => p.surfaceAt(x) };
+}
+
+/** gen2：陸地 = 大陸的地區（wild / culture；家鄉、海、島都不算）；不屬 gen2 的欄（烘焙世界的舊範圍、±X_LIMIT 外）不算。width = 東側原點 */
+export function gen2LandQuery(src: Gen2Source): LandQuery {
+  return {
+    width: src.layout.origin.east.x,
+    isLand: (x) => { const r = src.profile.regionAt(x); return r !== null && (r.kind === 'wild' || r.kind === 'culture'); },
+    surfaceAt: (x) => src.surfaceAt(x),
+  };
+}
+
 /** 碑的 footprint：2 格寬、3 格高；(x, y) = 左上格 */
 export interface StoneRect { x: number; y: number; w: 2; h: 3 }
 
 export class Waystones {
   private readonly spawnStone: Waystone;
-  private readonly profile: OuterProfile | null;
+  private readonly land: LandQuery | null;
   private readonly sJit: number;
   /** 中央框寬（外圍 d 的基準）；有界世界沒有外圍 = 0 */
   private readonly width: number;
   /** 外圍碑的快取（id → 碑；推不到陸地 / 超出硬邊界 = null） */
   private readonly memo = new Map<number, Waystone | null>();
 
-  constructor(seed: string, spawnStone: { x: number; y: number }, profile: OuterProfile | null) {
+  constructor(seed: string, spawnStone: { x: number; y: number }, land: LandQuery | null) {
     this.spawnStone = { id: SPAWN_STONE, x: spawnStone.x, y: spawnStone.y, name: '出生地傳送碑' };
-    this.profile = profile;
+    this.land = land;
     this.sJit = seedInt(seed, 'waystone');
-    this.width = profile ? profile.frame.width : 0;
+    this.width = land ? land.width : 0;
   }
 
   byId(id: number): Waystone | null {
     if (!Number.isInteger(id)) return null;
     if (id === SPAWN_STONE) return this.spawnStone;
-    if (!this.profile) return null;
+    if (!this.land) return null;
     let s = this.memo.get(id);
     if (s === undefined) { s = this.compute(id); this.memo.set(id, s); }
     return s;
@@ -53,12 +72,12 @@ export class Waystones {
   private xOf(side: 1 | -1, d: number): number { return side === 1 ? this.width + d : -1 - d; }
 
   private compute(id: number): Waystone | null {
-    const p = this.profile!;
+    const q = this.land!;
     const side: 1 | -1 = id > 0 ? 1 : -1, k = Math.abs(id);
     let d = this.dist(side, k);
     const land = (dd: number): boolean => {
       const x = this.xOf(side, dd);
-      return p.zoneAt(x).kind === 'land' && p.zoneAt(x + 1).kind === 'land';
+      return q.isLand(x) && q.isLand(x + 1);
     };
     let push = 0;
     while (!land(d) && push < MAX_PUSH) { d++; push++; }
@@ -66,7 +85,7 @@ export class Waystones {
     const x = this.xOf(side, d);
     // 兩欄都要在硬邊界內（再留 2 格：碑旁要站得下人）
     if (x - 2 < -X_LIMIT || x + 4 > X_LIMIT) return null;
-    return { id, x, y: p.surfaceAt(x) - 1, name: `${side === 1 ? '東' : '西'}境第 ${k} 碑` };
+    return { id, x, y: q.surfaceAt(x) - 1, name: `${side === 1 ? '東' : '西'}境第 ${k} 碑` };
   }
 
   /** x 在 [x0, x1) 的碑（依 x 排序）：由範圍算 k 的候選，不掃描 */
@@ -75,7 +94,7 @@ export class Waystones {
     if (!(x1 > x0)) return out;
     const sp = this.spawnStone;
     if (sp.x >= x0 && sp.x < x1) out.push(sp);
-    if (this.profile) {
+    if (this.land) {
       // 第 k 顆的 d ∈ [base(k) − J, base(k) + J + MAX_PUSH]；東 x = width + d、西 x = −1 − d
       for (const side of [-1, 1] as const) {
         const dLo = side === 1 ? x0 - this.width : -x1;

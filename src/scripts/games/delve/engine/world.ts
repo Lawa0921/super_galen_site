@@ -170,6 +170,8 @@ export class World {
 
   /** 舊生成器的扁平格 → 欄儲存的世界：複製中央各層、箱子 / 陶罐 / 金寶箱、每欄陣列、深度層線與修改紀錄 */
   static fromGen(grid: GenGrid, layers: GenLayers, opts: WorldOptions = {}): World {
+    // 舊生成器的扁平格只能進 arrays 模式（source 模式沒有中央欄 / 每欄陣列可複製）
+    if (opts.central === 'source') throw new Error("World.fromGen: central: 'source' is not supported (legacy grids need central arrays)");
     // 中央的整欄由下面直接複製（含 variant），建構時不必先算座標雜湊
     copyingGrid = true;
     let w: World;

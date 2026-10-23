@@ -149,6 +149,7 @@ export function validTileKey(k: number, h: KeyDims): boolean {
   if (!Number.isInteger(k) || k < 0) return false;
   if (k < T_BASE) return k < h.width * h.height;
   if (h.bounds !== 'infinite') return false;
+  // [0, width) 是 tileKey 的編碼分界（coords.ts），與中央怎麼生成（arrays / source 模式）無關：gen2 世界照樣適用
   const { x, y } = tileXY(h.width, k);
   return y < h.height && (x < 0 || x >= h.width) && x >= -X_LIMIT && x < X_LIMIT;
 }

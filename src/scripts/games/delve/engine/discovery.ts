@@ -210,11 +210,11 @@ export function isOuterRegionId(id: number): boolean {
 const OUTER_BIOME_KEY: Record<number, string> = { [BIOME.FOREST]: 'forest', [BIOME.DESERT]: 'desert', [BIOME.SNOW]: 'snow', [BIOME.JUNGLE]: 'jungle' };
 
 /**
- * 外圍地區的查詢：(x, y) → 那一片海 / 那一段生態的地區（惰性建立、快取；中央 → null）。
+ * 外圍地區的查詢：(x, y) → 那一片海 / 那一段生態的地區，0 或 1 個（惰性建立、快取；中央 / 範圍外 → []）。
  * 名字：海 = 「西方大海」/「東方大海」；陸地 = 「東境・」/「西境・」+ NAMES[生態] 依（seed, 側, 段號）雜湊挑。
  * 範圍：該段的欄、y 在洞穴層線以上（同中央的地表區域）。
  */
-export function outerRegions(seed: string, profile: OuterProfile): (x: number, y: number) => Region | null {
+export function outerRegions(seed: string, profile: OuterProfile): (x: number, y: number) => Region[] {
   const cache = new Map<number, Region>();
   const sName = seedInt(seed, 'outer-region-names');
   const width = profile.frame.width;
@@ -227,9 +227,9 @@ export function outerRegions(seed: string, profile: OuterProfile): (x: number, y
       contains: (x: number, y: number): boolean => x >= x0 && x < x1 && y >= 0 && y < deep(x),
     };
   };
-  return (x: number, y: number): Region | null => {
+  return (x: number, y: number): Region[] => {
     const z = profile.zoneAt(x);
-    if (z.kind === 'central') return null;
+    if (z.kind === 'central') return [];
     const n = z.kind === 'sea' ? 0 : z.seg.k + 1;
     const id = outerRegionId(n, z.side);
     let r = cache.get(id);
@@ -244,7 +244,7 @@ export function outerRegions(seed: string, profile: OuterProfile): (x: number, y
       }
       cache.set(id, r);
     }
-    return r.contains(x, y) ? r : null;
+    return r.contains(x, y) ? [r] : [];
   };
 }
 
@@ -290,8 +290,8 @@ export class Discovery {
   /** 世界裡所有地標的 tile index（存檔讀回時只認這些） */
   readonly landmarkSet: ReadonlySet<number>;
   private grid = new Map<number, number[]>();
-  /** 外圍地區的查詢（無限世界；null = 沒有外圍） */
-  private outer: ((x: number, y: number) => Region | null) | null = null;
+  /** 外圍地區的查詢（無限世界；回傳 (x, y) 所在的外圍地區；null = 沒有外圍） */
+  private outer: ((x: number, y: number) => Region[]) | null = null;
   private lastX: number | null = null;
   private lastY = 0;
 
@@ -322,7 +322,7 @@ export class Discovery {
   isFound(id: number): boolean { return this.found.has(id); }
 
   /** 外圍地區的查詢（outerRegions 的結果；null = 沒有外圍） */
-  setOuter(fn: ((x: number, y: number) => Region | null) | null): void { this.outer = fn; }
+  setOuter(fn: ((x: number, y: number) => Region[]) | null): void { this.outer = fn; }
 
   /** 玩家在 (x,y)：回傳這次新發現的地區（越小的越前面——結構比生態區先顯示）；外圍地區排最後 */
   visit(x: number, y: number): Region[] {
@@ -333,8 +333,8 @@ export class Discovery {
       out.push(r);
     }
     out.sort((a, b) => a.w * a.h - b.w * b.h);
-    const o = this.outer?.(x, y);
-    if (o && !this.found.has(o.id)) { this.found.add(o.id); out.push(o); }
+    const os = this.outer?.(x, y);
+    if (os) for (const o of os) if (!this.found.has(o.id)) { this.found.add(o.id); out.push(o); }
     return out;
   }
 
