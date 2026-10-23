@@ -4,16 +4,16 @@ import { ITEMS } from '../items';
 import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
-import { FOUND_LINE, NIGHT_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
+import { FOUND_LINE, GROUP_TITLES, NIGHT_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
-import { AFTER_CHOICE, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
+import { AFTER_CHOICE, groupShapeBreaks, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
 import { T } from '../text.zh-TW';
 import type { CharacterId } from '../../engine/types';
 import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
 import { memoryPace } from '../../engine/story/expect';
 import { leadOpen } from '../../engine/story/leads';
 import type { StoryMood } from '../../render/artPaths';
-import { ACT_DEPTHS, DEPARTURE_SCENES, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage, type StoryGate } from './scenes';
+import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage, type StoryGate } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
 
@@ -3239,5 +3239,49 @@ describe('scene places (staging S6)', () => {
     expect(at('rin-reveal')).toEqual([{ i: 0, text: '月影旅館・深夜', night: true }, { i: 5, text: '月影旅館・清晨' }]);
     expect(at('chat:hero:2')).toEqual([{ i: 0, text: '月影旅館・深夜', night: true }]);
     expect(at('town:orik')).toEqual([{ i: 0, text: '道具店・打烊以後' }]);
+  });
+});
+
+// Story L Task 7 (spec §5.1, §6): a group scene's shape, checked as each one is written and registered (Tasks 9-11).
+describe('story L: the group scenes (Task 7)', () => {
+  const L = (who: ScriptLine['who'], text: string, extra: Partial<ScriptLine> = {}): ScriptLine => ({ who, text, ...extra });
+  const card = { text: '月影旅館・晚飯' };
+  /** A shape that passes: a card on the first line, Lorne and two of the cast, eight lines, narration last. */
+  const good = (): ScriptLine[] => [
+    L('narrator', '月影旅館。', { place: card }), L('rin', '「一。」'), L('noel', '「二。」'), L('hero', '「三。」'),
+    L('rin', '「四。」'), L('noel', '「五。」'), L('hero', '「六。」'), L('narrator', '桌上的布空了。'),
+  ];
+
+  it('the shape gate itself: lines, one reading, three to five speakers with Lorne, the cast its gate meets, a card first, narration last', () => {
+    expect(groupShapeBreaks('group:act2', good())).toEqual([]);
+    const flags = (lines: ScriptLine[], id: Parameters<typeof groupShapeBreaks>[0] = 'group:act2') => groupShapeBreaks(id, lines).join(' | ');
+    expect(flags(good().slice(1, 8).map((l, i): ScriptLine => (i === 0 ? { ...l, place: card } : l)))).toMatch(/7 lines/);
+    expect(flags([...good().slice(0, 7), ...good().slice(1, 7), good()[7]])).toMatch(/14 lines/);
+    expect(flags(good().map((l, i): ScriptLine => (i === 2 ? { ...l, if: { met: 'noel' } } : l)))).toMatch(/one reading/);
+    expect(flags(good().map((l): ScriptLine => (l.who === 'noel' ? { ...l, who: 'rin' } : l)))).toMatch(/2 speakers/);
+    expect(flags(good().map((l): ScriptLine => (l.who === 'hero' ? { ...l, who: 'selene' } : l)))).toMatch(/Lorne/);
+    expect(flags(good().map((l): ScriptLine => (l.who === 'noel' ? { ...l, who: 'liz' } : l)))).toMatch(/liz.*not in its cast/);
+    expect(flags(good().map((l): ScriptLine => (l.who === 'rin' ? { ...l, who: 'liz' } : l)).map((l): ScriptLine => (l.who === 'noel' ? { ...l, who: 'scarlet' } : l)), 'group:act4')).toEqual('');
+    expect(flags(good().map((l): ScriptLine => (l.who === 'noel' ? { ...l, who: 'liz' } : l)), 'group:act4')).toMatch(/rin.*not in its cast/);   // Rin is not there (spec §6.4)
+    expect(flags(good().map((l, i): ScriptLine => (i === 0 ? { ...l, place: undefined } : l)))).toMatch(/card/);
+    expect(flags([...good().slice(0, 7), L('hero', '「八。」')])).toMatch(/narration/);
+  });
+
+  it('every registered group scene has eight to twelve lines, one reading, three to five speakers with Lorne, all met by its gate', () => {
+    for (const node of ACT_NODES) {
+      const id = REACTIONS[node];
+      if (!id) continue;
+      expect(id).toBe(groupScene(node));
+      expect(SCENE_IDS, id).toContain(id);
+      expect(groupShapeBreaks(id, STORY.scenes[id].lines), id).toEqual([]);
+      expect(STORY.scenes[id].title).toBe(GROUP_TITLES[id]);
+    }
+    expect(Object.keys(GROUP_GATE).sort()).toEqual(ACT_NODES.map(groupScene).sort());
+  });
+
+  it('the group scenes are titled as the handbook lists them (spec §5.1)', () => {
+    expect(GROUP_TITLES).toEqual({
+      'group:act2': '第二幕之後・碎片的價錢', 'group:act3': '第三幕之後・問不問', 'group:act4': '第四幕之後・桌上的錢袋',
+    });
   });
 });

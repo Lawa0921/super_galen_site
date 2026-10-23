@@ -303,6 +303,40 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
     expect(particleBreaks(everything).includes(`bobby: ${marked} of ${said.length} lines carry ${VOICE.bobby!.mark}`)).toBe(over);
   });
 
+  it('Sylvie may say 啦 or 欸 in a fifth of her lines, none in a heavy scene (story L Task 7, spec §7.1)', () => {
+    const v = VOICE.sylvie!;
+    expect(v.mark?.test('「這個能吃啦。」')).toBe(true);
+    expect(v.mark?.test('「欸，蘿蔔切太大塊了。」')).toBe(true);
+    expect(v.maxShare).toBe(1 / 5);
+    expect(v.heavyNone).toBe(true);
+    expect(v.never?.test('「風向不對吧。」')).toBe(true);   // the other particles stay out of her mouth
+    expect(v.never?.test('「這個能吃啦。」')).toBe(false);
+    // the budget as it bites, on her real lines: one 啦 in a light scene passes, one in a heavy scene does not, and past a
+    // fifth of all her lines the share fails
+    const hers = storyTexts().filter((t) => t.line && t.line.who === 'sylvie' && t.key.startsWith('scenes.'));
+    const heavy = (t: Text) => heavyScene(t.key.split('.')[1] as SceneId);
+    const light = hers.filter((t) => !heavy(t));
+    const grave = hers.find(heavy)!;
+    const all = storyTexts().filter((t) => speakerOf(t.key, t.line) === 'sylvie').length;
+    const over = Math.floor(all / 5) + 1;
+    expect(light.length, 'enough light lines of hers to go over a fifth').toBeGreaterThanOrEqual(over);
+    const saved = hers.map((t) => t.line!.text);
+    const say = (ts: Text[]) => { for (const t of ts) t.line!.text = '「這個能吃啦。」'; };
+    const sylvieBreaks = () => particleBreaks(POLISHED).filter((x) => x.includes('sylvie'));
+    try {
+      say([light[0]]);
+      expect(sylvieBreaks()).toEqual([]);
+      say([grave]);
+      expect(sylvieBreaks().some((x) => x.includes('in a heavy scene'))).toBe(true);
+      hers.forEach((t, i) => { t.line!.text = saved[i]; });
+      say(light.slice(0, over));
+      expect(sylvieBreaks().some((x) => x.startsWith(`sylvie: ${over} of ${all} lines carry`))).toBe(true);
+    } finally {
+      hers.forEach((t, i) => { t.line!.text = saved[i]; });
+    }
+    expect(sylvieBreaks()).toEqual([]);
+  });
+
   it('readings cover a seen condition (story depth Task 1)', () => {
     const lines: ScriptLine[] = [
       { who: 'rin', text: '「看過了。」', if: { seen: 'banter:rin-sylvie:1' } },

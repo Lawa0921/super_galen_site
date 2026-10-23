@@ -6,7 +6,7 @@ import { MEETINGS, type Meetable } from './meetings';
 import { numeral } from './numeral';
 import { CHAINS } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
-import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
 
 export type NpcId = 'anna' | 'orik' | 'marta' | 'glen' | 'doran' | 'merchant' | 'bellkeeper';
 export const NPC_NAMES: Record<NpcId, string> = {
@@ -98,6 +98,10 @@ export { numeral } from './numeral';
 const MAJOR_TITLES: Record<MajorScene, string> = {
   prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', 'rin-confess': '凜的坦白', 'bellkeeper-arrives': '鐘守來到鎮上', 'hero-alone': '一個人的清晨', 'finale-eve': '下潛前的那一夜', finale: '終幕',
   epilogue: '星燈祭',
+};
+/** Story L spec §5.1: what each group scene is called in the handbook, on its act's truth page after the act. */
+export const GROUP_TITLES: Record<GroupScene, string> = {
+  'group:act2': '第二幕之後・碎片的價錢', 'group:act3': '第三幕之後・問不問', 'group:act4': '第四幕之後・桌上的錢袋',
 };
 /** What each homecoming is called in the handbook, after her name (continuity fix 2). */
 const HOME_TITLES: Record<HomeOwner, string> = { chizuru: '鎮邊的小祠', safira: '廣場上的最後一支舞', sylvie: '窗外的新芽', liz: '店門口' };
@@ -1754,6 +1758,8 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
   // Plan 6c wrote every scene (Task 14 removed the drafts): a scene without its SCRIPT entry is a bug, not a draft.
   const scene = (id: SceneId, title: string): void => { out[id] = { title, ...written(SCRIPT[id], id) }; };
   for (const id of MAJOR_SCENES) scene(id, MAJOR_TITLES[id]);
+  // story L: a group scene is in the script once it is registered (Tasks 9-11 write it and register it together)
+  for (const node of ACT_NODES) { const id = REACTIONS[node]; if (id) scene(id, GROUP_TITLES[id]); }
   for (const id of CHARACTER_IDS) {
     const name = nameOf(id);
     CHAINS[id].pieces.forEach((_, i) => scene(memScene(id, i + 1), `${name}・第${numeral(i + 1)}片`));
