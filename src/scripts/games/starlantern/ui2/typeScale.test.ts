@@ -79,28 +79,6 @@ describe('the stylesheet (legibility Task 2a)', () => {
 
 // ── Task 3: the 12/24 type scale ─────────────────────────────────────────────────────────────────────────────────────
 
-type Group = 'T3' | 'T4' | 'T5' | 'T6';
-/** The class prefixes of the later tasks' screens (legibility plan Task 3); anything else belongs to Task 3. */
-const PREFIXES: [Exclude<Group, 'T3'>, string[]][] = [
-  ['T6', ['slx-equip', 'slx-bag', 'slx-doll', 'slx-enh', 'slx-slot-tag', 'slx-ws', 'slx-workshop', 'slx-bd', 'slx-builds']],
-  ['T5', ['slx-status', 'slx-stat', 'slx-tab', 'slx-tabs', 'slx-tree', 'slx-talent', 'slx-skill', 'slx-field-tag', 'slx-gear-row', 'slx-gear-slot', 'slx-gear-bonus', 'slx-gear-power', 'slx-hb', 'slx-handbook', 'slx-memkey']],
-  ['T4', ['slx-pm', 'slx-partybar', 'slx-battle', 'slx-bsub', 'slx-bcmd', 'slx-bnote', 'slx-badge', 'slx-result', 'slx-acut', 'sl-cutin', 'slx-ail', 'slx-mech', 'slx-fieldbar', 'slx-msg', 'slx-who', 'slx-target']],
-];
-const ORDER: Group[] = ['T3', 'T4', 'T5', 'T6'];
-
-/**
- * The task a rule's selector belongs to: each comma-separated part on its own (a class token equal to a prefix, or
- * starting with it and a dash; T6 before T5 before T4; none: T3), and of the parts the earliest task.
- */
-export function groupOf(selector: string): Group {
-  const part = (p: string): Group => {
-    const tokens = [...p.matchAll(/\.([\w-]+)/g)].map((m) => m[1]);
-    for (const [g, prefixes] of PREFIXES) if (tokens.some((t) => prefixes.some((x) => t === x || t.startsWith(`${x}-`)))) return g;
-    return 'T3';
-  };
-  return selector.split(',').map((p) => part(p.trim())).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b))[0];
-}
-
 /** Every rule of the compiled CSS, innermost blocks only (keyframe steps included), as [selector, body]. */
 const flat = (text: string): [string, string][] => [...text.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => [m[1].trim(), m[2]]);
 
@@ -129,19 +107,9 @@ function faults(body: string): string[] {
 }
 
 describe('the type scale (legibility Task 3)', () => {
-  it('sorts selectors into their tasks', () => {
-    expect(groupOf('.slx-win')).toBe('T3');
-    expect(groupOf('.slx-battle .slx-talk')).toBe('T4');
-    expect(groupOf('.slx-status-scene .slx-skill-name')).toBe('T5');
-    expect(groupOf('.slx-ws-card .slx-skill-name')).toBe('T6');   // T6 before T5 inside one part
-    expect(groupOf('.slx-pm-name, .slx-hint')).toBe('T3');         // the earliest task of the parts
-    expect(groupOf('.slx-tabs')).toBe('T5');
-    expect(groupOf('.slx-tablet')).toBe('T3');                     // a prefix must end at a dash or the token's end
-  });
-
   it('every declaration keeps the 12/24 type scale', () => {
     // Every rule, no list of later tasks left (legibility Task 7).
-    const bad = flat(css).flatMap(([sel, body]) => faults(body).map((f) => `${groupOf(sel)} ${sel} { ${f} }`));
+    const bad = flat(css).flatMap(([sel, body]) => faults(body).map((f) => `${sel} { ${f} }`));
     expect(bad).toEqual([]);
   });
 });

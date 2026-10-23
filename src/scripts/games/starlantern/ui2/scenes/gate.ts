@@ -73,10 +73,13 @@ class PortalCards {
   private gearItem(id: string): HTMLElement {
     const rarity = SPECIALS[id]?.rarity ?? 'set';
     const known = this.ctx.game.state.codex.includes(id);
-    // The names run on one line joined by 、 (legibility T3: the card fits at 12px). An unknown piece is its dim colour and
-    // its silhouette in the strip above; its full 「（未取得）」 name is the tooltip.
-    return el('span', { class: `slx-codex-item slx-rarity-${rarity}${known ? '' : ' slx-codex-unknown'}`, attrs: { 'data-special': id, ...(known ? {} : { title: this.gearName(id) }) } },
-      [el('span', { class: 'slx-codex-name', text: known ? this.gearName(id) : codexName(id) })]);
+    // The names run on one line joined by 、 (legibility T3: the card fits at 12px). An unknown piece is its dim colour, its
+    // silhouette in the strip above, its full 「（未取得）」 name as the tooltip, and a visible 「未取得」 tag after the name, so
+    // a touch player reads it too (final review).
+    return el('span', { class: `slx-codex-item slx-rarity-${rarity}${known ? '' : ' slx-codex-unknown'}`, attrs: { 'data-special': id, ...(known ? {} : { title: this.gearName(id) }) } }, [
+      el('span', { class: 'slx-codex-name', text: known ? this.gearName(id) : codexName(id) }),
+      ...(known ? [] : [el('span', { class: 'slx-codex-tag', text: T.ui2.gate.unknownTag })]),
+    ]);
   }
 
   /**
@@ -157,8 +160,8 @@ class PortalCards {
       el('div', { class: 'slx-portal-trait', attrs: { 'data-trait': icon ?? 'none' } }, [...traitIcon, el('span', { text: traitText })]),
       ...(affinity ? [el('div', { class: 'slx-portal-affinity', text: affinity })] : []),
       el('div', { class: 'slx-portal-monsters' }, [el('span', { class: 'slx-portal-label', text: G.monsters }), el('span', { text: monsterNames(p.region, reached).join('、') })]),
-      // The condition's gold name and its effect on one line, no label (legibility T3: the card fits at 12px).
-      el('div', { class: 'slx-portal-cond' }, [el('b', { text: cond.name }), el('span', { class: 'slx-portal-desc', text: cond.desc })]),
+      // 本次狀況, the condition's gold name and its effect (final review: the label stays on screen).
+      el('div', { class: 'slx-portal-cond' }, [el('span', { class: 'slx-portal-label', text: G.condition }), el('b', { text: cond.name }), el('span', { class: 'slx-portal-desc', text: cond.desc })]),
       el('div', { class: 'slx-portal-drop', text: G.drop(r.material ? MATERIALS[r.material]?.name ?? r.material : G.commonDrop) }),
       ...(r.material ? [this.dropUse(r.material)] : []),
       ...(p.region === 'mainline' ? [this.generalLine()] : [

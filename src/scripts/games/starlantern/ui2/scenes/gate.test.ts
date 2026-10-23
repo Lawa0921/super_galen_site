@@ -286,8 +286,11 @@ describe('GateScene: region-only gear on the portal cards', () => {
     const { cards } = setup();
     const its = items(cards()[1]);
     expect(its.map((i) => i.dataset.special)).toEqual(['blaze-heart-sword', 'blaze-ember-ring', 'set-blaze']);
-    // Names only, in one run joined by 、 (legibility T3: the card fits at 12px); unknown is the dim colour and the tooltip.
-    expect(its.map((i) => i.textContent)).toEqual(['灼心之劍', '餘燼指環', '焰紋套裝']);
+    // Names in one run joined by 、 (legibility T3: the card fits at 12px); an unknown one is the dim colour, its tooltip,
+    // and a visible 「未取得」 tag a touch player sees too (final review: nothing rests on the hover alone).
+    expect(its.map((i) => i.querySelector('.slx-codex-name')!.textContent)).toEqual(['灼心之劍', '餘燼指環', '焰紋套裝']);
+    expect(its.map((i) => i.querySelector('.slx-codex-tag')?.textContent)).toEqual([T.ui2.gate.unknownTag, T.ui2.gate.unknownTag, T.ui2.gate.unknownTag]);
+    expect(T.ui2.gate.unknownTag).toBe('未取得');
     expect(its.map((i) => i.title)).toEqual(['灼心之劍（未取得）', '餘燼指環（未取得）', '焰紋套裝（未取得）']);
     expect(its.every((i) => i.classList.contains('slx-codex-unknown'))).toBe(true);
     expect(its[0].classList.contains('slx-rarity-legendary')).toBe(true);
@@ -305,7 +308,8 @@ describe('GateScene: region-only gear on the portal cards', () => {
     expect(set.textContent).toBe('焰紋套裝');
     expect(cards()[1].querySelector('.slx-codex-line')).toBeNull();
     expect(ring.classList.contains('slx-codex-unknown')).toBe(true);
-    expect(ring.textContent).toBe('餘燼指環');
+    expect(ring.textContent).toBe(`餘燼指環${T.ui2.gate.unknownTag}`);
+    expect(sword.querySelector('.slx-codex-tag')).toBeNull();   // an obtained piece carries no tag
     expect(ring.title).toBe('餘燼指環（未取得）');
   });
 
@@ -315,12 +319,12 @@ describe('GateScene: region-only gear on the portal cards', () => {
     expect(label(setup((g) => { g.state.codex.push('blaze-heart-sword', 'set-blaze'); }).cards()[1])).toBe('限定裝備 2／3');
   });
 
-  it('the condition is its gold name and its effect on one line, with no label (legibility T3)', () => {
+  it('the condition keeps its 本次狀況 label before its gold name and its effect (final review: nothing lost)', () => {
     const { cards } = setup();
     const cond = cards()[1].querySelector('.slx-portal-cond')!;
+    expect(cond.querySelector('.slx-portal-label')!.textContent).toBe(T.ui2.gate.condition);
     expect(cond.querySelector('b')!.textContent).toBe(CONDITIONS.fog.name);
     expect(cond.querySelector('.slx-portal-desc')!.textContent).toBe(CONDITIONS.fog.desc);
-    expect(cards()[1].textContent).not.toContain(T.ui2.gate.condition);
   });
 
   it('the mainline card has one summary line of the general legendaries, not a list', () => {

@@ -23,8 +23,14 @@ import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longest
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
-// Every test ends on a screen that reads clearly: whole-pixel scale and, once its scene is done, 12/24px Cubic 11 (legibility plan).
+// The game's spec runs on the three desktop chromium projects only: its guard reads fonts over CDP and asPhone drives CDP
+// too; firefox, webkit and the playwright mobile devices were never part of it (final review).
+const STARLANTERN_PROJECTS = ['chromium', 'chromium-dpr125', 'chromium-dpr150'];
+test.beforeEach(({}, info) => { test.skip(!STARLANTERN_PROJECTS.includes(info.project.name), 'starlantern runs on the desktop chromium projects only'); });
+
+// Every test ends on a screen that reads clearly: whole-pixel scale and 12/24px Cubic 11 (legibility plan).
 test.afterEach(async ({ page }, info) => {
+  if (!STARLANTERN_PROJECTS.includes(info.project.name)) return;
   expect(await legibility(page, { fontBlocked: info.annotations.some((a) => a.type === 'font-blocked') })).toEqual([]);
 });
 
@@ -101,6 +107,12 @@ test.describe('starlantern', () => {
     expect(faces, 'the prologue shows portraits').toBeGreaterThanOrEqual(3);
   });
 
+  test('legibility() with requireReady fails a page whose game never became ready (final review)', async ({ page }) => {
+    await page.setContent('<p>no game here</p>');
+    expect(await legibility(page)).toEqual([]);                                   // the afterEach guard: nothing to check
+    expect(await legibility(page, { requireReady: true, readyMs: 300 })).toEqual(['the game never became ready']);
+  });
+
   test('forwards the old preview address to the game page', async ({ page }) => {
     await page.goto('/games/starlantern-next?seed=3');
     await expect(page).toHaveURL(/\/games\/starlantern\?seed=3$/);
@@ -121,7 +133,7 @@ test.describe('starlantern', () => {
       if (w === 1280) expect(mode.s).toBeCloseTo(({ 1: 2, 1.25: 1.6, 1.5: 2 } as Record<number, number>)[env.d], 4);
       // 844x390 at 150%: K would be 1 (s 0.667, the text physically tiny), so the stage stays at 1x (readable over crisp).
       if (w === 844 && h === 390) expect(mode.s).toBe(1);
-      expect(await legibility(page)).toEqual([]);
+      expect(await legibility(page, { requireReady: true })).toEqual([]);
     });
   }
 
@@ -135,7 +147,7 @@ test.describe('starlantern', () => {
     await page.locator('.slx-settings [data-id=fullscreen]').click();
     await expect.poll(() => page.evaluate(() => document.fullscreenElement === document.documentElement)).toBe(true);
     expect(await page.locator('#sl-screen').evaluate((e) => getComputedStyle(e).transform)).not.toBe('none');
-    expect(await legibility(page)).toEqual([]);
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
   });
 
   test('a touch phone held upright shows the stage turned, at whole device pixels (legibility Task 2b)', async ({ page }) => {
@@ -154,7 +166,7 @@ test.describe('starlantern', () => {
       expect(b.x + b.width).toBeLessThanOrEqual(w + 0.5);
       const hint = await page.evaluate(() => { const cs = getComputedStyle(document.body, '::before'); return { content: cs.content, size: cs.fontSize }; });
       expect(hint).toEqual({ content: '"請將手機向左轉成橫向"', size: '12px' });   // the stage turns upright when the phone turns left
-      expect(await legibility(page)).toEqual([]);
+      expect(await legibility(page, { requireReady: true })).toEqual([]);
     }
   });
 
@@ -165,7 +177,7 @@ test.describe('starlantern', () => {
     expect(await stageScale(page)).toEqual({ kind: 'scale', s: 1 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(true);
     expect(await page.evaluate(() => getComputedStyle(document.body, '::before').content)).toBe('none');   // no hint without touch
-    expect(await legibility(page)).toEqual([]);
+    expect(await legibility(page, { requireReady: true })).toEqual([]);
   });
 
   test('uses the pixel font and still renders when it fails to load', { annotation: { type: 'font-blocked' } }, async ({ page }) => {
@@ -1619,7 +1631,7 @@ test.describe('starlantern', () => {
     const check = async (name: string, boxes: string[], rows: string, more?: (vw: number) => Promise<void>) => {
       for (const [vw, vh] of SIZES) {
         await fitTo(page, vw, vh);
-        bad.push(...(await legibility(page)).map((f) => `${name} ${vw}: ${f}`));
+        bad.push(...(await legibility(page, { requireReady: true })).map((f) => `${name} ${vw}: ${f}`));
         const rects = await Promise.all(boxes.map(async (sel) => [sel, await stageBox(page, page.locator(sel).first())] as const));
         for (const [sel, r] of rects) {
           if (r.x < -0.5 || r.y < -0.5 || r.x + r.width > 640.5 || r.y + r.height > 360.5) bad.push(`${name} ${vw}: ${sel} leaves the stage`);
@@ -1960,6 +1972,13 @@ test.describe('starlantern', () => {
             depthBelow: (c.querySelector<HTMLElement>('.slx-portal-depth')!.getBoundingClientRect().bottom - inner) / k,
             art: art ? { h: art.offsetHeight, w: art.offsetWidth, loaded: art.naturalWidth > 0 } : null,
             gear: g ? { over: g.scrollHeight - g.clientHeight, items: g.querySelectorAll('.slx-codex-item').length, more: !c.querySelector<HTMLElement>('.slx-codex-more')!.hidden } : null,
+            // Final review: the count on one line; the 本次狀況 label and every 「未取得」 tag on screen, whole, inside the card.
+            countLines: (() => { const l = c.querySelector('.slx-portal-gear-head .slx-portal-label'); if (!l) return null; const q = document.createRange(); q.selectNodeContents(l); return new Set([...q.getClientRects()].map((x) => Math.round(x.top))).size; })(),
+            shown: [...c.querySelectorAll<HTMLElement>('.slx-portal-cond .slx-portal-label, .slx-codex-tag')].map((e) => {
+              const q = e.getBoundingClientRect(), clip = (g ?? c).getBoundingClientRect();
+              const inside = (o: DOMRect) => q.left >= o.left - 0.5 && q.right <= o.right + 0.5 && q.top >= o.top - 0.5 && q.bottom <= inner + 0.5 && q.bottom <= o.bottom + 0.5;
+              return { text: e.textContent, whole: e.checkVisibility() && q.width > 0 && inside(box) && (e.classList.contains('slx-portal-label') || inside(clip)) };
+            }),
           };
         }));
         expect(r.map((c) => c.region)).toEqual(['mainline', ...pair]);
@@ -1969,7 +1988,10 @@ test.describe('starlantern', () => {
           expect(c.depthBelow, `${at} depth line clipped`).toBeLessThanOrEqual(0.5);
           expect(c.art?.loaded, `${at} banner art`).toBe(true);
           expect(c.art!.h, `${at} banner height`).toBeGreaterThanOrEqual(24);   // legibility ruling 8: the strip gives up 8px for 12px text
+          expect(c.shown.filter((x) => x.text === T.ui2.gate.condition), `${at} 本次狀況 label`).toEqual([{ text: T.ui2.gate.condition, whole: true }]);
           if (c.region === 'mainline') continue;
+          expect(c.countLines, `${at} 限定裝備 count on one line`).toBe(1);
+          expect(c.shown.filter((x) => x.text !== T.ui2.gate.condition), `${at} 未取得 tags`).toEqual(Array(3).fill({ text: '未取得', whole: true }));
           expect(c.gear!.items, at).toBe(3); expect(c.gear!.over, `${at} overflow`).toBeLessThanOrEqual(1); expect(c.gear!.more).toBe(false);
         }
         await w.key('Escape');
@@ -4672,7 +4694,7 @@ test.describe('starlantern', () => {
     const errors = await sweep(page, sizes, async (name, size) => {
       const file = `${name}-${size.width}x${size.height}`;
       seen.push(file);
-      bad.push(...(await legibility(page)).map((f) => `${file}: ${f}`));
+      bad.push(...(await legibility(page, { requireReady: true })).map((f) => `${file}: ${f}`));
       if (dir) { await page.waitForTimeout(400); await snap(page, `${dir}/${file}.png`); }   // windows fade in
     });
     if (shots && ratio === 'd1') writeReviewIndex(shots, SWEEP.map((s) => s.name), sizes);

@@ -524,10 +524,18 @@ type DomNode = { nodeId: number; nodeType: number; nodeName: string; nodeValue: 
  * 14px or more, and the centred windows sit on whole stage pixels (every scene since Task 7); and (chromium, the font
  * not blocked) every text is drawn with Cubic 11 itself, as the browser reports it.
  */
-export async function legibility(page: Page, opts: { fontBlocked?: boolean } = {}): Promise<string[]> {
-  if (page.isClosed()) return [];
-  const ready = await page.evaluate(() => !!document.getElementById('sl-screen') && document.getElementById('sl-ui')?.dataset.ready === 'true').catch(() => false);
-  if (!ready) return [];
+export async function legibility(page: Page, opts: { fontBlocked?: boolean; requireReady?: boolean; readyMs?: number } = {}): Promise<string[]> {
+  // The afterEach guard checks whatever a test ended on (a test may never load the game); a caller that measures a screen
+  // passes requireReady, so a game that never became ready (within readyMs, default 10s) is a failure, not a silent pass.
+  const fail = opts.requireReady ? ['the game never became ready'] : [];
+  if (page.isClosed()) return fail;
+  const isReady = () => page.evaluate(() => !!document.getElementById('sl-screen') && document.getElementById('sl-ui')?.dataset.ready === 'true').catch(() => false);
+  let ready = await isReady();
+  for (const until = Date.now() + (opts.requireReady ? opts.readyMs ?? 10_000 : 0); !ready && Date.now() < until;) {
+    await page.waitForTimeout(100);
+    ready = await isReady();
+  }
+  if (!ready) return fail;
   const out: string[] = [];
   const env = await page.evaluate(() => {
     const scr = document.getElementById('sl-screen')!;

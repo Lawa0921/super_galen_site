@@ -1224,6 +1224,7 @@ $slx-starlit: #bff6ff;
 .slx-portal-monsters .slx-portal-label { margin: 0 6px 0 0; word-break: normal; }
 // The condition: its gold name, then its effect on the same line (legibility T3).
 .slx-portal-cond { margin-top: 2px; }
+.slx-portal-cond .slx-portal-label { margin: 0 6px 0 0; }
 .slx-portal-cond b { margin-right: 6px; font-weight: normal; color: $slx-gold; }
 .slx-portal-cond .slx-portal-desc { color: $slx-dim; }
 .slx-portal-drop { margin-top: 2px; }
@@ -1238,6 +1239,8 @@ $slx-starlit: #bff6ff;
 .slx-codex-item + .slx-codex-item::before { content: '、'; color: $slx-dim; }
 // Unobtained names are dimmed.
 .slx-codex-unknown { color: $slx-dim; }
+// An unknown piece says so in words a touch player sees too (final review), after its name, never split.
+.slx-codex-tag { margin-left: 4px; color: #8f8778; white-space: nowrap; }
 .slx-codex-more { margin: 0; text-align: right; font-size: $slx-fs; line-height: 14px; color: $slx-gold; }
 // The gear icon (26 x 26) once obtained, else its silhouette art (28 x 28, made from the icon): each at its own size.
 .slx-codex-silhouette, .slx-codex-icon { flex: none; align-self: center; image-rendering: pixelated; }
@@ -1245,7 +1248,9 @@ $slx-starlit: #bff6ff;
 .slx-codex-silhouette { width: 28px; height: 28px; }
 // The pictures stand in one strip at the right of the 限定裝備 heading (gate.ts gearHead), in list order. With them there,
 // the names below read as notes (10px) so the 28px heading still leaves room for all three names in the card.
-.slx-portal-gear-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+// The count stays one line (final review); the pictures move under it when the card is too narrow for both.
+.slx-portal-gear-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 4px; }
+.slx-portal-gear-head > .slx-portal-label { flex: none; white-space: nowrap; }
 .slx-codex-pics { display: flex; gap: 2px; }
 .slx-portal-gear:has(.slx-codex-pics) .slx-codex-item { font-size: $slx-fs; line-height: 14px; }
 .slx-portal-general { margin-top: 2px; color: #c9b8ff; }

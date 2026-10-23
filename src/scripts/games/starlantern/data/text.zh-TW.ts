@@ -818,7 +818,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       noTrait: '無特性', weak: (els: string) => `弱 ${els}`, resist: (els: string) => `抗 ${els}`,
       /** A run that can only start at depth 1: the region resist is not there yet (scaling.REGION_TRAITS_FROM). */
       resistFrom: (els: string, depth: number) => `抗 ${els}（第 ${depth} 層起）`,
-      monsters: '怪物', condition: '本次狀況', gear: '限定裝備', gearCount: (n: number, total: number) => `限定裝備 ${n}／${total}`, general: (n: number, total: number) => `通用傳說：已取得 ${n}／${total}`, moreGear: '↑↓ 捲動看更多', unknownGear: (name: string) => `${name}（未取得）`,
+      monsters: '怪物', condition: '本次狀況', gear: '限定裝備', gearCount: (n: number, total: number) => `限定裝備 ${n}／${total}`, general: (n: number, total: number) => `通用傳說：已取得 ${n}／${total}`, moreGear: '↑↓ 捲動看更多', unknownGear: (name: string) => `${name}（未取得）`, unknownTag: '未取得',
       drop: (name: string) => `主要掉落：${name}`, commonDrop: '一般素材', dropUse: (list: string) => `用途：${list}`,
       ask: (region: string, n: number, cond: string) => `要從第 ${n} 層進入「${region}」嗎？\n本次狀況：${cond}`,
       banner: (cond: string) => `本次狀況　${cond}`,
