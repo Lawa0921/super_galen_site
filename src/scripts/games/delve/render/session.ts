@@ -3,13 +3,15 @@
 // 存檔身分 = 目前的存檔槽（多世界）＋ 目前的角色：標題選角色 → 選 / 建世界；新世界永遠另開存檔槽，匯入也是。
 import { DelveGame } from '../engine/game';
 import { generateWorldSteps, GEN_STAGE_COUNT, type GenResult } from '../engine/legacy/worldgen';
-import { GEN_VERSION } from '../engine/constants';
-import { restoreGame, COMPAT_GEN, type SaveData } from '../save/serialize';
+import { GEN_VERSION_V2 } from '../engine/constants';
+import { restoreGame, type SaveData } from '../save/serialize';
+import { genBlocker } from '../save/genCheck';
+import { bakeApplies, upgradeSlot } from '../save/bake';
 import {
   startAutosave, requestPersistence, exportBlob, importBlob, hasIndexedDB, idbSplitStore, DbBlockedError, previewOf, type CharacterMeta, type SlotMeta,
 } from '../save/storage';
 import {
-  SplitSession, planContinue, planPlay, planNewWorld, importWorld, saveSplit, commitMigration, restoreErrorMessage,
+  SplitSession, planContinue, planPlay, planNewWorld, importWorld, saveSplit, commitMigration,
   newWorldSlot, CHARACTER_MISSING_MSG, NO_CHARACTER_MSG, type ContinuePlan,
 } from '../save/split';
 import { decodeAnySave, encodeWorld, restoreSplit, type AnySave, type WorldData } from '../save/worldSave';
@@ -21,7 +23,8 @@ import { SoundManager } from '../audio/SoundManager';
 import { TitleScene } from './titleScene';
 import { TitleUi, PEACEFUL_KEY, publishVolume } from './titleUi';
 import { Wipe } from './wipe';
-import { continueSlot, importPlan, genProgress, genStageLabel, GEN_STAGE_LABELS, needsPendingConfirm, readVolume, rollWorldName, summarizeGame } from './titleModel';
+import { continueSlot, importPlan, genProgress, genStageLabel, GEN_STAGE_LABELS, needsPendingConfirm, readVolume, restoreErrorText, rollWorldName, summarizeGame } from './titleModel';
+import { gen2Flag } from './gen2Flag';
 import { liveCounts, type LiveCounts } from './live';
 import { GEN_PHASES, GenSectionView, genPhaseLabel, genPhaseOf } from './genSection';
 import { Wardrobe } from './wardrobe';
@@ -108,6 +111,8 @@ export function bootDelve(root: HTMLElement): Session {
 
   let storage: Storage | undefined;
   try { storage = globalThis.localStorage; } catch { storage = undefined; }
+  /** 1b M1 開發旗標（啟動時讀一次）：新世界用 gen2、讀到舊世界（v7）時烘焙升級；讀 genVersion 8 的存檔不看它 */
+  const gen2 = gen2Flag(location.search, storage ?? null);
   // 這頁沒有遊戲廳的音量面板：自己把存著的音效音量發布出去（SoundManager 跟著它）
   publishVolume(readVolume(storage));
 
@@ -591,7 +596,7 @@ export function bootDelve(root: HTMLElement): Session {
   }
   function hideLoading(): void { if (loading) loading.hidden = true; }
 
-  /** 在段與段之間讓出主執行緒（每批最多 ~14 ms），邊生成邊畫進度條 */
+  /** 舊生成器（genVersion 7）的世界：在段與段之間讓出主執行緒（每批最多 ~14 ms），邊生成邊畫進度條。gen2 / 烘焙世界不必預先生成 */
   function generate(seed: string, size: { width?: number; height?: number }): Promise<GenResult> {
     // 剖面直接看生成中的世界：每批段落做完重新取樣一次（取樣 ~1 ms，比一段生成便宜得多）
     const it = generateWorldSteps(seed, { ...size, peek: (w) => section?.reset(w) });
@@ -690,7 +695,7 @@ export function bootDelve(root: HTMLElement): Session {
   }
 
   /**
-   * 生成新世界（進度畫面；只生成一次）→ 角色就地套上（planNewWorld）→ 新存檔槽開局。
+   * 生成新世界（進度畫面；只生成一次）→ 角色就地套上（planNewWorld）→ 新存檔槽開局。gen2 旗標開著 → gen2 世界（不預先生成）。
    * character = null → 新的預設角色（旅人、預設外觀），建立當下就寫進角色庫（B2）。
    * 既有角色在生成前就先鎖住；新存檔槽（與新角色）的 id 是剛產生的，開局前補鎖（一定拿得到，別的分頁才看得到這一場在玩）。
    */
@@ -699,13 +704,16 @@ export function bootDelve(root: HTMLElement): Session {
     const locks = await lockFor(character ? [charLock(character.id)] : [], titleMsg);
     if (!locks) return;
     return transition('生成世界中…', async () => {
-      const gen = await generate(s, {});
+      const gen = gen2 ? null : await generate(s, {});
       let c = character;
       if (!c) {
         c = createCharacter(DEFAULT_NICK, defaultLook(), Date.now());
         await keepCharacter(c);
       }
-      const opened = planNewWorld(new DelveGame({ seed: s, peaceful, gen, appearance: c.appearance }), c, Date.now());
+      const game = gen
+        ? new DelveGame({ seed: s, peaceful, gen, appearance: c.appearance })
+        : new DelveGame({ seed: s, peaceful, appearance: c.appearance, worldGen: { kind: 'gen2' } });
+      const opened = planNewWorld(game, c, Date.now());
       if (!(await locks.acquire([...(character ? [] : [charLock(c.id)]), worldLock(opened.session.slot)]))) {
         say(titleMsg, PLAY_LOCKED_MSG);
         return null;
@@ -760,38 +768,33 @@ export function bootDelve(root: HTMLElement): Session {
   }
 
   /**
-   * 還原失敗 → 訊息。舊生成器的存檔：標題主選單上顯示「開始新世界」鈕（#delve-upgrade-new）並指向它；
+   * 還原失敗（或 genBlocker 擋下）→ 訊息（restoreErrorText）。舊生成器的存檔：標題主選單上顯示「開始新世界」鈕（#delve-upgrade-new）並指向它；
    * 角色 / 世界列表開著（或 listing = 轉換完就要打開列表）時那顆鈕被面板蓋住 → 不顯示，改指向世界列表的「新世界」。
+   * 存檔比遊戲新（newer）→ 只請玩家重新整理更新，不建議開新世界（鈕藏起來）。
    */
-  function restoreError(r: Extract<ReturnType<typeof restoreGame>, { ok: false }>, msgEl: HTMLElement | null, listing = false): void {
-    if (r.error === 'gen_version') {
-      if (msgEl !== titleMsg) { say(msgEl, `${restoreErrorMessage(r)}可以先從選單匯出備份，再按下面的按鈕開一個新世界。`); return; }
-      const inList = listing || ui.panelOpen;
-      say(msgEl, `${restoreErrorMessage(r)}可以先在世界列表按「匯出」備份這個世界，${inList ? '再按世界列表的「新世界」開一個新世界。' : '再按下面的按鈕開一個新世界。'}`);
-      if (upgradeNew) upgradeNew.hidden = inList;
-    } else say(msgEl, restoreErrorMessage(r));
+  function restoreError(r: Parameters<typeof restoreErrorText>[0], msgEl: HTMLElement | null, listing = false): void {
+    const t = restoreErrorText(r, msgEl !== titleMsg ? 'menu' : listing || ui.panelOpen ? 'list' : 'title');
+    say(msgEl, t.text);
+    if (upgradeNew && t.upgrade !== undefined) upgradeNew.hidden = !t.upgrade;
   }
 
   const errText = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
   /**
-   * 舊合併存檔（format ≤ 9，只會在 'main'）→ 世界 + 角色：先看檔頭（舊生成器立即回報，不必先生成世界），再分段生成同一個世界
-   * （顯示進度）後還原；還原成功 → commitMigration（先把舊記錄原封備份到 <slot>.v9.bak），寫完才開局。
+   * 舊合併存檔（format ≤ 9，只會在 'main'）→ 世界 + 角色：先看檔頭（genBlocker：生成器版本不對立即回報，不必先生成世界），再分段生成同一個世界
+   * （顯示進度；genVersion 8 不生成）後還原；還原成功 → commitMigration（先把舊記錄原封備份到 <slot>.v9.bak），寫完才開局。
+   * （這裡不烘焙：gen2 旗標開著時，轉換出來的 v7 世界檔下次由 openSplit 升級。）
    * enter = false：只轉換、不開局（「開始遊戲」進角色列表前 B5；世界列表選到還沒轉換的舊存檔），轉完回到標題的列表。
    * 寫入失敗 → 回報；舊記錄沒動，下次再試。轉換期間鎖住這個存檔槽（別的分頁不會同時轉換 / 遊玩它）。
    */
   async function openLegacy(data: SaveData, slot: string, msgEl: HTMLElement | null, from: 'title' | 'menu', enter = true): Promise<void> {
     const h = data.header;
-    const migrate = h.format <= 5 && COMPAT_GEN.includes(h.genVersion);
-    if (h.genVersion !== GEN_VERSION && !migrate) {
-      const r = restoreGame(data);
-      if (!r.ok) restoreError(r, msgEl, !enter);
-      return;
-    }
+    const blocked = genBlocker(h);
+    if (blocked) { restoreError(blocked, msgEl, !enter); return; }
     const locks = await lockFor([worldLock(slot)], msgEl);
     if (!locks) return;
     return transition(enter ? '載入世界中…' : '轉換舊存檔中…', async () => {
-      const gen = await generate(h.seed, { width: h.width, height: h.height });
+      const gen = h.genVersion === GEN_VERSION_V2 ? undefined : await generate(h.seed, { width: h.width, height: h.height });
       const r = restoreGame(data, { gen });
       if (!r.ok) { restoreError(r, msgEl, !enter); return null; }
       // 沒有 IndexedDB（無痕 / 被停用）：不能存，但仍照舊版行為開局（saveNow 也是無操作）
@@ -809,19 +812,31 @@ export function bootDelve(root: HTMLElement): Session {
     }, from, locks);
   }
 
-  /** 世界檔 + 角色 → 遊戲（角色第一次來這個世界 → 從出生點開始）；先看生成器版本，不對就不必先生成世界 */
+  /**
+   * 世界檔 + 角色 → 遊戲（角色第一次來這個世界 → 從出生點開始）；先看生成器版本（genBlocker），不對就不必先生成世界。
+   * genVersion 8（gen2 / 烘焙過的）→ 不生成、直接還原（不看旗標）。genVersion 7：照舊生成後還原；gen2 旗標開著、正式尺寸、
+   * 有 IndexedDB（世界檔就在 idbSplitStore 的 slot）→ 生成後烘焙升級（upgradeSlot；失敗 → 回報、不開局、存檔原封不動）。
+   */
   async function openSplit(world: WorldData, character: DelveCharacter, slot: string, msgEl: HTMLElement | null, from: 'title' | 'menu'): Promise<void> {
     const h = world.header;
-    if (h.genVersion !== GEN_VERSION) {
-      const r = restoreSplit(world, character);
-      if (!r.ok) restoreError(r, msgEl);
-      return;
-    }
+    const blocked = genBlocker(h);
+    if (blocked) { restoreError(blocked, msgEl); return; }
+    const upgrade = gen2 && bakeApplies(h) && hasIndexedDB();
     // 生成世界之前先鎖角色 + 世界：別的分頁正在玩其中一個 → 直接回報，不必等生成
     const locks = await lockFor([charLock(character.id), worldLock(slot)], msgEl);
     if (!locks) return;
-    return transition('載入世界中…', async () => {
+    return transition(upgrade ? '升級舊世界中…' : '載入世界中…', async () => {
+      if (h.genVersion === GEN_VERSION_V2) {
+        const r = restoreSplit(world, character);
+        if (!r.ok) { restoreError(r, msgEl); return null; }
+        return { game: r.game, session: SplitSession.fromLoaded(r.world, character, slot) };
+      }
       const gen = await generate(h.seed, { width: h.width, height: h.height });
+      if (upgrade) {
+        const u = await upgradeSlot(idbSplitStore, slot, character, gen, Date.now());
+        if (!u.ok) { say(msgEl, u.message); return null; }
+        return { game: u.game, session: u.session };
+      }
       const r = restoreSplit(world, character, { gen });
       if (!r.ok) { restoreError(r, msgEl); return null; }
       return { game: r.game, session: SplitSession.fromLoaded(r.world, character, slot) };

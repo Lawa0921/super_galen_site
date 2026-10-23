@@ -18,9 +18,11 @@ import type { SideOrigin } from '../engine/gen2/layout';
 import type { Waystones } from '../engine/waystones';
 import type { GenResult } from '../engine/legacy/worldgen';
 import type { DelveCharacter } from './character';
+import type { DelveGame } from '../engine/game';
 import { SaveFormatError, encodeDeltas, snapshotGame, validGen2 } from './serialize';
 import { encodeLegacyMeta } from './legacyMeta';
-import { restoreSplit, splitSnapshot, whereOf, whoOf, type WorldData, type WorldHeader } from './worldSave';
+import { decodeWorld, restoreSplit, splitSnapshot, whereOf, whoOf, type WorldData, type WorldHeader } from './worldSave';
+import { SplitSession, V7_BACKUP_SUFFIX, type SplitStore } from './split';
 
 /** 烘焙資訊（存檔 header.gen2.bake）：兩側接縫、舊中央框、還沒被碰過的中央 chunk（差分編碼的 chunk 鍵） */
 export interface BakeInfo { east: SideOrigin; west: SideOrigin; frame: CentralFrame; quiet: number[] /* 差分編碼的 chunk 鍵 */ }
@@ -118,6 +120,30 @@ export function bakeWorld(world: WorldData, character: DelveCharacter, gen: GenR
     throw new Error(`bakeWorld: baked header does not validate: ${e instanceof Error ? e.message : String(e)}`);
   }
   return out;
+}
+
+/** 升級失敗的訊息開頭（後面接原因）；原本的 v7 存檔沒有被寫過 */
+export const UPGRADE_FAILED_MSG = '世界升級失敗，原本的存檔沒有改動：';
+
+/**
+ * session 的舊世界升級路徑（裁決 P7）：從 store 讀 slot 的世界檔 → bake（預設 bakeWorld；gen = 同 seed 的舊生成器輸出）→ restoreSplit。
+ * 成功 → 開局用的遊戲 + 存檔身分（pendingBackup = V7_BACKUP_SUFFIX：第一次 saveSplit 先把原本的 v7 記錄備份成 slot + '.v7.bak'）。
+ * 任何一步丟錯 / 還原失敗 → { ok: false, message: UPGRADE_FAILED_MSG + 原因 }。永遠不寫 store（升級本身不存檔，可以重試）。
+ */
+export async function upgradeSlot(store: SplitStore, slot: string, character: DelveCharacter, gen: GenResult, now: number, bake: typeof bakeWorld = bakeWorld):
+  Promise<{ ok: true; game: DelveGame; session: SplitSession } | { ok: false; message: string }> {
+  try {
+    const rec = await store.getSlot(slot);
+    if (!rec) throw new Error('找不到這個存檔');
+    const baked = bake(decodeWorld(rec.bytes), character, gen, now);
+    const r = restoreSplit(baked, character);
+    if (!r.ok) throw new Error(r.message);
+    const session = SplitSession.fromLoaded(r.world, character, slot);
+    session.pendingBackup = V7_BACKUP_SUFFIX;
+    return { ok: true, game: r.game, session };
+  } catch (e) {
+    return { ok: false, message: UPGRADE_FAILED_MSG + (e instanceof Error ? e.message : String(e)) };
+  }
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);

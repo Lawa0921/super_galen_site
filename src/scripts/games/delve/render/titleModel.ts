@@ -6,7 +6,8 @@ import type { CharacterMeta, SaveSummary, SlotMeta } from '../save/storage';
 import type { AnySave, WorldData } from '../save/worldSave';
 import type { SaveData } from '../save/serialize';
 import type { DelveCharacter } from '../save/character';
-import type { ContinuePlan } from '../save/split';
+import { restoreErrorMessage, type ContinuePlan } from '../save/split';
+import type { RestoreError } from '../save/serialize';
 import { dollKey, plainLook, type DollLook } from '../engine/doll';
 import { normalizeAppearance } from '../engine/appearance';
 import { dollPreview } from './dollPreview';
@@ -266,4 +267,19 @@ export function focusFor(w: number, h: number): { x: number; y: number } {
   if (w >= 900 && w > h) return { x: 0.68, y: 0.56 };
   if (h > w) return { x: 0.5, y: 0.52 };
   return { x: 0.5, y: 0.5 };
+}
+
+/**
+ * 讀檔 / 還原失敗 → 標題 / 選單上的訊息，與標題主選單「開始新世界」鈕（#delve-upgrade-new）要不要顯示（undefined = 不動它）。
+ * 舊生成器的存檔：建議先匯出備份再開新世界——標題主選單（title）指向那顆鈕並顯示它；角色 / 世界列表開著（list）時鈕被面板蓋住
+ * → 藏起來、改指向世界列表的「新世界」；遊戲選單（menu）不動鈕。
+ * 存檔比遊戲新（newer）：只請玩家重新整理更新遊戲，不建議開新世界（標題的鈕藏起來）。
+ */
+export function restoreErrorText(r: { error: RestoreError; saveGenVersion?: number; newer?: boolean }, where: 'title' | 'list' | 'menu'): { text: string; upgrade?: boolean } {
+  const msg = restoreErrorMessage(r);
+  if (r.error !== 'gen_version') return { text: msg };
+  if (r.newer) return where === 'menu' ? { text: msg } : { text: msg, upgrade: false };
+  if (where === 'menu') return { text: `${msg}可以先從選單匯出備份，再按下面的按鈕開一個新世界。` };
+  const inList = where === 'list';
+  return { text: `${msg}可以先在世界列表按「匯出」備份這個世界，${inList ? '再按世界列表的「新世界」開一個新世界。' : '再按下面的按鈕開一個新世界。'}`, upgrade: !inList };
 }

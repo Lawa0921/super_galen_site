@@ -3,8 +3,9 @@ import { describe, it, expect } from 'vitest';
 import {
   formatPlayTime, summarizeGame, continueLines, rollWorldName, menuMove, readVolume, writeVolume, VOLUME_KEY,
   genStageLabel, genProgress, wipeThreshold, titleCamY, panX, zoomPrefLabel, savedAgo, realDate, descentY, focusFor,
-  worldLine, characterLine, continueSlot, importPlan, charPreview, needsPendingConfirm,
+  worldLine, characterLine, continueSlot, importPlan, charPreview, needsPendingConfirm, restoreErrorText,
 } from './titleModel';
+import { newerGeneratorMsg, oldGeneratorMsg, BAD_SIZE_MSG } from '../save/split';
 import { DAY_LENGTH } from '../engine/constants';
 import { normalizeAppearance } from '../engine/appearance';
 import { plainLook, type DollLook } from '../engine/doll';
@@ -303,5 +304,27 @@ describe('charPreview（角色列表小人像）', () => {
       expect(() => charPreview({ appearance: app, look: look as DollLook }), JSON.stringify(look)).not.toThrow();
       expect(charPreview({ appearance: app, look: look as DollLook }).px, JSON.stringify(look)).toEqual(plain.px);
     }
+  });
+});
+
+describe('restoreErrorText（讀檔失敗的訊息與「開始新世界」鈕）', () => {
+  const old = { error: 'gen_version' as const, saveGenVersion: 6, newer: false, message: 'x' };
+  const newer = { error: 'gen_version' as const, saveGenVersion: 8, newer: true, message: 'x' };
+  it('舊生成器：標題主選單指向下面的鈕並顯示它；列表開著 → 指向世界列表的「新世界」、藏起鈕；遊戲選單 → 不動鈕', () => {
+    expect(restoreErrorText(old, 'title')).toEqual({ text: `${oldGeneratorMsg(6)}可以先在世界列表按「匯出」備份這個世界，再按下面的按鈕開一個新世界。`, upgrade: true });
+    expect(restoreErrorText(old, 'list')).toEqual({ text: `${oldGeneratorMsg(6)}可以先在世界列表按「匯出」備份這個世界，再按世界列表的「新世界」開一個新世界。`, upgrade: false });
+    expect(restoreErrorText(old, 'menu')).toEqual({ text: `${oldGeneratorMsg(6)}可以先從選單匯出備份，再按下面的按鈕開一個新世界。` });
+  });
+  it('較新的生成器（newer）：只請玩家重新整理更新，不建議開新世界、標題的鈕藏起來', () => {
+    for (const where of ['title', 'list', 'menu'] as const) {
+      const r = restoreErrorText(newer, where);
+      expect(r.text).toBe(newerGeneratorMsg);
+      expect(r.text).toContain('重新整理頁面');
+      expect(r.text).not.toContain('新世界');
+      expect(r.upgrade).toBe(where === 'menu' ? undefined : false);
+    }
+  });
+  it('其他錯誤：照 restoreErrorMessage，不動鈕', () => {
+    expect(restoreErrorText({ error: 'size' }, 'title')).toEqual({ text: BAD_SIZE_MSG });
   });
 });

@@ -22,7 +22,8 @@ import { normalizeAppearance } from '../engine/appearance';
 import { SaveFormatError, decodeSave, validGen2 } from './serialize';
 import { decodeWorld, encodeWorld, restoreSplit, saveSplitGame, type SplitRestoreResult, type VisitSave, type WorldHeader } from './worldSave';
 import { decodeLegacyMeta } from './legacyMeta';
-import { SplitSession, V7_BACKUP_SUFFIX, saveSplit, type SplitStore } from './split';
+import { SplitSession, V7_BACKUP_SUFFIX, saveSplit } from './split';
+import { fakeSplitStore } from './testUtil';
 import { FIXTURE11_EDITS, FIXTURE11_PATH, FIXTURE11_SEED, FIXTURE11_WHO } from './legacyFixture11';
 import { readLegacyFixture } from './legacyFixture';
 import { bakeApplies, bakeWorld, farthestKnown, legacyRange, validBakeInfo } from './bake';
@@ -92,32 +93,6 @@ const stoneIn = (s: { x0: number; x1: number }): number | null => {
   for (let k = 1; k < 30; k++) { const st = stones.byId(k); if (st && st.x >= s.x0 && st.x + 1 < s.x1) return k; }
   return null;
 };
-
-/** 記憶體 SplitStore：記錄 putSplit 次數；丟錯時不改任何記錄 */
-function fakeSplitStore(o: { backupThrows?: boolean; putThrows?: boolean; slots: Record<string, Uint8Array> }) {
-  const slots = new Map<string, Uint8Array>(Object.entries(o.slots).map(([k, v]) => [k, v.slice()]));
-  const unused = (): never => { throw new Error('unused'); };
-  const st: SplitStore & { putCalls: number; slot(k: string): Uint8Array | undefined } = {
-    putCalls: 0,
-    slot: (k) => slots.get(k),
-    async getSlot(k) { const b = slots.get(k); return b ? { bytes: new Uint8Array(b) } : null; },
-    async getCharacter() { return null; },
-    async backupSlot(from, to) {
-      if (o.backupThrows) throw new Error('backup failed');
-      const b = slots.get(from); if (!b) throw new Error('no such slot');
-      if (!slots.has(to)) slots.set(to, b.slice());
-    },
-    async putSplit(slot, world, character) {
-      st.putCalls++;
-      if (o.putThrows) throw new Error('put failed');
-      slots.set(slot, world.bytes);
-      return { slot, seed: world.seed, savedAt: character.savedAt, bytes: world.bytes.length };
-    },
-    listWorlds: async () => [], listCharacters: async () => [],
-    deleteWorld: async () => unused(), deleteCharacter: async () => unused(), putCharacter: async () => unused(),
-  };
-  return st;
-}
 
 /** g.liquids 目前喚醒格所在的 chunk 鍵（只看常駐欄） */
 function awakeChunks(g: DelveGame): number[] {
