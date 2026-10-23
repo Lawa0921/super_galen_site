@@ -3356,6 +3356,28 @@ describe('story L: the group scenes (Task 7)', () => {
     expect(all).not.toMatch(/殺|刺客|林子/);
     expect(all).toMatch(/被人追/);   // the misreading, said aloud: she is the one hunted
   });
+
+  it('group:act4 keeps its beats: the purse, Scarlet goes, the song breaks off, his lie, Safira at Scarlet, she sits first, dawn (Task 11)', () => {
+    const id = 'group:act4';
+    expect(REACTIONS.act4).toBe(id);
+    for (const re of [/錢袋/, /燈芯，我去/, /自願下行/, /一個人的/, /坐/, /難過/, /天亮/]) pinBeat(id, {}, re);
+    expect(said(id, /燈芯，我去/)?.who).toBe('scarlet');
+    expect(said(id, /自願下行/)?.who).toBe('chizuru');
+    expect(said(id, /一個人的/)?.who).toBe('hero');
+    expect(said(id, /難過/)?.who).toBe('safira');
+    // she sits down first, and the purse is still on the table at dawn: the last line, an action
+    expect(STORY.scenes[id].lines.at(-1)!.text).toMatch(/坐.*天亮/);
+    expect(STORY.scenes[id].lines.some((l) => l.who === 'rin')).toBe(false);   // Rin is on the roof (spec §6.4)
+  });
+
+  it('group:act4 never says he is the keeper, and the song only says what the stone says (Task 11, spec §6.3)', () => {
+    const all = [...STORY.scenes['group:act4'].lines.map((l) => l.text), STORY.scenes['group:act4'].summary].join('');
+    expect(all).not.toMatch(/是守燈人/);
+    expect(all).not.toMatch(/舞團|團長/);   // Safira's troupe stays out of it (bible)
+    const song = said('group:act4', /自願下行/)!.text;
+    expect(song).toMatch(/^「『[^』]*』」$/);   // the song alone, broken off
+    expect(song).toMatch(/──』/);
+  });
 });
 
 // Story L Task 8 (spec §4.4.1; style bible §1.3.1): the beat between two memories of a night. Any of them may play at any stage,

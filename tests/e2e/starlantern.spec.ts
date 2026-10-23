@@ -4031,6 +4031,7 @@ test.describe('starlantern', () => {
       [banter('noel', 'selene', 2), /少掉一點自己/],
       ['group:act2', /看得見又不說/],   // story L Task 9: a group scene, replayed from its act's truth page
       ['group:act3', /四十二步/],   // story L Task 10
+      ['group:act4', /不會有人難過/],   // story L Task 11
       ['finale-cost', /那十段記憶/],
       ['finale', /一張一張淡了/],
       ['epilogue', /第一頁/],
@@ -4050,7 +4051,7 @@ test.describe('starlantern', () => {
         s.story.seen = ['prologue', 'prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'banter:rin-scarlet:2', 'banter:noel-selene:2', 'finale', 'epilogue'];
         // story L: the acts' truth pages open, each with its group scene after the act
         s.story.nodes = ['act2', 'act3', 'act4'];
-        s.story.seen.push('act2', 'act3', 'act4', 'group:act2', 'group:act3');
+        s.story.seen.push('act2', 'act3', 'act4', 'group:act2', 'group:act3', 'group:act4');
         s.story.fresh = [];
         s.story.queue = [];
       });
@@ -4096,7 +4097,7 @@ test.describe('starlantern', () => {
       await readThrough();
       await page.locator('.slx-back').click();
       await hbTab(H.tabs.truths).click();
-      for (const stage of ['act2', 'act3'] as const) { await pickRow(H.stages[stage]); await readThrough(); }   // each act, then its group scene (story L)
+      for (const stage of ['act2', 'act3', 'act4'] as const) { await pickRow(H.stages[stage]); await readThrough(); }   // each act, then its group scene (story L)
       await pickRow(H.stages.after);   // the finale, then the lantern festival (story depth ruling 12)
       await readThrough();
       expect([...reached].sort(), `${width}`).toEqual(BEATS.map(([scene]) => scene).sort());

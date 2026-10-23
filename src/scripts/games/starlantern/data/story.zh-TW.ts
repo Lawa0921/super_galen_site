@@ -460,6 +460,25 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '登記簿那一夜。希爾薇要洛恩去問凜，波比說不要問，洛恩不問。凜打水回來，希爾薇把被子鋪到了門邊。',
   },
+  // Story L Task 11 (spec §6.3; lore ledger I-195): after act 4, Rin on the roof either side of her choice. Chizuru's festival
+  // song breaks off on the line the stone said; Liz would buy him out, Safira would run, Scarlet would go in his place.
+  'group:act4': {
+    lines: [
+      at(PL.guildClosed, N('冒險者公會，打烊以後。安娜回家了，舊登記簿還攤在桌上。凜一個人上了屋頂。')),
+      { who: 'chizuru', mood: 'solemn', text: '「『春祭的燈，誰來點？守燈人，自願下行──』」' },
+      N('歌停在那一句。莉茲把錢袋重重擱上桌，銅板在袋子裡響了一聲。'),
+      { who: 'liz', mood: 'serious', text: '「我算過了。這一袋，夠在鎮上頂一間小店，外加三年的租金。老大，不下去了，你來顧店。」' },
+      { who: 'safira', mood: 'laugh', text: '「對嘛！行李我現在就去收，明天一早往南走。霧追不到的地方，總有一個吧～跑遠一點，就好了。」' },
+      { who: 'scarlet', mood: 'vow', text: '「燈要燈芯，我去。盾本來就是拿來用掉的。」' },
+      { who: 'liz', mood: 'serious', text: '「騎士大姊，妳把自己算成零，這帳要怎麼對？」' },
+      { who: 'scarlet', mood: 'serious', text: '「莎菲拉小姐，跑的人跑了，留下來的人就得替她擋。」' },
+      { who: 'safira', mood: 'sad', text: '「那妳去當燈芯，就不會有人難過了嗎？」' },
+      { who: 'hero', mood: 'distant', text: '「千鶴唱得沒錯。下面的事，本來就是一個人的。」' },
+      { who: 'chizuru', mood: 'serious', text: '「那首歌，我不唱完了。」' },
+      N('莎菲拉沒去收行李，第一個坐了回去。莉茲沒有收回那袋錢，它在桌上放了一整夜，天亮時還在。'),
+    ],
+    summary: '打烊後的公會。千鶴唱到守燈人那一句就停了。莉茲把錢袋放上桌要他別下去，絲嘉蕾說她去當燈芯。',
+  },
   // Task 6: Lorne's memories (spec §4, §3.4, §3.6, §4.6, §8.4). Pieces 1–8 hint; piece 9 names the keeper, piece 10 the key.
   'mem:hero:1': {
     lines: [
