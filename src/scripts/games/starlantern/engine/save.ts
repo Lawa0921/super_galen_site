@@ -12,6 +12,7 @@ import { MAX_LEVEL, SLOTS, slotsFor } from './party';
 import { defaultTree, heroTree, memoriesOf, validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
 import { repairRuneFields } from './sockets';
+import { tierUnlocked } from './tiers';
 import { buildOf } from '../data/builds';
 import { BANTER_PAIRS, isSceneId, type BanterPair } from '../data/story/scenes';
 import { MAX_WAITED } from './story/events';
@@ -149,7 +150,11 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!validPortals(g.portals)) return false;
   if (!isCounts(g.bossKills) || !Object.keys(g.bossKills as object).every(isBossKey)) return false;
   if (Object.keys(reached).length !== regions.length) return false;
-  return regions.every((r) => Number.isInteger(reached[r]) && (reached[r] as number) >= 1 && (reached[r] as number) <= MAX_REACHED);
+  if (!regions.every((r) => Number.isInteger(reached[r]) && (reached[r] as number) >= 1 && (reached[r] as number) <= MAX_REACHED)) return false;
+  // The tier last chosen (difficulty plan ruling 21): absent until the row was seen; else one of the three, unlocked by
+  // what the save itself holds (read last, once reached, the kills and the story are known good).
+  if (g.tier === undefined) return true;
+  return (g.tier === 'normal' || g.tier === 'nightmare' || g.tier === 'hell') && tierUnlocked(d as unknown as GameState, g.tier);
 }
 
 export function saveGame(storage: SaveStorage, s: GameState): boolean {

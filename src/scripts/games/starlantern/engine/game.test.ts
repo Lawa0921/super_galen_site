@@ -4513,6 +4513,72 @@ describe('a run has a tier (difficulty plan Task 6a)', () => {
     expect(play()).toEqual(a);
   });
 
+  it('a Hell save reloads into the same tier, kills and affixes (game flow, Task 6b)', () => {
+    const st = memoryStorage();
+    const g = new Game(calm(), st, undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 30;
+    g.state.story.act1Cleared = true;
+    g.state.story.finaleCleared = true;
+    // Hell opens the way the game opens it: the Nightmare depth-25 boss beaten after the finale.
+    expect(g.chooseTier('hell')).toEqual({ ok: false, reason: 'locked' });
+    expect(g.chooseTier('nightmare')).toEqual({ ok: true });
+    expect(g.depart(MAIN, 25)).toEqual({ ok: true });
+    expect(stepOnto(g, g.map().boss!)).toEqual({ kind: 'boss' });
+    expect(killAll(g).outcome).toBe('win');
+    expect(g.state.dungeon.bossKills).toEqual({ 'nightmare:mainline:25': 1 });
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    expect(g.chooseTier('hell')).toEqual({ ok: true });   // saves
+    const dungeon = structuredClone(g.state.dungeon);
+    const play = () => {
+      const r = loadGame(st);
+      expect(r.status).toBe('ok');
+      if (r.status !== 'ok') throw new Error('no save');
+      expect(r.state.dungeon).toEqual(dungeon);
+      const h = new Game(mulberry32(9), st, r.state);
+      expect(h.tier()).toBe('hell');
+      expect(h.depart(MAIN, 12)).toEqual({ ok: true });
+      expect(h.run!.difficulty).toBe('hell');
+      const out: unknown[] = [];
+      for (let i = 0; i < 3; i++) {
+        stepOnto(h, plantAt(h, 'elite'));
+        out.push(affixesOf(h));
+        expect(killAll(h).outcome).toBe('win');
+      }
+      // A crowd met on the first spot whose Hell draw gives one an affix.
+      const m = h.map();
+      const spot = (() => {
+        for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+          const p = { x, y };
+          const open = DIRS.some((d) => tileAt(m, { x: x - DELTA[d].x, y: y - DELTA[d].y }) === 'floor');
+          if (m.tiles[y][x] === 'floor' && open && rollCrowdAffix(h.run!.seed, 12, p, TIERS.hell.crowdAffixChance)) return p;
+        }
+        throw new Error('no spot');
+      })();
+      h.encounter = 99;
+      expect(stepOnto(h, spot)).toEqual({ kind: 'battle' });
+      out.push(affixesOf(h));
+      return out;
+    };
+    const a = play();
+    expect((a.slice(0, 3) as unknown[][]).every((f) => Array.isArray(f[0]) && f[0].length === 2)).toBe(true);
+    expect((a[3] as unknown[]).filter(Boolean)).toHaveLength(1);
+    expect(play()).toEqual(a);
+  });
+
+  it('a save holding a tier it has not unlocked boots as a reset (Task 6b)', () => {
+    const s = newGame(mulberry32(1), 0, HERO_LINEUP);
+    s.dungeon.reached.mainline = 30;
+    s.dungeon.tier = 'hell';   // no finale, no Nightmare depth-25 kill
+    const b = Game.boot(mulberry32(2), memoryStorage({ [SAVE_KEY]: JSON.stringify(s) }));
+    expect(b.notice).toBe('save-reset');
+    expect([b.state.dungeon.tier, b.tier()]).toEqual([undefined, 'normal']);
+    // The same save on Nightmare, which it has unlocked, boots as it was.
+    s.dungeon.tier = 'nightmare';
+    const ok = Game.boot(mulberry32(2), memoryStorage({ [SAVE_KEY]: JSON.stringify(s) }));
+    expect([ok.notice, ok.tier()]).toEqual([null, 'nightmare']);
+  });
+
   it('story fights are Normal on every tier', () => {
     const DUO: CharacterId[] = ['hero', 'rin'];
     // The rescue room (Selene, main road depth 2): the same fight as on Normal, no affixes.
