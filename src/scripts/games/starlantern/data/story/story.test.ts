@@ -3156,19 +3156,25 @@ describe('story depth: the final review', () => {
 describe('memory lines: past and present (staging S5)', () => {
   const memories = SCENE_IDS.filter((id) => sceneKind(id) === 'memory');
 
-  it('every memory scene opens in the past and comes back to the present', () => {
+  // Bobby's plan pieces (staging review 4): the plan assembles in front of her now (「最後一角拼上了」), so they hold no
+  // remembered past line; nothing in them is re-lived.
+  const NO_PAST: Partial<Record<SceneId, string>> = {
+    'mem:bobby:3': 'another corner of the plan falls into place now; she reads it',
+    'mem:bobby:5': 'the last corner falls into place now; she reads the whole plan',
+  };
+
+  it('every memory holds a remembered past line (or says why not) and ends in the present; it may open in either', () => {
     expect(memories).toHaveLength(57);
     for (const id of memories) {
       const lines = STORY.scenes[id].lines;
-      expect(lines[0].past, `${id} opens in the past`).toBe(true);
+      expect(lines.some((l) => l.past), `${id} has a past line`).toBe(!NO_PAST[id]);
       expect(lines[lines.length - 1].past, `${id} ends in the present`).toBeUndefined();
-      expect(lines.some((l) => !l.past), id).toBe(true);
     }
   });
 
-  it('the tags are data: 125 past lines, all in memory scenes, all narration', () => {
+  it('the tags are data: 122 past lines, all in memory scenes, all narration', () => {
     const past = SCENE_IDS.flatMap((id) => STORY.scenes[id].lines.filter((l) => l.past).map((l) => ({ id, l })));
-    expect(past).toHaveLength(125);
+    expect(past).toHaveLength(122);
     expect(past.filter(({ id }) => sceneKind(id) !== 'memory')).toEqual([]);
     expect(past.filter(({ l }) => l.who !== 'narrator').map(({ id, l }) => `${id}: ${l.text}`)).toEqual([]);
     for (const id of SCENE_IDS) for (const l of STORY.scenes[id].lines) expect(l.past === undefined || l.past === true, id).toBe(true);
