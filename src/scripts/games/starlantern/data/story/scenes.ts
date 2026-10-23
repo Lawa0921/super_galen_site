@@ -118,7 +118,7 @@ const LONG_MEMORIES = new Set<SceneId>(['mem:hero:9', 'mem:hero:10', 'mem:rin:7'
 export function lineCap(id: SceneId): number {
   switch (sceneKind(id)) {
     case 'major': return MAJOR_CAPS[id as MajorScene] ?? 12;
-    case 'memory': return LONG_MEMORIES.has(id) ? 12 : 4;
+    case 'memory': return LONG_MEMORIES.has(id) ? 12 : 5;
     case 'chat': return 3;
     case 'town': return 8;
     case 'home': return 4;

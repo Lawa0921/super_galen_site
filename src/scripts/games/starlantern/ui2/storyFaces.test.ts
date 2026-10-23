@@ -60,7 +60,7 @@ describe('companion grave faces', () => {
     expect(face('rin', 'sad')).toBe(art.portrait('rin', 'sad'));
   });
 
-  it('every heavy companion line in the script now shows a face (107 lines, 0 hidden)', () => {
+  it('every heavy companion line in the script now shows a face (100 lines, 0 hidden)', () => {
     const lines: ScriptLine[] = [];
     const seen = new Set<unknown>();
     const walk = (o: unknown): void => {
@@ -74,11 +74,11 @@ describe('companion grave faces', () => {
     const heavy = lines.filter((l) => NORMAL_SMILES.has(l.who) && l.mood && GRAVE.has(l.mood));
     const s = state();
     const hidden = heavy.filter((l) => !speakerOf(l.who, s, ART, l.mood).face).map((l) => `${l.who} ${l.mood} ${l.text}`);
-    expect(heavy).toHaveLength(107);
+    expect(heavy).toHaveLength(100);   // story polish M: memories end on an action now, not on a said wound (107 -> 100)
     expect(hidden).toEqual([]);
-    // Liz's hushed lines are not grave but used to borrow her smile: all 8 now have the hushed face.
+    // Liz's hushed lines are not grave but used to borrow her smile: all 7 now have the hushed face (story polish M: her meeting has none).
     const hushed = lines.filter((l) => l.who === 'liz' && l.mood === 'hushed');
-    expect(hushed).toHaveLength(8);
+    expect(hushed).toHaveLength(7);
     for (const l of hushed) expect(speakerOf('liz', s, ART, 'hushed').face, l.text).toBe(art.portrait('liz', 'hushed'));
   });
 
@@ -157,13 +157,14 @@ describe('faces in a heavy scene (staging S3)', () => {
       }
     }
     expect(smiling).toEqual([]);
-    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(395);
+    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(382);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line
     // 395 character lines. Before S3 the 15 heavy lines of a non-glad mood without art showed a companion's smile, and 60
     // heavy lines of Lorne and Rin their normal: 75 lines, which now take a near face (35), Rin's calm normal (17) or no
     // portrait (23). A glad mood still borrows the smile (22). The light scenes are as they were.
     expect(tally).toEqual({
-      'heavy exact': 99, 'heavy near': 35, 'heavy calm-normal': 17, 'heavy hidden': 23, 'heavy smiling-normal': 22,
-      'light exact': 92, 'light calm-normal': 6, 'light smiling-normal': 101,
+      // story polish M: the present halves of the early memories end on an action, so fewer heavy companion lines
+      'heavy exact': 93, 'heavy near': 33, 'heavy calm-normal': 17, 'heavy hidden': 22, 'heavy smiling-normal': 18,
+      'light exact': 91, 'light calm-normal': 6, 'light smiling-normal': 102,
     });
   });
 });

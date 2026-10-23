@@ -142,7 +142,7 @@ describe('story data', () => {
     expect(lineCap('act1-after')).toBe(3);
     expect(lineCap('mem:hero:9')).toBe(12);
     expect(lineCap('mem:rin:7')).toBe(12);
-    expect(lineCap('mem:hero:1')).toBe(4);
+    expect(lineCap('mem:hero:1')).toBe(5);   // story polish M: +1 for a present beat shown, not said (mem:rin:3's blink)
     expect(lineCap('chat:noel:1')).toBe(3);
     expect(lineCap('town:orik')).toBe(8);
     expect(lineCap('act2')).toBe(12);
@@ -603,13 +603,13 @@ describe('the script gates', () => {
     for (const id of Object.keys(MEMORY_GUESTS)) expect(isSceneId(id) && id.startsWith('mem:'), id).toBe(true);
   });
 
-  it('meetings say one to four lines before and after', () => {
+  it('meetings say one to four lines before, and one to five after', () => {
     for (const m of MEETINGS) {
       const { before, after } = STORY.meet[m.id];
       expect(before.length, m.id).toBeGreaterThanOrEqual(1);
       expect(before.length, m.id).toBeLessThanOrEqual(4);
       expect(after.length, m.id).toBeGreaterThanOrEqual(1);   // raised from 0 in Task 10: every companion joins in words
-      expect(after.length, m.id).toBeLessThanOrEqual(4);
+      expect(after.length, m.id).toBeLessThanOrEqual(5);   // story polish M: +1 for the beat that shows what she wants now
     }
   });
 
@@ -627,12 +627,12 @@ describe('the script gates', () => {
       for (const l of [...before, ...after.slice(0, intro)]) expect(l.text, `${id}: ${l.text}`).not.toContain(name);
     }
     // Liz says her own name now (story polish Task 1, ruling 2), by its beats (Task 3, ruling 11): the ration in the
-    // narration, her name in her own line, the family she cannot picture, the cover-up.
+    // narration, her name in her own line, the home she cannot find (story polish M: it leaks out of a joke), the hire.
     const liz = STORY.meet.liz.after;
-    expect(liz.length).toBeLessThanOrEqual(4);
+    expect(liz.length).toBeLessThanOrEqual(5);
     expect(liz.filter((l) => l.who === 'narrator' && /乾糧/.test(l.text))).toHaveLength(1);
     expect(liz[introIndex('liz')].text).toMatch(/我是莉茲/);
-    expect(liz.filter((l) => l.who === 'liz' && l.mood === 'hushed' && /家人的臉/.test(l.text))).toHaveLength(1);
+    expect(liz.filter((l) => l.who === 'liz' && /家在哪/.test(l.text))).toHaveLength(1);
     expect(liz.filter((l) => l.who === 'liz' && /老大/.test(l.text))).toHaveLength(1);
     // introIndex finds her first line that says her name, and nothing else.
     expect(introIndex('selene')).toBe(STORY.meet.selene.after.findIndex((l) => l.who === 'selene' && l.text.includes(CHARACTERS.selene.name)));
@@ -1254,7 +1254,7 @@ describe('Task 10b: why the two of them go down together', () => {
   it('the approved prologue keeps its twelve lines, from the dawn plaza to 「歸來者」, and its beats', () => {
     const p = lines('prologue');
     expect(p).toHaveLength(12);
-    expect(p[0].text).toBe('黎明前的傳送門廣場。暮霧貼著石板流動，西邊高地上的星燈，淡得像快燒盡的燭火。');
+    expect(p[0].text).toBe('黎明前的傳送門廣場。迷宮吐出的霧──鎮上叫它暮霧──貼著石板流動，西邊高地上的星燈淡得像殘燭。');   // story polish M round 2: 暮霧 introduced, not 「黎明前……暮」
     // story polish Task 5 (ruling 7): Glen tells the grip, Anna puts the medicine and the lamp on the guild's account
     expect(p[2].who).toBe('glen');
     expect(() => pinBeat('prologue', {}, /拖了出來.*三步就倒.*手腕/)).not.toThrow();
@@ -1307,21 +1307,21 @@ describe('Task 10b: why the two of them go down together', () => {
     const text = inn.map((l) => l.text).join('');
     expect(text).toMatch(/指痕/);   // 1. the grip: Glen could not pry his fingers off
     expect(text).toMatch(/掰/);
-    expect(text).toMatch(/線索/);   // 2. each other's only lead
-    expect(text).toMatch(/同一盞燈/);   // 3. one lamp for the two of them (I-83)
+    expect(text).toMatch(/只能跟著你/);   // 2. each other's only lead (story polish M round 2: said as following, not as 「線索」)
+    expect(text).toMatch(/一盞燈/);   // 3. one lamp for the two of them (I-83)
     expect(text).toMatch(/欠/);   // 4. the debt, and only the depths pay it
     expect(text).toMatch(/碎片/);
-    expect(text).toMatch(/睡不著/);   // 5. she cannot sleep without knowing where he is
+    expect(text).toMatch(/睜著眼/);   // 5. she does not sleep: shown, not explained (story polish M round 2)
     const go = inn.findIndex((l) => l.who === 'rin' && l.text.includes('我跟你去'));
     const why = inn.findIndex((l) => l.who === 'hero' && l.text.includes('為什麼'));
     const left = inn.findIndex((l) => l.who === 'rin' && l.text.includes('只剩迷宮'));   // story polish Task 2 (audit A7)
     expect(go).toBeGreaterThanOrEqual(0);
     expect(why).toBeGreaterThan(go);
     expect(left).toBeGreaterThan(why);
-    // and then one line: the way he walks seems familiar (her seventh piece pays it off; I-85)
+    // and then one line, his (story polish M: 「走路的樣子」 is cut, her foreshadowing halved; I-85)
     expect(inn.slice(left + 1)).toHaveLength(1);
-    expect(inn[inn.length - 1].who).toBe('rin');
-    expect(inn[inn.length - 1].text).toMatch(/走路/);
+    expect(inn[inn.length - 1].who).toBe('hero');
+    expect(text).not.toMatch(/走路/);
   });
 
   it("review fixes: the lamp has its own line and its consequence, the sleepless beat is the narrator's, and the reasons are spread", () => {
@@ -1330,11 +1330,11 @@ describe('Task 10b: why the two of them go down together', () => {
     const why = inn.findIndex((l) => l.who === 'hero' && l.text.includes('為什麼'));
     const lamp = inn[why + 1];
     expect(lamp.who).toBe('rin');
-    expect(lamp.text).toMatch(/同一盞燈/);
+    expect(lamp.text).toMatch(/一盞燈/);
     expect(lamp.text).toMatch(/一個人下去/);
-    expect(lamp.text).not.toMatch(/線索|只剩/);
+    expect(lamp.text).not.toMatch(/跟著你|只剩/);
     // The lead and the debt come before her choice, each in a line of its own.
-    const lead = inn.findIndex((l) => l.who === 'rin' && l.text.includes('線索'));
+    const lead = inn.findIndex((l) => l.who === 'rin' && l.text.includes('跟著你'));
     const debt = inn.findIndex((l) => l.who === 'hero' && l.text.includes('欠'));
     const go = inn.findIndex((l) => l.text.includes('我跟你去'));
     expect(lead).toBeGreaterThanOrEqual(0);
@@ -1343,7 +1343,7 @@ describe('Task 10b: why the two of them go down together', () => {
     expect(inn[lead].text).not.toMatch(/燈|欠/);
     // Pre-reveal Rin does not confess her sleeplessness; the narrator shows it.
     for (const t of said('prologue-inn', 'rin')) expect(t).not.toMatch(/睡/);
-    expect(inn.some((l) => l.who === 'narrator' && /睡不著/.test(l.text))).toBe(true);
+    expect(inn.some((l) => l.who === 'narrator' && /睜著眼/.test(l.text))).toBe(true);
   });
 
   it('review fixes: the first-return scene never claims to be the first return, and leaves the window to the inn night', () => {
@@ -2057,31 +2057,28 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
     expect(all('liz')).toContain('乾糧');
   });
 
-  it("a quiet beat keeps its own line: Liz's family line carries no joke, and her cover-up comes in the next box after a turn (bible §2.2)", () => {
-    // V2 fix 1 (controller ruling): the sample's cover-up stays, as its own box after a turn word, never in the quiet line.
-    // Final review issue 1: the box must exist and open on a turn word, and the quiet line before it carries no joke.
+  it("Liz's lost home leaks out of a joke, not a confession, and she joins for what she wants now (story polish M)", () => {
+    // Diagnosis §4.2 6: 「欸，家在哪啊？算了，先扛再說。」 The slip rides inside the joke and the joke runs on past it;
+    // nobody stops on it. She joins because the gold is too heavy for her: she hires them, after a turn word.
     const TURN = /^「?(好啦|再說|話說回來|算了|──)/;
-    const JOKE = /老大|成交|分紅|商量|銅板|估/;
-    const coverUpBreaks = (after: ScriptLine[]): string[] => {
-      const i = after.findIndex((l) => l.who === 'liz' && l.mood === 'hushed' && /臉/.test(l.text));
-      if (i < 0) return ['no quiet line'];
+    const leakBreaks = (after: ScriptLine[]): string[] => {
+      const lines = after.filter((l) => l.who === 'liz');
       const out: string[] = [];
-      if (JOKE.test(after[i].text)) out.push('the quiet line carries a joke');
-      const next = after[i + 1];
-      if (!next) return [...out, 'no cover-up box'];
-      if (!TURN.test(next.text)) out.push('the cover-up box opens without a turn word');
-      if (!/老大|分紅|商量/.test(next.text)) out.push('the next box is not the cover-up');   // the cover-up itself (sample §5.6)
+      if (lines.some((l) => /家人的臉|想不起來/.test(l.text))) out.push('she confesses the loss');
+      const i = after.findIndex((l) => l.who === 'liz' && /家在哪/.test(l.text));
+      if (i < 0) return [...out, 'no slip'];
+      if (!/扛/.test(after[i].text) || !/算了/.test(after[i].text)) out.push('the slip is not inside the joke');
+      const hire = after.slice(i + 1).find((l) => l.who === 'liz');
+      if (!hire || !TURN.test(hire.text) || !/老大/.test(hire.text) || !/雇|成交/.test(hire.text)) out.push('no hire after a turn');
       return out;
     };
     const after = STORY.meet.liz.after;
-    expect(coverUpBreaks(after)).toEqual([]);
-    // the gate catches what it guards
-    const i = after.findIndex((l) => l.who === 'liz' && l.mood === 'hushed');
-    expect(coverUpBreaks(after.slice(0, i + 1))).toEqual(['no cover-up box']);   // the box deleted
-    const sample = '「得把錢帶回家。……家人的臉，卻想不起來。老大，讓我跟著你們，分紅好商量。」';   // the sample's one-line form
-    expect(coverUpBreaks([{ who: 'liz', mood: 'hushed', text: sample }])).toEqual(['the quiet line carries a joke', 'no cover-up box']);
-    const noTurn = [...after.slice(0, i + 1), { ...after[i + 1], text: '「老大，讓我跟著你們吧，分紅好商量。」' }];
-    expect(coverUpBreaks(noTurn)).toEqual(['the cover-up box opens without a turn word']);
+    expect(leakBreaks(after)).toEqual([]);
+    // the gate catches what it guards: the old confession, and a slip with nothing after it
+    const old = [{ who: 'liz', mood: 'hushed', text: '「你們不要，我就全帶回家了。只是家人的臉，我一張也想不起來了。」' }] as ScriptLine[];
+    expect(leakBreaks(old)).toEqual(['she confesses the loss', 'no slip']);
+    const i = after.findIndex((l) => l.who === 'liz' && /家在哪/.test(l.text));
+    expect(leakBreaks(after.slice(0, i + 1))).toEqual(['no hire after a turn']);
   });
 
   it("Lorne's straight man has more than one move: one counting joke at most across V2's scenes", () => {
@@ -2592,7 +2589,7 @@ describe('story polish Task 2: the S1 lines', () => {
     // Task 3 (ruling 11): each final pinned by its beat, a key noun or fact, not by its wording.
     const beats: [SceneId, Partial<LineWhen>, RegExp][] = [
       ['prologue-inn', {}, /發青的指痕/],
-      ['prologue-inn', {}, /線索.*夢話/],
+      ['prologue-inn', {}, /跟著你.*夢話/],
       ['prologue-inn', {}, /只剩迷宮/],
       ['rin-reveal', {}, /派來殺你/],
       ['mem:bobby:4', {}, /祖先.*道.*歉/],
@@ -2800,7 +2797,7 @@ describe('story depth Task 11: Liz and Scarlet', () => {
     expect(named).toBeGreaterThan(-1);
     expect(named).toBeLessThan(intro);
     expect(after[intro].text).toMatch(/金幣真的不要/);
-    const home = after.findIndex((l) => l.who === 'liz' && /帶回家/.test(l.text));
+    const home = after.findIndex((l) => l.who === 'liz' && /扛回家/.test(l.text));   // story polish M: 帶 -> 扛
     expect(home).toBe(intro + 1);
     expect(after[home].text).toMatch(/你們不要/);
   });
@@ -3180,10 +3177,10 @@ describe('memory lines: past and present (staging S5)', () => {
     for (const id of SCENE_IDS) for (const l of STORY.scenes[id].lines) expect(l.past === undefined || l.past === true, id).toBe(true);
   });
 
-  it("Lorne's 「想起什麼了？」 is said now, the bell tower is remembered", () => {
+  it("Rin's answer is said now, the bell tower is remembered", () => {
     const rin1 = STORY.scenes['mem:rin:1'].lines;
     expect(rin1.map((l) => !!l.past)).toEqual([true, true, false, false]);
-    expect(rin1[2].text).toBe('「想起什麼了？」');
+    expect(rin1[2].who).toBe('rin');   // story polish M: no 「想起什麼了？」 prompt; she says it, then a present beat
     // the eighth line of Rin's seventh is the chase she remembers; from her line on she is here again
     expect(STORY.scenes['mem:rin:7'].lines.map((l) => !!l.past)).toEqual([true, true, true, true, true, true, false, false, false, false, false, false]);
     // Liz's father's arms are the evening she left; his words with Orik's fragment back are said now
