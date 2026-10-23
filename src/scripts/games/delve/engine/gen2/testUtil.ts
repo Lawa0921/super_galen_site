@@ -72,7 +72,8 @@ export function bfsReachesDepth(w: World, x: number, y: number, deepAt: (x: numb
   return false;
 }
 
-// 靜態液體不變量：x ∈ [x0, x1) 的每個水 / 熔岩格都是滿格，下方與左右是實心或同種滿格液體（世界底下算實心）。回違規格
+// 靜態液體不變量：x ∈ [x0, x1) 的每個水 / 熔岩格都是滿格、不在實心格裡，下方與左右是實心或同種滿格液體（世界底下算實心）。回違規格。
+// 液體可以泡著非實心物件（箱子、木樑；liquid.ts 只擋實心格），所以沉船裡泡水的箱子 / 桅杆也算靜止。
 export function liquidInvariant(w: World, x0: number, x1: number): { x: number; y: number }[] {
   const bad: { x: number; y: number }[] = [];
   const H = w.height;
@@ -82,7 +83,7 @@ export function liquidInvariant(w: World, x0: number, x1: number): { x: number; 
     for (let y = 0; y < H; y++) {
       if (w.getLiquid(x, y) === 0) continue;
       const type = w.getLiquidType(x, y);
-      const ok = (type === LIQ.WATER || type === LIQ.LAVA) && w.getLiquid(x, y) === LIQ_MAX && w.getFg(x, y) === T.AIR
+      const ok = (type === LIQ.WATER || type === LIQ.LAVA) && w.getLiquid(x, y) === LIQ_MAX && !isSolidTile(w.getFg(x, y))
         && holds(x, y + 1, type) && holds(x - 1, y, type) && holds(x + 1, y, type);
       if (!ok) bad.push({ x, y });
     }

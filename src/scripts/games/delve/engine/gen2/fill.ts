@@ -1,5 +1,6 @@
 // fill.ts — gen2 寫格子：表層材質（gen2 自己的表）、深度層與牆、噪聲洞穴 + 地表入口、每個地區的主坑道、礦（只換石頭類）、
-// 靜止的海水、熔岩線（LAVA_Y 以下的空氣全是熔岩）、結構藍圖（blueprint.ts，依 (layer, id) 序蓋）、樹 / 仙人掌（只長在陸地欄、不長在表層藍圖外框內）。
+// 靜止的海水、熔岩線（LAVA_Y 以下的空氣全是熔岩）、結構藍圖（blueprint.ts，依 (layer, id) 序蓋；含海槽的沉船 / 漂流箱）、
+// 樹 / 仙人掌（只長在陸地欄與島的台地、不長在表層藍圖外框內）。島的表層與樹在這裡（P12：島地形 = Profile2 的島欄形狀 + 這裡的表層）。
 // 噪聲取樣與樹 / 仙人掌繪製來自 engine/genPrims.ts（與 v1 同一份，P10）；這裡只有 gen2 的材質與礦的規則。不 import legacy。
 // 每一格只由 (seed, x, y) 決定：跨欄的東西（樹冠、坑道）由「掃 [x0 − 觸及範圍, x1 + 觸及範圍)、只畫進 [x0, x1)」保證與先填哪一段無關。
 // 每個 pass 收到它所屬地塊的 ctx.ver（鎖 / latestVer）；M1 只有 ver 0，沒有版本分支（新規則寫 if (ctx.ver >= N)）。
@@ -29,9 +30,15 @@ const LAND_SKIN: Readonly<Record<number, Skin>> = {
   [BIOME.SNOW]: { depth: 5, t: T.SNOW, w: W.SNOW_WALL, under: T.DIRT, underW: W.DIRT_WALL },
   [BIOME.JUNGLE]: { depth: 1, t: T.JUNGLE_GRASS, w: W.MUD_WALL, under: T.MUD, underW: W.MUD_WALL },
 };
-// 島欄在 M1 只有海床材質（島的表層與樹歸 Task 11，P12）
-const skinOf = (I: ColInfo2): Skin =>
-  I.kind === COL_SEA || I.kind === COL_ISLAND ? SEABED : I.kind === COL_BEACH ? BEACH : LAND_SKIN[I.biome] ?? LAND_SKIN[BIOME.FOREST];
+// 島欄離島的兩端（離水）這麼多格內是沙灘
+const ISLAND_BEACH = 4;
+// 島欄離水的格數（島地區 = 島本身的 [x0, x1)）
+const islandEdge = (x: number, r: RegionInfo): number => Math.min(x - r.x0, r.x1 - 1 - x);
+const landSkin = (biome: number): Skin => LAND_SKIN[biome] ?? LAND_SKIN[BIOME.FOREST];
+// 島欄（ctx.ver 0 的規則）：離水 ISLAND_BEACH 格內沙灘沙、其餘台地照島的生態（森林：草 + 泥）
+const skinOf = (x: number, I: ColInfo2): Skin =>
+  I.kind === COL_SEA ? SEABED : I.kind === COL_BEACH ? BEACH
+    : I.kind === COL_ISLAND ? (islandEdge(x, I.region) < ISLAND_BEACH ? BEACH : landSkin(I.biome)) : landSkin(I.biome);
 // 牆從地表下 WALL_FROM 格起
 const WALL_FROM = 3;
 // 海與島的欄地表下這麼多格內不挖（比陸地深：海床薄殼不會被洞穴從下面挖穿）
@@ -108,7 +115,7 @@ export class Filler2 {
     if (I.kind === COL_SEA) {
       for (let y = Math.max(0, I.waterTop); y < S && y < H; y++) { const i = li(x, y); liq[i] = LIQ_MAX; lt[i] = LIQ.WATER; }
     }
-    const sk = skinOf(I), skinTo = S + sk.depth;
+    const sk = skinOf(x, I), skinTo = S + sk.depth;
     const entrance = I.kind === COL_LAND && this.entranceAt(x);
     const caveTop = entrance ? S : Math.max(rock, S + (I.kind === COL_SEA || I.kind === COL_ISLAND ? NO_DIG_SEA : NO_DIG));
     const spanInv = 1 / Math.max(1, molten - rock), midRock = rock + ((deep - rock) >> 1);
@@ -172,7 +179,7 @@ export class Filler2 {
     return sh;
   }
 
-  // ── 樹 / 仙人掌（genPrims.growPlants）：只長在陸地欄；入口欄、出生點 ±3、坑道上方、表層藍圖外框內不長 ──
+  // ── 樹 / 仙人掌（genPrims.growPlants）：只長在陸地欄與島的台地；入口欄、出生點 ±3、坑道上方、表層藍圖外框內不長 ──
   private plants(col: Column, x0: number, x1: number, surface: Blueprint[]): void {
     const inBp = (rx: number): boolean => surface.some((b) => rx >= b.x && rx < b.x + b.w);
     const site = (rx: number): PlantSite | null => (this.profile.regionAt(rx) && !inBp(rx) ? this.plantSite(rx, this.ctxAt(rx)) : null);
@@ -182,6 +189,8 @@ export class Filler2 {
   // ctx.ver（樹根所屬地塊）0 的規則
   private plantSite(rx: number, _ctx: FillCtx): PlantSite | null {
     const I = this.profile.info(rx), r = I.region;
+    // 島：台地（離水 ≥ ISLAND_BEACH，草上）照島的生態長樹；樹冠半徑 ≤ 3，不會伸出島外
+    if (I.kind === COL_ISLAND) return islandEdge(rx, r) >= ISLAND_BEACH ? I : null;
     if (I.kind !== COL_LAND || this.entranceAt(rx)) return null;
     if (this.spawnX !== null && Math.abs(rx - this.spawnX) <= SPAWN_NO_TREE) return null;
     const sh = this.shaftFor(r);

@@ -112,7 +112,7 @@ describe('gen2 fill / Gen2Source', () => {
     }
   });
 
-  it('表層材質：森林草 + 泥、沙漠沙 6 + 砂岩、雪 5、叢林叢林草 + 泥巴；島欄只有海床材質', () => {
+  it('表層材質：森林草 + 泥、沙漠沙 6 + 砂岩、雪 5、叢林叢林草 + 泥巴；島欄沙灘沙 / 台地草', () => {
     const src = new Gen2Source('skin');
     const want: Record<number, number[]> = {
       [BIOME.FOREST]: [T.GRASS, T.DIRT, T.DIRT, T.DIRT, T.DIRT, T.DIRT, T.DIRT],
@@ -141,8 +141,11 @@ describe('gen2 fill / Gen2Source', () => {
       const I = src.profile.info(x);
       if (I.kind !== COL_ISLAND) continue;
       const col = fillCol(src, x >> 5);
-      for (let y = I.surface; y < I.surface + 3; y++) expect(col.fg[li(x, y)]).toBe(T.SAND);
-      for (let y = 0; y < I.surface; y++) expect(col.fg[li(x, y)]).toBe(T.AIR);
+      // 島的表層歸 Task 11（P12，詳見 sea.test.ts）：離水 4 格內沙灘沙、其餘草 + 泥；地表以上只有空氣與樹
+      const e = Math.min(x - I.region.x0, I.region.x1 - 1 - x);
+      if (e < 4) for (let y = I.surface; y < I.surface + 4; y++) expect(col.fg[li(x, y)]).toBe(T.SAND);
+      else expect([col.fg[li(x, I.surface)], col.fg[li(x, I.surface + 1)]]).toEqual([T.GRASS, T.DIRT]);
+      for (let y = 0; y < I.surface; y++) expect([T.AIR, T.WOOD, T.LEAVES]).toContain(col.fg[li(x, y)]);
       isl++;
     }
     expect(isl).toBeGreaterThan(0);
