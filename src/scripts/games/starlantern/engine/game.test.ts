@@ -39,7 +39,8 @@ import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, 
 import { fragmentItem } from './story/fragments';
 import type { FragmentGain } from './story/memories';
 import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, lineCap, memScene, type SceneId } from '../data/story/scenes';
-import { STORY } from '../data/story.zh-TW';
+import { NIGHT_BEATS, STORY, type ScriptLine } from '../data/story.zh-TW';
+import { planNight } from './story/nights';
 import { linesOf } from '../ui2/story';
 import { chainLength } from '../data/story/chains';
 import { SKILLS } from '../data/skills';
@@ -4429,5 +4430,145 @@ describe('story L: pieces wait to be told (Task 2a)', () => {
     const h = run(1, (x) => { x.state.party.roster.rin.memories = 1; x.state.story.untold = ['mem:rin:1']; }, road);
     expect(h.tellEarly('mem:rin:1')).toBe(true);
     expect(loadGame(road).status).toBe('empty');
+  });
+});
+
+describe('story L: the night in the game (Task 3b)', () => {
+  const duo: CharacterId[] = ['hero', 'rin'];
+  /** A game in town, the opening behind it, whose untold memories are `list` (each owner met, the earlier pieces told). */
+  const withUntold = (list: SceneId[], storage = memoryStorage(), tweak: (g: Game) => void = () => {}) => {
+    const g = new Game(calm(), storage, undefined, 0, duo);
+    g.state.story.queue = [];
+    g.state.story.seen = ['prologue', 'prologue-inn'];
+    for (const id of list) {
+      const [, c, k] = id.split(':') as [string, CharacterId, string];
+      if (!g.state.party.recruited.includes(c)) g.state.party = meet(g.state.party, c, 1);
+      const m = g.state.party.roster[c];
+      m.memories = Math.max(m.memories ?? 0, Number(k));
+      for (let n = 1; n < Number(k); n++) if (!list.includes(memScene(c, n)) && !g.state.story.seen.includes(memScene(c, n))) g.state.story.seen.push(memScene(c, n));
+    }
+    g.state.story.untold = [...list];
+    tweak(g);
+    return g;
+  };
+  /** Out through the mainline at depth 1 and straight back in by the entrance. */
+  const trip = (g: Game) => {
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+  };
+  const five: SceneId[] = ['mem:hero:3', 'mem:selene:1', 'mem:noel:1', 'mem:safira:1', 'mem:bobby:1'];
+
+  it('a return plans the night and saves it in tonight', () => {
+    const g = withUntold(five);
+    trip(g);
+    // backlog 5, cap 2: Lorne first
+    expect(g.night).toHaveLength(2);
+    expect(g.night[0]).toBe('mem:hero:3');
+    expect(g.state.story.tonight).toEqual(g.night);
+    expect(g.arrival.filter((id) => id.startsWith('mem:'))).toEqual([]);
+    expect(g.night).toEqual(planNight(g.state, g.arrival).night);
+    // told at night, a memory is done: seen, out of untold and tonight
+    expect(g.sceneDone(g.night[0], 'played')).toBe(true);
+    expect(g.state.story.seen).toContain('mem:hero:3');
+    expect(g.state.story.untold).not.toContain('mem:hero:3');
+    expect(g.state.story.tonight).not.toContain('mem:hero:3');
+    expect(g.night).not.toContain('mem:hero:3');
+    expect(g.sceneDone('mem:noel:2', 'played')).toBe(false);   // nothing anyone holds
+  });
+
+  it('a reload mid-night plays the rest of tonight, no more', () => {
+    const storage = memoryStorage();
+    const g = withUntold(five, storage);
+    trip(g);
+    const night = [...g.night];
+    expect(night).toHaveLength(2);
+    g.sceneDone(night[0], 'played');   // town saves at once
+    const b = Game.boot(calm(), storage);
+    expect(b.night).toEqual(night.slice(1));
+    expect(b.arrival.filter((id) => id.startsWith('mem:'))).toEqual([]);
+    expect(b.sceneDone(night[1], 'played')).toBe(true);
+    expect(b.night).toEqual([]);
+    expect(Game.boot(calm(), storage).night).toEqual([]);
+  });
+
+  it('a new return replaces tonight; what was not played stays untold', () => {
+    const g = withUntold(five);
+    trip(g);
+    const [first, second] = g.night;
+    g.sceneDone(first, 'played');
+    trip(g);
+    expect(g.state.story.untold).toContain(second);
+    expect(g.state.story.untold).not.toContain(first);
+    expect(g.state.story.tonight).toEqual(g.night);
+    expect(g.night).not.toContain(first);
+  });
+
+  it('a lamp return and a wipe have a night too', () => {
+    const lamp = withUntold(five);
+    lamp.state.inventory['return-lamp'] = 1;
+    expect(lamp.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(lamp.useReturnLamp()).toBe(true);
+    expect(lamp.night).toHaveLength(2);
+    expect(lamp.state.story.tonight).toEqual(lamp.night);
+    const wiped = withUntold(five);
+    expect(wiped.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(stepOnto(wiped, plantAt(wiped, 'elite')).kind).toBe('battle');
+    for (const c of wiped.battle!.party) { c.hp = 0; c.alive = false; }
+    expect(wiped.submitRound({})!.end!.outcome).toBe('lose');
+    expect(wiped.phase).toBe('town');
+    expect(wiped.night).toHaveLength(2);
+    expect(wiped.state.story.tonight).toEqual(wiped.night);
+  });
+
+  it('owed pieces lead the arrival, ahead of the act', () => {
+    const g = withUntold(['mem:selene:1', 'mem:hero:3', 'mem:rin:2', 'mem:noel:1']);
+    g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
+    trip(g);
+    expect(g.arrival.slice(0, 3)).toEqual(['mem:hero:3', 'mem:rin:2', 'act2']);
+    expect(g.night).toEqual(['mem:selene:1']);   // backlog 2, cap 1
+    expect(g.state.story.tonight).toEqual(['mem:hero:3', 'mem:rin:2', 'mem:selene:1']);
+    // a reload puts the owed ones back ahead of the act
+    const storage = memoryStorage();
+    saveGame(storage, g.state);
+    const b = Game.boot(calm(), storage);
+    expect(b.arrival.slice(0, 3)).toEqual(['mem:hero:3', 'mem:rin:2', 'act2']);
+    expect(b.night).toEqual(['mem:selene:1']);
+  });
+
+  it("untold hero pieces join the finale's list in piece order and leave untold", () => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, duo);
+    g.state.dungeon.reached.mainline = FINALE_DEPTH;
+    g.state.party.roster.hero.memories = 8;
+    Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    for (const node of ['act2', 'act3', 'act4'] as const) { g.state.story.nodes.push(node); g.state.story.seen.push(node); }
+    g.state.story.untold = ['mem:hero:8', 'mem:hero:7'];
+    g.state.story.tonight = ['mem:hero:8'];
+    expect(g.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces.filter((id) => id.startsWith('mem:hero:'))).toEqual(['mem:hero:7', 'mem:hero:8', 'mem:hero:9', 'mem:hero:10']);
+    expect(g.state.story.untold).toEqual([]);
+    expect(g.state.story.tonight).toEqual([]);
+  });
+
+  it('takeBeat moves the cursor and saves it; a reload gives the next line, not the same one', () => {
+    const lines: ScriptLine[] = [{ who: 'narrator', text: '一' }, { who: 'narrator', text: '二' }];
+    NIGHT_BEATS.lines.push(...lines);
+    try {
+      const storage = memoryStorage();
+      const g = withUntold(five, storage);
+      expect(g.takeBeat('mem:selene:1', 'mem:noel:1')).toEqual(lines[0]);
+      expect(g.state.story.beat).toBe(1);
+      const b = Game.boot(calm(), storage);
+      expect(b.state.story.beat).toBe(1);
+      expect(b.takeBeat('mem:selene:1', 'mem:noel:1')).toEqual(lines[1]);
+      expect(b.state.story.beat).toBe(0);   // past the end, back to the start
+    } finally {
+      NIGHT_BEATS.lines.splice(0);
+    }
+    // no pool, no beat, and the cursor stays where it was
+    const g = withUntold(five);
+    expect(g.takeBeat('mem:selene:1', 'mem:noel:1')).toBeNull();
+    expect(g.state.story.beat).toBeUndefined();
   });
 });

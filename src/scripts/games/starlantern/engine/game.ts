@@ -33,6 +33,8 @@ import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { nextLead } from './story/leads';
 import { afterWin, arrivalScenes, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
+import { NIGHT_BEATS, type ScriptLine } from '../data/story.zh-TW';
+import { nextBeat, planNight, restoreNight } from './story/nights';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeFail, RerollOpts } from './forge/cost';
@@ -137,6 +139,11 @@ export class Game {
   pending: SceneId[] = [];
   /** The scenes the town should play on this arrival, in order (not saved: a reload rebuilds it from the queue). */
   arrival: SceneId[] = [];
+  /**
+   * Story L spec §4.5, §4.6: this return's night, the memories the town tells after the day's notices, in order. Not saved:
+   * `story.tonight` keeps the picks, and a reload rebuilds it from what tonight still holds untold.
+   */
+  night: SceneId[] = [];
   /** Whether this arrival's portal reroll is spent (not saved): `boot` sets it, so a reload grants none; `toTown` and `wipe` clear it. */
   private rerolled = false;
   /**
@@ -183,6 +190,10 @@ export class Game {
     if (r.status === 'ok' && previous?.notice === 'tree-reworked') g.notice = 'tree-reworked';
     g.rerolled = true;
     g.arrival = arrivalScenes(g.state, { chat: false });
+    // Story L spec §4.6: the night is not picked again; what tonight still holds untold plays, the owed ones first.
+    const plan = restoreNight(g.state, g.arrival);
+    g.arrival = [...plan.before, ...g.arrival];
+    g.night = plan.night;
     return g;
   }
 
@@ -1183,10 +1194,11 @@ export class Game {
    * finale, one of its own scenes. It leaves that list and the story queue; town saves at once.
    */
   sceneDone(id: SceneId, how: 'played' | 'skipped' | 'auto'): boolean {
-    const due = this.arrival.includes(id) || this.pending.includes(id) || (this.finale !== null && (id === 'finale' || this.finale.pieces.includes(id)))
+    const due = this.arrival.includes(id) || this.night.includes(id) || this.pending.includes(id) || (this.finale !== null && (id === 'finale' || this.finale.pieces.includes(id)))
       || id === this.departScene();
     if (!due) return false;
     this.arrival = this.arrival.filter((s) => s !== id);
+    this.night = this.night.filter((s) => s !== id);
     this.pending = this.pending.filter((s) => s !== id);
     this.state = sceneDone(this.state, id, how);
     // Inside the finale, a scene its own list covers never waits in the queue (Task 3 review): the keeper her confession
@@ -1212,6 +1224,18 @@ export class Game {
     return true;
   }
 
+  /**
+   * Story L spec §4.4.1: the beat said between memories `prev` and `next` of a night, or null when there is none (no pool,
+   * or no line fits). The cursor moves past it, so a reload gives the next line, not the same one; town saves at once.
+   */
+  takeBeat(prev: SceneId, next: SceneId): ScriptLine | null {
+    const r = nextBeat(this.state, prev, next);
+    if (!r) return null;
+    this.state.story.beat = (r.at + 1) % NIGHT_BEATS.lines.length;
+    this.saveInTown();
+    return r.line;
+  }
+
   /** The handbook opened a scene: it is no longer new. Town saves at once. */
   markRead(id: SceneId): void {
     this.state = markRead(this.state, id);
@@ -1222,10 +1246,17 @@ export class Game {
     if (this.phase === 'town' && this.storage && !saveGame(this.storage, this.state)) this.notice = 'save-failed';
   }
 
-  /** What a return to town queues: acts reached, Rin's reveal; then the arrival, with one chat and one banter (B1). */
+  /**
+   * What a return to town queues: acts reached, Rin's reveal; then the arrival, with one chat and one banter (B1). Story L
+   * spec §4.6: then the night (`planNight`), kept in `story.tonight`; the memories the day owes lead the arrival.
+   */
   private arrive(afterFinale = false): void {
     this.state.story = onReturn(this.state);
-    this.arrival = arrivalScenes(this.state, { chat: true, afterFinale });
+    const day = arrivalScenes(this.state, { chat: true, afterFinale });
+    const plan = planNight(this.state, day);
+    this.state.story.tonight = [...plan.before, ...plan.night];
+    this.arrival = [...plan.before, ...day];
+    this.night = plan.night;
     this.leadSaid = false;
   }
 

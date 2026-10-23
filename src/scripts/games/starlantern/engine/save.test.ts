@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import type { CharacterId } from './types';
 import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
+import { NIGHT_BEATS } from '../data/story.zh-TW';
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -1049,5 +1050,33 @@ describe('story L: untold and tonight in the save (Task 2a)', () => {
     const stranger = newGame();
     stranger.story.untold = ['mem:noel:1'];
     expect(status(stranger), 'not met').toBe('corrupt');
+  });
+});
+
+describe('story L: the beat cursor in the save (Task 3b)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+
+  it('beat saves and loads; a cursor past the pool is refused', () => {
+    NIGHT_BEATS.lines.push({ who: 'narrator', text: '一' }, { who: 'narrator', text: '二' });
+    try {
+      const st = memoryStorage();
+      const g = newGame();
+      g.story.beat = 1;
+      expect(saveGame(st, g)).toBe(true);
+      const r = loadGame(st);
+      expect(r.status === 'ok' && r.state.story.beat).toBe(1);
+      for (const bad of [2, -1, 0.5, '1', null]) {
+        const b = newGame();
+        (b.story as { beat?: unknown }).beat = bad;
+        expect(status(b), String(bad)).toBe('corrupt');
+      }
+      expect(status(newGame())).toBe('ok');   // absent reads as 0
+    } finally {
+      NIGHT_BEATS.lines.splice(0);
+    }
+    // with no pool written there is no cursor to keep
+    const g = newGame();
+    g.story.beat = 0;
+    expect(status(g)).toBe('corrupt');
   });
 });

@@ -17,6 +17,7 @@ import { BANTER_PAIRS, isSceneId, type BanterPair } from '../data/story/scenes';
 import { MAX_WAITED } from './story/events';
 import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
+import { NIGHT_BEATS } from '../data/story.zh-TW';
 import type { CharacterId, ItemInstance, Member, Slot } from './types';
 
 export const SAVE_KEY = 'starlantern-save';
@@ -98,6 +99,8 @@ function isStory(v: unknown): boolean {
   // story L: untold memories, each once, never seen nor queued; tonight's picks among them
   if (v.untold !== undefined && !(isUniqueList(v.untold, (x) => isSceneId(x) && x.startsWith('mem:')) && v.untold.every((id) => !(v.seen as unknown[]).includes(id) && !(v.queue as unknown[]).includes(id)))) return false;
   if (v.tonight !== undefined && !(isUniqueList(v.tonight, isSceneId) && v.tonight.every((id) => ((v.untold ?? []) as unknown[]).includes(id)))) return false;
+  // story L: the beat cursor, a line of the pool (none while the pool is empty)
+  if (v.beat !== undefined && !(Number.isInteger(v.beat) && (v.beat as number) >= 0 && (v.beat as number) < NIGHT_BEATS.lines.length)) return false;
   if (v.waited !== undefined && !(isObj(v.waited) && Object.entries(v.waited).every(([k, n]) => BANTER_PAIRS.includes(k as BanterPair) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_WAITED))) return false;
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }
