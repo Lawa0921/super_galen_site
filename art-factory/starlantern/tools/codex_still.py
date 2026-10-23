@@ -23,8 +23,9 @@ def _sha(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def _now(): return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
 
-def codex_command(prompt, images=(), codex='codex'):
-    argv = [codex, 'exec', '--skip-git-repo-check', '-s', 'workspace-write']
+def codex_command(prompt, images=(), codex='codex', model=None):
+    """model=None keeps the codex config default; a name overrides it for this one call only (config is never edited)."""
+    argv = [codex, 'exec', '--skip-git-repo-check', '-s', 'workspace-write'] + (['-m', model] if model else [])
     argv += [f'--image={Path(p).resolve()}' for p in images]
     return argv + [prompt]
 
@@ -39,13 +40,13 @@ def newest_generated(since, root=GENERATED):
     return max(found, key=lambda p: p.stat().st_mtime) if found else None
 
 
-def run_codex(prompt, workdir, name, images=(), runner=subprocess.run, codex=None, generated_root=GENERATED, timeout=900):
+def run_codex(prompt, workdir, name, images=(), runner=subprocess.run, codex=None, generated_root=GENERATED, timeout=900, model=None):
     """Run one codex image_gen call in workdir; returns the .gen.json record (output may be None on failure)."""
     workdir = Path(workdir); workdir.mkdir(parents=True, exist_ok=True)
     if (workdir/name).exists(): raise FileExistsError(f'{workdir/name} exists; use a new name for a new generation')
     full = prompt.rstrip() + COPY_SUFFIX.format(gen=generated_root, name=name)
     (workdir/f'{Path(name).stem}.prompt.txt').write_text(full, encoding='utf-8')
-    argv = codex_command(full, images, codex or shutil.which('codex') or 'codex')
+    argv = codex_command(full, images, codex or shutil.which('codex') or 'codex', model)
     start = time.time()
     with open(workdir/f'{Path(name).stem}.codex.log', 'w', encoding='utf-8') as log:
         proc = runner(argv, cwd=str(workdir), stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, timeout=timeout,
@@ -55,7 +56,7 @@ def run_codex(prompt, workdir, name, images=(), runner=subprocess.run, codex=Non
         fallback = newest_generated(start - 2, generated_root)  # 2 s slack for file-time granularity
         if fallback is not None: shutil.copyfile(fallback, out)
     record = {'tool': 'codex', 'name': name, 'started': datetime.fromtimestamp(start, timezone.utc).isoformat(timespec='seconds'),
-              'finished': _now(), 'argv_without_prompt': argv[:-1], 'prompt_file': f'{Path(name).stem}.prompt.txt',
+              'finished': _now(), 'model': model, 'argv_without_prompt': argv[:-1], 'prompt_file': f'{Path(name).stem}.prompt.txt',
               'prompt_sha256': hashlib.sha256(full.encode('utf-8')).hexdigest(),
               'inputs': [{'path': str(Path(p).resolve()), 'sha256': _sha(p)} for p in images],
               'returncode': getattr(proc, 'returncode', None), 'output': name if out.exists() else None,
@@ -190,6 +191,7 @@ def main(argv=None):
     g.add_argument('--name', required=True, help='output PNG file name inside workdir (new name per attempt)')
     g.add_argument('--prompt-file', required=True, type=Path)
     g.add_argument('--image', action='append', default=[], type=Path, help='reference image (passed as --image=PATH)')
+    g.add_argument('--model', help='codex model for this call only (default: the codex config model)')
     for p in (g, sub.add_parser('postprocess', help='re-run postprocess + gate on an existing raw PNG')):
         p.add_argument('--height-range', type=_range, help='accepted art-pixel height, e.g. 54-62')
         strips = p.add_mutually_exclusive_group()
@@ -199,7 +201,7 @@ def main(argv=None):
     sub.choices['postprocess'].add_argument('--raw', required=True, type=Path)
     args = ap.parse_args(argv)
     if args.command == 'generate':
-        record = run_codex(args.prompt_file.read_text(encoding='utf-8'), args.workdir, args.name, args.image)
+        record = run_codex(args.prompt_file.read_text(encoding='utf-8'), args.workdir, args.name, args.image, model=args.model)
         if record['output'] is None: print(json.dumps(record, ensure_ascii=False)); return 2
         raw = args.workdir/args.name
     else:
