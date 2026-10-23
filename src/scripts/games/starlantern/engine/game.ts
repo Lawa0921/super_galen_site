@@ -1233,6 +1233,8 @@ export class Game {
     story.untold = story.untold.filter((u) => u !== id);
     if (story.tonight) story.tonight = story.tonight.filter((u) => u !== id);
     if (!story.seen.includes(id)) story.seen.push(id);
+    this.night = this.night.filter((u) => u !== id);   // a night that held it skips it, and calls no one else
+    this.eve = this.eve.filter((u) => u !== id);
     this.saveInTown();
     return true;
   }

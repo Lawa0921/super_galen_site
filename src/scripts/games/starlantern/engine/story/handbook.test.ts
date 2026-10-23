@@ -302,13 +302,39 @@ describe("the adventurer's handbook", () => {
     expect(h3.people.find((p) => p.id === 'rin')!.scenes.map((e) => e.scene)).toEqual(['prologue-inn']);   // not the first return, unseen
   });
 
-  it('a piece is replayable only when it is found and seen: a found piece may still be queued', () => {
+  it('a piece is playable when it is found and seen, or found and untold (story L spec §4.7)', () => {
     const s = withMemories(fresh(), 'noel', 2);
     s.story.seen = [memScene('noel', 1)];
-    s.story.queue = [memScene('noel', 2)];
+    s.story.untold = [memScene('noel', 2)];
     const noel = handbook(s).memories.find((m) => m.id === 'noel')!;
     expect(noel.pieces.map((p) => p.found)).toEqual([true, true, false, false, false]);
     expect(noel.pieces.map((p) => p.seen)).toEqual([true, false, false, false, false]);
+    expect(noel.pieces.map((p) => p.untold)).toEqual([false, true, false, false, false]);
+  });
+
+  it('an untold piece is playable and new; a character row is new while any is (story L Task 4)', () => {
+    const s = withMemories(withMemories(fresh(), 'noel', 3), 'selene', 1);
+    s.story.seen = [memScene('noel', 1), memScene('selene', 1)];
+    s.story.untold = [memScene('noel', 3), memScene('noel', 2)];
+    const page = (id: CharacterId) => handbook(s).memories.find((m) => m.id === id)!;
+    const noel = page('noel');
+    expect(noel.pieces.map((p) => p.untold)).toEqual([false, true, true, false, false]);
+    expect(noel.pieces.map((p) => p.fresh)).toEqual([false, true, true, false, false]);   // untold reads as new
+    expect(noel.fresh).toBe(true);
+    expect(page('selene').fresh).toBe(false);            // told and opened: nothing new
+    // told one by one, the row stays new while any is untold, then it is not
+    s.story.untold = [memScene('noel', 3)];
+    s.story.seen.push(memScene('noel', 2));
+    expect(page('noel').fresh).toBe(true);
+    s.story.untold = [];
+    s.story.seen.push(memScene('noel', 3));
+    expect(page('noel').fresh).toBe(false);
+    expect(page('noel').pieces.every((p) => !p.untold)).toBe(true);
+    // a piece the story setting skipped (auto) is seen and new: the row is new for it as well
+    s.story.fresh = [memScene('noel', 3)];
+    expect(page('noel').fresh).toBe(true);
+    // an unmet one has no row to mark
+    expect(page('bobby').fresh).toBe(false);
   });
 
   it('a set piece is listed under its set only, never under the specials too', () => {

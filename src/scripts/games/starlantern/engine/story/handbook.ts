@@ -14,9 +14,13 @@ import { MEETINGS } from '../../data/meetings';
 import { followedLeads, nextLead, type Lead } from './leads';
 import { storyPieces } from './events';
 
-/** `seen` is what makes a piece replayable: a found piece can still be waiting in the story queue. */
-export interface PiecePage { n: number; scene: SceneId; found: boolean; seen: boolean; fresh: boolean; hint: string }
-export interface MemoryPage { id: CharacterId; met: boolean; pieces: PiecePage[] }
+/**
+ * A found piece plays when it is told (`seen`) or still untold (story L spec §4.7: the handbook may tell it early). `fresh` is
+ * the 新 mark: opened by the story setting's auto-skip and not read since, or untold.
+ */
+export interface PiecePage { n: number; scene: SceneId; found: boolean; seen: boolean; untold: boolean; fresh: boolean; hint: string }
+/** `fresh`: her row's 新 mark, while any piece of hers is new (untold, or not read since an auto-skip). */
+export interface MemoryPage { id: CharacterId; met: boolean; fresh: boolean; pieces: PiecePage[] }
 /** A scene the handbook can replay: only scenes already seen are listed. */
 export interface SceneEntry { scene: SceneId; title: string; fresh: boolean }
 export interface PersonPage { id: CharacterId; met: boolean; title: string; segments: string[]; scenes: SceneEntry[] }
@@ -50,15 +54,17 @@ function entryMaker(s: GameState) {
 /** Everything the adventurer's handbook shows, from the state alone. */
 export function handbook(s: GameState): Handbook {
   const { entry, entries, fresh, seen } = entryMaker(s);
+  const untold = new Set<SceneId>(s.story.untold ?? []);
   const memories = CHARACTER_IDS.map((id): MemoryPage => {
     const have = memoriesOf(s.party.roster[id]);
-    return {
-      id, met: s.party.recruited.includes(id),
-      pieces: CHAINS[id].pieces.map((_, i) => {
-        const scene = memScene(id, i + 1);
-        return { n: i + 1, scene, found: i + 1 <= have, seen: seen.has(scene), fresh: fresh.has(scene), hint: hintOf(id, i) };
-      }),
-    };
+    const met = s.party.recruited.includes(id);
+    const pieces = CHAINS[id].pieces.map((_, i): PiecePage => {
+      const scene = memScene(id, i + 1);
+      const found = i + 1 <= have;
+      const waits = found && untold.has(scene);
+      return { n: i + 1, scene, found, seen: seen.has(scene), untold: waits, fresh: fresh.has(scene) || waits, hint: hintOf(id, i) };
+    });
+    return { id, met, fresh: met && pieces.some((p) => p.found && (p.seen || p.untold) && p.fresh), pieces };
   });
   const people = CHARACTER_IDS.map((id): PersonPage => {
     const m = s.party.roster[id];

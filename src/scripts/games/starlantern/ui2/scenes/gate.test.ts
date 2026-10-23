@@ -16,6 +16,8 @@ import { chainLength } from '../../data/story/chains';
 import { activeIds } from '../../engine/party';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { linesOf } from '../story';
+import { handbook } from '../../engine/story/handbook';
+import { planNight } from '../../engine/story/nights';
 
 function setup(prep?: (g: Game) => void, art: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
@@ -508,5 +510,53 @@ describe('GateScene: the night before the descent (story L Task 3d)', () => {
     } finally {
       NIGHT_BEATS.lines.splice(0);
     }
+  });
+
+  it("the eve's memories, once watched (or cut short), are told: never 新 in the handbook, never picked again (story L ruling)", async () => {
+    const game = new Game(constRng(0.5), null);
+    game.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }];
+    Object.assign(game.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    game.state.story.seen.push('rin-reveal', 'rin-confess', 'bellkeeper-arrives');
+    game.state.story.queue = ['finale-eve'];
+    for (const c of ['selene', 'noel', 'bobby'] as const) {
+      game.state.party = meet(game.state.party, c, 1);
+      game.state.party.roster[c].memories = 1;
+    }
+    const watched = ['mem:selene:1', 'mem:noel:1', 'mem:bobby:1'] as const;
+    game.state.story.untold = [...watched];
+    game.state.story.tonight = ['mem:selene:1'];
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' as const, story: 'all' as const }) };
+    const s = new GateScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+    s.enter(root);
+    s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm');
+    s.onAction('up'); s.onAction('confirm');
+    await tick();
+    // the eve's line and its first memory read through; the second cut short (the summary, then on); the third read through
+    let cut = false;
+    for (let i = 0; i < 40 && !go.mock.calls.length; i++) {
+      const text = root.querySelector('.slx-talk .slx-text')?.textContent ?? '';
+      if (!cut && game.state.story.seen.includes(watched[0]) && text === linesOf(game.eve[0] ?? watched[1], game.state)[0].text) { cut = true; s.onAction('cancel'); await tick(); }
+      s.onAction('confirm');
+      await tick();
+    }
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(cut).toBe(true);
+    const story = game.state.story;
+    for (const id of watched) {
+      expect(story.seen, id).toContain(id);
+      expect(story.fresh, id).not.toContain(id);
+      expect(story.untold, id).not.toContain(id);
+      expect(story.tonight ?? [], id).not.toContain(id);
+    }
+    const h = handbook(game.state);
+    for (const c of ['selene', 'noel', 'bobby'] as const) {
+      const page = h.memories.find((m) => m.id === c)!;
+      expect(page.fresh, c).toBe(false);
+      expect(page.pieces[0], c).toMatchObject({ seen: true, untold: false, fresh: false });
+    }
+    // a later night never picks them again
+    expect(planNight(game.state, []).night).toEqual([]);
   });
 });

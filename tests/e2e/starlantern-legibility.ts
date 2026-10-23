@@ -370,6 +370,24 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   })),
   {
+    // Story L: a memory piece found and still untold is listed and marked 新 (and so is its owner's row); reading it tells it.
+    name: 'handbook-new', visit: async (page) => {
+      await page.evaluate(() => {
+        const d = (window as unknown as { __starlanternDebug: { game: { state: { party: { roster: { rin: { memories?: number } } }; story: { seen: string[]; untold?: string[] } } } } }).__starlanternDebug;
+        const { story, party } = d.game.state;
+        const k = [1, 2, 3, 4, 5, 6, 7].find((n) => !story.seen.includes(`mem:rin:${n}`) && !(story.untold ?? []).includes(`mem:rin:${n}`));
+        if (!k) return;
+        party.roster.rin.memories = Math.max(party.roster.rin.memories ?? 0, k);
+        story.untold = [...(story.untold ?? []), `mem:rin:${k}`];
+      });
+      await go(page, 'handbook');
+      const rin = page.locator('.slx-handbook .slx-hb-list [role=option][data-id=rin]');
+      await expect(rin.locator('.slx-fresh')).toHaveText(T.ui2.handbook.fresh);
+      await rin.click();
+      await expect(page.locator('.slx-handbook .slx-hb-list [role=option] .slx-fresh').first()).toHaveText(T.ui2.handbook.fresh);
+    },
+  },
+  {
     // The first workshop visit with runes in the bag tells the rune tutorial (plan 8g).
     name: 'rune-tutorial', visit: async (page, w) => {
       await go(page, 'workshop');
