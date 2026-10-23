@@ -1,4 +1,8 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { TIERS } from '../../data/difficulty';
+import { RUNE_LEGENDARY } from '../../data/runeEconomy';
+import { depthLevel } from '../levels';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -186,3 +190,43 @@ describe('the rune bag and its stack (plan 8f Task 1)', () => {
     expect(ownedCount(newGame(undefined, 0, STANDARD_LINEUP), spreadMagic)).toBe(0);
   });
 });
+
+describe("a tier's runes (difficulty plan Task 4)", () => {
+  it('no multiplier draws as before', () => {
+    // Guard (green before the implementation): the defaults are the rolls before any tier code (SHA-256 recorded on the
+    // code before this task), and naming them changes nothing.
+    const out: unknown[] = [];
+    for (const source of ['monster', 'chest', 'vault', 'elite', 'boss'] as const) for (const lv of [2, 38, 98]) {
+      const a = mulberry32(lv * 7 + source.length), b = mulberry32(lv * 7 + source.length);
+      for (let i = 0; i < 60; i++) {
+        const r = rollRune(a, source, lv, 'plain');
+        expect(rollRune(b, source, lv, 'plain', 1, undefined)).toEqual(r);
+        out.push(r);
+      }
+      out.push(runeTierWeights(source, lv, 'plain'));
+    }
+    expect(createHash('sha256').update(JSON.stringify(out)).digest('hex')).toBe(PINNED_RUNES);
+  });
+
+  it("Hell's monster rune at depth 25 is magic or better three times in four", () => {
+    const magicUp = (w: Record<string, number>) => (w.magic + w.rare + w.epic) / (w.common + w.magic + w.rare + w.epic);
+    const hell = magicUp(runeTierWeights('monster', depthLevel(25), 'plain', TIERS.hell.runeTierMul));
+    const normal = magicUp(runeTierWeights('monster', depthLevel(25), 'plain'));
+    console.info(`[tiers] monster rune magic+ at d25: normal ${normal.toFixed(3)} hell ${hell.toFixed(3)}`);
+    expect(hell).toBeGreaterThanOrEqual(0.75);
+    expect(normal).toBeLessThan(0.75);
+  });
+
+  it('a tier raises the legendary rune odds', () => {
+    expect(RUNE_LEGENDARY.boss * 2).toBeCloseTo(0.16, 12);
+    expect(rollRune(constRng(0.15), 'boss', 38, 'plain', 1, 2).tier).toBe('legendary');
+    expect(rollRune(constRng(0.17), 'boss', 38, 'plain', 1, 2).tier).not.toBe('legendary');
+    // Without it, 0.15 is past the boss's 0.08.
+    expect(rollRune(constRng(0.15), 'boss', 38, 'plain').tier).not.toBe('legendary');
+    // A monster never rolls a legendary rune, multiplier or not.
+    expect(rollRune(constRng(0), 'monster', 38, 'plain', 1, 2).tier).not.toBe('legendary');
+  });
+});
+
+/** The pre-tier rune rolls (recorded on the code before Task 4). */
+const PINNED_RUNES = '48c815944e3584645f063583c8723f2427c3caaf195a446690346b1f2e0d9e89';

@@ -5,7 +5,9 @@ import { depthLevel } from '../levels';
 import type { Run } from '../dungeon/run';
 import { mulberry32, pick, type Rng } from '../rng';
 import type { ItemInstance, Pos } from '../types';
-import { itemLevel, rollItem, starlitItem, type DropSource } from './item';
+import { itemLevel, rollItem, starlitItem, tierItemLevel, type DropSource } from './item';
+import { tierOf, type TierDef } from '../../data/difficulty';
+import type { Difficulty } from '../battle';
 
 export type Tier = 'common' | 'magic' | 'rare' | 'epic' | 'legendaryTier';
 
@@ -24,6 +26,8 @@ export interface DropCtx {
   ilvl?: number;
   /** The run seed: keys the starlit stream (plan 5g). Without it nothing is ever starlit. */
   seed?: number;
+  /** The difficulty the drop is paid at (difficulty plan Task 4): read through `tierOf`, so Normal and none roll as before. */
+  difficulty?: Difficulty;
 }
 
 /** Plan 5g: the salt of the starlit stream (an unused SHA-256 initial value; see the other salts in this engine). */
@@ -39,9 +43,13 @@ export const STARLIT_CHANCE: Record<'drop' | 'elite' | 'boss', { base: number; p
 };
 const STARLIT_ROW: Record<DropSource, keyof typeof STARLIT_CHANCE> = { monster: 'drop', chest: 'drop', elite: 'elite', vault: 'elite', boss: 'boss' };
 
-/** The chance, among legendary-tier drops from `source` on `depth`, that the piece is starlit. */
-export function starlitChance(source: DropSource, depth: number): number {
+/**
+ * The chance, among legendary-tier drops from `source` on `depth`, that the piece is starlit; on a higher `tier` the
+ * chance and its cap both times `starlitMul` (ruling 11).
+ */
+export function starlitChance(source: DropSource, depth: number, tier?: TierDef): number {
   const c = STARLIT_CHANCE[STARLIT_ROW[source]];
+  if (tier) return Math.min(c.cap * tier.starlitMul, (c.base + c.perDepth * (Math.max(1, depth) - 1)) * tier.starlitMul);
   return Math.min(c.cap, c.base + c.perDepth * (Math.max(1, depth) - 1));
 }
 
@@ -49,14 +57,36 @@ export function starlitChance(source: DropSource, depth: number): number {
  * Plan 5g: a legendary, unique or set drop becomes starlit on its own stream, keyed by the run seed and the item's uid
  * (like chestHasGear), so no other rng is drawn. The stream's first number decides; the rest pick the extra affix.
  */
-export function applyStarlit(it: ItemInstance, ctx: Pick<DropCtx, 'seed' | 'source' | 'depth'>): ItemInstance {
+export function applyStarlit(it: ItemInstance, ctx: Pick<DropCtx, 'seed' | 'source' | 'depth' | 'difficulty'>): ItemInstance {
   if (ctx.seed === undefined || !STARLIT_RARITIES.includes(it.rarity)) return it;
   const r = mulberry32(mix(ctx.seed ^ STARLIT_SALT, it.uid));
-  return r() < starlitChance(ctx.source, ctx.depth) ? starlitItem(it, r) : it;
+  const t = tierOf(ctx.difficulty);
+  return r() < (t ? starlitChance(ctx.source, ctx.depth, t) : starlitChance(ctx.source, ctx.depth)) ? starlitItem(it, r) : it;
 }
 
-/** Relative weights of the five rarity tiers; `depthLv` is the depth's level (not the depth). Epic is cut from rare last. */
-export function rarityWeights(source: DropSource, depthLv: number, cond: ConditionId, bossRepeat = false): Record<Tier, number> {
+/**
+ * Relative weights of the five rarity tiers; `depthLv` is the depth's level (not the depth). Epic is cut from rare last.
+ * With a higher `tier` (difficulty plan ruling 10), after that: rare and epic times `rarityMul`, and the legendary weight
+ * set so its share of the whole is the Normal share times `legendaryShareMul` (at most `legendaryCap`), from every
+ * source alike; without one, the weights as before.
+ */
+export function rarityWeights(source: DropSource, depthLv: number, cond: ConditionId, bossRepeat = false, tier?: TierDef): Record<Tier, number> {
+  return tier ? tierWeights(normalWeights(source, depthLv, cond, bossRepeat), tier) : normalWeights(source, depthLv, cond, bossRepeat);
+}
+
+/** Ruling 10 on Normal weights `w`: p' = min(cap, p x mul); rare and epic x rarityMul; legendary = p' x rest / (1 - p'). */
+function tierWeights(w: Record<Tier, number>, tier: TierDef): Record<Tier, number> {
+  const total = w.common + w.magic + w.rare + w.epic + w.legendaryTier;
+  const p = total > 0 ? w.legendaryTier / total : 0;
+  const share = Math.min(tier.legendaryCap, p * tier.legendaryShareMul);
+  const out = { ...w, rare: w.rare * tier.rarityMul, epic: w.epic * tier.rarityMul };
+  const rest = out.common + out.magic + out.rare + out.epic;
+  out.legendaryTier = (share * rest) / (1 - share);
+  return out;
+}
+
+/** The Normal weights (the function as it was before the tiers). */
+function normalWeights(source: DropSource, depthLv: number, cond: ConditionId, bossRepeat: boolean): Record<Tier, number> {
   const carveEpic = (w: Record<Tier, number>): Record<Tier, number> => {
     w.epic = w.rare * EPIC_SHARE[source];
     w.rare -= w.epic;
@@ -112,8 +142,10 @@ function pickSpecial(rng: Rng, region: RegionId, source: DropSource): SpecialDef
 }
 
 export function rollGear(rng: Rng, ctx: DropCtx): ItemInstance {
-  const tier = rollTier(rng, rarityWeights(ctx.source, depthLevel(ctx.depth), ctx.condition, ctx.bossRepeat));
-  const ilvl = ctx.ilvl ?? itemLevel(ctx.depth, ctx.source);
+  const t = tierOf(ctx.difficulty);
+  const tier = rollTier(rng, t ? rarityWeights(ctx.source, depthLevel(ctx.depth), ctx.condition, ctx.bossRepeat, t) : rarityWeights(ctx.source, depthLevel(ctx.depth), ctx.condition, ctx.bossRepeat));
+  // A higher tier's item level only where the source's own is taken (ruling 11): a given `ilvl` is kept.
+  const ilvl = ctx.ilvl ?? (t ? tierItemLevel(ctx.depth, ctx.source, t) : itemLevel(ctx.depth, ctx.source));
   if (tier === 'legendaryTier') {
     const sp = pickSpecial(rng, ctx.region, ctx.source);
     return applyStarlit(rollItem(rng, { uid: ctx.uid(), ilvl, rarity: sp.rarity, special: sp.id }), ctx);
@@ -121,9 +153,10 @@ export function rollGear(rng: Rng, ctx: DropCtx): ItemInstance {
   return rollItem(rng, { uid: ctx.uid(), ilvl, rarity: tier });
 }
 
-/** A boss drops two pieces: the first on boss odds, the second on elite odds; both at the boss item level. */
+/** A boss drops two pieces: the first on boss odds, the second on elite odds; both at the boss item level (a tier's, once). */
 export function rollBossGear(rng: Rng, ctx: DropCtx): ItemInstance[] {
-  const ilvl = itemLevel(ctx.depth, 'boss');
+  const t = tierOf(ctx.difficulty);
+  const ilvl = t ? tierItemLevel(ctx.depth, 'boss', t) : itemLevel(ctx.depth, 'boss');
   return [rollGear(rng, { ...ctx, source: 'boss', ilvl }), rollGear(rng, { ...ctx, source: 'elite', bossRepeat: false, ilvl })];
 }
 
