@@ -150,7 +150,7 @@
 - 每個畫面在 1280×720、844×390、390×844（觸控直拿，側置）都不溢出、不裁切、沒有水平捲動。
 - **全域 e2e 守門**：
   - 文字只有 12px、24px，粗細 400，第一字型是 Cubic 11，而且 CDP 回報實際使用的平台字型只有 Cubic 11。
-  - 舞台倍率 s 符合裁定 1／2 的 `expectedMode`：`s·d` 是整數；或是 d ≥ 2 時、沒有 s ≥ 1 的整數裝置倍率可用，s = 1；或是 d 不在清單裡，s 是整數。
+  - 舞台倍率 s 符合裁定 1／2 的 `expectedMode`：`s·d` 是整數而且 s ≥ 1；只要沒有 s ≥ 1 的整數裝置倍率可用（任何 d），s 就是剛好 1（控制者 2026-10-23 裁示：清楚比銳利重要，縮小會讓字實體變小）；d 不在清單裡時 s 是整數。倍率依頁面盒（`.slx-body`，高 100dvh 的 size container）以容器查詢選擇，位置也用 cqw／cqh。
 - **不改遊戲邏輯**；`engine/` 不動。
   - 戰鬥閘門在 Task 0、1、4、7 各跑一次。每次都要 `gate: identical`（Task 0 除外），而且 `cmp <gate>/contribution.json src/scripts/games/starlantern/engine/__fixtures__/sim-gate/contribution.8d-final.160.json` 沒有輸出。
   - 不覆寫 `engine/__fixtures__/`。

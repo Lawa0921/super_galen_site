@@ -17,23 +17,27 @@ $slx-down: #ff8a7a;
 $slx-win: rgb(10, 14, 34);
 
 html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; background: #000; }
-// A window smaller than the stage at 1x: the stage stays at 1x and the page scrolls to it (legibility ruling 1).
+// The page's own box, as tall as what shows (100dvh: iPhone Safari's toolbar comes and goes): the stage's scale is chosen
+// on it by container queries and the stage is placed on it (cqw, cqh), so both follow the same height.
+.slx-body { height: 100dvh; container-name: slx-view; container-type: size; }
+// A window smaller than the stage at 1x: the stage stays at 1x and the page scrolls to it (legibility ruling 1). Overflow
+// belongs to the page itself, which no container query can reach, so this one stays a media query.
 @media (max-width: $slx-w - 1px), (max-height: $slx-h - 1px) {
   html:has(.slx-body), .slx-body { overflow: auto; }
 }
 
 // The stage scale --slx-s (legibility ruling 1): each stage pixel is a whole number K of device pixels, s = K / d at the
-// device pixel ratio d, with K = floor(min(vw·d / 640, vh·d / 360)) and s at most 6, but never under 1: where no crisp s
-// of 1 or more fits, s is 1 (readable over crisp: a smaller stage makes the text physically tiny). The corner snaps to a device
-// pixel (--slx-px = 1/d px) with CSS round(); a browser without round() keeps the plain line before it.
+// device pixel ratio d, with K = floor(min(w·d / 640, h·d / 360)) on the page box and s at most 6, but never under 1:
+// where no crisp s of 1 or more fits, s is 1 (readable over crisp: a smaller stage makes the text physically tiny). The
+// corner snaps to a device pixel (--slx-px = 1/d px) with CSS round(); a browser without round() keeps the line before it.
 .slx-screen {
   --slx-s: 1;
   --slx-px: 1px;
   position: absolute;
-  left: max(0px, calc((100vw - #{$slx-w} * var(--slx-s)) / 2));
-  left: max(0px, round(down, calc((100vw - #{$slx-w} * var(--slx-s)) / 2), var(--slx-px)));
-  top: max(0px, calc((100dvh - #{$slx-h} * var(--slx-s)) / 2));
-  top: max(0px, round(down, calc((100dvh - #{$slx-h} * var(--slx-s)) / 2), var(--slx-px)));
+  left: max(0px, calc((100cqw - #{$slx-w} * var(--slx-s)) / 2));
+  left: max(0px, round(down, calc((100cqw - #{$slx-w} * var(--slx-s)) / 2), var(--slx-px)));
+  top: max(0px, calc((100cqh - #{$slx-h} * var(--slx-s)) / 2));
+  top: max(0px, round(down, calc((100cqh - #{$slx-h} * var(--slx-s)) / 2), var(--slx-px)));
   width: $slx-w;
   height: $slx-h;
   overflow: hidden;
@@ -50,40 +54,45 @@ html:has(.slx-body), .slx-body { height: 100%; margin: 0; overflow: hidden; back
 
 // A device pixel ratio the list below does not know: a whole CSS scale, 1 to 6.
 @each $k in 2, 3, 4, 5, 6 {
-  @media (min-width: $slx-w * $k) and (min-height: $slx-h * $k) {
+  @container slx-view (min-width: #{$slx-w * $k}) and (min-height: #{$slx-h * $k}) {
     .slx-screen { --slx-s: #{$k}; }
   }
 }
 // The ratios of common screens and Windows / browser zoom steps: every K for each, smallest first, so the largest that
 // fits wins. They come after the whole scales above and override them.
-$slx-dprs: 1, 1.1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.625, 2.75, 3;
+$slx-dprs: 1, 1.1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.625, 2.75, 3, 3.5, 4;
+@function slx-res($d) { @return '(min-resolution: #{$d - 0.005}dppx) and (max-resolution: #{$d + 0.005}dppx)'; }
 @each $d in $slx-dprs {
-  $res: '(min-resolution: #{$d - 0.005}dppx) and (max-resolution: #{$d + 0.005}dppx)';
-  @media #{$res} {
-    .slx-screen { --slx-d: #{$d}; --slx-px: #{math.div(1px, $d)}; }
-  }
-  @for $k from math.ceil($d) through math.floor(6 * $d) {
-    @media #{$res} and (min-width: #{math.div($slx-w * $k, $d)}) and (min-height: #{math.div($slx-h * $k, $d)}) {
-      .slx-screen { --slx-s: #{math.div($k, $d)}; }
+  @media #{slx-res($d)} {
+    .slx-screen { --slx-px: #{math.div(1px, $d)}; }
+    @for $k from math.ceil($d) through math.floor(6 * $d) {
+      @container slx-view (min-width: #{math.div($slx-w * $k, $d)}) and (min-height: #{math.div($slx-h * $k, $d)}) {
+        .slx-screen { --slx-s: #{math.div($k, $d)}; }
+      }
     }
   }
 }
 
 // A touch phone held upright (legibility ruling 2): the stage is turned a quarter clockwise, so that turning the phone a
-// quarter counter-clockwise into landscape shows it upright, and scaled by the same rule with width and height swapped, under
-// 40px kept for the hint above it: K = floor(min(vw·d / 360, (vh − 40)·d / 640)). Only touch: a narrow desktop window keeps
-// the stage upright at 1x and scrolls.
-$slx-sideways: '(orientation: portrait) and (max-width: #{$slx-w - 1px}) and (pointer: coarse)';
-@media #{$slx-sideways} {
-  .slx-screen {
-    left: max(0px, calc((100vw - #{$slx-h} * var(--slx-s)) / 2));
-    left: max(0px, round(down, calc((100vw - #{$slx-h} * var(--slx-s)) / 2), var(--slx-px)));
-    top: max(40px, calc((100dvh - #{$slx-w} * var(--slx-s)) / 2));
-    top: max(40px, round(down, calc((100dvh - #{$slx-w} * var(--slx-s)) / 2), var(--slx-px)));
-    transform: translateX(calc(#{$slx-h} * var(--slx-s))) rotate(90deg) scale(var(--slx-s));
+// quarter counter-clockwise (to the left) into landscape shows it upright, and scaled by the same rule with width and height
+// swapped, under 40px kept for the hint above it: K = floor(min(w·d / 360, (h − 40)·d / 640)). Only touch: a narrow desktop
+// window keeps the stage upright at 1x and scrolls.
+$slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
+@media (pointer: coarse) {
+  @container slx-view #{$slx-upright} {
+    .slx-screen {
+      left: max(0px, calc((100cqw - #{$slx-h} * var(--slx-s)) / 2));
+      left: max(0px, round(down, calc((100cqw - #{$slx-h} * var(--slx-s)) / 2), var(--slx-px)));
+      top: max(40px, calc((100cqh - #{$slx-w} * var(--slx-s)) / 2));
+      top: max(40px, round(down, calc((100cqh - #{$slx-w} * var(--slx-s)) / 2), var(--slx-px)));
+      transform: translateX(calc(#{$slx-h} * var(--slx-s))) rotate(90deg) scale(var(--slx-s));
+    }
   }
+}
+// The hint is the page's own text, outside the stage: a media query (the body is the container, so it cannot query itself).
+@media (pointer: coarse) and #{$slx-upright} {
   .slx-body::before {
-    content: '請橫拿手機遊玩';
+    content: '請將手機向左轉成橫向';
     position: fixed;
     top: 12px;
     left: 16px;
@@ -94,9 +103,11 @@ $slx-sideways: '(orientation: portrait) and (max-width: #{$slx-w - 1px}) and (po
   }
 }
 @each $d in $slx-dprs {
-  @for $k from math.ceil($d) through math.floor(6 * $d) {
-    @media #{$slx-sideways} and (min-resolution: #{$d - 0.005}dppx) and (max-resolution: #{$d + 0.005}dppx) and (min-width: #{math.div($slx-h * $k, $d)}) and (min-height: #{math.div($slx-w * $k, $d) + 40px}) {
-      .slx-screen { --slx-s: #{math.div($k, $d)}; }
+  @media (pointer: coarse) and #{slx-res($d)} {
+    @for $k from math.ceil($d) through math.floor(6 * $d) {
+      @container slx-view #{$slx-upright} and (min-width: #{math.div($slx-h * $k, $d)}) and (min-height: #{math.div($slx-w * $k, $d) + 40px}) {
+        .slx-screen { --slx-s: #{math.div($k, $d)}; }
+      }
     }
   }
 }
@@ -884,9 +895,10 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
 .slx-item-detail .slx-hint, .slx-item-detail .slx-desc { margin: 4px 0 0; }
 .slx-bag-menu { left: 96px; top: 96px; min-width: 200px; z-index: 2; }
 
-// Impact: the whole screen jolts (translate composes with the scale transform), heavy hits redden the edges
-.slx-shake-s { animation: slx-shake-s 0.25s linear 1; }
-.slx-shake-l { animation: slx-shake-l 0.42s linear 1; }
+// Impact: everything inside the stage jolts, in stage px along the stage's own axes (a phone turns the stage, and its
+// scale may be a fraction); heavy hits redden the edges
+.slx-shake-s > * { animation: slx-shake-s 0.25s linear 1; }
+.slx-shake-l > * { animation: slx-shake-l 0.42s linear 1; }
 @keyframes slx-shake-s { 0%, 100% { translate: 0 0; } 25% { translate: -3px 1px; } 50% { translate: 3px -1px; } 75% { translate: -2px 0; } }
 @keyframes slx-shake-l {
   0%, 100% { translate: 0 0; } 10% { translate: -9px 4px; } 22% { translate: 8px -4px; } 34% { translate: -7px 3px; }

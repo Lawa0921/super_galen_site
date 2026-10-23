@@ -153,7 +153,7 @@ test.describe('starlantern', () => {
       expect(b.y).toBeGreaterThanOrEqual(40);
       expect(b.x + b.width).toBeLessThanOrEqual(w + 0.5);
       const hint = await page.evaluate(() => { const cs = getComputedStyle(document.body, '::before'); return { content: cs.content, size: cs.fontSize }; });
-      expect(hint).toEqual({ content: '"請橫拿手機遊玩"', size: '12px' });
+      expect(hint).toEqual({ content: '"請將手機向左轉成橫向"', size: '12px' });   // the stage turns upright when the phone turns left
       expect(await legibility(page)).toEqual([]);
     }
   });
@@ -1745,6 +1745,8 @@ test.describe('starlantern', () => {
         await expect(page.locator('.slx-portal')).toHaveCount(3);
         // Every card, the mainline too: its banner art is shown, nothing in it is clipped, and the region gear list does not scroll.
         await page.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>('.slx-portal-art')].every((i) => i.complete));
+        // k below reads the drawn scale off a card's height: that holds only for an upright stage (desktop sizes here).
+        expect((await stageScale(page)).kind).toBe('scale');
         const r = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.slx-portal')].map((c) => {
           const g = c.querySelector<HTMLElement>('.slx-portal-gear');
           const art = c.querySelector<HTMLImageElement>('.slx-portal-art');

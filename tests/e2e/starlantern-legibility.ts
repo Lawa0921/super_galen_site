@@ -474,7 +474,7 @@ export type Rect = { x: number; y: number; width: number; height: number };
 export type StageMode = { kind: 'scale' | 'sideways'; s: number };
 
 /** The device pixel ratios the stylesheet knows (ruling 1); any other gets a whole CSS scale. */
-export const KNOWN_DPR = [1, 1.1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.625, 2.75, 3] as const;
+export const KNOWN_DPR = [1, 1.1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.625, 2.75, 3, 3.5, 4] as const;
 
 /**
  * The stage scale ruling 1 (and, for a touch phone held upright, ruling 2) gives a `vw` x `vh` window at device pixel ratio
