@@ -928,7 +928,7 @@ export class DelveGame {
     const w = this.world;
     if (!w.isResident(n)) return;
     const sx = Math.max(cx, n) * CHUNK;
-    const central = (x: number): boolean => x >= 0 && x < w.width;
+    const central = (x: number): boolean => w.isLegacyCentral(x);
     if (central(sx - 1) || central(sx)) { this.liquids.wakeSeam(sx); return; }
     for (let cy = 0; cy < w.chunksY; cy++) {
       const a = w.chunkIndex(cx, cy), b = w.chunkIndex(n, cy);

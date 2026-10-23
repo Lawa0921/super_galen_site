@@ -9,9 +9,9 @@ import type { World } from '../engine/world';
  * 遠景地平線用的「看得到的地表」：中央照舊 surfaceAt；外圍有水的欄（海）取 min(地表, 水面)——
  * surfaceAt 在海上是海床（水面下 ~46 格），拿它當地平線遠山會沉到水裡。
  */
-export function horizonSurfaceAt(w: Pick<World, 'width' | 'source' | 'surfaceAt'>, x: number): number {
+export function horizonSurfaceAt(w: Pick<World, 'width' | 'source' | 'surfaceAt' | 'isLegacyCentral'>, x: number): number {
   const s = w.surfaceAt(x);
-  if (x >= 0 && x < w.width) return s;
+  if (w.isLegacyCentral(x)) return s;
   const top = w.source?.waterTopAt?.(x);
   return top === null || top === undefined ? s : Math.min(s, top);
 }

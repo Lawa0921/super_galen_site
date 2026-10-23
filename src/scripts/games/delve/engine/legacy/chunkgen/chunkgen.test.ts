@@ -321,3 +321,19 @@ describe('BIOME.OCEAN（v1 海區）', () => {
     expect(gen.profile.biomeAt(4200 + SEA_W + 50)).not.toBe(BIOME.OCEAN);
   });
 });
+
+describe('OuterGen.regionAt（v1 地區）', () => {
+  it('海 = landmass 1 / sea / OCEAN；陸地段 k = landmass 2 / wild / 段的生態與範圍；variant 0、culture null', () => {
+    const gen = new OuterGen('region', F), P = gen.profile;
+    expect(gen.regionAt(4210)).toMatchObject({ kind: 'sea', side: 1, biome: BIOME.OCEAN, x0: 4200, x1: 4200 + SEA_W });
+    expect(gen.regionAt(4210)).toEqual({ landmass: 1, side: 1, tier: 0, kind: 'sea', culture: null, variant: 0, biome: BIOME.OCEAN, index: 0, x0: 4200, x1: 4200 + SEA_W });
+    expect(gen.regionAt(-1)).toEqual({ landmass: 1, side: -1, tier: 0, kind: 'sea', culture: null, variant: 0, biome: BIOME.OCEAN, index: 0, x0: -SEA_W, x1: 0 });
+    expect(gen.regionAt(-1 - SEA_W - 5)).toMatchObject({ kind: 'wild', side: -1, index: 0 });
+    for (const x of [-1 - SEA_W - 5, -SEA_W - 2000, 4200 + SEA_W, 4200 + SEA_W + 3000]) {
+      const s = P.segmentAt(x)!;
+      expect(gen.regionAt(x)).toEqual({ landmass: 2, side: s.side, tier: 0, kind: 'wild', culture: null, variant: 0, biome: s.biome, index: s.k, x0: s.x0, x1: s.x1 });
+      expect(x >= s.x0 && x < s.x1).toBe(true);
+    }
+    expect(gen.regionAt(4200 + SEA_W + 3000).index).toBeGreaterThan(0);
+  });
+});

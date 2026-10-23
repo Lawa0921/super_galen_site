@@ -1,12 +1,14 @@
 // world.ts — tile 世界，儲存單位是區塊欄（engine/column.ts：32 格寬 × height，索引 (y << 5) | (x & 31)）。
 // 欄有三種狀態（B2、B7、B8）：常駐（在記憶體、可讀寫）/ 停放（卸載了，但改過的 chunk 六層 payload 留在記憶體）/ 卸載（重算得回來）。
-// 中央欄（0 ≤ cx < chunksX：舊生成器的輸出）恆常駐（pinned）。沒常駐的欄讀到 = 實心 STONE、牆 0、沒液體；寫入丟掉。
+// 中央欄（0 ≤ cx < chunksX：舊生成器的輸出）恆常駐（pinned）——central: 'arrays'（預設）。central: 'source'（gen2 / 烘焙過的舊世界）：
+// 沒有中央陣列，每一欄（含 0..width）都由 ColumnSource 生成、照樣串流；width 只留給鍵的算術。沒常駐的欄讀到 = 實心 STONE、牆 0、沒液體；寫入丟掉。
 // 呼叫端一律走與儲存無關的 API（getter / window / forEachChunk / tileXY / readChunk…）；鍵見 engine/coords.ts。
 import { CHUNK } from './constants';
 import { tileKey, tileXY as keyToXY, chunkKey, chunkXY, chunkOfX, localX, X_LIMIT, type WorldBounds } from './coords';
 import type { GenLayers } from './legacy/worldgen';
 import type { GenGrid } from './legacy/gen/grid';
-import { Column, COLUMN_LAYERS, variantHash, type ChunkData, type ColumnLayers, type ColumnSource } from './column';
+import { Column, COLUMN_LAYERS, variantHash, li, type ChunkData, type ColumnLayers, type ColumnSource } from './column';
+import type { RegionInfo } from './regionInfo';
 import { SOLID_LUT, PLATFORM_LUT, CLIMB_LUT, T } from './tiles';
 import { cloneStack, type Stack } from './inventory';
 import { CHEST_SLOTS, type Drop } from './loot';
@@ -14,7 +16,7 @@ import { LIQ, LIQ_MAX } from './liquidKind';
 import { EditJournal } from './edits';
 export { LIQ, LIQ_MAX } from './liquidKind';
 export { variantHash } from './column';
-export type { ChunkData, ColumnSource, ColumnLayers } from './column';
+export type { ChunkData, ColumnSource, ColumnLayers, GenChest } from './column';
 
 export type ChestSlots = (Stack | null)[];
 /** 生態區（每欄地表所屬；地下的過渡邊界另有起伏） */
@@ -33,8 +35,11 @@ export interface TileWindow {
   frozen: Uint8Array; half: Uint8Array; variant: Uint8Array;
 }
 
-/** World 建構選項：邊界（預設 legacy = [0, width)）與中央以外的欄由誰生成（沒有 = 空氣） */
-export interface WorldOptions { bounds?: WorldBounds; source?: ColumnSource | null; }
+/**
+ * World 建構選項：邊界（預設 legacy = [0, width)）、欄由誰生成（沒有 = 空氣）、中央的模式：
+ * 'arrays'（預設）= 中央 [0, width) 是舊生成器的輸出（建構時建好、常駐、每欄陣列）；'source' = 沒有中央，每一欄都問 source
+ */
+export interface WorldOptions { bounds?: WorldBounds; source?: ColumnSource | null; central?: 'arrays' | 'source'; }
 
 function allocWindow(n: number): TileWindow {
   return {
@@ -69,11 +74,13 @@ export class World {
   /** 中央區的 chunk 數（舊生成器的輸出：0 ≤ cx < chunksX） */
   readonly chunksX: number;
   readonly chunksY: number;
-  /** 中央以外的欄由誰生成（null = 空氣） */
+  /** 欄由誰生成（arrays：中央以外；source：每一欄。null = 空氣） */
   readonly source: ColumnSource | null;
+  /** true = 有舊式中央（central: 'arrays'：中央欄建構時建好並 pin、surface / biome / layers 陣列）；false = 每一欄都由 source 來 */
+  readonly centralArrays: boolean;
   /** 地表層 y（worldSurface）：此線以上、無牆、非擋光的格會發天空光 */
   surfaceY = 0;
-  /** 中央每欄生成時的地表高度（地形 pass 的第一個實心格 y；之後玩家挖掘不改變）。HUD 深度用。系統走 surfaceAt(x) */
+  /** 中央每欄生成時的地表高度（地形 pass 的第一個實心格 y；之後玩家挖掘不改變）。HUD 深度用。系統走 surfaceAt(x)。source 模式長度 0 */
   surface: Int16Array;
   /** 岩層起始 y（泥土層之下；最深的那欄） */
   rockY = 0;
@@ -81,7 +88,7 @@ export class World {
   cavernY = 0;
   /** 熔岩深淵起始 y（最淺的那欄） */
   moltenY = 0;
-  /** 中央每欄地表的生態區（BIOME）；系統走 biomeAt(x) */
+  /** 中央每欄地表的生態區（BIOME）；系統走 biomeAt(x)。source 模式長度 0 */
   readonly biome: Uint8Array;
   /** 中央每欄的深度層線（生成器填、DelveGame 建構時再設一次；沒有時 layersAt 用 rockY / cavernY / moltenY）。系統一律走 layersAt(x) */
   layers: GenLayers | null = null;
@@ -130,24 +137,31 @@ export class World {
   private unloadedEv: number[] = [];
   /** 載入時由停放蓋回來的 chunk 鍵（drainRestoredChunks 取走：液體要整塊喚醒） */
   private restoredEv: number[] = [];
+  /** 生成物件登錄（source.objectsIn）：欄號 → 這一欄載入時登錄進 chests 的箱子 tile 鍵（卸載時丟掉沒改過的） */
+  private readonly genChests = new Map<number, number[]>();
   /** 上一次用到的欄（點查詢快取） */
   private lcx = NO_COL;
   private lcol: Column | null = null;
 
-  /** 中央欄全部建立（空氣）並常駐；x ≥ width 的格（最後一欄的右半）有 source 時由 source 填 */
+  /**
+   * arrays 模式：中央欄全部建立（空氣）並常駐；x ≥ width 的格（最後一欄的右半）有 source 時由 source 填。
+   * source 模式：什麼欄都不建、surface / biome 長度 0（欄由 ensureColumn 生成）
+   */
   constructor(width: number, height: number, opts: WorldOptions = {}) {
     this.width = width;
     this.height = height;
     this.bounds = opts.bounds ?? 'legacy';
     this.source = opts.source ?? null;
+    this.centralArrays = (opts.central ?? 'arrays') === 'arrays';
     if (this.bounds === 'infinite') { this.xMin = -X_LIMIT; this.xMax = X_LIMIT; } else { this.xMin = 0; this.xMax = width; }
     this.chunksX = Math.ceil(width / CHUNK);
     this.chunksY = Math.ceil(height / CHUNK);
-    this.surface = new Int16Array(width);
-    this.biome = new Uint8Array(width);
+    this.surface = new Int16Array(this.centralArrays ? width : 0);
+    this.biome = new Uint8Array(this.centralArrays ? width : 0);
     this.cxLo = chunkOfX(this.xMin);
     this.cxHi = this.xMax > this.xMin ? chunkOfX(this.xMax - 1) : this.cxLo - 1;
     this.slots = new Array<Column | null>(Math.max(0, this.cxHi - this.cxLo + 1)).fill(null);
+    if (!this.centralArrays) return;
     for (let cx = 0; cx < this.chunksX; cx++) {
       if (cx < this.cxLo || cx > this.cxHi) continue;
       this.register(this.build(cx, false, !(copyingGrid && (cx + 1) * CW <= width)));
@@ -221,15 +235,15 @@ export class World {
   }
   /** 常駐欄號的集合（唯讀、不複製；串流規劃用） */
   residentSet(): ReadonlySet<number> { return this.resident; }
-  /** 中央欄或 pin() 過的欄：不卸載 */
+  /** 中央欄（arrays 模式）或 pin() 過的欄：不卸載 */
   isPinned(cx: number): boolean {
-    return (cx >= 0 && cx < this.chunksX) || this.pinned.has(cx);
+    return (this.centralArrays && cx >= 0 && cx < this.chunksX) || this.pinned.has(cx);
   }
-  /** 不卸載的欄（中央欄 + pin() 過的）；快取，pin / unpin 時重建 */
+  /** 不卸載的欄（中央欄（arrays 模式）+ pin() 過的）；快取，pin / unpin 時重建 */
   pinnedSet(): ReadonlySet<number> {
     if (!this.pinCache) {
       const s = new Set<number>(this.pinned);
-      for (let cx = Math.max(0, this.cxLo); cx < this.chunksX && cx <= this.cxHi; cx++) s.add(cx);
+      if (this.centralArrays) for (let cx = Math.max(0, this.cxLo); cx < this.chunksX && cx <= this.cxHi; cx++) s.add(cx);
       this.pinCache = s;
     }
     return this.pinCache;
@@ -237,13 +251,17 @@ export class World {
   pin(cx: number): void { this.pinned.add(cx); this.pinCache = null; }
   unpin(cx: number): void { this.pinned.delete(cx); this.pinCache = null; }
 
-  /** 讓第 cx 欄常駐：生成（source；沒有 source = 空氣）再蓋上停放的 chunk。中央欄恆常駐。邊界外丟 RangeError */
+  /**
+   * 讓第 cx 欄常駐：生成（source；沒有 source = 空氣）再蓋上停放的 chunk，再登錄生成器的箱子（registerObjects）。
+   * 中央欄（arrays 模式）恆常駐。邊界外丟 RangeError
+   */
   ensureColumn(cx: number): Column {
     this.checkCx(cx);
     const have = this.slots[cx - this.cxLo];
     if (have) return have;
     const col = this.build(cx, true);
     this.register(col);
+    this.registerObjects(col);
     this.loadedEv.push(cx);
     for (let cy = 0; cy < this.chunksY; cy++) this.dirty.add(this.chunkIndex(cx, cy));
     // 接縫：常駐的左右鄰欄邊上的 chunk 也重畫（之前那一側讀到的是「沒載入 = 石頭」）
@@ -253,10 +271,19 @@ export class World {
     }
     return col;
   }
-  /** 卸載第 cx 欄：pinned 的拒絕（回 false）；有改過的 chunk（modifiedChunks ∪ liquidModified）→ 停放（noPark：丟掉） */
+  /**
+   * 卸載第 cx 欄：pinned 的拒絕（回 false）；有改過的 chunk（modifiedChunks ∪ liquidModified）→ 停放（noPark：丟掉）。
+   * 這一欄登錄的生成箱子：所在 chunk 沒改過（不在 modifiedChunks）的從 chests 刪掉（再載入時重新登錄）
+   */
   unloadColumn(cx: number): boolean {
     if (this.isPinned(cx) || !this.isResident(cx)) return false;
     const col = this.slots[cx - this.cxLo]!;
+    const gen = this.genChests.get(cx);
+    if (gen) {
+      // 在 noPark 清掉修改標記之前判斷：改過的箱子與其它箱子一樣留在 chests
+      for (const k of gen) if (!this.modifiedChunks.has(this.chunkIndex(cx, Math.floor(this.tileXY(k).y / CHUNK)))) this.chests.delete(k);
+      this.genChests.delete(cx);
+    }
     for (let cy = 0; cy < this.chunksY; cy++) {
       const k = this.chunkIndex(cx, cy);
       if (this.noPark) { this.modifiedChunks.delete(k); this.liquidModified.delete(k); }
@@ -360,16 +387,44 @@ export class World {
     this.resident.add(col.cx);
     this.sortedCols = null;
   }
-  /** 生成第 cx 欄：source 填中央以外、邊界內的格；再蓋上停放的 chunk（consume = 用完從停放清單拿掉） */
+  /**
+   * 剛載入的欄：source.objectsIn 的箱子登錄進 chests——所在 chunk 沒改過（改過的由停放 / 存檔內容負責）、
+   * chests 還沒有這個鍵、而且那格是箱子 tile；登錄的鍵記進 genChests（卸載時丟掉沒改過的）
+   */
+  private registerObjects(col: Column): void {
+    const src = this.source;
+    if (!src || !src.objectsIn) return;
+    const x0 = Math.max(col.cx * CHUNK, this.xMin), x1 = Math.min(col.cx * CHUNK + CHUNK, this.xMax);
+    if (x0 >= x1) return;
+    let keys: number[] | null = null;
+    for (const c of src.objectsIn(x0, x1)) {
+      if (c.x < x0 || c.x >= x1 || c.y < 0 || c.y >= this.height) continue;
+      const k = this.idx(c.x, c.y);
+      if (this.modifiedChunks.has(this.chunkIndex(col.cx, Math.floor(c.y / CHUNK))) || this.chests.has(k)) continue;
+      const t = col.fg[li(c.x, c.y)];
+      if (t !== T.CHEST && t !== T.LOCKED_CHEST) continue;
+      this.chests.set(k, c.slots.map((s) => (s ? cloneStack(s) : null)));
+      (keys ??= []).push(k);
+    }
+    if (keys) this.genChests.set(col.cx, keys);
+  }
+  /**
+   * 生成第 cx 欄：source 填邊界內的格（arrays 模式扣掉中央 [0, width)；source 模式整段）；
+   * 再蓋上停放的 chunk（consume = 用完從停放清單拿掉）
+   */
   private build(cx: number, consume: boolean, hashVariant = true): Column {
     const col = new Column(cx, this.height, hashVariant);
     const src = this.source;
     if (src) {
       const x0 = Math.max(cx * CHUNK, this.xMin), x1 = Math.min(cx * CHUNK + CHUNK, this.xMax);
-      // 中央區 [0, width) 由舊生成器負責：只填它左右兩邊
-      if (x0 < Math.min(x1, 0)) src.fill(col, x0, Math.min(x1, 0));
-      const r0 = Math.max(x0, this.width);
-      if (r0 < x1) src.fill(col, r0, x1);
+      if (!this.centralArrays) {
+        if (x0 < x1) src.fill(col, x0, x1);
+      } else {
+        // 中央區 [0, width) 由舊生成器負責：只填它左右兩邊
+        if (x0 < Math.min(x1, 0)) src.fill(col, x0, Math.min(x1, 0));
+        const r0 = Math.max(x0, this.width);
+        if (r0 < x1) src.fill(col, r0, x1);
+      }
     }
     if (this.parked.size) {
       for (let cy = 0; cy < this.chunksY; cy++) {
@@ -397,9 +452,20 @@ export class World {
     }
   }
 
-  // ── 每欄資料（中央讀陣列；中央以外有 source 時問 source） ──
-  /** 第 x 欄的地表高度（中央以外：有 source 問 source，否則夾到邊欄）。 */
+  // ── 每欄資料（中央讀陣列；中央以外有 source 時問 source；source 模式一律問 source） ──
+  /** x 是舊式中央（arrays 模式的 [0, width)：舊生成器的輸出、每欄陣列）？source 模式一律 false */
+  isLegacyCentral(x: number): boolean {
+    return this.centralArrays && x >= 0 && x < this.width;
+  }
+  /** 第 x 欄所屬的地區：source 有 regionAt 就問 source；舊式中央或 source 沒有 → 後備值（landmass 0 的 home、整個 [0, width)） */
+  regionAt(x: number): RegionInfo {
+    const fx = Math.floor(x);
+    const r = this.isLegacyCentral(fx) ? undefined : this.source?.regionAt?.(fx);
+    return r ?? { landmass: 0, side: 0, tier: 0, kind: 'home', culture: null, variant: 0, biome: this.biomeAt(fx), index: 0, x0: 0, x1: this.width };
+  }
+  /** 第 x 欄的地表高度（中央以外：有 source 問 source，否則夾到邊欄；source 模式一律問 source）。 */
   surfaceAt(x: number): number {
+    if (!this.centralArrays) return this.source ? this.source.surfaceAt(Math.floor(x)) : this.surfaceY;
     if (this.width === 0) return this.surfaceY;
     const fx = Math.floor(x);
     if (this.source !== null && (fx < 0 || fx >= this.width)) return this.source.surfaceAt(fx);
@@ -407,6 +473,7 @@ export class World {
   }
   /** 第 x 欄地表的生態區 */
   biomeAt(x: number): number {
+    if (!this.centralArrays) return this.source ? this.source.biomeAt(Math.floor(x)) : BIOME.FOREST;
     if (this.width === 0) return BIOME.FOREST;
     const fx = Math.floor(x);
     if (this.source !== null && (fx < 0 || fx >= this.width)) return this.source.biomeAt(fx);
@@ -415,6 +482,7 @@ export class World {
   /** 第 x 欄的深度層線（中央以外：有 source 問 source，否則夾到邊欄） */
   layersAt(x: number): ColumnLayers {
     const fx = Math.floor(x);
+    if (!this.centralArrays && this.source !== null) return this.source.layersAt(fx);
     if (this.source !== null && this.width > 0 && (fx < 0 || fx >= this.width)) return this.source.layersAt(fx);
     const L = this.layers;
     if (!L || this.width === 0) return { rock: this.rockY, deep: this.cavernY, molten: this.moltenY };
