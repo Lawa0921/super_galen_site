@@ -1402,13 +1402,18 @@ def test_skills_page_shows_every_skill_icon_native_in_its_game_cell_and_a_size_g
     s7 = page[page.index('id="s7"'):page.index('id="s9"')]
     every = [s for o, (_, ids) in G.SKILL_OWNERS.items() for s in ids] + OLD_SKILLS
     assert len(every) == 105
+    # A skill the game no longer has (plan 8c: triple-slash became Liz's pickpocket; artPaths RETIRED_ICON_IDS) is still re-derived
+    # with its sheet, but the page shows only what the skill tab and tree can show.
+    retired = {s for s in every if s not in review.skill_owners()}
+    assert retired == {'triple-slash'}
+    shown = set(every) - retired
     for px in (16, 14):
         for z in (1, 3):
             cells = set(re.findall(rf'data-native="{px}" data-zoom="{z}" data-skill="([a-z0-9-]+)"', s7))
-            assert cells == set(every), (px, z, set(every) - cells)
-    assert set(re.findall(r'data-native="16" data-zoom="1" data-skill="([a-z0-9-]+)" data-old', s7)) == set(OLD_SKILLS)
+            assert cells == shown, (px, z, shown ^ cells)
+    assert set(re.findall(r'data-native="16" data-zoom="1" data-skill="([a-z0-9-]+)" data-old', s7)) == set(OLD_SKILLS) - retired
     grid = page[page.index('id="skill-size"'):]; grid = grid[:grid.index('</section>')]
-    assert set(re.findall(r'data-skill-size-cell="([a-z0-9-]+)"', grid)) == set(every) and grid.count('class="target"') == 2 * 105
+    assert set(re.findall(r'data-skill-size-cell="([a-z0-9-]+)"', grid)) == shown and grid.count('class="target"') == 2 * len(shown)
     refs = set(re.findall(r'src="(img/[^"]+)"', page)); assert len(refs) <= 480
     assert {f'img/{f.name}' for f in (factory / 'review-g3/img').iterdir()} == refs
     head = page[page.index('id="decisions"'):page.index('id="s0"')]
@@ -1416,9 +1421,11 @@ def test_skills_page_shows_every_skill_icon_native_in_its_game_cell_and_a_size_g
     assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['技能圖示的大小與畫風一致嗎（新 78 個＋既有 27 個）', '洛恩與凜的技能圖示（沒有舊圖示可對照）']
     for s in ('16×16', '14×14', '沒有重畫', '核准後', '換成'):
         assert s in asked, s
+    # Names come from the game data; veil-dance and sirocco left Safira's roster in plan 8c (their replacements' icons are step
+    # ⑨'s), so the page names them by id, as it does any skill the game no longer has.
     names = review.names()
     for group in (('quickstep', 'phantom-step'), ('sand-cyclone', 'thousand-shadows', 'veil-dance', 'sirocco')):
-        assert '／'.join(names[s] for s in group) in asked, group
+        assert '／'.join(names.get(s, s) for s in group) in asked, group
     assert '直接回覆每題的選擇' in head and 'G1' in head[head.index('已決定'):]
     decided = head[head.index('已決定'):]
     assert '高約 32' not in decided and '原尺寸' in decided                           # the native-size ruling, not the old size

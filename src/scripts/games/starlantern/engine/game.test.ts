@@ -30,7 +30,7 @@ import { BOSS_LEGENDARY, chestHasGear, GEAR_CHANCE, mix, RARE_MATERIALS, rollBos
 import { itemLevel, itemWeight, rollItem } from './loot/item';
 import { MATERIALS } from '../data/materials';
 import { buy, unequip } from './town';
-import { defaultTalents, defaultTree, memoriesOf } from './progression';
+import { defaultTalents, defaultTree, memoriesOf, skillPointsLeft, talentPointsLeft } from './progression';
 import { buildTalents, buildTree } from './builds';
 import { buildOf } from '../data/builds';
 import { learnedSkills } from './progression';
@@ -1471,6 +1471,42 @@ describe('apply and follow a build (plan 8h Task 6)', () => {
     const chizuru = g.state.party.roster.chizuru;
     expect(chizuru.build).toBeUndefined();
     expect([chizuru.tree, chizuru.talents]).toEqual([chizuru0.tree, chizuru0.talents]);
+  });
+
+  it('one fight that crosses many levels spends every point and fills every slot opened on the way (plan 8h)', () => {
+    const g = inMap(1);
+    // Lv19, one exp short of Lv35: the fight crosses sixteen levels and two rune-slot levels (20 and 35) at once.
+    const toLv35 = Array.from({ length: 35 - 19 }, (_, i) => expToNext(19 + i)).reduce((a, b) => a + b, 0) - 1;
+    const set = (id: CharacterId, key: string) => {
+      const m = g.state.party.roster[id];
+      g.state.party.roster[id] = { ...m, level: 19, exp: toLv35, tree: buildTree(id, 19, buildOf(id, key)!), talents: buildTalents(id, 19, buildOf(id, key)!), build: key };
+    };
+    set('noel', 'cycle');
+    if (!g.state.party.recruited.includes('rin')) g.state.party.recruited.push('rin');
+    set('rin', 'venom');
+    const R = (id: RuneRef['id']): RuneRef => ({ id, tier: 'magic' });
+    // 冰雷循環: 冰之星彈 [蓄力, 連擊], 雷之星彈 [蓄力, 感電, 雷鳴]; 千針毒: 千本針 [淬毒, 撕裂, 連擊].
+    g.state.runes = { 'jolt@magic': 1, 'thunderclap@magic': 1, 'multistrike@magic': 2, 'tear@magic': 1 };
+    g.state.party.roster.noel.sockets = { 'ice-star': [R('charge')] };
+    stepOnto(g, plantAt(g, 'elite'));
+    expect(killAll(g).outcome).toBe('win');
+    for (const [id, key] of [['noel', 'cycle'], ['rin', 'venom']] as const) {
+      const m = g.state.party.roster[id];
+      expect(m.level, id).toBeGreaterThanOrEqual(35);
+      expect(m.build, id).toBe(key);
+      expect(m.tree, id).toEqual(buildTree(id, m.level, buildOf(id, key)!, memoriesOf(m)));
+      expect(m.talents, id).toEqual(buildTalents(id, m.level, buildOf(id, key)!));
+      // Every point of every level crossed is spent.
+      expect(skillPointsLeft(m), id).toBe(0);
+      expect(talentPointsLeft(m), id).toBe(0);
+    }
+    const noel = g.state.party.roster.noel;
+    expect(noel.sockets?.['ice-star']).toEqual([R('charge'), R('multistrike')]);   // what she wore stays; slot 1 opened at 20
+    // Slot 0 was open before the fight (and no 蓄力 in the bag): left alone. Slots 1 (Lv20) and 2 (Lv35) both filled.
+    expect(noel.sockets?.['thunder-star']).toEqual([null, R('jolt'), R('thunderclap')]);
+    // Benched, at half the exp, she crosses the same levels: slot 0 was open (she left it empty), 1 and 2 are new.
+    expect(g.state.party.roster.rin.sockets?.['rin-storm']).toEqual([null, R('tear'), R('multistrike')]);
+    expect(g.state.runes).toEqual({});
   });
 });
 

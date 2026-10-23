@@ -4,6 +4,7 @@ import { dirname, relative, sep } from 'node:path';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
 import { SPECIALS, STARLIT_RARITIES } from '../../src/scripts/games/starlantern/data/gear';
 import { ENHANCE_MAX } from '../../src/scripts/games/starlantern/data/forge';
+import { ITEMS } from '../../src/scripts/games/starlantern/data/items';
 import { RUNES, runeKey, tiersOf, type RuneId } from '../../src/scripts/games/starlantern/data/runes';
 import { STORY } from '../../src/scripts/games/starlantern/data/story.zh-TW';
 import { T } from '../../src/scripts/games/starlantern/data/text.zh-TW';
@@ -154,18 +155,29 @@ const toStairs = (page: Page) => page.evaluate(() => {
  * Put `tile` on the `nth` plain floor tile of the map that has plain floor to its left, and stand the party there,
  * facing it: the key that steps onto it is returned. With `content`, the floor's contents gain that event there.
  */
-const placeBeside = (page: Page, tile: string, nth = 0, content?: string) => page.evaluate(({ tile, nth, content }) => {
+const placeBeside = (page: Page, tile: string, nth = 0, content?: string, extra: Record<string, unknown> = {}) => page.evaluate(({ tile, nth, content, extra }) => {
   const g = (window as unknown as Dbg).__starlanternDebug.game;
   const tiles: string[][] = g.map().tiles;
   const spots: { x: number; y: number }[] = [];
   tiles.forEach((row, y) => row.forEach((t, x) => { if (t === 'floor' && row[x - 1] === 'floor') spots.push({ x, y }); }));
   const at = spots[nth % spots.length];
   tiles[at.y][at.x] = tile;
-  if (content) g.run.floors.get(g.floor).contents.push({ kind: content, at, room: -1 });
+  if (content) g.run.floors.get(g.floor).contents.push({ kind: content, at, room: -1, ...extra });
   g.pos = { x: at.x - 1, y: at.y };
   g.encounter = 0;
   return { at, spots: spots.length };
-}, { tile, nth, content });
+}, { tile, nth, content, extra });
+
+/** Close the event window or talk line the last visit left showing; the party stays where it stood. */
+const leaveEvent = async (page: Page, w: SpecHelpers) => {
+  if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+  await w.closeTalk();
+  await expect(page.locator('.slx-event')).toHaveCount(0);
+};
+
+/** A merchant's stock of the three priced items with the longest names (his window's longest list). */
+const LONGEST_STOCK = Object.values(ITEMS).filter((i) => i.price > 0)
+  .sort((a, b) => b.name.length - a.name.length || String(b.price).length - String(a.price).length).slice(0, 3).map((i) => i.id);
 
 /** Put plain floor back where `placeBeside` put a tile. */
 const unplace = (page: Page, at: { x: number; y: number }) => page.evaluate((at) => {
@@ -179,14 +191,14 @@ const commandMenu = async (page: Page) => {
   await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
 };
 
-/** The chests the sweep put down, taken up again before it walks to the stairs. */
+/** The chests and event rooms the sweep put down, taken up again before it walks to the stairs. */
 const chests: { x: number; y: number }[] = [];
 
 const HANDBOOK_TABS = ['memories', 'people', 'leads', 'town', 'codex', 'truths'] as const;
 
 /**
  * The sweep's screens, in the order one game reaches them: the menus by `go`, then a portal run (the departure prompt,
- * the dungeon, its menu and handbook, three event windows with art, the stairs, a fight, its lists and result) and the
+ * the dungeon, its menu and handbook, every event room (altar, fountain, merchant, the vault locked and opened by its key, a trap, an elite, a chest into a full bag), the stairs, a fight, its lists and result) and the
  * finale card. Each visit leaves its screen showing.
  */
 export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<void> }[] = [
@@ -350,9 +362,61 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
+    name: 'event-fountain', visit: async (page, w) => {
+      await leaveEvent(page, w);                              // 離開: the party stays on the altar
+      chests.push((await placeBeside(page, 'fountain', 1, 'fountain')).at);
+      await w.key('ArrowRight');
+      await expect(page.locator('.slx-event-fountain .slx-event-art')).toBeVisible();
+    },
+  },
+  {
+    // The merchant with the three priced items whose names are longest: the longest list his window can show.
+    name: 'event-merchant', visit: async (page, w) => {
+      await leaveEvent(page, w);
+      chests.push((await placeBeside(page, 'merchant', 2, 'merchant', { stock: LONGEST_STOCK })).at);
+      await w.key('ArrowRight');
+      await expect(page.locator('.slx-event-merchant .slx-event-art')).toBeVisible();
+      await expect(page.locator('.slx-event-merchant [role=option]')).toHaveCount(LONGEST_STOCK.length + 1);   // and 離開
+    },
+  },
+  {
+    name: 'event-vault-locked', visit: async (page, w) => {
+      await leaveEvent(page, w);
+      chests.push((await placeBeside(page, 'vault', 3, 'vault')).at);
+      await w.key('ArrowRight');
+      await expect(page.locator('.slx-event-vault')).toContainText(T.ui2.event.vault.locked);
+    },
+  },
+  {
+    // The key's line (a talk line, not a window), then the vault it opens.
+    name: 'event-key', visit: async (page, w) => {
+      await leaveEvent(page, w);
+      await placeBeside(page, 'key', 4);
+      await w.key('ArrowRight');
+      await expect(page.locator('.slx-talk')).toContainText(T.ui2.event.key);
+    },
+  },
+  {
+    name: 'event-vault-ready', visit: async (page, w) => {
+      await leaveEvent(page, w);
+      chests.push((await placeBeside(page, 'vault', 6, 'vault')).at);
+      await w.key('ArrowRight');
+      await expect(page.locator('.slx-event-vault')).toContainText(T.ui2.event.vault.ready);
+      await expect(page.locator('.slx-event-vault [role=option]')).toHaveCount(2);                  // 打開, 離開
+    },
+  },
+  {
+    // A trap says what it did in a talk line.
+    name: 'event-trap', visit: async (page, w) => {
+      await leaveEvent(page, w);
+      await placeBeside(page, 'trap', 7);
+      await w.key('ArrowRight');
+      await expect(page.locator('.slx-talk')).toBeVisible();
+    },
+  },
+  {
     name: 'event-elite', visit: async (page, w) => {
-      await w.key('Escape');                                  // 離開: the party stays on the altar
-      await expect(page.locator('.slx-event-altar')).toHaveCount(0);
+      await leaveEvent(page, w);
       await placeBeside(page, 'elite', 5);
       await w.key('ArrowRight');                              // seen from the doorway: asked before the fight
       await expect(page.locator('.slx-event-elite .slx-event-art')).toBeVisible();
