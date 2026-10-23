@@ -85,6 +85,12 @@ export function parsePs(data: Payload): Ps | null {
   };
 }
 
+/** ws.br（房主送來、收件客人自己的呼吸）：省略 = 滿氣；有限數字夾到 0..max；其他 → null（沿用上一份） */
+export function decodeBreath(v: unknown, max: number): number | null {
+  if (v === undefined) return max;
+  return fin(v) ? Math.max(0, Math.min(max, v)) : null;
+}
+
 // ── PlayerPose（M-C2 D2）：房主送來的 WirePose（客人端也照樣嚴格驗：壞的那份 pose 丟掉，絕不拋）──
 const POSE_FLAGS = POSE_GROUND | POSE_BOAT | POSE_CLIMB | POSE_DEAD | POSE_LEFT;
 /** 世界座標（px）：有限且在世界範圍內 */

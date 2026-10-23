@@ -70,6 +70,8 @@ export const WIRE_POSE_LEN = 14;
 export const r2 = (v: number): number => Math.round(v * 100) / 100;
 /** 往下取 2 位小數（HUD 用 Math.floor 顯示的值：取完再 floor 跟原值一樣） */
 export const floor2 = (v: number): number => Math.floor(v * 100) / 100;
+/** 往上取 2 位小數（呼吸泡泡用 Math.ceil 算顆數：取完再 ceil 跟原值一樣） */
+export const ceil2 = (v: number): number => Math.ceil(v * 100) / 100;
 export function encodeMantle(m: PlayerPose['mantle']): WireMantle | null {
   return m ? [r2(Math.max(0, Math.min(1, m.p))), m.dir, r2(m.edgeX), r2(m.edgeY)] : null;
 }
@@ -112,7 +114,11 @@ export interface WsEnemy { id: number; kind: EnemyKind; x: number; y: number; di
 export interface WsDrop { id: number; item: ItemId; count: number; x: number; y: number }
 export interface WsProj { id: number; kind: ProjKind; x: number; y: number; vx: number; vy: number; hostile: boolean }
 export interface WsNpc { id: number; src: 0 | 1; x: number; y: number; dir: 1 | -1 }   // src 0 = 據點居民、1 = 世界 NPC
-export interface Ws { t: 'ws'; tick: number; time: number; players: WsPlayer[]; enemies: WsEnemy[]; drops: WsDrop[]; proj: WsProj[]; npcs: WsNpc[] }
+export interface Ws {
+  t: 'ws'; tick: number; time: number; players: WsPlayer[]; enemies: WsEnemy[]; drops: WsDrop[]; proj: WsProj[]; npcs: WsNpc[];
+  /** 收件客人自己的呼吸泡泡數（往上取 2 位小數）；滿氣就省略。別人的呼吸畫面上用不到，不帶 */
+  br?: number;
+}
 
 export type HostCtrl = Welcome | { t: 'reject'; reason: RejectReason } | { t: 'tiles'; tick: number; batches: WireBatch[] }
   | { t: 'ev'; list: DelveEvent[] } | { t: 'pub'; list: DelveEvent[] } | { t: 'ack'; seq: number; ok: boolean; reason?: string }

@@ -7,7 +7,7 @@
 // 客人信任房主（反目標：不做防作弊），但每則訊息的解析 / 套用失敗只丟掉那一則，絕不拋到 frame 之外。
 // 決定性：不讀時鐘、不用 Math.random；時間一律是 frame(nowMs, …) 傳進來的值。
 import { DelveGame, type DelveEvent } from '../engine/game';
-import type { Pid } from '../engine/actor';
+import { MAX_BREATH, type Pid } from '../engine/actor';
 import type { Cmd } from '../engine/commands';
 import type { DollLook } from '../engine/doll';
 import { ENEMIES, makeEnemy, type Enemy } from '../engine/enemies';
@@ -26,7 +26,7 @@ import {
   type ByeReason, type GuestCtrl, type HostCtrl, type Ps, type RejectReason, type Welcome, type WorldSnap,
   type Ws, type WsDrop, type WsEnemy, type WsNpc, type WsProj, encodeMantle,
 } from './protocol';
-import { decodePose } from './validate';
+import { decodeBreath, decodePose } from './validate';
 import { lerpPose, type PlayerPose } from '../engine/pose';
 import { decodeBulk } from './codec';
 import { ChunkSyncGuest, applyLiq } from './chunkSync';
@@ -508,13 +508,16 @@ export class NetGuest {
     if (w.getFg(pd.x, pd.y) === pd.placed && !this.chunks!.writtenSince(pd.x, pd.y, pd.since)) w.setFg(pd.x, pd.y, pd.old);
   }
 
-  /** ws（state 通道：不可靠無序，舊的丟）：內插緩衝 + 本地的 hp / mana / dead / time */
+  /** ws（state 通道：不可靠無序，舊的丟）：內插緩衝 + 本地的 hp / mana / breath / dead / time */
   private onWs(m: Ws): void {
     if (!fin(m.tick) || !fin(m.time) || m.tick <= this.wsTick) return;
     if (![m.players, m.enemies, m.drops, m.proj, m.npcs].every(Array.isArray)) return;
     const game = this.replica!;
     const at = m.time * 1000;
     const seen = new Set<number | string>();
+    // 自己的呼吸：副本不跑液體，泡泡數照房主的（省略 = 滿氣；壞的沿用上一份）
+    const br = decodeBreath(m.br, MAX_BREATH);
+    if (br !== null) game.local.breath = br;
     for (const p of m.players) {
       if (!isObj(p) || typeof p.pid !== 'string') continue;
       // pose 壞掉：只丟這一份 pose（自己的沿用上一份；別人這則不進內插緩衝，但不當成離開）

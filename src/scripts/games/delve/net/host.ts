@@ -7,7 +7,7 @@
 // 決定性：不讀時鐘、不用 Math.random；時間一律是 frame(nowMs, …) 傳進來的值。送出的角色 savedAt 一律 0（寫檔的人自己蓋時間）。
 //   唯一例外：held.at 是牆鐘（Date.now，同 removeActor 的 lastSeen），只給世界檔的 LRU 用，不影響協定。
 import type { DelveGame, DelveEvent } from '../engine/game';
-import type { Pid } from '../engine/actor';
+import { MAX_BREATH, type Pid } from '../engine/actor';
 import type { CmdOp } from '../engine/commands';
 import type { DollLook } from '../engine/doll';
 import { GEN_VERSION, TILE_SIZE } from '../engine/constants';
@@ -21,7 +21,7 @@ import {
   BOUNDARY_OPS, BULK_HIGH_WATER, CHAR_HZ, CHK_MS, CMD_BURST, CMD_RATE, GUEST_TIMEOUT_MS, LIQ_HZ, LINGER_MS, LOOK_MS, MAX_GUESTS, NET_TILE_COLS, PING_MS, PROTO,
   PS_BOAT, PS_CLIMB, PS_GROUND, PS_STALE_MS, REPLACE_SILENT_MS, SAVE_DEBOUNCE_MS, SUM_PARK_MAX, WORLD_SIG_MS, WS_HZ,
   type ByeReason, type GuestCtrl, type HostCtrl, type PeerInfo, type Ps, type RejectReason, type WireBatch, type Ws,
-  type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj, encodePose, floor2, r2,
+  type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj, ceil2, encodePose, floor2, r2,
 } from './protocol';
 import { encodeBulk } from './codec';
 import { parseGuestCtrl, parsePs } from './validate';
@@ -526,9 +526,12 @@ export class NetHost {
   private wsFor(g: Guest, parts: ReturnType<NetHost['wsParts']>): Ws {
     const gcx = this.colOf(g.pid);
     const near = <X>(l: [number, X][]): X[] => l.filter(([cx]) => Math.abs(cx - gcx) <= LOAD_COLS).map(([, v]) => v);
+    // 呼吸只給收件人自己（客人副本不跑液體 / 呼吸，泡泡數只能從這裡來）；滿氣省略，平常不多一個位元組
+    const br = this.game.actors.get(g.pid)?.breath ?? MAX_BREATH;
     return {
       t: 'ws', tick: this.game.tick, time: this.game.time, players: parts.players,
       enemies: near(parts.enemies), drops: near(parts.drops), proj: near(parts.proj), npcs: near(parts.npcs),
+      ...(br < MAX_BREATH ? { br: ceil2(br) } : {}),
     };
   }
 
