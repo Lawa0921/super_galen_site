@@ -8,6 +8,7 @@ import { ITEMS } from '../../src/scripts/games/starlantern/data/items';
 import { RUNES, runeKey, tiersOf, type RuneId } from '../../src/scripts/games/starlantern/data/runes';
 import { STORY } from '../../src/scripts/games/starlantern/data/story.zh-TW';
 import { T } from '../../src/scripts/games/starlantern/data/text.zh-TW';
+import { CHARACTERS } from '../../src/scripts/games/starlantern/data/characters';
 import { BAG_SIZE } from '../../src/scripts/games/starlantern/engine/loot/bag';
 import { LEGACY_GRID, LEGACY_LINEUP } from '../../src/scripts/games/starlantern/engine/party';
 import type { ItemInstance } from '../../src/scripts/games/starlantern/engine/types';
@@ -106,6 +107,25 @@ export const startSweepGame = async (page: Page, seed = 7): Promise<SpecHelpers>
   }, [LEGACY_LINEUP, LEGACY_GRID.map((c) => (c === 'selene' ? 'hero' : c)), longestGear(), ALL_RUNES] as const);
   return { errors, key, closeTalk, choose };
 };
+
+/**
+ * Story on, `ids` queued for the town, and the town entered: the scenes play (story staging S5, S6). The sweep game has
+ * the story off, so `storyOff` puts it back once they are read.
+ */
+const storyOn = async (page: Page, w: SpecHelpers, ids: string[]) => {
+  await page.evaluate((ids) => {
+    const d = (window as unknown as { __starlanternDebug: { game: { arrival: string[] }; settings: { get(): object; set(s: object): void } } }).__starlanternDebug;
+    d.settings.set({ ...d.settings.get(), story: 'all' });
+    d.game.arrival = ids;
+  }, ids);
+  await go(page, 'town');
+  await expect(page.locator('.slx-town .slx-talk')).toBeVisible();
+  if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+};
+const storyOff = (page: Page) => page.evaluate(() => {
+  const d = (window as unknown as { __starlanternDebug: { settings: { get(): object; set(s: object): void } } }).__starlanternDebug;
+  d.settings.set({ ...d.settings.get(), story: 'none' });
+});
 
 /** A facility scene, its greeting closed. */
 const facility = async (page: Page, w: SpecHelpers, scene: string, cls: string) => {
@@ -213,7 +233,42 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   { name: 'town', visit: async (page, w) => { await w.closeTalk(); await expect(page.locator('.slx-town')).toBeVisible(); } },
-  { name: 'guild', visit: async (page, w) => facility(page, w, 'guild', '.slx-guild') },
+  {
+    // Story staging S5: a memory played in the town, on a remembered line: the sepia veil over the town, the dimmed box,
+    // and the town's HUD put away.
+    name: 'memory-past', visit: async (page, w) => {
+      await storyOn(page, w, ['mem:scarlet:5']);
+      await expect(page.locator('.slx-town .slx-talk.slx-talk--memory')).toBeVisible();
+      await expect(page.locator('.slx-town .slx-veil-past.slx-on')).toHaveCount(1);
+      await expect(page.locator('.slx-town .slx-place')).toBeHidden();
+    },
+  },
+  {
+    // The same memory back in the present: the plain box, Scarlet's own face in its own colours, the veil gone.
+    name: 'memory-present', visit: async (page, w) => {
+      await w.key('z');
+      await expect(page.locator('.slx-town .slx-talk .slx-name')).toHaveText(CHARACTERS.scarlet.name);
+      if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');
+      await expect(page.locator('.slx-town .slx-talk')).not.toHaveClass(/slx-talk--memory/);
+      await expect(page.locator('.slx-town .slx-veil-past.slx-on')).toHaveCount(0);
+    },
+  },
+  {
+    // Story staging S6: a town scene's location card where the place plate stood, the night dimming the town.
+    name: 'place-card', visit: async (page, w) => {
+      await readAll(page, w);   // the rest of the memory, then the day's line
+      await storyOn(page, w, ['prologue-inn']);
+      await expect(page.locator('.slx-town .slx-place-card')).toHaveText('月影旅館・深夜');
+      await expect(page.locator('.slx-town .slx-veil-night.slx-on')).toHaveCount(1);
+    },
+  },
+  {
+    name: 'guild', visit: async (page, w) => {
+      await readAll(page, w);   // the inn night and the day's line after it
+      await storyOff(page);
+      await facility(page, w, 'guild', '.slx-guild');
+    },
+  },
   {
     name: 'shop-buy', visit: async (page, w) => {
       await facility(page, w, 'shop', '.slx-shop');

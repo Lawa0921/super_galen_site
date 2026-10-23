@@ -3187,3 +3187,42 @@ describe('memory lines: past and present (staging S5)', () => {
   });
 });
 
+// Story staging S6 (2026-10-23): where a scene happens, as a one-line card (no new art). Data, not script text.
+describe('scene places (staging S6)', () => {
+  const placed = SCENE_IDS.flatMap((id) => STORY.scenes[id].lines.flatMap((l, i) => (l.place ? [{ id, i, l, place: l.place }] : [])));
+
+  it('a place card is one short line: a place, then its time after 「・」, with no sentence stop', () => {
+    expect(placed.length).toBeGreaterThan(30);
+    for (const { id, place } of placed) {
+      expect([...place.text].length, `${id}: ${place.text}`).toBeLessThanOrEqual(10);
+      expect(place.text, id).toMatch(/^[^。！？，\n「」…]+$/);
+      expect(place.night === undefined || place.night === true, id).toBe(true);
+    }
+  });
+
+  it("the places come from the scene: its narration names the card's place", () => {
+    // Where the narration does not name it, the reason the place is certain.
+    const BY_CONTEXT: Partial<Record<SceneId, string>> = {
+      'hero-alone': "Rin against the room's door as on first-return's inn night, the corridor, Marta on the stairs",
+    };
+    for (const { id, place } of placed) {
+      const said = STORY.scenes[id].lines.filter((n) => n.who === 'narrator').map((n) => n.text).join('');
+      const where = place.text.split('・')[0].replace(/屋頂$/, '');
+      expect(!!BY_CONTEXT[id] || said.includes(where) || said.includes(where.replace('月影旅館', '旅館')), `${id}: ${place.text}`).toBe(true);
+    }
+  });
+
+  it('no memory carries a place: its look is the past, not a location', () => {
+    expect(placed.filter(({ id }) => sceneKind(id) === 'memory')).toEqual([]);
+  });
+
+  it('the night scenes dim the town, and the reveal night ends at dawn', () => {
+    const at = (id: SceneId) => placed.filter((p) => p.id === id).map((p) => ({ i: p.i, ...p.place }));
+    expect(at('prologue-inn')).toEqual([{ i: 0, text: '月影旅館・深夜', night: true }]);
+    expect(at('prologue')).toEqual([{ i: 0, text: '傳送門廣場・黎明前' }, { i: 3, text: '冒險者公會' }]);
+    expect(at('act2')).toEqual([{ i: 0, text: '冒險者公會' }, { i: 8, text: '月影旅館' }]);
+    expect(at('rin-reveal')).toEqual([{ i: 0, text: '月影旅館・深夜', night: true }, { i: 5, text: '月影旅館・清晨' }]);
+    expect(at('chat:hero:2')).toEqual([{ i: 0, text: '月影旅館・深夜', night: true }]);
+    expect(at('town:orik')).toEqual([{ i: 0, text: '道具店・打烊以後' }]);
+  });
+});

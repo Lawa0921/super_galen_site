@@ -185,13 +185,33 @@ export class Dialogue {
     this.veil('slx-veil-past', style === 'memory');
   }
 
-  /** The veil `cls` just under the box, on or off; none is made only to be off, nor while the box has no screen. */
+  /**
+   * Where the scene is (staging S6): a one-line card in the screen's top corner (where the town's place plate stands, put
+   * away while a scene plays), and with `night` a veil that dims the screen. `null` takes both down.
+   */
+  setPlace(place: { text: string; night?: true } | null): void {
+    const parent = this.el.parentElement;
+    let card = this.card();
+    if (!place) card?.remove();
+    else if (parent) {
+      if (!card) parent.insertBefore((card = win('slx-place-card', [])), this.el);
+      card.textContent = place.text;
+    }
+    this.veil('slx-veil-night', !!place?.night);
+  }
+
+  /** The place card on the box's screen, if one is up. */
+  private card(): HTMLElement | null {
+    return this.el.parentElement?.querySelector<HTMLElement>(':scope > .slx-place-card') ?? null;
+  }
+
+  /** The veil `cls` just under the box (and under the place card), on or off; none is made only to be off, nor while the box has no screen. */
   private veil(cls: string, on: boolean): void {
     const parent = this.el.parentElement;
     let v = parent?.querySelector<HTMLElement>(`:scope > .${cls}`) ?? null;
     if (!v && on && parent) {
       v = el('div', { class: `slx-veil ${cls}`, attrs: { 'aria-hidden': 'true' } });
-      parent.insertBefore(v, this.el);
+      parent.insertBefore(v, this.card() ?? this.el);
       void v.offsetWidth;   // the off state first, so the fade in runs
     }
     v?.classList.toggle('slx-on', on);

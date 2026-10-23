@@ -131,11 +131,14 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
       if (summary) break;
       // Only a memory's remembered past wears the memory look; its present lines are any scene's (staging S5).
       talk.setStyle(line.past ? 'memory' : 'plain');
+      // Where it happens, from the line that says so (staging S6); a line with no place keeps the card up.
+      if (line.place) talk.setPlace(line.place);
       await sayLine(talk, line, ctx, first, undefined, heavy);
     }
     if (summary) await summary;
     finished = true;
     talk.setStyle('plain');
+    talk.setPlace(null);
     talk.hold(false);
     talk.close();
     return summary ? 'skipped' : 'done';
@@ -148,7 +151,7 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
       if (finished) return;
       if (a === 'confirm') { talk.onAction('confirm'); return; }
       // Cancelling while the summary is up does nothing more: the summary is already the last line.
-      if (a === 'cancel' && !summary) { talk.stop(); talk.setStyle('plain'); summary = talk.say('', T.ui2.story.skipped(STORY.scenes[id].summary)); }
+      if (a === 'cancel' && !summary) { talk.stop(); talk.setStyle('plain'); talk.setPlace(null); summary = talk.say('', T.ui2.story.skipped(STORY.scenes[id].summary)); }
     },
   };
 }

@@ -454,6 +454,25 @@ describe('Dialogue faces', () => {
     expect(scene.querySelectorAll('.slx-veil-past')).toHaveLength(1);
   });
 
+  it('a place card shows where the scene is, over the screen and under the box; night dims the screen (staging S6)', () => {
+    const scene = document.createElement('div');
+    const d = new Dialogue(Infinity);
+    scene.append(d.el);
+    d.setPlace({ text: '月影旅館・深夜', night: true });
+    const card = scene.querySelector('.slx-place-card')!;
+    expect(card.textContent).toBe('月影旅館・深夜');
+    const night = scene.querySelector('.slx-veil-night')!;
+    expect(night.classList.contains('slx-on')).toBe(true);
+    d.setStyle('memory');                                    // a veil made later still goes under the card
+    expect([...scene.children].map((e) => e.classList[0] === 'slx-veil' ? e.classList[1] : e.classList[1] ?? e.classList[0])).toEqual(['slx-veil-night', 'slx-veil-past', 'slx-place-card', 'slx-talk']);
+    d.setPlace({ text: '月影旅館・清晨' });
+    expect(scene.querySelectorAll('.slx-place-card')).toHaveLength(1);
+    expect(scene.querySelector('.slx-place-card')!.textContent).toBe('月影旅館・清晨');
+    expect(night.classList.contains('slx-on')).toBe(false);
+    d.setPlace(null);
+    expect(scene.querySelector('.slx-place-card')).toBeNull();
+  });
+
   it('memory style marks the box', () => {
     const d = new Dialogue(Infinity);
     d.setStyle('memory');

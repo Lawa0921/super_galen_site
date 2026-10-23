@@ -96,6 +96,28 @@ describe('playScene', () => {
     await light.done;
   });
 
+  it("a line's place puts up the scene's card, a later one changes it, and the scene's end takes it down (staging S6)", async () => {
+    const { talk, ctx } = mk();
+    const screen = document.createElement('div');
+    screen.append(talk.el);
+    const card = () => screen.querySelector('.slx-place-card')?.textContent ?? null;
+    const night = () => !!screen.querySelector('.slx-veil-night.slx-on');
+    stage('chat:liz:1', [
+      { who: 'narrator', text: '一', place: { text: '月影旅館・深夜', night: true } },
+      { who: 'hero', text: '二' },
+      { who: 'narrator', text: '三', place: { text: '月影旅館・清晨' } },
+    ]);
+    const p = playScene(talk, 'chat:liz:1', ctx);
+    expect([card(), night()]).toEqual(['月影旅館・深夜', true]);
+    p.onAction('confirm'); await tick();
+    expect([card(), night()]).toEqual(['月影旅館・深夜', true]);   // a line with no place keeps the card
+    p.onAction('confirm'); await tick();
+    expect([card(), night()]).toEqual(['月影旅館・清晨', false]);
+    p.onAction('confirm');
+    await p.done;
+    expect([card(), night()]).toEqual([null, false]);
+  });
+
   it('cancel skips the rest and shows the summary', async () => {
     const { talk, ctx } = mk();
     stage('chat:liz:1', [{ who: 'hero', text: '一' }, { who: 'rin', text: '二' }], '兩人說了幾句話。');
