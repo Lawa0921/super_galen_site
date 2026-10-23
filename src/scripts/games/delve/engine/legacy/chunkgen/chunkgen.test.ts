@@ -275,7 +275,8 @@ describe('chunkgen：外圍生成器 v0', () => {
       const src = readFileSync(path, 'utf8');
       expect(banned.exec(src)?.[0] ?? null, path).toBeNull();
     }
-    const legacyImports = [...g2files, ...(readdirSync(g2, { recursive: true }) as string[]).filter((f) => f.endsWith('.test.ts')).map((f) => join(g2, f))]
+    // gen2.perf.test.ts 例外：效能測試要拿 v1 OuterGen 當分母（只在測試裡，gen2 本體仍不得 import legacy）
+    const legacyImports = [...g2files, ...(readdirSync(g2, { recursive: true }) as string[]).filter((f) => f.endsWith('.test.ts') && f !== 'gen2.perf.test.ts').map((f) => join(g2, f))]
       .filter((path) => /from\s+['"][^'"]*legacy\//.test(readFileSync(path, 'utf8')));
     expect(legacyImports).toEqual([]);
   });
