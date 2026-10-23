@@ -394,23 +394,100 @@ function buildJungleNear(seed: number): IndexedLayer {
 }
 
 /** 生態區背景色（白天的遠 / 中 / 近三層基色；全部取自色票） */
-const BIOME_DAY: Record<number, [string, string, string]> = {
+export const BIOME_DAY: Record<number, [string, string, string]> = {
   1: ['#d98f66', '#c99660', '#966139'],
   2: ['#b4b9c8', '#858aa0', '#3f7468'],
   3: ['#6a9c88', '#3f7468', '#214528'],
+  4: ['#7f9cc4', '#2c8692', '#1f6474'],
 };
 /** 生態區背景的受光色 */
-const BIOME_LITE: Record<number, [string, string, string]> = {
+export const BIOME_LITE: Record<number, [string, string, string]> = {
   1: ['#f2b888', '#d8ba76', '#b07a4b'],
   2: ['#cceaf8', '#b4b9c8', '#6a9c88'],
   3: ['#a2c8b0', '#6a9c88', '#2d672e'],
+  4: ['#b4b9c8', '#4aaeb0', '#2c8692'],
 };
 /** 生態區背景的暗面色（取代 nudge，避免跳到別的色相） */
-const BIOME_DARK: Record<number, [string, string, string]> = {
+export const BIOME_DARK: Record<number, [string, string, string]> = {
   1: ['#b07a4b', '#966139', '#7c4c2e'],
   2: ['#858aa0', '#5e5e74', '#16301e'],
   3: ['#3f7468', '#214528', '#16301e'],
+  4: ['#707490', '#1f6474', '#18204a'],
 };
+/** 海遠景：海平線（頂緣一行受光）+ 2–4 座遠方島影 */
+export function buildSeaHorizon(seed: number): IndexedLayer {
+  const H = 150, L = new IndexedLayer(STRIP_W, H);
+  const water = H - 18;
+  const top = new Int16Array(STRIP_W).fill(water);
+  const n = 2 + Math.floor(h01(0, 1, seed) * 3);
+  for (let i = 0; i < n; i++) {
+    const cx = Math.floor(((i + 0.2 + h01(i, 2, seed) * 0.6) / n) * STRIP_W);
+    const hw = 16 + Math.floor(h01(i, 3, seed) * 26), hgt = 8 + Math.floor(h01(i, 4, seed) * 18);
+    for (let k = -hw; k <= hw; k++) {
+      const f = 1 - Math.abs(k) / hw, lift = Math.round(hgt * Math.sqrt(f) * (0.75 + 0.25 * f));
+      const xx = (((cx + k) % STRIP_W) + STRIP_W) % STRIP_W;
+      top[xx] = Math.min(top[xx], water - lift);
+    }
+  }
+  for (let x = 0; x < STRIP_W; x++) {
+    const lt = top[(x + STRIP_W - 1) % STRIP_W], rt = top[(x + 1) % STRIP_W];
+    for (let y = top[x]; y < H; y++) {
+      const depth = y - top[x];
+      let k = 1;
+      if (top[x] < water) { if (depth < 2 || lt > top[x] + 1) k = 2; else if (rt > top[x] + 1) k = 3; }
+      else if (depth < 1) k = 2;
+      else if (depth > 8 && (y + (x >> 5)) % 7 === 0 && h01(x >> 3, y, seed) > 0.5) k = 3;
+      L.idx[y * STRIP_W + x] = k;
+    }
+  }
+  return L;
+}
+/** 海中景：低浪帶（長而平的湧浪，迎光面亮、背面暗） */
+export function buildSwells(seed: number): IndexedLayer {
+  const H = 110, L = new IndexedLayer(STRIP_W, H);
+  const p = (i: number): number => h01(i, 6, seed) * 6.28;
+  const height = (x: number): number => 22 + wave(x, [[6, 4, p(1)], [14, 2, p(2)], [29, 1, p(3)]]);
+  for (let x = 0; x < STRIP_W; x++) {
+    const top = Math.round(H - height(x)), slope = height(x + 1) - height(x - 1);
+    for (let y = Math.max(0, top); y < H; y++) {
+      const depth = y - top;
+      let k = 1;
+      if (depth < 2 && slope > -0.05) k = 2;
+      else if (slope < -0.3 && depth < 10) k = 3;
+      else if (depth > 6 && (y + (x >> 4)) % 9 === 0 && h01(x >> 2, y, seed) > 0.4) k = 3;
+      L.idx[y * STRIP_W + x] = k;
+    }
+  }
+  return L;
+}
+/** 海近景：浪頂碎白（索引 5 = 偏白的泡沫） */
+export function buildSeaNear(seed: number): IndexedLayer {
+  const H = 96, L = new IndexedLayer(STRIP_W, H);
+  const p = (i: number): number => h01(i, 6, seed) * 6.28;
+  const height = (x: number): number => 14 + wave(x, [[9, 4, p(1)], [22, 2, p(2)], [41, 1, p(3)]]);
+  for (let x = 0; x < STRIP_W; x++) {
+    const top = Math.round(H - height(x)), slope = height(x + 1) - height(x - 1);
+    for (let y = Math.max(0, top); y < H; y++) {
+      const depth = y - top;
+      let k = 1;
+      if (depth < 2 && slope > -0.05) k = 2;
+      else if (slope < -0.25 && depth < 8) k = 3;
+      L.idx[y * STRIP_W + x] = k;
+    }
+  }
+  // 浪頂碎白：沿浪頂灑短橫條
+  let x = 0, i = 0;
+  while (x < STRIP_W) {
+    const len = 3 + Math.floor(h01(i, 11, seed) * 6);
+    for (let k = 0; k < len; k++) {
+      const xx = (x + k) % STRIP_W, ty = Math.round(H - height(xx));
+      if (ty >= 0 && ty < H) L.idx[ty * STRIP_W + xx] = 5;
+      if (k > 0 && k < len - 1 && ty + 1 < H && h01(i, 12 + k, seed) > 0.5) L.idx[(ty + 1) * STRIP_W + xx] = 4;
+    }
+    x += 10 + Math.floor(h01(i, 13, seed) * 22); i++;
+  }
+  return L;
+}
 /** 近林：針葉 / 圓頂樹剪影 */
 function buildForest(seed: number): IndexedLayer {
   const H = 96, L = new IndexedLayer(STRIP_W, H);
@@ -563,10 +640,11 @@ const UG_COVER_M = 160;
 interface LayerPlan { left: number; right: number; L: IndexedLayer; R: IndexedLayer; front: number; }
 
 /** 各生態區白天的天色傾向（頂 / 底）：沙漠偏暖白、雪原偏冷亮、叢林偏濕綠；森林不改 */
-const SKY_TINT: Record<number, [string, string]> = {
+export const SKY_TINT: Record<number, [string, string]> = {
   1: ['#5c9ce0', '#f2e2b0'],
   2: ['#94c8ee', '#cceaf8'],
   3: ['#3e74c4', '#a2c8b0'],
+  4: ['#3e74c4', '#94c8ee'],
 };
 /** 天色依生態區權重往該區傾向靠（amt = 白天程度；夜裡不變）。回傳新物件，顏色未吸附（drawSky 會吸附） */
 export function tintSky(sky: SkyColors, weights: readonly number[], amt: number): SkyColors {
@@ -622,12 +700,16 @@ export class Background {
     this.sets[1] = [buildMesas(seed + 2), buildDunes(seed + 3, 110, 14, 40), buildDesertNear(seed + 4)];
     this.sets[2] = [buildMountains(seed + 5, 48), buildHills(seed + 6, true), buildPines(seed + 7)];
     this.sets[3] = [buildKarst(seed + 8), buildCanopy(seed + 9), buildJungleNear(seed + 10)];
+    this.sets[4] = [buildSeaHorizon(seed + 11), buildSwells(seed + 12), buildSeaNear(seed + 13)];
     for (const set of this.sets) set[2].deep = true;
     this.winterSet = [buildMountains(seed, 60), buildHills(seed + 1, true), this.sets[0][2]];
     for (let i = 0; i < 5; i++) this.clouds.push(cloudLayer(i));
     for (let l = 1; l <= 4; l++) this.stars.push(toCanvas(starsBmp(seed, l)) as HTMLCanvasElement);
     this.cloudSeed = seed;
   }
+
+  /** 測試用唯讀存取：某區某層的剪影（沒有就回森林的） */
+  layerFor(biome: number, k: number): IndexedLayer { return this.sets[biome]?.[k] ?? this.sets[0][k]; }
 
   /** 生態區權重場（來源換了才重建） */
   private fieldFor(src: BiomeSource | undefined): BiomeField | null {

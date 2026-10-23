@@ -14,7 +14,7 @@ export const LAYER_HALF: readonly [number, number, number] = [104, 68, 40];
 export const SKY_HALF = 128;
 /** 分界抖動帶寬度（美術 px） */
 export const WIPE_BAND = 80;
-const NB = 4;
+const NB = 5;
 
 export interface BiomePair { left: number; right: number; u: number; }
 

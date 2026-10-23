@@ -191,3 +191,11 @@ describe('分界帶（WIPE_LEVELS 段、1×1 Bayer 遮罩、錨定圖層）', ()
     expect(diff).toBeGreaterThan(0);
   });
 });
+
+describe('BiomeField 五區（含 OCEAN）', () => {
+  it('weights 有 5 項；全海視窗 pair = OCEAN', () => {
+    const f = new BiomeField((x) => (x < 1000 ? 0 : 4), -1e6, 1e6);
+    expect(f.weights(5000, 104)).toHaveLength(5);
+    expect(f.pair(5000, 104)).toEqual({ left: 4, right: 4, u: 0 });
+  });
+});

@@ -1,5 +1,6 @@
 // underground.test.ts — 地下背景每欄的色帶規劃：生態區主題、層與層之間的抖動過渡帶、交界抖動、菇林 / 地城覆蓋；
 // 主題暗紋（近層有洞口、遠層是整片的環境色）。
+import { BIOME } from '../engine/world';
 import { describe, it, expect } from 'vitest';
 import { FAR_RAMP, UG, UG_KEEPS, UG_FADE_STEPS, UG_SEAM, UG_TILE, smoothTops, ugAreas, ugColumnBands, ugThemeBmp, type UgColumn } from './underground';
 
@@ -167,5 +168,14 @@ describe('smoothTops（欄頂平滑：水裡 / 洞裡沒有垂直硬邊）', () 
     for (let i = 0; i < t.length; i++) expect(t[i]).toBeGreaterThanOrEqual(raw(80 + i) - 3 * T);
     const flat = smoothTops(() => 300 * T, 0, 10, T);
     for (const v of flat) expect(v).toBe(300 * T);
+  });
+});
+
+describe('ugColumnBands · OCEAN', () => {
+  it('海：上層砂、岩層仍是岩（不跟著海換主題）', () => {
+    const col = base();
+    const bands = ugColumnBands({ ...col, biomeAt: () => BIOME.OCEAN });
+    expect(bands.find((b) => !b.fade && !b.overlay && b.y0 < col.rockY)!.theme).toBe(UG.SAND);
+    expect(bands.find((b) => !b.overlay && b.y0 >= col.rockY && b.y1 <= col.deepY + UG_SEAM / 2)!.theme).toBe(UG.ROCK);
   });
 });
