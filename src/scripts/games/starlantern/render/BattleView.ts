@@ -138,8 +138,13 @@ type PopOpts = { weak?: boolean; crit?: boolean; resist?: boolean; small?: boole
 const popSize = (o: PopOpts): 12 | 24 => (o.small ? 12 : 24);
 /** A label's width at the ailment font size, estimated without measuring (render/ailmentStyle.ts `textWidth`). */
 export const ailLabelWidth = (text: string): number => textWidth(text, AIL_SIZE);
-/** Nothing in the picture may rise above the message window. */
-const TOP_CLEAR = 52;
+/**
+ * The message window (`.slx-msg`) covers the stage from y 6 to 70 with one line. Nothing in the picture may stand under
+ * it: an intent line (anchored at its bottom) is held at least this low, so a tall boss's intent and its affix row show
+ * (T8 acceptance: at 52 both were hidden behind the window).
+ */
+const MSG_BOTTOM = 70;
+const TOP_CLEAR = MSG_BOTTOM + 2 + INTENT_H;
 
 /** Pop colours: a crit burns orange, a resisted hit is a cold grey-blue, a miss a pale grey. */
 const CRIT_COLOR = 0xff9a3c;

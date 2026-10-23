@@ -586,6 +586,8 @@ describe('BattleView affixes (difficulty plan Task 7b)', () => {
   const foes = (n: number, name = (i: number) => `e${i}`) => makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], Array.from({ length: n }, (_, i) => makeCombatant({ key: `e${i}`, side: 'enemy', name: name(i) })));
   const THREE: AilmentChip[] = [{ id: 'bleed', stacks: 2, turns: 3 }, { id: 'burn', turns: 3 }, { id: 'shock', turns: 2 }];
   const texts = (view: BattleView, key: string) => view.ailmentTexts(key).map((t) => t.text);
+  /** The message window's bottom on the 640x360 stage: `.slx-msg` stands at 6 and is 64 px tall with one line (T8). */
+  const MSG_BOTTOM = 70;
 
   it('affixes lead the row and fold last', () => {
     // Three foes: the row has room for two affixes and a 「+N」, not for an ailment beside them.
@@ -668,9 +670,30 @@ describe('BattleView affixes (difficulty plan Task 7b)', () => {
           expect(meets(rect, view.nameRect(o)!), `${label} ${k} row vs ${o} name`).toBe(false);
         }
         for (const other of rows) if (other.k !== k) expect(meets(rect, other.rect), `${label} ${k} row vs ${other.k} row`).toBe(false);
-        expect(rect.y, `${label} ${k} under the message window`).toBeGreaterThanOrEqual(52);
+        expect(rect.y, `${label} ${k} under the message window`).toBeGreaterThanOrEqual(MSG_BOTTOM);
       }
     }
+  });
+
+  it('a lone boss keeps its intent and affixes below the message window (T8 acceptance)', () => {
+    // A boss's picture is tall, so its intent and row are held down by the top of the stage. They must stand under the
+    // message window (.slx-msg), which covers stage y 6 to 70 with one line: there they are the only place its affixes
+    // show, since a lone foe gets no target list.
+    const tex = new Texture({ source: new TextureSource({ width: 220, height: 300 }) });
+    const view = new BattleView(true, { get: () => tex, has: () => true } as unknown as TextureBank);
+    view.setup(makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], [makeCombatant({ key: 'e0', side: 'enemy', defId: 'lanterneater', boss: true, name: '深層・燈喰之獸' })]), { width: 640, height: 360 }, 1, 150, 70);
+    view.showIntents({ e0: '攻擊 → 絲嘉蕾' });
+    view.showAilments({ e0: [{ id: 'poison' }] }, {}, { e0: ['迅捷', '霜縛'] });
+    const box = view.enemyBoxOf('e0')!;
+    const at = (r: { x: number; y: number; width: number; height: number }) => ({ ...r, x: box.x + r.x, y: box.y + r.y });
+    const intent = at(view.intentRect('e0')!), row = at(view.ailmentRowRect('e0')!);
+    expect(intent.y, 'the intent under the message window').toBeGreaterThanOrEqual(MSG_BOTTOM);
+    expect(row.y, 'the affix row under the message window').toBeGreaterThanOrEqual(MSG_BOTTOM);
+    expect(texts(view, 'e0').slice(0, 2)).toEqual(['迅捷', '霜縛']);
+    const meets = (a: typeof row, b: typeof row) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+    expect(meets(intent, row), 'the intent and the row apart').toBe(false);
+    expect(meets(row, view.hpBarRect('e0')!), 'the row clear of the bar').toBe(false);
+    expect(meets(row, view.nameRect('e0')!), 'the row clear of the name').toBe(false);
   });
 });
 

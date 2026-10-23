@@ -4885,6 +4885,49 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test('a Hell boss shows its two affixes below the message window (difficulty, T8)', async ({ page }) => {
+    // T8 acceptance: a boss's picture is tall, so its intent and affix row are held at the top of the stage, where the
+    // message window covered both. A lone boss gets no target list, so the row is the only place its affixes show.
+    const w = await startSweepGame(page);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const run = (src: string) => page.evaluate((s) => new Function('g', s)((window as any).__starlanternDebug.game), src);
+    await run(`const d = g.state.dungeon; d.reached.mainline = 30; d.bossKills['nightmare:mainline:25'] = 1;
+      g.state.story.finaleCleared = true;
+      if (!g.chooseTier('hell').ok) throw new Error('Hell did not open');
+      if (!g.depart({ region: 'mainline', condition: 'plain' }, 24).ok) throw new Error('no departure');`);
+    await go(page, 'dungeon');
+    await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+    const key = await run(`const m = g.map();
+      for (const [k, dx, dy] of [['ArrowUp', 0, -1], ['ArrowDown', 0, 1], ['ArrowLeft', -1, 0], ['ArrowRight', 1, 0]]) {
+        const x = g.pos.x + dx, y = g.pos.y + dy;
+        if (m.tiles[y]?.[x] !== 'floor') continue;
+        if (m.boss) m.tiles[m.boss.y][m.boss.x] = 'floor';
+        m.tiles[y][x] = 'boss'; m.boss = { x, y }; g.encounter = 0;
+        return k;
+      }
+      return '';`) as string;
+    expect(key).not.toBe('');
+    await page.keyboard.press(key);
+    for (let i = 0; i < 20 && !(await page.locator('.slx-bcmd [role=option]').count()); i++) { await w.key('z'); await page.waitForTimeout(80); }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    const affixes = await run('return g.battle.boss ? g.battle.enemies[0].affixes : null;') as string[];
+    expect(affixes).toHaveLength(2);
+    const names = affixes.map((id) => TIER_AFFIXES[id as keyof typeof TIER_AFFIXES].name);
+    for (const [width, height] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await fitTo(page, width, height);
+      const msg = await stageBox(page, page.locator('.slx-battle .slx-msg'));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const at = await page.evaluate(() => { const v = (window as any).__starlanternDebug.stage.battleView; const b = v.enemyBoxOf('e0'), i = v.intentRect('e0'), r = v.ailmentRowRect('e0');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return { intent: b.y + i.y, row: b.y + r.y, texts: v.ailmentTexts('e0').map((t: any) => t.text) }; });
+      expect(at.intent, `the intent under the message window at ${width}x${height}`).toBeGreaterThanOrEqual(msg.y + msg.height - 0.5);
+      expect(at.row, `the affix row under the message window at ${width}x${height}`).toBeGreaterThanOrEqual(msg.y + msg.height - 0.5);
+      expect(at.texts.slice(0, 2)).toEqual(names);
+    }
+    await fitTo(page, 1280, 720);
+    expect(w.errors).toEqual([]);
+  });
+
   test('every main screen reads at 12px and 24px at 1280x720, 844x390 and a phone (legibility Task 7) @sweep @dpr', async ({ page }, info) => {
     // Every main screen at the three sizes (the phone held upright, turned), in each project's device pixel ratio: each
     // one reads clearly (legibility() finds nothing). With SL_SHOTS, one picture each into <SL_SHOTS>/<d1|d1.25|d1.5>,
