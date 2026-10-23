@@ -132,12 +132,12 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // Task 4: the prologue (spec §9.2, §3.3, §4).
   prologue: {
     lines: [
-      at(PL.plazaPredawn, N('黎明前的傳送門廣場。暮霧貼著石板流動，西邊高地上的星燈，淡得像快燒盡的燭火。')),
+      at(PL.plazaPredawn, N('黎明前的傳送門廣場。迷宮吐出的霧──鎮上叫它暮霧──貼著石板流動，西邊高地上的星燈淡得像殘燭。')),
       { who: 'glen', text: '「喂，醒醒！這身灰，只有深處才沾得到。」' },
-      { who: 'glen', text: '「沒人走進去，門卻自己亮了。這小子把那女孩拖了出來，走了三步就倒了，還扣著她的手腕不放。」' },
+      { who: 'glen', text: '「別光看，去叫安娜！門自己亮了，這小子把那女孩拖了出來，走了三步就倒了，還扣著她的手腕不放。」' },
       at(PL.guild, N('冒險者公會。安娜攤開一張失憶登記表：找到的地點、身上的東西、記得的最後一句話。')),
       { who: 'anna', text: '「身上只有一把刻著怪紋路的劍。你醒來以後，嘴裡一直念著一個『洛』字。」' },
-      { who: 'hero', mood: 'normal', text: '「洛……就這樣。後面那半個字，大概掉在下面了。」' },
+      { who: 'hero', mood: 'normal', text: '「洛……就這樣。後面那個字，大概掉在下面了。」' },
       { who: 'anna', text: '「那就叫你洛恩吧。名字總要有一個，回來的時候，才有人喊得出來。」' },
       { who: 'anna', text: '「妳的刀柄上也刻了一個字：『凜』。認得嗎？」' },
       { who: 'rin', mood: 'guarded', text: '「不認得。名字總要有一個，就它了。」' },
@@ -151,18 +151,18 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // player's: the grip, each other's only lead, one lamp, the debt, and the pull she takes for instinct (her 7th piece pays it).
   'prologue-inn': {
     lines: [
-      at(PL.innDeepNight, N('深夜的月影旅館。洛恩從夢裡驚醒，窗邊的凜還睜著眼，臉朝著他的床。她像是不確定他還在不在，所以睡不著。')),
+      at(PL.innDeepNight, N('深夜的月影旅館。洛恩從夢裡驚醒，窗邊的凜還睜著眼，臉朝著他的床。他翻個身，她的眼睛就跟著動。')),
       N('她手腕上還留著一圈發青的指痕。洛恩昏過去以後，那幾根手指還扣著，葛倫掰了很久才掰開。他悄悄把手縮回被子裡。'),
       { who: 'hero', mood: 'normal', text: '「我們是一起被撿回來的吧？那妳該不會認識以前的我？」' },
-      { who: 'rin', mood: 'guarded', text: '「我什麼都不記得，你是我唯一的線索。另外，你說了三次夢話。很吵。」' },
+      { who: 'rin', mood: 'guarded', text: '「不認識。我什麼都不記得，現在只能跟著你。你說了三次夢話，很吵。」' },
       { who: 'hero', mood: 'serious', text: '「明天我再下去。我怎麼會從下面走出來，答案總不會自己爬上來。欠公會的錢，也得撿碎片來還。」' },
       { who: 'rin', mood: 'normal', text: '「我跟你去。」' },
       { who: 'hero', mood: 'surprised', text: '「為什麼？妳不是嫌我吵？」' },
-      { who: 'rin', mood: 'serious', text: '「公會說，兩個人算同一盞燈。你一個人下去回不來，我會很麻煩。」' },
+      { who: 'rin', mood: 'serious', text: '「公會只發了一盞燈。你一個人下去回不來，我也回不來。」' },
       { who: 'rin', mood: 'sad', text: '「吵是吵。反正我能去的地方，也只剩迷宮了。」' },
       { who: 'hero', mood: 'smile', text: '「好。那夢話我盡量小聲。」' },
     ],
-    summary: '旅館的第一夜。兩人都欠著公會，又只有彼此是自己的線索。公會只記了一盞燈，兩個人決定一起下去。',
+    summary: '旅館的第一夜。兩人都欠著公會，什麼都不記得，只能跟著彼此。公會只發了一盞燈，兩個人決定一起下去。',
   },
   // Task 10b: the return after the first fight Rin won in (not always the first return). Her first trust in a fight,
   // mirrored on his grip; she will not take thanks. Nothing here says "first": an earlier return may have played a chat.
@@ -202,7 +202,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:rin:3': {
     lines: [
       NP('燭火前，有人用兩根手指撐開她的眼皮：「不准眨。眨一次，目標就不見了。」'),
-      NP('她盯著火，直到眼淚流乾、火光變成一片白。這一次，沒有人說這是遊戲。'),
+      NP('她盯著火，直到眼淚流乾、火光變成一片白。旁邊的人只說：「再一次。」'),
       { who: 'rin', mood: 'serious', text: '「難怪我打架都不眨眼。」' },
       { who: 'hero', mood: 'normal', text: '「那妳現在眨一下。」' },
       N('凜瞪著他，撐了三秒，眨了一下。然後又眨了一下，像在確認這件事可以做。'),
@@ -265,20 +265,20 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   act2: {
     lines: [
-      at(PL.guild, N('冒險者公會。洛恩把一塊石頭擱上櫃台。本道第四層的牆，他敲了一整個下午，才敲下這一角。')),
-      N('石頭裡有光，細得像葉脈。安娜把它翻過來，又翻回去。不管怎麼擺，光都往同一邊流──往下。'),
+      at(PL.guild, N('冒險者公會。洛恩把一塊石頭擱上櫃台，是他在本道第四層的牆上敲了一整個下午才敲下來的。')),
+      N('石頭裡有光，細得像葉脈。安娜把它翻過來，又翻回去，光都往同一邊流──往下。其中幾條，是灰的。'),
       { who: 'anna', text: '「這紋路，星燈的基座上也有。我每年替公會上去擦一次，擦到閉著眼睛都畫得出來。」' },
-      { who: 'hero', mood: 'serious', text: '「有幾條是灰的。耳朵貼上去，會聽見不認識的人在說話。下面的牆，都順著那幾條長。」' },
+      N('洛恩把耳朵貼上灰的那一條。他整個人停住了，過了很久，才把石頭放回櫃台。'),
+      { who: 'anna', text: '「你聽到什麼了？」' },
+      { who: 'hero', mood: 'serious', text: '「沒什麼。只是下面的牆，都是順著這種灰的長出來的。」' },
       { who: 'anna', text: '「公會的老人老愛講，山上那道光只是燈罩，燈芯在迷宮最底下。我一直當成醉話。」' },
-      { who: 'anna', text: '「光灰掉的地方就長出牆……那迷宮，是燈壞了才長出來的？」' },
-      { who: 'hero', mood: 'serious', text: '「燈芯還在燒嗎？」' },
-      { who: 'anna', text: '「光柱一年比一年暗。我每年都跟自己說，是我眼睛老花了。」' },
+      { who: 'anna', text: '「燈芯要是好好的，光柱就不會一年比一年暗。我每年都跟自己說，是我眼睛老花了。」' },
       at(PL.inn, N('月影旅館。瑪莎端上剛起鍋的湯，凜捧起碗，一口氣喝到見底，眉頭也沒有皺一下。')),
       { who: 'marta', text: '「慢慢喝，燙壞了舌頭，明天的湯就嘗不出味道了。」' },
       { who: 'rin', text: '「放著，會被拿走。」' },
       N('洛恩把自己那一碗推到她面前，說他吃得慢。第二碗，凜喝了很久。'),
     ],
-    summary: '第四層的牆裡流著星燈的光，牆順著灰掉的光長。燈芯在迷宮最底下，迷宮是燈壞了以後才長出來的。凜喝湯的樣子有點不對勁。',
+    summary: '第四層的牆裡流著星燈的光，牆順著灰掉的光長；洛恩貼耳聽了，不肯說聽見什麼。燈芯在迷宮最底下。凜喝湯的樣子不對勁。',
   },
   act3: {
     lines: [
@@ -432,7 +432,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       { who: 'glen', text: '「小子，下去之前先看一眼那道光。迷路了，就朝它走。」' },
       { who: 'hero', mood: 'normal', text: '「知道。醒來的時候，第一個看見的就是它。第二個，是你的鼻孔。」' },
-      { who: 'glen', text: '「少耍嘴皮。你昏著的時候，是我的鼻孔替你擋了一整晚的風。還站著幹嘛，下去。」' },
+      { who: 'glen', text: '「少耍嘴皮。下次你醒過來，我記得把臉挪開。還站著幹嘛，下去。」' },
     ],
     summary: '葛倫要洛恩迷路時朝星燈走。洛恩說，他醒來第一個看見的就是它。',
   },
@@ -685,7 +685,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('山腰的神社，石階兩旁積著雪。神主替她繫好袖帶，把長槍交到她手上。'),
       NP('「去封住迷宮的裂口吧。」神主說，「春祭之前，回來。」'),
-      { who: 'chizuru', mood: 'solemn', text: '「這是幾日前的事。春祭之前，得趕回去才行。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「不過是幾日前的事。春祭之前，須得歸山。」' },
       N('千鶴抬頭看了看迷宮的天頂，像在找太陽，好算出今天是幾月幾日。'),
     ],
     summary: '千鶴想起神主送她出發：去封住迷宮的裂口，春祭之前回來。她以為那只是幾天前的事。',
@@ -753,7 +753,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     lines: [
       NP('沙丘上的營火。鼓手敲著皮鼓，她赤著腳，在火光裡轉圈。'),
       NP('「慢了半拍！」鼓手笑著喊，「跟上我的鼓，別讓鼓跟著妳跑！」'),
-      { who: 'safira', mood: 'laugh', text: '「哈哈，那個大鬍子，打起鼓來比誰都兇。他是我們舞團的鼓手唷。」' },
+      { who: 'safira', mood: 'laugh', text: '「哈哈，那個大鬍子啊，罵我慢半拍，罵了整整十年唷。」' },
       N('莎菲拉跟著記憶裡的鼓點踩了兩拍。第三拍踩空了，她笑了一下，沒有再踩。'),
     ],
     summary: '莎菲拉想起舞團的鼓手，和營火邊跟不上的那半拍。鼓聲是哪一天停的，她想不起來。',
@@ -1151,7 +1151,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       // Read right before and after any of her pieces: a knight keeping watch is her meeting's, not a memory (I-58).
       at(PL.plazaDeepNight, N('深夜的傳送門廣場。絲嘉蕾佩著劍站在門前，一動也不動。')),
       { who: 'glen', text: '「喂，騎士大人。守門是我的工作，妳回去睡。別逞強。」' },
-      { who: 'scarlet', mood: 'serious', text: '「遵命。另外，守夜表已經排好了。葛倫先生是明晚第二班，請勿遲到。」' },
+      { who: 'scarlet', mood: 'serious', text: '「遵命。守夜表已排定。葛倫先生，明晚第二班，請勿遲到。」' },
     ],
     summary: '絲嘉蕾深夜站在傳送門前守夜，被葛倫趕回去睡。她領命，順手把葛倫排進了守夜表。',
   },
@@ -1846,12 +1846,12 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
       N(FOUND_LINE),
       N('一大塊冰裡凍著一位巫女，握著長槍，還保持著封印儀式的姿勢。冰面忽然裂開一道細縫。'),
       { who: 'chizuru', mood: 'solemn', text: '「封印……尚未完成。」' },
-      { who: 'rin', text: '「冰在說話。」' },   // V2: her deadpan; a meeting plays unfiltered, so no guarded face
+      N('凜伸手敲了敲冰面。冰裡那雙眼睛，動了一下。'),   // story polish M round 2: half of Rin's meeting quips become actions
     ],
     after: [
       N('冰碎了。巫女跌了出來，拄著長槍站穩，第一件事是朝倒下的怪物鄭重行了一禮。'),
       { who: 'hero', text: '「站得起來嗎？看來可以，還有空跟怪物鞠躬。」' },
-      { who: 'chizuru', mood: 'bewildered', text: '「失禮了，對手也須以禮相送。我是千鶴，奉神社之命封印裂口。春祭之前得趕回去，往山下是哪一邊？」' },
+      { who: 'chizuru', mood: 'bewildered', text: '「失禮了，逝者當以禮相送。我是千鶴，奉神社之命封印裂口。春祭之前須得歸山，敢問下山的路在哪一邊？」' },
       { who: 'rin', text: '「這裡沒有山下。只有樓下。」' },
       N('千鶴愣了很久，抬頭看那片石頭天頂。然後把長槍扛上肩，跟在凜後面走了。'),
     ],
@@ -1861,13 +1861,13 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
       N(FOUND_LINE),
       N('熾焰之地的火海裡，一個少女握著彎刀，一個人跳著劍舞。每一步，都像在等誰接上她的拍子。'),
       { who: 'safira', mood: 'wink', text: '「哎呀，有觀眾！來得剛好，這首一個人跳太寂寞了呀。舞伴又一個比一個醜。」' },
-      { who: 'rin', text: '「那是在打，還是在跳？」' },   // V1: her deadpan; a meeting plays unfiltered, so no guarded face
+      N('凜的腳尖跟著那拍子點了一下，又立刻停住。'),   // story polish M round 2: an action, not a quip
     ],
     after: [
       { who: 'safira', mood: 'laugh', text: '「哈哈，好久沒人陪我跳完一整首了！你們踩拍子的腳，還不錯唷。」' },
       { who: 'hero', text: '「我是洛恩。剛才那個，我們是在打架。」' },
       N('她轉過身，朝空蕩蕩的火海喊：「鼓手大叔，下一首快一點！」火海裡，什麼也沒有回答。'),
-      { who: 'safira', mood: 'wink', text: '「啊，喊錯人了。那就你們吧。我是莎菲拉，你的名字太硬，叫小洛好了。跟上拍子囉！」' },
+      { who: 'safira', mood: 'wink', text: '「啊，喊錯人了。那就你們吧，一、二──我是莎菲拉。你的名字太硬，叫小洛好了。跟上拍子囉！」' },
     ],
   },
   // Task 9
@@ -1881,8 +1881,8 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
     after: [
       N('洛恩割斷了毒藤。她把箭一支一支撿回來，順手拎起一條被射穿的蛇，掂了掂。'),
       { who: 'sylvie', text: '「希爾薇。謝了──這個，晚上能吃。」' },
-      { who: 'hero', text: '「蛇就不用了。妳知道往哪邊走，比較不會被吃掉嗎？」' },
-      { who: 'sylvie', mood: 'serious', text: '「這片沼澤的路，我認得。你們走路像小鹿，三步就會踩到毒藤。走我後面。」' },
+      { who: 'hero', text: '「蛇就不用了。那妳知道哪條路比較不會被吃掉嗎？」' },
+      { who: 'sylvie', mood: 'serious', text: '「這片沼澤的路，我認得。你們的腳印太深，獵物隔三棵樹就聽得見。踩我踩過的地方。」' },
       N('她走在最前面，弓一直沒有放下。那條蛇掛在她腰上，晃了一路。'),
     ],
   },
@@ -1891,7 +1891,7 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
       N(FOUND_LINE),
       N('雷鳴之地的岩台上，雷光四處亂竄。一個少女揮著法杖，連自己腳邊都劈。'),
       { who: 'noel', mood: 'panic', text: '「別、別過來！我的雷還、還沒用完！」' },
-      { who: 'rin', text: '「她在跟自己的雷吵架。雷比較大聲。」' },
+      N('一道雷劈在凜的腳邊。凜往旁邊挪了一步，像在躲雨。'),
     ],
     after: [
       N('雷光熄了。少女腿一軟，坐倒在岩石上，頭髮被自己的雷劈得蓬成一團。'),
@@ -1905,13 +1905,12 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
     before: [
       N(FOUND_LINE),
       N('星燈神殿的石柱之間，倒著一台古代機兵。一個少女趴在它的胸口，扳手轉個不停。'),
-      { who: 'bobby', mood: 'focused', text: '「這顆螺絲，再半圈──再半圈就好──好，接上了喔！」' },
       { who: 'rin', text: '「後面有三隻。」' },   // a meeting plays unfiltered and may come after her oath: no guarded face
+      { who: 'bobby', mood: 'focused', text: '「三隻？等一下，這邊還差半圈──好了！可以打了！」' },
     ],
     after: [
-      { who: 'bobby', mood: 'grin', text: '「嘿嘿，剛才有人說『三隻』？我還以為是在數螺絲。」' },
       { who: 'hero', text: '「怪物都圍過來了，妳還在鎖螺絲。」' },
-      { who: 'bobby', mood: 'excited', text: '「它關節的齒輪到現在都還咬得好好的──啊，你那把劍，紋路好漂亮！借我看一下下！」' },
+      { who: 'bobby', mood: 'excited', text: '「第一步鎖螺絲，第二步打怪，順序不能反──啊，你那把劍，紋路好漂亮。借我看一下下！」' },
       N('她的手已經伸過來了。洛恩把劍往後一收，她整個人就跟著劍走了兩步。'),
       { who: 'bobby', mood: 'grin', text: '「我是波比，技師。那我就跟著你們走吧，剛好順路。真的。」' },
     ],
@@ -1942,15 +1941,15 @@ const MEET: Partial<Record<Meetable, { before: ScriptLine[]; after: ScriptLine[]
     before: [
       N(FOUND_LINE),
       N('鋼鐵要塞的城門前，一位騎士舉著燃燒的劍，背對著城門站著。'),
-      N('圍在她身邊的機兵，一台也沒有對她動手。它們和她一起，轉向了隊伍。'),
+      N('她身邊圍著要塞的守城機兵。它們不是在圍攻她，是和她站在同一邊，一起轉向了隊伍。'),
       { who: 'scarlet', mood: 'vow', text: '「止步。這扇門後，一步也不許過。以我的劍起誓，我不會再轉身。」' },
     ],
     after: [
-      { who: 'scarlet', mood: 'shaken', text: '「你們不是敵人。是我把你們，錯看成了攻破城門的人。」' },
+      { who: 'scarlet', mood: 'shaken', text: '「抱歉。我以為你們是來破門的。」' },
       { who: 'hero', text: '「妳在守這扇門？守著什麼？」' },
       N('她張開口，又閉上，回頭看了城門很久。門後面，一點聲音也沒有。'),
-      { who: 'scarlet', mood: 'serious', text: '「我是絲嘉蕾，騎士。剛才對各位拔劍，非常抱歉。誰受了傷，請一個一個報上來，我一個一個賠。」' },
-      { who: 'scarlet', mood: 'vow', text: '「另外，在弄清楚各位是什麼人之前，我會跟著。這是監視，不是同行。」' },
+      { who: 'scarlet', mood: 'serious', text: '「我是絲嘉蕾，騎士。誰受了傷，請一個一個報上來，我一個一個賠。」' },
+      { who: 'scarlet', mood: 'vow', text: '「查清各位的來歷之前，我隨隊行動。這是監視，不是同行。」' },
     ],
   },
 };

@@ -196,7 +196,7 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
       at('prologue-inn', '發青的指痕'), at('prologue-inn', '三次夢話'), at('prologue-inn', '只剩迷宮'), at('rin-reveal', '派來殺你'),
       at('mem:bobby:4', '替祖先道一次歉'), at('chat:bobby:2', '彈簧上得太緊'), at('mem:hero:9', '一直都想回來'),
       at('chat:scarlet:2', '騎士的職責'), at('chat:sylvie:2', '新芽，我看過了'), at('mem:liz:5', '在鎮上見過'), at('mem:liz:5', '爸爸到現在都沒收'),
-      at('prologue-inn', '睡不著'),
+      at('prologue-inn', '睜著眼'),   // story polish M round 2: 「睡不著」 explained the feeling; the look shows it
     ];
     for (const t of finals) expect(telegraphBreaks(t), t).toEqual([]);
   });

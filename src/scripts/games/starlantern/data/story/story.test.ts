@@ -1254,7 +1254,7 @@ describe('Task 10b: why the two of them go down together', () => {
   it('the approved prologue keeps its twelve lines, from the dawn plaza to 「歸來者」, and its beats', () => {
     const p = lines('prologue');
     expect(p).toHaveLength(12);
-    expect(p[0].text).toBe('黎明前的傳送門廣場。暮霧貼著石板流動，西邊高地上的星燈，淡得像快燒盡的燭火。');
+    expect(p[0].text).toBe('黎明前的傳送門廣場。迷宮吐出的霧──鎮上叫它暮霧──貼著石板流動，西邊高地上的星燈淡得像殘燭。');   // story polish M round 2: 暮霧 introduced, not 「黎明前……暮」
     // story polish Task 5 (ruling 7): Glen tells the grip, Anna puts the medicine and the lamp on the guild's account
     expect(p[2].who).toBe('glen');
     expect(() => pinBeat('prologue', {}, /拖了出來.*三步就倒.*手腕/)).not.toThrow();
@@ -1307,11 +1307,11 @@ describe('Task 10b: why the two of them go down together', () => {
     const text = inn.map((l) => l.text).join('');
     expect(text).toMatch(/指痕/);   // 1. the grip: Glen could not pry his fingers off
     expect(text).toMatch(/掰/);
-    expect(text).toMatch(/線索/);   // 2. each other's only lead
-    expect(text).toMatch(/同一盞燈/);   // 3. one lamp for the two of them (I-83)
+    expect(text).toMatch(/只能跟著你/);   // 2. each other's only lead (story polish M round 2: said as following, not as 「線索」)
+    expect(text).toMatch(/一盞燈/);   // 3. one lamp for the two of them (I-83)
     expect(text).toMatch(/欠/);   // 4. the debt, and only the depths pay it
     expect(text).toMatch(/碎片/);
-    expect(text).toMatch(/睡不著/);   // 5. she cannot sleep without knowing where he is
+    expect(text).toMatch(/睜著眼/);   // 5. she does not sleep: shown, not explained (story polish M round 2)
     const go = inn.findIndex((l) => l.who === 'rin' && l.text.includes('我跟你去'));
     const why = inn.findIndex((l) => l.who === 'hero' && l.text.includes('為什麼'));
     const left = inn.findIndex((l) => l.who === 'rin' && l.text.includes('只剩迷宮'));   // story polish Task 2 (audit A7)
@@ -1330,11 +1330,11 @@ describe('Task 10b: why the two of them go down together', () => {
     const why = inn.findIndex((l) => l.who === 'hero' && l.text.includes('為什麼'));
     const lamp = inn[why + 1];
     expect(lamp.who).toBe('rin');
-    expect(lamp.text).toMatch(/同一盞燈/);
+    expect(lamp.text).toMatch(/一盞燈/);
     expect(lamp.text).toMatch(/一個人下去/);
-    expect(lamp.text).not.toMatch(/線索|只剩/);
+    expect(lamp.text).not.toMatch(/跟著你|只剩/);
     // The lead and the debt come before her choice, each in a line of its own.
-    const lead = inn.findIndex((l) => l.who === 'rin' && l.text.includes('線索'));
+    const lead = inn.findIndex((l) => l.who === 'rin' && l.text.includes('跟著你'));
     const debt = inn.findIndex((l) => l.who === 'hero' && l.text.includes('欠'));
     const go = inn.findIndex((l) => l.text.includes('我跟你去'));
     expect(lead).toBeGreaterThanOrEqual(0);
@@ -1343,7 +1343,7 @@ describe('Task 10b: why the two of them go down together', () => {
     expect(inn[lead].text).not.toMatch(/燈|欠/);
     // Pre-reveal Rin does not confess her sleeplessness; the narrator shows it.
     for (const t of said('prologue-inn', 'rin')) expect(t).not.toMatch(/睡/);
-    expect(inn.some((l) => l.who === 'narrator' && /睡不著/.test(l.text))).toBe(true);
+    expect(inn.some((l) => l.who === 'narrator' && /睜著眼/.test(l.text))).toBe(true);
   });
 
   it('review fixes: the first-return scene never claims to be the first return, and leaves the window to the inn night', () => {
@@ -2589,7 +2589,7 @@ describe('story polish Task 2: the S1 lines', () => {
     // Task 3 (ruling 11): each final pinned by its beat, a key noun or fact, not by its wording.
     const beats: [SceneId, Partial<LineWhen>, RegExp][] = [
       ['prologue-inn', {}, /發青的指痕/],
-      ['prologue-inn', {}, /線索.*夢話/],
+      ['prologue-inn', {}, /跟著你.*夢話/],
       ['prologue-inn', {}, /只剩迷宮/],
       ['rin-reveal', {}, /派來殺你/],
       ['mem:bobby:4', {}, /祖先.*道.*歉/],

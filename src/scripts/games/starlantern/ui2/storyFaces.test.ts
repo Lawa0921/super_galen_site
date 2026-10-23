@@ -157,13 +157,13 @@ describe('faces in a heavy scene (staging S3)', () => {
       }
     }
     expect(smiling).toEqual([]);
-    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(383);   // story polish M: 395 -> 383, present halves told by action
+    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(382);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line
     // 395 character lines. Before S3 the 15 heavy lines of a non-glad mood without art showed a companion's smile, and 60
     // heavy lines of Lorne and Rin their normal: 75 lines, which now take a near face (35), Rin's calm normal (17) or no
     // portrait (23). A glad mood still borrows the smile (22). The light scenes are as they were.
     expect(tally).toEqual({
       // story polish M: the present halves of the early memories end on an action, so fewer heavy companion lines
-      'heavy exact': 93, 'heavy near': 33, 'heavy calm-normal': 17, 'heavy hidden': 23, 'heavy smiling-normal': 18,
+      'heavy exact': 93, 'heavy near': 33, 'heavy calm-normal': 17, 'heavy hidden': 22, 'heavy smiling-normal': 18,
       'light exact': 91, 'light calm-normal': 6, 'light smiling-normal': 102,
     });
   });
