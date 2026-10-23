@@ -106,9 +106,11 @@ export function handbook(s: GameState): Handbook {
       default: return s.story.nodes.includes(stage) && seen.has(TRUTH_SCENE[stage]);
     }
   };
-  // The after page replays the finale, then the lantern festival (story depth plan ruling 12).
+  // The after page replays the finale, then the lantern festival (story depth plan ruling 12). Story L: the act 4 page
+  // replays the night before the descent after the act (as a group scene sits after its act, spec §5.1).
+  const pageScenes = (stage: Stage): SceneId[] => stage === 'after' ? ['finale', 'epilogue'] : stage === 'act4' ? [TRUTH_SCENE.act4, 'finale-eve'] : [TRUTH_SCENE[stage]];
   const truths = STAGES.map((stage): TruthPage => ({
-    stage, unlocked: open(stage), text: open(stage) ? STORY.truths[stage] : null, scenes: entries(stage === 'after' ? ['finale', 'epilogue'] : [TRUTH_SCENE[stage]]),
+    stage, unlocked: open(stage), text: open(stage) ? STORY.truths[stage] : null, scenes: entries(pageScenes(stage)),
   }));
   const followed = followedLeads(s);
   const leads: LeadsPage = { current: nextLead(s), followed, allMet: followed.length === MEETINGS.length };

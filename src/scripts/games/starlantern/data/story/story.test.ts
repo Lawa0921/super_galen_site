@@ -4,7 +4,7 @@ import { ITEMS } from '../items';
 import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
-import { FOUND_LINE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
+import { FOUND_LINE, NIGHT_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
 import { AFTER_CHOICE, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
 import { T } from '../text.zh-TW';
@@ -13,7 +13,7 @@ import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragme
 import { memoryPace } from '../../engine/story/expect';
 import { leadOpen } from '../../engine/story/leads';
 import type { StoryMood } from '../../render/artPaths';
-import { ACT_DEPTHS, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage, type StoryGate } from './scenes';
+import { ACT_DEPTHS, DEPARTURE_SCENES, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage, type StoryGate } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
 
@@ -461,6 +461,7 @@ describe('the script gates', () => {
     const caps: [SceneId, number][] = [
       ['act1-after', 3], ['prologue-inn', 10], ['first-return', 10], ['bellkeeper-arrives', 10], ['rin-confess', 12], ['hero-alone', 10],
       ['finale', 16], ['epilogue', 16], ['prologue', 12], ['act2', 12], ['act3', 12], ['act4', 12], ['rin-reveal', 12],
+      ['finale-eve', 2],   // story L spec §11
     ];
     for (const [id, cap] of caps) expect(lineCap(id), id).toBe(cap);
     expect(caps.map(([id]) => id).sort()).toEqual([...MAJOR_SCENES].sort());   // every major scene named
@@ -471,7 +472,7 @@ describe('the script gates', () => {
     expect(STORY.scenes['hero-alone'].title).toBe('一個人的清晨');
     expect(STORY.scenes.epilogue.title).toBe('星燈祭');
     expect(MAJOR_SCENES).toEqual([
-      'prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale', 'epilogue',
+      'prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale-eve', 'finale', 'epilogue',
     ]);
     expect(position('scenes.rin-confess.lines.0.text')).toBe(rinSeventh());
     expect(position('scenes.hero-alone.lines.0.text')).toBe('act4');
@@ -479,6 +480,17 @@ describe('the script gates', () => {
     for (const id of ['rin-confess', 'hero-alone'] as SceneId[]) {
       for (const k of [`scenes.${id}.lines.0.text`, `scenes.${id}.summary`]) expect(rinSecretAllowed(k), k).toBe(true);
     }
+  });
+
+  it('the eve is one narration line, titled 下潛前的那一夜 (story L Task 3d)', () => {
+    const eve = STORY.scenes['finale-eve'];
+    expect(eve.title).toBe('下潛前的那一夜');
+    expect(eve.lines).toHaveLength(1);
+    expect(eve.lines[0].who).toBe('narrator');
+    expect(eve.lines[0].if).toBeUndefined();
+    expect(eve.lines[0].place).toEqual(NIGHT_PLACE);
+    expect(eve.summary.length).toBeGreaterThan(0);
+    expect(DEPARTURE_SCENES).toEqual(['finale-eve', 'hero-alone']);
   });
 
   it("rin-confess plays every one of its readings within its cap, and Scarlet's and Sylvie's lines only with them (story depth Task 2)", () => {

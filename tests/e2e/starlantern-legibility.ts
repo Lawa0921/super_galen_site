@@ -408,8 +408,23 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
-    name: 'dungeon', visit: async (page, w) => {
+    // Story L: the night before the descent, said at the gate on the departure that owes it, under the night's card.
+    name: 'eve', visit: async (page, w) => {
+      await page.evaluate(() => {
+        const d = (window as unknown as { __starlanternDebug: { game: { state: { story: { queue: string[] } } }; settings: { get(): object; set(s: object): void } } }).__starlanternDebug;
+        d.settings.set({ ...d.settings.get(), story: 'all' });
+        d.game.state.story.queue.push('finale-eve');
+      });
       await w.key('ArrowUp'); await w.key('Enter');           // 是
+      await expect(page.locator('.slx-gate .slx-talk')).toBeVisible();
+      await expect(page.locator('.slx-gate .slx-place-card')).toHaveText('月影旅館・夜');
+      if (!(await page.locator('.slx-gate .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+    },
+  },
+  {
+    name: 'dungeon', visit: async (page, w) => {
+      await readAll(page, w);                                 // the eve, then the party sets out
+      await storyOff(page);
       await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
     },
   },

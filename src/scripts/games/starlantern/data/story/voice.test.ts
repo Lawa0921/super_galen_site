@@ -42,6 +42,8 @@ const POLISHED: string[] = [
   // Task 18: the townsfolk returns and the bellkeeper (story depth plan Task 18). `town.` (each return's handbook line and
   // its thanks at the counter) was story polish Task 12a's and no depth task listed it; it belongs with the returns.
   'scenes.town:', 'bellkeeper.', 'town.',
+  // Story L Task 3d: the night before the descent, its frame line (Task 8 finalizes it under the same gates)
+  'scenes.finale-eve.',
 ];
 
 type Scope = readonly string[];

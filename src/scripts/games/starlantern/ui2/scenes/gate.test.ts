@@ -11,7 +11,7 @@ import { MEETINGS } from '../../data/meetings';
 import { T } from '../../data/text.zh-TW';
 import { CONDITIONS } from '../../data/conditions';
 import { meet } from '../../engine/party';
-import { STORY } from '../../data/story.zh-TW';
+import { NIGHT_BEATS, STORY } from '../../data/story.zh-TW';
 import { chainLength } from '../../data/story/chains';
 import { activeIds } from '../../engine/party';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
@@ -457,5 +457,56 @@ describe('GateScene: the leads (6c Task 16)', () => {
     expect(T.ui2.rescue.waiting).toBe('這層好像還有別人。');
     const texts = [T.ui2.rescue.waiting, T.ui2.gate.lead, T.ui2.gate.leadAt(3), T.ui2.gate.sighted(3), ...Object.values(STORY.leads)];
     for (const t of texts) expect(t).not.toMatch(/求救|求助|呼救|訊號|救命/);
+  });
+});
+
+// Story L Task 3d: the night before the descent plays on the departure that owes it, then the lone morning.
+describe('GateScene: the night before the descent (story L Task 3d)', () => {
+  const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+  it('departing plays each departure scene in order under its card, then leaves', async () => {
+    NIGHT_BEATS.lines.push({ who: 'narrator', text: '樓下的貓叫了一聲。' });
+    try {
+      const game = new Game(constRng(0.5), null);
+      game.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }];
+      Object.assign(game.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+      game.state.party.roster.hero.memories = 9;
+      game.state.story.seen.push('rin-reveal', 'rin-confess', 'mem:hero:9', 'bellkeeper-arrives');
+      game.state.story.queue = ['finale-eve', 'hero-alone'];
+      for (const c of ['selene', 'noel'] as const) {
+        game.state.party = meet(game.state.party, c, 1);
+        game.state.party.roster[c].memories = 1;
+      }
+      game.state.story.untold = ['mem:selene:1', 'mem:noel:1'];
+      const go = vi.fn();
+      const root = document.createElement('div');
+      const settings = { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' as const, story: 'all' as const }) };
+      const s = new GateScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+      s.enter(root);
+      s.onAction('confirm');   // greeting
+      s.onAction('confirm');   // 選擇傳送門
+      s.onAction('confirm');   // the mainline
+      s.onAction('confirm');   // 第 1 層
+      s.onAction('up'); s.onAction('confirm');   // 是
+      await tick();
+      const text = () => root.querySelector('.slx-talk .slx-text')?.textContent;
+      const card = () => root.querySelector('.slx-place-card')?.textContent ?? null;
+      const said: { text: string | null | undefined; card: string | null }[] = [];
+      for (let i = 0; i < 40 && !go.mock.calls.length; i++) { said.push({ text: text(), card: card() }); s.onAction('confirm'); await tick(); }
+      expect(go).toHaveBeenCalledWith('dungeon');
+      const eveLine = STORY.scenes['finale-eve'].lines[0].text;
+      const selene = linesOf('mem:selene:1', game.state).map((l) => l.text);
+      const noel = linesOf('mem:noel:1', game.state).map((l) => l.text);
+      const lone = linesOf('hero-alone', game.state).map((l) => l.text);
+      expect(said.map((x) => x.text)).toEqual([eveLine, ...selene, '樓下的貓叫了一聲。', ...noel, ...lone]);
+      // the eve, its memories and the beat between them under the night card; the lone morning under its own
+      const night = said.slice(0, 1 + selene.length + 1 + noel.length);
+      expect(night.every((x) => x.card === '月影旅館・夜'), JSON.stringify(night)).toBe(true);
+      expect(said[night.length].card).toBe(STORY.scenes['hero-alone'].lines[0].place?.text ?? null);
+      expect(game.state.story.seen).toEqual(expect.arrayContaining(['finale-eve', 'mem:selene:1', 'mem:noel:1', 'hero-alone']));
+      expect(game.state.story.untold).toEqual([]);
+      expect(game.phase).toBe('map');
+    } finally {
+      NIGHT_BEATS.lines.splice(0);
+    }
   });
 });

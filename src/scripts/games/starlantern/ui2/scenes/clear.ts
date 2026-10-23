@@ -1,4 +1,4 @@
-import { STORY } from '../../data/story.zh-TW';
+import { STORY, type ScriptLine } from '../../data/story.zh-TW';
 import type { SceneId } from '../../data/story/scenes';
 import { T } from '../../data/text.zh-TW';
 import { art } from '../../render/artPaths';
@@ -7,7 +7,7 @@ import type { UiAction } from '../input';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
-import { playAndRecord, storyCtx } from '../story';
+import { playAndRecord, playBeat, playNight, storyCtx, type SceneOpts } from '../story';
 import { Dialogue, MenuView, win } from '../widgets';
 
 /**
@@ -20,8 +20,8 @@ export class ClearScene implements Scene {
   private view: MenuView | null = null;
   private body!: HTMLElement;
   private talk: Dialogue;
-  /** The story scene on screen, if any: it takes the actions while it plays. */
-  private playing: ReturnType<typeof playAndRecord> | null = null;
+  /** The story scene (or a beat of the eve) on screen, if any: it takes the actions while it plays. */
+  private playing: { onAction(a: UiAction): void } | null = null;
   private exited = false;
 
   constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
@@ -47,21 +47,39 @@ export class ClearScene implements Scene {
     this.view?.onAction(a);
   }
 
-  /** The scenes the finale owes (acts, the bellkeeper's arrival, the hero's memories), then the finale. A scene that fails is reported and skipped: the card still comes. */
+  /**
+   * The scenes the finale owes (acts, the bellkeeper's arrival, the hero's memories), then the finale. A scene that fails is
+   * reported and skipped: the card still comes. Story L spec §4.8: the eve no departure told comes first, its line and its
+   * memories told as a night (`playNight`: the night's card, a beat between two of them; none before Lorne's pieces).
+   */
   private async playFinale(): Promise<void> {
-    const ids: SceneId[] = [...(this.ctx.game.finale?.pieces ?? []), 'finale'];
-    for (const id of ids) {
-      try {
-        const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
-        this.playing = p;
-        await p.done;
-      } catch (e) {
-        console.error('starlantern: finale scene failed', e);
-      } finally {
-        this.playing = null;
-      }
-      if (this.exited) return;
+    const game = this.ctx.game;
+    const ids: SceneId[] = [...(game.finale?.pieces ?? []), 'finale'];
+    const n = ids[0] === 'finale-eve' ? 1 + ids.slice(1).findIndex((id) => !game.eve.includes(id)) : 0;
+    await playNight(ids.slice(0, n), storyCtx(this.ctx), (id, o) => this.playOne(id, o), (line) => this.beat(line));
+    for (const id of ids.slice(n)) await this.playOne(id);
+  }
+
+  /** One scene of the finale's list, recorded; nothing once the screen is left. */
+  private async playOne(id: SceneId, o: SceneOpts = {}): Promise<void> {
+    if (this.exited) return;
+    try {
+      const p = playAndRecord(this.talk, id, storyCtx(this.ctx), o);
+      this.playing = p;
+      await p.done;
+    } catch (e) {
+      console.error('starlantern: finale scene failed', e);
+    } finally {
+      this.playing = null;
     }
+  }
+
+  /** The eve's beat between two of its memories (spec §4.4.1). */
+  private async beat(line: ScriptLine): Promise<void> {
+    if (this.exited) return;
+    const p = playBeat(this.talk, line, storyCtx(this.ctx));
+    this.playing = p;
+    try { await p.done; } finally { this.playing = null; }
   }
 
   private showCard(title: string, text: string, back: string): void {

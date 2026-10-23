@@ -1,6 +1,6 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { chainLength } from '../../data/story/chains';
-import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAYOFFS, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, HEAVY_MAJORS, HOME_OWNERS, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAYOFFS, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, EVE_DEPTH, HEAVY_MAJORS, HOME_OWNERS, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
 import type { CharacterId } from '../types';
@@ -58,10 +58,13 @@ export function onReturn(s: GameState): StoryState {
     if (!story.seen.includes(id) && !story.queue.includes(id)) story.queue.push(id);
   }
   // Story depth (plan ruling 6): the lone morning, once his ninth piece is seen or waiting and her choice is made, until the
-  // finale; it plays on a departure (`Game.departScene`). The festival, once, on the first return after the finale.
+  // finale; it plays on a departure (`Game.departScenes`). The festival, once, on the first return after the finale.
   const owed = (id: SceneId): boolean => !story.seen.includes(id) && !story.queue.includes(id);
   const ninth = story.seen.includes('mem:hero:9') || story.queue.includes('mem:hero:9') || !!story.untold?.includes('mem:hero:9');   // story L: held, untold
   if (ninth && rin?.oath && !story.finaleCleared && owed('hero-alone')) story.queue.push('hero-alone');
+  // Story L spec §4.8: the night before the descent, once her choice is made and the main road has reached EVE_DEPTH, until
+  // the finale. A departure scene: it plays on the next departure (or, missed, first in the finale's own list).
+  if (rin?.oath && s.dungeon.reached.mainline >= EVE_DEPTH && !story.finaleCleared && owed('finale-eve')) story.queue.push('finale-eve');
   if (story.finaleCleared && owed('epilogue')) story.queue.push('epilogue');
   // Task 6 review: one more return for every pair with a banter ready (the pick's tie-break: ready longest first). A pair
   // no longer ready drops out, so its wait starts again when it is next ready. A banter that expires keeps its pair's wait:

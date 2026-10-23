@@ -4,7 +4,9 @@ import { T } from '../../data/text.zh-TW';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { ClearScene } from './clear';
-import { STORY } from '../../data/story.zh-TW';
+import { NIGHT_BEATS, STORY } from '../../data/story.zh-TW';
+import { meet } from '../../engine/party';
+import { linesOf } from '../story';
 import type { SceneId } from '../../data/story/scenes';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 
@@ -119,5 +121,45 @@ describe('ClearScene finale', () => {
     expect(card()).not.toBeNull();
     expect(err).toHaveBeenCalled();
     err.mockRestore();
+  });
+});
+
+describe("ClearScene: the eve as the finale's fallback (story L Task 3d)", () => {
+  const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+  it('the fallback eve has a beat between two memories', async () => {
+    NIGHT_BEATS.lines.push({ who: 'narrator', text: '樓下的貓叫了一聲。' });
+    try {
+      const game = new Game(constRng(0.5), null);
+      for (const c of ['selene', 'noel'] as const) {
+        game.state.party = meet(game.state.party, c, 1);
+        game.state.party.roster[c].memories = 1;
+      }
+      game.state.story.untold = ['mem:selene:1', 'mem:noel:1'];
+      game.phase = 'clear';
+      game.cleared = 'finale';
+      game.finale = { pieces: ['finale-eve', 'mem:selene:1', 'mem:noel:1', 'mem:hero:10'] };
+      game.eve = ['mem:selene:1', 'mem:noel:1'];
+      const root = document.createElement('div');
+      const s = new ClearScene({
+        game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(),
+        settings: { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant', story: 'all' }) },
+      });
+      s.enter(root);
+      const text = () => root.querySelector('.slx-talk .slx-text')?.textContent;
+      const card = () => root.querySelector('.slx-place-card')?.textContent ?? null;
+      const said: { text: string | null | undefined; card: string | null }[] = [];
+      for (let i = 0; i < 60 && !root.querySelector('.slx-clear-card'); i++) { said.push({ text: text(), card: card() }); s.onAction('confirm'); await tick(); }
+      expect(root.querySelector('.slx-clear-card')).not.toBeNull();
+      const selene = linesOf('mem:selene:1', game.state).map((l) => l.text);
+      const noel = linesOf('mem:noel:1', game.state).map((l) => l.text);
+      const texts = said.map((x) => x.text);
+      expect(texts.slice(0, 2 + selene.length + noel.length)).toEqual([STORY.scenes['finale-eve'].lines[0].text, ...selene, '樓下的貓叫了一聲。', ...noel]);
+      expect(said.slice(0, 2 + selene.length + noel.length).every((x) => x.card === '月影旅館・夜')).toBe(true);
+      // no beat between the eve's last memory and Lorne's piece
+      expect(texts[2 + selene.length + noel.length]).toBe(linesOf('mem:hero:10', game.state)[0].text);
+      expect(texts.filter((t) => t === '樓下的貓叫了一聲。')).toHaveLength(1);
+    } finally {
+      NIGHT_BEATS.lines.splice(0);
+    }
   });
 });

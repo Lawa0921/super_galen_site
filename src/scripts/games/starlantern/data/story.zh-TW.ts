@@ -96,7 +96,7 @@ const nameOf = (id: CharacterId): string => CHARACTERS[id].name;
 export { numeral } from './numeral';
 
 const MAJOR_TITLES: Record<MajorScene, string> = {
-  prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', 'rin-confess': '凜的坦白', 'bellkeeper-arrives': '鐘守來到鎮上', 'hero-alone': '一個人的清晨', finale: '終幕',
+  prologue: '序章', 'prologue-inn': '序章・旅館的第一夜', 'first-return': '回城的那一夜', 'act1-after': '第一幕・之後', act2: '第二幕', act3: '第三幕', act4: '第四幕', 'rin-reveal': '凜的真相', 'rin-confess': '凜的坦白', 'bellkeeper-arrives': '鐘守來到鎮上', 'hero-alone': '一個人的清晨', 'finale-eve': '下潛前的那一夜', finale: '終幕',
   epilogue: '星燈祭',
 };
 /** What each homecoming is called in the handbook, after her name (continuity fix 2). */
@@ -576,6 +576,14 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('那一天，洛恩沒有一個人出門。天亮以後，大家一起下去了。'),
     ],
     summary: '天還沒亮，洛恩想一個人下迷宮，門口的凜、走廊上的夥伴和端著熱湯的瑪莎，誰也沒讓他一個人走。',
+  },
+  // Story L (spec §4.8): the night before the descent, on the first departure once her choice is made and the main road
+  // reaches depth 26. One frame line; up to three companions' untold memories follow it. Task 8 finalizes the line.
+  'finale-eve': {
+    lines: [
+      at(NIGHT_PLACE, N('下到最後一層的前一晚，旅館裡沒有人睡得著。')),
+    ],
+    summary: '下到最後一層的前一晚，旅館裡沒有人睡得著。',
   },
   // Task 7: Rin's chats. 2 waits for act 2, 3 for act 3 (she looks away only from her 4th piece), 4 for her choice.
   // 2 and 3 can be delayed past her choice (one chat per return): each reading has its own lines.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ACT_DEPTHS, ALONE, BANTER_COUNT, BANTER_PAYOFFS, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, GROUP_MIN_LINES, HEAVY_ARRIVAL, REACTIONS, groupScene, heavyScene, isHeavyArrival, lineCap, memScene, sceneKind, type BanterPair, type SceneId } from '../../data/story/scenes';
+import { ACT_DEPTHS, ALONE, EVE_DEPTH, BANTER_COUNT, BANTER_PAYOFFS, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, GROUP_MIN_LINES, HEAVY_ARRIVAL, REACTIONS, groupScene, heavyScene, isHeavyArrival, lineCap, memScene, sceneKind, type BanterPair, type SceneId } from '../../data/story/scenes';
 import { chainLength } from '../../data/story/chains';
 import { CHARACTER_IDS } from '../../data/characters';
 import { meet } from '../party';
@@ -1219,5 +1219,41 @@ describe('story L: pieces wait to be told (Task 2a)', () => {
     expect(onReturn(s).queue).not.toContain('hero-alone');
     s.story.untold = ['mem:hero:9'];
     expect(onReturn(s).queue).toContain('hero-alone');
+  });
+});
+
+describe('story L: the night before the descent (Task 3d)', () => {
+  /** Her choice made, the acts and the keeper behind them, the main road reached to `reached`. */
+  const chose = (reached: number): GameState => {
+    const s = withMemories(base(), 'rin', chainLength('rin'));
+    s.party.roster.rin.oath = true;
+    s.story.seen.push('rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'act2', 'act3', 'act4');
+    s.story.nodes = ['act2', 'act3', 'act4'];
+    s.dungeon.reached.mainline = reached;
+    return s;
+  };
+
+  it('the eve is queued once her choice is made and the main road reaches twenty-six, never on an arrival', () => {
+    const s = returned(chose(EVE_DEPTH));
+    expect(EVE_DEPTH).toBe(26);
+    expect(s.story.queue).toEqual(['finale-eve']);
+    expect(arrivalScenes(s, { chat: true })).not.toContain('finale-eve');
+    expect(arrivalScenes(s, { chat: false })).not.toContain('finale-eve');
+    expect(returned(s).story.queue.filter((id) => id === 'finale-eve')).toHaveLength(1);   // once
+    const told = chose(28);
+    told.story.seen.push('finale-eve');
+    expect(returned(told).story.queue).not.toContain('finale-eve');
+    const after = chose(30);
+    after.story.act1Cleared = true;
+    after.story.finaleCleared = true;
+    expect(returned(after).story.queue).not.toContain('finale-eve');
+  });
+
+  it('not before her choice, nor below twenty-six', () => {
+    expect(returned(chose(EVE_DEPTH - 1)).story.queue).not.toContain('finale-eve');
+    const before = chose(29);
+    delete before.party.roster.rin.oath;
+    before.story.seen = before.story.seen.filter((id) => id !== 'rin-reveal' && id !== 'rin-confess' && id !== 'bellkeeper-arrives');
+    expect(returned(before).story.queue).not.toContain('finale-eve');
   });
 });

@@ -19,7 +19,7 @@ export const STAGES: Stage[] = ['prologue', 'act1', 'act2', 'act3', 'act4', 'aft
 
 export type SceneId =
   | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'rin-confess' | 'bellkeeper-arrives' | 'hero-alone'
-  | 'finale' | 'epilogue'
+  | 'finale-eve' | 'finale' | 'epilogue'
   | `mem:${CharacterId}:${number}` | `chat:${CharacterId}:${number}` | `town:${TownFragmentId}` | `home:${HomeOwner}`
   | `banter:${BanterPair}:${number}` | GroupScene;
 
@@ -81,13 +81,17 @@ export const banterTwo = (id: SceneId): [CharacterId, CharacterId] => id.split('
  * Story depth (design §7.4, §7.5): `rin-confess` is her confession at the dinner of the return after her reveal;
  * `hero-alone` the morning he means to go down alone, played on a departure; `epilogue` the lantern festival, the first
  * return after the finale (controller ruling d: pulled from 6e into the main line).
+ * Story L (spec §4.8): `finale-eve`, the night before the descent: one line of narration on the first departure once her
+ * choice is made and the main road reaches `EVE_DEPTH`, then up to three companions' untold memories.
  */
 export type MajorScene =
   | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'rin-confess' | 'bellkeeper-arrives' | 'hero-alone'
-  | 'finale' | 'epilogue';
+  | 'finale-eve' | 'finale' | 'epilogue';
 export const MAJOR_SCENES: MajorScene[] = [
-  'prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale', 'epilogue',
+  'prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale-eve', 'finale', 'epilogue',
 ];
+/** Story L spec §4.8: the main road's deepest reach that queues the night before the descent (once her choice is made). */
+export const EVE_DEPTH = 26;
 /**
  * The major scenes whose cap is not twelve: Act 1's close; the two short scenes of the opening (Task 10b); and, from the
  * story depth design (§7.4, §7.5), the bellkeeper's arrival (6 -> 10), the lone morning, the finale (12 -> 16) and the festival
@@ -95,6 +99,7 @@ export const MAJOR_SCENES: MajorScene[] = [
  */
 const MAJOR_CAPS: Partial<Record<MajorScene, number>> = {
   'act1-after': 3, 'prologue-inn': 10, 'first-return': 10, 'bellkeeper-arrives': 10, 'rin-confess': 12, 'hero-alone': 10, finale: 16, epilogue: 16,
+  'finale-eve': 2,   // story L spec §11
 };
 
 /** Every scene id, in a fixed order: major scenes, then memories, chats, returns, homecomings and banters (B1). */
@@ -237,11 +242,11 @@ export const CLOSING_PIECES: SceneId[] = CHARACTER_IDS.flatMap((id) => {
 /**
  * Story depth Task 3 (plan ruling 5). `ALONE`: a scene that plays by itself on its arrival (the reveal first); the chat and
  * the banter wait for the next return. `HEAVY_MAJORS`: one of them an arrival, the first in play order; the others stay in
- * the queue for the next return. `DEPARTURE_SCENES`: played on a departure (`Game.departScene`), never on an arrival.
+ * the queue for the next return. `DEPARTURE_SCENES`: played on a departure (`Game.departScenes`), never on an arrival.
  */
 export const ALONE: readonly SceneId[] = ['rin-reveal', 'rin-confess'];
 export const HEAVY_MAJORS: ReadonlySet<SceneId> = new Set<SceneId>(['act2', 'act3', 'act4', 'bellkeeper-arrives', 'epilogue']);
-export const DEPARTURE_SCENES: readonly SceneId[] = ['hero-alone'];
+export const DEPARTURE_SCENES: readonly SceneId[] = ['finale-eve', 'hero-alone'];
 
 // ---- Light or heavy (style bible §2.2; moved here from voiceGates.ts in story depth Task 3: the engine reads it) ----
 
