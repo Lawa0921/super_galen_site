@@ -422,6 +422,25 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
     ],
     summary: '地底的古城艾斯特拉。石碑說，有人自願當燈芯，叫守燈人。霧變濃是因為燈芯快燒完，靜鐘會看反了。洛恩讀得懂碑文。',
   },
+  // Story L Task 9 (spec §6.1; lore ledger I-193): the night of act 2, its first thing. Rin would sell, Noel would absorb,
+  // Selene leaves it to a coin until Lorne catches it. One reading; the last line is what the finale calls back.
+  'group:act2': {
+    lines: [
+      at(PL.innDinner, N('月影旅館的晚飯。碗收走以後，桌上攤開一塊布，布上是找不到主人的碎片。瑟蕾拿起一片，對著燈看了很久。')),
+      { who: 'rin', mood: 'serious', text: '「一共十一片。明天全部拿去交易所換錢，照人頭分，誰也不欠誰。」' },
+      { who: 'noel', mood: 'smug', text: '「換錢？裡面是光耶！吸進去，本小姐的雷能再亮一倍。」' },
+      { who: 'rin', mood: 'serious', text: '「吸進去，別人的東西就長在妳身上。」' },
+      { who: 'noel', mood: 'smug', text: '「說得好像妳很懂。」' },
+      { who: 'rin', mood: 'normal', text: '「不懂。所以明天賣。」' },
+      { who: 'noel', mood: 'sad', text: '「瑟蕾，妳盯著那片看了那麼久，看見什麼了？看得見又不說，跟看不見有什麼兩樣？」' },
+      { who: 'selene', mood: 'foresee', text: '「那就……交給月亮吧。正面是賣，反面是吸呢。」' },
+      N('銅板翻上半空。洛恩伸手接住，把它放回瑟蕾的手心。'),
+      { who: 'hero', mood: 'smile', text: '「妳自己說。」' },
+      { who: 'selene', mood: 'smile', text: '「不賣也不吸。我那一份，請瑪莎收進廚房的抽屜，等它的主人。」' },
+      N('大家看著瑟蕾的時候，諾艾兒把一片滑進了袖子。洛恩看見了，什麼也沒說。'),
+    ],
+    summary: '晚飯桌上攤著無主的碎片。凜要賣，諾艾兒要吸，瑟蕾想丟銅板，被洛恩接住。諾艾兒藏起一片，他看見了。',
+  },
   // Task 6: Lorne's memories (spec §4, §3.4, §3.6, §4.6, §8.4). Pieces 1–8 hint; piece 9 names the keeper, piece 10 the key.
   'mem:hero:1': {
     lines: [

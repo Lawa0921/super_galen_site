@@ -281,8 +281,25 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
-    name: 'guild', visit: async (page, w) => {
+    // Story L: a group scene, the first thing of the night, under its own card (the inn's dinner, not the night's).
+    name: 'group-scene', visit: async (page, w) => {
       await readAll(page, w);   // the night's memory
+      await page.evaluate(() => {
+        const d = (window as unknown as { __starlanternDebug: { game: { arrival: string[]; night: string[] } } }).__starlanternDebug;
+        d.game.arrival = [];
+        d.game.night = ['group:act2'];
+      });
+      await go(page, 'town');
+      await expect(page.locator('.slx-town .slx-talk')).toBeVisible();
+      await w.key('z');   // the day's line
+      if (!(await page.locator('.slx-town .slx-place-card').isVisible())) await w.key('z');   // the line whole first
+      await expect(page.locator('.slx-town .slx-place-card')).toHaveText('月影旅館・晚飯');
+      if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+    },
+  },
+  {
+    name: 'guild', visit: async (page, w) => {
+      await readAll(page, w);   // the group scene
       await storyOff(page);
       await facility(page, w, 'guild', '.slx-guild');
     },

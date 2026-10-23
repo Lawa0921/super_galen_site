@@ -13,7 +13,7 @@ import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragme
 import { memoryPace } from '../../engine/story/expect';
 import { leadOpen } from '../../engine/story/leads';
 import type { StoryMood } from '../../render/artPaths';
-import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage, type StoryGate } from './scenes';
+import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, type GroupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage, type StoryGate } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
 
@@ -315,6 +315,7 @@ function position(key: string): Stage {
         return gateStage(later(metStage(a1), metStage(b1)), BANTER_GATE[id]);
       }
       if (kind === 'home') return metStage(c);   // after her last piece; placed like the rest of her story (I-58)
+      if (kind === 'group') return c as Stage;   // story L: a group scene plays on its act's arrival or the next return
       if (kind === 'mem') {
         if (c === 'hero' || c === 'rin') return stageOf(CHAINS[c].pieces[Number(n) - 1].minDepth);
         return metStage(c);
@@ -598,6 +599,9 @@ describe('the script gates', () => {
       if (!(COMPANIONS as string[]).includes(who) || who === ownerOf(key) || banterTwo(key).includes(who)) continue;
       // story L Task 8: a night's beat is said only by one met (engine/story/nights.ts `nextBeat`, tested there)
       if (key.startsWith('nightBeats.')) continue;
+      // story L Tasks 9-11: a group scene waits for its cast (`GROUP_GATE`), so its one reading needs no `if.met`
+      const [top, id] = key.split('.');
+      if (top === 'scenes' && sceneKind(id as SceneId) === 'group' && (GROUP_GATE[id as GroupScene].met ?? []).includes(who as CharacterId)) continue;
       const c = line!.if;
       expect(c?.met === who || c?.full === who, `${key}: ${who} speaks without being met`).toBe(true);
     }
@@ -3285,6 +3289,54 @@ describe('story L: the group scenes (Task 7)', () => {
     expect(GROUP_TITLES).toEqual({
       'group:act2': '第二幕之後・碎片的價錢', 'group:act3': '第三幕之後・問不問', 'group:act4': '第四幕之後・桌上的錢袋',
     });
+  });
+
+  /** The group scenes written so far (Tasks 9-11), with their lines. */
+  const written = (): [GroupScene, ScriptLine[]][] =>
+    ACT_NODES.flatMap((n): [GroupScene, ScriptLine[]][] => { const id = REACTIONS[n]; return id ? [[id, STORY.scenes[id].lines]] : []; });
+  const said = (id: GroupScene, re: RegExp): ScriptLine | undefined => STORY.scenes[id].lines.find((l) => re.test(l.text));
+
+  it("a group scene plays at any count of anyone's pieces told: no line turns with them, and Rin speaks as before her choice (Tasks 9-11)", () => {
+    // its gate meets the cast and nothing more (`GROUP_GATE`), so each line must hold for a companion who has told nothing
+    // and for one who has told all: no name that turns with her pieces, nothing her pieces reveal or undo (the chats' tables)
+    expect(written().length).toBeGreaterThanOrEqual(1);
+    for (const [id, lines] of written()) for (const l of lines) {
+      const tag = `${id} ${l.who}: ${l.text}`;
+      expect([...l.text].length, tag).toBeLessThanOrEqual(MAX_LINE_CHARS);
+      expect(dots(l.text), tag).toBeLessThanOrEqual(1);
+      expect(opensOnDots(l.text), tag).toBe(false);
+      expect(l.past, tag).toBeUndefined();
+      if (l.who === 'narrator') {
+        for (const r of REVEALED) if (r.heard) expect(l.text, tag).not.toMatch(r.re);
+        continue;
+      }
+      expect(l.text, tag).toMatch(/^「[^」]*」$/);
+      if (l.who === 'rin') {   // acts 2 and 3: always before her choice (act 3's gate is `beforeChoice`; Rin is not at act 4's table)
+        expect(l.text, tag).not.toMatch(/洛恩|我們|[呢吧啦喔囉嘛耶]|！|還有|鐘|師父|結社/);
+        expect(l.mood ?? 'normal', tag).not.toBe('averted');
+        continue;
+      }
+      if (l.who === 'hero') continue;
+      for (const r of [...REVEALED, ...UNDONE]) if (r.who === l.who) expect(l.text, tag).not.toMatch(r.re);
+      expect(l.text, tag).not.toMatch(GUEST_NEVER[l.who]);
+      expect(l.text, tag).not.toMatch(/您|閣下|歸來者/);
+      if (!LOUD.has(l.who)) expect(l.text, tag).not.toMatch(/！/);
+      expect(l.text, tag).not.toContain('另外');   // Rin's alone
+    }
+  });
+
+  it('group:act2 keeps its beats: Rin sells tomorrow, Noel at Selene, the coin Lorne catches, the sleeve; he keeps no shard (Task 9)', () => {
+    const id = 'group:act2';
+    expect(REACTIONS.act2).toBe(id);
+    for (const re of [/明天賣/, /銅板/, /袖/, /看得見又不說/, /自己說/]) pinBeat(id, {}, re);
+    expect(said(id, /明天賣/)?.who).toBe('rin');
+    expect(said(id, /看得見又不說/)?.who).toBe('noel');
+    expect(said(id, /自己說/)?.who).toBe('hero');
+    expect(said(id, /袖/)?.who).toBe('narrator');
+    // review fix 16: the grey shard Lorne kept is cut; he takes none
+    for (const l of STORY.scenes[id].lines) if (l.who === 'hero') expect(l.text).not.toMatch(/留著|這一片我/);
+    // the guild's debt was crossed off in act 1 (I-84, I-96): Rin sells so that nobody owes anybody
+    expect(STORY.scenes[id].lines.map((l) => l.text).join('')).not.toMatch(/欠(公會|著|的|錢|帳)/);
   });
 });
 

@@ -46,6 +46,8 @@ const POLISHED: string[] = [
   'scenes.finale-eve.',
   // Story L Task 8: the beats between a night's memories (the memories' present lines were polished above)
   'nightBeats.',
+  // Story L Tasks 9-11: the group scenes, each as it is written and registered
+  'scenes.group:',
 ];
 
 type Scope = readonly string[];

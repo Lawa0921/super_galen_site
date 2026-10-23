@@ -3182,7 +3182,9 @@ describe('the arrival queue', () => {
     const g = inRun(townGame());
     g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
     wipeOut(g);
-    expect(g.arrival).toEqual(['act2', 'chat:hero:1']);
+    // story L Task 9: act 2's group scene takes the chat's place, the first thing of the night
+    expect(g.arrival).toEqual(['act2']);
+    expect(g.night[0]).toBe('group:act2');
     expect(g.state.story.queue).toEqual(['act2']);
     expect(g.state.story.nodes).toEqual(['act2']);
   });
@@ -3230,7 +3232,10 @@ describe('the arrival queue', () => {
     g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
     g.returnToTown();
     expect(g.sceneDone('act2', 'played')).toBe(true);
-    expect(g.arrival).toEqual(['chat:hero:1']);   // act 2 is heavy: no banter on that return (B1)
+    // act 2 is heavy: no banter on that return (B1); and its group scene takes the chat's place (story L Task 9)
+    expect(g.arrival).toEqual([]);
+    expect(g.night[0]).toBe('group:act2');
+    expect(g.sceneDone('group:act2', 'played')).toBe(true);
     inRun(g);
     g.returnToTown();
     expect(g.arrival).toEqual(['chat:hero:1', LINEUP_BANTER]);   // B2: the lineup's banter, last (B1)
@@ -4532,14 +4537,14 @@ describe('story L: the night in the game (Task 3b)', () => {
     g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
     trip(g);
     expect(g.arrival.slice(0, 3)).toEqual(['mem:hero:3', 'mem:rin:2', 'act2']);
-    expect(g.night).toEqual(['mem:selene:1']);   // backlog 2, cap 1
+    expect(g.night).toEqual(['group:act2', 'mem:selene:1']);   // backlog 2, cap 1; act 2's group scene first (story L Task 9)
     expect(g.state.story.tonight).toEqual(['mem:hero:3', 'mem:rin:2', 'mem:selene:1']);
     // a reload puts the owed ones back ahead of the act
     const storage = memoryStorage();
     saveGame(storage, g.state);
     const b = Game.boot(calm(), storage);
     expect(b.arrival.slice(0, 3)).toEqual(['mem:hero:3', 'mem:rin:2', 'act2']);
-    expect(b.night).toEqual(['mem:selene:1']);
+    expect(b.night).toEqual(['group:act2', 'mem:selene:1']);
   });
 
   it("untold hero pieces join the finale's list in piece order and leave untold", () => {

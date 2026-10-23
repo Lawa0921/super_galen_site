@@ -30,6 +30,11 @@ export type SceneId =
  */
 export type GroupScene = `group:${ActNode}`;
 export const groupScene = (node: ActNode): GroupScene => `group:${node}`;
+/**
+ * The group scenes written and playable, by the act they follow (story L Tasks 9-11 register each one with its script; each
+ * is in `SCENE_IDS` too). Its gate, `GROUP_GATE`, is further down.
+ */
+export const REACTIONS: Partial<Record<ActNode, GroupScene>> = { act2: 'group:act2' };
 
 export const memScene = (id: CharacterId, n: number): SceneId => `mem:${id}:${n}`;
 
@@ -102,7 +107,7 @@ const MAJOR_CAPS: Partial<Record<MajorScene, number>> = {
   'finale-eve': 2,   // story L spec §11
 };
 
-/** Every scene id, in a fixed order: major scenes, then memories, chats, returns, homecomings and banters (B1). */
+/** Every scene id, in a fixed order: major scenes, then memories, chats, returns, homecomings, banters (B1) and the group scenes (story L). */
 export const SCENE_IDS: SceneId[] = [
   ...MAJOR_SCENES,
   ...CHARACTER_IDS.flatMap((id) => CHAINS[id].pieces.map((_, i) => memScene(id, i + 1))),
@@ -110,6 +115,7 @@ export const SCENE_IDS: SceneId[] = [
   ...TOWN_FRAGMENTS.map((f): SceneId => `town:${f.id}`),
   ...HOME_OWNERS.map(homeScene),
   ...BANTER_PAIRS.flatMap((p) => Array.from({ length: BANTER_COUNT[p] ?? 0 }, (_, i) => banterScene(p, i + 1))),
+  ...ACT_NODES.flatMap((n): SceneId[] => (REACTIONS[n] ? [REACTIONS[n]] : [])),   // story L: the written group scenes
 ];
 
 const SCENE_SET = new Set<string>(SCENE_IDS);
@@ -194,8 +200,6 @@ export const GROUP_GATE: Record<GroupScene, StoryGate> = {
   'group:act3': { met: ['sylvie', 'bobby'], beforeChoice: true },
   'group:act4': { met: ['liz', 'scarlet', 'chizuru', 'safira'] },
 };
-/** The group scenes written and playable, by the act they follow (story L Tasks 9-11 register each one with its script). */
-export const REACTIONS: Partial<Record<ActNode, GroupScene>> = {};
 
 /**
  * Banters that wait (B1), used like `CHAT_GATE` (`StoryGate`). A banter with no entry is open as soon as both of its two are

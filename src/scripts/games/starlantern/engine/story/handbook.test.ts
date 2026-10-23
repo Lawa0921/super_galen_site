@@ -270,7 +270,10 @@ describe("the adventurer's handbook", () => {
 
   it("a group scene sits on its act's truth page, after the act (story L spec §5.1)", () => {
     const scenes = STORY.scenes as Record<string, { title: string; summary: string; lines: unknown[] }>;
-    for (const id of ['group:act2', 'group:act3', 'group:act4']) scenes[id] = { title: id, summary: '', lines: [] };
+    // a stand-in for each one not written yet (story L Tasks 9-11 write them); a written one is put back as it was
+    const ids = ['group:act2', 'group:act3', 'group:act4'];
+    const written = Object.fromEntries(ids.map((id) => [id, scenes[id]]));
+    for (const id of ids) scenes[id] ??= { title: id, summary: '', lines: [] };
     try {
       const s = everything();
       s.story.seen.push('group:act2', 'group:act3', 'group:act4');
@@ -283,7 +286,7 @@ describe("the adventurer's handbook", () => {
       s.story.seen = s.story.seen.filter((id) => id !== 'group:act2');
       expect(page('act2').map((e) => e.scene)).toEqual(['act2']);
     } finally {
-      for (const id of ['group:act2', 'group:act3', 'group:act4']) delete scenes[id];
+      for (const id of ids) if (written[id]) scenes[id] = written[id]; else delete scenes[id];
     }
   });
 
