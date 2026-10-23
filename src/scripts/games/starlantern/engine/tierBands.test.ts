@@ -7,7 +7,9 @@ import { BUILDS, buildOf } from '../data/builds';
 import { STANDARD_LINEUP } from './party';
 import { ODD_LINEUPS } from './sim';
 import { encounterTable } from './scaling';
-import { BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, TIER_BANDS, bandCells, bandMisses, baselineLine, frozenMisses, hasTriggerOrLasting, measureCell, nightmareTwins, normalTwin, pullsApart, roadCell, tierLineup, TIER_SEEDS, withTrigger, type BandId, type BandRun, type TierCell, type TierRun } from './tierBands';
+import { rollCrowdAffix } from './tiers';
+import { TIERS } from '../data/difficulty';
+import { CURVE, cellCrowdAffix, BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, TIER_BANDS, bandCells, bandMisses, baselineLine, frozenMisses, hasTriggerOrLasting, measureCell, nightmareTwins, normalTwin, pullsApart, roadCell, tierLineup, TIER_SEEDS, withTrigger, type BandId, type BandRun, type TierCell, type TierRun } from './tierBands';
 import { AFFIX_IDS } from '../data/affixes';
 import { CHARACTER_IDS } from '../data/characters';
 import { ENHANCE_MAX } from '../data/forge';
@@ -163,36 +165,47 @@ describe('difficulty band measurements (difficulty plan Task 0)', () => {
     }
     expect(h2[0].lineup.build!.chizuru).toBe('steady');
     expect({ ...h2[0].lineup.build, chizuru: undefined }).toEqual({ ...tierLineup(50, 'boss', 'rare').build, chizuru: undefined });
-    expect(h2.length).toBe(30);
+    expect(h2.length).toBe(28);
     expect(new Set(shape(h2))).toEqual(new Set(['boss/hell/rare']));
     expect(h2.every((c) => pair(c.affixes) === 2 && c.affixes![0] !== c.affixes![1] && c.seeds === 10)).toBe(true);
-    expect(new Set(h2.map((c) => c.affixes!.join('+'))).size).toBe(15);
+    // 15 pairs but 堅韌 with 迅捷 (AFFIX_EXCLUDE).
+    expect(new Set(h2.map((c) => c.affixes!.join('+'))).size).toBe(14);
+    expect(h2.some((c) => c.affixes!.includes('tough') && c.affixes!.includes('swift'))).toBe(false);
     // H3: H1 and H2 at magic, then again bare.
     const h3 = bandCells('H3');
-    expect(h3.length).toBe(82);
-    expect(h3.slice(0, 41).every((c) => c.lineup.runeTier === 'magic')).toBe(true);
-    expect(h3.slice(41).every((c) => !c.lineup.runeTier && !c.lineup.build)).toBe(true);
+    expect(h3.length).toBe(78);
+    expect(h3.slice(0, 39).every((c) => c.lineup.runeTier === 'magic')).toBe(true);
+    expect(h3.slice(39).every((c) => !c.lineup.runeTier && !c.lineup.build)).toBe(true);
     // H4: every rune build of every member in turn at the epic tier, rare kits at +ENHANCE_MAX, the bosses of H2, ten seeds.
     const h4 = bandCells('H4');
     const runeBuilds = CHARACTER_IDS.reduce((a, id) => a + BUILDS[id].filter((b) => b.key !== 'standard').length, 0);
     expect(runeBuilds).toBe(23);
-    expect(h4.length).toBe(690);
-    expect(h4.length).toBe(runeBuilds * 30);
+    expect(h4.length).toBe(644);
+    expect(h4.length).toBe(runeBuilds * 28);
     expect(h4.every((c) => c.kind === 'boss' && c.difficulty === 'hell' && c.lineup.runeTier === 'epic' && c.rarity === 'rare' && c.enhance === ENHANCE_MAX && c.seeds === 10)).toBe(true);
     // HE (controller ruling 2026-10-23): every group at 20 and 25, its first foe an elite with each pair, rare, ten seeds.
     const he = bandCells('HE');
-    expect(he.length).toBe((groups(20) + groups(25)) * 15);
+    expect(he.length).toBe((groups(20) + groups(25)) * 14);
     expect(new Set(shape(he))).toEqual(new Set(['elite/hell/rare']));
     expect(he.every((c) => pair(c.affixes) === 2 && c.seeds === 10 && c.groups.length === 1)).toBe(true);
   });
 
   it('Hell crowd cells meet the crowd affix as the game draws it; twins and other tiers do not', () => {
-    // A Hell crowd cell differs from the same cell with no crowd affix chance (TIERS.hell is read through tierOf).
+    // A Hell crowd cell's fight k of group gi draws the crowd affix of spot (gi, k) from seed k x 7919, at Hell's chance;
+    // about half the fights meet one. Nightmare, Normal, an elite and a boss never.
     const cell = bandCells('H1').find((c) => c.depth === 20)!;
-    const few = { ...cell, seeds: 4 };
-    const hell = measureCell(few);
-    const asNightmare = measureCell({ ...few, difficulty: 'nightmare' });
-    expect(hell).not.toEqual(asNightmare);
+    let met = 0;
+    for (let k = 1; k <= 40; k++) {
+      const a = cellCrowdAffix(cell, 0, k);
+      expect(a, `k ${k}`).toEqual(rollCrowdAffix(k * 7919, 20, { x: 0, y: k }, TIERS.hell.crowdAffixChance));
+      if (a) met++;
+      expect(cellCrowdAffix({ ...cell, difficulty: 'nightmare' }, 0, k)).toBeUndefined();
+      expect(cellCrowdAffix(normalTwin(cell), 0, k)).toBeUndefined();
+      expect(cellCrowdAffix(bandCells('HE')[0], 0, k)).toBeUndefined();
+      expect(cellCrowdAffix(bandCells('H2')[0], 0, k)).toBeUndefined();
+    }
+    expect(met).toBeGreaterThan(10);
+    expect(met).toBeLessThan(30);
     // Nightmare twins: a crowd as it is at Nightmare; a pair as its two single-affix Nightmare cells.
     expect(nightmareTwins(cell)).toEqual([{ ...normalTwin(cell), label: undefined, difficulty: 'nightmare' }].map(({ label: _l, ...c }) => c));
     const boss = bandCells('H2')[0];
@@ -237,10 +250,23 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
     expect(bandMisses('N1', only('N1', fill('N1', () => run(0.9, 0.11))))).toEqual([]);
     // One group of d15 at .5 pulls its depth's pool (three groups) under .90; a twin at the same loss is not harder.
     const n1 = bandMisses('N1', only('N1', fill('N1', (c) => run(c.depth === 15 && c.groups[0].length === 1 && c.groups[0][0] === 'golem' ? 0.5 : 1, c.depth === 25 ? 0.1 : 0.2))));
-    expect(n1).toEqual(['N1 d15: rate 0.833 < 0.9', 'N1 d25: loss 0.100 not above the normal twin\'s 0.100']);
+    expect(n1).toEqual(['N1 d15: rate 0.833 < 0.9', 'N1 d25: loss 0.100 not above the normal twin\'s 0.100', 'N1 d25: the loss over the normal twin 0.000 drops more than 0.03 under d20\'s 0.100']);
     // N3: d10 is reported only; a weak affix pulls its depth.
     expect(bandMisses('N3', only('N3', fill('N3', (c) => run(c.depth === 10 ? 0 : 0.8, 0.3))))).toEqual([]);
     expect(bandMisses('N3', only('N3', fill('N3', (c) => run(c.depth === 20 && c.affixes![0] === 'swift' ? 0 : 0.9, 0.3))))).toEqual(['N3 d20: rate 0.750 < 0.8']);
+  });
+
+  it('the curve: a tier\'s loss over the Normal twin never drops by more than .03 as the depth rises', () => {
+    expect(CURVE).toEqual({ slack: 0.03, N1: [10, 15, 20, 25], N3: [10, 15, 20, 25], H1: [20, 25] });
+    // Deltas over the twin (twin loss .1): N1 .05, .10, .08, .12 holds (.08 is .02 under .10); .05 at d20 does not.
+    const n1 = (lossAt: Record<number, number>) => fill('N1', (c) => run(1, lossAt[c.depth]), 0.1);
+    expect(bandMisses('N1', only('N1', n1({ 10: 0.15, 15: 0.2, 20: 0.18, 25: 0.22 })))).toEqual([]);
+    expect(bandMisses('N1', only('N1', n1({ 10: 0.15, 15: 0.2, 20: 0.15, 25: 0.22 })))).toEqual(['N1 d20: the loss over the normal twin 0.050 drops more than 0.03 under d15\'s 0.100']);
+    // N3 reads d10 for the curve though its rate is not held there; H1 its d20 and d25 only (d30 reported).
+    const n3 = fill('N3', (c) => run(c.depth === 10 ? 0 : 0.9, c.depth === 10 ? 0.5 : 0.3), 0.1);
+    expect(bandMisses('N3', only('N3', n3))).toEqual(['N3 d15: the loss over the normal twin 0.200 drops more than 0.03 under d10\'s 0.400']);
+    const h1 = fill('H1', (c) => run(0.9, c.depth === 30 ? 0.11 : c.depth === 20 ? 0.4 : 0.36), 0.1, 0.05);
+    expect(bandMisses('H1', only('H1', h1))).toEqual(['H1 d25: the loss over the normal twin 0.260 drops more than 0.03 under d20\'s 0.300']);
   });
 
   it('N4: the bare boss pooled at most .70 and .20 under magic, from d15', () => {
@@ -268,8 +294,8 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
     // The wolf elite at 0 with one pair: that pair pools .75 x 3 / 4 = .5625, above the floor; at 0 in every group, below it.
     const wolf = (c: TierCell) => c.groups[0].length === 1 && c.groups[0][0] === 'wolf';
     expect(bandMisses('HE', only('HE', fill('HE', (c) => run(wolf(c) && c.affixes!.join('+') === 'scorch+frostbind' ? 0 : 0.8, 0.5))))).toEqual([]);
-    expect(bandMisses('HE', only('HE', fill('HE', (c) => run(c.depth === 20 && c.affixes!.join('+') === 'tough+swift' ? 0.3 : 0.8, 0.5)))))
-      .toEqual(['HE d20 [tough+swift]: rate 0.300 < 0.4']);
+    expect(bandMisses('HE', only('HE', fill('HE', (c) => run(c.depth === 20 && c.affixes!.join('+') === 'rend+swift' ? 0.3 : 0.8, 0.5)))))
+      .toEqual(['HE d20 [rend+swift]: rate 0.300 < 0.4']);
     expect(bandMisses('HE', only('HE', fill('HE', (c) => run(c.depth === 25 ? 0.7 : 0.9, 0.5))))).toEqual(['HE d25: rate 0.700 < 0.75']);
   });
 

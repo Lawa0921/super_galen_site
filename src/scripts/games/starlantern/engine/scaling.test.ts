@@ -10,7 +10,7 @@ import { expToNext, LEGACY_LINEUP } from './party';
 import { mulberry32 } from './rng';
 import { DEEP_ENEMIES, deepPower, enemyLevelAt, homeLevel, BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
 import { constRng, fullParty } from './testing';
-import { TIERS } from '../data/difficulty';
+import { TIERS, type DepthFactors, type TierDef } from '../data/difficulty';
 import { AFFIXES } from '../data/affixes';
 import { rewardGrowth } from './scaling';
 
@@ -416,6 +416,37 @@ describe('the deep enemy knobs (plan 6b Task 20c, added at their start values by
   });
 });
 
+/**
+ * The spec §5.0 enemy factors at every depth (Tasks 1–3 worked their numbers by hand on them), whatever the depth table
+ * (Task 5b) tunes: the tiers as they were, one band throughout.
+ */
+const flat = (t: TierDef, f: DepthFactors): TierDef => ({ ...t, enemy: [f, f, f, f] });
+const SPEC = {
+  nightmare: flat(TIERS.nightmare, { hp: 1.35, atk: 1.2, chanceMul: 1.5, chanceCap: 0.6 }),
+  hell: flat(TIERS.hell, { hp: 1.8, atk: 1.4, chanceMul: 2, chanceCap: 0.75 }),
+};
+
+describe('the depth table in scaleEnemy (controller ruling 2026-10-23)', () => {
+  const plain = CONDITIONS.plain;
+  const band = (hp: number, atk: number, boss?: { bossHp: number; bossAtk: number }): DepthFactors => ({ hp, atk, chanceMul: 1.5, chanceCap: 0.6, ...boss });
+  const t: TierDef = { ...TIERS.nightmare, enemy: [band(1.1, 1.1), band(1.2, 1.3), band(1.3, 1.2, { bossHp: 2, bossAtk: 1.5 }), band(1.4, 1.4)] };
+  const one = (f: DepthFactors) => flat(TIERS.nightmare, f);
+
+  it('a depth band scales the enemy at its depth, a boss with its own factors', () => {
+    // Each depth meets its band, as a tier of that band throughout would.
+    for (const [d, f] of [[14, band(1.1, 1.1)], [15, band(1.2, 1.3)], [24, band(1.3, 1.2)], [25, band(1.4, 1.4)], [5, band(1.1, 1.1)]] as const) {
+      expect(scaleEnemy(wolf, d, MAIN, false, plain, t), `wolf d${d}`).toEqual(scaleEnemy(wolf, d, MAIN, false, plain, one(f)));
+      expect(scaleEnemy(wolf, d, MAIN, true, plain, t), `elite wolf d${d}`).toEqual(scaleEnemy(wolf, d, MAIN, true, plain, one(f)));
+    }
+    // A boss takes its own factors on top (a crowd foe, an elite, never): hp x1.3 x2, atk and mag x1.2 x1.5.
+    const boss = ENEMIES.lanterneater;
+    expect(boss.boss).toBe(true);
+    expect(scaleEnemy(boss, 22, MAIN, false, plain, t)).toEqual(scaleEnemy(boss, 22, MAIN, false, plain, one(band(1.3 * 2, 1.2 * 1.5))));
+    expect(scaleEnemy(boss, 22, MAIN, false, plain, t)).not.toEqual(scaleEnemy(boss, 22, MAIN, false, plain, one(band(1.3, 1.2))));
+    expect(scaleEnemy(boss, 15, MAIN, false, plain, t)).toEqual(scaleEnemy(boss, 15, MAIN, false, plain, one(band(1.2, 1.3))));
+  });
+});
+
 describe("a fight's difficulty in scaleEnemy (difficulty plan Task 1)", () => {
   const plain = CONDITIONS.plain;
   // The 荊棘狼 at depth 10 on Nightmare, worked by hand: before compensation hp 718, atk 218, mag 50 (Normal compensates
@@ -439,7 +470,7 @@ describe("a fight's difficulty in scaleEnemy (difficulty plan Task 1)", () => {
 
   it('a tier scales hp, atk and mag, not def, mdf or spd', () => {
     const normal = scaleEnemy(wolf, 10, MAIN, false, plain);
-    const night = scaleEnemy(wolf, 10, MAIN, false, plain, TIERS.nightmare);
+    const night = scaleEnemy(wolf, 10, MAIN, false, plain, SPEC.nightmare);
     // Before compensation: the 荊棘狼 at depth 10 x 1.35 hp and x 1.2 atk and mag (one rounding each), then compensated.
     expect([night.stats.hp, night.stats.atk, night.stats.mag]).toEqual([NIGHT_WOLF_HP, NIGHT_WOLF_ATK, NIGHT_WOLF_MAG]);
     expect([normal.stats.hp, normal.stats.atk, normal.stats.mag]).toEqual([630, 209, 48]);
@@ -454,13 +485,13 @@ describe("a fight's difficulty in scaleEnemy (difficulty plan Task 1)", () => {
   it('a tier raises skill chances to its cap, never lowers one', () => {
     const skill = wolf.skills[0];
     const def = { ...wolf, skills: [0.3, 0.5, 0.7].map((chance) => ({ ...skill, chance })) };
-    const chances = (t: typeof TIERS.hell) => scaleEnemy(def, 10, MAIN, false, plain, t).skills.map((k) => k.chance);
-    [0.45, 0.6, 0.7].forEach((c, i) => expect(chances(TIERS.nightmare)[i], `nightmare ${i}`).toBeCloseTo(c, 12));
-    [0.6, 0.75, 0.75].forEach((c, i) => expect(chances(TIERS.hell)[i], `hell ${i}`).toBeCloseTo(c, 12));
+    const chances = (t: typeof SPEC.hell) => scaleEnemy(def, 10, MAIN, false, plain, t).skills.map((k) => k.chance);
+    [0.45, 0.6, 0.7].forEach((c, i) => expect(chances(SPEC.nightmare)[i], `nightmare ${i}`).toBeCloseTo(c, 12));
+    [0.6, 0.75, 0.75].forEach((c, i) => expect(chances(SPEC.hell)[i], `hell ${i}`).toBeCloseTo(c, 12));
     // Never lowered: 0.7 stays 0.7 exactly under a cap of 0.6.
-    expect(chances(TIERS.nightmare)[2]).toBe(0.7);
+    expect(chances(SPEC.nightmare)[2]).toBe(0.7);
     // The region's skill too (烈焰吐息 0.3), and the region's own data is untouched.
-    const blaze = scaleEnemy(wolf, 10, REGIONS.blaze, false, plain, TIERS.nightmare);
+    const blaze = scaleEnemy(wolf, 10, REGIONS.blaze, false, plain, SPEC.nightmare);
     expect(blaze.skills.at(-1)!.name).toBe(REGIONS.blaze.skill!.name);
     expect(blaze.skills.at(-1)!.chance).toBeCloseTo(0.45, 12);
     expect(REGIONS.blaze.skill!.chance).toBe(0.3);
@@ -468,7 +499,7 @@ describe("a fight's difficulty in scaleEnemy (difficulty plan Task 1)", () => {
   });
 
   it('a tier pays more exp and gold, rounded once', () => {
-    const t = TIERS.nightmare;
+    const t = SPEC.nightmare;
     // An enemy and depth where rounding twice would be off by one, for exp and for gold: the tier must round once.
     let found = false;
     let foundGold = false;
@@ -492,7 +523,7 @@ describe('region riders (difficulty plan Task 2)', () => {
     expect(REGION_RIDER).toEqual({ blaze: 'burn', frost: 'freeze', storm: 'shock', shade: 'bleed', iron: 'bleed' });
     for (const r of Object.values(REGIONS)) {
       const normal = scaleEnemy(wolf, 10, r, false, CONDITIONS.plain).skills.at(-1);
-      for (const [t, chance] of [[TIERS.nightmare, 0.25], [TIERS.hell, 0.4]] as const) {
+      for (const [t, chance] of [[SPEC.nightmare, 0.25], [SPEC.hell, 0.4]] as const) {
         const last = scaleEnemy(wolf, 10, r, false, CONDITIONS.plain, t).skills.at(-1)!;
         const rider = REGION_RIDER[r.id];
         if (!r.skill) { expect(last.name, r.id).toBe(wolf.skills.at(-1)!.name); continue; }
@@ -514,12 +545,12 @@ describe('affixes in scaleEnemy (difficulty plan Task 3)', () => {
   const boss = ENEMIES.lanterneater;
 
   it('affixes as plain fields', () => {
-    const night = TIERS.nightmare;
+    const night = SPEC.nightmare;
     const base = scaleEnemy(wolf, 10, MAIN, false, plain, night);
-    // 堅韌: hp x1.4 before compensation (one more rounding than the tier's), 1.25 on a boss; nothing else moves.
+    // 堅韌: hp x1.15 before compensation (one more rounding than the tier's), 1.6 on a boss; nothing else moves.
     const tough = scaleEnemy(wolf, 10, MAIN, false, plain, night, ['tough']);
-    // By hand: pre-compensation 969 (the tier's) x1.4 = 1357 (1356.6), x0.877888 = 1191.
-    expect(tough.stats.hp).toBe(1191);
+    // By hand: pre-compensation 969 (the tier's) x1.15 = 1114 (1114.35), x0.877888 = 978 (977.97).
+    expect(tough.stats.hp).toBe(978);
     expect({ ...tough.stats, hp: 0 }).toEqual({ ...base.stats, hp: 0 });
     expect(tough.skills).toEqual(base.skills);
     const bossBase = scaleEnemy(boss, 10, MAIN, false, plain, night);
@@ -536,7 +567,7 @@ describe('affixes in scaleEnemy (difficulty plan Task 3)', () => {
     expect(blaze.skills[0].chance).toBe(0.35);
     expect(blaze.skills.slice(1)).toEqual(plainBlaze.skills);
     // Two: both skills lead, in the order given.
-    const two = scaleEnemy(wolf, 10, MAIN, false, plain, TIERS.hell, ['rend', 'frostbind']);
+    const two = scaleEnemy(wolf, 10, MAIN, false, plain, SPEC.hell, ['rend', 'frostbind']);
     expect(two.skills.slice(0, 2).map((k) => k.name)).toEqual([AFFIXES.rend.skill!.name, AFFIXES.frostbind.skill!.name]);
     // The data is untouched.
     expect(AFFIXES.scorch.skill!.chance).toBe(0.35);

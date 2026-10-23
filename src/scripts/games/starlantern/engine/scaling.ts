@@ -8,7 +8,7 @@ import { terrainOf } from './dungeon/run';
 import { expToNext } from './party';
 import { depthLevel } from './levels';
 import { pick, type Rng } from './rng';
-import type { TierDef } from '../data/difficulty';
+import { enemyFactors, type TierDef } from '../data/difficulty';
 import { AFFIXES, type AffixId } from '../data/affixes';
 import { compensation, enemySecondary } from './stats';
 import type { Element, EnemyDef, EnemySkill, StatKey, Stats } from './types';
@@ -176,7 +176,13 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
   if (region.trait && TRAIT[region.trait]) stats = mul(stats, TRAIT[region.trait]!);
   if (elite) stats = mul(stats, ELITE);
   if (condition.enemyAtkMul !== 1) stats = mul(stats, { atk: condition.enemyAtkMul, mag: condition.enemyAtkMul });
-  if (tier) stats = mul(stats, { hp: tier.hp, atk: tier.atk, mag: tier.atk });
+  // The tier's factors at this depth (the depth table); a boss takes its own on top (controller ruling 2026-10-23).
+  const f = tier ? enemyFactors(tier, depth) : null;
+  if (f) {
+    const hp = def.boss && f.bossHp !== undefined ? f.hp * f.bossHp : f.hp;
+    const atk = def.boss && f.bossAtk !== undefined ? f.atk * f.bossAtk : f.atk;
+    stats = mul(stats, { hp, atk, mag: atk });
+  }
   if (affixes?.length) stats = mul(stats, affixMul(def, affixes));
   const sec = enemySecondary(depthLevel(depth), homeLevel(def), region.trait);
   stats = mul(stats, compensation(sec));
@@ -186,7 +192,7 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
   const skill = region.skill && !(early && SKILL_SCALES_IN.has(region.id)) ? region.skill : null;
   const name = [depth >= DEEP_FROM ? '深層' : '', PREFIX[region.id], def.name].filter(Boolean).join('・');
   // A tier's skill odds (ruling 3): raised to the cap, never lowered; the region's skill object is copied, not changed.
-  const raise = (k: EnemySkill): EnemySkill => (tier ? { ...k, chance: Math.max(k.chance, Math.min(tier.chanceCap, k.chance * tier.chanceMul)) } : k);
+  const raise = (k: EnemySkill): EnemySkill => (f ? { ...k, chance: Math.max(k.chance, Math.min(f.chanceCap, k.chance * f.chanceMul)) } : k);
   const own = tier ? (skill ? [...def.skills, ridden(skill, region.id, tier)] : def.skills).map(raise) : skill ? [...def.skills, skill] : [...def.skills];
   // The affixes' skills lead (ruling 4: `findIndex` reads them first), copies of the data.
   const lead = affixes?.length ? affixes.flatMap((a) => { const k = AFFIXES[a].skill; return k ? [{ ...k, effects: k.effects.map((e) => ({ ...e })) }] : []; }) : null;

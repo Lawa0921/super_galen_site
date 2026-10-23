@@ -271,9 +271,13 @@ describe('a lineup wears a build (plan 8h Task 5a)', () => {
     const plainHp = start({}).enemies.map((e) => e.max.hp);
     const nightHp = start({ difficulty: 'nightmare' }).enemies.map((e) => e.max.hp);
     const hellHp = start({ difficulty: 'hell' }).enemies.map((e) => e.max.hp);
+    const atk = (d?: 'nightmare' | 'hell') => start(d ? { difficulty: d } : {}).enemies.map((e) => e.max.atk);
+    // The depth table (Task 5b): Hell asks at least Nightmare's hp and more atk at d10–14 and shallower.
     for (let i = 0; i < plainHp.length; i++) {
       expect(nightHp[i]).toBeGreaterThan(plainHp[i]);
-      expect(hellHp[i]).toBeGreaterThan(nightHp[i]);
+      expect(hellHp[i]).toBeGreaterThanOrEqual(nightHp[i]);
+      expect(atk('nightmare')[i]).toBeGreaterThan(atk()[i]);
+      expect(atk('hell')[i]).toBeGreaterThan(atk('nightmare')[i]);
     }
   });
 

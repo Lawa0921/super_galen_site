@@ -299,6 +299,8 @@
 > - 斷言只留：N1（第 10–25 層每層合併：勝率 ≥ .90、失血 > 普通雙胞胎）、N2、N3（第 15–25 層每層詞綴合併：勝率 ≥ .80、失血 > 普通雙胞胎）、N4（只頭目、第 15–25 層：不裝符文 ≤ .70 且 ≤ 魔法階 − .20）、N5、N6、H1（第 20–25 層：稀有階 ≥ .85、失血 > 噩夢雙胞胎）、H2（第 25 層：稀有階＋觸發或常駐組合 ≥ .75、失血 > 噩夢雙胞胎）、H3（第 25 層頭目不裝符文 ≤ .40）、H4、HX、新的 HE（地獄菁英第 20、25 層：每層合併 ≥ .75、任一詞綴組合 ≥ .40）。其他舊格子只報告，含群戰的符文差距。
 > - 新槓桿 `TIERS.crowdAffixChance`（普通、噩夢 0，地獄起始 .5）：地獄一般群戰有這個機率讓一隻敵人帶一個詞綴；`rollCrowdAffix(seed, depth, at, chance)` 走 `AFFIX_SALT` 以位置為鍵的串流；`BattleScale.crowdAffix`，`createBattle` 只在 tier 的 `crowdAffixChance > 0`、不是菁英戰也不是頭目戰時套用。先寫測試（TDD）：普通與噩夢一律不套、同一格永遠同一個結果（逃跑再回來）；遊戲流程那一則併入 Task 6a 的待辦。
 > - 允許的槓桿：`TIERS` 的 hp、atk、發動率、`crowdAffixChance`；`AFFIXES` 的數字；詞綴排除清單 `AFFIX_EXCLUDE`（`rollAffixes` 與平衡帶的組合都照它）。新的 4 輪預算；順序：先 commit 改過的 spec、plan、平衡帶程式（斷言可以是紅的），再調，每輪寫進 `retune.md`（所有斷言格＋只報告的群戰差距）。4 輪後仍紅 → BLOCKED。
+
+> **【控制者裁定 2026-10-23，第二則】`TIERS` 依深度分帶**（全文與最後的表見 spec §6.2 末）：`DEPTH_BANDS = [10, 15, 20, 25]`、`TierDef.enemy`（每帶 hp、atk、chanceMul、chanceCap、可省略的 `bossHp`／`bossAtk`）、`enemyFactors`；`scaleEnemy` 只在 tier 分支讀它。測試：`data/difficulty.test.ts` `a depth reads its band…`、`the depth table…`、`higher tiers only ever ask more`（每帶地獄 ≥ 噩夢；噩夢有效係數 ≥ 普通）；`engine/scaling.test.ts` `a depth band scales the enemy at its depth, a boss with its own factors`（Task 1–3 手算的數字改用 spec §5.0 的固定係數 `SPEC`）；平衡帶加 `CURVE`（每層對普通雙胞胎的失血差不降超過 .03）。採納堅韌 1.15／1.6 與排除堅韌＋迅捷。新的 4 輪預算；C2 全綠。
 - [ ] **Step 5：收尾 G**（`gate-5b` against `gate-5a`＋`cmp`；難度帶 `bands-5b-*.stdout`）。
 - [ ] **Step 6：commit**：`test(starlantern): tier bands — magic runes beat Nightmare, the bare default does not, odd lineups hold, Hell needs rare and a trigger, no affix is a death sentence, the party never freezes`（內文附 `retune.md` 的最後一列）。
 

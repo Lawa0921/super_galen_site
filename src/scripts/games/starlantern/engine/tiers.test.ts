@@ -71,10 +71,10 @@ describe('affixes are drawn by the spot (difficulty plan Task 3)', () => {
       const two = rollAffixes(seed, 25, 2, at, ex);
       expect(two).toHaveLength(2);
       expect(two.includes('tough') && two.includes('swift'), `${seed}`).toBe(false);
-      // The first affix is the same draw; nothing is excluded by default, as before.
-      expect(two[0]).toBe(rollAffixes(seed, 25, 2, at)[0]);
-      expect(rollAffixes(seed, 25, 2, at, [])).toEqual(rollAffixes(seed, 25, 2, at));
-      const plain = rollAffixes(seed, 25, 2, at);
+      // The first affix is the same draw; the default is AFFIX_EXCLUDE (堅韌 with 迅捷, the ruling's), the same here.
+      expect(two[0]).toBe(rollAffixes(seed, 25, 2, at, [])[0]);
+      expect(rollAffixes(seed, 25, 2, at)).toEqual(two);
+      const plain = rollAffixes(seed, 25, 2, at, []);
       if (plain.includes('tough') && plain.includes('swift')) met++;
     }
     expect(met).toBeGreaterThan(0);

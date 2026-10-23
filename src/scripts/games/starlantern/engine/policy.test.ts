@@ -634,10 +634,16 @@ describe('cure-ailment (difficulty plan Task 2, builds only)', () => {
     for (const o of [{ burn: { tick: 4, turns: 2, src: 'e0' } }, { bleed: [{ tick: 3, turns: 2, src: 'e0' }] }, { shock: 1 }, { chill: 2 }]) {
       expect(at([o]), JSON.stringify(o)).toEqual({ kind: 'skill', skill: 'cleanse', target: 'm0' });
     }
-    // In a real Nightmare fight: the frost rider chills the party (frost group 0, seed 1, round 1), and she cures it.
+    // In a real Nightmare fight: the frost rider chills the party in round 1 (frost group 0, the first of seeds 1-40 where
+    // it does: the depth table tunes the fight, so no one seed is pinned), and she cures it.
     const party = partyAt(38, {}, 10);
-    let st = createBattle({ party, enemyIds: encounterTable('frost', 10)[0], inventory: {}, revealed: {}, scale: { depth: 10, region: 'frost', difficulty: 'nightmare' } });
-    st = resolveRound(st, choose(st, party), mulberry32(1));
+    const roundOne = (seed: number) => {
+      const st0 = createBattle({ party, enemyIds: encounterTable('frost', 10)[0], inventory: {}, revealed: {}, scale: { depth: 10, region: 'frost', difficulty: 'nightmare' } });
+      return resolveRound(st0, choose(st0, party), mulberry32(seed));
+    };
+    const seed = Array.from({ length: 40 }, (_, i) => i + 1).find((k) => roundOne(k).party.some((c) => c.alive && c.chill));
+    expect(seed).toBeDefined();
+    const st = roundOne(seed!);
     const chilled = st.party.filter((c) => c.alive && c.chill);
     expect(chilled.length).toBeGreaterThan(0);
     const selene = st.party.find((c) => c.key === 'selene')!;

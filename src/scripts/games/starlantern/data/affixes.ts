@@ -31,12 +31,12 @@ export const AFFIXES: Record<AffixId, AffixDef> = {
     name: '裂刃', line: '多一招裂刃，砍中就血流不止。',
     skill: { name: '裂刃', chance: 0.35, target: 'enemy', effects: [{ kind: 'damage', power: 90, element: 'phys', scale: 'atk', melee: true }, { kind: 'inflict', status: 'bleed', chance: 0.5 }] },
   },
-  tough: { name: '堅韌', line: '皮又粗又厚，得多打好幾下才會倒。', hp: 1.4, bossHp: 1.25 },
+  tough: { name: '堅韌', line: '皮又粗又厚，得多打好幾下才會倒。', hp: 1.15, bossHp: 1.6 },
   swift: { name: '迅捷', line: '腳步飛快，常常搶在大家前面出手。', spd: 1.25 },
 };
 
 /**
  * Pairs of affixes that never meet on one foe (controller ruling 2026-10-23: a lever of Task 5b): `rollAffixes` draws
- * around them and the bands leave them out.
+ * around them and the bands leave them out. 堅韌 with 迅捷 was the Hell elites' wall (HE: .275 at d25).
  */
-export const AFFIX_EXCLUDE: readonly (readonly [AffixId, AffixId])[] = [];
+export const AFFIX_EXCLUDE: readonly (readonly [AffixId, AffixId])[] = [['tough', 'swift']];

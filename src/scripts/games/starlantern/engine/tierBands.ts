@@ -18,7 +18,7 @@ import { encounterTable } from './scaling';
 import { parityLineups } from './parity';
 import { ODD_LINEUPS, kitParty, lineupPolicies, setSimTrace, simBattle, type Lineup } from './sim';
 import { socketCount } from './sockets';
-import { rollCrowdAffix } from './tiers';
+import { rollCrowdAffix, type CrowdAffix } from './tiers';
 import type { CharacterId, Rarity } from './types';
 
 /** What a cell is: a crowd of an encounter group, the same group with its first foe an elite, or the floor's boss. */
@@ -85,6 +85,15 @@ export interface TierCell {
 export interface TierRun { rate: number; hpLoss: number; rounds: number; minRounds: number; partyFrozen: number; fights: number }
 
 /**
+ * The crowd affix a cell's fight `k` of group `gi` meets (controller ruling 2026-10-23): on a tier with a crowd affix
+ * chance (Hell), a crowd cell draws it as the game does, the group and the fight as the spot; none otherwise.
+ */
+export function cellCrowdAffix(c: TierCell, gi: number, k: number): CrowdAffix | undefined {
+  const chance = tierOf(c.difficulty)?.crowdAffixChance ?? 0;
+  return chance > 0 && c.kind === 'crowd' ? rollCrowdAffix(k * 7919, c.depth, { x: gi, y: k }, chance) : undefined;
+}
+
+/**
  * Measures a cell: every group x seed k x 7919 (k = 1..seeds), the party `kitParty(min(MAX_LEVEL, depthLevel(depth)),
  * depth, 1, …, enhance, { …lineup, expect: true })` (built once, a copy a fight), the lineup's own policies. A fight that
  * reaches the round cap is a loss. A trace already installed is set aside while this measures.
@@ -94,7 +103,6 @@ export function measureCell(c: TierCell): TierRun {
   const level = Math.min(MAX_LEVEL, depthLevel(c.depth));
   const kit = kitParty(level, c.depth, 1, c.rarity, c.enhance ?? expectedEnhance(c.depth), { ...c.lineup, expect: true });
   const policies = lineupPolicies(c.lineup);
-  const crowdChance = tierOf(c.difficulty)?.crowdAffixChance ?? 0;
   let wins = 0, loss = 0, rounds = 0, minRounds = Infinity, frozen = 0, n = 0;
   const prev = setSimTrace({
     round(_a, _before, after) { if (after.party.some((p) => p.frozen)) frozen++; },
@@ -110,7 +118,7 @@ export function measureCell(c: TierCell): TierRun {
       };
       for (let k = 1; k <= seeds; k++) {
         // Hell's crowd affix (controller ruling 2026-10-23), drawn as the game draws it, the group and seed as the spot.
-        const ca = crowdChance > 0 && c.kind === 'crowd' ? rollCrowdAffix(k * 7919, c.depth, { x: gi, y: k }, crowdChance) : undefined;
+        const ca = cellCrowdAffix(c, gi, k);
         const r = simBattle(structuredClone(kit), g, c.kind === 'boss', k * 7919, ca ? { ...scale, crowdAffix: ca } : scale, undefined, 'skill', c.lineup.abyss, undefined, { policies });
         n++;
         loss += r.hpLoss;
@@ -393,6 +401,12 @@ export const TIER_BANDS = {
   HE: { depths: [20, 25], rate: 0.75, pairFloor: 0.40 },
 } as const;
 
+/**
+ * The curve (controller ruling 2026-10-23): within a tier the effective difficulty does not drop as the depth rises, read
+ * as the pooled HP lost over the Normal twin's at each depth listed, never more than `slack` under the depth before.
+ */
+export const CURVE = { slack: 0.03, N1: [10, 15, 20, 25], N3: [10, 15, 20, 25], H1: [20, 25] } as const;
+
 const f3 = (x: number): string => x.toFixed(3);
 const at = (runs: readonly BandRun[], depth: number, kind?: CellKind) => runs.filter((m) => m.cell.depth === depth && (!kind || m.cell.kind === kind));
 /** The runs pooled: the cells', their Normal twins', their Nightmare twins'. */
@@ -419,6 +433,13 @@ export function bandMisses(band: BandId, runsOf: (b: BandId) => readonly BandRun
         const p = poolOf(at(runs, d));
         if (p.run.rate < t.rate) out.push(`${band} d${d}: rate ${f3(p.run.rate)} < ${t.rate}`);
         harder(d, p, band[0] === 'N' ? 'normal' : 'nightmare');
+      }
+      if (band !== 'H2') {
+        const deltas = CURVE[band].map((d) => { const p = poolOf(at(runs, d)); return { d, delta: p.run.hpLoss - p.twin.hpLoss }; });
+        for (let i = 1; i < deltas.length; i++) {
+          const [a, b] = [deltas[i - 1], deltas[i]];
+          if (b.delta < a.delta - CURVE.slack) out.push(`${band} d${b.d}: the loss over the normal twin ${f3(b.delta)} drops more than ${CURVE.slack} under d${a.d}'s ${f3(a.delta)}`);
+        }
       }
       break;
     }

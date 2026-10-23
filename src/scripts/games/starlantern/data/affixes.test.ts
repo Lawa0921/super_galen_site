@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AFFIXES, AFFIX_IDS } from './affixes';
+import { AFFIXES, AFFIX_EXCLUDE, AFFIX_IDS } from './affixes';
 
 describe('the affixes (difficulty plan Task 3)', () => {
   it('six affixes, each said in one line', () => {
@@ -23,7 +23,9 @@ describe('the affixes (difficulty plan Task 3)', () => {
     expect(inflicts('thunder')).toEqual([['shock', 0.4]]);
     expect(AFFIXES.rend.skill).toMatchObject({ name: '裂刃', chance: 0.35, target: 'enemy' });
     expect(inflicts('rend')).toEqual([['bleed', 0.5]]);
-    expect(AFFIXES.tough).toMatchObject({ hp: 1.4, bossHp: 1.25 });
+    // 堅韌 as the controller ruling of 2026-10-23 set it (Task 5b): a lighter elite, a heavier boss.
+    expect(AFFIXES.tough).toMatchObject({ hp: 1.15, bossHp: 1.6 });
+    expect(AFFIX_EXCLUDE).toEqual([['tough', 'swift']]);
     expect(AFFIXES.tough.skill).toBeUndefined();
     expect(AFFIXES.swift).toMatchObject({ spd: 1.25 });
     expect(AFFIXES.swift.skill).toBeUndefined();

@@ -1180,12 +1180,11 @@ describe('region riders in a fight (difficulty plan Task 2)', () => {
   const breathes = (s: ReturnType<typeof play>[number]) => s.log.some((e) => e.type === 'act' && e.label === REGIONS_FROST_SKILL);
 
   it('a rider lands in a Nightmare fight', () => {
-    // Seed 1 (picked: the rider lands on the first breath, in the first round).
-    const night = play(1, 'nightmare');
-    const first = night.findIndex(breathes);
-    expect(first).toBe(0);
-    expect(night[first].party.some((c) => (c.chill ?? 0) > 0)).toBe(true);
-    expect(night.every((s) => s.party.every((c) => !c.frozen))).toBe(true);
+    // Seeds 1-20 (the depth table tunes how long the fight lasts, so no one seed is pinned): some breath carries the rider
+    // (a member chilled right after it), and no member is ever frozen.
+    const nights = Array.from({ length: 20 }, (_, i) => play(i + 1, 'nightmare'));
+    expect(nights.some((night) => night.some((s) => breathes(s) && s.party.some((c) => (c.chill ?? 0) > 0)))).toBe(true);
+    expect(nights.every((night) => night.every((s) => s.party.every((c) => !c.frozen)))).toBe(true);
     // The same fight on Normal, seeds 0-7: the breath comes, and no member is ever chilled.
     const normal = [0, 1, 2, 3, 4, 5, 6, 7].flatMap((seed) => play(seed));
     expect(normal.some(breathes)).toBe(true);
