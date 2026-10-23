@@ -9,7 +9,8 @@ import type { Combatant } from '../engine/combatant';
 import type { WeaponKind } from '../engine/types';
 import { art, enemyArt, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
-import { AILMENT_FILL, AILMENT_MORE_FILL, bySeverity, fitRow, isHalting, textWidth } from './ailmentStyle';
+import { AFFIX_FILL, AILMENT_FILL, AILMENT_MORE_FILL, bySeverity, fitLabel, fitRow, isHalting, textWidth } from './ailmentStyle';
+import { NAME_PREFIXES } from '../engine/scaling';
 import { MECH_FILL } from './mechStyle';
 import type { MechCue, MechTone, MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
@@ -91,6 +92,36 @@ const AIL_SLOT_MARGIN = 6;
 /** An ailment row's height and an intent's: 12 px words with their outline (legibility Task 4: the pixel font's grid). */
 const AIL_ROW_H = 14;
 const INTENT_H = 14;
+/** A name's line under the feet: 12 px words on the pixel font's 14 px grid. */
+const NAME_H = 14;
+/** Room kept between two foes' names, and between two intents: each fits its slot less this. */
+const LABEL_SLOT_MARGIN = 4;
+
+/**
+ * A foe's name for its slot (legibility follow-up of the difficulty plan): whole when it fits; else without 深層 and its
+ * region (the floor's badge and the message line carry them); else cut with 「…」 before its letter. ★ always stays.
+ */
+export function slotName(name: string, max: number): string {
+  const star = name.startsWith('★') ? '★' : '';
+  const rest = name.slice(star.length);
+  const m = / ([A-Z])$/.exec(rest);
+  const body = m ? rest.slice(0, -2) : rest;
+  const parts = body.split('・');
+  let i = 0;
+  while (i < parts.length - 1 && NAME_PREFIXES.includes(parts[i])) i++;
+  const bare = `${star}${parts.slice(i).join('・')}`;
+  return fitLabel([name, m ? `${bare} ${m[1]}` : bare], max, ailLabelWidth, { head: bare, tail: m ? m[1] : '' });
+}
+
+/**
+ * A foe's intent for its slot: whole when it fits; else without its area (（十字）); else the skill alone, marked; else the
+ * skill alone; else cut. The whole intent is the target note's first line.
+ */
+export function slotIntent(label: string, max: number): string {
+  const noArea = label.replace(/（[^）]*）/, '');
+  const skill = noArea.split(' → ')[0];
+  return fitLabel([`◆ ${label}`, `◆ ${noArea}`, `◆ ${skill}`, skill], max, ailLabelWidth, { head: skill });
+}
 /** A hit's tags (暴擊！ 弱點！ 抗性) stand side by side in one row of this height just over the number. */
 const TAG_SIZE = 12;
 const TAG_ROW_H = 16;
@@ -107,8 +138,13 @@ type PopOpts = { weak?: boolean; crit?: boolean; resist?: boolean; small?: boole
 const popSize = (o: PopOpts): 12 | 24 => (o.small ? 12 : 24);
 /** A label's width at the ailment font size, estimated without measuring (render/ailmentStyle.ts `textWidth`). */
 export const ailLabelWidth = (text: string): number => textWidth(text, AIL_SIZE);
-/** Nothing in the picture may rise above the message window. */
-const TOP_CLEAR = 52;
+/**
+ * The message window (`.slx-msg`) covers the stage from y 6 to 70 with one line. Nothing in the picture may stand under
+ * it: an intent line (anchored at its bottom) is held at least this low, so a tall boss's intent and its affix row show
+ * (T8 acceptance: at 52 both were hidden behind the window). Keep in step with `.slx-msg` in _starlantern-ui.scss.
+ */
+const MSG_BOTTOM = 70;
+const TOP_CLEAR = MSG_BOTTOM + 2 + INTENT_H;
 
 /** Pop colours: a crit burns orange, a resisted hit is a cold grey-blue, a miss a pale grey. */
 const CRIT_COLOR = 0xff9a3c;
@@ -139,6 +175,8 @@ export class BattleView {
   private size = { width: 640, height: 360 };
   /** How wide one enemy's ailment row may be: its slot, less a margin. */
   private ailMax = Infinity;
+  /** How wide one enemy's name or intent may be: its slot, less a margin. */
+  private labelMax = Infinity;
   private lit = new Map<string, ColorMatrixFilter>();
   /** Tint, glow and outline filters of the current battle, destroyed on the next setup. */
   private tintFilters: Filter[] = [];
@@ -227,6 +265,7 @@ export class BattleView {
     const n = state.enemies.length;
     const slotW = (size.width - left) / (n + 1);
     this.ailMax = slotW - AIL_SLOT_MARGIN;
+    this.labelMax = slotW - LABEL_SLOT_MARGIN;
     const usable = size.height - bottom;
     const ground = bottom > 0 ? usable - 28 : size.height * 0.85;   // 28 px under the feet for the name and the HP bar
     state.enemies.forEach((e, i) => {
@@ -236,7 +275,7 @@ export class BattleView {
       const maxH = (bottom > 0 ? usable : size.height) * (e.boss ? (bottom > 0 ? 0.62 : 0.7) : 0.45);
       const elite = e.tint === 'elite';
       const name = elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
-      const label = pixelText(name, 12, 0xffffff);
+      const label = pixelText(slotName(name, this.labelMax), 12, 0xffffff);
       label.anchor.set(0.5, 0);
       const lift = bottom > 0 ? NAME_LIFT : 0;
       label.y = -lift;
@@ -319,6 +358,14 @@ export class BattleView {
     const s = this.slots.get(key);
     if (!s || s.box.destroyed) return null;
     return { x: s.box.x - BAR_W / 2 - 1, y: s.box.y + s.bar.y - 1, width: BAR_W + 2, height: 6 };
+  }
+
+  /** An enemy's name under its feet, in design px at rest (for layout checks): its line, as wide as its words. */
+  nameRect(key: string): Box | null {
+    const s = this.slots.get(key);
+    if (!s || s.box.destroyed) return null;
+    const w = textWidth(s.name.text, AIL_SIZE);
+    return { x: s.box.x - w / 2, y: s.box.y + s.name.y, width: w, height: NAME_H };
   }
 
   /** Party members are drawn by the DOM party bar; these cues tell it what to show. */
@@ -452,15 +499,17 @@ export class BattleView {
 
   /** What each enemy will do next ({} hides them all, e.g. while a round plays). */
   showIntents(byKey: Record<string, string>): void {
-    for (const [k, s] of this.slots) if (!s.intent.destroyed) s.intent.text = byKey[k] ? `◆ ${byKey[k]}` : '';
+    for (const [k, s] of this.slots) if (!s.intent.destroyed) s.intent.text = byKey[k] ? slotIntent(byKey[k], this.labelMax) : '';
   }
 
   /**
    * Each enemy's ailments as coloured words above its head, centred on it, in one line inside its slot (「流血×3」「感電2」「+1」); a call replaces the whole
    * row, and an enemy missing from `byKey` or with an empty list shows none. `marks` are its mechanic words (「暗記」「弱點2」,
-   * plan 8c): first in the same row, in the same type, in their own colours.
+   * plan 8c): first in the same row, in the same type, in their own colours. `affixes` are an elite's or a boss's affix names
+   * (difficulty plan Task 7b, ruling 24): they lead the row and fold last of all but freeze and sleep, so the row never
+   * grows a second line toward the name and the HP bar under the feet.
    */
-  showAilments(byKey: Record<string, AilmentChip[]>, marks: Record<string, MechWord[]> = {}): void {
+  showAilments(byKey: Record<string, AilmentChip[]>, marks: Record<string, MechWord[]> = {}, affixes: Record<string, readonly string[]> = {}): void {
     for (const [k, s] of this.slots) {
       if (s.ail.destroyed) continue;
       for (const c of s.ail.removeChildren()) c.destroy();
@@ -473,8 +522,12 @@ export class BattleView {
       const ofWord = (x: MechWord): W => ({ text: x.text, fill: MECH_FILL[x.tone] });
       const halting = chips.filter(isHalting);
       const setups = mech.filter((x) => x.setup).sort((a, b) => SETUP_ORDER.indexOf(a.tone) - SETUP_ORDER.indexOf(b.tone));
-      const items: W[] = [...halting.map(ofChip), ...setups.map(ofWord), ...chips.filter((c) => !isHalting(c)).map(ofChip), ...mech.filter((x) => !x.setup).map(ofWord)];
-      const { shown, more } = fitRow(items, this.ailMax, (w) => ailLabelWidth(w.text), (n) => ailLabelWidth(T.ailmentMore(n)), AIL_GAP, halting.length);
+      // An affix folds after every other ailment and word, never before freeze or sleep; what stands shows the affixes first.
+      const tags: W[] = (affixes[k] ?? []).map((text) => ({ text, fill: AFFIX_FILL }));
+      const items: W[] = [...halting.map(ofChip), ...tags, ...setups.map(ofWord), ...chips.filter((c) => !isHalting(c)).map(ofChip), ...mech.filter((x) => !x.setup).map(ofWord)];
+      const fit = fitRow(items, this.ailMax, (w) => ailLabelWidth(w.text), (n) => ailLabelWidth(T.ailmentMore(n)), AIL_GAP, halting.length);
+      const more = fit.more;
+      const shown = tags.length ? [...fit.shown.filter((w) => tags.includes(w)), ...fit.shown.filter((w) => !tags.includes(w))] : fit.shown;
       const word = (text: string, fill: number) => pixelText(text, AIL_SIZE, fill);
       const words = shown.map((w) => word(w.text, w.fill));
       if (more) words.push(word(T.ailmentMore(more), AILMENT_MORE_FILL));

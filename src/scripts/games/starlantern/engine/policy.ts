@@ -6,7 +6,7 @@
 import type { Action, BattleState } from './battle';
 import { hitAmount, type Combatant } from './combatant';
 import { castDef } from './mechanics/index';
-import { AILMENT } from './ailments';
+import { AILMENT, curable, type AilmentShown } from './ailments';
 import { mechGauge, type MechGauge, type MoonPhase } from './mech';
 import { echoDef, echoOf } from './mechanics/echo';
 import type { CharacterId, SkillDef } from './types';
@@ -54,7 +54,14 @@ export type PolicyRule =
    * The hero: echo the coming round's record when it is worth at least his strongest damage skill (power x reach), or with
    * `min`, at least that percent of it (an echo is a companion's skill at 70%: plan 8h Task 5b tuning).
    */
-  | { kind: 'echo'; min?: number };
+  | { kind: 'echo'; min?: number }
+  /**
+   * Builds only (difficulty plan ruling 23; no default policy has it): `skill` can be cast and a living member holds an
+   * ailment only the higher tiers' enemies inflict (TIER_AILMENTS) that its cast (`castDef`, a 淨化 rune's cure included)
+   * takes off (`curable`): cast it on the one with the most, ties in party order. Poison and sleep never count (controller
+   * ruling on Task 2: Normal enemies inflict them, and a Normal build must play as it did).
+   */
+  | { kind: 'cure-ailment'; skill: string };
 
 export type PolicyTable = Readonly<Partial<Record<CharacterId, readonly PolicyRule[]>>>;
 
@@ -78,6 +85,14 @@ export function reach(s: BattleState, def: SkillDef): number {
 }
 
 const shareOf = (c: Combatant) => c.hp / c.max.hp;
+
+/**
+ * The ailments `cure-ailment` answers: the ones only the higher tiers' enemies inflict on the party (the region riders and
+ * the affixes; a freeze lands on the party as a chill, so it is the chill). No Normal enemy or region inflicts any of them
+ * (ailments.test.ts `Normal never freezes the party`, which also checks this list against the riders and the affixes), so
+ * on Normal the rule never holds.
+ */
+export const TIER_AILMENTS: readonly AilmentShown[] = ['burn', 'bleed', 'shock', 'chill'];
 
 /** Rounds of damage a rune's poison is counted for when ranking (it lasts until cured). */
 const POISON_ROUNDS = 3;
@@ -256,6 +271,18 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
         if (!def || (rule.big && !big())) break;
         if (rule.whileAbsent && holding(s, c, def)) break;
         return cast(rule.skill, aim(def));
+      }
+      case 'cure-ailment': {
+        const raw = defOf(rule.skill);
+        if (!raw) break;
+        const def = castDef(s, c, raw);
+        const on = def.target === 'self' ? [c] : s.party;
+        const most = on.reduce<{ m: Combatant; n: number } | undefined>((best, m) => {
+          const n = curable(def, m).filter((id) => TIER_AILMENTS.includes(id)).length;
+          return n > (best?.n ?? 0) ? { m, n } : best;
+        }, undefined);
+        if (!most) break;
+        return cast(rule.skill, def.target === 'ally' ? most.m.key : undefined);
       }
       case 'echo': {
         const rec = c.defId === 'hero' ? echoOf(s, s.round + 1) : null;

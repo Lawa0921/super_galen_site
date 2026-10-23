@@ -3,6 +3,7 @@ import { writeFileSync } from 'node:fs';
 import { dirname, relative, sep } from 'node:path';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
 import { SPECIALS, STARLIT_RARITIES } from '../../src/scripts/games/starlantern/data/gear';
+import { AFFIXES } from '../../src/scripts/games/starlantern/data/affixes';
 import { ENHANCE_MAX } from '../../src/scripts/games/starlantern/data/forge';
 import { ITEMS } from '../../src/scripts/games/starlantern/data/items';
 import { RUNES, runeKey, tiersOf, type RuneId } from '../../src/scripts/games/starlantern/data/runes';
@@ -175,7 +176,7 @@ const toStairs = (page: Page) => page.evaluate(() => {
  * Put `tile` on the `nth` plain floor tile of the map that has plain floor to its left, and stand the party there,
  * facing it: the key that steps onto it is returned. With `content`, the floor's contents gain that event there.
  */
-const placeBeside = (page: Page, tile: string, nth = 0, content?: string, extra: Record<string, unknown> = {}) => page.evaluate(({ tile, nth, content, extra }) => {
+export const placeBeside = (page: Page, tile: string, nth = 0, content?: string, extra: Record<string, unknown> = {}) => page.evaluate(({ tile, nth, content, extra }) => {
   const g = (window as unknown as Dbg).__starlanternDebug.game;
   const tiles: string[][] = g.map().tiles;
   const spots: { x: number; y: number }[] = [];
@@ -434,7 +435,48 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
   // The act 1 clear card: `go` shows it without changing the game.
   { name: 'clear', visit: async (page) => { await go(page, 'clear'); await expect(page.locator('.slx-clear [role=option]').first()).toBeVisible(); } },
   {
+    // Difficulty plan Task 7a: Nightmare open (the main road reached 12), Glen's one line closed, Nightmare chosen with E;
+    // Hell stays locked and says what opens it (the row's longest words). The plain 'portals' screen shows both locked.
+    name: 'portals-tier', visit: async (page, w) => {
+      await game(page, 'g.state.dungeon.reached.mainline = 12; delete g.state.dungeon.tier;');
+      await facility(page, w, 'gate', '.slx-gate');
+      await w.key('Enter');
+      await expect(page.locator('.slx-portal')).toHaveCount(3);
+      await w.key('e');
+      await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'nightmare');
+      await expect(page.locator('.slx-tier-locked[data-tier=hell] .slx-tier-cond')).toBeVisible();
+      await expect(page.locator('.slx-portal-tier').first()).toBeVisible();
+    },
+  },
+  {
+    name: 'depths-tier', visit: async (page) => {
+      await page.locator('.slx-portal').first().click();
+      await expect(page.locator('.slx-depths [role=option] .slx-right').first()).toContainText('噩夢');
+    },
+  },
+  {
+    name: 'confirm-tier', visit: async (page, w) => {
+      await w.key('Enter');                                   // depth 1
+      await expect(page.locator('.slx-confirm')).toContainText('難度：噩夢');
+    },
+  },
+  {
+    // Difficulty plan Task 7c: the handbook's 難度 page, listed now that Nightmare is open; the cursor on Hell, its longest
+    // detail (still shut: the condition and the status).
+    name: 'handbook-tiers', visit: async (page, w) => {
+      await go(page, 'handbook');
+      await page.locator('.slx-handbook [role=tab]', { hasText: T.ui2.handbook.tabs.tiers }).click();
+      await expect(page.locator('.slx-handbook [role=tab]', { hasText: T.ui2.handbook.tabs.tiers })).toHaveAttribute('aria-selected', 'true');
+      await w.key('ArrowDown'); await w.key('ArrowDown');
+      await expect(page.locator('.slx-hb-detail h4')).toHaveText(T.ui2.tier.names.hell);
+      // Its longest detail fits its column: nothing cut at the bottom.
+      expect(await page.locator('.slx-hb-detail').evaluate((e) => e.scrollHeight <= e.clientHeight + 0.5)).toBe(true);
+    },
+  },
+  {
     name: 'confirm', visit: async (page, w) => {
+      // The sweep's own save again for the rest (difficulty plan Task 7a): the main road at 1, the tier row unseen.
+      await game(page, 'g.state.dungeon.reached.mainline = 1; delete g.state.dungeon.tier;');
       await facility(page, w, 'gate', '.slx-gate');
       await w.key('Enter');                                   // 選擇傳送門
       await expect(page.locator('.slx-portal')).toHaveCount(3);
@@ -651,6 +693,56 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
         else await page.waitForTimeout(50);
       }
       await expect(page.locator('.slx-result')).toBeVisible();
+    },
+  },
+  {
+    // Difficulty plan Task 7b: Hell opened, a Hell run into 熾焰之地 at depth 20 (its elites have the longest names); the
+    // badge stands beside the condition.
+    name: 'dungeon-tier', visit: async (page, w) => {
+      await game(page, `
+        g.battle = null; g.run = null; g.phase = 'town';
+        const d = g.state.dungeon;
+        d.reached.mainline = 30; d.reached.blaze = 20; d.bossKills['nightmare:mainline:25'] = 1;
+        g.state.story.finaleCleared = true;
+        if (!g.chooseTier('hell').ok) throw new Error('Hell did not open');
+        const r = g.depart({ region: 'blaze', condition: 'plain' }, 20);
+        if (!r.ok) throw new Error('no departure: ' + r.reason);
+      `);
+      await go(page, 'dungeon');
+      await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+      await expect(page.locator('.slx-tier-badge')).toHaveText(T.ui2.tier.names.hell);
+    },
+  },
+  {
+    // A Hell elite of that depth, then the fullest picture of it: five of its group, every one wearing the elite's two
+    // affixes and three ailments (the rows above their heads at their fullest).
+    name: 'battle-affix', visit: async (page, w) => {
+      await placeBeside(page, 'elite', 5);
+      await w.key('ArrowRight');
+      await expect(page.locator('.slx-event-elite')).toBeVisible();
+      await w.key('Enter');                                   // 挑戰
+      await expect(page.locator('.slx-battle')).toBeVisible();
+      const n = await game<number>(page, 'return g.battle.enemies[0].affixes.length;');
+      expect(n).toBe(2);
+      await game(page, `
+        const ids = g.battle.enemies.map((e) => e.defId);
+        const five = [0, 1, 2, 3, 4].map((i) => ids[i % ids.length]);
+        const affixes = [...g.battle.enemies[0].affixes];
+        g.startBattle(five, false, true, five[0]);
+        for (const e of g.battle.enemies) { e.affixes = [...affixes]; e.poison = true; e.shock = 2; e.chill = 2; e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1; }
+      `);
+      await go(page, 'battle');
+      await commandMenu(page);
+      const lead = await page.evaluate(() => (window as unknown as { __starlanternDebug: { stage: { battleView: { ailmentTexts(k: string): { text: string }[] } } } }).__starlanternDebug.stage.battleView.ailmentTexts('e4')[0]?.text);
+      expect(Object.values(AFFIXES).map((a) => a.name)).toContain(lead);
+    },
+  },
+  {
+    // The target list over the first of them: the note says each affix, a line each.
+    name: 'battle-affix-target', visit: async (page, w) => {
+      await w.choose('.slx-bcmd', '攻擊');
+      await expect(page.locator('.slx-btarget')).toBeVisible();
+      await expect(page.locator('.slx-bnote')).toHaveClass(/slx-bnote-lines/);
     },
   },
   {

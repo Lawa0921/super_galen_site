@@ -16,6 +16,12 @@ export const AILMENT_FILL: Record<AilmentShown, number> = {
 export const AILMENT_MORE_FILL = 0xf1ead8;
 
 /**
+ * The ink of an elite's or a boss's affix words, which lead its row (difficulty plan Task 7b): a pale peach, apart from
+ * every ailment and mechanic colour (ui2/rarity.test.ts) and readable on the window. Text only, no icon (spec §7.3).
+ */
+export const AFFIX_FILL = 0xffccbb;
+
+/**
  * The order a row shows ailments in, most severe first (plan 8b follow-up): what costs a turn (freeze, sleep), then
  * damage every round (bleed, which stacks; burn; poison), then what only shifts numbers (shock, chill). Fixed, so the
  * same ailments always read the same way, and a full row folds the mildest into 「+N」.
@@ -31,6 +37,20 @@ export const bySeverity = (chips: readonly AilmentChip[]): AilmentChip[] =>
  */
 export const textWidth = (text: string, size: number): number =>
   [...text].reduce((w, ch) => w + (ch.charCodeAt(0) > 0x2e80 ? (size * 13) / 12 : (size * 8) / 12), 0);
+
+/**
+ * A label no wider than `max`: the first of `options` (longest first) that fits; when none does, `cut.head` shortened with
+ * 「…」 and `cut.tail` kept after it (a foe's letter), as long as fits. The whole text stays one action away (the target
+ * list, the message line, the target note), so a cut loses nothing.
+ */
+export function fitLabel(options: readonly string[], max: number, widthOf: (t: string) => number, cut: { head: string; tail?: string }): string {
+  for (const o of options) if (widthOf(o) <= max) return o;
+  const chars = [...cut.head];
+  const tail = cut.tail ?? '';
+  let k = chars.length - 1;
+  while (k > 1 && widthOf(`${chars.slice(0, k).join('')}…${tail}`) > max) k--;
+  return `${chars.slice(0, Math.max(1, k)).join('')}…${tail}`;
+}
 
 /** Freeze and sleep cost a turn: a row never folds them away (plan 8c final). */
 export const isHalting = (c: AilmentChip): boolean => c.id === 'freeze' || c.id === 'sleep';

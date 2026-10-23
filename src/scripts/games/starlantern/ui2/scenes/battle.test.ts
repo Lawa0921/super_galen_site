@@ -7,7 +7,7 @@ import { NO_ART } from '../../render/textures';
 import { art } from '../../render/artPaths';
 import { chainLength } from '../../data/story/chains';
 import { BattleScene } from './battle';
-import { STORY_FIGHT_ROUNDS } from '../../engine/battle';
+import { STORY_FIGHT_ROUNDS, intentLabel } from '../../engine/battle';
 import { LEGACY_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { SKILLS } from '../../data/skills';
@@ -22,6 +22,7 @@ import { ultimateFor } from '../../engine/progression';
 import { skillFor } from '../../engine/battle';
 import { ECHO, echoDef } from '../../engine/mechanics/echo';
 import { CHARACTERS } from '../../data/characters';
+import { AFFIXES } from '../../data/affixes';
 import { SHARD_NAMES } from '../../data/story/fragments';
 import { FINALE_DEPTH } from '../../data/story/scenes';
 import { STORY, type ScriptLine } from '../../data/story.zh-TW';
@@ -1628,5 +1629,46 @@ describe("BattleScene: Safira's beat in her numbers (plan 8h Task 8 review)", ()
     const three = at(3);
     expect(three.shown).toBe(Math.round((three.base * 130) / 100));
     expect(three.flat).toBe(three.real);
+  });
+});
+
+describe('BattleScene affixes (difficulty plan Task 7b)', () => {
+  /** Two foes at least, the first wearing 灼熱 and 霜縛, as a Nightmare elite would. */
+  const affixed = (g: Game) => {
+    const b = g.battle!;
+    if (b.enemies.length < 2) b.enemies.push({ ...structuredClone(b.enemies[0]), key: 'e1' });
+    b.enemies[0].affixes = ['scorch', 'frostbind'];
+  };
+  const stageWith = (showAilments: ReturnType<typeof vi.fn>) => ({ show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, highlight: vi.fn(), showIntents: vi.fn(), syncHp: vi.fn(), showAilments, play: vi.fn() } });
+
+  it('the target note says the foe\'s whole intent, then each affix in a line', () => {
+    // The picture may shorten an intent to fit its slot (legibility follow-up); the note keeps it whole.
+    const { s, root, game } = setup(affixed);
+    const b = game.battle!;
+    if (b.intents) delete b.intents.e1;                       // the second foe: no plan to show
+    s.onAction('confirm');                                   // 攻擊: whom?
+    expect(root.querySelector('.slx-btarget [aria-selected=true]')!.getAttribute('data-id')).toBe('e0');
+    const intent = intentLabel(b, 'e0');
+    expect(intent).not.toBe('');
+    const note = root.querySelector('.slx-bnote')!;
+    expect(note.textContent!.split('\n')).toEqual([T.ui2.battle.intentNote(intent), T.ui2.tier.affixLine(AFFIXES.scorch.name, AFFIXES.scorch.line), T.ui2.tier.affixLine(AFFIXES.frostbind.name, AFFIXES.frostbind.line)]);
+    expect(note.classList.contains('slx-bnote-lines')).toBe(true);
+    s.onAction('down');                                      // no affixes and no plan: no note
+    expect(root.querySelector('.slx-bnote')).toBeNull();
+    // A plain foe: its intent alone, one line.
+    const plain = setup((g) => { const pb = g.battle!; if (pb.enemies.length < 2) pb.enemies.push({ ...structuredClone(pb.enemies[0]), key: 'e1' }); });
+    plain.s.onAction('confirm');
+    expect(plain.root.querySelector('.slx-btarget')).not.toBeNull();
+    expect(plain.root.querySelector('.slx-bnote')!.textContent).toBe(T.ui2.battle.intentNote(intentLabel(plain.game.battle!, 'e0')));
+  });
+
+  it('the picture gets each foe\'s affix names; a fight without affixes calls it as before', () => {
+    const showAilments = vi.fn();
+    setup(affixed, { stage: stageWith(showAilments) as never });
+    const call = showAilments.mock.calls.at(-1)!;
+    expect(call[2]).toEqual({ e0: [AFFIXES.scorch.name, AFFIXES.frostbind.name] });
+    const plainCalls = vi.fn();
+    setup(undefined, { stage: stageWith(plainCalls) as never });
+    expect(plainCalls.mock.calls.at(-1)!).toHaveLength(2);
   });
 });

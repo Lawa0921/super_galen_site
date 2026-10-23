@@ -1167,3 +1167,42 @@ describe('DungeonScene art (no placeholder)', () => {
     expect(urls.some((u) => u.includes('/map/party-'))).toBe(true);
   });
 });
+
+describe('DungeonScene tier badge (difficulty plan Task 7b)', () => {
+  const enterOn = (tier: 'normal' | 'nightmare' | 'hell') => {
+    const game = new Game(constRng(0.99), null, undefined, 0, LEGACY_LINEUP);
+    game.state.dungeon.reached.mainline = 25;
+    if (tier === 'hell') { game.state.story.finaleCleared = true; game.state.dungeon.bossKills['nightmare:mainline:25'] = 1; }
+    expect(game.chooseTier(tier)).toMatchObject({ ok: true });
+    expect(game.depart({ region: 'mainline', condition: 'fog' }, 10)).toEqual({ ok: true });
+    const root = document.createElement('div');
+    const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
+    new DungeonScene({ game, art: NO_ART, sfx, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), stage: null, fast: true }, Infinity).enter(root);
+    return root;
+  };
+  const top = (root: HTMLElement) => [...root.querySelector('.slx-dungeon')!.children].map((c) => c.className);
+
+  it('the floor shows its tier beside the condition', () => {
+    for (const tier of ['nightmare', 'hell'] as const) {
+      const root = enterOn(tier);
+      const badge = root.querySelector<HTMLElement>('.slx-tier-badge')!;
+      expect(badge.textContent, tier).toBe(T.ui2.tier.names[tier]);
+      expect(badge.getAttribute('aria-label'), tier).toBe(T.ui2.tier.badgeLabel(T.ui2.tier.names[tier]));
+      // One row with the condition badge, the condition first; its tooltip still answers to it.
+      const row = badge.parentElement!;
+      expect(row.classList.contains('slx-run-badges')).toBe(true);
+      expect([...row.children].map((c) => c.classList.contains('slx-condition') ? 'condition' : c.classList.contains('slx-tier-badge') ? 'tier' : c.className)).toEqual(['condition', 'tier']);
+      expect(root.querySelector('.slx-condition')!.textContent).toBe(CONDITIONS.fog.name);
+      expect(root.querySelector('.slx-condition')!.getAttribute('aria-describedby')).toBe(root.querySelector('.slx-condition-tip')!.id);
+    }
+  });
+
+  it('a Normal floor has no tier badge and the screen it always had', () => {
+    const root = enterOn('normal');
+    expect(root.querySelector('.slx-tier-badge')).toBeNull();
+    expect(root.querySelector('.slx-run-badges')).toBeNull();
+    const plain = setup({ region: 'mainline', condition: 'fog' }).root;
+    expect(top(root)).toEqual(top(plain));
+    expect(top(root).slice(0, 3)).toEqual(['slx-win slx-floorname', 'slx-win slx-condition slx-cond-fog', 'slx-win slx-condition-tip']);
+  });
+});

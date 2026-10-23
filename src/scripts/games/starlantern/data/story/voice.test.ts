@@ -48,6 +48,8 @@ const POLISHED: string[] = [
   'nightBeats.',
   // Story L Tasks 9-11: the group scenes, each as it is written and registered
   'scenes.group:',
+  // Difficulty plan Task 7a: Glen's one line when Nightmare opens.
+  'tierUnlock',
 ];
 
 type Scope = readonly string[];

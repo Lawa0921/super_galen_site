@@ -4,7 +4,7 @@ import type { Rng } from './rng';
 import type { Effect, Element, SkillDef } from './types';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
 import { credit, creditPrevented, lossOf, type Ledger } from './ledger';
-import { clearAilments, inflictAilment, type AilmentId } from './ailments';
+import { CURED, cureAilments, inflictAilment, type AilmentId } from './ailments';
 import type { BattleState } from './battle';
 import { onLandedHit } from './mechanics/index';
 import { noteHit } from './mechanics/runes';
@@ -399,10 +399,8 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'cure': {
       if (!target.alive) return;
-      target.poison = false;
-      delete target.poisonSrc;
-      target.sleep = 0;
-      clearAilments(target, { keepGuard: true });
+      // The list `curable` names (difficulty plan Task 2): every ailment, the freeze guard kept.
+      cureAilments(target, CURED);
       ctx.log.push({ type: 'cure', target: target.key });
       return;
     }

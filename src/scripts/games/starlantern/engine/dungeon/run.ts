@@ -5,6 +5,7 @@ import type { FloorMap } from '../map';
 import { mulberry32 } from '../rng';
 import { GLIMMER_CHANCE } from '../../data/story/chains';
 import type { BuffStat, CharacterId, ItemInstance } from '../types';
+import type { Difficulty } from '../battle';
 import { genFloor } from './gen';
 import { fillRooms, placeRescue, placeSpecial, type Content } from './rooms';
 
@@ -50,13 +51,19 @@ export interface Run {
   dropped: Record<number, CharacterId[]>;
   /** Rune draws taken in battle so far (plan 8f); `runeRng` seeds each from the run seed, RUNE_SALT and this count. */
   runeDraws: number;
+  /**
+   * The tier of this trip (difficulty plan Task 6a), set at departure and kept until town; absent on Normal, so a Normal
+   * run is the run it always was. Not saved (a run never is).
+   */
+  difficulty?: Difficulty;
 }
 
-export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number, rescues: Record<number, Meetable> = {}): Run {
+export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number, rescues: Record<number, Meetable> = {}, difficulty?: Difficulty): Run {
   return {
     seed, region, condition, startDepth, floors: new Map(), opened: new Set(), explored: {},
     loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, waiting: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(), rescues: { ...rescues },
     glimmers: {}, memoryDraws: 0, dropped: {}, runeDraws: 0,
+    ...(difficulty && difficulty !== 'normal' ? { difficulty } : {}),
   };
 }
 

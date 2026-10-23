@@ -3,13 +3,15 @@ import { ABYSS } from '../data/hero';
 import { CONDITIONS, type ConditionDef } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
-import type { RegionDef, RegionId } from '../data/regions';
+import { REGION_RIDER, type RegionDef, type RegionId } from '../data/regions';
 import { terrainOf } from './dungeon/run';
 import { expToNext } from './party';
 import { depthLevel } from './levels';
 import { pick, type Rng } from './rng';
+import { enemyFactors, type TierDef } from '../data/difficulty';
+import { AFFIXES, type AffixId } from '../data/affixes';
 import { compensation, enemySecondary } from './stats';
-import type { Element, EnemyDef, StatKey, Stats } from './types';
+import type { Element, EnemyDef, EnemySkill, StatKey, Stats } from './types';
 
 export { depthLevel } from './levels';
 
@@ -94,7 +96,8 @@ export function depthClearExp(depth: number): number {
   return Math.round(DEPTH_CLEAR_SHARE * need(lv, lv + 4));
 }
 
-const rewardGrowth = (def: EnemyDef, depth: number): number => {
+/** How a monster's exp and gold grow with depth (exported for the tests of a tier's reward: one rounding). */
+export const rewardGrowth = (def: EnemyDef, depth: number): number => {
   const lv = depthLevel(depth);
   if (lv <= homeLevel(def)) return 1;
   const [a, b] = HOME_SPAN[def.floor];
@@ -117,6 +120,11 @@ const SKILL_SCALES_IN: ReadonlySet<RegionId> = new Set<RegionId>(['iron']);
 
 /** Name prefix of a region's variants: 「熾焰・荊棘狼」. */
 const PREFIX: Record<RegionId, string> = { mainline: '', blaze: '熾焰', frost: '霜凍', storm: '雷鳴', mire: '腐毒', shade: '暗影', iron: '鋼鐵' };
+/**
+ * The words `scaleEnemy` puts before a name (深層, a region's prefix): a battle label too long for its slot drops them first
+ * (render/BattleView.ts), since the floor's badge and the message line already say them. Read by the picture only.
+ */
+export const NAME_PREFIXES: readonly string[] = ['深層', ...Object.values(PREFIX).filter(Boolean)];
 
 /**
  * Region traits as plain stat changes (spec §3.0): mire monsters are tough, storm ones fast, iron ones armoured but
@@ -140,16 +148,47 @@ export function mul(stats: Stats, by: Partial<Record<StatKey, number>>): Stats {
   return out;
 }
 
+/** The HP and speed multipliers of `affixes` on `def` (a boss takes `bossHp` where an affix has one); 1s left out. */
+function affixMul(def: EnemyDef, affixes: readonly AffixId[]): Partial<Record<StatKey, number>> {
+  let hp = 1, spd = 1;
+  for (const a of affixes) {
+    const d = AFFIXES[a];
+    hp *= (def.boss ? d.bossHp ?? d.hp : d.hp) ?? 1;
+    spd *= d.spd ?? 1;
+  }
+  return { ...(hp !== 1 ? { hp } : {}), ...(spd !== 1 ? { spd } : {}) };
+}
+
+/** A region's skill on a tier: its effects and then its rider (REGION_RIDER) at the tier's chance; a new object. */
+function ridden(skill: EnemySkill, region: RegionId, tier: TierDef): EnemySkill {
+  const status = REGION_RIDER[region];
+  return status ? { ...skill, effects: [...skill.effects, { kind: 'inflict', status, chance: tier.rider }] } : skill;
+}
+
 /**
  * A monster as met at this depth, in this region, possibly as an elite, under a run condition (default: none).
  * It carries the secondaries of its depth and region (`sec`), and its stats pay for them last (stats.compensation).
+ * With a difficulty `tier` (data/difficulty.ts; null for Normal, which takes none of this path): hp and atk/mag are
+ * multiplied after the condition and before compensation; the region skill carries its rider (REGION_RIDER, ruling 8);
+ * its own skills' and the region skill's chances rise to
+ * `max(chance, min(chanceCap, chance x chanceMul))` (difficulty plan ruling 3); exp and gold are rounded once (ruling 9).
+ * With `affixes` (data/affixes.ts; Task 3): their HP (a boss's `bossHp`) and speed multipliers right after the tier's, and
+ * their skills first, at their own chance (ruling 4); none, or an empty list, takes none of this path.
  * Returns a new definition; `def` is untouched.
  */
-export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elite: boolean, condition: ConditionDef = CONDITIONS.plain): EnemyDef {
+export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elite: boolean, condition: ConditionDef = CONDITIONS.plain, tier: TierDef | null = null, affixes?: readonly AffixId[]): EnemyDef {
   let stats = mul({ ...def.stats }, growth(def, depth));
   if (region.trait && TRAIT[region.trait]) stats = mul(stats, TRAIT[region.trait]!);
   if (elite) stats = mul(stats, ELITE);
   if (condition.enemyAtkMul !== 1) stats = mul(stats, { atk: condition.enemyAtkMul, mag: condition.enemyAtkMul });
+  // The tier's factors at this depth (the depth table); a boss takes its own on top (controller ruling 2026-10-23).
+  const f = tier ? enemyFactors(tier, depth) : null;
+  if (f) {
+    const hp = def.boss && f.bossHp !== undefined ? f.hp * f.bossHp : f.hp;
+    const atk = def.boss && f.bossAtk !== undefined ? f.atk * f.bossAtk : f.atk;
+    stats = mul(stats, { hp, atk, mag: atk });
+  }
+  if (affixes?.length) stats = mul(stats, affixMul(def, affixes));
   const sec = enemySecondary(depthLevel(depth), homeLevel(def), region.trait);
   stats = mul(stats, compensation(sec));
   const reward = rewardGrowth(def, depth) * (elite ? ELITE_REWARD : 1);
@@ -157,6 +196,11 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
   const early = depth < REGION_TRAITS_FROM;
   const skill = region.skill && !(early && SKILL_SCALES_IN.has(region.id)) ? region.skill : null;
   const name = [depth >= DEEP_FROM ? '深層' : '', PREFIX[region.id], def.name].filter(Boolean).join('・');
+  // A tier's skill odds (ruling 3): raised to the cap, never lowered; the region's skill object is copied, not changed.
+  const raise = (k: EnemySkill): EnemySkill => (f ? { ...k, chance: Math.max(k.chance, Math.min(f.chanceCap, k.chance * f.chanceMul)) } : k);
+  const own = tier ? (skill ? [...def.skills, ridden(skill, region.id, tier)] : def.skills).map(raise) : skill ? [...def.skills, skill] : [...def.skills];
+  // The affixes' skills lead (ruling 4: `findIndex` reads them first), copies of the data.
+  const lead = affixes?.length ? affixes.flatMap((a) => { const k = AFFIXES[a].skill; return k ? [{ ...k, effects: k.effects.map((e) => ({ ...e })) }] : []; }) : null;
   return {
     ...def,
     name: `${elite ? '★' : ''}${name}`,
@@ -165,9 +209,10 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
     // A named story foe keeps its own elements: the region's belong to its monsters.
     weak: regional && !def.story ? [...region.weak] : [...def.weak],
     resist: regional && !early && !def.story ? [...region.resist] : [...def.resist],
-    skills: skill ? [...def.skills, skill] : [...def.skills],
-    exp: Math.round(def.exp * reward * condition.expMul),
-    gold: Math.round(def.gold * reward * condition.goldMul),
+    skills: lead ? [...lead, ...own] : own,
+    // With a tier, one rounding (ruling 9); without, the line as it was.
+    exp: tier ? Math.round(def.exp * reward * condition.expMul * tier.reward) : Math.round(def.exp * reward * condition.expMul),
+    gold: tier ? Math.round(def.gold * reward * condition.goldMul * tier.reward) : Math.round(def.gold * reward * condition.goldMul),
     drops: [...def.drops.map((d) => ({ ...d })), ...(regional && region.material ? [{ mat: region.material, chance: REGION_DROP_CHANCE }] : [])],
   };
 }

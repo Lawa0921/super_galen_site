@@ -12,6 +12,24 @@ describe('newRun', () => {
       .toEqual([0, 0, {}, { items: {}, gold: 0, gear: [] }, false, [], 0]);
     expect([r.gearRolls, r.lootDraws]).toEqual([{}, 0]);
   });
+  it('a Normal run is the run it always was (difficulty plan Task 6a)', () => {
+    const plain = newRun(42, 'blaze', 'fog', 5, { 8: 'scarlet' });
+    const normal = newRun(42, 'blaze', 'fog', 5, { 8: 'scarlet' }, 'normal');
+    expect(normal).toEqual(plain);
+    expect('difficulty' in plain).toBe(false);
+    expect('difficulty' in normal).toBe(false);
+  });
+  it('a Nightmare run carries its tier, and nothing else changes', () => {
+    const plain = newRun(42, 'blaze', 'fog', 5, { 8: 'scarlet' });
+    const night = newRun(42, 'blaze', 'fog', 5, { 8: 'scarlet' }, 'nightmare');
+    expect(night.difficulty).toBe('nightmare');
+    expect(newRun(42, 'blaze', 'fog', 5, {}, 'hell').difficulty).toBe('hell');
+    // No counter or any other field is added: the same run but for the tier.
+    const { difficulty, ...rest } = night;
+    expect(difficulty).toBe('nightmare');
+    expect(rest).toEqual(plain);
+    expect(Object.keys(night).sort()).toEqual([...Object.keys(plain), 'difficulty'].sort());
+  });
 });
 
 describe('floorOf', () => {

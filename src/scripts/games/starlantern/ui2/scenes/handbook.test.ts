@@ -13,7 +13,10 @@ import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { artIdOf } from '../../ui/art';
-import { HandbookScene } from './handbook';
+import { HandbookScene, tabsFor } from './handbook';
+import { AFFIXES, AFFIX_IDS } from '../../data/affixes';
+import { TIERS } from '../../data/difficulty';
+import { HELL_BOSS_DEPTH, NIGHTMARE_DEPTH } from '../../engine/tiers';
 
 const H = T.ui2.handbook;
 
@@ -342,5 +345,63 @@ describe('HandbookScene: the leads (6c Task 16)', () => {
     goTab(H.tabs.leads);
     expect(labels()[0]).toBe(H.leads.allFound);
     expect(labels()).toHaveLength(9);
+  });
+});
+
+describe('HandbookScene: the tier page (difficulty plan Task 7c)', () => {
+  const open = (g: Game) => { g.state.dungeon.reached.mainline = NIGHTMARE_DEPTH; };
+  /** Every row's label, right column and detail, the cursor walked down the list. */
+  const walk = (t: ReturnType<typeof setup>) => t.rows().map((r, i) => {
+    if (i > 0) t.s.onAction('down');
+    return `${r.textContent}|${t.root.querySelector('.slx-hb-detail')!.textContent}`;
+  }).join('\n');
+
+  it('the tier page opens with Nightmare', () => {
+    const locked = setup();
+    expect(tabsFor(locked.game.state)).not.toContain('tiers');
+    expect(locked.tabs()).not.toContain(H.tabs.tiers);
+    const t = setup(undefined, open);
+    expect(tabsFor(t.game.state)).toEqual(['memories', 'people', 'leads', 'town', 'codex', 'truths', 'tiers']);
+    expect(t.tabs()).toEqual([H.tabs.memories, H.tabs.people, H.tabs.leads, H.tabs.town, H.tabs.codex, H.tabs.truths, H.tabs.tiers]);
+    t.goTab(H.tabs.tiers);
+    expect(t.tab()).toBe(H.tabs.tiers);
+    const page = walk(t);
+    for (const d of ['normal', 'nightmare', 'hell'] as const) expect(page).toContain(T.ui2.tier.names[d]);
+    // What each changes, numbers from the table; Hell's condition and that it is still shut.
+    expect(page).toContain(T.ui2.tier.what.nightmare);
+    expect(page).toContain(T.ui2.tier.what.hell);
+    expect(page).toContain(H.tiers.rewards(Math.round((TIERS.nightmare.reward - 1) * 100)));
+    expect(page).toContain(H.tiers.rewards(Math.round((TIERS.hell.reward - 1) * 100)));
+    expect(page).toContain(H.tiers.affixes(TIERS.nightmare.eliteAffixes, TIERS.nightmare.bossAffixes, false));
+    expect(page).toContain(H.tiers.affixes(TIERS.hell.eliteAffixes, TIERS.hell.bossAffixes, true));   // a Hell crowd may wear one too
+    expect(page).toContain(H.tiers.condition(T.ui2.tier.locked.hell(HELL_BOSS_DEPTH)));
+    expect(page).toContain(`${T.ui2.tier.names.hell}${H.tiers.locked}`);
+    expect(page).toContain(`${T.ui2.tier.names.nightmare}${H.tiers.open}`);
+    for (const id of AFFIX_IDS) {
+      expect(page).toContain(AFFIXES[id].name);
+      expect(page).toContain(AFFIXES[id].line);
+    }
+    // Hell open: its row says so.
+    const hell = setup(undefined, (g) => { open(g); g.state.dungeon.reached.mainline = 30; g.state.story.finaleCleared = true; g.state.dungeon.bossKills['nightmare:mainline:25'] = 1; });
+    hell.goTab(H.tabs.tiers);
+    expect(walk(hell)).toContain(`${T.ui2.tier.names.hell}${H.tiers.open}`);
+    // Nothing to pick on the page: a confirm only beeps.
+    t.s.onAction('confirm');
+    expect(t.sfx.error).toHaveBeenCalled();
+  });
+
+  it('turning tabs skips a locked tier page', () => {
+    const locked = setup();
+    const seen = (t: ReturnType<typeof setup>, dir: 'next' | 'prev', n: number) => Array.from({ length: n }, () => { t.s.onAction(dir); return t.tab(); });
+    expect(seen(locked, 'next', 7)).toEqual([H.tabs.people, H.tabs.leads, H.tabs.town, H.tabs.codex, H.tabs.truths, H.tabs.memories, H.tabs.people]);
+    expect(seen(locked, 'prev', 2)).toEqual([H.tabs.memories, H.tabs.truths]);   // left from the first page: the last one, not tiers
+    const t = setup(undefined, open);
+    expect(seen(t, 'prev', 1)).toEqual([H.tabs.tiers]);
+    expect(seen(t, 'next', 2)).toEqual([H.tabs.memories, H.tabs.people]);
+    expect(seen(t, 'next', 5)).toEqual([H.tabs.leads, H.tabs.town, H.tabs.codex, H.tabs.truths, H.tabs.tiers]);
+    // A click on the tab goes there too.
+    const c = setup(undefined, open);
+    ([...c.root.querySelectorAll('.slx-tab')].find((x) => x.textContent === H.tabs.tiers) as HTMLElement).click();
+    expect(c.tab()).toBe(H.tabs.tiers);
   });
 });

@@ -289,6 +289,15 @@ describe('mechanic colours (plan 8c)', () => {
     expect(css).toContain('.slx-pm-cue');
   });
 
+  it('the affix ink reads on the window and stands apart from every chip colour (difficulty plan Task 7b)', async () => {
+    const { AFFIX_FILL } = await import('../render/ailmentStyle');
+    const hex = AFFIX_FILL.toString(16).padStart(6, '0');
+    expect(contrast(rgb(hex), scssRgb('slx-win'))).toBeGreaterThanOrEqual(4.5);
+    const ail = [...(/\$slx-ailment:\s*\(([^)]*)\)/.exec(scss)?.[1] ?? '').matchAll(/([a-z]+): #([0-9a-f]{6})/g)].map((m) => [`ailment ${m[1]}`, m[2]] as const);
+    expect(ail).toHaveLength(7);
+    for (const [k, h] of [...entries.map(([k, h]) => [`mech ${k}`, h] as const), ...ail]) expect(deltaE2000(hex, h), k).toBeGreaterThanOrEqual(CHIP_DE);
+  });
+
   it('a cue stands on the lower part of the portrait, over the hit effects (T4 review)', () => {
     const css = compile(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss')).css;
     const rule = (sel: string) => [...css.matchAll(new RegExp(`(?:^|\\n|\\})\\s*${sel.replace('.', '\\.')}\\s*\\{([^}]*)\\}`, 'g'))].map((m) => m[1]).join(';');

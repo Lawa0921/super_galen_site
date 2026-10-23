@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { createHash } from 'node:crypto';
 import { STORY_FIGHT_ROUNDS, LIMIT_MAX, LIMIT_PER_ACTION, LIMIT_PER_HIT_SCALE, createBattle, escapeChance, intentLabel, resolveRound, rewards, skillCost, skillFor, turnOrder, writeBack } from './battle';
 import { WEAPON_MASTERY_PCT } from '../data/equipment';
 import { RIN_DAWN, SKY_LANTERN, ULTIMATES, skyForm, HERO_ULTIMATES } from '../data/ultimates';
@@ -18,6 +19,9 @@ import { SKILLS } from '../data/skills';
 import { keystonesOf } from './progression';
 import { mulberry32 } from './rng';
 import { ABYSS } from '../data/hero';
+import { REGIONS } from '../data/regions';
+
+const REGIONS_FROST_SKILL = REGIONS.frost.skill!.name;
 
 // Re-captured (CAPTURE=1) in plan 6a Task 19c for its ENEMY_POWER retune (amount 0.3, amount2 0.26, ramp 0.002). Task 20 then moved the ramp to 0.0012; the replays below did not change.
 // Re-captured in plan 8c Task 5 for Scarlet's mechanic (embers, cover, 贖火, 盾擊's challenge): 1:1, 1:2, 1:3 and 3:2 moved.
@@ -1123,5 +1127,100 @@ describe('character mechanics (plan 8c)', () => {
     expect(t4().party.find((c) => c.key === 'bobby')?.mech).toEqual({ kind: 'devices', devices: [], cap: 2 });
     expect(t4().echo).toBeUndefined();
     for (const c of f4.party) expect('turret' in c, c.key).toBe(false);
+  });
+});
+
+describe('Normal takes no new path (difficulty plan Task 1)', () => {
+  // Guard (green before the implementation): 'normal' and no difficulty are the same fight, draw for draw, and both are
+  // the fight as it was before any tier code: the draws and a SHA-256 of the final state, recorded at 29fc255ca (the
+  // difficulty plan's base) with this same play (T0-T1 review, minor 1: equal to each other alone would pass a x1 path).
+  const BEFORE_TIERS = [
+    '100:edd6aa7d325a733c32991bf99ee742edea953806fbe316c679fde16ffdc921c8',
+    '142:059a9a42be4a3aa30f0bc3be73da7b86b8eedc60b5cad759fe6813b4bfc06549',
+    '356:e0f8ce703e830bf5be81b994db0d480c30c94c01efd644ba895ecfee8198e660',
+  ];
+  it('Normal and no difficulty are the same fight', () => {
+    const main10 = encounterTable('mainline', 10)[0];
+    const cases: { label: string; ids: string[]; boss: boolean; scale: { depth: number; region: 'mainline' | 'mire'; elite?: string } }[] = [
+      { label: 'mainline d10 with an elite', ids: main10, boss: false, scale: { depth: 10, region: 'mainline', elite: main10[0] } },
+      { label: 'mire d5', ids: encounterTable('mire', 5)[0], boss: false, scale: { depth: 5, region: 'mire' } },
+      { label: 'boss d10', ids: ['lanterneater'], boss: true, scale: { depth: 10, region: 'mainline' } },
+    ];
+    cases.forEach((c, i) => {
+      const party = partyAt(Math.min(50, depthLevel(c.scale.depth)), {}, c.scale.depth);
+      const start = (difficulty?: 'normal') => createBattle({ party, enemyIds: c.ids, boss: c.boss, inventory: {}, revealed: {}, scale: { ...c.scale, ...(difficulty ? { difficulty } : {}) } });
+      expect(JSON.stringify(start('normal')), c.label).toBe(JSON.stringify(start()));
+      const play = (difficulty?: 'normal') => {
+        const base = mulberry32(4242);
+        let draws = 0;
+        const rng = () => { draws++; return base(); };
+        let s = start(difficulty);
+        for (let r = 0; r < 60 && s.outcome === 'ongoing'; r++) s = resolveRound(s, choose(s, party), rng);
+        return { draws, state: JSON.stringify(s) };
+      };
+      const a = play('normal');
+      const b = play();
+      expect(a.draws, c.label).toBeGreaterThan(0);
+      expect(a, c.label).toEqual(b);
+      expect(`${b.draws}:${createHash('sha256').update(b.state).digest('hex')}`, c.label).toBe(BEFORE_TIERS[i]);
+    });
+  });
+});
+
+describe('region riders in a fight (difficulty plan Task 2)', () => {
+  /** Frost's first group at depth 10, played with `choose` from `seed`; each round's state after it. */
+  const play = (seed: number, difficulty?: 'nightmare') => {
+    const party = partyAt(38, {}, 10);
+    let s = createBattle({ party, enemyIds: encounterTable('frost', 10)[0], inventory: {}, revealed: {}, scale: { depth: 10, region: 'frost', ...(difficulty ? { difficulty } : {}) } });
+    const rng = mulberry32(seed);
+    const out = [];
+    for (let r = 0; r < 60 && s.outcome === 'ongoing'; r++) { s = resolveRound(s, choose(s, party), rng); out.push(s); }
+    return out;
+  };
+  const breathes = (s: ReturnType<typeof play>[number]) => s.log.some((e) => e.type === 'act' && e.label === REGIONS_FROST_SKILL);
+
+  it('a rider lands in a Nightmare fight', () => {
+    // Seeds 1-20 (the depth table tunes how long the fight lasts, so no one seed is pinned): some breath carries the rider
+    // (a member chilled right after it), and no member is ever frozen.
+    const nights = Array.from({ length: 20 }, (_, i) => play(i + 1, 'nightmare'));
+    expect(nights.some((night) => night.some((s) => breathes(s) && s.party.some((c) => (c.chill ?? 0) > 0)))).toBe(true);
+    expect(nights.every((night) => night.every((s) => s.party.every((c) => !c.frozen)))).toBe(true);
+    // The same fight on Normal, seeds 0-7: the breath comes, and no member is ever chilled.
+    const normal = [0, 1, 2, 3, 4, 5, 6, 7].flatMap((seed) => play(seed));
+    expect(normal.some(breathes)).toBe(true);
+    expect(normal.every((s) => s.party.every((c) => c.chill === undefined))).toBe(true);
+  });
+});
+
+describe('affixes in a fight (difficulty plan Task 3)', () => {
+  it('affixes land on the elite and the boss only', () => {
+    const party = partyAt(38, {}, 10);
+    const start = (o: { enemyIds: string[]; boss?: boolean; elite?: string; affixes?: ('tough' | 'scorch' | 'swift')[] }) =>
+      createBattle({ party, enemyIds: o.enemyIds, boss: o.boss, inventory: {}, revealed: {}, scale: { depth: 10, region: 'mainline', difficulty: 'nightmare', ...(o.elite ? { elite: o.elite } : {}), ...(o.affixes ? { affixes: o.affixes } : {}) } });
+    // An elite fight with 堅韌: only e0 (the elite) carries it, with more HP; its guards none.
+    const plainElite = start({ enemyIds: ['wolf', 'wolf', 'bat'], elite: 'wolf' });
+    const toughElite = start({ enemyIds: ['wolf', 'wolf', 'bat'], elite: 'wolf', affixes: ['tough'] });
+    expect(toughElite.enemies.map((e) => e.affixes)).toEqual([['tough'], undefined, undefined]);
+    expect(toughElite.enemies[0].max.hp).toBeGreaterThan(plainElite.enemies[0].max.hp);
+    expect(toughElite.enemies.slice(1)).toEqual(plainElite.enemies.slice(1));
+    expect(toughElite.enemyDefs!.e0.skills).toEqual(plainElite.enemyDefs!.e0.skills);
+    // A boss fight with two: the Lantern-eater carries both, its skill leading.
+    const boss = start({ enemyIds: ['lanterneater'], boss: true, affixes: ['scorch', 'swift'] });
+    expect(boss.enemies[0].affixes).toEqual(['scorch', 'swift']);
+    expect(boss.enemyDefs!.e0.skills[0].name).toBe('灼擊');
+    // Affixes with no elite in a plain fight land on no one; a fight without them has the field on no enemy.
+    expect(start({ enemyIds: ['wolf', 'bat'], affixes: ['tough'] }).enemies.every((e) => !('affixes' in e))).toBe(true);
+    expect(plainElite.enemies.every((e) => !('affixes' in e))).toBe(true);
+    // Affixes without a difficulty (or on Normal) apply nothing (T2-T3 review, minor 2).
+    for (const difficulty of [undefined, 'normal'] as const) {
+      const none = createBattle({ party, enemyIds: ['wolf', 'bat'], inventory: {}, revealed: {}, scale: { depth: 10, region: 'mainline', elite: 'wolf', affixes: ['tough'], ...(difficulty ? { difficulty } : {}) } });
+      const plain = createBattle({ party, enemyIds: ['wolf', 'bat'], inventory: {}, revealed: {}, scale: { depth: 10, region: 'mainline', elite: 'wolf' } });
+      expect(none, String(difficulty)).toEqual(plain);
+    }
+    // The affixes on the combatant are a copy.
+    const list: ('tough' | 'scorch' | 'swift')[] = ['tough'];
+    const b = start({ enemyIds: ['wolf'], elite: 'wolf', affixes: list });
+    list.push('swift');
+    expect(b.enemies[0].affixes).toEqual(['tough']);
   });
 });

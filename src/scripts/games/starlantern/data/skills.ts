@@ -54,7 +54,7 @@ const LIST: SkillDef[] = [
 
   { id: 'moonlight', name: '月光', owner: 'selene', tp: 5, target: 'ally', field: true, desc: '回復一名隊友 HP',
     effects: [{ kind: 'heal', power: 120 }] },
-  { id: 'cleanse', name: '淨化', owner: 'selene', tp: 3, target: 'ally', desc: '解除毒與睡眠', effects: [{ kind: 'cure' }] },
+  { id: 'cleanse', name: '淨化', owner: 'selene', tp: 3, target: 'ally', desc: '解除所有異常', effects: [{ kind: 'cure' }] },
   { id: 'dream', name: '夢境', owner: 'selene', tp: 6, target: 'enemies', desc: '可能使全體敵人睡眠',
     effects: [{ kind: 'inflict', status: 'sleep', chance: 0.6 }] },
   { id: 'rebirth', name: '月之再生', owner: 'selene', tp: 10, target: 'deadAlly', field: true, desc: '復活倒下的隊友',
@@ -138,7 +138,7 @@ const LIST: SkillDef[] = [
 
   { id: 'moon-rain', name: '月光雨', owner: 'selene', tp: 9, target: 'allies', field: true, desc: '回復我方全體 HP',
     effects: [{ kind: 'heal', power: 60 }] },
-  { id: 'full-moon', name: '滿月之癒', owner: 'selene', tp: 18, target: 'allies', field: true, desc: '大幅回復我方全體 HP 並解除毒與睡眠',
+  { id: 'full-moon', name: '滿月之癒', owner: 'selene', tp: 18, target: 'allies', field: true, desc: '大幅回復我方全體 HP 並解除所有異常',
     effects: [{ kind: 'heal', power: 120 }, { kind: 'cure' }] },
   { id: 'moon-recall', name: '收回', owner: 'selene', tp: 0, target: 'self', desc: '剛才的月相，請當作沒看見吧。月相倒回一格。',
     effects: [{ kind: 'moon', step: -1 }] },
@@ -225,8 +225,8 @@ const LIST: SkillDef[] = [
     effects: [{ kind: 'heal', power: 90 }] },
   { id: 'hero-prayer', name: '祈禱', owner: 'hero', tp: 9, target: 'allies', field: true, desc: '回復我方全體 HP',
     effects: [{ kind: 'heal', power: 50 }] },
-  { id: 'hero-purify', name: '淨光', owner: 'hero', tp: 3, target: 'ally', desc: '解除毒與睡眠', effects: [{ kind: 'cure' }] },
-  { id: 'abyss-light', abyss: true, name: '深淵・光', owner: 'hero', tp: 16, target: 'allies', field: true, desc: '回復我方全體 HP 並解除毒與睡眠',
+  { id: 'hero-purify', name: '淨光', owner: 'hero', tp: 3, target: 'ally', desc: '解除所有異常', effects: [{ kind: 'cure' }] },
+  { id: 'abyss-light', abyss: true, name: '深淵・光', owner: 'hero', tp: 16, target: 'allies', field: true, desc: '回復我方全體 HP 並解除所有異常',
     effects: [{ kind: 'heal', power: 85 }, { kind: 'cure' }] },
   { id: 'hero-shackle', name: '枷鎖', owner: 'hero', tp: 4, target: 'enemy', desc: '降低敵人攻擊',
     effects: [{ kind: 'buff', stat: 'atk', pct: -20, turns: 3 }] },

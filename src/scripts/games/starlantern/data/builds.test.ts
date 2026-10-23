@@ -135,3 +135,30 @@ describe('the suggested builds (plan 8h Task 4)', () => {
     }
   });
 });
+
+describe('cures in the builds (difficulty plan Task 2)', () => {
+  it('every build that learns a cure uses it', () => {
+    let withCure = 0;
+    for (const b of runeBuilds()) {
+      // At the level it is suggested from (its first band level; ruling E2): a skill named in its policy is learned at
+      // every band level (the test above), so a cure learned only later stays out.
+      const level = LEVELS.find((l) => l >= (b.minLevel ?? 0))!;
+      // The skills that cure at once, as she casts them (a 淨化 rune's cure included).
+      const m = wearing(b, level);
+      const c = fromMember(m, 0);
+      const cures = new Set(learnedSkills(m).filter((id) => skillFor(c, id)?.effects.some((e) => e.kind === 'cure')));
+      const rules = b.policy.filter((r) => r.kind === 'cure-ailment');
+      const tag = `${b.owner}/${b.key}`;
+      if (!cures.size) { expect(rules, tag).toEqual([]); continue; }
+      withCure++;
+      expect(rules.length, tag).toBe(1);
+      const rule = rules[0] as Extract<PolicyRule, { kind: 'cure-ailment' }>;
+      expect(cures.has(rule.skill), `${tag} ${rule.skill}`).toBe(true);
+      // Before heal-below when it has one; else before its closing damage rule.
+      const at = b.policy.indexOf(rule);
+      const heal = b.policy.findIndex((r) => r.kind === 'heal-below');
+      expect(at, tag).toBe(heal >= 0 ? heal - 1 : b.policy.length - 2);
+    }
+    expect(withCure).toBeGreaterThan(0);
+  });
+});

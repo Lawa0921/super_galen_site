@@ -42,3 +42,12 @@ export const REGIONS: Record<RegionId, RegionDef> = {
     skill: { name: '鐵壁重擊', chance: 0.3, target: 'row', effects: [{ kind: 'damage', power: 80, element: 'phys', scale: 'atk', melee: true }] },
   },
 };
+
+/**
+ * The ailment a region's skill also inflicts on a higher difficulty (spec §5.4, difficulty plan ruling 8), at the tier's
+ * `rider` chance: 熾焰 burns, 霜凍 freezes (the party is chilled instead), 雷鳴 shocks, 暗影 and 鋼鐵 make them bleed. 腐毒
+ * already poisons and the main road has no region skill: neither has one. Normal never adds it.
+ */
+export const REGION_RIDER: Partial<Record<RegionId, 'burn' | 'freeze' | 'shock' | 'bleed'>> = {
+  blaze: 'burn', frost: 'freeze', storm: 'shock', shade: 'bleed', iron: 'bleed',
+};

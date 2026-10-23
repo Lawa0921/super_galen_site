@@ -7,6 +7,7 @@ import { LIMIT_MAX, intentLabel, runeView, skillFor, type Action, type BattleSta
 import { autoActions } from '../../engine/builds';
 import type { Combatant } from '../../engine/combatant';
 import { ailmentChips, type AilmentChip } from '../../engine/ailments';
+import { AFFIXES } from '../../data/affixes';
 import { castCost, cueWord, fieldWords, foeWords, memberWords, whyNot, type MechCue, type MechWord } from '../../engine/mechanics/index';
 import { ECHO, echoDef, echoOf } from '../../engine/mechanics/echo';
 import type { BattleEnd } from '../../engine/game';
@@ -218,7 +219,22 @@ export class BattleScene implements Scene {
     this.showField();
     const s = this.state;
     const live = s.outcome === 'ongoing' ? s.enemies.filter((e) => e.alive) : [];
-    this.ctx.stage?.battleView.showAilments?.(Object.fromEntries(live.map((e) => [e.key, ailmentChips(e)])), Object.fromEntries(live.map((e) => [e.key, foeWords(s, e)])));
+    const chips = Object.fromEntries(live.map((e) => [e.key, ailmentChips(e)]));
+    const words = Object.fromEntries(live.map((e) => [e.key, foeWords(s, e)]));
+    // An elite's or a boss's affixes lead its row (difficulty plan Task 7b); a fight with none calls it as before.
+    const tagged = live.filter((e) => e.affixes?.length);
+    if (tagged.length) this.ctx.stage?.battleView.showAilments?.(chips, words, Object.fromEntries(tagged.map((e) => [e.key, e.affixes!.map((a) => AFFIXES[a].name)])));
+    else this.ctx.stage?.battleView.showAilments?.(chips, words);
+  }
+
+  /**
+   * A foe's target note, a line each: its whole intent (the picture may shorten it to fit its slot), then its affixes
+   * (Task 7b). None when it has neither, so the note stays away.
+   */
+  private targetNote(e: Combatant): string | undefined {
+    const intent = intentLabel(this.state, e.key);
+    const lines = [...(intent ? [T.ui2.battle.intentNote(intent)] : []), ...(e.affixes ?? []).map((a) => T.ui2.tier.affixLine(AFFIXES[a].name, AFFIXES[a].line))];
+    return lines.length ? lines.join('\n') : undefined;
   }
 
   /** 返回 shows only when cancel would do something: close a sub-list or go back to the previous member. */
@@ -347,7 +363,7 @@ export class BattleScene implements Scene {
     if (target === 'enemy') {
       const living = this.state.enemies.filter((e) => e.alive);
       if (living.length === 1) { this.finish(p, living[0].key); return; }
-      this.subList(living.map((e) => ({ id: e.key, label: e.name })), (it) => this.finish(p, it.id), 'slx-bsub slx-btarget');
+      this.subList(living.map((e) => { const note = this.targetNote(e); return { id: e.key, label: e.name, ...(note ? { note } : {}) }; }), (it) => this.finish(p, it.id), 'slx-bsub slx-btarget');
       return;
     }
     if (target === 'ally' || target === 'deadAlly') {

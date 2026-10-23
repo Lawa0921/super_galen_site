@@ -3,7 +3,7 @@ import { favouredRegions, rescuesFor, type Meetable } from '../data/meetings';
 import { ITEMS } from '../data/items';
 import { capacity, carried, weightOf } from '../data/weights';
 import { FLOORS } from '../data/floors';
-import { STORY_FIGHT_ROUNDS, createBattle, planEnemies, resolveRound, rewards, writeBack, type Action, type BattleState } from './battle';
+import { STORY_FIGHT_ROUNDS, createBattle, planEnemies, resolveRound, rewards, writeBack, type Action, type BattleScale, type BattleState, type Difficulty } from './battle';
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
@@ -20,6 +20,8 @@ import { chestHasGear, GEAR_CHANCE, lootRng, rollBossGear, rollGear, rollRareMat
 import { itemWeight, type DropSource } from './loot/item';
 import { grantRune, rollRune, runeRng, spotRuneRng } from './loot/runes';
 import { RUNE_DROP } from '../data/runeEconomy';
+import { tierOf } from '../data/difficulty';
+import { bossKey, rollAffixes, rollCrowdAffix, tierUnlocked } from './tiers';
 import { buyRune, fuseRunes, sellRunes, type RuneTradeFail } from './runeTrade';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
 import { CHARACTERS } from '../data/characters';
@@ -132,6 +134,12 @@ export class Game {
   private eliteAt: Pos | null = null;
   /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
   private rescueAt: { at: Pos; who: Meetable } | null = null;
+  /**
+   * The tier the fight on now is played and paid at (difficulty plan ruling 17): the run's at `startBattle`, none for a
+   * story fight or a Normal run. The fight's scale, affixes, gear, runes and boss-kill key read it, never `run.difficulty`;
+   * the fight's end clears it.
+   */
+  private fightTier: Difficulty | undefined = undefined;
   notice: Notice | null = null;
   /**
    * Who stopped following their builds since the town last said so, in order (plan 8h Task 6): a queue of its own, so a
@@ -262,11 +270,28 @@ export class Game {
     return dawn ? [dawn, ...scenes] : scenes;
   }
 
-  /** Start a new run through a gate: a fresh labyrinth every time. */
+  /** The tier the next departure plays at (difficulty plan ruling 18): the one last chosen, Normal until then. */
+  tier(): Difficulty {
+    return this.state.dungeon.tier ?? 'normal';
+  }
+
+  /**
+   * Choose the tier of the next departures (ruling 18): in town only, and only an unlocked one. Written down, Normal too,
+   * and saved at once like the inn's respec.
+   */
+  chooseTier(t: Difficulty): { ok: true } | { ok: false; reason: 'invalid' | 'locked' } {
+    if (this.phase !== 'town' || !(t === 'normal' || t === 'nightmare' || t === 'hell')) return { ok: false, reason: 'invalid' };
+    if (!tierUnlocked(this.state, t)) return { ok: false, reason: 'locked' };
+    this.state.dungeon.tier = t;
+    if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return { ok: true };
+  }
+
+  /** Start a new run through a gate: a fresh labyrinth every time, at the chosen tier. */
   depart(portal: Portal, startDepth: number): { ok: true } | { ok: false; reason: 'locked' | 'party-down' | 'phase' } {
     const refused = this.departCheck(portal, startDepth);
     if (refused) return { ok: false, reason: refused };
-    this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited));
+    this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited), this.tier());
     this.pending = [];
     this.eve = [];
     this.finale = null;
@@ -299,8 +324,9 @@ export class Game {
       case 'boss':
         // The mainline story boss stays as written; every other boss is the 燈喰之獸 grown by depth and region.
         if (this.isFinaleFight() && !this.state.party.roster.rin?.oath) { this.finaleWaiting = true; return { kind: 'moved' }; }
-        if (this.isFinaleFight()) this.startBattle([FINALE_BOSS.base], true, true, undefined, 0, { names: { [FINALE_BOSS.base]: STORY.finaleBossName }, bossPower: FINALE_BOSS.power });
-        else this.startBattle(['lanterneater'], true, !this.isStoryDepth(this.floor));
+        if (this.isFinaleFight()) this.startBattle([FINALE_BOSS.base], true, true, undefined, 0, { names: { [FINALE_BOSS.base]: STORY.finaleBossName }, bossPower: FINALE_BOSS.power, story: true });
+        else if (this.isStoryDepth(this.floor)) this.startBattle(['lanterneater'], true, false, undefined, 0, { story: true });
+        else this.startBattle(['lanterneater'], true);
         return { kind: 'boss' };
       case 'chest': return this.openChest() ?? { kind: 'moved' };
       case 'fountain': return this.run!.usedFountain ? this.walk() : this.eventHere();
@@ -325,8 +351,8 @@ export class Game {
         const c = floorOf(this.run!, this.floor).contents.find((x) => x.kind === 'rescue' && x.at.x === this.pos.x && x.at.y === this.pos.y);
         if (!c?.who) return this.walk();
         const group = encounterGroup(this.run!.region, this.floor, this.rng);
-        if (c.who === 'scarlet') this.startBattle(['scarlet-foe', ...group], false, true, undefined, 1, { survive: STORY_FIGHT_ROUNDS, names: { 'scarlet-foe': CHARACTERS.scarlet.name } });   // her story fight: last it out
-        else this.startBattle([...group, group[0]], false, true, undefined, 1);
+        if (c.who === 'scarlet') this.startBattle(['scarlet-foe', ...group], false, true, undefined, 1, { survive: STORY_FIGHT_ROUNDS, names: { 'scarlet-foe': CHARACTERS.scarlet.name }, story: true });   // her story fight: last it out
+        else this.startBattle([...group, group[0]], false, true, undefined, 1, { story: true });
         this.rescueAt = { at: { ...this.pos }, who: c.who };
         return { kind: 'rescue', who: c.who };
       }
@@ -664,12 +690,14 @@ export class Game {
     this.eliteAt = null;
     const rescue = this.rescueAt;
     this.rescueAt = null;
+    const tier = this.fightTier;
+    this.fightTier = undefined;
     if (b.outcome === 'fled') { this.phase = 'map'; return { battle: b, end: empty }; }
     if (b.outcome === 'lose') { this.wipe(); return { battle: b, end: empty }; }
     const rw = rewards(b, this.rng, hasPassive(this.state.party, 'dropBoost'), CONDITIONS[this.run!.condition].dropMul);
     this.run!.loot.gold += rw.gold;
-    const found = this.battleGear(b, elite !== null);
-    const runes = this.battleRunes(b, elite !== null);
+    const found = this.battleGear(b, elite !== null, tier);
+    const runes = this.battleRunes(b, elite !== null, tier);
     const drops = { ...rw.drops };
     if (found.rare) drops[found.rare] = (drops[found.rare] ?? 0) + 1;
     const taken: Record<string, number> = {};
@@ -746,14 +774,16 @@ export class Game {
   /**
    * Gear a won fight drops, all from the loot rng: a boss its two pieces (a repeat kill of the same region and depth rolls
    * on repeat odds); an elite one piece and a rare material, and then each escort rolls like an ordinary monster; and an
-   * ordinary fight a GEAR_CHANCE.monster roll per monster. An elite fight never pays less than an ordinary one.
+   * ordinary fight a GEAR_CHANCE.monster roll per monster. An elite fight never pays less than an ordinary one. All at
+   * the fight's `tier` (difficulty plan Task 6a-prime): its drops, and its boss-kill key, so a story fight pays and counts
+   * as Normal.
    */
-  private battleGear(b: BattleState, elite: boolean): { gear: ItemInstance[]; rare?: string } {
+  private battleGear(b: BattleState, elite: boolean, tier: Difficulty | undefined): { gear: ItemInstance[]; rare?: string } {
     const run = this.run!;
     if (b.boss) {
-      const key = `${run.region}:${Math.min(this.floor, MAX_REACHED)}`;
+      const key = bossKey(tier, run.region, Math.min(this.floor, MAX_REACHED));
       const kills = this.state.dungeon.bossKills;
-      const gear = rollBossGear(lootRng(run), { ...this.dropCtx('boss'), bossRepeat: (kills[key] ?? 0) > 0 });
+      const gear = rollBossGear(lootRng(run), { ...this.dropCtx('boss', tier), bossRepeat: (kills[key] ?? 0) > 0 });
       kills[key] = (kills[key] ?? 0) + 1;
       return { gear };
     }
@@ -761,14 +791,14 @@ export class Game {
     let rare: string | undefined;
     if (elite) {
       const rng = lootRng(run);
-      gear.push(rollGear(rng, this.dropCtx('elite')));
+      gear.push(rollGear(rng, this.dropCtx('elite', tier)));
       rare = rollRareMaterial(rng);
     }
     // In an elite fight the first enemy is the elite; the rest are escorts.
     for (let i = elite ? 1 : 0; i < b.enemies.length; i++) {
       if (b.survive && b.enemies[i].alive) continue;
       const rng = lootRng(run);
-      if (rng() < GEAR_CHANCE.monster) gear.push(rollGear(rng, this.dropCtx('monster')));
+      if (rng() < GEAR_CHANCE.monster) gear.push(rollGear(rng, this.dropCtx('monster', tier)));
     }
     return { gear, rare };
   }
@@ -778,9 +808,10 @@ export class Game {
    * drawn: a boss then opens them and gives a magic 擴散, any other fight nothing. After: one stream for the fight; a boss
    * rolls its one rune with no drop draw (no other foe of a boss fight rolls); in an elite fight the first foe draws at the
    * elite rate and rolls on the elite row, the escorts like ordinary foes; an ordinary foe draws at the monster rate. A foe
-   * still standing at the end of a fight to last out drops nothing (as battleGear).
+   * still standing at the end of a fight to last out drops nothing (as battleGear). On a higher `tier` (the fight's), the
+   * drop chances times its `runeDrop` and the roll with its `runeTierMul` and `runeLegendary`; Normal draws as before.
    */
-  private battleRunes(b: BattleState, elite: boolean): { runes: RuneRef[]; gold: BattleRuneGold[] } {
+  private battleRunes(b: BattleState, elite: boolean, tier: Difficulty | undefined): { runes: RuneRef[]; gold: BattleRuneGold[] } {
     const out: { runes: RuneRef[]; gold: BattleRuneGold[] } = { runes: [], gold: [] };
     const give = (r: RuneRef) => {
       const at = out.runes.length + out.gold.length;
@@ -797,26 +828,30 @@ export class Game {
     }
     const run = this.run!;
     const rng = runeRng(run);
-    const roll = (source: DropSource) => give(rollRune(rng, source, depthLevel(this.floor), run.condition));
+    const t = tierOf(tier);
+    const roll = (source: DropSource) => give(t ? rollRune(rng, source, depthLevel(this.floor), run.condition, t.runeTierMul, t.runeLegendary) : rollRune(rng, source, depthLevel(this.floor), run.condition));
     if (b.boss) { roll('boss'); return out; }
     for (let i = 0; i < b.enemies.length; i++) {
       const first = elite && i === 0;
       if (!first && b.survive && b.enemies[i].alive) continue;
-      if (rng() < (first ? RUNE_DROP.elite : RUNE_DROP.monster)) roll(first ? 'elite' : 'monster');
+      const chance = first ? RUNE_DROP.elite : RUNE_DROP.monster;
+      if (rng() < (t ? chance * t.runeDrop : chance)) roll(first ? 'elite' : 'monster');
     }
     return out;
   }
 
   /**
    * The rune of the chest or vault at `at`, once runes are open (plan 8f rulings 3, 12): one drop draw and then its roll,
-   * on the spot's own stream, so a chest kept shut for weight rolls the same when it opens. Called once, as it opens.
+   * on the spot's own stream, so a chest kept shut for weight rolls the same when it opens. Called once, as it opens. Not
+   * a fight: it reads the run's tier (difficulty plan Task 6a-prime).
    */
   private spotRune(at: Pos, source: 'chest' | 'vault'): RuneFind {
     if (!this.state.runesOpen) return {};
     const run = this.run!;
     const rng = spotRuneRng(run, this.floor, at);
-    if (rng() >= RUNE_DROP[source]) return {};
-    return this.giveRune(rollRune(rng, source, depthLevel(this.floor), run.condition));
+    const t = tierOf(run.difficulty);
+    if (rng() >= (t ? RUNE_DROP[source] * t.runeDrop : RUNE_DROP[source])) return {};
+    return this.giveRune(t ? rollRune(rng, source, depthLevel(this.floor), run.condition, t.runeTierMul, t.runeLegendary) : rollRune(rng, source, depthLevel(this.floor), run.condition));
   }
 
   /**
@@ -831,9 +866,10 @@ export class Game {
     return g.gold ? { runeGold: { rune: r, gold: g.gold } } : { rune: r };
   }
 
-  private dropCtx(source: DropSource): DropCtx {
+  /** A drop's context at `tier` (a fight's, or the run's for a chest or vault): the tier is written only above Normal. */
+  private dropCtx(source: DropSource, tier: Difficulty | undefined): DropCtx {
     const run = this.run!;
-    return { uid: () => mintUid(this.state), depth: this.floor, region: run.region, condition: run.condition, source, seed: run.seed };
+    return { uid: () => mintUid(this.state), depth: this.floor, region: run.region, condition: run.condition, source, seed: run.seed, ...(tierOf(tier) ? { difficulty: tier } : {}) };
   }
 
   /** The inn: town only, so a run can never rest (or save) mid-labyrinth. */
@@ -1435,7 +1471,7 @@ export class Game {
     const run = this.run!;
     const kept = run.gearRolls[key];
     if (kept) return kept;
-    const it = rollGear(lootRng(run), this.dropCtx(source));
+    const it = rollGear(lootRng(run), this.dropCtx(source, run.difficulty));
     run.gearRolls[key] = it;
     return it;
   }
@@ -1481,9 +1517,27 @@ export class Game {
     return { kind: 'chest', item, qty, ...extra, ...this.offerGear(id, gear) };
   }
 
-  private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string, extra = 0, opts: { survive?: number; names?: Record<string, string>; bossPower?: number } = {}): void {
-    const scale = scaled && this.run ? { depth: this.floor, region: this.run.region, condition: this.run.condition, elite } : undefined;
-    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra, ...opts });
+  /**
+   * `story`: the finale, a rescue fight (Scarlet's too) or the depth-3 story boss, always played and paid as Normal
+   * (difficulty plan ruling 17). Otherwise the run's tier: its scale, and the affixes keyed by the spot (engine/tiers.ts)
+   * on an elite (this tile), a boss (the depth) or, on Hell, one foe of a plain crowd (this tile).
+   */
+  private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string, extra = 0, opts: { survive?: number; names?: Record<string, string>; bossPower?: number; story?: true } = {}): void {
+    const { story, ...rest } = opts;
+    const run = this.run;
+    this.fightTier = story ? undefined : run?.difficulty;
+    const t = tierOf(this.fightTier);
+    let scale: BattleScale | undefined = scaled && run ? { depth: this.floor, region: run.region, condition: run.condition, elite } : undefined;
+    if (scale && run && t) {
+      scale = { ...scale, difficulty: this.fightTier };
+      if (elite) scale.affixes = rollAffixes(run.seed, this.floor, t.eliteAffixes, this.pos);
+      else if (boss) scale.affixes = rollAffixes(run.seed, this.floor, t.bossAffixes);
+      else {
+        const crowd = rollCrowdAffix(run.seed, this.floor, this.pos, t.crowdAffixChance);
+        if (crowd) scale.crowdAffix = crowd;
+      }
+    }
+    this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra, ...rest });
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
   }

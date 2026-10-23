@@ -176,7 +176,19 @@ export class DungeonScene implements Scene {
     badge.addEventListener('mouseleave', show(false));
     badge.addEventListener('focus', show(true));
     badge.addEventListener('blur', show(false));
-    return [badge, tip];
+    // Above Normal, the tier's badge stands beside it in one row (difficulty plan Task 7b, spec §7.1 ④); Normal as before.
+    const tier = this.tierBadge();
+    return tier ? [el('div', { class: 'slx-run-badges' }, [badge, tier]), tip] : [badge, tip];
+  }
+
+  /** The run's tier, in words (no art, spec §7.3); null on Normal, where the screen stays as it always was. */
+  private tierBadge(): HTMLElement | null {
+    const d = this.ctx.game.run?.difficulty;
+    if (!d || d === 'normal') return null;
+    const name = T.ui2.tier.names[d];
+    const b = win('slx-tier-badge', [document.createTextNode(name)]);
+    b.setAttribute('aria-label', T.ui2.tier.badgeLabel(name));
+    return b;
   }
 
   private say(text: string | Rich, name = '', face?: { src: string; side: 'left' | 'right' }): Promise<void> {

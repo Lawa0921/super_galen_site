@@ -3,6 +3,8 @@ import { CHARACTERS, artIdOf } from '../data/characters';
 import { CONDITIONS, type ConditionId } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { REGIONS, type RegionId } from '../data/regions';
+import { tierOf } from '../data/difficulty';
+import type { AffixId } from '../data/affixes';
 import { ITEMS } from '../data/items';
 import { POWERS } from '../data/gear';
 import { WEAPON_KINDS, WEAPON_MASTERY_PCT, weaponKindOf } from '../data/equipment';
@@ -76,14 +78,24 @@ export interface BattleState {
   triggers?: { by: string; skill: string; on: 'crit' | 'kill' | 'struck'; foe: string }[];
 }
 
-/** The difficulty a fight is measured or played at (spec §13 hook 1, plan 8h); the engine reads none of it yet. */
+/** The difficulty a fight is measured or played at (spec §13 hook 1, plan 8h); read through data/difficulty.ts `tierOf`. */
 export type Difficulty = 'normal' | 'nightmare' | 'hell';
 
 /**
  * Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in
- * `enemyIds`). `difficulty` is carried for the difficulty plans and read by no one: a fight is the same with or without it.
+ * `enemyIds`). `difficulty` scales the scaled enemies (difficulty plan Task 1, `scaleEnemy`'s tier); 'normal' and none are
+ * the same fight, draw for draw (`tierOf` gives null and the call is the one without a tier).
  */
-export interface BattleScale { depth: number; region: RegionId; elite?: string; condition?: ConditionId; difficulty?: Difficulty }
+export interface BattleScale {
+  depth: number; region: RegionId; elite?: string; condition?: ConditionId; difficulty?: Difficulty;
+  /** The affixes of this fight's elite, or of its boss in a boss fight (difficulty plan Task 3): drawn by the caller, applied here. */
+  affixes?: readonly AffixId[];
+  /**
+   * Hell's crowd affix (controller ruling 2026-10-23; engine/tiers.ts rollCrowdAffix): drawn by the caller; applied to the
+   * foe `floor(pick x foes)` of a plain crowd (no elite, no boss) only when the tier has a crowd affix chance.
+   */
+  crowdAffix?: { pick: number; id: AffixId };
+}
 
 /**
  * `target` is the drawn one, which the engine plays (a taunt, a challenge or a cover turns it when the blow falls).
@@ -188,11 +200,15 @@ export function createBattle(o: {
   const seen: Record<string, number> = {};
   const sc = o.scale;
   const region = sc ? REGIONS[sc.region] : null;
+  const t = sc ? tierOf(sc.difficulty) : null;
   const defs: Record<string, EnemyDef> = {};
+  const crowdAt = t && t.crowdAffixChance > 0 && sc?.crowdAffix && !o.boss && !sc.elite ? Math.floor(sc.crowdAffix.pick * enemyIds.length) : -1;
   const enemies = enemyIds.map((id, i) => {
     const n = (seen[id] = (seen[id] ?? 0) + 1);
     const elite = !!sc && sc.elite === id && n === 1;
-    const met = sc && region ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']) : ENEMIES[id];
+    // The affixes go on the elite, or in a boss fight on each boss (ruling 5), only on a higher tier; none drawn here.
+    const aff = t && sc?.affixes?.length && (elite || (o.boss && ENEMIES[id].boss)) ? sc.affixes : i === crowdAt ? [sc!.crowdAffix!.id] : undefined;
+    const met = !sc || !region ? ENEMIES[id] : t ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t, aff) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']);
     // An enemy is met at its level for the fight's depth (enemyLevelAt; the deep road's own extra power on top), or at
     // its own home level when the fight has no scale.
     const level = sc ? enemyLevelAt(sc.depth) : homeLevel(met);
@@ -202,7 +218,9 @@ export function createBattle(o: {
     const d = o.names?.[id] ? { ...scaled, name: o.names[id] } : scaled;
     defs[`e${i}`] = d;
     const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + n)}` : d.name;
-    return fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);
+    const c = fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);
+    if (aff) c.affixes = [...aff];
+    return c;
   });
   const s: BattleState = {
     round: 0, party, enemies, boss: !!o.boss, inventory: { ...o.inventory }, revealed: structuredClone(o.revealed),
