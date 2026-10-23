@@ -90,6 +90,11 @@ export interface BattleScale {
   depth: number; region: RegionId; elite?: string; condition?: ConditionId; difficulty?: Difficulty;
   /** The affixes of this fight's elite, or of its boss in a boss fight (difficulty plan Task 3): drawn by the caller, applied here. */
   affixes?: readonly AffixId[];
+  /**
+   * Hell's crowd affix (controller ruling 2026-10-23; engine/tiers.ts rollCrowdAffix): drawn by the caller; applied to the
+   * foe `floor(pick x foes)` of a plain crowd (no elite, no boss) only when the tier has a crowd affix chance.
+   */
+  crowdAffix?: { pick: number; id: AffixId };
 }
 
 /**
@@ -197,11 +202,12 @@ export function createBattle(o: {
   const region = sc ? REGIONS[sc.region] : null;
   const t = sc ? tierOf(sc.difficulty) : null;
   const defs: Record<string, EnemyDef> = {};
+  const crowdAt = t && t.crowdAffixChance > 0 && sc?.crowdAffix && !o.boss && !sc.elite ? Math.floor(sc.crowdAffix.pick * enemyIds.length) : -1;
   const enemies = enemyIds.map((id, i) => {
     const n = (seen[id] = (seen[id] ?? 0) + 1);
     const elite = !!sc && sc.elite === id && n === 1;
     // The affixes go on the elite, or in a boss fight on each boss (ruling 5), only on a higher tier; none drawn here.
-    const aff = t && sc?.affixes?.length && (elite || (o.boss && ENEMIES[id].boss)) ? sc.affixes : undefined;
+    const aff = t && sc?.affixes?.length && (elite || (o.boss && ENEMIES[id].boss)) ? sc.affixes : i === crowdAt ? [sc!.crowdAffix!.id] : undefined;
     const met = !sc || !region ? ENEMIES[id] : t ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t, aff) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']);
     // An enemy is met at its level for the fight's depth (enemyLevelAt; the deep road's own extra power on top), or at
     // its own home level when the fight has no scale.

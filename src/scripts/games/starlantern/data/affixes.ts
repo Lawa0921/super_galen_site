@@ -34,3 +34,9 @@ export const AFFIXES: Record<AffixId, AffixDef> = {
   tough: { name: '堅韌', line: '皮又粗又厚，得多打好幾下才會倒。', hp: 1.4, bossHp: 1.25 },
   swift: { name: '迅捷', line: '腳步飛快，常常搶在大家前面出手。', spd: 1.25 },
 };
+
+/**
+ * Pairs of affixes that never meet on one foe (controller ruling 2026-10-23: a lever of Task 5b): `rollAffixes` draws
+ * around them and the bands leave them out.
+ */
+export const AFFIX_EXCLUDE: readonly (readonly [AffixId, AffixId])[] = [];
