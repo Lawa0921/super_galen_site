@@ -1,5 +1,6 @@
 // guest.ts — 客人端協定狀態機與副本（co-op M-B3；spec §5.2–5.7；建造者決定 C3、C6、C9、C12–C14）。
-//   握手（hello → welcome → 建 replica → bulk snap → ready → live）、收件匣（C2：onMessage 只排隊，frame 開頭依序處理）、
+//   握手（hello → welcome →〔烘焙世界：等 bulk legacy〕→ 建 replica → bulk snap → ready → live）、收件匣（C2：onMessage 只排隊，frame 開頭依序處理）、
+//   生成器相容檢查（coopGenOk）：gen2 / 烘焙世界的副本照 welcome.gen2 建 Gen2Source / BakedSource（鎖表凍結、不記鎖），只生成自己附近（Task 18）、
 //   chunk 同步（ChunkSyncGuest：tiles / col / chunk、updateInterest 送 sum）、液體、事件、角色、checkpoint、
 //   teleport / knock、ws 內插（怪物 / 掉落物 / 投射物 / NPC 寫進 replica 的列表，現有 renderer 直接畫）、
 //   樂觀放置與回滾（C14）、20 Hz 的 ps、逾時與重連。
@@ -16,10 +17,16 @@ import { ProjList, type Projectile } from '../engine/projectiles';
 import { ITEMS, type ItemId } from '../engine/items';
 import { T, tileDef, isSolidTile, isInteractive, isBedTile, isChestTile, isDoorTile } from '../engine/tiles';
 import { PAIR_OF_LEFT } from '../engine/furniture';
-import { CHUNK, FIXED_DT, GEN_VERSION, PLACE_COOLDOWN, TILE_SIZE } from '../engine/constants';
+import { CHUNK, FIXED_DT, GEN_VERSION, GEN_VERSION_V2, PLACE_COOLDOWN, TILE_SIZE } from '../engine/constants';
 import { OUTER_GEN_VERSION } from '../engine/legacy/chunkgen/index';
+import { GEN2_VERSION } from '../engine/gen2';
+import { LockTable, type LockJSON } from '../engine/gen2/locks';
 import { chunkOfX } from '../engine/coords';
 import type { DelveCharacter } from '../save/character';
+import { genBlocker } from '../save/genCheck';
+import { SAVE_FORMAT } from '../save/serialize';
+import { validBakeInfo } from '../save/bake';
+import { decodeLegacyMeta, type LegacyMeta } from '../save/legacyMeta';
 import type { Channel, NetLink, Payload } from './link';
 import {
   BOUNDARY_OPS, HOST_TIMEOUT_MS, INTERP_DELAY_MS, PING_MS, PROTO, PS_BOAT, PS_CLIMB, PS_GROUND, PS_HZ,
@@ -39,8 +46,8 @@ export interface NetGuestOptions {
   character: DelveCharacter;
   /** C9：只把房主的 chk 交出去（M-C 寫 IDB）；絕不存本地預測狀態。回傳 promise → resolve 之後才回 chkAck（reject 就不回） */
   onCheckpoint?: (c: DelveCharacter, rev: number) => void | Promise<void>;
-  /** 測試注入（gen 快取 / columnSource）；預設依 welcome 建 replica */
-  createReplica?: (w: Welcome) => DelveGame;
+  /** 測試注入（gen 快取 / columnSource）；預設依 welcome 建 replica。meta = 烘焙世界的 legacy bulk 解出來的（其他世界 undefined） */
+  createReplica?: (w: Welcome, meta?: LegacyMeta) => DelveGame;
 }
 export type GuestState = 'connecting' | 'syncing' | 'live' | 'ended';
 /** 最後一份 chk：upTo = 房主做這份 checkpoint 時處理到的 cmd seq */
@@ -74,8 +81,8 @@ export const END_TEXT: Readonly<Record<RejectReason | ByeReason | 'hostGone', st
 /** leave 之後最多等這麼久收房主最後的 chk，再自己關連線 */
 export const LEAVE_GRACE_MS = 2000;
 const PS_MS = 1000 / PS_HZ;
-/** welcome 之前最多留這麼多則 bulk（加入時房主在 bulk 只送一則 snap） */
-const EARLY_BULK_MAX = 4;
+/** welcome 之前最多留這麼多則 bulk（加入時房主在 bulk 只送一則 snap；烘焙世界多一則 legacy） */
+const EARLY_BULK_MAX = 5;
 
 type Inbox = { link: NetLink; ch: Channel; data: Payload } | { link: NetLink; close: true };
 /** 樂觀放置（C14）：ack 回來前記著；since = 放下那一刻的 sync.writes */
@@ -84,6 +91,7 @@ interface PendingPlace { x: number; y: number; old: number; placed: number; sinc
 const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 const fin = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const own = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
+const isLegacyBulk = (d: Uint8Array): boolean => decodeBulk(d)?.head.t === 'legacy';
 const endText = (r: unknown): string => (typeof r === 'string' && own(END_TEXT, r) ? END_TEXT[r as keyof typeof END_TEXT] : END_TEXT.closed);
 
 /**
@@ -106,8 +114,27 @@ function soloBlock(item: ItemId): number | null {
   return t;
 }
 
-function defaultReplica(w: Welcome): DelveGame {
-  return new DelveGame({ seed: w.seed, width: w.w, height: w.h, bounds: w.bounds, peaceful: w.peaceful, localPid: w.pid, mode: 'replica' });
+/**
+ * 房主世界的生成器能不能用這個客人的程式重現（Task 18；save/genCheck 的 genBlocker 判版本）：
+ * genVersion 7 = 外圍 OUTER_GEN_VERSION、不帶描述；genVersion 8 = outerGen GEN2_VERSION、帶描述（kind 對、鎖表合法、每個鎖 ≤ GEN2_VERSION）；其他 false
+ */
+export function coopGenOk(m: Pick<Welcome, 'genVersion' | 'outerGenVersion' | 'gen2'>): boolean {
+  const v = m.genVersion, o = m.outerGenVersion, g = m.gen2 as unknown;
+  if (v === GEN_VERSION) return o === OUTER_GEN_VERSION && g === undefined;
+  if (v !== GEN_VERSION_V2 || o !== GEN2_VERSION || !isObj(g) || (g.kind !== 'gen2' && g.kind !== 'baked')) return false;
+  let locks: LockJSON;
+  try { locks = LockTable.fromJSON(g.locks).toJSON(); } catch { return false; }
+  return genBlocker({ format: SAVE_FORMAT, genVersion: v, outerGen: o, bounds: 'infinite', gen2: { locks } }) === null;
+}
+
+/** welcome → 副本：舊世界照舊；gen2 = 不建中央的 Gen2Source；烘焙世界 = BakedSource（meta 來自 legacy bulk）。鎖表在副本裡凍結 */
+function defaultReplica(w: Welcome, meta?: LegacyMeta): DelveGame {
+  const g = w.gen2;
+  if (!g) return new DelveGame({ seed: w.seed, width: w.w, height: w.h, bounds: w.bounds, peaceful: w.peaceful, localPid: w.pid, mode: 'replica' });
+  const base = { seed: w.seed, peaceful: w.peaceful, localPid: w.pid, mode: 'replica' as const };
+  if (g.kind === 'gen2') return new DelveGame({ ...base, worldGen: { kind: 'gen2', locks: g.locks } });
+  if (!meta) throw new RangeError('baked replica without legacy meta');
+  return new DelveGame({ ...base, worldGen: { kind: 'baked', locks: g.locks, bake: validBakeInfo(g.bake, meta.frame), meta } });
 }
 
 export class NetGuest {
@@ -133,6 +160,8 @@ export class NetGuest {
   private inbox: Inbox[] = [];
   /** welcome 之前到的 bulk（ctrl 與 bulk 各自有序、彼此不保證順序：snap 可能比 welcome 先到）；welcome 建好副本後依序套上 */
   private early: Uint8Array[] = [];
+  /** 烘焙世界：welcome 到了、legacy bulk 還沒到（維持 connecting，legacy 一到就建副本） */
+  private waitLegacy: Welcome | null = null;
   /** 這個副本（welcome 之後）已經套過 ctrl 的 world：之後才到的加入 snap 是舊的，不再蓋世界層級 */
   private worldSeen = false;
   private now = 0;
@@ -284,6 +313,7 @@ export class NetGuest {
     this.text = null;
     this.inbox = this.inbox.filter((it) => it.link === link);   // 舊連線的丟掉；新連線已到的留著
     this.early = [];
+    this.waitLegacy = null;
     this.heardAt = null;
     this.closeAt = null;
     this.leaveChk = null;
@@ -356,7 +386,13 @@ export class NetGuest {
   private handle(ch: Channel, data: Payload): void {
     if (ch === 'bulk') {
       if (!(data instanceof Uint8Array)) return;
-      if (!this.replica) { if (this.st === 'connecting' && this.early.length < EARLY_BULK_MAX) this.early.push(data); return; }
+      if (!this.replica) {
+        if (this.st !== 'connecting') return;
+        // 烘焙世界的 welcome 已到、正在等的 legacy：現在建副本
+        if (this.waitLegacy && isLegacyBulk(data)) { const m = this.waitLegacy; this.waitLegacy = null; this.build(m, data); return; }
+        if (this.early.length < EARLY_BULK_MAX) this.early.push(data);
+        return;
+      }
       this.onBulk(data);
       return;
     }
@@ -415,14 +451,36 @@ export class NetGuest {
   }
 
   private onWelcome(m: Welcome): void {
-    if (this.st !== 'connecting') return;
-    if (m.genVersion !== GEN_VERSION || m.outerGenVersion !== OUTER_GEN_VERSION) {
-      this.ctrl({ t: 'bye', reason: 'leave' });
-      this.end(END_TEXT.gen, true);
+    if (this.st !== 'connecting' || this.waitLegacy) return;
+    if (!coopGenOk(m)) { this.genMismatch(); return; }
+    if (typeof m.pid !== 'string' || !isObj(m.you) || !fin(m.you.x) || !fin(m.you.y)) return;
+    if (m.gen2?.kind === 'baked') {
+      // 烘焙世界要先有 legacy bulk（LegacyMeta）：早到的就用，沒有就維持 connecting 等它
+      const i = this.early.findIndex(isLegacyBulk);
+      if (i < 0) { this.waitLegacy = m; return; }
+      const [legacy] = this.early.splice(i, 1);
+      this.build(m, legacy);
       return;
     }
-    if (typeof m.pid !== 'string' || !isObj(m.you) || !fin(m.you.x) || !fin(m.you.y)) return;
-    const game = (this.opts.createReplica ?? defaultReplica)(m);
+    this.build(m, null);
+  }
+
+  /** 房主世界的生成器這邊重現不了：bye、以「世界版本不同」結束 */
+  private genMismatch(): void {
+    this.ctrl({ t: 'bye', reason: 'leave' });
+    this.end(END_TEXT.gen, true);
+  }
+
+  /** 建副本（legacy = 烘焙世界的 legacy bulk）；gen2 / 烘焙世界的描述或 LegacyMeta 壞掉 → 同生成器不符 */
+  private build(m: Welcome, legacy: Uint8Array | null): void {
+    const make = this.opts.createReplica ?? defaultReplica;
+    let game: DelveGame;
+    if (m.gen2) {
+      try {
+        const meta = legacy ? decodeLegacyMeta(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(decodeBulk(legacy)!.payload))) : undefined;
+        game = make(m, meta);
+      } catch { this.genMismatch(); return; }
+    } else game = make(m);
     const sync = new ChunkSyncGuest(game.world);
     sync.reset();
     game.cmdSink = (cmd) => { this.sendCmd(cmd); };

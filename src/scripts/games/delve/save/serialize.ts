@@ -619,9 +619,10 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
 
 /**
  * gen2 / 烘焙世界的 header.gen2：鎖表（不該沒有 gen2 生成器：沒有 → 空表並大聲說）；
- * 烘焙世界另寫 bake（接縫、舊中央框、目前的 bakedQuiet）與 legacy（存檔帶進來的那份 LegacyMeta）
+ * 烘焙世界另寫 bake（接縫、舊中央框、目前的 bakedQuiet）與 legacy（存檔帶進來的那份 LegacyMeta）。
+ * 連線的生成器描述（net/host.ts 的 welcome.gen2 + legacy bulk）也取這一份
  */
-function gen2Save(game: DelveGame): Gen2Save {
+export function gen2Save(game: DelveGame): Gen2Save {
   const src = game.gen2();
   if (!src) { invariantBroken(`snapshotGame: ${game.genKind} world has no gen2 source`); return { locks: [] }; }
   const locks = src.locks.toJSON(), w = game.world, b = w.source;
