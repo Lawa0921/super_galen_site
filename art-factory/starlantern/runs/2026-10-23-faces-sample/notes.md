@@ -64,3 +64,25 @@ python art-factory/starlantern/tools/review_faces.py 2026-10-23-faces-sample cha
 - 千鶴 serious：同一個人，表情明確（皺眉、抿嘴）。頭大約 5%（block 取整），陰影比 base 稍微柔一點、像素稍糊。
 - 千鶴 sad：表情最明確（眉尾上揚、淚滴、嘴角下垂）。同樣頭大 5%，陰影偏柔。
 - 沒有明顯的身分漂移。Gemini 的差別在於像素不貼齊格子（後處理吸附之後還是比 codex 原圖柔），以及上面兩點後處理差異。
+
+## codex 對照組（ChatGPT Plus 恢復後，2026-10-23）
+
+- 帳號升級成 Plus 後，codex 預設模型 `gpt-6-astra` 可以用了（codex-cli 0.164.0，log 第 5 行），沒有指定 `--model`。
+- 4 次呼叫，一次一個，各在新的空資料夾：chizuru serious/sad `a4`、scarlet serious/sad `a3`。4 張都有輸出（1254×1254），sha256 互不相同，log 裡沒有 usage／rate limit 訊息。
+- 後處理和 Gemini 一樣（`faces.py cand`，base 自己的 block；codex 原圖是 1254 px，所以 block 不必換算，也不套修補旗標）。
+
+| id | 尺寸（normal） | 機械 QA | 對照 normal | 封閉洞（警告） | 輪廓洋紅（base 56／74） |
+|---|---|---|---|---|---|
+| char-scarlet-portrait-serious a3 | 108×115（108×115） | 通過 | 通過：差 0, 0、block 11／11、色盤 99.8% | 0 | 66 |
+| char-scarlet-portrait-sad a3 | 108×115 | 通過 | 通過：差 0, 0、色盤 99.9% | 0 | 53 |
+| char-chizuru-portrait-serious a4 | 127×123（127×123） | 通過 | 通過：差 0, 0、block 9／9、色盤 99.9% | 7 | 78 |
+| char-chizuru-portrait-sad a4 | 127×123 | 通過 | 通過：差 0, 0、色盤 99.9% | 11 | 87 |
+
+### codex 與 Gemini 比較（目視，原尺寸與 2×／3×）
+
+- **畫風與身分**：codex 比較貼近 base。畫布、頭的大小、構圖和 normal 完全一樣（差 0），像素一樣銳利。Gemini 也是同一個人，但陰影稍柔，千鶴還大了 5%。
+- **絲嘉蕾 serious**：codex 較好。眉頭明顯壓低，和 normal 並排時差別一眼就看得出來；Gemini 的版本偏淡。
+- **絲嘉蕾 sad**：兩張在遊戲尺寸都不夠「難過」。codex 是眼皮半垂、視線往下，但眉頭往下壓，看起來偏沉悶或不悅；Gemini 眉尾上揚、比較柔，可是縮小後很淡。建議用剩下的額度、加強眉尾上揚與嘴角下垂再生一次。
+- **千鶴 serious**：codex 較好。皺眉明確，尺寸和 normal 一樣。
+- **千鶴 sad**：Gemini 的表情最像難過（眉尾上揚、淚滴），codex 是垂眼、抿嘴的憂鬱，也讀得出來。codex 尺寸正確，Gemini 頭大 5%。
+- 登錄表目前登記的仍是 Gemini 版（`qa_passed`，未發佈）；選用哪一版等使用者決定，之後再用 `faces.py pick` 改。

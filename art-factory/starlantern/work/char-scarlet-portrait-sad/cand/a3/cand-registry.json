@@ -1,0 +1,27 @@
+{
+  "assets": {
+    "char-scarlet-portrait-sad": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex",
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-sad/cand/a3/char-scarlet-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-sad\\a3\\char-scarlet-portrait-sad-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          108,
+          115
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

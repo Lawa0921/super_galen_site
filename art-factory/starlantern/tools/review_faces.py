@@ -26,7 +26,7 @@ CSS = """
 body{margin:0;padding:16px;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,"Noto Sans TC",sans-serif}
 h1{font-size:20px;margin:0 0 4px}h2{font-size:17px;margin:28px 0 8px}p.note{color:var(--dim);margin:0 0 12px;max-width:70em}
 .card{background:var(--card);border-radius:8px;padding:12px;margin:0 0 14px}
-.pair{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end}
+.pair{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end}.pair+.pair{margin-top:14px}
 figure{margin:0;text-align:center}figcaption{color:var(--dim);font-size:13px}
 .px{image-rendering:pixelated}.chk{background:repeating-conic-gradient(#2c2f48 0 25%,#262940 0 50%) 0 0/16px 16px;display:inline-block;padding:6px}
 .line{margin:10px 0 2px;font-size:16px}.qa{font-size:13px;color:var(--dim)}.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
@@ -63,24 +63,27 @@ def main(run, ids):
         text, scene, hidden = LINES[aid]
         cands = sorted((AF / 'work' / aid / 'cand').glob('a*'), key=lambda p: int(p.name[1:])) if (AF / 'work' / aid / 'cand').exists() else []
         body.append(f'<h2>{NAMES[cid]}｜{MOOD[mood]}</h2>')
-        if not any((c / f'{aid}.png').exists() for c in cands):
+        shown = [c for c in cands if (c / f'{aid}.png').exists()]
+        line = (f'<p class="line">表情：{MOOD[mood]}｜搭配台詞：{html.escape(text)} '
+                f'<span class="qa">（{scene}；這個表情目前隱藏 {hidden} 句）</span></p>')
+        if not shown:
             body.append(f'<div class="card"><div class="pair">{_fig(bsrc, bw, bh, "normal（已發佈）原尺寸")}{_fig(bsrc, bw * 2, bh * 2, "normal 2×")}</div>'
-                        f'<p class="line">表情：{MOOD[mood]}｜搭配台詞：{html.escape(text)} <span class="qa">（{scene}；這個表情目前隱藏 {hidden} 句）</span></p>'
-                        '<p class="qa bad">還沒有候選：codex 這次沒有產出圖片（原因見同資料夾的 notes.md）。</p></div>')
-        for c in cands:
+                        f'{line}<p class="qa bad">還沒有候選（原因見同資料夾的 notes.md）。</p></div>')
+            continue
+        natural, double, qas = [_fig(bsrc, bw, bh, 'normal（已發佈）')], [_fig(bsrc, bw * 2, bh * 2, 'normal 2×')], []
+        for c in shown:
             png = c / f'{aid}.png'
-            if not png.exists(): continue
             q = json.loads((c / f'{aid}.qa.json').read_text(encoding='utf-8')); m = json.loads((c / f'{aid}.match.json').read_text(encoding='utf-8'))
+            gen = json.loads((c / 'cand-registry.json').read_text(encoding='utf-8'))['assets'].get(aid, {}).get('generator', '?')
+            label = f'{gen.split("/")[0]} {c.name}'
             w, h = Image.open(png).size; src = _copy(png, img, f'{aid}-{c.name}.png')
-            figs = [_fig(bsrc, bw, bh, 'normal（已發佈）原尺寸'), _fig(src, w, h, f'{mood} {c.name} 原尺寸'),
-                    _fig(bsrc, bw * 2, bh * 2, 'normal 2×'), _fig(src, w * 2, h * 2, f'{mood} {c.name} 2×')]
-            body.append(f'<div class="card"><div class="pair">{"".join(figs)}</div>'
-                        f'<p class="line">表情：{MOOD[mood]}｜搭配台詞：{html.escape(text)} <span class="qa">（{scene}；這個表情目前隱藏 {hidden} 句）</span></p>'
-                        f'<p class="qa">{_qa(q, m)}</p></div>')
+            natural.append(_fig(src, w, h, label)); double.append(_fig(src, w * 2, h * 2, f'{label} 2×'))
+            qas.append(f'<p class="qa"><b>{html.escape(gen)} {c.name}</b>：{_qa(q, m)}</p>')
+        body.append(f'<div class="card"><div class="pair">{"".join(natural)}</div><div class="pair">{"".join(double)}</div>{line}{"".join(qas)}</div>')
     page = ('<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>對話表情樣本</title><style>{CSS}</style></head><body>'
             '<h1>星燈迷宮｜夥伴對話表情樣本（serious、sad）</h1>'
-            '<p class="note">每張候選的左邊是同一個人已發佈的 normal 頭貼。請看：是不是同一個人（臉、髮型、服裝、配色）、大小與構圖是否一致、表情配上那句台詞對不對。'
+            '<p class="note">每個表情一張卡：第一列原尺寸、第二列 2× 像素放大，由左到右是已發佈的 normal 頭貼、各生成器的候選（標籤是生成器與次數）。請看：是不是同一個人（臉、髮型、服裝、配色）、大小與構圖是否一致、表情配上那句台詞對不對。'
             '這些圖還沒進遊戲（不在 public/），選定與核准後才發佈。</p>' + ''.join(body) + '</body></html>')
     (out / 'review.html').write_text(page, encoding='utf-8'); print(out / 'review.html')
 
