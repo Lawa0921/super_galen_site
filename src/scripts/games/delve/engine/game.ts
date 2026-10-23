@@ -82,6 +82,7 @@ import type { VillageInfo, HallInfo } from './gen/settlements';
 import type { LandmarkInfo } from './gen/landmarks';
 import { isLandmarkTile } from './tiles';
 import { WALL_ITEM } from './items';
+import { marchTiles } from './aimRay';
 import {
   levelDef, levelHp, lootIlvl, milestoneAt, respecCost, skillPointsAt, titleFor, xpForEvent, type GainResult, type XpCtx, type XpSource,
 } from './levels';
@@ -1243,7 +1244,8 @@ export class DelveGame {
     const x = Math.floor(tx), y = Math.floor(ty);
     // 精確瞄準點（px）：整數 tile 座標視為格子中心
     a.aimPx = { x: (Number.isInteger(tx) ? tx + 0.5 : tx) * TILE_SIZE, y: (Number.isInteger(ty) ? ty + 0.5 : ty) * TILE_SIZE };
-    if (x !== a.aim.x || y !== a.aim.y) { a.aim = { x, y }; a.mining = null; a.lastBlocked = ''; }
+    // 換瞄準格不清挖掘進度：方向挖掘時游標在空氣裡掃，射線指的可能還是同一塊；換了目標由 updateMining 歸零
+    if (x !== a.aim.x || y !== a.aim.y) { a.aim = { x, y }; a.lastBlocked = ''; }
   }
   private miningOf(a: PlayerActor, held: boolean): void { a.miningHeld = held; if (!held) a.mining = null; }
   private useOf(a: PlayerActor, held: boolean): void {
@@ -1519,19 +1521,15 @@ export class DelveGame {
   }
 
   private updateMining(dt: number): void {
-    const { x, y } = this.aim;
+    const { x, y } = this.mineTarget();
     const id = this.world.getFg(x, y);
     if (id === T.AIR && this.world.isFrozen(x, y)) { this.mineIce(x, y, dt); return; }
     if (id === T.AIR && WALL_ITEM[this.world.getWall(x, y)]) { this.mineWall(x, y, dt); return; }
     if (!this.world.inBounds(x, y) || id === T.AIR) { this.mining = null; return; }
     if (!this.canReach(x, y)) { this.block('mine', 'reach', x, y); this.mining = null; return; }
-    const def = tileDef(id);
-    const pick = this.currentPick();
-    if (id === T.DOOR_LOCKED || id === T.LOCKED_CHEST) { this.block('mine', 'locked', x, y); this.mining = null; return; }
-    if (def.minTier > pick.tier) { this.block('mine', 'tier', x, y); this.mining = null; return; }
-    const plan = this.planBreak(x, y);
-    if (plan.chest) { this.block('mine', 'chest', x, y); this.mining = null; return; }
-    const need = def.hardness / pick.speed;
+    const why = this.mineRefusal(x, y, id);
+    if (why) { this.block('mine', why, x, y); this.mining = null; return; }
+    const need = tileDef(id).hardness / this.currentPick().speed;
     if (!this.mining || this.mining.x !== x || this.mining.y !== y) this.mining = { x, y, elapsed: 0, need };
     this.mining.need = need; // 換鎬即時生效
     this.mining.elapsed += dt;
@@ -1539,6 +1537,55 @@ export class DelveGame {
       this.mining = null;
       this.breakTile(x, y);
     }
+  }
+  /** 前景方塊 id（在 (x,y)，非空氣）挖不挖得動（不看距離）：null = 挖得動，否則是擋下的原因 */
+  private mineRefusal(x: number, y: number, id: number): 'locked' | 'tier' | 'chest' | null {
+    if (id === T.DOOR_LOCKED || id === T.LOCKED_CHEST) return 'locked';
+    if (tileDef(id).minTier > this.currentPick().tier) return 'tier';
+    if (this.planBreak(x, y).chest) return 'chest';
+    return null;
+  }
+  /** 按住挖掘會不會真的挖 (x,y)（不看距離；同 updateMining）：冰、拆得掉的背景牆、挖得動的前景方塊 */
+  private mineable(x: number, y: number): boolean {
+    const w = this.world, id = w.getFg(x, y);
+    if (id === T.AIR) return w.isFrozen(x, y) || Boolean(WALL_ITEM[w.getWall(x, y)]);
+    return w.inBounds(x, y) && this.mineRefusal(x, y, id) === null;
+  }
+  /**
+   * 這一步要挖哪一格（cur；方向挖掘，游標不用正好壓在方塊上）：
+   * 1. 游標那格在觸及範圍內、挖得動 → 就是那格（跟以前一樣）。
+   * 2. 否則從玩家中心朝游標點打格子射線（marchTiles，格角規則見 aimRay.ts），走到觸及距離：碰到的第一個前景方塊 / 冰
+   *    在觸及範圍內 → 就是它（挖不動也停在這、ok = false，updateMining 照常提示原因；不穿過去挖後面的）；超出範圍 / 出界 → 不算。
+   *    射線不看背景牆（屋裡到處都是，會把射線吃掉），也穿過跟自己身體重疊的非實心格（手上爬的繩子、腳邊的草）。
+   * 3. 都沒有 → 游標那格、ok = false（照舊：空氣不挖、太遠提示 reach）。
+   * 只看玩家中心、瞄準點與世界：房主替遠端客人算的、客人副本預覽的（mineFocus）是同一格。
+   */
+  private mineTarget(): { x: number; y: number; ok: boolean } {
+    const { x, y } = this.aim;
+    if (this.canReach(x, y) && this.mineable(x, y)) return { x, y, ok: true };
+    const w = this.world, p = this.player, c = this.playerCenter(), S = TILE_SIZE;
+    let hit: { x: number; y: number; ok: boolean } | null = null;
+    marchTiles(c.x / S, c.y / S, this.aimPx.x - c.x, this.aimPx.y - c.y, this.reach() + 1, (tx, ty) => {
+      if (!w.inBounds(tx, ty)) return true;
+      const id = w.getFg(tx, ty);
+      if (id === T.AIR && !w.isFrozen(tx, ty)) return false;
+      const onBody = p.x < (tx + 1) * S && p.x + p.w > tx * S && p.y < (ty + 1) * S && p.y + p.h > ty * S;
+      if (id !== T.AIR && !isSolidTile(id) && onBody) return false;
+      if (this.canReach(tx, ty)) hit = { x: tx, y: ty, ok: this.mineable(tx, ty) };
+      return true;
+    });
+    return hit ?? { x, y, ok: false };
+  }
+  /**
+   * 本地玩家按住挖掘時實際會挖的那格（mineTarget；renderer 把瞄準框畫在這，玩家看得到會挖哪塊）：
+   * 沒按住、死了、在船上、手上是武器 / 釣竿（左鍵不是挖）、或沒有挖得動的格 → null（照舊畫游標那格）
+   */
+  mineFocus(): { x: number; y: number } | null {
+    return this.withActor(this.local, () => {
+      if (!this.miningHeld || this.dead || this.boating || this.heldWeapon() || this.heldRod() !== null) return null;
+      const t = this.mineTarget();
+      return t.ok ? { x: t.x, y: t.y } : null;
+    });
   }
 
   /** 敲冰：結冰格當成冰塊挖（不掉東西），挖完那格恢復成水 */

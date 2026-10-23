@@ -824,9 +824,11 @@ export class Renderer {
     for (const v of this.remoteNow) if (v.pose.mining) this.drawCrack(ctx, v.pose.mining);
     const mine = this.localPose?.mining;
     if (mine) this.drawCrack(ctx, mine);
-    const { x, y } = st.aim;
+    // 按住挖掘：框框畫在實際要挖的那格（方向挖掘可能不是游標那格）；沒有 → 照舊畫游標那格
+    const focus = g.mineFocus();
+    const { x, y } = focus ?? st.aim;
     if (!this.showCursor || !g.world.inBounds(x, y)) return;
-    const ok = g.canReach(x, y);
+    const ok = focus !== null || g.canReach(x, y);
     // 像素角括號：四個 L 形角（1px 亮線 + 右下 1px 暗影），沒有半透明
     const px = x * S, py = y * S, n = 4;
     const corners = (c: string, o: number): void => {
