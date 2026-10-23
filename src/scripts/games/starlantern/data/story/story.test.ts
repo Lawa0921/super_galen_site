@@ -2573,9 +2573,9 @@ describe('story polish Task 4: numerals in titles and notices', () => {
     expect(STORY.scenes[banter].title.endsWith('・閒聊一')).toBe(true);
   });
 
-  it('the memory notice counts in Chinese numerals', () => {
-    expect(T.ui2.memory.piece('凜', 2)).toBe('找回了凜的記憶（第二片）。');
-    expect(T.ui2.memory.piece('洛恩', 10)).toBe('找回了洛恩的記憶（第十片）。');
+  it('the memory caption names who remembered, and no number (story L ruling 4: it replaces the piece notice)', () => {
+    expect(T.ui2.memory.recalled('凜')).toBe('凜想起了什麼。');
+    expect(T.ui2.memory.recalled('洛恩')).not.toMatch(/[0-9０-９]|第.片/);
   });
 });
 

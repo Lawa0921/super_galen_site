@@ -351,10 +351,13 @@ describe('BattleScene', () => {
     }
   });
 
-  it('a won fight lists the memories found', async () => {
+  it('a won fight lists one caption for each one who remembered (story L)', async () => {
     const { game, s, root } = setup();
     const fragments = [
-      { kind: 'piece' as const, id: 'rin' as const, n: 2, play: false },
+      { kind: 'piece' as const, id: 'hero' as const, n: 6 },
+      { kind: 'piece' as const, id: 'hero' as const, n: 7 },
+      { kind: 'piece' as const, id: 'rin' as const, n: 2 },
+      { kind: 'piece' as const, id: 'hero' as const, n: 8 },
       { kind: 'shard' as const, grade: 'clear' as const },
       { kind: 'town' as const, id: 'marta' as const },
     ];
@@ -365,9 +368,12 @@ describe('BattleScene', () => {
     await flush();
     const lines = [...root.querySelectorAll('.slx-result-lines p')].map((p) => p.textContent);
     expect(lines).not.toContain(T.ui2.rescue.joined(CHARACTERS.selene.name, 4));   // the join line is said after 繼續 (story polish Task 1)
-    expect(lines[0]).toBe(T.ui2.memory.piece(CHARACTERS.rin.name, 2));
-    expect(lines[1]).toBe(T.ui2.memory.shard(SHARD_NAMES.clear));
-    expect(lines[2]).toBe(T.ui2.memory.town('瑪莎的記憶碎片'));
+    expect(lines[0]).toBe(T.ui2.memory.recalled(CHARACTERS.hero.name));   // three of his: one line
+    expect(lines[0]).toBe('洛恩想起了什麼。');
+    expect(lines[1]).toBe(T.ui2.memory.recalled(CHARACTERS.rin.name));
+    expect(lines[2]).toBe(T.ui2.memory.shard(SHARD_NAMES.clear));
+    expect(lines[3]).toBe(T.ui2.memory.town('瑪莎的記憶碎片'));
+    expect(lines.filter((l) => l === T.ui2.memory.recalled(CHARACTERS.hero.name))).toHaveLength(1);
   });
 
   it('a fragment that did not fit is told once, as left behind', async () => {
@@ -990,7 +996,7 @@ describe('BattleScene after the oath', () => {
 
 describe('BattleScene story', () => {
   const instant: Partial<SceneCtx> = { settings: { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' }) } };
-  const win = (game: Game, fragments: { kind: 'piece'; id: 'rin'; n: number; play: boolean }[]) => {
+  const win = (game: Game, fragments: { kind: 'piece'; id: 'rin'; n: number }[]) => {
     const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], fragments };
     vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
   };
@@ -1013,58 +1019,41 @@ describe('BattleScene story', () => {
     expect(root.querySelector('.slx-msg')!.textContent).toContain(STORY.finaleBossName);
   });
 
-  it('a played memory follows the result window', async () => {
-    const { game, go, s, root } = setup((g) => { g.pending.push('mem:rin:1'); }, instant);
-    win(game, [{ kind: 'piece', id: 'rin', n: 1, play: true }]);
-    await fight(s);
-    s.onAction('confirm');   // 繼續
-    await flush();
-    expect(go).not.toHaveBeenCalled();
-    expect(root.querySelector('.slx-talk--memory')).not.toBeNull();
-    expect((root.querySelector('.slx-result') as HTMLElement).hidden).toBe(true);
-    expect((root.querySelector('.slx-msg') as HTMLElement).hidden).toBe(true);   // the foes' names gone with them (Task 6 review)
-    for (let i = 0; i < 40 && !talkHidden(root); i++) { s.onAction('confirm'); await flush(); }
-    expect(go).toHaveBeenCalledWith('dungeon');
-    expect(game.state.story.seen).toContain('mem:rin:1');
-    expect(game.pending).toEqual([]);
-  });
-
-  it('a memory that does not play now leaves at once', async () => {
+  it('the result leaves at once with no memory, or after the rescue and the rune tutorial (story L)', async () => {
+    // a piece found: 繼續 leaves at once, no scene and nothing recorded
     const { game, go, s, root } = setup(undefined, instant);
-    win(game, [{ kind: 'piece', id: 'rin', n: 2, play: false }]);
+    const done = vi.spyOn(game, 'sceneDone');
+    win(game, [{ kind: 'piece', id: 'rin', n: 1 }]);
     await fight(s);
     s.onAction('confirm');
     expect(go).toHaveBeenCalledWith('dungeon');
     expect(root.querySelector('.slx-talk--memory')).toBeNull();
+    expect(talkHidden(root)).toBe(true);
+    expect(done).not.toHaveBeenCalled();
+    // a rescue with a piece: her words, the join line, then out (no memory between)
+    const r = setup(undefined, instant);
+    rescueWin(r.game, false, [{ kind: 'piece', id: 'rin', n: 1 }]);
+    await fight(r.s);
+    r.s.onAction('confirm');
+    await flush();
+    const { texts } = await readOut(r.s, r.root);
+    expect(texts).toEqual([...STORY.meet.selene.after.map((l) => l.text), joinedLine()]);
+    expect(r.root.querySelector('.slx-talk--memory')).toBeNull();
+    expect(r.go).toHaveBeenCalledTimes(1);
+    expect(r.go).toHaveBeenCalledWith('dungeon');
   });
 
-  it('after a played memory a clear still goes to the clear screen', async () => {
-    const { game, go, s, root } = setup((g) => { g.pending.push('mem:rin:2'); }, instant);
-    win(game, [{ kind: 'piece', id: 'rin', n: 2, play: true }]);
-    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'clear'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end: { outcome: 'win', exp: 1, gold: 1, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], fragments: [{ kind: 'piece', id: 'rin', n: 2, play: true }] } }; });
+  it('a clear with a piece found goes to the clear screen at once (story L)', async () => {
+    const { game, go, s, root } = setup(undefined, instant);
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'clear'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end: { outcome: 'win', exp: 1, gold: 1, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], fragments: [{ kind: 'piece', id: 'rin', n: 2 }] } }; });
     await fight(s);
     s.onAction('confirm');
-    await flush();
-    for (let i = 0; i < 40 && !talkHidden(root); i++) { s.onAction('confirm'); await flush(); }
     expect(go).toHaveBeenCalledWith('clear');
-  });
-
-  it('a memory that fails to record does not lock the result', async () => {
-    const { game, go, s, root } = setup((g) => { g.pending.push('mem:rin:1'); }, instant);
-    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(game, 'sceneDone').mockImplementation(() => { throw new Error('boom'); });
-    win(game, [{ kind: 'piece', id: 'rin', n: 1, play: true }]);
-    await fight(s);
-    s.onAction('confirm');
-    await flush();
-    for (let i = 0; i < 40 && !talkHidden(root); i++) { s.onAction('confirm'); await flush(); }
-    expect(go).toHaveBeenCalledWith('dungeon');
-    expect(err).toHaveBeenCalled();
-    err.mockRestore();
+    expect(root.querySelector('.slx-talk--memory')).toBeNull();
   });
 
   // Story polish Task 1 (S1 A1): who joins, and her words, play in the dialogue box after 繼續, not in the result list.
-  const rescueWin = (game: Game, benched = false, fragments: { kind: 'piece'; id: 'rin'; n: number; play: boolean }[] = []) => {
+  const rescueWin = (game: Game, benched = false, fragments: { kind: 'piece'; id: 'rin'; n: number }[] = []) => {
     const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [], met: { id: 'selene' as const, level: 4, benched }, fragments };
     vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
   };
@@ -1114,9 +1103,9 @@ describe('BattleScene story', () => {
     expect(texts).not.toContain(joinedLine());
   });
 
-  it('cancel during her words goes straight to the join line, then the memories', async () => {
-    const { game, go, s, root } = setup((g) => { g.pending.push('mem:rin:1'); }, instant);
-    rescueWin(game, false, [{ kind: 'piece', id: 'rin', n: 1, play: true }]);
+  it('cancel during her words goes straight to the join line, then out (story L: no memory follows)', async () => {
+    const { game, go, s, root } = setup(undefined, instant);
+    rescueWin(game, false, [{ kind: 'piece', id: 'rin', n: 1 }]);
     await fight(s);
     s.onAction('confirm');   // 繼續
     await flush();
@@ -1127,12 +1116,10 @@ describe('BattleScene story', () => {
     expect(root.querySelector('.slx-talk--memory')).toBeNull();
     s.onAction('confirm');
     await flush();
-    expect(root.querySelector('.slx-talk--memory')).not.toBeNull();   // her memory follows the join line
-    expect(go).not.toHaveBeenCalled();
-    for (let i = 0; i < 40 && !talkHidden(root); i++) { s.onAction('confirm'); await flush(); }
+    expect(root.querySelector('.slx-talk--memory')).toBeNull();   // no memory after the join line: it is told at night
     expect(go).toHaveBeenCalledTimes(1);
     expect(go).toHaveBeenCalledWith('dungeon');
-    expect(game.state.story.seen).toContain('mem:rin:1');
+    expect(game.state.story.seen).not.toContain('mem:rin:1');
   });
 
   it('confirm on the join line leaves exactly once', async () => {

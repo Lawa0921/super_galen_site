@@ -2354,7 +2354,7 @@ describe('glimmers and memory pieces', () => {
     const c = floorOf(g.run!, 1).contents.find((x) => x.kind === 'glimmer' && x.owner === 'rin')!;
     expect(c).toBeDefined();
     const r = stepOnto(g, c.at);
-    expect(r).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin', n: 1, play: false }] });
+    expect(r).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin', n: 1 }] });
     expect(memoriesOf(g.state.party.roster.rin)).toBe(1);
     expect(tileAt(g.map(), c.at)).toBe('floor');
     expect(floorOf(g.run!, 1).contents.some((x) => x.kind === 'glimmer' && x.owner === 'rin')).toBe(false);
@@ -2387,7 +2387,7 @@ describe('glimmers and memory pieces', () => {
     const g = run(duo, 5, (x) => finished(x, 'rin'));
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'hero', n: 1, play: false }]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'hero', n: 1 }]);
     expect(memoriesOf(g.state.party.roster.hero)).toBe(1);
     expect(g.run!.dropped[5]).toEqual(['hero']);
   });
@@ -2403,9 +2403,9 @@ describe('glimmers and memory pieces', () => {
     const g = run(duo, 5);
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'rin', n: 1, play: false }]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'rin', n: 1 }]);
     const r = stepOnto(g, plantGlimmer(g, 'rin'));
-    expect(r).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin', n: 2, play: false }] });
+    expect(r).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'rin', n: 2 }] });
     expect(g.state.story.fresh).not.toContain('mem:rin:2');
     expect(g.state.story.seen).not.toContain('mem:rin:2');
     expect(g.state.story.untold).toEqual(['mem:rin:1', 'mem:rin:2']);
@@ -2479,7 +2479,7 @@ describe('glimmers and memory pieces', () => {
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
     expect(memoriesOf(g.state.party.roster.hero)).toBe(9);
-    expect(end.fragments!.filter((f) => f.kind === 'piece' && f.id === 'hero').map((f) => f.kind === 'piece' && [f.n, f.play])).toEqual([[6, false], [7, false], [8, false], [9, false]]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece' && f.id === 'hero').map((f) => f.kind === 'piece' && f.n)).toEqual([6, 7, 8, 9]);
     expect(g.state.story.queue.filter((id) => id.startsWith('mem:'))).toEqual([]);
     expect(g.state.story.untold).toEqual(['mem:hero:6', 'mem:hero:7', 'mem:hero:8', 'mem:hero:9']);
     expect(g.state.story.seen.some((id) => id.startsWith('mem:hero'))).toBe(false);
@@ -2490,7 +2490,7 @@ describe('glimmers and memory pieces', () => {
     const g = run(duo, 25, (x) => { x.state.party.roster.hero.memories = 8; });
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'hero', n: 9, play: false }]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'hero', n: 9 }]);
     expect(g.state.story.untold).toEqual(['mem:hero:9']);
     expect(g.state.story.queue).not.toContain('mem:hero:9');
     expect(g.state.story.seen).not.toContain('mem:hero:9');
@@ -2501,7 +2501,7 @@ describe('glimmers and memory pieces', () => {
     const g = run(duo, 3, (x) => { x.state.party.roster.rin.memories = 1; });
     stepOnto(g, g.map().boss!);
     const end = killAll(g);
-    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'rin', n: 2, play: false }]);
+    expect(end.fragments!.filter((f) => f.kind === 'piece')).toEqual([{ kind: 'piece', id: 'rin', n: 2 }]);
     expect(memoriesOf(g.state.party.roster.rin)).toBe(2);
     expect(g.phase).toBe('clear');
   });
@@ -3473,7 +3473,7 @@ describe('the finale', () => {
     const end = killAll(g);
     expect(memoriesOf(g.state.party.roster.hero)).toBe(10);
     expect(g.finale).toEqual({ pieces: heroPieces(3, 10) });
-    expect(end.fragments!.filter((f) => f.kind === 'piece').every((f) => f.kind === 'piece' && !f.play)).toBe(true);
+    expect(end.fragments!.filter((f) => f.kind === 'piece').every((f) => f.kind === 'piece' && f.id === 'hero')).toBe(true);
     expect([g.phase, g.cleared, g.state.story.finaleCleared]).toEqual(['clear', 'finale', true]);
     // The finale plays them, so nothing is marked seen, new or waiting for the town or the screen.
     expect(g.state.story.seen.some((id) => id.startsWith('mem:hero:'))).toBe(false);

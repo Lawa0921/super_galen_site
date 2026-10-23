@@ -70,7 +70,7 @@ describe('DungeonScene glimmers', () => {
     const { dir, at } = glimmerNext(game, 'selene');
     s.onAction(dir);
     await Promise.resolve();
-    expect(text()).toBe(T.ui2.memory.piece(CHARACTERS.selene.name, 1));
+    expect(text()).toBe(T.ui2.memory.recalled(CHARACTERS.selene.name));   // story L: who remembered, not which piece
     expect(tileAt(game.map(), at)).toBe('floor');
     expect(memoriesOf(game.state.party.roster.selene)).toBe(1);
   });
@@ -673,42 +673,40 @@ describe('DungeonScene memories', () => {
     for (let i = 0; i < 40 && !root.querySelector('.slx-talk')!.hasAttribute('hidden'); i++) { s.onAction('confirm'); await flush(); }
   };
 
-  it('the first memory of a floor plays as a memory scene', async () => {
+  it("a glimmer's piece shows one caption and plays no scene (story L)", async () => {
     const { game, s, root, text } = setup(undefined, true, {}, undefined, SELENE_FIRST);
+    const done = vi.spyOn(game, 'sceneDone');
     s.onAction(glimmerNext(game, 'selene'));
     await flush();
-    expect(text()).toBe(T.ui2.memory.piece(CHARACTERS.selene.name, 1));
+    expect(text()).toBe(T.ui2.memory.recalled(CHARACTERS.selene.name));
+    expect(text()).toBe('瑟蕾想起了什麼。');
     expect(root.querySelector('.slx-talk--memory')).toBeNull();
     s.onAction('confirm');
     await flush();
-    expect(root.querySelector('.slx-talk--memory')).not.toBeNull();
-    expect(root.querySelector('.slx-pad')!.classList.contains('slx-cmd-hidden')).toBe(true);   // the pad steps aside for the scene
-    expect(root.querySelector('.slx-weight')!.classList.contains('slx-cmd-hidden')).toBe(true);   // and so do the lines under the box
-    expect(root.querySelector('.slx-keyhint')!.classList.contains('slx-cmd-hidden')).toBe(true);
-    expect(game.pending).toEqual(['mem:selene:1']);
-    await through(s, root);
     expect(root.querySelector('.slx-talk--memory')).toBeNull();
+    expect(root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(true);   // the caption was all
     expect(root.querySelector('.slx-pad')!.classList.contains('slx-cmd-hidden')).toBe(false);
-    expect(root.querySelector('.slx-weight')!.classList.contains('slx-cmd-hidden')).toBe(false);
-    expect(root.querySelector('.slx-keyhint')!.classList.contains('slx-cmd-hidden')).toBe(false);
+    expect(root.querySelector('.slx-pad')!.hasAttribute('inert')).toBe(false);
+    expect(done).not.toHaveBeenCalled();
     expect(game.pending).toEqual([]);
-    expect(game.state.story.seen).toContain('mem:selene:1');
-    expect(game.state.story.fresh).not.toContain('mem:selene:1');   // it was played, so it is not new
+    expect(game.state.story.untold).toEqual(['mem:selene:1']);   // told tonight in town
+    expect(game.state.story.seen).not.toContain('mem:selene:1');
   });
 
-  it('story none records it without a line', async () => {
-    const { game, s, root } = setup(undefined, true, withStory('none'), undefined, SELENE_FIRST);
+  it('story none: the same caption, and the piece still waits untold (story L)', async () => {
+    const { game, s, root, text } = setup(undefined, true, withStory('none'), undefined, SELENE_FIRST);
     s.onAction(glimmerNext(game, 'selene'));
     await flush();
-    s.onAction('confirm');   // the found line
+    expect(text()).toBe(T.ui2.memory.recalled(CHARACTERS.selene.name));
+    s.onAction('confirm');
     await flush();
     expect(root.querySelector('.slx-talk--memory')).toBeNull();
-    expect(game.pending).toEqual([]);
-    expect(game.state.story.seen).toContain('mem:selene:1');
-    expect(game.state.story.fresh).toContain('mem:selene:1');   // never shown, so the handbook marks it new
+    expect(game.state.story.untold).toEqual(['mem:selene:1']);
+    expect(game.state.story.seen).not.toContain('mem:selene:1');
+    expect(game.state.story.fresh).not.toContain('mem:selene:1');
   });
 
-  it('a wipe afterwards loses no seen mark', async () => {
+  it('a wipe afterwards keeps the piece and its untold memory (story L)', async () => {
     const { game, s, root } = setup(undefined, true, {}, undefined, SELENE_FIRST);
     s.onAction(glimmerNext(game, 'selene'));
     await flush();
@@ -720,55 +718,43 @@ describe('DungeonScene memories', () => {
     for (const m of game.battle!.party) { m.hp = 0; m.alive = false; }
     game.submitRound({});
     expect(game.phase).toBe('town');
-    expect(game.state.story.seen).toContain('mem:selene:1');
+    expect(game.state.story.untold).toEqual(['mem:selene:1']);
     expect(memoriesOf(game.state.party.roster.selene)).toBe(1);
   });
 
-  it('the return lamp plays a memory still waiting before it leaves', async () => {
-    const { game, go, s, pick, root } = setup(undefined, true, {}, (g) => { g.pending.push('mem:rin:1'); });
-    await flush();   // entering the floor plays it first
-    await through(s, root);
-    expect(game.state.story.seen).toContain('mem:rin:1');
-    game.pending.push('mem:rin:2');   // and one that turned up after
+  it('leaving the floor waits for no memory (story L)', async () => {
+    const { game, go, s, pick } = setup(undefined, true, {}, (g) => { g.state.party.roster.rin.memories = 1; g.state.story.untold = ['mem:rin:1']; });
+    const done = vi.spyOn(game, 'sceneDone');
+    await flush();
     const lamps = game.state.inventory['return-lamp'] ?? 0;
     s.onAction('menu');
     pick('歸還之燈');
     pick('是');
-    expect(go).not.toHaveBeenCalled();   // the scene comes first
-    expect(game.state.inventory['return-lamp'] ?? 0).toBe(lamps);
-    await flush();
-    await through(s, root);
-    expect(go).toHaveBeenCalledWith('town');
-    expect(game.state.story.seen).toContain('mem:rin:2');
+    expect(go).toHaveBeenCalledWith('town');   // at once
     expect(game.state.inventory['return-lamp'] ?? 0).toBe(lamps - 1);
+    expect(done).not.toHaveBeenCalled();
+    expect(game.state.story.untold).toEqual(['mem:rin:1']);
   });
 
-  it('walking out at the entrance plays a waiting memory first', async () => {
-    const { game, go, s, root } = setup(undefined, true, {}, (g) => { g.pending.push('mem:rin:1'); });
+  it('walking out at the entrance leaves at once, an untold memory or not (story L)', async () => {
+    const { game, go, s } = setup(undefined, true, {}, (g) => { g.state.party.roster.rin.memories = 1; g.state.story.untold = ['mem:rin:1']; });
     await flush();
-    await through(s, root);
-    game.pending.push('mem:rin:2');
     s.onAction('right'); s.onAction('left');
     s.onAction('up');
     s.onAction('confirm');
-    expect(go).not.toHaveBeenCalled();
-    await flush();
-    await through(s, root);
     expect(go).toHaveBeenCalledWith('town');
-    expect(game.state.story.seen).toEqual(expect.arrayContaining(['mem:rin:1', 'mem:rin:2']));
+    expect(game.state.story.untold).toEqual(['mem:rin:1']);
   });
 
-  it('a scene that throws does not lock the labyrinth', async () => {
-    const { game, s, root } = setup(undefined, true, {}, undefined, SELENE_FIRST);
-    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(game, 'sceneDone').mockImplementation(() => { throw new Error('boom'); });
-    s.onAction(glimmerNext(game, 'selene'));
+  it('two pieces in one step are one caption each, never a scene (story L)', async () => {
+    const { game, s, root, text } = setup(undefined, true, {}, undefined, SELENE_FIRST);
+    vi.spyOn(game, 'move').mockImplementation(() => ({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'hero', n: 6 }, { kind: 'piece', id: 'hero', n: 7 }, { kind: 'piece', id: 'selene', n: 1 }] }));
+    s.onAction('right');
     await flush();
-    await through(s, root);   // the found line, then the memory, which fails on recording
-    expect(err).toHaveBeenCalled();
-    expect(root.querySelector('.slx-pad')!.classList.contains('slx-cmd-hidden')).toBe(false);
-    expect(root.querySelector('.slx-pad')!.hasAttribute('inert')).toBe(false);
-    err.mockRestore();
+    const said: string[] = [];
+    for (let i = 0; i < 6 && !root.querySelector('.slx-talk')!.hasAttribute('hidden'); i++) { said.push(text()); s.onAction('confirm'); await flush(); }
+    expect(said).toEqual([T.ui2.memory.recalled(CHARACTERS.hero.name), T.ui2.memory.recalled(CHARACTERS.selene.name)]);
+    expect(root.querySelector('.slx-talk--memory')).toBeNull();
   });
 });
 

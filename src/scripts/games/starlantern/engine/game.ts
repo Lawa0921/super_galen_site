@@ -352,7 +352,7 @@ export class Game {
     for (const id of ids) story.pity[id] = 0;   // a piece resets its chain's count now, so leaving the floor any way keeps it
     return applied.gained.map(({ id, n }) => {
       if (!(finale && id === 'hero')) (story.untold ??= []).push(memScene(id, n));
-      return { kind: 'piece' as const, id, n, play: false };
+      return { kind: 'piece' as const, id, n };
     });
   }
 

@@ -272,7 +272,8 @@ export const T = {
   ui2: {
     battle: { survive: (left: number) => `撐過去！還有 ${left} 回合` },
     memory: {
-      piece: (name: string, n: number) => `找回了${name}的記憶（第${numeral(n)}片）。`,
+      /** Story L spec §4.2: one caption for each one who remembered something; the memory itself is told at night in town. */
+      recalled: (name: string) => `${name}想起了什麼。`,
       shard: (name: string) => `撿到了${name}。`,
       town: (name: string) => `撿到了${name}。`,
     },
