@@ -5,7 +5,7 @@ import { chainLength } from '../data/story/chains';
 import { STORY, linesWhen, type LineWhen, type ScriptLine } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import { Game } from '../engine/game';
-import { constRng } from '../engine/testing';
+import { constRng, withTold } from '../engine/testing';
 import { allArtUrls, art, NORMAL_SMILES } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { Dialogue } from './widgets';
@@ -231,6 +231,23 @@ describe('playScene', () => {
     expect(texts()).toEqual(['甲', '丙']);
     s.party.roster.rin.memories = chainLength('rin');
     expect(texts()).toEqual(['甲', '乙', '丙']);
+  });
+
+  it("linesOf reads a companion's full from the pieces told (story L Task 1)", () => {
+    const { game } = mk();
+    const len = chainLength('sylvie');
+    const s = withTold(game.state, 'sylvie', len - 1);
+    s.party.roster.sylvie.memories = len;   // all held, one untold
+    const notFull = STORY.scenes['chat:sylvie:2'].lines.filter((l) => l.if?.notFull === 'sylvie').map((l) => l.text);
+    const full = STORY.scenes['chat:sylvie:2'].lines.filter((l) => l.if?.full === 'sylvie').map((l) => l.text);
+    expect(notFull.length).toBeGreaterThan(0);
+    const texts = linesOf('chat:sylvie:2', s).map((l) => l.text);
+    for (const t of notFull) expect(texts).toContain(t);
+    for (const t of full) expect(texts).not.toContain(t);
+    const told = withTold(s, 'sylvie', len);
+    const after = linesOf('chat:sylvie:2', told).map((l) => l.text);
+    for (const t of full) expect(after).toContain(t);
+    for (const t of notFull) expect(after).not.toContain(t);
   });
 
   it('a scene line waits on a scene the save has seen (story depth Task 1)', async () => {

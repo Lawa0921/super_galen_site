@@ -4,7 +4,7 @@ import { MAJOR_SCENES, heavyScene, type SceneId } from '../data/story/scenes';
 import { NPC_NAMES, STORY, linesWhen, type NpcId, type ScriptLine, type Speaker } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import type { Game } from '../engine/game';
-import { memoriesOf } from '../engine/progression';
+import { storyPieces } from '../engine/story/events';
 import type { GameState } from '../engine/state';
 import type { CharacterId } from '../engine/types';
 import { NORMAL_SMILES, art, type StoryMood } from '../render/artPaths';
@@ -97,10 +97,8 @@ export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: Sto
 
 /** A scene's lines without the ones whose condition does not hold for this game. */
 export function linesOf(id: SceneId, s: GameState): ScriptLine[] {
-  const full = CHARACTER_IDS.filter((c) => {
-    const m = s.party.roster[c];
-    return !!m && memoriesOf(m) >= chainLength(c);
-  });
+  // story L spec §4.9: a companion is full once her last piece is told; Lorne and Rin once they hold it all.
+  const full = CHARACTER_IDS.filter((c) => !!s.party.roster[c] && storyPieces(s, c) >= chainLength(c));
   return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath, seen: s.story.seen });
 }
 

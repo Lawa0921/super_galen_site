@@ -54,7 +54,7 @@ export function onReturn(s: GameState): StoryState {
   if (memoriesOf(rin) >= chainLength('rin') && !rin.oath && !story.seen.includes('rin-reveal') && !story.queue.includes('rin-reveal')) story.queue.push('rin-reveal');
   for (const c of HOME_OWNERS) {
     const id = homeScene(c);
-    if (!s.party.recruited.includes(c) || memoriesOf(s.party.roster[c]) < chainLength(c)) continue;
+    if (!s.party.recruited.includes(c) || storyPieces(s, c) < chainLength(c)) continue;   // story L: her last piece told
     if (!story.seen.includes(id) && !story.queue.includes(id)) story.queue.push(id);
   }
   // Story depth (plan ruling 6): the lone morning, once his ninth piece is seen or waiting and her choice is made, until the
@@ -101,19 +101,40 @@ const piecesOf = (s: GameState, c: CharacterId): number => {
 };
 
 /**
+ * Story L spec §4.1: how many of `c`'s memory pieces have been told, played, skipped or auto-skipped: her `mem:` scenes in
+ * `story.seen`, in any order.
+ */
+export function toldCount(s: GameState, c: CharacterId): number {
+  const len = chainLength(c);
+  let n = 0;
+  for (let k = 1; k <= len; k++) if (s.story.seen.includes(`mem:${c}:${k}`)) n++;
+  return n;
+}
+
+/**
+ * Story L spec §4.9: the pieces the story reads for `c`. A companion's lines and gates can only speak of what the player has
+ * heard: her pieces told. Lorne and Rin keep the pieces held (his tenth plays in the finale; her reveal reads what she holds,
+ * and her untold pieces always play before it).
+ */
+export function storyPieces(s: GameState, c: CharacterId): number {
+  return c === 'hero' || c === 'rin' ? piecesOf(s, c) : toldCount(s, c);
+}
+
+/**
  * Whether a gate holds (`StoryGate`): every kind it names. No gate always holds. `stage`: reached; `oath`: her choice made;
- * `full`: all of that one's memories; `beforeChoice`: her choice not made yet; `pieces`: each one named holds at least that
- * many; `seen`: every scene named is in `story.seen`.
+ * `full`: all of that one's memories; `beforeChoice`: her choice not made yet; `pieces`: each one named has at least that
+ * many; `seen`: every scene named is in `story.seen`; `met`: every one named is met. `full` and `pieces` read `storyPieces`.
  */
 export function gateOpen(s: GameState, g: StoryGate | undefined): boolean {
   if (!g) return true;
   if (g.stage && STAGES.indexOf(storyStage(s)) < STAGES.indexOf(g.stage)) return false;
   if (g.oath && !s.party.roster.rin?.oath) return false;
-  if (g.full && piecesOf(s, g.full) < chainLength(g.full)) return false;
+  if (g.full && storyPieces(s, g.full) < chainLength(g.full)) return false;
   if (g.beforeChoice && s.party.roster.rin?.oath) return false;
-  if (g.pieces && (Object.entries(g.pieces) as [CharacterId, number][]).some(([c, n]) => piecesOf(s, c) < n)) return false;
+  if (g.pieces && (Object.entries(g.pieces) as [CharacterId, number][]).some(([c, n]) => storyPieces(s, c) < n)) return false;
   if (g.seen && !g.seen.every((id) => s.story.seen.includes(id))) return false;
   if (g.confession && s.story.confession !== g.confession) return false;
+  if (g.met && !g.met.every((c) => s.party.recruited.includes(c))) return false;
   return true;
 }
 

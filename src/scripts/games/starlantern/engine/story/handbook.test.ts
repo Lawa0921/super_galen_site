@@ -11,6 +11,7 @@ import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { handbook } from './handbook';
+import { withTold } from '../testing';
 import { arrivalScenes, onReturn, sceneDone } from './events';
 
 /** Rin's banters, in the pairs' fixed order: what her people page lists after her chats (B1, B2; ids are frozen once shipped). */
@@ -64,12 +65,25 @@ describe("the adventurer's handbook", () => {
 
   it('people pages unlock with the pieces', () => {
     const len = chainLength('noel');
-    const segs = (n: number) => handbook(withMemories(fresh(), 'noel', n)).people.find((p) => p.id === 'noel')!.segments;
+    const segs = (n: number) => handbook(withTold(fresh(), 'noel', n)).people.find((p) => p.id === 'noel')!.segments;   // story L: told
     expect(segs(0)).toEqual(STORY.people.noel.slice(0, 1));
     expect(segs(Math.ceil(len / 2) - 1)).toEqual(STORY.people.noel.slice(0, 1));
     expect(segs(Math.ceil(len / 2))).toEqual(STORY.people.noel.slice(0, 2));
     expect(segs(len - 1)).toEqual(STORY.people.noel.slice(0, 2));
     expect(segs(len)).toEqual(STORY.people.noel);
+  });
+
+  it("a person's page opens by the pieces told (story L Task 1)", () => {
+    const len = chainLength('noel');
+    const half = Math.ceil(len / 2);
+    const page = (s: GameState) => handbook(s).people.find((p) => p.id === 'noel')!.segments;
+    const held = withMemories(fresh(), 'noel', len);   // all held, none told
+    expect(page(held)).toEqual(STORY.people.noel.slice(0, 1));
+    expect(page(withTold(held, 'noel', half))).toEqual(STORY.people.noel.slice(0, 2));
+    expect(page(withTold(held, 'noel', len))).toEqual(STORY.people.noel);
+    // Lorne reads what he holds
+    const hero = withMemories(fresh(), 'hero', chainLength('hero'));
+    expect(handbook(hero).people.find((p) => p.id === 'hero')!.segments).toEqual(STORY.people.hero);
   });
 
   it("people pages carry the title, and Rin's changes with her oath", () => {
@@ -89,7 +103,7 @@ describe("the adventurer's handbook", () => {
     expect(segs()).toEqual(STORY.people.rin);
     expect(segs()[3]).toMatch(/不做了.*自己決定/);   // story polish Task 2: the choice, in the reveal's new words
     // the others keep three pages, whatever her oath
-    expect(handbook(withMemories(s, 'noel', chainLength('noel'))).people.find((p) => p.id === 'noel')!.segments).toHaveLength(3);
+    expect(handbook(withTold(s, 'noel', chainLength('noel'))).people.find((p) => p.id === 'noel')!.segments).toHaveLength(3);
   });
 
   it('a homecoming is replayed from her own page', () => {

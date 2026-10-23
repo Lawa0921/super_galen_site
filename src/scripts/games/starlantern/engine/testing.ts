@@ -1,7 +1,9 @@
 import type { BattleState } from './battle';
 import type { Combatant } from './combatant';
 import { EQUIPMENT } from '../data/equipment';
-import { STANDARD_LINEUP, partyWith } from './party';
+import { STANDARD_LINEUP, meet, partyWith } from './party';
+import { memoriesOf } from './progression';
+import { memScene } from '../data/story/scenes';
 import { NODES, TREES, type TreeNode } from '../data/trees';
 import type { CharacterId, ItemInstance, Party } from './types';
 import { CHARACTER_IDS } from '../data/characters';
@@ -80,4 +82,18 @@ export function version8Save(trees8b: Record<string, { id: string }[][]>): { raw
   g.party.roster.noel.equip.ring1 = { ...plainItem('star-ring', g.nextUid), rarity: 'legendary', ilvl: 20, special: 'lg-noel' };
   g.nextUid++;
   return { raw: JSON.stringify({ ...g, version: 8 }), state: g };
+}
+
+/**
+ * Story L plan ruling 1: `c` holds at least `n` pieces and has told the first `n` (`mem:c:1` to `mem:c:n` in `seen`); she
+ * is met first when she is not yet. Everything else is left as it was. For tests that pin a gate, not the gap between held
+ * and told. Returns a new state.
+ */
+export function withTold(s: GameState, c: CharacterId, n: number): GameState {
+  const party = s.party.recruited.includes(c) ? s.party : meet(s.party, c, 1);
+  const m = party.roster[c];
+  const roster = { ...party.roster, [c]: { ...m, memories: Math.max(memoriesOf(m), n) } };
+  const seen = [...s.story.seen];
+  for (let k = 1; k <= n; k++) if (!seen.includes(memScene(c, k))) seen.push(memScene(c, k));
+  return { ...s, party: { ...party, roster }, story: { ...s.story, seen } };
 }

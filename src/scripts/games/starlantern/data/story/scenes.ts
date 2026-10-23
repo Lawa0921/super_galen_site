@@ -21,7 +21,15 @@ export type SceneId =
   | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'rin-confess' | 'bellkeeper-arrives' | 'hero-alone'
   | 'finale' | 'epilogue'
   | `mem:${CharacterId}:${number}` | `chat:${CharacterId}:${number}` | `town:${TownFragmentId}` | `home:${HomeOwner}`
-  | `banter:${BanterPair}:${number}`;
+  | `banter:${BanterPair}:${number}` | GroupScene;
+
+/**
+ * Story L (spec §5): the group scene after an act, `group:<act>`. It plays in the reaction slot of the act's own arrival or
+ * the next return (`engine/story/events.ts`), as the first thing of the night. Its gate is `GROUP_GATE`; only the ones written
+ * are registered in `REACTIONS` (and in `SCENE_IDS`).
+ */
+export type GroupScene = `group:${ActNode}`;
+export const groupScene = (node: ActNode): GroupScene => `group:${node}`;
 
 export const memScene = (id: CharacterId, n: number): SceneId => `mem:${id}:${n}`;
 
@@ -102,13 +110,14 @@ export const SCENE_IDS: SceneId[] = [
 const SCENE_SET = new Set<string>(SCENE_IDS);
 export const isSceneId = (v: unknown): v is SceneId => typeof v === 'string' && SCENE_SET.has(v);
 
-export type SceneKind = 'major' | 'memory' | 'chat' | 'town' | 'home' | 'banter';
+export type SceneKind = 'major' | 'memory' | 'chat' | 'town' | 'home' | 'banter' | 'group';
 export function sceneKind(id: SceneId): SceneKind {
   if (id.startsWith('mem:')) return 'memory';
   if (id.startsWith('chat:')) return 'chat';
   if (id.startsWith('town:')) return 'town';
   if (id.startsWith('home:')) return 'home';
   if (id.startsWith('banter:')) return 'banter';
+  if (id.startsWith('group:')) return 'group';
   return 'major';
 }
 
@@ -123,8 +132,12 @@ export function lineCap(id: SceneId): number {
     case 'town': return 8;
     case 'home': return 4;
     case 'banter': return 4;
+    case 'group': return 12;
   }
 }
+
+/** The fewest lines a group scene may have (story L spec §5.1). */
+export const GROUP_MIN_LINES = 8;
 
 /**
  * What a chat, a banter (and from the story depth plan, a return line) waits on; every kind it names has to hold
@@ -135,7 +148,9 @@ export function lineCap(id: SceneId): number {
  * - `beforeChoice`: Rin has not made her choice yet. Once she has, the gate is expired (`gateExpired`): the scene never
  *   plays, and it no longer holds back the ones after it (it counts as passed, never as seen);
  * - `pieces`: each one named holds at least that many memory pieces;
- * - `seen`: every scene named has been seen.
+ * - `seen`: every scene named has been seen;
+ * - `met`: every one named has been met (story L spec §5.2).
+ * `full` and `pieces` count a companion's pieces told (`storyPieces`); Lorne's and Rin's count the pieces held.
  */
 export interface StoryGate {
   stage?: Stage;
@@ -144,6 +159,7 @@ export interface StoryGate {
   beforeChoice?: true;
   pieces?: Partial<Record<CharacterId, number>>;
   seen?: SceneId[];
+  met?: CharacterId[];
   /** Story depth Task 15 review: where Rin's confession was told (`StoryState.confession`); the other place expires it. */
   confession?: 'dinner';
 }
@@ -163,6 +179,18 @@ export const CHAT_GATE: Partial<Record<SceneId, StoryGate>> = {
   // Story depth (design §7.4): Anna has stopped counting the papers on the guild door; it waits for act 4, when the town turns.
   'chat:hero:5': { stage: 'act4' },
 };
+
+/**
+ * Story L spec §5.2: who a group scene needs met (Lorne aside). It has two chances, its act's arrival and the next return
+ * (`StoryState.reacts`); `group:act3` also expires once Rin has made her choice.
+ */
+export const GROUP_GATE: Record<GroupScene, StoryGate> = {
+  'group:act2': { met: ['selene', 'noel'] },
+  'group:act3': { met: ['sylvie', 'bobby'], beforeChoice: true },
+  'group:act4': { met: ['liz', 'scarlet', 'chizuru', 'safira'] },
+};
+/** The group scenes written and playable, by the act they follow (story L Tasks 9-11 register each one with its script). */
+export const REACTIONS: Partial<Record<ActNode, GroupScene>> = {};
 
 /**
  * Banters that wait (B1), used like `CHAT_GATE` (`StoryGate`). A banter with no entry is open as soon as both of its two are
@@ -221,10 +249,10 @@ const HEAVY_SCENES = new Set<SceneId>([
   'prologue', 'act2', 'act3', 'act4', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale', 'epilogue',
   'chat:rin:2', 'chat:rin:3', 'chat:rin:4', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4',
 ]);
-/** Whether a scene is heavy: every memory, every townsfolk return, and the scenes the bible names. */
+/** Whether a scene is heavy: every memory, every townsfolk return, every group scene (story L), and the scenes the bible names. */
 export function heavyScene(id: SceneId): boolean {
   const kind = sceneKind(id);
-  return kind === 'memory' || kind === 'town' || HEAVY_SCENES.has(id);
+  return kind === 'memory' || kind === 'town' || kind === 'group' || HEAVY_SCENES.has(id);
 }
 
 /**

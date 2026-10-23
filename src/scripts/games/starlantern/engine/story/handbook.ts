@@ -12,6 +12,7 @@ import type { GameState } from '../state';
 import type { CharacterId, Element } from '../types';
 import { MEETINGS } from '../../data/meetings';
 import { followedLeads, nextLead, type Lead } from './leads';
+import { storyPieces } from './events';
 
 /** `seen` is what makes a piece replayable: a found piece can still be waiting in the story queue. */
 export interface PiecePage { n: number; scene: SceneId; found: boolean; seen: boolean; fresh: boolean; hint: string }
@@ -62,7 +63,7 @@ export function handbook(s: GameState): Handbook {
   const people = CHARACTER_IDS.map((id): PersonPage => {
     const m = s.party.roster[id];
     const met = s.party.recruited.includes(id);
-    const have = memoriesOf(m);
+    const have = storyPieces(s, id);   // story L spec §4.9: a companion's page opens by her pieces told
     const len = chainLength(id);
     // Rin's fourth page tells her choice: it opens with her oath, not with a piece (continuity fix 3).
     const k = !met ? 0 : id === 'rin' && m.oath ? 4 : have >= len ? 3 : have >= Math.ceil(len / 2) ? 2 : 1;

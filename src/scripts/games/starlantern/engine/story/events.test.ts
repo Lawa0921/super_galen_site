@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ACT_DEPTHS, ALONE, BANTER_COUNT, BANTER_PAYOFFS, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, HEAVY_ARRIVAL, isHeavyArrival, type BanterPair, type SceneId } from '../../data/story/scenes';
+import { ACT_DEPTHS, ALONE, BANTER_COUNT, BANTER_PAYOFFS, BANTER_GATE, BANTER_PAIRS, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, GROUP_MIN_LINES, HEAVY_ARRIVAL, REACTIONS, groupScene, heavyScene, isHeavyArrival, lineCap, memScene, sceneKind, type BanterPair, type SceneId } from '../../data/story/scenes';
 import { chainLength } from '../../data/story/chains';
 import { CHARACTER_IDS } from '../../data/characters';
 import { meet } from '../party';
@@ -7,7 +7,8 @@ import { MEETINGS } from '../../data/meetings';
 import { memoryPace } from './expect';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
-import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyStage, afterWin } from './events';
+import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyPieces, storyStage, toldCount, afterWin } from './events';
+import { withTold } from '../testing';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
 const base = (): GameState => {
@@ -107,23 +108,24 @@ describe('story triggers', () => {
   });
 
   it('a homecoming waits for her last piece and plays once, behind the story and ahead of the chat', () => {
-    const s = withMemories(base(), 'sylvie', chainLength('sylvie') - 1);
+    // story L: her last piece told, not only held (so it is never still waiting in the queue beside her homecoming)
+    let s = withTold(base(), 'sylvie', chainLength('sylvie') - 1);
     s.story.seen.push('chat:hero:1');
     expect(onReturn(s).queue).toEqual([]);
-    s.party.roster.sylvie.memories = chainLength('sylvie');
-    s.story.queue = ['mem:sylvie:5', 'act3'];
+    s = withTold(s, 'sylvie', chainLength('sylvie'));
+    s.story.queue = ['act3'];
     const back = returned(s);
-    expect(back.story.queue).toEqual(['mem:sylvie:5', 'act3', 'home:sylvie']);
+    expect(back.story.queue).toEqual(['act3', 'home:sylvie']);
     const order = arrivalScenes(back, { chat: true });
-    expect(order.slice(0, 3)).toEqual(['act3', 'mem:sylvie:5', 'home:sylvie']);
-    expect(order[3]).toMatch(/^chat:/);
+    expect(order.slice(0, 2)).toEqual(['act3', 'home:sylvie']);
+    expect(order[2]).toMatch(/^chat:/);
     expect(returned(back).story.queue.filter((x) => x === 'home:sylvie')).toHaveLength(1);   // waiting, not doubled
     expect(onReturn(sceneDone(back, 'home:sylvie', 'played')).queue).not.toContain('home:sylvie');
   });
 
   it('only the endings the town holds have a homecoming', () => {
     let s = base();
-    for (const id of ['selene', 'noel', 'bobby', 'scarlet', 'chizuru', 'safira', 'liz'] as CharacterId[]) s = withMemories(s, id, chainLength(id));
+    for (const id of ['selene', 'noel', 'bobby', 'scarlet', 'chizuru', 'safira', 'liz'] as CharacterId[]) s = withTold(s, id, chainLength(id));
     s = withMemories(s, 'hero', chainLength('hero'));
     expect(onReturn(s).queue).toEqual(['home:chizuru', 'home:safira', 'home:liz']);
   });
@@ -421,7 +423,7 @@ describe('story depth: when the scenes play (Task 3)', () => {
   });
 
   it('the festival is the first scene after the finale', () => {
-    const s = withMemories(base(), 'liz', chainLength('liz'));
+    const s = withTold(base(), 'liz', chainLength('liz'));
     s.story.finaleCleared = true;
     const back = returned(s);
     expect(back.story.queue).toContain('epilogue');
@@ -584,7 +586,7 @@ describe('town banter', () => {
   });
 
   it('a gate holds a banter back, as CHAT_GATE does: stage, oath, a full memory', () => {
-    const s = meetAll(base(), ['noel']);
+    let s = meetAll(base(), ['noel']);
     const id: SceneId = 'banter:noel-rin:1';
     expect(banterOpen(s, id, { [id]: { stage: 'act2' } })).toBe(false);
     expect(nextBanter(s, { [id]: { stage: 'act2' } })).toBeNull();
@@ -594,7 +596,7 @@ describe('town banter', () => {
     s.party.roster.rin.oath = true;
     expect(banterOpen(s, id, { [id]: { stage: 'act2', oath: true } })).toBe(true);
     expect(banterOpen(s, id, { [id]: { full: 'noel' } })).toBe(false);
-    s.party.roster.noel.memories = chainLength('noel');
+    s = withTold(s, 'noel', chainLength('noel'));
     expect(banterOpen(s, id, { [id]: { full: 'noel' } })).toBe(true);
     // no gate opens a banter whose two are not both met
     expect(banterOpen(base(), id, {})).toBe(false);
@@ -617,7 +619,7 @@ describe('town banter', () => {
   });
 
   it('a gate opens on each of its kinds (story depth)', () => {
-    const s = meetAll(base(), ['noel', 'bobby', 'chizuru']);
+    let s = meetAll(base(), ['noel', 'bobby', 'chizuru']);
     const id: SceneId = 'banter:noel-rin:1';
     const chat: SceneId = 'chat:noel:2';
     // before her choice: open until she makes it, closed after
@@ -626,13 +628,13 @@ describe('town banter', () => {
     // pieces: each named one holds at least that many
     expect(banterOpen(s, id, { [id]: { pieces: { noel: 1 } } })).toBe(false);
     expect(chatOpen(s, chat, { [chat]: { pieces: { noel: 1 } } })).toBe(false);
-    s.party.roster.noel.memories = 1;
+    s = withTold(s, 'noel', 1);
     expect(banterOpen(s, id, { [id]: { pieces: { noel: 1 } } })).toBe(true);
     expect(chatOpen(s, chat, { [chat]: { pieces: { noel: 1 } } })).toBe(true);
-    s.party.roster.bobby.memories = 3;
+    s = withTold(s, 'bobby', 3);
     expect(banterOpen(s, id, { [id]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(false);   // only one of the two at three
     expect(chatOpen(s, chat, { [chat]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(false);
-    s.party.roster.chizuru.memories = 3;
+    s = withTold(s, 'chizuru', 3);
     expect(banterOpen(s, id, { [id]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(true);
     expect(chatOpen(s, chat, { [chat]: { pieces: { bobby: 3, chizuru: 3 } } })).toBe(true);
     // seen: every named scene already seen
@@ -649,7 +651,7 @@ describe('town banter', () => {
     expect(chatOpen(s, chat, { [chat]: { stage: 'act2' } })).toBe(true);
     expect(banterOpen(s, id, { [id]: { full: 'noel' } })).toBe(false);
     expect(chatOpen(s, chat, { [chat]: { full: 'noel' } })).toBe(false);
-    s.party.roster.noel.memories = chainLength('noel');
+    s = withTold(s, 'noel', chainLength('noel'));
     expect(banterOpen(s, id, { [id]: { full: 'noel' } })).toBe(true);
     expect(chatOpen(s, chat, { [chat]: { full: 'noel' } })).toBe(true);
     expect(banterOpen(s, id, { [id]: { oath: true } })).toBe(false);
@@ -913,8 +915,7 @@ describe('town banter', () => {
   });
 
   it('the second banter of a return is never the same pair as the first (Task 6 review)', () => {
-    const s = allChatsSeen(meetAll(base(), ['liz', 'scarlet', 'noel', 'safira', 'sylvie']));
-    s.party.roster.scarlet.memories = chainLength('scarlet');
+    const s = withTold(allChatsSeen(meetAll(base(), ['liz', 'scarlet', 'noel', 'safira', 'sylvie'])), 'scarlet', chainLength('scarlet'));
     s.story.nodes = ['act2', 'act3'];
     s.story.seen.push('act2', 'act3', 'banter:liz-scarlet:1');
     const banters = arrivalScenes(s, { chat: true }).filter((id) => id.startsWith('banter:'));
@@ -972,6 +973,9 @@ describe('town banter', () => {
         if (!s.party.recruited.includes(id)) continue;
         const n = pace[id].filter((d) => d <= t).length;
         s.party.roster[id].memories = id === 'hero' ? Math.min(n, 8) : n;
+        // story L plan ruling 2: until Task 6 brings the nights, a companion's piece is told the moment it is held (as it
+        // played in the labyrinth before story L). Lorne's and Rin's gates read what they hold.
+        if (id !== 'hero' && id !== 'rin') for (let k = 1; k <= n; k++) if (!s.story.seen.includes(memScene(id, k))) s.story.seen.push(memScene(id, k));
       }
       if (t >= 25 && (s.party.roster.hero.memories ?? 0) < 9) {
         s.party.roster.hero.memories = 9;
@@ -1094,7 +1098,7 @@ describe('town banter', () => {
 
 describe('the confession remembers where it was told (Task 15 review, controller ruling)', () => {
   const confessed = (heroPieces: number): GameState => {
-    let s = withMemories(base(), 'scarlet', 5);
+    let s = withTold(base(), 'scarlet', 5);
     s = withMemories(s, 'hero', heroPieces);
     s.party.roster.rin.oath = true;
     s.story.seen.push('rin-reveal', 'banter:rin-scarlet:1');
@@ -1118,5 +1122,81 @@ describe('the confession remembers where it was told (Task 15 review, controller
     const s = base();
     s.party.roster.rin.oath = true;
     expect(sceneDone(s, 'rin-confess', 'auto').story.confession).toBe('dinner');
+  });
+});
+
+describe('story L: told pieces and the met gate (Task 1)', () => {
+  it("a companion's full and pieces read the pieces told, not held", () => {
+    let s = withMemories(base(), 'safira', 2);
+    s = withTold(s, 'safira', 1);
+    expect(gateOpen(s, { pieces: { safira: 2 } })).toBe(false);
+    s = withTold(s, 'safira', 2);
+    expect(gateOpen(s, { pieces: { safira: 2 } })).toBe(true);
+    const len = chainLength('safira');
+    let f = withTold(withMemories(base(), 'safira', len), 'safira', len - 1);
+    expect(gateOpen(f, { full: 'safira' })).toBe(false);
+    expect(storyPieces(f, 'safira')).toBe(len - 1);
+    f = withTold(f, 'safira', len);
+    expect(gateOpen(f, { full: 'safira' })).toBe(true);
+  });
+
+  it('the hero and Rin read the pieces held', () => {
+    const len = chainLength('hero');
+    const s = withTold(withMemories(base(), 'hero', len), 'hero', len - 1);
+    expect(gateOpen(s, { full: 'hero' })).toBe(true);
+    expect(storyPieces(s, 'hero')).toBe(len);
+    const r = withMemories(base(), 'rin', 4);
+    expect(toldCount(r, 'rin')).toBe(0);
+    expect(gateOpen(r, { pieces: { rin: 4 } })).toBe(true);
+  });
+
+  it('the reveal still queues once Rin holds all seven, some untold', () => {
+    const s = withTold(withMemories(base(), 'rin', chainLength('rin')), 'rin', chainLength('rin') - 2);
+    expect(toldCount(s, 'rin')).toBe(chainLength('rin') - 2);
+    expect(onReturn(s).queue).toContain('rin-reveal');
+  });
+
+  it('a homecoming waits for her last piece told', () => {
+    const len = chainLength('sylvie');
+    const s = withTold(withMemories(base(), 'sylvie', len), 'sylvie', len - 1);
+    expect(onReturn(s).queue).not.toContain('home:sylvie');
+    expect(onReturn(withTold(s, 'sylvie', len)).queue).toContain('home:sylvie');
+  });
+
+  it('a met gate opens once every one named is met', () => {
+    const s = base();
+    expect(gateOpen(s, { met: ['selene', 'noel'] })).toBe(false);
+    s.party = meet(s.party, 'selene', 1);
+    expect(gateOpen(s, { met: ['selene', 'noel'] })).toBe(false);
+    s.party = meet(s.party, 'noel', 1);
+    expect(gateOpen(s, { met: ['selene', 'noel'] })).toBe(true);
+    expect(gateOpen(s, { met: [] })).toBe(true);
+  });
+
+  it('toldCount counts her memory scenes in seen, in any order', () => {
+    const s = withMemories(base(), 'noel', 3);
+    s.story.seen.push('mem:noel:1', 'mem:noel:3', 'mem:selene:2', 'chat:noel:1');
+    expect(toldCount(s, 'noel')).toBe(2);
+    expect(toldCount(base(), 'noel')).toBe(0);
+  });
+
+  it('group ids are kind group, capped at twelve, heavy', () => {
+    expect(groupScene('act2')).toBe('group:act2');
+    for (const node of ['act2', 'act3', 'act4'] as const) {
+      const id = groupScene(node);
+      expect(sceneKind(id)).toBe('group');
+      expect(lineCap(id)).toBe(12);
+      expect(heavyScene(id)).toBe(true);
+    }
+    expect(GROUP_MIN_LINES).toBe(8);
+  });
+
+  it('GROUP_GATE matches the cast table', () => {
+    expect(GROUP_GATE).toEqual({
+      'group:act2': { met: ['selene', 'noel'] },
+      'group:act3': { met: ['sylvie', 'bobby'], beforeChoice: true },
+      'group:act4': { met: ['liz', 'scarlet', 'chizuru', 'safira'] },
+    });
+    expect(REACTIONS).toEqual({});   // no group scene is written yet (Task 9-11 register them)
   });
 });
