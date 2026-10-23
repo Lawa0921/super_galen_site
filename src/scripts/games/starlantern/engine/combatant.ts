@@ -1,3 +1,4 @@
+import type { AffixId } from '../data/affixes';
 import { ROW_MELEE } from './formation';
 import type { Rng } from './rng';
 import { armorReduction, evadeChance, EVADE_MAX } from './stats';
@@ -72,6 +73,8 @@ export interface Combatant {
   frozen?: true;
   freezeGuard?: number;
   chill?: number;
+  /** The affixes it carries (an elite or a boss on a higher difficulty; data/affixes.ts), absent when none. */
+  affixes?: AffixId[];
   /**
    * The guard barrier over the party, as it stands on this member (battle.syncWards): def and res percent, who raised it,
    * and with which skill (a ledger split by skill credits what it prevents to that skill; plan 8h Task 2 review).

@@ -4,6 +4,7 @@ import { CONDITIONS, type ConditionId } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { REGIONS, type RegionId } from '../data/regions';
 import { tierOf } from '../data/difficulty';
+import type { AffixId } from '../data/affixes';
 import { ITEMS } from '../data/items';
 import { POWERS } from '../data/gear';
 import { WEAPON_KINDS, WEAPON_MASTERY_PCT, weaponKindOf } from '../data/equipment';
@@ -85,7 +86,11 @@ export type Difficulty = 'normal' | 'nightmare' | 'hell';
  * `enemyIds`). `difficulty` scales the scaled enemies (difficulty plan Task 1, `scaleEnemy`'s tier); 'normal' and none are
  * the same fight, draw for draw (`tierOf` gives null and the call is the one without a tier).
  */
-export interface BattleScale { depth: number; region: RegionId; elite?: string; condition?: ConditionId; difficulty?: Difficulty }
+export interface BattleScale {
+  depth: number; region: RegionId; elite?: string; condition?: ConditionId; difficulty?: Difficulty;
+  /** The affixes of this fight's elite, or of its boss in a boss fight (difficulty plan Task 3): drawn by the caller, applied here. */
+  affixes?: readonly AffixId[];
+}
 
 /**
  * `target` is the drawn one, which the engine plays (a taunt, a challenge or a cover turns it when the blow falls).
@@ -195,7 +200,9 @@ export function createBattle(o: {
   const enemies = enemyIds.map((id, i) => {
     const n = (seen[id] = (seen[id] ?? 0) + 1);
     const elite = !!sc && sc.elite === id && n === 1;
-    const met = !sc || !region ? ENEMIES[id] : t ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']);
+    // The affixes go on the elite, or in a boss fight on each boss (ruling 5); none drawn here.
+    const aff = sc?.affixes?.length && (elite || (o.boss && ENEMIES[id].boss)) ? sc.affixes : undefined;
+    const met = !sc || !region ? ENEMIES[id] : t || aff ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t, aff) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']);
     // An enemy is met at its level for the fight's depth (enemyLevelAt; the deep road's own extra power on top), or at
     // its own home level when the fight has no scale.
     const level = sc ? enemyLevelAt(sc.depth) : homeLevel(met);
@@ -205,7 +212,9 @@ export function createBattle(o: {
     const d = o.names?.[id] ? { ...scaled, name: o.names[id] } : scaled;
     defs[`e${i}`] = d;
     const name = counts[id] > 1 ? `${d.name} ${String.fromCharCode(64 + n)}` : d.name;
-    return fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);
+    const c = fromEnemy(d, `e${i}`, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);
+    if (aff) c.affixes = [...aff];
+    return c;
   });
   const s: BattleState = {
     round: 0, party, enemies, boss: !!o.boss, inventory: { ...o.inventory }, revealed: structuredClone(o.revealed),

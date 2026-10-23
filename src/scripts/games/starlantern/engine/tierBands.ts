@@ -8,6 +8,7 @@ import { expectedEnhance } from '../data/forge';
 import type { HeroBuild } from '../data/hero';
 import type { RegionId } from '../data/regions';
 import type { RuneTier } from '../data/runes';
+import type { AffixId } from '../data/affixes';
 import type { BattleScale, Difficulty } from './battle';
 import { depthLevel } from './levels';
 import { MAX_LEVEL, STANDARD_LINEUP } from './party';
@@ -64,7 +65,7 @@ export function tierLineup(level: number, kind: CellKind, runeTier: RuneTier | '
  * TIER_SEEDS) and the gear's enhance (default `expectedEnhance(depth)`).
  */
 export interface TierCell {
-  depth: number; region: RegionId; kind: CellKind; groups: string[][]; difficulty?: Difficulty; affixes?: readonly string[];
+  depth: number; region: RegionId; kind: CellKind; groups: string[][]; difficulty?: Difficulty; affixes?: readonly AffixId[];
   lineup: Lineup; seeds?: number; enhance?: number;
 }
 
@@ -91,12 +92,12 @@ export function measureCell(c: TierCell): TierRun {
   });
   try {
     for (const g of c.groups) {
-      const scale = {
+      const scale: BattleScale = {
         depth: c.depth, region: c.region,
         ...(c.kind === 'elite' ? { elite: g[0] } : {}),
         ...(c.difficulty ? { difficulty: c.difficulty } : {}),
         ...(c.affixes ? { affixes: c.affixes } : {}),
-      } as BattleScale;   // TODO(difficulty plan Task 3): drop the cast once BattleScale carries `affixes` (T0-T1 review, minor 3).
+      };
       for (let k = 1; k <= seeds; k++) {
         const r = simBattle(structuredClone(kit), g, c.kind === 'boss', k * 7919, scale, undefined, 'skill', c.lineup.abyss, undefined, { policies });
         n++;

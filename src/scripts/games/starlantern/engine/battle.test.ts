@@ -1192,3 +1192,30 @@ describe('region riders in a fight (difficulty plan Task 2)', () => {
     expect(normal.every((s) => s.party.every((c) => c.chill === undefined))).toBe(true);
   });
 });
+
+describe('affixes in a fight (difficulty plan Task 3)', () => {
+  it('affixes land on the elite and the boss only', () => {
+    const party = partyAt(38, {}, 10);
+    const start = (o: { enemyIds: string[]; boss?: boolean; elite?: string; affixes?: ('tough' | 'scorch' | 'swift')[] }) =>
+      createBattle({ party, enemyIds: o.enemyIds, boss: o.boss, inventory: {}, revealed: {}, scale: { depth: 10, region: 'mainline', difficulty: 'nightmare', ...(o.elite ? { elite: o.elite } : {}), ...(o.affixes ? { affixes: o.affixes } : {}) } });
+    // An elite fight with 堅韌: only e0 (the elite) carries it, with more HP; its guards none.
+    const plainElite = start({ enemyIds: ['wolf', 'wolf', 'bat'], elite: 'wolf' });
+    const toughElite = start({ enemyIds: ['wolf', 'wolf', 'bat'], elite: 'wolf', affixes: ['tough'] });
+    expect(toughElite.enemies.map((e) => e.affixes)).toEqual([['tough'], undefined, undefined]);
+    expect(toughElite.enemies[0].max.hp).toBeGreaterThan(plainElite.enemies[0].max.hp);
+    expect(toughElite.enemies.slice(1)).toEqual(plainElite.enemies.slice(1));
+    expect(toughElite.enemyDefs!.e0.skills).toEqual(plainElite.enemyDefs!.e0.skills);
+    // A boss fight with two: the Lantern-eater carries both, its skill leading.
+    const boss = start({ enemyIds: ['lanterneater'], boss: true, affixes: ['scorch', 'swift'] });
+    expect(boss.enemies[0].affixes).toEqual(['scorch', 'swift']);
+    expect(boss.enemyDefs!.e0.skills[0].name).toBe('灼擊');
+    // Affixes with no elite in a plain fight land on no one; a fight without them has the field on no enemy.
+    expect(start({ enemyIds: ['wolf', 'bat'], affixes: ['tough'] }).enemies.every((e) => !('affixes' in e))).toBe(true);
+    expect(plainElite.enemies.every((e) => !('affixes' in e))).toBe(true);
+    // The affixes on the combatant are a copy.
+    const list: ('tough' | 'scorch' | 'swift')[] = ['tough'];
+    const b = start({ enemyIds: ['wolf'], elite: 'wolf', affixes: list });
+    list.push('swift');
+    expect(b.enemies[0].affixes).toEqual(['tough']);
+  });
+});

@@ -11,6 +11,7 @@ import { mulberry32 } from './rng';
 import { DEEP_ENEMIES, deepPower, enemyLevelAt, homeLevel, BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
 import { constRng, fullParty } from './testing';
 import { TIERS } from '../data/difficulty';
+import { AFFIXES } from '../data/affixes';
 import { rewardGrowth } from './scaling';
 
 const MAIN = REGIONS.mainline;
@@ -505,5 +506,42 @@ describe('region riders (difficulty plan Task 2)', () => {
     }
     // The region's own data is untouched.
     expect(REGIONS.frost.skill!.effects.some((e) => e.kind === 'inflict' && e.status === 'freeze')).toBe(false);
+  });
+});
+
+describe('affixes in scaleEnemy (difficulty plan Task 3)', () => {
+  const plain = CONDITIONS.plain;
+  const boss = ENEMIES.lanterneater;
+
+  it('affixes as plain fields', () => {
+    const night = TIERS.nightmare;
+    const base = scaleEnemy(wolf, 10, MAIN, false, plain, night);
+    // 堅韌: hp x1.4 before compensation (one more rounding than the tier's), 1.25 on a boss; nothing else moves.
+    const tough = scaleEnemy(wolf, 10, MAIN, false, plain, night, ['tough']);
+    // By hand: pre-compensation 969 (the tier's) x1.4 = 1357 (1356.6), x0.877888 = 1191.
+    expect(tough.stats.hp).toBe(1191);
+    expect({ ...tough.stats, hp: 0 }).toEqual({ ...base.stats, hp: 0 });
+    expect(tough.skills).toEqual(base.skills);
+    const bossBase = scaleEnemy(boss, 10, MAIN, false, plain, night);
+    const bossTough = scaleEnemy(boss, 10, MAIN, false, plain, night, ['tough']);
+    expect(bossTough.stats.hp / bossBase.stats.hp).toBeCloseTo(AFFIXES.tough.bossHp!, 2);
+    // 迅捷: spd x1.25.
+    const swift = scaleEnemy(wolf, 10, MAIN, false, plain, night, ['swift']);
+    expect(swift.stats.spd).toBe(Math.round(base.stats.spd * 1.25));
+    expect({ ...swift.stats, spd: 0 }).toEqual({ ...base.stats, spd: 0 });
+    // 灼熱: 灼擊 leads (ruling 4), at its own chance (not raised by the tier); her own skill and the region's after it.
+    const blaze = scaleEnemy(wolf, 10, REGIONS.blaze, false, plain, night, ['scorch']);
+    const plainBlaze = scaleEnemy(wolf, 10, REGIONS.blaze, false, plain, night);
+    expect(blaze.skills[0]).toEqual(AFFIXES.scorch.skill);
+    expect(blaze.skills[0].chance).toBe(0.35);
+    expect(blaze.skills.slice(1)).toEqual(plainBlaze.skills);
+    // Two: both skills lead, in the order given.
+    const two = scaleEnemy(wolf, 10, MAIN, false, plain, TIERS.hell, ['rend', 'frostbind']);
+    expect(two.skills.slice(0, 2).map((k) => k.name)).toEqual([AFFIXES.rend.skill!.name, AFFIXES.frostbind.skill!.name]);
+    // The data is untouched.
+    expect(AFFIXES.scorch.skill!.chance).toBe(0.35);
+    // No affixes, or an empty list: as without.
+    expect(scaleEnemy(wolf, 10, MAIN, false, plain, night, [])).toEqual(base);
+    expect(scaleEnemy(wolf, 10, MAIN, false, plain, null, [])).toEqual(scaleEnemy(wolf, 10, MAIN, false, plain));
   });
 });
