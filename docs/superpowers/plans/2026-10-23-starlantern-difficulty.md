@@ -294,6 +294,11 @@
 - [ ] **Step 2：執行，看哪些紅**：兩個難度帶到 `bands-5b-0-*.stdout`。
 - [ ] **Step 3：調整到全綠**：槓桿照順序——`TIERS` 的 hp／atk → `chanceMul`／`chanceCap` → `rider` → `AFFIXES` 的數字。**不准**動普通的任何常數、`TIERS.normal`、掉落欄位、符文、build、角色；不准改門檻。每一輪（改一次、跑一次兩個帶）在 `retune.md` 記：改了什麼，以及**N1 與 N4 並排**的一張表（每格 N1 的 rate／loss 與同格 N4 的 rate／loss），再加其他帶的前後數字；最多 4 輪。N1 與 N4 往相反方向拉扯、4 輪內收不攏，或仍有其他紅 → 停下來回報 BLOCKED，附 `retune.md` 與建議（交給控制者，不自行改門檻）。**（控制者裁定，Task 0b 後加）**：每一輪的表也列出群戰的符文差距（Task 5a 的報告）；N4 的群戰部分不過時，第一個槓桿是該難度的敵人 HP（`TIERS.<tier>.hp`，拉長群戰），仍守 4 輪上限。
 - [ ] **Step 4：確認通過**：兩個難度帶全綠；`data/difficulty.test.ts` 的 `higher tiers only ever ask more` 仍綠。
+
+> **【控制者裁定 2026-10-23】Task 5b 第一次 BLOCKED 之後（上面的 Step 1–6 原文保留；以本段為準）**：全文與理由見 spec §6.2 末的同名裁定。摘要：
+> - 斷言只留：N1（第 10–25 層每層合併：勝率 ≥ .90、失血 > 普通雙胞胎）、N2、N3（第 15–25 層每層詞綴合併：勝率 ≥ .80、失血 > 普通雙胞胎）、N4（只頭目、第 15–25 層：不裝符文 ≤ .70 且 ≤ 魔法階 − .20）、N5、N6、H1（第 20–25 層：稀有階 ≥ .85、失血 > 噩夢雙胞胎）、H2（第 25 層：稀有階＋觸發或常駐組合 ≥ .75、失血 > 噩夢雙胞胎）、H3（第 25 層頭目不裝符文 ≤ .40）、H4、HX、新的 HE（地獄菁英第 20、25 層：每層合併 ≥ .75、任一詞綴組合 ≥ .40）。其他舊格子只報告，含群戰的符文差距。
+> - 新槓桿 `TIERS.crowdAffixChance`（普通、噩夢 0，地獄起始 .5）：地獄一般群戰有這個機率讓一隻敵人帶一個詞綴；`rollCrowdAffix(seed, depth, at, chance)` 走 `AFFIX_SALT` 以位置為鍵的串流；`BattleScale.crowdAffix`，`createBattle` 只在 tier 的 `crowdAffixChance > 0`、不是菁英戰也不是頭目戰時套用。先寫測試（TDD）：普通與噩夢一律不套、同一格永遠同一個結果（逃跑再回來）；遊戲流程那一則併入 Task 6a 的待辦。
+> - 允許的槓桿：`TIERS` 的 hp、atk、發動率、`crowdAffixChance`；`AFFIXES` 的數字；詞綴排除清單 `AFFIX_EXCLUDE`（`rollAffixes` 與平衡帶的組合都照它）。新的 4 輪預算；順序：先 commit 改過的 spec、plan、平衡帶程式（斷言可以是紅的），再調，每輪寫進 `retune.md`（所有斷言格＋只報告的群戰差距）。4 輪後仍紅 → BLOCKED。
 - [ ] **Step 5：收尾 G**（`gate-5b` against `gate-5a`＋`cmp`；難度帶 `bands-5b-*.stdout`）。
 - [ ] **Step 6：commit**：`test(starlantern): tier bands — magic runes beat Nightmare, the bare default does not, odd lineups hold, Hell needs rare and a trigger, no affix is a death sentence, the party never freezes`（內文附 `retune.md` 的最後一列）。
 
@@ -328,6 +333,8 @@
 - [ ] **Step 6：commit**：`feat(starlantern): a run has a tier — chosen in town, unlocked by progress; story fights stay Normal; affixes keyed by the spot`。
 
 > **待辦（T2–T3 審查 Important 1，Task 3 後加；Task 6a 實作）**：Task 3 的 `rollAffixes has no counter` 只證明抽法沒有計數器，沒有真的逃跑。Task 6a 加一則遊戲流程測試 `fleeing and coming back keeps the affixes (game flow)`：`depart` 到噩夢、走上菁英格、`submitRound({ kind: 'escape' })` 斷言 `fled`、再踩回同一格，比對兩場的 `enemies[].affixes` 相同；另加存檔／讀檔一則（存檔、讀回、走到同一格，詞綴相同；可併入 Task 6b 的 `a reload departs into the same affixes`）。
+
+> **待辦（Task 5b 控制者裁定 2026-10-23 後加；Task 6a 實作）**：地獄的一般群戰在 `startBattle` 帶 `scale.crowdAffix = rollCrowdAffix(run.seed, floor, this.pos, TIERS[t].crowdAffixChance)`（菁英、頭目、劇情戰不帶）；同一則遊戲流程測試也比對群戰：地獄一般群戰逃跑、再在同一格觸發，`enemies[].affixes` 相同；存檔／讀檔同理。
 
 ### Task 6a′: 掉落與擊殺鍵接線
 

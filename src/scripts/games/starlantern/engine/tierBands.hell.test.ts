@@ -1,17 +1,18 @@
 /**
- * The Hell bands (spec §6.2 H1–H4, difficulty plan Task 5a): rare runes with a trigger or 常駐 win Hell; Nightmare's magic
- * and the bare default do not; no boss falls inside three rounds even to the epic ceiling. Opt-in (BANDS=1, npm run
- * test:starlantern:bands -- tierBands.hell); every number reported with BALANCE_REPORT set, one `[hell]` line a cell, then
- * the crowd gap of each depth (rare and magic against bare) and the Hell elites (report only).
+ * The Hell bands (spec §6.2 with the controller ruling of 2026-10-23): rare runes with a trigger or 常駐 combo win the
+ * Hell boss at d25 and the crowds at d20–25, each harder than on Nightmare; the bare default does not win the boss; the
+ * Hell elites are no wall; no boss falls inside three rounds even to the epic ceiling. d30 and the magic tier are reported
+ * only. Opt-in (BANDS=1, npm run test:starlantern:bands -- tierBands.hell); every number reported with BALANCE_REPORT set:
+ * one `[hell]` line a cell, the pooled lines of each band, then the crowd gap of each depth (rare and magic against bare).
  */
 import { describe, expect, it } from 'vitest';
-import { HELL_BANDS, bandCells, bandLine, gapLine, hellEliteCells, measureBand, measureCells, pooled } from './tierBands';
+import { HELL_BANDS, bandCells, bandLine, bandMisses, frozenMisses, gapLine, measureBand, pooled, pooledLines } from './tierBands';
 
 const on = process.env.BANDS === '1';
 const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0';
 const say = (line: string) => { if (report) console.info(`[hell] ${line}`); };
 
-describe.skipIf(!on)('the Hell bands (difficulty plan Task 5a)', () => {
+describe.skipIf(!on)('the Hell bands (difficulty plan Tasks 5a-5b)', () => {
   it('reports every tier band number', () => {
     for (const band of HELL_BANDS) {
       const runs = measureBand(band);
@@ -20,8 +21,9 @@ describe.skipIf(!on)('the Hell bands (difficulty plan Task 5a)', () => {
         expect(m.run.fights, `${band} ${m.cell.label}`).toBeGreaterThan(0);
       }
       say(bandLine(band, 'all', pooled(runs.map((m) => m.run)), pooled(runs.map((m) => m.twin))));
+      for (const line of pooledLines(band, measureBand)) say(line);
     }
-    // The crowd gap a depth: H1 (rare) and H3's magic crowd cells against H3's bare ones, every group of the floor pooled.
+    // The crowd gap a depth (report only): H1 (rare) and H3's magic crowd cells against H3's bare ones, every group pooled.
     const h3 = measureBand('H3');
     const crowd = bandCells('H1').length;
     for (const d of [20, 25, 30]) {
@@ -30,7 +32,29 @@ describe.skipIf(!on)('the Hell bands (difficulty plan Task 5a)', () => {
       say(gapLine(d, bare, at(measureBand('H1')), 'rare'));
       say(gapLine(d, bare, at(h3.slice(0, crowd)), 'magic'));
     }
-    // The Hell elites, report only (no band holds them): every group at 25 with each pair of affixes.
-    for (const m of measureCells(hellEliteCells())) say(bandLine('HE', m.cell.label!, m.run, m.twin));
+  }, 3_000_000);
+
+  it('H1 Hell crowds are won with rare runes, harder than Nightmare', () => {
+    expect(bandMisses('H1', measureBand)).toEqual([]);
+  }, 3_000_000);
+
+  it('H2 the Hell boss falls to rare runes with a trigger or lasting combo, harder than Nightmare', () => {
+    expect(bandMisses('H2', measureBand)).toEqual([]);
+  }, 3_000_000);
+
+  it('H3 the bare default loses the Hell boss', () => {
+    expect(bandMisses('H3', measureBand)).toEqual([]);
+  }, 3_000_000);
+
+  it('H4 no boss falls inside three rounds', () => {
+    expect(bandMisses('H4', measureBand)).toEqual([]);
+  }, 3_000_000);
+
+  it('HE no Hell elite is a wall', () => {
+    expect(bandMisses('HE', measureBand)).toEqual([]);
+  }, 3_000_000);
+
+  it('HX the party is never frozen', () => {
+    expect(HELL_BANDS.flatMap((b) => frozenMisses(b, measureBand(b)))).toEqual([]);
   }, 3_000_000);
 });

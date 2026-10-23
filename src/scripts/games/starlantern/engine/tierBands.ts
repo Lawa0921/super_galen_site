@@ -9,7 +9,8 @@ import { ENHANCE_MAX, expectedEnhance } from '../data/forge';
 import type { HeroBuild } from '../data/hero';
 import type { RegionId } from '../data/regions';
 import { RUNES, type RuneTier } from '../data/runes';
-import { AFFIX_IDS, type AffixId } from '../data/affixes';
+import { AFFIX_EXCLUDE, AFFIX_IDS, type AffixId } from '../data/affixes';
+import { tierOf } from '../data/difficulty';
 import type { BattleScale, Difficulty } from './battle';
 import { depthLevel } from './levels';
 import { MAX_LEVEL, STANDARD_LINEUP } from './party';
@@ -17,6 +18,7 @@ import { encounterTable } from './scaling';
 import { parityLineups } from './parity';
 import { ODD_LINEUPS, kitParty, lineupPolicies, setSimTrace, simBattle, type Lineup } from './sim';
 import { socketCount } from './sockets';
+import { rollCrowdAffix } from './tiers';
 import type { CharacterId, Rarity } from './types';
 
 /** What a cell is: a crowd of an encounter group, the same group with its first foe an elite, or the floor's boss. */
@@ -92,13 +94,14 @@ export function measureCell(c: TierCell): TierRun {
   const level = Math.min(MAX_LEVEL, depthLevel(c.depth));
   const kit = kitParty(level, c.depth, 1, c.rarity, c.enhance ?? expectedEnhance(c.depth), { ...c.lineup, expect: true });
   const policies = lineupPolicies(c.lineup);
+  const crowdChance = tierOf(c.difficulty)?.crowdAffixChance ?? 0;
   let wins = 0, loss = 0, rounds = 0, minRounds = Infinity, frozen = 0, n = 0;
   const prev = setSimTrace({
     round(_a, _before, after) { if (after.party.some((p) => p.frozen)) frozen++; },
     end() {},
   });
   try {
-    for (const g of c.groups) {
+    for (const [gi, g] of c.groups.entries()) {
       const scale: BattleScale = {
         depth: c.depth, region: c.region,
         ...(c.kind === 'elite' ? { elite: g[0] } : {}),
@@ -106,7 +109,9 @@ export function measureCell(c: TierCell): TierRun {
         ...(c.affixes ? { affixes: c.affixes } : {}),
       };
       for (let k = 1; k <= seeds; k++) {
-        const r = simBattle(structuredClone(kit), g, c.kind === 'boss', k * 7919, scale, undefined, 'skill', c.lineup.abyss, undefined, { policies });
+        // Hell's crowd affix (controller ruling 2026-10-23), drawn as the game draws it, the group and seed as the spot.
+        const ca = crowdChance > 0 && c.kind === 'crowd' ? rollCrowdAffix(k * 7919, c.depth, { x: gi, y: k }, crowdChance) : undefined;
+        const r = simBattle(structuredClone(kit), g, c.kind === 'boss', k * 7919, ca ? { ...scale, crowdAffix: ca } : scale, undefined, 'skill', c.lineup.abyss, undefined, { policies });
         n++;
         loss += r.hpLoss;
         rounds += r.rounds;
@@ -184,11 +189,11 @@ export const feasibilityLine = (r: FeasibleRow): string =>
   + `rounds ${r.bare.rounds.toFixed(2)}->${r.magic.rounds.toFixed(2)} (ratio ${(r.bare.rounds ? r.magic.rounds / r.bare.rounds : 0).toFixed(3)}) `
   + `${r.gated ? (r.ok ? 'ok' : 'FAIL') : 'reported'}`;
 
-/** The bands of the higher difficulties (spec §6.2): N1–N6 Nightmare, H1–H4 Hell. */
-export type BandId = 'N1' | 'N2' | 'N3' | 'N4' | 'N5' | 'N6' | 'H1' | 'H2' | 'H3' | 'H4';
+/** The bands of the higher difficulties (spec §6.2 and its controller ruling of 2026-10-23): N1–N6 Nightmare, H1–H4 and HE Hell. */
+export type BandId = 'N1' | 'N2' | 'N3' | 'N4' | 'N5' | 'N6' | 'H1' | 'H2' | 'H3' | 'H4' | 'HE';
 export const NIGHTMARE_BANDS = ['N1', 'N2', 'N3', 'N4', 'N5', 'N6'] as const;
-export const HELL_BANDS = ['H1', 'H2', 'H3', 'H4'] as const;
-/** The seeds of a Hell boss cell (spec §6.2 H2, H4: ten fights a pair of affixes). */
+export const HELL_BANDS = ['H1', 'H2', 'H3', 'H4', 'HE'] as const;
+/** The seeds of a Hell boss or elite cell (spec §6.2 H2, H4: ten fights a pair of affixes). */
 export const HELL_BOSS_SEEDS = 10;
 /** The regions with a rider (data/regions.ts REGION_RIDER), as N6 measures them. */
 export const RIDER_REGIONS: readonly RegionId[] = ['blaze', 'frost', 'storm', 'shade', 'iron'];
@@ -196,9 +201,10 @@ export const RIDER_REGIONS: readonly RegionId[] = ['blaze', 'frost', 'storm', 's
 const levelAt = (depth: number): number => Math.min(MAX_LEVEL, depthLevel(depth));
 const tierName = (l: Lineup): string => l.runeTier ?? 'bare';
 
-/** Every pair of different affixes, in AFFIX_IDS order (15). */
+/** Every pair of different affixes that may meet (AFFIX_EXCLUDE left out), in AFFIX_IDS order. */
 export const AFFIX_PAIRS: readonly (readonly [AffixId, AffixId])[] =
-  AFFIX_IDS.flatMap((a, i) => AFFIX_IDS.slice(i + 1).map((b) => [a, b] as const));
+  AFFIX_IDS.flatMap((a, i) => AFFIX_IDS.slice(i + 1).map((b) => [a, b] as const))
+    .filter(([a, b]) => !AFFIX_EXCLUDE.some(([x, y]) => (x === a && y === b) || (x === b && y === a)));
 
 /** Every group of the main road at `depth`, one a cell (a crowd, or with `elite` its first foe an elite). */
 function groupCells(depth: number, kind: 'crowd' | 'elite', difficulty: Difficulty, tier: RuneTier, affixes?: readonly AffixId[]): TierCell[] {
@@ -229,6 +235,20 @@ function atTier(c: TierCell, tier: RuneTier): TierCell {
 }
 
 /**
+ * The lineup with a trigger or 常駐 combo (controller ruling 2026-10-23, H2): as it is when it already has one; else the
+ * first member in party order with a rune build that sockets one at `level` wears her first such build (the standard
+ * five's boss lineup: Chizuru on 穩守).
+ */
+export function withTrigger(l: Lineup, level: number): Lineup {
+  if (hasTriggerOrLasting(l, level)) return l;
+  for (const id of l.ids ?? STANDARD_LINEUP) {
+    const b = BUILDS[id].find((x) => x.key !== 'standard' && (x.minLevel ?? 0) <= level && hasTriggerOrLasting({ build: { [id]: x.key } }, level));
+    if (b) return { ...l, build: { ...l.build, [id]: b.key }, ...(id === 'hero' ? { heroBuild: b.hero ?? 'balanced' } : {}) };
+  }
+  return l;
+}
+
+/**
  * H4's lineup: `owner` on her build `key` in her parity lineup (where band 14 and the rune bands' ceiling field her), every
  * other member on her boss build (ruling 12), all at the epic tier; the hero's `heroBuild` the `hero` of the build he wears.
  */
@@ -240,12 +260,12 @@ function ceilingLineup(owner: CharacterId, key: string): Lineup {
   return { ...base, build, heroBuild };
 }
 
-/** The cells of a band (spec §6.2; difficulty plan Task 5a, rulings 12–14). */
+/** The cells of a band (spec §6.2; difficulty plan Task 5a, rulings 12–14; the controller ruling of 2026-10-23). */
 export function bandCells(band: BandId): TierCell[] {
   switch (band) {
     case 'N1': return [10, 15, 20, 25].flatMap((d) => groupCells(d, 'crowd', 'nightmare', 'magic'));
     case 'N2': return [10, 20].flatMap((d) => AFFIX_IDS.flatMap((a) => groupCells(d, 'elite', 'nightmare', 'magic', [a])));
-    case 'N3': return [10, 20, 25].flatMap((d) => AFFIX_IDS.map((a) => bossCell(d, 'nightmare', 'magic', [a])));
+    case 'N3': return [10, 15, 20, 25].flatMap((d) => AFFIX_IDS.map((a) => bossCell(d, 'nightmare', 'magic', [a])));
     case 'N4': return [...bandCells('N1'), ...bandCells('N3')].map(bareOf);
     case 'N5': return Object.entries(ODD_LINEUPS).flatMap(([name, odd]) => odd.regions.map((region): TierCell => ({
       depth: 15, region, kind: 'crowd', groups: encounterTable(region, 15), difficulty: 'nightmare',
@@ -257,7 +277,10 @@ export function bandCells(band: BandId): TierCell[] {
       lineup: tierLineup(levelAt(depth), 'crowd', 'magic'), label: `d${depth} ${region} crowd magic`,
     })));
     case 'H1': return [20, 25, 30].flatMap((d) => groupCells(d, 'crowd', 'hell', 'rare'));
-    case 'H2': return [25, 30].flatMap((d) => AFFIX_PAIRS.map((p) => bossCell(d, 'hell', 'rare', p, HELL_BOSS_SEEDS)));
+    case 'H2': return [25, 30].flatMap((d) => AFFIX_PAIRS.map((p) => {
+      const c = bossCell(d, 'hell', 'rare', p, HELL_BOSS_SEEDS);
+      return { ...c, lineup: withTrigger(c.lineup, levelAt(d)) };
+    }));
     case 'H3': {
       const cells = [...bandCells('H1'), ...bandCells('H2')];
       return [...cells.map((c) => atTier(c, 'magic')), ...cells.map(bareOf)];
@@ -267,6 +290,7 @@ export function bandCells(band: BandId): TierCell[] {
         ...bossCell(d, 'hell', 'epic', p, HELL_BOSS_SEEDS), lineup: ceilingLineup(owner, b.key), rarity: 'rare', enhance: ENHANCE_MAX,
         label: `d${d} boss [${p.join('+')}] epic ${owner}:${b.key}`,
       })))));
+    case 'HE': return [20, 25].flatMap((d) => AFFIX_PAIRS.flatMap((p) => groupCells(d, 'elite', 'hell', 'rare', p).map((c) => ({ ...c, seeds: HELL_BOSS_SEEDS }))));
   }
 }
 
@@ -288,16 +312,30 @@ export function normalTwin(c: TierCell): TierCell {
   return rest;
 }
 
-const twinRuns = new Map<string, TierRun>();
+/**
+ * A Hell cell's twins on Nightmare (controller ruling 2026-10-23): the same lineup and seeds at Nightmare; a crowd as it is
+ * (Nightmare crowds wear no affix), a boss's pair [a, b] as the two Nightmare cells [a] and [b] (over every pair, each
+ * affix weighs the same).
+ */
+export function nightmareTwins(c: TierCell): TierCell[] {
+  const { label: _l, ...rest } = c;
+  if (!c.affixes?.length) return [{ ...rest, difficulty: 'nightmare' }];
+  return c.affixes.map((a) => ({ ...rest, difficulty: 'nightmare' as const, affixes: [a] }));
+}
 
-/** `normalTwin(c)` measured once a twin (cells that differ only in their affixes share one). */
-export function measureTwin(c: TierCell): TierRun {
-  const { label: _l, ...t } = normalTwin(c);
+const cellRuns = new Map<string, TierRun>();
+
+/** A cell measured once (its label aside): twins shared between cells are run once. */
+function measureOnce(c: TierCell): TierRun {
+  const { label: _l, ...t } = c;
   const key = JSON.stringify(t);
-  let run = twinRuns.get(key);
-  if (!run) twinRuns.set(key, (run = measureCell(t)));
+  let run = cellRuns.get(key);
+  if (!run) cellRuns.set(key, (run = measureCell(t)));
   return run;
 }
+
+/** `normalTwin(c)` measured once a twin (cells that differ only in their affixes share one). */
+export const measureTwin = (c: TierCell): TierRun => measureOnce(normalTwin(c));
 
 /** Runs pooled as one: rate, HP lost and rounds weighted by fights; the fewest rounds and the frozen rounds over all. */
 export function pooled(runs: readonly TierRun[]): TierRun {
@@ -318,22 +356,156 @@ export const bandLine = (band: string, label: string, r: TierRun, twin: TierRun)
 export const gapLine = (depth: number, bare: TierRun, built: TierRun, tier: string): string =>
   `gap ${tier}-vs-bare ${feasibilityLine({ depth, kind: 'crowd', bare, magic: built, ok: false, gated: false })}`;
 
-/** A Hell elite at the depth, with each pair of affixes (report only: the T2–T3 review's 堅韌 elite, about 5.5x HP). */
-export function hellEliteCells(depth = 25): TierCell[] {
-  return AFFIX_PAIRS.flatMap((p) => groupCells(depth, 'elite', 'hell', 'rare', p).map((c) => ({ ...c, seeds: HELL_BOSS_SEEDS })));
-}
-
-/** One cell measured, with its Normal twin. */
-export interface BandRun { cell: TierCell; run: TierRun; twin: TierRun }
+/** One cell measured, with its Normal twin, and for H1 and H2 its Nightmare twins pooled. */
+export interface BandRun { cell: TierCell; run: TierRun; twin: TierRun; nightmare?: TierRun }
 
 const bandRuns = new Map<BandId, BandRun[]>();
 
-/** Every cell of `cells` measured, each with its twin. */
-export const measureCells = (cells: readonly TierCell[]): BandRun[] => cells.map((cell) => ({ cell, run: measureCell(cell), twin: measureTwin(cell) }));
+/** Every cell of `cells` measured, each with its twin (and with `nightmare`, its Nightmare twins pooled). */
+export const measureCells = (cells: readonly TierCell[], nightmare = false): BandRun[] => cells.map((cell) => ({
+  cell, run: measureOnce(cell), twin: measureTwin(cell), ...(nightmare ? { nightmare: pooled(nightmareTwins(cell).map(measureOnce)) } : {}),
+}));
 
-/** Every cell of a band measured, with its twin; once a band (a file's tests share it). */
+/** Every cell of a band measured, with its twins; once a band (a file's tests share it). */
 export function measureBand(band: BandId): BandRun[] {
   let runs = bandRuns.get(band);
-  if (!runs) bandRuns.set(band, (runs = measureCells(bandCells(band))));
+  if (!runs) bandRuns.set(band, (runs = measureCells(bandCells(band), band === 'H1' || band === 'H2')));
   return runs;
+}
+
+/**
+ * The bands' thresholds (spec §6.2 with the controller ruling of 2026-10-23; Task 5b may not move them). Each asserted
+ * band pools its cells a depth (`depths`): N1 every crowd group, N3 every affix, N4 the bare bosses against N3 at the same
+ * depth, H1 every crowd group, H2 every pair, H3 the bare bosses, HE every group and pair. "Harder than" is a pooled HP
+ * lost strictly above the twin's (N1, N3: Normal; H1, H2: Nightmare). Cells at other depths are reported only.
+ */
+export const TIER_BANDS = {
+  N1: { depths: [10, 15, 20, 25], rate: 0.90 },
+  N2: { rate: 0.80, belowMean: 0.15 },
+  N3: { depths: [15, 20, 25], rate: 0.80 },
+  N4: { depths: [15, 20, 25], bareRate: 0.70, belowMagic: 0.20 },
+  N5: { rate: 0.75 },
+  N6: { rate: 0.80 },
+  H1: { depths: [20, 25], rate: 0.85 },
+  H2: { depths: [25], rate: 0.75 },
+  H3: { depths: [25], bareRate: 0.40 },
+  H4: { minRounds: 3 },
+  HE: { depths: [20, 25], rate: 0.75, pairFloor: 0.40 },
+} as const;
+
+const f3 = (x: number): string => x.toFixed(3);
+const at = (runs: readonly BandRun[], depth: number, kind?: CellKind) => runs.filter((m) => m.cell.depth === depth && (!kind || m.cell.kind === kind));
+/** The runs pooled: the cells', their Normal twins', their Nightmare twins'. */
+export const poolOf = (runs: readonly BandRun[]) => ({
+  run: pooled(runs.map((m) => m.run)), twin: pooled(runs.map((m) => m.twin)),
+  nightmare: pooled(runs.flatMap((m) => (m.nightmare ? [m.nightmare] : []))),
+});
+
+/**
+ * What a band misses of TIER_BANDS, one line a miss (empty when the band holds). `runsOf` gives a band's runs (N4 reads
+ * N3's at the same depth).
+ */
+export function bandMisses(band: BandId, runsOf: (b: BandId) => readonly BandRun[]): string[] {
+  const out: string[] = [];
+  const runs = runsOf(band);
+  const harder = (d: number, p: ReturnType<typeof poolOf>, vs: 'normal' | 'nightmare') => {
+    const t = vs === 'normal' ? p.twin : p.nightmare;
+    if (!(p.run.hpLoss > t.hpLoss)) out.push(`${band} d${d}: loss ${f3(p.run.hpLoss)} not above the ${vs} twin's ${f3(t.hpLoss)}`);
+  };
+  switch (band) {
+    case 'N1': case 'N3': case 'H1': case 'H2': {
+      const t = TIER_BANDS[band];
+      for (const d of t.depths) {
+        const p = poolOf(at(runs, d));
+        if (p.run.rate < t.rate) out.push(`${band} d${d}: rate ${f3(p.run.rate)} < ${t.rate}`);
+        harder(d, p, band[0] === 'N' ? 'normal' : 'nightmare');
+      }
+      break;
+    }
+    case 'N2': {
+      const t = TIER_BANDS.N2;
+      for (const depth of [...new Set(runs.map((m) => m.cell.depth))]) {
+        const here = at(runs, depth);
+        const by = AFFIX_IDS.map((a) => ({ a, r: pooled(here.filter((m) => m.cell.affixes?.[0] === a).map((m) => m.run)) }));
+        const mean = by.reduce((s, x) => s + x.r.rate, 0) / by.length;
+        for (const { a, r } of by) {
+          if (r.rate < t.rate) out.push(`N2 d${depth} [${a}]: rate ${f3(r.rate)} < ${t.rate}`);
+          if (r.rate < mean - t.belowMean) out.push(`N2 d${depth} [${a}]: rate ${f3(r.rate)} below the mean ${f3(mean)} by more than ${t.belowMean}`);
+        }
+      }
+      break;
+    }
+    case 'N4': {
+      const t = TIER_BANDS.N4;
+      for (const d of t.depths) {
+        const bare = pooled(at(runs, d, 'boss').map((m) => m.run));
+        const magic = pooled(at(runsOf('N3'), d).map((m) => m.run));
+        if (bare.rate > t.bareRate) out.push(`N4 d${d}: bare rate ${f3(bare.rate)} > ${t.bareRate}`);
+        if (bare.rate > magic.rate - t.belowMagic) out.push(`N4 d${d}: bare rate ${f3(bare.rate)} not ${t.belowMagic} under magic's ${f3(magic.rate)}`);
+      }
+      break;
+    }
+    case 'N5': case 'N6': {
+      const t = TIER_BANDS[band];
+      for (const m of runs) if (m.run.rate < t.rate) out.push(`${band} ${m.cell.label}: rate ${f3(m.run.rate)} < ${t.rate}`);
+      break;
+    }
+    case 'H3': {
+      const t = TIER_BANDS.H3;
+      for (const d of t.depths) {
+        const bare = pooled(at(runs, d, 'boss').filter((m) => !m.cell.lineup.runeTier).map((m) => m.run));
+        if (bare.rate > t.bareRate) out.push(`H3 d${d}: bare boss rate ${f3(bare.rate)} > ${t.bareRate}`);
+      }
+      break;
+    }
+    case 'H4': {
+      for (const m of runs) if (m.run.minRounds < TIER_BANDS.H4.minRounds) out.push(`H4 ${m.cell.label}: a fight of ${m.run.minRounds} rounds < ${TIER_BANDS.H4.minRounds}`);
+      break;
+    }
+    case 'HE': {
+      const t = TIER_BANDS.HE;
+      for (const d of t.depths) {
+        const here = at(runs, d);
+        const p = pooled(here.map((m) => m.run));
+        if (p.rate < t.rate) out.push(`HE d${d}: rate ${f3(p.rate)} < ${t.rate}`);
+        for (const pair of AFFIX_PAIRS) {
+          const r = pooled(here.filter((m) => m.cell.affixes?.join('+') === pair.join('+')).map((m) => m.run));
+          if (r.fights && r.rate < t.pairFloor) out.push(`HE d${d} [${pair.join('+')}]: rate ${f3(r.rate)} < ${t.pairFloor}`);
+        }
+      }
+      break;
+    }
+  }
+  return out;
+}
+
+/** HX (spec §6.2): every cell whose party spent a round frozen, one line a cell. */
+export const frozenMisses = (band: string, runs: readonly BandRun[]): string[] =>
+  runs.filter((m) => m.run.partyFrozen !== 0).map((m) => `${band} ${m.cell.label}: frozen ${m.run.partyFrozen}`);
+
+/**
+ * The pooled lines of a band's asserted depths, for the report: `<band> d<D> pooled rate <a> loss <b> (normal loss <n>[,
+ * nightmare loss <m>])`; N4 and H3 their bare bosses, HE every pair's rate.
+ */
+export function pooledLines(band: BandId, runsOf: (b: BandId) => readonly BandRun[]): string[] {
+  const runs = runsOf(band);
+  const depths = [...new Set(runs.map((m) => m.cell.depth))].sort((a, b) => a - b);
+  return depths.flatMap((d) => {
+    const kinds = band === 'N4' || band === 'H3' ? (['crowd', 'boss'] as const) : [undefined];
+    return kinds.flatMap((kind) => {
+      const tiers = band === 'H3' ? (['magic', 'bare'] as const) : [undefined];
+      return tiers.flatMap((tier) => {
+        const here = at(runs, d, kind).filter((m) => !tier || tierName(m.cell.lineup) === tier);
+        if (!here.length) return [];
+        const p = poolOf(here);
+        const nm = here.some((m) => m.nightmare) ? `, nightmare loss ${f3(p.nightmare.hpLoss)}` : '';
+        const head = `${band} d${d}${kind ? ` ${kind}` : ''}${tier ? ` ${tier}` : ''} pooled rate ${f3(p.run.rate)} loss ${f3(p.run.hpLoss)} (normal loss ${f3(p.twin.hpLoss)}${nm})`;
+        if (band !== 'HE') return [head];
+        return [head, ...AFFIX_PAIRS.map((pair) => {
+          const r = pooled(here.filter((m) => m.cell.affixes?.join('+') === pair.join('+')).map((m) => m.run));
+          return `${band} d${d} pair [${pair.join('+')}] pooled rate ${f3(r.rate)} loss ${f3(r.hpLoss)}`;
+        })];
+      });
+    });
+  });
 }
