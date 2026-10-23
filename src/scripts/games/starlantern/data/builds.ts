@@ -49,6 +49,13 @@ type RuneBuild = Omit<BuildDef, 'owner'>;
 
 /** The builds' damage pick: what each cast would really deal, times the foes it meets (plan 8h Task 5b, H1). */
 const aoe: PolicyRule = { kind: 'strongest-damage', aoe: true, effective: true };
+/**
+ * A build that learns a cure by the level it is suggested from uses it (difficulty plan ruling 23): before its
+ * heal-below, else before its closing damage rule. The single-target cures: Selene's 淨化, the hero's 淨光 (劍技, 守護 and
+ * 殘響 learn it only by Lv 50, so they do not name it).
+ */
+const cleanse: PolicyRule = { kind: 'cure-ailment', skill: 'cleanse' };
+const purify: PolicyRule = { kind: 'cure-ailment', skill: 'hero-purify' };
 
 /**
  * The rune builds (plan 8h Task 4; spec §16's starting proposal on the roster as it is now). Each puts at least one rune
@@ -126,12 +133,12 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       // step back (controller ruling R5: dropped from coverage, reason in rune-value.md); heal from 70%.
       policy: [
         { kind: 'cast-when', skill: 'full-moon-night', big: true, whileAbsent: true },
-        { kind: 'at-phase', phase: 'full', skill: 'moonlight' }, { kind: 'heal-below', pct: 70 }, aoe,
+        { kind: 'at-phase', phase: 'full', skill: 'moonlight' }, cleanse, { kind: 'heal-below', pct: 70 }, aoe,
       ] },
     { key: 'nightmare', name: '新月夢魘', intro: '新月來了，大家都睡吧。夢裡也有毒喔。', scenario: 'crowd', capstone: 2,
       // 夢境 deals no damage: 淬毒 goes on 月蝕, which strikes them all; 夢境 takes 節流 (「依 fit」).
       runes: { dream: ['thrift'], 'lunar-eclipse': ['venom'] },
-      policy: [{ kind: 'at-phase', phase: 'new', skill: 'dream' }, aoe] },
+      policy: [{ kind: 'at-phase', phase: 'new', skill: 'dream' }, cleanse, aoe] },
   ],
   safira: [
     { key: 'fourbeat', name: '四拍劍舞', intro: '刃舞加撕裂，跟著四拍一路跳到終幕！', scenario: 'boss', capstone: 2,
@@ -174,9 +181,9 @@ const RUNE_BUILDS: Record<CharacterId, readonly RuneBuild[]> = {
       // Tuning round 2: his blow is 深淵・劍 (斬擊 was never the pick).
       runes: { 'abyss-sword': ['charge', 'multistrike', 'armor-break'] }, policy: [aoe] },
     { key: 'mage', name: '星術', intro: '星火擴散開來，一次照亮整片。', scenario: 'crowd', hero: 'mage',
-      runes: { 'hero-flare': ['spread', 'charge', 'ignite'] }, policy: [{ kind: 'heal-below', pct: 40 }, aoe] },
+      runes: { 'hero-flare': ['spread', 'charge', 'ignite'] }, policy: [purify, { kind: 'heal-below', pct: 40 }, aoe] },
     { key: 'healer', name: '祈光', intro: '治癒照到每個人，誰都別倒下。', scenario: 'ordeal', hero: 'healer', role: 'heal',
-      runes: { 'hero-mend': ['spread', 'dispel'] }, policy: [{ kind: 'heal-below', pct: 60 }, aoe] },
+      runes: { 'hero-mend': ['spread', 'dispel'] }, policy: [purify, { kind: 'heal-below', pct: 60 }, aoe] },
     { key: 'tank', name: '守護', intro: '站到最前面，傷害都衝著我來。', scenario: 'long', hero: 'tank',
       // 分享 needs a skill of buffs alone and 守勢 also taunts: 節流 in its place (「依 fit」).
       runes: { 'hero-guard': ['extend', 'thrift'], 'abyss-sword': ['charge', 'multistrike', 'tear'] }, policy: [{ kind: 'ensure-taunt', skill: 'hero-guard' }, aoe] },

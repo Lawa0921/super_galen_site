@@ -585,4 +585,36 @@ describe('build policy rules (plan 8h Task 1)', () => {
       }
     }
   });
+
+  it('no default policy cures', () => {
+    // Guard (green before the implementation): every default rule is of a kind that was there before cure-ailment.
+    const old = ['ensure-barrier', 'ensure-device', 'ensure-mark', 'alternate', 'spend-at', 'heal-below', 'strongest-damage'];
+    for (const [id, rules] of Object.entries(DEFAULT_POLICIES)) for (const r of rules ?? []) expect(old, `${id} ${r.kind}`).toContain(r.kind);
+  });
+});
+
+describe('cure-ailment (difficulty plan Task 2, builds only)', () => {
+  const rule: PolicyRule[] = [{ kind: 'cure-ailment', skill: 'cleanse' }];
+  const at = (allies: Partial<Combatant>[], castable = sk('cleanse', 'moon-rain'), selene: Partial<Combatant> = {}) => {
+    const s = makeBattle([P('selene', selene), ...allies.map((o, i) => P(`m${i}`, o))], [E('e0')]);
+    return run(s, s.party[0], castable, rule).action;
+  };
+
+  it('a build cures what its cure can cure', () => {
+    // The ally with the most her cure removes: A (poison and burn) over B (a chill alone).
+    const A = { poison: true, burn: { tick: 4, turns: 2, src: 'e0' } };
+    const B = { chill: 1 };
+    expect(at([B, A])).toEqual({ kind: 'skill', skill: 'cleanse', target: 'm1' });
+    // Ties go in party order; she counts herself.
+    expect(at([B, B])).toEqual({ kind: 'skill', skill: 'cleanse', target: 'm0' });
+    expect(at([{}], undefined, { sleep: 2 })).toEqual({ kind: 'skill', skill: 'cleanse', target: 'selene' });
+    // Nothing her cure removes (a freeze guard is no ailment; a fallen ally is not cured): the rule does not hold.
+    expect(at([{ freezeGuard: 2 }, { alive: false, poison: true }])).toBeNull();
+    // Not castable (no TP: choose leaves it out of castable): the rule does not hold, the next one is read.
+    expect(at([A], sk('moon-rain'))).toBeNull();
+    const s = makeBattle([P('selene'), P('m0', A)], [E('e0')]);
+    expect(run(s, s.party[0], sk('moon-rain'), [...rule, { kind: 'heal-below', pct: 101 }]).action?.kind).toBe('skill');
+    // It reads the skill as she casts it: a skill with no cure never holds.
+    expect(run(s, s.party[0], sk('moon-rain'), [{ kind: 'cure-ailment', skill: 'moon-rain' }]).action).toBeNull();
+  });
 });

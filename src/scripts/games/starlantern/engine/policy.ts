@@ -6,7 +6,7 @@
 import type { Action, BattleState } from './battle';
 import { hitAmount, type Combatant } from './combatant';
 import { castDef } from './mechanics/index';
-import { AILMENT } from './ailments';
+import { AILMENT, curable } from './ailments';
 import { mechGauge, type MechGauge, type MoonPhase } from './mech';
 import { echoDef, echoOf } from './mechanics/echo';
 import type { CharacterId, SkillDef } from './types';
@@ -54,7 +54,13 @@ export type PolicyRule =
    * The hero: echo the coming round's record when it is worth at least his strongest damage skill (power x reach), or with
    * `min`, at least that percent of it (an echo is a companion's skill at 70%: plan 8h Task 5b tuning).
    */
-  | { kind: 'echo'; min?: number };
+  | { kind: 'echo'; min?: number }
+  /**
+   * Builds only (difficulty plan ruling 23; no default policy has it): `skill` can be cast and a living member holds an
+   * ailment its cast (`castDef`, a 淨化 rune's cure included) takes off (`curable`): cast it on the one with the most, ties
+   * in party order.
+   */
+  | { kind: 'cure-ailment'; skill: string };
 
 export type PolicyTable = Readonly<Partial<Record<CharacterId, readonly PolicyRule[]>>>;
 
@@ -256,6 +262,18 @@ export function applyPolicy(s: BattleState, c: Combatant, castable: SkillDef[], 
         if (!def || (rule.big && !big())) break;
         if (rule.whileAbsent && holding(s, c, def)) break;
         return cast(rule.skill, aim(def));
+      }
+      case 'cure-ailment': {
+        const raw = defOf(rule.skill);
+        if (!raw) break;
+        const def = castDef(s, c, raw);
+        const on = def.target === 'self' ? [c] : s.party;
+        const most = on.reduce<{ m: Combatant; n: number } | undefined>((best, m) => {
+          const n = curable(def, m).length;
+          return n > (best?.n ?? 0) ? { m, n } : best;
+        }, undefined);
+        if (!most) break;
+        return cast(rule.skill, def.target === 'ally' ? most.m.key : undefined);
       }
       case 'echo': {
         const rec = c.defId === 'hero' ? echoOf(s, s.round + 1) : null;

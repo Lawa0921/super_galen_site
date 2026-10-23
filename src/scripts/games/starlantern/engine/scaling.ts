@@ -3,7 +3,7 @@ import { ABYSS } from '../data/hero';
 import { CONDITIONS, type ConditionDef } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
-import type { RegionDef, RegionId } from '../data/regions';
+import { REGION_RIDER, type RegionDef, type RegionId } from '../data/regions';
 import { terrainOf } from './dungeon/run';
 import { expToNext } from './party';
 import { depthLevel } from './levels';
@@ -142,11 +142,18 @@ export function mul(stats: Stats, by: Partial<Record<StatKey, number>>): Stats {
   return out;
 }
 
+/** A region's skill on a tier: its effects and then its rider (REGION_RIDER) at the tier's chance; a new object. */
+function ridden(skill: EnemySkill, region: RegionId, tier: TierDef): EnemySkill {
+  const status = REGION_RIDER[region];
+  return status ? { ...skill, effects: [...skill.effects, { kind: 'inflict', status, chance: tier.rider }] } : skill;
+}
+
 /**
  * A monster as met at this depth, in this region, possibly as an elite, under a run condition (default: none).
  * It carries the secondaries of its depth and region (`sec`), and its stats pay for them last (stats.compensation).
  * With a difficulty `tier` (data/difficulty.ts; null for Normal, which takes none of this path): hp and atk/mag are
- * multiplied after the condition and before compensation; its own skills' and the region skill's chances rise to
+ * multiplied after the condition and before compensation; the region skill carries its rider (REGION_RIDER, ruling 8);
+ * its own skills' and the region skill's chances rise to
  * `max(chance, min(chanceCap, chance x chanceMul))` (difficulty plan ruling 3); exp and gold are rounded once (ruling 9).
  * Returns a new definition; `def` is untouched.
  */
@@ -173,7 +180,7 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
     // A named story foe keeps its own elements: the region's belong to its monsters.
     weak: regional && !def.story ? [...region.weak] : [...def.weak],
     resist: regional && !early && !def.story ? [...region.resist] : [...def.resist],
-    skills: tier ? (skill ? [...def.skills, skill] : def.skills).map(raise) : skill ? [...def.skills, skill] : [...def.skills],
+    skills: tier ? (skill ? [...def.skills, ridden(skill, region.id, tier)] : def.skills).map(raise) : skill ? [...def.skills, skill] : [...def.skills],
     // With a tier, one rounding (ruling 9); without, the line as it was.
     exp: tier ? Math.round(def.exp * reward * condition.expMul * tier.reward) : Math.round(def.exp * reward * condition.expMul),
     gold: tier ? Math.round(def.gold * reward * condition.goldMul * tier.reward) : Math.round(def.gold * reward * condition.goldMul),

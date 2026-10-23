@@ -18,6 +18,9 @@ import { SKILLS } from '../data/skills';
 import { keystonesOf } from './progression';
 import { mulberry32 } from './rng';
 import { ABYSS } from '../data/hero';
+import { REGIONS } from '../data/regions';
+
+const REGIONS_FROST_SKILL = REGIONS.frost.skill!.name;
 
 // Re-captured (CAPTURE=1) in plan 6a Task 19c for its ENEMY_POWER retune (amount 0.3, amount2 0.26, ramp 0.002). Task 20 then moved the ramp to 0.0012; the replays below did not change.
 // Re-captured in plan 8c Task 5 for Scarlet's mechanic (embers, cover, 贖火, 盾擊's challenge): 1:1, 1:2, 1:3 and 3:2 moved.
@@ -1152,5 +1155,31 @@ describe('Normal takes no new path (difficulty plan Task 1)', () => {
       expect(a.draws, c.label).toBeGreaterThan(0);
       expect(a, c.label).toEqual(b);
     }
+  });
+});
+
+describe('region riders in a fight (difficulty plan Task 2)', () => {
+  /** Frost's first group at depth 10, played with `choose` from `seed`; each round's state after it. */
+  const play = (seed: number, difficulty?: 'nightmare') => {
+    const party = partyAt(38, {}, 10);
+    let s = createBattle({ party, enemyIds: encounterTable('frost', 10)[0], inventory: {}, revealed: {}, scale: { depth: 10, region: 'frost', ...(difficulty ? { difficulty } : {}) } });
+    const rng = mulberry32(seed);
+    const out = [];
+    for (let r = 0; r < 60 && s.outcome === 'ongoing'; r++) { s = resolveRound(s, choose(s, party), rng); out.push(s); }
+    return out;
+  };
+  const breathes = (s: ReturnType<typeof play>[number]) => s.log.some((e) => e.type === 'act' && e.label === REGIONS_FROST_SKILL);
+
+  it('a rider lands in a Nightmare fight', () => {
+    // Seed 1 (picked: the rider lands on the first breath, in the first round).
+    const night = play(1, 'nightmare');
+    const first = night.findIndex(breathes);
+    expect(first).toBe(0);
+    expect(night[first].party.some((c) => (c.chill ?? 0) > 0)).toBe(true);
+    expect(night.every((s) => s.party.every((c) => !c.frozen))).toBe(true);
+    // The same fight on Normal, seeds 0-7: the breath comes, and no member is ever chilled.
+    const normal = [0, 1, 2, 3, 4, 5, 6, 7].flatMap((seed) => play(seed));
+    expect(normal.some(breathes)).toBe(true);
+    expect(normal.every((s) => s.party.every((c) => c.chill === undefined))).toBe(true);
   });
 });

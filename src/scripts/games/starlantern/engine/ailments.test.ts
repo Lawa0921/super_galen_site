@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AILMENT, ailmentChance, ailmentChips, inflictAilment } from './ailments';
+import { AILMENT, ailmentChance, ailmentChips, curable, inflictAilment } from './ailments';
 import type { Combatant } from './combatant';
 import { mulberry32 } from './rng';
 import { applyEffect, type EffectContext } from './skills';
@@ -254,5 +254,62 @@ describe('the data guard', () => {
         }
       });
     }
+  });
+});
+
+describe('the party is chilled, never frozen (difficulty plan Task 2)', () => {
+  it('the party is chilled, never frozen', () => {
+    const foe = E('e0');
+    const hit = (t: Combatant) => { const c = ctx(); inflictAilment(foe, t, 'freeze', 1, c); return c.log; };
+    const p = P('p');
+    expect(hit(p)).toEqual([{ type: 'status', target: 'p', status: 'chill' }]);
+    expect(p.frozen).toBeUndefined();
+    expect(p.chill).toBe(AILMENT.chillTurns);
+    // Already chilled: refreshed back to full.
+    const chilled = P('p', { chill: 1 });
+    hit(chilled);
+    expect(chilled.chill).toBe(AILMENT.chillTurns);
+    expect(chilled.frozen).toBeUndefined();
+    // Just thawed (the guard still up): chilled all the same, the guard does not stop it.
+    const thawed = P('p', { freezeGuard: 2 });
+    expect(ailmentChance(thawed, 'freeze', 0.4)).toBe(0.4);
+    hit(thawed);
+    expect(thawed.chill).toBe(AILMENT.chillTurns);
+    expect(thawed.frozen).toBeUndefined();
+    // Asleep: chilled too.
+    const asleep = P('p', { sleep: 2 });
+    hit(asleep);
+    expect(asleep.chill).toBe(AILMENT.chillTurns);
+    expect(asleep.frozen).toBeUndefined();
+    // A foe (not a boss) still freezes, and its guard still holds.
+    const e = E('e1');
+    inflictAilment(P('p'), e, 'freeze', 1, ctx());
+    expect(e.frozen).toBe(true);
+    expect(ailmentChance(E('e2', { freezeGuard: 2 }), 'freeze', 0.4)).toBe(0);
+  });
+
+  it('Normal never freezes the party', () => {
+    // Guard (green before the implementation): no Normal source of the enemies inflicts freeze, so changing what a freeze
+    // does to the party changes no Normal fight.
+    const freezes = (effects: readonly Effect[]) => effects.some((e) => e.kind === 'inflict' && e.status === 'freeze');
+    for (const def of Object.values(ENEMIES)) for (const k of def.skills) expect(freezes(k.effects), `${def.id} ${k.name}`).toBe(false);
+    for (const r of Object.values(REGIONS)) if (r.skill) expect(freezes(r.skill.effects), `${r.id} ${r.skill.name}`).toBe(false);
+  });
+
+  it('curable names what a cure removes', () => {
+    const cleanse = SKILLS.cleanse;
+    const sick = () => P('a', { poison: true, burn: { tick: 5, turns: 2, src: 'e0' }, chill: 1, freezeGuard: 2 });
+    const t = sick();
+    const named = curable(cleanse, t);
+    expect([...named].sort()).toEqual(['burn', 'chill', 'poison']);
+    // What the cast really removes is what it named.
+    const before = ailmentChips(t).map((x) => x.id);
+    applyEffect(P('selene'), t, { kind: 'cure' }, ctx());
+    const after = ailmentChips(t).map((x) => x.id);
+    expect(before.filter((id) => !after.includes(id)).sort()).toEqual([...named].sort());
+    expect(t.freezeGuard).toBe(2);
+    // Nothing to cure, or no cure in the skill: none.
+    expect(curable(cleanse, P('b'))).toEqual([]);
+    expect(curable(SKILLS['moon-rain'], sick())).toEqual([]);
   });
 });

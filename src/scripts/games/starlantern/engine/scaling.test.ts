@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CONDITIONS } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { FLOORS } from '../data/floors';
-import { REGIONS, type RegionId } from '../data/regions';
+import { REGIONS, REGION_RIDER, type RegionId } from '../data/regions';
 import { createBattle, intentLabel, planEnemies, rewards } from './battle';
 import { expToNext, LEGACY_LINEUP } from './party';
 import { mulberry32 } from './rng';
@@ -471,5 +471,27 @@ describe("a fight's difficulty in scaleEnemy (difficulty plan Task 1)", () => {
       if (once !== twice) found = true;
     }
     expect(found).toBe(true);
+  });
+});
+
+describe('region riders (difficulty plan Task 2)', () => {
+  it("each region's skill carries its rider on a higher tier", () => {
+    expect(REGION_RIDER).toEqual({ blaze: 'burn', frost: 'freeze', storm: 'shock', shade: 'bleed', iron: 'bleed' });
+    for (const r of Object.values(REGIONS)) {
+      const normal = scaleEnemy(wolf, 10, r, false, CONDITIONS.plain).skills.at(-1);
+      for (const [t, chance] of [[TIERS.nightmare, 0.25], [TIERS.hell, 0.4]] as const) {
+        const last = scaleEnemy(wolf, 10, r, false, CONDITIONS.plain, t).skills.at(-1)!;
+        const rider = REGION_RIDER[r.id];
+        if (!r.skill) { expect(last.name, r.id).toBe(wolf.skills.at(-1)!.name); continue; }
+        expect(last.name, r.id).toBe(r.skill.name);
+        if (rider) {
+          expect(last.effects, r.id).toEqual([...r.skill.effects, { kind: 'inflict', status: rider, chance }]);
+        } else expect(last.effects, r.id).toEqual(r.skill.effects);
+      }
+      // Normal: the region's skill as it is.
+      if (r.skill) expect(normal, r.id).toEqual(r.skill);
+    }
+    // The region's own data is untouched.
+    expect(REGIONS.frost.skill!.effects.some((e) => e.kind === 'inflict' && e.status === 'freeze')).toBe(false);
   });
 });
