@@ -1,8 +1,9 @@
 // profile.ts — gen2 每欄側寫：一欄是海 / 沙灘 / 陸地 / 島、地表、水面、生態、深度層線、所屬地區。
 // 地塊與地區由 Layout 決定（唯一擁有者）；這裡只把它們變成每欄的高度。全部是 (seed, layout, x) 的純函式，
-// 只用 engine/noise.ts 的整數雜湊 + 四則運算，結果與先問哪一欄無關（32 欄一段快取只是加速）。
+// 只用 engine/noise.ts 的整數雜湊與 engine/genPrims.ts 的共用 primitives（與 v1 同一份，P10）+ 四則運算，結果與先問哪一欄無關（32 欄一段快取只是加速）。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { seedInt, vnoise1 } from '../noise';
+import { BIOME_RELIEF, reliefNoise, seabedDepth, layerLines } from '../genPrims';
 import { BIOME } from '../world';
 import type { ColumnLayers } from '../column';
 import type { RegionInfo } from '../regionInfo';
@@ -29,8 +30,6 @@ export interface ColInfo2 {
   region: RegionInfo;
 }
 
-// 各生態的地表起伏振幅（格，同 v1）
-const RELIEF: Readonly<Record<number, number>> = { [BIOME.FOREST]: 14, [BIOME.DESERT]: 8, [BIOME.SNOW]: 28, [BIOME.JUNGLE]: 12 };
 // 陸地基準 = seaY − LAND_DROP
 const LAND_DROP = 7;
 // 島台地 = seaY − (PLAT_MIN..PLAT_MAX)
@@ -114,7 +113,7 @@ export class Profile2 {
       const o = this.originOf(x, m);
       const c = m.kind === 'sea' ? this.seaColumn(x, m, r, o) : this.landColumn(x, m, r, o);
       const surface = Math.max(1, Math.min(this.height - 4, c.surface));
-      const lay = this.layers(x, surface);
+      const lay = layerLines(x, surface, this.height, this.sLayers, CAVERN_BASE, MOLTEN_BASE);
       const a = j * N_I16, b = j * N_U8;
       s.i16[a + F_SURF] = surface;
       s.i16[a + F_WATER] = c.kind === COL_SEA ? o.seaY : -1;
@@ -137,7 +136,7 @@ export class Profile2 {
   // ── 陸地（家鄉 / 大陸）──
 
   // 地區的起伏振幅與基準
-  private amp(r: RegionInfo): number { return RELIEF[r.biome] * AMP[r.variant]; }
+  private amp(r: RegionInfo): number { return BIOME_RELIEF[r.biome] * AMP[r.variant]; }
   // ver 0 每個地區的基準都是 seaY − LAND_DROP（內插保留給之後的 variant）
   private base(_r: RegionInfo, seaY: number): number { return seaY - LAND_DROP; }
 
@@ -158,8 +157,7 @@ export class Profile2 {
       if (d <= 0) a = 0;
       else if (d < SPAWN_RAMP) a = a * d / SPAWN_RAMP;
     }
-    const n = vnoise1(x, 64, this.sRelief) * 0.65 + vnoise1(x, 17, this.sRelief + 1) * 0.35;
-    return { b, rel: a * n };
+    return { b, rel: a * reliefNoise(x, this.sRelief) };
   }
 
   private landColumn(x: number, m: Landmass, r: RegionInfo, o: SideOrigin): { kind: 0 | 1 | 2 | 3; surface: number } {
@@ -180,11 +178,12 @@ export class Profile2 {
 
   // ── 海 ──
 
-  // 海床 = seaY + SEA_DEPTH ± 8；離岸 SHORE_RAMP 內（離島 ISLAND_RAMP 內）線性爬升到岸邊；島 = 台地 seaY − (3..10)、兩側 ISLAND_RAMP 斜到海床。
+  // 海床 = seaY + SEA_DEPTH ± 8；離岸 SHORE_RAMP 內（離島 ISLAND_RAMP 內）線性爬升到岸邊；
+  // 島 = 台地 seaY − (3..10)、兩側 ISLAND_RAMP 從水面下 1 格斜到台地（島內每欄都是乾地），島外 ISLAND_RAMP 再斜到海床。
   // 各個岸的斜坡各算一個高度取最淺的（連續、相鄰差不超過各斜坡自己的坡度）。
   private seaColumn(x: number, m: Landmass, r: RegionInfo, o: SideOrigin): { kind: 0 | 1 | 2 | 3; surface: number } {
     const seaY = o.seaY;
-    const depth = SEA_DEPTH + Math.round((vnoise1(x, 37, this.sFloor) - 0.5) * 16);
+    const depth = seabedDepth(x, SEA_DEPTH, this.sFloor);
     const ramp = (d: number, w: number): number => seaY + Math.max(MIN_WATER, Math.round(depth * Math.min(1, (d + 1) / w)));
     const d0 = x - m.x0, d1 = m.x1 - 1 - x;
     const dIn = m.side === 1 ? d0 : d1, dOut = m.side === 1 ? d1 : d0;
@@ -196,7 +195,7 @@ export class Profile2 {
       if (x >= isl.x0 && x < isl.x1) {
         const t = Math.min(1, (x - isl.x0 + 1) / ISLAND_RAMP, (isl.x1 - x) / ISLAND_RAMP);
         const plat = seaY - PLAT_MIN - Math.round((PLAT_MAX - PLAT_MIN) * vnoise1(x, 29, this.sPlat));
-        const edge = seaY + MIN_WATER;
+        const edge = seaY + 1;
         s = Math.min(s, Math.round(edge + (plat - edge) * t));
       } else {
         const d = x < isl.x0 ? isl.x0 - 1 - x : x - isl.x1;
@@ -212,17 +211,4 @@ export class Profile2 {
     return { kind: dry, surface: Math.min(s, dry === COL_ISLAND ? seaY - 1 : seaY) };
   }
 
-  // ── 層線（比照 v1：rock = surface + 18 ± 8、deep = CAVERN_BASE ± 16、molten = MOLTEN_BASE ± 12，夾住順序）──
-
-  private layers(x: number, surface: number): ColumnLayers {
-    const L = this.sLayers, height = this.height;
-    let molten = MOLTEN_BASE + Math.round((vnoise1(x, 45, L + 2) - 0.5) * 24);
-    let deep = CAVERN_BASE + Math.round((vnoise1(x, 55, L + 1) - 0.5) * 32);
-    let rock = surface + 18 + Math.round((vnoise1(x, 37, L) - 0.5) * 16);
-    deep = Math.max(deep, rock + 10);
-    molten = Math.min(height - 1, Math.max(molten, deep + 10));
-    deep = Math.min(deep, molten - 1);
-    rock = Math.max(surface + 1, Math.min(rock, deep - 1));
-    return { rock, deep, molten };
-  }
 }

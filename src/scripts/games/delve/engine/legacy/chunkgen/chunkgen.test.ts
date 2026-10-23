@@ -261,14 +261,15 @@ describe('chunkgen：外圍生成器 v0', () => {
     expect(seen.size).toBe(4);
   });
 
-  it('(6) 禁用 API：chunkgen 的原始碼沒有 Math.random / 超越函數 / 次方運算子', () => {
-    const dir = join(process.cwd(), 'src', 'scripts', 'games', 'delve', 'engine', 'legacy', 'chunkgen');
+  it('(6) 禁用 API：chunkgen 與共用 primitives（engine/genPrims.ts）的原始碼沒有 Math.random / 超越函數 / 次方運算子', () => {
+    const engine = join(process.cwd(), 'src', 'scripts', 'games', 'delve', 'engine');
+    const dir = join(engine, 'legacy', 'chunkgen');
     const files = readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
     expect(files.sort()).toEqual(['fill.ts', 'index.ts', 'profile.ts']);
     const banned = /Math\.random|Math\.sin|Math\.cos|Math\.pow|Math\.exp|Math\.log|Math\.sqrt|Math\.hypot|\*\*/;
-    for (const f of files) {
-      const src = readFileSync(join(dir, f), 'utf8');
-      expect(banned.exec(src)?.[0] ?? null, f).toBeNull();
+    for (const path of [...files.map((f) => join(dir, f)), join(engine, 'genPrims.ts')]) {
+      const src = readFileSync(path, 'utf8');
+      expect(banned.exec(src)?.[0] ?? null, path).toBeNull();
     }
   });
 

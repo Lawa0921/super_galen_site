@@ -46,6 +46,7 @@ describe('Profile2', () => {
       const m = lay.landmass(side, i);
       for (let x = m.x0; x < m.x1; x++) {
         const c = p.info(x);
+        if (c.region.kind === 'island') expect(c.kind, `x=${x}`).not.toBe(COL_SEA);
         if (c.kind === COL_SEA) {
           expect(c.waterTop).toBe(SEA_Y);
           expect(c.surface).toBeGreaterThanOrEqual(SEA_Y + 2);
@@ -72,8 +73,11 @@ describe('Profile2', () => {
   it('快取不改變結果', () => {
     const a = P('c'), b = P('c');
     const xs = [...Array(3000)].map((_, k) => ((k * 7919) % 60000) - 30000);
-    for (const x of xs) expect(a.info(x)).toEqual(b.info(x));
-    for (const x of [...xs].reverse()) expect(a.info(x)).toEqual(b.info(x));
+    // b 反向查、a 正向查：結果與查詢順序無關；再拿全新的 Profile2 單查一欄比對（沒有任何快取）
+    const fromB = new Map<number, ReturnType<typeof b.info>>();
+    for (const x of [...xs].reverse()) fromB.set(x, b.info(x));
+    for (const x of xs) expect(a.info(x)).toEqual(fromB.get(x));
+    for (const x of xs.slice(0, 150)) expect(P('c').info(x)).toEqual(a.info(x));
   });
 
   it('烘焙原點（海開始）：第一道海從 shore 高度斜下', () => {

@@ -1,7 +1,8 @@
 // profile.ts — 外圍生成器 v0 的「每欄」側寫（B9）：區域（中央 / 海 / 陸地生態段）、地表、水面、生態、深度層線。
 // 全部是 (seed, x) 的純函式：只用 engine/noise.ts 的整數雜湊 + 四則運算（不用亂數、不用超越函數），
 // 任一欄的結果與先問哪一欄無關。注意：本資料夾的檔案（測試以外）不得出現連續兩個星號（測試會 grep），註解一律用 //。
-import { seedInt, hash2, vnoise1 } from '../../noise';
+import { seedInt, hash2 } from '../../noise';
+import { BIOME_RELIEF, reliefNoise, seabedDepth, layerLines } from '../../genPrims';
 import { BIOME, type BiomeId } from '../../world';
 import type { ColumnLayers } from '../../column';
 
@@ -10,9 +11,6 @@ export const SEA_W = 480, SEG_W = 900, SEG_JITTER = 120, SEA_DEPTH = 46, SHORE_R
 // 陸地離海這麼多格內是沙灘斜坡；生態段界這麼多格內地表起伏線性混合
 export const BEACH_W = 40;
 export const BLEND_W = 40;
-// 各生態的地表起伏振幅（格）
-const RELIEF: Record<number, number> = { [BIOME.FOREST]: 14, [BIOME.DESERT]: 8, [BIOME.SNOW]: 28, [BIOME.JUNGLE]: 12 };
-
 // 中央區（舊生成器）的框：外圍以它的兩個邊欄地表與深度層基準接上
 export interface CentralFrame {
   width: number; height: number;
@@ -129,17 +127,16 @@ export class OuterProfile {
   // 陸地生態段裡的地表（不含沙灘斜坡）：edge − 6 − 起伏；段界 BLEND_W 格內振幅線性混合
   private landSurface(x: number, side: number, e: number, k: number): number {
     const edge = side === 1 ? this.frame.edgeR : this.frame.edgeL;
-    let amp = RELIEF[this.biomeOfSeg(side, k)];
+    let amp = BIOME_RELIEF[this.biomeOfSeg(side, k)];
     const b0 = this.bound(side, k), b1 = this.bound(side, k + 1);
     if (k > 0 && e - b0 < BLEND_W) {
       const w = 0.5 + (e - b0) / (2 * BLEND_W);
-      amp = amp * w + RELIEF[this.biomeOfSeg(side, k - 1)] * (1 - w);
+      amp = amp * w + BIOME_RELIEF[this.biomeOfSeg(side, k - 1)] * (1 - w);
     } else if (b1 - e <= BLEND_W) {
       const w = 0.5 + (b1 - e) / (2 * BLEND_W);
-      amp = amp * w + RELIEF[this.biomeOfSeg(side, k + 1)] * (1 - w);
+      amp = amp * w + BIOME_RELIEF[this.biomeOfSeg(side, k + 1)] * (1 - w);
     }
-    const n = vnoise1(x, 64, this.sRelief) * 0.65 + vnoise1(x, 17, this.sRelief + 1) * 0.35;
-    return edge - 6 - Math.round(amp * n);
+    return edge - 6 - Math.round(amp * reliefNoise(x, this.sRelief));
   }
 
   // 一欄的全部側寫（fill 用；公開 API 都從這裡導出）
@@ -156,7 +153,7 @@ export class OuterProfile {
     if (d < SEA_W) {
       kind = ZONE_SEA;
       biome = BIOME.OCEAN;
-      const depth = SEA_DEPTH + Math.round((vnoise1(x, 37, this.sFloor) - 0.5) * 16);
+      const depth = seabedDepth(x, SEA_DEPTH, this.sFloor);
       const ramp = Math.min(1, (d + 1) / SHORE_RAMP, (SEA_W - d) / SHORE_RAMP);
       surface = edge + Math.max(2, Math.round(depth * ramp));
       waterTop = edge + 1;
@@ -173,14 +170,7 @@ export class OuterProfile {
       }
     }
     surface = Math.max(1, Math.min(height - 4, surface));
-    const L = this.sLayers;
-    let molten = this.frame.moltenY + Math.round((vnoise1(x, 45, L + 2) - 0.5) * 24);
-    let deep = this.frame.cavernY + Math.round((vnoise1(x, 55, L + 1) - 0.5) * 32);
-    let rock = surface + 18 + Math.round((vnoise1(x, 37, L) - 0.5) * 16);
-    deep = Math.max(deep, rock + 10);
-    molten = Math.min(height - 1, Math.max(molten, deep + 10));
-    deep = Math.min(deep, molten - 1);
-    rock = Math.max(surface + 1, Math.min(rock, deep - 1));
+    const { rock, deep, molten } = layerLines(x, surface, height, this.sLayers, this.frame.cavernY, this.frame.moltenY);
     return { kind, side, surface, waterTop, biome, rock, deep, molten };
   }
 
