@@ -270,16 +270,15 @@ function ceilingLineup(owner: CharacterId, key: string): Lineup {
 
 /**
  * Hell below d25 (T4-T5 review): reachable, since depths are shared and Hell is chosen a run, but under no band; measured
- * and reported only, never asserted. The d15 crowds as H1 builds them, the d15 and d20 bosses as H2 does.
+ * and reported only, never asserted. The d15 crowds as H1 builds them, the d15 and d20 bosses as H2 does, and the same
+ * bosses again with the bare default (the controller after Task 6a: the intent is H3's .40 or less there too).
  */
 export function hellReportCells(): TierCell[] {
-  return [
-    ...groupCells(15, 'crowd', 'hell', 'rare'),
-    ...[15, 20].flatMap((d) => AFFIX_PAIRS.map((p) => {
-      const c = bossCell(d, 'hell', 'rare', p, HELL_BOSS_SEEDS);
-      return { ...c, lineup: withTrigger(c.lineup, levelAt(d)) };
-    })),
-  ];
+  const bosses = [15, 20].flatMap((d) => AFFIX_PAIRS.map((p) => {
+    const c = bossCell(d, 'hell', 'rare', p, HELL_BOSS_SEEDS);
+    return { ...c, lineup: withTrigger(c.lineup, levelAt(d)) };
+  }));
+  return [...groupCells(15, 'crowd', 'hell', 'rare'), ...bosses, ...bosses.map(bareOf)];
 }
 
 /** The cells of a band (spec §6.2; difficulty plan Task 5a, rulings 12–14; the controller ruling of 2026-10-23). */

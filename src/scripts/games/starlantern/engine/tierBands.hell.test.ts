@@ -39,9 +39,10 @@ describe.skipIf(!on)('the Hell bands (difficulty plan Tasks 5a-5b)', () => {
       say(bandLine('HR', m.cell.label!, m.run, m.twin));
       expect(m.run.fights, `HR ${m.cell.label}`).toBeGreaterThan(0);
     }
-    for (const [d, kind] of [[15, 'crowd'], [15, 'boss'], [20, 'boss']] as const) {
-      const p = poolOf(below.filter((m) => m.cell.depth === d && m.cell.kind === kind));
-      say(`HR d${d} ${kind} pooled rate ${p.run.rate.toFixed(3)} loss ${p.run.hpLoss.toFixed(3)} (normal loss ${p.twin.hpLoss.toFixed(3)}, nightmare loss ${p.nightmare.hpLoss.toFixed(3)}) reported only`);
+    // The bosses split by lineup: rare with a trigger (as H2) and the bare default (as H3; its intent .40 or less).
+    for (const [d, kind, tier] of [[15, 'crowd', 'rare'], [15, 'boss', 'rare'], [15, 'boss', 'bare'], [20, 'boss', 'rare'], [20, 'boss', 'bare']] as const) {
+      const p = poolOf(below.filter((m) => m.cell.depth === d && m.cell.kind === kind && (m.cell.lineup.runeTier ?? 'bare') === tier));
+      say(`HR d${d} ${kind} ${tier} pooled rate ${p.run.rate.toFixed(3)} loss ${p.run.hpLoss.toFixed(3)} (normal loss ${p.twin.hpLoss.toFixed(3)}, nightmare loss ${p.nightmare.hpLoss.toFixed(3)}) reported only`);
     }
   }, 3_000_000);
 

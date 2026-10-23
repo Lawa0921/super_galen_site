@@ -193,18 +193,21 @@ describe('difficulty band measurements (difficulty plan Task 0)', () => {
     // builds them, the d15 and d20 bosses as H2 does; no BandId, so no assertion reads them.
     const hr = hellReportCells();
     expect(hr.filter((c) => c.kind === 'crowd').map((c) => c.label)).toEqual(encounterTable('mainline', 15).map((g, i) => `d15 crowd g${i} ${g.join('+')} rare`));
+    // Each boss also with the bare default (controller, after Task 6a: Hell should still punish it at shallow depths).
     for (const d of [15, 20]) {
-      const bosses = hr.filter((c) => c.kind === 'boss' && c.depth === d);
-      expect(bosses.length, `d${d}`).toBe(14);
       const lv = Math.min(MAX_LEVEL, depthLevel(d));
-      expect(new Set(bosses.map((c) => c.affixes!.join('+'))).size).toBe(14);
-      for (const c of bosses) {
-        expect([c.seeds, pair(c.affixes)], c.label).toEqual([10, 2]);
-        expect(c.lineup, c.label).toEqual(withTrigger(tierLineup(lv, 'boss', 'rare'), lv));
+      for (const [tier, lineup] of [['rare', withTrigger(tierLineup(lv, 'boss', 'rare'), lv)], ['bare', tierLineup(lv, 'boss', 'bare')]] as const) {
+        const bosses = hr.filter((c) => c.kind === 'boss' && c.depth === d && (c.lineup.runeTier ?? 'bare') === tier);
+        expect(bosses.length, `d${d} ${tier}`).toBe(14);
+        expect(new Set(bosses.map((c) => c.affixes!.join('+'))).size).toBe(14);
+        for (const c of bosses) {
+          expect([c.seeds, pair(c.affixes), c.label!.endsWith(` ${tier}`)], c.label).toEqual([10, 2, true]);
+          expect(c.lineup, c.label).toEqual(lineup);
+        }
       }
     }
-    expect(hr.length).toBe(groups(15) + 28);
-    expect(new Set(shape(hr))).toEqual(new Set(['crowd/hell/rare', 'boss/hell/rare']));
+    expect(hr.length).toBe(groups(15) + 56);
+    expect(new Set(shape(hr))).toEqual(new Set(['crowd/hell/rare', 'boss/hell/rare', 'boss/hell/bare']));
   });
 
   it('Hell crowd cells meet the crowd affix as the game draws it; twins and other tiers do not', () => {
