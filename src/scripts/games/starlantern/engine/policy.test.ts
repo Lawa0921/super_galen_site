@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { createBattle, resolveRound, skillFor, type Action, type BattleState } from './battle';
 import type { Combatant } from './combatant';
 import { mechGauge, type MechState, type MoonPhase } from './mech';
-import { applyPolicy, effectiveOf, reach, type PolicyRule } from './policy';
+import { applyPolicy, effectiveOf, reach, TIER_AILMENTS, type PolicyRule } from './policy';
+import { T } from '../data/text.zh-TW';
 import { mulberry32 } from './rng';
 import { encounterTable } from './scaling';
 import { castPower, choose, partyAt } from './sim';
@@ -616,6 +617,12 @@ describe('cure-ailment (difficulty plan Task 2, builds only)', () => {
     expect(run(s, s.party[0], sk('moon-rain'), [...rule, { kind: 'heal-below', pct: 101 }]).action?.kind).toBe('skill');
     // It reads the skill as she casts it: a skill with no cure never holds.
     expect(run(s, s.party[0], sk('moon-rain'), [{ kind: 'cure-ailment', skill: 'moon-rain' }]).action).toBeNull();
+  });
+
+  it("the rule's words name what it answers (T2-T3 review, minor 4)", () => {
+    const line = T.build.rule.cureAilment('淨化');
+    for (const id of TIER_AILMENTS) expect(line, id).toContain(T.ailment[id]);
+    for (const id of ['poison', 'sleep'] as const) expect(line, id).not.toContain(T.ailment[id]);
   });
 
   it('it cures only what tier enemies inflict, never poison or sleep (controller ruling: Normal builds do not move)', () => {

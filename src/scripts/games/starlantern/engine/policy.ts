@@ -87,11 +87,12 @@ export function reach(s: BattleState, def: SkillDef): number {
 const shareOf = (c: Combatant) => c.hp / c.max.hp;
 
 /**
- * The ailments `cure-ailment` answers: the ones only the higher tiers' enemies inflict on the party (region riders and
- * affixes; a freeze lands as a chill). No Normal enemy inflicts any of them (ailments.test.ts `Normal never freezes the
- * party`, and Normal enemies inflict only poison and sleep), so on Normal the rule never holds.
+ * The ailments `cure-ailment` answers: the ones only the higher tiers' enemies inflict on the party (the region riders and
+ * the affixes; a freeze lands on the party as a chill, so it is the chill). No Normal enemy or region inflicts any of them
+ * (ailments.test.ts `Normal never freezes the party`, which also checks this list against the riders and the affixes), so
+ * on Normal the rule never holds.
  */
-export const TIER_AILMENTS: readonly AilmentShown[] = ['burn', 'bleed', 'shock', 'freeze', 'chill'];
+export const TIER_AILMENTS: readonly AilmentShown[] = ['burn', 'bleed', 'shock', 'chill'];
 
 /** Rounds of damage a rune's poison is counted for when ranking (it lasts until cured). */
 const POISON_ROUNDS = 3;

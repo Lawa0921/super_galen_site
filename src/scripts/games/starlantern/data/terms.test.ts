@@ -9,6 +9,7 @@ import { SCENE_IDS } from './story/scenes';
 import { dots, opensOnDots, telegraphBreaks } from './story/voiceGates';
 import { T } from './text.zh-TW';
 import { SPECIALS } from './gear';
+import { AFFIXES, AFFIX_IDS } from './affixes';
 
 /** The starlantern folder: this file sits in its `data/`. */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -63,6 +64,8 @@ function uiSentences(): { key: string; text: string }[] {
   walk(T, 'T');
   for (const id of SCENE_IDS) out.push({ key: `STORY.scenes.${id}.title`, text: STORY.scenes[id].title });
   for (const s of Object.values(SPECIALS)) out.push({ key: `SPECIALS.${s.id}.lore`, text: s.lore ?? '' });
+  // The affixes' lines (difficulty plan Task 3; T2-T3 review, minor 6): the battle's target note reads them.
+  for (const id of AFFIX_IDS) out.push({ key: `AFFIXES.${id}.line`, text: AFFIXES[id].line });
   return out;
 }
 
@@ -130,6 +133,7 @@ describe('terms (story polish)', () => {
     const keys = uiSentences().map((s) => s.key);
     for (const k of ['T.notices.wipe', 'T.ui2.handbook.empty', 'T.ui2.equip.full', 'STORY.scenes.rin-reveal.title', 'SPECIALS.lg-noel.lore']) expect(keys, k).toContain(k);
     // Task 20: 8h's keys, the inn's tail, templates and strings with no full stop are read too
+    for (const k of AFFIX_IDS.map((id) => `AFFIXES.${id}.line`)) expect(keys, k).toContain(k);
     for (const k of ['T.rune.fuseEmpty', 'T.ui2.builds.followingNow', 'T.ui2.inn.nobodyDown', 'T.rune.got(string)', 'T.ui2.exchange.giveAsk(string)', 'T.ui2.formation.title']) expect(keys, k).toContain(k);
   });
 

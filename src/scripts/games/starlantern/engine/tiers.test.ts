@@ -46,8 +46,9 @@ describe('affixes are drawn by the spot (difficulty plan Task 3)', () => {
     expect(rollAffixes(1234, 10, 0, at)).toEqual([]);
   });
 
-  it('fleeing and coming back keeps the affixes', () => {
-    // An elite at a spot: its affixes, then a fight (fled: the battle draws from its own rng), then the same spot again.
+  it('rollAffixes has no counter', () => {
+    // An elite at a spot: its affixes, then a fight (the battle draws from its own rng), then the same spot again. The
+    // game flow (flee, step back on; save and reload) is difficulty plan Task 6a's test.
     const at = { x: 3, y: 2 };
     const first = rollAffixes(777, 12, 2, at);
     const party = partyAt(42, {}, 12);

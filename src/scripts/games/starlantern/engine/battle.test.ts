@@ -1212,6 +1212,12 @@ describe('affixes in a fight (difficulty plan Task 3)', () => {
     // Affixes with no elite in a plain fight land on no one; a fight without them has the field on no enemy.
     expect(start({ enemyIds: ['wolf', 'bat'], affixes: ['tough'] }).enemies.every((e) => !('affixes' in e))).toBe(true);
     expect(plainElite.enemies.every((e) => !('affixes' in e))).toBe(true);
+    // Affixes without a difficulty (or on Normal) apply nothing (T2-T3 review, minor 2).
+    for (const difficulty of [undefined, 'normal'] as const) {
+      const none = createBattle({ party, enemyIds: ['wolf', 'bat'], inventory: {}, revealed: {}, scale: { depth: 10, region: 'mainline', elite: 'wolf', affixes: ['tough'], ...(difficulty ? { difficulty } : {}) } });
+      const plain = createBattle({ party, enemyIds: ['wolf', 'bat'], inventory: {}, revealed: {}, scale: { depth: 10, region: 'mainline', elite: 'wolf' } });
+      expect(none, String(difficulty)).toEqual(plain);
+    }
     // The affixes on the combatant are a copy.
     const list: ('tough' | 'scorch' | 'swift')[] = ['tough'];
     const b = start({ enemyIds: ['wolf'], elite: 'wolf', affixes: list });

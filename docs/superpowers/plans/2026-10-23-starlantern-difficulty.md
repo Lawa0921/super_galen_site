@@ -327,6 +327,8 @@
 - [ ] **Step 5：收尾 G**（`gate-6a` against `gate-5b`＋`cmp`；e2e 三專案）。
 - [ ] **Step 6：commit**：`feat(starlantern): a run has a tier — chosen in town, unlocked by progress; story fights stay Normal; affixes keyed by the spot`。
 
+> **待辦（T2–T3 審查 Important 1，Task 3 後加；Task 6a 實作）**：Task 3 的 `rollAffixes has no counter` 只證明抽法沒有計數器，沒有真的逃跑。Task 6a 加一則遊戲流程測試 `fleeing and coming back keeps the affixes (game flow)`：`depart` 到噩夢、走上菁英格、`submitRound({ kind: 'escape' })` 斷言 `fled`、再踩回同一格，比對兩場的 `enemies[].affixes` 相同；另加存檔／讀檔一則（存檔、讀回、走到同一格，詞綴相同；可併入 Task 6b 的 `a reload departs into the same affixes`）。
+
 ### Task 6a′: 掉落與擊殺鍵接線
 
 **Files:**

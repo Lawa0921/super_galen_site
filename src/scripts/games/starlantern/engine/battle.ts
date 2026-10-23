@@ -200,9 +200,9 @@ export function createBattle(o: {
   const enemies = enemyIds.map((id, i) => {
     const n = (seen[id] = (seen[id] ?? 0) + 1);
     const elite = !!sc && sc.elite === id && n === 1;
-    // The affixes go on the elite, or in a boss fight on each boss (ruling 5); none drawn here.
-    const aff = sc?.affixes?.length && (elite || (o.boss && ENEMIES[id].boss)) ? sc.affixes : undefined;
-    const met = !sc || !region ? ENEMIES[id] : t || aff ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t, aff) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']);
+    // The affixes go on the elite, or in a boss fight on each boss (ruling 5), only on a higher tier; none drawn here.
+    const aff = t && sc?.affixes?.length && (elite || (o.boss && ENEMIES[id].boss)) ? sc.affixes : undefined;
+    const met = !sc || !region ? ENEMIES[id] : t ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t, aff) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']);
     // An enemy is met at its level for the fight's depth (enemyLevelAt; the deep road's own extra power on top), or at
     // its own home level when the fight has no scale.
     const level = sc ? enemyLevelAt(sc.depth) : homeLevel(met);
