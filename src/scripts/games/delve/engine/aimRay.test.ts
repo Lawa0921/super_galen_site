@@ -185,36 +185,113 @@ describe('方向挖掘', () => {
   });
 });
 
-describe('方向挖掘：射線只到游標為止、只看實心方塊、游標壓在東西上照舊', () => {
-  it('挖掉游標那塊之後游標那格是空氣 → 停手，不會沿著方向繼續挖下一塊', () => {
+describe('方向挖掘：沿方向找到觸及距離、路徑寬 1 格、只看實心方塊、游標壓在東西上照舊', () => {
+  /** 從玩家中心朝 (dx, dy) 方向瞄（游標放在 20 格外） */
+  const aimDir = (g: DelveGame, dx: number, dy: number): void => {
+    const c = g.playerCenter(), k = (20 * S) / Math.hypot(dx, dy);
+    g.setAimWorld(c.x + dx * k, c.y + dy * k);
+  };
+
+  it('按住挖：挖掉游標那塊之後沿著方向繼續往前挖，挖到觸及距離為止', () => {
     const g = arena();
-    g.world.setFg(63, 58, T.STONE);
-    g.world.setFg(64, 58, T.STONE);
-    aimAt(g, 63, 58); g.setMining(true);
-    runFor(g, STONE_S * 2.5);
-    expect(g.world.getFg(63, 58)).toBe(T.AIR);
-    expect(g.world.getFg(64, 58)).toBe(T.STONE);
-    expect(g.getState().mining).toBeNull();
+    for (let x = 62; x <= 67; x++) g.world.setFg(x, 58, T.STONE);
+    aimAt(g, 62, 58); g.setMining(true);
+    runFor(g, STONE_S * 6);
+    for (let x = 62; x <= 65; x++) expect(g.world.getFg(x, 58), `x=${x}`).toBe(T.AIR);
+    // (66,58) 中心離玩家中心 6.003 格 > 觸及 6 格
+    expect(g.world.getFg(66, 58)).toBe(T.STONE);
+    expect(g.world.getFg(67, 58)).toBe(T.STONE);
   });
 
-  it('游標在方塊前面的空氣（還沒到方塊）→ 不挖', () => {
+  it('游標在方塊前面的空氣（還沒到方塊）→ 照樣挖到那塊', () => {
     const g = arena();
     g.world.setFg(65, 58, T.STONE);
     aimAt(g, 63, 58); g.setMining(true);
     runFor(g, STONE_S);
-    expect(g.world.getFg(65, 58)).toBe(T.STONE);
-    expect(g.getState().mining).toBeNull();
+    expect(g.world.getFg(65, 58)).toBe(T.AIR);
   });
 
-  it('游標點在自己腳邊（身體那格的空氣）→ 不會往下挖地板', () => {
+  it('游標點在自己腳邊（正下方）→ 往下挖地板（明顯朝下就挖）', () => {
     const g = arena();
     aimAt(g, 60, 59); g.setMining(true);
     runFor(g, STONE_S);
-    expect(g.world.getFg(60, 60)).toBe(T.STONE);
-    expect(mines(g)).toEqual([]);
+    expect(mines(g).map((e) => [e.x, e.y])).toEqual([[60, 60]]);
   });
 
-  it('射線上的火把 / 平台 / 開著的門 / 箱子 / 床 / 爐心（非實心）→ 穿過去、留著，挖後面（游標之前）的石頭', () => {
+  it('水平瞄準：腳下的地板（離中心線 1.81 格）不會被挑中', () => {
+    for (const dir of [1, -1]) {
+      const g = arena();
+      aimDir(g, dir, 0); g.setMining(true);
+      runFor(g, 2);
+      expect(mines(g)).toEqual([]);
+      expect(g.getState().mining).toBeNull();
+    }
+  });
+
+  it('中心線上沒東西：偏離 ≤ 1 格的方塊被挑中；偏離 > 1 格的不挑', () => {
+    // 水平往右：中心 y = 58.69；第 59 列的格心偏 0.81 格、第 57 列偏 1.19 格
+    const g = arena();
+    g.world.setFg(63, 59, T.STONE);
+    aimDir(g, 1, 0); g.setMining(true);
+    expect(g.mineFocus()).toEqual({ x: 63, y: 59 });
+    runFor(g, STONE_S);
+    expect(g.world.getFg(63, 59)).toBe(T.AIR);
+    const h = arena();
+    h.world.setFg(63, 57, T.STONE);
+    aimDir(h, 1, 0); h.setMining(true);
+    expect(h.mineFocus()).toBeNull();
+    runFor(h, STONE_S);
+    expect(h.world.getFg(63, 57)).toBe(T.STONE);
+  });
+
+  it('挑 t（沿方向的距離）最小的：近的側邊方塊先於遠的中心線方塊', () => {
+    const g = arena();
+    g.world.setFg(62, 59, T.STONE); // 側邊、t ≈ 1.5
+    g.world.setFg(64, 58, T.STONE); // 中心線、t ≈ 3.5
+    aimDir(g, 1, 0); g.setMining(true);
+    expect(g.mineFocus()).toEqual({ x: 62, y: 59 });
+  });
+
+  it('中心線上挖不動的方塊擋住它後面的（含側邊的）；提示 tier', () => {
+    const g = arena();
+    g.world.setFg(62, 58, T.IRON_ORE);
+    g.world.setFg(64, 58, T.STONE);
+    g.world.setFg(64, 59, T.STONE); // 側邊、但在擋路的鐵礦後面
+    aimDir(g, 1, 0); g.setMining(true);
+    expect(g.mineFocus()).toBeNull();
+    runFor(g, 2);
+    expect(g.world.getFg(62, 58)).toBe(T.IRON_ORE);
+    expect(g.world.getFg(64, 58)).toBe(T.STONE);
+    expect(g.world.getFg(64, 59)).toBe(T.STONE);
+    expect(g.drainEvents().some((e) => e.type === 'blocked' && e.reason === 'tier')).toBe(true);
+  });
+
+  it('側邊挖不動的方塊直接跳過（不擋）：挑下一個', () => {
+    const g = arena();
+    g.world.setFg(62, 59, T.IRON_ORE); // 側邊、木鎬挖不動
+    g.world.setFg(64, 58, T.STONE);
+    aimDir(g, 1, 0); g.setMining(true);
+    expect(g.mineFocus()).toEqual({ x: 64, y: 58 });
+    runFor(g, STONE_S);
+    expect(g.world.getFg(64, 58)).toBe(T.AIR);
+    expect(g.world.getFg(62, 59)).toBe(T.IRON_ORE);
+    expect(g.drainEvents().some((e) => e.type === 'blocked')).toBe(false);
+  });
+
+  it('平手（t、偏離都一樣）→ 固定挑 x 小的，再來 y 小的', () => {
+    // 正上方：中心 x = 60.5；(59,55) 和 (61,55) 的格心左右各偏 1 格、t 一樣
+    const pick = (): { x: number; y: number } | null => {
+      const g = arena();
+      g.world.setFg(59, 55, T.STONE);
+      g.world.setFg(61, 55, T.STONE);
+      aimDir(g, 0, -1); g.setMining(true);
+      return g.mineFocus();
+    };
+    expect(pick()).toEqual({ x: 59, y: 55 });
+    expect(pick()).toEqual(pick());
+  });
+
+  it('射線上的火把 / 平台 / 開著的門 / 箱子 / 床 / 爐心（非實心）→ 穿過去、留著，挖後面的石頭', () => {
     for (const k of [T.TORCH, T.PLATFORM, T.DOOR_OPEN, T.CHEST, T.BED_HEAD, T.HEARTH]) {
       const g = arena();
       g.world.setFg(62, 58, k);
@@ -282,5 +359,24 @@ describe('方向挖掘（co-op）', () => {
     expect(until(r, () => hg.world.getFg(tx + 3, ty) === T.AIR, 4000)).toBe(true);
     gg.setMining(false);
     expect(until(r, () => gg.world.getFg(tx + 3, ty) === T.AIR, 2000)).toBe(true);
+  });
+
+  it('寬路徑：客人水平瞄、近的側邊方塊 vs 遠的中心線方塊 → 客人的框框和房主實際在挖的是同一格', () => {
+    const r = coopRig();
+    const g = r.guests[0], hg = r.hostGame, gg = g.game!;
+    const p = gg.local.player, tx = Math.floor((p.x + p.w / 2) / S), ty = FLOOR - 2;
+    hg.world.setFg(tx + 2, ty + 1, T.STONE);
+    hg.world.setFg(tx + 4, ty, T.STONE);
+    r.run(500);
+    const c = gg.playerCenter();
+    gg.setAimWorld(c.x + 20 * S, c.y);
+    gg.setMining(true);
+    const focus = gg.mineFocus();
+    expect(focus).toEqual({ x: tx + 2, y: ty + 1 });
+    const host = hg.actors.get(g.pid!)!;
+    expect(until(r, () => host.mining !== null, 2000)).toBe(true);
+    expect({ x: host.mining!.x, y: host.mining!.y }).toEqual(focus);
+    expect(until(r, () => hg.world.getFg(tx + 2, ty + 1) === T.AIR, 4000)).toBe(true);
+    gg.setMining(false);
   });
 });

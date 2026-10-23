@@ -371,6 +371,8 @@ export const RECALL_TIME = 1.2;
 export const MAGNET_REACH = 3;
 /** 互動基準點：腳底往上幾 px（舊碰撞盒 42 px 的一半） */
 export const REACH_CENTER_Y = 21;
+/** 方向挖掘的路徑半寬（格）：格心離「玩家中心 → 游標」中心線多遠以內算在路徑上 */
+export const MINE_PATH_HALF = 1;
 /** 玩家周圍自動揭露的半徑（格） */
 export const REVEAL_RADIUS = 9;
 /** 畫面上光照 ≥ 此值的格算「看見了」 */
@@ -1548,27 +1550,49 @@ export class DelveGame {
   /**
    * 這一步要挖哪一格（cur；方向挖掘，游標不用正好壓在方塊上）：
    * 1. 游標那格在觸及範圍內、不是空氣（或是冰 / 拆得掉的背景牆）→ 就是那格，跟以前一模一樣（火把照挖、鎖著的門照樣提示）。
-   * 2. 否則（游標那格是空氣、或太遠）從玩家中心朝游標點打格子射線（marchTiles，格角規則見 aimRay.ts），
-   *    長度 = min(到游標點的距離, 觸及距離)：不會挖到游標後面去（挖掉游標那塊之後就停手）。
-   *    射線只看實心方塊與冰，非實心的（火把、平台、開著的門、箱子、床、爐心、樹、繩子…）一律穿過、不挖也不擋。
-   *    碰到的第一個在觸及範圍內 → 就是它（kind 'ray'；挖不動也停在這、ok = false，updateMining 照常提示原因，不穿過去挖後面的）。
+   * 2. 否則（游標那格是空氣、或太遠）沿「玩家中心 → 游標點」的方向找到觸及距離為止（不停在游標點：按住會一路往前挖），路徑寬 1 格：
+   *    候選 = 觸及範圍內（canReach）的實心方塊或冰，格心在玩家前方（沿方向的投影 t > 0）、離中心線的垂直距離 ≤ MINE_PATH_HALF 格。
+   *    非實心的（火把、平台、門、箱子、床、爐心、樹、繩子…）不是候選也不擋。
+   *    挑 t 最小的；平手 → 垂直距離小的 → x 小的 → y 小的（固定順序：房主替客人算的跟客人預覽的一樣）。
+   *    挖不動的候選：在中心線上（格子射線 marchTiles 真的走進去的格）→ 擋住，就是它（kind 'ray'、ok = false，
+   *    updateMining 照常提示原因；t 比它大的都不算）；在側邊 → 直接跳過、看下一個。
+   *    水平瞄準時腳下的地板格心離中心線 1.81 格（中心在腳底往上 REACH_CENTER_Y），不會被挑中；明顯朝下才挖地板。
    * 3. 都沒有 → 游標那格（kind 'none'；照舊：空氣不挖、太遠提示 reach）。
-   * 只看玩家中心、瞄準點與世界：房主替遠端客人算的、客人副本預覽的（mineFocus）是同一格。
-   * 便宜：游標那格只看 tile id；射線只對碰到的那一格實心方塊跑一次 planBreak（實心格沒有樹，不會 fellTree）。
+   * 便宜：游標那格只看 tile id；掃觸及範圍那個方框只看 tile id，排序後才對最前面的候選跑 mineRefusal（planBreak；實心格沒有樹，
+   * 不會 fellTree），通常一次；中心線的格只在碰到挖不動的候選時才算。
    */
   private mineTarget(): { x: number; y: number; kind: 'aim' | 'ray' | 'none'; ok: boolean } {
     const { x, y } = this.aim, w = this.world;
     if (this.canReach(x, y) && (w.getFg(x, y) !== T.AIR || w.isFrozen(x, y) || WALL_ITEM[w.getWall(x, y)])) return { x, y, kind: 'aim', ok: true };
-    const c = this.playerCenter(), S = TILE_SIZE, dx = this.aimPx.x - c.x, dy = this.aimPx.y - c.y;
-    let hit: { x: number; y: number; kind: 'ray'; ok: boolean } | null = null;
-    marchTiles(c.x / S, c.y / S, dx, dy, Math.min(Math.hypot(dx, dy) / S, this.reach()), (tx, ty) => {
-      if (!w.inBounds(tx, ty)) return true;
-      const id = w.getFg(tx, ty), ice = id === T.AIR && w.isFrozen(tx, ty);
-      if (!ice && !isSolidTile(id)) return false;
-      if (this.canReach(tx, ty)) hit = { x: tx, y: ty, kind: 'ray', ok: ice || this.mineRefusal(tx, ty, id) === null };
-      return true;
-    });
-    return hit ?? { x, y, kind: 'none', ok: false };
+    const c = this.playerCenter(), S = TILE_SIZE, dx = this.aimPx.x - c.x, dy = this.aimPx.y - c.y, len = Math.hypot(dx, dy);
+    const none = { x, y, kind: 'none' as const, ok: false };
+    if (!(len > 0)) return none;
+    const ux = dx / len, uy = dy / len, ox = c.x / S, oy = c.y / S, R = this.reach();
+    const cands: { x: number; y: number; t: number; d: number; ice: boolean; id: number }[] = [];
+    for (let ty = Math.floor(oy - R); ty <= Math.floor(oy + R); ty++) {
+      for (let tx = Math.floor(ox - R); tx <= Math.floor(ox + R); tx++) {
+        const rx = tx + 0.5 - ox, ry = ty + 0.5 - oy, t = rx * ux + ry * uy;
+        if (t <= 0) continue;
+        const d = Math.abs(rx * uy - ry * ux);
+        if (d > MINE_PATH_HALF + 1e-9 || !w.inBounds(tx, ty)) continue;
+        const id = w.getFg(tx, ty), ice = id === T.AIR && w.isFrozen(tx, ty);
+        if ((!ice && !isSolidTile(id)) || !this.canReach(tx, ty)) continue;
+        cands.push({ x: tx, y: ty, t, d, ice, id });
+      }
+    }
+    const EPS = 1e-9;
+    cands.sort((a, b) => (Math.abs(a.t - b.t) > EPS ? a.t - b.t : Math.abs(a.d - b.d) > EPS ? a.d - b.d : a.x !== b.x ? a.x - b.x : a.y - b.y));
+    let line: Set<number> | null = null;
+    for (const k of cands) {
+      if (k.ice || this.mineRefusal(k.x, k.y, k.id) === null) return { x: k.x, y: k.y, kind: 'ray', ok: true };
+      if (!line) {
+        const set = new Set<number>();
+        marchTiles(ox, oy, ux, uy, R + 1, (tx, ty) => { set.add(w.idx(tx, ty)); return false; });
+        line = set;
+      }
+      if (line.has(w.idx(k.x, k.y))) return { x: k.x, y: k.y, kind: 'ray', ok: false };
+    }
+    return none;
   }
   /**
    * 本地玩家按住挖掘時實際會挖的那格（mineTarget；renderer 把瞄準框畫在這，玩家看得到會挖哪塊）：
