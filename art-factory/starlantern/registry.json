@@ -25799,7 +25799,7 @@
           115
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a3",
       "source_id": "char-scarlet-portrait-serious",
       "batch": "faces-scarlet",
@@ -25827,7 +25827,8 @@
       "rejected_attempts": {
         "a2": "Gemini (gemini-3-pro-image) candidate, kept as evidence: the user chose codex for every face (2026-10-23, 「當然是用 codex 的」).",
         "a1": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md."
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-scarlet-portrait-sad": {
       "kind": "sprite",
@@ -25853,7 +25854,7 @@
           115
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a4",
       "source_id": "char-scarlet-portrait-sad",
       "batch": "faces-scarlet",
@@ -25882,7 +25883,8 @@
         "a2": "Gemini (gemini-3-pro-image) candidate, kept as evidence: the user chose codex for every face (2026-10-23, 「當然是用 codex 的」).",
         "a3": "codex with the first sad prompt: the sadness read too faintly at game size; redone with the strengthened sad prompt (inner brows raised, tear, mouth corners down, head tilted down).",
         "a1": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md."
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-chizuru-portrait-serious": {
       "kind": "sprite",
@@ -25910,7 +25912,7 @@
           123
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a4",
       "source_id": "char-chizuru-portrait-serious",
       "batch": "faces-chizuru",
@@ -25939,7 +25941,8 @@
         "a3": "Gemini (gemini-3-pro-image) candidate, kept as evidence: the user chose codex for every face (2026-10-23, 「當然是用 codex 的」).",
         "a1": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md.",
         "a2": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md."
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-chizuru-portrait-sad": {
       "kind": "sprite",
@@ -25967,7 +25970,7 @@
           123
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a5",
       "source_id": "char-chizuru-portrait-sad",
       "batch": "faces-chizuru",
@@ -25997,7 +26000,8 @@
         "a4": "codex with the first sad prompt: the sadness read too faintly at game size; redone with the strengthened sad prompt (inner brows raised, tear, mouth corners down, head tilted down).",
         "a1": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md.",
         "a2": "no output: codex default model refused by the account before the Plus upgrade (gpt-6-astra 400) or gpt-6-luna without image_gen; see runs/2026-10-23-faces-sample/notes.md."
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-scarlet-portrait-vow": {
       "kind": "sprite",
@@ -26023,7 +26027,7 @@
           115
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-scarlet-portrait-vow",
       "batch": "faces-scarlet",
@@ -26047,7 +26051,8 @@
         "block": 11,
         "base_block": 11,
         "palette_share": 0.998
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-scarlet-portrait-shaken": {
       "kind": "sprite",
@@ -26073,7 +26078,7 @@
           115
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-scarlet-portrait-shaken",
       "batch": "faces-scarlet",
@@ -26097,7 +26102,8 @@
         "block": 11,
         "base_block": 11,
         "palette_share": 0.998
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-chizuru-portrait-solemn": {
       "kind": "sprite",
@@ -26125,7 +26131,7 @@
           123
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-chizuru-portrait-solemn",
       "batch": "faces-chizuru",
@@ -26149,7 +26155,8 @@
         "block": 9,
         "base_block": 9,
         "palette_share": 0.999
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-sylvie-portrait-serious": {
       "kind": "sprite",
@@ -26177,7 +26184,7 @@
           121
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-sylvie-portrait-serious",
       "batch": "faces-sylvie",
@@ -26201,7 +26208,8 @@
         "block": 10,
         "base_block": 10,
         "palette_share": 0.998
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-sylvie-portrait-sad": {
       "kind": "sprite",
@@ -26227,7 +26235,7 @@
           121
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-sylvie-portrait-sad",
       "batch": "faces-sylvie",
@@ -26251,7 +26259,8 @@
         "block": 10,
         "base_block": 10,
         "palette_share": 0.996
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-selene-portrait-sad": {
       "kind": "sprite",
@@ -26279,7 +26288,7 @@
           114
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-selene-portrait-sad",
       "batch": "faces-selene",
@@ -26303,7 +26312,8 @@
         "block": 10,
         "base_block": 10,
         "palette_share": 0.999
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-selene-portrait-wistful": {
       "kind": "sprite",
@@ -26331,7 +26341,7 @@
           114
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-selene-portrait-wistful",
       "batch": "faces-selene",
@@ -26355,7 +26365,8 @@
         "block": 10,
         "base_block": 10,
         "palette_share": 0.999
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-safira-portrait-sad": {
       "kind": "sprite",
@@ -26383,7 +26394,7 @@
           122
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-safira-portrait-sad",
       "batch": "faces-safira",
@@ -26407,7 +26418,8 @@
         "block": 9,
         "base_block": 9,
         "palette_share": 0.998
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-bobby-portrait-serious": {
       "kind": "sprite",
@@ -26435,7 +26447,7 @@
           121
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-bobby-portrait-serious",
       "batch": "faces-bobby",
@@ -26459,7 +26471,8 @@
         "block": 10,
         "base_block": 10,
         "palette_share": 0.998
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-bobby-portrait-sad": {
       "kind": "sprite",
@@ -26487,7 +26500,7 @@
           121
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-bobby-portrait-sad",
       "batch": "faces-bobby",
@@ -26511,7 +26524,8 @@
         "block": 10,
         "base_block": 10,
         "palette_share": 0.996
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-liz-portrait-serious": {
       "kind": "sprite",
@@ -26539,7 +26553,7 @@
           121
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-liz-portrait-serious",
       "batch": "faces-liz",
@@ -26563,7 +26577,8 @@
         "block": 10,
         "base_block": 10,
         "palette_share": 0.999
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-liz-portrait-sad": {
       "kind": "sprite",
@@ -26591,7 +26606,7 @@
           121
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-liz-portrait-sad",
       "batch": "faces-liz",
@@ -26615,7 +26630,8 @@
         "block": 10,
         "base_block": 10,
         "palette_share": 0.997
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-liz-portrait-hushed": {
       "kind": "sprite",
@@ -26643,7 +26659,7 @@
           121
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-liz-portrait-hushed",
       "batch": "faces-liz",
@@ -26667,7 +26683,8 @@
         "block": 10,
         "base_block": 10,
         "palette_share": 0.998
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     },
     "char-noel-portrait-sad": {
       "kind": "sprite",
@@ -26695,7 +26712,7 @@
           119
         ]
       },
-      "status": "qa_passed",
+      "status": "published",
       "chosen_attempt": "a1",
       "source_id": "char-noel-portrait-sad",
       "batch": "faces-noel",
@@ -26719,7 +26736,8 @@
         "block": 10,
         "base_block": 10,
         "palette_share": 0.998
-      }
+      },
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
     }
   },
   "requa_log": [

@@ -218,12 +218,14 @@ describe('speakerOf', () => {
   it('a serious or sad line with no art for that face shows the name plate alone, never a smiling normal (final review, story depth)', () => {
     // A companion's normal portrait often smiles: borrowed for a grave line it says the opposite. Until the art pipeline
     // brings her serious and sad faces (user approval, plan leftovers), the line has no portrait at all.
+    // Wave 1 (2026-10-23) brought most of them; the art index here leaves Noel's sad out to keep the rule in view.
     const { game } = mk();
+    const noSad: ArtIndex = { has: (u) => ART.has(u) && u !== art.portrait('noel', 'sad') };
     for (const mood of ['serious', 'sad'] as const) {
-      const said = speakerOf('noel', game.state, ART, mood);
+      const said = speakerOf('noel', game.state, noSad, mood);
       expect(said.name, mood).toBe(CHARACTERS.noel.name);
       expect(said.face, mood).toBeUndefined();
-      const withIt: ArtIndex = { has: (u) => ART.has(u) || u === art.portrait('noel', mood) };
+      const withIt: ArtIndex = { has: (u) => noSad.has(u) || u === art.portrait('noel', mood) };
       expect(speakerOf('noel', game.state, withIt, mood).face, mood).toBe(art.portrait('noel', mood));
     }
     // The faces on disk still show: Lorne's and Rin's sad.
@@ -239,11 +241,14 @@ describe('speakerOf', () => {
     expect(speakerOf('hero', game.state, ART, 'distant').face).toBe(art.portrait('hero', 'normal'));
     game.state.party.roster.rin.oath = true;
     expect(speakerOf('rin', game.state, ART, 'serious').face).toBe(art.portrait('rin-oath', 'normal'));
-    // A companion's heavy faces count as grave too: Chizuru's solemn, Scarlet's vow and shaken, Selene's wistful.
+    // A companion's heavy faces count as grave too: Chizuru's solemn, Scarlet's vow and shaken, Selene's wistful. Without
+    // their art (and their fallbacks') no portrait; wave 1 (2026-10-23) published them, so they show (storyFaces.test.ts).
+    const bare: ArtIndex = { has: (u) => ART.has(u) && !/-portrait-(serious|sad|solemn|vow|shaken|wistful)\.png$/.test(u) };
     for (const [who, mood] of [['chizuru', 'solemn'], ['scarlet', 'vow'], ['scarlet', 'shaken'], ['selene', 'wistful'], ['sylvie', 'serious']] as const) {
-      const said = speakerOf(who, game.state, ART, mood);
+      const said = speakerOf(who, game.state, bare, mood);
       expect(said.face, `${who} ${mood}`).toBeUndefined();
       expect(said.name).toBe(CHARACTERS[who].name);
+      expect(speakerOf(who, game.state, ART, mood).face, `${who} ${mood}`).toBe(art.portrait(who, mood));
     }
     // A plain or light line keeps her smiling normal face.
     expect(speakerOf('chizuru', game.state, ART, 'normal').face).toBe(art.portrait('chizuru', 'normal'));

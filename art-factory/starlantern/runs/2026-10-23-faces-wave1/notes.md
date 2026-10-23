@@ -19,3 +19,11 @@
   - **selene sad 與 wistful**：兩張都是垂眼，差別小；wistful 的淺笑又接近她本來就在笑的 normal。
   - **noel sad**、**bobby sad**：看得出難過（眉尾上揚、嘴角下垂），但比其他人淡，沒有明顯的淚。
 - 每個 id 都還有 1 次額度，如果使用者覺得上面幾張不夠，可以再生一次。
+
+## 接進遊戲（2026-10-23）
+
+- 使用者核准第一輪 18 張先接進遊戲看看（「可以先這樣接進去看看」）。比較弱的幾張（scarlet vow、selene wistful、noel 與 bobby 的 sad）先照現在的用，之後可能重做。
+- 發佈：`sl_art.py approve`（`approved_by` 記下日期與原話）→ `sl_art.py publish --approved`。18 張複製到 `public/assets/games/starlantern/char/<cid>-portrait-<mood>.png`，manifest 從 410 筆變成 428 筆。Gemini 和其他淘汰的候選都不在 runtime 路徑。
+- 程式：`render/artPaths.ts` 的 `PUBLISHED_FACES` 加上這 18 張；`ui2/story.ts` 的 `faceOrder` 讓夥伴的沉重台詞先找自己那張表情，找不到再照 `GRAVE_FALLBACK` 往下找（shaken→sad、solemn→serious、vow→serious、distant→wistful→sad、wistful→sad），都沒有才隱藏頭貼。莉茲的 `hushed` 用她的 hushed 頭貼。洛恩和凜不變。
+- 涵蓋：劇本裡夥伴的沉重台詞 107 句，**107 句都有臉，0 句隱藏**；莉茲的 hushed 8 句也都有臉（`ui2/storyFaces.test.ts`）。莎菲拉和諾艾兒沒有 serious 台詞，所以缺 serious 頭貼也不影響。
+- 遊戲內截圖（1280×720，headless、靜音）：`ingame/scarlet-sad.png`、`chizuru-solemn.png`、`selene-wistful.png`、`liz-hushed.png`、`bobby-serious.png`。這些都是回憶場景，所以頭貼套用遊戲原本的回憶色調（偏褐）。現在沒有任何沉重台詞還會隱藏頭貼，所以沒有「隱藏」的截圖。

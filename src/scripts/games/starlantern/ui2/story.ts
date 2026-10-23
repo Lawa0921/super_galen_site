@@ -35,15 +35,22 @@ export const NPC_FACILITY: Partial<Record<NpcId, 'guild' | 'shop' | 'inn' | 'gat
 };
 
 /** The heavy faces (story depth final review): a smile borrowed for one of these says the opposite. */
-const GRAVE = new Set<StoryMood>(['serious', 'sad', 'solemn', 'shaken', 'vow', 'distant', 'wistful']);
+export const GRAVE: ReadonlySet<StoryMood> = new Set<StoryMood>(['serious', 'sad', 'solemn', 'shaken', 'vow', 'distant', 'wistful']);
 /**
- * Faces to try for a mood, best first. Sad falls back to down and then normal; any other face straight to normal (never
- * another feeling). But a speaker whose normal portrait smiles (`NORMAL_SMILES`: the companions) takes a grave face of her
- * own or none: until the art pipeline brings it, the line shows its name plate alone (story depth final review).
+ * The near grave face a companion wears when she has no art for the exact one (wave 1 wiring, 2026-10-23): close enough
+ * in feeling that it never says the opposite, unlike her smiling normal.
+ */
+export const GRAVE_FALLBACK: Partial<Record<StoryMood, StoryMood[]>> = {
+  shaken: ['sad'], solemn: ['serious'], vow: ['serious'], distant: ['wistful', 'sad'], wistful: ['sad'],
+};
+/**
+ * Faces to try for a mood, best first. Sad falls back to down and then normal; any other face straight to normal. But a
+ * speaker whose normal portrait smiles (`NORMAL_SMILES`: the companions) takes a grave face of her own, then its
+ * `GRAVE_FALLBACK`, or none: with no such art the line shows its name plate alone (story depth final review).
  */
 const faceOrder = (mood: StoryMood, artId: string): StoryMood[] => {
   if (mood === 'normal') return ['normal'];
-  if (GRAVE.has(mood) && NORMAL_SMILES.has(artId)) return [mood];
+  if (GRAVE.has(mood) && NORMAL_SMILES.has(artId)) return [mood, ...(GRAVE_FALLBACK[mood] ?? [])];
   return mood === 'sad' ? ['sad', 'down', 'normal'] : [mood, 'normal'];
 };
 
