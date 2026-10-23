@@ -29,6 +29,10 @@ export default defineConfig({
 
   // Vite 配置
   vite: {
+    // 房主與客人必須同一次部署：Vercel 帶 commit SHA，本機是 'dev'
+    define: {
+      __DELVE_BUILD__: JSON.stringify(process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev'),
+    },
     css: {
       preprocessorOptions: {
         scss: {

@@ -13,6 +13,7 @@ import { FloatNumbers, digitRows, enemyFrameIndex, type FloatKind, type FloatNum
 const XP_MERGE = 0.6;
 import { beamColors, beamPixels, markerPixels, rarityColor, sparkleAt } from './lootArt';
 import { RARITIES } from '../engine/gear';
+import { isMine } from './eventScope';
 
 interface EnemySprite { frames: HTMLCanvasElement[]; flash: HTMLCanvasElement[]; dark: HTMLCanvasElement[]; anchor: 'bottom' | 'center'; }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number; grav: number; }
@@ -122,13 +123,13 @@ export class CombatLayer {
       case 'impact':
         this.burst(e.x, e.y, e.kind === 'fireball' || e.kind === 'ember' ? ['#ffa93a', '#e8701c'] : e.kind === 'bolt' ? ['#f2b888', '#b8788e', '#ffffff'] : ['#d8ba76', '#966139'], 4, 70);
         break;
-      case 'death': this.burst(e.x, e.y, ['#a83a10', '#6c1e14', '#e8701c'], 24, 160); this.shake(3, 0.4); break;
+      case 'death': this.burst(e.x, e.y, ['#a83a10', '#6c1e14', '#e8701c'], 24, 160); if (isMine(e, this.game.localPid)) this.shake(3, 0.4); break;
       case 'loot':
         if (e.rarity >= 3) { const R = RARITIES[e.rarity]; this.burst(e.x, e.y, [R.color, R.dark, '#ffffff'], e.rarity >= 4 ? 22 : 12, 150, 200); }
         if (e.rarity >= 4) this.shake(1, 0.15);
         break;
       case 'chain': this.chains.push({ pts: e.pts.map((p) => ({ ...p })), life: 0.36 }); break;
-      case 'undying': this.burst(e.x, e.y + 20, ['#ffd86a', '#fff4c0', '#ffa93a'], 30, 180, 120); this.shake(3, 0.3); break;
+      case 'undying': this.burst(e.x, e.y + 20, ['#ffd86a', '#fff4c0', '#ffa93a'], 30, 180, 120); if (isMine(e, this.game.localPid)) this.shake(3, 0.3); break;
       case 'airjump': this.burst(e.x, e.y, ['#ffffff', '#cceaf8', '#b4b9c8'], 8, 60, 0); break;
       // ── 等級系統：經驗飄字、升級金色爆發、震地塵土 ──
       case 'xp': this.addXpFloat(e.x, e.y - 6, e.amount); break;

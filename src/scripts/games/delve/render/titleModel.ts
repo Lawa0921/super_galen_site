@@ -6,6 +6,7 @@ import type { CharacterMeta, SaveSummary, SlotMeta } from '../save/storage';
 import type { AnySave, WorldData } from '../save/worldSave';
 import type { SaveData } from '../save/serialize';
 import type { DelveCharacter } from '../save/character';
+import type { ContinuePlan } from '../save/split';
 import { dollKey, plainLook, type DollLook } from '../engine/doll';
 import { normalizeAppearance } from '../engine/appearance';
 import { dollPreview } from './dollPreview';
@@ -120,6 +121,13 @@ export function characterLine(c: CharacterMeta, now: number): string {
 export function continueSlot(worlds: readonly SlotMeta[], chars: readonly { id: string }[]): SlotMeta | null {
   const ids = new Set(chars.map((c) => c.id));
   return worlds.find((m) => (m.charId ? ids.has(m.charId) : true)) ?? null;
+}
+
+/** 「繼續冒險」要開的角色上次在朋友的世界斷線、最後一筆交易沒確認（pendingWorld）→ 先跳確認（C1，同選角色時） */
+export function needsPendingConfirm(plan: ContinuePlan, chars: readonly { id: string; pendingWorld?: string }[]): boolean {
+  if (plan.kind !== 'split') return false;
+  const id = plan.character.id;
+  return Boolean(chars.find((c) => c.id === id)?.pendingWorld);
 }
 
 export type ImportPlan =

@@ -1,14 +1,15 @@
 // storage.test.ts — gzip 解壓的錯誤對應（截斷 / 損毀 → 友善訊息）、解壓上限（node 有 CompressionStream）、自動存檔排程
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
-  compress, decompress, importBlob, startAutosave, previewOf, SaveFileError, CORRUPT_MSG, MAX_DECOMPRESSED, type SlotMeta,
+  compress, decompress, importBlob, startAutosave, previewOf, characterRecord, characterMeta, SaveFileError, CORRUPT_MSG, MAX_DECOMPRESSED,
+  type SlotMeta,
 } from './storage';
 import { DelveGame } from '../engine/game';
 import { OUTFITS, normalizeAppearance } from '../engine/appearance';
 import { plainLook, type DollLook } from '../engine/doll';
 import { avatarSheet } from '../render/avatarArt';
 import { charDollLook } from '../render/titleModel';
-import { decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
+import { createCharacter, decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
 import { restoreSplit, saveSplitGame } from './worldSave';
 
 describe('decompress', () => {
@@ -124,5 +125,22 @@ describe('角色列表預覽（preview.look）', () => {
     expect(sheet(charDollLook(p))).toBe(sheet(before)); // 衣服 + 頭飾 + 頭盔都在
     expect(sheet(charDollLook({ appearance: c.appearance }))).toBe(sheet(plainLook(c.appearance)));
     expect(sheet(charDollLook({ appearance: c.appearance }))).not.toBe(sheet(before));
+  });
+});
+
+describe('角色記錄的 pendingWorld（co-op C1）', () => {
+  // IndexedDB 沒有單元測試環境：putCharacter / putSplit / listCharacters 都經這兩個純函式建記錄與列表列
+  it('putCharacter 帶 pendingWorld 時 listCharacters 看得到；之後一般 putCharacter 會清掉', () => {
+    const c = { ...createCharacter('乙', normalizeAppearance(undefined), 5), rev: 3 };
+    const data = new Uint8Array([1, 2, 3]);
+    const marked = characterRecord(c, data, 'w-friend');
+    expect(marked.pendingWorld).toBe('w-friend');
+    expect(characterMeta(marked, marked.preview ?? previewOf(c)).pendingWorld).toBe('w-friend');
+    for (const plain of [characterRecord(c, data), characterRecord(c, data, null)]) {
+      expect('pendingWorld' in plain).toBe(false);
+      const m = characterMeta(plain, plain.preview ?? previewOf(c));
+      expect('pendingWorld' in m).toBe(false);
+      expect(m).toMatchObject({ id: c.id, nick: c.nick, savedAt: c.savedAt, rev: 3 });
+    }
   });
 });

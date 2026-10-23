@@ -4,22 +4,21 @@
 import type { DelveGame, DelveEvent } from '../engine/game';
 import type { TileWindow } from '../engine/world';
 import { BLOCKS_LIGHT_LUT, T, isSolidTile, isDecor } from '../engine/tiles';
-import { ITEMS, type ItemId } from '../engine/items';
-import { TILE_SIZE, CHUNK, DAY_LENGTH } from '../engine/constants';
+import type { Pid } from '../engine/actor';
+import type { PlayerPose } from '../engine/pose';
+import { TILE_SIZE, CHUNK, DAY_LENGTH, PLAYER_H, PLAYER_W } from '../engine/constants';
 import { chunkOfX } from '../engine/coords';
 import { buildAtlas, perpMask, type Atlas } from './textures';
 import { ChunkLRU, cameraFocus, chunksTouchRect, followCamera, nearRect, visibleChunks, type Cam, type TileRect } from './model';
 import { CORNER, EDGE, blendOverlay, decorStyle, edgeMask, innerCornerMask, type Neighbor } from './autotile';
-import { armAngles, carryArm, carryStyle, flameFrame, heldCarryArm, swingAngle, SWING_RATE, type PoseKind } from './anim';
-import { clearShiftAll, faceGuard } from './heldLayout';
-import { skinRamp } from './avatarPalette';
+import { flameFrame } from './anim';
 import { FW, FH, Sprites } from './sprites';
-import { PlayerAnimator, atRopeTop, blinkAt, type PlayerAnim } from './playerAnim';
-import { MANTLE_KNEE_X, mantleLean, ROPE_HAND_HI, SHEET, type SheetAnim } from './avatarArt';
-import { previewArms } from './dollPreview';
+import type { RemoteView } from './remotePlayers';
+import type { PlayerAnim } from './playerAnim';
+import { drawAvatar, newAvatarState, type AvatarState, type AvatarWorld, type HeldPart, type PlayerDraw, type RimDraw } from './avatarDraw';
+import type { OwnPose } from '../net/guest';
 import { CombatLayer } from './combatDraw';
 import { LevelFx } from './levelFx';
-import { aimArmDeg, attackArmDeg, spearThrust } from './combatAnim';
 import { Background, type BiomeSource } from './background';
 import { ColumnCache, horizonSurfaceAt } from './colCache';
 import { scanTrees, torchMount, treeKind, TREE_KIND } from './scene';
@@ -43,6 +42,7 @@ import type { Waystone } from '../engine/waystones';
 import { bobberBmp, campfireBmp } from './fishArt';
 import { SettleLayer } from './settleDraw'; // [settle]
 import { FolkLayer } from './folkDraw';
+import { isMine } from './eventScope';
 
 const S = TILE_SIZE;
 /** 已解鎖傳送碑的小光源：強度 / 色（青） */
@@ -102,9 +102,11 @@ export class Renderer {
   cam: Cam = { x: 0, y: 0 };
   drawCam: Cam = { x: 0, y: 0 };
   /** 最後一次畫玩家：影格表第幾格、原點（緩衝座標）、影格偏移、面向（e2e 檢查武器不蓋臉用） */
-  playerDraw: { fi: number; x: number; y: number; ox: number; oy: number; facing: number } | null = null;
+  playerDraw: PlayerDraw | null = null;
   /** 最後一次畫玩家手上的東西（局部座標，面向右；e2e 檢查手持物整個看得到、不蓋臉用） */
-  heldDraws: { c: HTMLCanvasElement; x: number; y: number }[] = [];
+  heldDraws: HeldPart[] = [];
+  /** 遠端玩家這一幀畫在哪（腳底中心）、手上有沒有東西（e2e / 測試用；pid 離開就刪） */
+  readonly avatarDraws = new Map<Pid, { held: boolean; x: number; y: number }>();
   /** 世界 px（= 美術 px）→ CSS px 縮放 = scale / dpr */
   zoom = 1;
   /** 每個美術像素佔幾個裝置像素（整數） */
@@ -113,7 +115,8 @@ export class Renderer {
   viewW = 0; viewH = 0; dpr = 1;
   /** 低解析緩衝大小（美術 px） */
   bufW = 1; bufH = 1;
-  facing: 1 | -1 = 1;
+  /** 本地玩家畫出來的面向 */
+  get facing(): 1 | -1 { return this.local.facing; }
   /** 使用者縮放（預設倍率 + offset，整數倍） */
   zoomOffset = 0;
   private cssW = 1; private cssH = 1;
@@ -129,6 +132,24 @@ export class Renderer {
   /** 標題畫面背景：鏡頭由外部指定（世界 px，左上角），不跟玩家；不畫玩家 */
   camOverride: Cam | null = null;
   hidePlayer = false;
+  /** 本地玩家的畫圖狀態（受傷時間由 hurt 事件設定）；遠端玩家每個 pid 一份 */
+  private readonly local: AvatarState = newAvatarState();
+  private readonly remotes = new Map<Pid, AvatarState>();
+  private readonly avatarWorld: AvatarWorld = { isClimbable: (tx, ty) => this.game.world.isClimbable(tx, ty) };
+  /** 這一幀本地玩家的 pose（drawPlayer 算；船 / 釣線 / 輪廓光共用） */
+  private localPose: PlayerPose | null = null;
+  /** 客人：自己的攻擊 / 挖掘 / 釣魚 / 無敵用房主回報的（D3）；null = 單機 / 房主 */
+  private ownPose: (() => OwnPose | null) | null = null;
+  /** 最後一次畫本地玩家用的紙娃娃 key（e2e：換裝之後精靈快取 key 換了） */
+  dollKey = '';
+  private remoteSource: (() => RemoteView[]) | null = null;
+  private remoteNow: readonly RemoteView[] = [];
+  /** 這一幀畫的遠端玩家（名牌共用；來源有狀態，不要在同一幀再叫一次） */
+  get remoteViews(): readonly RemoteView[] { return this.remoteNow; }
+  /** 其他玩家的來源（房主 / 客人各給一個）；null = 單機不畫 */
+  setRemoteSource(fn: (() => RemoteView[]) | null): void { this.remoteSource = fn; }
+  /** 客人：自己的動作狀態來源（NetGuest.ownPose）；本地玩家的攻擊 / 挖掘 / 釣魚 / 無敵用它 */
+  setOwnPose(fn: (() => OwnPose | null) | null): void { this.ownPose = fn; }
   /** 畫瞄準游標（標題背景關掉） */
   showCursor = true;
   /** 遠景不做生態區交界混色（標題背景的大像素下，混色的抖動圖樣像雜訊） */
@@ -163,7 +184,8 @@ export class Renderer {
   /** 釣魚：浮標、營火火焰（3 格動畫）、竿尖位置（世界 px；畫釣線用） */
   private bobber = toCanvas(bobberBmp()) as HTMLCanvasElement;
   private campfires = [0, 1, 2].map((f) => toCanvas(campfireBmp(f)) as HTMLCanvasElement);
-  private rodTip: { x: number; y: number } | null = null;
+  /** 本地玩家的竿尖（世界 px） */
+  private get rodTip(): { x: number; y: number } | null { return this.local.rodTip; }
 
   private cache: ChunkLRU<HTMLCanvasElement>;
   private pool: HTMLCanvasElement[] = [];
@@ -210,7 +232,6 @@ export class Renderer {
   private stonesSeen: Waystone[] = [];
   private particles: Particle[] = [];
   private walkPhase = 0;
-  private swingPhase = 0;
   private snapNext = true;
   private viewed = false;
   private bg: Background;
@@ -322,9 +343,11 @@ export class Renderer {
   onEvent(e: DelveEvent): void {
     this.combat.onEvent(e);
     this.levelFx.onEvent(e);
-    if (e.type === 'respawn') this.snapCamera();
-    if (e.type === 'hurt' && !e.cause) this.hurtAt = this.clock;
-    if (e.type === 'climb') this.climbDust(e.phase !== 'grab', e.phase === 'mantle' ? e : null);
+    const mine = isMine(e, this.game.localPid);
+    if (e.type === 'respawn' && mine) this.snapCamera();
+    // 受傷姿勢：單機 / 房主看事件；客人只看房主回報的計數（ownPose.hurt），轉送回來的事件不再設一次
+    if (e.type === 'hurt' && !e.cause && !this.ownPose) this.local.hurtAt = this.clock;
+    if (e.type === 'climb' && mine) this.climbDust(e.phase !== 'grab', e.phase === 'mantle' ? e : null);
     if (e.type === 'lightning') { this.bolt = { x: e.x * S + S / 2, seed: ++this.boltN }; this.lightDirty = true; }
     if (e.type === 'mine' && e.tile === T.ICE) this.fx.invalidate(this.game.world, [this.game.world.chunkIndex(Math.floor(e.x / CHUNK), Math.floor(e.y / CHUNK))]);
     if ((e.type === 'mine' || e.type === 'place') && this.nearView(e.x, e.y, LIGHT_MARGIN)) this.lightDirty = true;
@@ -489,6 +512,8 @@ export class Renderer {
     this.combat.drawWorld(ctx, vb, this.glowSeen);
     this.settleLayer.drawWorld(ctx, vb, this.clock); // [settle]
     this.folkLayer.drawWorld(ctx, vb, this.clock);
+    // 其他玩家（連線時）：畫在本地玩家後面，跟本地玩家同一個 painter
+    this.drawRemotes(ctx, dt);
     this.drawPlayer(ctx, dt);
     ph.sprites = this.lap();
     const tl = performance.now();
@@ -794,11 +819,11 @@ export class Renderer {
   // ── 前景物件 ─────────────────────────────────────────
   private drawMiningAndCursor(ctx: CanvasRenderingContext2D): void {
     const g = this.game, st = g.getState();
-    if (st.mining) {
-      const stage = Math.min(3, Math.floor(st.mining.progress * 4));
-      const c = this.atlas.crack(stage);
-      ctx.drawImage(this.atlas.canvas, c.sx, c.sy, S, S, st.mining.x * S, st.mining.y * S, S, S);
-    }
+    // 裂痕看每個玩家的 pose（客人副本不挖，getState().mining 一直是 null）：遠端 = 內插過的進度；
+    // 本地 = 這一幀 drawPlayer 用的那份（客人 = 房主回報的 ownPose；單機 / 房主 = poseOf，跟 getState 同值）
+    for (const v of this.remoteNow) if (v.pose.mining) this.drawCrack(ctx, v.pose.mining);
+    const mine = this.localPose?.mining;
+    if (mine) this.drawCrack(ctx, mine);
     const { x, y } = st.aim;
     if (!this.showCursor || !g.world.inBounds(x, y)) return;
     const ok = g.canReach(x, y);
@@ -815,212 +840,77 @@ export class Renderer {
     corners('#0c0a12', 1);
     corners(ok ? '#ffffff' : '#e8701c', 0);
   }
-
-  /** 背包裡最好的鎬（挖掘時手上顯示它） */
-  private bestPickItem(): ItemId | null {
-    let best: ItemId | null = null, tier = -1;
-    for (const s of this.game.inventory.slots) {
-      const p = s ? ITEMS[s.item].pick : undefined;
-      if (s && p && p.speed > tier) { tier = p.speed; best = s.item; }
-    }
-    return best;
+  /** 挖掘裂痕：進度 0..1 → 4 階 */
+  private drawCrack(ctx: CanvasRenderingContext2D, m: { x: number; y: number; progress: number }): void {
+    const c = this.atlas.crack(Math.min(3, Math.floor(m.progress * 4)));
+    ctx.drawImage(this.atlas.canvas, c.sx, c.sy, S, S, m.x * S, m.y * S, S, S);
   }
 
-  /** 玩家動畫狀態機（climb / hang / mantle / swim / hurt / dead …）；e2e 讀 playerAnim */
-  private readonly animator = new PlayerAnimator();
-  /** 最近一次受傷的時間（clock 秒） */
-  private hurtAt = -99;
   /** 目前的玩家動畫（e2e / debug） */
   playerAnim: PlayerAnim = 'idle';
-  /** 這一幀玩家畫在哪（光照遮罩之後補畫暗處輪廓光用）；沒畫 = null */
-  private rimDraw: { cx: number; bottom: number; facing: number; fi: number; x: number; y: number; canvas: HTMLCanvasElement } | null = null;
+  /** 這一幀本地玩家畫在哪（光照遮罩之後補畫暗處輪廓光用）；沒畫 = null */
+  private get rimDraw(): RimDraw | null { return this.local.rim; }
   /** 動畫提示（換手 → 攀爬音效）；main.ts 接到音效 */
   onCue: ((cue: 'grip') => void) | null = null;
 
-  /** 玩家中心欄這段繩子最上面那格的頂端（世界 px） */
-  private ropeTopY(p: { x: number; y: number; w: number; h: number }): number {
-    const w = this.game.world, tx = Math.floor((p.x + p.w / 2) / S);
-    let ty = Math.floor((p.y + p.h - 0.01) / S);
-    while (ty >= 0 && !w.isClimbable(tx, ty)) ty--;
-    while (ty > 0 && w.isClimbable(tx, ty - 1)) ty--;
-    return ty * S;
+  /**
+   * 本地玩家的 pose 與揮擊時鐘：單機 / 房主 = poseOf(localPid)，揮擊進度直接用引擎的計時 t
+   * （at = −t、時鐘 0：time − at 再減回來有浮點誤差，剛好落在整數幀的門檻會差一幀）；
+   * 客人的攻擊 / 挖掘 / 釣魚 / 無敵改用房主回報的（D3），時鐘 = game.time（ws 帶來的房主時間）
+   */
+  private poseNow(): { pose: PlayerPose; time: number; own: boolean } {
+    const g = this.game, pose = g.poseOf(g.localPid);
+    const own = this.ownPose?.();
+    if (own) { pose.attack = own.attack; pose.mining = own.mining; pose.fishing = own.fishing; pose.iframes = own.iframes; pose.hurt = own.hurt; return { pose, time: g.time, own: true }; }
+    const a = g.local.attack;
+    if (pose.attack && a) { pose.attack = { ...pose.attack, at: -a.t }; return { pose, time: 0, own: false }; }
+    return { pose, time: g.time, own: false };
   }
 
   private drawPlayer(ctx: CanvasRenderingContext2D, dt: number): void {
-    const g = this.game, p = g.player, st = g.getState();
-    this.rimDraw = null;
+    const g = this.game, now = this.poseNow(), pose = this.localPose = now.pose;
+    this.local.rim = null;
     if (this.hidePlayer) return;
-    const SP = this.sprites;
-    // 紙娃娃：樣子沒變（key 一樣）就沿用快取的影格表
+    // 紙娃娃：樣子沒變（key 一樣）就沿用快取的影格表 / 手臂
     const doll = g.doll();
-    SP.setDoll(doll.look, doll.key);
-    const mt = st.player.mantle;
-    // 船上：站著不動的姿勢（船在走、人不踏步）
-    const boating = g.local.boating;
-    const swim = !boating && st.liquid.frac > 0.55 && !p.onGround && !st.player.climbing;
-    const an = this.animator.update({
-      dt, dead: st.dead, climbing: st.player.climbing, mantle: mt ? mt.p : null, onGround: boating || p.onGround, vx: boating ? 0 : p.vx, vy: boating ? 0 : p.vy,
-      swim, sinceHurt: this.clock - this.hurtAt,
-    });
-    this.playerAnim = an.anim;
-    if (an.cue === 'grip') this.climbDust(false);
-    if (an.cue) this.onCue?.(an.cue);
-    const atk = st.attack;
-    if (mt) this.facing = mt.dir;
-    else if (atk) this.facing = atk.dir;
-    else if (!st.dead) {
-      if (p.vx > 8) this.facing = 1; else if (p.vx < -8) this.facing = -1;
-      if (st.mining) this.facing = (st.mining.x + 0.5) * S >= p.x + p.w / 2 ? 1 : -1;
-      // 釣魚：面向浮標（拋竿時沿用遊戲的面向）
-      else if (st.fishing) this.facing = Math.abs(st.fishing.x - (p.x + p.w / 2)) > 2 ? (st.fishing.x >= p.x + p.w / 2 ? 1 : -1) : st.facing;
-    }
+    this.dollKey = doll.key;
+    // 單機 / 房主：受傷姿勢由 hurt 事件設定（onEvent）→ 計數先對齊，painter 不會晚一幀再設一次；客人看房主回報的計數
+    if (!this.ownPose) this.local.hurtSeen = pose.hurt;
+    const o = drawAvatar(ctx, this.sprites, pose, doll.look, doll.key, this.local, dt, this.clock, this.avatarWorld, now.time);
+    // 客人還沒收到房主的回報（計數是副本自己的 0）→ 當成沒看過：第一份到的時候不算挨打
+    if (this.ownPose && !now.own) this.local.hurtSeen = null;
+    this.playerAnim = o.anim;
+    if (o.cue === 'grip') this.climbDust(false);
+    if (o.cue) this.onCue?.(o.cue);
+    // 元素詞條的火星 / 冰晶…：只有本地玩家（粒子跟著 game.player）
     this.elementSparks(doll.look, dt);
-    this.swingPhase = st.mining ? (this.swingPhase + dt * SWING_RATE) % 1 : 0;
-    // 受傷無敵時閃爍（倒地 / 縮身那一下不閃）
-    if (!st.dead && st.iframes > 0 && an.anim !== 'hurt' && Math.floor(st.iframes * 16) % 2 === 1) return;
-    const cx = Math.round(p.x + p.w / 2), bottom = Math.round(p.y + p.h + p.gfxOffY);
-    const ox = -FW / 2, oy = -FH;
-    // 爬到繩頂：舉高的那隻手以上沒有繩子了 → 換成兩手抓在胸口的繩頂影格
-    let sheetAnim: SheetAnim = an.anim === 'idle' && blinkAt(this.clock) ? 'blink' : an.anim;
-    let sheetFrame = an.frame;
-    if (st.player.climbing && atRopeTop(an.anim, bottom + oy + ROPE_HAND_HI, this.ropeTopY(p))) { sheetAnim = 'ropetop'; sheetFrame = Math.floor(this.clock * 3) % 2; }
-    const fi = SHEET[sheetAnim][0] + Math.min(sheetFrame, SHEET[sheetAnim][1] - 1);
-    // 分幀烘焙：換裝那一幀只烘這一格 + 時間預算內的幾格（不會整張同步烘完卡住）
-    const sheet = SP.dollSheet(fi);
-    const meta = sheet.meta[fi];
-    this.rimDraw = { cx, bottom, facing: this.facing, fi, x: ox + (meta.arms ? 0 : meta.ox ?? 0), y: oy, canvas: sheet.canvas };
-    if (!meta.arms) {
-      // 背面爬繩 / 掛著 / 倒地：手臂畫在影格裡，手上的東西收起來
-      ctx.save(); ctx.translate(cx, bottom); ctx.scale(this.facing, 1);
-      ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox + (meta.ox ?? 0), oy, FW, FH);
-      ctx.restore();
-      this.rodTip = null;
-      return;
-    }
-    const kind: PoseKind = an.anim === 'walk' || an.anim === 'jump' || an.anim === 'fall' ? an.anim : 'idle';
-    const local = an.anim === 'walk' || an.anim === 'idle' ? an.frame : 0;
-    // 船上：手上不拿東西（不能挖 / 用道具）
-    const held = st.held && !boating ? st.held.item : null;
-    const heldDef = held ? ITEMS[held] : null;
-    let swing: number | null = st.mining ? swingAngle(this.swingPhase) : null;
-    let blade: ItemId | null = null;
-    let rot: { item: ItemId; base: number; push: number } | null = null;
-    let throwMini: ItemId | null = null;
-    if (atk) {
-      swing = attackArmDeg(atk.kind, atk.progress, aimArmDeg(atk.angle, atk.dir));
-      if (atk.kind === 'sword' || atk.kind === 'broadsword') blade = atk.item;
-      else if (atk.kind === 'bow') rot = { item: atk.item, base: -Math.PI * 0.75, push: 0 };
-      else if (atk.kind === 'staff') rot = { item: atk.item, base: -Math.PI / 4, push: 4 };
-      else if (atk.kind === 'spear') rot = { item: atk.item, base: -Math.PI / 4, push: 4 + spearThrust(atk.progress) * 16 };
-      else if (atk.progress < 0.5) throwMini = atk.item;
-    }
-    const special = an.anim === 'mantle' || an.anim === 'swim' || an.anim === 'hurt';
-    if (special) { swing = null; blade = null; rot = null; throwMini = null; }
-    const arms = special ? previewArms(an.anim as 'mantle' | 'swim' | 'hurt', an.frame) : armAngles(kind, local, swing);
-    // 攀上邊緣（最後一格「站起來」以外）：手掌撐在牆角那一格上（手掌 3 寬：從牆邊往內），換算成影格座標
-    // 牆角在胸口以下、手搆不到（繩頂旁的台面）→ 整個人往牆那邊傾幾格，手掌才落得到牆角上（不會浮在半空）
-    let lean = 0, grip: ReturnType<typeof SP.grip> | null = null;
-    if (mt && an.frame < 3) {
-      const gx = Math.round((mt.edgeX + mt.dir - cx) * this.facing - ox), gy = Math.round(mt.edgeY - 1 - bottom - oy);
-      const s0 = SP.shoulder(false);
-      lean = mantleLean(gx, gy, { x: s0.x + meta.dx, y: s0.y + meta.dy });
-      // 膝蓋上台那格：身體已經越過牆角，手改撐在身前的台面上（不會往後拉長）
-      grip = SP.grip(meta, fi, Math.max(an.frame === 2 ? MANTLE_KNEE_X : 0, gx - lean), gy);
-    }
-    // 待機 / 走路 / 跳躍時，手上的鎬 / 武器也拿著（往前斜舉）；挖掘時換成背包裡最好的鎬、攻擊時用攻擊動畫
-    const carry = !st.mining && !atk && !special ? carryStyle(heldDef) : null;
-    if (carry && carry !== 'mini') arms.front = carryArm(kind, arms.front);
-    // 鎬：扛在身前、鎬頭朝上（不會拖在腳邊）
-    // 釣竿：手往前平舉到胸口（竿子從胸前斜上去，線從竿尖出來）
-    // 釣竿：手往前平舉（竿子從手往前上方斜出去、不會蓋到大頭）
-    if (carry === 'rod') arms.front = st.fishing?.state === 'bite' ? 105 : 85;
-    if (carry === 'pick') arms.front = (kind === 'jump' || kind === 'fall' ? 150 : 128) + (kind === 'walk' ? Math.round(Math.sin((local / 8) * Math.PI * 2) * 6) : 0);
-    const showPick = special ? null : st.mining ? this.bestPickItem() : carry === 'pick' ? held : null;
-    if (carry === 'blade') blade = held;
-    const heldOther = !special && !st.mining && !atk && held && carry !== 'rod' && ((!heldDef?.pick && !heldDef?.weapon) || carry === 'mini') ? held : null;
-    // 火把 / 方塊：前手往前平舉（手在身體前面、離開臉）
-    if (heldOther && kind !== 'jump' && kind !== 'fall') arms.front = heldCarryArm(heldOther === 'torch' || heldOther === 'lantern' ? 'torch' : 'mini') + Math.round(arms.front * 0.15);
+    if (o.playerDraw) this.playerDraw = o.playerDraw;
+    if (o.heldDraws) this.heldDraws = o.heldDraws;
+    for (const t of o.cool) this.coolSeen.push(t);
+    for (const t of o.torches) this.torchesSeen.push(t);
+  }
 
-    const bodyDy = meta.dy;
-    const X = cx + lean * this.facing;
-    // e2e 用：這一幀玩家用影格表的哪一格、畫在哪（低解析緩衝座標）
-    this.playerDraw = { fi, x: X, y: bottom, ox, oy, facing: this.facing };
-    const sb0 = SP.shoulder(true), sf0 = SP.shoulder(false);
-    const sb = { x: sb0.x + meta.dx, y: sb0.y }, sf = { x: sf0.x + meta.dx, y: sf0.y };
-    // 局部座標（面向右；畫的時候整個鏡像）：肩膀 / 自然的手的位置
-    const sx = ox + sf.x, sy = oy + sf.y + bodyDy;
-    const radA = (arms.front * Math.PI) / 180;
-    const hx = Math.round(sx + Math.sin(radA) * SP.handReach), hy = Math.round(sy + Math.cos(radA) * SP.handReach);
-    // ── 手上的東西：先算好要畫哪幾張、畫在哪（局部座標）。一律畫在頭和臉的前面 ──
-    const parts: { c: HTMLCanvasElement; x: number; y: number }[] = [];
-    let glowAt: { x: number; y: number } | null = null, rodTipL: { x: number; y: number } | null = null;
-    if (!grip && (showPick || blade)) { const it = SP.arm(false, showPick, arms.front, blade, true); parts.push({ c: it.canvas, x: sx - it.ox, y: sy - it.oy }); }
-    if (heldOther === 'torch') parts.push({ c: SP.torches[flameFrame(this.clock, 7, 3)], x: hx - 4, y: hy - 13 });
-    else if (heldOther) parts.push({ c: SP.mini(heldOther), x: hx - 2, y: hy - 6 });
-    if (throwMini) parts.push({ c: SP.mini(throwMini), x: hx - 2, y: hy - 5 });
-    if (rot && atk) {
-      // 弓 / 法杖 / 矛：轉到瞄準角（局部座標：面向左時角度鏡像），從肩膀沿瞄準方向推出去
-      const la = this.facing > 0 ? atk.angle : Math.PI - atk.angle;
-      const c = SP.rotatedIcon(rot.item, la, rot.base), ux = Math.cos(la), uy = Math.sin(la);
-      const px = sx + ux * (SP.handReach + rot.push), py = sy + uy * (SP.handReach + rot.push);
-      parts.push({ c, x: Math.round(px - c.width / 2), y: Math.round(py - c.height / 2) });
-      if (rot.item === 'crystal_staff') glowAt = { x: px + ux * 8, y: py + uy * 8 };
+  /** 其他玩家：同一個 painter（手持物 / 揮擊 / 挖掘 / 攀邊 / 釣竿 / 受傷都畫）；離開的 pid 狀態丟掉 */
+  private drawRemotes(ctx: CanvasRenderingContext2D, dt: number): void {
+    this.remoteNow = this.remoteSource && !this.hidePlayer ? this.remoteSource() : [];
+    const seen = new Set<Pid>();
+    for (const v of this.remoteNow) {
+      seen.add(v.pid);
+      let st = this.remotes.get(v.pid);
+      if (!st) { st = newAvatarState(); this.remotes.set(v.pid, st); }
+      if (!v.look) { st.rim = null; st.rodTip = null; this.avatarDraws.delete(v.pid); continue; }
+      const o = drawAvatar(ctx, this.sprites, v.pose, v.look, v.key, st, dt, this.clock, this.avatarWorld, v.time);
+      if (o.at) this.avatarDraws.set(v.pid, { held: (o.heldDraws?.length ?? 0) > 0, x: o.at.x, y: o.at.y });
+      for (const t of o.cool) this.coolSeen.push(t);
+      for (const t of o.torches) this.torchesSeen.push(t);
     }
-    if (carry === 'rotated' && held) {
-      // 弓 / 法杖 / 矛拿在手上：法杖 / 矛朝上斜立、弓朝前（圖示中心沿著拿的方向往外推：握的那端在手上）
-      const wk = heldDef?.weapon?.kind;
-      const up = wk === 'bow' ? 0.3 : -Math.PI / 2 + 0.6, base = wk === 'bow' ? -Math.PI * 0.75 : -Math.PI / 4, push = wk === 'bow' ? 4 : 8;
-      const c = SP.rotatedIcon(held, up, base);
-      parts.push({ c, x: Math.round(hx - c.width / 2 + Math.cos(up) * push), y: Math.round(hy - c.height / 2 + Math.sin(up) * push) });
-    }
-    if (carry === 'rod' && held) {
-      // 釣竿：往前斜舉（浮標在水上時比較平、上鉤時往上抬）；竿尖記下來畫釣線
-      const fishing = st.fishing;
-      const up = fishing?.state === 'bite' ? -Math.PI / 2 + 0.55 : fishing ? -Math.PI / 2 + 1.05 : -Math.PI / 2 + 0.85;
-      const c = SP.rotatedIcon(held, up, -Math.PI / 4);
-      parts.push({ c, x: Math.round(hx - c.width / 2 + Math.cos(up) * 9), y: Math.round(hy - c.height / 2 + Math.sin(up) * 9) });
-      rodTipL = { x: hx + Math.cos(up) * 18, y: hy + Math.sin(up) * 18 };
-    }
-    // 握點：手持物只要碰到臉上「眼睛 + 嘴」那一塊，整隻手（連手上的東西）往前推到碰不到為止（手臂往前伸）
-    const g0 = faceGuard(meta.dx, meta.dy), guard = { x0: g0.x0 + ox, x1: g0.x1 + ox, y0: g0.y0 + oy, y1: g0.y1 + oy };
-    const reach = special || grip ? 0 : clearShiftAll(parts.flatMap((q) => { const s = SP.spans(q.c); return s ? [{ s, x: q.x, y: q.y }] : []; }), guard);
-    const sk = skinRamp(doll.look.app.skin), css = (c: readonly number[]): string => `rgb(${c[0]},${c[1]},${c[2]})`;
+    for (const k of [...this.remotes.keys()]) if (!seen.has(k)) { this.remotes.delete(k); this.avatarDraws.delete(k); }
+  }
 
-    ctx.save();
-    ctx.translate(X, bottom);
-    ctx.scale(this.facing, 1);
-    // 紙娃娃順序：後手臂 → 第一張（背飾 / 後髮 / 身體 / 腿 / 胸）→ 前手臂 → 第二張（臉 / 前髮 / 頭飾 / 前飾品）→ 手上的東西 + 手
-    if (!grip) { const back = SP.arm(true, null, arms.back); ctx.drawImage(back.canvas, ox + sb.x - back.ox, oy + sb.y + bodyDy - back.oy); }
-    ctx.drawImage(sheet.canvas, fi * FW, 0, FW, FH, ox, oy, FW, FH);
-    // 揮劍殘影：刀身掃過的弧（前 80%）
-    if (atk && blade && atk.progress < 0.8) {
-      const r0 = 20, r1 = atk.kind === 'broadsword' ? 34 : 30;
-      for (let d = arms.front + 8; d <= Math.min(arms.front + 70, 205); d += 4) {
-        const fade = (d - arms.front) / 70;
-        ctx.fillStyle = fade < 0.35 ? '#ffffff' : fade < 0.7 ? '#cceaf8' : '#94c8ee';
-        const ux = Math.sin((d * Math.PI) / 180), uy = Math.cos((d * Math.PI) / 180);
-        for (let r = r0 + Math.round(fade * 6); r <= r1; r += 3) ctx.fillRect(Math.round(sx + reach + ux * r), Math.round(sy + uy * r), 1, 1);
-      }
-    }
-    if (grip) ctx.drawImage(grip.arms, ox - grip.pad, oy - grip.pad);
-    else {
-      const front = SP.arm(false, null, arms.front, null);
-      ctx.drawImage(front.canvas, ox + sf.x - front.ox, oy + sf.y + bodyDy - front.oy);
-      // 手往前伸：前臂從原本的手一路接到推出去的握點（畫在頭後面：從臉的前緣外面露出來）
-      if (reach > 0) {
-        ctx.fillStyle = css(sk[1]); ctx.fillRect(hx - 1, hy - 2, reach + 2, 4);
-        ctx.fillStyle = css(sk[3]); ctx.fillRect(hx - 1, hy - 1, reach + 2, 2);
-      }
-    }
-    ctx.drawImage(sheet.canvas, fi * FW, FH, FW, FH, ox, oy, FW, FH);
-    // 手掌蓋在臉 / 頭髮上面：看得出抓住了邊緣
-    if (grip) ctx.drawImage(grip.hands, ox - grip.pad, oy - grip.pad);
-    this.heldDraws = [];
-    for (const q of parts) { ctx.drawImage(q.c, q.x + reach, q.y); this.heldDraws.push({ c: q.c, x: q.x + reach, y: q.y }); }
-    ctx.restore();
-    if (glowAt) this.coolSeen.push({ x: X + this.facing * (glowAt.x + reach), y: bottom + glowAt.y });
-    if (heldOther === 'torch' || heldOther === 'lantern') this.torchesSeen.push({ x: X + this.facing * (hx + reach), y: bottom + hy - 8 });
-    this.rodTip = rodTipL ? { x: Math.round(X + this.facing * (rodTipL.x + reach)), y: Math.round(bottom + rodTipL.y) } : null;
+  /** 這一幀畫的每個玩家（遠端在前、本地最後）：pid、pose、畫圖狀態 */
+  private *avatars(): Generator<[Pid, PlayerPose, AvatarState]> {
+    for (const v of this.remoteNow) { const st = this.remotes.get(v.pid); if (st && v.look) yield [v.pid, v.pose, st]; }
+    if (this.localPose) yield [this.game.localPid, this.localPose, this.local];
   }
 
   /** 傳送碑（世界物件，畫在人物後面、光照之前）：未解鎖灰、解鎖刻符青；已解鎖的記進 stonesSeen 與冷色光暈 */
@@ -1053,29 +943,30 @@ export class Renderer {
     }
   }
 
-  /** 小木船：每個坐船的 actor（不只本地玩家）腳下畫一艘；隨 clock 上下晃 1 px（只在畫面上，不影響物理） */
+  /** 小木船：每個坐船的玩家（遠端 + 本地）腳下畫一艘；隨 clock 上下晃 1 px（只在畫面上，不影響物理） */
   private drawBoats(ctx: CanvasRenderingContext2D): void {
-    const g = this.game, vb = this.viewBox;
-    for (const a of g.actors.values()) {
-      if (!a.boating || a.dead) continue;
-      const p = a.player, cx = Math.round(p.x + p.w / 2), feet = Math.round(p.y + p.h);
+    const vb = this.viewBox;
+    for (const [pid, p, st] of this.avatars()) {
+      if (!p.boating || p.dead) continue;
+      const cx = Math.round(p.x + PLAYER_W / 2), feet = Math.round(p.y + PLAYER_H);
       if (cx + BOAT_PX < vb.x || cx - BOAT_PX > vb.x + vb.w || feet + BOAT_PY < vb.y || feet - BOAT_PY > vb.y + vb.h) continue;
       const c = this.boatCanvas ??= toCanvas(boatBmp()) as HTMLCanvasElement;
       // 每個人的船晃的相位錯開一點
-      const bob = Math.round(Math.sin(this.clock * 2.4 + a.pid.length * 1.7 + a.pid.charCodeAt(0)));
-      const facing = a === g.local ? this.facing : a.facing;
+      const bob = Math.round(Math.sin(this.clock * 2.4 + pid.length * 1.7 + pid.charCodeAt(0)));
       ctx.save();
       ctx.translate(cx, feet - BOAT_RAIL_ABOVE - BOAT_RAIL_Y + bob);
-      ctx.scale(facing, 1);
+      ctx.scale(st.facing, 1);
       ctx.drawImage(c, -BOAT_PX / 2, 0);
       ctx.restore();
     }
   }
 
-  /** 釣線（竿尖 → 浮標，往下垂的拋物線，1px 像素點）+ 浮標（上鉤時沉下去、頭上冒驚嘆號） */
+  /** 每個在釣魚的玩家（遠端 + 本地）的釣線與浮標 */
   private drawFishing(ctx: CanvasRenderingContext2D): void {
-    const f = this.game.fishing, tip = this.rodTip;
-    if (!f || !tip) return;
+    for (const [, p, st] of this.avatars()) if (p.fishing && st.rodTip) this.drawLine(ctx, p.fishing, st.rodTip);
+  }
+  /** 釣線（竿尖 → 浮標，往下垂的拋物線，1px 像素點）+ 浮標（上鉤時沉下去、頭上冒驚嘆號） */
+  private drawLine(ctx: CanvasRenderingContext2D, f: NonNullable<PlayerPose['fishing']>, tip: { x: number; y: number }): void {
     const bite = f.state === 'bite';
     // 浮標：漂著時一半在水裡（只露上半）；上鉤時沉到只剩天線、抖動
     const bob = f.state === 'floating' ? Math.round(Math.sin(this.clock * 3) * 0.6) : 0;
@@ -1346,13 +1237,18 @@ export class Renderer {
     this.stats.lightFrames = j.frames;
   }
 
-  /** 暗處的玩家輪廓光：站的地方很暗時，在光照遮罩之上補畫一圈冷灰的外框（身體 / 頭；手臂很細就不補） */
+  /** 暗處的玩家輪廓光（遠端 + 本地）：站的地方很暗時，在光照遮罩之上補畫一圈冷灰的外框（身體 / 頭；手臂很細就不補） */
   private drawPlayerRim(ctx: CanvasRenderingContext2D): void {
-    const r = this.rimDraw;
-    if (!r) return;
-    const t = this.game.playerTile();
-    const lv = Math.max(this.lightAt(t.x, t.y), this.lightAt(t.x, t.y - 1));
-    if (lv > 0.32) return;
+    for (const [pid, p, st] of this.avatars()) {
+      const r = st.rim;
+      if (!r) continue;
+      const t = pid === this.game.localPid ? this.game.playerTile() : { x: Math.floor((p.x + PLAYER_W / 2) / S), y: Math.floor((p.y + PLAYER_H / 2) / S) };
+      const lv = Math.max(this.lightAt(t.x, t.y), this.lightAt(t.x, t.y - 1));
+      if (lv > 0.32) continue;
+      this.drawRim(ctx, r);
+    }
+  }
+  private drawRim(ctx: CanvasRenderingContext2D, r: RimDraw): void {
     ctx.save();
     ctx.translate(r.cx, r.bottom);
     ctx.scale(r.facing, 1);

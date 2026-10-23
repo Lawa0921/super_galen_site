@@ -54,8 +54,10 @@ export const DESPAWN = { x: 110, y: 72 };
 export const ACTIVE = { x: 80, y: 56 };
 /** 床（重生點）周圍不生成（格） */
 export const BED_SAFE = 24;
-/** 全世界怪物上限 */
+/** 每位玩家那一帶的怪物上限（D8：活躍範圍內 + 遠方凍住但離他最近的；單機 = 全世界） */
 export const MAX_ENEMIES = 40;
+/** 全世界怪物上限（co-op：每位玩家各自生成，8 人時的總量保險） */
+export const MAX_ENEMIES_TOTAL = 160;
 
 export interface HabitatSource {
   /** 深度層線走 world.layersAt(x)（每欄；越界夾到邊欄） */

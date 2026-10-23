@@ -1873,6 +1873,39 @@ test.describe('delve 標題流程（生成畫面 / 回到標題）', () => {
     await page.addInitScript(() => { try { localStorage.setItem('delve.peaceful', '1'); localStorage.setItem('delve.help.seen', '1'); } catch { /* ignore */ } });
   });
 
+  test('「繼續冒險」開到待同步（pendingWorld）的角色 → 先跳確認；取消留在標題，確定才進去', async ({ page }) => {
+    await page.goto('/games/delve?seed=pend-cont&autostart=1&fresh=1');
+    await waitGame(page);
+    await page.evaluate(() => window.__delveDebug!.save());
+    // 角色記錄標上 pendingWorld（同客人斷線時 CoopGuestSession 寫的）
+    await page.evaluate(() => new Promise<void>((ok, bad) => {
+      const r = indexedDB.open('delve');
+      r.onsuccess = () => {
+        const d = r.result, t = d.transaction('characters', 'readwrite'), st = t.objectStore('characters'), q = st.getAll();
+        q.onsuccess = () => { for (const rec of q.result as Record<string, unknown>[]) st.put({ ...rec, pendingWorld: 'w-friend' }); };
+        t.oncomplete = () => { ok(); d.close(); };
+        t.onerror = () => bad(t.error);
+      };
+    }));
+    await page.goto('/games/delve');
+    await pressStart(page);
+    await expect(page.locator('#delve-continue')).toBeVisible();
+    await page.click('#delve-continue');
+    await expect(page.locator('#delve-confirm')).toBeVisible();
+    await expect(page.locator('#delve-confirm-msg')).toContainText('最後一筆交易還沒確認');
+    await expect(page.locator('#delve-confirm-ok')).toHaveText('繼續');
+    await page.click('#delve-confirm-cancel');
+    await expect(page.locator('#delve-confirm')).toBeHidden();
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => Boolean(window.__delveDebug))).toBe(false);
+    await expect(page.locator('#delve-root')).toHaveAttribute('data-phase', 'title');
+    await page.click('#delve-continue');
+    await expect(page.locator('#delve-confirm')).toBeVisible();
+    await page.click('#delve-confirm-ok');
+    await waitGame(page);
+    expect(await page.evaluate(() => window.__delveDebug!.game.seed)).toBe('pend-cont');
+  });
+
   test('生成畫面：地層剖面跟著生成器真的取樣、六個階段依序完成', async ({ page }) => {
     await page.goto('/games/delve');
     await pressStart(page);
@@ -2461,7 +2494,7 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     await waitGame(page);
     await page.waitForFunction(() => window.__delveDebug!.game.player.onGround, undefined, { timeout: 10000 });
     await page.waitForTimeout(200);
-    const k0 = await page.evaluate(() => window.__delveDebug!.handle.renderer.sprites.dollKey);
+    const k0 = await page.evaluate(() => window.__delveDebug!.handle.renderer.dollKey);
     // 選單裡不再有「角色外觀」（外觀改到梳妝台）
     await page.click('#delve-menu-btn');
     await expect(page.locator('#delve-menu')).toBeVisible();
@@ -2483,7 +2516,7 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     await page.click('#delve-wr-done');
     await expect(page.locator('#delve-wardrobe')).toBeHidden();
     await page.waitForTimeout(250);
-    const k1 = await page.evaluate(() => window.__delveDebug!.handle.renderer.sprites.dollKey);
+    const k1 = await page.evaluate(() => window.__delveDebug!.handle.renderer.dollKey);
     expect(k1).not.toBe(k0);
     const a1 = await page.evaluate(() => window.__delveDebug!.game.appearance);
     expect({ race: a1.race, outfit: a1.outfit, acc: a1.acc, glasses: a1.glasses }).toEqual({ race: a0.race, outfit: a0.outfit, acc: a0.acc, glasses: a0.glasses });
@@ -2492,7 +2525,7 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
   test('紙娃娃：戴頭盔 → 精靈快取 key 換了；外觀欄蓋過防具的樣子；隱藏開關；說明框試穿；存檔後還在', async ({ page }) => {
     await page.goto('/games/delve?seed=doll-e2e&autostart=1&fresh=1');
     await waitGame(page);
-    const key = (): Promise<string> => page.evaluate(() => window.__delveDebug!.handle.renderer.sprites.dollKey);
+    const key = (): Promise<string> => page.evaluate(() => window.__delveDebug!.handle.renderer.dollKey);
     await page.waitForTimeout(200);
     const k0 = await key();
     await page.evaluate(() => { window.__delveDebug!.game.equip('iron_helmet'); window.__delveDebug!.game.equip('iron_chestplate'); });
@@ -2616,13 +2649,14 @@ test.describe('delve 角色外觀 / 紙娃娃 / 攀爬', () => {
     await page.waitForTimeout(400);
     // 臉那一層（影格表第 3 列）裡眼睛 / 嘴的像素，在畫面緩衝上是不是還是一樣的顏色
     const face = (): Promise<{ n: number; bad: number }> => page.evaluate(() => {
-      const r = window.__delveDebug!.handle.renderer as unknown as { playerDraw: { fi: number; x: number; y: number; ox: number; oy: number; facing: number } | null; drawCam: { x: number; y: number }; buf: HTMLCanvasElement; sprites: { dollSheet(i?: number): { canvas: HTMLCanvasElement } } };
+      const r = window.__delveDebug!.handle.renderer as unknown as { playerDraw: { fi: number; x: number; y: number; ox: number; oy: number; facing: number } | null; drawCam: { x: number; y: number }; buf: HTMLCanvasElement; sprites: { sheetFor(look: unknown, key: string, i?: number): { canvas: HTMLCanvasElement } } };
       const pd = r.playerDraw;
       if (!pd) return { n: 0, bad: -1 };
       const FW = 52, FH = 54, t = document.createElement('canvas');
       t.width = FW; t.height = FH;
       const tc = t.getContext('2d')!;
-      tc.drawImage(r.sprites.dollSheet(pd.fi).canvas, pd.fi * FW, FH * 3, FW, FH, 0, 0, FW, FH);
+      const doll = window.__delveDebug!.game.doll();
+      tc.drawImage(r.sprites.sheetFor(doll.look, doll.key, pd.fi).canvas, pd.fi * FW, FH * 3, FW, FH, 0, 0, FW, FH);
       const fd = tc.getImageData(0, 0, FW, FH).data, bc = r.buf.getContext('2d')!, bd = bc.getImageData(0, 0, r.buf.width, r.buf.height);
       // 眼睛（紫羅蘭瞳 + 上眼瞼）與嘴（深紅 / 紅 / 舌頭）
       const want = new Set(['2c2450', '9a6ee0', '472819', '8c2038', 'c8344c', 'e890b0']);

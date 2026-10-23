@@ -13,6 +13,9 @@
 // 驗證：世界欄位重用 serialize 的驗證函式（壞了 = 損毀）；worldId 不合法 = 損毀；worldName 不合法 → 退回 seed；
 //   visits 不是物件 = 損毀，但單筆 visit 不合法只丟那一筆（該角色在這個世界從出生點重來）；
 //   匯出檔才有的內嵌 character 有值時過 validateCharacter。
+// held（co-op M-C C1）：房主移除客人時留下的角色（rev 是房主的 checkpoint rev），客人重進時 rev 較新就用它、收到 chkAck 就清掉。
+//   不升 format：沒有 held = {}；非空才寫；單筆不合法只丟那一筆；最多 MAX_HELD 筆，超過以 at 最舊者淘汰（LRU）。
+//   MAX_HELD 不跟 visits 共用（M-C2 D7）：7 位在線客人每 30 秒的 held 不能擠掉剛斷線那位的。
 import {
   SAVE_FORMAT, SaveFormatError, decodeSave, encodeContainer, isNum, readChunks, readContainer, restoreGame, snapshotGame,
   validBed, validBossActive, validChests, validDiscovery, validDrops, validEnv, validExplored, validExtra, validFolk, validHalves,
@@ -41,7 +44,10 @@ import type { QuestLogJSON } from '../engine/quests';
 export const WORLD_FORMAT = 11;
 /** format 10 的世界檔第一次以 format 11 寫回前的備份槽後綴 */
 export const V10_BACKUP_SUFFIX = '.v10.bak';
-export const MAX_VISITS = 8;
+/** visits 上限：8 人同房 + 輪流來的朋友，彼此的床 / 位置不互擠（M-C2） */
+export const MAX_VISITS = 16;
+/** held（離線客人的角色）上限：比 visits 寬，在線的 7 位 + 最近斷線的都放得下 */
+export const MAX_HELD = 32;
 const MAX_WORLD_NAME = 64;
 /** worldId 與 visits 的 key（角色 id）共用 */
 const ID_RE = /^[A-Za-z0-9-]{1,64}$/;
@@ -54,6 +60,9 @@ export interface VisitSave {
   exploredOuter?: OuterBitsSave;
 }
 export type VisitMap = Record<string, VisitSave>;
+/** co-op 房主移除客人時留下的角色（C1）：rev = 房主那份 checkpoint 的 rev；at = 移除的時間（LRU 用） */
+export interface HeldChar { rev: number; character: DelveCharacter; at: number }
+export type HeldMap = Record<string, HeldChar>;
 export interface WorldHeader {
   format: 10 | 11; genVersion: number; seed: string; width: number; height: number;
   time: number; tick: number; savedAt: number; worldId: string; worldName: string;
@@ -63,6 +72,8 @@ export interface WorldHeader {
   extra: { minedIce: number[]; rng?: { loot?: RngState; fish?: RngState } };
   settle?: SettlementJSON; halves?: number[]; folk?: Omit<FolkSave, 'buffs'>;
   visits: VisitMap;
+  /** co-op 離線客人的角色（C1；非空才有，沒有 = {}） */
+  held?: HeldMap;
   /** 無限世界才有（format 11） */
   bounds?: 'infinite';
   /** 外圍生成器版本（無限世界才有） */
@@ -73,7 +84,7 @@ export interface WorldHeader {
   character?: DelveCharacter;
 }
 export interface WorldData { header: WorldHeader; chunks: Map<number, ChunkPayload> }
-export interface WorldIdentity { worldId: string; worldName: string; visits: VisitMap }
+export interface WorldIdentity { worldId: string; worldName: string; visits: VisitMap; held?: HeldMap }
 export type AnySave = { kind: 'legacy'; data: SaveData } | { kind: 'world'; data: WorldData };
 export type SplitRestoreResult =
   | { ok: true; game: DelveGame; world: WorldHeader; freshVisit: boolean }
@@ -88,6 +99,16 @@ function evictOldest(v: VisitMap, max: number, keep?: string): void {
   if (ids.length <= max) return;
   const order = ids.filter((id) => id !== keep).sort((a, b) => v[a].lastSeen - v[b].lastSeen);
   for (const id of order.slice(0, ids.length - max)) delete v[id];
+}
+
+/** held 的 LRU：回傳新物件（不改輸入），超過 max 筆淘汰 at 最舊的（keep 永不淘汰；同 at 先淘汰先放進來的） */
+export function trimHeld(held: HeldMap, max: number = MAX_HELD, keep?: string): HeldMap {
+  const out: HeldMap = { ...held };
+  const ids = Object.keys(out);
+  if (ids.length <= max) return out;
+  const order = ids.filter((id) => id !== keep).sort((a, b) => out[a].at - out[b].at);
+  for (const id of order.slice(0, ids.length - max)) delete out[id];
+  return out;
 }
 
 /** 放進 / 更新一個角色的 visit，回傳新物件（不改輸入）；超過 max 筆淘汰最久沒來的 */
@@ -131,6 +152,7 @@ export function splitSnapshot(data: SaveData, who: CharIdentity, where: WorldIde
   let folk: Omit<FolkSave, 'buffs'> | undefined;
   if (h.folk) { const { buffs: _buffs, ...rest } = h.folk; folk = rest; }
   const rng = h.extra?.rng;
+  const held = trimHeld(where.held ?? {});
   const header: WorldHeader = {
     format: WORLD_FORMAT, genVersion: h.genVersion, seed: h.seed, width: h.width, height: h.height,
     time: h.time, tick: h.tick, savedAt: h.savedAt, worldId: where.worldId, worldName: where.worldName,
@@ -141,6 +163,7 @@ export function splitSnapshot(data: SaveData, who: CharIdentity, where: WorldIde
     settle: h.settle ? { ...h.settle, spawnCore: null } : undefined,
     halves: h.halves, folk,
     visits: upsertVisit(where.visits, who.id, visit),
+    ...(Object.keys(held).length ? { held } : {}),
     ...(h.bounds ? { bounds: h.bounds } : {}),
     ...(h.outerGen !== undefined ? { outerGen: h.outerGen } : {}),
     ...(h.stones?.length ? { stones: h.stones } : {}),
@@ -260,6 +283,17 @@ function validVisit(v: unknown, width: number, height: number, bounds?: 'infinit
   }
 }
 
+/** 單筆 held：不合法（角色檔壞、id 與 key 不符、rev 不是 ≥ 0 的整數、at 不是數字）→ null（丟掉這筆） */
+function validHeld(v: unknown, charId: string): HeldChar | null {
+  if (!isObj(v) || !Number.isSafeInteger(v.rev) || (v.rev as number) < 0 || !isNum(v.at)) return null;
+  let character: DelveCharacter;
+  try { character = validateCharacter(v.character); } catch (e) {
+    if (e instanceof SaveFormatError) return null;
+    throw e;
+  }
+  return character.id === charId ? { rev: v.rev as number, character, at: v.at } : null;
+}
+
 /** 世界的戰鬥欄位（首領 / 擊殺 / 和平模式）：型別錯 → 損毀；未知 kind 寬鬆丟掉（同 validCombat） */
 function validWorldCombat(v: unknown): WorldHeader['combat'] {
   if (!isObj(v)) throw new SaveFormatError('combat');
@@ -299,6 +333,16 @@ function worldFromContainer(bytes: Uint8Array, { raw, body }: { raw: unknown; bo
     if (ok) visits[id] = ok;
   }
   evictOldest(visits, MAX_VISITS);
+  // held 是可選欄位：不是物件就當沒有（丟掉的只是離線客人的保險，不值得讓整個世界讀不了）
+  let held: HeldMap = {};
+  if (isObj(raw.held)) {
+    for (const [id, v] of Object.entries(raw.held)) {
+      if (!ID_RE.test(id)) continue;
+      const ok = validHeld(v, id);
+      if (ok) held[id] = ok;
+    }
+    held = trimHeld(held);
+  }
   const extra = validExtra(raw.extra);
   const folk = validFolk(raw.folk);
   let worldFolk: Omit<FolkSave, 'buffs'> | undefined;
@@ -320,6 +364,7 @@ function worldFromContainer(bytes: Uint8Array, { raw, body }: { raw: unknown; bo
     halves: validHalves(raw.halves),
     folk: worldFolk,
     visits,
+    ...(Object.keys(held).length ? { held } : {}),
     ...(bounds ? { bounds } : {}),
     ...(outerGen !== undefined ? { outerGen } : {}),
     ...stonesField(raw.stones),

@@ -6,9 +6,10 @@ import { OUTFIT_PLAIN, normalizeAppearance } from '../engine/appearance';
 import { restoreGame } from './serialize';
 import { readLegacyFixture } from './legacyFixture';
 import { createCharacter, decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
-import { decodeWorld, encodeWorld, restoreSplit, saveSplitGame, type WorldData } from './worldSave';
+import { decodeWorld, encodeWorld, restoreSplit, saveSplitGame, type HeldChar, type VisitSave, type WorldData } from './worldSave';
 import { expectSameGame } from './expectSameGame';
 import type { CharacterMeta } from './storage';
+import type { VisitStore } from '../net/host';
 import { levelForXp } from '../engine/levels';
 import {
   CHARACTER_CORRUPT_MSG, CHARACTER_MISSING_MSG, NO_CHARACTER_MSG, WORLD_CORRUPT_MSG, SplitSession, commitMigration, importWorld, newWorldSlot,
@@ -402,5 +403,50 @@ describe('fix round 1: no second world generation, import timestamps', () => {
     const l = await importWorld(st, readLegacyFixture(), 300);
     if ('error' in l) throw new Error(l.error);
     expect((await st.listWorlds())[0].slot).toBe(l.slot);
+  });
+});
+
+describe('SplitSession 當作房主的 VisitStore（co-op C1）', () => {
+  const visitOf = (x: number): VisitSave => ({
+    pos: { x, y: 20, vx: 0, vy: 0 }, bed: null, spawnCore: null, markers: [], vitals: { breath: 10, burning: 0, honey: 0 }, lastSeen: 5,
+  });
+  const heldOf = (id: string, rev: number, at: number): HeldChar => ({ rev, character: { ...createCharacter('客', normalizeAppearance(undefined), 1), id, rev }, at });
+
+  it('SplitSession.put/get/putHeld 之後 snapshot 的 world header 帶 visits 與 held', () => {
+    const s = SplitSession.fresh('vs', 1, 'w-vs');
+    const store: VisitStore = s;                       // 型別上就是 NetHost 的 VisitStore
+    expect(store).toBe(s);
+    expect(s.worldId).toMatch(/^[A-Za-z0-9-]+$/);
+    expect(s.get('g1')).toBeUndefined();
+    s.put('g1', visitOf(33));
+    expect(s.get('g1')).toEqual(visitOf(33));
+    const h = heldOf('g1', 4, 100);
+    s.putHeld('g1', h);
+    expect(s.getHeld('g1')).toEqual(h);
+    const { world } = s.snapshot(small('vs'), 10);
+    expect(world.header.worldId).toBe(s.worldId);
+    expect(world.header.visits.g1).toEqual(visitOf(33));
+    expect(world.header.visits[s.charId]).toBeDefined();
+    expect(world.header.held).toEqual({ g1: h });
+    const back = decodeWorld(encodeWorld(world));
+    expect(back.header.held!.g1.rev).toBe(4);
+    // 讀回來的世界：fromLoaded 帶著 held
+    const again = SplitSession.fromLoaded(back.header, { ...h.character, id: s.charId }, 'w-vs');
+    expect(again.getHeld('g1')!.rev).toBe(4);
+    expect(again.get('g1')!.pos.x).toBe(33);
+    s.putHeld('g1', null);
+    expect(s.getHeld('g1')).toBeUndefined();
+    expect(s.snapshot(small('vs'), 11).world.header).not.toHaveProperty('held');
+  });
+
+  it('snapshot 不會把其他角色的 held 清掉', () => {
+    const s = SplitSession.fresh('vs2', 1, 'w-vs2');
+    s.putHeld('g1', heldOf('g1', 2, 100));
+    s.putHeld('g2', heldOf('g2', 3, 200));
+    s.snapshot(small('vs2'), 10);
+    const { world } = s.snapshot(small('vs2'), 20);
+    expect(Object.keys(world.header.held!).sort()).toEqual(['g1', 'g2']);
+    expect(s.getHeld('g1')!.rev).toBe(2);
+    expect(s.getHeld('g2')!.rev).toBe(3);
   });
 });

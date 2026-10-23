@@ -4,6 +4,7 @@ import { FIXED_DT } from '../engine/constants';
 import { LIQUID_BUDGET_MS } from '../engine/game';
 import { LIQ } from '../engine/liquidKind';
 import { Renderer } from './renderer';
+import { attackSfx, isMine, lifeEvent, offscreenOther, unlockToast } from './eventScope';
 import { Hud } from './hud';
 import { FixedStepper, blockedMessage, hintText, stepsInFrame, inputAction, drainsEvents } from './model';
 import { Minimap, FullMap } from './mapView';
@@ -24,6 +25,9 @@ import { FolkUi } from './folkUi';
 import { WaystoneUi } from './waystoneUi';
 import { NPCS } from '../engine/npcs';
 import { LEVEL_NAMES } from '../engine/settlement';
+import { Nameplates } from './nameplates';
+import type { RemoteView } from './remotePlayers';
+import type { OwnPose } from '../net/guest';
 
 /** 稀有 / 傳說的漁獲（釣到時多一聲鈴） */
 const FISH_RARE = new Set(FISH.filter((f) => f.rarity === 'rare' || f.rarity === 'legendary').map((f) => f.item));
@@ -87,6 +91,10 @@ export interface StartOptions {
   onMirror?: (open: boolean) => void;
   /** 用了轉生之藥：開種族選單（確定換族才呼叫 game.rebirth 消耗） */
   onRebirth?: () => void;
+  /** 其他玩家（連線）：renderer 每幀叫一次，名牌用同一份；不給 = 不畫 */
+  remotes?: () => RemoteView[];
+  /** 客人：自己的攻擊 / 挖掘 / 釣魚 / 無敵（房主回報的，M-C2 D3）；不給 = 單機 / 房主 */
+  ownPose?: () => OwnPose | null;
 }
 
 const WINDOW = 120;
@@ -103,6 +111,11 @@ export function startDelve(opts: StartOptions): DelveHandle {
   const stepper = new FixedStepper(FIXED_DT, 0.25);
   const sound = new SoundManager();
   renderer.onCue = () => sound.climbGrip();
+  // 遠端玩家：renderer 一幀只叫一次來源，名牌讀 renderer.remoteViews（同一份）
+  renderer.setRemoteSource(opts.remotes ?? null);
+  renderer.setOwnPose(opts.ownPose ?? null);
+  const wlabels = root.querySelector<HTMLElement>('#delve-wlabels');
+  const nameplates = opts.remotes && wlabels ? new Nameplates(wlabels) : null;
   const ui = new ExploreUi(root, game, renderer.atlas);
   const calendar = new CalendarUi(root, game);
   const settleUi = new SettleUi(root, game, renderer, renderer.atlas, (m) => hud.toast(m, 2400), () => hud.setInventory(true));
@@ -245,7 +258,19 @@ export function startDelve(opts: StartOptions): DelveHandle {
       for (const e of game.drainEvents()) {
         renderer.onEvent(e);
         levels.onEvent(e);
-        if (e.type === 'blocked') {
+        // 共玩時別人的事件也會流進來：只屬於自己的表現（提示 / 背包 / 鏡頭）要用 mine 擋掉
+        const mine = isMine(e, game.localPid);
+        if (lifeEvent(e, game.localPid, {
+          onDeath: () => { sound.death(); hud.setInventory(false); },
+          onRespawn: () => hud.toast('你甦醒了'),
+          onUndying: () => { sound.undying(); hud.toast('不滅：撐住了致命一擊！', 2200, TOAST_HIGH); },
+          onSleepStart: () => { sound.sleep(); hud.setInventory(false); },
+          onOtherDown: (nick) => hud.toast(`${nick} 倒下了`, 1800, TOAST_LOW),
+          onOtherBack: (nick) => hud.toast(`${nick} 回來了`, 1800, TOAST_LOW),
+          nickOf: (pid) => renderer.remoteViews.find((v) => v.pid === pid)?.nick ?? '',
+        })) { /* 死亡 / 甦醒 / 不滅：見 eventScope.lifeEvent */ }
+        else if (offscreenOther(e, game.localPid, renderer.remoteViews, (x, y, m) => renderer.nearView(x, y, m))) { /* 別人在畫面外：不放音效 / 提示 */ }
+        else if (e.type === 'blocked') {
           const m = blockedMessage(e.reason);
           if (m) hud.toast(m);
         } else if (e.type === 'chest') hud.setChest(e.open);
@@ -262,12 +287,10 @@ export function startDelve(opts: StartOptions): DelveHandle {
         }
         else if (e.type === 'boat') { sound.boat(e.on); if (e.on) hud.toast('坐上小木船：按跳下船'); }
         else if (e.type === 'hint') hud.toast(hintText(e.id));
-        else if (e.type === 'unlock') { hud.toast(e.item === 'golden_key' ? '用金鑰匙打開了金寶箱' : '用地城鑰匙打開了門'); invChanged = true; }
+        else if (e.type === 'unlock') { const t = unlockToast(e, game.localPid); if (t) { hud.toast(t); invChanged = true; } }
         else if (e.type === 'door') { /* 門的開關：只需要重畫（chunk dirty） */ }
         else if (e.type === 'attack') {
-          if (e.kind === 'bow') sound.bow(); else if (e.kind === 'staff') sound.magic();
-          else if (e.kind === 'throw' || e.kind === 'boomerang') sound.throwSfx(); else sound.swing(e.kind === 'broadsword');
-          if (e.kind === 'throw' || e.kind === 'bow') invChanged = true;
+          if (attackSfx(e.kind, sound)) invChanged = true;
         }
         else if (e.type === 'hit') sound.enemyHit(e.crit);
         else if (e.type === 'kill') sound.enemyDeath();
@@ -276,11 +299,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
         else if (e.type === 'liquid') { if (renderer.nearView(e.x, e.y)) sound.sizzle(); }
         else if (e.type === 'bubble') sound.bubble();
         else if (e.type === 'liquidtool') { sound.splash(false, e.liquid === LIQ.LAVA); invChanged = true; }
-        else if (e.type === 'death') { sound.death(); hud.setInventory(false); }
-        else if (e.type === 'respawn') hud.toast('你甦醒了');
         else if (e.type === 'sleep') {
-          if (e.phase === 'start') { sound.sleep(); hud.setInventory(false); }
-          else if (e.phase === 'wait') { /* 等待人數由 HUD 每幀讀 game.sleepWaiting() */ }
+          if (e.phase === 'wait') { /* 等待人數由 HUD 每幀讀 game.sleepWaiting() */ }
           else { sound.wake(); hud.toast(`早安——${game.dateText()}`, 2400); }
         }
         else if (e.type === 'lightning') sound.thunder(e.dist);
@@ -291,14 +311,16 @@ export function startDelve(opts: StartOptions): DelveHandle {
           else if (e.phase === 'catch' && e.item) {
             const def = ITEMS[e.item], rare = Boolean(def.unique) || FISH_RARE.has(e.item);
             sound.catchFish(rare);
-            hud.toast(def.unique ? `傳說之魚！釣到了 ${def.name.zh}` : `釣到了 ${def.name.zh}`, rare ? 2600 : 1600);
-            invChanged = true;
+            if (mine) {
+              hud.toast(def.unique ? `傳說之魚！釣到了 ${def.name.zh}` : `釣到了 ${def.name.zh}`, rare ? 2600 : 1600);
+              invChanged = true;
+            }
           }
-          else if (e.phase === 'escape') { sound.reel(true); hud.toast('魚跑掉了…（浮標沉下去時要馬上按）'); }
+          else if (e.phase === 'escape') { sound.reel(true); if (mine) hud.toast('魚跑掉了…（浮標沉下去時要馬上按）'); }
           else if (e.phase === 'reel') sound.reel(false);
-          else if (e.phase === 'snag') hud.toast('浮標卡住了');
-          else if (e.phase === 'burn') hud.toast('浮標燒掉了：熔岩要用燼線釣竿');
-          else if (e.phase === 'snap') hud.toast('走太遠，釣線斷了');
+          else if (e.phase === 'snag') { if (mine) hud.toast('浮標卡住了'); }
+          else if (e.phase === 'burn') { if (mine) hud.toast('浮標燒掉了：熔岩要用燼線釣竿'); }
+          else if (e.phase === 'snap') { if (mine) hud.toast('走太遠，釣線斷了'); }
         }
         else if (e.type === 'crate') { sound.treasure(); hud.toast(`打開了${ITEMS[e.item].name.zh}`); invChanged = true; }
         else if (e.type === 'craft' && gearSlot(e.item)) {
@@ -324,7 +346,6 @@ export function startDelve(opts: StartOptions): DelveHandle {
           if (e.rarity >= 4) hud.toast(`${RARITIES[e.rarity].zh}裝備掉落了！`, 2400, TOAST_HIGH);
         }
         else if (e.type === 'chain') sound.zap();
-        else if (e.type === 'undying') { sound.undying(); hud.toast('不滅：撐住了致命一擊！', 2200, TOAST_HIGH); }
         else if (e.type === 'airjump') sound.airJump();
         else if (e.type === 'climb') { if (e.phase === 'grab') sound.climbGrab(); else if (e.phase === 'mantle') sound.mantle(); else sound.mantleTop(); }
         else if (e.type === 'codex') { sound.codex(); hud.toast(`圖鑑收錄新詞條：${affixDef(e.affix).word}`, 1800, TOAST_LOW); }
@@ -362,10 +383,11 @@ export function startDelve(opts: StartOptions): DelveHandle {
           ui.showNote(e.first ? '地標 · 新發現' : '地標', e.title, e.first ? `${e.text}${e.items.length || e.coins ? `\n\n得到：${[...e.items.map((i) => `${ITEMS[i.item].name.zh} ×${i.n}`), ...(e.coins ? [`${e.coins} 銅幣`] : [])].join('、')}` : ''}${e.clue ? `\n\n線索：「${e.clue}」已經標在地圖上了。` : ''}` : e.text);
           if (e.first) { sound.treasure(); invChanged = true; } else sound.tick();
         }
-        else if (e.type === 'travel') { renderer.snapCamera(); sound.recall('done'); hud.toast('傳送到另一個據點'); }
-        else if (e.type === 'stone_unlock') { sound.discover(); hud.toast(`傳送碑解鎖：${e.name}`, 2400, TOAST_HIGH); }
+        else if (e.type === 'travel') { if (mine) { renderer.snapCamera(); sound.recall('done'); hud.toast('傳送到另一個據點'); } }
+        else if (e.type === 'stone_unlock') { if (mine) { sound.discover(); hud.toast(`傳送碑解鎖：${e.name}`, 2400, TOAST_HIGH); } }
         else if (e.type === 'stone') {
-          if (e.phase === 'open') { if (ui.journalOpen) ui.setJournal(false); folkUi.closeTop(); folkUi.closeTop(); settleUi.closeNpc(); settleUi.closeSettle(); stoneUi.open(e.id); sound.tick(); }
+          if (!mine) { /* 別人的傳送碑操作：不開我的面板、不動我的鏡頭 */ }
+          else if (e.phase === 'open') { if (ui.journalOpen) ui.setJournal(false); folkUi.closeTop(); folkUi.closeTop(); settleUi.closeNpc(); settleUi.closeSettle(); stoneUi.open(e.id); sound.tick(); }
           else { stoneUi.close(); renderer.snapCamera(); sound.recall('done'); hud.toast(`傳送到${game.waystones.byId(e.to ?? 0)?.name ?? '傳送碑'}`); }
         }
         else if (e.type === 'boss') {
@@ -383,6 +405,7 @@ export function startDelve(opts: StartOptions): DelveHandle {
       if (invChanged) hud.refresh();
     }
     renderer.render((paused && game.mode === 'solo') || talkPaused ? 0 : dt);
+    nameplates?.update(renderer.remoteViews, (x, y) => renderer.worldToScreen(x, y));
     hud.tick();
     levels.tick(dt);
     ui.tick(dt);
@@ -474,6 +497,8 @@ export function startDelve(opts: StartOptions): DelveHandle {
       levels.destroy();
       sound.destroy();
       hud.destroy();
+      nameplates?.destroy();
+      renderer.setRemoteSource(null);
       renderer.destroy();
     },
   };

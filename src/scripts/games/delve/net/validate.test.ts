@@ -46,10 +46,25 @@ describe('parseGuestCtrl', () => {
     expect((r as { polluted?: unknown } | null)?.polluted).toBeUndefined();
     expect(Object.getPrototypeOf(r)).toBe(Object.prototype);
   });
+  it('ping / pong：at 必須是有限數（1e999 解析成 Infinity → 拒絕）', () => {
+    expect(parse({ t: 'ping', at: 12.5 })).toEqual({ t: 'ping', at: 12.5 });
+    expect(parse({ t: 'pong', at: 0 })).toEqual({ t: 'pong', at: 0 });
+    for (const t of ['ping', 'pong']) {
+      expect(parse(null, `{"t":"${t}","at":1e999}`)).toBeNull();
+      expect(parse(null, `{"t":"${t}","at":"1"}`)).toBeNull();
+      expect(parse({ t })).toBeNull();
+    }
+  });
+  it('chkAck：rev 必須是 ≥ 0 的整數', () => {
+    expect(parse({ t: 'chkAck', rev: 7, junk: 1 })).toEqual({ t: 'chkAck', rev: 7 });
+    expect(parse({ t: 'chkAck', rev: 0 })).toEqual({ t: 'chkAck', rev: 0 });
+    for (const rev of [-1, 1.5, '3', null, undefined]) expect(parse({ t: 'chkAck', rev })).toBeNull();
+    expect(parse(null, '{"t":"chkAck","rev":1e999}')).toBeNull();
+  });
 });
 
 describe('parsePs', () => {
-  const base = { t: 'ps', seq: 1, tseq: 0, x: 10, y: -20, vx: 1, vy: 2, flags: 3, facing: 1, aim: [4, 5], mine: true, use: false, slot: 2 };
+  const base = { t: 'ps', seq: 1, tseq: 0, x: 10, y: -20, vx: 1, vy: 2, flags: 3, facing: 1, aim: [4, 5], mine: true, use: false, slot: 2, mt: null };
   const p = (o: Record<string, unknown>) => parsePs(JSON.stringify(o));
   it('合法通過', () => { expect(p(base)).toEqual(base); });
   it('非有限數 → null', () => {

@@ -5,6 +5,7 @@
 - 標記：**【使用者決定】** = 擁有者已拍板，不再討論；**【建造者決定／提案】** = 本稿作者的選擇，實作者可在不違反【使用者決定】的前提下調整，但要在 PR 說明理由。
 - 先備研究：`reports/網頁版泰拉瑞亞技術研究.md`（host 權威、三通道、`TileReq → 套用 → 廣播`、里程碑 M4）。
 - 修訂：**2026-10-21 因無限世界修訂**（PR #299；`docs/superpowers/specs/2026-10-21-delve-infinite-world-design.md` §6 C11）。改了 §4 三列、§5.2 編輯日誌、§5.3 客人世界、§5.4 訊息、§5.5 第 6 點、§5.6、§6 M-B 測試、§7 R4／R10，並新增 §10。其餘不變；行號以 2026-10-20 為準，可能過期。
+- 修訂：**2026-10-22 M-C**。§5.7「已知剩餘窗口」改成 C1 的描述，§5.8 補 C2–C10，§6 M-C 驗收補背景實測。
 - 補記：2026-10-22 M-B2 終審：§5.6 第 5 點與 §10 D5 的措辭，並在 §10 新增「M-B3 進場清單」。
 
 ---
@@ -23,7 +24,7 @@ tetris 的 deterministic lockstep **不適用**，原因有四：浮點物理沒
 ## 2. 目標／非目標／反目標
 
 **目標**
-- 2–4 人在房主的世界裡同時遊玩，包括移動、挖、放、戰鬥、開箱、跟 NPC 交易、睡覺。
+- 2–8 人在房主的世界裡同時遊玩（原為 2–4 人，2026-10-22 M-C2 改成最多 8 人，見 §3），包括移動、挖、放、戰鬥、開箱、跟 NPC 交易、睡覺。
 - 世界持久化在房主的 IndexedDB。下次房主開同一個世界，朋友蓋的東西都還在。
 - 角色和世界分開存。客人的物品、裝備、外觀、等級都寫回客人自己的角色檔。
 - 正常的斷線或離開不會複製物品，也不會吃掉物品。
@@ -57,7 +58,7 @@ tetris 的 deterministic lockstep **不適用**，原因有四：浮點物理沒
 | U9 | **【使用者決定】** 任何人的瀏覽器不在最前景（切分頁、縮小、切到別的程式），都**不能讓任何人斷線**。房主在背景 → 世界照常運作、連線保持（U8）；客人在背景 → 連線保持，他的角色留在世界裡原地不動。心跳／逾時判斷不得依賴 rAF 或前景計時器，背景分頁被瀏覽器節流時也不能誤判斷線。只有真的關掉分頁、網路斷掉或按「離開」才算離線。**【建造者決定】** 背景中的客人角色照常會受傷（跟 Terraria 掛機一樣）；Chrome 長時間背景的強化節流（約 5 分鐘後計時器 1 分鐘醒一次）要在 M-C 實測，心跳逾時至少要容忍這個間隔。 |
 
 本稿的選擇（實作者可以調整）：
-- **【建造者決定／提案】** 2–4 人（沿用 `bomber/net/lobby.ts:21-22` 的 `MIN_PLAYERS=2`、`MAX_PLAYERS=4`）。
+- 最多 8 人（擁有者 2026-10-22 要求超過 4 人；8 這個數字是 M-C2 D7 的【建造者決定】）：`MAX_GUESTS = 7`（`delve/net/protocol.ts`），房主加 7 位客人；第 8 位客人收到 `full`。信令的 `JOIN_SLOTS` 仍是 4，它管的是同時握手的人數，不是總人數，伺服器不改。世界檔的 `held` 改用自己的上限 `MAX_HELD = 32`，不再跟 `visits` 的 8 筆共用。原本的「2–4 人（沿用 `bomber/net/lobby.ts:21-22` 的 `MAX_PLAYERS=4`）」作廢。
 - **【建造者決定／提案】** host 權威。客人只對自己的移動有權威，房主會做合理性檢查。
 - **【建造者決定／提案】** 沿用 `/api/signal`，namespace 用 `delve:`，跟 `BOMBER_NS = 'bomber:'`（`bomber/net/bomberNetMain.ts:45`）、`nsRoom()`（`tetris/net/signalClient.ts:68`）同一種做法。
 - **【建造者決定／提案】** v1 不做換主。房主離開時 session 結束，客人保留最後一次 checkpoint 的角色進度。
@@ -78,7 +79,7 @@ tetris 的 deterministic lockstep **不適用**，原因有四：浮點物理沒
 | 輸入 | `setMoveX/Jump/Up/Drop/Aim/Mining/Use`、`selectSlot`，全部寫在單例欄位上（`game.ts:723-750`） | 要改成每個 actor 各有一份 `PlayerInput` |
 | 模擬迴圈 | `step(dt)`（`game.ts:752-843`）依序跑：液體、死亡、睡覺、單一玩家的移動／技能／生命值、挖掘、攻擊、使用、實體、據點、NPC | 要拆成世界階段加每個 actor 的階段 |
 | 事件 | 只有一個 `events[]`，`drainEvents()` 取出（`game.ts:535,1767`），共約 60 種，都沒有 pid（`:102-218`） | 要加 `pid`，並分成公開事件和私人事件 |
-| 怪物 | `AiCtx` 只有一個 `px/py/playerDead/playerWet`（`delve/engine/enemies.ts:133-147`）。活躍和消失範圍、生成都以單一玩家為中心（`game.ts:2383-2517`；`delve/engine/spawn.ts:48-58`：`ACTIVE 80×56`、`MAX_ENEMIES 40`） | 目標改成最近的活著的玩家；活躍範圍取所有玩家的聯集；生成輪流挑玩家 |
+| 怪物 | `AiCtx` 只有一個 `px/py/playerDead/playerWet`（`delve/engine/enemies.ts:133-147`）。活躍和消失範圍、生成都以單一玩家為中心（`game.ts:2383-2517`；`delve/engine/spawn.ts:48-58`：`ACTIVE 80×56`、`MAX_ENEMIES 40`） | 目標改成最近的活著的玩家；活躍範圍取所有玩家的聯集；每位活著的玩家各自計時生怪，上限算他那一帶（全世界另有上限，見 Q11） |
 | NPC／據點 | `FolkHost.playerTile/playerOverlaps`（`delve/engine/folk.ts:100-116`）、`SettleHost` 同理（`delve/engine/settlement.ts:193-201`） | 改成 `players()` 加 `anyPlayerOverlaps` |
 | 液體 | `liquids.blocked = 只檢查本地玩家`（`game.ts:655`），而且有牆鐘預算 | 只有房主跑液體模擬，客人只收液體差量 |
 | 掉落物 | `drops.step` 收單一個 `player`（`game.ts:2465-2470`） | 改成磁吸和撿取都對最近的合格 actor 生效 |
@@ -138,7 +139,7 @@ class DelveGame {
   1. 世界前段：時間、天氣、液體（`replica` 模式跳過液體）。
   2. 對每個 actor 跑 `stepActor(a, dt)`：移動、技能、生命值、挖掘、攻擊、使用、釣魚。這段就是現在 `game.ts:762-838` 的內容，只是把 `this.` 換成 `a.`。在 `host` 模式下，**客人 actor 的移動積分要跳過**，改成套用客人回報的位置（見 5.3）。
   3. 世界後段：`updateEntities`、`updateSettlements`、`updateFolk`（`replica` 模式只做內插，不跑 AI）。
-- `AiCtx`、`FolkHost`、`SettleHost` 改成提供 `players(): {pid, cx, cy, dead, wet}[]`。怪物鎖定最近的活著的玩家。只要有任何一個玩家在 `ACTIVE` 範圍內，怪物就活躍；離所有玩家都超過 `DESPAWN` 才消失。`trySpawn` 每次輪流挑一個玩家當中心。`MAX_ENEMIES` 是否要乘上人數倍率屬於調參，見 Q11。
+- `AiCtx`、`FolkHost`、`SettleHost` 改成提供 `players(): {pid, cx, cy, dead, wet}[]`。怪物鎖定最近的活著的玩家。只要有任何一個玩家在 `ACTIVE` 範圍內，怪物就活躍；離所有玩家都超過 `DESPAWN` 才消失。生怪依 M-C2 D8：每位活著的玩家有自己的生怪計時器（各自從慢漸快、重生後各自重來，睡覺時全部重來），以自己為中心生怪，上限算他那一帶的怪，另有全世界上限（詳見 §8 Q11）。`MAX_ENEMIES` 是否要乘上人數倍率屬於調參，見 Q11。
 - `liquids.blocked` 和 `playerOverlaps` 改成檢查任何一個 actor。
 - 睡覺：所有活著的 actor 都在床上（`sleepReady` 旗標）才開始倒數 `sleepT`。HUD 顯示「等待其他人 1/3」。
 - 事件：`DelveEvent` 加上 `pid?`。依類型分成**私人事件**（pickup、blocked、select、xp、levelup、hurt、talk、trade、quest、bubble、craft 等，只送給該 pid）和**公開事件**（mine、place、kill、hit、boss、liquid、lightning、sleep、door、chest 等，廣播給所有人）。`drainEvents(pid = localPid)` 只回傳本地需要的事件，房主另外用 `drainAll()` 拿到全部再分送。
@@ -151,8 +152,12 @@ class DelveGame {
 - **客人（replica）**：跑一個 `DelveGame`（mode `replica`）。世界由 seed 按欄生成（中央一次產生，外圍等進入自己的載入半徑才生成），再逐 chunk 套上房主的資料（5.6；2026-10-21 因無限世界修訂）。它**只積分本地 actor 的移動**（`stepPlayer`，對照本地的世界副本），其他東西全部照房主送來的快照內插。
   - **【建造者決定／提案】** 移動採客戶端權威，跟先備研究一致：客人每秒 20 次回報 `ps`。房主檢查兩件事：位移速度不能超過 `RUN_SPEED` 乘以技能和飾品上限再加容差，以及身體不能卡在實心方塊裡。不合理時送 `teleport` 把客人拉回去。Co-op 不需要 Gambetta 式的重播和修正。
   - 被擊退時，房主算出 `knock{vx, vy}` 送給客人，由客人套到自己的 body 上。傳送、回城、旅行、重生也都是房主送 `teleport`。
-  - 攻擊、挖掘、使用：客人在本地立刻播放揮擊動畫和挖掘裂紋（純外觀預測）。命中、破壞和產生掉落物都由房主根據該 actor 的 `input`（以 `ps` 裡的 `mine`、`use`、`aim`、`slot` 驅動）判定，大約晚半個 RTT。
+  - 攻擊、挖掘、使用：~~客人在本地立刻播放揮擊動畫和挖掘裂紋（純外觀預測）。~~（**已被下面的 D3 取代**：第一版客人自己的揮擊 / 裂紋用房主回報的，本地外觀預測留到 M-D。）命中、破壞和產生掉落物都由房主根據該 actor 的 `input`（以 `ps` 裡的 `mine`、`use`、`aim`、`slot` 驅動）判定，大約晚半個 RTT。
   - 遠端玩家、怪物、NPC 都以大約 100 ms 的延遲做內插（2 筆快照之間線性插值）。投射物用初速自己外推，有修正時再校正。
+  - **【建造者決定】（M-C2 D1–D3，2026-10-22）遠端玩家畫得跟本地玩家一樣**：
+    - D1：房主在 `ws` 裡給每位玩家一份精簡的 `PlayerPose`（位置、速度、著地、朝向、死亡、無敵、船、攀爬、攀邊、液體比例、手持物、`attack`、`mining`、`fishing`、`hurt`（受擊計數）），不用 `getState()`。揮擊進度在畫的時候用 `(time − at) / dur` 算；`mining.progress` 在兩筆之間線性內插。
+    - D2：`WsPlayer` 帶 `pose`（數字留 2 位小數），另外只帶 `pid`、`hp`、`maxHp`、`mana`（往下取 2 位小數）——位置、速度、朝向、死亡只在 `pose` 裡，不重複帶；`ps` 加 `mt`（攀邊狀態），房主才知道客人正在翻上邊緣。
+    - D3：客人畫自己時，移動相關的欄位用本地預測；`attack`、`mining`、`fishing`、`iframes` 用房主 `ws` 裡自己那一份（最新一筆、不內插）。所以客人自己的揮擊大約晚一個 RTT 再加 50–100 ms（等下一則 ps 與下一則 ws）才出現——上面「客人在本地立刻播放揮擊動畫」的外觀預測，第一版不做，留到 M-D。
 - 房主的分頁在背景時，`requestAnimationFrame` 會停，世界也跟著凍結。見風險 R2。
 
 ### 5.4 通道與訊息協定
@@ -219,7 +224,13 @@ class DelveGame {
   - 客人只會寫入**最後一次收到的 `chk`**，絕不寫入自己本地的預測狀態。
   - 房主離開：客人保留最後的 `chk`，回到標題畫面，顯示「主機已離線」。
 - **鎖**：客人用 `navigator.locks.request('delve-char-'+id, {ifAvailable:true})` 防止同一個角色同時開在兩個分頁。房主拒絕已經在 session 裡的 `charId`。
-- **已知剩餘窗口**：房主在 checkpoint 和存世界之間崩潰，可能複製或遺失「最後幾秒」的跨邊界物品。這在反目標的範圍內可以接受，寫成測試記錄行為，不追求零窗口。
+- **確認收到的 checkpoint（2026-10-22 M-C，C1）【建造者決定】**
+  - `chk` 多帶 `upTo`，代表房主已經處理到這位客人的第幾個 cmd seq。
+  - 房主每送一份 chk（定時、跨邊界、撿起、離開前最後一份）就把它寫成世界檔的 `held[charId]`（送出但還沒 ack 的最新一份），透過 `VisitStore` 寫進世界存檔，房主重新整理也不會丟。
+  - 客人把 checkpoint 寫進 IDB 之後回 `chkAck{rev}`；房主收到 rev ≥ held.rev 的 `chkAck`（連線中或延遲關閉中都算）就清掉 held。
+  - 客人重進時，`held.rev` 比 hello 帶來的大就用 held；held 在同步（syncing）期間保留，客人 ready 後房主立刻送一份 chk，讓客人把房主這份寫進 IDB。
+  - 斷線時如果還有跨邊界操作沒被 checkpoint 涵蓋（`unconfirmed`），客人存最後一份 chk，並在角色記錄標上 `pendingWorld`；`unconfirmed` 會跨過 welcome 保留，直到新連線的第一份 chk 到達才清。標題畫面會顯示「待同步」，選這個角色、或按「繼續冒險」開到這個角色時都會跳確認。標記只在回到那個世界的 chk 才清；在別的世界收到的 chk 照樣保留它（`GuestSessionDeps.pendingWorld`）。
+- **已知剩餘窗口**：客人沒回原世界，先在別的世界玩，最後一筆跨邊界操作可能重複或消失。依反目標（朋友間不防作弊）接受，UI 會明白告知。房主在 checkpoint 和存世界之間崩潰的窗口同理，寫成測試記錄行為，不追求零窗口。
 
 ### 5.8 連線、大廳與 UI（M-C）
 
@@ -229,6 +240,16 @@ class DelveGame {
 - 標題畫面：新增「角色」選單（建立、選擇、匯出、匯入），以及「多人」入口（建立房間顯示 5 碼房號，或輸入房號加入），加上暱稱欄位。
 - 遊戲中：玩家名單和延遲顯示、名牌、遠端紙娃娃（`SpriteCache` 改成以 `dollKey` 為 key 的多筆 LRU）、等待睡覺的提示、房主斷線的提示。
 - 文案：依照 delve 目前的慣例，UI 直接寫中文。如果改走站台 i18n，**兩套檔都要改**（CLAUDE.md 雷 1）。
+- **M-C 建造者決定（2026-10-22，擁有者可推翻；C1 見 §5.7）**
+  - **C2 `sum` 洪水**：離客人超過 `NET_TILE_COLS` 欄的 `sum`，先停在 `parkedSums`（以 cx 去重，上限 `SUM_PARK_MAX = 32`，超過丟最舊的）。客人走近時才處理，超過 `2 × NET_TILE_COLS` 直接丟（客人那邊也已經卸載，回來時會重送）。佇列裡同一個 cx 的 sum 只留最新一份。
+  - **C3 延遲關閉**：房主送 reject、bye 或判定逾時之後，過 `LINGER_MS = 2000` 才 `link.close('linger')`。這段時間只處理 `chkAck` 和 `pong`。`NetHost.close()` 之後 `frame()` 只負責這些延遲關閉。
+  - **C4 `savedAt`**：由寫入 IDB 的一端蓋 `Date.now()`。客人在 `CoopGuestSession` 的 persist 包裝裡蓋，房主不改。
+  - **C5 延遲**：雙方都每 `PING_MS = 2000` 在 ctrl 送 `ping{at}`，對方回 `pong{at}`，各自算 RTT。房主看到每位客人的延遲，客人看到自己到房主的延遲。
+  - **C6 同角色快速重連**：新的 hello 帶同一個 charId，而舊連線已經沉默超過 `REPLACE_SILENT_MS = 5000`，就直接把舊的移除（`'timeout'`），讓新的進來，不必等 90 秒（例如客人重新整理頁面但 RTC 沒及時報斷線）。
+  - **C7 建置版本**：`astro.config.mjs` 用 `vite.define` 注入 `__DELVE_BUILD__ = VERCEL_GIT_COMMIT_SHA ?? 'dev'`。`delve/net/build.ts` 匯出 `DELVE_BUILD`，用 `typeof` 守住沒有 define 的情況（vitest）。
+  - **C8 入口**：房主入口在遊戲中的暫停選單「開放加入」，房主一定要先進入自己的世界。客人入口在標題：選角色之後，世界清單面板裡的「加入朋友的世界」。
+  - **C9 遠端紙娃娃**：`Sprites.sheetFor(look, key, need)` 取任意樣子的影格表，不改目前的 `look` 和手臂快取；`SHEET_CACHE` 從 6 改成 10。遠端玩家只畫身體影格（跑、跳、待機），v1 不畫手持物和揮擊手臂。
+  - **C10 背景運作**：連線時 `NetLoop` 用 Worker 計時器。`RoomHost.poll` 也由同一個 loop 驅動，所以房主在背景時客人照樣能加入。主執行緒計時器只用在不影響正確性的 UI。
 
 ## 6. 里程碑與測試策略
 
@@ -262,7 +283,7 @@ class DelveGame {
   - vitest：用 mock 的 RTCPeerConnection 測三通道的建立和二進位收發，寫法參考 `tetris/net/webrtcTransport.test.ts`。
   - Playwright 新增 `tests/e2e/delve-online.spec.ts`：照 `tests/e2e/bomber-online.spec.ts` 的方式開 2 個 browser context，只跑 chromium。流程是房主建房、客人輸入房號，雙方透過 `window.__delveDebug`（`session.ts:189`）看到 2 名玩家；客人放一塊方塊，房主那邊的 tile 也變了；客人離線後，角色檔裡有剛撿的物品。
   - 指令：`npx playwright test tests/e2e/delve-online.spec.ts --project=chromium`。
-- 驗收：兩台實機（同一個 Wi-Fi，加上一台用手機熱點）可以連線。附上 4321 連結給擁有者實測。
+- 驗收：兩台實機（同一個 Wi-Fi，加上一台用手機熱點）可以連線。附上 4321 連結給擁有者實測。背景 10 分鐘、兩台實機由擁有者實測：房主分頁在背景 10 分鐘，客人持續遊玩、世界不會停（U8）；客人分頁在背景 10 分鐘再回來，沒有斷線（U9）。
 
 **M-D 打磨**
 - 內容：兩邊確認的交易視窗、聊天和表情、名牌樣式、二進位量化快照和頻寬儀表、客人在寬限期內用同一個 `charId` 重連、怪物血量依人數縮放（v1 不做，見第 8 節 Q11）、連線失敗時提示「可能是 NAT」。
@@ -295,7 +316,7 @@ class DelveGame {
 - Q7 睡覺：**【建造者決定】** 全員都在床上才跳夜。
 - Q8 死亡掉錢：**【建造者決定】** 任何人都能撿（與 U6 一致）。
 - Q9 世界槽：**【建造者決定】** v1 只有一個世界槽 `main`。
-- Q11 怪物縮放：**【建造者決定】** v1 不縮放血量；生怪以每位玩家周圍各自計算上限。
+- Q11 怪物縮放：**【建造者決定】** v1 不縮放血量；生怪以每位玩家周圍各自計算上限。M-C2 D8（2026-10-22）的做法：每位活著的玩家有自己的生怪計時器（各自從慢漸快、各自在重生後重來；睡覺時全部重來），以自己為中心生怪；上限 `MAX_ENEMIES = 40` 算的是那位玩家那一帶的怪（他活躍範圍 `ACTIVE` 內的，加上不在他範圍內但離他最近的），另加全世界上限 `MAX_ENEMIES_TOTAL = 160`。只有 1 位玩家時，RNG 消耗順序與結果跟改動前逐位元相同（`engine/spawn.coop.test.ts` 的固定種子序列）。
 - `kills` 計數：**【建造者決定】** 留在世界檔（見 5.1），不放進角色檔。
 
 ## 9. 留給建造者的決定

@@ -21,7 +21,7 @@ import { SoundManager } from '../audio/SoundManager';
 import { TitleScene } from './titleScene';
 import { TitleUi, PEACEFUL_KEY, publishVolume } from './titleUi';
 import { Wipe } from './wipe';
-import { continueSlot, importPlan, genProgress, genStageLabel, GEN_STAGE_LABELS, readVolume, rollWorldName, summarizeGame } from './titleModel';
+import { continueSlot, importPlan, genProgress, genStageLabel, GEN_STAGE_LABELS, needsPendingConfirm, readVolume, rollWorldName, summarizeGame } from './titleModel';
 import { liveCounts, type LiveCounts } from './live';
 import { GEN_PHASES, GenSectionView, genPhaseLabel, genPhaseOf } from './genSection';
 import { Wardrobe } from './wardrobe';
@@ -29,6 +29,15 @@ import { RACES, createLook, loadDefaultAppearance, saveDefaultAppearance, setApp
 import { ITEMS } from '../engine/items';
 import { restyledLook } from '../engine/doll';
 import { PlayLocks, PLAY_LOCKED_MSG, browserLocks, charLock, heldElsewhere, worldLock } from './playLock';
+import { CoopHostSession } from '../net/hostSession';
+import { CoopGuestSession, type CoopGuestPhase } from '../net/guestSession';
+import { JOIN_ERROR_TEXT, JoinError, normalizeRoom, realSignalApi } from '../net/rtcSignal';
+import { createRtcPeer } from '../net/rtcLink';
+import { workerTicker } from '../net/workerTicker';
+import { DELVE_BUILD } from '../net/build';
+import { guestRemoteViews, hostRemoteViews, type RemoteView } from './remotePlayers';
+import type { OwnPose } from '../net/guest';
+import { CoopUi, type CoopRow } from './coopUi';
 
 /** 進度條格數 */
 const PROGRESS_CELLS = 20;
@@ -40,7 +49,12 @@ export interface DelveDebug {
   game: DelveGame; handle: DelveHandle; save: () => Promise<void>;
   /** 大地圖目前會畫的圖示（地標、解鎖的傳送碑、線索、標記） */
   mapPins(): { icon: string; x: number; y: number; name: string }[];
+  /** 連線（M-C）：房主開房之後 / 客人進場之後才有；phase 房主開著房 = 'live'，客人 = CoopGuestSession.phase */
+  coop?: { role: 'host' | 'guest'; room: string | null; phase: string; players(): { pid: string; nick: string }[] };
 }
+
+/** 選到上次在朋友的世界斷線、最後一筆交易沒確認的角色（C1） */
+const PENDING_WORLD_MSG = '這個角色上次在朋友的世界斷線時，最後一筆交易還沒確認。回到那個世界會以主機的紀錄為準；先在別的世界玩，那筆物品可能重複或消失。要繼續嗎？';
 declare global {
   interface Window { __delveDebug?: DelveDebug; __delveTitle?: TitleScene; __delveLive?: () => LiveCounts }
 }
@@ -207,6 +221,7 @@ export function bootDelve(root: HTMLElement): Session {
     handle?.setPaused(open);
     say(menuMsg, '');
     syncPeaceful();
+    if (open) syncCoop();
   }
 
   // ── 操作說明：第一次進遊戲自動打開，看過記在 localStorage；選單 / 標題「操作說明」可再打開 ──
@@ -271,19 +286,32 @@ export function bootDelve(root: HTMLElement): Session {
     });
   }
 
-  function begin(game: DelveGame, s: SplitSession, locks: PlayLocks): void {
+  /**
+   * begin / beginGuest 共用：收掉上一場、換鎖、藏標題、開 HUD、startDelve（remotes = 其他玩家的來源）。
+   * 上一場還開著房 / 還在朋友的房裡（例如沒有 IndexedDB 時從暫停選單匯入直接開局）→ 先關房 / 離開，
+   * 舊的 NetHost / NetLoop 不會繼續跑被丟掉的那場；關房的 requestSave 存的還是上一場（split 在 enter 之後才換）。
+   */
+  function enter(game: DelveGame, locks: PlayLocks, remotes: () => RemoteView[], ownPose?: () => OwnPose | null): DelveHandle {
+    if (hostCoop) void closeHost();
+    if (guestCoop) { void guestCoop.s.leave(); dropGuest(); }
     stopAutosave?.();
+    stopAutosave = null;
     handle?.destroy();
     if (playLocks !== locks) playLocks?.release();
     playLocks = locks;
-    split = s;
     stopScene();
     ui.closePanel(false);
     title!.hidden = true;
     hudEl!.hidden = false;
     root.dataset.phase = 'playing';
     setMenu(false);
-    handle = startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden), onMirror: (open) => setMirror(game, open), onRebirth: () => setRebirth(game) });
+    return startDelve({ root, canvas: canvas!, game, onMenu: () => setMenu(menu!.hidden), onMirror: (open) => setMirror(game, open), onRebirth: () => setRebirth(game), remotes, ownPose });
+  }
+
+  function begin(game: DelveGame, s: SplitSession, locks: PlayLocks): void {
+    // 單機時 actors 只有自己（空清單）；按「開放加入」之後客人進來就畫得到
+    handle = enter(game, locks, () => hostRemoteViews(game));
+    split = s;
     window.__delveDebug = { game, handle, save: saveNow, mapPins: () => fullMapPins(game) };
     if (!helpSeen(storage)) setHelp(true);
     if (hasIndexedDB()) {
@@ -296,6 +324,133 @@ export function bootDelve(root: HTMLElement): Session {
     }
   }
 
+  // ── 連線（M-C）：房主在遊戲中「開放加入」（C8），客人在標題的世界列表「加入朋友的世界」 ──
+  const coopUi = new CoopUi(root);
+  const coopBtn = $<HTMLButtonElement>('#delve-coop');
+  const toTitleBtn = $<HTMLButtonElement>('#delve-to-title');
+  const joinMsg = $('#delve-join-msg');
+  /** 房主：開著的房間（open 還在等房號時就有；關房 / createRoom 失敗 → null） */
+  let hostCoop: CoopHostSession | null = null;
+  /** 客人：進場之後的房間（連線中、同步中還在轉場裡，不算） */
+  let guestCoop: { s: CoopGuestSession; room: string; nick: string } | null = null;
+  /** HUD 名單的延遲每秒更新一次（主執行緒計時器只管 UI，C10） */
+  let coopTimer = 0;
+  function coopTick(on: boolean): void {
+    if (on && !coopTimer) coopTimer = window.setInterval(syncCoop, 1000);
+    else if (!on && coopTimer) { clearInterval(coopTimer); coopTimer = 0; }
+  }
+  /** HUD 房號 + 名單、暫停選單「開放加入」的文字跟著目前的連線狀態 */
+  function syncCoop(): void {
+    const h = hostCoop, g = guestCoop;
+    if (h?.room) {
+      // 還在 hello / 同步中的客人暱稱可能是空的：live 了才列出來（同加入的 toast）
+      const ps = h.players().filter((p) => p.self || p.phase === 'live');
+      const rows: CoopRow[] = ps.map((p) => (p.self ? { nick: p.nick, self: true } : { nick: p.nick, self: false, rttMs: p.rttMs }));
+      // 停止加入之後，只要還有客人在，房號和名單就留著
+      coopUi.update({ show: h.joining || ps.length > 1, room: h.room, rows });
+      coopUi.setButton({ joining: h.joining });
+    } else if (g) {
+      const rows: CoopRow[] = [{ nick: g.nick, self: true, rttMs: g.s.rttMs }, ...g.s.peers().filter((p) => p.nick).map((p) => ({ nick: p.nick, self: false }))];
+      coopUi.update({ show: true, room: g.room, rows });
+    } else coopUi.hide();
+  }
+
+  /** 暫停選單 #delve-coop：沒開房 → 開房；開放中 → 停止加入；停止後（手動 / 閒置自動）→ 重新開放 */
+  async function toggleCoop(): Promise<void> {
+    if (!handle || !split || guestCoop || leaving) return;
+    const cur = hostCoop;
+    if (cur) {
+      if (!cur.room) return;   // 還在拿房號
+      if (cur.joining) cur.stopJoin(); else cur.reopenJoin();
+      say(menuMsg, cur.joining ? `已重新開放加入：房號 ${cur.room}` : '已停止加入：房裡的人不受影響');
+      syncCoop();
+      return;
+    }
+    const s = split;
+    const host = new CoopHostSession(handle.game, {
+      signal: realSignalApi, makePeer: () => createRtcPeer(), ticker: workerTicker(), build: DELVE_BUILD,
+      visits: s, nick: s.nick,
+      requestSave: () => { void saveNow().catch((e: unknown) => console.warn('[delve] save failed', e)); },
+    });
+    hostCoop = host;
+    host.onChange((e) => {
+      if (hostCoop !== host) return;
+      handle?.hud.toast(e.type === 'join' ? `「${e.nick}」加入了世界` : `「${e.nick}」離開了世界`, 2400);
+      syncCoop();
+    });
+    if (coopBtn) coopBtn.disabled = true;
+    say(menuMsg, '開放加入中…');
+    try {
+      await host.open();
+    } catch (e) {
+      // createRoom 失敗：這個 session 已經自己退回單機、永久關閉；再按一次就建新的
+      if (hostCoop === host) { hostCoop = null; say(menuMsg, `開放加入失敗：${errText(e)}`); }
+      return;
+    } finally {
+      if (coopBtn) coopBtn.disabled = false;
+    }
+    if (hostCoop !== host) return;   // 等房號時回到標題（已經關房）
+    root.dataset.coop = 'host';
+    say(menuMsg, `已開放加入：房號 ${host.room}`);
+    if (window.__delveDebug) {
+      window.__delveDebug.coop = {
+        role: 'host',
+        get room() { return host.room; },
+        get phase() { return hostCoop === host ? 'live' : 'ended'; },
+        players: () => host.players().map((p) => ({ pid: p.pid, nick: p.nick })),
+      };
+    }
+    syncCoop();
+    coopTick(true);
+  }
+
+  /** 房主關房（回到標題 / 關頁）：每位客人最後的 chk + bye，resolve 時 mode 已回 solo */
+  async function closeHost(): Promise<void> {
+    const h = hostCoop;
+    if (!h) return;
+    hostCoop = null;
+    coopTick(false);
+    coopUi.hide();
+    delete root.dataset.coop;
+    if (window.__delveDebug) delete window.__delveDebug.coop;
+    await h.close();
+  }
+
+  /** 客人進場：同 begin，但不取世界鎖、不自動存檔，save 是無操作（角色由 CoopGuestSession 的 persist 寫） */
+  function beginGuest(o: { guest: CoopGuestSession; room: string; nick: string }, locks: PlayLocks): void {
+    const guest = o.guest, game = guest.game;
+    if (!game) throw new Error('coop guest: no replica');
+    split = null;
+    // 別人：內插過的 pose + 同一個延遲時鐘（揮擊進度跟身體同步）；自己的攻擊 / 挖掘 / 釣魚 / 無敵用房主回報的（D3）
+    handle = enter(game, locks, () => guestRemoteViews(guest.peers(), guest.peerTime()), () => guest.ownPose());
+    guestCoop = { s: guest, room: o.room, nick: o.nick };
+    root.dataset.coop = 'guest';
+    say(toTitleBtn, '離開房間');
+    window.__delveDebug = {
+      game, handle, save: async () => { /* 客人不存世界 */ }, mapPins: () => fullMapPins(game),
+      coop: {
+        role: 'guest', room: o.room,
+        get phase() { return guest.phase; },
+        players: () => [{ pid: game.localPid, nick: o.nick }, ...guest.peers().map((p) => ({ pid: p.pid, nick: p.nick }))],
+      },
+    };
+    // 房主關房 / 斷線 / 被踢：回到標題，顯示原因（自己按「離開房間」時 returnToTitle 已經在跑，這裡會被擋掉）
+    const ended = (): void => { if (guestCoop?.s === guest) void returnToTitle(guest.endText ?? '連線已結束'); };
+    guest.onPhase((p) => { if (p === 'ended') ended(); });
+    if (guest.phase === 'ended') ended();   // live 之後、進場之前就斷了
+    if (!helpSeen(storage)) setHelp(true);
+    syncCoop();
+    coopTick(true);
+  }
+  /** 客人的連線 UI 收掉（handle 已經 destroy 之後） */
+  function dropGuest(): void {
+    guestCoop = null;
+    coopTick(false);
+    coopUi.hide();
+    delete root.dataset.coop;
+    say(toTitleBtn, '回到標題');
+  }
+
   /**
    * 遊戲中「回到標題」：先存檔（失敗就留在遊戲裡回報，不丟進度）→ 轉場蓋上 → 收掉遊戲（迴圈 / 輸入 / 音效 / 自動存檔）
    * → 標題畫面（場景直接停在洞窟、選單模式、「繼續」摘要是剛存的）→ 掀開。之後的繼續 / 新世界走一般流程。
@@ -304,10 +459,15 @@ export function bootDelve(root: HTMLElement): Session {
   let noSaveWarned = false;
   /** 正在「回到標題」（存檔 / 轉場中）：選單與 Esc 不再切換暫停 */
   let leaving = false;
-  async function returnToTitle(): Promise<void> {
+  /**
+   * 連線中：房主先關房（await close，客人拿到最後的 chk + bye）再存檔；客人不存世界，按「離開房間」= await leave()
+   * （最後的 chk 寫好）再走。endMsg = 客人被房主結束時標題訊息要顯示的原因。
+   */
+  async function returnToTitle(endMsg?: string): Promise<void> {
     if (busy) await inFlight;
     if (busy || !handle) return;
-    if (!hasIndexedDB() && !noSaveWarned) {
+    const guest = guestCoop;
+    if (!guest && !hasIndexedDB() && !noSaveWarned) {
       noSaveWarned = true;
       say(menuMsg, '這個瀏覽器不能存檔：離開後進度會消失。要保留請先「匯出存檔」，確定要離開就再按一次「回到標題」。');
       return;
@@ -318,11 +478,18 @@ export function bootDelve(root: HTMLElement): Session {
     handle.setPaused(true);
     if (menu) menu.inert = true;
     try {
-      say(menuMsg, '存檔中…');
-      try { await saveNow(); } catch (e) {
-        say(menuMsg, `存檔失敗，沒有離開：${e instanceof Error ? e.message : String(e)}`);
-        return;
+      if (guest) {
+        say(menuMsg, '離開房間中…');
+        await guest.s.leave();
+      } else {
+        if (hostCoop) { say(menuMsg, '關閉房間中…'); await closeHost(); }
+        say(menuMsg, '存檔中…');
+        try { await saveNow(); } catch (e) {
+          say(menuMsg, `存檔失敗，沒有離開：${e instanceof Error ? e.message : String(e)}`);
+          return;
+        }
       }
+      if (wardrobe?.isOpen) wardrobe.close();   // 被房主結束時衣櫥可能開著
       uiSound.uiBack();
       await wipe?.cover();
       stopAutosave?.();
@@ -330,6 +497,7 @@ export function bootDelve(root: HTMLElement): Session {
       handle.destroy();
       handle = null;
       split = null;
+      if (guest) dropGuest();
       // 最後一次存檔已寫完、自動存檔已停：放掉角色 / 世界鎖（別的分頁現在可以玩它們了）
       playLocks?.release();
       playLocks = null;
@@ -342,7 +510,7 @@ export function bootDelve(root: HTMLElement): Session {
       title!.hidden = false;
       root.dataset.phase = 'title';
       root.dataset.title = 'menu';
-      say(titleMsg, '');
+      say(titleMsg, endMsg ?? '');
       await refreshTitle();
       startScene(true);
       ui.focusFirst(true);
@@ -410,7 +578,7 @@ export function bootDelve(root: HTMLElement): Session {
   ];
   // 載入畫面的字是之後才放進去的：先把點陣字（Google Fonts 依字分段下載）的字形載好，免得第一次顯示時是系統字
   try {
-    void document.fonts?.load("16px 'DotGothic16'", ['生成世界中…載入世界中…完成提示：', ...GEN_STAGE_LABELS, ...GEN_PHASES.map((p) => p.zh + p.label), ...TIPS].join('')).catch(() => { /* 離線：用系統字 */ });
+    void document.fonts?.load("16px 'DotGothic16'", ['生成世界中…載入世界中…連線中…同步世界中…完成提示：', ...GEN_STAGE_LABELS, ...GEN_PHASES.map((p) => p.zh + p.label), ...TIPS].join('')).catch(() => { /* 離線：用系統字 */ });
   } catch { /* 舊瀏覽器 */ }
   function showLoading(text: string): void {
     say(loadingText, text);
@@ -455,8 +623,8 @@ export function bootDelve(root: HTMLElement): Session {
     });
   }
 
-  /** 轉場要開的局：遊戲 + 它的存檔身分 */
-  interface Opened { game: DelveGame; session: SplitSession }
+  /** 轉場要開的局：遊戲 + 它的存檔身分；或客人進朋友的世界（副本在 guest.game） */
+  type Opened = { game: DelveGame; session: SplitSession } | { guest: CoopGuestSession; room: string; nick: string };
   /**
    * 蓋上轉場 → 生成 / 讀檔 → 開局 → 掀開；失敗時回到原畫面並回報。
    * locks = 這一場要握著的鎖（呼叫端開局前已拿好，work 裡還可以再加）：開局 → 交給 begin 握著；沒開局 / 失敗 → 放掉。
@@ -475,7 +643,14 @@ export function bootDelve(root: HTMLElement): Session {
       showLoading(text);
       const opened = await work();
       if (opened) {
-        begin(opened.game, opened.session, locks);
+        if ('guest' in opened) {
+          // 客人已經 live 了才進場：進場失敗要離開房間，房主那邊不會留著一個不會動的客人
+          try { beginGuest(opened, locks); } catch (e) {
+            void opened.guest.leave();
+            if (guestCoop?.s === opened.guest) dropGuest();
+            throw e;
+          }
+        } else begin(opened.game, opened.session, locks);
         hideLoading();
         await wipe?.reveal();
       } else {
@@ -662,14 +837,19 @@ export function bootDelve(root: HTMLElement): Session {
     return Promise.resolve();
   }
 
-  /** 「繼續冒險」（B1）：最近存檔的世界 + 該世界記錄的角色；'main' 還是舊存檔 → 先轉換（B5）再開局 */
+  /**
+   * 「繼續冒險」（B1）：最近存檔的世界 + 該世界記錄的角色；'main' 還是舊存檔 → 先轉換（B5）再開局。
+   * 那個角色待同步（pendingWorld）→ 同選角色時先確認（C1）；取消 → 留在標題。
+   */
   function continueGame(): Promise<void> {
     return exclusive(undefined, async () => {
       let plan: ContinuePlan;
-      try { plan = await planContinue(idbSplitStore); } catch (e) {
+      let chars: CharacterMeta[];
+      try { [plan, chars] = await Promise.all([planContinue(idbSplitStore), idbSplitStore.listCharacters()]); } catch (e) {
         say(titleMsg, `讀取存檔失敗：${errText(e)}`);
         return;
       }
+      if (needsPendingConfirm(plan, chars) && !(await askConfirm(PENDING_WORLD_MSG, '繼續'))) return;
       await openPlan(plan, '找不到存檔');
     });
   }
@@ -702,7 +882,11 @@ export function bootDelve(root: HTMLElement): Session {
     ui.setWorlds(worldList, pickedNick() || DEFAULT_NICK);
     ui.showPanel('worlds');
   }
-  const pickCharacter = (id: string): Promise<void> => exclusive(undefined, () => showWorldsFor(id));
+  /** 上次在朋友的世界斷線、最後一筆交易沒確認（pendingWorld）的角色：先確認（C1） */
+  const pickCharacter = (id: string): Promise<void> => exclusive(undefined, async () => {
+    if (charList.find((c) => c.id === id)?.pendingWorld && !(await askConfirm(PENDING_WORLD_MSG, '繼續'))) return;
+    await showWorldsFor(id);
+  });
   /** 新角色：建立當下就寫進角色庫（B2），選定它並打開世界列表；失敗 → null（標題訊息回報） */
   function newCharacter(nick: string, appearance: Appearance): Promise<CharacterMeta | null> {
     return exclusive<CharacterMeta | null>(null, async () => {
@@ -781,6 +965,65 @@ export function bootDelve(root: HTMLElement): Session {
       await newWorldWith(name, peaceful, c);
     });
   }
+  /**
+   * 加入朋友的世界（客人）：房號不對 → 面板說明；鎖住角色（不鎖世界：世界在房主那裡）→ 轉場「連線中…」→ 信令 / RTC →
+   * 「同步世界中…」（welcome 時副本同步生成，會卡住主執行緒幾秒）→ live 才進場。失敗回到加入面板顯示原因。
+   */
+  function joinFriend(raw: string): Promise<void> {
+    return exclusive(undefined, async () => {
+      const room = normalizeRoom(raw);
+      if (!room) { ui.setJoinMsg(JOIN_ERROR_TEXT.badRoom); return; }
+      const id = picked;
+      if (!id) { ui.setJoinMsg('請先選擇角色'); return; }
+      let c: DelveCharacter | null;
+      try { c = await loadCharacter(id); } catch (e) {
+        ui.setJoinMsg(`讀取角色失敗：${errText(e)}`);
+        return;
+      }
+      if (!c) { ui.setJoinMsg(CHARACTER_MISSING_MSG); return; }
+      const character = c;
+      const locks = await lockFor([charLock(id)], joinMsg);
+      if (!locks) return;
+      ui.setJoinMsg('');
+      return transition('連線中…', async () => {
+        const guest = new CoopGuestSession({
+          signal: realSignalApi, makePeer: () => createRtcPeer(), ticker: workerTicker(), build: DELVE_BUILD, character,
+          // 原本的待同步標記：只有回到那個世界的 chk 才清掉
+          pendingWorld: charList.find((m) => m.id === id)?.pendingWorld ?? null,
+          // savedAt 由 session 蓋（C4）；pendingWorld = null 清掉標記
+          persist: (ch, pendingWorld) => {
+            if (hasIndexedDB()) return idbSplitStore.putCharacter(ch, { pendingWorld });
+            memChars.set(ch.id, ch);
+            return Promise.resolve();
+          },
+        });
+        guest.onPhase((p) => { if (p === 'connecting' || p === 'syncing') say(loadingText, '同步世界中…'); });
+        try { await guest.join(room); } catch (e) {
+          ui.setJoinMsg(e instanceof JoinError ? JOIN_ERROR_TEXT[e.code] : `加入失敗：${errText(e)}`);
+          return null;
+        }
+        if (!(await untilLive(guest))) {
+          // 被房主拒絕（滿了 / 版本不同 / 角色已在房裡）或同步途中斷線
+          ui.setJoinMsg(guest.endText ?? JOIN_ERROR_TEXT.rtc);
+          void guest.leave();
+          return null;
+        }
+        return { guest, room, nick: character.nick };
+      }, 'title', locks);
+    });
+  }
+  /** 等到客人 live（true）或結束 / 失敗（false） */
+  function untilLive(g: CoopGuestSession): Promise<boolean> {
+    return new Promise((resolve) => {
+      const check = (p: CoopGuestPhase): void => {
+        if (p === 'live') resolve(true);
+        else if (p === 'ended' || p === 'failed') resolve(false);
+      };
+      g.onPhase(check);
+      check(g.phase);
+    });
+  }
+
   /** 沒有 IndexedDB 就沒有存著的世界（列表永遠是空的）：刪除 / 匯出世界直接說明原因 */
   const NO_IDB_WORLD_MSG = '這個瀏覽器不能存檔，沒有存著的世界';
   /** 刪世界（B3）：先確認；只刪這個槽，不碰 *.bak 備份 */
@@ -899,6 +1142,7 @@ export function bootDelve(root: HTMLElement): Session {
     onCreateWorld: (name, peaceful) => void createWorld(name, peaceful),
     onDeleteWorld: (slot) => void removeWorld(slot),
     onExportWorld: (slot) => void exportSlot(slot),
+    onJoin: (room) => void joinFriend(room),
     onHelp: () => setHelp(true),
     onPressStart: () => scene?.skipIntro(),
     onLook: () => {
@@ -947,6 +1191,7 @@ export function bootDelve(root: HTMLElement): Session {
     saveNow().then(() => say(menuMsg, '已存檔')).catch((e: unknown) => say(menuMsg, `存檔失敗：${String(e)}`));
   });
   on($('#delve-export'), 'click', () => void exportSave());
+  on(coopBtn, 'click', () => void toggleCoop());
   on(peacefulBtn, 'click', () => {
     if (!handle) return;
     handle.game.peaceful = !handle.game.peaceful;
@@ -982,6 +1227,9 @@ export function bootDelve(root: HTMLElement): Session {
     destroy(): void {
       confirmDone?.(false);
       confirmDone = null;
+      coopTick(false);
+      if (hostCoop) { const h = hostCoop; hostCoop = null; void h.close(); }
+      if (guestCoop) { void guestCoop.s.leave(); guestCoop = null; }
       stopAutosave?.();
       handle?.destroy();
       playLocks?.release();

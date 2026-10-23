@@ -82,7 +82,7 @@ describe('NetLoop', () => {
     game.setDate({ season: 1, day: 2, hour: 12 });
     game.peaceful = true;
     game.drainEvents();
-    const host = new NetHost(game, { build: 'b', worldId: 'w1', visits: { get: () => undefined, put: () => {} } });
+    const host = new NetHost(game, { build: 'b', worldId: 'w1', visits: { get: () => undefined, put: () => {}, getHeld: () => undefined, putHeld: () => {} } });
     host.open();
     const t = new FakeTicker();
     const loop = new NetLoop(t, (n, s) => host.frame(n, s));

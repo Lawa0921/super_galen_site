@@ -12,17 +12,24 @@ import { normalizeAppearance } from '../engine/appearance';
 import { rollGear } from '../engine/gear';
 import { Rng } from '../engine/rng';
 import { createCharacter, type DelveCharacter } from '../save/character';
-import type { VisitSave } from '../save/worldSave';
+import type { HeldChar, VisitSave } from '../save/worldSave';
 import { LoopbackNet } from './loopback';
 import type { Channel, NetLink, Payload } from './link';
 import { decodeBulk } from './codec';
 import { columnSums } from './chunkSync';
-import { CHK_MS, NET_TILE_COLS, PROTO, PS_GROUND, type BulkHead } from './protocol';
-import { BOUNDARY_OPS, NetHost } from './host';
+import { BOUNDARY_OPS, CHK_MS, LINGER_MS, MAX_GUESTS, NET_TILE_COLS, PROTO, PS_GROUND, SAVE_DEBOUNCE_MS, WS_HZ, type BulkHead, type Ws } from './protocol';
+import { makeEnemy } from '../engine/enemies';
+import { NetHost } from './host';
 
 const FLOOR = 60;
 const BUILD = 'test-build';
 const FRAME = 1000 / 60;
+/**
+ * 8 人（房主 + 7 位客人都在挖 + 揮）、40 隻怪、20 個掉落物的一則 ws 上限（位元組）。逐項給額度：
+ * 一位玩家 230（量到 204：pose 帶 attack + mining；再留攀邊 / 釣魚的空間）、一隻怪 110（量到 102，kind 名字長短不一）、
+ * 一個掉落物 64（量到 56）、外框 100 → 7620。瘦身前量到 8101（players 重複帶位置 / 速度、座標沒取整）會超過
+ */
+const WS_BUDGET = 8 * 230 + 40 * 110 + 20 * 64 + 100;
 
 /** 平地小世界（同 actors.test.ts）：y ≥ 60 石頭；本地玩家站在 (40, 59)；出生點也在 (40, 59)；白天、和平 */
 function arena(): DelveGame {
@@ -92,16 +99,19 @@ function hero(o: Partial<DelveCharacter> = {}): DelveCharacter {
 }
 const hello = (c: DelveCharacter, o: Record<string, unknown> = {}) => ({ t: 'hello', proto: PROTO, build: BUILD, charId: c.id, nick: c.nick, character: c, ...o });
 
-function rig(world: 'arena' | 'infinite' = 'arena', maxGuests?: number) {
+function rig(world: 'arena' | 'infinite' = 'arena', maxGuests?: number, nick?: string) {
   const game = world === 'arena' ? arena() : infinite();
   const net = new LoopbackNet();
-  const visits = new Map<string, VisitSave>();
+  const visits = new Map<string, VisitSave>(), held = new Map<string, HeldChar>();
   const puts: string[] = [];
   const saves: number[] = [];
   let now = 0;
   const host = new NetHost(game, {
-    build: BUILD, worldId: 'w1', maxGuests,
-    visits: { get: (k) => visits.get(k), put: (k, v) => { puts.push(k); visits.set(k, v); } },
+    build: BUILD, worldId: 'w1', maxGuests, nick,
+    visits: {
+      get: (k) => visits.get(k), put: (k, v) => { puts.push(k); visits.set(k, v); },
+      getHeld: (k) => held.get(k), putHeld: (k, h) => { if (h) held.set(k, h); else held.delete(k); },
+    },
     requestSave: () => { saves.push(now); },
   });
   host.open();
@@ -118,12 +128,12 @@ function rig(world: 'arena' | 'infinite' = 'arena', maxGuests?: number) {
     tick(); tick();
     return g;
   };
-  return { game, net, host, visits, puts, saves, tick, run, connect, join, get now() { return now; } };
+  return { game, net, host, visits, held, puts, saves, tick, run, connect, join, get now() { return now; } };
 }
 
 /** 客人 p1 站在地上、左緣 x（px）的 ps */
 function psAt(seq: number, x: number, o: Record<string, unknown> = {}) {
-  return { t: 'ps', seq, tseq: 0, x, y: FLOOR * TILE_SIZE - PLAYER_H, vx: 0, vy: 0, flags: PS_GROUND, facing: 1, aim: [41, FLOOR], mine: false, use: false, slot: 0, ...o };
+  return { t: 'ps', seq, tseq: 0, x, y: FLOOR * TILE_SIZE - PLAYER_H, vx: 0, vy: 0, flags: PS_GROUND, facing: 1, aim: [41, FLOOR], mine: false, use: false, slot: 0, mt: null, ...o };
 }
 
 describe('NetHost 握手', () => {
@@ -169,10 +179,25 @@ describe('NetHost 握手', () => {
     const c1 = hero();
     r.join(c1);
     expect(reject(hello({ ...c1 }))).toBe('charInUse');
-    r.join(); r.join();
-    expect([...r.game.actors.keys()]).toEqual(['h', 'p1', 'p2', 'p3']);
+    for (let i = 0; i < 6; i++) r.join();
+    expect([...r.game.actors.keys()]).toEqual(['h', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']);
     expect(reject(hello(hero()))).toBe('full');
-    expect(r.game.actors.size).toBe(4);
+    expect(r.game.actors.size).toBe(8);
+  });
+
+  it('客人看到的房主暱稱 = opts.nick（welcome players、房主換裝的 look）；沒給才是「房主」', () => {
+    const r = rig('arena', undefined, '甲');
+    const g = r.join();
+    const host = (g.last('welcome')!.players as { pid: string; nick: string }[]).find((p) => p.pid === 'h');
+    expect(host?.nick).toBe('甲');
+    r.game.act({ op: 'bodyLook', look: { ...r.game.appearance, hair: (r.game.appearance.hair + 1) % 4 } });
+    r.run(2000);
+    const looks = g.of('look').filter((m) => m.pid === 'h');
+    expect(looks.length).toBeGreaterThan(0);
+    expect(looks.every((m) => m.nick === '甲')).toBe(true);
+    const r2 = rig();
+    const g2 = r2.join();
+    expect((g2.last('welcome')!.players as { pid: string; nick: string }[]).find((p) => p.pid === 'h')?.nick).toBe('房主');
   });
 
   it('pid 取最小的空號；其他客人收到新來的 look', () => {
@@ -454,7 +479,7 @@ describe('NetHost 逾時與關閉', () => {
     expect(r.host.guests()).toEqual([]);
   });
 
-  it('重連：retained 的角色 rev 較新 → 用房主那份；位置是斷線前的 visit', () => {
+  it('重連：held 的角色 rev 較新 → 用房主那份；位置是斷線前的 visit', () => {
     const r = rig();
     const c = hero({ rev: 3 });
     const g = r.join(c);
@@ -511,6 +536,119 @@ describe('NetHost 逾時與關閉', () => {
     expect(r.game.mode).toBe('solo');
     expect(r.puts.length).toBe(2);
   });
+
+  it('closeLingering：延遲關閉中的連線立刻全部關掉（不等 LINGER_MS）', () => {
+    const r = rig();
+    const a = r.join(), b = r.join();
+    r.host.close();
+    r.net.flush();
+    expect(r.host.lingering).toBe(2);
+    expect(a.closed || b.closed).toBe(false);
+    r.host.closeLingering();
+    expect(r.host.lingering).toBe(0);
+    expect(a.closed && b.closed).toBe(true);
+  });
+});
+
+describe('NetHost held 與 chkAck（C1）', () => {
+  it('chk.upTo = 處理過的最大 cmd seq；ackedRev 跟著 chkAck 走', () => {
+    const r = rig();
+    const g = r.join();
+    g.send({ t: 'cmd', seq: 4, cmd: { op: 'swap', a: 0, b: 1 } });
+    g.send({ t: 'cmd', seq: 9, cmd: { op: 'toss', slot: 0, n: 1 } });
+    r.tick(); r.tick();
+    const chk = g.last('chk') as unknown as { rev: number; upTo: number };
+    expect(chk.upTo).toBe(9);
+    expect(r.host.guests()[0].ackedRev).toBe(0);
+    g.send({ t: 'chkAck', rev: chk.rev });
+    r.tick(); r.tick();
+    expect(r.host.guests()[0].ackedRev).toBe(chk.rev);
+    g.send({ t: 'chkAck', rev: 0 });                    // 舊的 ack 不會倒退
+    r.tick(); r.tick();
+    expect(r.host.guests()[0].ackedRev).toBe(chk.rev);
+  });
+
+  it('客人 bye → 最後的 chk + held、連線延遲關閉；ack 舊 rev 不清、ack 最後那份才清', () => {
+    const r = rig();
+    const c = hero();
+    const g = r.join(c);
+    g.send({ t: 'bye', reason: 'leave' });
+    r.tick(); r.tick();
+    const fin = g.last('chk') as unknown as { rev: number };
+    expect(r.held.get(c.id)?.rev).toBe(fin.rev);
+    expect(r.host.lingering).toBe(1);
+    g.send({ t: 'chkAck', rev: fin.rev - 1 });
+    r.tick(); r.tick();
+    expect(r.held.get(c.id)?.rev).toBe(fin.rev);
+    g.send({ t: 'chkAck', rev: fin.rev });
+    r.tick(); r.tick();
+    expect(r.held.has(c.id)).toBe(false);
+    r.run(LINGER_MS);
+    expect(r.host.lingering).toBe(0);
+    expect(g.closed).toBe(true);
+  });
+
+  it('close 之後延遲中的連線送來最後那份的 chkAck → held 清掉、requestSave', () => {
+    const r = rig();
+    const c = hero();
+    const g = r.join(c);
+    r.host.close();
+    const saves0 = r.saves.length;
+    r.tick();
+    const fin = g.last('chk') as unknown as { rev: number };
+    expect(r.held.get(c.id)?.rev).toBe(fin.rev);
+    g.send({ t: 'chkAck', rev: fin.rev });
+    r.tick(); r.tick();
+    expect(r.held.has(c.id)).toBe(false);
+    expect(r.saves.length).toBe(saves0 + 1);             // 關房後 loop 可能不再跑：直接存，不走防抖
+    r.run(SAVE_DEBOUNCE_MS + 100);
+    expect(r.saves.length).toBe(saves0 + 1);
+  });
+
+  it('重新加入：held 的 rev 較新就用它；ready 之前 held 不清（中途存世界也還在），上線時的 chk 蓋過、ack 後才清', () => {
+    const r = rig();
+    const c = hero({ rev: 3 });
+    const kept = { ...c, rev: 8, inventory: { ...c.inventory, slots: c.inventory.slots.map(() => null) } };
+    r.held.set(c.id, { rev: 8, character: kept, at: 1 });
+    const g = r.connect();
+    g.send(hello(c));
+    r.tick(); r.tick();
+    expect(r.game.actors.get('p1')!.inventory.slots.every((s) => s === null)).toBe(true);
+    expect(g.of('chk')).toEqual([]);
+    // 客人還在 syncing（不送 ready）：過了存世界的防抖，held 仍是那份
+    r.run(SAVE_DEBOUNCE_MS + 100);
+    expect(r.held.get(c.id)).toEqual({ rev: 8, character: kept, at: 1 });
+    g.send({ t: 'ready' });
+    r.tick(); r.tick();
+    const chk = g.of('chk') as unknown as { rev: number; character: DelveCharacter }[];
+    expect(chk.length).toBe(1);
+    expect(chk[0].rev).toBe(9);
+    expect(chk[0].character.inventory.slots.every((s) => s === null)).toBe(true);
+    expect(r.held.get(c.id)?.rev).toBe(9);              // 送出、還沒 ack 的那份
+    g.send({ t: 'chkAck', rev: 9 });
+    r.tick(); r.tick();
+    expect(r.held.has(c.id)).toBe(false);
+  });
+
+  it('held 不用時（hello 較新）不送加入 chk；每份 chk 都寫成 held，還連著的客人 ack 後清掉（不另外存世界）', () => {
+    const r = rig();
+    const c = hero({ rev: 20 });
+    r.held.set(c.id, { rev: 8, character: { ...c, rev: 8 }, at: 1 });
+    const g = r.join(c);
+    expect(g.of('chk')).toEqual([]);
+    expect(r.held.has(c.id)).toBe(false);
+    r.run(SAVE_DEBOUNCE_MS + 100);
+    const saves0 = r.saves.length;
+    r.run(CHK_MS);
+    const chk = g.last('chk') as unknown as { rev: number };
+    expect(chk.rev).toBe(21);
+    expect(r.held.get(c.id)?.rev).toBe(21);
+    g.send({ t: 'chkAck', rev: 21 });
+    r.tick(); r.tick();
+    expect(r.held.has(c.id)).toBe(false);
+    r.run(SAVE_DEBOUNCE_MS + 100);
+    expect(r.saves.length).toBe(saves0);
+  });
 });
 
 describe('NetHost 垃圾訊息（Review Focus 3）', () => {
@@ -541,5 +679,71 @@ describe('NetHost 垃圾訊息（Review Focus 3）', () => {
     expect(r.host.guests().map((i) => [i.pid, i.phase])).toEqual([['p1', 'live'], ['p2', 'live']]);
     expect(good.state.filter((m) => m.t === 'ws').length).toBeGreaterThan(ws0 + 5);
     expect(bad.of('ack').filter((m) => m.reason === 'rate').length).toBeGreaterThan(400);
+  });
+});
+
+describe('NetHost ws 大小（8 人，最終修正）', () => {
+  /** 房主 + 7 位客人都在挖 + 揮、附近 40 隻怪、20 個掉落物；數字都是沒取整的小數。回傳第 1 位客人收到的那則 ws（JSON 原文） */
+  function busyWs(): { raw: string; ws: Ws } {
+    const r = rig();
+    const gs = Array.from({ length: 7 }, () => r.join());
+    r.run(200);
+    const game = r.game;
+    let i = 0;
+    for (const a of game.actors.values()) {
+      const p = a.player;
+      p.x = 600 + i * 23.456789123; p.y = FLOOR * TILE_SIZE - p.h - 0.123456789; p.vx = 87.33333333 * (i % 2 ? 1 : -1); p.vy = -213.456789;
+      a.facing = i % 2 ? 1 : -1;
+      a.mana = 37.866666667; a.hp = 87.5 - i / 3;
+      a.attack = { item: 'wood_sword', kind: 'sword', t: 0.123456789, dur: 0.42, angle: -0.785398163, dir: 1, id: i + 1 };
+      a.mining = { x: 37 + i, y: FLOOR, elapsed: 0.2345678, need: 0.6666667 };
+      i++;
+    }
+    for (let k = 0; k < 40; k++) {
+      const e = makeEnemy(1000 + k, k % 2 ? 'night_walker' : 'gel_blob', 400 + k * 13.3333333, FLOOR * TILE_SIZE - 0.37);
+      e.body.vx = 70.123456; e.hp = 23.456; e.state = 'chase';
+      game.enemies.push(e);
+    }
+    for (let k = 0; k < 20; k++) {
+      game.drops.list.push({ id: 500 + k, item: 'dirt', count: 1 + k, age: 0, pickDelay: 0, grabbed: false,
+        body: { x: 450 + k * 17.77777, y: FLOOR * TILE_SIZE - 20.3333333, w: 10, h: 10, vx: 33.3333, vy: -120.1234, onGround: false, gfxOffY: 0 } });
+    }
+    // 不跑模擬（steps 0）：狀態原樣留著，只等下一則 ws
+    const g = gs[0], n0 = g.state.length;
+    for (let k = 0; k < 10 && g.state.length === n0; k++) r.tick(FRAME, 0);
+    const ws = g.state[g.state.length - 1] as unknown as Ws;
+    expect(ws.t).toBe('ws');
+    return { raw: JSON.stringify(ws), ws };
+  }
+
+  it('players 只帶 pid / hp / maxHp / mana / pose（位置、速度、面向、死活都在 pose 裡，不重複）；mana 取 2 位小數', () => {
+    const { ws } = busyWs();
+    expect(ws.players).toHaveLength(8);
+    for (const p of ws.players) {
+      expect(Object.keys(p).sort()).toEqual(['hp', 'mana', 'maxHp', 'pid', 'pose']);
+      expect(p.mana).toBe(37.86);
+      expect(p.pose[11]).not.toBeNull();   // mining
+      expect(p.pose[10]).not.toBeNull();   // attack
+    }
+  });
+
+  it('怪物 / 掉落物 / 投射物 / NPC 的座標與速度取 2 位小數', () => {
+    const { ws } = busyWs();
+    expect(ws.enemies).toHaveLength(40);
+    expect(ws.drops).toHaveLength(20);
+    const r2ok = (v: number): boolean => Math.round(v * 100) / 100 === v;
+    for (const e of ws.enemies) expect(r2ok(e.x) && r2ok(e.y)).toBe(true);
+    for (const d of ws.drops) expect(r2ok(d.x) && r2ok(d.y)).toBe(true);
+  });
+
+  it('一則 ws 的位元組在預算內（房主上傳 = 位元組 × 15 Hz × 7 位客人）', () => {
+    const { raw } = busyWs();
+    const bytes = new TextEncoder().encode(raw).length;
+    const kbps = (bytes * WS_HZ * MAX_GUESTS) / 1024;
+    const ws = JSON.parse(raw) as Ws, len = (v: unknown): number => new TextEncoder().encode(JSON.stringify(v)).length;
+    console.log(`[ws budget] 8 人 ws = ${bytes} B（players ${len(ws.players)}、enemies ${len(ws.enemies)}、drops ${len(ws.drops)}）；房主上傳 ≈ ${kbps.toFixed(1)} KB/s（${WS_HZ} Hz × ${MAX_GUESTS} 位客人）`);
+    console.log(`[ws budget] 一位玩家 ${len(ws.players[1])} B：${JSON.stringify(ws.players[1])}`);
+    console.log(`[ws budget] 一隻怪 ${len(ws.enemies[1])} B：${JSON.stringify(ws.enemies[1])}；一個掉落物 ${len(ws.drops[1])} B`);
+    expect(bytes).toBeLessThan(WS_BUDGET);
   });
 });
