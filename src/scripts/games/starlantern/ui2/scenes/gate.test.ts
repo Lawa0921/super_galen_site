@@ -16,6 +16,7 @@ import { chainLength } from '../../data/story/chains';
 import { activeIds } from '../../engine/party';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { linesOf } from '../story';
+import { HELL_BOSS_DEPTH } from '../../engine/tiers';
 
 function setup(prep?: (g: Game) => void, art: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
@@ -484,7 +485,8 @@ describe('GateScene: the tier row (difficulty plan Task 7a)', () => {
     expect(h2.classList.contains('slx-tier-locked')).toBe(true);
   });
 
-  it('Q and E switch the tier, a locked one only beeps; a tap does the same', () => {
+  it('Q and E cycle the open tiers, skipping a locked one; a tap on a locked one only beeps', () => {
+    // T6a-T7a review 5: Q/E go round the tiers that are open (as the handbook skips a locked page, ruling 25).
     const { game, s, root } = setup(nightmareOpen);
     const spy = vi.spyOn(game, 'chooseTier');
     const sfx = (s as unknown as { ctx: { sfx: { error: ReturnType<typeof vi.fn> } } }).ctx.sfx;
@@ -493,26 +495,54 @@ describe('GateScene: the tier row (difficulty plan Task 7a)', () => {
     expect(game.state.dungeon.tier).toBe('nightmare');
     expect(selected(root)!.dataset.tier).toBe('nightmare');
     expect(selected(root)!.textContent).toBe(`→${T.ui2.tier.names.nightmare}`);
-    // Hell is locked: an error beep, nothing chosen.
+    // Hell is locked: E goes round to Normal, never to Hell, and nothing beeps.
     s.onAction('next');
-    expect(sfx.error).toHaveBeenCalledTimes(1);
+    expect(spy).not.toHaveBeenCalledWith('hell');
+    expect(game.state.dungeon.tier).toBe('normal');
+    expect(sfx.error).not.toHaveBeenCalled();
+    s.onAction('prev');                                        // left from Normal: the last open tier
     expect(game.state.dungeon.tier).toBe('nightmare');
-    expect(selected(root)!.dataset.tier).toBe('nightmare');
     s.onAction('prev');
     expect(game.state.dungeon.tier).toBe('normal');
-    // A tap on a cell: the same rules.
+    // A tap on a cell: an open one is chosen; the locked one beeps, keeps its condition, and changes nothing.
     cells(root)[1].click();
     expect(game.state.dungeon.tier).toBe('nightmare');
     cells(root)[2].click();
-    expect(sfx.error).toHaveBeenCalledTimes(2);
+    expect(sfx.error).toHaveBeenCalledTimes(1);
     expect(game.state.dungeon.tier).toBe('nightmare');
+    expect(cells(root)[2].querySelector('.slx-tier-cond')!.textContent).toBe(T.ui2.tier.locked.hell(HELL_BOSS_DEPTH));
     cells(root)[0].click();
     expect(game.state.dungeon.tier).toBe('normal');
-    // Locked from the start (Lv 1 save): Nightmare only beeps.
+    // Hell open too: E walks all three.
+    const all = setup((g) => { nightmareOpen(g); g.state.dungeon.reached.mainline = 30; g.state.story.finaleCleared = true; g.state.dungeon.bossKills['nightmare:mainline:25'] = 1; });
+    all.s.onAction('next'); all.s.onAction('next');
+    expect(all.game.state.dungeon.tier).toBe('hell');
+    all.s.onAction('next');
+    expect(all.game.state.dungeon.tier).toBe('normal');
+    // Locked from the start (Lv 1 save): nothing to go round to, so E only beeps.
     const lv1 = setup();
     lv1.s.onAction('next');
     expect(lv1.game.state.dungeon.tier).toBeUndefined();
     expect((lv1.s as unknown as { ctx: { sfx: { error: ReturnType<typeof vi.fn> } } }).ctx.sfx.error).toHaveBeenCalledTimes(1);
+  });
+
+  it('switching the tier marks the scroll cue again (T6a-T7a review 1)', () => {
+    // The two tier lines push the gear list: a list that fitted may overflow now, and back on Normal fit again.
+    const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get');
+    const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get');
+    try {
+      sh.mockReturnValue(40); ch.mockReturnValue(60);
+      const { s, root } = setup(nightmareOpen);
+      const more = () => [...root.querySelectorAll<HTMLElement>('.slx-codex-more')];
+      expect(more().length).toBeGreaterThan(0);
+      expect(more().every((m) => m.hidden)).toBe(true);
+      sh.mockReturnValue(90);                                  // as the two lines would make it
+      s.onAction('next');
+      expect(more().every((m) => !m.hidden)).toBe(true);
+      sh.mockReturnValue(40);
+      s.onAction('prev');
+      expect(more().every((m) => m.hidden)).toBe(true);        // no stale cue left on Normal
+    } finally { sh.mockRestore(); ch.mockRestore(); }
   });
 
   it('a Nightmare card says what changes; a Normal card is as before', () => {

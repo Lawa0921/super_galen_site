@@ -4493,24 +4493,29 @@ describe('a run has a tier (difficulty plan Task 6a)', () => {
     const g = new Game(calm(), st, undefined, 0, HERO_LINEUP);
     g.state.dungeon.reached.mainline = 12;
     expect(g.chooseTier('nightmare')).toEqual({ ok: true });
-    const play = () => {
+    // `burn`: draws taken from the game's stream after the departure (T6a-T7a review 3), so the two plays fight their
+    // battles on different draws; the affixes still match, and each is the draw its own spot gives.
+    const play = (burn: number) => {
       const r = loadGame(st);
       expect(r.status).toBe('ok');
       if (r.status !== 'ok') throw new Error('no save');
       const h = new Game(mulberry32(9), st, r.state);
       expect(h.tier()).toBe('nightmare');
       expect(h.depart(MAIN, 12)).toEqual({ ok: true });
+      for (let i = 0; i < burn; i++) h.rng();
       const out: unknown[][] = [];
       for (let i = 0; i < 3; i++) {
-        stepOnto(h, plantAt(h, 'elite'));
+        const at = plantAt(h, 'elite');
+        stepOnto(h, at);
         out.push(affixesOf(h));
+        expect(out[i][0], `elite ${i}`).toEqual(rollAffixes(h.run!.seed, 12, TIERS.nightmare.eliteAffixes, at));
         expect(killAll(h).outcome).toBe('win');
       }
       return out;
     };
-    const a = play();
+    const a = play(0);
     expect(a.every((f) => Array.isArray(f[0]) && f[0].length === 1)).toBe(true);
-    expect(play()).toEqual(a);
+    expect(play(7)).toEqual(a);
   });
 
   it('a Hell save reloads into the same tier, kills and affixes (game flow, Task 6b)', () => {
@@ -4530,7 +4535,8 @@ describe('a run has a tier (difficulty plan Task 6a)', () => {
     expect(g.useReturnLamp()).toBe(true);
     expect(g.chooseTier('hell')).toEqual({ ok: true });   // saves
     const dungeon = structuredClone(g.state.dungeon);
-    const play = () => {
+    // `burn`: draws taken after the departure, as in the Nightmare reload above (T6a-T7a review 3).
+    const play = (burn: number) => {
       const r = loadGame(st);
       expect(r.status).toBe('ok');
       if (r.status !== 'ok') throw new Error('no save');
@@ -4539,10 +4545,13 @@ describe('a run has a tier (difficulty plan Task 6a)', () => {
       expect(h.tier()).toBe('hell');
       expect(h.depart(MAIN, 12)).toEqual({ ok: true });
       expect(h.run!.difficulty).toBe('hell');
+      for (let i = 0; i < burn; i++) h.rng();
       const out: unknown[] = [];
       for (let i = 0; i < 3; i++) {
-        stepOnto(h, plantAt(h, 'elite'));
+        const at = plantAt(h, 'elite');
+        stepOnto(h, at);
         out.push(affixesOf(h));
+        expect(affixesOf(h)[0], `elite ${i}`).toEqual(rollAffixes(h.run!.seed, 12, TIERS.hell.eliteAffixes, at));
         expect(killAll(h).outcome).toBe('win');
       }
       // A crowd met on the first spot whose Hell draw gives one an affix.
@@ -4557,13 +4566,16 @@ describe('a run has a tier (difficulty plan Task 6a)', () => {
       })();
       h.encounter = 99;
       expect(stepOnto(h, spot)).toEqual({ kind: 'battle' });
-      out.push(affixesOf(h));
+      const crowd = affixesOf(h);
+      const drawn = rollCrowdAffix(h.run!.seed, 12, spot, TIERS.hell.crowdAffixChance)!;
+      expect(crowd[Math.floor(drawn.pick * crowd.length)]).toEqual([drawn.id]);   // the foe its spot's draw picks
+      out.push(crowd);
       return out;
     };
-    const a = play();
+    const a = play(0);
     expect((a.slice(0, 3) as unknown[][]).every((f) => Array.isArray(f[0]) && f[0].length === 2)).toBe(true);
     expect((a[3] as unknown[]).filter(Boolean)).toHaveLength(1);
-    expect(play()).toEqual(a);
+    expect(play(7)).toEqual(a);
   });
 
   it('a save holding a tier it has not unlocked boots as a reset (Task 6b)', () => {

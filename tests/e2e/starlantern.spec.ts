@@ -4718,6 +4718,15 @@ test.describe('starlantern', () => {
         expect(b.x >= -0.5 && b.y >= -0.5 && b.x + b.width <= 640.5 && b.y + b.height <= 360.5, `${width}x${height} ${JSON.stringify(b)}`).toBe(true);
         expect(await cell.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5)).toBe(true);
       }
+      // T6a-T7a review 4: the row keeps clear of the place window, 返回, the gold window and every card.
+      const meets = (a: { x: number; y: number; width: number; height: number }, b: typeof a) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+      const rowBox = await stageBox(page, row);
+      const others = [page.locator('.slx-gate .slx-place'), page.locator('.slx-gate .slx-gold'), ...(await page.locator('.slx-gate .slx-back:visible').all()), ...(await page.locator('.slx-portal').all())];
+      expect(others.length, 'place, gold, 返回 and the three cards').toBeGreaterThanOrEqual(6);
+      for (const o of others) {
+        const b = await stageBox(page, o);
+        expect(meets(rowBox, b), `${width}x${height}: the tier row ${JSON.stringify(rowBox)} on ${(await o.getAttribute('class')) ?? ''} ${JSON.stringify(b)}`).toBe(false);
+      }
     }
     await fitTo(page, 1280, 720);
     // The main road, depth 10: the list and the confirm name the tier.
@@ -4728,6 +4737,40 @@ test.describe('starlantern', () => {
     await w.key('ArrowUp'); await w.key('Enter');             // 是
     await expect(page.locator('.slx-dungeon')).toBeVisible();
     expect(await dbg()).toEqual({ tier: 'nightmare', run: 'nightmare' });
+    expect(w.errors).toEqual([]);
+  });
+
+  test('switching the tier marks each card\'s scroll cue again (difficulty)', async ({ page }) => {
+    // T6a-T7a review 1: at 844x390, E adds two tier lines to every card; a gear list that now overflows shows 「↑↓ 捲動看更多」
+    // and one that fits does not; back on Normal no stale cue stays. Every region piece obtained: the longest lists.
+    const w = await startSweepGame(page);
+    await page.evaluate((ids) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const s = (window as any).__starlanternDebug.game.state;
+      s.dungeon.reached.mainline = 12; s.dungeon.tier = 'normal';
+      s.codex = [...new Set([...s.codex, ...ids])];
+    }, Object.keys(SPECIALS));
+    await fitTo(page, 844, 390);
+    await go(page, 'gate');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');                                     // 選擇傳送門
+    await expect(page.locator('.slx-portal')).toHaveCount(3);
+    const cues = () => page.locator('.slx-portal').evaluateAll((cards) => cards.flatMap((c) => {
+      const list = c.querySelector<HTMLElement>('.slx-portal-gear'), more = c.querySelector<HTMLElement>('.slx-codex-more');
+      return list && more ? [{ over: list.scrollHeight > list.clientHeight + 1, shown: !more.hidden }] : [];
+    }));
+    const before = await cues();
+    expect(before.length).toBeGreaterThan(0);
+    for (const c of before) expect(c.shown).toBe(c.over);
+    await w.key('e');
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'nightmare');
+    const after = await cues();
+    expect(after.some((c) => c.over), 'the tier lines push some list past its card').toBe(true);
+    for (const c of after) expect(c.shown, JSON.stringify(after)).toBe(c.over);
+    await w.key('e');                                         // Hell is locked: round to Normal
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'normal');
+    for (const c of await cues()) expect(c.shown).toBe(c.over);
+    await fitTo(page, 1280, 720);
     expect(w.errors).toEqual([]);
   });
 

@@ -322,12 +322,23 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
   });
 
   it('shallow Hell: the bare boss at d15 and d20 pooled at most .40; rare and crowds reported only (controller ruling)', () => {
-    expect(SHALLOW_HELL_BARE).toEqual({ depths: [15, 20], bareRate: 0.40 });
+    expect(SHALLOW_HELL_BARE).toEqual({ depths: [15, 20], bareRate: 0.40, rareRate: 0.80 });
     const hr = (rate: (c: TierCell) => number): BandRun[] => hellReportCells().map((cell) => ({ cell, run: run(rate(cell), 0.9), twin: run(1, 0.1), nightmare: run(1, 0.2) }));
     const bare = (c: TierCell) => c.kind === 'boss' && !c.lineup.runeTier;
-    expect(shallowHellMisses(hr((c) => (bare(c) ? 0.4 : 0)))).toEqual([]);
+    expect(shallowHellMisses(hr((c) => (bare(c) ? 0.4 : c.kind === 'boss' ? 1 : 0)))).toEqual([]);   // crowds reported only
     expect(shallowHellMisses(hr((c) => (bare(c) && c.depth === 20 ? 0.45 : bare(c) ? 0.3 : 1)))).toEqual(['HR d20: bare boss rate 0.450 > 0.4']);
     expect(shallowHellMisses(hr(() => 1).filter((m) => !bare(m.cell) || m.cell.depth !== 15))).toEqual(['HR d15: no bare boss fight measured', 'HR d20: bare boss rate 1.000 > 0.4']);
+  });
+
+  it('shallow Hell: the rare boss at d15 and d20 holds .80, counted in wins so float noise cannot flip it (T6a-T7a review 2)', () => {
+    const hr = (rate: (c: TierCell) => number): BandRun[] => hellReportCells().map((cell) => ({ cell, run: run(rate(cell), 0.9), twin: run(1, 0.1), nightmare: run(1, 0.2) }));
+    const rare = (c: TierCell) => c.kind === 'boss' && !!c.lineup.runeTier;
+    const rest = (c: TierCell) => (c.kind === 'boss' ? 0.3 : 1);
+    expect(shallowHellMisses(hr((c) => (rare(c) ? 0.8 : rest(c))))).toEqual([]);                         // exactly on the floor
+    expect(shallowHellMisses(hr((c) => (rare(c) ? 0.8 - 1e-12 : rest(c))))).toEqual([]);                 // .79999…: the same wins
+    expect(shallowHellMisses(hr((c) => (rare(c) && c.depth === 20 ? 0.79 : rare(c) ? 1 : rest(c))))).toEqual(['HR d20: rare boss rate 0.790 < 0.8']);
+    // No rare boss fight measured is a miss, not a pass.
+    expect(shallowHellMisses(hr((c) => (rare(c) ? 0.8 : rest(c))).filter((m) => !(rare(m.cell) && m.cell.depth === 15)))).toEqual(['HR d15: no rare boss fight measured']);
   });
 
   it('HE: a depth pooled at .75, and no pair under .40', () => {

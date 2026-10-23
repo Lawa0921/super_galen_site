@@ -283,17 +283,28 @@ export function hellReportCells(): TierCell[] {
 
 /**
  * Shallow Hell's one assertion (controller ruling after Task 6b, its one tuning round on the d20–24 boss factors): the bare
- * default pooled at most .40 against the Hell boss at d15 and d20, as H3 holds it at d25. The rare rows and the d15 crowds
- * stay reported only.
+ * default pooled at most .40 against the Hell boss at d15 and d20, as H3 holds it at d25. The rare boss pooled at least
+ * .80 there (T6a-T7a review 2: the tuning round left d20 exactly on that floor, so it is asserted, counted in wins). The
+ * d15 crowds stay reported only.
  */
-export const SHALLOW_HELL_BARE = { depths: [15, 20], bareRate: 0.40 } as const;
+export const SHALLOW_HELL_BARE = { depths: [15, 20], bareRate: 0.40, rareRate: 0.80 } as const;
 
-/** What shallow Hell misses of SHALLOW_HELL_BARE over `runs` (hellReportCells measured); no bare boss fight is a miss. */
+/**
+ * Whether a pooled run won at least `floor` of its fights, counted in whole wins: a pooled rate a hair under the floor in
+ * floats (.79999…) is still the same number of wins, and the wins a floor asks for are rounded up once, never by noise.
+ */
+export const winsAtLeast = (r: TierRun, floor: number): boolean => Math.round(r.rate * r.fights) >= Math.ceil(floor * r.fights - 1e-9);
+
+/** What shallow Hell misses of SHALLOW_HELL_BARE over `runs` (hellReportCells measured); no boss fight of a kind is a miss. */
 export function shallowHellMisses(runs: readonly BandRun[]): string[] {
-  return SHALLOW_HELL_BARE.depths.flatMap((d) => {
-    const bare = pooled(runs.filter((m) => m.cell.kind === 'boss' && m.cell.depth === d && !m.cell.lineup.runeTier).map((m) => m.run));
-    if (!bare.fights) return [`HR d${d}: no bare boss fight measured`];
-    return bare.rate > SHALLOW_HELL_BARE.bareRate ? [`HR d${d}: bare boss rate ${f3(bare.rate)} > ${SHALLOW_HELL_BARE.bareRate}`] : [];
+  const S = SHALLOW_HELL_BARE;
+  return S.depths.flatMap((d) => {
+    const boss = (rare: boolean) => pooled(runs.filter((m) => m.cell.kind === 'boss' && m.cell.depth === d && !!m.cell.lineup.runeTier === rare).map((m) => m.run));
+    const bare = boss(false), rare = boss(true);
+    return [
+      ...(!bare.fights ? [`HR d${d}: no bare boss fight measured`] : bare.rate > S.bareRate ? [`HR d${d}: bare boss rate ${f3(bare.rate)} > ${S.bareRate}`] : []),
+      ...(!rare.fights ? [`HR d${d}: no rare boss fight measured`] : !winsAtLeast(rare, S.rareRate) ? [`HR d${d}: rare boss rate ${f3(rare.rate)} < ${S.rareRate}`] : []),
+    ];
   });
 }
 

@@ -119,6 +119,8 @@ class PortalCards {
         el('div', { class: 'slx-portal-tier-suggest', text: L.suggest[now] }),
       ]));
     }
+    // The tier lines move the gear list: its scroll cue is marked again (T6a-T7a review 1), never left stale on Normal.
+    this.markOverflow();
   }
 
   /** A region-only item's full name: until obtained it reads 「（未取得）」 after it; once in the codex it shows rarity. */
@@ -265,8 +267,12 @@ class PortalCards {
       return true;
     }
     if (a === 'prev' || a === 'next') {
-      const i = TIER_ORDER.indexOf(this.ctx.game.tier());
-      this.pickTier(TIER_ORDER[(i + (a === 'next' ? 1 : -1) + TIER_ORDER.length) % TIER_ORDER.length]);
+      // Round the open tiers only, as the handbook skips a locked page (ruling 25; T6a-T7a review 5): a tap on a locked
+      // one still beeps and shows what opens it. With nothing else open, Q／E only beep.
+      const open = TIER_ORDER.filter((t) => tierUnlocked(this.ctx.game.state, t));
+      if (open.length < 2) { this.ctx.sfx.error(); return true; }
+      const i = Math.max(0, open.indexOf(this.ctx.game.tier()));
+      this.pickTier(open[(i + (a === 'next' ? 1 : -1) + open.length) % open.length]);
       return true;
     }
     if (a === 'confirm') { this.on.pick(this.cursor); return true; }
