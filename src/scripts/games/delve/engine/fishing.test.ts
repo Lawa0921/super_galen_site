@@ -1,7 +1,7 @@
 // fishing.test.ts — 釣魚：上鉤時機（等待 / 判定窗）、漁獲表（生態區 × 深度 × 液體 × 季節 × 天氣 × 時段 × 水域大小 × 釣力）、木箱戰利品
 import { describe, it, expect } from 'vitest';
 import {
-  FISH, FISH_SPECIES, biteDelay, biteWindow, canFishIn, catchCandidates, crateLoot, fishingPower, rollCatch, timeSlot,
+  FISH, FISH_SPECIES, OCEAN_FISH, biteDelay, biteWindow, canFishIn, catchCandidates, crateLoot, fishingPower, rollCatch, timeSlot,
   type CatchCtx,
 } from './fishing';
 import { ITEMS } from './items';
@@ -124,5 +124,22 @@ describe('釣魚：木箱', () => {
       expect(g.some((d) => d.item === 'gold_bar' || d.item === 'silver_coin')).toBe(true);
       for (const d of [...w, ...g]) { expect(ITEMS[d.item]).toBeDefined(); expect(d.n).toBeGreaterThan(0); }
     }
+  });
+});
+
+describe('BIOME.OCEAN 釣魚', () => {
+  const ocean = { ...base, biome: BIOME.OCEAN, zone: 'surface' as const };
+  it('不出淡水 / 生態專屬魚，仍有通用小魚', () => {
+    const items = catchCandidates(ocean).map((c) => c.item);
+    for (const fresh of ['reed_perch', 'brook_trout', 'frost_char', 'oasis_koi', 'mud_whisker', 'sun_bream', 'ember_salmon', 'old_whiskers']) expect(items).not.toContain(fresh);
+    expect(items).toContain('silver_minnow');
+  });
+  it('海洋表 = OCEAN_FISH ∪ 垃圾 ∪ 木箱（所有季節 × 時段 × 天氣、釣力 100、大水池）', () => {
+    const seasons = [0, 1, 2, 3] as const, times = ['dawn', 'day', 'dusk', 'night'] as const;
+    const weathers = ['clear', 'cloudy', 'rain', 'storm', 'snow', 'fog'] as const;
+    const union = new Set<string>();
+    for (const season of seasons) for (const time of times) for (const weather of weathers)
+      for (const c of catchCandidates({ ...ocean, season, time, weather, power: 100, pool: 200 })) union.add(c.item);
+    expect([...union].sort()).toEqual([...OCEAN_FISH, 'soggy_boot', 'wood', 'wooden_crate', 'iron_crate', 'golden_crate'].sort());
   });
 });

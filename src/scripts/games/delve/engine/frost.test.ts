@@ -5,7 +5,7 @@ import { T, W } from './tiles';
 import { LiquidSim } from './liquid';
 import { updateFreeze, freezeColumns, frozenCount } from './frost';
 import { li, type Column, type ColumnLayers, type ColumnSource } from './column';
-import { DAYS_PER_SEASON, SEASON, SEASON_TRANSITION_DAYS } from './calendar';
+import { DAYS_PER_SEASON, SEASON, SEASON_TRANSITION_DAYS, freezeSeason } from './calendar';
 
 /** 寬 60、高 40 的小世界：地面在 y=20，x 20..39 挖一個 4 格深的湖（水面 y=17..20 → 湖底 y=21） */
 function lakeWorld(biome: number = BIOME.FOREST): World {
@@ -160,5 +160,11 @@ describe('freezeColumns（無限世界：欄載入時依日期結冰）', () => 
     updateFreeze(w, null, winterLate, undefined, undefined, [0, 1]);
     expect(w.isFrozen(25, 18)).toBe(true);
     expect(w.liquidModified.has(w.chunkIndex(0, 0))).toBe(true);
+  });
+});
+
+describe('BIOME.OCEAN 結冰', () => {
+  it('海洋整年不結冰', () => {
+    for (let d = 0; d < 112; d++) expect(freezeSeason(d, BIOME.OCEAN, 0.5)).toBe(false);
   });
 });

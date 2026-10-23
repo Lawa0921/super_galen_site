@@ -88,6 +88,8 @@ export const FISH: readonly FishEntry[] = [
   { item: 'iron_crate', weight: 2, rarity: 'crate', liquid: W, minPower: 30, minPool: SMALL_POOL },
   { item: 'golden_crate', weight: 0.7, rarity: 'crate', liquid: W, minPower: 50, minPool: 120 },
 ];
+/** 海洋表（M1）：海上釣得到的魚 = 現有不限生態的水魚（FISH 不動、不新增物品）；海洋專屬魚種留 M2 */
+export const OCEAN_FISH: readonly ItemId[] = ['silver_minnow', 'moonlit_eel', 'thunder_ray', 'mistfin', 'petal_koi'];
 /** 日誌「釣魚紀錄」列出的魚種（不含垃圾 / 木箱） */
 export const FISH_SPECIES: readonly ItemId[] = FISH.filter((f) => ITEMS[f.item].fish).map((f) => f.item)
   .filter((v, i, a) => a.indexOf(v) === i);

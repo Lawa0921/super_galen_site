@@ -18,7 +18,7 @@ export type { ChunkData, ColumnSource, ColumnLayers } from './column';
 
 export type ChestSlots = (Stack | null)[];
 /** 生態區（每欄地表所屬；地下的過渡邊界另有起伏） */
-export const BIOME = { FOREST: 0, DESERT: 1, SNOW: 2, JUNGLE: 3 } as const;
+export const BIOME = { FOREST: 0, DESERT: 1, SNOW: 2, JUNGLE: 3, OCEAN: 4 } as const;
 export type BiomeId = (typeof BIOME)[keyof typeof BIOME];
 
 /** 一個 chunk 的前景 / 背景牆（各 CHUNK*CHUNK，索引 ly*CHUNK + lx；存檔 payload） */

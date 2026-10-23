@@ -155,6 +155,7 @@ export class OuterProfile {
     let biome: BiomeId = BIOME.FOREST;
     if (d < SEA_W) {
       kind = ZONE_SEA;
+      biome = BIOME.OCEAN;
       const depth = SEA_DEPTH + Math.round((vnoise1(x, 37, this.sFloor) - 0.5) * 16);
       const ramp = Math.min(1, (d + 1) / SHORE_RAMP, (SEA_W - d) / SHORE_RAMP);
       surface = edge + Math.max(2, Math.round(depth * ramp));

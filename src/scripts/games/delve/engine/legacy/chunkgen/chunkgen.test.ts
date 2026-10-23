@@ -9,7 +9,9 @@ import { vnoise2, fbm2 } from '../../noise';
 import { World, BIOME, LIQ } from '../../world';
 import { T } from '../../tiles';
 import { CHUNK } from '../../constants';
+import { fnv1a } from '../../../net/codec';
 
+const V1_SEA_HASH = 2089571727; // 改動前（biome 仍為 FOREST）取得的 v1 海 / 沙灘欄位元組雜湊
 const H = 1200;
 const F: CentralFrame = { width: 4200, height: H, edgeL: 330, edgeR: 345, cavernY: 560, moltenY: 1010 };
 
@@ -300,5 +302,22 @@ describe('chunkgen：外圍生成器 v0', () => {
       expect(w.biomeAt(x)).toBe(gen.profile.biomeAt(x));
       expect(w.layersAt(x)).toEqual(gen.profile.layersAt(x));
     }
+  });
+
+  it('OCEAN 不改變 v1 fill：海與沙灘欄的位元組雜湊固定', () => {
+    const gen = new OuterGen('ocean-pin', F);
+    let h = 0x811c9dc5;
+    for (const cx of [131, 132, 133, 140, 145, 146, 147, -1, -5, -15, -16, -17]) h = fnv1a(bytes(filled(gen, cx)), h);
+    expect(h).toBe(V1_SEA_HASH);
+  });
+});
+
+describe('BIOME.OCEAN（v1 海區）', () => {
+  it('海區欄的 biome = OCEAN，陸地段不是', () => {
+    const gen = new OuterGen('ocean-biome', F);
+    expect(BIOME.OCEAN).toBe(4);
+    expect(gen.profile.biomeAt(4200 + 10)).toBe(BIOME.OCEAN);
+    expect(gen.profile.biomeAt(-10)).toBe(BIOME.OCEAN);
+    expect(gen.profile.biomeAt(4200 + SEA_W + 50)).not.toBe(BIOME.OCEAN);
   });
 });

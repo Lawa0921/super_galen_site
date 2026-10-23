@@ -117,3 +117,9 @@ describe('localWeather / forecast / weatherDim', () => {
     expect(weatherDim('storm', 0)).toBe(1);
   });
 });
+
+describe('BIOME.OCEAN 天氣', () => {
+  it('海洋不改天氣（雨照下、霧照起）', () => {
+    for (const k of ['clear', 'cloudy', 'rain', 'storm', 'snow', 'fog'] as const) expect(localWeather(k, BIOME.OCEAN)).toBe(k);
+  });
+});
