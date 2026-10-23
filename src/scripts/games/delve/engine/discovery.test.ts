@@ -1,6 +1,9 @@
 // discovery.test.ts — 地區 / 地標（由 worldgen 推導、依種子命名）、首次進入的發現、日誌統計、存檔 JSON
 import { describe, it, expect } from 'vitest';
-import { buildRegions, Discovery, CATEGORY_LABEL, outerRegions, type RegionSource, type Region } from './discovery';
+import { buildRegions, Discovery, CATEGORY_LABEL, outerRegions, gen2Regions, NAMES, gen2RegionId, isGen2RegionId, isOuterRegionId, type RegionSource, type Region } from './discovery';
+import { Gen2Source } from './gen2';
+import { SPAWN_X } from './gen2/layout';
+import { CULTURES } from './gen2/cultures';
 import { OuterProfile, type CentralFrame } from './legacy/chunkgen';
 import { BIOME } from './world';
 import { LORE } from './lore';
@@ -145,5 +148,48 @@ describe('outerRegions（陣列）', () => {
     expect(f(2100, 300)).toEqual([]);
     expect(f(4800, 1100)).toEqual([]);
     expect(d.visit(4800, 300)).toEqual([]);
+  });
+});
+
+// ── gen2 地區的發現與命名 ──
+describe('gen2Regions', () => {
+  const src = new Gen2Source('rg'), q = gen2Regions('rg', src), q2 = gen2Regions('rg', new Gen2Source('rg'));
+  // 依 x 排序第一份整個外框都在地區範圍內（b.y + b.h ≤ min deep）的小屋（深層小屋在 deep 以下、只會回 1 個 region）
+  const shallowCabin = (g: Gen2Source): { x: number; y: number } => {
+    const bs = g.blueprints.overlapping(-40_000, 40_000).filter((b) => b.kind === 'cabin').sort((a, b) => a.x - b.x);
+    const b = bs.find((c) => { let m = Infinity; for (let x = c.x; x < c.x + c.w; x++) m = Math.min(m, g.layersAt(x).deep); return c.y + c.h <= m; })!;
+    return { x: b.x, y: b.y };
+  };
+  it('gen2 地區 id 唯一、在 gen2 範圍內、跨實例穩定；名字確定', () => {
+    const seen = new Map<number, string>();
+    for (let x = -30_000; x < 30_000; x += 53) for (const r of q(x, 300)) {
+      expect(isGen2RegionId(r.id)).toBe(true); expect(isOuterRegionId(r.id)).toBe(false);
+      if (seen.has(r.id)) expect(seen.get(r.id)).toBe(r.name); else seen.set(r.id, r.name);
+    }
+    for (let x = -30_000; x < 30_000; x += 977) expect(q2(x, 300).map((r) => [r.id, r.name])).toEqual(q(x, 300).map((r) => [r.id, r.name]));
+    expect(q(SPAWN_X, 300)[0].name).toBe('家鄉林地'); expect(q(5, 300)[0].name).toBe('西岸沙灘');
+  });
+  it('在淺層小屋裡 visit：先回小屋、再回所在地區；再 visit 不重複', () => {
+    const cab = shallowCabin(src), d = new Discovery([]); d.setOuter(q);
+    const got = d.visit(cab.x + 1, cab.y + 1);
+    expect(got).toHaveLength(2); expect(got[0].kind).toBe('cabin'); expect(got[1].cat).toBe('land');
+    expect(d.visit(cab.x + 1, cab.y + 1)).toEqual([]);
+  });
+  it('load 接受 gen2 id、丟掉亂數 id', () => {
+    const d = new Discovery([]); d.load({ regions: [gen2RegionId(1, 2, 0, 0), 12345678901] } as never);
+    expect([...d.found]).toEqual([gen2RegionId(1, 2, 0, 0)]);
+  });
+  it('霧竹大陸的地區名用霧竹命名池', () => {
+    const m = [src.layout.landmass(1, 2), src.layout.landmass(-1, 2)].find((l) => l.culture === 'mistbamboo')!;
+    for (const r of m.regions) { const n = q(r.x0 + 5, 300).at(-1)!.name; expect(CULTURES.mistbamboo.suffixes.some((s) => n.endsWith(s))).toBe(true); }
+  });
+  it('海與島的名字', () => {
+    expect(q(4300, 300).at(-1)!.name).toBe('東方大海'); 
+    // 西側第一道海：避開島的一欄（seed 'rg' 的 x = -300 落在島上）
+    const w = src.layout.landmass(-1, 1), wx = w.x1 - 3;
+    expect(w.islands.some((i) => wx >= i.x0 && wx < i.x1)).toBe(false);
+    expect(q(wx, 300).at(-1)!.name).toBe('西方大海');
+    const d = src.layout.landmass(1, 1).islands[0];
+    expect(NAMES.island).toContain(q((d.x0 + d.x1) >> 1, 300).at(-1)!.name);
   });
 });

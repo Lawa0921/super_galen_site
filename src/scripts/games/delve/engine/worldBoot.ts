@@ -9,7 +9,7 @@ import type { DungeonInfo } from './legacy/gen/dungeon';
 import type { VillageInfo, HallInfo } from './legacy/gen/settlements';
 import type { LandmarkInfo } from './legacy/gen/landmarks';
 import type { SpringSpec } from './liquid';
-import { outerRegions, type Region } from './discovery';
+import { outerRegions, gen2Regions, type Region } from './discovery';
 import { gen2LandQuery, v1LandQuery, type LandQuery } from './waystones';
 import { Gen2Source } from './gen2';
 import { LockTable, type LockJSON } from './gen2/locks';
@@ -37,7 +37,7 @@ export interface WorldContent {
   landmarks: LandmarkInfo[];
   /** null = 建構子照舊 buildRegions（舊世界） */
   regions: Region[] | null;
-  /** 外圍 / gen2 地區查詢（legacy = outerRegions、gen2 = null；Task 14 接 gen2） */
+  /** 外圍 / gen2 地區查詢（legacy = outerRegions、gen2 = gen2Regions） */
   outer: ((x: number, y: number) => Region[]) | null;
   /** 傳送碑的陸地查詢（null = 有界世界，只有出生點那顆） */
   land: LandQuery | null;
@@ -90,7 +90,7 @@ export function bootGen2(seed: string, spec: Extract<WorldGenSpec, { kind: 'gen2
     tablets: [], relics: [], springs: [],
     villages: [], halls: [], landmarks: [],
     regions: [],
-    outer: null,
+    outer: gen2Regions(seed, source),
     land: gen2LandQuery(source),
   };
 }
