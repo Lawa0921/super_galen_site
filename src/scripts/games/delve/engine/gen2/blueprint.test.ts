@@ -14,7 +14,7 @@ const src = new Gen2Source('bp');
 const idx = new BlueprintIndex('bp', src.layout, src.profile);
 const all = idx.overlapping(-40_000, 40_000);
 
-describe('gen2 blueprints / slot grid', () => {
+describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
   it('HRng：hash2(id, counter++, s)；int 是 [lo, hi)、chance(n) 是 1/n', () => {
     const r = new HRng(77, 12345);
     expect([r.next(), r.next(), r.next()]).toEqual([hash2(12345, 0, 77), hash2(12345, 1, 77), hash2(12345, 2, 77)]);

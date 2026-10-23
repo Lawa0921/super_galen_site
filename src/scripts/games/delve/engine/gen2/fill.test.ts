@@ -29,7 +29,8 @@ function diffAt(a: Uint8Array, b: Uint8Array): number {
   return -1;
 }
 
-describe('gen2 fill / Gen2Source', () => {
+// 整欄填格很重（全套平行跑時單一測試可超過 5 秒），這個檔的測試一律 30 秒
+describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
   it('版本常數', () => {
     expect(GEN2_VERSION).toBe(0);
     expect(GEN2_MIN_VERSION).toBe(0);
@@ -122,6 +123,9 @@ describe('gen2 fill / Gen2Source', () => {
     };
     const home = src.layout.landmassAt(2100)!;
     const seen = new Set<number>();
+    // 同一欄只填一次（下面逐 x 取樣，相鄰 x 落在同一欄）
+    const cols = new Map<number, Column>();
+    const colAt = (cx: number): Column => { let c = cols.get(cx); if (!c) cols.set(cx, c = fillCol(src, cx)); return c; };
     const ss = seedInt('skin', 'g2-shaft');
     for (const r of home.regions) {
       if (r.variant === VARIANT.BEACH) continue;
@@ -130,7 +134,7 @@ describe('gen2 fill / Gen2Source', () => {
         const I = src.profile.info(x);
         // 入口欄與主坑道附近會挖到地表
         if (I.kind !== COL_LAND || src.isEntrance(x) || Math.abs(x - sx) <= 20) continue;
-        const col = fillCol(src, x >> 5);
+        const col = colAt(x >> 5);
         for (let d = 0; d < want[r.biome].length; d++) expect(col.fg[li(x, I.surface + d)], `biome ${r.biome} x ${x} d ${d}`).toBe(want[r.biome][d]);
         seen.add(r.biome);
       }
@@ -140,7 +144,7 @@ describe('gen2 fill / Gen2Source', () => {
     for (let x = src.layout.landmass(1, 1).x0; x < src.layout.landmass(1, 1).x1; x++) {
       const I = src.profile.info(x);
       if (I.kind !== COL_ISLAND) continue;
-      const col = fillCol(src, x >> 5);
+      const col = colAt(x >> 5);
       // 島的表層歸 Task 11（P12，詳見 sea.test.ts）：離水 4 格內沙灘沙、其餘草 + 泥；地表以上只有空氣與樹
       const e = Math.min(x - I.region.x0, I.region.x1 - 1 - x);
       if (e < 4) for (let y = I.surface; y < I.surface + 4; y++) expect(col.fg[li(x, y)]).toBe(T.SAND);
