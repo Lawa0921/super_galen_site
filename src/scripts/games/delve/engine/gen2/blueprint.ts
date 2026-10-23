@@ -4,6 +4,8 @@
 // 所以 fill 一段 [x0, x1) 只要看與它相交的槽，任何一段都蓋得出同一份藍圖與自己相交的部分。
 // 海槽（P12）：structureId / slotOf 認得海槽（region = 0、slot = SeaSlot.k、表層）；海上點位的內容歸 Task 11，島地區不進陸地槽位格。
 // 保證槽（P11）：每片非家鄉的大陸至少一間小屋、一座遺跡（見 BlueprintIndex.guard）。
+// 液體藍圖（湖 / 地下湖 / 熔岩池，structures/lakes.ts）讓位：同一槽另一層的藍圖外框與它相交、且那份不是液體或層比它淺 → 這份不放
+// （fill 依 (layer, id) 序蓋，後蓋的結構會切開液體；依「原始」擲出的結果判，沒有循環）。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { hash2, seedInt } from '../noise';
 import { X_LIMIT } from '../coords';
@@ -14,7 +16,8 @@ import type { Profile2 } from './profile';
 import { shaftX } from './caves';
 import { buildCabin } from './structures/cabin';
 import { buildRuin } from './structures/ruin';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, LAND_SLOT_W, KEEP, type Blueprint, type BpCtx } from './bpcore';
+import { buildLake, buildCaveLake, buildLavaPool } from './structures/lakes';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, LAND_SLOT_W, KEEP, type Blueprint, type BpCtx, type BpKind } from './bpcore';
 
 export { BP_SURFACE, BP_UNDER, BP_DEEP, LAND_SLOT_W, KEEP, SLOT_PAD, BpGrid, placeX, type BpKind, type Blueprint, type BpCtx } from './bpcore';
 
@@ -91,12 +94,20 @@ export function stamp(col: Column, bp: Blueprint, x0: number, x1: number): void 
 // ── 槽位表 ──
 
 type Build = (c: BpCtx, o?: { force?: boolean }) => Blueprint | null;
-// 各層的機率（依序累加；擲 hash2(id, 0, sRoll)）。Task 10 在後面接上湖 0.15、地下湖 0.15、熔岩池 0.20
+// 各層的機率（依序累加；擲 hash2(id, 0, sRoll)）：表層遺跡 0.3、湖 0.15；地下層小屋 0.4、地下湖 0.15；深層熔岩池 0.2
 const ROLL: readonly (readonly { p: number; build: Build }[])[] = [
-  [{ p: 0.3, build: buildRuin }],
-  [{ p: 0.4, build: buildCabin }],
-  [],
+  [{ p: 0.3, build: buildRuin }, { p: 0.15, build: buildLake }],
+  [{ p: 0.4, build: buildCabin }, { p: 0.15, build: buildCaveLake }],
+  [{ p: 0.2, build: buildLavaPool }],
 ];
+const LIQUID: ReadonlySet<BpKind> = new Set<BpKind>(['lake', 'cave_lake', 'lava_pool']);
+const LAYERS = [BP_SURFACE, BP_UNDER, BP_DEEP] as const;
+const boxesMeet = (a: Blueprint, b: Blueprint): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+// 液體藍圖 b 讓位給同槽另一層的 o：外框相交，且 o 不是液體、或 o 的層比 b 淺（先蓋）。非液體藍圖從不讓位
+// （幾何上很少相交：400 個種子沒有發生；這裡保證後蓋的結構不會切開液體）
+export function liquidYields(b: Blueprint, o: Blueprint): boolean {
+  return LIQUID.has(b.kind) && o.layer !== b.layer && boxesMeet(b, o) && (!LIQUID.has(o.kind) || o.layer < b.layer);
+}
 // 家鄉含出生點 ± SPAWN_CLEAR 的槽全空
 const SPAWN_CLEAR = 80;
 const CACHE_MAX = 256;
@@ -109,8 +120,9 @@ export class BlueprintIndex {
   private readonly sRoll: number;
   private readonly sShaft: number;
   private readonly spawnX: number | null;
-  // id → 藍圖（null = 這槽這層空著）；LRU CACHE_MAX 份
+  // id → 藍圖（null = 這槽這層空著）；LRU CACHE_MAX 份。raw = 讓位前（原始擲出）的結果
   private readonly cache = new Map<number, Blueprint | null>();
+  private readonly rawCache = new Map<number, Blueprint | null>();
   // 大陸 → 保證槽（Landmass 是 Layout 快取的同一個物件）
   private readonly guards = new Map<Landmass, Guard>();
 
@@ -141,7 +153,7 @@ export class BlueprintIndex {
           for (let q = 0; q < n; q++) {
             const sl = landSlot(r, q);
             if (sl.x1 <= x0 || sl.x0 >= x1) continue;
-            for (const layer of [BP_SURFACE, BP_UNDER, BP_DEEP] as const) {
+            for (const layer of LAYERS) {
               const b = this.get(m, r, q, layer);
               if (b && b.x < x1 && b.x + b.w > x0) out.push(b);
             }
@@ -155,11 +167,21 @@ export class BlueprintIndex {
 
   private get(m: Landmass, r: RegionInfo, q: number, layer: 0 | 1 | 2): Blueprint | null {
     const id = structureId(m.side, m.i, r.index, q, layer);
-    const hit = this.cache.get(id);
-    if (hit !== undefined) { this.cache.delete(id); this.cache.set(id, hit); return hit; }
-    const b = this.build(m, r, q, layer, id);
-    this.cache.set(id, b);
-    if (this.cache.size > CACHE_MAX) this.cache.delete(this.cache.keys().next().value!);
+    return lru(this.cache, id, () => this.yieldLiquid(m, r, q, this.raw(m, r, q, layer)));
+  }
+
+  private raw(m: Landmass, r: RegionInfo, q: number, layer: 0 | 1 | 2): Blueprint | null {
+    const id = structureId(m.side, m.i, r.index, q, layer);
+    return lru(this.rawCache, id, () => this.build(m, r, q, layer, id));
+  }
+
+  // 液體藍圖 b 讓位（liquidYields）給同槽另一層的原始藍圖 → null
+  private yieldLiquid(m: Landmass, r: RegionInfo, q: number, b: Blueprint | null): Blueprint | null {
+    if (!b || !LIQUID.has(b.kind)) return b;
+    for (const layer of LAYERS) {
+      const o = layer === b.layer ? null : this.raw(m, r, q, layer);
+      if (o && liquidYields(b, o)) return null;
+    }
     return b;
   }
 
@@ -219,4 +241,14 @@ export class BlueprintIndex {
     this.guards.set(m, g);
     return g;
   }
+}
+
+// LRU：命中移到最新；未命中 make() 後放入，超過 CACHE_MAX 丟最舊
+function lru<V>(cache: Map<number, V>, id: number, make: () => V): V {
+  const hit = cache.get(id);
+  if (hit !== undefined) { cache.delete(id); cache.set(id, hit); return hit; }
+  const v = make();
+  cache.set(id, v);
+  if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value!);
+  return v;
 }

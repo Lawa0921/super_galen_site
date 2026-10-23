@@ -163,20 +163,22 @@ describe('gen2 fill / Gen2Source', () => {
     expect(water).toBeGreaterThan(1000);
   });
 
-  it('熔岩表面在 LAVA_Y：LAVA_Y 以下沒有空氣、LAVA_Y 以上沒有熔岩（不會有階梯）', () => {
+  it('熔岩表面在 LAVA_Y：LAVA_Y 以下沒有空氣、LAVA_Y 以上的熔岩只在熔岩池（Task 10）外框內（不會有階梯）', () => {
     const src = new Gen2Source('lava');
-    let lava = 0;
-    for (const cx of [20, 70, 140, 190, -50]) {
+    const pools = src.blueprints.overlapping(-25_000, 25_000).filter((b) => b.kind === 'lava_pool');
+    const inPool = (x: number, y: number): boolean => pools.some((b) => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
+    let lava = 0, pooled = 0;
+    for (const cx of [20, 70, 140, 190, -50, pools[0].x >> 5]) {
       const col = fillCol(src, cx);
       for (let x = cx * 32; x < cx * 32 + 32; x++) for (let y = 0; y < 1200; y++) {
         const i = li(x, y);
         if (y >= LAVA_Y) {
           expect(col.fg[i] !== T.AIR || col.liquidType[i] === LIQ.LAVA).toBe(true);
           if (col.liquidType[i] === LIQ.LAVA) lava++;
-        } else expect(col.liquidType[i]).not.toBe(LIQ.LAVA);
+        } else if (col.liquidType[i] === LIQ.LAVA) { expect(inPool(x, y), `${x},${y}`).toBe(true); pooled++; }
       }
     }
-    expect(lava).toBeGreaterThan(0);
+    expect(lava).toBeGreaterThan(0); expect(pooled).toBeGreaterThan(0);
   });
 
   it('出生點站得住：腳下實心、上方 2 格空氣、±3 沒有樹幹（P9）', () => {
