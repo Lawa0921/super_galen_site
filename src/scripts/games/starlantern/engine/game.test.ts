@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { Game, type BattleEnd, type MoveResult } from './game';
 import { STORY_FIGHT_ROUNDS } from './battle';
 import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
@@ -4437,7 +4437,10 @@ describe('story L: pieces wait to be told (Task 2a)', () => {
   });
 });
 
+// story L Task 8: the pool is written now; a test that sets its own (or none) gets the written one back after it
+const WRITTEN_BEATS = [...NIGHT_BEATS.lines];
 describe('story L: the night in the game (Task 3b)', () => {
+  afterEach(() => { NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, ...WRITTEN_BEATS); });
   const duo: CharacterId[] = ['hero', 'rin'];
   /** A game in town, the opening behind it, whose untold memories are `list` (each owner met, the earlier pieces told). */
   const withUntold = (list: SceneId[], storage = memoryStorage(), tweak: (g: Game) => void = () => {}) => {
@@ -4557,7 +4560,7 @@ describe('story L: the night in the game (Task 3b)', () => {
 
   it('takeBeat moves the cursor and saves it; a reload gives the next line, not the same one', () => {
     const lines: ScriptLine[] = [{ who: 'narrator', text: '一' }, { who: 'narrator', text: '二' }];
-    NIGHT_BEATS.lines.push(...lines);
+    NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, ...lines);
     try {
       const storage = memoryStorage();
       const g = withUntold(five, storage);

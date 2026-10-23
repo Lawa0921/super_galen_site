@@ -4,9 +4,9 @@ import { ITEMS } from '../items';
 import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
-import { FOUND_LINE, GROUP_TITLES, NIGHT_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
+import { FOUND_LINE, GROUP_TITLES, NIGHT_BEATS, NIGHT_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
-import { AFTER_CHOICE, groupShapeBreaks, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
+import { AFTER_CHOICE, dots, groupShapeBreaks, opensOnDots, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
 import { T } from '../text.zh-TW';
 import type { CharacterId } from '../../engine/types';
 import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragmentName, SHARD_PRICE, SHARD_DROP, TOWN_DROP, PERKS, ABSORB_GAIN } from './fragments';
@@ -596,6 +596,8 @@ describe('the script gates', () => {
     for (const { key, line } of storyTexts().filter((t) => t.line)) {
       const who = line!.who;
       if (!(COMPANIONS as string[]).includes(who) || who === ownerOf(key) || banterTwo(key).includes(who)) continue;
+      // story L Task 8: a night's beat is said only by one met (engine/story/nights.ts `nextBeat`, tested there)
+      if (key.startsWith('nightBeats.')) continue;
       const c = line!.if;
       expect(c?.met === who || c?.full === who, `${key}: ${who} speaks without being met`).toBe(true);
     }
@@ -3283,5 +3285,55 @@ describe('story L: the group scenes (Task 7)', () => {
     expect(GROUP_TITLES).toEqual({
       'group:act2': '第二幕之後・碎片的價錢', 'group:act3': '第三幕之後・問不問', 'group:act4': '第四幕之後・桌上的錢袋',
     });
+  });
+});
+
+// Story L Task 8 (spec §4.4.1; style bible §1.3.1): the beat between two memories of a night. Any of them may play at any stage,
+// before or after Rin's choice, with anyone not met yet, between any two memories: so each says nothing that leans on those.
+describe('story L: the night beats (Task 8)', () => {
+  it('the night beats: four a companion, eight narrations, light, no memory named, not dawn', () => {
+    const lines = NIGHT_BEATS.lines;
+    expect(lines).toHaveLength(40);
+    expect(lines.map((l) => l.who)).toEqual([...COMPANIONS.flatMap((c) => [c, c, c, c]), ...Array<string>(8).fill('narrator')]);
+    const SECRETS = /守燈人|靜鐘會|艾斯特拉|燈芯|刺客|代號|信物|派來殺|要殺|鐘守|師父|名單/;
+    const others = (who: string) => [...COMPANIONS.filter((c) => c !== who).map((c) => CHARACTERS[c].name), '凜'];
+    for (const l of lines) {
+      const tag = `${l.who}: ${l.text}`;
+      expect([...l.text].length, tag).toBeLessThanOrEqual(MAX_LINE_CHARS);
+      expect(dots(l.text), tag).toBeLessThanOrEqual(1);
+      expect(opensOnDots(l.text), tag).toBe(false);
+      expect(l.text, tag).not.toMatch(/天亮|天快亮|早上|清晨|黎明/);   // the night is not over
+      expect(l.if, tag).toBeUndefined();
+      expect(l.past, tag).toBeUndefined();
+      expect(l.place, tag).toBeUndefined();
+      expect(moodAllowed(l.who, l.mood), tag).toBe(true);
+      expect(l.text, tag).not.toMatch(SECRETS);
+      for (const name of others(l.who)) expect(l.text, tag).not.toContain(name);   // she may not be met yet
+      if (l.who === 'narrator') {
+        expect(l.text, tag).not.toMatch(/^「/);
+        for (const r of REVEALED) if (r.heard) expect(l.text, tag).not.toMatch(r.re);
+        continue;
+      }
+      expect(l.text, tag).toMatch(/^「[^」]*」$/);
+      // no memory named, and no name that turns with her pieces: what her own pieces reveal or undo, at any count
+      for (const r of [...REVEALED, ...UNDONE]) if (r.who === l.who) expect(l.text, tag).not.toMatch(r.re);
+      expect(l.text, tag).not.toMatch(GUEST_NEVER[l.who]);
+      expect(l.text, tag).not.toMatch(/您|閣下|歸來者/);
+      if (!LOUD.has(l.who)) expect(l.text, tag).not.toMatch(/！/);
+      expect(l.text, tag).not.toContain('另外');   // Rin's alone
+    }
+  });
+
+  it('each companion keeps her own voice in the beats: who says them can be told apart', () => {
+    const by = (c: CharacterId) => NIGHT_BEATS.lines.filter((l) => l.who === c).map((l) => l.text).join('');
+    expect(by('noel')).toMatch(/本小姐/);
+    expect(by('safira')).toMatch(/唷|～/);
+    expect(by('safira')).toMatch(/小洛/);
+    expect(by('bobby')).toMatch(/洛恩哥|一下下/);
+    expect(by('selene')).toMatch(/月亮/);
+    expect(by('scarlet')).toMatch(/回報/);
+    expect(by('liz')).toMatch(/錢|價|銀幣/);
+    expect(by('sylvie')).toMatch(/風|湯|蟲|被子/);   // spec §7.1: food, weather, the wild
+    expect(by('chizuru')).toMatch(/我們那時候|最近|去年|近來/);   // spec §7.2: the year she fell asleep in
   });
 });

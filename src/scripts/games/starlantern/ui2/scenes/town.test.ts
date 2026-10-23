@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { constRng } from '../../engine/testing';
 import { NO_ART, type ArtIndex } from '../../render/textures';
@@ -479,7 +479,10 @@ describe('TownScene story', () => {
   });
 });
 
+// story L Task 8: the pool is written now; a test that sets its own (or none) gets the written one back after it
+const WRITTEN_BEATS = [...NIGHT_BEATS.lines];
 describe('TownScene: the night (story L Task 3c)', () => {
+  afterEach(() => { NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, ...WRITTEN_BEATS); });
   const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
   const open = (game: Game, story: StoryMode = 'all') => {
     const root = document.createElement('div');
@@ -517,7 +520,7 @@ describe('TownScene: the night (story L Task 3c)', () => {
     return game;
   };
   const withBeats = async (lines: ScriptLine[], fn: () => Promise<void>) => {
-    NIGHT_BEATS.lines.push(...lines);
+    NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, ...lines);
     try { await fn(); } finally { NIGHT_BEATS.lines.splice(0); }
   };
 

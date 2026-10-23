@@ -44,6 +44,8 @@ const POLISHED: string[] = [
   'scenes.town:', 'bellkeeper.', 'town.',
   // Story L Task 3d: the night before the descent, its frame line (Task 8 finalizes it under the same gates)
   'scenes.finale-eve.',
+  // Story L Task 8: the beats between a night's memories (the memories' present lines were polished above)
+  'nightBeats.',
 ];
 
 type Scope = readonly string[];
@@ -317,19 +319,23 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
     const heavy = (t: Text) => heavyScene(t.key.split('.')[1] as SceneId);
     const light = hers.filter((t) => !heavy(t));
     const grave = hers.find(heavy)!;
-    const all = storyTexts().filter((t) => speakerOf(t.key, t.line) === 'sylvie').length;
+    const whole = storyTexts().filter((t) => speakerOf(t.key, t.line) === 'sylvie');
+    const all = whole.length;
+    const already = whole.filter((t) => v.mark!.test(t.text)).length;   // the ones she says today, in the beats too
     const over = Math.floor(all / 5) + 1;
-    expect(light.length, 'enough light lines of hers to go over a fifth').toBeGreaterThanOrEqual(over);
+    const unmarked = light.filter((t) => !v.mark!.test(t.text));
+    expect(unmarked.length, 'enough light lines of hers to go over a fifth').toBeGreaterThanOrEqual(over - already);
     const saved = hers.map((t) => t.line!.text);
     const say = (ts: Text[]) => { for (const t of ts) t.line!.text = '「這個能吃啦。」'; };
     const sylvieBreaks = () => particleBreaks(POLISHED).filter((x) => x.includes('sylvie'));
     try {
-      say([light[0]]);
+      say([unmarked[0]]);
+      expect(already + 1, 'one more is still within a fifth').toBeLessThanOrEqual(all / 5);
       expect(sylvieBreaks()).toEqual([]);
       say([grave]);
       expect(sylvieBreaks().some((x) => x.includes('in a heavy scene'))).toBe(true);
       hers.forEach((t, i) => { t.line!.text = saved[i]; });
-      say(light.slice(0, over));
+      say(unmarked.slice(0, over - already));
       expect(sylvieBreaks().some((x) => x.startsWith(`sylvie: ${over} of ${all} lines carry`))).toBe(true);
     } finally {
       hers.forEach((t, i) => { t.line!.text = saved[i]; });
@@ -381,7 +387,28 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
   });
 });
 
+/** Story L spec §8: what points a memory's present line at the labyrinth. 「這裡」 and Chizuru's 「此處」 are let be. */
+const LABYRINTH_HERE = /這片|這座|腳下|這一層|天頂/;
+/** The memory lines said now (not `past`) that point at the labyrinth, though a memory is told at night in town. */
+const labyrinthBreaks = (texts: Text[]): string[] =>
+  texts.filter((t) => t.key.startsWith('scenes.mem:') && t.line && !t.line.past && LABYRINTH_HERE.test(t.text)).map((t) => `${t.key}: ${t.text}`);
+
 describe('voice gates over the polished script (story polish)', () => {
+  it("a memory's present lines do not point at the labyrinth (story L Task 8)", () => {
+    // the gate itself: a present line that stands in the labyrinth is caught; the past, 「這裡」 and 「此處」 are not
+    const t = (key: string, line: ScriptLine): Text => ({ key, text: line.text, line });
+    const now = (text: string): ScriptLine => ({ who: 'narrator', text });
+    expect(labyrinthBreaks([t('scenes.mem:safira:5.lines.2.text', now('腳下這片火海，原來就是那片沙漠。'))])).toHaveLength(1);
+    expect(labyrinthBreaks([t('scenes.mem:sylvie:1.lines.2.text', { who: 'sylvie', text: '「這箭頭是我刻的。那時候，這片沼澤還是林子。」' })])).toHaveLength(1);
+    expect(labyrinthBreaks([t('scenes.mem:chizuru:1.lines.3.text', now('千鶴抬頭看了看迷宮的天頂。'))])).toHaveLength(1);
+    expect(labyrinthBreaks([t('scenes.mem:safira:5.lines.0.text', { who: 'narrator', text: '腳下這片沙漠燒了起來。', past: true })])).toEqual([]);
+    expect(labyrinthBreaks([t('scenes.mem:scarlet:5.lines.3.text', { who: 'scarlet', text: '「從今天起，我站這裡。」' })])).toEqual([]);
+    expect(labyrinthBreaks([t('scenes.mem:chizuru:5.lines.3.text', { who: 'chizuru', text: '「為此處的人掛上這枚鈴。」' })])).toEqual([]);
+    expect(labyrinthBreaks([t('scenes.act2.lines.0.text', now('腳下這片石板。'))])).toEqual([]);   // only memories
+    // the script: every memory's present half is said at night in town (spec §8)
+    expect(labyrinthBreaks(storyTexts())).toEqual([]);
+  });
+
   it('polished lines are whole sentences', () => {
     const out = polishedTexts().flatMap((t) => telegraphBreaks(t.text).map((why) => `${t.key}: ${why}: ${t.text}`));
     expect(out).toEqual([]);

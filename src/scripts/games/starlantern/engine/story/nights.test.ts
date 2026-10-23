@@ -4,6 +4,7 @@ import { memScene, type SceneId } from '../../data/story/scenes';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
+import { NIGHT_BEATS } from '../../data/story.zh-TW';
 import { DAWN_BACKLOG, continuing, dawnMemory, eveMemories, nextBeat, nightCap, owedPieces, pickMemories, planNight, restoreNight, type NightBeats } from './nights';
 
 /** A new game with the prologue behind it. */
@@ -175,7 +176,9 @@ describe('story L: the night planner (Task 3a)', () => {
       // nothing fits, or no pool: none
       expect(nextBeat(s, m('noel', 1), m('safira', 1), { lines: [L('noel', 'n1'), L('safira', 'f1')] })).toBeNull();
       expect(nextBeat(s, m('noel', 1), m('safira', 1), { lines: [] })).toBeNull();
-      expect(nextBeat(s, m('noel', 1), m('safira', 1))).toBeNull();   // the pool is written later (Task 8)
+      // the default pool is the written one (Task 8): narration always fits, so a night of two memories always has a beat
+      expect(nextBeat(s, m('noel', 1), m('safira', 1))).toEqual(nextBeat(s, m('noel', 1), m('safira', 1), NIGHT_BEATS));
+      expect(nextBeat(s, m('noel', 1), m('safira', 1))).not.toBeNull();
     });
 
     it('a beat is the same after a reload', () => {

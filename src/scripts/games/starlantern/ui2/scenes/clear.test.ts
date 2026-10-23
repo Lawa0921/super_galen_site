@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { T } from '../../data/text.zh-TW';
 import { constRng } from '../../engine/testing';
@@ -124,10 +124,13 @@ describe('ClearScene finale', () => {
   });
 });
 
+// story L Task 8: the pool is written now; a test that sets its own (or none) gets the written one back after it
+const WRITTEN_BEATS = [...NIGHT_BEATS.lines];
 describe("ClearScene: the eve as the finale's fallback (story L Task 3d)", () => {
+  afterEach(() => { NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, ...WRITTEN_BEATS); });
   const tick = () => new Promise<void>((r) => setTimeout(r, 0));
   it('the fallback eve has a beat between two memories', async () => {
-    NIGHT_BEATS.lines.push({ who: 'narrator', text: '樓下的貓叫了一聲。' });
+    NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, { who: 'narrator', text: '樓下的貓叫了一聲。' });
     try {
       const game = new Game(constRng(0.5), null);
       for (const c of ['selene', 'noel'] as const) {

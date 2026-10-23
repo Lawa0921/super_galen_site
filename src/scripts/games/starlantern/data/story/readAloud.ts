@@ -9,7 +9,7 @@ import { SCENE_IDS, type SceneId } from './scenes';
 import { SENTENCE_PARTICLE, dots, heavyScene, readingsOf, sceneReadings, speakerOf, storyTexts } from './voiceGates';
 
 /** The pools that are not scenes, in the order they are printed after the scenes and the meetings. */
-const POOLS = ['townLines', 'greet', 'rinLines', 'rinOath', 'bellkeeper', 'merchant', 'leads', 'absorb', 'people', 'truths', 'town'] as const;
+const POOLS = ['townLines', 'greet', 'rinLines', 'rinOath', 'bellkeeper', 'merchant', 'leads', 'absorb', 'people', 'truths', 'town', 'nightBeats'] as const;
 const PARTICLES = ['呢', '吧', '啦', '喔', '囉', '嘛', '耶', '唷', '呀'];
 
 const nameOf = (who: Speaker): string =>

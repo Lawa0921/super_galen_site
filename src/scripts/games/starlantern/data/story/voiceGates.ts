@@ -3,12 +3,15 @@
 // Read by `voice.test.ts` (the gates), `story.test.ts` (pins) and `readAloud.ts` (the read-aloud dump).
 import type { CharacterId } from '../../engine/types';
 import { CHARACTERS, CHARACTER_IDS } from '../characters';
-import { NPC_NAMES, STORY, linesWhen, type LineWhen, type NpcId, type ScriptLine, type Speaker } from '../story.zh-TW';
+import { NIGHT_BEATS, NPC_NAMES, STORY, linesWhen, type LineWhen, type NpcId, type ScriptLine, type Speaker } from '../story.zh-TW';
 import type { TownFragmentId } from './fragments';
 import { GROUP_GATE, GROUP_MIN_LINES, lineCap, type GroupScene, type SceneId } from './scenes';
 
 export interface Text { key: string; text: string; line?: ScriptLine }
-/** Every string leaf of STORY, keyed by its path; a scene line's text carries its ScriptLine. Skips who, mood, if and scene titles (interface labels). */
+/**
+ * Every string leaf of STORY, keyed by its path, and the night's beats (`nightBeats.<i>.text`, story L Task 8); a line's text
+ * carries its ScriptLine. Skips who, mood, if and scene titles (interface labels).
+ */
 export function storyTexts(): Text[] {
   const out: Text[] = [];
   const walk = (v: unknown, path: string[], line?: ScriptLine): void => {
@@ -25,6 +28,7 @@ export function storyTexts(): Text[] {
     }
   };
   for (const [k, v] of Object.entries(STORY)) walk(v, [k]);
+  walk(NIGHT_BEATS.lines, ['nightBeats']);
   return out;
 }
 

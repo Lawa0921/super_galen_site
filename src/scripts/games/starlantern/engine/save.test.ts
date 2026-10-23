@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
 import { SAVE_VERSION, newGame, type GameState } from './state';
 import { STANDARD_LINEUP } from './party';
@@ -1053,11 +1053,14 @@ describe('story L: untold and tonight in the save (Task 2a)', () => {
   });
 });
 
+// story L Task 8: the pool is written now; a test that sets its own (or none) gets the written one back after it
+const WRITTEN_BEATS = [...NIGHT_BEATS.lines];
 describe('story L: the beat cursor in the save (Task 3b)', () => {
+  afterEach(() => { NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, ...WRITTEN_BEATS); });
   const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
 
   it('beat saves and loads; a cursor past the pool is refused', () => {
-    NIGHT_BEATS.lines.push({ who: 'narrator', text: '一' }, { who: 'narrator', text: '二' });
+    NIGHT_BEATS.lines.splice(0, NIGHT_BEATS.lines.length, { who: 'narrator', text: '一' }, { who: 'narrator', text: '二' });
     try {
       const st = memoryStorage();
       const g = newGame();
