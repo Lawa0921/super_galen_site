@@ -105,29 +105,7 @@ export function groupOf(selector: string): Group {
 export const PENDING: Record<'T4' | 'T5' | 'T6', string[]> = {
   T4: [],
   T5: [],
-  T6: [
-    '.slx-bag-cell, .slx-doll-slot',
-    '.slx-bd-card-name b',
-    '.slx-bd-title',
-    '.slx-enh',
-    '.slx-equip-notice',
-    '.slx-equip-stats',
-    '.slx-equip-title',
-    '.slx-slot-tag',
-    '.slx-ws-adds',
-    '.slx-ws-foot',
-    '.slx-ws-giver',
-    '.slx-ws-note, .slx-ws-owned',
-    '.slx-ws-reserve',
-    '.slx-ws-rune-text',
-    '.slx-ws-sub',
-    '.slx-ws-swapout',
-    '.slx-ws-table',
-    '.slx-ws-table thead th',
-    '.slx-ws-tags',
-    '.slx-ws-title',
-    '.slx-ws-warn',
-  ],
+  T6: [],
 };
 
 /**

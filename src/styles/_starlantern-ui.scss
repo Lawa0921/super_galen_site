@@ -590,7 +590,7 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 }
 // The name plate sits at the feet so the standee's face stays clear.
 .slx-status-plate { left: 10px; bottom: 10px; width: 226px; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 6px; }
-.slx-status-name, .slx-equip-name { display: grid; justify-items: center; line-height: 16px; }
+.slx-status-name { display: grid; justify-items: center; line-height: 16px; }
 .slx-status-name b, .slx-equip-name b { font-size: $slx-fs; font-weight: normal; color: $slx-gold; }
 .slx-status-title { color: $slx-dim; font-size: $slx-fs; }
 .slx-status-arrow { padding: 0 6px; cursor: pointer; color: $slx-ink; }   // no vertical padding: the plate stays 40px under the wide panel (legibility T5)
@@ -798,14 +798,17 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 // Equipment, left to right: the bag (10 × 6), the paper doll (3 × 3) with the member's numbers below, the item detail.
 // Cells are text until gear art exists: the name's first four characters in its rarity colour and frame.
 .slx-equip-scene .slx-keyhint { bottom: 4px; }
-.slx-equip-head { left: 8px; top: 6px; right: 8px; display: flex; align-items: center; gap: 8px; padding: 2px 8px; }
+// The head is one line (title, name, level beside the 28px face), so it ends at 50px where the windows start (legibility T6).
+.slx-equip-head { left: 8px; top: 6px; right: 8px; display: flex; align-items: center; gap: 8px; padding: 0 8px; }
 .slx-equip-face { width: 28px; height: 28px; object-fit: contain; }
-.slx-equip-title { margin-left: auto; font-size: 16px; color: $slx-gold; }
+.slx-equip-name { display: flex; align-items: baseline; gap: 6px; line-height: 16px; white-space: nowrap; }
+.slx-equip-title { margin-left: auto; font-size: $slx-fs; color: $slx-gold; }
 .slx-bag, .slx-doll, .slx-equip-stats { padding: 4px 6px; }
 .slx-bag { left: 6px; top: 50px; }
 .slx-doll { left: 336px; top: 50px; }
-.slx-equip-stats { left: 336px; top: 218px; width: 122px; font-size: 10px; line-height: 14px; }
-.slx-item-detail { left: 490px; right: 6px; top: 50px; bottom: 44px; display: flex; flex-direction: column; }
+.slx-equip-stats { left: 336px; top: 218px; width: 122px; font-size: $slx-fs; line-height: 14px; }
+// Its frame ends at 312px, above the back button's (314px).
+.slx-item-detail { left: 490px; right: 6px; top: 50px; bottom: 48px; display: flex; flex-direction: column; }
 .slx-item-detail-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6e5a2e transparent; }
 /* The detail panel's scroll cues sit on its frame, over the content's corner, so showing one never shifts the lines. */
 .slx-item-detail .slx-more { position: absolute; right: 10px; padding: 0 2px; background: $slx-win; }
@@ -830,7 +833,7 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.03);
   text-align: center;
-  line-height: 12px;
+  line-height: 14px;
   word-break: break-all;
   cursor: pointer;
   transition: opacity 0.12s linear;
@@ -847,9 +850,9 @@ $slx-rarity: (common: #e8e8e8, magic: #6f9cff, rare: #ffd84a, epic: #b36bff, leg
 .slx-doll-slot.slx-rarity-legendary, .slx-doll-slot.slx-rarity-unique, .slx-doll-slot.slx-rarity-set { text-shadow: 0 0 4px currentColor; }
 .slx-doll-slot.slx-slot-empty { color: $slx-dim; border-style: dashed; }
 .slx-doll-slot { align-content: center; }
-.slx-slot-tag { font-size: 10px; line-height: 10px; color: $slx-dim; text-shadow: none; }
+.slx-slot-tag { font-size: $slx-fs; line-height: 14px; color: $slx-dim; text-shadow: none; }
 /* The enhance level, a corner mark apart from the name (the cell is too tight for "+n" after it). */
-.slx-enh { position: absolute; z-index: 4; right: 0; bottom: 0; padding: 0 1px; font-size: 8px; line-height: 9px; color: $slx-gold; background: rgba(0, 0, 0, 0.7); text-shadow: none; }
+.slx-enh { position: absolute; z-index: 4; right: 0; bottom: 0; padding: 0 1px; font-size: $slx-fs; line-height: 14px; color: $slx-gold; background: rgba(0, 0, 0, 0.7); text-shadow: none; }
 .slx-bag-cell:hover, .slx-doll-slot:hover { border-color: #c9a35a; }
 .slx-cur { z-index: 1; box-shadow: 0 0 0 1px rgba(232, 196, 106, 0.45); }
 .slx-area-on .slx-cur { box-shadow: 0 0 0 2px $slx-gold, 0 0 8px rgba(232, 196, 106, 0.6); animation: slx-cur-pulse 1.2s ease-in-out infinite; }
@@ -907,7 +910,7 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
 .slx-line-set.slx-line-on { color: $slx-up; }
 .slx-line-off .slx-line-dim { opacity: 0.45; }
 .slx-line-note { display: block; font-size: $slx-fs; line-height: 14px; color: #ffc4a8; }
-.slx-equip-notice { position: absolute; left: 8px; bottom: 18px; margin: 0; font-size: 10px; line-height: 12px; color: #ff8a7a; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
+.slx-equip-notice { position: absolute; left: 8px; bottom: 18px; margin: 0; font-size: $slx-fs; line-height: 14px; color: #ff8a7a; text-shadow: 0 1px 0 #000, 0 0 3px #000; pointer-events: none; }
 .slx-line-lore { margin-top: 2px; font-size: $slx-fs; line-height: 14px; color: $slx-dim; }
 .slx-cmp-head { margin-bottom: 2px; font-size: $slx-fs; line-height: 14px; color: $slx-dim; }
 .slx-cmp-row { display: flex; justify-content: space-between; gap: 6px; line-height: 14px; }
@@ -1318,12 +1321,14 @@ $slx-starlit: #bff6ff;
 .slx-workshop > .slx-back { right: 10px; top: auto; bottom: 4px; }
 .slx-ws-head { left: 8px; top: 6px; right: 8px; display: flex; align-items: center; gap: 8px; padding: 2px 8px; }
 .slx-ws-name { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
-.slx-ws-reserve { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: $slx-dim; }
-.slx-ws-title { margin-left: auto; flex: none; font-size: 16px; color: $slx-gold; }
+.slx-ws-reserve { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: $slx-fs; color: $slx-dim; }
+.slx-ws-title { margin-left: auto; flex: none; font-size: $slx-fs; color: $slx-gold; }
 .slx-ws-skills, .slx-ws-card, .slx-ws-slots { top: 42px; bottom: 40px; padding: 4px 6px; display: flex; flex-direction: column; }
-// About 128 / 324 / 148 wide, 14px apart (the frames are border-box).
+// Content 128 / 268 / 148 wide; with their 8px frames and 6px padding the windows are 156 / 296 / 176, frame to frame as the
+// head sits on them (legibility T6: the windows are content-box, so the old 148/168 hid the skills' right edge and the
+// slots' left edge under the card).
 .slx-ws-skills { left: 6px; width: 128px; }
-.slx-ws-card { left: 148px; right: 168px; }
+.slx-ws-card { left: 162px; right: 182px; }
 .slx-ws-slots { right: 6px; width: 148px; }
 .slx-ws-skills:not(.slx-area-on), .slx-ws-slots:not(.slx-area-on) { border-color: #8a7444; }
 .slx-ws-skills .slx-opt, .slx-ws-runes .slx-opt { padding-right: 4px; }
@@ -1334,7 +1339,7 @@ $slx-starlit: #bff6ff;
 .slx-ws-slot { flex-wrap: wrap; }
 .slx-ws-slot .slx-label { flex: none; }
 .slx-ws-slot .slx-right { flex: 1 1 auto; min-width: 0; margin-left: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.slx-ws-sub { flex-basis: 100%; font-size: 10px; line-height: 12px; color: $slx-down; white-space: normal; }
+.slx-ws-sub { flex-basis: 100%; font-size: $slx-fs; line-height: 14px; color: $slx-down; white-space: normal; }
 .slx-ws-off .slx-right { opacity: 0.6; }
 .slx-ws-runes { display: flex; flex-direction: column; min-height: 0; }
 .slx-ws-runes .slx-desc { white-space: normal; }
@@ -1345,7 +1350,7 @@ $slx-starlit: #bff6ff;
 .slx-ws-runes .slx-opt .slx-label { flex: 0 0 auto; }
 .slx-ws-runes .slx-opt .slx-right { flex: 0 4 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .slx-label-tail { flex: none; white-space: nowrap; }
-.slx-ws-swapout { font-size: 11px; line-height: 14px; color: $slx-dim; }
+.slx-ws-swapout { font-size: $slx-fs; line-height: 14px; color: $slx-dim; }
 // The card: its body scrolls inside the frame (no native bar; ▲/▼ stand in), the foot below never moves.
 .slx-ws-card-frame { flex: 1 1 auto; min-height: 0; }
 .slx-ws-card-frame > .slx-more-up { top: 0; }
@@ -1354,26 +1359,29 @@ $slx-starlit: #bff6ff;
 .slx-ws-card-body::-webkit-scrollbar { display: none; }
 .slx-ws-card-body p { margin: 3px 0 0; white-space: normal; overflow-wrap: anywhere; }
 .slx-ws-card-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; color: $slx-gold; }
-.slx-ws-tags { font-size: 10px; color: $slx-dim; }
+.slx-ws-tags { font-size: $slx-fs; color: $slx-dim; }
 // Each tag and each part of a card value stays on one line: 「消耗 TP」, 「84（每個目標）」.
 .slx-ws-tag, .slx-ws-table .slx-nb { white-space: nowrap; }
-.slx-ws-table { width: 100%; margin-top: 2px; border-collapse: collapse; table-layout: fixed; font-size: 11px; line-height: 14px; }
-.slx-ws-table th { width: 58px; text-align: left; font-weight: normal; color: $slx-dim; }
-.slx-ws-table thead th { font-size: 10px; color: $slx-dim; }
+.slx-ws-table { width: 100%; margin-top: 2px; border-collapse: collapse; table-layout: fixed; font-size: $slx-fs; line-height: 14px; }
+// 48px holds 「HP 消耗」 on one line and leaves each value column 110px (「防禦與魔防 +32%」 is 100px at 12px).
+.slx-ws-table th { width: 48px; text-align: left; font-weight: normal; color: $slx-dim; }
+.slx-ws-table thead th { font-size: $slx-fs; color: $slx-dim; }
+// Only the label column is fixed (the table lays out by its head row): 之前 and 之後 share the rest.
+.slx-ws-table thead th + th { width: auto; }
 .slx-ws-table td { overflow-wrap: anywhere; }
 .slx-ws-table tr.slx-changed td.slx-ws-after { color: $slx-gold; }
 .slx-ws-table tr.slx-changed th { color: $slx-ink; }
-.slx-ws-adds { list-style: none; margin: 3px 0 0; padding: 0; font-size: 11px; line-height: 14px; }
+.slx-ws-adds { list-style: none; margin: 3px 0 0; padding: 0; font-size: $slx-fs; line-height: 14px; }
 .slx-ws-adds li { overflow-wrap: anywhere; }
 .slx-ws-add { color: $slx-up; }
 .slx-ws-lost { color: $slx-dim; text-decoration: line-through; }
-.slx-ws-rune-text { font-size: 11px; line-height: 14px; }
+.slx-ws-rune-text { font-size: $slx-fs; line-height: 14px; }
 .slx-ws-rune-text b { font-weight: normal; margin-right: 4px; }
 .slx-ws-rune-text span { color: $slx-ink; }
-.slx-ws-note, .slx-ws-owned { font-size: 11px; line-height: 14px; color: $slx-dim; }
-.slx-ws-giver { font-size: 11px; line-height: 14px; color: #ffb36b; }
-.slx-ws-warn { font-size: 11px; line-height: 14px; color: #ffb36b; }
-.slx-ws-foot { flex: none; min-height: 12px; margin-top: 2px; padding-top: 2px; border-top: 1px solid rgba(232, 196, 106, 0.35); font-size: 10px; line-height: 12px; }
+.slx-ws-note, .slx-ws-owned { font-size: $slx-fs; line-height: 14px; color: $slx-dim; }
+.slx-ws-giver { font-size: $slx-fs; line-height: 14px; color: #ffb36b; }
+.slx-ws-warn { font-size: $slx-fs; line-height: 14px; color: #ffb36b; }
+.slx-ws-foot { flex: none; min-height: 14px; margin-top: 2px; padding-top: 2px; border-top: 1px solid rgba(232, 196, 106, 0.35); font-size: $slx-fs; line-height: 14px; }
 .slx-ws-foot p { margin: 0; white-space: normal; overflow-wrap: anywhere; }
 .slx-ws-why { color: $slx-down; }
 .slx-ws-msg { color: $slx-up; }
@@ -1398,10 +1406,11 @@ $slx-starlit: #bff6ff;
 .slx-builds > .slx-back { right: 10px; top: auto; bottom: 4px; }
 .slx-bd-head { left: 8px; top: 6px; right: 8px; display: flex; align-items: center; gap: 8px; padding: 2px 8px; }
 .slx-bd-name { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
-.slx-bd-title { margin-left: auto; flex: none; font-size: 16px; color: $slx-gold; }
+.slx-bd-title { margin-left: auto; flex: none; font-size: $slx-fs; color: $slx-gold; }
 .slx-bd-list, .slx-bd-card { top: 42px; bottom: 40px; padding: 4px 6px; display: flex; flex-direction: column; }
+// The list window is 178 wide with its frame and padding (content-box): the card's frame starts where it ends (legibility T6).
 .slx-bd-list { left: 6px; width: 150px; }
-.slx-bd-card { left: 170px; right: 6px; }
+.slx-bd-card { left: 184px; right: 6px; }
 .slx-bd-list .slx-opt { display: flex; align-items: baseline; padding-right: 4px; }
 .slx-bd-list .slx-opt .slx-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .slx-bd-list .slx-opt .slx-right { flex: none; padding-left: 6px; color: $slx-up; }
@@ -1412,7 +1421,7 @@ $slx-starlit: #bff6ff;
 .slx-bd-card-body::-webkit-scrollbar { display: none; }
 .slx-bd-card-body p { margin: 2px 0 0; white-space: normal; overflow-wrap: anywhere; }
 .slx-bd-card-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; color: $slx-gold; }
-.slx-bd-card-name b { font-size: 16px; font-weight: normal; }
+.slx-bd-card-name b { font-size: $slx-fs; font-weight: normal; }
 .slx-bd-tag { color: $slx-up; }
 .slx-bd-scenario { color: $slx-gold; }
 .slx-bd-under { color: #ffb36b; }

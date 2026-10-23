@@ -19,7 +19,7 @@ import { version8Save } from '../../src/scripts/games/starlantern/engine/testing
 import { defaultTalents, defaultTree } from '../../src/scripts/games/starlantern/engine/progression';
 import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/engine/builds';
 import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
-import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, legibility, snap, stageBox, stageScale, sweep } from './starlantern-legibility';
+import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longestGear, snap, stageBox, stageScale, startSweepGame, sweep } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
@@ -1537,6 +1537,94 @@ test.describe('starlantern', () => {
         await fitTo(page, 1280, 720);
       }
     }
+    expect(bad).toEqual([]);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('equip, workshop and builds fit at 12px (legibility Task 6)', async ({ page }) => {
+    test.setTimeout(180_000);
+    await fitTo(page, 1280, 720);
+    const w = await startSweepGame(page, 7);
+    // The fullest screens: the longest gear worn (its +10 mark on a doll slot) and in the bag; Noel at Lv 50 following
+    // 暴走流星, 火之星彈 holding the three longest runes (two of them do nothing there: their reasons get lines of their own).
+    const long = longestGear();
+    const gs = Object.values(EQUIPMENT).find((b) => b.id === long.base)!.slot;
+    await page.evaluate(([long, slot]) => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const p = g.state.party;
+      g.state.runeTutorialSeen = true;
+      p.roster.hero.equip = { ...p.roster.hero.equip, [slot]: { ...long, uid: g.mintUid() } };
+      p.roster.noel = {
+        ...p.roster.noel, level: 50, build: 'meteor', tree: { 'fire-star': 1 },
+        sockets: { 'fire-star': [{ id: 'twin-cast', tier: 'legendary' }, { id: 'starwheel', tier: 'legendary' }, { id: 'blood-price', tier: 'legendary' }] },
+      };
+    }, [long, gs === 'ring' ? 'ring1' : gs] as const);
+    const SIZES = [[1280, 720], [844, 390], [390, 844]] as const;
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    const bad: string[] = [];
+    /** At each size: the screen reads clearly, `boxes` lie inside the stage and pairwise apart, and `rows` never spill. */
+    const check = async (name: string, boxes: string[], rows: string, more?: (vw: number) => Promise<void>) => {
+      for (const [vw, vh] of SIZES) {
+        await fitTo(page, vw, vh);
+        bad.push(...(await legibility(page)).map((f) => `${name} ${vw}: ${f}`));
+        const rects = await Promise.all(boxes.map(async (sel) => [sel, await stageBox(page, page.locator(sel).first())] as const));
+        for (const [sel, r] of rects) {
+          if (r.x < -0.5 || r.y < -0.5 || r.x + r.width > 640.5 || r.y + r.height > 360.5) bad.push(`${name} ${vw}: ${sel} leaves the stage`);
+        }
+        for (let i = 0; i < rects.length; i++) {
+          for (let j = i + 1; j < rects.length; j++) if (!apart(rects[i][1], rects[j][1])) bad.push(`${name} ${vw}: ${rects[i][0]} meets ${rects[j][0]} ${JSON.stringify([rects[i][1], rects[j][1]])}`);
+        }
+        const over = await page.locator(rows).evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5 || e.scrollHeight > e.clientHeight + 0.5).map((e) => `${e.className} "${(e.textContent ?? '').trim()}"`));
+        bad.push(...over.map((o) => `${name} ${vw}: ${o} spills`));
+        await more?.(vw);
+        if (shots) { await page.waitForTimeout(400); await snap(page, `${shots}/t6-${name}-${vw}.png`); }
+      }
+      await fitTo(page, 1280, 720);
+    };
+
+    // Equipment: the four windows, the head, the key hint and the back button apart; each enhance mark inside its cell.
+    await go(page, 'equip');
+    await expect(page.locator('.slx-equip-scene .slx-doll-slot .slx-enh')).toHaveText('+10');
+    await check('equip', ['.slx-equip-head', '.slx-bag', '.slx-doll', '.slx-equip-stats', '.slx-item-detail', '.slx-equip-scene .slx-keyhint', '.slx-equip-scene > .slx-back'],
+      '.slx-equip-title, .slx-equip-stats .slx-stat-cell', async (vw) => {
+        // A cell's name (shown until its gear art comes) wraps inside the cell, never wider than it.
+        const wide = await page.locator('.slx-bag-cell, .slx-doll-slot').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => (e.textContent ?? '').trim()));
+        bad.push(...wide.map((t) => `equip ${vw}: cell "${t}" spills sideways`));
+        for (const enh of await page.locator('.slx-equip-scene .slx-enh').all()) {
+          const e = await stageBox(page, enh), c = await stageBox(page, enh.locator('xpath=..'));
+          if (e.x < c.x - 0.5 || e.y < c.y - 0.5 || e.x + e.width > c.x + c.width + 0.5 || e.y + e.height > c.y + c.height + 0.5) bad.push(`equip ${vw}: ${await enh.textContent()} leaves its cell`);
+        }
+      });
+
+    // The workshop at its fullest: Noel's slots, then slot 1's list of every rune in the bag.
+    const ws = ['.slx-ws-head', '.slx-ws-skills', '.slx-ws-card', '.slx-ws-slots', '.slx-workshop .slx-keyhint', '.slx-workshop > .slx-back'];
+    const wsRows = '.slx-workshop [role=option], .slx-ws-slot .slx-right, .slx-ws-card p, .slx-ws-card td, .slx-ws-foot p, .slx-ws-follow, .slx-ws-lack, .slx-ws-skills, .slx-ws-slots';
+    const footInCard = async (vw: number) => {
+      const foot = await stageBox(page, page.locator('.slx-ws-foot')), card = await stageBox(page, page.locator('.slx-ws-card'));
+      if (foot.y + foot.height > card.y + card.height + 0.5) bad.push(`workshop ${vw}: the foot leaves the card`);
+    };
+    await go(page, 'workshop', 'noel:fire-star');
+    await expect(page.locator('.slx-ws-follow')).toBeVisible();
+    await w.key('Enter');                                     // her slots
+    await expect(page.locator('.slx-ws-slot .slx-right').nth(2)).toHaveText('血之代價（傳說）');
+    await check('workshop-slots', ws, wsRows, footInCard);
+    await w.key('Enter');                                     // slot 1's runes
+    await expect(page.locator('.slx-ws-runes [role=option]').first()).toBeVisible();
+    await check('workshop-runes', ws, wsRows, footInCard);
+
+    // The suggested builds: Noel's list, the 暴走流星 card, its confirm window.
+    const bd = ['.slx-bd-head', '.slx-bd-list', '.slx-bd-card', '.slx-builds .slx-keyhint', '.slx-builds > .slx-back'];
+    const bdRows = '.slx-builds [role=option], .slx-bd-card-body p, .slx-bd-card-body li, .slx-bd-rune, .slx-bd-foot p, .slx-bd-btn';
+    await go(page, 'builds', 'noel');
+    await expect(page.locator('.slx-bd-name')).toContainText('諾艾兒');
+    await check('builds-list', bd, bdRows);
+    for (let i = 0; i < 4 && (await page.locator('.slx-bd-list [aria-selected=true]').getAttribute('data-id')) !== 'meteor'; i++) await w.key('ArrowDown');
+    await expect(page.locator('.slx-bd-card-name')).toContainText('暴走流星');
+    await check('builds-card', bd, bdRows);
+    await w.key('Enter');
+    await expect(page.locator('.slx-builds .slx-confirm')).toBeVisible();
+    await check('builds-confirm', ['.slx-builds .slx-confirm'], `${bdRows}, .slx-confirm p, .slx-confirm [role=option]`);
     expect(bad).toEqual([]);
     expect(w.errors).toEqual([]);
   });
