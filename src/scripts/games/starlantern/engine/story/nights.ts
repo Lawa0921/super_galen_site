@@ -40,7 +40,8 @@ function interleave(ids: SceneId[]): SceneId[] {
  * Spec §4.3's table: the memories this arrival owes before its day, in pickup order with Lorne and Rin interleaved.
  * - an act or the bellkeeper's arrival in `day`: every untold piece of Lorne's and Rin's;
  * - Rin's reveal or confession (`ALONE`): Rin's only;
- * - `hero-alone` in the queue, whatever the day: Lorne's untold pieces up to his ninth.
+ * - `hero-alone` in the queue, on any day but those: Lorne's untold pieces up to his ninth (they wait for the next
+ *   arrival that is not `ALONE`).
  */
 export function owedPieces(s: GameState, day: SceneId[]): SceneId[] {
   const main = day.some((id) => MAIN_DAYS.includes(id));
@@ -49,7 +50,7 @@ export function owedPieces(s: GameState, day: SceneId[]): SceneId[] {
   return interleave((s.story.untold ?? []).filter((id) => {
     const c = ownerOf(id);
     if (c === 'rin') return main || alone;
-    if (c === 'hero') return (main && !alone) || (lone && pieceNo(id) <= 9);
+    if (c === 'hero') return !alone && (main || (lone && pieceNo(id) <= 9));
     return false;
   }));
 }

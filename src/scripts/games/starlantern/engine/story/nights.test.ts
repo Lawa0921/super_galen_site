@@ -124,6 +124,15 @@ describe('story L: the night planner (Task 3a)', () => {
     expect(owedPieces({ ...s, story: { ...s.story, queue: [] } }, ['chat:selene:1'])).toEqual([]);
   });
 
+  it("on Rin's confession day nobody else's piece is owed, the lone morning queued or not (review)", () => {
+    // spec §4.3: an ALONE day owes Rin's only; the lone morning's hero pieces wait for the next arrival that is not ALONE
+    const s = untold([m('hero', 8), m('selene', 1), m('hero', 9), m('noel', 1)], (st) => { st.story.queue = ['hero-alone']; });
+    expect(owedPieces(s, ['rin-confess'])).toEqual([]);
+    expect(planNight(s, ['rin-confess'])).toEqual({ before: [], night: [] });
+    expect(owedPieces(s, ['rin-reveal'])).toEqual([]);
+    expect(owedPieces(s, ['chat:selene:1'])).toEqual([m('hero', 8), m('hero', 9)]);   // the next arrival owes them
+  });
+
   it('never the same one twice in a row; a companion once a night; Lorne or Rin at most twice, apart', () => {
     // backlog 7, cap 3
     const s = untold([m('hero', 3), m('hero', 4), m('selene', 1), m('selene', 2), m('noel', 1), m('safira', 1), m('bobby', 1)]);
