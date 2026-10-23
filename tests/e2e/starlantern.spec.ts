@@ -2306,8 +2306,12 @@ test.describe('starlantern', () => {
       return Date.now() - t;
     };
     const onTime = await timeToTitle();
-    await page.route('**/Cubic_11.woff2', async (r) => { await new Promise((ok) => setTimeout(ok, 5000)); await r.continue().catch(() => undefined); });
+    let asked = 0;
+    await page.route('**/Cubic_11.woff2', async (r) => { asked++; await new Promise((ok) => setTimeout(ok, 5000)); await r.continue().catch(() => undefined); });
     const slow = await timeToTitle();
+    expect(asked, 'the font was asked for (and held back)').toBeGreaterThanOrEqual(1);
+    // The game did wait for it (about 3s; without loadPixelFont the title would not wait at all), and not for longer.
+    expect(slow - onTime, `the title took ${slow}ms with the font 5s late, ${onTime}ms with it on time`).toBeGreaterThan(2000);
     expect(slow - onTime, `the title took ${slow}ms with the font 5s late, ${onTime}ms with it on time`).toBeLessThan(3500);
   });
 
@@ -2587,7 +2591,11 @@ test.describe('starlantern', () => {
         const pm = c.closest('.slx-pm')!;
         const others = ['.slx-pm-num', '.slx-pm-tp', '.slx-pm-ail:not([hidden])'].map((q) => pm.querySelector(q)?.getBoundingClientRect());
         const clear = others.every((r) => !!r && r.width > 0 && !meets(r));
-        return { text: c.textContent, right: b.left >= panel.left + panel.width / 2 - 0.5 && b.right <= panel.right + 0.5, onTop: c.contains(top), clear };
+        // On the portrait (T4 review): its lower part, where no text is.
+        const face = pm.querySelector('img')?.getBoundingClientRect();
+        const onFace = !!face && b.left >= panel.left - 0.5 && b.top >= face.top + face.height / 2 - 0.5 && b.bottom <= panel.bottom + 0.5;
+        const pops = [...pm.querySelectorAll('.slx-pm-pop, .slx-pm-crit, .slx-pm-weak, .slx-pm-resist, .slx-pm-miss')].map((p) => p.getBoundingClientRect());
+        return { text: c.textContent, right: onFace && pops.every((r) => !meets(r)), onTop: c.contains(top), clear };
       });
       if (shots) await page.screenshot({ path: `${shots}/again-1280.png` });
       return shown;

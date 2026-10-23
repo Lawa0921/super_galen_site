@@ -465,6 +465,18 @@ describe('BattleView stat cues', () => {
     expect(on.mock.calls.filter((c) => c[0] === 'e0')).toEqual([]);   // enemies show no TP
   });
 
+  it('pops a hit number by whole steps, a crit bigger (T4 review)', () => {
+    const scales = (crit: boolean) => {
+      const view = new BattleView(false, bank);
+      view.setup(battle([]), { width: 640, height: 360 }, 1);
+      void view.play(battle([{ type: 'damage', target: 'e0', amount: 30, element: 'phys', mult: 1, crit }]), sfx);
+      return (enemyBox(view).children.find((c) => c instanceof Text && c.text === '30') as Text).scale.x;
+    };
+    expect(Number.isInteger(scales(true))).toBe(true);
+    expect(Number.isInteger(scales(false))).toBe(true);
+    expect(scales(true)).toBeGreaterThan(scales(false));
+  });
+
   it('keeps pops still for reduced motion', () => {
     const view = new BattleView(false, bank, true);
     view.setup(battle([]), { width: 640, height: 360 }, 1);

@@ -100,7 +100,10 @@ const POP_RISE = 4;
 const POP_CLEAR = 3;
 type Box = { x: number; y: number; width: number; height: number };
 type PopOpts = { weak?: boolean; crit?: boolean; resist?: boolean; small?: boolean };
-/** A hit's number is 24px (a crit stays the biggest by its pop scale and its colour); a small word (MISS) 12px (legibility Task 4). */
+/**
+ * A hit's number is 24px, a small word (MISS) 12px (legibility Task 4). A crit stands out by its colour, its 暴擊！ tag and a
+ * bigger pop (popup: 3x, then 2x, then 1x; another hit 2x, then 1x).
+ */
 const popSize = (o: PopOpts): 12 | 24 => (o.small ? 12 : 24);
 /** A label's width at the ailment font size, estimated without measuring (render/ailmentStyle.ts `textWidth`). */
 export const ailLabelWidth = (text: string): number => textWidth(text, AIL_SIZE);
@@ -680,7 +683,8 @@ export class BattleView {
     const t = pixelText(text, size, color);
     t.anchor.set(0.5);
     t.y = at.number.y + at.number.height / 2;
-    t.scale.set(this.calm ? 1 : o.crit ? 1.9 : 1.6);
+    // Whole steps only (T4 review): the pixel font stays on its grid at every frame of the pop.
+    t.scale.set(this.calm ? 1 : o.crit ? 3 : 2);
     slot.box.addChild(t);
     const parts: Text[] = [t];
     const tags = [o.crit && T_CRIT, o.weak && T_WEAK, o.resist && T_RESIST].filter((x): x is typeof T_CRIT => !!x);
@@ -695,7 +699,7 @@ export class BattleView {
     });
     // A new battle may have torn the sprites down before these run.
     if (!this.calm) {
-      this.later(40, () => { if (!t.destroyed) t.scale.set(1.2); });
+      this.later(40, () => { if (!t.destroyed) t.scale.set(o.crit ? 2 : 1); });
       this.later(80, () => { if (!t.destroyed) t.scale.set(1); });
       this.later(200, () => { if (!t.destroyed) t.y -= POP_RISE; });
     }

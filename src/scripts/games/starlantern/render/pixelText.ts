@@ -9,7 +9,14 @@ export const PIXEL_FONT: string[] = ['Cubic 11', 'Noto Sans TC', 'Microsoft Jhen
 /** The pixel font's grid: 12px, or 24px for display words (hit numbers, map markers). */
 export type PixelSize = 12 | 24;
 
-/** A Pixi text in the pixel font. Its outline straddles the glyph's edge: width size/6 shows as 1px at 12px, 2px at 24px. */
+/**
+ * A Pixi text in the pixel font. Its outline straddles the glyph's edge: width size/6 shows as 1px at 12px, 2px at 24px.
+ * Its texture scales nearest-neighbour, so a tween (a hit's pop, a lunge, the screen's punch) never smears it (T4 review).
+ */
 export function pixelText(text: string, size: PixelSize, fill: number, stroke = 0x000000): Text {
-  return new Text({ text, style: { fontFamily: PIXEL_FONT, fontSize: size, fontWeight: 'normal', fill, stroke: { color: stroke, width: size / 6 } } });
+  return new Text({
+    text,
+    style: { fontFamily: PIXEL_FONT, fontSize: size, fontWeight: 'normal', fill, stroke: { color: stroke, width: size / 6 } },
+    textureStyle: { scaleMode: 'nearest' },
+  });
 }

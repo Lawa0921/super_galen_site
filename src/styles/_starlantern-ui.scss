@@ -91,10 +91,8 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 @media (pointer: coarse) {
   @container slx-view #{$slx-upright} {
     .slx-screen {
-      left: max(0px, calc((100vw - #{$slx-h} * var(--slx-s)) / 2));
       left: max(0px, calc((100cqw - #{$slx-h} * var(--slx-s)) / 2));
       left: max(0px, round(down, calc((100cqw - #{$slx-h} * var(--slx-s)) / 2), var(--slx-px)));
-      top: max(40px, calc((100dvh - #{$slx-w} * var(--slx-s)) / 2));
       top: max(40px, calc((100cqh - #{$slx-w} * var(--slx-s)) / 2));
       top: max(40px, round(down, calc((100cqh - #{$slx-w} * var(--slx-s)) / 2), var(--slx-px)));
       transform: translateX(calc(#{$slx-h} * var(--slx-s))) rotate(90deg) scale(var(--slx-s));
@@ -949,12 +947,12 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
   animation: slx-pm-miss 0.9s ease-out forwards;
 }
 @keyframes slx-pm-miss { 0% { translate: -6px 0; opacity: 0; } 20% { translate: 0 0; opacity: 1; } 70% { opacity: 1; } 100% { translate: 0 -12px; opacity: 0; } }
-// A mechanic's moment (暴走！, 還有。): a word in its colour rising off the panel like MISS, with no shake; from the
-// panel's top right, over the name line (at 12px with a 14px leading it no longer fits the 11px under the TP line: legibility
-// Task 4), so it covers neither the HP digits, the TP line nor the ailment row above the panel, and over the hit effects
-// (.slx-pm-fx, .slx-pm-fxa) so a blow landing at the same moment never hides it.
+// A mechanic's moment (暴走！, 還有。): a word in its colour rising off the panel like MISS, with no shake; on the lower part
+// of the portrait, where it covers no text (not the name, the HP digits or the TP line, not the hit's number at the top
+// right, not the ailment row above the panel: T4 review), and over the hit effects (.slx-pm-fx, .slx-pm-fxa) so a blow
+// landing at the same moment never hides it.
 .slx-pm-cue {
-  position: absolute; right: 4px; top: 0; z-index: 4; pointer-events: none; white-space: nowrap;
+  position: absolute; left: 2px; bottom: 2px; z-index: 4; pointer-events: none; white-space: nowrap;
   font-size: $slx-fs; line-height: 14px; padding: 0 2px; border: 1px solid currentColor; background: rgba($slx-win, 0.92);
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
   animation: slx-pm-cue 0.9s ease-out forwards;
