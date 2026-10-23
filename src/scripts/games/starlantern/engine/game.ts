@@ -1225,6 +1225,7 @@ export class Game {
       this.eve = eveMemories(this.state);
       const story = this.state.story;
       if (story.tonight) story.tonight = story.tonight.filter((t) => !this.eve.includes(t));
+      delete story.dawn;   // the eve takes its own departure: no dawn after it, nor on a reload
     }
     // Inside the finale, a scene its own list covers never waits in the queue (Task 3 review): the keeper her confession
     // queues is the finale's to play, and leaving the ending early must not leave him for the town after the festival.

@@ -4838,6 +4838,25 @@ describe('story L: the dawn before departure (controller ruling 2026-10-24)', ()
     expect(g.departScenes()).toEqual([dawn, 'hero-alone']);
   });
 
+  it("the eve's line said clears the dawn: its own departure plays none, reloaded or not (review)", () => {
+    const storage = memoryStorage();
+    const g = inTown(eight, storage);
+    trip(g);
+    for (const id of [...g.arrival, ...g.night]) g.sceneDone(id, 'played');
+    const dawn = g.state.story.dawn!;
+    expect(dawn).toBeDefined();
+    Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    g.state.story.queue = ['finale-eve'];
+    expect(g.departScenes()).toEqual(['finale-eve']);
+    expect(g.sceneDone('finale-eve', 'played')).toBe(true);   // town saves at once
+    expect(g.state.story.dawn).toBeUndefined();
+    expect(g.departScenes()).toEqual([]);
+    const b = Game.boot(calm(), storage);
+    expect(b.state.story.dawn).toBeUndefined();
+    expect(b.departScenes()).toEqual([]);
+    expect(b.state.story.untold).toContain(dawn);           // not told: still 新 in the handbook
+  });
+
   it('a reveal or confession waiting blocks the dawn: the piece stays untold and new (controller ruling 2026-10-24)', () => {
     const g = inTown(eight);
     trip(g);
