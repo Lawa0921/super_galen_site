@@ -212,7 +212,7 @@ describe("a tier's runes (difficulty plan Task 4)", () => {
     const magicUp = (w: Record<string, number>) => (w.magic + w.rare + w.epic) / (w.common + w.magic + w.rare + w.epic);
     const hell = magicUp(runeTierWeights('monster', depthLevel(25), 'plain', TIERS.hell.runeTierMul));
     const normal = magicUp(runeTierWeights('monster', depthLevel(25), 'plain'));
-    console.info(`[tiers] monster rune magic+ at d25: normal ${normal.toFixed(3)} hell ${hell.toFixed(3)}`);
+    if (process.env.BALANCE_REPORT) console.info(`[tiers] monster rune magic+ at d25: normal ${normal.toFixed(3)} hell ${hell.toFixed(3)}`);
     expect(hell).toBeGreaterThanOrEqual(0.75);
     expect(normal).toBeLessThan(0.75);
   });

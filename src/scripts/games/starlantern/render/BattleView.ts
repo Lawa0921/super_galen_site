@@ -141,7 +141,7 @@ export const ailLabelWidth = (text: string): number => textWidth(text, AIL_SIZE)
 /**
  * The message window (`.slx-msg`) covers the stage from y 6 to 70 with one line. Nothing in the picture may stand under
  * it: an intent line (anchored at its bottom) is held at least this low, so a tall boss's intent and its affix row show
- * (T8 acceptance: at 52 both were hidden behind the window).
+ * (T8 acceptance: at 52 both were hidden behind the window). Keep in step with `.slx-msg` in _starlantern-ui.scss.
  */
 const MSG_BOTTOM = 70;
 const TOP_CLEAR = MSG_BOTTOM + 2 + INTENT_H;

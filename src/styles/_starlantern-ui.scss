@@ -386,6 +386,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 
 // Battle
 .slx-battle { background: transparent; }
+// Its bottom edge (top 6 + two lines = 70) is BattleView MSG_BOTTOM: change one, change the other.
 .slx-msg { left: 8px; right: 8px; top: 6px; min-height: 36px; white-space: pre-line; }
 // The field bar (plan 8c): the barrier up and the moon, as words under the message window's right end.
 .slx-fieldbar { position: absolute; right: 10px; top: 70px; z-index: 2; display: flex; gap: 2px; pointer-events: none; }
