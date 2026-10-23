@@ -417,6 +417,46 @@ describe('save v4 codex, boss kills and auto junk', () => {
     const r = loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) }));
     expect(r.status === 'ok' && r.state.codex).toEqual(['lg-noel', 'set-blaze']);
   });
+  it('a tier key loads (difficulty plan Task 6a-prime: a Nightmare or Hell kill is written as tier:region:depth)', () => {
+    expect(bad((g) => { g.dungeon.bossKills = { 'nightmare:mainline:25': 1, 'hell:blaze:10': 2, 'mainline:25': 1 }; })).toBe('ok');
+    expect(bad((g) => { g.dungeon.bossKills = { 'normal:mainline:5': 1 }; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.bossKills = { 'nightmare:nowhere:5': 1 }; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.bossKills = { 'nightmare:mainline:0': 1 }; })).toBe('corrupt');
+    expect(bad((g) => { g.dungeon.bossKills = { 'easy:mainline:5': 1 }; })).toBe('corrupt');
+  });
+  it('a tier the save has not unlocked is corrupt (difficulty plan Task 6b, ruling 21)', () => {
+    const nightmareOpen = (g: GameState) => { g.dungeon.reached.mainline = 10; };
+    const hellOpen = (g: GameState) => {
+      g.dungeon.reached.mainline = 30;
+      g.story.act1Cleared = true;
+      g.story.finaleCleared = true;
+      g.dungeon.bossKills['nightmare:mainline:25'] = 1;
+    };
+    // The unlocked saves load without a tier, so each corrupt one below is corrupt for its tier alone.
+    expect([bad(nightmareOpen), bad(hellOpen)]).toEqual(['ok', 'ok']);
+    // Normal always; Nightmare from main-road depth 10; Hell with the finale and the Nightmare depth-25 kill.
+    expect(bad((g) => { g.dungeon.tier = 'normal'; })).toBe('ok');
+    expect(bad((g) => { nightmareOpen(g); g.dungeon.tier = 'nightmare'; })).toBe('ok');
+    expect(bad((g) => { hellOpen(g); g.dungeon.tier = 'hell'; })).toBe('ok');
+    expect(bad((g) => { hellOpen(g); g.dungeon.tier = 'nightmare'; })).toBe('ok');
+    expect(bad((g) => { g.dungeon.reached.mainline = 9; g.dungeon.tier = 'nightmare'; })).toBe('corrupt');
+    expect(bad((g) => { nightmareOpen(g); g.dungeon.tier = 'hell'; })).toBe('corrupt');
+    expect(bad((g) => { hellOpen(g); g.story.finaleCleared = false; g.dungeon.tier = 'hell'; })).toBe('corrupt');
+    // The Normal kill of the same boss is not the Nightmare one.
+    expect(bad((g) => { hellOpen(g); delete g.dungeon.bossKills['nightmare:mainline:25']; g.dungeon.bossKills['mainline:25'] = 1; g.dungeon.tier = 'hell'; })).toBe('corrupt');
+    // Not one of the three.
+    for (const t of ['easy', 'Nightmare', '', null, 1]) expect(bad((g) => { (g.dungeon as unknown as Record<string, unknown>).tier = t; }), String(t)).toBe('corrupt');
+  });
+  it('a save without a tier is as before (difficulty plan Task 6b)', () => {
+    // Nightmare is open, but the player has not seen the row: no tier, and the save reads back field for field.
+    const g = newGame();
+    g.dungeon.reached.mainline = 12;
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r).toEqual({ status: 'ok', state: g });
+    expect(r.status === 'ok' && 'tier' in r.state.dungeon).toBe(false);
+  });
 
   it('turns gear base ids left in the inventory into common bag items on load', () => {
     const g = newGame();

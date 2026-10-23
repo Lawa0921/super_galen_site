@@ -27,7 +27,7 @@ type RollTier = 'common' | 'magic' | 'rare' | 'epic';
 /**
  * The weights of a rune's four ordinary tiers: the gear's first four (`rarityWeights`, its legendary tier dropped), a boss
  * on the elite row (plan 8f ruling 1, after rollBossGear's second piece). Magic and up are multiplied by `difficultyMul`
- * (spec §13 point 4; always 1 for now, plan 8f ruling 11).
+ * (spec §13 point 4: the caller passes a higher tier's `runeTierMul`; 1 on Normal, difficulty plan ruling 11).
  */
 export function runeTierWeights(source: DropSource, depthLv: number, cond: ConditionId, difficultyMul = 1): Record<RollTier, number> {
   const w = rarityWeights(source === 'boss' ? 'elite' : source, depthLv, cond);
@@ -37,10 +37,11 @@ export function runeTierWeights(source: DropSource, depthLv: number, cond: Condi
 /**
  * Which rune one drop is. An elite or a boss first draws whether it is legendary (RUNE_LEGENDARY) and, if so, picks one
  * of LEGENDARY_RUNES; otherwise one weighted tier draw (runeTierWeights, as rollTier walks) and one pick of NORMAL_RUNES.
- * So a roll always takes the same number of draws for its outcome (plan 8f ruling 12).
+ * So a roll always takes the same number of draws for its outcome (plan 8f ruling 12). With `legendaryMul` (a higher
+ * tier's `runeLegendary`), the legendary chance is RUNE_LEGENDARY times it; without, as before.
  */
-export function rollRune(rng: Rng, source: DropSource, depthLv: number, cond: ConditionId, difficultyMul = 1): RuneRef {
-  if ((source === 'elite' || source === 'boss') && rng() < RUNE_LEGENDARY[source]) return { id: pick(rng, LEGENDARY_RUNES), tier: 'legendary' };
+export function rollRune(rng: Rng, source: DropSource, depthLv: number, cond: ConditionId, difficultyMul = 1, legendaryMul?: number): RuneRef {
+  if ((source === 'elite' || source === 'boss') && rng() < (legendaryMul === undefined ? RUNE_LEGENDARY[source] : RUNE_LEGENDARY[source] * legendaryMul)) return { id: pick(rng, LEGENDARY_RUNES), tier: 'legendary' };
   const tier = rollTier(rng, { ...runeTierWeights(source, depthLv, cond, difficultyMul), legendaryTier: 0 }) as RollTier;
   return { id: pick(rng, NORMAL_RUNES), tier };
 }

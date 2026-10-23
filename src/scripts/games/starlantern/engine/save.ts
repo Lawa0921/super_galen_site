@@ -12,6 +12,7 @@ import { MAX_LEVEL, SLOTS, slotsFor } from './party';
 import { defaultTree, heroTree, memoriesOf, validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
 import { repairRuneFields } from './sockets';
+import { tierUnlocked } from './tiers';
 import { buildOf } from '../data/builds';
 import { BANTER_PAIRS, isSceneId, type BanterPair } from '../data/story/scenes';
 import { MAX_WAITED } from './story/events';
@@ -58,9 +59,12 @@ const validMemory = (id: CharacterId, m: Record<string, unknown>): boolean => {
   if (m.oath !== undefined && !(m.oath === true && id === 'rin' && m.memories === chainLength('rin'))) return false;
   return true;
 };
-/** A boss-kill key: `region:depth`, a known region and a depth from 1 to MAX_DEPTH. */
+/**
+ * A boss-kill key: `region:depth`, a known region and a depth from 1 to MAX_DEPTH; a Nightmare or Hell kill has its tier
+ * in front (`nightmare:region:depth`, engine/tiers.ts bossKey). Normal's keys never carry one.
+ */
 const isBossKey = (k: string): boolean => {
-  const m = /^([a-z]+):(\d{1,4})$/.exec(k);
+  const m = /^(?:(?:nightmare|hell):)?([a-z]+):(\d{1,4})$/.exec(k);
   return !!m && has(REGIONS, m[1]) && Number(m[2]) >= 1 && Number(m[2]) <= MAX_DEPTH;
 };
 
@@ -146,7 +150,11 @@ function isValid(d: Record<string, unknown>): boolean {
   if (!validPortals(g.portals)) return false;
   if (!isCounts(g.bossKills) || !Object.keys(g.bossKills as object).every(isBossKey)) return false;
   if (Object.keys(reached).length !== regions.length) return false;
-  return regions.every((r) => Number.isInteger(reached[r]) && (reached[r] as number) >= 1 && (reached[r] as number) <= MAX_REACHED);
+  if (!regions.every((r) => Number.isInteger(reached[r]) && (reached[r] as number) >= 1 && (reached[r] as number) <= MAX_REACHED)) return false;
+  // The tier last chosen (difficulty plan ruling 21): absent until the row was seen; else one of the three, unlocked by
+  // what the save itself holds (read last, once reached, the kills and the story are known good).
+  if (g.tier === undefined) return true;
+  return (g.tier === 'normal' || g.tier === 'nightmare' || g.tier === 'hell') && tierUnlocked(d as unknown as GameState, g.tier);
 }
 
 export function saveGame(storage: SaveStorage, s: GameState): boolean {

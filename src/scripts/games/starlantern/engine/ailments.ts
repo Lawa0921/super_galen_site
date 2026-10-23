@@ -1,15 +1,17 @@
 /**
- * The ailments (spec §9, plan 8b): poison and sleep as before, plus burn, freeze (a boss is chilled instead), shock and
- * bleed. They live as optional fields on a Combatant, so a combatant without them is the same object as before. Nothing in
- * the data inflicts the new four yet; later plans add their sources.
+ * The ailments (spec §9, plan 8b): poison and sleep as before, plus burn, freeze, shock and bleed. A freeze on a boss or
+ * on the party is a chill instead (difficulty plan ruling 7: the party is never frozen). They live as optional fields on a
+ * Combatant, so a combatant without them is the same object as before. The party's skills and runes inflict them on
+ * foes; on Normal no enemy source freezes, so the party's chill only comes with the higher difficulties (the region
+ * riders and the 霜縛 affix). `curable` names what a cure takes off, and the cure itself takes off that list.
  */
 import { dealDamage, roll, SLEEP_TURNS, type Combatant } from './combatant';
 import { credit, lossOf } from './ledger';
 import type { EffectContext } from './skills';
-import type { SecondaryKey } from './types';
+import type { SecondaryKey, SkillDef } from './types';
 
 export type AilmentId = 'poison' | 'sleep' | 'burn' | 'freeze' | 'shock' | 'bleed';
-/** What the log and the screen show: a boss's freeze is shown as the chill it became. */
+/** What the log and the screen show: a boss's or a party member's freeze is shown as the chill it became. */
 export type AilmentShown = AilmentId | 'chill';
 
 export const AILMENT = {
@@ -28,11 +30,11 @@ const RES: Partial<Record<AilmentId, SecondaryKey>> = {
 
 /**
  * The chance that an inflict lands: chance x (a boss halves it, but not a freeze) x (1 - the matching resistance / 100).
- * Bleed has no resistance. A foe still guarded after a freeze cannot be frozen (0). Poison and sleep are the old formula,
- * in the same order of operations.
+ * Bleed has no resistance. A foe still guarded after a freeze cannot be frozen (0); a boss and the party, chilled instead,
+ * pay no heed to the guard. Poison and sleep are the old formula, in the same order of operations.
  */
 export function ailmentChance(t: Combatant, status: AilmentId, chance: number): number {
-  if (status === 'freeze' && !t.boss && (t.freezeGuard ?? 0) > 0) return 0;
+  if (status === 'freeze' && !t.boss && t.side !== 'party' && (t.freezeGuard ?? 0) > 0) return 0;
   const key = RES[status];
   const res = (key ? t.x[key] : 0) ?? 0;
   return chance * (t.boss && status !== 'freeze' ? AILMENT.bossMul : 1) * (1 - res / 100);
@@ -62,7 +64,8 @@ function addBleed(t: Combatant, d: Dot): void {
 /**
  * Tries to inflict `status` on `t`. Poison and sleep draw once, always (their old sequence). The new four draw only when
  * their chance is above 0 and log nothing when it is not: burn and bleed need a hit on `t` in this action (`ctx.lastHit`),
- * and their tick is a share of it; a guarded foe cannot be frozen; a boss is chilled instead of frozen. `turns`: a sleep's
+ * and their tick is a share of it; a guarded foe cannot be frozen; a boss or a party member is chilled instead of frozen
+ * (an existing chill back to full, never shortened). `turns`: a sleep's
  * rounds when a variant sets them (深眠, plan 8d); absent, SLEEP_TURNS.
  */
 export function inflictAilment(actor: Combatant, t: Combatant, status: AilmentId, chance: number, ctx: EffectContext, turns?: number): void {
@@ -91,7 +94,7 @@ export function inflictAilment(actor: Combatant, t: Combatant, status: AilmentId
     case 'bleed': addBleed(t, { tick: tickOf(hit, AILMENT.bleedPct), turns: AILMENT.bleedTurns, src: actor.key }); break;
     case 'shock': t.shock = Math.max(t.shock ?? 0, AILMENT.shockTurns); break;
     case 'freeze':
-      if (t.boss) { t.chill = Math.max(t.chill ?? 0, AILMENT.chillTurns); shown = 'chill'; } else t.frozen = true;
+      if (t.boss || t.side === 'party') { t.chill = Math.max(t.chill ?? 0, AILMENT.chillTurns); shown = 'chill'; } else t.frozen = true;
       break;
   }
   ctx.log.push({ type: 'status', target: t.key, status: shown });
@@ -155,6 +158,19 @@ export function cureAilments(c: Combatant, ids: readonly AilmentId[]): void {
       case 'freeze': delete c.frozen; delete c.chill; break;
     }
   }
+}
+
+/** What a `cure` effect takes off: every ailment (a freeze with its chill); the freeze guard stays. */
+export const CURED: readonly AilmentId[] = AILMENT_IDS;
+
+/**
+ * The ailments `c` holds that a cast of `def` takes off at once (difficulty plan ruling 23), as the screen names them: with
+ * a `cure` effect (the skill as cast, so a 淨化 rune's cure counts), each of CURED she holds (a chill under its freeze);
+ * nothing for a fallen `c` or a skill without one. A device's later cures (急救) are not a cure now. Draws nothing.
+ */
+export function curable(def: SkillDef, c: Combatant): AilmentShown[] {
+  if (!c.alive || !def.effects.some((e) => e.kind === 'cure')) return [];
+  return ailmentChips(c).map((x) => x.id).filter((id) => CURED.includes(id === 'chill' ? 'freeze' : id));
 }
 
 /** One ailment as the screen shows it: its rounds left (none for poison and freeze), the bleed's stack count. */

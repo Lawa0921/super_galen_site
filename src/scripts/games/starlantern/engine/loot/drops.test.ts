@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { TIERS } from '../../data/difficulty';
 import { describe, it, expect } from 'vitest';
 import { mulberry32, type Rng } from '../rng';
 import { ROLL_FLOOR, SPECIALS, affixRange } from '../../data/gear';
@@ -6,7 +8,7 @@ import { MATERIALS } from '../../data/materials';
 import { CONDITIONS } from '../../data/conditions';
 import { MAX_ILVL, MAX_REACHED, depthLevel } from '../levels';
 import type { ItemInstance, Rarity } from '../types';
-import { itemLevel, rollItem, type DropSource } from './item';
+import { itemLevel, rollItem, tierItemLevel, type DropSource } from './item';
 import { BOSS_LEGENDARY, EPIC_SHARE, GEAR_CHANCE, RARE_MATERIALS, STARLIT_CHANCE, STARLIT_SALT, applyStarlit, rarityWeights, rollBossGear, rollGear, rollRareMaterial, rollTier, starlitChance, type DropCtx, type Tier } from './drops';
 
 const N = 20000;
@@ -416,3 +418,118 @@ describe('starlit drops (plan 5g)', () => {
     for (const word of ['applyStarlit', 'rollGear', 'STARLIT', 'starlit']) expect(src, word).not.toContain(word);
   });
 });
+
+describe("a tier's drops (difficulty plan Task 4)", () => {
+  const sha = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
+  /** An rng that counts its draws. */
+  const counted = (seed: number) => { const base = mulberry32(seed); const f = Object.assign(() => { f.n++; return base(); }, { n: 0 }); return f; };
+  const share = (w: Record<Tier, number>) => w.legendaryTier / (w.common + w.magic + w.rare + w.epic + w.legendaryTier);
+
+  it('no tier rolls as before', () => {
+    // Guard (green before the implementation): without a tier, and on Normal, every roll is the roll before any tier code:
+    // SHA-256s recorded on the code before this task (as the T0-T1 review asked of the guards).
+    const weights: unknown[] = [];
+    for (const source of SOURCES) for (const lv of [2, 38, 98]) for (const cond of Object.keys(CONDITIONS) as (keyof typeof CONDITIONS)[]) for (const rep of [false, true]) {
+      weights.push(rarityWeights(source, lv, cond, rep));
+    }
+    expect(sha(weights)).toBe(PINNED.weights);
+    const rolls = (difficulty?: 'normal') => {
+      const out: unknown[] = [];
+      for (const source of SOURCES) for (const depth of [1, 10, 25]) for (const region of ['mainline', 'blaze'] as const) {
+        const rng = counted(depth * 31 + source.length);
+        const ctx = ctxFor({ source, depth, region, seed: 4242, ...(difficulty ? { difficulty } : {}) });
+        for (let i = 0; i < 40; i++) out.push(rollGear(rng, ctx));
+        out.push(rollBossGear(rng, ctx), rng.n);
+      }
+      return out;
+    };
+    const none = rolls();
+    expect(rolls('normal')).toEqual(none);
+    expect(sha(none)).toBe(PINNED.rolls);
+    expect(starlitChance('boss', 30)).toBe(0.16);
+  });
+
+  it('a tier sets the legendary share to its multiple, from every source', () => {
+    const lines: string[] = [];
+    let ok = true;
+    for (const [name, t] of [['nightmare', TIERS.nightmare], ['hell', TIERS.hell]] as const) for (const source of SOURCES) for (const rep of source === 'boss' ? [false, true] : [false]) for (const lv of [38, 98]) {
+      const n = share(rarityWeights(source, lv, 'plain', rep));
+      const got = share(rarityWeights(source, lv, 'plain', rep, t));
+      const want = Math.min(t.legendaryCap, n * t.legendaryShareMul);
+      lines.push(`${name} ${source}${rep ? ' repeat' : ''} Lv${lv} ${(got / n).toFixed(4)}`);
+      if (Math.abs(got - want) > 1e-12) ok = false;
+    }
+    expect(ok, lines.join('\n')).toBe(true);
+    // The vault, which has only rare and legendary weights, too: exactly 1.3x and 1.6x.
+    const v = share(rarityWeights('vault', 38, 'plain'));
+    expect(share(rarityWeights('vault', 38, 'plain', false, TIERS.nightmare)) / v).toBeCloseTo(1.3, 12);
+    expect(share(rarityWeights('vault', 38, 'plain', false, TIERS.hell)) / v).toBeCloseTo(1.6, 12);
+    // Capped: a share that would pass the cap sits at it.
+    const capped = { ...TIERS.hell, legendaryShareMul: 10 };
+    expect(share(rarityWeights('boss', 38, 'plain', false, capped))).toBeCloseTo(capped.legendaryCap, 12);
+  });
+
+  it('the legendary share stays under 1 whatever the cap (T4-T5 review)', () => {
+    // A higher tier's cap is a share, always under 1.
+    for (const [name, t] of Object.entries(TIERS)) if (name !== 'normal') expect(t.legendaryCap, name).toBeLessThan(1);
+    // A row with no real cap still gives finite weights: the share sits at .99, never 1 (which divides by zero).
+    const open = { ...TIERS.hell, legendaryCap: 1, legendaryShareMul: 100 };
+    for (const source of SOURCES) {
+      const w = rarityWeights(source, 38, 'plain', false, open);
+      expect(Object.values(w).every(Number.isFinite), source).toBe(true);
+      expect(share(w), source).toBeCloseTo(0.99, 12);
+    }
+  });
+
+  it('a tier raises rare and epic by its multiplier, leaves common and magic', () => {
+    for (const t of [TIERS.nightmare, TIERS.hell]) for (const source of SOURCES) {
+      const n = rarityWeights(source, 38, 'plain');
+      const w = rarityWeights(source, 38, 'plain', false, t);
+      expect(w.common, source).toBe(n.common);
+      expect(w.magic, source).toBe(n.magic);
+      expect(w.rare, source).toBeCloseTo(n.rare * t.rarityMul, 12);
+      expect(w.epic, source).toBeCloseTo(n.epic * t.rarityMul, 12);
+    }
+  });
+
+  it("a boss's legendary odds", () => {
+    const boss = (rep: boolean, t?: typeof TIERS.hell) => share(rarityWeights('boss', 38, 'plain', rep, t));
+    expect(boss(false)).toBeCloseTo(0.2, 12);
+    expect(boss(false, TIERS.nightmare)).toBeCloseTo(0.26, 12);
+    expect(boss(false, TIERS.hell)).toBeCloseTo(0.32, 12);
+    expect(boss(true)).toBeCloseTo(0.1, 12);
+    expect(boss(true, TIERS.nightmare)).toBeCloseTo(0.13, 12);
+    expect(boss(true, TIERS.hell)).toBeCloseTo(0.16, 12);
+    expect(TIERS.nightmare.legendaryCap).toBe(0.5);
+  });
+
+  it('starlit rises with its cap', () => {
+    expect(starlitChance('boss', 30)).toBe(0.16);
+    expect(starlitChance('boss', 30, TIERS.hell)).toBeCloseTo(0.32, 12);
+    expect(starlitChance('boss', 30, TIERS.nightmare)).toBeCloseTo(0.24, 12);
+    // Under the cap: the base and the depth's rise, times the multiplier.
+    expect(starlitChance('monster', 5, TIERS.nightmare)).toBeCloseTo((0.03 + 0.002 * 4) * 1.5, 12);
+    // applyStarlit reads the tier from the context.
+    const it = rollItem(mulberry32(7), { uid: 7, ilvl: 20, rarity: 'legendary', special: 'lg-noel' });
+    let lit = 0, litT = 0;
+    for (let seed = 0; seed < 4000; seed++) {
+      if (applyStarlit({ ...it }, { seed, source: 'monster', depth: 5 }).starlit) lit++;
+      if (applyStarlit({ ...it }, { seed, source: 'monster', depth: 5, difficulty: 'hell' }).starlit) litT++;
+    }
+    expect(litT).toBeGreaterThan(lit);
+  });
+
+  it("gear rolls a tier's item level, the boss's second piece too, once", () => {
+    expect(tierItemLevel(10, 'boss', TIERS.nightmare)).toBe(itemLevel(10, 'boss') + 4);
+    expect(tierItemLevel(MAX_REACHED, 'boss', TIERS.hell)).toBe(MAX_ILVL);
+    const [a, b] = rollBossGear(mulberry32(3), ctxFor({ depth: 10, difficulty: 'nightmare' }));
+    expect(a.ilvl).toBe(itemLevel(10, 'boss') + 4);
+    expect(b.ilvl).toBe(itemLevel(10, 'boss') + 4);
+    expect(rollGear(mulberry32(3), ctxFor({ depth: 10, source: 'monster', difficulty: 'hell' })).ilvl).toBe(itemLevel(10, 'monster') + 8);
+    // A given item level is kept as it is.
+    expect(rollGear(mulberry32(3), ctxFor({ depth: 10, source: 'elite', difficulty: 'hell', ilvl: 33 })).ilvl).toBe(33);
+  });
+});
+
+/** The pre-tier rolls (recorded on the code before Task 4). */
+const PINNED = { weights: '8d7faf51a6b4b0e1431f4068c704918687702fb4a20ce127ff7c63cb4f5127b5', rolls: '94b99933704b65898fd937d33639ff8c376c7551e4f123264beba2f3a70f0534' };

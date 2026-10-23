@@ -5,13 +5,16 @@ import type { BattleState } from '../engine/battle';
 import { makeBattle, makeCombatant } from '../engine/testing';
 import { OutlineFilter } from 'pixi-filters';
 import { BattleView, TINT_COLORS, TINT_STYLE, ailLabelWidth } from './BattleView';
-import { AILMENT_FILL, AILMENT_MORE_FILL } from './ailmentStyle';
+import { AFFIX_FILL, AILMENT_FILL, AILMENT_MORE_FILL } from './ailmentStyle';
 import { MECH_FILL } from './mechStyle';
 import type { AilmentChip } from '../engine/ailments';
 import type { MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
 import { enemyArt } from './artPaths';
 import { T } from '../data/text.zh-TW';
+import { ENEMIES } from '../data/enemies';
+import { REGIONS } from '../data/regions';
+import { CHARACTERS } from '../data/characters';
 
 const sfx = { hit: vi.fn(), weak: vi.fn(), heal: vi.fn(), ko: vi.fn() } as unknown as SoundManager;
 /** Five ailments, as the battle hands them over (the fixed chip order). */
@@ -414,7 +417,7 @@ describe('BattleView text (legibility Task 4)', () => {
     expect(size(T.battle.pop.crit)).toBe(12);             // its tag
     expect(size(T.battle.pop.miss)).toBe(12);             // a small word
     expect(size('e0')).toBe(12);                          // a name
-    expect(size('◆ 攻擊 → 絲嘉蕾')).toBe(12);              // an intent
+    expect(size('◆ 攻擊')).toBe(12);                      // an intent (four foes: its target does not fit the slot)
   });
 
   it('ailment rows of four enemies at 12px stay inside their slots', () => {
@@ -574,5 +577,204 @@ describe('BattleView without enemy art (no placeholder)', () => {
     expect(body.children[0]).toBeInstanceOf(Sprite);
     expect(view.intentRect('e0')!.y).toBeLessThan(before);
     expect(view.intentRect('e0')!.y + view.intentRect('e0')!.height).toBeLessThanOrEqual(-body.height + 1);
+  });
+});
+
+describe('BattleView affixes (difficulty plan Task 7b)', () => {
+  type R = { x: number; y: number; width: number; height: number };
+  const meets = (a: R, b: R) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  const foes = (n: number, name = (i: number) => `e${i}`) => makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], Array.from({ length: n }, (_, i) => makeCombatant({ key: `e${i}`, side: 'enemy', name: name(i) })));
+  const THREE: AilmentChip[] = [{ id: 'bleed', stacks: 2, turns: 3 }, { id: 'burn', turns: 3 }, { id: 'shock', turns: 2 }];
+  const texts = (view: BattleView, key: string) => view.ailmentTexts(key).map((t) => t.text);
+  /** The message window's bottom on the 640x360 stage: `.slx-msg` stands at 6 and is 64 px tall with one line (T8). */
+  const MSG_BOTTOM = 70;
+
+  it('affixes lead the row and fold last', () => {
+    // Three foes: the row has room for two affixes and a 「+N」, not for an ailment beside them.
+    const view = new BattleView(true, bank);
+    view.setup(foes(3), { width: 640, height: 360 }, 1, 150, 70);
+    view.showAilments({ e0: THREE }, {}, { e0: ['灼熱', '霜縛'] });
+    expect(texts(view, 'e0')).toEqual(['灼熱', '霜縛', '+3']);   // the +N counts the ailments, never an affix first
+    const words = view.ailmentTexts('e0');
+    expect(words.slice(0, 2).map((t) => t.style.fill)).toEqual([AFFIX_FILL, AFFIX_FILL]);
+    expect(words.every((t) => t.style.fontSize === 12 && (t.style.fontFamily as string[])[0] === 'Cubic 11')).toBe(true);
+    // Room for all of it: affixes first, then the ailments by severity.
+    const wide = new BattleView(true, bank);
+    wide.setup(foes(1), { width: 640, height: 360 }, 1, 150, 70);
+    wide.showAilments({ e0: THREE }, {}, { e0: ['灼熱', '霜縛'] });
+    expect(texts(wide, 'e0')).toEqual(['灼熱', '霜縛', '流血×2', '灼燒3', '感電2']);
+    // Freeze and sleep still never fold: with room for three words, the affixes stand first and freeze after them;
+    // with room for two (four foes), the second affix folds before freeze does.
+    view.showAilments({ e0: [{ id: 'freeze' }, ...THREE] }, {}, { e0: ['灼熱', '霜縛'] });
+    expect(texts(view, 'e0')).toEqual(['灼熱', '霜縛', '凍結', '+3']);
+    const four = new BattleView(true, bank);
+    four.setup(foes(4), { width: 640, height: 360 }, 1, 150, 70);
+    four.showAilments({ e0: [{ id: 'freeze' }, ...THREE] }, {}, { e0: ['灼熱', '霜縛'] });
+    expect(texts(four, 'e0')).toEqual(['灼熱', '凍結', '+4']);
+    // A foe with no affixes beside one with them reads as before.
+    view.showAilments({ e0: THREE, e1: THREE }, {}, { e0: ['迅捷'] });
+    expect(texts(view, 'e0')[0]).toBe('迅捷');
+    expect(texts(view, 'e1')[0]).toBe('流血×2');
+  });
+
+  it('no affix, no change', () => {
+    const marks: MechWord[] = [{ tone: 'mark', text: '暗記', setup: true }, { tone: 'aim', text: '最後行動' }];
+    for (const n of [1, 3, 5]) {
+      const a = new BattleView(true, bank), b = new BattleView(true, bank);
+      a.setup(foes(n), { width: 640, height: 360 }, 1, 150, 70);
+      b.setup(foes(n), { width: 640, height: 360 }, 1, 150, 70);
+      const byKey = Object.fromEntries(Array.from({ length: n }, (_, i) => [`e${i}`, FIVE]));
+      const words = Object.fromEntries(Array.from({ length: n }, (_, i) => [`e${i}`, marks]));
+      a.showAilments(byKey, words);
+      b.showAilments(byKey, words, {});
+      for (let i = 0; i < n; i++) {
+        const k = `e${i}`;
+        const shape = (v: BattleView) => v.ailmentTexts(k).map((t) => [t.text, t.x, t.style.fill]);
+        expect(shape(b), k).toEqual(shape(a));
+      }
+    }
+  });
+
+  it('affixes lead the row above five foes without touching a bar', () => {
+    // 844x390 holds the 640x360 stage; five foes, each the longest name, two affixes and three ailments, over a tall
+    // picture, a small one (the bat) and none yet: every row stays in its slot, clear of every HP bar, every name and
+    // every other row.
+    const LONG = '★深層・熾焰之地・燈喰之獸';
+    const banks: [string, TextureBank][] = [
+      ['tall', bank],
+      ['bat', { get: () => new Texture({ source: new TextureSource({ width: 119, height: 65 }) }), has: () => true } as unknown as TextureBank],
+      ['no art', { get: () => null, has: () => false } as unknown as TextureBank],
+    ];
+    const keys = ['e0', 'e1', 'e2', 'e3', 'e4'];
+    for (const [label, b] of banks) {
+      const view = new BattleView(true, b);
+      view.setup(foes(5, () => LONG), { width: 640, height: 360 }, 1, 150, 70);
+      view.showAilments(Object.fromEntries(keys.map((k) => [k, THREE])), {}, Object.fromEntries(keys.map((k) => [k, ['灼熱', '霜縛']])));
+      const slotW = (640 - 150) / 6;
+      const rows = keys.map((k) => {
+        const box = view.enemyBoxOf(k)!;
+        const local = view.ailmentRowRect(k)!;
+        const words = view.ailmentTexts(k);
+        expect(words[0].text, `${label} ${k}`).toBe('灼熱');   // an affix leads
+        expect(new Set(words.map((t) => t.y)).size, `${label} ${k} one line`).toBe(1);
+        const left = box.x + words[0].x - ailLabelWidth(words[0].text) / 2;
+        const right = box.x + words.at(-1)!.x + ailLabelWidth(words.at(-1)!.text) / 2;
+        expect(right - left, `${label} ${k} inside its slot`).toBeLessThanOrEqual(slotW - 6);
+        expect(left, `${label} ${k}`).toBeGreaterThanOrEqual(box.x - local.width / 2 - 0.001);
+        expect(right, `${label} ${k}`).toBeLessThanOrEqual(box.x + local.width / 2 + 0.001);
+        return { k, rect: { x: box.x + local.x, y: box.y + local.y, width: local.width, height: local.height } };
+      });
+      for (const { k, rect } of rows) {
+        for (const o of keys) {
+          expect(meets(rect, view.hpBarRect(o)!), `${label} ${k} row vs ${o} bar`).toBe(false);
+          expect(meets(rect, view.nameRect(o)!), `${label} ${k} row vs ${o} name`).toBe(false);
+        }
+        for (const other of rows) if (other.k !== k) expect(meets(rect, other.rect), `${label} ${k} row vs ${other.k} row`).toBe(false);
+        expect(rect.y, `${label} ${k} under the message window`).toBeGreaterThanOrEqual(MSG_BOTTOM);
+      }
+    }
+  });
+
+  it('a lone boss keeps its intent and affixes below the message window (T8 acceptance)', () => {
+    // A boss's picture is tall, so its intent and row are held down by the top of the stage. They must stand under the
+    // message window (.slx-msg), which covers stage y 6 to 70 with one line: there they are the only place its affixes
+    // show, since a lone foe gets no target list.
+    const tex = new Texture({ source: new TextureSource({ width: 220, height: 300 }) });
+    const view = new BattleView(true, { get: () => tex, has: () => true } as unknown as TextureBank);
+    view.setup(makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], [makeCombatant({ key: 'e0', side: 'enemy', defId: 'lanterneater', boss: true, name: '深層・燈喰之獸' })]), { width: 640, height: 360 }, 1, 150, 70);
+    view.showIntents({ e0: '攻擊 → 絲嘉蕾' });
+    view.showAilments({ e0: [{ id: 'poison' }] }, {}, { e0: ['迅捷', '霜縛'] });
+    const box = view.enemyBoxOf('e0')!;
+    const at = (r: { x: number; y: number; width: number; height: number }) => ({ ...r, x: box.x + r.x, y: box.y + r.y });
+    const intent = at(view.intentRect('e0')!), row = at(view.ailmentRowRect('e0')!);
+    expect(intent.y, 'the intent under the message window').toBeGreaterThanOrEqual(MSG_BOTTOM);
+    expect(row.y, 'the affix row under the message window').toBeGreaterThanOrEqual(MSG_BOTTOM);
+    expect(texts(view, 'e0').slice(0, 2)).toEqual(['迅捷', '霜縛']);
+    const meets = (a: typeof row, b: typeof row) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+    expect(meets(intent, row), 'the intent and the row apart').toBe(false);
+    expect(meets(row, view.hpBarRect('e0')!), 'the row clear of the bar').toBe(false);
+    expect(meets(row, view.nameRect('e0')!), 'the row clear of the name').toBe(false);
+  });
+});
+
+describe('BattleView names and intents fit their slots (legibility, difficulty plan follow-up)', () => {
+  type R = { x: number; y: number; width: number; height: number };
+  const meets = (a: R, b: R) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  // The longest names a deep fight can give: ★, 深層, a region's prefix, the longest enemy name and a letter.
+  const longestBase = Object.values(ENEMIES).map((e) => e.name).reduce((a, b) => (ailLabelWidth(b) > ailLabelWidth(a) ? b : a));
+  const LONG_NAME = (i: number) => `★深層・熾焰・${longestBase} ${String.fromCharCode(65 + i)}`;
+  // The longest intent: the longest enemy or region skill name, an area, and the longest member's name.
+  const skills = [...Object.values(ENEMIES).flatMap((e) => e.skills.map((k) => k.name)), ...Object.values(REGIONS).flatMap((r) => (r.skill ? [r.skill.name] : []))];
+  const longestSkill = skills.reduce((a, b) => (ailLabelWidth(b) > ailLabelWidth(a) ? b : a));
+  const longestMember = Object.values(CHARACTERS).map((c) => c.name).reduce((a, b) => (ailLabelWidth(b) > ailLabelWidth(a) ? b : a));
+  const LONG_INTENT = `${longestSkill}（十字） → ${longestMember}`;
+  const fight = (n: number) => makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], Array.from({ length: n }, (_, i) => makeCombatant({ key: `e${i}`, side: 'enemy', name: LONG_NAME(i) })));
+  const textRect = (view: BattleView, key: string, text: string, y: number, h: number): R => {
+    const box = view.enemyBoxOf(key)!;
+    const w = ailLabelWidth(text);
+    return { x: box.x - w / 2, y: box.y + y, width: w, height: h };
+  };
+  const banks: [string, TextureBank][] = [
+    ['tall', bank],
+    ['bat', { get: () => new Texture({ source: new TextureSource({ width: 119, height: 65 }) }), has: () => true } as unknown as TextureBank],
+  ];
+
+  it('names never meet each other, nor intents each other, for one to five deep foes at 844x390 and 1280x720', () => {
+    // Both sizes show the same 640x360 stage (ui2/stage.ts), so one layout per foe count stands for both.
+    for (const [label, b] of banks) for (let n = 1; n <= 5; n++) {
+      const view = new BattleView(true, b);
+      view.setup(fight(n), { width: 640, height: 360 }, 1, 150, 70);
+      const keys = Array.from({ length: n }, (_, i) => `e${i}`);
+      view.showIntents(Object.fromEntries(keys.map((k) => [k, LONG_INTENT])));
+      const slotW = (640 - 150) / (n + 1);
+      const names = keys.map((k) => view.nameRect(k)!);
+      const intents = keys.map((k) => textRect(view, k, view.intentText(k), view.intentRect(k)!.y, view.intentRect(k)!.height));
+      keys.forEach((k, i) => {
+        expect(names[i].width, `${label} ${n} foes: ${k}'s name inside its slot`).toBeLessThanOrEqual(slotW - 4);
+        expect(intents[i].width, `${label} ${n} foes: ${k}'s intent inside its slot`).toBeLessThanOrEqual(slotW - 4);
+        expect(view.intentText(k), `${label} ${n}`).not.toBe('');
+        keys.forEach((o, j) => {
+          if (j <= i) return;
+          expect(meets(names[i], names[j]), `${label} ${n} foes: ${k} / ${o} names`).toBe(false);
+          expect(meets(intents[i], intents[j]), `${label} ${n} foes: ${k} / ${o} intents`).toBe(false);
+        });
+      });
+    }
+  });
+
+  it('a name too long drops 深層 and the region first, then cuts with 「…」, keeping its star and letter', () => {
+    const one = new BattleView(true, bank);
+    one.setup(fight(1), { width: 640, height: 360 }, 1, 150, 70);
+    expect(one.nameOf('e0')).toBe(LONG_NAME(0));                       // room enough: the whole name
+    const five = new BattleView(true, bank);
+    five.setup(fight(5), { width: 640, height: 360 }, 1, 150, 70);
+    const shown = five.nameOf('e2');
+    expect(shown).not.toContain('深層');
+    expect(shown).not.toContain('熾焰');
+    expect(shown.startsWith('★')).toBe(true);
+    expect(shown.endsWith('C')).toBe(true);                            // the letter that tells it from its twins
+    // A short regional name keeps everything.
+    const short = new BattleView(true, bank);
+    short.setup(makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], Array.from({ length: 5 }, (_, i) => makeCombatant({ key: `e${i}`, side: 'enemy', name: `熾焰・蝙蝠` }))), { width: 640, height: 360 }, 1, 150, 70);
+    expect(short.nameOf('e0')).toBe('熾焰・蝙蝠');
+    // Cut when even the bare name does not fit: 「…」 before the letter.
+    const cut = new BattleView(true, bank);
+    cut.setup(makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], Array.from({ length: 5 }, (_, i) => makeCombatant({ key: `e${i}`, side: 'enemy', name: `★深層・暗影・很長很長很長的名字 ${String.fromCharCode(65 + i)}` }))), { width: 640, height: 360 }, 1, 150, 70);
+    expect(cut.nameOf('e1')).toMatch(/^★很長.*…B$/);
+  });
+
+  it('an intent too long drops its area, then its target, then its mark, then cuts', () => {
+    const one = new BattleView(true, bank);
+    one.setup(fight(1), { width: 640, height: 360 }, 1, 150, 70);
+    one.showIntents({ e0: '暮色搖籃曲（十字） → 千鶴' });
+    expect(one.intentText('e0')).toBe('◆ 暮色搖籃曲（十字） → 千鶴');   // room enough: as before
+    const five = new BattleView(true, bank);
+    five.setup(fight(5), { width: 640, height: 360 }, 1, 150, 70);
+    five.showIntents({ e0: '暮色搖籃曲（十字） → 千鶴', e1: '攻擊 → 絲嘉蕾', e2: '暮色搖籃曲（十字）' });
+    expect(five.intentText('e0')).toBe('暮色搖籃曲');                    // its name whole, before any cut
+    expect(five.intentText('e1')).toBe('◆ 攻擊');
+    expect(five.intentText('e2')).toBe('暮色搖籃曲');
+    five.showIntents({});
+    expect(five.intentText('e0')).toBe('');
   });
 });

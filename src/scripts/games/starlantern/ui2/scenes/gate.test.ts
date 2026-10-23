@@ -16,6 +16,7 @@ import { chainLength } from '../../data/story/chains';
 import { activeIds } from '../../engine/party';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { linesOf } from '../story';
+import { HELL_BOSS_DEPTH } from '../../engine/tiers';
 
 function setup(prep?: (g: Game) => void, art: ArtIndex = NO_ART) {
   const game = new Game(constRng(0.5), null);
@@ -457,5 +458,160 @@ describe('GateScene: the leads (6c Task 16)', () => {
     expect(T.ui2.rescue.waiting).toBe('這層好像還有別人。');
     const texts = [T.ui2.rescue.waiting, T.ui2.gate.lead, T.ui2.gate.leadAt(3), T.ui2.gate.sighted(3), ...Object.values(STORY.leads)];
     for (const t of texts) expect(t).not.toMatch(/求救|求助|呼救|訊號|救命/);
+  });
+});
+
+// Difficulty plan Task 7a: the tier row above the cards, the cards' tier lines, the depth list and the confirm, Glen's line.
+describe('GateScene: the tier row (difficulty plan Task 7a)', () => {
+  const nightmareOpen = (g: Game) => { g.state.dungeon.reached.mainline = 10; g.state.dungeon.tier = 'normal'; };
+  const cells = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('.slx-tier-row .slx-tier')];
+  const selected = (root: HTMLElement) => root.querySelector<HTMLElement>('.slx-tier-row .slx-tier-sel');
+
+  it('the tier row shows three tiers and what unlocks them', () => {
+    const { root } = setup();
+    expect(root.querySelector('.slx-tier-row .slx-tier-label')!.textContent).toBe(T.ui2.tier.row);
+    expect(cells(root).map((c) => c.dataset.tier)).toEqual(['normal', 'nightmare', 'hell']);
+    expect(selected(root)!.dataset.tier).toBe('normal');
+    expect(selected(root)!.textContent).toBe(`→${T.ui2.tier.names.normal}`);
+    const [, night, hell] = cells(root);
+    expect(night.classList.contains('slx-tier-locked')).toBe(true);
+    expect(night.textContent).toBe(`${T.ui2.tier.names.nightmare}${T.ui2.tier.locked.nightmare(10)}`);
+    expect(hell.textContent).toBe(`${T.ui2.tier.names.hell}${T.ui2.tier.locked.hell(25)}`);
+    expect(night.getAttribute('aria-disabled')).toBe('true');
+    // Main road depth 10: Nightmare may be chosen, Hell still says how.
+    const open = setup(nightmareOpen);
+    const [, n2, h2] = cells(open.root);
+    expect([n2.classList.contains('slx-tier-locked'), n2.textContent]).toEqual([false, T.ui2.tier.names.nightmare]);
+    expect(h2.classList.contains('slx-tier-locked')).toBe(true);
+  });
+
+  it('Q and E cycle the open tiers, skipping a locked one; a tap on a locked one only beeps', () => {
+    // T6a-T7a review 5: Q/E go round the tiers that are open (as the handbook skips a locked page, ruling 25).
+    const { game, s, root } = setup(nightmareOpen);
+    const spy = vi.spyOn(game, 'chooseTier');
+    const sfx = (s as unknown as { ctx: { sfx: { error: ReturnType<typeof vi.fn> } } }).ctx.sfx;
+    s.onAction('next');
+    expect(spy).toHaveBeenLastCalledWith('nightmare');
+    expect(game.state.dungeon.tier).toBe('nightmare');
+    expect(selected(root)!.dataset.tier).toBe('nightmare');
+    expect(selected(root)!.textContent).toBe(`→${T.ui2.tier.names.nightmare}`);
+    // Hell is locked: E goes round to Normal, never to Hell, and nothing beeps.
+    s.onAction('next');
+    expect(spy).not.toHaveBeenCalledWith('hell');
+    expect(game.state.dungeon.tier).toBe('normal');
+    expect(sfx.error).not.toHaveBeenCalled();
+    s.onAction('prev');                                        // left from Normal: the last open tier
+    expect(game.state.dungeon.tier).toBe('nightmare');
+    s.onAction('prev');
+    expect(game.state.dungeon.tier).toBe('normal');
+    // A tap on a cell: an open one is chosen; the locked one beeps, keeps its condition, and changes nothing.
+    cells(root)[1].click();
+    expect(game.state.dungeon.tier).toBe('nightmare');
+    cells(root)[2].click();
+    expect(sfx.error).toHaveBeenCalledTimes(1);
+    expect(game.state.dungeon.tier).toBe('nightmare');
+    expect(cells(root)[2].querySelector('.slx-tier-cond')!.textContent).toBe(T.ui2.tier.locked.hell(HELL_BOSS_DEPTH));
+    cells(root)[0].click();
+    expect(game.state.dungeon.tier).toBe('normal');
+    // Hell open too: E walks all three.
+    const all = setup((g) => { nightmareOpen(g); g.state.dungeon.reached.mainline = 30; g.state.story.finaleCleared = true; g.state.dungeon.bossKills['nightmare:mainline:25'] = 1; });
+    all.s.onAction('next'); all.s.onAction('next');
+    expect(all.game.state.dungeon.tier).toBe('hell');
+    all.s.onAction('next');
+    expect(all.game.state.dungeon.tier).toBe('normal');
+    // Locked from the start (Lv 1 save): nothing to go round to, so E only beeps.
+    const lv1 = setup();
+    lv1.s.onAction('next');
+    expect(lv1.game.state.dungeon.tier).toBeUndefined();
+    expect((lv1.s as unknown as { ctx: { sfx: { error: ReturnType<typeof vi.fn> } } }).ctx.sfx.error).toHaveBeenCalledTimes(1);
+  });
+
+  it('switching the tier marks the scroll cue again (T6a-T7a review 1)', () => {
+    // The two tier lines push the gear list: a list that fitted may overflow now, and back on Normal fit again.
+    const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get');
+    const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get');
+    try {
+      sh.mockReturnValue(40); ch.mockReturnValue(60);
+      const { s, root } = setup(nightmareOpen);
+      const more = () => [...root.querySelectorAll<HTMLElement>('.slx-codex-more')];
+      expect(more().length).toBeGreaterThan(0);
+      expect(more().every((m) => m.hidden)).toBe(true);
+      sh.mockReturnValue(90);                                  // as the two lines would make it
+      s.onAction('next');
+      expect(more().every((m) => !m.hidden)).toBe(true);
+      sh.mockReturnValue(40);
+      s.onAction('prev');
+      expect(more().every((m) => m.hidden)).toBe(true);        // no stale cue left on Normal
+    } finally { sh.mockRestore(); ch.mockRestore(); }
+  });
+
+  it('a Nightmare card says what changes; a Normal card is as before', () => {
+    const plain = setup();
+    const before = plain.cards().map((c) => c.children.length);
+    expect(plain.root.querySelector('.slx-portal-tier')).toBeNull();
+    const { s, cards, root } = setup(nightmareOpen);
+    expect(cards().map((c) => c.children.length)).toEqual(before);
+    s.onAction('next');
+    for (const c of cards()) {
+      const lines = [...c.querySelectorAll('.slx-portal-tier > *')].map((x) => x.textContent);
+      expect(lines).toEqual([T.ui2.tier.what.nightmare, T.ui2.tier.suggest.nightmare]);
+    }
+    expect(cards().map((c) => c.children.length)).toEqual(before.map((n) => n + 1));
+    s.onAction('prev');
+    expect(root.querySelector('.slx-portal-tier')).toBeNull();
+    expect(cards().map((c) => c.children.length)).toEqual(before);
+  });
+
+  it('the depth list and the confirm name the tier; Normal reads as before', () => {
+    const night = setup((g) => { nightmareOpen(g); g.state.dungeon.tier = 'nightmare'; });
+    night.s.onAction('confirm');   // the mainline
+    const right = [...night.root.querySelectorAll('.slx-depths [role=option] .slx-right')].map((o) => o.textContent);
+    expect(right[0]).toBe(`建議 Lv 2・${T.ui2.tier.names.nightmare}`);   // a page of six: depth 1 first
+    for (let i = 0; i < 9; i++) night.s.onAction('down');
+    night.s.onAction('confirm');   // 第 10 層
+    expect(night.root.querySelector('.slx-confirm')!.textContent).toContain(`難度：${T.ui2.tier.names.nightmare}`);
+    night.s.onAction('up'); night.s.onAction('confirm');   // 是
+    expect(night.game.run!.difficulty).toBe('nightmare');
+    // Normal: the words of before, no tier.
+    const normal = setup(nightmareOpen);
+    normal.s.onAction('confirm');
+    const plainRight = [...normal.root.querySelectorAll('.slx-depths [role=option] .slx-right')].map((o) => o.textContent);
+    expect(plainRight[0]).toBe('建議 Lv 2');
+    normal.s.onAction('confirm');
+    expect(normal.root.querySelector('.slx-confirm p')!.textContent).toBe(T.ui2.gate.ask('星燈迷宮・本道', 1, CONDITIONS.plain.name));
+    expect(normal.root.querySelector('.slx-confirm')!.textContent).not.toContain('難度');
+  });
+
+  it('Glen speaks once', () => {
+    const visit = (prep: (g: Game) => void) => {
+      const game = new Game(constRng(0.5), null);
+      prep(game);
+      let draws = 0;
+      (game as { rng: unknown }).rng = () => { draws++; return 0.5; };
+      const root = document.createElement('div');
+      const s = new GateScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+      s.enter(root);
+      return { game, draws, text: root.querySelector('.slx-talk .slx-text')?.textContent };
+    };
+    // Nightmare open, the row never seen: Glen's line, and Normal written down.
+    const first = visit((g) => { g.state.dungeon.reached.mainline = 10; });
+    expect(first.text).toBe(STORY.tierUnlock);
+    expect(first.game.state.dungeon.tier).toBe('normal');
+    expect(first.draws).toBe(1);
+    // The next visit: a greeting from the pool.
+    const again = visit((g) => { g.state.dungeon.reached.mainline = 10; g.state.dungeon.tier = 'normal'; });
+    expect(again.text).not.toBe(STORY.tierUnlock);
+    expect(again.draws).toBe(1);
+    // Not unlocked: a greeting, and no tier written.
+    const locked = visit(() => {});
+    expect(locked.text).not.toBe(STORY.tierUnlock);
+    expect(locked.game.state.dungeon.tier).toBeUndefined();
+    expect(locked.draws).toBe(1);
+  });
+
+  it('Glen and the tier words keep the house rules: no hand-typed numbers in his line', () => {
+    expect(STORY.tierUnlock).not.toMatch(/\d/);
+    expect(T.ui2.tier.locked.nightmare(10)).toContain('10');
+    expect(T.ui2.tier.locked.hell(25)).toContain('25');
   });
 });

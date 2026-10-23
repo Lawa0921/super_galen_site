@@ -76,6 +76,7 @@ function ruleText(r: PolicyRule): string {
     case 'cast-unless-last': return R.castUnlessLast(nameOf(r.skill));
     case 'cast-when': return R.castWhen(nameOf(r.skill), !!r.big, !!r.whileAbsent);
     case 'echo': return r.min === undefined ? R.echo : R.echoAt(r.min);
+    case 'cure-ailment': return R.cureAilment(nameOf(r.skill));
   }
 }
 

@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { createBattle, resolveRound, skillFor, type Action, type BattleState } from './battle';
 import type { Combatant } from './combatant';
 import { mechGauge, type MechState, type MoonPhase } from './mech';
-import { applyPolicy, effectiveOf, reach, type PolicyRule } from './policy';
+import { applyPolicy, effectiveOf, reach, TIER_AILMENTS, type PolicyRule } from './policy';
+import { T } from '../data/text.zh-TW';
 import { mulberry32 } from './rng';
 import { encounterTable } from './scaling';
 import { castPower, choose, partyAt } from './sim';
@@ -584,5 +585,69 @@ describe('build policy rules (plan 8h Task 1)', () => {
         expect(r, id).not.toHaveProperty('effective');
       }
     }
+  });
+
+  it('no default policy cures', () => {
+    // Guard (green before the implementation): every default rule is of a kind that was there before cure-ailment.
+    const old = ['ensure-barrier', 'ensure-device', 'ensure-mark', 'alternate', 'spend-at', 'heal-below', 'strongest-damage'];
+    for (const [id, rules] of Object.entries(DEFAULT_POLICIES)) for (const r of rules ?? []) expect(old, `${id} ${r.kind}`).toContain(r.kind);
+  });
+});
+
+describe('cure-ailment (difficulty plan Task 2, builds only)', () => {
+  const rule: PolicyRule[] = [{ kind: 'cure-ailment', skill: 'cleanse' }];
+  const at = (allies: Partial<Combatant>[], castable = sk('cleanse', 'moon-rain'), selene: Partial<Combatant> = {}) => {
+    const s = makeBattle([P('selene', selene), ...allies.map((o, i) => P(`m${i}`, o))], [E('e0')]);
+    return run(s, s.party[0], castable, rule).action;
+  };
+
+  it('a build cures what its cure can cure', () => {
+    // The ally with the most tier ailments her cure removes: A (burn and bleed) over B (a chill alone).
+    const A = { burn: { tick: 4, turns: 2, src: 'e0' }, bleed: [{ tick: 3, turns: 2, src: 'e0' }] };
+    const B = { chill: 1 };
+    expect(at([B, A])).toEqual({ kind: 'skill', skill: 'cleanse', target: 'm1' });
+    // Ties go in party order; she counts herself.
+    expect(at([B, B])).toEqual({ kind: 'skill', skill: 'cleanse', target: 'm0' });
+    expect(at([{}], undefined, { shock: 2 })).toEqual({ kind: 'skill', skill: 'cleanse', target: 'selene' });
+    // Nothing her cure removes (a freeze guard is no ailment; a fallen ally is not cured): the rule does not hold.
+    expect(at([{ freezeGuard: 2 }, { alive: false, burn: { tick: 4, turns: 2, src: 'e0' } }])).toBeNull();
+    // Not castable (no TP: choose leaves it out of castable): the rule does not hold, the next one is read.
+    expect(at([A], sk('moon-rain'))).toBeNull();
+    const s = makeBattle([P('selene'), P('m0', A)], [E('e0')]);
+    expect(run(s, s.party[0], sk('moon-rain'), [...rule, { kind: 'heal-below', pct: 101 }]).action?.kind).toBe('skill');
+    // It reads the skill as she casts it: a skill with no cure never holds.
+    expect(run(s, s.party[0], sk('moon-rain'), [{ kind: 'cure-ailment', skill: 'moon-rain' }]).action).toBeNull();
+  });
+
+  it("the rule's words name what it answers (T2-T3 review, minor 4)", () => {
+    const line = T.build.rule.cureAilment('淨化');
+    for (const id of TIER_AILMENTS) expect(line, id).toContain(T.ailment[id]);
+    for (const id of ['poison', 'sleep'] as const) expect(line, id).not.toContain(T.ailment[id]);
+  });
+
+  it('it cures only what tier enemies inflict, never poison or sleep (controller ruling: Normal builds do not move)', () => {
+    // Poison and sleep, which Normal enemies inflict, never set it off; alongside a tier ailment they do not count.
+    expect(at([{ poison: true }, { sleep: 2 }])).toBeNull();
+    expect(at([{}], undefined, { poison: true, sleep: 2 })).toBeNull();
+    expect(at([{ poison: true, sleep: 2, chill: 1 }, { burn: { tick: 4, turns: 2, src: 'e0' }, shock: 1 }])).toEqual({ kind: 'skill', skill: 'cleanse', target: 'm1' });
+    // Each tier ailment alone sets it off.
+    for (const o of [{ burn: { tick: 4, turns: 2, src: 'e0' } }, { bleed: [{ tick: 3, turns: 2, src: 'e0' }] }, { shock: 1 }, { chill: 2 }]) {
+      expect(at([o]), JSON.stringify(o)).toEqual({ kind: 'skill', skill: 'cleanse', target: 'm0' });
+    }
+    // In a real Nightmare fight: the frost rider chills the party in round 1 (frost group 0, the first of seeds 1-40 where
+    // it does: the depth table tunes the fight, so no one seed is pinned), and she cures it.
+    const party = partyAt(38, {}, 10);
+    const roundOne = (seed: number) => {
+      const st0 = createBattle({ party, enemyIds: encounterTable('frost', 10)[0], inventory: {}, revealed: {}, scale: { depth: 10, region: 'frost', difficulty: 'nightmare' } });
+      return resolveRound(st0, choose(st0, party), mulberry32(seed));
+    };
+    const seed = Array.from({ length: 40 }, (_, i) => i + 1).find((k) => roundOne(k).party.some((c) => c.alive && c.chill));
+    expect(seed).toBeDefined();
+    const st = roundOne(seed!);
+    const chilled = st.party.filter((c) => c.alive && c.chill);
+    expect(chilled.length).toBeGreaterThan(0);
+    const selene = st.party.find((c) => c.key === 'selene')!;
+    const act = run(st, selene, sk('cleanse'), rule).action;
+    expect(act).toEqual({ kind: 'skill', skill: 'cleanse', target: chilled[0].key });
   });
 });

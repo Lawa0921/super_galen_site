@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Game, type BattleEnd, type MoveResult } from './game';
-import { STORY_FIGHT_ROUNDS } from './battle';
+import { STORY_FIGHT_ROUNDS, type Difficulty } from './battle';
 import { BACKUP_KEY, SAVE_KEY, V8_KEY, loadGame, saveGame } from './save';
 import { SAVE_VERSION, newGame, START_ITEMS, type GameState } from './state';
 import { constRng, memoryStorage, plainItem, version8Save, withNode } from './testing';
@@ -8,7 +8,9 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NODES, P, TREES, V } from '../data/trees';
-import { mulberry32 } from './rng';
+import { mulberry32, type Rng } from './rng';
+import { rollAffixes, rollCrowdAffix } from './tiers';
+import { TIERS } from '../data/difficulty';
 import { rollPortals, validPortals } from './portals';
 import { DELTA, posKey, tileAt, type Dir } from './map';
 import { floorOf, type Portal } from './dungeon/run';
@@ -56,6 +58,12 @@ vi.mock('./portals', async (importOriginal) => {
 vi.mock('./loot/drops', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./loot/drops')>();
   return { ...mod, rollBossGear: vi.fn(mod.rollBossGear) };
+});
+
+// Wrapped so a test can see what a rune was rolled with (difficulty plan Task 6a-prime); it still rolls for real.
+vi.mock('./loot/runes', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('./loot/runes')>();
+  return { ...mod, rollRune: vi.fn(mod.rollRune) };
 });
 
 /** The legacy five with the hero in Scarlet's place: a save needs the hero on the field. */
@@ -4311,5 +4319,463 @@ describe('following between fights (plan 8h final review)', () => {
     expect(killAll(g).outcome).toBe('win');
     expect(g.state.party.roster.noel.sockets?.['fire-star']).toEqual([null, { id: 'ignite', tier: 'magic' }]);
     expect(g.state.runes).toEqual({ 'spread@magic': 1 });
+  });
+});
+
+/** A short fingerprint of anything JSON can write (FNV-1a over the text), for pinning a whole result in one line. */
+const fnv = (x: unknown): string => {
+  let h = 0x811c9dc5;
+  for (const ch of JSON.stringify(x)) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193) >>> 0;
+  return h.toString(16);
+};
+
+/**
+ * A game standing in town with every tier unlocked (the main road reached 30, the finale won, the Nightmare depth-25 boss
+ * beaten) and `tier` chosen; its Normal twin differs in the chosen tier alone.
+ */
+const tiered = (tier: Difficulty, rng: Rng = calm(), lineup: CharacterId[] = HERO_LINEUP): Game => {
+  const g = new Game(rng, null, undefined, 0, lineup);
+  g.state.dungeon.reached.mainline = 30;
+  g.state.story.act1Cleared = true;
+  g.state.story.finaleCleared = true;
+  g.state.dungeon.bossKills['nightmare:mainline:25'] = 1;
+  expect(g.chooseTier(tier)).toEqual({ ok: true });
+  return g;
+};
+/**
+ * A game ready for the finale (Rin's oath, the acts heard, the main road reached 30) on `tier`: Nightmare unlocked, the
+ * finale not yet won (so never Hell).
+ */
+const finaleGame = (tier: Difficulty, rng: Rng = calm()): Game => {
+  const g = new Game(rng, null, undefined, 0, ['hero', 'rin']);
+  g.state.dungeon.reached.mainline = 30;
+  for (const node of ['act2', 'act3', 'act4'] as const) {
+    g.state.story.nodes.push(node);
+    g.state.story.seen.push(node);
+  }
+  g.state.story.act1Cleared = true;
+  Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+  expect(g.chooseTier(tier)).toEqual({ ok: true });
+  return g;
+};
+/** The escape: always succeeds on a 0 rng; the calm rng is put back after, so what follows draws as before. */
+const flee = (g: Game) => {
+  (g as { rng: unknown }).rng = constRng(0);
+  expect(g.submitRound({ hero: { kind: 'escape' } })!.end!.outcome).toBe('fled');
+  (g as { rng: unknown }).rng = calm();
+};
+const affixesOf = (g: Game) => g.battle!.enemies.map((e) => e.affixes);
+
+describe('a run has a tier (difficulty plan Task 6a)', () => {
+  it('chooseTier is town-only and needs the unlock', () => {
+    const st = memoryStorage();
+    const g = new Game(calm(), st, undefined, 0, HERO_LINEUP);
+    const writes = vi.spyOn(st, 'setItem');
+    expect(g.tier()).toBe('normal');
+    g.state.dungeon.reached.mainline = 9;
+    expect(g.chooseTier('nightmare')).toEqual({ ok: false, reason: 'locked' });
+    expect(g.chooseTier('hell')).toEqual({ ok: false, reason: 'locked' });
+    expect(g.chooseTier('easy' as Difficulty)).toEqual({ ok: false, reason: 'invalid' });
+    expect([g.state.dungeon.tier, g.tier()]).toEqual([undefined, 'normal']);
+    expect(writes).not.toHaveBeenCalled();
+    g.state.dungeon.reached.mainline = 10;
+    expect(g.chooseTier('nightmare')).toEqual({ ok: true });
+    expect([g.state.dungeon.tier, g.tier()]).toEqual(['nightmare', 'nightmare']);
+    expect(writes).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(st.getItem(SAVE_KEY)!).dungeon.tier).toBe('nightmare');
+    expect(g.chooseTier('hell')).toEqual({ ok: false, reason: 'locked' });
+    expect(g.state.dungeon.tier).toBe('nightmare');
+    // Normal is written too: the player has seen the row.
+    expect(g.chooseTier('normal')).toEqual({ ok: true });
+    expect(g.state.dungeon.tier).toBe('normal');
+    expect(writes).toHaveBeenCalledTimes(2);
+    // Not on the map.
+    expect(g.depart(MAIN, 2)).toEqual({ ok: true });
+    expect(g.chooseTier('nightmare')).toEqual({ ok: false, reason: 'invalid' });
+    expect(g.state.dungeon.tier).toBe('normal');
+    expect(writes).toHaveBeenCalledTimes(2);
+  });
+
+  it('a departure carries the chosen tier, and Normal draws as before', () => {
+    const go = (choose?: Difficulty) => {
+      const g = new Game(mulberry32(3), null, undefined, 0, HERO_LINEUP);
+      g.state.dungeon.reached.mainline = 10;
+      if (choose) expect(g.chooseTier(choose)).toEqual({ ok: true });
+      expect(g.depart(MAIN, 4)).toEqual({ ok: true });
+      return { run: g.run!, next: g.rng() };
+    };
+    const plain = go();
+    const normal = go('normal');
+    const night = go('nightmare');
+    expect('difficulty' in plain.run).toBe(false);
+    expect('difficulty' in normal.run).toBe(false);
+    expect(normal.run).toEqual(plain.run);
+    expect(normal.next).toBe(plain.next);
+    expect(night.run.difficulty).toBe('nightmare');
+    expect(night.next).toBe(plain.next);
+    const { difficulty: _d, ...rest } = night.run;
+    expect(rest).toEqual(plain.run);
+  });
+
+  it('an elite on Nightmare wears one affix, on Hell two', () => {
+    for (const [tier, n] of [['normal', 0], ['nightmare', 1], ['hell', 2]] as const) {
+      const g = tiered(tier);
+      expect(g.depart(MAIN, 12)).toEqual({ ok: true });
+      const at = plantAt(g, 'elite');
+      stepOnto(g, at);
+      const [elite, ...escorts] = g.battle!.enemies;
+      if (n) expect(elite.affixes, tier).toEqual(rollAffixes(g.run!.seed, 12, n, at));
+      expect(elite.affixes?.length ?? 0, tier).toBe(n);
+      expect(escorts.every((e) => e.affixes === undefined), tier).toBe(true);
+    }
+  });
+
+  it("a boss past the story wears its tier's affixes", () => {
+    for (const [tier, n] of [['normal', 0], ['nightmare', 1], ['hell', 2]] as const) {
+      const g = tiered(tier);
+      expect(g.depart(MAIN, 5)).toEqual({ ok: true });
+      expect(stepOnto(g, g.map().boss!)).toEqual({ kind: 'boss' });
+      const [boss] = g.battle!.enemies;
+      if (n) expect(boss.affixes, tier).toEqual(rollAffixes(g.run!.seed, 5, n));
+      expect(boss.affixes?.length ?? 0, tier).toBe(n);
+    }
+  });
+
+  it('fleeing and coming back keeps the affixes (game flow)', () => {
+    const g = tiered('nightmare');
+    expect(g.depart(MAIN, 12)).toEqual({ ok: true });
+    const at = plantAt(g, 'elite');
+    stepOnto(g, at);
+    const first = affixesOf(g);
+    expect(first[0]).toHaveLength(1);
+    flee(g);
+    expect(tileAt(g.map(), at)).toBe('elite');
+    expect(stepOnto(g, at)).toEqual({ kind: 'battle' });
+    expect(affixesOf(g)).toEqual(first);
+    // Another elite on the floor: the affix its own spot gives.
+    flee(g);
+    const other = plantAt(g, 'elite', (p) => p.x !== at.x || p.y !== at.y);
+    stepOnto(g, other);
+    expect(affixesOf(g)[0]).toEqual(rollAffixes(g.run!.seed, 12, 1, other));
+  });
+
+  it('fleeing a Hell crowd and meeting it again on the same spot keeps its affix (game flow)', () => {
+    const g = tiered('hell');
+    expect(g.depart(MAIN, 12)).toEqual({ ok: true });
+    const seed = g.run!.seed;
+    const m = g.map();
+    const open = (p: Pos) => DIRS.some((d) => tileAt(m, { x: p.x - DELTA[d].x, y: p.y - DELTA[d].y }) === 'floor');
+    let at: Pos | null = null;
+    let none: Pos | null = null;
+    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+      if (m.tiles[y][x] !== 'floor' || !open({ x, y })) continue;
+      const has = rollCrowdAffix(seed, 12, { x, y }, TIERS.hell.crowdAffixChance) !== undefined;
+      if (has) at ??= { x, y };
+      else none ??= { x, y };
+    }
+    const meet = (who: Game, p: Pos) => { who.encounter = 99; expect(stepOnto(who, p)).toEqual({ kind: 'battle' }); return affixesOf(who); };
+    const first = meet(g, at!);
+    expect(first.filter(Boolean)).toHaveLength(1);
+    expect(first.find(Boolean)).toEqual([rollCrowdAffix(seed, 12, at!, TIERS.hell.crowdAffixChance)!.id]);
+    flee(g);
+    expect(meet(g, at!)).toEqual(first);
+    flee(g);
+    // A spot whose draw says no: a plain crowd.
+    expect(meet(g, none!).every((a) => a === undefined)).toBe(true);
+    // Nightmare crowds never wear one, on the very spot.
+    const n = tiered('nightmare');
+    expect(n.depart(MAIN, 12)).toEqual({ ok: true });
+    expect(meet(n, at!).every((a) => a === undefined)).toBe(true);
+  });
+
+  it('a reload departs into the same affixes (game flow)', () => {
+    const st = memoryStorage();
+    const g = new Game(calm(), st, undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 12;
+    expect(g.chooseTier('nightmare')).toEqual({ ok: true });
+    // `burn`: draws taken from the game's stream after the departure (T6a-T7a review 3), so the two plays fight their
+    // battles on different draws; the affixes still match, and each is the draw its own spot gives.
+    const play = (burn: number) => {
+      const r = loadGame(st);
+      expect(r.status).toBe('ok');
+      if (r.status !== 'ok') throw new Error('no save');
+      const h = new Game(mulberry32(9), st, r.state);
+      expect(h.tier()).toBe('nightmare');
+      expect(h.depart(MAIN, 12)).toEqual({ ok: true });
+      for (let i = 0; i < burn; i++) h.rng();
+      const out: unknown[][] = [];
+      for (let i = 0; i < 3; i++) {
+        const at = plantAt(h, 'elite');
+        stepOnto(h, at);
+        out.push(affixesOf(h));
+        expect(out[i][0], `elite ${i}`).toEqual(rollAffixes(h.run!.seed, 12, TIERS.nightmare.eliteAffixes, at));
+        expect(killAll(h).outcome).toBe('win');
+      }
+      return out;
+    };
+    const a = play(0);
+    expect(a.every((f) => Array.isArray(f[0]) && f[0].length === 1)).toBe(true);
+    expect(play(7)).toEqual(a);
+  });
+
+  it('a Hell save reloads into the same tier, kills and affixes (game flow, Task 6b)', () => {
+    const st = memoryStorage();
+    const g = new Game(calm(), st, undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 30;
+    g.state.story.act1Cleared = true;
+    g.state.story.finaleCleared = true;
+    // Hell opens the way the game opens it: the Nightmare depth-25 boss beaten after the finale.
+    expect(g.chooseTier('hell')).toEqual({ ok: false, reason: 'locked' });
+    expect(g.chooseTier('nightmare')).toEqual({ ok: true });
+    expect(g.depart(MAIN, 25)).toEqual({ ok: true });
+    expect(stepOnto(g, g.map().boss!)).toEqual({ kind: 'boss' });
+    expect(killAll(g).outcome).toBe('win');
+    expect(g.state.dungeon.bossKills).toEqual({ 'nightmare:mainline:25': 1 });
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    expect(g.chooseTier('hell')).toEqual({ ok: true });   // saves
+    const dungeon = structuredClone(g.state.dungeon);
+    // `burn`: draws taken after the departure, as in the Nightmare reload above (T6a-T7a review 3).
+    const play = (burn: number) => {
+      const r = loadGame(st);
+      expect(r.status).toBe('ok');
+      if (r.status !== 'ok') throw new Error('no save');
+      expect(r.state.dungeon).toEqual(dungeon);
+      const h = new Game(mulberry32(9), st, r.state);
+      expect(h.tier()).toBe('hell');
+      expect(h.depart(MAIN, 12)).toEqual({ ok: true });
+      expect(h.run!.difficulty).toBe('hell');
+      for (let i = 0; i < burn; i++) h.rng();
+      const out: unknown[] = [];
+      for (let i = 0; i < 3; i++) {
+        const at = plantAt(h, 'elite');
+        stepOnto(h, at);
+        out.push(affixesOf(h));
+        expect(affixesOf(h)[0], `elite ${i}`).toEqual(rollAffixes(h.run!.seed, 12, TIERS.hell.eliteAffixes, at));
+        expect(killAll(h).outcome).toBe('win');
+      }
+      // A crowd met on the first spot whose Hell draw gives one an affix.
+      const m = h.map();
+      const spot = (() => {
+        for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+          const p = { x, y };
+          const open = DIRS.some((d) => tileAt(m, { x: x - DELTA[d].x, y: y - DELTA[d].y }) === 'floor');
+          if (m.tiles[y][x] === 'floor' && open && rollCrowdAffix(h.run!.seed, 12, p, TIERS.hell.crowdAffixChance)) return p;
+        }
+        throw new Error('no spot');
+      })();
+      h.encounter = 99;
+      expect(stepOnto(h, spot)).toEqual({ kind: 'battle' });
+      const crowd = affixesOf(h);
+      const drawn = rollCrowdAffix(h.run!.seed, 12, spot, TIERS.hell.crowdAffixChance)!;
+      expect(crowd[Math.floor(drawn.pick * crowd.length)]).toEqual([drawn.id]);   // the foe its spot's draw picks
+      out.push(crowd);
+      return out;
+    };
+    const a = play(0);
+    expect((a.slice(0, 3) as unknown[][]).every((f) => Array.isArray(f[0]) && f[0].length === 2)).toBe(true);
+    expect((a[3] as unknown[]).filter(Boolean)).toHaveLength(1);
+    expect(play(7)).toEqual(a);
+  });
+
+  it('a save holding a tier it has not unlocked boots as a reset (Task 6b)', () => {
+    const s = newGame(mulberry32(1), 0, HERO_LINEUP);
+    s.dungeon.reached.mainline = 30;
+    s.dungeon.tier = 'hell';   // no finale, no Nightmare depth-25 kill
+    const b = Game.boot(mulberry32(2), memoryStorage({ [SAVE_KEY]: JSON.stringify(s) }));
+    expect(b.notice).toBe('save-reset');
+    expect([b.state.dungeon.tier, b.tier()]).toEqual([undefined, 'normal']);
+    // The same save on Nightmare, which it has unlocked, boots as it was.
+    s.dungeon.tier = 'nightmare';
+    const ok = Game.boot(mulberry32(2), memoryStorage({ [SAVE_KEY]: JSON.stringify(s) }));
+    expect([ok.notice, ok.tier()]).toEqual([null, 'nightmare']);
+  });
+
+  it('story fights are Normal on every tier', () => {
+    const DUO: CharacterId[] = ['hero', 'rin'];
+    // The rescue room (Selene, main road depth 2): the same fight as on Normal, no affixes.
+    const rescue = (tier: Difficulty) => {
+      const g = tiered(tier, calm(), DUO);
+      expect(g.depart(MAIN, 2)).toEqual({ ok: true });
+      const c = floorOf(g.run!, 2).contents.find((x) => x.kind === 'rescue')!;
+      expect(stepOnto(g, c.at)).toEqual({ kind: 'rescue', who: 'selene' });
+      return g.battle!.enemies;
+    };
+    // Scarlet's story fight (iron depth 8).
+    const scarlet = (tier: Difficulty) => {
+      const g = tiered(tier, calm(), DUO);
+      g.state.dungeon.reached.iron = 8;
+      expect(g.depart({ region: 'iron', condition: 'plain' }, 5)).toEqual({ ok: true });
+      g.floor = 8;
+      const c = floorOf(g.run!, 8).contents.find((x) => x.kind === 'rescue')!;
+      expect(stepOnto(g, c.at)).toEqual({ kind: 'rescue', who: 'scarlet' });
+      return g.battle!.enemies;
+    };
+    for (const tier of ['nightmare', 'hell'] as const) {
+      for (const fight of [rescue, scarlet]) {
+        const foes = fight(tier);
+        expect(foes, `${tier} ${fight.name}`).toEqual(fight('normal'));
+        expect(foes.every((e) => e.affixes === undefined)).toBe(true);
+      }
+    }
+    // The finale (main road depth 30, before it is won: never on Hell) and the depth-3 story boss (before Act 1 is done).
+    const story = (tier: Difficulty, depth: number) => {
+      const g = finaleGame(tier);
+      if (depth === 3) g.state.story.act1Cleared = false;
+      expect(g.depart(MAIN, depth)).toEqual({ ok: true });
+      expect(stepOnto(g, g.map().boss!)).toEqual({ kind: 'boss' });
+      return g;
+    };
+    const fin = story('nightmare', FINALE_DEPTH);
+    expect(fin.battle!.enemies.map((e) => e.name)).toEqual([STORY.finaleBossName]);
+    expect(fin.battle!.enemies).toEqual(story('normal', FINALE_DEPTH).battle!.enemies);
+    expect(fin.battle!.enemies[0].affixes).toBeUndefined();
+    const act1 = story('nightmare', 3);
+    expect(act1.battle!.enemies).toEqual(story('normal', 3).battle!.enemies);
+    expect(act1.battle!.enemies[0].affixes).toBeUndefined();
+  });
+
+  it('a wipe keeps the chosen tier', () => {
+    const g = tiered('nightmare');
+    expect(g.depart(MAIN, 12)).toEqual({ ok: true });
+    stepOnto(g, plantAt(g, 'elite'));
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    expect(g.submitRound({})!.end!.outcome).toBe('lose');
+    expect([g.phase, g.run, g.state.dungeon.tier, g.tier()]).toEqual(['town', null, 'nightmare', 'nightmare']);
+    expect(g.depart(MAIN, 12)).toEqual({ ok: true });
+    expect(g.run!.difficulty).toBe('nightmare');
+  });
+});
+
+describe('drops and kill keys by tier (difficulty plan Task 6a-prime)', () => {
+  /** Runs `body` with RUNE_DROP overwritten by `over`, then puts it back. */
+  const withDrops = <T,>(over: Partial<typeof RUNE_DROP>, body: () => T): T => {
+    const saved = { ...RUNE_DROP };
+    Object.assign(RUNE_DROP, over);
+    try { return body(); } finally { Object.assign(RUNE_DROP, saved); }
+  };
+  const lampHome = (g: Game) => { g.state.inventory['return-lamp'] = 1; expect(g.useReturnLamp()).toBe(true); };
+
+  it('Nightmare drops are better', () => {
+    const elite = (tier: Difficulty) => {
+      const g = tiered(tier, mulberry32(5));
+      expect(g.depart(MAIN, 12)).toEqual({ ok: true });
+      stepOnto(g, plantAt(g, 'elite'));
+      return killAll(g);
+    };
+    const plus = TIERS.nightmare.ilvl;
+    expect(elite('normal').gear[0].ilvl).toBe(itemLevel(12, 'elite'));
+    const night = elite('nightmare');
+    expect(night.gear[0].ilvl).toBe(itemLevel(12, 'elite') + plus);
+    for (const it of night.gear.slice(1)) expect(it.ilvl).toBe(itemLevel(12, 'monster') + plus);
+    // A Nightmare boss rolls its rune with the tier's tier and legendary multipliers, and its gear at the tier.
+    const spy = vi.mocked(rollRune);
+    const gearSpy = vi.mocked(rollBossGear);
+    const boss = (tier: Difficulty) => {
+      const g = tiered(tier);
+      g.state.runesOpen = true;
+      expect(g.depart(MAIN, 5)).toEqual({ ok: true });
+      stepOnto(g, g.map().boss!);
+      spy.mockClear();
+      gearSpy.mockClear();
+      return killAll(g);
+    };
+    const b = boss('nightmare');
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0].slice(1)).toEqual(['boss', depthLevel(5), 'plain', TIERS.nightmare.runeTierMul, TIERS.nightmare.runeLegendary]);
+    expect(gearSpy.mock.calls[0][1]).toMatchObject({ difficulty: 'nightmare', source: 'boss', depth: 5 });
+    expect(b.gear.map((it) => it.ilvl)).toEqual([itemLevel(5, 'boss') + plus, itemLevel(5, 'boss') + plus]);
+    boss('normal');
+    expect(spy.mock.calls[0].slice(1)).toEqual(['boss', depthLevel(5), 'plain']);
+    expect('difficulty' in gearSpy.mock.calls[0][1]).toBe(false);
+    // A chest reads the run's tier: its rune and its gear.
+    withDrops({ chest: 1 }, () => {
+      const g = tiered('nightmare');
+      g.state.runesOpen = true;
+      expect(g.depart(MAIN, 12)).toEqual({ ok: true });
+      spy.mockClear();
+      const r = stepOnto(g, chestWhere(g, true)) as { gear?: ItemInstance };
+      expect(spy.mock.calls[0].slice(1)).toEqual(['chest', depthLevel(12), 'plain', TIERS.nightmare.runeTierMul, TIERS.nightmare.runeLegendary]);
+      expect(r.gear?.ilvl).toBe(itemLevel(12, 'chest') + plus);
+    });
+  });
+
+  it('first kills are counted per tier', () => {
+    const spy = vi.mocked(rollBossGear);
+    const g = tiered('nightmare');
+    delete g.state.dungeon.bossKills['nightmare:mainline:25'];
+    const beat = () => {
+      expect(g.depart(MAIN, 5)).toEqual({ ok: true });
+      stepOnto(g, g.map().boss!);
+      spy.mockClear();
+      expect(killAll(g).outcome).toBe('win');
+      return spy.mock.calls[0][1];
+    };
+    expect(beat()).toMatchObject({ bossRepeat: false, difficulty: 'nightmare' });
+    expect(g.state.dungeon.bossKills).toEqual({ 'nightmare:mainline:5': 1 });
+    lampHome(g);
+    expect(g.chooseTier('normal')).toEqual({ ok: true });
+    expect(beat()).toMatchObject({ bossRepeat: false });   // Normal still rolls its first kill
+    expect(g.state.dungeon.bossKills).toEqual({ 'nightmare:mainline:5': 1, 'mainline:5': 1 });
+    lampHome(g);
+    expect(g.chooseTier('nightmare')).toEqual({ ok: true });
+    expect(beat()).toMatchObject({ bossRepeat: true, difficulty: 'nightmare' });
+    expect(g.state.dungeon.bossKills).toEqual({ 'nightmare:mainline:5': 2, 'mainline:5': 1 });
+  });
+
+  it('a story fight pays Normal loot and a Normal kill', () => {
+    const spy = vi.mocked(rollRune);
+    // The finale won on a Nightmare run: the very end of the same fight on Normal; the kill on the Normal key.
+    const finale = (tier: Difficulty) => {
+      const g = finaleGame(tier);
+      g.state.runesOpen = true;
+      expect(g.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+      stepOnto(g, g.map().boss!);
+      spy.mockClear();
+      return { g, end: killAll(g) };
+    };
+    const night = finale('nightmare');
+    expect(spy.mock.calls.map((c) => c.length)).toEqual([4]);
+    expect(night.end).toEqual(finale('normal').end);
+    expect(night.end.gear.map((it) => it.ilvl)).toEqual([itemLevel(FINALE_DEPTH, 'boss'), itemLevel(FINALE_DEPTH, 'boss')]);
+    expect(night.g.state.dungeon.bossKills).toEqual({ 'mainline:30': 1 });
+    expect(night.g.state.story.finaleCleared).toBe(true);
+    // A rescue fight on Nightmare and on Hell pays as on Normal, every foe rolling its rune.
+    withDrops({ monster: 1 }, () => {
+      const rescue = (tier: Difficulty) => {
+        const g = tiered(tier, calm(), ['hero', 'rin']);
+        g.state.runesOpen = true;
+        expect(g.depart(MAIN, 2)).toEqual({ ok: true });
+        stepOnto(g, floorOf(g.run!, 2).contents.find((x) => x.kind === 'rescue')!.at);
+        spy.mockClear();
+        return killAll(g);
+      };
+      for (const tier of ['nightmare', 'hell'] as const) {
+        const end = rescue(tier);
+        expect(spy.mock.calls.length).toBeGreaterThan(0);
+        expect(spy.mock.calls.every((c) => c.length === 4)).toBe(true);
+        expect(end, tier).toEqual(rescue('normal'));
+      }
+    });
+  });
+
+  it('Normal drops are as before', () => {
+    // Pinned before Task 6a-prime: one seed's elite win, boss win and gear chest on iron depth 5, runes open.
+    const g = new Game(mulberry32(17), null, undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.iron = 5;
+    g.state.runesOpen = true;
+    expect(g.depart({ region: 'iron', condition: 'plain' }, 5)).toEqual({ ok: true });
+    stepOnto(g, plantAt(g, 'elite'));
+    const elite = killAll(g);
+    const chest = stepOnto(g, chestWhere(g, true));
+    stepOnto(g, g.map().boss!);
+    const boss = killAll(g);
+    const sum = (e: BattleEnd) => ({ gear: e.gear.map((it) => [it.base, it.rarity, it.ilvl]), runes: e.runes, drops: e.drops, gold: e.gold, exp: e.exp });
+    expect(sum(elite)).toEqual({ gear: [['scale-mail', 'magic', 20], ['wooden-buckler', 'magic', 18]], runes: undefined, drops: { 'bat-wing': 1, moss: 1, 'king-scale': 1 }, gold: 336, exp: 294 });
+    expect(sum(boss)).toEqual({ gear: [['star-saber', 'legendary', 22], ['straw-sandals', 'rare', 22]], runes: [{ id: 'bounce', tier: 'rare' }], drops: { 'iron-shard': 1 }, gold: 0, exp: 1094 });
+    expect(chest).toEqual({ kind: 'chest', item: 'ancient-gear', qty: 1, gear: { uid: 3, base: 'cloth-gloves', rarity: 'common', ilvl: 18, affixes: [], enhance: 0 } });
+    expect([g.state.dungeon.bossKills, g.run!.lootDraws, g.run!.runeDraws, g.rng()]).toEqual([{ 'iron:5': 1 }, 5, 2, 0.06393614131957293]);
+    // The whole of each result, to the last affix of every piece.
+    expect([fnv(elite), fnv(boss), fnv(chest)]).toEqual(['f5001d33', 'b08b01f5', 'e0f8ad6e']);
   });
 });

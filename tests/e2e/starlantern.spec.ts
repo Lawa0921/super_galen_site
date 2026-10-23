@@ -5,6 +5,7 @@ import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
 import { LEGACY_GRID, LEGACY_LINEUP, meet } from '../../src/scripts/games/starlantern/engine/party';
 import { FOUND_LINE, STORY } from '../../src/scripts/games/starlantern/data/story.zh-TW';
 import { T } from '../../src/scripts/games/starlantern/data/text.zh-TW';
+import { AFFIXES as TIER_AFFIXES } from '../../src/scripts/games/starlantern/data/affixes';
 import { CHAINS, chainLength } from '../../src/scripts/games/starlantern/data/story/chains';
 import { ABSORB_CAP, ABSORB_GAIN, SHARD_IDS, SHARD_NAMES } from '../../src/scripts/games/starlantern/data/story/fragments';
 import { memScene } from '../../src/scripts/games/starlantern/data/story/scenes';
@@ -19,7 +20,7 @@ import { version8Save } from '../../src/scripts/games/starlantern/engine/testing
 import { defaultTalents, defaultTree } from '../../src/scripts/games/starlantern/engine/progression';
 import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/engine/builds';
 import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
-import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longestGear, snap, stageBox, stageScale, startSweepGame, sweep, writeReviewIndex } from './starlantern-legibility';
+import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longestGear, placeBeside, snap, stageBox, stageScale, startSweepGame, sweep, writeReviewIndex } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
@@ -4680,6 +4681,251 @@ test.describe('starlantern', () => {
       await expect.poll(round, { timeout: 15000 }).toBe(1);
       expect(w.errors).toEqual([]);
     });
+  });
+
+  test('the portal plaza chooses a tier and departs into Nightmare (difficulty)', async ({ page }) => {
+    // Difficulty plan Task 7a: a save past main-road depth 12 hears Glen once, picks Nightmare with E (Hell says what opens
+    // it), names the tier on the depth list and the confirm, and departs into a Nightmare run. The row stays in the stage
+    // and never overflows at 1280x720, 844x390 and a phone held upright; a tap on a tier works too.
+    const w = await startSweepGame(page);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dbg = () => page.evaluate(() => { const g = (window as any).__starlanternDebug.game; return { tier: g.state.dungeon.tier, run: g.run?.difficulty ?? null }; });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await page.evaluate(() => { (window as any).__starlanternDebug.game.state.dungeon.reached.mainline = 12; });
+    await go(page, 'gate');
+    await expect(page.locator('.slx-gate')).toBeVisible();
+    await expect(page.locator('.slx-gate .slx-talk .slx-text')).toHaveText(STORY.tierUnlock);
+    await w.closeTalk();
+    expect((await dbg()).tier).toBe('normal');
+    await w.key('Enter');                                     // 選擇傳送門
+    await expect(page.locator('.slx-portal')).toHaveCount(3);
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'normal');
+    await expect(page.locator('.slx-tier[data-tier=hell]')).toContainText(T.ui2.tier.locked.hell(25));
+    // A tap: Nightmare, then Hell (locked) changes nothing; back to Normal by tap, then E.
+    await page.locator('.slx-tier[data-tier=nightmare]').click();
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'nightmare');
+    await page.locator('.slx-tier[data-tier=hell]').click({ force: true });   // aria-disabled: Playwright would wait for it
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'nightmare');
+    await page.locator('.slx-tier[data-tier=normal]').click();
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'normal');
+    await w.key('e');
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'nightmare');
+    await expect(page.locator('.slx-tier-sel')).toHaveText(`→${T.ui2.tier.names.nightmare}`);
+    await expect(page.locator('.slx-portal-tier').first()).toContainText(T.ui2.tier.what.nightmare);
+    for (const [width, height] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await fitTo(page, width, height);
+      const row = page.locator('.slx-tier-row');
+      expect(await row.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), `${width}x${height} row`).toBe(true);
+      for (const cell of await page.locator('.slx-tier-row .slx-tier').all()) {
+        const b = await stageBox(page, cell);
+        expect(b.x >= -0.5 && b.y >= -0.5 && b.x + b.width <= 640.5 && b.y + b.height <= 360.5, `${width}x${height} ${JSON.stringify(b)}`).toBe(true);
+        expect(await cell.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5)).toBe(true);
+      }
+      // T6a-T7a review 4: the row keeps clear of the place window, 返回, the gold window and every card.
+      const meets = (a: { x: number; y: number; width: number; height: number }, b: typeof a) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+      const rowBox = await stageBox(page, row);
+      const others = [page.locator('.slx-gate .slx-place'), page.locator('.slx-gate .slx-gold'), ...(await page.locator('.slx-gate .slx-back:visible').all()), ...(await page.locator('.slx-portal').all())];
+      expect(others.length, 'place, gold, 返回 and the three cards').toBeGreaterThanOrEqual(6);
+      for (const o of others) {
+        const b = await stageBox(page, o);
+        expect(meets(rowBox, b), `${width}x${height}: the tier row ${JSON.stringify(rowBox)} on ${(await o.getAttribute('class')) ?? ''} ${JSON.stringify(b)}`).toBe(false);
+      }
+    }
+    await fitTo(page, 1280, 720);
+    // The main road, depth 10: the list and the confirm name the tier.
+    await w.key('Enter');
+    await expect(page.locator('.slx-depths [role=option] .slx-right').first()).toContainText(T.ui2.tier.names.nightmare);
+    await w.choose('.slx-depths', '第 10 層');
+    await expect(page.locator('.slx-confirm')).toContainText(`難度：${T.ui2.tier.names.nightmare}`);
+    await w.key('ArrowUp'); await w.key('Enter');             // 是
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    expect(await dbg()).toEqual({ tier: 'nightmare', run: 'nightmare' });
+    expect(w.errors).toEqual([]);
+  });
+
+  test('switching the tier marks each card\'s scroll cue again (difficulty)', async ({ page }) => {
+    // T6a-T7a review 1: at 844x390, E adds two tier lines to every card; a gear list that now overflows shows 「↑↓ 捲動看更多」
+    // and one that fits does not; back on Normal no stale cue stays. Every region piece obtained: the longest lists.
+    const w = await startSweepGame(page);
+    await page.evaluate((ids) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const s = (window as any).__starlanternDebug.game.state;
+      s.dungeon.reached.mainline = 12; s.dungeon.tier = 'normal';
+      s.codex = [...new Set([...s.codex, ...ids])];
+    }, Object.keys(SPECIALS));
+    await fitTo(page, 844, 390);
+    await go(page, 'gate');
+    await expect(page.locator('.slx-gate')).toBeVisible(); await w.closeTalk();
+    await w.key('Enter');                                     // 選擇傳送門
+    await expect(page.locator('.slx-portal')).toHaveCount(3);
+    const cues = () => page.locator('.slx-portal').evaluateAll((cards) => cards.flatMap((c) => {
+      const list = c.querySelector<HTMLElement>('.slx-portal-gear'), more = c.querySelector<HTMLElement>('.slx-codex-more');
+      return list && more ? [{ over: list.scrollHeight > list.clientHeight + 1, shown: !more.hidden }] : [];
+    }));
+    const before = await cues();
+    expect(before.length).toBeGreaterThan(0);
+    for (const c of before) expect(c.shown).toBe(c.over);
+    await w.key('e');
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'nightmare');
+    const after = await cues();
+    expect(after.some((c) => c.over), 'the tier lines push some list past its card').toBe(true);
+    for (const c of after) expect(c.shown, JSON.stringify(after)).toBe(c.over);
+    await w.key('e');                                         // Hell is locked: round to Normal
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'normal');
+    for (const c of await cues()) expect(c.shown).toBe(c.over);
+    await fitTo(page, 1280, 720);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('a Nightmare elite shows its affixes and the target says them (difficulty)', async ({ page }) => {
+    // Difficulty plan Task 7b: the floor's badge says 噩夢 beside the condition; an elite's affix leads the row above its
+    // head and the target note says it. Then the longest case (Hell, 熾焰之地 depth 20, five of the elite's group with its
+    // two affixes and three ailments each): the rows keep clear of every HP bar and name, and the note and the badge stay
+    // in the stage without overflowing at 1280x720, 844x390 and a phone held upright.
+    const w = await startSweepGame(page);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const run = (src: string) => page.evaluate((s) => new Function('g', s)((window as any).__starlanternDebug.game), src);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const view = <R>(src: string) => page.evaluate((s) => new Function('v', s)((window as any).__starlanternDebug.stage.battleView) as R, src);
+    const intoElite = async () => {
+      await placeBeside(page, 'elite', 5);
+      await w.key('ArrowRight');
+      await expect(page.locator('.slx-event-elite')).toBeVisible();
+      await w.key('Enter');                                   // 挑戰
+      await expect(page.locator('.slx-battle')).toBeVisible();
+      await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    };
+    await run(`g.state.dungeon.reached.mainline = 12;
+      if (!g.chooseTier('nightmare').ok) throw new Error('Nightmare did not open');
+      if (!g.depart({ region: 'mainline', condition: 'plain' }, 10).ok) throw new Error('no departure');`);
+    await go(page, 'dungeon');
+    await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+    await expect(page.locator('.slx-tier-badge')).toHaveText(T.ui2.tier.names.nightmare);
+    await intoElite();
+    const ids = await run(`
+      if (g.battle.enemies.length < 2) { const id = g.battle.enemies[0].defId; g.startBattle([id, id], false, true, id); }
+      return g.battle.enemies[0].affixes;`) as string[];
+    expect(ids).toHaveLength(1);
+    const affix = TIER_AFFIXES[ids[0] as keyof typeof TIER_AFFIXES];
+    await go(page, 'battle');
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    expect(await view<string[]>("return v.ailmentTexts('e0').map((t) => t.text);")).toEqual([affix.name]);
+    await w.choose('.slx-bcmd', '攻擊');
+    await expect(page.locator('.slx-btarget [aria-selected=true]')).toHaveAttribute('data-id', 'e0');
+    // The note: the foe's whole intent first (the picture may shorten it), then its affix.
+    const lines = (await page.locator('.slx-bnote').textContent())!.split('\n');
+    expect(lines.at(-1)).toBe(T.ui2.tier.affixLine(affix.name, affix.line));
+    expect(lines.slice(0, -1).every((l) => l.startsWith('◆ ')), JSON.stringify(lines)).toBe(true);
+    await w.key('ArrowDown');
+    const escort = page.locator('.slx-bnote');                // its escort wears none: at most its intent
+    if (await escort.count()) expect((await escort.textContent())!).not.toContain(affix.line);
+
+    // The longest case, on Hell.
+    await run(`g.battle = null; g.run = null; g.phase = 'town';
+      const d = g.state.dungeon; d.reached.mainline = 30; d.reached.blaze = 20; d.bossKills['nightmare:mainline:25'] = 1;
+      g.state.story.finaleCleared = true;
+      if (!g.chooseTier('hell').ok) throw new Error('Hell did not open');
+      if (!g.depart({ region: 'blaze', condition: 'plain' }, 20).ok) throw new Error('no departure');`);
+    await go(page, 'dungeon');
+    await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+    await expect(page.locator('.slx-tier-badge')).toHaveText(T.ui2.tier.names.hell);
+    for (const [width, height] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await fitTo(page, width, height);
+      for (const sel of ['.slx-tier-badge', '.slx-condition']) {
+        const b = await stageBox(page, page.locator(sel));
+        expect(b.x >= -0.5 && b.y >= -0.5 && b.x + b.width <= 640.5 && b.y + b.height <= 360.5, `${sel} at ${width}x${height}`).toBe(true);
+        expect(await page.locator(sel).evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), `${sel} at ${width}`).toBe(true);
+      }
+      const badge = await stageBox(page, page.locator('.slx-tier-badge')), cond = await stageBox(page, page.locator('.slx-condition'));
+      expect(cond.x + cond.width <= badge.x + 0.5, `the badge beside the condition at ${width}`).toBe(true);
+      expect(Math.abs(cond.y - badge.y), `one row at ${width}`).toBeLessThanOrEqual(0.5);
+    }
+    await fitTo(page, 1280, 720);
+    await intoElite();
+    expect(await run('return g.battle.enemies[0].affixes.length;')).toBe(2);
+    await run(`const ids = g.battle.enemies.map((e) => e.defId);
+      const five = [0, 1, 2, 3, 4].map((i) => ids[i % ids.length]);
+      const affixes = [...g.battle.enemies[0].affixes];
+      g.startBattle(five, false, true, five[0]);
+      for (const e of g.battle.enemies) { e.affixes = [...affixes]; e.poison = true; e.shock = 2; e.chill = 2; }`);
+    await go(page, 'battle');
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    // Each row: one line, an affix first, inside its slot, clear of every bar, every name and every other row.
+    const clash = await view<string[]>(`
+      const keys = ['e0', 'e1', 'e2', 'e3', 'e4'];
+      const meets = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+      const out = [];
+      const rows = keys.map((k) => { const b = v.enemyBoxOf(k), r = v.ailmentRowRect(k); return { k, r: { x: b.x + r.x, y: b.y + r.y, width: r.width, height: r.height } }; });
+      for (const { k, r } of rows) {
+        const t = v.ailmentTexts(k);
+        if (!t.length || new Set(t.map((x) => x.y)).size !== 1) out.push(k + ' not one line');
+        for (const o of keys) {
+          if (meets(r, v.hpBarRect(o))) out.push(k + ' row on ' + o + ' bar');
+          if (meets(r, v.nameRect(o))) out.push(k + ' row on ' + o + ' name');
+        }
+        for (const q of rows) if (q.k !== k && meets(r, q.r)) out.push(k + ' row on ' + q.k + ' row');
+        for (const o of keys) if (o !== k && meets(v.nameRect(k), v.nameRect(o))) out.push(k + ' name on ' + o + ' name');
+      }
+      return out;`);
+    expect(clash).toEqual([]);
+    const lead = await view<string[]>("return ['e0', 'e1', 'e2', 'e3', 'e4'].map((k) => v.ailmentTexts(k)[0].text);");
+    for (const t of lead) expect(Object.values(TIER_AFFIXES).map((a) => a.name)).toContain(t);
+    await w.choose('.slx-bcmd', '攻擊');
+    const note = page.locator('.slx-bnote');
+    await expect(note).toHaveClass(/slx-bnote-lines/);
+    expect((await note.textContent())!.split('\n').filter((l) => !l.startsWith('◆ '))).toHaveLength(2);   // two affixes after the intent
+    for (const [width, height] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await fitTo(page, width, height);
+      const b = await stageBox(page, note);
+      expect(b.x >= -0.5 && b.y >= -0.5 && b.x + b.width <= 640.5 && b.y + b.height <= 360.5, `the note at ${width}x${height}`).toBe(true);
+      expect(await note.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5 && e.scrollHeight <= e.clientHeight + 0.5), `the note fits at ${width}`).toBe(true);
+      if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/affix-target-${width}.png` });
+    }
+    await fitTo(page, 1280, 720);
+    expect(w.errors).toEqual([]);
+  });
+
+  test('a Hell boss shows its two affixes below the message window (difficulty, T8)', async ({ page }) => {
+    // T8 acceptance: a boss's picture is tall, so its intent and affix row are held at the top of the stage, where the
+    // message window covered both. A lone boss gets no target list, so the row is the only place its affixes show.
+    const w = await startSweepGame(page);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const run = (src: string) => page.evaluate((s) => new Function('g', s)((window as any).__starlanternDebug.game), src);
+    await run(`const d = g.state.dungeon; d.reached.mainline = 30; d.bossKills['nightmare:mainline:25'] = 1;
+      g.state.story.finaleCleared = true;
+      if (!g.chooseTier('hell').ok) throw new Error('Hell did not open');
+      if (!g.depart({ region: 'mainline', condition: 'plain' }, 24).ok) throw new Error('no departure');`);
+    await go(page, 'dungeon');
+    await expect(page.locator('.slx-dungeon')).toBeVisible(); await w.closeTalk();
+    const key = await run(`const m = g.map();
+      for (const [k, dx, dy] of [['ArrowUp', 0, -1], ['ArrowDown', 0, 1], ['ArrowLeft', -1, 0], ['ArrowRight', 1, 0]]) {
+        const x = g.pos.x + dx, y = g.pos.y + dy;
+        if (m.tiles[y]?.[x] !== 'floor') continue;
+        if (m.boss) m.tiles[m.boss.y][m.boss.x] = 'floor';
+        m.tiles[y][x] = 'boss'; m.boss = { x, y }; g.encounter = 0;
+        return k;
+      }
+      return '';`) as string;
+    expect(key).not.toBe('');
+    await page.keyboard.press(key);
+    for (let i = 0; i < 20 && !(await page.locator('.slx-bcmd [role=option]').count()); i++) { await w.key('z'); await page.waitForTimeout(80); }
+    await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+    const affixes = await run('return g.battle.boss ? g.battle.enemies[0].affixes : null;') as string[];
+    expect(affixes).toHaveLength(2);
+    const names = affixes.map((id) => TIER_AFFIXES[id as keyof typeof TIER_AFFIXES].name);
+    for (const [width, height] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await fitTo(page, width, height);
+      const msg = await stageBox(page, page.locator('.slx-battle .slx-msg'));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const at = await page.evaluate(() => { const v = (window as any).__starlanternDebug.stage.battleView; const b = v.enemyBoxOf('e0'), i = v.intentRect('e0'), r = v.ailmentRowRect('e0');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return { intent: b.y + i.y, row: b.y + r.y, texts: v.ailmentTexts('e0').map((t: any) => t.text) }; });
+      expect(at.intent, `the intent under the message window at ${width}x${height}`).toBeGreaterThanOrEqual(msg.y + msg.height - 0.5);
+      expect(at.row, `the affix row under the message window at ${width}x${height}`).toBeGreaterThanOrEqual(msg.y + msg.height - 0.5);
+      expect(at.texts.slice(0, 2)).toEqual(names);
+    }
+    await fitTo(page, 1280, 720);
+    expect(w.errors).toEqual([]);
   });
 
   test('every main screen reads at 12px and 24px at 1280x720, 844x390 and a phone (legibility Task 7) @sweep @dpr', async ({ page }, info) => {

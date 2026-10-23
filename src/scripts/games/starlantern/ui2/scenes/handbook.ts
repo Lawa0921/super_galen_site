@@ -8,6 +8,11 @@ import type { SceneId } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { handbook, type Handbook, type SceneEntry } from '../../engine/story/handbook';
+import { AFFIXES, AFFIX_IDS } from '../../data/affixes';
+import { TIERS } from '../../data/difficulty';
+import type { Difficulty } from '../../engine/battle';
+import type { GameState } from '../../engine/state';
+import { HELL_BOSS_DEPTH, NIGHTMARE_DEPTH, tierUnlocked } from '../../engine/tiers';
 import type { Lead } from '../../engine/story/leads';
 import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
@@ -21,8 +26,17 @@ import { playScene, storyCtx } from '../story';
 import { Dialogue, MenuView, backControl, win } from '../widgets';
 
 const H = T.ui2.handbook;
-const TABS = ['memories', 'people', 'leads', 'town', 'codex', 'truths'] as const;
+const TABS = ['memories', 'people', 'leads', 'town', 'codex', 'truths', 'tiers'] as const;
 type Tab = (typeof TABS)[number];
+
+/**
+ * The pages this save shows, in order (difficulty plan ruling 25): 難度 only once Nightmare opens. Turning and tapping go
+ * through this list, so a locked tier page is never reached.
+ */
+export function tabsFor(s: GameState): Tab[] {
+  return TABS.filter((t) => t !== 'tiers' || tierUnlocked(s, 'nightmare'));
+}
+const TIER_IDS: readonly Difficulty[] = ['normal', 'nightmare', 'hell'];
 /** How many rows of a list are on screen at once. */
 const LIST_ROWS = 10;
 
@@ -94,7 +108,8 @@ export class HandbookScene implements Scene {
   }
 
   private turn(d: 1 | -1): void {
-    this.tab = (this.tab + d + TABS.length) % TABS.length;
+    const n = tabsFor(this.ctx.game.state).length;
+    this.tab = (this.tab + d + n) % n;
     this.sub = null;
     this.ctx.sfx.cursor();
     this.render();
@@ -225,15 +240,45 @@ export class HandbookScene implements Scene {
     };
   }
 
+  /**
+   * The tiers (Task 7c): one row each, open or not, then the six affixes. The detail says what a tier changes, its numbers
+   * from TIERS, and Hell's condition; an affix its line. Nothing here is picked.
+   */
+  private tiers(): Level {
+    const P = H.tiers, N = T.ui2.tier.names;
+    const s = this.ctx.game.state;
+    const rows: MenuItem[] = [
+      ...TIER_IDS.map((d): MenuItem => ({ id: `tier:${d}`, label: N[d], right: tierUnlocked(s, d) ? P.open : P.locked })),
+      ...AFFIX_IDS.map((id): MenuItem => ({ id: `affix:${id}`, label: AFFIXES[id].name, right: P.affix })),
+    ];
+    const tierDetail = (d: Difficulty): Node[] => {
+      if (d === 'normal') return [el('h4', { text: N.normal }), ...paras([P.normal, P.story])];
+      const t = TIERS[d];
+      const lines = [T.ui2.tier.what[d], P.rewards(Math.round((t.reward - 1) * 100)), P.affixes(t.eliteAffixes, t.bossAffixes, t.crowdAffixChance > 0), T.ui2.tier.suggest[d]];
+      const cond = d === 'hell' ? T.ui2.tier.locked.hell(HELL_BOSS_DEPTH) : T.ui2.tier.locked.nightmare(NIGHTMARE_DEPTH);
+      return [el('h4', { text: N[d] }), el('p', { class: 'slx-dim', text: `${tierUnlocked(s, d) ? P.open : P.locked}・${P.condition(cond)}` }), ...paras(lines)];
+    };
+    return {
+      key: 'tiers', rows, pick: () => this.ctx.sfx.error(), shown: () => null,
+      detail: (id) => {
+        if (id?.startsWith('tier:')) return tierDetail(id.slice(5) as Difficulty);
+        if (id?.startsWith('affix:')) { const a = AFFIXES[id.slice(6) as keyof typeof AFFIXES]; return [el('h4', { text: a.name }), el('p', { text: a.line }), el('p', { class: 'slx-dim', text: P.affixNote })]; }
+        return [];
+      },
+    };
+  }
+
   // ---- Drawing ----
 
   private render(): void {
     if (this.closed) return;
     const h = handbook(this.ctx.game.state);
-    const tab = TABS[this.tab] as Tab;
-    this.level = { memories: () => this.memories(h), people: () => this.people(h), leads: () => this.leads(h), town: () => this.town(h), codex: () => this.codex(h), truths: () => this.truths(h) }[tab]();
+    const tabs = tabsFor(this.ctx.game.state);
+    this.tab = Math.min(this.tab, tabs.length - 1);
+    const tab = tabs[this.tab];
+    this.level = { memories: () => this.memories(h), people: () => this.people(h), leads: () => this.leads(h), town: () => this.town(h), codex: () => this.codex(h), truths: () => this.truths(h), tiers: () => this.tiers() }[tab]();
     this.bodyEl.classList.toggle('slx-hb-solo', !!this.level.solo);
-    this.tabsEl.replaceChildren(...TABS.map((t, i) => {
+    this.tabsEl.replaceChildren(...tabs.map((t, i) => {
       const b = el('span', { class: i === this.tab ? 'slx-tab slx-tab-sel' : 'slx-tab', text: H.tabs[t], attrs: { role: 'tab', 'aria-selected': String(i === this.tab) } });
       b.addEventListener('click', () => { if (this.playing) return; this.tab = i; this.sub = null; this.ctx.sfx.cursor(); this.render(); });
       return b;
