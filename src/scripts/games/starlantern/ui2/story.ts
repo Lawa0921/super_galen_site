@@ -1,6 +1,7 @@
 import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { chainLength } from '../data/story/chains';
 import { MAJOR_SCENES, heavyScene, type SceneId } from '../data/story/scenes';
+import { WARM_MOODS } from '../data/story/tone';
 import { NPC_NAMES, STORY, linesWhen, type NpcId, type ScriptLine, type Speaker } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import type { Game } from '../engine/game';
@@ -43,8 +44,8 @@ export const GRAVE: ReadonlySet<StoryMood> = new Set<StoryMood>(['serious', 'sad
 export const GRAVE_FALLBACK: Partial<Record<StoryMood, StoryMood[]>> = {
   shaken: ['sad'], solemn: ['serious'], vow: ['serious'], distant: ['wistful', 'sad'], wistful: ['sad'],
 };
-/** The glad faces (staging S3): a smiling normal says the same thing, so any scene may borrow it for them. */
-export const HAPPY: ReadonlySet<StoryMood> = new Set<StoryMood>(['smile', 'laugh', 'wink', 'grin', 'excited', 'smug', 'scheming', 'blush']);
+/** The glad faces (staging S3): a smiling normal says the same thing, so any scene may borrow it for them (story L: `WARM_MOODS`). */
+export const HAPPY: ReadonlySet<StoryMood> = WARM_MOODS;
 /**
  * The nearest face for a mood that is neither glad nor normal (staging S3, 2026-10-23), tried in order in a heavy scene:
  * a fright reads as sorrow, a start or a frown as gravity, a vision as longing. The grave faces keep their

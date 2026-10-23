@@ -127,6 +127,14 @@ const PL = {
   depth16: { text: '本道第十六層' }, depth30: { text: '第三十層・燈前' }, lampBase: { text: '星燈之底' },
 } satisfies Record<string, Place>;
 
+/**
+ * Story L spec §4.4.1: the beats between two memories of a night, in their fixed order (the companions by `CHARACTER_IDS`,
+ * four each, then eight of narration). `engine/story/nights.ts` `nextBeat` walks it from the save's cursor (`story.beat`).
+ */
+export interface NightBeats { lines: ScriptLine[] }
+/** The night's beats. Written in story L Task 8; until then the pool is empty and a night has no beat. */
+export const NIGHT_BEATS: NightBeats = { lines: [] };
+
 /** The finished script, scene by scene (plan 6c). Read the style bible and the lore ledger before adding to it. */
 const SCRIPT: Partial<Record<SceneId, Written>> = {
   // Task 4: the prologue (spec §9.2, §3.3, §4).

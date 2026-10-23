@@ -51,6 +51,8 @@ export interface StoryState {
   untold?: SceneId[];
   /** Story L: the memories this return's night picked (a subset of `untold`), so a reload plays the same ones. Absent reads as empty. */
   tonight?: SceneId[];
+  /** Story L spec §4.4.1: the cursor into `NIGHT_BEATS`, the next beat between two memories. Absent reads as 0. */
+  beat?: number;
 }
 
 /** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */
