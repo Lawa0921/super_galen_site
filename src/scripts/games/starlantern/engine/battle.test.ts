@@ -1125,3 +1125,32 @@ describe('character mechanics (plan 8c)', () => {
     for (const c of f4.party) expect('turret' in c, c.key).toBe(false);
   });
 });
+
+describe('Normal takes no new path (difficulty plan Task 1)', () => {
+  // Guard (green before the implementation): 'normal' and no difficulty are the same fight, draw for draw.
+  it('Normal and no difficulty are the same fight', () => {
+    const main10 = encounterTable('mainline', 10)[0];
+    const cases: { label: string; ids: string[]; boss: boolean; scale: { depth: number; region: 'mainline' | 'mire'; elite?: string } }[] = [
+      { label: 'mainline d10 with an elite', ids: main10, boss: false, scale: { depth: 10, region: 'mainline', elite: main10[0] } },
+      { label: 'mire d5', ids: encounterTable('mire', 5)[0], boss: false, scale: { depth: 5, region: 'mire' } },
+      { label: 'boss d10', ids: ['lanterneater'], boss: true, scale: { depth: 10, region: 'mainline' } },
+    ];
+    for (const c of cases) {
+      const party = partyAt(Math.min(50, depthLevel(c.scale.depth)), {}, c.scale.depth);
+      const start = (difficulty?: 'normal') => createBattle({ party, enemyIds: c.ids, boss: c.boss, inventory: {}, revealed: {}, scale: { ...c.scale, ...(difficulty ? { difficulty } : {}) } });
+      expect(JSON.stringify(start('normal')), c.label).toBe(JSON.stringify(start()));
+      const play = (difficulty?: 'normal') => {
+        const base = mulberry32(4242);
+        let draws = 0;
+        const rng = () => { draws++; return base(); };
+        let s = start(difficulty);
+        for (let r = 0; r < 60 && s.outcome === 'ongoing'; r++) s = resolveRound(s, choose(s, party), rng);
+        return { draws, state: JSON.stringify(s) };
+      };
+      const a = play('normal');
+      const b = play();
+      expect(a.draws, c.label).toBeGreaterThan(0);
+      expect(a, c.label).toEqual(b);
+    }
+  });
+});

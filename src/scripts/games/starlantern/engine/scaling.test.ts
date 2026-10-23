@@ -8,6 +8,8 @@ import { expToNext, LEGACY_LINEUP } from './party';
 import { mulberry32 } from './rng';
 import { DEEP_ENEMIES, deepPower, enemyLevelAt, homeLevel, BOSS_PARTY_SCALE, DEPTH_CLEAR_SHARE, ENEMY_POWER, FIRST_DEPTH_CAP, GROUP_CAP, PARTY_SCALE, NORMAL_ENEMIES, REGION_DROP_CHANCE, REGION_TRAITS_FROM, depthClearExp, depthLevel, empower, encounterGroup, enemyPower, groupCap, partyScale, scaleEnemy, bossPartyScale } from './scaling';
 import { constRng, fullParty } from './testing';
+import { TIERS } from '../data/difficulty';
+import { rewardGrowth } from './scaling';
 
 const MAIN = REGIONS.mainline;
 const wolf = ENEMIES.wolf;
@@ -408,5 +410,66 @@ describe('the deep enemy knobs (plan 6b Task 20c, added at their start values by
     } finally {
       Object.assign(DEEP_ENEMIES, saved);
     }
+  });
+});
+
+describe("a fight's difficulty in scaleEnemy (difficulty plan Task 1)", () => {
+  const plain = CONDITIONS.plain;
+  // The 荊棘狼 at depth 10 on Nightmare, worked by hand: before compensation hp 718, atk 218, mag 50 (Normal compensates
+  // them to 630, 209, 48 with hp x0.877888 and atk/mag x0.956938); x1.35 hp -> 969 and x1.2 -> 262, 60; compensated
+  // 851, 251, 57.
+  const [NIGHT_WOLF_HP, NIGHT_WOLF_ATK, NIGHT_WOLF_MAG] = [851, 251, 57];
+
+  it('no tier is the old enemy', () => {
+    // Guard (green before the implementation): a null tier is the call without one.
+    for (const def of Object.values(ENEMIES)) for (const r of Object.values(REGIONS)) for (const d of [1, 5, 10, 25]) {
+      for (const elite of [false, true]) expect(scaleEnemy(def, d, r, elite, plain, null), `${def.id} ${r.id} d${d}`).toEqual(scaleEnemy(def, d, r, elite, plain));
+    }
+  });
+
+  it('a tier scales hp, atk and mag, not def, mdf or spd', () => {
+    const normal = scaleEnemy(wolf, 10, MAIN, false, plain);
+    const night = scaleEnemy(wolf, 10, MAIN, false, plain, TIERS.nightmare);
+    // Before compensation: the 荊棘狼 at depth 10 x 1.35 hp and x 1.2 atk and mag (one rounding each), then compensated.
+    expect([night.stats.hp, night.stats.atk, night.stats.mag]).toEqual([NIGHT_WOLF_HP, NIGHT_WOLF_ATK, NIGHT_WOLF_MAG]);
+    expect([normal.stats.hp, normal.stats.atk, normal.stats.mag]).toEqual([630, 209, 48]);
+    expect(night.stats.hp).toBeGreaterThan(normal.stats.hp);
+    expect(night.stats.atk).toBeGreaterThan(normal.stats.atk);
+    expect(night.stats.def).toBe(normal.stats.def);
+    expect(night.stats.res).toBe(normal.stats.res);
+    expect(night.stats.spd).toBe(normal.stats.spd);
+    expect(night.sec).toEqual(normal.sec);
+  });
+
+  it('a tier raises skill chances to its cap, never lowers one', () => {
+    const skill = wolf.skills[0];
+    const def = { ...wolf, skills: [0.3, 0.5, 0.7].map((chance) => ({ ...skill, chance })) };
+    const chances = (t: typeof TIERS.hell) => scaleEnemy(def, 10, MAIN, false, plain, t).skills.map((k) => k.chance);
+    [0.45, 0.6, 0.7].forEach((c, i) => expect(chances(TIERS.nightmare)[i], `nightmare ${i}`).toBeCloseTo(c, 12));
+    [0.6, 0.75, 0.75].forEach((c, i) => expect(chances(TIERS.hell)[i], `hell ${i}`).toBeCloseTo(c, 12));
+    // Never lowered: 0.7 stays 0.7 exactly under a cap of 0.6.
+    expect(chances(TIERS.nightmare)[2]).toBe(0.7);
+    // The region's skill too (烈焰吐息 0.3), and the region's own data is untouched.
+    const blaze = scaleEnemy(wolf, 10, REGIONS.blaze, false, plain, TIERS.nightmare);
+    expect(blaze.skills.at(-1)!.name).toBe(REGIONS.blaze.skill!.name);
+    expect(blaze.skills.at(-1)!.chance).toBeCloseTo(0.45, 12);
+    expect(REGIONS.blaze.skill!.chance).toBe(0.3);
+    expect(wolf.skills[0].chance).toBe(skill.chance);
+  });
+
+  it('a tier pays more exp and gold, rounded once', () => {
+    const t = TIERS.nightmare;
+    // An enemy and depth where rounding twice would be off by one: the tier must round once.
+    let found = false;
+    for (const def of Object.values(ENEMIES)) for (let d = 1; d <= 30; d++) {
+      const reward = rewardGrowth(def, d);
+      const once = Math.round(def.exp * reward * plain.expMul * t.reward);
+      const twice = Math.round(Math.round(def.exp * reward * plain.expMul) * t.reward);
+      const got = scaleEnemy(def, d, MAIN, false, plain, t);
+      expect(got.exp, `${def.id} d${d} exp`).toBe(once);
+      expect(got.gold, `${def.id} d${d} gold`).toBe(Math.round(def.gold * reward * plain.goldMul * t.reward));
+      if (once !== twice) found = true;
+    }
+    expect(found).toBe(true);
   });
 });

@@ -8,8 +8,9 @@ import { terrainOf } from './dungeon/run';
 import { expToNext } from './party';
 import { depthLevel } from './levels';
 import { pick, type Rng } from './rng';
+import type { TierDef } from '../data/difficulty';
 import { compensation, enemySecondary } from './stats';
-import type { Element, EnemyDef, StatKey, Stats } from './types';
+import type { Element, EnemyDef, EnemySkill, StatKey, Stats } from './types';
 
 export { depthLevel } from './levels';
 
@@ -94,7 +95,8 @@ export function depthClearExp(depth: number): number {
   return Math.round(DEPTH_CLEAR_SHARE * need(lv, lv + 4));
 }
 
-const rewardGrowth = (def: EnemyDef, depth: number): number => {
+/** How a monster's exp and gold grow with depth (exported for the tests of a tier's reward: one rounding). */
+export const rewardGrowth = (def: EnemyDef, depth: number): number => {
   const lv = depthLevel(depth);
   if (lv <= homeLevel(def)) return 1;
   const [a, b] = HOME_SPAN[def.floor];
@@ -143,13 +145,17 @@ export function mul(stats: Stats, by: Partial<Record<StatKey, number>>): Stats {
 /**
  * A monster as met at this depth, in this region, possibly as an elite, under a run condition (default: none).
  * It carries the secondaries of its depth and region (`sec`), and its stats pay for them last (stats.compensation).
+ * With a difficulty `tier` (data/difficulty.ts; null for Normal, which takes none of this path): hp and atk/mag are
+ * multiplied after the condition and before compensation; its own skills' and the region skill's chances rise to
+ * `max(chance, min(chanceCap, chance x chanceMul))` (difficulty plan ruling 3); exp and gold are rounded once (ruling 9).
  * Returns a new definition; `def` is untouched.
  */
-export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elite: boolean, condition: ConditionDef = CONDITIONS.plain): EnemyDef {
+export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elite: boolean, condition: ConditionDef = CONDITIONS.plain, tier: TierDef | null = null): EnemyDef {
   let stats = mul({ ...def.stats }, growth(def, depth));
   if (region.trait && TRAIT[region.trait]) stats = mul(stats, TRAIT[region.trait]!);
   if (elite) stats = mul(stats, ELITE);
   if (condition.enemyAtkMul !== 1) stats = mul(stats, { atk: condition.enemyAtkMul, mag: condition.enemyAtkMul });
+  if (tier) stats = mul(stats, { hp: tier.hp, atk: tier.atk, mag: tier.atk });
   const sec = enemySecondary(depthLevel(depth), homeLevel(def), region.trait);
   stats = mul(stats, compensation(sec));
   const reward = rewardGrowth(def, depth) * (elite ? ELITE_REWARD : 1);
@@ -157,6 +163,8 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
   const early = depth < REGION_TRAITS_FROM;
   const skill = region.skill && !(early && SKILL_SCALES_IN.has(region.id)) ? region.skill : null;
   const name = [depth >= DEEP_FROM ? '深層' : '', PREFIX[region.id], def.name].filter(Boolean).join('・');
+  // A tier's skill odds (ruling 3): raised to the cap, never lowered; the region's skill object is copied, not changed.
+  const raise = (k: EnemySkill): EnemySkill => (tier ? { ...k, chance: Math.max(k.chance, Math.min(tier.chanceCap, k.chance * tier.chanceMul)) } : k);
   return {
     ...def,
     name: `${elite ? '★' : ''}${name}`,
@@ -165,9 +173,10 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
     // A named story foe keeps its own elements: the region's belong to its monsters.
     weak: regional && !def.story ? [...region.weak] : [...def.weak],
     resist: regional && !early && !def.story ? [...region.resist] : [...def.resist],
-    skills: skill ? [...def.skills, skill] : [...def.skills],
-    exp: Math.round(def.exp * reward * condition.expMul),
-    gold: Math.round(def.gold * reward * condition.goldMul),
+    skills: tier ? (skill ? [...def.skills, skill] : def.skills).map(raise) : skill ? [...def.skills, skill] : [...def.skills],
+    // With a tier, one rounding (ruling 9); without, the line as it was.
+    exp: tier ? Math.round(def.exp * reward * condition.expMul * tier.reward) : Math.round(def.exp * reward * condition.expMul),
+    gold: tier ? Math.round(def.gold * reward * condition.goldMul * tier.reward) : Math.round(def.gold * reward * condition.goldMul),
     drops: [...def.drops.map((d) => ({ ...d })), ...(regional && region.material ? [{ mat: region.material, chance: REGION_DROP_CHANCE }] : [])],
   };
 }

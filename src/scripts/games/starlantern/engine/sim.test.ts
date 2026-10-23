@@ -6,7 +6,12 @@ import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
 import { LEGACY_LINEUP, MAX_LEVEL, SLOTS, STANDARD_LINEUP, rowOfCell, statsOf } from './party';
 import { mulberry32 } from './rng';
-import { KIT_ORDER, attackAll, kitParty, lineupPolicies, partyAt, setSimTrace, simBattle, winRate } from './sim';
+import { KIT_ORDER, attackAll, groupExp, kitParty, lineupPolicies, partyAt, setSimTrace, simBattle, winRate } from './sim';
+import { scaleEnemy } from './scaling';
+import { TIERS } from '../data/difficulty';
+import { CONDITIONS } from '../data/conditions';
+import { ENEMIES } from '../data/enemies';
+import { REGIONS } from '../data/regions';
 import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -259,11 +264,27 @@ describe('a lineup wears a build (plan 8h Task 5a)', () => {
     expect(partyAt(35, hero).roster.hero.tree).toEqual(heroTree(35, 'mage'));
   });
 
-  it('difficulty is carried and read by no one', () => {
+  it('Nightmare is read and Normal is not', () => {
     const party = partyAt(20);
-    const s = (scale: object) => JSON.stringify(createBattle({ party, enemyIds: ['slime', 'slime'], inventory: {}, revealed: {}, scale: { depth: 5, region: 'mainline', ...scale } }));
-    expect(s({ difficulty: 'nightmare' })).toBe(s({}));
-    expect(s({ difficulty: 'hell' })).toBe(s({}));
+    const start = (scale: object) => createBattle({ party, enemyIds: ['slime', 'slime'], inventory: {}, revealed: {}, scale: { depth: 5, region: 'mainline', ...scale } });
+    expect(JSON.stringify(start({ difficulty: 'normal' }))).toBe(JSON.stringify(start({})));
+    const plainHp = start({}).enemies.map((e) => e.max.hp);
+    const nightHp = start({ difficulty: 'nightmare' }).enemies.map((e) => e.max.hp);
+    const hellHp = start({ difficulty: 'hell' }).enemies.map((e) => e.max.hp);
+    for (let i = 0; i < plainHp.length; i++) {
+      expect(nightHp[i]).toBeGreaterThan(plainHp[i]);
+      expect(hellHp[i]).toBeGreaterThan(nightHp[i]);
+    }
+  });
+
+  it('groupExp reads the tier', () => {
+    const g = ['slime', 'slime'];
+    const scale = { depth: 5, region: 'mainline' as const };
+    expect(groupExp(g, { ...scale, difficulty: 'normal' })).toBe(groupExp(g, scale));
+    const cond = CONDITIONS.plain;
+    const want = g.reduce((n, id) => n + scaleEnemy(ENEMIES[id], 5, REGIONS.mainline, false, cond, TIERS.nightmare).exp, 0);
+    expect(groupExp(g, { ...scale, difficulty: 'nightmare' })).toBe(want);
+    expect(want).toBeGreaterThan(groupExp(g, scale));
   });
 
   it('every balance file is a normal band', () => {

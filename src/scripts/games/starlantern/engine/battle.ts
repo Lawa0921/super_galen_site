@@ -3,6 +3,7 @@ import { CHARACTERS, artIdOf } from '../data/characters';
 import { CONDITIONS, type ConditionId } from '../data/conditions';
 import { ENEMIES } from '../data/enemies';
 import { REGIONS, type RegionId } from '../data/regions';
+import { tierOf } from '../data/difficulty';
 import { ITEMS } from '../data/items';
 import { POWERS } from '../data/gear';
 import { WEAPON_KINDS, WEAPON_MASTERY_PCT, weaponKindOf } from '../data/equipment';
@@ -76,12 +77,13 @@ export interface BattleState {
   triggers?: { by: string; skill: string; on: 'crit' | 'kill' | 'struck'; foe: string }[];
 }
 
-/** The difficulty a fight is measured or played at (spec §13 hook 1, plan 8h); the engine reads none of it yet. */
+/** The difficulty a fight is measured or played at (spec §13 hook 1, plan 8h); read through data/difficulty.ts `tierOf`. */
 export type Difficulty = 'normal' | 'nightmare' | 'hell';
 
 /**
  * Depth, region, run condition (default plain) and the id of the enemy that comes as an elite (its first occurrence in
- * `enemyIds`). `difficulty` is carried for the difficulty plans and read by no one: a fight is the same with or without it.
+ * `enemyIds`). `difficulty` scales the scaled enemies (difficulty plan Task 1, `scaleEnemy`'s tier); 'normal' and none are
+ * the same fight, draw for draw (`tierOf` gives null and the call is the one without a tier).
  */
 export interface BattleScale { depth: number; region: RegionId; elite?: string; condition?: ConditionId; difficulty?: Difficulty }
 
@@ -188,11 +190,12 @@ export function createBattle(o: {
   const seen: Record<string, number> = {};
   const sc = o.scale;
   const region = sc ? REGIONS[sc.region] : null;
+  const t = sc ? tierOf(sc.difficulty) : null;
   const defs: Record<string, EnemyDef> = {};
   const enemies = enemyIds.map((id, i) => {
     const n = (seen[id] = (seen[id] ?? 0) + 1);
     const elite = !!sc && sc.elite === id && n === 1;
-    const met = sc && region ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']) : ENEMIES[id];
+    const met = !sc || !region ? ENEMIES[id] : t ? scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain'], t) : scaleEnemy(ENEMIES[id], sc.depth, region, elite, CONDITIONS[sc.condition ?? 'plain']);
     // An enemy is met at its level for the fight's depth (enemyLevelAt; the deep road's own extra power on top), or at
     // its own home level when the fight has no scale.
     const level = sc ? enemyLevelAt(sc.depth) : homeLevel(met);

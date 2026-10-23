@@ -3,6 +3,7 @@ import { ENEMIES } from '../data/enemies';
 import { CONDITIONS } from '../data/conditions';
 import { FLOORS } from '../data/floors';
 import { REGIONS } from '../data/regions';
+import { tierOf } from '../data/difficulty';
 import { depthLevel } from './levels';
 import { rarityWeights, rollTier } from './loot/drops';
 import { itemLevel, rollItem } from './loot/item';
@@ -240,7 +241,8 @@ export function winRate(level: number, groups: string[][], boss: boolean, seeds 
 export function groupExp(g: string[], scale?: BattleScale): number {
   if (!scale) return g.reduce((n, id) => n + ENEMIES[id].exp, 0);
   const cond = CONDITIONS[scale.condition ?? 'plain'];
-  return g.reduce((n, id) => n + scaleEnemy(ENEMIES[id], scale.depth, REGIONS[scale.region], false, cond).exp, 0);
+  const t = tierOf(scale.difficulty);
+  return g.reduce((n, id) => n + (t ? scaleEnemy(ENEMIES[id], scale.depth, REGIONS[scale.region], false, cond, t) : scaleEnemy(ENEMIES[id], scale.depth, REGIONS[scale.region], false, cond)).exp, 0);
 }
 
 export function avgExp(floor: number): number {
