@@ -10,6 +10,9 @@ import type { Scene, SceneCtx } from '../scene';
 import { backControl, win } from '../widgets';
 import { STATUS_TABS, cueFrame, updateCues } from './statusTabs';
 
+/** The pages that take the sheet's whole width, the standee hidden: their columns need it at 12px (legibility ruling 6). */
+export const WIDE_TABS: ReadonlySet<string> = new Set(['tree', 'talent']);
+
 /** Character sheet: a large standee on the left, tabbed pages on the right; Q/E (or the arrows) page through the members. */
 export class StatusScene implements Scene {
   private id!: CharacterId;
@@ -25,6 +28,7 @@ export class StatusScene implements Scene {
   private nameEl!: HTMLElement;
   private tabsEl!: HTMLElement;
   private bodyEl!: HTMLElement;
+  private sceneEl!: HTMLElement;
 
   constructor(private ctx: SceneCtx) {}
 
@@ -47,9 +51,9 @@ export class StatusScene implements Scene {
     this.tabsEl = el('div', { class: 'slx-tabs', attrs: { role: 'tablist' } });
     this.bodyEl = el('div', { class: 'slx-status-body', attrs: { role: 'tabpanel' } });
     this.hintEl = el('p', { class: 'slx-hint' });
-    root.append(el('div', { class: 'slx-scene slx-status-scene' }, [
+    root.append(this.sceneEl = el('div', { class: 'slx-scene slx-status-scene' }, [
       this.standee,
-      win('slx-status-plate', [arrow('slx-status-prev', '◀', 'prev'), this.nameEl, arrow('slx-status-next', '▶', 'next')]),
+      win('slx-status-plate', [arrow('slx-status-prev', '←', 'prev'), this.nameEl, arrow('slx-status-next', '→', 'next')]),
       // The page pages with ▲/▼ cues, never a native scrollbar; the sheet keeps its place itself (render), so `keep` is idle.
       win('slx-status-panel', [this.tabsEl, cueFrame('slx-status-frame', this.bodyEl, () => {}), this.hintEl]),
       backControl(() => this.onAction('cancel')),
@@ -114,6 +118,7 @@ export class StatusScene implements Scene {
       return b;
     }));
     const tab = STATUS_TABS[this.tab];
+    this.sceneEl.classList.toggle('slx-status-wide', WIDE_TABS.has(tab.id));
     const same = this.drawn?.tab === this.tab && this.drawn.id === this.id;
     if (this.drawn && !same) STATUS_TABS[this.drawn.tab]?.leave?.();
     const top = this.bodyEl.scrollTop;

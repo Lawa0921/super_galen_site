@@ -8,6 +8,7 @@ import { constRng } from '../engine/testing';
 import { fogState } from './fog';
 import { MAP_CELL, MapView } from './MapView';
 import { MARKER_GLYPH, markersOf } from './markers';
+import { PIXEL_FONT } from './pixelText';
 import { chestHasGear } from '../engine/loot/drops';
 import type { TextureBank } from './textures';
 import { art } from './artPaths';
@@ -229,6 +230,10 @@ describe('MapView event markers', () => {
     expect(stepOnto(game, trap.at).kind).toBe('trap');
     view.draw(game, SIZE);
     expect(view.markerGlyphs()).toContain('陷');
+    // Every glyph is the pixel font at 24px, normal weight (legibility Task 4).
+    const glyphs = view.root.children.flatMap(function all(c): Text[] { return c instanceof Text ? [c] : c instanceof Container ? c.children.flatMap(all) : []; });
+    expect(glyphs.length).toBeGreaterThan(0);
+    for (const t of glyphs) expect([t.style.fontFamily, t.style.fontSize, t.style.fontWeight], t.text).toEqual([PIXEL_FONT, 24, 'normal']);
   });
 
   it('draws the event art instead of a glyph once it has loaded, and plain floor under every event tile', () => {

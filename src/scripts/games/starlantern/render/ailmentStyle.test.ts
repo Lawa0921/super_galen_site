@@ -34,8 +34,9 @@ describe('ailment rows: one line, most severe first, the rest folded into +N', (
     expect(fitChips(FIVE, 5, w, 2)).toEqual({ shown: [], more: 5 });   // only the count, however narrow
   });
 
-  it('text width: a CJK character is a full em, anything else 0.6 em', () => {
-    expect(textWidth('流血×2', 10)).toBeCloseTo(32, 6);
-    expect(textWidth('+3', 9)).toBeCloseTo(10.8, 6);
+  it('text width: Cubic 11 advances a CJK character 13/12 em, anything else 8/12 em (legibility Task 4)', () => {
+    expect(textWidth('流血×2', 12)).toBe(42);
+    expect(textWidth('+3', 12)).toBe(16);
+    expect(textWidth('暴擊！', 24)).toBe(78);
   });
 });

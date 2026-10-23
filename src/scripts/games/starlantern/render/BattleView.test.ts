@@ -291,7 +291,7 @@ describe('BattleView enemy status', () => {
     const view = new BattleView(true, bank);
     view.setup(battle([]), { width: 640, height: 360 }, 1);
     view.showIntents({ e0: '攻擊 → 絲嘉蕾' });
-    expect(view.intentText('e0')).toBe('▶ 攻擊 → 絲嘉蕾');
+    expect(view.intentText('e0')).toBe('◆ 攻擊 → 絲嘉蕾');
     view.showIntents({});
     expect(view.intentText('e0')).toBe('');
   });
@@ -303,7 +303,7 @@ describe('BattleView enemy status', () => {
     const labels = view.ailmentTexts('e0');
     expect(labels.map((t) => t.text)).toEqual(['流血×3', '感電2']);
     expect(labels.map((t) => t.style.fill)).toEqual([AILMENT_FILL.bleed, AILMENT_FILL.shock]);
-    expect(labels.every((t) => t instanceof Text && t.style.fontSize === 11)).toBe(true);
+    expect(labels.every((t) => t instanceof Text && t.style.fontSize === 12)).toBe(true);   // the pixel font's 12px (legibility Task 4)
     const box = enemyBox(view);
     for (const t of labels) {
       expect(t.parent?.parent).toBe(box);
@@ -315,7 +315,7 @@ describe('BattleView enemy status', () => {
     const left = labels[0].x - ailLabelWidth('流血×3') / 2, right = labels[1].x + ailLabelWidth('感電2') / 2;
     expect(right - left).toBeCloseTo(ailLabelWidth('感電2') + ailLabelWidth('流血×3') + 4, 6);
     expect(left + right).toBeCloseTo(0, 6);
-    expect(ailLabelWidth('感電2')).toBeCloseTo(11 * 2 + 6.6, 6);
+    expect(ailLabelWidth('感電2')).toBeCloseTo(13 * 2 + 8, 6);   // Cubic 11's advances at 12px (legibility Task 4)
     view.showAilments({ e0: [{ id: 'poison' }] });
     expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['中毒']);
     expect(labels.every((t) => t.destroyed)).toBe(true);
@@ -388,6 +388,49 @@ describe('BattleView regional tints', () => {
   });
 });
 
+describe('BattleView text (legibility Task 4)', () => {
+  const four = (log: BattleState['log'] = []) => makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], ['e0', 'e1', 'e2', 'e3'].map((key) => makeCombatant({ key, side: 'enemy' })), { log });
+  const allTexts = (c: Container): Text[] => c.children.flatMap((x) => (x instanceof Text ? [x] : x instanceof Container ? allTexts(x) : []));
+  const WORDS: MechWord[] = [{ tone: 'mark', text: '暗記', setup: true }, { tone: 'aim', text: '最後行動' }];
+
+  it('every text it draws is a pixelText (legibility Task 4)', () => {
+    const crit = new BattleView(false, bank);
+    crit.setup(four(), { width: 640, height: 360 }, 1, 150, 66);
+    crit.showIntents({ e0: '攻擊 → 絲嘉蕾' });
+    crit.showAilments(Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, FIVE])), Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, WORDS])));
+    void crit.play(four([{ type: 'damage', target: 'e0', amount: 30, element: 'phys', mult: 1, crit: true }]), sfx);
+    const miss = new BattleView(false, bank);
+    miss.setup(four(), { width: 640, height: 360 }, 1, 150, 66);
+    void miss.play(four([{ type: 'miss', target: 'e1' }]), sfx);
+    const texts = [...allTexts(crit.root), ...allTexts(miss.root)];
+    const size = (s: string) => texts.find((t) => t.text === s)!.style.fontSize;
+    expect(texts.length).toBeGreaterThan(20);
+    for (const t of texts) {
+      expect((t.style.fontFamily as string[])[0], t.text).toBe('Cubic 11');
+      expect([12, 24], t.text).toContain(t.style.fontSize);
+      expect(t.style.fontWeight, t.text).toBe('normal');
+    }
+    expect(size('30')).toBe(24);                         // a hit's number: 24, a crit too (it stays the biggest by its scale)
+    expect(size(T.battle.pop.crit)).toBe(12);             // its tag
+    expect(size(T.battle.pop.miss)).toBe(12);             // a small word
+    expect(size('e0')).toBe(12);                          // a name
+    expect(size('◆ 攻擊 → 絲嘉蕾')).toBe(12);              // an intent
+  });
+
+  it('ailment rows of four enemies at 12px stay inside their slots', () => {
+    const view = new BattleView(true, bank);
+    view.setup(four(), { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments(Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, FIVE])), Object.fromEntries(['e0', 'e1', 'e2', 'e3'].map((k) => [k, WORDS])));
+    for (const key of ['e0', 'e1', 'e2', 'e3']) {
+      const words = view.ailmentTexts(key);
+      for (const t of words) expect(t.style.fontSize, t.text).toBe(12);
+      const width = words.reduce((a, t) => a + ailLabelWidth(t.text), 0) + 4 * (words.length - 1);
+      expect(width, key).toBeLessThanOrEqual(view.ailmentRowRect(key)!.width);
+      expect(words.at(-1)!.text, key).toMatch(/^\+\d$/);   // what does not fit folds into +N
+    }
+  });
+});
+
 describe('BattleView stat cues', () => {
   const texts = (view: BattleView) => enemyBox(view).children.filter((c) => c instanceof Text).map((c) => (c as Text).text);
 
@@ -420,6 +463,27 @@ describe('BattleView stat cues', () => {
     expect(on).toHaveBeenCalledWith('scarlet', 'hit', undefined, 9, { fx: expect.anything(), weak: false, crit: true, resist: true });
     expect(on).toHaveBeenCalledWith('scarlet', 'tp', undefined, 3);
     expect(on.mock.calls.filter((c) => c[0] === 'e0')).toEqual([]);   // enemies show no TP
+  });
+
+  it('pops a hit number by whole steps, a crit bigger (T4 review)', () => {
+    // On fake timers, each view set up again before they go back: no tween or held moment outlives the test.
+    vi.useFakeTimers();
+    const views: BattleView[] = [];
+    try {
+      const scales = (crit: boolean) => {
+        const view = new BattleView(false, bank);
+        views.push(view);
+        view.setup(battle([]), { width: 640, height: 360 }, 1);
+        void view.play(battle([{ type: 'damage', target: 'e0', amount: 30, element: 'phys', mult: 1, crit }]), sfx);
+        return (enemyBox(view).children.find((c) => c instanceof Text && c.text === '30') as Text).scale.x;
+      };
+      expect(Number.isInteger(scales(true))).toBe(true);
+      expect(Number.isInteger(scales(false))).toBe(true);
+      expect(scales(true)).toBeGreaterThan(scales(false));
+    } finally {
+      for (const v of views) v.setup(battle([]), { width: 640, height: 360 }, 1);
+      vi.useRealTimers();
+    }
   });
 
   it('keeps pops still for reduced motion', () => {

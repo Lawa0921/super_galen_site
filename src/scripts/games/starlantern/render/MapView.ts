@@ -3,6 +3,7 @@ import { CONDITIONS } from '../data/conditions';
 import type { Game } from '../engine/game';
 import type { FloorMap, Tile } from '../engine/map';
 import { art, tileKey } from './artPaths';
+import { pixelText } from './pixelText';
 import { fogState } from './fog';
 import { MARKER_GLYPH, markersOf, type MarkerKind } from './markers';
 import type { TextureBank } from './textures';
@@ -20,7 +21,6 @@ const HOP_FRAMES = 10;
 const ON_FLOOR = new Set<Tile>(['fountain', 'trap', 'merchant', 'altar', 'elite', 'vault', 'key', 'rescue', 'glimmer']);
 /** Text marker colours: danger in red, everything else in the UI gold. */
 const GLYPH_FILL: Partial<Record<MarkerKind, number>> = { elite: 0xff8a6a, trap: 0xff7a6b };
-const GLYPH_FONT = ['Cubic 11', 'Noto Sans TC', 'Microsoft JhengHei', 'sans-serif'];
 
 /**
  * The labyrinth from above: large cells, one seamless fog over everything unexplored, and a camera that keeps the party
@@ -183,10 +183,7 @@ export class MapView {
       keep.add(id);
       let t = this.glyphs.get(id);
       if (!t) {
-        t = new Text({
-          text: MARKER_GLYPH[m.kind],
-          style: { fontFamily: GLYPH_FONT, fontSize: 24, fontWeight: 'bold', fill: GLYPH_FILL[m.kind] ?? 0xe8c46a, stroke: { color: 0x14100a, width: 5 } },
-        });
+        t = pixelText(MARKER_GLYPH[m.kind], 24, GLYPH_FILL[m.kind] ?? 0xe8c46a, 0x14100a);
         t.anchor.set(0.5);
         t.x = cx; t.y = cy;
         t.label = `glyph-${m.kind}`;

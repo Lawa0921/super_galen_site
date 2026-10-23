@@ -238,7 +238,7 @@ export const T = {
     shield: (n: number) => `護盾${n}`,
     riposte: (n: number) => `贖火${n}`,
     beat: (n: number) => (n >= 4 ? `拍子${n}・終幕` : `拍子${n}`),
-    cue: { overload: '暴走！', again: '還有。', noBarrier: '沒有結界', counter: '贖火', misstep: '這一步踩空了呀。', finale: '終幕' },
+    cue: { overload: '暴走！', again: '還有。', noBarrier: '無結界', counter: '贖火', misstep: '踩空！', finale: '終幕' },
   },
   log: {
     act: (who: string, label: string) => `${who}：${label}`,
@@ -606,8 +606,8 @@ export const T = {
       pieces: (found: number, total: number) => `${found}/${total}`,
       codex: { none: '無', rarity: { legendary: '傳說', unique: '獨特', set: '套裝' }, weak: (list: string) => `弱點：${list}`, weakUnknown: '弱點：？？？', setPieces: (have: number, total: number) => `${have}/${total} 件` },
       pieceHint: (regions: string, deep: boolean) => `${regions}・${deep ? '深處' : '淺層'}`,
-      hint: '◀▶ 換分頁　確定：選取　取消：返回',
-      hintReadonly: '◀▶ 換分頁　確定：重看　取消：回到迷宮',
+      hint: '←→ 換分頁　確定：選取　取消：返回',
+      hintReadonly: '←→ 換分頁　確定：重看　取消：回到迷宮',
       empty: '還沒有可以重看的場景。',
       /** The guild's leads (6c Task 16): sightings, never a call for help (the lost remember nothing). */
       leads: { now: '目前的線索', found: '已找到', heard: '公會聽來的目擊', place: (region: string, depth: number) => `${region}・第 ${depth} 層`, allFound: '目擊過的人影，都已經找到了。', none: '公會還沒有新的目擊消息。' },
@@ -818,7 +818,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       noTrait: '無特性', weak: (els: string) => `弱 ${els}`, resist: (els: string) => `抗 ${els}`,
       /** A run that can only start at depth 1: the region resist is not there yet (scaling.REGION_TRAITS_FROM). */
       resistFrom: (els: string, depth: number) => `抗 ${els}（第 ${depth} 層起）`,
-      monsters: '怪物', condition: '本次狀況', gear: '限定裝備', general: (n: number, total: number) => `通用傳說：已取得 ${n}／${total}`, moreGear: '↑↓ 捲動看更多', unknownGear: (name: string) => `${name}（未取得）`,
+      monsters: '怪物', condition: '本次狀況', gear: '限定裝備', gearCount: (n: number, total: number) => `限定裝備 ${n}／${total}`, general: (n: number, total: number) => `通用傳說：已取得 ${n}／${total}`, moreGear: '↑↓ 捲動看更多', unknownGear: (name: string) => `${name}（未取得）`, unknownTag: '未取得',
       drop: (name: string) => `主要掉落：${name}`, commonDrop: '一般素材', dropUse: (list: string) => `用途：${list}`,
       ask: (region: string, n: number, cond: string) => `要從第 ${n} 層進入「${region}」嗎？\n本次狀況：${cond}`,
       banner: (cond: string) => `本次狀況　${cond}`,

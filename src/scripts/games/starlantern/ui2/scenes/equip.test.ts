@@ -618,7 +618,24 @@ describe('EquipScene gear art (plan 5d Task 6)', () => {
     expect(r.cell(0).textContent).toBe('長效齒輪');
     expect(r.root.querySelector('.slx-gear-ico, .slx-rframe, .slx-rglow, .slx-rstarlit, .slx-gear-art, .slx-item-art-box')).toBeNull();
     expect(r.slot('head').querySelector('.slx-slot-name')!.textContent).toBe('皮帽');
-    expect(r.cell(0).getAttribute('title')).toBeNull();
+    // The full name is the cell's title too (T6 review: a text name may show only its first line).
+    expect(r.cell(0).getAttribute('title')).toBe(gearLabel(gear('cloth-gloves', 1, 'legendary', { special: 'lg-bobby' })));
+    expect(r.cell(0).classList.contains('slx-equip-textcell')).toBe(true);
+  });
+
+  it('a text name with a +n mark: the mark is a row of its own after the name, the slot word gives way (T6 review)', () => {
+    const long = gear('cloth-gloves', 1, 'legendary', { special: 'lg-bobby', enhance: 10 });
+    const r = setup((g) => {
+      g.state.bag = [long];
+      g.state.party.roster.scarlet.equip = { hands: { ...long, uid: 9001 }, head: plainItem('leather-cap', 9) };
+    });
+    const kids = (e: Element) => [...e.children].map((c) => c.className);
+    expect(kids(r.cell(0))).toEqual(['slx-equip-cellname', 'slx-enh']);
+    expect(r.cell(0).classList.contains('slx-equip-textcell')).toBe(true);
+    expect(kids(r.slot('hands'))).toEqual(['slx-equip-cellname slx-slot-name', 'slx-enh']);
+    expect(r.slot('hands').getAttribute('title')).toBe(T.ui2.equip.worn(T.slot.hands, gearLabel(long)));
+    // Without a mark the slot word stays over the name.
+    expect(kids(r.slot('head'))).toEqual(['slx-slot-tag', 'slx-equip-cellname slx-slot-name']);
   });
 
   it('a special without its own art keeps its text, never the base icon', () => {

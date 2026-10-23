@@ -39,6 +39,19 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    // 星燈迷宮 at 125% and 150% Windows scaling (legibility plan Task 2a): only its @dpr tests.
+    {
+      name: 'chromium-dpr125',
+      use: { ...devices['Desktop Chrome'], deviceScaleFactor: 1.25 },
+      testMatch: /starlantern\.spec\.ts/,
+      grep: /@dpr/,
+    },
+    {
+      name: 'chromium-dpr150',
+      use: { ...devices['Desktop Chrome'], deviceScaleFactor: 1.5 },
+      testMatch: /starlantern\.spec\.ts/,
+      grep: /@dpr/,
+    },
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },

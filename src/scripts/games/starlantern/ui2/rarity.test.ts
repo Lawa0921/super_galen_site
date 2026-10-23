@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { RARITIES } from '../data/gear';
 import { T } from '../data/text.zh-TW';
 import { gearLabel, rarityClass } from './loot';
-import { AILMENT_FILL } from '../render/ailmentStyle';
+import { AILMENT_FILL, textWidth } from '../render/ailmentStyle';
+import { cueWord, type MechCue } from '../engine/mechanics/index';
 import type { AilmentShown } from '../engine/ailments';
 
 const scss = readFileSync(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss'), 'utf-8');
@@ -288,18 +289,37 @@ describe('mechanic colours (plan 8c)', () => {
     expect(css).toContain('.slx-pm-cue');
   });
 
-  it('a cue stands at the bottom right of its panel, over the hit effects', () => {
+  it('a cue stands on the lower part of the portrait, over the hit effects (T4 review)', () => {
     const css = compile(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss')).css;
     const rule = (sel: string) => [...css.matchAll(new RegExp(`(?:^|\\n|\\})\\s*${sel.replace('.', '\\.')}\\s*\\{([^}]*)\\}`, 'g'))].map((m) => m[1]).join(';');
     const z = (sel: string) => Number(/z-index:\s*(\d+)/.exec(rule(sel))?.[1] ?? NaN);
     const cue = rule('.slx-pm-cue');
-    expect(cue).toMatch(/right:/);
-    expect(cue).not.toMatch(/left:/);
-    // From the panel's bottom right, over the bars: clear of the HP digits and of the ailment row above the panel.
-    expect(cue).toMatch(/bottom:\s*\d+(px)?;/);
+    // On the portrait's lower part, where it covers no text: not the name, the HP digits or the TP line, not the hit's
+    // number (top right) nor the ailment row above the panel (the e2e 'heat and the mark' test measures it).
+    expect(cue).toMatch(/left:\s*2px;/);
+    expect(cue).toMatch(/bottom:\s*2px;/);
+    expect(cue).not.toMatch(/right:/);
     expect(cue).not.toMatch(/top:/);
     expect(z('.slx-pm-cue')).toBeGreaterThan(z('.slx-pm-fx'));
     expect(z('.slx-pm-cue')).toBeGreaterThan(z('.slx-pm-fxa'));
+  });
+
+  it('every cue word stays on the portrait, short of the name and the digits beside it (review of T4 and T5)', () => {
+    const css = compile(resolve(process.cwd(), 'src/styles/_starlantern-ui.scss')).css;
+    const rule = (sel: string) => [...css.matchAll(new RegExp(`(?:^|\\n|\\})\\s*${sel.replace('.', '\\.')}\\s*\\{([^}]*)\\}`, 'g'))].map((m) => m[1]).join(';');
+    // The panel: 4px of padding, the 40px portrait, a 4px gap, then its text; the word: 2px in, 2px padding, a 1px border.
+    expect(rule('.slx-pm')).toMatch(/padding:\s*3px 4px;/);
+    expect(rule('.slx-pm')).toMatch(/gap:\s*4px;/);
+    expect(rule('.slx-pm img')).toMatch(/width:\s*40px;/);
+    expect(rule('.slx-pm-cue')).toMatch(/left:\s*2px;[\s\S]*font-size:\s*12px;[\s\S]*padding:\s*0 2px;[\s\S]*border:\s*1px solid/);
+    const textLeft = 4 + 40 + 4;
+    // Every cue the battle can pop (a new MechCue fails to compile here until it is listed).
+    const cues = { overload: 1, again: 1, 'no-barrier': 1, counter: 1, misstep: 1, finale: 1 } satisfies Record<MechCue, 1>;
+    for (const cue of Object.keys(cues) as MechCue[]) {
+      const w = cueWord(cue);
+      expect(w.tone, cue).not.toBe('plain');
+      expect(2 + textWidth(w.text, 12) + 2 * 2 + 2 * 1, `${cue} 「${w.text}」`).toBeLessThanOrEqual(textLeft);
+    }
   });
 });
 

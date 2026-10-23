@@ -28,6 +28,11 @@ describe('SettingsScene', () => {
     expect(root.querySelector('[data-id=speed] .slx-right')!.textContent).toContain('中');
   });
 
+  it('marks each value left/right changes with ← and →, which Cubic 11 has (legibility Task 1)', () => {
+    const { root } = setup();
+    expect(['volume', 'speed', 'vibrate', 'story'].map((id) => root.querySelector(`[data-id=${id}] .slx-right`)!.textContent)).toEqual(['← 70% →', '← 中 →', '← 開 →', '← 全部播放 →']);
+  });
+
   it('adjusts values with left/right and saves them at once', () => {
     const { s, root, store, saved } = setup();
     s.onAction('right');

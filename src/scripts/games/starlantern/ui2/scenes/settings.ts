@@ -43,10 +43,10 @@ export class SettingsScene implements Scene {
     const t = T.ui2.settings;
     const v = this.value;
     return [
-      { id: 'volume', label: t.volume, right: `◀ ${v.volume}% ▶` },
-      { id: 'speed', label: t.speed, right: `◀ ${t.speeds[v.textSpeed]} ▶` },
-      { id: 'vibrate', label: t.vibrate, right: `◀ ${v.vibrate ? t.on : t.off} ▶` },
-      { id: 'story', label: t.story, right: `◀ ${t.storyModes[v.story]} ▶` },
+      { id: 'volume', label: t.volume, right: `← ${v.volume}% →` },
+      { id: 'speed', label: t.speed, right: `← ${t.speeds[v.textSpeed]} →` },
+      { id: 'vibrate', label: t.vibrate, right: `← ${v.vibrate ? t.on : t.off} →` },
+      { id: 'story', label: t.story, right: `← ${t.storyModes[v.story]} →` },
       { id: 'fullscreen', label: t.fullscreen },
       { id: 'keys', label: t.keys },
       { id: 'back', label: t.back },

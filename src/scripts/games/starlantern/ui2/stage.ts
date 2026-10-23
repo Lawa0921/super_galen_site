@@ -7,7 +7,10 @@ import type { TextureBank } from '../render/textures';
 export const STAGE_W = 640;
 export const STAGE_H = 360;
 
-/** The Pixi layer of the game screen: a fixed 640x360 canvas under the DOM windows, scaled with the screen by CSS. */
+/**
+ * The Pixi layer of the game screen: a fixed 640x360 canvas under the DOM windows, scaled with the screen by CSS to a whole
+ * number of device pixels per stage pixel (legibility ruling 1: s·devicePixelRatio is whole, at 125% and 150% too).
+ */
 export class Stage {
   readonly mapView: MapView;
   readonly battleView: BattleView;

@@ -35,7 +35,7 @@ export async function toggleFullscreen(el: HTMLElement): Promise<void> {
 export function bindUiInput(target: Window, handler: (a: UiAction) => void): () => void {
   const onKey = (e: KeyboardEvent) => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;   // browser shortcuts (copy, tab switching, zoom) stay the browser's
-    if (e.key === 'F11') { e.preventDefault(); void toggleFullscreen(document.getElementById('sl-screen') ?? document.documentElement); return; }
+    if (e.key === 'F11') { e.preventDefault(); void toggleFullscreen(document.documentElement); return; }   // the page, as the settings' 全螢幕 (legibility 2a)
     if (e.key === 'Tab' && isFormField(e.target)) return;   // Tab keeps moving focus inside a real form field
     const a = uiActionFor(e.key);
     if (!a) return;

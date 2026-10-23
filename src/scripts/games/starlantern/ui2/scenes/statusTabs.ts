@@ -26,6 +26,7 @@ import { battleTp, cardOf, compareCards, slotDots, slotStates } from '../skillCa
 import { RUNES, type RuneRef } from '../../data/runes';
 import { socketable } from '../../engine/sockets';
 import { buildOf } from '../../data/builds';
+import { stageSpan } from '../stageAxis';
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 
@@ -378,11 +379,14 @@ export function cueFrame(cls: string, pane: HTMLElement, keep: (top: number) => 
 /**
  * Scrolls `pane` (only it: nothing around it moves) just enough to show `node` whole, and not at all when it already shows
  * (plan 8d Task 5: a nudge of a few pixels used to hide the branch names at 1280). `head`, its branch's name, stays pinned
- * at the top of the columns (sticky, 8d Task 6 review), so a row shows only below it.
+ * at the top of the columns (sticky, 8d Task 6 review), so a row shows only below it. Measured in stage px, as the scroll
+ * position is (stageSpan: the stage may be scaled by a fraction or turned, legibility Task 2a).
  */
 export function revealIn(pane: HTMLElement, node: HTMLElement, head: HTMLElement | null): void {
-  const p = pane.getBoundingClientRect(), r = node.getBoundingClientRect();
-  const top = p.top + (head?.getBoundingClientRect().height ?? 0);
+  const screen = pane.closest('.slx-screen')?.getBoundingClientRect() ?? null;
+  const p = stageSpan(pane.getBoundingClientRect(), screen), r = stageSpan(node.getBoundingClientRect(), screen);
+  const h = head ? stageSpan(head.getBoundingClientRect(), screen) : null;
+  const top = p.top + (h ? h.bottom - h.top : 0);
   if (r.top < top) pane.scrollTop = Math.max(0, pane.scrollTop - (top - r.top));
   else if (r.bottom > p.bottom) pane.scrollTop += Math.min(r.bottom - p.bottom, r.top - top);   // its top never goes under the name
 }
@@ -899,7 +903,9 @@ const talent: StatusTab = {
     board.scrollTop = talentView.top;
     if (talentView.reveal) {
       talentView.reveal = false;
-      board.querySelector('.slx-talent-node.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
+      // Only the board scrolls, by stage px, as the tree's columns do (scrollIntoView could move the page around it).
+      const node = board.querySelector<HTMLElement>('.slx-talent-node.slx-row-cur');
+      if (node) revealIn(board, node, null);
       talentView.top = board.scrollTop;
     }
     updateCues(board);

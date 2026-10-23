@@ -40,6 +40,23 @@ const holdsRune = (s: GameState): boolean => Object.values(s.runes ?? {}).some((
 /** A rune row's id: `bag:<key>`, or `move:<member>:<skill>:<slot>` for a rune in someone's slot. */
 const rowOf = (c: RuneChoice): string =>
   (c.source.kind === 'bag' ? `bag:${runeKey(c.source.ref)}` : `move:${c.source.at.id}:${c.source.at.skill}:${c.source.at.slot}`);
+/**
+ * A stat word and its value, with the stop after it: 「威力 115%；」, 「TP +1。」. A rune's line keeps each on one line (it
+ * broke as 「…；TP」 / 「+1。」 at 12px, legibility T6 review).
+ */
+const STAT_VALUE = /(?:[A-Za-z]+|\p{Script=Han}{1,4}) ?[+\-−×]?\d+(?:\.\d+)?%?[。，；、）]?/gu;
+const keepStats = (text: string): (string | HTMLElement)[] => {
+  const out: (string | HTMLElement)[] = [];
+  let at = 0;
+  for (const m of text.matchAll(STAT_VALUE)) {
+    if (m.index! > at) out.push(text.slice(at, m.index));
+    out.push(el('span', { class: 'slx-nb', text: m[0] }));
+    at = m.index! + m[0].length;
+  }
+  if (at < text.length) out.push(text.slice(at));
+  return out;
+};
+
 /** A card value in a cell: each of its 「／」 parts kept on one line (「84（每個目標）」 never breaks). */
 const cell = (cls: string, text: string): HTMLElement => {
   const parts = text.split(W.join);
@@ -357,9 +374,9 @@ export class WorkshopScene implements Scene {
     const b = this.followed;
     this.sceneEl.classList.toggle('slx-ws-following', !!b);
     this.head.replaceChildren(
-      arrow('◀', 'prev'),
+      arrow('←', 'prev'),
       el('div', { class: 'slx-ws-name' }, [el('b', { text: CHARACTERS[this.id].name }), el('span', { text: `Lv ${m.level}` })]),
-      arrow('▶', 'next'),
+      arrow('→', 'next'),
       ...(held ? [el('span', { class: 'slx-ws-reserve', text: held })] : []),
       el('span', { class: 'slx-ws-title', text: W.title }),
       // The build she follows, its name and the first rule of its play (plan 8h ruling 14), on a line of its own.
@@ -581,7 +598,7 @@ export class WorkshopScene implements Scene {
       ]));
       out.push(after ? this.table(now, after) : this.single(now));
       const ref = p?.choice?.source.ref;
-      if (ref) out.push(el('p', { class: `slx-ws-rune-text slx-rarity-${ref.tier}` }, [el('b', { text: label(ref) }), el('span', { text: RUNES[ref.id].text(ref.tier) })]));
+      if (ref) out.push(el('p', { class: `slx-ws-rune-text slx-rarity-${ref.tier}` }, [el('b', { text: label(ref) }), el('span', {}, keepStats(RUNES[ref.id].text(ref.tier)))]));
       for (const n of p?.choice?.notes ?? []) if (n !== W.barrierClash) out.push(el('p', { class: 'slx-ws-note', text: n }));
       // Ruling 10, now and in the preview: the barriers her lasting runes raise that a fight's start would replace.
       if (lastingBarrierLoss(fromMember(p?.after ?? m, 0)) > 0) out.push(el('p', { class: 'slx-ws-warn', text: W.barrierClash }));

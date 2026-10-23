@@ -10,8 +10,8 @@ import { cardOf, compareCards } from '../skillCard';
 import { constRng, plainItem } from '../../engine/testing';
 import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
-import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView } from './statusTabs';
-import { StatusScene } from './status';
+import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView, revealIn } from './statusTabs';
+import { StatusScene, WIDE_TABS } from './status';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
 import { RUNES, type RuneRef } from '../../data/runes';
@@ -60,13 +60,26 @@ describe('StatusScene', () => {
     expect(body()).toContain('近戰（100%）');
   });
 
+  it('the tree and talent pages take the whole width; the other pages keep the standee (legibility Task 5)', () => {
+    const { root } = setup('scarlet');
+    const scene = root.querySelector('.slx-status-scene')!;
+    expect([...WIDE_TABS].sort()).toEqual(['talent', 'tree']);
+    for (const t of STATUS_TABS) {
+      (root.querySelector(`[data-tab=${t.id}]`) as HTMLElement).click();
+      expect(scene.classList.contains('slx-status-wide'), t.id).toBe(WIDE_TABS.has(t.id));
+    }
+    // Opened straight on a wide page (the guild's 技能樹 entry), it is wide from the start.
+    expect(setup('tab:tree').root.querySelector('.slx-status-scene')!.classList.contains('slx-status-wide')).toBe(true);
+  });
+
   it('a tab: arg opens that tab on the first active member, with the cursor revealed', () => {
     const reveal = vi.fn();
     const orig = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = reveal;
     try {
-      // The tree scrolls its own columns (statusTabs revealIn, tested with the columns' cues); the board scrolls into view.
-      for (const [id, label, node, into] of [['tree', '技能樹', '.slx-tree-node.slx-row-cur', false], ['talent', '天賦', '.slx-talent-node.slx-row-cur', true]] as const) {
+      // The tree scrolls its own columns and the talent page its own board (statusTabs revealIn, review of T5): nothing
+      // around them scrolls into view.
+      for (const [id, label, node, into] of [['tree', '技能樹', '.slx-tree-node.slx-row-cur', false], ['talent', '天賦', '.slx-talent-node.slx-row-cur', false]] as const) {
         reveal.mockClear();
         const { root, tab, name } = setup(`tab:${id}`);
         expect(tab()).toBe(label);
@@ -1635,20 +1648,37 @@ describe('StatusScene', () => {
       });
     });
 
-    it('coming back to the tab brings the cursor\'s node into view', () => {
+    it('the cursor, and coming back to the tab, scroll the board itself just enough to show the node, in stage px (review of T5)', () => {
       const into = vi.fn();
       const had = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView');
       Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, writable: true, value: into });
+      const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(600);
+      const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(200);
+      // On screen at 2x: the board from 100 to 300 (stage 50 to 150); the cursor's node where `at` says.
+      const at = { node: { top: 150, bottom: 180 } };
+      const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+        const r = this.classList.contains('slx-screen') ? { top: 0, bottom: 720, left: 0, right: 1280 }
+          : this.classList.contains('slx-talent-board') ? { top: 100, bottom: 300, left: 0, right: 0 }
+            : this.classList.contains('slx-row-cur') ? { ...at.node, left: 0, right: 0 } : { top: 0, bottom: 0, left: 0, right: 0 };
+        return { ...r, width: r.right - r.left, height: r.bottom - r.top, x: r.left, y: r.top, toJSON: () => r } as DOMRect;
+      });
       try {
         const { s, cur, root } = onTalent(6);
+        root.classList.add('slx-screen');
+        const board = () => root.querySelector<HTMLElement>('.slx-talent-board')!;
+        s.onAction('down');                                      // in view: the board stays
+        expect(board().scrollTop).toBe(0);
+        at.node = { top: 290, bottom: 340 };                     // 20 stage px under the board's bottom
+        s.onAction('down');
+        expect(board().scrollTop).toBe(20);
         down(s, 6); s.onAction('swap'); s.onAction('swap');
         expect(cur()).toBe('noel-k2');
-        into.mockClear();
         s.onAction('right'); s.onAction('left');                 // away and back: the board was reset to the top
         expect(cur()).toBe('noel-k2');
-        expect(into).toHaveBeenCalled();
-        expect(into.mock.contexts.at(-1)).toBe(root.querySelector('.slx-talent-node[data-node="noel-k2"]'));
+        expect(board().scrollTop).toBe(20);
+        expect(into).not.toHaveBeenCalled();                     // nothing else on the page moves
       } finally {
+        rect.mockRestore(); sh.mockRestore(); ch.mockRestore();
         if (had) Object.defineProperty(Element.prototype, 'scrollIntoView', had);
         else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
       }
@@ -1978,5 +2008,44 @@ describe('the tree tab and the suggested builds (plan 8h Task 7)', () => {
     s.enter(document.createElement('div'));
     s.onAction('cancel');
     expect(go).toHaveBeenCalledWith('guild');
+  });
+});
+
+describe('revealIn in stage px (legibility Task 2a)', () => {
+  it('revealIn scrolls by stage px at 1.6x and sideways (legibility Task 2a)', () => {
+    const screen = document.createElement('div'); screen.className = 'slx-screen';
+    const pane = document.createElement('div'); pane.className = 'slx-tree-cols';
+    const node = document.createElement('div');
+    pane.append(node); screen.append(pane); document.body.append(screen);
+    const box = (left: number, top: number, right: number, bottom: number) =>
+      ({ left, top, right, bottom, x: left, y: top, width: right - left, height: bottom - top, toJSON: () => ({}) }) as DOMRect;
+    const rects = new Map<Element, DOMRect>();
+    const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) { return rects.get(this) ?? box(0, 0, 0, 0); });
+    const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(1000);
+    const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(200);
+    try {
+      // 1.6x, the stage at (128, 72): the columns span stage y 100-300, the node 290-330, so 30 stage px (48 screen px) below.
+      rects.set(screen, box(128, 72, 128 + 1024, 72 + 576));
+      rects.set(pane, box(128, 72 + 160, 128 + 1024, 72 + 480));
+      rects.set(node, box(140, 72 + 464, 300, 72 + 528));
+      revealIn(pane, node, null);
+      expect(pane.scrollTop).toBe(30);
+      // Above: the node at stage y 80-110, 20 stage px over the columns' top.
+      pane.scrollTop = 50;
+      rects.set(node, box(140, 72 + 128, 300, 72 + 176));
+      revealIn(pane, node, null);
+      expect(pane.scrollTop).toBe(30);
+      // Turned at 2x: the stage's top runs down the screen's right edge (x 720). Columns at stage y 100-300 are x 120-520;
+      // the node at stage y 290-330 is x 60-140: 30 stage px below, though nothing is below on screen.
+      rects.set(screen, box(0, 0, 720, 1280));
+      rects.set(pane, box(120, 0, 520, 1280));
+      rects.set(node, box(60, 100, 140, 400));
+      pane.scrollTop = 0;
+      revealIn(pane, node, null);
+      expect(pane.scrollTop).toBe(30);
+    } finally {
+      rect.mockRestore(); sh.mockRestore(); ch.mockRestore();
+      screen.remove();
+    }
   });
 });

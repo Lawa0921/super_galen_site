@@ -10,10 +10,10 @@ import type { ArtIndex } from '../render/textures';
 const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' };
 /**
  * A panel's ailment row in design px: the party bar is 632 wide in five columns with 4 px gaps (123.2 each), less the
- * panel's 1 px borders, less 2 px to spare. A word is its text at 9 px plus 1 px padding and a 1 px rim each side.
+ * panel's 1 px borders, less 2 px to spare. A word is its text at 12 px (legibility Task 4) plus 1 px padding and a 1 px rim each side.
  */
 const AIL_ROW_W = 119;
-const ailWordWidth = (text: string): number => textWidth(text, 9) + 4;
+const ailWordWidth = (text: string): number => textWidth(text, 12) + 4;
 
 /** `row` shows a small 前／中／後 tag so the formation is visible during play. */
 export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row;
@@ -131,7 +131,7 @@ export class PartyBar {
     setTimeout(() => { for (const x of extras) x.remove(); }, POP_MS);
   }
 
-  /** A mechanic's moment (暴走！, 還有。): its word in its colour rising off the panel, like MISS. */
+  /** A mechanic's moment (暴走！, 還有。): its word in its colour on the portrait's lower part, rising as it fades. */
   cue(key: string, w: MechWord): void {
     const p = this.panels.get(key);
     if (!p) return;

@@ -9,6 +9,7 @@ import { capacity, carried, formatWeight } from '../../data/weights';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { MEETINGS } from '../../data/meetings';
 import { T } from '../../data/text.zh-TW';
+import { CONDITIONS } from '../../data/conditions';
 import { meet } from '../../engine/party';
 import { STORY } from '../../data/story.zh-TW';
 import { chainLength } from '../../data/story/chains';
@@ -285,7 +286,12 @@ describe('GateScene: region-only gear on the portal cards', () => {
     const { cards } = setup();
     const its = items(cards()[1]);
     expect(its.map((i) => i.dataset.special)).toEqual(['blaze-heart-sword', 'blaze-ember-ring', 'set-blaze']);
-    expect(its.map((i) => i.textContent)).toEqual(['灼心之劍（未取得）', '餘燼指環（未取得）', '焰紋套裝（未取得）']);
+    // Names in one run joined by 、 (legibility T3: the card fits at 12px); an unknown one is the dim colour, its tooltip,
+    // and a visible 「未取得」 tag a touch player sees too (final review: nothing rests on the hover alone).
+    expect(its.map((i) => i.querySelector('.slx-codex-name')!.textContent)).toEqual(['灼心之劍', '餘燼指環', '焰紋套裝']);
+    expect(its.map((i) => i.querySelector('.slx-codex-tag')?.textContent)).toEqual([T.ui2.gate.unknownTag, T.ui2.gate.unknownTag, T.ui2.gate.unknownTag]);
+    expect(T.ui2.gate.unknownTag).toBe('未取得');
+    expect(its.map((i) => i.title)).toEqual(['灼心之劍（未取得）', '餘燼指環（未取得）', '焰紋套裝（未取得）']);
     expect(its.every((i) => i.classList.contains('slx-codex-unknown'))).toBe(true);
     expect(its[0].classList.contains('slx-rarity-legendary')).toBe(true);
     expect(its[1].classList.contains('slx-rarity-unique')).toBe(true);
@@ -302,7 +308,23 @@ describe('GateScene: region-only gear on the portal cards', () => {
     expect(set.textContent).toBe('焰紋套裝');
     expect(cards()[1].querySelector('.slx-codex-line')).toBeNull();
     expect(ring.classList.contains('slx-codex-unknown')).toBe(true);
-    expect(ring.textContent).toBe('餘燼指環（未取得）');
+    expect(ring.textContent).toBe(`餘燼指環${T.ui2.gate.unknownTag}`);
+    expect(sword.querySelector('.slx-codex-tag')).toBeNull();   // an obtained piece carries no tag
+    expect(ring.title).toBe('餘燼指環（未取得）');
+  });
+
+  it('the 限定裝備 heading counts what is obtained, so nothing rests on the art alone (T3 review)', () => {
+    const label = (c: HTMLElement) => c.querySelector('.slx-portal-gear-head .slx-portal-label')!.textContent;
+    expect(label(setup().cards()[1])).toBe('限定裝備 0／3');
+    expect(label(setup((g) => { g.state.codex.push('blaze-heart-sword', 'set-blaze'); }).cards()[1])).toBe('限定裝備 2／3');
+  });
+
+  it('the condition keeps its 本次狀況 label before its gold name and its effect (final review: nothing lost)', () => {
+    const { cards } = setup();
+    const cond = cards()[1].querySelector('.slx-portal-cond')!;
+    expect(cond.querySelector('.slx-portal-label')!.textContent).toBe(T.ui2.gate.condition);
+    expect(cond.querySelector('b')!.textContent).toBe(CONDITIONS.fog.name);
+    expect(cond.querySelector('.slx-portal-desc')!.textContent).toBe(CONDITIONS.fog.desc);
   });
 
   it('the mainline card has one summary line of the general legendaries, not a list', () => {
@@ -348,12 +370,12 @@ describe('GateScene: region-only gear on the portal cards', () => {
     expect(pic(known, 'blaze-ember-ring')!.getAttribute('src')).toBe(art.gear(codexArtId('blaze-ember-ring')));
     expect(pic(known, 'set-blaze')!.getAttribute('src')).toBe(art.gear('set-blaze-weapon'));
     // Each picture names its piece on hover; the names list below is unchanged and carries no picture of its own.
-    expect(pic(unknown, 'set-blaze')!.getAttribute('title')).toBe(unknown.root.querySelector('[data-special="set-blaze"].slx-codex-item')!.textContent);
+    expect(pic(unknown, 'set-blaze')!.getAttribute('title')).toBe(unknown.root.querySelector('[data-special="set-blaze"].slx-codex-item')!.getAttribute('title'));   // the same full name as the list's tooltip (legibility T3)
     expect(unknown.root.querySelector('.slx-codex-item img')).toBeNull();
     const blaze = unknown.root.querySelector('.slx-portal-blaze')!;
     const order = [...blaze.querySelectorAll('.slx-codex-pics img')].map((i) => i.getAttribute('data-special'));
     expect(order).toEqual([...blaze.querySelectorAll('.slx-codex-item')].map((i) => i.getAttribute('data-special')));
-    expect(blaze.querySelector('.slx-portal-gear-head > .slx-portal-label')!.textContent).toBe(T.ui2.gate.gear);
+    expect(blaze.querySelector('.slx-portal-gear-head > .slx-portal-label')!.textContent).toBe(T.ui2.gate.gearCount(0, 3));   // with its count (T3 review)
     // Obtained but its gear art not published: the name alone.
     const knownNoArt = setup((g) => { g.state.codex.push('blaze-ember-ring'); }, { has: (u) => u === art.gearSilhouette('blaze-ember-ring') });
     expect(pic(knownNoArt, 'blaze-ember-ring')).toBeNull();
