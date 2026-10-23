@@ -1,7 +1,7 @@
 // fishing.test.ts — 釣魚：上鉤時機（等待 / 判定窗）、漁獲表（生態區 × 深度 × 液體 × 季節 × 天氣 × 時段 × 水域大小 × 釣力）、木箱戰利品
 import { describe, it, expect } from 'vitest';
 import {
-  FISH, FISH_SPECIES, OCEAN_FISH, biteDelay, biteWindow, canFishIn, catchCandidates, crateLoot, fishingPower, rollCatch, timeSlot,
+  FISH, FISH_SPECIES, biteDelay, biteWindow, canFishIn, catchCandidates, crateLoot, fishingPower, rollCatch, timeSlot,
   type CatchCtx,
 } from './fishing';
 import { ITEMS } from './items';
@@ -134,12 +134,20 @@ describe('BIOME.OCEAN 釣魚', () => {
     for (const fresh of ['reed_perch', 'brook_trout', 'frost_char', 'oasis_koi', 'mud_whisker', 'sun_bream', 'ember_salmon', 'old_whiskers']) expect(items).not.toContain(fresh);
     expect(items).toContain('silver_minnow');
   });
-  it('海洋表 = OCEAN_FISH ∪ 垃圾 ∪ 木箱（所有季節 × 時段 × 天氣、釣力 100、大水池）', () => {
+  // 海洋表（M1）：海上釣得到的 = FISH 裡不限生態、地表可釣的水中條目（魚 + 垃圾 + 木箱）；海洋專屬魚種留 M2。
+  // 預期集合直接從 FISH 表的靜態欄位推（不另抄一份清單，表改了跟著變）
+  it('海洋表 = FISH 中不限生態的地表水中條目（所有季節 × 時段 × 天氣、釣力 100、大水池）', () => {
     const seasons = [0, 1, 2, 3] as const, times = ['dawn', 'day', 'dusk', 'night'] as const;
     const weathers = ['clear', 'cloudy', 'rain', 'storm', 'snow', 'fog'] as const;
     const union = new Set<string>();
     for (const season of seasons) for (const time of times) for (const weather of weathers)
       for (const c of catchCandidates({ ...ocean, season, time, weather, power: 100, pool: 200 })) union.add(c.item);
-    expect([...union].sort()).toEqual([...OCEAN_FISH, 'soggy_boot', 'wood', 'wooden_crate', 'iron_crate', 'golden_crate'].sort());
+    const want = new Set(FISH.filter((f) => (f.liquid === undefined || f.liquid === LIQ.WATER) && (!f.biomes || f.biomes.includes(BIOME.OCEAN))
+      && (!f.zones || f.zones.includes('surface')) && (f.minPower ?? 0) <= 100 && (f.minPool ?? 0) <= 200).map((f) => f.item));
+    expect([...union].sort()).toEqual([...want].sort());
+    // 推出來的表本身合理：沒有任何生態專屬條目、魚有好幾種、垃圾與三種木箱都在
+    expect(FISH.some((f) => f.biomes?.includes(BIOME.OCEAN))).toBe(false);
+    expect([...want].filter((i) => ITEMS[i as keyof typeof ITEMS].fish).length).toBeGreaterThanOrEqual(5);
+    for (const i of ['silver_minnow', 'soggy_boot', 'wood', 'wooden_crate', 'iron_crate', 'golden_crate']) expect(union).toContain(i);
   });
 });
