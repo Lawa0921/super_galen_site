@@ -1,6 +1,6 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { chainLength } from '../../data/story/chains';
-import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAYOFFS, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, EVE_DEPTH, HEAVY_MAJORS, HOME_OWNERS, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAYOFFS, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, EVE_DEPTH, GROUP_GATE, HEAVY_MAJORS, HOME_OWNERS, REACTIONS, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type GroupScene, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
 import type { CharacterId } from '../types';
@@ -73,6 +73,13 @@ export function onReturn(s: GameState): StoryState {
   const waited: Partial<Record<BanterPair, number>> = {};
   for (const p of readyPairs({ ...s, story }, BANTER_GATE, BANTER_COUNT)) waited[p.pair] = Math.min(MAX_WAITED, (prev[p.pair] ?? 0) + 1);
   story.waited = waited;
+  // Story L spec §5.2: each return spends a group scene's chance: the act's own arrival was the first (0), this is the
+  // second (1); the return after that, it has expired. A reveal or confession arrival spends one too.
+  if (story.reacts) {
+    const reacts: Partial<Record<GroupScene, 0 | 1>> = {};
+    for (const [g, n] of Object.entries(story.reacts) as [GroupScene, 0 | 1][]) if (n === 0) reacts[g] = 1;
+    story.reacts = reacts;
+  }
   return story;
 }
 
@@ -277,12 +284,16 @@ export function openPairs(s: GameState, gates: Partial<Record<SceneId, StoryGate
  * arrival (`HEAVY_ARRIVAL`, or `afterFinale`: the return right after the ending); it waits for the next return. The heavy
  * check reads the queue and the scene in the chat slot: `slot` fills that slot, `nextChat` by default (6d: an ending first).
  */
-export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: boolean; slot?: (s: GameState) => SceneId | null }): SceneId[] {
+export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: boolean; slot?: (s: GameState) => SceneId | null; reactions?: Partial<Record<ActNode, GroupScene>> }): SceneId[] {
   const alone = ALONE.find((id) => s.story.queue.includes(id));
   if (alone) return [alone];
   const sorted = s.story.queue.filter((id) => !DEPARTURE_SCENES.includes(id)).sort((a, b) => rank(a) - rank(b));
   const major = sorted.find((id) => HEAVY_MAJORS.has(id));
   const list = sorted.filter((id) => !HEAVY_MAJORS.has(id) || id === major);
+  // Story L spec §5.3: the reaction slot, after the day's scenes. A group scene takes the chat and the banter's place
+  // (they wait for the next return); a reload fills it too, as the main line owes it.
+  const group = nextReaction(s, list, o.reactions);
+  if (group) return [...list, group];
   if (!o.chat) return list;
   const heavyList = list.some(isHeavyArrival);
   const chat = (o.slot ?? ((st: GameState) => nextChat(st, CHAT_GATE, heavyList)))(s);
@@ -295,6 +306,26 @@ export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: bo
   const quiet = !!banter && list.length === 0 && !o.afterFinale && openPairs(s) >= 3;
   const second = quiet ? pickBanter({ ...s, story: { ...s.story, seen: [...s.story.seen, banter] } }, BANTER_GATE, BANTER_COUNT, banterTwo(banter).join('-')) : null;
   return [...list, ...(chat ? [chat] : []), ...(banter ? [banter] : []), ...(second ? [second] : [])];
+}
+
+/**
+ * Story L spec §5.2, §5.3: the group scene for this arrival's reaction slot, or null. In act order, the first registered
+ * group (`reactions`) not yet seen whose act is in `day` or whose chances are still held in `story.reacts`; passed over
+ * when its gate has expired (act 3's, once Rin has chosen) or the next act is in `day` (it would play behind the act that
+ * follows it); offered only when its gate holds (`met`). None after the finale: by then every group has played or expired.
+ */
+export function nextReaction(s: GameState, day: SceneId[], reactions: Partial<Record<ActNode, GroupScene>> = REACTIONS, gates: Record<GroupScene, StoryGate> = GROUP_GATE): GroupScene | null {
+  if (s.story.finaleCleared) return null;
+  for (const [i, node] of ACT_NODES.entries()) {
+    const group = reactions[node];
+    if (!group || s.story.seen.includes(group)) continue;
+    if (!day.includes(node) && s.story.reacts?.[group] === undefined) continue;
+    if (gateExpired(s, gates[group])) continue;
+    const next = ACT_NODES[i + 1];
+    if (next && day.includes(next)) continue;
+    if (gateOpen(s, gates[group])) return group;
+  }
+  return null;
 }
 
 /**
@@ -332,8 +363,12 @@ export function settleOpening(s: GameState): GameState {
   return { ...s, story: { ...story, seen, queue } };
 }
 
-/** A scene is over, played or skipped; `auto` is one the player's story setting never showed, so it also reads as new. */
-export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' | 'auto'): GameState {
+/**
+ * A scene is over, played or skipped; `auto` is one the player's story setting never showed, so it also reads as new.
+ * Story L spec §5.2: an act said opens its group scene's chances (`reacts` 0; none inside the finale) and ends the chances
+ * of the group before it; a group said spends its own. `reactions`: the registered groups (tests give their own).
+ */
+export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' | 'auto', reactions: Partial<Record<ActNode, GroupScene>> = REACTIONS): GameState {
   const story: StoryState = { ...s.story, queue: s.story.queue.filter((q) => q !== id), seen: [...s.story.seen], fresh: [...s.story.fresh] };
   if (!story.seen.includes(id)) story.seen.push(id);
   if (how === 'auto' && !story.fresh.includes(id)) story.fresh.push(id);
@@ -341,6 +376,17 @@ export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' |
   if (story.untold) story.untold = story.untold.filter((u) => u !== id);
   if (story.tonight) story.tonight = story.tonight.filter((u) => u !== id);
   const queueOnce = (next: SceneId): void => { if (!story.seen.includes(next) && !story.queue.includes(next)) story.queue.push(next); };
+  const at = ACT_NODES.indexOf(id as ActNode);
+  if (at >= 0 || id.startsWith('group:')) {
+    const reacts = { ...story.reacts };
+    if (at >= 0) {
+      const before = ACT_NODES[at - 1] && reactions[ACT_NODES[at - 1]];
+      if (before) delete reacts[before];
+      const own = reactions[id as ActNode];
+      if (own && !story.finaleCleared && !story.seen.includes(own)) reacts[own] = 0;
+    } else delete reacts[id as GroupScene];
+    if (story.reacts || Object.keys(reacts).length) story.reacts = reacts;
+  }
   // Task 6 review: a banter heard, its pair's wait starts again
   if (id.startsWith('banter:') && story.waited) {
     const { [banterTwo(id).join('-') as BanterPair]: _, ...rest } = story.waited;

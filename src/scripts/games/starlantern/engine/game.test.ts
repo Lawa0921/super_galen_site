@@ -38,7 +38,7 @@ import { TALENT_NODES } from '../data/talents';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
 import type { FragmentGain } from './story/memories';
-import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, lineCap, memScene, type SceneId } from '../data/story/scenes';
+import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, lineCap, memScene, REACTIONS, type SceneId } from '../data/story/scenes';
 import { NIGHT_BEATS, STORY, type ScriptLine } from '../data/story.zh-TW';
 import { planNight } from './story/nights';
 import { linesOf } from '../ui2/story';
@@ -4672,4 +4672,92 @@ describe('story L: the night before the descent (Task 3d)', () => {
     expect(h.finale!.pieces).toEqual(['rin-confess', 'bellkeeper-arrives', 'mem:hero:10']);
     expect(h.eve).toEqual([]);
   });
+});
+
+describe('story L: the reaction slot in the game (Task 5)', () => {
+  const duo: CharacterId[] = ['hero', 'rin'];
+  const R = { act2: 'group:act2', act3: 'group:act3', act4: 'group:act4' } as const;
+  /** The three group scenes registered for the length of `fn` (their scripts come with the writing tasks). */
+  const registered = (fn: () => void) => {
+    Object.assign(REACTIONS, R);
+    try { fn(); } finally { for (const k of Object.keys(R)) delete REACTIONS[k as keyof typeof R]; }
+  };
+  /** In town, the opening behind it, `ids` met, the main road reached to act 2's depth and `untold` held untold. */
+  const inTown = (ids: CharacterId[], untold: SceneId[], storage: ReturnType<typeof memoryStorage> | null = null) => {
+    const g = new Game(calm(), storage, undefined, 0, duo);
+    g.state.story.queue = [];
+    g.state.story.seen = ['prologue', 'prologue-inn'];
+    for (const c of ids) if (!g.state.party.recruited.includes(c)) g.state.party = meet(g.state.party, c, 1);
+    for (const id of untold) {
+      const [, c, k] = id.split(':') as [string, CharacterId, string];
+      if (!g.state.party.recruited.includes(c)) g.state.party = meet(g.state.party, c, 1);
+      g.state.party.roster[c].memories = Math.max(g.state.party.roster[c].memories ?? 0, Number(k));
+    }
+    g.state.story.untold = [...untold];
+    g.state.dungeon.reached.mainline = ACT_DEPTHS.act2;
+    return g;
+  };
+  const trip = (g: Game) => {
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+  };
+  const four: SceneId[] = ['mem:safira:1', 'mem:bobby:1', 'mem:selene:1', 'mem:noel:1'];
+
+  it("the group scene is the night's first item, after the day's notices", () => registered(() => {
+    const storage = memoryStorage();
+    const g = inTown(['selene', 'noel'], four, storage);
+    trip(g);
+    expect(g.arrival).toEqual(['act2']);                         // the day: the act, no chat, no banter
+    expect(g.night[0]).toBe('group:act2');                       // the night: the group first
+    expect(g.night.slice(1)).toEqual(['mem:selene:1', 'mem:noel:1']);   // backlog 4, cap 2: the group's two go ahead
+    expect(g.state.story.tonight).toEqual(['mem:selene:1', 'mem:noel:1']);   // tonight keeps memories only
+    expect(g.sceneDone('act2', 'played')).toBe(true);
+    expect(g.state.story.reacts).toEqual({ 'group:act2': 0 });
+    // a reload after the act: the slot is filled again, still the night's first item
+    const b = Game.boot(calm(), storage);
+    expect(b.arrival).toEqual([]);
+    expect(b.night).toEqual(['group:act2', 'mem:selene:1', 'mem:noel:1']);
+    expect(b.sceneDone('group:act2', 'played')).toBe(true);
+    expect(b.state.story.reacts).toEqual({});
+    expect(b.state.story.seen).toContain('group:act2');
+    expect(b.night).toEqual(['mem:selene:1', 'mem:noel:1']);
+    // the next return has its chat back, and no group
+    trip(b);
+    expect(b.arrival.concat(b.night).some((id) => id.startsWith('group:'))).toBe(false);
+    expect(b.arrival.some((id) => id.startsWith('chat:') || id.startsWith('banter:'))).toBe(true);
+  }));
+
+  it('with its cast not met the arrival is as before, and the group waits one return', () => registered(() => {
+    const g = inTown(['selene'], ['mem:safira:1', 'mem:bobby:1', 'mem:selene:1', 'mem:liz:1']);   // Noel not met
+    trip(g);
+    expect(g.night.some((id) => id.startsWith('group:'))).toBe(false);
+    for (const id of [...g.arrival]) g.sceneDone(id, 'played');
+    expect(g.state.story.reacts).toEqual({ 'group:act2': 0 });
+    g.state.party = meet(g.state.party, 'noel', 1);
+    trip(g);
+    expect(g.state.story.reacts).toEqual({ 'group:act2': 1 });
+    expect(g.night[0]).toBe('group:act2');
+    expect(g.arrival.some((id) => id.startsWith('chat:') || id.startsWith('banter:'))).toBe(false);
+  }));
+
+  it("the finale's list never holds a group scene, and none follows it", () => registered(() => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, duo);
+    for (const c of ['liz', 'scarlet', 'chizuru', 'safira'] as const) g.state.party = meet(g.state.party, c, 1);
+    Object.assign(g.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    g.state.party.roster.hero.memories = 9;
+    g.state.story.seen = ['prologue', 'prologue-inn', 'act2', 'act3', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'mem:hero:9', 'finale-eve', 'hero-alone'];
+    g.state.story.nodes = ['act2', 'act3'];
+    g.state.story.queue = [];
+    g.state.dungeon.reached.mainline = FINALE_DEPTH;
+    expect(g.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(g, g.map().boss!);
+    killAll(g);
+    expect(g.finale!.pieces).toContain('act4');
+    expect(g.finale!.pieces.some((id) => id.startsWith('group:'))).toBe(false);
+    for (const id of [...g.finale!.pieces, 'finale'] as SceneId[]) expect(g.sceneDone(id, 'played'), id).toBe(true);
+    expect(g.state.story.reacts ?? {}).toEqual({});
+    g.restartAfterClear();
+    expect(g.phase).toBe('town');
+    expect([...g.arrival, ...g.night].some((id) => id.startsWith('group:'))).toBe(false);
+  }));
 });

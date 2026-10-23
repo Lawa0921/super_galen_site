@@ -619,4 +619,65 @@ describe('TownScene: the night (story L Task 3c)', () => {
     expect(game.state.story.fresh).toContain('mem:liz:1');
     expect(game.state.story.untold).toEqual([]);
   });
+  it("the group scene is the night's first item, after the day's notices, under its own card (story L Task 5)", async () => {
+    // a stand-in script for the group (the writing tasks write the real one): two lines, the first with its place card
+    const scenes = STORY.scenes as Record<string, { title: string; summary: string; lines: ScriptLine[] }>;
+    scenes['group:act2'] = { title: '碎片的價錢', summary: '', lines: [
+      { who: 'narrator', text: '公會的長桌。', place: { text: '冒險者公會・打烊以後' } },
+      { who: 'selene', text: '「我先說。」' },
+    ] };
+    try {
+      await withBeats([{ who: 'narrator', text: '窗外起風了。' }], async () => {
+        const game = setup(['mem:selene:1', 'mem:noel:1']);
+        game.state.story.queue = ['act2'];
+        game.state.story.reacts = {};
+        game.arrival = ['act2'];
+        game.night = ['group:act2', 'mem:selene:1', 'mem:noel:1'];
+        game.state.story.tonight = ['mem:selene:1', 'mem:noel:1'];
+        game.notice = 'banked';
+        game.banked = { items: {}, gold: 40, viaLamp: false, gear: [], overflow: [] };
+        const t = open(game, 'major');   // the group plays under 「只播主線」 too; the memories are recorded as new
+        await t.through('act2');
+        expect(t.text()).toBe('平安回城。帶回了：40 G。');   // the day's notices come first
+        t.s.onAction('confirm'); await t.settle();
+        t.s.onAction('confirm'); await t.settle();   // the day's line
+        await t.through('group:act2', () => {
+          expect(t.card()).toBe('冒險者公會・打烊以後');   // its own card, not the night's
+          expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(true);
+        });
+        expect(game.state.story.seen).toContain('group:act2');
+        expect(game.state.story.fresh).not.toContain('group:act2');
+        expect(game.state.story.fresh).toEqual(expect.arrayContaining(['mem:selene:1', 'mem:noel:1']));   // not shown: new
+        expect(game.state.story.beat).toBeUndefined();   // no beat after a group, nor around memories not shown
+        expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);
+        expect(t.menu().hasAttribute('inert')).toBe(false);
+        expect(game.night).toEqual([]);
+      });
+    } finally {
+      delete scenes['group:act2'];
+    }
+  });
+
+  it('a group scene then the memories: the night card comes up for the first memory, with no beat between (story L Task 5)', async () => {
+    const scenes = STORY.scenes as Record<string, { title: string; summary: string; lines: ScriptLine[] }>;
+    scenes['group:act2'] = { title: '碎片的價錢', summary: '', lines: [{ who: 'narrator', text: '公會的長桌。', place: { text: '冒險者公會・打烊以後' } }] };
+    try {
+      await withBeats([{ who: 'narrator', text: '窗外起風了。' }], async () => {
+        const game = setup(['mem:selene:1', 'mem:noel:1']);
+        game.night = ['group:act2', 'mem:selene:1', 'mem:noel:1'];
+        game.state.story.tonight = ['mem:selene:1', 'mem:noel:1'];
+        const t = open(game);
+        t.s.onAction('confirm'); await t.settle();   // the day's line
+        await t.through('group:act2', () => expect(t.card()).toBe('冒險者公會・打烊以後'));
+        await t.through('mem:selene:1', () => expect([t.card(), t.night()]).toEqual(['月影旅館・夜', true]));
+        expect(t.text()).toBe('窗外起風了。');      // the beat between the two memories only
+        t.s.onAction('confirm'); await t.settle();
+        await t.through('mem:noel:1');
+        expect(game.state.story.beat).toBe(0);
+        expect(game.state.story.seen).toEqual(expect.arrayContaining(['group:act2', 'mem:selene:1', 'mem:noel:1']));
+      });
+    } finally {
+      delete scenes['group:act2'];
+    }
+  });
 });

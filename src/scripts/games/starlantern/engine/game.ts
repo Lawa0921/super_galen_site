@@ -114,6 +114,9 @@ function openStairs(m: FloorMap): void {
   m.boss = null;
 }
 
+/** Story L spec §5: a group scene, the reaction slot's (it plays as the night's first item). */
+const isGroup = (id: SceneId): boolean => id.startsWith('group:');
+
 export class Game {
   state: GameState;
   phase: Phase = 'town';
@@ -194,11 +197,12 @@ export class Game {
     }
     if (r.status === 'ok' && previous?.notice === 'tree-reworked') g.notice = 'tree-reworked';
     g.rerolled = true;
-    g.arrival = arrivalScenes(g.state, { chat: false });
-    // Story L spec §4.6: the night is not picked again; what tonight still holds untold plays, the owed ones first.
-    const plan = restoreNight(g.state, g.arrival);
-    g.arrival = [...plan.before, ...g.arrival];
-    g.night = plan.night;
+    const day = arrivalScenes(g.state, { chat: false });
+    // Story L spec §4.6: the night is not picked again; what tonight still holds untold plays, the owed ones first. A
+    // group scene the reaction slot holds again leads the night (spec §5.3).
+    const plan = restoreNight(g.state, day);
+    g.arrival = [...plan.before, ...day.filter((id) => !isGroup(id))];
+    g.night = [...day.filter(isGroup), ...plan.night];
     return g;
   }
 
@@ -1270,8 +1274,10 @@ export class Game {
     const day = arrivalScenes(this.state, { chat: true, afterFinale });
     const plan = planNight(this.state, day);
     this.state.story.tonight = [...plan.before, ...plan.night];
-    this.arrival = [...plan.before, ...day];
-    this.night = plan.night;
+    // Story L spec §4.5: a group scene in the reaction slot is the night's first item, after the day's notices.
+    const group = day.filter(isGroup);
+    this.arrival = [...plan.before, ...day.filter((id) => !isGroup(id))];
+    this.night = [...group, ...plan.night];
     this.leadSaid = false;
   }
 

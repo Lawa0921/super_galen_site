@@ -24,10 +24,10 @@ export interface StoryCtx { game: Game; art: ArtIndex; mode: StoryMode }
 export const storyCtx = (ctx: SceneCtx): StoryCtx => ({ game: ctx.game, art: ctx.art, mode: ctx.settings?.get().story ?? DEFAULT_SETTINGS.story });
 
 const MAJOR = new Set<SceneId>(MAJOR_SCENES);
-/** Whether a scene starts by itself: every one, only the major ones, or none. */
+/** Whether a scene starts by itself: every one, only the major ones (a group scene counts as one, story L spec §5.1), or none. */
 export function shouldPlay(id: SceneId, mode: StoryMode): boolean {
   if (mode === 'all') return true;
-  return mode === 'major' && MAJOR.has(id);
+  return mode === 'major' && (MAJOR.has(id) || sceneKind(id) === 'group');
 }
 
 /** The town people who have a published face: the facility keeper each one stands in. */

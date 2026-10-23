@@ -468,6 +468,16 @@ describe('shouldPlay', () => {
     expect(shouldPlay('chat:liz:1', 'major')).toBe(false);
     expect(shouldPlay('town:anna', 'none')).toBe(false);
   });
+
+  it('a group scene plays under major only (story L Task 5, spec §5.1)', () => {
+    for (const id of ['group:act2', 'group:act3', 'group:act4'] as SceneId[]) {
+      expect(shouldPlay(id, 'all'), id).toBe(true);
+      expect(shouldPlay(id, 'major'), id).toBe(true);
+      expect(shouldPlay(id, 'none'), id).toBe(false);
+    }
+    expect(shouldPlay('mem:selene:1', 'major')).toBe(false);
+    expect(shouldPlay('banter:noel-rin:1', 'major')).toBe(false);
+  });
 });
 
 describe('playAndRecord', () => {

@@ -268,6 +268,25 @@ describe("the adventurer's handbook", () => {
     }
   });
 
+  it("a group scene sits on its act's truth page, after the act (story L spec §5.1)", () => {
+    const scenes = STORY.scenes as Record<string, { title: string; summary: string; lines: unknown[] }>;
+    for (const id of ['group:act2', 'group:act3', 'group:act4']) scenes[id] = { title: id, summary: '', lines: [] };
+    try {
+      const s = everything();
+      s.story.seen.push('group:act2', 'group:act3', 'group:act4');
+      s.story.fresh = ['group:act3'];
+      const page = (stage: string) => handbook(s).truths.find((t) => t.stage === stage)!.scenes;
+      expect(page('act2').map((e) => e.scene)).toEqual(['act2', 'group:act2']);
+      expect(page('act3').map((e) => [e.scene, e.fresh])).toEqual([['act3', false], ['group:act3', true]]);
+      expect(page('act4').map((e) => e.scene)).toEqual(['act4', 'group:act4', 'finale-eve']);
+      // one missed (never seen) is simply not listed
+      s.story.seen = s.story.seen.filter((id) => id !== 'group:act2');
+      expect(page('act2').map((e) => e.scene)).toEqual(['act2']);
+    } finally {
+      for (const id of ['group:act2', 'group:act3', 'group:act4']) delete scenes[id];
+    }
+  });
+
   it('a banter is replayable from the page of each of its two, once seen: after her chats, before her homecoming (B1)', () => {
     const s = withMemories(withMemories(fresh(), 'safira', 0), 'sylvie', 0);
     const id: SceneId = 'banter:safira-sylvie:1';

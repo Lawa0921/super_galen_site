@@ -7,7 +7,7 @@ import { MEETINGS } from '../../data/meetings';
 import { memoryPace } from './expect';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
-import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyPieces, storyStage, toldCount, afterWin } from './events';
+import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, nextReaction, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyPieces, storyStage, toldCount, afterWin } from './events';
 import { withTold } from '../testing';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
@@ -1255,5 +1255,137 @@ describe('story L: the night before the descent (Task 3d)', () => {
     delete before.party.roster.rin.oath;
     before.story.seen = before.story.seen.filter((id) => id !== 'rin-reveal' && id !== 'rin-confess' && id !== 'bellkeeper-arrives');
     expect(returned(before).story.queue).not.toContain('finale-eve');
+  });
+});
+
+describe('story L: the reaction slot (Task 5)', () => {
+  const R = { act2: 'group:act2', act3: 'group:act3', act4: 'group:act4' } as const;
+  const kinds = (ids: SceneId[]) => ids.filter((id) => id.startsWith('chat:') || id.startsWith('banter:'));
+  /** In town with `ids` met (Lorne and Rin are), the act `node` reached and queued, the acts before it played. */
+  const at = (node: 'act2' | 'act3' | 'act4' | null, ids: CharacterId[]): GameState => {
+    const s = base();
+    for (const id of ids) withMemories(s, id, 0);
+    if (node) {
+      s.dungeon.reached.mainline = ACT_DEPTHS[node];
+      for (const n of ['act2', 'act3', 'act4'] as const) {
+        if (ACT_DEPTHS[n] > ACT_DEPTHS[node]) continue;
+        s.story.nodes.push(n);
+        if (n === node) s.story.queue.push(n); else s.story.seen.push(n);
+      }
+    }
+    return s;
+  };
+  const done = (s: GameState, id: SceneId): GameState => sceneDone(s, id, 'played', R);
+
+  it('group:act2 plays on the arrival act2 plays, its cast met, and takes the chat and banter', () => {
+    const s = at('act2', ['selene', 'noel', 'liz']);
+    const day = arrivalScenes(s, { chat: true, reactions: R });
+    expect(day).toEqual(['act2', 'group:act2']);
+    expect(kinds(day)).toEqual([]);
+    // the registry empty (no script yet), the arrival is what it was
+    expect(arrivalScenes(s, { chat: true })).not.toContain('group:act2');
+    expect(kinds(arrivalScenes(s, { chat: true })).length).toBeGreaterThan(0);
+    expect(nextReaction(s, ['act2'], R)).toBe('group:act2');
+    // the act said, it holds its group's chances; the group said, they are spent
+    const after = done(s, 'act2');
+    expect(after.story.reacts).toEqual({ 'group:act2': 0 });
+    const heard = done(after, 'group:act2');
+    expect(heard.story.reacts).toEqual({});
+    expect(heard.story.seen).toContain('group:act2');
+    // the chat and the banter come back on the next return
+    const next = returned(heard);
+    const nextDay = arrivalScenes(next, { chat: true, reactions: R });
+    expect(nextDay).not.toContain('group:act2');
+    expect(kinds(nextDay).length).toBeGreaterThan(0);
+  });
+
+  it('a group scene waits for its cast one more return, then expires', () => {
+    // act 2's arrival: Noel not met, so no group, and the chat slot is as before
+    let s = at('act2', ['selene']);
+    const day = arrivalScenes(s, { chat: true, reactions: R });
+    expect(day).not.toContain('group:act2');
+    expect(day).toEqual(arrivalScenes(s, { chat: true }));
+    s = done(s, 'act2');
+    expect(s.story.reacts).toEqual({ 'group:act2': 0 });
+    // the next return: its second chance
+    s = returned(s);
+    expect(s.story.reacts).toEqual({ 'group:act2': 1 });
+    const met = withMemories(structuredClone(s), 'noel', 0);
+    expect(arrivalScenes(met, { chat: true, reactions: R })).toEqual(['group:act2']);
+    expect(arrivalScenes(s, { chat: true, reactions: R })).not.toContain('group:act2');   // still not met
+    // one more return: gone, met or not
+    s = returned(s);
+    expect(s.story.reacts).toEqual({});
+    withMemories(s, 'noel', 0);
+    expect(arrivalScenes(s, { chat: true, reactions: R })).not.toContain('group:act2');
+    expect(nextReaction(s, [], R)).toBeNull();
+  });
+
+  it("a group scene's second chance is lost when the next act plays", () => {
+    const s = at('act3', ['selene', 'noel']);
+    s.story.reacts = { 'group:act2': 1 };
+    // the next act in the day: the group before it is passed over (and act 3's own needs Sylvie and Bobby)
+    expect(nextReaction(s, ['act3'], R)).toBeNull();
+    const day = arrivalScenes(s, { chat: true, reactions: R });
+    expect(day[0]).toBe('act3');
+    expect(day).not.toContain('group:act2');
+    const zero = structuredClone(s);
+    zero.story.reacts = { 'group:act2': 0 };
+    expect(nextReaction(zero, ['act3'], R)).toBeNull();
+    // and once the next act is said, the earlier group is gone: a reload does not bring it back after it
+    const after = done(s, 'act3');
+    expect(after.story.reacts).toEqual({ 'group:act3': 0 });
+    expect(arrivalScenes(after, { chat: false, reactions: R })).toEqual([]);
+    // with act 3's cast met as well, act 3's own group plays
+    const cast = at('act3', ['selene', 'noel', 'sylvie', 'bobby']);
+    cast.story.reacts = { 'group:act2': 0 };
+    expect(nextReaction(cast, ['act3'], R)).toBe('group:act3');
+  });
+
+  it("group:act3 expires on Rin's choice", () => {
+    const s = at('act3', ['sylvie', 'bobby']);
+    expect(nextReaction(s, ['act3'], R)).toBe('group:act3');
+    s.party.roster.rin.oath = true;
+    expect(nextReaction(s, ['act3'], R)).toBeNull();
+    s.story.reacts = { 'group:act3': 1 };
+    expect(nextReaction(s, [], R)).toBeNull();
+    expect(arrivalScenes(s, { chat: false, reactions: R })).not.toContain('group:act3');
+  });
+
+  it('no reaction on a reveal or a confession arrival, and that arrival spends a chance', () => {
+    const s = at(null, ['selene', 'noel']);
+    withMemories(s, 'rin', chainLength('rin'));
+    s.story.seen.push('act2');
+    s.story.nodes = ['act2'];
+    s.dungeon.reached.mainline = ACT_DEPTHS.act2;
+    s.story.reacts = { 'group:act2': 0 };
+    const reveal = returned(s);
+    expect(reveal.story.queue).toEqual(['rin-reveal']);
+    expect(arrivalScenes(reveal, { chat: true, reactions: R })).toEqual(['rin-reveal']);
+    expect(reveal.story.reacts).toEqual({ 'group:act2': 1 });
+    const confess = returned(done(reveal, 'rin-reveal'));
+    expect(arrivalScenes(confess, { chat: true, reactions: R })).toEqual(['rin-confess']);
+    expect(confess.story.reacts).toEqual({});
+  });
+
+  it('a reload fills the reaction slot but no chat', () => {
+    const s = at(null, ['selene', 'noel']);
+    s.story.seen.push('act2');
+    s.story.nodes = ['act2'];
+    s.dungeon.reached.mainline = ACT_DEPTHS.act2;
+    s.story.reacts = { 'group:act2': 0 };
+    expect(arrivalScenes(s, { chat: false, reactions: R })).toEqual(['group:act2']);
+    expect(arrivalScenes(s, { chat: false })).toEqual([]);
+    expect(arrivalScenes(s, { chat: true, reactions: R })).toEqual(['group:act2']);
+  });
+
+  it('after the finale no act opens a chance and no group is offered (spec §4.8, §5.3)', () => {
+    const s = at('act4', ['liz', 'scarlet', 'chizuru', 'safira']);
+    s.story.act1Cleared = true;
+    s.story.finaleCleared = true;
+    expect(nextReaction(s, ['act4'], R)).toBeNull();
+    expect(done(s, 'act4').story.reacts ?? {}).toEqual({});
+    s.story.reacts = { 'group:act4': 0 };
+    expect(nextReaction(s, [], R)).toBeNull();
   });
 });

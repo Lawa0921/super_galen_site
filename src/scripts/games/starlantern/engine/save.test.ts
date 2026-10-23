@@ -1080,3 +1080,36 @@ describe('story L: the beat cursor in the save (Task 3b)', () => {
     expect(status(g)).toBe('corrupt');
   });
 });
+
+describe('story L: the reaction slot in the save (Task 5)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+
+  it('reacts saves and loads; a seen or unknown group, or a value other than 0 and 1, is refused', () => {
+    const st = memoryStorage();
+    const g = newGame();
+    g.story.reacts = { 'group:act2': 0, 'group:act4': 1 };
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && r.state.story.reacts).toEqual({ 'group:act2': 0, 'group:act4': 1 });
+    expect(status(newGame())).toBe('ok');   // absent reads as empty
+    const empty = newGame();
+    empty.story.reacts = {};
+    expect(status(empty)).toBe('ok');
+    const cases: [string, unknown, string[]?][] = [
+      ['an unknown group', { 'group:act1': 0 }],
+      ['not a group', { act2: 0 }],
+      ['a value of 2', { 'group:act2': 2 }],
+      ['a value of -1', { 'group:act2': -1 }],
+      ['a string', { 'group:act2': '0' }],
+      ['not an object', ['group:act2']],
+      ['null', null],
+      ['a seen group', { 'group:act2': 0 }, ['group:act2']],
+    ];
+    for (const [name, reacts, seen] of cases) {
+      const b = newGame();
+      (b.story as { reacts?: unknown }).reacts = reacts;
+      if (seen) b.story.seen.push(...(seen as never[]));
+      expect(status(b), name).toBe('corrupt');
+    }
+  });
+});

@@ -4,7 +4,7 @@ import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from '../../data/story/fragments';
-import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, banterScene, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
+import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, banterScene, groupScene, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { memoriesOf } from '../progression';
@@ -112,9 +112,13 @@ export function handbook(s: GameState): Handbook {
       default: return s.story.nodes.includes(stage) && seen.has(TRUTH_SCENE[stage]);
     }
   };
-  // The after page replays the finale, then the lantern festival (story depth plan ruling 12). Story L: the act 4 page
-  // replays the night before the descent after the act (as a group scene sits after its act, spec §5.1).
-  const pageScenes = (stage: Stage): SceneId[] => stage === 'after' ? ['finale', 'epilogue'] : stage === 'act4' ? [TRUTH_SCENE.act4, 'finale-eve'] : [TRUTH_SCENE[stage]];
+  // The after page replays the finale, then the lantern festival (story depth plan ruling 12). Story L: an act's page
+  // replays its group scene after the act (spec §5.1), and the act 4 page then the night before the descent.
+  const pageScenes = (stage: Stage): SceneId[] => {
+    if (stage === 'after') return ['finale', 'epilogue'];
+    if (stage === 'act2' || stage === 'act3' || stage === 'act4') return [TRUTH_SCENE[stage], groupScene(stage), ...(stage === 'act4' ? ['finale-eve' as const] : [])];
+    return [TRUTH_SCENE[stage]];
+  };
   const truths = STAGES.map((stage): TruthPage => ({
     stage, unlocked: open(stage), text: open(stage) ? STORY.truths[stage] : null, scenes: entries(pageScenes(stage)),
   }));

@@ -223,3 +223,18 @@ describe('story L: the night planner (Task 3a)', () => {
     expect(JSON.stringify(s)).toBe(before);
   });
 });
+
+describe('story L: the reaction slot and the night (Task 5)', () => {
+  it("a group scene's companions are continuing that night", () => {
+    // Selene and Noel are act 2's group; Safira waited longer, but they speak tonight
+    const s = untold([m('safira', 1), m('selene', 2), m('noel', 1), m('bobby', 1)]);
+    expect(continuing(s, 'selene', [])).toBe(false);
+    expect(continuing(s, 'selene', ['act2', 'group:act2'])).toBe(true);
+    expect(continuing(s, 'noel', ['group:act2'])).toBe(true);
+    expect(continuing(s, 'safira', ['group:act2'])).toBe(false);
+    // backlog 4, cap 2: the two of the group, ahead of Safira
+    expect(pickMemories(s, ['group:act2'], 2)).toEqual([m('selene', 2), m('noel', 1)]);
+    expect(pickMemories(s, [], 2)).toEqual([m('safira', 1), m('selene', 2)]);
+    expect(planNight(s, ['group:act2']).night).toEqual([m('selene', 2), m('noel', 1)]);
+  });
+});

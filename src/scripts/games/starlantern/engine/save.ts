@@ -13,7 +13,7 @@ import { defaultTree, heroTree, memoriesOf, validBuild } from './progression';
 import { SAVE_VERSION, type GameState } from './state';
 import { repairRuneFields } from './sockets';
 import { buildOf } from '../data/builds';
-import { BANTER_PAIRS, isSceneId, type BanterPair } from '../data/story/scenes';
+import { BANTER_PAIRS, GROUP_GATE, isSceneId, type BanterPair } from '../data/story/scenes';
 import { MAX_WAITED } from './story/events';
 import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
@@ -101,6 +101,8 @@ function isStory(v: unknown): boolean {
   if (v.tonight !== undefined && !(isUniqueList(v.tonight, isSceneId) && v.tonight.every((id) => ((v.untold ?? []) as unknown[]).includes(id)))) return false;
   // story L: the beat cursor, a line of the pool (none while the pool is empty)
   if (v.beat !== undefined && !(Number.isInteger(v.beat) && (v.beat as number) >= 0 && (v.beat as number) < NIGHT_BEATS.lines.length)) return false;
+  // story L: a group scene's chances, one of the three groups not yet seen, 0 or 1
+  if (v.reacts !== undefined && !(isObj(v.reacts) && Object.entries(v.reacts).every(([k, n]) => Object.hasOwn(GROUP_GATE, k) && !(v.seen as unknown[]).includes(k) && (n === 0 || n === 1)))) return false;
   if (v.waited !== undefined && !(isObj(v.waited) && Object.entries(v.waited).every(([k, n]) => BANTER_PAIRS.includes(k as BanterPair) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_WAITED))) return false;
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }

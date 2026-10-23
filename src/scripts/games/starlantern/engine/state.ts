@@ -1,5 +1,5 @@
 import { favouredRegions } from '../data/meetings';
-import type { ActNode, BanterPair, SceneId } from '../data/story/scenes';
+import type { ActNode, BanterPair, GroupScene, SceneId } from '../data/story/scenes';
 import type { TownFragmentId } from '../data/story/fragments';
 import type { RegionId } from '../data/regions';
 import type { Portal } from './dungeon/run';
@@ -53,6 +53,11 @@ export interface StoryState {
   tonight?: SceneId[];
   /** Story L spec §4.4.1: the cursor into `NIGHT_BEATS`, the next beat between two memories. Absent reads as 0. */
   beat?: number;
+  /**
+   * Story L spec §5.2, §11: a group scene's chances left. Its act said, it is 0; the next return makes it 1, the one after
+   * removes it (expired), and so does the group said, or the next act said. Absent reads as empty.
+   */
+  reacts?: Partial<Record<GroupScene, 0 | 1>>;
 }
 
 /** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */
