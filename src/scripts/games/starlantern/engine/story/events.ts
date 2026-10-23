@@ -60,7 +60,7 @@ export function onReturn(s: GameState): StoryState {
   // Story depth (plan ruling 6): the lone morning, once his ninth piece is seen or waiting and her choice is made, until the
   // finale; it plays on a departure (`Game.departScene`). The festival, once, on the first return after the finale.
   const owed = (id: SceneId): boolean => !story.seen.includes(id) && !story.queue.includes(id);
-  const ninth = story.seen.includes('mem:hero:9') || story.queue.includes('mem:hero:9');
+  const ninth = story.seen.includes('mem:hero:9') || story.queue.includes('mem:hero:9') || !!story.untold?.includes('mem:hero:9');   // story L: held, untold
   if (ninth && rin?.oath && !story.finaleCleared && owed('hero-alone')) story.queue.push('hero-alone');
   if (story.finaleCleared && owed('epilogue')) story.queue.push('epilogue');
   // Task 6 review: one more return for every pair with a banter ready (the pick's tie-break: ready longest first). A pair
@@ -334,6 +334,9 @@ export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' |
   const story: StoryState = { ...s.story, queue: s.story.queue.filter((q) => q !== id), seen: [...s.story.seen], fresh: [...s.story.fresh] };
   if (!story.seen.includes(id)) story.seen.push(id);
   if (how === 'auto' && !story.fresh.includes(id)) story.fresh.push(id);
+  // story L: a memory told leaves the untold list and tonight's picks
+  if (story.untold) story.untold = story.untold.filter((u) => u !== id);
+  if (story.tonight) story.tonight = story.tonight.filter((u) => u !== id);
   const queueOnce = (next: SceneId): void => { if (!story.seen.includes(next) && !story.queue.includes(next)) story.queue.push(next); };
   // Task 6 review: a banter heard, its pair's wait starts again
   if (id.startsWith('banter:') && story.waited) {

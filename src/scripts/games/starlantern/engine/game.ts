@@ -133,7 +133,7 @@ export class Game {
    * later notice ('banked') never drops it. The town reads and empties it.
    */
   followEnded: CharacterId[] = [];
-  /** Memory scenes the screen should play now (not saved). */
+  /** Scenes the screen should play now (not saved): a returned townsfolk fragment. A memory never waits here (story L). */
   pending: SceneId[] = [];
   /** The scenes the town should play on this arrival, in order (not saved: a reload rebuilds it from the queue). */
   arrival: SceneId[] = [];
@@ -337,8 +337,12 @@ export class Game {
     return { kind: 'glimmer', gained: [gainOf(item)!] };
   }
 
-  /** Gives each chain in `ids` its next piece, in order, and works out which memory scenes play now, wait in the handbook, or queue. */
-  private takePieces(ids: CharacterId[], topUp = false, finale = false): FragmentGain[] {
+  /**
+   * Gives each chain in `ids` its next piece, in order. Its effects land now (the count, the stats, the pity reset); its scene
+   * waits in `story.untold`, in pickup order, for a night in town or the handbook (story L spec §4.2). The finale fight's hero
+   * pieces are the finale's own (`finalePieces`): neither untold nor seen.
+   */
+  private takePieces(ids: CharacterId[], finale = false): FragmentGain[] {
     if (ids.length === 0) return [];
     const run = this.run!;
     const story = this.state.story;
@@ -347,17 +351,8 @@ export class Game {
     (run.dropped[this.floor] ??= []).push(...ids);
     for (const id of ids) story.pity[id] = 0;   // a piece resets its chain's count now, so leaving the floor any way keeps it
     return applied.gained.map(({ id, n }) => {
-      const scene = memScene(id, n);
-      if (finale && id === 'hero') return { kind: 'piece' as const, id, n, play: false };   // the finale plays these itself: neither queued nor seen
-      let play = false;
-      // A top-up (and anyone else's piece in the finale fight) waits in the queue for the next return to town.
-      if (topUp || finale) story.queue.push(scene);
-      else if (!run.played.includes(this.floor)) { play = true; run.played.push(this.floor); this.pending.push(scene); }
-      else {
-        if (!story.seen.includes(scene)) story.seen.push(scene);
-        if (!story.fresh.includes(scene)) story.fresh.push(scene);
-      }
-      return { kind: 'piece' as const, id, n, play };
+      if (!(finale && id === 'hero')) (story.untold ??= []).push(memScene(id, n));
+      return { kind: 'piece' as const, id, n, play: false };
     });
   }
 
@@ -691,8 +686,7 @@ export class Game {
       const source = b.boss ? 'boss' : 'elite';
       const rng = memoryRng(run);
       const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source }, rng);
-      const topUp = b.boss && run.region === 'mainline' && this.floor === 25 && ids.every((id) => id === 'hero');
-      fragments = this.takePieces(ids, topUp, finale);
+      fragments = this.takePieces(ids, finale);
       if (finale) this.finale = { pieces: this.finalePieces(fragments) };
       // Ownerless and townsfolk fragments ride in the run pack like materials; one that does not fit is left behind.
       for (const gain of lootFragments(this.state, run, { region: run.region, depth: this.floor, source }, rng)) {
@@ -1203,6 +1197,21 @@ export class Game {
     return true;
   }
 
+  /**
+   * Story L spec §4.7: the handbook played a memory still untold. It is told: seen (not new: the player chose to read it),
+   * out of `untold` and tonight's picks. Town saves at once; the labyrinth waits for the next save in town. False, and nothing
+   * changes, for anything not untold.
+   */
+  tellEarly(id: SceneId): boolean {
+    const story = this.state.story;
+    if (!story.untold?.includes(id)) return false;
+    story.untold = story.untold.filter((u) => u !== id);
+    if (story.tonight) story.tonight = story.tonight.filter((u) => u !== id);
+    if (!story.seen.includes(id)) story.seen.push(id);
+    this.saveInTown();
+    return true;
+  }
+
   /** The handbook opened a scene: it is no longer new. Town saves at once. */
   markRead(id: SceneId): void {
     this.state = markRead(this.state, id);
@@ -1243,7 +1252,11 @@ export class Game {
     const confess: SceneId[] = story.queue.includes('rin-confess') ? ['rin-confess'] : [];
     const keeper: SceneId[] = story.queue.includes('bellkeeper-arrives') || confess.length ? ['bellkeeper-arrives'] : [];
     const heroNo = (id: SceneId) => Number(id.slice('mem:hero:'.length));
-    const queued = story.queue.filter((id) => id.startsWith('mem:hero:'));
+    // story L spec §4.8: his pieces still untold (depth 25's top-up) are the finale's to play, and leave untold and tonight
+    const untoldHero = (story.untold ?? []).filter((id) => id.startsWith('mem:hero:'));
+    if (story.untold) story.untold = story.untold.filter((id) => !id.startsWith('mem:hero:'));
+    if (story.tonight) story.tonight = story.tonight.filter((id) => !id.startsWith('mem:hero:'));
+    const queued = [...story.queue.filter((id) => id.startsWith('mem:hero:')), ...untoldHero];
     const taken = new Set<SceneId>([...acts, ...confess, ...keeper]);
     story.queue = story.queue.filter((id) => !id.startsWith('mem:hero:') && !taken.has(id));
     for (const id of DEPARTURE_SCENES) {

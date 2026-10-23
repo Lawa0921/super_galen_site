@@ -1200,3 +1200,24 @@ describe('story L: told pieces and the met gate (Task 1)', () => {
     expect(REACTIONS).toEqual({});   // no group scene is written yet (Task 9-11 register them)
   });
 });
+
+describe('story L: pieces wait to be told (Task 2a)', () => {
+  it('sceneDone takes a memory out of untold and tonight', () => {
+    const s = withMemories(base(), 'rin', 2);
+    s.story.untold = ['mem:rin:1', 'mem:rin:2'];
+    s.story.tonight = ['mem:rin:1'];
+    const done = sceneDone(s, 'mem:rin:1', 'played');
+    expect(done.story.untold).toEqual(['mem:rin:2']);
+    expect(done.story.tonight).toEqual([]);
+    expect(done.story.seen).toContain('mem:rin:1');
+    expect(sceneDone(base(), 'act2', 'played').story.untold).toBeUndefined();   // nothing added where there was nothing
+  });
+
+  it('the lone morning counts a ninth piece still untold', () => {
+    const s = withMemories(base(), 'hero', 9);
+    s.party.roster.rin.oath = true;
+    expect(onReturn(s).queue).not.toContain('hero-alone');
+    s.story.untold = ['mem:hero:9'];
+    expect(onReturn(s).queue).toContain('hero-alone');
+  });
+});

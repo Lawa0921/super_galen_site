@@ -44,6 +44,13 @@ export interface StoryState {
   waited?: Partial<Record<BanterPair, number>>;
   /** Story depth Task 15 review: where Rin told the table (`rin-confess`), at dinner or at the depth-30 rest before the finale. */
   confession?: 'dinner' | 'depth30';
+  /**
+   * Story L spec §4.1, §11: memory pieces taken and not told yet, in pickup order. Absent reads as empty. A piece's effects
+   * land at pickup; only its scene waits here, for a night in town or the handbook.
+   */
+  untold?: SceneId[];
+  /** Story L: the memories this return's night picked (a subset of `untold`), so a reload plays the same ones. Absent reads as empty. */
+  tonight?: SceneId[];
 }
 
 /** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */

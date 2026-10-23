@@ -1006,3 +1006,48 @@ describe('the rune tutorial flag in the save (plan 8g Task 1)', () => {
     }
   });
 });
+
+describe('story L: untold and tonight in the save (Task 2a)', () => {
+  /** A game with Rin's first two pieces held and untold. */
+  const held = (): GameState => {
+    const g = newGame();
+    g.party.roster.rin.memories = 2;
+    g.story.untold = ['mem:rin:2', 'mem:rin:1'];
+    g.story.tonight = ['mem:rin:1'];
+    return g;
+  };
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+
+  it('untold and tonight save and load; absent reads as empty', () => {
+    const st = memoryStorage();
+    const g = held();
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    expect(r.status).toBe('ok');
+    expect(r.status === 'ok' && [r.state.story.untold, r.state.story.tonight]).toEqual([['mem:rin:2', 'mem:rin:1'], ['mem:rin:1']]);
+    const bare = newGame();
+    expect(bare.story.untold).toBeUndefined();
+    expect(status(bare)).toBe('ok');
+  });
+
+  it('a save is refused when untold repeats, is seen, is queued, is not a memory, or is past what she holds; or tonight is outside untold', () => {
+    const cases: [string, (g: GameState) => void][] = [
+      ['untold repeats', (g) => { g.story.untold = ['mem:rin:1', 'mem:rin:1']; g.story.tonight = []; }],
+      ['untold is seen', (g) => { g.story.seen.push('mem:rin:1'); }],
+      ['untold is queued', (g) => { g.story.queue.push('mem:rin:2'); }],
+      ['untold is not a memory', (g) => { g.story.untold = ['mem:rin:1', 'act2']; }],
+      ['untold is past what she holds', (g) => { g.party.roster.rin.memories = 1; g.story.untold = ['mem:rin:2']; g.story.tonight = []; }],
+      ['tonight is outside untold', (g) => { g.story.tonight = ['mem:rin:1', 'mem:hero:1']; }],
+    ];
+    expect(status(held())).toBe('ok');
+    for (const [name, mut] of cases) {
+      const g = held();
+      mut(g);
+      expect(status(g), name).toBe('corrupt');
+    }
+    // and one not met holds nothing to tell
+    const stranger = newGame();
+    stranger.story.untold = ['mem:noel:1'];
+    expect(status(stranger), 'not met').toBe('corrupt');
+  });
+});
