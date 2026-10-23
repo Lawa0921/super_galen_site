@@ -258,7 +258,7 @@ export class Game {
     // least DAWN_BACKLOG; the eve takes its own departure. It comes before the lone morning. A reveal or confession still
     // waiting (`ALONE`) blocks it: that morning is Lorne's and Rin's silence; the piece stays untold, still 新.
     const untold = story.untold ?? [];
-    const dawn = !alone && story.dawn &&untold.includes(story.dawn) && untold.length >= DAWN_BACKLOG && !scenes.includes('finale-eve') ? story.dawn : null;
+    const dawn = !alone && story.dawn && untold.includes(story.dawn) && untold.length >= DAWN_BACKLOG && !scenes.includes('finale-eve') ? story.dawn : null;
     return dawn ? [dawn, ...scenes] : scenes;
   }
 

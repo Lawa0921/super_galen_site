@@ -1071,7 +1071,11 @@ describe('town banter', () => {
       beatNight(String(at), plan.night);
       for (const id of [...plan.before, ...daytime, ...group, ...plan.night]) play(id, at);
     };
-    /** A departure, as `Game.departScenes` offers: the dawn, the eve and its memories, then the lone morning. */
+    /**
+     * A departure, as `Game.departScenes` offers: the dawn, the eve and its memories, then the lone morning. A copy of the
+     * engine's rule; 'the script plays each return and departure as the real engine does' checks it against
+     * `Game.departScenes` on every state it starts from (final review: the copy must not drift).
+     */
     const depart = (at: number) => {
       const check: DepartCheck = { at, state: structuredClone(s), scenes: [], eve: [] };
       departures.push(check);
@@ -1238,6 +1242,8 @@ describe('town banter', () => {
     try {
       let arrivals = 0;
       let departures = 0;
+      let dawned = 0;
+      let eves = 0;
       for (const [depths, route] of [[EVERY_FLOOR, 'all'], [EVERY_SECOND, 'all'], [EVERY_THIRD, 'all'], [EVERY_FLOOR, 'mainline-first'], [EVERY_SECOND, 'mainline-first']] as const) {
         const r = scriptedPlay([...depths], 3, route);
         for (const a of r.arrivals) {
@@ -1260,10 +1266,15 @@ describe('town banter', () => {
             expect(g.departScenes(), label).toEqual(d.scenes.filter((id) => id === 'hero-alone'));
           }
           departures++;
+          if (d.scenes.some((id) => id.startsWith('mem:'))) dawned++;
+          if (d.scenes.includes('finale-eve')) eves++;
         }
       }
       expect(arrivals).toBeGreaterThan(80);
       expect(departures).toBeGreaterThan(60);
+      // final review: the cross-check covers each branch of the copied rule, the dawn and the eve, not only plain departures
+      expect(dawned).toBeGreaterThan(10);
+      expect(eves).toBeGreaterThanOrEqual(3);
     } finally {
       for (const k of Object.keys(REACT)) delete REACTIONS[k as keyof typeof REACT];
     }

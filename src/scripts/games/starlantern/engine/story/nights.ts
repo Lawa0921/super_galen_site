@@ -12,10 +12,10 @@ export type { NightBeats };
  * Story L spec §4.3–§4.6: what a return's night plays. `before`: the memories the story owes before the day's scene that
  * needs them (Lorne's and Rin's), at the front of the day's list; `night`: the night's memories, after the day's notices.
  */
-export interface NightPlan { before: SceneId[]; night: SceneId[] }
+interface NightPlan { before: SceneId[]; night: SceneId[] }
 
 /** A night's fatigue guard reads each memory's tone (`memoryTone`); tests may give their own. */
-export type ToneOf = (id: SceneId) => 'warm' | 'heavy';
+type ToneOf = (id: SceneId) => 'warm' | 'heavy';
 
 const ownerOf = (id: SceneId): CharacterId => id.split(':')[1] as CharacterId;
 const pieceNo = (id: SceneId): number => Number(id.split(':')[2]);
@@ -133,7 +133,7 @@ export function pickMemories(s: GameState, day: SceneId[], n: number, exclude: S
  * next one too; by tier (Lorne and Rin; where the day's talk picks up, `continuing`; the rest), then pickup order, then
  * the roster's order. The night (`pickMemories`) and the dawn (`dawnMemory`) take from it.
  */
-export function rankMemories(s: GameState, day: SceneId[], exclude: SceneId[] = []): SceneId[] {
+function rankMemories(s: GameState, day: SceneId[], exclude: SceneId[] = []): SceneId[] {
   const untold = (s.story.untold ?? []).filter((id) => !exclude.includes(id));
   const byOwner = new Map<CharacterId, SceneId[]>();
   for (const id of untold) byOwner.set(ownerOf(id), [...(byOwner.get(ownerOf(id)) ?? []), id]);
