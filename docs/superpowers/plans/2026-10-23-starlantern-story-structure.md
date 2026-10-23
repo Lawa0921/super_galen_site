@@ -2,14 +2,14 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 回憶改在回城的夜晚播（一晚最多兩段，洛恩與凜優先，其餘在手冊標新），迷宮只留一行字幕；第二、三、四幕之後各加一場群戲，佔掉那一次回城的閒聊位置；希爾薇、千鶴重新定聲；終幕八句回呼群戲；分歧讀法減量。戰鬥模擬逐位元不動。
+**Goal:** 回憶改在回城的夜晚播（一晚一到三段，隨積壓變動；洛恩與凜的必需回憶在需要它們的主線之前先播，不算在上限裡；終幕前有「下潛前的那一夜」補播；其餘在手冊標新），迷宮只留一行字幕；第二、三、四幕之後各加一場群戲，佔掉那一次回城的閒聊位置；希爾薇、千鶴重新定聲；終幕八句回呼群戲；分歧讀法減量。戰鬥模擬逐位元不動。
 
 **Architecture:**
 - **先引擎，後寫作**。
 - **拾取與播放分開**：
   - `takePieces` 照舊加片數（戰鬥讀得到的效果全部留在拾取時）；
   - 回憶改記在 `story.untold`；
-  - 純函式 `engine/story/nights.ts` 的 `planNight` 依到站決定今晚播哪幾段，寫進 `story.tonight`，讓重新讀檔播的還是同一批。
+  - 純函式 `engine/story/nights.ts` 的 `planNight` 依到站決定今晚播哪幾段，寫進 `story.tonight`，讓重新讀檔播的還是同一批。必需回憶先播，其餘一到三段隨積壓變動，兩段之間插一拍，終幕前補播「下潛前的那一夜」（【控制者裁定 2026-10-23】）。
 - **「已說」取代「持有」**：夥伴的 `full`／`pieces` 閘門與台詞條件改讀「已說的片數」（`storyPieces`）；洛恩、凜照舊讀持有。
 - **反應槽**：
   - `arrivalScenes` 在主線之後找第一場到期的群戲（`nextReaction`）；
@@ -61,7 +61,17 @@
    - 引擎依序做 Task 1 到 6；
    - 寫作依序做 Task 7 到 15；
    - Task 14（終幕）要等三場群戲都寫完。
-7. **停止規則**：
+7. **【控制者裁定 2026-10-23】夜晚的段數與補播**：取代第一版的固定上限（spec §4.3、§4.4.1、§4.8、§13）。
+   - **上限**：`cap = min(3, max(1, ceil(backlog / 3)))`，`backlog` 是扣掉必需回憶之後的 `untold` 段數。
+   - **疲勞保護**：
+     - 同一人不連播；
+     - 播三段時，候選裡有 `warm` 的就至少一段 `warm`；
+     - 收尾的碎片放最後。
+   - **兩段之間的一拍**：取自 `NIGHT_BEATS` 台詞池，二十二句，在 Task 8 寫。
+   - **必需回憶**：洛恩、凜未說的碎片，在需要它們的主線（三幕、鐘守、揭露、坦白、終幕）之前，不受上限限制先播。
+   - **下潛前的那一夜**：在終幕清單裡，最多三段。
+   - **Task 6 的驗收數字**：未說的段數在終幕之後：每層回城 ≤ 3、每兩層 ≤ 8、每三層 ≤ 15；沒有一晚超過三段；沒有必需回憶遲到。達不到就停下回報。
+8. **停止規則**：
    - 任何改動要動到掉落、數值，或模擬閘門變成不是 `identical`，停下來回報 BLOCKED；
    - 要改帳本裡既有的 I 條目或揭露時機，停下來回報 NEEDS_CONTEXT；
    - 新增的設定（千鶴的祭典歌、諾艾兒藏起的碎晶、希爾薇睡門邊、莉茲的錢袋）只能新增條目。
@@ -372,13 +382,16 @@
 ### Task 3：夜晚的排程與城裡的夜晚
 
 **Files:**
-- Create: `engine/story/nights.ts`、`engine/story/nights.test.ts`
+- Create:
+  - `engine/story/nights.ts`、`engine/story/nights.test.ts`；
+  - `data/story/tone.ts`、`data/story/tone.test.ts`（`memoryTone`、`WARM_MOODS`；`ui2/story.ts:47` 的 `HAPPY` 改成從這裡匯入）。
 - Modify:
-  - `engine/game.ts:139`、`:165-195`（`boot`、`fresh`）、`:1191-1204`、`:1217-1221`（`arrive`）、`:1239-1258`（`finalePieces`）；
+  - `engine/game.ts:139`、`:149`（`finale` 加 `eve`）、`:165-195`（`boot`、`fresh`）、`:1191-1204`、`:1217-1221`（`arrive`）、`:1239-1258`（`finalePieces`）；
   - `ui2/story.ts:122-212`（`place` 選項）；
   - `ui2/scenes/town.ts:80-104`；
-  - `data/story.zh-TW.ts:115-127`（匯出 `NIGHT_PLACE`）。
-- Test：`engine/game.test.ts`、`ui2/scenes/town.test.ts`、`ui2/story.test.ts`、`tests/e2e/starlantern.spec.ts`。
+  - `ui2/scenes/clear.ts`（下潛前的那一夜的框架句與一拍）；
+  - `data/story.zh-TW.ts:115-127`（匯出 `NIGHT_PLACE`；`NIGHT_BEATS` 與 `STORY.finaleEve` 的型別，內容由 Task 8 寫，這裡是空池與 `undefined`）。
+- Test：`engine/game.test.ts`、`ui2/scenes/town.test.ts`、`ui2/scenes/clear.test.ts`、`ui2/story.test.ts`、`tests/e2e/starlantern.spec.ts`。
 - 已知會紅：
   - `game.test.ts` :3508 `memories still queued from depth 25 play before the finale`：改成「未說的洛恩碎片進終幕清單」。
   - `town.test.ts` :285 `arrival scenes play before the menu`：多了夜晚，順序改成白天 → 通知與當天的一句 → 夜晚。
@@ -388,20 +401,35 @@
   - Task 1 的 `storyPieces`、`gateOpen`；
   - Task 2 的 `untold`、`tonight`；
   - 既有的 `nextChat`、`nextBanter`、`CHAT_GATE`、`BANTER_GATE`、`BANTER_COUNT`、`CLOSING_PIECES`、`HEAVY_MAJORS`、`ALONE`。
-- Produces（`engine/story/nights.ts`）：
-  - `interface NightPlan { before: SceneId[]; night: SceneId[] }`：`before` 只在凜揭露的那一晚有值，排在揭露前面。
-  - `nightCap(day: SceneId[], afterFinale: boolean): number`：照 spec §4.3。凜的揭露回傳 `Infinity`，只給凜用；坦白回傳 0；有 `HEAVY_MAJORS`、`group:`，或 `afterFinale` 回傳 1；其他 2。
+- Produces（`data/story/tone.ts`）：
+  - `WARM_MOODS: ReadonlySet<StoryMood>`（同 `HAPPY`）；
+  - `memoryTone(id: SceneId): 'warm' | 'heavy'`：任何讀法裡有一句的 `mood` 在 `WARM_MOODS`，而且 `id` 不在 `CLOSING_PIECES`，就是 `warm`。
+- Produces（`engine/story/nights.ts`；spec §4.3、§4.4、§4.4.1、§4.8）：
+  - `interface NightPlan { before: SceneId[]; night: SceneId[] }`：`before` 是必需回憶，放在白天清單的最前面。
+  - `NEEDS_OWED: ReadonlySet<SceneId>`：`act2`、`act3`、`act4`、`bellkeeper-arrives`、`rin-reveal`、`rin-confess`、`finale`。
+  - `owedPieces(s: GameState, day: SceneId[]): SceneId[]`：`day` 有 `NEEDS_OWED` 的場景時，回傳洛恩、凜所有未說的碎片，依拾取順序，兩人交錯；否則回傳 `[]`。
+  - `nightCap(backlog: number): number`：`Math.min(3, Math.max(1, Math.ceil(backlog / 3)))`；`backlog` 是 0 時回傳 0。
   - `continuing(s: GameState, c: CharacterId, day: SceneId[]): boolean`：spec §4.4 第二層的兩個條件。
-  - `planNight(s: GameState, day: SceneId[], o?: { afterFinale?: boolean }): NightPlan`。
-  - `restoreNight(s: GameState, day: SceneId[]): NightPlan`：讀 `story.tonight` 裡還沒在 `seen` 的。`day[0]` 是 `rin-reveal` 時，凜的放 `before`；其他放 `night`。
+  - `pickMemories(s: GameState, day: SceneId[], n: number, exclude?: SceneId[]): SceneId[]`：照 §4.4 的三層順序，套 §4.3 的疲勞保護，挑最多 `n` 段。
+  - `planNight(s: GameState, day: SceneId[]): NightPlan`：
+    - `before = owedPieces(s, day)`；
+    - `day` 有 `rin-reveal` 或 `rin-confess` 時，`night = []`；
+    - 否則 `night = pickMemories(s, day, nightCap(backlog), before)`。
+  - `restoreNight(s: GameState, day: SceneId[]): NightPlan`：讀 `story.tonight` 裡還沒在 `seen` 的。`day` 有 `NEEDS_OWED` 的場景時，洛恩、凜的放 `before`；其他放 `night`。
+  - `nightBeat(s: GameState, prev: SceneId, next: SceneId, pool?: NightBeats): ScriptLine | null`：
+    - `type NightBeats = { said: Partial<Record<CharacterId, ScriptLine[]>>; narration: ScriptLine[] }`；預設是 `NIGHT_BEATS`；
+    - 照 spec §4.4.1 挑，池是空的就回傳 `null`。
+  - `eveMemories(s: GameState): SceneId[]`：`pickMemories(s, ['finale'], 3)`，只挑夥伴的碎片。
 - Produces（`Game`）：
   - `night: SceneId[]`（不存檔）；
   - `arrive` 先寫 `story.tonight = [...before, ...night]`，再設 `arrival = [...before, ...day]`、`night`；
   - `boot` 用 `restoreNight`；
-  - `sceneDone` 把 `night` 也當作到期。
+  - `sceneDone` 把 `night` 也當作到期；
+  - `finale: { pieces: SceneId[]; eve: SceneId[] }`：`eve` 由 `eveMemories` 決定，從 `untold` 拿掉，排在洛恩的碎片之後、`finale` 之前（`finale.pieces` 也包含它們，才能記錄）。
 - Produces（介面）：
   - `playScene(talk, id, ctx, o?: { place?: Place })`、`playAndRecord(talk, id, ctx, o?: { place?: Place })`；
-  - `NIGHT_PLACE: Place`。
+  - `NIGHT_PLACE: Place`；
+  - `STORY.finaleEve?: ScriptLine`：結局畫面在 `eve` 的第一段之前說它；`undefined` 時不說。
 
 - [ ] **Step 1：寫失敗的測試**
   - **`nights.test.ts`**：
@@ -409,18 +437,29 @@
     - `a companion in today's chat, banter or group scene goes ahead of one who waited longer`。
     - `a companion whose next piece opens her next banter goes ahead`：諾艾兒說過 2、`mem:noel:3` 未說、`banter:noel-selene:2` 的閘門是 `pieces: { noel: 3 }`；她排在等更久的莎菲拉前面。
     - `waited longest is pickup order, then roster order`。
-    - `a companion plays one piece a night; Lorne may play two in a row`。
-    - `cap 1 with an act, the bellkeeper, the festival, a group scene, or after the finale; 2 otherwise`。
-    - `a closing piece plays alone in its night, and is never the second`。
+    - `nightCap follows the backlog`：0→0、1→1、3→1、4→2、6→2、7→3、30→3。
+    - `the cap leaves out the owed pieces`：未說的有洛恩兩片、夥伴四片，而且白天有 `act3`：`before` 是洛恩兩片，`night` 是兩段。
+    - `owed pieces play before the act that needs them, Lorne and Rin interleaved`。
     - `Rin's untold pieces all play before her reveal, beyond the cap, and no one else's`。
-    - `the confession night plays no memory`。
+    - `the confession night plays no memory beyond the owed`。
+    - `never the same one twice in a row; a companion once a night; Lorne or Rin at most twice, apart`。
+    - `three a night hold a warm one when a warm candidate exists`：三段候選都是 `heavy`、第四名是 `warm` 時，第三段換成它。
+    - `a closing piece plays last`。
+    - `a beat sits between two memories, from neither owner; narration when no one else is met; none from an empty pool`。
+    - `nightBeat is the same after a reload`：同樣的前後 id，同樣的一句。
+    - `eveMemories picks up to three companions' pieces by the night order`。
     - `planNight is pure: the same state gives the same plan, nothing written, no rng`（比較 `JSON.stringify(s)` 前後）。
+  - **`tone.test.ts`**：
+    - `a memory with a glad face is warm, unless it closes a chain`；
+    - `every memory has a tone`（掃 `SCENE_IDS` 裡的 `mem:`）。
   - **`game.test.ts`**（新 `describe('story L: the night (Task 3)')`）：
     - `a return plans the night and saves it in tonight`。
     - `a reload mid-night plays the rest of tonight, no more`：播完第一段後存檔，`Game.boot` 的 `night` 只剩第二段。
     - `a new return replaces tonight; what was not played stays untold`。
     - `a lamp return and a wipe have a night too`。
     - `untold hero pieces join the finale's list in piece order and leave untold`。
+    - `the night before the descent: up to three companions' memories after the hero's pieces and before the finale; the rest stay untold and new`。
+  - **`clear.test.ts`**：`the eve's framing line comes before its first memory, and a beat between two`。
   - **`town.test.ts`**：
     - `the night plays after the day's lines, under the night card`：順序是白天場景 → 通知 → 當天的一句 → 夜晚；夜晚期間 `.slx-place` 是「月影旅館・夜」，暗幕在。
     - `the reveal's night: Rin's pieces, then the reveal, then the day's line`。
@@ -431,21 +470,26 @@
   - 演算法照 spec §4.3、§4.4：
     - 候選：每人最小片號的那一片；洛恩、凜再加一片相鄰的。
     - 依（層級、`untold` 的位置、`CHARACTER_IDS` 的位置）排序。
-    - 逐一放進今晚，跳過：
-      - 同一位夥伴的第二段；
-      - 當第二段的收尾碎片。
-    - 第一段是收尾碎片時，今晚只有它。
+    - 逐一放進今晚，跳過同一位夥伴的第二段，以及洛恩、凜的第三段。
+    - 滿三段而沒有 `warm` 時，第三段換成排名最前的 `warm`。
+    - 收尾的碎片移到最後；同一人相鄰時，和下一個不同人的那一段交換。
   - `continuing` 的第二條：用 `{ ...s, story: { ...s.story, seen: [...seen, 她的這一片] } }` 重算 `nextChat`／`readyPairs` 的閘門。不要另寫一套閘門。
 - [ ] **Step 4：接進 `Game` 與 `TownScene`**。
-  - `TownScene.arrive`：`game.arrival` 播完 → `says` 播完（改成 `await`）→ `game.night` 逐一用 `playScene(id, { place: NIGHT_PLACE })` 播。
-  - `finalePieces`：把 `untold` 裡的 `mem:hero:` 併進 `queued`，從 `untold` 與 `tonight` 拿掉。
+  - `TownScene.arrive`：
+    - `game.arrival` 播完（必需回憶在最前面，用 `NIGHT_PLACE`）；
+    - `says` 播完（改成 `await`）；
+    - `game.night` 逐一用 `playScene(id, { place: NIGHT_PLACE })` 播，兩段之間說 `nightBeat` 的那一句（有名牌與頭像，旁白沒有）。
+  - `finalePieces`：
+    - 把 `untold` 裡的 `mem:hero:` 併進 `queued`；
+    - 接著放 `eveMemories`；
+    - 兩者都從 `untold` 與 `tonight` 拿掉。
 - [ ] **Step 5：e2e** 新增兩則，插在 Task 2 那一則後面：
   - `a memory found in the labyrinth is told that night in town, under the night card (story L)`：
     - 用 debug 鉤子給凜一片未說的碎片，再用歸還之燈回城；
     - 斷言：回憶的文字出現時 `.slx-place` 是「月影旅館・夜」；播完才看得到城鎮選單。
   - 同一則在 390×844 觸控側置（`asPhone`）也跑一次：每一句 `.slx-talk .slx-text` 的 `scrollHeight <= clientHeight + 1`。
 - [ ] **Step 6：執行**全套、e2e、閘門 `gate-3`。
-- [ ] **Step 7：收尾 G，commit**：`feat(starlantern): story L — memories are told at night in town, one or two a night, Lorne and Rin first`。
+- [ ] **Step 7：收尾 G，commit**：`feat(starlantern): story L — memories are told at night in town, one to three by the backlog, the owed ones first, and an eve before the descent`。
 
 ---
 
@@ -487,7 +531,7 @@
 - Test：`engine/story/events.test.ts`、`engine/game.test.ts`、`ui2/story.test.ts`、`engine/story/nights.test.ts`。
 
 **Interfaces:**
-- Consumes：Task 1 的 `GROUP_GATE`、`REACTIONS`、`gateOpen`、`gateExpired`；Task 3 的 `nightCap`。
+- Consumes：Task 1 的 `GROUP_GATE`、`REACTIONS`、`gateOpen`、`gateExpired`；Task 3 的 `continuing`。
 - Produces：
   - `nextReaction(s: GameState, day: SceneId[], reactions?: Partial<Record<ActNode, GroupScene>>, gates?: Record<GroupScene, StoryGate>): GroupScene | null`：
     - 依 `ACT_NODES` 的順序；
@@ -508,7 +552,7 @@
   - `no reaction on a reveal or a confession arrival`。
   - `a reload fills the reaction slot but no chat`。
   - `the finale's list never holds a group scene`。
-  - `nightCap is 1 with a group scene`（`nights.test.ts`）。
+  - `a group scene's companions are continuing that night`（`nights.test.ts`：群戲裡的夥伴屬於 §4.4 第二層）。
   - `ui2/story.test.ts` › `a group scene plays under major only`。
 - [ ] **Step 2：執行**，確認紅。
 - [ ] **Step 3：實作**。
@@ -530,14 +574,16 @@
   - `every payoff banter plays before the finale`；
   - `a return every second depth: every payoff by the finale or within three returns after it`，含 `before.length` 與 `[102, 103]` 的釘子。
   - 不放寬。紅了就停下來回報 NEEDS_CONTEXT，附上 `trace`，不改排程規則。
-- [ ] **Step 3：新增測試**：
-  - `scripted play: no night over its cap; every Rin piece told before her reveal; the hero's ninth told within two returns of its pickup`。
+- [ ] **Step 3：新增測試**【控制者裁定 2026-10-23】
+  - **三種玩家**：每層回城（1, 2, …, 29）、每兩層（1, 3, …, 29）、每三層（1, 4, …, 28）。
+    - 第三種的最後一次在第二十八層；之後照 Game 的終幕，跑 `finalePieces` 的補播：洛恩的碎片，加上 `eveMemories`。
+  - 每種玩家各一則測試：
+    - `scripted play (<玩家>): unplayed memories after the finale's eve ≤ <上限>`：上限分別是 3、8、15。
+    - `scripted play (<玩家>): no night plays more than three memories beyond the owed ones`。
+    - `scripted play (<玩家>): no owed memory is ever late`：每一次播 `NEEDS_OWED` 的場景時，洛恩與凜持有的每一片都已在 `seen`；`hero-alone` 播時 `mem:hero:9` 在 `seen`。
   - `scripted play: every group scene plays, each on its act's arrival`（每層回城）。
-  - `scripted play: the untold count at the finale`：
-    - 每層回城與每兩層回城各量一次；
-    - 把數字寫進測試，當作回歸的上限（`toBeLessThanOrEqual(<實測>)`）；
-    - 也記進 SDD `task-6-report.md`。
-    - 這兩個數字要轉告使用者（spec §13 風險 1）。
+  - 實測的段數、每晚段數的分布、每一則 `trace` 記進 SDD `task-6-report.md`。
+- [ ] **Step 3b：達不到就停**：任何一個門檻沒達到，停下來回報 BLOCKED，附上三份 `trace` 與實測數字。不改上限公式、不改疲勞保護、不改門檻。
 - [ ] **Step 4：收尾 G，commit**：`test(starlantern): story L — scripted plays through the nights and the reaction slot`。
 
 ---
@@ -577,9 +623,19 @@
 
 ---
 
-### Task 8：夜晚化：回憶的「現在」那一半
+### Task 8：夜晚化：回憶的「現在」那一半，以及夜晚的串場
 
-照 W1–W8。鍵前綴：`scenes.mem:`。
+照 W1–W8。鍵前綴：`scenes.mem:`、`nightBeats.`、`finaleEve.`（`storyTexts()` 在 W1 收進這兩個新池）。
+
+**新句數**【控制者裁定 2026-10-23】：共二十三句。
+- `NIGHT_BEATS` 二十二句：八位夥伴各兩句（`said`），旁白六句（`narration`），照 spec §4.4.1；
+- `STORY.finaleEve` 一句，照 spec §4.8。
+- W1 的新測試 `the night beats: two a companion, six narrations, light, no memory named`：
+  - 句數正確；
+  - 每句 ≤ 60 字，「……」最多一個、不放句首；
+  - 不出現任何夥伴回憶的 `REVEALED` 詞；
+  - 夥伴的句子照她的 `VOICE`。
+- W8 的讀者另外拿到一段「一晚三段回憶加兩拍」的朗讀稿，多答一題：「這一晚太重嗎？中間那兩句有沒有讓你喘一口氣，還是很突兀？」
 
 **範圍**（spec §8；`b08d75191` 的行號）：
 - `story:188`（`mem:rin:1`）；
@@ -767,4 +823,4 @@
   - 閘門有沒有被放寬；
   - 戰鬥讀到的東西有沒有被搬到播放時；
   - 帳本與劇本是否一致。
-- [ ] **Step 5**：報告附上 Task 6 量到的兩個未說數字（spec §13 風險 1），交給控制者轉告使用者。commit `chore(starlantern): story L acceptance`。
+- [ ] **Step 5**：報告附上 Task 6 量到的三種玩家的未說數字與每晚段數的分布（spec §13 風險 1），交給控制者轉告使用者。commit `chore(starlantern): story L acceptance`。
