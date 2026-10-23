@@ -1,5 +1,7 @@
 # 2026-10-23 夥伴對話表情樣本（serious、sad）
 
+> 更新：使用者裁定改用 Gemini 生靜態圖（「既然 codex 不行 就先改用 gemini 生圖吧」）。結果見文末「Gemini 樣本」；下面「沒有產出任何圖片」一節是 codex 那一輪的紀錄。
+
 - 範圍：絲嘉蕾、千鶴的 `serious`、`sad`（隱藏句數最多的兩人：34、26 句，見 `../expressions-survey.md`）。
 - 工具：`tools/faces.py`（生成、後處理、對照 QA）、`tools/review_faces.py`（本頁 `review.html`）。
 - 參考圖：該角色已發佈 normal 頭貼與立繪的 codex 原圖（registry `raw`），prompt 用 spec §10.5 的句型（`prompts/char-<cid>-portrait-<mood>.txt`，單行）。
@@ -30,3 +32,35 @@ python art-factory/starlantern/tools/review_faces.py 2026-10-23-faces-sample cha
 
 - 失敗的 a1、a2 資料夾保留當證據；下一次自動從下一個編號開始。
 - 次數上限：contract 規定每個 id 最多 3 次。這次的失敗都沒有出圖，是帳號的問題，不是畫的問題，所以建議不算進上限。千鶴兩個 id 已經用掉 a1、a2 兩個編號。
+
+## Gemini 樣本（使用者裁定，2026-10-23）
+
+- 後端：`codex_still.py generate --backend gemini --model gemini-3-pro-image`（Nano Banana Pro，GA 版；從 API 的 model list 選出，同族還有 `gemini-3.1-flash-image`、`gemini-nano-banana-2.1` 等）。`faces.py gen --backend=gemini --model=…` 會把參數傳下去。
+- 紀錄和 codex 一樣：`<stem>.prompt.txt`、`<stem>.gemini.log`（圖片 bytes 換成 sha256，沒有金鑰）、`<stem>.gen.json`（`generator: gemini/gemini-3-pro-image`、`model_version`、`usage`、輸入與輸出的 sha256）、`-magenta.png`、`.gate.json`。金鑰在執行時從 `~/.gemini/.env` 讀，不寫進任何檔案。
+- 參考圖：該角色 normal 頭貼的原圖（第一張）、立繪原圖（第二張）。prompt 是同一句 spec §10.5 句型，把「用 image tool 生一次」那句換成 `Return only the image, a square picture.`。
+- 每個 id 一次呼叫，一次一個，各在新的空資料夾（scarlet `a2`，chizuru `a3`，因為 codex 失敗的資料夾占掉前面的編號）。共 4 次呼叫，每次都 `STOP` 並回傳 1024×1024 PNG。
+- 費用：API 只回報 token（輸出約 1313–1323 tokens／張，輸入約 690 tokens 的文字部分），沒有回報金額。以 3 Pro Image 每張約 US$0.13–0.16 估算，4 張約 US$0.6（**估計值，未對帳**）。
+
+### 後處理差異
+
+1. **block 換算**：base 的 block 是對 1254 px 的 codex 原圖量的；Gemini 回 1024 px，所以用 `scaled_block` = round(base block × 1024 / 1254)：絲嘉蕾 11 → 9（誤差 0.2%）、千鶴 9 → 7（實際應是 7.35，取整後**頭大約 5%**，尺寸 133×129 對 normal 127×123，剛好在 ±6 的上限）。
+2. **邊緣洋紅**：Gemini 的輪廓帶的 key 色是 codex base 的約 4 倍（`magenta_spill_count` 264 對 56）。用登錄表已有的修補旗標 `defringe: strong` + `neutralize_tint: true`（`faces.postprocess_flags`，只套在 gemini 的原圖）降到 66–71（絲嘉蕾）與 1（千鶴），和 base（56、74）同一水準。
+
+### 結果（全部 `qa_passed`，未核准、未發佈）
+
+| id | 尺寸（normal） | 機械 QA | 對照 normal | 封閉洞（警告） |
+|---|---|---|---|---|
+| char-scarlet-portrait-serious a2 | 107×114（108×115） | 通過：殘留 0、半透明 0、碰邊只在底邊 | 通過：block 9／9、色盤 99% | 0 |
+| char-scarlet-portrait-sad a2 | 107×114（108×115） | 通過 | 通過：色盤 99% | 0 |
+| char-chizuru-portrait-serious a3 | 133×129（127×123） | 通過 | 通過（差 +6, +6，在上限） | 28 |
+| char-chizuru-portrait-sad a3 | 133×129（127×123） | 通過 | 通過（差 +6, +6，在上限） | 27 |
+
+千鶴的封閉洞逐一看過：都是 1 px，在髮飾花瓣圈、袖口蝴蝶結和幾縷頭髮之間，是真的縫，不是擦掉的色塊。
+
+### 目視判斷（Read 看過原圖與 2×／3× 縮圖）
+
+- 絲嘉蕾 serious：同一個人、同一個畫風，髮型、鎧甲、披風、配色、構圖幾乎一致。表情是眉頭壓低、嘴抿成一直線，原尺寸下偏淡，但讀得出來。
+- 絲嘉蕾 sad：身分與畫風一致。原圖上有淚光、眉尾上揚、嘴角下垂，但縮到原尺寸後淚光不見，和 serious 很接近，**難過感偏弱**。如果要更明顯，可以用第 2 次額度重生。
+- 千鶴 serious：同一個人，表情明確（皺眉、抿嘴）。頭大約 5%（block 取整），陰影比 base 稍微柔一點、像素稍糊。
+- 千鶴 sad：表情最明確（眉尾上揚、淚滴、嘴角下垂）。同樣頭大 5%，陰影偏柔。
+- 沒有明顯的身分漂移。Gemini 的差別在於像素不貼齊格子（後處理吸附之後還是比 codex 原圖柔），以及上面兩點後處理差異。

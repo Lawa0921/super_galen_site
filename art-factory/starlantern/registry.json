@@ -25774,6 +25774,210 @@
       "chosen_attempt": "a1",
       "source_id": "sheet-icons-1",
       "batch": "gear-5d-skills"
+    },
+    "char-scarlet-portrait-serious": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "gemini/gemini-3-pro-image",
+      "defringe": "strong",
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-serious/char-scarlet-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-serious\\a2\\char-scarlet-portrait-serious-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 9,
+        "size": [
+          107,
+          114
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-scarlet-portrait-serious",
+      "batch": "faces-scarlet",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-serious.png",
+      "depends_on": [
+        "char-scarlet-portrait",
+        "char-scarlet-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          108,
+          115
+        ],
+        "size_delta": [
+          -1,
+          -1
+        ],
+        "block": 9,
+        "base_block": 9,
+        "palette_share": 0.987
+      }
+    },
+    "char-scarlet-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "gemini/gemini-3-pro-image",
+      "defringe": "strong",
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-sad/char-scarlet-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-sad\\a2\\char-scarlet-portrait-sad-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 9,
+        "size": [
+          107,
+          114
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a2",
+      "source_id": "char-scarlet-portrait-sad",
+      "batch": "faces-scarlet",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-sad.png",
+      "depends_on": [
+        "char-scarlet-portrait",
+        "char-scarlet-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          108,
+          115
+        ],
+        "size_delta": [
+          -1,
+          -1
+        ],
+        "block": 9,
+        "base_block": 9,
+        "palette_share": 0.986
+      }
+    },
+    "char-chizuru-portrait-serious": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "gemini/gemini-3-pro-image",
+      "defringe": "strong",
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-serious/char-chizuru-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-serious\\a3\\char-chizuru-portrait-serious-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 28,
+        "block": 7,
+        "size": [
+          133,
+          129
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a3",
+      "source_id": "char-chizuru-portrait-serious",
+      "batch": "faces-chizuru",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-serious.png",
+      "depends_on": [
+        "char-chizuru-portrait",
+        "char-chizuru-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          127,
+          123
+        ],
+        "size_delta": [
+          6,
+          6
+        ],
+        "block": 7,
+        "base_block": 7,
+        "palette_share": 0.997
+      }
+    },
+    "char-chizuru-portrait-sad": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "gemini/gemini-3-pro-image",
+      "defringe": "strong",
+      "neutralize_tint": true,
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-sad/char-chizuru-portrait-sad.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-sad\\a3\\char-chizuru-portrait-sad-a3.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 27,
+        "block": 7,
+        "size": [
+          133,
+          129
+        ]
+      },
+      "status": "qa_passed",
+      "chosen_attempt": "a3",
+      "source_id": "char-chizuru-portrait-sad",
+      "batch": "faces-chizuru",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-sad.png",
+      "depends_on": [
+        "char-chizuru-portrait",
+        "char-chizuru-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          127,
+          123
+        ],
+        "size_delta": [
+          6,
+          6
+        ],
+        "block": 7,
+        "base_block": 7,
+        "palette_share": 0.997
+      }
     }
   },
   "requa_log": [

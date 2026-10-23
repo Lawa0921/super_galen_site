@@ -1,6 +1,6 @@
 """faces.py: talking-face candidates for the eight companions (plan 5e; spec 2026-10-18 affinity-expressions section 10).
 
-  gen  [--only=prefix,...] [--n=N] [--model=M] generate codex attempts one at a time until each id has N raw attempts
+  gen  [--only=prefix,...] [--n=N] [--model=M] [--backend=codex|gemini] generate codex attempts one at a time until each id has N raw attempts
   cand [--only=prefix,...]                  postprocess every raw attempt into work/<id>/cand/a<N>/ (scratch registry) + match QA
   pick --id ID --attempt N                  postprocess the chosen attempt into the real registry (qa_passed / qa_failed)
   note --id ID --attempt N --reason R       record why an attempt was not chosen (registry `rejected_attempts`)
@@ -100,9 +100,32 @@ def match_qa(final, base, base_block, block):
     return m
 
 
-def write_prompt(job):
+def prompt_text(job, backend='codex'):
+    """One line. codex gets party.GEN (use its image tool once, no post-processing); gemini answers with the image itself."""
+    return job['prompt'].strip() + (' ' + P.GEN if backend == 'codex' else ' Return only the image, a square picture.')
+
+
+def write_prompt(job, backend='codex'):
     PROMPTS.mkdir(exist_ok=True)
-    (PROMPTS / f'{job["id"]}.txt').write_text(job['prompt'].strip() + ' ' + P.GEN + '\n', encoding='utf-8')
+    (PROMPTS / f'{job["id"]}.txt').write_text(prompt_text(job, backend) + '\n', encoding='utf-8')
+
+
+def scaled_block(base_block, base_width, raw_width):
+    """The base portrait's block in the new raw's pixels: same art-pixel scale when the generator's canvas size differs
+    (codex raws are 1254 px; gemini returns its own size)."""
+    return max(1, round(base_block * raw_width / base_width))
+
+
+def postprocess_flags(generator):
+    """Registry repair flags per generator: gemini outlines carry about 4x the key spill of the codex base portraits, which
+    `defringe: strong` + `neutralize_tint` bring back to the base level (runs/2026-10-23-faces-sample/notes.md)."""
+    return {'defringe': 'strong', 'neutralize_tint': True} if generator.startswith('gemini') else {}
+
+
+def generator_of(raw):
+    gen = Path(raw).with_name(f'{Path(raw).stem}.gen.json')
+    rec = json.loads(gen.read_text(encoding='utf-8')) if gen.exists() else {}
+    return rec.get('generator') or ('codex' + (f'/{rec["model"]}' if rec.get('model') else ''))
 
 
 def selected(argv):
@@ -114,24 +137,31 @@ def _model(argv):
     return next((a.split('=', 1)[1] for a in argv if a.startswith('--model=')), None)
 
 
+def _backend(argv):
+    return next((a.split('=', 1)[1] for a in argv if a.startswith('--backend=')), 'codex')
+
+
 def gen(argv):
     """Strictly one codex call at a time (codex_still must not run in parallel). --model=NAME overrides the codex config
     model for these calls only (2026-10-23: the config default was refused by the account, see runs/ notes)."""
-    model = _model(argv)
+    model, backend = _model(argv), _backend(argv)
     n = int(next((a.split('=', 1)[1] for a in argv if a.startswith('--n=')), 2))
     for job in selected(argv):
-        while len(attempts(job['id'])) < n:
+        tries = 0
+        while len(attempts(job['id'])) < n and tries < n:   # never more calls than asked for, even when some fail
+            tries += 1
             k = next_attempt(job['id'])
             wd, name = attempt_dir(job['id'], k), f'{job["id"]}-a{k}.png'
-            write_prompt(job)
+            write_prompt(job, backend)
             argv2 = [sys.executable, str(TOOLS / 'codex_still.py'), 'generate', '--workdir', str(wd), '--name', name,
                      '--prompt-file', str(PROMPTS / f'{job["id"]}.txt')]
             for im in job['images']: argv2 += ['--image', str(im)]
             if model: argv2 += ['--model', model]
+            if backend != 'codex': argv2 += ['--backend', backend]
             start = time.time()
             g = subprocess.run(argv2, cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
             print(f'[gen {job["id"]} a{k}] rc={g.returncode} {g.stdout.strip()[-200:]}', flush=True)
-            fixed = P.recover(wd, name, start, time.time())
+            fixed = P.recover(wd, name, start, time.time()) if backend == 'codex' else None
             if fixed: print(f'[recovered {job["id"]} a{k}] codex saved {fixed}; the fallback copy was replaced', flush=True)
             if not (wd / name).exists():
                 print(f'[no output] {job["id"]} a{k}; stopping this id', flush=True); break
@@ -140,9 +170,12 @@ def gen(argv):
 def process_attempt(reg, job, raw, workdir):
     if 'allow_edge' not in reg.data['assets'].get(job['id'], {}):
         reg.set(job['id'], allow_edge=['bottom'])
-    q = A.process(reg, job['id'], raw, 'sprite', workdir=workdir, block=job['block'])[job['id']]
-    base = REPO / _registry()[job['base']]['final']
-    m = match_qa(Path(workdir) / f'{job["id"]}.png', base, job['block'], q['block'])
+    from PIL import Image as _I
+    breg = _registry()[job['base']]
+    block = scaled_block(job['block'], _I.open(breg['raw']).width, _I.open(raw).width)
+    gen = generator_of(raw); reg.set(job['id'], generator=gen, **postprocess_flags(gen))
+    q = A.process(reg, job['id'], raw, 'sprite', workdir=workdir, block=block)[job['id']]
+    m = match_qa(Path(workdir) / f'{job["id"]}.png', REPO / breg['final'], block, q['block'])
     (Path(workdir) / f'{job["id"]}.match.json').write_text(json.dumps(m, indent=2), encoding='utf-8')
     return q, m
 
