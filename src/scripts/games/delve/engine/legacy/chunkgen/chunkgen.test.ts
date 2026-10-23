@@ -12,6 +12,7 @@ import { CHUNK } from '../../constants';
 import { fnv1a } from '../../../net/codec';
 
 const V1_SEA_HASH = 2089571727; // 改動前（biome 仍為 FOREST）取得的 v1 海 / 沙灘欄位元組雜湊
+const V1_FILL_HASH = 119539757; // 抽出 engine/genPrims.ts 之前取得的 v1 陸地欄位元組雜湊（地表到熔岩層、兩側、跨多個生態段）
 const H = 1200;
 const F: CentralFrame = { width: 4200, height: H, edgeL: 330, edgeR: 345, cavernY: 560, moltenY: 1010 };
 
@@ -309,6 +310,14 @@ describe('chunkgen：外圍生成器 v0', () => {
     let h = 0x811c9dc5;
     for (const cx of [131, 132, 133, 140, 145, 146, 147, -1, -5, -15, -16, -17]) h = fnv1a(bytes(filled(gen, cx)), h);
     expect(h).toBe(V1_SEA_HASH);
+  });
+
+  it('抽出共用 primitives 不改變 v1 fill：陸地欄的位元組雜湊固定（裁決 P10）', () => {
+    const gen = new OuterGen('land-pin', F);
+    let h = 0x811c9dc5;
+    // 東：x ≥ 4680 是陸地（cx 150 起）；西：x < −480（cx −16 以下）；各跨 4 個以上生態段
+    for (const cx of [150, 151, 165, 180, 200, 215, 240, 270, -20, -21, -35, -50, -70, -90, -110, -140]) h = fnv1a(bytes(filled(gen, cx)), h);
+    expect(h).toBe(V1_FILL_HASH);
   });
 });
 
