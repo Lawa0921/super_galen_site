@@ -138,3 +138,35 @@ export function normalRoad(depth: number, kind: 'crowd' | 'boss', tier: RuneTier
 /** One baseline line: `[tiers-base] d<D> <tier> <kind> rate <a> loss <b> rounds <c> min <m>`, without the tag. */
 export const baselineLine = (depth: number, tier: string, kind: string, r: TierRun): string =>
   `d${depth} ${tier} ${kind} rate ${r.rate.toFixed(3)} loss ${r.hpLoss.toFixed(3)} rounds ${r.rounds.toFixed(2)} min ${r.minRounds}`;
+
+/**
+ * The feasibility gate (difficulty plan ruling 16, Task 0b, with the controller's ruling on it): on Normal, at each depth,
+ * the magic-tier builds must already pull apart from the bare default at the boss, by HP lost (`lossGap`) AND by rounds
+ * (`roundsRatio`). The crowd rows are measured and reported, not gated: a Normal group falls in 2–4 rounds at Lv 50 either
+ * way (a ceiling), so the crowd gap is measured under each difficulty in Task 5a instead.
+ */
+export const FEASIBLE = { depths: [10, 15, 20, 25], lossGap: 0.10, roundsRatio: 0.8, gated: ['boss'] } as const;
+
+/** Whether `magic` pulls apart from `bare` as FEASIBLE asks: HP lost lower by `lossGap`, and rounds at most `roundsRatio` of bare's. */
+export const pullsApart = (bare: TierRun, magic: TierRun): boolean =>
+  bare.hpLoss - magic.hpLoss >= FEASIBLE.lossGap && magic.rounds <= FEASIBLE.roundsRatio * bare.rounds;
+
+export interface FeasibleRow { depth: number; kind: 'crowd' | 'boss'; bare: TierRun; magic: TierRun; ok: boolean; gated: boolean }
+
+/**
+ * Every row of the feasibility gate: the crowd (every group of the floor, averaged) and the boss at each FEASIBLE depth;
+ * `ok` whether it pulls apart, `gated` whether the gate holds it to that (the bosses).
+ */
+export function feasibility(): FeasibleRow[] {
+  return FEASIBLE.depths.flatMap((depth) => (['crowd', 'boss'] as const).map((kind) => {
+    const bare = normalRoad(depth, kind, 'bare');
+    const magic = normalRoad(depth, kind, 'magic');
+    return { depth, kind, bare, magic, ok: pullsApart(bare, magic), gated: (FEASIBLE.gated as readonly string[]).includes(kind) };
+  }));
+}
+
+/** One feasibility row: `d<D> <kind> loss <bare>-><magic> (gap <g>) rounds <bare>-><magic> (ratio <r>) <ok|FAIL|reported>`. */
+export const feasibilityLine = (r: FeasibleRow): string =>
+  `d${r.depth} ${r.kind} loss ${r.bare.hpLoss.toFixed(3)}->${r.magic.hpLoss.toFixed(3)} (gap ${(r.bare.hpLoss - r.magic.hpLoss).toFixed(3)}) `
+  + `rounds ${r.bare.rounds.toFixed(2)}->${r.magic.rounds.toFixed(2)} (ratio ${(r.bare.rounds ? r.magic.rounds / r.bare.rounds : 0).toFixed(3)}) `
+  + `${r.gated ? (r.ok ? 'ok' : 'FAIL') : 'reported'}`;

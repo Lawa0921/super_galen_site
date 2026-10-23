@@ -153,6 +153,8 @@
 - [ ] **Step 4：收尾 G**（`gate-0c` against `gate-0b`＋`cmp`）。
 - [ ] **Step 5：commit**：`test(starlantern): a feasibility gate — on Normal, magic runes already beat the bare default by a stated margin`。
 
+> **控制者裁定（2026-10-23，Task 0b 執行後；上面的原文保留不改）：PASS，以頭目為閘門。** 實測（SDD `feasibility.md`）：頭目每一層兩道門檻都過（失血差 .143／.168／.107／.171，回合比 .544／.655／.600／.510，第 10／15／20／25 層）；群戰第 15 層（差 −.005、比 .841）與第 20 層（差 .008、比 .803）兩道都不過。理由：普通的單組群戰在 Lv50 兩種配置都 2–4 回合打完，差距近 0 是天花板效應，不代表符文沒用；高難度的敵人 HP 與攻擊提高後群戰變長，群戰的差距改在 Task 5a 量。因此 `FEASIBLE` 加 `gated: ['boss']`，`pullsApart` 對頭目要求**兩道門檻都過**（失血差 ≥ .10 **且** 回合比 ≤ .8），群戰只報告不斷言；斷言改名 `magic runes already pull apart from bare on Normal, at every boss`。
+
 ### Task 1: 難度接線
 
 **Files:**
@@ -268,7 +270,7 @@
   - `engine/sim.test.ts`：`every balance file is a normal band` 照新形狀。
 - [ ] **Step 2：執行，確認失敗**：`rtk proxy npx vitest run --testTimeout=20000 src/scripts/games/starlantern/engine/tierBands.test.ts src/scripts/games/starlantern/engine/sim.test.ts`。
 - [ ] **Step 3：實作**；兩個帶檔 `describe.skipIf(process.env.BANDS !== '1')`，本任務各只有 `it('reports every tier band number')`：跑全部格子與它的普通雙胞胎、印報告行、只斷言每格都量到（`fights > 0`）。
-- [ ] **Step 4：確認通過**；跑兩個難度帶到 `bands-5a-*.stdout`，把每一行抄進 SDD `tier-bands.md`，標出照 spec §6.2 門檻會紅的格子。這份是調整前的基準。
+- [ ] **Step 4：確認通過**；跑兩個難度帶到 `bands-5a-*.stdout`，把每一行抄進 SDD `tier-bands.md`，標出照 spec §6.2 門檻會紅的格子。這份是調整前的基準。**（控制者裁定，Task 0b 後加）**：每個難度的每個群戰深度，另外報告群戰的符文差距——同格的魔法階對不裝符文（N1 對 N4 的群戰格；地獄是 H1 對 H3 的 magic／bare）的失血差與回合比，格式同 `feasibilityLine`，和 N1／N4 並排寫進 `tier-bands.md`。
 - [ ] **Step 5：收尾 G**（`gate-5a` against `gate-4`＋`cmp`）。
 - [ ] **Step 6：commit**：`test(starlantern): Nightmare and Hell bands measured and reported, opt-in like the rune bands`（內文附 `tier-bands.md` 的摘要表）。
 
@@ -290,7 +292,7 @@
   - `H1`（rate ≥ .80、loss .20–.55、rounds ≤ 雙胞胎 × 1.5）、`H2`（rate .40–.85、每場 ≥ 3 回合）、`H3`（magic：群戰 ≤ .60、頭目 ≤ .30；bare：≤ .20）、`H4 no boss falls inside three rounds`（每一場 `rounds ≥ 3`）。
   - `HX the party is never frozen`：兩個帶檔的每一格 `partyFrozen === 0`。
 - [ ] **Step 2：執行，看哪些紅**：兩個難度帶到 `bands-5b-0-*.stdout`。
-- [ ] **Step 3：調整到全綠**：槓桿照順序——`TIERS` 的 hp／atk → `chanceMul`／`chanceCap` → `rider` → `AFFIXES` 的數字。**不准**動普通的任何常數、`TIERS.normal`、掉落欄位、符文、build、角色；不准改門檻。每一輪（改一次、跑一次兩個帶）在 `retune.md` 記：改了什麼，以及**N1 與 N4 並排**的一張表（每格 N1 的 rate／loss 與同格 N4 的 rate／loss），再加其他帶的前後數字；最多 4 輪。N1 與 N4 往相反方向拉扯、4 輪內收不攏，或仍有其他紅 → 停下來回報 BLOCKED，附 `retune.md` 與建議（交給控制者，不自行改門檻）。
+- [ ] **Step 3：調整到全綠**：槓桿照順序——`TIERS` 的 hp／atk → `chanceMul`／`chanceCap` → `rider` → `AFFIXES` 的數字。**不准**動普通的任何常數、`TIERS.normal`、掉落欄位、符文、build、角色；不准改門檻。每一輪（改一次、跑一次兩個帶）在 `retune.md` 記：改了什麼，以及**N1 與 N4 並排**的一張表（每格 N1 的 rate／loss 與同格 N4 的 rate／loss），再加其他帶的前後數字；最多 4 輪。N1 與 N4 往相反方向拉扯、4 輪內收不攏，或仍有其他紅 → 停下來回報 BLOCKED，附 `retune.md` 與建議（交給控制者，不自行改門檻）。**（控制者裁定，Task 0b 後加）**：每一輪的表也列出群戰的符文差距（Task 5a 的報告）；N4 的群戰部分不過時，第一個槓桿是該難度的敵人 HP（`TIERS.<tier>.hp`，拉長群戰），仍守 4 輪上限。
 - [ ] **Step 4：確認通過**：兩個難度帶全綠；`data/difficulty.test.ts` 的 `higher tiers only ever ask more` 仍綠。
 - [ ] **Step 5：收尾 G**（`gate-5b` against `gate-5a`＋`cmp`；難度帶 `bands-5b-*.stdout`）。
 - [ ] **Step 6：commit**：`test(starlantern): tier bands — magic runes beat Nightmare, the bare default does not, odd lineups hold, Hell needs rare and a trigger, no affix is a death sentence, the party never freezes`（內文附 `retune.md` 的最後一列）。

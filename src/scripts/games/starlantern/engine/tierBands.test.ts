@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { BUILDS, buildOf } from '../data/builds';
 import { STANDARD_LINEUP } from './party';
 import { encounterTable } from './scaling';
-import { BASELINE_DEPTHS, BASELINE_TIERS, baselineLine, measureCell, roadCell, tierLineup, TIER_SEEDS } from './tierBands';
+import { BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, baselineLine, measureCell, pullsApart, roadCell, tierLineup, TIER_SEEDS, type TierRun } from './tierBands';
 import type { CharacterId } from './types';
 
 describe('difficulty band measurements (difficulty plan Task 0)', () => {
@@ -80,5 +80,17 @@ describe('difficulty band measurements (difficulty plan Task 0)', () => {
     expect(roadCell(20, 'crowd', 'rare', 'nightmare').difficulty).toBe('nightmare');
     expect(baselineLine(10, 'magic', 'boss', { rate: 0.95, hpLoss: 0.1234, rounds: 7.125, minRounds: 5, partyFrozen: 0, fights: 40 }))
       .toBe('d10 magic boss rate 0.950 loss 0.123 rounds 7.13 min 5');
+  });
+
+  it('the feasibility gate: at a boss magic pulls apart from bare by HP lost and by rounds; a crowd is reported', () => {
+    // Controller ruling on Task 0b: the gate holds at the bosses (both thresholds); Normal crowds are reported only.
+    expect(FEASIBLE).toEqual({ depths: [10, 15, 20, 25], lossGap: 0.10, roundsRatio: 0.8, gated: ['boss'] });
+    const run = (hpLoss: number, rounds: number): TierRun => ({ rate: 1, hpLoss, rounds, minRounds: 1, partyFrozen: 0, fights: 1 });
+    expect(pullsApart(run(0.31, 10), run(0.20, 8))).toBe(true);
+    // Either threshold alone is not enough.
+    expect(pullsApart(run(0.31, 10), run(0.20, 10))).toBe(false);
+    expect(pullsApart(run(0.30, 10), run(0.21, 8))).toBe(false);
+    expect(pullsApart(run(0.30, 10), run(0.21, 8.1))).toBe(false);
+    expect(pullsApart(run(0.12, 3.35), run(0.12, 2.82))).toBe(false);
   });
 });

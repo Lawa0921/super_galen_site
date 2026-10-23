@@ -5,7 +5,7 @@
  * BALANCE_REPORT set, one `[tiers-base]` line a cell (engine/__fixtures__/tiers/baseline.normal.txt keeps them sorted).
  */
 import { describe, expect, it } from 'vitest';
-import { BASELINE_DEPTHS, BASELINE_TIERS, baselineLine, normalRoad } from './tierBands';
+import { BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, baselineLine, feasibility, feasibilityLine, normalRoad } from './tierBands';
 
 const on = process.env.BANDS === '1';
 const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0';
@@ -18,5 +18,13 @@ describe.skipIf(!on)('the difficulty bands: the Normal baseline (difficulty plan
       say(baselineLine(depth, tier, kind, r));
       expect(r.fights, `d${depth} ${tier} ${kind}`).toBeGreaterThan(0);
     }
+  }, 3_000_000);
+
+  it('magic runes already pull apart from bare on Normal, at every boss', () => {
+    // Controller ruling on Task 0b: the bosses are gated on both thresholds; the crowds are reported only.
+    const rows = feasibility();
+    for (const r of rows) console.info(`[tiers-feasible] ${feasibilityLine(r)}`);
+    expect(rows.filter((r) => r.gated).length).toBe(FEASIBLE.depths.length);
+    expect(rows.filter((r) => r.gated && !r.ok).map(feasibilityLine), rows.map(feasibilityLine).join('\n')).toEqual([]);
   }, 3_000_000);
 });
