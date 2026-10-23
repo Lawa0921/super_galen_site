@@ -44,7 +44,7 @@ const rowOf = (c: RuneChoice): string =>
  * A stat word and its value, with the stop after it: 「威力 115%；」, 「TP +1。」. A rune's line keeps each on one line (it
  * broke as 「…；TP」 / 「+1。」 at 12px, legibility T6 review).
  */
-const STAT_VALUE = /(?:[A-Za-z]+|[一-鿿]{1,4}) ?[+\-−×]?\d+(?:\.\d+)?%?[。，；、）]?/g;
+const STAT_VALUE = /(?:[A-Za-z]+|\p{Script=Han}{1,4}) ?[+\-−×]?\d+(?:\.\d+)?%?[。，；、）]?/gu;
 const keepStats = (text: string): (string | HTMLElement)[] => {
   const out: (string | HTMLElement)[] = [];
   let at = 0;
