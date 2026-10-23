@@ -77,8 +77,9 @@ describe('StatusScene', () => {
     const orig = Element.prototype.scrollIntoView;
     Element.prototype.scrollIntoView = reveal;
     try {
-      // The tree scrolls its own columns (statusTabs revealIn, tested with the columns' cues); the board scrolls into view.
-      for (const [id, label, node, into] of [['tree', '技能樹', '.slx-tree-node.slx-row-cur', false], ['talent', '天賦', '.slx-talent-node.slx-row-cur', true]] as const) {
+      // The tree scrolls its own columns and the talent page its own board (statusTabs revealIn, review of T5): nothing
+      // around them scrolls into view.
+      for (const [id, label, node, into] of [['tree', '技能樹', '.slx-tree-node.slx-row-cur', false], ['talent', '天賦', '.slx-talent-node.slx-row-cur', false]] as const) {
         reveal.mockClear();
         const { root, tab, name } = setup(`tab:${id}`);
         expect(tab()).toBe(label);
@@ -1647,20 +1648,37 @@ describe('StatusScene', () => {
       });
     });
 
-    it('coming back to the tab brings the cursor\'s node into view', () => {
+    it('the cursor, and coming back to the tab, scroll the board itself just enough to show the node, in stage px (review of T5)', () => {
       const into = vi.fn();
       const had = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView');
       Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, writable: true, value: into });
+      const sh = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(600);
+      const ch = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(200);
+      // On screen at 2x: the board from 100 to 300 (stage 50 to 150); the cursor's node where `at` says.
+      const at = { node: { top: 150, bottom: 180 } };
+      const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+        const r = this.classList.contains('slx-screen') ? { top: 0, bottom: 720, left: 0, right: 1280 }
+          : this.classList.contains('slx-talent-board') ? { top: 100, bottom: 300, left: 0, right: 0 }
+            : this.classList.contains('slx-row-cur') ? { ...at.node, left: 0, right: 0 } : { top: 0, bottom: 0, left: 0, right: 0 };
+        return { ...r, width: r.right - r.left, height: r.bottom - r.top, x: r.left, y: r.top, toJSON: () => r } as DOMRect;
+      });
       try {
         const { s, cur, root } = onTalent(6);
+        root.classList.add('slx-screen');
+        const board = () => root.querySelector<HTMLElement>('.slx-talent-board')!;
+        s.onAction('down');                                      // in view: the board stays
+        expect(board().scrollTop).toBe(0);
+        at.node = { top: 290, bottom: 340 };                     // 20 stage px under the board's bottom
+        s.onAction('down');
+        expect(board().scrollTop).toBe(20);
         down(s, 6); s.onAction('swap'); s.onAction('swap');
         expect(cur()).toBe('noel-k2');
-        into.mockClear();
         s.onAction('right'); s.onAction('left');                 // away and back: the board was reset to the top
         expect(cur()).toBe('noel-k2');
-        expect(into).toHaveBeenCalled();
-        expect(into.mock.contexts.at(-1)).toBe(root.querySelector('.slx-talent-node[data-node="noel-k2"]'));
+        expect(board().scrollTop).toBe(20);
+        expect(into).not.toHaveBeenCalled();                     // nothing else on the page moves
       } finally {
+        rect.mockRestore(); sh.mockRestore(); ch.mockRestore();
         if (had) Object.defineProperty(Element.prototype, 'scrollIntoView', had);
         else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
       }

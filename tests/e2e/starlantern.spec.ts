@@ -1050,6 +1050,42 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  test("on a sideways phone the full-width talent board keeps the cursor's node whole while it walks down (review of T5)", async ({ page }) => {
+    await fitTo(page, 1280, 720);
+    const w = await setup(page, 7);
+    await legacyRoster(page);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.party.roster.noel.level = 50;
+    });
+    await w.choose('.slx-town', '冒險者公會');
+    await expect(page.locator('.slx-guild')).toBeVisible(); await w.closeTalk();
+    await page.locator('.slx-guild [data-id=tree]').click();
+    await flipTo(page, CHARACTERS.noel.name);
+    await page.locator('[data-tab=talent]').click();
+    await expect(page.locator('.slx-status-scene')).toHaveClass(/slx-status-wide/);
+    await asPhone(page);
+    expect(await stageScale(page)).toEqual({ kind: 'sideways', s: 1 });
+    const cur = page.locator('.slx-talent-node.slx-row-cur');
+    const seen: string[] = [];
+    let scrolled = false;
+    for (let i = 0; i < 60; i++) {
+      const id = (await cur.getAttribute('data-node')) ?? '';
+      // The cursor's node shows whole inside the board.
+      const board = await stageBox(page, page.locator('.slx-talent-board'));
+      const node = await stageBox(page, cur);
+      expect(node.y, `${id} below the board's top`).toBeGreaterThanOrEqual(board.y - 0.5);
+      expect(node.y + node.height, `${id} above the board's bottom`).toBeLessThanOrEqual(board.y + board.height + 0.5);
+      scrolled ||= await page.locator('.slx-talent-board').evaluate((b) => b.scrollTop > 0);
+      if (seen.includes(id)) break;                       // the last node: down moves no further (or wraps)
+      seen.push(id);
+      await w.key('ArrowDown');
+    }
+    expect(seen.length, 'the walk went down several nodes').toBeGreaterThan(3);
+    expect(scrolled, 'the walk went past the first screen of the board').toBe(true);
+    expect(w.errors).toEqual([]);
+  });
+
   test('the tree shows pairs and swaps a side (plan 8d)', async ({ page }) => {
     await fitTo(page, 1280, 720);
     const missing: string[] = [];
@@ -1528,6 +1564,15 @@ test.describe('starlantern', () => {
           const over = await page.locator('.slx-tree-node .slx-skill-name, .slx-talent-name').evaluateAll((els) =>
             els.filter((e) => e.scrollWidth > e.clientWidth + 0.5).map((e) => (e.textContent ?? '').trim()));
           bad.push(...over.map((t) => `${id} ${tab} ${vw}: ${t}`));
+          // A node's state line reads whole, never cut to 「…」 (review of T5).
+          const cut = await page.locator('.slx-tree-state, .slx-talent-state').evaluateAll((els) =>
+            els.filter((e) => e.checkVisibility() && e.scrollWidth > e.clientWidth + 0.5).map((e) => (e.textContent ?? '').trim()));
+          bad.push(...cut.map((t) => `${id} ${tab} ${vw}: state 「${t}」 cut to 「…」`));
+          // The member arrows stay a 20px tall target here too (review of T5), without growing the plate.
+          for (const arrow of await page.locator('.slx-status-plate .slx-status-arrow').all()) {
+            const h = (await stageBox(page, arrow)).height;
+            if (h < 20 - 0.5) bad.push(`${id} ${tab} ${vw}: a member arrow ${h}px tall`);
+          }
           const panel = await stageBox(page, page.locator('.slx-status-panel'));
           for (const other of ['.slx-status-plate', '.slx-status-scene > .slx-back']) {
             if (!apart(panel, await stageBox(page, page.locator(other)))) bad.push(`${id} ${tab} ${vw}: the panel meets ${other}`);
@@ -2683,14 +2728,44 @@ test.describe('starlantern', () => {
         const face = pm.querySelector('img')?.getBoundingClientRect();
         const onFace = !!face && b.left >= panel.left - 0.5 && b.top >= face.top + face.height / 2 - 0.5 && b.bottom <= panel.bottom + 0.5;
         const pops = [...pm.querySelectorAll('.slx-pm-pop, .slx-pm-crit, .slx-pm-weak, .slx-pm-resist, .slx-pm-miss')].map((p) => p.getBoundingClientRect());
-        return { text: c.textContent, right: onFace && pops.every((r) => !meets(r)), onTop: c.contains(top), clear };
+        return { text: c.textContent, onPortrait: onFace && pops.every((r) => !meets(r)), onTop: c.contains(top), clear };
       });
       if (shots) await page.screenshot({ path: `${shots}/again-1280.png` });
       return shown;
     });
     await play('攻擊');
-    expect(await seen).toEqual({ text: '還有。', right: true, onTop: true, clear: true });
+    expect(await seen).toEqual({ text: '還有。', onPortrait: true, onTop: true, clear: true });
     expect(await game((g) => g.battle.log.some((e: any) => e.type === 'mech' && e.cue === 'again'))).toBe(true);
+    // Every cue word, in every slot of the bar (review of T4): the same word element, put on each panel in turn, stays on
+    // the portrait's lower part and clear of the name, the HP digits and the TP line.
+    for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await fitTo(page, vw, vh);
+      const off = await page.evaluate((words) => [...document.querySelectorAll('.slx-partybar .slx-pm')].flatMap((pm, slot) => words.flatMap((word) => {
+        const c = document.createElement('span');
+        c.className = 'slx-pm-cue slx-mech-heat';
+        c.textContent = word;
+        pm.append(c);
+        const b = c.getBoundingClientRect(), panel = pm.getBoundingClientRect(), face = pm.querySelector('img')!.getBoundingClientRect();
+        const meets = (r: DOMRect) => b.left < r.right && r.left < b.right && b.top < r.bottom && r.top < b.bottom;
+        const text = ['.slx-pm-name', '.slx-pm-num', '.slx-pm-tp'].map((q) => pm.querySelector(q)!.getBoundingClientRect());
+        // In screen px: on the phone the stage is turned, so check against the face along both axes.
+        const onFace = meets(face) && b.left >= panel.left - 0.5 && b.right <= panel.right + 0.5 && b.top >= panel.top - 0.5 && b.bottom <= panel.bottom + 0.5;
+        c.remove();
+        return onFace && text.every((r) => !meets(r)) ? [] : [`slot ${slot} 「${word}」`];
+      })), Object.values(T.mech.cue));
+      expect(off, `cue words off the portrait at ${vw}`).toEqual([]);
+      if (shots && vw === 1280) {
+        await page.evaluate((words) => [...document.querySelectorAll('.slx-partybar .slx-pm')].forEach((pm, i) => {
+          const c = document.createElement('span');
+          c.className = 'slx-pm-cue slx-mech-beat slx-shot-cue';
+          c.textContent = words[i % words.length];
+          pm.append(c);
+        }), Object.values(T.mech.cue));
+        await page.screenshot({ path: `${shots}/cue-words-1280.png` });
+        await page.evaluate(() => document.querySelectorAll('.slx-shot-cue').forEach((c) => c.remove()));
+      }
+    }
+    await fitTo(page, 1280, 720);
     expect(w.errors).toEqual([]);
     expect(missing).toEqual([]);
   });
@@ -4237,6 +4312,12 @@ test.describe('starlantern', () => {
           expect(l.length).toBe(lefts[0].length);
           l.forEach((x, i) => expect(Math.abs(x - lefts[0][i]), `column ${i} at ${vw}`).toBeLessThanOrEqual(0.5));
         }
+        // The row names keep to one line in their narrower column, and every heading fits its own (review of T5).
+        const cramped = await page.locator('.slx-stat-table').evaluateAll((ts) => ts.flatMap((t) => [
+          ...[...t.querySelectorAll('tbody th')].filter((th) => { const r = document.createRange(); r.selectNodeContents(th); return r.getClientRects().length > 1; }).map((th) => `row ${th.textContent} wraps`),
+          ...[...t.querySelectorAll('thead th')].filter((th) => th.scrollWidth > th.clientWidth + 0.5).map((th) => `heading ${th.textContent} spills`),
+        ]));
+        expect(cramped, `stat tables at ${vw}`).toEqual([]);
       };
       const branches = async (vw: number) => {
         const heads = await page.locator('.slx-tree-branch-name').evaluateAll((hs) => hs.map((h) => ({

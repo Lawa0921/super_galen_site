@@ -16,6 +16,6 @@ describe('pixelText (legibility Task 4)', () => {
     }
     expect(pixelText('記', 24, 0xe8c46a, 0x14100a).style.stroke).toMatchObject({ color: 0x14100a, width: 4 });
     // Scaled by a tween (a hit's pop, a lunge, the screen's punch), it stays whole pixels, never smeared (T4 review).
-    expect(pixelText('30', 24, 0xffffff).textureStyle.scaleMode).toBe('nearest');
+    expect(pixelText('30', 24, 0xffffff).textureStyle?.scaleMode).toBe('nearest');
   });
 });

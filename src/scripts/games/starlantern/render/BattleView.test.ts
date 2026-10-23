@@ -466,15 +466,24 @@ describe('BattleView stat cues', () => {
   });
 
   it('pops a hit number by whole steps, a crit bigger (T4 review)', () => {
-    const scales = (crit: boolean) => {
-      const view = new BattleView(false, bank);
-      view.setup(battle([]), { width: 640, height: 360 }, 1);
-      void view.play(battle([{ type: 'damage', target: 'e0', amount: 30, element: 'phys', mult: 1, crit }]), sfx);
-      return (enemyBox(view).children.find((c) => c instanceof Text && c.text === '30') as Text).scale.x;
-    };
-    expect(Number.isInteger(scales(true))).toBe(true);
-    expect(Number.isInteger(scales(false))).toBe(true);
-    expect(scales(true)).toBeGreaterThan(scales(false));
+    // On fake timers, each view set up again before they go back: no tween or held moment outlives the test.
+    vi.useFakeTimers();
+    const views: BattleView[] = [];
+    try {
+      const scales = (crit: boolean) => {
+        const view = new BattleView(false, bank);
+        views.push(view);
+        view.setup(battle([]), { width: 640, height: 360 }, 1);
+        void view.play(battle([{ type: 'damage', target: 'e0', amount: 30, element: 'phys', mult: 1, crit }]), sfx);
+        return (enemyBox(view).children.find((c) => c instanceof Text && c.text === '30') as Text).scale.x;
+      };
+      expect(Number.isInteger(scales(true))).toBe(true);
+      expect(Number.isInteger(scales(false))).toBe(true);
+      expect(scales(true)).toBeGreaterThan(scales(false));
+    } finally {
+      for (const v of views) v.setup(battle([]), { width: 640, height: 360 }, 1);
+      vi.useRealTimers();
+    }
   });
 
   it('keeps pops still for reduced motion', () => {

@@ -131,7 +131,7 @@ export class PartyBar {
     setTimeout(() => { for (const x of extras) x.remove(); }, POP_MS);
   }
 
-  /** A mechanic's moment (暴走！, 還有。): its word in its colour rising off the panel, like MISS. */
+  /** A mechanic's moment (暴走！, 還有。): its word in its colour on the portrait's lower part, rising as it fades. */
   cue(key: string, w: MechWord): void {
     const p = this.panels.get(key);
     if (!p) return;

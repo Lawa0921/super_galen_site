@@ -238,7 +238,7 @@ export const T = {
     shield: (n: number) => `護盾${n}`,
     riposte: (n: number) => `贖火${n}`,
     beat: (n: number) => (n >= 4 ? `拍子${n}・終幕` : `拍子${n}`),
-    cue: { overload: '暴走！', again: '還有。', noBarrier: '沒有結界', counter: '贖火', misstep: '這一步踩空了呀。', finale: '終幕' },
+    cue: { overload: '暴走！', again: '還有。', noBarrier: '無結界', counter: '贖火', misstep: '踩空！', finale: '終幕' },
   },
   log: {
     act: (who: string, label: string) => `${who}：${label}`,

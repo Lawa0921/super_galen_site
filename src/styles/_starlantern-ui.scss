@@ -593,12 +593,15 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-status-name { display: grid; justify-items: center; line-height: 16px; }
 .slx-status-name b, .slx-equip-name b { font-size: $slx-fs; font-weight: normal; color: $slx-gold; }
 .slx-status-title { color: $slx-dim; font-size: $slx-fs; }
-.slx-status-arrow { padding: 0 6px; cursor: pointer; color: $slx-ink; }   // no vertical padding: the plate stays 40px under the wide panel (legibility T5)
+// A 20px tall tap target that lays out 16px tall (the negative margin takes the padding back), so no plate or head grows:
+// the wide pages' plate stays 40px under the panel (legibility T5), the workshop and builds heads end where their windows start.
+.slx-status-arrow { padding: 2px 6px; margin: -2px 0; cursor: pointer; color: $slx-ink; }
 .slx-status-arrow:hover { color: $slx-gold; }
 .slx-status-panel { left: 250px; top: 10px; right: 10px; bottom: 40px; display: flex; flex-direction: column; }
 // The tree and talent pages take the whole width, above the name plate, the standee hidden (legibility ruling 6).
 .slx-status-wide .slx-status-panel { left: 10px; bottom: 52px; }
-.slx-status-wide .slx-status-art { visibility: hidden; }
+// Gone, not just hidden, so its standee, rays and motes stop animating.
+.slx-status-wide .slx-status-art { display: none; }
 // Its name plate in one line (title, name, level), so the plate stays under the panel's bottom at 52px.
 .slx-status-wide .slx-status-name { grid-auto-flow: column; align-items: baseline; gap: 0 6px; }
 // The wide talent page keeps three board rows in view at 12px: its top lines on one line, the hint closer below.
@@ -639,7 +642,9 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-stat-cat-head.slx-row-cur, .slx-stat-table .slx-row-cur th { color: #fff; }
 /* Fixed layout (plan 8g Task 5): the row names take 22%, the total 11%, and the source columns share the rest evenly, so
    every category's table has the same column edges and the columns line up down the page; a long row name wraps rather
-   than push the table past the page's edge. The headings are 10px and centred; 主屬性 reads 主屬 there (its title whole). */
+   than push the table past the page's edge. 22% keeps every row name on one line (「TP 消耗減少」 is 71px of the 348px table;
+   21% is the floor; e2e 'the status page: columns line up'). The headings are 12px and centred, 26px words in 31px columns;
+   主屬性 reads 主屬 there (its title whole). */
 .slx-stat-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 4px; }
 .slx-stat-table thead th:first-child { width: 22%; }
 .slx-stat-table thead th:last-child { width: 11%; }
@@ -960,8 +965,8 @@ $slx-framed: (magic, rare, epic, legendary, unique, set);
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
   animation: slx-pm-cue 0.9s ease-out forwards;
 }
-// Readable from its first frame (fast mode holds it only a moment) over the bars, clear of the TP line above them; it
-// holds there, then rises as it fades.
+// Readable from its first frame (fast mode holds it only a moment) on the portrait's lower part; it holds there, then rises
+// as it fades. Every cue word is three characters at most, so it ends before the panel's text (rarity.test).
 @keyframes slx-pm-cue { 0% { translate: 0 0; opacity: 1; } 70% { translate: 0 0; opacity: 1; } 100% { translate: 0 -10px; opacity: 0; } }
 .slx-pm-pop-tp { font-size: $slx-fs; line-height: 14px; top: 14px; color: #8fb8ff; }
 @media (prefers-reduced-motion: reduce) {

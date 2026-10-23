@@ -903,7 +903,9 @@ const talent: StatusTab = {
     board.scrollTop = talentView.top;
     if (talentView.reveal) {
       talentView.reveal = false;
-      board.querySelector('.slx-talent-node.slx-row-cur')?.scrollIntoView?.({ block: 'nearest' });
+      // Only the board scrolls, by stage px, as the tree's columns do (scrollIntoView could move the page around it).
+      const node = board.querySelector<HTMLElement>('.slx-talent-node.slx-row-cur');
+      if (node) revealIn(board, node, null);
       talentView.top = board.scrollTop;
     }
     updateCues(board);
