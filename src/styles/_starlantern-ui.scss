@@ -1258,6 +1258,19 @@ $slx-starlit: #bff6ff;
 .slx-portal-depth { margin-top: auto; padding-top: 1px; color: $slx-dim; font-size: $slx-fs; line-height: 14px; text-align: right; }
 // With the banner strip shown, the deepest depth sits on it, at its bottom right, so the card gains a line (legibility T3).
 .slx-portal:has(.slx-portal-art) .slx-portal-depth { position: absolute; top: 16px; right: 10px; margin: 0; padding: 0 2px; color: $slx-ink; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; }
+// Difficulty plan Task 7a: the tier row above the cards (12px, leading 14, weight normal), in the free band between the
+// place window and the 返回／gold windows, so the cards keep every pixel of their height. The chosen tier carries the 「→」
+// and a gold underline (no layout cost), not colour alone; a locked one is dim and says what opens it. It wraps, centred,
+// rather than overflowing (up to three lines fit the band).
+.slx-tier-row { position: absolute; top: -46px; left: 166px; right: 170px; height: 44px; display: flex; flex-wrap: wrap; align-content: center; align-items: baseline; justify-content: center; gap: 0 6px; margin: 0; font-size: $slx-fs; line-height: 14px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; }
+.slx-tier-label { color: $slx-dim; }
+.slx-tier { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; min-width: 0; padding: 0 2px; overflow-wrap: anywhere; cursor: pointer; }
+.slx-tier-sel { color: $slx-gold; text-decoration: underline 2px; text-underline-offset: 2px; }
+.slx-tier-locked { color: $slx-dim; cursor: not-allowed; }
+.slx-tier-cond { color: #8f8778; }
+// A Nightmare or Hell card's two lines: what changes, then the suggestion (dim).
+.slx-portal-tier { margin-top: 2px; color: #f0a8a0; }
+.slx-portal-tier-suggest { color: $slx-dim; }
 .slx-portal-hint { margin: 0; text-align: center; font-size: $slx-fs; line-height: 14px; color: $slx-ink; text-shadow: 0 1px 0 #000, 0 0 3px #000; }
 .slx-layer.slx-depths { left: 50%; top: 84px; translate: -50% 0; translate: round(down, -50%, 1px) 0; min-width: 200px; max-width: none; }
 .slx-depths .slx-ico { width: 48px; height: 27px; object-fit: cover; }

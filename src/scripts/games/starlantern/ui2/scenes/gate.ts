@@ -12,6 +12,9 @@ import { capacity, carried, formatWeight } from '../../data/weights';
 import { materialUses } from '../../engine/forge/uses';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { startDepths, terrainOf, type Portal } from '../../engine/dungeon/run';
+import type { Difficulty } from '../../engine/battle';
+import { HELL_BOSS_DEPTH, NIGHTMARE_DEPTH, tierUnlocked } from '../../engine/tiers';
+import { STORY } from '../../data/story.zh-TW';
 import { REGION_TRAITS_FROM, depthLevel, encounterTable } from '../../engine/scaling';
 import { ART_BASE, art, codexArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
@@ -50,17 +53,72 @@ function gearIds(region: RegionId): string[] {
 /** The departure confirm warns when the town bag has fewer free slots than this. */
 const BAG_LOW = 5;
 
-/** Three portal cards side by side: ←→ or the pointer chooses, Enter or a click goes in. */
+/** The tiers in the row's order. */
+const TIER_ORDER: readonly Difficulty[] = ['normal', 'nightmare', 'hell'];
+/** A tier's name for the depth list and the confirm: none on Normal, so those read as they always did. */
+const tierWord = (t: Difficulty): string | undefined => (t === 'normal' ? undefined : T.ui2.tier.names[t]);
+
+/**
+ * Three portal cards side by side: ←→ or the pointer chooses, Enter or a click goes in. Above them the tier row (difficulty
+ * plan Task 7a, ruling 24): Q／E or a tap picks Normal, Nightmare or Hell; a locked tier says what opens it and only beeps.
+ */
 class PortalCards {
   readonly el: HTMLElement;
   private cards: HTMLElement[];
+  private tiers: HTMLElement[];
   cursor = 0;
 
   constructor(private ctx: SceneCtx, portals: Portal[], private on: { pick(i: number): void; cancel(): void }) {
     this.cards = portals.map((p, i) => this.card(p, i));
+    this.tiers = TIER_ORDER.map((t) => this.tierCell(t));
+    const tierRow = el('div', { class: 'slx-tier-row', attrs: { role: 'radiogroup', 'aria-label': T.ui2.tier.row } }, [
+      el('span', { class: 'slx-tier-label', text: T.ui2.tier.row }), ...this.tiers,
+    ]);
     const row = el('div', { class: 'slx-portal-row', attrs: { role: 'listbox', 'aria-label': T.ui2.gate.choose } }, this.cards);
-    this.el = el('div', { class: 'slx-portals' }, [row, el('p', { class: 'slx-portal-hint', text: T.ui2.gate.hint })]);
+    this.el = el('div', { class: 'slx-portals' }, [tierRow, row, el('p', { class: 'slx-portal-hint', text: T.ui2.gate.hint })]);
     this.render();
+    this.renderTier();
+  }
+
+  /** One tier of the row: a tap chooses it (a locked one only beeps). */
+  private tierCell(t: Difficulty): HTMLElement {
+    const c = el('div', { class: 'slx-tier', attrs: { role: 'radio', 'data-tier': t } });
+    c.addEventListener('click', () => { if (!this.locked()) this.pickTier(t); });
+    return c;
+  }
+
+  /** Choose `t` through the game (town only, unlocked only); a locked one beeps and nothing changes. */
+  private pickTier(t: Difficulty): void {
+    const game = this.ctx.game;
+    if (t === game.tier()) return;
+    if (!game.chooseTier(t).ok) { this.ctx.sfx.error(); return; }
+    this.ctx.sfx.cursor();
+    this.renderTier();
+  }
+
+  /** The row as the game has it, and each card's two tier lines above Normal (none on Normal: the card as before). */
+  private renderTier(): void {
+    const s = this.ctx.game.state;
+    const now = this.ctx.game.tier();
+    const L = T.ui2.tier;
+    TIER_ORDER.forEach((t, i) => {
+      const c = this.tiers[i];
+      const open = tierUnlocked(s, t);
+      const on = t === now;
+      c.className = `slx-tier${on ? ' slx-tier-sel' : ''}${open ? '' : ' slx-tier-locked'}`;
+      c.setAttribute('aria-checked', String(on));
+      if (open) c.removeAttribute('aria-disabled'); else c.setAttribute('aria-disabled', 'true');
+      const cond = t === 'normal' || open ? [] : [el('span', { class: 'slx-tier-cond', text: t === 'nightmare' ? L.locked.nightmare(NIGHTMARE_DEPTH) : L.locked.hell(HELL_BOSS_DEPTH) })];
+      c.replaceChildren(el('span', { class: 'slx-tier-name', text: `${on ? '→' : ''}${L.names[t]}` }), ...cond);
+    });
+    for (const card of this.cards) {
+      card.querySelector('.slx-portal-tier')?.remove();
+      if (now === 'normal') continue;
+      card.querySelector('.slx-portal-cond')!.after(el('div', { class: 'slx-portal-tier' }, [
+        el('div', { class: 'slx-portal-tier-what', text: L.what[now] }),
+        el('div', { class: 'slx-portal-tier-suggest', text: L.suggest[now] }),
+      ]));
+    }
   }
 
   /** A region-only item's full name: until obtained it reads 「（未取得）」 after it; once in the codex it shows rarity. */
@@ -206,6 +264,11 @@ class PortalCards {
       this.ctx.sfx.cursor();
       return true;
     }
+    if (a === 'prev' || a === 'next') {
+      const i = TIER_ORDER.indexOf(this.ctx.game.tier());
+      this.pickTier(TIER_ORDER[(i + (a === 'next' ? 1 : -1) + TIER_ORDER.length) % TIER_ORDER.length]);
+      return true;
+    }
     if (a === 'confirm') { this.on.pick(this.cursor); return true; }
     if (a === 'cancel') { this.on.cancel(); return true; }
     if (a === 'up' || a === 'down') {
@@ -224,6 +287,17 @@ export class GateScene extends FacilityScene {
 
   protected sceneArt(): string {
     return this.ctx.art.has(portalArt.plaza) ? portalArt.plaza : art.scene('gate');
+  }
+
+  /**
+   * Glen's one line when Nightmare has opened and the tier row was never seen (difficulty plan ruling 22): said instead of
+   * the greeting drawn (the draw is taken as ever), and the row written down as seen (Normal), saved, so he says it once.
+   */
+  protected greet(line: string): Promise<void> {
+    const game = this.ctx.game;
+    if (!tierUnlocked(game.state, 'nightmare') || game.state.dungeon.tier !== undefined) return super.greet(line);
+    game.chooseTier('normal');
+    return this.say(STORY.tierUnlock);
   }
 
   protected commands(): MenuItem[] {
@@ -252,7 +326,7 @@ export class GateScene extends FacilityScene {
     const items = depths.map((d) => ({
       id: String(d), label: T.ui2.gate.floor(d, p.region === 'mainline' ? FLOORS[terrainOf('mainline', d) - 1].name : undefined),
       icon: this.ctx.art.has(art.bg(terrainOf(p.region, d))) ? art.bg(terrainOf(p.region, d)) : undefined,
-      right: T.ui2.gate.suggest(depthLevel(d)),
+      right: T.ui2.gate.suggest(depthLevel(d), tierWord(this.ctx.game.tier())),
     }));
     const v = new MenuView(new Menu(items), {
       pick: (it) => { this.ctx.sfx.confirm(); this.askDepart(p, Number(it.id)); },
@@ -263,7 +337,7 @@ export class GateScene extends FacilityScene {
   }
 
   private askDepart(p: Portal, n: number): void {
-    const box = confirmBox(T.ui2.gate.ask(REGIONS[p.region].name, n, CONDITIONS[p.condition].name), (yes) => {
+    const box = confirmBox(T.ui2.gate.ask(REGIONS[p.region].name, n, CONDITIONS[p.condition].name, tierWord(this.ctx.game.tier())), (yes) => {
       this.pop();
       if (!yes) return;
       // Story depth plan ruling 7: a departure that may go first plays the scene it owes (the lone morning), with every

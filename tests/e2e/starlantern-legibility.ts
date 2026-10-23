@@ -326,7 +326,35 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
   // The act 1 clear card: `go` shows it without changing the game.
   { name: 'clear', visit: async (page) => { await go(page, 'clear'); await expect(page.locator('.slx-clear [role=option]').first()).toBeVisible(); } },
   {
+    // Difficulty plan Task 7a: Nightmare open (the main road reached 12), Glen's one line closed, Nightmare chosen with E;
+    // Hell stays locked and says what opens it (the row's longest words). The plain 'portals' screen shows both locked.
+    name: 'portals-tier', visit: async (page, w) => {
+      await game(page, 'g.state.dungeon.reached.mainline = 12; delete g.state.dungeon.tier;');
+      await facility(page, w, 'gate', '.slx-gate');
+      await w.key('Enter');
+      await expect(page.locator('.slx-portal')).toHaveCount(3);
+      await w.key('e');
+      await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'nightmare');
+      await expect(page.locator('.slx-tier-locked[data-tier=hell] .slx-tier-cond')).toBeVisible();
+      await expect(page.locator('.slx-portal-tier').first()).toBeVisible();
+    },
+  },
+  {
+    name: 'depths-tier', visit: async (page) => {
+      await page.locator('.slx-portal').first().click();
+      await expect(page.locator('.slx-depths [role=option] .slx-right').first()).toContainText('噩夢');
+    },
+  },
+  {
+    name: 'confirm-tier', visit: async (page, w) => {
+      await w.key('Enter');                                   // depth 1
+      await expect(page.locator('.slx-confirm')).toContainText('難度：噩夢');
+    },
+  },
+  {
     name: 'confirm', visit: async (page, w) => {
+      // The sweep's own save again for the rest (difficulty plan Task 7a): the main road at 1, the tier row unseen.
+      await game(page, 'g.state.dungeon.reached.mainline = 1; delete g.state.dungeon.tier;');
       await facility(page, w, 'gate', '.slx-gate');
       await w.key('Enter');                                   // 選擇傳送門
       await expect(page.locator('.slx-portal')).toHaveCount(3);

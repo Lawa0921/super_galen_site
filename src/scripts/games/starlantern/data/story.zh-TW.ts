@@ -2058,6 +2058,11 @@ export const STORY = {
    * speaker has her fragment back, so it holds both ways: Orik never speaks of his daughter, Anna of her old name, Martha of
    * the day her husband left, Glen of the earlier dawn; Doran, who calls Lorne by name only once returned, calls him nothing.
    */
+  /**
+   * Glen, the first time at the gates after Nightmare opens (difficulty plan Task 7a, ruling 22): once, then the tier row
+   * is written down as seen.
+   */
+  tierUnlock: '小子，門後頭的東西變兇了。想往裡頭闖，就把符文帶齊了再進去──不想闖，照舊走也行，門我替你顧著。',
   greet: {
     // V3 voice pass: each keeper has a running bit that comes back changed (style bible §2.5, §3): Anna's forms and red
     // pen, Orik's pitch with the worry under it, Martha's soup and diary, Glen's 「別逞強」 and yawn, Doran in few words.

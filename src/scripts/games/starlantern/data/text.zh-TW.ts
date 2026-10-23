@@ -809,7 +809,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       /** The portal of the guild's lead, and where someone was sighted (6c Task 16): a sighting, never a distress call. */
       lead: '公會的線索', leadAt: (depth: number) => `線索・第 ${depth} 層`, sighted: (depth: number) => `目擊・第 ${depth} 層`,
       choose: '選擇傳送門', floor: (n: number, name?: string) => (name ? `第 ${n} 層 ${name}` : `第 ${n} 層`),
-      suggest: (lv: number) => `建議 Lv ${lv}`,
+      /** `tier`: the chosen tier's name above Normal (difficulty plan Task 7a); Normal reads as before. */
+      suggest: (lv: number, tier?: string) => (tier ? `建議 Lv ${lv}・${tier}` : `建議 Lv ${lv}`),
       heavy: (now: string, cap: string) => `超重！重量 ${now}／${cap}，出發後撿不了任何東西`,
       bagLow: (free: number) => `背包只剩 ${free} 格空位，放不下的裝備只能先留在寶箱裡`,
       depthTitle: '起始深度', deepest: (n: number) => `最深 第 ${n} 層`, notYet: '尚未進入',
@@ -820,9 +821,23 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       resistFrom: (els: string, depth: number) => `抗 ${els}（第 ${depth} 層起）`,
       monsters: '怪物', condition: '本次狀況', gear: '限定裝備', gearCount: (n: number, total: number) => `限定裝備 ${n}／${total}`, general: (n: number, total: number) => `通用傳說：已取得 ${n}／${total}`, moreGear: '↑↓ 捲動看更多', unknownGear: (name: string) => `${name}（未取得）`, unknownTag: '未取得',
       drop: (name: string) => `主要掉落：${name}`, commonDrop: '一般素材', dropUse: (list: string) => `用途：${list}`,
-      ask: (region: string, n: number, cond: string) => `要從第 ${n} 層進入「${region}」嗎？\n本次狀況：${cond}`,
+      ask: (region: string, n: number, cond: string, tier?: string) => `要從第 ${n} 層進入「${region}」嗎？\n本次狀況：${cond}${tier ? `\n難度：${tier}` : ''}`,
       banner: (cond: string) => `本次狀況　${cond}`,
-      hint: '←→ 選擇　Enter／點擊 決定　Esc／右鍵 返回',
+      hint: '←→ 選擇　Q／E 難度　Enter／點擊 決定　Esc／右鍵 返回',
+    },
+    /**
+     * The tier row on the portal plaza (difficulty plan Task 7a, spec §7.1): the tiers' names, what a locked one needs (its
+     * depth passed in, never typed here), and the two lines a Nightmare or Hell card adds.
+     */
+    tier: {
+      row: '難度',
+      names: { normal: '普通', nightmare: '噩夢', hell: '地獄' },
+      locked: {
+        nightmare: (d: number) => `主線第 ${d} 層解鎖`,
+        hell: (d: number) => `結局後，在噩夢擊敗主線第 ${d} 層頭目解鎖`,
+      },
+      what: { nightmare: '噩夢：敵人會施加異常、菁英有詞綴；掉落更好', hell: '地獄：敵人更兇、菁英與頭目有兩個詞綴；掉落最好' },
+      suggest: { nightmare: '建議：每人一套魔法階符文', hell: '建議：稀有階以上的符文，加上觸發或常駐' },
     },
     event: {
       leave: '離開',

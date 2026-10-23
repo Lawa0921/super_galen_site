@@ -4679,6 +4679,57 @@ test.describe('starlantern', () => {
     });
   });
 
+  test('the portal plaza chooses a tier and departs into Nightmare (difficulty)', async ({ page }) => {
+    // Difficulty plan Task 7a: a save past main-road depth 12 hears Glen once, picks Nightmare with E (Hell says what opens
+    // it), names the tier on the depth list and the confirm, and departs into a Nightmare run. The row stays in the stage
+    // and never overflows at 1280x720, 844x390 and a phone held upright; a tap on a tier works too.
+    const w = await startSweepGame(page);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dbg = () => page.evaluate(() => { const g = (window as any).__starlanternDebug.game; return { tier: g.state.dungeon.tier, run: g.run?.difficulty ?? null }; });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await page.evaluate(() => { (window as any).__starlanternDebug.game.state.dungeon.reached.mainline = 12; });
+    await go(page, 'gate');
+    await expect(page.locator('.slx-gate')).toBeVisible();
+    await expect(page.locator('.slx-gate .slx-talk .slx-text')).toHaveText(STORY.tierUnlock);
+    await w.closeTalk();
+    expect((await dbg()).tier).toBe('normal');
+    await w.key('Enter');                                     // 選擇傳送門
+    await expect(page.locator('.slx-portal')).toHaveCount(3);
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'normal');
+    await expect(page.locator('.slx-tier[data-tier=hell]')).toContainText(T.ui2.tier.locked.hell(25));
+    // A tap: Nightmare, then Hell (locked) changes nothing; back to Normal by tap, then E.
+    await page.locator('.slx-tier[data-tier=nightmare]').click();
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'nightmare');
+    await page.locator('.slx-tier[data-tier=hell]').click({ force: true });   // aria-disabled: Playwright would wait for it
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'nightmare');
+    await page.locator('.slx-tier[data-tier=normal]').click();
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'normal');
+    await w.key('e');
+    await expect(page.locator('.slx-tier-sel')).toHaveAttribute('data-tier', 'nightmare');
+    await expect(page.locator('.slx-tier-sel')).toHaveText(`→${T.ui2.tier.names.nightmare}`);
+    await expect(page.locator('.slx-portal-tier').first()).toContainText(T.ui2.tier.what.nightmare);
+    for (const [width, height] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await fitTo(page, width, height);
+      const row = page.locator('.slx-tier-row');
+      expect(await row.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5), `${width}x${height} row`).toBe(true);
+      for (const cell of await page.locator('.slx-tier-row .slx-tier').all()) {
+        const b = await stageBox(page, cell);
+        expect(b.x >= -0.5 && b.y >= -0.5 && b.x + b.width <= 640.5 && b.y + b.height <= 360.5, `${width}x${height} ${JSON.stringify(b)}`).toBe(true);
+        expect(await cell.evaluate((e) => e.scrollWidth <= e.clientWidth + 0.5)).toBe(true);
+      }
+    }
+    await fitTo(page, 1280, 720);
+    // The main road, depth 10: the list and the confirm name the tier.
+    await w.key('Enter');
+    await expect(page.locator('.slx-depths [role=option] .slx-right').first()).toContainText(T.ui2.tier.names.nightmare);
+    await w.choose('.slx-depths', '第 10 層');
+    await expect(page.locator('.slx-confirm')).toContainText(`難度：${T.ui2.tier.names.nightmare}`);
+    await w.key('ArrowUp'); await w.key('Enter');             // 是
+    await expect(page.locator('.slx-dungeon')).toBeVisible();
+    expect(await dbg()).toEqual({ tier: 'nightmare', run: 'nightmare' });
+    expect(w.errors).toEqual([]);
+  });
+
   test('every main screen reads at 12px and 24px at 1280x720, 844x390 and a phone (legibility Task 7) @sweep @dpr', async ({ page }, info) => {
     // Every main screen at the three sizes (the phone held upright, turned), in each project's device pixel ratio: each
     // one reads clearly (legibility() finds nothing). With SL_SHOTS, one picture each into <SL_SHOTS>/<d1|d1.25|d1.5>,
