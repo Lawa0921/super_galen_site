@@ -2,6 +2,8 @@
 
   python review_faces.py RUN ID [ID ...]      every candidate of the ids beside the normal portrait (sample runs)
   python review_faces.py wave RUN               the registry picks of faces.WAVE1, grouped by character, + montage.png at 3x
+  python review_faces.py wave2 RUN              wave 2: Lorne's and Rin's new faces beside their normal, and the four redos as
+                                                old approved | new candidate | normal, + montage.png at 3x
 
 Every postprocessed candidate (work/<id>/cand/a<N>/) beside that character's published normal portrait, at natural size
 and at 2x pixelated, with the mood it covers, one story line it would go with, and its QA (sl_art) and match QA (faces).
@@ -13,7 +15,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[3]
 AF = REPO / 'art-factory/starlantern'
 PUB = REPO / 'public/assets/games/starlantern/char'
-NAMES = {'scarlet': '絲嘉蕾', 'chizuru': '千鶴', 'selene': '瑟蕾', 'safira': '莎菲拉', 'sylvie': '希爾薇', 'noel': '諾艾兒', 'bobby': '波比', 'liz': '莉茲'}
+NAMES = {'hero': '洛恩', 'rin': '凜', 'rin-oath': '凜（誓約後）', 'scarlet': '絲嘉蕾', 'chizuru': '千鶴', 'selene': '瑟蕾', 'safira': '莎菲拉', 'sylvie': '希爾薇', 'noel': '諾艾兒', 'bobby': '波比', 'liz': '莉茲'}
 MOOD = {'serious': 'serious 嚴肅', 'sad': 'sad 難過'}
 # One story line per face (data/story.zh-TW.ts; scene in brackets) and the hidden lines it would unhide (survey).
 LINES = {
@@ -151,8 +153,107 @@ def wave(run):
     (out / 'review.html').write_text(page, encoding='utf-8'); print(out / 'review.html'); print(out / 'montage.png')
 
 
+# Wave 2: per face, one real line it will be shown on (data/story.zh-TW.ts; scene) and what it replaces today.
+WAVE2_LINES = {
+    'char-hero-portrait-serious': ('serious', '「拿刀的那個人，手在發抖。……他們在怕什麼？」', 'mem:hero:7'),
+    'char-hero-portrait-distant': ('distant', '「『艾斯特拉之燈，收逝者之記憶，點之為光，長明不滅。』」', 'act4'),
+    'char-rin-portrait-serious': ('serious', '「洛恩，我是被派來殺你的。可是我不殺了──這是我自己決定的。」', 'rin-reveal'),
+    'char-rin-portrait-guarded': ('guarded', '「不認識。我什麼都不記得，現在只能跟著你。你說了三次夢話，很吵。」', 'prologue-inn'),
+    'char-rin-oath-portrait-serious': ('serious', '「這一次，不是一個人。你下去的地方，我也去。」', 'chat:hero:4（誓約後）'),
+    'char-rin-oath-portrait-guarded': ('guarded', '「那枚鐘，我敲平了。洛恩，站到我後面。」', 'bellkeeper-arrives'),
+    'char-scarlet-portrait-vow': ('vow', '「凜小姐，請退後三步。這一次，誰也別想從他背後過去。」', 'rin-confess'),
+    'char-selene-portrait-wistful': ('wistful', '「那個人的臉，我沒有看清楚。也許是我不敢看吧。」', 'mem:selene:2'),
+    'char-noel-portrait-sad': ('sad', '「老師不教我，不是小氣，是怕我把自己燒光。」', 'mem:noel:4'),
+    'char-bobby-portrait-sad': ('sad', '「這些機兵，是我家的人造的。每修好一台，就像替祖先道一次歉。」', 'mem:bobby:4'),
+}
+WAVE2_NOW = {'hero': '現在：重場景不顯示頭貼（normal 帶微笑）', 'rin': '現在：退回平靜的 normal', 'rin-oath': '現在：退回平靜的 normal'}
+WAVE2_WHY = {
+    'char-scarlet-portrait-vow': '第一輪太像 serious，手按胸口在原尺寸看不出來。',
+    'char-selene-portrait-wistful': '第一輪太像 sad；這次要柔和、遠望的淺笑，懷念而不是要哭。',
+    'char-noel-portrait-sad': '第一輪太淡；這次照加強版 sad 再加重眉、淚、嘴角。',
+    'char-bobby-portrait-sad': '第一輪太淡；這次照加強版 sad 再加重眉、淚、嘴角。',
+}
+MOOD_ZH.update({'distant': '出神', 'guarded': '戒備'})
+
+
+def _cands(aid):
+    d = AF / 'work' / aid / 'cand'
+    return [c for c in sorted(d.glob('a*'), key=lambda p: int(p.name[1:])) if (c / f'{aid}.png').exists()] if d.exists() else []
+
+
+def _cand_qa(aid, c):
+    q = json.loads((c / f'{aid}.qa.json').read_text(encoding='utf-8')); m = json.loads((c / f'{aid}.match.json').read_text(encoding='utf-8'))
+    gen = json.loads((c / 'cand-registry.json').read_text(encoding='utf-8'))['assets'].get(aid, {}).get('generator', '?')
+    return q, m, gen
+
+
+def _montage(tiles, path):
+    from PIL import Image, ImageDraw
+    cw = max(t[1].width for t in tiles) + 8; ch = max(t[1].height for t in tiles) + 14; cols = 6
+    rows = (len(tiles) + cols - 1) // cols
+    can = Image.new('RGBA', (cols * cw, rows * ch), (34, 36, 56, 255)); d = ImageDraw.Draw(can)
+    for k, (lab, im) in enumerate(tiles):
+        x, y = (k % cols) * cw, (k // cols) * ch
+        can.alpha_composite(im, (x + (cw - im.width) // 2, y + ch - 12 - im.height)); d.text((x + 3, y + ch - 12), lab, fill=(220, 220, 230, 255))
+    can.resize((can.width * 3, can.height * 3), Image.NEAREST).save(path)
+
+
+def wave2(run):
+    import faces as F
+    from PIL import Image
+    reg = json.loads((AF / 'registry.json').read_text(encoding='utf-8'))['assets']
+    out = AF / 'runs' / run; img = out / 'img'; img.mkdir(parents=True, exist_ok=True)
+    body, tiles = [], []
+    jobs = F.jobs(wave=2)
+    new = [j for j in jobs if j['id'] not in F.REDO]; redo = [j for j in jobs if j['id'] in F.REDO]
+    body.append('<h2>一、洛恩與凜的新表情</h2>')
+    for j in new:
+        aid, cid = j['id'], j['cid']; mood, text, scene = WAVE2_LINES[aid]
+        base = PUB / f'{cid}-portrait.png'; bw, bh = Image.open(base).size; bsrc = _copy(base, img, f'{cid}-portrait.png')
+        tiles.append((f'{cid} normal', Image.open(base).convert('RGBA')))
+        nat, dbl, qas = [_fig(bsrc, bw, bh, 'normal（已發佈）')], [_fig(bsrc, bw * 2, bh * 2, 'normal 2×')], []
+        for c in _cands(aid):
+            png = c / f'{aid}.png'; w, h = Image.open(png).size; src = _copy(png, img, f'{aid}-{c.name}.png')
+            q, m, gen = _cand_qa(aid, c)
+            nat.append(_fig(src, w, h, f'{mood} {MOOD_ZH[mood]}（{c.name}）')); dbl.append(_fig(src, w * 2, h * 2, f'{mood} {c.name} 2×'))
+            qas.append(f'<p class="qa"><b>{html.escape(gen)} {c.name}</b>：{_qa(q, m)}</p>')
+            tiles.append((f'{cid} {mood} {c.name}', Image.open(png).convert('RGBA')))
+        if len(nat) == 1: qas.append('<p class="qa bad">沒有候選（見 notes.md）。</p>')
+        body.append(f'<div class="card"><h3>{NAMES[cid]}｜{mood} {MOOD_ZH[mood]}</h3><div class="pair">{"".join(nat)}</div><div class="pair">{"".join(dbl)}</div>'
+                    f'<p class="line">台詞：{html.escape(text)} <span class="qa">（{scene}；{WAVE2_NOW[cid]}）</span></p>{"".join(qas)}</div>')
+    body.append('<h2>二、第一輪重做（舊的核准版仍在遊戲裡，等你選）</h2>')
+    for j in redo:
+        aid, cid = j['id'], j['cid']; mood, text, scene = WAVE2_LINES[aid]
+        base = PUB / f'{cid}-portrait.png'; bw, bh = Image.open(base).size; bsrc = _copy(base, img, f'{cid}-portrait.png')
+        old = PUB / f'{cid}-portrait-{mood}.png'; ow, oh = Image.open(old).size; osrc = _copy(old, img, f'{aid}-approved.png')
+        e = reg.get(aid, {})
+        nat, dbl, qas = [_fig(osrc, ow, oh, f'舊：核准版 {e.get("chosen_attempt", "?")}')], [_fig(osrc, ow * 2, oh * 2, '舊 2×')], []
+        tiles.append((f'{cid} {mood} old', Image.open(old).convert('RGBA')))
+        for c in _cands(aid):
+            if e.get('chosen_attempt') == c.name: continue
+            png = c / f'{aid}.png'; w, h = Image.open(png).size; src = _copy(png, img, f'{aid}-{c.name}.png')
+            q, m, gen = _cand_qa(aid, c)
+            nat.append(_fig(src, w, h, f'新候選 {c.name}')); dbl.append(_fig(src, w * 2, h * 2, f'新 {c.name} 2×'))
+            qas.append(f'<p class="qa"><b>{html.escape(gen)} {c.name}</b>：{_qa(q, m)}</p>')
+            tiles.append((f'{cid} {mood} new {c.name}', Image.open(png).convert('RGBA')))
+        if len(nat) == 1: qas.append('<p class="qa bad">沒有新候選（見 notes.md）。</p>')
+        nat.append(_fig(bsrc, bw, bh, 'normal')); dbl.append(_fig(bsrc, bw * 2, bh * 2, 'normal 2×'))
+        body.append(f'<div class="card"><h3>{NAMES[cid]}｜{mood} {MOOD_ZH[mood]}</h3><div class="pair">{"".join(nat)}</div><div class="pair">{"".join(dbl)}</div>'
+                    f'<p class="line">台詞：{html.escape(text)} <span class="qa">（{scene}）</span></p><p class="qa">重做原因：{WAVE2_WHY[aid]}</p>{"".join(qas)}</div>')
+    _montage(tiles, out / 'montage.png')
+    page = ('<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            f'<title>對話表情第二輪</title><style>{CSS}h3{{font-size:15px;margin:0 0 8px}}</style></head><body>'
+            '<h1>星燈迷宮｜對話表情第二輪</h1>'
+            '<p class="note">第一部分：洛恩與凜（兩套：鈴鐺有裂痕的凜、誓約後鈴鐺敲平的凜）的 serious／distant／guarded，每張和該角色已發佈的 normal 並排，原尺寸與 2× 像素放大，附一句實際會用到的台詞。'
+            '第二部分：第一輪比較弱的四張重做一次，舊的核准版、新候選、normal 並排。全部由 codex 生成；還沒進遊戲（不在 public/），核准後才發佈。'
+            '全部的 3× 總覽：<a href="montage.png">montage.png</a>。</p>' + ''.join(body) + '</body></html>')
+    (out / 'review.html').write_text(page, encoding='utf-8'); print(out / 'review.html'); print(out / 'montage.png')
+
+
 if __name__ == '__main__':
-    if sys.argv[1] == 'wave':
+    if sys.argv[1] == 'wave2':
+        wave2(sys.argv[2])
+    elif sys.argv[1] == 'wave':
         wave(sys.argv[2])
     else:
         main(sys.argv[1], sys.argv[2:])

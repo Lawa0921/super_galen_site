@@ -1,8 +1,9 @@
 """faces.py: talking-face candidates for the eight companions (plan 5e; spec 2026-10-18 affinity-expressions section 10).
 
+  (every command takes --wave=2 for the wave-2 jobs: Lorne, both Rin sets, and the four redos)
   gen  [--only=prefix,...] [--n=N] [--model=M] [--backend=codex|gemini] generate codex attempts one at a time until each id has N raw attempts
   cand [--only=prefix,...]                  postprocess every raw attempt into work/<id>/cand/a<N>/ (scratch registry) + match QA
-  pick --id ID --attempt N                  postprocess the chosen attempt into the real registry (qa_passed / qa_failed)
+  pick --id ID --attempt N [--wave=2]       postprocess the chosen attempt into the real registry (qa_passed / qa_failed)
   note --id ID --attempt N --reason R       record why an attempt was not chosen (registry `rejected_attempts`)
 
 Same chain as party.py's mood portraits: each face <- the character's published normal portrait (raw, first image) and
@@ -45,7 +46,40 @@ WAVE1 = {
     'scarlet': ['serious', 'sad', 'vow', 'shaken'], 'chizuru': ['serious', 'sad', 'solemn'], 'sylvie': ['serious', 'sad'],
     'selene': ['sad', 'wistful'], 'safira': ['sad'], 'bobby': ['serious', 'sad'], 'liz': ['serious', 'sad', 'hushed'], 'noel': ['sad'],
 }
-SIZE_TOL = 6          # art pixels the face's canvas may differ from the base portrait's on either axis
+# Wave 2 (user 2026-10-24): the grave faces Lorne and Rin use (story.ts: hero serious 15, distant 18; rin serious 16,
+# guarded 7). Rin's two looks (`rin`, `rin-oath`: cracked vs flattened collar bell) each get their own, from their own
+# normal portrait (spec 10.5). Lorne's normal smiles faintly, so his serious face says outright that the smile is gone.
+WAVE2 = {'hero': ['serious', 'distant'], 'rin': ['serious', 'guarded'], 'rin-oath': ['serious', 'guarded']}
+WAVE2_FACES = {
+    ('hero', 'serious'): ('a serious, focused look with no smile at all: brows level and lowered a little, steady alert eyes looking straight ahead, '
+                          f'lips pressed into a flat straight line, the face of someone about to act; {READ}'),
+    ('hero', 'distant'): ('a distant look, as if hearing a faraway voice: eyes unfocused and soft, gazing slightly past the viewer into the distance, '
+                          f'brows relaxed and raised a little, lips slightly parted, no smile; {READ}'),
+    ('rin', 'serious'): ('dead serious and direct: brows lowered and drawn a little together, cool eyes fixed straight on the viewer without blinking, '
+                         f'lips pressed thin, face turned more toward the viewer than in the first image; {READ}'),
+    ('rin', 'guarded'): ('guarded and wary: eyes half-lidded and watchful, glancing sideways at the viewer, chin lowered, lips closed in a flat line, '
+                         f'one hand risen to her chest gripping the hilt of a short dagger held close against her chest, below the collar bell; {READ}'),
+}
+WAVE2_FACES.update({('rin-oath', m): f for (c, m), f in WAVE2_FACES.items() if c == 'rin'})
+WHO = {'hero': dict(who='young man', pron='him', extra=' He carries no sword in this portrait.')}
+BELL = {'rin': ' Keep the small cracked bronze bell at her collar exactly as in the first image.',
+        'rin-oath': ' Keep the bronze bell at her collar exactly as in the first image: hammered flattened into a smooth dented disc, with no crack.'}
+# Redos of wave-1 faces that read weakly at game size (wave-1 notes; user 2026-10-24): one more attempt each.
+SAD_HARD = ('clearly sad, close to tears: the inner ends of the eyebrows steeply raised and knitted together, eyes lowered and glistening with a '
+            'visible tear running down one cheek, the corners of the mouth clearly turned down in a small frown, head bowed a little, '
+            'no trace of a smile; exaggerate the brows, the tear and the mouth so the sadness reads at a glance when the portrait is shown at small size')
+REDO = {
+    'char-scarlet-portrait-vow': ('swearing a knight\'s oath: her right gauntleted hand pressed flat over her heart, the armoured hand large and clearly visible '
+                                  'across the middle of her chest, chin raised, eyes wide open, bright and steady, brows firm but not frowning, '
+                                  f'lips closed in a calm resolute line, solemn pride rather than anger; {READ}'),
+    'char-selene-portrait-wistful': ('wistful and nostalgic: a soft, distant half-smile with one corner of the mouth gently raised, eyes half-lidded and '
+                                     'gazing off to the side into the distance as if remembering something long ago, brows relaxed, no tears, '
+                                     f'a quiet fondness tinged with longing, clearly different from a sad face and from a bright smile; {READ}'),
+    'char-noel-portrait-sad': SAD_HARD,
+    'char-bobby-portrait-sad': SAD_HARD,
+}
+REDO_ATTEMPTS = 2     # a redo id ends at a2: its wave-1 a1 plus this one
+SIZE_TOL = 6         # art pixels the face's canvas may differ from the base portrait's on either axis
 PALETTE_DIST = 24     # RGB distance under which a colour counts as one of the base portrait's
 PALETTE_SHARE = 0.8   # below this share of base-palette pixels the face is flagged for the reviewer (warning only)
 
@@ -54,20 +88,28 @@ def _registry():
     return json.loads((AF / 'registry.json').read_text(encoding='utf-8'))['assets']
 
 
-def jobs(reg=None, cids=COMPANIONS):
+def _job(reg, c, m, face):
+    pid, sid = f'char-{c}-portrait', f'char-{c}-standee'
+    w = WHO.get(c, dict(who='girl', pron='her', extra=''))
+    return dict(id=f'{pid}-{m}', cid=c, mood=m, base=pid, deps=[pid, sid], batch=f'faces-{c}',
+                images=[Path(reg[pid]['raw']), Path(reg[sid]['raw'])], block=reg[pid]['qa']['block'], prompt=(
+        f'Square bust portrait in pixel art of exactly the same {w["who"]} as the first attached portrait, same framing, head size, palette, hair and outfit '
+        f'(the second attached image is the same character in full body, for reference only), but {face}. '
+        f'Keep the face recognisably the same person.{w["extra"]}{BELL.get(c, "")} 16-bit JRPG dialogue portrait style, {P.PIX}. '
+        f'Perfectly flat solid pure magenta #FF00FF background around {w["pron"]} with empty margin at the top and sides; the body is cut off by the bottom edge. No frame, no text.'))
+
+
+def jobs(reg=None, cids=None, wave=1):
+    """wave 1: the companions' 18 faces (FACES). wave 2: Lorne's and both Rin sets' grave faces, then the REDO prompts of
+    four wave-1 ids (same ids, so a new attempt lands beside the approved a1)."""
     reg = _registry() if reg is None else reg
-    out = []
-    for c in cids:
-        pid, sid = f'char-{c}-portrait', f'char-{c}-standee'
-        if not (reg.get(pid, {}).get('raw') and reg.get(sid, {}).get('raw')): continue
-        for m in WAVE1[c]:
-            face = FACES[m]
-            out.append(dict(id=f'{pid}-{m}', cid=c, mood=m, base=pid, deps=[pid, sid], batch=f'faces-{c}',
-                            images=[Path(reg[pid]['raw']), Path(reg[sid]['raw'])], block=reg[pid]['qa']['block'], prompt=(
-                f'Square bust portrait in pixel art of exactly the same girl as the first attached portrait, same framing, head size, palette, hair and outfit '
-                f'(the second attached image is the same character in full body, for reference only), but {face}. '
-                f'Keep the face recognisably the same person. 16-bit JRPG dialogue portrait style, {P.PIX}. '
-                'Perfectly flat solid pure magenta #FF00FF background around her with empty margin at the top and sides; the body is cut off by the bottom edge. No frame, no text.')))
+    has = lambda c: reg.get(f'char-{c}-portrait', {}).get('raw') and reg.get(f'char-{c}-standee', {}).get('raw')
+    if wave == 1:
+        return [_job(reg, c, m, FACES[m]) for c in (cids or COMPANIONS) if has(c) for m in WAVE1[c]]
+    out = [_job(reg, c, m, WAVE2_FACES[(c, m)]) for c in WAVE2 if has(c) and (not cids or c in cids) for m in WAVE2[c]]
+    for aid, face in REDO.items():
+        c, m = aid[5:].rsplit('-portrait-', 1)
+        if has(c) and (not cids or c in cids): out.append(_job(reg, c, m, face))
     return out
 
 
@@ -156,7 +198,8 @@ def generator_of(raw):
 
 def selected(argv):
     only = next((a.split('=', 1)[1].split(',') for a in argv if a.startswith('--only=')), None)
-    return [j for j in jobs() if not only or any(j['id'].startswith(o) for o in only)]
+    wave = int(next((a.split('=', 1)[1] for a in argv if a.startswith('--wave=')), 1))
+    return [j for j in jobs(wave=wave) if not only or any(j['id'].startswith(o) for o in only)]
 
 
 def _model(argv):
@@ -217,7 +260,7 @@ def cand(argv):
 
 def pick(argv):
     aid, k = P._arg(argv, '--id'), P._arg(argv, '--attempt')
-    job = next(j for j in jobs() if j['id'] == aid)
+    job = next(j for j in selected(argv) if j['id'] == aid)
     reg = A.Registry(AF / 'registry.json')
     reg.set(aid, kind='sprite')
     raw = RAW / aid / f'a{k}' / f'{aid}-a{k}.png'
