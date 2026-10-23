@@ -175,9 +175,26 @@ export class Dialogue {
 
   busy(): boolean { return this.resolve !== null; }
 
-  /** `memory` dims the box for a remembered scene; `plain` is the everyday look. */
+  /**
+   * `memory` dims the box for a remembered line; `plain` is the everyday look. Memory also fades a sepia veil in over the
+   * screen behind the box (staging S5), and plain fades it out: the veil is the box's sibling, made the first time it is
+   * needed in a scene, so whatever screen plays the memory (the labyrinth, a battle's result, the town) goes back in time.
+   */
   setStyle(style: 'plain' | 'memory'): void {
     this.el.classList.toggle('slx-talk--memory', style === 'memory');
+    this.veil('slx-veil-past', style === 'memory');
+  }
+
+  /** The veil `cls` just under the box, on or off; none is made only to be off, nor while the box has no screen. */
+  private veil(cls: string, on: boolean): void {
+    const parent = this.el.parentElement;
+    let v = parent?.querySelector<HTMLElement>(`:scope > .${cls}`) ?? null;
+    if (!v && on && parent) {
+      v = el('div', { class: `slx-veil ${cls}`, attrs: { 'aria-hidden': 'true' } });
+      parent.insertBefore(v, this.el);
+      void v.offsetWidth;   // the off state first, so the fade in runs
+    }
+    v?.classList.toggle('slx-on', on);
   }
 
   /**

@@ -1,6 +1,6 @@
 import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { chainLength } from '../data/story/chains';
-import { MAJOR_SCENES, heavyScene, sceneKind, type SceneId } from '../data/story/scenes';
+import { MAJOR_SCENES, heavyScene, type SceneId } from '../data/story/scenes';
 import { NPC_NAMES, STORY, linesWhen, type NpcId, type ScriptLine, type Speaker } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
 import type { Game } from '../engine/game';
@@ -124,12 +124,13 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
   const lines = linesOf(id, ctx.game.state);
   const first = firstSpeaker(lines);
   const heavy = heavyScene(id);
-  talk.setStyle(sceneKind(id) === 'memory' ? 'memory' : 'plain');
   talk.hold(true);
 
   const run = async (): Promise<'done' | 'skipped'> => {
     for (const line of lines) {
       if (summary) break;
+      // Only a memory's remembered past wears the memory look; its present lines are any scene's (staging S5).
+      talk.setStyle(line.past ? 'memory' : 'plain');
       await sayLine(talk, line, ctx, first, undefined, heavy);
     }
     if (summary) await summary;
@@ -147,7 +148,7 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx): { done: P
       if (finished) return;
       if (a === 'confirm') { talk.onAction('confirm'); return; }
       // Cancelling while the summary is up does nothing more: the summary is already the last line.
-      if (a === 'cancel' && !summary) { talk.stop(); summary = talk.say('', T.ui2.story.skipped(STORY.scenes[id].summary)); }
+      if (a === 'cancel' && !summary) { talk.stop(); talk.setStyle('plain'); summary = talk.say('', T.ui2.story.skipped(STORY.scenes[id].summary)); }
     },
   };
 }

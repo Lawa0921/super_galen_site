@@ -108,13 +108,32 @@ describe('playScene', () => {
     expect(talk.busy()).toBe(false);
   });
 
-  it('memory scenes use the memory style and give it back', async () => {
+  it('only the past lines of a memory wear the memory style, and it is given back (staging S5)', async () => {
     const { talk, ctx } = mk();
     const p = playScene(talk, 'mem:hero:1', ctx);
-    expect(talk.el.classList.contains('slx-talk--memory')).toBe(true);
-    for (let i = 0; i < STORY.scenes['mem:hero:1'].lines.length; i++) { p.onAction('confirm'); await tick(); }
+    const styles: boolean[] = [];
+    for (let i = 0; i < STORY.scenes['mem:hero:1'].lines.length; i++) {
+      styles.push(talk.el.classList.contains('slx-talk--memory'));
+      p.onAction('confirm');
+      await tick();
+    }
     await p.done;
+    expect(styles).toEqual(STORY.scenes['mem:hero:1'].lines.map((l) => !!l.past));
+    expect(styles).toEqual([true, true, false, false]);
     expect(talk.el.classList.contains('slx-talk--memory')).toBe(false);
+  });
+
+  it("a memory's present line shows the normal portrait look; a past line the memory one (staging S5)", async () => {
+    const { talk, ctx } = mk();
+    stage('mem:rin:1', [{ who: 'narrator', past: true, text: '一' }, { who: 'hero', text: '二' }, { who: 'rin', text: '三' }]);
+    const p = playScene(talk, 'mem:rin:1', ctx);
+    expect(talk.el.classList.contains('slx-talk--memory')).toBe(true);
+    p.onAction('confirm'); await tick();
+    expect(talk.el.classList.contains('slx-talk--memory')).toBe(false);
+    expect(talk.el.querySelector('.slx-talk-face')).not.toBeNull();
+    p.onAction('confirm'); await tick();
+    p.onAction('confirm');
+    await p.done;
   });
 
   it('lines whose condition fails are left out', () => {

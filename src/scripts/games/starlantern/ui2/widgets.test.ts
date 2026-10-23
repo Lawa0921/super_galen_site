@@ -438,6 +438,22 @@ describe('Dialogue faces', () => {
     expect(d.el.hidden).toBe(false);
   });
 
+  it('memory style fades a sepia veil in over the screen behind the box, and out again (staging S5)', () => {
+    const scene = document.createElement('div');
+    const d = new Dialogue(Infinity);
+    scene.append(d.el);
+    d.setStyle('memory');
+    const veil = scene.querySelector('.slx-veil-past')!;
+    expect(veil).not.toBeNull();
+    expect(veil.nextElementSibling).toBe(d.el);               // under the box, over everything before it
+    expect(veil.classList.contains('slx-on')).toBe(true);
+    d.setStyle('plain');
+    expect(veil.parentElement).toBe(scene);                  // it stays, to fade out
+    expect(veil.classList.contains('slx-on')).toBe(false);
+    d.setStyle('memory');
+    expect(scene.querySelectorAll('.slx-veil-past')).toHaveLength(1);
+  });
+
   it('memory style marks the box', () => {
     const d = new Dialogue(Infinity);
     d.setStyle('memory');

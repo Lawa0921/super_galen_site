@@ -3151,3 +3151,39 @@ describe('story depth: the final review', () => {
     expect(STORY.people.rin.some((t) => t.includes('現在她叫我洛恩'))).toBe(true);
   });
 });
+
+// Story staging S5 (2026-10-23): a memory's remembered past is tagged line by line; only those lines wear the memory look.
+describe('memory lines: past and present (staging S5)', () => {
+  const memories = SCENE_IDS.filter((id) => sceneKind(id) === 'memory');
+
+  it('every memory scene opens in the past and comes back to the present', () => {
+    expect(memories).toHaveLength(57);
+    for (const id of memories) {
+      const lines = STORY.scenes[id].lines;
+      expect(lines[0].past, `${id} opens in the past`).toBe(true);
+      expect(lines[lines.length - 1].past, `${id} ends in the present`).toBeUndefined();
+      expect(lines.some((l) => !l.past), id).toBe(true);
+    }
+  });
+
+  it('the tags are data: 125 past lines, all in memory scenes, all narration', () => {
+    const past = SCENE_IDS.flatMap((id) => STORY.scenes[id].lines.filter((l) => l.past).map((l) => ({ id, l })));
+    expect(past).toHaveLength(125);
+    expect(past.filter(({ id }) => sceneKind(id) !== 'memory')).toEqual([]);
+    expect(past.filter(({ l }) => l.who !== 'narrator').map(({ id, l }) => `${id}: ${l.text}`)).toEqual([]);
+    for (const id of SCENE_IDS) for (const l of STORY.scenes[id].lines) expect(l.past === undefined || l.past === true, id).toBe(true);
+  });
+
+  it("Lorne's 「想起什麼了？」 is said now, the bell tower is remembered", () => {
+    const rin1 = STORY.scenes['mem:rin:1'].lines;
+    expect(rin1.map((l) => !!l.past)).toEqual([true, true, false, false]);
+    expect(rin1[2].text).toBe('「想起什麼了？」');
+    // the eighth line of Rin's seventh is the chase she remembers; from her line on she is here again
+    expect(STORY.scenes['mem:rin:7'].lines.map((l) => !!l.past)).toEqual([true, true, true, true, true, true, false, false, false, false, false, false]);
+    // Liz's father's arms are the evening she left; his words with Orik's fragment back are said now
+    const liz5 = STORY.scenes['mem:liz:5'].lines;
+    expect(liz5.filter((l) => l.past).map((l) => l.who)).toEqual(['narrator', 'narrator']);
+    expect(liz5.find((l) => l.who === 'orik')!.past).toBeUndefined();
+  });
+});
+
