@@ -6,10 +6,11 @@ import { describe, expect, it } from 'vitest';
 import { BUILDS, buildOf } from '../data/builds';
 import { STANDARD_LINEUP } from './party';
 import { ODD_LINEUPS } from './sim';
-import { encounterTable } from './scaling';
+import { depthLevel, encounterTable } from './scaling';
+import { MAX_LEVEL } from './party';
 import { rollCrowdAffix } from './tiers';
 import { TIERS } from '../data/difficulty';
-import { CURVE, cellCrowdAffix, BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, TIER_BANDS, bandCells, bandMisses, baselineLine, frozenMisses, hasTriggerOrLasting, measureCell, nightmareTwins, normalTwin, pullsApart, roadCell, tierLineup, TIER_SEEDS, withTrigger, type BandId, type BandRun, type TierCell, type TierRun } from './tierBands';
+import { CURVE, cellCrowdAffix, BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, TIER_BANDS, bandCells, bandMisses, baselineLine, frozenMisses, hasTriggerOrLasting, hellReportCells, measureCell, nightmareTwins, normalTwin, pullsApart, roadCell, tierLineup, TIER_SEEDS, withTrigger, type BandId, type BandRun, type TierCell, type TierRun } from './tierBands';
 import { AFFIX_IDS } from '../data/affixes';
 import { CHARACTER_IDS } from '../data/characters';
 import { ENHANCE_MAX } from '../data/forge';
@@ -188,6 +189,22 @@ describe('difficulty band measurements (difficulty plan Task 0)', () => {
     expect(he.length).toBe((groups(20) + groups(25)) * 14);
     expect(new Set(shape(he))).toEqual(new Set(['elite/hell/rare']));
     expect(he.every((c) => pair(c.affixes) === 2 && c.seeds === 10 && c.groups.length === 1)).toBe(true);
+    // Hell below d25, reachable (depths are shared) but under no band (T4-T5 review): reported only. The d15 crowds as H1
+    // builds them, the d15 and d20 bosses as H2 does; no BandId, so no assertion reads them.
+    const hr = hellReportCells();
+    expect(hr.filter((c) => c.kind === 'crowd').map((c) => c.label)).toEqual(encounterTable('mainline', 15).map((g, i) => `d15 crowd g${i} ${g.join('+')} rare`));
+    for (const d of [15, 20]) {
+      const bosses = hr.filter((c) => c.kind === 'boss' && c.depth === d);
+      expect(bosses.length, `d${d}`).toBe(14);
+      const lv = Math.min(MAX_LEVEL, depthLevel(d));
+      expect(new Set(bosses.map((c) => c.affixes!.join('+'))).size).toBe(14);
+      for (const c of bosses) {
+        expect([c.seeds, pair(c.affixes)], c.label).toEqual([10, 2]);
+        expect(c.lineup, c.label).toEqual(withTrigger(tierLineup(lv, 'boss', 'rare'), lv));
+      }
+    }
+    expect(hr.length).toBe(groups(15) + 28);
+    expect(new Set(shape(hr))).toEqual(new Set(['crowd/hell/rare', 'boss/hell/rare']));
   });
 
   it('Hell crowd cells meet the crowd affix as the game draws it; twins and other tiers do not', () => {
@@ -250,7 +267,7 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
     expect(bandMisses('N1', only('N1', fill('N1', () => run(0.9, 0.11))))).toEqual([]);
     // One group of d15 at .5 pulls its depth's pool (three groups) under .90; a twin at the same loss is not harder.
     const n1 = bandMisses('N1', only('N1', fill('N1', (c) => run(c.depth === 15 && c.groups[0].length === 1 && c.groups[0][0] === 'golem' ? 0.5 : 1, c.depth === 25 ? 0.1 : 0.2))));
-    expect(n1).toEqual(['N1 d15: rate 0.833 < 0.9', 'N1 d25: loss 0.100 not above the normal twin\'s 0.100', 'N1 d25: the loss over the normal twin 0.000 drops more than 0.03 under d20\'s 0.100']);
+    expect(n1).toEqual(['N1 d15: rate 0.833 < 0.9', 'N1 d25: loss 0.100 not above the normal twin\'s 0.100', 'N1 d25: the loss over the normal twin 0.000 drops more than 0.03 under d10\'s 0.100']);
     // N3: d10 is reported only; a weak affix pulls its depth.
     expect(bandMisses('N3', only('N3', fill('N3', (c) => run(c.depth === 10 ? 0 : 0.8, 0.3))))).toEqual([]);
     expect(bandMisses('N3', only('N3', fill('N3', (c) => run(c.depth === 20 && c.affixes![0] === 'swift' ? 0 : 0.9, 0.3))))).toEqual(['N3 d20: rate 0.750 < 0.8']);
@@ -262,9 +279,15 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
     const n1 = (lossAt: Record<number, number>) => fill('N1', (c) => run(1, lossAt[c.depth]), 0.1);
     expect(bandMisses('N1', only('N1', n1({ 10: 0.15, 15: 0.2, 20: 0.18, 25: 0.22 })))).toEqual([]);
     expect(bandMisses('N1', only('N1', n1({ 10: 0.15, 15: 0.2, 20: 0.15, 25: 0.22 })))).toEqual(['N1 d20: the loss over the normal twin 0.050 drops more than 0.03 under d15\'s 0.100']);
+    // Against the highest of every shallower depth, not only the one before (T4-T5 review): .10, .08, .06, .06 slides by
+    // .02 a step, yet d20 and d25 sit .04 under d10.
+    expect(bandMisses('N1', only('N1', n1({ 10: 0.2, 15: 0.18, 20: 0.16, 25: 0.16 })))).toEqual([
+      'N1 d20: the loss over the normal twin 0.060 drops more than 0.03 under d10\'s 0.100',
+      'N1 d25: the loss over the normal twin 0.060 drops more than 0.03 under d10\'s 0.100',
+    ]);
     // N3 reads d10 for the curve though its rate is not held there; H1 its d20 and d25 only (d30 reported).
     const n3 = fill('N3', (c) => run(c.depth === 10 ? 0 : 0.9, c.depth === 10 ? 0.5 : 0.3), 0.1);
-    expect(bandMisses('N3', only('N3', n3))).toEqual(['N3 d15: the loss over the normal twin 0.200 drops more than 0.03 under d10\'s 0.400']);
+    expect(bandMisses('N3', only('N3', n3))).toEqual([15, 20, 25].map((d) => `N3 d${d}: the loss over the normal twin 0.200 drops more than 0.03 under d10's 0.400`));
     const h1 = fill('H1', (c) => run(0.9, c.depth === 30 ? 0.11 : c.depth === 20 ? 0.4 : 0.36), 0.1, 0.05);
     expect(bandMisses('H1', only('H1', h1))).toEqual(['H1 d25: the loss over the normal twin 0.260 drops more than 0.03 under d20\'s 0.300']);
   });
@@ -275,6 +298,9 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
     // The crowds and d10 are reported only.
     expect(bandMisses('N4', with4((c) => (c.kind === 'crowd' || c.depth === 10 ? 1 : 0.7)))).toEqual([]);
     expect(bandMisses('N4', with4((c) => (c.kind === 'boss' && c.depth === 15 ? 0.75 : 0.5)))).toEqual(['N4 d15: bare rate 0.750 > 0.7', 'N4 d15: bare rate 0.750 not 0.2 under magic\'s 0.900']);
+    // No bare boss fight measured at a depth is a miss, not a pass (T4-T5 review).
+    const crowdsOnly = fill('N4', () => run(0, 0.8)).filter((m) => m.cell.kind === 'crowd' || m.cell.depth !== 20);
+    expect(bandMisses('N4', (b) => (b === 'N3' ? n3 : crowdsOnly))).toEqual(['N4 d20: no bare boss fight measured']);
   });
 
   it('H1 and H2 pool a depth against the Nightmare twins; d30 is reported only', () => {
@@ -287,6 +313,9 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
   it('H3: the bare boss at d25 pooled at most .40; magic and crowds reported only', () => {
     expect(bandMisses('H3', only('H3', fill('H3', (c) => run(c.lineup.runeTier || c.kind === 'crowd' || c.depth === 30 ? 1 : 0.4, 0.9))))).toEqual([]);
     expect(bandMisses('H3', only('H3', fill('H3', (c) => run(c.lineup.runeTier ? 0 : 0.41, 0.9))))).toEqual(['H3 d25: bare boss rate 0.410 > 0.4']);
+    // No bare boss fight measured is a miss, not a pass (T4-T5 review).
+    const noBare = fill('H3', () => run(0, 0.9)).filter((m) => m.cell.lineup.runeTier || m.cell.kind === 'crowd');
+    expect(bandMisses('H3', only('H3', noBare))).toEqual(['H3 d25: no bare boss fight measured']);
   });
 
   it('HE: a depth pooled at .75, and no pair under .40', () => {

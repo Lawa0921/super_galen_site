@@ -268,6 +268,20 @@ function ceilingLineup(owner: CharacterId, key: string): Lineup {
   return { ...base, build, heroBuild };
 }
 
+/**
+ * Hell below d25 (T4-T5 review): reachable, since depths are shared and Hell is chosen a run, but under no band; measured
+ * and reported only, never asserted. The d15 crowds as H1 builds them, the d15 and d20 bosses as H2 does.
+ */
+export function hellReportCells(): TierCell[] {
+  return [
+    ...groupCells(15, 'crowd', 'hell', 'rare'),
+    ...[15, 20].flatMap((d) => AFFIX_PAIRS.map((p) => {
+      const c = bossCell(d, 'hell', 'rare', p, HELL_BOSS_SEEDS);
+      return { ...c, lineup: withTrigger(c.lineup, levelAt(d)) };
+    })),
+  ];
+}
+
 /** The cells of a band (spec §6.2; difficulty plan Task 5a, rulings 12–14; the controller ruling of 2026-10-23). */
 export function bandCells(band: BandId): TierCell[] {
   switch (band) {
@@ -435,10 +449,12 @@ export function bandMisses(band: BandId, runsOf: (b: BandId) => readonly BandRun
         harder(d, p, band[0] === 'N' ? 'normal' : 'nightmare');
       }
       if (band !== 'H2') {
+        // Each depth against the highest of every shallower one (T4-T5 review), so a slow slide cannot pass step by step.
         const deltas = CURVE[band].map((d) => { const p = poolOf(at(runs, d)); return { d, delta: p.run.hpLoss - p.twin.hpLoss }; });
-        for (let i = 1; i < deltas.length; i++) {
-          const [a, b] = [deltas[i - 1], deltas[i]];
-          if (b.delta < a.delta - CURVE.slack) out.push(`${band} d${b.d}: the loss over the normal twin ${f3(b.delta)} drops more than ${CURVE.slack} under d${a.d}'s ${f3(a.delta)}`);
+        let top = deltas[0];
+        for (const b of deltas.slice(1)) {
+          if (b.delta < top.delta - CURVE.slack) out.push(`${band} d${b.d}: the loss over the normal twin ${f3(b.delta)} drops more than ${CURVE.slack} under d${top.d}'s ${f3(top.delta)}`);
+          if (b.delta > top.delta) top = b;
         }
       }
       break;
@@ -461,6 +477,7 @@ export function bandMisses(band: BandId, runsOf: (b: BandId) => readonly BandRun
       for (const d of t.depths) {
         const bare = pooled(at(runs, d, 'boss').map((m) => m.run));
         const magic = pooled(at(runsOf('N3'), d).map((m) => m.run));
+        if (!bare.fights) { out.push(`N4 d${d}: no bare boss fight measured`); continue; }   // never a pass by default
         if (bare.rate > t.bareRate) out.push(`N4 d${d}: bare rate ${f3(bare.rate)} > ${t.bareRate}`);
         if (bare.rate > magic.rate - t.belowMagic) out.push(`N4 d${d}: bare rate ${f3(bare.rate)} not ${t.belowMagic} under magic's ${f3(magic.rate)}`);
       }
@@ -475,6 +492,7 @@ export function bandMisses(band: BandId, runsOf: (b: BandId) => readonly BandRun
       const t = TIER_BANDS.H3;
       for (const d of t.depths) {
         const bare = pooled(at(runs, d, 'boss').filter((m) => !m.cell.lineup.runeTier).map((m) => m.run));
+        if (!bare.fights) { out.push(`H3 d${d}: no bare boss fight measured`); continue; }   // never a pass by default
         if (bare.rate > t.bareRate) out.push(`H3 d${d}: bare boss rate ${f3(bare.rate)} > ${t.bareRate}`);
       }
       break;

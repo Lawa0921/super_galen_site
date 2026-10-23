@@ -74,11 +74,15 @@ export function rarityWeights(source: DropSource, depthLv: number, cond: Conditi
   return tier ? tierWeights(normalWeights(source, depthLv, cond, bossRepeat), tier) : normalWeights(source, depthLv, cond, bossRepeat);
 }
 
+/** The highest legendary share any tier may set, whatever its `legendaryCap`. */
+const MAX_LEGENDARY_SHARE = 0.99;
+
 /** Ruling 10 on Normal weights `w`: p' = min(cap, p x mul); rare and epic x rarityMul; legendary = p' x rest / (1 - p'). */
 function tierWeights(w: Record<Tier, number>, tier: TierDef): Record<Tier, number> {
   const total = w.common + w.magic + w.rare + w.epic + w.legendaryTier;
   const p = total > 0 ? w.legendaryTier / total : 0;
-  const share = Math.min(tier.legendaryCap, p * tier.legendaryShareMul);
+  // Under 1 whatever the row says (T4-T5 review): a share of 1 would divide by zero below.
+  const share = Math.min(tier.legendaryCap, MAX_LEGENDARY_SHARE, p * tier.legendaryShareMul);
   const out = { ...w, rare: w.rare * tier.rarityMul, epic: w.epic * tier.rarityMul };
   const rest = out.common + out.magic + out.rare + out.epic;
   out.legendaryTier = (share * rest) / (1 - share);

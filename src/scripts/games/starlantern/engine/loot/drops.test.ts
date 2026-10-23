@@ -469,6 +469,18 @@ describe("a tier's drops (difficulty plan Task 4)", () => {
     expect(share(rarityWeights('boss', 38, 'plain', false, capped))).toBeCloseTo(capped.legendaryCap, 12);
   });
 
+  it('the legendary share stays under 1 whatever the cap (T4-T5 review)', () => {
+    // A higher tier's cap is a share, always under 1.
+    for (const [name, t] of Object.entries(TIERS)) if (name !== 'normal') expect(t.legendaryCap, name).toBeLessThan(1);
+    // A row with no real cap still gives finite weights: the share sits at .99, never 1 (which divides by zero).
+    const open = { ...TIERS.hell, legendaryCap: 1, legendaryShareMul: 100 };
+    for (const source of SOURCES) {
+      const w = rarityWeights(source, 38, 'plain', false, open);
+      expect(Object.values(w).every(Number.isFinite), source).toBe(true);
+      expect(share(w), source).toBeCloseTo(0.99, 12);
+    }
+  });
+
   it('a tier raises rare and epic by its multiplier, leaves common and magic', () => {
     for (const t of [TIERS.nightmare, TIERS.hell]) for (const source of SOURCES) {
       const n = rarityWeights(source, 38, 'plain');

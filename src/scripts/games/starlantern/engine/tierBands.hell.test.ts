@@ -6,7 +6,7 @@
  * one `[hell]` line a cell, the pooled lines of each band, then the crowd gap of each depth (rare and magic against bare).
  */
 import { describe, expect, it } from 'vitest';
-import { HELL_BANDS, bandCells, bandLine, bandMisses, frozenMisses, gapLine, measureBand, pooled, pooledLines } from './tierBands';
+import { HELL_BANDS, bandCells, bandLine, bandMisses, frozenMisses, gapLine, hellReportCells, measureBand, measureCells, poolOf, pooled, pooledLines } from './tierBands';
 
 const on = process.env.BANDS === '1';
 const report = !!process.env.BALANCE_REPORT && process.env.BALANCE_REPORT !== '0';
@@ -32,6 +32,16 @@ describe.skipIf(!on)('the Hell bands (difficulty plan Tasks 5a-5b)', () => {
       const bare = at(h3.slice(h3.length / 2));
       say(gapLine(d, bare, at(measureBand('H1')), 'rare'));
       say(gapLine(d, bare, at(h3.slice(0, crowd)), 'magic'));
+    }
+    // Hell below d25 (T4-T5 review): reachable but under no band; every cell and each depth's pool, reported only.
+    const below = measureCells(hellReportCells(), true);
+    for (const m of below) {
+      say(bandLine('HR', m.cell.label!, m.run, m.twin));
+      expect(m.run.fights, `HR ${m.cell.label}`).toBeGreaterThan(0);
+    }
+    for (const [d, kind] of [[15, 'crowd'], [15, 'boss'], [20, 'boss']] as const) {
+      const p = poolOf(below.filter((m) => m.cell.depth === d && m.cell.kind === kind));
+      say(`HR d${d} ${kind} pooled rate ${p.run.rate.toFixed(3)} loss ${p.run.hpLoss.toFixed(3)} (normal loss ${p.twin.hpLoss.toFixed(3)}, nightmare loss ${p.nightmare.hpLoss.toFixed(3)}) reported only`);
     }
   }, 3_000_000);
 

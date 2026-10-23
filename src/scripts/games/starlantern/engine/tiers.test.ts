@@ -121,8 +121,6 @@ describe('a Hell crowd may wear one affix (controller ruling 2026-10-23)', () =>
     const party = partyAt(50, {}, 22);
     const fight = () => createBattle({ party, enemyIds: ['wolf', 'bat', 'bat'], inventory: {}, revealed: {}, scale: { depth: 22, region: 'mainline', difficulty: 'hell', crowdAffix: rollCrowdAffix(777, 22, at, 1) } });
     const a = fight();
-    const other = mulberry32(777);
-    for (let i = 0; i < 50; i++) other();
     expect(rollCrowdAffix(777, 22, at, 0.5)).toEqual(first);
     expect(fight().enemies.map((e) => e.affixes)).toEqual(a.enemies.map((e) => e.affixes));
   });
