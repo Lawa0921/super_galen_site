@@ -40,6 +40,8 @@ export class TownScene implements Scene {
   private view!: MenuView;
   private menuWin!: HTMLElement;
   private backEl!: HTMLElement;
+  /** The place plate and the gold: the town's HUD, put away while a story scene plays (staging S1). */
+  private hud: HTMLElement[] = [];
   private talk: Dialogue;
   private root!: HTMLElement;
   private ask: MenuView | null = null;
@@ -58,8 +60,7 @@ export class TownScene implements Scene {
     const bg = this.ctx.art.has(art.scene('town')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('town'), alt: '' } })] : [];
     root.append(el('div', { class: 'slx-scene slx-town' }, [
       ...bg,
-      win('slx-place', [document.createTextNode(t.place)]),
-      win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)]),
+      ...(this.hud = [win('slx-place', [document.createTextNode(t.place)]), win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)])]),
       (this.menuWin = win('slx-town-menu', [this.view.el])),
       (this.backEl = backControl(() => this.onAction('cancel'))),
       el('p', { class: 'slx-keyhint', text: T.ui2.hints.town }),
@@ -107,20 +108,21 @@ export class TownScene implements Scene {
     }
   }
 
-  /** Plays one arrival scene with the menu hidden (the 96px face stands over its last row) and records it. */
+  /**
+   * Plays one arrival scene with the menu hidden (the face stands over its last row) and records it. The HUD goes too
+   * (staging S1): the place plate would say 露米亞 over an inn at night, and the gold has nothing to do with a scene.
+   */
   private async playScene(id: SceneId): Promise<void> {
     this.menuWin.setAttribute('inert', '');
     this.backEl.setAttribute('inert', '');
-    this.menuWin.classList.add('slx-cmd-hidden');
-    this.backEl.classList.add('slx-cmd-hidden');
+    for (const e of [this.menuWin, this.backEl, ...this.hud]) e.classList.add('slx-cmd-hidden');
     try {
       const p = playAndRecord(this.talk, id, storyCtx(this.ctx));
       this.playing = p;
       await p.done;
     } finally {
       this.playing = null;
-      this.menuWin.classList.remove('slx-cmd-hidden');
-      this.backEl.classList.remove('slx-cmd-hidden');
+      for (const e of [this.menuWin, this.backEl, ...this.hud]) e.classList.remove('slx-cmd-hidden');
     }
   }
 

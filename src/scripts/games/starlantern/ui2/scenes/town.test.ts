@@ -216,6 +216,19 @@ describe('TownScene story', () => {
     expect(game.arrival).toEqual([]);
   });
 
+  it('a scene hides the town HUD (place name and gold) while it plays, and the day line brings it back (staging S1)', async () => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.arrival = ['act1-after'];
+    game.state.story.queue = ['act1-after'];
+    const t = open(game);
+    const place = t.root.querySelector('.slx-place')!, gold = t.root.querySelector('.slx-gold')!;
+    expect(place.classList.contains('slx-cmd-hidden')).toBe(true);
+    expect(gold.classList.contains('slx-cmd-hidden')).toBe(true);
+    for (let i = 0; i < linesOf('act1-after', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    expect(place.classList.contains('slx-cmd-hidden')).toBe(false);
+    expect(gold.classList.contains('slx-cmd-hidden')).toBe(false);
+  });
+
   it('cancel skips a scene, records it, and the next one plays', async () => {
     const game = Game.fresh(constRng(0.5), null);
     game.arrival = ['prologue', 'act1-after'];
