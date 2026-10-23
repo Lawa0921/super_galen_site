@@ -391,7 +391,7 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       N('泛黃的一頁。找到的地點：傳送門廣場。身上的東西：一把刻著怪紋路的劍。記得的最後一句話：「洛」。'),
       { who: 'anna', text: '「比我出生還早。每隔幾十年就有一筆，名字每次都不一樣，地點、那把劍和那個『洛』字，從來沒變過。」' },
       // Story depth design §7.3: the last entry's name is the last line on her list (I-09, I-168); true before and after her choice.
-      N('凜湊過來看那幾個名字。看到最後一筆，她按住了領口的小銅鐘，回頭看了一眼樓梯口，像怕有人跟下來。'),
+      N('凜湊過來看那幾個名字。樓上有人走過，她猛地回頭看樓梯口，手按住了領口的小銅鐘。'),
       N('每一筆的最後一欄，不是「回到迷宮，未歸」，就是「死亡」。洛恩數著「死亡」，數到第四筆，就不數了。'),
       { who: 'hero', mood: 'smile', text: '「看來我很難殺。」' },
       N('安娜沒有笑。她指著「死亡」旁邊的小字。每一筆，都補著同一個名字。'),
@@ -412,11 +412,10 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       { who: 'hero', mood: 'distant', text: '「燈芯燒完了，那個人就被吐回地面，什麼都不記得。然後，又會被引著走回深處，再點一次燈。」' },
       at(PL.guild, N('冒險者公會。安娜聽完，翻開那本舊登記簿，指著邊上一行褪色的小字。')),
       { who: 'anna', text: '「靜鐘會的人說，那個走出來的人『走到哪裡，暮霧就跟到哪裡』。」' },
-      { who: 'anna', text: '「他們看反了。不是有人走出來，霧才變濃。是燈芯快燒完了，霧才變濃。」' },
+      { who: 'anna', text: '「霧會變濃，是燈芯快燒完了，跟誰走出來沒關係。」' },
       { who: 'hero', mood: 'sad', text: '「那我……為什麼讀得懂那塊碑？」' },
       // Rin's lines know whether she has made her choice: act 4 may play before her reveal or after it (U1).
-      { who: 'narrator', text: '凜一直站在門邊。她的手按著刀柄，像是在等某個聲音。', if: { oath: false } },
-      { who: 'rin', mood: 'guarded', text: '「我出去走走，這裡太安靜了。」', if: { oath: false } },
+      { who: 'rin', mood: 'guarded', text: '「我去外面看看。」', if: { oath: false } },
       { who: 'rin', mood: 'sad', text: '「我等過那口鐘響，等的原來是一個誤會。」', if: { oath: true } },
       { who: 'rin', mood: 'serious', text: '「洛恩，他們錯了。……你不是霧。」', if: { oath: true } },
     ],
@@ -446,12 +445,12 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // Lorne will not. They take her for one the society hunts too, never the one it sent; she comes back with the water.
   'group:act3': {
     lines: [
-      at(PL.innDeepNight, N('月影旅館，深夜。凜提著水桶下樓打水，房裡剩下洛恩、希爾薇、波比，和一盞燈。')),
-      { who: 'sylvie', mood: 'alert', text: '「她在簿子前按住了領口，還回頭看樓梯。兔子聽見狗叫，就是那個樣子。洛恩，你去問，她只聽你的。」' },
+      at(PL.innDeepNight, N('月影旅館，深夜。凜把窗閂扣好，才提著水桶下樓打水。房裡剩下洛恩、希爾薇、波比，和一盞燈。')),
+      { who: 'sylvie', mood: 'alert', text: '「樓上一有腳步聲，她就按住領口回頭看。兔子聽見狗叫，就是那個樣子。洛恩，你去問，她只聽你的。」' },
       { who: 'hero', mood: 'sad', text: '「不問。她想說的時候，自己會說。」' },
       { who: 'bobby', mood: 'sad', text: '「凜姊如果也被人追……她一定不想講吧。我們一問，她就不能不講了。那、那還是不要問。」' },
       { who: 'sylvie', mood: 'serious', text: '「有人盯你盯了好幾輩子。凜不講，你也不問，那我要怎麼守？」' },
-      { who: 'bobby', mood: 'grin', text: '「那、那我去幫她的鐘換個舌頭好了。裂成那樣，敲了也不會響。先拆下來，再──」' },
+      { who: 'bobby', mood: 'grin', text: '「那、那我去幫她修修那個鐘好了。她每晚都在擦，一定是哪裡怪怪的。先拆下來，再──」' },
       N('門響了。凜提著水桶站在門口，沒有人知道她聽見了多少。'),
       { who: 'rin', mood: 'guarded', text: '「要問什麼？」' },
       { who: 'hero', mood: 'smile', text: '「問妳水打了沒。」' },
@@ -466,21 +465,21 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'group:act4': {
     lines: [
       at(PL.guildClosed, N('冒險者公會，打烊以後。安娜回家了，舊登記簿還攤在桌上。凜一個人上了屋頂。')),
-      { who: 'chizuru', mood: 'solemn', text: '「『春祭的燈，誰來點？守燈人，自願下行──』」' },
+      { who: 'chizuru', mood: 'solemn', text: '「『春祭的燈，誰提下去？提燈的人，不留名字──』」' },
       N('歌停在那一句。莉茲把錢袋重重擱上桌；莎菲拉從椅背上拎起包袱，甩上了肩。'),
       { who: 'liz', mood: 'serious', text: '「我算過了。這一袋，夠在鎮上頂一間小店，外加三年的租金。老大，不下去了，你來顧店。」' },
-      { who: 'safira', mood: 'laugh', text: '「開什麼店，乾脆走遠一點！明天一早往南，霧總追不到天涯海角吧～」' },
+      { who: 'safira', mood: 'laugh', text: '「開什麼店，乾脆走遠一點！明天一早往南，霧總不能追到天涯海角吧。」' },
       { who: 'liz', mood: 'scheming', text: '「跑路最貴啦。妳那個包袱，撐不過十天的伙食錢。店至少天天有進帳。」' },
       { who: 'scarlet', mood: 'vow', text: '「燈要燈芯，我去。盾本來就是拿來用掉的。」' },
       { who: 'liz', mood: 'serious', text: '「騎士大姊，妳把自己算成零，這帳要怎麼對？」' },
-      { who: 'scarlet', mood: 'serious', text: '「帳不用對。莎菲拉小姐要跑，總得有人留下來擋。」' },
+      { who: 'scarlet', mood: 'serious', text: '「帳不用對。要有人去，騎士排第一個。」' },
       { who: 'safira', mood: 'sad', text: '「那妳去當燈芯，就不會有人難過了嗎？」' },
       { who: 'hero', mood: 'distant', text: '「千鶴唱得沒錯。下面的事，本來就是一個人的。」' },
       { who: 'liz', mood: 'sad', text: '「一個人你個頭啦！錢都擺上桌了，你還要自己下去？」' },
       { who: 'chizuru', mood: 'serious', text: '「那首歌，後面我不唱了。」' },
       N('莎菲拉放下剛拎起的包袱，第一個坐了回去。莉茲沒有收回那袋錢，它在桌上放了一整夜，天亮時還在。'),
     ],
-    summary: '打烊後的公會。千鶴唱到守燈人那一句就停了。莉茲把錢袋放上桌要他別下去，絲嘉蕾說她去當燈芯。',
+    summary: '打烊後的公會。千鶴的祭典歌唱到一半就停了。莉茲把錢袋放上桌要他別下去，絲嘉蕾說她去當燈芯。',
   },
   // Task 6: Lorne's memories (spec §4, §3.4, §3.6, §4.6, §8.4). Pieces 1–8 hint; piece 9 names the keeper, piece 10 the key.
   'mem:hero:1': {

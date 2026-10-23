@@ -3352,7 +3352,8 @@ describe('story L: the group scenes (Task 7)', () => {
     expect(said(id, /四十二/)?.who).toBe('rin');
     expect(said(id, /門邊/)?.who).toBe('narrator');
     expect(STORY.scenes[id].lines.at(-1)!.text).toMatch(/凜和希爾薇並排坐在門邊/);
-    expect(said(id, /領口/)!.text).toMatch(/回頭看樓梯/);   // she reads as afraid of being followed (cold read)
+    expect(said(id, /領口/)!.text).toMatch(/腳步聲.*回頭/);   // she reads as afraid of being followed: footsteps, not bells (cold read)
+    expect(STORY.scenes[id].lines[0].text).toMatch(/窗閂/);   // she checks the window before she goes down
   });
 
   it('group:act3 never ties the bell to the society, nor says 殺 or 刺客: they take her for the hunted (Task 10, spec §6.2)', () => {
@@ -3365,9 +3366,9 @@ describe('story L: the group scenes (Task 7)', () => {
   it('group:act4 keeps its beats: the purse, Scarlet goes, the song breaks off, his lie, Safira at Scarlet, she sits first, dawn (Task 11)', () => {
     const id = 'group:act4';
     expect(REACTIONS.act4).toBe(id);
-    for (const re of [/錢袋/, /燈芯，我去/, /自願下行/, /一個人的/, /坐/, /難過/, /天亮/]) pinBeat(id, {}, re);
+    for (const re of [/錢袋/, /燈芯，我去/, /提燈的人/, /一個人的/, /坐/, /難過/, /天亮/]) pinBeat(id, {}, re);
     expect(said(id, /燈芯，我去/)?.who).toBe('scarlet');
-    expect(said(id, /自願下行/)?.who).toBe('chizuru');
+    expect(said(id, /提燈的人/)?.who).toBe('chizuru');
     expect(said(id, /一個人的/)?.who).toBe('hero');
     expect(said(id, /難過/)?.who).toBe('safira');
     // she sits down first, and the purse is still on the table at dawn: the last line, an action
@@ -3385,9 +3386,12 @@ describe('story L: the group scenes (Task 7)', () => {
     const all = [...STORY.scenes['group:act4'].lines.map((l) => l.text), STORY.scenes['group:act4'].summary].join('');
     expect(all).not.toMatch(/是守燈人/);
     expect(all).not.toMatch(/舞團|團長/);   // Safira's troupe stays out of it (bible)
-    const song = said('group:act4', /自願下行/)!.text;
+    const song = said('group:act4', /提燈的人/)!.text;
     expect(song).toMatch(/^「『[^』]*』」$/);   // the song alone, broken off
     expect(song).toMatch(/──』/);
+    // second cold read: oblique, not the stone word for word (a lamp carried down, a name not kept)
+    expect(song).not.toMatch(/守燈人|自願下行|燈芯/);
+    expect(song).toMatch(/提.*下去/);
   });
 });
 
