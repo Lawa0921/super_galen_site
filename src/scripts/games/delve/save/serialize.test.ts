@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { DelveGame } from '../engine/game';
 import { World } from '../engine/world';
 import { T, W } from '../engine/tiles';
-import { CHUNK, GEN_VERSION, FIXED_DT } from '../engine/constants';
+import { CHUNK, GEN_VERSION, GEN_VERSION_V2, FIXED_DT } from '../engine/constants';
 import {
   snapshotGame, encodeSave, decodeSave, serializeGame, restoreGame, diffChunks, SaveFormatError,
   SAVE_FORMAT, CHUNK_BYTES,
@@ -87,11 +87,12 @@ describe('save serialize', () => {
   it('生成器版本不符：預設回報錯誤；allowGenMismatch 時仍可還原', () => {
     const g = modified();
     const snap = snapshotGame(g);
-    snap.header.genVersion = GEN_VERSION + 1;
+    // 8 是 gen2 世界（Task 15）：用比 8 新的未知版本
+    snap.header.genVersion = GEN_VERSION_V2 + 1;
     const bytes = encodeSave(snap);
     const r = restoreGame(bytes);
-    expect(r).toMatchObject({ ok: false, error: 'gen_version' });
-    if (!r.ok) expect(r.saveGenVersion).toBe(GEN_VERSION + 1);
+    expect(r).toMatchObject({ ok: false, error: 'gen_version', newer: true });
+    if (!r.ok) expect(r.saveGenVersion).toBe(GEN_VERSION_V2 + 1);
     const forced = restoreGame(bytes, { allowGenMismatch: true });
     expect(forced.ok).toBe(true);
   });

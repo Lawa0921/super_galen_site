@@ -9,7 +9,8 @@ import {
   V10_BACKUP_SUFFIX, characterState, decodeAnySave, encodeWorld, splitSnapshot, trimHeld, upsertVisit,
   type AnySave, type HeldChar, type VisitSave, type WorldData, type WorldHeader, type WorldIdentity,
 } from './worldSave';
-import { GEN_VERSION } from '../engine/constants';
+import { GEN_VERSION, GEN_VERSION_V2 } from '../engine/constants';
+import { genBlocker } from './genCheck';
 import type { DelveGame } from '../engine/game';
 import type { CharacterMeta, SaveSummary, SlotMeta } from './storage';
 
@@ -22,6 +23,8 @@ export const NO_CHARACTER_MSG = '讀取失敗：這個存檔沒有角色資料�
 export const BAD_SIZE_MSG = '這個存檔的世界大小不正確，可能不是有效的 DELVE 存檔或已損毀。';
 export const oldGeneratorMsg = (v?: number): string =>
   `這個存檔是舊版地圖產生器（v${v ?? '?'}）做的，新版地圖重做了洞穴、地層、生態區形狀並加入地城，舊世界無法繼續。`;
+/** 存檔的生成器（genVersion / gen2 版本）比目前的遊戲新：不讀、不用目前的生成器重算（spec §5） */
+export const newerGeneratorMsg = '這個世界是用較新版本的地圖產生器做的，請重新整理頁面更新遊戲後再讀取。';
 
 /** 新世界的存檔槽名（多世界）；'main' 是舊的單一槽 */
 export function newWorldSlot(): string { return 'w-' + newId(); }
@@ -201,9 +204,9 @@ export function planNewWorld(game: DelveGame, character: DelveCharacter, _now: n
   return { game, session };
 }
 
-/** restoreGame 的錯誤 → 給玩家看的訊息 */
-export function restoreErrorMessage(r: { error: RestoreError; saveGenVersion?: number }): string {
-  if (r.error === 'gen_version') return oldGeneratorMsg(r.saveGenVersion);
+/** restoreGame 的錯誤 → 給玩家看的訊息（gen_version：newer = 存檔比遊戲新 → 請更新） */
+export function restoreErrorMessage(r: { error: RestoreError; saveGenVersion?: number; newer?: boolean }): string {
+  if (r.error === 'gen_version') return r.newer ? newerGeneratorMsg : oldGeneratorMsg(r.saveGenVersion);
   if (r.error === 'size') return BAD_SIZE_MSG;
   return WORLD_CORRUPT_MSG;
 }
@@ -211,8 +214,9 @@ export function restoreErrorMessage(r: { error: RestoreError; saveGenVersion?: n
 /**
  * 匯入檔 → 新存檔槽（既有槽一律不動；不建遊戲、不生成世界）。寫入的角色 savedAt = now（存檔清單以匯入時間排序）。
  * 舊合併檔：restoreBlocker 檢查後直接在資料層拆成世界 + 新角色（與 commitMigration 共用 migrateData，不備份）；
- *   COMPAT_GEN 舊生成器的存檔照 restoreGame 的遷移規則改標成目前生成器。
+ *   COMPAT_GEN 舊生成器的存檔照 restoreGame 的遷移規則改標成目前的舊生成器（v7）；gen2（v8）的維持 v8。
  * 世界檔：要有內嵌角色（遊戲匯出的檔才有），世界存檔時拿掉內嵌角色；本機已有同 id 角色時，匯入的 rev 較大才覆蓋（否則保留本機角色）。
+ *   生成器版本以 genBlocker 比對（較新版 → newerGeneratorMsg、舊版 → oldGeneratorMsg），不通過什麼都不寫。
  */
 export async function importWorld(store: SplitStore, bytes: Uint8Array, now: number): Promise<{ slot: string } | { error: string }> {
   let any: AnySave;
@@ -222,12 +226,14 @@ export async function importWorld(store: SplitStore, bytes: Uint8Array, now: num
     const h = any.data.header;
     const blocked = restoreBlocker(h);
     if (blocked) return { error: restoreErrorMessage(blocked) };
-    await migrateData(store, slot, { ...any.data, header: { ...h, genVersion: GEN_VERSION, savedAt: now } }, now, { backup: false });
+    const genVersion = h.genVersion === GEN_VERSION_V2 ? GEN_VERSION_V2 : GEN_VERSION;
+    await migrateData(store, slot, { ...any.data, header: { ...h, genVersion, savedAt: now } }, now, { backup: false });
     return { slot };
   }
   const { character: imported, ...header } = any.data.header;
   if (!imported) return { error: NO_CHARACTER_MSG };
-  if (header.genVersion !== GEN_VERSION) return { error: oldGeneratorMsg(header.genVersion) };
+  const gen = genBlocker(header);
+  if (gen) return { error: restoreErrorMessage(gen) };
   let local: DelveCharacter | null = null;
   const cb = await store.getCharacter(imported.id);
   if (cb) {

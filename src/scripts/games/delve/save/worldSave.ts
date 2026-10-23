@@ -2,6 +2,7 @@
 // format 11（無限世界 1a）：chunk / tile 鍵可含外圍鍵；header.bounds = 'infinite' + header.outerGen 只在無限世界才寫；
 //   visit.exploredOuter = 中央框外的迷霧（非空才寫）；header.stones = 已解鎖的傳送碑（世界共用，非空才寫）。decodeWorld 接受 10 與 11（header.format 保留讀到的值）；
 //   splitSnapshot 一律寫 11。format 10 的檔第一次存檔前先備份成 slot + V10_BACKUP_SUFFIX（save/split.ts）。
+// gen2 世界（genVersion 8）：header.gen2 = 地塊鎖表（同 serialize.ts SaveHeader.gen2；8 必有、7 必無，驗證同 decodeSave 的 gen2Field）。
 // 存檔 = snapshotGame()（format 9 的完整 header）→ splitSnapshot() 切成「世界 + 角色」；
 // 讀檔 = joinSplit() 拼回 format-9 形狀的 SaveData → 交給現行 restoreGame()（restoreSplit 包好這兩步；存檔用 saveSplitGame）。
 //   角色第一次來這個世界（沒有 visit）→ restoreGame 的 freshVisit：出生點、只揭露出生點周圍、沒有標記 / 床 / 重生核心。
@@ -20,8 +21,8 @@ import {
   SAVE_FORMAT, SaveFormatError, decodeSave, encodeContainer, isNum, readChunks, readContainer, restoreGame, snapshotGame,
   validBed, validBossActive, validChests, validDiscovery, validDrops, validEnv, validExplored, validExtra, validFolk, validHalves,
   validKeysUsed, validLevels, validLiquids, validMarkers, validUnlocked, validVitals, validBounds, validOuterGen, validExploredOuter,
-  stonesField,
-  type ChestSave, type ChunkPayload, type DropSave, type EnvSave, type FolkSave, type LiquidSave, type PlayerSave,
+  stonesField, gen2Field,
+  type ChestSave, type Gen2Save, type ChunkPayload, type DropSave, type EnvSave, type FolkSave, type LiquidSave, type PlayerSave,
   type CharacterState, type RestoreOptions, type RestoreResult, type SaveData, type SaveHeader,
 } from './serialize';
 import { CHARACTER_FORMAT, validateCharacter, type CharIdentity, type DelveCharacter } from './character';
@@ -80,6 +81,8 @@ export interface WorldHeader {
   outerGen?: number;
   /** 已解鎖的傳送碑 id（世界共用；非空才有） */
   stones?: number[];
+  /** gen2 世界才有（genVersion 8 必有、7 必無） */
+  gen2?: Gen2Save;
   /** 只有匯出檔有（D4） */
   character?: DelveCharacter;
 }
@@ -167,6 +170,7 @@ export function splitSnapshot(data: SaveData, who: CharIdentity, where: WorldIde
     ...(h.bounds ? { bounds: h.bounds } : {}),
     ...(h.outerGen !== undefined ? { outerGen: h.outerGen } : {}),
     ...(h.stones?.length ? { stones: h.stones } : {}),
+    ...(h.gen2 ? { gen2: h.gen2 } : {}),
   };
   return { world: { header, chunks: data.chunks }, character };
 }
@@ -229,6 +233,7 @@ export function joinSplit(world: WorldData, character: DelveCharacter): { data: 
     ...(w.outerGen !== undefined ? { outerGen: w.outerGen } : {}),
     ...(visit?.exploredOuter ? { exploredOuter: visit.exploredOuter } : {}),
     ...(w.stones?.length ? { stones: w.stones } : {}),
+    ...(w.gen2 ? { gen2: w.gen2 } : {}),
   };
   return { data: { header, chunks: world.chunks }, freshVisit: !visit };
 }
@@ -368,6 +373,7 @@ function worldFromContainer(bytes: Uint8Array, { raw, body }: { raw: unknown; bo
     ...(bounds ? { bounds } : {}),
     ...(outerGen !== undefined ? { outerGen } : {}),
     ...stonesField(raw.stones),
+    ...gen2Field(genVersion, raw.gen2),
   };
   if (raw.character !== undefined) header.character = validateCharacter(raw.character);
   return { header, chunks: readChunks(bytes, body, header.chunks) };
