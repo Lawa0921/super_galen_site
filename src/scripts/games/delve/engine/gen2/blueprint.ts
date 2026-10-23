@@ -1,5 +1,5 @@
 // blueprint.ts — gen2 結構藍圖與槽位格（spec §4.3「結構以地區內的槽位格決定位置」）。
-// 每個陸地地區（home / wild / culture）切成寬 LAND_SLOT_W 的槽（最後一槽吃餘數），每槽三層（表層 / 地下 / 深層）各至多一份藍圖；
+// 每個陸地地區（home / wild / culture，沙灘除外）切成寬 LAND_SLOT_W 的槽（最後一槽吃餘數），每槽三層（表層 / 地下 / 深層）各至多一份藍圖；
 // 藍圖只由 (seed, 地區, 槽, 層) 與 Profile2 的地表 / 層線算出（局部可算），外框在 [槽 x0 + 8, 槽 x1 − 8) 內，
 // 所以 fill 一段 [x0, x1) 只要看與它相交的槽，任何一段都蓋得出同一份藍圖與自己相交的部分。
 // 海槽（P12）：structureId / slotOf 認得海槽（region = 0、slot = SeaSlot.k、表層）；海上點位的內容歸 Task 11，島地區不進陸地槽位格。
@@ -8,28 +8,15 @@
 import { hash2, seedInt } from '../noise';
 import { X_LIMIT } from '../coords';
 import { li, type Column } from '../column';
-import type { ChestKind } from '../loot';
 import type { RegionInfo, Side } from '../regionInfo';
 import { HOME_X0, SPAWN_X, VARIANT, type Landmass, type Layout } from './layout';
 import type { Profile2 } from './profile';
 import { shaftX } from './caves';
 import { buildCabin } from './structures/cabin';
 import { buildRuin } from './structures/ruin';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, LAND_SLOT_W, KEEP, type Blueprint, type BpCtx } from './bpcore';
 
-export type BpKind = 'cabin' | 'ruin' | 'shipwreck' | 'crate' | 'lake' | 'cave_lake' | 'lava_pool';
-export const BP_SURFACE = 0, BP_UNDER = 1, BP_DEEP = 2, LAND_SLOT_W = 340, KEEP = -1;
-// 外框離槽兩端至少 SLOT_PAD 格
-export const SLOT_PAD = 8;
-
-export interface Blueprint {
-  id: number; kind: BpKind; layer: 0 | 1 | 2; x: number; y: number; w: number; h: number;
-  // 每格 5 個數：x, y, fg|KEEP, wall|KEEP, liq|KEEP（liq = amount << 8 | type）；依序蓋
-  cells: Int32Array;
-  chests: { x: number; y: number; kind: ChestKind }[];
-}
-
-// 建一份藍圖的上下文：s = 結構雜湊種子、id = structureId、槽的範圍、所屬地區、側寫、該地塊的版面版本
-export interface BpCtx { seed: string; s: number; id: number; slotX0: number; slotX1: number; region: RegionInfo; profile: Profile2; ver: number }
+export { BP_SURFACE, BP_UNDER, BP_DEEP, LAND_SLOT_W, KEEP, SLOT_PAD, BpGrid, placeX, type BpKind, type Blueprint, type BpCtx } from './bpcore';
 
 // ── structureId：layer 2 bit | slot 5 bit | region 5 bit | side 2 bit | i 13 bit（共 27 bit，hash2 吃得下的 int32）──
 const I_LIMIT = 1 << 13, R_LIMIT = 1 << 5, S_LIMIT = 1 << 5;
@@ -51,6 +38,8 @@ function decode(id: number): { side: Side; i: number; region: number; slot: numb
 
 // 陸地地區：home / wild / culture（海與島不進陸地槽位格，P12）
 const isLand = (r: RegionInfo): boolean => r.kind === 'home' || r.kind === 'wild' || r.kind === 'culture';
+// 放藍圖的地區：陸地、非沙灘（家鄉兩端的沙灘留給 M2 的地城，spec §4.4；與主坑道 / 保證槽的沙灘豁免一致）
+const hasSlots = (r: RegionInfo): boolean => isLand(r) && r.variant !== VARIANT.BEACH;
 // 地區的陸地槽數（至少 1；最後一槽吃餘數）與第 q 槽
 export const landSlotCount = (r: RegionInfo): number => Math.max(1, Math.floor((r.x1 - r.x0) / LAND_SLOT_W));
 function landSlot(r: RegionInfo, q: number): { x0: number; x1: number } {
@@ -99,55 +88,6 @@ export function stamp(col: Column, bp: Blueprint, x0: number, x1: number): void 
   }
 }
 
-// ── 給各結構用的工具 ──
-
-// 外框內的暫存格（三層各一，初值 KEEP）：結構先在這裡畫（可以讀自己畫過的格），最後依列序輸出 cells
-export class BpGrid {
-  private readonly f: Int32Array;
-  private readonly wl: Int32Array;
-  private readonly lq: Int32Array;
-  constructor(readonly x: number, readonly y: number, readonly w: number, readonly h: number) {
-    const n = w * h;
-    this.f = new Int32Array(n).fill(KEEP); this.wl = new Int32Array(n).fill(KEEP); this.lq = new Int32Array(n).fill(KEEP);
-  }
-  private at(x: number, y: number): number {
-    const dx = x - this.x, dy = y - this.y;
-    if (dx < 0 || dx >= this.w || dy < 0 || dy >= this.h) throw new RangeError(`blueprint cell (${x}, ${y}) outside its box`);
-    return dy * this.w + dx;
-  }
-  fg(x: number, y: number, t: number): void { this.f[this.at(x, y)] = t; }
-  wall(x: number, y: number, t: number): void { this.wl[this.at(x, y)] = t; }
-  liq(x: number, y: number, v: number): void { this.lq[this.at(x, y)] = v; }
-  getFg(x: number, y: number): number { return this.f[this.at(x, y)]; }
-  // 有任何一層不是 KEEP 的格，依列序
-  cells(): Int32Array {
-    const out: number[] = [];
-    for (let dy = 0; dy < this.h; dy++) for (let dx = 0; dx < this.w; dx++) {
-      const i = dy * this.w + dx;
-      if (this.f[i] !== KEEP || this.wl[i] !== KEEP || this.lq[i] !== KEEP) out.push(this.x + dx, this.y + dy, this.f[i], this.wl[i], this.lq[i]);
-    }
-    return Int32Array.from(out);
-  }
-}
-
-// 外框 x：依序試槽內 3 個候選中心（置中、−槽寬 / 4、+槽寬 / 4），外框要在 [slotX0 + 8, slotX1 − 8) 內，再過 ok（結構自己的條件）。
-// force：ok 全不過時用第一個放得下的候選（都放不下就夾進槽裡）；不 force 時沒有就回 null。
-// 主坑道：含 shaftX 的槽不放表層 / 地下藍圖；坑道離 shaftX 最多 SHAFT_REACH（19）格、而候選外框離槽邊至少 槽寬 / 4 − 外框半寬（≥ 85 − 38），
-// 所以鄰槽的結構碰不到坑道（blueprint.test 釘住）
-export function placeX(c: BpCtx, w: number, force: boolean, ok: (x: number) => boolean): number | null {
-  const sw = c.slotX1 - c.slotX0, mid = c.slotX0 + (sw >> 1), q = Math.floor(sw / 4);
-  const fits = (x: number): boolean => x >= c.slotX0 + SLOT_PAD && x + w <= c.slotX1 - SLOT_PAD;
-  let first: number | null = null;
-  for (const m of [mid, mid - q, mid + q]) {
-    const x = m - (w >> 1);
-    if (!fits(x)) continue;
-    if (ok(x)) return x;
-    if (first === null) first = x;
-  }
-  if (!force) return null;
-  return first ?? Math.max(c.slotX0 + SLOT_PAD, Math.min(mid - (w >> 1), c.slotX1 - SLOT_PAD - w));
-}
-
 // ── 槽位表 ──
 
 type Build = (c: BpCtx, o?: { force?: boolean }) => Blueprint | null;
@@ -162,7 +102,7 @@ const SPAWN_CLEAR = 80;
 const CACHE_MAX = 256;
 
 interface Pick { r: RegionInfo; q: number; bp: Blueprint }
-interface Guard { cabin: Pick | null; ruin: Pick | null }
+interface Guard { cabin: Pick; ruin: Pick }
 
 export class BlueprintIndex {
   private readonly s: number;
@@ -196,7 +136,7 @@ export class BlueprintIndex {
       }
       if (m.kind !== 'sea') {
         for (const r of m.regions) {
-          if (r.x1 <= x0 || r.x0 >= x1 || !isLand(r)) continue;
+          if (r.x1 <= x0 || r.x0 >= x1 || !hasSlots(r)) continue;
           const n = landSlotCount(r);
           for (let q = 0; q < n; q++) {
             const sl = landSlot(r, q);
@@ -240,8 +180,8 @@ export class BlueprintIndex {
     if (layer !== BP_DEEP && this.shaftIn(r, q)) return null;
     if (m.kind === 'continent') {
       const g = this.guard(m);
-      if (layer === BP_UNDER && g.cabin && g.cabin.r === r && g.cabin.q === q) return g.cabin.bp;
-      if (layer === BP_SURFACE && g.ruin && g.ruin.r === r && g.ruin.q === q) return g.ruin.bp;
+      if (layer === BP_UNDER && g.cabin.r === r && g.cabin.q === q) return g.cabin.bp;
+      if (layer === BP_SURFACE && g.ruin.r === r && g.ruin.q === q) return g.ruin.bp;
     }
     const u = hash2(id, 0, this.sRoll);
     let acc = 0;
@@ -260,12 +200,13 @@ export class BlueprintIndex {
     if (g) return g;
     const ok: { r: RegionInfo; q: number }[] = [];
     for (const r of m.regions) {
-      if (r.variant === VARIANT.BEACH || !isLand(r)) continue;
+      if (!hasSlots(r)) continue;
       for (let q = 0; q < landSlotCount(r); q++) if (!this.shaftIn(r, q)) ok.push({ r, q });
     }
     const n = ok.length, g0 = Math.floor(hash2(m.side, m.i, this.s) * n);
-    const find = (start: number, layer: 0 | 1, build: Build): Pick | null => {
-      if (n === 0) return null;
+    // 大陸 ≥ 2400 寬、地區 ≥ 700 寬：每個地區 ≥ 2 槽、至多 1 槽有坑道，不會沒有合格槽；真的發生就是版面壞了（P11 不能默默失效）
+    if (n === 0) throw new RangeError(`gen2: continent ${m.side}:${m.i} has no eligible blueprint slot`);
+    const find = (start: number, layer: 0 | 1, build: Build): Pick => {
       for (let k = 0; k < n; k++) {
         const e = ok[(start + k) % n], bp = build(this.ctx(m, e.r, e.q, layer));
         if (bp) return { ...e, bp };

@@ -97,6 +97,19 @@ describe('gen2 blueprints / slot grid', () => {
     for (const b of all) if (b.kind === 'cabin') expect(b.layer).toBe(BP_UNDER); else if (b.kind === 'ruin') expect(b.layer).toBe(BP_SURFACE);
   });
 
+  it('家鄉兩端的沙灘沒有藍圖（留給 M2 的地城，spec §4.4）：20 個種子', () => {
+    let seen = 0;
+    for (let k = 0; k < 20; k++) {
+      const seed = `seed-${k}`, g = new Gen2Source(seed), home = g.layout.landmassAt(SPAWN_X)!;
+      const beaches = home.regions.filter((r) => r.variant === VARIANT.BEACH).map((r) => [r.x0, r.x1]);
+      expect(beaches).toEqual([[0, 70], [4130, 4200]]);
+      const bps = new BlueprintIndex(seed, g.layout, g.profile).overlapping(-200, 4400);
+      seen += bps.length;
+      for (const [a, z] of beaches) expect(bps.filter((b) => b.x < z && b.x + b.w > a), `${seed} [${a}, ${z})`).toEqual([]);
+    }
+    expect(seen).toBeGreaterThan(20);
+  });
+
   it('非保證槽照機率：遺跡約 30% 的表層槽、小屋約 40% 的地下層槽（上限）', () => {
     const land = sampleRegions(src, { home: false, perSide: 6 });
     let slots = 0;

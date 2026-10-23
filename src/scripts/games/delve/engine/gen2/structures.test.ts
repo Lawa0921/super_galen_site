@@ -2,7 +2,7 @@
 // objectsIn 的箱子 = chestLoot、樹不長在表層藍圖外框內、World 整合（搜刮過的箱子卸載再載入不會重新填滿，Review Focus #2）。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
-import { BlueprintIndex, slotOf, depthFrac, structureId, BP_SURFACE, BP_UNDER, KEEP, type Blueprint, type BpCtx } from './blueprint';
+import { BlueprintIndex, slotOf, depthFrac, structureId, BP_SURFACE, BP_UNDER, KEEP, LAND_SLOT_W, type Blueprint, type BpCtx } from './blueprint';
 import { buildCabin } from './structures/cabin';
 import { buildRuin } from './structures/ruin';
 import { fillCol, worldOf } from './testUtil';
@@ -91,7 +91,7 @@ describe('gen2 structures: cabin / ruin', () => {
     for (const side of [1, -1] as const) for (const i of [2, 4, 6, 8]) {
       const m = src.layout.landmass(side, i);
       for (const r of m.regions) {
-        const n = Math.max(1, Math.floor((r.x1 - r.x0) / 340));
+        const n = Math.max(1, Math.floor((r.x1 - r.x0) / LAND_SLOT_W));
         for (let k = 0; k < n; k++) {
           const c = ctxOf(src, 'bp', side, i, r.index, k, BP_SURFACE);
           if (buildRuin(c) !== null) continue;

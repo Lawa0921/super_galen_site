@@ -4,7 +4,7 @@
 import { T, W } from '../../tiles';
 import { BIOME } from '../../world';
 import { HRng } from '../hrng';
-import { BpGrid, placeX, BP_SURFACE, type Blueprint, type BpCtx } from '../blueprint';
+import { BpGrid, placeX, BP_SURFACE, type Blueprint, type BpCtx } from '../bpcore';
 
 const MAX_ROUGH = 5;
 

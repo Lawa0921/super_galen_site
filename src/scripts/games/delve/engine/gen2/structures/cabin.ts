@@ -4,7 +4,7 @@
 // 外框 = 屋子 + 兩側坑道。本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T, W } from '../../tiles';
 import { HRng } from '../hrng';
-import { BpGrid, placeX, BP_UNDER, type Blueprint, type BpCtx } from '../blueprint';
+import { BpGrid, placeX, BP_UNDER, type Blueprint, type BpCtx } from '../bpcore';
 
 // force（P11）：不回 null（y 範圍不成立時取下限）
 export function buildCabin(c: BpCtx, o: { force?: boolean } = {}): Blueprint | null {
