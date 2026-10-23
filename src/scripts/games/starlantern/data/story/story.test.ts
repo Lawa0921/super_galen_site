@@ -461,7 +461,7 @@ describe('the script gates', () => {
   it("the depth design's line caps (story depth Task 2)", () => {
     const caps: [SceneId, number][] = [
       ['act1-after', 3], ['prologue-inn', 10], ['first-return', 10], ['bellkeeper-arrives', 10], ['rin-confess', 12], ['hero-alone', 10],
-      ['finale', 16], ['epilogue', 16], ['prologue', 12], ['act2', 12], ['act3', 12], ['act4', 12], ['rin-reveal', 12],
+      ['finale', 17], ['epilogue', 16], ['prologue', 12], ['act2', 12], ['act3', 12], ['act4', 12], ['rin-reveal', 12],
       ['finale-eve', 2],   // story L spec §11
     ];
     for (const [id, cap] of caps) expect(lineCap(id), id).toBe(cap);
@@ -1633,7 +1633,10 @@ describe('Task 14: the finale', () => {
     for (const c of COMPANIONS) {
       const own = lines().filter((l) => l.if?.met === c);
       expect(own.length, c).toBeGreaterThan(0);
-      for (const l of own) expect(l.who, c).toBe(c);   // a met companion gives her own memory of him, in her own voice
+      // a met companion gives her own memory of him, in her own voice; story L Task 14 cold read: Scarlet, who reports
+      // everything, says nothing in one reading, and the narration shows what she does
+      for (const l of own) if (l.who !== c) expect(l.who === 'narrator' && l.text.includes(CHARACTERS[c].name), `${c}: ${l.text}`).toBe(true);
+      expect(own.filter((l) => l.who === 'narrator').length, c).toBeLessThanOrEqual(c === 'scarlet' ? 1 : 0);
       const named = lines().filter((l) => l.if?.notMet === c);
       expect(named.length, c).toBe(1);
       expect(named[0].who, c).toBe('hero');   // an unmet one is named by Lorne (spec §8.4)
@@ -1645,25 +1648,29 @@ describe('Task 14: the finale', () => {
     for (const l of lines()) expect(l.if?.oath, l.text).toBeUndefined();   // U3: it always follows her choice
   });
 
-  // Story depth Task 16 (plan ruling 13: the twelve-line rule is retired; cap 16, sixteen in every party after R8)
-  it('every party hears sixteen lines, one for each companion, and the beats in order', () => {
+  // Story depth Task 16 (plan ruling 13: the twelve-line rule is retired; cap 16, sixteen in every party after R8). Story L
+  // Task 14 cold read: seventeen, one narration more to say why the lamp took none of theirs (it was never the lamp's).
+  it('every party hears seventeen lines, one for each companion, and the beats in order', () => {
     let n = 0;
     for (const w of readings()) {
       const played = linesWhen(lines(), w);
-      expect(played.length, JSON.stringify(w)).toBe(16);
+      expect(played.length, JSON.stringify(w)).toBe(17);
       for (const c of COMPANIONS) expect(played.filter((l) => l.if?.met === c || l.if?.notMet === c).length, `${c} ${JSON.stringify(w)}`).toBe(1);
-      // 1 the wick; 2 the stake; 3-10 the eight; 11 his ten pieces; 12 the faces fading; 13 the lamp; 14 the bell; 15 the keeper; 16 Rin
+      // 1 the wick; 2 the stake; 3-10 the eight; 11 his ten pieces; 12 the faces fading; 13 theirs kept for him; 14 the lamp;
+      // 15 the bell; 16 the keeper; 17 Rin
       expect(played[0].who).toBe('hero');
       expect(played[1].who).toBe('hero');
       expect(played[10].who).toBe('hero');
       expect(played[10].text).toMatch(/十段/);
       expect(played[11].who).toBe('narrator');
       expect(played[11].text).toMatch(/淡了/);
-      expect(played[15].who).toBe('rin');
+      expect(played[12].who).toBe('narrator');
+      expect(played[12].text).toMatch(/一段也沒收/);
+      expect(played[16].who).toBe('rin');
       const lamp = played.findIndex((l) => l.text.includes('燈穩了下來'));
-      expect(lamp, 'the lamp line plays').toBe(12);
+      expect(lamp, 'the lamp line plays').toBe(13);
       expect(played.slice(0, lamp + 1).some((l) => l.who !== 'hero' && (l.who !== 'narrator' || /凜/.test(l.text))), 'he is not alone at the lamp').toBe(true);
-      for (const i of [0, 1, 10, 11, 12, 13, 14, 15]) expect(played[i].if, `${i}`).toBeUndefined();
+      for (const i of [0, 1, 10, 11, 12, 13, 14, 15, 16]) expect(played[i].if, `${i}`).toBeUndefined();
       expect(played.slice(2, 10).every((l) => l.if !== undefined)).toBe(true);
       expect(played[9].if?.met === 'bobby' || played[9].if?.notMet === 'bobby', 'Bobby closes the eight with the valve').toBe(true);
       n++;
@@ -1679,8 +1686,9 @@ describe('Task 14: the finale', () => {
     for (const l of bobby) expect(l.text).toMatch(/閥/);
     // story depth Task 16 (design §7.5): whole, she says her family made his sword (I-46); every reading carries the valve's
     // rule (story L Task 14: the readings before her whole chain follow her group scene, and carry it too)
-    expect(bobby.some((l) => l.if?.full === 'bobby' && /我家的人/.test(l.text) && /不回來的光/.test(l.text))).toBe(true);
-    for (const l of bobby) expect(l.text).toMatch(/閥.*不回來的光/);
+    // story L Task 14 cold read: 「回不來」, the light cannot come back (her fifth piece says it the same way)
+    expect(bobby.some((l) => l.if?.full === 'bobby' && /我家的人/.test(l.text) && /回不來的光/.test(l.text))).toBe(true);
+    for (const l of bobby) expect(l.text).toMatch(/閥.*回不來的光/);
     for (const l of bobby) if (l.if?.full !== 'bobby') expect(l.text).not.toMatch(/祖先|我家/);   // her ancestors are her pieces' to tell
     const lorne = L.find((l) => l.if?.notMet === 'bobby')!;
     expect(lorne.text).toMatch(/閥/);
@@ -1699,11 +1707,13 @@ describe('Task 14: the finale', () => {
     expect(tail[1]).toMatch(/鐘守/);
     expect(tail[1]).toMatch(/最後一聲/);
     expect(tail[1]).toMatch(/結社的鐘|靜鐘會的鐘/);   // fix round 1: the society's own bell; her flattened one never rings (I-51)
-    // story depth Task 16: the keeper says it himself (story polish ruling 7), his own 「我」 at the end of the 「吾等」
+    // story depth Task 16: the keeper says it himself (story polish ruling 7)
     expect(L[L.length - 2].who).toBe('bellkeeper');
-    expect(tail[2]).toMatch(/殺的一直是守燈人/);
-    expect(tail[2]).toMatch(/晚一次點亮/);
-    expect(tail[2]).toMatch(/散/);
+    // story L Task 14 cold read: in his own 「我們」 now, the society's 「吾等」 dropped as it ends; the society's crime is
+    // said here first (spec §3.6), his own knife is a callback to his arrival (bellkeeper-arrives: 「是我的刀」)
+    expect(tail[2]).toMatch(/一直在殺的，是守燈人/);
+    expect(tail[2]).toMatch(/晚一輪亮/);
+    expect(tail[2]).toMatch(/到此為止/);
     // Rin's last word echoes Lorne's from her reveal (「明天也一起回來吧。」), for everyone: after her choice she names him
     const rin = L[L.length - 1];
     expect(rin.who).toBe('rin');
@@ -2804,7 +2814,7 @@ describe('story depth Task 10: Noel and Bobby', () => {
     expect(five.filter((l) => /閥第一次點火/.test(l.text))).toHaveLength(1);
     const valve = five.find((l) => /閥第一次點火/.test(l.text))!;
     expect(valve.who).toBe('bobby');
-    expect(valve.text).toMatch(/不回來的光/);
+    expect(valve.text).toMatch(/回不來的光/);   // story L Task 14 cold read: 回不來, as the finale pays it
     for (const l of five) if (l.who === 'bobby') expect(l.text).not.toMatch(/喔/);   // no 「喔」 in her memories
   });
 
@@ -2984,12 +2994,14 @@ describe('story depth Task 16: the finale and the lantern festival', () => {
     for (const r of sceneReadings('finale')) {
       const L = r.lines;
       const at = JSON.stringify(r.when);
-      expect(L.length, at).toBeLessThanOrEqual(16);
+      expect(L.length, at).toBeLessThanOrEqual(17);   // story L Task 14 cold read: one narration more, why theirs were kept
       expect(L.filter((l) => l.who === 'hero' && /十段/.test(l.text)), at).toHaveLength(1);
       expect(L.filter((l) => l.who === 'bellkeeper'), at).toHaveLength(1);
       const keeper = L.find((l) => l.who === 'bellkeeper')!;
-      expect(keeper.text).toMatch(/是我殺的/);
-      expect(keeper.text).toMatch(/散了/);
+      // story L Task 14 cold read: his own words now, not the society's 「吾等」; the market knife calls back his arrival
+      expect(keeper.text).toMatch(/市集裡那一刀，也是我/);
+      expect(keeper.text).toMatch(/到此為止/);
+      expect(keeper.text).not.toMatch(/吾等/);
       expect(L.filter((l) => l.who === 'rin'), at).toHaveLength(1);
       expect(L[L.length - 1].who, at).toBe('rin');
       expect(L.some((l) => /閥/.test(l.text)), at).toBe(true);
@@ -3011,7 +3023,7 @@ describe('story depth Task 16: the finale and the lantern festival', () => {
     const unmet: LineWhen = { ...full, met: CHARACTER_IDS.filter((c) => c !== 'bobby'), full: [] };
     for (const w of [full, metOnly, unmet]) {
       const L = linesWhen(STORY.scenes.finale.lines, w);
-      expect(L.some((l) => /不回來的光|不歸之光/.test(l.text)), JSON.stringify(w.met.length)).toBe(true);
+      expect(L.some((l) => /回不來的光|不歸之光/.test(l.text)), JSON.stringify(w.met.length)).toBe(true);
     }
     expect(linesWhen(STORY.scenes.finale.lines, full).find((l) => l.who === 'bobby')!.text).toMatch(/我家的人/);
     expect(STORY.scenes['mem:hero:10'].lines.filter((l) => /要回來/.test(l.text))).toHaveLength(1);
@@ -3162,10 +3174,13 @@ describe('story depth: the final review', () => {
     expect(lamp[0].text).toMatch(/燈/);
   });
 
-  it('the finale says the lamp kept his ten and none of theirs, inside sixteen lines', () => {
+  it('the finale says the lamp kept his ten and none of theirs, inside seventeen lines', () => {
     for (const r of sceneReadings('finale')) {
-      expect(r.lines.length).toBeLessThanOrEqual(16);
-      const kept = r.lines.filter((l) => /一段也沒拿走/.test(l.text));
+      // story L Task 14 cold read: seventeen, the line that says why (what they held out was kept for him, not the lamp)
+      expect(r.lines.length).toBeLessThanOrEqual(17);
+      const kept = r.lines.filter((l) => /一段也沒收/.test(l.text));
+      expect(kept[0]?.text).toMatch(/只收下他的十段/);
+      expect(kept[0]?.text).toMatch(/留給他/);
       expect(kept).toHaveLength(1);
       expect(kept[0].who).toBe('narrator');
       expect(r.lines.indexOf(kept[0])).toBeGreaterThan(r.lines.findIndex((l) => l.who === 'hero' && /十段/.test(l.text)));
@@ -3529,7 +3544,7 @@ describe('story L Task 14: the eight give back a night they shared (spec §9)', 
 
   it('seen: each one gives back that night, and names what it left on the table', () => {
     const played = linesWhen(L(), W(GROUPS));
-    expect(played).toHaveLength(16);
+    expect(played).toHaveLength(17);
     for (const c of COMPANIONS) {
       const mine = played.filter((l) => l.who === c);
       expect(mine, c).toHaveLength(1);
@@ -3537,19 +3552,22 @@ describe('story L Task 14: the eight give back a night they shared (spec §9)', 
       expect(mine[0].text, c).toMatch(LEFT[c]);
     }
     const bobby = played.find((l) => l.who === 'bobby')!;
-    expect(bobby.text).toMatch(/閥.*不回來的光/);   // the valve's rule rides the same line as the bell she did not take apart
+    expect(bobby.text).toMatch(/閥.*回不來的光/);   // the valve's rule rides the same line as the bell she did not take apart
   });
 
   it('missed: a night at the inn instead, and nothing from the scene the player did not see', () => {
     const played = linesWhen(L(), W([]));
-    expect(played).toHaveLength(16);
+    expect(played).toHaveLength(17);
     for (const c of COMPANIONS) {
-      const mine = played.find((l) => l.who === c)!;
+      const mine = played.find((l) => l.if?.met === c)!;
       expect(mine.if?.notSeen, c).toBe(GROUP_OF[c]);
       expect(mine.text, c).not.toMatch(/那晚/);
       expect(mine.text, c).not.toMatch(LEFT[c]);   // what her scene left, the player never saw
     }
-    expect(played.find((l) => l.who === 'bobby')!.text).toMatch(/閥.*不回來的光/);
+    expect(played.find((l) => l.who === 'bobby')!.text).toMatch(/閥.*回不來的光/);
+    // cold read: not one template. Some speak to him, one hands over a coin, Scarlet says nothing at all
+    expect(played.find((l) => l.if?.met === 'scarlet')!.who).toBe('narrator');
+    expect(played.filter((l) => l.if?.met && /燈/.test(l.text) && /這一段/.test(l.text)).length).toBeLessThanOrEqual(3);
     // one seen, the others missed: each line follows her own scene
     const some = linesWhen(L(), W(['group:act3']));
     expect(some.find((l) => l.who === 'sylvie')!.if?.seen).toBe('group:act3');

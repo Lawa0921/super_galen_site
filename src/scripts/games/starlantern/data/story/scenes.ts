@@ -103,7 +103,7 @@ export const EVE_DEPTH = 26;
  * (six core lines and at most ten more, affinity spec §8.5).
  */
 const MAJOR_CAPS: Partial<Record<MajorScene, number>> = {
-  'act1-after': 3, 'prologue-inn': 10, 'first-return': 10, 'bellkeeper-arrives': 10, 'rin-confess': 12, 'hero-alone': 10, finale: 16, epilogue: 16,
+  'act1-after': 3, 'prologue-inn': 10, 'first-return': 10, 'bellkeeper-arrives': 10, 'rin-confess': 12, 'hero-alone': 10, finale: 17, epilogue: 16,
   'finale-eve': 2,   // story L spec §11
 };
 

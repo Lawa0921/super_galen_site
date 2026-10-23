@@ -1164,11 +1164,11 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   'mem:bobby:5': {
     lines: [
       N('最後一角拼上了。整張構造圖在她眼前亮起來，齒輪和管線，一條一條連上。'),
-      { who: 'bobby', mood: 'serious', text: '「看懂了。燈芯少一道閥，只會吞，不會還。可是閥第一次點火，要一段不回來的光。」' },
+      { who: 'bobby', mood: 'serious', text: '「看懂了。燈芯少一道閥，只會吞，不會還。可是閥第一次點火，要一段回不來的光。」' },
       { who: 'hero', text: '「修得好嗎？」' },
       { who: 'bobby', mood: 'smile', text: '「祖先造錯的東西，我來修好。」' },
     ],
-    summary: '波比讀懂了整張構造圖：燈芯少一道閥，第一次點火要一段不回來的光。她說她來修好。',
+    summary: '波比讀懂了整張構造圖：燈芯少一道閥，第一次點火要一段回不來的光。她說她來修好。',
   },
   'chat:bobby:1': {
     lines: [
@@ -1336,8 +1336,9 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   // `if.oath`. Lorne means to burn this round's days and says what the lamp takes; each companion gives a night she shared
   // with him anyway, believing it lost (met), or Lorne hears her in the lamp and names her (not met); Bobby closes the eight
   // with her valve and its rule (her fifth piece); Lorne pays its first light with the ten pieces he found; Rin's hand on his;
-  // the bell, handed over without a word, and the keeper's last; Rin's last word. Sixteen lines in every party (R8: the faces
-  // fading after his cost); the three 「……」 are Lorne's, the keeper's and Rin's.
+  // the bell, handed over without a word, and the keeper's last; Rin's last word. Seventeen lines in every party (R8: the
+  // faces fading after his cost; story L Task 14 cold read: one line more, why the lamp took none of theirs); the two 「……」
+  // are Lorne's and Rin's.
   finale: {
     lines: [
       { who: 'hero', mood: 'resolve', text: '「這一輪走過的每一天，就是這一次的燈芯。送到這裡就好。」' },
@@ -1346,23 +1347,24 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       // left on the table (`if.seen`; a group scene can expire, spec §5.2). Missed: one of the nights at the inn, the habit her
       // night beats show (style bible §2.2: no two share a role). Not met: Lorne hears her in the lamp (I-112). No reading
       // turns on her pieces, so none names him in a way that does; none gives back the minute they met.
-      { who: 'selene', mood: 'wistful', text: '「被接住的那枚銅板，我一直記得。月亮沒有替我開口，所以這一段，我自己說：送給燈。」', if: { met: 'selene', seen: 'group:act2' } },
-      { who: 'selene', mood: 'smile', text: '「看月亮的時候，我總會順便看看，明天大家回不回得來。這一段，不問月亮了，送燈。」', if: { met: 'selene', notSeen: 'group:act2' } },
+      { who: 'selene', mood: 'wistful', text: '「被接住的那枚銅板，我一直記得。那天月亮沒幫我開口。這次我自己說──這一段，給燈。」', if: { met: 'selene', seen: 'group:act2' } },
+      { who: 'selene', mood: 'smile', text: '「看月亮的時候，我總會順便看看，明天大家回不回得來。這次不問月亮了──這一段，給燈。」', if: { met: 'selene', notSeen: 'group:act2' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有一段光在讀月亮。瑟蕾，還沒找到妳，但我記住妳了。」', if: { notMet: 'selene' } },
       { who: 'noel', mood: 'pout', text: '「那晚本小姐藏進袖子的那一片，你看見了吧？一句也沒說。這次不藏了，本小姐自己交出去。」', if: { met: 'noel', seen: 'group:act2' } },
-      { who: 'noel', mood: 'pout', text: '「旅館的燈一暗，都是本小姐點小雷光，你每次都說剛好。這一段不借了，本小姐自己交出去。」', if: { met: 'noel', notSeen: 'group:act2' } },
+      { who: 'noel', mood: 'pout', text: '「旅館的燈一暗，都是本小姐點小雷光，你每次都說剛好。這次不點雷光了，這一段，本小姐親手交出去。」', if: { met: 'noel', notSeen: 'group:act2' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有人快把自己的雷燒乾了。諾艾兒，一起回去吧。」', if: { notMet: 'noel' } },
-      { who: 'sylvie', mood: 'unguarded', text: '「你不肯問，我只好去睡門邊。硬地板睡了好幾層樓，才懂你是怕凜走。這一段，給燈。」', if: { met: 'sylvie', seen: 'group:act3' } },
-      { who: 'sylvie', mood: 'unguarded', text: '「我靠窗聽風，你在床上睡得很沉。我守過最安靜的夜，就是那些。這一段，給燈。」', if: { met: 'sylvie', notSeen: 'group:act3' } },
+      { who: 'sylvie', mood: 'unguarded', text: '「你不肯問，我就去睡了門邊。那塊地板我一路睡下來，才懂你怕的是凜走掉。」', if: { met: 'sylvie', seen: 'group:act3' } },
+      { who: 'sylvie', mood: 'unguarded', text: '「我靠窗聽風的那些晚上，你都睡得很沉。以後也照那樣睡，窗我來守。」', if: { met: 'sylvie', notSeen: 'group:act3' } },
       { who: 'hero', mood: 'distant', text: '「燈裡還有一支箭在射。希爾薇，不用再一個人守了。」', if: { notMet: 'sylvie' } },
-      { who: 'liz', mood: 'smile', text: '「擺上桌的那個錢袋，是我做過最虧的生意，老大一枚也沒拿。這一段送燈，這筆帳我不算了。」', if: { met: 'liz', seen: 'group:act4' } },
-      { who: 'liz', mood: 'smile', text: '「老大，我邊數銅板邊聽大家說話，數到一半都忘了數。估不出價的，就送燈。」', if: { met: 'liz', notSeen: 'group:act4' } },
+      { who: 'liz', mood: 'smile', text: '「擺上桌的那個錢袋，是我做過最虧的生意，老大一枚也沒拿。這筆帳，我不算了。」', if: { met: 'liz', seen: 'group:act4' } },
+      { who: 'liz', mood: 'smile', text: '「老大，這枚是我每晚數的第一枚銅板。聽大家說話，總是數到一半就忘了數。這枚送你，不收錢。」', if: { met: 'liz', notSeen: 'group:act4' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有人數著吃不下的金幣。莉茲，家裡有人在等。」', if: { notMet: 'liz' } },
-      { who: 'safira', mood: 'smile', text: '「說要逃的是我，先坐回椅子的也是我。小洛，那一拍我記到現在。這一拍，放進燈裡。」', if: { met: 'safira', seen: 'group:act4' } },
-      { who: 'safira', mood: 'smile', text: '「小洛，你的腳在桌子底下偷偷跟著我的拍子，我都看見了。這一拍，放進燈裡。」', if: { met: 'safira', notSeen: 'group:act4' } },
+      { who: 'safira', mood: 'smile', text: '「說要逃的是我，先坐回椅子的也是我。小洛，你那時沒笑我。」', if: { met: 'safira', seen: 'group:act4' } },
+      { who: 'safira', mood: 'smile', text: '「小洛，你的腳在桌子底下偷偷跟著我的拍子，我都看見了。下一首，換你帶我跳。」', if: { met: 'safira', notSeen: 'group:act4' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有人一個人跳著舞，等誰接上拍子。莎菲拉，我會去接。」', if: { notMet: 'safira' } },
-      { who: 'scarlet', mood: 'vow', text: '「自請去當燈芯，被駁回了兩次。命令收到：不替誰去，站在旁邊。這一段，交給燈。」', if: { met: 'scarlet', seen: 'group:act4' } },
-      { who: 'scarlet', mood: 'vow', text: '「門閂查三次，第一班守夜由我排。我排過的夜，一次也沒出事。這一段，交給燈。」', if: { met: 'scarlet', notSeen: 'group:act4' } },
+      { who: 'scarlet', mood: 'vow', text: '「自請去當燈芯，被駁回了兩次。命令收到：不替誰去，站在旁邊。」', if: { met: 'scarlet', seen: 'group:act4' } },
+      // Cold read: the fallback's eight were one template; Scarlet, who reports everything, says nothing here.
+      { who: 'narrator', text: '絲嘉蕾沒有開口。她把盾靠上燈座，站到洛恩身側，行了一個騎士禮。', if: { met: 'scarlet', notSeen: 'group:act4' } },
       { who: 'hero', mood: 'distant', text: '「燈裡有個騎士還守著城門，不肯轉身。絲嘉蕾，劍可以放下了。」', if: { notMet: 'scarlet' } },
       { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，祭歌的後半我改了。我們那時候沒人敢改，我改成：提燈的人，會回來。那一夜，交給燈。」', if: { met: 'chizuru', seen: 'group:act4' } },
       { who: 'chizuru', mood: 'solemn', text: '「洛恩大人，我每晚在紙上添一道。冰裡的日子數不清，跟大家過的，一道一道都在。這一段，交給燈。」', if: { met: 'chizuru', notSeen: 'group:act4' } },
@@ -1370,18 +1372,21 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
       // The valve and its rule (Bobby's fifth piece, design fix four) close the eight in every reading. Her whole chain keeps its
       // own line: her family made his sword (I-46, foreshadowing 14), a fact only her pieces give her, so it is the one place
       // the finale still reads a chain. Before it: seen, the bell she did not take apart; missed, the wicks she trims each night.
-      { who: 'bobby', mood: 'focused', text: '「洛恩哥，做這把劍的，是我家的人。閥裝好了，這次真的一下下。只是第一次點火，要一段不回來的光。」', if: { met: 'bobby', full: 'bobby' } },
-      { who: 'bobby', mood: 'focused', text: '「那、那天差點拆了凜姊的鐘。這道閥倒是拆了好幾十次──好，裝上了，真的一下下！第一次點火，要一段不回來的光。」', if: { met: 'bobby', notFull: 'bobby', seen: 'group:act3' } },
-      { who: 'bobby', mood: 'focused', text: '「旅館的蠟燭，我都替它們剪芯，剪平了，火才不跳。閥也一樣──好，裝上了！第一次點火，要一段不回來的光。」', if: { met: 'bobby', notFull: 'bobby', notSeen: 'group:act3' } },
+      { who: 'bobby', mood: 'focused', text: '「洛恩哥，做這把劍的，是我家的人。閥裝好了，這次真的一下下。只是第一次點火，要一段回不來的光。」', if: { met: 'bobby', full: 'bobby' } },
+      { who: 'bobby', mood: 'focused', text: '「那、那天差點拆了凜姊的鐘。這個閥我倒是拆拆裝裝幾十次了──好，裝上了！只是第一次點火，要一段回不來的光。」', if: { met: 'bobby', notFull: 'bobby', seen: 'group:act3' } },
+      { who: 'bobby', mood: 'focused', text: '「旅館的蠟燭，我都替它們剪芯，剪平了，火才不跳。閥也一樣──好，裝上了！只是第一次點火，要一段回不來的光。」', if: { met: 'bobby', notFull: 'bobby', notSeen: 'group:act3' } },
       { who: 'hero', mood: 'distant', text: '「燈座上刻著：閥初次點火，須一段不歸之光。波比，造燈那一族的孩子，這道閥我替妳補上。」', if: { notMet: 'bobby' } },
       // The cost (ruling d): the ten pieces he found, given as the light that does not come back; 「要回來」 kept (mem:hero:10).
       { who: 'hero', mood: 'resolve', text: '「那就用我找回來的那十段記憶。我答應過那個人要回來……我回來了。」' },
       // Final review: whose memories the lamp kept. It took his ten as the light that does not come back, and so none of theirs.
-      N('光從劍上流進燈裡。那些他一張也不肯忘的臉，一張一張淡了。燈收下他的十段，大家交出去的，一段也沒拿走。'),
+      N('光從劍上流進燈裡。那些他一張也不肯忘的臉，一張一張淡了。'),
+      // Cold read (story L Task 14): the gifts were not wasted. The lamp takes the keeper's ten; what they held out was this
+      // round's days, and those were never the lamp's: they stay his (his opening line meant to burn them).
+      N('燈只收下他的十段。大家遞出去的，它一段也沒收──那些夜晚，本來就是要留給他的。'),
       N('凜的手疊上他握著燈鑰的手。燈穩了下來，碎片的光回到每一個弄丟它的人身上。暮霧散了。天亮時，沒有一個人鬆開手。'),
       // Ruling a: she hands the flattened bell over without a word; the keeper says the truth himself (story polish ruling 7).
-      N('回到鎮上，凜把敲平的鐘交給鐘守，一句話也沒說。他敲響結社的鐘，最後一聲。'),
-      { who: 'bellkeeper', text: '「吾等殺的一直是守燈人。每殺一次，燈就晚一次點亮。……是我殺的。靜鐘會，散了。」' },
+      N('回到鎮上，凜把那枚再也敲不響的小銅鐘還給鐘守，一句話也沒說。他敲響結社的鐘，最後一聲。'),
+      { who: 'bellkeeper', text: '「我們一直在殺的，是守燈人。每殺一個，燈就晚一輪亮。市集裡那一刀，也是我。靜鐘會，到此為止。」' },
       // Coordinator ruling (T14): Rin closes the game, echoing Lorne's line from her reveal; 「大家」 makes it everyone's.
       { who: 'rin', mood: 'smile', text: '「洛恩，明天……大家也一起回來吧。」' },
     ],
