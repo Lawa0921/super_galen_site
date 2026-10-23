@@ -4824,7 +4824,7 @@ describe('story L: the dawn before departure (controller ruling 2026-10-24)', ()
     expect(Game.boot(calm(), storage).departScenes()).toEqual([]);
   });
 
-  it('the eve takes priority on its own departure; the dawn goes before the lone morning, and a confession waiting does not stop it', () => {
+  it('the eve takes priority on its own departure; the dawn goes before the lone morning', () => {
     const g = inTown(eight);
     trip(g);
     for (const id of [...g.arrival, ...g.night]) g.sceneDone(id, 'played');
@@ -4836,8 +4836,23 @@ describe('story L: the dawn before departure (controller ruling 2026-10-24)', ()
     g.state.party.roster.hero.memories = 9;
     g.state.story.queue = ['hero-alone'];
     expect(g.departScenes()).toEqual([dawn, 'hero-alone']);
-    g.state.story.queue = ['rin-confess'];
+  });
+
+  it('a reveal or confession waiting blocks the dawn: the piece stays untold and new (controller ruling 2026-10-24)', () => {
+    const g = inTown(eight);
+    trip(g);
+    for (const id of [...g.arrival, ...g.night]) g.sceneDone(id, 'played');
+    const dawn = g.state.story.dawn!;
     expect(g.departScenes()).toEqual([dawn]);
+    for (const alone of ['rin-reveal', 'rin-confess'] as SceneId[]) {
+      g.state.story.queue = [alone];
+      expect(g.departScenes(), alone).toEqual([]);
+      expect(g.sceneDone(dawn, 'played'), alone).toBe(false);   // not due either
+    }
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.state.story.untold).toContain(dawn);           // untold: the handbook still marks it 新
+    expect(g.state.story.seen).not.toContain(dawn);
+    expect(g.state.story.dawn).toBeUndefined();
   });
 
   it('the dawn pick goes once told some other way, once the backlog is under four, and on departing', () => {

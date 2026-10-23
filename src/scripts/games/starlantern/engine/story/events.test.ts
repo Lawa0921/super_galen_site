@@ -959,8 +959,8 @@ describe('town banter', () => {
    * (`arrivalScenes`, with the three group scenes registered), the night (`planNight`); the owed pieces first, then the day,
    * the group scene, the night, each through `sceneDone`, and the dawn's pick is kept (`dawnMemory`). Each departure plays
    * as `Game.departScenes` would offer: the dawn's one memory (controller ruling 2026-10-24; not on the eve's own
-   * departure), the night before the descent and its memories (`eveMemories`), then the lone morning. After the last return the finale
-   * plays as `Game.finalePieces` does (the pieces of the last dive held untold, the eve as its fallback, any act owed,
+   * departure, nor while a reveal or confession waits), the night before the descent and its memories (`eveMemories`),
+   * then the lone morning. After the last return the finale plays as `Game.finalePieces` does (the pieces of the last dive held untold, the eve as its fallback, any act owed,
    * Lorne's pieces and his tenth), then `afterFinale` returns, numbered 100 + k in `played`.
    * Returns the state after it all, each payoff's opening and playing depth, every return whose two banters shared a pair,
    * every night's count, every owed piece played late, where each act and group scene played, and the memories left
@@ -1025,7 +1025,7 @@ describe('town banter', () => {
       if (ALONE.includes(id) && untoldOf('rin').length) late.push(`${at}: ${id} before ${untoldOf('rin').join(' ')}`);
       if (id === 'hero-alone' && !s.story.seen.includes('mem:hero:9')) late.push(`${at}: hero-alone before mem:hero:9`);
       if (id.startsWith('banter:') && played[id] === undefined && at !== 'finale') played[id] = at;
-      if ((ACT_NODES as SceneId[]).includes(id) || id.startsWith('group:')) where[id] = at;
+      if ((ACT_NODES as SceneId[]).includes(id) || id.startsWith('group:') || id === 'hero-alone') where[id] = at;
       s = sceneDone(s, id, 'played', REACT);
     };
     /** A return to town, as `Game.arrive` and the town play it. */
@@ -1048,12 +1048,13 @@ describe('town banter', () => {
       nights.push({ at: String(at), owed: plan.before, night: plan.night, beats: Math.max(0, plan.night.length - 1), alone: day.some((id) => ALONE.includes(id)) });
       for (const id of [...plan.before, ...daytime, ...group, ...plan.night]) play(id, at);
     };
-    /** A departure, as `Game.departScenes` offers: the eve and its memories, then the lone morning. */
+    /** A departure, as `Game.departScenes` offers: the dawn, the eve and its memories, then the lone morning. */
     const depart = (at: number) => {
       const alone = ALONE.some((id) => s.story.queue.includes(id));
       const untold = s.story.untold ?? [];
       const dawn = s.story.dawn;
-      if (!(!alone && s.story.queue.includes('finale-eve')) && dawn && untold.includes(dawn) && untold.length >= DAWN_BACKLOG) {
+      // 【控制者裁定 2026-10-24】 a reveal or confession waiting blocks the dawn; so does the eve's own departure
+      if (!alone && !s.story.queue.includes('finale-eve') && dawn && untold.includes(dawn) && untold.length >= DAWN_BACKLOG) {
         trace.push(`${at} departs: dawn ${dawn}`);
         dawns.push(dawn);
         dawnsAt[at] = (dawnsAt[at] ?? 0) + 1;
@@ -1127,9 +1128,11 @@ describe('town banter', () => {
     expect(five.played['banter:bobby-chizuru:2']).toBe(105);
     // Story L Task 6 (controller ruling 2026-10-24): the payoffs wait for the pieces told at night, so the count before the
     // finale is a measured pin (it was 4 before story L); the guarantee is the one above, every payoff by the third return
-    // after the finale. Measured: Selene's before it (depth 29), Scarlet's on the third return after it.
-    expect(before.length, report).toBe(1);
-    expect([played['banter:rin-selene:2'], played['banter:rin-scarlet:3']], report).toEqual([29, 103]);
+    // after the finale. Measured: Selene's before it (depth 29), Scarlet's on the third return after it. Controller
+    // ruling 2026-10-24 (a waiting reveal or confession blocks the dawn): Chizuru and Noel's payoff now lands before the
+    // finale too (depth 29), so two do.
+    expect(before.length, report).toBe(2);
+    expect([played['banter:rin-selene:2'], played['banter:chizuru-noel:2'], played['banter:rin-scarlet:3']], report).toEqual([29, 29, 103]);
     expect(samePair).toEqual([]);
   });
 

@@ -252,11 +252,13 @@ export class Game {
     const story = this.state.story;
     if (this.phase !== 'town') return [];
     const ready = (id: SceneId): boolean => id !== 'hero-alone' || (story.seen.includes('mem:hero:9') && story.seen.includes('bellkeeper-arrives'));
-    const scenes = ALONE.some((id) => story.queue.includes(id)) ? [] : DEPARTURE_SCENES.filter((id) => story.queue.includes(id) && ready(id));
+    const alone = ALONE.some((id) => story.queue.includes(id));
+    const scenes = alone ? [] : DEPARTURE_SCENES.filter((id) => story.queue.includes(id) && ready(id));
     // 【控制者裁定 2026-10-24】 The dawn before departure: the return's pick, while still untold and the backlog is at
-    // least DAWN_BACKLOG; the eve takes its own departure. It comes before the lone morning.
+    // least DAWN_BACKLOG; the eve takes its own departure. It comes before the lone morning. A reveal or confession still
+    // waiting (`ALONE`) blocks it: that morning is Lorne's and Rin's silence; the piece stays untold, still 新.
     const untold = story.untold ?? [];
-    const dawn = story.dawn && untold.includes(story.dawn) && untold.length >= DAWN_BACKLOG && !scenes.includes('finale-eve') ? story.dawn : null;
+    const dawn = !alone && story.dawn &&untold.includes(story.dawn) && untold.length >= DAWN_BACKLOG && !scenes.includes('finale-eve') ? story.dawn : null;
     return dawn ? [dawn, ...scenes] : scenes;
   }
 
