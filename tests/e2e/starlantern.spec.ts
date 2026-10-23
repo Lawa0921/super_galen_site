@@ -19,7 +19,7 @@ import { version8Save } from '../../src/scripts/games/starlantern/engine/testing
 import { defaultTalents, defaultTree } from '../../src/scripts/games/starlantern/engine/progression';
 import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/engine/builds';
 import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
-import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longestGear, snap, stageBox, stageScale, startSweepGame, sweep } from './starlantern-legibility';
+import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longestGear, snap, stageBox, stageScale, startSweepGame, sweep, writeReviewIndex } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
 
@@ -4657,18 +4657,27 @@ test.describe('starlantern', () => {
     });
   });
 
-  test('screen sweep (legibility Task 0) @sweep', async ({ page }) => {
-    // Every main screen at the three sizes, one picture each when SL_SHOTS is set. Task 0 only takes the pictures.
-    test.setTimeout(300_000);
+  test('every main screen reads at 12px and 24px at 1280x720, 844x390 and a phone (legibility Task 7) @sweep @dpr', async ({ page }, info) => {
+    // Every main screen at the three sizes (the phone held upright, turned), in each project's device pixel ratio: each
+    // one reads clearly (legibility() finds nothing). With SL_SHOTS, one picture each into <SL_SHOTS>/<d1|d1.25|d1.5>,
+    // and (the 100% project) the review page beside it, before and after side by side.
+    test.setTimeout(900_000);
     const shots = process.env.SL_SHOTS;
-    if (shots) mkdirSync(shots, { recursive: true });
+    const ratio = ({ 'chromium-dpr125': 'd1.25', 'chromium-dpr150': 'd1.5' } as Record<string, string>)[info.project.name] ?? 'd1';
+    const dir = shots ? `${shots}/${ratio}` : null;
+    if (dir) mkdirSync(dir, { recursive: true });
+    const sizes = [{ width: 1280, height: 720 }, { width: 844, height: 390 }, { width: 390, height: 844 }];
     const seen: string[] = [];
-    const errors = await sweep(page, [{ width: 1280, height: 720 }, { width: 844, height: 390 }, { width: 390, height: 844 }], async (name, size) => {
+    const bad: string[] = [];
+    const errors = await sweep(page, sizes, async (name, size) => {
       const file = `${name}-${size.width}x${size.height}`;
       seen.push(file);
-      if (shots) { await page.waitForTimeout(400); await snap(page, `${shots}/${file}.png`); }   // windows fade in
+      bad.push(...(await legibility(page)).map((f) => `${file}: ${f}`));
+      if (dir) { await page.waitForTimeout(400); await snap(page, `${dir}/${file}.png`); }   // windows fade in
     });
+    if (shots && ratio === 'd1') writeReviewIndex(shots, SWEEP.map((s) => s.name), sizes);
     expect(seen).toHaveLength(SWEEP.length * 3);
+    expect(bad).toEqual([]);
     expect(errors).toEqual([]);
   });
 });

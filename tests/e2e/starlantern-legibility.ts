@@ -1,5 +1,6 @@
 import { expect, type CDPSession, type Locator, type Page } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
+import { dirname, relative, sep } from 'node:path';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
 import { SPECIALS, STARLIT_RARITIES } from '../../src/scripts/games/starlantern/data/gear';
 import { ENHANCE_MAX } from '../../src/scripts/games/starlantern/data/forge';
@@ -511,9 +512,6 @@ export const stageBox = async (page: Page, target: Locator): Promise<Rect> => {
   return { x: (r.y - scr.y) / s, y: (scr.x + scr.width - (r.x + r.width)) / s, width: r.height / s, height: r.width / s };
 };
 
-/** Scenes (their root's second class) whose text Tasks 3–6 have yet to bring to 12/24px: the text checks skip them. */
-export const PENDING_SCENES: string[] = [];
-
 /** The windows ruling 8 centres: their top-left must sit on a whole stage pixel. */
 const CENTRED = ['.slx-confirm', '.slx-layer.slx-confirm', '.slx-result', '.slx-settings', '.slx-keys', '.slx-clear-card', '.slx-title-menu', '.slx-depths', '.slx-event'];
 
@@ -522,9 +520,9 @@ type DomNode = { nodeId: number; nodeType: number; nodeName: string; nodeValue: 
 /**
  * What keeps the screen from reading clearly, as a list of problems (empty: it reads clearly). Nothing to check before
  * the game is ready. The scale is the one `expectedMode` gives; the stage's corner sits on a whole device pixel; the page
- * scrolls no further than the stage overflows; in a scene not pending, every text is 12 or 24px Cubic 11 at weight 400
- * with an even leading of 14px or more, and the centred windows sit on whole stage pixels; and (chromium, the font not blocked) every
- * text is drawn with Cubic 11 itself, as the browser reports it.
+ * scrolls no further than the stage overflows; every text is 12 or 24px Cubic 11 at weight 400 with an even leading of
+ * 14px or more, and the centred windows sit on whole stage pixels (every scene since Task 7); and (chromium, the font
+ * not blocked) every text is drawn with Cubic 11 itself, as the browser reports it.
  */
 export async function legibility(page: Page, opts: { fontBlocked?: boolean } = {}): Promise<string[]> {
   if (page.isClosed()) return [];
@@ -535,12 +533,11 @@ export async function legibility(page: Page, opts: { fontBlocked?: boolean } = {
     const scr = document.getElementById('sl-screen')!;
     const r = scr.getBoundingClientRect();
     const root = document.documentElement;
-    const scene = document.querySelector('#sl-ui > .slx-scene');
     return {
       vw: innerWidth, vh: innerHeight, d: devicePixelRatio, touch: matchMedia('(pointer: coarse)').matches,
       x: r.x + scrollX, y: r.y + scrollY, right: r.right + scrollX, bottom: r.bottom + scrollY,
       sw: root.scrollWidth, sh: root.scrollHeight, cw: root.clientWidth, ch: root.clientHeight,
-      moving: scr.getAnimations().length > 0, scene: scene?.classList[1] ?? '',
+      moving: scr.getAnimations().length > 0,
     };
   });
   const want = expectedMode(env.vw, env.vh, env.d, env.touch);
@@ -552,63 +549,61 @@ export async function legibility(page: Page, opts: { fontBlocked?: boolean } = {
   if (env.sw - env.cw > overX) out.push(`the page scrolls ${env.sw - env.cw}px across, the stage overflows ${overX}px`);
   if (env.sh - env.ch > overY) out.push(`the page scrolls ${env.sh - env.ch}px down, the stage overflows ${overY}px`);
 
-  if (!PENDING_SCENES.includes(env.scene)) {
-    // Let the finite animations (a window opening, a fade) end first, for at most 500ms.
-    await page.evaluate(() => Promise.race([
-      Promise.all(document.getAnimations().filter((a) => Number.isFinite(Number(a.effect?.getComputedTiming().endTime ?? Infinity))).map((a) => a.finished.catch(() => undefined))),
-      new Promise((r) => setTimeout(r, 500)),
-    ]));
-    out.push(...await page.evaluate(() => {
-      const bad: string[] = [];
-      const check = (where: string, cs: CSSStyleDeclaration) => {
-        const size = parseFloat(cs.fontSize), lh = cs.lineHeight === 'normal' ? NaN : parseFloat(cs.lineHeight);
-        const family = cs.fontFamily.split(',')[0].trim().replace(/^['"]|['"]$/g, '');
-        if (cs.fontSize !== '12px' && cs.fontSize !== '24px') bad.push(`${where}: font-size ${cs.fontSize}`);
-        if (cs.fontWeight !== '400') bad.push(`${where}: font-weight ${cs.fontWeight}`);
-        if (family !== 'Cubic 11') bad.push(`${where}: font ${family}`);
-        // An even leading of 14px or more at 12px (Cubic 11 draws 11px glyphs in a 12px cell: 12px lines touch), 24 or more at 24px.
-        if (!(lh >= Math.max(14, size) && (lh - size) % 2 === 0)) bad.push(`${where}: line-height ${cs.lineHeight} at ${cs.fontSize}`);
-      };
-      const name = (e: Element) => `${e.tagName.toLowerCase()}.${[...e.classList].join('.')} "${(e.textContent ?? '').trim().slice(0, 20)}"`;
-      const screen = document.getElementById('sl-screen')!;
-      const walker = document.createTreeWalker(screen, NodeFilter.SHOW_TEXT);
-      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-        const e = n.parentElement!;
-        if (!n.textContent?.trim() || !e.checkVisibility({ visibilityProperty: true })) continue;
-        check(name(e), getComputedStyle(e));
+  // Let the finite animations (a window opening, a fade) end first, for at most 500ms.
+  await page.evaluate(() => Promise.race([
+    Promise.all(document.getAnimations().filter((a) => Number.isFinite(Number(a.effect?.getComputedTiming().endTime ?? Infinity))).map((a) => a.finished.catch(() => undefined))),
+    new Promise((r) => setTimeout(r, 500)),
+  ]));
+  out.push(...await page.evaluate(() => {
+    const bad: string[] = [];
+    const check = (where: string, cs: CSSStyleDeclaration) => {
+      const size = parseFloat(cs.fontSize), lh = cs.lineHeight === 'normal' ? NaN : parseFloat(cs.lineHeight);
+      const family = cs.fontFamily.split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+      if (cs.fontSize !== '12px' && cs.fontSize !== '24px') bad.push(`${where}: font-size ${cs.fontSize}`);
+      if (cs.fontWeight !== '400') bad.push(`${where}: font-weight ${cs.fontWeight}`);
+      if (family !== 'Cubic 11') bad.push(`${where}: font ${family}`);
+      // An even leading of 14px or more at 12px (Cubic 11 draws 11px glyphs in a 12px cell: 12px lines touch), 24 or more at 24px.
+      if (!(lh >= Math.max(14, size) && (lh - size) % 2 === 0)) bad.push(`${where}: line-height ${cs.lineHeight} at ${cs.fontSize}`);
+    };
+    const name = (e: Element) => `${e.tagName.toLowerCase()}.${[...e.classList].join('.')} "${(e.textContent ?? '').trim().slice(0, 20)}"`;
+    const screen = document.getElementById('sl-screen')!;
+    const walker = document.createTreeWalker(screen, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const e = n.parentElement!;
+      if (!n.textContent?.trim() || !e.checkVisibility({ visibilityProperty: true })) continue;
+      check(name(e), getComputedStyle(e));
+    }
+    for (const e of screen.querySelectorAll('*')) {
+      if (!e.checkVisibility({ visibilityProperty: true })) continue;
+      for (const pseudo of ['::before', '::after']) {
+        const cs = getComputedStyle(e, pseudo);
+        if (!/^["'].*\S.*["']$/.test(cs.content)) continue;   // text content only (not none, '' or an image)
+        check(`${name(e)}${pseudo}`, cs);
       }
-      for (const e of screen.querySelectorAll('*')) {
-        if (!e.checkVisibility({ visibilityProperty: true })) continue;
-        for (const pseudo of ['::before', '::after']) {
-          const cs = getComputedStyle(e, pseudo);
-          if (!/^["'].*\S.*["']$/.test(cs.content)) continue;   // text content only (not none, '' or an image)
-          check(`${name(e)}${pseudo}`, cs);
-        }
+    }
+    return bad;
+  }));
+  // The Pixi layer's text (the labyrinth's markers, the battle's names, intents, ailments and numbers): the pixel font too.
+  out.push(...await page.evaluate(() => {
+    type Node = { children?: Node[]; text?: unknown; style?: { fontFamily?: string | string[]; fontSize?: number; fontWeight?: string }; destroyed?: boolean };
+    const stage = (window as unknown as { __starlanternDebug?: { stage?: { mapView?: { root: Node }; battleView?: { root: Node } } } }).__starlanternDebug?.stage;
+    const bad: string[] = [];
+    const walk = (n: Node) => {
+      if (n.destroyed) return;
+      if (typeof n.text === 'string' && n.style) {
+        // Pixi may hand the family list back as one CSS string, its names quoted.
+        const fam = (Array.isArray(n.style.fontFamily) ? n.style.fontFamily[0] : String(n.style.fontFamily ?? '').split(',')[0]).trim().replace(/^['"]|['"]$/g, '');
+        if (fam !== 'Cubic 11' || ![12, 24].includes(n.style.fontSize ?? 0) || !['normal', '400'].includes(String(n.style.fontWeight))) bad.push(`pixi "${n.text}": ${fam} ${n.style.fontSize}px ${n.style.fontWeight}`);
       }
-      return bad;
-    }));
-    // The Pixi layer's text (the labyrinth's markers, the battle's names, intents, ailments and numbers): the pixel font too.
-    out.push(...await page.evaluate(() => {
-      type Node = { children?: Node[]; text?: unknown; style?: { fontFamily?: string | string[]; fontSize?: number; fontWeight?: string }; destroyed?: boolean };
-      const stage = (window as unknown as { __starlanternDebug?: { stage?: { mapView?: { root: Node }; battleView?: { root: Node } } } }).__starlanternDebug?.stage;
-      const bad: string[] = [];
-      const walk = (n: Node) => {
-        if (n.destroyed) return;
-        if (typeof n.text === 'string' && n.style) {
-          // Pixi may hand the family list back as one CSS string, its names quoted.
-          const fam = (Array.isArray(n.style.fontFamily) ? n.style.fontFamily[0] : String(n.style.fontFamily ?? '').split(',')[0]).trim().replace(/^['"]|['"]$/g, '');
-          if (fam !== 'Cubic 11' || ![12, 24].includes(n.style.fontSize ?? 0) || !['normal', '400'].includes(String(n.style.fontWeight))) bad.push(`pixi "${n.text}": ${fam} ${n.style.fontSize}px ${n.style.fontWeight}`);
-        }
-        for (const c of n.children ?? []) walk(c);
-      };
-      for (const r of [stage?.mapView?.root, stage?.battleView?.root]) if (r) walk(r);
-      return bad;
-    }));
-    for (const sel of CENTRED) {
-      for (const win of await page.locator(`#sl-screen ${sel}:visible`).all()) {
-        const b = await stageBox(page, win);
-        if (!whole(b.x) || !whole(b.y)) out.push(`${sel} at stage ${b.x},${b.y}: not on a whole stage pixel`);
-      }
+      for (const c of n.children ?? []) walk(c);
+    };
+    for (const r of [stage?.mapView?.root, stage?.battleView?.root]) if (r) walk(r);
+    return bad;
+  }));
+  for (const sel of CENTRED) {
+    for (const win of await page.locator(`#sl-screen ${sel}:visible`).all()) {
+      const b = await stageBox(page, win);
+      if (!whole(b.x) || !whole(b.y)) out.push(`${sel} at stage ${b.x},${b.y}: not on a whole stage pixel`);
     }
   }
 
@@ -688,4 +683,54 @@ export async function snap(page: Page, path: string): Promise<void> {
   if (!cdp) { await page.screenshot({ path }); return; }
   const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' });
   writeFileSync(path, Buffer.from(data, 'base64'));
+}
+
+// ── Task 7: the review page ─────────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Writes <review>/index.html beside <after> (SL_SHOTS): one row per screen and size, its picture before the legibility
+ * work (<review>/before) and after it at 100%, 125% and 150% (<after>/d1, d1.25, d1.5), every picture at its natural size
+ * (no width or height, pixelated), each row scrolling sideways on its own.
+ */
+export function writeReviewIndex(after: string, names: string[], sizes: SweepSize[]): void {
+  const review = dirname(after);
+  const rel = relative(review, after).split(sep).join('/');
+  const cols: [string, string][] = [['改之前', 'before'], ['改之後 d1', `${rel}/d1`], ['d1.25', `${rel}/d1.25`], ['d1.5', `${rel}/d1.5`]];
+  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const rows = names.flatMap((n) => sizes.map((s) => {
+    const file = `${n}-${s.width}x${s.height}.png`;
+    const cells = cols.map(([head, folder]) => `<figure><figcaption>${esc(head)}</figcaption><img src="${folder}/${file}" alt="${esc(`${n} ${s.width}x${s.height} ${head}`)}"></figure>`).join('');
+    return `<section><h2>${esc(n)} ${s.width}×${s.height}</h2><div class="row">${cells}</div></section>`;
+  }));
+  const html = `<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>星燈迷宮 易讀性 review</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; padding: 16px; background: #10121c; color: #e8e4d8; font: 14px/1.6 system-ui, sans-serif; }
+  header { margin-bottom: 24px; }
+  a { color: #e8c46a; }
+  section { margin: 0 0 32px; }
+  h2 { margin: 0 0 8px; font-size: 16px; }
+  .row { display: flex; gap: 16px; align-items: flex-start; overflow-x: auto; padding-bottom: 8px; }
+  figure { margin: 0; flex: none; }
+  figcaption { margin-bottom: 4px; color: #a9a39a; }
+  img { display: block; image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<header>
+<h1>星燈迷宮 易讀性（12／24px＋整數倍縮放）</h1>
+<p>遊戲：<a href="http://localhost:4321/games/starlantern/">http://localhost:4321/games/starlantern/</a></p>
+<p>每列一個畫面：改之前（before/）、改之後 d1、d1.25、d1.5，圖片都是原尺寸（像素不縮放）。390×844 是觸控手機直拿，舞台側置。</p>
+<p>手機直拿側置時，觸控捲動的方向 e2e 驗不到：請在 iPhone 實機（iOS Safari）確認。</p>
+</header>
+${rows.join('\n')}
+</body>
+</html>
+`;
+  writeFileSync(`${review}/index.html`, html);
 }

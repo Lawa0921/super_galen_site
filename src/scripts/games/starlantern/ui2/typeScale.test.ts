@@ -101,86 +101,6 @@ export function groupOf(selector: string): Group {
   return selector.split(',').map((p) => part(p.trim())).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b))[0];
 }
 
-/** Rules (as the compiled CSS writes their selector) whose screens Tasks 4–6 bring to 12/24px; each list only shrinks. */
-export const PENDING: Record<'T4' | 'T5' | 'T6', string[]> = {
-  T4: [],
-  T5: [],
-  T6: [],
-};
-
-/**
- * PENDING as it stood when Task 3 froze it (T4 13, T5 26, T6 21): PENDING may only lose selectors. Growing a list means
- * editing this baseline too, in plain sight (T3 review).
- */
-const BASELINE: Readonly<Record<'T4' | 'T5' | 'T6', readonly string[]>> = {
-  T4: [
-    '.slx-pm-pop-tp',
-    '.slx-acut-label',
-    '.slx-ail, .slx-mech',
-    '.slx-badge',
-    '.slx-pm-cue',
-    '.slx-pm-miss',
-    '.slx-pm-num',
-    '.slx-pm-pop',
-    '.slx-pm-pop-big',
-    '.slx-pm-pop-crit',
-    '.slx-pm-row',
-    '.slx-pm-tp',
-    '.slx-result h3',
-  ],
-  T5: [
-    '.slx-field-tag',
-    '.slx-gear-bonus',
-    '.slx-gear-power',
-    '.slx-hb-detail h4',
-    '.slx-skill-power',
-    '.slx-skill-rune',
-    '.slx-stat-table td',
-    '.slx-stat-table thead th',
-    '.slx-status-name b, .slx-equip-name b',
-    '.slx-status-title',
-    '.slx-tab-skills .slx-skill-name-long',
-    '.slx-talent-memkey',
-    '.slx-talent-rank',
-    '.slx-talent-state',
-    '.slx-talent-sub',
-    '.slx-talent-tier',
-    '.slx-talent-wide .slx-talent-head',
-    '.slx-talent-wide .slx-talent-sub',
-    '.slx-tree-node .slx-skill-name-long',
-    '.slx-tree-node-foot',
-    '.slx-tree-pair-tag',
-    '.slx-tree-preview',
-    '.slx-tree-warn',
-    '.slx-tree-wide .slx-tree-branch-name',
-    '.slx-tree-wide .slx-tree-node .slx-skill-head',
-    '.slx-tree-wide .slx-tree-node-foot',
-  ],
-  T6: [
-    '.slx-bag-cell, .slx-doll-slot',
-    '.slx-bd-card-name b',
-    '.slx-bd-title',
-    '.slx-enh',
-    '.slx-equip-notice',
-    '.slx-equip-stats',
-    '.slx-equip-title',
-    '.slx-slot-tag',
-    '.slx-ws-adds',
-    '.slx-ws-foot',
-    '.slx-ws-giver',
-    '.slx-ws-note, .slx-ws-owned',
-    '.slx-ws-reserve',
-    '.slx-ws-rune-text',
-    '.slx-ws-sub',
-    '.slx-ws-swapout',
-    '.slx-ws-table',
-    '.slx-ws-table thead th',
-    '.slx-ws-tags',
-    '.slx-ws-title',
-    '.slx-ws-warn',
-  ],
-};
-
 /** Every rule of the compiled CSS, innermost blocks only (keyframe steps included), as [selector, body]. */
 const flat = (text: string): [string, string][] => [...text.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => [m[1].trim(), m[2]]);
 
@@ -220,21 +140,8 @@ describe('the type scale (legibility Task 3)', () => {
   });
 
   it('every declaration keeps the 12/24 type scale', () => {
-    const pending = new Set(Object.values(PENDING).flat());
-    const bad = flat(css).filter(([sel]) => !pending.has(sel)).flatMap(([sel, body]) => faults(body).map((f) => `${groupOf(sel)} ${sel} { ${f} }`));
+    // Every rule, no list of later tasks left (legibility Task 7).
+    const bad = flat(css).flatMap(([sel, body]) => faults(body).map((f) => `${groupOf(sel)} ${sel} { ${f} }`));
     expect(bad).toEqual([]);
-  });
-
-  it('the pending lists only shrink', () => {
-    const all = flat(css);
-    for (const [g, list] of Object.entries(PENDING)) for (const sel of list) expect(BASELINE[g as keyof typeof BASELINE], `${sel} is new on PENDING.${g}`).toContain(sel);
-    for (const [g, list] of Object.entries(PENDING)) {
-      for (const sel of list) {
-        const found = all.filter(([s]) => s === sel);
-        expect(found.length, `${sel} is still in the CSS`).toBeGreaterThan(0);
-        expect(found.some(([, body]) => faults(body).length > 0), `${sel} is fixed: take it off PENDING.${g}`).toBe(true);
-        expect(groupOf(sel), sel).toBe(g);
-      }
-    }
   });
 });
