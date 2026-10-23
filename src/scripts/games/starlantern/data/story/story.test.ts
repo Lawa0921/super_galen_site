@@ -602,6 +602,8 @@ describe('the script gates', () => {
       // story L Tasks 9-11: a group scene waits for its cast (`GROUP_GATE`), so its one reading needs no `if.met`
       const [top, id] = key.split('.');
       if (top === 'scenes' && sceneKind(id as SceneId) === 'group' && (GROUP_GATE[id as GroupScene].met ?? []).includes(who as CharacterId)) continue;
+      // story L Task 13: so does a chat that waits for her (`CHAT_GATE`, `chat:chizuru:2` and Bobby)
+      if (top === 'scenes' && (CHAT_GATE[id as SceneId]?.met ?? []).includes(who as CharacterId)) continue;
       const c = line!.if;
       expect(c?.met === who || c?.full === who, `${key}: ${who} speaks without being met`).toBe(true);
     }
@@ -1005,6 +1007,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
            // V2 fix 1: also with only her met, so the stand-in lines a guest leaves behind (`if.notMet`) are read too
            for (const met of [[...CHARACTER_IDS], ['hero', 'rin', c]] as CharacterId[][]) {
             const id = `chat:${c}:${n}` as SceneId;
+            if (!full && CHAT_GATE[id]?.full === c) continue;   // story L Task 12: it waits for her told whole (chat:sylvie:2)
             const played = linesWhen(STORY.scenes[id].lines, { met, full: full ? [c] : [], returned: [], oath });
             const said = played.filter((l) => l.who === c).map((l) => l.text).join('');
             const heard = played.filter((l) => l.who === c || l.who === 'narrator').map((l) => l.text).join('');
@@ -1016,8 +1019,10 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
         }
       }
     }
-    // the variants exist: before her last piece and after it, each chat still plays her
-    for (const [id, c] of [['chat:selene:2', 'selene'], ['chat:chizuru:2', 'chizuru'], ['chat:sylvie:2', 'sylvie'], ['chat:noel:2', 'noel'], ['chat:liz:2', 'liz'], ['chat:scarlet:2', 'scarlet']] as const) {
+    // the variants exist: before her last piece and after it, each chat still plays her. Story L Task 12: chat:sylvie:2 has
+    // left the list, it waits for her memories told whole instead and reads one way (voice.test.ts, Tasks 12 and 13)
+    expect(CHAT_GATE['chat:sylvie:2']).toEqual({ full: 'sylvie' });
+    for (const [id, c] of [['chat:selene:2', 'selene'], ['chat:chizuru:2', 'chizuru'], ['chat:noel:2', 'noel'], ['chat:liz:2', 'liz'], ['chat:scarlet:2', 'scarlet']] as const) {
       const lines = STORY.scenes[id].lines;
       expect(lines.some((l) => l.if?.notFull === c), id).toBe(true);
       expect(lines.some((l) => l.if?.full === c), id).toBe(true);
@@ -1048,7 +1053,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
 
   it('their chats wait where the lore ledger says', () => {
     expect(CHAT_GATE['chat:selene:2']).toEqual({ stage: 'act3' });
-    expect(CHAT_GATE['chat:chizuru:2']).toBeUndefined();
+    expect(CHAT_GATE['chat:chizuru:2']).toEqual({ met: ['bobby'] });   // story L Task 13: Bobby's bell, one reading fewer (I-196)
     expect(CHAT_GATE['chat:safira:2']).toBeUndefined();
   });
 });
@@ -1141,7 +1146,8 @@ describe('Task 9: Sylvie, Noel and Bobby', () => {
   });
 
   it('their chats are open as soon as she is met', () => {
-    for (const c of THREE) expect(CHAT_GATE[`chat:${c}:2`], c).toBeUndefined();
+    // story L Task 12: Sylvie's second chat waits for her memories told whole (I-196); Noel's and Bobby's do not wait
+    for (const c of THREE) expect(CHAT_GATE[`chat:${c}:2`], c).toEqual(c === 'sylvie' ? { full: 'sylvie' } : undefined);
   });
 });
 
@@ -1999,14 +2005,19 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
 
   it('the companions talk to each other: a guest in a chat is met first, and keeps her own reveal rules', () => {
     const guests = chatLines().filter(({ owner, line }) => (C as string[]).includes(line.who) && line.who !== owner);
-    expect(new Set(guests.map((g) => g.id)).size).toBeGreaterThanOrEqual(3);
+    // story L Task 12 (spec §10): chat:sylvie:1 became the bed and lost Bobby, so two chats have a guest now (Chizuru's and
+    // Noel's second); the banters and the group scenes carry the rest of their talk
+    expect(new Set(guests.map((g) => g.id)).size).toBeGreaterThanOrEqual(2);
     // a guest line never changes with her own memories, so it never names him in a form that changes (I-22, I-25, I-26)
+    // story L Task 13: or the chat itself waits for her (`CHAT_GATE`, chat:chizuru:2 and Bobby), and then needs no stand-in
+    const waitsFor = (id: SceneId, who: string): boolean => (CHAT_GATE[id]?.met ?? []).includes(who as CharacterId);
     for (const { id, line } of guests) {
-      expect(line.if?.met, `${id}: ${line.text}`).toBe(line.who);
+      expect(line.if?.met ?? (waitsFor(id, line.who) ? line.who : undefined), `${id}: ${line.text}`).toBe(line.who);
       expect(line.text, `${id}: ${line.who}`).not.toMatch(GUEST_NEVER[line.who]);
     }
     // and a guest line has a stand-in for the parties that have not met her, so no chat goes thin (V2 fix 1: each one played)
     for (const { id, owner, line } of guests) {
+      if (waitsFor(id, line.who)) continue;
       const lines = STORY.scenes[id].lines;
       const g = line.who as CharacterId;
       for (const full of [[], [owner]] as CharacterId[][]) {
@@ -2275,7 +2286,8 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
               const never = GUEST_NEVER[l.who];
               if (never && !full.includes(l.who as CharacterId) && never.test(l.text)) out.push(`${tag}: ${l.who} tells her own story: ${l.text}`);
               if (l.who === 'safira' && (/[喔啦嘛]/.test(l.text) || /囉/.test(l.text.replace(/跟上拍子囉/g, '')))) out.push(`${tag}: Safira in someone else's register: ${l.text}`);
-              if (l.who === 'sylvie' && /[呢吧啦喔囉嘛耶唷呀～]/.test(l.text)) out.push(`${tag}: Sylvie uses a particle: ${l.text}`);
+              // story L Task 12 (spec §7.1): 啦 and 欸 are hers now, within a fifth of her lines (`VOICE.sylvie`); the rest are not
+              if (l.who === 'sylvie' && /[呢吧喔囉嘛耶唷呀～]/.test(l.text)) out.push(`${tag}: Sylvie uses a particle: ${l.text}`);
             }
             // fix round 1: the chats' spoiler tables, for both of the two; the narration and Lorne's lines too (fix round 2),
             // except for her forms of address (they may name anyone)
@@ -2423,11 +2435,12 @@ describe('B1: town banter, two companions on their own (voice-pass sample §6)',
 
   it('the three sample banters (§6), in the V2 voices', () => {
     const lines = (id: SceneId) => STORY.scenes[id].lines;
-    // Safira drags Sylvie onto the square: her 唷 / 呀 / ～ and her nickname 「小希」; Sylvie answers in a few words
+    // Safira drags Sylvie onto the square: her 唷 / 呀 / ～ and her nickname 「小希」; Sylvie answers in a few words (story L
+    // Task 12: a hunter's few words, the exits and the wind, twenty characters at most)
     const ss = lines('banter:safira-sylvie:1');
     expect(ss.filter((l) => l.who === 'safira').map((l) => l.text).join('')).toContain('小希');
     expect(ss.filter((l) => l.who === 'safira').some((l) => /[唷呀～]/.test(l.text))).toBe(true);
-    for (const l of ss.filter((x) => x.who === 'sylvie')) expect([...l.text].length, l.text).toBeLessThanOrEqual(12);
+    for (const l of ss.filter((x) => x.who === 'sylvie')) expect([...l.text].length, l.text).toBeLessThanOrEqual(20);
     // Noel and Rin: the same four lines before and after her choice, with Rin's deadpan surrender
     const read = (oath: boolean) => linesWhen(lines('banter:noel-rin:1'), { met: [...CHARACTER_IDS], full: [], returned: [], oath });
     expect(read(false)).toEqual(read(true));

@@ -182,6 +182,18 @@ export const VOICE: Partial<Record<Speaker, { mark?: RegExp; maxShare?: number; 
   chizuru: { never: SENTENCE_PARTICLE('[喔啦唷呀耶嘛]') },
 };
 
+/**
+ * Story L spec §7.1 (Task 12): what a grumbling hunter talks about. A third of Sylvie's light lines at least name one of
+ * them: food, weather, the wind, tracks, prey.
+ */
+export const SYLVIE_WORLD = /吃|乾糧|湯|餓|雨|風|天氣|冷|熱|腳印|足跡|下風|獵物|兔|鹿|鳥/;
+/**
+ * Story L spec §7.2 (Task 13): Chizuru's old-style markers. Polite and whole, not classical: one a line at most, a quarter
+ * of her lines at most. 吾等, 謹以 and 奉於 read as translation and are never hers (`CHIZURU_NEVER`).
+ */
+export const CHIZURU_ARCHAIC = /此處|此物|莫非|甚好|謹以|何方|奉於/;
+export const CHIZURU_NEVER = /吾等|謹以|奉於/;
+
 // ---- Readings ----
 
 const BASE: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: false };

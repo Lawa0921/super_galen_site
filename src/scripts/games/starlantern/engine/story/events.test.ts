@@ -364,6 +364,8 @@ describe('story depth: when the scenes play (Task 3)', () => {
   it('a heavy arrival gives the chat slot to a light chat', () => {
     const s = meetAll(base(), ['sylvie']);
     s.story.seen.push('chat:hero:1', 'chat:hero:2', 'chat:hero:3', 'chat:hero:4', 'chat:rin:1', 'chat:sylvie:1', 'act2', 'act3');
+    // story L Task 12: her second chat waits for her memories told whole (CHAT_GATE)
+    s.story.seen.push(...[1, 2, 3, 4, 5].map((n) => `mem:sylvie:${n}` as SceneId));
     s.story.nodes = ['act2', 'act3', 'act4'];
     expect(nextChat(s)).toBe('chat:rin:2');   // tied at one each: Rin first, and her chat is heavy
     s.story.queue = ['act4'];

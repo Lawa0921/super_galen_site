@@ -265,17 +265,18 @@ describe('playScene', () => {
 
   it("linesOf reads a companion's full from the pieces told (story L Task 1)", () => {
     const { game } = mk();
-    const len = chainLength('sylvie');
-    const s = withTold(game.state, 'sylvie', len - 1);
-    s.party.roster.sylvie.memories = len;   // all held, one untold
-    const notFull = STORY.scenes['chat:sylvie:2'].lines.filter((l) => l.if?.notFull === 'sylvie').map((l) => l.text);
-    const full = STORY.scenes['chat:sylvie:2'].lines.filter((l) => l.if?.full === 'sylvie').map((l) => l.text);
+    // story L Task 12: chat:sylvie:2 now waits for her told whole and reads one way; Chizuru's bell still reads both ways
+    const len = chainLength('chizuru');
+    const s = withTold(game.state, 'chizuru', len - 1);
+    s.party.roster.chizuru.memories = len;   // all held, one untold
+    const notFull = STORY.scenes['chat:chizuru:2'].lines.filter((l) => l.if?.notFull === 'chizuru').map((l) => l.text);
+    const full = STORY.scenes['chat:chizuru:2'].lines.filter((l) => l.if?.full === 'chizuru').map((l) => l.text);
     expect(notFull.length).toBeGreaterThan(0);
-    const texts = linesOf('chat:sylvie:2', s).map((l) => l.text);
+    const texts = linesOf('chat:chizuru:2', s).map((l) => l.text);
     for (const t of notFull) expect(texts).toContain(t);
     for (const t of full) expect(texts).not.toContain(t);
-    const told = withTold(s, 'sylvie', len);
-    const after = linesOf('chat:sylvie:2', told).map((l) => l.text);
+    const told = withTold(s, 'chizuru', len);
+    const after = linesOf('chat:chizuru:2', told).map((l) => l.text);
     for (const t of full) expect(after).toContain(t);
     for (const t of notFull) expect(after).not.toContain(t);
   });

@@ -60,7 +60,7 @@ describe('companion grave faces', () => {
     expect(face('rin', 'sad')).toBe(art.portrait('rin', 'sad'));
   });
 
-  it('every heavy companion line in the script now shows a face (111 lines, 0 hidden)', () => {
+  it('every heavy companion line in the script now shows a face (107 lines, 0 hidden)', () => {
     const lines: ScriptLine[] = [];
     const seen = new Set<unknown>();
     const walk = (o: unknown): void => {
@@ -74,7 +74,7 @@ describe('companion grave faces', () => {
     const heavy = lines.filter((l) => NORMAL_SMILES.has(l.who) && l.mood && GRAVE.has(l.mood));
     const s = state();
     const hidden = heavy.filter((l) => !speakerOf(l.who, s, ART, l.mood).face).map((l) => `${l.who} ${l.mood} ${l.text}`);
-    expect(heavy).toHaveLength(111);   // story polish M: memories end on an action now, not on a said wound (107 -> 100); story L group:act2 +1, group:act3 +3, group:act4 +7
+    expect(heavy).toHaveLength(107);   // story polish M: memories end on an action now, not on a said wound (107 -> 100); story L group:act2 +1, group:act3 +3, group:act4 +7; story L Tasks 12-13: chat:sylvie:1 and :2 read one way (-2), chat:chizuru:2 waits for Bobby (-2)
     expect(hidden).toEqual([]);
     // Liz's hushed lines are not grave but used to borrow her smile: all 7 now have the hushed face (story polish M: her meeting has none).
     const hushed = lines.filter((l) => l.who === 'liz' && l.mood === 'hushed');
@@ -157,7 +157,7 @@ describe('faces in a heavy scene (staging S3)', () => {
       }
     }
     expect(smiling).toEqual([]);
-    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(411);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line
+    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(405);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line; story L Tasks 12-13: -6 (chat:sylvie:1 without Bobby, :2 one reading, chat:chizuru:2 without the reading that has not met Bobby)
     // 395 character lines. Before S3 the 15 heavy lines of a non-glad mood without art showed a companion's smile, and 60
     // heavy lines of Lorne and Rin their normal: 75 lines, which now take a near face (35), Rin's calm normal (17) or no
     // portrait (23). A glad mood still borrows the smile (22). The light scenes are as they were.
@@ -168,7 +168,9 @@ describe('faces in a heavy scene (staging S3)', () => {
       // story L Task 11, group:act4 (nine lines): exact +7, near +1 (Lorne's distant), Safira's laugh +1
       // cold read fixes: act 4's two lines more (Liz's price of running, a glad mood; Liz breaking, sad), Noel's jab glad now
       'heavy exact': 109, 'heavy near': 36, 'heavy calm-normal': 20, 'heavy hidden': 22, 'heavy smiling-normal': 25,
-      'light exact': 91, 'light calm-normal': 6, 'light smiling-normal': 102,
+      // story L Tasks 12-13: light exact -5 (Bobby's and Sylvie's lines in chat:sylvie:1, Sylvie's bed line in :2, two of
+      // Chizuru's bell lines), Lorne's smiling normal -1 (his two stand-ins gone, the tofu line moved to chat:sylvie:1)
+      'light exact': 86, 'light calm-normal': 6, 'light smiling-normal': 101,
     });
   });
 });

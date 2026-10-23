@@ -189,6 +189,12 @@ export const CHAT_GATE: Partial<Record<SceneId, StoryGate>> = {
   'chat:selene:2': { stage: 'act3' },
   // Story depth (design §7.4): Anna has stopped counting the papers on the guild door; it waits for act 4, when the town turns.
   'chat:hero:5': { stage: 'act4' },
+  // Story L Task 12 (spec §10; lore ledger §5): Sylvie takes the bed once her seed has sprouted, so her second chat waits
+  // for her memories told whole and reads one way; the bed's setup is chat:sylvie:1's.
+  'chat:sylvie:2': { full: 'sylvie' },
+  // Story L Task 13 (spec §10; lore ledger §5): Bobby wants Chizuru's bell taken apart; met on the main road at depth 6, so
+  // the wait is short, and the reading without her is gone.
+  'chat:chizuru:2': { met: ['bobby'] },
 };
 
 /**
