@@ -1545,46 +1545,40 @@ export class DelveGame {
     if (this.planBreak(x, y).chest) return 'chest';
     return null;
   }
-  /** 按住挖掘會不會真的挖 (x,y)（不看距離；同 updateMining）：冰、拆得掉的背景牆、挖得動的前景方塊 */
-  private mineable(x: number, y: number): boolean {
-    const w = this.world, id = w.getFg(x, y);
-    if (id === T.AIR) return w.isFrozen(x, y) || Boolean(WALL_ITEM[w.getWall(x, y)]);
-    return w.inBounds(x, y) && this.mineRefusal(x, y, id) === null;
-  }
   /**
    * 這一步要挖哪一格（cur；方向挖掘，游標不用正好壓在方塊上）：
-   * 1. 游標那格在觸及範圍內、挖得動 → 就是那格（跟以前一樣）。
-   * 2. 否則從玩家中心朝游標點打格子射線（marchTiles，格角規則見 aimRay.ts），走到觸及距離：碰到的第一個前景方塊 / 冰
-   *    在觸及範圍內 → 就是它（挖不動也停在這、ok = false，updateMining 照常提示原因；不穿過去挖後面的）；超出範圍 / 出界 → 不算。
-   *    射線不看背景牆（屋裡到處都是，會把射線吃掉），也穿過跟自己身體重疊的非實心格（手上爬的繩子、腳邊的草）。
-   * 3. 都沒有 → 游標那格、ok = false（照舊：空氣不挖、太遠提示 reach）。
+   * 1. 游標那格在觸及範圍內、不是空氣（或是冰 / 拆得掉的背景牆）→ 就是那格，跟以前一模一樣（火把照挖、鎖著的門照樣提示）。
+   * 2. 否則（游標那格是空氣、或太遠）從玩家中心朝游標點打格子射線（marchTiles，格角規則見 aimRay.ts），
+   *    長度 = min(到游標點的距離, 觸及距離)：不會挖到游標後面去（挖掉游標那塊之後就停手）。
+   *    射線只看實心方塊與冰，非實心的（火把、平台、開著的門、箱子、床、爐心、樹、繩子…）一律穿過、不挖也不擋。
+   *    碰到的第一個在觸及範圍內 → 就是它（kind 'ray'；挖不動也停在這、ok = false，updateMining 照常提示原因，不穿過去挖後面的）。
+   * 3. 都沒有 → 游標那格（kind 'none'；照舊：空氣不挖、太遠提示 reach）。
    * 只看玩家中心、瞄準點與世界：房主替遠端客人算的、客人副本預覽的（mineFocus）是同一格。
+   * 便宜：游標那格只看 tile id；射線只對碰到的那一格實心方塊跑一次 planBreak（實心格沒有樹，不會 fellTree）。
    */
-  private mineTarget(): { x: number; y: number; ok: boolean } {
-    const { x, y } = this.aim;
-    if (this.canReach(x, y) && this.mineable(x, y)) return { x, y, ok: true };
-    const w = this.world, p = this.player, c = this.playerCenter(), S = TILE_SIZE;
-    let hit: { x: number; y: number; ok: boolean } | null = null;
-    marchTiles(c.x / S, c.y / S, this.aimPx.x - c.x, this.aimPx.y - c.y, this.reach() + 1, (tx, ty) => {
+  private mineTarget(): { x: number; y: number; kind: 'aim' | 'ray' | 'none'; ok: boolean } {
+    const { x, y } = this.aim, w = this.world;
+    if (this.canReach(x, y) && (w.getFg(x, y) !== T.AIR || w.isFrozen(x, y) || WALL_ITEM[w.getWall(x, y)])) return { x, y, kind: 'aim', ok: true };
+    const c = this.playerCenter(), S = TILE_SIZE, dx = this.aimPx.x - c.x, dy = this.aimPx.y - c.y;
+    let hit: { x: number; y: number; kind: 'ray'; ok: boolean } | null = null;
+    marchTiles(c.x / S, c.y / S, dx, dy, Math.min(Math.hypot(dx, dy) / S, this.reach()), (tx, ty) => {
       if (!w.inBounds(tx, ty)) return true;
-      const id = w.getFg(tx, ty);
-      if (id === T.AIR && !w.isFrozen(tx, ty)) return false;
-      const onBody = p.x < (tx + 1) * S && p.x + p.w > tx * S && p.y < (ty + 1) * S && p.y + p.h > ty * S;
-      if (id !== T.AIR && !isSolidTile(id) && onBody) return false;
-      if (this.canReach(tx, ty)) hit = { x: tx, y: ty, ok: this.mineable(tx, ty) };
+      const id = w.getFg(tx, ty), ice = id === T.AIR && w.isFrozen(tx, ty);
+      if (!ice && !isSolidTile(id)) return false;
+      if (this.canReach(tx, ty)) hit = { x: tx, y: ty, kind: 'ray', ok: ice || this.mineRefusal(tx, ty, id) === null };
       return true;
     });
-    return hit ?? { x, y, ok: false };
+    return hit ?? { x, y, kind: 'none', ok: false };
   }
   /**
    * 本地玩家按住挖掘時實際會挖的那格（mineTarget；renderer 把瞄準框畫在這，玩家看得到會挖哪塊）：
-   * 沒按住、死了、在船上、手上是武器 / 釣竿（左鍵不是挖）、或沒有挖得動的格 → null（照舊畫游標那格）
+   * 游標那格（照舊）或射線找到、挖得動的那格。沒按住、死了、在船上、手上是武器 / 釣竿（左鍵不是挖）、或沒有 → null（照舊畫游標那格）
    */
   mineFocus(): { x: number; y: number } | null {
     return this.withActor(this.local, () => {
       if (!this.miningHeld || this.dead || this.boating || this.heldWeapon() || this.heldRod() !== null) return null;
       const t = this.mineTarget();
-      return t.ok ? { x: t.x, y: t.y } : null;
+      return t.kind === 'aim' || t.ok ? { x: t.x, y: t.y } : null;
     });
   }
 

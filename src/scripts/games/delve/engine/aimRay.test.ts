@@ -140,7 +140,7 @@ describe('方向挖掘', () => {
     expect(g.world.getFg(60, 60)).toBe(before);
   });
 
-  it('爬繩時：跟自己身體重疊的繩子不擋射線、也不會被挖', () => {
+  it('爬繩時：繩子（非實心）不擋射線、也不會被挖', () => {
     const g = arena();
     // 身體佔 y = 57..59：那三格掛繩子，上面隔一格空氣是石頭
     for (let y = 57; y < 60; y++) g.world.setFg(60, y, T.ROPE);
@@ -182,6 +182,83 @@ describe('方向挖掘', () => {
       return [g.world.getFg(63, 57), g.world.getFg(64, 58), g.getState()];
     };
     expect(play()).toEqual(play());
+  });
+});
+
+describe('方向挖掘：射線只到游標為止、只看實心方塊、游標壓在東西上照舊', () => {
+  it('挖掉游標那塊之後游標那格是空氣 → 停手，不會沿著方向繼續挖下一塊', () => {
+    const g = arena();
+    g.world.setFg(63, 58, T.STONE);
+    g.world.setFg(64, 58, T.STONE);
+    aimAt(g, 63, 58); g.setMining(true);
+    runFor(g, STONE_S * 2.5);
+    expect(g.world.getFg(63, 58)).toBe(T.AIR);
+    expect(g.world.getFg(64, 58)).toBe(T.STONE);
+    expect(g.getState().mining).toBeNull();
+  });
+
+  it('游標在方塊前面的空氣（還沒到方塊）→ 不挖', () => {
+    const g = arena();
+    g.world.setFg(65, 58, T.STONE);
+    aimAt(g, 63, 58); g.setMining(true);
+    runFor(g, STONE_S);
+    expect(g.world.getFg(65, 58)).toBe(T.STONE);
+    expect(g.getState().mining).toBeNull();
+  });
+
+  it('游標點在自己腳邊（身體那格的空氣）→ 不會往下挖地板', () => {
+    const g = arena();
+    aimAt(g, 60, 59); g.setMining(true);
+    runFor(g, STONE_S);
+    expect(g.world.getFg(60, 60)).toBe(T.STONE);
+    expect(mines(g)).toEqual([]);
+  });
+
+  it('射線上的火把 / 平台 / 開著的門 / 箱子 / 床 / 爐心（非實心）→ 穿過去、留著，挖後面（游標之前）的石頭', () => {
+    for (const k of [T.TORCH, T.PLATFORM, T.DOOR_OPEN, T.CHEST, T.BED_HEAD, T.HEARTH]) {
+      const g = arena();
+      g.world.setFg(62, 58, k);
+      g.world.setFg(64, 58, T.STONE);
+      aimAt(g, 66, 58); g.setMining(true);
+      runFor(g, STONE_S);
+      expect(g.world.getFg(62, 58), tileDef(k).key).toBe(k);
+      expect(g.world.getFg(64, 58), tileDef(k).key).toBe(T.AIR);
+    }
+  });
+
+  it('游標直接壓在觸及範圍內的火把上 → 照舊挖火把', () => {
+    const g = arena();
+    g.world.setFg(62, 58, T.TORCH);
+    aimAt(g, 62, 58); g.setMining(true);
+    runFor(g, 0.5);
+    expect(g.world.getFg(62, 58)).toBe(T.AIR);
+  });
+
+  it('游標壓在觸及範圍內、挖不動的鐵礦上（中間隔一塊泥土）→ 不用射線：提示 tier、什麼都不挖', () => {
+    const g = arena();
+    g.world.setFg(62, 58, T.DIRT);
+    g.world.setFg(64, 58, T.IRON_ORE);
+    aimAt(g, 64, 58); g.setMining(true);
+    runFor(g, 2);
+    expect(g.world.getFg(62, 58)).toBe(T.DIRT);
+    expect(g.world.getFg(64, 58)).toBe(T.IRON_ORE);
+    expect(g.drainEvents().some((e) => e.type === 'blocked' && e.reason === 'tier')).toBe(true);
+  });
+
+  it('觸及邊緣：射線上剛好在範圍內的挖得到、剛好超出的不挖', () => {
+    const g = arena();
+    expect(g.canReach(65, 58)).toBe(true);
+    expect(g.canReach(66, 58)).toBe(false);
+    g.world.setFg(65, 58, T.STONE);
+    aimAt(g, 90, 58); g.setMining(true);
+    runFor(g, STONE_S);
+    expect(g.world.getFg(65, 58)).toBe(T.AIR);
+    const h = arena();
+    h.world.setFg(66, 58, T.STONE);
+    aimAt(h, 90, 58); h.setMining(true);
+    runFor(h, STONE_S);
+    expect(h.world.getFg(66, 58)).toBe(T.STONE);
+    expect(mines(h)).toEqual([]);
   });
 });
 
