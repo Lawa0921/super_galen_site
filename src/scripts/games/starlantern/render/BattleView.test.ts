@@ -5,7 +5,7 @@ import type { BattleState } from '../engine/battle';
 import { makeBattle, makeCombatant } from '../engine/testing';
 import { OutlineFilter } from 'pixi-filters';
 import { BattleView, TINT_COLORS, TINT_STYLE, ailLabelWidth } from './BattleView';
-import { AILMENT_FILL, AILMENT_MORE_FILL } from './ailmentStyle';
+import { AFFIX_FILL, AILMENT_FILL, AILMENT_MORE_FILL } from './ailmentStyle';
 import { MECH_FILL } from './mechStyle';
 import type { AilmentChip } from '../engine/ailments';
 import type { MechWord } from '../engine/mechanics/index';
@@ -574,5 +574,99 @@ describe('BattleView without enemy art (no placeholder)', () => {
     expect(body.children[0]).toBeInstanceOf(Sprite);
     expect(view.intentRect('e0')!.y).toBeLessThan(before);
     expect(view.intentRect('e0')!.y + view.intentRect('e0')!.height).toBeLessThanOrEqual(-body.height + 1);
+  });
+});
+
+describe('BattleView affixes (difficulty plan Task 7b)', () => {
+  type R = { x: number; y: number; width: number; height: number };
+  const meets = (a: R, b: R) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  const foes = (n: number, name = (i: number) => `e${i}`) => makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], Array.from({ length: n }, (_, i) => makeCombatant({ key: `e${i}`, side: 'enemy', name: name(i) })));
+  const THREE: AilmentChip[] = [{ id: 'bleed', stacks: 2, turns: 3 }, { id: 'burn', turns: 3 }, { id: 'shock', turns: 2 }];
+  const texts = (view: BattleView, key: string) => view.ailmentTexts(key).map((t) => t.text);
+
+  it('affixes lead the row and fold last', () => {
+    // Three foes: the row has room for two affixes and a 「+N」, not for an ailment beside them.
+    const view = new BattleView(true, bank);
+    view.setup(foes(3), { width: 640, height: 360 }, 1, 150, 70);
+    view.showAilments({ e0: THREE }, {}, { e0: ['灼熱', '霜縛'] });
+    expect(texts(view, 'e0')).toEqual(['灼熱', '霜縛', '+3']);   // the +N counts the ailments, never an affix first
+    const words = view.ailmentTexts('e0');
+    expect(words.slice(0, 2).map((t) => t.style.fill)).toEqual([AFFIX_FILL, AFFIX_FILL]);
+    expect(words.every((t) => t.style.fontSize === 12 && (t.style.fontFamily as string[])[0] === 'Cubic 11')).toBe(true);
+    // Room for all of it: affixes first, then the ailments by severity.
+    const wide = new BattleView(true, bank);
+    wide.setup(foes(1), { width: 640, height: 360 }, 1, 150, 70);
+    wide.showAilments({ e0: THREE }, {}, { e0: ['灼熱', '霜縛'] });
+    expect(texts(wide, 'e0')).toEqual(['灼熱', '霜縛', '流血×2', '灼燒3', '感電2']);
+    // Freeze and sleep still never fold: with room for three words, the affixes stand first and freeze after them;
+    // with room for two (four foes), the second affix folds before freeze does.
+    view.showAilments({ e0: [{ id: 'freeze' }, ...THREE] }, {}, { e0: ['灼熱', '霜縛'] });
+    expect(texts(view, 'e0')).toEqual(['灼熱', '霜縛', '凍結', '+3']);
+    const four = new BattleView(true, bank);
+    four.setup(foes(4), { width: 640, height: 360 }, 1, 150, 70);
+    four.showAilments({ e0: [{ id: 'freeze' }, ...THREE] }, {}, { e0: ['灼熱', '霜縛'] });
+    expect(texts(four, 'e0')).toEqual(['灼熱', '凍結', '+4']);
+    // A foe with no affixes beside one with them reads as before.
+    view.showAilments({ e0: THREE, e1: THREE }, {}, { e0: ['迅捷'] });
+    expect(texts(view, 'e0')[0]).toBe('迅捷');
+    expect(texts(view, 'e1')[0]).toBe('流血×2');
+  });
+
+  it('no affix, no change', () => {
+    const marks: MechWord[] = [{ tone: 'mark', text: '暗記', setup: true }, { tone: 'aim', text: '最後行動' }];
+    for (const n of [1, 3, 5]) {
+      const a = new BattleView(true, bank), b = new BattleView(true, bank);
+      a.setup(foes(n), { width: 640, height: 360 }, 1, 150, 70);
+      b.setup(foes(n), { width: 640, height: 360 }, 1, 150, 70);
+      const byKey = Object.fromEntries(Array.from({ length: n }, (_, i) => [`e${i}`, FIVE]));
+      const words = Object.fromEntries(Array.from({ length: n }, (_, i) => [`e${i}`, marks]));
+      a.showAilments(byKey, words);
+      b.showAilments(byKey, words, {});
+      for (let i = 0; i < n; i++) {
+        const k = `e${i}`;
+        const shape = (v: BattleView) => v.ailmentTexts(k).map((t) => [t.text, t.x, t.style.fill]);
+        expect(shape(b), k).toEqual(shape(a));
+      }
+    }
+  });
+
+  it('affixes lead the row above five foes without touching a bar', () => {
+    // 844x390 holds the 640x360 stage; five foes, each the longest name, two affixes and three ailments, over a tall
+    // picture, a small one (the bat) and none yet: every row stays in its slot, clear of every HP bar, every name and
+    // every other row.
+    const LONG = '★深層・熾焰之地・燈喰之獸';
+    const banks: [string, TextureBank][] = [
+      ['tall', bank],
+      ['bat', { get: () => new Texture({ source: new TextureSource({ width: 119, height: 65 }) }), has: () => true } as unknown as TextureBank],
+      ['no art', { get: () => null, has: () => false } as unknown as TextureBank],
+    ];
+    const keys = ['e0', 'e1', 'e2', 'e3', 'e4'];
+    for (const [label, b] of banks) {
+      const view = new BattleView(true, b);
+      view.setup(foes(5, () => LONG), { width: 640, height: 360 }, 1, 150, 70);
+      view.showAilments(Object.fromEntries(keys.map((k) => [k, THREE])), {}, Object.fromEntries(keys.map((k) => [k, ['灼熱', '霜縛']])));
+      const slotW = (640 - 150) / 6;
+      const rows = keys.map((k) => {
+        const box = view.enemyBoxOf(k)!;
+        const local = view.ailmentRowRect(k)!;
+        const words = view.ailmentTexts(k);
+        expect(words[0].text, `${label} ${k}`).toBe('灼熱');   // an affix leads
+        expect(new Set(words.map((t) => t.y)).size, `${label} ${k} one line`).toBe(1);
+        const left = box.x + words[0].x - ailLabelWidth(words[0].text) / 2;
+        const right = box.x + words.at(-1)!.x + ailLabelWidth(words.at(-1)!.text) / 2;
+        expect(right - left, `${label} ${k} inside its slot`).toBeLessThanOrEqual(slotW - 6);
+        expect(left, `${label} ${k}`).toBeGreaterThanOrEqual(box.x - local.width / 2 - 0.001);
+        expect(right, `${label} ${k}`).toBeLessThanOrEqual(box.x + local.width / 2 + 0.001);
+        return { k, rect: { x: box.x + local.x, y: box.y + local.y, width: local.width, height: local.height } };
+      });
+      for (const { k, rect } of rows) {
+        for (const o of keys) {
+          expect(meets(rect, view.hpBarRect(o)!), `${label} ${k} row vs ${o} bar`).toBe(false);
+          expect(meets(rect, view.nameRect(o)!), `${label} ${k} row vs ${o} name`).toBe(false);
+        }
+        for (const other of rows) if (other.k !== k) expect(meets(rect, other.rect), `${label} ${k} row vs ${other.k} row`).toBe(false);
+        expect(rect.y, `${label} ${k} under the message window`).toBeGreaterThanOrEqual(52);
+      }
+    }
   });
 });

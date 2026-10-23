@@ -9,7 +9,7 @@ import type { Combatant } from '../engine/combatant';
 import type { WeaponKind } from '../engine/types';
 import { art, enemyArt, type FxKey } from './artPaths';
 import { battleCues } from './battleCues';
-import { AILMENT_FILL, AILMENT_MORE_FILL, bySeverity, fitRow, isHalting, textWidth } from './ailmentStyle';
+import { AFFIX_FILL, AILMENT_FILL, AILMENT_MORE_FILL, bySeverity, fitRow, isHalting, textWidth } from './ailmentStyle';
 import { MECH_FILL } from './mechStyle';
 import type { MechCue, MechTone, MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
@@ -91,6 +91,8 @@ const AIL_SLOT_MARGIN = 6;
 /** An ailment row's height and an intent's: 12 px words with their outline (legibility Task 4: the pixel font's grid). */
 const AIL_ROW_H = 14;
 const INTENT_H = 14;
+/** A name's line under the feet: 12 px words on the pixel font's 14 px grid. */
+const NAME_H = 14;
 /** A hit's tags (暴擊！ 弱點！ 抗性) stand side by side in one row of this height just over the number. */
 const TAG_SIZE = 12;
 const TAG_ROW_H = 16;
@@ -321,6 +323,14 @@ export class BattleView {
     return { x: s.box.x - BAR_W / 2 - 1, y: s.box.y + s.bar.y - 1, width: BAR_W + 2, height: 6 };
   }
 
+  /** An enemy's name under its feet, in design px at rest (for layout checks): its line, as wide as its words. */
+  nameRect(key: string): Box | null {
+    const s = this.slots.get(key);
+    if (!s || s.box.destroyed) return null;
+    const w = textWidth(s.name.text, AIL_SIZE);
+    return { x: s.box.x - w / 2, y: s.box.y + s.name.y, width: w, height: NAME_H };
+  }
+
   /** Party members are drawn by the DOM party bar; these cues tell it what to show. */
   async play(
     state: BattleState, sfx: SoundManager,
@@ -458,9 +468,11 @@ export class BattleView {
   /**
    * Each enemy's ailments as coloured words above its head, centred on it, in one line inside its slot (「流血×3」「感電2」「+1」); a call replaces the whole
    * row, and an enemy missing from `byKey` or with an empty list shows none. `marks` are its mechanic words (「暗記」「弱點2」,
-   * plan 8c): first in the same row, in the same type, in their own colours.
+   * plan 8c): first in the same row, in the same type, in their own colours. `affixes` are an elite's or a boss's affix names
+   * (difficulty plan Task 7b, ruling 24): they lead the row and fold last of all but freeze and sleep, so the row never
+   * grows a second line toward the name and the HP bar under the feet.
    */
-  showAilments(byKey: Record<string, AilmentChip[]>, marks: Record<string, MechWord[]> = {}): void {
+  showAilments(byKey: Record<string, AilmentChip[]>, marks: Record<string, MechWord[]> = {}, affixes: Record<string, readonly string[]> = {}): void {
     for (const [k, s] of this.slots) {
       if (s.ail.destroyed) continue;
       for (const c of s.ail.removeChildren()) c.destroy();
@@ -473,8 +485,12 @@ export class BattleView {
       const ofWord = (x: MechWord): W => ({ text: x.text, fill: MECH_FILL[x.tone] });
       const halting = chips.filter(isHalting);
       const setups = mech.filter((x) => x.setup).sort((a, b) => SETUP_ORDER.indexOf(a.tone) - SETUP_ORDER.indexOf(b.tone));
-      const items: W[] = [...halting.map(ofChip), ...setups.map(ofWord), ...chips.filter((c) => !isHalting(c)).map(ofChip), ...mech.filter((x) => !x.setup).map(ofWord)];
-      const { shown, more } = fitRow(items, this.ailMax, (w) => ailLabelWidth(w.text), (n) => ailLabelWidth(T.ailmentMore(n)), AIL_GAP, halting.length);
+      // An affix folds after every other ailment and word, never before freeze or sleep; what stands shows the affixes first.
+      const tags: W[] = (affixes[k] ?? []).map((text) => ({ text, fill: AFFIX_FILL }));
+      const items: W[] = [...halting.map(ofChip), ...tags, ...setups.map(ofWord), ...chips.filter((c) => !isHalting(c)).map(ofChip), ...mech.filter((x) => !x.setup).map(ofWord)];
+      const fit = fitRow(items, this.ailMax, (w) => ailLabelWidth(w.text), (n) => ailLabelWidth(T.ailmentMore(n)), AIL_GAP, halting.length);
+      const more = fit.more;
+      const shown = tags.length ? [...fit.shown.filter((w) => tags.includes(w)), ...fit.shown.filter((w) => !tags.includes(w))] : fit.shown;
       const word = (text: string, fill: number) => pixelText(text, AIL_SIZE, fill);
       const words = shown.map((w) => word(w.text, w.fill));
       if (more) words.push(word(T.ailmentMore(more), AILMENT_MORE_FILL));

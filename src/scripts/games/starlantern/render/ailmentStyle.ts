@@ -16,6 +16,12 @@ export const AILMENT_FILL: Record<AilmentShown, number> = {
 export const AILMENT_MORE_FILL = 0xf1ead8;
 
 /**
+ * The ink of an elite's or a boss's affix words, which lead its row (difficulty plan Task 7b): a pale peach, apart from
+ * every ailment and mechanic colour (ui2/rarity.test.ts) and readable on the window. Text only, no icon (spec §7.3).
+ */
+export const AFFIX_FILL = 0xffccbb;
+
+/**
  * The order a row shows ailments in, most severe first (plan 8b follow-up): what costs a turn (freeze, sleep), then
  * damage every round (bleed, which stacks; burn; poison), then what only shifts numbers (shock, chill). Fixed, so the
  * same ailments always read the same way, and a full row folds the mildest into 「+N」.

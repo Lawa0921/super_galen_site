@@ -22,6 +22,7 @@ import { ultimateFor } from '../../engine/progression';
 import { skillFor } from '../../engine/battle';
 import { ECHO, echoDef } from '../../engine/mechanics/echo';
 import { CHARACTERS } from '../../data/characters';
+import { AFFIXES } from '../../data/affixes';
 import { SHARD_NAMES } from '../../data/story/fragments';
 import { FINALE_DEPTH } from '../../data/story/scenes';
 import { STORY, type ScriptLine } from '../../data/story.zh-TW';
@@ -1641,5 +1642,40 @@ describe("BattleScene: Safira's beat in her numbers (plan 8h Task 8 review)", ()
     const three = at(3);
     expect(three.shown).toBe(Math.round((three.base * 130) / 100));
     expect(three.flat).toBe(three.real);
+  });
+});
+
+describe('BattleScene affixes (difficulty plan Task 7b)', () => {
+  /** Two foes at least, the first wearing 灼熱 and 霜縛, as a Nightmare elite would. */
+  const affixed = (g: Game) => {
+    const b = g.battle!;
+    if (b.enemies.length < 2) b.enemies.push({ ...structuredClone(b.enemies[0]), key: 'e1' });
+    b.enemies[0].affixes = ['scorch', 'frostbind'];
+  };
+  const stageWith = (showAilments: ReturnType<typeof vi.fn>) => ({ show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, highlight: vi.fn(), showIntents: vi.fn(), syncHp: vi.fn(), showAilments, play: vi.fn() } });
+
+  it('the target note says each affix in a line', () => {
+    const { s, root } = setup(affixed);
+    s.onAction('confirm');                                   // 攻擊: whom?
+    expect(root.querySelector('.slx-btarget [aria-selected=true]')!.getAttribute('data-id')).toBe('e0');
+    const note = root.querySelector('.slx-bnote')!;
+    expect(note.textContent!.split('\n')).toEqual([T.ui2.tier.affixLine(AFFIXES.scorch.name, AFFIXES.scorch.line), T.ui2.tier.affixLine(AFFIXES.frostbind.name, AFFIXES.frostbind.line)]);
+    expect(note.classList.contains('slx-bnote-lines')).toBe(true);
+    s.onAction('down');                                      // a foe with no affixes: no note, as before
+    expect(root.querySelector('.slx-bnote')).toBeNull();
+    const plain = setup((g) => { const b = g.battle!; if (b.enemies.length < 2) b.enemies.push({ ...structuredClone(b.enemies[0]), key: 'e1' }); });
+    plain.s.onAction('confirm');
+    expect(plain.root.querySelector('.slx-btarget')).not.toBeNull();
+    expect(plain.root.querySelector('.slx-bnote')).toBeNull();
+  });
+
+  it('the picture gets each foe\'s affix names; a fight without affixes calls it as before', () => {
+    const showAilments = vi.fn();
+    setup(affixed, { stage: stageWith(showAilments) as never });
+    const call = showAilments.mock.calls.at(-1)!;
+    expect(call[2]).toEqual({ e0: [AFFIXES.scorch.name, AFFIXES.frostbind.name] });
+    const plainCalls = vi.fn();
+    setup(undefined, { stage: stageWith(plainCalls) as never });
+    expect(plainCalls.mock.calls.at(-1)!).toHaveLength(2);
   });
 });

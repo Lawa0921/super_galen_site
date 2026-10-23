@@ -600,7 +600,7 @@ export const T = {
     },
     handbook: {
       title: '冒險者手冊',
-      tabs: { memories: '記憶', people: '人物', leads: '線索', town: '鎮民', codex: '圖鑑', truths: '真相' },
+      tabs: { memories: '記憶', people: '人物', leads: '線索', town: '鎮民', codex: '圖鑑', truths: '真相', tiers: '難度' },
       unknown: '？？？', fresh: '新', status: { unknown: '尚未找到', held: '持有中', returned: '已交還' },
       stages: { prologue: '序章', act1: '第一幕', act2: '第二幕', act3: '第三幕', act4: '第四幕', after: '終幕' },
       pieces: (found: number, total: number) => `${found}/${total}`,
@@ -611,6 +611,20 @@ export const T = {
       empty: '還沒有可以重看的場景。',
       /** The guild's leads (6c Task 16): sightings, never a call for help (the lost remember nothing). */
       leads: { now: '目前的線索', found: '已找到', heard: '公會聽來的目擊', place: (region: string, depth: number) => `${region}・第 ${depth} 層`, allFound: '目擊過的人影，都已經找到了。', none: '公會還沒有新的目擊消息。' },
+      /**
+       * The tier page (difficulty plan Task 7c, spec §7.1 ⑥): listed once Nightmare opens. Each tier's row says whether it is
+       * open; its detail what changes (the numbers passed in from TIERS), Hell's condition; then the six affixes, a line each.
+       */
+      tiers: {
+        open: '已開放', locked: '未開放', affix: '詞綴',
+        normal: '敵人、掉落與故事都是原本的樣子。',
+        story: '劇情戰在每個難度都照普通打，故事與好感度也不分難度。',
+        rewards: (pct: number) => `經驗與金幣多 ${pct}%。`,
+        /** `crowd`: a plain crowd may have one foe with an affix too (Hell). */
+        affixes: (elite: number, boss: number, crowd: boolean) => `菁英身上有 ${elite} 個詞綴，頭目有 ${boss} 個${crowd ? '；一般的敵群偶爾也有一隻帶著詞綴' : ''}。`,
+        condition: (text: string) => `條件：${text}`,
+        affixNote: '詞綴寫在敵人頭上那一列的最前面；選目標時，說明列會寫出它的作用。',
+      },
     },
     town: {
       place: '邊境小鎮 露米亞',
@@ -838,6 +852,10 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       },
       what: { nightmare: '噩夢：敵人會施加異常、菁英有詞綴；掉落更好', hell: '地獄：敵人更兇、菁英與頭目有兩個詞綴；掉落最好' },
       suggest: { nightmare: '建議：每人一套魔法階符文', hell: '建議：稀有階以上的符文，加上觸發或常駐' },
+      /** The labyrinth's badge beside the condition (Task 7b): the tier's name; read aloud with what it is. */
+      badgeLabel: (name: string) => `難度：${name}`,
+      /** One affix in the target note, a line each (Task 7b): its name as the row above the foe shows it, then its line. */
+      affixLine: (name: string, line: string) => `${name}：${line}`,
     },
     event: {
       leave: '離開',
