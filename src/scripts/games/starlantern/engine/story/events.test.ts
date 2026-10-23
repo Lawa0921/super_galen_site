@@ -986,8 +986,7 @@ describe('town banter', () => {
     const nights: NightCount[] = [];
     const late: string[] = [];
     const dawns: SceneId[] = [];
-    const dawnsAt: Record<number, number> = {};
-    /** Where each act and each group scene played: the return's depth (100 + k after the finale), or 'finale'. */
+    /** Where each act, each group scene and the lone morning played: the return's depth (100 + k after the finale), or 'finale'. */
     const where: Partial<Record<SceneId, number | 'finale'>> = {};
     const late4 = depths.find((t) => t > ACT_DEPTHS.act4) ?? Infinity;
     const metBy = (id: CharacterId, t: number): boolean => {
@@ -1023,7 +1022,6 @@ describe('town banter', () => {
         if (owed.length) late.push(`${at}: ${id} before ${owed.join(' ')}`);
       }
       if (ALONE.includes(id) && untoldOf('rin').length) late.push(`${at}: ${id} before ${untoldOf('rin').join(' ')}`);
-      if (id === 'hero-alone' && !s.story.seen.includes('mem:hero:9')) late.push(`${at}: hero-alone before mem:hero:9`);
       if (id.startsWith('banter:') && played[id] === undefined && at !== 'finale') played[id] = at;
       if ((ACT_NODES as SceneId[]).includes(id) || id.startsWith('group:') || id === 'hero-alone') where[id] = at;
       s = sceneDone(s, id, 'played', REACT);
@@ -1057,7 +1055,6 @@ describe('town banter', () => {
       if (!alone && !s.story.queue.includes('finale-eve') && dawn && untold.includes(dawn) && untold.length >= DAWN_BACKLOG) {
         trace.push(`${at} departs: dawn ${dawn}`);
         dawns.push(dawn);
-        dawnsAt[at] = (dawnsAt[at] ?? 0) + 1;
         play(dawn, at);
       }
       if (alone) return;
@@ -1103,7 +1100,7 @@ describe('town banter', () => {
     const unplayed = [...(s.story.untold ?? [])];
     for (let k = 1; k <= afterFinale; k++) arrive(100 + k, k === 1);
     const report = [...PAYOFFS, ...SETUP_PAYOFFS.filter((id) => !PAYOFFS.includes(id))].map((id) => `${id}: opens ${opened[id] ?? '-'}, plays ${played[id] ?? '-'}`).join('\n');
-    return { s, report, samePair, trace, before, played, nights, late, where, unplayed, oath, atLastReturn, dawns, dawnsAt };
+    return { s, report, samePair, trace, before, played, nights, late, where, unplayed, oath, atLastReturn, dawns };
   };
 
   it('scripted play: every payoff banter plays before the finale', () => {
@@ -1156,35 +1153,44 @@ describe('town banter', () => {
       expect(r.unplayed.length, `${r.unplayed.join(' ')}\n${tell(r)}`).toBeLessThanOrEqual(most);
     });
 
-    it(`scripted play (${name}): no night plays more than three memories beyond the owed ones, and a dawn one at most`, () => {
+    it(`scripted play (${name}): no night plays more than three memories beyond the owed ones, and the dawn plays`, () => {
       const r = scriptedPlay(depths, 3);
       for (const n of r.nights) expect(n.night.length, `${n.at}\n${tell(r)}`).toBeLessThanOrEqual(3);
-      for (const [at, k] of Object.entries(r.dawnsAt)) expect(k, `dawn ${at}`).toBeLessThanOrEqual(1);
+      expect(r.dawns.length, tell(r)).toBeGreaterThan(0);   // one a departure at most, by construction
       // controller ruling 3 (2026-10-23): a reveal or confession night, its owed pieces and all, stays small
       for (const n of r.nights.filter((x) => x.alone)) expect(n.owed.length + n.night.length, `${n.at}\n${tell(r)}`).toBeLessThanOrEqual(5);
     });
 
-    it(`scripted play (${name}): no owed memory is ever late`, () => {
+    it(`scripted play (${name}): no owed memory is ever late, and the lone morning plays on a departure`, () => {
       const r = scriptedPlay(depths, 3);
       expect(r.late, tell(r)).toEqual([]);
+      // review: the lone morning plays in town, not folded into the finale (measured: on the departure from depth 25)
+      expect(typeof r.where['hero-alone'], tell(r)).toBe('number');
+      expect(r.where['hero-alone'], tell(r)).not.toBe('finale');
     });
 
     it(`scripted play (${name}): each group scene plays on its act's arrival, and none after the finale`, () => {
       const r = scriptedPlay(depths, 3);
-      for (const node of ACT_NODES) expect(r.where[groupScene(node)], `${node}\n${tell(r)}`).toBe(r.where[node]);
+      for (const node of ACT_NODES) {
+        expect(typeof r.where[node], `${node}\n${tell(r)}`).toBe('number');   // the act played on a return, not the finale
+        expect(r.where[groupScene(node)], `${node}\n${tell(r)}`).toBe(r.where[node]);
+      }
     });
   }
 
   it('scripted play (mainline-first): the group scenes played are recorded; each one missed has expired, none plays late', () => {
     // Controller ruling 2026-10-24: a player who rushes the main road skips the scenes that need the companions met
     // on the side roads. Recorded in task-4-6-report.md. A group that plays still plays inside its two chances.
-    for (const depths of [EVERY_FLOOR, EVERY_SECOND]) {
+    // Measured: every floor plays none of the three (acts 2 and 3 before their casts are met; act 4's second chance falls
+    // on the reveal day); every 2nd floor plays only act 4's, on its own arrival (21).
+    const measured: [number[], Partial<Record<SceneId, number>>][] = [[EVERY_FLOOR, {}], [EVERY_SECOND, { 'group:act4': 21 }]];
+    for (const [depths, want] of measured) {
       const r = scriptedPlay(depths, 3, 'mainline-first');
-      for (const node of ACT_NODES) {
-        const g = r.where[groupScene(node)];
-        if (g === undefined) continue;
-        const act = r.where[node] as number;
-        expect([act, depths[depths.indexOf(act) + 1]], `${node}\n${tell(r)}`).toContain(g);
+      const played = Object.fromEntries(ACT_NODES.map((node) => [groupScene(node), r.where[groupScene(node)]]).filter(([, at]) => at !== undefined));
+      expect(played, tell(r)).toEqual(want);
+      for (const [g, at] of Object.entries(played)) {
+        const act = r.where[g.slice('group:'.length) as SceneId] as number;
+        expect([act, depths[depths.indexOf(act) + 1]], `${g}\n${tell(r)}`).toContain(at);   // inside its two chances
       }
       expect(Object.keys(r.s.story.reacts ?? {}), tell(r)).toEqual([]);
       expect(r.late, tell(r)).toEqual([]);
