@@ -117,7 +117,7 @@ describe('gen2 家鄉地城', () => {
   it('地城裡沒有天然洞穴：bbox 內縮 14 的每個空氣格都有地城背景牆', () => { const [, d] = DUNGEONS[1], w = worldOf(d.src), b = d.info.bbox;
     loadColumns(w, b.x, b.x + b.w); expect(naturalHoles(w, { x: b.x + 14, y: b.y + 14, w: b.w - 28, h: b.h - 28 })).toEqual([]); }, 60_000);
 
-  it('分段填 = 整欄填（地城跨欄）；colIndex 每欄恰好是該欄的格；地城藍圖單次建構 ≤ 80 ms（直接呼叫建構器，不經索引）', () => { const [, d] = DUNGEONS[2], cx = (d.info.bbox.x >> 5) + 3;
+  it('分段填 = 整欄填（地城跨欄）；colIndex 每欄恰好是該欄的格；地城藍圖單次建構 ≤ 80 ms（3 次中位數；直接呼叫建構器，不經索引）', () => { const [, d] = DUNGEONS[2], cx = (d.info.bbox.x >> 5) + 3;
     const whole = fillCol(d.src, cx), parts = new Column(cx, 1200); d.src.fill(parts, cx * 32, cx * 32 + 13); d.src.fill(parts, cx * 32 + 13, cx * 32 + 32);
     expect(bytes(parts)).toEqual(bytes(whole));
     const ci = d.bp.colIndex!, c = d.bp.cells;
@@ -128,12 +128,44 @@ describe('gen2 家鄉地城', () => {
     const a = new Column(cx, 1200), z = new Column(cx, 1200);
     stamp(a, d.bp, cx * 32, cx * 32 + 32); stamp(z, { ...d.bp, colIndex: undefined }, cx * 32, cx * 32 + 32);
     expect(bytes(a)).toEqual(bytes(z)); expect(bytes(a).some((v) => v !== 0)).toBe(true);
-    const ctx = dungeonCtx('dg-time'), t0 = performance.now(); buildDungeonBp(ctx); expect(performance.now() - t0).toBeLessThanOrEqual(80); }, 30_000);
+    // 單次牆鐘會被負載抖動拉高：量 3 次（每次新的 ctx，不吃快取）取中位數
+    const ts = ['dg-time', 'dg-time-2', 'dg-time-3'].map((s) => { const ctx = dungeonCtx(s), t0 = performance.now(); buildDungeonBp(ctx); return performance.now() - t0; }).sort((p, q) => p - q);
+    expect(ts[1], ts.map((t) => t.toFixed(1)).join(' / ')).toBeLessThanOrEqual(80); }, 30_000);
 
   it('家鄉藍圖釘選：碰過外圍 300 份藍圖（超過 LRU 256）之後，再取地城藍圖是同一個物件（沒被淘汰重建）', () => { const g = new Gen2Source('dg-pin'), z = homeDungeonRegion(home(g));
     const a = g.blueprints.overlapping(z.x0, z.x1).find((b) => b.kind === 'dungeon')!; touchOuterBlueprints(g, 300);
     expect(a).toBeDefined();
     expect(g.blueprints.overlapping(z.x0, z.x1).find((b) => b.kind === 'dungeon')).toBe(a); }, 60_000);
 
-  it('50 個種子都建得出地城（不丟 RangeError）', () => { for (const seed of SEEDS50) expect(() => dungeonOf(seed)).not.toThrow(); }, 300_000);
+  it('50 個種子都建得出地城（不丟 RangeError）、每個 ≥ 25 房且房間圖可解', () => { for (const seed of SEEDS50) {
+    let bp: Blueprint | null = null;
+    expect(() => { bp = dungeonOf(seed); }, seed).not.toThrow();
+    const info = infoOf(bp!);
+    expect(info.rooms.length, seed).toBeGreaterThanOrEqual(25); expect(solvable(info), seed).toEqual({ ok: true }); } }, 300_000);
+
+  it('礦照常換（控制者裁決）：地城 solid 範圍內的礦密度（礦 / 可換礦的岩格）與鄰近同尺寸區塊相差 ±30% 內（3 個種子）', () => {
+    const ORE = new Set<number>([T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE]), HOST = new Set<number>([T.STONE, T.DEEP_STONE, ...ORE]);
+    for (const [seed, d] of DUNGEONS.slice(0, 3)) {
+      const s = d.bp.solid!, z = homeDungeonRegion(home(d.src)), beachWest = d.src.profile.regionAt(z.x0 - 1)!.variant === VARIANT.BEACH;
+      // 鄰近區塊：地城區往內側（離開沙灘的那側）緊鄰、同寬同高
+      const nx = beachWest ? z.x1 : z.x0 - s.w, w = worldOf(d.src);
+      const density = (x0: number): { ore: number; host: number } => {
+        loadColumns(w, x0, x0 + s.w);
+        let ore = 0, host = 0;
+        for (let x = x0; x < x0 + s.w; x++) for (let y = s.y; y < s.y + s.h; y++) { const t = w.getFg(x, y); if (ORE.has(t)) ore++; if (HOST.has(t)) host++; }
+        return { ore, host };
+      };
+      const a = density(s.x), b = density(nx), ra = a.ore / a.host, rb = b.ore / b.host;
+      expect(a.ore, seed).toBeGreaterThan(1000); expect(b.ore, seed).toBeGreaterThan(1000);
+      expect(ra / rb, `${seed} ${ra} vs ${rb}`).toBeGreaterThanOrEqual(0.7); expect(ra / rb, `${seed} ${ra} vs ${rb}`).toBeLessThanOrEqual(1.3);
+    }
+  }, 120_000);
+
+  it('地城外框不與家鄉任何其他藍圖的外框在 x 上重疊（鄰接地區的槽離地區邊 ≥ 8；Task 9 起的家鄉結構保護）', () => {
+    for (const [seed, d] of DUNGEONS) {
+      const h = home(d.src), b = d.bp, others = d.src.blueprints.overlapping(h.x0, h.x1).filter((q) => q !== b);
+      expect(others.length, seed).toBeGreaterThan(0);
+      for (const o of others) expect(o.x + o.w <= b.x || o.x >= b.x + b.w, `${seed} ${o.kind} [${o.x}, ${o.x + o.w})`).toBe(true);
+    }
+  }, 60_000);
 });

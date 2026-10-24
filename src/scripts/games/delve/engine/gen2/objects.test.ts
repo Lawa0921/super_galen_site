@@ -1,6 +1,6 @@
 // objects.test.ts — gen2 藍圖物件（M2a Task 2）：分層槽寬（地下 / 深層 / 小點位 170、表層 / 天空 340）與槽邊距（wholeRegion 例外，Q2）、
 // UNDER / DEEP 的坑道避讓帶（Q3 / Q3b）、遺跡的地面覆寫（surfaceAt 吃 SURFACE 層藍圖的 ground，Q4）、箱子附加物品（withExtras）、
-// 免挖洞箱（solid：箱內不挖噪聲洞穴、不換礦，主坑道照挖）、extrasIn；solid / ground 在外框內（M2a Task 7）。
+// 免挖洞箱（solid：箱內不挖噪聲洞穴、不當入口，礦照常、主坑道照挖）、extrasIn；solid / ground 在外框內（M2a Task 7）。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
 import { slotOf, slotWidth, BP_UNDER, BP_DEEP, BP_SURFACE, emptyObjects, type Layer, type Blueprint, type BlueprintIndex } from './blueprint';
@@ -86,7 +86,7 @@ describe('gen2 blueprint objects', () => {
     expect(withExtras([null, null], ['magnet', 'jump_boots'])).toEqual([{ item: 'magnet', count: 1 }, { item: 'jump_boots', count: 1 }]);
   });
 
-  it('免挖洞箱（solid）：箱內不挖噪聲洞穴、不換礦（只填天然材質），箱外不變；主坑道照挖', () => {
+  it('免挖洞箱（solid）：箱內不挖噪聲洞穴、不當地表入口，礦照常（原本不是洞的格與沒有箱子時相同），箱外不變；主坑道照挖', () => {
     // 有主坑道的地區：箱子蓋住坑道入口那一段 ± 60 欄、地表下 0..400 列
     const ss = seedInt('obj', 'g2-shaft'), r = src.layout.landmass(1, 2).regions[1], sx = shaftX(ss, r);
     expect(Number.isFinite(sx)).toBe(true);
@@ -98,7 +98,8 @@ describe('gen2 blueprint objects', () => {
     // 真的藍圖畫的格（小屋坑道的空氣等）不算
     const others = real.overlapping(box.x, box.x + box.w);
     const inOther = (x: number, y: number): boolean => others.some((o) => x >= o.x && x < o.x + o.w && y >= o.y && y < o.y + o.h);
-    let dug = 0, ores = 0, shaft = 0;
+    const ORES = [T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE] as number[];
+    let dug = 0, ores = 0, oresIn = 0, shaft = 0;
     for (const c of [cx - 1, cx, cx + 1]) {
       const a = new Column(c, WORLD_H), p = new Column(c, WORLD_H);
       with_.fill(a, c * 32, c * 32 + 32); plain.fill(p, c * 32, c * 32 + 32);
@@ -108,14 +109,18 @@ describe('gen2 blueprint objects', () => {
         if (!inBox) { expect(a.fg[i], `${x},${y}`).toBe(p.fg[i]); continue; }
         if (y < src.profile.surfaceAt(x) || inOther(x, y)) continue;
         const t = a.fg[i];
-        expect([T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE], `${x},${y}`).not.toContain(t);
+        // 原本不是洞的格（含礦）與沒有箱子時相同：礦照常換
+        if (p.fg[i] !== T.AIR) expect(t, `${x},${y}`).toBe(p.fg[i]);
         if (t === T.AIR) { expect(near, `air at ${x},${y}`).toBe(true); shaft++; }
         if (p.fg[i] === T.AIR && t !== T.AIR) dug++;
-        if ([T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE].includes(p.fg[i] as never)) ores++;
+        if (ORES.includes(p.fg[i])) ores++;
+        if (ORES.includes(t)) oresIn++;
       }
     }
-    // 不是空測：原本箱內有洞穴與礦、主坑道也還在
-    expect(dug).toBeGreaterThan(50); expect(ores).toBeGreaterThan(5); expect(shaft).toBeGreaterThan(50);
+    // 箱內地表那格不當入口
+    for (let x = box.x; x < box.x + box.w; x++) if (box.y <= src.profile.surfaceAt(x)) expect(with_.isEntrance(x), `entrance ${x}`).toBe(false);
+    // 不是空測：原本箱內有洞穴與礦、主坑道也還在；有箱子時礦一格不少（原本是洞的格也可能換成礦）
+    expect(dug).toBeGreaterThan(50); expect(ores).toBeGreaterThan(5); expect(shaft).toBeGreaterThan(50); expect(oresIn).toBeGreaterThanOrEqual(ores);
   }, 60_000);
 
   it('extrasIn / objectsIn：沒有物件的 M1 藍圖回空清單（只有家鄉地城的陶罐 / 古碑 / 聚落，M2a Task 8）；每次回新物件', () => {

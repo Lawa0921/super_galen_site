@@ -1,6 +1,6 @@
 // fill.ts — gen2 寫格子：表層材質（gen2 自己的表）、深度層與牆、噪聲洞穴 + 地表入口、每個地區的主坑道、礦（只換石頭類）、
 // 靜止的海水、熔岩線（LAVA_Y 以下的空氣全是熔岩）、結構藍圖（blueprint.ts，依 (layer, id) 序蓋；含海槽的沉船 / 漂流箱）、
-// 樹 / 仙人掌（只長在陸地欄與島的台地、不長在表層藍圖外框內）。免挖洞箱（藍圖的 solid）內的格不挖噪聲洞穴、不當入口、不換礦（主坑道照挖）。島的表層與樹在這裡（P12：島地形 = Profile2 的島欄形狀 + 這裡的表層）。
+// 樹 / 仙人掌（只長在陸地欄與島的台地、不長在表層藍圖外框內）。免挖洞箱（藍圖的 solid）內的格不挖噪聲洞穴、不當入口（礦照常換、主坑道照挖；控制者裁決：solid 只擋洞穴與入口）。島的表層與樹在這裡（P12：島地形 = Profile2 的島欄形狀 + 這裡的表層）。
 // 噪聲取樣與樹 / 仙人掌繪製來自 engine/genPrims.ts（與 v1 同一份，P10）；這裡只有 gen2 的材質與礦的規則。不 import legacy。
 // 每一格只由 (seed, x, y) 決定：跨欄的東西（樹冠、坑道）由「掃 [x0 − 觸及範圍, x1 + 觸及範圍)、只畫進 [x0, x1)」保證與先填哪一段無關。
 // 每個 pass 收到它所屬地塊的 ctx.ver（鎖 / latestVer）；M1 只有 ver 0，沒有版本分支（新規則寫 if (ctx.ver >= N)）。
@@ -126,7 +126,7 @@ export class Filler2 {
 
   // ── 一欄：材質、牆、海水、洞穴、礦、熔岩 ──
   // ctx.ver 0 的規則
-  // solid = 這一欄落在免挖洞箱內的列段 [y0, y1)（沒有 = null）：段內不挖噪聲洞穴、不換礦；地表那格在段內就不當入口
+  // solid = 這一欄落在免挖洞箱內的列段 [y0, y1)（沒有 = null）：段內不挖噪聲洞穴（礦照常換：礦只換石頭類，結構本身之後由 stamp 蓋）；地表那格在段內就不當入口
   private column(col: Column, x: number, I: ColInfo2, _ctx: FillCtx, solid: number[] | null): void {
     const H = col.height, fg = col.fg, wall = col.wall, liq = col.liquid, lt = col.liquidType;
     const { surface: S, rock, deep, molten } = I;
@@ -148,10 +148,9 @@ export class Filler2 {
       else { t = T.BASALT; w = W.BASALT_WALL; }
       const i = li(x, y);
       if (y >= S + WALL_FROM) wall[i] = w;
-      if (solid !== null && inRows(solid, y)) { fg[i] = t; continue; }
-      // 洞穴（義大利麵越深越寬 + 洞穴層大洞窟）
+      // 洞穴（義大利麵越深越寬 + 洞穴層大洞窟）；免挖洞箱內不挖
       const k = y <= rock ? 0 : y >= molten ? 1 : (y - rock) * spanInv;
-      if ((y >= caveTop && spagHit(this.spag, y, k)) || (y >= deep && cavernHit(this.cav, y))) {
+      if (!(solid !== null && inRows(solid, y)) && ((y >= caveTop && spagHit(this.spag, y, k)) || (y >= deep && cavernHit(this.cav, y)))) {
         // 熔岩線：LAVA_Y 以下的空氣全是熔岩（全世界同一條水平線；主坑道最深只到 deep + 18，碰不到這裡）
         if (y >= LAVA_Y) { liq[i] = LIQ_MAX; lt[i] = LIQ.LAVA; }
         continue;

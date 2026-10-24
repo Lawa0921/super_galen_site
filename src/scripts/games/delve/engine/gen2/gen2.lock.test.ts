@@ -6,7 +6,7 @@ import { Gen2Source, GEN2_VERSION, GEN2_MIN_VERSION } from './index';
 import { fillCol, bytes } from './testUtil';
 import { fnv1a } from '../../net/codec';
 
-const GEN2_HASHES: Record<number, number> = { 0: 2855785091 };
+const GEN2_HASHES: Record<number, number> = { 0: 949959904 };
 // 101：家鄉的小屋（M2a Task 7 起家鄉表層槽多半是錨點，原本 105 的遺跡沒了）；8：家鄉地城的入口塔與塔下的房間（M2a Task 8）
 const COLS = [-300, -40, -8, -4, -1, 0, 8, 30, 65, 100, 101, 131, 132, 140, 160, 220, 400];
 

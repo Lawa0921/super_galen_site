@@ -145,7 +145,8 @@ export function solvable(d: DungeonInfo): Verdict {
 
 // tile 層級（洪水填充，4 連通，範圍 = bbox 外擴）：非實心可走、關著的木門可開、上鎖的門依 openLocked。
 // 不開鎖：拿得到所有地城鑰匙、碰不到金鑰匙 / 金寶箱 / 上鎖房間內部；開鎖：金鑰匙、金寶箱、每個房間的地板都到得了
-export function floodSolvable(w: World, d: DungeonInfo): Verdict {
+// w 只要讀得到 fg（gen2 的 World 與舊生成器的 GenGrid 都可以，legacy/gen/dungeon.test.ts 共用）
+export function floodSolvable(w: { getFg(x: number, y: number): number }, d: DungeonInfo): Verdict {
   const b = d.bbox, x0 = b.x - 2, x1 = b.x + b.w + 2, y0 = b.y - 6, y1 = b.y + b.h + 2, W = x1 - x0;
   const flood = (openLocked: boolean): Uint8Array => {
     const seen = new Uint8Array(W * (y1 - y0));
