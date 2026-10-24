@@ -8,10 +8,13 @@
 //   for (const e of game.drainEvents()) playSfx(e);
 import { World, type ColumnSource } from './world';
 import { chunkOfX, defaultBounds, type WorldBounds } from './coords';
-import { OuterGen, frameOf } from './chunkgen';
+import { OuterGen, frameOf } from './legacy/chunkgen';
 import { LOAD_COLS, planStreaming } from './streaming';
-import { generateWorld, type GenResult, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './worldgen';
-import type { DungeonInfo } from './gen/dungeon';
+import { generateWorld, type GenResult, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './legacy/worldgen';
+import { bootBaked, bootGen2, bootLegacy, type WorldContent, type WorldGenSpec } from './worldBoot';
+import { Gen2Source } from './gen2';
+import { BakedSource } from './bakedSource';
+import type { DungeonInfo } from './legacy/gen/dungeon';
 type GenRelic = { x: number; y: number; item: ItemId; where: string };
 import { T, W, TIER_UNBREAKABLE, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
 import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, type PickStats, type WeaponDef, type WeaponKind } from './items';
@@ -31,7 +34,7 @@ import {
   FISH, POOL_COUNT_MAX, biteDelay, biteWindow, canFishIn, crateLoot, fishingPower, rollCatch, timeSlot, type DepthZone, type TimeSlot,
 } from './fishing';
 import { ExploredMap, toggleMarker, type MapMarker } from './explore';
-import { Discovery, buildRegions, outerRegions, type Region, type RegionCat } from './discovery';
+import { Discovery, buildRegions, type Region, type RegionCat } from './discovery';
 import { EQUIP_SLOTS, type EquipSlot } from './equipment';
 import {
   BASE_MANA, LIFE_CORE_HP, MAX_HP_CAP, SAFE_FALL_TILES, computeStats, damageTaken, enemyDamage, fallDamage,
@@ -78,8 +81,8 @@ import { FolkWorld, type FolkEvent, type FolkHost, type FolkNpc } from './folk';
 import { ROLES, AFF_QUEST, AFF_RESCUE, BUFFS, affMul, affTier, type BuffKind, type FolkService } from './folkDefs';
 import { QuestLog, type QuestDef, type GiverInfo, type QuestCtx } from './quests';
 import { landmarkReward } from './sites';
-import type { VillageInfo, HallInfo } from './gen/settlements';
-import type { LandmarkInfo } from './gen/landmarks';
+import type { VillageInfo, HallInfo } from './legacy/gen/settlements';
+import type { LandmarkInfo } from './legacy/gen/landmarks';
 import { isLandmarkTile } from './tiles';
 import { WALL_ITEM } from './items';
 import { marchTiles } from './aimRay';
@@ -92,6 +95,7 @@ import {
 } from './skills';
 import {
   TILE_SIZE, CHUNK, FIXED_DT, REACH_TILES, STATION_RANGE, PLACE_COOLDOWN, DAY_LENGTH, HOTBAR_SIZE, JUMP_SPEED, JUMP_HOLD, REMOTE_REACH_SLACK,
+  GEN_VERSION, GEN_VERSION_V2, WORLD_W, WORLD_H,
 } from './constants';
 
 export interface DelveOptions {
@@ -112,6 +116,8 @@ export interface DelveOptions {
   localPid?: Pid;
   /** 單機 / 房主 / 客人副本（省略 = 'solo'） */
   mode?: GameMode;
+  /** 世界生成器（省略 = legacy 舊生成器）。gen2 = 無限世界生成器 v2：只接受正式尺寸、忽略 gen / bounds / columnSource */
+  worldGen?: WorldGenSpec;
 }
 
 export type BlockReason = 'reach' | 'tier' | 'full' | 'body' | 'support' | 'occupied' | 'chest' | 'locked' | 'golden'
@@ -526,8 +532,9 @@ export class DelveGame {
   readonly biomes: readonly BiomeSegment[];
   readonly structures: readonly Structure[];
   readonly landforms: readonly Landform[];
-  readonly dungeonZone: ReservedZone;
-  readonly layers: GenLayers;
+  /** 地城保留區 / 深度層線（舊生成器的輸出；gen2 世界沒有 = null，層線一律走 world.layersAt） */
+  readonly dungeonZone: ReservedZone | null;
+  readonly layers: GenLayers | null;
   /** 地城（房間 / 門 / 鑰匙位置）；小世界沒有 */
   readonly dungeon: DungeonInfo | null;
   /** 所有古碑（id = 碑文編號） */
@@ -538,6 +545,10 @@ export class DelveGame {
   readonly springs: readonly SpringSpec[];
   /** 地區 / 地標（依種子命名） */
   readonly regions: readonly Region[];
+  /** 世界生成器版本（存檔 header 的 genVersion）：legacy = GEN_VERSION（7）、gen2 / 烘焙 = GEN_VERSION_V2（8） */
+  readonly genVersion: number;
+  /** 世界的生成方式：legacy = 舊生成器、gen2 = 新建的 gen2 世界、baked = 舊世界烘焙成 gen2（Task 16） */
+  readonly genKind: 'legacy' | 'gen2' | 'baked';
   // ── 玩家（PlayerActor）──────────────────────────────────
   /** 所有玩家角色（插入順序 = 處理順序；本地 actor 永遠第一個） */
   readonly actors = new Map<Pid, PlayerActor>();
@@ -722,7 +733,7 @@ export class DelveGame {
   /** 已解鎖的傳送碑 id（世界層級、所有 actor 共用；不含 0：出生點那顆恆解鎖；存檔內容） */
   readonly stonesUnlocked = new Set<number>();
   /** 外圍地區（無限世界的海 / 生態段；所有 actor 的 Discovery 共用同一個查詢與快取） */
-  private readonly outerRegion: ((x: number, y: number) => Region | null) | null;
+  private readonly outerRegion: ((x: number, y: number) => Region[]) | null;
   /** 地表村落 / 矮人地廳（世界生成） */
   readonly villages: readonly VillageInfo[];
   readonly halls: readonly HallInfo[];
@@ -817,25 +828,40 @@ export class DelveGame {
     this.settle.spawnLink = { get: () => this.cur.spawnCore, set: (v) => { this.cur.spawnCore = v; } };
     this.seed = String(opts.seed ?? 'delve');
     this.appearance = normalizeAppearance(opts.appearance);
-    // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
-    const pre = opts.gen && (opts.width === undefined || opts.gen.world.width === opts.width) && (opts.height === undefined || opts.gen.world.height === opts.height) ? opts.gen : null;
-    const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
-    // 舊生成器的扁平格 → 區塊欄儲存。正式尺寸的世界無限（中央以外由外圍生成器產生），小尺寸的測試世界有界（B5）
-    const bounds = opts.bounds ?? defaultBounds(gen.world.width, gen.world.height);
-    const source = opts.columnSource ?? (bounds === 'infinite' ? new OuterGen(this.seed, frameOf(gen.world)) : null);
-    this.world = World.fromGen(gen.world, gen.layers, { bounds, source });
+    const spec: WorldGenSpec = opts.worldGen ?? { kind: 'legacy' };
+    let content: WorldContent;
+    if (spec.kind === 'gen2' || spec.kind === 'baked') {
+      // gen2 / 烘焙世界只有正式尺寸（版面以家鄉 [0, 4200) 為準）
+      if ((opts.width !== undefined && opts.width !== WORLD_W) || (opts.height !== undefined && opts.height !== WORLD_H)) {
+        throw new RangeError(`delve: gen2 worlds are ${WORLD_W}x${WORLD_H} (got ${opts.width ?? WORLD_W}x${opts.height ?? WORLD_H})`);
+      }
+      // 烘焙世界不跑舊生成器：中央的格子在存檔裡（restoreGame 蓋上），每欄資料 / 生成資訊取存檔的 LegacyMeta
+      content = spec.kind === 'gen2' ? bootGen2(this.seed, spec, this.mode === 'replica') : bootBaked(this.seed, spec, this.mode === 'replica');
+    } else {
+      // 預先生成的世界只在大小對得上時採用（seed 由呼叫端保證）
+      const pre = opts.gen && (opts.width === undefined || opts.gen.world.width === opts.width) && (opts.height === undefined || opts.gen.world.height === opts.height) ? opts.gen : null;
+      const gen = pre ?? generateWorld(this.seed, { width: opts.width, height: opts.height });
+      // 舊生成器的扁平格 → 區塊欄儲存。正式尺寸的世界無限（中央以外由外圍生成器產生），小尺寸的測試世界有界（B5）
+      const bounds = opts.bounds ?? defaultBounds(gen.world.width, gen.world.height);
+      const source = opts.columnSource ?? (bounds === 'infinite' ? new OuterGen(this.seed, frameOf(gen.world)) : null);
+      content = bootLegacy(this.seed, gen, { bounds, source });
+    }
+    this.genKind = spec.kind;
+    this.genVersion = spec.kind === 'legacy' ? GEN_VERSION : GEN_VERSION_V2;
+    this.world = content.world;
     // 客人副本：卸載的欄不停放（D4：回來時由房主重新同步）
     if (this.mode === 'replica') this.world.noPark = true;
-    this.outerRegion = source instanceof OuterGen ? outerRegions(this.seed, source.profile) : null;
-    // 傳送碑：出生點那顆在 spawn.x + 7 的生成地表上（中央每欄陣列：挖掘 / 蓋東西不會讓碑移動）；外圍的由外圍側寫算（有界世界沒有）
-    const stoneX = gen.spawn.x + 7;
-    this.waystones = new Waystones(this.seed, { x: stoneX, y: this.world.surface[stoneX] - 1 }, source instanceof OuterGen ? source.profile : null);
+    this.outerRegion = content.outer;
+    // 傳送碑：出生點那顆在 spawn.x + 7 的生成地表上（舊世界 = 中央每欄陣列、gen2 = source 的側寫：挖掘 / 蓋東西不會讓碑移動）；
+    // 外圍的由陸地查詢算（有界世界沒有）
+    const stoneX = content.spawn.x + 7;
+    this.waystones = new Waystones(this.seed, { x: stoneX, y: this.world.surfaceAt(stoneX) - 1 }, content.land);
     this.liquids = new LiquidSim(this.world);
     // 液體反應（熔岩遇水 / 蜂蜜）不在任何活著的玩家站的格子凝成黑曜石 / 脆蜜塊（不把人封進方塊；液體本身照樣流過去）
     this.liquids.blocked = (x, y) => this.tileOverlapsPlayer(x, y, true);
     // 泉水瀑布（無限源 + 滲水石排水）
-    this.springs = gen.springs;
-    this.liquids.setSprings(gen.springs);
+    this.springs = content.springs;
+    this.liquids.setSprings(content.springs);
     const w = this.world;
     this.env = {
       isSolid: (x, y) => w.isSolid(x, y),
@@ -847,28 +873,28 @@ export class DelveGame {
       contactAt: (b) => liquidContact(w, b),
       liquidAt: (x, y) => ({ amount: w.getLiquid(x, y), type: w.getLiquidType(x, y) }),
     };
-    this.spawn = gen.spawn;
-    this.biomes = gen.biomes;
-    this.structures = gen.structures;
-    this.landforms = gen.landforms;
-    this.dungeonZone = gen.dungeonZone;
-    this.layers = gen.layers;
-    // 每欄深度層線：系統一律走 world.layersAt(x)（預先生成的世界也補上）
-    this.world.layers = gen.layers;
-    this.dungeon = gen.dungeon;
-    this.tablets = gen.tablets;
-    this.relics = gen.relics;
-    for (const t of gen.tablets) this.tabletAt.set(this.world.idx(t.x, t.y), t.id);
-    this.regions = buildRegions({
-      seed: this.seed, width: this.world.width, height: this.world.height, spawn: gen.spawn,
-      surface: this.world.surface, layers: gen.layers, biomes: gen.biomes, structures: gen.structures, dungeon: gen.dungeon,
-    });
+    this.spawn = content.spawn;
+    this.biomes = content.biomes;
+    this.structures = content.structures;
+    this.landforms = content.landforms;
+    this.dungeonZone = content.dungeonZone;
+    this.layers = content.layers;
+    // 每欄深度層線：系統一律走 world.layersAt(x)（舊世界由 World.fromGen 設好；gen2 問 source）
+    this.dungeon = content.dungeon;
+    this.tablets = content.tablets;
+    this.relics = content.relics;
+    for (const t of content.tablets) this.tabletAt.set(this.world.idx(t.x, t.y), t.id);
+    const L = content.layers;
+    this.regions = content.regions ?? (L ? buildRegions({
+      seed: this.seed, width: this.world.width, height: this.world.height, spawn: content.spawn,
+      surface: this.world.surface, layers: L, biomes: content.biomes, structures: content.structures, dungeon: content.dungeon,
+    }) : []);
     this.explored = new ExploredMap(this.world.width, this.world.height, undefined, this.world);
-    this.villages = gen.villages ?? [];
-    this.halls = gen.halls ?? [];
-    this.landmarks = gen.landmarks ?? [];
+    this.villages = content.villages;
+    this.halls = content.halls;
+    this.landmarks = content.landmarks;
     for (const l of this.landmarks) this.landmarkAt.set(this.world.idx(l.x, l.y), l);
-    this.discovery = new Discovery(this.regions, { loreTotal: gen.tablets.length, landmarks: [...this.landmarkAt.keys()] });
+    this.discovery = new Discovery(this.regions, { loreTotal: content.tablets.length, landmarks: [...this.landmarkAt.keys()] });
     this.discovery.setOuter(this.outerRegion);
     // 據點核心範圍的欄 pin 住（無限世界：居民在那裡活動，不卸載）
     this.settle.attach(this.world);
@@ -896,6 +922,33 @@ export class DelveGame {
     this.discovery.visit(this.spawn.x, this.spawn.y);
     // 曆法：雪原的湖在春天開局時仍是冰
     this.refreshSeason();
+  }
+
+  /** gen2 生成器：gen2 世界 = world.source；烘焙世界 = BakedSource.gen2（接縫外的 gen2；存檔的鎖表在它身上）；舊世界 null */
+  gen2(): Gen2Source | null {
+    const s = this.world.source;
+    if (s instanceof BakedSource) return s.gen2;
+    return s instanceof Gen2Source ? s : null;
+  }
+
+  /**
+   * 喚醒 (cx, cy) chunk 與外圍一圈的液體（讀檔 / 停放蓋回來的 chunk 可能還在流）。烘焙世界：安靜 chunk（world.bakedQuiet）
+   * 不喚醒，外圍那一圈也不碰安靜的鄰 chunk；沒有安靜 chunk（舊世界 / gen2）= 一個 wakeRect（與以前相同的排入順序）
+   */
+  wakeChunk(cx: number, cy: number): void {
+    const w = this.world, quiet = w.bakedQuiet;
+    const x0 = cx * CHUNK - 1, y0 = cy * CHUNK - 1, x1 = (cx + 1) * CHUNK + 1, y1 = (cy + 1) * CHUNK + 1;
+    if (!quiet.size) { this.liquids.wakeRect(x0, y0, x1, y1); return; }
+    if (quiet.has(w.chunkIndex(cx, cy))) return;
+    for (let dy = -1; dy <= 1; dy++) {
+      const ny = cy + dy;
+      if (ny < 0 || ny >= w.chunksY) continue;
+      for (let dx = -1; dx <= 1; dx++) {
+        const nx = cx + dx;
+        if ((dx || dy) && quiet.has(w.chunkIndex(nx, ny))) continue;
+        this.liquids.wakeRect(Math.max(x0, nx * CHUNK), Math.max(y0, ny * CHUNK), Math.min(x1, (nx + 1) * CHUNK), Math.min(y1, (ny + 1) * CHUNK));
+      }
+    }
   }
 
   /** 換掉探索狀態（存檔還原用） */
@@ -928,13 +981,20 @@ export class DelveGame {
     const w = this.world;
     if (!w.isResident(n)) return;
     const sx = Math.max(cx, n) * CHUNK;
-    const central = (x: number): boolean => x >= 0 && x < w.width;
+    const central = (x: number): boolean => w.isLegacyCentral(x);
     if (central(sx - 1) || central(sx)) { this.liquids.wakeSeam(sx); return; }
+    // 烘焙世界的安靜 chunk 不算改過、它那一側的接縫格也不喚醒（舊世界 / gen2 沒有安靜 chunk：與以前相同）
+    const quiet = w.bakedQuiet;
+    const touched = (k: number): boolean => (w.modifiedChunks.has(k) || w.liquidModified.has(k)) && !quiet.has(k);
     for (let cy = 0; cy < w.chunksY; cy++) {
       const a = w.chunkIndex(cx, cy), b = w.chunkIndex(n, cy);
-      if (w.modifiedChunks.has(a) || w.liquidModified.has(a) || w.modifiedChunks.has(b) || w.liquidModified.has(b)) {
-        this.liquids.wakeSeam(sx, cy * CHUNK, (cy + 1) * CHUNK);
-      }
+      if (!touched(a) && !touched(b)) continue;
+      const y0 = cy * CHUNK, y1 = (cy + 1) * CHUNK;
+      if (!quiet.has(a) && !quiet.has(b)) { this.liquids.wakeSeam(sx, y0, y1); continue; }
+      // 一側安靜：只喚醒另一側那一欄（左欄 = sx − 1 屬於 min(cx, n)）
+      const left = cx < n ? a : b, right = cx < n ? b : a;
+      if (!quiet.has(left)) this.liquids.wakeRect(sx - 1, y0, sx, y1);
+      if (!quiet.has(right)) this.liquids.wakeRect(sx, y0, sx + 1, y1);
     }
   }
   /** tile 欄 x 周圍 LOAD_COLS 欄同步載入（teleport / 重生 / 傳送先叫它，落點不會是「沒載入 = 石頭」） */
@@ -961,7 +1021,7 @@ export class DelveGame {
     if (loaded.length) freezeColumns(w, this.liquids, dayIndexOf(this.time), loaded, (x, y) => this.tileOverlapsPlayer(x, y, true), this.minedIce);
     for (const k of restored) {
       const { cx, cy } = w.chunkCoords(k);
-      if (w.isResident(cx)) this.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
+      if (w.isResident(cx)) this.wakeChunk(cx, cy);
     }
   }
 

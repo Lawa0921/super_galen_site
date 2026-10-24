@@ -4,7 +4,7 @@ import { World, LIQ } from './world';
 import { T, W } from './tiles';
 import { LightEngine, LightMap, skyBrightness, ambientReach, depthSurface, depthSurfaceAt, DEPTH_SMOOTH_R } from './lighting';
 import { skyColor } from './sky';
-import { generateWorld } from './worldgen';
+import { generateWorld } from './legacy/worldgen';
 import {
   LIGHT_AIR_DECAY, LIGHT_AIR_DECAY_DEEP, LIGHT_DEEP_START, LIGHT_DEEP_FULL, LIGHT_SOLID_DECAY, LIGHT_MARGIN, DAY_LENGTH,
   LIGHT_WATER_DECAY, LIGHT_HONEY_DECAY, LAVA_LIGHT, SKY_SHAFT_LEN,

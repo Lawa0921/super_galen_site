@@ -30,7 +30,7 @@ export function freezeHash(x: number): number {
 
 /** 冰變動的那格：中央標液體 dirty + 已修改（存檔），外圍只標 dirty */
 function touchIce(w: World, x: number, y: number): void {
-  if (x >= 0 && x < w.width) w.touchLiquidAt(x, y);
+  if (w.isLegacyCentral(x)) w.touchLiquidAt(x, y);
   else w.markLiquidDirty(x, y);
 }
 

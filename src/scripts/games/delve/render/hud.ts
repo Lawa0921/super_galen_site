@@ -705,7 +705,7 @@ export class Hud {
       const area = here[0]?.name ?? g.discovery.regionsAt(f.x, f.y).find((r) => g.discovery.isFound(r.id))?.name ?? '未知之地';
       const nav = g.navInfo();
       // 深度層線：中央照舊用全世界的 cavernY / moltenY；中央以外用該欄自己的（外圍生成器每欄加了雜訊）
-      const L = f.x < 0 || f.x >= w.width ? w.layersAt(f.x) : null;
+      const L = w.isLegacyCentral(f.x) ? null : w.layersAt(f.x);
       this.q('#delve-status').textContent = statusText({
         clock: '', area, feetY: f.y, surface: w.surfaceAt(f.x), cavernY: L ? L.deep : w.cavernY, moltenY: (L ? L.molten : w.moltenY) || Infinity,
         east: nav.east, depth: nav.depth,

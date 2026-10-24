@@ -185,3 +185,12 @@ describe('季節 / 天氣對生成的影響', () => {
     expect(weight({ ...desert, season: 0 }, 'gel_blob')).toBeGreaterThan(weight({ ...desert, season: 1 }, 'gel_blob'));
   });
 });
+
+describe('BIOME.OCEAN 生成', () => {
+  const hab = (o: Partial<Habitat>): Habitat => ({ zone: 'surface', biome: BIOME.OCEAN, mushroom: false, night: false, ...o });
+  it('海面上沒有陸怪；海水裡只有鋸鰭魚', () => {
+    expect(spawnTable(hab({ night: true, water: false }))).toEqual([]);
+    expect(spawnTable(hab({ water: false }))).toEqual([]);
+    expect(spawnTable(hab({ water: true })).map((e) => e.kind)).toEqual(['razor_fin']);
+  });
+});

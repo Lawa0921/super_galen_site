@@ -15,7 +15,9 @@ export const UG_FADE_STEPS = 8;
 /** 土 → 岩 → 深層 → 熔岩 分界的過渡帶高度（px，分界上下各一半）：下一層以 1/8 … 7/8 抖動疊上去 */
 export const UG_SEAM = 64;
 /** 生態區（BIOME id）→ 土 / 岩層主題（森林 = 土 / 岩各自） */
-const BIOME_THEME: Record<number, number> = { 1: UG.SAND, 2: UG.ICE, 3: UG.MUD };
+const BIOME_THEME: Record<number, number> = { 1: UG.SAND, 2: UG.ICE, 3: UG.MUD, 4: UG.SAND };
+/** 岩層不跟著生態區換主題的區（海：上層是砂、下面仍是岩） */
+const LOWER_THEME: Record<number, number> = { 4: UG.ROCK };
 /** 交界抖動：距離另一區 d 欄（1..BORDER_R）→ keep 約 (BORDER_R+1−d) / (2(BORDER_R+1))（邊界上約五五開） */
 const BORDER_R = 10;
 /** 覆蓋區外緣：3 圈、每圈 2 tile */
@@ -59,7 +61,7 @@ export function ugColumnBands(c: UgColumn): UgBand[] {
   };
   const bio = c.biomeAt(c.tx);
   const upper = (b: number): number => BIOME_THEME[b] ?? UG.DIRT;
-  const lower = (b: number): number => BIOME_THEME[b] ?? UG.ROCK;
+  const lower = (b: number): number => LOWER_THEME[b] ?? BIOME_THEME[b] ?? UG.ROCK;
   const step = c.fade / UG_FADE_STEPS;
   const fadeEnd = Math.min(c.rockY, c.top + c.fade);
   for (let i = 0; i < UG_FADE_STEPS; i++) {

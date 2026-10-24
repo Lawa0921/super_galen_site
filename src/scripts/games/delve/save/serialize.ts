@@ -48,6 +48,12 @@
 //   讀檔：有 bounds → 外圍鍵合法、chunk payload 整塊 32 欄寫入；沒有 bounds（format ≤ 10 的舊檔）→ 只接受中央範圍的鍵
 //   （restoreBlocker 回 size），payload / 液體 / 箱子只寫 x < width 的格（補零規則：舊 payload 在 x ≥ width 是補的 0，
 //   不能把無限世界那幾欄的地形挖成空氣）。
+// gen2 世界（genVersion 8；B6：舊世界 genVersion 7 不寫新欄位，位元組不變）：header.outerGen = gen2 版本（GEN2_VERSION）、
+//   header.gen2 = { locks：地塊鎖表（engine/gen2/locks.ts LockJSON，依 side, i 排序）}。genVersion 8 必有 gen2、7 必無（否則損毀）；
+//   比 8 新的 genVersion 不讀 gen2（形狀可能不同），交給 genBlocker 回「較新版本」。讀檔前 restoreBlocker 以 save/genCheck.ts genBlocker 比對版本，
+//   gen2 世界依存檔的鎖表重建生成器（鎖表在 Gen2Source / Layout 建構前載入），不需預先生成。
+//   烘焙過的舊世界（save/bake.ts）：header.gen2 另有 bake（接縫 / 舊中央框 / 安靜 chunk 的差分鍵）與 legacy（LegacyMeta JSON），
+//   兩者同時有（只有一個 = 損毀）；中央每個 chunk 都在 chunks / liquids 裡，讀檔不跑舊生成器、安靜 chunk 不喚醒。
 // 門的開 / 關 / 解鎖是 tile 本身（DOOR_CLOSED / DOOR_OPEN / DOOR_LOCKED），跟著被修改的 chunk 一起存。
 //
 // 二進位格式（little-endian）：
@@ -64,12 +70,12 @@ import { Inventory, cloneStack, type InventoryJSON, type Stack } from '../engine
 import { gearSlot, validGear, type Gear } from '../engine/gear';
 import type { CodexJSON } from '../engine/codex';
 import { CHEST_SLOTS } from '../engine/loot';
-import { CHUNK, GEN_VERSION, INV_SIZE, TILE_SIZE } from '../engine/constants';
+import { CHUNK, GEN_VERSION_V2, INV_SIZE, TILE_SIZE, WORLD_H, WORLD_W } from '../engine/constants';
 import { TILES, WALLS, T, SOLID_LUT, isChestTile } from '../engine/tiles';
 import { ITEMS, isItemId, type ItemId } from '../engine/items';
 import { MAX_DROPS } from '../engine/entities';
 import { ExploredMap, MAX_MARKERS, decodeRle, type MapMarker, type OuterBitsSave } from '../engine/explore';
-import type { GenResult } from '../engine/worldgen';
+import type { GenResult } from '../engine/legacy/worldgen';
 import type { DiscoveryJSON } from '../engine/discovery';
 import { Equipment, type EquipmentGearJSON, type EquipmentJSON } from '../engine/equipment';
 import { ENEMIES, type EnemyKind } from '../engine/enemies';
@@ -88,10 +94,16 @@ import type { FolkJSON } from '../engine/folk';
 import type { QuestLogJSON } from '../engine/quests';
 import { BUFFS, type BuffKind } from '../engine/folkDefs';
 import { validStoneIds } from '../engine/waystones';
+import { LockTable, type LockJSON } from '../engine/gen2/locks';
+import { genBlocker } from './genCheck';
+import type { WorldGenSpec } from '../engine/worldBoot';
+import { BakedSource } from '../engine/bakedSource';
+import { validBakeInfo, type BakeInfo } from './bake';
+import { decodeLegacyMeta, encodeLegacyMeta, type LegacyMetaJSON } from './legacyMeta';
 
 export const SAVE_FORMAT = 9;
-/** 可以遷移的舊生成器版本（format ≤ 5 的存檔）：v4 → v5（差異見檔頭） */
-export const COMPAT_GEN: readonly number[] = [4];
+/** 可以遷移的舊生成器版本（定義在 genCheck.ts；這裡轉出給既有的呼叫端） */
+export { COMPAT_GEN } from './genCheck';
 export interface LiquidSave { chunks: number[]; data: string; }
 export interface CombatSave {
   hp: number; maxHp: number; mana: number;
@@ -149,6 +161,7 @@ export function validTileKey(k: number, h: KeyDims): boolean {
   if (!Number.isInteger(k) || k < 0) return false;
   if (k < T_BASE) return k < h.width * h.height;
   if (h.bounds !== 'infinite') return false;
+  // [0, width) 是 tileKey 的編碼分界（coords.ts），與中央怎麼生成（arrays / source 模式）無關：gen2 世界照樣適用
   const { x, y } = tileXY(h.width, k);
   return y < h.height && (x < 0 || x >= h.width) && x >= -X_LIMIT && x < X_LIMIT;
 }
@@ -220,6 +233,40 @@ export interface SaveHeader {
   exploredOuter?: OuterBitsSave;
   /** 已解鎖的傳送碑 id（世界共用；非空才有） */
   stones?: number[];
+  /** gen2 世界才有（genVersion 8 必有、7 必無） */
+  gen2?: Gen2Save;
+}
+/** gen2 世界的存檔欄位；bake + legacy 同時有 = 烘焙過的舊世界（save/bake.ts：接縫 / 安靜 chunk、舊生成器的附帶資料） */
+export interface Gen2Save { locks: LockJSON; bake?: BakeInfo; legacy?: LegacyMetaJSON }
+/** gen2 欄位：沒有 = undefined；形狀不對 / 鎖表不合法 / bake 與 legacy 只有一個或壞掉 → 存檔損毀；回傳正規化（排序）的副本 */
+export function validGen2(v: unknown): Gen2Save | undefined {
+  if (v === undefined) return undefined;
+  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new SaveFormatError('gen2');
+  const o = v as { locks?: unknown; bake?: unknown; legacy?: unknown };
+  let locks: LockJSON;
+  try {
+    locks = LockTable.fromJSON(o.locks).toJSON();
+  } catch (e) {
+    if (e instanceof RangeError) throw new SaveFormatError(`gen2: ${e.message}`);
+    throw e;
+  }
+  if ((o.bake === undefined) !== (o.legacy === undefined)) throw new SaveFormatError('gen2: bake and legacy go together');
+  if (o.bake === undefined) return { locks };
+  // legacy 只驗證（解得開、每個欄位合法）；存檔照原樣帶著 JSON，讀檔開機時再解一次（worldGenFor）。bake.frame 必須 = legacy.frame
+  const meta = decodeLegacyMeta(o.legacy);
+  const bake = validBakeInfo(o.bake, meta.frame);
+  return { locks, bake, legacy: o.legacy as LegacyMetaJSON };
+}
+/** header.gen2 依 genVersion：8 → 必有（validGen2）；< 8 → 必無；> 8（較新版）→ 不讀（genBlocker 會回較新版本） */
+export function gen2Field(genVersion: number, v: unknown): Pick<SaveHeader, 'gen2'> {
+  if (genVersion > GEN_VERSION_V2) return {};
+  if (genVersion < GEN_VERSION_V2) {
+    if (v !== undefined) throw new SaveFormatError('gen2: legacy world');
+    return {};
+  }
+  const gen2 = validGen2(v);
+  if (!gen2) throw new SaveFormatError('gen2: missing');
+  return { gen2 };
 }
 export interface FolkSave {
   world: FolkJSON; quests: QuestLogJSON;
@@ -275,7 +322,7 @@ export class SaveFormatError extends Error {
 export type RestoreError = 'format' | 'gen_version' | 'size';
 export type RestoreResult =
   | { ok: true; game: DelveGame; header: SaveHeader }
-  | { ok: false; error: RestoreError; message: string; saveGenVersion?: number };
+  | { ok: false; error: RestoreError; message: string; saveGenVersion?: number; newer?: boolean };
 export interface RestoreOptions {
   /** 生成器版本不符時仍以目前生成器還原（被修改 chunk 照貼，可能有接縫） */
   allowGenMismatch?: boolean;
@@ -333,7 +380,7 @@ export function encodeLiquidRle(amount: Uint8Array, type: Uint8Array): Uint8Arra
 }
 /** 解 RLE；長度不符 / 種類不合法 / 量與種類不一致 → SaveFormatError */
 export function decodeLiquidRle(bytes: Uint8Array, n: number): { amount: Uint8Array; type: Uint8Array } {
-  const amount = new Uint8Array(n), type = new Uint8Array(n);
+  // 第一遍：只驗證並加總 run 長度（不配置）；總和 ≠ n 就丟，避免惡意 n 先配置巨大緩衝
   let p = 0, i = 0;
   while (p < bytes.length) {
     let len = 0, shift = 0, b: number;
@@ -344,10 +391,19 @@ export function decodeLiquidRle(bytes: Uint8Array, n: number): { amount: Uint8Ar
     if (p + 2 > bytes.length) throw new SaveFormatError('liquids: truncated');
     const a = bytes[p++], t = bytes[p++];
     if (t > LIQ.HONEY || (a === 0) !== (t === 0) || a > LIQ_MAX || len < 1 || i + len > n) throw new SaveFormatError('liquids: bad cell');
-    amount.fill(a, i, i + len); type.fill(t, i, i + len);
     i += len;
   }
   if (i !== n) throw new SaveFormatError(`liquids: ${i} cells != ${n}`);
+  // 第二遍：確認後才配置並填值
+  const amount = new Uint8Array(n), type = new Uint8Array(n);
+  p = 0; i = 0;
+  while (p < bytes.length) {
+    let len = 0, shift = 0, b: number;
+    do { b = bytes[p++]; len |= (b & 0x7f) << shift; shift += 7; } while (b & 0x80);
+    const a = bytes[p++], t = bytes[p++];
+    amount.fill(a, i, i + len); type.fill(t, i, i + len);
+    i += len;
+  }
   return { amount, type };
 }
 /** chunk 清單的液體（依序每 chunk CHUNK*CHUNK 格，越界補 0） */
@@ -411,8 +467,8 @@ export function validHalves(v: unknown): number[] | undefined {
   if (!Array.isArray(v)) return undefined;
   return v.filter((d) => Number.isInteger(d) && d >= 0).slice(0, 2_000_000);
 }
-/** 升冪 tile 鍵 → 差分（第一個是絕對值，之後是與前一個的差） */
-function encodeDeltas(keys: readonly number[]): number[] {
+/** 升冪 tile / chunk 鍵 → 差分（第一個是絕對值，之後是與前一個的差） */
+export function encodeDeltas(keys: readonly number[]): number[] {
   const out: number[] = [];
   let last = 0;
   for (const i of keys) { out.push(i - last); last = i; }
@@ -507,7 +563,7 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
   return {
     header: {
       format: SAVE_FORMAT,
-      genVersion: GEN_VERSION,
+      genVersion: game.genVersion,
       seed: game.seed,
       width: w.width,
       height: w.height,
@@ -551,12 +607,29 @@ export function snapshotGame(game: DelveGame, now: number = Date.now()): SaveDat
       levels: game.levels.toJSON(),
       folk: { world: game.folk.toJSON(), quests: game.quests.toJSON(), buffs: { ...game.buffs }, scoutMarks: game.scoutMarks.map((m) => ({ ...m })), perkDays: { ...game.perkDays }, scouted: [...game.scouted] },
       // B6：只在不是預設值時才寫（有界世界 / 沒有外圍迷霧 → 位元組與之前相同）
+      // gen2 世界：outerGen = Gen2Source.version（GEN2_VERSION）、gen2.locks = 地塊鎖表
       ...(w.bounds === 'infinite' ? { bounds: 'infinite' as const, outerGen: w.source ? w.source.version : 0 } : {}),
+      ...(game.genKind !== 'legacy' ? { gen2: gen2Save(game) } : {}),
       ...(fog.outer ? { exploredOuter: { chunks: [...fog.outer.chunks], data: fog.outer.data } } : {}),
       ...(game.stonesUnlocked.size ? { stones: [...game.stonesUnlocked].sort((a, b) => a - b) } : {}),
     },
     chunks,
   };
+}
+
+/**
+ * gen2 / 烘焙世界的 header.gen2：鎖表（不該沒有 gen2 生成器：沒有 → 空表並大聲說）；
+ * 烘焙世界另寫 bake（接縫、舊中央框、目前的 bakedQuiet）與 legacy（存檔帶進來的那份 LegacyMeta）。
+ * 連線的生成器描述（net/host.ts 的 welcome.gen2 + legacy bulk）也取這一份
+ */
+export function gen2Save(game: DelveGame): Gen2Save {
+  const src = game.gen2();
+  if (!src) { invariantBroken(`snapshotGame: ${game.genKind} world has no gen2 source`); return { locks: [] }; }
+  const locks = src.locks.toJSON(), w = game.world, b = w.source;
+  if (game.genKind !== 'baked') return { locks };
+  if (!(b instanceof BakedSource)) { invariantBroken('snapshotGame: baked world has no baked source'); return { locks }; }
+  const quiet = encodeDeltas([...w.bakedQuiet].sort((p, q) => p - q));
+  return { locks, bake: { east: { ...b.bake.east }, west: { ...b.bake.west }, frame: { ...b.bake.frame }, quiet, v1: b.bake.v1 }, legacy: encodeLegacyMeta(game) };
 }
 
 // ── base64（engine/base64.ts；這裡轉出給既有的呼叫端） ───────────────
@@ -840,6 +913,7 @@ export function decodeSave(bytes: Uint8Array): SaveData {
     folk: validFolk(h.folk),
     ...outer,
     ...stonesField(h.stones),
+    ...gen2Field(h.genVersion, h.gen2),
   };
   return { header, chunks: readChunks(bytes, body, header.chunks) };
 }
@@ -943,22 +1017,39 @@ export function serializeGame(game: DelveGame, now?: number): Uint8Array {
   return encodeSave(snapshotGame(game, now));
 }
 
-/** 還原前的檢查（不必生成世界）：格式範圍、生成器版本（format ≤ 5 的 COMPAT_GEN 可遷移）、世界大小、chunk 範圍 */
+/** 還原前的檢查（不必生成世界）：格式範圍、生成器版本（genBlocker；format ≤ 5 的 COMPAT_GEN 可遷移）、世界大小、chunk 範圍 */
 export function restoreBlocker(h: SaveHeader, opts: RestoreOptions = {}): Extract<RestoreResult, { ok: false }> | null {
   if (!Number.isInteger(h.format) || h.format < 1 || h.format > SAVE_FORMAT) return { ok: false, error: 'format', message: `format ${h.format}` };
-  const migrate = h.genVersion !== GEN_VERSION && h.format <= 5 && COMPAT_GEN.includes(h.genVersion);
-  if (h.genVersion !== GEN_VERSION && !migrate && !opts.allowGenMismatch) {
-    return {
-      ok: false, error: 'gen_version', saveGenVersion: h.genVersion,
-      message: `save generated with v${h.genVersion}, current generator v${GEN_VERSION}`,
-    };
-  }
+  const gen = genBlocker(h, opts);
+  if (gen) return { ok: false, error: gen.error, saveGenVersion: gen.saveGenVersion, newer: gen.newer, message: gen.message };
   if (!validDims(h.width, h.height)) {
     return { ok: false, error: 'size', message: `bad size ${h.width}x${h.height}` };
+  }
+  // gen2 世界只有正式尺寸（DelveGame 的 gen2 開機只接受 WORLD_W × WORLD_H）
+  if (!gen2SizeOk(h)) {
+    return { ok: false, error: 'size', message: `gen2 world must be ${WORLD_W}x${WORLD_H}, got ${h.width}x${h.height}` };
   }
   // 中央鍵要在範圍內；外圍鍵只在 bounds 有值（format 11 的無限世界）時合法
   for (const ci of h.chunks) if (!chunkKeyOk(ci, h)) return { ok: false, error: 'size', message: `chunk ${ci} out of range` };
   return null;
+}
+
+/**
+ * 存檔要用哪個生成器開機：genVersion 8 → gen2（鎖表來自存檔）；其他 → legacy。
+ * genVersion 8 卻沒有 gen2 鎖表 → SaveFormatError（spec §5：絕不退回舊生成器重算 gen2 世界的改動）
+ */
+export function worldGenFor(h: Pick<SaveHeader, 'genVersion' | 'gen2'>): WorldGenSpec {
+  if (h.genVersion !== GEN_VERSION_V2) return { kind: 'legacy' };
+  if (!h.gen2) throw new SaveFormatError('gen2 world without lock table');
+  const { locks, bake, legacy } = h.gen2;
+  // 烘焙過的舊世界：bake + legacy（validGen2 保證兩者同時有）→ 不跑舊生成器，附帶資料由存檔解出來
+  if (bake && legacy) return { kind: 'baked', locks, bake, meta: decodeLegacyMeta(legacy) };
+  if (bake || legacy) throw new SaveFormatError('gen2: bake and legacy go together');
+  return { kind: 'gen2', locks };
+}
+/** gen2 世界（genVersion 8）只有正式尺寸 WORLD_W × WORLD_H（DelveGame 的 gen2 開機只接受這個大小）；其他版本不限 */
+export function gen2SizeOk(h: { genVersion: number; width: number; height: number }): boolean {
+  return h.genVersion !== GEN_VERSION_V2 || (h.width === WORLD_W && h.height === WORLD_H);
 }
 
 /** 角色隨身的狀態（restoreGame 與 split.planNewWorld 共用 applyCharacter 套到遊戲上） */
@@ -1038,6 +1129,9 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
       data.header.appearance = normalizeAppearance(data.header.appearance);
       data.header.vanity = Vanity.fromJSON(data.header.vanity).toJSON();
       data.header.levels = validLevels(data.header.levels);
+      // 只留驗證過的 gen2（genVersion > 8 不讀 → 拿掉原值，還原後的 header 不帶未驗證的資料）
+      const g2 = gen2Field(data.header.genVersion, data.header.gen2);
+      if (g2.gen2) data.header.gen2 = g2.gen2; else delete data.header.gen2;
     }
   } catch (e) {
     return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
@@ -1045,11 +1139,27 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   const h = data.header;
   const blocked = restoreBlocker(h, opts);
   if (blocked) return blocked;
+  let spec: WorldGenSpec;
+  try { spec = worldGenFor(h); } catch (e) {
+    return { ok: false, error: 'format', message: e instanceof Error ? e.message : String(e) };
+  }
+  // 烘焙世界的中央沒有生成器：每個中央 chunk 都要有存檔的格子與液體，缺一塊就是損毀（不然那裡讀出來是一片空氣）
+  if (spec.kind === 'baked') {
+    const liq = new Set(h.liquids?.chunks ?? []), have = new Set(h.chunks.filter((ci) => data.chunks.has(ci)));
+    const n = Math.ceil(h.width / CHUNK) * Math.ceil(h.height / CHUNK);
+    for (let ci = 0; ci < n; ci++) {
+      if (!have.has(ci) || !liq.has(ci)) return { ok: false, error: 'format', message: `baked world is missing central chunk ${ci}` };
+    }
+  }
+  // gen2 世界（genVersion 8）：依存檔的鎖表開機（不需預先生成；gen / bounds / source 覆寫不適用）。
   // 沒有 bounds 的存檔（format ≤ 10）：正式尺寸 → 無限世界、小尺寸的測試世界 → 有界（CONFLICT-2）
-  const game = new DelveGame({
-    seed: h.seed, width: h.width, height: h.height, gen: opts.gen, appearance: h.appearance,
-    bounds: opts.bounds ?? h.bounds ?? defaultBounds(h.width, h.height), columnSource: opts.source,
-  });
+  // 烘焙過的舊世界（baked）同樣不需預先生成：中央每個 chunk 都在存檔裡（下面整塊寫入 / 停放），安靜 chunk 不喚醒（wakeChunk）
+  const game = spec.kind !== 'legacy'
+    ? new DelveGame({ seed: h.seed, appearance: h.appearance, worldGen: spec })
+    : new DelveGame({
+      seed: h.seed, width: h.width, height: h.height, gen: opts.gen, appearance: h.appearance,
+      bounds: opts.bounds ?? h.bounds ?? defaultBounds(h.width, h.height), columnSource: opts.source,
+    });
   const w = game.world;
   // 讀檔後玩家所在的那一帶先載入（存檔內容直接寫進常駐欄）；其他沒常駐的外圍欄的存檔 chunk 直接停放（FarChunks）
   if (!opts.freshVisit) game.ensureAround(Math.floor((h.player.x + game.player.w / 2) / TILE_SIZE));
@@ -1108,7 +1218,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
     const { cx, cy } = w.chunkCoords(ci);
     // 停放的 chunk 走近載入時才整塊喚醒
     if (far.isFar(cx)) continue;
-    game.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
+    game.wakeChunk(cx, cy);
   }
   for (const i of h.unlocked ?? []) {
     if (!validTileKey(i, h)) continue;
@@ -1205,7 +1315,7 @@ export function restoreGame(input: Uint8Array | SaveData, opts: RestoreOptions =
   // 遠方的存檔 chunk 停放（據點核心那幾欄接著由 settle.load 載入、蓋回來）；途中變成常駐的欄改成直接寫入 → 喚醒液體
   for (const ci of far.park()) {
     const { cx, cy } = w.chunkCoords(ci);
-    game.liquids.wakeRect(cx * CHUNK - 1, cy * CHUNK - 1, (cx + 1) * CHUNK + 1, (cy + 1) * CHUNK + 1);
+    game.wakeChunk(cx, cy);
   }
   game.settle.load(h.settle, w);
   game.folk.load(h.folk?.world, w);

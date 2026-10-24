@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { ambientKind, AmbientField, AMBIENT_CAP, AMBIENT_COLORS, type AmbientKind } from './ambient';
 import { inPalette, hex } from './pixel';
+import { BIOME } from '../engine/world';
 
 const at = (o: Partial<Parameters<typeof ambientKind>[0]>): AmbientKind | null => ambientKind({
   molten: false, mushroom: false, outdoors: false, underground: false, biome: 0, sky: 1, ...o,
@@ -57,5 +58,12 @@ describe('AmbientField 可讀性（1280×720 看得到）', () => {
     for (const p of d) expect([1, 2]).toContain(p.size);
     expect(d.filter((p) => p.size === 2).length).toBeGreaterThan(d.length * 0.2);
     for (const p of run('snow', 6).particles) expect(p.size).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('BIOME.OCEAN 環境粒子', () => {
+  it('海上沒有環境粒子（白天、夜晚都沒有）', () => {
+    expect(at({ outdoors: true, biome: BIOME.OCEAN, sky: 0.2 })).toBeNull();
+    expect(at({ outdoors: true, biome: BIOME.OCEAN, sky: 1 })).toBeNull();
   });
 });

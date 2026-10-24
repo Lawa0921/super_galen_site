@@ -1,6 +1,8 @@
 // column.ts — 區塊欄（B2）：32 格寬 × height 格高，每層一個 Uint8Array(32*height)，索引 (y << 5) | (x & 31)。
 // 一個 chunk 剛好是欄內連續的 1024 bytes（subarray(cy*1024, (cy+1)*1024)）：網路層 / 存檔要一個 chunk 就是一段 subarray。
 import { CHUNK } from './constants';
+import type { Stack } from './inventory';
+import type { RegionInfo } from './regionInfo';
 
 /** 材質變體 0..2（座標雜湊；任何座標都有值，包括世界外） */
 export function variantHash(x: number, y: number): number {
@@ -54,16 +56,23 @@ export class Column {
 /** 欄的深度層線（第一個屬於該層的 y） */
 export interface ColumnLayers { rock: number; deep: number; molten: number; }
 
-/** 中央以外的欄由誰生成（Task 7 的外圍生成器；測試用簡單的雜湊來源） */
+/** 生成器放的箱子（World 載入欄時登錄進 chests；格必須是箱子 tile） */
+export interface GenChest { x: number; y: number; slots: (Stack | null)[] }
+
+/** 欄由誰生成（arrays 模式：中央以外；source 模式：每一欄。外圍生成器 / gen2；測試用簡單的雜湊來源） */
 export interface ColumnSource {
   readonly version: number;
-  /** 寫入第 col.cx 欄中 world x ∈ [x0, x1) 的格（呼叫端已排除中央區） */
+  /** 寫入第 col.cx 欄中 world x ∈ [x0, x1) 的格（arrays 模式下呼叫端已排除中央區） */
   fill(col: Column, x0: number, x1: number): void;
   surfaceAt(x: number): number;
   biomeAt(x: number): number;
   layersAt(x: number): ColumnLayers;
   /** 第 x 欄的水面 y（海；沒有水 = null）。選用：畫面的遠景地平線用（海上看得到的是水面、不是海床） */
   waterTopAt?(x: number): number | null;
+  /** 第 x 欄所屬的地區。選用：沒有 → World.regionAt 回後備值 */
+  regionAt?(x: number): RegionInfo;
+  /** world x ∈ [x0, x1) 裡生成器放的箱子（每次呼叫回新的 slots；World 只登錄沒改過的 chunk）。選用 */
+  objectsIn?(x0: number, x1: number): GenChest[];
 }
 
 /** 一個 chunk 的六層（各 CHUNK*CHUNK，索引 ly*CHUNK + lx；網路層 / 存檔 / 停放用） */

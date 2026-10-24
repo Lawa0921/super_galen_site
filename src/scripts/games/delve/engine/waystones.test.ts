@@ -2,11 +2,11 @@
 // 有界世界只有出生點那顆；遊戲層的碰觸解鎖（世界共用）、打開面板、傳送（目的地先載入、不卡進實心）、存讀檔。
 import { describe, expect, it } from 'vitest';
 import {
-  SPAWN_STONE, STONE_EVERY, STONE_JITTER, STONE_FIRST, Waystones, validStoneIds, type Waystone,
+  SPAWN_STONE, STONE_EVERY, STONE_JITTER, STONE_FIRST, Waystones, v1LandQuery, validStoneIds, type Waystone,
 } from './waystones';
-import { OuterProfile, SEA_W, type CentralFrame } from './chunkgen';
+import { OuterProfile, SEA_W, type CentralFrame } from './legacy/chunkgen';
 import { DelveGame, PRIVATE_EVENTS, type DelveEvent } from './game';
-import { generateWorld, type GenResult } from './worldgen';
+import { generateWorld, type GenResult } from './legacy/worldgen';
 import { FIXED_DT, TILE_SIZE, WORLD_W } from './constants';
 import { chunkOfX } from './coords';
 import { overlapsSolid } from './physics';
@@ -19,7 +19,7 @@ import { decodeWorld, encodeWorld, restoreSplit, saveSplitGame } from '../save/w
 
 const FRAME: CentralFrame = { width: 4200, height: 1200, edgeL: 300, edgeR: 310, cavernY: 600, moltenY: 1000 };
 const profile = (seed = 'ws'): OuterProfile => new OuterProfile(seed, FRAME);
-const stones = (seed = 'ws'): Waystones => new Waystones(seed, { x: 2107, y: 299 }, profile(seed));
+const stones = (seed = 'ws'): Waystones => new Waystones(seed, { x: 2107, y: 299 }, v1LandQuery(profile(seed)));
 
 /** 暴力：ids −40..40 全部算出來（涵蓋 |x| ≤ 20000 + 中央寬） */
 function all(ws: Waystones): Waystone[] {
@@ -105,7 +105,7 @@ describe('Waystones：位置', () => {
     expect(ws.byId(100000)).toBeNull();
   });
 
-  it('有界世界（profile = null）只有 id 0', () => {
+  it('有界世界（land = null）只有 id 0', () => {
     const ws = new Waystones('legacy', { x: 30, y: 40 }, null);
     expect(ws.near(-1_000_000, 1_000_000).map((s) => s.id)).toEqual([0]);
     expect(ws.byId(1)).toBeNull();
@@ -391,4 +391,25 @@ describe('遊戲層：傳送碑', () => {
     expect(g.unlockedStones().map((s) => s.id)).toEqual([0]);
     expect('stones' in snapshotGame(g, 0).header).toBe(false);
   });
+});
+
+// ── LandQuery（Task 13）：舊世界的碑位置不變、gen2 的碑落在大陸 ──
+/** 改寫前（Waystones 吃 OuterProfile）錄下：seed 'ws' 正式尺寸舊世界，id 1..6、−1..−6 的 [x, y] */
+const WS_BEFORE = [
+  [4877, 168], [6617, 175], [8050, 155], [9618, 168], [11240, 170], [13016, 169],
+  [-698, 244], [-2363, 249], [-3816, 235], [-5537, 251], [-7188, 249], [-8691, 248],
+];
+describe('Waystones：LandQuery', () => {
+  it('改成 LandQuery 後舊世界碑位置不變；gen2 碑落在大陸', () => {
+    const g = new DelveGame({ seed: 'ws' });
+    expect([1, 2, 3, 4, 5, 6, -1, -2, -3, -4, -5, -6].map((id) => { const s = g.waystones.byId(id)!; return [s.x, s.y]; })).toEqual(WS_BEFORE);
+    const g2 = new DelveGame({ seed: 'ws', worldGen: { kind: 'gen2' } });
+    expect(g2.genKind).toBe('gen2');
+    for (const id of [1, -1, 2, -2]) {
+      const s = g2.waystones.byId(id)!;
+      expect(['wild', 'culture']).toContain(g2.world.regionAt(s.x).kind);
+      expect(['wild', 'culture']).toContain(g2.world.regionAt(s.x + 1).kind);
+      expect(s.y).toBe(g2.world.surfaceAt(s.x) - 1);
+    }
+  }, 30000);
 });

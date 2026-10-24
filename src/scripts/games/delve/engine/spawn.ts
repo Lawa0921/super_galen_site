@@ -102,6 +102,7 @@ function aquaticTable(h: Habitat): SpawnEntry[] {
   if (h.zone === 'molten' || h.zone === 'dungeon') return out;
   if (h.biome === BIOME.JUNGLE) out.push({ kind: 'razor_fin', weight: 10, group: [3, 5] });
   else if (h.zone !== 'surface') out.push({ kind: 'razor_fin', weight: 4, group: [2, 4] });
+  else if (h.biome === BIOME.OCEAN) out.push({ kind: 'razor_fin', weight: 6, group: [2, 4] });
   if (h.zone === 'underground' || h.zone === 'cavern') out.push({ kind: 'glow_jelly', weight: 6, group: [1, 2] });
   return out;
 }
@@ -146,6 +147,7 @@ export function spawnTable(h: Habitat): SpawnEntry[] {
 type AddFn = (kind: EnemyKind, weight: number, group?: [number, number]) => void;
 function surfaceTable(h: Habitat, add: AddFn): void {
   const { biome, night } = h;
+  if (biome === BIOME.OCEAN) return; // 海面上沒有陸怪
   {
     if (biome === BIOME.SNOW) {
       add('frost_blob', night ? 4 : 10);

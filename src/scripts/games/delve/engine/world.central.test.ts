@@ -3,10 +3,10 @@
 // CENTRAL_FINGERPRINT / GAME_FINGERPRINT 是在 Task 1 改動 world.ts 之前、用當時的扁平 World 錄下的值。
 // **不准為了讓測試過而重錄。** 這條測試失敗代表中央區的生成或儲存讀出變了——去修程式碼，不是改數字。
 import { describe, it, expect } from 'vitest';
-import { generateWorld, type GenResult } from './worldgen';
+import { generateWorld, type GenResult } from './legacy/worldgen';
 import { DelveGame } from './game';
 import type { World } from './world';
-import type { GenGrid } from './gen/grid';
+import type { GenGrid } from './legacy/gen/grid';
 
 const SEED = 'infinite-1a';
 

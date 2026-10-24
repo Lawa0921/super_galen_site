@@ -490,7 +490,9 @@ test.describe('delve', () => {
       expect(s.colBiome).toBe(s.biome);
       expect(want[s.biome]).toContain(s.top);
     }
-    expect(r.dz.x0 < 4200 * 0.12 || r.dz.x1 > 4200 * 0.88).toBe(true);
+    // 舊世界一定有地城保留區（gen2 世界才是 null）
+    expect(r.dz).not.toBeNull();
+    expect(r.dz!.x0 < 4200 * 0.12 || r.dz!.x1 > 4200 * 0.88).toBe(true);
   });
 
   test('箱子：右鍵開箱 → 面板顯示內容 → 全部拿取', async ({ page }) => {

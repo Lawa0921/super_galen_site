@@ -9,6 +9,8 @@ export const WORLD_H = 1200;
  * v7 = NPC 地表村落 / 矮人地廳 / 每個發現地點的地標（v6 的存檔不相容）。
  */
 export const GEN_VERSION = 7;
+/** gen2 世界（無限世界生成器 v2；新建或由舊世界烘焙）的 genVersion。gen2 自己的規則版本另記在地塊鎖（gen2/index.ts 的 GEN2_VERSION） */
+export const GEN_VERSION_V2 = 8;
 export const FIXED_DT = 1 / 60;
 
 // 玩家物理（px/s、px/s²）。每 tick 數值 ×60 換算後調整。

@@ -278,7 +278,7 @@ export function autostartPlan(search: string, hasSave: boolean): AutostartPlan {
   return { kind: 'fresh', seed };
 }
 
-const BIOME_NAMES = ['森林', '沙漠', '雪原', '叢林'];
+const BIOME_NAMES = ['森林', '沙漠', '雪原', '叢林', '海洋'];
 export function biomeLabel(biome: number): string { return BIOME_NAMES[biome] ?? BIOME_NAMES[0]; }
 const REGION_NAMES: Record<string, string> = { mushroom_biome: '螢光菇林', crystal_cave: '水晶洞', sky_island: '浮空島', cabin: '廢棄小屋', mineshaft: '礦坑', ruin: '遺跡', dungeon: '地城' };
 /** 玩家所在區域名：在迷你生態區 / 結構裡就顯示它，否則顯示地表生態區 */

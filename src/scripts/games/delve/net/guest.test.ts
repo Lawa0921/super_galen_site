@@ -5,7 +5,7 @@ import { DelveGame } from '../engine/game';
 import { T, W } from '../engine/tiles';
 import { BIOME, LIQ } from '../engine/world';
 import { GEN_VERSION, TILE_SIZE } from '../engine/constants';
-import { OUTER_GEN_VERSION } from '../engine/chunkgen/index';
+import { OUTER_GEN_VERSION } from '../engine/legacy/chunkgen/index';
 import { makeEnemy } from '../engine/enemies';
 import { normalizeAppearance } from '../engine/appearance';
 import { FixedStepper } from '../render/model';

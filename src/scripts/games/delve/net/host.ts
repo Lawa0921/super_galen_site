@@ -1,5 +1,5 @@
 // host.ts — 房主端協定狀態機（co-op M-B3；spec §5.2–5.7；建造者決定 C6–C10、C14）。
-//   握手（hello → welcome + bulk snap → ready）、回覆 sum（整欄 col）、每位客人的 fanout（tiles／liq／ev／pub／teleport／knock）、
+//   握手（hello → welcome（gen2 / 烘焙世界帶生成器描述）+〔烘焙世界：bulk legacy〕+ bulk snap → ready）、回覆 sum（整欄 col）、每位客人的 fanout（tiles／liq／ev／pub／teleport／knock）、
 //   ws／char／chk／world／look 的計時送出、cmd 權杖桶與 ack、ps 檢查、逾時與 PS_STALE_MS、離線時寫回 visit 與 held。
 // M-C C1：chk 帶 upTo（處理到這位客人的第幾個 cmd seq）。每送一份 chk 就把它寫成 held（送出但還沒 ack 的最新一份），
 //   客人寫好 checkpoint 回 chkAck，rev ≥ held.rev 就清掉 held；房主重新載入世界後，客人重進時 held 較新就用它。
@@ -10,8 +10,9 @@ import type { DelveGame, DelveEvent } from '../engine/game';
 import { MAX_BREATH, type Pid } from '../engine/actor';
 import type { CmdOp } from '../engine/commands';
 import type { DollLook } from '../engine/doll';
-import { GEN_VERSION, TILE_SIZE } from '../engine/constants';
-import { OUTER_GEN_VERSION } from '../engine/chunkgen/index';
+import { TILE_SIZE } from '../engine/constants';
+import { OUTER_GEN_VERSION } from '../engine/legacy/chunkgen/index';
+import { gen2Save } from '../save/serialize';
 import { chunkOfX } from '../engine/coords';
 import { LOAD_COLS } from '../engine/streaming';
 import { validateCharacterStrict, type DelveCharacter } from '../save/character';
@@ -20,7 +21,7 @@ import type { Channel, NetLink, Payload } from './link';
 import {
   BOUNDARY_OPS, BULK_HIGH_WATER, CHAR_HZ, CHK_MS, CMD_BURST, CMD_RATE, GUEST_TIMEOUT_MS, LIQ_HZ, LINGER_MS, LOOK_MS, MAX_GUESTS, NET_TILE_COLS, PING_MS, PROTO,
   PS_BOAT, PS_CLIMB, PS_GROUND, PS_STALE_MS, REPLACE_SILENT_MS, SAVE_DEBOUNCE_MS, SUM_PARK_MAX, WORLD_SIG_MS, WS_HZ,
-  type ByeReason, type GuestCtrl, type HostCtrl, type PeerInfo, type Ps, type RejectReason, type WireBatch, type Ws,
+  type ByeReason, type GuestCtrl, type HostCtrl, type PeerInfo, type Ps, type RejectReason, type WireBatch, type WireGen2, type Ws,
   type WsDrop, type WsEnemy, type WsNpc, type WsPlayer, type WsProj, ceil2, encodePose, floor2, r2,
 } from './protocol';
 import { encodeBulk } from './codec';
@@ -297,11 +298,19 @@ export class NetHost {
     const players: PeerInfo[] = [];
     for (const p of game.actors.keys()) if (p !== pid) players.push({ pid: p, nick: this.nickOf(p), look: this.lookOf(p).look });
     const w = game.world;
+    // gen2 / 烘焙世界：帶生成器描述（鎖表、烘焙接縫），客人副本只生成自己附近；舊世界照舊（welcome 位元組不變）。
+    // gen2 / 烘焙世界一定有 source（沒有 = 不變式壞了，gen2Save 會大聲說；outerGen 送 -1 讓客人拒絕）
+    const g2 = game.genKind === 'legacy' ? null : gen2Save(game);
+    const wire: WireGen2 | null = g2 ? { kind: game.genKind === 'baked' ? 'baked' : 'gen2', locks: g2.locks, ...(g2.bake ? { bake: g2.bake } : {}) } : null;
     this.sendCtrl(g, {
-      t: 'welcome', pid, worldId: this.opts.worldId, seed: game.seed, genVersion: GEN_VERSION, outerGenVersion: OUTER_GEN_VERSION,
+      t: 'welcome', pid, worldId: this.opts.worldId, seed: game.seed,
+      genVersion: game.genVersion, outerGenVersion: g2 ? w.source?.version ?? -1 : OUTER_GEN_VERSION,
       bounds: w.bounds, w: w.width, h: w.height, time: game.time, tick: game.tick, peaceful: game.peaceful,
       you: { x: a.player.x, y: a.player.y }, players,
+      ...(wire ? { gen2: wire } : {}),
     });
+    // 烘焙世界：舊生成器的附帶資料（LegacyMeta）在 snap 之前送（客人收到它才建得了副本）
+    if (g2?.legacy) g.link.send('bulk', encodeBulk({ t: 'legacy' }, new TextEncoder().encode(JSON.stringify(g2.legacy))));
     g.link.send('bulk', encodeBulk({ t: 'snap', snap: snapshotWorld(game, game.visitOf(pid, 0)) }));
     const look = this.lookOf(pid);
     this.lookKeys.set(pid, look.key);

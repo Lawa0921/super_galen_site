@@ -4,6 +4,7 @@ import {
   clampCamera, followCamera, FixedStepper, visibleChunks, ChunkLRU,
   formatClock, depthLabel, blockedMessage, recipeRows, countLabel, cameraFocus, autostartPlan, biomeLabel, regionLabel, stepsInFrame, inputAction, drainsEvents } from './model';
 import { Inventory } from '../engine/inventory';
+import { BIOME } from '../engine/world';
 import { DAY_LENGTH } from '../engine/constants';
 
 describe('clampCamera', () => {
@@ -277,4 +278,8 @@ describe('inputAction / drainsEvents', () => {
       expect(drainsEvents(m, false)).toBe(true);
     }
   });
+});
+
+describe('BIOME.OCEAN 標籤', () => {
+  it('biomeLabel(OCEAN) = 海洋', () => { expect(biomeLabel(BIOME.OCEAN)).toBe('海洋'); });
 });

@@ -2,13 +2,13 @@
 // 總量只會因薄膜蒸發減少、不會變多；熔岩 / 蜂蜜照原本的節奏比較慢；世界生成的真實湖也一樣（沒有水壓：要往上爬才出得去的水留著，跟 Terraria 一樣）；靜止時不花成本。
 import { describe, it, expect } from 'vitest';
 import { World, LIQ } from './world';
-import type { GenGrid } from './gen/grid';
+import type { GenGrid } from './legacy/gen/grid';
 /** 測試世界或生成器的扁平格（湖泊洩水直接跑在生成結果上） */
 type AnyWorld = World | GenGrid;
 import { T, SOLID_LUT } from './tiles';
 import { LiquidSim } from './liquid';
 import { LIQ_MAX } from './liquidKind';
-import { generateWorld } from './worldgen';
+import { generateWorld } from './legacy/worldgen';
 
 /**
  * 湖：x 1..LW、y LY0..LY1 滿液體；湖底 y = FLOOR 是石頭；底下 CAV_W 寬、CAV_H 高的空腔（x 1..CAV_W）。

@@ -2,7 +2,7 @@
 // 不用手寫的「開局材料」清單：直接生成幾個真的世界，從裡面的方塊掉落、箱子內容、陶罐、商店與配方
 // 一路推出「不打怪拿得到的材料」，再看每件時裝做不做得出來；做不出來的，要靠箱子每個新世界期望至少 0.33 件。
 import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { generateWorld } from './worldgen';
+import { generateWorld } from './legacy/worldgen';
 import { tileDef } from './tiles';
 import { ITEMS, VANITY_ITEMS, type ItemId } from './items';
 import { RECIPES } from './crafting';

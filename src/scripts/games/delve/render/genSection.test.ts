@@ -1,8 +1,8 @@
 // genSection.test.ts — 生成畫面的地層剖面：階段推進、取樣、揭露
 import { describe, it, expect } from 'vitest';
 import { GEN_PHASES, genPhaseOf, genPhaseLabel, sampleSection, revealStep, revealThreshold, SECTION_COLORS } from './genSection';
-import { generateWorldSteps, GEN_STAGE_COUNT } from '../engine/worldgen';
-import { GenGrid } from '../engine/gen/grid';
+import { generateWorldSteps, GEN_STAGE_COUNT } from '../engine/legacy/worldgen';
+import { GenGrid } from '../engine/legacy/gen/grid';
 import { T } from '../engine/tiles';
 import { LIQ } from '../engine/liquidKind';
 import { buildMapLut } from './mapModel';

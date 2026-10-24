@@ -1,12 +1,14 @@
 // testRig.ts — 驗收測試輔助（Task 11）：同一行程裡的房主 + 客人，經 LoopbackNet。只給測試 import，正式程式碼不用。
 //   run(ms)：每 1000/60 ms 依序 net.advance → host.frame → 每位客人 guest.frame（各自一個 FixedStepper）。
-//   世界：arena（平地 160×100、有界）、infinite（中央 200×100 + HashSource 外圍）、real（正式尺寸、OuterGen；generateWorld 只跑一次）。
+//   世界：arena（平地 160×100、有界）、infinite（中央 200×100 + HashSource 外圍）、real（正式尺寸、OuterGen；generateWorld 只跑一次）、
+//   gen2（新建的 gen2 世界）、baked（Task 16 的 format11-v7 fixture 烘焙一次、每個 rig 讀回一份）；gen2 / baked 的客人用 NetGuest 預設的副本。
 // 決定性：LoopbackNet 用種子；沒有真的計時器。
 import { DelveGame } from '../engine/game';
 import { T, W } from '../engine/tiles';
 import { BIOME, LIQ } from '../engine/world';
 import { li, type Column, type ColumnLayers, type ColumnSource } from '../engine/column';
-import { generateWorld, type GenResult } from '../engine/worldgen';
+import { readFileSync } from 'node:fs';
+import { generateWorld, type GenResult } from '../engine/legacy/worldgen';
 import { chunkOfX } from '../engine/coords';
 import { CHUNK } from '../engine/constants';
 import { normalizeAppearance } from '../engine/appearance';
@@ -14,9 +16,11 @@ import type { ItemId } from '../engine/items';
 import type { Stack } from '../engine/inventory';
 import { FixedStepper } from '../render/model';
 import { createCharacter, type DelveCharacter } from '../save/character';
-import type { HeldChar, VisitSave } from '../save/worldSave';
+import { decodeWorld, encodeWorld, restoreSplit, type HeldChar, type VisitSave } from '../save/worldSave';
+import { bakeWorld } from '../save/bake';
+import { FIXTURE11_PATH, FIXTURE11_SEED, FIXTURE11_WHO } from '../save/legacyFixture11';
 import { LoopbackNet } from './loopback';
-import type { NetLink } from './link';
+import type { Channel, NetLink, Payload } from './link';
 import { decodeBulk } from './codec';
 import { NetHost, type VisitStore } from './host';
 import { NetGuest } from './guest';
@@ -29,8 +33,8 @@ export const FLOOR = 60;
 const LAYERS = ['fg', 'wall', 'liquid', 'liquidType', 'frozen', 'half'] as const;
 
 export interface RigOptions {
-  latencyMs?: [number, number]; loss?: number; seed?: string; guests?: number; world?: 'arena' | 'infinite' | 'real';
-  /** 世界種子（預設 arena 'host'、infinite 'coop-inf'、real 'coop-real'）；seed 是 LoopbackNet 的種子 */
+  latencyMs?: [number, number]; loss?: number; seed?: string; guests?: number; world?: 'arena' | 'infinite' | 'real' | 'gen2' | 'baked';
+  /** 世界種子（預設 arena 'host'、infinite 'coop-inf'、real 'coop-real'、gen2 'coop-gen2'；baked 固定是 fixture 的種子）；seed 是 LoopbackNet 的種子 */
   worldSeed?: string;
   /** 預設 arena / infinite / real 都是和平；false = 非和平 */
   peaceful?: boolean;
@@ -38,6 +42,14 @@ export interface RigOptions {
   game?: DelveGame;
   /** 房主的 VisitStore 改用這個（例：SplitSession，帶真正的 held LRU）；預設是 Map 版（rig.visits / rig.held） */
   store?: VisitStore;
+  /** 測試鉤子：客人收到的 welcome 先經過它（回傳值才是客人看到的）；有給時客人以 ended 結束也不算 rig 建不起來 */
+  tamperWelcome?: (m: Welcome) => Welcome;
+  /**
+   * 測試鉤子：welcome（ctrl）與烘焙世界的 legacy bulk 誰先到客人。bulkFirst = welcome（與之後的 ctrl）擋到 legacy bulk 到了才放；
+   * welcomeFirst = 所有 bulk 擋到客人處理過 welcome 之後 bulkDelayFrames 幀（預設 1）才放
+   */
+  deliver?: 'bulkFirst' | 'welcomeFirst';
+  bulkDelayFrames?: number;
 }
 export interface Rig {
   net: LoopbackNet; readonly host: NetHost; hostGame: DelveGame; guests: NetGuest[]; visits: Map<string, VisitSave>; checkpoints: DelveCharacter[][];
@@ -121,6 +133,66 @@ export function infiniteGame(seed = 'coop-inf', peaceful = true): DelveGame {
   return g;
 }
 
+/** 新建的 gen2 世界（正式尺寸、無限） */
+export function gen2Game(seed = 'coop-gen2', peaceful = true): DelveGame {
+  const g = new DelveGame({ seed, worldGen: { kind: 'gen2' }, peaceful });
+  g.drainEvents();
+  return g;
+}
+
+/** format11-v7 fixture 烘焙後的世界檔（每個測試檔烘焙一次）；每次讀回一份新的遊戲 */
+let bakedBytes: Uint8Array | null = null;
+const fixtureChar = (): DelveCharacter => ({ ...createCharacter(FIXTURE11_WHO.nick, normalizeAppearance(undefined), 1), id: FIXTURE11_WHO.id });
+export function bakedGame(peaceful = true): DelveGame {
+  bakedBytes ??= encodeWorld(bakeWorld(decodeWorld(new Uint8Array(readFileSync(FIXTURE11_PATH))), fixtureChar(), generateWorld(FIXTURE11_SEED), 1));
+  const r = restoreSplit(decodeWorld(bakedBytes), fixtureChar());
+  if (!r.ok) throw new Error(`bakedGame: ${r.message}`);
+  r.game.peaceful = peaceful;
+  r.game.drainEvents();
+  return r.game;
+}
+
+const isLegacyBulk = (d: Payload): boolean => d instanceof Uint8Array && decodeBulk(d)?.head.t === 'legacy';
+
+/** 客人那端的連線包一層（RigOptions.tamperWelcome / deliver）；其他一律轉給原連線 */
+class GateLink implements NetLink {
+  private readonly cbs: ((ch: Channel, d: Payload) => void)[] = [];
+  private held: [Channel, Payload][] = [];
+  private welcomed = false;
+  private legacy = false;
+  /** welcomeFirst：客人處理過 welcome 之後 bulkDelayFrames 幀才放 bulk */
+  private passBulk = false;
+  private sinceWelcome = 0;
+  constructor(private readonly inner: NetLink, private readonly o: RigOptions) {
+    inner.onMessage((ch, d) => this.recv(ch, d));
+  }
+  get open(): boolean { return this.inner.open; }
+  send(ch: Channel, d: Payload): void { this.inner.send(ch, d); }
+  onMessage(cb: (ch: Channel, d: Payload) => void): void { this.cbs.push(cb); }
+  onClose(cb: (reason: string) => void): void { this.inner.onClose(cb); }
+  close(reason?: string): void { this.inner.close(reason); }
+  buffered(ch: Channel): number { return this.inner.buffered(ch); }
+  /** 每幀（客人 frame 之後） */
+  tick(): void {
+    if (this.o.deliver !== 'welcomeFirst' || !this.welcomed || this.passBulk) return;
+    if (++this.sinceWelcome >= (this.o.bulkDelayFrames ?? 1)) { this.passBulk = true; this.release(); }
+  }
+  private emit(ch: Channel, d: Payload): void { for (const cb of this.cbs.slice()) cb(ch, d); }
+  private release(): void { const h = this.held; this.held = []; for (const [ch, d] of h) this.emit(ch, d); }
+  private recv(ch: Channel, data: Payload): void {
+    let d = data;
+    const welcome = ch === 'ctrl' && typeof d === 'string' && (JSON.parse(d) as { t?: unknown }).t === 'welcome';
+    if (welcome && this.o.tamperWelcome) d = JSON.stringify(this.o.tamperWelcome(JSON.parse(d as string) as Welcome));
+    if (this.o.deliver === 'bulkFirst') {
+      if (!this.legacy && isLegacyBulk(d)) { this.legacy = true; this.emit(ch, d); this.release(); return; }
+      if (!this.legacy && ch === 'ctrl' && (welcome || this.held.length)) { this.held.push([ch, d]); return; }
+    }
+    if (this.o.deliver === 'welcomeFirst' && ch === 'bulk' && !this.passBulk) { this.held.push([ch, d]); return; }
+    if (welcome) this.welcomed = true;
+    this.emit(ch, d);
+  }
+}
+
 const gens = new Map<string, GenResult>();
 /** 正式尺寸的世界：同一個種子只生成一次（房主與客人共用 gen；World.fromGen 會複製） */
 function realGen(seed: string): GenResult {
@@ -145,11 +217,14 @@ const countSlots = (slots: readonly (Stack | null)[] | undefined, item: ItemId):
 export function coopRig(o: RigOptions = {}): Rig {
   const kind = o.world ?? 'arena';
   const peaceful = o.peaceful ?? true;
-  const seed = o.worldSeed ?? (kind === 'arena' ? 'host' : kind === 'infinite' ? 'coop-inf' : 'coop-real');
+  const seed = kind === 'baked' ? FIXTURE11_SEED
+    : o.worldSeed ?? (kind === 'arena' ? 'host' : kind === 'infinite' ? 'coop-inf' : kind === 'gen2' ? 'coop-gen2' : 'coop-real');
   const hostGame = o.game ?? (kind === 'arena' ? arenaGame(seed, peaceful)
     : kind === 'infinite' ? infiniteGame(seed, peaceful)
-      : new DelveGame({ seed, gen: realGen(seed), peaceful }));
-  const createReplica = kind === 'arena' ? undefined
+      : kind === 'gen2' ? gen2Game(seed, peaceful)
+        : kind === 'baked' ? bakedGame(peaceful)
+          : new DelveGame({ seed, gen: realGen(seed), peaceful }));
+  const createReplica = kind === 'arena' || kind === 'gen2' || kind === 'baked' ? undefined
     : kind === 'infinite'
       ? (w: Welcome): DelveGame => new DelveGame({
         seed: w.seed, width: w.w, height: w.h, bounds: w.bounds, peaceful: w.peaceful, localPid: w.pid, mode: 'replica', columnSource: new HashSource(),
@@ -168,6 +243,7 @@ export function coopRig(o: RigOptions = {}): Rig {
   const guests: NetGuest[] = [], steppers: FixedStepper[] = [], paused: boolean[] = [];
   const links: NetLink[] = [], hostLinks: NetLink[] = [], chars: DelveCharacter[] = [], ps: number[] = [], checkpoints: DelveCharacter[][] = [];
   const cols: { cx: number; diff: number[] }[][] = [];
+  const gates: GateLink[] = [];
   let now = 0;
 
   /** 新的一對連線：房主 accept 一端；記 ps 與 col */
@@ -180,9 +256,11 @@ export function coopRig(o: RigOptions = {}): Rig {
       const m = decodeBulk(d);
       if (m && m.head.t === 'col') cols[i].push({ cx: m.head.cx, diff: m.head.diff.map((q) => q.cy) });
     });
-    links[i] = p.guest;
+    const link = o.tamperWelcome || o.deliver ? new GateLink(p.guest, o) : p.guest;
+    if (link instanceof GateLink) gates.push(link);
+    links[i] = link;
     hostLinks[i] = p.host;
-    return p.guest;
+    return link;
   };
 
   const rig: Rig = {
@@ -197,6 +275,7 @@ export function coopRig(o: RigOptions = {}): Rig {
         net.advance(FRAME);
         if (rig.driveHost) host.frame(now, hs.advance(FRAME / 1000));
         for (let i = 0; i < guests.length; i++) if (!paused[i]) guests[i].frame(now, steppers[i].advance(FRAME / 1000));
+        for (const gl of gates) gl.tick();
         each?.();
       }
     },
@@ -261,9 +340,10 @@ export function coopRig(o: RigOptions = {}): Rig {
 
   for (let i = 0; i < (o.guests ?? 1); i++) rig.join();
   if (guests.length) {
-    // 等全部 live，再多跑 1 秒讓興趣範圍內的欄同步完
-    for (let t = 0; t < 10_000 && guests.some((g) => g.state !== 'live'); t += FRAME) rig.run(FRAME);
-    const stuck = guests.findIndex((g) => g.state !== 'live');
+    // 等全部 live，再多跑 1 秒讓興趣範圍內的欄同步完（tamperWelcome：客人被拒、以 ended 結束也算）
+    const done = (g: NetGuest): boolean => g.state === 'live' || (o.tamperWelcome !== undefined && g.state === 'ended');
+    for (let t = 0; t < 10_000 && !guests.every(done); t += FRAME) rig.run(FRAME);
+    const stuck = guests.findIndex((g) => !done(g));
     if (stuck >= 0) throw new Error(`coopRig: guest ${stuck} never reached live (state ${guests[stuck].state})`);
     rig.run(1000);
   }

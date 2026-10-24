@@ -17,6 +17,8 @@ import type { MapMarker } from '../engine/explore';
 import type { DelveCharacter } from '../save/character';
 import type { EnvSave } from '../save/serialize';
 import type { VisitSave } from '../save/worldSave';
+import type { LockJSON } from '../engine/gen2/locks';
+import type { BakeInfo } from '../save/bake';
 
 export const PROTO = 1;
 export const MAX_GUESTS = 7;                    // MAX_PLAYERS 8（含房主；M-C2 D7）
@@ -93,9 +95,19 @@ export function encodePose(p: PlayerPose): WirePose {
 export type WireChest = [key: number, slots: (Stack | null)[] | null, unlocked: 0 | 1];
 export interface WireBatch { chunk: number; rev: number; tiles: number[]; chests: WireChest[]; full: boolean }
 export interface PeerInfo { pid: Pid; nick: string; look: DollLook }
+/**
+ * gen2 / 烘焙世界的生成器描述（Task 18）：客人副本照它建 Gen2Source / BakedSource（鎖表凍結、不記新鎖）。
+ * 烘焙世界的 LegacyMeta 太大不放 welcome：房主在 welcome 之後、snap 之前另送一則 bulk { t: 'legacy' }（payload = UTF-8 JSON）
+ */
+export interface WireGen2 { kind: 'gen2' | 'baked'; locks: LockJSON; bake?: BakeInfo }
+/**
+ * genVersion = 房主遊戲的 game.genVersion；outerGenVersion = 舊世界 OUTER_GEN_VERSION、gen2 / 烘焙世界 world.source.version。
+ * gen2 只在 gen2 / 烘焙世界才有（舊世界的 welcome 位元組與以前相同）
+ */
 export interface Welcome {
   t: 'welcome'; pid: Pid; worldId: string; seed: string; genVersion: number; outerGenVersion: number;
   bounds: WorldBounds; w: number; h: number; time: number; tick: number; peaceful: boolean; you: { x: number; y: number }; players: PeerInfo[];
+  gen2?: WireGen2;
 }
 export interface Ps {
   t: 'ps'; seq: number; tseq: number; x: number; y: number; vx: number; vy: number; flags: number;
@@ -142,4 +154,9 @@ export interface WorldSnap {
 }
 /** bulk 的標頭（payload 另外帶） */
 export type BulkHead = { t: 'snap'; snap: WorldSnap } | { t: 'col'; cx: number; revs: number[]; diff: { cy: number; chests: WireChest[] }[] }
-  | { t: 'chunk'; key: number; rev: number; chests: WireChest[] } | { t: 'liq'; chunks: number[] };
+  | { t: 'chunk'; key: number; rev: number; chests: WireChest[] } | { t: 'liq'; chunks: number[] }
+  /**
+   * 烘焙世界加入時（welcome 之後、snap 之前）：payload = LegacyMetaJSON 的 UTF-8 JSON（約 85 KB）。
+   * 同 snap 直接送、不走 BULK_HIGH_WATER 的排隊，靠 rtcLink 分片
+   */
+  | { t: 'legacy' };

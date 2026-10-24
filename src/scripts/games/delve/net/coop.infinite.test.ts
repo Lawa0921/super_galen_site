@@ -5,7 +5,7 @@ import { T } from '../engine/tiles';
 import { chunkOfX } from '../engine/coords';
 import { CHUNK } from '../engine/constants';
 import { UNLOAD_EVERY } from '../engine/streaming';
-import { SEA_W, SEG_W } from '../engine/chunkgen/index';
+import { SEA_W, SEG_W } from '../engine/legacy/chunkgen/index';
 import type { DelveGame } from '../engine/game';
 import { encodeWorld, restoreSplit, saveSplitGame } from '../save/worldSave';
 import type { NetGuest } from './guest';

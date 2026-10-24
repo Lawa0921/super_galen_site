@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { DelveGame } from '../engine/game';
 import { Inventory } from '../engine/inventory';
 import { OUTFIT_PLAIN, normalizeAppearance } from '../engine/appearance';
-import { restoreGame } from './serialize';
+import { restoreGame, serializeGame } from './serialize';
 import { readLegacyFixture } from './legacyFixture';
 import { createCharacter, decodeCharacter, encodeCharacter, type DelveCharacter } from './character';
 import { decodeWorld, encodeWorld, restoreSplit, saveSplitGame, type HeldChar, type VisitSave, type WorldData } from './worldSave';
@@ -11,9 +11,10 @@ import { expectSameGame } from './expectSameGame';
 import type { CharacterMeta } from './storage';
 import type { VisitStore } from '../net/host';
 import { levelForXp } from '../engine/levels';
+import type { LockJSON } from '../engine/gen2/locks';
 import {
-  CHARACTER_CORRUPT_MSG, CHARACTER_MISSING_MSG, NO_CHARACTER_MSG, WORLD_CORRUPT_MSG, SplitSession, commitMigration, importWorld, newWorldSlot,
-  planContinue, planNewWorld, planPlay, saveSplit,
+  BAD_SIZE_MSG, CHARACTER_CORRUPT_MSG, CHARACTER_MISSING_MSG, NO_CHARACTER_MSG, WORLD_CORRUPT_MSG, SplitSession, commitMigration, importWorld, newWorldSlot,
+  planContinue, planNewWorld, planPlay, saveSplit, newerGeneratorMsg, oldGeneratorMsg, restoreErrorMessage,
   type SlotRead, type SplitStore,
 } from './split';
 
@@ -404,6 +405,61 @@ describe('fix round 1: no second world generation, import timestamps', () => {
     if ('error' in l) throw new Error(l.error);
     expect((await st.listWorlds())[0].slot).toBe(l.slot);
   });
+});
+
+describe('生成器版本（Task 15）', () => {
+  /** gen2 遊戲 → 匯出檔（世界檔 + 內嵌角色）；header 可改寫後再編碼 */
+  const gen2Export = (() => {
+    let cache: { world: WorldData; character: DelveCharacter } | null = null;
+    return (): { world: WorldData; character: DelveCharacter } => {
+      cache ??= SplitSession.fresh('g2imp', 1, 'tmp').snapshot(new DelveGame({ seed: 'g2imp', worldGen: { kind: 'gen2' } }), 10);
+      return cache;
+    };
+  })();
+  const gen2WorldBytesWith = (patch: Partial<WorldData['header']>): Uint8Array => {
+    const { world, character } = gen2Export();
+    return exportFile({ ...world, header: { ...world.header, ...patch } }, character);
+  };
+
+  it('restoreErrorMessage：newer → newerGeneratorMsg；舊版 → oldGeneratorMsg', () => {
+    expect(newerGeneratorMsg).toBe('這個世界是用較新版本的地圖產生器做的，請重新整理頁面更新遊戲後再讀取。');
+    expect(restoreErrorMessage({ error: 'gen_version', saveGenVersion: 8, newer: true })).toBe(newerGeneratorMsg);
+    expect(restoreErrorMessage({ error: 'gen_version', saveGenVersion: 6 })).toBe(oldGeneratorMsg(6));
+    expect(restoreErrorMessage({ error: 'gen_version', saveGenVersion: 6, newer: false })).toBe(oldGeneratorMsg(6));
+  });
+
+  it('importWorld 接受 v8 世界檔、拒絕較新版本（不寫任何東西）', async () => {
+    const store = memStore({});
+    const ok = await importWorld(store, gen2WorldBytesWith({}), 1);
+    expect(ok).toHaveProperty('slot');
+    if ('error' in ok) throw new Error(ok.error);
+    const back = decodeWorld(store.slots[ok.slot].bytes).header;
+    expect(back.genVersion).toBe(8);
+    expect(back.gen2).toEqual(gen2Export().world.header.gen2);
+    const st2 = memStore({});
+    expect(await importWorld(st2, gen2WorldBytesWith({ outerGen: 5 }), 1)).toEqual({ error: newerGeneratorMsg });
+    const locks: LockJSON = gen2Export().world.header.gen2!.locks.map(([s, i, , c]) => [s, i, 7, c]);
+    expect(await importWorld(st2, gen2WorldBytesWith({ gen2: { locks } }), 1)).toEqual({ error: newerGeneratorMsg });
+    expect(await importWorld(st2, gen2WorldBytesWith({ genVersion: 9 }), 1)).toEqual({ error: newerGeneratorMsg });
+    expect(await importWorld(st2, gen2WorldBytesWith({ genVersion: 6, gen2: undefined }), 1)).toEqual({ error: oldGeneratorMsg(6) });
+    // v8 不是正式尺寸 → 大小不對；v7 世界檔帶 gen2 → 損毀
+    expect(await importWorld(st2, gen2WorldBytesWith({ height: 1216 }), 1)).toEqual({ error: BAD_SIZE_MSG });
+    const { world: v7, character: v7c } = SplitSession.fresh('v7imp', 1, 'tmp').snapshot(small('v7imp'), 10);
+    expect(await importWorld(st2, exportFile({ ...v7, header: { ...v7.header, gen2: { locks: [] } } }, v7c), 1)).toEqual({ error: WORLD_CORRUPT_MSG });
+    expect(await importWorld(st2, exportFile(v7, v7c), 1)).toHaveProperty('slot');   // 同一份不帶 gen2 → 照收
+    expect(st2.log.filter((l) => !l.startsWith('putSplit'))).toEqual([]);
+    expect(st2.log.filter((l) => l.startsWith('putSplit'))).toHaveLength(1);
+  }, 60000);
+
+  it('importWorld：v8 的舊合併檔（format 9）保留 genVersion 8，不被改標成 7', async () => {
+    const g = new DelveGame({ seed: 'g2merged', worldGen: { kind: 'gen2' } });
+    const st = memStore({});
+    const r = await importWorld(st, serializeGame(g, 1), 2);
+    if ('error' in r) throw new Error(r.error);
+    const back = decodeWorld(st.slots[r.slot].bytes).header;
+    expect(back.genVersion).toBe(8);
+    expect(back.gen2).toEqual({ locks: g.gen2()!.locks.toJSON() });
+  }, 60000);
 });
 
 describe('SplitSession 當作房主的 VisitStore（co-op C1）', () => {

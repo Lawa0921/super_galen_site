@@ -2,7 +2,7 @@
 // 每完成一段生成就重新取樣，新出現的像素由上往下以 Bayer 抖動掃進來（一層一層填滿）。
 // 另有六個大階段（地形 → 洞穴 → 礦脈 → 地城 → 裝飾 → 液體），由生成器實際 yield 的段名推進（單調）。
 // 純邏輯（取樣 / 揭露 / 階段）不碰 DOM；GenSectionView 才畫到 canvas。只有不透明像素。
-import type { GenGrid } from '../engine/gen/grid';
+import type { GenGrid } from '../engine/legacy/gen/grid';
 import { TILES, T, SOLID_LUT } from '../engine/tiles';
 import { LIQ } from '../engine/liquidKind';
 import { buildMapLut, type MapLut } from './mapModel';
