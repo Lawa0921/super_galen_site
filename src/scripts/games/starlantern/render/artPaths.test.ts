@@ -26,8 +26,9 @@ describe('artPaths', () => {
     //   + 15 silhouettes - 14 retired old base icons = 282 + 128 = 410
     // - plan 8c's 三連刃 icon (its skill replaced by 順手牽羊; the file stays until step ⑨) = 409
     // + the companion talking faces, wave 1 (18; user approval 2026-10-23) = 427
-    expect(urls).toHaveLength(427);
-    expect(new Set(urls).size).toBe(427);
+    // + Lorne's and both Rin looks' grave faces, wave 2 (6; user approval 2026-10-24; the three redos replace files) = 433
+    expect(urls).toHaveLength(433);
+    expect(new Set(urls).size).toBe(433);
     for (const id of RETIRED_ICON_IDS) expect(urls).not.toContain(art.icon(id));
     expect(urls).toContain(art.fxAnim('thunder'));
     for (const id of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(urls).toContain(art.icon(id));

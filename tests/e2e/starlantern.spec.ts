@@ -2347,7 +2347,7 @@ test.describe('starlantern', () => {
     const answered = assetResponses(page);
     const w = await setup(page, 7);
     const manifest = await page.evaluate(async () => (await (await fetch('/assets/games/starlantern/manifest.json')).json()).urls as string[]);
-    expect(manifest.length).toBe(428);   // 410 + the companion talking faces, wave 1 (18; user approval 2026-10-23)
+    expect(manifest.length).toBe(434);   // 410 + the companion talking faces, wave 1 (18; user approval 2026-10-23) + wave 2 (6, 2026-10-24)
     // Every file the manifest lists answers 200.
     for (const u of manifest) expect((await page.request.get(u)).status(), u).toBe(200);
     // Walk the screens that show the new art (equipment, shop, forge, portal codex) with every sample piece in the bag.

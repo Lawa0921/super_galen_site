@@ -48,7 +48,9 @@ export const MOODS_OF: Record<string, StoryMood[]> = Object.fromEntries(
 );
 /** Story faces on disk, by art id. An art batch adds its moods here in the same commit as its registry entries. */
 export const PUBLISHED_FACES: Record<string, StoryMood[]> = {
-  hero: ['smile', 'sad'], rin: ['smile', 'sad'], 'rin-oath': ['smile', 'sad'],
+  // Wave 2 (art-factory/starlantern/runs/2026-10-24-faces-wave2; user approval 2026-10-24): Lorne's and both Rin looks'
+  // grave faces. Each Rin look has its own (cracked bell / flattened bell); `artIdOf` picks the look, as for her normal.
+  hero: ['smile', 'sad', 'serious', 'distant'], rin: ['smile', 'sad', 'serious', 'guarded'], 'rin-oath': ['smile', 'sad', 'serious', 'guarded'],
   // Companion faces, wave 1 (art-factory/starlantern/runs/2026-10-23-faces-wave1; user approval 2026-10-23): the grave faces
   // the script uses, plus Liz's hushed.
   scarlet: ['serious', 'sad', 'vow', 'shaken'], chizuru: ['serious', 'sad', 'solemn'], sylvie: ['serious', 'sad'],
@@ -58,7 +60,8 @@ export const PUBLISHED_FACES: Record<string, StoryMood[]> = {
  * Art ids whose `normal` portrait smiles (story depth final review, checked by eye on the published art): every companion.
  * Lorne's and Rin's normal faces are calm, so they are not here. A grave line of theirs shows its own face or a mapped near
  * one (ui2/story.ts `GRAVE_FALLBACK`), never the smiling normal; with neither published it shows no portrait. In a heavy
- * scene (staging S3) Lorne's normal, whose calm carries a soft smile, is no stand-in either: see ui2/story.ts `CALM_NORMALS`.
+ * scene (staging S3) Lorne's normal, whose calm carries a soft smile, is no stand-in either; since wave 2 his grave moods
+ * have faces of their own (ui2/story.ts `CALM_NORMALS`).
  */
 export const NORMAL_SMILES: ReadonlySet<string> = new Set(['selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet']);
 

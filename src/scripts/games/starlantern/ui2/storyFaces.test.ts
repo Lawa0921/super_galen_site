@@ -52,12 +52,30 @@ describe('companion grave faces', () => {
     expect(face('liz', 'hushed', without(art.portrait('liz', 'hushed')))).toBe(art.portrait('liz', 'normal'));
   });
 
-  it('Lorne and Rin are unchanged: a grave face of their own, else their calm normal', () => {
-    expect(face('hero', 'serious')).toBe(art.portrait('hero', 'normal'));
-    expect(face('hero', 'distant')).toBe(art.portrait('hero', 'normal'));
+  // Wave 2 (art-factory/starlantern/runs/2026-10-24-faces-wave2; user approval 2026-10-24 「繼續」): Lorne's serious and
+  // distant, and serious and guarded for both of Rin's looks.
+  it('Lorne and Rin say their grave lines with their own wave-2 faces', () => {
+    expect(face('hero', 'serious')).toBe(art.portrait('hero', 'serious'));
+    expect(face('hero', 'distant')).toBe(art.portrait('hero', 'distant'));
     expect(face('hero', 'sad')).toBe(art.portrait('hero', 'sad'));
-    expect(face('rin', 'serious')).toBe(art.portrait('rin', 'normal'));
+    expect(face('rin', 'serious')).toBe(art.portrait('rin', 'serious'));
+    expect(face('rin', 'guarded')).toBe(art.portrait('rin', 'guarded'));
     expect(face('rin', 'sad')).toBe(art.portrait('rin', 'sad'));
+  });
+
+  it("Rin's era picks the set by the same rule as her normal: the cracked bell before her oath, the oath set after", () => {
+    const s = state();
+    for (const m of ['normal', 'serious', 'guarded'] as StoryMood[]) {
+      expect(speakerOf('rin', s, ART, m).face, `before ${m}`).toBe(art.portrait('rin', m));
+      expect(speakerOf('rin', s, ART, m, true).face, `before, heavy ${m}`).toBe(art.portrait('rin', m));
+    }
+    s.party.roster.rin.oath = true;
+    for (const m of ['normal', 'serious', 'guarded'] as StoryMood[]) {
+      expect(speakerOf('rin', s, ART, m).face, `after ${m}`).toBe(art.portrait('rin-oath', m));
+      expect(speakerOf('rin', s, ART, m, true).face, `after, heavy ${m}`).toBe(art.portrait('rin-oath', m));
+    }
+    // the two looks never mix: with the oath serious face missing, the oath Rin falls to her own calm normal, not the cracked bell's serious
+    expect(speakerOf('rin', s, without(art.portrait('rin-oath', 'serious')), 'serious', true).face).toBe(art.portrait('rin-oath', 'normal'));
   });
 
   it('every heavy companion line in the script now shows a face (106 lines, 0 hidden)', () => {
@@ -82,14 +100,25 @@ describe('companion grave faces', () => {
     for (const l of hushed) expect(speakerOf('liz', s, ART, 'hushed').face, l.text).toBe(art.portrait('liz', 'hushed'));
   });
 
-  it('every published face is a file under public/, and wave 1 is the 18 faces', () => {
+  it('every published face is a file under public/; wave 1 is the 18 companion faces, wave 2 the 6 of Lorne and Rin', () => {
     const companions = CHARACTER_IDS.filter((c) => NORMAL_SMILES.has(c));
     expect(companions.reduce((n, c) => n + (PUBLISHED_FACES[c]?.length ?? 0), 0)).toBe(18);
+    expect(PUBLISHED_FACES.hero).toEqual(['smile', 'sad', 'serious', 'distant']);
+    expect(PUBLISHED_FACES.rin).toEqual(['smile', 'sad', 'serious', 'guarded']);
+    expect(PUBLISHED_FACES['rin-oath']).toEqual(PUBLISHED_FACES.rin);
     for (const [id, faces] of Object.entries(PUBLISHED_FACES)) {
       for (const m of faces) expect(existsSync(`public${art.portrait(id, m)}`), `${id} ${m}`).toBe(true);
     }
   });
 });
+
+// Lorne's and Rin's lines in heavy scenes by what they show, before and after wave 2 (filled in from the count below).
+// Before: 18 of Lorne's hidden (serious, resolve, surprised), 18 more on his sad face for distant, and 20 of Rin's on her calm normal.
+const BEFORE_WAVE2: Record<string, number> = {
+  'hero exact': 30, 'hero near': 18, 'hero hidden': 18, 'rin exact': 16, 'rin near': 5, 'rin calm-normal': 20,
+};
+// After: all 107 show their own face or a near one; none hidden, none on Rin's calm normal.
+const AFTER_WAVE2: Record<string, number> = { 'hero exact': 61, 'hero near': 5, 'rin exact': 34, 'rin near': 7 };
 
 // Story staging S3 (2026-10-23): in a heavy scene a mood without art takes its nearest face, never the smiling normal.
 describe('faces in a heavy scene (staging S3)', () => {
@@ -128,16 +157,54 @@ describe('faces in a heavy scene (staging S3)', () => {
     expect(face('chizuru', 'bewildered')).toBe(art.portrait('chizuru', 'normal'));
   });
 
-  it("Lorne's soft-smiling normal is hidden for a heavy mood without a near face; Rin keeps her calm normal", () => {
-    expect(heavyFace('hero', 'serious')).toBeUndefined();
-    expect(heavyFace('hero', 'surprised')).toBeUndefined();
-    expect(heavyFace('hero', 'resolve')).toBeUndefined();
-    expect(heavyFace('hero', 'distant')).toBe(art.portrait('hero', 'sad'));   // distant → wistful → sad
+  it('Lorne and Rin map a heavy mood to their nearest wave-2 face instead of hiding', () => {
+    expect(heavyFace('hero', 'serious')).toBe(art.portrait('hero', 'serious'));
+    expect(heavyFace('hero', 'distant')).toBe(art.portrait('hero', 'distant'));
+    expect(heavyFace('hero', 'resolve')).toBe(art.portrait('hero', 'serious'));     // resolve → serious
+    expect(heavyFace('hero', 'surprised')).toBe(art.portrait('hero', 'serious'));   // surprised → serious
     expect(heavyFace('hero', 'sad')).toBe(art.portrait('hero', 'sad'));
     expect(heavyFace('hero', 'smile')).toBe(art.portrait('hero', 'smile'));
-    expect(heavyFace('rin', 'guarded')).toBe(art.portrait('rin', 'normal'));
-    expect(heavyFace('rin', 'serious')).toBe(art.portrait('rin', 'normal'));
-    expect(heavyFace('rin', 'averted')).toBe(art.portrait('rin', 'sad'));      // averted → sad
+    expect(heavyFace('rin', 'serious')).toBe(art.portrait('rin', 'serious'));
+    expect(heavyFace('rin', 'guarded')).toBe(art.portrait('rin', 'guarded'));
+    expect(heavyFace('rin', 'surprised')).toBe(art.portrait('rin', 'serious'));     // surprised → serious
+    expect(heavyFace('rin', 'averted')).toBe(art.portrait('rin', 'sad'));           // averted → sad (eyes down, not wary)
+  });
+
+  it("without the wave-2 art Lorne's soft-smiling normal still never stands in: distant → sad, else no portrait", () => {
+    const old = without(...(['serious', 'distant'] as StoryMood[]).map((m) => art.portrait('hero', m)));
+    expect(heavyFace('hero', 'distant', old)).toBe(art.portrait('hero', 'sad'));    // distant → wistful → sad
+    expect(heavyFace('hero', 'serious', old)).toBeUndefined();
+    expect(heavyFace('hero', 'resolve', old)).toBeUndefined();
+    const oldRin = without(...(['serious', 'guarded'] as StoryMood[]).map((m) => art.portrait('rin', m)));
+    expect(heavyFace('rin', 'guarded', oldRin)).toBe(art.portrait('rin', 'normal'));   // Rin's calm normal is a stand-in
+  });
+
+  it("Lorne's and Rin's heavy lines, each in its own era: every one shows a face now (wave 2)", () => {
+    const tally = (index: ArtIndex) => {
+      const t: Record<string, number> = {};
+      const hidden: string[] = [];
+      for (const id of SCENE_IDS) {
+        if (!heavyScene(id)) continue;
+        for (const l of STORY.scenes[id].lines) {
+          if (l.who !== 'hero' && l.who !== 'rin') continue;
+          const s = state();
+          if (l.if?.oath === true) s.party.roster.rin.oath = true;   // a line gated on her oath plays in the oath era
+          const mood = l.mood ?? 'normal';
+          const artId = l.who === 'rin' && s.party.roster.rin.oath ? 'rin-oath' : l.who;
+          const shown = speakerOf(l.who, s, index, mood, true).face;
+          const k = !shown ? 'hidden' : shown === art.portrait(artId, mood) ? 'exact' : shown === art.portrait(artId, 'normal') ? 'calm-normal' : 'near';
+          t[`${l.who} ${k}`] = (t[`${l.who} ${k}`] ?? 0) + 1;
+          if (!shown) hidden.push(`${id} ${l.who} ${mood} ${l.text}`);
+        }
+      }
+      return { t, hidden };
+    };
+    const before = tally(without(...(['serious', 'distant'] as StoryMood[]).map((m) => art.portrait('hero', m)),
+      ...['rin', 'rin-oath'].flatMap((a) => (['serious', 'guarded'] as StoryMood[]).map((m) => art.portrait(a, m)))));
+    const now = tally(ART);
+    expect(before.t).toEqual(BEFORE_WAVE2);
+    expect(now.t).toEqual(AFTER_WAVE2);
+    expect(now.hidden).toEqual([]);
   });
 
   it('the whole script: no non-happy line of a heavy scene shows a smiling normal', () => {
@@ -170,11 +237,15 @@ describe('faces in a heavy scene (staging S3)', () => {
       // story L Tasks 14-15: the finale's Selene wistful and Scarlet vow (exact +2, glad smiles -2), Noel's whole-chain blush gone
       // (a glad smile -1, her pout hidden +1), Bobby's third reading (near +1); hero-alone's Scarlet two lines fewer (exact -2),
       // rin-confess's Sylvie one fewer (near -1); the cold read: Scarlet's silent fallback is narration (exact -1)
-      'heavy exact': 108, 'heavy near': 36, 'heavy calm-normal': 20, 'heavy hidden': 23, 'heavy smiling-normal': 22,
+      // face wave 2 (2026-10-24; this tally reads every line before Rin's oath): Lorne's and Rin's heavy lines take their own
+      // face (exact +49): from a near face (-11: Lorne's distant had borrowed his sad), Rin's calm normal (-20) and no
+      // portrait (-18, Lorne's serious, resolve and surprised). The 5 still hidden are companions' (Safira, Noel: no serious face).
+      'heavy exact': 157, 'heavy near': 25, 'heavy hidden': 5, 'heavy smiling-normal': 22,
       // story L Tasks 12-13: light exact -5 (Bobby's and Sylvie's lines in chat:sylvie:1, Sylvie's bed line in :2, two of
       // Chizuru's bell lines), Lorne's smiling normal -1 (his two stand-ins gone, the tofu line moved to chat:sylvie:1)
       // story L Task 15: chat:selene:2 reads one way, two of Selene's lines fewer
-      'light exact': 86, 'light calm-normal': 6, 'light smiling-normal': 99,
+      // face wave 2: Rin's light guarded and serious lines (5) and Lorne's one light serious line now show their own face
+      'light exact': 92, 'light calm-normal': 1, 'light smiling-normal': 98,
     });
   });
 });

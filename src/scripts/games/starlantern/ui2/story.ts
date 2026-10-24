@@ -59,9 +59,10 @@ export const NEAR_FACE: Partial<Record<StoryMood, StoryMood[]>> = {
 };
 /**
  * Art ids whose normal is calm enough to stand in for any heavy face (staging S3, by eye on the published art): Rin's,
- * both looks, a level gaze. Lorne's normal carries a soft smile, so in a heavy scene it is no stand-in: like a
- * companion's, his line then shows its name plate alone. That is intentional (staging review 5): 19 heavy lines of his show no
- * portrait rather than a smile. The real fix is art, a second face wave for Lorne and Rin (serious, distant, guarded).
+ * both looks, a level gaze. Lorne's normal carries a soft smile, so it is no stand-in. Since face wave 2 (2026-10-24) both
+ * have heavy faces of their own: Lorne serious and distant, each Rin look serious and guarded; a heavy mood takes its own
+ * face or its `NEAR_FACE` (resolve and surprised → serious, guarded → serious, averted → sad), so every heavy line of
+ * theirs in the script shows a face (ui2/storyFaces.test.ts).
  */
 export const CALM_NORMALS: ReadonlySet<string> = new Set(['rin', 'rin-oath']);
 /**

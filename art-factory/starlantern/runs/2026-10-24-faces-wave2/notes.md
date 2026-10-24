@@ -44,3 +44,12 @@ magenta 殘留 0、半透明 0、只碰底邊。封閉洞是 1 px 的縫（瑟�
   - 諾艾兒 sad **新的較好**：眉尾上揚、臉頰一道明顯的淚痕、嘴角下垂。
   - 波比 sad **新的較好**：眉頭上揚、垂眼、臉頰有淚痕，比舊版的皺眉清楚。
   - 瑟蕾 wistful **沒有比較好**：還是垂眼、小嘴，看不出淺笑，和舊版、normal 都很接近。額度已用完（a2），建議保留舊版，或由使用者決定是否破例再給一次。
+
+## 核准與接進遊戲（2026-10-24）
+
+- 使用者對建議回「繼續」：6 張新表情全部採用；重做的絲嘉蕾 vow、諾艾兒 sad、波比 sad 用 a2 換掉舊版；瑟蕾 wistful 保留第一輪 a1。
+- 發佈：重做的 3 個 id 先 `faces.py pick --wave=2 --attempt 2`，舊的 a1 記進 `rejected_attempts`（「被第二輪 a2 取代」，檔案留在 `work/<id>/cand/a1` 與 raw 當證據）；瑟蕾 wistful 的 a2 記為淘汰，留在 `work/…/cand/a2`，不在 runtime 路徑。9 個 id 用 `sl_art` approve（`approved_by` 記日期與原話「繼續」）→ `publish --approved`。manifest 從 428 筆變成 434 筆；3 張重做直接覆蓋同名 runtime 檔（逐位元組對照過是 a2），瑟蕾 wistful 對照過仍是 a1。
+- 程式：`render/artPaths.ts` 的 `PUBLISHED_FACES` 加上 hero serious/distant、rin 與 rin-oath 的 serious/guarded。`ui2/story.ts` 的對應表本來就有：重場景裡 resolve、surprised、guarded 先找自己的臉、再找 serious，averted 找 sad（垂眼，不是戒備）。凜用哪一套和她的 normal 同一條規則（`artIdOf`：誓約前有裂痕的鈴、誓約後敲平的鈴），兩套不混用。拿掉「洛恩重場景隱藏頭貼是刻意的」那段註解。
+- 涵蓋（`ui2/storyFaces.test.ts`，重場景裡洛恩與凜的 107 句，每句照它自己的時期算：帶 `if.oath: true` 的句子用誓約後那一套）：
+  - 之前：洛恩 18 句不顯示頭貼（serious、resolve、surprised），另外 18 句 distant 借他的 sad；凜 20 句退回平靜的 normal。
+  - 之後：107 句都顯示自己的臉（95 句）或接近的臉（12 句），0 句隱藏、0 句退回 normal。

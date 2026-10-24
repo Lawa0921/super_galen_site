@@ -420,12 +420,18 @@ describe('speakerOf', () => {
 
   it('only a companion whose normal portrait smiles loses it on a grave line; Lorne and Rin keep theirs (re-review of the final fixes)', () => {
     const { game } = mk();
-    // Rin's and Lorne's normal faces do not smile: a serious line keeps the portrait (「要出去，得先過我這裡」).
-    expect(speakerOf('rin', game.state, ART, 'serious').face).toBe(art.portrait('rin', 'normal'));
-    expect(speakerOf('hero', game.state, ART, 'serious').face).toBe(art.portrait('hero', 'normal'));
-    expect(speakerOf('hero', game.state, ART, 'distant').face).toBe(art.portrait('hero', 'normal'));
+    // Rin's and Lorne's normal faces do not smile: a serious line keeps the portrait (「要出去，得先過我這裡」). Face wave 2
+    // (2026-10-24) gave them their own grave faces; without those, a light line falls back to the normal as before.
+    const noWave2: ArtIndex = { has: (u) => ART.has(u) && !/(hero|rin|rin-oath)-portrait-(serious|distant|guarded)\.png$/.test(u) };
+    expect(speakerOf('rin', game.state, noWave2, 'serious').face).toBe(art.portrait('rin', 'normal'));
+    expect(speakerOf('hero', game.state, noWave2, 'serious').face).toBe(art.portrait('hero', 'normal'));
+    expect(speakerOf('hero', game.state, noWave2, 'distant').face).toBe(art.portrait('hero', 'normal'));
+    expect(speakerOf('rin', game.state, ART, 'serious').face).toBe(art.portrait('rin', 'serious'));
+    expect(speakerOf('hero', game.state, ART, 'serious').face).toBe(art.portrait('hero', 'serious'));
+    expect(speakerOf('hero', game.state, ART, 'distant').face).toBe(art.portrait('hero', 'distant'));
     game.state.party.roster.rin.oath = true;
-    expect(speakerOf('rin', game.state, ART, 'serious').face).toBe(art.portrait('rin-oath', 'normal'));
+    expect(speakerOf('rin', game.state, noWave2, 'serious').face).toBe(art.portrait('rin-oath', 'normal'));
+    expect(speakerOf('rin', game.state, ART, 'serious').face).toBe(art.portrait('rin-oath', 'serious'));
     // A companion's heavy faces count as grave too: Chizuru's solemn, Scarlet's vow and shaken, Selene's wistful. Without
     // their art (and their fallbacks') no portrait; wave 1 (2026-10-23) published them, so they show (storyFaces.test.ts).
     const bare: ArtIndex = { has: (u) => ART.has(u) && !/-portrait-(serious|sad|solemn|vow|shaken|wistful)\.png$/.test(u) };
