@@ -130,10 +130,10 @@ describe('gen2 anchors', () => {
     expect(idx.anchorsOf(h).length).toBe(g.blueprints.anchorsOf(h).length + 1);
   });
 
-  it('地城區只有地城錨點：其他層、機率表都不放（地城建構器還沒登錄 → 整區沒有藍圖）', () => {
+  it('地城區只有地城錨點：其他層、機率表都不放（整區只有一份 wholeRegion 的地城藍圖，M2a Task 8）', () => {
     for (const seed of SEEDS50.slice(0, 20)) {
       const g = new Gen2Source(seed), dz = homeDungeonRegion(g.layout.landmassAt(SPAWN_X)!);
-      expect(g.blueprints.overlapping(dz.x0, dz.x1), seed).toEqual([]);
+      expect(g.blueprints.overlapping(dz.x0, dz.x1).map((b) => [b.kind, b.layer, b.wholeRegion]), seed).toEqual([['dungeon', BP_SURFACE, true]]);
     }
   }, 60_000);
 

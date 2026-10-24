@@ -39,9 +39,12 @@ describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
         expect(b.cells[k + 1]).toBeGreaterThanOrEqual(b.y); expect(b.cells[k + 1]).toBeLessThan(b.y + b.h);
       }
       const slot = slotOf(b.id, src.layout);
-      expect(b.x).toBeGreaterThanOrEqual(slot.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(slot.x1 - 8);
       expect(slot.layer).toBe(b.layer);
+      // wholeRegion 錨點（家鄉地城，M2a Task 8）：外框在地區內、豁免槽邊距（Q2）
+      if (b.wholeRegion) { expect(b.x).toBeGreaterThanOrEqual(slot.region.x0); expect(b.x + b.w).toBeLessThanOrEqual(slot.region.x1); continue; }
+      expect(b.x).toBeGreaterThanOrEqual(slot.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(slot.x1 - 8);
     }
+    expect(all.filter((b) => b.wholeRegion).map((b) => b.kind)).toEqual(['dungeon']);
     expect(new BlueprintIndex('bp', src.layout, src.profile).overlapping(-40_000, 40_000)).toEqual(all);
   });
 

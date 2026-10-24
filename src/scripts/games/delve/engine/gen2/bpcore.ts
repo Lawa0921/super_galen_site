@@ -56,6 +56,25 @@ export interface Blueprint {
   site: GenSite | null;
   // true = 佔滿整個地區的錨點（家鄉地城）：外框只需在地區 [r.x0, r.x1) 內，豁免 SLOT_PAD 槽邊距（Q2）
   wholeRegion: boolean;
+  // 大藍圖（家鄉地城）：cells 依 (x >> 5, y, x) 排序，欄號（x >> 5）→ 該欄的格在 cells 的 [起, 訖)（以 Int32 為單位）；
+  // stamp 有它就只掃該欄的範圍（同一藍圖每格只出現一次，排序不改蓋出來的結果）
+  colIndex?: Map<number, [number, number]>;
+}
+
+// 依列序（y, x）的 cells → 依 (x >> 5, y, x) 排序的 cells 與 colIndex（每欄內保持原本的列序）
+export function indexColumns(cells: Int32Array): { cells: Int32Array; colIndex: Map<number, [number, number]> } {
+  const count = new Map<number, number>();
+  for (let k = 0; k < cells.length; k += 5) { const c = cells[k] >> 5; count.set(c, (count.get(c) ?? 0) + 5); }
+  const cols = [...count.keys()].sort((a, b) => a - b), colIndex = new Map<number, [number, number]>(), next = new Map<number, number>();
+  let at = 0;
+  for (const c of cols) { const n = count.get(c)!; colIndex.set(c, [at, at + n]); next.set(c, at); at += n; }
+  const out = new Int32Array(cells.length);
+  for (let k = 0; k < cells.length; k += 5) {
+    const c = cells[k] >> 5, i = next.get(c)!;
+    out.set(cells.subarray(k, k + 5), i);
+    next.set(c, i + 5);
+  }
+  return { cells: out, colIndex };
 }
 
 // 沒有物件的藍圖的新欄位

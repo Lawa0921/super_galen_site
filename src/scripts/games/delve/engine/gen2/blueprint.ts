@@ -12,6 +12,7 @@
 // 錨點可以在含主坑道的槽（找不到不含坑道的槽時），建構器收到的 slotX0 / slotX1 是避開坑道帶後較大的一側（anchors.anchorSpan），
 // 所以外框照舊離坑道觸及範圍 ≥ 1；「含坑道的槽沒有非 DEEP 藍圖」只對機率 / 保證藍圖成立。
 // 家鄉地城區只有 dungeon 錨點（wholeRegion：外框佔滿整個地區，任何與地區相交的查詢都找得到它），其他層 / 槽全空。
+// 快取（Q9）：家鄉地塊的藍圖存在釘選表（永不淘汰，家鄉地城這種大藍圖只建一次）；外圍地塊照舊 LRU CACHE_MAX 份。
 // 液體藍圖（湖 / 地下湖 / 熔岩池，structures/lakes.ts）讓位：另一層與它的外框相交的那幾槽的藍圖外框與它相交、且那份不是液體或層比它淺 → 這份不放
 // （fill 依 (layer, id) 序蓋，後蓋的結構會切開液體；依「原始」擲出的結果判，沒有循環）。
 // 地面覆寫（groundAt，Q4）：SURFACE 層藍圖的 ground 蓋過 profile 的地表；Gen2Source.surfaceAt 與 BpCtx.groundAt 都是它。
@@ -21,7 +22,7 @@ import { X_LIMIT } from '../coords';
 import { li, type Column } from '../column';
 import type { RegionInfo } from '../regionInfo';
 import { HOME_X0, SPAWN_X, VARIANT, type Landmass, type Layout, type SeaSlot } from './layout';
-import { ANCHOR_MAX_W, anchorBuild, anchorSpan, continentAnchors, homeAnchors, type Anchor } from './anchors';
+import { ANCHOR_MAX_W, anchorBuild, anchorSpan, continentAnchors, homeAnchors, registerAnchorBuild, type Anchor } from './anchors';
 import type { Profile2 } from './profile';
 import { shaftX } from './caves';
 import { buildCabin } from './structures/cabin';
@@ -29,6 +30,7 @@ import { buildRuin } from './structures/ruin';
 import { buildLake, buildCaveLake, buildLavaPool } from './structures/lakes';
 import { buildShipwreck } from './structures/shipwreck';
 import { buildCrate } from './structures/crate';
+import { buildDungeonBp } from './structures/dungeon';
 import { BP_SURFACE, BP_UNDER, BP_DEEP, KEEP, SLOT_PAD, slotWidth, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
 import { encodeStructureId, decodeStructureId } from './structId';
 
@@ -81,11 +83,16 @@ export function depthFrac(p: Profile2, x: number, y: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
 }
 
-// 把藍圖與 [x0, x1) 相交的格依序蓋進 col（col 是 [x0, x1) 所在的那一欄）
+// 把藍圖與 [x0, x1) 相交的格依序蓋進 col（col 是 [x0, x1) 所在的那一欄）；有 colIndex 的大藍圖只掃 [x0, x1) 涉及的欄
 export function stamp(col: Column, bp: Blueprint, x0: number, x1: number): void {
   if (bp.x >= x1 || bp.x + bp.w <= x0) return;
-  const c = bp.cells, H = col.height, fg = col.fg, wall = col.wall, liq = col.liquid, lt = col.liquidType;
-  for (let k = 0; k < c.length; k += 5) {
+  const ci = bp.colIndex;
+  if (!ci) { stampRange(col, bp.cells, 0, bp.cells.length, x0, x1); return; }
+  for (let c = x0 >> 5; c <= (x1 - 1) >> 5; c++) { const r = ci.get(c); if (r) stampRange(col, bp.cells, r[0], r[1], x0, x1); }
+}
+function stampRange(col: Column, c: Int32Array, a: number, z: number, x0: number, x1: number): void {
+  const H = col.height, fg = col.fg, wall = col.wall, liq = col.liquid, lt = col.liquidType;
+  for (let k = a; k < z; k += 5) {
     const x = c[k], y = c[k + 1];
     if (x < x0 || x >= x1 || y < 0 || y >= H) continue;
     const i = li(x, y), f = c[k + 2], w = c[k + 3], q = c[k + 4];
@@ -94,6 +101,9 @@ export function stamp(col: Column, bp: Blueprint, x0: number, x1: number): void 
     if (q !== KEEP) { liq[i] = q >> 8; lt[i] = q & 255; }
   }
 }
+
+// ── 錨點建構器（家鄉地城：wholeRegion，Q2）──
+registerAnchorBuild('dungeon', buildDungeonBp);
 
 // ── 槽位表 ──
 
@@ -137,9 +147,12 @@ export class BlueprintIndex {
   private readonly sRoll: number;
   private readonly sShaft: number;
   private readonly spawnX: number | null;
-  // id → 藍圖（null = 這槽這層空著）；LRU CACHE_MAX 份。raw = 讓位前（原始擲出）的結果
+  // id → 藍圖（null = 這槽這層空著）；外圍（家鄉以外）LRU CACHE_MAX 份。raw = 讓位前（原始擲出）的結果
   private readonly cache = new Map<number, Blueprint | null>();
   private readonly rawCache = new Map<number, Blueprint | null>();
+  // 家鄉地塊的藍圖（Q9）：釘選、永不淘汰（家鄉地城等大藍圖只建一次；家鄉的槽數有限）。pinnedRaw = 讓位前的結果
+  private readonly pinned = new Map<number, Blueprint | null>();
+  private readonly pinnedRaw = new Map<number, Blueprint | null>();
   // 大陸 → 保證槽（Landmass 是 Layout 快取的同一個物件）
   private readonly guards = new Map<Landmass, Guard>();
   // 地塊 → 錨點
@@ -251,14 +264,15 @@ export class BlueprintIndex {
     return lru(this.cache, id, () => build({ seed: this.seed, s: this.s, id, slotX0: s.x0, slotX1: s.x1, region: m.regions[0], profile: this.profile, ver: m.ver, groundAt: this.groundFn }))!;
   }
 
+  // 家鄉地塊走釘選表（Q9），外圍走 LRU
   private get(m: Landmass, r: RegionInfo, q: number, layer: RolledLayer): Blueprint | null {
-    const id = structureId(m.side, m.i, r.index, q, layer);
-    return lru(this.cache, id, () => this.yieldLiquid(m, r, this.raw(m, r, q, layer)));
+    const id = structureId(m.side, m.i, r.index, q, layer), make = (): Blueprint | null => this.yieldLiquid(m, r, this.raw(m, r, q, layer));
+    return m.kind === 'home' ? memo(this.pinned, id, make) : lru(this.cache, id, make);
   }
 
   private raw(m: Landmass, r: RegionInfo, q: number, layer: RolledLayer): Blueprint | null {
-    const id = structureId(m.side, m.i, r.index, q, layer);
-    return lru(this.rawCache, id, () => this.build(m, r, q, layer, id));
+    const id = structureId(m.side, m.i, r.index, q, layer), make = (): Blueprint | null => this.build(m, r, q, layer, id);
+    return m.kind === 'home' ? memo(this.pinnedRaw, id, make) : lru(this.rawCache, id, make);
   }
 
   // 液體藍圖 b 讓位（liquidYields）給另一層與它的外框相交的那幾槽的原始藍圖 → null（各層槽寬不同，不是「同一個 slot 序號」）
@@ -354,6 +368,14 @@ export class BlueprintIndex {
     this.guards.set(m, g);
     return g;
   }
+}
+
+// 釘選表：未命中 make() 後放入，永不淘汰
+function memo<V>(cache: Map<number, V>, id: number, make: () => V): V {
+  if (cache.has(id)) return cache.get(id)!;
+  const v = make();
+  cache.set(id, v);
+  return v;
 }
 
 // LRU：命中移到最新；未命中 make() 後放入，超過 CACHE_MAX 丟最舊

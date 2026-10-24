@@ -6,9 +6,9 @@ import { Gen2Source, GEN2_VERSION, GEN2_MIN_VERSION } from './index';
 import { fillCol, bytes } from './testUtil';
 import { fnv1a } from '../../net/codec';
 
-const GEN2_HASHES: Record<number, number> = { 0: 244772130 };
-// 101：家鄉的小屋（M2a Task 7 起家鄉表層槽多半是錨點，原本 105 的遺跡沒了）
-const COLS = [-300, -40, -8, -4, -1, 0, 30, 65, 100, 101, 131, 132, 140, 160, 220, 400];
+const GEN2_HASHES: Record<number, number> = { 0: 2855785091 };
+// 101：家鄉的小屋（M2a Task 7 起家鄉表層槽多半是錨點，原本 105 的遺跡沒了）；8：家鄉地城的入口塔與塔下的房間（M2a Task 8）
+const COLS = [-300, -40, -8, -4, -1, 0, 8, 30, 65, 100, 101, 131, 132, 140, 160, 220, 400];
 
 describe('gen2 版本雜湊鎖', () => {
   for (let v = GEN2_MIN_VERSION; v <= GEN2_VERSION; v++) {
@@ -25,6 +25,7 @@ describe('gen2 版本雜湊鎖', () => {
     for (const cx of COLS) for (const b of src.blueprints.overlapping(cx * 32, cx * 32 + 32)) kinds.add(b.kind);
     expect([...kinds].some((k) => k === 'shipwreck' || k === 'crate'), [...kinds].join()).toBe(true);
     expect([...kinds].some((k) => k === 'cabin' || k === 'ruin'), [...kinds].join()).toBe(true);
+    expect(kinds.has('dungeon'), [...kinds].join()).toBe(true);
   });
   it('每個版本都有雜湊', () => {
     for (let v = GEN2_MIN_VERSION; v <= GEN2_VERSION; v++) expect(GEN2_HASHES[v]).toBeTypeOf('number');

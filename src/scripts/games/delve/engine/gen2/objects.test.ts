@@ -118,11 +118,13 @@ describe('gen2 blueprint objects', () => {
     expect(dug).toBeGreaterThan(50); expect(ores).toBeGreaterThan(5); expect(shaft).toBeGreaterThan(50);
   }, 60_000);
 
-  it('extrasIn / objectsIn：沒有物件的 M1 藍圖回空清單；每次回新物件', () => {
-    const e = src.extrasIn(-20_000, 20_000);
-    expect(e).toEqual({ pots: [], tablets: [], landmarks: [], sites: [] });
+  it('extrasIn / objectsIn：沒有物件的 M1 藍圖回空清單（只有家鄉地城的陶罐 / 古碑 / 聚落，M2a Task 8）；每次回新物件', () => {
+    const e = src.extrasIn(-20_000, 20_000), dg = src.blueprints.overlapping(-20_000, 20_000).filter((b) => b.kind === 'dungeon');
+    expect(dg).toHaveLength(1);
+    expect(e).toEqual({ pots: dg[0].pots, tablets: dg[0].tablets, landmarks: [], sites: [dg[0].site] });
+    expect(e.pots.length).toBeGreaterThan(0); expect(e.tablets.length).toBe(3);
     expect(src.extrasIn(-20_000, 20_000)).not.toBe(e);
-    for (const b of src.blueprints.overlapping(-20_000, 20_000)) {
+    for (const b of src.blueprints.overlapping(-20_000, 20_000).filter((q) => q.kind !== 'dungeon')) {
       expect(b.pots).toEqual([]); expect(b.tablets).toEqual([]); expect(b.landmarks).toEqual([]); expect(b.site).toBeNull(); expect(b.wholeRegion).toBe(false);
       if (b.kind !== 'ruin') expect(b.ground).toBeNull();
       expect(b.solid).toBeNull();
