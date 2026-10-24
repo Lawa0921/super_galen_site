@@ -43,12 +43,13 @@ const SECRET_GAP = 2 * SUB_SLOT_W, UNDER_TRIES = 8;
 //   village 91 = vw 上限 73 + 兩側坡地各 9（外框 x0 − 9 .. x1 + 9，Task 4 延續事項）；ruin 20 = w 上限 18 + 2（structures/ruin.ts）；
 //   cabin 75 = tl 30 + w 15 + tr 30（structures/cabin.ts）；cave_lake 65 = 2 × rx 上限 30 + 1 + 2 × 殼 2（structures/lakes.ts）；
 //   hall 154 = Task 9「外框 ≤ 154 = 170 − 16」；mineshaft_secret 154 = Q3 總寬上限；sky_island 48 = 島寬 30–48（Task 10）；
-//   mushroom_biome 145 = 2 × rx 70 + 1 + 2 × 2（殼，同 lakes 的橢圓外框）；crystal_cave 125 = 2 × 60 + 1 + 4；hive 37 = 2 × 15 + 1 + 2 × 3（2.5 格殼取整）；
+//   mushroom_biome 145、crystal_cave 125 = 橢圓 2rx + 1（rx 上限 70 / 60）+ 接洞隧道最多再 4 欄（structures/miniBiome.ts 的 MUSHROOM_MAX_W / CRYSTAL_MAX_W）；
+//   hive 48 = 2 × 15 + 1 + 2 × 3（2.5 格殼取整）+ 接洞隧道最多再 11 欄（structures/hive.ts 的 HIVE_MAX_W；Task 11 從 37 放寬：蜂巢的殼是封閉的，一定要挖隧道接洞穴）；
 //   alcove 9 = 9 × 5 石室（Task 14）；molten_shrine 15、spawn_tablet 12：Task 14 規格沒給寬度，這裡訂為契約上限（spawn_tablet 照小點位的寬 ≤ 12）。
 // dungeon（wholeRegion）與 shaft_cache（刻意在坑道底）不受這個限制
 export const ANCHOR_MAX_W: Readonly<Partial<Record<AnchorKind, number>>> = {
   village: 91, ruin: 20, cabin: 75, cave_lake: 65, hall: 154, mineshaft_secret: 154, sky_island: 48,
-  mushroom_biome: 145, crystal_cave: 125, hive: 37, alcove_snow: 9, alcove_desert: 9, molten_shrine: 15, spawn_tablet: 12,
+  mushroom_biome: 145, crystal_cave: 125, hive: 48, alcove_snow: 9, alcove_desert: 9, molten_shrine: 15, spawn_tablet: 12,
   // 只給測試（BlueprintIndex 的執行期寬度檢查）
   test_probe: 60,
 };
@@ -179,45 +180,64 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   }
   add('shaft_cache', cache);
   add('molten_shrine', hashed(free('molten_shrine', BP_DEEP, (s) => far(s, MOLTEN_MIN)), 4));
-  add('crystal_cave', hashed(free('crystal_cave', BP_DEEP), 5));
-
-  // 地下層：小屋 = 離出生點最近的兩槽
-  for (let k = 0; k < 2; k++) add('cabin', nearest(free('cabin', BP_UNDER), sp));
-  // 先挑要整槽的礦坑密室（寬 154 + 邊距 = 170；每一座只在「挑了之後剩下的還湊得滿 3 座」的槽裡挑），再來生態限定的小結構
-  // （放得進含坑道槽的一側，沒有不含坑道的槽時退過去）、蘑菇林，最後地下湖。
-  // 雜湊挑法可能把後面的種類擠到沒槽：這一組整組重挑（第 t 次用雜湊鍵 + 100t），UNDER_TRIES 次都不行才丟 RangeError。
-  // 礦坑密室先不放在地廳的槽上方（strict）；整組 UNDER_TRIES 次都湊不滿才放寬（那時只有地廳走後備豎井才會相交，Task 9 實測 300 個種子 0 次）
-  const mark = out.length, takenBefore = new Set(taken);
+  // 水晶洞：外框頂到 deep − 36，地下層錨點裡礦坑密室（往下接洞的豎井到 deep 線附近，Task 10）、蜂巢（外框底到 deep + 33）、小屋（頂 y 可到 molten − 30）
+  // 都碰得到它（地下層與深層同槽寬 SUB_SLOT_W、同序號：(地區, q) 在兩層是同一段 x）。錨點與錨點跨層相交 = RangeError（1500 個種子實測不避開時 4 個開機失敗），
+  // 所以水晶洞那一槽的正上方不放地下層錨點（那一槽的地下層只有機率藍圖，它們讓位給錨點）。兩段式（Task 11）：
+  //   ① 照原本的順序選完地下層，水晶洞再挑正上方沒有地下層錨點的槽（先挑森林：生態限定錨點的地區通常只有 2–3 槽）；
+  //   ② ① 沒有槽（6000 個種子約 2.7%）→ 整段重來：先挑水晶洞、把正上方的地下層槽標成已佔，再選地下層。
+  // ① 優先的理由：② 少一個地下層槽，礦坑密室換位置後空島（避開密室的槽）偶爾放不下（1500 個種子 2 個），① 的地下層與空島和 Task 10 完全一樣
+  const pickCrystal = (keep: (s: Slot) => boolean): Slot | undefined =>
+    hashed(free('crystal_cave', BP_DEEP, (s) => s.r.biome === BIOME.FOREST && keep(s)), 5) ?? hashed(free('crystal_cave', BP_DEEP, keep), 5);
+  const markPhase = out.length, takenPhase = new Set(taken);
   let secrets: Slot[] = [];
-  under: for (const strict of [true, false]) for (let t = 0; t < UNDER_TRIES; t++) {
-    const o = 100 * t;
+  for (const reserve of [false, true]) {
     try {
-      secrets = [];
-      for (let k = 0; k < 3; k++) {
-        const { plain, shafted } = split('mineshaft_secret', BP_UNDER, (q) => far(q, SECRET_MIN) && (!strict || offHalls(q)) && secrets.every((p) => Math.abs(p.mid - q.mid) >= SECRET_GAP));
-        // 挑 q 之後，剩下的（含坑道的槽也算，之後的挑選會退到它們）還湊得滿
-        const all = [...plain, ...shafted].sort((p, q) => p.mid - q.mid);
-        const viable = (q: Slot): boolean => spacedCount(all.filter((p) => Math.abs(p.mid - q.mid) >= SECRET_GAP), SECRET_GAP) >= 2 - k;
-        const pv = plain.filter(viable);
-        secrets.push(add('mineshaft_secret', hashed(pv.length ? pv : shafted.filter(viable), 11 + k + o)));
+      if (reserve) { const cr = add('crystal_cave', pickCrystal(() => true)); taken.add(key(cr.r, BP_UNDER, cr.q)); }
+      // 地下層：小屋 = 離出生點最近的兩槽
+      for (let k = 0; k < 2; k++) add('cabin', nearest(free('cabin', BP_UNDER), sp));
+      // 先挑要整槽的礦坑密室（寬 154 + 邊距 = 170；每一座只在「挑了之後剩下的還湊得滿 3 座」的槽裡挑），再來生態限定的小結構
+      // （放得進含坑道槽的一側，沒有不含坑道的槽時退過去）、蘑菇林，最後地下湖。
+      // 雜湊挑法可能把後面的種類擠到沒槽：這一組整組重挑（第 t 次用雜湊鍵 + 100t），UNDER_TRIES 次都不行才丟 RangeError。
+      // 礦坑密室先不放在地廳的槽上方（strict）；整組 UNDER_TRIES 次都湊不滿才放寬（那時只有地廳走後備豎井才會相交，Task 9 實測 300 個種子 0 次）
+      const mark = out.length, takenBefore = new Set(taken);
+      under: for (const strict of [true, false]) for (let t = 0; t < UNDER_TRIES; t++) {
+        const o = 100 * t;
+        try {
+          secrets = [];
+          for (let k = 0; k < 3; k++) {
+            const { plain, shafted } = split('mineshaft_secret', BP_UNDER, (q) => far(q, SECRET_MIN) && (!strict || offHalls(q)) && secrets.every((p) => Math.abs(p.mid - q.mid) >= SECRET_GAP));
+            // 挑 q 之後，剩下的（含坑道的槽也算，之後的挑選會退到它們）還湊得滿
+            const all = [...plain, ...shafted].sort((p, q) => p.mid - q.mid);
+            const viable = (q: Slot): boolean => spacedCount(all.filter((p) => Math.abs(p.mid - q.mid) >= SECRET_GAP), SECRET_GAP) >= 2 - k;
+            const pv = plain.filter(viable);
+            secrets.push(add('mineshaft_secret', hashed(pv.length ? pv : shafted.filter(viable), 11 + k + o)));
+          }
+          add('alcove_snow', hashed(free('alcove_snow', BP_UNDER, biome(BIOME.SNOW)), 6 + o));
+          add('alcove_desert', hashed(free('alcove_desert', BP_UNDER, biome(BIOME.DESERT)), 7 + o));
+          // 蜂巢的外框底到 deep + 33、地廳的外框頂 ≥ deep + 23：蜂巢不放在地廳的槽上方（Task 11）。蘑菇林的外框底 ≤ rock + 0.4 (deep − rock) + 69，
+          // 碰不到地廳與熔岩祭壇（molten 附近）；shaft_cache 還沒有建構器（Task 14 接上時要一併檢查）
+          add('hive', hashed(free('hive', BP_UNDER, (s) => s.r.biome === BIOME.JUNGLE && offHalls(s)), 8 + o));
+          add('mushroom_biome', hashed(free('mushroom_biome', BP_UNDER, biome(BIOME.FOREST)), 9 + o));
+          add('cave_lake', hashed(free('cave_lake', BP_UNDER), 10 + o));
+          break under;
+        } catch (e) {
+          if (!(e instanceof RangeError) || (!strict && t + 1 >= UNDER_TRIES)) throw e;
+          out.length = mark; taken.clear(); for (const k of takenBefore) taken.add(k);
+        }
       }
-      add('alcove_snow', hashed(free('alcove_snow', BP_UNDER, biome(BIOME.SNOW)), 6 + o));
-      add('alcove_desert', hashed(free('alcove_desert', BP_UNDER, biome(BIOME.DESERT)), 7 + o));
-      add('hive', hashed(free('hive', BP_UNDER, biome(BIOME.JUNGLE)), 8 + o));
-      add('mushroom_biome', hashed(free('mushroom_biome', BP_UNDER, biome(BIOME.FOREST)), 9 + o));
-      add('cave_lake', hashed(free('cave_lake', BP_UNDER), 10 + o));
-      break under;
-    } catch (e) {
-      if (!(e instanceof RangeError) || (!strict && t + 1 >= UNDER_TRIES)) throw e;
-      out.length = mark; taken.clear(); for (const k of takenBefore) taken.add(k);
-    }
-  }
+      if (!reserve) add('crystal_cave', pickCrystal((s) => !taken.has(key(s.r, BP_UNDER, s.q))));
 
-  // 天空：兩座空島。空島的繩梯垂到地面（錨點跨層相交 = RangeError）：不放在表層錨點（村莊 / 遺跡）的同一槽（天空與表層同槽寬、同序號；
-  // 那個表層槽也不擲機率，BlueprintIndex.build）；可用範圍避開下方地廳（後備豎井）與礦坑密室的 170 格槽（Anchor.avoid，剩下的一段要放得下）
-  const below = [...halls, ...secrets], skyAvoid: Avoid = (s) => below.filter((b) => overX(s, b)).map((b) => ({ x0: b.x0, x1: b.x1 }));
-  for (let k = 0; k < 2; k++) {
-    add('sky_island', hashed(free('sky_island', BP_SKY, (s) => far(s, SKY_MIN) && !taken.has(key(s.r, BP_SURFACE, s.q)), skyAvoid), 14 + k), skyAvoid);
+      // 天空：兩座空島。空島的繩梯垂到地面（錨點跨層相交 = RangeError）：不放在表層錨點（村莊 / 遺跡）的同一槽（天空與表層同槽寬、同序號；
+      // 那個表層槽也不擲機率，BlueprintIndex.build）；可用範圍避開下方地廳（後備豎井）與礦坑密室的 170 格槽（Anchor.avoid，剩下的一段要放得下）
+      const below = [...halls, ...secrets], skyAvoid: Avoid = (s) => below.filter((b) => overX(s, b)).map((b) => ({ x0: b.x0, x1: b.x1 }));
+      for (let k = 0; k < 2; k++) {
+        add('sky_island', hashed(free('sky_island', BP_SKY, (s) => far(s, SKY_MIN) && !taken.has(key(s.r, BP_SURFACE, s.q)), skyAvoid), 14 + k), skyAvoid);
+      }
+      break;
+    } catch (e) {
+      if (!(e instanceof RangeError) || reserve) throw e;
+      out.length = markPhase; taken.clear(); for (const k of takenPhase) taken.add(k);
+    }
   }
   // 小點位：出生點東側第一個槽
   add('spawn_tablet', free('spawn_tablet', BP_MINOR, (s) => s.x0 > sp)[0]);

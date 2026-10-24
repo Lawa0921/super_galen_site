@@ -10,7 +10,8 @@ import type { Profile2 } from './profile';
 import { shaftX, SHAFT_REACH } from './caves';
 import { decodeStructureId } from './structId';
 
-export type BpKind = 'cabin' | 'ruin' | 'shipwreck' | 'crate' | 'lake' | 'cave_lake' | 'lava_pool' | 'dungeon' | 'mineshaft' | 'sky_island' | 'village' | 'hall';
+export type BpKind = 'cabin' | 'ruin' | 'shipwreck' | 'crate' | 'lake' | 'cave_lake' | 'lava_pool' | 'dungeon' | 'mineshaft' | 'sky_island' | 'village' | 'hall'
+  | 'mushroom_biome' | 'crystal_cave' | 'hive';
 // 層：表層 / 地下 / 深層 / 空中（浮空島）/ 小點（minor）；結構 id 的 layer 欄位 3 bit（structId.ts）
 export const BP_SURFACE = 0, BP_UNDER = 1, BP_DEEP = 2, BP_SKY = 3, BP_MINOR = 4, LAND_SLOT_W = 340, KEEP = -1;
 export type Layer = 0 | 1 | 2 | 3 | 4;

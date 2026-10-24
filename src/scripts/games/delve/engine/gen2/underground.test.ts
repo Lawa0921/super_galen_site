@@ -19,7 +19,7 @@ import type { Canvas } from './draw/canvas';
 import { HRng } from './hrng';
 import { Filler2 } from './fill';
 import type { BlueprintIndex } from './blueprint';
-import { SEEDS5, SEEDS50, bytes, fillCol, homeBlueprints, loadColumns, overlapPairs, srcOf, worldOf } from './testUtil';
+import { SEEDS5, SEEDS50, bytes, fillCol, homeBlueprints, loadColumns, overlapPairs, srcOf, walkOut, worldOf } from './testUtil';
 import { Gen2Source } from './index';
 import type { World } from '../world';
 
@@ -91,26 +91,6 @@ function rampFeet(b: Blueprint, shaftX0: number): { x: number; y: number }[] {
     if (x < shaftX0 && !shaftCols.has(x) && b.cells[i + 2] === T.AIR) low.set(x, Math.max(low.get(x) ?? -1, y));
   }
   return [...low].map(([x, y]) => ({ x, y }));
-}
-// 從礦車格出發走不擋身體的格（4 鄰、不進液體），範圍 = 外框外擴 80 欄、外框上方 80 列（到世界頂）到外框下 40 列：
-// 走到外框外 ≥ 300 格、或走到地表以上（y < 地面）= true
-function walkOut(w: World, src: Gen2Source, b: Blueprint): boolean {
-  const cart = b.landmarks[0], x0 = b.x - 80, x1 = b.x + b.w + 80, y0 = Math.max(0, b.y - 80), y1 = b.y + b.h + 40, W = x1 - x0;
-  const seen = new Uint8Array(W * (y1 - y0)), st = [cart.x, cart.y];
-  seen[(cart.y - y0) * W + cart.x - x0] = 1;
-  let out = 0;
-  while (st.length) {
-    const y = st.pop()!, x = st.pop()!;
-    if (y < src.surfaceAt(x)) return true;
-    if ((x < b.x || x >= b.x + b.w || y < b.y || y >= b.y + b.h) && ++out >= 300) return true;
-    for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
-      if (nx < x0 || nx >= x1 || ny < y0 || ny >= y1) continue;
-      const k = (ny - y0) * W + nx - x0;
-      if (seen[k] || isSolidTile(w.getFg(nx, ny)) || w.getLiquid(nx, ny) > 0) continue;
-      seen[k] = 1; st.push(nx, ny);
-    }
-  }
-  return false;
 }
 // 外圍：東西兩側前幾片地塊裡的某種藍圖
 function outerOf(seed: string, kind: string, layers: readonly Layer[]): Blueprint[] {

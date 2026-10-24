@@ -5,22 +5,15 @@ import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
 import { BlueprintIndex, KEEP, liquidYields, emptyObjects, type Blueprint, type BpKind } from './blueprint';
 import { LAVA_Y } from './profile';
-import { worldOf, loadColumns, liquidInvariant, SEEDS5 } from './testUtil';
+import { worldOf, loadColumns, liquidInvariant, snapshotLiquid, SEEDS5 } from './testUtil';
 import { LiquidSim } from '../liquid';
 import { LIQ, LIQ_MAX } from '../liquidKind';
 import { T } from '../tiles';
-import type { World } from '../world';
 
 const KINDS = ['lake', 'cave_lake', 'lava_pool'];
 const src = new Gen2Source('lake'), liq = new BlueprintIndex('lake', src.layout, src.profile).overlapping(-25_000, 25_000).filter((b) => KINDS.includes(b.kind));
 const ofKind = (k: string): Blueprint[] => liq.filter((b) => b.kind === k);
 
-// 外框內 liquid / liquidType 的複本
-function snapshotLiquid(w: World, b: Blueprint): number[] {
-  const out: number[] = [];
-  for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) out.push(w.getLiquid(x, y), w.getLiquidType(x, y));
-  return out;
-}
 // 藍圖最後蓋在 (x, y) 的液體值（沒有 = KEEP）
 function liqAt(b: Blueprint, x: number, y: number): number {
   let v = KEEP;
@@ -142,7 +135,8 @@ describe('gen2 static liquids: lake / cave_lake / lava_pool', () => {
       }
     }
     expect(n).toBeGreaterThan(50);
-  });
+  // 5 個種子 ±25,000 格的全部藍圖（Task 11 加了小生態 / 蜂巢的建構，超過預設 5 秒）
+  }, 60_000);
 
   it('liquidYields：液體讓給相交的非液體（任一層）與較淺層的液體；不相交、同層、非液體本身都不讓', () => {
     const bp = (kind: BpKind, layer: 0 | 1 | 2, x: number, y: number): Blueprint => ({ id: 0, kind, layer, x, y, w: 10, h: 10, cells: new Int32Array(0), chests: [], ...emptyObjects() });

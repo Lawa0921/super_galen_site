@@ -25,6 +25,7 @@
 // 小點位（MINOR）層還沒有藍圖（Task 19）：接上時照 SKY 的規則（BuiltLayer / isBuilt、LAYERS、CROSS）。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { hash2, seedInt } from '../noise';
+import { BIOME } from '../world';
 import { X_LIMIT } from '../coords';
 import { li, type Column } from '../column';
 import type { RegionInfo } from '../regionInfo';
@@ -42,6 +43,8 @@ import { buildVillageBp } from './structures/village';
 import { buildHallBp } from './structures/hall';
 import { buildMineshaftBp, rollMineshaftBp } from './structures/mineshaft';
 import { buildSkyIslandBp, rollSkyIslandBp } from './structures/skyIsland';
+import { buildMushroomBp, buildCrystalBp, rollMushroomBp, rollCrystalBp } from './structures/miniBiome';
+import { buildHiveBp, rollHiveBp } from './structures/hive';
 import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, SLOT_PAD, bandFreeSpan, slotWidth, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
 import { encodeStructureId, decodeStructureId } from './structId';
 
@@ -119,26 +122,35 @@ registerAnchorBuild('village', buildVillageBp);
 registerAnchorBuild('hall', buildHallBp);
 registerAnchorBuild('mineshaft_secret', (c) => buildMineshaftBp(c, { secret: true }));
 registerAnchorBuild('sky_island', buildSkyIslandBp);
+// 小生態與蜂巢（Task 11）
+registerAnchorBuild('mushroom_biome', buildMushroomBp);
+registerAnchorBuild('crystal_cave', buildCrystalBp);
+registerAnchorBuild('hive', buildHiveBp);
 
 // ── 槽位表 ──
 
 type Build = (c: BpCtx, o?: { force?: boolean }) => Blueprint | null;
+// 槽位表的一項：biomes = 只在這些生態的地區（RegionInfo.biome）擲；不合的地區這一項整個不算（機率不累加，Task 11）
+interface Roll { p: number; build: Build; biomes?: readonly number[] }
 // 有藍圖的層（MINOR 是 Task 19）
 type BuiltLayer = 0 | 1 | 2 | 3;
 const isBuilt = (l: Layer): l is BuiltLayer => l !== BP_MINOR;
 // 地下層機率礦坑的機率：外圍大陸 MINESHAFT_P；家鄉 HOME_UNDER_MINESHAFT_P（控制者裁決：家鄉的地下層槽大多是錨點，0.15 時家鄉平均只有 3.1 條礦坑，
 // 舊生成器約 8 條）。ver 0 的規則；之後要改就在這兩個常數上加版本閘門（if (ctx.ver >= N)），不要寫進判斷式
 export const MINESHAFT_P = 0.15, HOME_UNDER_MINESHAFT_P = 0.45;
-// 各層的機率（依序累加；擲 hash2(id, 0, sRoll)）：表層（340 格槽）遺跡 0.3、湖 0.15；地下層（170 格槽）小屋 0.35、地下湖 0.12、礦坑 MINESHAFT_P；
-// 深層（170 格槽）熔岩池 0.2；天空層（340 格槽）空島 0.06（只在非家鄉的大陸，家鄉的天空只有錨點）
-const ROLL: readonly (readonly { p: number; build: Build }[])[] = [
+// 各層的機率（依序累加；擲 hash2(id, 0, sRoll)；不合生態的項目跳過、不累加）：表層（340 格槽）遺跡 0.3、湖 0.15；
+// 地下層（170 格槽）小屋 0.35、地下湖 0.12、蘑菇林 0.05（只在森林 / 叢林）、蜂巢 0.1（只在叢林）、礦坑 MINESHAFT_P；
+// 深層（170 格槽）熔岩池 0.2、水晶洞 0.08；天空層（340 格槽）空島 0.06（只在非家鄉的大陸，家鄉的天空只有錨點）。
+// 蘑菇林 / 蜂巢排在礦坑前面：外圍累加到 0.77，各項都是原值；家鄉叢林累加會超過 1（0.62 + 0.45），礦坑只剩 1 − 0.62 = 0.38（森林 0.45 照舊）
+const ROLL: readonly (readonly Roll[])[] = [
   [{ p: 0.3, build: buildRuin }, { p: 0.15, build: buildLake }],
-  [{ p: 0.35, build: buildCabin }, { p: 0.12, build: buildCaveLake }, { p: MINESHAFT_P, build: rollMineshaftBp }],
-  [{ p: 0.2, build: buildLavaPool }],
+  [{ p: 0.35, build: buildCabin }, { p: 0.12, build: buildCaveLake }, { p: 0.05, build: rollMushroomBp, biomes: [BIOME.FOREST, BIOME.JUNGLE] },
+    { p: 0.1, build: rollHiveBp, biomes: [BIOME.JUNGLE] }, { p: MINESHAFT_P, build: rollMineshaftBp }],
+  [{ p: 0.2, build: buildLavaPool }, { p: 0.08, build: rollCrystalBp }],
   [{ p: 0.06, build: rollSkyIslandBp }],
 ];
-// 家鄉的地下層：ROLL[BP_UNDER] 只把礦坑那一項換成 HOME_UNDER_MINESHAFT_P（累加 0.35 + 0.12 + 0.45 = 0.92）
-const HOME_UNDER_ROLL: readonly { p: number; build: Build }[] = ROLL[BP_UNDER].map((e) => (e.build === rollMineshaftBp ? { ...e, p: HOME_UNDER_MINESHAFT_P } : e));
+// 家鄉的地下層：ROLL[BP_UNDER] 只把礦坑那一項換成 HOME_UNDER_MINESHAFT_P
+const HOME_UNDER_ROLL: readonly Roll[] = ROLL[BP_UNDER].map((e) => (e.build === rollMineshaftBp ? { ...e, p: HOME_UNDER_MINESHAFT_P } : e));
 // 海槽的點（island 沒有藍圖）
 type SeaPoi = Exclude<SeaSlot['poi'], 'island'>;
 const SEA_BUILD: Readonly<Record<SeaPoi, (c: BpCtx) => Blueprint>> = { shipwreck: buildShipwreck, crate: buildCrate };
@@ -430,6 +442,7 @@ export class BlueprintIndex {
     const u = hash2(id, 0, this.sRoll);
     let acc = 0;
     for (const e of homeUnder ? HOME_UNDER_ROLL : ROLL[layer]) {
+      if (e.biomes && !e.biomes.includes(r.biome)) continue;
       acc += e.p;
       if (u >= acc) continue;
       if (!shafted) return e.build(this.ctx(m, r, q, layer));

@@ -80,7 +80,7 @@ export function bfsReachesDepth(w: World, x: number, y: number, deepAt: (x: numb
   return false;
 }
 
-// 靜態液體不變量：x ∈ [x0, x1) 的每個水 / 熔岩格都是滿格、不在實心格裡，下方與左右是實心或同種滿格液體（世界底下算實心）。回違規格。
+// 靜態液體不變量：x ∈ [x0, x1) 的每個水 / 熔岩 / 蜂蜜格都是滿格、不在實心格裡，下方與左右是實心或同種滿格液體（世界底下算實心）。回違規格。
 // 液體可以泡著非實心物件（箱子、木樑；liquid.ts 只擋實心格），所以沉船裡泡水的箱子 / 桅杆也算靜止。
 export function liquidInvariant(w: World, x0: number, x1: number): { x: number; y: number }[] {
   const bad: { x: number; y: number }[] = [];
@@ -91,7 +91,7 @@ export function liquidInvariant(w: World, x0: number, x1: number): { x: number; 
     for (let y = 0; y < H; y++) {
       if (w.getLiquid(x, y) === 0) continue;
       const type = w.getLiquidType(x, y);
-      const ok = (type === LIQ.WATER || type === LIQ.LAVA) && w.getLiquid(x, y) === LIQ_MAX && !isSolidTile(w.getFg(x, y))
+      const ok = (type === LIQ.WATER || type === LIQ.LAVA || type === LIQ.HONEY) && w.getLiquid(x, y) === LIQ_MAX && !isSolidTile(w.getFg(x, y))
         && holds(x, y + 1, type) && holds(x - 1, y, type) && holds(x + 1, y, type);
       if (!ok) bad.push({ x, y });
     }
@@ -116,6 +116,34 @@ export function homeBlueprints(seed: string): Blueprint[] {
   const s = srcOf(seed), h = s.layout.origin.home;
   if (!h) throw new Error('no gen2 home');
   return s.blueprints.overlapping(h.x0, h.x1);
+}
+// 依序找種子（SEEDS5）家鄉裡第一份 kind 藍圖
+export function firstOf(kind: string): { src: Gen2Source; b: Blueprint } {
+  for (const seed of SEEDS5) { const b = homeBlueprints(seed).find((q) => q.kind === kind); if (b) return { src: srcOf(seed), b }; }
+  throw new Error(`no home ${kind}`);
+}
+
+// ── 外框 b 內的格（藍圖外框 = { x, y, w, h }）──
+type Box = { x: number; y: number; w: number; h: number };
+// 讓外框涵蓋的欄都常駐
+export const loadBox = (w: World, b: Box): void => loadColumns(w, b.x, b.x + b.w);
+// 外框內 fg = tile 的格數
+export function countIn(w: World, b: Box, tile: number): number {
+  let n = 0;
+  for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) if (w.getFg(x, y) === tile) n++;
+  return n;
+}
+// 外框內有 type 液體的格數
+export function liquidIn(w: World, b: Box, type: number): number {
+  let n = 0;
+  for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) if (w.getLiquid(x, y) > 0 && w.getLiquidType(x, y) === type) n++;
+  return n;
+}
+// 外框內 liquid / liquidType 的複本
+export function snapshotLiquid(w: World, b: Box): number[] {
+  const out: number[] = [];
+  for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) out.push(w.getLiquid(x, y), w.getLiquidType(x, y));
+  return out;
 }
 
 // ── 地城的可解性（原 legacy/gen/dungeon.test.ts 的兩個檢查，改成吃 DungeonInfo / World；M2b 刪 legacy 後仍在）──
@@ -212,6 +240,26 @@ export function naturalHoles(w: World, r: { x: number; y: number; w: number; h: 
   return out;
 }
 
+// 從藍圖的第一個地標（礦坑的礦車、小生態 / 蜂巢的地標，Task 10 / 11）出發走不擋身體的格（4 鄰、不進液體），範圍 = 外框外擴 80 欄、外框上方 80 列（到世界頂）到外框下 40 列：
+// 走到外框外 ≥ 300 格、或走到地表以上（y < 地面）= true
+export function walkOut(w: World, src: Gen2Source, b: Blueprint): boolean {
+  const cart = b.landmarks[0], x0 = b.x - 80, x1 = b.x + b.w + 80, y0 = Math.max(0, b.y - 80), y1 = b.y + b.h + 40, W = x1 - x0;
+  const seen = new Uint8Array(W * (y1 - y0)), st = [cart.x, cart.y];
+  seen[(cart.y - y0) * W + cart.x - x0] = 1;
+  let out = 0;
+  while (st.length) {
+    const y = st.pop()!, x = st.pop()!;
+    if (y < src.surfaceAt(x)) return true;
+    if ((x < b.x || x >= b.x + b.w || y < b.y || y >= b.y + b.h) && ++out >= 300) return true;
+    for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+      if (nx < x0 || nx >= x1 || ny < y0 || ny >= y1) continue;
+      const k = (ny - y0) * W + nx - x0;
+      if (seen[k] || isSolidTile(w.getFg(nx, ny)) || w.getLiquid(nx, ny) > 0) continue;
+      seen[k] = 1; st.push(nx, ny);
+    }
+  }
+  return false;
+}
 // ── 跨層不重疊（Q10）──
 // 外框相交、而且兩份都不是液體的藍圖配對（所有層之間；同層的配對由槽保證不相交，也一併檢查）。回 [kind@x:layer, kind@x:layer]
 const LIQUID_KINDS: ReadonlySet<string> = new Set(['lake', 'cave_lake', 'lava_pool']);
