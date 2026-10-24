@@ -1,6 +1,7 @@
 """faces.py: talking-face candidates for the eight companions (plan 5e; spec 2026-10-18 affinity-expressions section 10).
 
-  (every command takes --wave=2 for the wave-2 jobs: Lorne, both Rin sets, and the four redos)
+  (every command takes --wave=2 for the wave-2 jobs: Lorne, both Rin sets, and the four redos;
+   --wave=3 for Safira's serious, Noel's pout and Selene's third wistful, each capped by its job's `max_attempts`)
   gen  [--only=prefix,...] [--n=N] [--model=M] [--backend=codex|gemini] generate codex attempts one at a time until each id has N raw attempts
   cand [--only=prefix,...]                  postprocess every raw attempt into work/<id>/cand/a<N>/ (scratch registry) + match QA
   pick --id ID --attempt N [--wave=2]       postprocess the chosen attempt into the real registry (qa_passed / qa_failed)
@@ -87,6 +88,29 @@ WAVE2_NOTES = {
                                        'the nose, eyes narrowed a little and locked straight on the viewer, mouth a tight short line; readable at small size.'),
 }
 REDO_ATTEMPTS = 2    # a redo id ends at a2: its wave-1 a1 plus this one
+# Wave 3 (2026-10-24; runs/2026-10-24-faces-wave3/notes.md): the five heavy lines that still showed no portrait, Safira's
+# memory line (surprised, which a heavy scene maps to serious) and Noel's four pout lines (pout -> serious). Safira gets
+# serious, the face a heavy scene falls back to; Noel gets her own pout, which the four lines (and her three light pout
+# lines) ask for by name, sulky rather than cute so it holds in a grave scene.
+WAVE3 = {'safira': ['serious'], 'noel': ['pout']}
+WAVE3_FACES = {
+    ('safira', 'serious'): ('a serious, grave look with no smile at all: brows level and lowered a little, steady eyes looking straight ahead, '
+                            f'lips pressed into a flat straight line, the warmth of the first image gone from her face; {READ}'),
+    ('noel', 'pout'): ('a sulky, stubborn pout with no smile: lips pushed out into a small pout with the corners turned down, cheeks puffed a little, '
+                       'brows drawn together and lowered, eyes glancing sideways away from the viewer, no blush, proud and a little hurt; '
+                       f'{READ}'),
+}
+# Selene's wistful, a third attempt (user 2026-10-24: one extra, after wave 2's a2 still read as sad): the cues that survive
+# the downscale, a smile you can see and eyes that look down.
+WAVE3_REDO = {
+    'char-selene-portrait-wistful': ('wistful: a soft, gentle smile that is clearly visible, the corners of the mouth turned up in a small closed-mouth curve, '
+                                     'eyelids lowered so the eyes are half closed and looking down and off to the side, brows relaxed and smooth, '
+                                     'head tilted slightly down, no tears, a quiet fond memory; clearly different from the first image (open eyes looking '
+                                     f'at the viewer) and from a sad face (no frown, no raised inner brows); {READ}'),
+}
+WAVE3_NOTES = {}      # revision sentences for a2, written after looking at a1 (as WAVE2_NOTES)
+WAVE3_MAX = 2         # a new wave-3 face: a1, and a2 only if a1 is weak
+WAVE3_REDO_MAX = 3    # Selene's wistful ends at a3
 SIZE_TOL = 6         # art pixels the face's canvas may differ from the base portrait's on either axis
 PALETTE_DIST = 24     # RGB distance under which a colour counts as one of the base portrait's
 PALETTE_SHARE = 0.8   # below this share of base-palette pixels the face is flagged for the reviewer (warning only)
@@ -114,7 +138,14 @@ def jobs(reg=None, cids=None, wave=1):
     has = lambda c: reg.get(f'char-{c}-portrait', {}).get('raw') and reg.get(f'char-{c}-standee', {}).get('raw')
     if wave == 1:
         return [_job(reg, c, m, FACES[m]) for c in (cids or COMPANIONS) if has(c) for m in WAVE1[c]]
-    out = [_job(reg, c, m, WAVE2_FACES[(c, m)]) for c in WAVE2 if has(c) and (not cids or c in cids) for m in WAVE2[c]]
+    if wave == 3:
+        out = [dict(_job(reg, c, m, WAVE3_FACES[(c, m)]), max_attempts=WAVE3_MAX) for c in WAVE3 if has(c) and (not cids or c in cids) for m in WAVE3[c]]
+        for aid, face in WAVE3_REDO.items():
+            c, m = aid[5:].rsplit('-portrait-', 1)
+            if has(c) and (not cids or c in cids): out.append(dict(_job(reg, c, m, face), max_attempts=WAVE3_REDO_MAX))
+        for j in out: j['prompt'] += WAVE3_NOTES.get(j['id'], '')
+        return out
+    out =[_job(reg, c, m, WAVE2_FACES[(c, m)]) for c in WAVE2 if has(c) and (not cids or c in cids) for m in WAVE2[c]]
     for j in out: j['prompt'] += WAVE2_NOTES.get(j['id'], '')
     for aid, face in REDO.items():
         c, m = aid[5:].rsplit('-portrait-', 1)
@@ -219,14 +250,19 @@ def _backend(argv):
     return next((a.split('=', 1)[1] for a in argv if a.startswith('--backend=')), 'codex')
 
 
+def target(job, n):
+    """How many raw attempts an id may have: --n, but never past the job's own cap (wave 3)."""
+    return min(n, job.get('max_attempts', n))
+
+
 def gen(argv):
     """Strictly one codex call at a time (codex_still must not run in parallel). --model=NAME overrides the codex config
     model for these calls only (2026-10-23: the config default was refused by the account, see runs/ notes)."""
     model, backend = _model(argv), _backend(argv)
     n = int(next((a.split('=', 1)[1] for a in argv if a.startswith('--n=')), 2))
     for job in selected(argv):
-        tries = 0
-        while len(attempts(job['id'])) < n and tries < n:   # never more calls than asked for, even when some fail
+        tries, want = 0, target(job, n)
+        while len(attempts(job['id'])) < want and tries < want:   # never more calls than asked for, even when some fail
             tries += 1
             k = next_attempt(job['id'])
             wd, name = attempt_dir(job['id'], k), f'{job["id"]}-a{k}.png'
