@@ -2,9 +2,6 @@ import { el } from '../ui/dom';
 import { T } from '../data/text.zh-TW';
 import type { UiAction } from './input';
 
-/** How long after a tap outside its click is still taken (a touch's click follows its pointerdown at once). */
-const SWALLOW_MS = 600;
-
 /**
  * A row's 「+N」 that a tap opens (touch overflow): a button for the pointer, as 返回 is (`tabindex -1`: the keys stay the
  * game's, so it never steals Enter from a menu). Its label says how many it hides; its title (hover) names them. A click
@@ -25,13 +22,15 @@ export function moreTrigger(n: number, onTap: () => void, cls = 'slx-ail slx-ail
  * The full list behind a tapped 「+N」 (touch overflow): every word of the row, each with its icon, in a small window
  * inside its host (a member's panel, a foe's hit area), placed by the stylesheet. One at a time: another +N moves it.
  * It closes on a second tap of its +N, on a tap outside (that tap does nothing else, so closing it never picks a
- * command), and on cancel (Esc), which it takes. Closed, it takes no input at all.
+ * command, however long the press was held), and on cancel (Esc), which it takes. Closed, it takes no input at all
+ * but the click its closing press still owes.
  */
 export class MorePopover {
   readonly el = el('div', { class: 'slx-more-pop', attrs: { role: 'dialog', 'aria-label': T.ailmentAll, hidden: '' } });
   private id: string | null = null;
   private anchor: HTMLElement | null = null;
-  private swallowUntil = 0;
+  /** A press outside closed the list: the click that ends that press is taken (a new press, or its cancel, drops it). */
+  private owed = false;
   private listening = false;
 
   get openId(): string | null { return this.id; }
@@ -60,7 +59,7 @@ export class MorePopover {
     this.anchor = null;
     this.el.hidden = true;
     this.el.replaceChildren();
-    if (Date.now() >= this.swallowUntil) this.listen(false);
+    if (!this.owed) this.listen(false);
   }
 
   /** The scene's keys come here first: cancel closes an open list and is used up; any other key closes it and goes on. */
@@ -72,25 +71,34 @@ export class MorePopover {
 
   /** The scene is leaving: closed, and no listener left on the document. */
   dispose(): void {
-    this.swallowUntil = 0;
+    this.owed = false;
     this.close();
     this.el.remove();
     this.listen(false);
   }
 
+  /** A new press: whatever an earlier one owed is dropped; one outside an open list closes it and owes its click. */
   private onDown = (e: Event): void => {
-    if (this.id === null) return;
+    this.owed = false;
+    if (this.id === null) { this.listen(false); return; }
     const t = e.target as Element | null;
     if (t && (this.el.contains(t) || t.closest?.('[aria-haspopup="dialog"]'))) return;   // inside, or a +N: its click decides
-    this.swallowUntil = Date.now() + SWALLOW_MS;
+    this.owed = true;
     this.close();
   };
 
+  /** The click that ends the closing press, however long it was held: taken, so it picks nothing. */
   private onClick = (e: Event): void => {
-    if (Date.now() >= this.swallowUntil) { if (this.id === null) this.listen(false); return; }
-    this.swallowUntil = 0;
+    if (!this.owed) return;
+    this.owed = false;
     e.stopPropagation();
     e.preventDefault();
+    if (this.id === null) this.listen(false);
+  };
+
+  /** A press that ends without a click (a drag, a scroll): nothing is owed. */
+  private onCancel = (): void => {
+    this.owed = false;
     if (this.id === null) this.listen(false);
   };
 
@@ -100,9 +108,11 @@ export class MorePopover {
     if (on) {
       document.addEventListener('pointerdown', this.onDown, true);
       document.addEventListener('click', this.onClick, true);
+      document.addEventListener('pointercancel', this.onCancel, true);
     } else {
       document.removeEventListener('pointerdown', this.onDown, true);
       document.removeEventListener('click', this.onClick, true);
+      document.removeEventListener('pointercancel', this.onCancel, true);
     }
   }
 }

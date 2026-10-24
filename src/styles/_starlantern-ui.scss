@@ -586,6 +586,8 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-pm > .slx-more-pop { left: 0; bottom: calc(100% + 18px); }
 .slx-pm:nth-child(n + 4) > .slx-more-pop { left: auto; right: 0; }
 .slx-foe-more > .slx-more-pop { top: 100%; left: 50%; translate: -50% 0; translate: round(down, -50%, 1px) 0; }
+// A foe far right (ui2/scenes/battle.ts FOE_LIST_END_X): its list ends at the target's right edge, inside the screen.
+.slx-foe-more-end > .slx-more-pop { left: auto; right: 0; translate: none; }
 
 // Formation: 3x3 grid on the left (front row on top, nearest the enemies), rules on the right
 .slx-formation-grid { left: 10px; top: 10px; padding: 6px 10px; }

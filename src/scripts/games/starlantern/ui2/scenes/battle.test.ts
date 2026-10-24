@@ -1792,3 +1792,71 @@ describe('BattleScene +N on touch (touch overflow)', () => {
     });
   });
 });
+
+describe('BattleScene +N on touch, review follow-ups', () => {
+  const crowd = (g: Game) => {
+    const m = g.battle!.party[0];
+    m.poison = true; m.burn = { tick: 1, turns: 3, src: 'e0' }; m.bleed = [{ tick: 1, turns: 3, src: 'e0' }]; m.shock = 3; m.chill = 3;
+  };
+  const tap = (t: Element) => { t.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); t.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); };
+  const word = { cls: 'slx-ail slx-ail-burn', text: '灼燒3', icons: [] };
+
+  it("a foe's picture landing late moves its row: the tap target follows at once, and an open list stays with it", () => {
+    let rows = [{ key: 'e0', more: 2, at: { x: 301, y: 120, width: 16, height: 14 }, words: [word, word] }];
+    const battleView: Record<string, unknown> = { setup: vi.fn(), anchor: () => null, showIntents: vi.fn(), syncHp: vi.fn(), showAilments: vi.fn(), play: vi.fn(), foldedRows: () => rows };
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView };
+    const { s, root } = setup(undefined, { stage: stage as never });
+    document.body.append(root);
+    const hit = () => root.querySelector<HTMLElement>('.slx-foe-more')!;
+    expect(hit().classList.contains('slx-at-y-64')).toBe(true);
+    tap(hit());
+    expect(typeof battleView.onRowsMoved).toBe('function');
+    rows = [{ ...rows[0], at: { ...rows[0].at, y: 60 } }];   // the picture landed: the row stands higher
+    (battleView.onRowsMoved as () => void)();
+    expect([...hit().classList]).toEqual(['slx-foe-more', 'slx-at-x-155', 'slx-at-y-34']);
+    const pop = root.querySelector<HTMLElement>('.slx-more-pop')!;
+    expect(pop.hidden).toBe(false);
+    expect(pop.parentElement).toBe(hit());
+    s.exit?.();
+    expect(battleView.onRowsMoved).toBeNull();               // a later landing reaches no scene
+    root.remove();
+  });
+
+  it("a foe far right gets its list ended at the target's right edge, so it stays on the screen; one nearer the middle keeps it centred", () => {
+    const rows = [
+      { key: 'e0', more: 2, at: { x: 300, y: 120, width: 16, height: 14 }, words: [word, word] },
+      { key: 'e1', more: 2, at: { x: 534, y: 120, width: 16, height: 14 }, words: [word, word] },
+    ];
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, showIntents: vi.fn(), syncHp: vi.fn(), showAilments: vi.fn(), play: vi.fn(), foldedRows: () => rows } };
+    const { s, root } = setup(undefined, { stage: stage as never });
+    const [mid, right] = [...root.querySelectorAll<HTMLElement>('.slx-foe-more')];
+    expect(mid.classList.contains('slx-foe-more-end')).toBe(false);
+    expect(right.classList.contains('slx-foe-more-end')).toBe(true);
+    s.exit?.();
+  });
+
+  it('a fight that ends while a list is open (the round taken with it up): the list closes, the rows go, and leaving the scene takes no tap after', async () => {
+    const { s, root, game } = setup((g) => { crowd(g); for (const e of g.battle!.enemies) { e.hp = 1; e.max.def = 0; } });
+    document.body.append(root);
+    const key = game.battle!.party[0].key;
+    s.onAction('up');                                        // the cursor on 全員攻擊
+    tap(root.querySelector<HTMLElement>(`.slx-partybar [data-key=${key}] .slx-ail-more`)!);
+    expect(root.querySelector<HTMLElement>('.slx-more-pop')!.hidden).toBe(false);
+    s.onAction('confirm');                                   // the list open: confirm closes it and the round plays on
+    expect(game.battle?.outcome ?? 'win').toBe('win');
+    await flush();
+    expect(game.battle?.outcome ?? 'win').toBe('win');
+    expect(root.querySelector('.slx-result')).not.toBeNull();
+    expect(root.querySelector('.slx-more-pop:not([hidden])')).toBeNull();
+    expect(root.querySelectorAll('[aria-expanded=true]')).toHaveLength(0);
+    expect(root.querySelector('.slx-foe-more')).toBeNull();
+    s.exit?.();
+    const after = document.createElement('button');
+    const picked = vi.fn();
+    after.addEventListener('click', picked);
+    document.body.append(after);
+    tap(after);
+    expect(picked).toHaveBeenCalledTimes(1);
+    after.remove(); root.remove();
+  });
+});

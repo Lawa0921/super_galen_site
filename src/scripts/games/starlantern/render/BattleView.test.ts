@@ -265,6 +265,32 @@ describe('BattleView folded rows (touch overflow)', () => {
   });
 });
 
+describe('BattleView folded rows follow a late picture (touch overflow review)', () => {
+  it("a foe's picture landing after its row folded moves the row: the +N's bounds follow, and the owner hears of it", () => {
+    let land: ((u: string) => void) | null = null;
+    const loaded = new Set<string>();
+    const late = { get: (u: string) => (loaded.has(u) ? Texture.WHITE : null), has: (u: string) => loaded.has(u), onLoad: (fn: (u: string) => void) => { land = fn; return () => undefined; } } as unknown as TextureBank;
+    const view = new BattleView(true, late);
+    const moved = vi.fn();
+    view.onRowsMoved = moved;
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments({ e0: FIVE }, {}, { e0: ['狂暴', '堅韌'] });
+    const before = view.foldedRows()[0];
+    expect(before).toBeDefined();
+    // The picture lands: its body is drawn, the intent and the row stand above it now.
+    const defUrl = enemyArt(battle([]).enemies[0].defId);
+    loaded.add(defUrl);
+    land!(defUrl);
+    const after = view.foldedRows()[0];
+    const box = view.enemyBoxOf('e0')!;
+    const more = view.ailmentTexts('e0').at(-1)!;
+    expect(after.at.y).toBeCloseTo(box.y + more.parent!.y + more.y, 6);
+    expect(after.at.y).not.toBeCloseTo(before.at.y, 3);
+    expect(after.at.x).toBeCloseTo(before.at.x, 6);
+    expect(moved).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('BattleView element flash', () => {
   it('washes the picture in the element colour on a fire, ice or thunder hit, not on a plain one', () => {
     const fire = new BattleView(false, bank);

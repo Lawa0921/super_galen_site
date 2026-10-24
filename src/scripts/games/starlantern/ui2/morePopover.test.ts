@@ -79,6 +79,30 @@ describe('MorePopover (touch overflow)', () => {
     expect(r.picked).toHaveBeenCalledTimes(1);
   });
 
+  it('a long press outside closes it and its click, however late, picks nothing; the next press works as before (review)', () => {
+    vi.useFakeTimers();
+    try {
+      const r = rig();
+      tap(r.trigger);
+      r.outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      expect(r.pop.openId).toBeNull();
+      vi.advanceTimersByTime(2000);                       // held two seconds, then let go
+      r.outside.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      expect(r.picked).not.toHaveBeenCalled();
+      tap(r.outside);
+      expect(r.picked).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('a press outside with no click after it (a drag) leaves the next tap alone', () => {
+    const r = rig();
+    tap(r.trigger);
+    r.outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+    r.outside.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true }));
+    tap(r.outside);
+    expect(r.picked).toHaveBeenCalledTimes(1);
+  });
+
   it('a tap inside the open list keeps it open', () => {
     const r = rig();
     tap(r.trigger);
@@ -150,6 +174,13 @@ describe('MorePopover stylesheet (touch overflow)', () => {
     expect(rule('.slx-pm-ail .slx-ail-more[role=button]')).toMatch(/pointer-events:\s*auto/);
     expect(rule('.slx-foe-more-layer')).toMatch(/pointer-events:\s*none/);
     expect(rule('.slx-foe-more')).toMatch(/pointer-events:\s*auto/);
+  });
+
+  it("a far-right foe's list ends at its target's right edge, as the last two members' do (review)", () => {
+    const end = rule('.slx-foe-more-end > .slx-more-pop');
+    expect(end).toMatch(/left:\s*auto/);
+    expect(end).toMatch(/right:\s*0/);
+    expect(end).toMatch(/translate:\s*none/);
   });
 
   it('a target can stand anywhere on the 640 x 360 stage in 2 px steps', () => {

@@ -40,6 +40,8 @@ import { memScene, type SceneId } from '../../data/story/scenes';
 export const BATTLE_LEFT = 150;
 /** How long a battle waits for its foes' pictures and its backdrop before it is drawn (a late one is drawn when it lands). */
 export const BATTLE_ART_WAIT_MS = 1500;
+/** Past this stage x a foe's +N list is ended at its target's right edge, not centred (a long affix list stays on screen). */
+const FOE_LIST_END_X = 440;
 const BANNER_MS = 1100;
 const WIN_MS = 1000;
 /**
@@ -117,6 +119,8 @@ export class BattleScene implements Scene {
     if (this.ctx.stage) {
       this.ctx.stage.show('battle');
       this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.terrain(), BATTLE_LEFT, BATTLE_BOTTOM, this.ctx.game.run?.region);
+      // A foe's picture that lands late raises its row: the tap targets over the +N follow at once.
+      this.ctx.stage.battleView.onRowsMoved = () => this.showFoeMore();
     }
     this.msg.textContent = this.state.enemies.map((e) => e.name).join('、') + this.surviveLine();
     this.banner(this.state.boss ? T.ui2.banner.boss : T.ui2.banner.encounter, this.state.boss ? 'slx-banner-boss' : '');
@@ -126,6 +130,7 @@ export class BattleScene implements Scene {
   exit(): void {
     this.talk.stop();
     this.more.dispose();
+    if (this.ctx.stage) this.ctx.stage.battleView.onRowsMoved = null;
     if (this.body) clearPillars(this.body);
     this.ctx.stage?.show(null);
   }
@@ -250,8 +255,11 @@ export class BattleScene implements Scene {
     const listOf = (r: (typeof rows)[number]) => r.words.map((w) => chipWord(this.ctx.art, w.cls, w.text, w.icons));
     const hits = rows.map((r) => {
       const id = `foe:${r.key}`;
+      const cx = r.at.x + r.at.width / 2;
+      // Far right, its list ends at the target's right edge (as the last two members' do), so it stays on the screen.
+      const end = cx > FOE_LIST_END_X ? ' slx-foe-more-end' : '';
       const hit: HTMLElement = moreTrigger(r.more, () => this.more.toggle(id, hit, hit, listOf(r)),
-        `slx-foe-more slx-at-x-${step(r.at.x + r.at.width / 2)} slx-at-y-${step(r.at.y + r.at.height / 2)}`, false);
+        `slx-foe-more slx-at-x-${step(cx)} slx-at-y-${step(r.at.y + r.at.height / 2)}${end}`, false);
       hit.title = r.words.map((w) => w.text).join('、');
       return { id, hit, r };
     });

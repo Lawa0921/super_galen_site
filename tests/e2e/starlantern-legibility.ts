@@ -863,8 +863,26 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
+    // Touch overflow review: the rightmost of the five, its +N tapped (clicked here): its whole row, the elite's two
+    // long affixes first, in a list that ends at the target's right edge and stays on the screen.
+    name: 'battle-affix-more', visit: async (page) => {
+      const hits = page.locator('.slx-foe-more');
+      expect(await hits.count()).toBeGreaterThan(0);
+      const last = hits.last();
+      await expect(last).toHaveClass(/slx-foe-more-end/);
+      await last.click();
+      const pop = page.locator('.slx-foe-more-end > .slx-more-pop');
+      await expect(pop).toBeVisible();
+      await expect(pop.locator('.slx-affix')).toHaveCount(2);
+      const b = await stageBox(page, pop);
+      expect(b.x, 'the list starts on the screen').toBeGreaterThanOrEqual(-0.5);
+      expect(b.x + b.width, 'the list ends on the screen').toBeLessThanOrEqual(640.5);
+    },
+  },
+  {
     // The target list over the first of them: the note says each affix, a line each.
     name: 'battle-affix-target', visit: async (page, w) => {
+      if (await page.locator('.slx-more-pop').isVisible()) await w.key('Escape');   // the +N list, closed first
       await w.choose('.slx-bcmd', '攻擊');
       await expect(page.locator('.slx-btarget')).toBeVisible();
       await expect(page.locator('.slx-bnote')).toHaveClass(/slx-bnote-lines/);

@@ -70,8 +70,8 @@ interface Slot {
   name: Text;
   /** One coloured word per ailment, side by side above its head (`showAilments`). */
   ail: Container;
-  /** Its row's 「+N」 when the row folds: where it stands in the box and every word of the row (`foldedRows`). */
-  folded?: { at: Box; more: number; words: FoldedWord[] };
+  /** Its row's 「+N」 when the row folds: its left edge and width in the box, and every word of the row (`foldedRows`). */
+  folded?: { x: number; width: number; more: number; words: FoldedWord[] };
   /** Its regional colour and elite outline: always on; the hit flash and the target highlight are added on top. */
   base: Filter[];
   tint: { color: number | null; elite: boolean };
@@ -199,6 +199,9 @@ export class BattleView {
     this.bank?.onLoad?.((u) => this.arrived(u));
   }
 
+  /** Called when a folded row moved after it was drawn (a foe's picture landed late), so a tap target over its +N can follow. */
+  onRowsMoved: (() => void) | null = null;
+
   /** The backdrop's url while it has not loaded, and the size it is drawn at. */
   private bgWant: { url: string; size: { width: number; height: number } } | null = null;
 
@@ -215,6 +218,7 @@ export class BattleView {
     for (const slot of this.slots.values()) {
       if (slot.want?.url !== url || slot.texture || slot.box.destroyed) continue;
       this.placeBody(slot, tex, slot.want.maxH, slot.want.slotW, slot.want.ground);
+      if (slot.folded) this.onRowsMoved?.();
     }
   }
 
@@ -550,7 +554,7 @@ export class BattleView {
         if (w === moreWord) {
           // The words standing, in their order, then the folded ones in theirs (the +N is not one of them).
           const words = [...shown, ...items.filter((it) => !shown.includes(it))].map(({ cls, text, urls }) => ({ cls, text, icons: urls }));
-          s.folded = { at: { x, y: s.ail.y, width: ailLabelWidth(w.text), height: AIL_ROW_H }, more, words };
+          s.folded = { x, width: ailLabelWidth(w.text), more, words };
         }
         // The icons at the row's top, whole pixels, 1 px apart from the word; never scaled (14 x 14 on a 14 px row).
         w.icons.forEach((tex, j) => {
@@ -586,7 +590,8 @@ export class BattleView {
    */
   foldedRows(): FoldedRow[] {
     return [...this.slots.values()].flatMap((s) => (s.folded && !s.box.destroyed
-      ? [{ key: s.key, more: s.folded.more, at: { ...s.folded.at, x: s.box.x + s.folded.at.x, y: s.box.y + s.folded.at.y }, words: s.folded.words }]
+      // The row's height now: a picture that landed late has raised it (placeBody).
+      ? [{ key: s.key, more: s.folded.more, at: { x: s.box.x + s.folded.x, y: s.box.y + s.ail.y, width: s.folded.width, height: AIL_ROW_H }, words: s.folded.words }]
       : []));
   }
 
