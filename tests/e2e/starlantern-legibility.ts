@@ -212,6 +212,24 @@ const commandMenu = async (page: Page) => {
   await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
 };
 
+/**
+ * Art step 9: every row in `scope` that holds a rune icon keeps the height of one line of its own text (its line-height
+ * and padding), and every icon sits inside its row; at least one such row is on screen. Measured in layout px.
+ */
+const runeRowsKeepTheirLine = async (page: Page, scope: string) => {
+  const rows = await page.locator(`${scope} [role=option]`).evaluateAll((els) => els.filter((e) => e.querySelector('img.slx-rune-ico')).map((e) => {
+    const li = e as HTMLElement; const cs = getComputedStyle(li); const box = li.getBoundingClientRect();
+    const out = [...li.querySelectorAll('img.slx-rune-ico')].filter((i) => { const r = i.getBoundingClientRect(); return r.top < box.top - 0.5 || r.bottom > box.bottom + 0.5; }).length;
+    return { id: li.dataset.id, h: li.offsetHeight, line: parseFloat(cs.lineHeight) + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), lh: parseFloat(cs.lineHeight), out };
+  }));
+  expect(rows.length, `${scope}: rows with rune icons`).toBeGreaterThan(0);
+  for (const r of rows) {
+    expect(r.lh, `${r.id} leading`).toBeGreaterThanOrEqual(14);
+    expect(r.h, `${r.id} as tall as one line`).toBe(r.line);
+    expect(r.out, `${r.id} icons inside the row`).toBe(0);
+  }
+};
+
 /** The chests and event rooms the sweep put down, taken up again before it walks to the stairs. */
 const chests: { x: number; y: number }[] = [];
 
@@ -342,6 +360,8 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       await expect(page.locator('.slx-shop .slx-list')).toHaveCount(0);
       await page.locator('.slx-shop .slx-cmd [data-id=runes]').click();
       await expect(page.locator('.slx-shop .slx-list [role=option]').first()).toBeVisible();
+      // Art step 9: each rune row leads with its cell (icon in its tier frame) and stays one line tall.
+      await runeRowsKeepTheirLine(page, '.slx-shop .slx-list');
     },
   },
   { name: 'inn', visit: async (page, w) => facility(page, w, 'inn', '.slx-inn') },
@@ -693,6 +713,22 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
         await commandMenu(page);
       }
       await expect(page.locator('.slx-bsub [role=option]').first()).toBeVisible();
+    },
+  },
+  {
+    // Art step 9: the skill menu with working runes on its skills: each rune's 14px icon after the name, the row one line.
+    name: 'battle-skills-runed', visit: async (page, w) => {
+      await page.evaluate(() => {
+        const g = (window as unknown as Dbg).__starlanternDebug.game;
+        const who = document.querySelector('.slx-bcmd .slx-who')?.textContent ?? '';
+        const c = g.battle.party.find((x: { name: string }) => who.startsWith(x.name));
+        const ids = [...document.querySelectorAll<HTMLElement>('.slx-bsub [role=option]')].map((e) => e.dataset.id!);
+        c.runes = Object.fromEntries(ids.map((id) => [id, [{ id: 'on-struck', tier: 'magic' }, { id: 'multistrike', tier: 'magic' }, { id: 'drain', tier: 'rare' }]]));
+      });
+      await w.key('Escape');                                  // the command menu
+      await w.choose('.slx-bcmd', '技能');                     // the skills again, drawn with their runes
+      await expect(page.locator('.slx-bsub [role=option] .slx-badge img.slx-rune-ico-14').first()).toBeVisible();
+      await runeRowsKeepTheirLine(page, '.slx-bsub');
     },
   },
   {

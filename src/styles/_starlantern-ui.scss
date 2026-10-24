@@ -1422,8 +1422,18 @@ $slx-starlit: #bff6ff;
 .slx-workshop .slx-ws-slot .slx-right { padding-left: 0; }
 // A slot clips its overflow (a long name ends in an ellipsis): its cell takes its full 20px there, never spilling.
 .slx-ws-slot .slx-rune-cell { margin: 0 2px 0 0; }
-.slx-ws-runes .slx-opt { gap: 0; }
-.slx-workshop .slx-ws-runes .slx-opt .slx-right { padding-left: 4px; }
+// A rune row spends no space between its parts, so a two-character name, its tier and its bag count all fit whole: its
+// cell is the 16px icon itself, the tier frame's 2px band over the icon's own clear edge and outline (as a gear cell's).
+.slx-ws-runes .slx-opt { gap: 0; padding-right: 0; }
+.slx-ws-runes .slx-rune-cell { width: 16px; height: 16px; margin: 0; }
+.slx-ws-runes .slx-rune-cell > .slx-rune-ico { left: 0; top: 0; }
+.slx-workshop .slx-ws-runes .slx-opt .slx-right { padding-left: 1px; }
+// A rune row's bag count is never cut: the rune's name gives way instead (its tier stays whole; the cell and the card name
+// it in full). A giver's name or skill on the right still gives way first.
+.slx-workshop .slx-ws-runes .slx-opt .slx-label { flex: 0 1 auto; min-width: 0; }
+.slx-workshop .slx-ws-runes .slx-opt .slx-right.slx-ws-count { flex: none; }
+// A slot whose rune does nothing is dimmed as a whole: its greyed icon takes no second dimming of its own.
+.slx-ws-off .slx-right .slx-rune-off { opacity: 1; }
 .slx-ws-swapout { font-size: $slx-fs; line-height: 14px; color: $slx-dim; }
 // The card: its body scrolls inside the frame (no native bar; ▲/▼ stand in), the foot below never moves.
 .slx-ws-card-frame { flex: 1 1 auto; min-height: 0; }

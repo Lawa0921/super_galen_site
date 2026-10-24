@@ -86,6 +86,8 @@ describe('BuildsScene (plan 8h Task 7)', () => {
     // The legend (the filled-slot icon only: 缺 is said once, on the row), what following means, and the price.
     expect(card).toContain(B.have);
     expect(w.root.querySelector('.slx-bd-legend')!.textContent).not.toContain('缺');
+    // The legend's words follow its icon, so the icon is decorative (alt ""); a row's icons keep their words (鑲得上, 缺).
+    expect(w.root.querySelector('.slx-bd-legend img')!.getAttribute('alt')).toBe('');
     expect(card).toContain(B.follow);
     const cost = applyCost(w.game.state, 'noel', 'meteor')!.cost;
     expect(cost).toBeGreaterThan(0);

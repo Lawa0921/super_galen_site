@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { RUNES, tiersOf, type RuneId } from '../data/runes';
 import { T } from '../data/text.zh-TW';
 import { ART_BASE, RUNE_ICON_IDS, RUNE_ICON_SIZES, allArtUrls, art } from '../render/artPaths';
+import { Menu } from './menu';
 import { markEl, runeCell, runeIconUrl, runeMark, slotCell, slotMark, slotMarks } from './runeArt';
+import { MenuView } from './widgets';
 
 const ids = Object.keys(RUNES) as RuneId[];
 
@@ -68,8 +70,21 @@ describe('rune icons (art step 9, G4)', () => {
         else expect(frame!.className).toBe(`slx-rframe slx-rframe-${tier}`);
       }
     }
+    // Beside its own label (a shop or workshop row) the cell's icon is decorative: alt "", the label reads it once.
+    const quiet = runeCell({ id: 'twin-cast', tier: 'legendary' }, false, true).querySelector('img')!;
+    expect(quiet.getAttribute('alt')).toBe('');
+    expect(quiet.getAttribute('src')).toBe(art.runeIcon('twin-cast', 16));
     expect(slotCell('empty').querySelector('img')!.getAttribute('src')).toBe(art.runeIcon('slot-empty', 16));
     expect(slotCell('empty').querySelector('.slx-rframe')).toBeNull();
+  });
+
+  it('a menu row with a rune reads its name once: the label, the cell decorative', () => {
+    const v = new MenuView(new Menu([{ id: 'r', label: T.rune.label('flame', 'rare'), rune: { id: 'flame', tier: 'rare' }, right: '100 G' }]), { pick: () => undefined });
+    const row = v.el.querySelector('[role=option]')!;
+    const img = row.querySelector('.slx-rune-cell img')!;
+    expect(img.getAttribute('alt')).toBe('');
+    expect(row.querySelector('.slx-label')!.textContent).toBe(T.rune.label('flame', 'rare'));
+    expect(row.querySelector('.slx-rframe-rare')).not.toBeNull();
   });
 
   it('no rune glyph is left where the survey found one (the enemy intent ◆ is not a rune and stays)', () => {

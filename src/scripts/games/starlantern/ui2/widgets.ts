@@ -114,7 +114,8 @@ export class MenuView {
         role: 'option', 'aria-selected': String(i === this.menu.cursor), 'aria-disabled': String(!!item.disabled), 'data-id': item.id,
       } }, [
         ...(item.icon ? [el('img', { class: item.iconCls ? `slx-ico ${item.iconCls}` : 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
-        ...(item.rune ? [runeCell(item.rune)] : []),
+        // Its label beside it names the rune and its tier, so the cell's icon is decorative (alt "").
+        ...(item.rune ? [runeCell(item.rune, false, true)] : []),
         el('span', { class: item.cls ? `slx-label ${item.cls}` : 'slx-label', text: item.label }),
         ...(item.tail ? [el('span', { class: item.cls ? `slx-label-tail ${item.cls}` : 'slx-label-tail', text: item.tail })] : []),
         ...(item.marks?.length ? [marksEl(item.marks, 14, 'slx-badge slx-rune-marks')] : []),

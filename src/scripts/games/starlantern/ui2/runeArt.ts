@@ -49,9 +49,11 @@ export function marksEl(marks: readonly Mark[], size: RuneIconSize, cls = 'slx-r
  * A rune as a 20 x 20 cell (the workshop's and the shop's rune rows): its 16 x 16 icon, and over it the published
  * rarity frame of its tier (common has none, as gear). The frame's 2px band lies in the cell's outer 2px, clear of the icon.
  */
-export function runeCell(ref: RuneRef, off = false): HTMLElement {
+export function runeCell(ref: RuneRef, off = false, decorative = false): HTMLElement {
+  const mark = runeMark(ref, 16, off);
   return el('span', { class: 'slx-rune-cell', attrs: { 'data-tier': ref.tier } }, [
-    markEl(runeMark(ref, 16, off), 16),
+    // Decorative (alt "") where the row's own words beside it already name the rune and its tier (a shop or workshop row).
+    markEl(decorative ? { ...mark, alt: '' } : mark, 16),
     ...(ref.tier === 'common' ? [] : [el('span', { class: `slx-rframe slx-rframe-${ref.tier}`, attrs: { 'aria-hidden': 'true' } })]),
   ]);
 }

@@ -4658,14 +4658,16 @@ test.describe('starlantern', () => {
       })));
       const got = await page.locator(`${scope} img.slx-rune-ico-${size}`).evaluateAll((els) => els.map((e) => {
         const img = e as HTMLImageElement; const r = img.getBoundingClientRect();
-        return { nw: img.naturalWidth, nh: img.naturalHeight, w: r.width, h: r.height, alt: img.alt, src: img.getAttribute('src') };
+        // A decorative icon (alt "") stands in a row whose own label already names the rune.
+        const label = img.closest('[role=option]')?.querySelector('.slx-label')?.textContent ?? '';
+        return { nw: img.naturalWidth, nh: img.naturalHeight, w: r.width, h: r.height, alt: img.alt, label, src: img.getAttribute('src') };
       }));
       expect(got.length, scope).toBeGreaterThan(0);
       const scale = (await stageScale(page)).s;
       for (const g of got) {
         expect([g.nw, g.nh], `${g.src} loaded at its own size`).toEqual([size, size]);
         expect(Math.abs(g.w - size * scale), `${g.src} drawn at ${size}px`).toBeLessThan(0.5);
-        expect(g.alt, `${g.src} has words`).not.toBe('');
+        expect(g.alt || g.label, `${g.src} has words: its alt, or its row's label beside it`).not.toBe('');
       }
       return got;
     };
@@ -4693,7 +4695,9 @@ test.describe('starlantern', () => {
     // Slot 2 is taken by 重擊; slot 1's list holds every rune in the bag.
     await w.key('Enter'); await w.key('Enter');
     await expect(page.locator('.slx-ws-runes [role=option] .slx-rune-cell').first()).toBeVisible();
-    await icons('.slx-ws-runes', 16);
+    const listed = await icons('.slx-ws-runes', 16);
+    // In a rune row the label beside the cell names the rune, so its icon is decorative (no second reading).
+    for (const g of listed) expect(g.alt, g.src!).toBe('');
     // A row with a rune cell is as tall as the plain 拆下 row: the cell fills the row's padding, never the line.
     const heights = await page.locator('.slx-ws-runes [role=option]').evaluateAll((els) => els.map((e) => [e.querySelector('.slx-rune-cell') ? 'cell' : 'text', e.getBoundingClientRect().height]));
     const text = heights.filter(([k]) => k === 'text').map(([, h]) => h as number), cell = heights.filter(([k]) => k === 'cell').map(([, h]) => h as number);
@@ -4703,6 +4707,25 @@ test.describe('starlantern', () => {
     const frames = await page.locator('.slx-ws-runes .slx-rune-cell').evaluateAll((els) => els.map((e) => [(e as HTMLElement).dataset.tier, e.querySelector('.slx-rframe')?.className ?? '']));
     for (const [tier, frame] of frames) expect(frame, tier).toBe(tier === 'common' ? '' : `slx-rframe slx-rframe-${tier}`);
     expect(new Set(frames.map(([t]) => t)).size).toBeGreaterThan(1);
+    // The bag count is never cut, even beside a four-character legendary (雙重詠唱（傳說）): the name gives way instead.
+    // Walk the list down until a four-character legendary is on screen.
+    const longRow = page.locator('.slx-ws-runes [role=option]').filter({ has: page.locator('.slx-rune-cell[data-tier=legendary]') })
+      .filter({ hasText: /^.{4}（傳說）/ });
+    for (let i = 0; i < 160 && !(await longRow.count()); i++) await w.key('ArrowDown');
+    await expect(longRow.first()).toBeVisible();
+    for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
+      await fitTo(page, vw, vh);
+      const counts = await page.locator('.slx-ws-runes [role=option]').evaluateAll((els) => els.flatMap((li) => {
+        const c = li.querySelector<HTMLElement>('.slx-ws-count');
+        const name = li.querySelector('.slx-label')!.textContent!;
+        return c ? [{ name, tail: li.querySelector('.slx-label-tail')?.textContent ?? '', text: c.textContent, sw: c.scrollWidth, cw: c.clientWidth }] : [];
+      }));
+      const long = counts.filter((c) => c.name.length >= 4 && c.tail === '（傳說）');
+      expect(long.length, `a four-character legendary at ${vw}`).toBeGreaterThan(0);
+      for (const c of counts) expect(c.sw, `${c.name}${c.tail} ${c.text} at ${vw}`).toBeLessThanOrEqual(c.cw);
+      for (const c of counts) expect(c.text).toMatch(/^袋子 \d+$/);
+    }
+    await fitTo(page, 1280, 720);
     await shots('workshop-runes');
 
     // The skills page: 14px slot icons after 火之星彈's name; the head line keeps its own leading.

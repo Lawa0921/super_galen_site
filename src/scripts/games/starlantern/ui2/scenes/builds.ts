@@ -358,7 +358,7 @@ export class BuildsScene implements Scene {
       // What is in reach and what is missing first (the user: 「缺什麼直接寫出來」), then the play and the tree.
       el('h5', { class: 'slx-bd-sub', text: B.runesHead }),
       // The filled-slot icon marks a rune in reach and the empty-slot icon one that is missing (art step 9; once text glyphs).
-      ...(skills.length ? [el('p', { class: 'slx-bd-legend' }, [markEl(slotMark('filled', 14, B.haveMark), 14), B.have])] : [el('p', { text: B.noRunes })]),
+      ...(skills.length ? [el('p', { class: 'slx-bd-legend' }, [markEl(slotMark('filled', 14, ''), 14), B.have])] : [el('p', { text: B.noRunes })]),
       ...skills.map((skill) => el('div', { class: 'slx-bd-skill' }, [
         el('span', { class: 'slx-bd-skill-name', text: SKILLS[skill]?.name ?? skill }),
         ...rows.filter((r) => r.skill === skill).map((r) => el('span', {

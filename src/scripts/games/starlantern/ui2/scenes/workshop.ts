@@ -510,16 +510,18 @@ export class WorkshopScene implements Scene {
     const choices = this.choices();
     const row = (c: RuneChoice): MenuItem => ({
       id: rowOf(c),
-      // The name may be cut; its tier stays whole beside it (final review).
+      // The name may be cut (its icon's cell and the card name it whole); its tier stays whole beside it (final review).
       label: RUNES[c.source.ref.id].name,
       tail: T.rune.tierTag(c.source.ref.tier),
       rune: c.source.ref,
       cls: `slx-rarity-${c.source.ref.tier}${c.why !== null ? ' slx-ws-unfit' : ''}`,
-      // The bag's count; for a rune in a slot, who holds it, or on her own other skill, which skill (two 常駐 rows apart).
+      // The bag's count, never cut (slx-ws-count); for a rune in a slot, who holds it, or on her own other skill, which
+      // skill (two 常駐 rows apart), which gives way.
       right: c.source.kind === 'bag' ? T.rune.bag(c.source.count)
         : c.source.at.id === this.id ? skillFor(fromMember(this.member, 0), c.source.at.skill)?.name ?? c.source.at.skill
           : CHARACTERS[c.source.at.id].name,
-      ...(c.why !== null ? { rightClass: 'slx-lack' } : {}),
+      ...((c.source.kind === 'bag' || c.why !== null)
+        ? { rightClass: [c.source.kind === 'bag' ? 'slx-ws-count' : '', c.why !== null ? 'slx-lack' : ''].filter(Boolean).join(' ') } : {}),
     });
     const moves = choices.filter((c) => c.section === 'move');
     const items: MenuItem[] = [
