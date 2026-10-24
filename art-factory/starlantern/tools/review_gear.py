@@ -1,4 +1,7 @@
-"""review_gear.py <sample|main-gear|skills>: build tmp/starlantern/review-gear/index.html for a plan 5d batch.
+"""review_gear.py <sample|main-gear|skills> [--out=DIR]: build tmp/starlantern/review-gear/index.html (or DIR) for a plan 5d batch.
+
+The skills page (G3) follows the game's current roster (data/skills.ts, step 9): skills the game no longer has are only
+named in its `removed` list, and roster skills with no icon yet are listed in `no-icon` (their icons are G4's).
 
 Shows the batch's chosen candidates (registry `final`, status up to qa_passed) in use: the equipment screen (bag and doll
 cells with rarity frames and the legendary glow, the 64 px detail image, at 1x and 3x), old base icons beside the new
@@ -110,10 +113,11 @@ DECISIONS = {
     ],
     # Plan 5d G3 (skills): 〔...〕 are filled from the registry when the page is built.
     'skills': [
-        ('技能圖示的大小與畫風一致嗎（新 78 個＋既有 27 個）', ['#s7', '#skill-size'], [
+        ('技能圖示的大小與畫風一致嗎（新 〔新數〕 個＋既有 〔既有數〕 個）', ['#s7', '#skill-size'], [
             '〔未通過〕', '〔多版〕', '〔採用版備註〕', '〔未採用版〕', '〔容易搞混〕'],
          '所有技能圖示都改成遊戲實際大小的原尺寸圖：技能列 16×16（圖案長邊 14）、技能樹 14×14（圖案長邊 12），一次從高解析原圖縮好，'
-         '遊戲不再自己縮放，所以不會糊、大小一致。既有的 27 個技能圖示用當初核准的原圖重新縮成同樣大小，沒有重畫。'
+         '遊戲不再自己縮放，所以不會糊、大小一致。既有的 〔既有數〕 個技能圖示用當初核准的原圖重新縮成同樣大小，沒有重畫。'
+         '技能改版（2026-10-20 技能 build）刪掉的 〔移除數〕 招不在本頁核准、不會發布，列在「已移除的技能」；新招還沒有圖示的列在「還沒有圖示的技能」，屬於 G4。'
          '核准後，遊戲裡的技能列與技能樹會換成這些原尺寸圖示。請看 7. 技能（遊戲實際大小 1 倍與放大 3 倍）與技能尺寸一致性格。'),
         ('洛恩與凜的技能圖示（沒有舊圖示可對照）', ['#s7'], ['凜的技能多是深色細刀，原尺寸下在深色面板上仍是最暗的一組，細刀身容易看不清楚。'],
          '洛恩 21 個、凜 10 個技能以前都沒有圖示，生成時參考他們已發布的立繪配色。請看是否像同一個角色的技能、彼此分得出來。'),
@@ -122,7 +126,7 @@ DECISIONS = {
 DECIDED = {   # addendum 2 §6: decided on 2026-10-20, not asked again
     'skills': ('已決定（G1、G2，2026-10-20）', [
         '畫風：G1 已核准；裝備 G2 已核准並發布。',
-        '技能圖示改成原尺寸（技能列 16×16、技能樹 14×14），依你「圖示大小要一致」的要求（主控裁定 2026-10-20）；畫風沿用既有 27 個技能圖示。']),
+        '技能圖示改成原尺寸（技能列 16×16、技能樹 14×14），依你「圖示大小要一致」的要求（主控裁定 2026-10-20）；畫風沿用既有的技能圖示（計畫 4 已核准）。']),
     'main-gear': ('已決定（G1，2026-10-20）', [
         '畫風、大小（主體長邊 22）、七階外框、星輝圓點光、格內光暈：G1 已核准，本批照同一套規則。',
         '15 件舊底材圖示全部換新：〔舊底材〕。']),
@@ -458,8 +462,8 @@ def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes=None, plai
             f'<details class="tech"><summary>技術細節</summary>外框與星輝都是 border-image（slice 5、repeat）。</details></section>')
 
 
-def main(batch='sample'):
-    lab = G.label(batch); out = out_dir(batch)
+def main(batch='sample', out=None):
+    lab = G.label(batch); out = Path(out) if out else out_dir(batch)
     reg = json.loads(G.REG_PATH.read_text(encoding='utf-8'))['assets'] if G.REG_PATH.exists() else {}
     # Empty the folder rather than delete it: a shell or viewer may hold the folder itself open (Windows refuses rmdir).
     out.mkdir(parents=True, exist_ok=True)
@@ -467,7 +471,10 @@ def main(batch='sample'):
         shutil.rmtree(child) if child.is_dir() else child.unlink()
     (out / 'img').mkdir()
     pg = Page(out, reg); nm = names(); owners = skill_owners()
-    js = [j for j in G.jobs() if j['batch'] == batch]
+    # Step 9 (G3 rebuild): a skill the game no longer has keeps its sheet cell (the raw is history) but leaves every part of
+    # the page except the `removed` list; its cell reads as discarded here.
+    gone = G.removed_skills() if batch == 'skills' else set()
+    js = [dict(j, parts=[None if p in gone else p for p in j['parts']]) for j in G.jobs() if j['batch'] == batch]
     gear = [p for j in js if j['kind'] == 'gear-sheet' for p in j['parts']]
     mats = [p for j in js if j['id'].startswith('sheet-mat-') for p in j['parts']]
     skills = [p for j in js if j['id'].startswith('sheet-skill-') for p in j['parts'] if p]
@@ -670,15 +677,17 @@ def main(batch='sample'):
     notes = [(j, k, v) for j in js for k, v in reg.get(j['id'], {}).get('plain_reasons', {}).items()]
     unused_text = '；'.join(f'{nm.get(next(x for x in j["parts"] if x), j["id"])}那張表的第 {k[1:]} 版：{v}' for j, k, v in notes if not picked_from(j, k))
     picked_text = '；'.join(f'{"、".join(nm.get(p, p) for p in picked_from(j, k))}：{v}（這是採用的版本）' for j, k, v in notes if picked_from(j, k))
-    conf = [c for c in CONFUSABLES.get(batch, []) if all(x in gear or x in skills for x in c)]
+    conf = [k for c in CONFUSABLES.get(batch, []) if len(k := tuple(x for x in c if x in gear or x in skills or x in old_skills)) >= 2]
     conf_text = ('1 倍下容易搞混，要不要重畫請你決定：' + '；'.join('／'.join(nm.get(x, x) for x in c) for c in conf)) if conf else ''
+    counts = {'〔新數〕': len(skills), '〔既有數〕': len(old_skills), '〔移除數〕': len(gone)}
     live = lambda s: (live_text(s, reg).replace('〔未通過〕', pending_text).replace('〔只數外緣〕', edge_text).replace('〔多版〕', many_text)
-                      .replace('〔採用版備註〕', picked_text).replace('〔未採用版〕', unused_text).replace('〔容易搞混〕', conf_text))
+                      .replace('〔採用版備註〕', picked_text).replace('〔未採用版〕', unused_text).replace('〔容易搞混〕', conf_text)
+                      .replace('〔新數〕', str(counts['〔新數〕'])).replace('〔既有數〕', str(counts['〔既有數〕'])).replace('〔移除數〕', str(counts['〔移除數〕'])))
     decision_list = [tuple(d) + ([],) * (5 - len(d)) for d in DECISIONS[batch]]
     sq = starlit_question(alts, fails, plain) if batch == 'sample' else None
     if sq: decision_list.insert(2, sq)   # after the frames question, before the glow
     decisions = ''.join(
-        f'<li><b>{esc(q)}</b> <span class="links">看：{"、".join(f"<a href={chr(34)}{s}{chr(34)}>{SECTION_NAME[s]}</a>" for s in links)}</span>'
+        f'<li><b>{esc(live(q))}</b> <span class="links">看：{"、".join(f"<a href={chr(34)}{s}{chr(34)}>{SECTION_NAME[s]}</a>" for s in links)}</span>'
         f'{"<p class=why>" + esc(live(why)) + "</p>" if why else ""}'
         f'<p class="why">已知風險：</p><ul class="risks">{"".join(f"<li>{esc(live(r))}</li>" for r in risks if live(r)) or "<li>無</li>"}</ul>'
         f'{"<p class=opts>選項：" + esc("／".join(opts)) + "</p>" if opts else ""}</li>'
@@ -698,6 +707,25 @@ def main(batch='sample'):
         decided = f'<div class="decided"><h3>{esc(title)}</h3><ul>{"".join(f"<li>{esc(i.replace(chr(12308) + "舊底材" + chr(12309), old_fact))}</li>" for i in items)}</ul></div>'
     after = (f'<details class="tech after"><summary>技術細節（給主控）</summary>{esc(AFTER_APPROVAL[batch])}</details>'
              if batch in AFTER_APPROVAL else '')
+    roster_sections = ''
+    if batch == 'skills':
+        own = G.skill_roster(); owner_of = {s: o for o, (_, ids) in G.SKILL_OWNERS.items() for s in ids}
+        owner_of.update({s: own[n] for s, (_, n) in G.REPLACED_SKILLS.items() if s not in owner_of and n in own})   # the old 27 have no SKILL_OWNERS row
+        rm = ''.join(f'<tr data-removed="{esc(s)}"><td>{esc(s)}</td><td>{esc(G.REPLACED_SKILLS.get(s, ("", ""))[0])}</td>'
+                     f'<td>{esc(OWNER_NAME.get(owner_of.get(s, ""), owner_of.get(s, "")))}</td>'
+                     f'<td>{esc(nm.get(G.REPLACED_SKILLS.get(s, ("", ""))[1], G.REPLACED_SKILLS.get(s, ("", ""))[1]))}</td></tr>'
+                     for s in sorted(gone, key=lambda x: list(G.REPLACED_SKILLS).index(x) if x in G.REPLACED_SKILLS else 99))
+        missing = [s for s in own if s in G.skills_without_icon()]
+        mi = ''.join(f'<tr data-no-icon="{esc(s)}"><td>{esc(s)}</td><td>{esc(nm.get(s, s))}</td><td>{esc(OWNER_NAME.get(own[s], own[s]))}</td></tr>'
+                     for s in missing)
+        roster_sections = (
+            f'<section id="removed"><h2>已移除的技能（{len(gone)} 招，不在本頁核准，不會發布）</h2>'
+            '<p class="note">技能改版（2026-10-20 技能 build 規格 §8）換掉的招。它們的圖已經生成過，原圖留在第 9 節的生成紀錄裡當歷史，'
+            '但不放進遊戲；核准指令也會跳過它們。</p>'
+            f'<div class="scroll"><table><tr><th>id</th><th>舊名</th><th>角色</th><th>換成</th></tr>{rm}</table></div></section>'
+            f'<section id="no-icon"><h2>還沒有圖示的技能（{len(missing)} 招，屬於 G4）</h2>'
+            '<p class="note">遊戲現在有、但還沒有任何圖示的招，會在 G4 和異常、機制圖示一起生成，另一頁給你看。</p>'
+            f'<div class="scroll"><table><tr><th>id</th><th>名稱</th><th>角色</th></tr>{mi}</table></div></section>')
     rarity_css = ''.join(f'.r-{r}{{color:{c}}}' for r, c in G.RARITY_PALETTE.items())
 
     # Sections show only what the batch has (the skills batch has no gear, materials or forge).
@@ -788,6 +816,7 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 <h2 id="s0">0. 本批清單（{checklist.count("data-part=")} 件）</h2>
 <p class="note">手機上這張表可以在框內左右捲動。</p>
 <div class="scroll"><table class="checklist"><tr><th>id</th><th>名稱</th><th>工作表</th><th>狀態</th><th>QA</th></tr>{checklist}</table></div>
+{roster_sections}
 
 {gear_sections}
 {mats_section}{('<h2 id="s7">7. 技能：同角色的新技能圖示與既有技能圖示，遊戲實際大小</h2>' + skill_html + skill_size_html) if (skills or old_skills) else ''}
@@ -811,4 +840,4 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 
 
 if __name__ == '__main__':
-    main(sys.argv[1] if len(sys.argv) > 1 else 'sample')
+    main(sys.argv[1] if len(sys.argv) > 1 else 'sample', G._opt(sys.argv[2:], 'out'))

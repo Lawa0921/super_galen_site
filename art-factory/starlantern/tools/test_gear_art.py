@@ -1374,7 +1374,43 @@ def test_skill_jobs_make_native_icons_and_the_old_27_are_rederived_from_their_sh
     for j in old:                                                     # the same cell positions as the approved plan 4 sheet
         sheet = [x[5:] for x in real[j['id']]['parts']]
         assert all(p is None or sheet[i] == p for i, p in enumerate(j['parts'])), j['id']
-    assert len(G.batch_assets('skills')) == 210
+    # Step 9 (G3 rebuild): the 15 skills the skill-builds rework replaced keep their cells, but leave the batch.
+    assert len(G.batch_assets('skills')) == 180
+
+
+# Spec 2026-10-20 skill-builds §8 (data/roster.test.ts and render/gearArt.test.ts hold the same list): old -> new.
+REPLACED = {
+    'sacred-sake': 'purify-ward', 'thunder-thrust': 'exorcism-thrust', 'blessing': 'moon-recall', 'sanctuary': 'full-moon-night',
+    'triple-slash': 'pickpocket', 'shadow-flurry': 'jackpot', 'venom-edge': 'appraise',
+    'snare-shot': 'sunder-arrow', 'fire-arrow': 'scatter-shot', 'storm-volley': 'deluge-volley',
+    'guardian-roar': 'cover', 'fortress': 'atoning-flame', 'veil-dance': 'clap', 'sirocco': 'mirage-step',
+    'repair-kit': 'repair-drone',
+}
+
+
+def test_the_skills_batch_follows_the_game_roster():
+    """Step 9 (G3 rebuild): the roster is read from data/skills.ts; a skill it no longer has keeps its sheet cell (the raw
+    is history) but is never approved or published, and a roster skill with no cell is listed for G4."""
+    roster = G.skill_roster()
+    assert len(roster) == 105 and roster['pickpocket'] == 'liz' and roster['hero-slash'] == 'hero'
+    assert G.removed_skills() == set(REPLACED)
+    assert set(G.REPLACED_SKILLS) == set(REPLACED) and all(G.REPLACED_SKILLS[o][1] == n for o, n in REPLACED.items())
+    assert G.skills_without_icon() == set(REPLACED.values())
+    batch = set(G.batch_assets('skills'))
+    assert not any(f'icon-{s}-{px}' in batch for s in REPLACED for px in (16, 14))
+    assert {'icon-fire-star-16', 'icon-flame-wave-14', 'icon-hero-slash-16'} <= batch
+    parts = {a for j in G.jobs() if j['batch'] == 'skills' for p in j['parts'] for a in G.assets_of(j, p)}
+    assert len(parts) == 210                                           # the cells stay: the raws are history
+
+
+def test_approve_skills_never_approves_a_removed_skill(factory, review):
+    _fill(factory, 'skills')
+    reg = A.Registry(factory / 'registry.json'); reg.data['style_approved'] = '2026-10-20'; reg._save()
+    review.main('skills')
+    done = G.do_approve(A.Registry(factory / 'registry.json'), 'skills', 'user 2026-10-24: ok')
+    assert len(done) == 180
+    after = A.Registry(factory / 'registry.json')
+    assert all(after.get(f'icon-{s}-16')['status'] == 'qa_passed' for s in REPLACED)
 
 
 def test_gen_never_draws_a_rederived_skill_sheet(factory, monkeypatch):
@@ -1393,7 +1429,8 @@ def test_process_attempt_sends_skill_cells_to_native_icons(factory, monkeypatch)
 
 
 def test_skills_page_shows_every_skill_icon_native_in_its_game_cell_and_a_size_grid(factory, review):
-    """Ruling 2026-10-20 (G3): all 105 skill icons (78 new, 27 re-derived) at native size 1:1 inside the skill tab row
+    """Ruling 2026-10-20 (G3), rebuilt in step 9 for the current roster: the 90 skill icons the game still has (64 new, 26
+    re-derived; the 15 replaced skills are named in `removed`, the 15 new ones with no icon in `no-icon`) at native size 1:1 inside the skill tab row
     (16) and the tree node (14), and at 3x; a size-consistency grid; the decision block says the game switches to them."""
     import re
     _fill(factory, 'skills')
@@ -1402,11 +1439,12 @@ def test_skills_page_shows_every_skill_icon_native_in_its_game_cell_and_a_size_g
     s7 = page[page.index('id="s7"'):page.index('id="s9"')]
     every = [s for o, (_, ids) in G.SKILL_OWNERS.items() for s in ids] + OLD_SKILLS
     assert len(every) == 105
-    # A skill the game no longer has (plan 8c: triple-slash became Liz's pickpocket; artPaths RETIRED_ICON_IDS) is still re-derived
-    # with its sheet, but the page shows only what the skill tab and tree can show.
-    retired = {s for s in every if s not in review.skill_owners()}
-    assert retired == {'triple-slash'}
+    # Step 9 (G3 rebuild): the 15 skills the skill-builds rework replaced are re-derived with their sheets, but the page
+    # shows only the current roster (data/skills.ts); they are listed by name in `removed`, with no picture.
+    retired = {s for s in every if s not in G.skill_roster()}
+    assert retired == set(REPLACED)
     shown = set(every) - retired
+    assert len(shown) == 90
     for px in (16, 14):
         for z in (1, 3):
             cells = set(re.findall(rf'data-native="{px}" data-zoom="{z}" data-skill="([a-z0-9-]+)"', s7))
@@ -1418,14 +1456,24 @@ def test_skills_page_shows_every_skill_icon_native_in_its_game_cell_and_a_size_g
     assert {f'img/{f.name}' for f in (factory / 'review-g3/img').iterdir()} == refs
     head = page[page.index('id="decisions"'):page.index('id="s0"')]
     asked = head[:head.index('已決定')]
-    assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['技能圖示的大小與畫風一致嗎（新 78 個＋既有 27 個）', '洛恩與凜的技能圖示（沒有舊圖示可對照）']
+    assert re.findall(r'<li><b>([^<]+)</b>', asked) == ['技能圖示的大小與畫風一致嗎（新 64 個＋既有 26 個）', '洛恩與凜的技能圖示（沒有舊圖示可對照）']
+    assert '既有的 26 個' in asked and '27' not in asked and '78' not in asked
+    removed = page[page.index('id="removed"'):]; removed = removed[:removed.index('</section>')]
+    assert set(re.findall(r'data-removed="([a-z0-9-]+)"', removed)) == set(REPLACED) and '<img' not in removed
+    assert '順手牽羊' in removed and '三連刃' in removed                       # old name and the skill that replaced it
+    missing = page[page.index('id="no-icon"'):]; missing = missing[:missing.index('</section>')]
+    assert set(re.findall(r'data-no-icon="([a-z0-9-]+)"', missing)) == set(REPLACED.values()) and '<img' not in missing
+    assert not any(f'data-part="{s}"' in page for s in REPLACED)               # not in the checklist either
+    gal = page[page.index('id="s9"'):]
+    assert not any(f'icon-{s}-16' in gal for s in REPLACED)
     for s in ('16×16', '14×14', '沒有重畫', '核准後', '換成'):
         assert s in asked, s
-    # Names come from the game data; veil-dance and sirocco left Safira's roster in plan 8c (their replacements' icons are step
-    # ⑨'s), so the page names them by id, as it does any skill the game no longer has.
+    # Names come from the game data; veil-dance and sirocco left Safira's roster in plan 8c, so their confusable group keeps
+    # only the two skills the game still has.
     names = review.names()
-    for group in (('quickstep', 'phantom-step'), ('sand-cyclone', 'thousand-shadows', 'veil-dance', 'sirocco')):
+    for group in (('quickstep', 'phantom-step'), ('sand-cyclone', 'thousand-shadows')):
         assert '／'.join(names.get(s, s) for s in group) in asked, group
+    assert 'veil-dance' not in asked and 'sirocco' not in asked
     assert '直接回覆每題的選擇' in head and 'G1' in head[head.index('已決定'):]
     decided = head[head.index('已決定'):]
     assert '高約 32' not in decided and '原尺寸' in decided                           # the native-size ruling, not the old size

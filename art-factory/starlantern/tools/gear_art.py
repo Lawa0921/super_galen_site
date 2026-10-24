@@ -828,8 +828,51 @@ def note(argv):
 
 def batch_assets(batch):
     """Every registry id a batch's sheets produce, once each (two jobs may make the same id: ui-starlit); silhouettes
-    are derived later, not approved here."""
-    return list(dict.fromkeys(a for j in jobs() if j['batch'] == batch for p in j['parts'] for a in assets_of(j, p)))
+    are derived later, not approved here. The skills batch leaves out the skills the game no longer has (step 9): their
+    cells stay on the sheets, but they are never approved or published."""
+    gone = removed_skills() if batch == 'skills' else set()
+    return list(dict.fromkeys(a for j in jobs() if j['batch'] == batch for p in j['parts'] if p not in gone for a in assets_of(j, p)))
+
+
+# --- step 9 (G3 rebuild): the skill roster the game has now ------------------------------------------------------------
+SKILLS_TS = REPO / 'src/scripts/games/starlantern/data/skills.ts'
+# Spec 2026-10-20 skill-builds §8: old id -> (old name, the skill that replaced it). removed_skills() is read from the game
+# data; this table only names them on the G3 page (test_gear_art holds the two equal).
+REPLACED_SKILLS = {
+    'sacred-sake': ('御神酒', 'purify-ward'), 'thunder-thrust': ('雷神突', 'exorcism-thrust'),
+    'blessing': ('祝福', 'moon-recall'), 'sanctuary': ('聖域', 'full-moon-night'),
+    'triple-slash': ('三連刃', 'pickpocket'), 'shadow-flurry': ('影刃亂舞', 'jackpot'), 'venom-edge': ('毒刃', 'appraise'),
+    'snare-shot': ('絆索箭', 'sunder-arrow'), 'fire-arrow': ('火矢雨', 'scatter-shot'), 'storm-volley': ('雷霆箭雨', 'deluge-volley'),
+    'guardian-roar': ('守護咆哮', 'cover'), 'fortress': ('要塞', 'atoning-flame'),
+    'veil-dance': ('紗之舞', 'clap'), 'sirocco': ('熱風', 'mirage-step'),
+    'repair-kit': ('修理包', 'repair-drone'),
+}
+
+
+def skill_roster():
+    """{skill id: owner} of every skill in the game data (data/skills.ts), in file order."""
+    src = SKILLS_TS.read_text(encoding='utf-8')
+    starts = [(m.start(), m.group(1)) for m in re.finditer(r"\{ id: '([a-z0-9-]+)'", src)]
+    out = {}
+    for (a, sid), (b, _) in zip(starts, starts[1:] + [(len(src), '')]):
+        m = re.search(r"\bowner: '([a-z]+)'", src[a:b])
+        if m: out[sid] = m.group(1)
+    return out
+
+
+def _skill_cells():
+    return [p for j in jobs() if skill_native(j) for p in j['parts'] if p]
+
+
+def removed_skills():
+    """Skill cells of the skills batch whose skill the game no longer has."""
+    roster = skill_roster()
+    return {p for p in _skill_cells() if p not in roster}
+
+
+def skills_without_icon():
+    """Roster skills with no skill cell: their icons are G4's (step 9)."""
+    return set(skill_roster()) - set(_skill_cells())
 
 
 def shown_path(batch):

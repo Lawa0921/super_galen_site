@@ -1,0 +1,504 @@
+{
+  "assets": {
+    "icon-ail-burn-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-burn-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 10,
+          "mass": 0.583,
+          "box": [
+            2,
+            1,
+            12,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 34.0,
+        "scale": 34.0,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 1
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-burn"
+      }
+    },
+    "icon-ail-burn-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-burn-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 8,
+          "mass": 0.58,
+          "box": [
+            2,
+            1,
+            10,
+            11
+          ],
+          "centre_off": 0.0
+        },
+        "block": 40.8,
+        "scale": 40.8,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-burn"
+      }
+    },
+    "icon-ail-freeze-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-freeze-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 10,
+          "mass": 0.667,
+          "box": [
+            2,
+            1,
+            12,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.75,
+        "scale": 31.75,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-freeze"
+      }
+    },
+    "icon-ail-freeze-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-freeze-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 8,
+          "mass": 0.64,
+          "box": [
+            2,
+            1,
+            10,
+            11
+          ],
+          "centre_off": 0.0
+        },
+        "block": 38.1,
+        "scale": 38.1,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-freeze"
+      }
+    },
+    "icon-ail-chill-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-chill-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 8,
+          "mass": 0.528,
+          "box": [
+            3,
+            1,
+            11,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 30.833,
+        "scale": 30.833,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-chill"
+      }
+    },
+    "icon-ail-chill-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-chill-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 6,
+          "mass": 0.48,
+          "box": [
+            3,
+            1,
+            9,
+            11
+          ],
+          "centre_off": 0.0
+        },
+        "block": 37.0,
+        "scale": 37.0,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-chill"
+      }
+    },
+    "icon-ail-shock-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-shock-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 10,
+          "mass": 0.5,
+          "box": [
+            2,
+            1,
+            12,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.917,
+        "scale": 31.917,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 1
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-shock"
+      }
+    },
+    "icon-ail-shock-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-shock-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 8,
+          "mass": 0.48,
+          "box": [
+            2,
+            1,
+            10,
+            11
+          ],
+          "centre_off": 0.0
+        },
+        "block": 38.3,
+        "scale": 38.3,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-shock"
+      }
+    },
+    "icon-ail-bleed-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-bleed-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 9,
+          "mass": 0.431,
+          "box": [
+            2,
+            1,
+            11,
+            13
+          ],
+          "centre_off": 0.5
+        },
+        "block": 31.417,
+        "scale": 31.417,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 4
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-bleed"
+      }
+    },
+    "icon-ail-bleed-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-bleed-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 8,
+          "mass": 0.46,
+          "box": [
+            2,
+            1,
+            10,
+            11
+          ],
+          "centre_off": 0.0
+        },
+        "block": 37.7,
+        "scale": 37.7,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-bleed"
+      }
+    },
+    "icon-ail-poison-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-poison-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "interior erased"
+        ],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 13,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 8,
+          "mass": 0.354,
+          "box": [
+            3,
+            1,
+            11,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 28.5,
+        "scale": 28.5,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 13
+      },
+      "status": "qa_failed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-poison"
+      }
+    },
+    "icon-ail-poison-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-ailment-sample/cand/a1/icon-ail-poison-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "interior erased"
+        ],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 7,
+          "mass": 0.33,
+          "box": [
+            2,
+            1,
+            9,
+            11
+          ],
+          "centre_off": 0.5
+        },
+        "block": 34.2,
+        "scale": 34.2,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 2
+      },
+      "status": "qa_failed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-ailment-sample\\a1\\sheet-g4-ailment-sample-a1.png",
+        "cell": "ail-poison"
+      }
+    }
+  }
+}
