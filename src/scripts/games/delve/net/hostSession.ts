@@ -53,7 +53,10 @@ export class CoopHostSession {
 
   get room(): string | null { return this.rooms.room; }
   get joining(): boolean { return this.rooms.joining; }
-  /** 開放加入中但信令服務讀不到（客人進不來）：UI 顯示 JOIN_ERROR_TEXT.service */
+  /**
+   * 信令服務讀不到（連續 SERVICE_DOWN_PASSES 輪讀槽失敗，客人進不來）：UI 顯示 JOIN_ERROR_TEXT.service。
+   * 任一輪讀成功就清；stopJoin 後不再輪詢，旗標保留最後的值，要等 reopenJoin 才清。
+   */
   get serviceDown(): boolean { return this.rooms.serviceDown; }
 
   /** 停止加入之後（閒置 10 分鐘）重新開放 */

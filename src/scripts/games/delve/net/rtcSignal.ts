@@ -3,6 +3,7 @@
 import type { NetLink } from './link';
 import type { RtcPeer } from './rtcLink';
 import { createRoom, getSlot, getSlots, putSlot, type Slot } from '../../tetris/net/signalClient';
+import { ICE_GATHER_TIMEOUT_MS } from '../../tetris/net/webrtcTransport';
 import { newId } from '../save/character';
 
 export const DELVE_NS = 'delve:';
@@ -11,18 +12,33 @@ export const JOIN_SLOTS = 4;            // 用 guest-0..3-offer / host-ack-0..3
 export const HOST_POLL_MS = 3000;
 /** 閒置退讓：每一輪沒看到新 offer，間隔 ×1.5 … */
 export const HOST_POLL_BACKOFF = 1.5;
-/**
- * … 封頂 10 秒（3000 → 4500 → 6750 → 10000）。最壞情況：客人剛好在房主掃完後才寫 offer，
- * 要多等 ≤ 10 秒房主才看到（之後回到 3 秒），再加一輪 ACK_POLL_MS ≈ 11.2 秒；
- * 就算那一輪又卡死被放棄（要等 max(HOST_PASS_TIMEOUT_MS, 間隔) 才重掃）也 ≈ 10 + 10 + 1.2 = 21.2 秒，
- * 都在 ACK_TIMEOUT_MS（30 秒）內，所以 ACK_TIMEOUT_MS 不必調。（退讓前分別是 4.2 / 13.2 秒）
- */
+/** … 封頂 10 秒（3000 → 4500 → 6750 → 10000）。最壞等待見 GUEST_WORST_WAIT_MS */
 export const HOST_POLL_MAX_MS = 10_000;
 export const JOIN_IDLE_MS = 600_000;    // 開放加入後 10 分鐘沒有新客人 → 自動停止加入（R7）
 /** 一輪掃描卡住超過這麼久就放棄（防 fetch 永遠不回） */
 export const HOST_PASS_TIMEOUT_MS = HOST_POLL_MS * 3;
 export const ACK_POLL_MS = 1200;
 export const ACK_TIMEOUT_MS = 30_000;
+/** 每個信令請求（fetch /api/signal → Upstash）估的延遲預算 */
+export const SIGNAL_REQ_BUDGET_MS = 1000;
+/** 客人寫好 offer 之後、讀到 ack 之前，路徑上的請求數：房主讀槽（MGET）、清 offer 墓碑、寫 ack、客人讀 ack */
+export const WORST_CASE_SIGNAL_REQS = 4;
+/**
+ * 客人寫好 offer 到讀到 ack 的最壞等待（ACK_TIMEOUT_MS 必須蓋得住）：
+ *  - 客人剛好在房主掃完之後才寫 offer：房主退讓到上限，最多 HOST_POLL_MAX_MS 後才掃下一輪；
+ *  - 那一輪又卡死被放棄：要等 max(HOST_PASS_TIMEOUT_MS, 間隔) 才重掃；
+ *  - 房主 createAnswer 的 ICE 收集（non-trickle，最多 ICE_GATHER_TIMEOUT_MS）；
+ *  - 路徑上 WORST_CASE_SIGNAL_REQS 次請求，各 SIGNAL_REQ_BUDGET_MS；
+ *  - 客人多等一輪 ACK_POLL_MS 才讀到。
+ * = 10 + 10 + 2 + 4 + 1.2 = 27.2 秒 < 30 秒，所以 HOST_POLL_MAX_MS 維持 10 秒、ACK_TIMEOUT_MS 不調。
+ * （沒卡死的一般最壞 = 10 + 2 + 4 + 1.2 = 17.2 秒；退讓前同算法分別是 19.2 / 10.2 秒）
+ */
+export const GUEST_WORST_WAIT_MS = HOST_POLL_MAX_MS + Math.max(HOST_PASS_TIMEOUT_MS, HOST_POLL_MAX_MS)
+  + ICE_GATHER_TIMEOUT_MS + WORST_CASE_SIGNAL_REQS * SIGNAL_REQ_BUDGET_MS + ACK_POLL_MS;
+/** 連續這麼多輪讀槽整個失敗才算信令服務掛了（一輪失敗多半只是網路抖動） */
+export const SERVICE_DOWN_PASSES = 2;
+/** 客人掃槽失敗後，隔這麼久整段重掃一次；兩次都失敗才回 service */
+export const JOIN_SCAN_RETRY_MS = 1000;
 export const ROOM_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{5}$/;
 
 export interface SignalApi {
@@ -93,7 +109,7 @@ export class RoomHost {
   private lastJoinAt = 0;
   private lastPollAt = -Infinity;
   private interval = HOST_POLL_MS;   // 目前的掃描間隔（閒置退讓）
-  private down = false;              // 最近一輪讀槽整個失敗（信令服務掛了）
+  private failedPasses = 0;          // 連續幾輪讀槽整個失敗（≥ SERVICE_DOWN_PASSES = 信令服務掛了）
   private running = false;
   private passStartedAt = 0;
   private passGen = 0;   // 被放棄或 close 的舊一輪靠世代號自覺退出
@@ -110,8 +126,11 @@ export class RoomHost {
   get joining(): boolean { return this.isJoining; }
   /** 目前的掃描間隔（HOST_POLL_MS 起跳、閒置退讓到 HOST_POLL_MAX_MS） */
   get pollIntervalMs(): number { return this.interval; }
-  /** 最近一輪讀 offer 槽整個失敗（API 錯誤）：房號在、但客人進不來，UI 要講實話 */
-  get serviceDown(): boolean { return this.down; }
+  /**
+   * 連續 SERVICE_DOWN_PASSES 輪讀 offer 槽整個失敗（API 錯誤）：房號在、但客人進不來，UI 要講實話。
+   * 任一輪讀成功就清掉；stopJoin 不清（停止輪詢後保留最後狀態），open / reopen 才清。
+   */
+  get serviceDown(): boolean { return this.failedPasses >= SERVICE_DOWN_PASSES; }
 
   /** 拿房號失敗（信令 API 掛了 / 網路）→ JoinError('service') */
   async open(nowMs: number, room?: string): Promise<string> {
@@ -124,7 +143,7 @@ export class RoomHost {
     this.lastJoinAt = nowMs;
     this.lastPollAt = -Infinity;
     this.interval = HOST_POLL_MS;
-    this.down = false;
+    this.failedPasses = 0;
     return code;
   }
 
@@ -153,7 +172,7 @@ export class RoomHost {
     this.lastJoinAt = nowMs;
     this.lastPollAt = -Infinity;
     this.interval = HOST_POLL_MS;
-    this.down = false;
+    this.failedPasses = 0;
   }
 
   /** 停止加入（不收新客人）：停掉輪詢、放棄進行中的那一輪；房號與已在握手 / 已連上的客人不動，reopen 可再開 */
@@ -175,7 +194,7 @@ export class RoomHost {
   // 一輪只負責讀槽與清墓碑；客人的握手不 await，免得慢客人卡住輪詢。
   private async pass(room: string, nowMs: number, gen: number): Promise<void> {
     const { raws, ok } = await this.readOffers(room);
-    if (gen === this.passGen && this.roomCode === room) this.down = !ok;
+    if (gen === this.passGen && this.roomCode === room) this.failedPasses = ok ? 0 : this.failedPasses + 1;
     let fresh = false;
     for (let i = 0; i < JOIN_SLOTS; i++) {
       if (gen !== this.passGen || this.roomCode !== room) return;   // 已 close 或被放棄
@@ -258,15 +277,24 @@ export async function joinRoom(
 
   // 依序找空槽：offer 槽空，且 host-ack 槽也空或壞掉（還有上一位客人的 ack 在用就不能搶）。
   // 寫入後讀回只能縮小兩位客人同時寫同一槽的空窗，沒有伺服器端 CAS 就無法完全消除。
-  let slot = -1;
-  try {
-    for (let i = 0; i < JOIN_SLOTS && slot < 0; i++) {
-      if (await api.get(room, offerSlot(i))) continue;
-      if (parseSlot(await api.get(room, ackSlot(i)), 'answer')) continue;
+  // 重掃時槽裡已是自己的 offer（上一次寫進去、讀回才失敗），或 ack 已是給自己的（房主已收走 offer）→ 就是這一槽。
+  const scan = async (): Promise<number> => {
+    for (let i = 0; i < JOIN_SLOTS; i++) {
+      const cur = await api.get(room, offerSlot(i));
+      if (cur) { if (parseSlot(cur, 'offer')?.id === id) return i; continue; }
+      const ack = parseSlot(await api.get(room, ackSlot(i)), 'answer');
+      if (ack) { if (ack.id === id) return i; continue; }
       await api.put(room, offerSlot(i), payload);
-      if (parseSlot(await api.get(room, offerSlot(i)), 'offer')?.id === id) slot = i;
+      if (parseSlot(await api.get(room, offerSlot(i)), 'offer')?.id === id) return i;
     }
-  } catch { return fail('service'); }   // 掃槽只打信令 API：丟錯 = 服務本身壞了，不是房號錯
+    return -1;
+  };
+  let slot: number;
+  try { slot = await scan(); } catch {
+    // 掃槽只打信令 API：丟錯多半是網路抖動 → 隔一下整段重掃一次；再失敗才是服務本身壞了（不是房號錯）
+    await sleep(JOIN_SCAN_RETRY_MS);
+    try { slot = await scan(); } catch { return fail('service'); }
+  }
   if (slot < 0) return fail('full');
 
   const start = now();

@@ -217,12 +217,14 @@ describe('CoopHostSession／CoopGuestSession', { timeout: 20_000 }, () => {
     expect(e.host.joining).toBe(false);
   });
 
-  it('拿到房號後信令讀槽一直失敗 → host.serviceDown；恢復後清掉', async () => {
+  it('拿到房號後信令讀槽連續 2 輪失敗 → host.serviceDown；恢復後清掉', async () => {
     const e = setup();
     await e.host.open();
     const get = e.signal.get.bind(e.signal);
     e.signal.get = () => Promise.reject(new Error('signal GET 500'));
     await e.run(500);
+    expect(e.host.serviceDown).toBe(false);   // 只失敗 1 輪：當作網路抖動
+    await e.run(5000);                        // 第 2 輪（4.5 秒後）也失敗
     expect(e.host.serviceDown).toBe(true);
     e.signal.get = get;
     await e.run(12_000);
