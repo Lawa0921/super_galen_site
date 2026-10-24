@@ -2,8 +2,8 @@
 // 畫圖是與舊生成器共用的 draw/village.ts（drawVillage），畫在 BpCanvas 上再輸出藍圖：
 //   · 寬 vw ∈ [58, 74)、外框 = 村子 x0 − 9 .. x1 + 9（兩側緩坡；drawVillage 對外框外的坡地欄默默略過，所以外框一定涵蓋它們）、
 //     外框置中於可用範圍（c.slotX0 / slotX1；錨點的可用範圍 ≥ ANCHOR_MAX_W.village + 2 × SLOT_PAD，置中一定放得下，不靠 placeX 的夾位置）；
-//     出生地區（VARIANT.SPAWN，中點 = 出生點，同 caves.ts）裡中心離出生點 ≤ VILLAGE_MIN 時往外移（bpcore.centerAway；
-//     anchors.ts 只選移得開的槽，其他地區離出生點 ≥ 420，置中就夠遠）。
+//     家鄉（c.spawnX）裡中心離出生點 ≤ VILLAGE_MIN 時往外移（bpcore.centerAway；anchors.ts 用同一個出生點、只選移得開的槽）；
+//     外圍（spawnX undefined）只置中。
 //   · ground = 外框各欄 profile 地表的中位數；style = 雜湊 % 3；整平後每欄 setSurface → ground 覆寫長度 = vw + 18（Q4：只讀 c.profile）。
 //   · BpCanvas 的回退讀取假設天然格是實心、沒有洞穴：drawVillage 補低時「讀到實心就不填」的格（每欄 [地面, max(地面 + 6, 原地表 + 3))）
 //     必須在成品裡真的是實心 → 外框整片併進 solid（fill.ts 在箱內不挖噪聲洞穴、地表不當入口；礦照常換）。
@@ -13,11 +13,9 @@
 import { T } from '../../tiles';
 import { seedInt } from '../../noise';
 import { HRng } from '../hrng';
-import { VARIANT } from '../layout';
-import { VILLAGE_MIN } from '../anchors';
 import { BpCanvas } from '../draw/bpCanvas';
 import { drawVillage } from '../draw/village';
-import { BP_SURFACE, centerAway, type Blueprint, type BpCtx } from '../bpcore';
+import { BP_SURFACE, VILLAGE_MIN, centerAway, type Blueprint, type BpCtx } from '../bpcore';
 
 // 兩側緩坡的欄數（draw/village.ts）
 const SLOPE = 9;
@@ -30,8 +28,7 @@ export function buildVillageBp(c: BpCtx): Blueprint {
   // ctx.ver 0 的規則
   const p = c.profile, rng = new HRng(c.s, c.id);
   const vw = rng.int(58, 74), W = vw + 2 * SLOPE;
-  const r = c.region, sp = r.variant === VARIANT.SPAWN ? (r.x0 + r.x1) >> 1 : Number.NaN;
-  const bx = centerAway(c.slotX0, c.slotX1, W, sp, VILLAGE_MIN);
+  const bx = centerAway(c.slotX0, c.slotX1, W, c.spawnX ?? Number.NaN, VILLAGE_MIN);
   if (bx === null) throw new RangeError(`gen2: village ${c.id} does not fit [${c.slotX0}, ${c.slotX1})`);
   const x0 = bx + SLOPE, x1 = x0 + vw - 1;
   const surf: number[] = [];

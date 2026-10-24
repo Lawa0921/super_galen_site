@@ -11,7 +11,7 @@ import type { RegionInfo } from '../regionInfo';
 import { HOME_X0, SPAWN_X, VARIANT, homeDungeonRegion, type Landmass } from './layout';
 import type { Profile2 } from './profile';
 import { shaftOf, shaftX } from './caves';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, SLOT_PAD, centerAway, shaftBand, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type Layer } from './bpcore';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, SLOT_PAD, VILLAGE_MIN, centerAway, shaftBand, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type Layer } from './bpcore';
 
 export type AnchorKind = 'dungeon' | 'village' | 'hall' | 'mineshaft_secret' | 'sky_island' | 'mushroom_biome' | 'crystal_cave' | 'hive'
   | 'cave_lake' | 'ruin' | 'cabin' | 'alcove_snow' | 'alcove_desert' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet' | 'keep' | 'hermit_hut'
@@ -32,7 +32,6 @@ const ORDER: readonly AnchorKind[] = ['dungeon', 'village', 'hall', 'mineshaft_s
   'cave_lake', 'ruin', 'cabin', 'alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache', 'spawn_tablet'];
 
 // 村莊離出生點至少、第 1 / 2 座的目標偏移；地廳第 2 座的目標偏移與兩座最小間距；礦坑密室 / 空島 / 熔岩祭壇離出生點至少
-export const VILLAGE_MIN = 200;
 const VILLAGE_AIM = 950, HALL_AIM = 1200, HALL_GAP = 840, SECRET_MIN = 160, SKY_MIN = 250, MOLTEN_MIN = 630;
 // 礦坑密室彼此至少 2 槽；地下層那一組的重挑次數
 const SECRET_GAP = 2 * SUB_SLOT_W, UNDER_TRIES = 8;

@@ -17,7 +17,7 @@
 // （fill 依 (layer, id) 序蓋，後蓋的結構會切開液體；依「原始」擲出的結果判，沒有循環）。
 // 跨層不重疊（Q10，M2a Task 9）：同一地區、不同層的兩份非液體藍圖外框不得相交；相交時依 crossYields 丟掉一份：
 // 錨點（2）> 保證槽（1，P11）> 機率擲出（0）；同級丟較深的（SURFACE < UNDER < DEEP；SKY / MINOR 同級一律讓位）。
-// 比對的是其他層的「原始」藍圖（同 yieldLiquid，不遞迴）；錨點彼此由錨點規則保證不相交（settlements.test 釘住）。
+// 比對的是其他層的「原始」藍圖（同 yieldLiquid，不遞迴）；錨點彼此由錨點規則保證不相交（settlements.test 釘住），真的相交 → RangeError（不默默少放）。
 // 地面覆寫（groundAt，Q4）：SURFACE 層藍圖的 ground 蓋過 profile 的地表；Gen2Source.surfaceAt 與 BpCtx.groundAt 都是它。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { hash2, seedInt } from '../noise';
@@ -322,8 +322,11 @@ export class BlueprintIndex {
       for (let q = q0; q <= q1; q++) qs.push(q);
       for (const a of whole) if (a.region === r && a.layer === layer && (a.slot < q0 || a.slot > q1)) qs.push(a.slot);
       for (const q of qs) {
-        const o = this.raw(m, r, q, layer);
-        if (o && crossYields(b, rank, o, this.rank(m, r, q, layer))) return null;
+        const o = this.raw(m, r, q, layer), oRank = this.rank(m, r, q, layer);
+        if (!o || !crossYields(b, rank, o, oRank)) continue;
+        // 錨點彼此必須由錨點規則保證不相交：同級相交時不默默丟掉較深的錨點
+        if (rank === 2 && oRank === 2) throw new RangeError(`gen2: anchors ${b.kind} [${b.x}, ${b.x + b.w}) × [${b.y}, ${b.y + b.h}) and ${o.kind} overlap across layers`);
+        return null;
       }
     }
     return b;
@@ -350,7 +353,8 @@ export class BlueprintIndex {
 
   private ctx(m: Landmass, r: RegionInfo, q: number, layer: RolledLayer): BpCtx {
     const id = structureId(m.side, m.i, r.index, q, layer), sl = landSlot(r, q, layer);
-    return { seed: this.seed, s: this.s, id, slotX0: sl.x0, slotX1: sl.x1, region: r, profile: this.profile, ver: m.ver, groundAt: this.groundFn };
+    return { seed: this.seed, s: this.s, id, slotX0: sl.x0, slotX1: sl.x1, region: r, profile: this.profile, ver: m.ver, groundAt: this.groundFn,
+      spawnX: m.kind === 'home' && this.spawnX !== null ? this.spawnX : undefined };
   }
 
   // 該層第 q 槽含主坑道的 x

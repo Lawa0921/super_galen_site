@@ -27,6 +27,8 @@ export function landSlot(r: RegionInfo, q: number, layer: Layer): { x0: number; 
 }
 // 家鄉含出生點 ± SPAWN_CLEAR 的槽全空（所有層，含 MINOR，Q16）：槽 [x0, x1) 與 [sp − 80, sp + 80] 相交
 export const SPAWN_CLEAR = 80;
+// 家鄉村莊的中心離出生點要 > VILLAGE_MIN（anchors.ts 選槽、structures/village.ts 放置共用）
+export const VILLAGE_MIN = 200;
 export const touchesSpawnClear = (x0: number, x1: number, sp: number): boolean => x0 <= sp + SPAWN_CLEAR && x1 > sp - SPAWN_CLEAR;
 
 // 藍圖放的物件（World 載入欄時登錄，見 column.ts 的 GenExtras）
@@ -85,11 +87,13 @@ export const emptyObjects = (): Pick<Blueprint, 'pots' | 'tablets' | 'landmarks'
 // groundAt(x) = profile.surfaceAt(x) 被與 x 相交、有 ground 的 SURFACE 層藍圖覆寫（Q4）——只有 SKY / MINOR 層的建構器可以呼叫
 // （SURFACE / UNDER / DEEP 的建構器讀 c.profile），所以沒有循環（BlueprintIndex.groundAt 重入會丟錯）。
 // 錨點建構器的 slotX0 / slotX1 是錨點的可用範圍（anchors.anchorSpan：含坑道的槽只給避開坑道帶後較大的一側；wholeRegion 給整個地區）。
-// rank：家鄉錨點在同種錨點裡的名次（可用範圍中點離出生點由近到遠，平手取 x 小的；0 = 最近）；外圍錨點與非錨點 = undefined
+// rank：家鄉錨點在同種錨點裡的名次（可用範圍中點離出生點由近到遠，平手取 x 小的；0 = 最近）；外圍錨點與非錨點 = undefined。
+// spawnX：家鄉地塊的出生點 x（BlueprintIndex 與 anchors.ts 同一個來源：home.x0 + SPAWN_X − HOME_X0）；外圍地塊 = undefined
 export interface BpCtx {
   seed: string; s: number; id: number; slotX0: number; slotX1: number; region: RegionInfo; profile: Profile2; ver: number;
   groundAt(x: number): number;
   rank?: number;
+  spawnX?: number;
 }
 
 // 外框內的暫存格（三層各一，初值 KEEP）：結構先在這裡畫（可以讀自己畫過的格），最後依列序輸出 cells

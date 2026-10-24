@@ -11,6 +11,7 @@ import { buildVillageBp } from './structures/village';
 import { buildHallBp } from './structures/hall';
 import { homeDungeonRegion, SPAWN_X, VARIANT, type Landmass } from './layout';
 import { worldOf, loadColumns, firstSolid, overlapPairs } from './testUtil';
+import { Filler2 } from './fill';
 import { seedInt } from '../noise';
 import { T, W, isSolidTile } from '../tiles';
 import { BIOME } from '../world';
@@ -77,9 +78,9 @@ function hallsOf(seeds: readonly string[]): HallCase[] {
   }
   return out;
 }
-// 從地廳中央走「不擋身體」的格（4 鄰、門可開），範圍 = 外框外擴 80 欄、地板上下；回走到外框外的格數
+// 從地廳中央走「不擋身體」的格（4 鄰、門可開、不進液體），範圍 = 外框外擴 80 欄、外框上方 80 列到地板下 40 列；回走到外框外的格數
 function reachOutside(h: HallCase): number {
-  const { w, bp, info } = h, x0 = bp.x - 80, x1 = bp.x + bp.w + 80, y0 = info.floorY - 80, y1 = info.floorY + 40, W = x1 - x0;
+  const { w, bp, info } = h, x0 = bp.x - 80, x1 = bp.x + bp.w + 80, y0 = Math.max(0, bp.y - 80), y1 = info.floorY + 40, W = x1 - x0;
   const pass = (x: number, y: number): boolean => { const t = w.getFg(x, y); return !isSolidTile(t) || t === T.DOOR_CLOSED; };
   const seen = new Uint8Array(W * (y1 - y0)), sx = (info.x0 + info.x1) >> 1, sy = info.floorY - 2;
   const st = [sx, sy];
@@ -87,7 +88,7 @@ function reachOutside(h: HallCase): number {
   let out = 0;
   while (st.length) {
     const y = st.pop()!, x = st.pop()!;
-    if (x < bp.x || x >= bp.x + bp.w) out++;
+    if (x < bp.x || x >= bp.x + bp.w || y < bp.y || y >= bp.y + bp.h) out++;
     for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
       if (nx < x0 || nx >= x1 || ny < y0 || ny >= y1) continue;
       const k = (ny - y0) * W + nx - x0;
@@ -101,11 +102,11 @@ function reachOutside(h: HallCase): number {
 function anchorCtx(seed: string, a: Anchor, span?: { x0: number; x1: number }): BpCtx {
   const src = srcOf(seed), m = homeOf(src), sp = span ?? anchorSpan(seed, a);
   return { seed, s: seedInt(seed, 'g2-bp'), id: structureId(m.side, m.i, a.region.index, a.slot, a.layer), slotX0: sp.x0, slotX1: sp.x1,
-    region: a.region, profile: src.profile, ver: m.ver, groundAt: (x) => src.surfaceAt(x), rank: 0 };
+    region: a.region, profile: src.profile, ver: m.ver, groundAt: (x) => src.surfaceAt(x), rank: 0, spawnX: SPAWN_X };
 }
 
 describe('gen2 家鄉的村莊與矮人地廳', () => {
-  it('跨層優先序（Q10）：錨點 > 保證 > 機率；同級丟較深的；SKY / MINOR 同級讓位；不相交不丟', () => {
+  it('跨層優先序（Q10）：錨點 > 保證 > 機率；同級丟較深的；SKY / MINOR 同級讓位；不相交不丟', { timeout: 10_000 }, () => {
     const S_ = box(BP_SURFACE, 0, 300, 100, 40), U = box(BP_UNDER, 10, 320, 60, 40), K = box(BP_SKY, 0, 250, 40, 20), far = box(BP_DEEP, 500, 320, 40, 40);
     expect(crossYields(U, 0, S_, 0)).toBe(true); expect(crossYields(S_, 0, U, 0)).toBe(false);
     expect(crossYields(S_, 0, U, 2)).toBe(true); expect(crossYields(U, 1, S_, 0)).toBe(false);
@@ -137,7 +138,19 @@ describe('gen2 家鄉的村莊與矮人地廳', () => {
     expect(hit.some((b) => b.layer === BP_UNDER && b.kind === 'ruin' && b.id === structureId(m!.side, m!.i, r.index, uq, BP_UNDER))).toBe(true);
     const miss = make(400).overlapping(ruin!.x, ruin!.x + ruin!.w);
     expect(miss.some((b) => b.id === ruin!.id)).toBe(true);
-  });
+  }, 60_000);
+
+  it('錨點與錨點跨層相交 → RangeError（不默默丟掉較深的錨點）', () => {
+    const seed = SEEDS20[0], g = srcOf(seed), m = homeOf(g), v = villagesOf(seed)[0], vb = bpAt(g, v.info.x0, 'village', BP_SURFACE);
+    // 村莊底下、還沒有錨點的地下 / 深層 170 格槽（外框中心或兩端所在的槽）
+    const r = slotOf(vb.id, g.layout).region, used = new Set(g.blueprints.anchorsOf(m).map((a) => `${a.region.index}:${a.layer}:${a.slot}`));
+    const cands = ([BP_UNDER, BP_DEEP] as const).flatMap((layer) => [vb.x + (vb.w >> 1), vb.x + 9, vb.x + vb.w - 9].map((x) => ({ layer, slot: Math.floor((x - r.x0) / 170) })));
+    const at = cands.find((q) => !used.has(`${r.index}:${q.layer}:${q.slot}`))!;
+    expect(at).toBeDefined();
+    probeBox = (c) => ({ ...box(at.layer, Math.max(c.slotX0 + 8, Math.min(vb.x + 9, c.slotX1 - 8 - 30)), vb.y, 30, 10), id: c.id });
+    const idx = new BlueprintIndex(seed, g.layout, g.profile, { extraAnchors: (q) => (q === m ? [{ kind: 'test_probe', region: r, layer: at.layer, slot: at.slot }] : []) });
+    expect(() => idx.overlapping(vb.x, vb.x + vb.w)).toThrow(/anchors .* overlap across layers/);
+  }, 60_000);
 
   it('§4.4：家鄉 2–4 個村莊、≥ 1 座地廳；村莊在森林、離出生點 > 200、離地城區 > 60、不與其他藍圖重疊', () => { for (const seed of SEEDS20) { const s = sitesOf(seed);
     const v = s.filter((q) => q.kind === 'village'), h = s.filter((q): q is Hall => q.kind === 'hall');
@@ -223,9 +236,61 @@ describe('gen2 家鄉的村莊與矮人地廳', () => {
       expect(l.x1).toBe(h.info.x0 - 3); expect(r.x0).toBe(h.info.x1 + 3);
       for (const t of [l, r]) { expect(t.x1 - t.x0 + 1).toBeGreaterThanOrEqual(20); expect(t.x1 - t.x0 + 1).toBeLessThanOrEqual(36); }
       expect(h.bp.w).toBeLessThanOrEqual(154);
-      expect(reachOutside(h), `${h.seed} hall ${h.info.x0}`).toBeGreaterThan(40);
+      expect(reachOutside(h), `${h.seed} hall ${h.info.x0}`).toBeGreaterThanOrEqual(300);
     }
   }, 180_000);
+
+  it('後備（整個 floorY 範圍都接不到洞穴）：大廳中央 2 格寬的豎井 + 繩梯通到地表，外框往上延伸到地表、仍是 solid；從地表走得到大廳', () => {
+    const seed = SEEDS20[0], src = srcOf(seed), m = homeOf(src), a = src.blueprints.anchorsOf(m).find((q) => q.kind === 'hall')!;
+    const real = src.blueprints.anchorBlueprint(m, a)!, bp = buildHallBp(anchorCtx(seed, a), { caveOpen: () => false });
+    const h = (bp.site as Hall).info, sx = (h.x0 + h.x1) >> 1, top = Math.min(src.profile.surfaceAt(sx), src.profile.surfaceAt(sx + 1));
+    expect(bp.site?.kind).toBe('hall');
+    // 兩側 36 格、外框上緣 = 地表上一格、整個外框是 solid
+    for (const t of h.tunnels) expect(t.x1 - t.x0 + 1).toBe(36);
+    expect(bp.y).toBe(top - 1); expect(bp.y + bp.h).toBe(h.floorY + 3); expect(bp.solid).toEqual({ x: bp.x, y: bp.y, w: bp.w, h: bp.h });
+    // 用這份藍圖取代真的地廳來填欄
+    const stub = { overlapping: (x0: number, x1: number, l?: readonly Layer[]) => src.blueprints.overlapping(x0, x1, l).map((b) => (b.id === real.id ? bp : b)).filter((b) => b.x < x1 && b.x + b.w > x0) } as unknown as BlueprintIndex;
+    const filler = new Filler2(seed, src.layout, src.profile, stub);
+    const w = worldOf({ version: 0, fill: (c, x0, x1) => filler.fill(c, x0, x1), surfaceAt: (x) => src.surfaceAt(x), biomeAt: (x) => src.biomeAt(x), layersAt: (x) => src.layersAt(x) });
+    loadColumns(w, bp.x, bp.x + bp.w);
+    for (let y = top; y <= h.floorY - 2; y++) expect(w.getFg(sx, y), `rope ${y}`).toBe(T.ROPE);
+    // 從豎井口上方的地表走（4 鄰、不擋身體的格）到大廳地板
+    const goal = { x: (h.x0 + h.x1) >> 1, y: h.floorY - 1 }, seen = new Set<number>(), st = [sx, top - 1];
+    let found = false;
+    while (st.length && !found) {
+      const y = st.pop()!, x = st.pop()!;
+      if (x === goal.x && y === goal.y) found = true;
+      for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+        const k = ny * 100_000 + nx;
+        if (nx < bp.x || nx >= bp.x + bp.w || ny < bp.y - 1 || ny > h.floorY || seen.has(k) || isSolidTile(w.getFg(nx, ny))) continue;
+        seen.add(k); st.push(nx, ny);
+      }
+    }
+    expect(found).toBe(true);
+  }, 60_000);
+
+  it('回歸：rch-2 的 x0 = 895 地廳（floorY 範圍 390 列，只試 160 列時兩側都不通）現在接得出去', () => {
+    const h = hallsOf(['rch-2']).find((q) => q.info.x0 === 895)!;
+    expect(h).toBeDefined();
+    expect(reachOutside(h)).toBeGreaterThanOrEqual(300);
+  }, 60_000);
+
+  it('300 個種子的每一座家鄉地廳都接得出去（走得到外框外 ≥ 300 格：天然洞穴，或後備豎井通到地表）', () => {
+    let halls = 0, fallback = 0;
+    for (let k = 0; k < 300; k++) {
+      const seed = `hall300-${k}`, src = new Gen2Source(seed), w = worldOf(src);
+      for (const s of homeSites(src)) {
+        if (s.kind !== 'hall') continue;
+        const bp = bpAt(src, s.info.x0, 'hall', BP_DEEP);
+        loadColumns(w, bp.x - 80, bp.x + bp.w + 80);
+        halls++;
+        if (bp.y < s.info.y0 - 3) fallback++;
+        expect(reachOutside({ seed, info: s.info, w, bp, deep: 0, molten: 0 }), `${seed} hall ${s.info.x0}`).toBeGreaterThanOrEqual(300);
+      }
+    }
+    expect(halls).toBeGreaterThanOrEqual(300);
+    console.log(`[halls] ${halls} halls, ${fallback} via the fallback shaft`);
+  }, 600_000);
 
   it('錨點建構器在最窄的可用範圍（ANCHOR_MAX_W + 2 × SLOT_PAD）內也放得進去（不靠 placeX 的夾位置）', () => {
     let built = 0;
