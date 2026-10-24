@@ -21,6 +21,7 @@ import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 import { NIGHT_BEATS } from '../data/story.zh-TW';
 import { MAX_DAY, SPRING_AFTER, dayOf } from './calendar';
+import { SEASON_SCENES, isSceneId } from '../data/story/scenes';
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -1245,5 +1246,29 @@ describe('time and moon: the day in the save (Task 1)', () => {
     if (r.status !== 'ok') throw new Error(r.status);
     expect(r.state.story.day).toBeUndefined();
     expect(dayOf(r.state)).toBe(1);
+  });
+});
+
+describe('time and moon: the spring festival in the save (Task 7)', () => {
+  afterEach(() => { delete SEASON_SCENES.spring; });
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  const cleared = (): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.story.day = 30;
+    g.story.springDay = 24;
+    g.story.seen.push('season:spring');
+    return g;
+  };
+  it('a queued or seen season:spring loads, only once it is registered', () => {
+    expect(status(cleared())).toBe('corrupt');   // not written yet: not a scene
+    SEASON_SCENES.spring = 'season:spring';
+    expect(status(cleared())).toBe('ok');
+    const queued = newGame();
+    queued.story.queue.push('season:spring');
+    expect(status(queued)).toBe('ok');
+    expect(isSceneId('season:spring')).toBe(true);
+    expect(isSceneId('season:summer')).toBe(false);
   });
 });

@@ -4,7 +4,7 @@ import { MOODS_OF, type StoryMood } from '../render/artPaths';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { MEETINGS, type Meetable } from './meetings';
 import { numeral } from './numeral';
-import { CHAINS, type MoonPhase } from './story/chains';
+import { CHAINS, type MoonPhase, type Season } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
 import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
 
@@ -105,6 +105,8 @@ export const GROUP_TITLES: Record<GroupScene, string> = {
 };
 /** What each homecoming is called in the handbook, after her name (continuity fix 2). */
 const HOME_TITLES: Record<HomeOwner, string> = { chizuru: '鎮邊的小祠', safira: '廣場上的最後一支舞', sylvie: '窗外的新芽', liz: '店門口' };
+/** Time and moon ruling 7: what each season's scene is called in the handbook, after Chizuru's name (her page). */
+export const SEASON_TITLES: Partial<Record<Season, string>> = { spring: '春祭' };
 
 type Written = { lines: ScriptLine[]; summary: string };
 const N = (text: string, oath?: boolean): ScriptLine => (oath === undefined ? { who: 'narrator', text } : { who: 'narrator', text, if: { oath } });

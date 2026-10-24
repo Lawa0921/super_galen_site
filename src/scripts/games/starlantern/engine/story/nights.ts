@@ -1,6 +1,6 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { NIGHT_BEATS, type NightBeat, type NightBeats } from '../../data/story.zh-TW';
-import { ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, banterScene, banterTwo, type GroupScene, type SceneId, type StoryGate } from '../../data/story/scenes';
+import { ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, CLOSING_PIECES, GROUP_GATE, NIGHT_RANK, banterScene, banterTwo, type GroupScene, type SceneId, type StoryGate } from '../../data/story/scenes';
 import { memoryTone } from '../../data/story/tone';
 import type { GameState } from '../state';
 import { tonightMoon } from '../calendar';
@@ -189,8 +189,16 @@ function arrange(picks: SceneId[]): SceneId[] {
 export function planNight(s: GameState, day: SceneId[]): NightPlan {
   const before = owedPieces(s, day);
   if (day.some((id) => ALONE.includes(id))) return { before, night: [] };
+  // Time and moon ruling 7: the spring festival is the whole night; the memories wait for the next one (the owed rule stays)
+  if (day.some((id) => id.startsWith('season:'))) return { before, night: [] };
   const backlog = (s.story.untold ?? []).length - before.length;
   return { before, night: pickMemories(s, day, nightCap(backlog), before) };
+}
+
+/** Time and moon ruling 7: a night's items in their order (`NIGHT_RANK`: the group scene, the season's, the memories); each kind keeps its own order. */
+export function orderNight(ids: SceneId[]): SceneId[] {
+  const rank = (id: SceneId): number => (id.startsWith('group:') ? NIGHT_RANK.group : id.startsWith('season:') ? NIGHT_RANK.season : NIGHT_RANK.memory);
+  return [...ids].sort((a, b) => rank(a) - rank(b));
 }
 
 /**

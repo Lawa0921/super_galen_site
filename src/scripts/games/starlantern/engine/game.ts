@@ -7,7 +7,7 @@ import { STORY_FIGHT_ROUNDS, createBattle, planEnemies, resolveRound, rewards, w
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
-import { ACT_DEPTHS, ACT_NODES, ALONE, DEPARTURE_SCENES, FINALE_BOSS, FINALE_DEPTH, memScene, type SceneId } from '../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, ALONE, DEPARTURE_SCENES, FINALE_BOSS, FINALE_DEPTH, isNightSlot, memScene, type SceneId } from '../data/story/scenes';
 import { STORY } from '../data/story.zh-TW';
 import { PERKS, SHARD_IDS, isFragmentItem, shardGrade, type ShardGrade, type TownFragmentId } from '../data/story/fragments';
 import { absorb, fragmentItem, gainOf, hasPerk, lootFragments, returnFragment, sellShards, type AbsorbResult } from './story/fragments';
@@ -36,8 +36,8 @@ import { rollPortals } from './portals';
 import { nextLead } from './story/leads';
 import { afterWin, arrivalScenes, calendarOf, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
 import { NIGHT_BEATS, type ScriptLine } from '../data/story.zh-TW';
-import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, planNight, restoreNight } from './story/nights';
-import { dayOf, nextDay } from './calendar';
+import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, orderNight, planNight, restoreNight } from './story/nights';
+import { SPRING_AFTER, dayOf, nextDay } from './calendar';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeFail, RerollOpts } from './forge/cost';
@@ -116,9 +116,6 @@ function openStairs(m: FloorMap): void {
   m.down = m.boss;
   m.boss = null;
 }
-
-/** Story L spec §5: a group scene, the reaction slot's (it plays as the night's first item). */
-const isGroup = (id: SceneId): boolean => id.startsWith('group:');
 
 export class Game {
   state: GameState;
@@ -210,8 +207,8 @@ export class Game {
     // Story L spec §4.6: the night is not picked again; what tonight still holds untold plays, the owed ones first. A
     // group scene the reaction slot holds again leads the night (spec §5.3).
     const plan = restoreNight(g.state, day);
-    g.arrival = [...plan.before, ...day.filter((id) => !isGroup(id))];
-    g.night = [...day.filter(isGroup), ...plan.night];
+    g.arrival = [...plan.before, ...day.filter((id) => !isNightSlot(id))];
+    g.night = orderNight([...day.filter(isNightSlot), ...plan.night]);
     return g;
   }
 
@@ -761,6 +758,8 @@ export class Game {
       // The act-one flag rides along, so a game that skipped straight to the end still writes a save that loads.
       this.state.story.finaleCleared = true;
       this.state.story.act1Cleared = true;
+      // time and moon ruling 6: spring comes one turn of the moon after the finale's dive
+      this.state.story.springDay = dayOf(this.state) + SPRING_AFTER;
       this.cleared = 'finale';
       this.phase = 'clear';
     }
@@ -1328,10 +1327,11 @@ export class Game {
     const dawn = dawnMemory(this.state, [...plan.before, ...plan.night]);
     if (dawn) this.state.story.dawn = dawn;
     else delete this.state.story.dawn;
-    // Story L spec §4.5: a group scene in the reaction slot is the night's first item, after the day's notices.
-    const group = day.filter(isGroup);
-    this.arrival = [...plan.before, ...day.filter((id) => !isGroup(id))];
-    this.night = [...group, ...plan.night];
+    // Story L spec §4.5: a group scene in the reaction slot is the night's first item, after the day's notices; after the
+    // finale the slot may hold the spring festival instead (time and moon ruling 7). The night in `NIGHT_RANK` order.
+    const slot = day.filter(isNightSlot);
+    this.arrival = [...plan.before, ...day.filter((id) => !isNightSlot(id))];
+    this.night = orderNight([...slot, ...plan.night]);
     this.leadSaid = false;
     // time and moon (ruling 1): the return and its night end the dive's day; the town wakes on the next, saved with it
     this.state.story.day = nextDay(dayOf(this.state));

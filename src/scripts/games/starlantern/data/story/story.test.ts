@@ -114,7 +114,7 @@ describe('story data', () => {
   });
 
   it("memories and the reveal are night scenes; the day's scenes are not (time and moon Task 5)", () => {
-    expect(SCENE_TIME).toEqual({ 'rin-reveal': 'night' });
+    expect(SCENE_TIME).toEqual({ 'rin-reveal': 'night', 'season:spring': 'night' });   // Task 7 adds the spring festival
     expect(sceneTime('rin-reveal')).toBe('night');
     const memories = SCENE_IDS.filter((id) => sceneKind(id) === 'memory');
     expect(memories.length).toBe(57);

@@ -1,6 +1,6 @@
 import type { CharacterId } from '../../engine/types';
 import { CHARACTER_IDS } from '../characters';
-import { CHAINS } from './chains';
+import { CHAINS, type Season } from './chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './fragments';
 
 export type ActNode = 'act2' | 'act3' | 'act4';
@@ -21,7 +21,7 @@ export type SceneId =
   | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'rin-confess' | 'bellkeeper-arrives' | 'hero-alone'
   | 'finale-eve' | 'finale' | 'epilogue'
   | `mem:${CharacterId}:${number}` | `chat:${CharacterId}:${number}` | `town:${TownFragmentId}` | `home:${HomeOwner}`
-  | `banter:${BanterPair}:${number}` | GroupScene;
+  | `banter:${BanterPair}:${number}` | GroupScene | `season:${Season}`;
 
 /**
  * Story L (spec §5): the group scene after an act, `group:<act>`. It plays in the reaction slot of the act's own arrival or
@@ -35,6 +35,17 @@ export const groupScene = (node: ActNode): GroupScene => `group:${node}`;
  * is in `SCENE_IDS` too). Its gate, `GROUP_GATE`, is further down.
  */
 export const REACTIONS: Partial<Record<ActNode, GroupScene>> = { act2: 'group:act2', act3: 'group:act3', act4: 'group:act4' };
+
+/**
+ * Time and moon ruling 7: a season's scene, `season:<season>`, on the night of the first return its season brings once its
+ * conditions hold (`engine/story/events.ts` `nextSeasonScene`); never queued. Like `REACTIONS`, only the ones written are
+ * registered (the writing task adds each with its script); `isSceneId` reads it when called, `SCENE_IDS` when loaded.
+ */
+export const SEASON_SCENES: Partial<Record<Season, SceneId>> = {};
+/** Time and moon ruling 7 (review fix 4): the night's order. The group scene, then the season's scene, then the memories. */
+export const NIGHT_RANK = { group: 0, season: 1, memory: 2 } as const;
+/** A scene the reaction slot holds, played as the night's first item: a group scene, or (after the finale) a season's scene. */
+export const isNightSlot = (id: SceneId): boolean => id.startsWith('group:') || id.startsWith('season:');
 
 export const memScene = (id: CharacterId, n: number): SceneId => `mem:${id}:${n}`;
 
@@ -116,17 +127,18 @@ export const SCENE_IDS: SceneId[] = [
   ...HOME_OWNERS.map(homeScene),
   ...BANTER_PAIRS.flatMap((p) => Array.from({ length: BANTER_COUNT[p] ?? 0 }, (_, i) => banterScene(p, i + 1))),
   ...ACT_NODES.flatMap((n): SceneId[] => (REACTIONS[n] ? [REACTIONS[n]] : [])),   // story L: the written group scenes
+  ...Object.values(SEASON_SCENES),   // time and moon: the written season scenes
 ];
 
 const SCENE_SET = new Set<string>(SCENE_IDS);
-export const isSceneId = (v: unknown): v is SceneId => typeof v === 'string' && SCENE_SET.has(v);
+export const isSceneId = (v: unknown): v is SceneId => typeof v === 'string' && (SCENE_SET.has(v) || (Object.values(SEASON_SCENES) as string[]).includes(v));
 
 export type SceneKind = 'major' | 'memory' | 'chat' | 'town' | 'home' | 'banter' | 'group';
 export function sceneKind(id: SceneId): SceneKind {
   if (id.startsWith('mem:')) return 'memory';
   if (id.startsWith('chat:')) return 'chat';
   if (id.startsWith('town:')) return 'town';
-  if (id.startsWith('home:')) return 'home';
+  if (id.startsWith('home:') || id.startsWith('season:')) return 'home';   // time and moon ruling 7: a season's scene plays as a homecoming
   if (id.startsWith('banter:')) return 'banter';
   if (id.startsWith('group:')) return 'group';
   return 'major';
@@ -136,7 +148,7 @@ export function sceneKind(id: SceneId): SceneKind {
  * Time and moon ruling 5 (world spec §5.2, §11.1): the scenes the story sets at night beyond the memories (told at night in
  * town, story L). Rin's reveal is the night of the return that brings it. Anything else is day.
  */
-export const SCENE_TIME: Partial<Record<SceneId, 'night'>> = { 'rin-reveal': 'night' };
+export const SCENE_TIME: Partial<Record<SceneId, 'night'>> = { 'rin-reveal': 'night', 'season:spring': 'night' };
 /** Whether a scene happens by day or by night: a memory, or one `SCENE_TIME` names, is night. */
 export const sceneTime = (id: SceneId): 'day' | 'night' => (sceneKind(id) === 'memory' || SCENE_TIME[id] === 'night' ? 'night' : 'day');
 
@@ -144,6 +156,7 @@ const LONG_MEMORIES = new Set<SceneId>(['mem:hero:9', 'mem:hero:10', 'mem:rin:7'
 
 /** The most lines a scene may have (spec §8.2, §17). */
 export function lineCap(id: SceneId): number {
+  if (id.startsWith('season:')) return 10;   // time and moon ruling 7: a festival night, light
   switch (sceneKind(id)) {
     case 'major': return MAJOR_CAPS[id as MajorScene] ?? 12;
     case 'memory': return LONG_MEMORIES.has(id) ? 12 : 5;
@@ -286,5 +299,5 @@ export function heavyScene(id: SceneId): boolean {
  * (a companion's happy after-story; the warm line comes last), middle memory pieces, `first-return`, `act1-after`.
  * 6d adds its heavy scenes here.
  */
-export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', ...ACT_NODES, ...CLOSING_PIECES, 'finale', 'epilogue', 'romance:'];
+export const HEAVY_ARRIVAL: readonly string[] = ['rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', ...ACT_NODES, ...CLOSING_PIECES, 'finale', 'epilogue', 'romance:', 'season:'];
 export const isHeavyArrival = (id: string): boolean => HEAVY_ARRIVAL.some((h) => (h.endsWith(':') ? id.startsWith(h) : id === h));

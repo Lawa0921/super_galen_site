@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { ScriptLine } from '../../data/story.zh-TW';
-import { memScene, type SceneId } from '../../data/story/scenes';
+import { NIGHT_RANK, memScene, type SceneId } from '../../data/story/scenes';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
 import { NIGHT_BEATS } from '../../data/story.zh-TW';
-import { DAWN_BACKLOG, continuing, dawnMemory, eveMemories, nextBeat, nightCap, owedPieces, pickMemories, planNight, restoreNight, type NightBeats } from './nights';
+import { DAWN_BACKLOG, continuing, dawnMemory, eveMemories, nextBeat, nightCap, orderNight, owedPieces, pickMemories, planNight, restoreNight, type NightBeats } from './nights';
 import { tonightMoon } from '../calendar';
 import type { MoonPhase } from '../../data/story/chains';
 import type { NightBeat } from '../../data/story.zh-TW';
@@ -364,5 +364,19 @@ describe('time and moon: the beats keep to the moon (Task 6)', () => {
     expect(nextBeat(s, eve[0], eve[1], pool)).toEqual({ line: N('full', ['full']), at: 0 });
     s.story.day = 6;   // last night was day 5's, the waning moon
     expect(nextBeat(s, eve[0], eve[1], pool)?.at).toBe(1);
+  });
+});
+
+describe('time and moon: the festival night (Task 7)', () => {
+  it('a festival night tells no memory; they wait for the next night', () => {
+    const s = untold([m('noel', 1), m('safira', 1), m('bobby', 1)]);
+    expect(planNight(s, ['season:spring'])).toEqual({ before: [], night: [] });
+    expect(planNight(s, []).night.length).toBeGreaterThan(0);   // the next return's night picks as usual
+    expect(s.story.untold).toEqual([m('noel', 1), m('safira', 1), m('bobby', 1)]);
+  });
+
+  it('the night is ordered group, season, memory', () => {
+    expect(NIGHT_RANK).toEqual({ group: 0, season: 1, memory: 2 });
+    expect(orderNight([m('noel', 1), 'season:spring', m('liz', 1), 'group:act2'])).toEqual(['group:act2', 'season:spring', m('noel', 1), m('liz', 1)]);
   });
 });

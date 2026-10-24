@@ -1,10 +1,11 @@
 import { CHARACTER_IDS } from '../../data/characters';
-import { chainLength, type CalendarNow } from '../../data/story/chains';
+import { chainLength, type CalendarNow, type Season } from '../../data/story/chains';
 import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAYOFFS, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, EVE_DEPTH, GROUP_GATE, HEAVY_MAJORS, HOME_OWNERS, REACTIONS, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type GroupScene, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
 import type { CharacterId } from '../types';
 import { dayOf, moonOf, seasonAt } from '../calendar';
+import { SEASON_SCENES } from '../../data/story/scenes';
 
 /**
  * Where the story stands, from what the player has done (the handbook and the town lines follow it). An act counts once it
@@ -304,6 +305,10 @@ export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: bo
   // (they wait for the next return); a reload fills it too, as the main line owes it.
   const group = nextReaction(s, list, o.reactions);
   if (group) return [...list, group];
+  // Time and moon ruling 7 (review fix 4): after the finale the slot holds a season's scene instead (no group scene by
+  // then), with no chat or banter. Its night is the dive's day: a return has not moved the day yet; a reload has.
+  const season = nextSeasonScene(s, o.chat ? dayOf(s) : dayOf(s) - 1);
+  if (season) return [...list, season];
   if (!o.chat) return list;
   const heavyList = list.some(isHeavyArrival);
   const chat = (o.slot ?? ((st: GameState) => nextChat(st, CHAT_GATE, heavyList)))(s);
@@ -316,6 +321,17 @@ export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: bo
   const quiet = !!banter && list.length === 0 && !o.afterFinale && openPairs(s) >= 3;
   const second = quiet ? pickBanter({ ...s, story: { ...s.story, seen: [...s.story.seen, banter] } }, BANTER_GATE, BANTER_COUNT, banterTwo(banter).join('-')) : null;
   return [...list, ...(chat ? [chat] : []), ...(banter ? [banter] : []), ...(second ? [second] : [])];
+}
+
+/**
+ * Time and moon ruling 7: the season's scene for the night of `day`, or null. The spring festival (`SEASON_SCENES.spring`,
+ * once registered): after the finale, once that night is spring, Chizuru's homecoming seen before this return, and the
+ * festival not yet seen. Spring, once come, stays, and so does the homecoming: it cannot be missed.
+ */
+export function nextSeasonScene(s: GameState, day: number, seasons: Partial<Record<Season, SceneId>> = SEASON_SCENES): SceneId | null {
+  const id = seasons.spring;
+  if (!id || !s.story.finaleCleared || s.story.seen.includes(id) || !s.story.seen.includes(homeScene('chizuru'))) return null;
+  return seasonAt(storyStage(s), day, s.story.finaleCleared, s.story.springDay) === 'spring' ? id : null;
 }
 
 /**

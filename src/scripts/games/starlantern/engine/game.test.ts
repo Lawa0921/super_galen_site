@@ -40,7 +40,7 @@ import { TALENT_NODES } from '../data/talents';
 import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { fragmentItem } from './story/fragments';
 import type { FragmentGain } from './story/memories';
-import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, lineCap, memScene, REACTIONS, type SceneId } from '../data/story/scenes';
+import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, isNightSlot, lineCap, memScene, REACTIONS, SEASON_SCENES, type SceneId } from '../data/story/scenes';
 import { NIGHT_BEATS, STORY, type ScriptLine } from '../data/story.zh-TW';
 import { dawnMemory, planNight } from './story/nights';
 import { linesOf } from '../ui2/story';
@@ -50,7 +50,8 @@ import { RUNE_DROP, RUNE_SELL } from '../data/runeEconomy';
 import type { RuneRef } from '../data/runes';
 import { rollRune, RUNE_SALT, spotRuneRng } from './loot/runes';
 import { depthLevel } from './levels';
-import { dayOf, moonOf, tonightMoon } from './calendar';
+import { SPRING_AFTER, dayOf, moonOf, tonightMoon } from './calendar';
+import { orderNight } from './story/nights';
 import { calendarOf } from './story/events';
 import { MEMORY_PITY } from '../data/story/chains';
 
@@ -5615,5 +5616,83 @@ describe('time and moon: the moon in the labyrinth (Task 2)', () => {
       if (!ra || ra.end) break;
     }
     expect(a.battle).toEqual(b.battle);
+  });
+});
+
+describe('time and moon: the seasons and the spring festival in the game (Task 7)', () => {
+  afterEach(() => { delete SEASON_SCENES.spring; });
+
+  it('the finale writes the spring day', () => {
+    const f = finaleGame('normal');
+    f.state.story.day = 9;
+    expect(f.state.story.springDay).toBeUndefined();
+    expect(f.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(f, f.map().boss!);
+    expect(killAll(f).outcome).toBe('win');
+    expect([f.state.story.finaleCleared, f.state.story.springDay]).toEqual([true, 9 + SPRING_AFTER]);
+  });
+
+  it("spring comes SPRING_AFTER days after the finale's dive", () => {
+    const f = finaleGame('normal');
+    f.state.story.day = 9;
+    expect(f.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(f, f.map().boss!);
+    killAll(f);
+    expect(calendarOf(f.state).season).toBe('winter');   // the finale's own day: winter (acts 3 and 4 played)
+    f.restartAfterClear();
+    // each return's night is its dive's day: 9 (the finale's), 10, 11, 12 winter; 13 on, spring
+    const nights: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      nights.push(`${dayOf(f.state)}:${calendarOf(f.state, 'night').season}`);
+      expect(f.depart(MAIN, 1)).toEqual({ ok: true });
+      expect(f.returnToTown()).toBe(true);
+    }
+    expect(nights).toEqual(['10:winter', '11:winter', '12:winter', '13:spring', '14:spring', '15:spring']);
+  });
+
+  it('the festival leads the night and a reload plays it again until it is seen', () => {
+    SEASON_SCENES.spring = 'season:spring';
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    const st = g.state;
+    st.dungeon.reached.mainline = 30;
+    st.story.nodes = ['act2', 'act3', 'act4'];
+    st.story.queue = [];
+    st.story.seen = ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'group:act2', 'group:act3', 'group:act4', 'finale', 'epilogue', 'home:chizuru'];
+    st.story.act1Cleared = true;
+    st.story.finaleCleared = true;
+    Object.assign(st.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    st.party = meet(st.party, 'chizuru', 1);
+    st.party.roster.chizuru.memories = chainLength('chizuru');
+    for (let n = 1; n <= chainLength('chizuru'); n++) st.story.seen.push(memScene('chizuru', n));
+    st.party = meet(st.party, 'noel', 1);
+    st.party.roster.noel.memories = 1;
+    st.story.untold = ['mem:noel:1'];
+    st.story.day = 20;
+    st.story.springDay = 20;
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.night).toEqual(['season:spring']);   // the festival's night tells no memory
+    expect(g.arrival).not.toContain('season:spring');
+    expect(g.state.story.queue).not.toContain('season:spring');
+    expect(g.state.story.untold).toEqual(['mem:noel:1']);
+    expect(g.state.story.tonight).toEqual([]);
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves
+    const b = Game.boot(calm(), storage);
+    expect(b.night).toEqual(['season:spring']);
+    expect(b.sceneDone('season:spring', 'played')).toBe(true);
+    expect(b.state.story.seen).toContain('season:spring');
+    const c = Game.boot(calm(), storage);
+    expect(c.state.story.seen).toContain('season:spring');
+    expect(c.night).toEqual([]);
+    // the next return tells the memory that waited
+    expect(c.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(c.returnToTown()).toBe(true);
+    expect(c.night).toEqual(['mem:noel:1']);
+  });
+
+  it('the night is ordered group, season, memory, as Game.arrive puts it', () => {
+    expect(orderNight(['mem:noel:1', 'season:spring', 'group:act2'])).toEqual(['group:act2', 'season:spring', 'mem:noel:1']);
+    expect((['group:act2', 'season:spring', 'mem:noel:1'] as SceneId[]).map(isNightSlot)).toEqual([true, true, false]);
   });
 });
