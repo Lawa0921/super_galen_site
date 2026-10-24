@@ -408,6 +408,14 @@ export interface DiscoveryJSON {
   /** 領過的地標（tile index，排序）；沒有 = 都還沒領 */
   landmarks?: number[];
 }
+export interface DiscoveryOpts {
+  loreTotal?: number;
+  treasureItems?: readonly ItemId[];
+  /** 世界裡的地標 tile index（舊世界：全部；gen2：已登錄的） */
+  landmarks?: readonly number[];
+  /** gen2 / 烘焙世界傳 true：load 保留所有存檔的地標鍵、不經 landmarkSet 過濾 */
+  open?: boolean;
+}
 export interface CategoryStat { cat: RegionCat; label: string; found: number; total: number; }
 export interface JournalStats {
   cats: CategoryStat[];
@@ -437,17 +445,22 @@ export class Discovery {
   distance = 0;
   readonly loreTotal: number;
   readonly treasureItems: readonly ItemId[];
-  /** 世界裡所有地標的 tile index（存檔讀回時只認這些） */
+  /** 世界裡（已知的）地標的 tile index：可領的集合（closed 世界：存檔讀回時只認這些；gen2 世界由 knowLandmark 隨載入增加） */
   readonly landmarkSet: ReadonlySet<number>;
+  private readonly known: Set<number>;
+  /** true（gen2 / 烘焙世界）：load 保留存檔的所有地標鍵（生成的地標要等那一欄載入才登錄，讀檔時還不知道） */
+  private readonly open: boolean;
   private grid = new Map<number, number[]>();
   /** 外圍地區的查詢（無限世界；回傳 (x, y) 所在的外圍地區；null = 沒有外圍） */
   private outer: ((x: number, y: number) => Region[]) | null = null;
   private lastX: number | null = null;
   private lastY = 0;
 
-  constructor(readonly regions: readonly Region[], opts: { loreTotal?: number; treasureItems?: readonly ItemId[]; landmarks?: readonly number[] } = {}) {
+  constructor(readonly regions: readonly Region[], opts: DiscoveryOpts = {}) {
     this.loreTotal = opts.loreTotal ?? LORE.length;
-    this.landmarkSet = new Set(opts.landmarks ?? []);
+    this.known = new Set(opts.landmarks ?? []);
+    this.landmarkSet = this.known;
+    this.open = opts.open === true;
     this.treasureItems = opts.treasureItems ?? TREASURE_ITEMS;
     for (const r of regions) {
       for (let gy = Math.floor(r.y / CELL); gy <= Math.floor((r.y + r.h - 1) / CELL); gy++) {
@@ -501,6 +514,9 @@ export class Discovery {
     return true;
   }
 
+  /** 認得一個地標（World 登錄生成的地標時）：之後 claimLandmark 才領得到 */
+  knowLandmark(key: number): void { this.known.add(key); }
+
   /** 領地標；回傳是否第一次（不是地標 / 領過 → false） */
   claimLandmark(i: number): boolean {
     if (!this.landmarkSet.has(i) || this.landmarks.has(i)) return false;
@@ -549,7 +565,10 @@ export class Discovery {
     for (const id of ints(j.regions)) if (id < this.regions.length || isOuterRegionId(id) || isGen2RegionId(id) || isGen2SiteRegionId(id)) this.found.add(id);
     for (const id of ints(j.lore)) this.readLore(id);
     if (Array.isArray(j.treasures)) for (const t of j.treasures) if (isItemId(t)) this.gainTreasure(t);
-    for (const i of ints(j.landmarks)) this.claimLandmark(i);
+    // open：存檔的鍵都保留（領過的地標算已知，found ≤ total）；closed：只認 landmarkSet
+    for (const i of ints(j.landmarks)) {
+      if (this.open) { this.known.add(i); this.landmarks.add(i); } else this.claimLandmark(i);
+    }
     if (typeof j.depthRecord === 'number' && Number.isFinite(j.depthRecord) && j.depthRecord >= 0) this.depthRecord = Math.floor(j.depthRecord);
     if (typeof j.distance === 'number' && Number.isFinite(j.distance) && j.distance >= 0) this.distance = j.distance;
   }

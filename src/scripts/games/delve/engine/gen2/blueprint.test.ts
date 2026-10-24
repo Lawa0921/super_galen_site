@@ -2,7 +2,7 @@
 // 保證槽（P11）與排除區（出生點、主坑道）、structureId / slotOf 反查（陸地槽與海槽，P12）、主坑道蓋上結構後仍通。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
-import { BlueprintIndex, slotOf, structureId, BP_DEEP, BP_SURFACE, BP_UNDER, LAND_SLOT_W } from './blueprint';
+import { BlueprintIndex, slotOf, structureId, slotWidth, BP_DEEP, BP_SURFACE, BP_UNDER, LAND_SLOT_W } from './blueprint';
 import { HRng } from './hrng';
 import { shaftX, SHAFT_REACH } from './caves';
 import { SPAWN_X, VARIANT } from './layout';
@@ -110,23 +110,26 @@ describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
     expect(seen).toBeGreaterThan(20);
   });
 
-  it('非保證槽照機率：遺跡約 30% 的表層槽、小屋約 40% 的地下層槽（上限）', () => {
+  // M2a Task 2：地下層改成 170 格槽、小屋 0.35（各層槽數依 slotWidth 算）
+  it('非保證槽照機率：遺跡約 30% 的表層槽、小屋約 35% 的地下層槽（上限）', () => {
     const land = sampleRegions(src, { home: false, perSide: 6 });
-    let slots = 0;
-    for (const r of land) slots += Math.max(1, Math.floor((r.x1 - r.x0) / LAND_SLOT_W));
+    let slots = 0, under = 0;
+    for (const r of land) { slots += Math.max(1, Math.floor((r.x1 - r.x0) / LAND_SLOT_W)); under += Math.max(1, Math.floor((r.x1 - r.x0) / slotWidth(BP_UNDER))); }
     const lo = Math.min(...land.map((r) => r.x0)), hi = Math.max(...land.map((r) => r.x1));
     const bps = idx.overlapping(lo, hi).filter((b) => b.x >= lo && b.x < hi);
     const ruins = bps.filter((b) => b.kind === 'ruin').length, cabins = bps.filter((b) => b.kind === 'cabin').length;
-    // 12 片大陸各有 1 個保證槽；其餘槽最多 30% / 40%（建不成會更少）
+    // 12 片大陸各有 1 個保證槽；其餘槽最多 30% / 35%（建不成會更少）
     expect(ruins).toBeGreaterThan(12); expect(ruins).toBeLessThan(12 + slots * 0.45);
-    expect(cabins).toBeGreaterThan(12); expect(cabins).toBeLessThan(12 + slots * 0.55);
+    expect(cabins).toBeGreaterThan(12); expect(cabins).toBeLessThan(12 + under * 0.5);
   });
 
   it('structureId / slotOf：陸地槽與海槽都反查得回來（P12：海 region = 0、slot = SeaSlot.k、表層）', () => {
     const m = src.layout.landmass(1, 2), r = m.regions[1];
     const id = structureId(1, 2, 1, 1, BP_UNDER), q = slotOf(id, src.layout);
     expect(q.region).toBe(r); expect(q.layer).toBe(BP_UNDER);
-    expect(q.x0).toBe(r.x0 + LAND_SLOT_W); expect(q.x1).toBe(Math.floor((r.x1 - r.x0) / LAND_SLOT_W) > 2 ? r.x0 + 2 * LAND_SLOT_W : r.x1);
+    // 地下層的槽寬 = slotWidth(BP_UNDER)（M2a Task 2：170）
+    const uw = slotWidth(BP_UNDER);
+    expect(q.x0).toBe(r.x0 + uw); expect(q.x1).toBe(Math.floor((r.x1 - r.x0) / uw) > 2 ? r.x0 + 2 * uw : r.x1);
     // 最後一槽吃餘數
     const n = Math.floor((r.x1 - r.x0) / LAND_SLOT_W), last = slotOf(structureId(1, 2, 1, n - 1, BP_SURFACE), src.layout);
     expect(last.x1).toBe(r.x1); expect(last.x1 - last.x0).toBeGreaterThanOrEqual(LAND_SLOT_W); expect(last.x1 - last.x0).toBeLessThan(2 * LAND_SLOT_W);

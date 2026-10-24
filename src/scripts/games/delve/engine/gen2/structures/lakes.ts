@@ -15,7 +15,7 @@ import { BIOME } from '../../world';
 import { LIQ, LIQ_MAX } from '../../liquidKind';
 import { HRng } from '../hrng';
 import { LAVA_Y, type Profile2 } from '../profile';
-import { BpGrid, placeX, BP_SURFACE, BP_UNDER, BP_DEEP, type Blueprint, type BpCtx, type BpKind } from '../bpcore';
+import { BpGrid, placeX, emptyObjects, BP_SURFACE, BP_UNDER, BP_DEEP, type Blueprint, type BpCtx, type BpKind } from '../bpcore';
 
 // 湖壁 / 殼的厚度
 const WALL = 2, SHELL = 2;
@@ -63,7 +63,7 @@ export function buildLake(c: BpCtx): Blueprint | null {
       if (y < level + dep) { g.fg(x, y, T.AIR); g.liq(x, y, (LIQ_MAX << 8) | LIQ.WATER); } else { g.fg(x, y, soil); g.liq(x, y, 0); }
     }
   }
-  return { id: c.id, kind: 'lake', layer: BP_SURFACE, x: bx, y: top, w: bw, h: bottom - top, cells: g.cells(), chests: [] };
+  return { id: c.id, kind: 'lake', layer: BP_SURFACE, x: bx, y: top, w: bw, h: bottom - top, cells: g.cells(), chests: [], ...emptyObjects() };
 }
 
 export function buildCaveLake(c: BpCtx): Blueprint | null {
@@ -121,5 +121,5 @@ function ellipse(c: BpCtx, o: EllipseSpec): Blueprint | null {
     for (let dy = -SHELL; dy <= SHELL && !shell; dy++) for (let dx = -SHELL; dx <= SHELL; dx++) if (inside(x + dx, y + dy)) { shell = true; break; }
     if (shell) { g.fg(x, y, o.shell); g.liq(x, y, 0); }
   }
-  return { id: c.id, kind: o.kind, layer: o.layer, x: bx, y: by, w: bw, h: bh, cells: g.cells(), chests: [] };
+  return { id: c.id, kind: o.kind, layer: o.layer, x: bx, y: by, w: bw, h: bh, cells: g.cells(), chests: [], ...emptyObjects() };
 }

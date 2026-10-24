@@ -4,7 +4,7 @@
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T } from '../../tiles';
 import { HRng } from '../hrng';
-import { BpGrid, BP_SURFACE, SLOT_PAD, type Blueprint, type BpCtx } from '../bpcore';
+import { BpGrid, emptyObjects, BP_SURFACE, SLOT_PAD, type Blueprint, type BpCtx } from '../bpcore';
 
 export function buildCrate(c: BpCtx): Blueprint {
   // ctx.ver 0 的規則
@@ -15,5 +15,5 @@ export function buildCrate(c: BpCtx): Blueprint {
   const g = new BpGrid(cx - 1, wt - 2, 3, 2);
   for (let x = cx - 1; x <= cx + 1; x++) { g.fg(x, wt - 1, T.PLANKS); g.liq(x, wt - 1, 0); }
   g.fg(cx, wt - 2, T.CHEST);
-  return { id: c.id, kind: 'crate', layer: BP_SURFACE, x: cx - 1, y: wt - 2, w: 3, h: 2, cells: g.cells(), chests: [{ x: cx, y: wt - 2, kind: 'cabin' }] };
+  return { id: c.id, kind: 'crate', layer: BP_SURFACE, x: cx - 1, y: wt - 2, w: 3, h: 2, cells: g.cells(), chests: [{ x: cx, y: wt - 2, kind: 'cabin' }], ...emptyObjects() };
 }

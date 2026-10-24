@@ -48,6 +48,12 @@ export function sampleRegions(src: Gen2Source, o: { home: boolean; perSide: numb
   return out;
 }
 
+// 第 x 欄由上往下第一個實心格的 y（skip(y) = true 的格不算；整欄都不是 = 世界高）
+export function firstSolid(w: World, x: number, skip?: (y: number) => boolean): number {
+  for (let y = 0; y < w.height; y++) if (isSolidTile(w.getFg(x, y)) && !skip?.(y)) return y;
+  return w.height;
+}
+
 // 從 (x, y) 走 4 鄰的空氣格（沒有液體）、x ∈ [xLo, xHi]，走得到任一 y ≥ deepAt(x) 的格 = true
 export function bfsReachesDepth(w: World, x: number, y: number, deepAt: (x: number) => number, xLo: number, xHi: number): boolean {
   const H = w.height, wd = xHi - xLo + 1;

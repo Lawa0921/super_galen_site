@@ -63,6 +63,16 @@ export function chestLoot(seed: string, x: number, y: number, kind: ChestKind, d
   return slots;
 }
 
+/** 箱子的附加物品（藍圖指定的遺物等）：每件放進第一個空格，沒有空格就蓋最後一格（與舊生成器的 addTo 同語意）；回新陣列、不改 slots */
+export function withExtras(slots: readonly (Stack | null)[], extra: readonly ItemId[]): (Stack | null)[] {
+  const out = slots.slice();
+  for (const item of extra) {
+    const k = out.indexOf(null);
+    out[k >= 0 ? k : out.length - 1] = { item, count: 1 };
+  }
+  return out;
+}
+
 /** 只在箱子裡找得到的時裝（收集目標） */
 export const LOOT_ONLY_FASHION: readonly ItemId[] = ['maid_dress', 'maid_skirt', 'maid_headdress', 'witch_hat', 'feather_wings', 'ribbon_bow'];
 /** 一般箱子的時裝：工作台做得出來的那幾件 */

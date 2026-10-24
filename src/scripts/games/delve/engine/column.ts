@@ -3,6 +3,8 @@
 import { CHUNK } from './constants';
 import type { Stack } from './inventory';
 import type { RegionInfo } from './regionInfo';
+import type { GenSite } from './genTypes';
+import type { BpPot, BpTablet, BpLandmark } from './gen2/bpcore';
 
 /** 材質變體 0..2（座標雜湊；任何座標都有值，包括世界外） */
 export function variantHash(x: number, y: number): number {
@@ -59,6 +61,12 @@ export interface ColumnLayers { rock: number; deep: number; molten: number; }
 /** 生成器放的箱子（World 載入欄時登錄進 chests；格必須是箱子 tile） */
 export interface GenChest { x: number; y: number; slots: (Stack | null)[] }
 
+/**
+ * 生成器放的其他物件（World 載入欄時登錄）：陶罐的額外掉落 / 石碑的碑文 id / 地標——蓋上停放的 chunk 之後那格仍是對應 tile 才登錄、
+ * 卸載時刪掉（下次載入重登）；聚落每次載入都交給 World.onGenSites（重複由 SiteRegistry 去重）
+ */
+export interface GenExtras { pots: BpPot[]; tablets: BpTablet[]; landmarks: BpLandmark[]; sites: GenSite[] }
+
 /** 欄由誰生成（arrays 模式：中央以外；source 模式：每一欄。外圍生成器 / gen2；測試用簡單的雜湊來源） */
 export interface ColumnSource {
   readonly version: number;
@@ -73,6 +81,8 @@ export interface ColumnSource {
   regionAt?(x: number): RegionInfo;
   /** world x ∈ [x0, x1) 裡生成器放的箱子（每次呼叫回新的 slots；World 只登錄沒改過的 chunk）。選用 */
   objectsIn?(x0: number, x1: number): GenChest[];
+  /** world x ∈ [x0, x1) 裡生成器放的陶罐掉落 / 石碑 / 地標，與錨點在範圍內的聚落（每次呼叫回新物件）。選用 */
+  extrasIn?(x0: number, x1: number): GenExtras;
 }
 
 /** 一個 chunk 的六層（各 CHUNK*CHUNK，索引 ly*CHUNK + lx；網路層 / 存檔 / 停放用） */

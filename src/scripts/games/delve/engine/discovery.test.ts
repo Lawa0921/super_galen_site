@@ -108,6 +108,20 @@ describe('Discovery', () => {
     e.load({ ...j, regions: [...j.regions, 9999, -1, 'x'], lore: [...j.lore, 99] });
     expect(e.toJSON()).toEqual(d.toJSON());
   });
+  it('open：讀檔保留還沒登錄的地標鍵；knowLandmark 之後才領得到', () => {
+    const d = new Discovery([], { open: true });
+    d.load({ regions: [], lore: [], treasures: [], depthRecord: 0, distance: 0, landmarks: [99_000_123] });
+    expect([...d.landmarks]).toEqual([99_000_123]);
+    expect(d.claimLandmark(99_000_123)).toBe(false); // 領過了
+    expect(d.claimLandmark(5)).toBe(false);
+    d.knowLandmark(5);
+    expect(d.claimLandmark(5)).toBe(true);
+    expect(d.claimLandmark(5)).toBe(false);
+    expect(d.toJSON().landmarks).toEqual([5, 99_000_123]);
+    const closed = new Discovery([]);
+    closed.load({ regions: [], lore: [], treasures: [], depthRecord: 0, distance: 0, landmarks: [99_000_123] });
+    expect(closed.landmarks.size).toBe(0);
+  });
 });
 
 describe('Discovery 格網（負 x）', () => {

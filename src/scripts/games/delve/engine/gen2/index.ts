@@ -6,7 +6,7 @@
 // - 新功能寫 if (ctx.ver >= N) 分支；改既有功能要保留舊分支（ver 0 在 M1 期間尚未凍結，M2 起凍結）。
 // - GEN2_MIN_VERSION = 還支援讀取的最舊 ver；舊於它的鎖要先遷移。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
-import type { Column, ColumnLayers, ColumnSource, GenChest } from '../column';
+import type { Column, ColumnLayers, ColumnSource, GenChest, GenExtras } from '../column';
 import type { RegionInfo } from '../regionInfo';
 import { WORLD_H } from '../constants';
 import { Layout, newWorldOrigin, type Landmass, type LayoutOrigin } from './layout';
@@ -14,7 +14,7 @@ import { LockTable } from './locks';
 import { Profile2, SEA_Y } from './profile';
 import { Filler2, FILL_REACH } from './fill';
 import { BlueprintIndex, depthFrac } from './blueprint';
-import { chestLoot } from '../loot';
+import { chestLoot, withExtras } from '../loot';
 
 export const GEN2_VERSION = 0, GEN2_MIN_VERSION = 0;
 
@@ -66,7 +66,8 @@ export class Gen2Source implements ColumnSource {
     if (m) this.locks.lock(m.side, m.i, { ver: m.ver, culture: m.culture });
   }
 
-  surfaceAt(x: number): number { return this.profile.surfaceAt(x); }
+  // 地表 = 側寫的地表被 SURFACE 層藍圖的地面覆寫（遺跡的底等；與 BpCtx.groundAt 同一個函式，Q4）
+  surfaceAt(x: number): number { return this.blueprints.groundAt(x); }
   biomeAt(x: number): number { return this.profile.biomeAt(x); }
   layersAt(x: number): ColumnLayers { return this.profile.layersAt(x); }
   waterTopAt(x: number): number | null { return this.profile.waterTopAt(x); }
@@ -76,11 +77,23 @@ export class Gen2Source implements ColumnSource {
     if (!r) throw new RangeError(`gen2: x ${x} is outside gen2`);
     return r;
   }
-  // 生成物件：與 [x0, x1) 相交的藍圖裡 x ∈ [x0, x1) 的箱子，內容 = chestLoot(seed, x, y, kind, depthFrac)（每次回新的 slots）
+  // 生成物件：與 [x0, x1) 相交的藍圖裡 x ∈ [x0, x1) 的箱子，內容 = chestLoot(seed, x, y, kind, depthFrac) + 附加物品（每次回新的 slots）
   objectsIn(x0: number, x1: number): GenChest[] {
     const out: GenChest[] = [];
     for (const b of this.blueprints.overlapping(x0, x1)) for (const c of b.chests) {
-      if (c.x >= x0 && c.x < x1) out.push({ x: c.x, y: c.y, slots: chestLoot(this.seed, c.x, c.y, c.kind, depthFrac(this.profile, c.x, c.y)) });
+      if (c.x >= x0 && c.x < x1) out.push({ x: c.x, y: c.y, slots: withExtras(chestLoot(this.seed, c.x, c.y, c.kind, depthFrac(this.profile, c.x, c.y)), c.extra ?? []) });
+    }
+    return out;
+  }
+  // 其他生成物件：相交藍圖裡 x ∈ [x0, x1) 的陶罐掉落 / 石碑 / 地標，與錨點（外框 x）在 [x0, x1) 內的聚落（每次回新物件）
+  extrasIn(x0: number, x1: number): GenExtras {
+    const out: GenExtras = { pots: [], tablets: [], landmarks: [], sites: [] };
+    const inside = (x: number): boolean => x >= x0 && x < x1;
+    for (const b of this.blueprints.overlapping(x0, x1)) {
+      for (const p of b.pots) if (inside(p.x)) out.pots.push({ x: p.x, y: p.y, drops: p.drops.map((d) => ({ ...d })) });
+      for (const t of b.tablets) if (inside(t.x)) out.tablets.push({ ...t });
+      for (const l of b.landmarks) if (inside(l.x)) out.landmarks.push({ ...l });
+      if (b.site && inside(b.x)) out.sites.push(structuredClone(b.site));
     }
     return out;
   }

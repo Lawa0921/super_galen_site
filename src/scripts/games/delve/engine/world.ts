@@ -5,9 +5,9 @@
 // 呼叫端一律走與儲存無關的 API（getter / window / forEachChunk / tileXY / readChunk…）；鍵見 engine/coords.ts。
 import { CHUNK } from './constants';
 import { tileKey, tileXY as keyToXY, chunkKey, chunkXY, chunkOfX, localX, X_LIMIT, type WorldBounds } from './coords';
-import type { GenLayers } from './genTypes';
+import type { GenLayers, GenSite, LandmarkInfo } from './genTypes';
 import type { GenGrid } from './legacy/gen/grid';
-import { Column, COLUMN_LAYERS, variantHash, li, type ChunkData, type ColumnLayers, type ColumnSource } from './column';
+import { Column, COLUMN_LAYERS, variantHash, li, type ChunkData, type ColumnLayers, type ColumnSource, type GenExtras } from './column';
 import type { RegionInfo } from './regionInfo';
 import { SOLID_LUT, PLATFORM_LUT, CLIMB_LUT, T } from './tiles';
 import { cloneStack, type Stack } from './inventory';
@@ -94,8 +94,16 @@ export class World {
   layers: GenLayers | null = null;
   /** 箱子內容：key = tile 鍵（world.idx） */
   readonly chests = new Map<number, ChestSlots>();
-  /** 生成時指定的陶罐額外掉落（地城鑰匙），key = tile 鍵；由 seed 重算、不存檔 */
+  /** 生成時指定的陶罐額外掉落（地城鑰匙），key = tile 鍵；由 seed 重算、不存檔（source.extrasIn 的陶罐載入時登錄、卸載時刪掉） */
   readonly potDrops = new Map<number, Drop[]>();
+  /** 生成器放的石碑：tile 鍵 → 碑文 id（source.extrasIn；載入時登錄、卸載時刪掉，不存檔） */
+  readonly genTablets = new Map<number, number>();
+  /** 生成器放的地標：tile 鍵 → 地標資訊（source.extrasIn；載入時登錄、卸載時刪掉，不存檔） */
+  readonly genLandmarks = new Map<number, LandmarkInfo>();
+  /** 每次載入一欄時，source.extrasIn 在這一欄的聚落（重複由接收端去重；沒有聚落不呼叫） */
+  onGenSites: ((sites: GenSite[]) => void) | null = null;
+  /** 每登錄一個生成地標時呼叫（DelveGame：讓每個玩家的 Discovery 認得這個地標鍵） */
+  onGenLandmark: ((key: number, info: LandmarkInfo) => void) | null = null;
   /** 已用金鑰匙打開的金寶箱（tile 鍵）——存檔內容 */
   readonly unlocked = new Set<number>();
   /** 累計用掉的鑰匙數（存檔內容） */
@@ -145,6 +153,8 @@ export class World {
   private restoredEv: number[] = [];
   /** 生成物件登錄（source.objectsIn）：欄號 → 這一欄載入時登錄進 chests 的箱子 tile 鍵（卸載時丟掉沒改過的） */
   private readonly genChests = new Map<number, number[]>();
+  /** 生成物件登錄（source.extrasIn）：欄號 → 這一欄載入時登錄的陶罐掉落 / 石碑 / 地標 tile 鍵（卸載時全部刪掉） */
+  private readonly genExtras = new Map<number, { pots: number[]; tablets: number[]; landmarks: number[] }>();
   /** 上一次用到的欄（點查詢快取） */
   private lcx = NO_COL;
   private lcol: Column | null = null;
@@ -281,7 +291,8 @@ export class World {
   }
   /**
    * 卸載第 cx 欄：pinned 的拒絕（回 false）；有改過的 chunk（modifiedChunks ∪ liquidModified）→ 停放（noPark：丟掉）。
-   * 這一欄登錄的生成箱子：所在 chunk 沒改過（不在 modifiedChunks）的從 chests 刪掉（再載入時重新登錄）
+   * 這一欄登錄的生成箱子：所在 chunk 沒改過（不在 modifiedChunks）的從 chests 刪掉（再載入時重新登錄）；
+   * 登錄的陶罐掉落 / 石碑 / 地標一律刪掉（再載入時看 tile 重新登錄）
    */
   unloadColumn(cx: number): boolean {
     if (this.isPinned(cx) || !this.isResident(cx)) return false;
@@ -291,6 +302,13 @@ export class World {
       // 在 noPark 清掉修改標記之前判斷：改過的箱子與其它箱子一樣留在 chests
       for (const k of gen) if (!this.modifiedChunks.has(this.chunkIndex(cx, Math.floor(this.tileXY(k).y / CHUNK)))) this.chests.delete(k);
       this.genChests.delete(cx);
+    }
+    const ex = this.genExtras.get(cx);
+    if (ex) {
+      for (const k of ex.pots) this.potDrops.delete(k);
+      for (const k of ex.tablets) this.genTablets.delete(k);
+      for (const k of ex.landmarks) this.genLandmarks.delete(k);
+      this.genExtras.delete(cx);
     }
     for (let cy = 0; cy < this.chunksY; cy++) {
       const k = this.chunkIndex(cx, cy);
@@ -397,13 +415,17 @@ export class World {
   }
   /**
    * 剛載入的欄：source.objectsIn 的箱子登錄進 chests——所在 chunk 沒改過（改過的由停放 / 存檔內容負責）、
-   * chests 還沒有這個鍵、而且那格是箱子 tile；登錄的鍵記進 genChests（卸載時丟掉沒改過的）
+   * chests 還沒有這個鍵、而且那格是箱子 tile；登錄的鍵記進 genChests（卸載時丟掉沒改過的）。
+   * source.extrasIn：陶罐掉落 / 石碑 / 地標——（蓋上停放的 chunk 之後）那格仍是 T.POT / T.LORE_TABLET / 該地標 tile 就登錄，
+   * 不看 chunk 有沒有改過（打破 / 挖掉了 tile 就不在了）；鍵已經有了（別處登錄的）不蓋。聚落交給 onGenSites
    */
   private registerObjects(col: Column): void {
     const src = this.source;
-    if (!src || !src.objectsIn) return;
+    if (!src || (!src.objectsIn && !src.extrasIn)) return;
     const x0 = Math.max(col.cx * CHUNK, this.xMin), x1 = Math.min(col.cx * CHUNK + CHUNK, this.xMax);
     if (x0 >= x1) return;
+    if (src.extrasIn) this.registerExtras(col, src.extrasIn(x0, x1), x0, x1);
+    if (!src.objectsIn) return;
     let keys: number[] | null = null;
     for (const c of src.objectsIn(x0, x1)) {
       if (c.x < x0 || c.x >= x1 || c.y < 0 || c.y >= this.height) continue;
@@ -415,6 +437,33 @@ export class World {
       (keys ??= []).push(k);
     }
     if (keys) this.genChests.set(col.cx, keys);
+  }
+  private registerExtras(col: Column, e: GenExtras, x0: number, x1: number): void {
+    const reg = { pots: [] as number[], tablets: [] as number[], landmarks: [] as number[] };
+    // (x, y) 在這一欄、tile 是 t、map 還沒有這個鍵 → 鍵；否則 null
+    const at = (x: number, y: number, t: number, m: Map<number, unknown>): number | null => {
+      if (x < x0 || x >= x1 || y < 0 || y >= this.height || col.fg[li(x, y)] !== t) return null;
+      const k = this.idx(x, y);
+      return m.has(k) ? null : k;
+    };
+    for (const p of e.pots) {
+      const k = at(p.x, p.y, T.POT, this.potDrops);
+      if (k !== null) { this.potDrops.set(k, p.drops.map((d) => ({ ...d }))); reg.pots.push(k); }
+    }
+    for (const t of e.tablets) {
+      const k = at(t.x, t.y, T.LORE_TABLET, this.genTablets);
+      if (k !== null) { this.genTablets.set(k, t.id); reg.tablets.push(k); }
+    }
+    for (const l of e.landmarks) {
+      const k = at(l.x, l.y, l.tile, this.genLandmarks);
+      if (k === null) continue;
+      const info: LandmarkInfo = { x: l.x, y: l.y, tile: l.tile, site: l.site };
+      this.genLandmarks.set(k, info);
+      reg.landmarks.push(k);
+      this.onGenLandmark?.(k, info);
+    }
+    if (reg.pots.length || reg.tablets.length || reg.landmarks.length) this.genExtras.set(col.cx, reg);
+    if (e.sites.length) this.onGenSites?.(e.sites);
   }
   /**
    * 生成第 cx 欄：source 填邊界內的格（arrays 模式扣掉中央 [0, width)；source 模式整段）；

@@ -7,7 +7,7 @@
 // 全部格在水面下（y > waterTop）。本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T, W, isSolidTile } from '../../tiles';
 import { HRng } from '../hrng';
-import { BpGrid, BP_SURFACE, KEEP, SLOT_PAD, type Blueprint, type BpCtx } from '../bpcore';
+import { BpGrid, emptyObjects, BP_SURFACE, KEEP, SLOT_PAD, type Blueprint, type BpCtx } from '../bpcore';
 
 export function buildShipwreck(c: BpCtx): Blueprint {
   // ctx.ver 0 的規則
@@ -50,5 +50,5 @@ export function buildShipwreck(c: BpCtx): Blueprint {
   // 桅杆：從船內地板往上到船舷上 stub 格（蓋過甲板）
   for (let y = floorAt(mx) - 1; y >= gunwale - stub; y--) put(mx, y, T.BEAM);
   put(cx, chestY, T.CHEST);
-  return { id: c.id, kind: 'shipwreck', layer: BP_SURFACE, x: bx, y: top, w, h: keel - top + 1, cells: g.cells(), chests: [{ x: cx, y: chestY, kind: 'ruin' }] };
+  return { id: c.id, kind: 'shipwreck', layer: BP_SURFACE, x: bx, y: top, w, h: keel - top + 1, cells: g.cells(), chests: [{ x: cx, y: chestY, kind: 'ruin' }], ...emptyObjects() };
 }

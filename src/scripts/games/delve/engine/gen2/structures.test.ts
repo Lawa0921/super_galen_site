@@ -27,7 +27,7 @@ const count = (b: Blueprint, t: number): number => { let n = 0; for (let k = 0; 
 // 某片大陸某地區的某槽的 BpCtx
 function ctxOf(g: Gen2Source, seed: string, side: 1 | -1, i: number, region: number, slot: number, layer: 0 | 1 | 2): BpCtx {
   const id = structureId(side, i, region, slot, layer), q = slotOf(id, g.layout);
-  return { seed, s: seedInt(seed, 'g2-bp'), id, slotX0: q.x0, slotX1: q.x1, region: q.region, profile: g.profile, ver: 0 };
+  return { seed, s: seedInt(seed, 'g2-bp'), id, slotX0: q.x0, slotX1: q.x1, region: q.region, profile: g.profile, ver: 0, groundAt: (x) => g.surfaceAt(x) };
 }
 
 describe('gen2 structures: cabin / ruin', () => {

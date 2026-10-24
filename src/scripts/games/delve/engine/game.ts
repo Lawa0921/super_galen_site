@@ -848,6 +848,8 @@ export class DelveGame {
     this.world = content.world;
     // 客人副本：卸載的欄不停放（D4：回來時由房主重新同步）
     if (this.mode === 'replica') this.world.noPark = true;
+    // 生成的地標（gen2 藍圖）在那一欄載入時才登錄：每個玩家的 Discovery 都要認得它（還沒建 Discovery 的 actor 在建時補上）
+    this.world.onGenLandmark = (k) => { for (const a of this.actors.values()) a.discovery?.knowLandmark(k); };
     this.outerRegion = content.outer;
     // 傳送碑：出生點那顆在 spawn.x + 7 的生成地表上（舊世界 = 中央每欄陣列、gen2 = source 的側寫：挖掘 / 蓋東西不會讓碑移動）；
     // 外圍的由陸地查詢算（有界世界沒有）
@@ -891,7 +893,7 @@ export class DelveGame {
     this.halls = content.halls;
     this.landmarks = content.landmarks;
     for (const l of this.landmarks) this.landmarkAt.set(this.world.idx(l.x, l.y), l);
-    this.discovery = new Discovery(this.regions, { loreTotal: content.tablets.length, landmarks: [...this.landmarkAt.keys()] });
+    this.discovery = new Discovery(this.regions, { loreTotal: content.tablets.length, landmarks: this.landmarkKeys(), open: this.genKind === 'gen2' });
     this.discovery.setOuter(this.outerRegion);
     // 據點核心範圍的欄 pin 住（無限世界：居民在那裡活動，不卸載）
     this.settle.attach(this.world);
@@ -1051,7 +1053,7 @@ export class DelveGame {
     a.inventory = starterInventory();
     a.appearance = normalizeAppearance(character.appearance);
     a.explored = new ExploredMap(this.world.width, this.world.height, undefined, this.world);
-    a.discovery = new Discovery(this.regions, { loreTotal: this.tablets.length, landmarks: [...this.landmarkAt.keys()] });
+    a.discovery = new Discovery(this.regions, { loreTotal: this.tablets.length, landmarks: this.landmarkKeys(), open: this.genKind === 'gen2' });
     a.discovery.setOuter(this.outerRegion);
     this.actors.set(pid, a);
     this.evRead.set(pid, this.evBase + this.events.length);
@@ -2195,10 +2197,13 @@ export class DelveGame {
     this.markers = r.markers;
     return r.action;
   }
-  /** 古碑 (x,y) 的碑文編號 */
+  /** 古碑 (x,y) 的碑文編號：舊生成器的碑 > gen2 藍圖登錄的碑 > 座標雜湊 */
   tabletId(x: number, y: number): number {
-    return this.tabletAt.get(this.world.idx(x, y)) ?? ((x * 7 + y) % 14);
+    const k = this.world.idx(x, y);
+    return this.tabletAt.get(k) ?? this.world.genTablets.get(k) ?? ((x * 7 + y) % 14);
   }
+  /** 目前已知的地標鍵：舊生成器的 + gen2 已登錄的（新建的 Discovery 用） */
+  private landmarkKeys(): number[] { return [...this.landmarkAt.keys(), ...this.world.genLandmarks.keys()]; }
 
   // ── 床 / 傳送石 ───────────────────────────────────────
   /** 目前玩家（cur）的重生點（腳底 tile）：自己選的據點爐心 > 自己的床（床頭那格）> 出生點 */
@@ -4781,7 +4786,7 @@ export class DelveGame {
   // ── 地標 ──
   /** 領地標：第一次 → 獎勵 + 文字 + 線索；之後只顯示文字 */
   private claimLandmark(x: number, y: number): boolean {
-    const i = this.world.idx(x, y), info = this.landmarkAt.get(i), tile = this.world.getFg(x, y);
+    const i = this.world.idx(x, y), info = this.landmarkAt.get(i) ?? this.world.genLandmarks.get(i), tile = this.world.getFg(x, y);
     const r = landmarkReward(this.seed, tile, info?.site ?? '', this.depthFrac(x, y), i);
     if (!info || !this.discovery.claimLandmark(i)) {
       this.emit({ type: 'landmark', x, y, tile, first: false, title: r.title, text: '這裡已經搜過了。', clue: null, items: [], coins: 0 });

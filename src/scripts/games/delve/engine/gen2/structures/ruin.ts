@@ -1,10 +1,11 @@
 // ruin.ts — gen2 地表遺跡（照舊生成器的形狀）：寬 12–18、高 7–9 的石磚殘屋，一側坍塌，底 = 寬度內地表平均；
 // 起伏 > 5 或雪原就不放（回 null）。外框 = 屋子左右各多 1 欄：底以上清空、底以下到地表補該生態的土，箱子（'ruin'）、陶罐。
+// 地面覆寫（ground）：外框每欄的地面 = 底（屋子的石磚牆 / 屋頂是建物、不是地面）。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T, W } from '../../tiles';
 import { BIOME } from '../../world';
 import { HRng } from '../hrng';
-import { BpGrid, placeX, BP_SURFACE, type Blueprint, type BpCtx } from '../bpcore';
+import { BpGrid, placeX, emptyObjects, BP_SURFACE, type Blueprint, type BpCtx } from '../bpcore';
 
 const MAX_ROUGH = 5;
 
@@ -57,5 +58,6 @@ export function buildRuin(c: BpCtx, o: { force?: boolean } = {}): Blueprint | nu
     const px = rng.int(x + 1, x + w - 1);
     if (g.getFg(px, base - 1) === T.AIR) g.fg(px, base - 1, T.POT);
   }
-  return { id: c.id, kind: 'ruin', layer: BP_SURFACE, x: bx, y: top, w: bw, h: bottom - top, cells: g.cells(), chests: [{ x: cx, y: base - 1, kind: 'ruin' }] };
+  return { id: c.id, kind: 'ruin', layer: BP_SURFACE, x: bx, y: top, w: bw, h: bottom - top, cells: g.cells(), chests: [{ x: cx, y: base - 1, kind: 'ruin' }],
+    ...emptyObjects(), ground: { x0: bx, tops: new Int16Array(bw).fill(base) } };
 }

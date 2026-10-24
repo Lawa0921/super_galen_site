@@ -6,8 +6,9 @@ import { Gen2Source, GEN2_VERSION, GEN2_MIN_VERSION } from './index';
 import { fillCol, bytes } from './testUtil';
 import { fnv1a } from '../../net/codec';
 
-const GEN2_HASHES: Record<number, number> = { 0: 574236935 };
-const COLS = [-300, -40, -8, -4, -1, 0, 30, 65, 100, 131, 132, 140, 160, 220, 400];
+const GEN2_HASHES: Record<number, number> = { 0: 3943538295 };
+// 105：家鄉的遺跡（M2a Task 2 起地下層 170 格槽，原本涵蓋的小屋移位了）
+const COLS = [-300, -40, -8, -4, -1, 0, 30, 65, 100, 105, 131, 132, 140, 160, 220, 400];
 
 describe('gen2 版本雜湊鎖', () => {
   for (let v = GEN2_MIN_VERSION; v <= GEN2_VERSION; v++) {

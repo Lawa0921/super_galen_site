@@ -2,7 +2,8 @@
 // regionAt（地區 API）與生成物件登錄（source.objectsIn 的箱子：載入時登錄、改過的 chunk 不蓋、卸載時丟掉沒改過的）。
 import { describe, it, expect } from 'vitest';
 import { World, BIOME, LIQ } from './world';
-import { Column, li, type ColumnSource, type ColumnLayers, type GenChest } from './column';
+import { Column, li, type ColumnSource, type ColumnLayers, type GenChest, type GenExtras } from './column';
+import type { GenSite } from './genTypes';
 import type { RegionInfo } from './regionInfo';
 import { cloneStack, type Stack } from './inventory';
 import { T, W } from './tiles';
@@ -43,6 +44,31 @@ class ObjSource implements ColumnSource {
     if (CHEST_X >= x0 && CHEST_X < x1) out.push({ x: CHEST_X, y: CHEST_Y, slots: this.chestSlots.map((s) => (s ? cloneStack(s) : null)) });
     if (BOGUS_X >= x0 && BOGUS_X < x1) out.push({ x: BOGUS_X, y: BOGUS_Y, slots: [{ item: 'rope', count: 1 }] });
     return out;
+  }
+}
+
+/** M2a：陶罐掉落 / 石碑 / 地標 / 聚落（都在第 10 欄、地標與陶罐在同一個 chunk） */
+const POT = { x: 324, y: 420, drops: [{ item: 'magnet' as const, n: 1 }] };
+const TAB = { x: 326, y: 430, id: 9 };
+const LM = { x: 328, y: 425, tile: T.CAIRN, site: 'ruin' };
+const SITE_X = 330;
+const SITE: GenSite = { kind: 'hermit', key: 'hermit-test', rot: 0, at: { x: SITE_X, y: 300 } };
+
+class ExtraSource extends ObjSource {
+  override expectFg(x: number, y: number): number {
+    if (x === POT.x && y === POT.y) return T.POT;
+    if (x === TAB.x && y === TAB.y) return T.LORE_TABLET;
+    if (x === LM.x && y === LM.y) return LM.tile;
+    return super.expectFg(x, y);
+  }
+  extrasIn(x0: number, x1: number): GenExtras {
+    const at = (x: number): boolean => x >= x0 && x < x1;
+    return {
+      pots: at(POT.x) ? [{ ...POT, drops: POT.drops.map((d) => ({ ...d })) }] : [],
+      tablets: at(TAB.x) ? [{ ...TAB }] : [],
+      landmarks: at(LM.x) ? [{ ...LM }] : [],
+      sites: at(SITE_X) ? [SITE] : [],
+    };
   }
 }
 
@@ -133,6 +159,41 @@ describe("World central: 'source'", () => {
     expect(w.chests.has(k)).toBe(false);
     w.ensureColumn(10);
     expect(w.chests.get(k)).toEqual(src.chestSlots);
+  });
+
+  it('extras 登錄：tile 還在就登錄（chunk 改過也一樣）、tile 變了就不登錄、卸載清掉、聚落交給 onGenSites', () => {
+    const ex = new ExtraSource();
+    const w = new World(4200, 1200, { bounds: 'infinite', source: ex, central: 'source' }), seen: GenSite[][] = [], known: number[] = [];
+    w.onGenSites = (s) => seen.push(s);
+    w.onGenLandmark = (k) => known.push(k);
+    w.ensureColumn(10);
+    expect(w.potDrops.get(w.idx(POT.x, POT.y))).toEqual(POT.drops);
+    expect(w.genTablets.get(w.idx(TAB.x, TAB.y))).toBe(TAB.id);
+    expect(w.genLandmarks.get(w.idx(LM.x, LM.y))).toMatchObject({ tile: LM.tile, site: LM.site });
+    expect(seen).toEqual([[SITE]]);
+    expect(known).toEqual([w.idx(LM.x, LM.y)]);
+    w.setFg(LM.x + 3, LM.y, T.AIR); // 同 chunk 挖一格（setFg 記修改）
+    w.setFg(POT.x, POT.y, T.AIR); // 陶罐打破
+    w.unloadColumn(10);
+    expect(w.genLandmarks.size).toBe(0); expect(w.potDrops.size).toBe(0); expect(w.genTablets.size).toBe(0);
+    w.ensureColumn(10);
+    expect(w.genLandmarks.has(w.idx(LM.x, LM.y))).toBe(true); // chunk 改過、地標 tile 還在 → 重登
+    expect(w.genTablets.get(w.idx(TAB.x, TAB.y))).toBe(TAB.id);
+    expect(w.potDrops.has(w.idx(POT.x, POT.y))).toBe(false); // 打破了 → 不登錄
+    expect(seen).toEqual([[SITE], [SITE]]); // 每次載入都交出去（重複由 SiteRegistry 去重）
+    // 卸載只清自己登錄的鍵：別處的陶罐掉落（舊世界的地城鑰匙）不動
+    w.potDrops.set(w.idx(5000, 400), [{ item: 'torch', n: 1 }]);
+    w.unloadColumn(10);
+    expect([...w.potDrops.keys()]).toEqual([w.idx(5000, 400)]);
+  });
+
+  it('extras：那格不是對應 tile（陶罐 / 石碑 / 地標）就不登錄；地標 tile 不對也不登錄', () => {
+    class Wrong extends ExtraSource {
+      override expectFg(x: number, y: number): number { return (x === POT.x && y === POT.y) || (x === TAB.x && y === TAB.y) || (x === LM.x && y === LM.y) ? T.STONE : super.expectFg(x, y); }
+    }
+    const w = mk(new Wrong());
+    w.ensureColumn(10);
+    expect(w.potDrops.size).toBe(0); expect(w.genTablets.size).toBe(0); expect(w.genLandmarks.size).toBe(0);
   });
 
   it('regionAt：source 有就問 source；舊世界中央回 home', () => {

@@ -3,7 +3,7 @@
 // 形狀參數（寬 / 深 / 水位 / 橢圓 / 殼）；同一槽不同層的藍圖外框不與液體藍圖相交（後蓋的結構不會切開液體）。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
-import { BlueprintIndex, KEEP, liquidYields, type Blueprint, type BpKind } from './blueprint';
+import { BlueprintIndex, KEEP, liquidYields, emptyObjects, type Blueprint, type BpKind } from './blueprint';
 import { LAVA_Y } from './profile';
 import { worldOf, loadColumns, liquidInvariant, SEEDS5 } from './testUtil';
 import { LiquidSim } from '../liquid';
@@ -145,7 +145,7 @@ describe('gen2 static liquids: lake / cave_lake / lava_pool', () => {
   });
 
   it('liquidYields：液體讓給相交的非液體（任一層）與較淺層的液體；不相交、同層、非液體本身都不讓', () => {
-    const bp = (kind: BpKind, layer: 0 | 1 | 2, x: number, y: number): Blueprint => ({ id: 0, kind, layer, x, y, w: 10, h: 10, cells: new Int32Array(0), chests: [] });
+    const bp = (kind: BpKind, layer: 0 | 1 | 2, x: number, y: number): Blueprint => ({ id: 0, kind, layer, x, y, w: 10, h: 10, cells: new Int32Array(0), chests: [], ...emptyObjects() });
     const lake = bp('lake', 0, 0, 0), cave = bp('cave_lake', 1, 5, 5), lava = bp('lava_pool', 2, 5, 5);
     expect(liquidYields(lake, bp('cabin', 1, 5, 5))).toBe(true);
     expect(liquidYields(lava, bp('cabin', 1, 5, 5))).toBe(true);
