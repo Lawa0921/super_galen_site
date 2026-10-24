@@ -39,8 +39,7 @@ describe('companion grave faces', () => {
   });
 
   it('with no suitable face the portrait stays hidden, never the smiling normal', () => {
-    expect(face('noel', 'serious')).toBeUndefined();     // Noel has no serious face (and no serious line)
-    expect(face('safira', 'serious')).toBeUndefined();   // nor Safira
+    expect(face('noel', 'serious')).toBeUndefined();     // Noel has no serious face (and no serious line); wave 3 gave her pout
     expect(face('noel', 'sad', without(art.portrait('noel', 'sad')))).toBeUndefined();
     expect(face('scarlet', 'shaken', without(art.portrait('scarlet', 'shaken'), art.portrait('scarlet', 'sad')))).toBeUndefined();
     expect(face('selene', 'distant', without(art.portrait('selene', 'wistful'), art.portrait('selene', 'sad')))).toBeUndefined();
@@ -61,6 +60,21 @@ describe('companion grave faces', () => {
     expect(face('rin', 'serious')).toBe(art.portrait('rin', 'serious'));
     expect(face('rin', 'guarded')).toBe(art.portrait('rin', 'guarded'));
     expect(face('rin', 'sad')).toBe(art.portrait('rin', 'sad'));
+  });
+
+  // Wave 3 (art-factory/starlantern/runs/2026-10-24-faces-wave3; user approval 2026-10-24 「可以」): Safira's serious and
+  // Noel's pout, the last two faces the heavy script lacked.
+  it("Safira and Noel say their lines with their own wave-3 faces; the 5 heavy lines that hid the portrait show one", () => {
+    expect(face('safira', 'serious')).toBe(art.portrait('safira', 'serious'));
+    expect(face('noel', 'pout')).toBe(art.portrait('noel', 'pout'));
+    const s = state();
+    const said = (id: string, who: CharacterId) => STORY.scenes[id as keyof typeof STORY.scenes].lines.filter((l) => l.who === who && (l.mood === 'pout' || l.mood === 'surprised'));
+    const wave3 = [...said('mem:safira:4', 'safira'), ...said('mem:noel:1', 'noel'), ...said('mem:noel:2', 'noel'), ...said('finale', 'noel')];
+    expect(wave3.map((l) => `${l.who} ${l.mood}`)).toEqual(['safira surprised', 'noel pout', 'noel pout', 'noel pout', 'noel pout']);
+    for (const l of wave3) {
+      const want = l.who === 'safira' ? art.portrait('safira', 'serious') : art.portrait('noel', 'pout');   // surprised → serious (NEAR_FACE)
+      expect(speakerOf(l.who, s, ART, l.mood, true).face, l.text).toBe(want);
+    }
   });
 
   it("Rin's era picks the set by the same rule as her normal: the cracked bell before her oath, the oath set after", () => {
@@ -100,9 +114,12 @@ describe('companion grave faces', () => {
     for (const l of hushed) expect(speakerOf('liz', s, ART, 'hushed').face, l.text).toBe(art.portrait('liz', 'hushed'));
   });
 
-  it('every published face is a file under public/; wave 1 is the 18 companion faces, wave 2 the 6 of Lorne and Rin', () => {
+  it('every published face is a file under public/; waves 1 and 3 are the 20 companion faces, wave 2 the 6 of Lorne and Rin', () => {
     const companions = CHARACTER_IDS.filter((c) => NORMAL_SMILES.has(c));
-    expect(companions.reduce((n, c) => n + (PUBLISHED_FACES[c]?.length ?? 0), 0)).toBe(18);
+    expect(companions.reduce((n, c) => n + (PUBLISHED_FACES[c]?.length ?? 0), 0)).toBe(20);
+    expect(PUBLISHED_FACES.safira).toEqual(['sad', 'serious']);
+    expect(PUBLISHED_FACES.noel).toEqual(['sad', 'pout']);
+    expect(PUBLISHED_FACES.selene).toEqual(['sad', 'wistful']);   // her wistful stays the wave-1 a1 (wave-2 a2 and wave-3 a3 rejected)
     expect(PUBLISHED_FACES.hero).toEqual(['smile', 'sad', 'serious', 'distant']);
     expect(PUBLISHED_FACES.rin).toEqual(['smile', 'sad', 'serious', 'guarded']);
     expect(PUBLISHED_FACES['rin-oath']).toEqual(PUBLISHED_FACES.rin);
@@ -143,8 +160,11 @@ describe('faces in a heavy scene (staging S3)', () => {
   });
 
   it('with no near face either the portrait stays hidden, never the smiling normal', () => {
-    expect(heavyFace('safira', 'surprised')).toBeUndefined();   // Safira has no serious face
-    expect(heavyFace('noel', 'pout')).toBeUndefined();          // nor Noel
+    // Wave 3: Safira's surprised has her serious face to take now, and Noel's pout its own.
+    expect(heavyFace('safira', 'surprised')).toBe(art.portrait('safira', 'serious'));
+    expect(heavyFace('noel', 'pout')).toBe(art.portrait('noel', 'pout'));
+    expect(heavyFace('noel', 'pout', without(art.portrait('noel', 'pout')))).toBeUndefined();   // pout → serious, which Noel has not
+    expect(heavyFace('noel', 'surprised')).toBeUndefined();     // Noel has no serious face
     for (const id of NORMAL_SMILES) {
       for (const m of [...GRAVE, ...(Object.keys(NEAR_FACE) as StoryMood[])]) expect(heavyFace(id as CharacterId, m), `${id} ${m}`).not.toBe(art.portrait(id, 'normal'));
     }
@@ -211,6 +231,7 @@ describe('faces in a heavy scene (staging S3)', () => {
     const s = state();
     const tally: Record<string, number> = {};
     const smiling: string[] = [];
+    const hiddenHeavy: string[] = [];
     for (const id of SCENE_IDS) {
       const heavy = heavyScene(id);
       for (const l of STORY.scenes[id].lines) {
@@ -221,9 +242,11 @@ describe('faces in a heavy scene (staging S3)', () => {
         const k = !shown ? 'hidden' : shown === art.portrait(l.who, mood) ? 'exact' : shown !== normal ? 'near' : NORMAL_SMILES.has(l.who) || l.who === 'hero' ? 'smiling-normal' : 'calm-normal';
         tally[`${heavy ? 'heavy' : 'light'} ${k}`] = (tally[`${heavy ? 'heavy' : 'light'} ${k}`] ?? 0) + 1;
         if (heavy && k === 'smiling-normal' && !HAPPY.has(mood)) smiling.push(`${id} ${l.who} ${mood} ${l.text}`);
+        if (heavy && k === 'hidden') hiddenHeavy.push(`${id} ${l.who} ${mood} ${l.text}`);
       }
     }
     expect(smiling).toEqual([]);
+    expect(hiddenHeavy).toEqual([]);   // face wave 3: no heavy line in the whole script hides the portrait
     expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(400);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line; story L Tasks 12-13: -6 (chat:sylvie:1 without Bobby, :2 one reading, chat:chizuru:2 without the reading that has not met Bobby); story L Tasks 14-15: -4 (chat:selene:2 -2, hero-alone -2, rin-confess -1, the finale +1); the cold read: Scarlet's silent fallback is narration (-1)
     // 395 character lines. Before S3 the 15 heavy lines of a non-glad mood without art showed a companion's smile, and 60
     // heavy lines of Lorne and Rin their normal: 75 lines, which now take a near face (35), Rin's calm normal (17) or no
@@ -240,12 +263,15 @@ describe('faces in a heavy scene (staging S3)', () => {
       // face wave 2 (2026-10-24; this tally reads every line before Rin's oath): Lorne's and Rin's heavy lines take their own
       // face (exact +49): from a near face (-11: Lorne's distant had borrowed his sad), Rin's calm normal (-20) and no
       // portrait (-18, Lorne's serious, resolve and surprised). The 5 still hidden are companions' (Safira, Noel: no serious face).
-      'heavy exact': 157, 'heavy near': 25, 'heavy hidden': 5, 'heavy smiling-normal': 22,
+      // face wave 3 (2026-10-24): Noel's four heavy pout lines take her pout (exact +4), Safira's surprised her serious
+      // (near +1): none hidden now.
+      'heavy exact': 161, 'heavy near': 26, 'heavy smiling-normal': 22,
       // story L Tasks 12-13: light exact -5 (Bobby's and Sylvie's lines in chat:sylvie:1, Sylvie's bed line in :2, two of
       // Chizuru's bell lines), Lorne's smiling normal -1 (his two stand-ins gone, the tofu line moved to chat:sylvie:1)
       // story L Task 15: chat:selene:2 reads one way, two of Selene's lines fewer
       // face wave 2: Rin's light guarded and serious lines (5) and Lorne's one light serious line now show their own face
-      'light exact': 92, 'light calm-normal': 1, 'light smiling-normal': 98,
+      // face wave 3: Noel's three light pout lines show her pout, no longer her smile
+      'light exact': 95, 'light calm-normal': 1, 'light smiling-normal': 95,
     });
   });
 });

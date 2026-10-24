@@ -36,8 +36,9 @@ describe('artPaths', () => {
     // + the rune icons (art step 9, G4; user approval 2026-10-24 「可以」): 32 runes and 2 slot states, at 14 and 16 = 501
     // Art step 9, G3 and G4 (user approval 2026-10-24): every one of the 105 skills at 16 and 14 (+210), the 26 plan 4
     // skill icons they re-derive retired (-26), 7 ailment and 14 mechanic chip icons at 14 (+21) = 706
-    expect(urls).toHaveLength(706);
-    expect(new Set(urls).size).toBe(706);
+    // + Safira's serious and Noel's pout, faces wave 3 (user approval 2026-10-24 「可以」) = 708
+    expect(urls).toHaveLength(708);
+    expect(new Set(urls).size).toBe(708);
     for (const id of Object.keys(SKILLS)) {
       expect(urls, id).not.toContain(art.icon(id));
       for (const px of SKILL_ICON_SIZES) expect(urls, id).toContain(art.skillIcon(id, px));

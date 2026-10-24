@@ -35344,6 +35344,112 @@
       },
       "approved_by": "controller 2026-10-24: G4 full set drawn in the style the user approved on the sample page (user 2026-10-24, answers 1-4), QA passed; publication directed by the coordinator",
       "approved_on": "2026-10-24"
+    },
+    "char-safira-portrait-serious": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-safira-portrait-serious/char-safira-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-serious\\a1\\char-safira-portrait-serious-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "block": 9,
+        "size": [
+          121,
+          122
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-safira-portrait-serious",
+      "batch": "faces-safira",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-serious.png",
+      "depends_on": [
+        "char-safira-portrait",
+        "char-safira-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          121,
+          122
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 9,
+        "base_block": 9,
+        "palette_share": 0.999
+      },
+      "approved_by": "user 2026-10-24: approved wave 3 (runs/2026-10-24-faces-wave3), 「可以」"
+    },
+    "char-noel-portrait-pout": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-noel-portrait-pout/char-noel-portrait-pout.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-pout\\a1\\char-noel-portrait-pout-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 10,
+        "size": [
+          118,
+          119
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-noel-portrait-pout",
+      "batch": "faces-noel",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-pout.png",
+      "depends_on": [
+        "char-noel-portrait",
+        "char-noel-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          118,
+          119
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.998
+      },
+      "approved_by": "user 2026-10-24: approved wave 3 (runs/2026-10-24-faces-wave3), 「可以」"
     }
   },
   "requa_log": [

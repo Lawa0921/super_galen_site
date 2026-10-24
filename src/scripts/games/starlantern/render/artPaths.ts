@@ -73,7 +73,9 @@ export const PUBLISHED_FACES: Record<string, StoryMood[]> = {
   // Companion faces, wave 1 (art-factory/starlantern/runs/2026-10-23-faces-wave1; user approval 2026-10-23): the grave faces
   // the script uses, plus Liz's hushed.
   scarlet: ['serious', 'sad', 'vow', 'shaken'], chizuru: ['serious', 'sad', 'solemn'], sylvie: ['serious', 'sad'],
-  selene: ['sad', 'wistful'], safira: ['sad'], bobby: ['serious', 'sad'], liz: ['serious', 'sad', 'hushed'], noel: ['sad'],
+  // Wave 3 (art-factory/starlantern/runs/2026-10-24-faces-wave3; user approval 2026-10-24 「可以」): Safira's serious and
+  // Noel's pout, so no heavy line of the script hides its portrait any more.
+  selene: ['sad', 'wistful'], safira: ['sad', 'serious'], bobby: ['serious', 'sad'], liz: ['serious', 'sad', 'hushed'], noel: ['sad', 'pout'],
 };
 /**
  * Art ids whose `normal` portrait smiles (story depth final review, checked by eye on the published art): every companion.
