@@ -454,6 +454,16 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
+    // Time and moon (Task 4): Selene's pieces not found yet say the moon each waits for, the longest hints in the list.
+    name: 'handbook-moon', visit: async (page) => {
+      await go(page, 'handbook');
+      await page.locator('.slx-handbook .slx-hb-list [role=option][data-id=selene]').click();
+      const full = page.locator('.slx-handbook .slx-hb-list [role=option]').filter({ hasText: `・${T.ui2.calendar.moon.full}` });
+      await expect(full.first()).toBeVisible();
+      await expect(page.locator('.slx-handbook .slx-hb-list [role=option]').filter({ hasText: `・${T.ui2.calendar.moon.new}` })).toHaveCount(1);
+    },
+  },
+  {
     // The first workshop visit with runes in the bag tells the rune tutorial (plan 8g).
     name: 'rune-tutorial', visit: async (page, w) => {
       await go(page, 'workshop');

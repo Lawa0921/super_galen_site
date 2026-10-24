@@ -611,7 +611,8 @@ export const T = {
       stages: { prologue: '序章', act1: '第一幕', act2: '第二幕', act3: '第三幕', act4: '第四幕', after: '終幕' },
       pieces: (found: number, total: number) => `${found}/${total}`,
       codex: { none: '無', rarity: { legendary: '傳說', unique: '獨特', set: '套裝' }, weak: (list: string) => `弱點：${list}`, weakUnknown: '弱點：？？？', setPieces: (have: number, total: number) => `${have}/${total} 件` },
-      pieceHint: (regions: string, deep: boolean) => `${regions}・${deep ? '深處' : '淺層'}`,
+      /** Where a piece lies, and the moon it waits for (time and moon ruling 4): 「本道、霜凍之地・深處・滿月」. */
+      pieceHint: (regions: string, deep: boolean, moon?: string) => `${regions}・${deep ? '深處' : '淺層'}${moon ? `・${moon}` : ''}`,
       hint: '←→ 換分頁　確定：選取　取消：返回',
       hintReadonly: '←→ 換分頁　確定：重看　取消：回到迷宮',
       empty: '還沒有可以重看的場景。',
@@ -632,8 +633,15 @@ export const T = {
         affixNote: '詞綴寫在敵人頭上那一列的最前面；選目標時，說明列會寫出它的作用。',
       },
     },
+    /** The calendar's words (time and moon ruling 2, 8): the moon's names are the battle's (`mech.phase`; waxing is its first quarter). */
+    calendar: {
+      moon: { new: '新月', waxing: '上弦', full: '滿月', waning: '下弦' },
+      season: { spring: '春', summer: '夏', autumn: '秋', winter: '冬' },
+    },
     town: {
       place: '邊境小鎮 露米亞',
+      /** The HUD window under the place plate: the season and today's moon, 「秋・下弦」. */
+      calendar: (season: string, moon: string) => `${season}・${moon}`,
       facilities: { guild: '冒險者公會', shop: '道具店', inn: '旅館', gate: '傳送門廣場', forge: '鍛造屋', handbook: '冒險者手冊', settings: '設定' },
       soon: (name: string) => `${name}的新介面正在製作中，下一階段開放。`,
       toTitle: '要回到標題畫面嗎？上次存檔之後的進度不會保留。',

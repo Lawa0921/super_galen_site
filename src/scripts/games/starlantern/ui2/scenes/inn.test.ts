@@ -4,6 +4,7 @@ import { constRng, memoryStorage } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { InnScene } from './inn';
 import { LEGACY_LINEUP } from '../../engine/party';
+import { TownScene } from './town';
 
 function setup(storage = memoryStorage()) {
   const game = new Game(constRng(0.5), storage, undefined, 0, LEGACY_LINEUP);
@@ -200,5 +201,20 @@ describe('InnScene', () => {
     s.onAction('confirm');                                           // cursor starts on 否
     expect(game.state.party.roster.scarlet.talents).toEqual({ 'scarlet-t01': 1 });
     expect(game.state.gold).toBe(gold);
+  });
+});
+
+describe('InnScene: the calendar (time and moon Task 4)', () => {
+  it("after a night at the inn the town shows the next day's moon", async () => {
+    const { game, s, root } = setup();
+    expect(game.state.story.day).toBeUndefined();
+    s.onAction('confirm');                 // 休息
+    s.onAction('up');                      // 是
+    s.onAction('confirm');
+    await vi.waitFor(() => expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('已存檔。'));
+    expect(game.state.story.day).toBe(2);
+    const town = document.createElement('div');
+    new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity).enter(town);
+    expect(town.querySelector('.slx-calendar')!.textContent).toBe('秋・新月');
   });
 });

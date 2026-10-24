@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { MAX_DAY, MOON_EPOCH, MOON_ORDER, SPRING_AFTER, dayOf, moonOf, nextDay, seasonAt, tonightMoon } from './calendar';
 import { newGame } from './state';
 import { STAGES } from '../data/story/scenes';
+import { T } from '../data/text.zh-TW';
 
 describe('time and moon: the calendar (Task 1)', () => {
   it('the moon turns once every four days, full on day 0', () => {
@@ -45,5 +46,14 @@ describe('time and moon: the calendar (Task 1)', () => {
     expect(seasonAt('after', 500, true, 24)).toBe('spring');
     // a cleared finale with no springDay reads as spring already (a read default, not a migration)
     expect(seasonAt('after', 7, true)).toBe('spring');
+  });
+
+  it("the calendar names match the battle's", () => {
+    const moon = T.ui2.calendar.moon;
+    expect([moon.new, moon.full, moon.waning]).toEqual([T.mech.phase.new, T.mech.phase.full, T.mech.phase.waning]);
+    expect(moon.waxing).toBe(T.mech.phase.first);   // the calendar's waxing is the battle's first quarter
+    expect(MOON_ORDER.map((m) => moon[m])).toEqual(['新月', '上弦', '滿月', '下弦']);
+    expect(T.ui2.calendar.season).toEqual({ spring: '春', summer: '夏', autumn: '秋', winter: '冬' });
+    expect(T.ui2.town.calendar('秋', '下弦')).toBe('秋・下弦');
   });
 });

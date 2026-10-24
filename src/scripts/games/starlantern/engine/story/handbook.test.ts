@@ -7,6 +7,7 @@ import { chainLength, CHAINS } from '../../data/story/chains';
 import { TOWN_FRAGMENTS } from '../../data/story/fragments';
 import { CHAT_COUNT, HOME_OWNERS, SCENE_IDS, STAGES, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
+import { T } from '../../data/text.zh-TW';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
@@ -390,5 +391,32 @@ describe("the handbook's leads (6c Task 16)", () => {
     expect(leads.current).toBeNull();
     expect(leads.followed).toHaveLength(8);
     expect(leads.allMet).toBe(true);
+  });
+});
+
+describe('time and moon: the handbook says the moon (Task 4)', () => {
+  it('a moon piece not found yet says its moon in the hint', () => {
+    const s = withMemories(fresh(), 'selene', 0);
+    const where = CHAINS.selene.pieces[0].regions.map((r) => REGIONS[r].name).join('、');
+    const hints = handbook(s).memories.find((m) => m.id === 'selene')!.pieces.map((p) => p.hint);
+    expect(hints).toEqual([`${where}・淺層`, `${where}・深處・滿月`, `${where}・深處`, `${where}・深處・滿月`, `${where}・深處・新月`]);
+    // no other chain waits on a moon: no moon in its hints
+    for (const id of CHARACTER_IDS.filter((c) => c !== 'selene')) {
+      for (const p of handbook(withMemories(fresh(), id, 0)).memories.find((m) => m.id === id)!.pieces) expect(p.hint, id).not.toMatch(/[新滿]月|[上下]弦/);
+    }
+  });
+
+  it('a piece under more than one moon names them all', () => {
+    expect(T.ui2.handbook.pieceHint('本道', true, '新月、滿月')).toBe('本道・深處・新月、滿月');
+    expect(T.ui2.handbook.pieceHint('本道', false)).toBe('本道・淺層');
+    const where = CHAINS.selene.pieces[1].regions.map((r) => REGIONS[r].name).join('、');
+    const piece = CHAINS.selene.pieces[1];
+    const was = piece.when;
+    piece.when = { moon: ['new', 'full'] };
+    try {
+      expect(handbook(withMemories(fresh(), 'selene', 0)).memories.find((m) => m.id === 'selene')!.pieces[1].hint).toBe(`${where}・深處・新月、滿月`);
+    } finally {
+      piece.when = was;
+    }
   });
 });

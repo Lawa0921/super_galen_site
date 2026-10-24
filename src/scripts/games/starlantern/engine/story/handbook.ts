@@ -36,10 +36,14 @@ const TRUTH_SCENE: Record<Stage, SceneId> = {
   prologue: 'prologue', act1: 'act1-after', act2: 'act2', act3: 'act3', act4: 'act4', after: 'finale',
 };
 
-/** How deep a piece lies (spec §7.6): the example reads 「熾焰之地・深處」. */
+/**
+ * How deep a piece lies (spec §7.6): the example reads 「熾焰之地・深處」. A piece that waits on the moon says which (time
+ * and moon ruling 4): 「…・深處・滿月」, several joined by 「、」.
+ */
 const hintOf = (id: CharacterId, i: number): string => {
   const p = CHAINS[id].pieces[i];
-  return T.ui2.handbook.pieceHint(p.regions.map((r) => REGIONS[r].name).join('、'), p.minDepth >= 6);
+  const moon = p.when?.moon?.map((m) => T.ui2.calendar.moon[m]).join('、');
+  return T.ui2.handbook.pieceHint(p.regions.map((r) => REGIONS[r].name).join('、'), p.minDepth >= 6, moon);
 };
 
 /** Titles, newness and the seen-only rule, for one state. */

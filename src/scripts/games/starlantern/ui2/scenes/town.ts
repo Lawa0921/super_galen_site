@@ -7,7 +7,7 @@ import type { ArtIndex } from '../../render/textures';
 import type { Game } from '../../engine/game';
 import type { ItemInstance } from '../../engine/types';
 import { BAG_SIZE } from '../../engine/loot/bag';
-import { storyStage } from '../../engine/story/events';
+import { calendarOf, storyStage } from '../../engine/story/events';
 import { bellkeeperPool } from '../../engine/story/keeper';
 import { el, itemName } from '../../ui/dom';
 import { gearIconUrl } from '../gearArt';
@@ -42,8 +42,10 @@ export class TownScene implements Scene {
   private view!: MenuView;
   private menuWin!: HTMLElement;
   private backEl!: HTMLElement;
-  /** The place plate and the gold: the town's HUD, put away while a story scene plays (staging S1). */
+  /** The place plate, the calendar and the gold: the town's HUD, put away while a story scene plays (staging S1). */
   private hud: HTMLElement[] = [];
+  /** Time and moon ruling 8: the season and today's moon, in its own window under the place plate. */
+  private calEl!: HTMLElement;
   private talk: Dialogue;
   private root!: HTMLElement;
   private ask: MenuView | null = null;
@@ -64,9 +66,15 @@ export class TownScene implements Scene {
     const menu = new Menu(FACILITIES.map((id) => ({ id, label: t.facilities[id] })));
     this.view = new MenuView(menu, { pick: (it) => this.pick(it.id, it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.askTitle(); } });
     const bg = this.ctx.art.has(art.scene('town')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('town'), alt: '' } })] : [];
+    const place = win('slx-place', [document.createTextNode(t.place)]);
+    this.calEl = win('slx-calendar', [document.createTextNode(this.calendarText())]);
+    const gold = win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)]);
+    this.hud = [place, this.calEl, gold];
     root.append(el('div', { class: 'slx-scene slx-town' }, [
       ...bg,
-      ...(this.hud = [win('slx-place', [document.createTextNode(t.place)]), win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)])]),
+      // the place plate and the calendar beside it, in one row (time and moon ruling 8); then the gold
+      el('div', { class: 'slx-town-hud' }, [place, this.calEl]),
+      gold,
       (this.menuWin = win('slx-town-menu', [this.view.el])),
       (this.backEl = backControl(() => this.onAction('cancel'))),
       el('p', { class: 'slx-keyhint', text: T.ui2.hints.town }),
@@ -109,6 +117,21 @@ export class TownScene implements Scene {
     if (!notice || RETURNS.has(notice)) says.push(this.dayLine(says.length === 0));
     for (const l of says) await this.speak(l.who, l.text);
     await this.playNight();
+    this.refreshCalendar();
+  }
+
+  /** 「秋・下弦」: the season the story stands in and today's moon (time and moon ruling 8). */
+  private calendarText(): string {
+    const c = calendarOf(this.ctx.game.state);
+    return T.ui2.town.calendar(T.ui2.calendar.season[c.season], T.ui2.calendar.moon[c.moon]);
+  }
+
+  /**
+   * Reads the calendar again (review fix 9): the scenes of this arrival may have moved the story (act 3 turns autumn to
+   * winter), so the HUD says it as it comes back.
+   */
+  refreshCalendar(): void {
+    this.calEl.textContent = this.calendarText();
   }
 
   /**
@@ -146,6 +169,7 @@ export class TownScene implements Scene {
   private putAway(on: boolean): void {
     if (on) { this.menuWin.setAttribute('inert', ''); this.backEl.setAttribute('inert', ''); }
     for (const e of [this.menuWin, this.backEl, ...this.hud]) e.classList.toggle('slx-cmd-hidden', on);
+    if (!on) this.refreshCalendar();
   }
 
   /**

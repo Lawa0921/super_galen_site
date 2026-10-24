@@ -3540,6 +3540,34 @@ test.describe('starlantern', () => {
     expect(w.errors).toEqual([]);
   });
 
+  // Time and moon (Task 4): the town's calendar under its name, the season and today's moon; a night at the inn turns the
+  // moon. Once on a desktop window, once on a touch phone held upright, where the calendar stays whole and clear of the gold.
+  for (const phone of [false, true]) {
+    test(`the town shows the season and the moon, and a night at the inn turns it (time and moon)${phone ? ', on a phone' : ''}`, async ({ page }) => {
+      await fitTo(page, 1280, 720);
+      const w = await setup(page, 7);
+      if (phone) await asPhone(page);
+      const cal = page.locator('.slx-town .slx-calendar');
+      await expect(cal).toHaveText('秋・下弦');   // a new game: day 1
+      await w.choose('.slx-town', '旅館');
+      await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+      await w.choose('.slx-inn', '休息');
+      await w.key('ArrowUp'); await w.key('Enter');
+      await expect(page.locator('.slx-talk .slx-text')).toHaveText('已存檔。', { timeout: 5000 });
+      await w.closeTalk();
+      await w.key('Escape');                                  // back to town
+      await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+      await expect(cal).toHaveText('秋・新月');   // the next day
+      expect(await cal.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
+      const at = (await cal.boundingBox())!;
+      for (const other of ['.slx-gold', '.slx-place', '.slx-town-menu']) {
+        const b = (await page.locator(`.slx-town ${other}`).boundingBox())!;
+        expect(apart(at, b), `the calendar ${JSON.stringify(at)} clear of ${other} ${JSON.stringify(b)}`).toBe(true);
+      }
+      expect(w.errors).toEqual([]);
+    });
+  }
+
   // Story L Task 3c: a piece found in the labyrinth is told that night in town, after the day's lines, under the night's card;
   // the town comes back only when the night is over. Once on a desktop window, once on a touch phone held upright (sideways
   // stage), where every line of the night fits its box.
