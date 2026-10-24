@@ -1,0 +1,121 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>符文圖示樣本</title><style>
+:root{color-scheme:dark;--bg:#16182a;--card:#22253a;--ink:#e6e6f0;--dim:#9a9cb4;--ok:#7fd49a;--bad:#ff8a8a;--warn:#ffd27a}
+@font-face{font-family:'Cubic 11';src:url('../../../../public/assets/fonts/cubic-11/Cubic_11.woff2') format('woff2'),url('/assets/fonts/cubic-11/Cubic_11.woff2') format('woff2')}
+body{margin:0;padding:16px;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,"Noto Sans TC",sans-serif}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:17px;margin:28px 0 8px}p.note{color:var(--dim);margin:0 0 12px;max-width:72em}
+.card{background:var(--card);border-radius:8px;padding:12px;margin:0 0 12px;display:inline-block;vertical-align:top;margin-right:12px}
+img{image-rendering:pixelated}.px{display:inline-block;vertical-align:middle;margin:0 8px 0 0;background:#0a0e22;padding:4px}
+table{border-collapse:collapse}td,th{border-bottom:1px solid #333752;padding:4px 8px;text-align:left;font-size:13px}.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+/* game look (styles/_starlantern-ui.scss): window, 12px pixel font, menu rows */
+.zoom1{zoom:1}.zoom2{zoom:2}.zoom3{zoom:3}
+.win{display:inline-block;vertical-align:top;background:rgb(10,14,34);border:2px solid #c9a35a;box-shadow:inset 0 0 0 1px #6e5a2e;border-radius:3px;padding:6px 8px;
+ font:12px/16px 'Cubic 11','Noto Sans TC','Microsoft JhengHei',sans-serif;color:#f1ead8;width:300px;margin:0 12px 12px 0;-webkit-font-smoothing:none}
+.head{color:#b7ae9a;margin-bottom:2px}.opt{display:flex;align-items:center;gap:4px;padding:2px 8px 2px 16px;position:relative;min-height:16px}
+.sel{color:#e8c46a;background:linear-gradient(90deg,rgba(232,196,106,.2),transparent)}.sel::before{content:'→';position:absolute;left:3px}
+.right{margin-left:auto;white-space:nowrap}.dim{color:#b7ae9a}.gold{color:#e8c46a}.blue{color:#9fc1ff}.down{color:#ff8a7a}
+.ico16{width:16px;height:16px;flex:none}.ico14{width:14px;height:14px;flex:none;vertical-align:-3px}.gear{width:26px;height:26px;flex:none}
+.cell{position:relative;width:20px;height:20px;flex:none;display:inline-block;vertical-align:middle}.cell>img{position:absolute;left:2px;top:2px;width:16px;height:16px}
+.cell>i{position:absolute;inset:0;border:5px solid transparent;border-image-slice:5;border-image-repeat:repeat;image-rendering:pixelated}
+/* after the border shorthand (it resets border-image), at the same specificity plus one */
+.cell>i.f-magic{border-image-source:url(img/rarity-magic.png)}.cell>i.f-rare{border-image-source:url(img/rarity-rare.png)}.cell>i.f-epic{border-image-source:url(img/rarity-epic.png)}.cell>i.f-legendary{border-image-source:url(img/rarity-legendary.png)}
+.skill{display:flex;align-items:center;gap:4px;padding:2px 0}.skill .name{margin-right:4px}.slots{display:inline-flex;gap:1px}
+.t-common{color:#e8e8e8}.t-magic{color:#6f9cff}.t-rare{color:#ffd84a}.t-epic{color:#b36bff}.t-legendary{color:#ff9a3c}
+.off{filter:grayscale(1);opacity:.55}
+</style></head><body>
+<h1>符文圖示樣本（第 ⑨ 步 G4，待核准）</h1>
+<p class="note">codex（gpt-6-astra）一張 3×2 表，2 次生成，採用 a2（a1 石面裂紋與細線在 16 px 變雜點，退件）。每格做兩張原尺寸圖：16×16（主體長邊 14，技能工坊）與 14×14（長邊 12，戰鬥選單），覆蓋取樣、不放大，跟 G3 技能圖示同一條管線。階級不畫進圖，用已核准的稀有度外框（普通無框）。灰階的那顆是「裝著但沒生效」（◇）用 CSS 濾鏡的提案，不是另一張圖。尚未接進遊戲，也還沒核准。</p>
+<p><a href="montage-4x.png">montage-4x.png</a></p>
+<h2>每張圖：1×、2×、4×</h2>
+<div class="card"><b>空插槽</b> <span style="color:var(--dim)">rune-slot-empty</span><br><span class="px"><img src="img/icon-rune-slot-empty-16.png" width="16" height="16" alt=""></span><span class="px"><img src="img/icon-rune-slot-empty-16.png" width="32" height="32" alt=""></span><span class="px"><img src="img/icon-rune-slot-empty-16.png" width="64" height="64" alt=""></span><br><span class="px"><img src="img/icon-rune-slot-empty-14.png" width="14" height="14" alt=""></span><span class="px"><img src="img/icon-rune-slot-empty-14.png" width="28" height="28" alt=""></span><span class="px"><img src="img/icon-rune-slot-empty-14.png" width="56" height="56" alt=""></span><br></div>
+<div class="card"><b>已鑲插槽</b> <span style="color:var(--dim)">rune-slot-filled</span><br><span class="px"><img src="img/icon-rune-slot-filled-16.png" width="16" height="16" alt=""></span><span class="px"><img src="img/icon-rune-slot-filled-16.png" width="32" height="32" alt=""></span><span class="px"><img src="img/icon-rune-slot-filled-16.png" width="64" height="64" alt=""></span><br><span class="px"><img src="img/icon-rune-slot-filled-14.png" width="14" height="14" alt=""></span><span class="px"><img src="img/icon-rune-slot-filled-14.png" width="28" height="28" alt=""></span><span class="px"><img src="img/icon-rune-slot-filled-14.png" width="56" height="56" alt=""></span><br></div>
+<div class="card"><b>灼焰</b> <span style="color:var(--dim)">rune-flame</span><br><span class="px"><img src="img/icon-rune-flame-16.png" width="16" height="16" alt=""></span><span class="px"><img src="img/icon-rune-flame-16.png" width="32" height="32" alt=""></span><span class="px"><img src="img/icon-rune-flame-16.png" width="64" height="64" alt=""></span><br><span class="px"><img src="img/icon-rune-flame-14.png" width="14" height="14" alt=""></span><span class="px"><img src="img/icon-rune-flame-14.png" width="28" height="28" alt=""></span><span class="px"><img src="img/icon-rune-flame-14.png" width="56" height="56" alt=""></span><br></div>
+<div class="card"><b>擴散</b> <span style="color:var(--dim)">rune-spread</span><br><span class="px"><img src="img/icon-rune-spread-16.png" width="16" height="16" alt=""></span><span class="px"><img src="img/icon-rune-spread-16.png" width="32" height="32" alt=""></span><span class="px"><img src="img/icon-rune-spread-16.png" width="64" height="64" alt=""></span><br><span class="px"><img src="img/icon-rune-spread-14.png" width="14" height="14" alt=""></span><span class="px"><img src="img/icon-rune-spread-14.png" width="28" height="28" alt=""></span><span class="px"><img src="img/icon-rune-spread-14.png" width="56" height="56" alt=""></span><br></div>
+<div class="card"><b>暴擊觸發</b> <span style="color:var(--dim)">rune-on-crit</span><br><span class="px"><img src="img/icon-rune-on-crit-16.png" width="16" height="16" alt=""></span><span class="px"><img src="img/icon-rune-on-crit-16.png" width="32" height="32" alt=""></span><span class="px"><img src="img/icon-rune-on-crit-16.png" width="64" height="64" alt=""></span><br><span class="px"><img src="img/icon-rune-on-crit-14.png" width="14" height="14" alt=""></span><span class="px"><img src="img/icon-rune-on-crit-14.png" width="28" height="28" alt=""></span><span class="px"><img src="img/icon-rune-on-crit-14.png" width="56" height="56" alt=""></span><br></div>
+<div class="card"><b>雙重詠唱</b> <span style="color:var(--dim)">rune-twin-cast</span><br><span class="px"><img src="img/icon-rune-twin-cast-16.png" width="16" height="16" alt=""></span><span class="px"><img src="img/icon-rune-twin-cast-16.png" width="32" height="32" alt=""></span><span class="px"><img src="img/icon-rune-twin-cast-16.png" width="64" height="64" alt=""></span><br><span class="px"><img src="img/icon-rune-twin-cast-14.png" width="14" height="14" alt=""></span><span class="px"><img src="img/icon-rune-twin-cast-14.png" width="28" height="28" alt=""></span><span class="px"><img src="img/icon-rune-twin-cast-14.png" width="56" height="56" alt=""></span><br></div>
+<h2>階級外框（20×20 格，16 圖示置中，外框九宮格 slice 5；1× 與 3×）</h2>
+<div class="card"><b>灼焰</b><br><span class="px"><span class="cell"><img class="" src="img/icon-rune-flame-16.png" alt=""></span></span><span class="px zoom3"><span class="cell"><img class="" src="img/icon-rune-flame-16.png" alt=""></span></span><span class="t-common">普通</span><br><span class="px"><span class="cell"><img class="" src="img/icon-rune-flame-16.png" alt=""><i class=f-magic></i></span></span><span class="px zoom3"><span class="cell"><img class="" src="img/icon-rune-flame-16.png" alt=""><i class=f-magic></i></span></span><span class="t-magic">魔法</span><br></div>
+<div class="card"><b>擴散</b><br><span class="px"><span class="cell"><img class="" src="img/icon-rune-spread-16.png" alt=""><i class=f-rare></i></span></span><span class="px zoom3"><span class="cell"><img class="" src="img/icon-rune-spread-16.png" alt=""><i class=f-rare></i></span></span><span class="t-rare">稀有</span><br><span class="px"><span class="cell"><img class="" src="img/icon-rune-spread-16.png" alt=""><i class=f-epic></i></span></span><span class="px zoom3"><span class="cell"><img class="" src="img/icon-rune-spread-16.png" alt=""><i class=f-epic></i></span></span><span class="t-epic">史詩</span><br></div>
+<div class="card"><b>暴擊觸發</b><br><span class="px"><span class="cell"><img class="" src="img/icon-rune-on-crit-16.png" alt=""><i class=f-magic></i></span></span><span class="px zoom3"><span class="cell"><img class="" src="img/icon-rune-on-crit-16.png" alt=""><i class=f-magic></i></span></span><span class="t-magic">魔法</span><br></div>
+<div class="card"><b>雙重詠唱</b><br><span class="px"><span class="cell"><img class="" src="img/icon-rune-twin-cast-16.png" alt=""><i class=f-legendary></i></span></span><span class="px zoom3"><span class="cell"><img class="" src="img/icon-rune-twin-cast-16.png" alt=""><i class=f-legendary></i></span></span><span class="t-legendary">傳說</span><br></div>
+<h2>放進遊戲畫面的樣子（字型 Cubic 11 12px；1× 與 2×）</h2><p class="note">技能圖示用 G3 已生成的 16×16 原尺寸圖（尚未發布），裝備圖示是已發布的 26×26。每塊下方灰字「（舊）」是現在的文字符號。</p>
+<div class="zoom1"><div class="win"><div class="dim" style="margin-bottom:4px">狀態頁技能列（statusTabs.ts:321，現在是「火之星彈 ◆○」）</div>
+<div class="head">技能</div>
+<div class="skill"><img class="ico16" src="img/skill-fire-star-16.png" alt=""><span class="name">火之星彈</span><span class="slots"><img class="ico14 " src="img/icon-rune-flame-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span><span class="dim">單體</span><span class="right">TP 4　3/5</span></div>
+<div class="skill"><img class="ico16" src="img/skill-flame-wave-16.png" alt=""><span class="name">炎之波</span><span class="slots"><img class="ico14 " src="img/icon-rune-slot-filled-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span><span class="dim">全體</span><span class="right">TP 7　1/5</span></div>
+<div class="skill"><img class="ico16" src="img/skill-aimed-shot-16.png" alt=""><span class="name">瞄準射擊</span><span class="slots"><img class="ico14 " src="img/icon-rune-spread-14.png" alt=""><img class="ico14 off" src="img/icon-rune-on-crit-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span><span class="dim">單體</span><span class="right">TP 5　5/5</span></div>
+<div class="skill dim">（舊）<img class="ico16" src="img/skill-fire-star-16.png" alt=""><span class="name">火之星彈</span><span class="gold">◆○</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">技能工坊：技能清單（workshop.ts:431，右欄是插槽）</div>
+<div class="head">技能</div>
+<div class="opt sel">火之星彈<span class="right"><img class="ico14 " src="img/icon-rune-flame-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span></div>
+<div class="opt">炎之波<span class="right"><img class="ico14 " src="img/icon-rune-slot-filled-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span></div>
+<div class="opt">瞄準射擊<span class="right"><img class="ico14 " src="img/icon-rune-spread-14.png" alt=""><img class="ico14 off" src="img/icon-rune-on-crit-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span></div>
+<div class="opt dim">（舊）火之星彈<span class="right gold">◆○</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">技能工坊：插槽（workshop.ts:461，20×20 格＋稀有度外框）</div>
+<div class="head">插槽</div>
+<div class="opt sel">槽 1 <span class="cell"><img class="" src="img/icon-rune-flame-16.png" alt=""><i class="f-magic"></i></span><span class="t-magic">灼焰（魔法）</span></div>
+<div class="opt">槽 2 <span class="cell"><img class="" src="img/icon-rune-slot-empty-16.png" alt=""></span><span class="dim">空</span></div>
+<div class="opt dim">槽 3<span class="right">Lv35 開放</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">技能工坊：符文清單（workshop.ts:503–516）</div>
+<div class="head">符文</div>
+<div class="opt">拆下</div>
+<div class="opt sel"><span class="cell"><img class="" src="img/icon-rune-flame-16.png" alt=""></span><span class="t-common">灼焰</span><span class="t-common">（普通）</span><span class="right">袋子 3</span></div>
+<div class="opt"><span class="cell"><img class="" src="img/icon-rune-spread-16.png" alt=""><i class="f-rare"></i></span><span class="t-rare">擴散</span><span class="t-rare">（稀有）</span><span class="right">袋子 1</span></div>
+<div class="opt"><span class="cell"><img class="" src="img/icon-rune-spread-16.png" alt=""><i class="f-epic"></i></span><span class="t-epic">擴散</span><span class="t-epic">（史詩）</span><span class="right">袋子 1</span></div>
+<div class="opt"><span class="cell"><img class="" src="img/icon-rune-on-crit-16.png" alt=""><i class="f-magic"></i></span><span class="t-magic">暴擊觸發</span><span class="t-magic">（魔法）</span><span class="right down">需要：傷害</span></div>
+<div class="opt"><span class="cell"><img class="" src="img/icon-rune-twin-cast-16.png" alt=""><i class="f-legendary"></i></span><span class="t-legendary">雙重詠唱</span><span class="t-legendary">（傳說）</span><span class="right">袋子 1</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">戰鬥技能選單（battle.ts:310 badge，14×14）</div>
+<div class="opt sel">火之星彈<img class="ico14 " src="img/icon-rune-flame-14.png" alt=""><span class="right">TP 4</span></div>
+<div class="opt">炎之波<img class="ico14 " src="img/icon-rune-slot-filled-14.png" alt=""><span class="right">TP 7</span></div>
+<div class="opt">瞄準射擊<img class="ico14 " src="img/icon-rune-spread-14.png" alt=""><img class="ico14 " src="img/icon-rune-on-crit-14.png" alt=""><span class="right">TP 5</span></div>
+<div class="opt dim">（舊）瞄準射擊<span class="blue">◆◆</span><span class="right">TP 5</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">道具店：和已發布裝備圖示同列（shop.ts:56、270）</div>
+<div class="opt"><img class="gear" src="img/gear-crystal-blade.png" alt="">晶刃<span class="right">320 G</span></div>
+<div class="opt"><img class="gear" src="img/gear-copper-ring.png" alt="">銅戒指<span class="right">80 G</span></div>
+<div class="opt sel"><span class="cell"><img class="" src="img/icon-rune-spread-16.png" alt=""></span><span class="t-common">擴散（普通）</span><span class="right">60 G</span></div>
+<div class="opt"><span class="cell"><img class="" src="img/icon-rune-flame-16.png" alt=""><i class="f-magic"></i></span><span class="t-magic">灼焰（魔法）</span><span class="right">150 G</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">建議 build 卡片（builds.ts:365，◆有／○缺）</div>
+<div class="dim"><img class="ico14 " src="img/icon-rune-slot-filled-14.png" alt=""> 鑲得上（鑲著或袋子裡有）</div>
+<div>瞄準射擊　<img class="ico14 " src="img/icon-rune-spread-14.png" alt=""><span class="t-rare">擴散（稀有）</span>　<img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""><span class="down">灼焰</span></div>
+<div class="dim">（舊）瞄準射擊　◆擴散（稀有）　<span class="down">○灼焰</span></div></div></div>
+<div class="zoom2"><div class="win"><div class="dim" style="margin-bottom:4px">狀態頁技能列（statusTabs.ts:321，現在是「火之星彈 ◆○」）</div>
+<div class="head">技能</div>
+<div class="skill"><img class="ico16" src="img/skill-fire-star-16.png" alt=""><span class="name">火之星彈</span><span class="slots"><img class="ico14 " src="img/icon-rune-flame-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span><span class="dim">單體</span><span class="right">TP 4　3/5</span></div>
+<div class="skill"><img class="ico16" src="img/skill-flame-wave-16.png" alt=""><span class="name">炎之波</span><span class="slots"><img class="ico14 " src="img/icon-rune-slot-filled-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span><span class="dim">全體</span><span class="right">TP 7　1/5</span></div>
+<div class="skill"><img class="ico16" src="img/skill-aimed-shot-16.png" alt=""><span class="name">瞄準射擊</span><span class="slots"><img class="ico14 " src="img/icon-rune-spread-14.png" alt=""><img class="ico14 off" src="img/icon-rune-on-crit-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span><span class="dim">單體</span><span class="right">TP 5　5/5</span></div>
+<div class="skill dim">（舊）<img class="ico16" src="img/skill-fire-star-16.png" alt=""><span class="name">火之星彈</span><span class="gold">◆○</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">技能工坊：技能清單（workshop.ts:431，右欄是插槽）</div>
+<div class="head">技能</div>
+<div class="opt sel">火之星彈<span class="right"><img class="ico14 " src="img/icon-rune-flame-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span></div>
+<div class="opt">炎之波<span class="right"><img class="ico14 " src="img/icon-rune-slot-filled-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span></div>
+<div class="opt">瞄準射擊<span class="right"><img class="ico14 " src="img/icon-rune-spread-14.png" alt=""><img class="ico14 off" src="img/icon-rune-on-crit-14.png" alt=""><img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""></span></div>
+<div class="opt dim">（舊）火之星彈<span class="right gold">◆○</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">技能工坊：插槽（workshop.ts:461，20×20 格＋稀有度外框）</div>
+<div class="head">插槽</div>
+<div class="opt sel">槽 1 <span class="cell"><img class="" src="img/icon-rune-flame-16.png" alt=""><i class="f-magic"></i></span><span class="t-magic">灼焰（魔法）</span></div>
+<div class="opt">槽 2 <span class="cell"><img class="" src="img/icon-rune-slot-empty-16.png" alt=""></span><span class="dim">空</span></div>
+<div class="opt dim">槽 3<span class="right">Lv35 開放</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">技能工坊：符文清單（workshop.ts:503–516）</div>
+<div class="head">符文</div>
+<div class="opt">拆下</div>
+<div class="opt sel"><span class="cell"><img class="" src="img/icon-rune-flame-16.png" alt=""></span><span class="t-common">灼焰</span><span class="t-common">（普通）</span><span class="right">袋子 3</span></div>
+<div class="opt"><span class="cell"><img class="" src="img/icon-rune-spread-16.png" alt=""><i class="f-rare"></i></span><span class="t-rare">擴散</span><span class="t-rare">（稀有）</span><span class="right">袋子 1</span></div>
+<div class="opt"><span class="cell"><img class="" src="img/icon-rune-spread-16.png" alt=""><i class="f-epic"></i></span><span class="t-epic">擴散</span><span class="t-epic">（史詩）</span><span class="right">袋子 1</span></div>
+<div class="opt"><span class="cell"><img class="" src="img/icon-rune-on-crit-16.png" alt=""><i class="f-magic"></i></span><span class="t-magic">暴擊觸發</span><span class="t-magic">（魔法）</span><span class="right down">需要：傷害</span></div>
+<div class="opt"><span class="cell"><img class="" src="img/icon-rune-twin-cast-16.png" alt=""><i class="f-legendary"></i></span><span class="t-legendary">雙重詠唱</span><span class="t-legendary">（傳說）</span><span class="right">袋子 1</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">戰鬥技能選單（battle.ts:310 badge，14×14）</div>
+<div class="opt sel">火之星彈<img class="ico14 " src="img/icon-rune-flame-14.png" alt=""><span class="right">TP 4</span></div>
+<div class="opt">炎之波<img class="ico14 " src="img/icon-rune-slot-filled-14.png" alt=""><span class="right">TP 7</span></div>
+<div class="opt">瞄準射擊<img class="ico14 " src="img/icon-rune-spread-14.png" alt=""><img class="ico14 " src="img/icon-rune-on-crit-14.png" alt=""><span class="right">TP 5</span></div>
+<div class="opt dim">（舊）瞄準射擊<span class="blue">◆◆</span><span class="right">TP 5</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">道具店：和已發布裝備圖示同列（shop.ts:56、270）</div>
+<div class="opt"><img class="gear" src="img/gear-crystal-blade.png" alt="">晶刃<span class="right">320 G</span></div>
+<div class="opt"><img class="gear" src="img/gear-copper-ring.png" alt="">銅戒指<span class="right">80 G</span></div>
+<div class="opt sel"><span class="cell"><img class="" src="img/icon-rune-spread-16.png" alt=""></span><span class="t-common">擴散（普通）</span><span class="right">60 G</span></div>
+<div class="opt"><span class="cell"><img class="" src="img/icon-rune-flame-16.png" alt=""><i class="f-magic"></i></span><span class="t-magic">灼焰（魔法）</span><span class="right">150 G</span></div></div><div class="win"><div class="dim" style="margin-bottom:4px">建議 build 卡片（builds.ts:365，◆有／○缺）</div>
+<div class="dim"><img class="ico14 " src="img/icon-rune-slot-filled-14.png" alt=""> 鑲得上（鑲著或袋子裡有）</div>
+<div>瞄準射擊　<img class="ico14 " src="img/icon-rune-spread-14.png" alt=""><span class="t-rare">擴散（稀有）</span>　<img class="ico14 " src="img/icon-rune-slot-empty-14.png" alt=""><span class="down">灼焰</span></div>
+<div class="dim">（舊）瞄準射擊　◆擴散（稀有）　<span class="down">○灼焰</span></div></div></div>
+<h2>QA</h2><table><tr><th>id</th><th>尺寸</th><th>結果</th><th>殘色</th><th>半透明</th><th>溢色</th><th>長邊/短邊</th><th>mass</th><th>置中偏移</th><th>和技能圖示比</th></tr>
+<tr><td>icon-rune-slot-empty-16</td><td>16×16</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>14/14</td><td>0.98</td><td>0.0</td><td>範圍內</td></tr>
+<tr><td>icon-rune-slot-empty-14</td><td>14×14</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>12/12</td><td>0.972</td><td>0.0</td><td></td></tr>
+<tr><td>icon-rune-slot-filled-16</td><td>16×16</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>14/14</td><td>0.98</td><td>0.0</td><td>範圍內</td></tr>
+<tr><td>icon-rune-slot-filled-14</td><td>14×14</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>12/12</td><td>0.979</td><td>0.0</td><td></td></tr>
+<tr><td>icon-rune-flame-16</td><td>16×16</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>14/14</td><td>0.98</td><td>0.0</td><td>範圍內</td></tr>
+<tr><td>icon-rune-flame-14</td><td>14×14</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>12/12</td><td>0.972</td><td>0.0</td><td></td></tr>
+<tr><td>icon-rune-spread-16</td><td>16×16</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>14/14</td><td>0.98</td><td>0.0</td><td>範圍內</td></tr>
+<tr><td>icon-rune-spread-14</td><td>14×14</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>12/12</td><td>0.972</td><td>0.0</td><td></td></tr>
+<tr><td>icon-rune-on-crit-16</td><td>16×16</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>14/14</td><td>0.98</td><td>0.0</td><td>範圍內</td></tr>
+<tr><td>icon-rune-on-crit-14</td><td>14×14</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>12/12</td><td>0.972</td><td>0.0</td><td></td></tr>
+<tr><td>icon-rune-twin-cast-16</td><td>16×16</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>14/14</td><td>0.98</td><td>0.0</td><td>範圍內</td></tr>
+<tr><td>icon-rune-twin-cast-14</td><td>14×14</td><td class="ok">pass</td><td>0</td><td>0</td><td>0</td><td>12/12</td><td>0.972</td><td>0.0</td><td></td></tr>
+</table></body></html>
