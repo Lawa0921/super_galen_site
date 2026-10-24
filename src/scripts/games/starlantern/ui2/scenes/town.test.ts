@@ -683,6 +683,41 @@ describe('TownScene: the night (story L Task 3c)', () => {
       delete scenes['group:act2'];
     }
   });
+  it("the night's memories are told under tonight's moon (time and moon Task 5)", async () => {
+    const game = setup(['mem:liz:1', 'mem:noel:1']);
+    // as a return leaves it: the dive's day 4 (a full moon) planned the night, then the day became 5
+    game.state.story.day = 5;
+    game.night = ['mem:liz:1', 'mem:noel:1'];
+    game.state.story.tonight = ['mem:liz:1', 'mem:noel:1'];
+    const t = open(game);
+    const tinted = (moon: string) => !!t.root.querySelector(`.slx-veil-night.slx-on.slx-moon-${moon}`);
+    expect(tinted('full')).toBe(false);   // the day's line: no night yet
+    t.s.onAction('confirm'); await t.settle();
+    await t.through('mem:liz:1', () => expect([t.night(), tinted('full')]).toEqual([true, true]));
+    for (let i = 0; i < 6 && t.text() !== linesOf('mem:noel:1', game.state)[0].text; i++) { t.s.onAction('confirm'); await t.settle(); }   // the beat
+    await t.through('mem:noel:1', () => expect(tinted('full')).toBe(true));
+    expect(t.root.querySelector('[class*="slx-moon-"]')).toBeNull();   // the night over, the tint goes with the card
+  });
+
+  it("the reveal plays at night, under tonight's moon (time and moon Task 5)", async () => {
+    const game = setup(['mem:rin:6', 'mem:rin:7']);
+    game.state.story.seen.push('mem:rin:1', 'mem:rin:2', 'mem:rin:3', 'mem:rin:4', 'mem:rin:5');
+    game.state.story.queue = ['rin-reveal'];
+    game.arrival = ['mem:rin:6', 'mem:rin:7', 'rin-reveal'];
+    game.state.story.tonight = ['mem:rin:6', 'mem:rin:7'];
+    game.state.story.day = 3;   // after the return: tonight is day 2's, a new moon
+    const t = open(game);
+    await t.through('mem:rin:6');
+    await t.through('mem:rin:7');
+    // its night lines wear tonight's moon; its dawn card has no veil and no tint
+    const lines: [boolean, boolean][] = [];
+    await t.through('rin-reveal', () => { lines.push([t.night(), !!t.root.querySelector('.slx-veil-night.slx-on.slx-moon-new')]); });
+    expect(lines[0]).toEqual([true, true]);
+    for (const [night, tinted] of lines) expect(tinted).toBe(night);
+    expect(t.root.querySelector('[class*="slx-moon-new"]')).toBeNull();
+    expect(t.root.querySelector('[class*="slx-moon-"]')).toBeNull();
+  });
+
 });
 
 describe('TownScene: the calendar (time and moon Task 4)', () => {

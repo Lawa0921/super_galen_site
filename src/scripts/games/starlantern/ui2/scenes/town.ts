@@ -8,6 +8,7 @@ import type { Game } from '../../engine/game';
 import type { ItemInstance } from '../../engine/types';
 import { BAG_SIZE } from '../../engine/loot/bag';
 import { calendarOf, storyStage } from '../../engine/story/events';
+import { tonightMoon } from '../../engine/calendar';
 import { bellkeeperPool } from '../../engine/story/keeper';
 import { el, itemName } from '../../ui/dom';
 import { gearIconUrl } from '../gearArt';
@@ -94,6 +95,8 @@ export class TownScene implements Scene {
   private async arrive(): Promise<void> {
     const game = this.ctx.game;
     this.nightAhead = game.night.some((id) => shouldPlay(id, storyCtx(this.ctx).mode));
+    // Time and moon ruling 8: this arrival's night scenes (the owed memories, the reveal, the night) wear tonight's moon.
+    this.talk.moon = tonightMoon(game.state);
     try {
       for (const id of [...game.arrival]) await this.playScene(id, sceneKind(id) === 'memory' ? { place: NIGHT_PLACE } : {});
     } catch (e) {
@@ -150,6 +153,7 @@ export class TownScene implements Scene {
       this.nightAhead = false;
       this.inNight = false;
       this.talk.setPlace(null);
+      this.talk.moon = null;
       if (shown) {
         this.putAway(false);
         this.menuWin.removeAttribute('inert');

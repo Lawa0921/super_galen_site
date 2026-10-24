@@ -132,6 +132,14 @@ export function sceneKind(id: SceneId): SceneKind {
   return 'major';
 }
 
+/**
+ * Time and moon ruling 5 (world spec §5.2, §11.1): the scenes the story sets at night beyond the memories (told at night in
+ * town, story L). Rin's reveal is the night of the return that brings it. Anything else is day.
+ */
+export const SCENE_TIME: Partial<Record<SceneId, 'night'>> = { 'rin-reveal': 'night' };
+/** Whether a scene happens by day or by night: a memory, or one `SCENE_TIME` names, is night. */
+export const sceneTime = (id: SceneId): 'day' | 'night' => (sceneKind(id) === 'memory' || SCENE_TIME[id] === 'night' ? 'night' : 'day');
+
 const LONG_MEMORIES = new Set<SceneId>(['mem:hero:9', 'mem:hero:10', 'mem:rin:7']);
 
 /** The most lines a scene may have (spec §8.2, §17). */

@@ -13,7 +13,7 @@ import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragme
 import { memoryPace } from '../../engine/story/expect';
 import { leadOpen } from '../../engine/story/leads';
 import type { StoryMood } from '../../render/artPaths';
-import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, type GroupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, type SceneId, type Stage, type StoryGate } from './scenes';
+import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, type GroupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, SCENE_TIME, sceneTime, type SceneId, type Stage, type StoryGate } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
 
@@ -111,6 +111,15 @@ describe('story data', () => {
     expect(p[4].when?.moon).toEqual(['new']);
     for (const i of [1, 3, 4]) expect(whenHolds(p[i].when)).toBe(true);
     expect(whenHolds(undefined)).toBe(true);
+  });
+
+  it("memories and the reveal are night scenes; the day's scenes are not (time and moon Task 5)", () => {
+    expect(SCENE_TIME).toEqual({ 'rin-reveal': 'night' });
+    expect(sceneTime('rin-reveal')).toBe('night');
+    const memories = SCENE_IDS.filter((id) => sceneKind(id) === 'memory');
+    expect(memories.length).toBe(57);
+    for (const id of memories) expect(sceneTime(id), id).toBe('night');
+    for (const id of SCENE_IDS.filter((x) => sceneKind(x) !== 'memory' && x !== 'rin-reveal')) expect(sceneTime(id), id).toBe('day');
   });
 
   it('whenHolds checks the moon, the time and the season given a calendar, and holds without one', () => {

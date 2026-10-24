@@ -324,6 +324,24 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
     },
   },
+  ...(['full', 'new'] as const).map((moon) => ({
+    // Time and moon (Task 5): a night told under tonight's moon, the veil tinted (full: lighter and bluer; new: darker).
+    name: `night-moon-${moon}`, visit: async (page: Page, w: SpecHelpers) => {
+      await readAll(page, w);   // what is still on screen
+      await page.evaluate((day) => {
+        const d = (window as unknown as { __starlanternDebug: { game: { arrival: string[]; night: string[]; state: { story: { day?: number } } } } }).__starlanternDebug;
+        d.game.arrival = [];
+        d.game.night = ['mem:rin:1'];
+        d.game.state.story.day = day;   // tonight is the day before's
+      }, moon === 'full' ? 5 : 3);
+      await go(page, 'town');
+      await expect(page.locator('.slx-town .slx-talk')).toBeVisible();
+      await w.key('z');   // the day's line
+      if (!(await page.locator('.slx-town .slx-place-card').isVisible())) await w.key('z');   // the line whole first
+      await expect(page.locator(`.slx-town .slx-veil-night.slx-on.slx-moon-${moon}`)).toHaveCount(1);
+      if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+    },
+  })),
   {
     // Story L: a group scene, the first thing of the night, under its own card (the inn's dinner, not the night's).
     name: 'group-scene', visit: async (page, w) => {

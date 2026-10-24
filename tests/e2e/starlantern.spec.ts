@@ -3628,6 +3628,48 @@ test.describe('starlantern', () => {
     });
   }
 
+  // Time and moon (Task 5): a return's night wears tonight's moon. The dive's day is set so that last night, the one told on
+  // the return, is a full moon; the town menu comes back only when the night is over.
+  test("a return's night wears its moon (time and moon)", async ({ page }) => {
+    test.setTimeout(120_000);
+    await fitTo(page, 1280, 720);
+    const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+      page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+    const w = await setup(page, 7, { story: 'all' });
+    for (let quiet = 0, i = 0; quiet < 4 && i < 400; i++) {   // the prologue and the inn night
+      if (await page.locator('.slx-talk').first().isVisible()) { quiet = 0; await page.keyboard.press('z'); await page.waitForTimeout(30); }
+      else if ((await page.locator('.slx-cmd-hidden').count()) > 0) { quiet = 0; await page.waitForTimeout(60); }
+      else { quiet++; await page.waitForTimeout(60); }
+    }
+    await depart(page, w);
+    // day 4 is a full moon: the return ends it, and its night is told on day 5
+    await game((g) => { g.state.story.day = 4; g.state.party.roster.rin.memories = 1; g.state.story.untold = ['mem:rin:1']; g.state.inventory['return-lamp'] = 1; });
+    await lampHome(page, w);
+    expect(await game((g) => [g.state.story.day, [...g.night]])).toEqual([5, [memScene('rin', 1)]]);
+    const first = STORY.scenes[memScene('rin', 1)].lines[0].text;
+    const text = page.locator('.slx-town .slx-talk .slx-text');
+    let told = 0;
+    for (let i = 0; i < 200; i++) {
+      const talk = await page.locator('.slx-town .slx-talk').isVisible();
+      const menuHidden = ((await page.locator('.slx-town-menu').getAttribute('class')) ?? '').includes('slx-cmd-hidden');
+      if (!talk && !menuHidden) break;
+      if (talk) {
+        if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) { await w.key('z'); await page.waitForTimeout(30); continue; }
+        if (told || (await text.textContent()) === first) {
+          told++;
+          await expect(page.locator('.slx-town .slx-veil-night.slx-moon-full')).toBeVisible();
+          expect(menuHidden).toBe(true);
+        }
+        await w.key('z');
+      }
+      await page.waitForTimeout(40);
+    }
+    expect(told).toBeGreaterThanOrEqual(3);
+    await expect(page.locator('.slx-town-menu')).not.toHaveClass(/slx-cmd-hidden/);
+    await expect(page.locator('.slx-town [class*="slx-moon-"]')).toHaveCount(0);
+    expect(w.errors).toEqual([]);
+  });
+
   test('B1: on a return to town, Noel and Rin talk among themselves after the chat, and the town menu waits for them', async ({ page }) => {
     test.setTimeout(120_000);
     await fitTo(page, 1280, 720);

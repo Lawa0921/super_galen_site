@@ -1,4 +1,6 @@
 import { el } from '../ui/dom';
+import type { MoonPhase } from '../data/story/chains';
+import { MOON_ORDER } from '../engine/calendar';
 import type { UiAction } from './input';
 import { Menu, type MenuItem } from './menu';
 import { marksEl, runeCell } from './runeArt';
@@ -186,6 +188,11 @@ export class Dialogue {
   private resolve: (() => void) | null = null;
   /** A scene is playing (staging S4): a confirmed line leaves the box and its face up until the next line or `close()`. */
   private held = false;
+  /**
+   * Time and moon ruling 8: tonight's moon, set by the screen while it tells a night (the town on a return, the night before
+   * the descent); a night card's veil takes its tint. Null (the handbook, the labyrinth): the plain night.
+   */
+  moon: MoonPhase | null = null;
 
   /** `onClose` runs synchronously when a line is dismissed, so owners can unlock their windows before the next click. */
   constructor(private charsPerSecond: number, private onClose?: () => void) {
@@ -221,6 +228,13 @@ export class Dialogue {
       card.textContent = place.text;
     }
     this.veil('slx-veil-night', !!place?.night);
+    this.tint(place?.night ? this.moon : null);
+  }
+
+  /** The night veil's moon (`slx-moon-<phase>`), or none: it goes with the card. */
+  private tint(moon: MoonPhase | null): void {
+    const v = this.el.parentElement?.querySelector<HTMLElement>(':scope > .slx-veil-night');
+    if (v) for (const m of MOON_ORDER) v.classList.toggle(`slx-moon-${m}`, m === moon);
   }
 
   /** The place card on the box's screen, if one is up. */
