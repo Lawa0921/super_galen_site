@@ -11,7 +11,7 @@ import { seedInt } from '../noise';
 import { BP_UNDER, BP_DEEP, KEEP, structureId, slotOf, type Blueprint, type BpCtx } from './blueprint';
 import { ANCHOR_MAX_W, anchorSpan, type Anchor } from './anchors';
 import { SPAWN_X, VARIANT, type Landmass } from './layout';
-import { buildMushroomBp, buildCrystalBp, MUSHROOM_MAX_W, CRYSTAL_MAX_W } from './structures/miniBiome';
+import { buildMushroomBp, buildCrystalBp, naturalOpen, MUSHROOM_MAX_W, CRYSTAL_MAX_W } from './structures/miniBiome';
 import { buildHiveBp, HIVE_MAX_W } from './structures/hive';
 import { Gen2Source } from './index';
 import { SEEDS5, SEEDS50, bytes, countIn, fillCol, firstOf, homeBlueprints, liquidIn, liquidInvariant, loadBox, loadColumns, overlapPairs, snapshotLiquid, srcOf, walkOut, worldOf } from './testUtil';
@@ -53,6 +53,30 @@ function reachesColumn(b: Blueprint, open: (x: number, y: number) => boolean, sx
     for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
       const k = `${nx},${ny}`;
       if (seen.has(k) || Math.abs(nx - sx) > 200 || Math.abs(ny - sy) > 120 || !pass(nx, ny)) continue;
+      seen.add(k); st.push(nx, ny);
+    }
+  }
+  return false;
+}
+// 錨點可達（不載入世界，只看藍圖的格 + 天然洞穴探針，同 fill 的判定）：從地標出發走 4 鄰——藍圖畫了 fg 的格看是否實心 / 有液體，
+// 沒畫的格看天然洞穴；走到外框外 ≥ 300 格（範圍同 walkOut：外框左右 80 欄、上 80 列、下 40 列）或走到地表以上 = true。
+// surface 預設 = 世界的地表（含表層藍圖的地面覆寫）；只測建構器本身時傳 profile 的地表（建構器只讀 profile）
+function escapes(src: Gen2Source, b: Blueprint, open: (x: number, y: number) => boolean, surface: (x: number) => number = (x) => src.surfaceAt(x)): boolean {
+  const at = new Map<number, [number, number]>();
+  for (let i = 0; i < b.cells.length; i += 5) at.set(b.cells[i] * 4096 + b.cells[i + 1], [b.cells[i + 2], b.cells[i + 4]]);
+  const pass = (x: number, y: number): boolean => { const c = at.get(x * 4096 + y); return c && c[0] !== KEEP ? !isSolidTile(c[0]) && c[1] <= 0 : open(x, y); };
+  const lm = b.landmarks[0], x0 = b.x - 80, x1 = b.x + b.w + 80, y0 = Math.max(0, b.y - 80), y1 = b.y + b.h + 40;
+  const seen = new Set<number>([lm.x * 4096 + lm.y]), st = [lm.x, lm.y];
+  let out = 0;
+  while (st.length) {
+    const y = st.pop()!, x = st.pop()!;
+    if (y < surface(x)) return true;
+    if ((x < b.x || x >= b.x + b.w || y < b.y || y >= b.y + b.h) && ++out >= 300) return true;
+    for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+      const k = nx * 4096 + ny;
+      if (seen.has(k) || nx < x0 || nx >= x1 || ny < y0 || ny >= y1) continue;
+      // 地表以上（天空）一律走得過
+      if (ny >= surface(nx) && !pass(nx, ny)) continue;
       seen.add(k); st.push(nx, ny);
     }
   }
@@ -205,14 +229,24 @@ describe('gen2 小生態與蜂巢', () => {
     }
   }, 120_000);
 
-  it('接不上天然洞穴就挖隧道：注入「只有外框左邊一條 4 欄寬的直洞」→ 主洞室挖得到那條洞（隧道 4 列高）；注入「全部不通」→ 沒有隧道（錨點照樣建得出來）', () => {
+  it('接不上天然洞穴就挖隧道：注入「只有外框左邊一條 4 欄寬的直洞」→ 主洞室挖得到那條洞（隧道 4 列高）；注入「全部不通」→ 2 格寬掛繩梯的直豎井通到地表，仍然走得出去', () => {
     for (const seed of SEEDS5.slice(0, 3)) for (const a of srcOf(seed).blueprints.anchorsOf(homeOf(srcOf(seed)))) {
       if (!(KINDS as readonly string[]).includes(a.kind)) continue;
       const k = a.kind as Kind, c = anchorCtx(seed, a), sealed = BUILD[k](c, { caveOpen: () => false }), tag = `${seed} ${k}`;
-      const lm = sealed.landmarks[0], none = (): boolean => false;
-      expect(reachesColumn(sealed, none, lm.x, lm.y, sealed.x - 1), tag).toBe(false);
-      // 直洞：外框左邊 [x − 5, x − 1)、上下各延伸 200 列（夠大）
-      const x = sealed.x, open = (px: number, py: number): boolean => px >= x - 5 && px < x - 1 && Math.abs(py - sealed.y) < 200;
+      const none = (): boolean => false, src = srcOf(seed);
+      // 全部不通：沒有隧道（外框不變寬、左邊那欄走不到），靠豎井從地標走到地表以上；豎井 = 繩梯那一欄與右邊一欄、外框往上包到地表上一列
+      expect(sealed.w, tag).toBeLessThanOrEqual(ANCHOR_MAX_W[k]!);
+      // 只測建構器（它只讀 profile）：地表 = profile 的地表（正式世界裡豎井若碰到上方的表層錨點會跨層相交 → RangeError，由 2500 / 1500 個種子的測試把關）
+      expect(escapes(src, sealed, none, (q) => src.profile.surfaceAt(q)), tag).toBe(true);
+      const rope = [...cellMap(sealed)].filter(([, q]) => q[0] === T.ROPE).map(([key]) => key.split(',').map(Number));
+      expect(rope.length, tag).toBeGreaterThan(5);
+      const rx = rope[0][0], top = Math.min(...rope.map((q) => q[1]));
+      expect(rope.every((q) => q[0] === rx), tag).toBe(true);
+      expect(sealed.y, tag).toBeLessThanOrEqual(Math.min(src.profile.surfaceAt(rx), src.profile.surfaceAt(rx + 1)) - 1);
+      expect(top, tag).toBeLessThanOrEqual(src.profile.surfaceAt(rx));
+      if (k === 'hive') expect(honeyHeld(sealed), tag).toEqual([]);
+      // 直洞：外框左邊 [x − 5, x − 1)、地標上下各 200 列（夠大；sealed 有通地表的豎井，外框頂是地表，所以用地標的 y）
+      const x = sealed.x, ly = sealed.landmarks[0].y, open = (px: number, py: number): boolean => px >= x - 5 && px < x - 1 && Math.abs(py - ly) < 200;
       const b = BUILD[k](c, { caveOpen: open });
       expect(reachesColumn(b, open, b.landmarks[0].x, b.landmarks[0].y, x - 2), tag).toBe(true);
       // 隧道往左挖到隧道口（直洞的最右欄 x − 2）的前一欄：外框左緣 = x − 1；隧道 4 列高（那一欄藍圖畫的空氣格）
@@ -243,6 +277,47 @@ describe('gen2 小生態與蜂巢', () => {
     const { src, b } = found!, cx = b.x >> 5, parts = new Column(cx, 1200);
     src.fill(parts, cx * 32, b.x + 1); src.fill(parts, b.x + 1, cx * 32 + 32); expect(bytes(parts), k).toEqual(bytes(fillCol(src, cx)));
   } }, 60_000);
+
+  it('錨點一定走得進去（修正第 1 輪）：2500 個家鄉（bx-0..2499）的蘑菇林 / 水晶洞 / 蜂巢錨點，從地標走得到外框外 ≥ 300 格或地表（藍圖的格 + 天然洞穴探針）', () => {
+    const sealed: string[] = [];
+    let n = 0;
+    for (let k = 0; k < 2500; k++) {
+      const seed = `bx-${k}`, g = new Gen2Source(seed), m = homeOf(g);
+      const open = naturalOpen({ seed, profile: g.profile } as BpCtx, {});
+      try {
+        for (const a of g.blueprints.anchorsOf(m)) {
+          if (!(KINDS as readonly string[]).includes(a.kind)) continue;
+          const b = g.blueprints.anchorBlueprint(m, a)!;
+          n++;
+          if (!escapes(g, b, open)) sealed.push(`${seed} ${b.kind}@${b.x}`);
+        }
+      } catch (e) { if (!(e instanceof RangeError)) throw e; sealed.push(`${seed} ${e.message}`); }
+    }
+    expect(sealed).toEqual([]);
+    expect(n).toBe(2500 * 3);
+  }, 300_000);
+
+  // 由上往下試時（修正前）只有 1.2% 貼著蜂蜜面（RED：0.012）；由下往上後，接得上的最低一列優先，過半貼著蜂蜜面（其餘是蜂蜜面那幾列接不到洞穴）
+  it('蜂巢的隧道從蜂蜜面那一列由下往上試：有隧道的蜂巢，隧道底（外框內沒畫牆的空氣格最低一列）都在蜂蜜面以上，過半貼著蜂蜜面', () => {
+    let n = 0, low = 0;
+    for (let k = 0; k < 80; k++) {
+      const g = new Gen2Source(`ht-${k}`), h = g.layout.origin.home!;
+      for (const b of g.blueprints.overlapping(h.x0, h.x1, [BP_UNDER])) {
+        if (b.kind !== 'hive') continue;
+        let tunBot = -1, honeyTop = Infinity;
+        for (let i = 0; i < b.cells.length; i += 5) {
+          const y = b.cells[i + 1], fg = b.cells[i + 2], wall = b.cells[i + 3], liq = b.cells[i + 4];
+          if (fg === T.AIR && wall === KEEP) tunBot = Math.max(tunBot, y);
+          if (liq > 0) honeyTop = Math.min(honeyTop, y);
+        }
+        if (tunBot < 0) continue;
+        n++;
+        expect(tunBot, `ht-${k} hive@${b.x}`).toBeLessThan(honeyTop);
+        if (tunBot === honeyTop - 1) low++;
+      }
+    }
+    expect(n).toBeGreaterThan(40); expect(low / n).toBeGreaterThan(0.5);
+  }, 120_000);
 
   it('1500 個種子（Task 10 延續事項）：0 開機失敗、家鄉 0 跨層重疊；三種錨點都建得出來', () => {
     const errors: string[] = [];

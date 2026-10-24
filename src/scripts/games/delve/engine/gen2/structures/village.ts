@@ -17,8 +17,8 @@ import { BpCanvas } from '../draw/bpCanvas';
 import { drawVillage } from '../draw/village';
 import { BP_SURFACE, VILLAGE_MIN, centerAway, type Blueprint, type BpCtx } from '../bpcore';
 
-// 兩側緩坡的欄數（draw/village.ts）
-const SLOPE = 9;
+// 兩側緩坡的欄數（draw/village.ts）；村子寬 vw 的範圍 [lo, hi)（rng.int；anchors.ts 用它算村莊外框可能的 x 範圍）
+export const SLOPE = 9, VILLAGE_VW: readonly [number, number] = [58, 74];
 // 整平時往上清 28 列、往下補到 max(地面 + 6, 原地表 + 3)（draw/village.ts 的 shape）
 const CLEAR_UP = 28, FILL_DOWN = 6, FILL_BELOW_SURFACE = 3;
 // 廣場寬（委託板在廣場中央：plaza0 = 委託板 x − 5）
@@ -27,7 +27,7 @@ const PLAZA_W = 12;
 export function buildVillageBp(c: BpCtx): Blueprint {
   // ctx.ver 0 的規則
   const p = c.profile, rng = new HRng(c.s, c.id);
-  const vw = rng.int(58, 74), W = vw + 2 * SLOPE;
+  const vw = rng.int(VILLAGE_VW[0], VILLAGE_VW[1]), W = vw + 2 * SLOPE;
   const bx = centerAway(c.slotX0, c.slotX1, W, c.spawnX ?? Number.NaN, VILLAGE_MIN);
   if (bx === null) throw new RangeError(`gen2: village ${c.id} does not fit [${c.slotX0}, ${c.slotX1})`);
   const x0 = bx + SLOPE, x1 = x0 + vw - 1;

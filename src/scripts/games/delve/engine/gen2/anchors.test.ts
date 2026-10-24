@@ -86,11 +86,13 @@ describe('gen2 anchors', () => {
       expect(a.filter((q) => q.wholeRegion).map((q) => q.kind)).toEqual(['dungeon']);
       // 每個錨點的外框可用範圍都不碰坑道帶、放得下該種最大外框（含坑道的槽也一樣）
       for (const q of a) { expect(spanProblem(seed, q), `${seed} ${q.kind} ${q.region.index}/${q.layer}:${q.slot}`).toBeNull(); if (anchorSpan(seed, q).shaft) shafted++; }
-      // 空島（Task 10）：不在表層錨點的同一槽；可用範圍不碰下方地廳 / 礦坑密室的槽（avoid 涵蓋每一個與天空槽相交的）
+      // 空島（Task 10）：可用範圍不碰下方地廳 / 礦坑密室 / 三種小生態（Task 11 修正 1：它們的後備豎井會通到地表）的槽（avoid 涵蓋每一個與天空槽相交的）；
+      // 不在表層錨點的同一槽——退讓鏈 ③④（Task 11 修正 1）放在村莊 / 遺跡的槽時，可用範圍不碰那座表層錨點實際的外框
       const meets = (p: { x0: number; x1: number }, q: { x0: number; x1: number }): boolean => p.x0 < q.x1 && q.x0 < p.x1;
       for (const k of a.filter((q) => q.kind === 'sky_island')) {
-        expect(a.some((q) => q.layer === BP_SURFACE && q.region === k.region && q.slot === k.slot), seed).toBe(false);
-        for (const q of a.filter((p) => p.kind === 'hall' || p.kind === 'mineshaft_secret')) if (meets(slotRange(k), slotRange(q))) { avoided++; expect(meets(anchorSpan(seed, k), slotRange(q)), `${seed} sky over ${q.kind}`).toBe(false); }
+        const surf = a.find((q) => q.layer === BP_SURFACE && q.region === k.region && q.slot === k.slot);
+        if (surf) { expect(['village', 'ruin'], seed).toContain(surf.kind); const sb = g.blueprints.anchorBlueprint(h, surf); if (sb) expect(meets(anchorSpan(seed, k), { x0: sb.x, x1: sb.x + sb.w }), `${seed} sky over ${surf.kind}`).toBe(false); }
+        for (const q of a.filter((p) => ['hall', 'mineshaft_secret', 'mushroom_biome', 'crystal_cave', 'hive'].includes(p.kind))) if (meets(slotRange(k), slotRange(q))) { avoided++; expect(meets(anchorSpan(seed, k), slotRange(q)), `${seed} sky over ${q.kind}`).toBe(false); }
       }
     }
     expect(avoided).toBeGreaterThan(0);
@@ -208,4 +210,20 @@ describe('gen2 anchors', () => {
       expect(after.filter((b) => b.kind === 'ruin').length, `${seed} ${i}`).toBeGreaterThanOrEqual(1);
     }
   }, 60_000);
+  // 修正第 1 輪（Task 11 審查）：rg-74 / rg-10181 等種子村莊擲到 4 座吃光天空合格槽，兩座空島放不下 → 開機 RangeError；
+  // 森林的地下層槽被吃光時蘑菇林也放不下。30,000 個種子 homeAnchors 0 個 RangeError；原有保證不變（地城 1、村莊 2–4、礦坑密室 3、空島 2）
+  for (const part of [0, 1, 2]) {
+    it(`30,000 個種子（rg-${part * 10_000}..${part * 10_000 + 9999}）homeAnchors 0 個 RangeError；地城 1、村莊 2–4、礦坑密室 3、空島 2、三種小生態各 1`, () => {
+      const errors: string[] = [];
+      for (let k = part * 10_000; k < (part + 1) * 10_000; k++) {
+        const seed = `rg-${k}`, g = new Gen2Source(seed);
+        try {
+          const a = homeAnchors(seed, g.layout.landmassAt(SPAWN_X)!, g.profile), n = (kind: AnchorKind): number => a.filter((q) => q.kind === kind).length;
+          const v = n('village');
+          if (n('dungeon') !== 1 || v < 2 || v > 4 || n('mineshaft_secret') !== 3 || n('sky_island') !== 2 || n('mushroom_biome') !== 1 || n('crystal_cave') !== 1 || n('hive') !== 1) errors.push(`${seed}: counts`);
+        } catch (e) { if (!(e instanceof RangeError)) throw e; errors.push(`${seed}: ${e.message}`); }
+      }
+      expect(errors.slice(0, 5)).toEqual([]);
+    }, 120_000);
+  }
 });

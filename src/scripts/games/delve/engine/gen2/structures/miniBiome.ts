@@ -18,9 +18,12 @@
 //     水晶洞：地板 28%、天花板 22% T.CRYSTAL。
 //   · 地標：主洞室裡離中心最近（舊生成器 landmarks.ts 的距離：dx² / rx² + 0.6 dy² / ry²）、腳下是 E 內的殼、頭頂空氣的地板格放
 //     T.SPORE_TOTEM（site 'mushroom_biome'）/ T.GEODE（site 'crystal_cave'）；那格與頭頂那格不放裝飾。
-//   · 一定走得進去（Task 11 延續事項）：從主洞室走「藍圖的非實心格 ∪ 藍圖沒畫的天然洞穴」（linksToCave），走到外框外的天然洞穴 ≥ CAVE_BIG 格才算接上
-//     （小氣泡不算；範圍只到自己的槽與外框上 80 / 下 40 列，同礦坑）。接不上 → digTunnel：從主洞室最左 / 最右的地板往外挖 4 列高的隧道到接上洞穴；
-//     這個 y 都不行 → 換下一個 y。全部不行 → 錨點：天然洞穴最少的 y 照樣畫（不保證接得上；minibiome.test 的 200 個家鄉釘住沒有發生）；槽位表：不放。
+//   · 一定走得進去（Task 11 延續事項 / 修正 1）：從主洞室走「藍圖的非實心格 ∪ 藍圖沒畫的天然洞穴」（linksToCave），走到外框外的天然洞穴 ≥ CAVE_BIG 格才算接上
+//     （小氣泡不算；範圍 = 自己的槽 ∩ 外框左右 80 欄、外框上 80 / 下 40 列，同測試的 walkOut）。接不上 → digTunnel：從主洞室的地板由下往上逐列，
+//     往外挖 4 列高的隧道到接上洞穴。這個 y 不行換下一個 y、這個 x 不行換 placeX 的下一個 x（同蜂巢）。
+//     全部不行 → 槽位表：不放；錨點：第一個放得下的 x、天然洞穴最多的 y，再接不上就挖 2 格寬、掛繩梯的直豎井（planShaft / digShaft，外框只加高不加寬）：
+//     蘑菇林 往上接洞 → 往下接洞（不過 deep 線、熔岩線）→ 往上通地表；水晶洞 往上接洞 → 往上通地表（正上方的地下層槽沒有錨點，anchors.ts）。
+//     5000 個家鄉實測 15,000 座錨點用到豎井 16 次。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T, W, SOLID_LUT } from '../../tiles';
 import { hash2, fbm2 } from '../../noise';
@@ -34,7 +37,8 @@ import { BpGrid, placeX, clearRange, emptyObjects, BP_UNDER, BP_DEEP, KEEP, type
 const OPEN_TRIES = 8, OPEN_MAX = 0.45;
 // 接到的洞穴至少這麼多格；探測範圍：左右到槽邊、外框上 REACH_UP 列、下 REACH_DOWN 列（同礦坑）
 export const CAVE_BIG = 300;
-const REACH_UP = 80, REACH_DOWN = 40;
+// 探測範圍（同測試的 walkOut）：外框左右 REACH_X 欄（且不出自己的槽）、上 REACH_UP 列、下 REACH_DOWN 列
+const REACH_X = 80, REACH_UP = 80, REACH_DOWN = 40;
 // 隧道高 4 列（同礦坑 / 地廳的坑道）；隧道口那一欄的 4 列至少 CAVE_MIN 格是洞穴
 const TUNNEL_H = 4, CAVE_MIN = 3;
 // 4 鄰（dx, dy 成對）
@@ -66,10 +70,10 @@ export function naturalOpen(c: BpCtx, o: MiniOptions): (x: number, y: number) =>
 }
 
 // 從 starts 出發走 4 鄰：外框 box 內走 air(x, y) 為真的格（藍圖畫的空氣；KEEP 的格看 open），外框外走天然洞穴；
-// 範圍 x ∈ [span.x0, span.x1)、y ∈ [box.y − REACH_UP, box.y + box.h + REACH_DOWN)。外框外走到 ≥ CAVE_BIG 格 = 接上
+// 範圍 x ∈ [span.x0, span.x1) ∩ 外框左右 REACH_X 欄、y ∈ [box.y − REACH_UP, box.y + box.h + REACH_DOWN)。外框外走到 ≥ CAVE_BIG 格 = 接上
 export function linksToCave(box: { x: number; y: number; w: number; h: number }, span: Span, starts: readonly (readonly [number, number])[],
   inside: (x: number, y: number) => boolean, open: (x: number, y: number) => boolean): boolean {
-  const y0 = box.y - REACH_UP, y1 = box.y + box.h + REACH_DOWN;
+  const y0 = box.y - REACH_UP, y1 = box.y + box.h + REACH_DOWN, xl = Math.max(span.x0, box.x - REACH_X), xr = Math.min(span.x1, box.x + box.w + REACH_X);
   const inBox = (x: number, y: number): boolean => x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
   const seen = new Set<number>(), st: number[] = [];
   for (const [x, y] of starts) { const k = x * 4096 + y; if (!seen.has(k)) { seen.add(k); st.push(x, y); } }
@@ -79,7 +83,7 @@ export function linksToCave(box: { x: number; y: number; w: number; h: number },
     for (let d = 0; d < 8; d += 2) {
       const nx = cx + DIRS[d], ny = cy + DIRS[d + 1];
       const k = nx * 4096 + ny;
-      if (seen.has(k) || nx < span.x0 || nx >= span.x1 || ny < y0 || ny >= y1) continue;
+      if (seen.has(k) || nx < xl || nx >= xr || ny < y0 || ny >= y1) continue;
       const b = inBox(nx, ny);
       if (b ? !inside(nx, ny) : !open(nx, ny)) continue;
       seen.add(k);
@@ -156,15 +160,12 @@ function grove(c: BpCtx, sp: GroveSpec, o: MiniOptions): Blueprint | null {
     for (let x = bx; x < bx + bw; x++) { const [a, b] = sp.span(p.layersAt(x), ry); lo = Math.max(lo, a); hi = Math.min(hi, b); }
     return { lo, hi };
   };
-  const bx = placeX(c, bw, o.force === true, (x) => { const s = spanAt(x); return s.hi >= s.lo; });
-  if (bx === null) return null;
-  const { lo, hi } = spanAt(bx), cx = bx + rx, open = naturalOpen(c, o);
-  const rx2 = rx * rx, ry2 = ry * ry, rr = rx2 * ry2, salt = (c.s ^ Math.imul(c.id, 0x2545f491)) | 0;
-  const room = clearRange(c, bx, bw), gx0 = Math.max(room.x0, bx + bw - sp.maxW), gx1 = Math.min(room.x1, bx + sp.maxW);
+  const open = naturalOpen(c, o), rx2 = rx * rx, ry2 = ry * ry, rr = rx2 * ry2, salt = (c.s ^ Math.imul(c.id, 0x2545f491)) | 0;
   const slot = { x0: c.slotX0, x1: c.slotX1 };
 
-  // 中心 y = cy 時畫出整個小生態；主洞室接不上洞穴（天然或隧道）時回 null（force = 照樣回）
-  const draw = (cy: number, force: boolean): Blueprint | null => {
+  // 外框 x = bx、中心 y = cy 時畫出整個小生態；主洞室接不上洞穴（天然或隧道）時回 null；force = 再接不上就挖直豎井（一定走得出去）
+  const draw = (bx: number, cy: number, force: boolean): Blueprint | null => {
+    const cx = bx + rx, room = clearRange(c, bx, bw), gx0 = Math.max(room.x0, bx + bw - sp.maxW), gx1 = Math.min(room.x1, bx + sp.maxW);
     const by = cy - ry, N = bw * bh, at = (x: number, y: number): number => (y - by) * bw + x - bx;
     // E：雜湊邊緣往內縮（k ∈ [0.75, 1]）；洞腔：E 的 0.85 倍內、在某個洞室裡（洞室的雜湊邊緣門檻 [0.8, 1.2]）
     const E = new Uint8Array(N), H = new Uint8Array(N);
@@ -185,7 +186,7 @@ function grove(c: BpCtx, sp: GroveSpec, o: MiniOptions): Blueprint | null {
       }
     }
     // 畫：E 內全部殼牆；洞腔、洞腔外的天然洞穴 = AIR，其餘殼。隧道可能讓外框往兩側延伸到 [gx0, gx1)，BpGrid 先開這麼寬
-    const g = new BpGrid(gx0, by, gx1 - gx0, bh);
+    let g = new BpGrid(gx0, by, gx1 - gx0, bh);
     for (let y = by; y < by + bh; y++) for (let x = bx; x < bx + bw; x++) {
       const i = at(x, y);
       if (!E[i]) continue;
@@ -240,13 +241,29 @@ function grove(c: BpCtx, sp: GroveSpec, o: MiniOptions): Blueprint | null {
     }
     if (!main) return null;
     const inMain = (x: number, y: number): boolean => inBox(x, y) && lab[at(x, y)] === main;
-    // 走得進去：主洞室接上外框外的天然洞穴；不行就從主洞室的地板挖隧道
+    // 走得進去：主洞室接上外框外的天然洞穴；不行就從主洞室的地板挖隧道；再不行（force）挖直豎井
     const box = { x: bx, y: by, w: bw, h: bh };
-    let x0 = bx, x1 = bx + bw;
+    let x0 = bx, x1 = bx + bw, top = by, bottom = by + bh;
     if (!linksToCave(box, slot, [seed], pass, open)) {
       const t = digTunnel(g, box, { x0: gx0, x1: gx1 }, (x, y) => inMain(x, y) && airE(x, y) && solidE(x, y + 1), pass, open, slot);
       if (!t && !force) return null;
-      if (t) { x0 = t.x0; x1 = t.x1; }
+      if (t) { x0 = t.x0; x1 = t.x1; } else {
+        // 豎井的候選欄（sx 與 sx + 1 同一列都是主洞室的空氣格）：離中心近的先；往上從那兩欄主洞室最高一列的上一列挖、往下從最低一列的下一列挖
+        const up: ShaftCol[] = [], down: ShaftCol[] = [];
+        for (let sx = bx; sx < bx + bw - 1; sx++) {
+          let hiY = -1, loY = -1;
+          for (let y = by; y < by + bh; y++) if (inMain(sx, y) && inMain(sx + 1, y) && airE(sx, y) && airE(sx + 1, y)) { if (hiY < 0) hiY = y; loY = y; }
+          if (hiY >= 0) { up.push({ sx, start: hiY - 1 }); down.push({ sx, start: loY + 1 }); }
+        }
+        const near = (a: ShaftCol, b2: ShaftCol): number => Math.abs(a.sx - cx) - Math.abs(b2.sx - cx) || a.sx - b2.sx;
+        up.sort(near); down.sort(near);
+        const env: ShaftEnv = { box, slot, pass, open, surface: (x) => p.surfaceAt(x), limit: (x) => Math.min(p.layersAt(x).deep, LAVA_Y) };
+        // 蘑菇林：往上接洞 → 往下接洞（不過 deep 線）→ 往上通地表；水晶洞：往上接洞 → 往上通地表（水晶洞正上方的地下層槽沒有錨點，anchors.ts）
+        const plan = planShaft(up, -1, false, env) ?? (sp.kind === 'mushroom_biome' ? planShaft(down, 1, false, env) : null) ?? planShaft(up, -1, true, env);
+        if (!plan) throw new RangeError(`gen2: mini biome ${c.id} has no shaft column`);
+        const dug = digShaft(g, plan, (x, y) => g.getFg(x, y) === T.AIR, by + bh);
+        g = dug.g; top = dug.y0; bottom = dug.y1;
+      }
     }
     // 地標：主洞室裡離中心最近、腳下是 E 內的殼、頭頂空氣的地板格
     let spot: { x: number; y: number } | null = null, sd = Infinity;
@@ -267,34 +284,101 @@ function grove(c: BpCtx, sp: GroveSpec, o: MiniOptions): Blueprint | null {
     }
     const landmarks: BpLandmark[] = [];
     if (spot) { g.fg(spot.x, spot.y, sp.landmark); landmarks.push({ x: spot.x, y: spot.y, tile: sp.landmark, site: sp.kind }); }
-    return { id: c.id, kind: sp.kind, layer: sp.layer, x: x0, y: by, w: x1 - x0, h: bh, cells: g.cells(), chests: [], ...emptyObjects(), landmarks };
+    return { id: c.id, kind: sp.kind, layer: sp.layer, x: x0, y: top, w: x1 - x0, h: bottom - top, cells: g.cells(), chests: [], ...emptyObjects(), landmarks };
   };
 
-  // 中心 y：依雜湊起點試 OPEN_TRIES 個（黃金比例步長）。E（不加雜湊的橢圓、每 2 格取樣）內天然洞穴 ≤ 45% 的依序畫，第一個接得上洞穴的就是；
-  // 都不行 → 錨點：天然洞穴最少的那個照樣畫（不保證接得上；minibiome.test 的 200 個家鄉釘住沒有發生）；槽位表：不放
-  if (hi < lo) return o.force ? draw(lo, true) : null;
-  let best = lo, bestF = Infinity;
-  for (let t = 0; t < OPEN_TRIES; t++) {
-    const f = fy + t * 0.381966, y = lo + Math.floor((f - Math.floor(f)) * (hi - lo + 1));
-    let n = 0, holes = 0;
-    for (let dy = -ry; dy <= ry; dy += 2) for (let dx = -rx; dx <= rx; dx += 2) if (dx * dx * ry2 + dy * dy * rx2 <= rr) { n++; if (open(cx + dx, y + dy)) holes++; }
-    const frac = holes / n;
-    if (frac < bestF) { bestF = frac; best = y; }
-    if (frac > OPEN_MAX) continue;
-    const b = draw(y, false);
-    if (b) return b;
-  }
-  return o.force ? draw(best, true) : null;
+  // 中心 y 的候選：依雜湊起點試 OPEN_TRIES 個（黃金比例步長）；frac = E（不加雜湊的橢圓、每 2 格取樣）內天然洞穴的比例
+  const ys = (bx: number): { y: number; frac: number }[] => {
+    const { lo, hi } = spanAt(bx), cx = bx + rx;
+    if (hi < lo) return [{ y: lo, frac: 0 }];
+    const out: { y: number; frac: number }[] = [];
+    for (let t = 0; t < OPEN_TRIES; t++) {
+      const f = fy + t * 0.381966, y = lo + Math.floor((f - Math.floor(f)) * (hi - lo + 1));
+      let n = 0, holes = 0;
+      for (let dy = -ry; dy <= ry; dy += 2) for (let dx = -rx; dx <= rx; dx += 2) if (dx * dx * ry2 + dy * dy * rx2 <= rr) { n++; if (open(cx + dx, y + dy)) holes++; }
+      out.push({ y, frac: holes / n });
+    }
+    return out;
+  };
+  // 外框 x：placeX 的候選依序試（同蜂巢），每個 x 依序畫天然洞穴 ≤ 45% 的 y，第一個主洞室接得上洞穴（天然或隧道）的就是。
+  // 都不行 → 錨點：第一個放得下的 x、天然洞穴最多的 y，接不上就挖直豎井（一定走得出去）；槽位表：不放
+  let got: Blueprint | null = null;
+  const bx = placeX(c, bw, o.force === true, (x) => {
+    const s = spanAt(x);
+    if (s.hi < s.lo) return false;
+    for (const q of ys(x)) { if (q.frac > OPEN_MAX) continue; got = draw(x, q.y, false); if (got) return true; }
+    return false;
+  });
+  if (bx === null) return null;
+  if (got) return got;
+  if (!o.force) return null;
+  const cand = ys(bx);
+  let best = cand[0];
+  for (const q of cand) if (q.frac > best.frac) best = q;
+  return draw(bx, best.y, true);
 }
 
-// 隧道（主洞室接不上洞穴時）：從上到下試主洞室的每一列地板（floorOf），由那一列最左 / 最右的地板格往外挖 4 列高（地板列在底）的隧道，
+// ── 直豎井（Task 11 修正 1：天然洞穴與隧道都接不上的錨點；比照地廳 / 礦坑的後備豎井）──
+// 2 欄寬（sx、sx + 1）、外框跟著加高（寬不變）；繩梯掛在 sx 欄
+export interface ShaftCol { sx: number; start: number }
+export interface ShaftEnv {
+  box: { x: number; y: number; w: number; h: number }; slot: Span;
+  pass: (x: number, y: number) => boolean; open: (x: number, y: number) => boolean;
+  // profile 地表；往下時的界線（那一列起不挖：deep 線、熔岩線）
+  surface: (x: number) => number; limit: (x: number) => number;
+}
+export interface ShaftPlan { sx: number; y0: number; y1: number; dir: -1 | 1; sky: boolean }
+// 依 cols 的順序試：從 start 那一列往 dir 一列一列挖。某一列兩欄有一格走得過（外框內看 pass、外框外看天然洞穴）、
+// 而且從那裡走得到（加高後的）外框外 ≥ CAVE_BIG 格 → 挖到前一列為止（接上洞穴）；往上挖到兩欄地表較高處的上一列 → surfaceOK 才算成功（通地表）；
+// 往下碰到 limit → 這一欄不行。挖的格只有藍圖的殼與天然格（熔岩線以下不去），沒有液體
+export function planShaft(cols: readonly ShaftCol[], dir: -1 | 1, surfaceOK: boolean, e: ShaftEnv): ShaftPlan | null {
+  const { box } = e, inBox = (x: number, y: number): boolean => x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
+  const walk = (x: number, y: number): boolean => (inBox(x, y) ? e.pass(x, y) : e.open(x, y));
+  for (const { sx, start } of cols) {
+    const sky = Math.min(e.surface(sx), e.surface(sx + 1)) - 1, lim = Math.min(e.limit(sx), e.limit(sx + 1));
+    for (let y = start; dir < 0 ? y >= 0 : y < lim; y += dir) {
+      if (dir < 0 && y <= sky) { if (surfaceOK) return { sx, y0: y, y1: start, dir, sky: true }; break; }
+      if (y === start) continue;
+      const a = Math.min(start, y - dir), b = Math.max(start, y - dir), y0 = Math.min(box.y, a), y1 = Math.max(box.y + box.h, b + 1);
+      const nb = { x: box.x, y: y0, w: box.w, h: y1 - y0 };
+      for (const x of [sx, sx + 1]) if (walk(x, y) && linksToCave(nb, e.slot, [[x, y]], walk, e.open)) return { sx, y0: a, y1: b, dir, sky: false };
+    }
+  }
+  return null;
+}
+// 挖豎井：BpGrid 往上 / 下加高到包住豎井（寬不變），豎井兩欄挖空、清液體。繩梯：往上的豎井從頂（通地表時是地表上一列的下一列）垂到豎井底，
+// 再沿 sx 欄往下穿過底下的空氣格（air 為真、y < end）直到腳下實心；往下的豎井從洞腔地板上一格（豎井頂 − 1）垂到豎井底
+export function digShaft(g: BpGrid, s: ShaftPlan, air: (x: number, y: number) => boolean, end: number): { g: BpGrid; y0: number; y1: number } {
+  const y0 = Math.min(g.y, s.y0), y1 = Math.max(g.y + g.h, s.y1 + 1), n = new BpGrid(g.x, y0, g.w, y1 - y0);
+  for (let y = g.y; y < g.y + g.h; y++) for (let x = g.x; x < g.x + g.w; x++) {
+    const f = g.getFg(x, y), w = g.getWall(x, y), l = g.getLiq(x, y);
+    if (f !== KEEP) n.fg(x, y, f);
+    if (w !== KEEP) n.wall(x, y, w);
+    if (l !== KEEP) n.liq(x, y, l);
+  }
+  for (let y = s.y0; y <= s.y1; y++) for (const x of [s.sx, s.sx + 1]) { n.fg(x, y, T.AIR); n.liq(x, y, 0); }
+  if (s.dir < 0) {
+    for (let y = s.sky ? s.y0 + 1 : s.y0; y <= s.y1; y++) n.fg(s.sx, y, T.ROPE);
+    for (let y = s.y1 + 1; y < end && y < g.y + g.h && air(s.sx, y); y++) {
+      n.fg(s.sx, y, T.ROPE);
+      if (y + 1 >= g.y + g.h || SOLID_LUT[g.getFg(s.sx, y + 1)] === 1) break;
+    }
+  } else {
+    for (let y = s.y0 - 1; y <= s.y1; y++) n.fg(s.sx, y, T.ROPE);
+  }
+  return { g: n, y0, y1 };
+}
+
+// 隧道（主洞室接不上洞穴時）：從下到上試主洞室的每一列地板（floorOf），由那一列最左 / 最右的地板格往外挖 4 列高（地板列在底）的隧道，
 // 外框跟著延伸；隧道口那一欄的 4 列裡 ≥ CAVE_MIN 格走得過、其中一格屬於夠大的洞穴就停。外框在 [room.x0, room.x1) 內（room 已經扣掉寬度上限）。
 // 夠大 = 那塊洞穴（舊外框內走 pass、外面走天然洞穴；範圍同 linksToCave）在 room × 外框列之外 ≥ CAVE_BIG 格——用最寬可能的外框算，
 // 所以不管隧道挖多長、最後的外框外都至少有那麼多格；每塊洞穴只洪水填充一次。找到 → 挖開、回新的外框 x 範圍；都不行 → null（不挖）
 export function digTunnel(g: BpGrid, box: { x: number; y: number; w: number; h: number }, room: Span, floorOf: (x: number, y: number) => boolean,
   pass: (x: number, y: number) => boolean, open: (x: number, y: number) => boolean, slot: Span): { x0: number; x1: number } | null {
   const bx0 = box.x, bx1 = box.x + box.w, y0 = box.y - REACH_UP, y1 = box.y + box.h + REACH_DOWN;
-  const walk = (x: number, y: number): boolean => x >= slot.x0 && x < slot.x1 && y >= y0 && y < y1 && (x >= bx0 && x < bx1 && y >= box.y && y < box.y + box.h ? pass(x, y) : open(x, y));
+  // 範圍同 linksToCave（槽 ∩ 舊外框左右 REACH_X 欄；隧道只會讓外框變寬，所以新外框的範圍一定包住它）
+  const xl = Math.max(slot.x0, bx0 - REACH_X), xr = Math.min(slot.x1, bx1 + REACH_X);
+  const walk = (x: number, y: number): boolean => x >= xl && x < xr && y >= y0 && y < y1 && (x >= bx0 && x < bx1 && y >= box.y && y < box.y + box.h ? pass(x, y) : open(x, y));
   const far = (x: number, y: number): boolean => x < room.x0 || x >= room.x1 || y < box.y || y >= box.y + box.h;
   // 洞穴塊的標號（懶算）：格 → 塊號；big[塊號] = 夠大
   const label = new Map<number, number>(), big: boolean[] = [];
@@ -318,7 +402,8 @@ export function digTunnel(g: BpGrid, box: { x: number; y: number; w: number; h: 
     big.push(n >= CAVE_BIG);
     return n >= CAVE_BIG;
   };
-  for (let fy = box.y + TUNNEL_H; fy < box.y + box.h - 1; fy++) {
+  // 由下往上試（地板低的先：隧道貼著洞腔底；蜂巢就是貼著蜂蜜面，不會從頂上掉進蜂蜜）
+  for (let fy = box.y + box.h - 2; fy >= box.y + TUNNEL_H; fy--) {
     let l = Infinity, r = -Infinity;
     for (let x = bx0; x < bx1; x++) if (floorOf(x, fy)) { l = Math.min(l, x); r = Math.max(r, x); }
     if (!Number.isFinite(l)) continue;

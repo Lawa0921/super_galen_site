@@ -234,8 +234,11 @@ describe('gen2 礦坑、密室、空島', () => {
     const sky = src.blueprints.overlapping(m.x0, m.x1, [BP_SKY]);
     expect(sky.map((b) => b.kind)).toEqual(['sky_island', 'sky_island']); expect(sky.every((b) => b.layer === BP_SKY)).toBe(true);
     expect(anchors.map((a) => src.blueprints.anchorBlueprint(m, a)!.id).sort()).toEqual(sky.map((b) => b.id).sort());
-    for (const a of anchors) { const sl = landSlot(a.region, a.slot, BP_SURFACE);
-      expect(src.blueprints.overlapping(sl.x0, sl.x1, [BP_SURFACE]).filter((b) => b.x >= sl.x0 && b.x < sl.x1), seed).toEqual([]); }
+    // 底下那個表層槽不擲機率：只可能有那一槽自己的表層錨點（Task 11 修正 1 的空島退讓鏈 ③④：空島放在村莊 / 遺跡的槽、避開它的外框），而且不相交
+    for (const a of anchors) { const sl = landSlot(a.region, a.slot, BP_SURFACE), own = src.blueprints.anchorsOf(m).find((q) => q.layer === BP_SURFACE && q.region === a.region && q.slot === a.slot);
+      const ownBp = own ? src.blueprints.anchorBlueprint(m, own) : null, sky = src.blueprints.anchorBlueprint(m, a)!;
+      expect(src.blueprints.overlapping(sl.x0, sl.x1, [BP_SURFACE]).filter((b) => b.x >= sl.x0 && b.x < sl.x1 && b !== ownBp), seed).toEqual([]);
+      if (ownBp) expect(ownBp.x + ownBp.w <= sky.x || sky.x + sky.w <= ownBp.x, `${seed} sky over ${own!.kind}`).toBe(true); }
     // 預設的 overlapping 也含 SKY（fill 才蓋得到空島）
     expect(src.blueprints.overlapping(m.x0, m.x1).filter((b) => b.layer === BP_SKY).length).toBe(2);
   } }, 120_000);
