@@ -1,6 +1,6 @@
 // objects.test.ts — gen2 藍圖物件（M2a Task 2）：分層槽寬（地下 / 深層 / 小點位 170、表層 / 天空 340）與槽邊距（wholeRegion 例外，Q2）、
 // UNDER / DEEP 的坑道避讓帶（Q3 / Q3b）、遺跡的地面覆寫（surfaceAt 吃 SURFACE 層藍圖的 ground，Q4）、箱子附加物品（withExtras）、
-// 免挖洞箱（solid：箱內不挖噪聲洞穴、不換礦，主坑道照挖）、extrasIn。
+// 免挖洞箱（solid：箱內不挖噪聲洞穴、不換礦，主坑道照挖）、extrasIn；solid / ground 在外框內（M2a Task 7）。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
 import { slotOf, slotWidth, BP_UNDER, BP_DEEP, BP_SURFACE, emptyObjects, type Layer, type Blueprint, type BlueprintIndex } from './blueprint';
@@ -20,13 +20,19 @@ describe('gen2 blueprint objects', () => {
     expect([0, 1, 2, 3, 4].map((l) => slotWidth(l as Layer))).toEqual([340, 170, 170, 340, 170]);
     const all = src.blueprints.overlapping(-20_000, 20_000);
     expect(all.filter((b) => b.layer === BP_UNDER).length).toBeGreaterThan(10);
+    let grounds = 0;
     for (const b of all) {
       const s = slotOf(b.id, src.layout);
       expect(s.layer).toBe(b.layer);
+      // 區塊切分獨立的前提（overlapping 只看外框）：solid 與 ground 都在自己的外框內
+      if (b.solid) { expect(b.solid.x).toBeGreaterThanOrEqual(b.x); expect(b.solid.x + b.solid.w).toBeLessThanOrEqual(b.x + b.w);
+        expect(b.solid.y).toBeGreaterThanOrEqual(b.y); expect(b.solid.y + b.solid.h).toBeLessThanOrEqual(b.y + b.h); }
+      if (b.ground) { grounds++; expect(b.ground.x0).toBeGreaterThanOrEqual(b.x); expect(b.ground.x0 + b.ground.tops.length).toBeLessThanOrEqual(b.x + b.w); }
       if (b.wholeRegion) { expect(b.x).toBeGreaterThanOrEqual(s.region.x0); expect(b.x + b.w).toBeLessThanOrEqual(s.region.x1); continue; } // Q2
       expect(s.x1 - s.x0).toBeLessThan(2 * slotWidth(b.layer));
       expect(b.x).toBeGreaterThanOrEqual(s.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(s.x1 - 8);
     }
+    expect(grounds).toBeGreaterThan(0);
     // 地下層的槽真的是 170 格（不是 340 的槽換了名字）：有地下藍圖的槽起點不全是 340 的倍數
     const under = all.filter((b) => b.layer === BP_UNDER && slotOf(b.id, src.layout).region.kind !== 'sea');
     expect(under.some((b) => { const s = slotOf(b.id, src.layout); return (s.x0 - s.region.x0) % 340 !== 0; })).toBe(true);

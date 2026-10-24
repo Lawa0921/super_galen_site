@@ -21,9 +21,9 @@ export const SHAFT_HALF = AMP + 1, SHAFT_REACH = SHAFT_HALF + ROOM_R;
 // 地區的雜湊鍵：家鄉 0、東第 i 片 2i、西第 i 片 2i + 1
 const regionKey = (r: RegionInfo): number => r.landmass * 2 + (r.side === -1 ? 1 : 0);
 
-// 只有非沙灘的陸地地區有坑道（沙灘只有 70 格寬，P4 豁免）
+// 只有非沙灘的陸地地區有坑道（沙灘只有 70 格寬，P4 豁免；家鄉地城區整區給地城，M2a Task 7）
 export function hasShaft(r: RegionInfo): boolean {
-  return (r.kind === 'home' || r.kind === 'culture' || r.kind === 'wild') && r.variant !== VARIANT.BEACH;
+  return (r.kind === 'home' || r.kind === 'culture' || r.kind === 'wild') && r.variant !== VARIANT.BEACH && r.variant !== VARIANT.DUNGEON;
 }
 
 // 坑道的 x（地表入口那一欄）：[x0 + m, x1 − m)，m = min(120, floor(寬 / 4))；出生地區（中點 = 出生點）避開 ±SPAWN_GAP。沒有坑道 = NaN

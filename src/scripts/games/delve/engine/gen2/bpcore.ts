@@ -19,6 +19,15 @@ export const SLOT_PAD = 8;
 // 地下 / 深層 / 小點位的槽寬（表層 / 天空照 LAND_SLOT_W）；每個陸地地區各層各自切槽、各自有 slot 序號（最後一槽吃餘數）
 export const SUB_SLOT_W = 170;
 export function slotWidth(layer: Layer): number { return layer === BP_SURFACE || layer === BP_SKY ? LAND_SLOT_W : SUB_SLOT_W; }
+// 地區在 layer 層的陸地槽數（至少 1；最後一槽吃餘數）與第 q 槽（blueprint.ts 與 anchors.ts 共用）
+export const landSlotCount = (r: RegionInfo, layer: Layer): number => Math.max(1, Math.floor((r.x1 - r.x0) / slotWidth(layer)));
+export function landSlot(r: RegionInfo, q: number, layer: Layer): { x0: number; x1: number } {
+  const sw = slotWidth(layer), x0 = r.x0 + q * sw;
+  return { x0, x1: q < landSlotCount(r, layer) - 1 ? x0 + sw : r.x1 };
+}
+// 家鄉含出生點 ± SPAWN_CLEAR 的槽全空（所有層，含 MINOR，Q16）：槽 [x0, x1) 與 [sp − 80, sp + 80] 相交
+export const SPAWN_CLEAR = 80;
+export const touchesSpawnClear = (x0: number, x1: number, sp: number): boolean => x0 <= sp + SPAWN_CLEAR && x1 > sp - SPAWN_CLEAR;
 
 // 藍圖放的物件（World 載入欄時登錄，見 column.ts 的 GenExtras）
 export interface BpChest { x: number; y: number; kind: ChestKind; extra?: ItemId[] }
@@ -55,7 +64,8 @@ export const emptyObjects = (): Pick<Blueprint, 'pots' | 'tablets' | 'landmarks'
 
 // 建一份藍圖的上下文：s = 結構雜湊種子、id = structureId、槽的範圍、所屬地區、側寫、該地塊的版面版本；
 // groundAt(x) = profile.surfaceAt(x) 被與 x 相交、有 ground 的 SURFACE 層藍圖覆寫（Q4）——只有 SKY / MINOR 層的建構器可以呼叫
-// （SURFACE / UNDER / DEEP 的建構器讀 c.profile），所以沒有循環
+// （SURFACE / UNDER / DEEP 的建構器讀 c.profile），所以沒有循環（BlueprintIndex.groundAt 重入會丟錯）。
+// 錨點建構器的 slotX0 / slotX1 是錨點的可用範圍（anchors.anchorSpan：含坑道的槽只給避開坑道帶後較大的一側；wholeRegion 給整個地區）
 export interface BpCtx {
   seed: string; s: number; id: number; slotX0: number; slotX1: number; region: RegionInfo; profile: Profile2; ver: number;
   groundAt(x: number): number;

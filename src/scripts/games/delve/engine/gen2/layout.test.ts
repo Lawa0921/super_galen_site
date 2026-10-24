@@ -1,11 +1,13 @@
 // layout.test.ts — gen2 版面：海 / 大陸交替、寬度範圍、地區鋪滿、島與槽位、文化指派、tier、家鄉、鎖、查詢一致性（禁用 API 的掃描在 determinism.test.ts）。
 import { describe, it, expect } from 'vitest';
-import { Layout, newWorldOrigin, SPAWN_X, VARIANT, HOME_X0, HOME_X1, SEA_SLOT_W } from './layout';
+import { Layout, newWorldOrigin, homeDungeonRegion, SPAWN_X, VARIANT, HOME_X0, HOME_X1, SEA_SLOT_W } from './layout';
 import { LockTable } from './locks';
 import { poolFor, CULTURE_POOL, CULTURES } from './cultures';
 import { BIOME } from '../world';
+import { hash2, seedInt } from '../noise';
 
 const SEEDS20 = Array.from({ length: 20 }, (_, k) => `seed-${k}`);
+const SEEDS50 = Array.from({ length: 50 }, (_, k) => `home-${k}`);
 const L = (seed: string, locks = new LockTable()) => new Layout(seed, newWorldOrigin(341, 334), locks, 0);
 
 describe('gen2 Layout', () => {
@@ -107,16 +109,18 @@ describe('gen2 Layout', () => {
     expect(lay.regionAt(0)).toMatchObject({ variant: VARIANT.BEACH, x1: 70 }); expect(lay.regionAt(4199)).toMatchObject({ variant: VARIANT.BEACH, x0: 4130 });
     expect(new Set(h.regions.map((r) => r.biome))).toEqual(new Set([0, 1, 2, 3])); expect(h.regions.every((r) => r.kind === 'home')).toBe(true); } });
 
-  it('家鄉版面：鋪滿、雪原 / 叢林各在一側外圍、沙漠寬度與離外圍 ≥ 84 格森林、兩側都出現過', () => {
+  // M2a Task 7：一端海灘內側是 420 寬的地城區（VARIANT.DUNGEON），那一側的外圍生態往內移
+  it('家鄉版面：鋪滿、雪原 / 叢林各在一側外圍（地城區內側）、沙漠寬度與離外圍 ≥ 84 格森林、兩側都出現過', () => {
     const snowSides = new Set<string>(), desertSides = new Set<string>();
     for (const seed of SEEDS20) {
-      const h = L(seed).landmassAt(SPAWN_X)!, R = h.regions;
+      const h = L(seed).landmassAt(SPAWN_X)!, R = h.regions, dWest = homeDungeonRegion(h).x0 === 70;
       R.forEach((r, k) => { expect(r.x0).toBe(k ? R[k - 1].x1 : 0); expect(r.x1).toBeGreaterThan(r.x0); expect(r.index).toBe(k);
         expect(r).toMatchObject({ side: 0, landmass: 0, tier: 0, culture: null }); });
       expect(R.at(-1)!.x1).toBe(4200);
       expect(R[0]).toMatchObject({ x0: 0, x1: 70, variant: VARIANT.BEACH, biome: BIOME.FOREST });
       expect(R.at(-1)).toMatchObject({ x0: 4130, x1: 4200, variant: VARIANT.BEACH, biome: BIOME.FOREST });
-      const outerW = R[1], outerE = R.at(-2)!;
+      expect(dWest ? R[1] : R.at(-2)).toMatchObject({ variant: VARIANT.DUNGEON, biome: BIOME.FOREST });
+      const outerW = dWest ? R[2] : R[1], outerE = dWest ? R.at(-2)! : R.at(-3)!;
       expect(new Set([outerW.biome, outerE.biome])).toEqual(new Set([BIOME.SNOW, BIOME.JUNGLE]));
       for (const o of [outerW, outerE]) {
         const w = o.x1 - o.x0;
@@ -128,11 +132,35 @@ describe('gen2 Layout', () => {
       const d = deserts[0], dw = d.x1 - d.x0; expect(dw).toBeGreaterThanOrEqual(315); expect(dw).toBeLessThanOrEqual(420);
       if (d.x1 <= 1680) { expect(d.x0 - outerW.x1).toBeGreaterThanOrEqual(84); expect(1680 - d.x1).toBeGreaterThanOrEqual(84); desertSides.add('w'); }
       else { expect(d.x0 - 2520).toBeGreaterThanOrEqual(84); expect(outerE.x0 - d.x1).toBeGreaterThanOrEqual(84); desertSides.add('e'); }
-      for (const r of R) if (r.biome === BIOME.FOREST && r.variant !== VARIANT.BEACH && r.variant !== VARIANT.SPAWN)
+      for (const r of R) if (r.biome === BIOME.FOREST && r.variant !== VARIANT.BEACH && r.variant !== VARIANT.SPAWN && r.variant !== VARIANT.DUNGEON)
         expect([VARIANT.PLAIN, VARIANT.HILLS]).toContain(r.variant);
       expect(R.filter((r) => r.variant === VARIANT.SPAWN)).toHaveLength(1);
+      expect(R.filter((r) => r.variant === VARIANT.DUNGEON)).toHaveLength(1);
     }
     expect(snowSides.size).toBe(2); expect(desertSides.size).toBe(2);
+  });
+
+  it('家鄉地城區：420 寬、緊貼一端沙灘、FOREST、50 個種子兩側都出現；四生態都在、沙漠放得下', () => { const sides = new Set<number>();
+    for (const seed of SEEDS50) { const h = L(seed).landmassAt(SPAWN_X)!, d = homeDungeonRegion(h);
+      expect(d.x1 - d.x0).toBe(420); expect([70, 3710]).toContain(d.x0); expect(d.biome).toBe(BIOME.FOREST); sides.add(d.x0);
+      expect(d).toMatchObject({ kind: 'home', variant: VARIANT.DUNGEON });
+      expect(new Set(h.regions.map((r) => r.biome))).toEqual(new Set([0, 1, 2, 3]));
+      h.regions.forEach((r, k) => { if (k) expect(r.x0).toBe(h.regions[k - 1].x1); if (r.variant !== VARIANT.BEACH) expect(r.x1 - r.x0).toBeGreaterThanOrEqual(84); }); }
+    expect(sides.size).toBe(2); }, 60_000);
+
+  it('沙漠擲到地城側但放不下（外圍寬 + 84 + 沙漠寬 + 84 > 1680 − 70 − 420）時改放另一側；放得下就留在擲到的那側', () => {
+    let moved = 0, kept = 0;
+    for (let k = 0; k < 400; k++) {
+      const seed = `dz${k}`, h = L(seed).landmassAt(SPAWN_X)!, R = h.regions, dWest = homeDungeonRegion(h).x0 === 70;
+      const outer = dWest ? R[2] : R.at(-3)!, desert = R.find((r) => r.biome === BIOME.DESERT)!;
+      const rolledOnDz = (hash2(0, 3, seedInt(seed, 'g2-home')) < 0.5) === dWest;
+      const fits = (outer.x1 - outer.x0) + 84 + (desert.x1 - desert.x0) + 84 <= 1680 - 70 - 420;
+      const onDz = dWest ? desert.x1 <= 1680 : desert.x0 >= 2520;
+      expect(onDz, seed).toBe(rolledOnDz && fits);
+      if (rolledOnDz) { if (fits) kept++; else moved++; }
+    }
+    // 兩種情況都真的發生（不是空測）
+    expect(kept).toBeGreaterThan(20); expect(moved).toBeGreaterThan(0);
   });
 
   it('家鄉除兩端海灘外每個地區都 ≥ 84 寬（SEEDS20 + 300 個雜湊種子）', () => {

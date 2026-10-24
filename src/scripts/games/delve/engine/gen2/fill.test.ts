@@ -50,13 +50,14 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
     expect(diffAt(bytes(fillCol(new Gen2Source('other'), 65)), fwd[CXS.indexOf(65)])).toBeGreaterThanOrEqual(0);
   });
 
-  it('主坑道：每個非沙灘的陸地地區都有、且從地表走得到洞穴層（P4）', () => {
+  // M2a Task 7：家鄉地城區（整區給地城）也沒有主坑道
+  it('主坑道：每個非沙灘、非地城區的陸地地區都有、且從地表走得到洞穴層（P4）', () => {
     const src = new Gen2Source('shaft'); const w = worldOf(src); const s = seedInt('shaft', 'g2-shaft');
     const regs = sampleRegions(src, { home: true, perSide: 3 });
-    const beaches = regs.filter((q) => q.variant === VARIANT.BEACH);
-    expect(beaches.length).toBe(2);
-    for (const r of beaches) expect(shaftX(s, r)).toBeNaN();
-    const land = regs.filter((q) => q.variant !== VARIANT.BEACH);
+    const none = regs.filter((q) => q.variant === VARIANT.BEACH || q.variant === VARIANT.DUNGEON);
+    expect(none.length).toBe(3);
+    for (const r of none) expect(shaftX(s, r)).toBeNaN();
+    const land = regs.filter((q) => q.variant !== VARIANT.BEACH && q.variant !== VARIANT.DUNGEON);
     expect(land.length).toBeGreaterThanOrEqual(5 + 2 * 3 * 2);
     for (const r of land) {
       const sx = shaftX(s, r), m = Math.min(120, Math.floor((r.x1 - r.x0) / 4));

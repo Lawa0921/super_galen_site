@@ -47,7 +47,8 @@ const NO_DIG_SEA = 8;
 const SPAWN_NO_TREE = 3, SPAWN_NO_ENTRANCE = 8;
 // 樹根離 shaftX 這麼近不長：坑道各列的範圍 + 樹冠半徑 3（樹幹不會懸在挖開的地表上、樹葉不會蓋住坑道口）
 const SHAFT_NO_TREE = SHAFT_HALF + 3;
-// 一段 fill 讀得到的範圍：坑道觸及範圍 ≥ 樹的觸及範圍（genPrims.growPlants 掃 [x0 − 3, x1 + 3)）；藍圖外框不超出自己的槽，不另外算
+// 一段 fill 讀得到的範圍：坑道觸及範圍 ≥ 樹的觸及範圍（genPrims.growPlants 掃 [x0 − 3, x1 + 3)）；藍圖不另外算——
+// overlapping 依外框找（一般藍圖的外框在自己的槽裡、wholeRegion 錨點在自己的地區裡，任何與外框相交的查詢都找得到）
 export const FILL_REACH = SHAFT_REACH;
 
 // 礦只換這些格（石頭類；沙 / 泥土 / 雪 / 玄武岩不換，P10）

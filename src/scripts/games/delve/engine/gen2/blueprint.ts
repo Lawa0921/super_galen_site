@@ -1,12 +1,17 @@
 // blueprint.ts — gen2 結構藍圖與槽位格（spec §4.3「結構以地區內的槽位格決定位置」）。
 // 每個陸地地區（home / wild / culture，沙灘除外）每一層各自切槽：表層 / 天空寬 LAND_SLOT_W（340）、地下 / 深層 / 小點位寬 SUB_SLOT_W（170）
 // （bpcore.slotWidth；最後一槽吃餘數，各層有自己的 slot 序號；170 的槽界一定包含 340 的槽界），每層每槽至多一份藍圖；
-// 藍圖只由 (seed, 地區, 槽, 層) 與 Profile2 的地表 / 層線算出（局部可算），外框在 [槽 x0 + 8, 槽 x1 − 8) 內（wholeRegion 的錨點例外，Q2），
-// 所以 fill 一段 [x0, x1) 只要看與它相交的槽，任何一段都蓋得出同一份藍圖與自己相交的部分。
+// 藍圖只由 (seed, 地區, 槽, 層) 與 Profile2 的地表 / 層線算出（局部可算），外框在 [槽 x0 + 8, 槽 x1 − 8) 內（wholeRegion 的錨點例外：
+// 外框在地區 [r.x0, r.x1) 內，Q2），solid / ground 在外框內，所以 fill 一段 [x0, x1) 只要看與它相交的槽（加上相交地區的 wholeRegion 錨點），
+// 任何一段都蓋得出同一份藍圖與自己相交的部分。
 // 海槽（P12 / spec §8）：structureId / slotOf 認得海槽（region = 0、slot = SeaSlot.k、表層）；每個海槽恰有一個點：
 // SeaSlot.poi = 'island' 的槽沒有藍圖（島地形由 Profile2 + fill 負責）、'shipwreck' / 'crate' 各一份表層藍圖（ctx 的槽 = 海槽、region = 海本身）。
 // 島地區不進陸地槽位格。
 // 保證槽（P11）：每片非家鄉的大陸至少一間小屋、一座遺跡（見 BlueprintIndex.guard）。
+// 錨點（anchors.ts，M2a Task 7）：有錨點的 (地區, 層, 槽) 不擲機率、用登錄的錨點建構器（沒登錄 = 空著）；錨點優先於保證槽（Q15）。
+// 錨點可以在含主坑道的槽（找不到不含坑道的槽時），建構器收到的 slotX0 / slotX1 是避開坑道帶後較大的一側（anchors.anchorSpan），
+// 所以外框照舊離坑道觸及範圍 ≥ 1；「含坑道的槽沒有非 DEEP 藍圖」只對機率 / 保證藍圖成立。
+// 家鄉地城區只有 dungeon 錨點（wholeRegion：外框佔滿整個地區，任何與地區相交的查詢都找得到它），其他層 / 槽全空。
 // 液體藍圖（湖 / 地下湖 / 熔岩池，structures/lakes.ts）讓位：另一層與它的外框相交的那幾槽的藍圖外框與它相交、且那份不是液體或層比它淺 → 這份不放
 // （fill 依 (layer, id) 序蓋，後蓋的結構會切開液體；依「原始」擲出的結果判，沒有循環）。
 // 地面覆寫（groundAt，Q4）：SURFACE 層藍圖的 ground 蓋過 profile 的地表；Gen2Source.surfaceAt 與 BpCtx.groundAt 都是它。
@@ -16,6 +21,7 @@ import { X_LIMIT } from '../coords';
 import { li, type Column } from '../column';
 import type { RegionInfo } from '../regionInfo';
 import { HOME_X0, SPAWN_X, VARIANT, type Landmass, type Layout, type SeaSlot } from './layout';
+import { anchorBuild, anchorSpan, continentAnchors, homeAnchors, type Anchor } from './anchors';
 import type { Profile2 } from './profile';
 import { shaftX } from './caves';
 import { buildCabin } from './structures/cabin';
@@ -23,11 +29,11 @@ import { buildRuin } from './structures/ruin';
 import { buildLake, buildCaveLake, buildLavaPool } from './structures/lakes';
 import { buildShipwreck } from './structures/shipwreck';
 import { buildCrate } from './structures/crate';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, KEEP, slotWidth, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, KEEP, slotWidth, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
 import { encodeStructureId, decodeStructureId } from './structId';
 
 export {
-  BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, LAND_SLOT_W, SUB_SLOT_W, KEEP, SLOT_PAD, BpGrid, placeX, slotWidth, emptyObjects,
+  BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, LAND_SLOT_W, SUB_SLOT_W, KEEP, SLOT_PAD, SPAWN_CLEAR, BpGrid, placeX, slotWidth, landSlot, landSlotCount, emptyObjects,
   type BpKind, type Blueprint, type BpCtx, type Layer, type BpChest, type BpPot, type BpTablet, type BpLandmark, type BpGround, type BpBox,
 } from './bpcore';
 
@@ -37,14 +43,9 @@ export const structureId = encodeStructureId;
 
 // 陸地地區：home / wild / culture（海與島不進陸地槽位格，P12）
 const isLand = (r: RegionInfo): boolean => r.kind === 'home' || r.kind === 'wild' || r.kind === 'culture';
-// 放藍圖的地區：陸地、非沙灘（家鄉兩端的沙灘留給 M2 的地城，spec §4.4；與主坑道 / 保證槽的沙灘豁免一致）
+// 放藍圖的地區：陸地、非沙灘（家鄉兩端的沙灘不放，spec §4.4；與主坑道 / 保證槽的沙灘豁免一致）。家鄉地城區有槽，但只放 dungeon 錨點
 const hasSlots = (r: RegionInfo): boolean => isLand(r) && r.variant !== VARIANT.BEACH;
-// 地區在 layer 層的陸地槽數（至少 1；最後一槽吃餘數）與第 q 槽
-export const landSlotCount = (r: RegionInfo, layer: Layer): number => Math.max(1, Math.floor((r.x1 - r.x0) / slotWidth(layer)));
-export function landSlot(r: RegionInfo, q: number, layer: Layer): { x0: number; x1: number } {
-  const sw = slotWidth(layer), x0 = r.x0 + q * sw;
-  return { x0, x1: q < landSlotCount(r, layer) - 1 ? x0 + sw : r.x1 };
-}
+// 槽序號用 bpcore.landSlotCount / landSlot（anchors.ts 共用）
 // 地區 r 在 layer 層與 [x0, x1) 相交的槽 [q0, q1]（沒有相交 → q0 > q1）
 function slotsIn(r: RegionInfo, layer: Layer, x0: number, x1: number): [number, number] {
   const n = landSlotCount(r, layer), sw = slotWidth(layer);
@@ -117,14 +118,19 @@ const boxesMeet = (a: Blueprint, b: Blueprint): boolean => a.x < b.x + b.w && b.
 export function liquidYields(b: Blueprint, o: Blueprint): boolean {
   return LIQUID.has(b.kind) && o.layer !== b.layer && boxesMeet(b, o) && (!LIQUID.has(o.kind) || o.layer < b.layer);
 }
-// 家鄉含出生點 ± SPAWN_CLEAR 的槽全空
-const SPAWN_CLEAR = 80;
+// 家鄉含出生點 ± SPAWN_CLEAR 的槽全空（bpcore.touchesSpawnClear）
 const CACHE_MAX = 256;
 // 地面覆寫的快取：一段 GROUND_SEG 欄
 const GROUND_SEG = 32, NO_GROUND = -32768;
 
 interface Pick { r: RegionInfo; q: number; bp: Blueprint }
 interface Guard { cabin: Pick; ruin: Pick }
+// 一片地塊的錨點：list = anchorsOf 的結果；at = structureId → 錨點；whole = wholeRegion 的錨點
+interface AnchorTable { list: readonly Anchor[]; at: Map<number, Anchor>; whole: readonly Anchor[] }
+export interface BlueprintIndexOptions {
+  // 測試接縫：額外的錨點（併進 anchorsOf 的結果；正式碼不傳）
+  extraAnchors?: (m: Landmass) => readonly Anchor[];
+}
 
 export class BlueprintIndex {
   private readonly s: number;
@@ -136,11 +142,15 @@ export class BlueprintIndex {
   private readonly rawCache = new Map<number, Blueprint | null>();
   // 大陸 → 保證槽（Landmass 是 Layout 快取的同一個物件）
   private readonly guards = new Map<Landmass, Guard>();
+  // 地塊 → 錨點
+  private readonly anchors = new Map<Landmass, AnchorTable>();
   // 段號（floor(x / 32)）→ 那 32 欄的地面（groundAt）
   private readonly grounds = new Map<number, Int16Array>();
   private readonly groundFn = (x: number): number => this.groundAt(x);
+  // groundAt 正在算一段（重入 = Q4 的循環，丟錯）
+  private groundBusy = false;
 
-  constructor(private readonly seed: string, private readonly layout: Layout, private readonly profile: Profile2) {
+  constructor(private readonly seed: string, private readonly layout: Layout, private readonly profile: Profile2, private readonly opts: BlueprintIndexOptions = {}) {
     this.s = seedInt(seed, 'g2-bp');
     this.sRoll = seedInt(seed, 'g2-bp-roll');
     this.sShaft = seedInt(seed, 'g2-shaft');
@@ -148,7 +158,8 @@ export class BlueprintIndex {
     this.spawnX = home ? home.x0 + SPAWN_X - HOME_X0 : null;
   }
 
-  // 外框與 [x0, x1) 相交的藍圖，依 (layer, id) 排序；layers = 只要這幾層（預設全部）
+  // 外框與 [x0, x1) 相交的藍圖，依 (layer, id) 排序；layers = 只要這幾層（預設全部）。
+  // 一般藍圖的外框在自己的槽裡，看相交的槽就夠；wholeRegion 錨點的外框跨整個地區，地區相交就另外看它的槽（不重複）
   overlapping(x0: number, x1: number, layers: readonly Layer[] = LAYERS): Blueprint[] {
     const out: Blueprint[] = [];
     const land = LAYERS.filter((l) => layers.includes(l));
@@ -168,12 +179,18 @@ export class BlueprintIndex {
           if (b.x < x1 && b.x + b.w > x0) out.push(b);
         }
       } else {
+        const whole = this.anchorTable(m).whole;
         for (const r of m.regions) {
           if (r.x1 <= x0 || r.x0 >= x1 || !hasSlots(r)) continue;
           for (const layer of land) {
             const [q0, q1] = slotsIn(r, layer, x0, x1);
             for (let q = q0; q <= q1; q++) {
               const b = this.get(m, r, q, layer);
+              if (b && b.x < x1 && b.x + b.w > x0) out.push(b);
+            }
+            for (const a of whole) {
+              if (a.region !== r || a.layer !== layer || (a.slot >= q0 && a.slot <= q1)) continue;
+              const b = this.get(m, r, a.slot, layer);
               if (b && b.x < x1 && b.x + b.w > x0) out.push(b);
             }
           }
@@ -186,22 +203,46 @@ export class BlueprintIndex {
 
   // 地面（Q4）：profile.surfaceAt(x)，被與 x 相交、有 ground 且涵蓋 x 的 SURFACE 層藍圖覆寫（依 id 序、後者優先）。
   // 只看 SURFACE 層（SURFACE / UNDER / DEEP 的建構器讀 profile、不讀這裡），所以 SKY / MINOR 的建構器呼叫它沒有循環。
-  // 32 欄一段快取覆寫值（NO_GROUND = 沒有覆寫；段內可能有不屬 gen2 的欄，所以側寫的地表只對 x 本身問）
+  // 32 欄一段快取覆寫值（NO_GROUND = 沒有覆寫；段內可能有不屬 gen2 的欄，所以側寫的地表只對 x 本身問）。
+  // 算一段時（建 SURFACE 層藍圖）又被呼叫 = 有 SURFACE 層建構器讀了 groundAt，Q4 的無循環規則被破壞 → 丟錯（不是無窮遞迴）
   groundAt(x: number): number {
+    if (this.groundBusy) throw new Error(`gen2: groundAt re-entered at x ${x} (a SURFACE-layer builder must read c.profile, not c.groundAt; Q4)`);
     const seg = Math.floor(x / GROUND_SEG), a = seg * GROUND_SEG;
     let g = this.grounds.get(seg);
     if (!g) {
       g = new Int16Array(GROUND_SEG).fill(NO_GROUND);
-      for (const b of this.overlapping(a, a + GROUND_SEG, [BP_SURFACE])) {
-        const gr = b.ground;
-        if (!gr) continue;
-        for (let k = 0; k < gr.tops.length; k++) { const gx = gr.x0 + k; if (gx >= a && gx < a + GROUND_SEG) g[gx - a] = gr.tops[k]; }
-      }
+      this.groundBusy = true;
+      try {
+        for (const b of this.overlapping(a, a + GROUND_SEG, [BP_SURFACE])) {
+          const gr = b.ground;
+          if (!gr) continue;
+          for (let k = 0; k < gr.tops.length; k++) { const gx = gr.x0 + k; if (gx >= a && gx < a + GROUND_SEG) g[gx - a] = gr.tops[k]; }
+        }
+      } finally { this.groundBusy = false; }
       if (this.grounds.size >= CACHE_MAX) this.grounds.delete(this.grounds.keys().next().value!);
       this.grounds.set(seg, g);
     }
     const v = g[x - a];
     return v === NO_GROUND ? this.profile.surfaceAt(x) : v;
+  }
+
+  // 地塊的錨點（家鄉：homeAnchors；大陸：continentAnchors；海：沒有）+ 測試接縫 extraAnchors；依地塊快取
+  anchorsOf(m: Landmass): readonly Anchor[] { return this.anchorTable(m).list; }
+
+  private anchorTable(m: Landmass): AnchorTable {
+    let t = this.anchors.get(m);
+    if (t) return t;
+    const own = m.kind === 'home' ? homeAnchors(this.seed, m, this.profile) : m.kind === 'continent' ? continentAnchors(this.seed, m, this.profile) : [];
+    const list = [...own, ...(this.opts.extraAnchors?.(m) ?? [])], at = new Map<number, Anchor>();
+    for (const a of list) {
+      const id = structureId(m.side, m.i, a.region.index, a.slot, a.layer);
+      if (at.has(id)) throw new RangeError(`gen2: two anchors in slot ${id} (${at.get(id)!.kind}, ${a.kind})`);
+      at.set(id, a);
+    }
+    t = { list, at, whole: list.filter((a) => a.wholeRegion) };
+    if (this.anchors.size >= CACHE_MAX) this.anchors.clear();
+    this.anchors.set(m, t);
+    return t;
   }
 
   // 海槽的點（沉船 / 漂流箱）：ver 0 的規則（build 收到該海的 ctx.ver）
@@ -246,9 +287,17 @@ export class BlueprintIndex {
   }
 
   // ver 0 的規則（每個槽位表項目的 build 收到該地塊的 ctx.ver）
+  // 錨點先：有錨點 → 錨點建構器（沒登錄 → null），不擲機率；家鄉地城區沒有錨點的槽全空
   private build(m: Landmass, r: RegionInfo, q: number, layer: RolledLayer, id: number): Blueprint | null {
+    const a = this.anchorTable(m).at.get(id);
+    if (a) {
+      // 建構器的 slotX0 / slotX1 = 錨點的可用範圍（含坑道的槽 → 避開坑道帶後較大的一側；wholeRegion → 整個地區）
+      const f = anchorBuild(a.kind), sp = anchorSpan(this.seed, a);
+      return f ? f({ ...this.ctx(m, r, q, layer), slotX0: sp.x0, slotX1: sp.x1 }) : null;
+    }
+    if (r.variant === VARIANT.DUNGEON) return null;
     const sl = landSlot(r, q, layer);
-    if (m.kind === 'home' && this.spawnX !== null && sl.x0 <= this.spawnX + SPAWN_CLEAR && sl.x1 > this.spawnX - SPAWN_CLEAR) return null;
+    if (m.kind === 'home' && this.spawnX !== null && touchesSpawnClear(sl.x0, sl.x1, this.spawnX)) return null;
     if (layer !== BP_DEEP && this.shaftIn(r, q, layer)) return null;
     if (m.kind === 'continent') {
       const g = this.guard(m);
@@ -264,19 +313,21 @@ export class BlueprintIndex {
     return null;
   }
 
-  // 保證槽（P11）：大陸在該層的合格槽（非沙灘地區、不含主坑道；小屋看地下層的 170 格槽、遺跡看表層的 340 格槽）依 x 排序，
+  // 保證槽（P11）：大陸在該層的合格槽（非沙灘地區、不含主坑道、不是錨點槽（Q15）；小屋看地下層的 170 格槽、遺跡看表層的 340 格槽）依 x 排序，
   // 起點 g = floor(hash2(side, i, s) × 該層合格槽數)；小屋 = 從 g 往後（繞回）第一個 buildCabin 不回 null 的槽、
   // 遺跡 = 從 g + 1 往後第一個 buildRuin 不回 null 的槽；全部失敗就從同一個起點依序 force（force 也會因坑道避讓帶回 null，Q3）。
   // 保證槽的那一層不再擲機率
   private guard(m: Landmass): Guard {
     let g = this.guards.get(m);
     if (g) return g;
-    const h = hash2(m.side, m.i, this.s);
+    const h = hash2(m.side, m.i, this.s), anchored = this.anchorTable(m).at;
     const find = (off: number, layer: 0 | 1, build: Build): Pick => {
       const ok: { r: RegionInfo; q: number }[] = [];
       for (const r of m.regions) {
         if (!hasSlots(r)) continue;
-        for (let q = 0; q < landSlotCount(r, layer); q++) if (!this.shaftIn(r, q, layer)) ok.push({ r, q });
+        for (let q = 0; q < landSlotCount(r, layer); q++) {
+          if (!this.shaftIn(r, q, layer) && !anchored.has(structureId(m.side, m.i, r.index, q, layer))) ok.push({ r, q });
+        }
       }
       // 大陸 ≥ 2400 寬、地區 ≥ 700 寬：每個地區每層 ≥ 2 槽、至多 1 槽有坑道，不會沒有合格槽；真的發生就是版面壞了（P11 不能默默失效）
       const n = ok.length;

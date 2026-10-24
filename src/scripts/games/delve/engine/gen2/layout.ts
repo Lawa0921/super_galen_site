@@ -10,7 +10,7 @@ import type { LockTable } from './locks';
 import { poolFor } from './cultures';
 
 export const HOME_X0 = 0, HOME_X1 = 4200, SPAWN_X = 2100, SEA_SLOT_W = 300;
-export const VARIANT = { PLAIN: 0, HILLS: 1, HIGH: 2, BEACH: 3, SPAWN: 4, ISLAND: 5, SEA: 6 } as const;
+export const VARIANT = { PLAIN: 0, HILLS: 1, HIGH: 2, BEACH: 3, SPAWN: 4, ISLAND: 5, SEA: 6, DUNGEON: 7 } as const;
 
 export interface SideOrigin { x: number; start: 'sea' | 'continent'; seaY: number; shore: number }
 export interface LayoutOrigin { home: { x0: number; x1: number } | null; east: SideOrigin; west: SideOrigin }
@@ -28,7 +28,7 @@ export function newWorldOrigin(seaY: number, shore: number): LayoutOrigin {
 }
 
 // 家鄉版面（相對 home.x0）
-const BEACH_W = 70, SPAWN_X0 = 1680, SPAWN_X1 = 2520, DESERT_GAP = 84;
+const BEACH_W = 70, SPAWN_X0 = 1680, SPAWN_X1 = 2520, DESERT_GAP = 84, DUNGEON_W = 420;
 // 大陸
 const REGION_MIN = 700, REGION_MAX = 1500, CONT_MIN = 2400, CONT_MAX = 5200;
 // 海
@@ -206,30 +206,37 @@ export class Layout {
 
   // ── 家鄉 ──
 
-  // 兩端各 70 格海灘；出生森林 [1680, 2520)；一側外圍雪原（420–546）、另一側叢林（504–630）；
-  // 沙漠（315–420）隨機在一側，與該側外圍、與出生森林之間都至少 84 格森林（家鄉除海灘外每個地區 ≥ 84 寬）；其餘補森林（PLAIN / HILLS）。
+  // 兩端各 70 格海灘；出生森林 [1680, 2520)；h(9) < 0.5 的那一側（西 / 東）海灘內側是 420 寬的地城區（FOREST、VARIANT.DUNGEON，[70, 490) 或 [3710, 4130)）；
+  // 一側外圍雪原（420–546）、另一側叢林（504–630），緊貼海灘（地城側緊貼地城區）往內排；
+  // 沙漠（315–420）隨機在一側，與該側外圍、與出生森林之間都至少 84 格森林（家鄉除海灘外每個地區 ≥ 84 寬）；
+  // 擲到地城側但放不下（外圍寬 + 84 + 沙漠寬 + 84 > 1680 − 70 − 420）就改放另一側；其餘補森林（PLAIN / HILLS）。
   private buildHome(hs: number, hx0: number, hx1: number): Landmass {
     const h = (k: number): number => hash2(0, k, hs);
     const hv = (k: number): number => HOME_VARIANTS[Math.floor(h(k) * 2)];
     const snowWest = h(0) < 0.5;
     const snowW = pick(h(1), 420, 546), jungleW = pick(h(2), 504, 630);
     const wo = snowWest ? snowW : jungleW, eo = snowWest ? jungleW : snowW;
-    const desertWest = h(3) < 0.5, dw = pick(h(4), 315, 420);
-    const bE = hx1 - BEACH_W;
+    const dungeonWest = h(9) < 0.5, dw = pick(h(4), 315, 420);
+    const bW = hx0 + BEACH_W, bE = hx1 - BEACH_W;
+    // 外圍生態的內側起點（地城側再往內 420）
+    const wIn = bW + (dungeonWest ? DUNGEON_W : 0), eIn = bE - (dungeonWest ? 0 : DUNGEON_W);
+    let desertWest = h(3) < 0.5;
+    if (desertWest === dungeonWest && (desertWest ? wo : eo) + DESERT_GAP + dw + DESERT_GAP > SPAWN_X0 - BEACH_W - DUNGEON_W) desertWest = !desertWest;
 
     type Seg = [x0: number, x1: number, biome: number, variant: number];
     const fixed: Seg[] = [
-      [hx0, hx0 + BEACH_W, BIOME.FOREST, VARIANT.BEACH],
-      [hx0 + BEACH_W, hx0 + BEACH_W + wo, snowWest ? BIOME.SNOW : BIOME.JUNGLE, hv(6)],
+      [hx0, bW, BIOME.FOREST, VARIANT.BEACH],
+      dungeonWest ? [bW, wIn, BIOME.FOREST, VARIANT.DUNGEON] : [eIn, bE, BIOME.FOREST, VARIANT.DUNGEON],
+      [wIn, wIn + wo, snowWest ? BIOME.SNOW : BIOME.JUNGLE, hv(6)],
       [hx0 + SPAWN_X0, hx0 + SPAWN_X1, BIOME.FOREST, VARIANT.SPAWN],
-      [bE - eo, bE, snowWest ? BIOME.JUNGLE : BIOME.SNOW, hv(7)],
+      [eIn - eo, eIn, snowWest ? BIOME.JUNGLE : BIOME.SNOW, hv(7)],
       [bE, hx1, BIOME.FOREST, VARIANT.BEACH],
     ];
     if (desertWest) {
-      const d0 = pick(h(5), hx0 + BEACH_W + wo + DESERT_GAP, hx0 + SPAWN_X0 - dw - DESERT_GAP);
+      const d0 = pick(h(5), wIn + wo + DESERT_GAP, hx0 + SPAWN_X0 - dw - DESERT_GAP);
       fixed.push([d0, d0 + dw, BIOME.DESERT, hv(8)]);
     } else {
-      const d1 = pick(h(5), hx0 + SPAWN_X1 + dw + DESERT_GAP, bE - eo - DESERT_GAP);
+      const d1 = pick(h(5), hx0 + SPAWN_X1 + dw + DESERT_GAP, eIn - eo - DESERT_GAP);
       fixed.push([d1 - dw, d1, BIOME.DESERT, hv(8)]);
     }
     fixed.sort((p, q) => p[0] - q[0]);
@@ -245,4 +252,11 @@ export class Layout {
     const lock = this.locks.get(0, 0);
     return { side: 0, i: 0, kind: 'home', x0: hx0, x1: hx1, tier: 0, culture: null, ver: lock ? lock.ver : this.latestVer, regions, islands: [], slots: [] };
   }
+}
+
+// 家鄉的地城區（VARIANT.DUNGEON；每個家鄉恰一個）
+export function homeDungeonRegion(m: Landmass): RegionInfo {
+  const r = m.kind === 'home' ? m.regions.find((q) => q.variant === VARIANT.DUNGEON) : undefined;
+  if (!r) throw new RangeError(`gen2: landmass ${m.side}:${m.i} has no home dungeon zone`);
+  return r;
 }
