@@ -11,7 +11,8 @@ import { chunkOfX, defaultBounds, type WorldBounds } from './coords';
 import { OuterGen, frameOf } from './legacy/chunkgen';
 import { LOAD_COLS, planStreaming } from './streaming';
 import { generateWorld, type GenResult } from './legacy/worldgen';
-import type { BiomeSegment, Structure, Landform, ReservedZone, GenLayers, GenRelic, DungeonInfo, VillageInfo, HallInfo, LandmarkInfo } from './genTypes';
+import type { BiomeSegment, Structure, Landform, ReservedZone, GenLayers, GenRelic, DungeonInfo, VillageInfo, HallInfo, LandmarkInfo, GenSite } from './genTypes';
+import { SiteRegistry, legacySites } from './siteRegistry';
 import { bootBaked, bootGen2, bootLegacy, type WorldContent, type WorldGenSpec } from './worldBoot';
 import { Gen2Source } from './gen2';
 import { BakedSource } from './bakedSource';
@@ -734,6 +735,8 @@ export class DelveGame {
   /** 地表村落 / 矮人地廳（世界生成） */
   readonly villages: readonly VillageInfo[];
   readonly halls: readonly HallInfo[];
+  /** 聚落登錄（村落 / 地廳 / 隱士 / 地城，穩定的 key；新 key → folk.addSite 放那裡的 NPC） */
+  readonly sites: SiteRegistry;
   /** 每個發現地點的地標（一次性發現物；領過的記在 discovery.landmarks） */
   readonly landmarks: readonly LandmarkInfo[];
   private landmarkAt = new Map<number, LandmarkInfo>();
@@ -897,8 +900,11 @@ export class DelveGame {
     this.discovery.setOuter(this.outerRegion);
     // 據點核心範圍的欄 pin 住（無限世界：居民在那裡活動，不卸載）
     this.settle.attach(this.world);
-    this.folk = new FolkWorld(this.seed, this.villages, this.halls);
-    this.folk.populate(this.world);
+    this.folk = new FolkWorld(this.seed);
+    // 舊世界（legacy / baked）沿用改動前的 siteAt 範圍；gen2 用新範圍
+    this.sites = new SiteRegistry({ ranges: this.genKind === 'gen2' ? 'gen2' : 'legacy' });
+    this.sites.onAdd((s) => this.folk.addSite(this.world, s));
+    if (this.genKind !== 'gen2') for (const s of legacySites(this.villages, this.halls, this.dungeon)) this.sites.add(s);
     // 開局一段時間內不會遇見（第一位旅人至少四分之一天後、第一位受困者半天後）
     this.folk.enc.nextTraveller = this.time + DAY_LENGTH * 0.25;
     this.folk.enc.nextStranded = this.time + DAY_LENGTH * 0.5;
@@ -2584,8 +2590,9 @@ export class DelveGame {
       return Boolean(c);
     }
     if (id === T.QUEST_BOARD) {
-      const v = this.villages.findIndex((q) => Math.abs(q.board.x - x) <= 2 && Math.abs(q.board.y - y) <= 2);
-      const elder = this.folk.byKey(`v${Math.max(0, v)}:elder`);
+      // 委託板所在的村子（找不到就是第一座村子，同改動前）
+      const at = this.sites.at(x, y), v = at?.kind === 'village' ? at : this.sites.list('village')[0];
+      const elder = v ? this.folk.byKey(`${v.key}:elder`) : null;
       if (!elder) return false;
       this.emit({ type: 'folktalk', key: elder.key, line: '委託板上釘著幾張紙條。做完了去找村長領報酬。', board: true });
       return true;
@@ -4406,8 +4413,8 @@ export class DelveGame {
       get viewHalf() { return self.viewHalf; },
       isNight: () => this.isNight(), playerTiles: () => this.playerTiles(),
       underground: (x, y) => {
-        const b = this.dungeon?.bbox;
-        return y > this.world.layersAt(x).rock + 4 && !(b && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
+        if (y <= this.world.layersAt(x).rock + 4) return false;
+        return !this.sites.list('dungeon').some(({ info: { bbox: b } }) => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
       },
       onSurface: (x, y) => {
         return y <= this.world.layersAt(x).rock - 6 && y <= this.world.surfaceAt(x) + 4;
@@ -4434,24 +4441,15 @@ export class DelveGame {
     }
     if (this.tick % 30 === 0) this.refreshQuests();
   }
-  /** (x,y) 在哪個村落 / 地廳裡（範圍含村外的緩坡） */
-  siteAt(x: number, y: number): { kind: 'village' | 'hall'; i: number } | null {
-    for (let i = 0; i < this.villages.length; i++) {
-      const v = this.villages[i];
-      if (x >= v.x0 - 12 && x <= v.x1 + 12 && y >= v.ground - 28 && y <= v.ground + 4) return { kind: 'village', i };
-    }
-    for (let i = 0; i < this.halls.length; i++) {
-      const h = this.halls[i];
-      if (x >= h.x0 - 4 && x <= h.x1 + 4 && y >= h.y0 - 5 && y <= h.floorY + 2) return { kind: 'hall', i };
-    }
-    return null;
-  }
-  /** 地區名（村落 / 地廳：discovery 的名字） */
-  siteName(kind: 'village' | 'hall', i: number): string {
-    const rk = kind === 'village' ? 'village' : 'dwarf_hall';
-    const s = kind === 'village' ? this.villages[i] : this.halls[i];
-    if (!s) return '';
-    const cx = (s.x0 + s.x1) >> 1, cy = kind === 'village' ? (s as VillageInfo).ground - 2 : (s as HallInfo).floorY - 2;
+  /** (x,y) 在哪個聚落裡（舊世界：村落含村外的緩坡、地廳外框外擴，同改動前；gen2 的範圍見 SiteRegistry） */
+  siteAt(x: number, y: number): GenSite | null { return this.sites.at(x, y); }
+  /** 聚落名（村落 / 地廳：discovery 的名字；其他 / 不認得的 key → ''） */
+  siteName(key: string): string {
+    const s = this.sites.byKey(key);
+    let cx: number, cy: number, rk: string;
+    if (s?.kind === 'village') { cx = (s.info.x0 + s.info.x1) >> 1; cy = s.info.ground - 2; rk = 'village'; }
+    else if (s?.kind === 'hall') { cx = (s.info.x0 + s.info.x1) >> 1; cy = s.info.floorY - 2; rk = 'dwarf_hall'; }
+    else return '';
     return this.regions.find((r) => r.kind === rk && r.contains(cx, cy))?.name ?? '';
   }
   private talkFolk(n: FolkNpc): void {
@@ -4685,11 +4683,11 @@ export class DelveGame {
     const tier = pick ? ITEMS[pick.item].pick!.tier : 0;
     if (tier <= 1) return '先換一把好鎬：挖銅礦，用熔爐煉成銅錠，在鐵砧旁做銅鎬。挖得快，往下才有意思。';
     if (!this.settle.cores.length) return '做一個「據點爐心」（石頭 15、木材 5、火把 3）放在地上，蓋好有床的房間，就會有人搬來住。';
-    const vi = this.villages.findIndex((v) => !this.regions.some((r) => r.kind === 'village' && r.contains(v.x0 + 3, v.ground - 2) && this.discovery.isFound(r.id)));
-    if (vi >= 0) { const v = this.villages[vi]; return `${dir(v.x0, v.ground)}有一座村子「${this.siteName('village', vi)}」。村民會賣東西、幫你鍛造治療，村長那裡還有委託。`; }
+    const vs = this.sites.list('village').find(({ info: v }) => !this.regions.some((r) => r.kind === 'village' && r.contains(v.x0 + 3, v.ground - 2) && this.discovery.isFound(r.id)));
+    if (vs) { const v = vs.info; return `${dir(v.x0, v.ground)}有一座村子「${this.siteName(vs.key)}」。村民會賣東西、幫你鍛造治療，村長那裡還有委託。`; }
     if (!this.settle.invited.has('healer') && !this.settle.npc('healer')) return '白天在地表多走走：路邊偶爾會遇到旅行藥師，邀請這位藥師到據點，回血會快很多。';
-    const hi = this.halls.findIndex((h) => !this.regions.some((r) => r.kind === 'dwarf_hall' && r.contains((h.x0 + h.x1) >> 1, h.floorY - 2) && this.discovery.isFound(r.id)));
-    if (hi >= 0) { const h = this.halls[hi]; return `洞穴層深處住著矮人：${dir((h.x0 + h.x1) >> 1, h.floorY)}有「${this.siteName('hall', hi)}」。他們賣地表買不到的礦石，還能用錠幫你升階裝備。`; }
+    const hs = this.sites.list('hall').find(({ info: h }) => !this.regions.some((r) => r.kind === 'dwarf_hall' && r.contains((h.x0 + h.x1) >> 1, h.floorY - 2) && this.discovery.isFound(r.id)));
+    if (hs) { const h = hs.info; return `洞穴層深處住著矮人：${dir((h.x0 + h.x1) >> 1, h.floorY)}有「${this.siteName(hs.key)}」。他們賣地表買不到的礦石，還能用錠幫你升階裝備。`; }
     if (this.dungeon && !this.regions.some((r) => r.kind === 'dungeon' && this.discovery.isFound(r.id))) return `${dir(this.dungeon.bbox.x, this.dungeon.bbox.y)}有一座地下城。帶夠藥水，裡面的鑰匙能打開金寶箱。`;
     if (!this.bossesDefeated.has('lantern_warden')) return '地下城最深處的守望者還沒被擊敗。準備好之後，用燈芯祭品把它叫出來吧。';
     const left = this.landmarks.length - this.discovery.landmarks.size;

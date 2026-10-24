@@ -14,7 +14,8 @@ import { TILE_SIZE as S, GRAVITY, MAX_FALL, JUMP_SPEED, DAY_LENGTH } from './con
 import { findStandSpot, findPath, standable, type PathNode } from './npcPath';
 import { Rng } from './rng';
 import { HOUSE_WALLS } from './furniture';
-import type { VillageInfo, HallInfo } from './genTypes';
+import type { VillageInfo, GenSite } from './genTypes';
+import { claimNpcId, npcIdFor } from './siteRegistry';
 import {
   ROLES, AFF_MAX, AFF_TALK, AFF_TRADE, AFF_TRADE_DAILY, folkLook, folkName, peddlerStock,
   type FolkLook, type FolkOrigin, type FolkRace, type FolkRole, type FolkShopEntry,
@@ -44,6 +45,7 @@ export const STUCK_TP = 5;
 export const TP_RANGE = 30;
 
 export interface FolkNpc {
+  /** 聚落 NPC = npcIdFor(key)（≥ SITE_NPC_BASE，不依登錄順序）；遇見的人 = 遞增 id（< SITE_NPC_BASE） */
   id: number;
   /** 穩定的識別（好感度 / 委託用）：v0:elder、h1:runesmith、road:peddler、cave:stranded:2 */
   key: string;
@@ -57,8 +59,8 @@ export interface FolkNpc {
   zone: { x0: number; x1: number };
   /** 晚上待的地方（屋裡；矮人 / 旅人沒有） */
   night: { x: number; y: number } | null;
-  /** 村落 / 地廳的索引（遇見的人 = -1） */
-  site: number;
+  /** 所屬聚落的 key（SiteRegistry：v0 / h1 / s{structureId}；遇見的人 = null） */
+  site: string | null;
   t: number; targetX: number | null; stuck: number;
   say: string | null; sayT: number; talks: number;
   door: { x: number; top: number; bot: number } | null;
@@ -137,6 +139,9 @@ export class FolkWorld {
   affDay: Record<string, { day: number; n: number; talk?: number }> = {};
   enc = { nextTraveller: DAY_LENGTH * 0.25, nextStranded: DAY_LENGTH * 0.5, stranded: 0, visits: 0 };
   private nextId = 1;
+  /** 已放過 NPC 的聚落 key；聚落 NPC id → NPC key（撞號檢查） */
+  private readonly siteKeys = new Set<string>();
+  private readonly usedIds = new Map<number, string>();
   /** 上一刻玩家所在 tile（遇見提示的方向用） */
   private pt = { x: 0, y: 0 };
   private encT = 0;
@@ -145,19 +150,24 @@ export class FolkWorld {
   /** 測試 / e2e：遇見機率覆寫（1 = 一定出現） */
   chanceOverride: number | null = null;
 
-  constructor(readonly seed: string, readonly villages: readonly VillageInfo[], readonly halls: readonly HallInfo[]) {
+  constructor(readonly seed: string) {
     this.rng = new Rng(`${seed}:folk-enc`);
   }
   drainEvents(): FolkEvent[] { const e = this.events; this.events = []; return e; }
 
   // ── 村民 / 矮人 ──
-  /** 依世界生成的配置安排所有村民 / 矮人（建構後呼叫一次；讀檔不影響他們） */
-  populate(w: World): void {
-    this.npcs = this.npcs.filter((n) => n.site < 0);
-    // 第一座村子一定有嚮導（每個世界都找得到）；有兩座以上時鐵匠 / 醫者 / 嚮導都會出現
-    const VROLES: FolkRole[][] = [['guide', 'smith'], ['healer', 'guide'], ['smith', 'healer'], ['guide', 'healer']];
-    this.villages.forEach((v, vi) => {
-      const roles: FolkRole[] = ['elder', 'trader', ...VROLES[vi % VROLES.length]];
+  /**
+   * 依聚落描述安排那裡的村民 / 矮人（SiteRegistry.onAdd 觸發；同一個聚落只放一次；讀檔不影響他們）。
+   * NPC key = `${聚落 key}:${角色}`、id = npcIdFor(key)：登錄順序不同（房主 / 客人載入外圍的順序）也是同一批 id。
+   */
+  addSite(w: World, s: GenSite): void {
+    if (this.siteKeys.has(s.key)) return;
+    this.siteKeys.add(s.key);
+    if (s.kind === 'village') {
+      const v = s.info;
+      // 第一座村子一定有嚮導（每個世界都找得到）；有兩座以上時鐵匠 / 醫者 / 嚮導都會出現
+      const VROLES: FolkRole[][] = [['guide', 'smith'], ['healer', 'guide'], ['smith', 'healer'], ['guide', 'healer']];
+      const roles: FolkRole[] = ['elder', 'trader', ...VROLES[s.rot % VROLES.length]];
       const zones = villageZones(v);
       const used = new Map<VillageInfo['houses'][number], number>();
       roles.forEach((role, k) => {
@@ -172,18 +182,25 @@ export class FolkWorld {
           const span = house.x1 - house.x0 - 3;
           inside = { x: house.x0 + 2 + ((slot * 3) % Math.max(1, span)), y: house.floorY - 1 };
         }
-        this.add(w, `v${vi}:${role}`, role, 'village', vi, zones[k], v.ground - 1, inside);
+        this.addSettled(w, s.key, role, 'village', zones[k], v.ground - 1, inside);
       });
-    });
-    this.halls.forEach((h, hi) => {
-      const fy = h.floorY - 1, cx = (h.x0 + h.x1) >> 1;
-      this.add(w, `h${hi}:runesmith`, 'runesmith', 'hall', hi, { x0: h.forge.x - 1, x1: h.forge.x + 6 }, fy, null);
-      this.add(w, `h${hi}:ore_trader`, 'ore_trader', 'hall', hi, { x0: h.cart.x - 7, x1: h.cart.x - 1 }, fy, null);
-      this.add(w, `h${hi}:dwarf_elder`, 'dwarf_elder', 'hall', hi, { x0: cx - 6, x1: cx + 6 }, fy, null);
-    });
+    } else if (s.kind === 'hall') {
+      const h = s.info, fy = h.floorY - 1, cx = (h.x0 + h.x1) >> 1;
+      this.addSettled(w, s.key, 'runesmith', 'hall', { x0: h.forge.x - 1, x1: h.forge.x + 6 }, fy, null);
+      this.addSettled(w, s.key, 'ore_trader', 'hall', { x0: h.cart.x - 7, x1: h.cart.x - 1 }, fy, null);
+      this.addSettled(w, s.key, 'dwarf_elder', 'hall', { x0: cx - 6, x1: cx + 6 }, fy, null);
+    }
+    // 隱士（Task 18 加角色）/ 地城：沒有常駐 NPC
   }
-  private add(w: World, key: string, role: FolkRole, origin: FolkOrigin, site: number, zone: { x0: number; x1: number }, y: number,
+  /** 聚落 NPC：key = `${site}:${role}`、id 由 key 雜湊（撞號丟錯） */
+  private addSettled(w: World, site: string, role: FolkRole, origin: FolkOrigin, zone: { x0: number; x1: number }, y: number,
     night: { x: number; y: number } | null): FolkNpc {
+    const key = `${site}:${role}`, id = npcIdFor(key);
+    claimNpcId(this.usedIds, id, key);
+    return this.add(w, key, role, origin, site, zone, y, night, id);
+  }
+  private add(w: World, key: string, role: FolkRole, origin: FolkOrigin, site: string | null, zone: { x0: number; x1: number }, y: number,
+    night: { x: number; y: number } | null, id = this.nextId++): FolkNpc {
     const rng = new Rng(`${this.seed}:folk:${key}`);
     const def = ROLES[role];
     const b = makeBody(0, 0);
@@ -191,7 +208,7 @@ export class FolkWorld {
     const spot = findStandSpot(w, x0, y, 6) ?? { x: x0, y };
     b.x = spot.x * S + S / 2 - b.w / 2; b.y = (spot.y + 1) * S - b.h;
     const n: FolkNpc = {
-      id: this.nextId++, key, role, race: def.race, origin, name: folkName(def.race, rng), look: folkLook(role, rng), body: b, dir: 1, state: 'idle',
+      id, key, role, race: def.race, origin, name: folkName(def.race, rng), look: folkLook(role, rng), body: b, dir: 1, state: 'idle',
       zone, night, site, t: rng.next() * 3, targetX: null, stuck: 0, say: null, sayT: 0, talks: 0, door: null,
     };
     this.npcs.push(n);
@@ -268,11 +285,11 @@ export class FolkWorld {
       if (n.sayT > 0) { n.sayT -= dt; if (n.sayT <= 0) n.say = null; }
       // 離每個玩家都超過活動範圍才算遠
       const far = tiles.every((pt) => Math.abs(n.body.x / S - pt.x) > FOLK_ACTIVE.x || Math.abs(n.body.y / S - pt.y) > FOLK_ACTIVE.y);
-      if (n.site < 0) { this.stepEncounter(n, dt, h, far); continue; }
+      if (n.site === null) { this.stepEncounter(n, dt, h, far); continue; }
       if (far) { this.freeze(n, night, w); continue; }
       this.stepSettled(n, dt, night, h);
     }
-    this.npcs = this.npcs.filter((n) => !(n.site < 0 && n.leaving && n.state === 'idle' && (n.t > 40 || this.offscreen(n, h, 6))));
+    this.npcs = this.npcs.filter((n) => !(n.site === null && n.leaving && n.state === 'idle' && (n.t > 40 || this.offscreen(n, h, 6))));
     this.encT -= dt;
     if (this.encT <= 0) { this.encT = ENCOUNTER_EVERY; this.tryEncounters(h); }
   }
@@ -307,7 +324,7 @@ export class FolkWorld {
       if (home && n.night) n.targetX = (n.night.x + 0.5) * S;
       else {
         const span = n.zone.x1 - n.zone.x0 + 1;
-        n.targetX = (n.zone.x0 + ((n.id * 5 + Math.floor(n.t * 1.7)) % span) + 0.5) * S;
+        n.targetX = (n.zone.x0 + (((n.id % span) * 5 + Math.floor(n.t * 1.7)) % span) + 0.5) * S;
       }
       n.state = 'walk'; n.t = 0; n.stuck = 0;
     }
@@ -367,7 +384,7 @@ export class FolkWorld {
   }
 
   // ── 遇見 ──
-  travellers(): FolkNpc[] { return this.npcs.filter((n) => n.site < 0); }
+  travellers(): FolkNpc[] { return this.npcs.filter((n) => n.site === null); }
   /** 遇見：以第一個（活著的）玩家為中心（多人時輪流 / 各自的遇見留給之後調整） */
   private tryEncounters(h: FolkHost): void {
     const now = h.time, pt = h.playerTiles()[0];
@@ -428,7 +445,7 @@ export class FolkWorld {
   }
   spawnTraveller(w: World, role: 'peddler' | 'herbalist', x: number, y: number, now: number): FolkNpc {
     const visit = this.enc.visits++;
-    const n = this.add(w, `road:${role}`, role, 'road', -1, { x0: x - 3, x1: x + 3 }, y, null);
+    const n = this.add(w, `road:${role}`, role, 'road', null, { x0: x - 3, x1: x + 3 }, y, null);
     this.npcs = this.npcs.filter((q) => q === n || q.key !== n.key);
     n.visit = visit;
     if (role === 'peddler') { n.stock = peddlerStock(this.seed, visit); n.left = peddlerLeft(this.seed, visit, n.stock.length); }
@@ -439,7 +456,7 @@ export class FolkWorld {
   }
   spawnStranded(w: World, x: number, y: number, now: number): FolkNpc {
     const k = this.enc.stranded++;
-    const n = this.add(w, `cave:stranded:${k}`, 'stranded', 'cave', -1, { x0: x, x1: x }, y, null);
+    const n = this.add(w, `cave:stranded:${k}`, 'stranded', 'cave', null, { x0: x, x1: x }, y, null);
     n.since = now; n.leaveAt = now + STRANDED_WAIT;
     n.hp = STRANDED_HP;
     this.enc.nextStranded = now + STRANDED_CD;
@@ -572,7 +589,7 @@ export class FolkWorld {
   load(j: unknown, w: World, trust = false): void {
     this.aff = {}; this.affDay = {};
     this.enc = { nextTraveller: DAY_LENGTH * 0.25, nextStranded: DAY_LENGTH * 0.5, stranded: 0, visits: 0 };
-    this.npcs = this.npcs.filter((n) => n.site >= 0);
+    this.npcs = this.npcs.filter((n) => n.site !== null);
     if (!j || typeof j !== 'object') return;
     const o = j as Partial<FolkJSON>;
     const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -592,7 +609,7 @@ export class FolkWorld {
       if (!t || typeof t.key !== 'string' || !['peddler', 'herbalist', 'stranded'].includes(t.role) || !num(t.x) || !num(t.y)) continue;
       if (this.byKey(t.key) || t.x < w.xMin * S || t.y < 0 || t.x > w.xMax * S || t.y > w.height * S) continue;
       const tx = Math.floor(t.x / S), ty = Math.floor(t.y / S);
-      const n = this.add(w, t.key, t.role, t.role === 'stranded' ? 'cave' : 'road', -1, { x0: tx - 3, x1: tx + 3 }, ty + 2, null);
+      const n = this.add(w, t.key, t.role, t.role === 'stranded' ? 'cave' : 'road', null, { x0: tx - 3, x1: tx + 3 }, ty + 2, null);
       n.body.x = t.x; n.body.y = t.y;
       if (trust && int(t.id) && t.id > 0) { n.id = t.id; this.nextId = Math.max(this.nextId, t.id + 1); } // 客人副本：旅人 id 與房主一致
       n.since = num(t.since) ? t.since : 0; n.leaveAt = num(t.leaveAt) ? t.leaveAt : 0;

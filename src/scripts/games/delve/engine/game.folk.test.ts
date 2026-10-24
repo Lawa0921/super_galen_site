@@ -1,12 +1,13 @@
 // game.folk.test.ts — 世界 NPC 接上遊戲：村民 / 矮人的職能、好感度定價、服務（治療 / buff / 深岩升階）、
 // 遇見（行商 / 受困探險者：條件、冷卻、上限、護送）、委託（接 / 進度 / 交付不能重刷）、地標（只能領一次）、存檔來回。
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { DelveGame } from './game';
 import { FIXED_DT, TILE_SIZE as S, DAY_LENGTH } from './constants';
 import { T } from './tiles';
 import { ROLES, AFF_TRADE_DAILY, BUFFS, affTier } from './folkDefs';
 import { STRANDED_MAX } from './folk';
 import { restoreGame, serializeGame } from '../save/serialize';
+import { SITE_NPC_BASE, npcIdFor } from './siteRegistry';
 
 
 
@@ -18,6 +19,61 @@ function goTo(g: DelveGame, key: string): void {
   const n = g.folk.byKey(key)!;
   g.teleport(Math.floor((n.body.x + n.body.w / 2) / S) + 1, Math.floor((n.body.y + n.body.h - 1) / S));
 }
+
+/** FNV-1a（外觀指紋用） */
+const fnv = (s: string): number => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return h >>> 0; };
+// 改 folk.ts / SiteRegistry 之前，在舊世界 'alpha' 錄下的村民 / 矮人：[key, 角色, 名字, 外觀指紋, 白天範圍, 晚上的位置, 初始身體 px]
+const FOLK_BEFORE = [
+  ['h0:dwarf_elder', 'dwarf_elder', '晶耳・岡妲', 932598616, '2426..2438', '-', '38910,11005'],
+  ['h0:ore_trader', 'ore_trader', '深脈・杜瓦', 1654945588, '2447..2453', '-', '39198,11005'],
+  ['h0:runesmith', 'runesmith', '深脈・魯克', 3038395399, '2406..2413', '-', '38542,11005'],
+  ['h1:dwarf_elder', 'dwarf_elder', '灰岩・伯恩', 2881899463, '918..930', '-', '14782,13565'],
+  ['h1:ore_trader', 'ore_trader', '灰岩・朵菈', 423104471, '946..952', '-', '15182,13565'],
+  ['h1:runesmith', 'runesmith', '晶耳・朵菈', 2268316833, '891..898', '-', '14302,13565'],
+  ['v0:elder', 'elder', '漢克', 1400021624, '270..273', '259,280', '4334,4461'],
+  ['v0:guide', 'guide', '雪菈', 248887729, '239..242', '286,280', '3838,4461'],
+  ['v0:smith', 'smith', '莫莉', 2578590433, '296..300', '289,280', '4766,4461'],
+  ['v0:trader', 'trader', '葛雷', 445350778, '277..281', '246,280', '4462,4461'],
+  ['v1:elder', 'elder', '提歐', 3022895399, '2981..2984', '2997,282', '47710,4493'],
+  ['v1:guide', 'guide', '葛雷', 197652797, '3009..3014', '3000,282', '48174,4493'],
+  ['v1:healer', 'healer', '諾拉', 2851642318, '2959..2964', '2971,282', '47374,4493'],
+  ['v1:trader', 'trader', '琪雅', 3154175815, '2988..2992', '2968,282', '47838,4493'],
+  ['v2:elder', 'elder', '露露', 2219663239, '1589..1592', '1605,271', '25438,4317'],
+  ['v2:healer', 'healer', '艾琳', 2376874338, '1617..1622', '1608,271', '25902,4317'],
+  ['v2:smith', 'smith', '提歐', 3498937182, '1568..1572', '1579,271', '25118,4317'],
+  ['v2:trader', 'trader', '蜜拉', 3950961827, '1596..1600', '1576,271', '25566,4317'],
+];
+/** 改動前的 siteName（村落依序、地廳依序） */
+const NAMES_BEFORE = ['麥浪村', '暮光村', '白石村', '深爐大廳', '灰鬚石廳'];
+
+describe('聚落登錄（舊世界 alpha）', { timeout: 120_000 }, () => {
+  let g: DelveGame;
+  beforeAll(() => { g = fresh(); }, 120_000);
+
+  it('舊世界的 NPC key / 角色 / 名字 / 外觀與改動前相同', () => {
+    const rows = g.folk.npcs.filter((n) => n.origin !== 'road' && n.origin !== 'cave')
+      .map((n) => [n.key, n.role, n.name, fnv(JSON.stringify(n.look)), `${n.zone.x0}..${n.zone.x1}`, n.night ? `${n.night.x},${n.night.y}` : '-', `${n.body.x},${n.body.y}`]).sort();
+    expect(rows).toEqual(FOLK_BEFORE);
+  });
+  it('聚落 NPC 的 id = npcIdFor(key)、彼此不撞', () => {
+    const settled = g.folk.npcs.filter((q) => q.id >= SITE_NPC_BASE), ids = settled.map((n) => n.id);
+    expect(settled.length).toBe(FOLK_BEFORE.length);
+    for (const n of settled) expect(n.id).toBe(npcIdFor(n.key));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+  it('登錄 = v{i} / h{i} / d0（依序）；siteName(key) 與改動前相同；委託板找得到自己的村子', () => {
+    expect(g.sites.list('village').map((s) => s.key)).toEqual(g.villages.map((_, i) => `v${i}`));
+    expect(g.sites.list('hall').map((s) => s.key)).toEqual(g.halls.map((_, i) => `h${i}`));
+    expect(g.sites.list('dungeon').map((s) => s.key)).toEqual(g.dungeon ? ['d0'] : []);
+    expect([...g.villages.map((_, i) => g.siteName(`v${i}`)), ...g.halls.map((_, i) => g.siteName(`h${i}`))]).toEqual(NAMES_BEFORE);
+    for (let i = 0; i < g.villages.length; i++) {
+      const b = g.villages[i].board;
+      expect(g.siteAt(b.x, b.y)?.key).toBe(`v${i}`);
+      expect(g.folk.byKey(`v${i}:elder`)!.site).toBe(`v${i}`);
+    }
+    for (const n of g.folk.npcs) if (n.origin === 'hall') expect(n.site).toMatch(/^h\d+$/);
+  });
+});
 
 describe('村民與矮人', { timeout: 120_000 }, () => {
   it('每座村落有村長 + 雜貨商 + 兩位職能 NPC；每座地廳有三位矮人；職能都派得上用場', () => {
@@ -275,6 +331,6 @@ describe('存檔', { timeout: 120_000 }, () => {
     expect(h.folk.shop(t2)).toEqual(g.folk.shop(t));
     expect(h.buffOn('ward')).toBe(true);
     expect(h.discovery.landmarks.has(h.world.idx(l.x, l.y))).toBe(true);
-    expect(h.folk.npcs.filter((n) => n.site >= 0).length).toBe(g.folk.npcs.filter((n) => n.site >= 0).length);
+    expect(h.folk.npcs.filter((n) => n.site !== null).length).toBe(g.folk.npcs.filter((n) => n.site !== null).length);
   });
 });
