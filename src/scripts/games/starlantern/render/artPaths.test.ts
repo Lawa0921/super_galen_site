@@ -37,8 +37,10 @@ describe('artPaths', () => {
     // Art step 9, G3 and G4 (user approval 2026-10-24): every one of the 105 skills at 16 and 14 (+210), the 26 plan 4
     // skill icons they re-derive retired (-26), 7 ailment and 14 mechanic chip icons at 14 (+21) = 706
     // + Safira's serious and Noel's pout, faces wave 3 (user approval 2026-10-24 「可以」) = 708
-    expect(urls).toHaveLength(708);
-    expect(new Set(urls).size).toBe(708);
+    // + faces wave 4 (affinity plan Task A; user approval 2026-10-24 「可以，照這風格」): nine blush, both Rin looks' averted,
+    //   Sylvie's unguarded, Noel's smug, Bobby's excited = 722
+    expect(urls).toHaveLength(722);
+    expect(new Set(urls).size).toBe(722);
     for (const id of Object.keys(SKILLS)) {
       expect(urls, id).not.toContain(art.icon(id));
       for (const px of SKILL_ICON_SIZES) expect(urls, id).toContain(art.skillIcon(id, px));
@@ -135,9 +137,10 @@ describe('artPaths', () => {
 
   it('a declared face adds no url until it is published', () => {
     const urls = allArtUrls();
-    expect(urls).not.toContain(art.portrait('selene', 'blush'));
+    expect(urls).not.toContain(art.portrait('selene', 'foresee'));
     expect(urls).not.toContain(art.portrait('hero', 'resolve'));
-    expect(urls).not.toContain(art.portrait('rin-oath', 'averted'));
+    expect(urls).not.toContain(art.portrait('rin-oath', 'surprised'));
+    expect(urls).not.toContain(art.portrait('hero', 'blush'));   // wave 4 is the nine companions' blush, not Lorne's
     for (const [id, faces] of Object.entries(PUBLISHED_FACES)) {
       for (const f of faces) {
         expect(urls).toContain(art.portrait(id, f));

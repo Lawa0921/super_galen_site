@@ -119,9 +119,11 @@ WAVE4_ALL = {
     'rin': ['averted'], 'rin-oath': ['blush', 'averted'], 'selene': ['blush'], 'chizuru': ['blush'], 'safira': ['blush'],
     'sylvie': ['blush', 'unguarded'], 'noel': ['blush', 'smug'], 'bobby': ['blush', 'excited'], 'liz': ['blush'], 'scarlet': ['blush'],
 }
-# This round (2026-10-24) is a style sample of four: two blushes (Noel, whose published pout it must stay apart from; Safira,
-# whose darker skin is the palette test for a pink blush), Rin's oath-look averted (shy, not sad) and Bobby's excited.
-WAVE4 = {'noel': ['blush'], 'safira': ['blush'], 'rin-oath': ['averted'], 'bobby': ['excited']}
+# The style sample (runs/2026-10-24-faces-wave4-sample) was approved by the user on 2026-10-24 ("可以，照這風格"; Rin's oath-look
+# averted: a2, head turned away); the attempt each sample id publishes. The other ten follow with the same sentences.
+WAVE4_SAMPLE = {'char-noel-portrait-blush': 1, 'char-safira-portrait-blush': 1, 'char-rin-oath-portrait-averted': 2,
+                'char-bobby-portrait-excited': 1}
+WAVE4 = WAVE4_ALL
 BLUSH = ('a shy, flustered look: a short row of hard-edged pink pixels across both cheeks (no soft gradient), eyes glancing aside, '
          'a small embarrassed smile')
 WAVE4_FACES = {
@@ -136,12 +138,43 @@ WAVE4_FACES = {
     ('bobby', 'excited'): ('excited and thrilled: eyes sparkling wide open with two hard-edged highlights in each eye, brows raised high, '
                            'leaning forward toward the viewer, an open delighted grin showing teeth, the goggles on her head kept exactly as in '
                            f'the first image; {READ}'),
+    # The ten after the sample (2026-10-24). Rin before her choice: avoidance and guilt, not shyness (spec 10.2), the cracked bell.
+    ('rin', 'averted'): ('averting her eyes out of guilt: turn her whole head clearly away toward the side (about a quarter turn, the face in '
+                         'three-quarter view away from the viewer), chin lowered, eyes looking down and off to that side, brows drawn a little '
+                         f'together, lips pressed in a tight flat line, no smile, no blush, no tears, guilty and evasive, hiding something; {READ}'),
+    ('rin-oath', 'blush'): (f'{BLUSH}, a reserved, quiet person caught off guard: the pink row on both cheeks clearly visible on her pale skin, '
+                            f'eyes glancing aside and a little down, the faintest closed-mouth smile she is trying to hide; {READ}'),
+    ('selene', 'blush'): (f'{BLUSH}, a gentle dreamy girl caught off guard: the pink row clearly visible on both cheeks, eyes lowered and glancing '
+                          f'aside, a soft closed-mouth smile; {READ}'),
+    ('chizuru', 'blush'): (f'{BLUSH}, a proper shrine maiden losing her composure for a moment: the pink row clearly visible on both cheeks, eyes '
+                           f'lowered and glancing aside, a small shy closed-mouth smile, brows raised a little; {READ}'),
+    ('sylvie', 'blush'): (f'{BLUSH}, a quiet huntress caught off guard: the pink row clearly visible on both cheeks under the hood, eyes glancing '
+                          f'aside, a small awkward closed-mouth smile; {READ}'),
+    ('bobby', 'blush'): (f'{BLUSH}; against her pink hair the blush is a deeper rose-red row of hard-edged pixels across both cheeks and the bridge '
+                         f'of the nose, clearly separate from the hair colour, eyes glancing aside, a sheepish grin, the goggles on her head kept '
+                         f'exactly as in the first image; {READ}'),
+    ('liz', 'blush'): (f'{BLUSH}, a cheeky girl for once lost for words: the pink row clearly visible on both cheeks, eyes glancing aside, '
+                       f'a small embarrassed closed-mouth smile; {READ}'),
+    ('scarlet', 'blush'): (f'{BLUSH}, a stern knight caught off guard: against her red hair the blush is a clear rose-pink row of hard-edged pixels '
+                           f'on both cheeks, distinct from the hair, eyes glancing aside, a small flustered smile, brows raised a little; {READ}'),
+    ('sylvie', 'unguarded'): ('unguarded and relaxed, a rare peaceful look: eyes softened and half-lowered, brows relaxed and smooth, a small warm '
+                              'closed-mouth smile, shoulders at ease, as if resting by a window with nothing to watch for; calmer and softer, '
+                              f'clearly different from the first image (alert eyes looking at the viewer); {READ}'),
+    ('noel', 'smug'): ('smug and self-satisfied: chin raised, eyes half-closed looking down her nose at the viewer, brows raised confidently, '
+                       f'a lopsided smirk with one corner of the mouth pulled up, no blush, proud and showing off; {READ}'),
 }
 # Revision sentences for a2, written after looking at a1 (as WAVE2_NOTES; runs/2026-10-24-faces-wave4-sample/notes.md).
 WAVE4_NOTES = {
     'char-rin-oath-portrait-averted': (' Revision: a1 only moved the pupils; turn her whole head clearly away toward the side (about a quarter turn, '
                                        'the face in three-quarter view away from the viewer, chin slightly lowered), her eyes looking down and off to '
                                        'that side, so the avoidance reads at a glance at small size.'),
+    # a1 read too close to her smiling normal at native size (runs/2026-10-24-faces-wave4/notes.md)
+    'char-sylvie-portrait-unguarded': (' Revision: a1 looked almost like the first image; make the ease unmistakable: her eyes gently closed in two soft '
+                                       'downward curves, head tilted a little to one side, brows high and smooth, a contented closed-mouth smile, as '
+                                       'if dozing peacefully by a warm window.'),
+    # a1 was one art pixel wider than her normal (a hair tip further out); the canvas must match exactly
+    'char-bobby-portrait-blush': (' Revision: keep exactly the same framing, pose and silhouette as the first image: the hair and pigtails must not '
+                                  'reach further out to the sides than in the first image; change only the face.'),
 }
 WAVE4_MAX = 2
 SIZE_TOL = 6        # art pixels the face's canvas may differ from the base portrait's on either axis

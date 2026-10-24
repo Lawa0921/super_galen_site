@@ -22,18 +22,42 @@ def test_task_a_is_fourteen_faces_nine_blush_two_averted_and_three_specials():
     assert 'rin-oath' in F.WAVE4_ALL and 'blush' in F.WAVE4_ALL['rin-oath'] and 'blush' not in F.WAVE4_ALL['rin']
 
 
-def test_wave4_runs_only_the_sample_of_four():
-    assert sorted(by_id()) == sorted(['char-noel-portrait-blush', 'char-safira-portrait-blush',
-                                      'char-rin-oath-portrait-averted', 'char-bobby-portrait-excited'])
-    for c, ms in F.WAVE4.items():
-        assert set(ms) <= set(F.WAVE4_ALL[c])
+def test_wave4_runs_all_fourteen_and_records_the_approved_sample():
+    assert sorted(by_id()) == sorted(f'char-{c}-portrait-{m}' for c, ms in F.WAVE4_ALL.items() for m in ms)
+    assert F.WAVE4_SAMPLE == {'char-noel-portrait-blush': 1, 'char-safira-portrait-blush': 1,
+                              'char-rin-oath-portrait-averted': 2, 'char-bobby-portrait-excited': 1}
+
+
+def test_rin_two_averted_faces_are_two_feelings_with_their_own_bell():
+    j = by_id()
+    pre, post = j['char-rin-portrait-averted']['prompt'], j['char-rin-oath-portrait-averted']['prompt']
+    assert 'guilty' in pre and 'shy' not in pre and 'cracked' in pre and 'flattened' not in pre
+    assert 'shy' in post and 'flattened into a smooth dented disc' in post
+    for p in (pre, post): assert 'head clearly away' in p or 'turn her whole head' in p
+
+
+def test_every_blush_has_the_spec_cue_and_reads_on_its_palette():
+    j = by_id()
+    blush = [x for x in j.values() if x['mood'] == 'blush']
+    assert len(blush) == 9
+    for x in blush:
+        assert 'hard-edged pink pixels' in x['prompt'] and 'no soft gradient' in x['prompt'] and 'small size' in x['prompt']
+    assert 'pink hair' in j['char-bobby-portrait-blush']['prompt']      # the cheeks must not melt into her hair
+    assert 'red hair' in j['char-scarlet-portrait-blush']['prompt']
+
+
+def test_the_three_specials_carry_their_spec_cues():
+    j = by_id()
+    assert 'smirk' in j['char-noel-portrait-smug']['prompt'] and 'chin raised' in j['char-noel-portrait-smug']['prompt']
+    u = j['char-sylvie-portrait-unguarded']['prompt']
+    assert 'relaxed' in u and 'smile' in u and 'different from the first image' in u
 
 
 def test_earlier_waves_are_unchanged():
     assert len(F.jobs(REG)) == 18 and len(F.jobs(REG, wave=2)) == 10 and len(F.jobs(REG, wave=3)) == 3
 
 
-def test_sample_prompts_chain_to_their_own_normal_and_carry_the_spec_cues():
+def test_prompts_chain_to_their_own_normal_and_carry_the_spec_cues():
     j = by_id()
     for aid, x in j.items():
         c = x['cid']

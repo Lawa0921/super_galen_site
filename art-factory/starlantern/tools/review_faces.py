@@ -10,6 +10,8 @@
   python review_faces.py wave4 RUN              wave 4 sample (affinity plan Task A): four faces beside every face each has,
                                                 their script lines in the dialogue box (borrowed face | new), and the whole
                                                 14-face set with the lines and uses each serves, + montage.png at 3x
+  python review_faces.py wave4-final RUN        wave 4 after publishing: all 14, every attempt with the chosen one marked,
+                                                + montage.png of the 14 published faces at 3x
 
 Every postprocessed candidate (work/<id>/cand/a<N>/) beside that character's published normal portrait, at natural size
 and at 2x pixelated, with the mood it covers, one story line it would go with, and its QA (sl_art) and match QA (faces).
@@ -437,32 +439,40 @@ def _now_face(c, m, scene):
     return 'normal'
 
 
-def wave4(run):
-    """Wave 4 sample (affinity plan Task A): the four sample faces beside every face each character has, their lines in the
-    game's dialogue box (today's borrowed face | the new one), and the whole Task A set with what each face is for."""
+def wave4(run, final=False):
+    """Wave 4 (affinity plan Task A): the new faces beside every face each character had before, their lines in the game's
+    dialogue box (the face borrowed before | the new one), and the whole Task A set with what each face is for. The sample
+    run showed four candidates; `final` shows all 14 with the attempt the registry chose, after publishing."""
     import faces as F
     from PIL import Image
     out = AF / 'runs' / run; img = out / 'img'; img.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(REPO / 'public/assets/games/starlantern/ui/window.png', img / 'window.png')
     body, tiles, best = [], [], {}
-    jobs = F.jobs(wave=4)
-    body.append('<h2>一、四張樣本（和該角色已有的每張臉並排）</h2>')
+    jobs = F.jobs(wave=4) if final else [j for j in F.jobs(wave=4) if j['id'] in F.WAVE4_SAMPLE]
+    reg = json.loads((AF / 'registry.json').read_text(encoding='utf-8'))['assets']
+    new4 = {(c, m) for c, ms in F.WAVE4_ALL.items() for m in ms}
+    body.append('<h2>一、' + ('第四波 14 張（選定的一張標「發佈」；和該角色之前已有的每張臉並排）' if final else '四張樣本（和該角色已有的每張臉並排）') + '</h2>')
     for j in jobs:
         aid, cid, mood = j['id'], j['cid'], j['mood']
         nat, dbl, qas = [], [], []
         for m, p in _published(cid):
+            if (cid, m) in new4: continue   # wave 4's own faces are shown as the new ones
             w, h = Image.open(p).size; src = _copy(p, img, p.name)
             nat.append(_fig(src, w, h, f'{m}（已發佈）')); dbl.append(_fig(src, w * 2, h * 2, f'{m} 2×'))
-            tiles.append((f'{cid} {m}', Image.open(p).convert('RGBA')))
-        cands = _cands(aid)
-        for c in cands:
+            if not final: tiles.append((f'{cid} {m}', Image.open(p).convert('RGBA')))
+        chosen = reg.get(aid, {}).get('chosen_attempt') if final else None
+        rejected = reg.get(aid, {}).get('rejected_attempts') or {}
+        for c in _cands(aid):
             png = c / f'{aid}.png'; w, h = Image.open(png).size; src = _copy(png, img, f'{aid}-{c.name}.png')
             q, m, gen = _cand_qa(aid, c)
-            nat.append(_fig(src, w, h, f'新 {mood} {MOOD_ZH[mood]}（{c.name}）')); dbl.append(_fig(src, w * 2, h * 2, f'新 {mood} {c.name} 2×'))
-            qas.append(f'<p class="qa"><b>{html.escape(gen)} {c.name}</b>：{_qa(q, m)}</p>')
-            tiles.append((f'{cid} {mood} {c.name}', Image.open(png).convert('RGBA'))); best[aid] = src
+            tag = '，發佈' if chosen == c.name else '，淘汰' if c.name in rejected else ''
+            nat.append(_fig(src, w, h, f'新 {mood} {MOOD_ZH[mood]}（{c.name}{tag}）')); dbl.append(_fig(src, w * 2, h * 2, f'新 {mood} {c.name}{tag} 2×'))
+            qas.append(f'<p class="qa"><b>{html.escape(gen)} {c.name}{tag}</b>：{_qa(q, m)}'
+                       + (f'｜<span class="bad">淘汰：{html.escape(rejected[c.name])}</span>' if c.name in rejected else '') + '</p>')
+            if not final or chosen == c.name: tiles.append((f'{cid} {mood}' + ('' if final else f' {c.name}'), Image.open(png).convert('RGBA')))
+            if not final or chosen == c.name or (chosen is None and aid not in best): best[aid] = src
         if not qas: qas.append('<p class="qa bad">沒有候選（見 notes.md）。</p>')
-        pick = WAVE4_PICK.get(aid, '')
+        pick = '' if final else WAVE4_PICK.get(aid, '')
         body.append(f'<div class="card"><h3>{NAMES[cid]}｜{mood} {MOOD_ZH[mood]}</h3>'
                     f'<div class="pair">{"".join(nat)}</div><div class="pair">{"".join(dbl)}</div>'
                     f'<p class="line">用在：{html.escape(WAVE4_USES[(cid, mood)].replace('`', ''))}</p>{"".join(qas)}'
@@ -481,25 +491,30 @@ def wave4(run):
                         f'<figure>{_stage(NAMES[cid].split("（")[0], text, nsrc, "left")}<figcaption>現在：借 {now}</figcaption></figure>'
                         f'<figure>{_stage(NAMES[cid].split("（")[0], text, best.get(aid), "left")}<figcaption>之後：{mood}{"" if best.get(aid) else "（沒有候選）"}</figcaption></figure>'
                         '</div></div>')
-    body.append('<h2>三、Task A 全部 14 張與它們服務的台詞</h2><table class="set"><tr><th>角色</th><th>表情</th><th>這一輪</th><th>劇本裡已有的台詞</th><th>其他用途</th></tr>')
+    body.append('<h2>三、Task A 全部 14 張與它們服務的台詞</h2><table class="set"><tr><th>角色</th><th>表情</th><th>' + ('發佈' if final else '這一輪') + '</th><th>劇本裡已有的台詞</th><th>其他用途</th></tr>')
     sample = {j['id'] for j in jobs}
     for c, ms in F.WAVE4_ALL.items():
         for m in ms:
             aid = f'char-{c}-portrait-{m}'
             ls = _lines_for(c, m)
             said = '<br>'.join(f'{html.escape(t)} <span class="qa">（{html.escape(s)}{"；" + html.escape(k) if k else ""}）</span>' for s, t, k in ls) or '<span class="qa">沒有</span>'
-            body.append(f'<tr><td>{NAMES[c]}</td><td>{m} {MOOD_ZH[m]}</td><td>{"<b>樣本</b>" if aid in sample else "之後"}</td>'
+            body.append(f'<tr><td>{NAMES[c]}</td><td>{m} {MOOD_ZH[m]}</td><td>{(reg.get(aid, {}).get('chosen_attempt') or '—') if final else ("<b>樣本</b>" if aid in sample else "之後")}</td>'
                         f'<td>{said}</td><td>{html.escape(WAVE4_USES[(c, m)].replace('`', ''))}</td></tr>')
     body.append('</table>')
     _montage(tiles, out / 'montage.png')
+    intro = (('<h1>星燈迷宮｜對話表情第四波（14 張，已發佈）</h1>'
+              '<p class="note">好感度計畫 Task A：九位夥伴的 blush、凜兩套的 averted（誓約前是心虛、迴避；誓約後是害羞）、希爾薇的 unguarded、諾艾兒的 smug、波比的 excited。'
+              '你 2026-10-24 看過樣本說「可以，照這風格」（凜誓約後的 averted 用 a2），其餘 10 張照同一套句型由 codex 生成，每張最多 2 次。每張的選定版（標「發佈」）已進 registry 與 public/；'
+              '淘汰的只留在 work/…/cand/。遊戲內截圖在 <a href="ingame/">ingame/</a>，14 張的 3× 總覽：<a href="montage.png">montage.png</a>。</p>') if final else
+             ('<h1>星燈迷宮｜對話表情第四波（樣本 4 張）</h1>'
+              '<p class="note">第四波（好感度計畫 Task A，可選）是心契與戀愛用的 14 張臉：九位夥伴的 blush、凜兩套的 averted、希爾薇的 unguarded、諾艾兒的 smug、波比的 excited。'
+              '沒有它遊戲照樣完整，這些表情現在借已發佈的臉。這一輪先做 4 張看畫風：諾艾兒 blush、莎菲拉 blush（深膚色上的紅暈）、凜（誓約後）averted、波比 excited。'
+              '全部由 codex 生成；只在 work/ 當候選，不在 public/、未登錄為可發佈。你說可以，再把其餘 10 張照同一個方式做完。'
+              '全部的 3× 總覽：<a href="montage.png">montage.png</a>。</p>'))
     page = ('<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            f'<title>對話表情第四波樣本</title><style>{CSS}{STAGE_CSS}h3{{font-size:15px;margin:0 0 8px}}'
+            f'<title>{"對話表情第四波" if final else "對話表情第四波樣本"}</title><style>{CSS}{STAGE_CSS}h3{{font-size:15px;margin:0 0 8px}}'
             '.set{border-collapse:collapse;font-size:13px;margin:8px 0 24px}.set th,.set td{border:1px solid #445;padding:4px 6px;vertical-align:top;text-align:left}</style></head><body>'
-            '<h1>星燈迷宮｜對話表情第四波（樣本 4 張）</h1>'
-            '<p class="note">第四波（好感度計畫 Task A，可選）是心契與戀愛用的 14 張臉：九位夥伴的 blush、凜兩套的 averted、希爾薇的 unguarded、諾艾兒的 smug、波比的 excited。'
-            '沒有它遊戲照樣完整，這些表情現在借已發佈的臉。這一輪先做 4 張看畫風：諾艾兒 blush、莎菲拉 blush（深膚色上的紅暈）、凜（誓約後）averted、波比 excited。'
-            '全部由 codex 生成；只在 work/ 當候選，不在 public/、未登錄為可發佈。你說可以，再把其餘 10 張照同一個方式做完。'
-            '全部的 3× 總覽：<a href="montage.png">montage.png</a>。</p>' + ''.join(body) + '</body></html>')
+            + intro + ''.join(body) + '</body></html>')
     (out / 'review.html').write_text(page, encoding='utf-8'); print(out / 'review.html'); print(out / 'montage.png')
 
 
@@ -512,6 +527,8 @@ WAVE4_PICK = {
 if __name__ == '__main__':
     if sys.argv[1] == 'wave4':
         wave4(sys.argv[2])
+    elif sys.argv[1] == 'wave4-final':
+        wave4(sys.argv[2], final=True)
     elif sys.argv[1] == 'wave3':
         wave3(sys.argv[2])
     elif sys.argv[1] == 'wave2':

@@ -69,13 +69,20 @@ export const MOODS_OF: Record<string, StoryMood[]> = Object.fromEntries(
 export const PUBLISHED_FACES: Record<string, StoryMood[]> = {
   // Wave 2 (art-factory/starlantern/runs/2026-10-24-faces-wave2; user approval 2026-10-24): Lorne's and both Rin looks'
   // grave faces. Each Rin look has its own (cracked bell / flattened bell); `artIdOf` picks the look, as for her normal.
-  hero: ['smile', 'sad', 'serious', 'distant'], rin: ['smile', 'sad', 'serious', 'guarded'], 'rin-oath': ['smile', 'sad', 'serious', 'guarded'],
+  hero: ['smile', 'sad', 'serious', 'distant'],
+  // Wave 4 (art-factory/starlantern/runs/2026-10-24-faces-wave4; user approval 2026-10-24 「可以，照這風格」): each look's own
+  // averted (guilty before her oath, shy after), and only the oath look blushes (her heart pact and romance come after it).
+  rin: ['smile', 'sad', 'serious', 'guarded', 'averted'], 'rin-oath': ['smile', 'sad', 'serious', 'guarded', 'averted', 'blush'],
   // Companion faces, wave 1 (art-factory/starlantern/runs/2026-10-23-faces-wave1; user approval 2026-10-23): the grave faces
   // the script uses, plus Liz's hushed.
-  scarlet: ['serious', 'sad', 'vow', 'shaken'], chizuru: ['serious', 'sad', 'solemn'], sylvie: ['serious', 'sad'],
+  scarlet: ['serious', 'sad', 'vow', 'shaken', 'blush'], chizuru: ['serious', 'sad', 'solemn', 'blush'],
+  sylvie: ['serious', 'sad', 'blush', 'unguarded'],   // + wave 4's blush and unguarded
   // Wave 3 (art-factory/starlantern/runs/2026-10-24-faces-wave3; user approval 2026-10-24 「可以」): Safira's serious and
   // Noel's pout, so no heavy line of the script hides its portrait any more.
-  selene: ['sad', 'wistful'], safira: ['sad', 'serious'], bobby: ['serious', 'sad'], liz: ['serious', 'sad', 'hushed'], noel: ['sad', 'pout'],
+  // Wave 4 (same approval): every companion's blush, Sylvie's unguarded, Noel's smug and Bobby's excited, for the bond scenes
+  // and the lines the script already tags with them (a glad one no longer borrows the smiling normal).
+  selene: ['sad', 'wistful', 'blush'], safira: ['sad', 'serious', 'blush'], bobby: ['serious', 'sad', 'blush', 'excited'],
+  liz: ['serious', 'sad', 'hushed', 'blush'], noel: ['sad', 'pout', 'blush', 'smug'],
 };
 /**
  * Art ids whose `normal` portrait smiles (story depth final review, checked by eye on the published art): every companion.
