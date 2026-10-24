@@ -559,9 +559,11 @@ describe('StatusScene', () => {
     const owners = [...new Set(fields.map((sk) => sk.owner))] as CharacterId[];
     expect(owners.length).toBeGreaterThan(0);
     let gifted = 0;
+    // the hero has no memory keystone in the table: his row is opened and taken out again
+    const keys = MEMORY_KEYSTONES as Partial<Record<CharacterId, (typeof MEMORY_KEYSTONES)[keyof typeof MEMORY_KEYSTONES]>>;
     for (const id of owners) {
-      const own = MEMORY_KEYSTONES[id];
-      MEMORY_KEYSTONES[id] = 'teachers-gift';   // opened for this test only, as engine/field.test.ts does
+      const own = keys[id];
+      keys[id] = 'teachers-gift';   // opened for this test only, as engine/field.test.ts does
       try {
         const mine = fields.filter((sk) => sk.owner === id).map((sk) => sk.id);
         const { root, s, game } = setup(id, NO_ART, (g) => {
@@ -580,7 +582,8 @@ describe('StatusScene', () => {
           if (fieldCost(m, sk) < SKILLS[sk].tp) gifted++;
         }
       } finally {
-        MEMORY_KEYSTONES[id] = own;
+        if (own === undefined) delete keys[id];
+        else keys[id] = own;
       }
     }
     expect(gifted).toBeGreaterThan(0);   // the gift did lower a price, so the guard sees it
