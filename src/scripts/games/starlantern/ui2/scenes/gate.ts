@@ -21,6 +21,7 @@ import { REGION_TRAITS_FROM, depthLevel, encounterTable } from '../../engine/sca
 import { ART_BASE, art, codexArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
+import { awaitArt, bestPicture, lateArt } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { MenuView, confirmBox, win } from '../widgets';
@@ -152,17 +153,20 @@ class PortalCards {
    */
   private gearHead(ids: string[]): HTMLElement {
     const known = (id: string) => this.ctx.game.state.codex.includes(id);
+    const missing: string[] = [];
     const pics = ids.flatMap((id) => {
       const src = known(id) ? art.gear(codexArtId(id)) : art.gearSilhouette(id);
-      return this.ctx.art.has(src)
-        ? [el('img', { class: known(id) ? 'slx-codex-icon' : 'slx-codex-silhouette', attrs: { src, alt: '', title: this.gearName(id), 'data-special': id } })]
-        : [];
+      if (!this.ctx.art.has(src)) { missing.push(src); return []; }
+      return [el('img', { class: known(id) ? 'slx-codex-icon' : 'slx-codex-silhouette', attrs: { src, alt: '', title: this.gearName(id), 'data-special': id } })];
     });
-    return el('div', { class: 'slx-portal-gear-head' }, [
+    const head = el('div', { class: 'slx-portal-gear-head' }, [
       // The count says what is obtained in words too, whatever art is published (T3 review).
       el('div', { class: 'slx-portal-label', text: T.ui2.gate.gearCount(ids.filter(known).length, ids.length) }),
       ...(pics.length ? [el('div', { class: 'slx-codex-pics' }, pics)] : []),
     ]);
+    // A picture that lands later is drawn then (ui2/lateArt); the strip may change the list's room, so its cue is marked again.
+    awaitArt(head, 'pics', missing, () => { head.replaceWith(this.gearHead(ids)); this.markOverflow(); });
+    return head;
   }
 
   /** The mainline's summary: the general legendaries drop anywhere, so they are counted, not listed as this portal's own. */
@@ -206,9 +210,8 @@ class PortalCards {
     const r = REGIONS[p.region];
     const cond = CONDITIONS[p.condition];
     const reached = this.ctx.game.state.dungeon.reached[p.region];
-    const has = (u: string) => this.ctx.art.has(u);
     const icon = TRAIT_ICON[p.region];
-    const traitIcon = icon && has(portalArt.trait(icon)) ? [el('img', { class: 'slx-portal-icon', attrs: { src: portalArt.trait(icon), alt: '' } })] : [];
+    const trait = el('div', { class: 'slx-portal-trait', attrs: { 'data-trait': icon ?? 'none' } });
     const traitText = `${G.element(r.element ? T.element[r.element] : null)}・${r.trait ? G.traits[r.trait] : G.noTrait}`;
     const els = (list: string[]) => list.map((e) => T.element[e as keyof typeof T.element]).join('、');
     // A run that can only start at depth 1 meets the region resist from REGION_TRAITS_FROM on (scaling.scaleEnemy), so the card says so.
@@ -217,9 +220,8 @@ class PortalCards {
     const affinity = [r.weak.length ? G.weak(els(r.weak)) : '', resist].filter(Boolean).join('　');
     const seen = this.sighting(p.region);
     const c = win(`slx-portal slx-portal-${p.region}${seen.lead ? ' slx-portal-lead' : ''}`, [
-      ...(has(portalArt.card(p.region)) ? [el('img', { class: 'slx-portal-art', attrs: { src: portalArt.card(p.region), alt: '' } })] : []),
       el('div', { class: 'slx-portal-head' }, [el('div', { class: 'slx-portal-name', text: r.name }), ...seen.el]),
-      el('div', { class: 'slx-portal-trait', attrs: { 'data-trait': icon ?? 'none' } }, [...traitIcon, el('span', { text: traitText })]),
+      trait,
       ...(affinity ? [el('div', { class: 'slx-portal-affinity', text: affinity })] : []),
       el('div', { class: 'slx-portal-monsters' }, [el('span', { class: 'slx-portal-label', text: G.monsters }), el('span', { text: monsterNames(p.region, reached).join('、') })]),
       // 本次狀況, the condition's gold name and its effect (final review: the label stays on screen).
@@ -232,6 +234,10 @@ class PortalCards {
       ]),
       el('div', { class: 'slx-portal-depth', text: reached > 0 ? G.deepest(reached) : G.notYet }),
     ]);
+    trait.append(el('span', { text: traitText }));
+    // The card's picture and the trait's icon, each now or when it lands (ui2/lateArt).
+    bestPicture(c, 'art', this.ctx.art, [portalArt.card(p.region)], (src) => el('img', { class: 'slx-portal-art', attrs: { src, alt: '' } }), (n) => c.prepend(n));
+    if (icon) bestPicture(trait, 'icon', this.ctx.art, [portalArt.trait(icon)], (src) => el('img', { class: 'slx-portal-icon', attrs: { src, alt: '' } }), (n) => trait.prepend(n));
     c.setAttribute('role', 'option');
     c.setAttribute('data-region', p.region);
     // Same pointer rules as MenuView: pointermove (not enter) so a window opening under a resting mouse keeps the cursor.
@@ -293,8 +299,8 @@ class PortalCards {
 export class GateScene extends FacilityScene {
   constructor(ctx: SceneCtx, cps?: number) { super(ctx, 'gate', cps); }
 
-  protected sceneArt(): string {
-    return this.ctx.art.has(portalArt.plaza) ? portalArt.plaza : art.scene('gate');
+  protected sceneArts(): string[] {
+    return [portalArt.plaza, art.scene('gate')];
   }
 
   /**
@@ -333,7 +339,7 @@ export class GateScene extends FacilityScene {
     const depths = startDepths(p.region, this.ctx.game.state.dungeon.reached[p.region]);
     const items = depths.map((d) => ({
       id: String(d), label: T.ui2.gate.floor(d, p.region === 'mainline' ? FLOORS[terrainOf('mainline', d) - 1].name : undefined),
-      icon: this.ctx.art.has(art.bg(terrainOf(p.region, d))) ? art.bg(terrainOf(p.region, d)) : undefined,
+      icon: lateArt(this.ctx.art, art.bg(terrainOf(p.region, d))),
       right: T.ui2.gate.suggest(depthLevel(d), tierWord(this.ctx.game.tier())),
     }));
     const v = new MenuView(new Menu(items), {

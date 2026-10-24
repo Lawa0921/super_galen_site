@@ -2,13 +2,17 @@ import type { Game } from '../engine/game';
 import type { SoundManager } from '../audio/SoundManager';
 import type { ArtIndex } from '../render/textures';
 import type { UiAction } from './input';
+import { drawLanded } from './lateArt';
 import type { SettingsStore } from './settings';
 import type { Stage } from './stage';
 
 export type SceneName = 'title' | 'town' | 'guild' | 'shop' | 'inn' | 'gate' | 'forge' | 'dungeon' | 'battle' | 'clear' | 'settings'
   | 'formation' | 'status' | 'equip' | 'workshop' | 'handbook' | 'builds';
-/** `prepare`: awaited before `enter`, behind the fade with input locked (a battle waits a moment for its pictures). */
-export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(a: UiAction): void; prepare?(): Promise<void> }
+/**
+ * `prepare`: awaited before `enter`, behind the fade with input locked (a battle waits a moment for its pictures).
+ * `artArrived`: pictures that landed since the last frame, for what a scene draws outside the DOM's own waits (ui2/lateArt).
+ */
+export interface Scene { enter(root: HTMLElement): void; exit(): void; onAction(a: UiAction): void; prepare?(): Promise<void>; artArrived?(urls: ReadonlySet<string>): void }
 export interface SceneCtx {
   game: Game; art: ArtIndex;
   /** Menu cues are required; game cues are optional so menu-only tests can pass a small fake. */
@@ -36,8 +40,32 @@ export class Router {
   private scene: Scene | null = null;
   private name: SceneName | null = null;
   private switching = false;
+  /** Pictures that landed since the last frame, drawn together on the next one (ui2/lateArt). */
+  private landed = new Set<string>();
+  private frameAsked = false;
 
-  constructor(private root: HTMLElement, private make: (name: SceneName, ctx: SceneCtx) => Scene, private ctx: Omit<SceneCtx, 'go'>, private fadeMs = 300) {}
+  constructor(private root: HTMLElement, private make: (name: SceneName, ctx: SceneCtx) => Scene, private ctx: Omit<SceneCtx, 'go'>, private fadeMs = 300) {
+    ctx.art?.onLoad?.((u) => this.artLanded(u));
+  }
+
+  /** A picture landed: with a scene up, it is drawn on the next frame with any others that land before it. */
+  private artLanded(url: string): void {
+    if (!this.scene) return;
+    this.landed.add(url);
+    if (this.frameAsked) return;
+    this.frameAsked = true;
+    const draw = () => { this.frameAsked = false; this.drawLanded(); };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(draw); else setTimeout(draw, 16);
+  }
+
+  /** Draws what waits for the pictures that landed. A scene still being made reads the bank itself, so nothing is owed it. */
+  private drawLanded(): void {
+    const urls = this.landed;
+    this.landed = new Set();
+    if (this.switching || !this.scene) return;
+    drawLanded(this.root, urls);
+    this.scene.artArrived?.(urls);
+  }
 
   current(): SceneName | null { return this.name; }
 

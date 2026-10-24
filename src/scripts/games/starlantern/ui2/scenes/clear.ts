@@ -4,6 +4,7 @@ import { T } from '../../data/text.zh-TW';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
+import { bestPicture } from '../lateArt';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
@@ -31,8 +32,8 @@ export class ClearScene implements Scene {
 
   enter(root: HTMLElement): void {
     this.exited = false;
-    const bg = this.ctx.art.has(art.scene('title')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('title'), alt: '' } })] : [];
-    this.body = el('div', { class: 'slx-scene slx-clear' }, [...bg, this.talk.el]);
+    this.body = el('div', { class: 'slx-scene slx-clear' }, [this.talk.el]);
+    bestPicture(this.body, 'bg', this.ctx.art, [art.scene('title')], (src) => el('img', { class: 'slx-bg', attrs: { src, alt: '' } }), (n) => this.body.prepend(n));
     root.append(this.body);
     if (this.ctx.game.cleared === 'finale') void this.playFinale().then(() => { if (!this.exited) this.showCard(STORY.endingTitle, STORY.scenes.finale.summary, T.ending.back); });
     else this.showCard(STORY.act1Card.title, STORY.act1Card.body, T.clear.back);

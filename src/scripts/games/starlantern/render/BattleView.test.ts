@@ -291,6 +291,47 @@ describe('BattleView folded rows follow a late picture (touch overflow review)',
   });
 });
 
+describe('BattleView ailment icons that land late', () => {
+  it("an enemy's ailment and mark icons that land after its row was drawn are drawn then, in front of their words", () => {
+    let land: ((u: string) => void) | null = null;
+    const loaded = new Set<string>();
+    const late = { get: (u: string) => (loaded.has(u) ? Texture.WHITE : null), has: (u: string) => loaded.has(u), onLoad: (fn: (u: string) => void) => { land = fn; return () => undefined; } } as unknown as TextureBank;
+    const view = new BattleView(true, late);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments({ e0: [{ id: 'poison' }] }, { e0: [{ tone: 'mark', text: '暗記', setup: true }] });
+    const icons = () => view.ailmentTexts('e0')[0].parent!.children.filter((c) => c instanceof Sprite).length;
+    expect(icons()).toBe(0);
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['暗記', '中毒']);
+    loaded.add(art.ailmentIcon('poison'));
+    land!(art.ailmentIcon('poison'));
+    expect(icons()).toBe(1);
+    loaded.add(art.mechIcon('mark'));
+    land!(art.mechIcon('mark'));
+    expect(icons()).toBe(2);
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['暗記', '中毒']);
+    // A picture no row waits for redraws nothing; a cleared row stays clear.
+    view.showAilments({});
+    loaded.add(art.ailmentIcon('burn'));
+    land!(art.ailmentIcon('burn'));
+    expect(view.ailmentTexts('e0')).toEqual([]);
+  });
+
+  it('an icon the last fight waited for, landing in the next one, draws none of the last fight on its slots', () => {
+    let land: ((u: string) => void) | null = null;
+    const loaded = new Set<string>();
+    const late = { get: (u: string) => (loaded.has(u) ? Texture.WHITE : null), has: (u: string) => loaded.has(u), onLoad: (fn: (u: string) => void) => { land = fn; return () => undefined; } } as unknown as TextureBank;
+    const view = new BattleView(true, late);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments({ e0: [{ id: 'poison' }] });
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['中毒']);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);   // the next fight: its e0 holds nothing yet
+    loaded.add(art.ailmentIcon('poison'));
+    land!(art.ailmentIcon('poison'));
+    expect(view.ailmentTexts('e0')).toEqual([]);
+    expect(view.ailmentIcons('e0')).toEqual([]);
+  });
+});
+
 describe('BattleView element flash', () => {
   it('washes the picture in the element colour on a fire, ice or thunder hit, not on a plain one', () => {
     const fire = new BattleView(false, bank);

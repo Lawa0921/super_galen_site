@@ -7,6 +7,11 @@
   python review_faces.py wave3 RUN              wave 3: Safira's serious and Noel's pout beside every face each has, Selene's
                                                 third wistful beside the live a1, and the five once-hidden lines in the game's
                                                 dialogue box (before | after), + montage.png at 3x
+  python review_faces.py wave4 RUN              wave 4 sample (affinity plan Task A): four faces beside every face each has,
+                                                their script lines in the dialogue box (borrowed face | new), and the whole
+                                                14-face set with the lines and uses each serves, + montage.png at 3x
+  python review_faces.py wave4-final RUN        wave 4 after publishing: all 14, every attempt with the chosen one marked,
+                                                + montage.png of the 14 published faces at 3x
 
 Every postprocessed candidate (work/<id>/cand/a<N>/) beside that character's published normal portrait, at natural size
 and at 2x pixelated, with the mood it covers, one story line it would go with, and its QA (sl_art) and match QA (faces).
@@ -191,6 +196,29 @@ WAVE3_HIDDEN = [
 ]
 
 
+STORY = REPO / 'src/scripts/games/starlantern/data/story.zh-TW.ts'
+
+
+def script_lines(who, mood):
+    """Every line of the script (data/story.zh-TW.ts) that `who` says with `mood`, as (scene, text, condition): the scene key
+    the line sits under ('night beat' for NIGHT_BEATS), and the line's `if: {...}` body ('' when it has none)."""
+    import re
+    scene, out = '', []
+    obj = re.compile(r"who: '([\w-]+)', mood: '(\w+)', text: '([^']*)'(?:, if: \{ ([^}]*) \})?")
+    beat = re.compile(r"^\s*[JQ]\('([\w-]+)', '([^']*)', '(\w+)'\)")
+    table = ''
+    for ln in STORY.read_text(encoding='utf-8').splitlines():
+        m = re.match(r'^(?:export )?const (\w+)', ln)
+        if m: table, scene = m.group(1), ''
+        m = re.match(r"^  '?([\w:-]+)'?: \{", ln)
+        if m: scene = f'{table.lower()}:{m.group(1)}' if table in ('MEET', 'HOME') else m.group(1)   # MEET.noel -> meet:noel
+        m = beat.match(ln)
+        if m and m.group(1) == who and m.group(3) == mood: out.append(('night beat', m.group(2), ''))
+        m = obj.search(ln)
+        if m and m.group(1) == who and m.group(2) == mood: out.append((scene, m.group(3), (m.group(4) or '').strip()))
+    return out
+
+
 def _cands(aid):
     d = AF / 'work' / aid / 'cand'
     return [c for c in sorted(d.glob('a*'), key=lambda p: int(p.name[1:])) if (c / f'{aid}.png').exists()] if d.exists() else []
@@ -371,8 +399,137 @@ def wave3(run):
     (out / 'review.html').write_text(page, encoding='utf-8'); print(out / 'review.html'); print(out / 'montage.png')
 
 
+MOOD_ZH.update({'blush': '害羞臉紅', 'averted': '移開視線', 'unguarded': '卸下防備', 'smug': '得意', 'excited': '眼睛發亮'})
+_HEART = '心契 `bond:{c}:4` 與戀愛 `romance:{c}`（計畫的寫作任務，還沒寫）'
+# Wave 4 (affinity plan Task A): what each of the 14 faces is for besides the lines already in the script (script_lines),
+# from spec 2026-10-18 sections 6.3 (GIFT_MOOD), 7 (bond scenes), 9 (romance) and 10.2.
+WAVE4_USES = {
+    ('rin', 'averted'): '誓約前的凜（領口鐘有裂痕）：mem:rin:4–6 的回憶、chat:hero:4／chat:rin:3 的 `oath: false` 句；`bond:rin:2`（碎片 ≥ 4，開始避開他的視線，spec §7）。這一種是迴避、心虛，不是害羞。',
+    ('rin-oath', 'averted'): '誓約後的凜（鐘被敲平）：banter:chizuru-rin:2（`oath: true`）「另外半句，早該說了。」；送禮「最愛」的反應（GIFT_MOOD：她把高興藏起來，spec §6.3）；' + _HEART.format(c='rin') + '。誓約後的 averted 是害羞的那一種（spec §10.2）。',
+    ('rin-oath', 'blush'): '凜的心契與戀愛都在她選擇之後，所以只做誓約後這一套：' + _HEART.format(c='rin') + '；她第一次主動說出想要的東西（spec §9.5）。',
+    ('selene', 'blush'): _HEART.format(c='selene') + '：她第一次說「我想看見」的未來裡可以有他。',
+    ('chizuru', 'blush'): _HEART.format(c='chizuru') + '：禮數與心意之間的距離，結局後直接叫一次「洛恩」。',
+    ('safira', 'blush'): _HEART.format(c='safira') + '：她一直在等有人配合她的拍子。',
+    ('sylvie', 'blush'): '已在劇本：banter:bobby-sylvie:2；另 ' + _HEART.format(c='sylvie') + '：寡言的人終於說出口。',
+    ('sylvie', 'unguarded'): '已在劇本：終幕（finale）的兩句二選一；另心契 `bond:sylvie:4` 與後日談（spec §10.2：她難得放鬆的臉）。現在重場景借 sad。',
+    ('noel', 'blush'): '已在劇本：夜晚一句、chat:noel:2 集滿後改叫「洛恩」的兩句、banter:chizuru-noel:2；另 ' + _HEART.format(c='noel') + '：叫「洛恩」時自己先臉紅（文風聖經）。',
+    ('noel', 'smug'): '已在劇本 14 句（夜晚、群戲、相遇、多段鬥嘴）；送禮「最愛」的反應（GIFT_MOOD）。',
+    ('bobby', 'blush'): _HEART.format(c='bobby') + '：她修好的不是燈，是「他要一個人走下去」這件事。',
+    ('bobby', 'excited'): '已在劇本 8 句（夜晚、相遇、回憶、鬥嘴）；送禮「最愛」的反應（GIFT_MOOD）。',
+    ('liz', 'blush'): _HEART.format(c='liz') + '：家的線圓滿之後，「一起回家」有了新的意思。',
+    ('scarlet', 'blush'): _HEART.format(c='scarlet') + '：「你不是盾，你是我的朋友」之後的下一步。',
+}
+# Which of Rin's script lines each look plays: the oath look takes the `oath: true` scenes (data/story/scenes.ts), the
+# cracked-bell look the rest of hers that come before her choice.
+RIN_OATH_SCENES = {'banter:chizuru-rin:2'}
+WAVE4_SHOW = 4        # dialogue boxes per sample face; the rest of its lines are listed in section three
+
+
+def _lines_for(c, m):
+    who = 'rin' if c.startswith('rin') else c
+    ls = script_lines(who, m)
+    if who == 'rin': ls = [l for l in ls if (l[0] in RIN_OATH_SCENES) == (c == 'rin-oath')]
+    return ls
+
+
+def _now_face(c, m, scene):
+    """What the line shows today (ui2/story.ts faceOrder): a glad mood borrows the smiling normal; averted takes sad in a
+    heavy scene (a memory) and the calm normal in a light one."""
+    if m == 'averted' and scene.startswith('mem:'): return 'sad'
+    return 'normal'
+
+
+def wave4(run, final=False):
+    """Wave 4 (affinity plan Task A): the new faces beside every face each character had before, their lines in the game's
+    dialogue box (the face borrowed before | the new one), and the whole Task A set with what each face is for. The sample
+    run showed four candidates; `final` shows all 14 with the attempt the registry chose, after publishing."""
+    import faces as F
+    from PIL import Image
+    out = AF / 'runs' / run; img = out / 'img'; img.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(REPO / 'public/assets/games/starlantern/ui/window.png', img / 'window.png')
+    body, tiles, best = [], [], {}
+    jobs = F.jobs(wave=4) if final else [j for j in F.jobs(wave=4) if j['id'] in F.WAVE4_SAMPLE]
+    reg = json.loads((AF / 'registry.json').read_text(encoding='utf-8'))['assets']
+    new4 = {(c, m) for c, ms in F.WAVE4_ALL.items() for m in ms}
+    body.append('<h2>一、' + ('第四波 14 張（選定的一張標「發佈」；和該角色之前已有的每張臉並排）' if final else '四張樣本（和該角色已有的每張臉並排）') + '</h2>')
+    for j in jobs:
+        aid, cid, mood = j['id'], j['cid'], j['mood']
+        nat, dbl, qas = [], [], []
+        for m, p in _published(cid):
+            if (cid, m) in new4: continue   # wave 4's own faces are shown as the new ones
+            w, h = Image.open(p).size; src = _copy(p, img, p.name)
+            nat.append(_fig(src, w, h, f'{m}（已發佈）')); dbl.append(_fig(src, w * 2, h * 2, f'{m} 2×'))
+            if not final: tiles.append((f'{cid} {m}', Image.open(p).convert('RGBA')))
+        chosen = reg.get(aid, {}).get('chosen_attempt') if final else None
+        rejected = reg.get(aid, {}).get('rejected_attempts') or {}
+        for c in _cands(aid):
+            png = c / f'{aid}.png'; w, h = Image.open(png).size; src = _copy(png, img, f'{aid}-{c.name}.png')
+            q, m, gen = _cand_qa(aid, c)
+            tag = '，發佈' if chosen == c.name else '，淘汰' if c.name in rejected else ''
+            nat.append(_fig(src, w, h, f'新 {mood} {MOOD_ZH[mood]}（{c.name}{tag}）')); dbl.append(_fig(src, w * 2, h * 2, f'新 {mood} {c.name}{tag} 2×'))
+            qas.append(f'<p class="qa"><b>{html.escape(gen)} {c.name}{tag}</b>：{_qa(q, m)}'
+                       + (f'｜<span class="bad">淘汰：{html.escape(rejected[c.name])}</span>' if c.name in rejected else '') + '</p>')
+            if not final or chosen == c.name: tiles.append((f'{cid} {mood}' + ('' if final else f' {c.name}'), Image.open(png).convert('RGBA')))
+            if not final or chosen == c.name or (chosen is None and aid not in best): best[aid] = src
+        if not qas: qas.append('<p class="qa bad">沒有候選（見 notes.md）。</p>')
+        pick = '' if final else WAVE4_PICK.get(aid, '')
+        body.append(f'<div class="card"><h3>{NAMES[cid]}｜{mood} {MOOD_ZH[mood]}</h3>'
+                    f'<div class="pair">{"".join(nat)}</div><div class="pair">{"".join(dbl)}</div>'
+                    f'<p class="line">用在：{html.escape(WAVE4_USES[(cid, mood)].replace('`', ''))}</p>{"".join(qas)}'
+                    + (f'<p class="qa"><b>建議</b>：{html.escape(pick)}</p>' if pick else '') + '</div>')
+    body.append('<h2>二、台詞放在遊戲對話框裡（左：現在借用的臉，右：新表情）</h2>'
+                '<p class="note">照遊戲的對話框樣式（640×360 舞台 1×、Cubic 11 12px、頭貼 192px 站在框上緣）。每張最多放 '
+                f'{WAVE4_SHOW} 句，其餘列在第三部分。還沒寫的心契／戀愛台詞不代寫：沒有劇本台詞的表情，對話框裡只放一句標明「示意」的說明。</p>')
+    for j in jobs:
+        aid, cid, mood = j['id'], j['cid'], j['mood']
+        ls = _lines_for(cid, mood)[:WAVE4_SHOW] or [('（尚未寫）', '（示意：心契與戀愛的台詞還沒寫；這裡只看這張臉放在對話框裡的樣子）', '')]
+        for scene, text, cond in ls:
+            now = _now_face(cid, mood, scene)
+            nsrc = _copy(PUB / (f'{cid}-portrait.png' if now == 'normal' else f'{cid}-portrait-{now}.png'), img,
+                         f'{cid}-portrait.png' if now == 'normal' else f'{cid}-portrait-{now}.png')
+            body.append(f'<div class="card"><h3>{html.escape(scene)}｜{NAMES[cid]}（標籤 {mood}{"；條件 " + html.escape(cond) if cond else ""}）</h3><div class="stages">'
+                        f'<figure>{_stage(NAMES[cid].split("（")[0], text, nsrc, "left")}<figcaption>現在：借 {now}</figcaption></figure>'
+                        f'<figure>{_stage(NAMES[cid].split("（")[0], text, best.get(aid), "left")}<figcaption>之後：{mood}{"" if best.get(aid) else "（沒有候選）"}</figcaption></figure>'
+                        '</div></div>')
+    body.append('<h2>三、Task A 全部 14 張與它們服務的台詞</h2><table class="set"><tr><th>角色</th><th>表情</th><th>' + ('發佈' if final else '這一輪') + '</th><th>劇本裡已有的台詞</th><th>其他用途</th></tr>')
+    sample = {j['id'] for j in jobs}
+    for c, ms in F.WAVE4_ALL.items():
+        for m in ms:
+            aid = f'char-{c}-portrait-{m}'
+            ls = _lines_for(c, m)
+            said = '<br>'.join(f'{html.escape(t)} <span class="qa">（{html.escape(s)}{"；" + html.escape(k) if k else ""}）</span>' for s, t, k in ls) or '<span class="qa">沒有</span>'
+            body.append(f'<tr><td>{NAMES[c]}</td><td>{m} {MOOD_ZH[m]}</td><td>{(reg.get(aid, {}).get('chosen_attempt') or '—') if final else ("<b>樣本</b>" if aid in sample else "之後")}</td>'
+                        f'<td>{said}</td><td>{html.escape(WAVE4_USES[(c, m)].replace('`', ''))}</td></tr>')
+    body.append('</table>')
+    _montage(tiles, out / 'montage.png')
+    intro = (('<h1>星燈迷宮｜對話表情第四波（14 張，已發佈）</h1>'
+              '<p class="note">好感度計畫 Task A：九位夥伴的 blush、凜兩套的 averted（誓約前是心虛、迴避；誓約後是害羞）、希爾薇的 unguarded、諾艾兒的 smug、波比的 excited。'
+              '你 2026-10-24 看過樣本說「可以，照這風格」（凜誓約後的 averted 用 a2），其餘 10 張照同一套句型由 codex 生成，每張最多 2 次。每張的選定版（標「發佈」）已進 registry 與 public/；'
+              '淘汰的只留在 work/…/cand/。遊戲內截圖在 <a href="ingame/">ingame/</a>，14 張的 3× 總覽：<a href="montage.png">montage.png</a>。</p>') if final else
+             ('<h1>星燈迷宮｜對話表情第四波（樣本 4 張）</h1>'
+              '<p class="note">第四波（好感度計畫 Task A，可選）是心契與戀愛用的 14 張臉：九位夥伴的 blush、凜兩套的 averted、希爾薇的 unguarded、諾艾兒的 smug、波比的 excited。'
+              '沒有它遊戲照樣完整，這些表情現在借已發佈的臉。這一輪先做 4 張看畫風：諾艾兒 blush、莎菲拉 blush（深膚色上的紅暈）、凜（誓約後）averted、波比 excited。'
+              '全部由 codex 生成；只在 work/ 當候選，不在 public/、未登錄為可發佈。你說可以，再把其餘 10 張照同一個方式做完。'
+              '全部的 3× 總覽：<a href="montage.png">montage.png</a>。</p>'))
+    page = ('<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            f'<title>{"對話表情第四波" if final else "對話表情第四波樣本"}</title><style>{CSS}{STAGE_CSS}h3{{font-size:15px;margin:0 0 8px}}'
+            '.set{border-collapse:collapse;font-size:13px;margin:8px 0 24px}.set th,.set td{border:1px solid #445;padding:4px 6px;vertical-align:top;text-align:left}</style></head><body>'
+            + intro + ''.join(body) + '</body></html>')
+    (out / 'review.html').write_text(page, encoding='utf-8'); print(out / 'review.html'); print(out / 'montage.png')
+
+
+# The reviewer's call per sample id after looking at every attempt (runs/2026-10-24-faces-wave4-sample/notes.md).
+WAVE4_PICK = {
+    'char-rin-oath-portrait-averted': 'a2。a1 只把眼珠移到旁邊，原尺寸不太看得出在迴避；a2 整個頭轉開、視線往下，一眼就讀得出。',
+}
+
+
 if __name__ == '__main__':
-    if sys.argv[1] == 'wave3':
+    if sys.argv[1] == 'wave4':
+        wave4(sys.argv[2])
+    elif sys.argv[1] == 'wave4-final':
+        wave4(sys.argv[2], final=True)
+    elif sys.argv[1] == 'wave3':
         wave3(sys.argv[2])
     elif sys.argv[1] == 'wave2':
         wave2(sys.argv[2])

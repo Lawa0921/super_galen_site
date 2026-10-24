@@ -359,11 +359,14 @@ describe('EquipScene', () => {
 
   it('the portrait row is built once per member, not on every key or hover', () => {
     const { press, root } = setup();
+    const name = root.querySelector('.slx-equip-head .slx-equip-name')!;
     const arrow = root.querySelector('.slx-equip-head .slx-status-arrow')!;
     press('down', 'swap', 'right');
-    expect(root.contains(arrow)).toBe(true);
+    expect(root.contains(name)).toBe(true);
     press('next');
-    expect(root.contains(arrow)).toBe(false);
+    expect(root.contains(name)).toBe(false);
+    // The ←/→ buttons are the same ones for every member, so a press on one is never cut off by a redraw.
+    expect(root.querySelector('.slx-equip-head .slx-status-arrow')).toBe(arrow);
   });
 
   it('with a full bag the target hint points to the menu, since there is no empty cell to pick', () => {
@@ -954,5 +957,45 @@ describe('EquipScene in the labyrinth', () => {
     const { go, press } = fieldSetup();
     press('cancel');
     expect(go).toHaveBeenCalledWith('dungeon');
+  });
+});
+
+describe('EquipScene art that lands late (ui2/lateArt)', () => {
+  it('her face landing is put into the head row: the ←/→ buttons, the cells and the detail stay the same nodes', () => {
+    const landed = new Set<string>();
+    const { root, s } = setup(undefined, 'scarlet', { has: (u) => landed.has(u) });
+    const arrows = [...root.querySelectorAll('.slx-equip-head .slx-status-arrow')];
+    const cell0 = root.querySelector('.slx-bag-cell[data-index="0"]')!.firstChild;
+    const detail = root.querySelector('.slx-item-detail-body')!.firstChild;
+    expect(arrows).toHaveLength(2);
+    expect(root.querySelector('.slx-equip-face')).toBeNull();
+    const face = art.portrait('scarlet', 'normal');
+    landed.add(face);
+    s.artArrived(new Set([face]));
+    expect(root.querySelector('.slx-equip-face')!.getAttribute('src')).toBe(face);
+    const now = [...root.querySelectorAll('.slx-equip-head .slx-status-arrow')];
+    expect(now[0]).toBe(arrows[0]);
+    expect(now[1]).toBe(arrows[1]);
+    expect(root.querySelector('.slx-equip-head')!.children[1]).toBe(root.querySelector('.slx-equip-face'));
+    expect(root.querySelector('.slx-bag-cell[data-index="0"]')!.firstChild).toBe(cell0);
+    expect(root.querySelector('.slx-item-detail-body')!.firstChild).toBe(detail);
+  });
+
+  it('a cell picture landing redraws its cell, and the item detail only when the piece under the cursor waits for it', () => {
+    const landed = new Set<string>();
+    const { root, s, press } = setup(undefined, 'scarlet', { has: (u) => landed.has(u) });
+    press('swap');                                      // the bag cursor on the iron sword (cell 0)
+    const head = root.querySelector('.slx-equip-head')!.firstChild;
+    const detail = root.querySelector('.slx-item-detail-body')!.firstChild;
+    const ico = art.gear('iron-sword');
+    landed.add(ico);
+    s.artArrived(new Set([ico]));
+    expect(root.querySelector('.slx-bag-cell[data-index="0"] img')!.getAttribute('src')).toBe(ico);
+    expect(root.querySelector('.slx-equip-head')!.firstChild).toBe(head);
+    expect(root.querySelector('.slx-item-detail-body')!.firstChild).toBe(detail);   // the detail waits for the large art, not the cell's
+    const big = art.gearLarge('iron-sword');
+    landed.add(big);
+    s.artArrived(new Set([big]));
+    expect(root.querySelector('.slx-item-detail-body .slx-gear-art')!.getAttribute('src')).toBe(big);
   });
 });

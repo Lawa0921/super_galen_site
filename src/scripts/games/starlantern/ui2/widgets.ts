@@ -2,21 +2,27 @@ import { el } from '../ui/dom';
 import type { MoonPhase } from '../data/story/chains';
 import { MOON_ORDER } from '../engine/calendar';
 import type { UiAction } from './input';
+import type { ArtIndex } from '../render/textures';
+import { artMissing, artSrc, awaitArt, bestLanded, type ArtRef } from './lateArt';
 import { Menu, type MenuItem } from './menu';
 import { marksEl, runeCell } from './runeArt';
 
 /**
  * A line with coloured parts: plain text, or `{ text, cls }` drawn in a span of that class (a rarity colour, say). A part
- * with an `icon` (a piece's published gear art) shows it just before its span, from the part's first typed character.
+ * with an `icon` (a piece's published gear art) shows it just before its span, from the part's first typed character; a
+ * late icon (ui2/lateArt) once it has landed.
  */
-export type RichPart = string | { text: string; cls: string; icon?: string };
+export type RichPart = string | { text: string; cls: string; icon?: ArtRef };
 export type Rich = RichPart[];
 
 const partText = (p: RichPart): string => (typeof p === 'string' ? p : p.text);
 export const richText = (r: string | Rich): string => (typeof r === 'string' ? r : r.map(partText).join(''));
 
-/** The first `n` characters of a rich line as nodes; each coloured part keeps its span while it types out. */
-export function richNodes(r: Rich, n = Infinity): Node[] {
+/**
+ * The first `n` characters of a rich line as nodes; each coloured part keeps its span while it types out. The url of each
+ * shown part's late icon that has not landed yet goes into `missing`.
+ */
+export function richNodes(r: Rich, n = Infinity, missing: string[] = []): Node[] {
   const out: Node[] = [];
   let left = n;
   for (const p of r) {
@@ -26,11 +32,21 @@ export function richNodes(r: Rich, n = Infinity): Node[] {
     left -= chars.length;
     if (typeof p === 'string') out.push(document.createTextNode(shown));
     else {
-      if (p.icon && shown) out.push(el('img', { class: 'slx-ico slx-gear-ico', attrs: { src: p.icon, alt: '' } }));
+      const src = artSrc(p.icon);
+      if (src && shown) out.push(el('img', { class: 'slx-ico slx-gear-ico', attrs: { src, alt: '' } }));
+      const late = shown ? artMissing(p.icon) : undefined;
+      if (late) missing.push(late);
       out.push(el('span', { class: p.cls, text: shown }));
     }
   }
   return out;
+}
+
+/** Fills `target` with the first `n` characters of a rich line; a late icon not here yet is drawn in when it lands. */
+export function richInto(target: HTMLElement, r: Rich, n = Infinity): void {
+  const missing: string[] = [];
+  target.replaceChildren(...richNodes(r, n, missing));
+  awaitArt(target, 'rich', missing, () => richInto(target, r, n));
 }
 
 export function win(cls: string, children: Node[] = []): HTMLElement {
@@ -129,12 +145,15 @@ export class MenuView {
       li.addEventListener('click', () => { if (!this.locked()) this.scrollBy(d); });
       return li;
     };
+    // A row's late icon that has not landed is left out; it is put into its row when it lands (ui2/lateArt, `drawLate`).
+    const late: { li: HTMLElement; item: MenuItem }[] = [];
     const rows = this.menu.items.slice(this.top, end).map((item, k) => {
       const i = this.top + k;
+      const icon = artSrc(item.icon);
       const li = el('li', { class: i === this.menu.cursor ? 'slx-opt slx-sel' : 'slx-opt', attrs: {
         role: 'option', 'aria-selected': String(i === this.menu.cursor), 'aria-disabled': String(!!item.disabled), 'data-id': item.id,
       } }, [
-        ...(item.icon ? [el('img', { class: item.iconCls ? `slx-ico ${item.iconCls}` : 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
+        ...(icon ? [MenuView.icon(item, icon)] : []),
         // Its label beside it names the rune and its tier, so the cell's icon is decorative (alt "").
         ...(item.rune ? [runeCell(item.rune, false, true)] : []),
         el('span', { class: item.cls ? `slx-label ${item.cls}` : 'slx-label', text: item.label }),
@@ -150,9 +169,31 @@ export class MenuView {
         if (this.menu.setCursor(i) && this.menu.cursor !== before) { this.render(); this.on.moved?.(); }
       });
       li.addEventListener('click', () => { if (this.locked()) return; if (!item.disabled && this.menu.setCursor(i)) { this.render(); this.flashPick(); this.on.pick(item); } });
+      if (artMissing(item.icon)) late.push({ li, item });
       return li;
     });
     this.list.replaceChildren(...(this.top > 0 ? [marker('slx-more-up', '▲', -1)] : []), ...rows, ...(end < n ? [marker('slx-more-down', '▼', 1)] : []));
+    this.drawLate(late);
+  }
+
+  /** A row's icon picture, first in its row. */
+  private static icon(item: MenuItem, src: string): HTMLElement {
+    return el('img', { class: item.iconCls ? `slx-ico ${item.iconCls}` : 'slx-ico', attrs: { src, alt: '' } });
+  }
+
+  /**
+   * The rows whose icon had not landed: each one that has now is put first in its own row, in place, and the rest wait on.
+   * The rows themselves are not drawn again, so a press under way (a touch between down and up) still ends in its click,
+   * and a pick's flash keeps running.
+   */
+  private drawLate(rows: { li: HTMLElement; item: MenuItem }[]): void {
+    const waiting = rows.filter(({ li, item }) => {
+      const src = artSrc(item.icon);
+      if (!src) return true;
+      li.prepend(MenuView.icon(item, src));
+      return false;
+    });
+    awaitArt(this.list, 'rows', waiting.map(({ item }) => artMissing(item.icon)!), () => this.drawLate(waiting));
   }
 
   /** A quick flash on the chosen row, so a pick is felt even when the next window opens at once. */
@@ -262,7 +303,7 @@ export class Dialogue {
     this.held = on;
     // A scene starts with no face of its own: one left on the box from before it (a labyrinth line) is not kept by its
     // first narration line (staging review 2).
-    if (on) { this.face?.remove(); this.face = null; }
+    if (on) { this.face?.remove(); this.face = null; this.dropFaceWait(); }
   }
 
   /** Puts the box and its face away, unless a line is still waiting to be read. */
@@ -271,6 +312,12 @@ export class Dialogue {
     this.el.hidden = true;
     this.face?.remove();
     this.face = null;
+    this.dropFaceWait();
+  }
+
+  /** A face the line put away waited for is not drawn later (`faceLater`). */
+  private dropFaceWait(): void {
+    awaitArt(this.el, 'face', [], () => {});
   }
 
   /**
@@ -279,6 +326,7 @@ export class Dialogue {
    */
   say(name: string, text: string | Rich, face?: { src: string; side: 'left' | 'right' } | 'keep'): Promise<void> {
     this.stop();
+    this.dropFaceWait();   // a face the last line waited for is not this line's
     if (face === 'keep') this.face?.classList.add('slx-talk-face--dim');
     else {
       this.face?.remove();
@@ -300,15 +348,28 @@ export class Dialogue {
     if (!Number.isFinite(this.charsPerSecond)) this.complete();
     else {
       let n = 0;
-      this.text.textContent = '';
+      richInto(this.text, this.full, 0);
       this.el.setAttribute('aria-busy', 'true');
       this.timer = setInterval(() => {
         n += 1;
-        this.text.replaceChildren(...richNodes(this.full, n));
+        richInto(this.text, this.full, n);
         if (n >= [...richText(this.full)].length) this.complete();
       }, 1000 / this.charsPerSecond);
     }
     return new Promise((r) => { this.resolve = r; });
+  }
+
+  /**
+   * The line on screen takes the best of `faces` (best first) that lands while it is up (ui2/lateArt): a face that had not
+   * loaded when the line was said, or a better one than it shows. The next line drops the wait.
+   */
+  faceLater(faces: readonly string[], side: 'left' | 'right', idx: ArtIndex): void {
+    awaitArt(this.el, 'face', bestLanded(idx, faces).better, () => {
+      const src = bestLanded(idx, faces).src;
+      if (src && this.face) { this.face.setAttribute('src', src); this.face.classList.remove('slx-talk-face--dim'); }
+      else if (src) this.el.prepend((this.face = el('img', { class: `slx-talk-face slx-talk-face--${side}`, attrs: { src, alt: '', draggable: 'false' } })));
+      this.faceLater(faces, side, idx);
+    });
   }
 
   onAction(a: UiAction): boolean {
@@ -320,6 +381,7 @@ export class Dialogue {
       this.el.hidden = true;
       this.face?.remove();
       this.face = null;
+      this.dropFaceWait();
     }
     this.onClose?.();
     r();
@@ -329,7 +391,7 @@ export class Dialogue {
   /** Whole line on screen: the ▼ mark shows and screen readers (aria-busy off) read it once. */
   private complete(): void {
     this.stop();
-    this.text.replaceChildren(...richNodes(this.full));
+    richInto(this.text, this.full);
     this.next.removeAttribute('hidden');
     this.el.setAttribute('aria-busy', 'false');
   }
@@ -346,7 +408,8 @@ export function confirmBox(question: string | Rich, on: (yes: boolean) => void):
     pick: (it) => on(it.id === 'yes'),
     cancel: () => on(false),
   });
-  const q = typeof question === 'string' ? el('p', { text: question }) : el('p', {}, richNodes(question));
+  const q = el('p', typeof question === 'string' ? { text: question } : {});
+  if (typeof question !== 'string') richInto(q, question);
   return { el: win('slx-confirm', [q, view.el]), view };
 }
 

@@ -19,6 +19,7 @@ import { art } from '../../render/artPaths';
 import { artIdOf } from '../../ui/art';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
+import { awaitArt } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
@@ -306,6 +307,8 @@ export class HandbookScene implements Scene {
     const state = this.ctx.game.state;
     const face = shown ? artIdOf(state.party.roster[shown.id] ?? { id: shown.id, oath: undefined }) : null;
     const src = face && this.ctx.art.has(art.standee(face)) ? art.standee(face) : null;
+    // A standee not here yet is drawn when it lands, if the cursor is still on her (ui2/lateArt).
+    awaitArt(this.artEl, 'standee', face && !src ? [art.standee(face)] : [], () => { if (!this.closed) this.drawDetail(); });
     if (!src || !shown) { this.artEl.replaceChildren(); return; }
     // The same picture stays put, so its slide-in does not restart on every cursor move.
     const cur = this.artEl.firstElementChild;

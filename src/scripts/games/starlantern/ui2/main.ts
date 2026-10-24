@@ -93,7 +93,10 @@ export async function mountNext(): Promise<void> {
   const menuArt = urls.filter((u) => /\/(scene|npc)\/|\/ui\/(logo|window|cursor)\.png$/.test(u));
   await Promise.all([bank.preload(menuArt), font]);
   void bank.preload(urls.filter((u) => !menuArt.includes(u)));
-  document.getElementById('sl-screen')?.classList.toggle('slx-skinned', bank.has(art.window) && bank.has(art.cursor));
+  // The window skin needs both pictures; one that outlasted the wait skins the screen when it lands.
+  const skin = () => document.getElementById('sl-screen')?.classList.toggle('slx-skinned', bank.has(art.window) && bank.has(art.cursor));
+  skin();
+  bank.onLoad((u) => { if (u === art.window || u === art.cursor) skin(); });
   (window as unknown as { __starlanternDebug?: unknown }).__starlanternDebug = {
     get game() { return game; }, stage,
     /** Tests only: straight to a scene, as the router goes there; it changes nothing in the game. */

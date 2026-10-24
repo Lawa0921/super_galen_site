@@ -6,6 +6,7 @@ import type { MoonPhase } from '../../data/story/chains';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
+import { bestPicture } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
@@ -47,22 +48,24 @@ export abstract class FacilityScene implements Scene {
   protected abstract commands(): MenuItem[];
   protected abstract onCommand(id: string): void;
 
-  /** The scene picture behind the facility; a subclass can offer newer art first. */
-  protected sceneArt(): string { return art.scene(this.id); }
+  /** The scene pictures behind the facility, best first; a subclass can offer newer art first. The best one loaded shows. */
+  protected sceneArts(): string[] { return [art.scene(this.id)]; }
 
   enter(root: HTMLElement): void {
     this.root = root;
     const f = T.ui2.facility[this.id];
-    const scene = this.sceneArt();
-    const bg = this.ctx.art.has(scene) ? [el('img', { class: 'slx-bg', attrs: { src: scene, alt: '' } })] : [];
-    if (this.ctx.art.has(art.npc(this.id, 'normal'))) this.npc = el('img', { class: 'slx-npc', attrs: { src: art.npc(this.id, 'normal'), alt: '' } });
     this.gold = win('slx-gold');
     this.cmdWin = win('slx-cmd');
     this.stage = el('div', { class: 'slx-stage' });
     this.back = backControl(() => this.onAction('cancel'));
-    root.append(el('div', { class: `slx-scene slx-facility slx-${this.id}` }, [
-      ...bg, ...(this.npc ? [this.npc] : []), (this.place = win('slx-place', [document.createTextNode(f.place)])), this.gold, this.back, this.cmdWin, this.stage, this.talk.el,
-    ]));
+    const sceneEl = el('div', { class: `slx-scene slx-facility slx-${this.id}` }, [
+      (this.place = win('slx-place', [document.createTextNode(f.place)])), this.gold, this.back, this.cmdWin, this.stage, this.talk.el,
+    ]);
+    // The scene picture first, then the keeper's bust; each is put in when it lands if it had not yet (ui2/lateArt).
+    bestPicture(sceneEl, 'bg', this.ctx.art, this.sceneArts(), (src) => el('img', { class: 'slx-bg', attrs: { src, alt: '' } }), (n) => sceneEl.prepend(n));
+    bestPicture(sceneEl, 'npc', this.ctx.art, [art.npc(this.id, 'normal')], (src) => el('img', { class: 'slx-npc', attrs: { src, alt: '' } }),
+      (n) => { this.npc = n as HTMLImageElement; this.place.before(n); });
+    root.append(sceneEl);
     this.refresh();
     // Coming back from one of the guild's own screens (or settings) is not a new visit: no greeting.
     if (!RETURNING.includes(this.ctx.from ?? 'town')) { const pool = this.greetings(); void this.greet(pool[Math.floor(this.ctx.game.rng() * pool.length)]); }

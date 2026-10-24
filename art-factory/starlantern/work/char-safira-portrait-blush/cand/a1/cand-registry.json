@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "char-safira-portrait-blush": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-safira-portrait-blush/cand/a1/char-safira-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-blush\\a1\\char-safira-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 9,
+        "size": [
+          121,
+          122
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { drawLanded } from '../lateArt';
 import { Game } from '../../engine/game';
 import type { Combatant } from '../../engine/combatant';
 import type { CharacterId, ItemInstance } from '../../engine/types';
@@ -790,6 +791,25 @@ describe('BattleScene loot and stat cues', () => {
     expect(line('布袍').querySelector('img')).toBeNull();                       // no art: the name alone
     expect(line('獵弓').querySelector('img.slx-gear-ico')!.getAttribute('src')).toBe(art.gear('hunter-bow'));
     expect(line('獵弓').textContent).toBe('背包已滿，留下了 獵弓・魔法');
+  });
+
+  it('won gear and gear left behind whose icons land after the result is up gain them then (ui2/lateArt)', async () => {
+    const landed = new Set<string>();
+    const { game, s, root } = setup(undefined, { art: { has: (u) => landed.has(u) } });
+    const end = { outcome: 'win' as const, exp: 5, gold: 7, drops: {}, levelUps: [], left: {},
+      gear: [gearOf(1, 'iron-sword', 'rare')], gearLeft: [gearOf(3, 'hunter-bow', 'magic')] };
+    vi.spyOn(game, 'submitRound').mockImplementation(() => { game.phase = 'map'; return { battle: { ...game.battle!, outcome: 'win', log: [] }, end }; });
+    for (let i = 0; i < 5; i++) s.onAction('down');
+    s.onAction('confirm');
+    await flush();
+    const line = (t: string) => [...root.querySelectorAll('.slx-result-lines p')].find((p) => p.textContent!.includes(t))!;
+    expect(line('鐵劍').querySelector('img')).toBeNull();
+    expect(line('獵弓').querySelector('img')).toBeNull();
+    landed.add(art.gear('iron-sword')).add(art.gear('hunter-bow'));
+    drawLanded(root, new Set([art.gear('iron-sword'), art.gear('hunter-bow')]));
+    expect(line('鐵劍').querySelector('img.slx-gear-ico')!.getAttribute('src')).toBe(art.gear('iron-sword'));
+    expect(line('鐵劍').textContent).toBe('鐵劍・稀有');
+    expect(line('獵弓').querySelector('img.slx-gear-ico')!.getAttribute('src')).toBe(art.gear('hunter-bow'));
   });
 
   it('the result names each rune found (plan 8f Task 3)', async () => {

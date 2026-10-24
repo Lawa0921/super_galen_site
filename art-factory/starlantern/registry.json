@@ -35450,6 +35450,747 @@
         "palette_share": 0.998
       },
       "approved_by": "user 2026-10-24: approved wave 3 (runs/2026-10-24-faces-wave3), 「可以」"
+    },
+    "char-noel-portrait-blush": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-noel-portrait-blush/char-noel-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-blush\\a1\\char-noel-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 5,
+        "block": 10,
+        "size": [
+          118,
+          119
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-noel-portrait-blush",
+      "batch": "faces-noel",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-blush.png",
+      "depends_on": [
+        "char-noel-portrait",
+        "char-noel-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          118,
+          119
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.996
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-safira-portrait-blush": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-safira-portrait-blush/char-safira-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-safira-portrait-blush\\a1\\char-safira-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 9,
+        "size": [
+          121,
+          122
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-safira-portrait-blush",
+      "batch": "faces-safira",
+      "runtime": "/assets/games/starlantern/char/safira-portrait-blush.png",
+      "depends_on": [
+        "char-safira-portrait",
+        "char-safira-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          121,
+          122
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 9,
+        "base_block": 9,
+        "palette_share": 0.994
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-rin-oath-portrait-averted": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-averted/char-rin-oath-portrait-averted.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-averted\\a2\\char-rin-oath-portrait-averted-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-oath-portrait-averted",
+      "batch": "faces-rin-oath",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait-averted.png",
+      "depends_on": [
+        "char-rin-oath-portrait",
+        "char-rin-oath-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          101,
+          112
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 1.0
+      },
+      "rejected_attempts": {
+        "a1": "wave 4 sample: only the pupils moved, the avoidance did not read at native size; user chose a2 (head turned away), 2026-10-24"
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-bobby-portrait-excited": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-bobby-portrait-excited/char-bobby-portrait-excited.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-excited\\a1\\char-bobby-portrait-excited-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-bobby-portrait-excited",
+      "batch": "faces-bobby",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-excited.png",
+      "depends_on": [
+        "char-bobby-portrait",
+        "char-bobby-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          122,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.995
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-rin-portrait-averted": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-rin-portrait-averted/char-rin-portrait-averted.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-averted\\a1\\char-rin-portrait-averted-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-portrait-averted",
+      "batch": "faces-rin",
+      "runtime": "/assets/games/starlantern/char/rin-portrait-averted.png",
+      "depends_on": [
+        "char-rin-portrait",
+        "char-rin-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          101,
+          112
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 0.999
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-rin-oath-portrait-blush": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-blush/char-rin-oath-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-blush\\a1\\char-rin-oath-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-oath-portrait-blush",
+      "batch": "faces-rin-oath",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait-blush.png",
+      "depends_on": [
+        "char-rin-oath-portrait",
+        "char-rin-oath-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          101,
+          112
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 0.999
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-selene-portrait-blush": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-selene-portrait-blush/char-selene-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-selene-portrait-blush\\a1\\char-selene-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 10,
+        "block": 10,
+        "size": [
+          123,
+          114
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-selene-portrait-blush",
+      "batch": "faces-selene",
+      "runtime": "/assets/games/starlantern/char/selene-portrait-blush.png",
+      "depends_on": [
+        "char-selene-portrait",
+        "char-selene-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          123,
+          114
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.999
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-chizuru-portrait-blush": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-chizuru-portrait-blush/char-chizuru-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-chizuru-portrait-blush\\a1\\char-chizuru-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "block": 9,
+        "size": [
+          127,
+          123
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-chizuru-portrait-blush",
+      "batch": "faces-chizuru",
+      "runtime": "/assets/games/starlantern/char/chizuru-portrait-blush.png",
+      "depends_on": [
+        "char-chizuru-portrait",
+        "char-chizuru-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          127,
+          123
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 9,
+        "base_block": 9,
+        "palette_share": 0.997
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-sylvie-portrait-blush": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-blush/char-sylvie-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-blush\\a1\\char-sylvie-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-sylvie-portrait-blush",
+      "batch": "faces-sylvie",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-blush.png",
+      "depends_on": [
+        "char-sylvie-portrait",
+        "char-sylvie-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          122,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.992
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-sylvie-portrait-unguarded": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-unguarded/char-sylvie-portrait-unguarded.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-unguarded\\a2\\char-sylvie-portrait-unguarded-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "char-sylvie-portrait-unguarded",
+      "batch": "faces-sylvie",
+      "runtime": "/assets/games/starlantern/char/sylvie-portrait-unguarded.png",
+      "depends_on": [
+        "char-sylvie-portrait",
+        "char-sylvie-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          122,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 1.0
+      },
+      "rejected_attempts": {
+        "a1": "read almost like her smiling normal at native size; a2 (eyes closed, head tilted, contented smile) reads as unguarded"
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-noel-portrait-smug": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-noel-portrait-smug/char-noel-portrait-smug.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-smug\\a1\\char-noel-portrait-smug-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 10,
+        "size": [
+          118,
+          119
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-noel-portrait-smug",
+      "batch": "faces-noel",
+      "runtime": "/assets/games/starlantern/char/noel-portrait-smug.png",
+      "depends_on": [
+        "char-noel-portrait",
+        "char-noel-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          118,
+          119
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.998
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-bobby-portrait-blush": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-bobby-portrait-blush/char-bobby-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-blush\\a2\\char-bobby-portrait-blush-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 4,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "char-bobby-portrait-blush",
+      "batch": "faces-bobby",
+      "runtime": "/assets/games/starlantern/char/bobby-portrait-blush.png",
+      "depends_on": [
+        "char-bobby-portrait",
+        "char-bobby-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          122,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.997
+      },
+      "rejected_attempts": {
+        "a1": "canvas one art pixel wider than her normal (123 vs 122): size must match exactly; a2 matches"
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-liz-portrait-blush": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-liz-portrait-blush/char-liz-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-liz-portrait-blush\\a1\\char-liz-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 6,
+        "block": 10,
+        "size": [
+          102,
+          121
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-liz-portrait-blush",
+      "batch": "faces-liz",
+      "runtime": "/assets/games/starlantern/char/liz-portrait-blush.png",
+      "depends_on": [
+        "char-liz-portrait",
+        "char-liz-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          102,
+          121
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 10,
+        "base_block": 10,
+        "palette_share": 0.995
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
+    },
+    "char-scarlet-portrait-blush": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-scarlet-portrait-blush/char-scarlet-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-blush\\a1\\char-scarlet-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          108,
+          115
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-scarlet-portrait-blush",
+      "batch": "faces-scarlet",
+      "runtime": "/assets/games/starlantern/char/scarlet-portrait-blush.png",
+      "depends_on": [
+        "char-scarlet-portrait",
+        "char-scarlet-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          108,
+          115
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 0.997
+      },
+      "approved_by": "user 2026-10-24: approved faces wave 4 (runs/2026-10-24-faces-wave4-sample, runs/2026-10-24-faces-wave4), 「可以，照這風格」; Rin (oath) averted: a2, head turned away"
     }
   },
   "requa_log": [

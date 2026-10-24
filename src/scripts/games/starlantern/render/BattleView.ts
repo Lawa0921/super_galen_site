@@ -204,6 +204,8 @@ export class BattleView {
 
   /** The backdrop's url while it has not loaded, and the size it is drawn at. */
   private bgWant: { url: string; size: { width: number; height: number } } | null = null;
+  /** The last ailment rows drawn while some of their icons had not loaded: drawn again when one lands. */
+  private ailWant: { urls: Set<string>; args: Parameters<BattleView['showAilments']> } | null = null;
 
   private arrived(url: string): void {
     const tex = this.bank?.get(url);
@@ -219,6 +221,11 @@ export class BattleView {
       if (slot.want?.url !== url || slot.texture || slot.box.destroyed) continue;
       this.placeBody(slot, tex, slot.want.maxH, slot.want.slotW, slot.want.ground);
       if (slot.folded) this.onRowsMoved?.();
+    }
+    // An ailment or mark icon its row left out: the rows are drawn again with it (its width can fold the row differently).
+    if (this.ailWant?.urls.has(url) && !this.scene.destroyed) {
+      this.showAilments(...this.ailWant.args);
+      if ([...this.slots.values()].some((s) => s.folded)) this.onRowsMoved?.();
     }
   }
 
@@ -260,6 +267,8 @@ export class BattleView {
     for (const c of this.scene.removeChildren()) c.destroy({ children: true });
     this.root.scale.set(1); this.root.x = 0; this.root.y = 0; this.scene.x = 0;
     this.slots.clear();
+    // The last fight's rows waited for their icons on its slots: an icon landing now draws none of them here.
+    this.ailWant = null;
     this.defIds.clear();
     this.weapons.clear();
     for (const c of [...state.party, ...state.enemies]) { this.defIds.set(c.key, c.defId); if (c.weaponKind) this.weapons.set(c.key, c.weaponKind); }
@@ -522,6 +531,7 @@ export class BattleView {
    * grows a second line toward the name and the HP bar under the feet.
    */
   showAilments(byKey: Record<string, AilmentChip[]>, marks: Record<string, MechWord[]> = {}, affixes: Record<string, readonly string[]> = {}): void {
+    const missing = new Set<string>();
     for (const [k, s] of this.slots) {
       if (s.ail.destroyed) continue;
       for (const c of s.ail.removeChildren()) c.destroy();
@@ -532,7 +542,7 @@ export class BattleView {
       // Each word with its loaded 14px icons in front (art step 9, G4): an ailment's, a setup's (暗記, 瞄準).
       // `cls` and `urls`: the same word as the DOM draws it, for the list a tapped +N opens (touch overflow).
       type W = { text: string; fill: number; icons: Texture[]; cls: string; urls: string[] };
-      const loaded = (urls: string[]) => urls.flatMap((u) => this.bank?.get(u) ?? []);
+      const loaded = (urls: string[]) => urls.flatMap((u) => { const t = this.bank?.get(u); if (!t && this.bank) missing.add(u); return t ?? []; });
       const ofChip = (c: AilmentChip): W => ({ text: T.ailmentChip(c), fill: AILMENT_FILL[c.id], icons: loaded([ailmentIconUrl(c.id)]), cls: `slx-ail slx-ail-${c.id}`, urls: [ailmentIconUrl(c.id)] });
       const ofWord = (x: MechWord): W => ({ text: x.text, fill: MECH_FILL[x.tone], icons: loaded(mechIconUrls(x)), cls: `slx-mech slx-mech-${x.tone}`, urls: mechIconUrls(x) });
       const wide = (w: W) => ailLabelWidth(w.text) + CHIP_ICON_W * w.icons.length;
@@ -570,6 +580,7 @@ export class BattleView {
         s.ail.addChild(t);
       });
     }
+    this.ailWant = missing.size ? { urls: missing, args: [byKey, marks, affixes] } : null;
   }
 
   /** An enemy's whole picture (sprite, name, bar, words), for layout tests. */

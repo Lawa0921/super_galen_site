@@ -2,6 +2,7 @@ import { T } from '../../data/text.zh-TW';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
+import { bestPicture } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { DEFAULT_SETTINGS, STORY_MODES, TEXT_SPEEDS, type Settings } from '../settings';
@@ -18,14 +19,14 @@ export class SettingsScene implements Scene {
 
   enter(root: HTMLElement): void {
     const t = T.ui2.settings;
-    const bg = this.ctx.art.has(art.scene('title')) ? [el('img', { class: 'slx-bg slx-bg-dim', attrs: { src: art.scene('title'), alt: '' } })] : [];
     this.view = new MenuView(new Menu(this.items()), {
       pick: (it) => this.pick(it.id),
       moved: () => this.ctx.sfx.cursor(),
       cancel: () => this.leave(),
     });
     this.menuWin = win('slx-settings', [el('h3', { text: t.title }), this.view.el, el('p', { class: 'slx-hint', text: t.hint })]);
-    this.body = el('div', { class: 'slx-scene slx-settings-scene' }, [...bg, this.menuWin, backControl(() => this.onAction('cancel'))]);
+    this.body = el('div', { class: 'slx-scene slx-settings-scene' }, [this.menuWin, backControl(() => this.onAction('cancel'))]);
+    bestPicture(this.body, 'bg', this.ctx.art, [art.scene('title')], (src) => el('img', { class: 'slx-bg slx-bg-dim', attrs: { src, alt: '' } }), (n) => this.body.prepend(n));
     root.append(this.body);
   }
 
