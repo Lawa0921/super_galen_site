@@ -558,7 +558,7 @@
 **Interfaces:**
 - Consumes：Task 2 的 `walkFloor(…, cal)`；L 計畫 Task 6 的腳本（`engine/story/events.test.ts` 約 958 行的 `scriptedPlay`），只讀它決定每一趟走哪幾層的規則，不從測試檔匯入，要用就複製。
 - 腳本：
-  - 三種玩家：每層、每兩層、每三層回城；出發深度照遊戲規則（1 或 5 的倍數）；
+  - 三種玩家：每層、每兩層、每三層回城；出發深度照遊戲規則：本道可以從任何已到達的深度出發（`engine/dungeon/run.ts:84` 的 `startDepths`），所以每一趟從上一次回城的下一層出發（1 或 5 的倍數是其他地區的規則）；
   - 每一趟是一天，從第 1 天起；
   - 不住旅館；
   - 每一層用 `walkFloor(…, calendarOf 推出的 cal)`；
