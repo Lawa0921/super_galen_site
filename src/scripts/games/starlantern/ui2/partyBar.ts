@@ -7,6 +7,7 @@ import type { MechWord } from '../engine/mechanics/index';
 import { bySeverity, fitRow, isHalting, textWidth } from '../render/ailmentStyle';
 import { CHIP_ICON_PX, CHIP_ICON_W, ailmentIconUrl, mechIconUrls } from '../render/chipIcons';
 import type { ArtIndex } from '../render/textures';
+import { moreTrigger, type MorePopover } from './morePopover';
 
 const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' };
 /**
@@ -91,7 +92,8 @@ export class PartyBar {
   readonly el = el('div', { class: 'slx-partybar' });
   private panels = new Map<string, Panel>();
 
-  constructor(private art: ArtIndex) {}
+  /** `more`: the battle's popover; with it, a tap on a row's +N lists the whole row (touch overflow). */
+  constructor(private art: ArtIndex, private more: MorePopover | null = null) {}
 
   /** Panels are updated in place (not rebuilt), so a shake or a number already on screen keeps playing. */
   update(members: BarMember[], active: string | null = null): void {
@@ -210,10 +212,15 @@ export class PartyBar {
     // Whatever folds stays discoverable: the whole row, in its order, as the panel's title (the row lets the pointer
     // through) and the +N's.
     const all = more ? words.map((w) => w.textContent ?? '').join('、') : '';
-    const moreWord = more ? moreEl(more) : null;
+    // On touch there is no hover: with the battle's popover the +N is a button, and its tap lists the whole row there.
+    const pop = this.more, id = `pm:${m.key}`;
+    const listed = () => words.map((w) => w.cloneNode(true) as HTMLElement);
+    const moreWord = !more ? null : pop ? moreTrigger(more, () => pop.toggle(id, moreWord!, p.el, listed())) : moreEl(more);
     if (moreWord) moreWord.title = all;
     if (all) p.el.title = all; else p.el.removeAttribute('title');
     ail.replaceChildren(...shown, ...(moreWord ? [moreWord] : []));
+    // An open list follows the redraw (a new +N, the words now), and closes when nothing folds any more.
+    if (pop?.openId === id) { if (moreWord) pop.show(id, moreWord, p.el, listed()); else pop.close(); }
     tpNum.textContent = `TP ${m.tp}/${m.maxTp}`;
     name.replaceChildren(m.name, ...(m.row ? [el('span', { class: `slx-pm-row slx-pm-row-${m.row}`, text: ROW_TAG[m.row] })] : []));
     num.textContent = `${m.hp}/${m.maxHp}`;

@@ -3,6 +3,7 @@ import { art } from '../render/artPaths';
 import { NO_ART } from '../render/textures';
 import { T } from '../data/text.zh-TW';
 import { PartyBar } from './partyBar';
+import { MorePopover } from './morePopover';
 
 const m = (key: string, hp = 30, extra = {}) => ({ key, name: key, hp, maxHp: 30, tp: 10, maxTp: 20, limit: 40, alive: hp > 0, ...extra });
 
@@ -359,5 +360,58 @@ describe('PartyBar mechanics (plan 8c)', () => {
     vi.advanceTimersByTime(1000);
     expect(bar.el.querySelector('.slx-pm-cue')).toBeNull();
     vi.useRealTimers();
+  });
+});
+
+describe('PartyBar +N on touch (touch overflow)', () => {
+  const five = [{ id: 'poison' }, { id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }, { id: 'shock', turns: 2 }, { id: 'chill', turns: 2 }] as const;
+  const loaded = (...urls: string[]) => ({ has: (u: string) => urls.includes(u) });
+
+  it('a tap on +N lists every word of the row, icons and all, in the panel; a second tap closes it', () => {
+    const pop = new MorePopover();
+    const bar = new PartyBar(loaded(art.ailmentIcon('bleed'), art.ailmentIcon('chill')), pop);
+    document.body.append(bar.el);
+    bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度5' }], ailments: [...five] })]);
+    const panel = bar.el.querySelector<HTMLElement>('[data-key=noel]')!;
+    const more = panel.querySelector<HTMLElement>('.slx-ail-more')!;
+    expect(more.getAttribute('role')).toBe('button');
+    expect(more.getAttribute('aria-label')).toBe(T.ailmentMoreLabel(Number(more.textContent!.slice(1))));
+    more.click();
+    expect(pop.openId).toBe('pm:noel');
+    expect(pop.el.parentElement).toBe(panel);
+    const listed = [...pop.el.children].map((c) => [c.className, c.textContent]);
+    expect(listed).toEqual([['slx-mech slx-mech-heat', '熱度5'], ['slx-ail slx-ail-bleed', '流血×2'], ['slx-ail slx-ail-burn', '灼燒3'],
+      ['slx-ail slx-ail-poison', '中毒'], ['slx-ail slx-ail-shock', '感電2'], ['slx-ail slx-ail-chill', '冰緩2']]);
+    expect([...pop.el.querySelectorAll('img.slx-chip-ico')].map((i) => i.getAttribute('src'))).toEqual([art.ailmentIcon('bleed'), art.ailmentIcon('chill')]);
+    // The row itself is untouched: with the bleed's icon only her mechanic word fits before the +N.
+    expect([...panel.querySelectorAll('.slx-pm-ail > *')].map((c) => c.textContent)).toEqual(['熱度5', '+5']);
+    panel.querySelector<HTMLElement>('.slx-ail-more')!.click();
+    expect(pop.openId).toBeNull();
+    expect(pop.el.hidden).toBe(true);
+    pop.dispose(); bar.el.remove();
+  });
+
+  it('a redraw keeps an open list open with the new words; once nothing folds, it closes', () => {
+    const pop = new MorePopover();
+    const bar = new PartyBar(NO_ART, pop);
+    document.body.append(bar.el);
+    bar.update([m('noel', 30, { ailments: [...five] }), m('rin', 30, { ailments: [...five] })]);
+    bar.el.querySelector<HTMLElement>('[data-key=noel] .slx-ail-more')!.click();
+    bar.update([m('noel', 30, { ailments: five.slice(0, 4) }), m('rin', 30, { ailments: [...five] })]);
+    expect(pop.openId).toBe('pm:noel');
+    expect([...pop.el.children].map((c) => c.textContent)).toEqual(['流血×2', '灼燒3', '中毒', '感電2']);
+    expect(bar.el.querySelector('[data-key=noel] .slx-ail-more')!.getAttribute('aria-expanded')).toBe('true');
+    expect(bar.el.querySelector('[data-key=rin] .slx-ail-more')!.getAttribute('aria-expanded')).toBe('false');
+    bar.update([m('noel', 30, { ailments: [{ id: 'poison' }] }), m('rin', 30, { ailments: [...five] })]);
+    expect(pop.openId).toBeNull();
+    pop.dispose(); bar.el.remove();
+  });
+
+  it('without a popover (the labyrinth) the +N is still the plain folded word with its title', () => {
+    const bar = new PartyBar(NO_ART);
+    bar.update([m('noel', 30, { ailments: [...five] })]);
+    const more = bar.el.querySelector<HTMLElement>('.slx-ail-more')!;
+    expect(more.title).toBe('流血×2、灼燒3、中毒、感電2、冰緩2');
+    expect(more.hasAttribute('role')).toBe(false);
   });
 });

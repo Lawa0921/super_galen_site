@@ -27,6 +27,7 @@ import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import { PartyBar, chipWord, type PulseOpts } from '../partyBar';
+import { MorePopover, moreTrigger } from '../morePopover';
 import { mechIconUrls } from '../../render/chipIcons';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, richNodes, win, type Rich } from '../widgets';
@@ -63,6 +64,10 @@ export class BattleScene implements Scene {
   private backEl!: HTMLElement;
   private note: HTMLElement | null = null;
   private bar: PartyBar;
+  /** The list a tapped 「+N」 opens (touch overflow), a member's or a foe's; one at a time. */
+  private more = new MorePopover();
+  /** The tap targets over the foes' 「+N」 (the picture draws the words): first in the scene, under every window. */
+  private foeMore = el('div', { class: 'slx-foe-more-layer' });
   private layers: Layer[] = [];
   private view: MenuView | null = null;
   private state!: BattleState;
@@ -88,7 +93,7 @@ export class BattleScene implements Scene {
   private picked = false;
 
   constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
-    this.bar = new PartyBar(ctx.art);
+    this.bar = new PartyBar(ctx.art, this.more);
     this.talk = new Dialogue(cps);
   }
 
@@ -107,7 +112,7 @@ export class BattleScene implements Scene {
     this.marker = el('div', { class: 'slx-target', text: '▼', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.cutin = el('div', { class: 'sl-cutin', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.backEl = backControl(() => this.onAction('cancel'));
-    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.msg, this.field, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin, this.talk.el]);
+    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.foeMore, this.msg, this.field, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin, this.talk.el]);
     root.append(this.body);
     if (this.ctx.stage) {
       this.ctx.stage.show('battle');
@@ -120,11 +125,14 @@ export class BattleScene implements Scene {
 
   exit(): void {
     this.talk.stop();
+    this.more.dispose();
     if (this.body) clearPillars(this.body);
     this.ctx.stage?.show(null);
   }
 
   onAction(a: UiAction): void {
+    // An open +N list takes cancel (Esc) for itself; any other key closes it and goes on as always.
+    if (this.more.onAction(a)) return;
     if (this.rescue) { this.rescue.onAction(a); return; }
     if (this.tutoring) { this.talk.onAction(a); return; }
     if (this.busy) return;
@@ -228,6 +236,30 @@ export class BattleScene implements Scene {
     const tagged = live.filter((e) => e.affixes?.length);
     if (tagged.length) this.ctx.stage?.battleView.showAilments?.(chips, words, Object.fromEntries(tagged.map((e) => [e.key, e.affixes!.map((a) => AFFIXES[a].name)])));
     else this.ctx.stage?.battleView.showAilments?.(chips, words);
+    this.showFoeMore();
+  }
+
+  /**
+   * A tap target over each foe's 「+N」 (touch overflow): the picture draws the +N; this lays a bare button on it (centred,
+   * in 2 px steps: classes, never an inline style) that lists the foe's whole row. First in the scene, so every window
+   * covers it, and it lets every other tap through. An open list follows the redraw, and closes with the fold.
+   */
+  private showFoeMore(): void {
+    const rows = this.ctx.stage?.battleView.foldedRows?.() ?? [];
+    const step = (v: number) => Math.round(v / 2);
+    const listOf = (r: (typeof rows)[number]) => r.words.map((w) => chipWord(this.ctx.art, w.cls, w.text, w.icons));
+    const hits = rows.map((r) => {
+      const id = `foe:${r.key}`;
+      const hit: HTMLElement = moreTrigger(r.more, () => this.more.toggle(id, hit, hit, listOf(r)),
+        `slx-foe-more slx-at-x-${step(r.at.x + r.at.width / 2)} slx-at-y-${step(r.at.y + r.at.height / 2)}`, false);
+      hit.title = r.words.map((w) => w.text).join('、');
+      return { id, hit, r };
+    });
+    this.foeMore.replaceChildren(...hits.map((h) => h.hit));
+    const open = this.more.openId;
+    if (!open?.startsWith('foe:')) return;
+    const now = hits.find((h) => h.id === open);
+    if (now) this.more.show(open, now.hit, now.hit, listOf(now.r)); else this.more.close();
   }
 
   /**

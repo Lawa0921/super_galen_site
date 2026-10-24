@@ -188,6 +188,9 @@ export const T = {
   ailmentChip: (c: AilmentChip) => `${AILMENT_NAME[c.id]}${c.stacks !== undefined ? `×${c.stacks}` : c.turns !== undefined ? c.turns : ''}`,
   /** The ailments a full row folds away, counted: 「+2」. */
   ailmentMore: (n: number) => `+${n}`,
+  /** A tapped 「+N」's list (touch overflow): its name for a screen reader, and the +N's own, saying what a tap shows. */
+  ailmentAll: '全部狀態',
+  ailmentMoreLabel: (n: number) => `另有 ${n} 個狀態，點開看全部`,
   /** Character mechanics on the battle screen (plan 8c): words under a member or over a foe, and the moments that pop. */
   mech: {
     heat: (n: number) => `熱度${n}`,

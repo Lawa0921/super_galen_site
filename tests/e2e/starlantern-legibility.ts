@@ -762,7 +762,16 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
+    // Touch overflow: a member's +N tapped (clicked here) opens the list of her whole row, over the battle.
+    name: 'battle-chips-more', visit: async (page) => {
+      await page.locator('.slx-partybar .slx-ail-more').first().click();
+      await expect(page.locator('.slx-more-pop')).toBeVisible();
+      expect(await page.locator('.slx-more-pop > *').count()).toBeGreaterThan(3);
+    },
+  },
+  {
     name: 'battle-skills', visit: async (page, w) => {
+      if (await page.locator('.slx-more-pop').isVisible()) await w.key('Escape');   // the +N list, closed first
       for (let i = 0; i < 8; i++) {
         await w.choose('.slx-bcmd', '技能');
         if (await page.locator('.slx-bsub').isVisible()) break;
