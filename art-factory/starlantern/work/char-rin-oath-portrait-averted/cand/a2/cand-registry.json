@@ -1,0 +1,31 @@
+{
+  "assets": {
+    "char-rin-oath-portrait-averted": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-averted/cand/a2/char-rin-oath-portrait-averted.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-averted\\a2\\char-rin-oath-portrait-averted-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}
