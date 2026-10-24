@@ -11,7 +11,7 @@ import { priceOf } from '../../engine/town';
 import type { GearSlot } from '../../engine/types';
 import { codexArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
-import { gearIconUrl } from '../gearArt';
+import { gearIconLate } from '../gearArt';
 import { fillRich, gearPart } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import { GEAR_ROWS, MenuView, QtyView, confirmBox, richNodes, win, type Rich } from '../widgets';
@@ -47,11 +47,8 @@ const costLine = (s: GameState, c: Cost) => el('p', {}, richNodes([T.ui2.forge.c
 export function openCraft(h: ForgeHost): void {
   const game = h.ctx.game;
   const F = T.ui2.forge;
-  /** A set row shows its first piece's gear icon, a piece row its own, once published. */
-  const gearIcon = (id: string): Pick<MenuItem, 'icon' | 'iconCls'> => {
-    const icon = gearIconUrl(h.ctx.art, codexArtId(id));
-    return icon ? { icon, iconCls: 'slx-gear-ico' } : {};
-  };
+  /** A set row shows its first piece's gear icon, a piece row its own, once published and loaded. */
+  const gearIcon = (id: string): Pick<MenuItem, 'icon' | 'iconCls'> => ({ icon: gearIconLate(h.ctx.art, codexArtId(id)), iconCls: 'slx-gear-ico' });
 
   /**
    * One list layer sharing the page's detail window; the detail follows the cursor, Esc pops and runs `back`. `shown` is how

@@ -7,6 +7,7 @@ import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
+import { bestPicture, lateArt, type LateArt } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { MenuView, backControl, win } from '../widgets';
@@ -36,13 +37,16 @@ export class FormationScene implements Scene {
       el('ul', { class: 'slx-formation-rules' }, (this.field ? t.fieldRules : t.rules).map((r) => el('li', { text: r }))),
       this.msg, el('p', { class: 'slx-hint', text: t.hint }),
     ]);
-    const bg = !this.field && this.ctx.art.has(art.scene('guild')) ? [el('img', { class: 'slx-bg slx-bg-dim', attrs: { src: art.scene('guild'), alt: '' } })] : [];
-    this.body = el('div', { class: 'slx-scene slx-formation-scene' }, [...bg, this.gridEl, info, backControl(() => this.onAction('cancel'))]);
+    this.body = el('div', { class: 'slx-scene slx-formation-scene' }, [this.gridEl, info, backControl(() => this.onAction('cancel'))]);
+    if (!this.field) bestPicture(this.body, 'bg', this.ctx.art, [art.scene('guild')], (src) => el('img', { class: 'slx-bg slx-bg-dim', attrs: { src, alt: '' } }), (n) => this.body.prepend(n));
     root.append(this.body);
     this.render();
   }
 
   exit(): void {}
+
+  /** Faces that landed after the grid was drawn (ui2/lateArt) are drawn in; the pick list draws its own. */
+  artArrived(): void { this.render(); }
 
   onAction(a: UiAction): void {
     if (this.pickView) { this.pickView.onAction(a); return; }
@@ -67,6 +71,11 @@ export class FormationScene implements Scene {
   private faceUrl(id: CharacterId): string | undefined {
     const url = art.portrait(artIdOf(this.ctx.game.state.party.roster[id]), 'normal');
     return this.ctx.art.has(url) ? url : undefined;
+  }
+
+  /** The same face as a row icon of the pick list, shown once it has landed. */
+  private faceLate(id: CharacterId): LateArt {
+    return lateArt(this.ctx.art, art.portrait(artIdOf(this.ctx.game.state.party.roster[id]), 'normal'));
   }
 
   private face(id: CharacterId): HTMLElement[] {
@@ -100,7 +109,7 @@ export class FormationScene implements Scene {
   private openPick(): void {
     const p = this.ctx.game.state.party;
     const where = (id: CharacterId) => { const j = this.grid.indexOf(id); return j < 0 ? T.ui2.formation.reserve : T.ui2.rows[rowOfCell(j)]; };
-    const items: MenuItem[] = (this.field ? activeIds(p) : p.recruited).map((id) => ({ id, label: CHARACTERS[id].name, right: where(id), icon: this.faceUrl(id) }));
+    const items: MenuItem[] = (this.field ? activeIds(p) : p.recruited).map((id) => ({ id, label: CHARACTERS[id].name, right: where(id), icon: this.faceLate(id) }));
     const here = this.grid[this.cursor];
     if (here && here !== 'hero' && !this.field) items.push({ id: '', label: T.ui2.formation.remove });
     this.ctx.sfx.confirm();

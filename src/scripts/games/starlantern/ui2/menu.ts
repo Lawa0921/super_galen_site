@@ -1,12 +1,13 @@
 import type { RuneRef } from '../data/runes';
+import type { ArtRef } from './lateArt';
 import type { Mark } from './runeArt';
 
 /**
  * `cls` is added to the label (a rarity colour, say); `rightClass` to the right-hand text (`slx-lack`, say); `iconCls` to
- * the icon (`slx-gear-ico` for gear art, which keeps its own size).
+ * the icon (`slx-gear-ico` for gear art, which keeps its own size). A late `icon` (ui2/lateArt) shows once it has landed.
  */
 export interface MenuItem {
-  id: string; label: string; disabled?: boolean; note?: string; icon?: string; iconCls?: string; right?: string; rightClass?: string; cls?: string;
+  id: string; label: string; disabled?: boolean; note?: string; icon?: ArtRef; iconCls?: string; right?: string; rightClass?: string; cls?: string;
   /** Icons right after the label at 14px (plan 8g Task 7, art step 9: each working rune on a skill in the battle menu). */
   marks?: Mark[];
   /** Icons on the right at 14px, in place of `right` (art step 9: a skill's slots in the workshop's skill list). */

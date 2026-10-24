@@ -6,6 +6,7 @@ import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
+import { awaitArt, bestLanded } from '../lateArt';
 import type { Scene, SceneCtx } from '../scene';
 import { backControl, win } from '../widgets';
 import { STATUS_TABS, cueFrame, updateCues } from './statusTabs';
@@ -96,7 +97,7 @@ export class StatusScene implements Scene {
   private drawStandee(): void {
     this.shownId = this.id;
     const face = artIdOf(this.ctx.game.state.party.roster[this.id]);
-    const src = this.ctx.art.has(art.standee(face)) ? art.standee(face) : this.ctx.art.has(art.portrait(face, 'normal')) ? art.portrait(face, 'normal') : null;
+    const { src, better } = bestLanded(this.ctx.art, [art.standee(face), art.portrait(face, 'normal')]);
     this.standee.className = `slx-status-art slx-aura-${this.id}`;
     this.standee.replaceChildren(
       el('div', { class: 'slx-status-rays' }),
@@ -104,6 +105,13 @@ export class StatusScene implements Scene {
       ...(src ? [el('img', { class: 'slx-status-standee', attrs: { src, alt: CHARACTERS[this.id].name } })] : []),
       ...[0, 1, 2, 3, 4, 5].map((i) => el('span', { class: `slx-mote slx-mote-${i}`, attrs: { 'aria-hidden': 'true' } })),
     );
+    // Her standee (or her face, until the standee lands) is put in when it lands (ui2/lateArt).
+    awaitArt(this.standee, 'pic', better, () => { if (!this.closed && this.shownId === this.id) this.drawStandee(); });
+  }
+
+  /** Skill icons that landed after the page was drawn (ui2/lateArt): the page is drawn again, in place. */
+  artArrived(urls: ReadonlySet<string>): void {
+    if ([...urls].some((u) => u.includes('/icon/'))) this.render();
   }
 
   private render(): void {
