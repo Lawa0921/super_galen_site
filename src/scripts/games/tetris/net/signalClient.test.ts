@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { createRoom, getSlot, isValidSlot } from './signalClient';
+import { createRoom, getSlot, getSlots, isValidSlot } from './signalClient';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -114,5 +114,39 @@ describe('不同 matchId（room）的同槽位資料互相隔離', () => {
     });
     expect(await getSlot('ROOM1', 'offer')).toBe('sdp-A');
     expect(await getSlot('ROOM2', 'offer')).toBe('sdp-B');
+  });
+});
+
+describe('getSlots：一次讀多個槽位', () => {
+  it('打一次 GET（slots 逗號分隔、房號帶 ns）並回 slot→值', async () => {
+    const urls: string[] = [];
+    vi.stubGlobal('fetch', async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => ({ data: { 'guest-0-offer': 'x', 'guest-1-offer': null } }) } as unknown as Response;
+    });
+    const got = await getSlots('AB12C', ['guest-0-offer', 'guest-1-offer'], 'delve:');
+    expect(urls).toHaveLength(1);
+    const u = new URL(urls[0], 'http://localhost');
+    expect(u.pathname).toBe('/api/signal');
+    expect(u.searchParams.get('room')).toBe('delve:AB12C');
+    expect(u.searchParams.get('slots')).toBe('guest-0-offer,guest-1-offer');
+    expect(got).toEqual({ 'guest-0-offer': 'x', 'guest-1-offer': null });
+  });
+
+  it('伺服器沒回的槽位補 null', async () => {
+    vi.stubGlobal('fetch', async () => ({ ok: true, status: 200, json: async () => ({ data: { 'guest-0-offer': 'x' } }) }) as unknown as Response);
+    expect(await getSlots('AB12C', ['guest-0-offer', 'guest-1-offer'])).toEqual({ 'guest-0-offer': 'x', 'guest-1-offer': null });
+  });
+
+  it('非 2xx → 拋出含狀態碼的錯誤', async () => {
+    vi.stubGlobal('fetch', async () => ({ ok: false, status: 500, json: async () => ({}) }) as unknown as Response);
+    await expect(getSlots('AB12C', ['guest-0-offer'])).rejects.toThrow(/500/);
+  });
+
+  it('含非法槽位 → 拋錯，不打網路', async () => {
+    const spy = vi.fn();
+    vi.stubGlobal('fetch', spy);
+    await expect(getSlots('AB12C', ['guest-0-offer', 'bogus'])).rejects.toThrow(/invalid slot/i);
+    expect(spy).not.toHaveBeenCalled();
   });
 });

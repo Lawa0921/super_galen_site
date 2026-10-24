@@ -2,11 +2,13 @@
  * 牽線用的小型 KV store 抽象。
  * - 無金鑰（本地 / dev）→ 記憶體 mock（單一實例內有效，足夠本地開發）。
  * - 有 Upstash 金鑰（production）→ 打 Upstash Redis REST API（純 fetch，不加套件依賴）。
- * 只需要 set(帶 TTL) / get / del 三個操作即可承載 WebRTC offer/answer/ICE 中轉。
+ * set(帶 TTL) / get / del 承載 WebRTC offer/answer/ICE 中轉；mget 讓輪詢多個槽位只花一個 Upstash 指令。
  */
 export interface SignalStore {
   set(key: string, value: string, ttlSec: number): Promise<void>;
   get(key: string): Promise<string | null>;
+  /** 一次讀多個 key，回傳順序與 keys 相同；不存在 / 過期 → null */
+  mget(keys: string[]): Promise<(string | null)[]>;
   del(key: string): Promise<void>;
 }
 
@@ -25,6 +27,9 @@ export class MemoryStore implements SignalStore {
       return null;
     }
     return e.value;
+  }
+  async mget(keys: string[]): Promise<(string | null)[]> {
+    return Promise.all(keys.map((k) => this.get(k)));
   }
   async del(key: string): Promise<void> {
     this.map.delete(key);
@@ -53,6 +58,13 @@ export class UpstashStore implements SignalStore {
   async get(key: string): Promise<string | null> {
     const r = await this.cmd(`get/${encodeURIComponent(key)}`);
     return r === null || r === undefined ? null : String(r);
+  }
+  /** MGET k1 k2 …：整批只算一個 Upstash 指令（免費方案的配額按指令數計） */
+  async mget(keys: string[]): Promise<(string | null)[]> {
+    if (keys.length === 0) return [];
+    const r = await this.cmd(`mget/${keys.map(encodeURIComponent).join('/')}`);
+    const arr = Array.isArray(r) ? r : [];
+    return keys.map((_, i) => (arr[i] === null || arr[i] === undefined ? null : String(arr[i])));
   }
   async del(key: string): Promise<void> {
     await this.cmd(`del/${encodeURIComponent(key)}`);

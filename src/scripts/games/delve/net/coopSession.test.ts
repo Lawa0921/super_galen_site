@@ -12,7 +12,7 @@ import type { Ticker } from './loop';
 import type { RtcPeer } from './rtcLink';
 import { END_TEXT } from './guest';
 import { LINGER_MS } from './protocol';
-import { JOIN_IDLE_MS } from './rtcSignal';
+import { JOIN_ERROR_TEXT, JOIN_IDLE_MS } from './rtcSignal';
 import { arenaGame, BUILD, FRAME } from './testRig';
 import { CoopHostSession } from './hostSession';
 import { CoopGuestSession } from './guestSession';
@@ -207,14 +207,28 @@ describe('CoopHostSession／CoopGuestSession', { timeout: 20_000 }, () => {
     expect(e.host.joining).toBe(true);
   });
 
-  it('createRoom 失敗 → open reject，房主回到 solo、loop 停止', async () => {
+  it('createRoom 失敗 → open reject JoinError(service)，房主回到 solo、loop 停止', async () => {
     const e = setup();
     e.signal.createRoom = () => Promise.reject(new Error('net down'));
-    await expect(e.host.open()).rejects.toThrow('net down');
+    await expect(e.host.open()).rejects.toMatchObject({ code: 'service', message: JOIN_ERROR_TEXT.service });
     expect(e.hostGame.mode).toBe('solo');
     expect(e.hostTicker.running).toBe(false);
     expect(e.host.room).toBeNull();
     expect(e.host.joining).toBe(false);
+  });
+
+  it('拿到房號後信令讀槽連續 2 輪失敗 → host.serviceDown；恢復後清掉', async () => {
+    const e = setup();
+    await e.host.open();
+    const get = e.signal.get.bind(e.signal);
+    e.signal.get = () => Promise.reject(new Error('signal GET 500'));
+    await e.run(500);
+    expect(e.host.serviceDown).toBe(false);   // 只失敗 1 輪：當作網路抖動
+    await e.run(5000);                        // 第 2 輪（4.5 秒後）也失敗
+    expect(e.host.serviceDown).toBe(true);
+    e.signal.get = get;
+    await e.run(12_000);
+    expect(e.host.serviceDown).toBe(false);
   });
 
   it('persist 還沒寫好 → 房主不清 held（沒收到 chkAck）；寫好之後才清', async () => {

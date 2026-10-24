@@ -54,9 +54,25 @@ function makeRoomCode(): string {
   return s;
 }
 
-/** 讀取房間某槽位的 SDP：GET /api/signal?room=AB12C&slot=<valid-slot> */
+/** 一次批次讀取的槽位上限（DELVE 房主一輪讀 4 個 offer 槽） */
+const MAX_SLOTS = 8;
+
+/**
+ * 讀取房間槽位的 SDP：
+ *  - GET /api/signal?room=AB12C&slot=<valid-slot>           → { data: string|null }
+ *  - GET /api/signal?room=AB12C&slots=<slot>,<slot>,…（≤ 8） → { data: { [slot]: string|null } }（一個 Upstash MGET）
+ */
 export const GET: APIRoute = async ({ url }) => {
   const room = url.searchParams.get('room');
+  const slotsParam = url.searchParams.get('slots');
+  if (slotsParam !== null) {
+    const slots = slotsParam.split(',');
+    if (!room || slots.length > MAX_SLOTS || !slots.every((s) => isValidSlot(s))) return json({ error: 'bad params' }, 400);
+    const values = await getSignalStore().mget(slots.map((s) => `sig:${room}:${s}`));
+    const data: Record<string, string | null> = {};
+    slots.forEach((s, i) => { data[s] = values[i] ?? null; });
+    return json({ data });
+  }
   const slot = url.searchParams.get('slot');
   if (!room || !slot || !isValidSlot(slot)) return json({ error: 'bad params' }, 400);
   const store = getSignalStore();
