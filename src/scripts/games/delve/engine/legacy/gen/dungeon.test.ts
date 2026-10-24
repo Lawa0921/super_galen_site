@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { generateWorld, type GenResult } from '../worldgen';
 import { T, SOLID_LUT, tileDef, isDungeonBrick, TIER_GOLD, ceilOk, floorOk } from '../../tiles';
-import type { DungeonInfo } from './dungeon';
+import type { DungeonInfo } from '../../genTypes';
 
 const SEEDS = ['alpha', 'dungeon-b', 'dungeon-c'];
 

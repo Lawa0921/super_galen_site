@@ -11,8 +11,7 @@ import { Rng } from './rng';
 import { seedInt, hash2 } from './noise';
 import { SEA_W, type OuterProfile } from './legacy/chunkgen/profile';
 import { BIOME } from './world';
-import type { BiomeSegment, Structure, GenLayers } from './legacy/worldgen';
-import type { DungeonInfo, RoomKind } from './legacy/gen/dungeon';
+import type { BiomeSegment, Structure, GenLayers, DungeonInfo, RoomKind } from './genTypes';
 import { ITEMS, isItemId, type ItemId } from './items';
 import { LORE } from './lore';
 import { TILE_SIZE } from './constants';
@@ -21,6 +20,7 @@ import type { Gen2Source } from './gen2';
 import { CULTURES } from './gen2/cultures';
 import { VARIANT, SPAWN_X, type Landmass } from './gen2/layout';
 import type { Blueprint } from './gen2/blueprint';
+import { gen2SiteRegionId, isGen2SiteRegionId } from './gen2/structId';
 
 /** 分類：地表區域（生態區）、地層、洞窟與秘境、遺跡與建築、地城、密室 */
 export type RegionCat = 'land' | 'depth' | 'cave' | 'site' | 'dungeon' | 'secret';
@@ -316,7 +316,7 @@ export function outerRegions(seed: string, profile: OuterProfile): (x: number, y
 /** gen2 地區 id 的起點（高於舊世界外圍的範圍） */
 export const GEN2_REGION_BASE = 2 ** 32;
 const GEN2_REGION_END = GEN2_REGION_BASE + 2 ** 26;
-/** (側, 第幾片地塊, 地區 index, sub) → id；sub 0 = 地區本身、1.. = 槽位結構（slot × 3 + layer + 1） */
+/** (側, 第幾片地塊, 地區 index, sub) → id；sub 0 = 地區本身（結構的地區 id 另走 gen2/structId 的 gen2SiteRegionId） */
 export function gen2RegionId(side: Side, i: number, index: number, sub: number): number {
   return GEN2_REGION_BASE + (((i * 2 + (side < 0 ? 1 : 0)) * 64 + index) * 64 + sub);
 }
@@ -370,10 +370,10 @@ export function gen2Regions(seed: string, src: Gen2Source): (x: number, y: numbe
       };
     });
   };
-  // 藍圖 id 的 layer = 低 2 bit、slot = 接著 5 bit（見 blueprint.structureId）；sub = slot × 3 + layer + 1
-  const structureOf = (b: Blueprint, m: Landmass, info: RegionInfo): Region | null => {
+  // 結構地區 id = gen2SiteRegionId(藍圖 id, 0)（位元配置只在 gen2/structId.ts）
+  const structureOf = (b: Blueprint): Region | null => {
     if (b.kind !== 'cabin' && b.kind !== 'ruin' && b.kind !== 'shipwreck') return null;
-    const key = b.kind, id = gen2RegionId(m.side, m.i, m.kind === 'sea' ? 0 : info.index, ((b.id >> 2) & 31) * 3 + (b.id & 3) + 1);
+    const key = b.kind, id = gen2SiteRegionId(b.id, 0);
     return cached(id, () => ({
       id, cat: 'site', kind: key, name: pickName(NAMES[key], id), x: b.x, y: b.y, w: b.w, h: b.h,
       ax: b.x + (b.w >> 1), ay: b.y + (b.h >> 1), contains: rectHit(b.x, b.y, b.w, b.h),
@@ -384,7 +384,7 @@ export function gen2Regions(seed: string, src: Gen2Source): (x: number, y: numbe
     if (!m || !info) return [];
     const out: Region[] = [];
     for (const b of src.blueprints.overlapping(x, x + 1)) {
-      const r = y >= b.y && y < b.y + b.h ? structureOf(b, m, info) : null;
+      const r = y >= b.y && y < b.y + b.h ? structureOf(b) : null;
       if (r && r.contains(x, y)) out.push(r);
     }
     // 島在海之中：先回海、再回島
@@ -546,7 +546,7 @@ export class Discovery {
   load(j: Partial<DiscoveryJSON> | null | undefined): void {
     if (!j || typeof j !== 'object') return;
     const ints = (v: unknown): number[] => (Array.isArray(v) ? v.filter((i): i is number => Number.isInteger(i) && i >= 0) : []);
-    for (const id of ints(j.regions)) if (id < this.regions.length || isOuterRegionId(id) || isGen2RegionId(id)) this.found.add(id);
+    for (const id of ints(j.regions)) if (id < this.regions.length || isOuterRegionId(id) || isGen2RegionId(id) || isGen2SiteRegionId(id)) this.found.add(id);
     for (const id of ints(j.lore)) this.readLore(id);
     if (Array.isArray(j.treasures)) for (const t of j.treasures) if (isItemId(t)) this.gainTreasure(t);
     for (const i of ints(j.landmarks)) this.claimLandmark(i);

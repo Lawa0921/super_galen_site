@@ -1,7 +1,5 @@
-// layout.test.ts — gen2 版面：海 / 大陸交替、寬度範圍、地區鋪滿、島與槽位、文化指派、tier、家鄉、鎖、查詢一致性、禁用 API。
+// layout.test.ts — gen2 版面：海 / 大陸交替、寬度範圍、地區鋪滿、島與槽位、文化指派、tier、家鄉、鎖、查詢一致性（禁用 API 的掃描在 determinism.test.ts）。
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { Layout, newWorldOrigin, SPAWN_X, VARIANT, HOME_X0, HOME_X1, SEA_SLOT_W } from './layout';
 import { LockTable } from './locks';
 import { poolFor, CULTURE_POOL, CULTURES } from './cultures';
@@ -195,15 +193,5 @@ describe('gen2 cultures', () => {
     expect(CULTURES.mistbamboo.name).toBe('霧竹之國'); expect(CULTURES.mistbamboo.prefixes).toHaveLength(8);
     expect(new Set(CULTURES.mistbamboo.prefixes).size).toBe(8);
     expect(CULTURES.mistbamboo.suffixes).toEqual(['山', '谷', '之里']);
-  });
-});
-
-describe('gen2 禁用 API', () => {
-  it('engine/gen2 非測試檔不得用 Math.random / 浮點超越函數 / **', () => {
-    const dir = __dirname;
-    const files = readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
-    expect(files).toEqual(expect.arrayContaining(['layout.ts', 'locks.ts', 'cultures.ts']));
-    const banned = /Math\.random|Math\.sin|Math\.cos|Math\.pow|Math\.exp|Math\.log|Math\.sqrt|Math\.hypot|\*\*/;
-    for (const f of files) expect(banned.exec(readFileSync(join(dir, f), 'utf8'))?.[0] ?? null, f).toBeNull();
   });
 });

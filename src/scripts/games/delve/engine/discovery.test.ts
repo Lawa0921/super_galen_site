@@ -1,6 +1,7 @@
 // discovery.test.ts — 地區 / 地標（由 worldgen 推導、依種子命名）、首次進入的發現、日誌統計、存檔 JSON
 import { describe, it, expect } from 'vitest';
 import { buildRegions, Discovery, CATEGORY_LABEL, outerRegions, gen2Regions, NAMES, gen2RegionId, isGen2RegionId, isOuterRegionId, regionFromJSON, toRegionJSON, type RegionSource, type Region } from './discovery';
+import { gen2SiteRegionId, isGen2SiteRegionId, siteOfRegionId, encodeStructureId } from './gen2/structId';
 import { DelveGame } from './game';
 import { Gen2Source } from './gen2';
 import { SPAWN_X } from './gen2/layout';
@@ -161,24 +162,36 @@ describe('gen2Regions', () => {
     const b = bs.find((c) => { let m = Infinity; for (let x = c.x; x < c.x + c.w; x++) m = Math.min(m, g.layersAt(x).deep); return c.y + c.h <= m; })!;
     return { x: b.x, y: b.y };
   };
-  it('gen2 地區 id 唯一、在 gen2 範圍內、跨實例穩定；名字確定', () => {
+  it('gen2 地區 id 唯一、在 gen2 範圍內、跨實例穩定；名字確定；結構地區 id = gen2SiteRegionId(藍圖 id, 0)', () => {
     const seen = new Map<number, string>();
     for (let x = -30_000; x < 30_000; x += 53) for (const r of q(x, 300)) {
-      expect(isGen2RegionId(r.id)).toBe(true); expect(isOuterRegionId(r.id)).toBe(false);
+      expect(r.cat === 'site' ? isGen2SiteRegionId(r.id) : isGen2RegionId(r.id), `${r.cat} ${r.id}`).toBe(true); expect(isOuterRegionId(r.id)).toBe(false);
       if (seen.has(r.id)) expect(seen.get(r.id)).toBe(r.name); else seen.set(r.id, r.name);
     }
     for (let x = -30_000; x < 30_000; x += 977) expect(q2(x, 300).map((r) => [r.id, r.name])).toEqual(q(x, 300).map((r) => [r.id, r.name]));
     expect(q(SPAWN_X, 300)[0].name).toBe('家鄉林地'); expect(q(5, 300)[0].name).toBe('西岸沙灘');
-  });
+    // 結構地區：在每份小屋 / 遺跡 / 沉船藍圖的中心查，id = gen2SiteRegionId(藍圖 id, 0)、反查得回藍圖、不在地塊地區範圍
+    const bps = src.blueprints.overlapping(-30_000, 30_000).filter((b) => b.kind === 'cabin' || b.kind === 'ruin' || b.kind === 'shipwreck');
+    expect(new Set(bps.map((b) => b.kind)).size).toBe(3);
+    const siteIds = new Set<number>();
+    for (const b of bps) {
+      const r = q(b.x + (b.w >> 1), b.y + (b.h >> 1)).find((g) => g.cat === 'site' && g.x === b.x && g.y === b.y && g.w === b.w && g.h === b.h)!;
+      expect(r.id).toBe(gen2SiteRegionId(b.id, 0)); expect(r.kind).toBe(b.kind);
+      expect(siteOfRegionId(r.id)).toEqual({ sid: b.id, part: 0 }); expect(isGen2RegionId(r.id)).toBe(false);
+      siteIds.add(r.id);
+    }
+    expect(siteIds.size).toBe(bps.length);
+  }, 60_000);
   it('在淺層小屋裡 visit：先回小屋、再回所在地區；再 visit 不重複', () => {
     const cab = shallowCabin(src), d = new Discovery([]); d.setOuter(q);
     const got = d.visit(cab.x + 1, cab.y + 1);
     expect(got).toHaveLength(2); expect(got[0].kind).toBe('cabin'); expect(got[1].cat).toBe('land');
     expect(d.visit(cab.x + 1, cab.y + 1)).toEqual([]);
   });
-  it('load 接受 gen2 id、丟掉亂數 id', () => {
-    const d = new Discovery([]); d.load({ regions: [gen2RegionId(1, 2, 0, 0), 12345678901] } as never);
-    expect([...d.found]).toEqual([gen2RegionId(1, 2, 0, 0)]);
+  it('load 接受 gen2 地區 / 結構地區 id、丟掉範圍外的 id', () => {
+    const site = gen2SiteRegionId(encodeStructureId(1, 8191, 31, 31, 4), 63);
+    const d = new Discovery([]); d.load({ regions: [gen2RegionId(1, 2, 0, 0), site, 2 ** 33 - 1, 2 ** 33 + 2 ** 34, 2 ** 36] } as never);
+    expect([...d.found]).toEqual([gen2RegionId(1, 2, 0, 0), site]);
   });
   it('霧竹大陸的地區名用霧竹命名池', () => {
     const m = [src.layout.landmass(1, 2), src.layout.landmass(-1, 2)].find((l) => l.culture === 'mistbamboo')!;

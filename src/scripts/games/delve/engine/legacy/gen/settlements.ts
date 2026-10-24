@@ -9,34 +9,7 @@ import type { GenGrid } from './grid';
 import { BIOME } from '../../world';
 import { subSeed, type Rng } from '../../rng';
 import { T, W, SOLID_LUT } from '../../tiles';
-
-export interface GenRect { x: number; y: number; w: number; h: number; }
-export interface VillageHouse {
-  /** 外牆左右欄（含）、地板列（站立的那一列 = floorY - 1） */
-  x0: number; x1: number; floorY: number;
-  /** 門所在欄 */
-  door: number;
-  /** 用途：elder = 村長家（書架）、shop = 商店（櫃台 + 木桶）、home = 一般住家 */
-  role: 'elder' | 'shop' | 'home';
-}
-export interface VillageInfo {
-  /** 村子範圍（含兩端旗桿）x0..x1（含）、地面列 ground（第一個實心列） */
-  x0: number; x1: number; ground: number;
-  houses: VillageHouse[];
-  /** 委託板（站立列） */
-  board: { x: number; y: number };
-  /** 旗色（0..2；渲染端可依此換色） */
-  style: number;
-}
-export interface HallInfo {
-  x0: number; x1: number;
-  /** 天花板最高的內部列 / 地板（第一個實心列） */
-  y0: number; floorY: number;
-  forge: { x: number; y: number };
-  cart: { x: number; y: number };
-  /** 兩側鑿出的軌道隧道（欄範圍，含；列 = floorY-5 .. floorY） */
-  tunnels: { x0: number; x1: number }[];
-}
+import type { GenRect, VillageHouse, VillageInfo, HallInfo } from '../../genTypes';
 
 export interface SettleGenCtx {
   world: GenGrid;

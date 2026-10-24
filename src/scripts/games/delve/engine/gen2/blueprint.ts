@@ -12,7 +12,7 @@
 import { hash2, seedInt } from '../noise';
 import { X_LIMIT } from '../coords';
 import { li, type Column } from '../column';
-import type { RegionInfo, Side } from '../regionInfo';
+import type { RegionInfo } from '../regionInfo';
 import { HOME_X0, SPAWN_X, VARIANT, type Landmass, type Layout, type SeaSlot } from './layout';
 import type { Profile2 } from './profile';
 import { shaftX } from './caves';
@@ -21,27 +21,14 @@ import { buildRuin } from './structures/ruin';
 import { buildLake, buildCaveLake, buildLavaPool } from './structures/lakes';
 import { buildShipwreck } from './structures/shipwreck';
 import { buildCrate } from './structures/crate';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, LAND_SLOT_W, KEEP, type Blueprint, type BpCtx, type BpKind } from './bpcore';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, LAND_SLOT_W, KEEP, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
+import { encodeStructureId, decodeStructureId } from './structId';
 
-export { BP_SURFACE, BP_UNDER, BP_DEEP, LAND_SLOT_W, KEEP, SLOT_PAD, BpGrid, placeX, type BpKind, type Blueprint, type BpCtx } from './bpcore';
+export { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, LAND_SLOT_W, KEEP, SLOT_PAD, BpGrid, placeX, type BpKind, type Blueprint, type BpCtx, type Layer } from './bpcore';
 
-// ── structureId：layer 2 bit | slot 5 bit | region 5 bit | side 2 bit | i 13 bit（共 27 bit，hash2 吃得下的 int32）──
-const I_LIMIT = 1 << 13, R_LIMIT = 1 << 5, S_LIMIT = 1 << 5;
-
+// ── structureId：位元配置見 structId.ts（i 13 | side 2 | region 5 | slot 5 | layer 3 bit，hash2 吃得下的 int32）──
 // 陸地：region = 地區 index、slot = 陸地槽序號；海（P12）：region = 0（海本身）、slot = SeaSlot.k、layer = BP_SURFACE
-export function structureId(side: Side, i: number, region: number, slot: number, layer: 0 | 1 | 2): number {
-  const okInt = (v: number, lim: number): boolean => Number.isInteger(v) && v >= 0 && v < lim;
-  if (!okInt(i, I_LIMIT) || !okInt(region, R_LIMIT) || !okInt(slot, S_LIMIT) || !okInt(layer, 3) || !okInt(side + 1, 3)) {
-    throw new RangeError(`structureId(${side}, ${i}, ${region}, ${slot}, ${layer})`);
-  }
-  return ((((((i << 2) | (side + 1)) << 5) | region) << 5 | slot) << 2) | layer;
-}
-
-function decode(id: number): { side: Side; i: number; region: number; slot: number; layer: 0 | 1 | 2 } {
-  const layer = id & 3, slot = (id >> 2) & 31, region = (id >> 7) & 31, side = ((id >> 12) & 3) - 1, i = id >> 14;
-  if (!Number.isInteger(id) || id < 0 || layer > 2 || side > 1) throw new RangeError(`structure id ${id}`);
-  return { side: side as Side, i, region, slot, layer: layer as 0 | 1 | 2 };
-}
+export const structureId = encodeStructureId;
 
 // 陸地地區：home / wild / culture（海與島不進陸地槽位格，P12）
 const isLand = (r: RegionInfo): boolean => r.kind === 'home' || r.kind === 'wild' || r.kind === 'culture';
@@ -61,8 +48,8 @@ function homeOf(layout: Layout): Landmass {
 }
 
 // structureId 的反查：陸地槽與海槽都認得；不存在的槽丟 RangeError
-export function slotOf(id: number, layout: Layout): { x0: number; x1: number; region: RegionInfo; layer: 0 | 1 | 2 } {
-  const { side, i, region, slot, layer } = decode(id);
+export function slotOf(id: number, layout: Layout): { x0: number; x1: number; region: RegionInfo; layer: Layer } {
+  const { side, i, region, slot, layer } = decodeStructureId(id);
   if ((side === 0) !== (i === 0)) throw new RangeError(`structure id ${id}: side ${side} landmass ${i}`);
   const m = side === 0 ? homeOf(layout) : layout.landmass(side, i);
   if (m.kind === 'sea') {

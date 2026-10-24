@@ -16,10 +16,11 @@ import { WORLD_W, WORLD_H } from '../constants';
 import { chestLoot, type ChestKind } from '../loot';
 import { FbmField, NoiseField, fbm2, seedInt, vnoise1 } from '../noise';
 import { carveChamber, carveNetwork, carveNoiseTunnels, perlinWorm, carveDisc, paintBlob, noisePockets, fillTinyPockets } from './gen/caves';
-import { generateDungeon, type DungeonInfo } from './gen/dungeon';
+import { generateDungeon } from './gen/dungeon';
 import { createLiquidGen, type LiquidGenStats } from './gen/liquids';
-import { placeVillages, placeDwarfHalls, type VillageInfo, type HallInfo } from './gen/settlements';
-import { placeLandmarks, type LandmarkInfo } from './gen/landmarks';
+import { placeVillages, placeDwarfHalls } from './gen/settlements';
+import { placeLandmarks } from './gen/landmarks';
+import type { BiomeSegment, Structure, Landform, LandformType, ReservedZone, GenLayers, GenRelic, DungeonInfo, VillageInfo, HallInfo, LandmarkInfo } from '../genTypes';
 import type { SpringSpec } from '../liquid';
 import { LORE_SITES, type LoreSite } from '../lore';
 import type { ItemId } from '../items';
@@ -32,31 +33,6 @@ export interface GenOptions {
 }
 export interface GenBands {
   surfaceLow: number; surfaceHigh: number; rockLow: number; rockHigh: number;
-}
-export interface BiomeSegment { biome: BiomeId; x0: number; x1: number; }
-export type StructureKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'chasm' | 'ravine' | 'frozen_lake'
-  | 'mushroom_biome' | 'crystal_cave' | 'sky_island' | 'lake_bed' | 'sinkhole' | 'dungeon' | 'secret_room'
-  // 液體（v5）
-  | 'pond' | 'oasis' | 'hive' | 'underground_lake'
-  // 泉水瀑布（v6）
-  | 'waterfall' | 'lavafall'
-  // NPC 聚落（地表村落 / 矮人地廳）
-  | 'village' | 'dwarf_hall';
-/** 每欄的深度層分界（第一個屬於該層的 y） */
-export interface GenLayers { rock: Int16Array; deep: Int16Array; molten: Int16Array; }
-/** 地表地形種類（依生態區挑）；reserved = 預留給地城的平地 */
-export type LandformType = 'plains' | 'hills' | 'mountains' | 'valley' | 'dunes' | 'mesa' | 'frozen_lake' | 'swamp' | 'reserved';
-export interface Landform { type: LandformType; x0: number; x1: number; }
-/** 預留給之後地城 pass 的區域（tile 座標，x1 / y1 不含） */
-export interface ReservedZone { x0: number; x1: number; y0: number; y1: number; side: 'left' | 'right'; }
-export interface Structure {
-  kind: StructureKind;
-  x: number; y: number; w: number; h: number;
-  /** 大洞窟的風味 */
-  flavor?: 'mushroom' | 'crystal' | 'plain';
-  chest?: { x: number; y: number };
-  /** 浮空島垂下的繩梯（x、上端 y0、下端 y1） */
-  rope?: { x: number; y0: number; y1: number };
 }
 export interface GenResult {
   world: GenGrid;
@@ -79,7 +55,7 @@ export interface GenResult {
   /** 所有古碑（含地城裡的）：id = 碑文編號（lore.ts） */
   tablets: { x: number; y: number; id: number }[];
   /** 放在難到達處的珍寶（獨特道具）箱子 */
-  relics: { x: number; y: number; item: ItemId; where: string }[];
+  relics: GenRelic[];
   /** 液體 pass 的統計（耗時 / 靜置刻數 / 各液體格數） */
   liquidStats: LiquidGenStats;
   /** 泉水（瀑布的無限源；liquid.ts LiquidSim.setSprings） */

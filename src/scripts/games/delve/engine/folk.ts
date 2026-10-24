@@ -14,7 +14,7 @@ import { TILE_SIZE as S, GRAVITY, MAX_FALL, JUMP_SPEED, DAY_LENGTH } from './con
 import { findStandSpot, findPath, standable, type PathNode } from './npcPath';
 import { Rng } from './rng';
 import { HOUSE_WALLS } from './furniture';
-import type { VillageInfo, HallInfo } from './legacy/gen/settlements';
+import type { VillageInfo, HallInfo } from './genTypes';
 import {
   ROLES, AFF_MAX, AFF_TALK, AFF_TRADE, AFF_TRADE_DAILY, folkLook, folkName, peddlerStock,
   type FolkLook, type FolkOrigin, type FolkRace, type FolkRole, type FolkShopEntry,

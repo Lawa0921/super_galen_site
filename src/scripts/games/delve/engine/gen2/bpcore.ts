@@ -6,12 +6,14 @@ import type { RegionInfo } from '../regionInfo';
 import type { Profile2 } from './profile';
 
 export type BpKind = 'cabin' | 'ruin' | 'shipwreck' | 'crate' | 'lake' | 'cave_lake' | 'lava_pool';
-export const BP_SURFACE = 0, BP_UNDER = 1, BP_DEEP = 2, LAND_SLOT_W = 340, KEEP = -1;
+// 層：表層 / 地下 / 深層 / 空中（浮空島）/ 小點（minor）；結構 id 的 layer 欄位 3 bit（structId.ts）
+export const BP_SURFACE = 0, BP_UNDER = 1, BP_DEEP = 2, BP_SKY = 3, BP_MINOR = 4, LAND_SLOT_W = 340, KEEP = -1;
+export type Layer = 0 | 1 | 2 | 3 | 4;
 // 外框離槽兩端至少 SLOT_PAD 格
 export const SLOT_PAD = 8;
 
 export interface Blueprint {
-  id: number; kind: BpKind; layer: 0 | 1 | 2; x: number; y: number; w: number; h: number;
+  id: number; kind: BpKind; layer: Layer; x: number; y: number; w: number; h: number;
   // 每格 5 個數：x, y, fg|KEEP, wall|KEEP, liq|KEEP（liq = amount << 8 | type）；依序蓋
   cells: Int32Array;
   chests: { x: number; y: number; kind: ChestKind }[];

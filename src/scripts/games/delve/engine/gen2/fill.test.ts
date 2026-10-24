@@ -134,6 +134,8 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
         const I = src.profile.info(x);
         // 入口欄與主坑道附近會挖到地表
         if (I.kind !== COL_LAND || src.isEntrance(x) || Math.abs(x - sx) <= 20) continue;
+        // 藍圖（湖 / 遺跡…）外框蓋到表層的欄由結構決定材質
+        if (src.blueprints.overlapping(x, x + 1).some((b) => b.y < I.surface + want[r.biome].length && b.y + b.h > I.surface)) continue;
         const col = colAt(x >> 5);
         for (let d = 0; d < want[r.biome].length; d++) expect(col.fg[li(x, I.surface + d)], `biome ${r.biome} x ${x} d ${d}`).toBe(want[r.biome][d]);
         seen.add(r.biome);

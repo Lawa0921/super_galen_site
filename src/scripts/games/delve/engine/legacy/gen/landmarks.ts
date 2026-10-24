@@ -6,10 +6,8 @@
 //     地表的湖 / 綠洲 / 冰湖、裂谷、峽谷、天坑 → 旅人石堆（紅布旗，遠遠就看得到）
 //   找不到合適地板的地點就不放（不硬塞進牆裡）。
 import type { GenGrid } from './grid';
-import type { Structure } from '../worldgen';
+import type { Structure, LandmarkInfo } from '../../genTypes';
 import { T, W, SOLID_LUT } from '../../tiles';
-
-export interface LandmarkInfo { x: number; y: number; tile: number; /** 所屬地點的結構種類（獎勵 / 文案依它挑） */ site: string; }
 
 /** 結構種類 → 地標 tile（沒列的不放） */
 export function landmarkFor(s: Pick<Structure, 'kind' | 'flavor'>): number | null {

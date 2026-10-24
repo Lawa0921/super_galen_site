@@ -6,10 +6,8 @@
 import { World, type ColumnSource } from './world';
 import type { WorldBounds } from './coords';
 import { OuterGen } from './legacy/chunkgen';
-import type { GenResult, BiomeSegment, Structure, Landform, ReservedZone, GenLayers } from './legacy/worldgen';
-import type { DungeonInfo } from './legacy/gen/dungeon';
-import type { VillageInfo, HallInfo } from './legacy/gen/settlements';
-import type { LandmarkInfo } from './legacy/gen/landmarks';
+import type { GenResult } from './legacy/worldgen';
+import type { BiomeSegment, Structure, Landform, ReservedZone, GenLayers, GenRelic, DungeonInfo, VillageInfo, HallInfo, LandmarkInfo } from './genTypes';
 import type { SpringSpec } from './liquid';
 import { outerRegions, gen2Regions, regionFromJSON, type Region } from './discovery';
 import { bakedLandQuery, gen2LandQuery, v1LandQuery, type LandQuery } from './waystones';
@@ -35,7 +33,7 @@ export interface WorldContent {
   layers: GenLayers | null;
   dungeon: DungeonInfo | null;
   tablets: { x: number; y: number; id: number }[];
-  relics: GenResult['relics'];
+  relics: GenRelic[];
   springs: SpringSpec[];
   villages: VillageInfo[];
   halls: HallInfo[];

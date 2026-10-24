@@ -18,7 +18,7 @@ import { Rng, subSeed } from '../../rng';
 import { T, SOLID_LUT } from '../../tiles';
 import { chestLoot, type Drop } from '../../loot';
 import type { ItemId } from '../../items';
-import type { ReservedZone } from '../worldgen';
+import type { ReservedZone, RoomKind, DungeonRoom, DungeonEdge, DungeonKey, DungeonInfo } from '../../genTypes';
 import type { Stack } from '../../inventory';
 
 export interface DungeonOptions {
@@ -30,37 +30,6 @@ export interface DungeonOptions {
   depthFrac: (x: number, y: number) => number;
   /** (x,y) 的天然岩層（fg tile, 背景牆）：施工前用來把預留區裡的天然洞穴補實 */
   natural?: (x: number, y: number) => [number, number];
-}
-export type RoomKind = 'entry' | 'hall' | 'shaft' | 'library' | 'prison' | 'shrine' | 'treasure' | 'vault' | 'chamber';
-/** 房間內部（不含磚殼）；地板（腳踩的那列）= y + h − 1，實心地板在 y + h */
-export interface DungeonRoom { id: number; kind: RoomKind; x: number; y: number; w: number; h: number; locked: boolean; }
-export interface DungeonEdge {
-  a: number; b: number;
-  /** b 端的門（頂端 tile）；locked = 上鎖的門 */
-  door: { x: number; y: number } | null;
-  locked: boolean;
-}
-export interface DungeonKey { x: number; y: number; room: number; container: 'chest' | 'pot'; golden: boolean; }
-export interface DungeonInfo {
-  bbox: { x: number; y: number; w: number; h: number };
-  color: string; brick: number; wall: number;
-  rooms: DungeonRoom[];
-  edges: DungeonEdge[];
-  /** 入口塔：腳底 tile（塔內一樓地板上） */
-  entrance: { x: number; y: number };
-  /** 塔的範圍 */
-  tower: { x: number; y: number; w: number; h: number };
-  entryRoom: number; treasureRoom: number; keyRoom: number;
-  keys: DungeonKey[];
-  treasureChest: { x: number; y: number };
-  /** 所有門（頂端 tile） */
-  doors: { x: number; y: number; locked: boolean }[];
-  /** 古碑：site = 擺放位置（塔內 / 神殿 / 寶藏室），worldgen 依此對應碑文 id */
-  tablets: { x: number; y: number; id: number; site: 'tower' | 'shrine' | 'treasure' }[];
-  /** 所有地城箱子（含寶箱） */
-  chests: { x: number; y: number; room: number }[];
-  /** 平台格數（統計 / 測試用） */
-  platforms: number;
 }
 
 interface Rect { x: number; y: number; w: number; h: number; }
