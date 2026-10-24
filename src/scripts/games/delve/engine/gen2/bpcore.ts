@@ -79,6 +79,7 @@ export class BpGrid {
   wall(x: number, y: number, t: number): void { this.wl[this.at(x, y)] = t; }
   liq(x: number, y: number, v: number): void { this.lq[this.at(x, y)] = v; }
   getFg(x: number, y: number): number { return this.f[this.at(x, y)]; }
+  getWall(x: number, y: number): number { return this.wl[this.at(x, y)]; }
   // 有任何一層不是 KEEP 的格，依列序
   cells(): Int32Array {
     const out: number[] = [];
