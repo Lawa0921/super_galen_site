@@ -7,7 +7,7 @@ import { Column, li } from '../column';
 import { T } from '../tiles';
 import { seedInt } from '../noise';
 import { BP_SURFACE, BP_UNDER, partsMeet, partsOf, structureId, type Blueprint, type BpBox, type BpCtx, type BlueprintIndex, type Layer } from './blueprint';
-import { boxHits } from './bpcore';
+import { boxHits, solidParts } from './bpcore';
 import { anchorSpan, type Anchor } from './anchors';
 import { SPAWN_X, type Landmass } from './layout';
 import { Filler2 } from './fill';
@@ -53,7 +53,7 @@ describe('gen2 藍圖部件與 surfaceBan', () => {
     expect(n).toBe(5 * 6);
   }, 120_000);
 
-  it('逐格優先序：外接矩形與村莊外框重疊、部件不重疊的礦坑（注入全部不通 → 豎井通地表），村莊外框裡每一格（fg / 牆 / 液體）和沒有那份礦坑時相同', () => {
+  it('逐格優先序：外接矩形與村莊外框重疊、部件不重疊的礦坑（注入全部不通 → 豎井通地表），村莊外框裡、以及礦坑外框內部件外的每一格（fg / 牆 / 液體）和沒有那份礦坑時相同', () => {
     let cases = 0;
     for (let k = 0; k < 400 && cases < 3; k++) {
       const seed = `pt-${k}`, g = new Gen2Source(seed), m = homeOf(g), list = g.blueprints.anchorsOf(m);
@@ -69,30 +69,34 @@ describe('gen2 藍圖部件與 surfaceBan', () => {
         const with_ = { overlapping: (x0: number, x1: number, l?: readonly Layer[]) => g.blueprints.overlapping(x0, x1, l).map((b) => (b.id === real.id ? forced : b)).filter((b) => b.x < x1 && b.x + b.w > x0) } as unknown as BlueprintIndex;
         const without = { overlapping: (x0: number, x1: number, l?: readonly Layer[]) => g.blueprints.overlapping(x0, x1, l).filter((b) => b.id !== real.id) } as unknown as BlueprintIndex;
         const fa = new Filler2(seed, g.layout, g.profile, with_), fb = new Filler2(seed, g.layout, g.profile, without);
-        const x0 = Math.max(v.x, forced.x), x1 = Math.min(v.x + v.w, forced.x + forced.w);
-        let diff = 0, cells = 0;
-        for (let cx = x0 >> 5; cx <= (x1 - 1) >> 5; cx++) {
+        // 比對範圍：村莊外框 ∪（礦坑外框內、部件外）——後者抓得到「部件外還寫格」與「fill 仍用整塊 solid 擋洞穴」（solidParts 退化）
+        const ps = partsOf(forced), inParts = (x: number, y: number): boolean => ps.some((q) => inBox(x, y, q));
+        const inV = (x: number, y: number): boolean => x >= v.x && x < v.x + v.w && y >= v.y && y < v.y + v.h;
+        let diffV = 0, cellsV = 0, diffOut = 0, cellsOut = 0;
+        for (let cx = forced.x >> 5; cx <= (forced.x + forced.w - 1) >> 5; cx++) {
           const ca = new Column(cx, 1200), cb = new Column(cx, 1200);
           fa.fill(ca, cx * 32, cx * 32 + 32); fb.fill(cb, cx * 32, cx * 32 + 32);
-          for (let x = Math.max(x0, cx * 32); x < Math.min(x1, cx * 32 + 32); x++) for (let y = v.y; y < v.y + v.h; y++) {
-            const i = li(x, y); cells++;
-            if (ca.fg[i] !== cb.fg[i] || ca.wall[i] !== cb.wall[i] || ca.liquid[i] !== cb.liquid[i] || ca.liquidType[i] !== cb.liquidType[i]) diff++;
+          for (let x = Math.max(forced.x, cx * 32); x < Math.min(forced.x + forced.w, cx * 32 + 32); x++) for (let y = Math.min(v.y, forced.y); y < Math.max(v.y + v.h, forced.y + forced.h); y++) {
+            const i = li(x, y), d = ca.fg[i] !== cb.fg[i] || ca.wall[i] !== cb.wall[i] || ca.liquid[i] !== cb.liquid[i] || ca.liquidType[i] !== cb.liquidType[i];
+            if (inV(x, y)) { cellsV++; if (d) diffV++; } else if (y >= forced.y && y < forced.y + forced.h && !inParts(x, y)) { cellsOut++; if (d) diffOut++; }
           }
         }
-        expect(cells, seed).toBeGreaterThan(0); expect(diff, seed).toBe(0);
+        expect(cellsV, seed).toBeGreaterThan(0); expect(diffV, seed).toBe(0);
+        expect(cellsOut, seed).toBeGreaterThan(0); expect(diffOut, seed).toBe(0);
         cases++;
       }
     }
     expect(cases).toBeGreaterThanOrEqual(1);
   }, 300_000);
 
-  // 修正前（建構器不看 surfaceBan）同一批 pf- 家鄉：豎井 / 繩梯落在 ban 內 > 0 次（RED，見報告）
-  for (const part of [0, 1]) {
-    it(`注入 caveOpen = false（只能挖豎井通地表）：pf-${part * 500}..${part * 500 + 499} 的礦坑密室 / 小生態錨點，豎井部件與繩梯落在 surfaceBan 內 0 次、丟錯 0 次`, () => {
+  // 修正前（建構器不看 surfaceBan）pf- 家鄉：豎井 / 繩梯落在 ban 內 > 0 次；qf-（修正第 3 輪，沒調過參的新前綴，含 qf-73、qf-1196：
+  // 蜂巢槽與上方遺跡槽的可用範圍相同，placeX 的 3 個候選與遺跡的 3 段預測對齊）修正前 2 次 RangeError（RED，見報告）
+  for (const [pre, part] of [['pf', 0], ['pf', 1], ['qf', 0], ['qf', 1], ['qf', 2], ['qf', 3]] as const) {
+    it(`注入 caveOpen = false（只能挖豎井通地表）：${pre}-${part * 500}..${part * 500 + 499} 的礦坑密室 / 小生態錨點，豎井部件與繩梯落在 surfaceBan 內 0 次、丟錯 0 次`, () => {
       const errors: string[] = [], inBan: string[] = [];
       let n = 0;
       for (let k = part * 500; k < (part + 1) * 500; k++) {
-        const seed = `pf-${k}`, g = new Gen2Source(seed), m = homeOf(g);
+        const seed = `${pre}-${k}`, g = new Gen2Source(seed), m = homeOf(g);
         for (const a of g.blueprints.anchorsOf(m)) {
           const f = BUILD[a.kind];
           if (!f) continue;
@@ -107,6 +111,15 @@ describe('gen2 藍圖部件與 surfaceBan', () => {
       expect(n).toBe(500 * 6);
     }, 300_000);
   }
+
+  it('solidParts：沒有部件 = solid 本身；有部件 = solid 與每塊部件的交集（空的不算）；沒有 solid = []', () => {
+    const base = { id: 0, kind: 'mineshaft' as const, layer: BP_UNDER as Layer, x: 0, y: 0, w: 20, h: 30, cells: new Int32Array(0), chests: [], pots: [], tablets: [], landmarks: [], floors: [], ground: null, site: null, wholeRegion: false };
+    const solid = { x: 0, y: 0, w: 20, h: 30 };
+    expect(solidParts({ ...base, solid })).toEqual([solid]);
+    expect(solidParts({ ...base, solid: null, parts: [{ x: 0, y: 20, w: 20, h: 10 }] })).toEqual([]);
+    expect(solidParts({ ...base, solid, parts: [{ x: 0, y: 20, w: 20, h: 10 }, { x: 5, y: 0, w: 2, h: 20 }] })).toEqual([{ x: 0, y: 20, w: 20, h: 10 }, { x: 5, y: 0, w: 2, h: 20 }]);
+    expect(solidParts({ ...base, solid: { x: 0, y: 22, w: 20, h: 8 }, parts: [{ x: 0, y: 20, w: 20, h: 10 }, { x: 5, y: 0, w: 2, h: 20 }] })).toEqual([{ x: 0, y: 22, w: 20, h: 8 }]);
+  });
 
   it('surfaceBan = 同 x 範圍的家鄉表層錨點部件（村莊用實際藍圖；遺跡還沒有建構器、用預測範圍 × 整個世界高）；只給家鄉 UNDER / DEEP 錨點', () => {
     for (const seed of ['s-a', 's-b', 's-c']) {

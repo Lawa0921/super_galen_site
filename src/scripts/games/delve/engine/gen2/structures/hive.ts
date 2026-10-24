@@ -18,7 +18,7 @@ import { fbm2 } from '../../noise';
 import { LIQ, LIQ_MAX } from '../../liquidKind';
 import { HRng } from '../hrng';
 import { BpGrid, placeX, clearRange, emptyObjects, BP_UNDER, KEEP, type Blueprint, type BpBox, type BpCtx } from '../bpcore';
-import { digShaft, digTunnel, naturalOpen, planShaft, shaftPart, xCandidates, type MiniOptions, type ShaftCol, type ShaftEnv } from './miniBiome';
+import { TUNNEL_H, allXs, digShaft, digTunnel, naturalOpen, planShaft, shaftPart, type MiniOptions, type ShaftCol, type ShaftEnv } from './miniBiome';
 
 // 外框（含隧道）寬上限（anchors.ANCHOR_MAX_W.hive 同值）：37 + 11。家鄉叢林常常只有 3 槽、中間那槽被主坑道帶切成兩側各約 63 欄，
 // 48 + 2 × SLOT_PAD = 64 還放得進去（61 時 6000 個種子有 39 個家鄉放不下蜂巢錨點）
@@ -83,7 +83,7 @@ function hive(c: BpCtx, o: MiniOptions): Blueprint | null {
     const box = { x: bx, y: by, w: bw, h: bh }, slot = { x0: c.slotX0, x1: c.slotX1 };
     const t = digTunnel(g, box, { x0: gx0, x1: gx1 }, (x, y) => y < level && airAt(x, y), pass, open, slot);
     if (!t && !force) return null;
-    let parts: BpBox[] | undefined;
+    let parts: BpBox[] | undefined, x0 = t ? t.x0 : bx, x1 = t ? t.x1 : bx + bw;
     if (!t) {
       // 直豎井：只從蜂蜜面以上往上挖（蜂蜜不會流掉）。候選欄 = sx 與 sx + 1 同一列都是蜂蜜面以上的洞腔空氣，離中心近的先；
       // 先找接得上洞穴的，沒有才通地表；繩梯從豎井頂垂到蜂蜜面上一列
@@ -91,13 +91,31 @@ function hive(c: BpCtx, o: MiniOptions): Blueprint | null {
       for (let sx = bx; sx < bx + bw - 1; sx++) for (let y = by; y < level; y++) if (airAt(sx, y) && airAt(sx + 1, y)) { cols.push({ sx, start: y - 1 }); break; }
       cols.sort((a, b2) => Math.abs(a.sx - cx) - Math.abs(b2.sx - cx) || a.sx - b2.sx);
       const env: ShaftEnv = { box, slot, pass, open, surface: (x) => p.surfaceAt(x), limit: () => -Infinity, ban: c.surfaceBan ?? [] };
-      const plan = planShaft(cols, -1, false, env) ?? planShaft(cols, -1, true, env);
-      // 每一欄的豎井都碰到 surfaceBan → 這個 (x, y) 不行，外層換下一組
+      let plan = planShaft(cols, -1, false, env) ?? planShaft(cols, -1, true, env);
+      if (!plan) {
+        // 繞路（Task 11 修正 3；洞腔上方的欄都碰到 surfaceBan）：從蜂蜜面上一列（level − 1）挖 4 列高的橫隧道（整個在蜂蜜面以上，蜂蜜仍靜止）
+        // 到不碰的欄 sx，再從隧道頂往上挖。sx 在外框可延伸的範圍 [gx0, gx1 − 1) 內（寬 ≤ HIVE_MAX_W），離中心近的先；起點 = 那一列離 sx 最近的洞腔空氣格
+        const fy = level - 1, src: number[] = [];
+        for (let x = bx; x < bx + bw; x++) if (airAt(x, fy)) src.push(x);
+        const sxs = [...Array(Math.max(0, gx1 - gx0 - 1)).keys()].map((k) => gx0 + k).sort((a, b2) => Math.abs(a - cx) - Math.abs(b2 - cx) || a - b2);
+        for (const sx of src.length ? sxs : []) {
+          const t2 = planShaft([{ sx, start: fy - TUNNEL_H }], -1, true, env);
+          if (!t2) continue;
+          let xm = src[0];
+          for (const x of src) if (Math.abs(x - sx) < Math.abs(xm - sx)) xm = x;
+          for (let x = Math.min(xm, sx); x <= Math.max(xm, sx + 1); x++) for (let y = fy - TUNNEL_H + 1; y <= fy; y++) if (g.getFg(x, y) !== T.AIR || !cave(x, y)) { g.fg(x, y, T.AIR); g.liq(x, y, 0); }
+          x0 = Math.min(x0, sx); x1 = Math.max(x1, sx + 2);
+          plan = t2;
+          break;
+        }
+      }
+      // 每一欄的豎井都碰到 surfaceBan（繞路也不行）→ 這個 (x, y) 不行，外層換下一組
       if (!plan) return null;
-      const dug = digShaft(g, plan, (x, y) => airAt(x, y), level);
+      // 繩梯沿 sx 欄往下穿過蜂蜜面以上的空氣（洞腔或繞路的隧道），到腳下實心為止
+      const dug = digShaft(g, plan, (x, y) => y < level && g.getFg(x, y) === T.AIR, level);
       g = dug.g; y0 = dug.y0; y1 = dug.y1;
-      // 部件：主體（原外框）+ 豎井那兩欄（Task 11 修正 2；部件外不寫任何格）
-      parts = [{ x: bx, y: by, w: bw, h: bh }, shaftPart(plan)];
+      // 部件：主體（原外框，含繞路延伸的欄）+ 豎井那兩欄（Task 11 修正 2；部件外不寫任何格）
+      parts = [{ x: x0, y: by, w: x1 - x0, h: bh }, shaftPart(plan)];
     }
     // 蜂王蜜罐：蜂蜜面中間 3 格的台子（離中心最近、罐子那格與頭頂是空氣）
     let jar: { x: number; y: number } | null = null;
@@ -108,7 +126,7 @@ function hive(c: BpCtx, o: MiniOptions): Blueprint | null {
       jar = { x, y: level - 1 };
       break;
     }
-    return { g, y0, y1, jar, x0: t ? t.x0 : bx, x1: t ? t.x1 : bx + bw, parts };
+    return { g, y0, y1, jar, x0, x1, parts };
   };
   // 中心 y 的第 t 個候選（依雜湊起點、黃金比例步長）
   const yAt = (bx: number, t: number): number => {
@@ -122,7 +140,8 @@ function hive(c: BpCtx, o: MiniOptions): Blueprint | null {
     return n;
   };
   // 外框 x：placeX 的候選依序試，每個 x 試 Y_TRIES 個中心 y，取第一個隧道接得上洞穴的。
-  // 都不行：槽位表不放；錨點（force）x 候選 × y 候選（天然洞穴多的先）逐組挖直豎井，取第一組有不碰 surfaceBan 的豎井欄的
+  // 都不行：槽位表不放；錨點（force）x 候選（可用範圍內所有放得下的 x，placeX 的候選先；修正 3）× y 候選（天然洞穴多的先）逐組挖直豎井
+  // （洞腔上方都碰到時從蜂蜜面以上繞路），取第一組有不碰 surfaceBan 的豎井欄的
   // （Task 11 修正 2）；全部都沒有才丟 RangeError
   let got: Drawn | null = null;
   const bx = placeX(c, bw, o.force === true, (x) => {
@@ -133,7 +152,7 @@ function hive(c: BpCtx, o: MiniOptions): Blueprint | null {
   });
   if (bx === null) return null;
   if (!got) {
-    for (const x of xCandidates(c, bw, bx)) {
+    for (const x of allXs(c, bw, bx)) {
       const ys: { y: number; n: number }[] = [];
       for (let t = 0; t < Y_TRIES; t++) { const y = yAt(x, t); ys.push({ y, n: holes(x, y) }); }
       for (const q of ys.sort((a, b) => b.n - a.n)) { got = draw(x, q.y, true); if (got) break; }

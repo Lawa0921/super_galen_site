@@ -29,12 +29,12 @@
 //     有豎井時藍圖帶部件 = 主體（含繞路的隧道）+ 豎井那兩欄；部件外不寫任何格
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T, W, SOLID_LUT } from '../../tiles';
-import { hash2, fbm2 } from '../../noise';
+import { hash2, fbm2, seedInt } from '../../noise';
 import type { ColumnLayers } from '../../column';
 import { HRng } from '../hrng';
-import { CaveProbe } from '../caves';
+import { CaveProbe, shaftX } from '../caves';
 import { LAVA_Y, type Profile2 } from '../profile';
-import { BpGrid, placeX, clearRange, emptyObjects, boxHits, BP_UNDER, BP_DEEP, KEEP, type Blueprint, type BpBox, type BpCtx, type BpLandmark, type Span } from '../bpcore';
+import { BpGrid, placeX, clearRange, emptyObjects, boxHits, shaftBand, BP_UNDER, BP_DEEP, KEEP, SLOT_PAD, type Blueprint, type BpBox, type BpCtx, type BpLandmark, type Span } from '../bpcore';
 
 // 試幾個中心 y、E 內天然洞穴的比例上限（舊生成器 0.45）
 const OPEN_TRIES = 8, OPEN_MAX = 0.45;
@@ -43,7 +43,8 @@ export const CAVE_BIG = 300;
 // 探測範圍（同測試的 walkOut）：外框左右 REACH_X 欄（且不出自己的槽）、上 REACH_UP 列、下 REACH_DOWN 列
 const REACH_X = 80, REACH_UP = 80, REACH_DOWN = 40;
 // 隧道高 4 列（同礦坑 / 地廳的坑道）；隧道口那一欄的 4 列至少 CAVE_MIN 格是洞穴
-const TUNNEL_H = 4, CAVE_MIN = 3;
+export const TUNNEL_H = 4;
+const CAVE_MIN = 3;
 // 4 鄰（dx, dy 成對）
 const DIRS = [-1, 0, 1, 0, 0, -1, 0, 1];
 // 平台候選數
@@ -352,6 +353,15 @@ export function xCandidates(c: BpCtx, w: number, fallback: number): number[] {
   const xs: number[] = [];
   placeX(c, w, false, (x) => { xs.push(x); return false; });
   return xs.length ? xs : [fallback];
+}
+// 可用範圍內所有放得下的外框 x（Task 11 修正 3，蜂巢的 force 備案）：先 placeX 的候選（同 xCandidates），再其餘的依離槽中心由近到遠；
+// 放得下 = 離可用範圍兩端 ≥ SLOT_PAD、不碰主坑道避讓帶（同 placeX 的 UNDER / DEEP 規則）
+export function allXs(c: BpCtx, w: number, fallback: number): number[] {
+  const first = xCandidates(c, w, fallback), sx = shaftX(seedInt(c.seed, 'g2-shaft'), c.region), band = shaftBand(sx);
+  const fits = (x: number): boolean => x >= c.slotX0 + SLOT_PAD && x + w <= c.slotX1 - SLOT_PAD && (!Number.isFinite(sx) || x + w <= band.l || x >= band.r);
+  const mid = (c.slotX0 + c.slotX1 - w) >> 1, rest: number[] = [];
+  for (let x = c.slotX0 + SLOT_PAD; x + w <= c.slotX1 - SLOT_PAD; x++) if (fits(x) && !first.includes(x)) rest.push(x);
+  return [...first, ...rest.sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid) || a - b)];
 }
 // 豎井的部件：那兩欄、挖的列
 export const shaftPart = (s: ShaftPlan): BpBox => ({ x: s.sx, y: s.y0, w: 2, h: s.y1 - s.y0 + 1 });

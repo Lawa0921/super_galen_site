@@ -38,6 +38,18 @@ function spanProblem(seed: string, a: Anchor): string | null {
 }
 // kind 在 layer 層放得下的槽（不碰出生點清空區、可用範圍 − 16 ≥ 最大外框；含坑道的槽也算）：plain = 不含坑道、shafted = 含坑道
 // keep 收到地區、槽中點、可用範圍
+// 蘑菇林錨點：首選（森林、不在地廳槽上方）還有空槽時一定在森林；選完全部錨點後仍空著的森林地下層槽，在選蘑菇林時也是空的（錨點只會增加）。
+// 「空著」= 沒有地下層錨點、也不是水晶洞第 ② 段保留的那一槽（水晶洞正上方的地下層槽，anchors.ts 的 reserve 分支）；回 null = 合格
+function mushroomProblem(seed: string, h: Landmass, a: readonly Anchor[]): string | null {
+  const mu = a.find((q) => q.kind === 'mushroom_biome')!;
+  const takenU = new Set(a.filter((q) => q.layer === BP_UNDER || q.kind === 'crystal_cave').map((q) => `${q.region.index}:${q.slot}`));
+  const hallSlots = a.filter((q) => q.kind === 'hall').map(slotRange);
+  const forestFree = fitSlots(seed, h.regions.filter((r) => r.biome === BIOME.FOREST && r.variant !== VARIANT.BEACH && r.variant !== VARIANT.DUNGEON), 'mushroom_biome', BP_UNDER,
+    (_r, _m, sp) => hallSlots.every((hs) => hs.x1 <= sp.x0 || hs.x0 >= sp.x1)).plain.filter((q) => !takenU.has(`${q.region.index}:${q.slot}`));
+  if (forestFree.length && mu.region.biome !== BIOME.FOREST) return `mushroom in biome ${mu.region.biome} with a free forest slot ${forestFree[0].region.index}:${forestFree[0].slot}`;
+  if (mu.region.variant === VARIANT.BEACH || mu.region.variant === VARIANT.DUNGEON) return 'mushroom on beach / dungeon';
+  return null;
+}
 function fitSlots(seed: string, rs: readonly RegionInfo[], kind: AnchorKind, layer: Layer, keep: (r: RegionInfo, mid: number, span: { x0: number; x1: number }) => boolean) {
   const plain: Anchor[] = [], shafted: Anchor[] = [];
   for (const r of rs) for (let q = 0; q < landSlotCount(r, layer); q++) {
@@ -132,12 +144,7 @@ describe('gen2 anchors', () => {
       expect(slotMid(a.find((q) => q.kind === 'spawn_tablet')!)).toBeGreaterThan(SPAWN_X);
       expect(a.find((q) => q.kind === 'ruin')!.region.biome).not.toBe(BIOME.SNOW);
       // 蘑菇林：首選（森林、不在地廳槽上方）還有空槽時一定在森林；選完全部錨點後仍空著的森林地下層槽，在選蘑菇林時也是空的（錨點只會增加）
-      const mu = a.find((q) => q.kind === 'mushroom_biome')!, takenU = new Set(a.filter((q) => q.layer === BP_UNDER).map((q) => `${q.region.index}:${q.slot}`));
-      const hallSlots = a.filter((q) => q.kind === 'hall').map(slotRange);
-      const forestFree = fitSlots(seed, h.regions.filter((r) => r.biome === BIOME.FOREST && r.variant !== VARIANT.BEACH && r.variant !== VARIANT.DUNGEON), 'mushroom_biome', BP_UNDER,
-        (r, _m, sp) => hallSlots.every((hs) => hs.x1 <= sp.x0 || hs.x0 >= sp.x1)).plain.filter((q) => !takenU.has(`${q.region.index}:${q.slot}`));
-      if (forestFree.length) expect(mu.region.biome, seed).toBe(BIOME.FOREST);
-      expect([VARIANT.BEACH, VARIANT.DUNGEON]).not.toContain(mu.region.variant);
+      expect(mushroomProblem(seed, h, a)).toBeNull();
       expect(continentAnchors(seed, g.layout.landmass(1, 2), g.profile)).toEqual([]);
     }
   }, 120_000);
@@ -234,4 +241,13 @@ describe('gen2 anchors', () => {
       expect(errors.slice(0, 5)).toEqual([]);
     }, 120_000);
   }
+  // 修正第 3 輪：mx-0..2999（沒調過參的前綴）的蘑菇林規則；修正前的判定漏算水晶洞保留的地下層槽，mx-1121 / 1630 / 2826 / 2982 誤判（RED）
+  it('蘑菇林錨點首選可用時在森林（mx-0..2999；水晶洞第 ② 段保留的地下層槽算已佔）', () => {
+    const bad: string[] = [];
+    for (let k = 0; k < 3000; k++) {
+      const seed = `mx-${k}`, g = new Gen2Source(seed), h = g.layout.landmassAt(SPAWN_X)!, p = mushroomProblem(seed, h, homeAnchors(seed, h, g.profile));
+      if (p) bad.push(`${seed}: ${p}`);
+    }
+    expect(bad.slice(0, 5)).toEqual([]);
+  }, 120_000);
 });
