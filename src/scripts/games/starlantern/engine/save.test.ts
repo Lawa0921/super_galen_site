@@ -1272,3 +1272,36 @@ describe('time and moon: the spring festival in the save (Task 7)', () => {
     expect(isSceneId('season:summer')).toBe(false);
   });
 });
+
+describe('time and moon: the festival recorded in the save (Task 7 review)', () => {
+  afterEach(() => { delete SEASON_SCENES.spring; });
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  const recorded = (): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.story.day = 21;
+    g.story.springDay = 20;
+    g.story.festival = 'season:spring';
+    return g;
+  };
+  it('festival saves and loads; one unregistered, not a season scene, before the finale or already seen is refused', () => {
+    SEASON_SCENES.spring = 'season:spring';
+    const st = memoryStorage();
+    expect(saveGame(st, recorded())).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && r.state.story.festival).toBe('season:spring');
+    const cases: [string, (g: GameState) => void][] = [
+      ['not a season scene', (g) => { (g.story as { festival?: unknown }).festival = 'home:chizuru'; }],
+      ['before the finale', (g) => { g.story.finaleCleared = false; delete g.story.springDay; }],
+      ['already seen', (g) => { g.story.seen.push('season:spring'); }],
+    ];
+    for (const [name, mut] of cases) {
+      const g = recorded();
+      mut(g);
+      expect(status(g), name).toBe('corrupt');
+    }
+    delete SEASON_SCENES.spring;
+    expect(status(recorded()), 'unregistered').toBe('corrupt');
+  });
+});

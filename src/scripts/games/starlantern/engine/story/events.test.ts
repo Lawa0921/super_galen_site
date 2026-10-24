@@ -1709,9 +1709,13 @@ describe('time and moon: the spring festival (Task 7)', () => {
     const seen = after();
     seen.story.seen.push('season:spring');
     expect(arrivalScenes(seen, { chat: true })).not.toContain('season:spring');
-    // a reload reads the night of the day before (the return moved the day on): day 21 is day 20's night, spring
-    expect(arrivalScenes(after({ day: 21 }), { chat: false }).at(-1)).toBe('season:spring');
-    expect(arrivalScenes(after({ day: 20 }), { chat: false })).not.toContain('season:spring');
+    // a reload never decides it again (Task 7 review): only what the return recorded plays, until seen
+    expect(arrivalScenes(after({ day: 21 }), { chat: false })).not.toContain('season:spring');
+    const recorded = after({ day: 21 });
+    recorded.story.festival = 'season:spring';
+    expect(arrivalScenes(recorded, { chat: false }).at(-1)).toBe('season:spring');
+    recorded.story.seen.push('season:spring');
+    expect(arrivalScenes(recorded, { chat: false })).not.toContain('season:spring');
     // after spring has come, it stays: any later return
     expect(arrivalScenes(after({ day: 400 }), { chat: true }).at(-1)).toBe('season:spring');
   });

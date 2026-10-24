@@ -1330,6 +1330,10 @@ export class Game {
     // Story L spec §4.5: a group scene in the reaction slot is the night's first item, after the day's notices; after the
     // finale the slot may hold the spring festival instead (time and moon ruling 7). The night in `NIGHT_RANK` order.
     const slot = day.filter(isNightSlot);
+    // Task 7 review: the season's scene this return decided, saved with it, so a reload plays the same night
+    const festival = slot.find((id) => id.startsWith('season:'));
+    if (festival) this.state.story.festival = festival;
+    else delete this.state.story.festival;
     this.arrival = [...plan.before, ...day.filter((id) => !isNightSlot(id))];
     this.night = orderNight([...slot, ...plan.night]);
     this.leadSaid = false;

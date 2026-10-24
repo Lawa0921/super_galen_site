@@ -76,6 +76,11 @@ export interface StoryState {
   day?: number;
   /** Ruling 6: the day spring comes, written when the finale is cleared (that day + SPRING_AFTER). Absent after the finale: spring already. */
   springDay?: number;
+  /**
+   * Ruling 7 (Task 7 review): the season's scene the last return's night holds (`season:spring`), decided on that return
+   * and saved with it; a reload plays it again until it is seen, and never decides it from the calendar. Absent: none.
+   */
+  festival?: SceneId;
 }
 
 /** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */

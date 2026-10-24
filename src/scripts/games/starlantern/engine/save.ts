@@ -114,6 +114,8 @@ function isStory(v: unknown): boolean {
   // time and moon (ruling 12): today, a whole day from 1 to MAX_DAY; spring's day, only once the finale is cleared
   if (v.day !== undefined && !(Number.isInteger(v.day) && (v.day as number) >= 1 && (v.day as number) <= MAX_DAY)) return false;
   if (v.springDay !== undefined && !(v.finaleCleared && Number.isInteger(v.springDay) && (v.springDay as number) >= 1 && (v.springDay as number) <= MAX_DAY + SPRING_AFTER)) return false;
+  // the season's scene a return recorded (Task 7 review): a registered season scene, after the finale, not yet seen
+  if (v.festival !== undefined && !(isSceneId(v.festival) && v.festival.startsWith('season:') && v.finaleCleared && !(v.seen as unknown[]).includes(v.festival))) return false;
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }
 

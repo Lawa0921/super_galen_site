@@ -5650,7 +5650,7 @@ describe('time and moon: the seasons and the spring festival in the game (Task 7
     expect(nights).toEqual(['10:winter', '11:winter', '12:winter', '13:spring', '14:spring', '15:spring']);
   });
 
-  it('the festival leads the night and a reload plays it again until it is seen', () => {
+  it('the festival leads the night and a reload plays it again, as the return recorded it, until it is seen', () => {
     SEASON_SCENES.spring = 'season:spring';
     const storage = memoryStorage();
     const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
@@ -5677,6 +5677,7 @@ describe('time and moon: the seasons and the spring festival in the game (Task 7
     expect(g.state.story.queue).not.toContain('season:spring');
     expect(g.state.story.untold).toEqual(['mem:noel:1']);
     expect(g.state.story.tonight).toEqual([]);
+    expect(g.state.story.festival).toBe('season:spring');   // recorded with the return (Task 7 review)
     expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves
     const b = Game.boot(calm(), storage);
     expect(b.night).toEqual(['season:spring']);
@@ -5694,5 +5695,77 @@ describe('time and moon: the seasons and the spring festival in the game (Task 7
   it('the night is ordered group, season, memory, as Game.arrive puts it', () => {
     expect(orderNight(['mem:noel:1', 'season:spring', 'group:act2'])).toEqual(['group:act2', 'season:spring', 'mem:noel:1']);
     expect((['group:act2', 'season:spring', 'mem:noel:1'] as SceneId[]).map(isNightSlot)).toEqual([true, true, false]);
+  });
+});
+
+describe('time and moon: a reload never decides the festival again (Task 7 review)', () => {
+  afterEach(() => { delete SEASON_SCENES.spring; });
+  /** After the finale, Rin's choice made, Chizuru whole (`home`: her homecoming already seen), Noel holding an untold piece. */
+  const afterFinale = (storage: ReturnType<typeof memoryStorage>, o: { home: boolean; day: number; springDay: number }) => {
+    SEASON_SCENES.spring = 'season:spring';
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    const st = g.state;
+    st.dungeon.reached.mainline = 30;
+    st.story.nodes = ['act2', 'act3', 'act4'];
+    st.story.queue = [];
+    st.story.seen = ['prologue', 'prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'group:act2', 'group:act3', 'group:act4', 'finale', 'epilogue', ...(o.home ? ['home:chizuru' as SceneId] : [])];
+    st.story.act1Cleared = true;
+    st.story.finaleCleared = true;
+    Object.assign(st.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    st.party = meet(st.party, 'chizuru', 1);
+    st.party.roster.chizuru.memories = chainLength('chizuru');
+    for (let n = 1; n <= chainLength('chizuru'); n++) st.story.seen.push(memScene('chizuru', n));
+    st.party = meet(st.party, 'noel', 1);
+    st.party.roster.noel.memories = 1;
+    st.story.untold = ['mem:noel:1'];
+    st.gold = 5000;
+    st.story.day = o.day;
+    st.story.springDay = o.springDay;
+    return g;
+  };
+
+  it('case A: the homecoming return skips the festival, and a reload after the homecoming does not bring it', () => {
+    const storage = memoryStorage();
+    const g = afterFinale(storage, { home: false, day: 20, springDay: 20 });
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.arrival).toContain('home:chizuru');
+    expect(g.night).toEqual(['mem:noel:1']);
+    expect(g.state.story.festival).toBeUndefined();
+    for (const id of [...g.arrival]) g.sceneDone(id, 'played');   // the homecoming seen; the town saves
+    const b = Game.boot(calm(), storage);
+    expect(b.night).toEqual(['mem:noel:1']);
+    // the next spring return is the festival's
+    expect(b.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(b.returnToTown()).toBe(true);
+    expect(b.night).toEqual(['season:spring']);
+  });
+
+  it('case B: a winter return, then a night at the inn into spring, then a reload: no festival without a return', () => {
+    const storage = memoryStorage();
+    const g = afterFinale(storage, { home: true, day: 12, springDay: 13 });
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);   // the night of day 12: winter
+    expect(g.night).toEqual(['mem:noel:1']);
+    expect(g.rest().ok).toBe(true);        // day 14, spring: the inn saves
+    expect(g.state.story.day).toBe(14);
+    const b = Game.boot(calm(), storage);
+    expect(b.night).toEqual(['mem:noel:1']);
+    expect(b.night).not.toContain('season:spring');
+  });
+
+  it('a reload after the festival return plays the festival again, because the return recorded it', () => {
+    const storage = memoryStorage();
+    const g = afterFinale(storage, { home: true, day: 20, springDay: 20 });
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.night).toEqual(['season:spring']);
+    expect(g.state.story.festival).toBe('season:spring');
+    expect(g.rest().ok).toBe(true);   // saves; even a night at the inn keeps the record
+    const b = Game.boot(calm(), storage);
+    expect(b.night).toEqual(['season:spring']);
+    expect(b.sceneDone('season:spring', 'played')).toBe(true);
+    expect(b.state.story.festival).toBeUndefined();
+    expect(Game.boot(calm(), storage).night).toEqual([]);
   });
 });

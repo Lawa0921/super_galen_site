@@ -1,11 +1,10 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { chainLength, type CalendarNow, type Season } from '../../data/story/chains';
-import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAYOFFS, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, EVE_DEPTH, GROUP_GATE, HEAVY_MAJORS, HOME_OWNERS, REACTIONS, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type GroupScene, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAYOFFS, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, EVE_DEPTH, GROUP_GATE, HEAVY_MAJORS, HOME_OWNERS, REACTIONS, SEASON_SCENES, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type GroupScene, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
 import type { CharacterId } from '../types';
 import { dayOf, moonOf, seasonAt } from '../calendar';
-import { SEASON_SCENES } from '../../data/story/scenes';
 
 /**
  * Where the story stands, from what the player has done (the handbook and the town lines follow it). An act counts once it
@@ -306,8 +305,10 @@ export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: bo
   const group = nextReaction(s, list, o.reactions);
   if (group) return [...list, group];
   // Time and moon ruling 7 (review fix 4): after the finale the slot holds a season's scene instead (no group scene by
-  // then), with no chat or banter. Its night is the dive's day: a return has not moved the day yet; a reload has.
-  const season = nextSeasonScene(s, o.chat ? dayOf(s) : dayOf(s) - 1);
+  // then), with no chat or banter. A return decides it for its night, the dive's day (not moved yet); `Game.arrive`
+  // records it in `story.festival`. A reload (or a new game) never decides it again: it plays what the return recorded,
+  // until seen (Task 7 review: a homecoming seen since, or a night at the inn, must not bring it).
+  const season = o.chat ? nextSeasonScene(s, dayOf(s)) : (s.story.festival && !s.story.seen.includes(s.story.festival) ? s.story.festival : null);
   if (season) return [...list, season];
   if (!o.chat) return list;
   const heavyList = list.some(isHeavyArrival);
@@ -402,6 +403,7 @@ export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' |
   if (story.untold) story.untold = story.untold.filter((u) => u !== id);
   if (story.tonight) story.tonight = story.tonight.filter((u) => u !== id);
   if (story.dawn === id) delete story.dawn;   // the dawn's pick, told
+  if (story.festival === id) delete story.festival;   // time and moon: the season's scene a return recorded, seen
   const queueOnce = (next: SceneId): void => { if (!story.seen.includes(next) && !story.queue.includes(next)) story.queue.push(next); };
   const at = ACT_NODES.indexOf(id as ActNode);
   if (at >= 0 || id.startsWith('group:')) {
