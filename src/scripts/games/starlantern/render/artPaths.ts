@@ -7,6 +7,7 @@ import { MATERIALS } from '../data/materials';
 import { REGIONS, type RegionId } from '../data/regions';
 import { RUNES, type RuneId } from '../data/runes';
 import { SKILLS } from '../data/skills';
+import type { AilmentShown } from '../engine/ailments';
 import type { BattleEvent } from '../engine/combatant';
 import type { Dir, Tile } from '../engine/map';
 import type { CharacterId, FxKey, ItemInstance, Rarity, WeaponKind } from '../engine/types';
@@ -19,6 +20,16 @@ export type RuneIconSize = 14 | 16;
 export const RUNE_ICON_SIZES: readonly RuneIconSize[] = [14, 16];
 /** Every rune icon id: each rune of the data and both slot states (registry `icon-rune-<id>-<size>`). */
 export const RUNE_ICON_IDS = (): RuneIconId[] => ['slot-empty', 'slot-filled', ...(Object.keys(RUNES) as RuneId[])];
+/** A skill icon at its native size (art step 9, G3/G4; registry `icon-<skill>-<size>`): 16 in a skill row, 14 in the tree. */
+export type SkillIconSize = 16 | 14;
+export const SKILL_ICON_SIZES: readonly SkillIconSize[] = [16, 14];
+/** Every ailment shown in battle (render/ailmentStyle AILMENT_FILL): its 14px chip icon (registry `icon-ail-<id>-14`). */
+export const AILMENT_ICON_IDS: readonly AilmentShown[] = ['poison', 'sleep', 'burn', 'freeze', 'chill', 'shock', 'bleed'];
+/** A mechanic's 14px chip icon (registry `icon-mech-<key>-14`); a device uses its own skill's 14px icon instead. */
+export type MechIconKey = 'heat' | 'coins' | 'embers' | 'beat' | 'shield' | 'aim' | 'mark' | 'ward' | 'purify' | 'thunder'
+  | 'moon-first' | 'moon-full' | 'moon-waning' | 'moon-new';
+export const MECH_ICON_KEYS: readonly MechIconKey[] = ['heat', 'coins', 'embers', 'beat', 'shield', 'aim', 'mark', 'ward', 'purify', 'thunder',
+  'moon-first', 'moon-full', 'moon-waning', 'moon-new'];
 export const MANIFEST_URL = `${ART_BASE}/manifest.json`;
 export type TileKey = Tile | 'chest-open';
 export type { FxKey };
@@ -113,6 +124,12 @@ export const art = {
   traitIcon: (k: TraitIconKey) => `${ART_BASE}/icon/trait-${k}.png`,
   /** A rune or slot-state icon at its native size (art step 9, G4; registry `icon-rune-<id>-<size>`). */
   runeIcon: (id: RuneIconId, size: RuneIconSize) => `${ART_BASE}/icon/rune-${id}-${size}.png`,
+  /** A skill's icon at its native size (art step 9): 16 x 16 in a skill row, 14 x 14 in the tree; never scaled. */
+  skillIcon: (id: string, size: SkillIconSize) => `${ART_BASE}/icon/${id}-${size}.png`,
+  /** An ailment's 14px icon in front of its word (art step 9, G4). */
+  ailmentIcon: (id: AilmentShown) => `${ART_BASE}/icon/ail-${id}-14.png`,
+  /** A mechanic's 14px icon in front of its word (art step 9, G4). */
+  mechIcon: (k: MechIconKey) => `${ART_BASE}/icon/mech-${k}-14.png`,
   logo: `${ART_BASE}/ui/logo.png`,
   window: `${ART_BASE}/ui/window.png`,
   cursor: `${ART_BASE}/ui/cursor.png`,
@@ -148,37 +165,6 @@ const SILHOUETTE_IDS = (): string[] => [
   ...(Object.keys(REGIONS) as RegionId[]).flatMap((r) => regionSpecials(r).map((s) => s.id)),
   ...Object.keys(SETS),
 ];
-
-/**
- * Icons not on disk yet; allArtUrls leaves them out. Only the tree skills of plan 5d's skills batch (G3) remain: every
- * gear piece (small and large), codex silhouette, rarity layer, material, the forge and both of Doran's faces are
- * published (plan 5d Tasks 8 and 10), and every old base icon is retired. The skills publish takes its ids out.
- */
-/**
- * Skills a roster change replaced whose published icon stays on disk and in the registry until step ⑨'s G3 batch retires
- * it (plan 8c ruling 2: deleting art is not this plan's), but is no longer requested.
- */
-export const RETIRED_ICON_IDS: readonly string[] = ['triple-slash'];
-
-export const NO_ICON_YET_IDS: ReadonlySet<string> = new Set([
-  // plan 8c: skills that replaced others (their icons are step ⑨'s)
-  'purify-ward', 'exorcism-thrust', 'moon-recall', 'full-moon-night',
-  'pickpocket', 'jackpot', 'appraise', 'sunder-arrow', 'scatter-shot', 'deluge-volley',
-  'cover', 'atoning-flame', 'clap', 'mirage-step', 'repair-drone',
-  // plan 5b: the skill-tree skills have no icon yet
-  'flame-wave', 'inferno', 'frost-bind', 'blizzard', 'judgement',
-  'spiral-spear', 'thousand-spear', 'great-barrier', 'heaven-spear',
-  'smoke-bomb', 'fortune-strike', 'quickstep', 'phantom-step',
-  'heart-shot', 'starfall-arrow', 'hunters-mark',
-  'unbreakable', 'blaze-ring', 'crimson-end', 'shield-bash',
-  'moon-rain', 'full-moon', 'moon-arrow', 'lunar-eclipse',
-  'sand-cyclone', 'thousand-shadows', 'desert-festival', 'shadow-step',
-  'cannon', 'overclock', 'emergency-repair', 'shock-mine', 'tesla-coil',
-  // plan 6a: Rin's skills have no icon yet
-  'rin-needle', 'rin-fan', 'rin-venom-needle', 'rin-storm', 'rin-backstab', 'rin-veil', 'rin-shadowless', 'rin-mark', 'rin-execute', 'rin-deathblow',
-  // plan 6a: the hero's skills have no icon yet
-  ...Object.values(SKILLS).filter((s) => s.owner === 'hero').map((s) => s.id),
-]);
 
 /** Event tiles with art of their own in the art factory; a chest uses its terrain's chest tile instead. */
 export type EventTileKey = 'fountain' | 'merchant' | 'altar' | 'elite' | 'vault'
@@ -241,9 +227,12 @@ export function allArtUrls(): string[] {
   for (const k of PORTAL_CARD_KEYS) urls.push(art.portalCard(k));
   for (const k of TRAIT_ICON_KEYS) urls.push(art.traitIcon(k));
   for (const k of EVENT_TILE_KEYS) urls.push(art.eventTile(k));
-  for (const id of [...Object.keys(SKILLS), ...Object.keys(ITEMS), ...Object.keys(MATERIALS)]) {
-    if (!NO_ICON_YET_IDS.has(id)) urls.push(art.icon(id));
-  }
+  for (const id of [...Object.keys(ITEMS), ...Object.keys(MATERIALS)]) urls.push(art.icon(id));
+  // Art step 9 (G3 and G4): every skill at its two native sizes (the plan 4 icon/<skill>.png they re-derive are retired),
+  // and the 14px chip icons of every ailment and mechanic.
+  for (const id of Object.keys(SKILLS)) for (const size of SKILL_ICON_SIZES) urls.push(art.skillIcon(id, size));
+  for (const id of AILMENT_ICON_IDS) urls.push(art.ailmentIcon(id));
+  for (const k of MECH_ICON_KEYS) urls.push(art.mechIcon(k));
   // Plan 5d: the gear art of every base and special (small and large; a base no longer lists an icon/ path), the codex
   // silhouettes, the rarity layers, the forge and Doran. A piece merged into SPECIALS later (a roster unique) comes with
   // its own art batch, which must list it here.

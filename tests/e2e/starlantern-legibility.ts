@@ -230,6 +230,31 @@ const runeRowsKeepTheirLine = async (page: Page, scope: string) => {
   }
 };
 
+/**
+ * Art step 9: every picture matching `img` in `scope` is shown at its own native size (`px` x `px` layout px, the file
+ * that size: never scaled), decorative (alt ""), and inside its row; a row with a 14 or 16 px icon keeps the height of one
+ * line of its own text. At least `min` are on screen.
+ */
+const nativeIcons = async (page: Page, scope: string, img: string, px: number, min = 1) => {
+  const found = await page.locator(`${scope} ${img}`).evaluateAll((els) => els.filter((e) => (e as HTMLElement).checkVisibility()).map((e) => {
+    const i = e as HTMLImageElement; const r = i.getBoundingClientRect();
+    const row = (i.closest('[role=option], .slx-skill, .slx-ail, .slx-mech') ?? i.parentElement!) as HTMLElement;
+    const b = row.getBoundingClientRect(); const cs = getComputedStyle(row);
+    return { src: i.getAttribute('src'), w: i.offsetWidth, h: i.offsetHeight, nw: i.naturalWidth, nh: i.naturalHeight, alt: i.getAttribute('alt'),
+      // 1 screen px of slack: on a phone held upright the stage is turned and scaled by a fraction, so edges land between pixels.
+      out: r.top < b.top - 1 || r.bottom > b.bottom + 1 || r.left < b.left - 1 || r.right > b.right + 1,
+      boxes: `icon ${r.left},${r.top},${r.right},${r.bottom} row ${row.className} ${b.left},${b.top},${b.right},${b.bottom}`,
+      chip: row.matches('.slx-ail, .slx-mech'), rowH: row.offsetHeight, line: parseFloat(cs.lineHeight) + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth) };
+  }));
+  expect(found.length, `${scope} ${img}: icons on screen`).toBeGreaterThanOrEqual(min);
+  for (const f of found) {
+    expect(f.out ? f.boxes : '', `${f.src} inside its row`).toBe('');
+    expect([f.w, f.h, f.nw, f.nh], `${f.src} native ${px}`).toEqual([px, px, px, px]);
+    expect(f.alt, `${f.src} decorative`).toBe('');
+    if (f.chip) expect(f.rowH, `${f.src}: its chip stays one 14px line`).toBe(f.line);
+  }
+};
+
 /** The chests and event rooms the sweep put down, taken up again before it walks to the stairs. */
 const chests: { x: number; y: number }[] = [];
 
@@ -399,6 +424,9 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       await expect(page.locator(`.slx-status-scene [data-tab=${tab}]`)).toHaveAttribute('aria-selected', 'true');
     },
   })),
+  // Art step 9: the skills tab and the tree with every skill's native icon (16 in a row, 14 on a node), each whole.
+  { name: 'status-skills-icons', visit: async (page) => { await go(page, 'status', 'tab:skills:noel'); await nativeIcons(page, '.slx-tab-skills', 'img.slx-skill-ico', 16); } },
+  { name: 'status-tree-icons', visit: async (page) => { await go(page, 'status', 'tab:tree:noel'); await nativeIcons(page, '.slx-status-scene', '.slx-tree-node img.slx-skill-ico', 14, 3); } },
   { name: 'equip', visit: async (page) => { await go(page, 'equip'); await expect(page.locator('.slx-equip-scene')).toBeVisible(); } },
   ...HANDBOOK_TABS.map((tab, i) => ({
     name: i === 0 ? 'handbook' : `handbook-${tab}`, visit: async (page: Page) => {
@@ -705,6 +733,35 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
     },
   },
   {
+    // Art step 9 (G4): the party's ailment and mechanic words with their 14px icons (one member's row folding into +N),
+    // the field bar's barrier and moon with theirs, and the foes' rows (Pixi) with theirs.
+    name: 'battle-chips', visit: async (page, w) => {
+      await game(page, `
+        const [a, b] = g.battle.party;
+        a.poison = true; a.burn = { tick: 1, turns: 3, src: 'e0' }; a.bleed = [{ tick: 1, turns: 3, src: 'e0' }]; a.shock = 3; a.chill = 3;
+        b.sleep = 3;
+        for (const e of g.battle.enemies) { e.burn = { tick: 1, turns: 3, src: 'hero' }; e.shock = 3; }
+        g.battle.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 9, src: 'chizuru' }];
+        g.battle.moon = { phase: 'full' };`);
+      // One round on guard redraws every panel, the bar and the foes' rows with the words.
+      for (let i = 0; i < 60 && (await game<number>(page, 'return g.battle?.round ?? -1;')) === 0; i++) {
+        if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+        else await page.waitForTimeout(50);
+      }
+      await commandMenu(page);
+      await nativeIcons(page, '.slx-partybar', 'img.slx-chip-ico', 14, 2);
+      await nativeIcons(page, '.slx-fieldbar', 'img.slx-chip-ico', 14, 2);
+      await expect(page.locator('.slx-partybar .slx-ail-more').first()).toBeVisible();
+      const foeIcons = await page.evaluate(() => {
+        type N = { children?: N[]; texture?: { width: number; height: number }; width?: number; height?: number; text?: unknown; destroyed?: boolean };
+        const v = (window as unknown as { __starlanternDebug: { stage: { battleView: { ailmentIcons(k: string): N[] } } } }).__starlanternDebug.stage.battleView;
+        return v.ailmentIcons('e0').map((s) => [s.width, s.height]);
+      });
+      expect(foeIcons.length).toBeGreaterThan(0);
+      for (const s of foeIcons) expect(s).toEqual([14, 14]);
+    },
+  },
+  {
     name: 'battle-skills', visit: async (page, w) => {
       for (let i = 0; i < 8; i++) {
         await w.choose('.slx-bcmd', '技能');
@@ -713,6 +770,7 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
         await commandMenu(page);
       }
       await expect(page.locator('.slx-bsub [role=option]').first()).toBeVisible();
+      await nativeIcons(page, '.slx-bsub', 'img.slx-skill-menu-ico', 16);   // art step 9: each skill's 16px icon in its row
     },
   },
   {

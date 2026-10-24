@@ -16,7 +16,7 @@ import { SLOTS, activeIds, expToNext, powersOf, sheetOf, statSources, statsOf } 
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
 import { chainLength } from '../../data/story/chains';
 import type { AnyStat, CharacterId, Member, Slot, StatKey, Stats } from '../../engine/types';
-import { art } from '../../render/artPaths';
+import { art, type SkillIconSize } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { gearLabel, rarityClass } from '../loot';
@@ -31,9 +31,14 @@ import { stageSpan } from '../stageAxis';
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 
-/** A skill's icon (`icon/<skill>.png`) before its head line, once published; nothing before then. */
-const skillIco = (ctx: SceneCtx, skill: string): HTMLElement[] =>
-  (ctx.art.has(art.icon(skill)) ? [el('img', { class: 'slx-skill-ico', attrs: { src: art.icon(skill), alt: '' } })] : []);
+/**
+ * A skill's icon before its head line at its native size (art step 9: 16 in the skills tab, 14 on a tree node), once its
+ * picture is loaded; until then the name stands alone. Decorative (alt ""): the name beside it says which skill.
+ */
+const skillIco = (ctx: SceneCtx, skill: string, size: SkillIconSize = 16): HTMLElement[] => {
+  const src = art.skillIcon(skill, size);
+  return ctx.art.has(src) ? [el('img', { class: 'slx-skill-ico', attrs: { src, alt: '', width: String(size), height: String(size) } })] : [];
+};
 export const SLOT_ORDER: Slot[] = SLOTS;
 
 /**
@@ -614,7 +619,7 @@ const tree: StatusTab = {
       }, [
         // An active shows its skill's icon. A variant's name starts with the skill it changes (火之星彈・連星), so it goes
         // without, and the whole row is its name's (8d Task 6 review: no name wraps); a mechanic node has no skill at all.
-        ...(n.skill && !(n.kind === 'variant' && n.label !== undefined) ? skillIco(ctx, n.skill) : []),
+        ...(n.skill && !(n.kind === 'variant' && n.label !== undefined) ? skillIco(ctx, n.skill, 14) : []),
         el('div', { class: 'slx-skill-head' }, [
           // A name of five characters or more (護盾產生器) is set a size smaller, so it stays whole on its node. A variant's
           // (火之星彈・連星) may break onto a second line between its skill and its label, never inside either.

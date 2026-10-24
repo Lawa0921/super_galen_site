@@ -15,6 +15,7 @@ import { MECH_FILL } from './mechStyle';
 import type { MechCue, MechTone, MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
 import { pixelText } from './pixelText';
+import { CHIP_ICON_PX, CHIP_ICON_W, ailmentIconUrl, mechIconUrls } from './chipIcons';
 
 
 /** Colours of regional variants: the element's for fire, ice and thunder; by region for the element-less ones. */
@@ -517,25 +518,35 @@ export class BattleView {
       const chips = bySeverity(byKey[k] ?? []);
       // One line inside its slot, by priority (plan 8c final): freeze and sleep (never folded), the party's own setups on
       // it (暗記, 瞄準, 估價, 弱點), the other ailments, the other words; what does not fit folds into +N.
-      type W = { text: string; fill: number };
-      const ofChip = (c: AilmentChip): W => ({ text: T.ailmentChip(c), fill: AILMENT_FILL[c.id] });
-      const ofWord = (x: MechWord): W => ({ text: x.text, fill: MECH_FILL[x.tone] });
+      // Each word with its loaded 14px icons in front (art step 9, G4): an ailment's, a setup's (暗記, 瞄準).
+      type W = { text: string; fill: number; icons: Texture[] };
+      const loaded = (urls: string[]) => urls.flatMap((u) => this.bank?.get(u) ?? []);
+      const ofChip = (c: AilmentChip): W => ({ text: T.ailmentChip(c), fill: AILMENT_FILL[c.id], icons: loaded([ailmentIconUrl(c.id)]) });
+      const ofWord = (x: MechWord): W => ({ text: x.text, fill: MECH_FILL[x.tone], icons: loaded(mechIconUrls(x)) });
+      const wide = (w: W) => ailLabelWidth(w.text) + CHIP_ICON_W * w.icons.length;
       const halting = chips.filter(isHalting);
       const setups = mech.filter((x) => x.setup).sort((a, b) => SETUP_ORDER.indexOf(a.tone) - SETUP_ORDER.indexOf(b.tone));
       // An affix folds after every other ailment and word, never before freeze or sleep; what stands shows the affixes first.
-      const tags: W[] = (affixes[k] ?? []).map((text) => ({ text, fill: AFFIX_FILL }));
+      const tags: W[] = (affixes[k] ?? []).map((text) => ({ text, fill: AFFIX_FILL, icons: [] }));
       const items: W[] = [...halting.map(ofChip), ...tags, ...setups.map(ofWord), ...chips.filter((c) => !isHalting(c)).map(ofChip), ...mech.filter((x) => !x.setup).map(ofWord)];
-      const fit = fitRow(items, this.ailMax, (w) => ailLabelWidth(w.text), (n) => ailLabelWidth(T.ailmentMore(n)), AIL_GAP, halting.length);
+      const fit = fitRow(items, this.ailMax, wide, (n) => ailLabelWidth(T.ailmentMore(n)), AIL_GAP, halting.length);
       const more = fit.more;
       const shown = tags.length ? [...fit.shown.filter((w) => tags.includes(w)), ...fit.shown.filter((w) => !tags.includes(w))] : fit.shown;
       const word = (text: string, fill: number) => pixelText(text, AIL_SIZE, fill);
-      const words = shown.map((w) => word(w.text, w.fill));
-      if (more) words.push(word(T.ailmentMore(more), AILMENT_MORE_FILL));
-      const widths = words.map((t) => ailLabelWidth(t.text));
-      let x = -(widths.reduce((a, b) => a + b, 0) + AIL_GAP * Math.max(0, words.length - 1)) / 2;
-      words.forEach((t, i) => {
+      const row: W[] = [...shown, ...(more ? [{ text: T.ailmentMore(more), fill: AILMENT_MORE_FILL, icons: [] }] : [])];
+      const widths = row.map(wide);
+      let x = -(widths.reduce((a, b) => a + b, 0) + AIL_GAP * Math.max(0, row.length - 1)) / 2;
+      row.forEach((w, i) => {
+        // The icons at the row's top, whole pixels, 1 px apart from the word; never scaled (14 x 14 on a 14 px row).
+        w.icons.forEach((tex, j) => {
+          const ico = new Sprite(tex);
+          ico.width = CHIP_ICON_PX; ico.height = CHIP_ICON_PX;
+          ico.x = Math.round(x + CHIP_ICON_W * j); ico.y = 0;
+          s.ail.addChild(ico);
+        });
+        const t = word(w.text, w.fill);
         t.anchor.set(0.5, 0);
-        t.x = x + widths[i] / 2;
+        t.x = x + CHIP_ICON_W * w.icons.length + ailLabelWidth(w.text) / 2;
         x += widths[i] + AIL_GAP;
         s.ail.addChild(t);
       });
@@ -586,7 +597,13 @@ export class BattleView {
   /** The ailment words above an enemy's head, in order (for tests). */
   ailmentTexts(key: string): Text[] {
     const s = this.slots.get(key);
-    return s && !s.ail.destroyed ? [...s.ail.children] as Text[] : [];
+    return s && !s.ail.destroyed ? s.ail.children.filter((c): c is Text => c instanceof Text) : [];
+  }
+
+  /** The icons in an enemy's ailment row (art step 9, G4), for layout tests. */
+  ailmentIcons(key: string): Sprite[] {
+    const s = this.slots.get(key);
+    return s && !s.ail.destroyed ? s.ail.children.filter((c): c is Sprite => c instanceof Sprite) : [];
   }
 
   /** Set shown HP to the battle state's values (after a round). */

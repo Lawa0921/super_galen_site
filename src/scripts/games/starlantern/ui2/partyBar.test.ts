@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { art } from '../render/artPaths';
 import { NO_ART } from '../render/textures';
+import { T } from '../data/text.zh-TW';
 import { PartyBar } from './partyBar';
 
 const m = (key: string, hp = 30, extra = {}) => ({ key, name: key, hp, maxHp: 30, tp: 10, maxTp: 20, limit: 40, alive: hp > 0, ...extra });
@@ -220,6 +221,49 @@ describe('PartyBar after the oath', () => {
     expect(words).toEqual([['slx-ail slx-ail-bleed', '流血×2'], ['slx-ail slx-ail-burn', '灼燒3'], ['slx-ail slx-ail-more', '+3']]);
     bar.update([m('scarlet', 30, { ailments: [{ id: 'chill', turns: 2 }, { id: 'freeze' }, { id: 'sleep', turns: 1 }] })]);
     expect([...row.children].map((c) => c.textContent)).toEqual(['凍結', '睡眠1', '冰緩2']);   // all fit: no +N
+  });
+});
+
+describe('PartyBar chip icons (art step 9, G4)', () => {
+  const loaded = (...urls: string[]) => ({ has: (u: string) => urls.includes(u) });
+
+  it("each word whose 14px icon is loaded shows it first, decorative; the word's text is unchanged", () => {
+    const bar = new PartyBar(loaded(art.ailmentIcon('burn'), art.mechIcon('heat')));
+    bar.update([m('noel', 30, { mech: [{ tone: 'heat', text: '熱度3' }], ailments: [{ id: 'burn', turns: 2 }] }), m('rin', 30, { ailments: [{ id: 'poison' }] })]);
+    const row = bar.el.querySelector<HTMLElement>('[data-key=noel] .slx-pm-ail')!;
+    expect([...row.children].map((c) => [c.className, c.textContent])).toEqual([['slx-mech slx-mech-heat', '熱度3'], ['slx-ail slx-ail-burn', '灼燒2']]);
+    const ico = (i: number) => row.children[i].querySelector('img');
+    expect(ico(0)!.getAttribute('src')).toBe(art.mechIcon('heat'));
+    expect(ico(1)!.getAttribute('src')).toBe(art.ailmentIcon('burn'));
+    for (const i of [0, 1]) {
+      expect(ico(i)!.className).toBe('slx-chip-ico');
+      expect([ico(i)!.getAttribute('alt'), ico(i)!.getAttribute('width'), ico(i)!.getAttribute('height')]).toEqual(['', '14', '14']);
+      expect(row.children[i].firstChild).toBe(ico(i));                      // in front of the word
+    }
+    const poison = bar.el.querySelector('[data-key=rin] .slx-ail-poison')!;   // not loaded: the word alone
+    expect([poison.textContent, poison.querySelector('img')]).toEqual(['中毒', null]);
+  });
+
+  it('a device word shows its own skill icon; a shield its shield', () => {
+    const bar = new PartyBar(loaded(art.skillIcon('turret', 14), art.mechIcon('shield')));
+    bar.update([m('bobby', 30, { mech: [{ tone: 'devices', text: T.mech.deviceWord(T.mech.deviceShort.turret, 2, 3) }] }),
+      m('chizuru', 30, { mech: [{ tone: 'devices', text: T.mech.shield(12) }] })]);
+    const imgs = [...bar.el.querySelectorAll('.slx-pm-ail img')].map((i) => i.getAttribute('src'));
+    expect(imgs).toEqual([art.skillIcon('turret', 14), art.mechIcon('shield')]);
+  });
+
+  it('+N still folds the line, counting the icons in each word (estimated widths)', () => {
+    const five = [{ id: 'poison' }, { id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }, { id: 'shock', turns: 2 }, { id: 'chill', turns: 2 }] as const;
+    const all = loaded(...five.map((a) => art.ailmentIcon(a.id)));
+    const bare = new PartyBar(NO_ART), iconed = new PartyBar(all);
+    bare.update([m('scarlet', 30, { ailments: [...five] })]); iconed.update([m('scarlet', 30, { ailments: [...five] })]);
+    const texts = (b: PartyBar) => [...b.el.querySelectorAll('[data-key=scarlet] .slx-pm-ail > *')].map((c) => c.textContent);
+    expect(texts(bare)).toEqual(['流血×2', '灼燒3', '+3']);
+    // An icon is 15 px more per word: one ailment fewer fits, and the +N counts the rest.
+    expect(texts(iconed)).toEqual(['流血×2', '+4']);
+    const more = iconed.el.querySelector<HTMLElement>('.slx-ail-more')!;
+    expect(more.querySelector('img')).toBeNull();
+    expect(more.title).toBe('流血×2、灼燒3、中毒、感電2、冰緩2');
   });
 });
 

@@ -2350,7 +2350,9 @@ test.describe('starlantern', () => {
     const manifest = await page.evaluate(async () => (await (await fetch('/assets/games/starlantern/manifest.json')).json()).urls as string[]);
     // 410 + the companion talking faces, wave 1 (18; user approval 2026-10-23) + wave 2 (6, 2026-10-24)
     // + the rune icons (art step 9: 34 subjects at 14 and 16; user approval 2026-10-24 「可以」)
-    expect(manifest.length).toBe(502);
+    // + art step 9, G3 and G4 (user approval 2026-10-24): 105 skills at 16 and 14, 21 chip icons at 14, less the 27 old
+    // plan 4 skill icons retired (三連刃 and the 26 the native ones stand in for) = 502 + 210 + 21 - 27 = 706
+    expect(manifest.length).toBe(706);
     // Every file the manifest lists answers 200.
     for (const u of manifest) expect((await page.request.get(u)).status(), u).toBe(200);
     // Walk the screens that show the new art (equipment, shop, forge, portal codex) with every sample piece in the bag.
@@ -2544,8 +2546,9 @@ test.describe('starlantern', () => {
     for (const row of await page.locator('.slx-partybar .slx-pm-ail').all()) {
       const words = await row.locator('.slx-mech, .slx-ail').allTextContents();
       const mech = /^(熱度|銅板|餘燼|拍子)\d+$/.test(words[0]) ? [words[0]] : [];
-      // At 12px (legibility Task 4) fewer words fit the panel's line before the +N.
-      expect(words).toEqual(mech.length ? [...mech, '流血×2', '+4'] : ['流血×2', '灼燒2', '+3']);
+      // At 12px (legibility Task 4) fewer words fit the panel's line before the +N; with each word's 14px icon (art step 9,
+      // user 2026-10-24: 14×14) one word fewer again.
+      expect(words).toEqual(mech.length ? [...mech, '+5'] : ['流血×2', '+4']);
     }
     /** Every member word against every living enemy's HP bar (design px, mapped onto the canvas as drawn). */
     const overlaps = () => page.evaluate(() => {
@@ -2567,7 +2570,8 @@ test.describe('starlantern', () => {
       await page.waitForTimeout(300);
       const r = await overlaps();
       expect(r.bars, `${size.width}x${size.height}`).toBeGreaterThan(0);
-      expect(r.chips, `${size.width}x${size.height}`).toBe(15);   // three words a row at 12px (legibility Task 4), +N included
+      // Two words a row at 12px with their 14px icons (legibility Task 4, art step 9), +N included.
+      expect(r.chips, `${size.width}x${size.height}`).toBe(10);
       expect(r.hits, `${size.width}x${size.height}`).toEqual([]);
       if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.screenshot({ path: `${process.env.SL_SHOTS}/five-by-five-${size.width}.png` }); }
     }
@@ -2608,8 +2612,10 @@ test.describe('starlantern', () => {
     const row = page.locator(`.slx-partybar [data-key=${who}] .slx-pm-ail`);
     await expect(row).toBeVisible();
     // One line, the most severe first; what does not fit is counted in +N.
-    expect(await row.locator('.slx-ail').allTextContents()).toEqual(['流血×2', '灼燒2', '+3']);   // at 12px (legibility Task 4)
-    expect(await page.locator('.slx-partybar .slx-ail img, .slx-partybar .slx-pm-ail img').count()).toBe(0);
+    // At 12px (legibility Task 4), each word with its 14px icon in front (art step 9): one word, the rest in +N.
+    expect(await row.locator('.slx-ail').allTextContents()).toEqual(['流血×2', '+4']);
+    await expect(row.locator('.slx-ail-bleed img.slx-chip-ico')).toHaveAttribute('src', '/assets/games/starlantern/icon/ail-bleed-14.png');
+    expect(await row.locator('.slx-ail-more img').count()).toBe(0);
     if (process.env.SL_SHOTS) { mkdirSync(process.env.SL_SHOTS, { recursive: true }); await page.waitForTimeout(800); await page.screenshot({ path: `${process.env.SL_SHOTS}/ailments-1280.png` }); }
     // At 1280 and on a phone: the words wrap within the panel's width just above it, on the screen; the panel keeps its height.
     const fits = () => row.evaluate((r) => {
@@ -2995,8 +3001,10 @@ test.describe('starlantern', () => {
     // The rows only (a 贖火 counter's cue may still be rising over Scarlet's panel, in the same colour).
     const row = (key: string) => page.locator(`.slx-partybar [data-key=${key}] .slx-pm-ail`).locator('.slx-mech, .slx-ail');
     await expect(row('safira')).toHaveText(['拍子2', '受護']);
-    await expect(row('scarlet')).toHaveText(['餘燼20', '贖火2', '代受']);
-    await expect(page.locator('.slx-partybar [data-key=scarlet] .slx-pm-ail .slx-mech-embers')).toHaveCount(3);
+    // Her embers with their 14px icon (art step 9) take the room of 代受, which folds into +1 and stays named on it.
+    await expect(row('scarlet')).toHaveText(['餘燼20', '贖火2', '+1']);
+    await expect(page.locator('.slx-partybar [data-key=scarlet] .slx-pm-ail .slx-mech-embers img.slx-chip-ico')).toHaveCount(1);
+    await expect(page.locator('.slx-partybar [data-key=scarlet] .slx-ail-more')).toHaveAttribute('title', '餘燼20、贖火2、代受');
     await expect(page.locator('.slx-partybar [data-key=safira] .slx-pm-ail .slx-mech-embers')).toHaveText('受護');
     if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/embers-beat-1280.png` }); }
     await fitTo(page, 844, 390);

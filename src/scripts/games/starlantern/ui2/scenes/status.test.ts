@@ -578,21 +578,31 @@ describe('StatusScene', () => {
     expect(root.querySelector('.slx-tree-info-name')!.textContent).toBe('修理無人機・急救');
   });
 
-  it('tree nodes and the skills tab show the skill icon when published', () => {
-    const has = (u: string) => u === art.icon('blaze-ring');
+  it('tree nodes and the skills tab show the skill icon when published: 16 in the tab, 14 in the tree (art step 9)', () => {
+    const has = (u: string) => u === art.skillIcon('blaze-ring', 16) || u === art.skillIcon('blaze-ring', 14);
     const { root, s } = setup('scarlet', { has }, (g) => { g.state.party.roster.scarlet.tree = { ...g.state.party.roster.scarlet.tree, 'blaze-ring': 1 }; });
     s.onAction('right'); s.onAction('right');                          // 技能
     const icons = [...root.querySelectorAll<HTMLImageElement>('.slx-tab-skills img.slx-skill-ico')];
     expect(icons.map((i) => i.closest('[data-skill]')!.getAttribute('data-skill'))).toEqual(['blaze-ring']);
-    expect(icons[0].getAttribute('src')).toBe(art.icon('blaze-ring'));
+    expect(icons[0].getAttribute('src')).toBe(art.skillIcon('blaze-ring', 16));
     expect(icons[0].getAttribute('alt')).toBe('');
+    expect([icons[0].getAttribute('width'), icons[0].getAttribute('height')]).toEqual(['16', '16']);
     expect(icons[0].nextElementSibling!.classList.contains('slx-skill-head')).toBe(true);
     s.onAction('right');                                               // 技能樹
     const withIcon = [...root.querySelectorAll('.slx-tree-node')].filter((n) => n.querySelector('img.slx-skill-ico')).map((n) => n.getAttribute('data-node'));
     // The skill's own node only: its variant (炎環斬・燎原) names the skill and goes without (8d Task 6 review).
     expect(withIcon).toEqual(['blaze-ring']);
     expect(TREES.scarlet.branches.flatMap((b) => b.nodes).filter((n) => n.skill === 'blaze-ring').map((n) => n.id)).toEqual(['blaze-ring', 'scarlet-ring-blaze']);
-    expect(root.querySelector('.slx-tree-node[data-node=blaze-ring] img')!.getAttribute('src')).toBe(art.icon('blaze-ring'));
+    const treeIco = root.querySelector('.slx-tree-node[data-node=blaze-ring] img')!;
+    expect(treeIco.getAttribute('src')).toBe(art.skillIcon('blaze-ring', 14));
+    expect([treeIco.getAttribute('width'), treeIco.getAttribute('height'), treeIco.getAttribute('alt')]).toEqual(['14', '14', '']);
+  });
+
+  it('a skill whose icon is not loaded keeps its name alone (the old plan 4 icon is never asked for)', () => {
+    const { root, s } = setup('scarlet', { has: (u: string) => u === art.icon('provoke') });
+    s.onAction('right'); s.onAction('right');
+    expect(root.querySelector('[data-skill=provoke] .slx-skill-name')!.textContent).toBe('挑釁');
+    expect(root.querySelector('.slx-skill-ico')).toBeNull();
   });
 
   it('without art no skill shows an icon', () => {

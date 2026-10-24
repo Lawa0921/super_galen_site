@@ -5,6 +5,7 @@ import type { Row } from '../engine/types';
 import type { AilmentChip } from '../engine/ailments';
 import type { MechWord } from '../engine/mechanics/index';
 import { bySeverity, fitRow, isHalting, textWidth } from '../render/ailmentStyle';
+import { CHIP_ICON_PX, CHIP_ICON_W, ailmentIconUrl, mechIconUrls } from '../render/chipIcons';
 import type { ArtIndex } from '../render/textures';
 
 const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' };
@@ -14,6 +15,20 @@ const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' 
  */
 const AIL_ROW_W = 119;
 const ailWordWidth = (text: string): number => textWidth(text, 12) + 4;
+
+/**
+ * One word of the row (art step 9, G4): its loaded 14px icons first, decorative (alt "", the word names the state), then
+ * the word. `icons` is how many it shows, for the estimated width.
+ */
+export function chipWord(art: ArtIndex, cls: string, text: string, urls: readonly string[]): HTMLElement {
+  const shown = urls.filter((u) => art.has(u));
+  const word = el('span', { class: cls }, [
+    ...shown.map((src) => el('img', { class: 'slx-chip-ico', attrs: { src, alt: '', width: String(CHIP_ICON_PX), height: String(CHIP_ICON_PX) } })),
+    text,
+  ]);
+  word.dataset.icons = String(shown.length);
+  return word;
+}
 
 /** `row` shows a small 前／中／後 tag so the formation is visible during play. */
 export interface BarMember { key: string; name: string; hp: number; maxHp: number; tp: number; maxTp: number; limit: number; alive: boolean; row?: Row;
@@ -175,10 +190,11 @@ export class PartyBar {
     // each word's), and estimated only where nothing is laid out (tests).
     const chips = bySeverity(m.ailments ?? []);
     const halting = chips.filter(isHalting);
+    const ailWord = (c: AilmentChip) => chipWord(this.art, `slx-ail slx-ail-${c.id}`, T.ailmentChip(c), [ailmentIconUrl(c.id)]);
     const words = [
-      ...halting.map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
-      ...(m.mech ?? []).map((x) => el('span', { class: `slx-mech slx-mech-${x.tone}`, text: x.text })),
-      ...chips.filter((c) => !isHalting(c)).map((c) => el('span', { class: `slx-ail slx-ail-${c.id}`, text: T.ailmentChip(c) })),
+      ...halting.map(ailWord),
+      ...(m.mech ?? []).map((x) => chipWord(this.art, `slx-mech slx-mech-${x.tone}`, x.text, mechIconUrls(x))),
+      ...chips.filter((c) => !isHalting(c)).map(ailWord),
     ];
     const moreEl = (n: number) => el('span', { class: 'slx-ail slx-ail-more', text: T.ailmentMore(n) });
     ail.hidden = words.length === 0;
@@ -187,7 +203,7 @@ export class PartyBar {
     ail.append(probe);
     // Layout px (offsetWidth, as clientWidth), not the scaled screen box.
     const measured = ail.clientWidth > 0 && [...words, probe].every((w) => w.offsetWidth > 0);
-    const widthOf = (w: HTMLElement) => (measured ? w.offsetWidth : ailWordWidth(w.textContent ?? ''));
+    const widthOf = (w: HTMLElement) => (measured ? w.offsetWidth : ailWordWidth(w.textContent ?? '') + CHIP_ICON_W * Number(w.dataset.icons ?? 0));
     const moreW = measured ? probe.offsetWidth : 0;
     probe.remove();
     const { shown, more } = fitRow(words, measured ? ail.clientWidth : AIL_ROW_W, widthOf, (n) => (measured ? moreW : ailWordWidth(T.ailmentMore(n))), 1, halting.length);

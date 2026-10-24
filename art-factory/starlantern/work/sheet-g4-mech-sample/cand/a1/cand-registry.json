@@ -1,0 +1,496 @@
+{
+  "assets": {
+    "icon-mech-heat-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-heat-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 10,
+          "mass": 0.604,
+          "box": [
+            2,
+            1,
+            12,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 34.75,
+        "scale": 34.75,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-heat"
+      }
+    },
+    "icon-mech-heat-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-heat-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 9,
+          "mass": 0.69,
+          "box": [
+            1,
+            1,
+            10,
+            11
+          ],
+          "centre_off": 0.5
+        },
+        "block": 41.7,
+        "scale": 41.7,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-heat"
+      }
+    },
+    "icon-mech-coins-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-coins-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 9,
+          "mass": 0.653,
+          "box": [
+            1,
+            2,
+            13,
+            11
+          ],
+          "centre_off": 0.5
+        },
+        "block": 34.583,
+        "scale": 34.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-coins"
+      }
+    },
+    "icon-mech-coins-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-coins-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 8,
+          "mass": 0.68,
+          "box": [
+            1,
+            2,
+            11,
+            10
+          ],
+          "centre_off": 0.0
+        },
+        "block": 41.5,
+        "scale": 41.5,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-coins"
+      }
+    },
+    "icon-mech-embers-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-embers-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 10,
+          "mass": 0.625,
+          "box": [
+            1,
+            2,
+            13,
+            12
+          ],
+          "centre_off": 0.0
+        },
+        "block": 33.333,
+        "scale": 33.333,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-embers"
+      }
+    },
+    "icon-mech-embers-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-embers-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 9,
+          "mass": 0.67,
+          "box": [
+            1,
+            1,
+            11,
+            10
+          ],
+          "centre_off": 0.5
+        },
+        "block": 40.0,
+        "scale": 40.0,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-embers"
+      }
+    },
+    "icon-mech-beat-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-beat-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 11,
+          "mass": 0.451,
+          "box": [
+            1,
+            1,
+            12,
+            13
+          ],
+          "centre_off": 0.5
+        },
+        "block": 31.333,
+        "scale": 31.333,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-beat"
+      }
+    },
+    "icon-mech-beat-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-beat-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 9,
+          "mass": 0.47,
+          "box": [
+            1,
+            1,
+            10,
+            11
+          ],
+          "centre_off": 0.5
+        },
+        "block": 37.6,
+        "scale": 37.6,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-beat"
+      }
+    },
+    "icon-mech-shield-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-shield-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.799,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.5,
+        "scale": 31.5,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-shield"
+      }
+    },
+    "icon-mech-shield-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-shield-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 10,
+          "mass": 0.78,
+          "box": [
+            1,
+            1,
+            11,
+            11
+          ],
+          "centre_off": 0.0
+        },
+        "block": 37.8,
+        "scale": 37.8,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-shield"
+      }
+    },
+    "icon-mech-moon-full-14": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-moon-full-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.792,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.167,
+        "scale": 31.167,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-moon-full"
+      }
+    },
+    "icon-mech-moon-full-12": {
+      "final": "art-factory/starlantern/work/sheet-g4-mech-sample/cand/a1/icon-mech-moon-full-12.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 10,
+          "short": 10,
+          "mass": 0.78,
+          "box": [
+            1,
+            1,
+            11,
+            11
+          ],
+          "centre_off": 0.0
+        },
+        "block": 37.4,
+        "scale": 37.4,
+        "size": [
+          12,
+          12
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-g4-mech-sample\\a1\\sheet-g4-mech-sample-a1.png",
+        "cell": "mech-moon-full"
+      }
+    }
+  }
+}

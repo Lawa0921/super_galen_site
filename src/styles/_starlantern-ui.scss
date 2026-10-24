@@ -239,6 +239,9 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 
 .slx-list { left: 150px; top: 56px; min-width: 170px; max-height: 240px; overflow: hidden; }
 .slx-list .slx-ico { width: 16px; height: 16px; }
+// A skill's native 16px icon in the battle skill menu (art step 9): its own size, never scaled (the battle's submenu is
+// not a .slx-list, so its rows would otherwise take the 12px .slx-ico).
+.slx-ico.slx-skill-menu-ico { width: 16px; height: 16px; image-rendering: pixelated; }
 // Gear art in a list row or a loot line (plan 5d Task 7) keeps its own 26 x 26, never scaled like an item icon; its row
 // grows to fit it.
 .slx-ico.slx-gear-ico { display: inline-block; flex: none; width: 26px; height: 26px; vertical-align: middle; image-rendering: pixelated; }
@@ -350,7 +353,8 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 // Party bar (labyrinth and battle)
 .slx-partybar { position: absolute; left: 4px; right: 4px; bottom: 2px; height: 62px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
 .slx-pm { display: flex; gap: 4px; align-items: center; padding: 3px 4px; background: $slx-win; border: 1px solid #6e5a2e; }
-.slx-pm img { width: 40px; height: 40px; object-fit: contain; }
+// The face only: a word's chip icon (art step 9) in the panel keeps its own size and never recoils with the face.
+.slx-pm img:not(.slx-chip-ico) { width: 40px; height: 40px; object-fit: contain; }
 // Three 14px lines and three 4px bars fill the panel's 54px exactly, with no gap (legibility ruling 7, at the 14px leading).
 .slx-pm-body { display: grid; gap: 0; min-width: 0; flex: 1; }
 .slx-pm-name { color: $slx-ink; white-space: nowrap; overflow: hidden; line-height: 14px; }
@@ -373,7 +377,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-pm-hit::after, .slx-pm-heal::after { content: ''; position: absolute; inset: 0; pointer-events: none; animation: slx-pm-flash 0.4s ease-out forwards; }
 .slx-pm-hit::after { background: rgba(255, 50, 40, 0.6); }
 .slx-pm-heal::after { background: rgba(110, 230, 140, 0.45); }
-.slx-pm-hit img { animation: slx-pm-recoil 0.4s ease-out 1; }
+.slx-pm-hit img:not(.slx-chip-ico) { animation: slx-pm-recoil 0.4s ease-out 1; }
 .slx-pm-heal { box-shadow: 0 0 10px #6fe08f; }
 .slx-pm-acting { animation: slx-pm-act 0.4s ease-out 1; box-shadow: 0 0 0 1px $slx-gold, 0 0 10px rgba(232, 196, 106, 0.8); }
 .slx-pm-ko { animation: slx-pm-ko 0.45s ease-in 1 forwards; }
@@ -394,7 +398,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-pm-pop-heal { color: #6fe08f; }
 @keyframes slx-pm-pop { 0% { scale: 1.8; translate: 0 6px; opacity: 1; } 20% { scale: 1; translate: 0 0; } 70% { opacity: 1; } 100% { translate: 0 -16px; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .slx-pm-hit, .slx-pm-acting, .slx-pm-ko, .slx-pm-hit img, .slx-pm-pop { animation: none; }
+  .slx-pm-hit, .slx-pm-acting, .slx-pm-ko, .slx-pm-hit img:not(.slx-chip-ico), .slx-pm-pop { animation: none; }
 }
 
 // Battle
@@ -548,6 +552,9 @@ $slx-ailment: (poison: #b889fe, sleep: #c1c5d6, burn: #fe8a57, freeze: #92ebfd, 
 .slx-pm-ail { position: absolute; left: 0; right: 0; bottom: 100%; z-index: 3; margin-bottom: 1px; display: flex; flex-wrap: nowrap; gap: 1px; overflow: hidden; pointer-events: none; }
 .slx-pm-ail[hidden] { display: none; }
 .slx-ail, .slx-mech { flex: none; padding: 0 1px; font-size: $slx-fs; line-height: 14px; border: 1px solid currentColor; white-space: nowrap; background: rgba($slx-win, 0.92); }
+// A word's 14px icon (art step 9, G4): at the top of its 14px line so the chip stays 16 tall, 1px before the word. The
+// panel's face rules (40 x 40, the recoil) leave it out (:not(.slx-chip-ico)); two classes deep all the same.
+.slx-ail .slx-chip-ico, .slx-mech .slx-chip-ico { display: inline-block; width: 14px; height: 14px; vertical-align: top; margin-right: 1px; image-rendering: pixelated; }
 // Character mechanics (plan 8c): the same word look as an ailment, in their own colours (render/mechStyle.ts MECH_FILL).
 $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: #4ac2ff, purify: #d6ff7b, moon: #e6c6ff, coins: #d3ae46, aim: #ff9bb8, embers: #ff3c2a, beat: #3fd8c4, devices: #c0a081, plain: #f1ead8);
 @each $k, $c in $slx-mech {

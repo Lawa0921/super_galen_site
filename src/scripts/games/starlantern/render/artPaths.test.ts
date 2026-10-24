@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../data/enemies';
 import type { BattleEvent } from '../engine/combatant';
-import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, NO_ICON_YET_IDS, PUBLISHED_FACES, RETIRED_ICON_IDS, SPECIAL_MOODS_OF, allArtUrls, art, codexArtId, effectFor, enemyArt, gearArtId, moodFor, parseManifest, tileKey } from './artPaths';
+import { ART_BASE, ART_CHARACTER_IDS, ART_VARIANT_IDS, CORE_MOODS, FRAMED_RARITIES, MOODS, MOODS_OF, PUBLISHED_FACES, SKILL_ICON_SIZES, SPECIAL_MOODS_OF, allArtUrls, art, codexArtId, effectFor, enemyArt, gearArtId, moodFor, parseManifest, tileKey } from './artPaths';
 import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { EQUIPMENT } from '../data/equipment';
 import { REGIONS, type RegionId } from '../data/regions';
@@ -14,7 +14,13 @@ describe('artPaths', () => {
     for (const m of ['attack', 'hit', 'dying', 'down', 'ultimate'] as const) expect(art.portrait('scarlet', m)).toBe(`${ART_BASE}/char/scarlet-portrait-${m}.png`);
     expect(art.portrait('scarlet', 'normal')).toBe(`${ART_BASE}/char/scarlet-portrait.png`);
     expect(art.tile(2, 'chest-open')).toBe(`${ART_BASE}/tiles/f2-chest-open.png`);
-    expect(art.icon('fire-star')).toBe(`${ART_BASE}/icon/fire-star.png`);
+    expect(art.icon('potion')).toBe(`${ART_BASE}/icon/potion.png`);
+    // Art step 9: native skill icons (16 in a skill row, 14 in the tree) and the 14px chip icons.
+    expect(art.skillIcon('fire-star', 16)).toBe(`${ART_BASE}/icon/fire-star-16.png`);
+    expect(art.skillIcon('fire-star', 14)).toBe(`${ART_BASE}/icon/fire-star-14.png`);
+    expect(art.ailmentIcon('chill')).toBe(`${ART_BASE}/icon/ail-chill-14.png`);
+    expect(art.mechIcon('moon-new')).toBe(`${ART_BASE}/icon/mech-moon-new-14.png`);
+    expect(SKILL_ICON_SIZES).toEqual([16, 14]);
   });
 
   it('lists one url per asset with no duplicates', () => {
@@ -28,9 +34,15 @@ describe('artPaths', () => {
     // + the companion talking faces, wave 1 (18; user approval 2026-10-23) = 427
     // + Lorne's and both Rin looks' grave faces, wave 2 (6; user approval 2026-10-24; the three redos replace files) = 433
     // + the rune icons (art step 9, G4; user approval 2026-10-24 「可以」): 32 runes and 2 slot states, at 14 and 16 = 501
-    expect(urls).toHaveLength(501);
-    expect(new Set(urls).size).toBe(501);
-    for (const id of RETIRED_ICON_IDS) expect(urls).not.toContain(art.icon(id));
+    // Art step 9, G3 and G4 (user approval 2026-10-24): every one of the 105 skills at 16 and 14 (+210), the 26 plan 4
+    // skill icons they re-derive retired (-26), 7 ailment and 14 mechanic chip icons at 14 (+21) = 706
+    expect(urls).toHaveLength(706);
+    expect(new Set(urls).size).toBe(706);
+    for (const id of Object.keys(SKILLS)) {
+      expect(urls, id).not.toContain(art.icon(id));
+      for (const px of SKILL_ICON_SIZES) expect(urls, id).toContain(art.skillIcon(id, px));
+    }
+    expect(urls).not.toContain(art.icon('triple-slash'));
     expect(urls).toContain(art.fxAnim('thunder'));
     for (const id of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(urls).toContain(art.icon(id));
     for (const id of ['essence-common', 'essence-magic', 'essence-rare', 'essence-legendary', 'star-tear', 'king-scale']) expect(urls).toContain(art.icon(id));
@@ -64,15 +76,10 @@ describe('artPaths', () => {
     for (const id of Object.keys(EQUIPMENT)) expect(urls, id).not.toContain(art.icon(id));
   });
 
-  it('every gear and material id has art; only the tree skills of the skills batch (G3) still wait', () => {
+  it('every gear, material and skill id has art (art step 9: nothing waits any more)', () => {
     const urls = new Set(allArtUrls());
     for (const id of Object.keys(MATERIALS)) expect(urls.has(art.icon(id)), id).toBe(true);
-    // What still waits is skill ids only, each a real skill without its icon: no gear, silhouette, frame, scene or NPC key.
-    expect(NO_ICON_YET_IDS.size).toBeGreaterThan(0);
-    for (const id of NO_ICON_YET_IDS) {
-      expect(SKILLS[id], id).toBeDefined();
-      expect(urls.has(art.icon(id)), id).toBe(false);
-    }
+    for (const id of Object.keys(SKILLS)) expect(urls.has(art.skillIcon(id, 16)) && urls.has(art.skillIcon(id, 14)), id).toBe(true);
   });
 
   it('builds gear, large, silhouette and frame urls', () => {
@@ -98,8 +105,7 @@ describe('artPaths', () => {
   it('matches the art registry runtime paths exactly', () => {
     const reg = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as { assets: Record<string, { runtime?: string }> };
     const runtime = Object.values(reg.assets).flatMap((a) => (a.runtime ? [a.runtime] : [])).sort();
-    // Plus the retired icons plan 8c leaves in the registry for step ⑨ to retire.
-    expect(runtime).toEqual([...allArtUrls(), ...RETIRED_ICON_IDS.map((id) => art.icon(id))].sort());
+    expect(runtime).toEqual([...allArtUrls()].sort());
   });
 
   it('everyone has at least eight talking faces, the core six first', () => {
