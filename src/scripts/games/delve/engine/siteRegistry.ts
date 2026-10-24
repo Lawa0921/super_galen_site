@@ -74,8 +74,8 @@ export class SiteRegistry {
     return true;
   }
   byKey(key: string): GenSite | undefined { return this.keys.get(key); }
-  // 該種類的聚落（依加入順序）
-  list<K extends Kind>(kind: K): Extract<GenSite, { kind: K }>[] { return this.byKind[kind].slice(); }
+  // 該種類的聚落（依加入順序；唯讀的內部陣列，不複製——每刻的查詢會呼叫）
+  list<K extends Kind>(kind: K): readonly Extract<GenSite, { kind: K }>[] { return this.byKind[kind]; }
   // (x, y) 所在的聚落：依種類（村落、地廳、隱士、地城）再依加入順序，第一個範圍含它的
   at(x: number, y: number): GenSite | null {
     for (const k of KINDS) for (const s of this.byKind[k]) if (this.inRange(s, x, y)) return s;

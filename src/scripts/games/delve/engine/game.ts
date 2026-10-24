@@ -4419,7 +4419,7 @@ export class DelveGame {
       onSurface: (x, y) => {
         return y <= this.world.layersAt(x).rock - 6 && y <= this.world.surfaceAt(x) + 4;
       },
-      safeAt: (x, y) => this.settle.claimAt(x, y) !== null || this.siteAt(x, y) !== null,
+      safeAt: (x, y) => this.folkSafeAt(x, y),
       playerOverlaps: (x, y) => this.tileOverlapsPlayer(x, y),
       wantHerbalist: () => !this.settle.npc('healer') && !this.settle.invited.has('healer'),
     };
@@ -4440,6 +4440,15 @@ export class DelveGame {
       if (e.phase === 'safe') this.refreshQuests();
     }
     if (this.tick % 30 === 0) this.refreshQuests();
+  }
+  /**
+   * 世界 NPC 的「安全的地方」（旅人不在這裡出現；護送到這裡算完成）：據點範圍、村落 / 地廳 / 隱士小屋；
+   * 地城不算（裡面還有怪，護送不能在地城裡結束）
+   */
+  folkSafeAt(x: number, y: number): boolean {
+    if (this.settle.claimAt(x, y) !== null) return true;
+    const s = this.siteAt(x, y);
+    return s !== null && s.kind !== 'dungeon';
   }
   /** (x,y) 在哪個聚落裡（舊世界：村落含村外的緩坡、地廳外框外擴，同改動前；gen2 的範圍見 SiteRegistry） */
   siteAt(x: number, y: number): GenSite | null { return this.sites.at(x, y); }

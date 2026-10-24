@@ -7,6 +7,7 @@ import { T } from './tiles';
 import { ROLES, AFF_TRADE_DAILY, BUFFS, affTier } from './folkDefs';
 import { STRANDED_MAX } from './folk';
 import { restoreGame, serializeGame } from '../save/serialize';
+import type { DungeonInfo } from './genTypes';
 import { SITE_NPC_BASE, npcIdFor } from './siteRegistry';
 
 
@@ -72,6 +73,27 @@ describe('聚落登錄（舊世界 alpha）', { timeout: 120_000 }, () => {
       expect(g.folk.byKey(`v${i}:elder`)!.site).toBe(`v${i}`);
     }
     for (const n of g.folk.npcs) if (n.origin === 'hall') expect(n.site).toMatch(/^h\d+$/);
+  });
+});
+
+describe('安全的地方（folkSafeAt：旅人不出現、護送完成）', { timeout: 120_000 }, () => {
+  it('gen2：隱士小屋算安全；地城不算（siteAt 仍認得它）；範圍外不算', () => {
+    const g = new DelveGame({ seed: 'safe', worldGen: { kind: 'gen2' } });
+    const dx = g.spawn.x + 600, hx = g.spawn.x - 600;
+    g.sites.add({ kind: 'dungeon', key: 'sd', rot: 0, info: { bbox: { x: dx, y: 300, w: 40, h: 30 } } as DungeonInfo });
+    g.sites.add({ kind: 'hermit', key: 'sh', rot: 0, at: { x: hx, y: 200 } });
+    expect(g.siteAt(dx + 20, 315)?.kind).toBe('dungeon');
+    expect(g.folkSafeAt(dx + 20, 315)).toBe(false);
+    expect(g.folkSafeAt(dx, 300)).toBe(false);
+    expect(g.siteAt(hx + 8, 192)?.key).toBe('sh');
+    expect(g.folkSafeAt(hx + 8, 192)).toBe(true);
+    expect(g.folkSafeAt(hx + 9, 200)).toBe(false);
+  });
+  it('舊世界：村落 / 地廳安全、地城不安全（同改動前）', () => {
+    const g = fresh(), d = g.dungeon!, v = g.villages[0], h = g.halls[0];
+    expect(g.folkSafeAt(d.bbox.x + (d.bbox.w >> 1), d.bbox.y + (d.bbox.h >> 1))).toBe(false);
+    expect(g.folkSafeAt(v.board.x, v.board.y)).toBe(true);
+    expect(g.folkSafeAt(h.forge.x, h.forge.y)).toBe(true);
   });
 });
 
