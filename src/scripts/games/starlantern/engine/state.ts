@@ -69,6 +69,13 @@ export interface StoryState {
    * tells, picked on the return (`dawnMemory`) so a reload offers the same one. Absent: none.
    */
   dawn?: SceneId;
+  /**
+   * Time and moon plan ruling 1: today, a whole number from 1 to MAX_DAY (`engine/calendar.ts`). A departure is one day, its
+   * return and that night included; a night at the inn is one more. Absent reads as 1 (a new game).
+   */
+  day?: number;
+  /** Ruling 6: the day spring comes, written when the finale is cleared (that day + SPRING_AFTER). Absent after the finale: spring already. */
+  springDay?: number;
 }
 
 /** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */

@@ -7,7 +7,7 @@ import { MEETINGS } from '../../data/meetings';
 import { memoryPace } from './expect';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
-import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, nextReaction, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyPieces, storyStage, toldCount, afterWin } from './events';
+import { arrivalScenes, banterOpen, chatOpen, gateExpired, gateOpen, markRead, nextBanter, nextChat, nextReaction, onReturn, openPairs, sceneDone, settleBellkeeper, settleOpening, storyPieces, storyStage, toldCount, afterWin, calendarOf } from './events';
 import { constRng, withTold } from '../testing';
 import { Game } from '../game';
 import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, planNight } from './nights';
@@ -1644,5 +1644,31 @@ describe('story L: the reaction slot (Task 5)', () => {
     expect(done(s, 'act4').story.reacts ?? {}).toEqual({});
     s.story.reacts = { 'group:act4': 0 };
     expect(nextReaction(s, [], R)).toBeNull();
+  });
+});
+
+describe('time and moon: the calendar of a state (Task 1)', () => {
+  it('calendarOf reads the day, the stage and the time given', () => {
+    const s = base();
+    expect(calendarOf(s)).toEqual({ day: 1, moon: 'waning', season: 'autumn', time: 'day' });
+    s.story.day = 4;
+    expect(calendarOf(s, 'night')).toEqual({ day: 4, moon: 'full', season: 'autumn', time: 'night' });
+    // act 3 played: winter
+    s.story.nodes = ['act2', 'act3'];
+    s.story.seen.push('act2', 'act3');
+    s.dungeon.reached.mainline = ACT_DEPTHS.act3;
+    expect(calendarOf(s)).toMatchObject({ day: 4, moon: 'full', season: 'winter' });
+    // still waiting in the queue, act 3 moves nothing yet
+    s.story.queue = ['act3'];
+    expect(calendarOf(s).season).toBe('autumn');
+    s.story.queue = [];
+    // the finale cleared on day 6: winter until springDay, then spring
+    s.story.act1Cleared = true;
+    s.story.finaleCleared = true;
+    s.story.day = 6;
+    s.story.springDay = 10;
+    expect(calendarOf(s)).toMatchObject({ day: 6, moon: 'new', season: 'winter' });
+    s.story.day = 10;
+    expect(calendarOf(s)).toMatchObject({ day: 10, moon: 'new', season: 'spring' });
   });
 });

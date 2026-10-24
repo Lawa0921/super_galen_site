@@ -5,6 +5,8 @@ export type MoonPhase = 'new' | 'waxing' | 'full' | 'waning';
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 /** Calendar gate of a memory piece (spec §11.1). */
 export interface When { moon?: MoonPhase[]; time?: 'day' | 'night'; season?: Season[] }
+/** Today as a piece's gate reads it (time and moon plan ruling 3; `engine/story/events.ts` `calendarOf`). */
+export interface CalendarNow { moon: MoonPhase; season: Season; time: 'day' | 'night' }
 
 /** Always true until item 4 (the calendar) lands. */
 export const whenHolds = (_w?: When): boolean => true;

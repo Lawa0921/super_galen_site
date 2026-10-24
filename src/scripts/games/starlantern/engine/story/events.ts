@@ -1,9 +1,10 @@
 import { CHARACTER_IDS } from '../../data/characters';
-import { chainLength } from '../../data/story/chains';
+import { chainLength, type CalendarNow } from '../../data/story/chains';
 import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAYOFFS, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, EVE_DEPTH, GROUP_GATE, HEAVY_MAJORS, HOME_OWNERS, REACTIONS, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type GroupScene, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
 import type { CharacterId } from '../types';
+import { dayOf, moonOf, seasonAt } from '../calendar';
 
 /**
  * Where the story stands, from what the player has done (the handbook and the town lines follow it). An act counts once it
@@ -19,6 +20,15 @@ export function storyStage(s: GameState): Stage {
   if (played('act2')) return 'act2';
   if (story.act1Cleared || s.dungeon.reached.mainline >= 2) return 'act1';
   return 'prologue';
+}
+
+/**
+ * Today (time and moon plan rulings 1-3, 6): the day, its moon, the season the story stands in, and `time`, the caller's
+ * (the labyrinth is always day; a night scene passes 'night'). Read from the save alone, never from a clock.
+ */
+export function calendarOf(s: GameState, time: 'day' | 'night' = 'day'): CalendarNow & { day: number } {
+  const day = dayOf(s);
+  return { day, moon: moonOf(day), season: seasonAt(storyStage(s), day, s.story.finaleCleared, s.story.springDay), time };
 }
 
 /** Whether the party has ever won a fight: someone met has a level or exp to show for it (absorbing and memories give neither). Old saves only. */

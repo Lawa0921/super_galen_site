@@ -9,6 +9,7 @@ import { hasPerk } from './story/fragments';
 import { PERKS } from '../data/story/fragments';
 import { defaultSlotFor, slotsFor, statsOf } from './party';
 import type { GameState } from './state';
+import { dayOf, nextDay } from './calendar';
 import type { CharacterId, ItemInstance, Member, Party, Slot } from './types';
 
 type FailReason = 'gold' | 'locked' | 'stock' | 'invalid' | 'full';
@@ -190,6 +191,7 @@ export function rest(s: GameState): TownResult {
   const n = structuredClone(s);
   n.gold -= cost;
   if (hasPerk(n, 'inn-meal')) n.story.fed = true;   // Marta's meal waits for the next departure
+  n.story.day = nextDay(dayOf(s));   // time and moon (ruling 1): a night at the inn is a day; it tells no memory
   for (const id of n.party.recruited) {
     const m = n.party.roster[id];
     if (m.hp <= 0) continue;

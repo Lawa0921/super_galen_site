@@ -12,6 +12,7 @@ import { EQUIPMENT } from '../data/equipment';
 import { ITEMS } from '../data/items';
 import { PERKS } from '../data/story/fragments';
 import type { ItemInstance } from './types';
+import { MAX_DAY, dayOf } from './calendar';
 
 const withInv = (inv: Record<string, number>, gold = 150) => ({ ...newGame(undefined, 0, LEGACY_LINEUP), inventory: inv, gold });
 const withBag = (bag: ItemInstance[]) => ({ ...newGame(undefined, 0, LEGACY_LINEUP), bag, nextUid: Math.max(0, ...bag.map((it) => it.uid)) + 1 });
@@ -397,5 +398,30 @@ describe('townsfolk returns change the town', () => {
     expect(fed.ok && fed.state.story.fed).toBe(true);
     expect(m.story.fed).toBe(false);
     expect(rest({ ...m, gold: 0 })).toEqual({ ok: false, reason: 'gold' });
+  });
+});
+
+describe('time and moon: a night at the inn (Task 1)', () => {
+  it('a night at the inn is one day, saved with the rest', () => {
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
+    const r = rest(s);
+    if (!r.ok) throw new Error('rest failed');
+    expect(r.state.story.day).toBe(2);
+    expect(dayOf(s)).toBe(1);   // the state passed in is not changed
+    const again = rest({ ...r.state, gold: 150 });
+    expect(again.ok && again.state.story.day).toBe(3);
+    // what the inn saves holds the next day (a save needs the hero on the field: the default lineup)
+    const inn = rest(newGame());
+    if (!inn.ok) throw new Error('rest failed');
+    const st = memoryStorage();
+    expect(saveGame(st, inn.state)).toBe(true);
+    const loaded = loadGame(st);
+    expect(loaded.status === 'ok' && loaded.state.story.day).toBe(2);
+    // the last day stays the last
+    const end = { ...newGame(undefined, 0, LEGACY_LINEUP), story: { ...s.story, day: MAX_DAY } };
+    const last = rest(end);
+    expect(last.ok && last.state.story.day).toBe(MAX_DAY);
+    // no gold, no night: the day stays
+    expect(rest({ ...s, gold: 0 })).toEqual({ ok: false, reason: 'gold' });
   });
 });

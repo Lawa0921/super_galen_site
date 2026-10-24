@@ -37,6 +37,7 @@ import { nextLead } from './story/leads';
 import { afterWin, arrivalScenes, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
 import { NIGHT_BEATS, type ScriptLine } from '../data/story.zh-TW';
 import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, planNight, restoreNight } from './story/nights';
+import { dayOf, nextDay } from './calendar';
 import { newGame, type GameState } from './state';
 import { craftBase, craftItem, craftSet } from './forge/craft';
 import type { ForgeFail, RerollOpts } from './forge/cost';
@@ -1329,6 +1330,8 @@ export class Game {
     this.arrival = [...plan.before, ...day.filter((id) => !isGroup(id))];
     this.night = [...group, ...plan.night];
     this.leadSaid = false;
+    // time and moon (ruling 1): the return and its night end the dive's day; the town wakes on the next, saved with it
+    this.state.story.day = nextDay(dayOf(this.state));
   }
 
   /** The main road's depth 30 boss is the finale until it has been beaten once (spec §8.4); after that it is an ordinary boss. */

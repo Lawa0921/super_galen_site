@@ -50,6 +50,7 @@ import { RUNE_DROP, RUNE_SELL } from '../data/runeEconomy';
 import type { RuneRef } from '../data/runes';
 import { rollRune, RUNE_SALT, spotRuneRng } from './loot/runes';
 import { depthLevel } from './levels';
+import { dayOf, moonOf, tonightMoon } from './calendar';
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -5401,5 +5402,116 @@ describe('drops and kill keys by tier (difficulty plan Task 6a-prime)', () => {
     expect([g.state.dungeon.bossKills, g.run!.lootDraws, g.run!.runeDraws, g.rng()]).toEqual([{ 'iron:5': 1 }, 5, 2, 0.06393614131957293]);
     // The whole of each result, to the last affix of every piece.
     expect([fnv(elite), fnv(boss), fnv(chest)]).toEqual(['f5001d33', 'b08b01f5', 'e0f8ad6e']);
+  });
+});
+
+describe('time and moon: the day (Task 1)', () => {
+  /** In town on the main road, a depth reached past the first boss. */
+  const town = (storage: ReturnType<typeof memoryStorage> | null = null) => {
+    const g = new Game(calm(), storage, undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 3;
+    return g;
+  };
+
+  it("a return ends the day: walking home, the lamp, a wipe and the finale's clear each add one", () => {
+    // walking home by the entrance
+    const g = town();
+    expect(dayOf(g.state)).toBe(1);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.state.story.day).toBe(2);
+    // the return lamp, from a floor further down: the floors walked on one dive are one day
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });
+    expect(dayOf(g.state)).toBe(2);
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    expect(g.state.story.day).toBe(3);
+    // a wipe
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    g.encounter = 99;
+    expect(g.move(DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!)).toEqual({ kind: 'battle' });
+    for (const c of g.battle!.party) { c.hp = 0; c.alive = false; }
+    expect(g.submitRound({})!.end!.outcome).toBe('lose');
+    expect([g.phase, g.notice, g.state.story.day]).toEqual(['town', 'wipe', 4]);
+    // the finale's clear: the dive is one day, its return the next
+    const f = finaleGame('normal');
+    f.state.story.day = 9;
+    expect(f.depart(MAIN, FINALE_DEPTH)).toEqual({ ok: true });
+    stepOnto(f, f.map().boss!);
+    expect(killAll(f).outcome).toBe('win');
+    expect([f.phase, f.state.story.finaleCleared, f.state.story.day]).toEqual(['clear', true, 9]);
+    f.restartAfterClear();
+    expect([f.phase, f.state.story.day]).toEqual(['town', 10]);
+  });
+
+  it('a departure keeps the day, and a reload of the town save departs on the same day', () => {
+    const storage = memoryStorage();
+    const g = town(storage);
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves at once
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(dayOf(g.state)).toBe(1);
+    // no save in the labyrinth: a reload is back in town, on the same day, and departs on it
+    const b = Game.boot(calm(), storage);
+    expect([b.phase, dayOf(b.state)]).toEqual(['town', 1]);
+    expect(b.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(dayOf(b.state)).toBe(1);
+    expect(b.returnToTown()).toBe(true);
+    expect(dayOf(b.state)).toBe(2);
+  });
+
+  it('a reload keeps the day', () => {
+    const storage = memoryStorage();
+    const g = town(storage);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves the return
+    expect(g.state.story.day).toBe(2);
+    const b = Game.boot(calm(), storage);
+    expect(b.state.story.day).toBe(2);
+    expect(Game.boot(calm(), storage).state.story.day).toBe(2);
+    expect(Game.boot(calm(), memoryStorage()).state.story.day).toBeUndefined();   // a new game: day 1, unwritten
+  });
+
+  it("the night planned on a return is the night of the dive's day", () => {
+    const g = town();
+    for (let i = 0; i < 5; i++) {
+      const d = dayOf(g.state);
+      expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+      expect(g.returnToTown()).toBe(true);
+      expect(dayOf(g.state)).toBe(d + 1);
+      expect(tonightMoon(g.state)).toBe(moonOf(d));
+    }
+  });
+
+  it('a night at the inn tells no memory and keeps tonight and the dawn', () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    g.state.story.queue = [];
+    g.state.story.seen = ['prologue', 'prologue-inn'];
+    const eight: SceneId[] = ['mem:selene:1', 'mem:noel:1', 'mem:safira:1', 'mem:bobby:1', 'mem:sylvie:1', 'mem:liz:1', 'mem:scarlet:1', 'mem:chizuru:1'];
+    for (const id of eight) {
+      const c = id.split(':')[1] as CharacterId;
+      g.state.party = meet(g.state.party, c, 1);
+      g.state.party.roster[c].memories = 1;
+    }
+    g.state.story.untold = [...eight];
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.night).toHaveLength(3);
+    expect(g.state.story.dawn).toBeDefined();
+    const story = structuredClone(g.state.story);
+    const [arrival, night] = [[...g.arrival], [...g.night]];
+    g.state.gold = 999;
+    expect(g.rest().ok).toBe(true);
+    expect(g.state.story.day).toBe(story.day! + 1);
+    expect([g.state.story.untold, g.state.story.tonight, g.state.story.dawn]).toEqual([story.untold, story.tonight, story.dawn]);
+    expect([g.arrival, g.night]).toEqual([arrival, night]);
+    expect(g.state.story.seen).toEqual(story.seen);
+    // saved with the rest: a reload holds the next day and the same night
+    const b = Game.boot(calm(), storage);
+    expect(b.state.story.day).toBe(story.day! + 1);
+    expect(b.night).toEqual(night);
+    expect(b.state.story.dawn).toBe(story.dawn);
   });
 });
