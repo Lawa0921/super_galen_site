@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { LoopbackNet } from './loopback';
-import { FakeSignal, fakePeerFactory, manualTicker } from './fakeRtc';
+import { FakeBatchSignal, FakeSignal, fakePeerFactory, manualTicker } from './fakeRtc';
 import {
   RoomHost, joinRoom, JoinError, normalizeRoom, HOST_POLL_MS, HOST_PASS_TIMEOUT_MS, JOIN_IDLE_MS, ACK_TIMEOUT_MS,
-  ACK_POLL_MS, JOIN_SLOTS,
+  ACK_POLL_MS, JOIN_SLOTS, DELVE_NS, realSignalApi, HOST_POLL_BACKOFF, HOST_POLL_MAX_MS, JOIN_ERROR_TEXT, hostOpenErrorText,
 } from './rtcSignal';
 import type { NetLink } from './link';
 import type { RtcPeer } from './rtcLink';
@@ -113,15 +113,15 @@ describe('rtcSignal', () => {
     expect(api.store.get('ABCDE:guest-0-offer')).toBe(other);
   });
 
-  it('poll 3 秒內只掃一輪', async () => {
+  it('poll 未到間隔不掃第二輪（第一輪空的 → 間隔退讓成 HOST_POLL_MS × 1.5）', async () => {
     const { api, host } = setup();
     await host.open(0);
     host.poll(0); await settle();
     const g1 = api.calls.get;
     expect(g1).toBe(JOIN_SLOTS);
-    host.poll(1000); host.poll(2999); await settle();
+    host.poll(1000); host.poll(2999); host.poll(HOST_POLL_MS * HOST_POLL_BACKOFF - 1); await settle();
     expect(api.calls.get).toBe(g1);
-    host.poll(HOST_POLL_MS); await settle();
+    host.poll(HOST_POLL_MS * HOST_POLL_BACKOFF); await settle();
     expect(api.calls.get).toBe(g1 * 2);
   });
 
@@ -267,5 +267,277 @@ describe('rtcSignal', () => {
     t.stop();
     t.fire(3);
     expect(seen).toEqual([2]);
+  });
+});
+
+describe('rtcSignal 批次讀槽（getMany）', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function batchSetup() {
+    const net = new LoopbackNet();
+    const api = new FakeBatchSignal();
+    const makePeer = fakePeerFactory(net);
+    const links: NetLink[] = [];
+    const host = new RoomHost(api, makePeer, (l) => links.push(l));
+    return { net, api, makePeer, links, host };
+  }
+
+  it('api 有 getMany → 一輪只發一次 getMany，不逐槽 get', async () => {
+    const { api, host } = batchSetup();
+    await host.open(0);
+    host.poll(0); await settle();
+    expect(api.calls.getMany).toBe(1);
+    expect(api.calls.get).toBe(0);
+    expect(api.manySlots[0]).toEqual(Array.from({ length: JOIN_SLOTS }, (_, i) => `guest-${i}-offer`));
+  });
+
+  it('getMany 版房主照樣接得到客人（seen / 墓碑 / 握手不變）', async () => {
+    const { net, api, makePeer, links, host } = batchSetup();
+    const room = await host.open(0);
+    const joining = joinRoom(api, makePeer, room, clock());
+    await settle();
+    host.poll(0);
+    const guestLink = await joining;
+    await settle();
+    expect(links).toHaveLength(1);
+    expect(api.store.get(`${room}:guest-0-offer`)).toBe('');   // 墓碑照清
+    const got: unknown[] = [];
+    links[0].onMessage((_ch, d) => got.push(d));
+    guestLink.send('ctrl', 'hi');
+    net.advance(10); net.flush();
+    expect(got).toEqual(['hi']);
+  });
+
+  it('getMany 版：同一個 offer id 只處理一次', async () => {
+    const { api, makePeer, links, host } = batchSetup();
+    const room = await host.open(0);
+    const guest = makePeer();
+    const offer = await guest.createOffer();
+    const raw = JSON.stringify({ id: 'dup', offer });
+    api.store.set(`${room}:guest-2-offer`, raw);
+    host.poll(0); await settle();
+    await guest.acceptAnswer(`fake-answer:${offer}`);
+    await settle();
+    api.store.set(`${room}:guest-2-offer`, raw);
+    host.poll(HOST_POLL_MS); await settle();
+    expect(links).toHaveLength(1);
+  });
+
+  it('realSignalApi.getMany 打一次 GET ?slots=（房號帶 DELVE_NS），依 slots 順序回值', async () => {
+    const urls: string[] = [];
+    vi.stubGlobal('fetch', async (url: string) => {
+      urls.push(url);
+      return { ok: true, status: 200, json: async () => ({ data: { 'guest-0-offer': null, 'guest-1-offer': 'x' } }) } as unknown as Response;
+    });
+    expect(realSignalApi.getMany).toBeTypeOf('function');
+    const got = await realSignalApi.getMany!('ABCDE', ['guest-0-offer', 'guest-1-offer']);
+    expect(got).toEqual([null, 'x']);
+    expect(urls).toHaveLength(1);
+    const u = new URL(urls[0], 'http://localhost');
+    expect(u.searchParams.get('room')).toBe(`${DELVE_NS}ABCDE`);
+    expect(u.searchParams.get('slots')).toBe('guest-0-offer,guest-1-offer');
+  });
+});
+
+describe('rtcSignal 閒置退讓（idle backoff）', () => {
+  /** 從 t 開始連跑 n 輪空的掃描（每輪剛好在到期時 poll）；回傳最後一輪開始的時間 */
+  async function emptyPasses(host: RoomHost, t: number, n: number): Promise<number> {
+    let last = t;
+    for (let i = 0; i < n; i++) {
+      last = t;
+      host.poll(t); await settle();
+      t += host.pollIntervalMs;
+    }
+    return last;
+  }
+
+  it('常數：3 秒起跳、×1.5、上限 10 秒；最壞情況仍在客人的 ack 逾時內', () => {
+    expect(HOST_POLL_MS).toBe(3000);
+    expect(HOST_POLL_BACKOFF).toBe(1.5);
+    expect(HOST_POLL_MAX_MS).toBe(10_000);
+    // 正常最壞：房主剛掃完才寫 offer → 最多等 HOST_POLL_MAX_MS 才被看到，再多一輪 ack 輪詢
+    expect(HOST_POLL_MAX_MS + ACK_POLL_MS).toBeLessThan(ACK_TIMEOUT_MS);
+    // 看到之前那一輪又卡死被放棄（max(HOST_PASS_TIMEOUT_MS, 間隔) 後才重掃）也還在逾時內
+    expect(HOST_POLL_MAX_MS + Math.max(HOST_PASS_TIMEOUT_MS, HOST_POLL_MAX_MS) + ACK_POLL_MS).toBeLessThan(ACK_TIMEOUT_MS);
+  });
+
+  it('沒有新 offer 的每一輪 → 間隔 ×1.5，封頂 10 秒；到期前不掃', async () => {
+    const { api, host } = setup();
+    await host.open(0);
+    expect(host.pollIntervalMs).toBe(HOST_POLL_MS);
+    const seen: number[] = [];
+    let t = 0;
+    for (let i = 0; i < 6; i++) {
+      const before = api.calls.get;
+      host.poll(t); await settle();
+      expect(api.calls.get - before).toBe(JOIN_SLOTS);
+      seen.push(host.pollIntervalMs);
+      // 下一輪到期前一毫秒：不掃
+      host.poll(t + host.pollIntervalMs - 1); await settle();
+      expect(api.calls.get - before).toBe(JOIN_SLOTS);
+      t += host.pollIntervalMs;
+    }
+    expect(seen).toEqual([4500, 6750, HOST_POLL_MAX_MS, HOST_POLL_MAX_MS, HOST_POLL_MAX_MS, HOST_POLL_MAX_MS]);
+  });
+
+  it('看到新 offer → 間隔回到 3 秒', async () => {
+    const { api, makePeer, host } = setup();
+    const room = await host.open(0);
+    const t = await emptyPasses(host, 0, 4);
+    expect(host.pollIntervalMs).toBe(HOST_POLL_MAX_MS);
+    const guest = makePeer();
+    const offer = await guest.createOffer();
+    api.store.set(`${room}:guest-1-offer`, JSON.stringify({ id: 'g', offer }));
+    host.poll(t + HOST_POLL_MAX_MS); await settle();
+    expect(api.store.get(`${room}:guest-1-offer`)).toBe('');   // 收走了
+    expect(host.pollIntervalMs).toBe(HOST_POLL_MS);
+  });
+
+  it('reopen → 間隔回到 3 秒', async () => {
+    const { host } = setup();
+    await host.open(0);
+    const t = await emptyPasses(host, 0, 4);
+    expect(host.pollIntervalMs).toBe(HOST_POLL_MAX_MS);
+    host.stopJoin();
+    host.reopen(t + 1);
+    expect(host.pollIntervalMs).toBe(HOST_POLL_MS);
+  });
+
+  it('客人握手結束 → 間隔回到 3 秒（握手期間的空輪照樣退讓）', async () => {
+    const { api, makePeer, links, host } = setup();
+    const room = await host.open(0);
+    const guest = makePeer();
+    const offer = await guest.createOffer();
+    api.store.set(`${room}:guest-0-offer`, JSON.stringify({ id: 'g', offer }));
+    host.poll(0); await settle();                 // 收下 offer、寫 ack，等客人接 answer
+    expect(host.pollIntervalMs).toBe(HOST_POLL_MS);
+    await emptyPasses(host, HOST_POLL_MS, 4);     // 客人慢吞吞：房主空掃幾輪
+    expect(host.pollIntervalMs).toBe(HOST_POLL_MAX_MS);
+    await guest.acceptAnswer(`fake-answer:${offer}`);
+    await settle();
+    expect(links).toHaveLength(1);
+    expect(host.pollIntervalMs).toBe(HOST_POLL_MS);
+  });
+
+  it('最壞情況：房主退讓到上限、客人剛好在一輪之後才寫 offer → 仍在 HOST_POLL_MAX_MS + ACK_POLL_MS 內連上', async () => {
+    const { api, makePeer, links, host } = setup();
+    let t = 0;
+    const room = await host.open(0);
+    const last = await emptyPasses(host, 0, 4);
+    expect(host.pollIntervalMs).toBe(HOST_POLL_MAX_MS);
+    t = last + 1;                                  // 上一輪剛掃完
+    host.poll(t); await settle();                  // 還沒到期：不掃
+    const start = t;
+    // 客人的時鐘就是房主的時鐘：每次 sleep 推進時間後房主照常 poll（同一個 loop 的感覺）
+    const c = {
+      now: () => t,
+      sleep: async (ms: number) => { t += ms; host.poll(t); await settle(); },
+    };
+    const link = await joinRoom(api, makePeer, room, c);
+    await settle();
+    expect(link).toBeTruthy();
+    expect(links).toHaveLength(1);
+    const waited = t - start;
+    expect(waited).toBeGreaterThan(HOST_POLL_MAX_MS - ACK_POLL_MS * 2);   // 確實吃到退讓
+    expect(waited).toBeLessThanOrEqual(HOST_POLL_MAX_MS + ACK_POLL_MS);
+    expect(waited).toBeLessThan(ACK_TIMEOUT_MS);
+    expect(host.pollIntervalMs).toBe(HOST_POLL_MS);
+  });
+});
+
+describe('rtcSignal 信令服務掛掉 → 誠實的錯誤（service）', () => {
+  const down = () => Promise.reject(new Error('signal GET 500'));
+
+  it('文案', () => {
+    expect(JOIN_ERROR_TEXT.service).toBe('連線服務暫時無法使用，請稍後再試');
+    expect(new JoinError('service').message).toBe('連線服務暫時無法使用，請稍後再試');
+  });
+
+  it('客人掃槽時 get 失敗 → service（不是 noHost）', async () => {
+    const { api, makePeer } = setup();
+    api.get = down;
+    const err = await joinRoom(api, makePeer, 'ABCDE', clock()).catch((e) => e);
+    expect(err).toBeInstanceOf(JoinError);
+    expect(err.code).toBe('service');
+  });
+
+  it('客人掃槽時 put 失敗 → service', async () => {
+    const { api, makePeer } = setup();
+    api.put = down;
+    const err = await joinRoom(api, makePeer, 'ABCDE', clock()).catch((e) => e);
+    expect(err.code).toBe('service');
+  });
+
+  it('寫好 offer 之後每一次讀 ack 都失敗 → 逾時後 service', async () => {
+    const { api, makePeer } = setup();
+    const get = api.get.bind(api);
+    let scanned = false;
+    api.put = async (r, slot, data) => { await FakeSignal.prototype.put.call(api, r, slot, data); if (data) scanned = true; };
+    api.get = async (r, slot) => {
+      if (scanned && slot.startsWith('host-ack')) throw new Error('signal GET 503');
+      return get(r, slot);
+    };
+    const c = clock();
+    const err = await joinRoom(api, makePeer, 'ABCDE', c).catch((e) => e);
+    expect(err.code).toBe('service');
+    expect(c.now()).toBeGreaterThanOrEqual(ACK_TIMEOUT_MS - ACK_POLL_MS);
+  });
+
+  it('ack 輪詢有成功過（服務是通的、只是沒房主）→ 仍然 noHost', async () => {
+    const { api, makePeer } = setup();
+    const get = api.get.bind(api);
+    let scanned = false, ackReads = 0;
+    api.put = async (r, slot, data) => { await FakeSignal.prototype.put.call(api, r, slot, data); if (data) scanned = true; };
+    api.get = async (r, slot) => {
+      if (scanned && slot.startsWith('host-ack') && ackReads++ > 0) throw new Error('signal GET 503');
+      return get(r, slot);
+    };
+    const err = await joinRoom(api, makePeer, 'ABCDE', clock()).catch((e) => e);
+    expect(err.code).toBe('noHost');
+  });
+
+  it('房主 open 時 createRoom 失敗 → JoinError(service)', async () => {
+    const { api, host } = setup();
+    api.createRoom = down;
+    const err = await host.open(0).catch((e) => e);
+    expect(err).toBeInstanceOf(JoinError);
+    expect(err.code).toBe('service');
+    expect(host.room).toBeNull();
+  });
+
+  it('房主拿到房號但讀槽一直失敗 → serviceDown；恢復後清掉', async () => {
+    const { api, host } = setup();
+    await host.open(0);
+    expect(host.serviceDown).toBe(false);
+    const get = api.get.bind(api);
+    api.get = down;
+    host.poll(0); await settle();
+    expect(host.serviceDown).toBe(true);
+    api.get = get;
+    host.poll(host.pollIntervalMs); await settle();
+    expect(host.serviceDown).toBe(false);
+  });
+
+  it('逐槽 get 只有部分失敗 → 不算 serviceDown', async () => {
+    const { api, host } = setup();
+    await host.open(0);
+    const get = api.get.bind(api);
+    api.get = async (r, slot) => (slot === 'guest-0-offer' ? down() : get(r, slot));
+    host.poll(0); await settle();
+    expect(host.serviceDown).toBe(false);
+  });
+
+  it('getMany 失敗 → serviceDown', async () => {
+    const api = new FakeBatchSignal();
+    const host = new RoomHost(api, fakePeerFactory(new LoopbackNet()), () => {});
+    await host.open(0);
+    api.getMany = down;
+    host.poll(0); await settle();
+    expect(host.serviceDown).toBe(true);
+  });
+
+  it('hostOpenErrorText：JoinError 用對應文案，其他錯誤帶前綴', () => {
+    expect(hostOpenErrorText(new JoinError('service'))).toBe(JOIN_ERROR_TEXT.service);
+    expect(hostOpenErrorText(new Error('coop host closed'))).toBe('開放加入失敗：coop host closed');
   });
 });

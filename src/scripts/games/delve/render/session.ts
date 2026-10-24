@@ -34,7 +34,7 @@ import { restyledLook } from '../engine/doll';
 import { PlayLocks, PLAY_LOCKED_MSG, browserLocks, charLock, heldElsewhere, worldLock } from './playLock';
 import { CoopHostSession } from '../net/hostSession';
 import { CoopGuestSession, type CoopGuestPhase } from '../net/guestSession';
-import { JOIN_ERROR_TEXT, JoinError, normalizeRoom, realSignalApi } from '../net/rtcSignal';
+import { JOIN_ERROR_TEXT, JoinError, hostOpenErrorText, normalizeRoom, realSignalApi } from '../net/rtcSignal';
 import { createRtcPeer } from '../net/rtcLink';
 import { workerTicker } from '../net/workerTicker';
 import { DELVE_BUILD } from '../net/build';
@@ -336,6 +336,8 @@ export function bootDelve(root: HTMLElement): Session {
   const joinMsg = $('#delve-join-msg');
   /** 房主：開著的房間（open 還在等房號時就有；關房 / createRoom 失敗 → null） */
   let hostCoop: CoopHostSession | null = null;
+  /** 上次 syncCoop 看到的 hostCoop.serviceDown：只在變化時提示（信令服務掛了 / 恢復） */
+  let hostServiceDown = false;
   /** 客人：進場之後的房間（連線中、同步中還在轉場裡，不算） */
   let guestCoop: { s: CoopGuestSession; room: string; nick: string } | null = null;
   /** HUD 名單的延遲每秒更新一次（主執行緒計時器只管 UI，C10） */
@@ -354,6 +356,12 @@ export function bootDelve(root: HTMLElement): Session {
       // 停止加入之後，只要還有客人在，房號和名單就留著
       coopUi.update({ show: h.joining || ps.length > 1, room: h.room, rows });
       coopUi.setButton({ joining: h.joining });
+      if (h.serviceDown !== hostServiceDown) {
+        hostServiceDown = h.serviceDown;
+        // 房號拿到了但信令服務讀不到：客人其實進不來，要講實話（不是靜默的「已開放加入」）
+        if (hostServiceDown) { say(menuMsg, JOIN_ERROR_TEXT.service); handle?.hud.toast(JOIN_ERROR_TEXT.service, 2400); }
+        else if (h.joining) say(menuMsg, `已開放加入：房號 ${h.room}`);
+      }
     } else if (g) {
       const rows: CoopRow[] = [{ nick: g.nick, self: true, rttMs: g.s.rttMs }, ...g.s.peers().filter((p) => p.nick).map((p) => ({ nick: p.nick, self: false }))];
       coopUi.update({ show: true, room: g.room, rows });
@@ -378,6 +386,7 @@ export function bootDelve(root: HTMLElement): Session {
       requestSave: () => { void saveNow().catch((e: unknown) => console.warn('[delve] save failed', e)); },
     });
     hostCoop = host;
+    hostServiceDown = false;
     host.onChange((e) => {
       if (hostCoop !== host) return;
       handle?.hud.toast(e.type === 'join' ? `「${e.nick}」加入了世界` : `「${e.nick}」離開了世界`, 2400);
@@ -389,7 +398,8 @@ export function bootDelve(root: HTMLElement): Session {
       await host.open();
     } catch (e) {
       // createRoom 失敗：這個 session 已經自己退回單機、永久關閉；再按一次就建新的
-      if (hostCoop === host) { hostCoop = null; say(menuMsg, `開放加入失敗：${errText(e)}`); }
+      // 信令服務掛了 → JoinError('service') 的文案；其他錯誤照舊帶「開放加入失敗：」
+      if (hostCoop === host) { hostCoop = null; say(menuMsg, hostOpenErrorText(e)); }
       return;
     } finally {
       if (coopBtn) coopBtn.disabled = false;
