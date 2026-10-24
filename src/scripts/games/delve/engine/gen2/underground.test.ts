@@ -1,0 +1,294 @@
+// underground.test.ts — gen2 礦坑、密室、空島（M2a Task 10；spec §4.4「至少 3 個密室；小屋、遺跡、礦坑、空島」）：
+// 家鄉的密室錨點與空島錨點、機率表（地下層礦坑 0.15、非家鄉大陸天空層空島 0.06）、礦坑總寬上限（Q3）、空島相對 profile 地表（Q4）、
+// 畫圖時依賴實心的格在成品裡真的是實心（BpCanvas 回退不知道洞穴 → solid 蓋住）、SKY 層接進 overlapping / anchorBlueprint、
+// 錨點在最窄的可用範圍內也放得下（不靠 placeX 的夾位置）、新錨點不壓到地廳的後備豎井（Task 9）。
+import { describe, it, expect } from 'vitest';
+import { Column } from '../column';
+import { T, LIGHT_LUT, isSolidTile } from '../tiles';
+import { seedInt } from '../noise';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, KEEP, crossYields, emptyObjects, landSlot, slotOf, structureId, type Blueprint, type BpChest, type BpCtx, type Layer } from './blueprint';
+import { ANCHOR_MAX_W, anchorSpan, type Anchor } from './anchors';
+import { SPAWN_X, type Landmass } from './layout';
+import { shaftX, SHAFT_REACH } from './caves';
+import { buildMineshaftBp } from './structures/mineshaft';
+import { buildSkyIslandBp } from './structures/skyIsland';
+import { buildHallBp } from './structures/hall';
+import { BpCanvas } from './draw/bpCanvas';
+import { drawMineshaft, drawRamp, drawSecretRoom, rampSteps, secretRoomLayout } from './draw/mineshaft';
+import type { Canvas } from './draw/canvas';
+import { HRng } from './hrng';
+import { SEEDS5, SEEDS50, bytes, fillCol, homeBlueprints, loadColumns, overlapPairs, srcOf, worldOf } from './testUtil';
+import { Gen2Source } from './index';
+import type { World } from '../world';
+
+const homeOf = (src: Gen2Source): Landmass => src.layout.landmassAt(SPAWN_X)!;
+const boxesMeet = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }): boolean =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+// 會發光的 tile
+const GLOWING = new Set<number>(Object.values(T).filter((t) => LIGHT_LUT[t] > 0));
+
+// 從密室的 secret 箱子那格做 4 鄰洪水填充（走不是實心的格）：走到的格都在密室室內的可能範圍內
+// （室內 6 列、地板列 = 箱子那列；寬 ≤ 12、箱子離室內兩端 2–3 格 → 箱子 ± 10 欄），碰到的實心邊上有裂紋石塞，走到的格都不發光
+function secretRoomSealed(w: World, c: BpChest): boolean {
+  const seen = new Set<string>([`${c.x},${c.y}`]), st: [number, number][] = [[c.x, c.y]];
+  let cracked = false;
+  while (st.length) {
+    const [x, y] = st.pop()!;
+    if (Math.abs(x - c.x) > 10 || y > c.y || y < c.y - 5) return false;
+    if (GLOWING.has(w.getFg(x, y))) return false;
+    for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+      const t = w.getFg(nx, ny);
+      if (t === T.CRACKED_STONE) cracked = true;
+      if (isSolidTile(t) || seen.has(`${nx},${ny}`)) continue;
+      seen.add(`${nx},${ny}`); st.push([nx, ny]);
+    }
+  }
+  return cracked;
+}
+// 藍圖裡 T.ROPE 格的 x 與最低的 y
+function ropeOf(b: Blueprint): { x: number; y1: number } | null {
+  let out: { x: number; y1: number } | null = null;
+  for (let i = 0; i < b.cells.length; i += 5) if (b.cells[i + 2] === T.ROPE && (!out || b.cells[i + 1] > out.y1)) out = { x: b.cells[i], y1: b.cells[i + 1] };
+  return out;
+}
+// 依序找種子（SEEDS5）家鄉裡第一份跨欄（外框跨兩個 32 格欄、而且 b.x + 1 還在第一欄裡）的 kind 藍圖
+function firstCrossing(kind: string): { src: Gen2Source; b: Blueprint } {
+  for (const seed of SEEDS5) for (const b of homeBlueprints(seed)) {
+    if (b.kind === kind && (b.x >> 5) !== ((b.x + b.w - 1) >> 5) && (b.x & 31) < 31) return { src: srcOf(seed), b };
+  }
+  throw new Error(`no crossing ${kind}`);
+}
+// 錨點 a 的 BpCtx（照 BlueprintIndex：structureId、anchorSpan），可另給可用範圍
+function anchorCtx(seed: string, a: Anchor, span?: { x0: number; x1: number }): BpCtx {
+  const src = srcOf(seed), m = homeOf(src), sp = span ?? anchorSpan(seed, a);
+  return { seed, s: seedInt(seed, 'g2-bp'), id: structureId(m.side, m.i, a.region.index, a.slot, a.layer), slotX0: sp.x0, slotX1: sp.x1,
+    region: a.region, profile: src.profile, ver: m.ver, groundAt: (x) => src.surfaceAt(x), rank: 0, spawnX: SPAWN_X };
+}
+// "x,y" → fg（只收畫了 fg 的格）
+function cellMap(b: Blueprint): Map<string, number> {
+  const m = new Map<string, number>();
+  for (let i = 0; i < b.cells.length; i += 5) if (b.cells[i + 2] !== KEEP) m.set(`${b.cells[i]},${b.cells[i + 1]}`, b.cells[i + 2]);
+  return m;
+}
+// 礦坑的幾何（從藍圖還原）：礦車地標在地板上一列（yTop + 3）；軌道 / 礦車那一列的最左到最右 = 坑道 [x0, x1]
+function shaftOf(b: Blueprint): { x0: number; x1: number; yTop: number } {
+  const cart = b.landmarks[0], yTop = cart.y - 3, at = cellMap(b);
+  let x0 = Infinity, x1 = -Infinity;
+  for (let x = b.x; x < b.x + b.w; x++) { const t = at.get(`${x},${yTop + 3}`); if (t === T.RAIL || t === T.ORE_CART) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); } }
+  return { x0, x1, yTop };
+}
+// 斜坡（坑道左端外、藍圖畫了空氣的欄）每欄最低的空氣格；左側有密室 = 沒有斜坡
+function rampFeet(b: Blueprint, shaftX0: number): { x: number; y: number }[] {
+  if (b.chests.some((c) => c.kind === 'secret' && c.x < shaftX0)) return [];
+  const low = new Map<number, number>();
+  for (let i = 0; i < b.cells.length; i += 5) {
+    const x = b.cells[i], y = b.cells[i + 1];
+    if (x < shaftX0 && b.cells[i + 2] === T.AIR) low.set(x, Math.max(low.get(x) ?? -1, y));
+  }
+  return [...low].map(([x, y]) => ({ x, y }));
+}
+// 外圍：東西兩側前幾片地塊裡的某種藍圖
+function outerOf(seed: string, kind: string, layers: readonly Layer[]): Blueprint[] {
+  const src = srcOf(seed), h = src.layout.origin.home!;
+  return src.blueprints.overlapping(-30_000, 30_000, layers).filter((b) => b.kind === kind && (b.x + b.w <= h.x0 || b.x >= h.x1));
+}
+// 只記 fg 的畫布（測 drawRamp：讀不到的格一律空氣、不是實心）
+function mapCanvas(): Canvas & { cells: Map<string, number> } {
+  const cells = new Map<string, number>();
+  const fg = (x: number, y: number): number => cells.get(`${x},${y}`) ?? T.AIR;
+  return {
+    cells, inBounds: () => true, fg, wall: () => 0, isSolid: (x, y) => isSolidTile(fg(x, y)), setFg: (x, y, t) => { cells.set(`${x},${y}`, t); },
+    setWall: () => {}, clearLiquid: () => {}, setSurface: () => {}, surfaceAt: () => 0, chest: () => {}, addItem: () => {}, potDrop: () => {}, fillNatural: () => {},
+  };
+}
+
+describe('gen2 礦坑、密室、空島', () => {
+  // 礦坑的硬性保證 ≥ 3（= 3 個密室礦坑錨點；控制者裁決 D）；平均 ≥ 4 由下面 1500 個種子的測試驗
+  it('§4.4：家鄉 ≥ 3 間密室（裂紋石塞、secret 箱、洪水填充不出密室、不發光）、≥ 3 條礦坑、≥ 2 座空島', () => { for (const seed of SEEDS5) { const bp = homeBlueprints(seed);
+    const shafts = bp.filter((b) => b.kind === 'mineshaft'), secrets = shafts.flatMap((b) => b.chests.filter((c) => c.kind === 'secret'));
+    expect(secrets.length).toBeGreaterThanOrEqual(3); expect(shafts.length, seed).toBeGreaterThanOrEqual(3); expect(bp.filter((b) => b.kind === 'sky_island').length).toBeGreaterThanOrEqual(2);
+    const w = worldOf(srcOf(seed)); for (const c of secrets) { loadColumns(w, c.x - 20, c.x + 20); expect(secretRoomSealed(w, c), `${seed} ${c.x},${c.y}`).toBe(true); } } }, 120_000);
+
+  it('空島：箱子 sky、島身（繩梯以外的格）底部在地表上方 > 20、繩梯下端離地 ≤ 3、外框往下包到繩梯下端', () => { for (const seed of SEEDS5) for (const b of homeBlueprints(seed).filter((q) => q.kind === 'sky_island')) {
+    const src = srcOf(seed), rope = ropeOf(b)!; expect(b.chests[0].kind).toBe('sky');
+    // 量島身、不量外框（理由：外框要往下包到繩梯下端，Task 6 延續事項，所以 b.y + b.h 一定在地表附近）
+    let body = -1;
+    for (let i = 0; i < b.cells.length; i += 5) if (b.cells[i + 2] !== KEEP && b.cells[i + 2] !== T.ROPE && b.cells[i + 2] !== T.AIR) body = Math.max(body, b.cells[i + 1]);
+    expect(body).toBeLessThan(src.surfaceAt(b.x) - 20);
+    expect(src.surfaceAt(rope.x) - rope.y1).toBeLessThanOrEqual(4); expect(rope.y1).toBeLessThan(b.y + b.h);
+    expect(b.landmarks).toEqual([expect.objectContaining({ tile: T.GUARDIAN_STATUE, site: 'sky_island' })]);
+    expect(cellMap(b).get(`${b.landmarks[0].x},${b.landmarks[0].y}`)).toBe(T.GUARDIAN_STATUE);
+  } }, 120_000);
+
+  it('分段填 = 整欄填（礦坑、空島各一份跨欄的）', () => { for (const k of ['mineshaft', 'sky_island']) { const { src, b } = firstCrossing(k), cx = b.x >> 5;
+    const parts = new Column(cx, 1200); src.fill(parts, cx * 32, b.x + 1); src.fill(parts, b.x + 1, cx * 32 + 32); expect(bytes(parts)).toEqual(bytes(fillCol(src, cx))); } }, 60_000);
+
+  it('礦坑總寬 ≤ 154（長 + 斜坡 + 密室，Q3）、50 個種子的 secret 錨點都建得出來', () => { for (const seed of SEEDS50) {
+    const src = srcOf(seed), m = homeOf(src), anchors = src.blueprints.anchorsOf(m).filter((a) => a.kind === 'mineshaft_secret');
+    expect(anchors.length).toBe(3);
+    for (const a of anchors) { const b = src.blueprints.anchorBlueprint(m, a); expect(b?.kind, seed).toBe('mineshaft'); expect(b!.chests.some((c) => c.kind === 'secret')).toBe(true); }
+    for (const b of homeBlueprints(seed).filter((q) => q.kind === 'mineshaft')) {
+      expect(b.w, `${seed} ${b.x}`).toBeLessThanOrEqual(154); const s = slotOf(b.id, src.layout); expect(b.x).toBeGreaterThanOrEqual(s.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(s.x1 - 8); } } }, 300_000);
+
+  it('礦坑：礦車地標（site mineshaft）停在軌道上、坑道 4 列；坑道頂板 / 地板、斜坡每階腳下那格在成品裡是實心（solid = 整個外框），4 列都有背景牆', () => {
+    const cases: { seed: string; b: Blueprint }[] = [];
+    for (const seed of SEEDS5.slice(0, 3)) for (const b of homeBlueprints(seed).filter((q) => q.kind === 'mineshaft')) cases.push({ seed, b });
+    // 外圍的機率礦坑：取有斜坡的（斜坡只在機率擲出的礦坑上）
+    let ramps = 0;
+    for (const b of outerOf(SEEDS5[0], 'mineshaft', [BP_UNDER])) { if (ramps >= 6) break; if (rampFeet(b, shaftOf(b).x0).length) { cases.push({ seed: SEEDS5[0], b }); ramps++; } }
+    expect(ramps).toBeGreaterThanOrEqual(3);
+    const holes: string[] = [], worlds = new Map<string, World>();
+    for (const { seed, b } of cases) {
+      const w = worlds.get(seed) ?? worldOf(srcOf(seed)); worlds.set(seed, w);
+      loadColumns(w, b.x, b.x + b.w);
+      expect(b.landmarks).toHaveLength(1); expect(b.landmarks[0]).toMatchObject({ tile: T.ORE_CART, site: 'mineshaft' });
+      const { x0, x1, yTop } = shaftOf(b), cart = b.landmarks[0];
+      expect(w.getFg(cart.x, cart.y)).toBe(T.ORE_CART); expect(x1 - x0 + 1).toBeGreaterThanOrEqual(40);
+      expect(b.solid).toEqual({ x: b.x, y: b.y, w: b.w, h: b.h });
+      for (let x = x0; x <= x1; x++) {
+        if (!isSolidTile(w.getFg(x, yTop - 1))) holes.push(`${seed} roof ${x},${yTop - 1}`);
+        if (!isSolidTile(w.getFg(x, yTop + 4))) holes.push(`${seed} floor ${x},${yTop + 4}`);
+        for (let y = yTop; y < yTop + 4; y++) if (w.getWall(x, y) === 0) holes.push(`${seed} wall ${x},${y}`);
+      }
+      for (const f of rampFeet(b, x0)) if (!isSolidTile(w.getFg(f.x, f.y + 1))) holes.push(`${seed} ramp ${f.x},${f.y + 1}`);
+    }
+    expect(holes.slice(0, 5), `${holes.length} holes`).toEqual([]);
+  }, 180_000);
+
+  it('家鄉的密室錨點礦坑沒有斜坡（外框整個在槽中心地表下 ≥ 24）；外圍的機率礦坑有斜坡、左側 / 右側密室都有', () => {
+    for (const seed of SEEDS5) { const src = srcOf(seed), m = homeOf(src);
+      for (const a of src.blueprints.anchorsOf(m).filter((q) => q.kind === 'mineshaft_secret')) {
+        const b = src.blueprints.anchorBlueprint(m, a)!, sp = anchorSpan(seed, a);
+        expect(b.y, seed).toBeGreaterThanOrEqual(src.profile.surfaceAt((sp.x0 + sp.x1) >> 1) + 24);
+      } }
+    let ramp = 0, left = 0, right = 0, secret = 0, total = 0;
+    for (const seed of SEEDS5.slice(0, 2)) for (const b of outerOf(seed, 'mineshaft', [BP_UNDER])) {
+      const s = shaftOf(b), c = b.chests.find((q) => q.kind === 'secret');
+      total++;
+      if (rampFeet(b, s.x0).length) ramp++;
+      if (c) { secret++; if (c.x < s.x0) left++; else right++; }
+    }
+    expect(total).toBeGreaterThan(20); expect(ramp).toBeGreaterThan(0); expect(left).toBeGreaterThan(0); expect(right).toBeGreaterThan(0);
+    // 機率礦坑的密室 25%（樣本裡 10%–45%）
+    expect(secret / total).toBeGreaterThan(0.1); expect(secret / total).toBeLessThan(0.45);
+  }, 120_000);
+
+  it('左側密室的幾何（drawSecretRoom right = false）：塞子在坑道左端外 2 欄、室內在塞子左邊、箱子在室內左起第 3 格、石殼外框 = secretRoomLayout', () => {
+    const src = srcOf('sr'), x0 = 3000, yTop = src.profile.surfaceAt(x0) + 60, rw = 10;
+    const cv = new BpCanvas({ x: x0 - 30, y: yTop - 10, w: 140, h: 24 }, src.profile);
+    drawMineshaft(cv, { x0, len: 80, yTop }, new HRng(1, 2));
+    const lay = { shaftX0: x0, shaftLen: 80, yTop, right: false, rw }, r = drawSecretRoom(cv, lay, new HRng(1, 3)), L = secretRoomLayout(lay);
+    expect(L).toEqual({ plug0: x0 - 2, rx0: x0 - 2 - rw, ry0: yTop - 2, shell: { x: x0 - 4 - rw, y: yTop - 4, w: rw + 4, h: 11 } });
+    expect(r).toMatchObject({ x: x0 - 2 - rw, y: yTop - 2, w: rw, h: 6, chest: { x: x0 - rw, y: yTop + 3 } });
+    const b = cv.toBlueprint(1, 'mineshaft', 1), at = cellMap(b);
+    for (let y = yTop; y < yTop + 4; y++) for (const dx of [1, 2]) expect(at.get(`${x0 - dx},${y}`)).toBe(T.CRACKED_STONE);
+    for (let y = L.shell.y; y < L.shell.y + L.shell.h; y++) expect(at.get(`${L.shell.x},${y}`)).toBe(T.STONE);
+    expect(b.chests.find((c) => c.x === r.chest.x)!.kind).toBe('secret');
+    // 密室（塞子起往左）不放發光物
+    expect([...at.entries()].filter(([k, t]) => GLOWING.has(t) && Number(k.split(',')[0]) < x0)).toEqual([]);
+  });
+
+  it('drawRamp：xMin 預設 −∞（不停在舊世界的左緣 2）、頭頂高過 surfaceAt − 1 就停；rampSteps = 畫了的欄數；腳下不是實心補木板', () => {
+    const x0 = 10, yTop = 340, surf = 300, cv = mapCanvas();
+    drawRamp(cv, { x0, yTop }, () => surf);
+    const xs = [...cv.cells.keys()].map((k) => Number(k.split(',')[0]));
+    const steps = rampSteps({ x0, yTop }, () => surf);
+    // 第 s 欄頭頂 = yTop − s，yTop − s < surf − 1 → s = yTop − surf + 2
+    expect(steps).toBe(yTop - surf + 2); expect(Math.min(...xs)).toBe(x0 - steps); expect(Math.min(...xs)).toBeLessThan(2); expect(Math.max(...xs)).toBe(x0 - 1);
+    for (let s = 1; s <= steps; s++) { expect(cv.cells.get(`${x0 - s},${yTop - s}`)).toBe(T.AIR); expect(cv.cells.get(`${x0 - s},${yTop + 4 - s}`)).toBe(T.PLANKS); }
+    // xMin：x < xMin 的欄不畫，rampSteps 一樣
+    const cv2 = mapCanvas(); drawRamp(cv2, { x0, yTop, xMin: 2 }, () => surf);
+    expect(Math.min(...[...cv2.cells.keys()].map((k) => Number(k.split(',')[0])))).toBe(2); expect(rampSteps({ x0, yTop, xMin: 2 }, () => surf)).toBe(8);
+    // 地表高低不平：每欄照自己的 surfaceAt 判（往左越低：340 − s < 329 + 2s → s = 4）
+    const hill = (x: number): number => 330 + (x0 - x) * 2;
+    expect(rampSteps({ x0, yTop }, hill)).toBe(4);
+  });
+
+  it('SKY 層接進 overlapping / anchorBlueprint：家鄉恰好 2 座空島 = 兩個 sky_island 錨點的藍圖；家鄉天空層沒有機率空島、空島底下那個表層槽不擲機率', () => { for (const seed of SEEDS5) {
+    const src = srcOf(seed), m = homeOf(src), anchors = src.blueprints.anchorsOf(m).filter((a) => a.kind === 'sky_island');
+    const sky = src.blueprints.overlapping(m.x0, m.x1, [BP_SKY]);
+    expect(sky.map((b) => b.kind)).toEqual(['sky_island', 'sky_island']); expect(sky.every((b) => b.layer === BP_SKY)).toBe(true);
+    expect(anchors.map((a) => src.blueprints.anchorBlueprint(m, a)!.id).sort()).toEqual(sky.map((b) => b.id).sort());
+    for (const a of anchors) { const sl = landSlot(a.region, a.slot, BP_SURFACE);
+      expect(src.blueprints.overlapping(sl.x0, sl.x1, [BP_SURFACE]).filter((b) => b.x >= sl.x0 && b.x < sl.x1), seed).toEqual([]); }
+    // 預設的 overlapping 也含 SKY（fill 才蓋得到空島）
+    expect(src.blueprints.overlapping(m.x0, m.x1).filter((b) => b.layer === BP_SKY).length).toBe(2);
+  } }, 120_000);
+
+  it('非家鄉大陸的天空層空島（0.06）：有、外框在自己的 340 格槽內、繩梯接地；海上沒有', () => {
+    let n = 0, slots = 0;
+    for (const seed of SEEDS5) { const src = srcOf(seed);
+      for (const b of outerOf(seed, 'sky_island', [BP_SKY])) {
+        n++; const s = slotOf(b.id, src.layout); expect(s.layer).toBe(BP_SKY); expect(s.region.kind).not.toBe('home');
+        expect(b.x).toBeGreaterThanOrEqual(s.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(s.x1 - 8);
+        const rope = ropeOf(b)!; expect(src.surfaceAt(rope.x) - rope.y1).toBe(3);
+      }
+      for (let i = 1; i <= 6; i++) for (const side of [1, -1] as const) { const q = src.layout.landmass(side, i); if (q.kind === 'continent') slots += q.regions.reduce((a, r) => a + Math.floor((r.x1 - r.x0) / 340), 0); }
+    }
+    // 機率 0.06（含坑道的槽與讓位的不放，所以樣本比例 < 0.06）
+    expect(n).toBeGreaterThan(0); expect(n / slots).toBeLessThan(0.09);
+  }, 120_000);
+
+  it('跨層：SKY 一律讓位給表層（表層不看 SKY，Q4）與液體；地下 / 深層照等級', () => {
+    const box = (layer: Layer, kind: Blueprint['kind'], x: number, y: number, w: number, h: number): Blueprint => ({ id: 0, kind, layer, x, y, w, h, cells: new Int32Array(0), chests: [], ...emptyObjects() });
+    const K = box(BP_SKY, 'sky_island', 0, 200, 40, 100), S_ = box(BP_SURFACE, 'ruin', 10, 280, 20, 20), L = box(BP_SURFACE, 'lake', 10, 280, 20, 20), U = box(BP_UNDER, 'mineshaft', 0, 290, 60, 20);
+    expect(crossYields(K, 2, S_, 0)).toBe(true); expect(crossYields(K, 0, L, 0)).toBe(true); expect(crossYields(L, 0, K, 0)).toBe(false);
+    expect(crossYields(U, 0, K, 2)).toBe(true); expect(crossYields(K, 2, U, 0)).toBe(false); expect(crossYields(K, 0, U, 0)).toBe(true);
+    expect(crossYields(K, 2, box(BP_SURFACE, 'ruin', 500, 280, 20, 20), 0)).toBe(false);
+  });
+
+  it('錨點建構器在最窄的可用範圍（ANCHOR_MAX_W + 2 × SLOT_PAD）內也放得進去（不靠 placeX 的夾位置），同一個 ctx 算出相同藍圖', () => {
+    let built = 0;
+    for (const seed of SEEDS5) for (const a of srcOf(seed).blueprints.anchorsOf(homeOf(srcOf(seed)))) {
+      if (a.kind !== 'mineshaft_secret' && a.kind !== 'sky_island') continue;
+      const need = ANCHOR_MAX_W[a.kind]! + 16, sp = anchorSpan(seed, a), make = (c: BpCtx): Blueprint => (a.kind === 'sky_island' ? buildSkyIslandBp(c) : buildMineshaftBp(c, { secret: true }));
+      for (const span of [{ x0: sp.x0, x1: sp.x0 + need }, { x0: sp.x1 - need, x1: sp.x1 }]) {
+        const c = anchorCtx(seed, a, span), b = make(c);
+        expect(b.x, `${seed} ${a.kind}`).toBeGreaterThanOrEqual(c.slotX0 + 8); expect(b.x + b.w, `${seed} ${a.kind}`).toBeLessThanOrEqual(c.slotX1 - 8);
+        expect(b.w).toBeLessThanOrEqual(ANCHOR_MAX_W[a.kind]!);
+        built++;
+      }
+      expect(make(anchorCtx(seed, a))).toEqual(make(anchorCtx(seed, a)));
+    }
+    expect(built).toBe(5 * (3 + 2) * 2);
+  }, 60_000);
+
+  it('1500 個種子：家鄉平均 ≥ 4 條礦坑（機率礦坑 0.45、可用含坑道槽的一側，控制者裁決 ②）、0 開機失敗、0 跨層重疊、每條礦坑外框都不碰坑道帶', () => {
+    const dist: Record<number, number> = {}, errors: string[] = [];
+    let total = 0, inShaftSlot = 0;
+    for (let k = 0; k < 1500; k++) {
+      const seed = `ug-${k}`;
+      try {
+        // 每個種子新建一份（不進 srcOf 的快取，免得 1500 份常駐）
+        const g = new Gen2Source(seed), h = g.layout.origin.home!, bps = g.blueprints.overlapping(h.x0, h.x1), ss = seedInt(seed, 'g2-shaft');
+        expect(overlapPairs(bps), seed).toEqual([]);
+        const shafts = bps.filter((b) => b.kind === 'mineshaft');
+        for (const b of shafts) {
+          const s = slotOf(b.id, g.layout), sx = shaftX(ss, s.region);
+          if (!Number.isFinite(sx)) continue;
+          expect(b.x + b.w <= sx - SHAFT_REACH - 1 || b.x >= sx + SHAFT_REACH + 2, `${seed} mineshaft ${b.x}`).toBe(true);
+          if (sx >= s.x0 && sx < s.x1) inShaftSlot++;
+        }
+        dist[shafts.length] = (dist[shafts.length] ?? 0) + 1; total += shafts.length;
+      } catch (e) { if (!(e instanceof RangeError)) throw e; errors.push(`${seed}: ${e.message}`); }
+    }
+    console.log(`[mineshafts] 1500 homes: mean ${(total / 1500).toFixed(2)}, distribution ${JSON.stringify(dist)}, ${inShaftSlot} in shaft slots`);
+    expect(errors.slice(0, 3)).toEqual([]);
+    expect(total / 1500).toBeGreaterThanOrEqual(4);
+    // 含坑道槽的放寬真的有用到（上面的坑道帶斷言不是空測）
+    expect(inShaftSlot).toBeGreaterThan(0);
+  }, 600_000);
+
+  it('新錨點不壓到地廳的後備豎井（Task 9：後備豎井的外框從地表到地廳）：礦坑密室 / 空島錨點的外框與每座地廳的後備外框都不相交', () => {
+    let checked = 0;
+    for (const seed of SEEDS50) { const src = srcOf(seed), m = homeOf(src), list = src.blueprints.anchorsOf(m);
+      const mine = list.filter((a) => a.kind === 'mineshaft_secret' || a.kind === 'sky_island').map((a) => src.blueprints.anchorBlueprint(m, a)!);
+      for (const h of list.filter((a) => a.kind === 'hall')) {
+        const fb = buildHallBp(anchorCtx(seed, h), { caveOpen: () => false });
+        expect(fb.y).toBeLessThan(src.profile.surfaceAt(fb.x + (fb.w >> 1)));
+        for (const b of mine) { expect(boxesMeet(fb, b), `${seed} ${b.kind}@${b.x} vs hall@${fb.x}`).toBe(false); checked++; }
+      }
+    }
+    expect(checked).toBeGreaterThan(50 * 5);
+  }, 300_000);
+});

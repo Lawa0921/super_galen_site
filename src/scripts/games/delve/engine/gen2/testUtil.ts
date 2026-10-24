@@ -7,7 +7,7 @@ import { T, DUNGEON_COLORS, isSolidTile } from '../tiles';
 import { LIQ_MAX } from '../liquidKind';
 import type { RegionInfo } from '../regionInfo';
 import type { DungeonInfo } from '../genTypes';
-import type { Gen2Source } from './index';
+import { Gen2Source } from './index';
 import type { Blueprint } from './bpcore';
 
 // 第 cx 欄整欄（32 格）由 src 填
@@ -102,6 +102,21 @@ export function liquidInvariant(w: World, x0: number, x1: number): { x: number; 
 // 測試檔共用的小工具
 export const range = (a: number, b: number): number[] => Array.from({ length: b - a }, (_, k) => a + k);
 export const SEEDS5 = ['s-a', 's-b', 's-c', 's-d', 's-e'];
+export const SEEDS50 = Array.from({ length: 50 }, (_, k) => `anc-${k}`);
+
+// 每個種子一個 Gen2Source（同一個測試檔內共用）
+const SRC = new Map<string, Gen2Source>();
+export function srcOf(seed: string): Gen2Source {
+  let s = SRC.get(seed);
+  if (!s) { s = new Gen2Source(seed); SRC.set(seed, s); }
+  return s;
+}
+// 家鄉地塊（與 [home.x0, home.x1) 相交）的全部藍圖，依 (layer, id) 排序
+export function homeBlueprints(seed: string): Blueprint[] {
+  const s = srcOf(seed), h = s.layout.origin.home;
+  if (!h) throw new Error('no gen2 home');
+  return s.blueprints.overlapping(h.x0, h.x1);
+}
 
 // ── 地城的可解性（原 legacy/gen/dungeon.test.ts 的兩個檢查，改成吃 DungeonInfo / World；M2b 刪 legacy 後仍在）──
 type Verdict = { ok: true } | { ok: false; why: string };

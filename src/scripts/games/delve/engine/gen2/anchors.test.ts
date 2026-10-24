@@ -8,10 +8,9 @@ import { homeDungeonRegion, SPAWN_X, VARIANT, type Landmass } from './layout';
 import { shaftOf, shaftX, SHAFT_REACH } from './caves';
 import { hash2, seedInt } from '../noise';
 import { BIOME } from '../world';
-import { SEEDS5 } from './testUtil';
+import { SEEDS5, SEEDS50 } from './testUtil';
 import type { RegionInfo } from '../regionInfo';
 
-const SEEDS50 = Array.from({ length: 50 }, (_, k) => `anc-${k}`);
 const slotRange = (a: Anchor): { x0: number; x1: number } => landSlot(a.region, a.slot, a.layer);
 const slotMid = (a: Anchor): number => { const s = slotRange(a); return (s.x0 + s.x1) / 2; };
 const slotOverlapsSpawnClear = (a: Anchor): boolean => { const s = slotRange(a); return s.x0 <= SPAWN_X + 80 && s.x1 > SPAWN_X - 80; };
@@ -24,6 +23,15 @@ function spanProblem(seed: string, a: Anchor): string | null {
   if (Number.isFinite(sx) && !(sp.x1 <= sx - SHAFT_REACH - 1 || sp.x0 >= sx + SHAFT_REACH + 2)) return `span [${sp.x0}, ${sp.x1}) touches shaft ${sx}`;
   const inShaft = Number.isFinite(sx) && sx >= sl.x0 && sx < sl.x1;
   if (inShaft !== sp.shaft) return 'shaft flag';
+  // a.avoid（家鄉空島避開下方地廳 / 礦坑密室的槽，Task 10）：不碰它們、取扣掉坑道帶與它們之後最寬的一段
+  if (a.avoid?.length) {
+    const cuts = [...a.avoid, ...(Number.isFinite(sx) ? [{ x0: sx - SHAFT_REACH - 1, x1: sx + SHAFT_REACH + 2 }] : [])];
+    for (const v of a.avoid) if (sp.x0 < v.x1 && v.x0 < sp.x1) return `span touches avoided [${v.x0}, ${v.x1})`;
+    const edges = [sl.x0, sl.x1, ...cuts.flatMap((c) => [c.x0, c.x1])].filter((x) => x >= sl.x0 && x <= sl.x1).sort((p, q) => p - q);
+    let widest = 0;
+    for (const lo of edges) for (const hi of edges) if (hi > lo && cuts.every((c) => c.x1 <= lo || c.x0 >= hi)) widest = Math.max(widest, hi - lo);
+    return sp.x1 - sp.x0 < widest ? 'not the widest piece' : null;
+  }
   // 含坑道的槽：取較大的一側
   if (Number.isFinite(sx) && sp.x1 - sp.x0 < Math.min(sl.x1 - sl.x0, Math.max(sx - SHAFT_REACH - 1 - sl.x0, sl.x1 - sx - SHAFT_REACH - 2))) return 'not the larger side';
   return null;
@@ -53,7 +61,7 @@ function firstRolledSurfaceSlot(g: Gen2Source, m: Landmass): { region: RegionInf
 
 describe('gen2 anchors', () => {
   it('家鄉錨點不變量（50 個種子都放滿，homeAnchors 不丟 RangeError）', () => {
-    let shafted = 0;
+    let shafted = 0, avoided = 0;
     for (const seed of SEEDS50) {
       const g = new Gen2Source(seed), h = g.layout.landmassAt(SPAWN_X)!, a = g.blueprints.anchorsOf(h);
       const n = (k: AnchorKind) => a.filter((q) => q.kind === k).length;
@@ -78,7 +86,14 @@ describe('gen2 anchors', () => {
       expect(a.filter((q) => q.wholeRegion).map((q) => q.kind)).toEqual(['dungeon']);
       // 每個錨點的外框可用範圍都不碰坑道帶、放得下該種最大外框（含坑道的槽也一樣）
       for (const q of a) { expect(spanProblem(seed, q), `${seed} ${q.kind} ${q.region.index}/${q.layer}:${q.slot}`).toBeNull(); if (anchorSpan(seed, q).shaft) shafted++; }
+      // 空島（Task 10）：不在表層錨點的同一槽；可用範圍不碰下方地廳 / 礦坑密室的槽（avoid 涵蓋每一個與天空槽相交的）
+      const meets = (p: { x0: number; x1: number }, q: { x0: number; x1: number }): boolean => p.x0 < q.x1 && q.x0 < p.x1;
+      for (const k of a.filter((q) => q.kind === 'sky_island')) {
+        expect(a.some((q) => q.layer === BP_SURFACE && q.region === k.region && q.slot === k.slot), seed).toBe(false);
+        for (const q of a.filter((p) => p.kind === 'hall' || p.kind === 'mineshaft_secret')) if (meets(slotRange(k), slotRange(q))) { avoided++; expect(meets(anchorSpan(seed, k), slotRange(q)), `${seed} sky over ${q.kind}`).toBe(false); }
+      }
     }
+    expect(avoided).toBeGreaterThan(0);
     // 備案（含坑道的槽）真的有用到，上面的坑道帶斷言不是空測
     expect(shafted).toBeGreaterThan(0);
   }, 120_000);

@@ -84,10 +84,12 @@ describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
         expect(q.x0 <= SPAWN_X + 80 && q.x1 > SPAWN_X - 80, `spawn-${k} ${b.kind} ${b.x}`).toBe(false);
       }
     }
-    // 含坑道的槽沒有非 DEEP 藍圖——只對機率 / 保證藍圖；錨點可以在含坑道的槽（M2a Task 7，外框照下面的觸及範圍檢查）
-    const s = seedInt('bp', 'g2-shaft'), anchored = new Set<number>();
-    for (const m of [src.layout.landmassAt(SPAWN_X)!]) for (const a of idx.anchorsOf(m)) anchored.add(structureId(m.side, m.i, a.region.index, a.slot, a.layer));
-    for (const b of all.filter((q) => q.layer !== BP_DEEP && !anchored.has(q.id))) {
+    // 含坑道的槽沒有非 DEEP 藍圖——只對機率 / 保證藍圖；錨點可以在含坑道的槽（M2a Task 7，外框照下面的觸及範圍檢查）；
+    // 家鄉地下層的機率礦坑也可以（M2a Task 10 控制者裁決：只在避開坑道帶的一側，外框同樣照下面的觸及範圍檢查，其他藍圖照舊）
+    const s = seedInt('bp', 'g2-shaft'), anchored = new Set<number>(), hm = src.layout.landmassAt(SPAWN_X)!;
+    for (const m of [hm]) for (const a of idx.anchorsOf(m)) anchored.add(structureId(m.side, m.i, a.region.index, a.slot, a.layer));
+    const homeMine = (q: { kind: string; x: number }): boolean => q.kind === 'mineshaft' && q.x >= hm.x0 && q.x < hm.x1;
+    for (const b of all.filter((q) => q.layer !== BP_DEEP && !anchored.has(q.id) && !homeMine(q))) {
       const r = slotOf(b.id, src.layout); const sx = shaftX(s, r.region);
       if (Number.isFinite(sx)) expect(sx >= r.x0 && sx < r.x1).toBe(false);
     }

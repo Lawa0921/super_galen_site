@@ -48,6 +48,18 @@ export function drawRamp(cv: Canvas, o: { x0: number; yTop: number; xMin?: numbe
   }
 }
 
+// drawRamp 會畫幾欄（同一條停止規則：x < xMin 不畫、第 s 欄畫完頭頂高過 surfaceAt(x) − 1 就停、最多 159 欄）。
+// 第 s 欄的格在列 yTop − s .. yTop + 4 − s，所以斜坡最高的一列 = yTop − rampSteps（gen2 畫之前用它算外框）
+export function rampSteps(o: { x0: number; yTop: number; xMin?: number }, surfaceAt: (x: number) => number): number {
+  const { x0, yTop } = o, xMin = o.xMin ?? Number.NEGATIVE_INFINITY;
+  for (let s = 1; s < 160; s++) {
+    const x = x0 - s;
+    if (x < xMin) return s - 1;
+    if (yTop - s < surfaceAt(x) - 1) return s;
+  }
+  return 159;
+}
+
 // 密室的版面：plug0 = 裂紋石塞左欄（2 格寬）、rx0 / ry0 = 室內左上、shell = 石殼外框（含塞子）
 export function secretRoomLayout(o: { shaftX0: number; shaftLen: number; yTop: number; right: boolean; rw: number }):
   { plug0: number; rx0: number; ry0: number; shell: { x: number; y: number; w: number; h: number } } {

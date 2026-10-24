@@ -17,8 +17,11 @@ export type AnchorKind = 'dungeon' | 'village' | 'hall' | 'mineshaft_secret' | '
   | 'cave_lake' | 'ruin' | 'cabin' | 'alcove_snow' | 'alcove_desert' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet' | 'keep' | 'hermit_hut'
   // 只給測試注入（Q8）：homeAnchors / continentAnchors 永遠不產生、正式碼永遠不登錄建構器
   | 'test_probe';
-// wholeRegion：佔滿整個地區（家鄉地城，Q2）——外框可以超出自己的槽，overlapping 對任何與地區相交的查詢都找得到它
-export interface Anchor { kind: AnchorKind; region: RegionInfo; layer: Layer; slot: number; wholeRegion?: boolean }
+// wholeRegion：佔滿整個地區（家鄉地城，Q2）——外框可以超出自己的槽，overlapping 對任何與地區相交的查詢都找得到它。
+// avoid：可用範圍（anchorSpan）另外要避開的 x 區間（家鄉空島避開下方地廳 / 礦坑密室的槽，Task 10）。理由：家鄉的天空槽不夠，
+// 整槽避開地廳時 1000 個種子有 26% 放不下兩座空島；改成只避開下方那個 170 格槽，0 個失敗
+export interface Span { x0: number; x1: number }
+export interface Anchor { kind: AnchorKind; region: RegionInfo; layer: Layer; slot: number; wholeRegion?: boolean; avoid?: readonly Span[] }
 
 // 錨點建構器：一律 force，不回 null
 export type AnchorBuild = (c: BpCtx) => Blueprint;
@@ -51,23 +54,26 @@ export const ANCHOR_MAX_W: Readonly<Partial<Record<AnchorKind, number>>> = {
   test_probe: 60,
 };
 
-// 錨點的可用範圍：槽扣掉該地區主坑道的坑道帶（bpcore.shaftBand，與 placeX 同一個；鄰槽的坑道帶也可能伸進來）後
-// 較大的那一側（平手取左側；帶子碰不到槽 → 整槽）；shaft = 槽含 shaftX（選槽時排在不含坑道的槽之後）。
+// 錨點的可用範圍：槽扣掉該地區主坑道的坑道帶（bpcore.shaftBand，與 placeX 同一個；鄰槽的坑道帶也可能伸進來）與 a.avoid 的區間後
+// 最寬的那一段（平手取左邊的；都碰不到槽 → 整槽）；shaft = 槽含 shaftX（選槽時排在不含坑道的槽之後）。
 // wholeRegion → 整個地區；shaft_cache → 整槽（刻意蓋在坑道底）。BlueprintIndex 把它當成建構器的 slotX0 / slotX1
 export function anchorSpan(seed: string, a: Anchor): { x0: number; x1: number; shaft: boolean } {
   if (a.wholeRegion) return { x0: a.region.x0, x1: a.region.x1, shaft: false };
-  return spanOf(landSlot(a.region, a.slot, a.layer), a.kind === 'shaft_cache' ? NaN : shaftX(seedInt(seed, 'g2-shaft'), a.region));
+  return spanOf(landSlot(a.region, a.slot, a.layer), a.kind === 'shaft_cache' ? NaN : shaftX(seedInt(seed, 'g2-shaft'), a.region), a.avoid);
 }
 // 村莊（外框最寬 ANCHOR_MAX_W.village）放得進可用範圍、中心離出生點 sp > VILLAGE_MIN（寬度越窄越好放，所以最寬的放得下就都放得下）
 export function villageFits(span: { x0: number; x1: number }, sp: number): boolean {
   return centerAway(span.x0, span.x1, ANCHOR_MAX_W.village!, sp, VILLAGE_MIN) !== null;
 }
-function spanOf(sl: { x0: number; x1: number }, sx: number): { x0: number; x1: number; shaft: boolean } {
-  if (!Number.isFinite(sx)) return { x0: sl.x0, x1: sl.x1, shaft: false };
-  const { l, r } = shaftBand(sx), shaft = sx >= sl.x0 && sx < sl.x1;
-  if (r <= sl.x0 || l >= sl.x1) return { x0: sl.x0, x1: sl.x1, shaft };
-  const lw = Math.max(0, l - sl.x0), rw = Math.max(0, sl.x1 - r);
-  return lw >= rw ? { x0: sl.x0, x1: sl.x0 + lw, shaft } : { x0: sl.x1 - rw, x1: sl.x1, shaft };
+// 槽 sl 扣掉坑道帶（sx 不是有限數 = 沒有坑道）與 avoid 的各區間後最寬的一段（平手取左邊的；全被扣光 = 槽左端、寬 0）
+function spanOf(sl: Span, sx: number, avoid: readonly Span[] = []): { x0: number; x1: number; shaft: boolean } {
+  const shaft = Number.isFinite(sx) && sx >= sl.x0 && sx < sl.x1, cut: Span[] = [...avoid];
+  if (Number.isFinite(sx)) { const { l, r } = shaftBand(sx); cut.push({ x0: l, x1: r }); }
+  let pieces: Span[] = [{ x0: sl.x0, x1: sl.x1 }];
+  for (const c of cut) pieces = pieces.flatMap((p) => (c.x1 <= p.x0 || c.x0 >= p.x1 ? [p] : [{ x0: p.x0, x1: c.x0 }, { x0: c.x1, x1: p.x1 }].filter((q) => q.x1 > q.x0)));
+  let best: Span = { x0: sl.x0, x1: sl.x0 };
+  for (const p of pieces.sort((a, b) => a.x0 - b.x0)) if (p.x1 - p.x0 > best.x1 - best.x0) best = p;
+  return { x0: best.x0, x1: best.x1, shaft };
 }
 
 interface Slot { r: RegionInfo; layer: Layer; q: number; x0: number; x1: number; mid: number }
@@ -92,11 +98,13 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   const regions = home.regions.filter((r) => r.variant !== VARIANT.BEACH && r.variant !== VARIANT.DUNGEON);
 
   // 某層還空著、不碰出生點清空區、keep 成立、放得下 kind 外框的槽（依 x 序）：先回不含坑道的，沒有才回含坑道的
-  const free = (kind: AnchorKind, layer: Layer, keep: (s: Slot) => boolean = () => true): Slot[] => {
-    const { plain, shafted } = split(kind, layer, keep);
+  // avoid(s) = 這個槽的可用範圍另外要避開的區間（Anchor.avoid）
+  type Avoid = (s: Slot) => Span[];
+  const free = (kind: AnchorKind, layer: Layer, keep: (s: Slot) => boolean = () => true, avoid?: Avoid): Slot[] => {
+    const { plain, shafted } = split(kind, layer, keep, avoid);
     return plain.length ? plain : shafted;
   };
-  const split = (kind: AnchorKind, layer: Layer, keep: (s: Slot) => boolean): { plain: Slot[]; shafted: Slot[] } => {
+  const split = (kind: AnchorKind, layer: Layer, keep: (s: Slot) => boolean, avoid?: Avoid): { plain: Slot[]; shafted: Slot[] } => {
     const need = ANCHOR_MAX_W[kind];
     if (need === undefined) throw new RangeError(`gen2: anchor kind ${kind} has no max width`);
     const plain: Slot[] = [], shafted: Slot[] = [];
@@ -105,17 +113,18 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
       for (let q = 0; q < landSlotCount(r, layer); q++) {
         const sl = landSlot(r, q, layer), s: Slot = { r, layer, q, x0: sl.x0, x1: sl.x1, mid: (sl.x0 + sl.x1) / 2 };
         if (taken.has(key(r, layer, q)) || touchesSpawnClear(sl.x0, sl.x1, sp) || !keep(s)) continue;
-        const room = spanOf(sl, sx);
+        const room = spanOf(sl, sx, avoid?.(s));
         if (room.x1 - room.x0 - 2 * SLOT_PAD < need) continue;
         (room.shaft ? shafted : plain).push(s);
       }
     }
     return { plain, shafted };
   };
-  const add = (kind: AnchorKind, s: Slot | undefined): Slot => {
+  const add = (kind: AnchorKind, s: Slot | undefined, avoid?: Avoid): Slot => {
     if (!s) throw new RangeError(`gen2: home has no slot for anchor ${kind}`);
     taken.add(key(s.r, s.layer, s.q));
-    out.push({ kind, region: s.r, layer: s.layer, slot: s.q });
+    const av = avoid?.(s) ?? [];
+    out.push(av.length ? { kind, region: s.r, layer: s.layer, slot: s.q, avoid: av } : { kind, region: s.r, layer: s.layer, slot: s.q });
     return s;
   };
   // 離 x 最近的（平手取 x 序在前的）
@@ -138,6 +147,8 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
     && (s.r.variant === VARIANT.PLAIN || s.r.variant === VARIANT.HILLS || s.r.variant === VARIANT.SPAWN) && far(s, VILLAGE_MIN)
     && villageFits(spanOf(s, shaftX(sShaft, s.r)), sp);
   const touch = (a: Slot, b: Slot): boolean => a.x0 <= b.x1 && b.x0 <= a.x1;
+  // 兩槽的 x 範圍相交（半開區間）
+  const overX = (a: Slot, b: Slot): boolean => a.x0 < b.x1 && b.x0 < a.x1;
   const vfree = (keep: (s: Slot) => boolean): Slot[] => free('village', BP_SURFACE, (s) => villageOk(s) && keep(s));
   // 第 1 座：西側最接近 sp − 950（西側沒有 → 全家鄉）；第 2 座：東側最接近 sp + 950（東側沒有 → 全家鄉、不與第 1 座相鄰；
   // 剩下的槽都與第 1 座相鄰才取相鄰的——外框各離槽邊 ≥ 8，兩座仍不相交）
@@ -162,10 +173,12 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   // 深層：地廳先選（第 1 座只能在最外側那個地區，要整槽 170 格）。第 1 座 = 非地城那一端的外圍生態地區、離家鄉端點最近的槽；
   // 第 2 座（2/3 機率）= 地城側、最接近 sp ∓ 1200、與第 1 座相距 ≥ 840
   const outer = dWest ? home.regions[home.regions.length - 2] : home.regions[1];
-  const h1 = add('hall', nearest(free('hall', BP_DEEP, (s) => s.r === outer), dWest ? home.x1 : home.x0));
+  const h1 = add('hall', nearest(free('hall', BP_DEEP, (s) => s.r === outer), dWest ? home.x1 : home.x0)), halls = [h1];
   if (u(3, 0) < 2 / 3) {
-    add('hall', nearest(free('hall', BP_DEEP, (s) => (dWest ? s.mid < sp : s.mid > sp) && Math.abs(s.mid - h1.mid) >= HALL_GAP), dWest ? sp - HALL_AIM : sp + HALL_AIM));
+    halls.push(add('hall', nearest(free('hall', BP_DEEP, (s) => (dWest ? s.mid < sp : s.mid > sp) && Math.abs(s.mid - h1.mid) >= HALL_GAP), dWest ? sp - HALL_AIM : sp + HALL_AIM)));
   }
+  // 地廳的後備豎井（structures/hall.ts）讓地廳外框從地表一路到地廳：礦坑密室與空島不放在地廳的槽上方（Task 10；理由：後備豎井一出現，上方的錨點就跨層相交 → RangeError；礦坑密室湊不滿時才退讓，見下）
+  const offHalls = (s: Slot): boolean => halls.every((h) => !overX(s, h));
   // shaft_cache = 家鄉主坑道最深（shaft.bottom 最大）的地區、坑道所在那一槽（深層不受「坑道槽不放藍圖」限制；不看寬度）；
   // 那一槽已被地廳佔走時取次深的
   const deepest = regions.map((r) => ({ r, sh: shaftOf(sShaft, r, (x) => profile.surfaceAt(x), (x) => profile.layersAt(x).deep) }))
@@ -183,14 +196,16 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   for (let k = 0; k < 2; k++) add('cabin', nearest(free('cabin', BP_UNDER), sp));
   // 先挑要整槽的礦坑密室（寬 154 + 邊距 = 170；每一座只在「挑了之後剩下的還湊得滿 3 座」的槽裡挑），再來生態限定的小結構
   // （放得進含坑道槽的一側，沒有不含坑道的槽時退過去）、蘑菇林，最後地下湖。
-  // 雜湊挑法可能把後面的種類擠到沒槽：這一組整組重挑（第 t 次用雜湊鍵 + 100t），UNDER_TRIES 次都不行才丟 RangeError
+  // 雜湊挑法可能把後面的種類擠到沒槽：這一組整組重挑（第 t 次用雜湊鍵 + 100t），UNDER_TRIES 次都不行才丟 RangeError。
+  // 礦坑密室先不放在地廳的槽上方（strict）；整組 UNDER_TRIES 次都湊不滿才放寬（那時只有地廳走後備豎井才會相交，Task 9 實測 300 個種子 0 次）
   const mark = out.length, takenBefore = new Set(taken);
-  for (let t = 0; ; t++) {
+  let secrets: Slot[] = [];
+  under: for (const strict of [true, false]) for (let t = 0; t < UNDER_TRIES; t++) {
     const o = 100 * t;
     try {
-      const secrets: Slot[] = [];
+      secrets = [];
       for (let k = 0; k < 3; k++) {
-        const { plain, shafted } = split('mineshaft_secret', BP_UNDER, (q) => far(q, SECRET_MIN) && secrets.every((p) => Math.abs(p.mid - q.mid) >= SECRET_GAP));
+        const { plain, shafted } = split('mineshaft_secret', BP_UNDER, (q) => far(q, SECRET_MIN) && (!strict || offHalls(q)) && secrets.every((p) => Math.abs(p.mid - q.mid) >= SECRET_GAP));
         // 挑 q 之後，剩下的（含坑道的槽也算，之後的挑選會退到它們）還湊得滿
         const all = [...plain, ...shafted].sort((p, q) => p.mid - q.mid);
         const viable = (q: Slot): boolean => spacedCount(all.filter((p) => Math.abs(p.mid - q.mid) >= SECRET_GAP), SECRET_GAP) >= 2 - k;
@@ -202,15 +217,19 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
       add('hive', hashed(free('hive', BP_UNDER, biome(BIOME.JUNGLE)), 8 + o));
       add('mushroom_biome', hashed(free('mushroom_biome', BP_UNDER, biome(BIOME.FOREST)), 9 + o));
       add('cave_lake', hashed(free('cave_lake', BP_UNDER), 10 + o));
-      break;
+      break under;
     } catch (e) {
-      if (!(e instanceof RangeError) || t + 1 >= UNDER_TRIES) throw e;
+      if (!(e instanceof RangeError) || (!strict && t + 1 >= UNDER_TRIES)) throw e;
       out.length = mark; taken.clear(); for (const k of takenBefore) taken.add(k);
     }
   }
 
-  // 天空：兩座空島
-  for (let k = 0; k < 2; k++) add('sky_island', hashed(free('sky_island', BP_SKY, (s) => far(s, SKY_MIN)), 14 + k));
+  // 天空：兩座空島。空島的繩梯垂到地面（錨點跨層相交 = RangeError）：不放在表層錨點（村莊 / 遺跡）的同一槽（天空與表層同槽寬、同序號；
+  // 那個表層槽也不擲機率，BlueprintIndex.build）；可用範圍避開下方地廳（後備豎井）與礦坑密室的 170 格槽（Anchor.avoid，剩下的一段要放得下）
+  const below = [...halls, ...secrets], skyAvoid: Avoid = (s) => below.filter((b) => overX(s, b)).map((b) => ({ x0: b.x0, x1: b.x1 }));
+  for (let k = 0; k < 2; k++) {
+    add('sky_island', hashed(free('sky_island', BP_SKY, (s) => far(s, SKY_MIN) && !taken.has(key(s.r, BP_SURFACE, s.q)), skyAvoid), 14 + k), skyAvoid);
+  }
   // 小點位：出生點東側第一個槽
   add('spawn_tablet', free('spawn_tablet', BP_MINOR, (s) => s.x0 > sp)[0]);
 
