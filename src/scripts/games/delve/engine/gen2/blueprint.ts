@@ -41,8 +41,8 @@ import { buildDungeonBp } from './structures/dungeon';
 import { buildVillageBp } from './structures/village';
 import { buildHallBp } from './structures/hall';
 import { buildMineshaftBp, rollMineshaftBp } from './structures/mineshaft';
-import { buildSkyIslandBp } from './structures/skyIsland';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, SLOT_PAD, shaftBand, slotWidth, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
+import { buildSkyIslandBp, rollSkyIslandBp } from './structures/skyIsland';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, SLOT_PAD, bandFreeSpan, slotWidth, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
 import { encodeStructureId, decodeStructureId } from './structId';
 
 export {
@@ -135,11 +135,10 @@ const ROLL: readonly (readonly { p: number; build: Build }[])[] = [
   [{ p: 0.3, build: buildRuin }, { p: 0.15, build: buildLake }],
   [{ p: 0.35, build: buildCabin }, { p: 0.12, build: buildCaveLake }, { p: MINESHAFT_P, build: rollMineshaftBp }],
   [{ p: 0.2, build: buildLavaPool }],
-  [{ p: 0.06, build: buildSkyIslandBp }],
+  [{ p: 0.06, build: rollSkyIslandBp }],
 ];
-// 家鄉的地下層：同 ROLL[BP_UNDER]，礦坑換成 HOME_UNDER_MINESHAFT_P（累加 0.35 + 0.12 + 0.45 = 0.92）
-const HOME_UNDER_ROLL: readonly { p: number; build: Build }[] =
-  [{ p: 0.35, build: buildCabin }, { p: 0.12, build: buildCaveLake }, { p: HOME_UNDER_MINESHAFT_P, build: rollMineshaftBp }];
+// 家鄉的地下層：ROLL[BP_UNDER] 只把礦坑那一項換成 HOME_UNDER_MINESHAFT_P（累加 0.35 + 0.12 + 0.45 = 0.92）
+const HOME_UNDER_ROLL: readonly { p: number; build: Build }[] = ROLL[BP_UNDER].map((e) => (e.build === rollMineshaftBp ? { ...e, p: HOME_UNDER_MINESHAFT_P } : e));
 // 海槽的點（island 沒有藍圖）
 type SeaPoi = Exclude<SeaSlot['poi'], 'island'>;
 const SEA_BUILD: Readonly<Record<SeaPoi, (c: BpCtx) => Blueprint>> = { shipwreck: buildShipwreck, crate: buildCrate };
@@ -385,10 +384,10 @@ export class BlueprintIndex {
       spawnX: m.kind === 'home' && this.spawnX !== null ? this.spawnX : undefined };
   }
 
-  // 含主坑道的第 q 槽扣掉坑道帶後較大的一側（平手取左側；同 anchors.anchorSpan 的規則）
+  // 含主坑道的第 q 槽扣掉坑道帶後較大的一側（bpcore.bandFreeSpan，與 anchors.anchorSpan 同一個）
   private clearSide(r: RegionInfo, q: number, layer: Layer): { slotX0: number; slotX1: number } {
-    const sl = landSlot(r, q, layer), { l, r: br } = shaftBand(shaftX(this.sShaft, r)), lw = Math.max(0, l - sl.x0), rw = Math.max(0, sl.x1 - br);
-    return lw >= rw ? { slotX0: sl.x0, slotX1: sl.x0 + lw } : { slotX0: sl.x1 - rw, slotX1: sl.x1 };
+    const s = bandFreeSpan(landSlot(r, q, layer), shaftX(this.sShaft, r));
+    return { slotX0: s.x0, slotX1: s.x1 };
   }
 
   // 該層第 q 槽含主坑道的 x

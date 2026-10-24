@@ -135,6 +135,29 @@ export class BpGrid {
 // 主坑道避讓帶 [l, r)（placeX 與錨點的可用範圍 anchors.anchorSpan 共用）：外框 [x, x + w) 要 x + w ≤ l 或 x ≥ r
 export function shaftBand(sx: number): { l: number; r: number } { return { l: sx - SHAFT_REACH - 1, r: sx + SHAFT_REACH + 2 }; }
 
+// x 區間 [x0, x1)
+export interface Span { x0: number; x1: number }
+// 槽 sl 扣掉坑道帶（sx 不是有限數 = 沒有坑道）與 avoid 的各區間後最寬的一段（平手取左邊的；全被扣光 = 槽左端、寬 0）；shaft = 槽含 sx。
+// 錨點的可用範圍（anchors.anchorSpan）與家鄉含坑道槽的機率礦坑（BlueprintIndex）共用
+export function bandFreeSpan(sl: Span, sx: number, avoid: readonly Span[] = []): { x0: number; x1: number; shaft: boolean } {
+  const shaft = Number.isFinite(sx) && sx >= sl.x0 && sx < sl.x1, cut: Span[] = [...avoid];
+  if (Number.isFinite(sx)) { const { l, r } = shaftBand(sx); cut.push({ x0: l, x1: r }); }
+  let pieces: Span[] = [{ x0: sl.x0, x1: sl.x1 }];
+  for (const c of cut) pieces = pieces.flatMap((p) => (c.x1 <= p.x0 || c.x0 >= p.x1 ? [p] : [{ x0: p.x0, x1: c.x0 }, { x0: c.x1, x1: p.x1 }].filter((q) => q.x1 > q.x0)));
+  let best: Span = { x0: sl.x0, x1: sl.x0 };
+  for (const p of pieces.sort((a, b) => a.x0 - b.x0)) if (p.x1 - p.x0 > best.x1 - best.x0) best = p;
+  return { x0: best.x0, x1: best.x1, shaft };
+}
+
+// 外框 [x, x + w) 往兩側延伸時的界線 [lo, hi)：槽（c.slotX0 / slotX1）兩端各留 SLOT_PAD；UNDER / DEEP 另外不越過主坑道避讓帶（同 placeX）
+export function clearRange(c: BpCtx, x: number, w: number): Span {
+  let lo = c.slotX0 + SLOT_PAD, hi = c.slotX1 - SLOT_PAD;
+  const layer = decodeStructureId(c.id).layer;
+  const sx = layer === BP_UNDER || layer === BP_DEEP ? shaftX(seedInt(c.seed, 'g2-shaft'), c.region) : NaN;
+  if (Number.isFinite(sx)) { const { l, r } = shaftBand(sx); if (x + w <= l) hi = Math.min(hi, l); else if (x >= r) lo = Math.max(lo, r); }
+  return { x0: lo, x1: hi };
+}
+
 // 置中、但中心離 avoid 要 > minD 的外框 x（村莊：家鄉的錨點建構器與 anchors.ts 的選槽共用）：外框 [x, x + w) 在 [x0 + SLOT_PAD, x1 − SLOT_PAD) 內，
 // 中心 = x + ((w − 1) >> 1)。先置中（x0 + ((x1 − x0) >> 1) − (w >> 1)）；中心離 avoid ≤ minD → 往遠離 avoid 的方向移到剛好 > minD；
 // 放不下 → null。avoid 不是有限數 = 不限制（只置中，放不下也是 null）

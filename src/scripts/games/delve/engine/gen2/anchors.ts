@@ -11,7 +11,7 @@ import type { RegionInfo } from '../regionInfo';
 import { HOME_X0, SPAWN_X, VARIANT, homeDungeonRegion, type Landmass } from './layout';
 import type { Profile2 } from './profile';
 import { shaftOf, shaftX } from './caves';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, SLOT_PAD, VILLAGE_MIN, centerAway, shaftBand, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type Layer } from './bpcore';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, SLOT_PAD, VILLAGE_MIN, bandFreeSpan, centerAway, type Span, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type Layer } from './bpcore';
 
 export type AnchorKind = 'dungeon' | 'village' | 'hall' | 'mineshaft_secret' | 'sky_island' | 'mushroom_biome' | 'crystal_cave' | 'hive'
   | 'cave_lake' | 'ruin' | 'cabin' | 'alcove_snow' | 'alcove_desert' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet' | 'keep' | 'hermit_hut'
@@ -20,7 +20,6 @@ export type AnchorKind = 'dungeon' | 'village' | 'hall' | 'mineshaft_secret' | '
 // wholeRegion：佔滿整個地區（家鄉地城，Q2）——外框可以超出自己的槽，overlapping 對任何與地區相交的查詢都找得到它。
 // avoid：可用範圍（anchorSpan）另外要避開的 x 區間（家鄉空島避開下方地廳 / 礦坑密室的槽，Task 10）。理由：家鄉的天空槽不夠，
 // 整槽避開地廳時 1000 個種子有 26% 放不下兩座空島；改成只避開下方那個 170 格槽，0 個失敗
-export interface Span { x0: number; x1: number }
 export interface Anchor { kind: AnchorKind; region: RegionInfo; layer: Layer; slot: number; wholeRegion?: boolean; avoid?: readonly Span[] }
 
 // 錨點建構器：一律 force，不回 null
@@ -54,26 +53,16 @@ export const ANCHOR_MAX_W: Readonly<Partial<Record<AnchorKind, number>>> = {
   test_probe: 60,
 };
 
-// 錨點的可用範圍：槽扣掉該地區主坑道的坑道帶（bpcore.shaftBand，與 placeX 同一個；鄰槽的坑道帶也可能伸進來）與 a.avoid 的區間後
+// 錨點的可用範圍（bpcore.bandFreeSpan，BlueprintIndex 的家鄉含坑道槽礦坑共用）：槽扣掉該地區主坑道的坑道帶（bpcore.shaftBand，與 placeX 同一個；鄰槽的坑道帶也可能伸進來）與 a.avoid 的區間後
 // 最寬的那一段（平手取左邊的；都碰不到槽 → 整槽）；shaft = 槽含 shaftX（選槽時排在不含坑道的槽之後）。
 // wholeRegion → 整個地區；shaft_cache → 整槽（刻意蓋在坑道底）。BlueprintIndex 把它當成建構器的 slotX0 / slotX1
 export function anchorSpan(seed: string, a: Anchor): { x0: number; x1: number; shaft: boolean } {
   if (a.wholeRegion) return { x0: a.region.x0, x1: a.region.x1, shaft: false };
-  return spanOf(landSlot(a.region, a.slot, a.layer), a.kind === 'shaft_cache' ? NaN : shaftX(seedInt(seed, 'g2-shaft'), a.region), a.avoid);
+  return bandFreeSpan(landSlot(a.region, a.slot, a.layer), a.kind === 'shaft_cache' ? NaN : shaftX(seedInt(seed, 'g2-shaft'), a.region), a.avoid);
 }
 // 村莊（外框最寬 ANCHOR_MAX_W.village）放得進可用範圍、中心離出生點 sp > VILLAGE_MIN（寬度越窄越好放，所以最寬的放得下就都放得下）
 export function villageFits(span: { x0: number; x1: number }, sp: number): boolean {
   return centerAway(span.x0, span.x1, ANCHOR_MAX_W.village!, sp, VILLAGE_MIN) !== null;
-}
-// 槽 sl 扣掉坑道帶（sx 不是有限數 = 沒有坑道）與 avoid 的各區間後最寬的一段（平手取左邊的；全被扣光 = 槽左端、寬 0）
-function spanOf(sl: Span, sx: number, avoid: readonly Span[] = []): { x0: number; x1: number; shaft: boolean } {
-  const shaft = Number.isFinite(sx) && sx >= sl.x0 && sx < sl.x1, cut: Span[] = [...avoid];
-  if (Number.isFinite(sx)) { const { l, r } = shaftBand(sx); cut.push({ x0: l, x1: r }); }
-  let pieces: Span[] = [{ x0: sl.x0, x1: sl.x1 }];
-  for (const c of cut) pieces = pieces.flatMap((p) => (c.x1 <= p.x0 || c.x0 >= p.x1 ? [p] : [{ x0: p.x0, x1: c.x0 }, { x0: c.x1, x1: p.x1 }].filter((q) => q.x1 > q.x0)));
-  let best: Span = { x0: sl.x0, x1: sl.x0 };
-  for (const p of pieces.sort((a, b) => a.x0 - b.x0)) if (p.x1 - p.x0 > best.x1 - best.x0) best = p;
-  return { x0: best.x0, x1: best.x1, shaft };
 }
 
 interface Slot { r: RegionInfo; layer: Layer; q: number; x0: number; x1: number; mid: number }
@@ -113,7 +102,7 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
       for (let q = 0; q < landSlotCount(r, layer); q++) {
         const sl = landSlot(r, q, layer), s: Slot = { r, layer, q, x0: sl.x0, x1: sl.x1, mid: (sl.x0 + sl.x1) / 2 };
         if (taken.has(key(r, layer, q)) || touchesSpawnClear(sl.x0, sl.x1, sp) || !keep(s)) continue;
-        const room = spanOf(sl, sx, avoid?.(s));
+        const room = bandFreeSpan(sl, sx, avoid?.(s));
         if (room.x1 - room.x0 - 2 * SLOT_PAD < need) continue;
         (room.shaft ? shafted : plain).push(s);
       }
@@ -145,7 +134,7 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   // 最寬的村莊在可用範圍內往外移也做不到的槽不放（Task 9）
   const villageOk = (s: Slot): boolean => s.r.biome === BIOME.FOREST
     && (s.r.variant === VARIANT.PLAIN || s.r.variant === VARIANT.HILLS || s.r.variant === VARIANT.SPAWN) && far(s, VILLAGE_MIN)
-    && villageFits(spanOf(s, shaftX(sShaft, s.r)), sp);
+    && villageFits(bandFreeSpan(s, shaftX(sShaft, s.r)), sp);
   const touch = (a: Slot, b: Slot): boolean => a.x0 <= b.x1 && b.x0 <= a.x1;
   // 兩槽的 x 範圍相交（半開區間）
   const overX = (a: Slot, b: Slot): boolean => a.x0 < b.x1 && b.x0 < a.x1;

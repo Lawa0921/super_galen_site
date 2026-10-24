@@ -3,8 +3,10 @@
 //   · 寬 iw ∈ [30, 48]、厚 thick ∈ [9, 14]、高出 lift ∈ [10, 49]；外框 x 用 placeX（置中；SKY 層沒有坑道避讓帶，iw ≤ 48 一定放得下）。
 //   · top = 外框附近（[x0 − 6, x0 + iw + 6)）最高的 profile 地表 − 30 − thick − lift（Q4：相對 Profile2 地表，不看小點位 / 其他天空藍圖，沒有循環）。
 //     島身最低一列 ≤ top + thick + 4（drawSkyIsland 的厚度 ≤ 2 + thick + 1.5），所以島身在地表上方 ≥ 36。
-//   · 繩梯：groundBelow(x) = c.groundAt(x)（profile + SURFACE 層的地面覆寫；只有 SKY / MINOR 的建構器可以讀它，Q4），下端 = 地面 − 3。
-//     外框往下包到 4 個候選繩梯欄的「地面 − 3」最低者（drawSkyIsland 依序試 4 欄，畫出外框會丟 RangeError），往上包到樹冠（top − 9）。
+//   · 繩梯：groundBelow(x) = c.groundAt(x)（profile + SURFACE 層的地面覆寫；只有 SKY / MINOR 的建構器可以讀它，Q4），下端 = 地面 − 3；
+//     地表入口欄（genPrims.entranceHit，純噪聲、局部可算）與海欄回負數（drawSkyIsland 換下一個候選欄；Task 10 修正 1：繩梯不掛在入口坑 / 水面上）。
+//     外框往下包到 4 個候選繩梯欄的地面那一列（含；drawSkyIsland 依序試 4 欄，畫出外框會丟 RangeError；包到地面那一列，
+//     繩梯底下若是湖 / 其他表層藍圖，外框就與它相交 → 空島讓位，crossYields），往上包到樹冠（top − 9）。
 //   · 地標：守望石像（T.GUARDIAN_STATUE、site 'sky_island'），放在離島中央最近、站得住（空氣、頭頂空氣、腳下實心、左右不是箱子）的格。
 //   · 沒有 solid（島在空中，不需要擋洞穴）、沒有 ground（只有 SURFACE 層有地面覆寫，Q4）。
 // 跨層（blueprint.ts）：SKY 一律讓位給相交的表層藍圖（表層不看 SKY）與液體；家鄉的空島錨點選在沒有表層錨點、不在地廳 / 礦坑密室上方的槽，
@@ -14,6 +16,9 @@ import { T } from '../../tiles';
 import { HRng } from '../hrng';
 import { BpCanvas } from '../draw/bpCanvas';
 import { drawSkyIsland, SKY_HH } from '../draw/skyIsland';
+import { seedInt } from '../../noise';
+import { entranceHit } from '../../genPrims';
+import { COL_LAND, COL_SEA } from '../profile';
 import { BP_SKY, placeX, type Blueprint, type BpCtx } from '../bpcore';
 
 // 島面離外框附近地表至少 30 + thick + lift；外框附近 = 島兩側各多 6 欄；樹冠最高到 top − 9（樹幹 ≤ 7 + 冠半徑 2）
@@ -24,20 +29,36 @@ const BODY_MAX = 18;
 const TOP_MIN = CROWN + 4;
 const NOISE_SPAN = 0x7fffffff;
 
+// 錨點（家鄉）：一律放（繩梯 4 個候選欄都接不到地面時仍放、沒有繩梯）
 export function buildSkyIslandBp(c: BpCtx): Blueprint {
+  return skyIsland(c, true)!;
+}
+// 機率表（非家鄉大陸 0.06）：外框 3 個候選位置都沒有接得到地面的繩梯欄 → 不放（回 null）
+export function rollSkyIslandBp(c: BpCtx): Blueprint | null {
+  return skyIsland(c, false);
+}
+
+// 繩梯的 4 個候選欄（drawSkyIsland 的順序）
+const ropeCols = (x0: number, iw: number): number[] => [x0 + iw - 5, x0 + 4, x0 + iw - 8, x0 + 7];
+
+function skyIsland(c: BpCtx, force: boolean): Blueprint | null {
   // ctx.ver 0 的規則
   const p = c.profile, rng = new HRng(c.s, c.id);
   const iw = rng.int(30, 49), thick = rng.int(9, 15), lift = rng.int(10, 50), noiseSeed = Math.floor(rng.next() * NOISE_SPAN);
-  const x0 = placeX(c, iw, true, () => true);
-  if (x0 === null) throw new RangeError(`gen2: sky island ${c.id} does not fit [${c.slotX0}, ${c.slotX1})`);
+  // 繩梯可以接的地面：不是海欄、不是地表入口欄（入口噪聲同 fill.ts）；否則 −1（drawSkyIsland 換下一欄）
+  const sEnt = seedInt(c.seed, 'g2-entrance');
+  const ground = (x: number): number => { const k = p.info(x).kind; return k === COL_SEA || (k === COL_LAND && entranceHit(x, sEnt)) ? -1 : c.groundAt(x); };
+  // 外框 x：placeX 的候選裡第一個有接得到地面的繩梯欄的
+  const x0 = placeX(c, iw, force, (x) => ropeCols(x, iw).some((rx) => ground(rx) >= 0));
+  if (x0 === null) return null;
   let minTop = p.height;
   for (let x = x0 - NEAR; x < x0 + iw + NEAR; x++) minTop = Math.min(minTop, p.surfaceAt(x));
   const top = Math.max(TOP_MIN, minTop - AIR_GAP - thick - lift);
-  // 外框下緣：島身、與 4 個候選繩梯欄的下端（drawSkyIsland 的順序）
+  // 外框下緣：島身、與 4 個候選繩梯欄的地面那一列
   let low = top + BODY_MAX;
-  for (const rx of [x0 + iw - 5, x0 + 4, x0 + iw - 8, x0 + 7]) low = Math.max(low, c.groundAt(rx) - 3);
+  for (const rx of ropeCols(x0, iw)) low = Math.max(low, c.groundAt(rx));
   const y = top - CROWN, cv = new BpCanvas({ x: x0, y, w: iw, h: low + 1 - y }, p);
-  drawSkyIsland(cv, { x0, iw, top, thick, noiseSeed }, rng, (x) => c.groundAt(x));
+  drawSkyIsland(cv, { x0, iw, top, thick, noiseSeed }, rng, ground);
   return cv.toBlueprint(c.id, 'sky_island', BP_SKY, { landmarks: statue(cv, x0, iw, top) });
 }
 
