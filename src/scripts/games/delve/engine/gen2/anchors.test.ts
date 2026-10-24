@@ -126,10 +126,18 @@ describe('gen2 anchors', () => {
       // 礦坑密室彼此 ≥ 2 槽、離出生點 ≥ 160；空島離出生點 ≥ 250；出生石碑在出生點東側
       const ms = a.filter((q) => q.kind === 'mineshaft_secret');
       for (const p of ms) { expect(Math.abs(slotMid(p) - SPAWN_X)).toBeGreaterThanOrEqual(160); for (const q of ms) if (p !== q) expect(Math.abs(slotMid(p) - slotMid(q))).toBeGreaterThanOrEqual(2 * SUB_SLOT_W); }
-      for (const q of a.filter((p) => p.kind === 'sky_island')) expect(Math.abs(slotMid(q) - SPAWN_X)).toBeGreaterThanOrEqual(250);
+      // 空島：退讓鏈 ②（Task 11 修正 1）不限 SKY_MIN，所以只斷言退讓後仍成立的：槽不碰出生點清空區（上面對所有錨點驗過），
+      // 槽寬 ≥ 340 時中點離出生點因此 ≥ 80 + 170 = 250（只有不到 340 寬的地區單槽才可能更近）
+      for (const q of a.filter((p) => p.kind === 'sky_island')) { const sl = slotRange(q); if (sl.x1 - sl.x0 >= 340) expect(Math.abs(slotMid(q) - SPAWN_X)).toBeGreaterThanOrEqual(250); }
       expect(slotMid(a.find((q) => q.kind === 'spawn_tablet')!)).toBeGreaterThan(SPAWN_X);
       expect(a.find((q) => q.kind === 'ruin')!.region.biome).not.toBe(BIOME.SNOW);
-      expect(a.find((q) => q.kind === 'mushroom_biome')!.region.biome).toBe(BIOME.FOREST);
+      // 蘑菇林：首選（森林、不在地廳槽上方）還有空槽時一定在森林；選完全部錨點後仍空著的森林地下層槽，在選蘑菇林時也是空的（錨點只會增加）
+      const mu = a.find((q) => q.kind === 'mushroom_biome')!, takenU = new Set(a.filter((q) => q.layer === BP_UNDER).map((q) => `${q.region.index}:${q.slot}`));
+      const hallSlots = a.filter((q) => q.kind === 'hall').map(slotRange);
+      const forestFree = fitSlots(seed, h.regions.filter((r) => r.biome === BIOME.FOREST && r.variant !== VARIANT.BEACH && r.variant !== VARIANT.DUNGEON), 'mushroom_biome', BP_UNDER,
+        (r, _m, sp) => hallSlots.every((hs) => hs.x1 <= sp.x0 || hs.x0 >= sp.x1)).plain.filter((q) => !takenU.has(`${q.region.index}:${q.slot}`));
+      if (forestFree.length) expect(mu.region.biome, seed).toBe(BIOME.FOREST);
+      expect([VARIANT.BEACH, VARIANT.DUNGEON]).not.toContain(mu.region.variant);
       expect(continentAnchors(seed, g.layout.landmass(1, 2), g.profile)).toEqual([]);
     }
   }, 120_000);
