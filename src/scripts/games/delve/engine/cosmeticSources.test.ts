@@ -14,11 +14,11 @@ import { restoreGame, snapshotGame } from '../save/serialize';
 /** 開局附近就拿得到的材料（spec C8：新角色 10 分鐘內做得出來） */
 // 羽毛只有夜裡的暗羽梟會掉，不算開局材料
 const STARTER = new Set<ItemId>(['wood', 'planks', 'gel', 'dirt', 'stone', 'mushroom']);
-/** 世界生成真的會放的箱子種類：直接掃 legacy/worldgen.ts / legacy/gen/*.ts 裡每個 addChest(…, '<kind>') 呼叫 */
+/** 世界生成真的會放的箱子種類：直接掃 legacy/worldgen.ts 與地城畫圖（gen2/draw/dungeon.ts，legacy 與 gen2 共用）裡每個 addChest(…, '<kind>') 呼叫 */
 function placedChestKinds(): Set<string> {
   const dir = resolve(process.cwd(), 'src/scripts/games/delve/engine');
   const kinds = new Set<string>();
-  for (const f of ['legacy/worldgen.ts', 'legacy/gen/dungeon.ts']) {
+  for (const f of ['legacy/worldgen.ts', 'gen2/draw/dungeon.ts']) {
     const src = readFileSync(resolve(dir, f), 'utf8');
     const calls = [...src.matchAll(/addChest\(([^;]*?)\)[;,]/g)].map((m) => m[1]).filter((a) => !/:\s*number/.test(a));
     expect(calls.length, f).toBeGreaterThan(0);
