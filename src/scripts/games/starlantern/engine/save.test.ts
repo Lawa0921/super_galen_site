@@ -21,7 +21,7 @@ import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 import { NIGHT_BEATS } from '../data/story.zh-TW';
 import { MAX_DAY, SPRING_AFTER, dayOf } from './calendar';
-import { SEASON_SCENES, isSceneId } from '../data/story/scenes';
+import { SEASON_SCENES, isSceneId, type SceneId } from '../data/story/scenes';
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -1250,7 +1250,6 @@ describe('time and moon: the day in the save (Task 1)', () => {
 });
 
 describe('time and moon: the spring festival in the save (Task 7)', () => {
-  afterEach(() => { delete SEASON_SCENES.spring; });
   const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
   const cleared = (): GameState => {
     const g = newGame();
@@ -1262,9 +1261,12 @@ describe('time and moon: the spring festival in the save (Task 7)', () => {
     return g;
   };
   it('a queued or seen season:spring loads, only once it is registered', () => {
-    expect(status(cleared())).toBe('corrupt');   // not written yet: not a scene
-    SEASON_SCENES.spring = 'season:spring';
+    expect(SEASON_SCENES.spring).toBe('season:spring');   // Task 8 wrote and registered it
     expect(status(cleared())).toBe('ok');
+    // a season with no scene written is not a scene
+    const summer = cleared();
+    summer.story.seen.push('season:summer' as SceneId);
+    expect(status(summer)).toBe('corrupt');
     const queued = newGame();
     queued.story.queue.push('season:spring');
     expect(status(queued)).toBe('ok');
@@ -1274,7 +1276,6 @@ describe('time and moon: the spring festival in the save (Task 7)', () => {
 });
 
 describe('time and moon: the festival recorded in the save (Task 7 review)', () => {
-  afterEach(() => { delete SEASON_SCENES.spring; });
   const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
   const recorded = (): GameState => {
     const g = newGame();
@@ -1286,7 +1287,6 @@ describe('time and moon: the festival recorded in the save (Task 7 review)', () 
     return g;
   };
   it('festival saves and loads; one unregistered, not a season scene, before the finale or already seen is refused', () => {
-    SEASON_SCENES.spring = 'season:spring';
     const st = memoryStorage();
     expect(saveGame(st, recorded())).toBe(true);
     const r = loadGame(st);
@@ -1301,7 +1301,8 @@ describe('time and moon: the festival recorded in the save (Task 7 review)', () 
       mut(g);
       expect(status(g), name).toBe('corrupt');
     }
-    delete SEASON_SCENES.spring;
-    expect(status(recorded()), 'unregistered').toBe('corrupt');
+    const summer = recorded();
+    (summer.story as { festival?: unknown }).festival = 'season:summer';   // no such scene written
+    expect(status(summer), 'unregistered').toBe('corrupt');
   });
 });

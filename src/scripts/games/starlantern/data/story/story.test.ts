@@ -4,7 +4,7 @@ import { ITEMS } from '../items';
 import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
-import { FOUND_LINE, GROUP_TITLES, NIGHT_BEATS, NIGHT_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
+import { FOUND_LINE, GROUP_TITLES, NIGHT_BEATS, SEASON_TITLES, NIGHT_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds, type CalendarNow } from './chains';
 import { AFTER_CHOICE, dots, groupShapeBreaks, opensOnDots, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
 import { T } from '../text.zh-TW';
@@ -13,7 +13,7 @@ import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragme
 import { memoryPace } from '../../engine/story/expect';
 import { leadOpen } from '../../engine/story/leads';
 import type { StoryMood } from '../../render/artPaths';
-import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, type GroupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, SCENE_TIME, sceneTime, type SceneId, type Stage, type StoryGate } from './scenes';
+import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, type GroupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, SCENE_TIME, SEASON_SCENES, sceneTime, type SceneId, type Stage, type StoryGate } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
 
@@ -119,7 +119,8 @@ describe('story data', () => {
     const memories = SCENE_IDS.filter((id) => sceneKind(id) === 'memory');
     expect(memories.length).toBe(57);
     for (const id of memories) expect(sceneTime(id), id).toBe('night');
-    for (const id of SCENE_IDS.filter((x) => sceneKind(x) !== 'memory' && x !== 'rin-reveal')) expect(sceneTime(id), id).toBe('day');
+    for (const id of SCENE_IDS.filter((x) => sceneKind(x) !== 'memory' && !SCENE_TIME[x])) expect(sceneTime(id), id).toBe('day');
+    expect(sceneTime('season:spring')).toBe('night');   // Task 8: the festival, registered, is a night scene
   });
 
   it('whenHolds checks the moon, the time and the season given a calendar, and holds without one', () => {
@@ -631,6 +632,8 @@ describe('the script gates', () => {
       if (!(COMPANIONS as string[]).includes(who) || who === ownerOf(key) || banterTwo(key).includes(who)) continue;
       // story L Task 8: a night's beat is said only by one met (engine/story/nights.ts `nextBeat`, tested there)
       if (key.startsWith('nightBeats.')) continue;
+      // time and moon Task 8: the spring festival waits for Chizuru's homecoming (`nextSeasonScene`), so she is met
+      if (key.startsWith('scenes.season:') && who === 'chizuru') continue;
       // story L Tasks 9-11: a group scene waits for its cast (`GROUP_GATE`), so its one reading needs no `if.met`
       const [top, id] = key.split('.');
       if (top === 'scenes' && sceneKind(id as SceneId) === 'group' && (GROUP_GATE[id as GroupScene].met ?? []).includes(who as CharacterId)) continue;
@@ -3676,7 +3679,7 @@ describe('story L Task 15: the script reads fewer ways (spec §10)', () => {
     // out). Tasks 12 and 13 took 12, Task 14 keeps the finale at 24, Task 15 takes 9 more.
     // Two rows read as the spec could not: chat:scarlet:2 splits on what her last piece undoes (the debt, the duty), not only
     // on 「閣下」, so it keeps 2; the finale keeps Bobby's whole chain (her family's sword), so 25.
-    expect(all.length).toBeLessThanOrEqual(107);
+    expect(all.length).toBeLessThanOrEqual(109);   // time and moon Task 8: the spring festival's two readings (review fix 10), +2
     const AFTER: [SceneId, number][] = [
       ['finale', 25], ['chat:noel:2', 9], ['chat:chizuru:2', 2], ['chat:sylvie:1', 0], ['chat:sylvie:2', 0],
       ['chat:selene:2', 0], ['chat:scarlet:2', 2], ['hero-alone', 3], ['rin-confess', 14],
@@ -3709,5 +3712,61 @@ describe('story L Task 15: the script reads fewer ways (spec §10)', () => {
     const sylvie = STORY.scenes['rin-confess'].lines.filter((l) => l.who === 'sylvie');
     expect(sylvie).toHaveLength(1);
     expect(sylvie[0].if).toEqual({ met: 'sylvie' });
+  });
+});
+
+// Time and moon Task 8 (ruling 7): the spring festival at Chizuru's shrine, after the finale. Two readings: with the act 4
+// group scene seen (she stopped the song there) and without it (the finale did not set up the changed line).
+describe('time and moon: the spring festival (Task 8)', () => {
+  const id: SceneId = 'season:spring';
+  const reading = (seen: boolean) => linesWhen(STORY.scenes[id].lines, { met: [...CHARACTER_IDS], full: [], returned: [], oath: true, seen: seen ? ['group:act4'] : [] });
+  const at = (lines: ScriptLine[], re: RegExp) => lines.findIndex((l) => re.test(l.text));
+
+  it('it is registered and written, Chizuru\'s, at night by her shrine', () => {
+    expect(SEASON_SCENES.spring).toBe(id);
+    expect(SCENE_IDS).toContain(id);
+    expect(STORY.scenes[id].title).toBe(`${CHARACTERS.chizuru.name}・${SEASON_TITLES.spring}`);
+    expect(STORY.scenes[id].lines[0].place).toEqual({ text: '鎮邊小祠・春祭之夜', night: true });
+    expect(STORY.scenes[id].summary.length).toBeGreaterThan(0);
+  });
+
+  it('the spring festival sings the changed line to its end', () => {
+    for (const seen of [true, false]) {
+      const w: Partial<LineWhen> = { oath: true, seen: seen ? ['group:act4'] : [] };
+      expect(() => pinBeat(id, w, /堆成一座小山.*白蘿蔔/), String(seen)).not.toThrow();
+      expect(() => pinBeat(id, w, /春祭的燈/), String(seen)).not.toThrow();
+      expect(() => pinBeat(id, w, /『提燈的人，回來了。』/), String(seen)).not.toThrow();
+      const lines = reading(seen);
+      expect(lines.at(-1)!.who, String(seen)).toBe('narrator');
+      expect(lines.at(-1)!.text, String(seen)).toMatch(/鈴響/);
+      expect(at(lines, /春祭的燈/), String(seen)).toBeLessThan(at(lines, /『提燈的人，回來了。』/));
+      expect(lines.length, String(seen)).toBeLessThanOrEqual(lineCap(id));
+    }
+  });
+
+  it('it reads both ways: with group:act4 seen she stops a beat, without it she sets up the changed line first', () => {
+    const seen = reading(true);
+    const not = reading(false);
+    expect(at(seen, /停了一拍/)).toBeGreaterThan(at(seen, /春祭的燈/));
+    expect(at(seen, /停了一拍/)).toBeLessThan(at(seen, /『提燈的人，回來了。』/));
+    expect(at(seen, /原本的後半/)).toBe(-1);
+    // review fix 10: the old second half (the lamp-bearer did not come back) and this year's change, both before the new line
+    const setUp = at(not, /原本的後半.*沒有回來/);
+    expect(setUp).toBeGreaterThanOrEqual(0);
+    expect(not[setUp].text).toMatch(/改了/);
+    expect(setUp).toBeLessThan(at(not, /『提燈的人，回來了。』/));
+    expect(at(not, /停了一拍/)).toBe(-1);
+  });
+
+  it('every speaker but Chizuru and Lorne is met first; a light scene', () => {
+    for (const l of STORY.scenes[id].lines) {
+      if (l.who === 'narrator' || l.who === 'chizuru' || l.who === 'hero' || !(CHARACTER_IDS as string[]).includes(l.who)) continue;
+      expect(l.if?.met, `${l.who}: ${l.text}`).toBe(l.who);
+    }
+    for (const seen of [true, false]) {
+      const lines = reading(seen);
+      expect(lines.filter((l) => dots(l.text) > 0).length, String(seen)).toBeLessThanOrEqual(1);
+      expect(lines.filter((l) => l.who === 'hero').length, String(seen)).toBe(1);   // Lorne: one short line, no lecture
+    }
   });
 });

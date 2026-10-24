@@ -5620,7 +5620,6 @@ describe('time and moon: the moon in the labyrinth (Task 2)', () => {
 });
 
 describe('time and moon: the seasons and the spring festival in the game (Task 7)', () => {
-  afterEach(() => { delete SEASON_SCENES.spring; });
 
   it('the finale writes the spring day', () => {
     const f = finaleGame('normal');
@@ -5651,7 +5650,7 @@ describe('time and moon: the seasons and the spring festival in the game (Task 7
   });
 
   it('the festival leads the night and a reload plays it again, as the return recorded it, until it is seen', () => {
-    SEASON_SCENES.spring = 'season:spring';
+    expect(SEASON_SCENES.spring).toBe('season:spring');   // Task 8: written and registered
     const storage = memoryStorage();
     const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
     const st = g.state;
@@ -5699,10 +5698,8 @@ describe('time and moon: the seasons and the spring festival in the game (Task 7
 });
 
 describe('time and moon: a reload never decides the festival again (Task 7 review)', () => {
-  afterEach(() => { delete SEASON_SCENES.spring; });
   /** After the finale, Rin's choice made, Chizuru whole (`home`: her homecoming already seen), Noel holding an untold piece. */
   const afterFinale = (storage: ReturnType<typeof memoryStorage>, o: { home: boolean; day: number; springDay: number }) => {
-    SEASON_SCENES.spring = 'season:spring';
     const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
     const st = g.state;
     st.dungeon.reached.mainline = 30;

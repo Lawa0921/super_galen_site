@@ -50,6 +50,8 @@ const POLISHED: string[] = [
   'scenes.group:',
   // Difficulty plan Task 7a: Glen's one line when Nightmare opens.
   'tierUnlock',
+  // Time and moon Task 8: the spring festival at Chizuru's shrine
+  'scenes.season:',
 ];
 
 type Scope = readonly string[];

@@ -41,7 +41,7 @@ export const REACTIONS: Partial<Record<ActNode, GroupScene>> = { act2: 'group:ac
  * conditions hold (`engine/story/events.ts` `nextSeasonScene`); never queued. Like `REACTIONS`, only the ones written are
  * registered (the writing task adds each with its script); `isSceneId` reads it when called, `SCENE_IDS` when loaded.
  */
-export const SEASON_SCENES: Partial<Record<Season, SceneId>> = {};
+export const SEASON_SCENES: Partial<Record<Season, SceneId>> = { spring: 'season:spring' };   // time and moon Task 8: the spring festival, written
 /** Time and moon ruling 7 (review fix 4): the night's order. The group scene, then the season's scene, then the memories. */
 export const NIGHT_RANK = { group: 0, season: 1, memory: 2 } as const;
 /** A scene the reaction slot holds, played as the night's first item: a group scene, or (after the finale) a season's scene. */

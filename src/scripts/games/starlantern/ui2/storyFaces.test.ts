@@ -113,7 +113,7 @@ describe('companion grave faces', () => {
     const heavy = lines.filter((l) => NORMAL_SMILES.has(l.who) && l.mood && GRAVE.has(l.mood));
     const s = state();
     const hidden = heavy.filter((l) => !speakerOf(l.who, s, ART, l.mood).face).map((l) => `${l.who} ${l.mood} ${l.text}`);
-    expect(heavy).toHaveLength(106);   // story polish M: memories end on an action now, not on a said wound (107 -> 100); story L group:act2 +1, group:act3 +3, group:act4 +7; story L Tasks 12-13: chat:sylvie:1 and :2 read one way (-2), chat:chizuru:2 waits for Bobby (-2); story L Tasks 14-15 net 0 (the finale's Selene wistful and second Scarlet vow +2, hero-alone's Scarlet -2), then the cold read's silent Scarlet in the finale (-1)
+    expect(heavy).toHaveLength(108);   // time and moon Task 8: the spring festival's two solemn Chizuru lines (+2)   // story polish M: memories end on an action now, not on a said wound (107 -> 100); story L group:act2 +1, group:act3 +3, group:act4 +7; story L Tasks 12-13: chat:sylvie:1 and :2 read one way (-2), chat:chizuru:2 waits for Bobby (-2); story L Tasks 14-15 net 0 (the finale's Selene wistful and second Scarlet vow +2, hero-alone's Scarlet -2), then the cold read's silent Scarlet in the finale (-1)
     expect(hidden).toEqual([]);
     // Liz's hushed lines are not grave but used to borrow her smile: all 7 now have the hushed face (story polish M: her meeting has none).
     const hushed = lines.filter((l) => l.who === 'liz' && l.mood === 'hushed');
@@ -260,7 +260,7 @@ describe('faces in a heavy scene (staging S3)', () => {
     }
     expect(smiling).toEqual([]);
     expect(hiddenHeavy).toEqual([]);   // face wave 3: no heavy line in the whole script hides the portrait
-    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(400);   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line; story L Tasks 12-13: -6 (chat:sylvie:1 without Bobby, :2 one reading, chat:chizuru:2 without the reading that has not met Bobby); story L Tasks 14-15: -4 (chat:selene:2 -2, hero-alone -2, rin-confess -1, the finale +1); the cold read: Scarlet's silent fallback is narration (-1)
+    expect(Object.values(tally).reduce((a, b) => a + b, 0)).toBe(406);   // time and moon Task 8: the spring festival, six character lines (+6)   // story polish M: 395 -> 382, present halves told by action, act 2's question folded into Anna's line; story L Tasks 12-13: -6 (chat:sylvie:1 without Bobby, :2 one reading, chat:chizuru:2 without the reading that has not met Bobby); story L Tasks 14-15: -4 (chat:selene:2 -2, hero-alone -2, rin-confess -1, the finale +1); the cold read: Scarlet's silent fallback is narration (-1)
     // 395 character lines. Before S3 the 15 heavy lines of a non-glad mood without art showed a companion's smile, and 60
     // heavy lines of Lorne and Rin their normal: 75 lines, which now take a near face (35), Rin's calm normal (17) or no
     // portrait (23). A glad mood still borrows the smile (22). The light scenes are as they were.
@@ -288,7 +288,9 @@ describe('faces in a heavy scene (staging S3)', () => {
       // face wave 3: Noel's three light pout lines show her pout, no longer her smile
       // face wave 4: 18 light blush, smug and excited lines leave the borrowed smile, and Rin's one light averted her calm
       // normal (exact +19)
-      'light exact': 114, 'light smiling-normal': 77,
+      // time and moon Task 8: the spring festival, a light scene (exact +3: Chizuru's bewildered and two solemn lines;
+      // smiling normal +3: her two smiles and Lorne's)
+      'light exact': 117, 'light smiling-normal': 80,
     });
   });
 });

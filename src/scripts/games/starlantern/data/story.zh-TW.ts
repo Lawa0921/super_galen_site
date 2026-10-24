@@ -6,7 +6,7 @@ import { MEETINGS, type Meetable } from './meetings';
 import { numeral } from './numeral';
 import { CHAINS, type MoonPhase, type Season } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
-import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, SEASON_SCENES, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
 
 export type NpcId = 'anna' | 'orik' | 'marta' | 'glen' | 'doran' | 'merchant' | 'bellkeeper';
 export const NPC_NAMES: Record<NpcId, string> = {
@@ -1555,6 +1555,30 @@ const HOME: Record<HomeOwner, Written> = {
 };
 
 /**
+ * Time and moon ruling 7 (lore ledger I-200): the spring festival at Chizuru's shrine, the first spring night after her
+ * homecoming once the finale is over. Two readings: with `group:act4` seen she stops a beat where she used to stop singing;
+ * without it she first tells the children what the old second half said, and that she changed it this year.
+ */
+const SEASON: Partial<Record<Season, Written>> = {
+  spring: {
+    lines: [
+      at({ text: '鎮邊小祠・春祭之夜', night: true }, N('冬天過去了。鎮邊小祠的屋簷下掛滿紙燈，祠前的供品堆成一座小山，全是白蘿蔔。')),
+      { who: 'chizuru', mood: 'bewildered', text: '「春祭開始了。照我們那時候的規矩，先向神明報上供品：白蘿蔔、白蘿蔔，還有白蘿蔔。」' },
+      { who: 'marta', text: '「賣菜的婆婆起的頭，整條街都跟著供。今晚旅館大概只能煮蘿蔔湯了。」' },
+      { who: 'chizuru', mood: 'solemn', text: '「這首祭歌原本的後半，唱的是提燈的人沒有回來。從今年起，我改了這一句。」', if: { notSeen: 'group:act4' } },
+      N('千鶴清了清喉嚨。鎮上的孩子圍過來，跟著她唱。'),
+      { who: 'chizuru', mood: 'solemn', text: '「『春祭的燈，誰提下去？提燈的人，不留名字──』」' },
+      { who: 'narrator', text: '唱到她從前不唱的那一段，千鶴停了一拍。', if: { seen: 'group:act4' } },
+      { who: 'chizuru', mood: 'smile', text: '「『提燈的人，回來了。』」' },
+      { who: 'hero', mood: 'smile', text: '「回來是回來了。這麼多白蘿蔔，誰吃得完？」' },
+      { who: 'chizuru', mood: 'smile', text: '「歌是活著的人唱的，活著的人就改得了。至於蘿蔔，大家一起吃，就吃得完。」' },
+      N('屋簷下的鈴響了一聲。千鶴看著洛恩，孩子們又把新的那一句唱了一遍。'),
+    ],
+    summary: '冬天過去，千鶴在鎮邊的小祠辦春祭。供品全是白蘿蔔；她當著全鎮把改過的祭歌唱完：提燈的人，回來了。',
+  },
+};
+
+/**
  * B1: town banter (voice-pass sample §6). Two companions talk among themselves on a return; Lorne listens (one line at most,
  * or the narrator gives his reaction). Light scenes: one 「……」 at most. The gate (`BANTER_GATE`) guarantees both are met, so
  * neither line needs `if.met`. A banter with no gate can play before or after Rin's choice and before either one's first
@@ -1936,6 +1960,8 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
   }
   for (const f of TOWN_FRAGMENTS) out[`town:${f.id}`] = { title: `${f.npc}的記憶`, ...TOWN_SCENES[f.id] };
   for (const c of HOME_OWNERS) out[homeScene(c)] = { title: `${nameOf(c)}・${HOME_TITLES[c]}`, ...HOME[c] };
+  // time and moon ruling 7: a season's scene is in the script once registered (Task 8 writes the spring festival)
+  for (const [season, id] of Object.entries(SEASON_SCENES) as [Season, SceneId][]) out[id] = { title: `${nameOf('chizuru')}・${SEASON_TITLES[season]}`, ...written(SEASON[season], id) };
   for (const p of BANTER_PAIRS) {
     for (let n = 1; n <= (BANTER_COUNT[p] ?? 0); n++) {
       const id = banterScene(p, n);

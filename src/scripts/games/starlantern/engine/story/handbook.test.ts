@@ -111,7 +111,9 @@ describe("the adventurer's handbook", () => {
     const s = everything();
     for (const c of HOME_OWNERS) {
       const page = handbook(s).people.find((p) => p.id === c)!;
-      expect(page.scenes.map((e) => e.scene).slice(-1), c).toEqual([homeScene(c)]);
+      // time and moon Task 8: the spring festival follows Chizuru's homecoming on her page
+      const tail: SceneId[] = c === 'chizuru' ? [homeScene(c), 'season:spring'] : [homeScene(c)];
+      expect(page.scenes.map((e) => e.scene).slice(-tail.length), c).toEqual(tail);
     }
     s.story.seen = s.story.seen.filter((id) => id !== 'home:liz');
     expect(handbook(s).people.find((p) => p.id === 'liz')!.scenes.map((e) => e.scene)).not.toContain('home:liz');
@@ -422,13 +424,8 @@ describe('time and moon: the handbook says the moon (Task 4)', () => {
 });
 
 describe('time and moon: the spring festival in the handbook (Task 7)', () => {
-  afterEach(() => {
-    delete SEASON_SCENES.spring;
-    delete (STORY.scenes as Record<string, unknown>)['season:spring'];
-  });
   it("the festival sits after Chizuru's homecoming on her page", () => {
-    SEASON_SCENES.spring = 'season:spring';
-    (STORY.scenes as Record<string, unknown>)['season:spring'] = { title: `${CHARACTERS.chizuru.name}・${SEASON_TITLES.spring}`, lines: [], summary: '' };
+    expect(SEASON_SCENES.spring).toBe('season:spring');   // Task 8: written and registered
     const s = withMemories(fresh(), 'chizuru', chainLength('chizuru'));
     for (let n = 1; n <= chainLength('chizuru'); n++) s.story.seen.push(memScene('chizuru', n));
     s.story.seen.push('home:chizuru');
