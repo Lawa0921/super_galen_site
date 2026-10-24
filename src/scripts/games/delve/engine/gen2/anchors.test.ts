@@ -2,11 +2,11 @@
 // 地城區只有地城錨點、地城區沒有主坑道、錨點優先於大陸的保證槽（Q15）。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
-import { BlueprintIndex, landSlot, slotOf, BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, slotWidth } from './blueprint';
+import { BlueprintIndex, landSlot, landSlotCount, slotOf, BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, slotWidth, type Layer } from './blueprint';
 import { ANCHOR_MAX_W, anchorSpan, continentAnchors, homeAnchors, type Anchor, type AnchorKind } from './anchors';
 import { homeDungeonRegion, SPAWN_X, VARIANT, type Landmass } from './layout';
 import { shaftOf, shaftX, SHAFT_REACH } from './caves';
-import { seedInt } from '../noise';
+import { hash2, seedInt } from '../noise';
 import { BIOME } from '../world';
 import { SEEDS5 } from './testUtil';
 import type { RegionInfo } from '../regionInfo';
@@ -27,6 +27,16 @@ function spanProblem(seed: string, a: Anchor): string | null {
   // 含坑道的槽：取較大的一側
   if (Number.isFinite(sx) && sp.x1 - sp.x0 < Math.min(sl.x1 - sl.x0, Math.max(sx - SHAFT_REACH - 1 - sl.x0, sl.x1 - sx - SHAFT_REACH - 2))) return 'not the larger side';
   return null;
+}
+// kind 在 layer 層放得下的槽（不碰出生點清空區、可用範圍 − 16 ≥ 最大外框；含坑道的槽也算）：plain = 不含坑道、shafted = 含坑道
+function fitSlots(seed: string, rs: readonly RegionInfo[], kind: AnchorKind, layer: Layer, keep: (r: RegionInfo, mid: number) => boolean) {
+  const plain: Anchor[] = [], shafted: Anchor[] = [];
+  for (const r of rs) for (let q = 0; q < landSlotCount(r, layer); q++) {
+    const a: Anchor = { kind, region: r, layer, slot: q }, sl = slotRange(a), sp = anchorSpan(seed, a);
+    if (slotOverlapsSpawnClear(a) || !keep(r, (sl.x0 + sl.x1) / 2) || sp.x1 - sp.x0 - 16 < ANCHOR_MAX_W[kind]!) continue;
+    (sp.shaft ? shafted : plain).push(a);
+  }
+  return { plain, shafted };
 }
 // 藍圖所在槽的序號（槽 x0 = 地區 x0 + 序號 × 槽寬）
 const slotIndex = (g: Gen2Source, id: number): number => { const s = slotOf(id, g.layout); return (s.x0 - s.region.x0) / slotWidth(s.layer); };
@@ -57,8 +67,12 @@ describe('gen2 anchors', () => {
       expect(Math.abs(slotMid(a.find((q) => q.kind === 'molten_shrine')!) - SPAWN_X)).toBeGreaterThanOrEqual(630);
       // 第 1 座地廳在非地城那一端的外圍生態地區（地廳要整槽 170 格，最外側的槽被坑道帶切到時只能放最後那個較寬的槽，
       // 槽中點可能到 509.5——所以釘地區本身、與槽中點 < 沙灘 70 + 外圍最寬 630）
-      const far = a.find((q) => q.kind === 'hall')!, dWest = homeDungeonRegion(h).x0 < SPAWN_X, end = dWest ? 4200 : 0;
-      expect(far.region).toBe(dWest ? h.regions.at(-2) : h.regions[1]); expect(Math.abs(slotMid(far) - end)).toBeLessThan(700);
+      const far = a.find((q) => q.kind === 'hall')!, dWest = homeDungeonRegion(h).x0 < SPAWN_X, end = dWest ? 4200 : 0, outer = dWest ? h.regions.at(-2)! : h.regions[1];
+      expect(far.region).toBe(outer);
+      // 外圍地區合格的 DEEP 槽（有不含坑道的就只看那些）裡，沒有比第 1 座更靠近端點的
+      const fit = fitSlots(seed, [outer], 'hall', BP_DEEP, () => true), pool = fit.plain.length ? fit.plain : fit.shafted;
+      expect(pool.map((q) => q.slot)).toContain(far.slot);
+      for (const q of pool) expect(Math.abs(slotMid(q) - end), `${seed} slot ${q.slot}`).toBeGreaterThanOrEqual(Math.abs(slotMid(far) - end));
       for (const q of a) expect(slotOverlapsSpawnClear(q), q.kind).toBe(false);                          // 所有層，含 MINOR 的 spawn_tablet（Q16）
       expect(a.filter((q) => q.wholeRegion).map((q) => q.kind)).toEqual(['dungeon']);
       // 每個錨點的外框可用範圍都不碰坑道帶、放得下該種最大外框（含坑道的槽也一樣）
@@ -122,6 +136,25 @@ describe('gen2 anchors', () => {
       expect(g.blueprints.overlapping(dz.x0, dz.x1), seed).toEqual([]);
     }
   }, 60_000);
+
+  it('村莊數 = 擲出的 2 / 3 / 4，只有家鄉放得下村莊的槽（含坑道槽）不夠時才少（600 個種子）', () => {
+    const dist: Record<number, number> = { 2: 0, 3: 0, 4: 0 };
+    let short = 0;
+    for (let k = 0; k < 600; k++) {
+      const seed = `vil-${k}`, g = new Gen2Source(seed), h = g.layout.landmassAt(SPAWN_X)!;
+      const got = g.blueprints.anchorsOf(h).filter((q) => q.kind === 'village').length;
+      const hv = hash2(1, 0, seedInt(seed, 'g2-anchor')), rolled = hv < 0.15 ? 2 : hv < 0.75 ? 3 : 4;
+      // 村莊在其他表層錨點之前選（地城不在森林），所以容量 = 全家鄉放得下村莊的森林表層槽
+      const fit = fitSlots(seed, h.regions.filter((r) => r.variant !== VARIANT.BEACH && r.variant !== VARIANT.DUNGEON), 'village', BP_SURFACE,
+        (r, mid) => r.biome === BIOME.FOREST && [VARIANT.PLAIN, VARIANT.HILLS, VARIANT.SPAWN].includes(r.variant as never) && Math.abs(mid - SPAWN_X) >= 200);
+      const cap = fit.plain.length + fit.shafted.length;
+      expect(got, `${seed} rolled ${rolled} cap ${cap}`).toBe(Math.min(rolled, cap));
+      if (got < rolled) { expect(cap).toBeLessThan(rolled); short++; }
+      dist[got]++;
+    }
+    // 實測（M2a Task 7 修正 1）：2 / 3 / 4 座 = 104 / 381 / 115、因容量不足而少的 20 個；擲到 4 的 25% 大多真的放 4 座
+    expect(dist[4]).toBeGreaterThan(600 * 0.18); expect(short).toBeLessThan(600 * 0.06);
+  }, 120_000);
 
   it('整個家鄉找不到放得下的槽 → RangeError（不默默少放）', () => {
     const g = new Gen2Source('anc-0'), h = g.layout.landmassAt(SPAWN_X)!;

@@ -211,6 +211,21 @@ describe('gen2 anchors in the blueprint index', () => {
     expect(idx.groundAt(-3000)).toBe(g.blueprints.groundAt(-3000));
   });
 
+  it('錨點建構器的執行期檢查：外框比 ANCHOR_MAX_W 寬、或超出可用範圍 ± SLOT_PAD → 丟錯', () => {
+    const ss = seedInt('whole', 'g2-shaft'), sx = shaftX(ss, r), n = Math.floor((r.x1 - r.x0) / LAND_SLOT_W);
+    const slot = Math.min(Math.floor((sx - r.x0) / LAND_SLOT_W), n - 1), sl = landSlot(r, slot, BP_SURFACE);
+    const mk = () => new BlueprintIndex('whole', g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot }] : []) });
+    const at = (x: number, w: number) => (c: BpCtx): Blueprint => ({ ...wholeBox(c), x, w, wholeRegion: false });
+    probe = (c) => at(placeX(c, 61, true, () => true)!, 61)(c);
+    expect(() => mk().overlapping(sl.x0, sl.x1)).toThrow(/wider than 60/);
+    probe = (c) => at(c.slotX0 + 7, 30)(c);                                  // 離可用範圍左緣只有 7 格
+    expect(() => mk().overlapping(sl.x0, sl.x1)).toThrow(/outside its span/);
+    probe = (c) => at(sx - 10, 30)(c);                                       // 壓在坑道上
+    expect(() => mk().overlapping(sl.x0, sl.x1)).toThrow(/outside its span/);
+    probe = (c) => at(placeX(c, 60, true, () => true)!, 60)(c);             // 剛好合格
+    expect(mk().overlapping(sl.x0, sl.x1).some((b) => b.id === structureId(0, 0, r.index, slot, BP_SURFACE))).toBe(true);
+  });
+
   it('錨點在含坑道的槽：建構器的 slotX0 / slotX1 = 避開坑道帶後較大的一側，用 placeX 放的外框離坑道觸及範圍 ≥ 1', () => {
     const ss = seedInt('whole', 'g2-shaft'), sx = shaftX(ss, r), q = Math.floor((sx - r.x0) / LAND_SLOT_W);
     const sl = landSlot(r, Math.min(q, Math.floor((r.x1 - r.x0) / LAND_SLOT_W) - 1), BP_SURFACE), slot = (sl.x0 - r.x0) / LAND_SLOT_W;

@@ -21,7 +21,7 @@ import { X_LIMIT } from '../coords';
 import { li, type Column } from '../column';
 import type { RegionInfo } from '../regionInfo';
 import { HOME_X0, SPAWN_X, VARIANT, type Landmass, type Layout, type SeaSlot } from './layout';
-import { anchorBuild, anchorSpan, continentAnchors, homeAnchors, type Anchor } from './anchors';
+import { ANCHOR_MAX_W, anchorBuild, anchorSpan, continentAnchors, homeAnchors, type Anchor } from './anchors';
 import type { Profile2 } from './profile';
 import { shaftX } from './caves';
 import { buildCabin } from './structures/cabin';
@@ -29,7 +29,7 @@ import { buildRuin } from './structures/ruin';
 import { buildLake, buildCaveLake, buildLavaPool } from './structures/lakes';
 import { buildShipwreck } from './structures/shipwreck';
 import { buildCrate } from './structures/crate';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, KEEP, slotWidth, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, KEEP, SLOT_PAD, slotWidth, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
 import { encodeStructureId, decodeStructureId } from './structId';
 
 export {
@@ -293,7 +293,15 @@ export class BlueprintIndex {
     if (a) {
       // 建構器的 slotX0 / slotX1 = 錨點的可用範圍（含坑道的槽 → 避開坑道帶後較大的一側；wholeRegion → 整個地區）
       const f = anchorBuild(a.kind), sp = anchorSpan(this.seed, a);
-      return f ? f({ ...this.ctx(m, r, q, layer), slotX0: sp.x0, slotX1: sp.x1 }) : null;
+      if (!f) return null;
+      const bp = f({ ...this.ctx(m, r, q, layer), slotX0: sp.x0, slotX1: sp.x1 });
+      // 執行期檢查（非 wholeRegion、非 shaft_cache）：外框寬 ≤ ANCHOR_MAX_W、外框在 [span.x0 + SLOT_PAD, span.x1 − SLOT_PAD) 內（不會蓋到坑道帶）
+      if (!a.wholeRegion && a.kind !== 'shaft_cache') {
+        const max = ANCHOR_MAX_W[a.kind];
+        if (max !== undefined && bp.w > max) throw new RangeError(`gen2: anchor ${a.kind} box ${bp.w} wider than ${max}`);
+        if (bp.x < sp.x0 + SLOT_PAD || bp.x + bp.w > sp.x1 - SLOT_PAD) throw new RangeError(`gen2: anchor ${a.kind} box [${bp.x}, ${bp.x + bp.w}) outside its span [${sp.x0}, ${sp.x1}) ± ${SLOT_PAD}`);
+      }
+      return bp;
     }
     if (r.variant === VARIANT.DUNGEON) return null;
     const sl = landSlot(r, q, layer);

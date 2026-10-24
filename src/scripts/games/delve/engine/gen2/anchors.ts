@@ -10,8 +10,8 @@ import { BIOME } from '../world';
 import type { RegionInfo } from '../regionInfo';
 import { HOME_X0, SPAWN_X, VARIANT, homeDungeonRegion, type Landmass } from './layout';
 import type { Profile2 } from './profile';
-import { shaftOf, shaftX, SHAFT_REACH } from './caves';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, SLOT_PAD, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type Layer } from './bpcore';
+import { shaftOf, shaftX } from './caves';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, SLOT_PAD, shaftBand, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type Layer } from './bpcore';
 
 export type AnchorKind = 'dungeon' | 'village' | 'hall' | 'mineshaft_secret' | 'sky_island' | 'mushroom_biome' | 'crystal_cave' | 'hive'
   | 'cave_lake' | 'ruin' | 'cabin' | 'alcove_snow' | 'alcove_desert' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet' | 'keep' | 'hermit_hut'
@@ -47,9 +47,11 @@ const SECRET_GAP = 2 * SUB_SLOT_W, UNDER_TRIES = 8;
 export const ANCHOR_MAX_W: Readonly<Partial<Record<AnchorKind, number>>> = {
   village: 91, ruin: 20, cabin: 75, cave_lake: 65, hall: 154, mineshaft_secret: 154, sky_island: 48,
   mushroom_biome: 145, crystal_cave: 125, hive: 37, alcove_snow: 9, alcove_desert: 9, molten_shrine: 15, spawn_tablet: 12,
+  // 只給測試（BlueprintIndex 的執行期寬度檢查）
+  test_probe: 60,
 };
 
-// 錨點的可用範圍：槽扣掉該地區主坑道的坑道帶 [sx − SHAFT_REACH − 1, sx + SHAFT_REACH + 2)（同 placeX；鄰槽的坑道帶也可能伸進來）後
+// 錨點的可用範圍：槽扣掉該地區主坑道的坑道帶（bpcore.shaftBand，與 placeX 同一個；鄰槽的坑道帶也可能伸進來）後
 // 較大的那一側（平手取左側；帶子碰不到槽 → 整槽）；shaft = 槽含 shaftX（選槽時排在不含坑道的槽之後）。
 // wholeRegion → 整個地區；shaft_cache → 整槽（刻意蓋在坑道底）。BlueprintIndex 把它當成建構器的 slotX0 / slotX1
 export function anchorSpan(seed: string, a: Anchor): { x0: number; x1: number; shaft: boolean } {
@@ -58,7 +60,7 @@ export function anchorSpan(seed: string, a: Anchor): { x0: number; x1: number; s
 }
 function spanOf(sl: { x0: number; x1: number }, sx: number): { x0: number; x1: number; shaft: boolean } {
   if (!Number.isFinite(sx)) return { x0: sl.x0, x1: sl.x1, shaft: false };
-  const l = sx - SHAFT_REACH - 1, r = sx + SHAFT_REACH + 2, shaft = sx >= sl.x0 && sx < sl.x1;
+  const { l, r } = shaftBand(sx), shaft = sx >= sl.x0 && sx < sl.x1;
   if (r <= sl.x0 || l >= sl.x1) return { x0: sl.x0, x1: sl.x1, shaft };
   const lw = Math.max(0, l - sl.x0), rw = Math.max(0, sl.x1 - r);
   return lw >= rw ? { x0: sl.x0, x1: sl.x0 + lw, shaft } : { x0: sl.x1 - rw, x1: sl.x1, shaft };
@@ -136,8 +138,8 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   const v2 = add('village', nearest(vfree((s) => s.mid > sp), sp + VILLAGE_AIM) ?? nearest(vfree((s) => !touch(s, v1)), sp + VILLAGE_AIM)
     ?? nearest(vfree(() => true), sp + VILLAGE_AIM));
   const villages = [v1, v2];
-  // 總數 2 / 3 / 4（15% / 60% / 25%），但不超過家鄉放得下村莊的槽數（容量：2000 個種子最少 3，擲到 4 而只有 3 槽的約 4%）
-  const hv = u(1, 0), nVillage = Math.min(hv < 0.15 ? 2 : hv < 0.75 ? 3 : 4, villages.length + vfree(() => true).length);
+  // 總數 2 / 3 / 4（15% / 60% / 25%）：補到擲出的數；只有家鄉放得下村莊的槽（含坑道槽的備案）真的用完才停（前 2 座已保證，否則上面丟錯）
+  const hv = u(1, 0), nVillage = hv < 0.15 ? 2 : hv < 0.75 ? 3 : 4;
   while (villages.length < nVillage) {
     // 剩下合格槽中離已選村莊最遠的（離最近一座的距離最大；平手取 x 序在前的）
     let best: Slot | undefined, bestD = -1;
@@ -145,6 +147,7 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
       const d = Math.min(...villages.map((v) => Math.abs(v.mid - s.mid)));
       if (d > bestD) { best = s; bestD = d; }
     }
+    if (!best) break;
     villages.push(add('village', best));
   }
   add('ruin', hashed(free('ruin', BP_SURFACE, (s) => s.r.biome !== BIOME.SNOW), 2));
@@ -194,7 +197,7 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
       add('cave_lake', hashed(free('cave_lake', BP_UNDER), 10 + o));
       break;
     } catch (e) {
-      if (t + 1 >= UNDER_TRIES) throw e;
+      if (!(e instanceof RangeError) || t + 1 >= UNDER_TRIES) throw e;
       out.length = mark; taken.clear(); for (const k of takenBefore) taken.add(k);
     }
   }

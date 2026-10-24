@@ -107,11 +107,14 @@ export class BpGrid {
 // 候選外框離槽邊至少 槽寬 / 4 − 外框半寬，鄰槽的表層結構碰不到坑道。地下 / 深層槽只有 170 寬，這個論證不成立，
 // 所以 UNDER / DEEP 的外框（含 force、含夾進槽裡的位置）必須在避讓帶 [sx − SHAFT_REACH − 1, sx + SHAFT_REACH + 2) 之外（Q3 / Q3b：
 // 涵蓋 [sx − SHAFT_HALF − 4, sx + SHAFT_HALF + 4] 與坑道底的圓室），放不下就回 null（blueprint.test / objects.test 釘住）
+// 主坑道避讓帶 [l, r)（placeX 與錨點的可用範圍 anchors.anchorSpan 共用）：外框 [x, x + w) 要 x + w ≤ l 或 x ≥ r
+export function shaftBand(sx: number): { l: number; r: number } { return { l: sx - SHAFT_REACH - 1, r: sx + SHAFT_REACH + 2 }; }
+
 export function placeX(c: BpCtx, w: number, force: boolean, ok: (x: number) => boolean): number | null {
   const sw = c.slotX1 - c.slotX0, mid = c.slotX0 + (sw >> 1), q = Math.floor(sw / 4);
   const layer = decodeStructureId(c.id).layer;
   const sx = layer === BP_UNDER || layer === BP_DEEP ? shaftX(seedInt(c.seed, 'g2-shaft'), c.region) : NaN;
-  const clear = (x: number): boolean => !Number.isFinite(sx) || x + w <= sx - SHAFT_REACH - 1 || x >= sx + SHAFT_REACH + 2;
+  const band = shaftBand(sx), clear = (x: number): boolean => !Number.isFinite(sx) || x + w <= band.l || x >= band.r;
   const fits = (x: number): boolean => x >= c.slotX0 + SLOT_PAD && x + w <= c.slotX1 - SLOT_PAD && clear(x);
   let first: number | null = null;
   for (const m of [mid, mid - q, mid + q]) {
