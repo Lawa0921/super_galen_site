@@ -54,3 +54,11 @@
 - `review.html`：一、兩張新表情和該角色每張已發佈的臉（normal、sad）並排，原尺寸＋2×，附它要解決的台詞與 QA；二、瑟蕾 wistful：遊戲中 a1、淘汰的 a2 與 a3、normal、sad；三、5 句台詞放在遊戲對話框樣式裡（照 `_starlantern-ui.scss` 的 `.slx-screen`／`.slx-talk`／`.slx-name`／`.slx-talk-face` 與 `ui/window.png` 框、Cubic 11 12px，640×360 舞台 1×），左邊是現在（只有名牌），右邊是用新表情。字型直接引用 `public/assets/fonts/cubic-11/`，從 repo 內開檔才載得到。
 - `montage.png`：3× 總覽。
 - 產生：`python art-factory/starlantern/tools/review_faces.py wave3 2026-10-24-faces-wave3`。
+
+## 核准與接進遊戲（2026-10-24）
+
+- 使用者回「可以」：莎菲拉 serious a1、諾艾兒 pout a1 採用；瑟蕾 wistful 維持第一輪 a1（第二輪 a2、第三輪 a3 都淘汰，只留在 `work/…/cand/`，不在 runtime 路徑，逐位元組對照過 runtime 仍是 a1）。
+- 發佈：`faces.py pick --wave=3 --attempt 1`（兩個 id 進登錄表，QA 與對照和候選一致）→ `sl_art` 的 `Registry.approve`，`approved_by` 記日期與原話「可以」→ `Registry.publish` 只發這兩個 id（登錄表裡另有 7 個 G4 sheet 是 approved，不能用 `publish --approved` 一次全發）→ 重寫 manifest（706 → 708 筆）。兩張 runtime 檔逐位元組對照過是 cand a1。
+- 程式：`render/artPaths.ts` 的 `PUBLISHED_FACES` 加上 `safira: serious`、`noel: pout`（兩個表情本來就在 `MOODS_OF`）。`NEAR_FACE` 不用改：重場景的 surprised 先找自己的臉、再找 serious（莎菲拉現在有了），pout 先找自己的臉（諾艾兒現在有了）、再找 serious。
+- 涵蓋（`ui2/storyFaces.test.ts`）：重場景 5 句隱藏 → 0（諾艾兒 4 句 pout 顯示自己的臉、莎菲拉 surprised 顯示 serious）；整份劇本重場景隱藏頭貼的句子斷言為空。輕場景諾艾兒 3 句 pout 也從笑臉 normal 換成 pout。
+- 遊戲內截圖（1280×720，headless）：`ingame/safira-serious-mem4-1280x720.png`、`ingame/noel-pout-mem1-1280x720.png`。
