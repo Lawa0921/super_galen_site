@@ -13,6 +13,8 @@
 //   · 沒有斜坡的礦坑一定走得進去（控制者裁決，Task 10 修正 1；同地廳隧道的做法，探測只讀噪聲與 profile、不讀已生成的區塊）：
 //     ① 橫向：開口端（沒有密室的那一端）往外延長坑道到接上天然洞穴；② 往下：坑道裡挖 2 格寬、掛繩梯的豎井到下方的洞穴；
 //     ③ 擲出的深度接不到就換深度再試（共 DEPTH_TRIES 個）；④ 都不行才往上挖到地表。200 個家鄉實測：橫向 40%、往下 54%、往上 0。
+//     ④ 的豎井欄從開口端往內找第一個不碰 surfaceBan（家鄉表層錨點的部件，Task 11 修正 2）的，坑道裡都碰到就把開口端往外延長到不碰的欄；
+//     有豎井（往上 / 往下）時藍圖帶部件 = 主體 + 豎井那兩欄（跨層判定用部件；fill 的 solid 也只算部件內，豎井旁的洞穴不再被抹掉）
 //     往下優先於往上的理由：家鄉的密室礦坑多半在村莊底下（1000 個種子 46% 避不開），往上通地表會壓到村莊錨點（RangeError）。
 //   · BpCanvas 的回退讀取假設天然格是實心、沒有洞穴：drawMineshaft 只在「讀到不是實心」時補頂板（yTop − 1）/ 地板（yTop + 4），
 //     drawRamp 只在不是實心時補每階腳下那格 → 外框整片併進 solid（箱內不挖噪聲洞穴，頂板 / 地板 / 腳下在成品裡是天然岩；礦照常換）。
@@ -27,7 +29,7 @@ import { CaveProbe } from '../caves';
 import { LAVA_Y } from '../profile';
 import { BpCanvas } from '../draw/bpCanvas';
 import { drawMineshaft, drawRamp, drawSecretRoom, rampSteps, secretRoomLayout } from '../draw/mineshaft';
-import { BP_UNDER, SLOT_PAD, SUB_SLOT_W, clearRange, placeX, type Blueprint, type BpCtx, type BpLandmark } from '../bpcore';
+import { BP_UNDER, SLOT_PAD, SUB_SLOT_W, boxHits, clearRange, placeX, type Blueprint, type BpCtx, type BpLandmark } from '../bpcore';
 
 // 總寬上限（Q3）；坑道最短（縮完還短於它 = 這槽不放）
 export const MINESHAFT_MAX_W = SUB_SLOT_W - 2 * SLOT_PAD, MINESHAFT_MIN_LEN = 50;
@@ -142,9 +144,26 @@ function mineshaft(c: BpCtx, anchor: boolean, force: boolean, o: MineshaftOption
     // 先試擲出的深度，接不到再試另外 DEPTH_TRIES − 1 個深度（在 [28, 129] 裡依 DEPTH_STEP 繞）
     let found: Plan | null = null;
     for (let t = 0; t < DEPTH_TRIES && !found; t++) found = connect(surfC + DY_MIN + ((dy - DY_MIN + t * DEPTH_STEP) % (DY_MAX - DY_MIN + 1)));
-    // ③ 都接不到：擲出的深度、開口端（右端優先）往上挖到地表
-    const col = rightOpen ? x00 + len0b - SHAFT_W : x00;
-    plan = found ?? { ...plan, col, up: Math.min(p.surfaceAt(col), p.surfaceAt(col + 1)) - 1 };
+    // ③ 都接不到：擲出的深度往上挖到地表。豎井欄從開口端（右端優先）往內找第一個豎井部件 [col, col + 2) × [地表上一列, 坑道頂)
+    //    不碰 surfaceBan（家鄉表層錨點，Task 11 修正 2）的；坑道裡都碰到 → 開口端往外延長坑道（同 ① 的延長法，寬 ≤ cap、不出 room）
+    //    到第一個不碰的欄；都不行 → 放不下（回 null；錨點丟 RangeError）
+    if (!found) {
+      const ban = c.surfaceBan ?? [], upAt = (x: number): number => Math.min(p.surfaceAt(x), p.surfaceAt(x + 1)) - 1;
+      const free = (x: number): boolean => !boxHits({ x, y: upAt(x), w: SHAFT_W, h: yTop0 - upAt(x) }, ban);
+      const L = x00, R = x00 + len0b;
+      let pick: Plan | null = null;
+      for (let k = 0; k + SHAFT_W <= len0b && !pick; k++) { const x = rightOpen ? R - SHAFT_W - k : L + k; if (free(x)) pick = { ...plan, col: x, up: upAt(x) }; }
+      if (rightOpen) for (let n = 1; !pick && R + n <= room.x1; n++) {
+        const r = R + n, l = Math.max(L, r - inner);
+        if (free(r - SHAFT_W)) pick = { ...plan, x0: l, len: r - l, col: r - SHAFT_W, up: upAt(r - SHAFT_W) };
+      }
+      if (leftOpen) for (let n = 1; !pick && L - n >= room.x0; n++) {
+        const l = L - n, r = Math.min(R, l + inner);
+        if (free(l)) pick = { ...plan, x0: l, len: r - l, col: l, up: upAt(l) };
+      }
+      if (!pick) return null;
+      plan = pick;
+    } else plan = found;
   }
 
   const { yTop, x0, len } = plan;
@@ -168,9 +187,16 @@ function mineshaft(c: BpCtx, anchor: boolean, force: boolean, o: MineshaftOption
   }
   // 軌道與礦車在豎井之後鋪（往下的豎井那兩欄地板挖掉了，不鋪軌道；往上的豎井那欄有繩梯，礦車不停在那裡）
   const landmarks = cart(cv, x0, len, yTop);
-  // 免挖洞箱 = 整個外框（BpBox 是外接矩形，兩個角就夠）
+  // 免挖洞箱 = 整個外框（BpBox 是外接矩形，兩個角就夠）；有豎井時 fill 只算與部件相交的部分（bpcore.solidParts）
   cv.fillNatural(left, top); cv.fillNatural(end - 1, bottom - 1);
-  return cv.toBlueprint(c.id, 'mineshaft', BP_UNDER, { landmarks });
+  const bp = cv.toBlueprint(c.id, 'mineshaft', BP_UNDER, { landmarks });
+  // 部件（Task 11 修正 2）：有往上 / 往下的豎井時 = 主體（斜坡、密室、坑道的外接矩形）+ 豎井那兩欄；部件外的格都沒畫（KEEP）。
+  // 理由：豎井把外框拉到地表 / 洞穴，整片外框會壓到上方的村莊（rv-1247 → 開機 RangeError）、抹掉下方的洞穴（solid）
+  const mainTop = Math.min(secret ? shell.y : yTop - 1, ramp ? yTop - steps : Infinity), mainBot = secret ? shell.y + shell.h : yTop + 5;
+  const main = { x: left, y: mainTop, w: end - left, h: mainBot - mainTop };
+  if (Number.isFinite(plan.up)) bp.parts = [main, { x: sc, y: plan.up, w: SHAFT_W, h: mainTop - plan.up }];
+  else if (plan.hole > mainBot) bp.parts = [main, { x: sc, y: mainBot, w: SHAFT_W, h: plan.hole - mainBot }];
+  return bp;
 }
 
 // 軌道 + 礦車（舊生成器 legacy/gen/landmarks.ts 的 mineCart 規則，只看畫布）；找不到站得住的軌道格就只有軌道

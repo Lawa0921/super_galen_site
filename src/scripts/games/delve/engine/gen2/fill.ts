@@ -15,7 +15,7 @@ import { ColNoise, CavernNoise, NO_DIG, ORE_THR, spagNoise, entranceHit, oreNois
 import { COL_SEA, COL_BEACH, COL_LAND, COL_ISLAND, LAVA_Y, type ColInfo2, type Profile2 } from './profile';
 import { HOME_X0, SPAWN_X, type Layout } from './layout';
 import { SHAFT_HALF, SHAFT_REACH, carveShaft, hasShaft, shaftOf, caveCut, caveK, type Shaft } from './caves';
-import { BP_SURFACE, stamp, type Blueprint, type BlueprintIndex, type BpBox } from './blueprint';
+import { BP_SURFACE, stamp, solidParts, type Blueprint, type BlueprintIndex, type BpBox } from './blueprint';
 
 // 每個 pass 的上下文：該地塊的版面版本
 export interface FillCtx { ver: number }
@@ -56,7 +56,8 @@ const ORE_HOST = new Uint8Array(256);
 ORE_HOST[T.STONE] = 1; ORE_HOST[T.DEEP_STONE] = 1;
 
 // 藍圖的免挖洞箱
-const solidBoxes = (bps: readonly Blueprint[]): BpBox[] => { const out: BpBox[] = []; for (const b of bps) if (b.solid) out.push(b.solid); return out; };
+// 藍圖的免挖洞箱：只算與部件相交的部分（bpcore.solidParts；沒有部件 = solid 本身，Task 11 修正 2）
+const solidBoxes = (bps: readonly Blueprint[]): BpBox[] => { const out: BpBox[] = []; for (const b of bps) out.push(...solidParts(b)); return out; };
 // 第 x 欄落在箱內的列段（依序 y0, y1, y0, y1…；沒有 = null）
 function solidRows(boxes: readonly BpBox[], x: number): number[] | null {
   let out: number[] | null = null;

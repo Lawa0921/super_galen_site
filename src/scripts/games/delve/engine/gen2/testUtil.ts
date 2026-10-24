@@ -8,7 +8,7 @@ import { LIQ_MAX } from '../liquidKind';
 import type { RegionInfo } from '../regionInfo';
 import type { DungeonInfo } from '../genTypes';
 import { Gen2Source } from './index';
-import type { Blueprint } from './bpcore';
+import { partsMeet, type Blueprint } from './bpcore';
 
 // 第 cx 欄整欄（32 格）由 src 填
 export function fillCol(src: ColumnSource, cx: number): Column {
@@ -265,7 +265,8 @@ export function walkOut(w: World, src: Gen2Source, b: Blueprint): boolean {
 const LIQUID_KINDS: ReadonlySet<string> = new Set(['lake', 'cave_lake', 'lava_pool']);
 export function overlapPairs(bps: readonly Blueprint[]): [string, string][] {
   const out: [string, string][] = [];
-  const meet = (a: Blueprint, b: Blueprint): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  // 部件判定（Task 11 修正 2；沒有部件 = 外框）
+  const meet = partsMeet;
   const tag = (b: Blueprint): string => `${b.kind}@${b.x}:${b.layer}`;
   for (let i = 0; i < bps.length; i++) for (let j = i + 1; j < bps.length; j++) {
     const a = bps[i], b = bps[j];

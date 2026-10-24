@@ -59,6 +59,10 @@ export interface Blueprint {
   site: GenSite | null;
   // true = 佔滿整個地區的錨點（家鄉地城）：外框只需在地區 [r.x0, r.x1) 內，豁免 SLOT_PAD 槽邊距（Q2）
   wholeRegion: boolean;
+  // 部件（Task 11 修正 2，控制者裁決 A）：藍圖實際佔的範圍 = 這幾塊的聯集（都在外框內）。沒有 = 整個外框。
+  // 跨層讓位（crossYields / liquidYields）與錨點跨層相交的 RangeError 用部件判定（partsMeet）；外框照舊用在索引、分段填、ANCHOR_MAX_W、可用範圍。
+  // 契約：部件外的格藍圖一律不寫（cells / ground / 物件都在部件內），fill 的免挖洞箱也只算 solid 與部件相交的部分（solidParts）
+  parts?: BpBox[];
   // 大藍圖（家鄉地城）：cells 依 (x >> 5, y, x) 排序，欄號（x >> 5）→ 該欄的格在 cells 的 [起, 訖)（以 Int32 為單位）；
   // stamp 有它就只掃該欄的範圍（同一藍圖每格只出現一次，排序不改蓋出來的結果）
   colIndex?: Map<number, [number, number]>;
@@ -80,6 +84,30 @@ export function indexColumns(cells: Int32Array): { cells: Int32Array; colIndex: 
   return { cells: out, colIndex };
 }
 
+// 藍圖佔的範圍（部件；沒有部件 = 整個外框）
+export const partsOf = (b: Blueprint): readonly BpBox[] => b.parts ?? [{ x: b.x, y: b.y, w: b.w, h: b.h }];
+const boxMeet = (a: BpBox, b: BpBox): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+// 兩份藍圖的部件有相交的（沒有部件的藍圖就是整個外框，與原本的外框判定相同）
+export function partsMeet(a: Blueprint, b: Blueprint): boolean {
+  if (!boxMeet(a, b)) return false;
+  for (const p of partsOf(a)) for (const q of partsOf(b)) if (boxMeet(p, q)) return true;
+  return false;
+}
+// 盒子與一組盒子有相交的
+export const boxHits = (a: BpBox, list: readonly BpBox[]): boolean => list.some((q) => boxMeet(a, q));
+// 免挖洞箱只算與部件相交的部分（沒有部件 = solid 本身）
+export function solidParts(b: Blueprint): BpBox[] {
+  const s = b.solid;
+  if (!s) return [];
+  if (!b.parts) return [s];
+  const out: BpBox[] = [];
+  for (const p of b.parts) {
+    const x0 = Math.max(s.x, p.x), y0 = Math.max(s.y, p.y), x1 = Math.min(s.x + s.w, p.x + p.w), y1 = Math.min(s.y + s.h, p.y + p.h);
+    if (x1 > x0 && y1 > y0) out.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+  }
+  return out;
+}
+
 // 沒有物件的藍圖的新欄位
 export const emptyObjects = (): Pick<Blueprint, 'pots' | 'tablets' | 'landmarks' | 'floors' | 'ground' | 'solid' | 'site' | 'wholeRegion'> =>
   ({ pots: [], tablets: [], landmarks: [], floors: [], ground: null, solid: null, site: null, wholeRegion: false });
@@ -95,6 +123,9 @@ export interface BpCtx {
   groundAt(x: number): number;
   rank?: number;
   spawnX?: number;
+  // 家鄉 UNDER / DEEP 錨點（Task 11 修正 2）：同一片家鄉表層錨點（村莊 / 遺跡）的範圍——有建構器的用實際藍圖的部件，
+  // 還沒有的（遺跡）用預測的 x 範圍 × 整個世界高。通地表的豎井（礦坑密室、小生態）的部件不得與它相交；其他藍圖 = undefined
+  surfaceBan?: readonly BpBox[];
 }
 
 // 外框內的暫存格（三層各一，初值 KEEP）：結構先在這裡畫（可以讀自己畫過的格），最後依列序輸出 cells

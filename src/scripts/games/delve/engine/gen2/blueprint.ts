@@ -18,6 +18,8 @@
 // 跨層不重疊（Q10，M2a Task 9）：同一地區、不同層的兩份非液體藍圖外框不得相交；相交時依 crossYields 丟掉一份：
 // 錨點（2）> 保證槽（1，P11）> 機率擲出（0）；同級丟較深的（SURFACE < UNDER < DEEP；SKY / MINOR 同級一律讓位）。
 // 比對的是其他層的「原始」藍圖（同 yieldLiquid，不遞迴）；錨點彼此由錨點規則保證不相交（settlements.test 釘住），真的相交 → RangeError（不默默少放）。
+// 「相交」用部件判定（Blueprint.parts，Task 11 修正 2 控制者裁決 A；沒有部件 = 外框，與原本相同）：礦坑密室與小生態錨點的直豎井是一塊 2 欄寬的部件，
+// 外接矩形與上方村莊重疊、部件不重疊時不算相交（部件外的格藍圖不寫）。家鄉 UNDER / DEEP 錨點的建構器收到 surfaceBan（表層錨點的部件），豎井部件避開它
 // 地面覆寫（groundAt，Q4）：SURFACE 層藍圖的 ground 蓋過 profile 的地表；Gen2Source.surfaceAt 與 BpCtx.groundAt 都是它。
 // 天空層（SKY，M2a Task 10）：空島的建構器讀 groundAt（繩梯接地），所以 SURFACE 層的讓位不看 SKY（否則 groundAt → SURFACE 讓位 → 建 SKY → groundAt
 // 重入）；對應地 SKY 一律讓位給相交的表層藍圖與液體（crossYields），UNDER / DEEP 與 SKY 照等級互比（它們的建構器不讀 groundAt）。
@@ -30,7 +32,7 @@ import { X_LIMIT } from '../coords';
 import { li, type Column } from '../column';
 import type { RegionInfo } from '../regionInfo';
 import { HOME_X0, SPAWN_X, VARIANT, type Landmass, type Layout, type SeaSlot } from './layout';
-import { ANCHOR_MAX_W, anchorBuild, anchorSpan, continentAnchors, homeAnchors, registerAnchorBuild, type Anchor } from './anchors';
+import { ANCHOR_MAX_W, anchorBuild, anchorSpan, continentAnchors, homeAnchors, registerAnchorBuild, surfaceAnchorRanges, type Anchor } from './anchors';
 import type { Profile2 } from './profile';
 import { shaftX } from './caves';
 import { buildCabin } from './structures/cabin';
@@ -45,11 +47,12 @@ import { buildMineshaftBp, rollMineshaftBp } from './structures/mineshaft';
 import { buildSkyIslandBp, rollSkyIslandBp } from './structures/skyIsland';
 import { buildMushroomBp, buildCrystalBp, rollMushroomBp, rollCrystalBp } from './structures/miniBiome';
 import { buildHiveBp, rollHiveBp } from './structures/hive';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, SLOT_PAD, bandFreeSpan, slotWidth, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, SLOT_PAD, bandFreeSpan, slotWidth, landSlot, landSlotCount, touchesSpawnClear, partsMeet, partsOf, type Blueprint, type BpBox, type BpCtx, type BpKind, type Layer } from './bpcore';
 import { encodeStructureId, decodeStructureId } from './structId';
 
 export {
   BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, LAND_SLOT_W, SUB_SLOT_W, KEEP, SLOT_PAD, SPAWN_CLEAR, BpGrid, placeX, slotWidth, landSlot, landSlotCount, emptyObjects,
+  partsMeet, partsOf, solidParts,
   type BpKind, type Blueprint, type BpCtx, type Layer, type BpChest, type BpPot, type BpTablet, type BpLandmark, type BpGround, type BpBox,
 } from './bpcore';
 
@@ -162,7 +165,8 @@ const LIQUID_LAYERS: readonly BuiltLayer[] = [BP_SURFACE, BP_UNDER, BP_DEEP];
 const CROSS: Readonly<Record<BuiltLayer, readonly BuiltLayer[]>> = {
   [BP_SURFACE]: [BP_UNDER, BP_DEEP], [BP_UNDER]: [BP_SURFACE, BP_DEEP, BP_SKY], [BP_DEEP]: [BP_SURFACE, BP_UNDER, BP_SKY], [BP_SKY]: [BP_SURFACE, BP_UNDER, BP_DEEP],
 };
-const boxesMeet = (a: Blueprint, b: Blueprint): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+// 相交判定用部件（bpcore.partsMeet；沒有部件 = 外框，Task 11 修正 2）
+const boxesMeet = partsMeet;
 // 液體藍圖 b 讓位給另一層的 o：外框相交，且 o 不是液體、或 o 的層比 b 淺（先蓋）。非液體藍圖從不讓位
 // （幾何上很少相交：400 個種子沒有發生；這裡保證後蓋的結構不會切開液體）
 export function liquidYields(b: Blueprint, o: Blueprint): boolean {
@@ -396,6 +400,22 @@ export class BlueprintIndex {
       spawnX: m.kind === 'home' && this.spawnX !== null ? this.spawnX : undefined };
   }
 
+  // 家鄉 UNDER / DEEP 錨點 a 的 surfaceBan（Task 11 修正 2）：同一片家鄉每個表層錨點（地城整區除外，它在自己的地區、x 不會重疊）——
+  // 有建構器的用原始藍圖的部件（村莊建構器只讀 profile、不查索引，這裡建它不會重入；錨點不會被讓位，原始 = 最後的藍圖），
+  // 沒有建構器的（遺跡，Task 14）用 anchors.surfaceAnchorRanges 預測的 x 範圍（遺跡可能落的三個候選）× 整個世界高。只留與 a 的槽 x 範圍相交的
+  surfaceBan(m: Landmass, a: Anchor): BpBox[] {
+    const sl = landSlot(a.region, a.slot, a.layer), out: BpBox[] = [];
+    for (const q of this.anchorTable(m).list) {
+      if (q.layer !== BP_SURFACE || q.wholeRegion) continue;
+      let boxes: readonly BpBox[];
+      if (anchorBuild(q.kind)) { const b = this.raw(m, q.region, q.slot, BP_SURFACE); boxes = b ? partsOf(b) : []; } else {
+        boxes = surfaceAnchorRanges(this.seed, q, this.spawnX ?? 0).map((s) => ({ x: s.x0, y: 0, w: s.x1 - s.x0, h: this.profile.height }));
+      }
+      for (const b of boxes) if (b.x < sl.x1 && sl.x0 < b.x + b.w) out.push({ ...b });
+    }
+    return out;
+  }
+
   // 含主坑道的第 q 槽扣掉坑道帶後較大的一側（bpcore.bandFreeSpan，與 anchors.anchorSpan 同一個）
   private clearSide(r: RegionInfo, q: number, layer: Layer): { slotX0: number; slotX1: number } {
     const s = bandFreeSpan(landSlot(r, q, layer), shaftX(this.sShaft, r));
@@ -416,7 +436,8 @@ export class BlueprintIndex {
       // 建構器的 slotX0 / slotX1 = 錨點的可用範圍（含坑道的槽 → 避開坑道帶後較大的一側；wholeRegion → 整個地區）
       const f = anchorBuild(a.kind), sp = anchorSpan(this.seed, a);
       if (!f) return null;
-      const bp = f({ ...this.ctx(m, r, q, layer), slotX0: sp.x0, slotX1: sp.x1, rank: this.anchorTable(m).rank.get(a) });
+      const surfaceBan = m.kind === 'home' && (layer === BP_UNDER || layer === BP_DEEP) ? this.surfaceBan(m, a) : undefined;
+      const bp = f({ ...this.ctx(m, r, q, layer), slotX0: sp.x0, slotX1: sp.x1, rank: this.anchorTable(m).rank.get(a), surfaceBan });
       // 執行期檢查（非 wholeRegion、非 shaft_cache）：外框寬 ≤ ANCHOR_MAX_W、外框在 [span.x0 + SLOT_PAD, span.x1 − SLOT_PAD) 內（不會蓋到坑道帶）
       if (!a.wholeRegion && a.kind !== 'shaft_cache') {
         const max = ANCHOR_MAX_W[a.kind];

@@ -70,6 +70,25 @@ export function villageFits(span: { x0: number; x1: number }, sp: number): boole
 
 interface Slot { r: RegionInfo; layer: Layer; q: number; x0: number; x1: number; mid: number }
 
+// 表層錨點（村莊 / 遺跡）外框可能的 x 範圍（空島退讓鏈、小生態選槽偏好、BlueprintIndex 給家鄉 UNDER / DEEP 錨點的 surfaceBan 共用）：
+// 村莊 = 每個寬度 W（structures/village.ts：vw + 2 × SLOPE）用 centerAway 置中的外框聯集（sp = 出生點）；
+// 遺跡 = placeX 的三個候選中心（mid、mid − q、mid + q）各 ± 遺跡最寬的一半（ANCHOR_MAX_W.ruin；遺跡只會落在其中一個）；
+// 可用範圍太窄（< 3 × 最寬）時 placeX 可能夾進槽裡，直接整段
+export function surfaceAnchorRanges(seed: string, a: Anchor, sp: number): Span[] {
+  const span = anchorSpan(seed, a);
+  if (a.kind === 'village') {
+    let x0 = Infinity, x1 = -Infinity;
+    for (let vw = VILLAGE_VW[0]; vw < VILLAGE_VW[1]; vw++) {
+      const W = vw + 2 * SLOPE, x = centerAway(span.x0, span.x1, W, sp, VILLAGE_MIN);
+      if (x !== null) { x0 = Math.min(x0, x); x1 = Math.max(x1, x + W); }
+    }
+    return [Number.isFinite(x0) ? { x0, x1 } : { x0: span.x0, x1: span.x1 }];
+  }
+  const rw = ANCHOR_MAX_W.ruin!, half = rw >> 1, sw = span.x1 - span.x0, mid = span.x0 + (sw >> 1), q = Math.floor(sw / 4);
+  if (sw < 3 * rw + 2 * SLOT_PAD) return [{ x0: span.x0, x1: span.x1 }];
+  return [mid - q, mid, mid + q].map((m) => ({ x0: m - half, x1: m + half }));
+}
+
 // 依 x 序的槽裡，彼此中點相距 ≥ gap 最多能挑幾個（由左往右貪心，一維上是最佳解）
 function spacedCount(list: readonly Slot[], gap: number): number {
   let n = 0, last = -Infinity;
@@ -146,18 +165,7 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   // vw + 2 × SLOPE）用 centerAway 置中的外框聯集；遺跡 = placeX 三個候選中心 ± 遺跡最寬的一半（ANCHOR_MAX_W.ruin），聯集 = [mid − q − 10, mid + q + 10)
   const surfaceAvoid = (s: Slot): Span[] => {
     const a = out.find((q) => q.layer === BP_SURFACE && q.region === s.r && q.slot === s.q);
-    if (!a || a.wholeRegion) return [];
-    const span = anchorSpan(seed, a);
-    if (a.kind === 'village') {
-      let x0 = Infinity, x1 = -Infinity;
-      for (let vw = VILLAGE_VW[0]; vw < VILLAGE_VW[1]; vw++) {
-        const W = vw + 2 * SLOPE, x = centerAway(span.x0, span.x1, W, sp, VILLAGE_MIN);
-        if (x !== null) { x0 = Math.min(x0, x); x1 = Math.max(x1, x + W); }
-      }
-      return Number.isFinite(x0) ? [{ x0, x1 }] : [{ x0: span.x0, x1: span.x1 }];
-    }
-    const half = ANCHOR_MAX_W.ruin! >> 1, sw = span.x1 - span.x0, mid = span.x0 + (sw >> 1), q = Math.floor(sw / 4);
-    return [{ x0: mid - q - half, x1: mid + q + half }];
+    return !a || a.wholeRegion ? [] : surfaceAnchorRanges(seed, a, sp);
   };
   // 第 1 座：西側最接近 sp − 950（西側沒有 → 全家鄉）；第 2 座：東側最接近 sp + 950（東側沒有 → 全家鄉、不與第 1 座相鄰；
   // 剩下的槽都與第 1 座相鄰才取相鄰的——外框各離槽邊 ≥ 8，兩座仍不相交）
