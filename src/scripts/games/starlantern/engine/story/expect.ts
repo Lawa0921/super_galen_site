@@ -1,5 +1,5 @@
 import { REGIONS, type RegionId } from '../../data/regions';
-import { CHAINS, ELITE_PIECE_CHANCE, GLIMMER_CHANCE, HERO_TOPUP, MEMORY_PITY, chainLength } from '../../data/story/chains';
+import { CHAINS, ELITE_PIECE_CHANCE, GLIMMER_CHANCE, HERO_TOPUP, MEMORY_PITY, chainLength, type CalendarNow } from '../../data/story/chains';
 import { ABSORB_CAP, ABSORB_GAIN, SHARD_DROP, SHARD_IDS, TOWN_DROP, TOWN_FRAGMENTS, shardGrade, type ShardGrade } from '../../data/story/fragments';
 import { isBossDepth, newRun, type Run } from '../dungeon/run';
 import { mix } from '../loot/drops';
@@ -38,7 +38,9 @@ const cache = new Map<string, Record<CharacterId, Expected>>();
  * rolls, as the town bag keeps it; it gives no stats. The ownerless shards are then absorbed in `ids` order, round
  * robin, by the real `absorb` (its cap included); no line is shown. Rin's oath holds once her chain is whole (her reveal
  * plays on the next return to town). Chest and vault shards (SHARD_DROP.chest, .vault) are not modelled, so shards are a
- * known underestimate. Pure: the same depth, ids and memory knobs always give the same, and every call gets its own
+ * known underestimate. Nor is the calendar (time and moon plan ruling 3): every floor walks with no moon, so Selene's
+ * second, fourth and fifth pieces (full, full, new moon) come earlier here than in a game, the same kind of known error
+ * (the plan's Task 3 measures how much). Pure: the same depth, ids and memory knobs always give the same, and every call gets its own
  * copy; the cache is keyed on the knobs' current values, so a knob changed at test time is never answered stale.
  */
 export function expectedMemories(depth: number, ids: CharacterId[]): Record<CharacterId, Expected> {
@@ -95,9 +97,11 @@ function compute(depth: number, ids: CharacterId[]): Record<CharacterId, Expecte
  * round(1 / GLIMMER_CHANCE) floors, an elite every EXPECT_ELITE_EVERY floors and the boss of a boss depth, each through
  * the real rules on the floor's own rng, `mulberry32(mix(mix(EXPECT_SEED, region index), depth))`; then the pity of the
  * floor. A glimmer that holds no piece leaves an ownerless shard; a townsfolk fragment goes into the inventory. The
- * given state and pity are not changed.
+ * given state and pity are not changed. `cal` (time and moon ruling 3): the day the floor is walked on, for the forced
+ * glimmers and the pieces, as the game passes it; the pity takes none. Absent (the expectation, the pace, the sim), the
+ * floor is as it always was.
  */
-export function walkFloor(s: GameState, pity: Pity, region: RegionId, depth: number, run: Run): { state: GameState; pity: Pity; shards: ShardGrade[] } {
+export function walkFloor(s: GameState, pity: Pity, region: RegionId, depth: number, run: Run, cal?: CalendarNow): { state: GameState; pity: Pity; shards: ShardGrade[] } {
   const rng = mulberry32(mix(mix(EXPECT_SEED, REGION_ORDER.indexOf(region)), depth));
   const shards: ShardGrade[] = [];
   const dropped: CharacterId[] = [];
@@ -107,9 +111,10 @@ export function walkFloor(s: GameState, pity: Pity, region: RegionId, depth: num
     pity = { ...pity, ...Object.fromEntries(got.map((id) => [id, 0])) };   // a piece resets its chain at once, as the game does
   };
   const glimmerEvery = Math.round(1 / GLIMMER_CHANCE);
-  const glimmers: (CharacterId | undefined)[] = [...forcedGlimmers(s.party, pity, region, depth), ...(depth % glimmerEvery === 0 ? [undefined] : [])];
+  const at = cal ? { cal } : {};
+  const glimmers: (CharacterId | undefined)[] = [...forcedGlimmers(s.party, pity, region, depth, cal), ...(depth % glimmerEvery === 0 ? [undefined] : [])];
   for (const who of glimmers) {
-    const got = pieceDrops(s.party, pity, { region, depth, source: 'glimmer', who }, rng);
+    const got = pieceDrops(s.party, pity, { region, depth, source: 'glimmer', who, ...at }, rng);
     if (got.length > 0) take(got);
     else shards.push(shardGrade(depth, rng()));
   }
@@ -117,7 +122,7 @@ export function walkFloor(s: GameState, pity: Pity, region: RegionId, depth: num
   if (depth % EXPECT_ELITE_EVERY === 0) sources.push('elite');
   if (isBossDepth(region, depth)) sources.push('boss');
   for (const source of sources) {
-    take(pieceDrops(s.party, pity, { region, depth, source }, rng));
+    take(pieceDrops(s.party, pity, { region, depth, source, ...at }, rng));
     for (const g of lootFragments(s, run, { region, depth, source }, rng)) {
       if (g.kind === 'shard') shards.push(g.grade);
       else s = { ...s, inventory: { ...s.inventory, [fragmentItem(g)!]: 1 } };

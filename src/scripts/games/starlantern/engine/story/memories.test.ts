@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { CHARACTER_IDS } from '../../data/characters';
-import { CHAINS, ELITE_PIECE_CHANCE, MEMORY_PITY } from '../../data/story/chains';
+import { CHAINS, ELITE_PIECE_CHANCE, MEMORY_PITY, type CalendarNow, type MoonPhase } from '../../data/story/chains';
 import type { CharacterId, Party } from '../types';
 import { meet, newParty } from '../party';
 import { memoriesOf } from '../progression';
 import { mulberry32 } from '../rng';
-import { FORCED_GLIMMERS, MAX_PITY, applyPieces, eligible, forcedGlimmers, nextPiece, pieceDrops, pityAfterFloor, type PieceCtx } from './memories';
+import { FORCED_GLIMMERS, MAX_PITY, applyPieces, eligible, forcedGlimmers, nextPiece, pieceDrops, pityAfterFloor, type PieceCtx, type Pity } from './memories';
 
 /** A party where exactly `held` are met (plus the hero), each holding the given number of pieces. */
 const partyOf = (held: Partial<Record<CharacterId, number>>): Party => {
@@ -263,5 +263,75 @@ describe('memory piece rules', () => {
     const unmet = partyOf({});
     expect(pityAfterFloor(unmet, {}, 'mainline', min('selene', 0), []).selene).toBeUndefined();
     expect(forcedGlimmers(unmet, { selene: 99 }, 'mainline', min('selene', 0))).toEqual([]);
+  });
+});
+
+describe('time and moon: the moon gates (Task 2)', () => {
+  const cal = (moon: MoonPhase): CalendarNow => ({ moon, season: 'autumn', time: 'day' });
+  const glimmer = (depth: number, moon?: MoonPhase, region: PieceCtx['region'] = 'mainline'): PieceCtx => ({ region, depth, source: 'glimmer', ...(moon ? { cal: cal(moon) } : {}) });
+
+  it("Selene's second piece drops only under a full moon", () => {
+    const p = partyOf({ selene: 1 });
+    expect(min('selene', 1)).toBe(6);
+    expect(eligible(p, 'selene', glimmer(6, 'full'))).toBe(true);
+    expect(eligible(p, 'selene', glimmer(6, 'waning'))).toBe(false);
+    expect(eligible(p, 'selene', glimmer(6, 'new'))).toBe(false);
+    expect(eligible(p, 'selene', glimmer(6))).toBe(true);   // no calendar: as before
+    expect(eligible(p, 'selene', glimmer(6, 'full', 'frost'))).toBe(true);
+    // her first and third pieces wait for no moon
+    expect(eligible(partyOf({ selene: 0 }), 'selene', glimmer(3, 'new'))).toBe(true);
+    expect(eligible(partyOf({ selene: 2 }), 'selene', glimmer(9, 'waxing'))).toBe(true);
+    // and the fourth for the full moon again
+    expect(eligible(partyOf({ selene: 3 }), 'selene', glimmer(13, 'full'))).toBe(true);
+    expect(eligible(partyOf({ selene: 3 }), 'selene', glimmer(13, 'new'))).toBe(false);
+    // a boss or an elite under the wrong moon pays none of hers either
+    const done = partyOf({ hero: 10, selene: 1 });
+    expect(pieceDrops(done, {}, { region: 'mainline', depth: 6, source: 'boss', cal: cal('waxing') }, mulberry32(1))).toEqual([]);
+    expect(pieceDrops(done, {}, { region: 'mainline', depth: 6, source: 'boss', cal: cal('full') }, mulberry32(1))).toEqual(['selene']);
+  });
+
+  it('her fifth piece drops only under a new moon', () => {
+    const p = partyOf({ selene: 4 });
+    expect(min('selene', 4)).toBe(15);
+    expect(eligible(p, 'selene', glimmer(15, 'new'))).toBe(true);
+    for (const moon of ['waxing', 'full', 'waning'] as MoonPhase[]) expect(eligible(p, 'selene', glimmer(15, moon)), moon).toBe(false);
+    expect(eligible(p, 'selene', glimmer(15))).toBe(true);
+    expect(eligible(p, 'selene', glimmer(20, 'new', 'frost'))).toBe(true);
+  });
+
+  it("pity waits through the wrong moon; the right moon's first floor holds her glimmer", () => {
+    const p = partyOf({ selene: 1 });
+    let pity: Pity = {};
+    for (let i = 0; i < MEMORY_PITY; i++) {
+      expect(forcedGlimmers(p, pity, 'mainline', 6 + i, cal('waning'))).not.toContain('selene');
+      pity = pityAfterFloor(p, pity, 'mainline', 6 + i, []);
+    }
+    expect(pity.selene).toBe(MEMORY_PITY);
+    expect(forcedGlimmers(p, pity, 'mainline', 8, cal('waning'))).not.toContain('selene');
+    expect(forcedGlimmers(p, pity, 'mainline', 8, cal('full'))).toContain('selene');
+    expect(forcedGlimmers(p, pity, 'mainline', 8)).toContain('selene');   // no calendar: as before
+  });
+
+  it('a floor may force three glimmers when one waits on the moon', () => {
+    // Lorne, Rin and Chizuru all due on depth 6 of the main road (two over the cap of two), Selene waiting on the full moon
+    const p = partyOf({ hero: 1, rin: 0, chizuru: 0, selene: 1 });
+    const pity: Pity = { hero: MEMORY_PITY, chizuru: MEMORY_PITY, selene: MEMORY_PITY };
+    expect(FORCED_GLIMMERS.max).toBe(2);
+    expect(forcedGlimmers(p, pity, 'mainline', 6, cal('full'))).toEqual(['hero', 'rin', 'selene']);
+    expect(forcedGlimmers(p, pity, 'mainline', 6, cal('waning'))).toEqual(['hero', 'rin']);
+    expect(forcedGlimmers(p, pity, 'mainline', 6)).toEqual(['hero', 'rin']);   // no calendar: as before, no Selene
+    // not due yet, she waits like anyone
+    expect(forcedGlimmers(p, { ...pity, selene: MEMORY_PITY - 1 }, 'mainline', 6, cal('full'))).toEqual(['hero', 'rin']);
+    // inside the cap she is not listed twice
+    const two = partyOf({ hero: 1, selene: 1 });
+    expect(forcedGlimmers(two, pity, 'mainline', 6, cal('full'))).toEqual(['hero', 'selene']);
+  });
+
+  it('with no calendar the cap is two, as before', () => {
+    const p = partyOf({ hero: 1, rin: 0, chizuru: 0, selene: 1, bobby: 0 });
+    const pity: Pity = { hero: 9, chizuru: 9, selene: 9, bobby: 9 };
+    expect(forcedGlimmers(p, pity, 'mainline', 7)).toEqual(['hero', 'rin']);
+    // a calendar with no moon piece waiting changes nothing: the cap is two
+    expect(forcedGlimmers(partyOf({ hero: 1, rin: 0, chizuru: 0, selene: 0 }), pity, 'mainline', 7, cal('full'))).toEqual(['hero', 'rin']);
   });
 });

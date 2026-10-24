@@ -5,7 +5,7 @@ import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
 import { FOUND_LINE, GROUP_TITLES, NIGHT_BEATS, NIGHT_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, type LineWhen, type ScriptLine } from '../story.zh-TW';
-import { CHAINS, HERO_TOPUP, chainLength, whenHolds } from './chains';
+import { CHAINS, HERO_TOPUP, chainLength, whenHolds, type CalendarNow } from './chains';
 import { AFTER_CHOICE, dots, groupShapeBreaks, opensOnDots, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
 import { T } from '../text.zh-TW';
 import type { CharacterId } from '../../engine/types';
@@ -111,6 +111,29 @@ describe('story data', () => {
     expect(p[4].when?.moon).toEqual(['new']);
     for (const i of [1, 3, 4]) expect(whenHolds(p[i].when)).toBe(true);
     expect(whenHolds(undefined)).toBe(true);
+  });
+
+  it('whenHolds checks the moon, the time and the season given a calendar, and holds without one', () => {
+    const cal: CalendarNow = { moon: 'full', season: 'autumn', time: 'day' };
+    expect(whenHolds(undefined, cal)).toBe(true);
+    expect(whenHolds({}, cal)).toBe(true);
+    expect(whenHolds({ moon: ['new'] })).toBe(true);   // no calendar: holds
+    expect(whenHolds({ moon: ['full'] }, cal)).toBe(true);
+    expect(whenHolds({ moon: ['new'] }, cal)).toBe(false);
+    expect(whenHolds({ moon: ['new', 'full'] }, cal)).toBe(true);
+    expect(whenHolds({ time: 'day' }, cal)).toBe(true);
+    expect(whenHolds({ time: 'night' }, cal)).toBe(false);
+    expect(whenHolds({ time: 'night' }, { ...cal, time: 'night' })).toBe(true);
+    expect(whenHolds({ season: ['autumn', 'winter'] }, cal)).toBe(true);
+    expect(whenHolds({ season: ['spring'] }, cal)).toBe(false);
+    // every field written must hold
+    expect(whenHolds({ moon: ['full'], time: 'night' }, cal)).toBe(false);
+    expect(whenHolds({ moon: ['full'], season: ['winter'] }, cal)).toBe(false);
+    expect(whenHolds({ moon: ['full'], time: 'day', season: ['autumn'] }, cal)).toBe(true);
+    const p = CHAINS.selene.pieces;
+    expect(whenHolds(p[1].when, cal)).toBe(true);
+    expect(whenHolds(p[4].when, cal)).toBe(false);
+    expect(whenHolds(p[4].when, { ...cal, moon: 'new' })).toBe(true);
   });
 
   it('the catalogue covers 57 memories, the acts, Rin, the finale, chats and returns', () => {

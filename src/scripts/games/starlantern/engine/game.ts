@@ -34,7 +34,7 @@ import { loadGame, saveGame, type SaveStorage } from './save';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { nextLead } from './story/leads';
-import { afterWin, arrivalScenes, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
+import { afterWin, arrivalScenes, calendarOf, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
 import { NIGHT_BEATS, type ScriptLine } from '../data/story.zh-TW';
 import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, planNight, restoreNight } from './story/nights';
 import { dayOf, nextDay } from './calendar';
@@ -375,7 +375,7 @@ export class Game {
     const memoKey = `frag:glimmer:${this.spotId()}`;
     const kept = run.rolls[memoKey];   // kept only when the pieces were already rolled empty
     const rng = kept ? null : memoryRng(run);
-    const ids = rng ? pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source: 'glimmer', who: c.owner }, rng) : [];
+    const ids = rng ? pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source: 'glimmer', who: c.owner, cal: calendarOf(this.state) }, rng) : [];
     if (ids.length > 0) {
       here.contents.splice(i, 1);
       this.map().tiles[this.pos.y][this.pos.x] = 'floor';
@@ -411,11 +411,14 @@ export class Game {
     });
   }
 
-  /** Before a depth is first made, fix the chains whose glimmer on it must hold their piece. */
+  /**
+   * Before a depth is first made, fix the chains whose glimmer on it must hold their piece. Under today's moon (time and
+   * moon ruling 3): a dive is one day, so the moon at the glimmer's making is the moon at its pickup.
+   */
   private forceGlimmers(floor: number): void {
     const run = this.run!;
     if (run.floors.has(floor)) return;
-    run.glimmers[floor] = forcedGlimmers(this.state.party, this.state.story.pity, run.region, floor);
+    run.glimmers[floor] = forcedGlimmers(this.state.party, this.state.story.pity, run.region, floor, calendarOf(this.state));
   }
 
   /** An ordinary step: fills the encounter gauge and may start a battle. Event tiles never come through here, so one step triggers one thing. */
@@ -742,7 +745,7 @@ export class Game {
       const run = this.run!;
       const source = b.boss ? 'boss' : 'elite';
       const rng = memoryRng(run);
-      const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source }, rng);
+      const ids = pieceDrops(this.state.party, this.state.story.pity, { region: run.region, depth: this.floor, source, cal: calendarOf(this.state) }, rng);
       fragments = this.takePieces(ids, finale);
       if (finale) this.finale = { pieces: this.finalePieces(fragments) };
       // Ownerless and townsfolk fragments ride in the run pack like materials; one that does not fit is left behind.

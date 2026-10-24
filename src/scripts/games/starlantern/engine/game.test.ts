@@ -51,6 +51,8 @@ import type { RuneRef } from '../data/runes';
 import { rollRune, RUNE_SALT, spotRuneRng } from './loot/runes';
 import { depthLevel } from './levels';
 import { dayOf, moonOf, tonightMoon } from './calendar';
+import { calendarOf } from './story/events';
+import { MEMORY_PITY } from '../data/story/chains';
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -5513,5 +5515,105 @@ describe('time and moon: the day (Task 1)', () => {
     expect(b.state.story.day).toBe(story.day! + 1);
     expect(b.night).toEqual(night);
     expect(b.state.story.dawn).toBe(story.dawn);
+  });
+});
+
+describe('time and moon: the moon in the labyrinth (Task 2)', () => {
+  const PAIR: CharacterId[] = ['hero', 'selene'];
+  /** In town on `day`, Selene met holding `held`, the main road reached to `depth`. */
+  const inTown = (depth: number, day: number, held: number, pity: Partial<Record<CharacterId, number>> = {}, storage: ReturnType<typeof memoryStorage> | null = null) => {
+    const g = new Game(calm(), storage, undefined, 0, PAIR);
+    g.state.dungeon.reached.mainline = depth;
+    g.state.story.day = day;
+    g.state.party.roster.selene.memories = held;
+    g.state.story.pity = { ...pity };
+    return g;
+  };
+  const dive = (depth: number, day: number, held: number, pity: Partial<Record<CharacterId, number>> = {}) => {
+    const g = inTown(depth, day, held, pity);
+    expect(g.depart(MAIN, depth)).toEqual({ ok: true });
+    return g;
+  };
+  /** A glimmer on an open cell, as the floor would have made it. */
+  const plantGlimmer = (g: Game, owner?: CharacterId): Pos => {
+    const m = g.map();
+    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+      if (m.tiles[y][x] !== 'floor' || (x === g.pos.x && y === g.pos.y)) continue;
+      m.tiles[y][x] = 'glimmer';
+      floorOf(g.run!, g.floor).contents.push({ kind: 'glimmer', at: { x, y }, room: 0, ...(owner ? { owner } : {}) });
+      return { x, y };
+    }
+    throw new Error('no cell for a glimmer');
+  };
+  const hers = (g: Game, floor: number) => floorOf(g.run!, floor).contents.find((c) => c.kind === 'glimmer' && c.owner === 'selene');
+
+  it("a glimmer planted for Selene's second piece pays under a full moon and leaves a shard under any other", () => {
+    expect([4, 1, 2, 3].map(moonOf)).toEqual(['full', 'waning', 'new', 'waxing']);
+    const full = dive(6, 4, 1);
+    expect(stepOnto(full, plantGlimmer(full, 'selene'))).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'selene', n: 2 }] });
+    expect(full.state.story.untold).toEqual(['mem:selene:2']);
+    for (const day of [1, 2, 3]) {
+      const g = dive(6, day, 1);
+      expect(stepOnto(g, plantGlimmer(g, 'selene')), `day ${day}`).toEqual({ kind: 'glimmer', gained: [{ kind: 'shard', grade: expect.any(String) }] });
+      expect(memoriesOf(g.state.party.roster.selene)).toBe(1);
+      expect(g.state.story.untold ?? []).toEqual([]);
+    }
+  });
+
+  it("the moon of a dive is its day's, the same at the glimmer's making and its pickup", () => {
+    // her fifth piece waits for the new moon (day 2); her pity is due
+    const g = dive(15, 2, 4, { selene: MEMORY_PITY });
+    expect(calendarOf(g.state)).toMatchObject({ day: 2, moon: 'new', time: 'day' });
+    expect(g.run!.glimmers[15]).toContain('selene');
+    const c = hers(g, 15)!;
+    expect(c).toBeDefined();
+    expect(dayOf(g.state)).toBe(2);
+    expect(stepOnto(g, c.at)).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'selene', n: 5 }] });
+    // the day after (the first quarter): no glimmer is made for her, and her pity still counts the floor
+    const next = dive(16, 3, 4, { selene: MEMORY_PITY });
+    expect(next.run!.glimmers[16]).not.toContain('selene');
+    expect(hers(next, 16)).toBeUndefined();
+    expect(downstairs(next, next.map().down!)).toMatchObject({ kind: 'floor', floor: 17 });
+    expect(next.state.story.pity.selene).toBe(MEMORY_PITY + 1);
+    expect(next.run!.glimmers[17]).not.toContain('selene');
+  });
+
+  it('a reload mid-town departs under the same moon', () => {
+    const storage = memoryStorage();
+    const g = inTown(15, 2, 4, { selene: MEMORY_PITY }, storage);
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves
+    expect(g.depart(MAIN, 15)).toEqual({ ok: true });
+    expect(g.run!.glimmers[15]).toContain('selene');
+    const b = Game.boot(calm(), storage);
+    expect([b.phase, dayOf(b.state), calendarOf(b.state).moon]).toEqual(['town', 2, 'new']);
+    expect(b.depart(MAIN, 15)).toEqual({ ok: true });
+    expect(b.run!.glimmers[15]).toContain('selene');
+    expect(stepOnto(b, hers(b, 15)!.at)).toEqual({ kind: 'glimmer', gained: [{ kind: 'piece', id: 'selene', n: 5 }] });
+  });
+
+  it('two games a day apart fight the same battle', () => {
+    // Selene holds no piece and her first waits for no moon: the floors are the same whatever the day
+    const fight = (day: number) => {
+      const g = new Game(mulberry32(7), null, undefined, 0, PAIR);
+      g.state.dungeon.reached.mainline = 3;
+      g.state.story.day = day;
+      expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+      g.encounter = 99;
+      expect(g.move(DIRS.find((d) => tileAt(g.map(), { x: g.pos.x + DELTA[d].x, y: g.pos.y + DELTA[d].y }) === 'floor')!)).toEqual({ kind: 'battle' });
+      return g;
+    };
+    const a = fight(1);
+    const b = fight(2);
+    expect(moonOf(1)).not.toBe(moonOf(2));
+    expect(a.battle).toEqual(b.battle);
+    expect(a.battle!.party.map((c) => c.defId)).toContain('selene');
+    expect([a.battle!.moon?.phase, b.battle!.moon?.phase]).toEqual(['first', 'first']);
+    for (let round = 0; round < 3; round++) {
+      const ra = a.submitRound({});
+      const rb = b.submitRound({});
+      expect(ra?.battle.log, `round ${round + 1}`).toEqual(rb?.battle.log);
+      if (!ra || ra.end) break;
+    }
+    expect(a.battle).toEqual(b.battle);
   });
 });
