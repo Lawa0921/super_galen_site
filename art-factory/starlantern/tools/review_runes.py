@@ -1,12 +1,13 @@
-"""review_runes.py: the rune-icon sample review page and its 4x montage (art step 9, G4 sample).
+"""review_runes.py: the rune-icon review page and its 4x montage (art step 9, G4): the sample, or the full set.
 
   python art-factory/starlantern/tools/review_runes.py [--out runs/2026-10-24-rune-icons-sample]
+  python art-factory/starlantern/tools/review_runes.py --full [--out runs/2026-10-24-rune-icons-full]
 
 Reads the registry's `rune-sample` batch (rune_art.py pick), copies each icon and the comparison art (G3 native skill
 icons, published gear icons, published rarity frames) into <out>/img/, and writes review.html (each icon at 1x / 2x /
 4x, in each tier frame, and inside mocks of the real UI rows) and montage-4x.png. Nothing is approved or published.
 """
-import html, json, shutil, sys
+import html, json, re, shutil, sys
 from pathlib import Path
 
 from PIL import Image
@@ -27,14 +28,34 @@ SHOW_TIERS = {'rune-flame': ['common', 'magic'], 'rune-spread': ['rare', 'epic']
 SKILLS = {'fire-star': ('sheet-icons-1', '火之星彈'), 'flame-wave': ('sheet-skill-noel', '炎之波'), 'aimed-shot': ('sheet-icons-1', '瞄準射擊')}
 GEAR = {'crystal-blade': '晶刃', 'copper-ring': '銅戒指'}
 BG = (10, 14, 34, 255)   # $slx-win
+# The sample's six parts; --full swaps in the 34 of the full set (configure_full).
+PARTS = list(R.SAMPLE_PARTS)
+FULL = {'on': False}
+
+
+def rune_names():
+    """Every rune's zh-TW name from the game's data (data/runes.ts), keyed `rune-<id>`, and the two slot states."""
+    src = (REPO / 'src/scripts/games/starlantern/data/runes.ts').read_text(encoding='utf-8')
+    pairs = re.findall(r"id: '([a-z-]+)', name: '([^']+)'", src) + re.findall(r"^  (?:element|perHit|trigger)\('([a-z-]+)', '([^']+)'", src, re.M)
+    return {'rune-slot-empty': '空插槽', 'rune-slot-filled': '已鑲插槽', **{f'rune-{i}': n for i, n in pairs}}
+
+
+def configure_full():
+    global PARTS, NAMES, SHOW_TIERS
+    PARTS = [p for ps in R.FULL_SHEETS.values() for p in ps if p]
+    NAMES = rune_names()
+    legend = set(R.FULL_SHEETS['sheet-rune-6'])
+    SHOW_TIERS = {p: (['legendary'] if p in legend else TIERS[:4]) for p in PARTS if not p.startswith('rune-slot')}
+    FULL['on'] = True
 
 
 def copy_inputs(out, reg):
     img = out / 'img'; img.mkdir(parents=True, exist_ok=True)
     qa = {}
-    for part in R.SAMPLE_PARTS:
+    for part in PARTS:
         for aid in R.assets_of(part):
-            e = reg.get(aid); shutil.copyfile(REPO / e['final'], img / f'{aid}.png'); qa[aid] = e['qa']
+            e = reg.get(aid); shutil.copyfile(REPO / e['final'], img / f'{aid}.png')
+            qa[aid] = dict(e['qa'], legible=e.get('legible'), attempt=f"{e.get('sheet', '')} {e.get('chosen_attempt', '')}".strip())
     for sid, (sheet, _) in SKILLS.items():
         shutil.copyfile(AF / 'work' / sheet / f'icon-{sid}-16.png', img / f'skill-{sid}-16.png')
     for gid in GEAR: shutil.copyfile(PUB / 'gear' / f'{gid}.png', img / f'gear-{gid}.png')
@@ -61,18 +82,19 @@ def framed(icon, tier):
 def montage(out):
     """Each sample icon at 4x: the 16 and the 14, then the 16 in each of its tier cells (20 x 20)."""
     rows = []
-    for part in R.SAMPLE_PARTS:
+    for part in PARTS:
         i16 = Image.open(out / 'img' / f'icon-{part}-16.png').convert('RGBA'); i14 = Image.open(out / 'img' / f'icon-{part}-14.png').convert('RGBA')
         rows.append([i16, i14] + [framed(i16, t) for t in SHOW_TIERS.get(part, [])])
     s, gap = 4, 6
-    w = max(sum(im.width for im in r) + gap * (len(r) + 1) for r in rows) * s
-    h = (sum(max(im.height for im in r) for r in rows) + gap * (len(rows) + 1)) * s
-    sheet = Image.new('RGBA', (w, h), BG); y = gap
-    for r in rows:
-        x = gap
+    cols = 2 if len(rows) > 8 else 1   # the full set in two columns, so the montage stays about square
+    per = -(-len(rows) // cols)
+    colw = max(sum(im.width for im in r) + gap * (len(r) + 1) for r in rows)
+    rowh = max(max(im.height for im in r) for r in rows) + gap
+    sheet = Image.new('RGBA', (colw * cols * s, (per * rowh + gap) * s), BG)
+    for k, r in enumerate(rows):
+        x = gap + (k // per) * colw; y = gap + (k % per) * rowh
         for im in r:
             sheet.alpha_composite(im.resize((im.width * s, im.height * s), Image.NEAREST), (x * s, y * s)); x += im.width + gap
-        y += max(im.height for im in r) + gap
     sheet.save(out / 'montage-4x.png')
 
 
@@ -165,14 +187,19 @@ def mocks():
 
 
 def page(out, qa, cons):
-    parts = R.SAMPLE_PARTS
+    parts = PARTS
+    head = (['<title>符文圖示全套</title>', '<h1>符文圖示全套（第 ⑨ 步 G4；風格已由使用者 2026-10-24 核准：「可以」）</h1>',
+             '<p class="note">32 種符文＋空插槽、已鑲插槽，共 34 個主體，6 張 codex 3×2 表（gpt-6-astra，每張最多 2 版，每版各自的新資料夾）。'
+             '每格做 16×16（主體長邊 14，技能工坊與道具店）與 14×14（長邊 12，技能列與戰鬥選單），覆蓋取樣、不放大。'
+             '階級不畫進圖，用已發布的稀有度外框（普通無框）。14px 規則（rune_art.legibility）與目視兩關都要過；每張圖選自哪一版見 QA 表。</p>']
+            if FULL['on'] else
+            ['<title>符文圖示樣本</title>', '<h1>符文圖示樣本（第 ⑨ 步 G4，待核准）</h1>',
+             '<p class="note">codex（gpt-6-astra）一張 3×2 表，2 次生成，採用 a2（a1 石面裂紋與細線在 16 px 變雜點，退件）。每格做兩張原尺寸圖：'
+             '16×16（主體長邊 14，技能工坊）與 14×14（長邊 12，戰鬥選單），覆蓋取樣、不放大，跟 G3 技能圖示同一條管線。'
+             '階級不畫進圖，用已核准的稀有度外框（普通無框）。灰階的那顆是「裝著但沒生效」（◇）用 CSS 濾鏡的提案，不是另一張圖。'
+             '尚未接進遊戲，也還沒核准。</p>'])
     h = ['<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-         f'<title>符文圖示樣本</title><style>{CSS}</style></head><body>',
-         '<h1>符文圖示樣本（第 ⑨ 步 G4，待核准）</h1>',
-         '<p class="note">codex（gpt-6-astra）一張 3×2 表，2 次生成，採用 a2（a1 石面裂紋與細線在 16 px 變雜點，退件）。每格做兩張原尺寸圖：'
-         '16×16（主體長邊 14，技能工坊）與 14×14（長邊 12，戰鬥選單），覆蓋取樣、不放大，跟 G3 技能圖示同一條管線。'
-         '階級不畫進圖，用已核准的稀有度外框（普通無框）。灰階的那顆是「裝著但沒生效」（◇）用 CSS 濾鏡的提案，不是另一張圖。'
-         '尚未接進遊戲，也還沒核准。</p>',
+         head[0] + f'<style>{CSS}</style></head><body>', head[1], head[2],
          f'<p><a href="montage-4x.png">montage-4x.png</a></p>',
          '<h2>每張圖：1×、2×、4×</h2>']
     for p in parts:
@@ -195,13 +222,17 @@ def page(out, qa, cons):
     for zoom in ('zoom1', 'zoom2'):
         h.append(f'<div class="{zoom}">' + ''.join(f'<div class="win"><div class="dim" style="margin-bottom:4px">{html.escape(t)}</div>{body}</div>'
                                                     for t, body in mocks()) + '</div>')
-    h.append('<h2>QA</h2><table><tr><th>id</th><th>尺寸</th><th>結果</th><th>殘色</th><th>半透明</th><th>溢色</th><th>長邊/短邊</th><th>mass</th><th>置中偏移</th><th>和技能圖示比</th></tr>')
+    h.append('<h2>QA</h2><table><tr><th>id</th><th>尺寸</th><th>結果</th><th>殘色</th><th>半透明</th><th>溢色</th><th>長邊/短邊</th><th>mass</th><th>置中偏移</th><th>和技能圖示比</th>'
+             + ('<th>14px 規則</th><th>版本</th>' if FULL['on'] else '') + '</tr>')
     for aid, q in qa.items():
         sj = q['subject']; c = cons.get(aid)
         h.append(f'<tr><td>{aid}</td><td>{q["size"][0]}×{q["size"][1]}</td><td class="{"ok" if q["pass"] else "bad"}">{"pass" if q["pass"] else ", ".join(q["reasons"])}'
                  f'{(" <span class=warn>" + ", ".join(q["warnings"]) + "</span>") if q.get("warnings") else ""}</td><td>{q["residue"]}</td><td>{q["semi"]}</td>'
                  f'<td>{q["magenta_spill"]}</td><td>{sj["long"]}/{sj["short"]}</td><td>{sj["mass"]}</td><td>{sj["centre_off"]}</td>'
-                 f'<td>{"" if c is None else (", ".join(c["flags"]) or "範圍內")}</td></tr>')
+                 f'<td>{"" if c is None else (", ".join(c["flags"]) or "範圍內")}</td>'
+                 + (f'<td class="{"bad" if (q.get("legible") or {}).get("reasons") else "ok"}">{", ".join((q.get("legible") or {}).get("reasons") or []) or "pass"}'
+                    f' <span style="color:var(--dim)">{html.escape(json.dumps({k: v for k, v in (q.get("legible") or {}).items() if k != "reasons"}))}</span></td>'
+                    f'<td>{q.get("attempt", "")}</td>' if FULL['on'] else '') + '</tr>')
     h.append('</table></body></html>')
     (out / 'review.html').write_text('\n'.join(h), encoding='utf-8')
 
@@ -212,7 +243,8 @@ def skill_subjects():
 
 
 def main(argv):
-    out = AF / (G._opt(argv, 'out', 'runs/2026-10-24-rune-icons-sample'))
+    if '--full' in argv: configure_full()
+    out = AF / (G._opt(argv, 'out', 'runs/2026-10-24-rune-icons-full' if FULL['on'] else 'runs/2026-10-24-rune-icons-sample'))
     reg = G._registry()
     qa = copy_inputs(out, reg)
     cons = R.consistency({a: q['subject'] for a, q in qa.items() if a.endswith('-16')}, skill_subjects())

@@ -27070,8 +27070,52 @@
       "approved_by": "user 2026-10-24: approved wave 2 as recommended on the review page (runs/2026-10-24-faces-wave2), 「繼續」"
     },
     "icon-rune-slot-empty-16": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-slot-empty-16.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-slot-empty-16.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 14,
+              "short": 14,
+              "mass": 0.98,
+              "box": [
+                1,
+                1,
+                15,
+                15
+              ],
+              "centre_off": 0.0
+            },
+            "block": 25.357,
+            "scale": 25.357,
+            "size": [
+              16,
+              16
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-slot-empty"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-slot-empty-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -27094,26 +27138,80 @@
           ],
           "centre_off": 0.0
         },
-        "block": 25.357,
-        "scale": 25.357,
+        "block": 25.429,
+        "scale": 25.429,
         "size": [
           16,
           16
         ],
         "spec": "skill-cell:533a8c45dbc6"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "skill-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
         "cell": "rune-slot-empty"
       },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
+      "legible": {
+        "area": 10,
+        "pieces": 4,
+        "hollow": 36,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-slot-empty-16.png"
     },
     "icon-rune-slot-empty-14": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-slot-empty-14.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-slot-empty-14.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 12,
+              "short": 12,
+              "mass": 0.972,
+              "box": [
+                1,
+                1,
+                13,
+                13
+              ],
+              "centre_off": 0.0
+            },
+            "block": 29.583,
+            "scale": 29.583,
+            "size": [
+              14,
+              14
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-slot-empty"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-slot-empty-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -27136,26 +27234,80 @@
           ],
           "centre_off": 0.0
         },
-        "block": 29.583,
-        "scale": 29.583,
+        "block": 29.667,
+        "scale": 29.667,
         "size": [
           14,
           14
         ],
         "spec": "skill-cell:533a8c45dbc6"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "skill-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
         "cell": "rune-slot-empty"
       },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
+      "legible": {
+        "area": 10,
+        "pieces": 4,
+        "hollow": 36,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-slot-empty-14.png"
     },
     "icon-rune-slot-filled-16": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-slot-filled-16.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-slot-filled-16.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 14,
+              "short": 14,
+              "mass": 0.98,
+              "box": [
+                1,
+                1,
+                15,
+                15
+              ],
+              "centre_off": 0.0
+            },
+            "block": 25.357,
+            "scale": 25.357,
+            "size": [
+              16,
+              16
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-slot-filled"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-slot-filled-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a2\\sheet-rune-1-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -27186,18 +27338,76 @@
         ],
         "spec": "skill-cell:533a8c45dbc6"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "skill-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a2\\sheet-rune-1-a2.png",
         "cell": "rune-slot-filled"
       },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
+      "legible": {
+        "area": 28,
+        "pieces": 5,
+        "star": 20,
+        "box": [
+          6,
+          6
+        ],
+        "reasons": []
+      },
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-slot-filled-16.png"
     },
     "icon-rune-slot-filled-14": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-slot-filled-14.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-slot-filled-14.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 12,
+              "short": 12,
+              "mass": 0.979,
+              "box": [
+                1,
+                1,
+                13,
+                13
+              ],
+              "centre_off": 0.0
+            },
+            "block": 29.583,
+            "scale": 29.583,
+            "size": [
+              14,
+              14
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-slot-filled"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-slot-filled-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a2\\sheet-rune-1-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -27211,7 +27421,7 @@
         "subject": {
           "long": 12,
           "short": 12,
-          "mass": 0.979,
+          "mass": 0.972,
           "box": [
             1,
             1,
@@ -27228,18 +27438,278 @@
         ],
         "spec": "skill-cell:533a8c45dbc6"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "skill-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a2\\sheet-rune-1-a2.png",
         "cell": "rune-slot-filled"
       },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
+      "legible": {
+        "area": 28,
+        "pieces": 5,
+        "star": 20,
+        "box": [
+          6,
+          6
+        ],
+        "reasons": []
+      },
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-slot-filled-14.png"
     },
     "icon-rune-flame-16": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-flame-16.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-flame-16.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 14,
+              "short": 14,
+              "mass": 0.98,
+              "box": [
+                1,
+                1,
+                15,
+                15
+              ],
+              "centre_off": 0.0
+            },
+            "block": 25.357,
+            "scale": 25.357,
+            "size": [
+              16,
+              16
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-flame"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-flame-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 26.857,
+        "scale": 26.857,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-flame"
+      },
+      "legible": {
+        "area": 50,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.25,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-flame-16.png"
+    },
+    "icon-rune-flame-14": {
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-flame-14.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 12,
+              "short": 12,
+              "mass": 0.972,
+              "box": [
+                1,
+                1,
+                13,
+                13
+              ],
+              "centre_off": 0.0
+            },
+            "block": 29.583,
+            "scale": 29.583,
+            "size": [
+              14,
+              14
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-flame"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-flame-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.333,
+        "scale": 31.333,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-flame"
+      },
+      "legible": {
+        "area": 50,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.25,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-flame-14.png"
+    },
+    "icon-rune-spread-16": {
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-spread-16.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 14,
+              "short": 14,
+              "mass": 0.98,
+              "box": [
+                1,
+                1,
+                15,
+                15
+              ],
+              "centre_off": 0.0
+            },
+            "block": 25.643,
+            "scale": 25.643,
+            "size": [
+              16,
+              16
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-spread"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-spread-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -27270,18 +27740,77 @@
         ],
         "spec": "skill-cell:533a8c45dbc6"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "skill-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
-        "cell": "rune-flame"
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
+        "cell": "rune-spread"
       },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
+      "legible": {
+        "area": 36,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.12,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-spread-16.png"
     },
-    "icon-rune-flame-14": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-flame-14.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+    "icon-rune-spread-14": {
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-spread-14.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 12,
+              "short": 12,
+              "mass": 0.972,
+              "box": [
+                1,
+                1,
+                13,
+                13
+              ],
+              "centre_off": 0.0
+            },
+            "block": 29.917,
+            "scale": 29.917,
+            "size": [
+              14,
+              14
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-spread"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-spread-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -27312,102 +27841,77 @@
         ],
         "spec": "skill-cell:533a8c45dbc6"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "skill-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
-        "cell": "rune-flame"
-      },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
-    },
-    "icon-rune-spread-16": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-spread-16.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
-      "qa": {
-        "pass": true,
-        "reasons": [],
-        "warnings": [],
-        "residue": 0,
-        "semi": 0,
-        "edge": 0,
-        "holes": 0,
-        "magenta_spill": 0,
-        "key_tint_inside": 0,
-        "subject": {
-          "long": 14,
-          "short": 14,
-          "mass": 0.98,
-          "box": [
-            1,
-            1,
-            15,
-            15
-          ],
-          "centre_off": 0.0
-        },
-        "block": 25.643,
-        "scale": 25.643,
-        "size": [
-          16,
-          16
-        ],
-        "spec": "skill-cell:533a8c45dbc6"
-      },
-      "status": "qa_passed",
-      "kind": "skill-cell",
-      "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
         "cell": "rune-spread"
       },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
-    },
-    "icon-rune-spread-14": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-spread-14.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
-      "qa": {
-        "pass": true,
-        "reasons": [],
-        "warnings": [],
-        "residue": 0,
-        "semi": 0,
-        "edge": 0,
-        "holes": 0,
-        "magenta_spill": 0,
-        "key_tint_inside": 0,
-        "subject": {
-          "long": 12,
-          "short": 12,
-          "mass": 0.972,
-          "box": [
-            1,
-            1,
-            13,
-            13
-          ],
-          "centre_off": 0.0
-        },
-        "block": 29.917,
-        "scale": 29.917,
-        "size": [
-          14,
-          14
+      "legible": {
+        "area": 36,
+        "pieces": 1,
+        "box": [
+          8,
+          8
         ],
-        "spec": "skill-cell:533a8c45dbc6"
+        "specks": 0.0,
+        "edge": 0.12,
+        "reasons": []
       },
-      "status": "qa_passed",
-      "kind": "skill-cell",
-      "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
-        "cell": "rune-spread"
-      },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-spread-14.png"
     },
     "icon-rune-on-crit-16": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-on-crit-16.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-on-crit-16.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 14,
+              "short": 14,
+              "mass": 0.98,
+              "box": [
+                1,
+                1,
+                15,
+                15
+              ],
+              "centre_off": 0.0
+            },
+            "block": 25.643,
+            "scale": 25.643,
+            "size": [
+              16,
+              16
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-on-crit"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-3/icon-rune-on-crit-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -27430,26 +27934,85 @@
           ],
           "centre_off": 0.0
         },
-        "block": 25.643,
-        "scale": 25.643,
+        "block": 25.5,
+        "scale": 25.5,
         "size": [
           16,
           16
         ],
         "spec": "skill-cell:533a8c45dbc6"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "skill-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
         "cell": "rune-on-crit"
       },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
+      "legible": {
+        "area": 39,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.16,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-3",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-on-crit-16.png"
     },
     "icon-rune-on-crit-14": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-on-crit-14.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-on-crit-14.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 12,
+              "short": 12,
+              "mass": 0.972,
+              "box": [
+                1,
+                1,
+                13,
+                13
+              ],
+              "centre_off": 0.0
+            },
+            "block": 29.917,
+            "scale": 29.917,
+            "size": [
+              14,
+              14
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-on-crit"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-3/icon-rune-on-crit-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -27472,26 +28035,252 @@
           ],
           "centre_off": 0.0
         },
-        "block": 29.917,
-        "scale": 29.917,
+        "block": 29.75,
+        "scale": 29.75,
         "size": [
           14,
           14
         ],
         "spec": "skill-cell:533a8c45dbc6"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "skill-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
         "cell": "rune-on-crit"
       },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
+      "legible": {
+        "area": 39,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.16,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-3",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-on-crit-14.png"
     },
     "icon-rune-twin-cast-16": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-twin-cast-16.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-twin-cast-16.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 14,
+              "short": 14,
+              "mass": 0.98,
+              "box": [
+                1,
+                1,
+                15,
+                15
+              ],
+              "centre_off": 0.0
+            },
+            "block": 25.571,
+            "scale": 25.571,
+            "size": [
+              16,
+              16
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-twin-cast"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-twin-cast-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a2\\sheet-rune-6-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.286,
+        "scale": 25.286,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a2\\sheet-rune-6-a2.png",
+        "cell": "rune-twin-cast"
+      },
+      "legible": {
+        "area": 48,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.3,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-twin-cast-16.png"
+    },
+    "icon-rune-twin-cast-14": {
+      "history": [
+        {
+          "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-twin-cast-14.png",
+          "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+          "qa": {
+            "pass": true,
+            "reasons": [],
+            "warnings": [],
+            "residue": 0,
+            "semi": 0,
+            "edge": 0,
+            "holes": 0,
+            "magenta_spill": 0,
+            "key_tint_inside": 0,
+            "subject": {
+              "long": 12,
+              "short": 12,
+              "mass": 0.972,
+              "box": [
+                1,
+                1,
+                13,
+                13
+              ],
+              "centre_off": 0.0
+            },
+            "block": 29.833,
+            "scale": 29.833,
+            "size": [
+              14,
+              14
+            ],
+            "spec": "skill-cell:533a8c45dbc6"
+          },
+          "status": "qa_passed",
+          "kind": "skill-cell",
+          "source": {
+            "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+            "cell": "rune-twin-cast"
+          },
+          "batch": "rune-sample",
+          "sheet": "sheet-rune-sample"
+        }
+      ],
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-twin-cast-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a2\\sheet-rune-6-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.5,
+        "scale": 29.5,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a2\\sheet-rune-6-a2.png",
+        "cell": "rune-twin-cast"
+      },
+      "legible": {
+        "area": 48,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.3,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-twin-cast-14.png"
+    },
+    "sheet-rune-sample": {
+      "chosen_attempt": "a2",
+      "batch": "rune-sample",
+      "prompt": "art-factory/starlantern/prompts/sheet-rune-sample.txt",
+      "rejected_attempts": {
+        "a1": "未採用：石面裂紋、寬斜邊與細線在 16 px 變雜點；擴散、暴擊觸發、雙重詠唱的符號糊掉（2026-10-24）"
+      },
+      "note_a2": "採用 a2；雙重詠唱的雙環在 16/14 仍糊，金邊像稀有度外框，量產前要重畫（2026-10-24）"
+    },
+    "icon-rune-focus-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-focus-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -27522,18 +28311,33 @@
         ],
         "spec": "skill-cell:533a8c45dbc6"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "skill-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
-        "cell": "rune-twin-cast"
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
+        "cell": "rune-focus"
       },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
+      "legible": {
+        "area": 40,
+        "pieces": 2,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.14,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-focus-16.png"
     },
-    "icon-rune-twin-cast-14": {
-      "final": "art-factory/starlantern/work/sheet-rune-sample/icon-rune-twin-cast-14.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
+    "icon-rune-focus-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-focus-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -27564,23 +28368,3152 @@
         ],
         "spec": "skill-cell:533a8c45dbc6"
       },
-      "status": "qa_passed",
+      "status": "published",
       "kind": "skill-cell",
       "source": {
-        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-sample\\sheet-rune-sample-a2.png",
-        "cell": "rune-twin-cast"
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
+        "cell": "rune-focus"
       },
-      "batch": "rune-sample",
-      "sheet": "sheet-rune-sample"
+      "legible": {
+        "area": 40,
+        "pieces": 2,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.14,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-focus-14.png"
     },
-    "sheet-rune-sample": {
-      "chosen_attempt": "a2",
-      "batch": "rune-sample",
-      "prompt": "art-factory/starlantern/prompts/sheet-rune-sample.txt",
-      "rejected_attempts": {
-        "a1": "未採用：石面裂紋、寬斜邊與細線在 16 px 變雜點；擴散、暴擊觸發、雙重詠唱的符號糊掉（2026-10-24）"
+    "icon-rune-bounce-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-bounce-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.571,
+        "scale": 25.571,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
       },
-      "note_a2": "採用 a2；雙重詠唱的雙環在 16/14 仍糊，金邊像稀有度外框，量產前要重畫（2026-10-24）"
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
+        "cell": "rune-bounce"
+      },
+      "legible": {
+        "area": 26,
+        "pieces": 1,
+        "box": [
+          8,
+          7
+        ],
+        "specks": 0.0,
+        "edge": 0.11,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-bounce-16.png"
+    },
+    "icon-rune-bounce-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-bounce-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.833,
+        "scale": 29.833,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
+        "cell": "rune-bounce"
+      },
+      "legible": {
+        "area": 26,
+        "pieces": 1,
+        "box": [
+          8,
+          7
+        ],
+        "specks": 0.0,
+        "edge": 0.11,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-bounce-14.png"
+    },
+    "icon-rune-multistrike-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-multistrike-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.5,
+        "scale": 25.5,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
+        "cell": "rune-multistrike"
+      },
+      "legible": {
+        "area": 31,
+        "pieces": 2,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.09,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-multistrike-16.png"
+    },
+    "icon-rune-multistrike-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-1/icon-rune-multistrike-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.75,
+        "scale": 29.75,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-1\\a1\\sheet-rune-1-a1.png",
+        "cell": "rune-multistrike"
+      },
+      "legible": {
+        "area": 31,
+        "pieces": 2,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.09,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-1",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-multistrike-14.png"
+    },
+    "icon-rune-tear-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-3/icon-rune-tear-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.357,
+        "scale": 25.357,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+        "cell": "rune-tear"
+      },
+      "legible": {
+        "area": 54,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.17,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-3",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-tear-16.png"
+    },
+    "icon-rune-tear-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-3/icon-rune-tear-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.583,
+        "scale": 29.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+        "cell": "rune-tear"
+      },
+      "legible": {
+        "area": 54,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.17,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-3",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-tear-14.png"
+    },
+    "icon-rune-frostbite-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-3/icon-rune-frostbite-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.357,
+        "scale": 25.357,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+        "cell": "rune-frostbite"
+      },
+      "legible": {
+        "area": 58,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.1,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-3",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-frostbite-16.png"
+    },
+    "icon-rune-frostbite-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-3/icon-rune-frostbite-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.986,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.583,
+        "scale": 29.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+        "cell": "rune-frostbite"
+      },
+      "legible": {
+        "area": 58,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.1,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-3",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-frostbite-14.png"
+    },
+    "icon-rune-aftermath-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-3/icon-rune-aftermath-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a2\\sheet-rune-3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.429,
+        "scale": 25.429,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a2\\sheet-rune-3-a2.png",
+        "cell": "rune-aftermath"
+      },
+      "legible": {
+        "area": 47,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.21,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-3",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-aftermath-16.png"
+    },
+    "icon-rune-aftermath-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-3/icon-rune-aftermath-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a2\\sheet-rune-3-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.667,
+        "scale": 29.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a2\\sheet-rune-3-a2.png",
+        "cell": "rune-aftermath"
+      },
+      "legible": {
+        "area": 47,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.21,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-3",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-aftermath-14.png"
+    },
+    "icon-rune-on-kill-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-3/icon-rune-on-kill-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.5,
+        "scale": 25.5,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+        "cell": "rune-on-kill"
+      },
+      "legible": {
+        "area": 46,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.16,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-3",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-on-kill-16.png"
+    },
+    "icon-rune-on-kill-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-3/icon-rune-on-kill-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.75,
+        "scale": 29.75,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-3\\a1\\sheet-rune-3-a1.png",
+        "cell": "rune-on-kill"
+      },
+      "legible": {
+        "area": 46,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.16,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-3",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-on-kill-14.png"
+    },
+    "icon-rune-starwheel-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-starwheel-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.357,
+        "scale": 25.357,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+        "cell": "rune-starwheel"
+      },
+      "legible": {
+        "area": 40,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.18,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-starwheel-16.png"
+    },
+    "icon-rune-starwheel-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-starwheel-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.583,
+        "scale": 29.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+        "cell": "rune-starwheel"
+      },
+      "legible": {
+        "area": 40,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.18,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-starwheel-14.png"
+    },
+    "icon-rune-blood-price-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-blood-price-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.429,
+        "scale": 25.429,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+        "cell": "rune-blood-price"
+      },
+      "legible": {
+        "area": 48,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.14,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-blood-price-16.png"
+    },
+    "icon-rune-blood-price-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-blood-price-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.667,
+        "scale": 29.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+        "cell": "rune-blood-price"
+      },
+      "legible": {
+        "area": 48,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.14,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-blood-price-14.png"
+    },
+    "icon-rune-sync-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-sync-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.5,
+        "scale": 25.5,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+        "cell": "rune-sync"
+      },
+      "legible": {
+        "area": 41,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.24,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-sync-16.png"
+    },
+    "icon-rune-sync-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-sync-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.75,
+        "scale": 29.75,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+        "cell": "rune-sync"
+      },
+      "legible": {
+        "area": 41,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.24,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-sync-14.png"
+    },
+    "icon-rune-spill-shield-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-spill-shield-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.429,
+        "scale": 25.429,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+        "cell": "rune-spill-shield"
+      },
+      "legible": {
+        "area": 62,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.29,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-spill-shield-16.png"
+    },
+    "icon-rune-spill-shield-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-spill-shield-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.667,
+        "scale": 29.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a1\\sheet-rune-6-a1.png",
+        "cell": "rune-spill-shield"
+      },
+      "legible": {
+        "area": 62,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.29,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-spill-shield-14.png"
+    },
+    "icon-rune-reprise-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-reprise-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a2\\sheet-rune-6-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.5,
+        "scale": 25.5,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a2\\sheet-rune-6-a2.png",
+        "cell": "rune-reprise"
+      },
+      "legible": {
+        "area": 45,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.22,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-reprise-16.png"
+    },
+    "icon-rune-reprise-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-6/icon-rune-reprise-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a2\\sheet-rune-6-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.75,
+        "scale": 29.75,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-6\\a2\\sheet-rune-6-a2.png",
+        "cell": "rune-reprise"
+      },
+      "legible": {
+        "area": 45,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.22,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-6",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-reprise-14.png"
+    },
+    "icon-rune-heavy-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-heavy-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 26.857,
+        "scale": 26.857,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-heavy"
+      },
+      "legible": {
+        "area": 30,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.17,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-heavy-16.png"
+    },
+    "icon-rune-heavy-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-heavy-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.333,
+        "scale": 31.333,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-heavy"
+      },
+      "legible": {
+        "area": 30,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.17,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-heavy-14.png"
+    },
+    "icon-rune-rime-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-rime-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 26.857,
+        "scale": 26.857,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-rime"
+      },
+      "legible": {
+        "area": 32,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.08,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-rime-16.png"
+    },
+    "icon-rune-rime-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-rime-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.333,
+        "scale": 31.333,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-rime"
+      },
+      "legible": {
+        "area": 32,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.08,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-rime-14.png"
+    },
+    "icon-rune-thunderclap-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-thunderclap-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 26.786,
+        "scale": 26.786,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-thunderclap"
+      },
+      "legible": {
+        "area": 32,
+        "pieces": 1,
+        "box": [
+          7,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.21,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-thunderclap-16.png"
+    },
+    "icon-rune-thunderclap-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-thunderclap-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.25,
+        "scale": 31.25,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-thunderclap"
+      },
+      "legible": {
+        "area": 32,
+        "pieces": 1,
+        "box": [
+          7,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.21,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-thunderclap-14.png"
+    },
+    "icon-rune-ignite-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-ignite-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 26.786,
+        "scale": 26.786,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-ignite"
+      },
+      "legible": {
+        "area": 48,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.24,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-ignite-16.png"
+    },
+    "icon-rune-ignite-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-ignite-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.25,
+        "scale": 31.25,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-ignite"
+      },
+      "legible": {
+        "area": 48,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.24,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-ignite-14.png"
+    },
+    "icon-rune-jolt-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-jolt-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 26.786,
+        "scale": 26.786,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-jolt"
+      },
+      "legible": {
+        "area": 41,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.22,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-jolt-16.png"
+    },
+    "icon-rune-jolt-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-2/icon-rune-jolt-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 31.25,
+        "scale": 31.25,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-2\\a1\\sheet-rune-2-a1.png",
+        "cell": "rune-jolt"
+      },
+      "legible": {
+        "area": 41,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.22,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-2",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-jolt-14.png"
+    },
+    "icon-rune-on-struck-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-on-struck-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.214,
+        "scale": 25.214,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-on-struck"
+      },
+      "legible": {
+        "area": 55,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.28,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-on-struck-16.png"
+    },
+    "icon-rune-on-struck-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-on-struck-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.417,
+        "scale": 29.417,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-on-struck"
+      },
+      "legible": {
+        "area": 55,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.28,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-on-struck-14.png"
+    },
+    "icon-rune-regain-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-regain-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.214,
+        "scale": 25.214,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-regain"
+      },
+      "legible": {
+        "area": 48,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.3,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-regain-16.png"
+    },
+    "icon-rune-regain-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-regain-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.417,
+        "scale": 29.417,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-regain"
+      },
+      "legible": {
+        "area": 48,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.3,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-regain-14.png"
+    },
+    "icon-rune-thrift-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-thrift-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.214,
+        "scale": 25.214,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-thrift"
+      },
+      "legible": {
+        "area": 49,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.16,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-thrift-16.png"
+    },
+    "icon-rune-thrift-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-thrift-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.417,
+        "scale": 29.417,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-thrift"
+      },
+      "legible": {
+        "area": 49,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.16,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-thrift-14.png"
+    },
+    "icon-rune-charge-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-charge-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.429,
+        "scale": 25.429,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-charge"
+      },
+      "legible": {
+        "area": 61,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.2,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-charge-16.png"
+    },
+    "icon-rune-charge-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-charge-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.667,
+        "scale": 29.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-charge"
+      },
+      "legible": {
+        "area": 61,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.2,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-charge-14.png"
+    },
+    "icon-rune-drain-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-drain-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.429,
+        "scale": 25.429,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-drain"
+      },
+      "legible": {
+        "area": 58,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.28,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-drain-16.png"
+    },
+    "icon-rune-drain-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-drain-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.667,
+        "scale": 29.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-drain"
+      },
+      "legible": {
+        "area": 58,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.28,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-drain-14.png"
+    },
+    "icon-rune-extend-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-extend-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.429,
+        "scale": 25.429,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-extend"
+      },
+      "legible": {
+        "area": 34,
+        "pieces": 2,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.09,
+        "edge": 0.18,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-extend-16.png"
+    },
+    "icon-rune-extend-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-4/icon-rune-extend-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.667,
+        "scale": 29.667,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-4\\a1\\sheet-rune-4-a1.png",
+        "cell": "rune-extend"
+      },
+      "legible": {
+        "area": 34,
+        "pieces": 2,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.09,
+        "edge": 0.18,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-4",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-extend-14.png"
+    },
+    "sheet-rune-1": {
+      "batch": "rune-full",
+      "attempts": {
+        "a1": "採用：空插槽、擴散、集中、彈射、連擊。已鑲插槽的星星在 14px 只有 17 px，和樣本一樣小（使用者要求放大）",
+        "a2": "採用：已鑲插槽（星 20 px）；其餘和 a1 差不多，留 a1"
+      },
+      "prompt": "art-factory/starlantern/prompts/sheet-rune-1.txt (latest; each attempt's own prompt is in raw/sheet-rune-1/a<N>/)"
+    },
+    "sheet-rune-2": {
+      "batch": "rune-full",
+      "attempts": {
+        "a1": "全部採用"
+      },
+      "prompt": "art-factory/starlantern/prompts/sheet-rune-2.txt (latest; each attempt's own prompt is in raw/sheet-rune-2/a<N>/)"
+    },
+    "sheet-rune-3": {
+      "batch": "rune-full",
+      "attempts": {
+        "a1": "採用：撕裂、凍結、暴擊觸發、擊倒觸發。淬毒深紫在 14px 沉進石面（14px 規則：symbol too small）；餘波的環沿著石框（symbol runs along the edge like a frame）",
+        "a2": "採用：餘波（環改成兩側短弧）。淬毒的粉紫被當成洋紅 key 去溢色成灰，不採用；淬毒改到 sheet-rune-5 的空格重畫"
+      },
+      "prompt": "art-factory/starlantern/prompts/sheet-rune-3.txt (latest; each attempt's own prompt is in raw/sheet-rune-3/a<N>/)"
+    },
+    "sheet-rune-4": {
+      "batch": "rune-full",
+      "attempts": {
+        "a1": "全部採用"
+      },
+      "prompt": "art-factory/starlantern/prompts/sheet-rune-4.txt (latest; each attempt's own prompt is in raw/sheet-rune-4/a<N>/)"
+    },
+    "sheet-rune-6": {
+      "batch": "rune-full",
+      "attempts": {
+        "a1": "採用：星燈輪轉、血之代價、同步、化盾。雙重詠唱環內有螺旋線，14px 糊；回聲的箭頭和弧黏在一起",
+        "a2": "採用：雙重詠唱（兩個乾淨的環，無金框）、回聲（一個箭頭＋一道弧）"
+      },
+      "prompt": "art-factory/starlantern/prompts/sheet-rune-6.txt (latest; each attempt's own prompt is in raw/sheet-rune-6/a<N>/)"
+    },
+    "icon-rune-share-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/icon-rune-share-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a1\\sheet-rune-5-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.357,
+        "scale": 25.357,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a1\\sheet-rune-5-a1.png",
+        "cell": "rune-share"
+      },
+      "legible": {
+        "area": 27,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.12,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-share-16.png"
+    },
+    "icon-rune-share-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/icon-rune-share-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a1\\sheet-rune-5-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.583,
+        "scale": 29.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a1\\sheet-rune-5-a1.png",
+        "cell": "rune-share"
+      },
+      "legible": {
+        "area": 27,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.12,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-share-14.png"
+    },
+    "icon-rune-lasting-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/icon-rune-lasting-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.357,
+        "scale": 25.357,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-lasting"
+      },
+      "legible": {
+        "area": 27,
+        "pieces": 1,
+        "box": [
+          8,
+          6
+        ],
+        "specks": 0.0,
+        "edge": 0.16,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-lasting-16.png"
+    },
+    "icon-rune-lasting-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/icon-rune-lasting-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.583,
+        "scale": 29.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-lasting"
+      },
+      "legible": {
+        "area": 27,
+        "pieces": 1,
+        "box": [
+          8,
+          6
+        ],
+        "specks": 0.0,
+        "edge": 0.16,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-lasting-14.png"
+    },
+    "icon-rune-dispel-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/icon-rune-dispel-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.357,
+        "scale": 25.357,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-dispel"
+      },
+      "legible": {
+        "area": 41,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.17,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-dispel-16.png"
+    },
+    "icon-rune-dispel-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/icon-rune-dispel-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.583,
+        "scale": 29.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-dispel"
+      },
+      "legible": {
+        "area": 41,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.17,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-dispel-14.png"
+    },
+    "icon-rune-armor-break-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/icon-rune-armor-break-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a1\\sheet-rune-5-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.571,
+        "scale": 25.571,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a1\\sheet-rune-5-a1.png",
+        "cell": "rune-armor-break"
+      },
+      "legible": {
+        "area": 52,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.13,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-armor-break-16.png"
+    },
+    "icon-rune-armor-break-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/icon-rune-armor-break-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a1\\sheet-rune-5-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.833,
+        "scale": 29.833,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a1\\sheet-rune-5-a1.png",
+        "cell": "rune-armor-break"
+      },
+      "legible": {
+        "area": 52,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.13,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5",
+      "batch": "rune-full",
+      "chosen_attempt": "a1",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-armor-break-14.png"
+    },
+    "icon-rune-venom-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/icon-rune-venom-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.5,
+        "scale": 25.5,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-venom"
+      },
+      "legible": {
+        "area": 35,
+        "pieces": 1,
+        "box": [
+          6,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.05,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-venom-16.png"
+    },
+    "icon-rune-venom-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/icon-rune-venom-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.75,
+        "scale": 29.75,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "published",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-venom"
+      },
+      "legible": {
+        "area": 35,
+        "pieces": 1,
+        "box": [
+          6,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.05,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5",
+      "batch": "rune-full",
+      "chosen_attempt": "a2",
+      "approved_by": "使用者 2026-10-24「可以」（核准符文圖示樣本風格，全套依此風格產出）",
+      "approved_on": "2026-10-24",
+      "runtime": "/assets/games/starlantern/icon/rune-venom-14.png"
+    },
+    "sheet-rune-5": {
+      "batch": "rune-full",
+      "attempts": {
+        "a1": "採用：共享、破甲（a1 第 5 格是空石板，丟棄）",
+        "a2": "採用：常駐（兩個環更開）、除厄（星較大）、淬毒（藍紫，不被 key 吃掉；從 sheet-rune-3 移來）"
+      }
     }
   },
   "requa_log": [

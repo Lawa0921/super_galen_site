@@ -5,12 +5,20 @@ import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
 import { REGIONS, type RegionId } from '../data/regions';
+import { RUNES, type RuneId } from '../data/runes';
 import { SKILLS } from '../data/skills';
 import type { BattleEvent } from '../engine/combatant';
 import type { Dir, Tile } from '../engine/map';
 import type { CharacterId, FxKey, ItemInstance, Rarity, WeaponKind } from '../engine/types';
 
 export const ART_BASE = '/assets/games/starlantern';
+/** A rune icon (art step 9, G4): a rune, or a slot state. */
+export type RuneIconId = RuneId | 'slot-empty' | 'slot-filled';
+/** 14 x 14 inline with 12px text (a skill's slots, the battle menu); 16 x 16 in a rune row's 20 x 20 cell. */
+export type RuneIconSize = 14 | 16;
+export const RUNE_ICON_SIZES: readonly RuneIconSize[] = [14, 16];
+/** Every rune icon id: each rune of the data and both slot states (registry `icon-rune-<id>-<size>`). */
+export const RUNE_ICON_IDS = (): RuneIconId[] => ['slot-empty', 'slot-filled', ...(Object.keys(RUNES) as RuneId[])];
 export const MANIFEST_URL = `${ART_BASE}/manifest.json`;
 export type TileKey = Tile | 'chest-open';
 export type { FxKey };
@@ -103,6 +111,8 @@ export const art = {
   portalPlaza: `${ART_BASE}/scene/portal-plaza.png`,
   portalCard: (k: PortalCardKey) => `${ART_BASE}/portal/${k}.png`,
   traitIcon: (k: TraitIconKey) => `${ART_BASE}/icon/trait-${k}.png`,
+  /** A rune or slot-state icon at its native size (art step 9, G4; registry `icon-rune-<id>-<size>`). */
+  runeIcon: (id: RuneIconId, size: RuneIconSize) => `${ART_BASE}/icon/rune-${id}-${size}.png`,
   logo: `${ART_BASE}/ui/logo.png`,
   window: `${ART_BASE}/ui/window.png`,
   cursor: `${ART_BASE}/ui/cursor.png`,
@@ -241,6 +251,8 @@ export function allArtUrls(): string[] {
   for (const id of SILHOUETTE_IDS()) urls.push(art.gearSilhouette(id));
   for (const r of FRAMED_RARITIES) urls.push(art.rarityFrame(r));
   urls.push(art.rarityGlow, art.starlitOverlay, art.scene('forge'), art.npc('forge', 'normal'), art.npc('forge', 'happy'));
+  // Art step 9 (G4): every rune and both slot states, 14 and 16.
+  for (const id of RUNE_ICON_IDS()) for (const size of RUNE_ICON_SIZES) urls.push(art.runeIcon(id, size));
   return urls;
 }
 
