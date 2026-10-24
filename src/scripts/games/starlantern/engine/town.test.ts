@@ -169,6 +169,33 @@ describe('useFieldItem', () => {
     expect(useFieldItem({ ...s, inventory: {} }, 'potion', 'noel')).toEqual({ ok: false, reason: 'stock' });
     expect(useFieldItem(s, 'return-lamp', 'noel')).toEqual({ ok: false, reason: 'invalid' });
   });
+  it("a potion on a member above max HP (an altar's leftover) keeps the extra (time and moon Task 9)", () => {
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
+    const max = statsOf(s.party.roster.liz).hp;
+    s.party.roster.liz.hp = max + 20;
+    const r = useFieldItem(s, 'potion', 'liz');
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.state.party.roster.liz.hp).toBe(max + 20);
+    expect(r.state.inventory.potion).toBe(START_ITEMS.potion - 1);   // used up all the same, as before
+  });
+  it('a potion below max still heals up to max, not past it (time and moon Task 9)', () => {
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
+    const max = statsOf(s.party.roster.liz).hp;
+    s.party.roster.liz.hp = max - 10;
+    const r = useFieldItem(s, 'potion', 'liz');
+    expect(r.ok && r.state.party.roster.liz.hp).toBe(max);
+  });
+  it('TP above max is kept too (time and moon Task 9)', () => {
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
+    s.inventory.ether = 1;
+    const max = statsOf(s.party.roster.noel).tp;
+    s.party.roster.noel.tp = max + 7;
+    const r = useFieldItem(s, 'ether', 'noel');
+    expect(r.ok && r.state.party.roster.noel.tp).toBe(max + 7);
+    s.party.roster.noel.tp = max - 5;
+    const low = useFieldItem(s, 'ether', 'noel');
+    expect(low.ok && low.state.party.roster.noel.tp).toBe(max);
+  });
 });
 
 describe('buying and selling gear', () => {

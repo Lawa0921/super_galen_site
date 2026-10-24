@@ -261,8 +261,9 @@ export function useFieldItem(s: GameState, itemId: string, targetId: CharacterId
   const t = n.party.roster[targetId];
   const max = statsOf(t);
   for (const e of def.effects) {
-    if (e.kind === 'restore') { t.hp = Math.min(max.hp, t.hp + (e.hp ?? 0)); t.tp = Math.min(max.tp, t.tp + (e.tp ?? 0)); }
-    if (e.kind === 'heal') t.hp = Math.min(max.hp, t.hp + e.power);
+    // time and moon Task 9 (old debt b): only ever up, as castField: an altar's HP or TP past the max is kept
+    if (e.kind === 'restore') { t.hp = Math.max(t.hp, Math.min(max.hp, t.hp + (e.hp ?? 0))); t.tp = Math.max(t.tp, Math.min(max.tp, t.tp + (e.tp ?? 0))); }
+    if (e.kind === 'heal') t.hp = Math.max(t.hp, Math.min(max.hp, t.hp + e.power));
     if (e.kind === 'revive') t.hp = Math.max(1, Math.floor(max.hp * e.hpPct));
   }
   addItem(n.inventory, itemId, -1);
