@@ -564,6 +564,30 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
   .slx-ail-#{$k} { color: $c; }
 }
 .slx-ail-more { color: $slx-ink; }
+// Touch overflow (ui2/morePopover.ts): a +N is a button that lists its whole row, since a touch has no hover for its
+// title. The party row lets the pointer through; its +N takes it back. A foe's +N is drawn by the picture: a bare tap
+// target lies over it, centred in 2 px steps (classes, never an inline style), in a layer first in the battle scene,
+// under every window, that lets every other tap through.
+.slx-pm-ail .slx-ail-more[role='button'] { pointer-events: auto; cursor: pointer; }
+.slx-foe-more-layer { position: absolute; inset: 0; pointer-events: none; }
+.slx-foe-more { position: absolute; width: 28px; height: 24px; margin: -12px 0 0 -14px; pointer-events: auto; cursor: pointer; }
+@for $k from 0 through 320 { .slx-at-x-#{$k} { left: $k * 2px; } }
+@for $k from 0 through 180 { .slx-at-y-#{$k} { top: $k * 2px; } }
+// The list: every word of the row, one a line, each in its chip look (an elite's affix in the Pixi row's ink,
+// render/ailmentStyle.ts AFFIX_FILL), in a small window over the row: above a member's panel (the last two panels'
+// lists end at their right edge, inside the screen), under a foe's +N.
+.slx-more-pop {
+  position: absolute; z-index: 6; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 4px 6px;
+  background: $slx-win; border: 1px solid #c9a35a; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); white-space: nowrap; cursor: default; pointer-events: auto;
+}
+.slx-more-pop[hidden] { display: none; }
+.slx-affix { color: #ffccbb; }
+.slx-more-pop .slx-affix { flex: none; padding: 0 1px; font-size: $slx-fs; line-height: 14px; border: 1px solid currentColor; }
+.slx-pm > .slx-more-pop { left: 0; bottom: calc(100% + 18px); }
+.slx-pm:nth-child(n + 4) > .slx-more-pop { left: auto; right: 0; }
+.slx-foe-more > .slx-more-pop { top: 100%; left: 50%; translate: -50% 0; translate: round(down, -50%, 1px) 0; }
+// A foe far right (ui2/scenes/battle.ts FOE_LIST_END_X): its list ends at the target's right edge, inside the screen.
+.slx-foe-more-end > .slx-more-pop { left: auto; right: 0; translate: none; }
 
 // Formation: 3x3 grid on the left (front row on top, nearest the enemies), rules on the right
 .slx-formation-grid { left: 10px; top: 10px; padding: 6px 10px; }

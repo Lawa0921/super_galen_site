@@ -27,6 +27,7 @@ import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import { PartyBar, chipWord, type PulseOpts } from '../partyBar';
+import { MorePopover, moreTrigger } from '../morePopover';
 import { mechIconUrls } from '../../render/chipIcons';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, richNodes, win, type Rich } from '../widgets';
@@ -39,6 +40,8 @@ import { memScene, type SceneId } from '../../data/story/scenes';
 export const BATTLE_LEFT = 150;
 /** How long a battle waits for its foes' pictures and its backdrop before it is drawn (a late one is drawn when it lands). */
 export const BATTLE_ART_WAIT_MS = 1500;
+/** Past this stage x a foe's +N list is ended at its target's right edge, not centred (a long affix list stays on screen). */
+const FOE_LIST_END_X = 440;
 const BANNER_MS = 1100;
 const WIN_MS = 1000;
 /**
@@ -63,6 +66,10 @@ export class BattleScene implements Scene {
   private backEl!: HTMLElement;
   private note: HTMLElement | null = null;
   private bar: PartyBar;
+  /** The list a tapped 「+N」 opens (touch overflow), a member's or a foe's; one at a time. */
+  private more = new MorePopover();
+  /** The tap targets over the foes' 「+N」 (the picture draws the words): first in the scene, under every window. */
+  private foeMore = el('div', { class: 'slx-foe-more-layer' });
   private layers: Layer[] = [];
   private view: MenuView | null = null;
   private state!: BattleState;
@@ -88,7 +95,7 @@ export class BattleScene implements Scene {
   private picked = false;
 
   constructor(private ctx: SceneCtx, cps = textCps(ctx)) {
-    this.bar = new PartyBar(ctx.art);
+    this.bar = new PartyBar(ctx.art, this.more);
     this.talk = new Dialogue(cps);
   }
 
@@ -107,11 +114,13 @@ export class BattleScene implements Scene {
     this.marker = el('div', { class: 'slx-target', text: '▼', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.cutin = el('div', { class: 'sl-cutin', attrs: { hidden: '', 'aria-hidden': 'true' } });
     this.backEl = backControl(() => this.onAction('cancel'));
-    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.msg, this.field, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin, this.talk.el]);
+    this.body = el('div', { class: 'slx-scene slx-battle' }, [this.foeMore, this.msg, this.field, this.marker, this.bar.el, this.cmd, this.backEl, this.cutin, this.talk.el]);
     root.append(this.body);
     if (this.ctx.stage) {
       this.ctx.stage.show('battle');
       this.ctx.stage.battleView.setup(this.state, this.ctx.stage.size(), this.ctx.game.terrain(), BATTLE_LEFT, BATTLE_BOTTOM, this.ctx.game.run?.region);
+      // A foe's picture that lands late raises its row: the tap targets over the +N follow at once.
+      this.ctx.stage.battleView.onRowsMoved = () => this.showFoeMore();
     }
     this.msg.textContent = this.state.enemies.map((e) => e.name).join('、') + this.surviveLine();
     this.banner(this.state.boss ? T.ui2.banner.boss : T.ui2.banner.encounter, this.state.boss ? 'slx-banner-boss' : '');
@@ -120,11 +129,15 @@ export class BattleScene implements Scene {
 
   exit(): void {
     this.talk.stop();
+    this.more.dispose();
+    if (this.ctx.stage) this.ctx.stage.battleView.onRowsMoved = null;
     if (this.body) clearPillars(this.body);
     this.ctx.stage?.show(null);
   }
 
   onAction(a: UiAction): void {
+    // An open +N list takes cancel (Esc) for itself; any other key closes it and goes on as always.
+    if (this.more.onAction(a)) return;
     if (this.rescue) { this.rescue.onAction(a); return; }
     if (this.tutoring) { this.talk.onAction(a); return; }
     if (this.busy) return;
@@ -228,6 +241,33 @@ export class BattleScene implements Scene {
     const tagged = live.filter((e) => e.affixes?.length);
     if (tagged.length) this.ctx.stage?.battleView.showAilments?.(chips, words, Object.fromEntries(tagged.map((e) => [e.key, e.affixes!.map((a) => AFFIXES[a].name)])));
     else this.ctx.stage?.battleView.showAilments?.(chips, words);
+    this.showFoeMore();
+  }
+
+  /**
+   * A tap target over each foe's 「+N」 (touch overflow): the picture draws the +N; this lays a bare button on it (centred,
+   * in 2 px steps: classes, never an inline style) that lists the foe's whole row. First in the scene, so every window
+   * covers it, and it lets every other tap through. An open list follows the redraw, and closes with the fold.
+   */
+  private showFoeMore(): void {
+    const rows = this.ctx.stage?.battleView.foldedRows?.() ?? [];
+    const step = (v: number) => Math.round(v / 2);
+    const listOf = (r: (typeof rows)[number]) => r.words.map((w) => chipWord(this.ctx.art, w.cls, w.text, w.icons));
+    const hits = rows.map((r) => {
+      const id = `foe:${r.key}`;
+      const cx = r.at.x + r.at.width / 2;
+      // Far right, its list ends at the target's right edge (as the last two members' do), so it stays on the screen.
+      const end = cx > FOE_LIST_END_X ? ' slx-foe-more-end' : '';
+      const hit: HTMLElement = moreTrigger(r.more, () => this.more.toggle(id, hit, hit, listOf(r)),
+        `slx-foe-more slx-at-x-${step(cx)} slx-at-y-${step(r.at.y + r.at.height / 2)}${end}`, false);
+      hit.title = r.words.map((w) => w.text).join('、');
+      return { id, hit, r };
+    });
+    this.foeMore.replaceChildren(...hits.map((h) => h.hit));
+    const open = this.more.openId;
+    if (!open?.startsWith('foe:')) return;
+    const now = hits.find((h) => h.id === open);
+    if (now) this.more.show(open, now.hit, now.hit, listOf(now.r)); else this.more.close();
   }
 
   /**

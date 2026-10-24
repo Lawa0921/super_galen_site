@@ -4,6 +4,9 @@
   python review_faces.py wave RUN               the registry picks of faces.WAVE1, grouped by character, + montage.png at 3x
   python review_faces.py wave2 RUN              wave 2: Lorne's and Rin's new faces beside their normal, and the four redos as
                                                 old approved | new candidate | normal, + montage.png at 3x
+  python review_faces.py wave3 RUN              wave 3: Safira's serious and Noel's pout beside every face each has, Selene's
+                                                third wistful beside the live a1, and the five once-hidden lines in the game's
+                                                dialogue box (before | after), + montage.png at 3x
 
 Every postprocessed candidate (work/<id>/cand/a<N>/) beside that character's published normal portrait, at natural size
 and at 2x pixelated, with the mood it covers, one story line it would go with, and its QA (sl_art) and match QA (faces).
@@ -176,6 +179,18 @@ WAVE2_WHY = {
 MOOD_ZH.update({'distant': '出神', 'guarded': '戒備'})
 
 
+# Wave 3: the five lines of heavy scenes that showed no portrait before it (ui2/storyFaces.test.ts 'heavy hidden': 5), as
+# (scene, speaker, mood tag, text, the wave-3 face that shows it). The finale's two Noel lines are alternatives: the first
+# plays when act 2's group scene was seen, the second when it was not.
+WAVE3_HIDDEN = [
+    ('mem:safira:4', 'safira', 'surprised', '「做決定的……不是我？」', 'char-safira-portrait-serious'),
+    ('mem:noel:1', 'noel', 'pout', '「幹嘛那樣看我。是借的啦，只是沒說一聲。」', 'char-noel-portrait-pout'),
+    ('mem:noel:2', 'noel', 'pout', '「小氣鬼。老師一定是怕我太厲害。」', 'char-noel-portrait-pout'),
+    ('finale', 'noel', 'pout', '「袖子裡這一片，藏到今天了。拿去吧，本小姐自己交出去。」', 'char-noel-portrait-pout'),
+    ('finale', 'noel', 'pout', '「旅館的燈一暗，都是本小姐點小雷光，你每次都說剛好。這次不點雷光了，這一段，本小姐親手交出去。」', 'char-noel-portrait-pout'),
+]
+
+
 def _cands(aid):
     d = AF / 'work' / aid / 'cand'
     return [c for c in sorted(d.glob('a*'), key=lambda p: int(p.name[1:])) if (c / f'{aid}.png').exists()] if d.exists() else []
@@ -251,8 +266,115 @@ def wave2(run):
     (out / 'review.html').write_text(page, encoding='utf-8'); print(out / 'review.html'); print(out / 'montage.png')
 
 
+BATTLE = {'attack', 'hit', 'dying', 'down', 'ultimate'}
+MOOD_ZH.update({'pout': '嘟嘴賭氣', 'surprised': '驚訝'})
+# The game's dialogue box (src/styles/_starlantern-ui.scss: .slx-screen, .slx-win, .slx-talk, .slx-name, .slx-talk-face,
+# the skinned frame), copied by value: a 640x360 stage at 1x, 12px Cubic 11, the portrait 192px on the box's top edge.
+STAGE_CSS = """
+@font-face{font-family:'Cubic 11';src:url('../../../../public/assets/fonts/cubic-11/Cubic_11.woff2') format('woff2')}
+.stages{display:flex;flex-wrap:wrap;gap:16px;overflow-x:auto}.stages figure{text-align:left}
+.slx-screen{position:relative;width:640px;height:360px;overflow:hidden;background:#05060c;color:#f1ead8;font:12px/16px 'Cubic 11','Noto Sans TC','Microsoft JhengHei',sans-serif;image-rendering:pixelated;flex:none}
+.slx-scene{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,#1d2340,#05060c 70%)}
+.slx-win{position:absolute;background:rgb(10,14,34);border:8px solid transparent;border-image:url('img/window.png') 7% / 8px round;box-shadow:0 2px 8px rgba(0,0,0,.5);padding:6px 8px}
+.slx-talk{left:12px;right:12px;bottom:10px;min-height:52px;padding:10px 12px 8px}
+.slx-name{position:absolute;top:-9px;left:10px;padding:0 6px;background:rgb(10,14,34);border:1px solid #c9a35a;color:#e8c46a}
+.slx-text{margin:0}
+.slx-talk-face{position:absolute;bottom:calc(100% + 12px);width:192px;height:192px;object-fit:contain;image-rendering:pixelated}
+.slx-talk-face--left{left:10px}.slx-talk-face--right{right:10px}
+"""
+
+
+def _published(cid):
+    """The character's talking faces in public/ (normal first), not the battle set."""
+    faces = [(m, PUB / f'{cid}-portrait-{m}.png') for m in sorted(p.stem.split('-portrait-', 1)[1] for p in PUB.glob(f'{cid}-portrait-*.png'))
+             if m not in BATTLE]
+    return [('normal', PUB / f'{cid}-portrait.png')] + faces
+
+
+def _stage(name, text, face_src, side):
+    img = f'<img class="slx-talk-face slx-talk-face--{side}" src="{face_src}" alt="">' if face_src else ''
+    return (f'<div class="slx-screen"><div class="slx-scene"></div><div class="slx-win slx-talk">{img}'
+            f'<span class="slx-name">{html.escape(name)}</span><p class="slx-text">{html.escape(text)}</p></div></div>')
+
+
+def wave3(run):
+    """Wave 3: Safira's serious and Noel's pout beside every face each already has, Selene's third wistful beside the live
+    a1 (and the rejected a2), and the five once-hidden lines in the game's dialogue box, before and after."""
+    import faces as F
+    from PIL import Image
+    out = AF / 'runs' / run; img = out / 'img'; img.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(REPO / 'public/assets/games/starlantern/ui/window.png', img / 'window.png')
+    body, tiles, best = [], [], {}
+    jobs = F.jobs(wave=3)
+    new = [j for j in jobs if j['id'] not in F.WAVE3_REDO]; redo = [j for j in jobs if j['id'] in F.WAVE3_REDO]
+    body.append('<h2>一、新表情（和該角色已有的每張臉並排）</h2>')
+    for j in new:
+        aid, cid, mood = j['id'], j['cid'], j['mood']
+        nat, dbl, qas = [], [], []
+        for m, p in _published(cid):
+            w, h = Image.open(p).size; src = _copy(p, img, p.name)
+            nat.append(_fig(src, w, h, f'{m}（已發佈）')); dbl.append(_fig(src, w * 2, h * 2, f'{m} 2×'))
+            tiles.append((f'{cid} {m}', Image.open(p).convert('RGBA')))
+        for c in _cands(aid):
+            png = c / f'{aid}.png'; w, h = Image.open(png).size; src = _copy(png, img, f'{aid}-{c.name}.png')
+            q, m, gen = _cand_qa(aid, c)
+            nat.append(_fig(src, w, h, f'新 {mood} {MOOD_ZH[mood]}（{c.name}）')); dbl.append(_fig(src, w * 2, h * 2, f'新 {mood} {c.name} 2×'))
+            qas.append(f'<p class="qa"><b>{html.escape(gen)} {c.name}</b>：{_qa(q, m)}</p>')
+            tiles.append((f'{cid} {mood} {c.name}', Image.open(png).convert('RGBA'))); best[aid] = src
+        if not qas: qas.append('<p class="qa bad">沒有候選（見 notes.md）。</p>')
+        lines = [h for h in WAVE3_HIDDEN if h[4] == aid]
+        say = ''.join(f'<p class="line">{html.escape(t)} <span class="qa">（{s}，標籤 {m}）</span></p>' for s, _, m, t, _ in lines)
+        body.append(f'<div class="card"><h3>{NAMES[cid]}｜{mood} {MOOD_ZH[mood]}（現在隱藏頭貼的 {len(lines)} 句）</h3>'
+                    f'<div class="pair">{"".join(nat)}</div><div class="pair">{"".join(dbl)}</div>{say}{"".join(qas)}</div>')
+    body.append('<h2>二、瑟蕾 wistful 第三次（遊戲裡是第一輪 a1）</h2>')
+    for j in redo:
+        aid, cid, mood = j['id'], j['cid'], j['mood']
+        live = PUB / f'{cid}-portrait-{mood}.png'; ow, oh = Image.open(live).size; osrc = _copy(live, img, f'{aid}-live.png')
+        rejected = json.loads((AF / 'registry.json').read_text(encoding='utf-8'))['assets'].get(aid, {}).get('rejected_attempts') or {}
+        nat, dbl, qas = [_fig(osrc, ow, oh, '遊戲中：a1')], [_fig(osrc, ow * 2, oh * 2, 'a1 2×')], []
+        tiles.append((f'{cid} {mood} live a1', Image.open(live).convert('RGBA')))
+        for c in _cands(aid):
+            if c.name == 'a1': continue
+            png = c / f'{aid}.png'; w, h = Image.open(png).size; src = _copy(png, img, f'{aid}-{c.name}.png')
+            q, m, gen = _cand_qa(aid, c)
+            tag = '已淘汰' if c.name in rejected else '新候選'
+            nat.append(_fig(src, w, h, f'{tag} {c.name}')); dbl.append(_fig(src, w * 2, h * 2, f'{c.name} 2×'))
+            if c.name != 'a2':   # a2 was judged in wave 2
+                qas.append(f'<p class="qa"><b>{html.escape(gen)} {c.name}</b>：{_qa(q, m)}'
+                           + ('｜<span class="bad">淘汰：看得出垂眼，但原尺寸看不到要的淺笑，沒有明顯比遊戲中的 a1 好；a1 保留。</span>' if c.name in rejected else '') + '</p>')
+                tiles.append((f'{cid} {mood} {c.name}', Image.open(png).convert('RGBA')))
+        if not qas: qas.append('<p class="qa bad">沒有第三次的候選（見 notes.md）。</p>')
+        for m in ('normal', 'sad'):
+            p = PUB / (f'{cid}-portrait.png' if m == 'normal' else f'{cid}-portrait-{m}.png')
+            w, h = Image.open(p).size; src = _copy(p, img, p.name)
+            nat.append(_fig(src, w, h, f'{m}（已發佈）')); dbl.append(_fig(src, w * 2, h * 2, f'{m} 2×'))
+        body.append(f'<div class="card"><h3>{NAMES[cid]}｜wistful 懷念的淺笑</h3><div class="pair">{"".join(nat)}</div><div class="pair">{"".join(dbl)}</div>'
+                    f'<p class="line">台詞：{html.escape(WAVE2_LINES[aid][1])} <span class="qa">（{WAVE2_LINES[aid][2]}）</span></p>'
+                    '<p class="qa">目標：看得出的淺笑＋往下、往遠處的視線，和 normal（睜眼看鏡頭）與 sad（皺眉、淚）都分得開。</p>'
+                    f'{"".join(qas)}</div>')
+    body.append('<h2>三、五句台詞在遊戲對話框裡（左：現在，右：用新表情）</h2>'
+                '<p class="note">照遊戲的對話框樣式（640×360 舞台 1×、Cubic 11 12px、頭貼 192px 站在框上緣、第一位說話的人在左、其餘在右）。'
+                '回憶場景的這幾句不是 past 句，所以不套回憶的褐色濾鏡。</p>')
+    for scene, who, mood, text, aid in WAVE3_HIDDEN:
+        side = 'right' if scene == 'finale' else 'left'
+        body.append(f'<div class="card"><h3>{html.escape(scene)}｜{NAMES[who]}（標籤 {mood}）</h3><div class="stages">'
+                    f'<figure>{_stage(NAMES[who], text, None, side)}<figcaption>現在：重場景，沒有適合的臉，只顯示名牌</figcaption></figure>'
+                    f'<figure>{_stage(NAMES[who], text, best.get(aid), side)}<figcaption>之後：{aid.rsplit("-", 1)[1]}{"" if best.get(aid) else "（沒有候選）"}</figcaption></figure>'
+                    '</div></div>')
+    _montage(tiles, out / 'montage.png')
+    page = ('<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            f'<title>對話表情第三輪</title><style>{CSS}{STAGE_CSS}h3{{font-size:15px;margin:0 0 8px}}</style></head><body>'
+            '<h1>星燈迷宮｜對話表情第三輪</h1>'
+            '<p class="note">重場景裡還有 5 句台詞不顯示頭貼：莎菲拉 1 句（驚訝，重場景找 serious）、諾艾兒 4 句（嘟嘴，重場景找 serious），兩人都沒有可用的臉。'
+            '這一輪給莎菲拉 serious、給諾艾兒她自己的 pout，另外破例再試一次瑟蕾的 wistful。全部由 codex 生成；還沒進遊戲（不在 public/、未登錄為可發佈），等你看過再決定。'
+            '全部的 3× 總覽：<a href="montage.png">montage.png</a>。</p>' + ''.join(body) + '</body></html>')
+    (out / 'review.html').write_text(page, encoding='utf-8'); print(out / 'review.html'); print(out / 'montage.png')
+
+
 if __name__ == '__main__':
-    if sys.argv[1] == 'wave2':
+    if sys.argv[1] == 'wave3':
+        wave3(sys.argv[2])
+    elif sys.argv[1] == 'wave2':
         wave2(sys.argv[2])
     elif sys.argv[1] == 'wave':
         wave(sys.argv[2])

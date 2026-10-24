@@ -1708,3 +1708,155 @@ describe('BattleScene affixes (difficulty plan Task 7b)', () => {
     expect(plainCalls.mock.calls.at(-1)!).toHaveLength(2);
   });
 });
+
+describe('BattleScene +N on touch (touch overflow)', () => {
+  const crowd = (g: Game) => {
+    const m = g.battle!.party[0];
+    m.poison = true; m.burn = { tick: 1, turns: 3, src: 'e0' }; m.bleed = [{ tick: 1, turns: 3, src: 'e0' }]; m.shock = 3; m.chill = 3;
+  };
+  const tap = (t: Element) => { t.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); t.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); };
+  const mount = (root: HTMLElement) => { document.body.append(root); return () => root.remove(); };
+
+  it("a member's +N opens the whole row and takes no battle action; a tap outside closes it without picking a command", () => {
+    const { s, root, game, heading } = setup(crowd);
+    const off = mount(root);
+    const key = game.battle!.party[0].key;
+    const more = root.querySelector<HTMLElement>(`.slx-partybar [data-key=${key}] .slx-ail-more`)!;
+    expect(more.getAttribute('role')).toBe('button');
+    const before = heading();
+    tap(more);
+    const pop = root.querySelector<HTMLElement>('.slx-more-pop')!;
+    expect(pop.hidden).toBe(false);
+    expect(pop.closest('.slx-pm')!.getAttribute('data-key')).toBe(key);
+    expect([...pop.children].map((c) => c.textContent)).toEqual(['餘燼0', '流血×1', '灼燒3', '中毒', '感電3', '冰緩3']);   // her mechanic word first
+    expect(heading()).toBe(before);                      // no command taken, nobody moved on
+    expect(game.battle!.round).toBe(0);
+    // A tap on a command closes the list and does nothing else.
+    tap(root.querySelector('.slx-bcmd [role=option]')!);
+    expect(pop.hidden).toBe(true);
+    expect(heading()).toBe(before);
+    expect(root.querySelectorAll('.slx-bsub')).toHaveLength(0);
+    expect(root.querySelectorAll('[style]')).toHaveLength(0);
+    s.exit?.(); off();
+  });
+
+  it('Esc closes the list and is used up (it does not step back a member); with the list closed Esc is the game\'s again', () => {
+    const { s, root, game, heading } = setup(crowd);
+    const off = mount(root);
+    s.onAction('down'); s.onAction('down'); s.onAction('confirm');   // the first member defends
+    const second = heading();
+    // The first member's row is still on her panel; open it.
+    tap(root.querySelector<HTMLElement>(`.slx-partybar [data-key=${game.battle!.party[0].key}] .slx-ail-more`)!);
+    expect(root.querySelector<HTMLElement>('.slx-more-pop')!.hidden).toBe(false);
+    s.onAction('cancel');
+    expect(root.querySelector<HTMLElement>('.slx-more-pop')?.hidden ?? true).toBe(true);
+    expect(heading()).toBe(second);
+    s.onAction('cancel');
+    expect(heading()).not.toBe(second);                  // now cancel goes back to the first member
+    s.exit?.(); off();
+  });
+
+  it("a foe's folded row gets a tap target over its +N (classes only), which lists the row; a redraw with nothing folded removes it", () => {
+    let rows: unknown[] = [{ key: 'e0', more: 3, at: { x: 301, y: 120, width: 16, height: 14 }, words: [
+      { cls: 'slx-affix', text: '狂暴', icons: [] }, { cls: 'slx-ail slx-ail-burn', text: '灼燒3', icons: [art.ailmentIcon('burn')] },
+      { cls: 'slx-mech slx-mech-mark', text: '暗記', icons: [art.mechIcon('mark')] }, { cls: 'slx-ail slx-ail-poison', text: '中毒', icons: [art.ailmentIcon('poison')] },
+    ] }];
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, showIntents: vi.fn(), syncHp: vi.fn(), showAilments: vi.fn(), play: vi.fn(), foldedRows: () => rows } };
+    const { s, root } = setup(undefined, { stage: stage as never, art: { has: (u: string) => u === art.ailmentIcon('burn') } });
+    const off = mount(root);
+    const hit = root.querySelector<HTMLElement>('.slx-foe-more')!;
+    // Centred on the +N (309, 127), in 2 px steps.
+    expect([...hit.classList]).toEqual(['slx-foe-more', 'slx-at-x-155', 'slx-at-y-64']);
+    expect(hit.getAttribute('role')).toBe('button');
+    expect(hit.getAttribute('aria-label')).toBe(T.ailmentMoreLabel(3));
+    expect(hit.textContent).toBe('');                    // the picture draws the +N itself
+    tap(hit);
+    const pop = root.querySelector<HTMLElement>('.slx-more-pop')!;
+    expect(pop.parentElement).toBe(hit);
+    expect([...pop.children].map((c) => [c.className, c.textContent])).toEqual([
+      ['slx-affix', '狂暴'], ['slx-ail slx-ail-burn', '灼燒3'], ['slx-mech slx-mech-mark', '暗記'], ['slx-ail slx-ail-poison', '中毒'],
+    ]);
+    expect([...pop.querySelectorAll('img')].map((i) => i.getAttribute('src'))).toEqual([art.ailmentIcon('burn')]);   // loaded icons only
+    tap(pop.children[1]);                                // inside the list: stays open
+    expect(pop.hidden).toBe(false);
+    tap(hit);                                            // its +N again: closed
+    expect(pop.hidden).toBe(true);
+    expect(root.querySelectorAll('[style]')).toHaveLength(0);
+    // The next redraw has nothing folded: the target goes.
+    rows = [];
+    s.onAction('down'); s.onAction('down'); s.onAction('confirm');
+    for (let i = 0; i < 4; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }
+    return flush().then(() => {
+      expect(root.querySelector('.slx-foe-more')).toBeNull();
+      s.exit?.(); off();
+    });
+  });
+});
+
+describe('BattleScene +N on touch, review follow-ups', () => {
+  const crowd = (g: Game) => {
+    const m = g.battle!.party[0];
+    m.poison = true; m.burn = { tick: 1, turns: 3, src: 'e0' }; m.bleed = [{ tick: 1, turns: 3, src: 'e0' }]; m.shock = 3; m.chill = 3;
+  };
+  const tap = (t: Element) => { t.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); t.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); };
+  const word = { cls: 'slx-ail slx-ail-burn', text: '灼燒3', icons: [] };
+
+  it("a foe's picture landing late moves its row: the tap target follows at once, and an open list stays with it", () => {
+    let rows = [{ key: 'e0', more: 2, at: { x: 301, y: 120, width: 16, height: 14 }, words: [word, word] }];
+    const battleView: Record<string, unknown> = { setup: vi.fn(), anchor: () => null, showIntents: vi.fn(), syncHp: vi.fn(), showAilments: vi.fn(), play: vi.fn(), foldedRows: () => rows };
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView };
+    const { s, root } = setup(undefined, { stage: stage as never });
+    document.body.append(root);
+    const hit = () => root.querySelector<HTMLElement>('.slx-foe-more')!;
+    expect(hit().classList.contains('slx-at-y-64')).toBe(true);
+    tap(hit());
+    expect(typeof battleView.onRowsMoved).toBe('function');
+    rows = [{ ...rows[0], at: { ...rows[0].at, y: 60 } }];   // the picture landed: the row stands higher
+    (battleView.onRowsMoved as () => void)();
+    expect([...hit().classList]).toEqual(['slx-foe-more', 'slx-at-x-155', 'slx-at-y-34']);
+    const pop = root.querySelector<HTMLElement>('.slx-more-pop')!;
+    expect(pop.hidden).toBe(false);
+    expect(pop.parentElement).toBe(hit());
+    s.exit?.();
+    expect(battleView.onRowsMoved).toBeNull();               // a later landing reaches no scene
+    root.remove();
+  });
+
+  it("a foe far right gets its list ended at the target's right edge, so it stays on the screen; one nearer the middle keeps it centred", () => {
+    const rows = [
+      { key: 'e0', more: 2, at: { x: 300, y: 120, width: 16, height: 14 }, words: [word, word] },
+      { key: 'e1', more: 2, at: { x: 534, y: 120, width: 16, height: 14 }, words: [word, word] },
+    ];
+    const stage = { show: vi.fn(), size: () => ({ width: 640, height: 360 }), battleView: { setup: vi.fn(), anchor: () => null, showIntents: vi.fn(), syncHp: vi.fn(), showAilments: vi.fn(), play: vi.fn(), foldedRows: () => rows } };
+    const { s, root } = setup(undefined, { stage: stage as never });
+    const [mid, right] = [...root.querySelectorAll<HTMLElement>('.slx-foe-more')];
+    expect(mid.classList.contains('slx-foe-more-end')).toBe(false);
+    expect(right.classList.contains('slx-foe-more-end')).toBe(true);
+    s.exit?.();
+  });
+
+  it('a fight that ends while a list is open (the round taken with it up): the list closes, the rows go, and leaving the scene takes no tap after', async () => {
+    const { s, root, game } = setup((g) => { crowd(g); for (const e of g.battle!.enemies) { e.hp = 1; e.max.def = 0; } });
+    document.body.append(root);
+    const key = game.battle!.party[0].key;
+    s.onAction('up');                                        // the cursor on 全員攻擊
+    tap(root.querySelector<HTMLElement>(`.slx-partybar [data-key=${key}] .slx-ail-more`)!);
+    expect(root.querySelector<HTMLElement>('.slx-more-pop')!.hidden).toBe(false);
+    s.onAction('confirm');                                   // the list open: confirm closes it and the round plays on
+    expect(game.battle?.outcome ?? 'win').toBe('win');
+    await flush();
+    expect(game.battle?.outcome ?? 'win').toBe('win');
+    expect(root.querySelector('.slx-result')).not.toBeNull();
+    expect(root.querySelector('.slx-more-pop:not([hidden])')).toBeNull();
+    expect(root.querySelectorAll('[aria-expanded=true]')).toHaveLength(0);
+    expect(root.querySelector('.slx-foe-more')).toBeNull();
+    s.exit?.();
+    const after = document.createElement('button');
+    const picked = vi.fn();
+    after.addEventListener('click', picked);
+    document.body.append(after);
+    tap(after);
+    expect(picked).toHaveBeenCalledTimes(1);
+    after.remove(); root.remove();
+  });
+});

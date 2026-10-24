@@ -10,7 +10,7 @@ import { MECH_FILL } from './mechStyle';
 import type { AilmentChip } from '../engine/ailments';
 import type { MechWord } from '../engine/mechanics/index';
 import type { TextureBank } from './textures';
-import { enemyArt } from './artPaths';
+import { art, enemyArt } from './artPaths';
 import { T } from '../data/text.zh-TW';
 import { ENEMIES } from '../data/enemies';
 import { REGIONS } from '../data/regions';
@@ -229,6 +229,65 @@ describe('BattleView bottom inset', () => {
     one.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
     one.showAilments({ e0: [{ id: 'poison' }] }, { e0: [{ tone: 'aim', text: '最後行動' }, { tone: 'mark', text: '暗記', setup: true }] });
     expect(one.ailmentTexts('e0').map((x) => x.text)).toEqual(['暗記', '中毒', '最後行動']);
+  });
+});
+
+describe('BattleView folded rows (touch overflow)', () => {
+  it("a foe's folded row: where its +N stands on the stage and every word of the row, in order, for the DOM list", () => {
+    const view = new BattleView(true, bank);
+    const four = makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], ['e0', 'e1', 'e2', 'e3'].map((key) => makeCombatant({ key, side: 'enemy' })));
+    view.setup(four, { width: 640, height: 360 }, 1, 150, 66);
+    const words: MechWord[] = [{ tone: 'mark', text: '暗記', setup: true }, { tone: 'aim', text: '最後行動' }];
+    view.showAilments({ e0: FIVE, e1: [{ id: 'poison' }] }, { e0: words }, { e0: ['狂暴'] });
+    const rows = view.foldedRows();
+    expect(rows.map((r) => r.key)).toEqual(['e0']);   // e1 fits: nothing to tap
+    const [r] = rows;
+    const shown = view.ailmentTexts('e0');
+    const more = shown.at(-1)!;
+    expect(more.text).toBe(T.ailmentMore(r.more));
+    const box = view.enemyBoxOf('e0')!;
+    // The +N's own bounds, in stage px.
+    expect(r.at.x).toBeCloseTo(box.x + more.x - ailLabelWidth(more.text) / 2, 6);
+    expect(r.at.width).toBeCloseTo(ailLabelWidth(more.text), 6);
+    expect(r.at.y).toBeCloseTo(box.y + more.parent!.y + more.y, 6);
+    expect(r.at.height).toBe(14);
+    // Every word: the ones standing (in their order), then the folded ones (in theirs); the +N itself is not one.
+    expect(r.words.map((w) => w.text)).toEqual([...shown.slice(0, -1).map((t) => t.text), ...r.words.slice(shown.length - 1).map((w) => w.text)]);
+    expect(r.words).toHaveLength(FIVE.length + words.length + 1);
+    expect(r.words.length - (shown.length - 1)).toBe(r.more);
+    const by = Object.fromEntries(r.words.map((w) => [w.text, w]));
+    expect(by['狂暴']).toEqual({ cls: 'slx-affix', text: '狂暴', icons: [] });
+    expect(by['暗記']).toEqual({ cls: 'slx-mech slx-mech-mark', text: '暗記', icons: [art.mechIcon('mark')] });
+    expect(by['流血×2']).toEqual({ cls: 'slx-ail slx-ail-bleed', text: '流血×2', icons: [art.ailmentIcon('bleed')] });
+    // A redraw with nothing folded clears it; a finished fight (an empty call) too.
+    view.showAilments({ e0: [{ id: 'poison' }] });
+    expect(view.foldedRows()).toEqual([]);
+  });
+});
+
+describe('BattleView folded rows follow a late picture (touch overflow review)', () => {
+  it("a foe's picture landing after its row folded moves the row: the +N's bounds follow, and the owner hears of it", () => {
+    let land: ((u: string) => void) | null = null;
+    const loaded = new Set<string>();
+    const late = { get: (u: string) => (loaded.has(u) ? Texture.WHITE : null), has: (u: string) => loaded.has(u), onLoad: (fn: (u: string) => void) => { land = fn; return () => undefined; } } as unknown as TextureBank;
+    const view = new BattleView(true, late);
+    const moved = vi.fn();
+    view.onRowsMoved = moved;
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments({ e0: FIVE }, {}, { e0: ['狂暴', '堅韌'] });
+    const before = view.foldedRows()[0];
+    expect(before).toBeDefined();
+    // The picture lands: its body is drawn, the intent and the row stand above it now.
+    const defUrl = enemyArt(battle([]).enemies[0].defId);
+    loaded.add(defUrl);
+    land!(defUrl);
+    const after = view.foldedRows()[0];
+    const box = view.enemyBoxOf('e0')!;
+    const more = view.ailmentTexts('e0').at(-1)!;
+    expect(after.at.y).toBeCloseTo(box.y + more.parent!.y + more.y, 6);
+    expect(after.at.y).not.toBeCloseTo(before.at.y, 3);
+    expect(after.at.x).toBeCloseTo(before.at.x, 6);
+    expect(moved).toHaveBeenCalledTimes(1);
   });
 });
 

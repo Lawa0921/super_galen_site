@@ -2658,6 +2658,106 @@ test.describe('starlantern', () => {
     expect(missing).toEqual([]);
   });
 
+  test.describe('a tapped +N on touch (touch overflow)', () => {
+    test.use({ hasTouch: true });
+
+    test('more than three ailments on one member: tapping +N lists them all, a tap outside closes it and picks nothing', async ({ page }) => {
+      await fitTo(page, 1280, 720);
+      const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>
+        page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as Dbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+      const shots = process.env.SL_SHOTS;
+      if (shots) mkdirSync(shots, { recursive: true });
+      const w = await setup(page, 7);
+      await depart(page, w);
+      for (let i = 0; i < 200 && !(await page.locator('.slx-battle').isVisible()); i++) {
+        await w.key(i % 2 ? 'ArrowLeft' : 'ArrowRight');
+        await w.closeTalk();
+        if (await page.locator('.slx-confirm').isVisible()) await w.key('Enter');
+        if (await page.locator('.slx-event').isVisible()) await w.key('Escape');
+      }
+      await expect(page.locator('.slx-battle')).toBeVisible();
+      const who: string = await game((g) => {
+        const m = g.battle.party[0];
+        m.poison = true; m.burn = { tick: 1, turns: 3, src: 'e0' }; m.bleed = [{ tick: 1, turns: 3, src: 'e0' }]; m.shock = 3; m.chill = 3;
+        m.hp = m.max.hp;
+        for (const e of g.battle.enemies) {
+          e.poison = true; e.burn = { tick: 1, turns: 3, src: m.key }; e.bleed = [{ tick: 1, turns: 3, src: m.key }]; e.shock = 3; e.chill = 3;
+          e.max.hp = 999; e.hp = 999; e.max.atk = 1; e.max.mag = 1;
+        }
+        return m.key;
+      });
+      // One round on guard redraws the panels and the foes' rows with every ailment.
+      for (let i = 0; i < 40 && (await game((g) => g.battle?.round ?? -1)) === 0; i++) {
+        if (await page.locator('.slx-bcmd [role=option]').count()) await w.choose('.slx-bcmd', '防禦');
+        else await page.waitForTimeout(50);
+      }
+      await expect(page.locator('.slx-bcmd [role=option]').first()).toBeVisible();
+      const all: string[] = await game((g, k) => {
+        const m = g.battle.party.find((c: { key: string }) => c.key === k);
+        return [m.bleed.length ? 'bleed' : '', m.burn ? 'burn' : '', m.poison ? 'poison' : '', m.shock ? 'shock' : '', m.chill ? 'chill' : ''].filter(Boolean);
+      }, who);
+      expect(all.length).toBeGreaterThan(3);
+      const more = page.locator(`.slx-partybar [data-key=${who}] .slx-ail-more`);
+      const pop = page.locator('.slx-more-pop');
+      const heading = await page.locator('.slx-bcmd .slx-who').textContent();
+      await more.tap();
+      await expect(pop).toBeVisible();
+      // Every ailment she has, each in its colour with its icon (the row before the +N shows only some).
+      for (const id of all) await expect(pop.locator(`.slx-ail-${id}`)).toHaveCount(1);
+      await expect(pop.locator(`.slx-ail-${all[0]} img.slx-chip-ico`)).toHaveCount(1);
+      expect(await page.locator(`.slx-partybar [data-key=${who}] .slx-pm-ail .slx-ail:not(.slx-ail-more)`).count()).toBeLessThan(all.length);
+      // Inside the screen, over the battle.
+      const scr = (await page.locator('#sl-screen').boundingBox())!, pb = (await pop.boundingBox())!;
+      expect(pb.x).toBeGreaterThanOrEqual(scr.x - 0.5); expect(pb.y).toBeGreaterThanOrEqual(scr.y - 0.5);
+      expect(pb.x + pb.width).toBeLessThanOrEqual(scr.x + scr.width + 0.5);
+      if (shots) { await page.waitForTimeout(300); await page.screenshot({ path: `${shots}/party-more-1280x720.png` }); }
+      // A tap outside, on a command: the list closes and no command is taken.
+      await page.locator('.slx-bcmd [role=option]').first().tap();
+      await expect(pop).toBeHidden();
+      await expect(page.locator('.slx-btarget')).toHaveCount(0);
+      await expect(page.locator('.slx-bsub')).toHaveCount(0);
+      await expect(page.locator('.slx-bcmd .slx-who')).toHaveText(heading!);
+      expect(await game((g) => g.battle.round)).toBe(1);
+      // A second tap on +N closes it too.
+      await more.tap();
+      await expect(pop).toBeVisible();
+      await more.tap();
+      await expect(pop).toBeHidden();
+
+      // A foe's row: the picture's +N has a tap target over it that lists the foe's row.
+      const folded = await page.evaluate(() => (window as unknown as { __starlanternDebug: { stage: { battleView: { foldedRows(): { key: string; at: { x: number; y: number; width: number; height: number } }[] } } } }).__starlanternDebug.stage.battleView.foldedRows());
+      expect(folded.length).toBeGreaterThan(0);
+      const hit = page.locator(`.slx-foe-more`).first();
+      // The target covers the +N's centre (stage px, 2 px steps).
+      const hb = await stageBox(page, hit), at = folded[0].at;
+      expect(Math.abs(hb.x + hb.width / 2 - (at.x + at.width / 2))).toBeLessThanOrEqual(1.01);
+      expect(Math.abs(hb.y + hb.height / 2 - (at.y + at.height / 2))).toBeLessThanOrEqual(1.01);
+      await hit.tap();
+      await expect(pop).toBeVisible();
+      for (const id of ['bleed', 'burn', 'poison', 'shock', 'chill']) await expect(pop.locator(`.slx-ail-${id}`)).toHaveCount(1);
+      await page.keyboard.press('Escape');                          // Esc closes it, and only it
+      await expect(pop).toBeHidden();
+      await expect(page.locator('.slx-bcmd .slx-who')).toHaveText(heading!);
+
+      // 844 x 390: the same list, inside the screen.
+      await fitTo(page, 844, 390);
+      await more.tap();
+      await expect(pop).toBeVisible();
+      const scr2 = (await page.locator('#sl-screen').boundingBox())!, pb2 = (await pop.boundingBox())!;
+      expect(pb2.x).toBeGreaterThanOrEqual(scr2.x - 0.5); expect(pb2.y).toBeGreaterThanOrEqual(scr2.y - 0.5);
+      expect(pb2.x + pb2.width).toBeLessThanOrEqual(scr2.x + scr2.width + 0.5);
+      if (shots) { await page.waitForTimeout(300); await page.screenshot({ path: `${shots}/party-more-844x390.png` }); }
+      await hit.tap();                                              // another +N: its list takes the place
+      await expect(pop.locator('.slx-ail-chill')).toHaveCount(1);
+      if (shots) { await page.waitForTimeout(300); await page.screenshot({ path: `${shots}/foe-more-844x390.png` }); }
+      await fitTo(page, 1280, 720);
+      if (shots) { await page.waitForTimeout(300); await page.screenshot({ path: `${shots}/foe-more-1280x720.png` }); }
+      await page.mouse.click(scr.x + 4, scr.y + scr.height / 2);      // the empty picture: closed
+      await expect(pop).toBeHidden();
+      expect(w.errors).toEqual([]);
+    });
+  });
+
   test('slow enemy and backdrop art never shows a stand-in block, and lands when it arrives', async ({ page }) => {
     await fitTo(page, 1280, 720);
     // Every enemy picture and backdrop is held back (a slow network) until the fight is on screen, then lands 3 s later.

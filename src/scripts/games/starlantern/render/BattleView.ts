@@ -70,6 +70,8 @@ interface Slot {
   name: Text;
   /** One coloured word per ailment, side by side above its head (`showAilments`). */
   ail: Container;
+  /** Its row's 「+N」 when the row folds: its left edge and width in the box, and every word of the row (`foldedRows`). */
+  folded?: { x: number; width: number; more: number; words: FoldedWord[] };
   /** Its regional colour and elite outline: always on; the hit flash and the target highlight are added on top. */
   base: Filter[];
   tint: { color: number | null; elite: boolean };
@@ -164,6 +166,11 @@ export type PartyCue = 'acting' | 'hit' | 'ultimate' | 'heal' | 'ko' | 'miss' | 
 /** What the party bar needs to draw a hit: its effect, and whether it was a weak point, a crit or resisted. */
 export interface HitExtra { fx: FxKey | null; weak: boolean; crit?: boolean; resist?: boolean }
 
+/** A word of a foe's row as the DOM draws it (touch overflow): its classes (its colour), its text, its icons' urls. */
+export interface FoldedWord { cls: string; text: string; icons: string[] }
+/** A foe's folded row: its 「+N」's bounds on the stage (stage px) and every word of the row, standing ones first. */
+export interface FoldedRow { key: string; more: number; at: Box; words: FoldedWord[] }
+
 export class BattleView {
   readonly root = new Container();
   private slots = new Map<string, Slot>();
@@ -192,6 +199,9 @@ export class BattleView {
     this.bank?.onLoad?.((u) => this.arrived(u));
   }
 
+  /** Called when a folded row moved after it was drawn (a foe's picture landed late), so a tap target over its +N can follow. */
+  onRowsMoved: (() => void) | null = null;
+
   /** The backdrop's url while it has not loaded, and the size it is drawn at. */
   private bgWant: { url: string; size: { width: number; height: number } } | null = null;
 
@@ -208,6 +218,7 @@ export class BattleView {
     for (const slot of this.slots.values()) {
       if (slot.want?.url !== url || slot.texture || slot.box.destroyed) continue;
       this.placeBody(slot, tex, slot.want.maxH, slot.want.slotW, slot.want.ground);
+      if (slot.folded) this.onRowsMoved?.();
     }
   }
 
@@ -519,24 +530,32 @@ export class BattleView {
       // One line inside its slot, by priority (plan 8c final): freeze and sleep (never folded), the party's own setups on
       // it (暗記, 瞄準, 估價, 弱點), the other ailments, the other words; what does not fit folds into +N.
       // Each word with its loaded 14px icons in front (art step 9, G4): an ailment's, a setup's (暗記, 瞄準).
-      type W = { text: string; fill: number; icons: Texture[] };
+      // `cls` and `urls`: the same word as the DOM draws it, for the list a tapped +N opens (touch overflow).
+      type W = { text: string; fill: number; icons: Texture[]; cls: string; urls: string[] };
       const loaded = (urls: string[]) => urls.flatMap((u) => this.bank?.get(u) ?? []);
-      const ofChip = (c: AilmentChip): W => ({ text: T.ailmentChip(c), fill: AILMENT_FILL[c.id], icons: loaded([ailmentIconUrl(c.id)]) });
-      const ofWord = (x: MechWord): W => ({ text: x.text, fill: MECH_FILL[x.tone], icons: loaded(mechIconUrls(x)) });
+      const ofChip = (c: AilmentChip): W => ({ text: T.ailmentChip(c), fill: AILMENT_FILL[c.id], icons: loaded([ailmentIconUrl(c.id)]), cls: `slx-ail slx-ail-${c.id}`, urls: [ailmentIconUrl(c.id)] });
+      const ofWord = (x: MechWord): W => ({ text: x.text, fill: MECH_FILL[x.tone], icons: loaded(mechIconUrls(x)), cls: `slx-mech slx-mech-${x.tone}`, urls: mechIconUrls(x) });
       const wide = (w: W) => ailLabelWidth(w.text) + CHIP_ICON_W * w.icons.length;
       const halting = chips.filter(isHalting);
       const setups = mech.filter((x) => x.setup).sort((a, b) => SETUP_ORDER.indexOf(a.tone) - SETUP_ORDER.indexOf(b.tone));
       // An affix folds after every other ailment and word, never before freeze or sleep; what stands shows the affixes first.
-      const tags: W[] = (affixes[k] ?? []).map((text) => ({ text, fill: AFFIX_FILL, icons: [] }));
+      const tags: W[] = (affixes[k] ?? []).map((text) => ({ text, fill: AFFIX_FILL, icons: [], cls: 'slx-affix', urls: [] }));
       const items: W[] = [...halting.map(ofChip), ...tags, ...setups.map(ofWord), ...chips.filter((c) => !isHalting(c)).map(ofChip), ...mech.filter((x) => !x.setup).map(ofWord)];
       const fit = fitRow(items, this.ailMax, wide, (n) => ailLabelWidth(T.ailmentMore(n)), AIL_GAP, halting.length);
       const more = fit.more;
       const shown = tags.length ? [...fit.shown.filter((w) => tags.includes(w)), ...fit.shown.filter((w) => !tags.includes(w))] : fit.shown;
       const word = (text: string, fill: number) => pixelText(text, AIL_SIZE, fill);
-      const row: W[] = [...shown, ...(more ? [{ text: T.ailmentMore(more), fill: AILMENT_MORE_FILL, icons: [] }] : [])];
+      const moreWord: W | null = more ? { text: T.ailmentMore(more), fill: AILMENT_MORE_FILL, icons: [], cls: '', urls: [] } : null;
+      const row: W[] = [...shown, ...(moreWord ? [moreWord] : [])];
       const widths = row.map(wide);
       let x = -(widths.reduce((a, b) => a + b, 0) + AIL_GAP * Math.max(0, row.length - 1)) / 2;
+      delete s.folded;
       row.forEach((w, i) => {
+        if (w === moreWord) {
+          // The words standing, in their order, then the folded ones in theirs (the +N is not one of them).
+          const words = [...shown, ...items.filter((it) => !shown.includes(it))].map(({ cls, text, urls }) => ({ cls, text, icons: urls }));
+          s.folded = { x, width: ailLabelWidth(w.text), more, words };
+        }
         // The icons at the row's top, whole pixels, 1 px apart from the word; never scaled (14 x 14 on a 14 px row).
         w.icons.forEach((tex, j) => {
           const ico = new Sprite(tex);
@@ -563,6 +582,17 @@ export class BattleView {
   ailmentRowRect(key: string): Box | null {
     const s = this.slots.get(key);
     return s && !s.box.destroyed ? { x: -this.ailMax / 2, y: s.ail.y, width: this.ailMax, height: AIL_ROW_H } : null;
+  }
+
+  /**
+   * Each foe whose row folds into 「+N」 (touch overflow): where the +N stands on the stage, in stage px (the picture at
+   * rest), and every word of its row, so the DOM can lay a tap target over the +N and list the row when it is tapped.
+   */
+  foldedRows(): FoldedRow[] {
+    return [...this.slots.values()].flatMap((s) => (s.folded && !s.box.destroyed
+      // The row's height now: a picture that landed late has raised it (placeBody).
+      ? [{ key: s.key, more: s.folded.more, at: { x: s.box.x + s.folded.x, y: s.box.y + s.ail.y, width: s.folded.width, height: AIL_ROW_H }, words: s.folded.words }]
+      : []));
   }
 
   /** Where an enemy's intent line stands (anchored at its bottom), in its box's px; at least the row's width. */
