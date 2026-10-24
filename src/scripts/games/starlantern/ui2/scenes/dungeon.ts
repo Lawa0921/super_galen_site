@@ -100,7 +100,7 @@ export class DungeonScene implements Scene {
   }
 
   /** Faces and row icons that landed after the party bar was drawn (ui2/lateArt); the lists and lines draw their own. */
-  artArrived(): void { if (!this.exited) this.bar.artArrived(); }
+  artArrived(urls: ReadonlySet<string>): void { if (!this.exited) this.bar.artArrived(urls); }
 
   exit(): void {
     this.exited = true;

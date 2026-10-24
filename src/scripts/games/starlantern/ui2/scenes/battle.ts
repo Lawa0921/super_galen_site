@@ -19,7 +19,7 @@ import { playCutIn } from '../../ui/cutin';
 import { battleLines, fragmentLines, levelUpLines } from '../battleText';
 import { fragmentItem } from '../../engine/story/fragments';
 import { gearIconLate } from '../gearArt';
-import { lateArt } from '../lateArt';
+import { anyLanded, lateArt, noteMissing } from '../lateArt';
 import { runeMark } from '../runeArt';
 import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
 import { RUNE_SLOT_LEVELS, RUNE_STACK } from '../../data/runes';
@@ -63,6 +63,9 @@ export class BattleScene implements Scene {
   private marker!: HTMLElement;
   /** The field bar: the barrier up and the moon (plan 8c). */
   private field = el('div', { class: 'slx-fieldbar', attrs: { role: 'status', hidden: '' } });
+  /** The icons the field bar, and the foes' open lists, were last drawn without (ui2/lateArt). */
+  private fieldWait = new Set<string>();
+  private foeWait = new Set<string>();
   private cutin!: HTMLElement;
   private backEl!: HTMLElement;
   private note: HTMLElement | null = null;
@@ -130,12 +133,13 @@ export class BattleScene implements Scene {
 
   /**
    * Faces and row icons that landed after they were drawn (ui2/lateArt): the party bar, the field bar and an open list of a
-   * foe's row; the lists and the lines draw their own, and the picture its own (BattleView).
+   * foe's row, each only when it was drawn without one of `urls`; the lists and the lines draw their own, and the picture
+   * its own (BattleView).
    */
-  artArrived(): void {
-    this.bar.artArrived();
-    if (!this.field.hidden) this.showField();
-    if (this.more.openId?.startsWith('foe:')) this.showFoeMore();
+  artArrived(urls: ReadonlySet<string>): void {
+    this.bar.artArrived(urls);
+    if (!this.field.hidden && anyLanded(urls, this.fieldWait)) this.showField();
+    if (this.more.openId?.startsWith('foe:') && anyLanded(urls, this.foeWait)) this.showFoeMore();
   }
 
   exit(): void {
@@ -237,7 +241,8 @@ export class BattleScene implements Scene {
   private showField(): void {
     const words = this.state.outcome === 'ongoing' ? fieldWords(this.state) : [];
     // Each with its 14px icon in front once loaded (art step 9, G4): the barrier's kind, the moon's phase now.
-    this.field.replaceChildren(...words.map((w) => chipWord(this.ctx.art, `slx-mech slx-mech-${w.tone}`, w.text, mechIconUrls(w))));
+    const art = noteMissing(this.ctx.art, (this.fieldWait = new Set()));
+    this.field.replaceChildren(...words.map((w) => chipWord(art, `slx-mech slx-mech-${w.tone}`, w.text, mechIconUrls(w))));
     this.field.hidden = words.length === 0;
   }
 
@@ -263,7 +268,8 @@ export class BattleScene implements Scene {
   private showFoeMore(): void {
     const rows = this.ctx.stage?.battleView.foldedRows?.() ?? [];
     const step = (v: number) => Math.round(v / 2);
-    const listOf = (r: (typeof rows)[number]) => r.words.map((w) => chipWord(this.ctx.art, w.cls, w.text, w.icons));
+    const art = noteMissing(this.ctx.art, (this.foeWait = new Set()));
+    const listOf = (r: (typeof rows)[number]) => r.words.map((w) => chipWord(art, w.cls, w.text, w.icons));
     const hits = rows.map((r) => {
       const id = `foe:${r.key}`;
       const cx = r.at.x + r.at.width / 2;

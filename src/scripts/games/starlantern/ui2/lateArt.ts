@@ -66,6 +66,29 @@ export function drawLanded(root: ParentNode & Node, landed: ReadonlySet<string>)
   }
 }
 
+/**
+ * `idx` that also notes into `missing` each picture asked for that is not here yet: what a drawing made with it waits for.
+ * A screen that draws again on `artArrived` keeps this set and draws again only when one of its pictures lands, never on
+ * the arrival of art it does not show.
+ */
+export function noteMissing(idx: ArtIndex, missing: Set<string>): ArtIndex {
+  return {
+    has: (u) => {
+      if (idx.has(u)) return true;
+      missing.add(u);
+      return false;
+    },
+    ...(idx.whenReady ? { whenReady: idx.whenReady.bind(idx) } : {}),
+    ...(idx.onLoad ? { onLoad: idx.onLoad.bind(idx) } : {}),
+  };
+}
+
+/** Whether one of `landed` is a picture `wanted` waits for. */
+export function anyLanded(landed: ReadonlySet<string>, wanted: ReadonlySet<string>): boolean {
+  for (const u of wanted) if (landed.has(u)) return true;
+  return false;
+}
+
 /** The first of `urls` (best first) that has landed, and the better ones still to come (all of them while none has). */
 export function bestLanded(idx: ArtIndex, urls: readonly string[]): { src: string | undefined; better: string[] } {
   const i = urls.findIndex((u) => idx.has(u));

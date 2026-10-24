@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { artSrc, awaitArt, bestLanded, bestPicture, drawLanded, lateArt } from './lateArt';
+import { anyLanded, artSrc, awaitArt, bestLanded, bestPicture, drawLanded, lateArt, noteMissing } from './lateArt';
 
 const index = (urls: string[]) => { const set = new Set(urls); return { set, idx: { has: (u: string) => set.has(u) } }; };
 
@@ -85,5 +85,25 @@ describe('the best picture that has landed', () => {
     expect(parent.querySelectorAll('img')).toHaveLength(1);
     expect(parent.firstElementChild!.getAttribute('src')).toBe('/best.png');
     expect(bestLanded(idx, ['/best.png', '/ok.png'])).toEqual({ src: '/best.png', better: [] });
+  });
+});
+
+describe('noteMissing and anyLanded', () => {
+  it('notes each picture asked for that is not here, and answers as the bank does', () => {
+    const missing = new Set<string>();
+    const onLoad = () => () => undefined;
+    const idx = noteMissing({ has: (u) => u === '/a.png', onLoad }, missing);
+    expect(idx.has('/a.png')).toBe(true);
+    expect(idx.has('/b.png')).toBe(false);
+    expect(idx.has('/c.png')).toBe(false);
+    expect([...missing]).toEqual(['/b.png', '/c.png']);
+    expect(idx.onLoad).toBeTypeOf('function');
+    expect(idx.whenReady).toBeUndefined();
+  });
+
+  it('anyLanded is true only when a landed picture is one waited for', () => {
+    expect(anyLanded(new Set(['/x.png']), new Set(['/a.png', '/b.png']))).toBe(false);
+    expect(anyLanded(new Set(['/x.png', '/b.png']), new Set(['/a.png', '/b.png']))).toBe(true);
+    expect(anyLanded(new Set(['/x.png']), new Set())).toBe(false);
   });
 });

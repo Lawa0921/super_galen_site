@@ -559,6 +559,57 @@ describe('icons that land after the window was drawn (ui2/lateArt)', () => {
     expect(v.el.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('b');
   });
 
+  it('a late icon is put into its own row: the rows, a pick flash and a press under way stay as they were', () => {
+    const { set, idx } = landed();
+    const SRC2 = '/assets/games/starlantern/gear/hunter-bow.png';
+    const pick = vi.fn();
+    const v = new MenuView(new Menu([
+      { id: 'a', label: '鐵劍', icon: lateArt(idx, SRC), iconCls: 'slx-gear-ico' },
+      { id: 'b', label: '獵弓', icon: lateArt(idx, SRC2), iconCls: 'slx-gear-ico' },
+      { id: 'c', label: '回復藥' },
+    ]), { pick });
+    const root = onScreen(v.el);
+    const rows = [...v.el.children];
+    const a = v.el.querySelector<HTMLElement>('[data-id=a]')!;
+    a.dispatchEvent(new Event('pointerdown'));        // a finger is down on 鐵劍 when its icon lands
+    a.classList.add('slx-picked');                     // and a pick flash is running on it
+    set.add(SRC);
+    drawLanded(root, new Set([SRC]));
+    expect(v.el.children).toHaveLength(rows.length);
+    expect(rows.every((r, i) => v.el.children[i] === r)).toBe(true);
+    expect(a.classList.contains('slx-picked')).toBe(true);
+    expect(a.firstElementChild!.outerHTML).toBe(`<img class="slx-ico slx-gear-ico" src="${SRC}" alt="">`);
+    expect(v.el.querySelector('[data-id=b] img')).toBeNull();
+    a.click();                                         // the press ends on the same row: it picks
+    expect(pick).toHaveBeenCalledWith(expect.objectContaining({ id: 'a' }));
+    // The second icon lands in a later batch: put in too, the first not doubled.
+    set.add(SRC2);
+    drawLanded(root, new Set([SRC2]));
+    expect(v.el.querySelectorAll('[data-id=a] img')).toHaveLength(1);
+    expect(v.el.querySelector('[data-id=b] img')!.getAttribute('src')).toBe(SRC2);
+    expect(v.el.hasAttribute('data-art-wait')).toBe(false);
+    // Drawn late equals drawn with both icons here.
+    const both = new MenuView(new Menu([
+      { id: 'a', label: '鐵劍', icon: lateArt(idx, SRC), iconCls: 'slx-gear-ico' },
+      { id: 'b', label: '獵弓', icon: lateArt(idx, SRC2), iconCls: 'slx-gear-ico' },
+      { id: 'c', label: '回復藥' },
+    ]), { pick: () => {} });
+    v.el.querySelector('.slx-picked')!.classList.remove('slx-picked');
+    expect(v.el.innerHTML).toBe(both.el.innerHTML);
+  });
+
+  it('a picture no row waits for leaves the rows alone', () => {
+    const { set, idx } = landed();
+    const v = new MenuView(new Menu([{ id: 'a', label: '鐵劍', icon: lateArt(idx, SRC) }, { id: 'c', label: '回復藥' }]), { pick: () => {} });
+    const root = onScreen(v.el);
+    const rows = [...v.el.children];
+    set.add('/assets/games/starlantern/gear/other.png');
+    drawLanded(root, new Set(['/assets/games/starlantern/gear/other.png']));
+    expect(rows.every((r, i) => v.el.children[i] === r)).toBe(true);
+    expect(v.el.querySelector('img')).toBeNull();
+    expect(v.el.hasAttribute('data-art-wait')).toBe(true);
+  });
+
   it('a menu with every icon here waits for nothing', () => {
     const { set, idx } = landed();
     set.add(SRC);

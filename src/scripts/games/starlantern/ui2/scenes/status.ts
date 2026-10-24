@@ -6,7 +6,7 @@ import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
-import { awaitArt, bestLanded } from '../lateArt';
+import { anyLanded, awaitArt, bestLanded, noteMissing } from '../lateArt';
 import type { Scene, SceneCtx } from '../scene';
 import { backControl, win } from '../widgets';
 import { STATUS_TABS, cueFrame, updateCues } from './statusTabs';
@@ -24,6 +24,8 @@ export class StatusScene implements Scene {
   private drawn: { tab: number; id: CharacterId } | null = null;
   /** Set on exit: a stale redraw (a click on a node of the closed sheet) does nothing. */
   private closed = false;
+  /** The pictures the page was last drawn without (its skill icons, ui2/lateArt). */
+  private pageWait = new Set<string>();
   private hintEl!: HTMLElement;
   private standee!: HTMLElement;
   private nameEl!: HTMLElement;
@@ -109,9 +111,9 @@ export class StatusScene implements Scene {
     awaitArt(this.standee, 'pic', better, () => { if (!this.closed && this.shownId === this.id) this.drawStandee(); });
   }
 
-  /** Skill icons that landed after the page was drawn (ui2/lateArt): the page is drawn again, in place. */
+  /** A picture the page was drawn without (a skill icon), landing (ui2/lateArt): the page is drawn again, in place. Other art changes nothing. */
   artArrived(urls: ReadonlySet<string>): void {
-    if ([...urls].some((u) => u.includes('/icon/'))) this.render();
+    if (anyLanded(urls, this.pageWait)) this.render();
   }
 
   private render(): void {
@@ -131,7 +133,9 @@ export class StatusScene implements Scene {
     if (this.drawn && !same) STATUS_TABS[this.drawn.tab]?.leave?.();
     const top = this.bodyEl.scrollTop;
     this.hintEl.textContent = tab.hint ?? T.ui2.status.hint;
-    this.bodyEl.replaceChildren(tab.render(this.ctx, this.id, (change) => {
+    // The page reads the bank through a note of what it asked for and did not find: only that landing draws it again.
+    const ctx = { ...this.ctx, art: noteMissing(this.ctx.art, (this.pageWait = new Set())) };
+    this.bodyEl.replaceChildren(tab.render(ctx, this.id, (change) => {
       if (this.closed) return;
       change?.();
       this.render();

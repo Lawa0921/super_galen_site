@@ -415,3 +415,31 @@ describe('PartyBar +N on touch (touch overflow)', () => {
     expect(more.hasAttribute('role')).toBe(false);
   });
 });
+
+describe('PartyBar art that lands late (ui2/lateArt)', () => {
+  it('only the panel drawn without a picture is drawn again when it lands; the others, and other art, change nothing', () => {
+    const landed = new Set<string>();
+    const bar = new PartyBar({ has: (u) => landed.has(u) });
+    bar.update([m('scarlet'), m('noel', 30, { ailments: [{ id: 'poison' }] })]);
+    const panel = (k: string) => bar.el.querySelector<HTMLElement>(`.slx-pm[data-key=${k}]`)!;
+    const ailOf = (k: string) => panel(k).querySelector('.slx-pm-ail')!;
+    const noelWord = ailOf('noel').firstElementChild;
+    const scarletName = panel('scarlet').querySelector('.slx-pm-name')!.firstChild;
+    const seen = new MutationObserver(() => {});
+    seen.observe(bar.el, { subtree: true, childList: true, attributes: true, characterData: true });
+    bar.artArrived(new Set([art.portrait('sylvie', 'normal'), art.ailmentIcon('burn')]));   // no panel waits for these
+    expect(seen.takeRecords()).toEqual([]);
+    // Her face lands: put in her panel only; Noel's row is not laid out again.
+    landed.add(art.portrait('scarlet', 'normal'));
+    bar.artArrived(new Set([art.portrait('scarlet', 'normal')]));
+    expect(panel('scarlet').querySelector('img.sl-portrait')!.getAttribute('src')).toBe(art.portrait('scarlet', 'normal'));
+    expect(panel('noel').querySelector('img.sl-portrait')).toBeNull();
+    expect(ailOf('noel').firstElementChild).toBe(noelWord);
+    // The poison icon lands in a later batch: Noel's row gains it, Scarlet's panel is left as it is.
+    landed.add(art.ailmentIcon('poison'));
+    bar.artArrived(new Set([art.ailmentIcon('poison')]));
+    expect(ailOf('noel').querySelector('img.slx-chip-ico')!.getAttribute('src')).toBe(art.ailmentIcon('poison'));
+    expect(panel('scarlet').querySelector('.slx-pm-name')!.firstChild).toBe(scarletName);
+    seen.disconnect();
+  });
+});
