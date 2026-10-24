@@ -26012,15 +26012,17 @@
       "defringe": null,
       "neutralize_tint": null,
       "final": "art-factory/starlantern/work/char-scarlet-portrait-vow/char-scarlet-portrait-vow.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-vow\\a1\\char-scarlet-portrait-vow-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-scarlet-portrait-vow\\a2\\char-scarlet-portrait-vow-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
-        "warnings": [],
+        "warnings": [
+          "enclosed holes"
+        ],
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 0,
+        "holes": 1,
         "block": 11,
         "size": [
           108,
@@ -26028,7 +26030,7 @@
         ]
       },
       "status": "published",
-      "chosen_attempt": "a1",
+      "chosen_attempt": "a2",
       "source_id": "char-scarlet-portrait-vow",
       "batch": "faces-scarlet",
       "runtime": "/assets/games/starlantern/char/scarlet-portrait-vow.png",
@@ -26050,9 +26052,12 @@
         ],
         "block": 11,
         "base_block": 11,
-        "palette_share": 0.998
+        "palette_share": 0.995
       },
-      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+      "approved_by": "user 2026-10-24: approved wave 2 as recommended on the review page (runs/2026-10-24-faces-wave2), 「繼續」",
+      "rejected_attempts": {
+        "a1": "wave-1 version, replaced by the wave-2 redo a2 (user 2026-10-24: 「繼續」 on the wave-2 recommendation); kept as evidence in work/char-scarlet-portrait-vow/cand/a1 and raw"
+      }
     },
     "char-scarlet-portrait-shaken": {
       "kind": "sprite",
@@ -26366,7 +26371,10 @@
         "base_block": 10,
         "palette_share": 0.999
       },
-      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」",
+      "rejected_attempts": {
+        "a2": "wave-2 redo still reads like her sad face, no visible half-smile; the user kept the wave-1 a1 (2026-10-24: 「繼續」 on the recommendation); kept as evidence in work/char-selene-portrait-wistful/cand/a2, outside runtime"
+      }
     },
     "char-safira-portrait-sad": {
       "kind": "sprite",
@@ -26483,7 +26491,7 @@
       "defringe": null,
       "neutralize_tint": null,
       "final": "art-factory/starlantern/work/char-bobby-portrait-sad/char-bobby-portrait-sad.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-sad\\a1\\char-bobby-portrait-sad-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-bobby-portrait-sad\\a2\\char-bobby-portrait-sad-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -26496,12 +26504,12 @@
         "holes": 1,
         "block": 10,
         "size": [
-          122,
+          123,
           121
         ]
       },
       "status": "published",
-      "chosen_attempt": "a1",
+      "chosen_attempt": "a2",
       "source_id": "char-bobby-portrait-sad",
       "batch": "faces-bobby",
       "runtime": "/assets/games/starlantern/char/bobby-portrait-sad.png",
@@ -26518,14 +26526,17 @@
           121
         ],
         "size_delta": [
-          0,
+          1,
           0
         ],
         "block": 10,
         "base_block": 10,
         "palette_share": 0.996
       },
-      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+      "approved_by": "user 2026-10-24: approved wave 2 as recommended on the review page (runs/2026-10-24-faces-wave2), 「繼續」",
+      "rejected_attempts": {
+        "a1": "wave-1 version, replaced by the wave-2 redo a2 (user 2026-10-24: 「繼續」 on the wave-2 recommendation); kept as evidence in work/char-bobby-portrait-sad/cand/a1 and raw"
+      }
     },
     "char-liz-portrait-serious": {
       "kind": "sprite",
@@ -26695,7 +26706,7 @@
       "defringe": null,
       "neutralize_tint": null,
       "final": "art-factory/starlantern/work/char-noel-portrait-sad/char-noel-portrait-sad.png",
-      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-sad\\a1\\char-noel-portrait-sad-a1.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-noel-portrait-sad\\a2\\char-noel-portrait-sad-a2.png",
       "qa": {
         "pass": true,
         "reasons": [],
@@ -26705,7 +26716,7 @@
         "residue": 0,
         "semi": 0,
         "edge": 0,
-        "holes": 2,
+        "holes": 4,
         "block": 10,
         "size": [
           118,
@@ -26713,7 +26724,7 @@
         ]
       },
       "status": "published",
-      "chosen_attempt": "a1",
+      "chosen_attempt": "a2",
       "source_id": "char-noel-portrait-sad",
       "batch": "faces-noel",
       "runtime": "/assets/games/starlantern/char/noel-portrait-sad.png",
@@ -26737,7 +26748,326 @@
         "base_block": 10,
         "palette_share": 0.998
       },
-      "approved_by": "user 2026-10-23: approved wave 1 for use on the review page, 「可以先這樣接進去看看」"
+      "approved_by": "user 2026-10-24: approved wave 2 as recommended on the review page (runs/2026-10-24-faces-wave2), 「繼續」",
+      "rejected_attempts": {
+        "a1": "wave-1 version, replaced by the wave-2 redo a2 (user 2026-10-24: 「繼續」 on the wave-2 recommendation); kept as evidence in work/char-noel-portrait-sad/cand/a1 and raw"
+      }
+    },
+    "char-hero-portrait-serious": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-hero-portrait-serious/char-hero-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-serious\\a1\\char-hero-portrait-serious-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          111,
+          113
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-hero-portrait-serious",
+      "batch": "faces-hero",
+      "runtime": "/assets/games/starlantern/char/hero-portrait-serious.png",
+      "depends_on": [
+        "char-hero-portrait",
+        "char-hero-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          111,
+          113
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 1.0
+      },
+      "approved_by": "user 2026-10-24: approved wave 2 as recommended on the review page (runs/2026-10-24-faces-wave2), 「繼續」"
+    },
+    "char-hero-portrait-distant": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-hero-portrait-distant/char-hero-portrait-distant.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-hero-portrait-distant\\a2\\char-hero-portrait-distant-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 1,
+        "block": 11,
+        "size": [
+          111,
+          113
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "char-hero-portrait-distant",
+      "batch": "faces-hero",
+      "runtime": "/assets/games/starlantern/char/hero-portrait-distant.png",
+      "depends_on": [
+        "char-hero-portrait",
+        "char-hero-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          111,
+          113
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 1.0
+      },
+      "rejected_attempts": {
+        "a1": "looks down and to the side with parted lips: at game size it reads as his sad face, not a distant one (a2 keeps a level gaze into the distance)"
+      },
+      "approved_by": "user 2026-10-24: approved wave 2 as recommended on the review page (runs/2026-10-24-faces-wave2), 「繼續」"
+    },
+    "char-rin-portrait-serious": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-rin-portrait-serious/char-rin-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-serious\\a1\\char-rin-portrait-serious-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          113
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-portrait-serious",
+      "batch": "faces-rin",
+      "runtime": "/assets/games/starlantern/char/rin-portrait-serious.png",
+      "depends_on": [
+        "char-rin-portrait",
+        "char-rin-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          101,
+          112
+        ],
+        "size_delta": [
+          0,
+          1
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 0.999
+      },
+      "approved_by": "user 2026-10-24: approved wave 2 as recommended on the review page (runs/2026-10-24-faces-wave2), 「繼續」"
+    },
+    "char-rin-portrait-guarded": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-rin-portrait-guarded/char-rin-portrait-guarded.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-portrait-guarded\\a1\\char-rin-portrait-guarded-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          101,
+          112
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-portrait-guarded",
+      "batch": "faces-rin",
+      "runtime": "/assets/games/starlantern/char/rin-portrait-guarded.png",
+      "depends_on": [
+        "char-rin-portrait",
+        "char-rin-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          101,
+          112
+        ],
+        "size_delta": [
+          0,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 0.998
+      },
+      "approved_by": "user 2026-10-24: approved wave 2 as recommended on the review page (runs/2026-10-24-faces-wave2), 「繼續」"
+    },
+    "char-rin-oath-portrait-serious": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-serious/char-rin-oath-portrait-serious.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-serious\\a2\\char-rin-oath-portrait-serious-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 2,
+        "block": 11,
+        "size": [
+          101,
+          114
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a2",
+      "source_id": "char-rin-oath-portrait-serious",
+      "batch": "faces-rin-oath",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait-serious.png",
+      "depends_on": [
+        "char-rin-oath-portrait",
+        "char-rin-oath-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          101,
+          112
+        ],
+        "size_delta": [
+          0,
+          2
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 0.999
+      },
+      "rejected_attempts": {
+        "a1": "too close to her calm normal at game size (a2 lowers the brows and narrows the eyes)"
+      },
+      "approved_by": "user 2026-10-24: approved wave 2 as recommended on the review page (runs/2026-10-24-faces-wave2), 「繼續」"
+    },
+    "char-rin-oath-portrait-guarded": {
+      "kind": "sprite",
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-rin-oath-portrait-guarded/char-rin-oath-portrait-guarded.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-rin-oath-portrait-guarded\\a1\\char-rin-oath-portrait-guarded-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 11,
+        "size": [
+          102,
+          112
+        ]
+      },
+      "status": "published",
+      "chosen_attempt": "a1",
+      "source_id": "char-rin-oath-portrait-guarded",
+      "batch": "faces-rin-oath",
+      "runtime": "/assets/games/starlantern/char/rin-oath-portrait-guarded.png",
+      "depends_on": [
+        "char-rin-oath-portrait",
+        "char-rin-oath-standee"
+      ],
+      "match": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "base_size": [
+          101,
+          112
+        ],
+        "size_delta": [
+          1,
+          0
+        ],
+        "block": 11,
+        "base_block": 11,
+        "palette_share": 0.998
+      },
+      "approved_by": "user 2026-10-24: approved wave 2 as recommended on the review page (runs/2026-10-24-faces-wave2), 「繼續」"
     }
   },
   "requa_log": [
