@@ -315,6 +315,21 @@ describe('BattleView ailment icons that land late', () => {
     land!(art.ailmentIcon('burn'));
     expect(view.ailmentTexts('e0')).toEqual([]);
   });
+
+  it('an icon the last fight waited for, landing in the next one, draws none of the last fight on its slots', () => {
+    let land: ((u: string) => void) | null = null;
+    const loaded = new Set<string>();
+    const late = { get: (u: string) => (loaded.has(u) ? Texture.WHITE : null), has: (u: string) => loaded.has(u), onLoad: (fn: (u: string) => void) => { land = fn; return () => undefined; } } as unknown as TextureBank;
+    const view = new BattleView(true, late);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments({ e0: [{ id: 'poison' }] });
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['中毒']);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);   // the next fight: its e0 holds nothing yet
+    loaded.add(art.ailmentIcon('poison'));
+    land!(art.ailmentIcon('poison'));
+    expect(view.ailmentTexts('e0')).toEqual([]);
+    expect(view.ailmentIcons('e0')).toEqual([]);
+  });
 });
 
 describe('BattleView element flash', () => {

@@ -89,5 +89,38 @@ describe('a screen drawn before its art landed', () => {
       full.scene.exit();
       late.scene.exit();
     });
+
+    it(`${name}: art landing in several batches shows, after each, what a screen drawn with that much art shows`, () => {
+      const full = draw(game(), make, { has: () => true });
+      const urls = [...new Set([...ALL, ...pictures(full.root).map((w) => w.split(' ')[0])])];
+      const landed = new Set<string>();
+      const late = draw(game(), make, { has: (u) => landed.has(u) });
+      // Three batches, each a spread of the whole list (faces, icons and backgrounds mixed), as a slow network brings them.
+      for (let b = 0; b < 3; b++) {
+        const batch = new Set(urls.filter((_, i) => i % 3 === b));
+        for (const u of batch) landed.add(u);
+        drawLanded(late.root, batch);
+        late.scene.artArrived?.(batch);
+        const now = draw(game(), make, { has: (u) => landed.has(u) });
+        expect(pictures(late.root), `after batch ${b + 1}`).toEqual(pictures(now.root));
+        now.scene.exit();
+      }
+      expect(pictures(late.root)).toEqual(pictures(full.root));
+      full.scene.exit();
+      late.scene.exit();
+    });
+
+    it(`${name}: a picture the screen does not wait for changes nothing on it`, () => {
+      const late = draw(game(), make, { has: () => false });
+      const seen = new MutationObserver(() => {});
+      seen.observe(late.root, { subtree: true, childList: true, attributes: true, characterData: true });
+      // Urls of every kind a screen draws (an icon, a face, a background, gear), none of them one this screen asked for.
+      const others = new Set(['icon/', 'portraits/', 'bg/', 'gear/', 'scenes/'].map((k) => `/assets/games/starlantern/${k}not-on-this-screen.webp`));
+      drawLanded(late.root, others);
+      late.scene.artArrived?.(others);
+      expect(seen.takeRecords()).toEqual([]);
+      seen.disconnect();
+      late.scene.exit();
+    });
   }
 });

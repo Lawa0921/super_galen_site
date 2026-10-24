@@ -12,7 +12,8 @@ import { art, gearArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import { framedGear, gearArtKey } from '../gearArt';
 import type { UiAction } from '../input';
-import { bestPicture } from '../lateArt';
+import type { ArtIndex } from '../../render/textures';
+import { anyLanded, bestPicture, noteMissing } from '../lateArt';
 import { gearLabel, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
@@ -90,6 +91,13 @@ export class EquipScene implements Scene {
   private menuWin: HTMLElement | null = null;
   private sceneEl!: HTMLElement;
   private head!: HTMLElement;
+  /** The head row's ←/→: made once, so art landing (or a member change) never swaps the button under a press. */
+  private prevBtn!: HTMLElement;
+  private nextBtn!: HTMLElement;
+  /** The pictures the head's face, the cells and the detail were last drawn without (ui2/lateArt). */
+  private headWait = new Set<string>();
+  private cellWait = new Set<string>();
+  private detailWait = new Set<string>();
   private bagWin!: HTMLElement;
   private bagCount!: HTMLElement;
   private dollWin!: HTMLElement;
@@ -112,6 +120,9 @@ export class EquipScene implements Scene {
     const list = this.members;
     this.id = list.includes(this.ctx.arg as CharacterId) ? (this.ctx.arg as CharacterId) : (list.includes('hero') ? 'hero' : (activeIds(p)[0] ?? p.recruited[0]));
     this.head = win('slx-equip-head');
+    const arrow = (text: string, a: UiAction) => { const b = el('span', { class: 'slx-status-arrow', text, attrs: { role: 'button' } }); b.addEventListener('click', () => this.onAction(a)); return b; };
+    this.prevBtn = arrow('←', 'prev');
+    this.nextBtn = arrow('→', 'next');
 
     this.bagCells = Array.from({ length: BAG_SIZE }, (_, i) => this.cell('bag', i, el('div', { class: 'slx-bag-cell', attrs: { role: 'gridcell', 'data-index': String(i) } })));
     this.bagCount = el('span', { class: 'slx-bag-count' });
@@ -156,15 +167,23 @@ export class EquipScene implements Scene {
   exit(): void {}
 
   /**
-   * Art landed after the screen was drawn (ui2/lateArt): the face and the pictures are drawn again. A cell redraws only
-   * when its key changes (`cellKey` holds which of its art is here); the detail keeps its scroll.
+   * Art landed after the screen was drawn (ui2/lateArt): only what was drawn without one of `urls` is drawn again. The
+   * face is put into the head row beside its buttons; the cells are looked over, and a cell redraws only when its key
+   * changes (`cellKey` holds which of its art is here); the detail is drawn again keeping its scroll. Art the screen did
+   * not ask for changes nothing.
    */
-  artArrived(): void {
-    const top = this.detailBody.scrollTop;
-    this.headId = null;
-    this.render();
-    this.detailBody.scrollTop = top;
-    this.detailCues();
+  artArrived(urls: ReadonlySet<string>): void {
+    if (anyLanded(urls, this.headWait)) {
+      const face = this.headFace();
+      if (face.length && !this.head.querySelector('.slx-equip-face')) this.prevBtn.after(...face);
+    }
+    if (anyLanded(urls, this.cellWait)) this.renderCells();
+    if (anyLanded(urls, this.detailWait)) {
+      const top = this.detailBody.scrollTop;
+      this.renderDetail();
+      this.detailBody.scrollTop = top;
+      this.detailCues();
+    }
   }
 
   onAction(a: UiAction): void {
@@ -384,7 +403,6 @@ export class EquipScene implements Scene {
   }
 
   private render(): void {
-    const m = this.member;
     const menuOpen = !!this.menuView;
     this.sceneEl.dataset.focus = this.focus;
     for (const w of [this.bagWin, this.dollWin, this.statsWin, this.detail]) w.toggleAttribute('inert', menuOpen);
@@ -394,6 +412,20 @@ export class EquipScene implements Scene {
     this.noticeEl.textContent = this.notice;
 
     this.renderCount();
+    this.renderCells();
+
+    // A full bag has no empty cell to pick, so the target hint names the menu route instead. In the labyrinth the pack must
+    // fit in the bag at home: with no room left there, no route takes a piece off, and the hint says so.
+    const t = T.ui2.equip;
+    this.keyhint.textContent = !this.target ? (this.field ? t.hintField : t.hint)
+      : this.bag.length >= this.room ? (this.field ? t.hintTargetFullField : t.hintTargetFull) : t.hintTarget;
+    this.renderDetail();
+  }
+
+  /** The bag cells and the doll's slots: classes each time, a cell's children only when its key changes. */
+  private renderCells(): void {
+    const m = this.member;
+    const idx = noteMissing(this.ctx.art, (this.cellWait = new Set()));
     this.bagCells.forEach((c, i) => {
       const it = this.bag[i];
       const cls = ['slx-bag-cell'];
@@ -404,10 +436,10 @@ export class EquipScene implements Scene {
       if (this.flash?.index === i) cls.push('slx-flash');
       c.className = cls.join(' ');
       // With its gear art a cell shows the picture in its rarity frame, and the name moves to the label and tooltip.
-      const key = it ? this.cellKey(it) : '';
+      const key = it ? this.cellKey(idx, it) : '';
       if (this.bagKeys[i] !== key) {
         this.bagKeys[i] = key;
-        const pic = it ? framedGear(this.ctx.art, it) : [];
+        const pic = it ? framedGear(idx, it) : [];
         c.replaceChildren(...(it ? [...(pic.length ? pic : [nameTag(it)]), ...enhTag(it)] : []));
         if (it) c.setAttribute('title', gearLabel(it));
         else c.removeAttribute('title');
@@ -429,11 +461,11 @@ export class EquipScene implements Scene {
       c.className = cls.join(' ');
       // A filled slot keeps a small slot label over the name: position alone does not say which slot is which.
       // With its gear art the picture in its rarity frame takes the slot; the label and tooltip name the slot and the piece.
-      const key = it ? `${slot}|${this.cellKey(it)}` : slot;
+      const key = it ? `${slot}|${this.cellKey(idx, it)}` : slot;
       const label = it ? T.ui2.equip.worn(T.slot[slot], gearLabel(it)) : T.slot[slot];
       if (this.dollKeys[i] !== key) {
         this.dollKeys[i] = key;
-        const pic = it ? framedGear(this.ctx.art, it) : [];
+        const pic = it ? framedGear(idx, it) : [];
         if (pic.length) c.replaceChildren(...pic, ...enhTag(it!));
         // A text name: the slot's word over it, unless an enhance mark needs that row (the slot is in the title then).
         else if (it) c.replaceChildren(...(it.enhance > 0 ? [] : [el('span', { class: 'slx-slot-tag', text: T.slot[slot] })]), nameTag(it, 'slx-slot-name'), ...enhTag(it));
@@ -445,18 +477,11 @@ export class EquipScene implements Scene {
       c.setAttribute('aria-label', label);
       c.setAttribute('aria-selected', String(i === this.dollCur));
     });
-
-    // A full bag has no empty cell to pick, so the target hint names the menu route instead. In the labyrinth the pack must
-    // fit in the bag at home: with no room left there, no route takes a piece off, and the hint says so.
-    const t = T.ui2.equip;
-    this.keyhint.textContent = !this.target ? (this.field ? t.hintField : t.hint)
-      : this.bag.length >= this.room ? (this.field ? t.hintTargetFullField : t.hintTargetFull) : t.hintTarget;
-    this.renderDetail();
   }
 
   /** Everything a cell draws from its piece, and which of its art is published: a change to any of it redraws the cell. */
-  private cellKey(it: ItemInstance): string {
-    return `${it.uid}|${gearArtId(it)}|${itemName(it)}|${it.rarity}|${it.starlit ? 1 : 0}|${it.enhance}|${gearArtKey(this.ctx.art, it)}`;
+  private cellKey(idx: ArtIndex, it: ItemInstance): string {
+    return `${it.uid}|${gearArtId(it)}|${itemName(it)}|${it.rarity}|${it.starlit ? 1 : 0}|${it.enhance}|${gearArtKey(idx, it)}`;
   }
 
   /** The bag line: `背包 n／60`, or in the labyrinth the pack's count and the load, red at the limit as on the map. */
@@ -472,12 +497,15 @@ export class EquipScene implements Scene {
     this.headId = this.id;
     const def = CHARACTERS[this.id];
     const m = this.member;
-    const look = artIdOf(m);
-    const face = this.ctx.art.has(art.portrait(look, 'normal')) ? [el('img', { class: 'slx-equip-face', attrs: { src: art.portrait(look, 'normal'), alt: '' } })] : [];
-    const arrow = (text: string, a: UiAction) => { const b = el('span', { class: 'slx-status-arrow', text, attrs: { role: 'button' } }); b.addEventListener('click', () => this.onAction(a)); return b; };
-    this.head.replaceChildren(arrow('←', 'prev'), ...face,
+    this.head.replaceChildren(this.prevBtn, ...this.headFace(),
       el('div', { class: 'slx-equip-name' }, [el('span', { class: 'slx-status-title', text: titleOf(m) }), el('b', { text: def.name }), el('span', { text: `Lv ${m.level}` })]),
-      arrow('→', 'next'), el('span', { class: 'slx-equip-title', text: T.ui2.equip.title }));
+      this.nextBtn, el('span', { class: 'slx-equip-title', text: T.ui2.equip.title }));
+  }
+
+  /** The member's face for the head row once it has landed (Rin's oath look after her oath); until then it waits for it. */
+  private headFace(): HTMLElement[] {
+    const src = art.portrait(artIdOf(this.member), 'normal');
+    return noteMissing(this.ctx.art, (this.headWait = new Set())).has(src) ? [el('img', { class: 'slx-equip-face', attrs: { src, alt: '' } })] : [];
   }
 
   /** The gear under the cursor: name and rarity word, slot, item level, weight, junk mark, its lines, and for bag gear what wearing it changes. */
@@ -488,13 +516,14 @@ export class EquipScene implements Scene {
     const it = onBag ? this.bag[this.bagCur] : m.equip[slotHere];
     const out: HTMLElement[] = [];
     let after: Stats | null = null;
+    this.detailWait = new Set();
     if (!it) {
       out.push(el('div', { class: 'slx-item-name', text: onBag ? T.ui2.equip.emptyCell : T.slot[slotHere] }));
       if (!onBag) out.push(el('p', { class: 'slx-desc', text: T.ui2.status.none }), el('p', { class: 'slx-hint', text: T.ui2.equip.pickSlot }));
       else if (this.target && m.equip[this.target]) out.push(el('p', { class: 'slx-hint', text: T.ui2.equip.takeOff(T.slot[this.target]) }));
     } else {
       // The 64px picture in its rarity frame (twice the cell's) heads the panel when its large art is published.
-      const big = framedGear(this.ctx.art, it, true);
+      const big = framedGear(noteMissing(this.ctx.art, this.detailWait), it, true);
       if (big.length) out.push(el('div', { class: 'slx-item-art-box' }, big));
       out.push(
         el('div', { class: `slx-item-name ${rarityClass(it)}`, text: gearLabel(it) }),

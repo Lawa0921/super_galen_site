@@ -143,17 +143,15 @@ export class MenuView {
       li.addEventListener('click', () => { if (!this.locked()) this.scrollBy(d); });
       return li;
     };
-    // A row's late icon that has not landed is left out; the list draws itself again when it lands (ui2/lateArt).
-    const missing: string[] = [];
+    // A row's late icon that has not landed is left out; it is put into its row when it lands (ui2/lateArt, `drawLate`).
+    const late: { li: HTMLElement; item: MenuItem }[] = [];
     const rows = this.menu.items.slice(this.top, end).map((item, k) => {
       const i = this.top + k;
       const icon = artSrc(item.icon);
-      const late = artMissing(item.icon);
-      if (late) missing.push(late);
       const li = el('li', { class: i === this.menu.cursor ? 'slx-opt slx-sel' : 'slx-opt', attrs: {
         role: 'option', 'aria-selected': String(i === this.menu.cursor), 'aria-disabled': String(!!item.disabled), 'data-id': item.id,
       } }, [
-        ...(icon ? [el('img', { class: item.iconCls ? `slx-ico ${item.iconCls}` : 'slx-ico', attrs: { src: icon, alt: '' } })] : []),
+        ...(icon ? [MenuView.icon(item, icon)] : []),
         // Its label beside it names the rune and its tier, so the cell's icon is decorative (alt "").
         ...(item.rune ? [runeCell(item.rune, false, true)] : []),
         el('span', { class: item.cls ? `slx-label ${item.cls}` : 'slx-label', text: item.label }),
@@ -169,10 +167,31 @@ export class MenuView {
         if (this.menu.setCursor(i) && this.menu.cursor !== before) { this.render(); this.on.moved?.(); }
       });
       li.addEventListener('click', () => { if (this.locked()) return; if (!item.disabled && this.menu.setCursor(i)) { this.render(); this.flashPick(); this.on.pick(item); } });
+      if (artMissing(item.icon)) late.push({ li, item });
       return li;
     });
     this.list.replaceChildren(...(this.top > 0 ? [marker('slx-more-up', '▲', -1)] : []), ...rows, ...(end < n ? [marker('slx-more-down', '▼', 1)] : []));
-    awaitArt(this.list, 'rows', missing, () => this.render());
+    this.drawLate(late);
+  }
+
+  /** A row's icon picture, first in its row. */
+  private static icon(item: MenuItem, src: string): HTMLElement {
+    return el('img', { class: item.iconCls ? `slx-ico ${item.iconCls}` : 'slx-ico', attrs: { src, alt: '' } });
+  }
+
+  /**
+   * The rows whose icon had not landed: each one that has now is put first in its own row, in place, and the rest wait on.
+   * The rows themselves are not drawn again, so a press under way (a touch between down and up) still ends in its click,
+   * and a pick's flash keeps running.
+   */
+  private drawLate(rows: { li: HTMLElement; item: MenuItem }[]): void {
+    const waiting = rows.filter(({ li, item }) => {
+      const src = artSrc(item.icon);
+      if (!src) return true;
+      li.prepend(MenuView.icon(item, src));
+      return false;
+    });
+    awaitArt(this.list, 'rows', waiting.map(({ item }) => artMissing(item.icon)!), () => this.drawLate(waiting));
   }
 
   /** A quick flash on the chosen row, so a pick is felt even when the next window opens at once. */

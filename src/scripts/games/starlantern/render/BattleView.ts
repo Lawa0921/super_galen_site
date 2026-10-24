@@ -267,6 +267,8 @@ export class BattleView {
     for (const c of this.scene.removeChildren()) c.destroy({ children: true });
     this.root.scale.set(1); this.root.x = 0; this.root.y = 0; this.scene.x = 0;
     this.slots.clear();
+    // The last fight's rows waited for their icons on its slots: an icon landing now draws none of them here.
+    this.ailWant = null;
     this.defIds.clear();
     this.weapons.clear();
     for (const c of [...state.party, ...state.enemies]) { this.defIds.set(c.key, c.defId); if (c.weaponKind) this.weapons.set(c.key, c.weaponKind); }

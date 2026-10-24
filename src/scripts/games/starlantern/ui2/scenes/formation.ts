@@ -7,7 +7,7 @@ import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
-import { bestPicture, lateArt, type LateArt } from '../lateArt';
+import { anyLanded, bestPicture, lateArt, type LateArt } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { MenuView, backControl, win } from '../widgets';
@@ -24,6 +24,8 @@ export class FormationScene implements Scene {
   private cursor = 0;
   private pickView: MenuView | null = null;
   private pickWin: HTMLElement | null = null;
+  /** The faces the grid was last drawn without (ui2/lateArt). */
+  private faceWait = new Set<string>();
 
   constructor(private ctx: SceneCtx) {}
 
@@ -45,8 +47,8 @@ export class FormationScene implements Scene {
 
   exit(): void {}
 
-  /** Faces that landed after the grid was drawn (ui2/lateArt) are drawn in; the pick list draws its own. */
-  artArrived(): void { this.render(); }
+  /** A face the grid was drawn without, landing (ui2/lateArt), is drawn in; other art changes nothing. The pick list draws its own. */
+  artArrived(urls: ReadonlySet<string>): void { if (anyLanded(urls, this.faceWait)) this.render(); }
 
   onAction(a: UiAction): void {
     if (this.pickView) { this.pickView.onAction(a); return; }
@@ -70,7 +72,9 @@ export class FormationScene implements Scene {
   /** The published normal face of a member (Rin's oath look after her oath), or nothing. */
   private faceUrl(id: CharacterId): string | undefined {
     const url = art.portrait(artIdOf(this.ctx.game.state.party.roster[id]), 'normal');
-    return this.ctx.art.has(url) ? url : undefined;
+    if (this.ctx.art.has(url)) return url;
+    this.faceWait.add(url);
+    return undefined;
   }
 
   /** The same face as a row icon of the pick list, shown once it has landed. */
@@ -85,6 +89,7 @@ export class FormationScene implements Scene {
 
   private render(): void {
     const t = T.ui2;
+    this.faceWait = new Set();
     this.gridEl.replaceChildren(...ROWS.map((row, r) => el('div', { class: 'slx-formation-row' }, [
       el('span', { class: 'slx-row-label', text: t.rows[row] }),
       ...[0, 1, 2].map((c) => {

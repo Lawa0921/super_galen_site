@@ -7,6 +7,7 @@ import type { MechWord } from '../engine/mechanics/index';
 import { bySeverity, fitRow, isHalting, textWidth } from '../render/ailmentStyle';
 import { CHIP_ICON_PX, CHIP_ICON_W, ailmentIconUrl, mechIconUrls } from '../render/chipIcons';
 import type { ArtIndex } from '../render/textures';
+import { anyLanded, noteMissing } from './lateArt';
 import { moreTrigger, type MorePopover } from './morePopover';
 
 const ROW_TAG: Record<Row, string> = { front: '前', middle: '中', back: '後' };
@@ -81,8 +82,12 @@ const TRANSIENT = ['slx-pm-hit', 'slx-pm-acting', 'slx-pm-heal', 'slx-pm-ko'];
 const PULSE_MS = 450;
 const POP_MS = 900;
 
-/** `ghost` is HP just lost, still drawn white behind the bar until it drains (GHOST_MS). */
-interface Panel { el: HTMLElement; body: HTMLElement; face: HTMLImageElement | null; member: BarMember; until: number; ghost: number | null; drain: ReturnType<typeof setTimeout> | null; shrinking?: boolean }
+/**
+ * `ghost` is HP just lost, still drawn white behind the bar until it drains (GHOST_MS). `faceWait` and `rowWait`: the
+ * pictures the face and the row were last drawn without (ui2/lateArt); only their landing draws the panel again.
+ */
+interface Panel { el: HTMLElement; body: HTMLElement; face: HTMLImageElement | null; member: BarMember; until: number; ghost: number | null; drain: ReturnType<typeof setTimeout> | null; shrinking?: boolean;
+  faceWait: Set<string>; rowWait: Set<string> }
 const GHOST_MS = 350;
 /** Matches the .slx-ghost width transition. */
 const GHOST_DRAIN_MS = 460;
@@ -118,13 +123,14 @@ export class PartyBar {
   }
 
   /**
-   * Art that landed after the panels were drawn (ui2/lateArt): each face and each row's icons as they would be drawn now.
+   * Art that landed after the panels were drawn (ui2/lateArt): a face or a row that was drawn without one of `urls` is
+   * drawn as it would be now; the rest are left alone (the row's layout is measured, so it is not redone for nothing).
    * A panel in a momentary face (a hit, an act) keeps it; its reset draws the new face.
    */
-  artArrived(): void {
+  artArrived(urls: ReadonlySet<string>): void {
     for (const p of this.panels.values()) {
-      if (!TRANSIENT.some((c) => p.el.classList.contains(c))) this.resetFace(p);
-      this.fillBody(p);
+      if (anyLanded(urls, p.faceWait) && !TRANSIENT.some((c) => p.el.classList.contains(c))) this.resetFace(p);
+      if (anyLanded(urls, p.rowWait)) this.fillBody(p);
     }
   }
 
@@ -181,7 +187,7 @@ export class PartyBar {
   private create(m: BarMember): Panel {
     const panel = el('div', { class: 'slx-pm', attrs: { 'data-key': m.key } });
     const body = el('div', { class: 'slx-pm-body' });
-    const p: Panel = { el: panel, body, face: null, member: m, until: 0, ghost: null, drain: null };
+    const p: Panel = { el: panel, body, face: null, member: m, until: 0, ghost: null, drain: null, faceWait: new Set(), rowWait: new Set() };
     panel.append(body);
     this.panels.set(m.key, p);
     return p;
@@ -203,10 +209,11 @@ export class PartyBar {
     // each word's), and estimated only where nothing is laid out (tests).
     const chips = bySeverity(m.ailments ?? []);
     const halting = chips.filter(isHalting);
-    const ailWord = (c: AilmentChip) => chipWord(this.art, `slx-ail slx-ail-${c.id}`, T.ailmentChip(c), [ailmentIconUrl(c.id)]);
+    const art = noteMissing(this.art, (p.rowWait = new Set()));
+    const ailWord = (c: AilmentChip) => chipWord(art, `slx-ail slx-ail-${c.id}`, T.ailmentChip(c), [ailmentIconUrl(c.id)]);
     const words = [
       ...halting.map(ailWord),
-      ...(m.mech ?? []).map((x) => chipWord(this.art, `slx-mech slx-mech-${x.tone}`, x.text, mechIconUrls(x))),
+      ...(m.mech ?? []).map((x) => chipWord(art, `slx-mech slx-mech-${x.tone}`, x.text, mechIconUrls(x))),
       ...chips.filter((c) => !isHalting(c)).map(ailWord),
     ];
     const moreEl = (n: number) => el('span', { class: 'slx-ail slx-ail-more', text: T.ailmentMore(n) });
@@ -262,7 +269,7 @@ export class PartyBar {
 
   /** The face for the member's current HP (normal, dying or down). */
   private resetFace(p: Panel): void {
-    const face = portraitImg(this.art, p.member.artId ?? p.member.key, p.member.hp, p.member.maxHp);
+    const face = portraitImg(noteMissing(this.art, (p.faceWait = new Set())), p.member.artId ?? p.member.key, p.member.hp, p.member.maxHp);
     if (!face) { p.face?.remove(); p.face = null; return; }
     if (p.face && p.face.getAttribute('src') === face.getAttribute('src') && p.face.className === face.className) return;
     if (p.face) p.face.replaceWith(face); else p.el.prepend(face);
