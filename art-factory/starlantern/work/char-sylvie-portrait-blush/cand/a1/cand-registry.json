@@ -1,0 +1,29 @@
+{
+  "assets": {
+    "char-sylvie-portrait-blush": {
+      "allow_edge": [
+        "bottom"
+      ],
+      "generator": "codex/gpt-6-astra",
+      "defringe": null,
+      "neutralize_tint": null,
+      "final": "art-factory/starlantern/work/char-sylvie-portrait-blush/cand/a1/char-sylvie-portrait-blush.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\char-sylvie-portrait-blush\\a1\\char-sylvie-portrait-blush-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "block": 10,
+        "size": [
+          122,
+          121
+        ]
+      },
+      "status": "qa_passed"
+    }
+  }
+}

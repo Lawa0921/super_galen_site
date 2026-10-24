@@ -451,15 +451,18 @@ describe('speakerOf', () => {
   it('a face with no art yet shows normal; one with art shows itself', () => {
     // Spec §10.3: a new face never borrows another feeling; until its art is published it is the normal face.
     const { game } = mk();
-    expect(speakerOf('selene', game.state, ART, 'blush').face).toBe(art.portrait('selene', 'normal'));
+    // (Faces wave 4 published Selene's blush and Rin's averted, so the unpublished faces here are her foresee and Rin's surprised.)
+    expect(speakerOf('selene', game.state, ART, 'foresee').face).toBe(art.portrait('selene', 'normal'));
     expect(speakerOf('hero', game.state, ART, 'resolve').face).toBe(art.portrait('hero', 'normal'));
-    const withBlush: ArtIndex = { has: (u) => ART.has(u) || u === art.portrait('selene', 'blush') };
-    expect(speakerOf('selene', game.state, withBlush, 'blush').face).toBe(art.portrait('selene', 'blush'));
+    const withForesee: ArtIndex = { has: (u) => ART.has(u) || u === art.portrait('selene', 'foresee') };
+    expect(speakerOf('selene', game.state, withForesee, 'foresee').face).toBe(art.portrait('selene', 'foresee'));
+    expect(speakerOf('selene', game.state, ART, 'blush').face).toBe(art.portrait('selene', 'blush'));
     // Rin after her oath wears the rin-oath set of the same faces.
     game.state.party.roster.rin.oath = true;
-    const withAverted: ArtIndex = { has: (u) => ART.has(u) || u === art.portrait('rin-oath', 'averted') };
-    expect(speakerOf('rin', game.state, withAverted, 'averted').face).toBe(art.portrait('rin-oath', 'averted'));
-    expect(speakerOf('rin', game.state, ART, 'averted').face).toBe(art.portrait('rin-oath', 'normal'));
+    const withSurprised: ArtIndex = { has: (u) => ART.has(u) || u === art.portrait('rin-oath', 'surprised') };
+    expect(speakerOf('rin', game.state, withSurprised, 'surprised').face).toBe(art.portrait('rin-oath', 'surprised'));
+    expect(speakerOf('rin', game.state, ART, 'surprised').face).toBe(art.portrait('rin-oath', 'normal'));
+    expect(speakerOf('rin', game.state, ART, 'averted').face).toBe(art.portrait('rin-oath', 'averted'));
   });
 });
 

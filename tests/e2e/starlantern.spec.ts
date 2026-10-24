@@ -2353,7 +2353,9 @@ test.describe('starlantern', () => {
     // + art step 9, G3 and G4 (user approval 2026-10-24): 105 skills at 16 and 14, 21 chip icons at 14, less the 27 old
     // plan 4 skill icons retired (三連刃 and the 26 the native ones stand in for) = 502 + 210 + 21 - 27 = 706
     // + faces wave 3 (user approval 2026-10-24 「可以」): Safira's serious and Noel's pout = 708
-    expect(manifest.length).toBe(708);
+    // + faces wave 4 (affinity plan Task A; user approval 2026-10-24 「可以，照這風格」): nine blush, both Rin looks' averted,
+    // Sylvie's unguarded, Noel's smug, Bobby's excited = 722
+    expect(manifest.length).toBe(722);
     // Every file the manifest lists answers 200.
     for (const u of manifest) expect((await page.request.get(u)).status(), u).toBe(200);
     // Walk the screens that show the new art (equipment, shop, forge, portal codex) with every sample piece in the bag.
