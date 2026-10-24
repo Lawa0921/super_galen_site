@@ -339,7 +339,16 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       await w.key('z');   // the day's line
       if (!(await page.locator('.slx-town .slx-place-card').isVisible())) await w.key('z');   // the line whole first
       await expect(page.locator(`.slx-town .slx-veil-night.slx-on.slx-moon-${moon}`)).toHaveCount(1);
+      // Task 7 review: on to the memory's present lines, so no sepia past veil hides the moon's tint
+      for (let i = 0; i < 20 && (await page.locator('.slx-town .slx-talk.slx-talk--memory').count()) > 0; i++) {
+        if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+        await w.key('z');
+      }
+      await expect(page.locator('.slx-town .slx-talk.slx-talk--memory')).toHaveCount(0);
+      await expect(page.locator('.slx-town .slx-veil-past.slx-on')).toHaveCount(0);
+      await expect(page.locator(`.slx-town .slx-veil-night.slx-on.slx-moon-${moon}`)).toHaveCount(1);
       if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+      await page.waitForTimeout(500);   // the past veil fades out (0.45s)
     },
   })),
   {
