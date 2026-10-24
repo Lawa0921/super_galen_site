@@ -496,3 +496,43 @@ describe('MenuView badges (plan 8g Task 7)', () => {
     expect(b.querySelector('.slx-badge')).toBeNull();
   });
 });
+
+describe('MenuView cues inside the rows (workshop review)', () => {
+  /** What is on screen, top to bottom: ▲, ▼ and row ids; the selected row starred. */
+  const shown = (v: MenuView) => [...v.el.children].map((e) => (e.classList.contains('slx-more-up') ? '▲' : e.classList.contains('slx-more-down') ? '▼'
+    : `${(e as HTMLElement).dataset.id}${e.getAttribute('aria-selected') === 'true' ? '*' : ''}`));
+  const items = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `r${i}`, label: `R${i}` }));
+
+  it('a cue takes a row of the budget, so rows and cues never pass it', () => {
+    const v = new MenuView(new Menu(items(20)), { pick: vi.fn() }, 5, { cuesInRows: true });
+    expect(shown(v)).toEqual(['r0*', 'r1', 'r2', 'r3', '▼']);
+    for (let i = 0; i < 19; i++) {
+      v.menu.move(1); v.render();
+      const s = shown(v);
+      expect(s.length, s.join(' ')).toBeLessThanOrEqual(5);
+      expect(s.some((x) => x.endsWith('*')), s.join(' ')).toBe(true);
+    }
+    expect(shown(v)).toEqual(['▲', 'r16', 'r17', 'r18', 'r19*']);
+    v.menu.move(1); v.render();                 // wraps to the top
+    expect(shown(v)).toEqual(['r0*', 'r1', 'r2', 'r3', '▼']);
+    v.menu.setCursor(10); v.render();
+    expect(shown(v)).toEqual(['▲', 'r8', 'r9', 'r10*', '▼']);
+  });
+
+  it('the wheel and the cues page by the same rows; a short list shows whole, no cues', () => {
+    const v = new MenuView(new Menu(items(20)), { pick: vi.fn() }, 5, { cuesInRows: true });
+    for (let i = 0; i < 30; i++) v.scrollBy(1);
+    const s = shown(v);
+    expect(s).toEqual(['▲', 'r16*', 'r17', 'r18', 'r19']);
+    for (let i = 0; i < 30; i++) v.scrollBy(-1);
+    expect(shown(v)[0]).toBe('r0');
+    expect(shown(v)).toHaveLength(5);
+    const short = new MenuView(new Menu(items(5)), { pick: vi.fn() }, 5, { cuesInRows: true });
+    expect(shown(short)).toEqual(['r0*', 'r1', 'r2', 'r3', 'r4']);
+  });
+
+  it('without the option a list keeps its old paging (rows apart from the cues)', () => {
+    const v = new MenuView(new Menu(items(20)), { pick: vi.fn() }, 5);
+    expect(shown(v)).toEqual(['r0*', 'r1', 'r2', 'r3', 'r4', '▼']);
+  });
+});

@@ -4707,6 +4707,35 @@ test.describe('starlantern', () => {
     const frames = await page.locator('.slx-ws-runes .slx-rune-cell').evaluateAll((els) => els.map((e) => [(e as HTMLElement).dataset.tier, e.querySelector('.slx-rframe')?.className ?? '']));
     for (const [tier, frame] of frames) expect(frame, tier).toBe(tier === 'common' ? '' : `slx-rframe slx-rframe-${tier}`);
     expect(new Set(frames.map(([t]) => t)).size).toBeGreaterThan(1);
+    // Review 2026-10-24: whatever cues show (▲, ▼ or both), every row and cue lies inside the panel's inner box, and the
+    // selected row stays on screen while the cursor walks the whole list, at 1280x720 and 844x390.
+    const inPanel = (panel: string, list: string) => page.evaluate(([p, l]) => {
+      const win = document.querySelector<HTMLElement>(p)!; const r = win.getBoundingClientRect(); const cs = getComputedStyle(win);
+      const s = r.height / win.offsetHeight;
+      const px = (v: string) => parseFloat(v) * s;
+      const inner = { l: r.left + px(cs.borderLeftWidth) + px(cs.paddingLeft), t: r.top + px(cs.borderTopWidth) + px(cs.paddingTop),
+        r: r.right - px(cs.borderRightWidth) - px(cs.paddingRight), b: r.bottom - px(cs.borderBottomWidth) - px(cs.paddingBottom) };
+      const lis = [...document.querySelectorAll<HTMLElement>(`${l} > li`)];
+      const out = lis.filter((e) => { const b = e.getBoundingClientRect(); return b.top < inner.t - 0.5 || b.bottom > inner.b + 0.5 || b.left < inner.l - 0.5 || b.right > inner.r + 0.5; })
+        .map((e) => e.textContent);
+      const sel = lis.find((e) => e.getAttribute('aria-selected') === 'true');
+      return { out, sel: sel?.dataset.id ?? null, up: lis.some((e) => e.classList.contains('slx-more-up')), down: lis.some((e) => e.classList.contains('slx-more-down')) };
+    }, [panel, list] as const);
+    for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
+      await fitTo(page, vw, vh);
+      const start = (await inPanel('.slx-ws-slots', '.slx-ws-runes .slx-menu')).sel;
+      let both = false;
+      for (let i = 0; i < 400; i++) {
+        const now = await inPanel('.slx-ws-slots', '.slx-ws-runes .slx-menu');
+        expect(now.out, `rows and cues inside the panel at ${vw}, step ${i}`).toEqual([]);
+        expect(now.sel, `the selected row on screen at ${vw}, step ${i}`).not.toBeNull();
+        both ||= now.up && now.down;
+        if (i > 0 && now.sel === start) break;
+        await w.key('ArrowDown');
+      }
+      expect(both, `the list scrolled with both cues at ${vw}`).toBe(true);
+    }
+    await fitTo(page, 1280, 720);
     // The bag count is never cut, even beside a four-character legendary (雙重詠唱（傳說）): the name gives way instead.
     // Walk the list down until a four-character legendary is on screen.
     const longRow = page.locator('.slx-ws-runes [role=option]').filter({ has: page.locator('.slx-rune-cell[data-tier=legendary]') })

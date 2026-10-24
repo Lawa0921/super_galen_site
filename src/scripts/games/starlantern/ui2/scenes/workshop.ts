@@ -25,9 +25,13 @@ type Focus = 'skills' | 'slots' | 'runes';
 
 /** How far one R/F (or one click on the card's ▲/▼) scrolls the card: about three lines. */
 const CARD_STEP = 36;
-/** Rows of the skill list and the rune list on screen; longer lists scroll with the cursor. */
-const SKILL_ROWS = 13;
-const RUNE_ROWS = 12;
+/**
+ * Rows of the skill list and the rune list on screen, their ▲/▼ cues included (MenuView cuesInRows); longer lists scroll
+ * with the cursor. 11 rows of 20px under the head fill the panel's 254px (review 2026-10-24: 12 and 13 ran the last row
+ * and ▼ onto the frame).
+ */
+const SKILL_ROWS = 11;
+const RUNE_ROWS = 11;
 /**
  * Rows the 「缺：…」 line over the rune list may take (plan 8h): it wraps in the narrow column. With a followed build's line
  * under the title, both lists lose one row more.
@@ -450,7 +454,7 @@ export class WorkshopScene implements Scene {
           this.ctx.sfx.cursor();
           this.render();
         },
-      }, this.followed ? SKILL_ROWS - 1 : SKILL_ROWS);
+      }, this.followed ? SKILL_ROWS - 1 : SKILL_ROWS, { cuesInRows: true });   // ▲/▼ inside the budget (review)
       this.skillsWin.replaceChildren(el('div', { class: 'slx-area-head', text: W.skillsHead }), this.skillView.el);
     } else {
       this.skillView.menu.setCursor(Math.max(0, skills.indexOf(this.skill)));
@@ -563,7 +567,7 @@ export class WorkshopScene implements Scene {
           this.ctx.sfx.cursor();
           this.renderCard();
         },
-      }, RUNE_ROWS - (this.followed ? 1 : 0) - (lack ? LACK_ROWS : 0)) : null;
+      }, RUNE_ROWS - (this.followed ? 1 : 0) - (lack ? LACK_ROWS : 0), { cuesInRows: true }) : null;   // ▲/▼ inside the budget (review)
       // What pressed a row: read by `pick` above (a click event may carry no pointerType: Safari).
       this.runeView?.el.addEventListener('pointerdown', (e) => { this.pressedBy = e.pointerType; }, true);
       this.runeView?.el.addEventListener('click', (e) => { this.pressedBy = (e as PointerEvent).pointerType || this.pressedBy; }, true);

@@ -54,8 +54,13 @@ export class MenuView {
   /** Wheel travel gathered toward the next row, so a trackpad's many small deltas move one row per notch-sized sum. */
   private wheelAcc = 0;
 
-  /** `rows` limits how many options are on screen; the window scrolls to keep the cursor visible. */
-  constructor(readonly menu: Menu, private on: { pick(item: MenuItem): void; moved?(): void; cancel?(): void }, private rows = Infinity) {
+  /**
+   * `rows` limits how many options are on screen; the window scrolls to keep the cursor visible. With `cuesInRows` the
+   * ▲ and ▼ cues each take one of those rows (a cue is no taller than a row), so a window sized for `rows` rows holds the
+   * rows and their cues at any scroll (the skill workshop, review 2026-10-24); without it the cues come on top of `rows`.
+   */
+  constructor(readonly menu: Menu, private on: { pick(item: MenuItem): void; moved?(): void; cancel?(): void }, private rows = Infinity,
+    private opts: { cuesInRows?: boolean } = {}) {
     this.list = el('ul', { class: 'slx-menu', attrs: { role: 'listbox' } });
     this.el = this.list;
     // Mouse and touch reach every row of a long list: the wheel scrolls it, and the ▲/▼ markers are clickable.
@@ -75,21 +80,34 @@ export class MenuView {
     this.render();
   }
 
+  /** How many options show from `top`: `rows`, less a row for each cue shown when the cues take rows. */
+  private span(top: number): number {
+    const n = this.menu.items.length;
+    if (!this.opts.cuesInRows || n <= this.rows) return Math.min(this.rows, n - top);
+    const k = this.rows - (top > 0 ? 1 : 0);
+    return top + k >= n ? n - top : k - 1;
+  }
+
+  /** The last top the window can scroll to. */
+  private maxTop(): number {
+    const n = this.menu.items.length;
+    if (n <= this.rows) return 0;
+    return this.opts.cuesInRows ? n - (this.rows - 1) : n - this.rows;
+  }
+
   /** Whether the visible window can move by `d` rows. */
   private canScroll(d: 1 | -1): boolean {
-    const n = this.menu.items.length;
-    return this.rows < n && (d < 0 ? this.top > 0 : this.top < n - this.rows);
+    return this.rows < this.menu.items.length && (d < 0 ? this.top > 0 : this.top < this.maxTop());
   }
 
   /** Move the visible window by `d` rows; the cursor follows into view when it would fall outside. */
   scrollBy(d: 1 | -1): void {
-    const n = this.menu.items.length;
-    const top = Math.max(0, Math.min(n - Math.min(n, this.rows), this.top + d));
+    const top = Math.max(0, Math.min(this.maxTop(), this.top + d));
     if (top === this.top) return;
     this.top = top;
     const c = this.menu.cursor;
-    if (c < top || c >= top + this.rows) {
-      const visible = [...Array(Math.min(this.rows, n - top)).keys()].map((k) => top + k);
+    if (c < top || c >= top + this.span(top)) {
+      const visible = [...Array(this.span(top)).keys()].map((k) => top + k);
       const next = (c < top ? visible : visible.reverse()).find((i) => !this.menu.items[i].disabled);
       if (next !== undefined && this.menu.setCursor(next)) this.on.moved?.();
     }
@@ -100,9 +118,10 @@ export class MenuView {
     const n = this.menu.items.length;
     const c = Math.max(0, this.menu.cursor);
     if (c < this.top) this.top = c;
-    if (c >= this.top + this.rows) this.top = c - this.rows + 1;
-    this.top = Math.max(0, Math.min(this.top, n - Math.min(n, this.rows)));
-    const end = Math.min(n, this.top + this.rows);
+    // The first top that shows the cursor (with cues in the rows a lower top shows fewer rows, so step down to it).
+    while (c >= this.top + this.span(this.top) && this.top < this.maxTop()) this.top++;
+    this.top = Math.max(0, Math.min(this.top, this.maxTop()));
+    const end = this.top + this.span(this.top);
     const marker = (cls: string, text: string, d: 1 | -1) => {
       const li = el('li', { class: `slx-more ${cls}`, text, attrs: { 'aria-hidden': 'true' } });
       li.addEventListener('click', () => { if (!this.locked()) this.scrollBy(d); });
