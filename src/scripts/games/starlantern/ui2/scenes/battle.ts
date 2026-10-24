@@ -19,6 +19,7 @@ import { playCutIn } from '../../ui/cutin';
 import { battleLines, fragmentLines, levelUpLines } from '../battleText';
 import { fragmentItem } from '../../engine/story/fragments';
 import { gearIconUrl } from '../gearArt';
+import { runeMark } from '../runeArt';
 import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
 import { RUNE_SLOT_LEVELS, RUNE_STACK } from '../../data/runes';
 import { autoLine, battleLine, shownDef, withoutPowerClause } from '../skillCard';
@@ -303,11 +304,11 @@ export class BattleScene implements Scene {
         const cost = castCost(this.state, actor, sk.id);
         // A skill that would spend an empty resource (no coins, no barrier) is greyed, its reason in place of the TP.
         const why = whyNot(this.state, actor, sk);
-        // ◆ for each rune that works on it, and its final numbers before its words (plan 8g ruling 12).
-        const working = runeView(actor, sk.id, actor.runes?.[sk.id] ?? [])?.states.filter((x) => x.miss === null).length ?? 0;
+        // Each rune that works on it as its own 14px icon (plan 8g ruling 12; art step 9), and its final numbers before its words.
+        const working = runeView(actor, sk.id, actor.runes?.[sk.id] ?? [])?.states.filter((x) => x.miss === null) ?? [];
         return {
           id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: this.noteOf(sk, actor),
-          ...(working ? { badge: T.cmd.runeMark.repeat(working) } : {}),
+          ...(working.length ? { marks: working.map((x) => runeMark(x.ref, 14)) } : {}),
         };
       });
   }

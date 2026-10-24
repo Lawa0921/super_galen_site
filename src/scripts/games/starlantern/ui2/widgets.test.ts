@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Menu } from './menu';
+import { runeMark } from './runeArt';
 import { Dialogue, MenuView, QtyView, backControl, confirmBox, richNodes, richText, type Rich } from './widgets';
 
 const mk = () => new Menu([{ id: 'a', label: '冒險者公會' }, { id: 'b', label: '道具店', disabled: true }, { id: 'c', label: '旅館' }]);
@@ -484,10 +485,12 @@ describe('Dialogue faces', () => {
 
 describe('MenuView badges (plan 8g Task 7)', () => {
   it('a badge follows the label', () => {
-    const v = new MenuView(new Menu([{ id: 'a', label: '火之星彈', badge: '◆◆', right: '4 TP' }, { id: 'b', label: '冰之星彈' }]), { pick: vi.fn() });
+    const marks = [runeMark({ id: 'spread', tier: 'magic' }, 14), runeMark({ id: 'flame', tier: 'rare' }, 14)];
+    const v = new MenuView(new Menu([{ id: 'a', label: '火之星彈', marks, right: '4 TP' }, { id: 'b', label: '冰之星彈' }]), { pick: vi.fn() });
     const [a, b] = [...v.el.querySelectorAll('[role=option]')];
     const badge = a.querySelector('.slx-badge')!;
-    expect(badge.textContent).toBe('◆◆');
+    expect([...badge.querySelectorAll('img')].map((e) => e.getAttribute('src'))).toEqual(marks.map((m) => m.src));
+    expect(badge.textContent).toBe('');
     expect(badge.previousElementSibling!.classList.contains('slx-label')).toBe(true);
     expect(badge.nextElementSibling!.classList.contains('slx-right')).toBe(true);
     expect(b.querySelector('.slx-badge')).toBeNull();

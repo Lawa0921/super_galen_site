@@ -1417,7 +1417,10 @@ describe('BattleScene: the skill menu in numbers (plan 8g Task 7)', () => {
       c.runes = runes;
     });
     const fire = w.row('fire-star')!;
-    expect(fire.querySelector('.slx-badge')!.textContent).toBe(T.cmd.runeMark);
+    // Only the working rune, as its own icon named with its tier (art step 9).
+    const badge = fire.querySelector('.slx-badge')!;
+    expect([...badge.querySelectorAll('img')].map((e) => [e.getAttribute('data-mark'), e.getAttribute('alt')])).toEqual([['on:spread', T.rune.label('spread', 'magic')]]);
+    expect(badge.textContent).toBe('');
     expect(w.row('ice-star')!.querySelector('.slx-badge')).toBeNull();
     const c = w.game.battle!.party.find((x) => x.key === 'noel')!;
     const def = skillFor(c, 'fire-star')!;

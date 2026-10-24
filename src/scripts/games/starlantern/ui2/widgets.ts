@@ -1,6 +1,7 @@
 import { el } from '../ui/dom';
 import type { UiAction } from './input';
 import { Menu, type MenuItem } from './menu';
+import { marksEl, runeCell } from './runeArt';
 
 /**
  * A line with coloured parts: plain text, or `{ text, cls }` drawn in a span of that class (a rarity colour, say). A part
@@ -113,10 +114,12 @@ export class MenuView {
         role: 'option', 'aria-selected': String(i === this.menu.cursor), 'aria-disabled': String(!!item.disabled), 'data-id': item.id,
       } }, [
         ...(item.icon ? [el('img', { class: item.iconCls ? `slx-ico ${item.iconCls}` : 'slx-ico', attrs: { src: item.icon, alt: '' } })] : []),
+        ...(item.rune ? [runeCell(item.rune)] : []),
         el('span', { class: item.cls ? `slx-label ${item.cls}` : 'slx-label', text: item.label }),
         ...(item.tail ? [el('span', { class: item.cls ? `slx-label-tail ${item.cls}` : 'slx-label-tail', text: item.tail })] : []),
-        ...(item.badge ? [el('span', { class: 'slx-badge', text: item.badge })] : []),
-        ...(item.right !== undefined ? [el('span', { class: item.rightClass ? `slx-right ${item.rightClass}` : 'slx-right', text: item.right })] : []),
+        ...(item.marks?.length ? [marksEl(item.marks, 14, 'slx-badge slx-rune-marks')] : []),
+        ...(item.right !== undefined ? [el('span', { class: item.rightClass ? `slx-right ${item.rightClass}` : 'slx-right', text: item.right })]
+          : item.rightMarks?.length ? [marksEl(item.rightMarks, 14, 'slx-right slx-rune-marks')] : []),
       ]);
       // pointermove, not pointerenter: a window that opens under a resting mouse must not steal the keyboard cursor.
       li.addEventListener('pointermove', () => {

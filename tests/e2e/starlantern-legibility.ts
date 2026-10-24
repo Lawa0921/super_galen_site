@@ -431,6 +431,28 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       await expect(page.locator('.slx-ws-runes [role=option]').first()).toBeVisible();
     },
   },
+  {
+    // Art step 9: runes socketed on 火之星彈, one working (擴散) and one doing nothing there (重擊 needs a skill of more than
+    // one hit): the skill list's slot icons, and the slots with each rune's cell in its tier frame.
+    name: 'workshop-socketed', visit: async (page, w) => {
+      await page.evaluate(() => {
+        const g = (window as unknown as Dbg).__starlanternDebug.game;
+        g.state.party.roster.noel.sockets = { 'fire-star': [{ id: 'spread', tier: 'rare' }, { id: 'heavy', tier: 'common' }] };
+      });
+      await go(page, 'workshop', 'noel:fire-star');
+      await expect(page.locator('.slx-ws-skills [data-id=fire-star] .slx-right [data-mark]')).toHaveCount(2);
+      await w.key('Enter');                                   // her slots
+      await expect(page.locator('.slx-ws-slot .slx-rune-cell')).toHaveCount(2);
+    },
+  },
+  {
+    // Art step 9: the skills page's slot icons after a skill's name (a working rune, one greyed).
+    name: 'status-skills-runed', visit: async (page) => {
+      await go(page, 'status', 'tab:skills:noel');
+      await expect(page.locator('.slx-skill[data-skill=fire-star] .slx-skill-slots [data-mark]')).toHaveCount(2);
+      await expect(page.locator('.slx-skill[data-skill=fire-star] .slx-skill-slots .slx-rune-off')).toHaveCount(1);
+    },
+  },
   { name: 'builds', visit: async (page) => { await go(page, 'builds'); await expect(page.locator('.slx-builds')).toBeVisible(); } },
   // The act 1 clear card: `go` shows it without changing the game.
   { name: 'clear', visit: async (page) => { await go(page, 'clear'); await expect(page.locator('.slx-clear [role=option]').first()).toBeVisible(); } },

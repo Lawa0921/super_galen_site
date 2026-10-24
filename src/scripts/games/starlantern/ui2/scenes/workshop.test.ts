@@ -69,8 +69,8 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     expect(w.name()).toContain(CHARACTERS.noel.name);
     expect(w.skillCur()).toBe('ice-star');
     expect(w.focus()).toBe('skills');
-    const dots = w.skills().find((r) => r.dataset.id === 'ice-star')!.querySelector('.slx-right')!.textContent!;
-    expect([...dots].length).toBe(socketCount(20));
+    const dots = w.skills().find((r) => r.dataset.id === 'ice-star')!.querySelectorAll('.slx-right [data-mark=empty]');
+    expect(dots.length).toBe(socketCount(20));
     // No argument: the hero, on his first skill that takes runes.
     const plain = setup(() => undefined);
     expect(plain.name()).toContain(CHARACTERS.hero.name);
@@ -104,7 +104,7 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     expect(w.foot()).toContain(W.socketed(label(R('spread')), SKILLS['fire-star'].name));
     expect(w.focus()).toBe('slots');
     expect(w.slots()[0].getAttribute('aria-selected')).toBe('true');
-    expect(w.skills()[0].querySelector('.slx-right')!.textContent).toBe('◆○');
+    expect([...w.skills()[0].querySelector('.slx-right')!.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['on:spread', 'empty']);
     // Saved at once in town.
     expect(JSON.parse(w.storage.getItem(SAVE_KEY)!).party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread')] });
   });
@@ -182,7 +182,7 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     }, 'noel:flame-wave');
     const m = w.game.state.party.roster.noel;
     const why = runeWhy(runeFits(skillFor(fromMember(m, 0), 'flame-wave')!, 'spread', [])!);
-    expect(w.skills().find((r) => r.dataset.id === 'flame-wave')!.querySelector('.slx-right')!.textContent).toBe('◇○');
+    expect([...w.skills().find((r) => r.dataset.id === 'flame-wave')!.querySelector('.slx-right')!.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['off:spread', 'empty']);
     expect(w.panel()).toContain(label(R('spread')));
     expect(w.panel()).toContain(W.off(why));
     expect(m.sockets).toEqual({ 'flame-wave': [R('spread')] });

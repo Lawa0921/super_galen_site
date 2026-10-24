@@ -13,7 +13,8 @@ import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import type { GameState } from '../../engine/state';
-import { cardOf, compareCards, failWhy, previewOf, reserveLine, runeChoices, slotDots, slotStates, type Card, type RuneAction, type RuneChoice } from '../skillCard';
+import { cardOf, compareCards, failWhy, previewOf, reserveLine, runeChoices, slotIcons, slotStates, type Card, type RuneAction, type RuneChoice } from '../skillCard';
+import { runeCell, slotCell, type Mark } from '../runeArt';
 import { textCps } from '../settings';
 import { Dialogue, MenuView, backControl, win } from '../widgets';
 import { cueFrame, updateCues } from './statusTabs';
@@ -414,9 +415,9 @@ export class WorkshopScene implements Scene {
     return [...(lack.length ? [W.lacking(lack)] : []), ...(ready.length ? [W.ready(ready)] : []), ...refused].join('　');
   }
 
-  /** ◆ a working rune, ◇ a rune that does nothing, ○ an empty slot; slots not open yet are not drawn (skillCard slotDots). */
-  private dots(skill: string): string {
-    return slotDots(this.member, skill);
+  /** A skill's open slots as icons (skillCard slotIcons): a rune's own icon, greyed when it does nothing; an empty slot. */
+  private dots(skill: string): Mark[] {
+    return slotIcons(this.member, skill);
   }
 
   private renderSkills(): void {
@@ -428,8 +429,8 @@ export class WorkshopScene implements Scene {
       return;
     }
     const c = fromMember(this.member, 0);
-    const items: MenuItem[] = skills.map((k) => ({ id: k, label: skillFor(c, k)?.name ?? k, right: this.dots(k) }));
-    const key = `${this.id}|${items.map((it) => `${it.id}:${it.label}:${it.right}`).join(',')}`;
+    const items: MenuItem[] = skills.map((k) => ({ id: k, label: skillFor(c, k)?.name ?? k, rightMarks: this.dots(k) }));
+    const key = `${this.id}|${items.map((it) => `${it.id}:${it.label}:${(it.rightMarks ?? []).map((x) => x.mark).join('+')}`).join(',')}`;
     if (!this.skillView || key !== this.skillKey) {
       this.skillKey = key;
       this.skillView = new MenuView(new Menu(items, Math.max(0, skills.indexOf(this.skill))), {
@@ -472,7 +473,10 @@ export class WorkshopScene implements Scene {
         attrs: { role: 'option', 'aria-selected': String(sel), 'aria-disabled': String(locked), 'data-id': `slot:${i}` },
       }, [
         el('span', { class: 'slx-label', text: W.slot(i + 1) }),
-        el('span', { class: `slx-right${s?.ref ? ` slx-rarity-${s.ref.tier}` : ''}`, text: right }),
+        // The rune's cell (its icon in its tier frame, greyed when it does nothing there) or the empty slot's, then its words.
+        el('span', { class: `slx-right${s?.ref ? ` slx-rarity-${s.ref.tier}` : ''}` }, [
+          ...(locked ? [] : [s?.ref ? runeCell(s.ref, s.state === 'off') : slotCell('empty')]), right,
+        ]),
         ...(s?.state === 'off' && s.why ? [el('span', { class: 'slx-ws-sub', text: W.off(s.why) })] : []),
       ]);
       if (!locked) {
@@ -509,6 +513,7 @@ export class WorkshopScene implements Scene {
       // The name may be cut; its tier stays whole beside it (final review).
       label: RUNES[c.source.ref.id].name,
       tail: T.rune.tierTag(c.source.ref.tier),
+      rune: c.source.ref,
       cls: `slx-rarity-${c.source.ref.tier}${c.why !== null ? ' slx-ws-unfit' : ''}`,
       // The bag's count; for a rune in a slot, who holds it, or on her own other skill, which skill (two 常駐 rows apart).
       right: c.source.kind === 'bag' ? T.rune.bag(c.source.count)

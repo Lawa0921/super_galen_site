@@ -1530,7 +1530,8 @@ test.describe('starlantern', () => {
     await w.choose('.slx-bcmd', '技能');
     const item = page.locator('.slx-bsub [role=option]').filter({ hasText: '設置砲台・雙管・雙砲台' });
     await expect(item).toHaveCount(1);
-    await expect(item.locator('.slx-badge')).toHaveText('◆◆');
+    await expect(item.locator('.slx-badge img.slx-rune-ico-14')).toHaveCount(2);   // each working rune's own icon (art step 9)
+    await expect(item.locator('.slx-badge')).toHaveText('');
     await item.hover();                                     // its note: the final numbers, then its words
     await expect(page.locator('.slx-bnote')).toHaveText(/^自身・砲台 威力 \d+　架一座砲台/);   // a device: its target and its power, as the card says
     for (const [vw, vh, name] of [[1280, 720, 'bobby-battle-1280'], [844, 390, 'bobby-battle-844'], [390, 844, 'bobby-battle-390']] as const) {
@@ -2347,7 +2348,9 @@ test.describe('starlantern', () => {
     const answered = assetResponses(page);
     const w = await setup(page, 7);
     const manifest = await page.evaluate(async () => (await (await fetch('/assets/games/starlantern/manifest.json')).json()).urls as string[]);
-    expect(manifest.length).toBe(434);   // 410 + the companion talking faces, wave 1 (18; user approval 2026-10-23) + wave 2 (6, 2026-10-24)
+    // 410 + the companion talking faces, wave 1 (18; user approval 2026-10-23) + wave 2 (6, 2026-10-24)
+    // + the rune icons (art step 9: 34 subjects at 14 and 16; user approval 2026-10-24 「可以」)
+    expect(manifest.length).toBe(502);
     // Every file the manifest lists answers 200.
     for (const u of manifest) expect((await page.request.get(u)).status(), u).toBe(200);
     // Walk the screens that show the new art (equipment, shop, forge, portal codex) with every sample piece in the bag.
@@ -4325,7 +4328,9 @@ test.describe('starlantern', () => {
       await fitTo(page, 1280, 720);
       await w.key('Enter');                                   // socket it
       await expect(page.locator('.slx-ws-foot')).toContainText('火之星彈裝上了擴散（魔法）');
-      await expect(page.locator('.slx-ws-skills [data-id=fire-star] .slx-right')).toHaveText('◆○');
+      await expect(page.locator('.slx-ws-skills [data-id=fire-star] .slx-right [data-mark]')).toHaveCount(2);
+      await expect(page.locator('.slx-ws-skills [data-id=fire-star] .slx-right [data-mark="on:spread"]')).toHaveAttribute('alt', '擴散（魔法）');
+      await expect(page.locator('.slx-ws-skills [data-id=fire-star] .slx-right [data-mark=empty]')).toHaveCount(1);
       await w.key('Escape'); await w.key('Escape');           // the slots, the skills, the guild
       await expect(page.locator('.slx-guild')).toBeVisible();
       await expect(page.locator('.slx-talk')).toBeHidden();   // no new greeting
@@ -4500,7 +4505,9 @@ test.describe('starlantern', () => {
       await flipTo(page, '諾艾兒');
       await page.locator('.slx-tab[data-tab=skills]').click();
       const fire = page.locator('.slx-skill[data-skill=fire-star]');
-      await expect(fire.locator('.slx-skill-slots')).toHaveText('◆○');
+      await expect(fire.locator('.slx-skill-slots [data-mark]')).toHaveCount(2);
+      await expect(fire.locator('.slx-skill-slots [data-mark="on:spread"]')).toBeVisible();
+      await expect(fire.locator('.slx-skill-slots [data-mark=empty]')).toBeVisible();
       await expect(fire.locator('.slx-skill-rune')).toContainText('擴散（魔法）：');
       for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
         await fitTo(page, vw, vh);
@@ -4617,7 +4624,7 @@ test.describe('starlantern', () => {
       }
       await w.choose('.slx-bcmd', '技能');
       const item = page.locator('.slx-bsub [data-id=jackpot]');
-      await expect(item.locator('.slx-badge')).toHaveText('◆◆◆');
+      await expect(item.locator('.slx-badge img.slx-rune-ico-14')).toHaveCount(3);
       await expect(item.locator('.slx-right')).toHaveText('沒有銅板');
       for (const [vw, vh] of [[1280, 720], [390, 844]] as const) {
         await fitTo(page, vw, vh);
@@ -4629,6 +4636,89 @@ test.describe('starlantern', () => {
       }
       expect(w.errors).toEqual([]);
     });
+  });
+
+  test('rune icons sit in the skill rows and the rune lists at their own size, named, the rows unchanged (art step 9)', async ({ page }) => {
+    const missing: string[] = [];
+    page.on('response', (r) => { if (r.status() === 404) missing.push(r.url()); });
+    await fitTo(page, 1280, 720);
+    const w = await startSweepGame(page, 7);
+    await page.evaluate(() => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      g.state.runeTutorialSeen = true;
+      // 擴散 works on 火之星彈; 重擊 does nothing there (it needs a skill of more than one hit).
+      g.state.party.roster.noel.sockets = { 'fire-star': [{ id: 'spread', tier: 'rare' }, { id: 'heavy', tier: 'common' }] };
+    });
+    /** Every rune icon on screen: loaded, drawn at its own size (never scaled), and named. */
+    const icons = async (scope: string, size: 14 | 16) => {
+      // A fresh image may still be on its way: wait for each to load or fail (a failure shows as naturalWidth 0 below).
+      await page.locator(`${scope} img.slx-rune-ico-${size}`).evaluateAll((els) => Promise.all(els.map((e) => {
+        const img = e as HTMLImageElement;
+        return img.complete ? null : new Promise((r) => { img.addEventListener('load', r, { once: true }); img.addEventListener('error', r, { once: true }); });
+      })));
+      const got = await page.locator(`${scope} img.slx-rune-ico-${size}`).evaluateAll((els) => els.map((e) => {
+        const img = e as HTMLImageElement; const r = img.getBoundingClientRect();
+        return { nw: img.naturalWidth, nh: img.naturalHeight, w: r.width, h: r.height, alt: img.alt, src: img.getAttribute('src') };
+      }));
+      expect(got.length, scope).toBeGreaterThan(0);
+      const scale = (await stageScale(page)).s;
+      for (const g of got) {
+        expect([g.nw, g.nh], `${g.src} loaded at its own size`).toEqual([size, size]);
+        expect(Math.abs(g.w - size * scale), `${g.src} drawn at ${size}px`).toBeLessThan(0.5);
+        expect(g.alt, `${g.src} has words`).not.toBe('');
+      }
+      return got;
+    };
+    const shots = async (name: string) => {
+      for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
+        await fitTo(page, vw, vh);
+        await page.waitForTimeout(150);
+        expect(await legibility(page, { requireReady: true }), `${name} ${vw}`).toEqual([]);
+        if (process.env.SL_SHOTS) await page.screenshot({ path: `${process.env.SL_SHOTS}/${name}-${vw}x${vh}.png` });
+      }
+      await fitTo(page, 1280, 720);
+    };
+
+    // The workshop: the skill list's slot icons (14px), the slots and the rune list as 20 x 20 cells (16px) in tier frames.
+    await go(page, 'workshop', 'noel:fire-star');
+    const marks = page.locator('.slx-ws-skills [data-id=fire-star] .slx-right [data-mark]');
+    await expect(marks).toHaveCount(2);
+    expect(await marks.evaluateAll((els) => els.map((e) => [e.getAttribute('data-mark'), e.getAttribute('alt'), e.classList.contains('slx-rune-off')])))
+      .toEqual([['on:spread', '擴散（稀有）', false], ['off:heavy', '重擊（普通）（未生效）', true]]);
+    await icons('.slx-ws-skills', 14);
+    await w.key('Enter');                                     // her slots
+    await expect(page.locator('.slx-ws-slot .slx-rune-cell')).toHaveCount(2);
+    await expect(page.locator('.slx-ws-slot .slx-rune-cell .slx-rframe-rare')).toHaveCount(1);
+    await w.key('Escape');
+    // Slot 2 is taken by 重擊; slot 1's list holds every rune in the bag.
+    await w.key('Enter'); await w.key('Enter');
+    await expect(page.locator('.slx-ws-runes [role=option] .slx-rune-cell').first()).toBeVisible();
+    await icons('.slx-ws-runes', 16);
+    // A row with a rune cell is as tall as the plain 拆下 row: the cell fills the row's padding, never the line.
+    const heights = await page.locator('.slx-ws-runes [role=option]').evaluateAll((els) => els.map((e) => [e.querySelector('.slx-rune-cell') ? 'cell' : 'text', e.getBoundingClientRect().height]));
+    const text = heights.filter(([k]) => k === 'text').map(([, h]) => h as number), cell = heights.filter(([k]) => k === 'cell').map(([, h]) => h as number);
+    expect(text.length && cell.length).toBeTruthy();
+    for (const h of cell) expect(Math.abs(h - text[0]), 'a rune row as tall as a text row').toBeLessThan(0.5);
+    // Each cell on screen wears its tier's published frame (common none, as gear); the list shows more than one tier.
+    const frames = await page.locator('.slx-ws-runes .slx-rune-cell').evaluateAll((els) => els.map((e) => [(e as HTMLElement).dataset.tier, e.querySelector('.slx-rframe')?.className ?? '']));
+    for (const [tier, frame] of frames) expect(frame, tier).toBe(tier === 'common' ? '' : `slx-rframe slx-rframe-${tier}`);
+    expect(new Set(frames.map(([t]) => t)).size).toBeGreaterThan(1);
+    await shots('workshop-runes');
+
+    // The skills page: 14px slot icons after 火之星彈's name; the head line keeps its own leading.
+    await go(page, 'status', 'tab:skills:noel');
+    const head = page.locator('.slx-skill[data-skill=fire-star] .slx-skill-head');
+    await expect(head.locator('.slx-skill-slots [data-mark]')).toHaveCount(2);
+    await icons('.slx-skill[data-skill=fire-star] .slx-skill-slots', 14);
+    const lh = await head.evaluate((e) => {
+      const cs = getComputedStyle(e); const name = e.querySelector('.slx-skill-name')!;
+      return { lh: parseFloat(cs.lineHeight), name: name.getBoundingClientRect().height, head: e.getBoundingClientRect().height, slots: e.querySelector('.slx-skill-slots')!.getBoundingClientRect().height };
+    });
+    expect(lh.lh).toBeGreaterThanOrEqual(14);
+    expect(lh.slots, 'the slot icons no taller than the line').toBeLessThanOrEqual(lh.name + 0.5);
+    await shots('skill-row-slots');
+    expect(missing.filter((u) => u.includes('/icon/rune-')), 'every rune icon is published').toEqual([]);
+    expect(w.errors).toEqual([]);
   });
 
   test.describe('the suggested builds (plan 8h)', () => {

@@ -1,11 +1,18 @@
+import type { RuneRef } from '../data/runes';
+import type { Mark } from './runeArt';
+
 /**
  * `cls` is added to the label (a rarity colour, say); `rightClass` to the right-hand text (`slx-lack`, say); `iconCls` to
  * the icon (`slx-gear-ico` for gear art, which keeps its own size).
  */
 export interface MenuItem {
   id: string; label: string; disabled?: boolean; note?: string; icon?: string; iconCls?: string; right?: string; rightClass?: string; cls?: string;
-  /** A short mark right after the label (plan 8g Task 7: ◆ for each working rune on a skill). */
-  badge?: string;
+  /** Icons right after the label at 14px (plan 8g Task 7, art step 9: each working rune on a skill in the battle menu). */
+  marks?: Mark[];
+  /** Icons on the right at 14px, in place of `right` (art step 9: a skill's slots in the workshop's skill list). */
+  rightMarks?: Mark[];
+  /** A rune row (art step 9): the rune's 20 x 20 cell (its 16px icon in its tier frame) before the label. */
+  rune?: RuneRef;
   /** The label's last part, never cut when the label is (a rune's 「（魔法）」, plan 8g final review); styled as the label. */
   tail?: string;
 }

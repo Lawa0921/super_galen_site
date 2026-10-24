@@ -14,7 +14,7 @@ import { runeWhy, runeFits } from '../engine/runes';
 import { newGame, type GameState } from '../engine/state';
 import type { CharacterId, Member } from '../engine/types';
 import {
-  battleLine, cardOf, compareCards, previewOf, reserveLine, runeChoices, slotDots, slotStates, withoutPowerClause, type RuneAction,
+  battleLine, cardOf, compareCards, previewOf, reserveLine, runeChoices, slotIcons, slotStates, withoutPowerClause, type RuneAction,
 } from './skillCard';
 import { loadGame, saveGame } from '../engine/save';
 import { memoryStorage } from '../engine/testing';
@@ -370,7 +370,7 @@ describe('the skill card (plan 8g Task 3)', () => {
     const back = (loaded as Extract<typeof loaded, { status: 'ok' }>).state;
     for (const [id, skill] of at) {
       expect(member(back, id).sockets, `${id} ${skill}`).toEqual({ [skill]: [R('on-struck')] });
-      expect(slotDots(member(back, id), skill), `${id} ${skill}`).toMatch(/^◇/);
+      expect(slotIcons(member(back, id), skill)[0].mark, `${id} ${skill}`).toBe('off:on-struck');
       expect(slotStates(member(back, id), skill)[0]).toEqual({ state: 'off', ref: R('on-struck'), why: T.rune.why.plain });
     }
   });
