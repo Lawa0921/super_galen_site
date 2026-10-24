@@ -127,6 +127,7 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
     const cols = new Map<number, Column>();
     const colAt = (cx: number): Column => { let c = cols.get(cx); if (!c) cols.set(cx, c = fillCol(src, cx)); return c; };
     const ss = seedInt('skin', 'g2-shaft');
+    let sampled = 0, checked = 0;
     for (const r of home.regions) {
       if (r.variant === VARIANT.BEACH) continue;
       const sx = shaftX(ss, r);
@@ -134,14 +135,18 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
         const I = src.profile.info(x);
         // 入口欄與主坑道附近會挖到地表
         if (I.kind !== COL_LAND || src.isEntrance(x) || Math.abs(x - sx) <= 20) continue;
+        sampled++;
         // 藍圖（湖 / 遺跡…）外框蓋到表層的欄由結構決定材質
         if (src.blueprints.overlapping(x, x + 1).some((b) => b.y < I.surface + want[r.biome].length && b.y + b.h > I.surface)) continue;
         const col = colAt(x >> 5);
         for (let d = 0; d < want[r.biome].length; d++) expect(col.fg[li(x, I.surface + d)], `biome ${r.biome} x ${x} d ${d}`).toBe(want[r.biome][d]);
         seen.add(r.biome);
+        checked++;
       }
     }
     expect(seen.size).toBe(4);
+    // 跳過藍圖欄不能吃掉大部分取樣：至少 80% 的取樣欄真的檢查了材質
+    expect(checked, `${checked} / ${sampled}`).toBeGreaterThanOrEqual(Math.ceil(sampled * 0.8));
     let isl = 0;
     for (let x = src.layout.landmass(1, 1).x0; x < src.layout.landmass(1, 1).x1; x++) {
       const I = src.profile.info(x);

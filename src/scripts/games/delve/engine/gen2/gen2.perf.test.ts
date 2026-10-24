@@ -8,7 +8,8 @@ import { fillCol, range } from './testUtil';
 const F: CentralFrame = { width: 4200, height: 1200, edgeL: 330, edgeR: 345, cavernY: 560, moltenY: 1010 };
 
 describe('gen2 效能', () => {
-  it('每欄 fill：中位數 ≤ 3 × v1（負載容忍）、p95 ≤ 40 ms（最壞值只記錄；單一最慢樣本會被負載抖動拉高；一欄 38 個 chunk → 每 chunk 遠低於 8 ms）', () => {
+  // retry 2（控制者裁決）：全套平行跑時負載會把 p95 拉到上百 ms（單獨跑約 3–4 ms）→ 失敗就重量一次；門檻不放寬，每次嘗試都印數字
+  it('每欄 fill：中位數 ≤ 3 × v1（負載容忍）、p95 ≤ 40 ms（最壞值只記錄；單一最慢樣本會被負載抖動拉高；一欄 38 個 chunk → 每 chunk 遠低於 8 ms）', { retry: 2 }, () => {
     const v1 = new OuterGen('perf', F), g2 = new Gen2Source('perf');
     const time = (src: ColumnSource, cxs: number[]): number[] => {
       for (const cx of [...cxs.slice(0, 10), ...cxs.slice(Math.floor(cxs.length / 2), Math.floor(cxs.length / 2) + 10)]) fillCol(src, cx); // 暖機（前後兩段範圍各 10 欄）

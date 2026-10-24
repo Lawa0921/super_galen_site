@@ -22,6 +22,15 @@ describe('structId', () => {
     expect(isGen2SiteRegionId(a)).toBe(true); expect(isGen2RegionId(a)).toBe(false); expect(isGen2SiteRegionId(gen2RegionId(1, 2, 0, 0))).toBe(false);
     expect(() => gen2SiteRegionId(1, 64)).toThrow(RangeError);
   });
+  it('M1 溢位的位置：地區 r 的 slot 21 結構不撞地區 r + 1 的任何 id（舊的 sub = slot × 3 + layer + 1 在這裡撞）', () => {
+    // 舊編法在這裡確實會撞（釘住這個案例有意義）
+    expect(gen2RegionId(1, 3, 2, 21 * 3 + 0 + 1)).toBe(gen2RegionId(1, 3, 3, 0));
+    for (const side of [-1, 1] as const) for (const r of [0, 2, 30]) for (const slot of [20, 21, 31]) for (const layer of [0, 1, 2, 3, 4] as const) {
+      const id = gen2SiteRegionId(encodeStructureId(side, 3, r, slot, layer), 0);
+      expect(isGen2RegionId(id)).toBe(false);
+      for (let sub = 0; sub < 64; sub++) expect(id).not.toBe(gen2RegionId(side, 3, r + 1, sub));
+    }
+  });
   it('結構地區 id 的範圍：[GEN2_SITE_BASE, GEN2_SITE_BASE + 2 ** 34)，不撞外圍 id；超出範圍的 sid / part 丟 RangeError', () => {
     expect(GEN2_SITE_BASE).toBe(2 ** 33);
     const top = gen2SiteRegionId(encodeStructureId(1, 8191, 31, 31, 4), 63);
