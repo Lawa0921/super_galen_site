@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { drawLanded } from '../lateArt';
 import { Game } from '../../engine/game';
 import { START_ITEMS } from '../../engine/state';
 import type { Portal } from '../../engine/dungeon/run';
@@ -446,6 +447,19 @@ describe('DungeonScene loot', () => {
     expect(text()).toContain('鐵劍・傳說');
     expect(root.querySelector('.slx-talk .slx-text .slx-rarity-legendary')!.textContent).toBe('鐵劍・傳說');
     expect(game.run!.loot.gear.map((g) => g.uid)).toEqual([77]);
+  });
+
+  it("a chest line shown before the piece's gear icon landed gains it when it lands (ui2/lateArt)", () => {
+    const landed = new Set<string>();
+    const { game, s, root } = setup(undefined, true, { art: { has: (u) => landed.has(u) } });
+    s.onAction(gearChest(game, gearOf(77, 'iron-sword', 'legendary')));
+    const line = root.querySelector('.slx-talk .slx-text')!;
+    expect(line.querySelector('img')).toBeNull();
+    landed.add(art.gear('iron-sword'));
+    drawLanded(root, new Set([art.gear('iron-sword')]));
+    const img = line.querySelector('img.slx-gear-ico')!;
+    expect(img.getAttribute('src')).toBe(art.gear('iron-sword'));
+    expect(img.nextElementSibling!.textContent).toBe('鐵劍・傳說');
   });
 
   it('the best drop raises one pillar and plays loot once', () => {

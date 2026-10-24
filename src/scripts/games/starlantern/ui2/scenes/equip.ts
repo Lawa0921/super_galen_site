@@ -12,6 +12,7 @@ import { art, gearArtId } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import { framedGear, gearArtKey } from '../gearArt';
 import type { UiAction } from '../input';
+import { bestPicture } from '../lateArt';
 import { gearLabel, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
@@ -144,15 +145,27 @@ export class EquipScene implements Scene {
     this.keyhint = el('p', { class: 'slx-keyhint' });
     this.noticeEl = el('p', { class: 'slx-equip-notice', attrs: { 'aria-live': 'polite' } });
 
-    const bg = !this.field && this.ctx.art.has(art.scene('guild')) ? [el('img', { class: 'slx-bg slx-bg-dim', attrs: { src: art.scene('guild'), alt: '' } })] : [];
     this.sceneEl = el('div', { class: 'slx-scene slx-equip-scene' }, [
-      ...bg, this.head, this.bagWin, this.dollWin, this.statsWin, this.detail, this.keyhint, this.noticeEl, backControl(() => this.onAction('cancel')),
+      this.head, this.bagWin, this.dollWin, this.statsWin, this.detail, this.keyhint, this.noticeEl, backControl(() => this.onAction('cancel')),
     ]);
+    if (!this.field) bestPicture(this.sceneEl, 'bg', this.ctx.art, [art.scene('guild')], (src) => el('img', { class: 'slx-bg slx-bg-dim', attrs: { src, alt: '' } }), (n) => this.sceneEl.prepend(n));
     root.append(this.sceneEl);
     this.render();
   }
 
   exit(): void {}
+
+  /**
+   * Art landed after the screen was drawn (ui2/lateArt): the face and the pictures are drawn again. A cell redraws only
+   * when its key changes (`cellKey` holds which of its art is here); the detail keeps its scroll.
+   */
+  artArrived(): void {
+    const top = this.detailBody.scrollTop;
+    this.headId = null;
+    this.render();
+    this.detailBody.scrollTop = top;
+    this.detailCues();
+  }
 
   onAction(a: UiAction): void {
     this.notice = '';

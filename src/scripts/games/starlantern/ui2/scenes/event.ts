@@ -20,9 +20,10 @@ import { el, itemName } from '../../ui/dom';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
-import { gearIconUrl } from '../gearArt';
+import { gearIconLate } from '../gearArt';
+import { bestPicture } from '../lateArt';
 import { fillRich, gearLabel, gearPart, joinParts, rarityClass } from '../loot';
-import { MenuView, confirmBox, richNodes, win, type Rich, type RichPart } from '../widgets';
+import { MenuView, confirmBox, richInto, win, type Rich, type RichPart } from '../widgets';
 
 export interface Layer { el: HTMLElement; onAction(a: UiAction): boolean }
 export type { FullResult } from '../../engine/game';
@@ -63,8 +64,9 @@ function eventWindow(host: EventHost, kind: EventKind | 'full' | 'stairs', title
     cancel: leave,
   }, 6);
   if (start) { view.menu.setCursor(start); view.render(); }
-  const art = kind !== 'full' && kind !== 'stairs' && ctx.art.has(eventArt(kind)) ? [el('img', { class: 'slx-event-art', attrs: { src: eventArt(kind), alt: '' } })] : [];
-  const head = el('div', { class: 'slx-event-head' }, [...art, el('span', { class: 'slx-event-title', text: title })]);
+  const head = el('div', { class: 'slx-event-head' }, [el('span', { class: 'slx-event-title', text: title })]);
+  // Its art now, or when it lands (ui2/lateArt).
+  if (kind !== 'full' && kind !== 'stairs') bestPicture(head, 'art', ctx.art, [eventArt(kind)], (src) => el('img', { class: 'slx-event-art', attrs: { src, alt: '' } }), (n) => head.prepend(n));
   const box = win(`slx-event ${kind === 'full' ? 'slx-full' : `slx-event-${kind}`}`, [head, ...body, view.el]);
   box.setAttribute('role', 'dialog');
   box.setAttribute('aria-label', title);
@@ -72,16 +74,16 @@ function eventWindow(host: EventHost, kind: EventKind | 'full' | 'stairs', title
 }
 
 const line = (text: string, cls = 'slx-event-text') => el('p', { class: cls, text });
-const richLine = (r: Rich, cls = 'slx-event-text') => el('p', { class: cls }, richNodes(r));
+const richLine = (r: Rich, cls = 'slx-event-text') => { const p = el('p', { class: cls }); richInto(p, r); return p; };
 
 export type ChestResult = Extract<MoveResult, { kind: 'chest' }>;
 
 /** 「打開寶箱：發光苔 ×2、鐵劍」 — the gear, when the chest held any, in its rarity colour. */
 /** A piece as part of a line, after its gear icon once that is published. */
-const gearOf = (host: EventHost, it: ItemInstance): RichPart => gearPart(it, gearIconUrl(host.ctx.art, it));
+const gearOf = (host: EventHost, it: ItemInstance): RichPart => gearPart(it, gearIconLate(host.ctx.art, it));
 
 export function chestLine(r: ChestResult, idx?: ArtIndex): Rich {
-  return [T.map.chest(itemName(r.item), r.qty), ...(r.gear ? ['、', gearPart(r.gear, idx && gearIconUrl(idx, r.gear))] : []), ...(r.fragments ?? []).flatMap((g) => ['、', fragmentName(fragmentItem(g) ?? '') ?? ''])];
+  return [T.map.chest(itemName(r.item), r.qty), ...(r.gear ? ['、', gearPart(r.gear, idx && gearIconLate(idx, r.gear))] : []), ...(r.fragments ?? []).flatMap((g) => ['、', fragmentName(fragmentItem(g) ?? '') ?? ''])];
 }
 const leaveItem = (): MenuItem => ({ id: 'leave', label: T.ui2.event.leave });
 

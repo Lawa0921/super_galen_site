@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Menu } from './menu';
 import { runeMark } from './runeArt';
 import { Dialogue, MenuView, QtyView, backControl, confirmBox, richNodes, richText, type Rich } from './widgets';
+import { drawLanded, lateArt } from './lateArt';
 
 const mk = () => new Menu([{ id: 'a', label: '冒險者公會' }, { id: 'b', label: '道具店', disabled: true }, { id: 'c', label: '旅館' }]);
 
@@ -534,5 +535,75 @@ describe('MenuView cues inside the rows (workshop review)', () => {
   it('without the option a list keeps its old paging (rows apart from the cues)', () => {
     const v = new MenuView(new Menu(items(20)), { pick: vi.fn() }, 5);
     expect(shown(v)).toEqual(['r0*', 'r1', 'r2', 'r3', 'r4', '▼']);
+  });
+});
+
+describe('icons that land after the window was drawn (ui2/lateArt)', () => {
+  const SRC = '/assets/games/starlantern/gear/iron-sword.png';
+  const landed = () => { const set = new Set<string>(); return { set, idx: { has: (u: string) => set.has(u) } }; };
+  const onScreen = (node: HTMLElement) => { const root = document.createElement('div'); root.append(node); return root; };
+
+  it('a menu row drawn before its icon landed shows no image, then gains it once it lands; the cursor stays', () => {
+    const { set, idx } = landed();
+    const v = new MenuView(new Menu([{ id: 'a', label: '鐵劍', icon: lateArt(idx, SRC), iconCls: 'slx-gear-ico' }, { id: 'b', label: '回復藥' }], 1), { pick: () => {} });
+    const root = onScreen(v.el);
+    expect(v.el.querySelector('img')).toBeNull();
+    drawLanded(root, new Set([SRC]));                 // told before it is here: nothing to draw yet
+    expect(v.el.querySelector('img')).toBeNull();
+    set.add(SRC);
+    drawLanded(root, new Set([SRC]));
+    const img = v.el.querySelector('[data-id=a] img')!;
+    expect(img.getAttribute('src')).toBe(SRC);
+    expect(img.className).toBe('slx-ico slx-gear-ico');
+    expect(v.menu.cursor).toBe(1);
+    expect(v.el.querySelector('[aria-selected=true]')!.getAttribute('data-id')).toBe('b');
+  });
+
+  it('a menu with every icon here waits for nothing', () => {
+    const { set, idx } = landed();
+    set.add(SRC);
+    const v = new MenuView(new Menu([{ id: 'a', label: '鐵劍', icon: lateArt(idx, SRC) }]), { pick: () => {} });
+    expect(v.el.querySelector('img')!.getAttribute('src')).toBe(SRC);
+    expect(v.el.hasAttribute('data-art-wait')).toBe(false);
+  });
+
+  it('a dialogue line shown before its gear icon landed gains the icon in place when it lands', () => {
+    const { set, idx } = landed();
+    const d = new Dialogue(Infinity);
+    const root = onScreen(d.el);
+    void d.say('', ['拾到', { text: '鐵劍', cls: 'slx-gear-drop slx-rarity-rare', icon: lateArt(idx, SRC) }, '。']);
+    const text = d.el.querySelector('.slx-text')!;
+    expect(text.querySelector('img')).toBeNull();
+    expect(text.textContent).toBe('拾到鐵劍。');
+    set.add(SRC);
+    drawLanded(root, new Set([SRC]));
+    const img = text.querySelector('img.slx-ico.slx-gear-ico')!;
+    expect(img.getAttribute('src')).toBe(SRC);
+    expect(img.nextElementSibling!.textContent).toBe('鐵劍');
+    expect(text.textContent).toBe('拾到鐵劍。');
+  });
+
+  it('a face a line waits for is not drawn once the line is put away', () => {
+    const { set, idx } = landed();
+    const d = new Dialogue(Infinity);
+    const root = onScreen(d.el);
+    void d.say('凜', '一');
+    d.faceLater(['/face.png'], 'left', idx);
+    d.onAction('confirm');                       // the line is read: the box goes, its face with it
+    set.add('/face.png');
+    drawLanded(root, new Set(['/face.png']));
+    expect(d.el.querySelector('.slx-talk-face')).toBeNull();
+    void d.say('', '二', 'keep');                 // a narration line keeps no face it never had
+    expect(d.el.querySelector('.slx-talk-face')).toBeNull();
+  });
+
+  it('a confirm question gains its late icon too', () => {
+    const { set, idx } = landed();
+    const box = confirmBox(['賣掉', { text: '鐵劍', cls: 'slx-rarity-rare', icon: lateArt(idx, SRC) }, '？'], () => {});
+    const root = onScreen(box.el);
+    expect(box.el.querySelector('p img')).toBeNull();
+    set.add(SRC);
+    drawLanded(root, new Set([SRC]));
+    expect(box.el.querySelector('p img')!.getAttribute('src')).toBe(SRC);
   });
 });

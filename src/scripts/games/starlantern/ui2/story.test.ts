@@ -8,8 +8,9 @@ import { Game } from '../engine/game';
 import { constRng, withTold } from '../engine/testing';
 import { allArtUrls, art, NORMAL_SMILES } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
+import { drawLanded } from './lateArt';
 import { Dialogue } from './widgets';
-import { linesOf, playAndRecord, playLines, playScene, shouldPlay, speakerOf, type StoryCtx } from './story';
+import { linesOf, playAndRecord, playLines, playScene, sceneEra, shouldPlay, speakerOf, type StoryCtx } from './story';
 
 const ART: ArtIndex = (() => { const set = new Set([...allArtUrls(), art.npc('guild', 'normal')]); return { has: (u: string) => set.has(u) }; })();
 const mk = () => {
@@ -588,5 +589,90 @@ describe('playAndRecord', () => {
     const { game, talk, ctx } = mk();
     await playAndRecord(talk, 'chat:liz:1', { ...ctx, mode: 'none' }).done;
     expect(game.state.story.seen).not.toContain('chat:liz:1');
+  });
+});
+
+describe('Rin\'s era in a scene (handbook replays)', () => {
+  const faceOf = (talk: Dialogue) => talk.el.querySelector('.slx-talk-face')?.getAttribute('src');
+
+  it('each scene that only ever plays on one side of her choice belongs to that side; any other has no era of its own', () => {
+    for (let k = 1; k <= chainLength('rin'); k++) expect(sceneEra(`mem:rin:${k}` as SceneId), `mem:rin:${k}`).toBe('before');
+    expect(sceneEra('rin-reveal')).toBe('before');
+    expect(sceneEra('banter:rin-sylvie:1')).toBe('before');   // beforeChoice
+    expect(sceneEra('group:act3')).toBe('before');            // beforeChoice
+    for (const id of ['rin-confess', 'bellkeeper-arrives', 'finale', 'finale-eve', 'hero-alone', 'epilogue', 'chat:rin:4', 'banter:noel-rin:2'] as SceneId[]) {
+      expect(sceneEra(id), id).toBe('after');
+    }
+    for (const id of ['chat:liz:1', 'mem:scarlet:1', 'chat:rin:3', 'act3'] as SceneId[]) expect(sceneEra(id), id).toBeNull();
+  });
+
+  it('a memory of hers replayed after her oath shows the faces she had then, not her rin-oath ones', async () => {
+    const { game, talk, ctx } = mk();
+    game.state.party.roster.rin.oath = true;
+    stage('mem:rin:4', [{ who: 'rin', mood: 'averted', text: '一' }, { who: 'rin', text: '二' }]);
+    const p = playScene(talk, 'mem:rin:4', ctx);
+    // Her guilty averted look of before the oath, never the shy one of after it.
+    expect(faceOf(talk)).toBe(art.portrait('rin', 'averted'));
+    p.onAction('confirm');
+    await tick();
+    expect(faceOf(talk)).toBe(art.portrait('rin', 'normal'));
+    // The game itself is left as it is: the replay only borrows the look.
+    expect(game.state.party.roster.rin.oath).toBe(true);
+    expect(speakerOf('rin', game.state, ART, 'averted').face).toBe(art.portrait('rin-oath', 'averted'));
+  });
+
+  it('a memory of hers played live (before her oath) shows the same faces', () => {
+    const { game, talk, ctx } = mk();
+    expect(game.state.party.roster.rin.oath).toBeUndefined();
+    stage('mem:rin:5', [{ who: 'rin', mood: 'averted', text: '一' }]);
+    playScene(talk, 'mem:rin:5', ctx);
+    expect(faceOf(talk)).toBe(art.portrait('rin', 'averted'));
+  });
+
+  it('a scene after her choice shows her rin-oath faces, and a scene with no era of its own follows the game', () => {
+    const { game, talk, ctx } = mk();
+    game.state.party.roster.rin.oath = true;
+    stage('rin-confess', [{ who: 'rin', mood: 'averted', text: '一' }]);
+    playScene(talk, 'rin-confess', ctx);
+    expect(faceOf(talk)).toBe(art.portrait('rin-oath', 'averted'));
+    const t2 = new Dialogue(Infinity);
+    stage('chat:liz:1', [{ who: 'rin', mood: 'averted', text: '一' }]);
+    playScene(t2, 'chat:liz:1', ctx);
+    expect(faceOf(t2)).toBe(art.portrait('rin-oath', 'averted'));
+    delete game.state.party.roster.rin.oath;
+    const t3 = new Dialogue(Infinity);
+    playScene(t3, 'chat:liz:1', ctx);
+    expect(faceOf(t3)).toBe(art.portrait('rin', 'averted'));
+  });
+});
+
+describe('a face that lands while its line is up (ui2/lateArt)', () => {
+  it('a line said before its face landed shows the face when it lands; the next line no longer waits for it', async () => {
+    const landed = new Set<string>();
+    const { game, talk } = mk();
+    const ctx: StoryCtx = { game, art: { has: (u) => landed.has(u) }, mode: 'all' };
+    const root = document.createElement('div');
+    root.append(talk.el);
+    stage('chat:liz:1', [{ who: 'liz', mood: 'smile', text: '一' }, { who: 'narrator', text: '二' }, { who: 'hero', text: '三' }]);
+    const p = playScene(talk, 'chat:liz:1', ctx);
+    const face = () => talk.el.querySelector('.slx-talk-face')?.getAttribute('src');
+    expect(face()).toBeUndefined();
+    landed.add(art.portrait('liz', 'normal'));
+    drawLanded(root, new Set([art.portrait('liz', 'normal')]));
+    expect(face()).toBe(art.portrait('liz', 'normal'));
+    expect(talk.el.querySelector('.slx-talk-face--left')).not.toBeNull();
+    // Her own smile lands later still: the better face takes its place.
+    landed.add(art.portrait('liz', 'smile'));
+    drawLanded(root, new Set([art.portrait('liz', 'smile')]));
+    expect(face()).toBe(art.portrait('liz', 'smile'));
+    p.onAction('confirm');
+    await tick();
+    p.onAction('confirm');
+    await tick();
+    expect(talk.el.querySelector('.slx-text')!.textContent).toBe('三');
+    expect(face()).toBeUndefined();   // Lorne's face is not here
+    landed.add(art.portrait('liz', 'sad'));
+    drawLanded(root, new Set([art.portrait('liz', 'sad'), art.portrait('liz', 'normal')]));
+    expect(face()).toBeUndefined();   // her old wait is gone with her line
   });
 });

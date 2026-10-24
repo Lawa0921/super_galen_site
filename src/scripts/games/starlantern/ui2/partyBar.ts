@@ -117,6 +117,17 @@ export class PartyBar {
     if (current.length !== order.length || current.some((c, i) => c !== order[i])) this.el.replaceChildren(...order);
   }
 
+  /**
+   * Art that landed after the panels were drawn (ui2/lateArt): each face and each row's icons as they would be drawn now.
+   * A panel in a momentary face (a hit, an act) keeps it; its reset draws the new face.
+   */
+  artArrived(): void {
+    for (const p of this.panels.values()) {
+      if (!TRANSIENT.some((c) => p.el.classList.contains(c))) this.resetFace(p);
+      this.fillBody(p);
+    }
+  }
+
   /** A momentary face, shake or glow, and the number that caused it. */
   pulse(key: string, mood: PulseMood, amount?: number, opts: PulseOpts = {}): void {
     const p = this.panels.get(key);

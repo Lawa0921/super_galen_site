@@ -16,7 +16,8 @@ import type { AnyStat, GearSlot, ItemInstance, Rarity } from '../../engine/types
 import { art } from '../../render/artPaths';
 import type { ArtIndex } from '../../render/textures';
 import { el } from '../../ui/dom';
-import { gearIconUrl } from '../gearArt';
+import { gearIconLate } from '../gearArt';
+import { lateArt } from '../lateArt';
 import { fillRich, gearLabel, gearPart, invested, joinParts, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
@@ -61,7 +62,7 @@ export function forgeRows(s: GameState, o: {
   const keep = o.filter ?? (() => true);
   const row = (it: ItemInstance, wearer?: string): MenuItem => {
     const reason = o.blocked?.(it);
-    const icon = o.art ? gearIconUrl(o.art, it) : undefined;
+    const icon = o.art ? gearIconLate(o.art, it) : undefined;
     return {
       id: `g${it.uid}`,
       label: wearer ? `${gearLabel(it)}${T.ui2.forge.wornBy(wearer)}` : gearLabel(it),
@@ -88,8 +89,8 @@ export class ForgeScene extends FacilityScene {
   constructor(ctx: SceneCtx, cps?: number) { super(ctx, 'forge', cps); }
 
   /** No forge picture is published yet: the town stands in until one is. */
-  protected sceneArt(): string {
-    return this.ctx.art.has(art.scene('forge')) ? art.scene('forge') : art.scene('town');
+  protected sceneArts(): string[] {
+    return [art.scene('forge'), art.scene('town')];
   }
 
   protected commands(): MenuItem[] {
@@ -403,7 +404,7 @@ export function rerollPage(h: ForgeHost): void {
         // A region material's row carries that material's icon once it is published.
         const row = (id: string, label: string): MenuItem => {
           const mat = how(id).mat;
-          const icon = mat && h.ctx.art.has(art.icon(mat)) ? art.icon(mat) : undefined;
+          const icon = mat ? lateArt(h.ctx.art, art.icon(mat)) : undefined;
           return { ...plainRow(id, label), ...(icon ? { icon } : {}) };
         };
         const plainRow = (id: string, label: string): MenuItem => {

@@ -13,6 +13,7 @@ import type { CharacterId } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import { artIdOf, standeeImg } from '../../ui/art';
+import { awaitArt, lateArt, type LateArt } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
 import { MenuView, QtyView, confirmBox, win } from '../widgets';
@@ -59,9 +60,9 @@ export class GuildScene extends FacilityScene {
 
   private titled(id: CharacterId): string { return titleOf(this.ctx.game.state.party.roster[id]); }
 
-  private faceIcon(id: CharacterId): string | undefined {
-    const look = artIdOf(this.ctx.game.state.party.roster[id]);
-    return this.ctx.art.has(art.portrait(look, 'normal')) ? art.portrait(look, 'normal') : undefined;
+  /** A member's normal face for her row, shown once it has landed (ui2/lateArt). */
+  private faceIcon(id: CharacterId): LateArt {
+    return lateArt(this.ctx.art, art.portrait(artIdOf(this.ctx.game.state.party.roster[id]), 'normal'));
   }
 
   private recallList(): void {
@@ -85,8 +86,12 @@ export class GuildScene extends FacilityScene {
   private showInfo(id: CharacterId | undefined, out = false): void {
     if (!id || !this.info) return;
     this.info.classList.toggle('slx-info-swap', out);
-    this.info.replaceChildren(...[standeeImg(this.ctx.art, artIdOf(this.ctx.game.state.party.roster[id]))].filter((n): n is HTMLImageElement => !!n),
+    const look = artIdOf(this.ctx.game.state.party.roster[id]);
+    const standee = standeeImg(this.ctx.art, look);
+    this.info.replaceChildren(...(standee ? [standee] : []),
       el('p', { text: out ? T.ui2.guild.swapOut(name(id)) : `${this.titled(id)} ${name(id)}` }), el('p', { class: 'slx-desc', text: T.ui2.guild.roles[id] }));
+    // Her standee once it lands, for the same pane (ui2/lateArt).
+    awaitArt(this.info, 'standee', standee ? [] : [art.standee(look)], () => this.showInfo(id, out));
   }
 
   private askRecall(id: CharacterId): void {

@@ -1,6 +1,7 @@
 import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { chainLength } from '../data/story/chains';
-import { MAJOR_SCENES, heavyScene, sceneKind, type SceneId } from '../data/story/scenes';
+import { BANTER_GATE, CHAT_GATE, GROUP_GATE, MAJOR_SCENES, heavyScene, memScene, sceneKind, type SceneId, type StoryGate } from '../data/story/scenes';
+import { AFTER_CHOICE } from '../data/story/voiceGates';
 import { WARM_MOODS } from '../data/story/tone';
 import { NIGHT_PLACE, NPC_NAMES, STORY, linesWhen, type NpcId, type Place, type ScriptLine, type Speaker } from '../data/story.zh-TW';
 import { T } from '../data/text.zh-TW';
@@ -82,19 +83,50 @@ const faceOrder = (mood: StoryMood, artId: string, heavy: boolean): StoryMood[] 
   return mood === 'sad' ? ['sad', 'down', 'normal'] : [mood, 'normal'];
 };
 
-/** Who speaks: the name plate, and the face when there is published art for it. `heavy`: the line is in a heavy scene (`faceOrder`). */
-export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: StoryMood = 'normal', heavy = false): { name: string; face?: string } {
-  if (who === 'narrator') return { name: '' };
+/** Which side of Rin's choice a scene belongs to: `before` her oath, `after` it, or null when it can play on either. */
+export type Era = 'before' | 'after';
+const gateOf = (id: SceneId): StoryGate | undefined => CHAT_GATE[id] ?? BANTER_GATE[id] ?? (GROUP_GATE as Partial<Record<SceneId, StoryGate>>)[id];
+/**
+ * The era a scene belongs to, from when it can ever play: her memory pieces and her reveal (the reveal sets the oath as it
+ * ends, and every piece of hers is told before it), and a scene gated `beforeChoice`, are `before`; the scenes after her
+ * choice (`AFTER_CHOICE`), the eve (queued only once she has sworn) and a scene gated `oath` are `after`. Any other can play on
+ * either side, so it has none and follows the game. A replay from the handbook after her oath then shows the faces she had
+ * when the scene was told (her guilty averted look, not her shy one), and a scene played live reads the same as the game.
+ */
+export function sceneEra(id: SceneId): Era | null {
+  const g = gateOf(id);
+  if (id === 'rin-reveal' || g?.beforeChoice || Array.from({ length: chainLength('rin') }, (_, i) => memScene('rin', i + 1)).includes(id)) return 'before';
+  if (AFTER_CHOICE.has(id) || id === 'finale-eve' || g?.oath) return 'after';
+  return null;
+}
+
+/**
+ * Who speaks: the name plate, and the face when there is published art for it. `heavy`: the line is in a heavy scene
+ * (`faceOrder`). `era`, when given, is the side of Rin's choice the line belongs to (`sceneEra`): her look is that era's,
+ * whatever the game's oath now says.
+ */
+export function speakerOf(who: Speaker, s: GameState, index: ArtIndex, mood: StoryMood = 'normal', heavy = false, era: Era | null = null): { name: string; face?: string } {
+  const { name, faces } = speakerFaces(who, s, mood, heavy, era);
+  const face = faces.find((u) => index.has(u));
+  return face ? { name, face } : { name };
+}
+
+/** Every face that could stand for a line of `who`, best first (`speakerOf` shows the first one loaded; `Dialogue.faceLater`). */
+export const faceCandidates = (who: Speaker, s: GameState, mood: StoryMood = 'normal', heavy = false, era: Era | null = null): string[] =>
+  speakerFaces(who, s, mood, heavy, era).faces;
+
+/** Who speaks, and every face that could stand for the line, best first (`speakerOf` shows the first one loaded). */
+function speakerFaces(who: Speaker, s: GameState, mood: StoryMood, heavy: boolean, era: Era | null): { name: string; faces: string[] } {
+  if (who === 'narrator') return { name: '', faces: [] };
   if (who in CHARACTERS) {
     const id = who as CharacterId;
-    const artId = artIdOf(s.party.roster[id] ?? { id, oath: undefined });
-    const face = faceOrder(mood, artId, heavy).map((m) => art.portrait(artId, m)).find((u) => index.has(u));
-    return face ? { name: CHARACTERS[id].name, face } : { name: CHARACTERS[id].name };
+    const oath = era ? (era === 'after' ? true as const : undefined) : s.party.roster[id]?.oath;
+    const artId = artIdOf({ id, oath });
+    return { name: CHARACTERS[id].name, faces: faceOrder(mood, artId, heavy).map((m) => art.portrait(artId, m)) };
   }
   const npc = who as NpcId;
   const facility = NPC_FACILITY[npc];
-  const face = facility ? art.npc(facility, 'normal') : null;
-  return face && index.has(face) ? { name: NPC_NAMES[npc], face } : { name: NPC_NAMES[npc] };
+  return { name: NPC_NAMES[npc], faces: facility ? [art.npc(facility, 'normal')] : [] };
 }
 
 /** A scene's lines without the ones whose condition does not hold for this game. */
@@ -107,12 +139,16 @@ export function linesOf(id: SceneId, s: GameState): ScriptLine[] {
 /** The first one to speak in `lines`: they stand on the left, everyone else on the right. */
 const firstSpeaker = (lines: ScriptLine[]): Speaker | undefined => lines.find((l) => l.who !== 'narrator')?.who;
 
-/** Says one line in the box: its speaker's plate (or `plate`, when given), and the face on its side. `heavy`: see `faceOrder`. */
-function sayLine(talk: Dialogue, line: ScriptLine, ctx: StoryCtx, first: Speaker | undefined, plate?: string, heavy = false): Promise<void> {
-  const sp = speakerOf(line.who, ctx.game.state, ctx.art, line.mood, heavy);
+/** Says one line in the box: its speaker's plate (or `plate`, when given), and the face on its side. `heavy`: see `faceOrder`; `era`: `sceneEra`. */
+function sayLine(talk: Dialogue, line: ScriptLine, ctx: StoryCtx, first: Speaker | undefined, plate?: string, heavy = false, era: Era | null = null): Promise<void> {
+  const sp = speakerOf(line.who, ctx.game.state, ctx.art, line.mood, heavy, era);
+  const side = line.who === first ? 'left' as const : 'right' as const;
   // Narration keeps the last speaker's face up, dimmed (staging S4): the scene stays peopled between her lines.
-  const face = sp.face ? { src: sp.face, side: line.who === first ? 'left' as const : 'right' as const } : line.who === 'narrator' ? 'keep' as const : undefined;
-  return talk.say(plate ?? sp.name, line.text, face);
+  const face = sp.face ? { src: sp.face, side } : line.who === 'narrator' ? 'keep' as const : undefined;
+  const said = talk.say(plate ?? sp.name, line.text, face);
+  // A better face for the line that lands while it is up is shown then (ui2/lateArt).
+  if (line.who !== 'narrator') talk.faceLater(speakerFaces(line.who, ctx.game.state, line.mood ?? 'normal', heavy, era).faces, side, ctx.art);
+  return said;
 }
 
 /** How a caller sets a scene (story L plan ruling 3): `place`, the card up from its first line (a line's own place replaces it). */
@@ -128,6 +164,8 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOp
   const lines = linesOf(id, ctx.game.state);
   const first = firstSpeaker(lines);
   const heavy = heavyScene(id);
+  // Her look is the scene's era, so a memory replayed after her oath wears the faces it was told with.
+  const era = sceneEra(id);
   talk.hold(true);
   if (o.place) talk.setPlace(o.place);
 
@@ -139,7 +177,7 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOp
         talk.setStyle(line.past ? 'memory' : 'plain');
         // Where it happens, from the line that says so (staging S6); a line with no place keeps the card up.
         if (line.place) talk.setPlace(line.place);
-        await sayLine(talk, line, ctx, first, undefined, heavy);
+        await sayLine(talk, line, ctx, first, undefined, heavy, era);
       }
       if (summary) await summary;
       return summary ? 'skipped' : 'done';

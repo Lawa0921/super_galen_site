@@ -10,7 +10,8 @@ import { BAG_SIZE } from '../../engine/loot/bag';
 import { storyStage } from '../../engine/story/events';
 import { bellkeeperPool } from '../../engine/story/keeper';
 import { el, itemName } from '../../ui/dom';
-import { gearIconUrl } from '../gearArt';
+import { gearIconLate } from '../gearArt';
+import { bestPicture } from '../lateArt';
 import { fillRich, gearPart, joinParts } from '../loot';
 import type { UiAction } from '../input';
 import { Menu } from '../menu';
@@ -29,7 +30,7 @@ const RETURNS: ReadonlySet<NonNullable<Game['notice']>> = new Set(['banked', 'la
  * not take is named once more as lost.
  */
 export function bankedLine(b: NonNullable<Game['banked']>, idx?: ArtIndex): Rich {
-  const piece = (it: ItemInstance) => gearPart(it, idx && gearIconUrl(idx, it));
+  const piece = (it: ItemInstance) => gearPart(it, idx && gearIconLate(idx, it));
   const parts: RichPart[] = Object.entries(b.items).filter(([, n]) => n > 0).map(([id, n]) => `${itemName(id)} ×${n}`);
   parts.push(...b.gear.map(piece));
   if (b.gold > 0) parts.push(T.gold(b.gold));
@@ -63,15 +64,15 @@ export class TownScene implements Scene {
     const t = T.ui2.town;
     const menu = new Menu(FACILITIES.map((id) => ({ id, label: t.facilities[id] })));
     this.view = new MenuView(menu, { pick: (it) => this.pick(it.id, it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.askTitle(); } });
-    const bg = this.ctx.art.has(art.scene('town')) ? [el('img', { class: 'slx-bg', attrs: { src: art.scene('town'), alt: '' } })] : [];
-    root.append(el('div', { class: 'slx-scene slx-town' }, [
-      ...bg,
+    const sceneEl = el('div', { class: 'slx-scene slx-town' }, [
       ...(this.hud = [win('slx-place', [document.createTextNode(t.place)]), win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)])]),
       (this.menuWin = win('slx-town-menu', [this.view.el])),
       (this.backEl = backControl(() => this.onAction('cancel'))),
       el('p', { class: 'slx-keyhint', text: T.ui2.hints.town }),
       this.talk.el,
-    ]));
+    ]);
+    bestPicture(sceneEl, 'bg', this.ctx.art, [art.scene('town')], (src) => el('img', { class: 'slx-bg', attrs: { src, alt: '' } }), (n) => sceneEl.prepend(n));
+    root.append(sceneEl);
     void this.arrive();
   }
 

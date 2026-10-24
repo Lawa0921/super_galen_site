@@ -3,6 +3,7 @@ import type { ItemInstance, Rarity } from '../engine/types';
 import { art, gearArtId, type FramedRarity } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { el } from '../ui/dom';
+import { lateArt, type LateArt } from './lateArt';
 
 /**
  * Gear art (plan 5d Task 6). Every layer is a published image or nothing: with no art the caller keeps its text, and no
@@ -29,6 +30,14 @@ export function gearIcon(idx: ArtIndex, it: Pick<ItemInstance, 'base' | 'special
 export function gearIconUrl(idx: ArtIndex, it: Pick<ItemInstance, 'base' | 'special'> | string): string | undefined {
   const src = art.gear(typeof it === 'string' ? it : gearArtId(it));
   return idx.has(src) ? src : undefined;
+}
+
+/**
+ * A piece's gear art (or a gear id's) as a late picture (ui2/lateArt): a list row or a loot line shows it once it has
+ * landed, and draws itself again when it does. The same url as `gearIconUrl`; an unpublished one never lands.
+ */
+export function gearIconLate(idx: ArtIndex, it: Pick<ItemInstance, 'base' | 'special'> | string): LateArt {
+  return lateArt(idx, art.gear(typeof it === 'string' ? it : gearArtId(it)));
 }
 
 /**

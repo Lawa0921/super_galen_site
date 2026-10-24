@@ -766,6 +766,11 @@ test.describe('starlantern', () => {
 
   test('a starlit chest drop raises a star-light pillar', async ({ page }) => {
     const answered = assetResponses(page);
+    // The spear's gear art is held back (a slow network) until its chest line is up: the line gains the icon when it lands
+    // (ui2/lateArt), whichever comes first on a real connection.
+    let release!: () => void;
+    const held = new Promise<void>((r) => { release = r; });
+    await page.route('**/assets/games/starlantern/gear/lg-chizuru.png', async (route) => { await held; await route.continue(); });
     const w = await setup(page, 7);
     await depart(page, w);
     // As in the rare chest test, but every chest's gear is a starlit legendary.
@@ -796,11 +801,18 @@ test.describe('starlantern', () => {
       }
       raised = (await pillar.count()) > 0;
       if (raised) {
-        lineIcon = await page.locator('.slx-talk .slx-text img.slx-gear-ico[src$="/gear/lg-chizuru.png"]').evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth === 26)
-          .catch(() => false);
+        const icon = page.locator('.slx-talk .slx-text img.slx-gear-ico[src$="/gear/lg-chizuru.png"]');
+        // Its art is still on its way: the line names the piece without it, then gains it in place once it lands.
+        await expect(page.locator('.slx-talk .slx-text .slx-rarity-legendary')).toBeVisible();
+        expect(await icon.count()).toBe(0);
+        release();
+        await expect.poll(() => icon.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth).catch(() => 0)).toBe(26);
+        // Right before the piece's name, in the same line.
+        lineIcon = await icon.evaluate((i: HTMLImageElement) => !!i.nextElementSibling?.classList.contains('slx-gear-drop'));
       }
       await w.closeTalk();
     }
+    release();
     expect(raised).toBe(true);
     expect(await page.evaluate(() => (window as unknown as Dbg).__starlanternDebug.game.run.loot.gear.map((it: any) => it.starlit === true))).toContain(true);
     // The chest line names the piece after its published gear icon, which loaded; the spear's art answered 200.
@@ -2408,7 +2420,26 @@ test.describe('starlantern', () => {
   });
 
   test('lists of gear with icons show every row they list inside their window and the screen (plan 5d Task 10)', async ({ page }) => {
+    // Every gear picture is held back until the shop's list is up, then lands (a slow network).
+    let release!: () => void;
+    const held = new Promise<void>((r) => { release = r; });
+    await page.route(/\/assets\/games\/starlantern\/gear\/[^/]+\.png$/, async (route) => { await held; await route.continue(); });
     const w = await setup(page, 7);
+    const listed = await page.evaluate(async () => (await (await fetch('/assets/games/starlantern/manifest.json')).json()).urls as string[]);
+    /** Every listed row of the top list whose art is published shows it, loaded: a row's height is its icon's then. */
+    const iconsIn = (list: string) => page.waitForFunction(({ sel, urls }) => {
+      const win = [...document.querySelectorAll<HTMLElement>(sel)].pop();
+      if (!win) return false;
+      const s = (window as unknown as Dbg).__starlanternDebug.game.state;
+      const all = [...s.bag, ...Object.values(s.party.roster).flatMap((m: any) => Object.values(m.equip))] as any[];
+      return [...win.querySelectorAll<HTMLElement>('[role=option]')].every((row) => {
+        const id = row.dataset.id ?? '';
+        const it = /^g\d+$/.test(id) ? all.find((x) => `g${x.uid}` === id) : null;
+        const want = [`gear/${it ? it.special ?? it.base : id}.png`, `icon/${id}.png`].map((p) => `/assets/games/starlantern/${p}`).filter((u) => urls.includes(u));
+        const img = row.querySelector('img');
+        return !want.length || (!!img && img.complete && img.naturalWidth > 0);
+      });
+    }, { sel: list, urls: listed });
     await page.evaluate(() => {
       const g = (window as unknown as Dbg).__starlanternDebug.game;
       const bases = ['wooden-staff', 'iron-sword', 'hunter-bow', 'thorn-spear', 'crystal-blade', 'frost-staff', 'star-saber', 'cloth-robe',
@@ -2432,8 +2463,13 @@ test.describe('starlantern', () => {
     await w.choose('.slx-town', '道具店');
     await expect(page.locator('.slx-shop')).toBeVisible(); await w.closeTalk();
     await w.key('Enter');                                   // 購買
-    await expect(page.locator('.slx-shop-list img.slx-gear-ico').first()).toBeVisible();
+    // The list was drawn with its gear art still on its way (held back, a slow network): it gains every icon as it lands
+    // (ui2/lateArt), and only then are its rows measured, whichever came first.
+    await expect(page.locator('.slx-shop-list [role=option]').first()).toBeVisible();
+    expect(await page.locator('.slx-shop-list img.slx-gear-ico').count()).toBe(0);
+    release();
     for (let i = 0; i < 3; i++) {                           // the top, then scrolled down by the wheel through the locked bases
+      await iconsIn('.slx-shop-list');
       const r = await rowsInside('.slx-shop-list');
       expect(r.rows, `shop ${i}`).toBeGreaterThan(0);
       expect(r, `shop ${i}`).toEqual({ rows: r.rows, outside: 0, offScreen: false, cursorShown: r.cursorShown });
@@ -2444,6 +2480,7 @@ test.describe('starlantern', () => {
     await expect(page.locator('.slx-forge')).toBeVisible(); await w.closeTalk();
     await w.key('ArrowDown'); await w.key('Enter');         // 強化: the bag and what everyone wears
     for (let i = 0; i < 20; i++) {
+      await iconsIn('.slx-forge-list');
       const r = await rowsInside('.slx-forge-list');
       expect(r, `forge row ${i}`).toEqual({ rows: r.rows, outside: 0, offScreen: false, cursorShown: true });
       await w.key('ArrowDown');

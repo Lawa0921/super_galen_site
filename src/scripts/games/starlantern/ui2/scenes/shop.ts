@@ -13,7 +13,8 @@ import { buy, isUnlocked, priceOf, junkTotals, sell, sellGear, sellJunk } from '
 import type { AnyStat } from '../../engine/types';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
-import { gearIconUrl } from '../gearArt';
+import { gearIconLate } from '../gearArt';
+import { lateArt, type LateArt } from '../lateArt';
 import { gearLabel, invested, rarityClass } from '../loot';
 import { Menu, type MenuItem } from '../menu';
 import type { SceneCtx } from '../scene';
@@ -36,14 +37,14 @@ export class ShopScene extends FacilityScene {
     else this.sellList();
   }
 
-  private icon(id: string): string | undefined {
-    return this.ctx.art.has(art.icon(id)) ? art.icon(id) : undefined;
+  /** An item's or material's row icon, shown once it has landed (ui2/lateArt). */
+  private icon(id: string): LateArt {
+    return lateArt(this.ctx.art, art.icon(id));
   }
 
-  /** A base's row icon: its gear art at its own size (plan 5d); the old icon/ paths are all retired. */
+  /** A base's row icon: its gear art at its own size (plan 5d), once it has landed; the old icon/ paths are all retired. */
   private gearIcon(id: string): Pick<MenuItem, 'icon' | 'iconCls'> {
-    const icon = gearIconUrl(this.ctx.art, id);
-    return icon ? { icon, iconCls: 'slx-gear-ico' } : {};
+    return { icon: gearIconLate(this.ctx.art, id), iconCls: 'slx-gear-ico' };
   }
 
   private goods(): MenuItem[] {

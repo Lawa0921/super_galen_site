@@ -18,7 +18,8 @@ import { el, itemName } from '../../ui/dom';
 import { playCutIn } from '../../ui/cutin';
 import { battleLines, fragmentLines, levelUpLines } from '../battleText';
 import { fragmentItem } from '../../engine/story/fragments';
-import { gearIconUrl } from '../gearArt';
+import { gearIconLate } from '../gearArt';
+import { lateArt } from '../lateArt';
 import { runeMark } from '../runeArt';
 import { fillRich, gearLabel, gearPart, rarityClass } from '../loot';
 import { RUNE_SLOT_LEVELS, RUNE_STACK } from '../../data/runes';
@@ -30,7 +31,7 @@ import { PartyBar, chipWord, type PulseOpts } from '../partyBar';
 import { MorePopover, moreTrigger } from '../morePopover';
 import { mechIconUrls } from '../../render/chipIcons';
 import type { Scene, SceneCtx } from '../scene';
-import { Dialogue, MenuView, backControl, richNodes, win, type Rich } from '../widgets';
+import { Dialogue, MenuView, backControl, richInto, win, type Rich } from '../widgets';
 import { textCps } from '../settings';
 import { playAndRecord, storyCtx } from '../story';
 import { playRescue } from '../rescue';
@@ -125,6 +126,16 @@ export class BattleScene implements Scene {
     this.msg.textContent = this.state.enemies.map((e) => e.name).join('、') + this.surviveLine();
     this.banner(this.state.boss ? T.ui2.banner.boss : T.ui2.banner.encounter, this.state.boss ? 'slx-banner-boss' : '');
     this.startRound();
+  }
+
+  /**
+   * Faces and row icons that landed after they were drawn (ui2/lateArt): the party bar, the field bar and an open list of a
+   * foe's row; the lists and the lines draw their own, and the picture its own (BattleView).
+   */
+  artArrived(): void {
+    this.bar.artArrived();
+    if (!this.field.hidden) this.showField();
+    if (this.more.openId?.startsWith('foe:')) this.showFoeMore();
   }
 
   exit(): void {
@@ -349,10 +360,10 @@ export class BattleScene implements Scene {
         // Each rune that works on it as its own 14px icon (plan 8g ruling 12; art step 9), and its final numbers before its words.
         const working = runeView(actor, sk.id, actor.runes?.[sk.id] ?? [])?.states.filter((x) => x.miss === null) ?? [];
         // Its 16px native icon before the name once loaded (art step 9); the name alone until then. Decorative (alt "").
-        const icon = art.skillIcon(sk.id, 16);
+        const icon = lateArt(this.ctx.art, art.skillIcon(sk.id, 16));
         return {
           id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: this.noteOf(sk, actor),
-          ...(this.ctx.art.has(icon) ? { icon, iconCls: 'slx-skill-menu-ico' } : {}),
+          icon, iconCls: 'slx-skill-menu-ico',
           ...(working.length ? { marks: working.map((x) => runeMark(x.ref, 14)) } : {}),
         };
       });
@@ -674,11 +685,8 @@ export class BattleScene implements Scene {
       for (const l of fragmentLines(found)) lines.push({ text: l });
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
       if (end.coinGold) lines.push({ text: T.battle.coinGold(end.coinGold) });
-      // Won gear reads after its gear icon once that is published (the line keeps its rarity colour either way).
-      for (const it of end.gear) {
-        const icon = gearIconUrl(this.ctx.art, it);
-        lines.push({ text: icon ? [{ text: gearLabel(it), cls: 'slx-loot-name', icon }] : gearLabel(it), cls: `slx-loot-gear ${rarityClass(it)}` });
-      }
+      // Won gear reads after its gear icon once that is published and loaded (the line keeps its rarity colour either way).
+      for (const it of end.gear) lines.push({ text: [{ text: gearLabel(it), cls: 'slx-loot-name', icon: gearIconLate(this.ctx.art, it) }], cls: `slx-loot-gear ${rarityClass(it)}` });
       // Runes after the gear, each once and in the order they dropped, in its tier's colour (plan 8f); one past the stack
       // says the gold it became, where it fell.
       const kept = [...(end.runes ?? [])];
@@ -693,7 +701,7 @@ export class BattleScene implements Scene {
       }
       for (const [id, n] of Object.entries(end.drops)) lines.push({ text: T.battle.drop(itemName(id), n) });
       for (const [id, n] of Object.entries(end.left)) lines.push({ text: T.battle.leftBehind(itemName(id), n) });
-      for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it, gearIconUrl(this.ctx.art, it))]), cls: 'slx-loot-left' });
+      for (const it of end.gearLeft) lines.push({ text: fillRich(T.battle.gearLeft, [gearPart(it, gearIconLate(this.ctx.art, it))]), cls: 'slx-loot-left' });
       lines.push(...levelUpLines(end.levelUps, this.ctx.game.state.party));
     } else if (end.outcome === 'lose') this.ctx.sfx.lose?.();
     const title = end.outcome === 'win' ? T.battle.win : end.outcome === 'lose' ? T.battle.lose : T.battle.fled;
@@ -716,7 +724,7 @@ export class BattleScene implements Scene {
     // A held or repeated key must not skip the rewards: accept input after a short beat.
     this.resultReady = !!this.ctx.fast;
     if (!this.resultReady) setTimeout(() => { this.resultReady = true; }, 300);
-    const box = win('slx-result', [el('h3', { text: title }), el('div', { class: 'slx-result-lines' }, lines.map((l) => el('p', { class: l.cls }, typeof l.text === 'string' ? [l.text] : richNodes(l.text)))), this.result.el]);
+    const box = win('slx-result', [el('h3', { text: title }), el('div', { class: 'slx-result-lines' }, lines.map((l) => { const p = el('p', { class: l.cls }, typeof l.text === 'string' ? [l.text] : []); if (typeof l.text !== 'string') richInto(p, l.text); return p; })), this.result.el]);
     this.body.append(box);
     // The gear won (not the gear left behind) raises one pillar, for its best piece. It stands on the result window, where
     // the loot is listed: the defeated enemies are gone by now, and their place is under this window.

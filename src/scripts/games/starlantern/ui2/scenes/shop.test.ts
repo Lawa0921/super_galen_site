@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { drawLanded } from '../lateArt';
 import { EQUIPMENT } from '../../data/equipment';
 import { compareDelta } from '../../engine/compare';
 import { Game } from '../../engine/game';
@@ -64,6 +65,25 @@ describe('ShopScene', () => {
     // The same for a base that was never in the old icon set.
     for (let i = 0; i < 60 && !row('leather-cap'); i++) list.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true }));
     expect(row('leather-cap').querySelector('img')).toBeNull();
+  });
+
+  it('a goods list drawn before its icons landed gains each one as it lands, where the cursor was (ui2/lateArt)', () => {
+    const landed = new Set<string>();
+    const { pick, root, s } = setup(100, { has: (u) => landed.has(u) });
+    pick('購買');
+    s.onAction('down');
+    const row = (id: string) => root.querySelector<HTMLElement>(`.slx-layer [role=option][data-id="${id}"]`)!;
+    const cur = root.querySelector('.slx-shop-list [aria-selected=true]')!.getAttribute('data-id');
+    expect(row('iron-sword').querySelector('img')).toBeNull();
+    expect(row('potion').querySelector('img')).toBeNull();
+    landed.add(art.gear('iron-sword'));
+    drawLanded(root, new Set([art.gear('iron-sword')]));
+    expect(row('iron-sword').querySelector('img.slx-gear-ico')!.getAttribute('src')).toBe(art.gear('iron-sword'));
+    expect(row('potion').querySelector('img')).toBeNull();
+    landed.add(art.icon('potion'));
+    drawLanded(root, new Set([art.icon('potion')]));
+    expect(row('potion').querySelector('img.slx-ico')!.getAttribute('src')).toBe(art.icon('potion'));
+    expect(root.querySelector('.slx-shop-list [aria-selected=true]')!.getAttribute('data-id')).toBe(cur);
   });
 
   it('the goods list shows GEAR_ROWS rows at a time: gear rows are taller with their icons', () => {
