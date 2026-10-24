@@ -23,7 +23,7 @@
 7. **藍圖帶出物件：`Blueprint` 加 `pots / tablets / landmarks / floors / ground / solid / site`，箱子加 `extra`。** World 載入欄時登錄（箱子照 M1 規則：所在 chunk 沒改過才登錄；陶罐掉落、石碑、地標改為「那格的 tile 還是該 tile 就登錄」，因為它們沒有存檔資料）。理由：spec §4.3「跨區塊物件的資料全部由藍圖產生，載入區塊時登錄」；地標若照箱子規則，玩家在同 chunk 挖過一格後地標就領不到了。
 8. **聚落登錄 `SiteRegistry` + 穩定的 NPC id。** 舊世界照舊以 `v{i}` / `h{i}` 為 key（存檔裡的好感度 / 委託鍵不變）；gen2 聚落 key = `s{structureId}`；聚落 NPC 的 id = `npcIdFor(key)`（雜湊，不再是 populate 的順序號）。家鄉聚落在開局一次登錄（委託板 / 提示 / 日誌要完整清單），外圍聚落在欄載入時登錄。理由：連線時房主與客人載入外圍的順序不同，順序號會對不上（agent 調查：`net/host.ts:530` 用 `n.id` 送位置）。
 9. **家鄉的地區、石碑、遺物、地標、聚落在開局由 `homeContent()` 一次算好（只算藍圖，不生成任何 chunk）；外圍的在載入時登錄。** Discovery 新增「已知地區」表（`know` / `region` / `listKnown`），大地圖、日誌、HUD、提示、委託都改讀它。理由：這些消費者都假設完整清單（agent 調查：`discovery.ts:452-461`、`render/mapView.ts:290`、`render/journal.ts:171`）；家鄉有限、可以先算，外圍無限、只能登錄。客人加入只算家鄉藍圖（不生成家鄉格子），符合 spec §4.3。
-10. **v0 / v1 沒有文化大陸（文化池只有荒野），霧竹之國的指派規則改由 `CULTURE_SINCE` 版本閘門開啟（M4 才設值）。** 理由：版本一凍結，已進入的大陸永遠用那版規則（spec §5）；若 v1 就把第一片大陸標成霧竹之國、卻沒有霧竹內容，玩家在 M4 之前走過那片地就永遠拿不到城鎮、神社與雷鈴主線。見文末「規格模糊處」第 1 條（需要使用者確認）。
+10. **v0 / v1 沒有文化大陸（文化池只有荒野、所有大陸 culture = null）；霧竹之國的指派（「離家最近、尚未進入過的那片大陸」、ver ≥ 2 閘門）整個留給 M4。** M2a 刪掉 M1 的 c = 1「第一片必有霧竹」規則，不做任何閘門機制。理由：版本一凍結，已進入的大陸永遠用那版規則（spec §5）；spec §4.1 已於 2026-10-24 修訂（commit 593567af5）。見文末「規格模糊處」第 1 條（已解決）與 Preflight 裁決 Q14。
 
 ## Global Constraints
 
@@ -40,7 +40,8 @@
 - tile id 只能附加、上限 256；M2a 不新增 tile（珊瑚礁 / 海底遺跡用既有 tile）。
 - **舊輸出不變（每個 task 都要守）**：`engine/world.central.test.ts`、`engine/actor.golden.test.ts`、`engine/legacy/**` 全部測試、`save/bake.test.ts` 不得改任何期待值；它們紅了代表搬移有錯，修程式不是改數字。
 - **gen2 v0 尚未凍結**：改到 gen2 輸出的 task 在同一個 commit 重錄 `engine/gen2/gen2.lock.test.ts` 的 `GEN2_HASHES[0]`，commit 訊息寫「re-record gen2 v0 hash (unfrozen)」。M1 的 gen2 測試若因版面 / 槽寬改動而失敗，依本計畫的新規則改寫並在 commit 說明；不得放寬成永遠會過。
-- 重的測試（生成正式尺寸舊世界、掃描 > 20,000 欄的 gen2 藍圖、建家鄉內容）一律寫明逾時（`60_000`–`300_000`），檔案內共用一次生成結果（M1 教訓）。
+- 重的測試（生成正式尺寸舊世界、掃描 > 20,000 欄的 gen2 藍圖、建家鄉內容）一律寫明逾時（`60_000`–`300_000`），檔案內共用一次生成結果（M1 教訓）。vitest 沒有全域 `testTimeout`：預設每個 `it` 5 s、每個 hook 10 s——共用 fixture 的 `beforeAll` 也要給逾時（第二參數）。
+- 測試檔在 tsconfig `include` 內（會被型別檢查）：測試只用公開 API，不得呼叫 private 成員或讀不存在的欄位（Preflight Q5 / Q13）。
 - 測試本體不得只有註解、空本體、吞例外或永遠會過（M1 P9）。
 - 旗標行為不變：預設新世界仍是 genVersion 7 舊生成器；`?gen2=1` 只在 dev 有效。
 - spec 數值（原文）：§4.4——4 種生態、出生點平坦森林、兩端海灘、地城在一端海灘內 ≥ 25 個房間且有召喚 / 鑰匙內容；2–4 個村莊、≥ 1 座矮人廳；地標放置率 ≥ 85%；≥ 3 個密室；小屋、遺跡、礦坑、空島；蘑菇 / 水晶小生態；花崗岩 / 大理石；地下湖；熔岩帶；14 塊燈脈石碑與 4 件遺物在初始之地；每種礦在對應深度帶的密度落在舊生成器 ±30%；燈籠守望者召喚材料（發光蘑菇、凝膠、金錠）取得得到；每種生態至少一條地表→洞穴層的路；±50,000 格掃描任意連續 340 格內至少一個值得停下的東西、任意 1,800 格內至少一個大東西。§8——海面每 300 格一個槽位、每槽必有一點；每道海至少 1 座有建物的島（燈塔 / 隱士 / 沉船島）；島寬 40–160。
@@ -58,7 +59,7 @@
 
 - 舊生成器礦物密度（Task 13 量測，`engine/gen2/oreBaseline.ts`）：_待填_
 - 舊生成器家鄉 tile 集合（Task 17 量測，`engine/gen2/legacyTiles.ts`）：_待填_
-- 大藍圖建構時間、`homeContent()` 時間、gen2 開局時間、每欄 fill 中位數比值（Task 21）：_待填_
+- 大藍圖建構時間、`homePlans()` 開局時間（目標 ≤ 300 ms，Q9）、gen2 開局時間、每欄 fill 中位數比值（Task 21）：_待填_
 
 ---
 
@@ -73,7 +74,7 @@
 | `engine/gen2/draw/{village,hall,dungeon,mineshaft,skyIsland}.ts` | 從 legacy 搬來的繪製碼（只透過 Canvas） |
 | `engine/legacy/gen/gridCanvas.ts` | legacy 用的 Canvas（整張 GenGrid） |
 | `engine/gen2/anchors.ts` | 錨點：家鄉必有內容、荒野大陸的大東西 |
-| `engine/gen2/structures/*.ts` | 各藍圖產生函式（新：dungeon、village、hall、mineshaft、skyIsland、miniBiome、hive、shrine、keep、minor、island、reef、seaRuin） |
+| `engine/gen2/structures/*.ts` | 各藍圖產生函式（新：dungeon、village、hall、mineshaft、skyIsland、miniBiome、hive、shrine、keep、hermitHut、minor、island、reef、seaRuin） |
 | `engine/gen2/home.ts` | `homeContent()`：家鄉的聚落、地城、石碑、遺物、地標、地區、結構清單 |
 | `engine/gen2/lore.ts` | 家鄉石碑 / 遺物的指派（LORE_SITES 精神） |
 | `engine/gen2/oreBaseline.ts`、`engine/gen2/legacyTiles.ts` | 舊生成器量測出的常數（M2b 刪掉舊生成器後測試仍有對照） |
@@ -95,7 +96,7 @@
   export const LAYER_BITS = 3;
   export function encodeStructureId(side: Side, i: number, region: number, slot: number, layer: Layer): number; // i 13 | side 2 | region 5 | slot 5 | layer 3 = 28 bit
   export function decodeStructureId(id: number): { side: Side; i: number; region: number; slot: number; layer: Layer };   // 壞 id 丟 RangeError
-  export const GEN2_SITE_BASE = 2 ** 33;
+  export const GEN2_SITE_BASE = 8589934592;   // 2 的 33 次方（gen2 非測試檔禁 `**`，註解也不行——Q1）
   export function gen2SiteRegionId(sid: number, part: number): number;   // GEN2_SITE_BASE + sid × 64 + part，part ∈ [0, 64)
   export function isGen2SiteRegionId(id: number): boolean;
   export function siteOfRegionId(id: number): { sid: number; part: number };
@@ -136,8 +137,13 @@ it('engine/gen2/**（遞迴，含 draw/、structures/）與 engine/genPrims.ts �
   for (const f of files) expect(/from '[^']*legacy\//.test(read(f)), f).toBe(false);
   for (const f of files.filter((p) => /[\\/](draw|structures)[\\/]/.test(p))) expect(/from '\.\.\/blueprint'/.test(read(f)), f).toBe(false);
 });
+it('gen2 的測試檔也不 import legacy（M1 chunkgen.test.ts:283-286 的檢查照留；gen2.perf.test.ts 例外）——legacy 在 M2a 還在', () => {
+  const tests = gen2TestFiles().filter((p) => !p.endsWith('gen2.perf.test.ts'));   // 遞迴，只取 .test.ts
+  expect(tests.length).toBeGreaterThanOrEqual(10);
+  for (const f of tests) expect(/from '[^']*legacy\//.test(read(f)), f).toBe(false);
+});
 ```
-（`BANNED` = M1 的同一個 regex；`gen2SourceFiles` / `read` / `GEN_PRIMS` 寫在測試檔內。）
+（`BANNED` = M1 的同一個 regex；`gen2SourceFiles` / `gen2TestFiles` / `read` / `GEN_PRIMS` 寫在測試檔內。`structId.ts` 的 `GEN2_SITE_BASE` 寫成字面值 `8589934592` + `// 2 的 33 次方`，所以 BANNED 掃描在 Step 4 會綠（Q1）。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/structId.test.ts src/scripts/games/delve/engine/gen2/determinism.test.ts`；Expected: FAIL（模組不存在）。
 - [ ] **Step 3: 實作** — 先搬型別（純 import 改寫、legacy 不留轉接），再寫 `structId.ts`，`blueprint.ts` 的 `structureId` / `decode` 換成它，`discovery.ts:376` 的手抄位元運算換成 `gen2SiteRegionId(b.id, 0)`。layer 改 3 bit 會改變 structureId 的值（hash2 的輸入）→ gen2 輸出改變 → 重錄 `GEN2_HASHES[0]`。
@@ -149,12 +155,14 @@ it('engine/gen2/**（遞迴，含 draw/、structures/）與 engine/genPrims.ts �
 ### Task 2: 藍圖物件、地面覆寫、免挖洞箱、分層槽寬、World 與遊戲登錄
 
 **Files:**
-- Modify: `engine/gen2/bpcore.ts`（`Blueprint` 新欄位、`slotWidth`）、`engine/gen2/blueprint.ts`（`landSlotCount(r, layer)`、`landSlot(r, q, layer)`、`slotOf` 依層、`overlapping(x0, x1, layers?)`）、`engine/gen2/structures/{cabin,ruin,lakes,shipwreck,crate}.ts`（新欄位給空值；ruin 設 `ground`）、`engine/gen2/fill.ts`（`solid` 箱）、`engine/gen2/index.ts`（`surfaceAt` 吃地面覆寫、`objectsIn` 加 `extra`、`extrasIn`）、`engine/column.ts:56-67`（`GenExtras`、`ColumnSource.extrasIn?`）、`engine/world.ts:399-418`（`registerObjects` 登錄 extras、`unloadColumn` 清掉）、`engine/game.ts:2202-2204`（`tabletId`）、`:4786-4801`（`claimLandmark`）、`engine/discovery.ts:434-552`（`knowLandmark`、`open` 讀檔）、`engine/loot.ts`（`withExtras`）
-- Test: `engine/gen2/objects.test.ts`（新）、`engine/world.source.test.ts`、`engine/discovery.test.ts`、`engine/gen2/blueprint.test.ts`、`engine/gen2/structures.test.ts`
+- Modify: `engine/gen2/bpcore.ts`（`Blueprint` 新欄位、`Blueprint.layer: Layer`（原 `0 | 1 | 2`，bpcore.ts:14）、`slotWidth`、`BpCtx.groundAt`、`placeX` 的坑道避讓帶）、`engine/gen2/blueprint.ts`（`landSlotCount(r, layer)`、`landSlot(r, q, layer)`、`slotOf` 依層、`overlapping(x0, x1, layers?)`、`ctx()` 填 `groundAt`）、`engine/gen2/structures/{cabin,ruin,lakes,shipwreck,crate}.ts`（新欄位給空值；ruin 設 `ground`）、`engine/gen2/fill.ts`（`solid` 箱）、`engine/gen2/index.ts`（`surfaceAt` 吃地面覆寫、`objectsIn` 加 `extra`、`extrasIn`）、`engine/column.ts:56-67`（`GenExtras`、`ColumnSource.extrasIn?`）、`engine/world.ts:399-418`（`registerObjects` 登錄 extras、`unloadColumn` 清掉）、`engine/game.ts:2202-2204`（`tabletId`）、`:4786-4801`（`claimLandmark`）、`engine/discovery.ts:434-552`（`knowLandmark`、`open` 讀檔）、`engine/loot.ts`（`withExtras`）
+- Test: `engine/gen2/objects.test.ts`（新）、`engine/world.source.test.ts`、`engine/discovery.test.ts`、`engine/gen2/structures.test.ts`；必須保持綠：`engine/gen2/blueprint.test.ts`（M1 的坑道避讓測試 `:80-93`——含 shaftX 的槽不放非 DEEP 藍圖、非 DEEP 外框離 sx 在 `[sx − SHAFT_REACH − 1, sx + SHAFT_REACH + 2)` 之外；只把寫死 340 的地下槽判斷改成 `slotWidth`，不改斷言）
+- 遊戲層的「讀生成物件」測試（`tabletId` / 領地標）不在本 Task：M1 的藍圖還沒有石碑 / 地標，而登錄要在 gen2 世界驗（Q5）→ 移到 Task 14（第一個帶石碑 / 地標的 gen2 家鄉內容）；本 Task 的 `game.ts` 改動由 Task 14 的測試承接。
 
 **Interfaces:**
 - Produces（`bpcore.ts`）：
   ```ts
+  export type Layer = 0 | 1 | 2 | 3 | 4;                           // Task 1；Blueprint.layer 改成 Layer
   export const SUB_SLOT_W = 170;
   export function slotWidth(layer: Layer): number;                 // SURFACE / SKY → LAND_SLOT_W (340)，UNDER / DEEP / MINOR → 170
   export interface BpChest { x: number; y: number; kind: ChestKind; extra?: ItemId[] }
@@ -166,24 +174,34 @@ it('engine/gen2/**（遞迴，含 draw/、structures/）與 engine/genPrims.ts �
   // Blueprint 新增（全部必填，沒有就給空陣列 / null）：
   //   pots: BpPot[]; tablets: BpTablet[]; landmarks: BpLandmark[]; floors: { x: number; y: number }[] /* 站得住的格（空氣、腳下實心），給石碑 / 地標用 */;
   //   ground: BpGround | null; solid: BpBox | null; site: GenSite | null;  chests: BpChest[]
-  export const emptyObjects: () => Pick<Blueprint, 'pots' | 'tablets' | 'landmarks' | 'floors' | 'ground' | 'solid' | 'site'>;
+  //   wholeRegion: boolean   /* true = 佔滿整個地區的錨點（家鄉地城，Task 8）：外框只需在地區 [r.x0, r.x1) 內，豁免 SLOT_PAD 8 格槽邊距（Q2） */
+  export const emptyObjects: () => Pick<Blueprint, 'pots' | 'tablets' | 'landmarks' | 'floors' | 'ground' | 'solid' | 'site' | 'wholeRegion'>;
+  // BpCtx 新增（Q4）：
+  //   groundAt(x: number): number   /* = profile.surfaceAt(x)，被與 x 相交、有 ground 的 SURFACE 層藍圖（最終結果）覆寫；
+  //                                    只有 SKY / MINOR 層的建構器可以呼叫（SURFACE / UNDER / DEEP 的建構器讀 c.profile），所以沒有循環 */
   ```
 - Produces（`column.ts`）：`interface GenExtras { pots: BpPot[]; tablets: BpTablet[]; landmarks: BpLandmark[]; sites: GenSite[] }`；`ColumnSource.extrasIn?(x0: number, x1: number): GenExtras`（每次回新物件）。
-- Produces（`index.ts`）：`Gen2Source.surfaceAt(x)` = 與 x 相交的表層藍圖（SURFACE / MINOR）有 `ground` 且涵蓋 x 時取它（依 (layer, id) 序、後者優先），否則 `profile.surfaceAt(x)`；32 欄一段快取。`objectsIn` 的 slots = `withExtras(chestLoot(...), c.extra ?? [])`。`extrasIn(x0, x1)` = 相交藍圖中 x ∈ [x0, x1) 的 pots / tablets / landmarks，與 `site` 錨點 x 在範圍內的聚落。
+- Produces（`index.ts`）：`Gen2Source.surfaceAt(x)` = 與 x 相交的 **SURFACE 層**藍圖有 `ground` 且涵蓋 x 時取它（依 id 序、後者優先），否則 `profile.surfaceAt(x)`；32 欄一段快取。**地面覆寫只來自 SURFACE 層**（MINOR / SKY 沒有 `ground`），與 `BpCtx.groundAt` 同一個函式（Q4：SKY 需要地面、地面只看 SURFACE、SURFACE 不讀 SKY / MINOR → 沒有循環）。`objectsIn` 的 slots = `withExtras(chestLoot(...), c.extra ?? [])`。`extrasIn(x0, x1)` = 相交藍圖中 x ∈ [x0, x1) 的 pots / tablets / landmarks，與 `site` 錨點 x 在範圍內的聚落。
 - Produces（`loot.ts`）：`withExtras(slots: (Stack | null)[], extra: readonly ItemId[]): (Stack | null)[]`——每件放進第一個空格、沒有空格就蓋最後一格（與舊 `worldgen.ts` 的 `addTo` 相同語意）。
 - Produces（`world.ts`）：`readonly genTablets: Map<number, number>`（tile 鍵 → 碑文 id）、`readonly genLandmarks: Map<number, LandmarkInfo>`、`onGenSites: ((sites: GenSite[]) => void) | null`。登錄規則：箱子照 M1（chunk 沒改過、chests 沒這鍵、格是箱子 tile）；陶罐掉落 / 石碑 / 地標——**蓋上停放的 chunk 之後，那格的 tile 仍是 T.POT / T.LORE_TABLET / 該地標 tile 就登錄**（不看 chunk 有沒有改過）；卸載時這三種都刪掉（下次載入重登）；`sites` 每次載入都交給 `onGenSites`（重複由 SiteRegistry 去重）。
 - Produces（`discovery.ts`）：`DiscoveryOpts.open?: boolean`（gen2 世界傳 true：`load` 保留所有存檔的地標鍵、不經 `landmarkSet` 過濾）；`knowLandmark(key: number): void`（把鍵加進可領集合）。`game.ts`：`tabletId(x, y)` 先查 `tabletAt` 再查 `world.genTablets`；`claimLandmark` 的 info 取 `landmarkAt.get(k) ?? world.genLandmarks.get(k)`；World 登錄地標時呼叫 `discovery.knowLandmark`（每個 actor 的 Discovery 都要，見 `game.ts:1057`）。
-- 槽位：表層 / 天空層照 M1（340），地下 / 深層 / 小點位每個陸地地區切成 170 格（最後一槽吃餘數），各自有自己的 slot 序號；外框仍在 `[槽 x0 + 8, 槽 x1 − 8)`。M1 的機率表搬到新槽寬：地下層（170）小屋 0.35、地下湖 0.12；深層（170）熔岩池 0.2；含 shaftX 的槽照舊不放表層 / 地下藍圖（地下層用 170 格槽判斷）。保證槽（P11）用新的地下槽。
+- 槽位：表層 / 天空層照 M1（340），地下 / 深層 / 小點位每個陸地地區切成 170 格（最後一槽吃餘數），各自有自己的 slot 序號；外框仍在 `[槽 x0 + 8, 槽 x1 − 8)`（`wholeRegion` 的藍圖例外，Q2）。M1 的機率表搬到新槽寬：地下層（170）小屋 0.35、地下湖 0.12；深層（170）熔岩池 0.2；含 shaftX 的槽照舊不放表層 / 地下藍圖（地下層用 170 格槽判斷）。保證槽（P11）用新的地下槽。
+- **坑道避讓帶（Q3）**：UNDER / DEEP 的藍圖外框不得與 `[shaftX − SHAFT_HALF − 4, shaftX + SHAFT_HALF + 4]`（該地區主坑道；`caves.ts` 的 `SHAFT_HALF`）相交——`placeX` 對這兩層把壓到帶子的候選視為不合格（force 時也不放：回 null）。例外：`shaft_cache` 錨點（Task 14，刻意蓋在坑道底）。UNDER（非 DEEP）另外照舊受 M1 更嚴的 `[sx − SHAFT_REACH − 1, sx + SHAFT_REACH + 2)` 約束（`blueprint.test.ts:86-93` 不改、必須綠）；所以帶子實際新增的是 DEEP 層的約束。170 格槽的任何單一外框 ≤ 槽寬 − 16 = 154。
 
 - [ ] **Step 1: 寫失敗測試**
 
 ```ts
 // objects.test.ts
 const src = new Gen2Source('obj');
-it('slotWidth 與各層槽：地下 / 深層 / 小點位 170、表層 / 天空 340；slotOf 依層反查', () => {
+it('slotWidth 與各層槽：地下 / 深層 / 小點位 170、表層 / 天空 340；slotOf 依層反查；非 wholeRegion 的外框離槽邊 ≥ 8', () => {
   expect([0, 1, 2, 3, 4].map((l) => slotWidth(l as Layer))).toEqual([340, 170, 170, 340, 170]);
   for (const b of src.blueprints.overlapping(-20_000, 20_000)) { const s = slotOf(b.id, src.layout);
-    expect(s.x1 - s.x0).toBeLessThan(2 * slotWidth(b.layer)); expect(b.x).toBeGreaterThanOrEqual(s.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(s.x1 - 8); } });
+    if (b.wholeRegion) { expect(b.x).toBeGreaterThanOrEqual(s.region.x0); expect(b.x + b.w).toBeLessThanOrEqual(s.region.x1); continue; }   // Q2
+    expect(s.x1 - s.x0).toBeLessThan(2 * slotWidth(b.layer)); expect(b.x).toBeGreaterThanOrEqual(s.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(s.x1 - 8); } }, 120_000);
+it('UNDER / DEEP 外框不碰坑道避讓帶 [sx − SHAFT_HALF − 4, sx + SHAFT_HALF + 4]（shaft_cache 例外）（Q3）', () => { const ss = seedInt('obj', 'g2-shaft');
+  for (const b of src.blueprints.overlapping(-20_000, 20_000, [BP_UNDER, BP_DEEP]).filter((q) => q.kind !== 'shaft_cache')) {
+    const sx = shaftX(ss, slotOf(b.id, src.layout).region); if (!Number.isFinite(sx)) continue;
+    expect(b.x + b.w <= sx - SHAFT_HALF - 4 || b.x > sx + SHAFT_HALF + 4, `${b.kind} ${b.x}`).toBe(true); } }, 120_000);
 it('遺跡的地面覆寫：surfaceAt = 第一個實心格（外框每一欄）', () => {
   const w = worldOf(src); for (const b of src.blueprints.overlapping(-20_000, 20_000).filter((q) => q.kind === 'ruin').slice(0, 12)) {
     expect(b.ground).not.toBeNull(); loadColumns(w, b.x, b.x + b.w);
@@ -207,15 +225,11 @@ it('open：讀檔保留還沒登錄的地標鍵；knowLandmark 之後才領得�
   const d = new Discovery([], { open: true }); d.load({ regions: [], lore: [], treasures: [], depthRecord: 0, distance: 0, landmarks: [99_000_123] });
   expect([...d.landmarks]).toEqual([99_000_123]); expect(d.claimLandmark(5)).toBe(false); d.knowLandmark(5); expect(d.claimLandmark(5)).toBe(true);
   const closed = new Discovery([]); closed.load({ regions: [], lore: [], treasures: [], depthRecord: 0, distance: 0, landmarks: [99_000_123] }); expect(closed.landmarks.size).toBe(0); });
-// game：DelveGame({ width: 200, height: 100, bounds: 'infinite', columnSource: ex }) 走到石碑 / 地標
-it('遊戲讀生成物件：tabletId = 藍圖的碑文 id；claimLandmark 領 world.genLandmarks 的地標一次', () => {
-  const g = new DelveGame({ seed: 'ex', width: 200, height: 100, bounds: 'infinite', columnSource: ex }); g.teleport(TAB.x, TAB.y - 1); g.step(FIXED_DT);
-  expect(g.tabletId(TAB.x, TAB.y)).toBe(TAB.id); expect(g.claimLandmark(LM.x, LM.y)).not.toBeNull(); expect(g.claimLandmark(LM.x, LM.y)).toBeNull(); });
 ```
-（`firstSolid(w, x)` = 該欄由上往下第一個 `isSolidTile` 的 y，寫在 `testUtil.ts`；`ex` 的 `TAB` / `LM` 放在 x < 200 的範圍內；`claimLandmark` 的回傳形狀以 `game.ts:4786` 為準——「領到」與「這裡已經搜過了」兩種結果要能區分。）
+（`firstSolid(w, x)` = 該欄由上往下第一個 `isSolidTile` 的 y，寫在 `testUtil.ts`；`world.source.test.ts` 的 World 是 `central: 'source'`（每一欄都經過 source 登錄），不是 arrays 模式的小世界——arrays 模式的中央欄在建構時就建好、從不呼叫 `registerObjects`（world.ts:170-173），在那裡驗登錄會永遠失敗（Q5）。`shaftX` / `SHAFT_HALF` / `seedInt` 從 `caves.ts` / `noise.ts`。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/objects.test.ts src/scripts/games/delve/engine/world.source.test.ts src/scripts/games/delve/engine/discovery.test.ts`；Expected: FAIL。
-- [ ] **Step 3: 實作** — 如上。Filler2：fill 先取 `overlapping(x0 − FILL_REACH, x1 + FILL_REACH)`，`column()` 對落在任一 `solid` 箱內的格不挖噪聲洞穴、不當入口、不換礦（只填天然材質）；主坑道照挖（地城區沒有主坑道，見 Task 7）。遺跡（M1）的地基補土到 `base`、上方清空 → `ground.tops[k] = base`（外框每欄）。M1 測試裡寫死 340 的地下槽判斷改用 `slotWidth`。
+- [ ] **Step 3: 實作** — 如上。Filler2：fill 先取 `overlapping(x0 − FILL_REACH, x1 + FILL_REACH)`，`column()` 對落在任一 `solid` 箱內的格不挖噪聲洞穴、不當入口、不換礦（只填天然材質）；主坑道照挖（地城區沒有主坑道，見 Task 7）。遺跡（M1）的地基補土到 `base`、上方清空 → `ground.tops[k] = base`（外框每欄）。M1 測試裡寫死 340 的地下槽判斷改用 `slotWidth`。`placeX` 加坑道避讓帶（Q3）；`bpcore.ts:54-56` 的「鄰槽碰不到坑道」註解改寫成新規則（340 格槽的舊論證對 170 格槽不成立）。`BlueprintIndex.ctx()` 給 `groundAt`（Q4）。
 - [ ] **Step 4: 跑測試** — `npx vitest run src/scripts/games/delve/engine src/scripts/games/delve/save src/scripts/games/delve/net`；Expected: 全綠（gen2 v0 雜湊重錄）。
 - [ ] **Step 5: Commit** — `feat(delve): gen2 blueprint objects, ground overrides, cave-free boxes, per-layer slot widths`。
 
@@ -233,16 +247,21 @@ it('遊戲讀生成物件：tabletId = 藍圖的碑文 id；claimLandmark 領 wo
 - Produces（`siteRegistry.ts`）：
   ```ts
   export const SITE_NPC_BASE = 1 << 20;
-  export function npcIdFor(key: string): number;              // SITE_NPC_BASE + (fnv1a(utf8(key)) & 0x3fffffff)
+  // 加寬的確定性雜湊（Q6）：a = seedInt(key, 'npc-a')、b = seedInt(key, 'npc-b')；hi = floor(hash2(a, b, 1) × 2147483648)、lo = floor(hash2(b, a, 2) × 2097152)
+  // id = SITE_NPC_BASE + hi × 2097152 + lo ∈ [2^20, 2^20 + 2^52)，安全整數（net 的 Ws 以 JSON number 傳 id，net/codec.ts 不打包 npcs）
+  export function npcIdFor(key: string): number;
+  export function claimNpcId(used: Map<number, string>, id: number, key: string): void;   // 同 id 已被「另一個 key」用 → throw Error('npc id collision: …')；同 key 重來 → 無事。不探測、不 +1
   export function legacySites(villages: readonly VillageInfo[], halls: readonly HallInfo[], dungeon: DungeonInfo | null): GenSite[];  // key 'v{i}' / 'h{i}' / 'd0'，rot = i
   export class SiteRegistry {
+    constructor(o: { ranges: 'legacy' | 'gen2' });
     add(s: GenSite): boolean;                                  // 新 key 回 true；同 key 忽略
     byKey(key: string): GenSite | undefined;
     list<K extends GenSite['kind']>(kind: K): Extract<GenSite, { kind: K }>[];   // 依加入順序
-    at(x: number, y: number): GenSite | null;                  // 村落：x0 − 4 .. x1 + 4、ground − 30 .. ground + 6；地廳：外框 + 隧道；隱士：±8；地城：bbox
+    at(x: number, y: number): GenSite | null;
     onAdd(fn: (s: GenSite) => void): void;
   }
   ```
+- `at` 的範圍（Q6）：`ranges: 'legacy'`（舊世界）= **今天 `game.siteAt` 的範圍逐字照抄**（game.ts:4436-4446：村落 `x0 − 12 .. x1 + 12`、`ground − 28 .. ground + 4`；地廳 `x0 − 4 .. x1 + 4`、`y0 − 5 .. floorY + 2`；先村落後地廳），旗標關閉時 `safeAt` / 委託板行為不變；`ranges: 'gen2'` 才用新範圍：村落 `x0 − 4 .. x1 + 4`、`ground − 30 .. ground + 6`；地廳：外框 + 隧道；隱士：±8；地城：bbox。
 - Produces（`folk.ts`）：`new FolkWorld(seed: string)`；`addSite(w: World, s: GenSite): void`——村落 / 地廳的角色與現在 `populate` 相同（村落 = elder、trader + `VROLES[s.rot % 4]`，地廳三人），NPC key = `` `${s.key}:${role}` ``（舊世界 = `v0:elder`…，與現在逐字相同），NPC id = `npcIdFor(npcKey)`；`FolkNpc.site` 改存 site key（字串）。遇見型 NPC（行商 / 受困者）維持遞增 id（< SITE_NPC_BASE）。`populate` 刪除（由 `registry.onAdd` 觸發 `addSite`）。
 - game.ts：`readonly sites: SiteRegistry`；舊世界建構時 `legacySites(...)` 依序 add（行為與現在相同）；`siteAt` 回 `GenSite | null`、`siteName(key)`；委託板 = `sites.at(board)`；`FolkHost.underground` 排除 `sites.list('dungeon')` 每個 bbox。
 
@@ -260,16 +279,21 @@ it('兩種登錄順序 → 同一組 key 與 NPC id；重複 add 忽略', () => 
   const sites = [...legacySites(V3, H2, null), hermitSite(77)], a = new FolkWorld('o'), b = new FolkWorld('o'), w = blankWorld();
   for (const s of sites) a.addSite(w, s); for (const s of [...sites].reverse()) b.addSite(w, s);
   const ids = (f: FolkWorld) => f.npcs.map((n) => [n.key, n.id] as const).sort();
-  expect(ids(b)).toEqual(ids(a)); const r = new SiteRegistry(); expect(r.add(sites[0])).toBe(true); expect(r.add(sites[0])).toBe(false); });
-it('at：村落範圍內回村落、範圍外 null', () => { const r = new SiteRegistry(); r.add(legacySites(V3, [], null)[0]);
+  expect(ids(b)).toEqual(ids(a)); const r = new SiteRegistry({ ranges: 'gen2' }); expect(r.add(sites[0])).toBe(true); expect(r.add(sites[0])).toBe(false); });
+it('at（legacy）：與改動前的 game.siteAt 逐點相同（V3 / H2 外框 ±20 格的每一格）', () => { const r = new SiteRegistry({ ranges: 'legacy' }); for (const s of legacySites(V3, H2, null)) r.add(s);
+  for (const p of gridAround(V3, H2, 20)) expect(siteKeyOf(r.at(p.x, p.y)), `${p.x},${p.y}`).toBe(oldSiteAtKey(V3, H2, p.x, p.y)); });
+it('at（gen2）：村落範圍內回村落、範圍外 null', () => { const r = new SiteRegistry({ ranges: 'gen2' }); r.add(legacySites(V3, [], null)[0]);
   expect(r.at(V3[0].board.x, V3[0].board.y)!.key).toBe('v0'); expect(r.at(V3[0].x1 + 40, V3[0].ground)).toBeNull(); });
-it('1,000 個 gen2 風格 key（s{sid}:{role}）的 npcIdFor 沒有碰撞', () => { const keys = [...Array(1000)].flatMap((_, k) => ['elder', 'trader', 'guide'].map((r) => `s${k * 7919}:${r}`));
-  expect(new Set(keys.map(npcIdFor)).size).toBe(keys.length); });
+it('1,000 個 gen2 風格 key（s{sid}:{role}）的 npcIdFor 沒有碰撞、都是安全整數 ≥ SITE_NPC_BASE', () => { const keys = [...Array(1000)].flatMap((_, k) => ['elder', 'trader', 'guide'].map((r) => `s${k * 7919}:${r}`));
+  const ids = keys.map(npcIdFor); expect(new Set(ids).size).toBe(keys.length);
+  for (const id of ids) { expect(Number.isSafeInteger(id)).toBe(true); expect(id).toBeGreaterThanOrEqual(SITE_NPC_BASE); } });
+it('撞號直接丟錯（不探測，id 不依登錄順序）', () => { const used = new Map<number, string>();
+  claimNpcId(used, 42, 'a'); expect(() => claimNpcId(used, 42, 'a')).not.toThrow(); expect(() => claimNpcId(used, 42, 'b')).toThrow(/collision/); });
 ```
-（`V3` / `H2` = 測試檔內手寫的 3 個 VillageInfo / 2 個 HallInfo、`hermitSite(sid)`、`blankWorld()` = `new World(400, 200)`；連線同步測試沿用 `net/` 既有的 folk 測試，必須仍綠——NPC id 換了但房主與客人用同一個函式。）
+（`V3` / `H2` = 測試檔內手寫的 3 個 VillageInfo / 2 個 HallInfo、`hermitSite(sid)`、`blankWorld()` = `new World(400, 200)`；`oldSiteAtKey` = 測試檔內照抄 game.ts:4436-4446 的舊判斷（回 `'v{i}'` / `'h{i}'` / null）、`gridAround`、`siteKeyOf(s) = s?.key ?? null`；連線同步測試沿用 `net/` 既有的 folk 測試，必須仍綠——NPC id 換了但房主與客人用同一個函式。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/siteRegistry.test.ts src/scripts/games/delve/engine/game.folk.test.ts`；Expected: `FOLK_BEFORE` 先 PASS（改碼前錄），新測試 FAIL。
-- [ ] **Step 3: 實作** 如上；`npcIdFor` 撞號時（同一 registry 內）往後 +1 探測，測試證明 1,000 組沒有撞。
+- [ ] **Step 3: 實作** 如上；`npcIdFor` 撞號時**丟錯、不探測**（`FolkWorld.addSite` 每個 NPC 經 `claimNpcId`；探測會讓 id 依登錄順序而變，房主 / 客人載入外圍的順序不同——Q6），測試證明 1,000 組沒有撞。舊世界建 `SiteRegistry({ ranges: 'legacy' })`、gen2 建 `({ ranges: 'gen2' })`。`FolkNpc.site` 改字串後，`n.site < 0` / `>= 0` 的判斷（folk.ts:156, 271, 275, 370, 575、render/folkUi.ts:126）一併改（tsc 會抓到）。
 - [ ] **Step 4: 跑測試** — `npx vitest run src/scripts/games/delve/engine src/scripts/games/delve/net src/scripts/games/delve/save`；Expected: 全綠（存檔的好感度 / 委託鍵沒變）。
 - [ ] **Step 5: Commit** — `refactor(delve): site registry with stable keys; settlement NPC ids from their keys`。
 
@@ -290,13 +314,14 @@ it('1,000 個 gen2 風格 key（s{sid}:{role}）的 npcIdFor 沒有碰撞', () =
     fg(x: number, y: number): number; wall(x: number, y: number): number; isSolid(x: number, y: number): boolean;
     setFg(x: number, y: number, t: number): void; setWall(x: number, y: number, w: number): void; clearLiquid(x: number, y: number): void;
     setSurface(x: number, y: number): void;                     // 整平後的地面
+    surfaceAt(x: number): number;                               // 讀地面（Q7）：最後一次 setSurface 的值，否則天然地表——村落 shape() 讀 c.surface[x]（settlements.ts:139, 150）改讀這個
     chest(x: number, y: number, kind: ChestKind): void; addItem(x: number, y: number, item: ItemId): void;
     potDrop(x: number, y: number, drops: Drop[]): void;
     fillNatural(x: number, y: number): void;                    // 「這格恢復天然地層，除非它是有背景牆的實心」（舊地城補洞的規則）
   }
   ```
 - Produces（`bpCanvas.ts`）：`class BpCanvas implements Canvas { constructor(box: BpBox, profile: Profile2); toBlueprint(id: number, kind: BpKind, layer: Layer, extra?: { landmarks?: BpLandmark[]; tablets?: BpTablet[]; site?: GenSite | null; floors?: { x: number; y: number }[] }): Blueprint }`——讀 = 畫過的格，否則天然地層（`y < 地表` 空氣、`< rock` 泥土、`< deep` 石、`< molten` 深層岩、其下玄武岩，地表 = profile）；`setSurface` 記進 `ground`；`fillNatural` 只把座標併進 `solid` 箱；`chest` 畫 T.CHEST 並記 BpChest、`addItem` 推進該箱 `extra`；畫出外框丟 RangeError（BpGrid 現有行為）。
-- Produces（`gridCanvas.ts`）：`gridCanvas(world: GenGrid, seed: string, depthFrac: (x: number, y: number) => number, surface: Int16Array): Canvas`——讀寫 GenGrid、`chest` = `world.chests.set(i, chestLoot(...))`、`addItem` = 舊 `addTo` 語意、`setSurface` 寫 `surface[x]` 與 `world.surface[x]`、`fillNatural` = 舊地城 `dungeon.ts:320-349` 的單格規則。
+- Produces（`gridCanvas.ts`）：`gridCanvas(world: GenGrid, seed: string, depthFrac: (x: number, y: number) => number, surface: Int16Array, natural: (x: number, y: number) => readonly [fg: number, wall: number]): Canvas`——讀寫 GenGrid、`chest` = `world.chests.set(i, chestLoot(...))`、`addItem` = 舊 `addTo` 語意、`setSurface` 寫 `surface[x]` 與 `world.surface[x]`、`surfaceAt` 讀 `surface[x]`、`fillNatural` = 舊地城 `dungeon.ts:320-349` 的單格規則，天然材質由 `natural(x, y)` 回呼給（Q7：legacy 傳 `dungeon.ts:31` / `worldgen.ts:1355-1356` 的 rock / deep / molten 分層函式；村落 / 地廳不用它，傳一個丟錯的回呼）。BpCanvas 的天然材質就是它自己的 Profile2 分層，不需要回呼。
 - Produces（`village.ts`）：`drawVillage(cv: Canvas, o: { x0: number; vw: number; ground: number; style: number }, rng: RandomLike): VillageInfo`（整平 `shape()`、房子、廣場、旗桿、圍欄；`settlements.ts:138-191`）；`buildHouse(cv, x0, x1, floorY, door, role, rng)`（`:200`）。
 - Produces（`hall.ts`）：`drawHall(cv: Canvas, o: { x0: number; hw: number; floorY: number }, rng: RandomLike, tunnelLen: (side: -1 | 1) => number): HallInfo`——隧道長度由呼叫端決定（legacy：照舊逐欄掃到洞穴為止的規則，包成回呼；gen2 在 Task 9 給固定長度）。
 
@@ -308,7 +333,7 @@ it('BpCanvas：沒畫過的格讀天然地層；畫過讀畫的；setSurface →
   const src = new Gen2Source('cv'), x = 3000, s = src.profile.surfaceAt(x), L = src.layersAt(x), cv = new BpCanvas({ x: x - 5, y: s - 20, w: 11, h: 80 }, src.profile);
   expect(cv.fg(x, s - 1)).toBe(T.AIR); expect(cv.fg(x, s + 1)).toBe(T.DIRT); expect(cv.fg(x, L.rock + 1)).toBe(T.STONE);
   cv.setFg(x, s + 1, T.PLANKS); expect(cv.fg(x, s + 1)).toBe(T.PLANKS);
-  cv.setSurface(x, s - 2); cv.fillNatural(x - 3, s + 10); cv.fillNatural(x + 2, s + 30);
+  expect(cv.surfaceAt(x)).toBe(s); cv.setSurface(x, s - 2); expect(cv.surfaceAt(x)).toBe(s - 2); cv.fillNatural(x - 3, s + 10); cv.fillNatural(x + 2, s + 30);
   cv.chest(x + 1, s - 1, 'cabin'); cv.addItem(x + 1, s - 1, 'magnet');
   const b = cv.toBlueprint(1, 'cabin', 1);
   expect(b.ground!.tops[x - b.ground!.x0]).toBe(s - 2); expect(b.solid).toEqual({ x: x - 3, y: s + 10, w: 6, h: 21 });
@@ -317,7 +342,7 @@ it('BpCanvas：沒畫過的格讀天然地層；畫過讀畫的；setSurface →
 ```
 
 - [ ] **Step 3: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/draw/bpCanvas.test.ts`；Expected: FAIL。
-- [ ] **Step 4: 實作** — 先寫 `canvas.ts` / `bpCanvas.ts` / `gridCanvas.ts`；再把 `settlements.ts` 的 `shape()`、房子 / 廣場 / 旗桿、`buildHouse`、地廳主體搬到 `draw/`，**亂數抽取的順序與次數一個都不能變**（選址迴圈裡的 `rng` 呼叫留在 legacy，畫圖裡的跟著搬）；legacy 的 `put / putWall / solid / c.surface[x] =` 全換成 `gridCanvas` 的方法。
+- [ ] **Step 4: 實作** — 先寫 `canvas.ts` / `bpCanvas.ts` / `gridCanvas.ts`；再把 `settlements.ts` 的 `shape()`、房子 / 廣場 / 旗桿、`buildHouse`、地廳主體搬到 `draw/`，**亂數抽取的順序與次數一個都不能變**（選址迴圈裡的 `rng` 呼叫留在 legacy，畫圖裡的跟著搬）；legacy 的 `put / putWall / solid / c.surface[x] =` 全換成 `gridCanvas` 的方法、讀 `c.surface[x]` 換成 `cv.surfaceAt(x)`（Q7）。
 - [ ] **Step 5: 跑測試** — 同 Step 1 三個檔 + `npx vitest run src/scripts/games/delve/engine/gen2`；Expected: 全 PASS、指紋未改。
 - [ ] **Step 6: Commit** — `refactor(delve): canvas-based village and dwarf hall drawing shared by legacy and gen2`（說明：legacy 輸出由 world.central 指紋釘住不變）。
 
@@ -409,22 +434,23 @@ it('drawSkyIsland：箱子 sky、繩梯下端在 groundBelow − 3', () => { con
 
 **Files:**
 - Create: `engine/gen2/anchors.ts`、`engine/gen2/anchors.test.ts`
-- Modify: `engine/gen2/layout.ts:225-248`（`buildHome`：地城區、沙漠側規則）、`:14`（`VARIANT.DUNGEON = 7`）、`engine/gen2/profile.ts:14-18`（`AMP[DUNGEON] = 0.3`）、`engine/gen2/caves.ts:28-30`（`hasShaft`：地城區沒有主坑道）、`engine/gen2/blueprint.ts`（`build` 先查錨點；錨點建構器登錄表）、`engine/discovery.ts`（地城區命名：照家鄉森林命名）
-- Test: `engine/gen2/layout.test.ts`、`engine/gen2/anchors.test.ts`、`engine/gen2/blueprint.test.ts`
+- Modify: `engine/gen2/layout.ts:225-248`（`buildHome`：地城區、沙漠側規則）、`:14`（`VARIANT.DUNGEON = 7`）、`engine/gen2/profile.ts:14-18`（`AMP[DUNGEON] = 0.3`）、`engine/gen2/caves.ts:28-30`（`hasShaft`：地城區沒有主坑道）、`engine/gen2/blueprint.ts`（`build` 先查錨點；錨點建構器登錄表；建構子 `opts.extraAnchors` 測試接縫）、`engine/discovery.ts`（地城區命名：照家鄉森林命名——`landName` 已退回森林名，多半不用改）
+- Test: `engine/gen2/layout.test.ts`、`engine/gen2/anchors.test.ts`、`engine/gen2/blueprint.test.ts`（M1 的出生點 ± 80、坑道槽、家鄉沙灘斷言不改、必須綠）
 
 **Interfaces:**
 - Produces（`layout.ts`）：`VARIANT.DUNGEON = 7`；家鄉在 `h(9) < 0.5` 的那一側（西 / 東）放 `[70, 490)` 或 `[3710, 4130)` 的地城區（biome FOREST、kind home、variant DUNGEON）；該側的外圍生態（雪或叢林）、沙漠、森林往內排。沙漠原本擲到地城側但放不下（`外圍寬 + 84 + 沙漠寬 + 84 > 1680 − 70 − 420`）時改放另一側。`homeDungeonRegion(m: Landmass): RegionInfo`。
 - Produces（`anchors.ts`）：
   ```ts
   export type AnchorKind = 'dungeon' | 'village' | 'hall' | 'mineshaft_secret' | 'sky_island' | 'mushroom_biome' | 'crystal_cave' | 'hive'
-    | 'cave_lake' | 'ruin' | 'cabin' | 'alcove_snow' | 'alcove_desert' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet' | 'keep';
-  export interface Anchor { kind: AnchorKind; region: RegionInfo; layer: Layer; slot: number }
+    | 'cave_lake' | 'ruin' | 'cabin' | 'alcove_snow' | 'alcove_desert' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet' | 'keep' | 'hermit_hut'
+    | 'test_probe';                                               // 只給測試注入（Q8）：homeAnchors / continentAnchors 永遠不產生、永遠不登錄建構器
+  export interface Anchor { kind: AnchorKind; region: RegionInfo; layer: Layer; slot: number; wholeRegion?: boolean /* 地城：佔滿整個地區（Q2） */ }
   export function homeAnchors(seed: string, home: Landmass, profile: Profile2): Anchor[];
   export function continentAnchors(seed: string, m: Landmass, profile: Profile2): Anchor[];   // 本 Task 回 []，Task 18 實作
   export type AnchorBuild = (c: BpCtx) => Blueprint;              // 一律 force，不回 null
   export function registerAnchorBuild(kind: AnchorKind, build: AnchorBuild): void;   // 結構 Task 各自登錄；沒登錄的錨點 = 該槽保留但空著
   ```
-  `BlueprintIndex.anchorsOf(m: Landmass): readonly Anchor[]`（快取）；`build()`：地城區只有 `dungeon` 錨點（佔該地區每一層，其他層回 null）；某 (地區, 層, 槽) 有錨點 → 用錨點建構器（沒登錄 → null），不擲機率；其餘照機率表。
+  `BlueprintIndex` 建構子加測試接縫 `opts?: { extraAnchors?: (m: Landmass) => readonly Anchor[] }`（併進 `anchorsOf` 的結果；正式碼不傳）。`BlueprintIndex.anchorsOf(m: Landmass): readonly Anchor[]`（快取）；`build()`：地城區只有 `dungeon` 錨點（佔該地區每一層，其他層回 null）；某 (地區, 層, 槽) 有錨點 → 用錨點建構器（沒登錄 → null），不擲機率；其餘照機率表。
 - **家鄉錨點規則（作者決定，凍結前可調，測試釘不變量）：**
   - `dungeon`：地城區、SURFACE、slot 0。
   - `village` × 2 + 額外：森林生態、variant 為 PLAIN / HILLS / SPAWN 的地區的 SURFACE 槽，槽中心離出生點 ≥ 200、不含 shaftX；第 1 座取槽中心最接近 `SPAWN_X − 950` 的、第 2 座最接近 `SPAWN_X + 950` 的（那一側沒有就取全家鄉最接近、且不相鄰的）；總數 2 / 3 / 4（`hash` 15% / 60% / 25%），額外的取剩下合格槽中離已選村莊最遠的。
@@ -435,8 +461,8 @@ it('drawSkyIsland：箱子 sky、繩梯下端在 groundBelow − 3', () => { con
   - `alcove_snow` / `alcove_desert`：雪原 / 沙漠地區各一個 UNDER 槽。
   - `molten_shrine`：DEEP 槽、槽中心離出生點 ≥ 630。
   - `shaft_cache`：家鄉主坑道最深（`shaft.bottom` 最大）的那個地區，其坑道所在的 DEEP 槽（深層不受「坑道槽不放藍圖」限制）。
-  - `spawn_tablet`：MINOR 層、含 `SPAWN_X + 30` 的那個槽。
-  - 回傳順序 = 上面列的順序（測試靠它取「第 1 座地廳」）；同一 (地區, 層, 槽) 至多一個錨點；`SPAWN_X ± 80` 的排除區照舊適用 SURFACE / SKY / UNDER / DEEP（MINOR 例外）；表層 / 地下的錨點不得落在含 shaftX 的槽。
+  - `spawn_tablet`：MINOR 層、出生點東側第一個與 `[SPAWN_X − 80, SPAWN_X + 80]` 不相交、也不含 shaftX 的槽（Q16：M1 `blueprint.test.ts:72-79` 的「± 80 內沒有藍圖、含 ± 80 的槽整槽全空」對所有層都成立，MINOR 不例外）。
+  - 回傳順序 = 上面列的順序（測試靠它取「第 1 座地廳」）；同一 (地區, 層, 槽) 至多一個錨點；`SPAWN_X ± 80` 的排除區適用**所有層**（含 MINOR，Q16）；非 DEEP 的錨點不得落在含 shaftX 的槽（M1 `blueprint.test.ts:80-83` 檢查所有非 DEEP 層）；`dungeon` 錨點 `wholeRegion: true`。
 
 - [ ] **Step 1: 寫失敗測試**
 
@@ -447,7 +473,7 @@ it('家鄉地城區：420 寬、緊貼一端沙灘、FOREST、50 個種子兩側
     expect(d.x1 - d.x0).toBe(420); expect([70, 3710]).toContain(d.x0); expect(d.biome).toBe(BIOME.FOREST); sides.add(d.x0);
     expect(new Set(h.regions.map((r) => r.biome))).toEqual(new Set([0, 1, 2, 3]));
     h.regions.forEach((r, k) => { if (k) expect(r.x0).toBe(h.regions[k - 1].x1); if (r.variant !== VARIANT.BEACH) expect(r.x1 - r.x0).toBeGreaterThanOrEqual(84); }); }
-  expect(sides.size).toBe(2); });
+  expect(sides.size).toBe(2); }, 60_000);
 // anchors.test.ts（50 個種子）
 it('家鄉錨點不變量', () => { for (const seed of SEEDS50) { const g = new Gen2Source(seed), h = g.layout.landmassAt(SPAWN_X)!, a = g.blueprints.anchorsOf(h);
   const n = (k: AnchorKind) => a.filter((q) => q.kind === k).length;
@@ -461,13 +487,16 @@ it('家鄉錨點不變量', () => { for (const seed of SEEDS50) { const g = new 
   expect(a.find((q) => q.kind === 'alcove_snow')!.region.biome).toBe(BIOME.SNOW); expect(a.find((q) => q.kind === 'alcove_desert')!.region.biome).toBe(BIOME.DESERT);
   expect(Math.abs(slotMid(a.find((q) => q.kind === 'molten_shrine')!) - SPAWN_X)).toBeGreaterThanOrEqual(630);
   const far = a.find((q) => q.kind === 'hall')!, end = homeDungeonRegion(h).x0 < SPAWN_X ? 4200 : 0; expect(Math.abs(slotMid(far) - end)).toBeLessThan(500);
-  for (const q of a.filter((p) => p.layer !== BP_MINOR)) expect(slotOverlapsSpawnClear(q)).toBe(false); } });
-it('錨點的槽不擲機率：沒登錄建構器的錨點槽是空的', () => { const g = new Gen2Source('anc'), h = g.layout.landmassAt(SPAWN_X)!;
-  const sky = g.blueprints.anchorsOf(h).find((q) => q.kind === 'sky_island')!, s = slotOf(encodeStructureId(0, 0, sky.region.index, sky.slot, sky.layer), g.layout);
-  expect(g.blueprints.overlapping(s.x0, s.x1).filter((b) => b.layer === sky.layer && b.x >= s.x0 && b.x < s.x1)).toEqual([]); });
+  for (const q of a) expect(slotOverlapsSpawnClear(q), q.kind).toBe(false);                          // 所有層，含 MINOR 的 spawn_tablet（Q16）
+  expect(a.filter((q) => q.wholeRegion).map((q) => q.kind)).toEqual(['dungeon']); } }, 120_000);
+it('錨點的槽不擲機率：沒登錄建構器的錨點槽是空的（測試專用 test_probe，Q8）', () => { const g = new Gen2Source('anc'), h = g.layout.landmassAt(SPAWN_X)!;
+  const free = firstRolledSurfaceSlot(g, h);                         // 家鄉一個不是錨點、機率擲出遺跡 / 湖的 SURFACE 槽
+  const idx = new BlueprintIndex('anc', g.layout, g.profile, { extraAnchors: (m) => (m === h ? [{ kind: 'test_probe', region: free.region, layer: BP_SURFACE, slot: free.slot }] : []) });
+  expect(idx.overlapping(free.x0, free.x1).filter((b) => b.layer === BP_SURFACE && b.x >= free.x0 && b.x < free.x1)).toEqual([]);
+  expect(g.blueprints.overlapping(free.x0, free.x1).filter((b) => b.layer === BP_SURFACE && b.x >= free.x0 && b.x < free.x1).length).toBe(1); });
 it('地城區沒有主坑道', () => { for (const seed of SEEDS5) { const g = new Gen2Source(seed); expect(shaftX(seedInt(seed, 'g2-shaft'), homeDungeonRegion(g.layout.landmassAt(SPAWN_X)!))).toBeNaN(); } });
 ```
-（`SEEDS50`、`slotMid(a)` = 錨點槽的中點、`slotOverlapsSpawnClear(a)` 寫在測試檔內。）
+（`SEEDS50`、`slotMid(a)` = 錨點槽的中點、`slotOverlapsSpawnClear(a)`、`firstRolledSurfaceSlot(g, h)`（回 `{ region, slot, x0, x1 }`）寫在測試檔內。這個測試在 Task 10 登錄 `sky_island` 之後仍然成立——它不依賴任何正式錨點種類沒登錄。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/layout.test.ts src/scripts/games/delve/engine/gen2/anchors.test.ts`；Expected: FAIL。
 - [ ] **Step 3: 實作** 如上。M1 的家鄉測試（`layout.test.ts` 家鄉、`profile.test.ts` 出生平地、`fill.test.ts` 主坑道）照新版面重跑，失敗的依新規則改寫並在 commit 說明。
@@ -480,14 +509,17 @@ it('地城區沒有主坑道', () => { for (const seed of SEEDS5) { const g = ne
 
 **Files:**
 - Create: `engine/gen2/structures/dungeon.ts`、`engine/gen2/dungeon.test.ts`
-- Modify: `engine/gen2/blueprint.ts`（`registerAnchorBuild('dungeon', buildDungeonBp)`）、`engine/gen2/bpcore.ts`（`BpKind` 加 `'dungeon'`）
+- Modify: `engine/gen2/blueprint.ts`（`registerAnchorBuild('dungeon', buildDungeonBp)`；家鄉藍圖的釘選表）、`engine/gen2/bpcore.ts`（`BpKind` 加 `'dungeon'`、`Blueprint.colIndex?`）
+- Test 必須保持綠：`engine/gen2/objects.test.ts`（Task 2 的槽邊距測試——地城 `wholeRegion: true`，走地區範圍那一支，Q2）
 
 **Interfaces:**
-- Consumes: `generateDungeonOn`、`BpCanvas`（Task 4、5）、錨點（Task 7）、`solid` / `ground` / `pots` / `site`（Task 2）。
-- Produces: `buildDungeonBp(c: BpCtx): Blueprint`——zone = 地城區 `[x0 + 4, x1)`（對著沙灘那側留 4 格），`y0 = max(2, 區內最高地表 − 40)`、`y1 = min(LAVA_Y − 60, max(區內最大 rock + 40, 區內最小 deep + floor((區內最小 molten − 區內最小 deep) × 0.32)))`（舊規則 `worldgen.ts:613-617` 改用區內極值）；顏色 = `DUNGEON_COLORS[hash % 3]`；古碑 id 依位置固定：塔 = 6、神殿 = 7、寶藏室 = 12（`LORE_SITES`）；`site = { kind: 'dungeon', key: 's' + c.id, rot: 0, info }`；外框 = 繪製實際範圍。`generateDungeonOn` 回 null（8 次都失敗）時改用較寬鬆的 `minConnected: 5` 再試；仍失敗丟 RangeError（測試證明 50 個種子都不會發生）。
+- Consumes: `generateDungeonOn`、`BpCanvas`（Task 4、5）、錨點（Task 7）、`solid` / `ground` / `pots` / `site` / `wholeRegion`（Task 2）。
+- **家鄉藍圖釘選（Q9）**：`BlueprintIndex` 對家鄉地塊的藍圖存進 `private readonly pinned: Map<number, Blueprint | null>`（永不淘汰），與外圍用的 LRU（`CACHE_MAX = 256`）分開；外圍照舊 LRU。
+- Produces: `buildDungeonBp(c: BpCtx): Blueprint`——`wholeRegion: true`；zone = 地城區 `[x0 + 4, x1)`（對著沙灘那側留 4 格），`y0 = max(2, 區內最高地表 − 40)`、`y1 = min(LAVA_Y − 60, max(區內最大 rock + 40, 區內最小 deep + floor((區內最小 molten − 區內最小 deep) × 0.32)))`（舊規則 `worldgen.ts:613-617` 改用區內極值）；顏色 = `DUNGEON_COLORS[hash % 3]`；古碑 id 依位置固定：塔 = 6、神殿 = 7、寶藏室 = 12（`LORE_SITES`）；`site = { kind: 'dungeon', key: 's' + c.id, rot: 0, info }`；外框 = 繪製實際範圍。`generateDungeonOn` 回 null（8 次都失敗）時改用較寬鬆的 `minConnected: 5` 再試；仍失敗丟 RangeError（測試證明 50 個種子都不會發生）。
 - 地城的 `floors`：每個房間地板列上站得住的格（給 Task 14 的地標 / 古碑不重疊判斷）。
+- **召喚 / 鑰匙內容 = 與舊地城相同（Q20a）**：舊地城沒有召喚物件本身（grep 過 `legacy/gen/dungeon.ts`）；spec §4.4 的「召喚 / 鑰匙內容」解讀為舊地城實際有的三樣：陶罐裡的地城鑰匙（`potDrops` `{ item: 'dungeon_key', n: 1 }`，dungeon.ts:608）與箱子裡的地城鑰匙（:620）、上鎖的寶藏室寶箱（`T.LOCKED_CHEST`、`'treasure'` 箱、金鑰匙在上鎖神殿，:593）、以及燈籠守望者召喚物 `wick_offering`（`crafting.ts:92`：發光蘑菇 6 + 凝膠 5 + 金錠 3）的材料路徑——寶藏室的 `'treasure'` 戰利品有 `gold_ore` 20–36（`loot.ts:159`，≥ 12 = 3 金錠 × 4 礦），由 `draw/dungeon.ts` 搬過來的規則照舊產生。
 
-- [ ] **Step 1: 寫失敗測試**（檔案內共用 5 個種子的地城藍圖，逾時 120 s）
+- [ ] **Step 1: 寫失敗測試**（檔案內共用 5 個種子的地城藍圖：`beforeAll(() => { DUNGEONS = … }, 120_000)`——hook 預設只有 10 s，Q18）
 
 ```ts
 it('§4.4：每個種子的家鄉地城 ≥ 25 房、bbox 寬 ≥ 0.7 高、在地城區內、塔底貼地', () => { for (const [seed, d] of DUNGEONS) {
@@ -501,19 +533,28 @@ it('世界整合：載入地城欄後 tile 層級可解（洪水填充）、陶�
   for (const p of d.bp.pots) expect(w.potDrops.get(w.idx(p.x, p.y))).toEqual(p.drops);
   const t = d.info.treasureChest; expect(w.getFg(t.x, t.y)).toBe(T.LOCKED_CHEST); expect(w.chests.get(w.idx(t.x, t.y))!.some((s) => s?.item === 'rune_pickaxe')).toBe(true);
   expect(d.info.tablets.map((q) => [q.site, w.genTablets.get(w.idx(q.x, q.y))]).sort()).toEqual([['shrine', 7], ['tower', 6], ['treasure', 12]]); }, 60_000);
+it('召喚 / 鑰匙內容與舊地城相同（Q20a）：陶罐鑰匙 + 箱子鑰匙 = 上鎖門數、金鑰匙在上鎖神殿、寶藏箱的金礦夠做 wick_offering 的 3 金錠', () => { for (const [, d] of DUNGEONS) {
+  const locked = d.info.doors.filter((q) => q.locked).length, potKeys = d.bp.pots.flatMap((p) => p.drops).filter((q) => q.item === 'dungeon_key').length;
+  expect(potKeys).toBeGreaterThanOrEqual(1); expect(potKeys + d.bp.chests.filter((c) => c.extra?.includes('dungeon_key')).length).toBe(locked);
+  expect(d.info.keys.filter((k) => k.golden && k.container === 'chest')).toHaveLength(1);
+  const w = worldOf(d.src), t = d.info.treasureChest; loadColumns(w, t.x, t.x + 1);
+  expect(w.getFg(t.x, t.y)).toBe(T.LOCKED_CHEST); expect(stackCount(w.chests.get(w.idx(t.x, t.y))!, 'gold_ore')).toBeGreaterThanOrEqual(12);
+  expect(recipeOf('wick_offering').inputs).toContainEqual(['gold_bar', 3]); expect(recipeOf('gold_bar').inputs).toEqual([['gold_ore', 4]]); } }, 60_000);
 it('地城裡沒有天然洞穴：bbox 內縮 14 的每個空氣格都有地城背景牆', () => { const [, d] = DUNGEONS[1], w = worldOf(d.src), b = d.info.bbox;
   loadColumns(w, b.x, b.x + b.w); expect(naturalHoles(w, { x: b.x + 14, y: b.y + 14, w: b.w - 28, h: b.h - 28 })).toEqual([]); }, 60_000);
-it('分段填 = 整欄填（地城跨欄）、建構時間 ≤ 80 ms', () => { const [, d] = DUNGEONS[2], cx = (d.info.bbox.x >> 5) + 3;
+it('分段填 = 整欄填（地城跨欄）；地城藍圖單次建構 ≤ 80 ms（直接呼叫建構器，不經索引）', () => { const [, d] = DUNGEONS[2], cx = (d.info.bbox.x >> 5) + 3;
   const whole = fillCol(d.src, cx), parts = new Column(cx, 1200); d.src.fill(parts, cx * 32, cx * 32 + 13); d.src.fill(parts, cx * 32 + 13, cx * 32 + 32);
   expect(bytes(parts)).toEqual(bytes(whole));
-  const fresh = new Gen2Source('dg-time'), t0 = performance.now(); fresh.blueprints.overlapping(homeDungeonRegion(home('dg-time')).x0, homeDungeonRegion(home('dg-time')).x0 + 1);
-  expect(performance.now() - t0).toBeLessThanOrEqual(80); });
+  const c = dungeonCtx(new Gen2Source('dg-time')), t0 = performance.now(); buildDungeonBp(c); expect(performance.now() - t0).toBeLessThanOrEqual(80); }, 30_000);
+it('家鄉藍圖釘選：碰過外圍 300 份藍圖（超過 LRU 256）之後，再取地城藍圖是同一個物件（沒被淘汰重建）', () => { const g = new Gen2Source('dg-pin'), z = homeDungeonRegion(home('dg-pin'));
+  const a = g.blueprints.overlapping(z.x0, z.x1).find((b) => b.kind === 'dungeon')!; touchOuterBlueprints(g, 300);
+  expect(g.blueprints.overlapping(z.x0, z.x1).find((b) => b.kind === 'dungeon')).toBe(a); }, 60_000);
 it('50 個種子都建得出地城（不丟 RangeError）', () => { for (const seed of SEEDS50) expect(() => dungeonOf(seed)).not.toThrow(); }, 300_000);
 ```
-（`DUNGEONS` = 5 個種子的 `{ src, bp, info }`；`solvable` / `floodSolvable` 照 `legacy/gen/dungeon.test.ts:106-168` 的兩個解謎檢查改寫成吃 `DungeonInfo` / World（**搬到 `engine/gen2/testUtil.ts`**，M2b 刪 legacy 後仍在）；`naturalHoles(w, rect)` = rect 內空氣格中背景牆不是地城牆的座標清單。）
+（`DUNGEONS` = 5 個種子的 `{ src, bp, info }`；`dungeonCtx(src)` = 地城錨點的 `BpCtx`（從 `anchorsOf` 取）、`touchOuterBlueprints(g, n)` = 依序取外圍大陸的藍圖直到碰過 n 份、`stackCount`、`recipeOf` 寫在測試檔或 `testUtil.ts`；`solvable` / `floodSolvable` 照 `legacy/gen/dungeon.test.ts:106-168` 的兩個解謎檢查改寫成吃 `DungeonInfo` / World（**搬到 `engine/gen2/testUtil.ts`**，M2b 刪 legacy 後仍在）；`naturalHoles(w, rect)` = rect 內空氣格中背景牆不是地城牆的座標清單。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/dungeon.test.ts`；Expected: FAIL。
-- [ ] **Step 3: 實作** 如上；大藍圖的格子依 `(x >> 5, y, x)` 排序並記每欄的起訖（`Blueprint.colIndex?: Map<number, [number, number]>`，`stamp` 有它就只掃該欄的範圍）——同一藍圖每格只出現一次，排序不改結果。
+- [ ] **Step 3: 實作** 如上；大藍圖的格子依 `(x >> 5, y, x)` 排序並記每欄的起訖（`Blueprint.colIndex?: Map<number, [number, number]>`，`stamp` 有它就只掃該欄的範圍）——同一藍圖每格只出現一次，排序不改結果。家鄉地塊的 `get` / `raw` 改走 `pinned`（Q9）。
 - [ ] **Step 4: 跑測試** — `npx vitest run src/scripts/games/delve/engine/gen2`；Expected: PASS。
 - [ ] **Step 5: Commit** — `feat(delve): gen2 home dungeon`（re-record gen2 v0 hash）。
 
@@ -522,15 +563,26 @@ it('50 個種子都建得出地城（不丟 RangeError）', () => { for (const s
 ### Task 9: gen2 村落與矮人地廳（家鄉）+ 居民住進去
 
 **Files:**
-- Create: `engine/gen2/structures/village.ts`、`engine/gen2/structures/hall.ts`、`engine/gen2/settlements.test.ts`
-- Modify: `engine/gen2/blueprint.ts`（登錄 `village` / `hall` 錨點建構器）、`engine/worldBoot.ts:84-104`（`bootGen2` 開局登錄家鄉聚落）、`engine/game.ts`（`world.onGenSites` → `sites.add`）
+- Create: `engine/gen2/structures/village.ts`、`engine/gen2/structures/hall.ts`、`engine/gen2/home.ts`（本 Task 建立、只有 `homeSites`；Task 14 修改加 `homeContent`——Q11）、`engine/gen2/settlements.test.ts`
+- Modify: `engine/gen2/blueprint.ts`（登錄 `village` / `hall` 錨點建構器；跨層不重疊規則）、`engine/gen2/bpcore.ts`（`BpKind` 加 `'village'` / `'hall'`）、`engine/worldBoot.ts:84-104`（`bootGen2` 把 `homeSites` 放進 `WorldContent.sites`）、`engine/game.ts`（建構時 `content.sites` 逐一 `sites.add`；`world.onGenSites` → `sites.add`）
+- Test 必須保持綠：`engine/gen2/blueprint.test.ts`、`engine/gen2/objects.test.ts`（跨層規則會讓部分機率藍圖消失——M1 的「非保證槽照機率」比例測試若因此偏出，依新規則改寫並在 commit 說明）
 
 **Interfaces:**
 - Consumes: `drawVillage` / `drawHall`（Task 4）、`SiteRegistry` / `FolkWorld.addSite`（Task 3）。
+- **跨層不重疊（Q10，作者規則）**：同一地帶、不同層的兩份**非液體**藍圖外框不得相交（液體照舊用 M1 的 `liquidYields`）。相交時依優先序丟掉一份（`build` 回 null）：錨點 > 保證槽（P11）> 機率擲出；同級時丟較深的那份（深度序 SURFACE < UNDER < DEEP；SKY 與 MINOR 同級時一律讓位——它們依 SURFACE 地面擺放，Q4，SURFACE 不能反過來依賴它們）。比對的是其他層的 **raw**（讓位前）藍圖，與 M1 `yieldLiquid` 同一種做法，不遞迴；SURFACE / UNDER / DEEP 的最終結果只看這三層的 raw，所以 `groundAt`（= SURFACE 最終結果）不會依賴 SKY / MINOR。錨點彼此由錨點規則保證不相交（測試釘）。這條規則在 Task 10、11、18 新增的種類上一樣適用（小地城的外框會讓同地帶的 UNDER / DEEP 機率藍圖消失）。
+- Produces（`blueprint.ts`）：`export function crossYields(b: Blueprint, bRank: 0 | 1 | 2, o: Blueprint, oRank: 0 | 1 | 2): boolean`（rank：2 錨點、1 保證、0 機率；純函式，給測試直接驗優先序）。
 - Produces: `buildVillageBp(c: BpCtx): Blueprint`——寬 `vw = 58..73`、置中於槽、`ground` = 外框內地表中位數、`style = hash % 3`；`floors` 含委託板與廣場；`site = { kind: 'village', key: 's' + c.id, rot, info }`（家鄉的 rot = 依離出生點距離排序的名次，最近的 0 → 一定有嚮導；外圍 rot = `hash % 4`）。`buildHallBp(c: BpCtx): Blueprint`——寬 60–77、`floorY ∈ [max(deep + 24) + 13, min(molten − 26))`（外框各欄極值）、隧道每側 20–36 格（固定長度，外框 ≤ 154 = 170 − 16）、礦車地標（`T.ORE_CART`、site `'dwarf_hall'`）、`site = { kind: 'hall', ... }`。
-- Produces（`engine/gen2/home.ts` 的第一部分）：`homeSites(src: Gen2Source): GenSite[]`——家鄉所有聚落錨點的藍圖 `site`（依 x 排序）；`bootGen2` 在建 World 後 `homeSites` 全部交給遊戲的 SiteRegistry（開局一次）；之後 `world.onGenSites` 交來的同 key 被去重。
+- Produces（`engine/gen2/home.ts`，**本 Task 建立**）：`homeSites(src: Gen2Source): GenSite[]`——家鄉所有聚落錨點的藍圖 `site`（依 x 排序）。`bootGen2`（worldBoot.ts:82-101）拿不到遊戲的 registry，所以放進 `WorldContent.sites: GenSite[]`（新欄位；legacy / flat 給 `[]`），`DelveGame` 建構時逐一 `sites.add`（開局一次）；之後 `world.onGenSites` 交來的同 key 被去重。
 
 - [ ] **Step 1: 寫失敗測試**（20 個種子的錨點建藍圖，逾時 180 s；世界整合用 2 個種子）
+
+```ts
+it('跨層優先序（Q10）：錨點 > 保證 > 機率；同級丟較深的；SKY / MINOR 同級讓位；不相交不丟', () => {
+  const S = box(BP_SURFACE, 0, 300, 100, 40), U = box(BP_UNDER, 10, 320, 60, 40), K = box(BP_SKY, 0, 250, 40, 20), far = box(BP_DEEP, 500, 320, 40, 40);
+  expect(crossYields(U, 0, S, 0)).toBe(true); expect(crossYields(S, 0, U, 0)).toBe(false);
+  expect(crossYields(S, 0, U, 2)).toBe(true); expect(crossYields(U, 1, S, 0)).toBe(false);
+  expect(crossYields(K, 0, box(BP_SURFACE, 0, 260, 40, 20), 0)).toBe(true); expect(crossYields(U, 0, far, 2)).toBe(false); });
+```
 
 ```ts
 it('§4.4：家鄉 2–4 個村莊、≥ 1 座地廳；村莊在森林、離出生點 > 200、離地城區 > 60、不與其他藍圖重疊', () => { for (const seed of SEEDS20) { const s = sitesOf(seed);
@@ -555,7 +607,7 @@ it('居民住進去：gen2 遊戲開局就有家鄉每座村莊的 elder / trade
   const ex = elder.body.x / 16; expect(ex).toBeGreaterThanOrEqual(s0.info.x0 - 2); expect(ex).toBeLessThanOrEqual(s0.info.x1 + 2);
   expect(g.questGiverAt(s0.info.board.x, s0.info.board.y)).toBe(`${s0.key}:elder`); }, 60_000);
 ```
-（`sitesOf(seed)` = `homeSites(new Gen2Source(seed))`；`homeBlueprints`、`overlapPairs`、`distToDungeonZone`、`count`、`liquidCells`、`hallsOf` 寫在測試檔或 `testUtil.ts`；`T.QUEST_BOARD`、`questGiverAt`（委託板 → 給委託的 NPC key）以 `tiles.ts` / `game.ts:2585` 的實際名稱為準——沒有對應的公開方法就在本 Task 抽出一個；晚上在屋裡的斷言照 `game.folk.test.ts` 既有的「入夜回屋」寫法加一條。）
+（`sitesOf(seed)` = `homeSites(new Gen2Source(seed))`；`overlapPairs(bps)` = 所有層之間外框相交、且兩份都不是液體的配對（同層的配對由槽保證不相交，也一併檢查），寫在 `testUtil.ts`——Task 10、11、14、19 加新種類後這條仍必須綠（Q10）；`box(layer, x, y, w, h)` = 只有外框的假藍圖；`homeBlueprints`、`distToDungeonZone`、`count`、`liquidCells`、`hallsOf` 寫在測試檔或 `testUtil.ts`；`T.QUEST_BOARD`、`questGiverAt`（委託板 → 給委託的 NPC key）以 `tiles.ts` / `game.ts:2585` 的實際名稱為準——沒有對應的公開方法就在本 Task 抽出一個；晚上在屋裡的斷言照 `game.folk.test.ts` 既有的「入夜回屋」寫法加一條。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/settlements.test.ts`；Expected: FAIL。
 - [ ] **Step 3: 實作** 如上。`FolkWorld.addSite` 的站位：`findStandSpot` 在欄未載入時讀到 STONE 會失敗 → 後備位置用 `VillageInfo.ground − 1` / `HallInfo.floorY − 1`（就是正確的地面，因為 ground 來自藍圖）。
@@ -568,11 +620,12 @@ it('居民住進去：gen2 遊戲開局就有家鄉每座村莊的 elder / trade
 
 **Files:**
 - Create: `engine/gen2/structures/mineshaft.ts`、`engine/gen2/structures/skyIsland.ts`、`engine/gen2/underground.test.ts`
-- Modify: `engine/gen2/blueprint.ts`（機率表：地下層加礦坑 0.15；天空層空島：家鄉只靠錨點、非家鄉大陸 0.06；登錄 `mineshaft_secret` / `sky_island` 錨點）
+- Modify: `engine/gen2/blueprint.ts`（機率表：地下層加礦坑 0.15；天空層空島：家鄉只靠錨點、非家鄉大陸 0.06；登錄 `mineshaft_secret` / `sky_island` 錨點）、`engine/gen2/bpcore.ts`（`BpKind` 加 `'mineshaft'` / `'sky_island'`）
+- Test 必須保持綠：`engine/gen2/blueprint.test.ts`（M1 坑道避讓 `:80-93`）、`engine/gen2/objects.test.ts`（槽邊距、坑道避讓帶）、`engine/gen2/anchors.test.ts`（「沒登錄建構器的錨點槽是空的」用 `test_probe`，登錄 `sky_island` 不影響它——Q8）、`engine/gen2/settlements.test.ts`（家鄉藍圖零重疊——Q10）
 
 **Interfaces:**
-- Consumes: `drawMineshaft` / `drawRamp` / `drawSecretRoom` / `drawSkyIsland`（Task 6）。
-- Produces: `buildMineshaftBp(c: BpCtx, o?: { secret?: boolean }): Blueprint`——長 50–100、`yTop = 槽中心地表 + 28..129`、斜坡 1/2（深度 < 100 時；斜坡在外框內）、`secret` 為 true 或 25% 機率接一間密室（外框 ≤ 154）；地標 `T.ORE_CART`（site `'mineshaft'`，鋪軌道）；密室的地區用 part 1（Task 15）。`buildSkyIslandBp(c: BpCtx): Blueprint`——寬 30–48、`top = 外框附近最高地表 − 30 − thick − (10..49)`、`groundBelow` = `Gen2Source` 的地面（profile + 地面覆寫）、地標 `T.GUARDIAN_STATUE`（site `'sky_island'`）。
+- Consumes: `drawMineshaft` / `drawRamp` / `drawSecretRoom` / `drawSkyIsland`（Task 6）、`BpCtx.groundAt`（Task 2）。
+- Produces: `buildMineshaftBp(c: BpCtx, o?: { secret?: boolean }): Blueprint`——`yTop = 槽中心地表 + 28..129`、斜坡 1/2（深度 < 100 時；斜坡在外框內）、`secret` 為 true 或 25% 機率接一間密室；地標 `T.ORE_CART`（site `'mineshaft'`，鋪軌道）；密室的地區用 part 1（Task 15）。**總寬上限（Q3）**：`len + 斜坡寬（yTop − 地表 + 6，有斜坡時）+ 密室寬（rw + 4，有密室時）≤ slotWidth(UNDER) − 16 = 154`——先擲斜坡與密室，`len = min(擲出的 50–100, 154 − 斜坡寬 − 密室寬)`；`len < 50` 時拿掉斜坡（密室保留：密室寬 ≤ 17，沒有斜坡時 len 上限 ≥ 137，一定放得下）；外框也受 Task 2 的坑道避讓帶約束。`buildSkyIslandBp(c: BpCtx): Blueprint`——寬 30–48、`top = 外框附近最高的 profile 地表 − 30 − thick − (10..49)`（**相對 Profile2 地表，不看小點位 / 其他天空藍圖**——Q4）、`groundBelow = (x) => c.groundAt(x)`（profile + SURFACE 層地面覆寫）、地標 `T.GUARDIAN_STATUE`（site `'sky_island'`）。
 
 - [ ] **Step 1: 寫失敗測試**（5 個種子，逾時 120 s）
 
@@ -585,9 +638,11 @@ it('空島：箱子 sky、底部在地表上方 > 20、繩梯下端離地 ≤ 3'
   const src = srcOf(seed), rope = ropeOf(b)!; expect(b.chests[0].kind).toBe('sky'); expect(b.y + b.h).toBeLessThan(src.surfaceAt(b.x) - 20);
   expect(src.surfaceAt(rope.x) - rope.y1).toBeLessThanOrEqual(4); } }, 120_000);
 it('分段填 = 整欄填（礦坑、空島各一份跨欄的）', () => { for (const k of ['mineshaft', 'sky_island']) { const { src, b } = firstCrossing(k), cx = b.x >> 5;
-  const parts = new Column(cx, 1200); src.fill(parts, cx * 32, b.x + 1); src.fill(parts, b.x + 1, cx * 32 + 32); expect(bytes(parts)).toEqual(bytes(fillCol(src, cx))); } });
+  const parts = new Column(cx, 1200); src.fill(parts, cx * 32, b.x + 1); src.fill(parts, b.x + 1, cx * 32 + 32); expect(bytes(parts)).toEqual(bytes(fillCol(src, cx))); } }, 60_000);
+it('礦坑總寬 ≤ 154（長 + 斜坡 + 密室，Q3）、50 個種子的 secret 錨點都建得出來', () => { for (const seed of SEEDS50) for (const b of homeBlueprints(seed).filter((q) => q.kind === 'mineshaft')) {
+  expect(b.w, `${seed} ${b.x}`).toBeLessThanOrEqual(154); const s = slotOf(b.id, srcOf(seed).layout); expect(b.x).toBeGreaterThanOrEqual(s.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(s.x1 - 8); } }, 300_000);
 ```
-（`secretRoomSealed(w, chest)` = 從箱子格做 4 鄰空氣洪水填充，碰到的格都在密室外框內、且外框邊有裂紋石；`ropeOf(b)` = 藍圖裡 T.ROPE 格的 x 與最低 y；`firstCrossing(kind)` = 依序找種子中第一份跨欄的該種藍圖。）
+（`SEEDS50` / `homeBlueprints` 共用 `testUtil.ts`；`secretRoomSealed(w, chest)` = 從箱子格做 4 鄰空氣洪水填充，碰到的格都在密室外框內、且外框邊有裂紋石；`ropeOf(b)` = 藍圖裡 T.ROPE 格的 x 與最低 y；`firstCrossing(kind)` = 依序找種子中第一份跨欄的該種藍圖。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/underground.test.ts`；Expected: FAIL。
 - [ ] **Step 3: 實作** 如上。
@@ -600,7 +655,8 @@ it('分段填 = 整欄填（礦坑、空島各一份跨欄的）', () => { for (
 
 **Files:**
 - Create: `engine/gen2/structures/miniBiome.ts`、`engine/gen2/structures/hive.ts`、`engine/gen2/minibiome.test.ts`
-- Modify: `engine/gen2/blueprint.ts`（機率表：地下層蘑菇林 0.05（只在森林 / 叢林）、蜂巢 0.1（只在叢林）；深層水晶洞 0.08；登錄三種錨點）
+- Modify: `engine/gen2/blueprint.ts`（機率表：地下層蘑菇林 0.05（只在森林 / 叢林）、蜂巢 0.1（只在叢林）；深層水晶洞 0.08；登錄三種錨點）、`engine/gen2/bpcore.ts`（`BpKind` 加三種）、`engine/gen2/testUtil.ts`（收 `snapshotLiquid`；`liquidInvariant` 認得蜂蜜）、`engine/gen2/lakes.test.ts`（改 import `snapshotLiquid`）
+- Test 必須保持綠：`engine/gen2/lakes.test.ts`、`engine/gen2/settlements.test.ts`（家鄉零重疊，Q10）、`engine/gen2/objects.test.ts`（坑道避讓帶，Q3）
 
 **Interfaces:**
 - Produces: `buildMushroomBp(c: BpCtx): Blueprint`——橢圓 rx 40–70、ry 22–34，中心 y ∈ [rock + ry + 10, rock + 0.4 × (deep − rock) + ry]；外框內挖出洞腔（雜湊邊緣）、殼改泥巴 + 泥巴牆、露出的地板 = `T.MUSHROOM_GRASS`、地板上 38% `T.GLOW_MUSHROOM`、天花板 10% 藤；地標 `T.SPORE_TOTEM`（site `'mushroom_biome'`）。`buildCrystalBp(c: BpCtx): Blueprint`——rx 40–60、ry 24–34、中心 y ∈ [deep, molten − ry − 12]；殼改大理石 + 冰牆、地板 28% / 天花板 22% `T.CRYSTAL`；地標 `T.GEODE`。`buildHiveBp(c: BpCtx): Blueprint`——rx 10–15、ry 7–10、中心 y ∈ [rock + ry + 4, deep + 20]、2.5 格厚 `T.HIVE` 殼 + 蜂巢牆、`cy + 0.15 × ry` 以下滿蜂蜜（`LIQ.HONEY`，靜止平面）、3 個垂掛蜂巢；地標 `T.HONEY_JAR`。三種都不用 `Math.sqrt`（橢圓用整數比較 `dx² ry² + dy² rx² ≤ rx² ry²`）。
@@ -616,7 +672,7 @@ it('§4.4：家鄉 ≥ 1 蘑菇林（蘑菇草 > 150、發光蘑菇 > 40）、�
   loadBox(w, h[0]); expect(liquidIn(w, h[0], LIQ.HONEY)).toBeGreaterThan(20); expect(srcOf(seed).biomeAt(h[0].x)).toBe(BIOME.JUNGLE); } }, 120_000);
 it('蜂蜜是靜止的：liquidInvariant 沒有違規、喚醒 300 步不變', () => { const { src, b } = firstOf('hive'), w = worldOf(src), sim = new LiquidSim(w); loadBox(w, b);
   expect(liquidInvariant(w, b.x - 2, b.x + b.w + 2)).toEqual([]); const before = snapshotLiquid(w, b); sim.wakeRect(b.x, b.y, b.x + b.w, b.y + b.h);
-  for (let k = 0; k < 300; k++) sim.step(); expect(snapshotLiquid(w, b)).toEqual(before); });
+  for (let k = 0; k < 300; k++) sim.step(); expect(snapshotLiquid(w, b)).toEqual(before); }, 60_000);
 ```
 （`loadBox` / `countIn` / `liquidIn` / `firstOf` 寫在 `testUtil.ts`；`snapshotLiquid` 從 M1 的 `lakes.test.ts` 搬到 `testUtil.ts` 共用；`liquidInvariant` 要認得蜂蜜（M1 只看水 / 熔岩時一併擴充）。）
 
@@ -640,19 +696,19 @@ it('蜂蜜是靜止的：liquidInvariant 沒有違規、喚醒 300 步不變', (
   - 地表裝飾（陸地欄、草 / 沙 / 雪 / 叢林草上方那格是空氣、不在表層藍圖外框內、不在水下）：機率照舊（草：高草 24%、花 8%、蘑菇 2%、小石 1.5%、灌木 3.5%、南瓜 0.7%；沙漠沙：枯木叢 12%、小石 2%；雪：雪灌木 7%、小石 1.5%；叢林草：蕨 24%、高草 10%、花 4%、蘑菇 1%、灌木 5%），擲 `hash2(x, 0, g2-decor)`。
   - 地下裝飾（`y > surface + 1` 的空氣格、不在任何藍圖外框內）：地板（下方實心）——深於 `surface + 12` 陶罐 1.2%、石上石筍 4%、`y ≥ deep` 發光蘑菇 1.2%、泥巴 / 叢林草上蕨 12%；天花板（上方實心）——石下鐘乳石 4.5%、叢林泥巴下藤 24%（長 2–7，只往下長到本欄空氣用完為止）；牆邊蛛網 2%。擲 `hash2(x, y, g2-ugdecor)`。
 
-- [ ] **Step 1: 寫失敗測試**（3 個種子、家鄉 [0, 4200)，逐欄 `fillCol`；檔案內共用欄資料，逾時 180 s）
+- [ ] **Step 1: 寫失敗測試**（3 個種子、家鄉 [0, 4200)，逐欄 `fillCol`；檔案內共用欄資料：`beforeAll(() => { HOME3 = … }, 180_000)`（hook 預設 10 s，Q18）；之後每個 `it` 只讀統計，各給 `30_000`）
 
 ```ts
 it('§4.4 花崗岩 / 大理石：各 > 300 格；花崗岩在深層的比在岩層的多', () => { for (const s of HOME3) {
-  expect(s.count(T.GRANITE)).toBeGreaterThan(300); expect(s.count(T.MARBLE)).toBeGreaterThan(300); expect(s.countBand(T.GRANITE, 'deep')).toBeGreaterThan(s.countBand(T.GRANITE, 'rock')); } });
+  expect(s.count(T.GRANITE)).toBeGreaterThan(300); expect(s.count(T.MARBLE)).toBeGreaterThan(300); expect(s.countBand(T.GRANITE, 'deep')).toBeGreaterThan(s.countBand(T.GRANITE, 'rock')); } }, 30_000);
 it('§4.4 熔岩帶：molten..LAVA_Y 的空氣 > 15%、灰燼 > 500、黑曜石 > 300、熔岩岩 > 200、熔岩 > 1500', () => { for (const s of HOME3) {
   expect(s.airShare('molten')).toBeGreaterThan(0.15); expect(s.count(T.ASH)).toBeGreaterThan(500); expect(s.count(T.OBSIDIAN)).toBeGreaterThan(300);
-  expect(s.count(T.MAGMA_ROCK)).toBeGreaterThan(200); expect(s.lavaCells()).toBeGreaterThan(1500); } });
+  expect(s.count(T.MAGMA_ROCK)).toBeGreaterThan(200); expect(s.lavaCells()).toBeGreaterThan(1500); } }, 30_000);
 it('裝飾：每種 > 30 格（南瓜 > 5），每一格的支撐都合法（地板類下方實心、天花板類上方實心、藤往上接藤或實心）', () => { for (const s of HOME3) {
   for (const t of [T.FLOWER, T.TALL_GRASS, T.MUSHROOM, T.SMALL_ROCK, T.BUSH, T.DEAD_BUSH, T.SNOW_SHRUB, T.FERN, T.VINE, T.GLOW_MUSHROOM, T.STALACTITE, T.STALAGMITE, T.COBWEB, T.POT]) expect(s.count(t), String(t)).toBeGreaterThan(30);
-  expect(s.count(T.PUMPKIN)).toBeGreaterThan(5); expect(s.badSupport()).toEqual([]); } });
+  expect(s.count(T.PUMPKIN)).toBeGreaterThan(5); expect(s.badSupport()).toEqual([]); } }, 30_000);
 it('分段填 = 整欄填（裝飾 / 熔岩帶在欄內、與分段無關）', () => { const src = new Gen2Source('feat'); for (const cx of [20, 66, 110]) {
-  const parts = new Column(cx, 1200); src.fill(parts, cx * 32, cx * 32 + 7); src.fill(parts, cx * 32 + 7, cx * 32 + 32); expect(bytes(parts)).toEqual(bytes(fillCol(src, cx))); } });
+  const parts = new Column(cx, 1200); src.fill(parts, cx * 32, cx * 32 + 7); src.fill(parts, cx * 32 + 7, cx * 32 + 32); expect(bytes(parts)).toEqual(bytes(fillCol(src, cx))); } }, 30_000);
 ```
 （`HOME3` = 3 個種子各自 `fillCol` 0..131 欄的統計物件（`count`、`countBand(tile, 'dirt' | 'rock' | 'deep' | 'molten')`、`airShare`、`lavaCells`、`badSupport`），寫在測試檔內；tile 名稱以 `tiles.ts` 為準。）
 
@@ -672,9 +728,18 @@ it('分段填 = 整欄填（裝飾 / 熔岩帶在欄內、與分段無關）', (
 **Interfaces:**
 - 深度帶（相對該欄層線）：`dirt = [surface, rock)`、`rock = [rock, deep)`、`deep = [deep, molten)`、`molten = [molten, H)`。密度 = 該帶內礦格數 ÷ 該帶總格數（千分比），x ∈ [100, 4100)、3 個種子平均。
 - Produces（`oreBaseline.ts`）：`export const LEGACY_ORE_DENSITY: Readonly<Record<'copper' | 'iron' | 'silver' | 'gold', Readonly<Record<'dirt' | 'rock' | 'deep' | 'molten', number>>>>`（量測值貼上，檔頭寫量測 commit 與種子 `alpha` / `beta` / `gamma`）。
-- `oreBaseline.measure.test.ts`：`it.runIf(process.env.DELVE_MEASURE === '1')`，用 `generateWorld` 量三個種子、`console.info(JSON.stringify(...))`；M2b 刪 legacy 時它跟著刪，常數留著。
+- `oreBaseline.measure.test.ts`：`it.runIf(process.env.DELVE_MEASURE === '1')`，用 `generateWorld` 量三個種子、先 `console.info(JSON.stringify(...))` 再斷言（Q17：不准只印不驗），逾時 `300_000`；M2b 刪 legacy 時它跟著刪，常數留著。
+  ```ts
+  it.runIf(process.env.DELVE_MEASURE === '1')('舊生成器礦物密度 = LEGACY_ORE_DENSITY（±30%）', () => {
+    const m = measureLegacy(['alpha', 'beta', 'gamma']); console.info('[ore baseline]', JSON.stringify(m));
+    for (const ore of ORES4) { expect(Math.max(...BANDS4.map((b) => m[ore][b])), ore).toBeGreaterThan(0);
+      for (const band of BANDS4) { const rec = LEGACY_ORE_DENSITY[ore][band], now = m[ore][band]; expect(Number.isFinite(now)).toBe(true);
+        if (rec >= 0.2) { expect(now, `${ore}/${band}`).toBeGreaterThanOrEqual(rec * 0.7); expect(now, `${ore}/${band}`).toBeLessThanOrEqual(rec * 1.3); }
+        else expect(now, `${ore}/${band}`).toBeLessThan(0.5); } } }, 300_000);
+  ```
+  （第一次跑時常數還是佔位值 → 測試紅、但先印出量測值；貼進 `oreBaseline.ts` 後重跑必須綠——證明貼上的數字就是量到的。）
 
-- [ ] **Step 1: 量舊生成器** — Run: `DELVE_MEASURE=1 npx vitest run src/scripts/games/delve/engine/legacy/oreBaseline.measure.test.ts`；把輸出貼進 `oreBaseline.ts` 與本計畫「基準紀錄」。
+- [ ] **Step 1: 量舊生成器** — Run: `DELVE_MEASURE=1 npx vitest run src/scripts/games/delve/engine/legacy/oreBaseline.measure.test.ts`；把 `[ore baseline]` 輸出貼進 `oreBaseline.ts` 與本計畫「基準紀錄」，重跑一次 Expected: PASS。
 - [ ] **Step 2: 寫失敗測試**
 
 ```ts
@@ -688,9 +753,9 @@ it('§4.4 燈籠守望者召喚材料：配方 = 發光蘑菇 6 + 凝膠 5 + 金
   expect(recipeOf('wick_offering').inputs).toEqual([['glow_mushroom', 6], ['gel', 5], ['gold_bar', 3]]);
   expect(homeCount(T.GLOW_MUSHROOM)).toBeGreaterThan(40); expect(homeCount(T.GOLD_ORE)).toBeGreaterThan(300);
   const kinds = spawnTable(hab({ zone: 'surface', biome: BIOME.FOREST, night: false })).map((e) => e.kind);
-  expect(kinds.some((k) => ENEMIES[k].drops.some((d) => d.item === 'gel'))).toBe(true); expect(recipeOf('gold_bar').inputs).toEqual([['gold_ore', 4]]); });
+  expect(kinds.some((k) => ENEMIES[k].drops.some((d) => d.item === 'gel'))).toBe(true); expect(recipeOf('gold_bar').inputs).toEqual([['gold_ore', 4]]); }, 180_000);
 ```
-（`densityOf` / `g2Count` / `clustered` / `homeCount` / `recipeOf` / `hab` 寫在測試檔內；`ENEMIES[k].drops` 與配方的確切形狀以 `enemies.ts` / `crafting.ts:53,92` 為準。）
+（`densityOf` / `g2Count` / `clustered` / `homeCount` / `recipeOf` / `hab` / `measureLegacy` 寫在測試檔內（`measureLegacy` 在 legacy 的 measure 檔，gen2 測試不 import legacy）；三個 `it` 共用的 gen2 家鄉欄資料放 `beforeAll(…, 180_000)`；`ENEMIES[k].drops` 與配方的確切形狀以 `enemies.ts` / `crafting.ts:53,92` 為準。）
 
 - [ ] **Step 3: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/ores.test.ts`；Expected: FAIL（M1 的礦門檻是被測試窗口調出來的，密度不對）。
 - [ ] **Step 4: 實作** — gen2 礦門檻改成每種礦 × 每個帶一個值（`G2_ORE_THR[ore][band]`），調到 Step 2 通過；只換石頭類（P10 照舊）。
@@ -702,11 +767,12 @@ it('§4.4 燈籠守望者召喚材料：配方 = 發光蘑菇 6 + 凝膠 5 + 金
 ### Task 14: 石碑、遺物、地標的家鄉指派與 bootGen2 的家鄉內容
 
 **Files:**
-- Create: `engine/gen2/lore.ts`、`engine/gen2/structures/shrine.ts`、`engine/gen2/home.ts`（完成：`homeContent`）、`engine/gen2/lore.test.ts`
-- Modify: `engine/gen2/blueprint.ts`（家鄉藍圖的「裝飾」步：原始藍圖 → 加上石碑與遺物）、`engine/worldBoot.ts:84-104`（`bootGen2` 填 `HomeContent`）、`engine/game.ts:886-902, 1057`（gen2 世界：`tabletAt` / `landmarkAt` / Discovery 的 `loreTotal: 14`、`landmarks`、`open: true`）
+- Create: `engine/gen2/lore.ts`、`engine/gen2/structures/shrine.ts`、`engine/gen2/lore.test.ts`
+- Modify: `engine/gen2/home.ts`（Task 9 建立；本 Task 加 `homeContent`——Q11）、`engine/gen2/blueprint.ts`（`homePlans()`：家鄉藍圖開局一次建完 + 「裝飾」步，存進 Task 8 的 `pinned`）、`engine/gen2/structures/{cabin,ruin,lakes}.ts`（M1 建構器補地標）、`engine/gen2/bpcore.ts`（`BpKind` 加 alcove / molten_shrine / shaft_cache / spawn_tablet）、`engine/worldBoot.ts:84-104`（`bootGen2` 先 `homePlans()` 再填 `HomeContent`）、`engine/game.ts:886-902, 1057`（gen2 世界：`tabletAt` / `landmarkAt` / Discovery 的 `loreTotal: 14`、`landmarks`、`open: true`）
+- Test 必須保持綠：`engine/gen2/structures.import.test.ts`、`engine/gen2/structures.test.ts`、`engine/gen2/blueprint.test.ts`（出生點 ± 80——`spawn_tablet` 已移到 ± 80 外，Q16）、`engine/gen2/settlements.test.ts`（零重疊）、`engine/gen2/dungeon.test.ts`
 
 **Interfaces:**
-- Produces（`shrine.ts`，錨點建構器）：`buildAlcoveBp(c: BpCtx, tag: 'snow' | 'desert'): Blueprint`（y ∈ [rock, deep) 的 9×5 石室，地板 + 陶罐）；`buildMoltenShrineBp(c: BpCtx): Blueprint`（y ∈ [molten + 8, LAVA_Y − 12) 的玄武岩小室、黑曜石台、箱子 `'relic'`）；`buildShaftCacheBp(c: BpCtx): Blueprint`（該地區主坑道底端圓室的地板：3 格石地板 + 箱子 `'relic'`；座標由 `caves.shaftOf` 算）；`buildSpawnTabletBp(c: BpCtx): Blueprint`（`SPAWN_X + 14..59` 第一個平地欄的地表石碑 + 清掉草）。
+- Produces（`shrine.ts`，錨點建構器）：`buildAlcoveBp(c: BpCtx, tag: 'snow' | 'desert'): Blueprint`（y ∈ [rock, deep) 的 9×5 石室，地板 + 陶罐）；`buildMoltenShrineBp(c: BpCtx): Blueprint`（y ∈ [molten + 8, LAVA_Y − 12) 的玄武岩小室、黑曜石台、箱子 `'relic'`）；`buildShaftCacheBp(c: BpCtx): Blueprint`（該地區主坑道底端圓室的地板：3 格石地板 + 箱子 `'relic'`；座標由 `caves.shaftOf` 算）；`buildSpawnTabletBp(c: BpCtx): Blueprint`（錨點槽（出生點東側第一個與 ± 80 不相交的 MINOR 槽，Task 7 / Q16）內、離出生點最近的第一個平地欄的地表石碑 + 清掉草；站在 `c.groundAt`）。
 - Produces（`lore.ts`）：
   ```ts
   export interface HomeDecor { tablets: Map<number /* sid */, BpTablet[]>; extras: Map<number /* sid */, Map<string /* "x,y" */, ItemId[]>> }
@@ -717,9 +783,10 @@ it('§4.4 燈籠守望者召喚材料：配方 = 發光蘑菇 6 + 凝膠 5 + 金
   ```ts
   export interface HomeContent { villages: VillageInfo[]; halls: HallInfo[]; dungeon: DungeonInfo | null; tablets: { x: number; y: number; id: number }[];
     relics: GenRelic[]; landmarks: LandmarkInfo[]; structures: Structure[]; sites: GenSite[] }
-  export function homeContent(src: Gen2Source): HomeContent;   // 只建家鄉藍圖（所有層），不生成任何格子；結果快取在 src 上
+  export function homeContent(src: Gen2Source): HomeContent;   // 讀 homePlans() 的結果，不生成任何格子；結果快取在 src 上
   ```
-  `bootGen2` 把它放進 `WorldContent`（`structures` 給 `render/underground.ts` 的地下背景：`mushroom_biome` / `dungeon`；`regions` 仍是 `[]`，地區走 Task 15）。
+  `bootGen2` 把它放進 `WorldContent`（`structures` 給 `render/underground.ts` 的地下背景：`mushroom_biome` / `dungeon`；`sites` 照 Task 9；`regions` 仍是 `[]`，地區走 Task 15）。
+- Produces（`blueprint.ts`，Q9）：`BlueprintIndex.homePlans(): readonly Blueprint[]`——家鄉地塊所有層、所有槽的原始藍圖一次建完 → `homeDecor` → 最終藍圖，全部寫進 `pinned`（永不淘汰，與外圍的 LRU 256 分開）；只建一次（第二次呼叫直接回快取）。`bootGen2` 開局呼叫它（客人加入也一樣，只算藍圖不生成格子）；之後碰到家鄉欄只是讀 `pinned`，所以「第一次碰到某欄」的 fill 預算不含建家鄉藍圖。開局的家鄉藍圖建構另有預算：**目標 ≤ 300 ms**（Task 21 量測、報告；本 Task 的測試先釘 `homePlans` 只建一次）。家鄉以外的地塊沒有裝飾步，照舊逐份建、走 LRU。
 
 - [ ] **Step 1: 寫失敗測試**（5 個種子，逾時 180 s）
 
@@ -740,11 +807,23 @@ it('§4.4：地標放置率 ≥ 85%（有地標種類的家鄉藍圖中真的放
 it('gen2 遊戲：日誌古碑 0 / 14、地標總數 = 家鄉地標數；開局 < 1500 ms', () => { const t0 = performance.now(), g = new DelveGame({ seed: 'home-c', worldGen: { kind: 'gen2' } });
   expect(performance.now() - t0).toBeLessThan(1500); const st = g.discovery.stats();
   expect(st.lore).toEqual({ found: 0, total: 14 }); expect(st.landmarks.total).toBe(homeOf('home-c').landmarks.length); }, 60_000);
+it('homePlans 只建一次、之後碰家鄉欄不重建（Q9）', () => { const src = new Gen2Source('home-pin'), a = src.blueprints.homePlans();
+  expect(src.blueprints.homePlans()).toBe(a); touchOuterBlueprints(src, 300);
+  const d = a.find((b) => b.kind === 'dungeon')!; expect(src.blueprints.overlapping(d.x, d.x + 1).find((b) => b.kind === 'dungeon')).toBe(d); }, 60_000);
+// 遊戲讀生成物件（從 Task 2 移來：要真的 gen2 世界才有登錄，Q5；只用公開 API——interact + drainEvents，不呼叫 private claimLandmark）
+it('gen2 遊戲：古碑互動回藍圖的碑文 id；地標第一次 first: true、第二次 first: false；讀檔後仍是已領', () => {
+  const g = new DelveGame({ seed: 'home-c', worldGen: { kind: 'gen2' } }), hc = homeOf('home-c');
+  const t = hc.tablets.find((q) => q.id === 0)!; g.teleport(t.x + 1, t.y); g.step(FIXED_DT); g.drainEvents();
+  expect(g.interact(t.x, t.y)).toBe(true); expect(g.drainEvents().find((e) => e.type === 'lore')).toMatchObject({ type: 'lore', id: 0, first: true });
+  const l = hc.landmarks[0]; g.teleport(l.x + 1, l.y); g.step(FIXED_DT); g.drainEvents();
+  expect(g.interact(l.x, l.y)).toBe(true); expect(g.drainEvents().find((e) => e.type === 'landmark')).toMatchObject({ type: 'landmark', first: true });
+  g.interact(l.x, l.y); expect(g.drainEvents().find((e) => e.type === 'landmark')).toMatchObject({ first: false });
+  const d2 = new Discovery([], { open: true }); d2.load(g.discovery.toJSON()); expect(d2.landmarks.has(g.world.idx(l.x, l.y))).toBe(true); }, 60_000);
 ```
 （`LANDMARK_KINDS` = 有地標的 gen2 種類（cabin、mineshaft、ruin、sky_island、crystal_cave、mushroom_biome、hive、cave_lake、lake、hall），`lake` 的地標是岸邊 `T.CAIRN`、`cave_lake` 是 `T.RELIC_PACK`——M1 的小屋 / 遺跡 / 湖 / 地下湖建構器在本 Task 補上地標（Task 9–11 的建構器各自已放）；`chestItemCount` 寫在測試檔內。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/lore.test.ts`；Expected: FAIL。
-- [ ] **Step 3: 實作** — BlueprintIndex 對家鄉地塊：先建全部原始藍圖（快取）→ `homeDecor` → 最終藍圖 = 原始 + 石碑格 + 箱子 extra（裝飾只依賴原始藍圖，沒有循環）。M1 的 cabin / ruin / lake / cave_lake 建構器補地標（站位取自己的 `floors`）。
+- [ ] **Step 3: 實作** — `homePlans()`：先建全部原始藍圖 → `homeDecor` → 最終藍圖 = 原始 + 石碑格 + 箱子 extra（裝飾只依賴原始藍圖，沒有循環），寫進 `pinned`（Q9）。M1 的 cabin / ruin / lake / cave_lake 建構器補地標（站位取自己的 `floors`）。`game.ts` 的 Task 2 改動（`tabletId` 查 `world.genTablets`、領地標的 info 查 `world.genLandmarks`、World 登錄地標時 `discovery.knowLandmark`）由上面的遊戲測試承接。
 - [ ] **Step 4: 跑測試** — `npx vitest run src/scripts/games/delve/engine`；Expected: 全綠。
 - [ ] **Step 5: Commit** — `feat(delve): gen2 home lore tablets, relics and landmarks; boot fills home content`（re-record gen2 v0 hash）。
 
@@ -757,17 +836,19 @@ it('gen2 遊戲：日誌古碑 0 / 14、地標總數 = 家鄉地標數；開局 
 - Test: `engine/discovery.test.ts`
 
 **Interfaces:**
-- 種類對應（gen2 藍圖 → 地區 kind / cat；名字取 `NAMES[kind]`，新種類在 `NAMES` 加名單）：cabin / ruin / shipwreck / mineshaft / sky_island / lake（→ `'pond'`）→ `site`；village / hall（→ `'dwarf_hall'`）→ `site`；mushroom_biome / crystal_cave / hive / cave_lake（→ `'underground_lake'`）→ `cave`；mineshaft 的密室（part 1）→ `secret`（kind `'secret_room'`）；dungeon（part 0 = 整座、part 1.. = 有名字的房間，`ROOM_NAMES`）→ `dungeon` 類別同舊；keep（Task 18）→ `dungeon`、lighthouse / hermit / wreck 島 / reef / sea_ruin（Task 20）→ `site`。地區形狀：結構 = 外框矩形；蘑菇林 / 水晶洞 / 蜂巢 = 橢圓。id = `gen2SiteRegionId(sid, part)`。
+- 種類對應（gen2 藍圖 → 地區 kind / cat；名字取 `NAMES[kind]`，新種類在 `NAMES` 加名單）：cabin / ruin / shipwreck / mineshaft / sky_island / lake（→ `'pond'`）→ `site`；village / hall（→ `'dwarf_hall'`）→ `site`；mushroom_biome / crystal_cave / hive / cave_lake（→ `'underground_lake'`）→ `cave`；mineshaft 的密室（part 1）→ `secret`（kind `'secret_room'`）；dungeon（part 0 = 整座、part 1.. = 有名字的房間，`ROOM_NAMES`）→ `dungeon` 類別同舊；keep（Task 18）→ `dungeon`、hermit_hut（Task 18，荒野大陸的隱士小屋 → kind `'hermit'`）→ `site`、lighthouse / hermit / wreck 島 / reef / sea_ruin（Task 20）→ `site`。地區形狀：結構 = 外框矩形；蘑菇林 / 水晶洞 / 蜂巢 = 橢圓。id = `gen2SiteRegionId(sid, part)`。
 - Produces（`discovery.ts`）：
   ```ts
   // Discovery 新增
-  know(regions: readonly Region[]): void;          // 加進已知表（同 id 不重複）；visit 的外圍查詢結果也自動加進來
+  know(regions: readonly Region[]): void;          // 加進已知表（同 id 不重複）
   region(id: number): Region | null;               // 中央 regions[id] → 已知表 → resolver
   listKnown(): Region[];                           // 中央 ∪ 已知表，依 id 排序
   setResolver(fn: ((id: number) => Region | null) | null): void;
   export function gen2RegionById(seed: string, src: Gen2Source): (id: number) => Region | null;   // 地塊地區 id 與結構地區 id 都能反查；不存在 → null
+  // DiscoveryOpts 新增（Q12）：trackOuter?: boolean   /* gen2 世界傳 true：visit 到的外圍地區自動 know()；舊世界不傳 */
+  // toJSON() 新增 known?: number[]（trackOuter 時：外圍自動加入的地區 id）；load() 對每個 id 經 resolver 反查後 know()，所以讀檔後 listKnown / 總數相同
   ```
-  `stats()` 的各類別總數 = `listKnown()` 裡該類別的數目（家鄉開局全知 → 家鄉內是精確總數）。gen2 世界：開局 `know(homeRegions)`（`homeContent` 的藍圖 + 家鄉地塊地區）、`setResolver(gen2RegionById(...))`。
+  `stats()` 的各類別總數 = `listKnown()` 裡該類別的數目（家鄉開局全知 → 家鄉內是精確總數）。**只有 gen2 世界（`trackOuter: true`）會把 visit 到的外圍地區自動加進已知表、並存進存檔**（Q12）；舊世界的 v1 外圍地區照 discovery.ts:6-7 不進總數，舊世界的日誌總數與讀檔前後都與現在相同。gen2 世界：開局 `know(homeRegions)`（`homeContent` 的藍圖 + 家鄉地塊地區）、`setResolver(gen2RegionById(...))`、`trackOuter: true`。
 
 - [ ] **Step 1: 寫失敗測試**
 
@@ -778,17 +859,23 @@ it('所有 gen2 種類都有地區、id 唯一、可反查回同名同範圍', (
     if (seen.has(r.id)) expect(seen.get(r.id)).toBe(r.name); else seen.set(r.id, r.name);
     expect(byId(r.id)).toMatchObject({ id: r.id, name: r.name, x: r.x, y: r.y, w: r.w, h: r.h }); }
   for (const k of ['cabin', 'ruin', 'mineshaft', 'secret_room', 'sky_island', 'village', 'dwarf_hall', 'dungeon', 'mushroom_biome', 'crystal_cave', 'underground_lake']) expect(kinds, k).toContain(k); }, 120_000);
-it('Discovery：know / visit 之後 listKnown 有它；讀檔後 found 的 id 經 resolver 反查得到；類別總數 = 已知數', () => {
-  const d = new Discovery([], { open: true }); d.setOuter(q); d.setResolver(byId); const r = q(SPAWN_X, 300).at(-1)!; d.visit(SPAWN_X, 300);
-  expect(d.listKnown().map((k) => k.id)).toContain(r.id); const j = d.toJSON(), d2 = new Discovery([], { open: true }); d2.setResolver(byId); d2.load(j);
-  expect(d2.region(r.id)!.name).toBe(r.name); expect(d2.listKnown().map((k) => k.id)).toContain(r.id); });
+it('Discovery（gen2，trackOuter）：visit 之後 listKnown 有它；讀檔後 listKnown 與各類別總數完全相同', () => {
+  const d = new Discovery([], { open: true, trackOuter: true }); d.setOuter(q); d.setResolver(byId); const r = q(SPAWN_X, 300).at(-1)!; d.visit(SPAWN_X, 300);
+  expect(d.listKnown().map((k) => k.id)).toContain(r.id); const j = d.toJSON(), d2 = new Discovery([], { open: true, trackOuter: true }); d2.setResolver(byId); d2.load(j);
+  expect(d2.region(r.id)!.name).toBe(r.name); expect(d2.listKnown().map((k) => k.id)).toEqual(d.listKnown().map((k) => k.id)); expect(d2.stats()).toEqual(d.stats()); });
+it('舊世界（沒有 trackOuter）：visit v1 外圍地區不改 listKnown 與日誌總數，讀檔前後相同（Q12）', () => {
+  const regs = buildRegions(source()), f = outerRegions('od', profile), d = new Discovery(regs); d.setOuter(f); const before = d.stats();
+  const [ox, oy] = OUTER_PT; expect(f(ox, oy).length).toBeGreaterThan(0); d.visit(ox, oy);
+  expect(d.listKnown()).toHaveLength(regs.length); expect(totals(d.stats())).toEqual(totals(before));
+  const d2 = new Discovery(regs); d2.setOuter(f); d2.load(d.toJSON()); expect(totals(d2.stats())).toEqual(totals(before)); });
 it('gen2 遊戲開局：家鄉每座村莊 / 地廳 / 地城都在 listKnown，日誌 site 類別總數 ≥ 村莊數 + 地廳數', () => { const g = new DelveGame({ seed: 'rg2', worldGen: { kind: 'gen2' } });
   const k = g.discovery.listKnown(); expect(k.filter((r) => r.kind === 'village').length).toBe(g.sites.list('village').length);
   expect(k.filter((r) => r.kind === 'dungeon').length).toBe(1); }, 60_000);
 ```
+（`source()`、`profile`（`OuterProfile('od', OUTER_FRAME)`）是 `discovery.test.ts:12, 133-134` 既有的 fixture；`OUTER_PT` = 該 profile 下 `outerRegions` 回非空的一點（在測試檔內挑一個寫死）；`totals(s)` = 各類別的 `total`。第一個 `it`（±20,000 掃描）逾時 120 s 已寫。）
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/discovery.test.ts`；Expected: FAIL。
 - [ ] **Step 3: 實作** 如上。
-- [ ] **Step 4: 跑測試** — `npx vitest run src/scripts/games/delve/engine src/scripts/games/delve/save`；Expected: 全綠（舊世界的 `buildRegions` 與 id 不變）。
+- [ ] **Step 4: 跑測試** — `npx vitest run src/scripts/games/delve/engine src/scripts/games/delve/save`；Expected: 全綠（舊世界的 `buildRegions` 與 id 不變、舊世界日誌總數不變）。
 - [ ] **Step 5: Commit** — `feat(delve): gen2 regions for every structure kind; known-region registry with id resolver`。
 
 ---
@@ -803,6 +890,7 @@ it('gen2 遊戲開局：家鄉每座村莊 / 地廳 / 地城都在 listKnown，�
 - Consumes: `Discovery.listKnown / region / know`（Task 15）。
 - `mapLabels(regions, d)` / `mapPins(regions, d, showAll)` 的呼叫端改傳 `discovery.listKnown()`；外圍地塊地區（`cat 'land'`：大陸地區、海、島）找到後畫名稱（spec §4.2「大地圖要畫出外圍地區名稱」）。`ICON_OF` 新增：`pond → 'lake'`、`keep → 'dungeon'`、`lighthouse / hermit / wreck_isle → 'cabin'`、`reef / sea_ruin → 'ruin'`（沿用既有圖示，不新增美術）。
 - HUD 地區名：`discovery.areaAt(x, y): Region | null`（新：中央 regionsAt ∪ 外圍查詢，取最小的那個）。
+- scout 的真實介面（Q13，不改形狀）：`scout(): { name: string; x: number; y: number } | null`（game.ts:4653）、候選 = `this.landmarks`（未領）+ 地區（`r.ax / r.ay`）；本 Task 只把地區候選從 `this.regions` 換成 `discovery.listKnown()`；標記走 `addScoutMark(x, y)` → `scoutMarks: MapMarker[]`（`{ x, y }`），`markDone` 的地區查詢同樣換成 `listKnown()`。
 - 提示 / 委託 / 探路 / 嚮導 reveal：候選 = `listKnown()` 中未找到的（gen2 世界家鄉全知，所以照舊能指路）。
 
 - [ ] **Step 1: 寫失敗測試**
@@ -819,7 +907,10 @@ it('gen2 家鄉的村莊 / 地城圖釘：找到前 showAll 才畫、找到後�
 it('HUD 地區名：gen2 出生點 = 家鄉林地、第一道東海 = 東方大海（不是「未知之地」）', () => { const g = new DelveGame({ seed: 'hud2', worldGen: { kind: 'gen2' } });
   expect(areaLabel(g, SPAWN_X, g.spawn.y)).toBe('家鄉林地'); g.teleport(4300, SEA_Y - 2); g.step(FIXED_DT); expect(areaLabel(g, 4300, SEA_Y - 2)).toBe('東方大海'); }, 60_000);
 it('gen2：提示指向家鄉沒去過的村莊；探路（scout）標出的地點在 listKnown 裡', () => { const g = new DelveGame({ seed: 'hint2', worldGen: { kind: 'gen2' } });
-  expect(g.nextStepHint()).toMatch(/村/); const m = g.scout(); expect(m).not.toBeNull(); expect(g.discovery.region(m!.id)).not.toBeNull(); }, 60_000);
+  expect(g.nextStepHint()).toMatch(/村/); const m = g.scout(); expect(m).not.toBeNull();          // scout(): { name, x, y } | null（game.ts:4653，沒有 id——Q13）
+  const known = g.discovery.listKnown().find((r) => r.ax === m!.x && r.ay === m!.y), lm = g.landmarks.find((l) => l.x === m!.x && l.y === m!.y);
+  expect(Boolean(known) || Boolean(lm)).toBe(true); if (known) expect(known.name).toBe(m!.name);
+  expect(g.scoutMarks).toContainEqual({ x: m!.x, y: m!.y }); }, 60_000);              // scoutMarks: MapMarker[] = { x, y }（explore.ts:14）
 ```
 ```ts
 // tests/e2e/delve-gen2.spec.ts（LF）
@@ -842,12 +933,14 @@ test('?gen2=1：大地圖模型在走到東方大海後有「東方大海」標�
 
 **Files:**
 - Create: `engine/legacy/legacyTiles.measure.test.ts`、`engine/gen2/legacyTiles.ts`、`engine/gen2/home.quality.test.ts`
+- Modify（只在 Step 4 需要補做時）：`engine/gen2/fill.ts`（Task 12 的 pass）
 
 **Interfaces:**
+- `legacyTiles.measure.test.ts`（Q17：不准只印不驗）：`it.runIf(process.env.DELVE_MEASURE === '1')`，量 3 個種子（`alpha` / `beta` / `gamma`）的舊家鄉 fg tile 集合，先 `console.info('[legacy tiles]', …)` 再斷言 `expect([...measured].sort((a, b) => a - b)).toEqual(LEGACY_HOME_TILES)` 與 `expect(measured.size).toBeGreaterThan(40)`，逾時 `300_000`（第一次跑常數是空的 → 紅、但先印出；貼上後重跑必須綠）。
 - Produces（`legacyTiles.ts`）：`export const LEGACY_HOME_TILES: readonly number[]`（舊生成器 3 個種子家鄉出現過的所有 fg tile id，量測貼上）、`export const NOT_PORTED: Readonly<Record<number, string>>`（gen2 刻意不做的 tile 與理由，作者決定：`T.SPRING` / `T.LAVA_SPRING` / `T.DRAIN`（泉水瀑布不移植：需要液體模擬，§4.3 禁止生成後模擬）、`T.CLAY` / `T.GRAVEL`（乾湖床 / 土石互滲不移植，§4.4 沒列）、`T.ICE`（結冰湖不移植），每項一行理由；量測後若還有其他 tile 只在舊世界出現，**先補 gen2 做法**，真的不做才列進來並在 commit 說明）。
 - `home.quality.test.ts` 把 §4.4 每一條在 20 個種子上再驗一次（各 Task 的測試是 5 個種子的細節版），全部只用藍圖 + `homeContent` + 抽樣欄的 fill，逾時 300 s。
 
-- [ ] **Step 1: 量舊生成器** — Run: `DELVE_MEASURE=1 npx vitest run src/scripts/games/delve/engine/legacy/legacyTiles.measure.test.ts`；貼進 `legacyTiles.ts`。
+- [ ] **Step 1: 量舊生成器** — Run: `DELVE_MEASURE=1 npx vitest run src/scripts/games/delve/engine/legacy/legacyTiles.measure.test.ts`；把 `[legacy tiles]` 輸出貼進 `legacyTiles.ts`，重跑一次 Expected: PASS。
 - [ ] **Step 2: 寫失敗測試**
 
 ```ts
@@ -876,27 +969,30 @@ it('家鄉不輸舊版：舊生成器家鄉出現過的 tile，gen2 家鄉（3 �
 
 ---
 
-### Task 18: 荒野大陸的大東西（村莊 / 小地城 / 地廳）、v0 文化池只有荒野
+### Task 18: 荒野大陸的大東西（村莊 / 小地城 / 地廳）與隱士小屋、v0 只有荒野大陸
 
 **Files:**
-- Create: `engine/gen2/structures/keep.ts`、`engine/gen2/outer.test.ts`
-- Modify: `engine/gen2/anchors.ts`（`continentAnchors`）、`engine/gen2/cultures.ts`（`CULTURE_POOL`、`CULTURE_SINCE`）、`engine/gen2/layout.ts:186-195`（c = 1 霧竹規則改看 `CULTURE_SINCE`；建構子加測試用的 `cultures?` 參數）、`engine/game.ts`（`world.onGenSites` 已接——外圍聚落 NPC 在欄載入時出現）、`net/`（客人收到未登錄 NPC 的位置時略過）
-- Test: `engine/gen2/layout.test.ts`、`engine/gen2/outer.test.ts`、`net/coop.gen2.test.ts`
+- Create: `engine/gen2/structures/keep.ts`、`engine/gen2/structures/hermitHut.ts`、`engine/gen2/outer.test.ts`
+- Modify: `engine/gen2/anchors.ts`（`continentAnchors`）、`engine/gen2/blueprint.ts`（登錄 `keep` / `village` / `hall` / `hermit_hut` 的大陸錨點；`guard()` 跳過錨點槽）、`engine/gen2/bpcore.ts`（`BpKind` 加 `'keep'` / `'hermit_hut'`）、`engine/gen2/cultures.ts`（`CULTURE_POOL = { 0: [null] }`）、`engine/gen2/layout.ts:182-189`（刪掉 c = 1 的「第一片必有霧竹」規則——Q14）、`engine/folkDefs.ts`（`FolkRole` 加 `'hermit'`、`ROLES.hermit`——Task 20 沿用並加 `chart` 服務）、`engine/folk.ts`（隱士站位：`addSite` 認得 `kind: 'hermit'`）、`engine/game.ts`（`world.onGenSites` 已接——外圍聚落 NPC 在欄載入時出現）、`net/`（客人收到未登錄 NPC 的位置時略過）
+- Test: `engine/gen2/layout.test.ts`（M1 的文化測試 `:88-89`、`:179` 改寫；鎖表注入霧竹的 `:150-151` 照留）、`engine/gen2/outer.test.ts`、`net/coop.gen2.test.ts`；必須保持綠：`engine/gen2/blueprint.test.ts`（P11：每片大陸 ≥ 1 小屋、≥ 1 遺跡，`:65-71`）、`engine/discovery.test.ts`（M1「霧竹大陸的地區名」測試改用 `LockTable` 鎖一片 `{ ver: 0, culture: 'mistbamboo' }` 的大陸——既有機制，不加 Layout 參數）
 
 **Interfaces:**
-- Produces（`cultures.ts`）：`CULTURE_POOL = { 0: [null] }`；`export const CULTURE_SINCE: Readonly<Partial<Record<CultureId, number>>> = {}`（M4 設 `mistbamboo: N`）。Layout：`constructor(seed, origin, locks, latestVer, cultures?: { pool?: Readonly<Record<number, readonly (CultureId | null)[]>>; since?: Readonly<Partial<Record<CultureId, number>>> })`；c = 1 的「必有一片霧竹」只在 `since.mistbamboo !== undefined && ver >= since.mistbamboo` 時套用，否則兩片都照池子挑。
-- Produces（`anchors.ts`）：`continentAnchors`——大東西的目標點：`x0 + 200`、`x1 − 200` 與兩者之間均分、相鄰目標距離 ≤ 1,100；每個目標取「槽中心最接近它的合格槽」（village / keep：SURFACE；hall：DEEP），已用過的槽跳過。種類（雜湊）：tier 1 village 50% / keep 30% / hall 20%；tier ≥ 2 village 35% / keep 45% / hall 20%；外圍村莊可以放在任何生態（雪原、沙漠、叢林也有村子），只排除 HIGH 變體的地區（太陡）——目標附近只有 HIGH 地區時改放 keep。M1 的保證小屋 / 遺跡（P11）照舊。
+- Produces（`cultures.ts` / `layout.ts`，Q14）：`CULTURE_POOL = { 0: [null] }`；c = 1 規則刪除 → v0（以及 M2b 凍結的 v1）所有大陸 `culture === null`、kind `'wild'`。**不做任何文化閘門**：霧竹的指派（「離家最近、尚未進入過的那片大陸」、ver ≥ 2）整個是 M4 的工作（spec §4.1 2026-10-24 修訂）。鎖表裡已存的 culture 照舊尊重（`locked !== undefined` 那一支不動）。
+- Produces（`anchors.ts`）：`continentAnchors`——大東西的目標點：`x0 + 200`、`x1 − 200` 與兩者之間均分、相鄰目標距離 ≤ 1,100；每個目標取「槽中心最接近它的合格槽」（village / keep：SURFACE；hall：DEEP），已用過的槽跳過。種類（雜湊）：tier 1 village 50% / keep 30% / hall 20%；tier ≥ 2 village 35% / keep 45% / hall 20%；外圍村莊可以放在任何生態（雪原、沙漠、叢林也有村子），只排除 HIGH 變體的地區（太陡）——目標附近只有 HIGH 地區時改放 keep。另加 **1 個 `hermit_hut` 錨點**（Q20b）：大陸中點附近、還沒被大東西用掉的 SURFACE 槽（槽中心最接近 `(x0 + x1) / 2` 的）。
+- **錨點 vs 保證槽（Q15）**：錨點優先。`guard()` 的合格槽清單先剔除該大陸所有錨點佔用的 (地區, 層, 槽)，再照 M1 的起點 g 往後找小屋 / 遺跡——保證仍是每片大陸各 ≥ 1，只是改在剩下的槽裡找；剔除後沒有合格槽 = 版面壞了，照 M1 丟 RangeError（P11 不能默默失效）。
+- **小地城的外框（Q10）**：keep 是錨點，Task 9 的跨層規則讓同地帶 UNDER / DEEP 的機率 / 保證藍圖讓位（不會切開房間或鎖）；本 Task 的測試驗「keep 外框內沒有其他非液體藍圖」。
 - Produces（`keep.ts`）：`buildKeepBp(c: BpCtx): Blueprint`——小地城：zone = 槽內寬 300、`y0 = 地表 − 40`、`y1 = 地表 + 260`；`generateDungeonOn(..., { rooms: KEEP_ROOMS, minConnected: 6 })`，`KEEP_ROOMS = ['shrine', 'library', 'prison', 'vault', 'hall', 'chamber', 'shaft', 'hall', 'chamber', 'chamber', 'prison', 'hall']`；不放燈脈古碑（`tablets: false`）；`site = { kind: 'dungeon', ... }`。
+- Produces（`hermitHut.ts`，Q20b）：`drawHermitHut(cv: Canvas, o: { x0: number; w: number; floorY: number }, rng: RandomLike): { at: { x: number; y: number } }`（木屋寬 9–11、門、床、火把；Task 20 的隱士島共用同一個繪製函式，不複製）；`buildHermitHutBp(c: BpCtx): Blueprint`——站在 `c.profile` 地表（SURFACE 層，不讀 `groundAt`），`ground` 覆寫屋底欄、`site = { kind: 'hermit', key: 's' + c.id, rot: 0, at }`。spec §4.1「荒野大陸的結構以遺跡、地城、小屋、礦坑、**隱士**為主」。
+- Produces（folk）：`FolkRole` 加 `'hermit'`；`ROLES.hermit`（人類、獨居、台詞 3 句繁中、商店：繩索 / 火把 / 烤魚；服務本 Task 先空著，Task 20 加 `chart`）；`addSite` 遇 `kind: 'hermit'` 放 1 位 `${key}:hermit`，站在 `at`。小屋不算「大東西」（Task 21 的判定照舊）。
 
 - [ ] **Step 1: 寫失敗測試**
 
 ```ts
-// layout.test.ts（M1 的文化測試改寫）
-it('v0：沒有文化大陸（文化池只有荒野）', () => { for (const seed of SEEDS20) for (const side of [1, -1] as const) for (let i = 2; i <= 12; i += 2) expect(L(seed).landmass(side, i).culture).toBeNull(); });
-it('CULTURE_SINCE 開啟時（測試注入）：第一片東西大陸恰一片霧竹、之後相鄰大陸不同', () => { const C = { pool: { 0: ['mistbamboo', null] as const }, since: { mistbamboo: 0 } };
-  for (const seed of SEEDS20) { const lay = new Layout(seed, newWorldOrigin(341, 334), new LockTable(), 0, C);
-    expect([lay.landmass(1, 2).culture, lay.landmass(-1, 2).culture].filter((c) => c === 'mistbamboo')).toHaveLength(1);
-    for (let i = 4; i <= 12; i += 2) expect(lay.landmass(1, i).culture).not.toBe(lay.landmass(1, i - 2).culture); } });
+// layout.test.ts（M1 的文化測試改寫，Q14：v0 / v1 只有荒野，霧竹指派是 M4）
+it('v0：所有大陸都是荒野（culture null、kind wild），含第一片東 / 西大陸', () => { for (const seed of SEEDS20) for (const side of [1, -1] as const) for (let i = 2; i <= 12; i += 2) {
+  const m = L(seed).landmass(side, i); expect(m.culture, `${seed} ${side}:${i}`).toBeNull(); expect(m.regions.every((r) => r.kind === 'wild')).toBe(true); } }, 30_000);
+it('鎖表裡已存的 culture 照舊尊重（M1 :150-151 的鎖表測試照留）', () => { const locks = new LockTable(); locks.lock(1, 2, { ver: 0, culture: 'mistbamboo' });
+  expect(L('s', locks).landmass(1, 2).culture).toBe('mistbamboo'); expect(L('s', locks).landmass(-1, 2).culture).toBeNull(); });
 // outer.test.ts（20 個種子 × 每側 3 片大陸，逾時 300 s）
 it('荒野大陸的大東西：兩端 500 格內各有一個、相鄰兩個的外框間隔 < 1,700', () => { for (const seed of SEEDS20) { const g = new Gen2Source(seed);
   for (const side of [1, -1] as const) for (const i of [2, 4, 6]) { const m = g.layout.landmass(side, i), big = bigBoxes(g, m.x0, m.x1).sort((a, b) => a[0] - b[0]);
@@ -906,18 +1002,27 @@ it('小地城：≥ 8 房、房間圖可解、有上鎖寶箱；外圍村莊有�
   expect(keep.info.rooms.length).toBeGreaterThanOrEqual(8); expect(solvable(keep.info)).toEqual({ ok: true });
   const g = new DelveGame({ seed: 'outer-k', worldGen: { kind: 'gen2' } }); g.teleport(village.info.board.x, village.info.board.y); for (let k = 0; k < 30; k++) g.step(FIXED_DT);
   expect(g.folk.byKey(`${village.key}:elder`)).not.toBeNull(); }, 120_000);
+it('錨點 vs 保證槽（Q15）：保證小屋 / 遺跡不落在錨點槽，且每片大陸仍各 ≥ 1；keep 外框內沒有其他非液體藍圖（Q10）', () => { for (const seed of SEEDS20) { const g = new Gen2Source(seed);
+  for (const side of [1, -1] as const) for (const i of [2, 4, 6]) { const m = g.layout.landmass(side, i), anc = new Set(g.blueprints.anchorsOf(m).map(slotKey)), bps = bpsIn(g, m);
+    expect(bps.filter((b) => b.kind === 'cabin').length).toBeGreaterThanOrEqual(1); expect(bps.filter((b) => b.kind === 'ruin').length).toBeGreaterThanOrEqual(1);
+    for (const b of bps.filter((q) => (q.kind === 'cabin' || q.kind === 'ruin') && isGuaranteed(g, m, q))) expect(anc.has(slotKeyOf(b, g.layout)), `${seed} ${b.kind} ${b.x}`).toBe(false);
+    for (const k of bps.filter((q) => q.kind === 'keep')) expect(bps.filter((o) => o !== k && !LIQUID_KINDS.has(o.kind) && meets(o, k))).toEqual([]); } } }, 300_000);
+it('隱士小屋（Q20b）：每片荒野大陸 1 座；欄載入後隱士 NPC 在屋裡', () => { for (const seed of SEEDS20) { const g = new Gen2Source(seed);
+  for (const side of [1, -1] as const) for (const i of [2, 4, 6]) expect(bpsIn(g, g.layout.landmass(side, i)).filter((b) => b.kind === 'hermit_hut' && b.site?.kind === 'hermit'), `${seed} ${side}:${i}`).toHaveLength(1); }
+  const g = new DelveGame({ seed: 'outer-h', worldGen: { kind: 'gen2' } }), h = firstHermitHut(g); g.teleport(h.at.x, h.at.y); for (let k = 0; k < 30; k++) g.step(FIXED_DT);
+  const npc = g.folk.byKey(`${h.key}:hermit`)!; expect(npc).not.toBeNull(); expect(Math.abs(npc.body.x / 16 - h.at.x)).toBeLessThanOrEqual(8); }, 300_000);
 // coop.gen2.test.ts
 it('外圍村莊：客人在房主之後才載入那段 → NPC key / id 與房主相同；之前收到的位置被略過、不丟錯', () => {
   const rig = coopRig({ world: 'gen2' }); rig.run(2000); rig.hostTeleport(outerVillageBoard(rig)); rig.run(30 * FRAME);
   expect(() => rig.run(30 * FRAME)).not.toThrow(); rig.guestTeleport(outerVillageBoard(rig)); rig.run(120 * FRAME);
   expect(siteNpcIds(rig.guests[0].game!)).toEqual(siteNpcIds(rig.hostGame)); }, 120_000);
 ```
-（`bigBoxes(g, x0, x1)` = 該範圍內 village / keep（dungeon site）/ hall 藍圖的 `[x, x + w]`；`firstOuter`、`outerVillageBoard`、`siteNpcIds`、`hostTeleport` / `guestTeleport` 以 testRig 既有成員為準，沒有就在 testRig 加。）
+（`bigBoxes(g, x0, x1)` = 該範圍內 village / keep（dungeon site）/ hall 藍圖的 `[x, x + w]`；`bpsIn(g, m)` = `overlapping(m.x0, m.x1)` 中落在 m 內的；`slotKey(a)` / `slotKeyOf(b, layout)` = `"region:layer:slot"`；`isGuaranteed` = 該藍圖是不是 `guard()` 選的那份（比對 `structureId` 與重算的保證槽）；`meets` = 外框相交；`LIQUID_KINDS` = lake / cave_lake / lava_pool；`firstHermitHut(g)` = 東側第一片大陸的 `hermit_hut` 藍圖的 `site`；`firstOuter`、`outerVillageBoard`、`siteNpcIds`、`hostTeleport` / `guestTeleport` 以 testRig 既有成員為準，沒有就在 testRig 加。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/layout.test.ts src/scripts/games/delve/engine/gen2/outer.test.ts src/scripts/games/delve/net/coop.gen2.test.ts`；Expected: FAIL。
-- [ ] **Step 3: 實作** 如上；Task 14 的 gen2 文化命名測試（M1 Task 14「霧竹大陸的地區名」）改用注入 `cultures` 的 Layout。
+- [ ] **Step 3: 實作** 如上；M1 Task 14 的 gen2 文化命名測試（「霧竹大陸的地區名」）改用 `LockTable` 鎖一片霧竹大陸（不加 Layout 參數、不做 `CULTURE_SINCE`——Q14）；M1 `layout.test.ts:88-89, 179` 的「第一片東西大陸恰一片霧竹」斷言刪除，commit 說明寫「v0 / v1 只有荒野（spec §4.1 修訂），霧竹指派由 M4 實作」。
 - [ ] **Step 4: 跑測試** — `npx vitest run src/scripts/games/delve/engine src/scripts/games/delve/net`；Expected: 全綠。
-- [ ] **Step 5: Commit** — `feat(delve): wild continents get villages, keeps and halls at guaranteed spacing; no culture continents before their content ships`（re-record gen2 v0 hash）。
+- [ ] **Step 5: Commit** — `feat(delve): wild continents get villages, keeps, halls and a hermit hut; v0 is wild-only`（re-record gen2 v0 hash）。
 
 ---
 
@@ -925,11 +1030,12 @@ it('外圍村莊：客人在房主之後才載入那段 → NPC key / id 與房�
 
 **Files:**
 - Create: `engine/gen2/structures/minor.ts`
-- Modify: `engine/gen2/blueprint.ts`（MINOR 層：每個陸地地區（含家鄉沙灘、不含地城區）切 170 格槽；槽內沒有其他表層 / 天空藍圖的外框相交就放一個小點位）、`engine/gen2/layout.ts:150-160`（海槽的島 / 沉船偏移 ± `min(20, floor(槽寬 / 10))`）、`engine/gen2/structures/shipwreck.ts`（同）
-- Test: `engine/gen2/minor.test.ts`、`engine/gen2/layout.test.ts`、`engine/gen2/sea.test.ts`
+- Modify: `engine/gen2/blueprint.ts`（MINOR 層：每個有槽的陸地地區（不含沙灘、不含地城區）切 170 格槽；槽內沒有其他表層 / 天空藍圖的外框相交、且不在下面的排除範圍，就放一個小點位）、`engine/gen2/bpcore.ts`（`BpKind` 加 `'minor'`——M2b Task 9 依賴這個名字）、`engine/gen2/layout.ts:150-160`（海槽的島 / 沉船偏移 ± `min(20, floor(槽寬 / 10))`）、`engine/gen2/structures/shipwreck.ts`（同）
+- Test: `engine/gen2/minor.test.ts`、`engine/gen2/layout.test.ts`、`engine/gen2/sea.test.ts`；必須保持綠、**不改斷言**（Q16）：`engine/gen2/blueprint.test.ts`——`:72-79`（出生點 ± 80 內沒有藍圖、含 ± 80 的槽整槽全空，所有層含 MINOR）、`:80-93`（含 shaftX 的槽不放非 DEEP 藍圖、非 DEEP 外框離 sx 在 SHAFT_REACH 範圍外）、`:100-111`（家鄉兩端沙灘沒有藍圖）；`engine/gen2/settlements.test.ts`（家鄉零重疊，Q10）
 
 **Interfaces:**
-- Produces（`minor.ts`）：`buildMinorBp(c: BpCtx): Blueprint`——種類（雜湊）：`cairn`（石堆 + 紅布旗，地標 `T.CAIRN`）45%、`camp`（木板帳篷 + 火把 + 地標 `T.RELIC_PACK`）30%、`stones`（3–5 根石柱圍一圈 + 2 個陶罐）25%；寬 ≤ 12、站在 `Gen2Source` 地面上（只畫地表以上與地表那一格）；水欄（湖、海）不放。沙灘槽只放 `cairn` / `stones`。`spawn_tablet` 錨點佔用它所在的 MINOR 槽。
+- Produces（`minor.ts`）：`buildMinorBp(c: BpCtx): Blueprint`（kind `'minor'`、`sub: 'cairn' | 'camp' | 'stones'` 記在藍圖上）——種類（雜湊）：`cairn`（石堆 + 紅布旗，地標 `T.CAIRN`）45%、`camp`（木板帳篷 + 火把 + 地標 `T.RELIC_PACK`）30%、`stones`（3–5 根石柱圍一圈 + 2 個陶罐）25%；寬 ≤ 12、站在 `c.groundAt(x)` 上（Q4：只看 profile + SURFACE 層的地面覆寫；**小點位自己沒有 `ground`**；只畫地表以上與地表那一格）。`spawn_tablet` 錨點佔用它所在的 MINOR 槽（Task 7：在 ± 80 之外）。
+- **排除範圍（Q16）**：小點位外框不得落在——家鄉兩端沙灘（`[0, 70)`、`[4130, 4200)`）；出生點清空區（含 `SPAWN_X ± 80` 的 MINOR 槽整槽不放）；主坑道 `[shaftX − (SHAFT_HALF + 2), shaftX + (SHAFT_HALF + 2)]`（另外 M1 測試要求含 shaftX 的槽整槽不放、外框離 sx 在 `SHAFT_REACH` 範圍外，比這條嚴，以 M1 為準）；湖藍圖的外框（`kind === 'lake'` 的 SURFACE 藍圖，M1 Task 10 起就有——湖的資料在 M2a 就拿得到，不等 M2b 的 `waterTopAt`）；海（`waterTopAt(x) !== null`）。被排除的槽不放小點位（不往旁邊挪）。
 - 小點位不建地區（不進 Discovery 地區），但地標照常登錄。
 
 - [ ] **Step 1: 寫失敗測試**
@@ -939,11 +1045,18 @@ it('每個陸地的 MINOR 槽至少有一個值得停下的東西（小點位，
   for (const s of minorSlots(g, -15_000, 15_000)) { const hit = g.blueprints.overlapping(s.x0, s.x1, [BP_SURFACE, BP_SKY, BP_MINOR]).filter((b) => b.x < s.x1 && b.x + b.w > s.x0);
     expect(hit.length, `${seed} ${s.x0}`).toBeGreaterThanOrEqual(1); } } }, 120_000);
 it('海槽偏移 ≤ 20：島與沉船的中心離槽中心 ≤ 20', () => { for (const seed of SEEDS20) for (const side of [1, -1] as const) for (const i of [1, 3, 5]) { const m = L(seed).landmass(side, i);
-  for (const d of m.islands) { const s = m.slots[d.slot]; expect(Math.abs(((d.x0 + d.x1) >> 1) - ((s.x0 + s.x1) >> 1))).toBeLessThanOrEqual(20 + 1); } } });
+  for (const d of m.islands) { const s = m.slots[d.slot]; expect(Math.abs(((d.x0 + d.x1) >> 1) - ((s.x0 + s.x1) >> 1))).toBeLessThanOrEqual(20 + 1); } } }, 30_000);
 it('小點位站在地面上、不在水上', () => { const g = new Gen2Source('mn'), w = worldOf(g); for (const b of g.blueprints.overlapping(-8000, 8000, [BP_MINOR]).slice(0, 40)) {
   loadColumns(w, b.x, b.x + b.w); for (let x = b.x; x < b.x + b.w; x++) expect(g.waterTopAt(x)).toBeNull(); expect(b.y + b.h - 1).toBeLessThanOrEqual(g.surfaceAt(b.x + (b.w >> 1))); } }, 60_000);
+it('小點位的排除範圍（Q16）：不在家鄉沙灘、出生點 ± 80 的槽、坑道 ± (SHAFT_HALF + 2)、湖藍圖外框上；小點位沒有 ground', () => { for (const seed of SEEDS5) { const g = new Gen2Source(seed), ss = seedInt(seed, 'g2-shaft');
+  const lakes = g.blueprints.overlapping(-15_000, 15_000, [BP_SURFACE]).filter((b) => b.kind === 'lake');
+  for (const b of g.blueprints.overlapping(-15_000, 15_000, [BP_MINOR]).filter((q) => q.kind === 'minor')) { const s = slotOf(b.id, g.layout), sx = shaftX(ss, s.region);
+    expect(b.ground).toBeNull(); expect((b.x < 70 && b.x + b.w > 0) || (b.x < 4200 && b.x + b.w > 4130), `${seed} beach ${b.x}`).toBe(false);
+    expect(s.x0 <= SPAWN_X + 80 && s.x1 > SPAWN_X - 80, `${seed} ${b.x}`).toBe(false);
+    if (Number.isFinite(sx)) expect(b.x + b.w <= sx - SHAFT_HALF - 2 || b.x > sx + SHAFT_HALF + 2, `${seed} ${b.x}`).toBe(true);
+    expect(lakes.filter((l) => l.x < b.x + b.w && b.x < l.x + l.w), `${seed} ${b.x}`).toEqual([]); } } }, 120_000);
 ```
-（`minorSlots(g, x0, x1)` = 範圍內所有陸地地區（非地城區）的 170 格 MINOR 槽；`overlapping` 的第三參數是 Task 2 的 `layers` 篩選。）
+（`minorSlots(g, x0, x1)` = 範圍內所有有槽的陸地地區（非沙灘、非地城區）的 170 格 MINOR 槽，**扣掉排除的槽**（出生點 ± 80 的槽、含 shaftX 的槽——那裡的主坑道入口本身就是 Task 21 定義的「值得停下的東西」、與湖相交的槽）；`overlapping` 的第三參數是 Task 2 的 `layers` 篩選。三個 `it` 都寫明逾時。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/minor.test.ts src/scripts/games/delve/engine/gen2/layout.test.ts`；Expected: FAIL。
 - [ ] **Step 3: 實作** 如上。
@@ -956,13 +1069,13 @@ it('小點位站在地面上、不在水上', () => { const g = new Gen2Source('
 
 **Files:**
 - Create: `engine/gen2/structures/island.ts`、`engine/gen2/structures/reef.ts`、`engine/gen2/structures/seaRuin.ts`、`engine/gen2/islands.test.ts`
-- Modify: `engine/gen2/layout.ts:20-21, 130-170`（`IslandInfo.type`、`SeaSlot.poi`）、`engine/gen2/blueprint.ts`（島槽有藍圖、新海點）、`engine/gen2/fill.ts`（島的表層照舊，建物蓋在上面）、`engine/loot.ts`（`ChestKind` 加 `'crate'`：漂流箱的少量物資表）、`engine/gen2/structures/crate.ts`（用 `'crate'`）、`engine/folkDefs.ts`（`FolkRole` 加 `'hermit'`、`FolkService` 加 `'chart'`）、`engine/folk.ts`（隱士站位）、`engine/game.ts`（`chart` 服務）、`engine/discovery.ts`（`NAMES` 加 lighthouse / hermit / wreck_isle / reef / sea_ruin 名單）
-- Test: `engine/gen2/islands.test.ts`、`engine/gen2/layout.test.ts`、`engine/game.folk.test.ts`
+- Modify: `engine/gen2/layout.ts:20-21, 130-170`（`IslandInfo.type`、`SeaSlot.poi`）、`engine/gen2/blueprint.ts`（島槽有藍圖、新海點）、`engine/gen2/fill.ts`（島的表層照舊，建物蓋在上面）、`engine/loot.ts`（`ChestKind` 加 `'crate'`：漂流箱的少量物資表）、`engine/gen2/structures/crate.ts`（用 `'crate'`）、`engine/gen2/structures/shipwreck.ts`（抽出 `drawHull`）、`engine/gen2/bpcore.ts`（`BpKind` 加 `'island'` / `'reef'` / `'sea_ruin'`）、`engine/folkDefs.ts`（`FolkService` 加 `'chart'`、`ROLES.hermit.services` 加 chart——`'hermit'` 角色本身是 Task 18 建的）、`engine/game.ts`（`chart` 服務走既有的 `folkService` → `doService`）、`engine/discovery.ts`（`NAMES` 加 lighthouse / hermit / wreck_isle / reef / sea_ruin 名單）
+- Test: `engine/gen2/islands.test.ts`、`engine/gen2/layout.test.ts`、`engine/game.folk.test.ts`；必須保持綠：`engine/gen2/sea.test.ts`、`engine/gen2/structures.test.ts`（M1 沉船形狀——`drawHull` 抽出後逐格相同）、`engine/gen2/outer.test.ts`（Task 18 的隱士小屋 NPC）
 
 **Interfaces:**
 - Produces（`layout.ts`）：`export type IslandType = 'plain' | 'lighthouse' | 'hermit' | 'wreck'`；`IslandInfo.type`；每道海依槽序的第一座島 = 有建物（三種依雜湊均分），其餘 40% 有建物、60% `plain`；`SeaSlot.poi: 'island' | 'shipwreck' | 'crate' | 'reef' | 'sea_ruin'`，非島槽 shipwreck 30% / crate 30% / reef 20% / sea_ruin 20%。
-- Produces（structures）：`buildIslandBp(c: BpCtx, type: IslandType): Blueprint`——`lighthouse`：石磚塔（寬 5、高 18–24、內部平台每 4 格一層可爬、頂部 `'ruin'` 箱 + 光源）、地標 `T.GUARDIAN_STATUE`；`hermit`：木屋（寬 9–11）+ `site = { kind: 'hermit', key: 's' + id, rot: 0, at }`；`wreck`：擱淺在島灘上的船殼（沿用 M1 沉船的形狀函式，抽成 `drawHull(cv, x0, w, keelY)` 共用）+ `'ruin'` 箱；`plain` 回 null（只有地形與樹）。`buildReefBp(c: BpCtx): Blueprint`（海床上的石 / 砂岩丘、內含 6–12 格銀 / 金礦團、地標 `T.CAIRN` 不放——水下用 `T.RELIC_PACK`）；`buildSeaRuinBp(c: BpCtx): Blueprint`（半埋海床的石磚殘屋、內部保留水、`'ruin'` 箱、地標 `T.GUARDIAN_STATUE`）。
-- Produces（folk）：`ROLES.hermit`（人類、獨居、台詞 3 句繁中、商店：繩索 / 火把 / 烤魚、服務 `{ kind: 'chart', zh: '標出下一片大陸上一處還沒去過的地點', price: 120 }`）；`chart` 服務：取該島所在海地塊朝外的下一片大陸，從它的錨點大東西中挑一個未找到的（`Discovery.region` 查得到），加進 `scoutMarks`（與既有 scout 相同的標記機制）；都找到了就退回一般 `scout`。
+- Produces（structures）：`buildIslandBp(c: BpCtx, type: IslandType): Blueprint`——`lighthouse`：石磚塔（寬 5、高 18–24、內部平台每 4 格一層可爬、頂部 `'ruin'` 箱 + 光源）、地標 `T.GUARDIAN_STATUE`；`hermit`：木屋（Task 18 的 `drawHermitHut`，寬 9–11）+ `site = { kind: 'hermit', key: 's' + id, rot: 0, at }`；`wreck`：擱淺在島灘上的船殼（沿用 M1 沉船的形狀函式，抽成 `drawHull(cv, x0, w, keelY)` 共用）+ `'ruin'` 箱；`plain` 回 null（只有地形與樹）。`buildReefBp(c: BpCtx): Blueprint`（海床上的石 / 砂岩丘、內含 6–12 格銀 / 金礦團、地標 `T.CAIRN` 不放——水下用 `T.RELIC_PACK`）；`buildSeaRuinBp(c: BpCtx): Blueprint`（半埋海床的石磚殘屋、內部保留水、`'ruin'` 箱、地標 `T.GUARDIAN_STATUE`）。
+- Produces（folk）：`ROLES.hermit`（Task 18 建的角色）加服務 `{ kind: 'chart', zh: '標出下一片大陸上一處還沒去過的地點', price: 120 }`；`chart` 服務（呼叫路徑 = 既有的 `folkService(key, 'chart'): { ok: boolean; msg: string }`，game.ts:4574）：取該隱士所在地塊朝外的下一片大陸（島上的隱士 = 該海朝外；荒野大陸上的隱士小屋 = 該大陸朝外），從它的錨點大東西中挑一個未找到的（`Discovery.region` 查得到），經既有的 private `addScoutMark(x, y)`（game.ts:4731）加進 `scoutMarks: MapMarker[]`（`{ x, y }`，explore.ts:14）；都找到了就退回一般 `scout()`。不新增 `useFolkService` / `give`（不存在；Q13）。
 
 - [ ] **Step 1: 寫失敗測試**
 
@@ -974,17 +1087,21 @@ it('§8：每道海至少 1 座有建物的島（燈塔 / 隱士 / 沉船島）�
 it('每個海槽恰一個點（島槽：有建物的島有一份藍圖；其他槽一份對應的藍圖）', () => { for (const seed of SEEDS5) { const g = new Gen2Source(seed);
   for (const side of [1, -1] as const) for (const i of [1, 3]) for (const s of g.layout.landmass(side, i).slots) { const bps = g.blueprints.overlapping(s.x0, s.x1, [BP_SURFACE]).filter((b) => b.x >= s.x0 && b.x < s.x1);
     const isl = g.layout.landmass(side, i).islands.find((d) => d.slot === s.k);
-    if (isl) expect(bps.map((b) => b.kind)).toEqual(isl.type === 'plain' ? [] : ['island']); else expect(bps.map((b) => b.kind)).toEqual([s.poi]); } } });
+    if (isl) expect(bps.map((b) => b.kind)).toEqual(isl.type === 'plain' ? [] : ['island']); else expect(bps.map((b) => b.kind)).toEqual([s.poi]); } } }, 120_000);
 it('燈塔可以從底爬到頂（平台間距 ≤ 4）、頂部有箱子；海底遺跡與珊瑚礁在水面下且液體靜止', () => { const { src, bp } = seaKinds('isl2'), w = worldOf(src);
   for (const b of bp) loadColumns(w, b.x, b.x + b.w);
-  expect(climbable(w, bp.find((b) => b.kind === 'island' && b.chests.length)!)).toBe(true);
+  const tower = bp.find((b) => b.kind === 'island' && islandOf(src, b)!.type === 'lighthouse')!;   // 明確挑燈塔島（沉船島也有箱子——Q21）
+  expect(tower).toBeDefined(); expect(climbable(w, tower)).toBe(true); expect(tower.chests.length).toBeGreaterThanOrEqual(1);
   for (const b of bp.filter((q) => q.kind === 'reef' || q.kind === 'sea_ruin')) { expect(b.y).toBeGreaterThan(src.waterTopAt(b.x)!); expect(liquidInvariant(w, b.x - 2, b.x + b.w + 2)).toEqual([]); } }, 60_000);
 it('隱士：島上有隱士 NPC；chart 服務把下一片大陸的一處未找到的大東西標上地圖', () => { const g = new DelveGame({ seed: 'hermit', worldGen: { kind: 'gen2' } }), h = firstHermit(g);
   g.teleport(h.at.x, h.at.y); for (let k = 0; k < 30; k++) g.step(FIXED_DT); const npc = g.folk.byKey(`${h.key}:hermit`)!; expect(npc).not.toBeNull();
-  g.give('copper_coin', 500); const mark = g.useFolkService(npc.key, 'chart')!; const next = nextContinentOf(g, h.at.x);
-  expect(mark.x).toBeGreaterThanOrEqual(next.x0); expect(mark.x).toBeLessThan(next.x1); expect(g.scoutMarks.some((m) => m.id === mark.id)).toBe(true); }, 120_000);
+  g.inventory.add('copper_coin', 500); const before = g.scoutMarks.length, coins = g.coins();
+  expect(g.folkService(npc.key, 'chart').ok).toBe(true); expect(g.coins()).toBeLessThan(coins);
+  expect(g.scoutMarks.length).toBe(before + 1); const mark = g.scoutMarks.at(-1)!, next = nextContinentOf(g, h.at.x);   // MapMarker = { x, y }，沒有 id（Q13）
+  expect(mark.x).toBeGreaterThanOrEqual(next.x0); expect(mark.x).toBeLessThan(next.x1);
+  expect(g.discovery.listKnown().concat(bigRegionsOf(g, next)).some((r) => r.ax === mark.x && r.ay === mark.y)).toBe(true); }, 120_000);
 ```
-（`seaKinds(seed)` = 前兩道海每種海點至少一份的種子搜尋；`climbable(w, b)` = 塔內從底往上每一列的下一個可站平台 ≤ 4 格；`firstHermit` / `nextContinentOf` 寫在測試檔內；`useFolkService`、`scoutMarks`、錢幣 item id 以 `game.ts` / `items.ts` 實際名稱為準。）
+（`seaKinds(seed)` = 前兩道海每種海點（含燈塔島）至少一份的種子搜尋；`islandOf(src, b)` = 該藍圖所在海槽的 `IslandInfo`（`layout.landmass(side, i).islands.find((d) => d.slot === slot)`）；`climbable(w, b)` = 塔內從底往上每一列的下一個可站平台 ≤ 4 格；`firstHermit` / `nextContinentOf` / `bigRegionsOf`（下一片大陸錨點大東西的地區，經 `discovery.region` 反查）寫在測試檔內。真實 API（Q13）：`folkService(key, kind): { ok, msg }`、`scoutMarks: MapMarker[]`（`{ x, y }`）、`inventory.add(item, n)`、`coins()`、錢幣 `'copper_coin'`；SCOUT_MAX = 60，新遊戲不會滿，`at(-1)` 就是新標的那個。）
 
 - [ ] **Step 2: 跑確認失敗** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/islands.test.ts src/scripts/games/delve/engine/gen2/layout.test.ts`；Expected: FAIL。
 - [ ] **Step 3: 實作** 如上（M1 的沉船形狀抽成 `drawHull` 給沉船與沉船島共用，不複製）。
@@ -1001,7 +1118,7 @@ it('隱士：島上有隱士 NPC；chart 服務把下一片大陸的一處未找
 
 **Interfaces:**
 - 「值得停下的東西」（小）= SURFACE / SKY / MINOR 層的藍圖外框、島（含 plain）、每個海點的藍圖、主坑道入口（`[shaftX − 1, shaftX + 3)`）；「大東西」= village、keep / 地城（dungeon site）、hall、有建物的島。以 x 區間判斷：排序後相鄰區間的空隙 `下一個.x0 − 上一個.x1` 全部 < 340（小）/ < 1,800（大）⇔ 任意連續 340 / 1,800 格內至少一個。
-- 效能預算（作者決定）：任一份藍圖建構 ≤ 80 ms（地城）、≤ 30 ms（小地城）、≤ 10 ms（其他）；`homeContent()` ≤ 400 ms；gen2 `DelveGame` 開局 ≤ 1,500 ms（自動，M1 門檻）；包含第一次建大藍圖在內的每欄 fill 最壞 ≤ 120 ms（≈ 每 chunk 3.2 ms，< 8 ms）；暖機後每欄中位數 ≤ 3 × v1、p95 ≤ 40 ms（M1）。
+- 效能預算（作者決定；Q9 修訂）：任一份藍圖單次建構（直接呼叫建構器）≤ 80 ms（地城）、≤ 30 ms（小地城）、≤ 10 ms（其他）；**開局建家鄉藍圖 `homePlans()`（含裝飾）目標 ≤ 300 ms**——自己一條預算、量測並寫進「基準紀錄」；gen2 `DelveGame` 開局 ≤ 1,500 ms（自動，M1 門檻，含 `homePlans`）；**第一次碰到某欄**的 fill 最壞 ≤ 120 ms（≈ 每 chunk 3.2 ms，< 8 ms）——家鄉欄量的是 `homePlans()` 已在開局建好之後的那次 fill（不含建家鄉藍圖；家鄉藍圖在 `pinned`、永不淘汰），外圍欄（小地城所在欄）照舊含第一次建藍圖；暖機後每欄中位數 ≤ 3 × v1、p95 ≤ 40 ms（M1）。
 
 - [ ] **Step 1: 寫失敗測試**
 
@@ -1014,14 +1131,15 @@ it('海上單獨也符合（只看海地塊的範圍）', () => { const g = new 
 // gen2.perf.test.ts
 it('大藍圖建構與開局預算', () => { const t = buildTimes(['perf-a', 'perf-b']);
   console.info('[gen2 budget]', JSON.stringify(t)); expect(t.dungeon).toBeLessThanOrEqual(80); expect(t.keep).toBeLessThanOrEqual(30); expect(t.other).toBeLessThanOrEqual(10);
-  expect(t.homeContent).toBeLessThanOrEqual(400); expect(t.firstTouchColumn).toBeLessThanOrEqual(120); }, 120_000);
+  expect(t.homePlans).toBeLessThanOrEqual(300);                                       // Q9：開局建家鄉藍圖的獨立預算
+  expect(t.firstTouchHomeColumn).toBeLessThanOrEqual(120); expect(t.firstTouchKeepColumn).toBeLessThanOrEqual(120); }, 120_000);
 ```
-（`pois(src, x0, x1)` 寫在 `testUtil.ts`，用 `overlapping(x0, x1, [BP_SURFACE, BP_SKY, BP_MINOR])` + 海點 + 島 + 主坑道；`maxGap(intervals, x0?, x1?)` 也算進範圍兩端的空隙；`buildTimes` 量每種藍圖第一次建構的最大值、`homeContent`、地城所在欄第一次 `fillCol` 的時間。）
+（`pois(src, x0, x1)` 寫在 `testUtil.ts`，用 `overlapping(x0, x1, [BP_SURFACE, BP_SKY, BP_MINOR])` + 海點 + 島 + 主坑道；`maxGap(intervals, x0?, x1?)` 也算進範圍兩端的空隙；`buildTimes` 量：每種藍圖直接呼叫建構器的單次最大值、新 `Gen2Source` 上 `blueprints.homePlans()` 的時間、`homePlans()` 之後地城所在欄第一次 `fillCol` 的時間（`firstTouchHomeColumn`，不含建家鄉藍圖）、東側第一片大陸小地城所在欄在全新 source 上第一次 `fillCol` 的時間（`firstTouchKeepColumn`，含建藍圖）。兩個密度 `it` 的逾時已寫。）
 
 - [ ] **Step 2: 跑** — Run: `npx vitest run src/scripts/games/delve/engine/gen2/density.test.ts src/scripts/games/delve/engine/gen2/gen2.perf.test.ts`；Expected: PASS（若 FAIL：密度不足 → 調 Task 18 / 19 的規則，不放寬門檻；預算不足 → 查藍圖快取與 `colIndex`）。
 - [ ] **Step 3: 雜湊鎖涵蓋新結構** — `gen2.lock.test.ts` 的 `COLS` 加上種子 `'gen2-lock'` 家鄉地城塔所在欄與第一座村莊所在欄（跑一次查出來後寫成常數），並加一條守衛斷言：那兩欄真的與 dungeon / village 藍圖相交；重錄 `GEN2_HASHES[0]`。
 - [ ] **Step 4: 全套** — Run: `npx vitest run`；`rtk proxy npx tsc --noEmit -p .`（773 / delve 0）；`npx playwright test tests/e2e/delve.spec.ts tests/e2e/delve-gen2.spec.ts tests/e2e/delve-online.spec.ts --project=chromium`；Expected: 全 PASS。
-- [ ] **Step 5: 閒置機器效能實測（M1 P5）** — 關掉 dev server 等重負載，`npx vitest run src/scripts/games/delve/engine/gen2/gen2.perf.test.ts` 跑三次，三次 `median ratio` 的中位數必須 ≤ 2.00，連同 `[gen2 budget]` 寫進「基準紀錄」與 commit 說明；不達標本 Task 失敗。
+- [ ] **Step 5: 閒置機器效能實測（M1 P5）** — 關掉 dev server 等重負載，`npx vitest run src/scripts/games/delve/engine/gen2/gen2.perf.test.ts` 跑三次，三次 `median ratio` 的中位數必須 ≤ 2.00，連同 `[gen2 budget]`（含 `homePlans` 的三次值——Q9 的開局預算報告）寫進「基準紀錄」與 commit 說明；不達標本 Task 失敗。
 - [ ] **Step 6: 給使用者 4321 連結** — 先確認 4321 是這個 worktree 起的 dev server（`docs/claude/verify.md`）；附 `http://localhost:4321/games/delve?gen2=1&autostart=1&fresh=1&seed=m2a-demo`，說明：家鄉有地城（在 `homeDungeonRegion` 那端）、村莊、地廳、石碑；往東過海可以看到燈塔 / 隱士島與荒野大陸的村莊、小地城。預設（不加 `?gen2=1`）仍是舊世界。
 - [ ] **Step 7: Commit** — `test(delve): gen2 surprise density scan and build budgets`；然後派 fresh-context 驗收 agent（spec §9），清單 = 本計畫 Review Focus 五條 + 規格對照表。
 
@@ -1033,7 +1151,10 @@ it('大藍圖建構與開局預算', () => { const t = buildTimes(['perf-a', 'pe
 |-----------|------|
 | §4.3 結構以槽位藍圖局部生成、跨區塊物件由藍圖產生、載入時登錄 | 2、7 |
 | §4.4 四生態 / 出生點 / 兩端海灘 | 7、17 |
-| §4.4 地城在一端海灘內、≥ 25 房、召喚 / 鑰匙內容 | 5、7、8 |
+| §4.4 地城在一端海灘內、≥ 25 房、召喚 / 鑰匙內容（= 舊地城的陶罐 / 箱子鑰匙、上鎖寶箱、wick_offering 的金礦路徑，Q20a） | 5、7、8 |
+| §4.1 荒野大陸的結構含「隱士」（Q20b） | 18（隱士小屋 + 隱士 NPC）、20（chart 服務） |
+| §8 OCEAN 海上遠景「海平線與遠方島影」（Q20c） | 已完成：M1 Task 4（`buildSeaHorizon` 等，`background.ts`） |
+| §8 鳥巢礁（Q20d） | 延到 1b 之後（需要新物品與美術；作者決定 2026-10-24，已記入 spec §8） |
 | §4.4 2–4 村莊、≥ 1 地廳、居民 | 3、4、9 |
 | §4.4 地標 ≥ 85% | 14 |
 | §4.4 ≥ 3 密室、小屋、遺跡、礦坑、空島 | 6、10、17 |
@@ -1052,13 +1173,39 @@ it('大藍圖建構與開局預算', () => { const t = buildTimes(['perf-a', 'pe
 
 ## 規格模糊處與作者裁決
 
-1. **v1 凍結時有沒有文化大陸（需要使用者確認）**：spec §4.1「第一片東 / 西大陸必有一片霧竹之國」與 §5「已進入的大陸永遠用那版規則」在 M2 凍結 v1、M4 才有霧竹內容時互相衝突——玩家在 M4 之前走過的那片大陸會永遠是空殼。裁決：v0 / v1 的文化池只有荒野（決定 10），霧竹的指派規則由 `CULTURE_SINCE` 在 M4 打開；M4 的雷鈴主線改放「離家鄉最近、版本 ≥ M4 的霧竹大陸」（§7.3 本來就寫「離家鄉最近的那片」）。代價：M4 前兩片第一大陸都去過的世界，霧竹之國會出現在 tier 2 以後。另一個選項是 v1 照 M1 指派霧竹、內容先用荒野——但那些大陸會永遠掛著霧竹的地名卻沒有霧竹的東西。
+1. **v1 凍結時有沒有文化大陸（已解決：spec §4.1 於 2026-10-24 修訂，commit 593567af5）**：spec §4.1「第一片東 / 西大陸必有一片霧竹之國」與 §5「已進入的大陸永遠用那版規則」在 M2 凍結 v1、M4 才有霧竹內容時互相衝突。定案：v0 / v1 只有荒野大陸（決定 10，Task 18 測試釘「所有大陸 culture null」）；M4 以 ver ≥ 2 閘門把霧竹指派給「離家最近、尚未進入過的那片大陸」——閘門與指派規則都在 M4 實作，M2a 不做任何閘門（Preflight Q14）。代價：M4 前兩片第一大陸都去過的世界，霧竹之國會出現在 tier 2 以後。
 2. **「地城在一端海灘內」**：照舊生成器的實際做法解讀為「緊貼一端沙灘的內側」（`worldgen.ts:274-278`），在家鄉版面加 420 格的地城區（決定 6）。
 3. **14 塊石碑的地點**：沿用 `LORE_SITES`；舊生成器沒有的地點換成 gen2 的同類：`molten` → 熔岩祠（新的小藍圖）、`snow` / `desert` → 該生態地下的石室、`spawn` → 出生點旁的地表石碑。遺物 swift_boots 的「最深的裂谷」改成「最深的主坑道底」（gen2 沒有裂谷；主坑道是 gen2 的垂直通道）。
 4. **舊生成器的地形特徵哪些不移植**：§4.4 是有約束力的清單；不在清單、又需要全域模擬或洪水填充的——泉水 / 瀑布（`SpringSpec`）、乾湖床、結冰湖、裂谷 / 峽谷 / 天坑、綠洲、土石互滲——M2 不移植，由 Task 17 的 `NOT_PORTED` 逐項記理由；蜂巢有獨特的物品來源（蜂蜜），所以移植（Task 11）。
 5. **「值得停下的東西」與「大東西」的判定**：小 = 地表看得到的結構外框、小點位、島、海點、主坑道入口（地下結構不算，因為走在地表的人看不到）；大 = 村莊、地城 / 小地城、矮人地廳、有建物的島（M3 的菁英守衛點、M4 的神社加入後也算）。矮人地廳在地下，但它是聚落（spec 列的「村莊」同類），算大東西。
 6. **海點偏移**：spec §8「每 300 格一個點」在 M1 的 ±槽寬/10（30）偏移下最大空隙可達 357 > 340；凍結前把偏移收到 ±20（Task 19），使 340 規則在海上嚴格成立。
-7. **鳥巢礁（§8 列出）**：需要新的空島材料物品與美術，M2 不做（島種類 = 燈塔 / 隱士 / 沉船島 + 普通島），留到有材料需求的期別。
+7. **鳥巢礁（§8 列出）**：需要新的空島材料物品與美術，延到 1b 之後（作者決定 2026-10-24，已記入 spec §8；Preflight Q20d）。島種類 = 燈塔 / 隱士 / 沉船島 + 普通島。
 8. **珊瑚礁「水下礦」**：用既有 tile（石 / 砂岩丘 + 銀 / 金礦團），不新增珊瑚 tile（tile 上限與美術成本；M4 要新增 14 個 tile）。
-9. **大藍圖的效能**：spec「單一區塊最壞 8 ms」解讀為每 chunk；一欄 38 個 chunk，含第一次建地城藍圖的那一欄上限 120 ms（≈ 每 chunk 3.2 ms），另訂藍圖建構預算（Task 21）。客人加入時會建家鄉藍圖（`homeContent`，≤ 400 ms）但不生成家鄉格子，符合「客人加入不需要生成家鄉整片」。
+9. **大藍圖的效能**：spec「單一區塊最壞 8 ms」解讀為每 chunk；一欄 38 個 chunk，含第一次建地城藍圖的那一欄上限 120 ms（≈ 每 chunk 3.2 ms），另訂藍圖建構預算（Task 21）。客人加入時會建家鄉藍圖（`homePlans()`，目標 ≤ 300 ms，Q9）但不生成家鄉格子，符合「客人加入不需要生成家鄉整片」。
 10. **舊 cabin / ruin**：M1 已是 gen2 版（不同形狀），不回頭與舊碼合併；「搬出共用碼」適用於 M2 新移植的結構。
+
+## Preflight rulings Q1–Q21（2026-10-24，已套進各 Task）
+
+來源：`.superpowers/sdd/2026-10-24-delve-1b-m2a-home-structures/preflight-scan.md`（衝突掃描）與同資料夾 `progress.md` 的「Preflight scan — rulings」。
+
+- **Q1**（Task 1）：`GEN2_SITE_BASE = 8589934592` 字面值 + `// 2 的 33 次方`；移出的確定性掃描保留 M1「gen2 測試檔不 import legacy（gen2.perf.test.ts 例外）」。
+- **Q2**（Task 2、7、8）：整區錨點（家鄉地城）帶 `wholeRegion`，豁免 8 格槽邊距測試、改驗在地區內；其他藍圖照舊。
+- **Q3**（Task 2、10）：UNDER / DEEP 外框不碰 `[shaftX − SHAFT_HALF − 4, shaftX + SHAFT_HALF + 4]`（`shaft_cache` 例外）；礦坑長 + 斜坡 + 密室 ≤ 槽寬 − 16 = 154；M1 `blueprint.test.ts` 坑道避讓測試照綠。
+- **Q4**（Task 2、10、19）：地面覆寫只來自 SURFACE 層；`BpCtx.groundAt(x)`；空島相對 profile 地表擺放、繩梯用 `groundAt`；小點位沒有 `ground` → 沒有循環。
+- **Q5**（Task 2 → 14）：測試只用公開 API（`interact` + `drainEvents`）；需要登錄的測試用 gen2 世界（遊戲層測試移到 Task 14），World 層用 `central: 'source'`。
+- **Q6**（Task 3）：NPC id = 兩次 hash2 組成的 53-bit 安全整數；撞號丟錯、不探測；舊世界 `SiteRegistry({ ranges: 'legacy' })` 逐字照抄今天的 `siteAt` 範圍，新範圍只給 gen2。
+- **Q7**（Task 4）：`Canvas.surfaceAt(x)`；`gridCanvas(…, natural)` 天然材質回呼。
+- **Q8**（Task 7）：「沒登錄建構器的錨點槽是空的」改用測試專用 `test_probe` 錨點（`extraAnchors` 測試接縫）。
+- **Q9**（Task 8、14、21）：家鄉藍圖開局 `homePlans()` 一次建完、存 `pinned`（不進 LRU 256）；開局預算目標 ≤ 300 ms（量測、報告）；第一次碰欄的預算不含建家鄉藍圖；地城 80 ms 改測建構器本身。
+- **Q10**（Task 9；10、11、18 適用）：跨層非液體藍圖不重疊；錨點 > 保證 > 機率，同級丟較深的（SKY / MINOR 同級讓位）；`crossYields` 純函式測試；Task 9 零重疊測試必須一路綠。
+- **Q11**（Task 9、14）：`engine/gen2/home.ts` 由 Task 9 建立、Task 14 修改；家鄉聚落經 `WorldContent.sites` 交給遊戲。
+- **Q12**（Task 15）：只有 gen2（`trackOuter`）把 visit 到的外圍地區加進已知表並存檔，讀檔後總數相同；舊世界日誌總數不變（測試）。
+- **Q13**（Task 16、20）：用真名——`scout(): { name, x, y } | null`、`scoutMarks: MapMarker[]`（`{ x, y }`）、`folkService(key, kind): { ok, msg }`、`inventory.add`、`coins()`；不存在的 `id` / `useFolkService` / `give` 全拿掉。
+- **Q14**（Task 18、決定 10、規格模糊處 1）：v1 只有荒野大陸（全部 culture null，測試釘）；刪 c = 1 規則，不做 `CULTURE_SINCE`；霧竹指派（最近未進入、ver ≥ 2）是 M4。
+- **Q15**（Task 18）：錨點優先於 P11 保證小屋 / 遺跡；`guard()` 在剩下的槽重找，仍各 ≥ 1（測試）。
+- **Q16**（Task 7、14、19）：小點位排除家鄉沙灘、出生點清空區、坑道 ±(SHAFT_HALF + 2)、湖藍圖外框；`spawn_tablet` 移到 ± 80 之外的 MINOR 槽；M1 `blueprint.test.ts` 列入並保持綠。
+- **Q17**（Task 13、17）：量測測試印出後斷言（礦物密度對記錄值 ±30%、tile 集合相等），逾時 300 s；沒有只印不驗的測試。
+- **Q18**（Task 2、7、8、10、11、12、13、20）：重測試一律寫逾時；Task 8 / 12 的共用 fixture 用 `beforeAll(…, timeout)`。
+- **Q19**（M2b Task 8）：退役表加 `FOLK_BEFORE`。
+- **Q20**：(a) Task 8 地城的召喚 / 鑰匙內容 = 舊地城（陶罐 / 箱子鑰匙、上鎖寶箱、wick_offering 金礦路徑），有測試；(b) Task 18 荒野大陸的隱士小屋（隱士角色在 Task 18 建、Task 20 加 chart）；(c) 海上遠景已在 M1 Task 4 完成；(d) 鳥巢礁延到 1b 之後，記入 spec §8。
+- **Q21**（Task 20）：燈塔測試明確挑 `type === 'lighthouse'` 的島。

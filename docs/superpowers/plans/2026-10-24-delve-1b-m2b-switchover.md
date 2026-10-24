@@ -333,6 +333,7 @@ test('新世界（不帶任何旗標）一律 gen2', async ({ page }) => { await
   | `serialize.gen2` 的 `V7_SAVE_HASH` | 不再寫 v7 存檔 | `regen.test.ts` 的 `regenReason` 真值表 |
   | `coop.gen2` 的 baked / `LEGACY_WELCOME_HASH` | 不再有舊房主 | Task 7 的「新客人連舊房主 → END_TEXT.gen」 |
   | `render/genSection.test.ts` | 生成剖面 UI 只服務舊生成器 | 無（功能移除） |
+  | `game.folk.test.ts` 的 `FOLK_BEFORE`（M2a Task 3 錄下的舊世界 'alpha' NPC key / 角色 / 名字）與它的 `it` | 釘的是舊生成器村落 / 地廳的居民；舊生成器刪除（M2a preflight Q19） | M2a Task 3 `siteRegistry.test.ts`（兩種登錄順序同 id、`npcIdFor` 不撞）+ M2a Task 9 `settlements.test.ts`「居民住進去」+ 本計畫 Task 5 改寫到 gen2 的 `game.folk.test.ts` |
 - fixture 改寫原則：`format9.delve` / `format10.delve` / `format11-v7.delve` 留著當「舊檔」輸入；讀它們的測試改成驗「解碼格式正確 + `regenReason` 判定 + 重生結果」，不再驗「照舊世界載入」。
 - carry 對應（由刪除解決）：「0.3–0.8 s 的烘焙凍結畫面」「改成動態 import legacy」「烘焙世界每次自動存檔都要快照 5016 塊」「v1 regionAt 的 landmass / tier 是佔位值」——commit 說明逐條註明。
 
