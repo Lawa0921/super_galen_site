@@ -14,17 +14,22 @@ import { restoreGame, snapshotGame } from '../save/serialize';
 /** 開局附近就拿得到的材料（spec C8：新角色 10 分鐘內做得出來） */
 // 羽毛只有夜裡的暗羽梟會掉，不算開局材料
 const STARTER = new Set<ItemId>(['wood', 'planks', 'gel', 'dirt', 'stone', 'mushroom']);
-/** 世界生成真的會放的箱子種類：直接掃 legacy/worldgen.ts 與地城畫圖（gen2/draw/dungeon.ts，legacy 與 gen2 共用）裡每個 addChest(…, '<kind>') 呼叫 */
+/** 世界生成真的會放的箱子種類：直接掃 legacy/worldgen.ts 與地城畫圖（gen2/draw/dungeon.ts）裡每個 addChest(…, '<kind>') 呼叫，
+ *  加上礦坑 / 密室 / 浮空島畫圖（gen2/draw/mineshaft.ts、skyIsland.ts）裡每個 cv.chest(…, '<kind>') 呼叫（gen2/draw/ 是 legacy 與 gen2 共用） */
 function placedChestKinds(): Set<string> {
   const dir = resolve(process.cwd(), 'src/scripts/games/delve/engine');
   const kinds = new Set<string>();
-  for (const f of ['legacy/worldgen.ts', 'gen2/draw/dungeon.ts']) {
+  const files: [string, RegExp][] = [
+    ['legacy/worldgen.ts', /addChest\(([^;]*?)\)[;,]/g], ['gen2/draw/dungeon.ts', /addChest\(([^;]*?)\)[;,]/g],
+    ['gen2/draw/mineshaft.ts', /cv\.chest\(([^;]*?)\)[;,]/g], ['gen2/draw/skyIsland.ts', /cv\.chest\(([^;]*?)\)[;,]/g],
+  ];
+  for (const [f, re] of files) {
     const src = readFileSync(resolve(dir, f), 'utf8');
-    const calls = [...src.matchAll(/addChest\(([^;]*?)\)[;,]/g)].map((m) => m[1]).filter((a) => !/:\s*number/.test(a));
+    const calls = [...src.matchAll(re)].map((m) => m[1]).filter((a) => !/:\s*number/.test(a));
     expect(calls.length, f).toBeGreaterThan(0);
     for (const a of calls) {
       const lit = a.match(/'([a-z]+)'/);
-      expect(lit, `${f}: addChest(${a}) 的種類要寫成字面值`).not.toBeNull();
+      expect(lit, `${f}: ${a} 的箱子種類要寫成字面值`).not.toBeNull();
       kinds.add(lit![1]);
     }
   }
