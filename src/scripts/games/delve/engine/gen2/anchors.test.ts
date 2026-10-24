@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
 import { BlueprintIndex, landSlot, landSlotCount, slotOf, BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, slotWidth, type Layer } from './blueprint';
-import { ANCHOR_MAX_W, anchorSpan, continentAnchors, homeAnchors, type Anchor, type AnchorKind } from './anchors';
+import { ANCHOR_MAX_W, anchorSpan, continentAnchors, homeAnchors, villageFits, type Anchor, type AnchorKind } from './anchors';
 import { homeDungeonRegion, SPAWN_X, VARIANT, type Landmass } from './layout';
 import { shaftOf, shaftX, SHAFT_REACH } from './caves';
 import { hash2, seedInt } from '../noise';
@@ -29,11 +29,12 @@ function spanProblem(seed: string, a: Anchor): string | null {
   return null;
 }
 // kind 在 layer 層放得下的槽（不碰出生點清空區、可用範圍 − 16 ≥ 最大外框；含坑道的槽也算）：plain = 不含坑道、shafted = 含坑道
-function fitSlots(seed: string, rs: readonly RegionInfo[], kind: AnchorKind, layer: Layer, keep: (r: RegionInfo, mid: number) => boolean) {
+// keep 收到地區、槽中點、可用範圍
+function fitSlots(seed: string, rs: readonly RegionInfo[], kind: AnchorKind, layer: Layer, keep: (r: RegionInfo, mid: number, span: { x0: number; x1: number }) => boolean) {
   const plain: Anchor[] = [], shafted: Anchor[] = [];
   for (const r of rs) for (let q = 0; q < landSlotCount(r, layer); q++) {
     const a: Anchor = { kind, region: r, layer, slot: q }, sl = slotRange(a), sp = anchorSpan(seed, a);
-    if (slotOverlapsSpawnClear(a) || !keep(r, (sl.x0 + sl.x1) / 2) || sp.x1 - sp.x0 - 16 < ANCHOR_MAX_W[kind]!) continue;
+    if (slotOverlapsSpawnClear(a) || !keep(r, (sl.x0 + sl.x1) / 2, sp) || sp.x1 - sp.x0 - 16 < ANCHOR_MAX_W[kind]!) continue;
     (sp.shaft ? shafted : plain).push(a);
   }
   return { plain, shafted };
@@ -146,13 +147,15 @@ describe('gen2 anchors', () => {
       const hv = hash2(1, 0, seedInt(seed, 'g2-anchor')), rolled = hv < 0.15 ? 2 : hv < 0.75 ? 3 : 4;
       // 村莊在其他表層錨點之前選（地城不在森林），所以容量 = 全家鄉放得下村莊的森林表層槽
       const fit = fitSlots(seed, h.regions.filter((r) => r.variant !== VARIANT.BEACH && r.variant !== VARIANT.DUNGEON), 'village', BP_SURFACE,
-        (r, mid) => r.biome === BIOME.FOREST && [VARIANT.PLAIN, VARIANT.HILLS, VARIANT.SPAWN].includes(r.variant as never) && Math.abs(mid - SPAWN_X) >= 200);
+        (r, mid, span) => r.biome === BIOME.FOREST && [VARIANT.PLAIN, VARIANT.HILLS, VARIANT.SPAWN].includes(r.variant as never) && Math.abs(mid - SPAWN_X) >= 200
+          && villageFits(span, SPAWN_X));
       const cap = fit.plain.length + fit.shafted.length;
       expect(got, `${seed} rolled ${rolled} cap ${cap}`).toBe(Math.min(rolled, cap));
       if (got < rolled) { expect(cap).toBeLessThan(rolled); short++; }
       dist[got]++;
     }
-    // 實測（M2a Task 7 修正 1）：2 / 3 / 4 座 = 104 / 381 / 115、因容量不足而少的 20 個；擲到 4 的 25% 大多真的放 4 座
+    // 實測（M2a Task 7 修正 1）：2 / 3 / 4 座 = 104 / 381 / 115、因容量不足而少的 20 個；擲到 4 的 25% 大多真的放 4 座。
+    // Task 9 起村莊中心要離出生點 > 200（移不開的含坑道槽不放）：113 / 377 / 110、少的 33 個
     expect(dist[4]).toBeGreaterThan(600 * 0.18); expect(short).toBeLessThan(600 * 0.06);
   }, 120_000);
 

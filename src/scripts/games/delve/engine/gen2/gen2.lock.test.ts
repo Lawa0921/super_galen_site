@@ -6,9 +6,10 @@ import { Gen2Source, GEN2_VERSION, GEN2_MIN_VERSION } from './index';
 import { fillCol, bytes } from './testUtil';
 import { fnv1a } from '../../net/codec';
 
-const GEN2_HASHES: Record<number, number> = { 0: 949959904 };
-// 101：家鄉的小屋（M2a Task 7 起家鄉表層槽多半是錨點，原本 105 的遺跡沒了）；8：家鄉地城的入口塔與塔下的房間（M2a Task 8）
-const COLS = [-300, -40, -8, -4, -1, 0, 8, 30, 65, 100, 101, 131, 132, 140, 160, 220, 400];
+const GEN2_HASHES: Record<number, number> = { 0: 2999581208 };
+// 101：家鄉的小屋（M2a Task 7 起家鄉表層槽多半是錨點，原本 105 的遺跡沒了）；8：家鄉地城的入口塔與塔下的房間（M2a Task 8）；
+// 57：第一座村莊的委託板與廣場、26：第一座地廳的礦車（M2a Task 9）
+const COLS = [-300, -40, -8, -4, -1, 0, 8, 26, 30, 57, 65, 100, 101, 131, 132, 140, 160, 220, 400];
 
 describe('gen2 版本雜湊鎖', () => {
   for (let v = GEN2_MIN_VERSION; v <= GEN2_VERSION; v++) {
@@ -26,6 +27,7 @@ describe('gen2 版本雜湊鎖', () => {
     expect([...kinds].some((k) => k === 'shipwreck' || k === 'crate'), [...kinds].join()).toBe(true);
     expect([...kinds].some((k) => k === 'cabin' || k === 'ruin'), [...kinds].join()).toBe(true);
     expect(kinds.has('dungeon'), [...kinds].join()).toBe(true);
+    expect(kinds.has('village'), [...kinds].join()).toBe(true); expect(kinds.has('hall'), [...kinds].join()).toBe(true);
   });
   it('每個版本都有雜湊', () => {
     for (let v = GEN2_MIN_VERSION; v <= GEN2_VERSION; v++) expect(GEN2_HASHES[v]).toBeTypeOf('number');

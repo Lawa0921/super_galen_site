@@ -8,6 +8,7 @@ import { LIQ_MAX } from '../liquidKind';
 import type { RegionInfo } from '../regionInfo';
 import type { DungeonInfo } from '../genTypes';
 import type { Gen2Source } from './index';
+import type { Blueprint } from './bpcore';
 
 // 第 cx 欄整欄（32 格）由 src 填
 export function fillCol(src: ColumnSource, cx: number): Column {
@@ -192,6 +193,21 @@ export function naturalHoles(w: World, r: { x: number; y: number; w: number; h: 
   for (let x = r.x; x < r.x + r.w; x++) {
     const s = w.surfaceAt(x);
     for (let y = Math.max(r.y, s); y < r.y + r.h; y++) if (w.getFg(x, y) === T.AIR && !DUNGEON_WALLS.has(w.getWall(x, y))) out.push({ x, y });
+  }
+  return out;
+}
+
+// ── 跨層不重疊（Q10）──
+// 外框相交、而且兩份都不是液體的藍圖配對（所有層之間；同層的配對由槽保證不相交，也一併檢查）。回 [kind@x:layer, kind@x:layer]
+const LIQUID_KINDS: ReadonlySet<string> = new Set(['lake', 'cave_lake', 'lava_pool']);
+export function overlapPairs(bps: readonly Blueprint[]): [string, string][] {
+  const out: [string, string][] = [];
+  const meet = (a: Blueprint, b: Blueprint): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  const tag = (b: Blueprint): string => `${b.kind}@${b.x}:${b.layer}`;
+  for (let i = 0; i < bps.length; i++) for (let j = i + 1; j < bps.length; j++) {
+    const a = bps[i], b = bps[j];
+    if (a.id === b.id || LIQUID_KINDS.has(a.kind) || LIQUID_KINDS.has(b.kind) || !meet(a, b)) continue;
+    out.push([tag(a), tag(b)]);
   }
   return out;
 }

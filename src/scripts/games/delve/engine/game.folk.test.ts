@@ -79,7 +79,9 @@ describe('聚落登錄（舊世界 alpha）', { timeout: 120_000 }, () => {
 describe('安全的地方（folkSafeAt：旅人不出現、護送完成）', { timeout: 120_000 }, () => {
   it('gen2：隱士小屋算安全；地城不算（siteAt 仍認得它）；範圍外不算', () => {
     const g = new DelveGame({ seed: 'safe', worldGen: { kind: 'gen2' } });
-    const dx = g.spawn.x + 600, hx = g.spawn.x - 600;
+    // 家鄉的聚落開局就登錄（M2a Task 9）：注入的地城 / 隱士放在家鄉外，不和真的村莊重疊
+    const dx = g.spawn.x + 20_000, hx = g.spawn.x - 20_000;
+    expect(g.siteAt(dx + 20, 315)).toBeNull(); expect(g.siteAt(hx + 8, 192)).toBeNull();
     g.sites.add({ kind: 'dungeon', key: 'sd', rot: 0, info: { bbox: { x: dx, y: 300, w: 40, h: 30 } } as DungeonInfo });
     g.sites.add({ kind: 'hermit', key: 'sh', rot: 0, at: { x: hx, y: 200 } });
     expect(g.siteAt(dx + 20, 315)?.kind).toBe('dungeon');

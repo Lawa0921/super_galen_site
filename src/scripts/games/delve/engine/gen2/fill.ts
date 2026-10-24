@@ -11,10 +11,10 @@ import { LIQ, LIQ_MAX } from '../liquidKind';
 import { BIOME } from '../world';
 import { li, type Column } from '../column';
 import type { RegionInfo } from '../regionInfo';
-import { ColNoise, CavernNoise, NO_DIG, ORE_THR, spagNoise, spagHit, cavernHit, entranceHit, oreNoise, growPlants, type PlantSite } from '../genPrims';
+import { ColNoise, CavernNoise, NO_DIG, ORE_THR, spagNoise, entranceHit, oreNoise, growPlants, type PlantSite } from '../genPrims';
 import { COL_SEA, COL_BEACH, COL_LAND, COL_ISLAND, LAVA_Y, type ColInfo2, type Profile2 } from './profile';
 import { HOME_X0, SPAWN_X, type Layout } from './layout';
-import { SHAFT_HALF, SHAFT_REACH, carveShaft, hasShaft, shaftOf, type Shaft } from './caves';
+import { SHAFT_HALF, SHAFT_REACH, carveShaft, hasShaft, shaftOf, caveCut, caveK, type Shaft } from './caves';
 import { BP_SURFACE, stamp, type Blueprint, type BlueprintIndex, type BpBox } from './blueprint';
 
 // 每個 pass 的上下文：該地塊的版面版本
@@ -149,8 +149,7 @@ export class Filler2 {
       const i = li(x, y);
       if (y >= S + WALL_FROM) wall[i] = w;
       // 洞穴（義大利麵越深越寬 + 洞穴層大洞窟）；免挖洞箱內不挖
-      const k = y <= rock ? 0 : y >= molten ? 1 : (y - rock) * spanInv;
-      if (!(solid !== null && inRows(solid, y)) && ((y >= caveTop && spagHit(this.spag, y, k)) || (y >= deep && cavernHit(this.cav, y)))) {
+      if (!(solid !== null && inRows(solid, y)) && caveCut(this.spag, this.cav, y, caveTop, deep, caveK(y, rock, molten, spanInv))) {
         // 熔岩線：LAVA_Y 以下的空氣全是熔岩（全世界同一條水平線；主坑道最深只到 deep + 18，碰不到這裡）
         if (y >= LAVA_Y) { liq[i] = LIQ_MAX; lt[i] = LIQ.LAVA; }
         continue;

@@ -905,6 +905,9 @@ export class DelveGame {
     this.sites = new SiteRegistry({ ranges: this.genKind === 'gen2' ? 'gen2' : 'legacy' });
     this.sites.onAdd((s) => this.folk.addSite(this.world, s));
     if (this.genKind !== 'gen2') for (const s of legacySites(this.villages, this.halls, this.dungeon)) this.sites.add(s);
+    // gen2 家鄉的聚落開局就登錄（居民開局就在）；之後欄載入時交來的聚落（外圍、或同一個家鄉聚落再交一次）依 key 去重
+    for (const s of content.sites) this.sites.add(s);
+    this.world.onGenSites = (ss) => { for (const s of ss) this.sites.add(s); };
     // 開局一段時間內不會遇見（第一位旅人至少四分之一天後、第一位受困者半天後）
     this.folk.enc.nextTraveller = this.time + DAY_LENGTH * 0.25;
     this.folk.enc.nextStranded = this.time + DAY_LENGTH * 0.5;
@@ -2590,11 +2593,9 @@ export class DelveGame {
       return Boolean(c);
     }
     if (id === T.QUEST_BOARD) {
-      // 委託板所在的村子（找不到就是第一座村子，同改動前）
-      const at = this.sites.at(x, y), v = at?.kind === 'village' ? at : this.sites.list('village')[0];
-      const elder = v ? this.folk.byKey(`${v.key}:elder`) : null;
-      if (!elder) return false;
-      this.emit({ type: 'folktalk', key: elder.key, line: '委託板上釘著幾張紙條。做完了去找村長領報酬。', board: true });
+      const key = this.questGiverAt(x, y);
+      if (!key) return false;
+      this.emit({ type: 'folktalk', key, line: '委託板上釘著幾張紙條。做完了去找村長領報酬。', board: true });
       return true;
     }
     if (isLandmarkTile(id)) return this.claimLandmark(x, y);
@@ -4449,6 +4450,11 @@ export class DelveGame {
     if (this.settle.claimAt(x, y) !== null) return true;
     const s = this.siteAt(x, y);
     return s !== null && s.kind !== 'dungeon';
+  }
+  /** (x,y) 的委託板給委託的 NPC key：委託板所在村子的村長（找不到村子就是第一座村子，同改動前）；沒有村長 → null */
+  questGiverAt(x: number, y: number): string | null {
+    const at = this.sites.at(x, y), v = at?.kind === 'village' ? at : this.sites.list('village')[0];
+    return (v ? this.folk.byKey(`${v.key}:elder`) : null)?.key ?? null;
   }
   /** (x,y) 在哪個聚落裡（舊世界：村落含村外的緩坡、地廳外框外擴，同改動前；gen2 的範圍見 SiteRegistry） */
   siteAt(x: number, y: number): GenSite | null { return this.sites.at(x, y); }

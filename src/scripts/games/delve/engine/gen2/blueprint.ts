@@ -15,6 +15,9 @@
 // 快取（Q9）：家鄉地塊的藍圖存在釘選表（永不淘汰，家鄉地城這種大藍圖只建一次）；外圍地塊照舊 LRU CACHE_MAX 份。
 // 液體藍圖（湖 / 地下湖 / 熔岩池，structures/lakes.ts）讓位：另一層與它的外框相交的那幾槽的藍圖外框與它相交、且那份不是液體或層比它淺 → 這份不放
 // （fill 依 (layer, id) 序蓋，後蓋的結構會切開液體；依「原始」擲出的結果判，沒有循環）。
+// 跨層不重疊（Q10，M2a Task 9）：同一地區、不同層的兩份非液體藍圖外框不得相交；相交時依 crossYields 丟掉一份：
+// 錨點（2）> 保證槽（1，P11）> 機率擲出（0）；同級丟較深的（SURFACE < UNDER < DEEP；SKY / MINOR 同級一律讓位）。
+// 比對的是其他層的「原始」藍圖（同 yieldLiquid，不遞迴）；錨點彼此由錨點規則保證不相交（settlements.test 釘住）。
 // 地面覆寫（groundAt，Q4）：SURFACE 層藍圖的 ground 蓋過 profile 的地表；Gen2Source.surfaceAt 與 BpCtx.groundAt 都是它。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { hash2, seedInt } from '../noise';
@@ -31,7 +34,9 @@ import { buildLake, buildCaveLake, buildLavaPool } from './structures/lakes';
 import { buildShipwreck } from './structures/shipwreck';
 import { buildCrate } from './structures/crate';
 import { buildDungeonBp } from './structures/dungeon';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, KEEP, SLOT_PAD, slotWidth, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
+import { buildVillageBp } from './structures/village';
+import { buildHallBp } from './structures/hall';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, SLOT_PAD, slotWidth, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type BpKind, type Layer } from './bpcore';
 import { encodeStructureId, decodeStructureId } from './structId';
 
 export {
@@ -102,8 +107,10 @@ function stampRange(col: Column, c: Int32Array, a: number, z: number, x0: number
   }
 }
 
-// ── 錨點建構器（家鄉地城：wholeRegion，Q2）──
+// ── 錨點建構器（家鄉地城：wholeRegion，Q2；村莊 / 地廳：M2a Task 9）──
 registerAnchorBuild('dungeon', buildDungeonBp);
+registerAnchorBuild('village', buildVillageBp);
+registerAnchorBuild('hall', buildHallBp);
 
 // ── 槽位表 ──
 
@@ -128,6 +135,17 @@ const boxesMeet = (a: Blueprint, b: Blueprint): boolean => a.x < b.x + b.w && b.
 export function liquidYields(b: Blueprint, o: Blueprint): boolean {
   return LIQUID.has(b.kind) && o.layer !== b.layer && boxesMeet(b, o) && (!LIQUID.has(o.kind) || o.layer < b.layer);
 }
+// 跨層不重疊（Q10）：非液體藍圖 b（等級 bRank）讓位給另一層的非液體藍圖 o（等級 oRank）？等級：2 錨點、1 保證槽、0 機率擲出。
+// 外框不相交、同層、任一份是液體（液體走 liquidYields）→ false；等級低的讓；同級時 SKY / MINOR 一律讓位（它們依 SURFACE 地面擺放，Q4），
+// 否則較深的讓（SURFACE < UNDER < DEEP）
+const sideLayer = (l: Layer): boolean => l === BP_SKY || l === BP_MINOR;
+export function crossYields(b: Blueprint, bRank: 0 | 1 | 2, o: Blueprint, oRank: 0 | 1 | 2): boolean {
+  if (b.layer === o.layer || LIQUID.has(b.kind) || LIQUID.has(o.kind) || !boxesMeet(b, o)) return false;
+  if (bRank !== oRank) return bRank < oRank;
+  if (sideLayer(b.layer)) return true;
+  if (sideLayer(o.layer)) return false;
+  return b.layer > o.layer;
+}
 // 家鄉含出生點 ± SPAWN_CLEAR 的槽全空（bpcore.touchesSpawnClear）
 const CACHE_MAX = 256;
 // 地面覆寫的快取：一段 GROUND_SEG 欄
@@ -136,7 +154,7 @@ const GROUND_SEG = 32, NO_GROUND = -32768;
 interface Pick { r: RegionInfo; q: number; bp: Blueprint }
 interface Guard { cabin: Pick; ruin: Pick }
 // 一片地塊的錨點：list = anchorsOf 的結果；at = structureId → 錨點；whole = wholeRegion 的錨點
-interface AnchorTable { list: readonly Anchor[]; at: Map<number, Anchor>; whole: readonly Anchor[] }
+interface AnchorTable { list: readonly Anchor[]; at: Map<number, Anchor>; whole: readonly Anchor[]; rank: Map<Anchor, number> }
 export interface BlueprintIndexOptions {
   // 測試接縫：額外的錨點（併進 anchorsOf 的結果；正式碼不傳）
   extraAnchors?: (m: Landmass) => readonly Anchor[];
@@ -242,6 +260,11 @@ export class BlueprintIndex {
   // 地塊的錨點（家鄉：homeAnchors；大陸：continentAnchors；海：沒有）+ 測試接縫 extraAnchors；依地塊快取
   anchorsOf(m: Landmass): readonly Anchor[] { return this.anchorTable(m).list; }
 
+  // 地塊 m 的錨點 a 的（讓位後的）藍圖；沒登錄建構器 / 被讓位 → null。SKY / MINOR 層還沒有藍圖（Task 10 / 19）→ null
+  anchorBlueprint(m: Landmass, a: Anchor): Blueprint | null {
+    return a.layer === BP_SURFACE || a.layer === BP_UNDER || a.layer === BP_DEEP ? this.get(m, a.region, a.slot, a.layer) : null;
+  }
+
   private anchorTable(m: Landmass): AnchorTable {
     let t = this.anchors.get(m);
     if (t) return t;
@@ -252,7 +275,16 @@ export class BlueprintIndex {
       if (at.has(id)) throw new RangeError(`gen2: two anchors in slot ${id} (${at.get(id)!.kind}, ${a.kind})`);
       at.set(id, a);
     }
-    t = { list, at, whole: list.filter((a) => a.wholeRegion) };
+    // 家鄉錨點的名次（BpCtx.rank）：同種裡可用範圍中點離出生點由近到遠，平手取 x 小的
+    const rank = new Map<Anchor, number>();
+    if (m.kind === 'home' && this.spawnX !== null) {
+      const sp = this.spawnX, mid = (a: Anchor): number => { const q = anchorSpan(this.seed, a); return (q.x0 + q.x1) / 2; };
+      for (const k of new Set(list.map((a) => a.kind))) {
+        const same = list.filter((a) => a.kind === k).sort((p, q) => Math.abs(mid(p) - sp) - Math.abs(mid(q) - sp) || mid(p) - mid(q));
+        same.forEach((a, i) => rank.set(a, i));
+      }
+    }
+    t = { list, at, whole: list.filter((a) => a.wholeRegion), rank };
     if (this.anchors.size >= CACHE_MAX) this.anchors.clear();
     this.anchors.set(m, t);
     return t;
@@ -264,10 +296,37 @@ export class BlueprintIndex {
     return lru(this.cache, id, () => build({ seed: this.seed, s: this.s, id, slotX0: s.x0, slotX1: s.x1, region: m.regions[0], profile: this.profile, ver: m.ver, groundAt: this.groundFn }))!;
   }
 
-  // 家鄉地塊走釘選表（Q9），外圍走 LRU
+  // 家鄉地塊走釘選表（Q9），外圍走 LRU。讓位：液體 → yieldLiquid、非液體 → yieldCross（都只看其他層的原始藍圖）
   private get(m: Landmass, r: RegionInfo, q: number, layer: RolledLayer): Blueprint | null {
-    const id = structureId(m.side, m.i, r.index, q, layer), make = (): Blueprint | null => this.yieldLiquid(m, r, this.raw(m, r, q, layer));
+    const id = structureId(m.side, m.i, r.index, q, layer), make = (): Blueprint | null => {
+      const b = this.raw(m, r, q, layer);
+      return !b ? null : LIQUID.has(b.kind) ? this.yieldLiquid(m, r, b) : this.yieldCross(m, r, b, this.rank(m, r, q, layer));
+    };
     return m.kind === 'home' ? memo(this.pinned, id, make) : lru(this.cache, id, make);
+  }
+
+  // 第 q 槽的原始藍圖的等級（crossYields）：2 錨點、1 大陸的保證槽、0 機率擲出
+  private rank(m: Landmass, r: RegionInfo, q: number, layer: RolledLayer): 0 | 1 | 2 {
+    if (this.anchorTable(m).at.has(structureId(m.side, m.i, r.index, q, layer))) return 2;
+    if (m.kind !== 'continent') return 0;
+    const g = this.guard(m), p = layer === BP_UNDER ? g.cabin : layer === BP_SURFACE ? g.ruin : null;
+    return p !== null && p.r === r && p.q === q ? 1 : 0;
+  }
+
+  // 非液體藍圖 b（等級 rank）讓位（crossYields）給同地區另一層與它的外框相交的那幾槽（含該層的 wholeRegion 錨點）的原始藍圖 → null
+  private yieldCross(m: Landmass, r: RegionInfo, b: Blueprint, rank: 0 | 1 | 2): Blueprint | null {
+    const whole = this.anchorTable(m).whole;
+    for (const layer of LAYERS) {
+      if (layer === b.layer) continue;
+      const [q0, q1] = slotsIn(r, layer, b.x, b.x + b.w), qs: number[] = [];
+      for (let q = q0; q <= q1; q++) qs.push(q);
+      for (const a of whole) if (a.region === r && a.layer === layer && (a.slot < q0 || a.slot > q1)) qs.push(a.slot);
+      for (const q of qs) {
+        const o = this.raw(m, r, q, layer);
+        if (o && crossYields(b, rank, o, this.rank(m, r, q, layer))) return null;
+      }
+    }
+    return b;
   }
 
   private raw(m: Landmass, r: RegionInfo, q: number, layer: RolledLayer): Blueprint | null {
@@ -308,7 +367,7 @@ export class BlueprintIndex {
       // 建構器的 slotX0 / slotX1 = 錨點的可用範圍（含坑道的槽 → 避開坑道帶後較大的一側；wholeRegion → 整個地區）
       const f = anchorBuild(a.kind), sp = anchorSpan(this.seed, a);
       if (!f) return null;
-      const bp = f({ ...this.ctx(m, r, q, layer), slotX0: sp.x0, slotX1: sp.x1 });
+      const bp = f({ ...this.ctx(m, r, q, layer), slotX0: sp.x0, slotX1: sp.x1, rank: this.anchorTable(m).rank.get(a) });
       // 執行期檢查（非 wholeRegion、非 shaft_cache）：外框寬 ≤ ANCHOR_MAX_W、外框在 [span.x0 + SLOT_PAD, span.x1 − SLOT_PAD) 內（不會蓋到坑道帶）
       if (!a.wholeRegion && a.kind !== 'shaft_cache') {
         const max = ANCHOR_MAX_W[a.kind];

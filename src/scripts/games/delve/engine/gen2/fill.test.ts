@@ -129,7 +129,9 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
     const colAt = (cx: number): Column => { let c = cols.get(cx); if (!c) cols.set(cx, c = fillCol(src, cx)); return c; };
     const ss = seedInt('skin', 'g2-shaft');
     let sampled = 0, checked = 0;
-    for (const r of home.regions) {
+    // 家鄉 + 東西各第一片大陸（M2a Task 9：家鄉的村莊整平了不少欄，只看家鄉時跳過的比例逼近 20%）
+    const lands = [home, ...([1, -1] as const).map((sd) => { for (let i = 1; ; i++) { const m = src.layout.landmass(sd, i); if (m.kind === 'continent') return m; } })];
+    for (const r of lands.flatMap((m) => m.regions)) {
       if (r.variant === VARIANT.BEACH) continue;
       const sx = shaftX(ss, r);
       for (let x = r.x0 + 30; x < r.x1 - 30; x += 11) {

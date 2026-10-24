@@ -1,11 +1,41 @@
-// caves.ts — gen2 每個地區的主坑道（spec §4.3「每個地區保證至少一條主坑道從地表通到洞穴層」，裁決 P4）。
+// caves.ts — gen2 每個地區的主坑道（spec §4.3「每個地區保證至少一條主坑道從地表通到洞穴層」，裁決 P4），
+// 以及噪聲洞穴的判定（fill.ts 挖洞與結構建構器探測天然洞穴共用同一個 caveCut）。
 // 坑道位置與形狀只由 (seed, 地區) 與 Profile2 的地表 / 層線決定（局部可算），任何一段 fill 都畫得出它與自己相交的部分。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
-import { hash2 } from '../noise';
-import { li, type Column } from '../column';
+import { hash2, seedInt } from '../noise';
+import { li, type Column, type ColumnLayers } from '../column';
 import { T } from '../tiles';
+import { NO_DIG, spagNoise, spagHit, cavernHit, CavernNoise, type ColNoise } from '../genPrims';
 import type { RegionInfo } from '../regionInfo';
 import { VARIANT } from './layout';
+
+// ── 噪聲洞穴 ──
+// (x, y) 是噪聲洞穴格：義大利麵（y ≥ caveTop，越深越寬）或洞穴層大洞窟（y ≥ deep）。spag / cav 已 setX(x)；
+// k = 深度比例（y ≤ rock → 0、y ≥ molten → 1、其間 (y − rock) × spanInv，spanInv = 1 / max(1, molten − rock)）
+export function caveCut(spag: ColNoise, cav: CavernNoise, y: number, caveTop: number, deep: number, k: number): boolean {
+  return (y >= caveTop && spagHit(spag, y, k)) || (y >= deep && cavernHit(cav, y));
+}
+export function caveK(y: number, rock: number, molten: number, spanInv: number): number {
+  return y <= rock ? 0 : y >= molten ? 1 : (y - rock) * spanInv;
+}
+// 天然噪聲洞穴的探針（給結構建構器找「附近的洞穴」，例如地廳隧道接洞）：只看噪聲，與 fill.ts 同一份種子與判定；
+// 不含地表入口欄的淺層（caveTop 用一般陸地欄的 max(rock, 地表 + NO_DIG)）、免挖洞箱、主坑道與其他結構。
+// 熔岩線（LAVA_Y）以下的洞穴格是熔岩，呼叫端自己避開
+export class CaveProbe {
+  private readonly spag: ColNoise;
+  private readonly cav: CavernNoise;
+  private x = Number.NaN;
+  constructor(seed: string) {
+    this.spag = spagNoise(seedInt(seed, 'g2-cave'));
+    this.cav = new CavernNoise(seedInt(seed, 'g2-cavern'));
+  }
+  // I = 第 x 欄的地表與層線
+  open(x: number, y: number, I: ColumnLayers & { surface: number }): boolean {
+    if (x !== this.x) { this.spag.setX(x); this.cav.setX(x); this.x = x; }
+    const caveTop = Math.max(I.rock, I.surface + NO_DIG), spanInv = 1 / Math.max(1, I.molten - I.rock);
+    return caveCut(this.spag, this.cav, y, caveTop, I.deep, caveK(y, I.rock, I.molten, spanInv));
+  }
+}
 
 // 坑道離地區兩端至少 min(SHAFT_MARGIN, 寬 / 4) 格、離出生點至少 SPAWN_GAP 格
 const SHAFT_MARGIN = 120, SPAWN_GAP = 100;

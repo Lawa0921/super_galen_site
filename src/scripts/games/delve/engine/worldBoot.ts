@@ -1,13 +1,14 @@
 // worldBoot.ts — DelveGame 的世界開機：把「生成 → 世界與生成資訊」包成 WorldContent，建構子只讀它。
 //   · legacy：舊生成器（generateWorld 的 GenResult）→ World.fromGen（中央 arrays 模式）+ 外圍 OuterGen（無限世界）。
-//   · gen2：不建中央、什麼都不生成（欄由 Gen2Source 在 ensureColumn 時生成）；其餘生成資訊空陣列 / null。
+//   · gen2：不建中央、什麼都不生成（欄由 Gen2Source 在 ensureColumn 時生成）；家鄉的聚落（村莊 / 地廳 / 地城）開局就建好藍圖、放進 sites
+//     （gen2/home.ts 的 homeSites，Q11）；其餘生成資訊空陣列 / null。
 //   · baked（烘焙過的舊世界，Task 16）：不跑舊生成器；中央的格子全在存檔裡（讀檔蓋上），每欄資料 / 生成資訊 / 地區清單取存檔的
 //     LegacyMeta；欄由 BakedSource 分段生成（舊外圍 = v1、接縫外 = gen2）。
 import { World, type ColumnSource } from './world';
 import type { WorldBounds } from './coords';
 import { OuterGen } from './legacy/chunkgen';
 import type { GenResult } from './legacy/worldgen';
-import type { BiomeSegment, Structure, Landform, ReservedZone, GenLayers, GenRelic, DungeonInfo, VillageInfo, HallInfo, LandmarkInfo } from './genTypes';
+import type { BiomeSegment, Structure, Landform, ReservedZone, GenLayers, GenRelic, DungeonInfo, VillageInfo, HallInfo, LandmarkInfo, GenSite } from './genTypes';
 import type { SpringSpec } from './liquid';
 import { outerRegions, gen2Regions, regionFromJSON, type Region } from './discovery';
 import { bakedLandQuery, gen2LandQuery, v1LandQuery, type LandQuery } from './waystones';
@@ -15,6 +16,7 @@ import { BakedSource } from './bakedSource';
 import type { BakeInfo } from '../save/bake';
 import type { LegacyMeta } from '../save/legacyMeta';
 import { Gen2Source } from './gen2';
+import { homeSites } from './gen2/home';
 import { LockTable, type LockJSON } from './gen2/locks';
 import { SPAWN_X } from './gen2/layout';
 import { SEA_Y, CAVERN_BASE, MOLTEN_BASE } from './gen2/profile';
@@ -38,6 +40,8 @@ export interface WorldContent {
   villages: VillageInfo[];
   halls: HallInfo[];
   landmarks: LandmarkInfo[];
+  /** 開局就登錄的聚落（gen2 家鄉的 homeSites；legacy / baked 給 []，舊世界的聚落由 villages / halls / dungeon 經 legacySites 登錄） */
+  sites: GenSite[];
   /** null = 建構子照舊 buildRegions（舊世界） */
   regions: Region[] | null;
   /** 外圍 / gen2 地區查詢（legacy = outerRegions、gen2 = gen2Regions） */
@@ -67,6 +71,7 @@ export function bootLegacy(seed: string, gen: GenResult, opts: { bounds: WorldBo
     villages: gen.villages ?? [],
     halls: gen.halls ?? [],
     landmarks: gen.landmarks ?? [],
+    sites: [],
     regions: null,
     outer: outer ? outerRegions(seed, outer) : null,
     land: outer ? v1LandQuery(outer) : null,
@@ -92,6 +97,7 @@ export function bootGen2(seed: string, spec: Extract<WorldGenSpec, { kind: 'gen2
     dungeonZone: null, layers: null, dungeon: null,
     tablets: [], relics: [], springs: [],
     villages: [], halls: [], landmarks: [],
+    sites: homeSites(source),
     regions: [],
     outer: gen2Regions(seed, source),
     land: gen2LandQuery(source),
@@ -122,6 +128,7 @@ export function bootBaked(seed: string, spec: Extract<WorldGenSpec, { kind: 'bak
     dungeonZone: m.dungeonZone, layers: m.layers, dungeon: m.dungeon,
     tablets: m.tablets, relics: m.relics, springs: m.springs,
     villages: m.villages, halls: m.halls, landmarks: m.landmarks,
+    sites: [],
     regions: m.regions.map((j) => regionFromJSON(j, m.layers, m.frame.height)),
     outer: (x, y) => (source.inLegacy(x) ? v1(x, y) : g2(x, y)),
     land: bakedLandQuery(m.frame.width, bake.west.x, bake.east.x, v1LandQuery(source.v1.profile), gen2LandQuery(source.gen2)),

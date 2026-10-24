@@ -10,7 +10,7 @@ import type { Profile2 } from './profile';
 import { shaftX, SHAFT_REACH } from './caves';
 import { decodeStructureId } from './structId';
 
-export type BpKind = 'cabin' | 'ruin' | 'shipwreck' | 'crate' | 'lake' | 'cave_lake' | 'lava_pool' | 'dungeon' | 'mineshaft' | 'sky_island';
+export type BpKind = 'cabin' | 'ruin' | 'shipwreck' | 'crate' | 'lake' | 'cave_lake' | 'lava_pool' | 'dungeon' | 'mineshaft' | 'sky_island' | 'village' | 'hall';
 // 層：表層 / 地下 / 深層 / 空中（浮空島）/ 小點（minor）；結構 id 的 layer 欄位 3 bit（structId.ts）
 export const BP_SURFACE = 0, BP_UNDER = 1, BP_DEEP = 2, BP_SKY = 3, BP_MINOR = 4, LAND_SLOT_W = 340, KEEP = -1;
 export type Layer = 0 | 1 | 2 | 3 | 4;
@@ -84,10 +84,12 @@ export const emptyObjects = (): Pick<Blueprint, 'pots' | 'tablets' | 'landmarks'
 // 建一份藍圖的上下文：s = 結構雜湊種子、id = structureId、槽的範圍、所屬地區、側寫、該地塊的版面版本；
 // groundAt(x) = profile.surfaceAt(x) 被與 x 相交、有 ground 的 SURFACE 層藍圖覆寫（Q4）——只有 SKY / MINOR 層的建構器可以呼叫
 // （SURFACE / UNDER / DEEP 的建構器讀 c.profile），所以沒有循環（BlueprintIndex.groundAt 重入會丟錯）。
-// 錨點建構器的 slotX0 / slotX1 是錨點的可用範圍（anchors.anchorSpan：含坑道的槽只給避開坑道帶後較大的一側；wholeRegion 給整個地區）
+// 錨點建構器的 slotX0 / slotX1 是錨點的可用範圍（anchors.anchorSpan：含坑道的槽只給避開坑道帶後較大的一側；wholeRegion 給整個地區）。
+// rank：家鄉錨點在同種錨點裡的名次（可用範圍中點離出生點由近到遠，平手取 x 小的；0 = 最近）；外圍錨點與非錨點 = undefined
 export interface BpCtx {
   seed: string; s: number; id: number; slotX0: number; slotX1: number; region: RegionInfo; profile: Profile2; ver: number;
   groundAt(x: number): number;
+  rank?: number;
 }
 
 // 外框內的暫存格（三層各一，初值 KEEP）：結構先在這裡畫（可以讀自己畫過的格），最後依列序輸出 cells
@@ -128,6 +130,18 @@ export class BpGrid {
 // 涵蓋 [sx − SHAFT_HALF − 4, sx + SHAFT_HALF + 4] 與坑道底的圓室），放不下就回 null（blueprint.test / objects.test 釘住）
 // 主坑道避讓帶 [l, r)（placeX 與錨點的可用範圍 anchors.anchorSpan 共用）：外框 [x, x + w) 要 x + w ≤ l 或 x ≥ r
 export function shaftBand(sx: number): { l: number; r: number } { return { l: sx - SHAFT_REACH - 1, r: sx + SHAFT_REACH + 2 }; }
+
+// 置中、但中心離 avoid 要 > minD 的外框 x（村莊：家鄉的錨點建構器與 anchors.ts 的選槽共用）：外框 [x, x + w) 在 [x0 + SLOT_PAD, x1 − SLOT_PAD) 內，
+// 中心 = x + ((w − 1) >> 1)。先置中（x0 + ((x1 − x0) >> 1) − (w >> 1)）；中心離 avoid ≤ minD → 往遠離 avoid 的方向移到剛好 > minD；
+// 放不下 → null。avoid 不是有限數 = 不限制（只置中，放不下也是 null）
+export function centerAway(x0: number, x1: number, w: number, avoid: number, minD: number): number | null {
+  const lo = x0 + SLOT_PAD, hi = x1 - SLOT_PAD - w, half = (w - 1) >> 1;
+  if (hi < lo) return null;
+  const x = x0 + ((x1 - x0) >> 1) - (w >> 1), c = x + half;
+  if (!Number.isFinite(avoid) || Math.abs(c - avoid) > minD) return x >= lo && x <= hi ? x : null;
+  const moved = c >= avoid ? avoid + minD + 1 - half : avoid - minD - 1 - half;
+  return moved >= lo && moved <= hi ? moved : null;
+}
 
 export function placeX(c: BpCtx, w: number, force: boolean, ok: (x: number) => boolean): number | null {
   const sw = c.slotX1 - c.slotX0, mid = c.slotX0 + (sw >> 1), q = Math.floor(sw / 4);

@@ -11,7 +11,7 @@ import type { RegionInfo } from '../regionInfo';
 import { HOME_X0, SPAWN_X, VARIANT, homeDungeonRegion, type Landmass } from './layout';
 import type { Profile2 } from './profile';
 import { shaftOf, shaftX } from './caves';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, SLOT_PAD, shaftBand, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type Layer } from './bpcore';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, SLOT_PAD, centerAway, shaftBand, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type Layer } from './bpcore';
 
 export type AnchorKind = 'dungeon' | 'village' | 'hall' | 'mineshaft_secret' | 'sky_island' | 'mushroom_biome' | 'crystal_cave' | 'hive'
   | 'cave_lake' | 'ruin' | 'cabin' | 'alcove_snow' | 'alcove_desert' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet' | 'keep' | 'hermit_hut'
@@ -32,7 +32,8 @@ const ORDER: readonly AnchorKind[] = ['dungeon', 'village', 'hall', 'mineshaft_s
   'cave_lake', 'ruin', 'cabin', 'alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache', 'spawn_tablet'];
 
 // 村莊離出生點至少、第 1 / 2 座的目標偏移；地廳第 2 座的目標偏移與兩座最小間距；礦坑密室 / 空島 / 熔岩祭壇離出生點至少
-const VILLAGE_MIN = 200, VILLAGE_AIM = 950, HALL_AIM = 1200, HALL_GAP = 840, SECRET_MIN = 160, SKY_MIN = 250, MOLTEN_MIN = 630;
+export const VILLAGE_MIN = 200;
+const VILLAGE_AIM = 950, HALL_AIM = 1200, HALL_GAP = 840, SECRET_MIN = 160, SKY_MIN = 250, MOLTEN_MIN = 630;
 // 礦坑密室彼此至少 2 槽；地下層那一組的重挑次數
 const SECRET_GAP = 2 * SUB_SLOT_W, UNDER_TRIES = 8;
 
@@ -57,6 +58,10 @@ export const ANCHOR_MAX_W: Readonly<Partial<Record<AnchorKind, number>>> = {
 export function anchorSpan(seed: string, a: Anchor): { x0: number; x1: number; shaft: boolean } {
   if (a.wholeRegion) return { x0: a.region.x0, x1: a.region.x1, shaft: false };
   return spanOf(landSlot(a.region, a.slot, a.layer), a.kind === 'shaft_cache' ? NaN : shaftX(seedInt(seed, 'g2-shaft'), a.region));
+}
+// 村莊（外框最寬 ANCHOR_MAX_W.village）放得進可用範圍、中心離出生點 sp > VILLAGE_MIN（寬度越窄越好放，所以最寬的放得下就都放得下）
+export function villageFits(span: { x0: number; x1: number }, sp: number): boolean {
+  return centerAway(span.x0, span.x1, ANCHOR_MAX_W.village!, sp, VILLAGE_MIN) !== null;
 }
 function spanOf(sl: { x0: number; x1: number }, sx: number): { x0: number; x1: number; shaft: boolean } {
   if (!Number.isFinite(sx)) return { x0: sl.x0, x1: sl.x1, shaft: false };
@@ -128,8 +133,11 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   // 選取順序：每層先選限制多的（回傳時再依 ORDER 排）
   // 表層
   out.push({ kind: 'dungeon', region: dz, layer: BP_SURFACE, slot: 0, wholeRegion: true });
+  // 村莊的中心（structures/village.ts：bpcore.centerAway）離出生點要 > VILLAGE_MIN：含坑道的槽只給一側，置中可能太近，
+  // 最寬的村莊在可用範圍內往外移也做不到的槽不放（Task 9）
   const villageOk = (s: Slot): boolean => s.r.biome === BIOME.FOREST
-    && (s.r.variant === VARIANT.PLAIN || s.r.variant === VARIANT.HILLS || s.r.variant === VARIANT.SPAWN) && far(s, VILLAGE_MIN);
+    && (s.r.variant === VARIANT.PLAIN || s.r.variant === VARIANT.HILLS || s.r.variant === VARIANT.SPAWN) && far(s, VILLAGE_MIN)
+    && villageFits(spanOf(s, shaftX(sShaft, s.r)), sp);
   const touch = (a: Slot, b: Slot): boolean => a.x0 <= b.x1 && b.x0 <= a.x1;
   const vfree = (keep: (s: Slot) => boolean): Slot[] => free('village', BP_SURFACE, (s) => villageOk(s) && keep(s));
   // 第 1 座：西側最接近 sp − 950（西側沒有 → 全家鄉）；第 2 座：東側最接近 sp + 950（東側沒有 → 全家鄉、不與第 1 座相鄰；

@@ -1,6 +1,9 @@
 // bpCanvas.ts — gen2 的繪製畫布：在藍圖外框內畫（BpGrid，畫出外框丟 RangeError），最後 toBlueprint 輸出藍圖。
 // 讀 = 畫過的格，否則天然地層（地表 = profile 的地表；y < 地表 空氣、< rock 泥土、< deep 石、< molten 深層岩、其下玄武岩；
 // 背景牆從地表下 3 格起照同一分層，同 fill.ts 的 WALL_FROM）——只是畫圖時的近似（生態表層由 fill.ts 決定），不是成品。
+// 契約：回退讀取假設天然格是實心、沒有洞穴（不知道 fill.ts 的噪聲洞穴 / 地表入口）。畫圖碼「讀到實心就不畫」的格（KEEP）在成品裡
+// 照 fill 的結果，可能是洞——所以建構器必須用 solid（fillNatural）蓋住所有依賴實心的格（地城塔的整平帶、村莊每欄到 max(地面 + 6, 原地表 + 3)、
+// 地廳隧道的地板 floorY 與頂 floorY − 5；structures/dungeon.ts、village.ts、hall.ts），並有成品裡真的是實心的測試（settlements.test / dungeon.test）。
 // setSurface 記進藍圖的 ground（只有 SURFACE 層的藍圖該有 ground，Q4，由呼叫端負責）；fillNatural 只把座標併進 solid 箱
 // （fill.ts 在箱內只填天然材質、不挖洞）；chest 畫 T.CHEST 並記 BpChest、addItem 推進該箱的 extra。
 // 不 import blueprint.ts（只依賴 bpcore.ts 與葉模組）。
