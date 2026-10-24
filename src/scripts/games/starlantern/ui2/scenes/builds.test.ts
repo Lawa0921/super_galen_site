@@ -69,20 +69,25 @@ describe('BuildsScene (plan 8h Task 7)', () => {
     expect(card).toContain(B.scenario.crowd);
     for (const line of policyText(meteor)) expect(card).toContain(line);
     expect(policyText(meteor).join('')).toContain(SKILLS.inferno.name);
-    // 擴散 is in the bag: ◆ and its tier; 點燃 is not: ○ and where it is found; 連擊 the shop sells.
+    // 擴散 is in the bag: the filled-slot icon and its tier; 點燃 is not: the empty-slot icon and where it is found; 連擊 the shop sells.
     const spread = w.rune('fire-star', 'spread')!;
     expect(spread.dataset.state).toBe('have');
-    expect(spread.textContent).toContain('◆');
+    expect([...spread.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['filled']);
+    expect(spread.querySelector('img')!.getAttribute('alt')).toBe(B.haveMark);
     expect(spread.textContent).toContain(T.rune.label('spread', 'magic'));
     const ignite = w.rune('fire-star', 'ignite')!;
     expect(ignite.dataset.state).toBe('lack');
-    expect(ignite.textContent).toContain('○');
+    expect([...ignite.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['empty']);
+    expect(ignite.querySelector('img')!.getAttribute('alt')).toBe(B.lackMark);
+    expect(card).not.toMatch(/[◆◇○]/);
     expect(ignite.textContent).toContain(T.build.missing('點燃', T.build.from.drop));
     expect(ignite.textContent).toContain('打怪、寶箱掉落');
     expect(w.rune('fire-star', 'multistrike')!.textContent).toContain(T.build.missing('連擊', T.build.from.shop));
-    // The legend (its ◆ only: 缺 is said once, on the row), what following means, and the price.
+    // The legend (the filled-slot icon only: 缺 is said once, on the row), what following means, and the price.
     expect(card).toContain(B.have);
     expect(w.root.querySelector('.slx-bd-legend')!.textContent).not.toContain('缺');
+    // The legend's words follow its icon, so the icon is decorative (alt ""); a row's icons keep their words (鑲得上, 缺).
+    expect(w.root.querySelector('.slx-bd-legend img')!.getAttribute('alt')).toBe('');
     expect(card).toContain(B.follow);
     const cost = applyCost(w.game.state, 'noel', 'meteor')!.cost;
     expect(cost).toBeGreaterThan(0);
@@ -128,7 +133,7 @@ describe('BuildsScene (plan 8h Task 7)', () => {
     const multi = w.rune('fire-star', 'multistrike')!;
     expect(multi.dataset.state).toBe('later');
     expect(multi.textContent).toContain(T.build.later('連擊', 35));
-    expect(multi.textContent).not.toContain('○');
+    expect(multi.querySelector('[data-mark]')).toBeNull();
     expect(w.rune('fire-star', 'ignite')!.dataset.state).toBe('lack');
   });
 

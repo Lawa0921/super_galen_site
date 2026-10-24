@@ -22,7 +22,8 @@ import type { UiAction } from '../input';
 import { gearLabel, rarityClass } from '../loot';
 import type { SceneCtx } from '../scene';
 import { cancelSpend, clickSpend, pressSpend, type SpendState } from '../spendPress';
-import { battleTp, cardOf, compareCards, slotDots, slotStates } from '../skillCard';
+import { battleTp, cardOf, compareCards, slotIcons, slotStates } from '../skillCard';
+import { marksEl } from '../runeArt';
 import { RUNES, type RuneRef } from '../../data/runes';
 import { socketable } from '../../engine/sockets';
 import { buildOf } from '../../data/builds';
@@ -318,7 +319,7 @@ const skills: StatusTab = {
           el('span', { class: s.name.length >= LONG_SKILL_NAME ? 'slx-skill-name slx-skill-name-long' : 'slx-skill-name', text: s.name }),
           // A recovery skill that can also be cast from the labyrinth's field menu (SkillDef.field).
           ...(SKILLS[sk]?.field ? [el('span', { class: 'slx-field-tag', text: t.fieldTag })] : []),
-          ...(takes ? [el('span', { class: 'slx-skill-slots', text: slotDots(m, sk) })] : []),
+          ...(takes ? [marksEl(slotIcons(m, sk), 14, 'slx-skill-slots slx-rune-marks')] : []),
           ...(s.passive ? [] : [el('span', { class: 'slx-skill-target', text: t.targets[s.target] })]),
           el('span', { class: 'slx-skill-cost', text: s.passive ? t.passive : t.tp(treeCost(m, sk, skillCost(caster, sk))) }),
           // A skill she knows outside her tree (Rin's mark) has no rank to show.

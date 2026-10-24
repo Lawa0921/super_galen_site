@@ -69,8 +69,8 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     expect(w.name()).toContain(CHARACTERS.noel.name);
     expect(w.skillCur()).toBe('ice-star');
     expect(w.focus()).toBe('skills');
-    const dots = w.skills().find((r) => r.dataset.id === 'ice-star')!.querySelector('.slx-right')!.textContent!;
-    expect([...dots].length).toBe(socketCount(20));
+    const dots = w.skills().find((r) => r.dataset.id === 'ice-star')!.querySelectorAll('.slx-right [data-mark=empty]');
+    expect(dots.length).toBe(socketCount(20));
     // No argument: the hero, on his first skill that takes runes.
     const plain = setup(() => undefined);
     expect(plain.name()).toContain(CHARACTERS.hero.name);
@@ -104,7 +104,7 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     expect(w.foot()).toContain(W.socketed(label(R('spread')), SKILLS['fire-star'].name));
     expect(w.focus()).toBe('slots');
     expect(w.slots()[0].getAttribute('aria-selected')).toBe('true');
-    expect(w.skills()[0].querySelector('.slx-right')!.textContent).toBe('◆○');
+    expect([...w.skills()[0].querySelector('.slx-right')!.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['on:spread', 'empty']);
     // Saved at once in town.
     expect(JSON.parse(w.storage.getItem(SAVE_KEY)!).party.roster.noel.sockets).toEqual({ 'fire-star': [R('spread')] });
   });
@@ -125,6 +125,11 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     }, 'noel:fire-star');
     w.press('confirm');
     expect(w.runes().map((r) => r.dataset.id)).toEqual(['remove', 'bag:spread@magic']);
+    // A bag row: its count on the right is never cut (slx-ws-count); its cell's icon is decorative beside its label.
+    const bag = w.runes()[1];
+    expect(bag.querySelector('.slx-right')!.className).toBe('slx-right slx-ws-count');
+    expect(bag.querySelector('.slx-right')!.textContent).toBe(T.rune.bag(1));
+    expect(bag.querySelector('.slx-rune-cell img')!.getAttribute('alt')).toBe('');
     w.press('down');
     // A rune already in the slot: the preview says it comes off, back to the bag (final review).
     expect(w.root.querySelector('.slx-ws-card')!.textContent).toContain(W.swapOut(label(R('multistrike'))));
@@ -182,7 +187,7 @@ describe('WorkshopScene (plan 8g Task 4a)', () => {
     }, 'noel:flame-wave');
     const m = w.game.state.party.roster.noel;
     const why = runeWhy(runeFits(skillFor(fromMember(m, 0), 'flame-wave')!, 'spread', [])!);
-    expect(w.skills().find((r) => r.dataset.id === 'flame-wave')!.querySelector('.slx-right')!.textContent).toBe('◇○');
+    expect([...w.skills().find((r) => r.dataset.id === 'flame-wave')!.querySelector('.slx-right')!.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['off:spread', 'empty']);
     expect(w.panel()).toContain(label(R('spread')));
     expect(w.panel()).toContain(W.off(why));
     expect(m.sockets).toEqual({ 'flame-wave': [R('spread')] });
@@ -341,6 +346,8 @@ describe('WorkshopScene: moves, mouse and touch (plan 8g Task 4b)', () => {
     const w = setup(pair({}, { 'fire-star': [R('drain')] }), 'noel:fire-star');
     w.press('confirm', 'confirm');
     expect(w.runes().map((r) => r.dataset.id)).toEqual(['remove', 'head:others', moveId]);
+    // A giver's name on the right may give way; only a bag row's count is kept whole (slx-ws-count, art step 9).
+    expect(w.runes()[2].querySelector('.slx-right')!.classList.contains('slx-ws-count')).toBe(false);
     w.press('down', 'confirm');
     expect(w.game.state.party.roster.noel.sockets).toEqual({ 'fire-star': [R('bounce')] });
     expect(w.game.state.runes).toEqual({ 'drain@magic': 1 });

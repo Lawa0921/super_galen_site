@@ -27,8 +27,9 @@ describe('artPaths', () => {
     // - plan 8c's 三連刃 icon (its skill replaced by 順手牽羊; the file stays until step ⑨) = 409
     // + the companion talking faces, wave 1 (18; user approval 2026-10-23) = 427
     // + Lorne's and both Rin looks' grave faces, wave 2 (6; user approval 2026-10-24; the three redos replace files) = 433
-    expect(urls).toHaveLength(433);
-    expect(new Set(urls).size).toBe(433);
+    // + the rune icons (art step 9, G4; user approval 2026-10-24 「可以」): 32 runes and 2 slot states, at 14 and 16 = 501
+    expect(urls).toHaveLength(501);
+    expect(new Set(urls).size).toBe(501);
     for (const id of RETIRED_ICON_IDS) expect(urls).not.toContain(art.icon(id));
     expect(urls).toContain(art.fxAnim('thunder'));
     for (const id of ['blaze-core', 'frost-heart', 'storm-stone', 'mire-gland', 'shade-crystal', 'iron-shard']) expect(urls).toContain(art.icon(id));

@@ -1,0 +1,524 @@
+{
+  "assets": {
+    "icon-rune-share-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/cand/a2/icon-rune-share-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.357,
+        "scale": 25.357,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-share"
+      },
+      "legible": {
+        "area": 30,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.09,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5"
+    },
+    "icon-rune-share-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/cand/a2/icon-rune-share-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.583,
+        "scale": 29.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-share"
+      },
+      "legible": {
+        "area": 30,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.09,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5"
+    },
+    "icon-rune-lasting-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/cand/a2/icon-rune-lasting-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.357,
+        "scale": 25.357,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-lasting"
+      },
+      "legible": {
+        "area": 27,
+        "pieces": 1,
+        "box": [
+          8,
+          6
+        ],
+        "specks": 0.0,
+        "edge": 0.16,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5"
+    },
+    "icon-rune-lasting-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/cand/a2/icon-rune-lasting-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.583,
+        "scale": 29.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-lasting"
+      },
+      "legible": {
+        "area": 27,
+        "pieces": 1,
+        "box": [
+          8,
+          6
+        ],
+        "specks": 0.0,
+        "edge": 0.16,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5"
+    },
+    "icon-rune-dispel-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/cand/a2/icon-rune-dispel-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.357,
+        "scale": 25.357,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-dispel"
+      },
+      "legible": {
+        "area": 41,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.17,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5"
+    },
+    "icon-rune-dispel-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/cand/a2/icon-rune-dispel-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.583,
+        "scale": 29.583,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-dispel"
+      },
+      "legible": {
+        "area": 41,
+        "pieces": 1,
+        "box": [
+          8,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.17,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5"
+    },
+    "icon-rune-armor-break-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/cand/a2/icon-rune-armor-break-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.5,
+        "scale": 25.5,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-armor-break"
+      },
+      "legible": {
+        "area": 46,
+        "pieces": 1,
+        "box": [
+          7,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.03,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5"
+    },
+    "icon-rune-armor-break-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/cand/a2/icon-rune-armor-break-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.75,
+        "scale": 29.75,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-armor-break"
+      },
+      "legible": {
+        "area": 46,
+        "pieces": 1,
+        "box": [
+          7,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.03,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5"
+    },
+    "icon-rune-venom-16": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/cand/a2/icon-rune-venom-16.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 14,
+          "short": 14,
+          "mass": 0.98,
+          "box": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "centre_off": 0.0
+        },
+        "block": 25.5,
+        "scale": 25.5,
+        "size": [
+          16,
+          16
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-venom"
+      },
+      "legible": {
+        "area": 35,
+        "pieces": 1,
+        "box": [
+          6,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.05,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5"
+    },
+    "icon-rune-venom-14": {
+      "final": "art-factory/starlantern/work/sheet-rune-5/cand/a2/icon-rune-venom-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 12,
+          "mass": 0.972,
+          "box": [
+            1,
+            1,
+            13,
+            13
+          ],
+          "centre_off": 0.0
+        },
+        "block": 29.75,
+        "scale": 29.75,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6"
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-rune-5\\a2\\sheet-rune-5-a2.png",
+        "cell": "rune-venom"
+      },
+      "legible": {
+        "area": 35,
+        "pieces": 1,
+        "box": [
+          6,
+          8
+        ],
+        "specks": 0.0,
+        "edge": 0.05,
+        "reasons": []
+      },
+      "sheet": "sheet-rune-5"
+    }
+  }
+}

@@ -1829,7 +1829,10 @@ describe('the skills page and the workshop (plan 8g Task 5)', () => {
     expect(w.root.querySelector('.slx-tab-sel')!.textContent).toBe(T.ui2.status.tabs.skills);
     expect(w.root.querySelector('.slx-hint')!.textContent).toBe(T.ui2.status.hintSkills);
     const fire = w.skill('fire-star')!;
-    expect(fire.querySelector('.slx-skill-head .slx-skill-slots')!.textContent).toBe('◆○');
+    const slots = fire.querySelector('.slx-skill-head .slx-skill-slots')!;
+    expect([...slots.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['on:spread', 'empty']);
+    expect(slots.textContent).toBe('');
+    for (const img of slots.querySelectorAll('img')) expect(img.getAttribute('alt')).toBeTruthy();
     const rune = fire.querySelector('.slx-skill-rune')!;
     // What the rune does to this skill, in the card's final numbers (final review): not its own 「威力 60%」.
     const m0 = w.game.state.party.roster.noel;
@@ -1839,17 +1842,18 @@ describe('the skills page and the workshop (plan 8g Task 5)', () => {
     expect(rune.textContent).toContain('84');
     expect(rune.textContent).not.toContain(RUNES.spread.text('magic'));
     expect(rune.classList.contains('slx-line-off')).toBe(false);
-    expect(w.skill('ice-star')!.querySelector('.slx-skill-slots')!.textContent).toBe('○○');
+    expect([...w.skill('ice-star')!.querySelector('.slx-skill-slots')!.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['empty', 'empty']);
     // Enter: the workshop on her first skill that takes runes; a click on a skill: that skill.
     w.s.onAction('confirm');
     expect(w.go).toHaveBeenLastCalledWith('workshop', 'noel:fire-star');
     w.skill('ice-star')!.click();
     expect(w.go).toHaveBeenLastCalledWith('workshop', 'noel:ice-star');
-    // A rune that no longer works (火焰波 hits them all): ◇, greyed, with its reason.
+    // A rune that no longer works (火焰波 hits them all): its icon greyed, the line greyed, with its reason.
     const off = open(noel({ 'flame-wave': 1 }, { 'flame-wave': [R('spread')] }), 'tab:skills:noel');
     const m = off.game.state.party.roster.noel;
     const why = runeWhy(runeFits(skillFor(fromMember(m, 0), 'flame-wave')!, 'spread', [])!);
-    expect(off.skill('flame-wave')!.querySelector('.slx-skill-slots')!.textContent).toBe('◇○');
+    expect([...off.skill('flame-wave')!.querySelector('.slx-skill-slots')!.querySelectorAll('[data-mark]')].map((e) => e.getAttribute('data-mark'))).toEqual(['off:spread', 'empty']);
+    expect(off.skill('flame-wave')!.querySelector('.slx-skill-slots .slx-rune-off')).not.toBeNull();
     const line = off.skill('flame-wave')!.querySelector('.slx-skill-rune')!;
     expect(line.classList.contains('slx-line-off')).toBe(true);
     expect(line.textContent).toContain(T.ui2.workshop.off(why));

@@ -150,8 +150,6 @@ export const T = {
     echoAct: (name: string) => `殘響・${name}`,
     /** What the echo repeats, in numbers (plan 8g ruling 12): the repeated skill's battle line, its percent already in it. */
     echoNote: (pct: number, line: string) => `重現（已含 ${pct}%）：${line}`,
-    /** After a skill's name in the battle menu, one for each working rune on it (plan 8g ruling 12). */
-    runeMark: '◆',
     /** A skill's note in the battle menu: its final numbers (battleLine), then its words. */
     noteWith: (line: string, desc: string) => `${line}　${desc}`,
     /** After the note when the record left a variant's mechanic extras out (8d final review). */
@@ -807,8 +805,10 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       sides: (names: string[]) => `二選一：${names.join('、')}`,
       runesHead: '建議符文',
       noRunes: '不裝符文。',
-      /** The mark of a rune in reach (a missing one says 缺 on its own row). */
-      have: '◆ 鑲得上（鑲著或袋子裡有）',
+      /** The legend of the filled-slot icon: a rune in reach (a missing one, the empty-slot icon, says 缺 on its own row). */
+      have: '鑲得上（鑲著或袋子裡有）',
+      /** The words of the two icons on a build's rune rows (art step 9). */
+      haveMark: '鑲得上', lackMark: '缺',
       /** What applying costs: the respec's price when her points move; free when they only grow or stay. */
       cost: (n: number) => `費用：${n} G（技能樹與天賦重新分配）`,
       costFree: '費用：免費（技能樹與天賦照這套補上）',
@@ -1052,6 +1052,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     label: (id: RuneId, tier: RuneTier) => `${RUNES[id].name}（${RARITY[tier]}）`,
     /** The tier part of a label, kept whole where a long name is cut (plan 8g final review). */
     tierTag: (tier: RuneTier) => `（${RARITY[tier]}）`,
+    /** The words of a rune icon (ui2/runeArt.ts; art step 9): an empty slot, the plain filled slot, a rune doing nothing there. */
+    mark: { empty: '空插槽', filled: '已鑲插槽', off: (label: string) => `${label}（未生效）` },
     /** A rune found in a fight, a chest or a vault. */
     got: (label: string) => `得到符文：${label}`,
     /** A rune found with `n` (RUNE_STACK) already owned: paid as its sell price instead (plan 8f ruling 7). */
