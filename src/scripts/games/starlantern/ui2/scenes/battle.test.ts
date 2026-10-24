@@ -1246,6 +1246,39 @@ describe('BattleScene art (no placeholder)', () => {
   });
 });
 
+describe('BattleScene icons (art step 9)', () => {
+  it("the field bar's barrier and moon show their 14px icons in front of the word, decorative", () => {
+    const has = (u: string) => [art.mechIcon('ward'), art.mechIcon('moon-full')].includes(u);
+    const { root } = setup((g) => {
+      g.battle!.barriers = [{ skill: 'ward', kind: 'guard', power: 30, turns: 3, src: 'chizuru' }];
+      g.battle!.moon = { phase: 'full' };
+    }, { art: { has } });
+    const bar = root.querySelector<HTMLElement>('.slx-fieldbar')!;
+    expect([...bar.children].map((c) => c.textContent)).toEqual(['守之結界3', '月相：滿月→下弦']);
+    const imgs = [...bar.querySelectorAll('img')];
+    expect(imgs.map((i) => i.getAttribute('src'))).toEqual([art.mechIcon('ward'), art.mechIcon('moon-full')]);
+    for (const i of imgs) expect([i.className, i.getAttribute('alt'), i.getAttribute('width')]).toEqual(['slx-chip-ico', '', '14']);
+    // Not loaded: the words alone, as before.
+    const plain = setup((g) => { g.battle!.moon = { phase: 'new' }; });
+    expect(plain.root.querySelector('.slx-fieldbar img')).toBeNull();
+  });
+
+  it('the skill menu shows each skill at its 16px native icon once loaded, the name alone otherwise', () => {
+    const has = (u: string) => u === art.skillIcon('iron-wall', 16);
+    const { s, root } = setup((g) => { g.state.party.roster.scarlet.tree = { provoke: 1, 'iron-wall': 1 }; }, { art: { has } });
+    for (let k = 0; k < 9 && root.querySelector('.slx-bcmd .slx-sel')?.getAttribute('data-id') !== 'skill'; k++) s.onAction('down');
+    s.onAction('confirm');
+    const opts = [...root.querySelectorAll<HTMLElement>('.slx-bsub [role=option]')];
+    expect(opts.length).toBeGreaterThan(0);
+    const withIcon = opts.filter((o) => o.querySelector('img.slx-skill-menu-ico'));
+    expect(opts.map((o) => o.getAttribute('data-id'))).toContain('provoke');
+    expect(withIcon.map((o) => o.getAttribute('data-id'))).toEqual(['iron-wall']);
+    const img = withIcon[0].querySelector('img')!;
+    expect([img.getAttribute('src'), img.getAttribute('alt')]).toEqual([art.skillIcon('iron-wall', 16), '']);
+    expect(withIcon[0].querySelector('.slx-label')!.textContent).toBe(SKILLS['iron-wall'].name);
+  });
+});
+
 describe('BattleScene field bar (plan 8c)', () => {
   it('the field bar shows the barrier and the moon', () => {
     const { root, s } = setup((g) => {

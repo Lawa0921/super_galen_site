@@ -26,7 +26,8 @@ import { autoLine, battleLine, shownDef, withoutPowerClause } from '../skillCard
 import { clearPillars, dropMoment, skipPillar } from '../lootFx';
 import type { UiAction } from '../input';
 import { Menu, type MenuItem } from '../menu';
-import { PartyBar, type PulseOpts } from '../partyBar';
+import { PartyBar, chipWord, type PulseOpts } from '../partyBar';
+import { mechIconUrls } from '../../render/chipIcons';
 import type { Scene, SceneCtx } from '../scene';
 import { Dialogue, MenuView, backControl, richNodes, win, type Rich } from '../widgets';
 import { textCps } from '../settings';
@@ -211,7 +212,8 @@ export class BattleScene implements Scene {
   /** The field bar (plan 8c): the barrier up and the moon, as words in their colours; hidden when there are none. */
   private showField(): void {
     const words = this.state.outcome === 'ongoing' ? fieldWords(this.state) : [];
-    this.field.replaceChildren(...words.map((w) => el('span', { class: `slx-mech slx-mech-${w.tone}`, text: w.text })));
+    // Each with its 14px icon in front once loaded (art step 9, G4): the barrier's kind, the moon's phase now.
+    this.field.replaceChildren(...words.map((w) => chipWord(this.ctx.art, `slx-mech slx-mech-${w.tone}`, w.text, mechIconUrls(w))));
     this.field.hidden = words.length === 0;
   }
 
@@ -306,8 +308,11 @@ export class BattleScene implements Scene {
         const why = whyNot(this.state, actor, sk);
         // Each rune that works on it as its own 14px icon (plan 8g ruling 12; art step 9), and its final numbers before its words.
         const working = runeView(actor, sk.id, actor.runes?.[sk.id] ?? [])?.states.filter((x) => x.miss === null) ?? [];
+        // Its 16px native icon before the name once loaded (art step 9); the name alone until then. Decorative (alt "").
+        const icon = art.skillIcon(sk.id, 16);
         return {
           id: sk.id, label: sk.name, right: why ?? T.cmd.tp(cost), disabled: !!why || actor.tp < cost, note: this.noteOf(sk, actor),
+          ...(this.ctx.art.has(icon) ? { icon, iconCls: 'slx-skill-menu-ico' } : {}),
           ...(working.length ? { marks: working.map((x) => runeMark(x.ref, 14)) } : {}),
         };
       });

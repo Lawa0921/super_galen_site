@@ -169,6 +169,22 @@ describe('gear art styles (src/styles/_starlantern-ui.scss)', () => {
     expect(declsFor('.slx-skill-ico')).toMatchObject({ 'image-rendering': 'pixelated' });
   });
 
+  it('art step 9: chip icons are 14 x 14 at the line top with a 1 px gap, skill menu icons 16 x 16, all unscaled pixel art', () => {
+    for (const sel of ['.slx-ail .slx-chip-ico', '.slx-mech .slx-chip-ico']) {
+      expect(declsFor(sel)).toMatchObject({ width: '14px', height: '14px', 'vertical-align': 'top', 'margin-right': '1px', 'image-rendering': 'pixelated' });
+    }
+    // The panel's face rules (40 x 40, the recoil on a hit) leave the chip icons out (a sweep caught the recoil on one).
+    expect(declsFor('.slx-pm img:not(.slx-chip-ico)')).toMatchObject({ width: '40px' });
+    expect(declsFor('.slx-pm-hit img:not(.slx-chip-ico)').animation).toMatch(/^slx-pm-recoil/);
+    expect(rules.filter((r) => r.sels.some((s) => /^\.slx-pm(-hit)? img$/.test(s)))).toEqual([]);
+    // A 14 px icon in a 14 px line (the chip's 12 px word, line-height 14) never makes the chip taller.
+    expect(declsFor('.slx-ail, .slx-mech'.split(', ')[0])['line-height'] ?? rules.find((r) => r.sels.includes('.slx-ail'))!.decls['line-height']).toBe('14px');
+    expect(declsFor('.slx-ico.slx-skill-menu-ico')).toMatchObject({ width: '16px', height: '16px', 'image-rendering': 'pixelated' });
+    // Two classes, after both icon rules (.slx-ico 12px, .slx-list .slx-ico 16px): it wins in any list.
+    expect(css.indexOf('.slx-ico.slx-skill-menu-ico {')).toBeGreaterThan(css.indexOf('.slx-list .slx-ico {'));
+    expect(css.indexOf('.slx-ico.slx-skill-menu-ico {')).toBeGreaterThan(css.indexOf('.slx-ico {'));
+  });
+
   it('no layer is drawn by a pseudo-element', () => {
     expect(css).not.toMatch(/\.slx-(rglow|rframe|rstarlit|gear-ico|gear-art|item-art-box)[^{,]*::?(before|after)/);
   });

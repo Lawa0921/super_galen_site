@@ -464,7 +464,11 @@ def starlit_alts_section(pg, alts, fails, icon, gear, nm, cell, notes=None, plai
 
 def main(batch='sample', out=None):
     lab = G.label(batch); out = Path(out) if out else out_dir(batch)
-    reg = json.loads(G.REG_PATH.read_text(encoding='utf-8'))['assets'] if G.REG_PATH.exists() else {}
+    full_reg = json.loads(G.REG_PATH.read_text(encoding='utf-8')) if G.REG_PATH.exists() else {'assets': {}}
+    reg = full_reg['assets']
+    # Step 9: a batch the user approved and that is published says so (with the approval) instead of 尚未核准.
+    approval = full_reg.get('approved_batches', {}).get(batch)
+    published = bool(approval) and all(reg.get(a, {}).get('status') == 'published' for a in G.batch_assets(batch))
     # Empty the folder rather than delete it: a shell or viewer may hold the folder itself open (Windows refuses rmdir).
     out.mkdir(parents=True, exist_ok=True)
     for child in out.iterdir():
@@ -807,7 +811,8 @@ table.checklist{{min-width:900px}} table.checklist td,table.checklist th{{overfl
 .treerow{{font-size:10px;line-height:14px;gap:2px}} .tabrow img,.treerow img{{image-rendering:pixelated;flex:none}}
 .finals{{margin:6px 0;padding-left:18px;font-size:12px;color:#b9b4a6}} .finals li{{margin:2px 0;overflow-wrap:anywhere}}
 </style></head><body>
-<h1>星燈迷宮 裝備美術審核・{esc(GATE_NAME.get(batch, batch))}（尚未核准、未發布）</h1>
+<h1>星燈迷宮 裝備美術審核・{esc(GATE_NAME.get(batch, batch))}（{'已核准並發布' if published else '尚未核准、未發布'}）</h1>
+{f'<p class="note">核准紀錄：{esc(approval.get("by", ""))}（{esc(approval.get("date", ""))}）。下面「請你決定的事」是當時的題目，保留作紀錄。</p>' if published else ''}
 <p class="note">本頁所有像素圖以最近鄰放大顯示。格子、外框位置、名稱與價格是頁面上的示意，不在圖片裡。這些圖要等你在這頁確認之後，才會放進遊戲。</p>
 <details class="tech"><summary>技術細節</summary>登錄狀態最多到 qa_passed；核准與發布要等使用者在這頁確認（補遺 S4）。登錄表批次：{esc(lab)}。</details>
 

@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { Effect, SkillDef, UltimateDef } from '../engine/types';
-import { NO_ICON_YET_IDS } from '../render/artPaths';
+import { allArtUrls, art } from '../render/artPaths';
 import { POWERS } from './gear';
 import { SKILLS } from './skills';
 import { NODES } from './trees';
@@ -137,7 +137,7 @@ describe('the converged roster (plan 8c Task 7)', () => {
       expect(r.SKILLS[was]?.owner, was).toBeDefined();
       expect(SKILLS[was], `${was} is gone`).toBeUndefined();
       expect(SKILLS[now]?.owner, now).toBe(r.SKILLS[was].owner);
-      expect(NO_ICON_YET_IDS.has(now), `${now} waits for its icon`).toBe(true);
+      expect(allArtUrls(), `${now} has its icon (art step 9)`).toContain(art.skillIcon(now, 16));
     }
     // The changed ones: every other old companion skill, still there under its id, its identity, its mechanic tag or its
     // words not as recorded (星墜一矢 keeps its effects and gains the aim it spends).

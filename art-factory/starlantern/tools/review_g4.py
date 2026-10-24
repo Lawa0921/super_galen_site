@@ -1,6 +1,7 @@
 """review_g4.py: the G4 SAMPLE review page and its 4x montage (art step 9): new skill icons, ailment icons, mechanic counters.
 
   python art-factory/starlantern/tools/review_g4.py [--out=runs/2026-10-24-g4-sample]
+  python art-factory/starlantern/tools/review_g4.py --full [--out=runs/2026-10-24-g4-full]   the published full set
 
 Reads the registry's `g4-sample` batch (g4_art.py pick), copies each icon and the comparison art (the G3 skill icons of
 the same characters, the published rune icons, the characters' published portraits) into <out>/img/, and writes
@@ -195,10 +196,128 @@ def page(out, qa):
     (out / 'review.html').write_text('\n'.join(h), encoding='utf-8', newline='\n')
 
 
+# --- the full set (art step 9, G4; published 2026-10-24) -------------------------------------------------------------------
+CHIP_NAMES = {'ail-sleep': '睡眠', 'mech-aim': '瞄準', 'mech-mark': '暗記', 'mech-ward': '守之結界', 'mech-purify': '淨之結界',
+              'mech-thunder': '雷（結界附加）', 'mech-moon-first': '上弦', 'mech-moon-waning': '下弦', 'mech-moon-new': '新月'}
+DEVICE_SKILLS = ['turret', 'repair-drone', 'barrier', 'shock-mine', 'tesla-coil']
+
+
+def full_name(p):
+    from review_gear import names
+    return NAMES.get(p) or CHIP_NAMES.get(p) or names().get(p, p)
+
+
+def neighbours(part):
+    """Three G3 icons of the same character (the skills before it in the game data), shown beside a new skill."""
+    roster = G.skill_roster(); own = roster.get(part)
+    mine = set(F.full_parts())
+    return [s for s, o in roster.items() if o == own and s not in mine][:3]
+
+
+def full_copy(out, reg):
+    img = out / 'img'
+    if img.exists(): shutil.rmtree(img)
+    img.mkdir(parents=True)
+    qa = {}
+    for p in F.full_parts():
+        for aid in F.assets_of(p, full=True):
+            e = reg.get(aid); shutil.copyfile(A._final_path(e['final']), img / f'{aid}.png')
+            qa[aid] = dict(e['qa'], status=e.get('status'), attempt=f"{e.get('sheet', '')} {e.get('chosen_attempt', '')}".strip(),
+                           batch=e.get('batch'))
+    for p in F.full_parts():
+        if F.kind_of(p) != 'skill': continue
+        for s in neighbours(p):
+            for px in (16, 14): shutil.copyfile(PUB / 'icon' / f'{s}-{px}.png', img / f'g3-{s}-{px}.png')
+    for s in DEVICE_SKILLS: shutil.copyfile(PUB / 'icon' / f'{s}-14.png', img / f'g3-{s}-14.png')
+    for r in RUNE_BESIDE.values(): shutil.copyfile(PUB / 'icon' / f'{r}-14.png', img / f'{r}-14.png')
+    return qa
+
+
+def full_montage(out):
+    """4x: each new skill (16, 14) then three G3 icons of the same character (16); each chip icon (14) then the rune of
+    the same idea (14), when there is one. Two columns."""
+    rows = []
+    for p in F.full_parts():
+        ims = [Image.open(out / 'img' / f'{a}.png').convert('RGBA') for a in F.assets_of(p, full=True)]
+        n = len(ims)
+        if F.kind_of(p) == 'skill': ims += [Image.open(out / 'img' / f'g3-{s}-16.png').convert('RGBA') for s in neighbours(p)]
+        if p in RUNE_BESIDE: ims += [Image.open(out / 'img' / f'{RUNE_BESIDE[p]}-14.png').convert('RGBA')]
+        rows.append((n, ims))
+    s, gap, sep = 4, 6, 10
+    per = -(-len(rows) // 2)
+    colw = max(sum(im.width for im in r) + gap * (len(r) + 1) + sep for _, r in rows)
+    rowh = 16 + gap
+    sheet = Image.new('RGBA', (colw * 2 * s, (per * rowh + gap) * s), BG)
+    for k, (n, r) in enumerate(rows):
+        x = gap + (k // per) * colw; y = gap + (k % per) * rowh
+        for i, im in enumerate(r):
+            if i == n: x += sep
+            sheet.alpha_composite(im.resize((im.width * s, im.height * s), Image.NEAREST), (x * s, (y + (16 - im.height) // 2) * s))
+            x += im.width + gap
+    sheet.save(out / 'montage-4x.png')
+
+
+def full_page(out, qa, shots):
+    parts = F.full_parts()
+    skills = [p for p in parts if F.kind_of(p) == 'skill']; chips = [p for p in parts if F.kind_of(p) != 'skill']
+    colour = {**F.AIL_COLOUR, **F.MECH_COLOUR, 'mech-aim': '#ff9bb8', 'mech-mark': '#ff6cd9', 'mech-ward': '#4ac2ff',
+              'mech-purify': '#d6ff7b', 'mech-thunder': '#ffe845', 'mech-moon-first': '#e6c6ff', 'mech-moon-waning': '#e6c6ff', 'mech-moon-new': '#e6c6ff'}
+    h = ['<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
+         f'<title>G4 圖示全套</title><style>{CSS}</style></head><body>',
+         '<h1>G4 圖示全套：新技能、異常、機制計數（第 ⑨ 步，已發布）</h1>',
+         '<p class="note">風格由使用者 2026-10-24 在樣本頁核准：「(1) 新技能風格可以、和 G3 一致；(2) 異常與機制不要底座；(3) 隊伍狀態列用 14×14；'
+         '(4) 冰緩＝小一點的冰塊＋向下箭頭」。全套照同一個風格畫，樣本的三個風險已重畫：熱度改成溫度計（和灼燒的火分開）、流血改成一顆更紅的大血滴、'
+         '拍子的音符桿加粗到 2 像素以上。新技能 16×16 與 14×14，異常與機制 14×14，數字一律是遊戲字。波比的裝置直接用他技能的 14×14 圖示。</p>',
+         f'<p><a href="montage-4x.png">montage-4x.png</a>　<a href="../2026-10-24-g3-review/index.html">G3 審核頁（90 招，已發布）</a>　'
+         f'遊戲內截圖：{"、".join(f"<a href={chr(34)}ingame/{n}{chr(34)}>{n}</a>" for n in shots) or "（無）"}</p>',
+         f'<h2>1. 新技能 {len(skills)} 招：1×、2×、4×，旁邊是同角色的 G3 圖示</h2>']
+    for p in skills:
+        cell = [f'<div class="card"><b>{html.escape(full_name(p))}</b> <span style="color:var(--dim)">{p}</span><br>']
+        for aid in F.assets_of(p, full=True):
+            px = int(aid.rsplit('-', 1)[1])
+            cell += [f'<span class="px"><img src="img/{aid}.png" width="{px * z}" height="{px * z}" alt=""></span>' for z in (1, 2, 4)] + ['<br>']
+        cell.append('<span class="dim">同角色：</span>' + ''.join(f'<span class="px">{img(f"g3-{s}-16.png", "i16")}</span>' for s in neighbours(p)))
+        h.append(''.join(cell) + '</div>')
+    h.append(f'<h2>2. 異常與機制 {len(chips)} 個：1×、2×、4×，和遊戲裡那個字的顏色、同概念的符文</h2>')
+    for p in chips:
+        aid = F.assets_of(p, full=True)[0]
+        rune = f'<span class="px">{img(f"{RUNE_BESIDE[p]}-14.png", "i14")}</span>' if p in RUNE_BESIDE else ''
+        h.append(f'<div class="card"><b>{html.escape(full_name(p))}</b> <span style="color:var(--dim)">{p}</span><br>'
+                 + ''.join(f'<span class="px"><img src="img/{aid}.png" width="{14 * z}" height="{14 * z}" alt=""></span>' for z in (1, 2, 4))
+                 + f'<br>{chip(colour.get(p, "#f1ead8"), full_name(p), p)}{rune}</div>')
+    dev = ''.join(f'<span class="chip" style="color:#c0a081">{img(f"g3-{s}-14.png", "i14")}{w}</span>'
+                  for s, w in zip(DEVICE_SKILLS, ['砲台2・3', '修機1・2', '盾機1・3', '地雷2・1', '線圈1・2']))
+    moons = ''.join(chip('#e6c6ff', f'月相：{a}→{b}', f'mech-moon-{k}') for k, a, b in
+                    [('first', '上弦', '滿月'), ('full', '滿月', '下弦'), ('waning', '下弦', '新月'), ('new', '新月', '上弦')])
+    h.append('<h2>3. 放進遊戲的字框裡（1× 與 2×）</h2><p class="note">遊戲裡的實際畫面見上方的遊戲內截圖。</p>')
+    for z in ('', 'zoom2'):
+        h.append(f'<div class="{z}"><div class="win"><div class="head">隊伍狀態列</div><div class="field">'
+                 + ''.join(chip(colour[p], w, p) for p, w in [('ail-sleep', '睡眠2'), ('ail-bleed', '流血×2'), ('mech-heat', '熱度3'), ('ail-burn', '灼燒3'), ('mech-beat', '拍子4・終幕')])
+                 + f'</div><div class="field" style="margin-top:4px">{dev}</div><div class="head" style="margin-top:6px">戰場橫幅</div><div class="field">'
+                 + chip('#4ac2ff', '守之結界・雷3', 'mech-ward') + chip('#d6ff7b', '淨之結界2', 'mech-purify') + chip('#ffe845', '雷', 'mech-thunder')
+                 + f'</div><div class="field" style="margin-top:4px">{moons}</div><div class="head" style="margin-top:6px">敵人頭上</div><div class="field">'
+                 + chip('#ff6cd9', '暗記', 'mech-mark') + chip('#ff9bb8', '瞄準3・鎖定', 'mech-aim') + chip(colour['ail-poison'], '中毒', 'ail-poison') + '</div></div></div>')
+    h.append('<h2>4. QA</h2><div class="scroll"><table><tr><th>id</th><th>尺寸</th><th>狀態</th><th>批次</th><th>結果</th><th>殘色</th><th>半透明</th><th>溢色</th>'
+             '<th>內部擦除</th><th>長/短</th><th>置中</th><th>版本</th></tr>')
+    for aid, q in qa.items():
+        sj = q['subject']
+        h.append(f'<tr><td>{aid}</td><td>{q["size"][0]}×{q["size"][1]}</td><td>{q["status"]}</td><td>{q["batch"]}</td>'
+                 f'<td class="{"ok" if q["pass"] else "bad"}">{"pass" if q["pass"] else ", ".join(q["reasons"])}</td><td>{q["residue"]}</td>'
+                 f'<td>{q["semi"]}</td><td>{q["magenta_spill"]}</td><td>{q.get("interior_holes", "")}</td><td>{sj["long"]}/{sj["short"]}</td>'
+                 f'<td>{sj["centre_off"]}</td><td>{q["attempt"]}</td></tr>')
+    h.append('</table></div></body></html>')
+    (out / 'review.html').write_text('\n'.join(h), encoding='utf-8', newline='\n')
+
+
 def main(argv):
-    out = AF / G._opt(argv, 'out', 'runs/2026-10-24-g4-sample')
+    full = '--full' in argv
+    out = AF / G._opt(argv, 'out', 'runs/2026-10-24-g4-full' if full else 'runs/2026-10-24-g4-sample')
     reg = G._registry()
-    qa = copy_inputs(out, reg); montage(out); page(out, qa)
+    if full:
+        shots = sorted(p.name for p in (out / 'ingame').glob('*.png')) if (out / 'ingame').is_dir() else []
+        qa = full_copy(out, reg); full_montage(out); full_page(out, qa, shots)
+    else:
+        qa = copy_inputs(out, reg); montage(out); page(out, qa)
     print(out / 'review.html')
 
 

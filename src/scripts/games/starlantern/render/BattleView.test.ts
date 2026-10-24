@@ -19,7 +19,8 @@ import { CHARACTERS } from '../data/characters';
 const sfx = { hit: vi.fn(), weak: vi.fn(), heal: vi.fn(), ko: vi.fn() } as unknown as SoundManager;
 /** Five ailments, as the battle hands them over (the fixed chip order). */
 const FIVE: AilmentChip[] = [{ id: 'poison' }, { id: 'burn', turns: 3 }, { id: 'bleed', stacks: 2, turns: 3 }, { id: 'shock', turns: 2 }, { id: 'chill', turns: 2 }];
-const bank = { get: () => Texture.WHITE, has: () => true } as unknown as TextureBank;
+/** Every picture loaded but the chip icons (art step 9): the word layouts below are the words' own; icons have their tests. */
+const bank = { get: (u: string) => (u.includes('/icon/') ? null : Texture.WHITE), has: (u: string) => !u.includes('/icon/') } as unknown as TextureBank;
 const battle = (log: BattleState['log']): BattleState =>
   makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], [makeCombatant({ key: 'e0', side: 'enemy' })], { log });
 const enemyBox = (view: BattleView) => (view.root.children[0] as Container).children.find((c) => c instanceof Container && !(c instanceof Sprite) && c.children.length > 0) as Container;
@@ -776,5 +777,43 @@ describe('BattleView names and intents fit their slots (legibility, difficulty p
     expect(five.intentText('e2')).toBe('暮色搖籃曲');
     five.showIntents({});
     expect(five.intentText('e0')).toBe('');
+  });
+});
+describe('BattleView ailment icons (art step 9, G4)', () => {
+  it('a loaded 14px icon stands before its word on the row, whole pixels, never over it; the row still folds into +N', () => {
+    const view = new BattleView(true, { get: () => Texture.WHITE, has: () => true } as unknown as TextureBank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments({ e0: [{ id: 'burn', turns: 3 }] }, { e0: [{ tone: 'mark', text: T.mech.mark, setup: true }] });
+    const icons = view.ailmentIcons('e0'), words = view.ailmentTexts('e0');
+    expect(words.map((t) => t.text)).toEqual([T.mech.mark, '灼燒3']);
+    expect(icons).toHaveLength(2);
+    words.forEach((t, i) => {
+      const ico = icons[i];
+      expect([ico.width, ico.height, ico.y]).toEqual([14, 14, 0]);
+      expect(Number.isInteger(ico.x)).toBe(true);
+      expect(ico.x + 14 + 1).toBeLessThanOrEqual(t.x - ailLabelWidth(t.text) / 2 + 0.5);
+    });
+    const row = view.ailmentRowRect('e0')!;
+    const four = makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], ['e0', 'e1', 'e2', 'e3'].map((key) => makeCombatant({ key, side: 'enemy' })));
+    view.setup(four, { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments({ e0: FIVE });
+    const texts = view.ailmentTexts('e0').map((t) => t.text);
+    expect(texts.at(-1)).toMatch(/^\+\d$/);
+    expect(texts.length - 1 + Number(texts.at(-1)!.slice(1))).toBe(5);
+    expect(view.ailmentIcons('e0')).toHaveLength(texts.length - 1);                      // the +N has no icon
+    const r = view.ailmentRowRect('e0')!;
+    const left = Math.min(...view.ailmentIcons('e0').map((s) => s.x));
+    const lastWord = view.ailmentTexts('e0').at(-1)!;
+    expect(left).toBeGreaterThanOrEqual(r.x);
+    expect(lastWord.x + ailLabelWidth(lastWord.text) / 2).toBeLessThanOrEqual(r.x + r.width);
+    expect(row.height).toBe(14);
+  });
+
+  it('without the picture loaded the word stands alone', () => {
+    const view = new BattleView(true, bank);
+    view.setup(battle([]), { width: 640, height: 360 }, 1, 150, 66);
+    view.showAilments({ e0: [{ id: 'burn', turns: 3 }] });
+    expect(view.ailmentIcons('e0')).toHaveLength(0);
+    expect(view.ailmentTexts('e0').map((t) => t.text)).toEqual(['灼燒3']);
   });
 });

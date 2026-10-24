@@ -6,7 +6,6 @@ import { SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { MATERIALS } from '../data/materials';
 import { REGIONS, type RegionId } from '../data/regions';
 import { SKILLS } from '../data/skills';
-import { allArtUrls, art } from './artPaths';
 
 /** Written by `python art-factory/starlantern/tools/gear_art.py plan-json` (plan 5d); null is a discarded cell. */
 interface GearPlan {
@@ -20,9 +19,6 @@ interface GearPlan {
   kinds: Record<string, string>;
 }
 const plan = JSON.parse(readFileSync('art-factory/starlantern/gear-plan.json', 'utf8')) as GearPlan;
-const registry = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as {
-  assets: Record<string, { batch?: string }>;
-};
 
 /**
  * Roster ids (monster roster spec 11.1): 7b merges data/*.roster.ts into SPECIALS and MATERIALS, and their art belongs
@@ -96,12 +92,11 @@ describe('plan 5d gear art plan (art-factory/starlantern/gear-plan.json)', () =>
     expect(cells).toHaveLength(new Set(cells).size);
     const mats = Object.keys(MATERIALS).filter((id) => !MATERIALS_WITH_ART.includes(id) && !ROSTER.has(id));
     expect(mats).toHaveLength(12);
-    // Addendum S2: the skills with no icon in allArtUrls(); once plan 5d publishes one, its registry batch still names it.
-    const urls = new Set(allArtUrls());
-    const fromPlan5d = (id: string) => registry.assets[`icon-${id}`]?.batch?.startsWith('gear-5d-') ?? false;
-    // Plan 8c ruling 2: a replaced skill keeps its cell (its icon is retired in step ⑨), and its successor waits for G3.
+    // Addendum S2: every skill plan 4 drew no icon for (the plan 4 ones are re-derived from their sheets, `sheet-icons-*`).
+    // Plan 8c ruling 2: a replaced skill keeps its cell (step 9 leaves it out of the batch), and its successor is G4's.
     const replaced = new Set(Object.keys(REPLACED)), successors = new Set(Object.values(REPLACED));
-    const skills = Object.keys(SKILLS).filter((id) => (!urls.has(art.icon(id)) || fromPlan5d(id)) && !successors.has(id));
+    const plan4 = new Set(cellsOf('sheet-icons-'));
+    const skills = Object.keys(SKILLS).filter((id) => !plan4.has(id) && !successors.has(id));
     expect(new Set(cells.filter((id) => !replaced.has(id)))).toEqual(new Set([...mats, ...skills]));
   });
 

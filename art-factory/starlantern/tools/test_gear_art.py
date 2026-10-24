@@ -1478,3 +1478,13 @@ def test_skills_page_shows_every_skill_icon_native_in_its_game_cell_and_a_size_g
     decided = head[head.index('已決定'):]
     assert '高約 32' not in decided and '原尺寸' in decided                           # the native-size ruling, not the old size
     assert '原尺寸下' in asked and '凜' in asked                                       # Rin's contrast reassessed at native size
+
+
+def test_a_published_batch_page_says_so_with_its_approval(factory, review):
+    """Step 9: after G3 is approved and published, its rebuilt page no longer says 尚未核准; it quotes the approval."""
+    _fill(factory, 'skills')
+    reg = A.Registry(factory / 'registry.json')
+    for a in G.batch_assets('skills'): reg.data['assets'][a]['status'] = 'published'
+    reg.data['approved_batches'] = {'skills': {'by': 'user 2026-10-24: publish the 90', 'date': '2026-10-24'}}; reg._save()
+    page = review.main('skills').read_text(encoding='utf-8')
+    assert '尚未核准' not in page[:page.index('id="decisions"')] and '已核准並發布' in page and 'user 2026-10-24: publish the 90' in page

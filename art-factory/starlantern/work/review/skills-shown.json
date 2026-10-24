@@ -1,6 +1,6 @@
 {
   "batch": "skills",
-  "generated": "2026-10-24T15:52:57",
+  "generated": "2026-10-24T17:08:01",
   "page": "art-factory\\starlantern\\runs\\2026-10-24-g3-review\\index.html",
   "parts": {
     "icon-flame-wave-16": "7578bc24c45247e47070ad5634bdc9b2800bc327b513567d58d978e7175d6ce8",
@@ -83,8 +83,8 @@
     "icon-rin-veil-14": "8c56686ddf34c727e1714adc857eee872adb0ea87803634f7f98880379227ff0",
     "icon-rin-shadowless-16": "50adf648568bbb6760b3f12aeebb9f402f547984cc3cebc210e372189c6b3206",
     "icon-rin-shadowless-14": "8149e79301bff90c7583fe8ccbc34a654f0a0cca0be7831da14549617e324ad4",
-    "icon-rin-mark-16": "13e173097c7fc8be23f2c032c3f2b4efb5f0d80a5b47955ef096f2267e01e43a",
-    "icon-rin-mark-14": "16a2261a27394967884febd12e3471bc74665d4000943f9091865b340f8128d0",
+    "icon-rin-mark-16": "11ee92decf74fa8e7051ae60b88954b5393f3df63f3c3b0759e6c8b77aedf60f",
+    "icon-rin-mark-14": "c12e3926a603c7235e4b250ee738d8b37cfe896f8cf0653a7116c9ed060ec3fb",
     "icon-rin-execute-16": "2431b2d6174172f2b09dd3759ca2345bdeec7582016d51d2807c211d5172f020",
     "icon-rin-execute-14": "8b59494b66756ac9d7c349576fbf418d8e3fe79062b69b7a9937fadb01156edc",
     "icon-rin-deathblow-16": "fc1937ecf4613fb6ad4029c9372da6902bdd4fce36fa0de069deaa6e300922cb",
