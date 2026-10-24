@@ -4,7 +4,7 @@ import { MOODS_OF, type StoryMood } from '../render/artPaths';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
 import { MEETINGS, type Meetable } from './meetings';
 import { numeral } from './numeral';
-import { CHAINS } from './story/chains';
+import { CHAINS, type MoonPhase } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
 import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
 
@@ -137,7 +137,7 @@ export const DAWN_PLACE: Place = PL.innDawn;
 
 /**
  * Story L spec §4.4.1: the beats between two memories of a night, in their fixed order (the companions by `CHARACTER_IDS`,
- * six each, then twelve of narration). `engine/story/nights.ts` `nextBeat` walks it from the save's cursor (`story.beat`).
+ * six each, Selene eight, then twelve of narration). `engine/story/nights.ts` `nextBeat` walks it from the save's cursor (`story.beat`).
  */
 export interface NightBeats { lines: NightBeat[] }
 /**
@@ -146,10 +146,15 @@ export interface NightBeats { lines: NightBeat[] }
  * tags every line; a line with no tone (a test's pool) fits either.
  */
 export type BeatTone = 'quiet' | 'lively';
-export interface NightBeat extends ScriptLine { tone?: BeatTone }
 /**
- * The night's beats (story L Task 8; style bible §1.3.1; lore ledger I-191). Each companion has six, in `CHARACTER_IDS` order,
- * then twelve of the deep night. Each line carries its tone (cold read, 2026-10-24): `quiet` (a drink, a door kept, a night
+ * Time and moon ruling 10: `moon`, the nights a beat fits (`tonightMoon`): a line that speaks of the moon or its light says
+ * which, and the cursor passes it over on any other night, not used up. No `moon`: any night.
+ */
+export interface NightBeat extends ScriptLine { tone?: BeatTone; moon?: MoonPhase[] }
+/**
+ * The night's beats (story L Task 8; style bible §1.3.1; lore ledger I-191, I-201). Each companion has six (Selene eight:
+ * time and moon ruling 10), in `CHARACTER_IDS` order, then twelve of the deep night. A line that speaks of the moon carries
+ * the nights it fits (`moon`). Each line carries its tone (cold read, 2026-10-24): `quiet` (a drink, a door kept, a night
  * sound, a small touch) may follow any memory; `lively` (a joke, a show-off, clapping) only a warm one. None touches what a
  * memory told, says 你 or 妳 to whoever told it, names another companion (anyone may not be met yet), or leans on a stage
  * or on Rin's choice.
@@ -157,6 +162,10 @@ export interface NightBeat extends ScriptLine { tone?: BeatTone }
 const Q = (who: CharacterId, text: string, mood?: StoryMood): NightBeat => ({ who, text, tone: 'quiet', ...(mood ? { mood } : {}) });
 const J = (who: CharacterId, text: string, mood?: StoryMood): NightBeat => ({ who, text, tone: 'lively', ...(mood ? { mood } : {}) });
 const QN = (text: string): NightBeat => ({ who: 'narrator', text, tone: 'quiet' });
+/** Time and moon ruling 10: a beat that speaks of the moon, for the nights under one of `moon`. */
+const UNDER = (moon: MoonPhase[], l: NightBeat): NightBeat => ({ ...l, moon });
+/** The moon is up: any night but the new moon's. */
+const LIT: MoonPhase[] = ['waxing', 'full', 'waning'];
 export const NIGHT_BEATS: NightBeats = {
   lines: [
     // Noel: loud by day; at night a kindness she will not own
@@ -169,7 +178,7 @@ export const NIGHT_BEATS: NightBeats = {
     // Chizuru: the rites of her shrine, kept in a room at the inn; and the year she fell asleep in
     J('chizuru', '「近來的被子真輕。我們那時候，冬天得壓三層棉被，翻身前還得先跟神明打聲招呼。」', 'bewildered'),
     J('chizuru', '「鎮上的守夜人，最近改敲梆子了？去年還是打鼓的。」', 'bewildered'),
-    Q('chizuru', '「香點上了。煙往窗外飄，今晚的風很溫和。」', 'solemn'),
+    Q('chizuru', '「香點上了。煙直直往上升，今晚屋裡很靜。」', 'solemn'),
     Q('chizuru', '「我摺了一張護符，放在枕邊。說過心事的人，夜裡要有東西守著。」'),
     Q('chizuru', '「我在紙上記下今天的日子。一天一道，明天再添一道。」'),
     Q('chizuru', '「容我合掌一次。說出口的心裡話，要有人替它收好，這是我們那裡的規矩。」', 'solemn'),
@@ -184,9 +193,9 @@ export const NIGHT_BEATS: NightBeats = {
     J('sylvie', '「瑪莎的湯鹹了一點。明天下去前多裝一袋水，不然走到第三層就有人喊渴。」'),
     Q('sylvie', '「窗縫在灌冷風，我拿布塞起來了。誰再打開，自己去睡走廊。」'),
     Q('sylvie', '「多的被子在櫃子最下面。半夜會變冷，蓋好再睡。」'),
-    Q('sylvie', '「風停了，樹葉也不動了。明天是好天氣。」', 'alert'),
+    Q('sylvie', '「風停了，外頭安靜得很。明天是好天氣。」', 'alert'),
     Q('sylvie', '「後院有腳印，小小的一串，是貓。不用管牠。」', 'alert'),
-    Q('sylvie', '「外面的蟲還在叫，代表附近沒東西在走動。安心睡啦。」'),
+    Q('sylvie', '「外面的貓頭鷹還在叫，代表附近沒東西在走動。安心睡啦。」'),
     // Scarlet: a soldier's watch, kept to the letter
     J('scarlet', '「盾已經擦了三遍。再擦一遍，應該就能拿來當鏡子用。」', 'serious'),
     Q('scarlet', '「門閂檢查了三次，三次都很牢。回報完畢。」', 'serious'),
@@ -194,13 +203,16 @@ export const NIGHT_BEATS: NightBeats = {
     Q('scarlet', '「我聽到了。這些話我會守著，一個字也不會傳出去。」', 'serious'),
     Q('scarlet', '「下一班守夜是我。蠟燭剪短了，剛好點到換班。」'),
     Q('scarlet', '「說完了就請休息。門口由我負責，今晚沒有任何東西進得來。」'),
-    // Selene: the moon says it, and then she takes it back
-    J('selene', '「今晚的月亮缺了右邊一角。不是壞兆頭──大概不是。」', 'foresee'),
-    J('selene', '「月亮往西邊走了一點。今晚大家都睡得著──啊，這句不算。」', 'foresee'),
-    Q('selene', '「月亮剛才也在聽。它不會說出去的，我也不會呢。」', 'smile'),
-    Q('selene', '「我把窗簾拉開一點。月光照進來，比燈溫柔。」', 'wistful'),
+    // Selene: the moon says it, and then she takes it back. Time and moon ruling 10: each line that sees the moon keeps to
+    // the nights it is up (the waning one only to its own); the new moon has her a line of its own, and so has the full.
+    UNDER(['waning'], J('selene', '「今晚的月亮缺了右邊一半。不是壞兆頭──大概不是。」', 'foresee')),
+    UNDER(LIT, J('selene', '「月亮往西邊走了一點。今晚大家都睡得著──啊，這句不算。」', 'foresee')),
+    UNDER(LIT, Q('selene', '「月亮剛才也在聽。它不會說出去的，我也不會呢。」', 'smile')),
+    UNDER(LIT, Q('selene', '「我把窗簾拉開一點。月光照進來，比燈溫柔。」', 'wistful')),
     Q('selene', '「我在窗邊數星星，數到一半，忘了數到哪裡。這不算預言，請別記下來。」', 'wistful'),
-    Q('selene', '「今晚的月亮，適合說話。說完了，也適合睡覺。」'),
+    UNDER(LIT, Q('selene', '「今晚的月亮，適合說話。說完了，也適合睡覺。」')),
+    UNDER(['new'], Q('selene', '「今晚月亮請假了。那就由我替它聽著，只聽不讀。」', 'smile')),
+    UNDER(['full'], Q('selene', '「月亮好亮，亮得什麼都讀得出來。今晚不讀了，看大家就好。」', 'smile')),
     // Safira: on the beat, even sitting down
     J('safira', '「睡不著？那來跳一小段啊──不跳？坐著打拍子也算喔。」', 'wink'),
     J('safira', '「一、二──小洛，你的腳在桌子底下跟著拍子，我看見了喔。」', 'laugh'),
@@ -226,7 +238,7 @@ export const NIGHT_BEATS: NightBeats = {
     QN('走廊盡頭，瑪莎的房門底下還透著光，筆尖沙沙地響。'),
     QN('隔壁房的鼾聲停了一下，又接上了。'),
     QN('桌上的茶涼了，杯緣留著一圈淡淡的水痕。'),
-    QN('月光從窗縫斜斜照進來，落在地板上，慢慢挪了一寸。'),
+    UNDER(LIT, QN('月光從窗縫斜斜照進來，落在地板上，慢慢挪了一寸。')),
     QN('有人把一條毯子輕輕搭在椅背上，又走開了。'),
   ],
 };
@@ -832,21 +844,21 @@ const SCRIPT: Partial<Record<SceneId, Written>> = {
   },
   'chat:selene:1': {
     lines: [
-      at(PL.innRoof, N('深夜的月影旅館屋頂。瑟蕾抱著膝蓋，看月亮看得很專心。')),
+      at(PL.innRoof, N('深夜的月影旅館屋頂。瑟蕾抱著膝蓋，仰頭看著夜空，看得很專心。')),
       { who: 'hero', text: '「看得見明天嗎？」' },
       { who: 'selene', mood: 'foresee', text: '「一點點呢。明天的早餐是──不行。話一說出口，就會自己長出腳來。所以，我只說月亮的事。」' },
     ],
-    summary: '瑟蕾在旅館的屋頂看月亮。洛恩問她看不看得見明天，她說只說月亮的事。',
+    summary: '瑟蕾在旅館的屋頂看夜空。洛恩問她看不看得見明天，她說只說月亮的事。',
   },
   'chat:selene:2': {
     lines: [
       // Her last piece can come before this chat (one chat per return), and it turns 「洛恩先生／您」 into 「洛恩／你」 (I-22,
       // I-58). Story L Task 15 (spec §10): she names him neither way here, so it reads one way.
-      { who: 'selene', mood: 'foresee', text: '「今晚的月亮很好說話。想讀哪一件未來的事？什麼都可以──早餐除外。」' },
-      { who: 'hero', text: '「明天大家有沒有都回來。」' },
+      { who: 'selene', mood: 'foresee', text: '「月亮最近很好說話。想讀哪一件未來的事？什麼都可以──早餐除外。」' },
+      { who: 'hero', text: '「那就讀讀看，明天大家會不會都回來。」' },
       { who: 'selene', mood: 'smile', text: '「那一件，不用讀月亮也知道呢。每一次，大家都是跟著同一個人回來的。」' },
     ],
-    summary: '瑟蕾問洛恩想知道什麼未來。他只想知道明天大家有沒有都回來。',
+    summary: '瑟蕾問洛恩想知道什麼未來。他只想知道明天大家會不會都回來。',
   },
   // Task 8: Chizuru (spec §6, §11.2). She thinks she left days ago; the pieces show the ice kept her for decades and the
   // shrine is gone. Her last piece is the bell the last priest tied to her spear; she will build a small shrine by the town.
@@ -1616,7 +1628,7 @@ const BANTER: Partial<Record<SceneId, Written>> = {
       { who: 'bobby', mood: 'surprised', text: '「希爾薇姊，妳老是叫我松鼠。我才不像松鼠！」' },
       { who: 'sylvie', mood: 'serious', text: '「手停不下來，看到什麼都撿，撿了就往口袋塞。入冬前的松鼠就長這樣。」' },
       { who: 'bobby', mood: 'excited', text: '「那些是零件！螺絲和彈簧，還有這顆──咦，口袋裡怎麼有核桃？」' },
-      { who: 'sylvie', mood: 'smile', text: '「妳自己撿的啦。今年核桃熟得早，冬天會很冷，多藏幾顆也好。」' },
+      { who: 'sylvie', mood: 'smile', text: '「妳自己撿的啦。果然是松鼠──撿了就忘。不過松鼠忘掉的核桃，後來都長成了樹。」' },
     ],
     summary: '波比抗議希爾薇老叫她松鼠。希爾薇說她手停不下來、什麼都往口袋藏；波比的口袋裡，翻出了一顆核桃。',
   },

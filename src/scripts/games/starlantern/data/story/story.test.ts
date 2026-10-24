@@ -3476,8 +3476,9 @@ describe('story L: the night beats (Task 8)', () => {
   it('the night beats: six a companion, twelve narrations, light, no memory named, not dawn', () => {
     // cold read (2026-10-24): sized for the quiet-only nights; forty was the spec's first count (spec §4.4.1)
     const lines = NIGHT_BEATS.lines;
-    expect(lines).toHaveLength(60);
-    expect(lines.map((l) => l.who)).toEqual([...COMPANIONS.flatMap((c) => Array<string>(6).fill(c)), ...Array<string>(12).fill('narrator')]);
+    // time and moon Task 6: Selene has two more, one for the new moon and one for the full (ruling 10)
+    expect(lines).toHaveLength(62);
+    expect(lines.map((l) => l.who)).toEqual([...COMPANIONS.flatMap((c) => Array<string>(c === 'selene' ? 8 : 6).fill(c)), ...Array<string>(12).fill('narrator')]);
     const SECRETS = /守燈人|靜鐘會|艾斯特拉|燈芯|刺客|代號|信物|派來殺|要殺|鐘守|師父|名單/;
     const others = (who: string) => [...COMPANIONS.filter((c) => c !== who).map((c) => CHARACTERS[c].name), '凜'];
     for (const l of lines) {
@@ -3521,7 +3522,7 @@ describe('story L: the night beats (Task 8)', () => {
     expect(by('chizuru')).toMatch(/我們那時候|最近|去年|近來/);   // spec §7.2: the year she fell asleep in
     // cold read: no two share a role. Sylvie reads the night, Scarlet keeps a soldier's watch; Chizuru keeps her rites,
     // Liz counts and prices; only Liz pours a drink
-    expect(by('sylvie')).toMatch(/蟲/);
+    expect(by('sylvie')).toMatch(/貓頭鷹/);   // time and moon Task 6 cold read: an owl calls in any season, the insects did not
     expect(by('sylvie')).toMatch(/腳印/);
     expect(by('scarlet')).toMatch(/門閂/);
     expect(by('scarlet')).toMatch(/靴子/);
@@ -3542,7 +3543,55 @@ describe('story L: the night beats (Task 8)', () => {
     // the lines the cold read named: the soup ladle and the clapping are lively only
     expect(lines.find((l) => l.text.includes('湯勺'))!.tone).toBe('lively');
     expect(lines.some((l) => l.text.includes('掌聲'))).toBe(false);
-    expect(lines.filter((l) => l.tone === 'quiet')).toHaveLength(47);
+    expect(lines.filter((l) => l.tone === 'quiet')).toHaveLength(49);   // time and moon Task 6: Selene's two moon lines are quiet
+  });
+
+  it('every beat that speaks of the moon carries a moon (time and moon Task 6)', () => {
+    const moony = (t: string) => t.replace(/月影旅館/g, '').includes('月');
+    for (const l of NIGHT_BEATS.lines) {
+      const tag = `${l.who}: ${l.text}`;
+      if (moony(l.text)) expect(l.moon, tag).toBeDefined();
+      else expect(l.moon, tag).toBeUndefined();
+      // a line that sees the moon or its light never plays on a new-moon night; one that says it is away plays only then
+      if (/月光|月亮(?!請假)/.test(l.text) && !/請假/.test(l.text)) expect(l.moon, tag).not.toContain('new');
+    }
+    const only = (moon: string) => NIGHT_BEATS.lines.filter((l) => l.moon?.length === 1 && l.moon[0] === moon);
+    expect(only('waning').map((l) => l.text)).toEqual([expect.stringMatching(/缺了右邊一半/)]);   // the last quarter: half
+    const away = only('new');
+    expect(away).toHaveLength(1);
+    expect(away[0]).toMatchObject({ who: 'selene', tone: 'quiet' });
+    expect(away[0].text).toMatch(/請假/);
+    expect(away[0].text).not.toMatch(/新月/);   // I-158: her fifth piece's word, never hers to say
+    const full = only('full');
+    expect(full).toHaveLength(1);
+    expect(full[0]).toMatchObject({ who: 'selene', tone: 'quiet' });
+    expect(full[0].text).toMatch(/月/);
+    expect(full[0].text).not.toMatch(/銀盆|讀到|結局/);   // she does not read it: the silver basin is her memory's
+    // every night has a line of hers that fits, and the narration has one that is not about the moon
+    for (const moon of ['new', 'waxing', 'full', 'waning']) {
+      expect(NIGHT_BEATS.lines.some((l) => l.who === 'selene' && (!l.moon || l.moon.includes(moon as never))), moon).toBe(true);
+    }
+  });
+
+  it("no town scene says tonight's moon is up: the moon there is her habit, not the sky (time and moon Task 6)", () => {
+    const town = SCENE_IDS.filter((id) => ['chat', 'banter', 'home', 'group', 'town'].includes(sceneKind(id)) || ['prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'finale-eve', 'epilogue'].includes(id));
+    for (const id of town) {
+      for (const l of STORY.scenes[id].lines.filter((x) => !x.past)) expect(l.text, `${id}: ${l.text}`).not.toMatch(/今晚的月亮|看月亮看得|月光照進/);
+    }
+    expect(() => pinBeat('chat:selene:1', {}, /夜空/)).not.toThrow();
+  });
+
+  it('no beat leans on a season: no insects, snow or fallen leaves (time and moon Task 6 cold read)', () => {
+    // second cold read: no leaves on the trees, no mild wind through an open window either
+    for (const l of NIGHT_BEATS.lines) expect(l.text, `${l.who}: ${l.text}`).not.toMatch(/蟲|蟬|蛙|螢|雪|落葉|楓|樹葉|風很溫和/);
+  });
+
+  it('the walnut line fits every season (time and moon Task 6, ruling 11)', () => {
+    const lines = STORY.scenes['banter:bobby-sylvie:1'].lines;
+    expect(lines.at(-1)!.who).toBe('sylvie');
+    expect(lines.at(-1)!.text).not.toMatch(/春|夏|秋|冬|今年|熟得早/);
+    expect(() => pinBeat('banter:bobby-sylvie:1', {}, /撿了就忘.*忘掉的核桃.*樹/)).not.toThrow();
+    expect(() => pinBeat('banter:bobby-sylvie:1', {}, /入冬前的松鼠/)).not.toThrow();   // a likeness, any season: kept
   });
 });
 
