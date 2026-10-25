@@ -20,6 +20,7 @@ import { version8Save } from '../../src/scripts/games/starlantern/engine/testing
 import { defaultTalents, defaultTree } from '../../src/scripts/games/starlantern/engine/progression';
 import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/engine/builds';
 import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
+import { maxBondRecord } from '../../src/scripts/games/starlantern/engine/story/bond';
 import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longestGear, placeBeside, snap, stageBox, stageScale, startSweepGame, sweep, writeReviewIndex } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
@@ -38,6 +39,28 @@ test.afterEach(async ({ page }, info) => {
 const box = (page: Page) => page.locator('#sl-screen').boundingBox();
 
 type Rect = { x: number; y: number; width: number; height: number };
+
+/**
+ * Review of bond plan Tasks 12-14: the stat tables' headings read apart. Any two side by side (after the row names' empty
+ * one) have 4 stage px between their words, or one of them wears the every-other-column tint. Stage px along the row,
+ * turned on a sideways phone as stageBox reads it.
+ */
+const headingsApart = (page: Page) => page.locator('.slx-stat-table').evaluateAll((ts) => {
+  const scr = document.querySelector('#sl-screen')!.getBoundingClientRect();
+  const turned = scr.height > scr.width, k = turned ? scr.width / 360 : scr.width / 640;
+  const span = (th: Element): [number, number] => {
+    const r = document.createRange(); r.selectNodeContents(th); const q = r.getBoundingClientRect();
+    return turned ? [q.top / k, q.bottom / k] : [q.left / k, q.right / k];
+  };
+  const tinted = (th: Element) => getComputedStyle(th).backgroundColor !== 'rgba(0, 0, 0, 0)';
+  return ts.flatMap((tb) => {
+    const hs = [...tb.querySelectorAll('thead th')].slice(1);
+    return hs.slice(1).flatMap((h, i) => {
+      const a = hs[i], gap = span(h)[0] - span(a)[1];
+      return gap >= 4 || tinted(a) || tinted(h) ? [] : [`${a.textContent}|${h.textContent} ${gap.toFixed(1)}px apart, neither tinted`];
+    });
+  });
+});
 const apart = (a: Rect, b: Rect) => a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y;
 /** If the dialogue box shows a speaker's portrait, it must lie inside the screen and clear of the text and the name plate. Returns the talk box height, or null with no portrait. */
 const faceFits = async (page: Page): Promise<number | null> => {
@@ -4711,6 +4734,7 @@ test.describe('starlantern', () => {
           ...[...t.querySelectorAll('thead th')].filter((th) => th.scrollWidth > th.clientWidth + 0.5).map((th) => `heading ${th.textContent} spills`),
         ]));
         expect(cramped, `stat tables at ${vw}`).toEqual([]);
+        expect(await headingsApart(page), `stat headings at ${vw}`).toEqual([]);
       };
       const branches = async (vw: number) => {
         const heads = await page.locator('.slx-tree-branch-name').evaluateAll((hs) => hs.map((h) => ({
@@ -5425,6 +5449,47 @@ test.describe('starlantern', () => {
     expect(seen).toHaveLength(SWEEP.length * 3);
     expect(bad).toEqual([]);
     expect(errors).toEqual([]);
+  });
+
+  test("a fully built companion's stat tables: every column, lined up, the headings apart, 羈絆 in its own colour (review of bond plan Tasks 12-14)", async ({ page }) => {
+    // Scarlet at Lv 30 with her default talents, three pieces, a full bond, two pieces of 焰紋 and 70 crit (capped at 60):
+    // every source has something, so all ten columns show; with that many, every other one is tinted.
+    await fitTo(page, 1280, 720);
+    const w = await setup(page, 7);
+    await legacyRoster(page);
+    await page.evaluate(({ talents, bond }) => {
+      const g = (window as unknown as Dbg).__starlanternDebug.game;
+      const m = g.state.party.roster.scarlet;
+      Object.assign(m, { level: 30, talents, memories: 3, bond });
+      m.equip.weapon = { uid: g.mintUid(), base: 'iron-sword', rarity: 'magic', ilvl: 2, enhance: 0, affixes: [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }] };
+      m.equip.body = { uid: g.mintUid(), base: 'cloth-robe', rarity: 'set', ilvl: 9, enhance: 0, special: 'set-blaze-body', affixes: [] };
+      m.equip.hands = { uid: g.mintUid(), base: 'cloth-gloves', rarity: 'set', ilvl: 9, enhance: 0, special: 'set-blaze-hands', affixes: [] };
+    }, { talents: defaultTalents('scarlet', 30), bond: maxBondRecord('scarlet') });
+    await go(page, 'status', 'scarlet');
+    await expect(page.locator('.slx-status-name')).toContainText(CHARACTERS.scarlet.name);
+    for (let i = 0; i < 8; i++) {
+      const closed = page.locator('.slx-stat-cat-head[aria-expanded=false]');
+      if (!(await closed.count())) break;
+      await closed.first().click();
+    }
+    const all = ['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '羈絆', '主屬', '上限', '合計'];
+    for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await fitTo(page, vw, vh);
+      await page.waitForTimeout(150);
+      for (const tb of await page.locator('.slx-stat-table').all()) await expect(tb.locator('thead th')).toHaveText(all);
+      // each column starts at the same stage x in every table (turned on a phone: its distance down the screen)
+      const lefts = await page.locator('.slx-stat-table').evaluateAll((ts) => {
+        const scr = document.querySelector('#sl-screen')!.getBoundingClientRect();
+        const turned = scr.height > scr.width, k = turned ? scr.width / 360 : scr.width / 640;
+        return ts.map((tb) => [...tb.querySelectorAll('thead th')].map((th) => { const q = th.getBoundingClientRect(); return turned ? (q.top - scr.top) / k : (q.left - scr.left) / k; }));
+      });
+      for (const l of lefts) l.forEach((x, i) => expect(Math.abs(x - lefts[0][i]), `column ${i} lines up at ${vw}`).toBeLessThanOrEqual(0.5));
+      expect(await headingsApart(page), `stat headings at ${vw}`).toEqual([]);
+      await expect(page.locator('[data-cat=attack] [data-stat=atk] .slx-bond')).toHaveCSS('color', 'rgb(255, 158, 196)');
+      if (process.env.SL_SHOTS) await snap(page, `${process.env.SL_SHOTS}/bond-status-built-${vw}x${vh}.png`);
+    }
+    await fitTo(page, 1280, 720);
+    expect(w.errors).toEqual([]);
   });
 
   test("the inn's partners: nothing unwritten shows, then a talk with its choice, a gift, and the bond on the status page (bond plan Tasks 12-14)", async ({ page }) => {

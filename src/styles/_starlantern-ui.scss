@@ -18,6 +18,9 @@ $slx-dim: #b7ae9a;
 $slx-gold: #e8c46a;
 $slx-up: #8fe08f;
 $slx-down: #ff8a7a;
+// The stat table's 羈絆 column, and the faint tint of every other column when many show (review of bond plan Tasks 12-14).
+$slx-bond: #ff9ec4;
+$slx-col-tint: rgba(255, 255, 255, 0.07);
 // opaque so stacked windows never show the text underneath
 $slx-win: rgb(10, 14, 34);
 
@@ -743,6 +746,9 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-stat-table .slx-primary { color: #6fa7ff; }
 .slx-stat-table .slx-talent { color: #c99bff; }
 .slx-stat-table .slx-memory { color: #ffd27a; }
+.slx-stat-table .slx-bond { color: $slx-bond; }
+// Review of bond plan Tasks 12-14: with many columns, every other one is faintly tinted (statusTabs marks it), header and cells.
+.slx-stat-table .slx-col-alt { background: $slx-col-tint; }
 .slx-stat-table .slx-capped, .slx-stat-table .slx-cap { color: #ffb36b; }
 .slx-stat-table th, .slx-stat-table td { padding: 1px 1px; text-align: right; font-weight: normal; }
 .slx-stat-table thead th:first-child { text-align: left; }

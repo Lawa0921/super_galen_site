@@ -30,6 +30,9 @@ import { socketable } from '../../engine/sockets';
 import { buildOf } from '../../data/builds';
 import { stageSpan } from '../stageAxis';
 
+/** The stat table tints every other column once this many sit between the row names and 合計 (review of Tasks 12-14). */
+const TINT_FROM = 5;
+
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 
 /**
@@ -133,27 +136,52 @@ const stats: StatusTab = {
     if (!stops().includes(view.cur)) view.cur = 'cat:primary';
     const curCls = (key: string) => (view.cur === key ? ' slx-row-cur' : '');
 
-    const statRow = (k: AnyStat) => {
-      const key = `stat:${k}`;
+    // One column per stat source, so a new source shows up here without touching this table. Each stat's shown share of
+    // each source, its cut and its total, for every category (folded ones too): the page's columns are read from them all.
+    const figures = (k: AnyStat) => {
       let before = 0;
       let raw = 0;
-      // One column per stat source, so a new source shows up here without touching this table.
-      const cells = parts.map((p, i) => {
+      const ds = parts.map((p) => {
         raw += p.stats[k] ?? 0;
         const now = floorShown(k, raw);
         const d = Math.round((now - before) * 10) / 10;
         before = now;
-        return el('td', { class: `slx-${p.source}`, text: i === 0 ? base(d) : signed(d) });
+        return d;
       });
       // Any clamp in capSheet (a cap today, a floor tomorrow) shows here: the sheet differs from the plain sum.
       const capped = sheet[k] !== raw;
       const total = WHOLE.has(k) ? st[k as StatKey] : floorShown(k, sheet[k]);
       const cut = capped ? Math.round((total - before) * 10) / 10 : 0;
+      return { ds, capped, total, cut };
+    };
+    const every = STAT_CATEGORIES.flatMap((c) => c.keys.map(figures));
+    // Review of bond plan Tasks 12-14: a source with nothing for any stat of hers leaves the page (基礎 and 合計 always stay;
+    // 上限 only while a stat is capped), the same columns in every category so they still line up.
+    const shown = parts.map((_, i) => i === 0 || every.some((f) => f.ds[i] !== 0));
+    const capCol = every.some((f) => f.capped);
+    // With many columns left, every other one (from the second) wears a faint tint, header and cells alike, so two
+    // headings side by side never run together.
+    const cols = shown.filter(Boolean).length + (capCol ? 1 : 0);
+    const alt = (n: number) => (cols >= TINT_FROM && n % 2 === 1 ? ' slx-col-alt' : '');
+    /** The cells of one row after its name: its shown sources, 上限 when shown, 合計 (`n` counts them from 0). */
+    const columns = (src: (i: number) => HTMLElement, cap: () => HTMLElement, total: () => HTMLElement): HTMLElement[] => {
+      const out = parts.flatMap((_, i) => (shown[i] ? [src(i)] : []));
+      if (capCol) out.push(cap());
+      out.push(total());
+      out.forEach((c, n) => { if (alt(n)) c.classList.add('slx-col-alt'); });
+      return out;
+    };
+
+    const statRow = (k: AnyStat) => {
+      const key = `stat:${k}`;
+      const { ds, capped, total, cut } = figures(k);
       const tr = el('tr', { class: `${total === 0 ? 'slx-zero' : ''}${curCls(key)}`.trim(), attrs: { 'data-stat': k } }, [
         el('th', { text: T.gear.statName[k] }),
-        ...cells,
-        el('td', { class: 'slx-cap', text: signed(cut) }),
-        el('td', { class: capped ? 'slx-total slx-capped' : 'slx-total', text: t.value(k, total) }),
+        ...columns(
+          (i) => el('td', { class: `slx-${parts[i].source}`, text: i === 0 ? base(ds[i]) : signed(ds[i]) }),
+          () => el('td', { class: 'slx-cap', text: signed(cut) }),
+          () => el('td', { class: capped ? 'slx-total slx-capped' : 'slx-total', text: t.value(k, total) }),
+        ),
       ]);
       tr.addEventListener('pointermove', () => point(tr, key));
       tr.addEventListener('click', () => point(tr, key));
@@ -176,9 +204,11 @@ const stats: StatusTab = {
       const table = open
         ? [el('table', { class: 'slx-stat-table' }, [
           // A heading too long for its share reads short, the whole word in its title (主屬 for 主屬性).
-          el('thead', {}, [el('tr', {}, [el('th'), ...parts.map((p) => el('th', {
-            text: t.sourcesShort[p.source] ?? t.sources[p.source] ?? p.source, attrs: { title: t.sources[p.source] ?? p.source },
-          })), el('th', { text: t.capCol }), el('th', { text: t.total })])]),
+          el('thead', {}, [el('tr', {}, [el('th'), ...columns(
+            (i) => el('th', { text: t.sourcesShort[parts[i].source] ?? t.sources[parts[i].source] ?? parts[i].source, attrs: { title: t.sources[parts[i].source] ?? parts[i].source } }),
+            () => el('th', { text: t.capCol }),
+            () => el('th', { text: t.total }),
+          )])]),
           el('tbody', {}, c.keys.map(statRow)),
         ])]
         : [];

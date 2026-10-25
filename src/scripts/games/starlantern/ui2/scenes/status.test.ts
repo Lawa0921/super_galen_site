@@ -227,7 +227,9 @@ describe('StatusScene', () => {
     it('the stats tab shows a 記憶 column', () => {
       const { root } = setup('scarlet', NO_ART, (g) => { g.state.party.roster.scarlet.memories = 3; });
       const heads = [...root.querySelectorAll('[data-cat=primary] thead th')].map((th) => th.textContent);
-      expect(heads.indexOf(T.ui2.status.sources.memory)).toBe(heads.indexOf(T.ui2.status.sources.talent) + 1);
+      // review of Tasks 12-14: only the sources she has are columns; no talent, so 記憶 follows 裝備
+      expect(heads).not.toContain(T.ui2.status.sources.talent);
+      expect(heads.indexOf(T.ui2.status.sources.memory)).toBe(heads.indexOf(T.ui2.status.sources.gear) + 1);
       expect(root.querySelector('[data-stat=str] .slx-memory')!.textContent).toBe('+' + 3 * CHAINS.scarlet.gain.str!);
     });
 
@@ -238,15 +240,15 @@ describe('StatusScene', () => {
       });
       const heads = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
       expect(T.ui2.status.sources.bond).toBe('羈絆');
-      expect(heads.indexOf('羈絆')).toBe(heads.indexOf(T.ui2.status.sources.memory) + 1);
+      expect(heads.indexOf('羈絆')).toBe(heads.indexOf(T.ui2.status.sources.gear) + 1);   // no set, talent or memory columns here
       const want = bondStats(game.state.party.roster.scarlet);
       expect(want.atk).toBe(1);
       expect(root.querySelector('[data-stat=atk] .slx-bond')!.textContent).toBe('+1');
       expect(root.querySelector('[data-stat=spd] .slx-bond')!.textContent).toBe('—');
-      // No bond: the column reads as the memory column does with no pieces.
+      // No bond: no column, as with no pieces there is no 記憶 column (review of Tasks 12-14).
       const plain = setup('scarlet');
-      expect(plain.root.querySelector('[data-stat=atk] .slx-bond')!.textContent).toBe('—');
-      expect(plain.root.querySelector('[data-stat=atk] .slx-memory')!.textContent).toBe('—');
+      expect(plain.root.querySelector('.slx-bond')).toBeNull();
+      expect(plain.root.querySelector('.slx-memory')).toBeNull();
     });
 
     it('six collapsible categories; rows show base, growth, gear, set, talent and primary sources', () => {
@@ -262,10 +264,12 @@ describe('StatusScene', () => {
       expect(cats.map((c) => c.querySelector('.slx-stat-cat-head')!.getAttribute('aria-expanded'))).toEqual(['true', 'true', 'false', 'false', 'false', 'false']);
       expect(root.querySelector('[data-cat=defense] tbody')).toBeNull();     // folded: no rows to land on
       const cols = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
-      // One column per stat source, in statSources order (bond plan Task 3 added 羈絆 after 記憶).
-      const sourceCols = statSources(game.state.party.roster.scarlet).map((p) => T.ui2.status.sourcesShort[p.source] ?? T.ui2.status.sources[p.source]);
-      expect(cols).toEqual(['', ...sourceCols, '上限', '合計']);
-      expect(sourceCols).toEqual(['基礎', '成長', '裝備', '套裝', '天賦', '記憶', '羈絆', '主屬']);
+      // One column per stat source she has, in statSources order (bond plan Task 3 added 羈絆 after 記憶; review of Tasks 12-14:
+      // a source with nothing for any stat, and 上限 with nothing capped, leave the page).
+      const sourceCols = statSources(game.state.party.roster.scarlet).filter((p, i) => i === 0 || Object.values(p.stats).some((v) => v))
+        .map((p) => T.ui2.status.sourcesShort[p.source] ?? T.ui2.status.sources[p.source]);
+      expect(cols).toEqual(['', ...sourceCols, '合計']);
+      expect(sourceCols).toEqual(['基礎', '成長', '裝備', '天賦', '主屬']);
       expect(root.querySelector('[data-stat=str] .slx-talent')!.textContent).toBe(T.signed(TALENT_PER.str! * TALENT_SCALE));
       // str is scarlet's affinity: 3 str gives 4.5 atk, shown whole so the parts add up to the floored total.
       const atk = root.querySelector('[data-stat=atk]')!;
@@ -295,10 +299,11 @@ describe('StatusScene', () => {
         const p = game.state.party;
         p.recruited.push('hero');
         p.grid[0] = 'hero';
+        p.roster.hero.level = 10;   // growth to show (review of Tasks 12-14: only the sources he has are columns)
       });
       expect(tab()).toBe('能力');
       const heads = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
-      expect(heads).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '主屬', '上限', '合計']);
+      expect(heads).toEqual(['', '基礎', '成長', '合計']);
       expect(root.querySelector('.slx-bond')).toBeNull();
     });
 
@@ -1428,7 +1433,7 @@ describe('StatusScene', () => {
       const { s, root, msg, noel, node, top, game, tab } = onTalent(6);
       for (let i = 0; i < 4; i++) s.onAction('left');
       expect(tab()).toBe('能力');
-      expect(root.querySelector('[data-stat=int] .slx-talent')!.textContent).toBe('—');
+      expect(root.querySelector('[data-stat=int] .slx-talent')).toBeNull();   // no talent yet: no column (review of Tasks 12-14)
       for (let i = 0; i < 4; i++) s.onAction('right');
       const spy = vi.spyOn(game, 'raiseTalent');
       s.onAction('confirm');
@@ -1996,7 +2001,8 @@ describe('the skills page and the workshop (plan 8g Task 5)', () => {
   });
 
   it('the stats tables name the primary column 主屬, the whole word in its title', () => {
-    const w = open(() => undefined, 'scarlet');
+    // a primary on her sword to convert, so the column is on her page (review of Tasks 12-14)
+    const w = open((g) => { g.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'str', value: 3 }] }; }, 'scarlet');
     const head = [...w.root.querySelectorAll<HTMLElement>('.slx-stat-table thead th')].find((th) => th.getAttribute('title') === T.ui2.status.sources.primary)!;
     expect(head.textContent).toBe(T.ui2.status.sourcesShort.primary);
     expect(T.ui2.status.sourcesShort.primary).toBe('主屬');
@@ -2144,5 +2150,50 @@ describe('the status page and the bond (bond plan Task 14)', () => {
     expect(plain.root.querySelector('.slx-stat-bond')!.textContent).toBe('好感度　相識');   // no record: the tier its pieces make
     const hero = setup('hero', NO_ART, (game) => { const p = game.state.party; p.recruited.push('hero'); p.grid[0] = 'hero'; });
     expect(hero.root.querySelector('.slx-stat-bond')).toBeNull();
+  });
+});
+
+describe("the stat table's columns (review of bond plan Tasks 12-14)", () => {
+  const heads = (root: HTMLElement, cat: string) => [...root.querySelectorAll(`[data-cat=${cat}] thead th`)].map((th) => th.textContent);
+  const alt = (root: HTMLElement, sel: string) => [...root.querySelectorAll(sel)].map((c) => c.classList.contains('slx-col-alt'));
+  /** Scarlet at Lv 1 with her sword and nothing else: no growth yet, no set, talent, memory, bond or conversion. */
+  const early = (g: Game) => {
+    const m = g.state.party.roster.scarlet;
+    Object.assign(m, { level: 1, talents: {}, memories: 0 });
+    delete m.bond;
+  };
+
+  it('an early companion shows only the sources she has, the same in every category; 上限 only once a stat is capped', () => {
+    const { root, game, s } = setup('scarlet', NO_ART, early);
+    expect(heads(root, 'primary')).toEqual(['', '基礎', '裝備', '合計']);
+    expect(heads(root, 'attack')).toEqual(heads(root, 'primary'));
+    expect(root.querySelector('.slx-growth, .slx-set, .slx-talent, .slx-memory, .slx-bond, .slx-primary, .slx-cap')).toBeNull();
+    // 3 agi converts into crit (主屬 shows), and 70 crit runs into its cap of 60 (上限 shows), on every category alike
+    game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }] };
+    s.onAction('next'); s.onAction('prev');
+    expect(heads(root, 'primary')).toEqual(['', '基礎', '裝備', '主屬', '上限', '合計']);
+    expect(heads(root, 'attack')).toEqual(heads(root, 'primary'));
+    expect(root.querySelector('[data-stat=crit] .slx-cap')!.textContent).toBe('−10.6');
+    expect(alt(root, '.slx-stat-table th, .slx-stat-table td').some(Boolean)).toBe(false);   // few columns: no tint
+  });
+
+  it('a fully built one shows them all, every other column tinted, header and cells alike', () => {
+    const { root } = setup('scarlet', NO_ART, (g) => {
+      const m = g.state.party.roster.scarlet;
+      const raised = raiseTalent({ ...m, level: 30 }, 'scarlet-t00');
+      if (!raised.ok) throw new Error(raised.reason);
+      Object.assign(m, raised.member, { memories: 3, bond: maxBondRecord('scarlet') });
+      m.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }] };
+      m.equip.body = { ...plainItem('cloth-robe', 9), rarity: 'set', special: 'set-blaze-body' };      // two of 焰紋: +15 fireDmg
+      m.equip.hands = { ...plainItem('cloth-gloves', 10), rarity: 'set', special: 'set-blaze-hands' };
+      expect(statSources(m).every((p) => Object.values(p.stats).some((v) => v))).toBe(true);   // every source has something
+    });
+    expect(heads(root, 'attack')).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '羈絆', '主屬', '上限', '合計']);
+    // every other one from the second, so any two side by side have one tinted: the header and each row the same
+    const want = [false, false, true, false, true, false, true, false, true, false, true];
+    expect(alt(root, '[data-cat=attack] thead th')).toEqual(want);
+    for (const tr of root.querySelectorAll('[data-cat=attack] tbody tr')) {
+      expect([...tr.children].map((c) => c.classList.contains('slx-col-alt'))).toEqual(want);
+    }
   });
 });
