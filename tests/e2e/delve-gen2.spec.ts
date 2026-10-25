@@ -48,6 +48,14 @@ test.describe('delve gen2 旗標', () => {
     await expect.poll(() => page.evaluate(() => window.__delveDebug!.game.world.biomeAt(4250))).toBe(4);
   });
 
+  test('?gen2=1：大地圖模型在走到東方大海後有「東方大海」標籤', async ({ page }) => {
+    await page.goto('/games/delve?seed=e2e-map&autostart=1&fresh=1&gen2=1');
+    await page.waitForFunction(() => window.__delveDebug?.game);
+    expect(await page.evaluate(() => window.__delveDebug!.mapLabels().map((l) => l.name))).not.toContain('東方大海');
+    await page.evaluate(() => { const g = window.__delveDebug!.game; g.teleport(4300, 330); });
+    await expect.poll(() => page.evaluate(() => window.__delveDebug!.mapLabels().map((l) => l.name))).toContain('東方大海');
+  });
+
   test('genVersion 8 的存檔：旗標關掉也照樣讀得進來（不生成、不是靜默什麼都不做）', async ({ page }) => {
     await page.goto('/games/delve?seed=e2e-g3&autostart=1&fresh=1&gen2=1');
     await waitGame(page);

@@ -4271,7 +4271,7 @@ export class DelveGame {
     if (!n || !sv || sv.kind !== 'reveal') return false;
     const price = shopPrice(sv.price ?? 100, n.mood);
     const pt = this.playerTile();
-    const left = this.regions.filter((r) => r.ax >= 0 && !this.discovery.isFound(r.id) && !this.markers.some((m) => m.x === r.ax && m.y === r.ay));
+    const left = this.discovery.listKnown().filter((r) => r.ax >= 0 && !this.discovery.isFound(r.id) && !this.markers.some((m) => m.x === r.ax && m.y === r.ay));
     if (!left.length) return false;
     if (this.coins() < price) { this.block('use', 'coins', 0, 0); return false; }
     left.sort((a, b) => Math.hypot(a.ax - pt.x, a.ay - pt.y) - Math.hypot(b.ax - pt.x, b.ay - pt.y));
@@ -4477,7 +4477,7 @@ export class DelveGame {
     if (s?.kind === 'village') { cx = (s.info.x0 + s.info.x1) >> 1; cy = s.info.ground - 2; rk = 'village'; }
     else if (s?.kind === 'hall') { cx = (s.info.x0 + s.info.x1) >> 1; cy = s.info.floorY - 2; rk = 'dwarf_hall'; }
     else return '';
-    return this.regions.find((r) => r.kind === rk && r.contains(cx, cy))?.name ?? '';
+    return this.discovery.listKnown().find((r) => r.kind === rk && r.contains(cx, cy))?.name ?? '';
   }
   private talkFolk(n: FolkNpc): void {
     const lines = ROLES[n.role].lines;
@@ -4690,7 +4690,7 @@ export class DelveGame {
       if (this.discovery.landmarks.has(i) || marked(l.x, l.y)) continue;
       cand.push({ name: tileDef(l.tile).name.zh, x: l.x, y: l.y, d: Math.hypot(l.x - pt.x, (l.y - pt.y) * 1.5) });
     }
-    for (const r of this.regions) {
+    for (const r of this.discovery.listKnown()) {
       if (r.ax < 0 || r.cat === 'land' || r.cat === 'depth' || this.discovery.isFound(r.id) || marked(r.ax, r.ay)) continue;
       cand.push({ name: r.name, x: r.ax, y: r.ay, d: Math.hypot(r.ax - pt.x, (r.ay - pt.y) * 1.5) * 0.9 });
     }
@@ -4710,12 +4710,14 @@ export class DelveGame {
     const tier = pick ? ITEMS[pick.item].pick!.tier : 0;
     if (tier <= 1) return '先換一把好鎬：挖銅礦，用熔爐煉成銅錠，在鐵砧旁做銅鎬。挖得快，往下才有意思。';
     if (!this.settle.cores.length) return '做一個「據點爐心」（石頭 15、木材 5、火把 3）放在地上，蓋好有床的房間，就會有人搬來住。';
-    const vs = this.sites.list('village').find(({ info: v }) => !this.regions.some((r) => r.kind === 'village' && r.contains(v.x0 + 3, v.ground - 2) && this.discovery.isFound(r.id)));
+    // 地區讀已知表（gen2 家鄉開局全知；舊世界 = 中央 regions）
+    const known = this.discovery.listKnown();
+    const vs = this.sites.list('village').find(({ info: v }) => !known.some((r) => r.kind === 'village' && r.contains(v.x0 + 3, v.ground - 2) && this.discovery.isFound(r.id)));
     if (vs) { const v = vs.info; return `${dir(v.x0, v.ground)}有一座村子「${this.siteName(vs.key)}」。村民會賣東西、幫你鍛造治療，村長那裡還有委託。`; }
     if (!this.settle.invited.has('healer') && !this.settle.npc('healer')) return '白天在地表多走走：路邊偶爾會遇到旅行藥師，邀請這位藥師到據點，回血會快很多。';
-    const hs = this.sites.list('hall').find(({ info: h }) => !this.regions.some((r) => r.kind === 'dwarf_hall' && r.contains((h.x0 + h.x1) >> 1, h.floorY - 2) && this.discovery.isFound(r.id)));
+    const hs = this.sites.list('hall').find(({ info: h }) => !known.some((r) => r.kind === 'dwarf_hall' && r.contains((h.x0 + h.x1) >> 1, h.floorY - 2) && this.discovery.isFound(r.id)));
     if (hs) { const h = hs.info; return `洞穴層深處住著矮人：${dir((h.x0 + h.x1) >> 1, h.floorY)}有「${this.siteName(hs.key)}」。他們賣地表買不到的礦石，還能用錠幫你升階裝備。`; }
-    if (this.dungeon && !this.regions.some((r) => r.kind === 'dungeon' && this.discovery.isFound(r.id))) return `${dir(this.dungeon.bbox.x, this.dungeon.bbox.y)}有一座地下城。帶夠藥水，裡面的鑰匙能打開金寶箱。`;
+    if (this.dungeon && !known.some((r) => r.kind === 'dungeon' && this.discovery.isFound(r.id))) return `${dir(this.dungeon.bbox.x, this.dungeon.bbox.y)}有一座地下城。帶夠藥水，裡面的鑰匙能打開金寶箱。`;
     if (!this.bossesDefeated.has('lantern_warden')) return '地下城最深處的守望者還沒被擊敗。準備好之後，用燈芯祭品把它叫出來吧。';
     const left = this.landmarks.length - this.discovery.landmarks.size;
     return left > 0 ? `這個世界還有 ${left} 件地標沒被發現。讓我幫你標一個在地圖上？` : '你已經走遍這個世界了。要不要試試蓋一座 Lv3 的村莊？';
@@ -4729,7 +4731,7 @@ export class DelveGame {
       day: dayIndexOf(this.time),
       nearestUnfound: (x, y, cats, skip) => {
         let best: { id: number; name: string; x: number; y: number } | null = null, bd = Infinity;
-        for (const r of this.regions) {
+        for (const r of this.discovery.listKnown()) {
           if (r.ax < 0 || !cats.includes(r.cat) || this.discovery.isFound(r.id) || skip.has(r.id) || r.kind === 'village' || r.kind === 'dwarf_hall') continue;
           const d = Math.hypot(r.ax - x, (r.ay - y) * 1.2);
           if (d < bd && d > 30) { bd = d; best = { id: r.id, name: r.name, x: r.ax, y: r.ay }; }
@@ -4767,7 +4769,7 @@ export class DelveGame {
   /** 這個標記已經沒用了：那裡的地標領過了、或那個地點已經發現了 */
   private markDone(x: number, y: number): boolean {
     if (this.world.inBounds(x, y) && this.landmarkAt.has(this.world.idx(x, y))) return this.discovery.landmarks.has(this.world.idx(x, y));
-    return this.regions.some((r) => r.ax === x && r.ay === y && this.discovery.isFound(r.id));
+    return this.discovery.listKnown().some((r) => r.ax === x && r.ay === y && this.discovery.isFound(r.id));
   }
   /** 交付：要在委託人身邊（村長 / 長老 / 被護送的人） */
   turnInQuest(id: string): boolean {

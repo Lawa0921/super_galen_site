@@ -9,8 +9,11 @@ import { T, W } from '../engine/tiles';
 import { ExploredMap } from '../engine/explore';
 import { CHUNK } from '../engine/constants';
 import { Bmp, inPalette } from './pixel';
-import { buildRegions, Discovery } from '../engine/discovery';
+import { buildRegions, Discovery, gen2Regions } from '../engine/discovery';
 import { BIOME } from '../engine/world';
+import { DelveGame } from '../engine/game';
+import { SEA_Y } from '../engine/gen2/profile';
+import { fullMapPins, fullMapLabels } from './mapView';
 
 const unpack = (v: number): [number, number, number] => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255];
 
@@ -188,5 +191,90 @@ describe('地城在地圖上讀得出來', () => {
     for (let y = 22; y < e; y++) for (let x = 22; x < e; x++) inside.add(out[y * CHUNK + x]);
     expect(inside.size).toBe(2);
     for (const v of inside) { expect(inPalette(unpack(v))).toBe(true); expect(lum(v)).toBeGreaterThan(lum(lut.cave)); }
+  });
+});
+
+// ── gen2：大地圖讀已知地區表（Task 16） ─────────────────────
+type Pt = { x: number; y: number };
+const layoutOf = (g: DelveGame) => g.gen2()!.layout;
+/** 第一道東海的海面（避開島） */
+function firstSea(g: DelveGame): Pt {
+  const sea = layoutOf(g).landmass(1, 1);
+  expect(sea.kind).toBe('sea');
+  let x = sea.x0 + 20;
+  while (layoutOf(g).regionAt(x)?.kind === 'island') x++;
+  return { x, y: SEA_Y - 2 };
+}
+/** 第一道東海的第一座島中點 */
+function firstIsland(g: DelveGame): Pt {
+  const isl = layoutOf(g).landmass(1, 1).regions.find((r) => r.kind === 'island')!;
+  return { x: (isl.x0 + isl.x1) >> 1, y: SEA_Y - 2 };
+}
+/** 東側第一片大陸第一個地區的中點（地表上方） */
+function firstContinentMid(g: DelveGame): Pt {
+  const c = layoutOf(g).landmass(1, 2);
+  expect(c.kind).toBe('continent');
+  const x = (c.regions[0].x0 + c.regions[0].x1) >> 1;
+  return { x, y: g.gen2()!.surfaceAt(x) - 2 };
+}
+/** 那一點所在的地塊地區名（gen2Regions 的最後一個 = 地塊地區） */
+function regionName(g: DelveGame, p: Pt): string {
+  const rs = gen2Regions(g.seed, g.gen2()!)(p.x, p.y);
+  expect(rs.at(-1)!.cat).toBe('land');
+  return rs.at(-1)!.name;
+}
+/** gen2 遊戲 + 依序 visit 第一道東海、它的第一座島、東側第一片大陸的中點 */
+function gen2Explorer(seed: string): { g: DelveGame; d: Discovery } {
+  const g = new DelveGame({ seed, worldGen: { kind: 'gen2' } }), d = g.discovery;
+  for (const p of [firstSea(g), firstIsland(g), firstContinentMid(g)]) d.visit(p.x, p.y);
+  return { g, d };
+}
+
+describe('gen2 大地圖：已知地區表', () => {
+  it('外圍地區找到後大地圖畫名字：東方大海、島、荒野地區（大地圖本身 fullMapLabels 也畫）', () => {
+    const { g, d } = gen2Explorer('lbl');
+    const want = ['東方大海', regionName(g, firstIsland(g)), regionName(g, firstContinentMid(g))];
+    const names = mapLabels(d.listKnown(), d).map((l) => l.name);
+    for (const n of want) expect(names).toContain(n);
+    const full = fullMapLabels(g);
+    for (const n of want) expect(full.map((l) => l.name)).toContain(n);
+    // 以 id 為鍵：每個已發現的地塊地區恰好一個標籤（同名不去重）
+    const ids = full.map((l) => l.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.length).toBe(d.listKnown().filter((r) => (r.cat === 'land' || r.cat === 'depth') && d.isFound(r.id)).length);
+    // 大地圖用 discovery.region(id) 找回地區（外圍 id 不是陣列索引）
+    for (const l of full) expect(d.region(l.id)?.name).toBe(l.name);
+    // 沒去過的大陸地區不畫
+    const far = layoutOf(g).landmass(1, 2).regions.at(-1)!, fx = (far.x0 + far.x1) >> 1;
+    const farId = gen2Regions(g.seed, g.gen2()!)(fx, g.gen2()!.surfaceAt(fx) - 2).at(-1)!.id;
+    expect(ids).not.toContain(farId);
+  }, 60_000);
+  it('gen2 家鄉的村莊 / 地城圖釘：找到前 showAll 才畫、找到後畫（大地圖 fullMapPins 也是）', () => {
+    const { g, d } = gen2Explorer('pin');
+    const v = d.listKnown().find((r) => r.kind === 'village' && !d.isFound(r.id))!;
+    expect(v).toBeDefined();
+    expect(mapPins(d.listKnown(), d, false).some((p) => p.id === v.id)).toBe(false);
+    expect(mapPins(d.listKnown(), d, true).some((p) => p.id === v.id && !p.found)).toBe(true);
+    expect(fullMapPins(g).some((p) => p.x === v.ax && p.y === v.ay)).toBe(false);
+    d.visit(v.ax, v.ay);
+    expect(mapPins(d.listKnown(), d, false).some((p) => p.id === v.id && p.icon === 'village')).toBe(true);
+    expect(fullMapPins(g)).toContainEqual({ icon: 'village', x: v.ax, y: v.ay, name: v.name });
+    const dg = d.listKnown().find((r) => r.kind === 'dungeon')!;
+    d.visit(dg.ax, dg.ay);
+    expect(fullMapPins(g).some((p) => p.icon === 'dungeon' && p.x === dg.ax && p.y === dg.ay)).toBe(true);
+  }, 60_000);
+  it('舊世界不變：listKnown = 中央 regions（同順序），大地圖的圖釘 / 標籤與改動前（直接吃 g.regions）相同', () => {
+    const g = new DelveGame({ seed: 'old-map', width: 300, height: 160 }), d = g.discovery;
+    expect(d.listKnown()).toEqual(g.regions);
+    for (const r of g.regions.filter((q) => q.ax >= 0).slice(0, 6)) d.visit(r.ax, r.ay);
+    for (const all of [false, true]) expect(mapPins(d.listKnown(), d, all)).toEqual(mapPins(g.regions, d, all));
+    expect(fullMapLabels(g)).toEqual(mapLabels(g.regions, d));
+    expect(fullMapLabels(g).length).toBeGreaterThan(0);
+  });
+  it('新種類沿用既有圖示：pond → lake、keep → dungeon、lighthouse / hermit / wreck_isle → cabin、reef / sea_ruin → ruin', () => {
+    const want: Record<string, string> = { pond: 'lake', keep: 'dungeon', lighthouse: 'cabin', hermit: 'cabin', wreck_isle: 'cabin', reef: 'ruin', sea_ruin: 'ruin' };
+    const rs = Object.keys(want).map((kind, id) => ({ id, cat: 'site' as const, kind, name: kind, x: id * 10, y: 0, w: 5, h: 5, ax: id * 10 + 2, ay: 2, contains: () => false }));
+    const d = new Discovery(rs);
+    expect(Object.fromEntries(mapPins(rs, d, true).map((p) => [p.name, p.icon]))).toEqual(want);
   });
 });

@@ -5,6 +5,10 @@ import { DelveGame, type DelveEvent } from './game';
 import { T } from './tiles';
 import { FIXED_DT } from './constants';
 import { LightMap } from './lighting';
+import { Discovery } from './discovery';
+import type { QuestCtx } from './quests';
+import { SEA_Y } from './gen2/profile';
+import { areaLabel } from '../render/model';
 
 const run = (g: DelveGame, s: number): void => { for (let i = 0, n = Math.round(s / FIXED_DT); i < n; i++) g.step(FIXED_DT); };
 type Disc = Extract<DelveEvent, { type: 'discover' }>;
@@ -86,4 +90,85 @@ describe('探索（完整世界）', { timeout: 120_000 }, () => {
     g.setMoveX(1); run(g, 0.5); g.setMoveX(0);
     expect(g.discovery.stats().distance).toBeGreaterThan(s0.distance + 2);
   });
+});
+
+// ── gen2：HUD / 提示 / 探路 / 委託讀已知地區表（Task 16） ──────
+type Spot = { name: string; x: number; y: number };
+type Hidden = { questCtx(): QuestCtx; markDone(x: number, y: number): boolean };
+const hidden = (g: DelveGame): Hidden => g as unknown as Hidden;
+/** 改動前 HUD 的取名（hud.ts 舊版逐字照抄）：只看中央 regionsAt */
+const oldArea = (d: Discovery, x: number, y: number): string => {
+  const here = d.regionsAt(x, y).filter((r) => r.cat !== 'depth' && d.isFound(r.id)).sort((a, b) => a.w * a.h - b.w * b.h);
+  return here[0]?.name ?? d.regionsAt(x, y).find((r) => d.isFound(r.id))?.name ?? '未知之地';
+};
+
+describe('gen2：HUD、提示、探路、委託讀已知地區', () => {
+  it('HUD 地區名：gen2 出生點 = 家鄉林地、第一道東海 = 東方大海（不是「未知之地」）；沒走過的外圍 = 未知之地', () => {
+    const g = new DelveGame({ seed: 'hud2', worldGen: { kind: 'gen2' } });
+    expect(areaLabel(g.discovery, g.spawn.x, g.spawn.y)).toBe('家鄉林地');
+    expect(areaLabel(g.discovery, 4300, SEA_Y - 2)).toBe('未知之地');
+    g.teleport(4300, SEA_Y - 2); g.step(FIXED_DT);
+    expect(areaLabel(g.discovery, 4300, SEA_Y - 2)).toBe('東方大海');
+    // 家鄉的村莊：走進去之後顯示村名（結構比地塊地區小，排前面）
+    const v = g.discovery.listKnown().find((r) => r.kind === 'village')!;
+    expect(areaLabel(g.discovery, v.ax, v.ay)).not.toBe(v.name);
+    g.discovery.visit(v.ax, v.ay);
+    expect(areaLabel(g.discovery, v.ax, v.ay)).toBe(v.name);
+    // 蘑菇環境音用的 knownAt：家鄉的蘑菇林中心查得到
+    const m = g.discovery.listKnown().find((r) => r.kind === 'mushroom_biome');
+    if (m) expect(g.discovery.knownAt(m.ax, m.ay).some((r) => r.id === m.id)).toBe(true);
+  }, 60_000);
+
+  it('舊世界的 HUD 取名不變：與改動前的寫法逐點相同；外圍查詢查到、但不在已知表的地區照舊不顯示', () => {
+    const g = new DelveGame({ seed: 'ex', width: 200, height: 120 }), d = g.discovery;
+    for (const r of g.regions.filter((q) => q.ax >= 0)) d.visit(r.ax, r.ay);
+    for (let x = 0; x < 200; x += 3) for (let y = 0; y < 120; y += 3) expect(areaLabel(d, x, y)).toBe(oldArea(d, x, y));
+    // 舊世界的外圍（v1 外圍地區不進已知表）：發現了、HUD 仍是未知之地（同改動前）
+    const far = { id: 2 ** 31, cat: 'land' as const, kind: 'forest', name: '東境・測試林', x: 500, y: 0, w: 100, h: 50, ax: 550, ay: 10, contains: (x: number, y: number) => x >= 500 && x < 600 && y >= 0 && y < 50 };
+    const o = new Discovery(g.regions);
+    o.setOuter((x, y) => (far.contains(x, y) ? [far] : []));
+    expect(o.visit(550, 10).map((r) => r.id)).toContain(far.id);
+    expect(areaLabel(o, 550, 10)).toBe('未知之地');
+    expect(o.knownAt(550, 10)).toEqual([]);
+  });
+
+  it('gen2：提示指向家鄉沒去過的村莊（說得出村名）；聚落名取自已知表', () => {
+    const g = new DelveGame({ seed: 'hint2', worldGen: { kind: 'gen2' } }), d = g.discovery;
+    g.giveGear('iron_pickaxe', 1);
+    g.settle.cores.push({ id: 1, x: g.spawn.x, y: g.spawn.y });
+    const vs = d.listKnown().filter((r) => r.kind === 'village');
+    expect(vs.length).toBeGreaterThan(1);
+    // 每座村莊的聚落名 = 已知表裡那座村莊的名字
+    for (const v of vs) { const s = g.siteAt(v.ax, v.ay)!; expect(s.kind).toBe('village'); expect(g.siteName(s.key)).toBe(v.name); }
+    expect(g.nextStepHint()).toMatch(/村子「[^」]+」/);
+    // 走過一座之後，提示改指另一座沒去過的
+    const first = g.nextStepHint().match(/「([^」]+)」/)![1], went = vs.find((v) => v.name === first)!;
+    d.visit(went.ax, went.ay);
+    const next = g.nextStepHint().match(/村子「([^」]+)」/)![1];
+    expect(next).not.toBe(first);
+    expect(vs.filter((v) => !d.isFound(v.id)).map((v) => v.name)).toContain(next);
+  }, 60_000);
+
+  it('gen2：探路（scout）標出的地點在 listKnown 裡、還沒去過；委託的 nearestUnfound、markDone 也讀已知表', () => {
+    const g = new DelveGame({ seed: 'hint2', worldGen: { kind: 'gen2' } }), d = g.discovery;
+    const m: Spot | null = g.scout();                       // scout(): { name, x, y } | null（沒有 id）
+    expect(m).not.toBeNull();
+    const known = d.listKnown().find((r) => r.ax === m!.x && r.ay === m!.y), lm = g.landmarks.find((l) => l.x === m!.x && l.y === m!.y);
+    expect(Boolean(known) || Boolean(lm)).toBe(true);
+    if (known) { expect(known.name).toBe(m!.name); expect(d.isFound(known.id)).toBe(false); }
+    expect(g.scoutMarks).toContainEqual({ x: m!.x, y: m!.y });  // scoutMarks: MapMarker[] = { x, y }
+    // 委託：離委託人最近、還沒發現的地點（不含村莊 / 地廳）
+    const q = hidden(g).questCtx().nearestUnfound(g.spawn.x, g.spawn.y, ['site', 'cave', 'secret', 'dungeon'], new Set());
+    expect(q).not.toBeNull();
+    const qr = d.listKnown().find((r) => r.id === q!.id)!;
+    expect(qr).toBeDefined();
+    expect(d.isFound(qr.id)).toBe(false);
+    expect(['village', 'dwarf_hall']).not.toContain(qr.kind);
+    expect({ name: qr.name, x: qr.ax, y: qr.ay }).toEqual({ name: q!.name, x: q!.x, y: q!.y });
+    // markDone：那個地點發現之後，標記就算完成
+    expect(hidden(g).markDone(qr.ax, qr.ay)).toBe(false);
+    d.visit(qr.ax, qr.ay);
+    expect(hidden(g).markDone(qr.ax, qr.ay)).toBe(true);
+    expect(hidden(g).questCtx().nearestUnfound(g.spawn.x, g.spawn.y, ['site', 'cave', 'secret', 'dungeon'], new Set())?.id).not.toBe(qr.id);
+  }, 60_000);
 });

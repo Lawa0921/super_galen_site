@@ -5,7 +5,7 @@
 import type { DelveGame } from '../engine/game';
 import {
   mapIconBmp, mapPins, mapLabels, stonePins, minimapView, zoomView, panView, clampView,
-  screenToTileOnMap, tileToScreenOnMap, MAP_ICONS, type MapIcon, type MapView,
+  screenToTileOnMap, tileToScreenOnMap, MAP_ICONS, type MapIcon, type MapLabel, type MapView,
 } from './mapModel';
 import type { MapPages } from './mapPages';
 import { Bmp, INK, hex, toCanvas } from './pixel';
@@ -14,12 +14,14 @@ import { FontGate } from './fontGate';
 /** 大地圖會畫的圖示（除錯 / e2e：__delveDebug.mapPins）：地標（未發現的畫成 ?）、解鎖的傳送碑、嚮導線索、玩家標記 */
 export function fullMapPins(g: DelveGame): { icon: string; x: number; y: number; name: string }[] {
   const out: { icon: string; x: number; y: number; name: string }[] = [];
-  for (const p of mapPins(g.regions, g.discovery, g.hasAccessory('map'))) out.push({ icon: p.found ? p.icon : 'unknown', x: p.x, y: p.y, name: p.found ? p.name : '' });
+  for (const p of mapPins(g.discovery.listKnown(), g.discovery, g.hasAccessory('map'))) out.push({ icon: p.found ? p.icon : 'unknown', x: p.x, y: p.y, name: p.found ? p.name : '' });
   for (const p of stonePins(g.unlockedStones())) out.push({ icon: p.icon, x: p.x, y: p.y, name: p.name });
   for (const m of g.scoutMarks) out.push({ icon: 'landmark', x: m.x, y: m.y, name: '' });
   for (const m of g.markers) out.push({ icon: 'marker', x: m.x, y: m.y, name: '' });
   return out;
 }
+/** 大地圖會畫的地域 / 地層名字（除錯 / e2e：__delveDebug.mapLabels）：已知地區表裡發現過的（gen2 含走過的外圍） */
+export function fullMapLabels(g: DelveGame): MapLabel[] { return mapLabels(g.discovery.listKnown(), g.discovery); }
 
 /** 圖示 canvas 快取（9×9 原生像素） */
 const ICONS = new Map<string, HTMLCanvasElement>();
@@ -287,7 +289,8 @@ export class FullMap {
     // 圖示與文字：固定大小（每個美術像素 = k 個裝置像素）
     const k = Math.max(1, Math.round(this.dpr * (W / this.dpr >= 900 ? 2 : 1.5)));
     const showAll = g.hasAccessory('map');
-    for (const pin of mapPins(g.regions, g.discovery, showAll)) {
+    const known = g.discovery.listKnown();
+    for (const pin of mapPins(known, g.discovery, showAll)) {
       const s = tileToScreenOnMap(v, W, H, pin.x, pin.y);
       if (s.x < -20 || s.y < -20 || s.x > W + 20 || s.y > H + 20) continue;
       ctx.drawImage(iconCanvas(pin.icon, !pin.found), Math.round(s.x - 4.5 * k), Math.round(s.y - 4.5 * k), 9 * k, 9 * k);
@@ -308,9 +311,10 @@ export class FullMap {
       const lk = Math.max(1, Math.round(k / 2));
       ctx.drawImage(lc, Math.round(s.x - (lc.width * lk) / 2), Math.round(s.y + 5 * k), lc.width * lk, lc.height * lk);
     }
-    for (const lb of mapLabels(g.regions, g.discovery)) {
-      // 名字跟著畫面中心走，但不超出該地域的欄範圍（寬的森林段也看得到名字）
-      const r = g.regions[lb.id];
+    for (const lb of mapLabels(known, g.discovery)) {
+      // 名字跟著畫面中心走，但不超出該地域的欄範圍（寬的森林段也看得到名字）；外圍 id 不是陣列索引 → discovery.region(id)
+      const r = g.discovery.region(lb.id);
+      if (!r) continue;
       const lx = lb.x < 0 ? v.cx : Math.max(r.x + 12, Math.min(r.x + r.w - 12, v.cx));
       const s = tileToScreenOnMap(v, W, H, lx, lb.y);
       const lc = labelCanvas(lb.name);

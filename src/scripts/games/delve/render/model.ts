@@ -289,6 +289,10 @@ export function regionLabel(biome: number, regions: readonly { kind: string; x: 
   }
   return biomeLabel(biome);
 }
+/** HUD 狀態列的區域：已發現的最小地區名（結構 > 生態區；含 gen2 家鄉與走過的外圍，見 Discovery.areaAt）；沒有就是未知之地 */
+export function areaLabel(d: { areaAt(x: number, y: number): { name: string } | null }, x: number, y: number): string {
+  return d.areaAt(x, y)?.name ?? '未知之地';
+}
 
 export function blockedMessage(reason: BlockReason): string | null { return BLOCKED[reason] ?? null; }
 

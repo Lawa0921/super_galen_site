@@ -7,6 +7,7 @@
 //     會跳「發現」並存進 found，但不算進日誌的總數與完成度（stats 只看已知表，舊世界的已知表 = 中央的 regions）。
 //   · 已知地區表（Task 15）：listKnown = 中央 regions ∪ know() 加入的地區；stats 的各類別總數只數它。gen2 世界開局 know(gen2HomeRegions)（家鄉全知），
 //     trackOuter 時 visit 到的外圍地區自動 know 並存進 toJSON().known（Q12）；region(id) 依序查中央 → 已知表 → resolver（gen2RegionById）。
+//     消費端（M2a Task 16）：大地圖 / 日誌 / 提示 / 委託讀 listKnown；HUD 與環境音讀 knownAt / areaAt（中央索引 ∪ 已知的外圍地區）。
 //   · RegionJSON（Task 16）：烘焙過的舊世界把 buildRegions 的清單存進存檔（id 依生成順序，之後不再重算）；
 //     contains 函式換成可存的形狀 RegionShape（buildRegions 填 shape），regionFromJSON 以深度層線重建出逐格相同的 contains。
 import { Rng } from './rng';
@@ -582,6 +583,8 @@ export class Discovery {
   /** id → 地區的反查（gen2RegionById；region() 與讀檔用；null = 沒有） */
   private resolver: ((id: number) => Region | null) | null = null;
   private readonly trackOuter: boolean;
+  /** knownAt 的單格快取（同一格連續查詢不重查外圍；know 改動已知表時清掉） */
+  private hereKey: { x: number; y: number; rs: readonly Region[] } | null = null;
   private lastX: number | null = null;
   private lastY = 0;
 
@@ -615,7 +618,7 @@ export class Discovery {
   isFound(id: number): boolean { return this.found.has(id); }
 
   /** 外圍地區的查詢（outerRegions 的結果；null = 沒有外圍） */
-  setOuter(fn: ((x: number, y: number) => Region[]) | null): void { this.outer = fn; }
+  setOuter(fn: ((x: number, y: number) => Region[]) | null): void { this.outer = fn; this.hereKey = null; }
 
   /** id → 地區的反查（gen2RegionById 的結果；null = 沒有） */
   setResolver(fn: ((id: number) => Region | null) | null): void { this.resolver = fn; }
@@ -636,6 +639,7 @@ export class Discovery {
     if (this.isKnown(r.id)) return false;
     this.extra.set(r.id, r);
     this.knownList = null;
+    this.hereKey = null;
     return true;
   }
 
@@ -648,6 +652,30 @@ export class Discovery {
   listKnown(): readonly Region[] {
     if (!this.knownList) this.knownList = [...this.regions, ...this.extra.values()].sort((a, b) => a.id - b.id);
     return this.knownList;
+  }
+
+  /**
+   * (x, y) 的已知地區：中央 regionsAt（格網索引）∪ 外圍查詢裡已知的（gen2 家鄉、走過的外圍；舊世界的外圍不進已知表 → 只有中央，
+   * 已知表是空的就不查外圍）。順序：中央在前、外圍照查詢的順序（小的結構先）。同一格連續查詢回快取（HUD / 環境音每幾幀查一次）。
+   */
+  knownAt(x: number, y: number): readonly Region[] {
+    const c = this.hereKey;
+    if (c && c.x === x && c.y === y) return c.rs;
+    const rs = this.regionsAt(x, y);
+    if (this.outer && this.extra.size) for (const o of this.outer(x, y)) if (this.extra.has(o.id)) rs.push(o);
+    this.hereKey = { x, y, rs };
+    return rs;
+  }
+
+  /** HUD 的地區名：knownAt 裡已發現、不是地層的最小那個（結構 > 生態區）；沒有 → 第一個已發現的（地層）；都沒有 → null */
+  areaAt(x: number, y: number): Region | null {
+    let best: Region | null = null, any: Region | null = null;
+    for (const r of this.knownAt(x, y)) {
+      if (!this.found.has(r.id)) continue;
+      any ??= r;
+      if (r.cat !== 'depth' && (!best || r.w * r.h < best.w * best.h)) best = r;
+    }
+    return best ?? any;
   }
 
   /** 玩家在 (x,y)：回傳這次新發現的地區（越小的越前面——結構比生態區先顯示）；外圍地區排最後 */

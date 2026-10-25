@@ -17,7 +17,7 @@ import {
 import { decodeAnySave, encodeWorld, restoreSplit, type AnySave, type WorldData } from '../save/worldSave';
 import { createCharacter, decodeCharacter, DEFAULT_NICK, type DelveCharacter } from '../save/character';
 import { startDelve, type DelveHandle } from './main';
-import { fullMapPins } from './mapView';
+import { fullMapLabels, fullMapPins } from './mapView';
 import { autostartPlan, helpSeen, HELP_KEY } from './model';
 import { SoundManager } from '../audio/SoundManager';
 import { TitleScene } from './titleScene';
@@ -52,6 +52,8 @@ export interface DelveDebug {
   game: DelveGame; handle: DelveHandle; save: () => Promise<void>;
   /** 大地圖目前會畫的圖示（地標、解鎖的傳送碑、線索、標記） */
   mapPins(): { icon: string; x: number; y: number; name: string }[];
+  /** 大地圖目前會畫的地域 / 地層名字（已知地區表裡發現過的；只讀） */
+  mapLabels(): { id: number; name: string; x: number; y: number }[];
   /** 連線（M-C）：房主開房之後 / 客人進場之後才有；phase 房主開著房 = 'live'，客人 = CoopGuestSession.phase */
   coop?: { role: 'host' | 'guest'; room: string | null; phase: string; players(): { pid: string; nick: string }[] };
 }
@@ -317,7 +319,7 @@ export function bootDelve(root: HTMLElement): Session {
     // 單機時 actors 只有自己（空清單）；按「開放加入」之後客人進來就畫得到
     handle = enter(game, locks, () => hostRemoteViews(game));
     split = s;
-    window.__delveDebug = { game, handle, save: saveNow, mapPins: () => fullMapPins(game) };
+    window.__delveDebug = { game, handle, save: saveNow, mapPins: () => fullMapPins(game), mapLabels: () => fullMapLabels(game) };
     if (!helpSeen(storage)) setHelp(true);
     if (hasIndexedDB()) {
       stopAutosave = startAutosave({
@@ -432,7 +434,7 @@ export function bootDelve(root: HTMLElement): Session {
     root.dataset.coop = 'guest';
     say(toTitleBtn, '離開房間');
     window.__delveDebug = {
-      game, handle, save: async () => { /* 客人不存世界 */ }, mapPins: () => fullMapPins(game),
+      game, handle, save: async () => { /* 客人不存世界 */ }, mapPins: () => fullMapPins(game), mapLabels: () => fullMapLabels(game),
       coop: {
         role: 'guest', room: o.room,
         get phase() { return guest.phase; },
