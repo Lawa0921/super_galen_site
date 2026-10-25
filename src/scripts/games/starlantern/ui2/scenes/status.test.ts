@@ -2214,11 +2214,14 @@ describe("the stat table's short headings (second review of bond plan Tasks 12-1
     expect(['base', 'growth', 'gear', 'set', 'talent', 'memory', 'bond', 'primary'].map((k) => t.sourcesOne[k]).join('') + t.capColOne).toBe('基成裝套賦憶絆主限');
   });
 
-  /** Every th of the stat tables `w` stage px wide while the test runs (jsdom lays nothing out). */
+  /** Every th of the stat tables `w` stage px wide while the test runs (jsdom lays nothing out; no screen, so rects are stage px). */
   const wide = (w: number) => {
-    const was = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
-    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get() { return this.tagName === 'TH' ? w : 0; } });
-    return () => { if (was) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', was); else delete (HTMLElement.prototype as { offsetWidth?: unknown }).offsetWidth; };
+    const was = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      const r = { x: 0, y: 0, left: 0, top: 0, right: this.tagName === 'TH' ? w : 0, bottom: 14, width: this.tagName === 'TH' ? w : 0, height: 14 };
+      return { ...r, toJSON: () => r } as DOMRect;
+    };
+    return () => { HTMLElement.prototype.getBoundingClientRect = was; };
   };
   const heads = (root: HTMLElement, cat: string) => [...root.querySelectorAll(`[data-cat=${cat}] thead th`)].map((th) => th.textContent);
   const built = (g: Game) => {
@@ -2242,11 +2245,39 @@ describe("the stat table's short headings (second review of bond plan Tasks 12-1
     } finally { back(); }
   });
 
+  it('a column of 27.6 stage px is read as it is, not rounded up to 28 (re-review)', () => {
+    const back = wide(27.6);
+    try {
+      const { root } = setup('scarlet', NO_ART, built);
+      expect(heads(root, 'attack')[1]).toBe('基');
+    } finally { back(); }
+  });
+
   it('roomy columns keep the full words, so the short forms can be learnt from them', () => {
     const back = wide(40);
     try {
       const { root } = setup('scarlet', NO_ART, built);
       expect(heads(root, 'attack')).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '羈絆', '主屬', '上限', '合計']);
     } finally { back(); }
+  });
+});
+
+describe("the stat tables' size watch (re-review of bond plan Tasks 12-14)", () => {
+  it('watches only the tables on the page, and lets them go when the tab or the page goes', () => {
+    const watched = new Set<Element>();
+    class Watch { observe(t: Element) { watched.add(t); } unobserve(t: Element) { watched.delete(t); } disconnect() { watched.clear(); } }
+    vi.stubGlobal('ResizeObserver', Watch);
+    try {
+      const { root, s } = setup('scarlet');
+      const tables = () => [...root.querySelectorAll('.slx-stat-table')];
+      expect(tables().length).toBeGreaterThan(0);
+      expect([...watched]).toEqual(tables());
+      s.onAction('right');                                         // the gear tab: no stat table left to watch
+      expect(watched.size).toBe(0);
+      s.onAction('left');                                          // back: the new tables
+      expect([...watched]).toEqual(tables());
+      s.exit();
+      expect(watched.size).toBe(0);
+    } finally { vi.unstubAllGlobals(); }
   });
 });

@@ -28,7 +28,7 @@ import { marksEl } from '../runeArt';
 import { RUNES, type RuneRef } from '../../data/runes';
 import { socketable } from '../../engine/sockets';
 import { buildOf } from '../../data/builds';
-import { stageSpan } from '../stageAxis';
+import { stageSpan, stageWidth } from '../stageAxis';
 
 /** The stat table tints every other column once this many sit between the row names and 合計 (review of Tasks 12-14). */
 const TINT_FROM = 5;
@@ -46,15 +46,29 @@ export function shortHeads(widths: number[]): boolean {
   return w.length > 0 && Math.min(...w) < 2 * 12 + HEAD_GAP;
 }
 
-/** Each middle heading of `table` in its full or its one-character form, as the columns' measured width allows. */
+/**
+ * Each middle heading of `table` in its full or its one-character form, as the columns' width allows: measured in stage
+ * px from the rect, unrounded (re-review: offsetWidth rounds a 27.6px column up to 28).
+ */
 function fitHeads(table: Element): void {
   const heads = [...table.querySelectorAll<HTMLElement>('thead th[data-one]')];
-  const one = shortHeads(heads.map((th) => th.offsetWidth));
+  const screen = table.closest('.slx-screen')?.getBoundingClientRect() ?? null;
+  const one = shortHeads(heads.map((th) => stageWidth(th.getBoundingClientRect(), screen)));
   for (const th of heads) th.textContent = one ? th.dataset.one! : th.dataset.full!;
 }
 
-/** Fits the stat tables again whenever one changes size (a turn to the phone, another layout); one for the page. */
-const headsWatch = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver((seen) => { for (const e of seen) fitHeads(e.target); });
+/** Fits the stat tables again whenever one changes size (a turn to the phone, another layout); one for the page at a time. */
+let headsWatch: ResizeObserver | null = null;
+/** The page's stat tables fitted now, and watched (only these: the ones drawn before are let go). */
+function watchHeads(body: HTMLElement): void {
+  headsWatch?.disconnect();
+  headsWatch = null;
+  const tables = [...body.querySelectorAll('.slx-stat-table')];
+  for (const table of tables) fitHeads(table);
+  if (typeof ResizeObserver === 'undefined') return;
+  headsWatch = new ResizeObserver((seen) => { for (const e of seen) fitHeads(e.target); });
+  for (const table of tables) headsWatch.observe(table);
+}
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 
@@ -278,10 +292,11 @@ const stats: StatusTab = {
     }
     return false;
   },
+  // re-review of Tasks 12-14: the size watch lets the tables go when the page or the tab goes
+  leave() { headsWatch?.disconnect(); },
   shown(body) {
     // second review of Tasks 12-14: the headings fit the columns as laid out, and again whenever a table changes size
-    headsWatch?.disconnect();
-    for (const table of body.querySelectorAll('.slx-stat-table')) { fitHeads(table); headsWatch?.observe(table); }
+    watchHeads(body);
     if (!view.reveal) return;
     view.reveal = false;
     // The first heading also brings the facts above it back into view; the last stop the end of the page (the margin
