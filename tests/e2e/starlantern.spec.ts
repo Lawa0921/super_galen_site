@@ -5455,7 +5455,7 @@ test.describe('starlantern', () => {
           { who: 'narrator', text: '旅館的後院。凜坐在井邊，一下一下地磨著短刃。' },
           { who: 'rin', text: '「你走路，總是走在最前面。」' },
           { who: 'hero', choices: [
-            { tone: 'ask', text: '「妳不喜歡嗎？」', reply: [{ who: 'rin', text: '「沒說不喜歡。」' }] },
+            { tone: 'ask', text: '「我走在前面，是因為後面有妳在看著啊。」', reply: [{ who: 'rin', text: '「沒說不喜歡。」' }] },   // CHOICE_MAX_CHARS: 20
             { tone: 'stay', text: '（在她旁邊坐下。）', reply: [{ who: 'rin', text: '「磨刀石，分你一半。」' }] },
             { tone: 'promise', text: '「明天也一起回來。」', reply: [{ who: 'rin', text: '「嗯。」' }] },
           ] },
@@ -5503,8 +5503,13 @@ test.describe('starlantern', () => {
       const box = await stageBox(page, page.locator('.slx-talk'));
       expect(last.y + last.height, 'the last choice inside its window').toBeLessThanOrEqual(choice.y + choice.height);
       expect(choice.y + choice.height, 'the choices stand clear above the dialogue box').toBeLessThanOrEqual(box.y);
+      // its longest row and its frame show whole: no portrait covers it (review of Tasks 12-14)
+      expect(last.x + last.width, 'the longest choice inside its window').toBeLessThanOrEqual(choice.x + choice.width);
+      const face = await stageBox(page, page.locator('.slx-talk-face'));
+      const apart = choice.x + choice.width <= face.x || face.x + face.width <= choice.x || choice.y + choice.height <= face.y || face.y + face.height <= choice.y;
+      expect(apart, `the choice ${JSON.stringify(choice)} clear of the portrait ${JSON.stringify(face)}`).toBe(true);
       await shot('talk-choice');
-      await w.key('Enter');   // 「妳不喜歡嗎？」
+      await w.key('Enter');   // the long one
       await expect(said).toHaveText('「沒說不喜歡。」');
       await w.closeTalk();
       await expect(page.locator('.slx-talk')).toBeHidden();

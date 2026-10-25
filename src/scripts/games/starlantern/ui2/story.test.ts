@@ -771,6 +771,24 @@ describe('a choice on screen (bond plan Task 9)', () => {
     } finally { back(); }
   });
 
+  it("the choice stands on the side away from Lorne's portrait (review of Tasks 12-14)", async () => {
+    for (const [lines, side] of [[scene, 'left'], [[{ who: 'hero', text: '我先說' }, choice], 'right']] as const) {
+      const back = put('bond:rin:1', lines as SceneLine[]);
+      try {
+        const { talk, ctx } = mk();
+        const root = mount(talk);
+        const p = playScene(talk, 'bond:rin:1', ctx);
+        p.onAction('confirm');
+        await tick();
+        // Lorne's face is on the right when another spoke first, on the left when he did: the choice takes the other side
+        expect(root.querySelector('.slx-choice')!.classList.contains(`slx-choice--${side}`)).toBe(true);
+        expect(root.querySelector('.slx-choice')!.classList.contains(`slx-choice--${side === 'left' ? 'right' : 'left'}`)).toBe(false);
+        p.onAction('cancel');
+        root.remove();
+      } finally { back(); }
+    }
+  });
+
   it('cancel on the choice skips the scene and shows the summary', async () => {
     const back = put('bond:rin:1', scene);
     try {

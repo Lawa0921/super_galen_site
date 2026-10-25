@@ -180,8 +180,10 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOp
   /** Asks which way Lorne says it: his plate and face in the box, the choices over it; null when cancelled. */
   const ask = (line: ChoiceLine): Promise<ChoiceLine['choices'][number] | null> => new Promise((resolve) => {
     const sp = speakerOf('hero', ctx.game.state, ctx.art, 'normal', heavy, era);
-    void talk.say(sp.name, '', sp.face ? { src: sp.face, side: first === 'hero' ? 'left' : 'right' } : undefined);
-    const box = win('slx-choice', []);
+    const side = first === 'hero' ? 'left' : 'right';
+    void talk.say(sp.name, '', sp.face ? { src: sp.face, side } : undefined);
+    // review of Tasks 12-14: the choice stands on the side away from his portrait, so it never covers anyone
+    const box = win(`slx-choice slx-choice--${side === 'left' ? 'right' : 'left'}`, []);
     const close = () => { box.remove(); menu = null; };
     const view = new MenuView(new Menu(line.choices.map((c, i) => ({ id: String(i), label: c.text }))), {
       pick: (it) => { close(); resolve(line.choices[Number(it.id)]); },

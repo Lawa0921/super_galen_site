@@ -152,7 +152,11 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-confirm p { margin: 0 0 6px; white-space: pre-line; }
 // Bond plan Task 9: a bond scene's choice, above the dialogue box (its 12px rows, CHOICE_MAX_CHARS at most) while Lorne's plate shows.
 // Bond plan Task 14: the box stands 10px up and 86px tall while it waits (plate, frame, no text), so the choice sits 4px clear of it.
-.slx-choice { left: 50%; bottom: 100px; translate: -50% 0; translate: round(down, -50%, 1px) 0; min-width: 200px; }
+// Review of Tasks 12-14: it stands on the side away from Lorne's portrait (story.ts sets --left or --right), in line with the
+// box's edge, so no face covers its end; and above the box (and a battle's or workshop's raised one) all the same.
+.slx-choice { bottom: 100px; min-width: 200px; z-index: 11; }
+.slx-choice--left { left: 12px; }
+.slx-choice--right { right: 12px; }
 @media (prefers-reduced-motion: reduce) { .slx-win, .slx-sel::before { animation: none; } }
 
 .slx-ui { transition: opacity 0.15s linear; }
