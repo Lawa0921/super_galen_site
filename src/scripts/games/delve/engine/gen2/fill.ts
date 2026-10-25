@@ -19,6 +19,7 @@ import { COL_SEA, COL_BEACH, COL_LAND, COL_ISLAND, LAVA_Y, type ColInfo2, type P
 import { HOME_X0, SPAWN_X, type Layout } from './layout';
 import { SHAFT_HALF, SHAFT_REACH, CaveProbe, carveShaft, hasShaft, shaftOf, caveCut, caveK, type Shaft } from './caves';
 import { BP_SURFACE, stamp, solidParts, partsOf, type Blueprint, type BlueprintIndex, type BpBox } from './blueprint';
+import { JungleField } from './jungle';
 
 // 每個 pass 的上下文：該地塊的版面版本
 export interface FillCtx { ver: number }
@@ -60,7 +61,8 @@ ORE_HOST[T.STONE] = 1; ORE_HOST[T.DEEP_STONE] = 1;
 
 // ── Task 12 的數值（ctx.ver 0；舊生成器 worldgen.ts 的花崗岩 / 大理石、熔岩深淵細節、地表 / 地下裝飾，改成逐欄局部判斷）──
 // 花崗岩 y ∈ [deep + 20, molten − 25)、大理石 y ∈ [rock + 30, deep + 80)：團塊噪聲過門檻的石 / 深層岩換掉（礦之前判，礦不換花崗岩 / 大理石）
-const GRANITE_FROM_DEEP = 20, GRANITE_TO_MOLTEN = 25, GRANITE_THR = 0.72;
+// 門檻 0.8（brief 的 0.72 搭三次方團塊噪聲約是舊生成器的 2.3 倍；修正 1 調到 0.8，總量落在舊生成器 ±30%）
+const GRANITE_FROM_DEEP = 20, GRANITE_TO_MOLTEN = 25, GRANITE_THR = 0.8;
 const MARBLE_FROM_ROCK = 30, MARBLE_TO_DEEP = 80, MARBLE_THR = 0.74;
 // 熔岩帶 y ∈ [molten, LAVA_Y)：團塊噪聲 > MOLTEN_OPEN 額外挖空（不留牆）；> MAGMA_THR 熔岩石、> OBSIDIAN_THR 黑曜石（只換玄武岩）；
 // 空氣正下方的玄武岩表面往下 2–4 格（每欄一個深度，vnoise1(x, ASH_CELL)）換灰燼。
@@ -76,9 +78,13 @@ const pickDecor = (table: readonly (readonly [number, number])[], r: number): nu
 //   地板（下方實心）：r < POT_P 且深於地表 + POT_BELOW → 陶罐；泥巴 / 叢林草上 r ∈ [POT_P, POT_P + FERN_P) → 蕨；
 //     石類上 r ∈ [POT_P, POT_P + STALAGMITE_P) → 石筍；y ≥ deep 且 r ≥ 1 − GLOW_P → 發光蘑菇
 //   天花板（上方實心、下方不實心）：石類下 r < STALACTITE_P → 鐘乳石；泥巴 / 叢林草下 r < VINE_P → 藤（長 2–7，hash2(x, y, g2-vine)，
-//     只往下長到本欄空氣用完）；r ≥ 1 − COBWEB_P 且左或右是天然實心（caves.CaveProbe，只看噪聲 → 與分段無關）→ 蛛網
+//     只往下長到本欄空氣用完）；r ≥ 1 − COBWEB_P、y < deep + COBWEB_BELOW_DEEP（舊生成器 cavernY + 120）且左或右是天然實心
+//     （caves.CaveProbe，只看噪聲 → 與分段無關）→ 蛛網
 const POT_P = 0.012, POT_BELOW = 12, FERN_P = 0.12, STALAGMITE_P = 0.04, GLOW_P = 0.012;
-const STALACTITE_P = 0.045, VINE_P = 0.24, VINE_MIN = 2, VINE_SPAN = 6, COBWEB_P = 0.02;
+const STALACTITE_P = 0.045, VINE_P = 0.24, VINE_MIN = 2, VINE_SPAN = 6, COBWEB_P = 0.02, COBWEB_BELOW_DEEP = 120;
+// 地下叢林（修正 1，jungle.ts 的淚滴）：岩層以下的石 / 深層岩 mat > JUNGLE_MUD_THR 換泥巴、牆換泥巴牆；
+// 岩層以下 cave > JUNGLE_CAVE_THR − JUNGLE_CAVE_INNER × inner 挖成叢林洞穴（免挖洞箱與藍圖部件內不挖）
+const JUNGLE_MUD_THR = 0.47, JUNGLE_CAVE_THR = 0.685, JUNGLE_CAVE_INNER = 0.035;
 // 石類（石筍 / 鐘乳石長在這些上面；同舊生成器）、叢林土（蕨 / 藤）
 const STONY = new Uint8Array(256);
 for (const t of [T.STONE, T.GRANITE, T.MARBLE, T.ICE, T.SANDSTONE, T.GRAVEL, T.DEEP_STONE, T.BASALT, T.OBSIDIAN]) STONY[t] = 1;
@@ -122,6 +128,7 @@ export class Filler2 {
   private readonly sVine: number;
   // 蛛網看左右欄的天然實心（只看噪聲）
   private readonly probe: CaveProbe;
+  private readonly jungle: JungleField;
   private readonly spawnX: number | null;
   // 地區 → 坑道（RegionInfo 是 Layout 的同一個物件）
   private readonly shafts = new Map<RegionInfo, Shaft | null>();
@@ -146,6 +153,7 @@ export class Filler2 {
     this.sUgDecor = seedInt(seed, 'g2-ugdecor');
     this.sVine = seedInt(seed, 'g2-vine');
     this.probe = new CaveProbe(seed);
+    this.jungle = new JungleField(seed, layout, profile);
     const home = layout.origin.home;
     this.spawnX = home ? home.x0 + SPAWN_X - HOME_X0 : null;
   }
@@ -199,6 +207,8 @@ export class Filler2 {
     this.spag.setX(x); this.cav.setX(x);
     this.oreCu.setX(x); this.oreFe.setX(x); this.oreAg.setX(x); this.oreAu.setX(x);
     this.granite.setX(x); this.marble.setX(x); this.molten.setX(x); this.obsidian.setX(x);
+    // 這一欄碰得到的地下叢林淚滴（通常沒有；有的話 jungle 的雜訊已 setX(x)）
+    const tds = this.jungle.at(x), jg = this.jungle;
     for (let y = Math.max(0, S); y < H; y++) {
       let t: number, w: number;
       if (y < rock) { if (y < skinTo) { t = sk.t; w = sk.w; } else { t = sk.under; w = sk.underW; } }
@@ -206,12 +216,20 @@ export class Filler2 {
       else if (y < molten) { t = T.DEEP_STONE; w = W.DEEP_STONE_WALL; }
       else { t = T.BASALT; w = W.BASALT_WALL; }
       const i = li(x, y);
+      // 地下叢林只在岩層以下（岩層以上是叢林地區自己的表層材質）
+      const inner = tds.length > 0 && y >= rock ? jg.inner(tds, x, y) : -1;
+      if (inner >= 0) w = W.MUD_WALL;
       if (y >= S + WALL_FROM) wall[i] = w;
       const inSolid = solid !== null && inRows(solid, y);
       // 洞穴（義大利麵越深越寬 + 洞穴層大洞窟）；免挖洞箱內不挖
       if (!inSolid && caveCut(this.spag, this.cav, y, caveTop, deep, caveK(y, rock, molten, spanInv))) {
         // 熔岩線：LAVA_Y 以下的空氣全是熔岩（全世界同一條水平線；主坑道最深只到 deep + 18，碰不到這裡）
         if (y >= LAVA_Y) { liq[i] = LIQ_MAX; lt[i] = LIQ.LAVA; }
+        open = true;
+        continue;
+      }
+      // 叢林洞穴（淚滴底在熔岩帶上方很遠，與下面的熔岩帶互不相干）
+      if (inner >= 0 && y > rock && !inSolid && !(parts !== null && inRows(parts, y)) && jg.cave.at(y) > JUNGLE_CAVE_THR - JUNGLE_CAVE_INNER * inner) {
         open = true;
         continue;
       }
@@ -231,6 +249,7 @@ export class Filler2 {
       if (ORE_HOST[t] === 1) {
         if (y >= gr0 && y < gr1 && this.granite.above(y, GRANITE_THR)) t = T.GRANITE;
         else if (y >= mb0 && y < mb1 && this.marble.above(y, MARBLE_THR)) t = T.MARBLE;
+        else if (inner >= 0 && jg.mat.at(y) > JUNGLE_MUD_THR) t = T.MUD;
         else if (y >= deep && this.oreAu.at(y) > ORE_THR.AU) t = T.GOLD_ORE;
         else if (y >= midRock && y < molten && this.oreAg.at(y) > ORE_THR.AG) t = T.SILVER_ORE;
         else if (y < deep && this.oreFe.at(y) > ORE_THR.FE) t = T.IRON_ORE;
@@ -276,7 +295,7 @@ export class Filler2 {
           if (fg[j] !== T.AIR || liq[j] !== 0 || inRows(parts, yy)) break;
           fg[j] = T.VINE;
         }
-      } else if (r >= 1 - COBWEB_P && (this.naturalSolid(x - 1, y) || this.naturalSolid(x + 1, y))) fg[i] = T.COBWEB;
+      } else if (r >= 1 - COBWEB_P && y < I.deep + COBWEB_BELOW_DEEP && (this.naturalSolid(x - 1, y) || this.naturalSolid(x + 1, y))) fg[i] = T.COBWEB;
     }
   }
 

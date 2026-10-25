@@ -12,7 +12,7 @@ import { fillCol, bytes, FILL_DECOR } from './testUtil';
 import { Column, li } from '../column';
 import { T, W, SOLID_LUT, floorOk, ceilOk } from '../tiles';
 import { BlobNoise, ColNoise, BLOB_CELL } from '../genPrims';
-import { LIQ } from '../liquidKind';
+import { LIQ, LIQ_MAX } from '../liquidKind';
 import { BIOME } from '../world';
 
 const SEEDS3 = ['ft-a', 'ft-b', 'ft-c'];
@@ -50,6 +50,10 @@ interface Stats {
   partsLeak: string[]; partsChecked: number;
   // 藍圖寫了 fg 的格，最終 fg ≠ 寫入值（應為空；寫入空氣的格之後可能長樹幹 / 樹葉 / 仙人掌，那是 fill 的樹，不算）；檢查過的格數
   writtenBad: string[]; writtenChecked: number;
+  // 地下叢林（修正 1）：家鄉叢林地區的總寬、y ∈ [rock, molten) 的泥巴（不含藍圖寫的格，淚滴可以伸出地區外，所以全家鄉都算）
+  jungleWidth: number; jungleMud: number;
+  // 靜態液體：液體格要滿格、不在實心格裡、下方與左右是實心或同種滿格液體（應為空）
+  liquidBad: string[];
   // 地表：可以放裝飾的格（陸地欄、地表上一格是空氣或裝飾、不在部件內、沒有液體、不在出生點 ±3）依地面種類；各地面種類上各裝飾的格數
   surfaceSites: Record<Ground, number>; surfaceDecor: Record<Ground, Float64Array>;
 }
@@ -65,14 +69,21 @@ const inRows = (r: readonly number[], y: number): boolean => { for (let k = 0; k
 function homeStats(seed: string): Stats {
   const src = new Gen2Source(seed), H = 1200;
   const cnt = new Float64Array(256), fillCnt = new Float64Array(256), band = BANDS.map(() => new Float64Array(256));
-  let mAir = 0, mAll = 0, lava = 0, partsChecked = 0, writtenChecked = 0;
-  const bad: string[] = [], partsLeak: string[] = [], writtenBad: string[] = [];
+  let mAir = 0, mAll = 0, lava = 0, partsChecked = 0, writtenChecked = 0, jungleMud = 0;
+  const bad: string[] = [], partsLeak: string[] = [], writtenBad: string[] = [], liquidBad: string[] = [];
+  const jungleWidth = src.layout.landmassAt(2100)!.regions.filter((r) => r.biome === BIOME.JUNGLE).reduce((a, r) => a + r.x1 - r.x0, 0);
   const surfaceSites: Record<Ground, number> = { grass: 0, desert: 0, snow: 0, jungle: 0 };
   const surfaceDecor = Object.fromEntries(GROUNDS.map((g) => [g, new Float64Array(256)])) as Record<Ground, Float64Array>;
   // 只留 cx − 1..cx + 1 三欄（蛛網看左右）
   const cols = new Map<number, Column>();
   const colOf = (cx: number): Column => { let c = cols.get(cx); if (!c) { c = fillCol(src, cx); cols.set(cx, c); } return c; };
   const fgAt = (x: number, y: number): number => (y < 0 || y >= H ? T.STONE : colOf(x >> 5).fg[li(x, y)]);
+  // (x, y) 撐得住 type 的液體：世界底下、實心、或同種滿格液體
+  const holds = (x: number, y: number, type: number): boolean => {
+    if (y >= H || solidAt(fgAt(x, y))) return true;
+    const q = colOf(x >> 5), j = li(x, y);
+    return q.liquid[j] === LIQ_MAX && q.liquidType[j] === type;
+  };
   for (let cx = 0; cx < CX1; cx++) {
     cols.delete(cx - 2);
     const c = colOf(cx), x0 = cx * 32, x1 = Math.min(HOME_X1, x0 + 32);
@@ -103,6 +114,11 @@ function homeStats(seed: string): Stats {
         if (y >= I.surface) band[y < I.rock ? 0 : y < I.deep ? 1 : y < I.molten ? 2 : 3][t]++;
         if (y >= I.molten && y < LAVA_Y) { mAll++; if (t === T.AIR && c.liquid[i] === 0) mAir++; }
         if (c.liquid[i] > 0 && c.liquidType[i] === LIQ.LAVA) lava++;
+        if (c.liquid[i] > 0) {
+          const ty = c.liquidType[i];
+          if (c.liquid[i] !== LIQ_MAX || solidAt(t) || !holds(x, y + 1, ty) || !holds(x - 1, y, ty) || !holds(x + 1, y, ty)) liquidBad.push(`${ty}@${x},${y}`);
+        }
+        if (t === T.MUD && wv === undefined && y >= I.rock && y < I.molten) jungleMud++;
         if (DECOR.has(t)) {
           const ok = FLOOR_DECOR.has(t) ? floorOk(t, fgAt(x, y + 1)) : CEIL_DECOR.has(t) ? ceilOk(t, fgAt(x, y - 1))
             : solidAt(fgAt(x, y - 1)) || solidAt(fgAt(x - 1, y)) || solidAt(fgAt(x + 1, y));
@@ -117,7 +133,7 @@ function homeStats(seed: string): Stats {
   }
   return {
     count: (t) => cnt[t], fillCount: (t) => fillCnt[t], countBand: (t, b) => band[BANDS.indexOf(b)][t], airShare: () => mAir / mAll, lavaCells: () => lava,
-    badSupport: () => bad, partsLeak, partsChecked, writtenBad, writtenChecked, surfaceSites, surfaceDecor,
+    badSupport: () => bad, partsLeak, partsChecked, writtenBad, writtenChecked, jungleWidth, jungleMud, liquidBad, surfaceSites, surfaceDecor,
   };
 }
 
@@ -137,9 +153,20 @@ describe('gen2 填格新特徵（Task 12）', () => {
   // brief 的「每種 > 30」對雪灌木 / 枯灌木 / 蘑菇不成立：家鄉的雪地地表約 450 欄（7% → 期望約 31）、沙漠沙約 400 欄（12%，扣掉仙人掌期望約 42）、
   // 蘑菇（草 2% + 叢林草 1%）期望約 40，每個種子都 > 30 是擲硬幣。這三種每個種子 > 15，再用下一個測試驗機率
   it('裝飾：每種 > 30 格（南瓜 > 5；雪灌木 / 枯灌木 / 蘑菇 > 15），每一格的支撐都合法（地板類下方實心、天花板類上方實心、藤往上接藤或實心）', () => { for (const s of HOME3) {
-    for (const t of [T.FLOWER, T.TALL_GRASS, T.SMALL_ROCK, T.BUSH, T.FERN, T.VINE, T.GLOW_MUSHROOM, T.STALACTITE, T.STALAGMITE, T.COBWEB, T.POT]) expect(s.count(t), String(t)).toBeGreaterThan(30);
+    for (const t of [T.FLOWER, T.TALL_GRASS, T.SMALL_ROCK, T.BUSH, T.FERN, T.GLOW_MUSHROOM, T.STALACTITE, T.STALAGMITE, T.COBWEB, T.POT]) expect(s.count(t), String(t)).toBeGreaterThan(30);
+    // 藤只算 fill 自己長的（蘑菇林的藤是藍圖畫的）：修正 1 的地下叢林之後每個種子 3,200–3,800（舊生成器同種子整圖 6,700–7,100）
+    expect(s.fillCount(T.VINE)).toBeGreaterThan(1500);
     for (const t of [T.SNOW_SHRUB, T.DEAD_BUSH, T.MUSHROOM]) expect(s.count(t), String(t)).toBeGreaterThan(15);
     expect(s.count(T.PUMPKIN)).toBeGreaterThan(5); expect(s.badSupport()).toEqual([]); } }, 30_000);
+
+  // 修正 1：舊生成器的地下叢林是一路長到熔岩深淵上方的泥巴淚滴。舊生成器同種子：岩層以下的泥巴約 17.5 萬格 / 地表叢林 550–626 欄
+  // （每欄 280–320 格）；gen2 家鄉每欄（叢林地區寬）實測 240–300 格，門檻 150（約舊的一半）
+  it('地下叢林：家鄉 y ∈ [rock, molten) 的泥巴每欄叢林地區寬 > 150 格', () => { for (const s of HOME3) {
+    expect(s.jungleWidth).toBeGreaterThan(200);
+    expect(s.jungleMud / s.jungleWidth, `${s.jungleMud} / ${s.jungleWidth}`).toBeGreaterThan(150); } }, 30_000);
+
+  it('靜態液體：家鄉每個液體格都滿格、下方與左右撐得住（叢林洞穴、熔岩帶挖空不會讓藍圖的水 / 蜂蜜 / 熔岩漏）', () => { for (const s of HOME3) {
+    expect(s.liquidBad).toEqual([]); expect(s.lavaCells()).toBeGreaterThan(1500); } }, 30_000);
 
   it('地表裝飾的機率：3 個種子合計，每種地面上各裝飾的比例在 brief 機率的 0.5–1.5 倍內', () => {
     for (const g of GROUNDS) {
@@ -190,19 +217,26 @@ describe('gen2 填格新特徵（Task 12）', () => {
 
   // 修正 1 第 4 項：BlobNoise 的 at() = 同格距 ColNoise 的三次方（逐位元），above(y, thr) = at(y) > thr（四角最大值提早結束不改結果）
   it('BlobNoise：at = ColNoise 的三次方、above = at > 門檻（逐點相同）', () => {
-    let n = 0;
+    // 逐點比較、不同的點收集起來（每點都 expect 太慢）
+    let n = 0, hits = 0;
+    const diff: string[] = [];
     for (const cell of [BLOB_CELL, 16]) for (const s of [7, -123456, 2024]) {
       const b = new BlobNoise(cell, s), c = new ColNoise(cell, s);
       for (let x = -300; x < 900; x += 7) {
         b.setX(x); c.setX(x);
         for (let y = 0; y < 1200; y++) {
-          const v = c.at(y);
-          expect(b.at(y)).toBe(v * v * v);
-          for (const thr of [0.55, 0.72, 0.74, 0.8, 0.86]) { expect(b.above(y, thr)).toBe(v * v * v > thr); n++; }
+          const v = c.at(y), v3 = v * v * v;
+          if (b.at(y) !== v3) diff.push(`at ${cell} ${s} ${x},${y}`);
+          for (const thr of [0.55, 0.72, 0.74, 0.8, 0.86]) {
+            const up = b.above(y, thr);
+            if (up !== v3 > thr) diff.push(`above ${thr} ${cell} ${s} ${x},${y}`);
+            n++; if (up) hits++;
+          }
         }
       }
     }
-    expect(n).toBeGreaterThan(1_000_000);
+    expect(diff.slice(0, 5)).toEqual([]);
+    expect(n).toBeGreaterThan(1_000_000); expect(hits).toBeGreaterThan(10_000);
   }, 120_000);
 
   it('分段填 = 整欄填（裝飾 / 熔岩帶在欄內、與分段無關）', () => { const src = new Gen2Source('feat'); for (const cx of [20, 66, 110]) {
