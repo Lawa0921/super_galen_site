@@ -47,7 +47,8 @@ import { moveRune, socketRune, unsocketRune, type SocketAt, type SocketFail } fr
 import type { RuneRef } from '../data/runes';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
 import { applyBuild, applyCost, followUp } from './builds';
-import { addField, inDanger } from './story/bond';
+import { addField, giveGift, inDanger, type GiveResult } from './story/bond';
+import type { Companion } from '../data/story/bond';
 import { FIELD_POINTS } from '../data/story/bond';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
 
@@ -1191,6 +1192,16 @@ export class Game {
     this.rerolled = true;
     if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return true;
+  }
+
+  /** Bond plan Task 6: one gift to a companion (`giveGift`), town only, saved at once like a shard absorbed. */
+  give(c: Companion, mat: string): GiveResult | { ok: false; reason: 'phase' } {
+    if (this.phase !== 'town') return { ok: false, reason: 'phase' };
+    const r = giveGift(this.state, c, mat);
+    if (!r.ok) return r;
+    this.state = r.state;
+    if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
+    return r;
   }
 
   /** One shard into a member who was met: town only, saved at once so a reload cannot re-roll the gain. */

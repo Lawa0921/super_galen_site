@@ -1,7 +1,11 @@
 import {
   BOND_CAP, BOND_MAX, BOND_PCT, BOND_PER_PIECE, BOND_RUN_CAP, BOND_SCALE, BOND_START, BOND_TIER_AT, DANGER_PCT, GIFTABLE,
-  GIFT_REPEAT_FULL, GIFT_TASTE, GIFT_VALUE, type BondTier, type Companion, type Taste,
+  GIFT_MOOD, GIFT_REPEAT_FULL, GIFT_TASTE, GIFT_VALUE, RIN_GIFT_MOOD_BEFORE_OATH, type BondTier, type Companion, type Taste,
 } from '../../data/story/bond';
+import { GIFT_LINES, RIN_OATH_GIFT_LINES, type GiftPools } from '../../data/bond.zh-TW';
+import type { StoryMood } from '../../render/artPaths';
+import { chainLength } from '../../data/story/chains';
+import { storyPieces } from './events';
 import type { Run } from '../dungeon/run';
 import { CHARACTERS } from '../../data/characters';
 import { dayOf } from '../calendar';
@@ -138,3 +142,66 @@ export function maxBondRecord(c: Companion): BondRecord {
   const [a, b] = GIFT_TASTE[c].loved;
   return { talk: BOND_CAP.talk, field: BOND_CAP.field, gifts: { [a]: 9, [b]: 9 } };
 }
+
+/** A gift's outcome (spec §6.3, §6.4). Taken or handed back, the new state comes with it; a failure changes nothing. */
+export type GiveResult =
+  | { ok: true; c: Companion; mat: GiftId; taste: Taste; healed: boolean; count: number; gained: number; state: GameState }
+  | { ok: false; reason: 'hero' | 'unmet' | 'today' | 'stock' | 'ungiftable' | 'unwritten' };
+
+/** Her reaction lines (bond plan ruling 6): Rin's after her choice are their own table; undefined while not written. */
+export function giftPools(s: GameState, c: Companion, pools: Partial<Record<Companion, GiftPools>> = GIFT_LINES, rinOath: GiftPools | null = RIN_OATH_GIFT_LINES): GiftPools | undefined {
+  return c === 'rin' && s.party.roster.rin?.oath ? rinOath ?? undefined : pools[c];
+}
+
+/**
+ * One gift of `mat` to `c` (bond plan Task 6, spec §6.3), a pure function. Fails for the hero, someone not met, one who
+ * already took a gift today, a material not held or not giftable, or one whose reactions are not written (Rin: both of her
+ * tables). Declined: nothing is used up or recorded but `refused`, and it is not today's gift. Taken: one less in the
+ * inventory, her count up, today's gift hers. Her taste is the healed one once her pieces are all told (spec §0 D2).
+ */
+export function giveGift(s: GameState, c: Companion, mat: GiftId, pools: Partial<Record<Companion, GiftPools>> = GIFT_LINES, rinOath: GiftPools | null = RIN_OATH_GIFT_LINES): GiveResult {
+  if ((c as string) === 'hero') return { ok: false, reason: 'hero' };
+  if (!s.party.recruited.includes(c)) return { ok: false, reason: 'unmet' };
+  if (today(s).gifted.includes(c)) return { ok: false, reason: 'today' };
+  if ((s.inventory[mat] ?? 0) < 1) return { ok: false, reason: 'stock' };
+  if (!GIFTABLE.includes(mat)) return { ok: false, reason: 'ungiftable' };
+  if (!pools[c] || (c === 'rin' && !rinOath)) return { ok: false, reason: 'unwritten' };
+  const healed = storyPieces(s, c) >= chainLength(c);
+  const taste = tasteOf(c, mat, healed)!;
+  const m = s.party.roster[c];
+  const b = bondOf(m);
+  const n = structuredClone(s);
+  if (taste === 'declined') {
+    const refused = b.refused?.includes(mat) ? b.refused : [...(b.refused ?? []), mat];
+    n.party.roster[c] = { ...n.party.roster[c], bond: { ...structuredClone(b), refused: [...refused] } };
+    return { ok: true, c, mat, taste, healed: false, count: 0, gained: 0, state: n };
+  }
+  const count = (b.gifts[mat] ?? 0) + 1;
+  const after = { ...structuredClone(b), gifts: { ...b.gifts, [mat]: count } };
+  n.party.roster[c] = { ...n.party.roster[c], bond: after };
+  const left = (n.inventory[mat] ?? 0) - 1;
+  if (left > 0) n.inventory[mat] = left;
+  else delete n.inventory[mat];
+  const day = dayOf(s);
+  const story = n.story;
+  if (story.bondDay !== day) { story.gifted = []; delete story.talked; }
+  story.bondDay = day;
+  story.gifted = [...(story.gifted ?? []), c];
+  const gained = Math.min(giftPoints(n.party.roster[c]), BOND_CAP.gift) - Math.min(giftPoints(m), BOND_CAP.gift);
+  return { ok: true, c, mat, taste, healed: healed && GIFT_TASTE[c].declined.includes(mat), count, gained, state: n };
+}
+
+/**
+ * Her line for a gift (spec §4.6): no rng, the index is the count. Declined: that material's line; the first of a healed
+ * material: its healing line; else her pool of that taste, line (count - 1) mod its length.
+ */
+export function giftLine(r: Extract<GiveResult, { ok: true }>, pools: GiftPools): string | undefined {
+  if (r.taste === 'declined') return pools.declined[r.mat];
+  if (r.healed && r.count === 1) return pools.healed[r.mat];
+  const pool = pools[r.taste];
+  return pool.length ? pool[(r.count - 1) % pool.length] : undefined;
+}
+
+/** Her face for a gift (spec §6.4): Rin before her choice always `normal` (her averted face waits on her 4th piece). */
+export const giftMood = (c: Companion, taste: Taste, oath: boolean): StoryMood =>
+  c === 'rin' && !oath ? RIN_GIFT_MOOD_BEFORE_OATH : GIFT_MOOD[c][taste];

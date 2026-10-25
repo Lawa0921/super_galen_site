@@ -54,7 +54,8 @@ import { SPRING_AFTER, dayOf, moonOf, tonightMoon } from './calendar';
 import { orderNight } from './story/nights';
 import { calendarOf } from './story/events';
 import { MEMORY_PITY } from '../data/story/chains';
-import { BOND_SWITCH, bondOf } from './story/bond';
+import { BOND_SWITCH, bondOf, bondPoints } from './story/bond';
+import { GIFT_LINES, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
 import { withBondEarn, withBondScale } from './testing';
 
@@ -5964,4 +5965,62 @@ describe('bond from going down and fighting together (bond plan Task 5)', () => 
     expect(off.fields.every((n) => n === 0)).toBe(true);
     expect(on.fields.some((n) => n > 0)).toBe(true);
   });
+});
+
+describe('gifts in the game (bond plan Task 6)', () => {
+  const pools: GiftPools = { loved: ['一', '二'], liked: ['三', '四'], neutral: ['五'], declined: { 'old-coin': '六' }, healed: { 'old-coin': '七' } };
+  /** Selene's reactions registered for the test (the registry starts empty), put back after. */
+  const withSelene = <T,>(f: () => T): T => {
+    const had = GIFT_LINES.selene;
+    GIFT_LINES.selene = pools;
+    try { return f(); } finally {
+      if (had) GIFT_LINES.selene = had; else delete GIFT_LINES.selene;
+    }
+  };
+  const withHer = () => {
+    const storage = memoryStorage();
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    g.state.party = meet(g.state.party, 'selene', 1);
+    g.state.inventory['star-tear'] = 3;
+    g.state.inventory['old-coin'] = 3;
+    g.state.inventory['dusk-cloth'] = 1;
+    return { g, storage };
+  };
+
+  it('gifts only in town, once a day', () => withSelene(() => {
+    const { g, storage } = withHer();
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.give('selene', 'star-tear')).toEqual({ ok: false, reason: 'phase' });
+    expect(g.returnToTown()).toBe(true);
+    const before = bondPoints(g.state.party.roster.selene);
+    const r = g.give('selene', 'star-tear');
+    expect(r.ok && [r.taste, r.gained]).toEqual(['loved', 4]);
+    expect(bondPoints(g.state.party.roster.selene)).toBe(before + 4);
+    const saved = loadGame(storage);
+    expect(saved.status === 'ok' && saved.state.party.roster.selene.bond!.gifts).toEqual({ 'star-tear': 1 });
+    expect(saved.status === 'ok' && saved.state.story.gifted).toEqual(['selene']);
+    expect(g.give('selene', 'star-tear')).toEqual({ ok: false, reason: 'today' });
+    expect(g.give('rin', 'dusk-cloth')).toEqual({ ok: false, reason: 'unwritten' });   // Rin's are not written yet
+    g.state.gold = 1000;
+    expect(g.rest().ok).toBe(true);
+    const again = g.give('selene', 'star-tear');
+    expect(again.ok && again.count).toBe(2);
+    // a reload of the same day reads the same gifts
+    const b = Game.boot(calm(), storage);
+    expect(b.state.party.roster.selene.bond!.gifts).toEqual({ 'star-tear': 2 });
+    expect(b.give('selene', 'star-tear')).toEqual({ ok: false, reason: 'today' });
+  }));
+
+  it('give draws nothing', () => withSelene(() => {
+    const base = calm();
+    let calls = 0;
+    const g = new Game(() => { calls++; return base(); }, memoryStorage(), undefined, 0, ['hero', 'rin']);
+    g.state.party = meet(g.state.party, 'selene', 1);
+    g.state.inventory['star-tear'] = 3;
+    g.state.inventory['old-coin'] = 3;
+    const was = calls;
+    expect(g.give('selene', 'old-coin').ok).toBe(true);   // handed back
+    expect(g.give('selene', 'star-tear').ok).toBe(true);
+    expect(calls).toBe(was);
+  }));
 });

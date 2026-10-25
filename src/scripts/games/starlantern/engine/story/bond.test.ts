@@ -3,7 +3,12 @@ import { newMember } from '../party';
 import { chainLength } from '../../data/story/chains';
 import { COMPANIONS, GIFTABLE, GIFT_TASTE, type Companion } from '../../data/story/bond';
 import type { BondRecord, Member } from '../types';
-import { BOND_SWITCH, addField, bondOf, bondPoints, bondTier, giftPoints, inDanger, tasteOf, tierAt, today } from './bond';
+import { BOND_SWITCH, addField, bondOf, bondPoints, bondTier, giftLine, giftMood, giftPools, giftPoints, giveGift, inDanger, tasteOf, tierAt, today } from './bond';
+import type { GiftPools } from '../../data/bond.zh-TW';
+import { meet } from '../party';
+import { mulberry32 } from '../rng';
+import { memScene } from '../../data/story/scenes';
+import type { GameState } from '../state';
 import { BOND_CAP, BOND_RUN_CAP } from '../../data/story/bond';
 import { newRun } from '../dungeon/run';
 import { newGame } from '../state';
@@ -164,5 +169,193 @@ describe('bond score', () => {
     expect(tasteOf('chizuru', 'frost-heart', true)).toBe('declined');
     expect(tasteOf('rin', 'essence-common', false)).toBeNull();
     expect(tasteOf('rin', 'potion', false)).toBeNull();
+  });
+});
+
+describe('gifts (bond plan Task 6)', () => {
+  /** Whole reaction tables, each line naming its pool and index, so a test can read which one was picked. */
+  const pools = (c: Companion): GiftPools => ({
+    loved: ['最愛一', '最愛二'], liked: ['喜歡一', '喜歡二', '喜歡三'], neutral: ['普通一'],
+    declined: Object.fromEntries(GIFT_TASTE[c].declined.map((m) => [m, `婉拒${m}`])),
+    healed: Object.fromEntries(Object.keys(GIFT_TASTE[c].healed).map((m) => [m, `痊癒${m}`])),
+  });
+  const ALL = Object.fromEntries(COMPANIONS.map((c) => [c, pools(c)])) as Record<Companion, GiftPools>;
+  const RIN_OATH: GiftPools = { ...pools('rin'), loved: ['誓約最愛'] };
+  /** Day 3; Rin and Selene met; plenty of every giftable material. */
+  const town = (): GameState => {
+    const g = newGame();
+    g.story.day = 3;
+    g.party = meet(g.party, 'selene', 1);
+    for (const m of GIFTABLE) g.inventory[m] = 50;
+    return g;
+  };
+  const give = (s: GameState, c: Companion | 'hero', mat: string, lines: Partial<Record<Companion, GiftPools>> = ALL, oath: GiftPools | null = RIN_OATH) =>
+    giveGift(s, c as Companion, mat, lines, oath);
+  /** Selene with `n` of her pieces held and told. */
+  const told = (s: GameState, n: number): GameState => {
+    s.party.roster.selene.memories = n;
+    for (let k = 1; k <= n; k++) s.story.seen.push(memScene('selene', k));
+    return s;
+  };
+
+  it('every reason a gift fails', () => {
+    const s = town();
+    expect(give(s, 'hero', 'moss')).toEqual({ ok: false, reason: 'hero' });
+    expect(give(s, 'sylvie', 'moss')).toEqual({ ok: false, reason: 'unmet' });
+    const once = give(s, 'rin', 'moss');
+    if (!once.ok) throw new Error(once.reason);
+    expect(give(once.state, 'rin', 'moss')).toEqual({ ok: false, reason: 'today' });
+    expect(give({ ...s, inventory: {} }, 'rin', 'moss')).toEqual({ ok: false, reason: 'stock' });
+    expect(give({ ...s, inventory: { 'essence-common': 3 } }, 'rin', 'essence-common')).toEqual({ ok: false, reason: 'ungiftable' });
+    expect(give({ ...s, inventory: { potion: 3 } }, 'rin', 'potion')).toEqual({ ok: false, reason: 'ungiftable' });
+    const { selene: _s, ...noSelene } = ALL;
+    expect(give(s, 'selene', 'moss', noSelene)).toEqual({ ok: false, reason: 'unwritten' });
+    expect(give(s, 'rin', 'moss', ALL, null)).toEqual({ ok: false, reason: 'unwritten' });   // Rin needs both tables
+    const { rin: _r, ...noRin } = ALL;
+    expect(give(s, 'rin', 'moss', noRin)).toEqual({ ok: false, reason: 'unwritten' });
+    expect(s.inventory.moss).toBe(50);   // nothing that failed took anything
+  });
+
+  it('a loved gift', () => {
+    const s = town();
+    const before = bondPoints(s.party.roster.rin);
+    const r = give(s, 'rin', 'dusk-cloth');
+    if (!r.ok) throw new Error(r.reason);
+    expect([r.taste, r.healed, r.count, r.gained]).toEqual(['loved', false, 1, 4]);
+    expect(bondPoints(r.state.party.roster.rin)).toBe(before + 4);
+    expect(r.state.inventory['dusk-cloth']).toBe(49);
+    expect(r.state.party.roster.rin.bond!.gifts).toEqual({ 'dusk-cloth': 1 });
+    expect(today(r.state).gifted).toEqual(['rin']);
+    expect(r.state.story.bondDay).toBe(3);
+    expect(s.inventory['dusk-cloth']).toBe(50);   // the state given is not changed
+    expect(s.party.roster.rin.bond).toBeUndefined();
+    expect(give(r.state, 'rin', 'thorn-fang')).toEqual({ ok: false, reason: 'today' });
+    // someone else may still take one today
+    const other = give(r.state, 'selene', 'star-tear');
+    expect(other.ok && today(other.state).gifted).toEqual(['rin', 'selene']);
+  });
+
+  it('a new day, a new gift', () => {
+    const s = town();
+    const r = give(s, 'rin', 'dusk-cloth');
+    if (!r.ok) throw new Error(r.reason);
+    r.state.story.talked = true;
+    r.state.story.day = 4;
+    expect(today(r.state)).toEqual({ gifted: [], talked: false });
+    const next = give(r.state, 'rin', 'dusk-cloth');
+    if (!next.ok) throw new Error(next.reason);
+    expect([next.count, next.gained]).toEqual([2, 4]);
+    expect(next.state.story.bondDay).toBe(4);
+    expect(next.state.story.gifted).toEqual(['rin']);       // yesterday's list cleared
+    expect(next.state.story.talked).toBeUndefined();        // and yesterday's talk
+  });
+
+  it('a declined gift is handed back', () => {
+    const s = town();
+    const before = bondPoints(s.party.roster.rin);
+    const r = give(s, 'rin', 'king-scale');
+    if (!r.ok) throw new Error(r.reason);
+    expect([r.taste, r.count, r.gained]).toEqual(['declined', 0, 0]);
+    expect(r.state.inventory['king-scale']).toBe(50);
+    expect(bondOf(r.state.party.roster.rin).gifts).toEqual({});
+    expect(r.state.party.roster.rin.bond!.refused).toEqual(['king-scale']);
+    expect(today(r.state).gifted).toEqual([]);
+    expect(bondPoints(r.state.party.roster.rin)).toBe(before);
+    expect(giftLine(r, ALL.rin)).toBe('婉拒king-scale');
+    // handed back twice, still once in the list; and a real gift is still open today
+    const again = give(r.state, 'rin', 'king-scale');
+    expect(again.ok && again.state.party.roster.rin.bond!.refused).toEqual(['king-scale']);
+    expect(give(r.state, 'rin', 'moss').ok).toBe(true);
+  });
+
+  it('healed tastes wait for the last piece told', () => {
+    const four = give(told(town(), 4), 'selene', 'old-coin');
+    expect(four.ok && four.taste).toBe('declined');
+    const held = town();
+    held.party.roster.selene.memories = 5;   // all held, four told
+    for (let k = 1; k <= 4; k++) held.story.seen.push(memScene('selene', k));
+    const untold = give(held, 'selene', 'old-coin');
+    expect(untold.ok && untold.taste).toBe('declined');
+    const five = give(told(town(), 5), 'selene', 'old-coin');
+    if (!five.ok) throw new Error(five.reason);
+    expect([five.taste, five.healed, five.count, five.gained]).toEqual(['liked', true, 1, 2]);
+    expect(giftLine(five, ALL.selene)).toBe('痊癒old-coin');
+    five.state.story.day = 4;
+    const second = give(five.state, 'selene', 'old-coin');
+    if (!second.ok) throw new Error(second.reason);
+    expect(giftLine(second, ALL.selene)).toBe('喜歡二');   // the second: the liked pool, index 1
+  });
+
+  it('the gift cap', () => {
+    const s = town();
+    s.party.roster.rin.bond = { talk: 0, field: 0, gifts: { 'dusk-cloth': 24 } };   // 30
+    const r = give(s, 'rin', 'thorn-fang');
+    if (!r.ok) throw new Error(r.reason);
+    expect([r.taste, r.count, r.gained]).toEqual(['loved', 1, 0]);
+    expect(r.state.inventory['thorn-fang']).toBe(49);   // taken all the same
+    expect(giftPoints(r.state.party.roster.rin)).toBe(34);
+  });
+
+  it('giftLine cycles by count', () => {
+    let s = town();
+    const lines: (string | undefined)[] = [];
+    for (let day = 3; day < 8; day++) {
+      s.story.day = day;
+      const r = give(s, 'rin', 'shade-crystal');   // liked: three lines
+      if (!r.ok) throw new Error(r.reason);
+      lines.push(giftLine(r, ALL.rin));
+      s = r.state;
+    }
+    expect(lines).toEqual(['喜歡一', '喜歡二', '喜歡三', '喜歡一', '喜歡二']);
+  });
+
+  it("Rin's gifts read her choice", () => {
+    const s = town();
+    expect(giftPools(s, 'rin', ALL, RIN_OATH)).toBe(ALL.rin);
+    expect(giftMood('rin', 'loved', false)).toBe('normal');
+    expect(giftMood('rin', 'declined', false)).toBe('normal');
+    s.party.roster.rin.memories = chainLength('rin');
+    s.party.roster.rin.oath = true;
+    expect(giftPools(s, 'rin', ALL, RIN_OATH)).toBe(RIN_OATH);
+    expect(giftMood('rin', 'loved', true)).toBe('averted');
+    expect(giftMood('noel', 'loved', false)).toBe('smug');
+    expect(giftMood('selene', 'declined', false)).toBe('sad');
+    const r = give(s, 'rin', 'dusk-cloth');
+    expect(r.ok && giftLine(r, giftPools(r.state, 'rin', ALL, RIN_OATH)!)).toBe('誓約最愛');
+    expect(giftPools(s, 'selene', ALL, RIN_OATH)).toBe(ALL.selene);
+    const { selene: _s, ...noSelene } = ALL;
+    expect(giftPools(s, 'selene', noSelene, RIN_OATH)).toBeUndefined();
+  });
+
+  it('bond never falls', () => {
+    const rng = mulberry32(1);
+    const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rng() * xs.length)];
+    for (let chain = 0; chain < 200; chain++) {
+      let s = town();
+      for (const c of COMPANIONS) if (c !== 'rin' && c !== 'selene') s.party = meet(s.party, c, 1);
+      let was = COMPANIONS.map((c) => bondPoints(s.party.roster[c]));
+      for (let step = 0; step < 30; step++) {
+        const c = pick(COMPANIONS);
+        const op = pick(['gift', 'field', 'talk', 'piece', 'day'] as const);
+        if (op === 'gift') {
+          const r = give(s, c, pick([...GIFTABLE, 'essence-common', 'potion']));
+          if (r.ok) s = r.state;
+        } else if (op === 'field') {
+          const r = addField(s.party, newRun(chain, 'mainline', 'plain', 1), [c], pick([1, 2]));
+          s = { ...s, party: r.party };
+        } else if (op === 'talk') {
+          const b = bondOf(s.party.roster[c]);
+          s.party.roster[c] = { ...s.party.roster[c], bond: { ...b, gifts: { ...b.gifts }, talk: Math.min(12, b.talk + pick([2, 3])) } };
+        } else if (op === 'piece') {
+          const m = s.party.roster[c];
+          const n = Math.min(chainLength(c), (m.memories ?? 0) + 1);
+          s.party.roster[c] = { ...m, memories: n };
+          if (!s.story.seen.includes(memScene(c, n))) s.story.seen.push(memScene(c, n));
+        } else s.story.day = (s.story.day ?? 1) + 1;
+        const now = COMPANIONS.map((x) => bondPoints(s.party.roster[x]));
+        now.forEach((p, i) => expect(p, `chain ${chain} step ${step} ${op} ${COMPANIONS[i]}`).toBeGreaterThanOrEqual(was[i]));
+        was = now;
+      }
+    }
   });
 });
