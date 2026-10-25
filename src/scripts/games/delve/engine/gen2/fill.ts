@@ -1,4 +1,4 @@
-// fill.ts — gen2 寫格子：表層材質（gen2 自己的表）、深度層與牆、噪聲洞穴 + 地表入口、每個地區的主坑道、礦（只換石頭類）、
+// fill.ts — gen2 寫格子：表層材質（gen2 自己的表）、深度層與牆、噪聲洞穴 + 地表入口、每個地區的主坑道、礦（逐帶宿主表 G2_ORE）、
 // 靜止的海水、熔岩線（LAVA_Y 以下的空氣全是熔岩）、結構藍圖（blueprint.ts，依 (layer, id) 序蓋；含海槽的沉船 / 漂流箱）、
 // 樹 / 仙人掌（只長在陸地欄與島的台地、不長在表層藍圖外框內）。免挖洞箱（藍圖的 solid）內的格不挖噪聲洞穴、不當入口（礦照常換、主坑道照挖；控制者裁決：solid 只擋洞穴與入口）。島的表層與樹在這裡（P12：島地形 = Profile2 的島欄形狀 + 這裡的表層）。
 // M2a Task 12：花崗岩 / 大理石（礦之前判）、熔岩帶（額外挖空、灰燼地板、黑曜石 / 熔岩石）在 column()；地表與地下裝飾在最後的 decorate()
@@ -14,7 +14,7 @@ import { LIQ, LIQ_MAX } from '../liquidKind';
 import { BIOME } from '../world';
 import { li, type Column } from '../column';
 import type { RegionInfo } from '../regionInfo';
-import { ColNoise, CavernNoise, NO_DIG, ORE_THR, spagNoise, entranceHit, oreNoise, blobNoise, growPlants, type BlobNoise, type PlantSite } from '../genPrims';
+import { ColNoise, CavernNoise, NO_DIG, spagNoise, entranceHit, oreNoise, blobNoise, growPlants, type BlobNoise, type PlantSite } from '../genPrims';
 import { COL_SEA, COL_BEACH, COL_LAND, COL_ISLAND, LAVA_Y, type ColInfo2, type Profile2 } from './profile';
 import { HOME_X0, SPAWN_X, type Layout } from './layout';
 import { SHAFT_HALF, SHAFT_REACH, CaveProbe, carveShaft, hasShaft, shaftOf, caveCut, caveK, type Shaft } from './caves';
@@ -55,12 +55,33 @@ const SHAFT_NO_TREE = SHAFT_HALF + 3;
 // overlapping 依外框找（一般藍圖的外框在自己的槽裡、wholeRegion 錨點在自己的地區裡，任何與外框相交的查詢都找得到）
 export const FILL_REACH = SHAFT_REACH;
 
-// 礦只換這些格（石頭類；沙 / 泥土 / 雪 / 玄武岩不換，P10）
-const ORE_HOST = new Uint8Array(256);
-ORE_HOST[T.STONE] = 1; ORE_HOST[T.DEEP_STONE] = 1;
-// 原本是石頭類的格，換完淚滴材質後還能放礦的：石頭類 + 泥巴 / 砂岩 / 冰（同舊生成器 isOreHost；沙不放）
-const ORE_ON = new Uint8Array(256);
-ORE_ON[T.STONE] = 1; ORE_ON[T.DEEP_STONE] = 1; ORE_ON[T.MUD] = 1; ORE_ON[T.SANDSTONE] = 1; ORE_ON[T.ICE] = 1;
+// 石頭類：花崗岩 / 大理石與地下生態淚滴只換這些格
+const STONE_BASE = new Uint8Array(256);
+STONE_BASE[T.STONE] = 1; STONE_BASE[T.DEEP_STONE] = 1;
+
+// ── 礦（ctx.ver 0；M2a Task 13，P10 改寫成逐帶宿主表，控制者裁決 A′）──
+// 深度帶相對本欄層線：0 泥土 [地表, 岩層)、1 岩層 [岩層, 洞穴層)、2 洞穴層 [洞穴層, 熔岩)、3 熔岩 [熔岩, 世界底)。
+// 每種礦 × 每個帶一條規則 { thr, host }（null = 該帶不放）：本格的 tile 在 host 裡、而且礦噪聲 > thr → 換成該礦；同一格多種礦都過時金 > 銀 > 鐵 > 銅。
+// 宿主照舊生成器 legacy/worldgen.ts:125-127 的 isOreHost（STONE / DIRT / SANDSTONE / ICE / MUD / SNOW / DEEP_STONE / BASALT）與
+// :996-1001 的礦脈深度帶，只開放舊生成器在該帶的密度 ≥ 0.2‰ 的礦（oreBaseline.ts 的 LEGACY_ORE_DENSITY）：
+//   泥土帶的銅（:996 銅礦脈 [地表 + 4, 岩層 + 20)）：DIRT / SNOW / MUD / SANDSTONE，只在 y ≥ 地表 + SOIL_ORE_FROM（地表那幾格的草 / 沙不放）
+//   岩層 / 洞穴層：石頭類 + 淚滴換成的泥巴 / 砂岩 / 冰（Task 12 裁決，同 isOreHost）
+//   熔岩帶的金（:1001 金礦脈上界熔岩線 + 25）：BASALT，只在 [熔岩線, 熔岩線 + MOLTEN_ORE_SPAN) 且 y < LAVA_Y（不落進熔岩海）
+// 沙不放礦（Task 12 裁決）；藍圖寫入的格之後由 stamp 蓋，不受這張表影響。
+// 門檻調到家鄉密度落在舊生成器 ±30%（ores.test.ts）；不用 genPrims.ORE_THR（那是 v1 的）。
+const SOIL_ORE_FROM = 4, MOLTEN_ORE_SPAN = 25;
+const hostOf = (...ts: number[]): Uint8Array => { const h = new Uint8Array(256); for (const t of ts) h[t] = 1; return h; };
+const H_SOIL = hostOf(T.DIRT, T.SNOW, T.MUD, T.SANDSTONE);
+const H_STONE = hostOf(T.STONE, T.DEEP_STONE, T.MUD, T.SANDSTONE, T.ICE);
+const H_BASALT = hostOf(T.BASALT);
+interface OreRule { thr: number; host: Uint8Array }
+type OreRules = readonly [OreRule | null, OreRule | null, OreRule | null, OreRule | null];
+const G2_ORE: Readonly<Record<'copper' | 'iron' | 'silver' | 'gold', OreRules>> = {
+  copper: [{ thr: 0.9125, host: H_SOIL }, { thr: 0.9165, host: H_STONE }, null, null],
+  iron: [null, { thr: 0.9385, host: H_STONE }, { thr: 0.963, host: H_STONE }, null],
+  silver: [null, { thr: 0.98, host: H_STONE }, { thr: 0.9645, host: H_STONE }, null],
+  gold: [null, null, { thr: 0.9595, host: H_STONE }, { thr: 0.9465, host: H_BASALT }],
+};
 
 // ── Task 12 的數值（ctx.ver 0；舊生成器 worldgen.ts 的花崗岩 / 大理石、熔岩深淵細節、地表 / 地下裝飾，改成逐欄局部判斷）──
 // 花崗岩 y ∈ [deep + 20, molten − 25)、大理石 y ∈ [rock + 30, deep + 80)：團塊噪聲過門檻的石 / 深層岩換掉（礦之前判，礦不換花崗岩 / 大理石）
@@ -91,7 +112,7 @@ const STALACTITE_P = 0.045, VINE_P = 0.24, VINE_MIN = 2, VINE_SPAN = 6, COBWEB_P
 //     y > sandTo + 6、t > 0.08 時直條砂岩洞：k = inner × min(1, (t − 0.08) × 6)，|caveB − 0.5| < 0.034k 或 caveA > 0.7 − 0.04k 挖空
 //   雪原：牆 → 冰牆；石 / 深層岩 mat > 0.45 → 冰；y > 岩層 + 8 時冰洞 caveA > 0.69 − 0.03 × inner 挖空
 // 挖空擋在免挖洞箱與藍圖部件外（CaveProbe 不知道這些洞，部件內 KEEP 的格不能挖）。換材質在花崗岩 / 大理石之後、礦之前；
-// 礦照常放在換完的泥巴 / 砂岩 / 冰上（ORE_ON，同舊生成器），沙不放
+// 礦照常放在換完的泥巴 / 砂岩 / 冰上（逐帶宿主表 H_STONE，同舊生成器），沙不放
 const JUNGLE_MUD_THR = 0.47, JUNGLE_CAVE_THR = 0.685, JUNGLE_CAVE_INNER = 0.035;
 const DESERT_SAND_THR = 0.68, DESERT_SAND_FROM = 13, DESERT_SAND_SPAN = 10, DESERT_CAVE_BELOW = 6, DESERT_CAVE_T = 0.08;
 const DESERT_SLIT = 0.034, DESERT_BUBBLE_THR = 0.7, DESERT_BUBBLE_INNER = 0.04;
@@ -199,7 +220,7 @@ export class Filler2 {
 
   // ── 一欄：材質、牆、海水、洞穴、礦、熔岩 ──
   // ctx.ver 0 的規則
-  // solid = 這一欄落在免挖洞箱內的列段 [y0, y1)（沒有 = null）：段內不挖噪聲洞穴、熔岩帶不額外挖空（礦 / 花崗岩 / 大理石照常換：只換石頭類，結構本身之後由 stamp 蓋）；
+  // solid = 這一欄落在免挖洞箱內的列段 [y0, y1)（沒有 = null）：段內不挖噪聲洞穴、熔岩帶不額外挖空（礦 / 花崗岩 / 大理石照常換：礦照逐帶宿主表、花崗岩 / 大理石只換石頭類，結構本身之後由 stamp 蓋）；
   // 地表那格在段內就不當入口。parts = 落在藍圖部件內的列段：熔岩帶的灰燼 / 黑曜石 / 熔岩石不換這些格
   private column(col: Column, x: number, I: ColInfo2, _ctx: FillCtx, solid: number[] | null, parts: number[] | null): void {
     const H = col.height, fg = col.fg, wall = col.wall, liq = col.liquid, lt = col.liquidType;
@@ -215,7 +236,10 @@ export class Filler2 {
     const sk = skinOf(x, I), skinTo = S + sk.depth;
     const entrance = I.kind === COL_LAND && this.entranceAt(x) && !inRows(solid, S);
     const caveTop = entrance ? S : Math.max(rock, S + (I.kind === COL_SEA || I.kind === COL_ISLAND ? NO_DIG_SEA : NO_DIG));
-    const spanInv = 1 / Math.max(1, molten - rock), midRock = rock + ((deep - rock) >> 1);
+    const spanInv = 1 / Math.max(1, molten - rock);
+    const CU = G2_ORE.copper, FE = G2_ORE.iron, AG = G2_ORE.silver, AU = G2_ORE.gold;
+    // 泥土帶 / 熔岩帶放礦的列範圍（見 G2_ORE）
+    const soilFrom = S + SOIL_ORE_FROM, moltenTo = Math.min(molten + MOLTEN_ORE_SPAN, LAVA_Y);
     this.spag.setX(x); this.cav.setX(x);
     this.oreCu.setX(x); this.oreFe.setX(x); this.oreAg.setX(x); this.oreAu.setX(x);
     this.granite.setX(x); this.marble.setX(x); this.molten.setX(x); this.obsidian.setX(x);
@@ -261,19 +285,20 @@ export class Filler2 {
         if (ashLeft > 0) ashLeft--;
       }
       open = false;
-      // 石頭類：花崗岩 / 大理石先判（換掉的格不再放礦），再放礦（所以都在岩層頂以下），深的先判；深度帶同 v1
-      if (ORE_HOST[t] === 1) {
+      // 石頭類：花崗岩 / 大理石先判（換掉的格不放礦），再換地下生態淚滴的材質
+      if (STONE_BASE[t] === 1) {
         if (y >= gr0 && y < gr1 && this.granite.above(y, GRANITE_THR)) t = T.GRANITE;
         else if (y >= mb0 && y < mb1 && this.marble.above(y, MARBLE_THR)) t = T.MARBLE;
-        else {
-          if (td) t = this.tearMat(td, y, sandTo, t);
-          if (ORE_ON[t] === 1) {
-            if (y >= deep && this.oreAu.at(y) > ORE_THR.AU) t = T.GOLD_ORE;
-            else if (y >= midRock && y < molten && this.oreAg.at(y) > ORE_THR.AG) t = T.SILVER_ORE;
-            else if (y < deep && this.oreFe.at(y) > ORE_THR.FE) t = T.IRON_ORE;
-            else if (y < midRock && this.oreCu.at(y) > ORE_THR.CU) t = T.COPPER_ORE;
-          }
-        }
+        else if (td) t = this.tearMat(td, y, sandTo, t);
+      }
+      // 礦：本格的深度帶 b 查逐帶宿主表（G2_ORE），貴的先判
+      const b = y < rock ? 0 : y < deep ? 1 : y < molten ? 2 : 3;
+      if ((b !== 0 || y >= soilFrom) && (b !== 3 || y < moltenTo)) {
+        const au = AU[b], ag = AG[b], fe = FE[b], cu = CU[b];
+        if (au !== null && au.host[t] === 1 && this.oreAu.at(y) > au.thr) t = T.GOLD_ORE;
+        else if (ag !== null && ag.host[t] === 1 && this.oreAg.at(y) > ag.thr) t = T.SILVER_ORE;
+        else if (fe !== null && fe.host[t] === 1 && this.oreFe.at(y) > fe.thr) t = T.IRON_ORE;
+        else if (cu !== null && cu.host[t] === 1 && this.oreCu.at(y) > cu.thr) t = T.COPPER_ORE;
       }
       fg[i] = t;
     }

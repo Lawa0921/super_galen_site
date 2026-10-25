@@ -39,7 +39,7 @@ export interface BpTablet { x: number; y: number; id: number }
 export interface BpLandmark { x: number; y: number; tile: number; site: string }
 // 地面覆寫：欄 x0 + k 的地面（第一個實心格 y）= tops[k]
 export interface BpGround { x0: number; tops: Int16Array }
-// 免挖洞箱：箱內的格不挖噪聲洞穴、不當地表入口（礦照常換——礦只換石頭類，結構本身之後由 stamp 蓋；主坑道照挖）
+// 免挖洞箱：箱內的格不挖噪聲洞穴、不當地表入口（礦照常換——礦照 fill.ts 的逐帶宿主表，結構本身之後由 stamp 蓋；主坑道照挖）
 export interface BpBox { x: number; y: number; w: number; h: number }
 
 export interface Blueprint {

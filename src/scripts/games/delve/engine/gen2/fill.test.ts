@@ -1,4 +1,4 @@
-// fill.test.ts — gen2 填格與 Gen2Source：確定性 / 子範圍、每個非沙灘陸地地區的主坑道（P4）、礦的深度帶與只換石頭（P10）、
+// fill.test.ts — gen2 填格與 Gen2Source：確定性 / 子範圍、每個非沙灘陸地地區的主坑道（P4）、礦的深度帶與逐帶宿主表（M2a Task 13 改寫 P10）、
 // 靜態海水與熔岩線、出生點（P9）、表層材質、版本鎖。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source, GEN2_VERSION, GEN2_MIN_VERSION } from './index';
@@ -13,13 +13,15 @@ import { LIQ } from '../liquidKind';
 import { BIOME } from '../world';
 
 const ORES = new Set<number>([T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE]);
-const mid = (L: ColumnLayers): number => L.rock + ((L.deep - L.rock) >> 1);
-// v1 的深度帶 [yMin, yMax)（s = 地表）
+// 泥土帶的銅的宿主（fill.ts 的 H_SOIL）
+const SOIL_HOST = new Set<number>([T.DIRT, T.SNOW, T.MUD, T.SANDSTONE]);
+// gen2 的深度帶 [yMin, yMax)（s = 地表；M2a Task 13：每種礦只放在舊生成器密度 ≥ 0.2‰ 的帶，oreBaseline.ts——
+// 銅：泥土帶（地表 + 4 起）+ 岩層；鐵、銀：岩層 + 洞穴層；金：洞穴層 + 熔岩線下 25 格（不到 LAVA_Y）
 const ORE_BAND: Record<number, (L: ColumnLayers, s: number) => [number, number]> = {
-  [T.COPPER_ORE]: (L, s) => [s + 1, mid(L)],
-  [T.IRON_ORE]: (L) => [L.rock, L.deep],
-  [T.SILVER_ORE]: (L) => [mid(L), L.molten],
-  [T.GOLD_ORE]: (L) => [L.deep, 1200],
+  [T.COPPER_ORE]: (L, s) => [s + 4, L.deep],
+  [T.IRON_ORE]: (L) => [L.rock, L.molten],
+  [T.SILVER_ORE]: (L) => [L.rock, L.molten],
+  [T.GOLD_ORE]: (L) => [L.deep, Math.min(L.molten + 25, LAVA_Y)],
 };
 const CXS = [...range(-400, -360), ...range(60, 71), ...range(131, 151)];
 // 第一個不同的位元組（相同 = -1）
@@ -75,7 +77,7 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
     for (const r of sea.regions) expect(shaftX(s, r)).toBeNaN();
   });
 
-  it('礦在對的層：陸地銅 / 鐵 / 銀 / 金都出現、各在自己的深度帶，而且只換石頭類（不在泥土層）', () => {
+  it('礦在對的層：陸地銅 / 鐵 / 銀 / 金都出現、各在自己的深度帶（逐帶宿主表：泥土帶只有銅、熔岩帶只有熔岩線下 25 格的金）', () => {
     const src = new Gen2Source('ore'), seen = new Set<number>();
     for (let cx = 160; cx < 230; cx += 7) {
       const col = fillCol(src, cx);
@@ -87,15 +89,15 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
           seen.add(t);
           const [y0, y1] = ORE_BAND[t](L, s);
           expect(y).toBeGreaterThanOrEqual(y0); expect(y).toBeLessThan(y1);
-          expect(y).toBeGreaterThanOrEqual(L.rock);
-          expect(y).toBeLessThan(L.molten);
+          if (y < L.rock) expect(t).toBe(T.COPPER_ORE);
+          if (y >= L.molten) expect(t).toBe(T.GOLD_ORE);
         }
       }
     }
     expect(seen).toEqual(ORES);
   });
 
-  it('海床與沙灘的沙不會被換成礦（P10）', () => {
+  it('海床、沙灘與沙漠地表的沙不會被換成礦（Task 12 裁決：沙不放礦；逐帶宿主表）', () => {
     const src = new Gen2Source('sand'), sea = src.layout.landmass(1, 1);
     let n = 0;
     for (let x = sea.x0; x < sea.x1; x += 3) {
@@ -112,6 +114,18 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
       const col = fillCol(src, x >> 5);
       for (let y = I.surface; y < I.surface + 4; y++) expect(col.fg[li(x, y)], `x ${x} y ${y}`).toBe(T.SAND);
     }
+    // 沙漠地表的沙（地表下 6 格；泥土帶的銅從地表 + 4 起，沙不是宿主）：家鄉的沙漠陸地欄這幾格都不是礦
+    let desert = 0;
+    const cols = new Map<number, Column>();
+    for (let x = 100; x < 4100; x += 5) {
+      const I = src.profile.info(x);
+      if (I.kind !== COL_LAND || I.biome !== BIOME.DESERT) continue;
+      let col = cols.get(x >> 5);
+      if (!col) { col = fillCol(src, x >> 5); cols.set(x >> 5, col); }
+      for (let y = I.surface; y < I.surface + 6; y++) expect(ORES.has(col.fg[li(x, y)]), `x ${x} y ${y}`).toBe(false);
+      desert++;
+    }
+    expect(desert).toBeGreaterThan(20);
   });
 
   it('表層材質：森林草 + 泥、沙漠沙 6 + 砂岩、雪 5、叢林叢林草 + 泥巴；島欄沙灘沙 / 台地草', () => {
@@ -142,7 +156,11 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
         // 藍圖（湖 / 遺跡…）外框蓋到表層的欄由結構決定材質
         if (src.blueprints.overlapping(x, x + 1).some((b) => b.y < I.surface + want[r.biome].length && b.y + b.h > I.surface)) continue;
         const col = colAt(x >> 5);
-        for (let d = 0; d < want[r.biome].length; d++) expect(col.fg[li(x, I.surface + d)], `biome ${r.biome} x ${x} d ${d}`).toBe(want[r.biome][d]);
+        // 地表 + 4 起的泥 / 雪 / 泥巴 / 砂岩可以是銅礦（逐帶宿主表，M2a Task 13）：當成原本的材質比
+        for (let d = 0; d < want[r.biome].length; d++) {
+          const w = want[r.biome][d], got = col.fg[li(x, I.surface + d)];
+          expect(d >= 4 && got === T.COPPER_ORE && SOIL_HOST.has(w) ? w : got, `biome ${r.biome} x ${x} d ${d}`).toBe(w);
+        }
         seen.add(r.biome);
         checked++;
       }

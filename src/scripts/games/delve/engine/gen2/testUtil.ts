@@ -9,6 +9,7 @@ import type { RegionInfo } from '../regionInfo';
 import type { DungeonInfo } from '../genTypes';
 import { Gen2Source } from './index';
 import { partsMeet, type Blueprint } from './bpcore';
+import { ORES4, BANDS4, type OreKind, type OreBand } from './oreBaseline';
 
 // 第 cx 欄整欄（32 格）由 src 填
 export function fillCol(src: ColumnSource, cx: number): Column {
@@ -277,5 +278,39 @@ export function overlapPairs(bps: readonly Blueprint[]): [string, string][] {
     if (a.id === b.id || LIQUID_KINDS.has(a.kind) || LIQUID_KINDS.has(b.kind) || !meet(a, b)) continue;
     out.push([tag(a), tag(b)]);
   }
+  return out;
+}
+
+// ── 礦物密度的量法（M2a Task 13；legacy/oreBaseline.measure.test.ts 與 ores.test.ts 共用同一份，兩邊一致）──
+// 深度帶相對該欄層線：dirt = [surface, rock)、rock = [rock, deep)、deep = [deep, molten)、molten = [molten, H)；
+// 每帶記礦格數與總格數（含洞穴 / 結構 / 液體格），密度 = 礦 ÷ 總格數 × 1000（千分比）
+export const ORE_X0 = 100, ORE_X1 = 4100;
+export const ORE_TILE: Readonly<Record<OreKind, number>> = { copper: T.COPPER_ORE, iron: T.IRON_ORE, silver: T.SILVER_ORE, gold: T.GOLD_ORE };
+export interface OreLines { surface: number; rock: number; deep: number; molten: number }
+export interface OreTally { ore: Record<OreKind, Record<OreBand, number>>; cells: Record<OreBand, number> }
+const bandZero = (): Record<OreBand, number> => ({ dirt: 0, rock: 0, deep: 0, molten: 0 });
+export function newOreTally(): OreTally {
+  return { ore: { copper: bandZero(), iron: bandZero(), silver: bandZero(), gold: bandZero() }, cells: bandZero() };
+}
+// 一欄：fgAt(y) = 這欄第 y 格的前景
+export function tallyColumn(t: OreTally, fgAt: (y: number) => number, L: OreLines, H: number): void {
+  const ends: [OreBand, number, number][] = [['dirt', L.surface, L.rock], ['rock', L.rock, L.deep], ['deep', L.deep, L.molten], ['molten', L.molten, H]];
+  for (const [band, a, b] of ends) {
+    for (let y = Math.max(0, a); y < b && y < H; y++) {
+      t.cells[band]++;
+      const f = fgAt(y);
+      for (const ore of ORES4) if (f === ORE_TILE[ore]) t.ore[ore][band]++;
+    }
+  }
+}
+export function oreDensity(t: OreTally): Record<OreKind, Record<OreBand, number>> {
+  const out = { copper: bandZero(), iron: bandZero(), silver: bandZero(), gold: bandZero() };
+  for (const ore of ORES4) for (const band of BANDS4) out[ore][band] = t.cells[band] > 0 ? (t.ore[ore][band] * 1000) / t.cells[band] : 0;
+  return out;
+}
+// 幾個種子的密度平均（每個種子各自算密度再平均）
+export function meanDensity(ms: readonly Record<OreKind, Record<OreBand, number>>[]): Record<OreKind, Record<OreBand, number>> {
+  const out = { copper: bandZero(), iron: bandZero(), silver: bandZero(), gold: bandZero() };
+  for (const ore of ORES4) for (const band of BANDS4) { let s = 0; for (const m of ms) s += m[ore][band]; out[ore][band] = s / ms.length; }
   return out;
 }

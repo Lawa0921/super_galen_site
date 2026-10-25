@@ -221,7 +221,9 @@ describe('gen2 填格新特徵（Task 12）', () => {
         // 挖空格可能長了裝飾（對照組沒有部件），所以算「空氣或裝飾、沒有牆」
         if ((ref.fg[i] === T.AIR || DECOR.has(ref.fg[i])) && ref.wall[i] === W.NONE) refCarve++;
         if (MOLTEN_T.has(ref.fg[i])) refMolten++;
-        expect(sol.fg[i], `solid ${x},${y}`).toBe(T.BASALT);
+        // solid 內礦照常換（控制者裁決）：熔岩線下 25 格的玄武岩可以是金礦（逐帶宿主表，M2a Task 13），當成玄武岩比
+        const sf = sol.fg[i];
+        expect(sf === T.GOLD_ORE && y < src.profile.info(x).molten + 25 ? T.BASALT : sf, `solid ${x},${y}`).toBe(T.BASALT);
         expect(MOLTEN_T.has(part.fg[i]) || DECOR.has(part.fg[i]), `parts ${x},${y}`).toBe(false);
         if (part.fg[i] === T.AIR && part.wall[i] === W.NONE) partCarve++;
       }
