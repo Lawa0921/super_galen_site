@@ -7,6 +7,7 @@ import { REGIONS, type RegionId } from '../../data/regions';
 import { rescuesFor } from '../../data/meetings';
 import { leadOpen, nextLead } from '../../engine/story/leads';
 import { storyStage } from '../../engine/story/events';
+import { tonightMoon } from '../../engine/calendar';
 import { T } from '../../data/text.zh-TW';
 import { capacity, carried, formatWeight } from '../../data/weights';
 import { materialUses } from '../../engine/forge/uses';
@@ -355,9 +356,15 @@ export class GateScene extends FacilityScene {
    * before departure is a memory: it is told under the dawn's card.
    */
   private async departure(ids: SceneId[]): Promise<void> {
-    for (const id of ids) {
-      await this.play(id, sceneKind(id) === 'memory' ? { place: DAWN_PLACE } : {});
-      if (id === 'finale-eve') await this.tellNight([...this.ctx.game.eve]);
+    // Time and moon review fix 8: the night before the descent is last night, under its moon (`tonightMoon`).
+    this.setMoon(tonightMoon(this.ctx.game.state));
+    try {
+      for (const id of ids) {
+        await this.play(id, sceneKind(id) === 'memory' ? { place: DAWN_PLACE } : {});
+        if (id === 'finale-eve') await this.tellNight([...this.ctx.game.eve]);
+      }
+    } finally {
+      this.setMoon(null);
     }
   }
 

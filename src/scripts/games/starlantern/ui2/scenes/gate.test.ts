@@ -750,3 +750,41 @@ describe('GateScene: the tier row (difficulty plan Task 7a)', () => {
     expect(T.ui2.tier.locked.hell(25)).toContain('25');
   });
 });
+
+describe('GateScene: the night before the descent under its moon (time and moon Task 5)', () => {
+  const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+  it("the eve is told under the night before's moon", async () => {
+    const game = new Game(constRng(0.5), null);
+    game.state.dungeon.portals = [{ region: 'mainline', condition: 'plain' }];
+    Object.assign(game.state.party.roster.rin, { memories: chainLength('rin'), oath: true });
+    game.state.story.seen.push('rin-reveal', 'rin-confess', 'bellkeeper-arrives');
+    game.state.story.queue = ['finale-eve'];
+    for (const c of ['selene', 'noel'] as const) {
+      game.state.party = meet(game.state.party, c, 1);
+      game.state.party.roster[c].memories = 1;
+    }
+    game.state.story.untold = ['mem:selene:1', 'mem:noel:1'];
+    game.state.story.day = 5;   // today; last night was day 4's, a full moon
+    const go = vi.fn();
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant' as const, story: 'all' as const }) };
+    const s = new GateScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go, hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+    s.enter(root);
+    s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm'); s.onAction('confirm');
+    s.onAction('up'); s.onAction('confirm');
+    await tick();
+    const tints: string[] = [];
+    for (let i = 0; i < 40 && !go.mock.calls.length; i++) {
+      const veil = root.querySelector('.slx-veil-night.slx-on');
+      tints.push(veil ? [...veil.classList].filter((c) => c.startsWith('slx-moon-')).join(' ') : '-');
+      s.onAction('confirm');
+      await tick();
+    }
+    expect(go).toHaveBeenCalledWith('dungeon');
+    expect(game.state.story.seen).toEqual(expect.arrayContaining(['finale-eve', 'mem:selene:1', 'mem:noel:1']));
+    expect(tints.length).toBeGreaterThan(2);
+    expect(tints.every((t) => t === 'slx-moon-full'), tints.join('|')).toBe(true);
+    expect((s as unknown as { talk: { moon: unknown } }).talk.moon).toBeNull();
+    expect(root.querySelector('[class*="slx-moon-"]')).toBeNull();
+  });
+});

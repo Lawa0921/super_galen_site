@@ -16,6 +16,7 @@ import { CHAINS, chainLength } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
 import { RUNES, type RuneRef } from '../../data/runes';
 import { fromMember, skillFor } from '../../engine/battle';
+import { fieldCost } from '../../engine/field';
 import { runeFits, runeWhy } from '../../engine/runes';
 import { memoryStorage } from '../../engine/testing';
 import type { SceneName } from '../scene';
@@ -550,6 +551,42 @@ describe('StatusScene', () => {
     const want = Math.max(1, SKILLS['twin-slash'].tp + NODES['liz-twin-haggle'].node.mods![0].tpDelta!);
     expect(want).toBeLessThan(SKILLS['twin-slash'].tp);
     expect(root.querySelector('[data-skill=twin-slash] .slx-skill-cost')!.textContent).toBe(T.ui2.status.tp(want));
+  });
+
+  it("the skills tab asks the field's price for every field skill (time and moon Task 10)", () => {
+    // Old debt (a), a guard: the tab and the field menu both price a skill by fromMember and skillCost, teacher's gift included.
+    const fields = Object.values(SKILLS).filter((sk) => sk.field && !sk.abyss);
+    const owners = [...new Set(fields.map((sk) => sk.owner))] as CharacterId[];
+    expect(owners.length).toBeGreaterThan(0);
+    let gifted = 0;
+    // the hero has no memory keystone in the table: his row is opened and taken out again
+    const keys = MEMORY_KEYSTONES as Partial<Record<CharacterId, (typeof MEMORY_KEYSTONES)[keyof typeof MEMORY_KEYSTONES]>>;
+    for (const id of owners) {
+      const own = keys[id];
+      keys[id] = 'teachers-gift';   // opened for this test only, as engine/field.test.ts does
+      try {
+        const mine = fields.filter((sk) => sk.owner === id).map((sk) => sk.id);
+        const { root, s, game } = setup(id, NO_ART, (g) => {
+          if (!g.state.party.recruited.includes(id)) g.state.party.recruited.push(id);
+          const m = g.state.party.roster[id];
+          m.level = 50;
+          m.memories = chainLength(id);
+          m.tree = Object.fromEntries(mine.map((sk) => [sk, 1]));
+        });
+        s.onAction('right'); s.onAction('right');   // the skills tab
+        const m = game.state.party.roster[id];
+        for (const sk of mine) {
+          const cost = root.querySelector(`.slx-tab-skills [data-skill=${sk}] .slx-skill-cost`);
+          expect(cost, `${id} ${sk}`).not.toBeNull();
+          expect(cost!.textContent, `${id} ${sk}`).toBe(T.ui2.status.tp(fieldCost(m, sk)));
+          if (fieldCost(m, sk) < SKILLS[sk].tp) gifted++;
+        }
+      } finally {
+        if (own === undefined) delete keys[id];
+        else keys[id] = own;
+      }
+    }
+    expect(gifted).toBeGreaterThan(0);   // the gift did lower a price, so the guard sees it
   });
 
   it('a turret with both variants keeps its name whole (plan 8d Task 8)', () => {

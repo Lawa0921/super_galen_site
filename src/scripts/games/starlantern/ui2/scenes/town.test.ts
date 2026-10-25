@@ -6,7 +6,7 @@ import { art } from '../../render/artPaths';
 import type { ItemInstance } from '../../engine/types';
 import { TownScene } from './town';
 import { CHARACTERS } from '../../data/characters';
-import type { SceneId } from '../../data/story/scenes';
+import { ACT_DEPTHS, type SceneId } from '../../data/story/scenes';
 import { NIGHT_BEATS, NPC_NAMES, STORY, type ScriptLine } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
@@ -682,5 +682,96 @@ describe('TownScene: the night (story L Task 3c)', () => {
     } finally {
       delete scenes['group:act2'];
     }
+  });
+  it("the night's memories are told under tonight's moon (time and moon Task 5)", async () => {
+    const game = setup(['mem:liz:1', 'mem:noel:1']);
+    // as a return leaves it: the dive's day 4 (a full moon) planned the night, then the day became 5
+    game.state.story.day = 5;
+    game.night = ['mem:liz:1', 'mem:noel:1'];
+    game.state.story.tonight = ['mem:liz:1', 'mem:noel:1'];
+    const t = open(game);
+    const tinted = (moon: string) => !!t.root.querySelector(`.slx-veil-night.slx-on.slx-moon-${moon}`);
+    expect(tinted('full')).toBe(false);   // the day's line: no night yet
+    t.s.onAction('confirm'); await t.settle();
+    await t.through('mem:liz:1', () => expect([t.night(), tinted('full')]).toEqual([true, true]));
+    for (let i = 0; i < 6 && t.text() !== linesOf('mem:noel:1', game.state)[0].text; i++) { t.s.onAction('confirm'); await t.settle(); }   // the beat
+    await t.through('mem:noel:1', () => expect(tinted('full')).toBe(true));
+    expect(t.root.querySelector('[class*="slx-moon-"]')).toBeNull();   // the night over, the tint goes with the card
+  });
+
+  it("the reveal plays at night, under tonight's moon (time and moon Task 5)", async () => {
+    const game = setup(['mem:rin:6', 'mem:rin:7']);
+    game.state.story.seen.push('mem:rin:1', 'mem:rin:2', 'mem:rin:3', 'mem:rin:4', 'mem:rin:5');
+    game.state.story.queue = ['rin-reveal'];
+    game.arrival = ['mem:rin:6', 'mem:rin:7', 'rin-reveal'];
+    game.state.story.tonight = ['mem:rin:6', 'mem:rin:7'];
+    game.state.story.day = 3;   // after the return: tonight is day 2's, a new moon
+    const t = open(game);
+    await t.through('mem:rin:6');
+    await t.through('mem:rin:7');
+    // its night lines wear tonight's moon; its dawn card has no veil and no tint
+    const lines: [boolean, boolean][] = [];
+    await t.through('rin-reveal', () => { lines.push([t.night(), !!t.root.querySelector('.slx-veil-night.slx-on.slx-moon-new')]); });
+    expect(lines[0]).toEqual([true, true]);
+    for (const [night, tinted] of lines) expect(tinted).toBe(night);
+    expect(t.root.querySelector('[class*="slx-moon-new"]')).toBeNull();
+    expect(t.root.querySelector('[class*="slx-moon-"]')).toBeNull();
+  });
+
+});
+
+describe('TownScene: the calendar (time and moon Task 4)', () => {
+  const sfx = { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() };
+  const open = (game: Game) => {
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, story: 'all' as StoryMode }) };
+    const s = new TownScene({ game, art: NO_ART, sfx, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+    s.enter(root);
+    const cal = () => root.querySelector('.slx-calendar') as HTMLElement;
+    const settle = () => new Promise((r) => setTimeout(r, 0));
+    return { root, s, cal, settle };
+  };
+
+  it("the town shows the season and today's moon under its name", () => {
+    const t = open(new Game(constRng(0.5), null));
+    expect(t.cal().textContent).toBe('秋・下弦');   // a new game: day 1
+    expect(t.root.querySelector('.slx-place')!.nextElementSibling).toBe(t.cal());
+    expect(t.cal().classList.contains('slx-win')).toBe(true);
+    const full = new Game(constRng(0.5), null);
+    full.state.story.day = 4;
+    expect(open(full).cal().textContent).toBe('秋・滿月');
+    const winter = new Game(constRng(0.5), null);
+    winter.state.story.nodes = ['act2', 'act3'];
+    winter.state.story.seen.push('act2', 'act3');
+    winter.state.story.act1Cleared = true;
+    winter.state.dungeon.reached.mainline = ACT_DEPTHS.act3;
+    expect(open(winter).cal().textContent).toBe('冬・下弦');
+  });
+
+  it('the calendar goes away with the HUD while a scene plays', async () => {
+    const game = Game.fresh(constRng(0.5), null);
+    game.arrival = ['act1-after'];
+    game.state.story.queue = ['act1-after'];
+    const t = open(game);
+    expect(t.cal().classList.contains('slx-cmd-hidden')).toBe(true);
+    for (let i = 0; i < linesOf('act1-after', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    expect(t.cal().classList.contains('slx-cmd-hidden')).toBe(false);
+  });
+
+  it("the calendar is read again when the return's scenes end", async () => {
+    // a return that reached act 3's depth: autumn on arrival, winter once act 3 has played
+    const game = Game.fresh(constRng(0.5), null);
+    game.state.story.seen = ['prologue', 'prologue-inn', 'act2'];
+    game.state.story.nodes = ['act2', 'act3'];
+    game.state.story.queue = ['act3'];
+    game.state.story.act1Cleared = true;
+    game.state.dungeon.reached.mainline = ACT_DEPTHS.act3;
+    game.arrival = ['act3'];
+    const t = open(game);
+    expect(t.cal().textContent).toBe('秋・下弦');
+    for (let i = 0; i < linesOf('act3', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    expect(game.state.story.seen).toContain('act3');
+    expect(t.cal().classList.contains('slx-cmd-hidden')).toBe(false);   // the menu is back, with the day's line
+    expect(t.cal().textContent).toBe('冬・下弦');
   });
 });

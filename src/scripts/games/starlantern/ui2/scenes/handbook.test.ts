@@ -405,3 +405,20 @@ describe('HandbookScene: the tier page (difficulty plan Task 7c)', () => {
     expect(c.tab()).toBe(H.tabs.tiers);
   });
 });
+
+describe('HandbookScene: a replayed night (time and moon Task 5)', () => {
+  it('the handbook replays a night with the plain veil', async () => {
+    const t = setup(undefined, (g) => {
+      meetAll(g, ['rin']);
+      g.state.story.seen = ['rin-reveal'];
+      g.state.story.day = 5;   // tonight would be a full moon in town: the handbook keeps the plain night
+    });
+    t.goTab(H.tabs.people);
+    t.pick(CHARACTERS.rin.name);
+    t.pick(STORY.scenes['rin-reveal'].title);
+    await t.settle();
+    expect(t.root.querySelector('.slx-veil-night.slx-on')).not.toBeNull();
+    expect(t.root.querySelector('[class*="slx-moon-"]')).toBeNull();
+    await t.skipScene();
+  });
+});
