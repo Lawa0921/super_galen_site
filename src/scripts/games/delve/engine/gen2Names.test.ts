@@ -14,6 +14,14 @@ describe('uniqueNames', () => {
     const m = uniqueNames([pick(9, 'k', L, 2), pick(3, 'k', L, 2), pick(5, 'k', L, 2)]);
     expect(m.get(3)).toBe('丙'); expect(m.get(5)).toBe('甲'); expect(m.get(9)).toBe('乙');
   });
+  it('兩輪定名：起點沒衝突的先定名，衝突者才往空位找——沒碰撞的不會被擠走（A / B 同起點 0、C 起點 1 → C 不換名）', () => {
+    const L = ['甲', '乙', '丙'];
+    const m = uniqueNames([pick(1, 'k', L, 0), pick(2, 'k', L, 0), pick(3, 'k', L, 1)]);
+    expect(m.get(1)).toBe('甲'); expect(m.get(3)).toBe('乙'); expect(m.get(2)).toBe('丙');
+    // 起點被固定名字佔掉的也算衝突：讓給固定名字、第二輪再找；其他人照起點
+    const f = uniqueNames([pick(1, 'k', L, 0), pick(2, 'k', L, 1), { id: 9, kind: 'k', fixed: '甲' }]);
+    expect(f.get(2)).toBe('乙'); expect(f.get(1)).toBe('丙');
+  });
   it('不同 kind 各自唯一（同名可以出現在不同 kind）', () => {
     const L = ['甲'];
     const m = uniqueNames([pick(1, 'a', L, 0), pick(2, 'b', L, 0)]);

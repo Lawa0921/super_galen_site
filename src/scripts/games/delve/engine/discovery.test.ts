@@ -1,6 +1,6 @@
 // discovery.test.ts — 地區 / 地標（由 worldgen 推導、依種子命名）、首次進入的發現、日誌統計、存檔 JSON
 import { describe, it, expect } from 'vitest';
-import { buildRegions, Discovery, CATEGORY_LABEL, outerRegions, gen2Regions, gen2RegionById, gen2HomeRegions, NAMES, gen2RegionId, isGen2RegionId, isOuterRegionId, regionFromJSON, toRegionJSON, type RegionSource, type Region, type JournalStats } from './discovery';
+import { buildRegions, Discovery, CATEGORY_LABEL, ROOM_NAMES, GEN2_ROOM_NAMES, GEN2_NAMES_EXTRA, gen2NameList, outerRegions, gen2Regions, gen2RegionById, gen2HomeRegions, NAMES, gen2RegionId, isGen2RegionId, isOuterRegionId, regionFromJSON, toRegionJSON, type RegionSource, type Region, type JournalStats } from './discovery';
 import { gen2SiteRegionId, isGen2SiteRegionId, siteOfRegionId, encodeStructureId } from './gen2/structId';
 import { DelveGame } from './game';
 import { Gen2Source } from './gen2';
@@ -399,14 +399,18 @@ const roomsOf = (byId: (id: number) => Region | null, sid: number): Region[] => 
   for (let p = 1; p < 64; p++) { const r = byId(gen2SiteRegionId(sid, p)); if (!r) break; out.push(r); }
   return out;
 };
+/** gen2 地塊地區的固定名字（不從名單挑） */
+const FIXED_NAMES = new Set(['西岸沙灘', '東岸沙灘', '家鄉林地']);
 /** 同 Task 16 量測用的 50 個種子 */
 const DUP_SEEDS = Array.from({ length: 50 }, (_, i) => `dup-${i}`);
 
 describe('gen2 名字唯一、三條路一致、村莊走近就發現（Task 17b）', () => {
   it('50 個種子：家鄉同 kind（也同 cat）沒有同名；家鄉地城的房間沒有同名', () => {
-    const byKind: string[] = [], byCat: string[] = [], rooms: string[] = [];
+    const byKind: string[] = [], byCat: string[] = [], rooms: string[] = [], suffixed: string[] = [];
     for (const seed of DUP_SEEDS) {
       const src = new Gen2Source(seed), home = gen2HomeRegions(seed, src), byId = gen2RegionById(seed, src);
+      // 後綴（「…二」）= 名字不在該 kind 的 gen2 名單裡（固定名字除外）；補了 gen2 名單之後 50 個種子一次都不該用到
+      for (const r of home) { const l = gen2NameList(r.kind); if (l && !FIXED_NAMES.has(r.name) && !l.includes(r.name)) suffixed.push(`${seed} ${r.kind} ${r.name}`); }
       byKind.push(...dupGroups(home, (r) => r.kind).map((g) => `${seed} ${g}`));
       byCat.push(...dupGroups(home, (r) => r.cat).map((g) => `${seed} ${g}`));
       const dun = src.blueprints.homePlans().filter((b) => b.kind === 'dungeon');
@@ -421,9 +425,30 @@ describe('gen2 名字唯一、三條路一致、村莊走近就發現（Task 17b
     }
     expect.soft(byKind.length, `同 kind 同名 ${byKind.length} 組：${byKind.slice(0, 12).join('、')}`).toBe(0);
     expect.soft(byCat.length, `同 cat 同名 ${byCat.length} 組：${byCat.slice(0, 12).join('、')}`).toBe(0);
+    expect.soft(suffixed.length, `用到後綴 ${suffixed.length} 次：${suffixed.slice(0, 12).join('、')}`).toBe(0);
     expect(rooms.length, `同地城房間同名 ${rooms.length} 組：${rooms.slice(0, 12).join('、')}`).toBe(0);
   }, 300_000);
-  it('每座地城（家鄉＋外圍掃 ±20,000）的房間沒有同名', () => {
+  it('gen2 名單：各房間種類的名單（ROOM_NAMES + gen2 補充）兩兩不重疊（「整座地城唯一」的前提）、ROOM_NAMES 是 gen2 名單的開頭；補充名字不在任何 NAMES 名單裡、自己不重複', () => {
+    const kinds = Object.keys(GEN2_ROOM_NAMES) as (keyof typeof GEN2_ROOM_NAMES)[];
+    expect(kinds.sort()).toEqual((Object.keys(ROOM_NAMES) as string[]).sort());
+    const seen = new Map<string, string>();
+    for (const k of kinds) {
+      const l = GEN2_ROOM_NAMES[k]!;
+      expect(l.slice(0, ROOM_NAMES[k]!.length), k).toEqual(ROOM_NAMES[k]);
+      expect(gen2NameList(`dungeon_${k}`), k).toEqual(l);
+      for (const n of l) { expect(seen.get(n), `${k} ${n}`).toBeUndefined(); seen.set(n, k); }
+    }
+    const all = new Set(Object.values(NAMES).flat());
+    for (const [k, extra] of Object.entries(GEN2_NAMES_EXTRA)) {
+      expect(new Set(extra).size, k).toBe(extra!.length);
+      for (const n of extra!) { expect(all.has(n), `${k} ${n}`).toBe(false); expect(seen.has(n), `${k} ${n}`).toBe(false); }
+      expect(gen2NameList(k), k).toEqual([...NAMES[k], ...extra!]);
+    }
+    // 沒補的 kind 就是原名單；不是 gen2 會用名單的 kind → null
+    expect(gen2NameList('cabin')).toEqual(NAMES.cabin);
+    expect(gen2NameList('no_such_kind')).toBeNull();
+  });
+  it('家鄉地城（overlapping ±20,000 掃到的地城；目前 gen2 只有家鄉有地城，外圍地城的整合測試在 Task 18）的房間沒有同名', () => {
     for (const seed of ['rg2', 'dup-7']) {
       const src = new Gen2Source(seed), byId = gen2RegionById(seed, src);
       const dun = src.blueprints.overlapping(-20_000, 20_000).filter((b) => b.kind === 'dungeon');

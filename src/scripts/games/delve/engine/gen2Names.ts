@@ -1,6 +1,7 @@
 // gen2Names.ts — gen2 地區名字的唯一化（M2a Task 17b；discovery.ts 的 Gen2Kit 用）。
-//   · 起點仍是 id 雜湊在名單上挑的那個（discovery.ts 算好傳進來）；同一組（kind）裡依 id 由小到大，起點被佔就往後找名單裡還沒用的
-//     （繞回開頭），整份名單都用過才加後綴「二」「三」…（同舊世界 Namer 的後綴），從起點起依序試。固定名字（沙灘、家鄉林地）先佔位、不改。
+//   · 起點仍是 id 雜湊在名單上挑的那個（discovery.ts 算好傳進來）。同一組（kind）分兩輪：固定名字（沙灘、家鄉林地）先佔位、不改；
+//     第一輪起點名字沒被佔的直接定名（同起點的由 id 最小者拿到）；第二輪才讓衝突者依 id 由小到大從起點往後找名單裡還沒用的（繞回開頭），
+//     整份名單都用過才加後綴「二」「三」…（同舊世界 Namer 的後綴），從起點起依序試。→ 起點沒和別人衝突的地區一定拿到起點名字。
 //   · 純函式：只看傳進來的整組（id 集合 + 各自的起點），與輸入順序、查詢順序無關——同種子的主機 / 客人逐位相同。
 //   · 用在家鄉（gen2HomeRegions 的全部地區，依 kind 分組）與單一份藍圖的部件（外圍的地城房間）；外圍之間不唯一化（可以重複）。
 
@@ -29,7 +30,14 @@ export function uniqueNames(specs: readonly NameSpec[]): Map<number, string> {
     const used = new Set<string>();
     for (const s of g) if ('fixed' in s) { used.add(s.fixed); out.set(s.id, s.fixed); }
     const picks = g.filter((s): s is Extract<NameSpec, { list: readonly string[] }> => !('fixed' in s)).sort((a, b) => a.id - b.id);
+    // 第一輪：起點名字沒被固定名字佔、也沒有 id 更小的同起點者 → 直接定名（沒碰撞的一律保留起點，不會被別人擠走）
+    const later: typeof picks = [];
     for (const s of picks) {
+      const c = s.list.length ? s.list[s.start % s.list.length] : '';
+      if (c && !used.has(c)) { used.add(c); out.set(s.id, c); } else later.push(s);
+    }
+    // 第二輪：衝突者依 id 由小到大，從起點往後找空位
+    for (const s of later) {
       const L = s.list.length;
       let name = '';
       // 第 round 輪：round 1 = 名單本身，之後 = 名單 + 後綴（二、三…）
