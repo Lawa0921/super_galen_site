@@ -6,9 +6,12 @@ import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
 import { Layout, newWorldOrigin, type IslandInfo, type Landmass } from './layout';
 import { LockTable } from './locks';
+import type { Profile2 } from './profile';
 import { BP_SURFACE, KEEP, structureId, type Blueprint, type BpCtx } from './blueprint';
 import { decodeStructureId, gen2SiteRegionId } from './structId';
 import { buildShipwreck } from './structures/shipwreck';
+import { buildReefBp } from './structures/reef';
+import { buildSeaRuinBp } from './structures/seaRuin';
 import { worldOf, loadColumns, liquidInvariant, SEEDS5, srcOf } from './testUtil';
 import { DelveGame } from '../game';
 import { FIXED_DT } from '../constants';
@@ -97,6 +100,20 @@ function climbable(w: World, b: Blueprint): boolean {
   if (ys[0] !== s.y) return false;
   for (let k = 1; k < ys.length; k++) if (ys[k - 1] - ys[k] > 4) return false;
   return ys.at(-1) === c.y;
+}
+
+// 從水面登岸（修正回合 1 第 5 條）：島 d 的一端（x0 端 = 左）外側那一欄 sx 是海、水面 wt；島灘那一欄的地面離水面 ≤ 1 格高（游到岸邊一步就上得去）、
+// 水面以上的空氣不擋（海那一欄 wt − 3 … wt − 1 與島灘站立格的身體都空）。回登岸後的站立格（不成立 → null）
+function landing(w: World, d: IslandInfo, left: boolean): { x: number; y: number } | null {
+  const sx = left ? d.x0 - 1 : d.x1, bx = left ? d.x0 : d.x1 - 1;
+  let wt = -1;
+  for (let y = 0; y < w.height && wt < 0; y++) if (w.getLiquid(sx, y) > 0) wt = y;
+  if (wt < 0) return null;
+  let top = 0;
+  while (top < w.height && !isSolidTile(w.getFg(bx, top))) top++;
+  if (wt - top > 1 || top > wt) return null;
+  for (let y = wt - 3; y < wt; y++) if (!open(w, sx, y)) return null;
+  return stands(w, bx, top - 1) ? { x: bx, y: top - 1 } : null;
 }
 
 // ── chart 測試用 ──
@@ -273,6 +290,72 @@ describe('gen2 島的種類、珊瑚礁、海底遺跡（Task 20）', () => {
     expect(h).toBe(HUT_HASH);
   }, 60_000);
 
+  it('修正回合 1（第 4 條）：珊瑚礁的礦一定 6–12 格、海底遺跡一定恰 1 尊守望石像（50 個種子的每個非島海槽直接呼叫建構器）', () => {
+    let n = 0;
+    for (let k = 0; k < 50; k++) { const seed = `rg-${k}`, src = srcOf(seed);
+      for (const side of [1, -1] as const) for (const i of [1, 3, 5, 7, 9]) { const m = src.layout.landmass(side, i);
+        for (const s of m.slots) { if (m.islands.some((d) => d.slot === s.k)) continue;
+          const c: BpCtx = { seed, s: seedInt(seed, 'g2-bp'), id: structureId(side, i, 0, s.k, BP_SURFACE), slotX0: s.x0, slotX1: s.x1, region: m.regions[0], profile: src.profile, ver: 0, groundAt: (x) => src.profile.surfaceAt(x) };
+          const r = buildReefBp(c), u = buildSeaRuinBp(c), msg = `${seed} ${side}:${i} slot ${s.k}`; n++;
+          let ore = 0; for (let q = 0; q < r.cells.length; q += 5) if (r.cells[q + 2] === T.SILVER_ORE || r.cells[q + 2] === T.GOLD_ORE) ore++;
+          expect(ore, msg).toBeGreaterThanOrEqual(6); expect(ore, msg).toBeLessThanOrEqual(12);
+          expect(u.landmarks.filter((l) => l.tile === T.GUARDIAN_STATUE), msg).toHaveLength(1);
+          let statues = 0; for (let q = 0; q < u.cells.length; q += 5) if (u.cells[q + 2] === T.GUARDIAN_STATUE) statues++;
+          expect(statues, msg).toBe(1);
+        } } }
+    expect(n).toBeGreaterThan(500);
+  }, 120_000);
+
+  it('修正回合 1（第 4 條）：極端海床（假側寫）下也不默默少放——礦 6–12 格或丟 RangeError；海底遺跡屋頂被水面壓扁、放不下石像 → RangeError', () => {
+    const fake = (surf: (x: number) => number, wt: number): Profile2 => ({ surfaceAt: surf, waterTopAt: () => wt } as unknown as Profile2);
+    const c = (p: Profile2, id: number): BpCtx => ({ seed: 'fake', s: 7, id, slotX0: 0, slotX1: 300, region: L('fake').landmass(1, 1).regions[0], profile: p, ver: 0, groundAt: (x) => p.surfaceAt(x) });
+    // 鋸齒海床：相鄰欄差 12 格（礦團長不開、丘心也可能碰水）
+    let thrown = 0, built = 0;
+    for (let id = 0; id < 200; id++) {
+      const p = fake((x) => 400 + (x % 2) * 12, 341);
+      try { const b = buildReefBp(c(p, id)); built++; let ore = 0; for (let q = 0; q < b.cells.length; q += 5) if (b.cells[q + 2] === T.SILVER_ORE || b.cells[q + 2] === T.GOLD_ORE) ore++; expect(ore, `id ${id}`).toBeGreaterThanOrEqual(6); expect(ore).toBeLessThanOrEqual(12); }
+      catch (e) { expect(e).toBeInstanceOf(RangeError); thrown++; }
+    }
+    expect(thrown + built).toBe(200);
+    // 海底遺跡：各種淺 / 鋸齒海床下，不是恰一尊石像就是 RangeError（不會沒有石像）
+    let ruins = 0;
+    for (let id = 0; id < 200; id++) for (const surf of [(x: number) => 343 + (x % 3 === 0 ? 4 : 0), (x: number) => 344 + (x % 2) * 3, () => 345]) {
+      try { const b = buildSeaRuinBp(c(fake(surf, 341), id)); ruins++; expect(b.landmarks.filter((l) => l.tile === T.GUARDIAN_STATUE), `id ${id}`).toHaveLength(1); }
+      catch (e) { expect(e).toBeInstanceOf(RangeError); }
+    }
+    expect(ruins).toBeGreaterThan(0);
+    // 水面離海床只有 2 格：屋頂夾到海床上一格，屋內站不下 → RangeError
+    for (let id = 0; id < 20; id++) expect(() => buildSeaRuinBp(c(fake(() => 343, 341), id))).toThrow(RangeError);
+  }, 30_000);
+
+  it('修正回合 1（第 5 條）：燈塔島兩端、隱士島兩端（含門那一側）都從水面一步登上島灘', () => {
+    const n: Record<string, number> = { lighthouse: 0, hermit: 0, door: 0 }, bad: string[] = [];
+    for (const seed of SEEDS20) { const src = srcOf(seed), w = worldOf(src);
+      for (const [side, i] of SEAS) for (const b of seaBps(src, src.layout.landmass(side, i)).filter((q) => q.kind === 'island' && q.variant !== 'wreck')) {
+        const d = islandOf(src, b)!, msg = `${seed} ${side}:${i} ${d.type}@${b.x}`;
+        loadColumns(w, d.x0 - 3, d.x1 + 3); n[d.type]++;
+        for (const left of [true, false]) if (!landing(w, d, left)) bad.push(`${msg} ${left ? 'x0' : 'x1'}`);
+        if (d.type === 'hermit' && b.site?.kind === 'hermit') {
+          // 門那一側：從水面登岸的站立格走得到隱士
+          let door = -1; for (let q = 0; q < b.cells.length; q += 5) if (b.cells[q + 2] === T.DOOR_CLOSED) door = b.cells[q];
+          const left = door < b.site.at.x, start = landing(w, d, left);
+          if (!start || !walkTo(w, start, b.site.at, d.x0, d.x1 - 1)) bad.push(`${msg} door side`); else n.door++;
+        }
+      } }
+    expect(bad.slice(0, 5)).toEqual([]);
+    expect(n.lighthouse).toBeGreaterThan(5); expect(n.hermit).toBeGreaterThan(5); expect(n.door).toBe(n.hermit);
+  }, 240_000);
+
+  it('修正回合 1（第 1 條）：沉船島與 M1 沉船共用 hullPlan 後，沉船島逐格不變（雜湊在改動前錄）', () => {
+    let h = 0x811c9dc5, n = 0;
+    for (const seed of SEEDS20) { const src = srcOf(seed);
+      for (const [side, i] of SEAS) for (const b of seaBps(src, src.layout.landmass(side, i)).filter((q) => q.variant === 'wreck')) {
+        n++; h = fnv1a(new Uint8Array(b.cells.buffer), h); h = fnv1aStr(JSON.stringify([b.x, b.y, b.w, b.h, b.chests]), h);
+      } }
+    expect(n).toBeGreaterThan(10);
+    expect(h).toBe(WRECK_ISLE_HASH);
+  }, 60_000);
+
   it('裁決 5：漂流箱用 crate 少量物資表（沒有裝備 / 時裝）、比遺跡箱少；既有種類的箱子內容與改動前相同', () => {
     let h = 0x811c9dc5;
     for (const kind of ['cabin', 'mineshaft', 'ruin', 'cavern', 'sky', 'dungeon', 'treasure', 'secret', 'relic'] as ChestKind[]) for (let x = 0; x < 40; x += 3) for (const d of [0, 0.3, 0.6, 0.9]) {
@@ -388,5 +471,7 @@ describe('隱士的 chart 服務（裁決 3、4）', () => {
 
 // 改動前（Task 20 之前，base 0e079e591）錄下的雜湊
 const SHIPWRECK_HASH = 2625913742;
+// 修正回合 1 抽出 hullPlan 前（253a71ee3）錄下的沉船島雜湊
+const WRECK_ISLE_HASH = 2107307070;
 const CHEST_HASH = 2991537935;
 const HUT_HASH = 951269948;

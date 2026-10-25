@@ -16,6 +16,7 @@ import { SiteRegistry, legacySites } from './siteRegistry';
 import { bootBaked, bootGen2, bootLegacy, type WorldContent, type WorldGenSpec } from './worldBoot';
 import { Gen2Source } from './gen2';
 import { gen2SiteRegionId } from './gen2/structId';
+import { chartPick } from './chart';
 import type { Landmass } from './gen2/layout';
 import { BakedSource } from './bakedSource';
 import { T, W, TIER_UNBREAKABLE, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
@@ -4708,15 +4709,18 @@ export class DelveGame {
     }
     cand.sort((a, b) => a.d - b.d);
     const c = cand[0];
-    if (!c) return null;
-    this.explored.revealDisc(c.x, c.y, 10);
-    this.addScoutMark(c.x, c.y);
-    this.lastScout = { name: c.name, x: c.x, y: c.y };
+    return c ? this.markScout(c.name, c.x, c.y) : null;
+  }
+  /** 嚮導 / 線索 / 隱士的 chart 標好一個地點：地圖揭露周圍、加標記、記成 lastScout */
+  private markScout(name: string, x: number, y: number): { name: string; x: number; y: number } {
+    this.explored.revealDisc(x, y, 10);
+    this.addScoutMark(x, y);
+    this.lastScout = { name, x, y };
     return this.lastScout;
   }
   /**
    * 隱士的 chart（M2a Task 20）：隱士所在地塊朝外的下一片大陸（島上的隱士 = 該海朝外、荒野大陸的隱士小屋 = 該大陸朝外）的錨點大東西
-   * （村莊 / 小地城 / 地廳；Discovery.region 查得到）裡，離隱士最近、還沒找到、還沒標過的那一處 → 標上地圖（同 scout）。
+   * （村莊 / 小地城 / 地廳；Discovery.region 查得到）裡，離隱士最近、還沒找到、還沒標過、地圖錨點在世界內的那一處（chart.chartPick）→ 標上地圖（同 scout）。
    * 沒有（不是 gen2 世界 / 不是聚落的 NPC / 家鄉 / 都找到或標過了）→ null，呼叫端退回 scout
    */
   private chartTarget(key: string | undefined): { name: string; x: number; y: number } | null {
@@ -4731,15 +4735,10 @@ export class DelveGame {
     for (const a of src.blueprints.anchorsOf(c)) {
       if (a.kind !== 'village' && a.kind !== 'keep' && a.kind !== 'hall') continue;
       const b = src.blueprints.anchorBlueprint(c, a), r = b ? this.discovery.region(gen2SiteRegionId(b.id, 0)) : null;
-      if (r && r.name && !this.discovery.isFound(r.id) && !this.scouted.has(`${r.ax},${r.ay}`)) cand.push(r);
+      if (r) cand.push(r);
     }
-    cand.sort((p, q) => Math.abs(p.ax - hx) - Math.abs(q.ax - hx) || p.ax - q.ax);
-    const r = cand[0];
-    if (!r) return null;
-    this.explored.revealDisc(r.ax, r.ay, 10);
-    this.addScoutMark(r.ax, r.ay);
-    this.lastScout = { name: r.name, x: r.ax, y: r.ay };
-    return this.lastScout;
+    const r = chartPick(cand, hx, (q) => this.discovery.isFound(q.id) || this.scouted.has(`${q.ax},${q.ay}`));
+    return r ? this.markScout(r.name, r.ax, r.ay) : null;
   }
   /** 嚮導的「下一步」：依目前進度給一句具體的建議 */
   nextStepHint(): string {

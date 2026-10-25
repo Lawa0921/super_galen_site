@@ -37,11 +37,13 @@ export function buildSeaRuinBp(c: BpCtx): Blueprint {
   // 箱子：屋內左半（坍塌側的另一邊）；守望石像：離屋子中央最近、不是箱子左右的欄（平手取左邊的）
   const cx = bx + 2 + rng.int(0, Math.max(1, Math.floor(w / 2) - 2)), cy = floorAt(cx) - 1;
   g.fg(cx, cy, T.CHEST);
+  // 構造保證（Task 20 修正回合 1）：先找不貼著箱子的欄、再放寬到箱子以外的任何屋內欄；屋內站不下（屋頂被水面壓到地板上一格）= RangeError
   const landmarks: BpLandmark[] = [], m = bx + (w >> 1);
-  for (let k = 0; k <= w >> 1 && !landmarks.length; k++) for (const x of [m - k, m + k]) {
+  for (const gap of [1, 0]) for (let k = 0; k <= w >> 1 && !landmarks.length; k++) for (const x of [m - k, m + k]) {
     const y = floorAt(x) - 1;
-    if (x <= bx || x >= bx + w - 1 || Math.abs(x - cx) <= 1 || y <= roof || g.getFg(x, y) !== KEEP) continue;
+    if (x <= bx || x >= bx + w - 1 || Math.abs(x - cx) <= gap || y <= roof || g.getFg(x, y) !== KEEP) continue;
     g.fg(x, y, T.GUARDIAN_STATUE); landmarks.push({ x, y, tile: T.GUARDIAN_STATUE, site: 'sea_ruin' }); break;
   }
+  if (!landmarks.length) throw new RangeError(`gen2: sea_ruin ${c.id} has no floor for its statue (roof ${roof}, base ${base})`);
   return { id: c.id, kind: 'sea_ruin', layer: BP_SURFACE, x: bx, y: roof, w, h: hh + 1, cells: g.cells(), chests: [{ x: cx, y: cy, kind: 'ruin' }], ...emptyObjects(), landmarks };
 }

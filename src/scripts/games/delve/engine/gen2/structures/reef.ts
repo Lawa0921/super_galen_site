@@ -1,5 +1,6 @@
 // reef.ts — gen2 海槽的珊瑚礁（M2a Task 20，spec §8）：海床上的石 / 砂岩丘（寬 9–15、中央高 3–6，往兩端拋物線遞減、每欄至少 1），
-// 丘裡一團 6–12 格的銀礦或金礦（同一種，金 1/3；從丘心長出、四鄰都是丘或天然海床——不碰水）；丘頂中央泡在水裡的遺落行囊
+// 丘裡一團 6–12 格的銀礦或金礦（同一種，金 1/3；從丘心長出、四鄰都是丘或天然海床——不碰水。構造保證（Task 20 修正回合 1）：丘心不合格 → 從丘內
+// 依欄序（中央往兩側）第一個合格格長；長不到 6 格 → 依同一順序補不相連的合格格；整個丘裡合格格不到 6 格 = RangeError，不默默少放）；丘頂中央泡在水裡的遺落行囊
 // （地標 T.RELIC_PACK、site 'reef'；水下不用石堆 T.CAIRN）。置中於槽 ± min(20, floor(槽寬 / 10))（layout.seaJitter，同沉船 / 漂流箱）。
 // 靜態液體（spec §4.3）：丘的格是實心、清掉水；行囊不是實心、保留水（KEEP）；丘頂離水面 ≥ 2 格，全部格在水面下（y > waterTop）。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
@@ -7,6 +8,9 @@ import { T } from '../../tiles';
 import { HRng } from '../hrng';
 import { BpGrid, emptyObjects, BP_SURFACE, KEEP, SLOT_PAD, type Blueprint, type BpCtx } from '../bpcore';
 import { seaJitter } from '../layout';
+
+// 礦團最少幾格
+const MIN_ORE = 6;
 
 export function buildReefBp(c: BpCtx): Blueprint {
   // ctx.ver 0 的規則
@@ -29,13 +33,19 @@ export function buildReefBp(c: BpCtx): Blueprint {
   const dry = (x: number, y: number): boolean => inMound(x, y) || y >= p.surfaceAt(x);
   const ok = (x: number, y: number): boolean => inMound(x, y) && y > tops[x - bx] && dry(x - 1, y) && dry(x + 1, y) && dry(x, y - 1) && dry(x, y + 1);
   const ore = rng.chance(3) ? T.GOLD_ORE : T.SILVER_ORE, n = rng.int(6, 13), k0 = cx - bx;
-  const got: [number, number][] = [[cx, (tops[k0] + beds[k0] + 2) >> 1]], has = (x: number, y: number): boolean => got.some((q) => q[0] === x && q[1] === y);
+  // 丘裡全部合格格：欄由中央往兩側（同距先左）、欄內由上往下
+  const cols = Array.from({ length: w }, (_, k) => k).sort((a, b) => Math.abs(a - k0) - Math.abs(b - k0) || a - b), all: [number, number][] = [];
+  for (const k of cols) for (let y = tops[k] + 1; y <= beds[k] + 1; y++) if (ok(bx + k, y)) all.push([bx + k, y]);
+  if (all.length < MIN_ORE) throw new RangeError(`gen2: reef ${c.id} has only ${all.length} cells for its ore`);
+  const mid0: [number, number] = [cx, (tops[k0] + beds[k0] + 2) >> 1];
+  const got: [number, number][] = [ok(mid0[0], mid0[1]) ? mid0 : all[0]], has = (x: number, y: number): boolean => got.some((q) => q[0] === x && q[1] === y);
   while (got.length < n) {
     const cand: [number, number][] = [];
     for (const [x, y] of got) for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]] as const) if (ok(nx, ny) && !has(nx, ny) && !cand.some((q) => q[0] === nx && q[1] === ny)) cand.push([nx, ny]);
     if (!cand.length) break;
     got.push(cand[rng.int(0, cand.length)]);
   }
+  for (const q of all) { if (got.length >= MIN_ORE) break; if (!has(q[0], q[1])) got.push(q); }
   for (const [x, y] of got) g.fg(x, y, ore);
   // 丘頂中央的遺落行囊（泡在水裡）
   const ly = tops[k0] - 1;

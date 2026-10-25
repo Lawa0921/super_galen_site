@@ -5,17 +5,33 @@
 // 靜態液體（spec §4.3）：實心格（木板）清掉水；非實心格（桅杆、箱子）與船內格的液體保留（KEEP）——
 // 海水本來就滿格，所以船內、箱子與桅杆都泡在滿格水裡、不會流動；船內海床以下的沙不動（半埋）。
 // 全部格在水面下（y > waterTop）。
-// drawHull（M2a Task 20）：船殼 / 甲板 / 桅杆的形狀函式，沉船與沉船島（structures/island.ts）共用；抽出前後 M1 沉船逐格相同（islands.test 釘雜湊）。
+// drawHull（M2a Task 20）：船殼 / 甲板 / 桅杆的形狀函式；hullPlan（修正回合 1）：龍骨 / 地板 / 桅杆 / 箱子的佈局。沉船與沉船島（structures/island.ts）共用兩者，
+// 抽出前後 M1 沉船與沉船島逐格相同（islands.test 釘 SHIPWRECK_HASH / WRECK_ISLE_HASH）。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T, W, isSolidTile } from '../../tiles';
 import { HRng } from '../hrng';
 import { BpGrid, emptyObjects, BP_SURFACE, KEEP, SLOT_PAD, type Blueprint, type BpCtx } from '../bpcore';
 import { seaJitter } from '../layout';
+import type { Profile2 } from '../profile';
 
 // drawHull 畫格的介面：put = 畫前景（液體怎麼處理由呼叫端決定）、wall = 掛深色木板牆；兩者都由呼叫端裁掉不能畫的列
 export interface HullCanvas { put(x: number, y: number, t: number): void; wall(x: number, y: number): void }
 // hh = 船殼高、mast = 桅杆的欄、stub = 桅杆高出船舷幾格、floorAt(x) = 船內該欄的地板（第一個實心格）
 export interface HullShape { hh: number; mast: number; stub: number; floorAt(x: number): number }
+
+// 船的佈局（外框 [bx, bx + w)、船殼高 hh）：龍骨 = 船寬內地表平均 + 2（半埋）、船舷 = 龍骨 − hh + 1；船內某欄的地板（第一個實心格）= 地表或龍骨取淺的；
+// 桅杆在中央 ± 2、高出船舷 stub（1–4）格；箱子的欄離桅杆 ≥ 2（都在第 1 列的船內），箱子在該欄地板上一格。亂數依序：桅杆偏移、殘段、箱子欄（同 M1）
+export interface HullPlan extends HullShape { keel: number; gunwale: number; cx: number; chestY: number }
+export function hullPlan(p: Profile2, bx: number, w: number, hh: number, rng: HRng): HullPlan {
+  let sum = 0;
+  for (let x = bx; x < bx + w; x++) sum += p.surfaceAt(x);
+  const keel = Math.round(sum / w) + 2, gunwale = keel - hh + 1;
+  const floorAt = (x: number): number => Math.min(p.surfaceAt(x), keel);
+  const mast = bx + (w >> 1) + rng.int(-2, 3), stub = rng.int(1, 5);
+  let cx = rng.int(bx + 3, bx + w - 3);
+  if (Math.abs(cx - mast) < 2) cx = mast + 2 <= bx + w - 4 ? mast + 2 : mast - 2;
+  return { hh, keel, gunwale, floorAt, mast, stub, cx, chestY: floorAt(cx) - 1 };
+}
 
 // 船殼 [x0, x0 + w) × 龍骨列 keelY 往上 hh 列、甲板殘段、桅杆。亂數依序：船殼每格的缺板 / 爛牆、甲板斷口寬與位置（與 M1 的 buildShipwreck 同一個順序）
 export function drawHull(cv: HullCanvas, x0: number, w: number, keelY: number, o: HullShape, rng: HRng): void {
@@ -44,16 +60,7 @@ export function buildShipwreck(c: BpCtx): Blueprint {
   const mid = c.slotX0 + (sw >> 1), off = rng.int(-d, d + 1);
   const bx = Math.max(c.slotX0 + SLOT_PAD, Math.min(mid + off - (w >> 1), c.slotX1 - SLOT_PAD - w));
   const cxm = bx + (w >> 1), wt = p.waterTopAt(cxm) ?? p.surfaceAt(cxm) - 2;
-  let sum = 0;
-  for (let x = bx; x < bx + w; x++) sum += p.surfaceAt(x);
-  const keel = Math.round(sum / w) + 2, gunwale = keel - hh + 1;
-  // 船內某欄的地板（第一個實心格）：海床或龍骨，取淺的
-  const floorAt = (x: number): number => Math.min(p.surfaceAt(x), keel);
-  // 桅杆與箱子的欄（箱子離桅杆 ≥ 2 格，都在第 1 列的船內）
-  const mx = cxm + rng.int(-2, 3), stub = rng.int(1, 5);
-  let cx = rng.int(bx + 3, bx + w - 3);
-  if (Math.abs(cx - mx) < 2) cx = mx + 2 <= bx + w - 4 ? mx + 2 : mx - 2;
-  const chestY = floorAt(cx) - 1;
+  const plan = hullPlan(p, bx, w, hh, rng), { keel, gunwale, stub, cx, chestY } = plan;
   // 全部格在水面下
   const lim = wt + 1, top = Math.max(lim, Math.min(gunwale - stub, chestY));
   const g = new BpGrid(bx, top, w, keel - top + 1);
@@ -61,7 +68,7 @@ export function buildShipwreck(c: BpCtx): Blueprint {
   // 實心格清水；非實心格保留水
   const put = (x: number, y: number, t: number): void => { if (!ok(y)) return; g.fg(x, y, t); g.liq(x, y, isSolidTile(t) ? 0 : KEEP); };
   const wall = (x: number, y: number): void => { if (ok(y)) g.wall(x, y, W.DARK_PLANK_WALL); };
-  drawHull({ put, wall }, bx, w, keel, { hh, mast: mx, stub, floorAt }, rng);
+  drawHull({ put, wall }, bx, w, keel, plan, rng);
   put(cx, chestY, T.CHEST);
   return { id: c.id, kind: 'shipwreck', layer: BP_SURFACE, x: bx, y: top, w, h: keel - top + 1, cells: g.cells(), chests: [{ x: cx, y: chestY, kind: 'ruin' }], ...emptyObjects() };
 }

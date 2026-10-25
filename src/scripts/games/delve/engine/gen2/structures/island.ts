@@ -15,7 +15,7 @@ import { BpCanvas } from '../draw/bpCanvas';
 import { BpGrid, emptyObjects, BP_SURFACE, KEEP, SLOT_PAD, type Blueprint, type BpCtx } from '../bpcore';
 import type { IslandType } from '../layout';
 import { buildHermitHutBp, flattestX, levelRows, levelSite, medianFloor, LEVEL_SIDE } from './hermitHut';
-import { drawHull } from './shipwreck';
+import { drawHull, hullPlan } from './shipwreck';
 
 // 島灘（fill.ts 的 ISLAND_BEACH：離水這麼多格內是沙灘）：燈塔 / 隱士屋的外框在它以內
 const SHORE = 4;
@@ -72,15 +72,8 @@ function lighthouse(c: BpCtx): Blueprint {
 function wreckIsle(c: BpCtx): Blueprint {
   const p = c.profile, r = c.region, rng = new HRng(c.s, c.id);
   const w = rng.int(18, 27), hh = rng.int(6, 9), bx = rng.chance(2) ? r.x0 + 1 : r.x1 - 1 - w;
-  let sum = 0;
-  for (let x = bx; x < bx + w; x++) sum += p.surfaceAt(x);
-  const keel = Math.round(sum / w) + 2, gunwale = keel - hh + 1;
-  // 船內某欄的地板：地面或龍骨，取淺的（同 M1 沉船）
-  const floorAt = (x: number): number => Math.min(p.surfaceAt(x), keel);
-  const cxm = bx + (w >> 1), mx = cxm + rng.int(-2, 3), stub = rng.int(1, 5);
-  let cx = rng.int(bx + 3, bx + w - 3);
-  if (Math.abs(cx - mx) < 2) cx = mx + 2 <= bx + w - 4 ? mx + 2 : mx - 2;
-  const chestY = floorAt(cx) - 1, top = Math.min(gunwale - stub, chestY);
+  // 龍骨 / 地板 / 桅杆 / 箱子的佈局同 M1 沉船（shipwreck.hullPlan）
+  const plan = hullPlan(p, bx, w, hh, rng), { keel, gunwale, stub, cx, chestY } = plan, top = Math.min(gunwale - stub, chestY);
   let low = keel;
   for (let x = bx; x < bx + w; x++) low = Math.max(low, p.surfaceAt(x) - 1);
   const g = new BpGrid(bx, top, w, low - top + 1);
@@ -89,7 +82,7 @@ function wreckIsle(c: BpCtx): Blueprint {
   const wall = (x: number, y: number): void => g.wall(x, y, W.DARK_PLANK_WALL);
   // 擱淺：龍骨以下到天然地面之間補沙
   for (let x = bx; x < bx + w; x++) for (let y = keel + 1; y < p.surfaceAt(x); y++) g.fg(x, y, T.SAND);
-  drawHull({ put, wall }, bx, w, keel, { hh, mast: mx, stub, floorAt }, rng);
+  drawHull({ put, wall }, bx, w, keel, plan, rng);
   put(cx, chestY, T.CHEST);
   return { id: c.id, kind: 'island', layer: BP_SURFACE, x: bx, y: top, w, h: low - top + 1, cells: g.cells(), chests: [{ x: cx, y: chestY, kind: 'ruin' }], ...emptyObjects(), variant: 'wreck' };
 }

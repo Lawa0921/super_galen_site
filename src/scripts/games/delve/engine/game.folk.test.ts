@@ -10,6 +10,9 @@ import { restoreGame, serializeGame } from '../save/serialize';
 import type { DungeonInfo } from './genTypes';
 import { SITE_NPC_BASE, npcIdFor } from './siteRegistry';
 import { gen2SiteRegionId } from './gen2/structId';
+import { chartPick } from './chart';
+import { X_LIMIT } from './coords';
+import type { Region } from './discovery';
 
 
 
@@ -388,5 +391,34 @@ describe('隱士的 chart（荒野大陸的隱士小屋）', { timeout: 120_000 
     expect(r2.ok).toBe(true); expect(r2.msg).not.toContain('「」');
     expect(big.some((q) => q.ax === m2.x && q.ay === m2.y)).toBe(false);
     expect(g.lastScout).toMatchObject({ x: m2.x, y: m2.y });
+  });
+});
+
+// Task 20 修正回合 1（第 2、6 條）
+describe('隱士的 chart：沒有候選、世界邊界', { timeout: 120_000 }, () => {
+  it('chart 與退路的 scout 都沒有地點可標 → ok:false、錢不變、標記不變', () => {
+    const g = new DelveGame({ seed: 'chart-c', worldGen: { kind: 'gen2' } }), src = g.gen2()!, cont = src.layout.landmass(1, 2);
+    const hut = src.blueprints.overlapping(cont.x0, cont.x1).find((b) => b.kind === 'hermit_hut' && b.x >= cont.x0 && b.x < cont.x1)!;
+    const site = hut.site!;
+    if (site.kind !== 'hermit') throw new Error('no hermit site');
+    g.teleport(site.at.x, site.at.y); steps(g, 30);
+    const key = `${site.key}:hermit`, d = g.discovery, next = src.layout.landmass(1, 4);
+    // 下一片大陸的大東西、已知表的每個地區、每件地標都算找到了
+    for (const a of src.blueprints.anchorsOf(next)) { const b = src.blueprints.anchorBlueprint(next, a); const r = b ? d.region(gen2SiteRegionId(b.id, 0)) : null; if (r) d.found.add(r.id); }
+    for (const r of d.listKnown()) d.found.add(r.id);
+    for (const l of g.landmarks) d.landmarks.add(g.world.idx(l.x, l.y));
+    g.give('copper_coin', 500);
+    const coins = g.coins(), marks = g.scoutMarks.length, r = g.folkService(key, 'chart');
+    expect(r.ok).toBe(false); expect(r.msg).not.toBe('');
+    expect(g.coins()).toBe(coins); expect(g.scoutMarks.length).toBe(marks);
+  });
+  it('chartPick：只挑地圖錨點在世界內（x ∈ [−X_LIMIT, X_LIMIT)）、有名字、沒被排除的，離隱士最近的（平手取 x 小的）', () => {
+    const R = (id: number, ax: number, name = `r${id}`): Region => ({ id, cat: 'site', kind: 'village', name, x: ax, y: 0, w: 1, h: 1, ax, ay: 300, contains: () => false });
+    expect(chartPick([R(1, X_LIMIT), R(2, X_LIMIT + 50)], X_LIMIT - 10, () => false)).toBeNull();
+    expect(chartPick([R(1, X_LIMIT), R(2, X_LIMIT - 1)], X_LIMIT - 10, () => false)?.id).toBe(2);
+    expect(chartPick([R(1, -X_LIMIT - 1), R(2, -X_LIMIT)], -X_LIMIT + 5, () => false)?.id).toBe(2);
+    expect(chartPick([R(1, 100, ''), R(2, 300)], 90, () => false)?.id).toBe(2);
+    expect(chartPick([R(1, 100), R(2, 300)], 90, (r) => r.id === 1)?.id).toBe(2);
+    expect(chartPick([R(1, 120), R(2, 80)], 100, () => false)?.id).toBe(2);
   });
 });
