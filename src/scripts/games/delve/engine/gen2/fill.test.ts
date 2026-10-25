@@ -5,7 +5,8 @@ import { Gen2Source, GEN2_VERSION, GEN2_MIN_VERSION } from './index';
 import { shaftX, shaftOffset } from './caves';
 import { COL_SEA, COL_BEACH, COL_LAND, COL_ISLAND, LAVA_Y } from './profile';
 import { SPAWN_X, VARIANT } from './layout';
-import { fillCol, bytes, worldOf, loadColumns, sampleRegions, bfsReachesDepth, liquidInvariant, range, SEEDS5 } from './testUtil';
+import { Filler2 } from './fill';
+import { fillCol, bytes, worldOf, loadColumns, sampleRegions, bfsReachesDepth, liquidInvariant, range, SEEDS5, srcOf } from './testUtil';
 import { Column, li, type ColumnLayers } from '../column';
 import { seedInt } from '../noise';
 import { T, isSolidTile } from '../tiles';
@@ -96,6 +97,41 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
     }
     expect(seen).toEqual(ORES);
   });
+
+  // 逐帶宿主表（M2a Task 13 裁決 A′）逐格檢查：同一欄再填一次「不放礦」的對照組（四個礦噪聲換成永遠 0 的假噪聲，其他 pass 不變），
+  // 每個礦格在對照組裡的原材質必須是該（礦, 帶）的宿主。宿主照裁決寫在這裡（不讀 fill.ts 的表：放寬表時這裡要紅）
+  it('礦的宿主逐格對照：泥土帶的銅原本是泥 / 雪 / 泥巴 / 砂岩，岩層 / 洞穴層的礦原本是石頭類（含淚滴材質），熔岩帶的金原本是玄武岩', () => {
+    const SOIL = new Set<number>([T.DIRT, T.SNOW, T.MUD, T.SANDSTONE]);
+    const STONE = new Set<number>([T.STONE, T.DEEP_STONE, T.MUD, T.SANDSTONE, T.ICE]);
+    const BASALT = new Set<number>([T.BASALT]);
+    const zero = { setX: (): void => {}, at: (): number => 0 };
+    const n = { soil: 0, stone: 0, basalt: 0 };
+    const bad: string[] = [];
+    // 4 個種子的整個家鄉（四種生態、地城、礦坑…；沙漠地表的沙只有地表 + 4、+ 5 兩列在泥土帶的放礦範圍內，一個家鄉約 700 格，要多掃才碰得到）
+    for (const seed of ['ore-host', 's-a', 's-b', 's-c']) for (let cx = 0; cx <= 131; cx++) {
+      const src = srcOf(seed);
+      const real = new Filler2(seed, src.layout, src.profile, src.blueprints), bare = new Filler2(seed, src.layout, src.profile, src.blueprints);
+      for (const k of ['oreCu', 'oreFe', 'oreAg', 'oreAu']) (bare as unknown as Record<string, unknown>)[k] = zero;
+      const a = new Column(cx, 1200), b = new Column(cx, 1200);
+      real.fill(a, cx * 32, cx * 32 + 32); bare.fill(b, cx * 32, cx * 32 + 32);
+      for (let x = cx * 32; x < cx * 32 + 32; x++) {
+        const I = src.profile.info(x);
+        for (let y = Math.max(0, I.surface); y < 1200; y++) {
+          const i = li(x, y), t = a.fg[i];
+          if (!ORES.has(t)) continue;
+          const was = b.fg[i], tag = `${seed} ${t}@${x},${y} was ${was}`;
+          if (y < I.rock) { if (t !== T.COPPER_ORE || !SOIL.has(was)) bad.push(`dirt ${tag}`); else n.soil++; }
+          else if (y < I.molten) { if (!STONE.has(was)) bad.push(`stone ${tag}`); else n.stone++; }
+          else if (t !== T.GOLD_ORE || !BASALT.has(was)) bad.push(`molten ${tag}`); else n.basalt++;
+        }
+      }
+    }
+    expect(bad.slice(0, 10)).toEqual([]);
+    // 三種情況都真的有檢查到
+    expect(n.soil, 'dirt-band copper').toBeGreaterThan(100);
+    expect(n.stone, 'rock / deep ores').toBeGreaterThan(5000);
+    expect(n.basalt, 'molten-band gold').toBeGreaterThan(30);
+  }, 120_000);
 
   it('海床、沙灘與沙漠地表的沙不會被換成礦（Task 12 裁決：沙不放礦；逐帶宿主表）', () => {
     const src = new Gen2Source('sand'), sea = src.layout.landmass(1, 1);

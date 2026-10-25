@@ -17,19 +17,27 @@ import { spawnTable, type Habitat } from '../spawn';
 
 const SEEDS = ['alpha', 'beta', 'gamma'];
 interface Home { src: Gen2Source; cols: Column[] }
+// 種子 → 填好的家鄉（beforeAll 填 SEEDS；densityOf 要別的種子時現填）
+const HOME_OF = new Map<string, Home>();
+const homeOf = (seed: string): Home => {
+  let h = HOME_OF.get(seed);
+  if (!h) {
+    const src = new Gen2Source(seed), cols: Column[] = [];
+    for (let cx = HOME_X0 >> 5; cx <= (HOME_X1 - 1) >> 5; cx++) cols.push(fillCol(src, cx));
+    h = { src, cols }; HOME_OF.set(seed, h);
+  }
+  return h;
+};
 const HOMES: Home[] = [];
 const fgAt = (h: Home, x: number, y: number): number => h.cols[x >> 5].fg[li(x, y)];
 
 beforeAll(() => {
-  for (const seed of SEEDS) {
-    const src = new Gen2Source(seed), cols: Column[] = [];
-    for (let cx = HOME_X0 >> 5; cx <= (HOME_X1 - 1) >> 5; cx++) cols.push(fillCol(src, cx));
-    HOMES.push({ src, cols });
-  }
+  for (const seed of SEEDS) HOMES.push(homeOf(seed));
 }, 180_000);
 
-function densityOf(): ReturnType<typeof meanDensity> {
-  return meanDensity(HOMES.map((h) => {
+// 幾個種子的家鄉密度（各自算再平均；量法同 legacy 的量測測試）
+function densityOf(seeds: readonly string[]): ReturnType<typeof meanDensity> {
+  return meanDensity(seeds.map(homeOf).map((h) => {
     const t = newOreTally();
     for (let x = ORE_X0; x < ORE_X1; x++) { const I = h.src.profile.info(x); tallyColumn(t, (y) => fgAt(h, x, y), I, WORLD_H); }
     if (process.env.DELVE_MEASURE === '1') console.info('[gen2 ore counts]', JSON.stringify({ ore: t.ore, cells: t.cells }));
@@ -68,7 +76,7 @@ const hab = (o: Partial<Habitat>): Habitat => ({ zone: 'surface', biome: BIOME.F
 
 describe('gen2 礦物密度（M2a Task 13）', () => {
   it('§4.4：每種礦在舊生成器密度 ≥ 0.2‰ 的帶裡，gen2 密度落在 ±30%；舊的 < 0.2‰ 的帶 gen2 也 < 0.5‰', () => {
-    const g2 = densityOf();
+    const g2 = densityOf(['alpha', 'beta', 'gamma']);
     if (process.env.DELVE_MEASURE === '1') console.info('[gen2 ore density]', JSON.stringify(g2));
     for (const ore of ORES4) for (const band of BANDS4) {
       const old = LEGACY_ORE_DENSITY[ore][band], now = g2[ore][band];
