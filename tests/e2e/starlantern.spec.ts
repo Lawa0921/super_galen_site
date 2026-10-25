@@ -1060,8 +1060,19 @@ test.describe('starlantern', () => {
     await asPhone(page);
     expect(await stageScale(page)).toEqual({ kind: 'sideways', s: 1 });
     const cur = page.locator('.slx-tree-node.slx-row-cur');
+    // Under load the turn to the phone lays out a frame or more after asPhone returns (the stage read 374.5 below a node at
+    // 133 once): measure only once the stage, the columns and the cursor's node hold still across two frames.
+    const settled = async () => {
+      const layout = () => page.evaluate(() => new Promise<string>((done) => requestAnimationFrame(() => requestAnimationFrame(() => {
+        const rect = (sel: string) => JSON.stringify(document.querySelector(sel)?.getBoundingClientRect() ?? null);
+        done([rect('#sl-screen'), rect('.slx-tree-cols'), rect('.slx-tree-node.slx-row-cur')].join());
+      }))));
+      let last = '';
+      await expect.poll(async () => { const now = await layout(); const still = now === last; last = now; return still; }, { timeout: 10_000 }).toBe(true);
+    };
     const seen: string[] = [];
     for (let i = 0; i < 60; i++) {
+      await settled();
       const id = (await cur.getAttribute('data-node')) ?? '';
       // The cursor's node shows whole inside the columns, below its branch's pinned name.
       const cols = await stageBox(page, page.locator('.slx-tree-cols'));
