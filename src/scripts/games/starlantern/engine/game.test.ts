@@ -5758,11 +5758,31 @@ describe('time and moon: a reload never decides the festival again (Task 7 revie
     expect(g.returnToTown()).toBe(true);
     expect(g.night).toEqual(['season:spring']);
     expect(g.state.story.festival).toBe('season:spring');
-    expect(g.rest().ok).toBe(true);   // saves; even a night at the inn keeps the record
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves, the record with it
     const b = Game.boot(calm(), storage);
     expect(b.night).toEqual(['season:spring']);
     expect(b.sceneDone('season:spring', 'played')).toBe(true);
     expect(b.state.story.festival).toBeUndefined();
     expect(Game.boot(calm(), storage).night).toEqual([]);
+  });
+
+  it('a night at the inn drops the record: a reload after it plays no festival under that moon; the next return does (bond batch fix)', () => {
+    // Before this fix a night at the inn kept the record, so a festival whose night never finished (its playback threw,
+    // ui2/scenes/town.ts playNight) came back on a reload under the inn night's moon.
+    const storage = memoryStorage();
+    const g = afterFinale(storage, { home: true, day: 20, springDay: 20 });
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.night).toEqual(['season:spring']);
+    expect(g.rest().ok).toBe(true);   // the festival's night not seen; the inn saves
+    expect(g.state.story.festival).toBeUndefined();
+    const b = Game.boot(calm(), storage);
+    expect(b.night).not.toContain('season:spring');
+    expect(b.state.story.seen).not.toContain('season:spring');
+    // spring stays and the festival is unseen: the next return decides it again
+    expect(b.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(b.returnToTown()).toBe(true);
+    expect(b.night).toEqual(['season:spring']);
+    expect(b.state.story.festival).toBe('season:spring');
   });
 });
