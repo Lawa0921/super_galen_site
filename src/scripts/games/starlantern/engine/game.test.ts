@@ -55,7 +55,7 @@ import { orderNight } from './story/nights';
 import { calendarOf } from './story/events';
 import { MEMORY_PITY } from '../data/story/chains';
 import { BOND_SWITCH, bondOf, bondPoints } from './story/bond';
-import { GIFT_LINES, type GiftPools } from '../data/bond.zh-TW';
+import { GIFT_LINES, RIN_OATH, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
 import { BONDS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, sceneTime } from '../data/story/scenes';
 import { today } from './story/bond';
@@ -6002,7 +6002,11 @@ describe('gifts in the game (bond plan Task 6)', () => {
     expect(saved.status === 'ok' && saved.state.party.roster.selene.bond!.gifts).toEqual({ 'star-tear': 1 });
     expect(saved.status === 'ok' && saved.state.story.gifted).toEqual(['selene']);
     expect(g.give('selene', 'star-tear')).toEqual({ ok: false, reason: 'today' });
-    expect(g.give('rin', 'dusk-cloth')).toEqual({ ok: false, reason: 'unwritten' });   // Rin's are not written yet
+    // Rin takes gifts once both of her tables are written (plan ruling 6): Task 16 wrote them, so take the one after
+    // her choice away to see the refusal
+    const oath = RIN_OATH.value;
+    RIN_OATH.value = null;
+    try { expect(g.give('rin', 'dusk-cloth')).toEqual({ ok: false, reason: 'unwritten' }); } finally { RIN_OATH.value = oath; }
     g.state.gold = 1000;
     expect(g.rest().ok).toBe(true);
     const again = g.give('selene', 'star-tear');

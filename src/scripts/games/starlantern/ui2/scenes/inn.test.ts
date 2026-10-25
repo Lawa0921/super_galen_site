@@ -343,10 +343,19 @@ describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
   /** Rin's gift lines registered (before and after her choice), put back after. */
   const withRinGifts = <T,>(f: () => T): T => {
     const had = GIFT_LINES.rin;
+    const hadOath = RIN_OATH.value;
     const box = (GIFT_LINES as Record<string, GiftPools | undefined>);
     box.rin = pools('前');
     RIN_OATH.value = pools('後');
-    try { return f(); } finally { if (had) box.rin = had; else delete box.rin; RIN_OATH.value = null; }
+    try { return f(); } finally { if (had) box.rin = had; else delete box.rin; RIN_OATH.value = hadOath; }
+  };
+  /** No gift lines written at all (bond plan Task 16 wrote all nine): the registry emptied for `f`, put back after. */
+  const withNoGifts = <T,>(f: () => T): T => {
+    const had = { ...GIFT_LINES };
+    const hadOath = RIN_OATH.value;
+    for (const c of Object.keys(GIFT_LINES)) delete (GIFT_LINES as Record<string, unknown>)[c];
+    RIN_OATH.value = null;
+    try { return f(); } finally { Object.assign(GIFT_LINES, had); RIN_OATH.value = hadOath; }
   };
   const open = (prep?: (g: Game) => void) => {
     const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, ['hero', 'rin']);
@@ -410,9 +419,11 @@ describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
   }));
 
   it('nobody written, or nothing to give, is said', () => {
-    const t = open();
-    t.partners(); t.pick('送禮');
-    expect(t.text()).toBe('現在還沒有誰能收下你的禮物。');
+    withNoGifts(() => {
+      const t = open();
+      t.partners(); t.pick('送禮');
+      expect(t.text()).toBe('現在還沒有誰能收下你的禮物。');
+    });
     withRinGifts(() => {
       const u = open((g) => { g.state.inventory = { potion: 3 }; });
       u.partners(); u.pick('送禮'); u.pick('凜');
@@ -490,7 +501,7 @@ describe('InnScene: a healed refusal (review of bond plan Tasks 12-14)', () => {
       const right = () => [...[...root.querySelectorAll('.slx-layer')].at(-1)!.querySelectorAll('[role=option] .slx-right')].map((e) => e.textContent);
       (root.querySelector('.slx-cmd [data-id=partners]') as HTMLElement).click();
       s.onAction('down'); s.onAction('confirm');   // 送禮
-      s.onAction('confirm');                        // 諾艾兒
+      s.onAction('down'); s.onAction('confirm');   // 諾艾兒 (after 凜: every gift table is written since Task 16)
       expect(right()).toEqual(['婉拒']);
     } finally { if (had) GIFT_LINES.noel = had; else delete GIFT_LINES.noel; }
   });

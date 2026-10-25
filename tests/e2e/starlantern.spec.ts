@@ -5530,8 +5530,9 @@ test.describe('starlantern', () => {
     await w.closeTalk();
     await partners();
     await page.locator('.slx-layer [data-id=gift]').click();
-    await expect(said).toHaveText(T.ui2.inn.nobodyToGift);
-    await w.closeTalk();
+    // bond plan Task 16: every gift table is written, so 送禮 lists everyone met, in the game's order
+    await expect(page.locator('.slx-layer.slx-depth-1 [role=option]')).toHaveText((['rin', 'noel', 'chizuru', 'liz', 'scarlet', 'selene'] as const).map((c) => CHARACTERS[c].name));
+    await w.key('Escape'); await w.key('Escape');
 
     const stage = () => page.evaluate(() => {
       const d = (window as unknown as BondDbg).__starlanternDebug;
@@ -5550,8 +5551,6 @@ test.describe('starlantern', () => {
           { who: 'narrator', text: '井裡的水，映著兩個人的影子。' },
         ],
       };
-      b.GIFT_LINES.rin = { loved: ['「暮影布。斗篷的邊，剛好破了。」', '「又是暮影布。」'], liked: ['「收下了。」', '「嗯。」'], neutral: ['「放這裡。」'], declined: { 'king-scale': '「太亮了。帶著它，躲不了人。收回去。」' }, healed: {} };
-      b.RIN_OATH.value = b.GIFT_LINES.rin;   // Rin takes gifts once both of her tables are written (plan ruling 6)
       const s = d.game.state;
       s.party.roster.rin.memories = 2;   // her two pieces: the first talk's gate
       s.party.roster.rin.bond = { talk: 0, field: 14, gifts: { 'dusk-cloth': 1 }, refused: ['king-scale'] };   // 30: 同行

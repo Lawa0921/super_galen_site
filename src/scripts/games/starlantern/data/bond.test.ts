@@ -7,7 +7,7 @@ import { BOND_SCENES, GIFT_LINES, RIN_OATH, ROMANCE_LINES, type GiftPools } from
 const RIN_OATH_GIFT_LINES = RIN_OATH.value;
 import { BONDS_WRITTEN, ENDINGS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, bondScene, sceneKind, type SceneId } from './story/scenes';
 import { CHOICE_MAX_CHARS, MAX_LINE_CHARS, STORY, flatLines, isChoice, type ChoiceLine, type SceneLine, type ScriptLine } from './story.zh-TW';
-import { dots, opensOnDots } from './story/voiceGates';
+import { CHIZURU_ARCHAIC, CHIZURU_NEVER, SYLVIE_WORLD, VOICE, dots, opensOnDots, telegraphBreaks } from './story/voiceGates';
 
 /**
  * Bond plan Task 6 (spec §0 D14, §6.4): a companion's gift reactions are registered whole or not at all. What a written
@@ -274,5 +274,65 @@ describe('bond text: the gates on the copy (bond plan Task 8)', () => {
     expect(romanceBreaks({ ...EMPTY, scenes: { 'romance:rin': scene([line('rin', '「走吧。」'), line('selene', '「我吃醋了呢。」')]) } }))
       .toEqual(['romance:rin: no other companion is there', 'romance:rin: 「「我吃醋了呢。」」']);
     expect(romanceBreaks({ ...EMPTY, scenes: { 'romance:rin': scene([line('rin', '「走吧。」'), line('selene', '「路上小心。」', { if: { met: 'selene' } })]) } })).toEqual([]);
+  });
+});
+
+// ---- bond plan Task 16: the gift reactions of all nine, each in her own voice (style bible §2.3, §2.5, §3; story L §7)
+
+/** Chizuru's own day in a light line (story L Task 13, the same list voice.test.ts reads). */
+const ERA = /我們那時候|我們那裡|最近|近來|去年|今年|城裡.{0,4}(流行|改|新)/;
+/**
+ * What breaks a gift line's voice, one line a break. Each line is one spoken line in 「」 of MAX_LINE_CHARS at most, in whole
+ * sentences (`telegraphBreaks`), with no particle her voice never uses and Chizuru's old style one a line; each table (Rin's
+ * two counted apart) keeps her particle to its share, 「……」 to the bible's share of a speaker, no line twice, and Sylvie's
+ * food and weather, Chizuru's own day and her old style to their shares of a light scene.
+ */
+const giftVoiceBreaks = (copy: BondCopy): string[] => {
+  const lines = giftLinesOf(copy);
+  const out: string[] = [];
+  for (const t of lines) {
+    if (!/^「[^「」]*」$/.test(t.text)) out.push(`${t.key}: not one line in 「」`);
+    if ([...t.text].length > MAX_LINE_CHARS) out.push(`${t.key}: over ${MAX_LINE_CHARS}`);
+    for (const why of telegraphBreaks(t.text)) out.push(`${t.key}: ${why}`);
+    if (VOICE[t.who]?.never?.test(t.text)) out.push(`${t.key}: a particle not hers`);
+    if (t.who === 'chizuru' && (CHIZURU_NEVER.test(t.text) || (t.text.match(new RegExp(CHIZURU_ARCHAIC.source, 'g')) ?? []).length > 1)) out.push(`${t.key}: not her old style`);
+  }
+  const tables = new Map<string, typeof lines>();
+  for (const t of lines) { const tag = t.key.split('.')[0]; tables.set(tag, [...(tables.get(tag) ?? []), t]); }
+  for (const [tag, ls] of tables) {
+    const who = ls[0].who;
+    const v = VOICE[who];
+    const share = (re: RegExp) => ls.filter((t) => re.test(t.text)).length / ls.length;
+    if (v?.mark && v.maxShare !== undefined && share(v.mark) > v.maxShare) out.push(`${tag}: her particle in too many lines`);
+    if (ls.filter((t) => dots(t.text) > 0).length > Math.max(1, Math.floor(ls.length / 6))) out.push(`${tag}: 「……」 in too many lines`);
+    if (new Set(ls.map((t) => t.text)).size !== ls.length) out.push(`${tag}: a line twice`);
+    if (who === 'sylvie' && share(SYLVIE_WORLD) < 1 / 3) out.push(`${tag}: too little food, weather or tracks`);
+    if (who === 'chizuru' && share(ERA) < 1 / 3) out.push(`${tag}: too little of her own day`);
+    if (who === 'chizuru' && share(CHIZURU_ARCHAIC) > 1 / 4) out.push(`${tag}: too much old style`);
+  }
+  return out;
+};
+
+describe('bond text: the gift reactions of all nine (bond plan Task 16)', () => {
+  it('all nine are written, Rin before and after her choice', () => {
+    expect(COMPANIONS.filter((c) => !GIFT_LINES[c])).toEqual([]);
+    expect(RIN_OATH_GIFT_LINES).not.toBeNull();
+  });
+
+  it('each line is hers: her voice, her particles, whole sentences', () => {
+    expect(giftVoiceBreaks(REAL())).toEqual([]);
+    // The gate bites: each kind of break on an injected table.
+    const pools = (loved: string[], neutral: string[]): GiftPools => ({ loved, liked: ['「乙。」', '「丙。」'], neutral, declined: {}, healed: {} });
+    expect(giftVoiceBreaks({ ...EMPTY, gifts: { scarlet: pools(['「收下了啦。」', '收下了。'], [`「${'好'.repeat(60)}」`]) } })).toEqual([
+      'gift:scarlet.loved.0: a particle not hers', 'gift:scarlet.loved.1: not one line in 「」', `gift:scarlet.neutral.0: over ${MAX_LINE_CHARS}`,
+    ]);
+    expect(giftVoiceBreaks({ ...EMPTY, gifts: { liz: pools(['「好啦。收啦。」', '「虧啦。」'], ['「成交啦。」']) } })).toContain('gift:liz: her particle in too many lines');
+    expect(giftVoiceBreaks({ ...EMPTY, gifts: { liz: pools(['「這個算你……便宜。」', '「虧大了可是……收下。」'], ['「乙。」']) } }))
+      .toEqual(['gift:liz: 「……」 in too many lines', 'gift:liz: a line twice']);
+    expect(giftVoiceBreaks({ ...EMPTY, gifts: { sylvie: pools(['「好看。」', '「收下。」'], ['「放著。」']) } })).toContain('gift:sylvie: too little food, weather or tracks');
+    expect(giftVoiceBreaks({ ...EMPTY, gifts: { chizuru: pools(['「此處甚好。」', '「收下了。」'], ['「莫非是禮物。」']) } })).toEqual([
+      'gift:chizuru.loved.0: not her old style', 'gift:chizuru: too little of her own day', 'gift:chizuru: too much old style',
+    ]);
+    expect(giftVoiceBreaks({ ...EMPTY, gifts: { selene: pools(['「好亮。退路。三條。」', '「收下了。」'], ['「謝謝。」']) } })).toHaveLength(1);   // telegraphese
   });
 });
