@@ -142,7 +142,9 @@ describe('gen2 blueprint objects', () => {
     // 每座地廳 / 礦坑 / 空島 / 小生態 / 蜂巢 / 小屋 / 遺跡 / 湖 / 地下湖 / 小點位至多一個地標（村莊、石柱圈小點位沒有）；九成以上有
     expect(marked.every((b) => b.landmarks.length <= 1)).toBe(true);
     expect(marked.filter((b) => b.kind === 'minor').every((b) => b.landmarks.length === (b.sub === 'stones' ? 0 : 1))).toBe(true);
-    expect(e.landmarks.length).toBeGreaterThanOrEqual(0.9 * marked.filter((b) => b.kind !== 'village' && b.sub !== 'stones').length);
+    // 九成的比例只算舊種類（小點位由上一行精確斷言，不進分子 / 分母）
+    const old = marked.filter((b) => b.kind !== 'minor');
+    expect(old.flatMap((b) => b.landmarks).length).toBeGreaterThanOrEqual(0.9 * old.filter((b) => b.kind !== 'village').length);
     expect(marked.filter((b) => b.kind === 'mineshaft').length).toBeGreaterThan(3); expect(marked.filter((b) => b.kind === 'sky_island').length).toBeGreaterThanOrEqual(2);
     for (const k of ['mushroom_biome', 'crystal_cave', 'hive']) expect(marked.some((b) => b.kind === k), k).toBe(true);
     expect(e.sites).toEqual(all.filter((b) => b.site).map((b) => b.site));

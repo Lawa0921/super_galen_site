@@ -92,9 +92,10 @@ describe('gen2 sea points: islands / shipwrecks / floating crates', () => {
       const src = new Gen2Source(seed);
       for (const side of [1, -1] as const) for (const i of [1, 3, 5, 7]) for (const s of src.layout.landmass(side, i).slots) {
         if (s.poi === 'island') continue;
-        const b = src.blueprints.overlapping(s.x0, s.x1).find((q) => q.kind === s.poi && q.x >= s.x0 && q.x < s.x1)!;
+        const b = src.blueprints.overlapping(s.x0, s.x1).find((q) => q.kind === s.poi && q.x >= s.x0 && q.x < s.x1), msg = `${seed} ${side}:${i} slot ${s.k} ${s.poi}`;
+        expect(b, msg).toBeDefined();
         n++;
-        expect(Math.abs(b.x + (b.w >> 1) - (s.x0 + ((s.x1 - s.x0) >> 1))), `${seed} ${side}:${i} slot ${s.k} ${s.poi}`).toBeLessThanOrEqual(20);
+        expect(Math.abs(b!.x + (b!.w >> 1) - (s.x0 + ((s.x1 - s.x0) >> 1))), msg).toBeLessThanOrEqual(20);
       }
     }
     expect(n).toBeGreaterThan(30);
