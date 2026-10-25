@@ -1,9 +1,12 @@
 // discovery.test.ts — 地區 / 地標（由 worldgen 推導、依種子命名）、首次進入的發現、日誌統計、存檔 JSON
 import { describe, it, expect } from 'vitest';
-import { buildRegions, Discovery, CATEGORY_LABEL, outerRegions, gen2Regions, NAMES, gen2RegionId, isGen2RegionId, isOuterRegionId, regionFromJSON, toRegionJSON, type RegionSource, type Region } from './discovery';
+import { buildRegions, Discovery, CATEGORY_LABEL, outerRegions, gen2Regions, gen2RegionById, gen2HomeRegions, NAMES, gen2RegionId, isGen2RegionId, isOuterRegionId, regionFromJSON, toRegionJSON, type RegionSource, type Region, type JournalStats } from './discovery';
 import { gen2SiteRegionId, isGen2SiteRegionId, siteOfRegionId, encodeStructureId } from './gen2/structId';
 import { DelveGame } from './game';
 import { Gen2Source } from './gen2';
+import { homeContent } from './gen2/home';
+import { slotOf, partsOf, type Blueprint } from './gen2/blueprint';
+import { FILL_REACH } from './gen2/fill';
 import { SPAWN_X } from './gen2/layout';
 import { CULTURES } from './gen2/cultures';
 import { OuterProfile, type CentralFrame } from './legacy/chunkgen';
@@ -184,12 +187,13 @@ describe('gen2Regions', () => {
     }
     for (let x = -30_000; x < 30_000; x += 977) expect(q2(x, 300).map((r) => [r.id, r.name])).toEqual(q(x, 300).map((r) => [r.id, r.name]));
     expect(q(SPAWN_X, 300)[0].name).toBe('家鄉林地'); expect(q(5, 300)[0].name).toBe('西岸沙灘');
-    // 結構地區：在每份小屋 / 遺跡 / 沉船藍圖的中心查，id = gen2SiteRegionId(藍圖 id, 0)、反查得回藍圖、不在地塊地區範圍
+    // 結構地區：在每份小屋 / 遺跡 / 沉船藍圖主體（部件 0；沒有部件 = 外框，Task 15）的中心查，id = gen2SiteRegionId(藍圖 id, 0)、反查得回藍圖、不在地塊地區範圍
     const bps = src.blueprints.overlapping(-30_000, 30_000).filter((b) => b.kind === 'cabin' || b.kind === 'ruin' || b.kind === 'shipwreck');
     expect(new Set(bps.map((b) => b.kind)).size).toBe(3);
     const siteIds = new Set<number>();
     for (const b of bps) {
-      const r = q(b.x + (b.w >> 1), b.y + (b.h >> 1)).find((g) => g.cat === 'site' && g.x === b.x && g.y === b.y && g.w === b.w && g.h === b.h)!;
+      const p = partsOf(b)[0];
+      const r = q(p.x + (p.w >> 1), p.y + (p.h >> 1)).find((g) => g.cat === 'site' && g.x === p.x && g.y === p.y && g.w === p.w && g.h === p.h)!;
       expect(r.id).toBe(gen2SiteRegionId(b.id, 0)); expect(r.kind).toBe(b.kind);
       expect(siteOfRegionId(r.id)).toEqual({ sid: b.id, part: 0 }); expect(isGen2RegionId(r.id)).toBe(false);
       siteIds.add(r.id);
@@ -220,6 +224,141 @@ describe('gen2Regions', () => {
     const d = src.layout.landmass(1, 1).islands[0];
     expect(NAMES.island).toContain(q((d.x0 + d.x1) >> 1, 300).at(-1)!.name);
   });
+});
+
+// ── Task 15：gen2 地區涵蓋所有結構種類、已知地區表、id 反查 ──
+/** OuterProfile('od') 下 outerRegions 回非空的一點（東境第一段陸地，OUTER_BEFORE[1]） */
+const OUTER_PT: [number, number] = [4800, 300];
+const totals = (s: JournalStats): [string, number][] => s.cats.map((c) => [c.cat, c.total]);
+/** 地區去掉 contains（函式不能 deep-equal） */
+const plain = (r: Region): Omit<Region, 'contains'> => { const { contains: _c, ...rest } = r; return rest; };
+/** 會立地區的 gen2 藍圖種類（新錨點 alcove / molten_shrine / shaft_cache / spawn_tablet、箱子、熔岩池不立） */
+const SITE_BP = new Set(['cabin', 'ruin', 'shipwreck', 'mineshaft', 'sky_island', 'lake', 'village', 'hall', 'dungeon', 'mushroom_biome', 'crystal_cave', 'hive', 'cave_lake']);
+
+describe('gen2 地區：所有結構種類、已知地區表、id 反查', () => {
+  const src = new Gen2Source('rg2'), q = gen2Regions('rg2', src), byId = gen2RegionById('rg2', src);
+  it('所有 gen2 種類都有地區、id 唯一、可反查回同名同範圍', () => {
+    const kinds = new Set<string>(), seen = new Map<number, string>();
+    const check = (x: number, y: number): void => {
+      for (const r of q(x, y)) {
+        kinds.add(r.kind);
+        if (seen.has(r.id)) expect(seen.get(r.id)).toBe(r.name); else seen.set(r.id, r.name);
+        expect(byId(r.id)).toMatchObject({ id: r.id, name: r.name, x: r.x, y: r.y, w: r.w, h: r.h });
+      }
+    };
+    for (let x = -20_000; x < 20_000; x += 7) for (const y of [300, 420, 700, 900]) check(x, y);
+    // 固定 y 的格點掃不到淺的遺跡 / 村莊（y 約 302–337）與小密室：另外在每份藍圖主體、礦坑密室、地城房間的中心查（取自藍圖本身，不經地區程式）
+    const mid = (b: { x: number; y: number; w: number; h: number }): void => check(b.x + (b.w >> 1), b.y + (b.h >> 1));
+    for (const b of src.blueprints.overlapping(-20_000, 20_000)) {
+      mid(partsOf(b)[0]);
+      if (b.secret) mid(b.secret);
+      if (b.site?.kind === 'dungeon') for (const r of b.site.info.rooms) mid(r);
+    }
+    for (const k of ['cabin', 'ruin', 'mineshaft', 'secret_room', 'sky_island', 'village', 'dwarf_hall', 'dungeon', 'mushroom_biome', 'crystal_cave', 'underground_lake']) expect(kinds, k).toContain(k);
+    for (const k of ['shipwreck', 'pond', 'hive', 'dungeon_entry']) expect(kinds, k).toContain(k);
+  }, 120_000);
+  it('每份立地區的藍圖在主體中心與左右兩端查得到自己的地區；新錨點 / 箱子 / 熔岩池不立地區、查詢不丟錯', () => {
+    const skipped = new Set<string>();
+    for (const b of src.blueprints.overlapping(-20_000, 20_000)) {
+      const own = (x: number, y: number): Region | undefined => q(x, y).find((r) => r.id === gen2SiteRegionId(b.id, 0));
+      if (!SITE_BP.has(b.kind)) {
+        skipped.add(b.kind);
+        expect(byId(gen2SiteRegionId(b.id, 0)), b.kind).toBeNull();
+        for (let x = b.x; x < b.x + b.w; x++) expect(q(x, b.y + (b.h >> 1)).every((r) => !isGen2SiteRegionId(r.id) || siteOfRegionId(r.id).sid !== b.id)).toBe(true);
+        continue;
+      }
+      const r0 = byId(gen2SiteRegionId(b.id, 0))!;
+      expect(r0, `${b.kind} ${b.id}`).not.toBeNull();
+      const cy = r0.y + (r0.h >> 1);
+      for (const x of [r0.x, r0.x + (r0.w >> 1), r0.x + r0.w - 1]) expect(own(x, cy), `${b.kind} ${b.id} @ ${x},${cy}`).toMatchObject(plain(r0));
+    }
+    for (const k of ['alcove', 'molten_shrine', 'shaft_cache', 'spawn_tablet']) expect(skipped, k).toContain(k);
+  }, 60_000);
+  it('外框伸出自己槽的結構（槽外 < FILL_REACH 欄）在槽外也查得到、反查相同（overlapping 多查 FILL_REACH）', () => {
+    // 目前立地區的種類外框都在自己的槽內（8 個種子 ±30,000 實測 0 份），所以把一份小屋移到槽外，用 BlueprintIndex 的語意
+    // （查詢範圍要碰到藍圖的槽、且碰到外框才回）包一個假的 blueprints：只查那一欄碰不到它的槽，多查 FILL_REACH 才碰得到
+    const real = src.blueprints.overlapping(-20_000, 20_000).find((b) => b.kind === 'cabin' && !b.parts)!;
+    const sl = slotOf(real.id, src.layout), moved: Blueprint = { ...real, x: sl.x1 + FILL_REACH - 1 - real.w };
+    const overlapping = (x0: number, x1: number): Blueprint[] => (x0 < sl.x1 && x1 > sl.x0 && moved.x < x1 && moved.x + moved.w > x0 ? [moved] : []);
+    const fake = Object.create(src, { blueprints: { value: { overlapping, groundAt: (x: number) => src.blueprints.groundAt(x), homePlans: () => [] } } }) as Gen2Source;
+    const fq = gen2Regions('rg2', fake), fid = gen2RegionById('rg2', fake), x = moved.x + moved.w - 1, y = moved.y + (moved.h >> 1);
+    expect(x).toBeGreaterThanOrEqual(sl.x1);
+    expect(overlapping(x, x + 1)).toEqual([]);
+    const r = fq(x, y).find((g) => g.id === gen2SiteRegionId(real.id, 0));
+    expect(r).toMatchObject({ kind: 'cabin', cat: 'site', x: moved.x, y: moved.y, w: moved.w, h: moved.h });
+    expect(plain(fid(r!.id)!)).toEqual(plain(r!));
+  });
+  it('密室（礦坑 part 1）與地城房間（part 1..）有自己的地區、在礦坑 / 地城之前回', () => {
+    const shaft = src.blueprints.homePlans().find((b) => b.kind === 'mineshaft' && b.secret)!;
+    const s = shaft.secret!, sec = q(s.x + (s.w >> 1), s.y + (s.h >> 1));
+    expect(sec[0]).toMatchObject({ id: gen2SiteRegionId(shaft.id, 1), kind: 'secret_room', cat: 'secret', x: s.x, y: s.y, w: s.w, h: s.h });
+    expect(sec.map((r) => r.id)).toContain(gen2SiteRegionId(shaft.id, 0));
+    const dun = src.blueprints.homePlans().find((b) => b.kind === 'dungeon')!;
+    const info = homeContent(src).dungeon!, entry = info.rooms[info.entryRoom];
+    const at = q(entry.x + (entry.w >> 1), entry.y + (entry.h >> 1));
+    expect(at[0]).toMatchObject({ kind: 'dungeon_entry', cat: 'dungeon', x: entry.x, y: entry.y, w: entry.w, h: entry.h });
+    expect(siteOfRegionId(at[0].id)).toMatchObject({ sid: dun.id });
+    expect(siteOfRegionId(at[0].id).part).toBeGreaterThan(0);
+    expect(at.find((r) => r.kind === 'dungeon')).toMatchObject({ id: gen2SiteRegionId(dun.id, 0), cat: 'dungeon', ...info.bbox });
+  });
+  it('反查：不存在的 id → null（地塊地區 sub ≠ 0、沒有的地區 index、沒有的槽、範圍外）', () => {
+    expect(byId(gen2RegionId(1, 2, 0, 1))).toBeNull();
+    expect(byId(gen2RegionId(1, 2, 63, 0))).toBeNull();
+    expect(byId(gen2SiteRegionId(encodeStructureId(1, 2, 31, 31, 0), 0))).toBeNull();
+    expect(byId(5)).toBeNull(); expect(byId(-1)).toBeNull(); expect(byId(2 ** 40)).toBeNull();
+  });
+  it('Discovery（gen2，trackOuter）：visit 之後 listKnown 有它；讀檔後 listKnown 與各類別總數完全相同', () => {
+    const d = new Discovery([], { open: true, trackOuter: true }); d.setOuter(q); d.setResolver(byId);
+    const r = q(SPAWN_X, 300).at(-1)!; d.visit(SPAWN_X, 300);
+    expect(d.listKnown().map((k) => k.id)).toContain(r.id);
+    const j = d.toJSON(), d2 = new Discovery([], { open: true, trackOuter: true }); d2.setResolver(byId); d2.load(j);
+    expect(d2.region(r.id)!.name).toBe(r.name);
+    expect(d2.listKnown().map((k) => k.id)).toEqual(d.listKnown().map((k) => k.id));
+    expect(d2.stats()).toEqual(d.stats());
+  });
+  it('know：同 id 不重複；region 依序查中央 → 已知表 → resolver；resolver 查到的不進已知表', () => {
+    const home = gen2HomeRegions('rg2', src), d = new Discovery([], { open: true, trackOuter: true });
+    d.know(home); d.know(home.slice(0, 3));
+    expect(d.listKnown().map((r) => r.id)).toEqual(home.map((r) => r.id));
+    expect(d.region(home[0].id)).toBe(home[0]);
+    const far = q(-15_000, 300).at(-1)!;
+    expect(d.region(far.id)).toBeNull();
+    d.setResolver(byId);
+    expect(d.region(far.id)).toMatchObject({ id: far.id, name: far.name });
+    expect(d.listKnown()).toHaveLength(home.length);
+    // 已知表內的類別總數 = stats 的總數
+    const site = d.stats().cats.find((c) => c.cat === 'site')!;
+    expect(site.total).toBe(home.filter((r) => r.cat === 'site').length);
+  });
+  it('舊世界（沒有 trackOuter）：visit v1 外圍地區不改 listKnown 與日誌總數，讀檔前後相同（Q12）', () => {
+    const regs = buildRegions(source()), f = outerRegions('od', profile), d = new Discovery(regs); d.setOuter(f); const before = d.stats();
+    const [ox, oy] = OUTER_PT; expect(f(ox, oy).length).toBeGreaterThan(0); d.visit(ox, oy);
+    expect(d.listKnown()).toHaveLength(regs.length); expect(totals(d.stats())).toEqual(totals(before));
+    expect(d.toJSON()).not.toHaveProperty('known');
+    const d2 = new Discovery(regs); d2.setOuter(f); d2.load(d.toJSON()); expect(totals(d2.stats())).toEqual(totals(before));
+  });
+  it('主機 / 客人：兩個獨立 Gen2Source 建出的家鄉已知表 deep-equal；gen2RegionById 與 gen2Regions 對同種子一致', () => {
+    const other = new Gen2Source('rg2'), a = gen2HomeRegions('rg2', src), b = gen2HomeRegions('rg2', other);
+    expect(a.length).toBeGreaterThan(20);
+    expect(b.map(plain)).toEqual(a.map(plain));
+    const byId2 = gen2RegionById('rg2', other);
+    for (const r of a) {
+      expect(plain(byId2(r.id)!)).toEqual(plain(r));
+      const cx = r.x + (r.w >> 1), cy = r.y + (r.h >> 1);
+      expect(byId2(r.id)!.contains(cx, cy)).toBe(r.contains(cx, cy));
+    }
+  });
+  it('gen2 遊戲開局：家鄉每座村莊 / 地廳 / 地城都在 listKnown，日誌 site 類別總數 ≥ 村莊數 + 地廳數', () => {
+    const g = new DelveGame({ seed: 'rg2', worldGen: { kind: 'gen2' } }), hc = homeContent(new Gen2Source('rg2'));
+    const k = g.discovery.listKnown(), n = (kind: string): number => k.filter((r) => r.kind === kind).length;
+    expect(hc.villages.length).toBeGreaterThan(0);
+    expect(n('village')).toBe(hc.villages.length);
+    expect(hc.halls.length).toBeGreaterThanOrEqual(0);
+    expect(n('dwarf_hall')).toBe(hc.halls.length);
+    expect(n('dungeon')).toBe(1);
+    expect(g.discovery.stats().cats.find((c) => c.cat === 'site')!.total).toBeGreaterThanOrEqual(hc.villages.length + hc.halls.length);
+    expect(k.map((r) => r.id)).toEqual(gen2HomeRegions('rg2', new Gen2Source('rg2')).map((r) => r.id));
+  }, 60_000);
 });
 
 // Task 16：烘焙世界把舊地區清單存成 RegionJSON（形狀取代 contains 函式），讀回後 contains 要逐格相同

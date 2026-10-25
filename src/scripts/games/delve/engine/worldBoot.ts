@@ -3,7 +3,9 @@
 //   · gen2：不建中央、什麼都不生成（欄由 Gen2Source 在 ensureColumn 時生成）；開局先建家鄉全部藍圖（BlueprintIndex.homePlans，Q9，
 //     客人副本也一樣——只算藍圖），再由 gen2/home.ts 的 homeContent（Q11，Task 14）填：sites（家鄉聚落，居民開局就在）、tablets（14 塊石碑，
 //     日誌古碑 0 / 14、碑文 id）、relics、landmarks（日誌的地標總數）、structures（地下背景：蘑菇林 / 地城）。
-//     villages / halls / dungeon 仍給空的（舊世界的 legacySites / 地城提示走它們；gen2 的聚落走 sites），regions 仍是 []（地區走 Task 15）。
+//     villages / halls / dungeon 仍給空的（舊世界的 legacySites / 地城提示走它們；gen2 的聚落走 sites），regions 仍是 []（中央沒有地區清單）；
+//     地區（Task 15）：outer = gen2Regions、known = gen2HomeRegions（家鄉地塊地區 + 家鄉藍圖的結構地區，開局 Discovery.know——家鄉全知）、
+//     resolveRegion = gen2RegionById（讀檔把 trackOuter 存的外圍已知地區反查回來）。
 //   · baked（烘焙過的舊世界，Task 16）：不跑舊生成器；中央的格子全在存檔裡（讀檔蓋上），每欄資料 / 生成資訊 / 地區清單取存檔的
 //     LegacyMeta；欄由 BakedSource 分段生成（舊外圍 = v1、接縫外 = gen2）。
 import { World, type ColumnSource } from './world';
@@ -12,7 +14,7 @@ import { OuterGen } from './legacy/chunkgen';
 import type { GenResult } from './legacy/worldgen';
 import type { BiomeSegment, Structure, Landform, ReservedZone, GenLayers, GenRelic, DungeonInfo, VillageInfo, HallInfo, LandmarkInfo, GenSite } from './genTypes';
 import type { SpringSpec } from './liquid';
-import { outerRegions, gen2Regions, regionFromJSON, type Region } from './discovery';
+import { outerRegions, gen2Regions, gen2RegionById, gen2HomeRegions, regionFromJSON, type Region } from './discovery';
 import { bakedLandQuery, gen2LandQuery, v1LandQuery, type LandQuery } from './waystones';
 import { BakedSource } from './bakedSource';
 import type { BakeInfo } from '../save/bake';
@@ -48,6 +50,10 @@ export interface WorldContent {
   regions: Region[] | null;
   /** 外圍 / gen2 地區查詢（legacy = outerRegions、gen2 = gen2Regions） */
   outer: ((x: number, y: number) => Region[]) | null;
+  /** 開局就知道的地區（Discovery.know；gen2 = gen2HomeRegions、legacy / baked = []——舊世界的已知表 = 中央 regions） */
+  known: Region[];
+  /** 地區 id 反查（Discovery.setResolver；gen2 = gen2RegionById、legacy / baked = null） */
+  resolveRegion: ((id: number) => Region | null) | null;
   /** 傳送碑的陸地查詢（null = 有界世界，只有出生點那顆） */
   land: LandQuery | null;
 }
@@ -76,6 +82,8 @@ export function bootLegacy(seed: string, gen: GenResult, opts: { bounds: WorldBo
     sites: [],
     regions: null,
     outer: outer ? outerRegions(seed, outer) : null,
+    known: [],
+    resolveRegion: null,
     land: outer ? v1LandQuery(outer) : null,
   };
 }
@@ -105,6 +113,8 @@ export function bootGen2(seed: string, spec: Extract<WorldGenSpec, { kind: 'gen2
     sites: hc.sites,
     regions: [],
     outer: gen2Regions(seed, source),
+    known: gen2HomeRegions(seed, source),
+    resolveRegion: gen2RegionById(seed, source),
     land: gen2LandQuery(source),
   };
 }
@@ -136,6 +146,8 @@ export function bootBaked(seed: string, spec: Extract<WorldGenSpec, { kind: 'bak
     sites: [],
     regions: m.regions.map((j) => regionFromJSON(j, m.layers, m.frame.height)),
     outer: (x, y) => (source.inLegacy(x) ? v1(x, y) : g2(x, y)),
+    known: [],
+    resolveRegion: null,
     land: bakedLandQuery(m.frame.width, bake.west.x, bake.east.x, v1LandQuery(source.v1.profile), gen2LandQuery(source.gen2)),
   };
 }

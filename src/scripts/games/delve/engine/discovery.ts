@@ -4,7 +4,9 @@
 //     id = 陣列索引（同種子永遠相同），存檔只存 id。
 //   · Discovery：已發現的地區、讀過的碑文、拿到的珍寶、最深紀錄、移動距離 → 日誌統計與完成度。
 //   · 外圍（B13）：每個 v0 生態段與兩片海各是一個惰性地區（cat land），id = OUTER_REGION_BASE + zigzag(段號, 側)；
-//     會跳「發現」並存進 found，但不算進日誌的總數與完成度（stats 只看中央的 regions）。
+//     會跳「發現」並存進 found，但不算進日誌的總數與完成度（stats 只看已知表，舊世界的已知表 = 中央的 regions）。
+//   · 已知地區表（Task 15）：listKnown = 中央 regions ∪ know() 加入的地區；stats 的各類別總數只數它。gen2 世界開局 know(gen2HomeRegions)（家鄉全知），
+//     trackOuter 時 visit 到的外圍地區自動 know 並存進 toJSON().known（Q12）；region(id) 依序查中央 → 已知表 → resolver（gen2RegionById）。
 //   · RegionJSON（Task 16）：烘焙過的舊世界把 buildRegions 的清單存進存檔（id 依生成順序，之後不再重算）；
 //     contains 函式換成可存的形狀 RegionShape（buildRegions 填 shape），regionFromJSON 以深度層線重建出逐格相同的 contains。
 import { Rng } from './rng';
@@ -19,8 +21,10 @@ import type { Side, RegionInfo } from './regionInfo';
 import type { Gen2Source } from './gen2';
 import { CULTURES } from './gen2/cultures';
 import { VARIANT, SPAWN_X, type Landmass } from './gen2/layout';
-import type { Blueprint } from './gen2/blueprint';
-import { gen2SiteRegionId, isGen2SiteRegionId } from './gen2/structId';
+import { slotOf, partsOf, type Blueprint, type BpBox, type BpKind } from './gen2/blueprint';
+import { FILL_REACH } from './gen2/fill';
+import { gen2SiteRegionId, isGen2SiteRegionId, siteOfRegionId } from './gen2/structId';
+import { X_LIMIT } from './coords';
 
 /** 分類：地表區域（生態區）、地層、洞窟與秘境、遺跡與建築、地城、密室 */
 export type RegionCat = 'land' | 'depth' | 'cave' | 'site' | 'dungeon' | 'secret';
@@ -96,6 +100,7 @@ export const NAMES: Record<string, readonly string[]> = {
   island: ['孤礁島', '椰影島', '潮間小島', '海鷗島', '漂木島', '無名小島'],
   shipwreck: ['擱淺的商船', '沉默的殘骸', '鏽錨之舟', '破帆沉船'],
   dwarf_hall: ['鐵脈地廳', '深爐大廳', '灰鬚石廳', '琥珀礦廳'],
+  pond: ['蘆葦池', '蛙鳴池', '睡蓮池', '野鴨池', '清泉池', '月影池'],
 };
 const ROOM_NAMES: Partial<Record<RoomKind, readonly string[]>> = {
   entry: ['入口大廳'], library: ['塵封書庫', '禁書庫', '低語書齋'], prison: ['鐵鍊牢房', '沉默監牢', '鏽鎖牢區'],
@@ -326,12 +331,45 @@ export function isGen2RegionId(id: number): boolean {
 const GEN2_BIOME_KEY = ['forest', 'desert', 'snow', 'jungle'] as const;
 
 /**
- * gen2 地區的查詢：(x, y) → 那裡的結構（小屋 / 遺跡 / 沉船）與所在地區（陸地 / 海 / 島），先結構、後地區（惰性建立、快取）。
- * 地區範圍 = 欄範圍、y 在洞穴層線以上；結構 = 藍圖外框。名字確定（由 id 雜湊挑），同種子跨實例相同。
+ * gen2 藍圖種類 → 結構地區（kind、cat、round = 橢圓）。沒列的種類不立地區：箱子（crate）、熔岩池，
+ * 以及家鄉的石碑 / 遺物點（alcove / molten_shrine / shaft_cache / spawn_tablet，Task 14；它們是點不是區域）。
+ * 之後的種類（keep / hermit_hut：Task 18；lighthouse / wreck 島 / reef / sea_ruin：Task 20）接上時加在這裡。
  */
-export function gen2Regions(seed: string, src: Gen2Source): (x: number, y: number) => Region[] {
+const GEN2_SITE: Partial<Record<BpKind, { kind: string; cat: RegionCat; round?: true }>> = {
+  cabin: { kind: 'cabin', cat: 'site' }, ruin: { kind: 'ruin', cat: 'site' }, shipwreck: { kind: 'shipwreck', cat: 'site' },
+  mineshaft: { kind: 'mineshaft', cat: 'site' }, sky_island: { kind: 'sky_island', cat: 'site' }, lake: { kind: 'pond', cat: 'site' },
+  village: { kind: 'village', cat: 'site' }, hall: { kind: 'dwarf_hall', cat: 'site' },
+  mushroom_biome: { kind: 'mushroom_biome', cat: 'cave', round: true }, crystal_cave: { kind: 'crystal_cave', cat: 'cave', round: true },
+  hive: { kind: 'hive', cat: 'cave', round: true }, cave_lake: { kind: 'underground_lake', cat: 'cave' },
+  dungeon: { kind: 'dungeon', cat: 'dungeon' },
+};
+
+/** gen2 地區的建法（gen2Regions / gen2RegionById / gen2HomeRegions 共用；依 (src, seed) 共用一份，快取也共用） */
+interface Gen2Kit {
+  /** 地塊 m 的第 info 個地區 */
+  land(m: Landmass, info: RegionInfo): Region;
+  /** 藍圖的結構地區（part 0 = 結構本身；礦坑密室 part 1、地城房間 part 1..）；不立地區的種類 = [] */
+  sites(b: Blueprint): readonly Region[];
+}
+const GEN2_KITS = new WeakMap<Gen2Source, Map<string, Gen2Kit>>();
+
+function gen2Kit(seed: string, src: Gen2Source): Gen2Kit {
+  let bySeed = GEN2_KITS.get(src);
+  if (!bySeed) { bySeed = new Map(); GEN2_KITS.set(src, bySeed); }
+  let kit = bySeed.get(seed);
+  if (!kit) { kit = makeGen2Kit(seed, src); bySeed.set(seed, kit); }
+  return kit;
+}
+
+/**
+ * 名字確定（由 id 雜湊挑），同種子跨實例相同（主機 / 客人逐位相同）。
+ * 地塊地區範圍 = 欄範圍、y 在洞穴層線以上；結構地區 = 藍圖主體（部件 0；沒有部件 = 外框——豎井部件不算進地區）的矩形，
+ * 蘑菇林 / 水晶洞 / 蜂巢是主體的內切橢圓；地城 = DungeonInfo.bbox（同舊世界）、房間 = 有名字的房間（ROOM_NAMES，依 rooms 順序編 part 1..）；
+ * 礦坑密室 = Blueprint.secret（密室室內，Task 14）。
+ */
+function makeGen2Kit(seed: string, src: Gen2Source): Gen2Kit {
   const sName = seedInt(seed, 'gen2-region-names');
-  const cache = new Map<number, Region>();
+  const cache = new Map<number, Region>(), siteCache = new Map<number, readonly Region[]>();
   const deep = (x: number): number => src.layersAt(x).deep;
   const pickName = (list: readonly string[], id: number): string => list[Math.floor(hash2(id & 0xffffff, id >>> 24, sName) * list.length) % list.length];
   const cached = (id: number, make: () => Region): Region => {
@@ -370,32 +408,109 @@ export function gen2Regions(seed: string, src: Gen2Source): (x: number, y: numbe
       };
     });
   };
-  // 結構地區 id = gen2SiteRegionId(藍圖 id, 0)（位元配置只在 gen2/structId.ts）
-  const structureOf = (b: Blueprint): Region | null => {
-    if (b.kind !== 'cabin' && b.kind !== 'ruin' && b.kind !== 'shipwreck') return null;
-    const key = b.kind, id = gen2SiteRegionId(b.id, 0);
-    return cached(id, () => ({
-      id, cat: 'site', kind: key, name: pickName(NAMES[key], id), x: b.x, y: b.y, w: b.w, h: b.h,
-      ax: b.x + (b.w >> 1), ay: b.y + (b.h >> 1), contains: rectHit(b.x, b.y, b.w, b.h),
-    }));
+  // 結構地區 id = gen2SiteRegionId(藍圖 id, part)（位元配置只在 gen2/structId.ts）
+  const site = (sid: number, part: number, cat: RegionCat, kind: string, names: readonly string[], box: BpBox, round = false): Region => {
+    const id = gen2SiteRegionId(sid, part), { x, y, w, h } = box;
+    return { id, cat, kind, name: pickName(names, id), x, y, w, h, ax: x + (w >> 1), ay: y + (h >> 1), contains: round ? ellipseHit(x, y, w, h) : rectHit(x, y, w, h) };
   };
+  const sitesOf = (b: Blueprint): readonly Region[] => {
+    const m = GEN2_SITE[b.kind];
+    if (!m) return [];
+    const out: Region[] = [];
+    const s = b.site;
+    if (m.kind === 'dungeon' && s?.kind === 'dungeon') {
+      out.push(site(b.id, 0, 'dungeon', 'dungeon', NAMES.dungeon, s.info.bbox));
+      let part = 1;
+      for (const r of s.info.rooms) {
+        const list = ROOM_NAMES[r.kind];
+        if (!list || part >= 64) continue;
+        out.push(site(b.id, part++, 'dungeon', `dungeon_${r.kind}`, list, r));
+      }
+    } else {
+      out.push(site(b.id, 0, m.cat, m.kind, NAMES[m.kind], partsOf(b)[0], m.round === true));
+      if (m.kind === 'mineshaft' && b.secret) out.push(site(b.id, 1, 'secret', 'secret_room', NAMES.secret_room, b.secret));
+    }
+    return out;
+  };
+  return {
+    land: regionOf,
+    sites(b: Blueprint): readonly Region[] {
+      let rs = siteCache.get(b.id);
+      if (!rs) { rs = sitesOf(b); if (siteCache.size >= 4096) siteCache.clear(); siteCache.set(b.id, rs); }
+      return rs;
+    },
+  };
+}
+
+/**
+ * gen2 地區的查詢：(x, y) → 那裡的結構地區（小的先：密室 / 地城房間先於礦坑 / 地城）與所在地區（陸地 / 海 / 島），先結構、後地區（惰性建立、快取）。
+ * 結構用 overlapping 多查 FILL_REACH 欄（藍圖外框可能伸出自己的槽，同 Gen2Source.objectsIn / extrasIn；整區錨點如家鄉地城由 overlapping 本身處理）。
+ */
+export function gen2Regions(seed: string, src: Gen2Source): (x: number, y: number) => Region[] {
+  const kit = gen2Kit(seed, src);
   return (x: number, y: number): Region[] => {
     const m = src.layout.landmassAt(x), info = m ? src.layout.regionAt(x) : null;
     if (!m || !info) return [];
     const out: Region[] = [];
-    for (const b of src.blueprints.overlapping(x, x + 1)) {
-      const r = y >= b.y && y < b.y + b.h ? structureOf(b) : null;
-      if (r && r.contains(x, y)) out.push(r);
+    for (const b of src.blueprints.overlapping(x - FILL_REACH, x + 1 + FILL_REACH)) {
+      if (b.x > x || b.x + b.w <= x || b.y > y || b.y + b.h <= y) continue;
+      for (const r of kit.sites(b)) if (r.contains(x, y)) out.push(r);
     }
+    out.sort((a, b) => a.w * a.h - b.w * b.h);
     // 島在海之中：先回海、再回島
     if (info.kind === 'island') {
-      const sea = regionOf(m, m.regions[0]);
+      const sea = kit.land(m, m.regions[0]);
       if (sea.contains(x, y)) out.push(sea);
     }
-    const r = regionOf(m, info);
+    const r = kit.land(m, info);
     if (r.contains(x, y)) out.push(r);
     return out;
   };
+}
+
+/**
+ * gen2 地區 id → 地區（gen2Regions 會回的同一個：同名、同範圍）；地塊地區 id（gen2RegionId，sub 必須是 0）與結構地區 id（gen2SiteRegionId）都能反查，
+ * 不存在（沒有那片地塊 / 地區 / 槽 / 藍圖 / part、不立地區的種類、超出 ±X_LIMIT、不是 gen2 的 id）→ null。
+ * 結構：slotOf(藍圖 id) 的槽多查 FILL_REACH 欄找那份藍圖（只看它那一層；整區錨點的槽在地區內，overlapping 找得到）。
+ */
+export function gen2RegionById(seed: string, src: Gen2Source): (id: number) => Region | null {
+  const kit = gen2Kit(seed, src), layout = src.layout;
+  const inRange = (m: Landmass): boolean => m.x1 > -X_LIMIT && m.x0 < X_LIMIT;
+  const landOf = (id: number): Region | null => {
+    const off = id - GEN2_REGION_BASE, sub = off % 64, index = Math.floor(off / 64) % 64, t = Math.floor(off / 4096), west = t % 2, i = (t - west) / 2;
+    if (sub !== 0) return null;
+    let m: Landmass | null;
+    if (i === 0) { const h = layout.origin.home; m = west === 0 && h ? layout.landmassAt(h.x0) : null; if (m && m.kind !== 'home') m = null; }
+    else m = layout.landmass(west ? -1 : 1, i);
+    const info = m && inRange(m) ? m.regions[index] : undefined;
+    return m && info ? kit.land(m, info) : null;
+  };
+  const siteOf = (id: number): Region | null => {
+    const { sid, part } = siteOfRegionId(id), sl = slotOf(sid, layout);
+    if (sl.x1 <= -X_LIMIT || sl.x0 >= X_LIMIT) return null;
+    const b = src.blueprints.overlapping(sl.x0 - FILL_REACH, sl.x1 + FILL_REACH, [sl.layer]).find((p) => p.id === sid);
+    return (b && kit.sites(b).find((r) => r.id === id)) ?? null;
+  };
+  return (id: number): Region | null => {
+    try {
+      if (isGen2RegionId(id)) return landOf(id);
+      if (isGen2SiteRegionId(id)) return siteOf(id);
+    } catch (e) {
+      // 解不開的 id（不存在的槽 / 地塊）
+      if (e instanceof RangeError) return null;
+      throw e;
+    }
+    return null;
+  };
+}
+
+/** gen2 家鄉開局就知道的地區（Task 15）：家鄉地塊的每個地區 + 家鄉藍圖（BlueprintIndex.homePlans，同 homeContent）的結構地區，依 id 排序；沒有家鄉 = [] */
+export function gen2HomeRegions(seed: string, src: Gen2Source): Region[] {
+  const h = src.layout.origin.home, m = h ? src.layout.landmassAt(h.x0) : null;
+  if (!m || m.kind !== 'home') return [];
+  const kit = gen2Kit(seed, src), out: Region[] = m.regions.map((info) => kit.land(m, info));
+  for (const b of src.blueprints.homePlans()) out.push(...kit.sites(b));
+  return out.sort((a, b) => a.id - b.id);
 }
 
 // ── 發現狀態 ─────────────────────────────────────────────
@@ -407,6 +522,8 @@ export interface DiscoveryJSON {
   depthRecord: number; distance: number;
   /** 領過的地標（tile index，排序）；沒有 = 都還沒領 */
   landmarks?: number[];
+  /** trackOuter 的世界（gen2）：visit 時自動加進已知表的外圍地區 id（排序）；讀檔經 resolver 反查後再加回去。舊世界沒有這個欄位 */
+  known?: number[];
 }
 export interface DiscoveryOpts {
   loreTotal?: number;
@@ -416,6 +533,8 @@ export interface DiscoveryOpts {
   /** gen2 世界傳 true（DelveGame 只對 genKind 'gen2' 傳）：load 保留所有存檔的地標鍵、不經 landmarkSet 過濾。
    *  烘焙世界傳 false：BakedSource 沒有 extrasIn，不登錄生成的地標（只有存檔的舊地標，closed 就對）；BakedSource 只在 dev、M2b 刪掉 */
   open?: boolean;
+  /** gen2 世界傳 true（Q12）：visit 到的外圍地區自動 know()、存進 toJSON().known；舊世界不傳（v1 外圍地區不進日誌總數） */
+  trackOuter?: boolean;
 }
 export interface CategoryStat { cat: RegionCat; label: string; found: number; total: number; }
 export interface JournalStats {
@@ -454,6 +573,15 @@ export class Discovery {
   private grid = new Map<number, number[]>();
   /** 外圍地區的查詢（無限世界；回傳 (x, y) 所在的外圍地區；null = 沒有外圍） */
   private outer: ((x: number, y: number) => Region[]) | null = null;
+  /** 已知表（中央 regions 以外的已知地區：gen2 家鄉開局的 know、trackOuter 自動加入的外圍地區） */
+  private readonly extra = new Map<number, Region>();
+  /** trackOuter 自動加入的 id（toJSON().known） */
+  private readonly auto = new Set<number>();
+  /** listKnown 的快取（know 改動已知表時清掉） */
+  private knownList: readonly Region[] | null = null;
+  /** id → 地區的反查（gen2RegionById；region() 與讀檔用；null = 沒有） */
+  private resolver: ((id: number) => Region | null) | null = null;
+  private readonly trackOuter: boolean;
   private lastX: number | null = null;
   private lastY = 0;
 
@@ -462,6 +590,7 @@ export class Discovery {
     this.known = new Set(opts.landmarks ?? []);
     this.landmarkSet = this.known;
     this.open = opts.open === true;
+    this.trackOuter = opts.trackOuter === true;
     this.treasureItems = opts.treasureItems ?? TREASURE_ITEMS;
     for (const r of regions) {
       for (let gy = Math.floor(r.y / CELL); gy <= Math.floor((r.y + r.h - 1) / CELL); gy++) {
@@ -488,6 +617,39 @@ export class Discovery {
   /** 外圍地區的查詢（outerRegions 的結果；null = 沒有外圍） */
   setOuter(fn: ((x: number, y: number) => Region[]) | null): void { this.outer = fn; }
 
+  /** id → 地區的反查（gen2RegionById 的結果；null = 沒有） */
+  setResolver(fn: ((id: number) => Region | null) | null): void { this.resolver = fn; }
+
+  /** 中央 regions 的第 id 個（中央地區 id = 陣列索引） */
+  private central(id: number): Region | null {
+    const r = Number.isInteger(id) && id >= 0 && id < this.regions.length ? this.regions[id] : undefined;
+    return r && r.id === id ? r : null;
+  }
+
+  private isKnown(id: number): boolean { return this.central(id) !== null || this.extra.has(id); }
+
+  /** 加進已知表（同 id 不重複；中央地區本來就已知） */
+  know(regions: readonly Region[]): void { for (const r of regions) this.addKnown(r); }
+
+  /** 加進已知表；回傳是否新加入 */
+  private addKnown(r: Region): boolean {
+    if (this.isKnown(r.id)) return false;
+    this.extra.set(r.id, r);
+    this.knownList = null;
+    return true;
+  }
+
+  /** id → 地區：中央 regions[id] → 已知表 → resolver（resolver 查到的不加進已知表）；都沒有 → null */
+  region(id: number): Region | null {
+    return this.central(id) ?? this.extra.get(id) ?? this.resolver?.(id) ?? null;
+  }
+
+  /** 已知的地區：中央 ∪ 已知表，依 id 排序（快取；別改它） */
+  listKnown(): readonly Region[] {
+    if (!this.knownList) this.knownList = [...this.regions, ...this.extra.values()].sort((a, b) => a.id - b.id);
+    return this.knownList;
+  }
+
   /** 玩家在 (x,y)：回傳這次新發現的地區（越小的越前面——結構比生態區先顯示）；外圍地區排最後 */
   visit(x: number, y: number): Region[] {
     const out: Region[] = [];
@@ -498,7 +660,11 @@ export class Discovery {
     }
     out.sort((a, b) => a.w * a.h - b.w * b.h);
     const os = this.outer?.(x, y);
-    if (os) for (const o of os) if (!this.found.has(o.id)) { this.found.add(o.id); out.push(o); }
+    if (os) for (const o of os) {
+      // trackOuter（gen2）：外圍地區第一次走到就進已知表（已經找到、但舊存檔沒記 known 的也補上）
+      if (this.trackOuter && this.addKnown(o)) this.auto.add(o.id);
+      if (!this.found.has(o.id)) { this.found.add(o.id); out.push(o); }
+    }
     return out;
   }
 
@@ -536,8 +702,9 @@ export class Discovery {
   }
 
   stats(): JournalStats {
+    const known = this.listKnown();
     const cats = CATEGORY_ORDER.map((cat) => {
-      const rs = this.regions.filter((r) => r.cat === cat);
+      const rs = known.filter((r) => r.cat === cat);
       return { cat, label: CATEGORY_LABEL[cat], found: rs.filter((r) => this.found.has(r.id)).length, total: rs.length };
     }).filter((c) => c.total > 0);
     const lore = { found: this.lore.size, total: this.loreTotal };
@@ -556,6 +723,7 @@ export class Discovery {
       landmarks: [...this.landmarks].sort((a, b) => a - b),
       depthRecord: this.depthRecord,
       distance: Math.round(this.distance * 100) / 100,
+      ...(this.trackOuter ? { known: [...this.auto].sort((a, b) => a - b) } : {}),
     };
   }
 
@@ -572,5 +740,11 @@ export class Discovery {
     }
     if (typeof j.depthRecord === 'number' && Number.isFinite(j.depthRecord) && j.depthRecord >= 0) this.depthRecord = Math.floor(j.depthRecord);
     if (typeof j.distance === 'number' && Number.isFinite(j.distance) && j.distance >= 0) this.distance = j.distance;
+    // trackOuter：存檔的外圍已知地區經 resolver 反查後加回已知表（不是 gen2 id / 反查不到 → 丟掉），讀檔後 listKnown 與總數相同
+    if (this.trackOuter) for (const id of ints(j.known)) {
+      if (!isGen2RegionId(id) && !isGen2SiteRegionId(id)) continue;
+      const r = this.isKnown(id) ? null : this.resolver?.(id);
+      if (r && r.id === id && this.addKnown(r)) this.auto.add(id);
+    }
   }
 }

@@ -732,6 +732,9 @@ export class DelveGame {
   readonly stonesUnlocked = new Set<number>();
   /** 外圍地區（無限世界的海 / 生態段；所有 actor 的 Discovery 共用同一個查詢與快取） */
   private readonly outerRegion: ((x: number, y: number) => Region[]) | null;
+  /** 開局就知道的地區（gen2 家鄉全知，Task 15；舊世界 = []）與地區 id 反查（gen2；舊世界 = null）——每個 actor 的 Discovery 都拿到同一份 */
+  private readonly knownRegions: readonly Region[];
+  private readonly regionResolver: ((id: number) => Region | null) | null;
   /** 地表村落 / 矮人地廳（世界生成） */
   readonly villages: readonly VillageInfo[];
   readonly halls: readonly HallInfo[];
@@ -854,6 +857,8 @@ export class DelveGame {
     // 生成的地標（gen2 藍圖）在那一欄載入時才登錄：每個玩家的 Discovery 都要認得它（還沒建 Discovery 的 actor 在建時補上）
     this.world.onGenLandmark = (k) => { for (const a of this.actors.values()) a.discovery?.knowLandmark(k); };
     this.outerRegion = content.outer;
+    this.knownRegions = content.known;
+    this.regionResolver = content.resolveRegion;
     // 傳送碑：出生點那顆在 spawn.x + 7 的生成地表上（舊世界 = 中央每欄陣列、gen2 = source 的側寫：挖掘 / 蓋東西不會讓碑移動）；
     // 外圍的由陸地查詢算（有界世界沒有）
     const stoneX = content.spawn.x + 7;
@@ -896,8 +901,7 @@ export class DelveGame {
     this.halls = content.halls;
     this.landmarks = content.landmarks;
     for (const l of this.landmarks) this.landmarkAt.set(this.world.idx(l.x, l.y), l);
-    this.discovery = new Discovery(this.regions, { loreTotal: content.tablets.length, landmarks: this.landmarkKeys(), open: this.genKind === 'gen2' });
-    this.discovery.setOuter(this.outerRegion);
+    this.discovery = this.newDiscovery();
     // 據點核心範圍的欄 pin 住（無限世界：居民在那裡活動，不卸載）
     this.settle.attach(this.world);
     this.folk = new FolkWorld(this.seed);
@@ -1062,8 +1066,7 @@ export class DelveGame {
     a.inventory = starterInventory();
     a.appearance = normalizeAppearance(character.appearance);
     a.explored = new ExploredMap(this.world.width, this.world.height, undefined, this.world);
-    a.discovery = new Discovery(this.regions, { loreTotal: this.tablets.length, landmarks: this.landmarkKeys(), open: this.genKind === 'gen2' });
-    a.discovery.setOuter(this.outerRegion);
+    a.discovery = this.newDiscovery();
     this.actors.set(pid, a);
     this.evRead.set(pid, this.evBase + this.events.length);
     this.withActor(a, () => {
@@ -2213,6 +2216,15 @@ export class DelveGame {
   }
   /** 目前已知的地標鍵：舊生成器的 + gen2 已登錄的（新建的 Discovery 用） */
   private landmarkKeys(): number[] { return [...this.landmarkAt.keys(), ...this.world.genLandmarks.keys()]; }
+  /** 一個 actor 的 Discovery：中央地區 + 外圍查詢；gen2 另外 trackOuter（Q12）、開局已知的家鄉地區、id 反查（Task 15） */
+  private newDiscovery(): Discovery {
+    const gen2 = this.genKind === 'gen2';
+    const d = new Discovery(this.regions, { loreTotal: this.tablets.length, landmarks: this.landmarkKeys(), open: gen2, trackOuter: gen2 });
+    d.setOuter(this.outerRegion);
+    d.know(this.knownRegions);
+    d.setResolver(this.regionResolver);
+    return d;
+  }
 
   // ── 床 / 傳送石 ───────────────────────────────────────
   /** 目前玩家（cur）的重生點（腳底 tile）：自己選的據點爐心 > 自己的床（床頭那格）> 出生點 */
