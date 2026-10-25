@@ -28,6 +28,8 @@ import { advance } from './encounter';
 import { DELTA, posKey, tileAt, type FloorMap } from './map';
 import type { BuffStat, CharacterId, GearSlot, Member, Party, Pos, Rarity, Row } from './types';
 import { choose } from './choose';
+import { maxBondRecord } from './story/bond';
+import type { Companion } from '../data/story/bond';
 /** The sim's player and its damage ranking live in engine/choose.ts (the battle's 自動 reads them without the sim). */
 export { castPower, choose } from './choose';
 import type { RegionId } from '../data/regions';
@@ -70,6 +72,11 @@ export const ODD_LINEUPS: Record<'noHeal' | 'noTank' | 'allMagic' | 'allPhys', {
 export interface Lineup {
   ids?: CharacterId[]; heroBuild?: HeroBuild; heroRow?: Row; memories?: number; abyss?: number; expect?: boolean; armHero?: boolean; policies?: PolicyTable;
   runes?: Partial<Record<CharacterId, Record<string, RuneRef[]>>>; build?: Partial<Record<CharacterId, string>>; runeTier?: RuneTier;
+  /**
+   * Bond plan Task 3: 'max' gives every companion `maxBondRecord` (心契), for band 21 only. Absent, no member of the
+   * party has a bond at all: every other band, and the sim gate, stay bit-identical.
+   */
+  bond?: 'max';
 }
 
 /**
@@ -115,6 +122,7 @@ export function partyAt(level: number, lineup: Lineup = {}, depth = 1): Party {
       tree: worn ? buildTree(id, level, worn, memories) : hero ? heroTree(level, build, memories) : defaultTree(id, level),
       talents: worn ? buildTalents(id, level, worn) : hero ? heroTalents(level, build) : defaultTalents(id, level),
       ...(worn ? { build: worn.key } : {}),
+      ...(lineup.bond === 'max' && !hero ? { bond: maxBondRecord(id as Companion) } : {}),
     };
     if (hero && lineup.armHero) {
       const base = HERO_BUILDS[build].weapon;

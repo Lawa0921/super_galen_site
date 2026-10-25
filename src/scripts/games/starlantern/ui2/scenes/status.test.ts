@@ -14,6 +14,8 @@ import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView, revealIn }
 import { StatusScene, WIDE_TABS } from './status';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
+import { statSources } from '../../engine/party';
+import { bondStats, maxBondRecord } from '../../engine/story/bond';
 import { RUNES, type RuneRef } from '../../data/runes';
 import { fromMember, skillFor } from '../../engine/battle';
 import { fieldCost } from '../../engine/field';
@@ -229,6 +231,24 @@ describe('StatusScene', () => {
       expect(root.querySelector('[data-stat=str] .slx-memory')!.textContent).toBe('+' + 3 * CHAINS.scarlet.gain.str!);
     });
 
+    it('the stat table has a bond column', () => {
+      const { root, game } = setup('scarlet', NO_ART, (g) => {
+        const m = g.state.party.roster.scarlet;
+        Object.assign(m, { level: 30, bond: maxBondRecord('scarlet') });
+      });
+      const heads = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
+      expect(T.ui2.status.sources.bond).toBe('羈絆');
+      expect(heads.indexOf('羈絆')).toBe(heads.indexOf(T.ui2.status.sources.memory) + 1);
+      const want = bondStats(game.state.party.roster.scarlet);
+      expect(want.atk).toBe(2);
+      expect(root.querySelector('[data-stat=atk] .slx-bond')!.textContent).toBe('+2');
+      expect(root.querySelector('[data-stat=spd] .slx-bond')!.textContent).toBe('—');
+      // No bond: the column reads as the memory column does with no pieces.
+      const plain = setup('scarlet');
+      expect(plain.root.querySelector('[data-stat=atk] .slx-bond')!.textContent).toBe('—');
+      expect(plain.root.querySelector('[data-stat=atk] .slx-memory')!.textContent).toBe('—');
+    });
+
     it('six collapsible categories; rows show base, growth, gear, set, talent and primary sources', () => {
       const { root, game, s } = setup('scarlet');
       game.state.party.roster.scarlet.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'str', value: 3 }] };
@@ -242,7 +262,10 @@ describe('StatusScene', () => {
       expect(cats.map((c) => c.querySelector('.slx-stat-cat-head')!.getAttribute('aria-expanded'))).toEqual(['true', 'true', 'false', 'false', 'false', 'false']);
       expect(root.querySelector('[data-cat=defense] tbody')).toBeNull();     // folded: no rows to land on
       const cols = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
-      expect(cols).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '主屬', '上限', '合計']);
+      // One column per stat source, in statSources order (bond plan Task 3 added 羈絆 after 記憶).
+      const sourceCols = statSources(game.state.party.roster.scarlet).map((p) => T.ui2.status.sourcesShort[p.source] ?? T.ui2.status.sources[p.source]);
+      expect(cols).toEqual(['', ...sourceCols, '上限', '合計']);
+      expect(sourceCols).toEqual(['基礎', '成長', '裝備', '套裝', '天賦', '記憶', '羈絆', '主屬']);
       expect(root.querySelector('[data-stat=str] .slx-talent')!.textContent).toBe(T.signed(TALENT_PER.str! * TALENT_SCALE));
       // str is scarlet's affinity: 3 str gives 4.5 atk, shown whole so the parts add up to the floored total.
       const atk = root.querySelector('[data-stat=atk]')!;
@@ -265,6 +288,18 @@ describe('StatusScene', () => {
       expect(line!.previousElementSibling).toBe(head(root, 'primary'));       // right after the heading
       expect(T.ui2.status.affinity(T.ui2.status.affinityAll)).toBe('取向：全能');
       expect(root.querySelectorAll('.slx-stat-affinity')).toHaveLength(1);    // the primary section only
+    });
+
+    it('the hero has no 羈絆 column: he never has a bond (bond plan Task 3)', () => {
+      const { root, tab } = setup('hero', NO_ART, (game) => {
+        const p = game.state.party;
+        p.recruited.push('hero');
+        p.grid[0] = 'hero';
+      });
+      expect(tab()).toBe('能力');
+      const heads = [...root.querySelectorAll('[data-cat=attack] thead th')].map((th) => th.textContent);
+      expect(heads).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '主屬', '上限', '合計']);
+      expect(root.querySelector('.slx-bond')).toBeNull();
     });
 
     it("the hero's affinity reads 全能", () => {

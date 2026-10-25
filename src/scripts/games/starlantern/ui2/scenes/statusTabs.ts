@@ -125,7 +125,8 @@ const stats: StatusTab = {
     const def = CHARACTERS[id];
     const st = statsOf(m);
     const sheet = sheetOf(m);
-    const parts = statSources(m);
+    // Lorne never has a bond (bond plan Task 3): his sheet keeps its columns, and its width (the stat table fits nine).
+    const parts = statSources(m).filter((p) => p.source !== 'bond' || m.id !== 'hero');
     const cell = ctx.game.state.party.grid.indexOf(id);
     const row = cell >= 0 ? rowOfCell(cell) : null;
     if (!stops().includes(view.cur)) view.cur = 'cat:primary';

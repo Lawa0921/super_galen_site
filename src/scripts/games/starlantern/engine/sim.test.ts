@@ -26,6 +26,7 @@ import { CHARACTER_IDS } from '../data/characters';
 import type { CharacterId, GearSlot } from './types';
 import { expectedMemories } from './story/expect';
 import { chainLength } from '../data/story/chains';
+import { bondPoints, bondTier, giftPoints } from './story/bond';
 import { HERO_BUILDS, type HeroBuild } from '../data/hero';
 import { EQUIPMENT, WEAPON_KINDS, weaponKindOf } from '../data/equipment';
 
@@ -301,5 +302,28 @@ describe('a lineup wears a build (plan 8h Task 5a)', () => {
     // The difficulty bands (difficulty plan Task 5a): one opt-in file a tier, and the file is there.
     expect([BANDS.nightmare, BANDS.hell]).toEqual([['tierBands.nightmare.test.ts'], ['tierBands.hell.test.ts']]);
     for (const f of [...BANDS.nightmare, ...BANDS.hell]) expect(readdirSync(dir), f).toContain(f);
+  });
+});
+
+describe('the sim and bond (bond plan Task 3)', () => {
+  it('partyAt with bond max gives every companion 心契 and the hero nothing', () => {
+    const p = partyAt(20, { bond: 'max' });
+    for (const id of CHARACTER_IDS) {
+      const m = p.roster[id];
+      if (id === 'hero') { expect(m.bond, id).toBeUndefined(); continue; }
+      expect(giftPoints(m), id).toBe(30);
+      expect(bondPoints(m), id).toBeGreaterThanOrEqual(92);
+      expect(bondTier(m), id).toBe(4);
+    }
+    // Her HP is filled to the bonus too.
+    expect(p.roster.rin.hp).toBe(statsOf(p.roster.rin).hp);
+    expect(p.roster.rin.hp).toBeGreaterThan(partyAt(20).roster.rin.hp);
+  });
+
+  it('partyAt without bond is unchanged', () => {
+    for (const lineup of [{}, { ids: LEGACY_LINEUP }, { expect: true }] as const) {
+      const p = partyAt(20, lineup, 10);
+      for (const id of CHARACTER_IDS) expect('bond' in p.roster[id], id).toBe(false);
+    }
   });
 });

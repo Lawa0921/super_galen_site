@@ -720,8 +720,10 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 /* Fixed layout (plan 8g Task 5): the row names take 22%, the total 11%, and the source columns share the rest evenly, so
    every category's table has the same column edges and the columns line up down the page; a long row name wraps rather
    than push the table past the page's edge. 22% keeps every row name on one line (「TP 消耗減少」 is 71px of the 348px table;
-   21% is the floor; e2e 'the status page: columns line up'). The headings are 12px and centred, 26px words in 31px columns;
-   主屬性 reads 主屬 there (its title whole). */
+   21% is the floor; e2e 'the status page: columns line up'). The headings are 12px and centred; 主屬性 reads 主屬 there (its
+   title whole). With the bond plan's 羈絆 column (Task 3) nine columns share the 67%: 25.8px each, so a heading's 24px word
+   keeps no side padding (it fits with none; the cells below keep theirs, and so does the total's heading, whose column
+   the fullest totals fill). */
 .slx-stat-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-bottom: 4px; }
 .slx-stat-table thead th:first-child { width: 22%; }
 .slx-stat-table thead th:last-child { width: 11%; }
@@ -738,6 +740,7 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-stat-table thead th:first-child { text-align: left; }
 .slx-stat-table td { font-size: $slx-fs; }
 .slx-stat-table thead th { color: $slx-dim; border-bottom: 1px solid #3a3550; }
+.slx-stat-table thead th:not(:first-child):not(:last-child) { padding-left: 0; padding-right: 0; }
 .slx-stat-table tbody th { text-align: left; color: $slx-gold; }
 .slx-stat-table .slx-total { color: #fff; }
 .slx-stat-table .slx-gear { color: $slx-up; }

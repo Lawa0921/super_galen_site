@@ -1,16 +1,24 @@
 import {
-  BOND_CAP, BOND_MAX, BOND_PER_PIECE, BOND_START, BOND_TIER_AT, GIFTABLE, GIFT_REPEAT_FULL, GIFT_TASTE, GIFT_VALUE,
-  type BondTier, type Companion, type Taste,
+  BOND_CAP, BOND_MAX, BOND_PCT, BOND_PER_PIECE, BOND_SCALE, BOND_START, BOND_TIER_AT, GIFTABLE, GIFT_REPEAT_FULL, GIFT_TASTE,
+  GIFT_VALUE, type BondTier, type Companion, type Taste,
 } from '../../data/story/bond';
+import { CHARACTERS } from '../../data/characters';
 import { dayOf } from '../calendar';
 import { memoriesOf } from '../progression';
 import type { GameState } from '../state';
-import type { BondRecord, GiftId, Member } from '../types';
+import type { BondRecord, GiftId, Member, Sheet } from '../types';
 
 /**
  * Bond (好感度) as pure functions of what has happened (bond plan Task 1; spec §4). No rng of any kind: every point is an
  * event already in the save. The score is never stored; it is derived from `Member.bond` and the pieces she holds.
  */
+
+/**
+ * The bond switches (bond plan ruling 5), as `FORCED_GLIMMERS`: `scale` multiplies the battle bonus (0 turns it off, spec
+ * §5.5); `earn` lets the field points be earned. Shipped code never changes them; tests go through `withBondScale`
+ * (engine/testing.ts) and set `earn` back in a `finally`.
+ */
+export const BOND_SWITCH: { earn: boolean; scale: number } = { earn: true, scale: BOND_SCALE };
 
 /** Her record, or an empty one when she has earned nothing yet. */
 export function bondOf(m: Pick<Member, 'bond'>): BondRecord {
@@ -78,3 +86,30 @@ export function today(s: GameState): { gifted: Companion[]; talked: boolean } {
 
 /** Her tier; the hero's is always 0. */
 export const bondTier = (m: Pick<Member, 'id' | 'memories' | 'bond'>): BondTier => tierAt(bondPoints(m));
+
+/** The stats the bond adds to (spec §5.1): never spd (turn order, and Rin's fastest base), tp, crit, the gauge or primaries. */
+const BOND_STATS = ['hp', 'atk', 'def', 'mag', 'res'] as const;
+/**
+ * The battle bonus (spec §5.1): BOND_PCT of her tier, of her own natural stats only (base plus growth to her level; no gear,
+ * set, talent or memory), each rounded down. Nothing for the hero, at scale 0, at tier 0, or with no record at all (spec
+ * §5.3): pieces alone make a tier, and the sim's parties hold pieces (the memory expectation) but never a record, so no
+ * frozen band moves. In play a record comes with the first floor gone down together, the first gift or the first talk.
+ */
+export function bondStats(m: Pick<Member, 'id' | 'level' | 'memories' | 'bond'>, scale = BOND_SWITCH.scale): Partial<Sheet> {
+  if (m.id === 'hero' || !m.bond || scale === 0) return {};
+  const pct = BOND_PCT[bondTier(m)];
+  if (pct === 0) return {};
+  const def = CHARACTERS[m.id];
+  const out: Partial<Sheet> = {};
+  for (const k of BOND_STATS) out[k] = Math.floor(((def.base[k] + def.growth[k] * (m.level - 1)) * pct * scale) / 100);
+  return out;
+}
+
+/**
+ * A maxed record (bond plan Task 3, for band 21): every cap but the memories, the gifts her two loved materials 9 each
+ * (4 × 2 + 7 = 15 apiece, 30 in all). 10 + 12 + 30 + 40 = 92: 心契 without a single piece.
+ */
+export function maxBondRecord(c: Companion): BondRecord {
+  const [a, b] = GIFT_TASTE[c].loved;
+  return { talk: BOND_CAP.talk, field: BOND_CAP.field, gifts: { [a]: 9, [b]: 9 } };
+}

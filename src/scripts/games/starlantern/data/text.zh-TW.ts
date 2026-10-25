@@ -314,7 +314,7 @@ export const T = {
       /** Beside a skill's name on the skills page: it can be cast outside battle (SkillDef.field). */
       fieldTag: '迷宮中可用',
       /** Column titles for statSources; a new source needs one line here. */
-      sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', memory: '記憶', primary: '主屬性' } as Record<string, string>,
+      sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', memory: '記憶', bond: '羈絆', primary: '主屬性' } as Record<string, string>,
       /** A column heading too long for its share of the table: the short word, the whole one in its title (plan 8g Task 5 review). */
       sourcesShort: { primary: '主屬' } as Record<string, string>,
       total: '合計',
