@@ -15,6 +15,7 @@ import { buildMineshaftBp } from './structures/mineshaft';
 import { buildMushroomBp, buildCrystalBp } from './structures/miniBiome';
 import { buildHiveBp } from './structures/hive';
 import { Gen2Source } from './index';
+import { FILL_DECOR } from './testUtil';
 
 const homeOf = (g: Gen2Source): Landmass => g.layout.landmassAt(SPAWN_X)!;
 const BUILD: Record<string, (c: BpCtx, o: { caveOpen: (x: number, y: number) => boolean }) => Blueprint> = {
@@ -31,6 +32,7 @@ const ropeCells = (b: Blueprint): { x: number; y: number }[] => {
   for (let i = 0; i < b.cells.length; i += 5) if (b.cells[i + 2] === T.ROPE) out.push({ x: b.cells[i], y: b.cells[i + 1] });
   return out;
 };
+const deco = (t: number): number => (FILL_DECOR.has(t) ? T.AIR : t);
 const inBox = (x: number, y: number, q: BpBox): boolean => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h;
 
 describe('gen2 藍圖部件與 surfaceBan', () => {
@@ -77,7 +79,8 @@ describe('gen2 藍圖部件與 surfaceBan', () => {
           const ca = new Column(cx, 1200), cb = new Column(cx, 1200);
           fa.fill(ca, cx * 32, cx * 32 + 32); fb.fill(cb, cx * 32, cx * 32 + 32);
           for (let x = Math.max(forced.x, cx * 32); x < Math.min(forced.x + forced.w, cx * 32 + 32); x++) for (let y = Math.min(v.y, forced.y); y < Math.max(v.y + v.h, forced.y + forced.h); y++) {
-            const i = li(x, y), d = ca.fg[i] !== cb.fg[i] || ca.wall[i] !== cb.wall[i] || ca.liquid[i] !== cb.liquid[i] || ca.liquidType[i] !== cb.liquidType[i];
+            // fill 的裝飾（Task 12）看上下一格的最終格：部件旁的天然洞穴格會因為部件的地板 / 天花板多或少一個裝飾，裝飾當空氣比
+            const i = li(x, y), d = deco(ca.fg[i]) !== deco(cb.fg[i]) || ca.wall[i] !== cb.wall[i] || ca.liquid[i] !== cb.liquid[i] || ca.liquidType[i] !== cb.liquidType[i];
             if (inV(x, y)) { cellsV++; if (d) diffV++; } else if (y >= forced.y && y < forced.y + forced.h && !inParts(x, y)) { cellsOut++; if (d) diffOut++; }
           }
         }

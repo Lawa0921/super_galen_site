@@ -6,7 +6,7 @@ import { Gen2Source, GEN2_VERSION, GEN2_MIN_VERSION } from './index';
 import { fillCol, bytes } from './testUtil';
 import { fnv1a } from '../../net/codec';
 
-const GEN2_HASHES: Record<number, number> = { 0: 2122694955 };
+const GEN2_HASHES: Record<number, number> = { 0: 4187693550 };
 // 101：家鄉的小屋（M2a Task 7 起家鄉表層槽多半是錨點，原本 105 的遺跡沒了）；8：家鄉地城的入口塔與塔下的房間（M2a Task 8）；
 // 57：第一座村莊的委託板與廣場、26：第一座地廳的礦車（M2a Task 9）；Task 10：家鄉的礦坑密室錨點換了槽，101 的小屋沒了 → 118（另一間小屋），
 // 16：第一座空島、107：有密室的礦坑；Task 11：118 的小屋讓給蜂巢錨點（118 現在是蜂巢 + 水晶洞），加 91（家鄉的蘑菇林）與 154（外圍大陸的小屋）

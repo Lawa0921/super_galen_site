@@ -56,10 +56,14 @@ export function firstSolid(w: World, x: number, skip?: (y: number) => boolean): 
   return w.height;
 }
 
-// 從 (x, y) 走 4 鄰的空氣格（沒有液體）、x ∈ [xLo, xHi]，走得到任一 y ≥ deepAt(x) 的格 = true
+// fill 放的裝飾（M2a Task 12）：都不是實心，人走得過去
+export const FILL_DECOR: ReadonlySet<number> = new Set<number>([T.POT, T.FLOWER, T.TALL_GRASS, T.MUSHROOM, T.SMALL_ROCK, T.BUSH, T.PUMPKIN, T.DEAD_BUSH,
+  T.SNOW_SHRUB, T.FERN, T.GLOW_MUSHROOM, T.STALAGMITE, T.STALACTITE, T.VINE, T.COBWEB]);
+
+// 從 (x, y) 走 4 鄰的非實心格（沒有液體；M2a Task 12 起洞穴裡有裝飾，裝飾不擋路）、x ∈ [xLo, xHi]，走得到任一 y ≥ deepAt(x) 的格 = true
 export function bfsReachesDepth(w: World, x: number, y: number, deepAt: (x: number) => number, xLo: number, xHi: number): boolean {
   const H = w.height, wd = xHi - xLo + 1;
-  const open = (px: number, py: number): boolean => w.getFg(px, py) === T.AIR && w.getLiquid(px, py) === 0;
+  const open = (px: number, py: number): boolean => !isSolidTile(w.getFg(px, py)) && w.getLiquid(px, py) === 0;
   if (!open(x, y)) return false;
   const deep: number[] = [];
   for (let px = xLo; px <= xHi; px++) deep.push(deepAt(px));

@@ -7,7 +7,7 @@ import { slotOf, slotWidth, BP_UNDER, BP_DEEP, BP_SURFACE, emptyObjects, type La
 import { Filler2 } from './fill';
 import { shaftX, SHAFT_HALF, SHAFT_REACH } from './caves';
 import { seedInt } from '../noise';
-import { worldOf, loadColumns, firstSolid } from './testUtil';
+import { worldOf, loadColumns, firstSolid, FILL_DECOR } from './testUtil';
 import { withExtras } from '../loot';
 import { Column, li } from '../column';
 import { WORLD_H } from '../constants';
@@ -106,11 +106,12 @@ describe('gen2 blueprint objects', () => {
       for (let x = c * 32; x < c * 32 + 32; x++) for (let y = 0; y < WORLD_H; y++) {
         const i = li(x, y), inBox = x >= box.x && x < box.x + box.w && y >= box.y && y < box.y + box.h;
         const near = Math.abs(x - sx) <= SHAFT_REACH;
-        if (!inBox) { expect(a.fg[i], `${x},${y}`).toBe(p.fg[i]); continue; }
+        // 箱外不變（fill 的裝飾看上下一格：箱子正下方的洞穴頂可能多一個鐘乳石，Task 12 → 裝飾當空氣比）
+        if (!inBox) { expect(FILL_DECOR.has(a.fg[i]) ? T.AIR : a.fg[i], `${x},${y}`).toBe(FILL_DECOR.has(p.fg[i]) ? T.AIR : p.fg[i]); continue; }
         if (y < src.profile.surfaceAt(x) || inOther(x, y)) continue;
         const t = a.fg[i];
-        // 原本不是洞的格（含礦）與沒有箱子時相同：礦照常換
-        if (p.fg[i] !== T.AIR) expect(t, `${x},${y}`).toBe(p.fg[i]);
+        // 原本不是洞的格（含礦）與沒有箱子時相同：礦照常換（洞穴格可能長了裝飾，Task 12：「不是洞」= 實心）
+        if (isSolidTile(p.fg[i])) expect(t, `${x},${y}`).toBe(p.fg[i]);
         if (t === T.AIR) { expect(near, `air at ${x},${y}`).toBe(true); shaft++; }
         if (p.fg[i] === T.AIR && t !== T.AIR) dug++;
         if (ORES.includes(p.fg[i])) ores++;

@@ -100,6 +100,16 @@ const ORE_CELL = 6;
 export const ORE_THR = { CU: 0.76, FE: 0.83, AG: 0.86, AU: 0.88 } as const;
 export function oreNoise(s: number): ColNoise { return new ColNoise(ORE_CELL, s); }
 
+// ── 團塊噪聲（gen2 M2a Task 12：花崗岩 / 大理石、熔岩帶；v1 不用）─────────────
+// vnoise2(x, y, cell) 的三次方（只用乘法）：0..1，高值只剩格點雜湊大的地方 → 稀疏的團塊（團塊大小約 cell / 2）。
+// 單層值雜訊直接比門檻 0.72 約 17% 的格都會過（舊生成器的花崗岩約佔該深度帶的 1%）；三次方後 > 0.55 約 7.6%、> 0.72 約 2.5%、
+// > 0.74 約 2.1%、(0.8, 0.86] 約 0.6%、> 0.86 約 0.5%（8000 × 400 格實測，與 cell 無關）。沿 y 取樣同 ColNoise（格點雜湊在同一格內重用）
+export const BLOB_CELL = 48;
+class BlobNoise extends ColNoise {
+  override at(y: number): number { const v = super.at(y); return v * v * v; }
+}
+export function blobNoise(s: number, cell: number = BLOB_CELL): ColNoise { return new BlobNoise(cell, s); }
+
 // ── 樹 / 仙人掌 ─────────────────────────────────────────
 // 樹根：hash2(x, 0) < 機率、而且是左右各 TREE_REACH 格內最小的（→ 樹根間距 ≥ 4）；樹冠半徑 ≤ 3
 const TREE_REACH = 3;
