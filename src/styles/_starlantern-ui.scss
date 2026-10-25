@@ -150,6 +150,8 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-talk-face--right { right: 10px; }
 .slx-confirm { left: 50%; top: 50%; translate: -50% -50%; translate: round(down, -50%, 1px) round(down, -50%, 1px); min-width: 200px; text-align: center; }
 .slx-confirm p { margin: 0 0 6px; white-space: pre-line; }
+// Bond plan Task 9: a bond scene's choice, over the dialogue box (its 12px rows, CHOICE_MAX_CHARS at most) while Lorne's plate shows.
+.slx-choice { left: 50%; bottom: 76px; translate: -50% 0; translate: round(down, -50%, 1px) 0; min-width: 200px; }
 @media (prefers-reduced-motion: reduce) { .slx-win, .slx-sel::before { animation: none; } }
 
 .slx-ui { transition: opacity 0.15s linear; }

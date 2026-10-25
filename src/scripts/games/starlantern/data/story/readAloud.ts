@@ -4,7 +4,7 @@
 import { CHARACTERS, CHARACTER_IDS } from '../characters';
 import { MEETINGS } from '../meetings';
 import { NPC_NAMES, STORY, flatLines, introIndex, isChoice, numeral, type LineWhen, type SceneLine, type ScriptLine, type Speaker } from '../story.zh-TW';
-import { GIFT_LINES, RIN_OATH_GIFT_LINES, type GiftPools } from '../bond.zh-TW';
+import { GIFT_LINES, RIN_OATH_GIFT_LINES, ROMANCE_LINES, type GiftPools } from '../bond.zh-TW';
 import { COMPANIONS, type Companion, type Tone } from './bond';
 import { T } from '../text.zh-TW';
 import { SCENE_IDS, type SceneId } from './scenes';
@@ -93,6 +93,11 @@ function render(prefixes: string[], blind: boolean): { lines: string[]; said: Sa
     if (!touches(`gift:${c}`)) continue;
     if (GIFT_LINES[c]) body.push(...pools(`gift:${c}`, c, GIFT_LINES[c]!));
     if (c === 'rin' && RIN_OATH_GIFT_LINES) body.push(...pools('gift:rin（選擇之後）', c, RIN_OATH_GIFT_LINES));
+  }
+  // the town's lines for the one chosen (`romanceLines`), each with her plate
+  if (touches('romanceLines')) {
+    const rows = (Object.entries(ROMANCE_LINES) as [Companion, string[]][]).flatMap(([c, ls]) => ls.map((x) => `${blind ? '・' : `romanceLines.${c}　`}${say({ who: c, text: x })}`));
+    if (rows.length) body.push(heading('romanceLines', '［輕］'), '', ...rows, '');
   }
   // in the order they are met: by depth, the mainline first at a depth it shares (spec §6)
   const byDepth = [...MEETINGS].sort((a, b) => a.depth - b.depth || Number(b.region === 'mainline') - Number(a.region === 'mainline'));

@@ -1,12 +1,14 @@
 import {
-  BOND_CAP, BOND_MAX, BOND_PCT, BOND_PER_PIECE, BOND_RUN_CAP, BOND_SCALE, BOND_START, BOND_TIER_AT, DANGER_PCT, GIFTABLE,
+  BOND_GATE, BOND_CAP, BOND_MAX, BOND_PCT, BOND_PER_PIECE, BOND_RUN_CAP, BOND_SCALE, BOND_START, BOND_TIER_AT, DANGER_PCT, GIFTABLE,
   GIFT_MOOD, GIFT_REPEAT_FULL, GIFT_TASTE, GIFT_VALUE, RIN_GIFT_MOOD_BEFORE_OATH, TALK_POINTS, TONE_PREF, type BondTier, type Companion,
   type Taste, type Tone,
 } from '../../data/story/bond';
 import { GIFT_LINES, RIN_OATH_GIFT_LINES, type GiftPools } from '../../data/bond.zh-TW';
 import type { StoryMood } from '../../render/artPaths';
 import { chainLength } from '../../data/story/chains';
-import { storyPieces } from './events';
+import { gateExpired, gateOpen, storyPieces } from './events';
+import { BONDS_WRITTEN, bondScene, type SceneId } from '../../data/story/scenes';
+import { CHARACTER_IDS } from '../../data/characters';
 import type { Run } from '../dungeon/run';
 import { CHARACTERS } from '../../data/characters';
 import { dayOf } from '../calendar';
@@ -210,3 +212,24 @@ export const giftMood = (c: Companion, taste: Taste, oath: boolean): StoryMood =
 /** A bond scene's choice (spec §7.2): her preferred tone 3, any other 2, none (skipped, or cancelled on the choice) 2. */
 export const talkPoints = (c: Companion, tone: Tone | null): 2 | 3 =>
   (tone !== null && tone === TONE_PREF[c] ? TALK_POINTS.preferred : tone === null ? TALK_POINTS.skipped : TALK_POINTS.other) as 2 | 3;
+
+/**
+ * Her next heart-to-heart (bond plan Task 9, spec §8.2, §8.3): met and registered (`written`); her first bond scene neither
+ * seen nor expired, every one before it seen or expired (never a skipped number); open when its gate holds (`gateOpen`:
+ * a companion's pieces told, Rin's held, her choice) and her bond reaches its tier. An expired one (Rin's first two, once
+ * she has chosen) is passed over, never seen. Null when none is open.
+ */
+export function nextBond(s: GameState, c: Companion, written: readonly Companion[] = BONDS_WRITTEN): SceneId | null {
+  if (!written.includes(c) || !s.party.recruited.includes(c)) return null;
+  for (const n of [1, 2, 3, 4] as const) {
+    const id = bondScene(c, n);
+    const gate = BOND_GATE[c][n];
+    if (s.story.seen.includes(id) || gateExpired(s, gate)) continue;
+    return gateOpen(s, gate) && bondTier(s.party.roster[c]) >= gate.tier ? id : null;
+  }
+  return null;
+}
+
+/** Every companion's open heart-to-heart (`nextBond`), in CHARACTER_IDS order. */
+export const bondOpen = (s: GameState, written: readonly Companion[] = BONDS_WRITTEN): SceneId[] =>
+  CHARACTER_IDS.flatMap((c) => (c === 'hero' ? [] : [nextBond(s, c, written)].filter((x): x is SceneId => x !== null)));

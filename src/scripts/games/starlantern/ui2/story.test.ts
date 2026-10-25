@@ -721,9 +721,97 @@ describe('the bond script format (bond plan Task 7)', () => {
       const w: LineWhen = { met: [], full: [], returned: [], oath: false };
       expect(linesWhen(STORY.scenes['bond:selene:2'].lines, w)).toEqual([choice, { who: 'narrator', text: '二' }]);
       expect(linesOf('bond:selene:2', game.state)[0]).toBe(choice);
-      // until Task 9 plays it, a choice on screen is an error, never a silent skip
+      // Task 9 plays it (a choice on screen: see 'a choice on screen' below)
       const { talk, ctx } = mk();
-      expect(() => playScene(talk, 'bond:selene:2', ctx)).toThrow(/choice/);
+      expect(() => playScene(talk, 'bond:selene:2', ctx)).not.toThrow();
+    } finally { back(); }
+  });
+});
+
+describe('a choice on screen (bond plan Task 9)', () => {
+  const put = (id: SceneId, lines: SceneLine[]) => {
+    const had = Object.prototype.hasOwnProperty.call(STORY.scenes, id) ? STORY.scenes[id] : undefined;
+    STORY.scenes[id] = { title: 't', lines, summary: '她說了一件事。' };
+    return () => { if (had) STORY.scenes[id] = had; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
+  };
+  const choice: ChoiceLine = {
+    who: 'hero', choices: [
+      { tone: 'ask', text: '「後來呢？」', reply: [{ who: 'rin', text: '問的回應' }] },
+      { tone: 'stay', text: '（在她旁邊坐下。）', reply: [{ who: 'rin', text: '陪的回應' }] },
+      { tone: 'promise', text: '「下次再說。」', reply: [{ who: 'rin', text: '約的回應' }] },
+    ],
+  };
+  const scene: SceneLine[] = [{ who: 'rin', text: '開場' }, choice, { who: 'narrator', text: '結尾' }];
+  const mount = (talk: Dialogue) => { const root = document.createElement('div'); root.append(talk.el); document.body.append(root); return root; };
+  const opts = (root: HTMLElement) => [...root.querySelectorAll('.slx-choice .slx-opt')].map((o) => o.textContent);
+
+  it('a choice plays its reply', async () => {
+    const back = put('bond:rin:1', scene);
+    try {
+      const { talk, ctx } = mk();
+      const root = mount(talk);
+      const p = playScene(talk, 'bond:rin:1', ctx);
+      expect(shown(talk)).toBe('開場');
+      p.onAction('confirm');
+      await tick();
+      expect(nameOf(talk).textContent).toBe(CHARACTERS.hero.name);   // Lorne's plate while he chooses
+      expect(opts(root)).toEqual(['「後來呢？」', '（在她旁邊坐下。）', '「下次再說。」']);
+      p.onAction('down');
+      p.onAction('confirm');
+      await tick();
+      expect(root.querySelector('.slx-choice')).toBeNull();
+      expect(shown(talk)).toBe('陪的回應');
+      p.onAction('confirm');
+      await tick();
+      expect(shown(talk)).toBe('結尾');
+      p.onAction('confirm');
+      expect(await p.done).toBe('done');
+      expect(p.chosen()).toBe('stay');
+      root.remove();
+    } finally { back(); }
+  });
+
+  it('cancel on the choice skips the scene and shows the summary', async () => {
+    const back = put('bond:rin:1', scene);
+    try {
+      const { talk, ctx } = mk();
+      const root = mount(talk);
+      const p = playScene(talk, 'bond:rin:1', ctx);
+      p.onAction('confirm');
+      await tick();
+      p.onAction('cancel');
+      await tick();
+      expect(root.querySelector('.slx-choice')).toBeNull();
+      expect(shown(talk)).toBe(T.ui2.story.skipped('她說了一件事。'));
+      p.onAction('confirm');
+      expect(await p.done).toBe('skipped');
+      expect(p.chosen()).toBeNull();
+      root.remove();
+    } finally { back(); }
+  });
+
+  it('a bond scene records the choice before it is done', async () => {
+    const back = put('bond:rin:1', scene);
+    try {
+      const { talk, ctx } = mk();
+      const calls: string[] = [];
+      const game = ctx.game;
+      game.bondChoice = (id, tone) => { calls.push(`choice ${id} ${tone}`); return true; };
+      game.sceneDone = (id, how) => { calls.push(`done ${id} ${how}`); return true; };
+      const root = mount(talk);
+      const p = playAndRecord(talk, 'bond:rin:1', ctx);
+      p.onAction('confirm'); await tick();
+      p.onAction('confirm'); await tick();   // the first choice
+      p.onAction('confirm'); await tick();
+      p.onAction('confirm');
+      await p.done;
+      expect(calls).toEqual(['choice bond:rin:1 ask', 'done bond:rin:1 played']);
+      // not shown (the story setting): recorded as skipped, choice null
+      calls.length = 0;
+      const auto = playAndRecord(talk, 'bond:rin:1', { ...ctx, mode: 'none' });
+      await auto.done;
+      expect(calls).toEqual(['choice bond:rin:1 null', 'done bond:rin:1 auto']);
+      root.remove();
     } finally { back(); }
   });
 });

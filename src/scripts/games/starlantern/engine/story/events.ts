@@ -404,6 +404,13 @@ export function sceneDone(s: GameState, id: SceneId, how: 'played' | 'skipped' |
   if (story.tonight) story.tonight = story.tonight.filter((u) => u !== id);
   if (story.dawn === id) delete story.dawn;   // the dawn's pick, told
   if (story.festival === id) delete story.festival;   // time and moon: the season's scene a return recorded, seen
+  // bond plan Task 9 (ruling 10): a heart-to-heart, played or skipped, is today's one; another day's gifts are cleared
+  if (id.startsWith('bond:')) {
+    const day = dayOf(s);
+    if (story.bondDay !== day) { story.gifted = []; delete story.talked; }
+    story.bondDay = day;
+    story.talked = true;
+  }
   const queueOnce = (next: SceneId): void => { if (!story.seen.includes(next) && !story.queue.includes(next)) story.queue.push(next); };
   const at = ACT_NODES.indexOf(id as ActNode);
   if (at >= 0 || id.startsWith('group:')) {

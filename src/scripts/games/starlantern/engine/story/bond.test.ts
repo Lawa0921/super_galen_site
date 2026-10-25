@@ -3,7 +3,7 @@ import { newMember } from '../party';
 import { chainLength } from '../../data/story/chains';
 import { COMPANIONS, GIFTABLE, GIFT_TASTE, type Companion } from '../../data/story/bond';
 import type { BondRecord, Member } from '../types';
-import { BOND_SWITCH, addField, talkPoints, bondOf, bondPoints, bondTier, giftLine, giftMood, giftPools, giftPoints, giveGift, inDanger, tasteOf, tierAt, today } from './bond';
+import { BOND_SWITCH, addField, bondOpen, nextBond, talkPoints, bondOf, bondPoints, bondTier, giftLine, giftMood, giftPools, giftPoints, giveGift, inDanger, tasteOf, tierAt, today } from './bond';
 import type { GiftPools } from '../../data/bond.zh-TW';
 import { meet } from '../party';
 import { mulberry32 } from '../rng';
@@ -371,5 +371,72 @@ describe('talk points (bond plan Task 8)', () => {
     }
     expect(talkPoints('selene', 'promise')).toBe(3);
     expect(talkPoints('selene', 'ask')).toBe(2);
+  });
+});
+
+describe('heart-to-hearts: the gates (bond plan Task 9)', () => {
+  /** Selene met, holding and having told `told` pieces (held `held`, default the same), with a record worth `extra` points. */
+  const selene = (told: number, extra = 0, held = told): GameState => {
+    const s = newGame();
+    s.party = meet(s.party, 'selene', 1);
+    s.party.roster.selene.memories = held;
+    for (let k = 1; k <= told; k++) s.story.seen.push(memScene('selene', k));
+    s.party.roster.selene.bond = { talk: 0, field: Math.min(40, extra), gifts: {} };
+    return s;
+  };
+  const W = ['selene', 'rin'] as Companion[];
+
+  it('BOND_GATE opens in order', () => {
+    // one piece told: 10 + 3 = 13, 相識; seven field points make 20, 同行
+    expect(nextBond(selene(1), 'selene', W)).toBeNull();
+    expect(nextBond(selene(1, 7), 'selene', W)).toBe('bond:selene:1');
+    const s = selene(3, 21);   // 10 + 9 + 21 = 40, 信賴
+    expect(nextBond(s, 'selene', W)).toBe('bond:selene:1');   // never skips a number
+    s.story.seen.push('bond:selene:1');
+    expect(nextBond(s, 'selene', W)).toBe('bond:selene:2');
+    s.story.seen.push('bond:selene:2');
+    expect(nextBond(s, 'selene', W)).toBeNull();   // the 3rd waits for 羈絆 and her 4th piece
+    const deep = selene(4, 40);   // 10 + 12 + 40 = 62, 羈絆
+    deep.story.seen.push('bond:selene:1', 'bond:selene:2');
+    expect(nextBond(deep, 'selene', W)).toBe('bond:selene:3');
+    deep.story.seen.push('bond:selene:3');
+    expect(nextBond(deep, 'selene', W)).toBeNull();   // 心契 waits for 85 and all her pieces told
+    const all = selene(5, 40);
+    all.party.roster.selene.bond = { talk: 12, field: 40, gifts: { 'star-tear': 6 } };   // 10 + 15 + 12 + 12 + 40 = 89
+    all.story.seen.push('bond:selene:1', 'bond:selene:2', 'bond:selene:3');
+    expect(nextBond(all, 'selene', W)).toBe('bond:selene:4');
+    all.story.seen.push('bond:selene:4');
+    expect(nextBond(all, 'selene', W)).toBeNull();
+  });
+
+  it("Rin's first two expire with her choice", () => {
+    const s = newGame();
+    s.party.roster.rin.memories = chainLength('rin');
+    s.party.roster.rin.bond = { talk: 0, field: 40, gifts: {} };   // 10 + 21 + 40 = 71, 羈絆
+    expect(nextBond(s, 'rin', W)).toBe('bond:rin:1');
+    s.party.roster.rin.oath = true;
+    expect(nextBond(s, 'rin', W)).toBe('bond:rin:3');   // 1 and 2 passed over, never seen
+    expect(s.story.seen).not.toContain('bond:rin:1');
+  });
+
+  it("a companion's gate reads pieces told", () => {
+    const s = selene(2, 40, 4);   // four held, two told: 10 + 12 + 40 = 62
+    s.story.seen.push('bond:selene:1');
+    expect(bondTier(s.party.roster.selene)).toBe(3);
+    expect(nextBond(s, 'selene', W)).toBeNull();   // the 2nd waits on three told
+    s.story.seen.push('mem:selene:3');
+    expect(nextBond(s, 'selene', W)).toBe('bond:selene:2');
+  });
+
+  it('unwritten, not offered', () => {
+    const s = selene(1, 7);
+    expect(nextBond(s, 'selene', [])).toBeNull();
+    expect(nextBond(s, 'selene')).toBeNull();   // nothing is registered today
+    expect(bondOpen(s, W)).toEqual(['bond:selene:1']);
+    expect(bondOpen(s, [])).toEqual([]);
+    s.party.roster.rin.bond = { talk: 0, field: 10, gifts: {} };
+    s.party.roster.rin.memories = 2;   // 10 + 6 + 10 = 26, 同行, two pieces
+    expect(bondOpen(s, W)).toEqual(['bond:rin:1', 'bond:selene:1']);   // CHARACTER_IDS order
+    expect(nextBond(s, 'sylvie', ['sylvie'])).toBeNull();   // not met
   });
 });

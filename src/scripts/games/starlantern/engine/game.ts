@@ -47,7 +47,7 @@ import { moveRune, socketRune, unsocketRune, type SocketAt, type SocketFail } fr
 import type { RuneRef } from '../data/runes';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
 import { applyBuild, applyCost, followUp } from './builds';
-import { addField, bondOf, giveGift, inDanger, talkPoints, type GiveResult } from './story/bond';
+import { addField, bondOf, giveGift, inDanger, nextBond, talkPoints, today, type GiveResult } from './story/bond';
 import { BOND_CAP, type Companion, type Tone } from '../data/story/bond';
 import { FIELD_POINTS } from '../data/story/bond';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
@@ -1194,6 +1194,19 @@ export class Game {
     this.rerolled = true;
     if (!(this.storage && saveGame(this.storage, this.state))) this.notice = 'save-failed';
     return true;
+  }
+
+  /**
+   * Bond plan Task 9 (spec §8.2): her next heart-to-heart (`nextBond`), in town and once a day (`today`): it waits in
+   * `pending` for the screen to play it, and is today's talk once done. Null when none may open now. Not saved: a talk cut
+   * short (a reload before its end) counts nothing.
+   */
+  openBond(c: Companion): SceneId | null {
+    if (this.phase !== 'town' || today(this.state).talked) return null;
+    const id = nextBond(this.state, c);
+    if (!id) return null;
+    if (!this.pending.includes(id)) this.pending.push(id);
+    return id;
   }
 
   /**

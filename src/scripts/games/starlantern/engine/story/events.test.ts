@@ -1781,3 +1781,48 @@ describe('time and moon: the spring festival (Task 7)', () => {
     expect(isNightSlot('home:chizuru')).toBe(false);
   });
 });
+
+describe('heart-to-hearts in the story (bond plan Task 9)', () => {
+  it("a bond scene marks the day's talk", () => {
+    const s = base();
+    s.story.day = 5;
+    s.story.bondDay = 4;
+    s.story.gifted = ['rin'];
+    const after = sceneDone(s, 'bond:rin:1', 'played');
+    expect([after.story.bondDay, after.story.talked, after.story.gifted]).toEqual([5, true, []]);   // yesterday's gifts cleared
+    const same = base();
+    same.story.day = 5;
+    same.story.bondDay = 5;
+    same.story.gifted = ['rin'];
+    expect(sceneDone(same, 'bond:rin:1', 'skipped').story.gifted).toEqual(['rin']);   // today's kept
+    expect(sceneDone(s, 'chat:rin:1', 'played').story.talked).toBeUndefined();   // only a bond scene
+    expect(s.story.talked).toBeUndefined();
+  });
+
+  it('arrivalScenes is unchanged by bond', () => {
+    const acts = (): GameState => { const s = base(); s.story.queue = ['mem:hero:10', 'town:anna', 'act4', 'mem:hero:7', 'act2']; return s; };
+    const home = (): GameState => { const s = withMemories(base(), 'liz', chainLength('liz')); for (let k = 1; k <= chainLength('liz'); k++) s.story.seen.push(`mem:liz:${k}`); s.story.queue = ['home:liz']; return s; };
+    const quiet = (): GameState => withMemories(base(), 'selene', 2);
+    // measured on the code before bond plan Task 9, written down
+    expect(arrivalScenes(acts(), { chat: false })).toEqual(['act2', 'mem:hero:7', 'mem:hero:10', 'town:anna']);
+    expect(arrivalScenes(home(), { chat: true })).toEqual(['home:liz', 'chat:hero:1']);
+    expect(arrivalScenes(quiet(), { chat: false })).toEqual([]);
+    const bonded = (s: GameState): GameState => {
+      for (const c of s.party.recruited) if (c !== 'hero') s.party.roster[c].bond = { talk: 12, field: 40, gifts: {} };
+      s.story.bondDay = 1;
+      s.story.talked = true;
+      s.story.seen.push('bond:rin:1');
+      return s;
+    };
+    expect(arrivalScenes(bonded(acts()), { chat: false })).toEqual(arrivalScenes(acts(), { chat: false }));
+    expect(arrivalScenes(bonded(home()), { chat: true })).toEqual(arrivalScenes(home(), { chat: true }));
+    expect(arrivalScenes(bonded(quiet()), { chat: false })).toEqual(arrivalScenes(quiet(), { chat: false }));
+  });
+
+  it('bond scenes never enter the queue', () => {
+    const s = base();
+    const done = sceneDone(s, 'bond:rin:1', 'played');
+    expect(done.story.queue).toEqual([]);
+    expect(onReturn(done).queue.some((q) => q.startsWith('bond:'))).toBe(false);
+  });
+});

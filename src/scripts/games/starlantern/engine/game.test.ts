@@ -58,6 +58,7 @@ import { BOND_SWITCH, bondOf, bondPoints } from './story/bond';
 import { GIFT_LINES, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
 import { BONDS_WRITTEN } from '../data/story/scenes';
+import { today } from './story/bond';
 import { withBondEarn, withBondScale } from './testing';
 
 vi.mock('./portals', async (importOriginal) => {
@@ -6051,4 +6052,43 @@ describe('a bond choice (bond plan Task 8)', () => {
       expect(talk()).toBe(12);                                        // the cap
     } finally { BONDS_WRITTEN.splice(0); }
   });
+});
+
+describe('a talk a day (bond plan Task 9)', () => {
+  const ready = (storage = memoryStorage()) => {
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    g.state.party.roster.rin.memories = 2;
+    g.state.party.roster.rin.bond = { talk: 0, field: 10, gifts: {} };   // 10 + 6 + 10 = 26, 同行
+    return g;
+  };
+  const registered = <T,>(f: () => T): T => { BONDS_WRITTEN.push('rin'); try { return f(); } finally { BONDS_WRITTEN.splice(0); } };
+
+  it('one talk a day', () => registered(() => {
+    const g = ready();
+    g.state.gold = 1000;
+    expect(g.openBond('rin')).toBe('bond:rin:1');
+    expect(g.pending).toContain('bond:rin:1');
+    expect(g.bondChoice('bond:rin:1', 'stay')).toBe(true);
+    expect(g.sceneDone('bond:rin:1', 'played')).toBe(true);
+    expect(today(g.state).talked).toBe(true);
+    g.state.party.roster.rin.memories = 4;
+    g.state.party.roster.rin.bond!.field = 30;   // 10 + 12 + 3 + 30 = 55: 信賴, the 2nd is open
+    expect(g.openBond('rin')).toBeNull();          // one a day
+    expect(g.rest().ok).toBe(true);
+    expect(g.openBond('rin')).toBe('bond:rin:2');  // a new day
+    g.sceneDone('bond:rin:2', 'skipped');
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.openBond('rin')).toBeNull();          // not in the labyrinth
+  }));
+
+  it('a talk cut short counts nothing', () => registered(() => {
+    const storage = memoryStorage();
+    const g = ready(storage);
+    expect(g.chooseTier('normal')).toEqual({ ok: true });   // the town saves
+    expect(g.openBond('rin')).toBe('bond:rin:1');            // and the scene never ends
+    const b = Game.boot(calm(), storage);
+    expect(b.state.story.talked).toBeUndefined();
+    expect(bondOf(b.state.party.roster.rin).talk).toBe(0);
+    expect(b.openBond('rin')).toBe('bond:rin:1');
+  }));
 });
