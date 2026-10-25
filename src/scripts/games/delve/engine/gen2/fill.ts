@@ -14,7 +14,7 @@ import { LIQ, LIQ_MAX } from '../liquidKind';
 import { BIOME } from '../world';
 import { li, type Column } from '../column';
 import type { RegionInfo } from '../regionInfo';
-import { ColNoise, CavernNoise, NO_DIG, ORE_THR, spagNoise, entranceHit, oreNoise, blobNoise, growPlants, type PlantSite } from '../genPrims';
+import { ColNoise, CavernNoise, NO_DIG, ORE_THR, spagNoise, entranceHit, oreNoise, blobNoise, growPlants, type BlobNoise, type PlantSite } from '../genPrims';
 import { COL_SEA, COL_BEACH, COL_LAND, COL_ISLAND, LAVA_Y, type ColInfo2, type Profile2 } from './profile';
 import { HOME_X0, SPAWN_X, type Layout } from './layout';
 import { SHAFT_HALF, SHAFT_REACH, CaveProbe, carveShaft, hasShaft, shaftOf, caveCut, caveK, type Shaft } from './caves';
@@ -112,10 +112,10 @@ export class Filler2 {
   private readonly sShaft: number;
   private readonly sTree: number;
   private readonly sCactus: number;
-  private readonly granite: ColNoise;
-  private readonly marble: ColNoise;
-  private readonly molten: ColNoise;
-  private readonly obsidian: ColNoise;
+  private readonly granite: BlobNoise;
+  private readonly marble: BlobNoise;
+  private readonly molten: BlobNoise;
+  private readonly obsidian: BlobNoise;
   private readonly sAsh: number;
   private readonly sDecor: number;
   private readonly sUgDecor: number;
@@ -217,20 +217,20 @@ export class Filler2 {
       }
       if (y >= molten && y < LAVA_Y) {
         // 熔岩帶：額外挖空（不留牆，看得到深淵背景；免挖洞箱內不挖）
-        if (!inSolid && this.molten.at(y) > MOLTEN_OPEN) { wall[i] = W.NONE; open = true; continue; }
+        if (!inSolid && this.molten.above(y, MOLTEN_OPEN)) { wall[i] = W.NONE; open = true; continue; }
         if (open) ashLeft = ashD;
         // 只換玄武岩、不換藍圖部件內的格：熔岩石 / 黑曜石（團塊），其餘的地板表層換灰燼
         if (!(parts !== null && inRows(parts, y))) {
-          const ob = this.obsidian.at(y);
-          t = ob > MAGMA_THR ? T.MAGMA_ROCK : ob > OBSIDIAN_THR ? T.OBSIDIAN : ashLeft > 0 ? T.ASH : t;
+          if (this.obsidian.above(y, OBSIDIAN_THR)) t = this.obsidian.at(y) > MAGMA_THR ? T.MAGMA_ROCK : T.OBSIDIAN;
+          else if (ashLeft > 0) t = T.ASH;
         }
         if (ashLeft > 0) ashLeft--;
       }
       open = false;
       // 石頭類：花崗岩 / 大理石先判（換掉的格不再放礦），再放礦（所以都在岩層頂以下），深的先判；深度帶同 v1
       if (ORE_HOST[t] === 1) {
-        if (y >= gr0 && y < gr1 && this.granite.at(y) > GRANITE_THR) t = T.GRANITE;
-        else if (y >= mb0 && y < mb1 && this.marble.at(y) > MARBLE_THR) t = T.MARBLE;
+        if (y >= gr0 && y < gr1 && this.granite.above(y, GRANITE_THR)) t = T.GRANITE;
+        else if (y >= mb0 && y < mb1 && this.marble.above(y, MARBLE_THR)) t = T.MARBLE;
         else if (y >= deep && this.oreAu.at(y) > ORE_THR.AU) t = T.GOLD_ORE;
         else if (y >= midRock && y < molten && this.oreAg.at(y) > ORE_THR.AG) t = T.SILVER_ORE;
         else if (y < deep && this.oreFe.at(y) > ORE_THR.FE) t = T.IRON_ORE;

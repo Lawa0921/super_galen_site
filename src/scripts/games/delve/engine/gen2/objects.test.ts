@@ -112,7 +112,7 @@ describe('gen2 blueprint objects', () => {
         const t = a.fg[i];
         // 原本不是洞的格（含礦）與沒有箱子時相同：礦照常換（洞穴格可能長了裝飾，Task 12：「不是洞」= 實心）
         if (isSolidTile(p.fg[i])) expect(t, `${x},${y}`).toBe(p.fg[i]);
-        if (t === T.AIR) { expect(near, `air at ${x},${y}`).toBe(true); shaft++; }
+        if (!isSolidTile(t)) { expect(near, `air at ${x},${y}`).toBe(true); shaft++; }
         if (p.fg[i] === T.AIR && t !== T.AIR) dug++;
         if (ORES.includes(p.fg[i])) ores++;
         if (ORES.includes(t)) oresIn++;

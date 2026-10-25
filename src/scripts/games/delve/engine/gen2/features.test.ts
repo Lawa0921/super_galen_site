@@ -8,9 +8,10 @@ import { SPAWN_X } from './layout';
 import { BP_DEEP, KEEP, emptyObjects, partsOf, type Blueprint, type BpBox } from './bpcore';
 import { Filler2 } from './fill';
 import type { BlueprintIndex } from './blueprint';
-import { fillCol, bytes } from './testUtil';
+import { fillCol, bytes, FILL_DECOR } from './testUtil';
 import { Column, li } from '../column';
 import { T, W, SOLID_LUT, floorOk, ceilOk } from '../tiles';
+import { BlobNoise, ColNoise, BLOB_CELL } from '../genPrims';
 import { LIQ } from '../liquidKind';
 import { BIOME } from '../world';
 
@@ -21,7 +22,7 @@ const BANDS: readonly Band[] = ['dirt', 'rock', 'deep', 'molten'];
 // 地板類 / 天花板類 / 蛛網（上方或左右實心）
 const FLOOR_DECOR = new Set<number>([T.POT, T.FLOWER, T.TALL_GRASS, T.MUSHROOM, T.SMALL_ROCK, T.BUSH, T.PUMPKIN, T.DEAD_BUSH, T.SNOW_SHRUB, T.FERN, T.GLOW_MUSHROOM, T.STALAGMITE]);
 const CEIL_DECOR = new Set<number>([T.STALACTITE, T.VINE]);
-const DECOR = new Set<number>([...FLOOR_DECOR, ...CEIL_DECOR, T.COBWEB]);
+const DECOR = FILL_DECOR;
 // 熔岩帶換的材質（M1 的 fill 不產生這些）
 const MOLTEN_T = new Set<number>([T.ASH, T.OBSIDIAN, T.MAGMA_ROCK]);
 const solidAt = (t: number): boolean => SOLID_LUT[t] === 1;
@@ -39,12 +40,16 @@ const groundOf = (g: number, biome: number): Ground | null =>
 
 interface Stats {
   count(t: number): number;
+  // fill 自己放的（不是藍圖寫的格）
+  fillCount(t: number): number;
   countBand(t: number, b: Band): number;
   airShare(b: 'molten'): number;
   lavaCells(): number;
   badSupport(): string[];
   // 藍圖部件內、藍圖沒寫的格出現裝飾 / 熔岩帶材質（應為空）；檢查過的部件內格數
   partsLeak: string[]; partsChecked: number;
+  // 藍圖寫了 fg 的格，最終 fg ≠ 寫入值（應為空；寫入空氣的格之後可能長樹幹 / 樹葉 / 仙人掌，那是 fill 的樹，不算）；檢查過的格數
+  writtenBad: string[]; writtenChecked: number;
   // 地表：可以放裝飾的格（陸地欄、地表上一格是空氣或裝飾、不在部件內、沒有液體、不在出生點 ±3）依地面種類；各地面種類上各裝飾的格數
   surfaceSites: Record<Ground, number>; surfaceDecor: Record<Ground, Float64Array>;
 }
@@ -59,9 +64,9 @@ const inRows = (r: readonly number[], y: number): boolean => { for (let k = 0; k
 
 function homeStats(seed: string): Stats {
   const src = new Gen2Source(seed), H = 1200;
-  const cnt = new Float64Array(256), band = BANDS.map(() => new Float64Array(256));
-  let mAir = 0, mAll = 0, lava = 0, partsChecked = 0;
-  const bad: string[] = [], partsLeak: string[] = [];
+  const cnt = new Float64Array(256), fillCnt = new Float64Array(256), band = BANDS.map(() => new Float64Array(256));
+  let mAir = 0, mAll = 0, lava = 0, partsChecked = 0, writtenChecked = 0;
+  const bad: string[] = [], partsLeak: string[] = [], writtenBad: string[] = [];
   const surfaceSites: Record<Ground, number> = { grass: 0, desert: 0, snow: 0, jungle: 0 };
   const surfaceDecor = Object.fromEntries(GROUNDS.map((g) => [g, new Float64Array(256)])) as Record<Ground, Float64Array>;
   // 只留 cx − 1..cx + 1 三欄（蛛網看左右）
@@ -72,11 +77,11 @@ function homeStats(seed: string): Stats {
     cols.delete(cx - 2);
     const c = colOf(cx), x0 = cx * 32, x1 = Math.min(HOME_X1, x0 + 32);
     const bps: Blueprint[] = src.blueprints.overlapping(x0, x0 + 32);
-    // 藍圖寫了 fg 的格（li 索引）
-    const written = new Set<number>();
+    // 藍圖寫了 fg 的格（li 索引 → 最後寫入的值；overlapping 的順序 = stamp 的順序）
+    const written = new Map<number, number>();
     for (const b of bps) for (let k = 0; k < b.cells.length; k += 5) {
       const x = b.cells[k], y = b.cells[k + 1];
-      if (x >= x0 && x < x0 + 32 && y >= 0 && y < H && b.cells[k + 2] !== KEEP) written.add(li(x, y));
+      if (x >= x0 && x < x0 + 32 && y >= 0 && y < H && b.cells[k + 2] !== KEEP) written.set(li(x, y), b.cells[k + 2]);
     }
     const parts = bps.flatMap((b) => [...partsOf(b)]);
     for (let x = x0; x < x1; x++) {
@@ -89,6 +94,12 @@ function homeStats(seed: string): Stats {
       for (let y = 0; y < H; y++) {
         const i = li(x, y), t = c.fg[i];
         cnt[t]++;
+        const wv = written.get(i);
+        if (wv === undefined) fillCnt[t]++;
+        else {
+          writtenChecked++;
+          if (t !== wv && !(wv === T.AIR && (t === T.WOOD || t === T.LEAVES || t === T.CACTUS))) writtenBad.push(`${t}≠${wv}@${x},${y}`);
+        }
         if (y >= I.surface) band[y < I.rock ? 0 : y < I.deep ? 1 : y < I.molten ? 2 : 3][t]++;
         if (y >= I.molten && y < LAVA_Y) { mAll++; if (t === T.AIR && c.liquid[i] === 0) mAir++; }
         if (c.liquid[i] > 0 && c.liquidType[i] === LIQ.LAVA) lava++;
@@ -105,8 +116,8 @@ function homeStats(seed: string): Stats {
     }
   }
   return {
-    count: (t) => cnt[t], countBand: (t, b) => band[BANDS.indexOf(b)][t], airShare: () => mAir / mAll, lavaCells: () => lava,
-    badSupport: () => bad, partsLeak, partsChecked, surfaceSites, surfaceDecor,
+    count: (t) => cnt[t], fillCount: (t) => fillCnt[t], countBand: (t, b) => band[BANDS.indexOf(b)][t], airShare: () => mAir / mAll, lavaCells: () => lava,
+    badSupport: () => bad, partsLeak, partsChecked, writtenBad, writtenChecked, surfaceSites, surfaceDecor,
   };
 }
 
@@ -115,8 +126,9 @@ let HOME3: Stats[] = [];
 describe('gen2 填格新特徵（Task 12）', () => {
   beforeAll(() => { HOME3 = SEEDS3.map(homeStats); }, 180_000);
 
-  it('§4.4 花崗岩 / 大理石：各 > 300 格；花崗岩在深層的比在岩層的多', () => { for (const s of HOME3) {
-    expect(s.count(T.GRANITE)).toBeGreaterThan(300); expect(s.count(T.MARBLE)).toBeGreaterThan(300); expect(s.countBand(T.GRANITE, 'deep')).toBeGreaterThan(s.countBand(T.GRANITE, 'rock')); } }, 30_000);
+  it('§4.4 花崗岩 / 大理石：各 > 300 格；花崗岩只在深層（泥土帶 / 岩層帶 0 格）', () => { for (const s of HOME3) {
+    expect(s.count(T.GRANITE)).toBeGreaterThan(300); expect(s.count(T.MARBLE)).toBeGreaterThan(300);
+    expect(s.countBand(T.GRANITE, 'dirt')).toBe(0); expect(s.countBand(T.GRANITE, 'rock')).toBe(0); expect(s.countBand(T.GRANITE, 'deep')).toBeGreaterThan(300); } }, 30_000);
 
   it('§4.4 熔岩帶：molten..LAVA_Y 的空氣 > 15%、灰燼 > 500、黑曜石 > 300、熔岩岩 > 200、熔岩 > 1500', () => { for (const s of HOME3) {
     expect(s.airShare('molten')).toBeGreaterThan(0.15); expect(s.count(T.ASH)).toBeGreaterThan(500); expect(s.count(T.OBSIDIAN)).toBeGreaterThan(300);
@@ -142,9 +154,11 @@ describe('gen2 填格新特徵（Task 12）', () => {
   }, 30_000);
 
   // 控制者裁決 1：部件內藍圖沒寫的格（KEEP = 天然）不放裝飾（家鄉真實藍圖；這 3 個種子沒有部件伸進熔岩帶，熔岩帶由下一個測試注入）
-  it('藍圖部件內不放裝飾（家鄉真實藍圖，部件內藍圖沒寫的格）', () => { for (const s of HOME3) {
+  it('藍圖部件內不放裝飾（家鄉真實藍圖，部件內藍圖沒寫的格）；藍圖寫的格最終就是寫入值', () => { for (const s of HOME3) {
     expect(s.partsChecked).toBeGreaterThan(10_000);
-    expect(s.partsLeak).toEqual([]); } }, 30_000);
+    expect(s.partsLeak).toEqual([]);
+    expect(s.writtenChecked).toBeGreaterThan(10_000);
+    expect(s.writtenBad).toEqual([]); } }, 30_000);
 
   // 控制者裁決 2：注入一份蓋住整欄熔岩帶、什麼都不寫（cells 空 = 全部 KEEP）的藍圖。
   // solid + 部件：箱內 [molten, LAVA_Y) 不挖洞、不額外挖空、不換灰燼 / 黑曜石 / 熔岩石；只有部件（solid = null）：照樣挖，但不換材質、不放裝飾。
@@ -173,6 +187,23 @@ describe('gen2 填格新特徵（Task 12）', () => {
     }
     expect(refCarve).toBeGreaterThan(1000); expect(refMolten).toBeGreaterThan(50); expect(partCarve).toBe(refCarve);
   }, 60_000);
+
+  // 修正 1 第 4 項：BlobNoise 的 at() = 同格距 ColNoise 的三次方（逐位元），above(y, thr) = at(y) > thr（四角最大值提早結束不改結果）
+  it('BlobNoise：at = ColNoise 的三次方、above = at > 門檻（逐點相同）', () => {
+    let n = 0;
+    for (const cell of [BLOB_CELL, 16]) for (const s of [7, -123456, 2024]) {
+      const b = new BlobNoise(cell, s), c = new ColNoise(cell, s);
+      for (let x = -300; x < 900; x += 7) {
+        b.setX(x); c.setX(x);
+        for (let y = 0; y < 1200; y++) {
+          const v = c.at(y);
+          expect(b.at(y)).toBe(v * v * v);
+          for (const thr of [0.55, 0.72, 0.74, 0.8, 0.86]) { expect(b.above(y, thr)).toBe(v * v * v > thr); n++; }
+        }
+      }
+    }
+    expect(n).toBeGreaterThan(1_000_000);
+  }, 120_000);
 
   it('分段填 = 整欄填（裝飾 / 熔岩帶在欄內、與分段無關）', () => { const src = new Gen2Source('feat'); for (const cx of [20, 66, 110]) {
     const parts = new Column(cx, 1200); src.fill(parts, cx * 32, cx * 32 + 7); src.fill(parts, cx * 32 + 7, cx * 32 + 32); expect(bytes(parts)).toEqual(bytes(fillCol(src, cx))); } }, 30_000);

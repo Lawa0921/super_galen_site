@@ -103,12 +103,48 @@ export function oreNoise(s: number): ColNoise { return new ColNoise(ORE_CELL, s)
 // ── 團塊噪聲（gen2 M2a Task 12：花崗岩 / 大理石、熔岩帶；v1 不用）─────────────
 // vnoise2(x, y, cell) 的三次方（只用乘法）：0..1，高值只剩格點雜湊大的地方 → 稀疏的團塊（團塊大小約 cell / 2）。
 // 單層值雜訊直接比門檻 0.72 約 17% 的格都會過（舊生成器的花崗岩約佔該深度帶的 1%）；三次方後 > 0.55 約 7.6%、> 0.72 約 2.5%、
-// > 0.74 約 2.1%、(0.8, 0.86] 約 0.6%、> 0.86 約 0.5%（8000 × 400 格實測，與 cell 無關）。沿 y 取樣同 ColNoise（格點雜湊在同一格內重用）
+// > 0.74 約 2.1%、(0.8, 0.86] 約 0.6%、> 0.86 約 0.5%、> 0.8 約 1.1%（8000 × 400 格實測，與 cell 無關）。
+// 沿 y 取樣同 ColNoise（格點雜湊在同一格內重用；at() 的運算順序與 ColNoise.at 逐位元相同，再乘三次）。
+// above(y, thr) = at(y) > thr，但先看這一格四角的最大值：值雜訊是四角的凸組合（smoothstep 權重都在 [0, 1]），
+// 最大角的三次方 < thr 時整格都過不了門檻，直接回 false（留 BLOB_EPS 的餘裕吸收捨入；結果與 at(y) > thr 完全相同）
 export const BLOB_CELL = 48;
-class BlobNoise extends ColNoise {
-  override at(y: number): number { const v = super.at(y); return v * v * v; }
+const BLOB_EPS = 1e-9;
+export class BlobNoise {
+  private fx = 0; private gx = 0; private sx = 0;
+  private gy = 0x7fffffff;
+  private a = 0; private b = 0; private c = 0; private d = 0;
+  // 這一格四角最大值的三次方
+  private top = 0;
+  constructor(readonly cell: number, readonly s: number) {}
+  setX(x: number): void {
+    this.fx = x / this.cell;
+    this.gx = Math.floor(this.fx);
+    this.sx = smooth(this.fx - this.gx);
+    this.gy = 0x7fffffff;
+  }
+  private row(gy: number): void {
+    const gx = this.gx, s = this.s;
+    this.gy = gy;
+    this.a = hash2(gx, gy, s); this.b = hash2(gx + 1, gy, s);
+    this.c = hash2(gx, gy + 1, s); this.d = hash2(gx + 1, gy + 1, s);
+    const m = Math.max(this.a, this.b, this.c, this.d);
+    this.top = m * m * m;
+  }
+  at(y: number): number {
+    const fy = y / this.cell, gy = Math.floor(fy);
+    if (gy !== this.gy) this.row(gy);
+    const sx = this.sx, sy = smooth(fy - gy), a = this.a, b = this.b, c = this.c, d = this.d;
+    const v = a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+    return v * v * v;
+  }
+  above(y: number, thr: number): boolean {
+    const gy = Math.floor(y / this.cell);
+    if (gy !== this.gy) this.row(gy);
+    if (this.top < thr - BLOB_EPS) return false;
+    return this.at(y) > thr;
+  }
 }
-export function blobNoise(s: number, cell: number = BLOB_CELL): ColNoise { return new BlobNoise(cell, s); }
+export function blobNoise(s: number, cell: number = BLOB_CELL): BlobNoise { return new BlobNoise(cell, s); }
 
 // ── 樹 / 仙人掌 ─────────────────────────────────────────
 // 樹根：hash2(x, 0) < 機率、而且是左右各 TREE_REACH 格內最小的（→ 樹根間距 ≥ 4）；樹冠半徑 ≤ 3
