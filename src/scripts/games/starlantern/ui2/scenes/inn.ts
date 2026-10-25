@@ -169,7 +169,8 @@ export class InnScene extends FacilityScene {
   private async talkWith(c: Companion): Promise<void> {
     this.popAll();
     const id = this.ctx.game.openBond(c);
-    if (!id) { void this.say(T.ui2.inn.talkedToday); return; }
+    // null: today's talk was had, or one opened before is still waiting (cut short; it opens again on the next return)
+    if (!id) { void this.say(today(this.ctx.game.state).talked ? T.ui2.inn.talkedToday : T.ui2.inn.talkCut); return; }
     await this.play(id, { mode: 'all' });
     this.refresh();
   }

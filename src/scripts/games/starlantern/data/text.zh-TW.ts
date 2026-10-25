@@ -777,7 +777,7 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       builds: '建議配點',
       /** Bond plan Task 12 (spec §0 D9): the inn's one bond entry, and its heart-to-heart. */
       partners: '夥伴', talk: '談心',
-      talkedToday: '今天已經談過心了，明天再來吧。', nobodyToTalk: '現在還沒有誰想找你談心。',
+      talkedToday: '今天已經談過心了，明天再來吧。', talkCut: '剛才那段談心沒能說完，等下次回城再說吧。', nobodyToTalk: '現在還沒有誰想找你談心。',
       /** Bond plan Task 13: gifts and the night walk, under 夥伴. */
       gift: '送禮', walk: '夜裡走走', together: '和大家一起',
       giftedToday: '今天已經收過了', nothingToGive: '你手上沒有能送的東西。', nobodyToGift: '現在還沒有誰能收下你的禮物。',

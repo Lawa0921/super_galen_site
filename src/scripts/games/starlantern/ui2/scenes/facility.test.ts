@@ -195,3 +195,23 @@ describe('FacilityScene.speakAs (bond plan Task 13)', () => {
     expect(root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(true);   // no 二 after her
   });
 });
+
+describe('FacilityScene.play: a scene that throws at once (review of bond plan Tasks 12-14)', () => {
+  it('is reported and over on either path, never thrown at the caller or left as an unhandled rejection', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      for (const o of [{ mode: 'all' as const, record: false as const }, { mode: 'all' as const }]) {
+        const c = ctx();
+        const root = document.createElement('div');
+        const s = new Probe(c, 'guild', Infinity);
+        s.enter(root);
+        s.onAction('confirm');
+        let p: Promise<void> | undefined;
+        expect(() => { p = s.scene('nowhere' as SceneId, o); }).not.toThrow();
+        await expect(p).resolves.toBeUndefined();
+        expect(root.querySelector('.slx-cmd')!.classList.contains('slx-cmd-hidden')).toBe(false);   // the facility is back
+      }
+      expect(err).toHaveBeenCalledTimes(2);
+    } finally { err.mockRestore(); }
+  });
+});

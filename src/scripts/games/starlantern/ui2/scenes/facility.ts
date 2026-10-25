@@ -214,8 +214,12 @@ export abstract class FacilityScene implements Scene {
     this.then = null;
     const { mode, record, ...opts } = o;
     const sc = { ...storyCtx(this.ctx), ...(mode ? { mode } : {}) };
-    const p = record === false ? (() => { const q = playScene(this.talk, id, sc, opts); return { done: q.done.then(() => {}), onAction: q.onAction }; })()
-      : playAndRecord(this.talk, id, sc, opts);
+    // A scene that throws before it starts (either path) is a failed play like any other: reported below, never thrown here.
+    let p: { done: Promise<void>; onAction(a: UiAction): void };
+    try {
+      p = record === false ? (() => { const q = playScene(this.talk, id, sc, opts); return { done: q.done.then(() => {}), onAction: q.onAction }; })()
+        : playAndRecord(this.talk, id, sc, opts);
+    } catch (e) { p = { done: Promise.reject(e), onAction() {} }; }
     this.playing = p;
     this.talking = true;
     // The place plate and the gold go with the command window (staging S1): a scene may be set elsewhere (its own card).

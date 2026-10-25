@@ -495,3 +495,23 @@ describe('InnScene: a healed refusal (review of bond plan Tasks 12-14)', () => {
     } finally { if (had) GIFT_LINES.noel = had; else delete GIFT_LINES.noel; }
   });
 });
+
+describe('InnScene: a talk still waiting (review of bond plan Tasks 12-14)', () => {
+  it('a talk cut short and still waiting is said as that, not as today\'s talk had', () => {
+    const back = stageRinTalk();
+    try {
+      const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, ['hero', 'rin']);
+      rinReady(game);
+      game.pending.push('bond:rin:1');   // opened, never finished (its play failed): it waits for the next return
+      const root = document.createElement('div');
+      const s = new InnScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity, 0);
+      s.enter(root);
+      s.onAction('confirm');
+      (root.querySelector('.slx-cmd [data-id=partners]') as HTMLElement).click();
+      s.onAction('confirm');   // 談心
+      s.onAction('confirm');   // 凜
+      expect(today(game.state).talked).toBe(false);
+      expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('剛才那段談心沒能說完，等下次回城再說吧。');
+    } finally { back(); }
+  });
+});
