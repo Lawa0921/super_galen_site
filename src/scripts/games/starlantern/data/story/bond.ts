@@ -27,10 +27,17 @@ export const BOND_START = 10;
 export const BOND_PER_PIECE = 3;
 /** Each source's lifetime cap (spec §4.3). Memories are capped by her chain's length. */
 export const BOND_CAP = { talk: 12, gift: 30, field: 40 } as const;
-/** The most field points one companion earns on one dive (one day, spec §0 D3). */
-export const BOND_RUN_CAP = 4;
-/** The battle bonus, in percent of her own base and growth stats, by tier (spec §5.1). Item 21 may only lower it. */
-export const BOND_PCT: Record<BondTier, number> = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 };
+/**
+ * The most field points one companion earns on one dive (one day, spec §0 D3). Spec §13 proposed 4; band 21p (bond plan
+ * Task 4, tuning round 1) found the three companions along on every dive short of 羈絆 by depth 30 (57), so 5 (63).
+ */
+export const BOND_RUN_CAP = 5;
+/**
+ * The battle bonus, in percent of her own base and growth stats, by tier (spec §5.1). Item 21 may only lower it: spec §13
+ * proposed 0/1/2/3/4; band 21b (bond plan Task 4) lost its 10% HP floor at mainline depth 4 and blaze depth 8 with 4 %
+ * (.098, .099) and with 3 % at 心契 (.098, .099), and holds with 2 % from 信賴 up (.101, .102).
+ */
+export const BOND_PCT: Record<BondTier, number> = { 0: 0, 1: 1, 2: 2, 3: 2, 4: 2 };
 /** 0 turns the battle bonus off (the endgame's versus, spec §5.5), as `MEMORY_SCALE` does for memories. */
 export const BOND_SCALE = 1;
 /** Fighting and exploring together (spec §4.3): a floor gone down with her, a boss or elite won with her, her life saved. */

@@ -17,6 +17,7 @@ import { convertPrimary } from './stats';
 import { TALENT_PER, TALENT_SCALE } from '../data/talents';
 import type { AnyStat, CharacterId, Member } from './types';
 import { bondStats, bondTier, maxBondRecord } from './story/bond';
+import { BOND_PCT } from '../data/story/bond';
 import { withBondScale } from './testing';
 
 const per = (stat: AnyStat) => TALENT_PER[stat]! * TALENT_SCALE;
@@ -477,18 +478,19 @@ describe('bond as a stat source (bond plan Task 3, spec §5.1)', () => {
   const devoted = (): Member => ({ ...newMember('scarlet'), level: 30, bond: maxBondRecord('scarlet') });
 
   it('bond adds a share of her natural stats', () => {
-    // Her base plus growth at Lv30, × 4 %, rounded down: hp 48 + 7 × 29 = 251 → 10; atk and def 13 + 2 × 29 = 71 → 2;
-    // mag and res 6 + 1 × 29 = 35 → 1. No spd, no tp.
-    expect(bondStats(devoted())).toEqual({ hp: 10, atk: 2, def: 2, mag: 1, res: 1 });
+    // Her base plus growth at Lv30, × BOND_PCT[4] (2 %, band 21's tuning; spec §5.1 proposed 4 %), rounded down: hp
+    // 48 + 7 × 29 = 251 → 5; atk and def 13 + 2 × 29 = 71 → 1; mag and res 6 + 1 × 29 = 35 → 0. No spd, no tp.
+    expect(bondStats(devoted())).toEqual({ hp: 5, atk: 1, def: 1, mag: 0, res: 0 });
     const parts = statSources(devoted());
     expect(parts.map((p) => p.source)).toEqual(['base', 'growth', 'gear', 'set', 'talent', 'memory', 'bond', 'primary']);
-    expect(parts.find((p) => p.source === 'bond')!.stats).toEqual({ hp: 10, atk: 2, def: 2, mag: 1, res: 1 });
+    expect(parts.find((p) => p.source === 'bond')!.stats).toEqual({ hp: 5, atk: 1, def: 1, mag: 0, res: 0 });
     const plain = { ...devoted(), bond: undefined };
     const a = statsOf(devoted()), b = statsOf(plain);
-    expect([a.hp - b.hp, a.atk - b.atk, a.def - b.def, a.mag - b.mag, a.res - b.res, a.spd - b.spd, a.tp - b.tp]).toEqual([10, 2, 2, 1, 1, 0, 0]);
-    // Tier by tier: 同行 1 %, 信賴 2 %, 羈絆 3 % of the same 251 HP.
+    expect([a.hp - b.hp, a.atk - b.atk, a.def - b.def, a.mag - b.mag, a.res - b.res, a.spd - b.spd, a.tp - b.tp]).toEqual([5, 1, 1, 0, 0, 0, 0]);
+    // Tier by tier: 同行 1 %, 信賴 2 %, 羈絆 2 % of the same 251 HP.
     const at = (talk: number, field: number) => bondStats({ ...newMember('scarlet'), level: 30, bond: { talk, field, gifts: {} } }).hp;
-    expect([at(10, 0), at(12, 18), at(12, 38)]).toEqual([2, 5, 7]);   // 20, 40, 60 points
+    expect([at(10, 0), at(12, 18), at(12, 38)]).toEqual([2, 5, 5]);   // 20, 40, 60 points
+    expect(BOND_PCT).toEqual({ 0: 0, 1: 1, 2: 2, 3: 2, 4: 2 });
   });
 
   it('no bond, no bond stats', () => {
@@ -517,9 +519,9 @@ describe('bond as a stat source (bond plan Task 3, spec §5.1)', () => {
   it('scale zero switches it off', () => {
     expect(withBondScale(0, () => bondStats(devoted()))).toEqual({});
     expect(withBondScale(0, () => statsOf(devoted()))).toEqual(statsOf({ ...devoted(), bond: undefined }));
-    expect(bondStats(devoted()).hp).toBe(10);   // switched back on after
+    expect(bondStats(devoted()).hp).toBe(5);   // switched back on after
     expect(() => withBondScale(0, () => { throw new Error('boom'); })).toThrow('boom');
-    expect(bondStats(devoted()).hp).toBe(10);   // even when the body throws
+    expect(bondStats(devoted()).hp).toBe(5);   // even when the body throws
   });
 
   it('a maxed record is 心契 with no pieces at all', () => {

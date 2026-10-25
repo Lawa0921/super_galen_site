@@ -240,8 +240,8 @@ describe('StatusScene', () => {
       expect(T.ui2.status.sources.bond).toBe('羈絆');
       expect(heads.indexOf('羈絆')).toBe(heads.indexOf(T.ui2.status.sources.memory) + 1);
       const want = bondStats(game.state.party.roster.scarlet);
-      expect(want.atk).toBe(2);
-      expect(root.querySelector('[data-stat=atk] .slx-bond')!.textContent).toBe('+2');
+      expect(want.atk).toBe(1);
+      expect(root.querySelector('[data-stat=atk] .slx-bond')!.textContent).toBe('+1');
       expect(root.querySelector('[data-stat=spd] .slx-bond')!.textContent).toBe('—');
       // No bond: the column reads as the memory column does with no pieces.
       const plain = setup('scarlet');

@@ -10,6 +10,9 @@ import { depthLevel, encounterTable } from './scaling';
 import { MAX_LEVEL } from './party';
 import { rollCrowdAffix } from './tiers';
 import { TIERS } from '../data/difficulty';
+import { bandKey, cellKey, withLineup } from './tierBands';
+import { withBondScale } from './testing';
+import type { Lineup } from './sim';
 import { CURVE, cellCrowdAffix, BASELINE_DEPTHS, BASELINE_TIERS, FEASIBLE, TIER_BANDS, bandCells, bandMisses, baselineLine, frozenMisses, hasTriggerOrLasting, hellReportCells, measureCell, SHALLOW_HELL_BARE, shallowHellMisses, nightmareTwins, normalTwin, pullsApart, roadCell, tierLineup, TIER_SEEDS, withTrigger, type BandId, type BandRun, type TierCell, type TierRun } from './tierBands';
 import { AFFIX_IDS } from '../data/affixes';
 import { CHARACTER_IDS } from '../data/characters';
@@ -363,5 +366,30 @@ describe('difficulty band thresholds (difficulty plan Task 5b, controller ruling
     expect(bandMisses('H4', only('H4', h4))).toEqual([`H4 ${bandCells('H4')[0].label}: a fight of 2 rounds < 3`]);
     expect(frozenMisses('N1', fill('N1', () => run(1, 0.1)))).toEqual([]);
     expect(frozenMisses('N1', fill('N1', () => run(1, 0.1, 3, 3, 1))).length).toBe(15);
+  });
+});
+
+describe('band 21 measures apart from the plain bands (bond plan Task 4)', () => {
+  const MAX: Lineup = { bond: 'max' };
+  it('the cache keys hold the bond scale and the extra lineup', () => {
+    const cell = bandCells('N3')[0];
+    expect(withBondScale(0, () => cellKey(cell))).not.toBe(cellKey(cell));
+    expect(cellKey({ ...cell, label: 'another' })).toBe(cellKey(cell));   // the label is no part of the fight
+    expect(bandKey('N3', MAX)).not.toBe(bandKey('N3'));
+    expect(withBondScale(0, () => bandKey('N3'))).not.toBe(bandKey('N3'));
+    expect(withBondScale(0, () => bandKey('N3', MAX))).not.toBe(bandKey('N3', MAX));
+    expect(bandKey('N3')).toBe(bandKey('N3'));
+  });
+  it("extra merges into every cell's lineup", () => {
+    const cells = bandCells('N4');
+    const merged = withLineup(cells, MAX);
+    expect(merged).toHaveLength(cells.length);
+    merged.forEach((c, i) => {
+      expect(c.lineup.bond).toBe('max');
+      const { bond: _b, ...rest } = c.lineup;
+      expect(rest).toEqual(cells[i].lineup);
+      expect({ ...c, lineup: cells[i].lineup }).toEqual(cells[i]);
+    });
+    expect(cells.every((c) => c.lineup.bond === undefined)).toBe(true);   // the band's own cells are untouched
   });
 });

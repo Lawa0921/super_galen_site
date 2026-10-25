@@ -18,6 +18,7 @@ import { encounterTable } from './scaling';
 import { parityLineups } from './parity';
 import { ODD_LINEUPS, kitParty, lineupPolicies, setSimTrace, simBattle, type Lineup } from './sim';
 import { socketCount } from './sockets';
+import { BOND_SWITCH } from './story/bond';
 import { rollCrowdAffix, type CrowdAffix } from './tiers';
 import type { CharacterId, Rarity } from './types';
 
@@ -377,10 +378,19 @@ export function nightmareTwins(c: TierCell): TierCell[] {
 
 const cellRuns = new Map<string, TierRun>();
 
+/**
+ * A cell's measurement key: the cell (its label aside) and the bond's battle scale (bond plan Task 4), so band 21 can
+ * measure a maxed bond, and the bond switched off, in the same process as the plain bands without one answering another.
+ */
+export function cellKey(c: TierCell): string {
+  const { label: _l, ...t } = c;
+  return JSON.stringify({ ...t, bondScale: BOND_SWITCH.scale });
+}
+
 /** A cell measured once (its label aside): twins shared between cells are run once. */
 function measureOnce(c: TierCell): TierRun {
   const { label: _l, ...t } = c;
-  const key = JSON.stringify(t);
+  const key = cellKey(c);
   let run = cellRuns.get(key);
   if (!run) cellRuns.set(key, (run = measureCell(t)));
   return run;
@@ -411,17 +421,31 @@ export const gapLine = (depth: number, bare: TierRun, built: TierRun, tier: stri
 /** One cell measured, with its Normal twin, and for H1 and H2 its Nightmare twins pooled. */
 export interface BandRun { cell: TierCell; run: TierRun; twin: TierRun; nightmare?: TierRun }
 
-const bandRuns = new Map<BandId, BandRun[]>();
+const bandRuns = new Map<string, BandRun[]>();
+
+/** A band's measurement key (bond plan Task 4): the band, the lineup merged into its cells, and the bond's battle scale. */
+export const bandKey = (band: BandId, extra?: Partial<Lineup>): string => `${band}|${JSON.stringify(extra ?? null)}|${BOND_SWITCH.scale}`;
+
+/** `cells` with `extra` merged into each one's lineup (band 21's maxed bond); the cells given are not changed. */
+export const withLineup = (cells: readonly TierCell[], extra: Partial<Lineup>): TierCell[] =>
+  cells.map((c) => ({ ...c, lineup: { ...c.lineup, ...extra } }));
 
 /** Every cell of `cells` measured, each with its twin (and with `nightmare`, its Nightmare twins pooled). */
 export const measureCells = (cells: readonly TierCell[], nightmare = false): BandRun[] => cells.map((cell) => ({
   cell, run: measureOnce(cell), twin: measureTwin(cell), ...(nightmare ? { nightmare: pooled(nightmareTwins(cell).map(measureOnce)) } : {}),
 }));
 
-/** Every cell of a band measured, with its twins; once a band (a file's tests share it). */
-export function measureBand(band: BandId): BandRun[] {
-  let runs = bandRuns.get(band);
-  if (!runs) bandRuns.set(band, (runs = measureCells(bandCells(band), band === 'H1' || band === 'H2')));
+/**
+ * Every cell of a band measured, with its twins; once a band (a file's tests share it). `extra` is merged into every
+ * cell's lineup (band 21: `{ bond: 'max' }`); with none, and the bond at its scale, the numbers are the band's own.
+ */
+export function measureBand(band: BandId, extra?: Partial<Lineup>): BandRun[] {
+  const key = bandKey(band, extra);
+  let runs = bandRuns.get(key);
+  if (!runs) {
+    const cells = extra ? withLineup(bandCells(band), extra) : bandCells(band);
+    bandRuns.set(key, (runs = measureCells(cells, band === 'H1' || band === 'H2')));
+  }
   return runs;
 }
 
