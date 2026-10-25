@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CHARACTER_IDS } from '../data/characters';
-import { STORY, type ScriptLine } from '../data/story.zh-TW';
+import { STORY, type ScriptLine, flatLines } from '../data/story.zh-TW';
 import { Game } from '../engine/game';
 import { constRng } from '../engine/testing';
 import type { CharacterId } from '../engine/types';
@@ -75,7 +75,7 @@ describe('companion grave faces', () => {
     expect(face('safira', 'serious')).toBe(art.portrait('safira', 'serious'));
     expect(face('noel', 'pout')).toBe(art.portrait('noel', 'pout'));
     const s = state();
-    const said = (id: string, who: CharacterId) => STORY.scenes[id as keyof typeof STORY.scenes].lines.filter((l) => l.who === who && (l.mood === 'pout' || l.mood === 'surprised'));
+    const said = (id: string, who: CharacterId) => flatLines(STORY.scenes[id as keyof typeof STORY.scenes].lines).filter((l) => l.who === who && (l.mood === 'pout' || l.mood === 'surprised'));
     const wave3 = [...said('mem:safira:4', 'safira'), ...said('mem:noel:1', 'noel'), ...said('mem:noel:2', 'noel'), ...said('finale', 'noel')];
     expect(wave3.map((l) => `${l.who} ${l.mood}`)).toEqual(['safira surprised', 'noel pout', 'noel pout', 'noel pout', 'noel pout']);
     for (const l of wave3) {
@@ -216,7 +216,7 @@ describe('faces in a heavy scene (staging S3)', () => {
       const hidden: string[] = [];
       for (const id of SCENE_IDS) {
         if (!heavyScene(id)) continue;
-        for (const l of STORY.scenes[id].lines) {
+        for (const l of flatLines(STORY.scenes[id].lines)) {
           if (l.who !== 'hero' && l.who !== 'rin') continue;
           const s = state();
           if (l.if?.oath === true) s.party.roster.rin.oath = true;   // a line gated on her oath plays in the oath era
@@ -247,7 +247,7 @@ describe('faces in a heavy scene (staging S3)', () => {
     const hiddenHeavy: string[] = [];
     for (const id of SCENE_IDS) {
       const heavy = heavyScene(id);
-      for (const l of STORY.scenes[id].lines) {
+      for (const l of flatLines(STORY.scenes[id].lines)) {
         if (!(CHARACTER_IDS as string[]).includes(l.who)) continue;
         const mood = l.mood ?? 'normal';
         const shown = speakerOf(l.who, s, ART, mood, heavy).face;
@@ -303,7 +303,7 @@ describe('faces wave 4 (affinity plan Task A)', () => {
   const WAVE4_MOODS = new Set<StoryMood>(['blush', 'averted', 'unguarded', 'smug', 'excited']);
   const tagged = () => {
     const out: { scene: string; l: ScriptLine }[] = [];
-    for (const id of SCENE_IDS) for (const l of STORY.scenes[id].lines) if (l.mood && WAVE4_MOODS.has(l.mood) && (CHARACTER_IDS as string[]).includes(l.who)) out.push({ scene: id, l });
+    for (const id of SCENE_IDS) for (const l of flatLines(STORY.scenes[id].lines)) if (l.mood && WAVE4_MOODS.has(l.mood) && (CHARACTER_IDS as string[]).includes(l.who)) out.push({ scene: id, l });
     return out;
   };
 

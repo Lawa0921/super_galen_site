@@ -3,7 +3,7 @@ import { SPECIALS, AFFIXES } from '../../src/scripts/games/starlantern/data/gear
 import { CHARACTERS } from '../../src/scripts/games/starlantern/data/characters';
 import { EQUIPMENT } from '../../src/scripts/games/starlantern/data/equipment';
 import { LEGACY_GRID, LEGACY_LINEUP, meet } from '../../src/scripts/games/starlantern/engine/party';
-import { FOUND_LINE, STORY } from '../../src/scripts/games/starlantern/data/story.zh-TW';
+import { FOUND_LINE, STORY, flatLines } from '../../src/scripts/games/starlantern/data/story.zh-TW';
 import { T } from '../../src/scripts/games/starlantern/data/text.zh-TW';
 import { AFFIXES as TIER_AFFIXES } from '../../src/scripts/games/starlantern/data/affixes';
 import { CHAINS, chainLength } from '../../src/scripts/games/starlantern/data/story/chains';
@@ -3632,7 +3632,7 @@ test.describe('starlantern', () => {
       if (phone) await asPhone(page);
       await lampHome(page, w);
       expect(await game((g) => [...g.night])).toEqual([memScene('rin', 1)]);
-      const first = STORY.scenes[memScene('rin', 1)].lines[0].text;
+      const first = flatLines(STORY.scenes[memScene('rin', 1)].lines)[0].text;
       const text = page.locator('.slx-town .slx-talk .slx-text');
       const steps: { text: string; card: string | null; menuHidden: boolean; fits: boolean }[] = [];
       for (let i = 0; i < 200; i++) {
@@ -3685,7 +3685,7 @@ test.describe('starlantern', () => {
     await game((g) => { g.state.story.day = 4; g.state.party.roster.rin.memories = 1; g.state.story.untold = ['mem:rin:1']; g.state.inventory['return-lamp'] = 1; });
     await lampHome(page, w);
     expect(await game((g) => [g.state.story.day, [...g.night]])).toEqual([5, [memScene('rin', 1)]]);
-    const first = STORY.scenes[memScene('rin', 1)].lines[0].text;
+    const first = flatLines(STORY.scenes[memScene('rin', 1)].lines)[0].text;
     const text = page.locator('.slx-town .slx-talk .slx-text');
     let told = 0;
     for (let i = 0; i < 200; i++) {
@@ -3740,7 +3740,7 @@ test.describe('starlantern', () => {
     expect(arrival.slice(0, -1).every((x: string) => x.startsWith('chat:'))).toBe(true);
     await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
     // Its lines play in order on the town's dialogue box, under their speakers' names, while the menu stays hidden.
-    const spoken = banter.lines.filter((l) => l.who !== 'narrator');
+    const spoken = flatLines(banter.lines).filter((l) => l.who !== 'narrator');
     let at = 0;
     for (let i = 0; i < 80 && at < spoken.length; i++) {
       const text = (await talkText.textContent()) ?? '';
@@ -3900,7 +3900,7 @@ test.describe('starlantern', () => {
     await shot('02-prologue-skip-summary');
     // The inn night follows before the town is the player's (Task 10b): the menu stays hidden until its first line is up.
     const talkText = page.locator('.slx-town .slx-talk .slx-text');
-    const innFirst = STORY.scenes['prologue-inn'].lines[0].text;
+    const innFirst = flatLines(STORY.scenes['prologue-inn'].lines)[0].text;
     for (let i = 0; i < 6 && ((await talkText.textContent()) ?? '') !== innFirst; i++) {
       await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
       await w.key('z'); await page.waitForTimeout(80);
@@ -4003,7 +4003,7 @@ test.describe('starlantern', () => {
     expect(homeArrival.slice(1).every((id: string) => /^(chat|banter):/.test(id))).toBe(true);   // B1: a banter may follow the chat
     await expect(page.locator('.slx-town-menu')).toHaveClass(/slx-cmd-hidden/);
     {
-      const trust = STORY.scenes['first-return'].lines.filter((l) => l.who === 'rin').at(-1)!.text;   // Rin's last spoken line of the scene
+      const trust = flatLines(STORY.scenes['first-return'].lines).filter((l) => l.who === 'rin').at(-1)!.text;   // Rin's last spoken line of the scene
       let heard = false;
       let faces = 0;
       for (let i = 0; i < 40 && !heard; i++) {
@@ -4092,7 +4092,7 @@ test.describe('starlantern', () => {
     // staging S5: the plain look), then her portrait must be on the box.
     await expect(page.locator('.slx-handbook .slx-talk.slx-talk--memory')).toBeVisible();
     {
-      const rinFirst = STORY.scenes[memScene('rin', 1)].lines.find((l) => l.who === 'rin')!;
+      const rinFirst = flatLines(STORY.scenes[memScene('rin', 1)].lines).find((l) => l.who === 'rin')!;
       const memoryText = page.locator('.slx-handbook .slx-talk:not([hidden]) .slx-text');
       for (let i = 0; i < 20 && !((await memoryText.textContent()) ?? '').includes(rinFirst.text); i++) { await w.key('z'); await page.waitForTimeout(60); }
       await expect(memoryText).toHaveText(rinFirst.text);

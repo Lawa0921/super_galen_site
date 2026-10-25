@@ -41,7 +41,7 @@ import { PERKS, SHARD_PRICE, FRAGMENT_WEIGHT, SHARD_DROP, SHARD_IDS, TOWN_DROP, 
 import { fragmentItem } from './story/fragments';
 import type { FragmentGain } from './story/memories';
 import { ACT_DEPTHS, ALONE, FINALE_BOSS, FINALE_DEPTH, HEAVY_MAJORS, isNightSlot, lineCap, memScene, REACTIONS, SEASON_SCENES, type SceneId } from '../data/story/scenes';
-import { NIGHT_BEATS, STORY, type ScriptLine } from '../data/story.zh-TW';
+import { NIGHT_BEATS, STORY, type ScriptLine, flatLines } from '../data/story.zh-TW';
 import { dawnMemory, planNight } from './story/nights';
 import { linesOf } from '../ui2/story';
 import { chainLength } from '../data/story/chains';
@@ -3632,7 +3632,7 @@ describe('the finale', () => {
     killAll(g);
     expect(g.finale!.pieces).toContain('bellkeeper-arrives');
     expect(memoriesOf(g.state.party.roster.hero)).toBe(chainLength('hero'));
-    const lines = linesOf('bellkeeper-arrives', g.state);   // the reading the game plays, from its own state (re-review)
+    const lines = flatLines(linesOf('bellkeeper-arrives', g.state));   // the reading the game plays, from its own state (re-review)
     expect(lines.length).toBeLessThanOrEqual(lineCap('bellkeeper-arrives'));
     const said = lines.map((l) => l.text).join('');
     expect(said).toMatch(/燈座/);

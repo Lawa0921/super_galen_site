@@ -3,7 +3,8 @@
 // Read by `voice.test.ts` (the gates), `story.test.ts` (pins) and `readAloud.ts` (the read-aloud dump).
 import type { CharacterId } from '../../engine/types';
 import { CHARACTERS, CHARACTER_IDS } from '../characters';
-import { NIGHT_BEATS, NPC_NAMES, STORY, linesWhen, type LineWhen, type NpcId, type ScriptLine, type Speaker } from '../story.zh-TW';
+import { NIGHT_BEATS, NPC_NAMES, STORY, flatLines, linesWhen, worstCount, type LineWhen, type NpcId, type SceneLine, type ScriptLine, type Speaker } from '../story.zh-TW';
+import { COMPANIONS } from './bond';
 import type { TownFragmentId } from './fragments';
 import { GROUP_GATE, GROUP_MIN_LINES, lineCap, type GroupScene, type SceneId } from './scenes';
 
@@ -42,6 +43,7 @@ const FACILITY_KEEPER: Record<string, NpcId> = { guild: 'anna', shop: 'orik', in
  */
 export function speakerOf(key: string, line?: ScriptLine): Speaker | undefined {
   if (line) return line.who;
+  if (/\.choices\.\d+\.text$/.test(key)) return 'hero';   // bond plan Task 7: a choice is Lorne's words
   const [top, a, b] = key.split('.');
   if (top === 'rinLines' || top === 'rinOath') return 'rin';
   if (top === 'greet') return FACILITY_KEEPER[a];
@@ -203,13 +205,15 @@ const BASE: LineWhen = { met: [...CHARACTER_IDS], full: [], returned: [], oath: 
  * Every different way `lines` can play: each condition its lines name, on and off (a companion met or not, her memories
  * whole or not, a townsfolk piece back or not, Rin's choice made or not, a scene seen or not), a full chain counting as met.
  * `oath` fixes the choice when the scene only plays on one side of it. Each different run of lines comes once, with the
- * first `when` that plays it; every `when` names its `seen` (empty when nothing is).
+ * first `when` that plays it; every `when` names its `seen` (empty when nothing is). Bond plan Task 7: a line that waits on a
+ * bond tier adds one more condition, every companion's tier 0 or 4; `lines` is the reading's lines as the gates read them
+ * (each choice opened, `flatLines`), `played` as written, and `count` the most it plays (`worstCount`).
  */
-export function readingsOf(lines: ScriptLine[], oath?: boolean): { when: LineWhen; lines: ScriptLine[] }[] {
-  type Atom = { kind: 'met' | 'full'; id: CharacterId } | { kind: 'returned'; id: TownFragmentId } | { kind: 'oath' } | { kind: 'seen'; id: SceneId };
+export function readingsOf(lines: readonly SceneLine[], oath?: boolean): { when: LineWhen; lines: ScriptLine[]; played: SceneLine[]; count: number }[] {
+  type Atom = { kind: 'met' | 'full'; id: CharacterId } | { kind: 'returned'; id: TownFragmentId } | { kind: 'oath' } | { kind: 'seen'; id: SceneId } | { kind: 'tier' };
   const atoms: Atom[] = [];
   const add = (a: Atom) => { if (!atoms.some((b) => JSON.stringify(b) === JSON.stringify(a))) atoms.push(a); };
-  for (const l of lines) {
+  for (const l of flatLines(lines)) {
     const c = l.if;
     if (!c) continue;
     if (c.met) add({ kind: 'met', id: c.met });
@@ -221,8 +225,9 @@ export function readingsOf(lines: ScriptLine[], oath?: boolean): { when: LineWhe
     if (c.oath !== undefined && oath === undefined) add({ kind: 'oath' });
     if (c.seen) add({ kind: 'seen', id: c.seen });
     if (c.notSeen) add({ kind: 'seen', id: c.notSeen });
+    if (c.tier) add({ kind: 'tier' });
   }
-  const out: { when: LineWhen; lines: ScriptLine[] }[] = [];
+  const out: { when: LineWhen; lines: ScriptLine[]; played: SceneLine[]; count: number }[] = [];
   const seen = new Set<string>();
   for (let mask = 0; mask < 1 << atoms.length; mask++) {
     const w: LineWhen = { met: [...BASE.met], full: [], returned: [], oath: oath ?? false, seen: [] };
@@ -232,6 +237,7 @@ export function readingsOf(lines: ScriptLine[], oath?: boolean): { when: LineWhe
       else if (a.kind === 'full') w.full.push(a.id);
       else if (a.kind === 'returned') w.returned.push(a.id);
       else if (a.kind === 'seen') w.seen!.push(a.id);
+      else if (a.kind === 'tier') w.tiers = Object.fromEntries(COMPANIONS.map((c) => [c, 4]));
       else w.oath = true;
     });
     if (w.full.some((c) => !w.met.includes(c))) continue;   // a full chain is a met companion's
@@ -239,7 +245,7 @@ export function readingsOf(lines: ScriptLine[], oath?: boolean): { when: LineWhe
     const sig = played.map((l) => lines.indexOf(l)).join(',');
     if (seen.has(sig)) continue;
     seen.add(sig);
-    out.push({ when: w, lines: played });
+    out.push({ when: w, lines: flatLines(played), played, count: worstCount(played) });
   }
   return out;
 }
@@ -249,7 +255,7 @@ export function readingsOf(lines: ScriptLine[], oath?: boolean): { when: LineWhe
  */
 export const AFTER_CHOICE: ReadonlySet<SceneId> = new Set<SceneId>(['finale', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'epilogue']);
 /** Every reading of a scene as it can play; the scenes after her choice (`AFTER_CHOICE`) only after it. */
-export const sceneReadings = (id: SceneId): { when: LineWhen; lines: ScriptLine[] }[] =>
+export const sceneReadings = (id: SceneId): ReturnType<typeof readingsOf> =>
   readingsOf(STORY.scenes[id].lines, AFTER_CHOICE.has(id) ? true : undefined);
 
 // ---- Pins (plan ruling 11) ----
@@ -260,7 +266,7 @@ export const sceneReadings = (id: SceneId): { when: LineWhen; lines: ScriptLine[
  */
 export function pinBeat(id: SceneId, reading: Partial<LineWhen>, re: RegExp): void {
   const w: LineWhen = { ...BASE, ...reading };
-  const hits = linesWhen(STORY.scenes[id].lines, w).filter((l) => re.test(l.text));
+  const hits = flatLines(linesWhen(STORY.scenes[id].lines, w)).filter((l) => re.test(l.text));
   if (hits.length !== 1) throw new Error(`pinBeat: ${id} ${JSON.stringify(reading)} has ${hits.length} lines matching ${re}${hits.map((h) => `\n  ${h.text}`).join('')}`);
 }
 

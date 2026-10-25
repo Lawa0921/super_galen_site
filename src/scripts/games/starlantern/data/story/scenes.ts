@@ -21,7 +21,10 @@ export type SceneId =
   | 'prologue' | 'prologue-inn' | 'first-return' | 'act1-after' | ActNode | 'rin-reveal' | 'rin-confess' | 'bellkeeper-arrives' | 'hero-alone'
   | 'finale-eve' | 'finale' | 'epilogue'
   | `mem:${CharacterId}:${number}` | `chat:${CharacterId}:${number}` | `town:${TownFragmentId}` | `home:${HomeOwner}`
-  | `banter:${BanterPair}:${number}` | GroupScene | `season:${Season}`;
+  | `banter:${BanterPair}:${number}` | GroupScene | `season:${Season}`
+  // bond plan Task 7: a companion's bond scenes, her after-story, her romance, and the night walk with everyone (types only;
+  // `SCENE_IDS` holds the registered ones, Task 8)
+  | `bond:${CharacterId}:${number}` | `ending:${CharacterId}` | `romance:${CharacterId}` | 'together';
 
 /**
  * Story L (spec §5): the group scene after an act, `group:<act>`. It plays in the reaction slot of the act's own arrival or
@@ -48,6 +51,8 @@ export const NIGHT_RANK = { group: 0, season: 1, memory: 2 } as const;
 export const isNightSlot = (id: SceneId): boolean => id.startsWith('group:') || id.startsWith('season:');
 
 export const memScene = (id: CharacterId, n: number): SceneId => `mem:${id}:${n}`;
+/** Bond plan Task 7: her `n`th bond scene (the 4th is 心契). */
+export const bondScene = (id: CharacterId, n: number): SceneId => `bond:${id}:${n}`;
 
 /**
  * The companions whose ending spec §6 places in the town (continuity fix 2): Chizuru's shrine, Safira's dance in the square,
@@ -133,8 +138,12 @@ export const SCENE_IDS: SceneId[] = [
 const SCENE_SET = new Set<string>(SCENE_IDS);
 export const isSceneId = (v: unknown): v is SceneId => typeof v === 'string' && (SCENE_SET.has(v) || (Object.values(SEASON_SCENES) as string[]).includes(v));
 
-export type SceneKind = 'major' | 'memory' | 'chat' | 'town' | 'home' | 'banter' | 'group';
+export type SceneKind = 'major' | 'memory' | 'chat' | 'town' | 'home' | 'banter' | 'group' | 'bond' | 'ending' | 'romance';
 export function sceneKind(id: SceneId): SceneKind {
+  // bond plan ruling 8: the bond scenes, the after-stories, the romances and the night walk with everyone
+  if (id.startsWith('bond:')) return 'bond';
+  if (id.startsWith('ending:')) return 'ending';
+  if (id.startsWith('romance:') || id === 'together') return 'romance';
   if (id.startsWith('mem:')) return 'memory';
   if (id.startsWith('chat:')) return 'chat';
   if (id.startsWith('town:')) return 'town';
@@ -165,6 +174,10 @@ export function lineCap(id: SceneId): number {
     case 'home': return 4;
     case 'banter': return 4;
     case 'group': return 14;   // story L cold read (2026-10-24): room for a reaction after the turn (spec §5.1 said twelve)
+    // bond plan ruling 8 (spec §8.1): a bond scene six, its 心契 ten; an after-story six; a romance twelve, the walk together three
+    case 'bond': return id.endsWith(':4') ? 10 : 6;
+    case 'ending': return 6;
+    case 'romance': return id === 'together' ? 3 : 12;
   }
 }
 
@@ -288,6 +301,9 @@ const HEAVY_SCENES = new Set<SceneId>([
 /** Whether a scene is heavy: every memory, every townsfolk return, every group scene (story L), and the scenes the bible names. */
 export function heavyScene(id: SceneId): boolean {
   const kind = sceneKind(id);
+  // bond plan ruling 8: 心契 and a romance are heavy; the other bond scenes, an after-story and the walk together are light
+  if (kind === 'bond') return id.endsWith(':4');
+  if (kind === 'romance') return id !== 'together';
   return kind === 'memory' || kind === 'town' || kind === 'group' || HEAVY_SCENES.has(id);
 }
 

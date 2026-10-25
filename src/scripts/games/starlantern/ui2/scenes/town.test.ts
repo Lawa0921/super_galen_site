@@ -7,7 +7,7 @@ import type { ItemInstance } from '../../engine/types';
 import { TownScene } from './town';
 import { CHARACTERS } from '../../data/characters';
 import { ACT_DEPTHS, type SceneId } from '../../data/story/scenes';
-import { NIGHT_BEATS, NPC_NAMES, STORY, type ScriptLine } from '../../data/story.zh-TW';
+import { NIGHT_BEATS, NPC_NAMES, STORY, type ScriptLine, flatLines } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { linesOf } from '../story';
@@ -282,7 +282,7 @@ describe('TownScene story', () => {
     const settle = () => new Promise((r) => setTimeout(r, 0));
     return { root, s, go, menu, text, settle };
   };
-  const firstLine = (id: SceneId, game: Game) => linesOf(id, game.state)[0].text;
+  const firstLine = (id: SceneId, game: Game) => flatLines(linesOf(id, game.state))[0].text;
 
   it('arrival scenes play before the menu', async () => {
     const game = Game.fresh(constRng(0.5), null);
@@ -292,12 +292,12 @@ describe('TownScene story', () => {
     expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(true);
     expect(t.root.querySelector('.slx-back')!.classList.contains('slx-cmd-hidden')).toBe(true);   // 返回 is not offered over a scene
     expect(t.text()).toBe(firstLine('prologue', game));
-    for (let i = 0; i < linesOf('prologue', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    for (let i = 0; i < flatLines(linesOf('prologue', game.state)).length; i++) { t.s.onAction('confirm'); await t.settle(); }
     // The inn night follows at once: still no menu, no 返回 (Task 10b).
     expect(t.text()).toBe(firstLine('prologue-inn', game));
     expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(true);
     expect(t.root.querySelector('.slx-back')!.classList.contains('slx-cmd-hidden')).toBe(true);
-    for (let i = 0; i < linesOf('prologue-inn', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    for (let i = 0; i < flatLines(linesOf('prologue-inn', game.state)).length; i++) { t.s.onAction('confirm'); await t.settle(); }
     expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);   // the town's own line is up now
     expect(t.root.querySelector('.slx-back')!.classList.contains('slx-cmd-hidden')).toBe(false);
     t.s.onAction('confirm');
@@ -315,7 +315,7 @@ describe('TownScene story', () => {
     const place = t.root.querySelector('.slx-place')!, gold = t.root.querySelector('.slx-gold')!;
     expect(place.classList.contains('slx-cmd-hidden')).toBe(true);
     expect(gold.classList.contains('slx-cmd-hidden')).toBe(true);
-    for (let i = 0; i < linesOf('act1-after', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    for (let i = 0; i < flatLines(linesOf('act1-after', game.state)).length; i++) { t.s.onAction('confirm'); await t.settle(); }
     expect(place.classList.contains('slx-cmd-hidden')).toBe(false);
     expect(gold.classList.contains('slx-cmd-hidden')).toBe(false);
   });
@@ -497,7 +497,7 @@ describe('TownScene: the night (story L Task 3c)', () => {
     const settle = () => new Promise((r) => setTimeout(r, 0));
     /** Confirm through `id`'s lines, checking each is up in turn. */
     const through = async (id: SceneId, each?: () => void) => {
-      for (const l of linesOf(id, game.state)) {
+      for (const l of flatLines(linesOf(id, game.state))) {
         expect(text()).toBe(l.text);
         each?.();
         s.onAction('confirm'); await settle();
@@ -537,7 +537,7 @@ describe('TownScene: the night (story L Task 3c)', () => {
     expect(t.text()).toBe('平安回城。帶回了：40 G。');
     expect(t.card()).toBeNull();
     t.s.onAction('confirm'); await t.settle();
-    expect(t.text()).not.toBe(linesOf('mem:liz:1', game.state)[0].text);   // the day's line, before the night
+    expect(t.text()).not.toBe(flatLines(linesOf('mem:liz:1', game.state))[0].text);   // the day's line, before the night
     expect([t.card(), t.night()]).toEqual([null, false]);
     t.s.onAction('confirm'); await t.settle();
     await t.through('mem:liz:1', () => {
@@ -584,8 +584,8 @@ describe('TownScene: the night (story L Task 3c)', () => {
       await t.through('mem:hero:3', () => expect([t.card(), t.night()]).toEqual(['月影旅館・夜', true]));
       // no beat between the owed ones: they lead into the act
       await t.through('mem:rin:2', () => expect(t.card()).toBe('月影旅館・夜'));
-      expect(t.text()).toBe(linesOf('act2', game.state)[0].text);
-      expect(t.card()).toBe(linesOf('act2', game.state)[0].place!.text);
+      expect(t.text()).toBe(flatLines(linesOf('act2', game.state))[0].text);
+      expect(t.card()).toBe(flatLines(linesOf('act2', game.state))[0].place!.text);
       expect(game.state.story.beat).toBeUndefined();
     });
   });
@@ -694,7 +694,7 @@ describe('TownScene: the night (story L Task 3c)', () => {
     expect(tinted('full')).toBe(false);   // the day's line: no night yet
     t.s.onAction('confirm'); await t.settle();
     await t.through('mem:liz:1', () => expect([t.night(), tinted('full')]).toEqual([true, true]));
-    for (let i = 0; i < 6 && t.text() !== linesOf('mem:noel:1', game.state)[0].text; i++) { t.s.onAction('confirm'); await t.settle(); }   // the beat
+    for (let i = 0; i < 6 && t.text() !== flatLines(linesOf('mem:noel:1', game.state))[0].text; i++) { t.s.onAction('confirm'); await t.settle(); }   // the beat
     await t.through('mem:noel:1', () => expect(tinted('full')).toBe(true));
     expect(t.root.querySelector('[class*="slx-moon-"]')).toBeNull();   // the night over, the tint goes with the card
   });
@@ -754,7 +754,7 @@ describe('TownScene: the calendar (time and moon Task 4)', () => {
     game.state.story.queue = ['act1-after'];
     const t = open(game);
     expect(t.cal().classList.contains('slx-cmd-hidden')).toBe(true);
-    for (let i = 0; i < linesOf('act1-after', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    for (let i = 0; i < flatLines(linesOf('act1-after', game.state)).length; i++) { t.s.onAction('confirm'); await t.settle(); }
     expect(t.cal().classList.contains('slx-cmd-hidden')).toBe(false);
   });
 
@@ -769,7 +769,7 @@ describe('TownScene: the calendar (time and moon Task 4)', () => {
     game.arrival = ['act3'];
     const t = open(game);
     expect(t.cal().textContent).toBe('秋・下弦');
-    for (let i = 0; i < linesOf('act3', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    for (let i = 0; i < flatLines(linesOf('act3', game.state)).length; i++) { t.s.onAction('confirm'); await t.settle(); }
     expect(game.state.story.seen).toContain('act3');
     expect(t.cal().classList.contains('slx-cmd-hidden')).toBe(false);   // the menu is back, with the day's line
     expect(t.cal().textContent).toBe('冬・下弦');

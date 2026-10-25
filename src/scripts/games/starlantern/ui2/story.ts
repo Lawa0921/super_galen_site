@@ -3,7 +3,9 @@ import { chainLength } from '../data/story/chains';
 import { BANTER_GATE, CHAT_GATE, GROUP_GATE, MAJOR_SCENES, heavyScene, memScene, sceneKind, type SceneId, type StoryGate } from '../data/story/scenes';
 import { AFTER_CHOICE } from '../data/story/voiceGates';
 import { WARM_MOODS } from '../data/story/tone';
-import { NIGHT_PLACE, NPC_NAMES, STORY, linesWhen, type NpcId, type Place, type ScriptLine, type Speaker } from '../data/story.zh-TW';
+import { NIGHT_PLACE, NPC_NAMES, STORY, isChoice, linesWhen, type NpcId, type Place, type SceneLine, type ScriptLine, type Speaker } from '../data/story.zh-TW';
+import { COMPANIONS } from '../data/story/bond';
+import { bondTier } from '../engine/story/bond';
 import { T } from '../data/text.zh-TW';
 import type { Game } from '../engine/game';
 import { storyPieces } from '../engine/story/events';
@@ -129,15 +131,17 @@ function speakerFaces(who: Speaker, s: GameState, mood: StoryMood, heavy: boolea
   return { name: NPC_NAMES[npc], faces: facility ? [art.npc(facility, 'normal')] : [] };
 }
 
-/** A scene's lines without the ones whose condition does not hold for this game. */
-export function linesOf(id: SceneId, s: GameState): ScriptLine[] {
+/** A scene's lines without the ones whose condition does not hold for this game (a choice always stays). */
+export function linesOf(id: SceneId, s: GameState): SceneLine[] {
   // story L spec §4.9: a companion is full once her last piece is told; Lorne and Rin once they hold it all.
   const full = CHARACTER_IDS.filter((c) => !!s.party.roster[c] && storyPieces(s, c) >= chainLength(c));
-  return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath, seen: s.story.seen });
+  // bond plan Task 7: each met companion's bond tier, for the lines that wait on one
+  const tiers = Object.fromEntries(COMPANIONS.filter((c) => s.party.recruited.includes(c)).map((c) => [c, bondTier(s.party.roster[c])]));
+  return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath, seen: s.story.seen, tiers });
 }
 
 /** The first one to speak in `lines`: they stand on the left, everyone else on the right. */
-const firstSpeaker = (lines: ScriptLine[]): Speaker | undefined => lines.find((l) => l.who !== 'narrator')?.who;
+const firstSpeaker = (lines: readonly SceneLine[]): Speaker | undefined => lines.find((l) => l.who !== 'narrator')?.who;
 
 /** Says one line in the box: its speaker's plate (or `plate`, when given), and the face on its side. `heavy`: see `faceOrder`; `era`: `sceneEra`. */
 function sayLine(talk: Dialogue, line: ScriptLine, ctx: StoryCtx, first: Speaker | undefined, plate?: string, heavy = false, era: Era | null = null): Promise<void> {
@@ -161,7 +165,10 @@ export interface SceneOpts { place?: Place }
 export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOpts = {}): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void } {
   let finished = false;
   let summary: Promise<void> | null = null;
-  const lines = linesOf(id, ctx.game.state);
+  const all = linesOf(id, ctx.game.state);
+  // bond plan Task 7: a choice is played from Task 9 on; until then one on screen is an error, never a silent skip
+  if (all.some(isChoice)) throw new Error(`starlantern: ${id} holds a choice, and choices do not play yet`);
+  const lines = all as ScriptLine[];
   const first = firstSpeaker(lines);
   const heavy = heavyScene(id);
   // Her look is the scene's era, so a memory replayed after her oath wears the faces it was told with.

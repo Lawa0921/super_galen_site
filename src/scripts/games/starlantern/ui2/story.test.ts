@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CHARACTERS } from '../data/characters';
 import { MAJOR_SCENES, type SceneId } from '../data/story/scenes';
 import { chainLength } from '../data/story/chains';
-import { NIGHT_PLACE, STORY, linesWhen, type LineWhen, type ScriptLine } from '../data/story.zh-TW';
+import { NIGHT_PLACE, STORY, linesWhen, type ChoiceLine, type LineWhen, type SceneLine, type ScriptLine, flatLines } from '../data/story.zh-TW';
+import { meet } from '../engine/party';
 import { T } from '../data/text.zh-TW';
 import { Game } from '../engine/game';
 import { constRng, withTold } from '../engine/testing';
@@ -202,13 +203,13 @@ describe('playScene', () => {
     const { talk, ctx } = mk();
     const p = playScene(talk, 'mem:hero:1', ctx);
     const styles: boolean[] = [];
-    for (let i = 0; i < STORY.scenes['mem:hero:1'].lines.length; i++) {
+    for (let i = 0; i < flatLines(STORY.scenes['mem:hero:1'].lines).length; i++) {
       styles.push(talk.el.classList.contains('slx-talk--memory'));
       p.onAction('confirm');
       await tick();
     }
     await p.done;
-    expect(styles).toEqual(STORY.scenes['mem:hero:1'].lines.map((l) => !!l.past));
+    expect(styles).toEqual(flatLines(STORY.scenes['mem:hero:1'].lines).map((l) => !!l.past));
     expect(styles).toEqual([true, true, false, false]);
     expect(talk.el.classList.contains('slx-talk--memory')).toBe(false);
   });
@@ -236,10 +237,10 @@ describe('playScene', () => {
     ]);
     const s = game.state;
     s.party.recruited = s.party.recruited.filter((c) => c !== 'bobby');
-    expect(linesOf('chat:liz:1', s).map((l) => l.text)).toEqual(['甲', '乙']);
+    expect(flatLines(linesOf('chat:liz:1', s)).map((l) => l.text)).toEqual(['甲', '乙']);
     s.party.recruited.push('bobby');
     s.story.returned = ['anna'];
-    expect(linesOf('chat:liz:1', s).map((l) => l.text)).toEqual(['甲', '丙', '丁']);
+    expect(flatLines(linesOf('chat:liz:1', s)).map((l) => l.text)).toEqual(['甲', '丙', '丁']);
   });
 
   it('full and oath conditions pick the right lines', () => {
@@ -252,7 +253,7 @@ describe('playScene', () => {
       { who: 'liz', text: '戊', if: { full: 'liz' } },
     ]);
     const s = game.state;
-    const texts = () => linesOf('chat:liz:1', s).map((l) => l.text);
+    const texts = () => flatLines(linesOf('chat:liz:1', s)).map((l) => l.text);
     expect(texts()).toEqual(['甲', '丁']);                       // nobody full, no choice yet; liz is not even met
     s.party.roster.rin.memories = chainLength('rin');
     expect(texts()).toEqual(['甲', '乙', '丁']);                 // a full chain is read through memoriesOf
@@ -270,14 +271,14 @@ describe('playScene', () => {
     const len = chainLength('chizuru');
     const s = withTold(game.state, 'chizuru', len - 1);
     s.party.roster.chizuru.memories = len;   // all held, one untold
-    const notFull = STORY.scenes['chat:chizuru:2'].lines.filter((l) => l.if?.notFull === 'chizuru').map((l) => l.text);
-    const full = STORY.scenes['chat:chizuru:2'].lines.filter((l) => l.if?.full === 'chizuru').map((l) => l.text);
+    const notFull = flatLines(STORY.scenes['chat:chizuru:2'].lines).filter((l) => l.if?.notFull === 'chizuru').map((l) => l.text);
+    const full = flatLines(STORY.scenes['chat:chizuru:2'].lines).filter((l) => l.if?.full === 'chizuru').map((l) => l.text);
     expect(notFull.length).toBeGreaterThan(0);
-    const texts = linesOf('chat:chizuru:2', s).map((l) => l.text);
+    const texts = flatLines(linesOf('chat:chizuru:2', s)).map((l) => l.text);
     for (const t of notFull) expect(texts).toContain(t);
     for (const t of full) expect(texts).not.toContain(t);
     const told = withTold(s, 'chizuru', len);
-    const after = linesOf('chat:chizuru:2', told).map((l) => l.text);
+    const after = flatLines(linesOf('chat:chizuru:2', told)).map((l) => l.text);
     for (const t of full) expect(after).toContain(t);
     for (const t of notFull) expect(after).not.toContain(t);
   });
@@ -290,9 +291,9 @@ describe('playScene', () => {
     ]);
     const s = game.state;
     expect(s.story.seen).not.toContain('banter:rin-sylvie:1');
-    expect(linesOf('chat:liz:1', s).map((l) => l.text)).toEqual(['沒看過']);
+    expect(flatLines(linesOf('chat:liz:1', s)).map((l) => l.text)).toEqual(['沒看過']);
     s.story.seen.push('banter:rin-sylvie:1');
-    expect(linesOf('chat:liz:1', s).map((l) => l.text)).toEqual(['看過']);
+    expect(flatLines(linesOf('chat:liz:1', s)).map((l) => l.text)).toEqual(['看過']);
     const p = playScene(talk, 'chat:liz:1', ctx);   // the player reads the save as it is
     expect(shown(talk)).toBe('看過');
     p.onAction('confirm');
@@ -674,5 +675,55 @@ describe('a face that lands while its line is up (ui2/lateArt)', () => {
     landed.add(art.portrait('liz', 'sad'));
     drawLanded(root, new Set([art.portrait('liz', 'sad'), art.portrait('liz', 'normal')]));
     expect(face()).toBeUndefined();   // her old wait is gone with her line
+  });
+});
+
+describe('the bond script format (bond plan Task 7)', () => {
+  /** A scene put in for the test, taken out after (it may be an id no written scene has). */
+  const put = (id: SceneId, lines: SceneLine[]) => {
+    const had = Object.prototype.hasOwnProperty.call(STORY.scenes, id) ? STORY.scenes[id] : undefined;
+    STORY.scenes[id] = { title: 't', lines, summary: '概要' };
+    return () => { if (had) STORY.scenes[id] = had; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
+  };
+  const text = (l: SceneLine) => ('text' in l ? l.text : 'choice');
+  const choice: ChoiceLine = {
+    who: 'hero', choices: [
+      { tone: 'ask', text: '「後來呢？」', reply: [{ who: 'selene', text: '四' }] },
+      { tone: 'stay', text: '（在她旁邊坐下。）', reply: [{ who: 'selene', text: '五' }] },
+    ],
+  };
+
+  it('tier conditions pick the right lines', () => {
+    const { game } = mk();
+    game.state.party = meet(game.state.party, 'selene', 1);
+    const back = put('bond:selene:1', [
+      { who: 'selene', text: '一' },
+      { who: 'selene', text: '二', if: { tier: { who: 'selene', min: 2 } } },
+      { who: 'narrator', text: '三', if: { tier: { who: 'selene', min: 1 } } },
+    ]);
+    try {
+      expect(linesOf('bond:selene:1', game.state).map(text)).toEqual(['一']);   // 10 points: 相識
+      game.state.party.roster.selene.bond = { talk: 10, field: 0, gifts: {} };   // 20: 同行
+      expect(linesOf('bond:selene:1', game.state).map(text)).toEqual(['一', '三']);
+      game.state.party.roster.selene.bond = { talk: 10, field: 20, gifts: {} };   // 40: 信賴
+      expect(linesOf('bond:selene:1', game.state).map(text)).toEqual(['一', '二', '三']);
+      // no tiers given reads every one as 0
+      const w: LineWhen = { met: ['selene'], full: [], returned: [], oath: false };
+      expect(linesWhen(STORY.scenes['bond:selene:1'].lines, w).map(text)).toEqual(['一']);
+      expect(linesWhen(STORY.scenes['bond:selene:1'].lines, { ...w, tiers: { selene: 4 } }).map(text)).toEqual(['一', '二', '三']);
+    } finally { back(); }
+  });
+
+  it('a choice line always stays', () => {
+    const { game } = mk();
+    const back = put('bond:selene:2', [{ who: 'sylvie', text: '一', if: { met: 'sylvie' } }, choice, { who: 'narrator', text: '二' }]);
+    try {
+      const w: LineWhen = { met: [], full: [], returned: [], oath: false };
+      expect(linesWhen(STORY.scenes['bond:selene:2'].lines, w)).toEqual([choice, { who: 'narrator', text: '二' }]);
+      expect(linesOf('bond:selene:2', game.state)[0]).toBe(choice);
+      // until Task 9 plays it, a choice on screen is an error, never a silent skip
+      const { talk, ctx } = mk();
+      expect(() => playScene(talk, 'bond:selene:2', ctx)).toThrow(/choice/);
+    } finally { back(); }
   });
 });
