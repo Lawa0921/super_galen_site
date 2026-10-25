@@ -17,8 +17,8 @@ import { buildOf } from '../data/builds';
 import { BANTER_PAIRS, GROUP_GATE, isSceneId, type BanterPair } from '../data/story/scenes';
 import { MAX_WAITED } from './story/events';
 import { MAX_DAY, SPRING_AFTER } from './calendar';
-import { BOND_CAP, COMPANIONS, GIFTABLE, GIFT_TASTE, ROMANCEABLE, type Companion } from '../data/story/bond';
-import { tasteOf } from './story/bond';
+import { BOND_CAP, BOND_GATE, COMPANIONS, GIFTABLE, GIFT_TASTE, ROMANCEABLE, type Companion } from '../data/story/bond';
+import { bondTier, tasteOf } from './story/bond';
 import { storyPieces } from './story/events';
 import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
@@ -148,6 +148,8 @@ function isStory(v: unknown): boolean {
   for (const list of [v.seen, v.fresh, v.queue] as unknown[][]) {
     if (list.includes('together')) return false;
     if (list.some((id) => typeof id === 'string' && id.startsWith('romance:') && id !== `romance:${v.romance as string}`)) return false;
+    // bond review fix: an after-story only after the finale
+    if (!v.finaleCleared && list.some((id) => typeof id === 'string' && id.startsWith('ending:'))) return false;
   }
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }
@@ -196,6 +198,20 @@ function isValid(d: Record<string, unknown>): boolean {
     if (!validBond(id, (p.roster as Record<string, Record<string, unknown>>)[id], { met: s.party.recruited.includes(id), told: storyPieces(s, id) })) return false;
   }
   if (s.story.romance !== undefined && !s.party.recruited.includes(s.story.romance)) return false;
+  // bond review fix: a bond scene seen follows the one before it (or that one expired: Rin's first two, once she chose),
+  // and never above the tier it needs: the bond is derived from the save and never falls, so it is at least that tier now
+  for (const id of s.story.seen) {
+    const m = /^bond:([a-z]+):([1-4])$/.exec(id);
+    if (!m) continue;
+    const c = m[1] as Companion;
+    const n = Number(m[2]) as 1 | 2 | 3 | 4;
+    if (!COMPANIONS.includes(c) || bondTier(s.party.roster[c]) < BOND_GATE[c][n].tier) return false;
+    if (n > 1) {
+      const prev = BOND_GATE[c][(n - 1) as 1 | 2 | 3];
+      const passed = s.story.seen.includes(`bond:${c}:${n - 1}`) || (!!prev.beforeChoice && !!s.party.roster.rin.oath);
+      if (!passed) return false;
+    }
+  }
   if (!(s.story.gifted ?? []).every((c) => s.party.recruited.includes(c))) return false;
   // Rin's reveal is only ever queued once she holds all her pieces; the oath it sets needs them (see validMemory).
   if ((d.story as { queue: unknown[] }).queue.includes('rin-reveal') && memoriesOf((p.roster as Record<string, Member>).rin) !== chainLength('rin')) return false;

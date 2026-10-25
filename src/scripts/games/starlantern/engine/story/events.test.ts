@@ -1963,13 +1963,19 @@ describe('after the finale: the endings (bond plan Task 10)', () => {
 
   it('the night, the dawn and the reactions are untouched', () => {
     const s = afterFestival();
-    s.story.untold = ['mem:liz:5'] as SceneId[];
+    // one of Lorne's pieces held and untold, so the night and the dawn have something to pick
+    s.party.roster.hero.memories = 2;
+    s.story.seen.push('mem:hero:1');
+    s.story.untold = ['mem:hero:2'];
     const plain = arrivalScenes(s, { chat: true });
     const pick = () => withEndings(['liz'], () => back(s));
     const ending = pick();
     expect(ending).toEqual([...plain, 'ending:liz']);
     expect(planNight(s, ending)).toEqual(planNight(s, plain));
-    expect(dawnMemory(s, [])).toEqual(dawnMemory(s, []));
+    // the dawn as Game.arrive picks it, from the night each list plans (review fix: no longer the same call twice)
+    const tonight = (day: SceneId[]) => { const p = planNight(s, day); return [...p.before, ...p.night]; };
+    expect(dawnMemory(s, tonight(ending))).toEqual(dawnMemory(s, tonight(plain)));
+    expect(tonight(plain).length + (dawnMemory(s, tonight(plain)) ? 1 : 0)).toBe(1);   // the piece is the night's or the dawn's
     expect(nextReaction(s, ending)).toEqual(nextReaction(s, plain));
     expect(nextSeasonScene(s, dayOf(s))).toBeNull();
   });

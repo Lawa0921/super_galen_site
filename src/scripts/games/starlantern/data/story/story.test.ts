@@ -7,6 +7,7 @@ import { MEETINGS } from '../meetings';
 import { bondSceneEntries, FOUND_LINE, GROUP_TITLES, NIGHT_BEATS, SEASON_TITLES, NIGHT_PLACE, DAWN_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, CHOICE_MAX_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, flatLines, isChoice, worstCount, type ChoiceLine, type LineWhen, type SceneLine, type ScriptLine } from '../story.zh-TW';
 import { PL } from './places';
 import { BOND_GATE, type Companion } from './bond';
+import { ROMANCES_WRITTEN } from './scenes';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds, type CalendarNow } from './chains';
 import { AFTER_CHOICE, dots, groupShapeBreaks, opensOnDots, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
 import { T } from '../text.zh-TW';
@@ -121,8 +122,21 @@ describe('story data', () => {
     const memories = SCENE_IDS.filter((id) => sceneKind(id) === 'memory');
     expect(memories.length).toBe(57);
     for (const id of memories) expect(sceneTime(id), id).toBe('night');
-    for (const id of SCENE_IDS.filter((x) => sceneKind(x) !== 'memory' && !SCENE_TIME[x])) expect(sceneTime(id), id).toBe('day');
+    // read through sceneTime (bond review fix): the night scenes beyond the memories are the table's and the registered romances
+    const nights = SCENE_IDS.filter((x) => sceneKind(x) !== 'memory' && sceneTime(x) === 'night').sort();
+    expect(nights).toEqual([...(Object.keys(SCENE_TIME) as SceneId[]), ...ROMANCES_WRITTEN.map((c): SceneId => `romance:${c}`)].sort());
     expect(sceneTime('season:spring')).toBe('night');   // Task 8: the festival, registered, is a night scene
+  });
+
+  it('a romance registered reads as night; one not registered as day (bond review fix)', () => {
+    expect(sceneTime('romance:liz')).toBe('day');
+    ROMANCES_WRITTEN.push('liz');
+    try {
+      expect(sceneTime('romance:liz')).toBe('night');
+      expect(sceneTime('romance:rin')).toBe('day');
+      expect(sceneTime('ending:liz')).toBe('day');
+    } finally { ROMANCES_WRITTEN.splice(0); }
+    expect(sceneTime('romance:liz')).toBe('day');
   });
 
   it('whenHolds checks the moon, the time and the season given a calendar, and holds without one', () => {

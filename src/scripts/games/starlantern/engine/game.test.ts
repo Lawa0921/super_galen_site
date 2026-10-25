@@ -6101,7 +6101,7 @@ describe('the night walk and the romance (bond plan Task 10)', () => {
     st.story.act1Cleared = true;
     st.story.finaleCleared = true;
     st.story.queue = [];
-    st.story.seen.push('epilogue', 'bond:liz:4');
+    st.story.seen.push('epilogue', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4');   // in order (the save checks it)
     st.party = meet(st.party, 'liz', 1);
     st.party.roster.liz.memories = chainLength('liz');
     st.party.roster.liz.bond = { talk: 12, field: 40, gifts: { 'old-coin': 24 } };
@@ -6167,7 +6167,7 @@ describe('a romance cut short plays at night (bond plan Task 11)', () => {
     st.story.act1Cleared = true;
     st.story.finaleCleared = true;
     st.story.queue = [];
-    st.story.seen.push('epilogue', 'bond:liz:4');
+    st.story.seen.push('epilogue', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4');   // in order (the save checks it)
     st.party = meet(st.party, 'liz', 1);
     st.party.roster.liz.memories = 1;
     st.party.roster.liz.bond = { talk: 12, field: 40, gifts: { 'old-coin': 24 } };   // 10 + 3 + 82 = 95
@@ -6230,4 +6230,25 @@ describe('a romance cut short plays at night (bond plan Task 11)', () => {
     expect(g.returnToTown()).toBe(true);
     expect(g.night).toEqual(['season:spring', 'romance:liz']);   // no memory
   }));
+});
+
+describe('one heart-to-heart at a time (bond review fix)', () => {
+  it('opening a second talk while one is pending returns null', () => {
+    BONDS_WRITTEN.push('rin', 'selene');
+    try {
+      const g = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
+      g.state.party.roster.rin.memories = 2;
+      g.state.party.roster.rin.bond = { talk: 0, field: 10, gifts: {} };    // 同行
+      g.state.party = meet(g.state.party, 'selene', 1);
+      g.state.party.roster.selene.memories = 1;
+      g.state.story.seen.push('mem:selene:1');
+      g.state.party.roster.selene.bond = { talk: 0, field: 7, gifts: {} };  // 20: 同行
+      expect(g.openBond('rin')).toBe('bond:rin:1');
+      expect(g.openBond('selene')).toBeNull();          // Rin's is still pending: one a day
+      expect(g.pending.filter((id) => id.startsWith('bond:'))).toEqual(['bond:rin:1']);
+      expect(g.openBond('rin')).toBeNull();             // nor the same one twice
+      expect(g.sceneDone('bond:rin:1', 'played')).toBe(true);
+      expect(g.openBond('selene')).toBeNull();          // and once done, today's talk is had
+    } finally { BONDS_WRITTEN.splice(0); }
+  });
 });

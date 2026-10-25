@@ -21,7 +21,7 @@ import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 import { NIGHT_BEATS } from '../data/story.zh-TW';
 import { MAX_DAY, SPRING_AFTER, dayOf } from './calendar';
-import { ROMANCES_WRITTEN, SEASON_SCENES, TOGETHER_WRITTEN, isSceneId, memScene, type SceneId } from '../data/story/scenes';
+import { BONDS_WRITTEN, ENDINGS_WRITTEN, ROMANCES_WRITTEN, SEASON_SCENES, TOGETHER_WRITTEN, isSceneId, memScene, type SceneId } from '../data/story/scenes';
 import { meet } from './party';
 
 describe('save', () => {
@@ -1446,4 +1446,81 @@ describe('bond scene ids in the save (bond plan Task 8)', () => {
     q.story.queue = ['romance:liz'];
     expect(status(q)).toBe('ok');
   }));
+});
+
+describe('bond scenes and the story they need (bond review fix)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  const registered = (f: () => void) => {
+    BONDS_WRITTEN.push('selene', 'rin');
+    ENDINGS_WRITTEN.push('liz');
+    try { f(); } finally { BONDS_WRITTEN.splice(0); ENDINGS_WRITTEN.splice(0); }
+  };
+  /** Selene met with her pieces told and a bond worth `field` more, after the finale when `after`. */
+  const story = (o: { field?: number; after?: boolean } = {}): GameState => {
+    const g = newGame();
+    if (o.after) { g.story.act1Cleared = true; g.story.finaleCleared = true; }
+    g.party = meet(g.party, 'selene', 1);
+    g.party.roster.selene.memories = 4;
+    for (let k = 1; k <= 4; k++) g.story.seen.push(memScene('selene', k));
+    g.party.roster.selene.bond = { talk: 0, field: o.field ?? 40, gifts: {} };   // 10 + 12 + 40 = 62: 羈絆
+    return g;
+  };
+
+  it('an ending only after the finale', () => registered(() => {
+    const ok = story({ after: true });
+    ok.party = meet(ok.party, 'liz', 1);
+    ok.story.seen.push('ending:liz');
+    expect(status(ok)).toBe('ok');
+    for (const list of ['seen', 'fresh', 'queue'] as const) {
+      const g = story();
+      g.party = meet(g.party, 'liz', 1);
+      if (list !== 'queue') g.story.seen.push('ending:liz');
+      g.story[list].push('ending:liz');
+      if (list === 'queue') g.story.seen = g.story.seen.filter((x) => x !== 'ending:liz');
+      expect(status(g), list).toBe('corrupt');
+    }
+  }));
+
+  it('bond scenes are seen in order', () => registered(() => {
+    const g = story();
+    g.story.seen.push('bond:selene:1', 'bond:selene:2', 'bond:selene:3');
+    expect(status(g)).toBe('ok');
+    const skip = story();
+    skip.story.seen.push('bond:selene:1', 'bond:selene:3');
+    expect(status(skip)).toBe('corrupt');
+    const first = story();
+    first.story.seen.push('bond:selene:2');
+    expect(status(first)).toBe('corrupt');
+    // Rin's first two expire with her choice: her third may come with neither seen
+    const rin = newGame();
+    rin.party.roster.rin.memories = chainLength('rin');
+    rin.party.roster.rin.oath = true;
+    rin.party.roster.rin.bond = { talk: 0, field: 40, gifts: {} };   // 71: 羈絆
+    rin.story.seen.push('bond:rin:3');
+    expect(status(rin)).toBe('ok');
+    const early = newGame();
+    early.party.roster.rin.memories = 4;
+    early.party.roster.rin.bond = { talk: 0, field: 40, gifts: {} };
+    early.story.seen.push('bond:rin:2');   // no oath: her first is not passed over
+    expect(status(early)).toBe('corrupt');
+  }));
+
+  it("a bond scene is never seen above the bond it needs (bond never falls)", () => registered(() => {
+    const low = story({ field: 10 });   // 10 + 12 + 10 = 32: 同行
+    low.story.seen.push('bond:selene:1');
+    expect(status(low)).toBe('ok');
+    low.story.seen.push('bond:selene:2');   // needs 信賴
+    expect(status(low)).toBe('corrupt');
+    const at = story({ field: 18 });   // 40: 信賴
+    at.story.seen.push('bond:selene:1', 'bond:selene:2');
+    expect(status(at)).toBe('ok');
+  }));
+
+  it('the romance is someone met (spec §12.2)', () => {
+    const g = story({ after: true });
+    g.story.romance = 'selene';
+    expect(status(g)).toBe('ok');
+    g.story.romance = 'liz';
+    expect(status(g)).toBe('corrupt');
+  });
 });

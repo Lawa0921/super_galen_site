@@ -1205,6 +1205,8 @@ export class Game {
    */
   openBond(c: Companion): SceneId | null {
     if (this.phase !== 'town' || today(this.state).talked) return null;
+    // bond review fix: a talk already waiting to play is today's; a second must not open before it is done
+    if (this.pending.some((p) => p.startsWith('bond:'))) return null;
     const id = nextBond(this.state, c);
     if (!id) return null;
     if (!this.pending.includes(id)) this.pending.push(id);
