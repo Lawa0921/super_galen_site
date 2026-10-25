@@ -42,8 +42,8 @@ type Rect = { x: number; y: number; width: number; height: number };
 
 /**
  * Review of bond plan Tasks 12-14: the stat tables' headings read apart. Any two side by side (after the row names' empty
- * one) have 4 stage px between their words, or one of them wears the every-other-column tint. Stage px along the row,
- * turned on a sideways phone as stageBox reads it.
+ * one) have 4 stage px between their words; a tint alone does not do (second review). Stage px along the row, turned on
+ * a sideways phone as stageBox reads it.
  */
 const headingsApart = (page: Page) => page.locator('.slx-stat-table').evaluateAll((ts) => {
   const scr = document.querySelector('#sl-screen')!.getBoundingClientRect();
@@ -52,12 +52,11 @@ const headingsApart = (page: Page) => page.locator('.slx-stat-table').evaluateAl
     const r = document.createRange(); r.selectNodeContents(th); const q = r.getBoundingClientRect();
     return turned ? [q.top / k, q.bottom / k] : [q.left / k, q.right / k];
   };
-  const tinted = (th: Element) => getComputedStyle(th).backgroundColor !== 'rgba(0, 0, 0, 0)';
   return ts.flatMap((tb) => {
     const hs = [...tb.querySelectorAll('thead th')].slice(1);
     return hs.slice(1).flatMap((h, i) => {
       const a = hs[i], gap = span(h)[0] - span(a)[1];
-      return gap >= 4 || tinted(a) || tinted(h) ? [] : [`${a.textContent}|${h.textContent} ${gap.toFixed(1)}px apart, neither tinted`];
+      return gap >= 4 ? [] : [`${a.textContent}|${h.textContent} ${gap.toFixed(1)}px apart`];
     });
   });
 });
@@ -5451,9 +5450,10 @@ test.describe('starlantern', () => {
     expect(errors).toEqual([]);
   });
 
-  test("a fully built companion's stat tables: every column, lined up, the headings apart, 羈絆 in its own colour (review of bond plan Tasks 12-14)", async ({ page }) => {
+  test("a fully built companion's stat tables: every column, lined up, short headings apart, 羈絆 in its own colour; early Rin's in full (review of bond plan Tasks 12-14)", async ({ page }) => {
     // Scarlet at Lv 30 with her default talents, three pieces, a full bond, two pieces of 焰紋 and 70 crit (capped at 60):
-    // every source has something, so all ten columns show; with that many, every other one is tinted.
+    // every source has something, so all ten columns show; with that many, every other one is tinted and the middle
+    // headings are one character each (second review). Rin with her two pieces keeps four columns and their full words.
     await fitTo(page, 1280, 720);
     const w = await setup(page, 7);
     await legacyRoster(page);
@@ -5461,6 +5461,7 @@ test.describe('starlantern', () => {
       const g = (window as unknown as Dbg).__starlanternDebug.game;
       const m = g.state.party.roster.scarlet;
       Object.assign(m, { level: 30, talents, memories: 3, bond });
+      Object.assign(g.state.party.roster.rin, { memories: 2, bond: { talk: 0, field: 14, gifts: {} } });
       m.equip.weapon = { uid: g.mintUid(), base: 'iron-sword', rarity: 'magic', ilvl: 2, enhance: 0, affixes: [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }] };
       m.equip.body = { uid: g.mintUid(), base: 'cloth-robe', rarity: 'set', ilvl: 9, enhance: 0, special: 'set-blaze-body', affixes: [] };
       m.equip.hands = { uid: g.mintUid(), base: 'cloth-gloves', rarity: 'set', ilvl: 9, enhance: 0, special: 'set-blaze-hands', affixes: [] };
@@ -5472,7 +5473,8 @@ test.describe('starlantern', () => {
       if (!(await closed.count())) break;
       await closed.first().click();
     }
-    const all = ['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '羈絆', '主屬', '上限', '合計'];
+    const all = ['', '基', '成', '裝', '套', '賦', '憶', '絆', '主', '限', '合計'];
+    const rin = ['', '基礎', '記憶', '主屬', '合計'];
     for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
       await fitTo(page, vw, vh);
       await page.waitForTimeout(150);
@@ -5486,7 +5488,17 @@ test.describe('starlantern', () => {
       for (const l of lefts) l.forEach((x, i) => expect(Math.abs(x - lefts[0][i]), `column ${i} lines up at ${vw}`).toBeLessThanOrEqual(0.5));
       expect(await headingsApart(page), `stat headings at ${vw}`).toEqual([]);
       await expect(page.locator('[data-cat=attack] [data-stat=atk] .slx-bond')).toHaveCSS('color', 'rgb(255, 158, 196)');
-      if (process.env.SL_SHOTS) await snap(page, `${process.env.SL_SHOTS}/bond-status-built-${vw}x${vh}.png`);
+      if (process.env.SL_SHOTS) { await page.waitForTimeout(400); await snap(page, `${process.env.SL_SHOTS}/bond-status-built-${vw}x${vh}.png`); }   // windows fade in
+    }
+    await fitTo(page, 1280, 720);
+    await go(page, 'status', 'rin');
+    await expect(page.locator('.slx-status-name')).toContainText(CHARACTERS.rin.name);
+    for (const [vw, vh] of [[1280, 720], [844, 390], [390, 844]] as const) {
+      await fitTo(page, vw, vh);
+      await page.waitForTimeout(150);
+      for (const tb of await page.locator('.slx-stat-table').all()) await expect(tb.locator('thead th')).toHaveText(rin);
+      expect(await headingsApart(page), `Rin's stat headings at ${vw}`).toEqual([]);
+      if (process.env.SL_SHOTS) { await page.waitForTimeout(400); await snap(page, `${process.env.SL_SHOTS}/bond-status-rin-${vw}x${vh}.png`); }   // windows fade in
     }
     await fitTo(page, 1280, 720);
     expect(w.errors).toEqual([]);

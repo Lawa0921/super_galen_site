@@ -317,6 +317,8 @@ export const T = {
       sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', memory: '記憶', bond: '羈絆', primary: '主屬性' } as Record<string, string>,
       /** A column heading too long for its share of the table: the short word, the whole one in its title (plan 8g Task 5 review). */
       sourcesShort: { primary: '主屬' } as Record<string, string>,
+      /** Second review of bond plan Tasks 12-14: one character each, for a page whose columns are too narrow for two (statusTabs). */
+      sourcesOne: { base: '基', growth: '成', gear: '裝', set: '套', talent: '賦', memory: '憶', bond: '絆', primary: '主' } as Record<string, string>,
       total: '合計',
       /** Category headings of the stats page, in STAT_CATEGORIES order. */
       cats: { primary: '主屬性', attack: '攻擊', defense: '防禦', element: '元素', resource: '資源', other: '其他' } as Record<StatCategory, string>,
@@ -328,6 +330,8 @@ export const T = {
       affinityAll: '全能',
       /** Column of the cut a cap takes off a total (an em dash when the stat is under its cap). */
       capCol: '上限',
+      /** 上限 in one character, beside sourcesOne. */
+      capColOne: '限',
       targets: TARGETS,
       exp: (n: number, next: number) => `經驗 ${n}／${next}`,
       place: (where: string) => `站位 ${where}`,

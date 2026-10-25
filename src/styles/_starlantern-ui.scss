@@ -20,7 +20,7 @@ $slx-up: #8fe08f;
 $slx-down: #ff8a7a;
 // The stat table's 羈絆 column, and the faint tint of every other column when many show (review of bond plan Tasks 12-14).
 $slx-bond: #ff9ec4;
-$slx-col-tint: rgba(255, 255, 255, 0.07);
+$slx-col-tint: rgba($slx-ink, 0.12);
 // opaque so stacked windows never show the text underneath
 $slx-win: rgb(10, 14, 34);
 

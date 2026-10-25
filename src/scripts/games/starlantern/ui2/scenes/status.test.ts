@@ -12,6 +12,7 @@ import { art } from '../../render/artPaths';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { STATUS_TABS, resetStatsView, resetTalentView, resetTreeView, revealIn } from './statusTabs';
 import { StatusScene, WIDE_TABS } from './status';
+import { shortHeads } from './statusTabs';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { T } from '../../data/text.zh-TW';
 import { statSources } from '../../engine/party';
@@ -2195,5 +2196,57 @@ describe("the stat table's columns (review of bond plan Tasks 12-14)", () => {
     for (const tr of root.querySelectorAll('[data-cat=attack] tbody tr')) {
       expect([...tr.children].map((c) => c.classList.contains('slx-col-alt'))).toEqual(want);
     }
+  });
+});
+
+describe("the stat table's short headings (second review of bond plan Tasks 12-14)", () => {
+  it('the rule: one character once the narrowest source column no longer fits two with a 4px gap', () => {
+    expect(shortHeads([40, 30, 28])).toBe(false);     // 24px of heading + 4px apart: just fits
+    expect(shortHeads([40, 30, 27.9])).toBe(true);
+    expect(shortHeads([])).toBe(false);               // nothing measured
+    expect(shortHeads([0, 0, 0])).toBe(false);        // not laid out yet: the full words
+  });
+
+  it('the short forms sit beside the full names in the text table', () => {
+    const t = T.ui2.status;
+    expect(Object.keys(t.sourcesOne).sort()).toEqual(Object.keys(t.sources).sort());
+    expect(Object.values(t.sourcesOne).every((s) => [...s].length === 1)).toBe(true);
+    expect(['base', 'growth', 'gear', 'set', 'talent', 'memory', 'bond', 'primary'].map((k) => t.sourcesOne[k]).join('') + t.capColOne).toBe('基成裝套賦憶絆主限');
+  });
+
+  /** Every th of the stat tables `w` stage px wide while the test runs (jsdom lays nothing out). */
+  const wide = (w: number) => {
+    const was = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get() { return this.tagName === 'TH' ? w : 0; } });
+    return () => { if (was) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', was); else delete (HTMLElement.prototype as { offsetWidth?: unknown }).offsetWidth; };
+  };
+  const heads = (root: HTMLElement, cat: string) => [...root.querySelectorAll(`[data-cat=${cat}] thead th`)].map((th) => th.textContent);
+  const built = (g: Game) => {
+    const m = g.state.party.roster.scarlet;
+    const raised = raiseTalent({ ...m, level: 30 }, 'scarlet-t00');
+    if (!raised.ok) throw new Error(raised.reason);
+    Object.assign(m, raised.member, { memories: 3, bond: maxBondRecord('scarlet') });
+    m.equip.weapon = { ...plainItem('iron-sword', 2), affixes: [{ key: 'agi', value: 3 }, { key: 'crit', value: 70 }] };
+    m.equip.body = { ...plainItem('cloth-robe', 9), rarity: 'set', special: 'set-blaze-body' };
+    m.equip.hands = { ...plainItem('cloth-gloves', 10), rarity: 'set', special: 'set-blaze-hands' };
+  };
+
+  it('crowded columns take the one-character forms, 合計 and the row names stay; the full word stays in the title', () => {
+    const back = wide(25);
+    try {
+      const { root } = setup('scarlet', NO_ART, built);
+      for (const cat of ['primary', 'attack']) expect(heads(root, cat)).toEqual(['', '基', '成', '裝', '套', '賦', '憶', '絆', '主', '限', '合計']);
+      const titles = [...root.querySelectorAll('[data-cat=attack] thead th')].slice(1, -1).map((th) => th.getAttribute('title'));
+      expect(titles).toEqual(['基礎', '成長', '裝備', '套裝', '天賦', '記憶', '羈絆', '主屬性', '上限']);
+      expect(root.querySelector('[data-stat=str] th')!.textContent).toBe(T.gear.statName.str);
+    } finally { back(); }
+  });
+
+  it('roomy columns keep the full words, so the short forms can be learnt from them', () => {
+    const back = wide(40);
+    try {
+      const { root } = setup('scarlet', NO_ART, built);
+      expect(heads(root, 'attack')).toEqual(['', '基礎', '成長', '裝備', '套裝', '天賦', '記憶', '羈絆', '主屬', '上限', '合計']);
+    } finally { back(); }
   });
 });

@@ -32,6 +32,29 @@ import { stageSpan } from '../stageAxis';
 
 /** The stat table tints every other column once this many sit between the row names and 合計 (review of Tasks 12-14). */
 const TINT_FROM = 5;
+/** The 12px headings' gap the stat table keeps between two side by side, in stage px (second review of Tasks 12-14). */
+const HEAD_GAP = 4;
+
+/**
+ * Second review of bond plan Tasks 12-14: whether the stat table's middle headings go to one character. They are centred
+ * in their columns, so two of two characters (24 stage px) stand `width - 24` apart: once the narrowest column is under
+ * 24 + HEAD_GAP they would run together. Widths are layout px, which are stage px; none measured (or 0: not laid out
+ * yet) keeps the full words.
+ */
+export function shortHeads(widths: number[]): boolean {
+  const w = widths.filter((x) => x > 0);
+  return w.length > 0 && Math.min(...w) < 2 * 12 + HEAD_GAP;
+}
+
+/** Each middle heading of `table` in its full or its one-character form, as the columns' measured width allows. */
+function fitHeads(table: Element): void {
+  const heads = [...table.querySelectorAll<HTMLElement>('thead th[data-one]')];
+  const one = shortHeads(heads.map((th) => th.offsetWidth));
+  for (const th of heads) th.textContent = one ? th.dataset.one! : th.dataset.full!;
+}
+
+/** Fits the stat tables again whenever one changes size (a turn to the phone, another layout); one for the page. */
+const headsWatch = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver((seen) => { for (const e of seen) fitHeads(e.target); });
 
 export const STAT_ORDER: StatKey[] = ['hp', 'tp', 'atk', 'def', 'mag', 'res', 'spd'];
 
@@ -204,9 +227,14 @@ const stats: StatusTab = {
       const table = open
         ? [el('table', { class: 'slx-stat-table' }, [
           // A heading too long for its share reads short, the whole word in its title (主屬 for 主屬性).
+          // Each middle heading carries its full and its one-character form (data-full, data-one); fitHeads picks one once the
+          // table is laid out, the whole word in its title either way.
           el('thead', {}, [el('tr', {}, [el('th'), ...columns(
-            (i) => el('th', { text: t.sourcesShort[parts[i].source] ?? t.sources[parts[i].source] ?? parts[i].source, attrs: { title: t.sources[parts[i].source] ?? parts[i].source } }),
-            () => el('th', { text: t.capCol }),
+            (i) => {
+              const full = t.sourcesShort[parts[i].source] ?? t.sources[parts[i].source] ?? parts[i].source;
+              return el('th', { text: full, attrs: { title: t.sources[parts[i].source] ?? parts[i].source, 'data-full': full, 'data-one': t.sourcesOne[parts[i].source] ?? full } });
+            },
+            () => el('th', { text: t.capCol, attrs: { title: t.capCol, 'data-full': t.capCol, 'data-one': t.capColOne } }),
             () => el('th', { text: t.total }),
           )])]),
           el('tbody', {}, c.keys.map(statRow)),
@@ -251,6 +279,9 @@ const stats: StatusTab = {
     return false;
   },
   shown(body) {
+    // second review of Tasks 12-14: the headings fit the columns as laid out, and again whenever a table changes size
+    headsWatch?.disconnect();
+    for (const table of body.querySelectorAll('.slx-stat-table')) { fitHeads(table); headsWatch?.observe(table); }
     if (!view.reveal) return;
     view.reveal = false;
     // The first heading also brings the facts above it back into view; the last stop the end of the page (the margin
