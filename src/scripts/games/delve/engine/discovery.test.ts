@@ -330,6 +330,26 @@ describe('gen2 地區：所有結構種類、已知地區表、id 反查', () =>
     const site = d.stats().cats.find((c) => c.cat === 'site')!;
     expect(site.total).toBe(home.filter((r) => r.cat === 'site').length);
   });
+  it('trackOuter 邊界：舊形狀存檔（沒有 known、found 裡有外圍地區）visit 後補進已知表；known 裡反查不到的 id 丟掉、不丟錯', () => {
+    const far = q(-15_000, 300).at(-1)!, home = gen2HomeRegions('rg2', src), homeIds = home.map((r) => r.id);
+    const mk = (): Discovery => { const d = new Discovery([], { open: true, trackOuter: true }); d.setOuter(q); d.setResolver(byId); d.know(home); return d; };
+    expect(homeIds).not.toContain(far.id);
+    // 舊形狀（Task 15 之前的 gen2 存檔）：外圍地區已經 found、但沒有 known 欄位
+    const d = mk();
+    d.load({ regions: [far.id], lore: [], treasures: [], depthRecord: 0, distance: 0 });
+    expect(d.isFound(far.id)).toBe(true);
+    expect(d.listKnown().map((r) => r.id)).not.toContain(far.id);
+    expect(d.visit(-15_000, 300).map((r) => r.id)).not.toContain(far.id); // 已經 found：不再跳發現
+    expect(d.listKnown().map((r) => r.id)).toContain(far.id);
+    expect(d.toJSON().known).toEqual([far.id]);
+    // known 裡有反查不到的 id（沒有的地區 index、解不開的槽、非 gen2 id、壞值）：丟掉、不丟錯，反查得到的照常加回
+    const noRegion = gen2RegionId(1, 2, 63, 0), noSlot = gen2SiteRegionId(encodeStructureId(1, 2, 31, 31, 0), 0);
+    expect(byId(noRegion)).toBeNull(); expect(byId(noSlot)).toBeNull();
+    const d2 = mk();
+    expect(() => d2.load({ regions: [], lore: [], treasures: [], depthRecord: 0, distance: 0, known: [noRegion, noSlot, far.id, 7, -1, 'x'] } as never)).not.toThrow();
+    expect(d2.listKnown().map((r) => r.id)).toEqual([...homeIds, far.id].sort((a, b) => a - b));
+    expect(d2.toJSON().known).toEqual([far.id]);
+  });
   it('舊世界（沒有 trackOuter）：visit v1 外圍地區不改 listKnown 與日誌總數，讀檔前後相同（Q12）', () => {
     const regs = buildRegions(source()), f = outerRegions('od', profile), d = new Discovery(regs); d.setOuter(f); const before = d.stats();
     const [ox, oy] = OUTER_PT; expect(f(ox, oy).length).toBeGreaterThan(0); d.visit(ox, oy);
@@ -353,7 +373,7 @@ describe('gen2 地區：所有結構種類、已知地區表、id 反查', () =>
     const k = g.discovery.listKnown(), n = (kind: string): number => k.filter((r) => r.kind === kind).length;
     expect(hc.villages.length).toBeGreaterThan(0);
     expect(n('village')).toBe(hc.villages.length);
-    expect(hc.halls.length).toBeGreaterThanOrEqual(0);
+    expect(hc.halls.length).toBeGreaterThan(0);
     expect(n('dwarf_hall')).toBe(hc.halls.length);
     expect(n('dungeon')).toBe(1);
     expect(g.discovery.stats().cats.find((c) => c.cat === 'site')!.total).toBeGreaterThanOrEqual(hc.villages.length + hc.halls.length);
