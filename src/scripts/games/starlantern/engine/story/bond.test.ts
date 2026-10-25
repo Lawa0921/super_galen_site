@@ -478,7 +478,8 @@ describe('romance candidates (bond plan Task 10)', () => {
   const W: Companion[] = ['liz', 'rin', 'noel'];
   it('romance candidates', () => {
     expect(romanceCandidates(eligible(['liz']), W)).toEqual(['liz']);
-    expect(romanceCandidates(eligible(['liz']))).toEqual([]);   // nothing is registered today
+    expect(romanceCandidates(eligible(['liz']))).toEqual(['liz']);   // by default, what is registered (Task 21 wrote all nine)
+    expect(romanceCandidates(eligible(['liz']), [])).toEqual([]);   // unwritten, not offered
     const cut: [string, (s: GameState) => void][] = [
       ['no finale', (s) => { s.story.finaleCleared = false; }],
       ['no festival', (s) => { s.story.seen = s.story.seen.filter((x) => x !== 'epilogue'); }],

@@ -19,8 +19,13 @@ import type { StoryMood } from '../../render/artPaths';
 import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, heavyScene, registeredBondScenes, type GroupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, SCENE_TIME, SEASON_SCENES, sceneTime, type SceneId, type Stage, type StoryGate } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
-/** Review 5: the key is in a bond scene whose gate waits on `c` whole (`BOND_GATE[x][n].full`), so it only plays once she is. */
+/**
+ * Review 5: the key is in a bond scene whose gate waits on `c` whole (`BOND_GATE[x][n].full`), so it only plays once she is;
+ * bond plan Tasks 20-21: or in her after-story or her romance (`nextEnding` waits on her chain told whole, a romance on her
+ * 心契 seen), which only ever play once she is.
+ */
 const bondWhole = (c: CharacterId, key: string): boolean => {
+  if (key.startsWith(`scenes.ending:${c}.`) || key.startsWith(`scenes.romance:${c}.`)) return true;
   const m = /^scenes\.bond:([a-z]+):([1-4])\./.exec(key);
   return !!m && BOND_GATE[m[1] as Companion]?.[Number(m[2]) as 1 | 2 | 3 | 4]?.full === c;
 };
@@ -139,14 +144,16 @@ describe('story data', () => {
   });
 
   it('a romance registered reads as night; one not registered as day (bond review fix)', () => {
-    expect(sceneTime('romance:liz')).toBe('day');
-    regAdd(ROMANCES_WRITTEN, 'liz');
+    // bond plan Task 21 registered all nine: here only Liz's is, then none
+    ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, 'liz');
     try {
       expect(sceneTime('romance:liz')).toBe('night');
       expect(sceneTime('romance:rin')).toBe('day');
       expect(sceneTime('ending:liz')).toBe('day');
+      ROMANCES_WRITTEN.splice(0);
+      expect(sceneTime('romance:liz')).toBe('day');
     } finally { romancesBack(); }
-    expect(sceneTime('romance:liz')).toBe('day');
+    expect(sceneTime('romance:liz')).toBe('night');
   });
 
   it('whenHolds checks the moon, the time and the season given a calendar, and holds without one', () => {
@@ -1073,7 +1080,8 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
   });
 
   it("Chizuru calls him 「洛恩大人」, and only her fourth piece on knows the shrine is gone", () => {
-    for (const t of spokenBy('chizuru')) for (const m of t.text.matchAll(/洛恩(.?.?)/g)) expect(m[1], t.key).toBe('大人');
+    // bond plan Task 21 (I-209): her romance holds the one bare 「洛恩」 of the whole script (data/bond.test.ts counts it)
+    for (const t of spokenBy('chizuru')) for (const m of t.text.matchAll(/洛恩(.?.?)/g)) if (!t.key.startsWith('scenes.romance:chizuru.')) expect(m[1], t.key).toBe('大人');
     const GONE = /不在了|早就不在|已經不在/;
     for (const t of storyTexts()) {
       if (!GONE.test(t.text) || !/chizuru/.test(t.key)) continue;
@@ -1228,7 +1236,8 @@ describe('Task 9: Sylvie, Noel and Bobby', () => {
   });
 
   it("Bobby calls him 「洛恩哥」, and her last piece ends on the spec's line, said nowhere else", () => {
-    for (const t of spokenBy('bobby')) for (const m of t.text.matchAll(/洛恩(.?)/g)) expect(m[1], t.key).toBe('哥');
+    // bond plan Task 21 (I-207): her romance tries 「洛恩──」 once and goes back to 「洛恩哥」 (data/bond.test.ts pins it)
+    for (const t of spokenBy('bobby')) for (const m of t.text.matchAll(/洛恩(.?)/g)) if (!(t.key.startsWith('scenes.romance:bobby.') && m[1] === '─')) expect(m[1], t.key).toBe('哥');
     expect(spokenBy('bobby').some((t) => t.text.includes('洛恩哥'))).toBe(true);
     const QUOTE = '祖先造錯的東西，我來修好。';
     const last = linesOf('mem:bobby:5').slice(-1)[0];
@@ -3765,8 +3774,9 @@ describe('story L Task 15: the script reads fewer ways (spec §10)', () => {
     // out). Tasks 12 and 13 took 12, Task 14 keeps the finale at 24, Task 15 takes 9 more.
     // Two rows read as the spec could not: chat:scarlet:2 splits on what her last piece undoes (the debt, the duty), not only
     // on 「閣下」, so it keeps 2; the finale keeps Bobby's whole chain (her family's sword), so 25.
-    // bond plan Task 20: the after-stories, +18 (a tier line or two in each, ten; Liz's two readings, eight lines)
-    expect(all.length).toBeLessThanOrEqual(127);   // time and moon Task 8: the spring festival's two readings (review fix 10), +2
+    // bond plan Task 20: the after-stories, +18 (a tier line or two in each, ten; Liz's two readings, eight lines); Task 21:
+    // the romances, +22 (the friend in each, on her own `if.met`: arcs v7)
+    expect(all.length).toBeLessThanOrEqual(149);   // time and moon Task 8: the spring festival's two readings (review fix 10), +2
     const AFTER: [SceneId, number][] = [
       ['finale', 25], ['chat:noel:2', 9], ['chat:chizuru:2', 2], ['chat:sylvie:1', 0], ['chat:sylvie:2', 0],
       ['chat:selene:2', 0], ['chat:scarlet:2', 2], ['hero-alone', 3], ['rin-confess', 14],

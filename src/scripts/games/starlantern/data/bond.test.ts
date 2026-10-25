@@ -7,7 +7,7 @@ import { BOND_SCENES, GIFT_LINES, RIN_OATH, ROMANCE_LINES, type GiftPools } from
 const RIN_OATH_GIFT_LINES = RIN_OATH.value;
 import { BONDS_WRITTEN, ENDINGS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, bondScene, sceneKind, type SceneId } from './story/scenes';
 import { CHOICE_MAX_CHARS, MAX_LINE_CHARS, STORY, flatLines, isChoice, type ChoiceLine, type SceneLine, type ScriptLine } from './story.zh-TW';
-import { CHIZURU_ARCHAIC, CHIZURU_NEVER, SYLVIE_WORLD, VOICE, dots, opensOnDots, pinBeat, telegraphBreaks } from './story/voiceGates';
+import { CHIZURU_ARCHAIC, CHIZURU_NEVER, SYLVIE_WORLD, VOICE, dots, opensOnDots, pinBeat, speakerOf, storyTexts, telegraphBreaks } from './story/voiceGates';
 import { CHARACTER_IDS } from './characters';
 
 /**
@@ -507,5 +507,70 @@ describe('after-stories and the walk together (bond plan Task 20)', () => {
     expect(out).toEqual([]);
     // Scarlet's letter names no princess and none of her words (I-211)
     for (const l of flatLines(BOND_SCENES['ending:scarlet']?.lines ?? [])) expect(l.text).not.toMatch(/公主|國家|轉身|號角|朋友|活下去|起誓|誓言|選/);
+  });
+});
+
+// ---- bond plan Task 21: the nine romances and the town's lines for the one chosen (arcs v7, romance lines)
+describe('romances (bond plan Task 21)', () => {
+  const ROMANCE = (c: Companion): SceneId => `romance:${c}`;
+  const whole = (c: Companion) => ({ oath: true, full: [c] });
+
+  it('all nine are registered and written, each with two town lines', () => {
+    expect([...ROMANCES_WRITTEN].sort()).toEqual([...COMPANIONS].sort());
+    for (const c of COMPANIONS) {
+      expect(BOND_SCENES[ROMANCE(c)], c).toBeDefined();
+      expect(ROMANCE_LINES[c], c).toHaveLength(2);
+    }
+  });
+
+  it('each walks the night road (I-205)', () => {
+    for (const c of COMPANIONS) expect(BOND_SCENES[ROMANCE(c)]!.lines[0], c).toMatchObject({ place: { text: '鎮上的夜路', night: true } });
+  });
+
+  it('each holds its beat (W4)', () => {
+    const beats: [Companion, RegExp][] = [
+      ['rin', /我不打算還/], ['rin', /我的名字，是我自己挑的/],   // her first ask, after the name she chose (spec §9.5)
+      ['selene', /今晚我只想看身邊/], ['chizuru', /──洛恩。」/], ['safira', /一步就夠了/], ['sylvie', /所以只說一次/],
+      ['noel', /這一張臉，我不會再忘/], ['bobby', /少了一顆螺絲/], ['liz', /合夥一輩子/], ['scarlet', /換你下令/],
+    ];
+    for (const [c, re] of beats) pinBeat(ROMANCE(c), whole(c), re);
+  });
+
+  it("Lorne answers each his own way: one answer in each, nine different, 「回來」 in Rin's, Selene's, Chizuru's and Sylvie's (I-205)", () => {
+    // his answer is his last line there (Rin's has a question before it, 「想要什麼？」); to Scarlet he writes it, an order on
+    // her duty roster (arcs v7), and says nothing
+    const said = COMPANIONS.map((c) => {
+      const lines = flatLines(BOND_SCENES[ROMANCE(c)]!.lines);
+      const his = c === 'scarlet' ? lines.filter((l) => l.who === 'narrator' && /『命令：/.test(l.text)) : lines.filter((l) => l.who === 'hero');
+      expect(his.length, c).toBeGreaterThanOrEqual(1);
+      expect(his.length, c).toBeLessThanOrEqual(2);
+      return [c, his[his.length - 1].text] as const;
+    });
+    expect(new Set(said.map(([, t]) => t)).size).toBe(9);
+    expect(said.filter(([, t]) => /回來|回到/.test(t)).map(([c]) => c).sort()).toEqual(['chizuru', 'rin', 'selene', 'sylvie']);   // Selene's: 回到妳看得見的地方
+    for (const [, t] of said) expect(t).not.toMatch(/一起回來|守護|發誓|起誓|永遠/);
+  });
+
+  it("Noel's confession slips to 我; Chizuru says 「洛恩」 bare here and nowhere else (I-209); Bobby tries it once and keeps 洛恩哥 (I-207)", () => {
+    const noel = flatLines(BOND_SCENES['romance:noel']!.lines).find((l) => l.text.includes('這一張臉'))!;
+    expect(noel.text).toMatch(/我/);
+    expect(noel.text).not.toMatch(/本小姐/);
+    const bare = (t: string) => [...t.matchAll(/洛恩(?!大人)/g)].length;
+    const chizuru = storyTexts().filter((t) => speakerOf(t.key, t.line) === 'chizuru' && bare(t.text) > 0);
+    expect(chizuru.map((t) => t.key.split('.').slice(0, 2).join('.'))).toEqual(['scenes.romance:chizuru']);
+    expect(chizuru.reduce((n, t) => n + bare(t.text), 0)).toBe(1);
+    const bobby = flatLines(BOND_SCENES['romance:bobby']!.lines).filter((l) => l.who === 'bobby').map((l) => l.text).join('');
+    expect(bobby).toMatch(/洛恩──/);
+    expect(bobby).toMatch(/洛恩哥/);
+    for (const t of ROMANCE_LINES.bobby ?? []) expect(t).not.toMatch(/洛恩(?!哥)/);
+  });
+
+  it("a town line for the one chosen is hers alone: plain text, no 「」, and none needs her after-story first", () => {
+    for (const c of COMPANIONS) for (const t of ROMANCE_LINES[c] ?? []) {
+      expect(t, c).not.toMatch(/^「|」$/);
+      expect(telegraphBreaks(`「${t}」`), `${c}: ${t}`).toEqual([]);
+      if (VOICE[c]?.never) expect(VOICE[c]!.never!.test(t), `${c}: ${t}`).toBe(false);
+    }
+    for (const t of ROMANCE_LINES.safira ?? []) expect(t).not.toMatch(/洛恩/);
   });
 });

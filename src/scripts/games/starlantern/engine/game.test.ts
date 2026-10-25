@@ -6158,9 +6158,12 @@ describe('the night walk and the romance (bond plan Task 10)', () => {
   }));
 
   it('nobody eligible, no night walk', () => {
-    const g = walk();   // not registered
-    expect(g.walkOpen()).toBe(false);
-    expect(g.chooseRomance('liz')).toEqual({ ok: false, reason: 'ineligible' });
+    const g = walk();
+    ROMANCES_WRITTEN.splice(0);   // not registered (bond plan Task 21 registered all nine: none here)
+    try {
+      expect(g.walkOpen()).toBe(false);
+      expect(g.chooseRomance('liz')).toEqual({ ok: false, reason: 'ineligible' });
+    } finally { romancesBack(); }
     registered(() => {
       g.state.party.roster.liz.bond = { talk: 0, field: 0, gifts: {} };
       expect(g.walkOpen()).toBe(false);
