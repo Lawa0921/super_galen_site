@@ -1,7 +1,7 @@
 // parts.test.ts — 藍圖部件（Task 11 修正 2，控制者裁決 A）：礦坑密室與小生態錨點的直豎井是 2 欄寬的部件，跨層判定用部件聯集；
 // 家鄉 UNDER / DEEP 錨點收到 surfaceBan（表層錨點的部件），通地表的豎井部件不碰它。
 // · 逐格優先序：外接矩形與村莊重疊、部件不重疊時，村莊外框裡的每一格和沒有那份礦坑時逐格相同（部件外藍圖不寫、solid 只算部件內）。
-// · 注入 caveOpen = false（天然洞穴全部不通，只能挖豎井通地表）跑 1000 個家鄉：繩梯 / 豎井部件落在 surfaceBan 內 0 次、丟錯 0 次。
+// · 注入 caveOpen = false（天然洞穴全部不通，只能挖豎井通地表）跑 3000 個家鄉（pf-0..999 與未調參的 qf-0..1999）：繩梯 / 豎井部件落在 surfaceBan 內 0 次、丟錯 0 次。
 import { describe, it, expect } from 'vitest';
 import { Column, li } from '../column';
 import { T } from '../tiles';
