@@ -52,6 +52,8 @@ interface Stats {
   writtenBad: string[]; writtenChecked: number;
   // 地下叢林（修正 1）：家鄉叢林地區的總寬、y ∈ [rock, molten) 的泥巴（不含藍圖寫的格，淚滴可以伸出地區外，所以全家鄉都算）
   jungleWidth: number; jungleMud: number;
+  // 沙漠 / 雪原淚滴（修正 2）：家鄉沙漠 / 雪原地區的總寬、y ∈ [rock, molten) 的砂岩 / 冰（不含藍圖寫的格）
+  desertWidth: number; desertSandstone: number; snowWidth: number; snowIce: number;
   // 靜態液體：液體格要滿格、不在實心格裡、下方與左右是實心或同種滿格液體（應為空）
   liquidBad: string[];
   // 地表：可以放裝飾的格（陸地欄、地表上一格是空氣或裝飾、不在部件內、沒有液體、不在出生點 ±3）依地面種類；各地面種類上各裝飾的格數
@@ -69,9 +71,10 @@ const inRows = (r: readonly number[], y: number): boolean => { for (let k = 0; k
 function homeStats(seed: string): Stats {
   const src = new Gen2Source(seed), H = 1200;
   const cnt = new Float64Array(256), fillCnt = new Float64Array(256), band = BANDS.map(() => new Float64Array(256));
-  let mAir = 0, mAll = 0, lava = 0, partsChecked = 0, writtenChecked = 0, jungleMud = 0;
+  let mAir = 0, mAll = 0, lava = 0, partsChecked = 0, writtenChecked = 0, jungleMud = 0, desertSandstone = 0, snowIce = 0;
   const bad: string[] = [], partsLeak: string[] = [], writtenBad: string[] = [], liquidBad: string[] = [];
-  const jungleWidth = src.layout.landmassAt(2100)!.regions.filter((r) => r.biome === BIOME.JUNGLE).reduce((a, r) => a + r.x1 - r.x0, 0);
+  const widthOf = (b: number): number => src.layout.landmassAt(2100)!.regions.filter((r) => r.biome === b).reduce((a, r) => a + r.x1 - r.x0, 0);
+  const jungleWidth = widthOf(BIOME.JUNGLE), desertWidth = widthOf(BIOME.DESERT), snowWidth = widthOf(BIOME.SNOW);
   const surfaceSites: Record<Ground, number> = { grass: 0, desert: 0, snow: 0, jungle: 0 };
   const surfaceDecor = Object.fromEntries(GROUNDS.map((g) => [g, new Float64Array(256)])) as Record<Ground, Float64Array>;
   // 只留 cx − 1..cx + 1 三欄（蛛網看左右）
@@ -118,7 +121,11 @@ function homeStats(seed: string): Stats {
           const ty = c.liquidType[i];
           if (c.liquid[i] !== LIQ_MAX || solidAt(t) || !holds(x, y + 1, ty) || !holds(x - 1, y, ty) || !holds(x + 1, y, ty)) liquidBad.push(`${ty}@${x},${y}`);
         }
-        if (t === T.MUD && wv === undefined && y >= I.rock && y < I.molten) jungleMud++;
+        if (wv === undefined && y >= I.rock && y < I.molten) {
+          if (t === T.MUD) jungleMud++;
+          else if (t === T.SANDSTONE) desertSandstone++;
+          else if (t === T.ICE) snowIce++;
+        }
         if (DECOR.has(t)) {
           const ok = FLOOR_DECOR.has(t) ? floorOk(t, fgAt(x, y + 1)) : CEIL_DECOR.has(t) ? ceilOk(t, fgAt(x, y - 1))
             : solidAt(fgAt(x, y - 1)) || solidAt(fgAt(x - 1, y)) || solidAt(fgAt(x + 1, y));
@@ -133,7 +140,7 @@ function homeStats(seed: string): Stats {
   }
   return {
     count: (t) => cnt[t], fillCount: (t) => fillCnt[t], countBand: (t, b) => band[BANDS.indexOf(b)][t], airShare: () => mAir / mAll, lavaCells: () => lava,
-    badSupport: () => bad, partsLeak, partsChecked, writtenBad, writtenChecked, jungleWidth, jungleMud, liquidBad, surfaceSites, surfaceDecor,
+    badSupport: () => bad, partsLeak, partsChecked, writtenBad, writtenChecked, jungleWidth, jungleMud, desertWidth, desertSandstone, snowWidth, snowIce, liquidBad, surfaceSites, surfaceDecor,
   };
 }
 
@@ -164,6 +171,13 @@ describe('gen2 填格新特徵（Task 12）', () => {
   it('地下叢林：家鄉 y ∈ [rock, molten) 的泥巴每欄叢林地區寬 > 150 格', () => { for (const s of HOME3) {
     expect(s.jungleWidth).toBeGreaterThan(200);
     expect(s.jungleMud / s.jungleWidth, `${s.jungleMud} / ${s.jungleWidth}`).toBeGreaterThan(150); } }, 30_000);
+
+  // 修正 2：舊生成器同種子（ft-a / b / c、lg-1 / 2）地表下 30 格以下的砂岩每欄沙漠 132–209 格、冰每欄雪原 101–142 格；
+  // gen2 家鄉（每欄地區寬）實測砂岩 111–123、冰 85–98（同樣從地表下 30 格算），門檻約舊的一半
+  it('地下沙漠 / 雪原：家鄉 y ∈ [rock, molten) 的砂岩每欄沙漠地區寬 > 80 格、冰每欄雪原地區寬 > 60 格', () => { for (const s of HOME3) {
+    expect(s.desertWidth).toBeGreaterThan(200); expect(s.snowWidth).toBeGreaterThan(200);
+    expect(s.desertSandstone / s.desertWidth, `${s.desertSandstone} / ${s.desertWidth}`).toBeGreaterThan(80);
+    expect(s.snowIce / s.snowWidth, `${s.snowIce} / ${s.snowWidth}`).toBeGreaterThan(60); } }, 30_000);
 
   it('靜態液體：家鄉每個液體格都滿格、下方與左右撐得住（叢林洞穴、熔岩帶挖空不會讓藍圖的水 / 蜂蜜 / 熔岩漏）', () => { for (const s of HOME3) {
     expect(s.liquidBad).toEqual([]); expect(s.lavaCells()).toBeGreaterThan(1500); } }, 30_000);

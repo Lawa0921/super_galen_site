@@ -144,7 +144,8 @@ describe('gen2 家鄉地城', () => {
     expect(info.rooms.length, seed).toBeGreaterThanOrEqual(25); expect(solvable(info), seed).toEqual({ ok: true }); } }, 300_000);
 
   it('礦照常換（控制者裁決）：地城 solid 範圍內的礦密度（礦 / 可換礦的岩格）與鄰近同尺寸區塊相差 ±30% 內（3 個種子）', () => {
-    const ORE = new Set<number>([T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE]), HOST = new Set<number>([T.STONE, T.DEEP_STONE, ...ORE]);
+    // 可換礦的岩格：石頭類，加上地下生態淚滴換成的泥巴 / 砂岩 / 冰（Task 12 修正 2：礦也放在這些上，同舊生成器）
+    const ORE = new Set<number>([T.COPPER_ORE, T.IRON_ORE, T.SILVER_ORE, T.GOLD_ORE]), HOST = new Set<number>([T.STONE, T.DEEP_STONE, T.MUD, T.SANDSTONE, T.ICE, ...ORE]);
     for (const [seed, d] of DUNGEONS.slice(0, 3)) {
       const s = d.bp.solid!, z = homeDungeonRegion(home(d.src)), beachWest = d.src.profile.regionAt(z.x0 - 1)!.variant === VARIANT.BEACH;
       // 鄰近區塊：地城區往內側（離開沙灘的那側）緊鄰、同寬同高

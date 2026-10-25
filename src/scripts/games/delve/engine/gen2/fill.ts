@@ -19,7 +19,7 @@ import { COL_SEA, COL_BEACH, COL_LAND, COL_ISLAND, LAVA_Y, type ColInfo2, type P
 import { HOME_X0, SPAWN_X, type Layout } from './layout';
 import { SHAFT_HALF, SHAFT_REACH, CaveProbe, carveShaft, hasShaft, shaftOf, caveCut, caveK, type Shaft } from './caves';
 import { BP_SURFACE, stamp, solidParts, partsOf, type Blueprint, type BlueprintIndex, type BpBox } from './blueprint';
-import { JungleField } from './jungle';
+import { TeardropField, type Teardrop } from './teardrop';
 
 // 每個 pass 的上下文：該地塊的版面版本
 export interface FillCtx { ver: number }
@@ -58,6 +58,9 @@ export const FILL_REACH = SHAFT_REACH;
 // 礦只換這些格（石頭類；沙 / 泥土 / 雪 / 玄武岩不換，P10）
 const ORE_HOST = new Uint8Array(256);
 ORE_HOST[T.STONE] = 1; ORE_HOST[T.DEEP_STONE] = 1;
+// 原本是石頭類的格，換完淚滴材質後還能放礦的：石頭類 + 泥巴 / 砂岩 / 冰（同舊生成器 isOreHost；沙不放）
+const ORE_ON = new Uint8Array(256);
+ORE_ON[T.STONE] = 1; ORE_ON[T.DEEP_STONE] = 1; ORE_ON[T.MUD] = 1; ORE_ON[T.SANDSTONE] = 1; ORE_ON[T.ICE] = 1;
 
 // ── Task 12 的數值（ctx.ver 0；舊生成器 worldgen.ts 的花崗岩 / 大理石、熔岩深淵細節、地表 / 地下裝飾，改成逐欄局部判斷）──
 // 花崗岩 y ∈ [deep + 20, molten − 25)、大理石 y ∈ [rock + 30, deep + 80)：團塊噪聲過門檻的石 / 深層岩換掉（礦之前判，礦不換花崗岩 / 大理石）
@@ -82,9 +85,18 @@ const pickDecor = (table: readonly (readonly [number, number])[], r: number): nu
 //     （caves.CaveProbe，只看噪聲 → 與分段無關）→ 蛛網
 const POT_P = 0.012, POT_BELOW = 12, FERN_P = 0.12, STALAGMITE_P = 0.04, GLOW_P = 0.012;
 const STALACTITE_P = 0.045, VINE_P = 0.24, VINE_MIN = 2, VINE_SPAN = 6, COBWEB_P = 0.02, COBWEB_BELOW_DEEP = 120;
-// 地下叢林（修正 1，jungle.ts 的淚滴）：岩層以下的石 / 深層岩 mat > JUNGLE_MUD_THR 換泥巴、牆換泥巴牆；
-// 岩層以下 cave > JUNGLE_CAVE_THR − JUNGLE_CAVE_INNER × inner 挖成叢林洞穴（免挖洞箱與藍圖部件內不挖）
+// 地下生態淚滴（修正 1 叢林、修正 2 沙漠 / 雪原；teardrop.ts）：只在岩層以下（岩層以上是地區自己的表層材質）。數值同舊生成器：
+//   叢林：牆 → 泥巴牆；石 / 深層岩 mat > 0.47 → 泥巴；岩層以下 caveA > 0.685 − 0.035 × inner 挖空
+//   沙漠：牆 → 砂岩牆；石 / 深層岩 → 砂岩（y < 砂層底 sandTo 或 mat > 0.68 → 沙）；sandTo = 地表 + 13 + floor(vnoise1(x, 20) × 10)；
+//     y > sandTo + 6、t > 0.08 時直條砂岩洞：k = inner × min(1, (t − 0.08) × 6)，|caveB − 0.5| < 0.034k 或 caveA > 0.7 − 0.04k 挖空
+//   雪原：牆 → 冰牆；石 / 深層岩 mat > 0.45 → 冰；y > 岩層 + 8 時冰洞 caveA > 0.69 − 0.03 × inner 挖空
+// 挖空擋在免挖洞箱與藍圖部件外（CaveProbe 不知道這些洞，部件內 KEEP 的格不能挖）。換材質在花崗岩 / 大理石之後、礦之前；
+// 礦照常放在換完的泥巴 / 砂岩 / 冰上（ORE_ON，同舊生成器），沙不放
 const JUNGLE_MUD_THR = 0.47, JUNGLE_CAVE_THR = 0.685, JUNGLE_CAVE_INNER = 0.035;
+const DESERT_SAND_THR = 0.68, DESERT_SAND_FROM = 13, DESERT_SAND_SPAN = 10, DESERT_CAVE_BELOW = 6, DESERT_CAVE_T = 0.08;
+const DESERT_SLIT = 0.034, DESERT_BUBBLE_THR = 0.7, DESERT_BUBBLE_INNER = 0.04;
+const SNOW_ICE_THR = 0.45, SNOW_CAVE_BELOW = 8, SNOW_CAVE_THR = 0.69, SNOW_CAVE_INNER = 0.03;
+const TEAR_WALL: Readonly<Record<number, number>> = { [BIOME.JUNGLE]: W.MUD_WALL, [BIOME.DESERT]: W.SANDSTONE_WALL, [BIOME.SNOW]: W.ICE_WALL };
 // 石類（石筍 / 鐘乳石長在這些上面；同舊生成器）、叢林土（蕨 / 藤）
 const STONY = new Uint8Array(256);
 for (const t of [T.STONE, T.GRANITE, T.MARBLE, T.ICE, T.SANDSTONE, T.GRAVEL, T.DEEP_STONE, T.BASALT, T.OBSIDIAN]) STONY[t] = 1;
@@ -128,7 +140,7 @@ export class Filler2 {
   private readonly sVine: number;
   // 蛛網看左右欄的天然實心（只看噪聲）
   private readonly probe: CaveProbe;
-  private readonly jungle: JungleField;
+  private readonly tear: TeardropField;
   private readonly spawnX: number | null;
   // 地區 → 坑道（RegionInfo 是 Layout 的同一個物件）
   private readonly shafts = new Map<RegionInfo, Shaft | null>();
@@ -153,7 +165,7 @@ export class Filler2 {
     this.sUgDecor = seedInt(seed, 'g2-ugdecor');
     this.sVine = seedInt(seed, 'g2-vine');
     this.probe = new CaveProbe(seed);
-    this.jungle = new JungleField(seed, layout, profile);
+    this.tear = new TeardropField(seed, layout, profile);
     const home = layout.origin.home;
     this.spawnX = home ? home.x0 + SPAWN_X - HOME_X0 : null;
   }
@@ -207,8 +219,9 @@ export class Filler2 {
     this.spag.setX(x); this.cav.setX(x);
     this.oreCu.setX(x); this.oreFe.setX(x); this.oreAg.setX(x); this.oreAu.setX(x);
     this.granite.setX(x); this.marble.setX(x); this.molten.setX(x); this.obsidian.setX(x);
-    // 這一欄碰得到的地下叢林淚滴（通常沒有；有的話 jungle 的雜訊已 setX(x)）
-    const tds = this.jungle.at(x), jg = this.jungle;
+    // 這一欄碰得到的地下生態淚滴（通常沒有；有的話淚滴的雜訊已 setX(x)）；沙漠淚滴的砂層底每欄算一次
+    const tds = this.tear.at(x), tf = this.tear;
+    let sandTd: Teardrop | null = null, sandTo = 0;
     for (let y = Math.max(0, S); y < H; y++) {
       let t: number, w: number;
       if (y < rock) { if (y < skinTo) { t = sk.t; w = sk.w; } else { t = sk.under; w = sk.underW; } }
@@ -216,9 +229,12 @@ export class Filler2 {
       else if (y < molten) { t = T.DEEP_STONE; w = W.DEEP_STONE_WALL; }
       else { t = T.BASALT; w = W.BASALT_WALL; }
       const i = li(x, y);
-      // 地下叢林只在岩層以下（岩層以上是叢林地區自己的表層材質）
-      const inner = tds.length > 0 && y >= rock ? jg.inner(tds, x, y) : -1;
-      if (inner >= 0) w = W.MUD_WALL;
+      // 地下生態淚滴只在岩層以下（岩層以上是地區自己的表層材質）
+      const td = tds.length > 0 && y >= rock ? tf.hit(tds, x, y) : null, inner = tf.inner;
+      if (td) {
+        w = TEAR_WALL[td.biome];
+        if (td.biome === BIOME.DESERT && sandTd !== td) { sandTd = td; sandTo = S + DESERT_SAND_FROM + Math.floor(vnoise1(x, 20, td.s0 + 4) * DESERT_SAND_SPAN); }
+      }
       if (y >= S + WALL_FROM) wall[i] = w;
       const inSolid = solid !== null && inRows(solid, y);
       // 洞穴（義大利麵越深越寬 + 洞穴層大洞窟）；免挖洞箱內不挖
@@ -228,8 +244,8 @@ export class Filler2 {
         open = true;
         continue;
       }
-      // 叢林洞穴（淚滴底在熔岩帶上方很遠，與下面的熔岩帶互不相干）
-      if (inner >= 0 && y > rock && !inSolid && !(parts !== null && inRows(parts, y)) && jg.cave.at(y) > JUNGLE_CAVE_THR - JUNGLE_CAVE_INNER * inner) {
+      // 淚滴的洞穴（淚滴底都在熔岩帶上方，與下面的熔岩帶互不相干）
+      if (td && !inSolid && !(parts !== null && inRows(parts, y)) && this.tearCave(td, inner, y, rock, sandTo)) {
         open = true;
         continue;
       }
@@ -249,14 +265,37 @@ export class Filler2 {
       if (ORE_HOST[t] === 1) {
         if (y >= gr0 && y < gr1 && this.granite.above(y, GRANITE_THR)) t = T.GRANITE;
         else if (y >= mb0 && y < mb1 && this.marble.above(y, MARBLE_THR)) t = T.MARBLE;
-        else if (inner >= 0 && jg.mat.at(y) > JUNGLE_MUD_THR) t = T.MUD;
-        else if (y >= deep && this.oreAu.at(y) > ORE_THR.AU) t = T.GOLD_ORE;
-        else if (y >= midRock && y < molten && this.oreAg.at(y) > ORE_THR.AG) t = T.SILVER_ORE;
-        else if (y < deep && this.oreFe.at(y) > ORE_THR.FE) t = T.IRON_ORE;
-        else if (y < midRock && this.oreCu.at(y) > ORE_THR.CU) t = T.COPPER_ORE;
+        else {
+          if (td) t = this.tearMat(td, y, sandTo, t);
+          if (ORE_ON[t] === 1) {
+            if (y >= deep && this.oreAu.at(y) > ORE_THR.AU) t = T.GOLD_ORE;
+            else if (y >= midRock && y < molten && this.oreAg.at(y) > ORE_THR.AG) t = T.SILVER_ORE;
+            else if (y < deep && this.oreFe.at(y) > ORE_THR.FE) t = T.IRON_ORE;
+            else if (y < midRock && this.oreCu.at(y) > ORE_THR.CU) t = T.COPPER_ORE;
+          }
+        }
       }
       fg[i] = t;
     }
+  }
+
+  // 淚滴的洞穴（ctx.ver 0 的規則；淚滴的雜訊已 setX(x)）：叢林洞穴、沙漠的直條砂岩洞與大泡泡、雪原的冰洞
+  private tearCave(td: Teardrop, inner: number, y: number, rock: number, sandTo: number): boolean {
+    const tf = this.tear;
+    if (td.biome === BIOME.JUNGLE) return y > rock && tf.caveA.at(y) > JUNGLE_CAVE_THR - JUNGLE_CAVE_INNER * inner;
+    if (td.biome === BIOME.SNOW) return y > rock + SNOW_CAVE_BELOW && tf.caveA.at(y) > SNOW_CAVE_THR - SNOW_CAVE_INNER * inner;
+    const t = (y - td.top) / td.depth;
+    if (y <= sandTo + DESERT_CAVE_BELOW || t <= DESERT_CAVE_T) return false;
+    const k = inner * Math.min(1, (t - DESERT_CAVE_T) * 6), v = tf.caveB.at(y) - 0.5;
+    return (v < DESERT_SLIT * k && v > -DESERT_SLIT * k) || tf.caveA.at(y) > DESERT_BUBBLE_THR - DESERT_BUBBLE_INNER * k;
+  }
+
+  // 淚滴裡的石 / 深層岩換成什麼（ctx.ver 0 的規則）
+  private tearMat(td: Teardrop, y: number, sandTo: number, t: number): number {
+    const m = this.tear.mat.at(y);
+    if (td.biome === BIOME.JUNGLE) return m > JUNGLE_MUD_THR ? T.MUD : t;
+    if (td.biome === BIOME.SNOW) return m > SNOW_ICE_THR ? T.ICE : t;
+    return y < sandTo || m > DESERT_SAND_THR ? T.SAND : T.SANDSTONE;
   }
 
   // ── 裝飾：地表（陸地欄的地表上一格）與地下（地表 + 1 以下的空氣格）；只看本欄的最終格、由上往下一次掃完 ──
