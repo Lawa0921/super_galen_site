@@ -56,6 +56,8 @@ const POLISHED: string[] = [
   'scenes.bond:rin:', 'scenes.bond:selene:', 'scenes.bond:chizuru:',
   'scenes.bond:safira:', 'scenes.bond:sylvie:', 'scenes.bond:noel:',
   'scenes.bond:bobby:', 'scenes.bond:liz:', 'scenes.bond:scarlet:',
+  // Bond plan Task 20: the nine after-stories and the walk together
+  'scenes.ending:', 'scenes.together.',
 ];
 
 type Scope = readonly string[];

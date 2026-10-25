@@ -724,6 +724,119 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
     ],
     summary: '絲嘉蕾第一次替自己排了一格休息，因為算在隊伍裡的人，也可以休息。',
   },
+
+  // ---- bond plan Task 20: the after-stories (arcs v7). Light, six lines at most on the worst path, one line more (or two) at
+  // tier 3 and up (`if.tier`); daily life after her homecoming, never a promise for life; the last line closes the return.
+  'ending:rin': {
+    lines: [
+      { who: 'narrator', place: PL.plazaMorning, text: '清晨的傳送門廣場。鐘守把那枚敲平的鐘掛在門柱上，葛倫每天開門，都順手敲它一下。' },
+      { who: 'narrator', text: '叩。凜照樣從鐘守身邊經過，不看他，也不繞路。' },
+      { who: 'rin', text: '「今天晚了三口氣。葛倫睡過頭了。」' },
+      { who: 'glen', text: '「我沒睡過頭。是呵欠打得比較長。」' },
+      { who: 'narrator', text: '她已經走在洛恩前面半步，回頭說：「走了。瑪莎的湯，第一碗是我的。」', if: { tier: { who: 'rin', min: 3 } } },
+      { who: 'narrator', text: '門柱上那枚鐘還輕輕晃著。' },
+    ],
+    summary: '鐘守把那枚鐘掛在門柱上，葛倫每天開門敲一下；凜照樣從鐘守身邊走過，不看他，也不繞路。',
+  },
+  'ending:selene': {
+    lines: [
+      { who: 'narrator', place: PL.inn, text: '月影旅館。瑟蕾的窗台上放著一本小冊子，她每天在上面寫一件明天要做的事。' },
+      { who: 'narrator', text: '隔天做到了就打一個勾，沒做到就畫一個小圈。圈比勾多，一個「也許」也沒有。' },
+      { who: 'selene', mood: 'smile', text: '「昨天寫的是『在第三扇窗亮之前回到旅館』。那扇窗幾時亮，我早就看見了，結果看得太入迷，又多一個圈。」' },
+      { who: 'selene', text: '「圈多一點也好呢。畫起來，比勾圓。」' },
+      { who: 'narrator', text: '往前翻幾頁，有一行寫著『和洛恩看第一扇窗』，旁邊是一個勾。', if: { tier: { who: 'selene', min: 3 } } },
+      { who: 'narrator', text: '她翻到新的一頁，想了很久，寫下明天的事。' },
+    ],
+    summary: '瑟蕾每天在小冊子上寫一件明天要做的事；沒做到就畫一個圈，圈比勾多。',
+  },
+  'ending:chizuru': {
+    lines: [
+      { who: 'narrator', place: PL.shrine, text: '鎮邊小祠。祭典之後，祠前的鈴每晚由千鶴搖一次；每天早上，麵包店的孩子會送來一個剛出爐的麵包。' },
+      { who: 'narrator', text: '千鶴每一個都記進奉納的名冊，名字那一欄，寫的是麵包的名字。' },
+      { who: 'chizuru', text: '「今日奉納，核桃麵包一個。我們那時候的供品，沒有這麼香。」' },
+      { who: 'chizuru', mood: 'smile', text: '「神明大人收香氣就好。剩下的，請你們吃。」' },
+      { who: 'narrator', text: '名冊的最後一頁另有一行：『洛恩大人，遲到兩次，之後從未遲到。』', if: { tier: { who: 'chizuru', min: 3 } } },
+      { who: 'narrator', text: '孩子們捧著麵包跑回廣場。千鶴在名冊上，先替明天空了一行。' },
+    ],
+    summary: '祭典之後，千鶴每晚搖一次鈴；孩子們每天送來的麵包，她都記進奉納的名冊。',
+  },
+  'ending:safira': {
+    lines: [
+      { who: 'narrator', place: PL.square, text: '廣場。莎菲拉開了一堂舞蹈課，學生是鎮上的孩子，還有多蘭。' },
+      { who: 'narrator', text: '多蘭一個字都沒說，只是從第一步開始，一直跟錯。' },
+      { who: 'safira', mood: 'laugh', text: '「多蘭大叔又錯了！沒關係，錯得這麼整齊，也算一種舞呀。」' },
+      { who: 'safira', mood: 'wink', text: '「隊伍最後面那個位置，是小洛的唷。站著就好，不用跑。」', if: { tier: { who: 'safira', min: 3 } } },
+      { who: 'narrator', text: '孩子們數著拍子轉了一圈。多蘭也轉了，轉的是另一個方向。' },
+    ],
+    summary: '莎菲拉在廣場開了舞蹈課，學生是孩子們和多蘭；多蘭一句話也沒說，一直跟錯。',
+  },
+  'ending:sylvie': {
+    lines: [
+      { who: 'narrator', place: PL.innLot, text: '旅館旁的空地。那棵芽已經長成小樹苗，高到洛恩的膝蓋。' },
+      { who: 'narrator', text: '每天早上，希爾薇都替全隊報明天的天氣，準不準另說。' },
+      { who: 'sylvie', text: '「明天晴，風從北邊來，曬被子剛好。昨天那場雨沒下，是雲自己走錯路啦。」' },
+      { who: 'narrator', text: '她教洛恩看風向，走了幾步，回頭看了看他的腳印。', if: { tier: { who: 'sylvie', min: 3 } } },
+      { who: 'sylvie', mood: 'smile', text: '「你現在走路輕多了。像在林子裡待過的人。」', if: { tier: { who: 'sylvie', min: 3 } } },
+      { who: 'narrator', text: '小樹苗的葉子晃了一下。她說那是在點頭。' },
+    ],
+    summary: '那棵芽長成了小樹苗；希爾薇每天早上替全隊報明天的天氣，準不準另說。',
+  },
+  'ending:noel': {
+    lines: [
+      { who: 'narrator', place: PL.inn, text: '月影旅館的大廳。諾艾兒每隔幾天去老師的攤子幫忙，今天也是。' },
+      { who: 'narrator', text: '在老師面前，她說的是「我」。一進旅館的門，「本小姐」就加倍奉還。' },
+      { who: 'noel', mood: 'smug', text: '「本小姐今天替老師算帳，一枚銅板都沒算錯！本小姐的算術，連本小姐都佩服！」' },
+      { who: 'noel', mood: 'blush', text: '「稱號定了，『雷光的諾艾兒』。你是第一個聽的，老師是第二個！」', if: { tier: { who: 'noel', min: 3 } } },
+      { who: 'narrator', text: '她翻開筆記本，把今天的戰績記上去，字寫得特別大。' },
+    ],
+    summary: '諾艾兒每隔幾天去老師的攤子幫忙；在老師面前不說「本小姐」，回到旅館加倍說。',
+  },
+  'ending:bobby': {
+    lines: [
+      { who: 'narrator', place: PL.forge, text: '鍛造屋。波比在多蘭的爐子旁邊擺了一張修理桌，掛牌寫著『一下下就好』。' },
+      { who: 'narrator', text: '排隊的人從早上排到中午。' },
+      { who: 'bobby', mood: 'grin', text: '「洛恩哥，劍還你！比八十七下久了一點點，可是當天就還了，記下來！」', if: { tier: { who: 'bobby', min: 3 } } },
+      { who: 'bobby', mood: 'excited', text: '「多蘭叔叔！這個門鎖，我拆開看一下下，可以嗎？」' },
+      { who: 'doran', text: '「好。」' },
+      { who: 'narrator', text: '多蘭回她的那個字，換了。' },
+    ],
+    summary: '波比在多蘭的鍛造屋旁擺了修理桌，掛牌「一下下就好」；多蘭回她的那個字，從「嗯」變成「好」。',
+  },
+  'ending:liz': {
+    lines: [
+      { who: 'narrator', place: PL.shopEvening, text: '傍晚的道具店。莉茲和爸爸輪流顧櫃檯，每天比誰估得準，輸的請吃邊邊烤焦的麵包。', if: { returned: 'orik' } },
+      { who: 'liz', mood: 'scheming', text: '「這只壺，爸爸估三枚，我估兩枚半，客人付了兩枚半。今天換爸爸請。」', if: { returned: 'orik' } },
+      { who: 'orik', text: '「好好好，丫頭贏了！今天的名目叫『輸家價』，焦的那幾塊最好吃，爸爸先替妳嚐。」', if: { returned: 'orik' } },
+      { who: 'narrator', place: PL.shopEvening, text: '傍晚的道具店。莉茲每天都來買一樣小東西，每一樣都跟老闆殺價。', if: { notReturned: 'orik' } },
+      { who: 'liz', mood: 'scheming', text: '「一根火柴要兩枚銅板？這價錢我估過了，頂多一枚半啦，老闆。」', if: { notReturned: 'orik' } },
+      { who: 'narrator', text: '老闆被殺得很開心，笑著收了錢。那頂紅帽子，還掛在門後。', if: { notReturned: 'orik' } },
+      { who: 'narrator', text: '回旅館的路上，她把一枚舊銀幣放在洛恩的手上。', if: { tier: { who: 'liz', min: 3 } } },
+      { who: 'liz', mood: 'smile', text: '「這枚換你收著。不估。」', if: { tier: { who: 'liz', min: 3 } } },
+      { who: 'narrator', text: '她把錢袋拍得叮噹響，已經在算明天要估什麼。' },
+    ],
+    summary: '莉茲每天都在道具店裡估價殺價，錢袋又拍得叮噹響了。',
+  },
+  'ending:scarlet': {
+    lines: [
+      { who: 'narrator', place: PL.guild, text: '冒險者公會。公會收到一封回信：從要塞撤退密道出來的人，在山的另一邊落了腳，那裡有一位小姐在教孩子拿木劍。' },
+      { who: 'narrator', text: '絲嘉蕾讀了三遍，寫了一封『回報』。' },
+      { who: 'scarlet', mood: 'serious', text: '「回報：本隊人員齊全，點心充足。完畢。」' },
+      { who: 'scarlet', text: '「最後一行，請協助檢查錯字。回報有誤，是我的失職。」', if: { tier: { who: 'scarlet', min: 3 } } },
+      { who: 'narrator', text: '那一行寫著：『我現在有同伴，排班的時候，我也算一個。』', if: { tier: { who: 'scarlet', min: 3 } } },
+      { who: 'narrator', text: '她把信摺好交給安娜，朝著山的那一邊，敬了一個禮。' },
+    ],
+    summary: '公會收到一封信：撤退密道出來的人在山的另一邊落了腳；絲嘉蕾讀了三遍，回了一封「回報」。',
+  },
+
+  // ---- the walk together (`together`): light, three lines at most; no companion named, since any may not be met yet
+  together: {
+    lines: [
+      { who: 'narrator', place: PL.nightWalk, text: '鎮上的夜路。洛恩只說出去走走，結果大家全跟了出來，一路吵吵鬧鬧。' },
+      { who: 'narrator', text: '走著走著，地上的影子疊成一大團，分不出哪一個是誰的。' },
+      { who: 'narrator', text: '走到傳送門廣場的時候，有人說明天也這樣走。沒有人反對，只有葛倫在門邊打了一個很大的呵欠。' },
+    ],
+    summary: '夜裡大家一起在鎮上走了一段，影子疊成一大團，分不出誰是誰。',
+  },
 };
 
 /** Two town lines for the one chosen (plan ruling 13), added to the town's pool under her name once she is chosen. */

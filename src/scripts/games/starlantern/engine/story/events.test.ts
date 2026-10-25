@@ -1066,7 +1066,8 @@ describe('town banter', () => {
         const prev = `banter:${pair}:${n - 1}` as SceneId;
         if (n === 1 || s.story.seen.includes(prev) || gateExpired(s, BANTER_GATE[prev])) opened[id] = at;
       }
-      const day = arrivalScenes(s, { chat: true, afterFinale: afterFinaleReturn, reactions: REACT });
+      // bond plan Task 20: the after-stories take the chat slot as `Game.arrive` gives them (`nextEnding`), now that they are written
+      const day = arrivalScenes(s, { chat: true, afterFinale: afterFinaleReturn, reactions: REACT, ending: (st) => nextEnding(st) });
       const plan = planNight(s, day);
       const dawn = dawnMemory(s, [...plan.before, ...plan.night]);
       s = { ...s, story: { ...s.story, tonight: [...plan.before, ...plan.night], dawn: dawn ?? undefined } };
@@ -1865,7 +1866,8 @@ const afterFestival = (home = true): GameState => {
 
 describe('after the finale: the endings (bond plan Task 10)', () => {
   /** Endings registered for the test (the registry starts empty), put back after. */
-  const withEndings = <T,>(cs: Companion[], f: () => T): T => { regAdd(ENDINGS_WRITTEN, ...cs); try { return f(); } finally { endingsBack(); } };
+  /** These after-stories registered, and only these (bond plan Task 20 registered all nine). */
+  const withEndings = <T,>(cs: Companion[], f: () => T): T => { ENDINGS_WRITTEN.splice(0, ENDINGS_WRITTEN.length, ...cs); try { return f(); } finally { endingsBack(); } };
   const back = (s: GameState) => arrivalScenes(s, { chat: true, ending: (st) => nextEnding(st) });
 
   it("the festival's return is as it was", () => withEndings(['liz'], () => {

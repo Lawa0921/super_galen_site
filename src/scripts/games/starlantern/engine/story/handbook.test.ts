@@ -127,7 +127,9 @@ describe("the adventurer's handbook", () => {
     for (const c of HOME_OWNERS) {
       const page = handbook(s).people.find((p) => p.id === c)!;
       // time and moon Task 8: the spring festival follows Chizuru's homecoming on her page
-      const tail: SceneId[] = c === 'chizuru' ? [homeScene(c), 'season:spring'] : [homeScene(c)];
+      // bond plan Task 20: her after-story, once written, follows on her page
+      const ending: SceneId[] = ENDINGS_WRITTEN.includes(c) ? [`ending:${c}`] : [];
+      const tail: SceneId[] = c === 'chizuru' ? [homeScene(c), 'season:spring', ...ending] : [homeScene(c), ...ending];
       expect(page.scenes.map((e) => e.scene).slice(-tail.length), c).toEqual(tail);
     }
     s.story.seen = s.story.seen.filter((id) => id !== 'home:liz');
@@ -246,6 +248,7 @@ describe("the adventurer's handbook", () => {
       ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['rin-confess', false], ['bellkeeper-arrives', false], ['hero-alone', false], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
       ...(BONDS_WRITTEN.includes('rin') ? [1, 2, 3, 4].map((n) => [bondScene('rin', n), false]) : []),   // bond plan Task 17: her bond scenes after her chats
       ...RIN_BANTERS.map((id) => [id, false]),   // B1: her banters follow her chats, in the pairs' order (B2: all of them)
+      ...(ENDINGS_WRITTEN.includes('rin') ? [['ending:rin', false]] : []),   // bond plan Task 20: her after-story last
     ]);
     expect(h.town.find((t) => t.id === 'orik')!.scene!.fresh).toBe(true);
     expect(h.town.find((t) => t.id === 'marta')!.scene!.fresh).toBe(false);

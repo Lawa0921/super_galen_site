@@ -6,7 +6,7 @@ import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
 import { bondSceneEntries, FOUND_LINE, GROUP_TITLES, NIGHT_BEATS, SEASON_TITLES, NIGHT_PLACE, DAWN_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, CHOICE_MAX_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, flatLines, isChoice, worstCount, type ChoiceLine, type LineWhen, type SceneLine, type ScriptLine } from '../story.zh-TW';
 import { PL } from './places';
-import { BOND_GATE, type Companion } from './bond';
+import { BOND_GATE, COMPANIONS as COMPANION_IDS, type Companion } from './bond';
 import { BONDS_WRITTEN, ROMANCES_WRITTEN, bondScene } from './scenes';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds, type CalendarNow } from './chains';
 import { AFTER_CHOICE, dots, groupShapeBreaks, opensOnDots, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
@@ -489,7 +489,8 @@ const banterTwo = (key: string): string[] => {
 };
 /**
  * The companion a scene belongs to: her memory, her chat or her meeting; bond plan Task 7: her bond scenes, her ending and
- * her romance (the townsfolk never speak in those three: no `BOND_GUESTS`, spec §0 D7). The walk together is nobody's.
+ * her romance (no `BOND_GUESTS`, spec §0 D7; bond plan Task 20: a townsperson may still speak in an after-story, as Glen,
+ * Doran and Orik do, under the voice rules of the whole script). The walk together is nobody's.
  */
 const ownerOf = (key: string): string | undefined => {
   const [top, a] = key.split('.');
@@ -947,7 +948,7 @@ describe('the script gates', () => {
 
   it('every line condition is well formed', () => {
     // Task 7 fix round 1: a condition object passed where a flag was meant made `if.oath` an object, and linesWhen dropped the line in every reading.
-    const KEYS = ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull', 'oath', 'seen', 'notSeen'];
+    const KEYS = ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull', 'oath', 'seen', 'notSeen', 'tier'];
     for (const { key, line } of storyTexts().filter((t) => t.line)) {
       const c = line!.if;
       if (c === undefined) continue;
@@ -956,13 +957,16 @@ describe('the script gates', () => {
       if ('oath' in c) expect(typeof c.oath, `${key}: if.oath`).toBe('boolean');
       for (const k of ['met', 'notMet', 'returned', 'notReturned', 'full', 'notFull', 'seen', 'notSeen'] as const) if (k in c) expect(typeof c[k], `${key}: if.${k}`).toBe('string');
       for (const k of ['seen', 'notSeen'] as const) if (k in c) expect(isSceneId(c[k]), `${key}: if.${k} names a scene`).toBe(true);   // story depth Task 2
+      // bond plan Task 20: a tier names a companion and a tier above 0 (an after-story's line at 信賴 and up)
+      if (c.tier) { expect((COMPANION_IDS as string[]).includes(c.tier.who), `${key}: if.tier.who`).toBe(true); expect([1, 2, 3, 4], `${key}: if.tier.min`).toContain(c.tier.min); }
     }
     // and every line of every scene plays in at least one reading (Task 10: with no fragment returned too, for `notReturned`;
     // story depth Task 2: with no scene seen and with every scene seen, for `notSeen` and `seen`)
     for (const id of SCENE_IDS) {
       const lines = flatLines(STORY.scenes[id].lines);
       const everyone: LineWhen = { met: [...CHARACTER_IDS], full: [...CHARACTER_IDS], returned: TOWN_FRAGMENTS.map((f) => f.id), oath: false, seen: [] };
-      const readings: LineWhen[] = [everyone, { ...everyone, full: [] }].flatMap((w) => [w, { ...w, returned: [] }]).flatMap((w) => [w, { ...w, seen: [...SCENE_IDS] }]);
+      const readings: LineWhen[] = [everyone, { ...everyone, full: [] }].flatMap((w) => [w, { ...w, returned: [] }]).flatMap((w) => [w, { ...w, seen: [...SCENE_IDS] }])
+        .flatMap((w) => [w, { ...w, tiers: Object.fromEntries(COMPANION_IDS.map((x) => [x, 4])) }]);   // bond plan Task 20: and every bond at 心契
       const played = new Set([true, false].flatMap((oath) => readings.flatMap((w) => linesWhen(lines, { ...w, oath }))));
       for (const l of lines) if (!l.if?.notMet) expect(played.has(l), `${id}: ${l.text}`).toBe(true);
     }
@@ -3761,7 +3765,8 @@ describe('story L Task 15: the script reads fewer ways (spec §10)', () => {
     // out). Tasks 12 and 13 took 12, Task 14 keeps the finale at 24, Task 15 takes 9 more.
     // Two rows read as the spec could not: chat:scarlet:2 splits on what her last piece undoes (the debt, the duty), not only
     // on 「閣下」, so it keeps 2; the finale keeps Bobby's whole chain (her family's sword), so 25.
-    expect(all.length).toBeLessThanOrEqual(109);   // time and moon Task 8: the spring festival's two readings (review fix 10), +2
+    // bond plan Task 20: the after-stories, +18 (a tier line or two in each, ten; Liz's two readings, eight lines)
+    expect(all.length).toBeLessThanOrEqual(127);   // time and moon Task 8: the spring festival's two readings (review fix 10), +2
     const AFTER: [SceneId, number][] = [
       ['finale', 25], ['chat:noel:2', 9], ['chat:chizuru:2', 2], ['chat:sylvie:1', 0], ['chat:sylvie:2', 0],
       ['chat:selene:2', 0], ['chat:scarlet:2', 2], ['hero-alone', 3], ['rin-confess', 14],
@@ -3925,8 +3930,9 @@ describe('the bond script format, and the gates that read it (bond plan Task 7)'
 
 describe('registered bond scenes (bond plan Task 8)', () => {
   it('registered bond scenes join STORY.scenes', () => {
-    // what is registered joins, in order (bond plan Task 17 registered Rin, Selene and Chizuru)
-    expect(bondSceneEntries().map(([id]) => id)).toEqual(BONDS_WRITTEN.flatMap((c) => [1, 2, 3, 4].map((n) => bondScene(c, n))));
+    // what is registered joins, in order (bond plan Tasks 17-19 the bond scenes, Task 20 the after-stories and the walk together)
+    expect(bondSceneEntries().map(([id]) => id)).toEqual(registeredBondScenes());
+    expect(registeredBondScenes().slice(0, BONDS_WRITTEN.length * 4)).toEqual(BONDS_WRITTEN.flatMap((c) => [1, 2, 3, 4].map((n) => bondScene(c, n))));
     const s = (t: string) => ({ lines: [{ who: 'narrator' as const, text: t }], summary: '概要。' });
     const texts: Partial<Record<SceneId, { lines: SceneLine[]; summary: string }>> = {
       'bond:selene:1': s('一'), 'bond:selene:2': s('二'), 'bond:selene:3': s('三'), 'bond:selene:4': s('四'),

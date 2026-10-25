@@ -26,6 +26,7 @@ const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ..
 const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
 const ROMANCES_BASE = [...ROMANCES_WRITTEN];
 const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
+const TOGETHER_BASE = TOGETHER_WRITTEN.value;
 const SCENES_BASE = { ...STORY.scenes };
 const scenesBack = (id: keyof typeof STORY.scenes): void => { if (SCENES_BASE[id]) STORY.scenes[id] = SCENES_BASE[id]; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
 
@@ -476,9 +477,36 @@ describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
     } finally { romancesBack(); bondsBack(); scenesBack(id); }
   });
 
+  /** After the finale and the festival, Liz at 心契 with her four bond scenes seen: the night walk is open. */
+  const walkReady = () => open((g) => {
+    const st = g.state;
+    st.story.act1Cleared = true; st.story.finaleCleared = true;
+    st.story.seen.push('epilogue', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4');
+    st.party = meet(st.party, 'liz', 1);
+    st.party.roster.liz.memories = chainLength('liz');
+    st.party.roster.liz.bond = { talk: 12, field: 40, gifts: { 'old-coin': 24 } };
+  });
+
+  it("和大家一起, written: the walk plays under tonight's sky and writes nothing (bond plan Task 20)", async () => {
+    regAdd(ROMANCES_WRITTEN, 'liz');
+    bondsAdd('liz');
+    try {
+      expect(TOGETHER_WRITTEN.value).toBe(true);
+      const t = walkReady();
+      const before = JSON.stringify(t.game.state);
+      t.partners(); t.pick('夜裡走走'); t.pick('和大家一起');
+      await new Promise((r) => setTimeout(r, 0));
+      expect(t.text()).toContain('鎮上的夜路');
+      for (let i = 0; i < 4; i++) { t.s.onAction('confirm'); await new Promise((r) => setTimeout(r, 0)); }
+      expect(JSON.stringify(t.game.state)).toBe(before);
+      expect(t.game.walkOpen()).toBe(false);
+    } finally { romancesBack(); bondsBack(); }
+  });
+
   it('和大家一起 writes nothing; unwritten, it is a line', () => {
     regAdd(ROMANCES_WRITTEN, 'liz');
     bondsAdd('liz');
+    TOGETHER_WRITTEN.value = false;
     try {
       const t = open((g) => {
         const st = g.state;
@@ -490,11 +518,10 @@ describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
       });
       const before = JSON.stringify(t.game.state);
       t.partners(); t.pick('夜裡走走'); t.pick('和大家一起');
-      expect(TOGETHER_WRITTEN.value).toBe(false);
       expect(t.text()).toBe('大家一起在星燈下走了一段路。');
       expect(JSON.stringify(t.game.state)).toBe(before);
       expect(t.game.walkOpen()).toBe(false);
-    } finally { romancesBack(); bondsBack(); }
+    } finally { romancesBack(); bondsBack(); TOGETHER_WRITTEN.value = TOGETHER_BASE; }
   });
 });
 

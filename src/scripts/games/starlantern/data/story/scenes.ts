@@ -138,9 +138,9 @@ const MAJOR_CAPS: Partial<Record<MajorScene, number>> = {
  * and put them back; `isSceneId` reads them when called, `SCENE_IDS` when loaded.
  */
 export const BONDS_WRITTEN: Companion[] = ['rin', 'selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet'];   // bond plan Tasks 17-19
-export const ENDINGS_WRITTEN: Companion[] = [];
+export const ENDINGS_WRITTEN: Companion[] = ['rin', 'noel', 'chizuru', 'liz', 'sylvie', 'scarlet', 'selene', 'safira', 'bobby'];   // bond plan Task 20
 export const ROMANCES_WRITTEN: Companion[] = [];
-export const TOGETHER_WRITTEN: { value: boolean } = { value: false };
+export const TOGETHER_WRITTEN: { value: boolean } = { value: true };   // bond plan Task 20
 /** The registered bond scene ids, in order: bond scenes, after-stories, romances, the walk together. */
 export const registeredBondScenes = (): SceneId[] => [
   ...BONDS_WRITTEN.flatMap((c) => [1, 2, 3, 4].map((n) => bondScene(c, n))),

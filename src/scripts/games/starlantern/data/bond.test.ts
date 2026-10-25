@@ -454,3 +454,58 @@ describe('bond scenes: Bobby, Liz, Scarlet (bond plan Task 19)', () => {
     expect(out).toEqual([]);
   });
 });
+
+// ---- bond plan Task 20: the nine after-stories and the walk together (arcs v7, after-story lines)
+describe('after-stories and the walk together (bond plan Task 20)', () => {
+  const ENDING = (c: Companion): SceneId => `ending:${c}`;
+
+  it('all nine and the walk together are registered and written', () => {
+    expect([...ENDINGS_WRITTEN].sort()).toEqual([...COMPANIONS].sort());
+    for (const c of COMPANIONS) expect(BOND_SCENES[ENDING(c)], c).toBeDefined();
+    expect(TOGETHER_WRITTEN.value).toBe(true);
+    expect(BOND_SCENES.together).toBeDefined();
+  });
+
+  it('each after-story holds its beat, and the line its tier adds (W4)', () => {
+    const at3 = (c: Companion) => ({ oath: true, full: [c], tiers: { [c]: 3 } });
+    const beats: [Companion, RegExp, RegExp][] = [
+      ['rin', /晚了三口氣/, /第一碗是我的/],            // the bell on the gate's post (I-210); half a step ahead
+      ['selene', /圈比勾多/, /和洛恩看第一扇窗/],        // the notebook of tomorrows
+      ['chizuru', /收香氣就好/, /之後從未遲到/],         // the bread in the offering book, after the festival
+      ['safira', /錯得這麼整齊/, /是小洛的/],            // the dance class, and Doran
+      ['sylvie', /準不準另說/, /走路輕多了/],            // the sapling and the weather (I-213)
+      ['noel', /加倍奉還/, /雷光的諾艾兒/],              // her teacher's stall; the title at last
+      ['bobby', /一下下就好/, /當天就還了/],             // the repair table; Doran's 好
+      ['scarlet', /撤退密道/, /我也算一個/],             // the letter (I-211)
+    ];
+    for (const [c, base, tier] of beats) {
+      pinBeat(ENDING(c), { oath: true, full: [c] }, base);
+      pinBeat(ENDING(c), at3(c), tier);
+      expect(() => pinBeat(ENDING(c), { oath: true, full: [c] }, tier), `${c}: the tier line waits for tier 3`).toThrow();
+    }
+    // Liz, both ways: her father back (a contest at the counter) or not (a sale a day, the hat still behind his door)
+    pinBeat('ending:liz', { full: ['liz'], returned: ['orik'] }, /輸家價/);
+    pinBeat('ending:liz', { full: ['liz'], returned: [] }, /紅帽子，還掛在門後/);
+    pinBeat('ending:liz', { full: ['liz'], tiers: { liz: 3 } }, /。不估。/);
+    pinBeat('together', {}, /分不出哪一個是誰的/);
+  });
+
+  it('a tier line is hers and waits for tier 3; Orik says nothing where he has not remembered her', () => {
+    for (const c of COMPANIONS) {
+      const tiers = flatLines(BOND_SCENES[ENDING(c)]!.lines).filter((l) => l.if?.tier);
+      expect(tiers.length, c).toBeGreaterThanOrEqual(1);
+      for (const l of tiers) expect(l.if!.tier, c).toEqual({ who: c, min: 3 });
+    }
+    const notBack = flatLines(BOND_SCENES['ending:liz']!.lines).filter((l) => !l.if?.returned);
+    expect(notBack.some((l) => l.who === 'orik')).toBe(false);
+  });
+
+  it("an after-story promises nothing for life: that is the romance's (arcs v7, M2)", () => {
+    const LIFE = /一輩子|往後|以後每|每一次都|回到妳/;
+    const ids: SceneId[] = [...COMPANIONS.map(ENDING), 'together'];
+    const out = ids.flatMap((id) => flatLines(BOND_SCENES[id]?.lines ?? []).filter((l) => LIFE.test(l.text)).map((l) => `${id}: ${l.text}`));
+    expect(out).toEqual([]);
+    // Scarlet's letter names no princess and none of her words (I-211)
+    for (const l of flatLines(BOND_SCENES['ending:scarlet']?.lines ?? [])) expect(l.text).not.toMatch(/公主|國家|轉身|號角|朋友|活下去|起誓|誓言|選/);
+  });
+});

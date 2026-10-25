@@ -20,6 +20,7 @@ export const PL = {
   innRoof: { text: '月影旅館屋頂・深夜', night: true }, innHall: { text: '旅館走廊・夜', night: true },
   innRoofDay: { text: '月影旅館屋頂' }, shrine: { text: '鎮邊小祠' },   // bond plan Task 17: a bond scene by day
   innLot: { text: '旅館旁的空地' },   // bond plan Task 18: Sylvie's sapling
+  nightWalk: { text: '鎮上的夜路', night: true },   // bond plan Tasks 20-21: the night walk (lore ledger I-205), no moon in its words
   roofNight: { text: '屋頂・夜', night: true },
   shopClosed: { text: '道具店・打烊以後' }, shopEvening: { text: '道具店・傍晚' }, forge: { text: '鍛造屋' }, forgeDoor: { text: '鍛造屋門口' },
   edgeMorning: { text: '鎮邊・清晨' }, shrineSpringNight: { text: '鎮邊小祠・春祭之夜', night: true }, squareDusk: { text: '廣場・黃昏' }, square: { text: '廣場' }, festival: { text: '廣場・星燈祭之夜', night: true },
