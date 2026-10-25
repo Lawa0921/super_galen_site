@@ -23,7 +23,8 @@ export function storyTexts(): Text[] {
       const isLine = typeof o.who === 'string' && typeof o.text === 'string';
       for (const [k, x] of Object.entries(o)) {
         // a beat's tone (story L Task 8) and its moon (time and moon Task 6) are tags, not text
-        if (k === 'who' || k === 'mood' || k === 'if' || k === 'tone' || k === 'moon') continue;
+        // review of bond plan Task 22: a card's backdrop and hall (`Place.backdrop`, `at`) are tags too
+        if (k === 'who' || k === 'mood' || k === 'if' || k === 'tone' || k === 'moon' || k === 'backdrop' || k === 'at') continue;
         if (k === 'title' && path.length === 2 && path[0] === 'scenes') continue;
         walk(x, [...path, k], isLine && k === 'text' ? (o as unknown as ScriptLine) : undefined);
       }

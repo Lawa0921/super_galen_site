@@ -3404,7 +3404,8 @@ describe('scene places (staging S6)', () => {
   });
 
   it('the night scenes dim the town, and the reveal night ends at dawn', () => {
-    const at = (id: SceneId) => placed.filter((p) => p.id === id).map((p) => ({ i: p.i, ...p.place }));
+    // the card and its night (review of bond plan Task 22: a card's backdrop and hall are the bond scenes' staging, read apart)
+    const at = (id: SceneId) => placed.filter((p) => p.id === id).map((p) => ({ i: p.i, text: p.place.text, ...(p.place.night ? { night: true } : {}) }));
     expect(at('prologue-inn')).toEqual([{ i: 0, text: '月影旅館・深夜', night: true }]);
     expect(at('prologue')).toEqual([{ i: 0, text: '傳送門廣場・黎明前' }, { i: 3, text: '冒險者公會' }]);
     expect(at('act2')).toEqual([{ i: 0, text: '冒險者公會' }, { i: 8, text: '月影旅館' }]);

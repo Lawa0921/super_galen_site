@@ -2,6 +2,7 @@ import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { chainLength } from '../data/story/chains';
 import { BANTER_GATE, CHAT_GATE, GROUP_GATE, MAJOR_SCENES, heavyScene, memScene, sceneKind, type SceneId, type StoryGate } from '../data/story/scenes';
 import { AFTER_CHOICE } from '../data/story/voiceGates';
+import type { Backdrop } from '../data/story/places';
 import { WARM_MOODS } from '../data/story/tone';
 import { NIGHT_PLACE, NPC_NAMES, STORY, isChoice, linesWhen, type ChoiceLine, type NpcId, type Place, type SceneLine, type ScriptLine, type Speaker } from '../data/story.zh-TW';
 import { BOND_GATE, COMPANIONS, type BondStep, type Companion, type Tone } from '../data/story/bond';
@@ -103,6 +104,17 @@ const gateOf = (id: SceneId): StoryGate | undefined => {
  * finale, so after her choice too. A replay from the handbook after her oath then shows the faces she had
  * when the scene was told (her guilty averted look, not her shy one), and a scene played live reads the same as the game.
  */
+/**
+ * Review of bond plan Task 22: how a scene opened from a facility stands on its place card (`Place.backdrop`, `at`). The
+ * facility's own hall keeps its keeper and its picture; anywhere else the keeper steps away, and the place's own published
+ * picture (one other than the facility's) goes behind the scene. A card with no picture of its own keeps the facility's; no
+ * card moves nothing.
+ */
+export function stagingOf(place: Place | undefined, facility: Exclude<Backdrop, 'town'>): { backdrop: Backdrop | null; keeper: boolean } {
+  if (!place) return { backdrop: null, keeper: true };
+  return { backdrop: place.backdrop && place.backdrop !== facility ? place.backdrop : null, keeper: place.at === facility };
+}
+
 export function sceneEra(id: SceneId): Era | null {
   const g = gateOf(id);
   if (id === 'rin-reveal' || g?.beforeChoice || Array.from({ length: chainLength('rin') }, (_, i) => memScene('rin', i + 1)).includes(id)) return 'before';

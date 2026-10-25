@@ -222,6 +222,8 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 @media (prefers-reduced-motion: reduce) { .slx-veil, .slx-talk, .slx-talk-face { transition: none; } }
 
 .slx-npc { position: absolute; right: 0; bottom: 0; height: 330px; }
+// review of bond plan Task 22: a bond scene set elsewhere plays with the keeper away (ui2/scenes/facility standOn)
+.slx-npc.slx-keeper-away { visibility: hidden; }
 .slx-cmd { left: 12px; top: 56px; min-width: 120px; }
 /* While a story scene plays in a facility or the town, its face stands where the command window is: hide the window, keep its place. */
 .slx-facility .slx-cmd.slx-cmd-hidden, .slx-town .slx-town-menu.slx-cmd-hidden, .slx-town .slx-back.slx-cmd-hidden, .slx-town .slx-place.slx-cmd-hidden, .slx-town .slx-calendar.slx-cmd-hidden, .slx-town .slx-gold.slx-cmd-hidden, .slx-facility .slx-place.slx-cmd-hidden, .slx-facility .slx-gold.slx-cmd-hidden, .slx-dungeon .slx-pad.slx-cmd-hidden, .slx-dungeon .slx-weight.slx-cmd-hidden, .slx-dungeon .slx-keyhint.slx-cmd-hidden { visibility: hidden; }

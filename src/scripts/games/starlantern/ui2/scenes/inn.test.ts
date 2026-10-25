@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../engine/game';
 import { constRng, memoryStorage } from '../../engine/testing';
-import { NO_ART } from '../../render/textures';
+import { NO_ART, type ArtIndex } from '../../render/textures';
+import { art } from '../../render/artPaths';
 import { InnScene } from './inn';
 import { LEGACY_LINEUP } from '../../engine/party';
 import { TownScene } from './town';
@@ -564,5 +565,74 @@ describe('InnScene: a talk still waiting (review of bond plan Tasks 12-14)', () 
       expect(today(game.state).talked).toBe(false);
       expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('剛才那段談心沒能說完，等下次回城再說吧。');
     } finally { back(); }
+  });
+});
+
+// Review of bond plan Task 22: a talk set elsewhere plays over that place's picture, and Marta steps away until it ends.
+describe('InnScene: a bond scene elsewhere stages its own place (review of Task 22)', () => {
+  const ALL: ArtIndex = { has: () => true };
+  const open = (prep: (g: Game) => void) => {
+    const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, ['hero', 'rin']);
+    prep(game);
+    const root = document.createElement('div');
+    const s = new InnScene({ game, art: ALL, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity, 0);
+    s.enter(root);
+    s.onAction('confirm');
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const talkWith = async (c: string) => {
+      (root.querySelector('.slx-cmd [data-id=partners]') as HTMLElement).click();
+      (root.querySelector('.slx-layer [data-id=talk]') as HTMLElement).click();
+      (root.querySelector(`.slx-layer [data-id=${c}]`) as HTMLElement).click();
+      await tick();
+    };
+    const playOut = async () => { for (let i = 0; i < 40 && root.querySelector('.slx-cmd.slx-cmd-hidden'); i++) { s.onAction('confirm'); await tick(); } };
+    return { game, root, talkWith, playOut };
+  };
+  /** Met, `pieces` told, and 20 points (相識 → 同行): her first talk is open. */
+  const firstTalk = (c: 'selene' | 'liz') => (g: Game) => {
+    g.state.party = meet(g.state.party, c, 1);
+    g.state.party.roster[c].memories = 1;
+    g.state.story.seen.push(`mem:${c}:1`);
+    g.state.party.roster[c].bond = { talk: 0, field: 7, gifts: {} };
+  };
+
+  it("Selene's first talk, at dusk on the square: the town behind it, Marta away; both back after", async () => {
+    const t = open(firstTalk('selene'));
+    const npc = () => t.root.querySelector('.slx-inn .slx-npc')!;
+    expect(npc().classList.contains('slx-keeper-away')).toBe(false);
+    await t.talkWith('selene');
+    expect(npc().classList.contains('slx-keeper-away')).toBe(true);
+    expect(t.root.querySelector('.slx-backdrop')?.getAttribute('src')).toBe(art.scene('town'));
+    await t.playOut();
+    expect(t.game.state.story.seen).toContain('bond:selene:1');
+    expect(npc().classList.contains('slx-keeper-away')).toBe(false);
+    expect(t.root.querySelector('.slx-backdrop')).toBeNull();
+  });
+
+  it("Liz's first talk, in the inn's hall: Marta stays and the inn stays behind it", async () => {
+    const t = open(firstTalk('liz'));
+    await t.talkWith('liz');
+    expect(t.root.querySelector('.slx-inn .slx-npc')!.classList.contains('slx-keeper-away')).toBe(false);
+    expect(t.root.querySelector('.slx-backdrop')).toBeNull();
+    await t.playOut();
+  });
+
+  it('with the place picture not loaded, the inn stays behind it, and Marta is still away', async () => {
+    const town = art.scene('town');
+    const t = (() => {
+      const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, ['hero', 'rin']);
+      firstTalk('selene')(game);
+      const root = document.createElement('div');
+      const s = new InnScene({ game, art: { has: (u: string) => u !== town }, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity, 0);
+      s.enter(root);
+      s.onAction('confirm');
+      return { root, s };
+    })();
+    (t.root.querySelector('.slx-cmd [data-id=partners]') as HTMLElement).click();
+    (t.root.querySelector('.slx-layer [data-id=talk]') as HTMLElement).click();
+    (t.root.querySelector('.slx-layer [data-id=selene]') as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(t.root.querySelector('.slx-backdrop')).toBeNull();
+    expect(t.root.querySelector('.slx-inn .slx-npc')!.classList.contains('slx-keeper-away')).toBe(true);
   });
 });

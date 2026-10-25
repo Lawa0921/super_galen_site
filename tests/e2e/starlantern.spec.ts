@@ -5757,9 +5757,14 @@ test.describe('starlantern', () => {
         await page.locator('.slx-layer.slx-depth-1 [data-id=selene]').click();
         for (let i = 0; i < 10 && !(await page.locator('.slx-choice').isVisible()); i++) await w.key('z');
         await expect(page.locator('.slx-choice [role=option]')).toHaveCount(choices('bond:selene:1'));
+        // review of Task 22: set at dusk on the square, it plays over the town, Marta away; both back once it ends
+        await expect(page.locator('.slx-inn .slx-npc')).toBeHidden();
+        await expect(page.locator('.slx-inn .slx-backdrop')).toBeVisible();
         await accept(page, 'talk-choice', vw, vh, info.project.name);
         await w.key('Enter');
         await w.closeTalk();
+        await expect(page.locator('.slx-inn .slx-npc')).toBeVisible();
+        await expect(page.locator('.slx-inn .slx-backdrop')).toHaveCount(0);
         const one = await member(page, 'selene');
         expect([2, 3]).toContain(one.bond.talk);
         await partners(page);
@@ -5910,6 +5915,35 @@ test.describe('starlantern', () => {
         await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
       }
       await fitTo(page, 1280, 720);
+      expect(w.errors).toEqual([]);
+    });
+
+    test('a dive that raises a tier says so on the way home', async ({ page }, info) => {
+      test.setTimeout(180_000);
+      await fitTo(page, 1280, 720);
+      const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>   // eslint-disable-line @typescript-eslint/no-explicit-any
+        page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as BondDbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+      const w = await setup(page, 7, { story: 'none' });
+      await game((g) => { g.state.party.roster.rin.bond = { talk: 0, field: 0, gifts: {} }; });   // 相識 when the dive starts
+      await depart(page, w);
+      await w.closeTalk();
+      // the dive's floors and fights earn her field points (simulated): enough to cross into 同行 before the lamp home
+      await game((g) => { g.state.party.roster.rin.bond.field = 20; });
+      if (process.env.SL_SHOTS) await page.waitForTimeout(4000);   // the pictures: the town's art lands first
+      const rose = T.ui2.bond.rose(CHARACTERS.rin.name, T.ui2.bond.tiers[1]);
+      await w.key('c');
+      await w.choose('.slx-field-menu', '歸還之燈');
+      await w.key('ArrowUp'); await w.key('Enter');
+      await expect(page.locator('.slx-town')).toBeVisible();
+      const heard: string[] = [];
+      for (let i = 0; i < 12 && (await page.locator('.slx-talk').isVisible()); i++) {
+        const t = (await page.locator('.slx-talk:not([hidden]) .slx-text').textContent()) ?? '';
+        if (t === rose) await accept(page, 'tier-up', 1280, 720, info.project.name);
+        heard.push(t);
+        await w.key('z'); await page.waitForTimeout(80);
+      }
+      expect(heard, heard.join(' / ')).toContain(rose);
+      expect(await game((g) => g.bondUps.length)).toBe(0);   // said once
       expect(w.errors).toEqual([]);
     });
 

@@ -1,4 +1,4 @@
-import { STORY, type ScriptLine } from '../../data/story.zh-TW';
+import { STORY, flatLines, type ScriptLine } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { storyStage } from '../../engine/story/events';
 import type { SceneId } from '../../data/story/scenes';
@@ -10,7 +10,8 @@ import { bestPicture } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
-import { NPC_FACILITY, playAndRecord, playBeat, playNight, playScene, speakerOf, storyCtx, type SceneOpts } from '../story';
+import { NPC_FACILITY, playAndRecord, playBeat, playNight, playScene, speakerOf, stagingOf, storyCtx, type SceneOpts } from '../story';
+import { sceneKind } from '../../data/story/scenes';
 import type { CharacterId } from '../../engine/types';
 import type { StoryMood } from '../../render/artPaths';
 import type { StoryMode } from '../settings';
@@ -31,6 +32,9 @@ export abstract class FacilityScene implements Scene {
   private gold!: HTMLElement;
   private place!: HTMLElement;
   private npc: HTMLImageElement | null = null;
+  private sceneEl!: HTMLElement;
+  /** Review of bond plan Task 22: the keeper is away while a scene set elsewhere plays (her bust, if it lands then, too). */
+  private keeperAway = false;
   private talk: Dialogue;
   private moodTimer: ReturnType<typeof setTimeout> | null = null;
   private talking = false;
@@ -61,13 +65,13 @@ export abstract class FacilityScene implements Scene {
     this.cmdWin = win('slx-cmd');
     this.stage = el('div', { class: 'slx-stage' });
     this.back = backControl(() => this.onAction('cancel'));
-    const sceneEl = el('div', { class: `slx-scene slx-facility slx-${this.id}` }, [
+    const sceneEl = this.sceneEl = el('div', { class: `slx-scene slx-facility slx-${this.id}` }, [
       (this.place = win('slx-place', [document.createTextNode(f.place)])), this.gold, this.back, this.cmdWin, this.stage, this.talk.el,
     ]);
     // The scene picture first, then the keeper's bust; each is put in when it lands if it had not yet (ui2/lateArt).
     bestPicture(sceneEl, 'bg', this.ctx.art, this.sceneArts(), (src) => el('img', { class: 'slx-bg', attrs: { src, alt: '' } }), (n) => sceneEl.prepend(n));
     bestPicture(sceneEl, 'npc', this.ctx.art, [art.npc(this.id, 'normal')], (src) => el('img', { class: 'slx-npc', attrs: { src, alt: '' } }),
-      (n) => { this.npc = n as HTMLImageElement; this.place.before(n); });
+      (n) => { this.npc = n as HTMLImageElement; n.classList.toggle('slx-keeper-away', this.keeperAway); this.place.before(n); });
     root.append(sceneEl);
     this.refresh();
     // Coming back from one of the guild's own screens (or settings) is not a new visit: no greeting.
@@ -225,8 +229,34 @@ export abstract class FacilityScene implements Scene {
     // The place plate and the gold go with the command window (staging S1): a scene may be set elsewhere (its own card).
     for (const e of [this.cmdWin, this.place, this.gold]) e.classList.add('slx-cmd-hidden');
     this.syncInert();
+    const unstage = this.standOn(id);
     // A scene that throws is reported and treated as over, so the caller carries on (the guild still pays the reward line).
-    return p.done.catch((e) => { console.error('starlantern: facility scene failed', e); }).finally(() => { this.playing = null; this.talking = false; for (const e of [this.cmdWin, this.place, this.gold]) e.classList.remove('slx-cmd-hidden'); this.syncInert(); });
+    return p.done.catch((e) => { console.error('starlantern: facility scene failed', e); }).finally(() => { unstage(); this.playing = null; this.talking = false; for (const e of [this.cmdWin, this.place, this.gold]) e.classList.remove('slx-cmd-hidden'); this.syncInert(); });
+  }
+
+  /**
+   * Review of bond plan Task 22: a bond scene, an after-story, a romance or the walk together opened here stands on its own
+   * card (`stagingOf`): the keeper steps away unless it is this facility's hall, and the place's published picture goes behind
+   * it while it plays (none loaded: this facility's stays). Gives back what puts it all back.
+   */
+  private standOn(id: SceneId): () => void {
+    const kind = sceneKind(id);
+    if (kind !== 'bond' && kind !== 'ending' && kind !== 'romance') return () => {};
+    const place = flatLines(STORY.scenes[id]?.lines ?? []).find((l) => l.place)?.place;
+    const { backdrop, keeper } = stagingOf(place, this.id);
+    this.keeperAway = !keeper;
+    this.npc?.classList.toggle('slx-keeper-away', this.keeperAway);
+    let shown: HTMLElement | null = null;
+    if (backdrop && this.ctx.art.has(art.scene(backdrop))) {
+      shown = el('img', { class: 'slx-bg slx-backdrop', attrs: { src: art.scene(backdrop), alt: '' } });
+      const bg = this.sceneEl.querySelector(':scope > .slx-bg');
+      if (bg) bg.after(shown); else this.sceneEl.prepend(shown);
+    }
+    return () => {
+      this.keeperAway = false;
+      this.npc?.classList.remove('slx-keeper-away');
+      shown?.remove();
+    };
   }
 
   /** Time and moon ruling 8: the moon a night card's veil wears in this facility's box (null: the plain night). */

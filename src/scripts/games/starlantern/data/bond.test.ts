@@ -9,6 +9,7 @@ import { BONDS_WRITTEN, ENDINGS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, bon
 import { CHOICE_MAX_CHARS, MAX_LINE_CHARS, STORY, flatLines, isChoice, type ChoiceLine, type SceneLine, type ScriptLine } from './story.zh-TW';
 import { CHIZURU_ARCHAIC, CHIZURU_NEVER, SYLVIE_WORLD, VOICE, dots, opensOnDots, pinBeat, speakerOf, storyTexts, telegraphBreaks } from './story/voiceGates';
 import { CHARACTER_IDS } from './characters';
+import { PL, type Place } from './story/places';
 
 /**
  * Bond plan Task 6 (spec §0 D14, §6.4): a companion's gift reactions are registered whole or not at all. What a written
@@ -572,5 +573,35 @@ describe('romances (bond plan Task 21)', () => {
       if (VOICE[c]?.never) expect(VOICE[c]!.never!.test(t), `${c}: ${t}`).toBe(false);
     }
     for (const t of ROMANCE_LINES.safira ?? []) expect(t).not.toMatch(/洛恩/);
+  });
+});
+
+// ---- review of bond plan Task 22: a bond scene set elsewhere plays over that place's own picture, its keeper away
+describe("the bond copy's places name their backdrop (review of Task 22)", () => {
+  const PUBLISHED = ['town', 'guild', 'shop', 'inn', 'gate', 'forge'];
+
+  it('every card the bond copy uses names a published backdrop', () => {
+    const cards = new Map<string, Place>();
+    for (const s of Object.values(BOND_SCENES)) for (const l of flatLines(s!.lines)) if (l.place) cards.set(l.place.text, l.place);
+    expect(cards.size).toBeGreaterThanOrEqual(10);
+    for (const [text, p] of cards) expect(PUBLISHED, text).toContain(p.backdrop);
+  });
+
+  it('the streets, the plaza, the night road, the lot and the shrine are the town; each facility its own', () => {
+    for (const k of ['square', 'squareDusk', 'nightWalk', 'innLot', 'shrine', 'edgeMorning'] as const) expect(PL[k].backdrop, k).toBe('town');
+    expect(PL.plazaMorning.backdrop).toBe('gate');
+    for (const k of ['inn', 'innYard', 'innKitchen', 'innRoofDay'] as const) expect(PL[k].backdrop, k).toBe('inn');
+    expect(PL.guild.backdrop).toBe('guild');
+    expect(PL.forge.backdrop).toBe('forge');
+    expect(PL.shopEvening.backdrop).toBe('shop');
+  });
+
+  it("only a facility's own hall has its keeper standing there", () => {
+    expect(PL.inn.at).toBe('inn');
+    expect(PL.guild.at).toBe('guild');
+    expect(PL.forge.at).toBe('forge');
+    for (const k of ['innYard', 'innKitchen', 'innRoofDay', 'innLot', 'square', 'squareDusk', 'nightWalk', 'shrine', 'plazaMorning', 'shopEvening'] as const) {
+      expect((PL[k] as Place).at, k).toBeUndefined();
+    }
   });
 });

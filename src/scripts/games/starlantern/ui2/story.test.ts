@@ -11,7 +11,8 @@ import { allArtUrls, art, NORMAL_SMILES } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { drawLanded } from './lateArt';
 import { Dialogue } from './widgets';
-import { linesOf, playAndRecord, playLines, playScene, sceneEra, shouldPlay, speakerOf, type StoryCtx } from './story';
+import { linesOf, playAndRecord, playLines, playScene, sceneEra, shouldPlay, speakerOf, stagingOf, type StoryCtx } from './story';
+import { PL } from '../data/story/places';
 
 const ART: ArtIndex = (() => { const set = new Set([...allArtUrls(), art.npc('guild', 'normal')]); return { has: (u: string) => set.has(u) }; })();
 const mk = () => {
@@ -837,5 +838,19 @@ describe('a choice on screen (bond plan Task 9)', () => {
       expect(calls).toEqual(['choice bond:rin:1 null', 'done bond:rin:1 auto']);
       root.remove();
     } finally { back(); }
+  });
+});
+
+// Review of bond plan Task 22: where a scene opened from a facility is set decides its picture and whether the keeper stays.
+describe('stagingOf: a place card against the facility it plays in', () => {
+  it("the facility's own hall keeps its keeper and picture; elsewhere, that place's picture and no keeper", () => {
+    expect(stagingOf(PL.inn, 'inn')).toEqual({ backdrop: null, keeper: true });
+    expect(stagingOf(PL.innYard, 'inn')).toEqual({ backdrop: null, keeper: false });   // the inn's own picture, Marta not in the yard
+    expect(stagingOf(PL.squareDusk, 'inn')).toEqual({ backdrop: 'town', keeper: false });
+    expect(stagingOf(PL.nightWalk, 'inn')).toEqual({ backdrop: 'town', keeper: false });
+    expect(stagingOf(PL.guild, 'inn')).toEqual({ backdrop: 'guild', keeper: false });
+    expect(stagingOf(PL.guild, 'guild')).toEqual({ backdrop: null, keeper: true });
+    expect(stagingOf({ text: '某處' }, 'inn')).toEqual({ backdrop: null, keeper: false });   // no picture of its own: the facility's
+    expect(stagingOf(undefined, 'inn')).toEqual({ backdrop: null, keeper: true });   // no card: nothing moves
   });
 });
