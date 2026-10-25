@@ -24,7 +24,7 @@ import { tierOf } from '../data/difficulty';
 import { bossKey, rollAffixes, rollCrowdAffix, tierUnlocked } from './tiers';
 import { buyRune, fuseRunes, sellRunes, type RuneTradeFail } from './runeTrade';
 import { posKey, reveal, step, tileAt, type Dir, type FloorMap } from './map';
-import { CHARACTERS } from '../data/characters';
+import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { MAX_ACTIVE } from './formation';
 import { activeIds, awardExp, hasPassive, joinLevel, meet, placeInGrid, setFormation, START_LINEUP, statsOf, type LevelUp, type SetFormationFail } from './party';
 import { raiseNode, raiseTalent, swapPair, type RaiseFail, type TalentFail } from './progression';
@@ -47,8 +47,8 @@ import { moveRune, socketRune, unsocketRune, type SocketAt, type SocketFail } fr
 import type { RuneRef } from '../data/runes';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
 import { applyBuild, applyCost, followUp } from './builds';
-import { addField, bondOf, giveGift, inDanger, nextBond, romanceCandidates, talkPoints, today, type GiveResult } from './story/bond';
-import { BOND_CAP, type Companion, type Tone } from '../data/story/bond';
+import { addField, bondOf, bondTier, giveGift, inDanger, nextBond, romanceCandidates, talkPoints, today, type GiveResult } from './story/bond';
+import { BOND_CAP, type BondTier, type Companion, type Tone } from '../data/story/bond';
 import { FIELD_POINTS } from '../data/story/bond';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
 
@@ -155,6 +155,10 @@ export class Game {
    * later notice ('banked') never drops it. The town reads and empties it.
    */
   followEnded: CharacterId[] = [];
+  /** Bond plan ruling 14: who rose a bond tier on the last dive (CHARACTER_IDS order), for the town to say once. Not saved. */
+  bondUps: { id: Companion; tier: BondTier }[] = [];
+  /** Each companion's tier as the dive set out (ruling 14); null in town. */
+  private tiersAtDepart: Partial<Record<Companion, BondTier>> | null = null;
   /** Scenes the screen should play now (not saved): a returned townsfolk fragment. A memory never waits here (story L). */
   pending: SceneId[] = [];
   /** The scenes the town should play on this arrival, in order (not saved: a reload rebuilds it from the queue). */
@@ -301,6 +305,7 @@ export class Game {
     const refused = this.departCheck(portal, startDepth);
     if (refused) return { ok: false, reason: refused };
     this.run = newRun(Math.floor(this.rng() * 2 ** 31), portal.region, portal.condition, startDepth, rescuesFor(portal.region, this.state.party.recruited), this.tier());
+    this.tiersAtDepart = Object.fromEntries(this.state.party.recruited.filter((c): c is Companion => c !== 'hero').map((c) => [c, bondTier(this.state.party.roster[c])]));
     this.pending = [];
     this.eve = [];
     this.finale = null;
@@ -1409,6 +1414,16 @@ export class Game {
    * spec §4.6: then the night (`planNight`), kept in `story.tonight`; the memories the day owes lead the arrival.
    */
   private arrive(afterFinale = false): void {
+    // bond plan ruling 14: whoever rose a tier on this dive (a wipe comes home too), in CHARACTER_IDS order
+    const was = this.tiersAtDepart;
+    this.tiersAtDepart = null;
+    if (was) {
+      for (const c of CHARACTER_IDS) {
+        if (c === 'hero' || was[c] === undefined) continue;
+        const now = bondTier(this.state.party.roster[c]);
+        if (now > was[c]!) this.bondUps.push({ id: c, tier: now });
+      }
+    }
     this.state.story = onReturn(this.state);
     // bond plan ruling 11: after the finale an after-story takes the chat's place
     const day = arrivalScenes(this.state, { chat: true, afterFinale, ending: (s) => nextEnding(s) });

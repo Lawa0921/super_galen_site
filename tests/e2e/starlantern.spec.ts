@@ -5415,4 +5415,119 @@ test.describe('starlantern', () => {
     expect(bad).toEqual([]);
     expect(errors).toEqual([]);
   });
+
+  test("the inn's partners: nothing unwritten shows, then a talk with its choice, a gift, and the bond on the status page (bond plan Tasks 12-14)", async ({ page }) => {
+    // No bond scene or gift line is written yet (Tasks 15-21): first nothing of the bond may show or play. Then the page
+    // stands in Rin's first talk and her gift lines through the debug handle, as the unit tests do (nothing shipped), and
+    // walks it at 1280x720 and 844x390. The sweep game has the story set to 'none': a talk the player opens plays anyway
+    // (ruling P3-2). With SL_SHOTS=<dir>, a picture of each into <dir>/bond-*.png.
+    test.setTimeout(240_000);
+    const shots = process.env.SL_SHOTS;
+    if (shots) mkdirSync(shots, { recursive: true });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type BondDbg = { __starlanternDebug: { game: any; bond: any } };
+    const w = await startSweepGame(page);
+    const said = page.locator('.slx-talk:not([hidden]) .slx-text');
+    const partners = async () => {
+      await page.locator('.slx-inn .slx-cmd [data-id=partners]').click();
+      await expect(page.locator('.slx-layer.slx-depth-0')).toBeVisible();
+    };
+    await fitTo(page, 1280, 720);
+    await go(page, 'inn');
+    await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+    await partners();
+    await expect(page.locator('.slx-layer.slx-depth-0 [role=option]')).toHaveText(['談心', '送禮']);   // no walk, no 新
+    await page.locator('.slx-layer [data-id=talk]').click();
+    await expect(said).toHaveText(T.ui2.inn.nobodyToTalk);
+    await w.closeTalk();
+    await partners();
+    await page.locator('.slx-layer [data-id=gift]').click();
+    await expect(said).toHaveText(T.ui2.inn.nobodyToGift);
+    await w.closeTalk();
+
+    const stage = () => page.evaluate(() => {
+      const d = (window as unknown as BondDbg).__starlanternDebug;
+      const b = d.bond;
+      if (!b.BONDS_WRITTEN.includes('rin')) b.BONDS_WRITTEN.push('rin');
+      b.STORY.scenes['bond:rin:1'] = {
+        title: '凜・羈絆 1', summary: '凜在旅館的後院磨刀，問他為什麼總是走在前面。',
+        lines: [
+          { who: 'narrator', text: '旅館的後院。凜坐在井邊，一下一下地磨著短刃。' },
+          { who: 'rin', text: '「你走路，總是走在最前面。」' },
+          { who: 'hero', choices: [
+            { tone: 'ask', text: '「妳不喜歡嗎？」', reply: [{ who: 'rin', text: '「沒說不喜歡。」' }] },
+            { tone: 'stay', text: '（在她旁邊坐下。）', reply: [{ who: 'rin', text: '「磨刀石，分你一半。」' }] },
+            { tone: 'promise', text: '「明天也一起回來。」', reply: [{ who: 'rin', text: '「嗯。」' }] },
+          ] },
+          { who: 'narrator', text: '井裡的水，映著兩個人的影子。' },
+        ],
+      };
+      b.GIFT_LINES.rin = { loved: ['「暮影布。斗篷的邊，剛好破了。」', '「又是暮影布。」'], liked: ['「收下了。」', '「嗯。」'], neutral: ['「放這裡。」'], declined: { 'king-scale': '「太亮了。帶著它，躲不了人。收回去。」' }, healed: {} };
+      b.RIN_OATH.value = b.GIFT_LINES.rin;   // Rin takes gifts once both of her tables are written (plan ruling 6)
+      const s = d.game.state;
+      s.party.roster.rin.memories = 2;   // her two pieces: the first talk's gate
+      s.party.roster.rin.bond = { talk: 0, field: 14, gifts: { 'dusk-cloth': 1 }, refused: ['king-scale'] };   // 30: 同行
+      Object.assign(s.inventory, { 'dusk-cloth': 2, 'king-scale': 1, 'star-tear': 1 });
+      s.story.seen = s.story.seen.filter((x: string) => x !== 'bond:rin:1');
+      delete s.story.talked;
+      delete s.story.gifted;
+      delete s.story.bondDay;
+      d.game.pending = [];
+    });
+    const bondOf = () => page.evaluate(() => {
+      const s = (window as unknown as BondDbg).__starlanternDebug.game.state;
+      return { talk: s.party.roster.rin.bond.talk as number, seen: (s.story.seen as string[]).includes('bond:rin:1') };
+    });
+
+    for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
+      const shot = async (name: string) => {
+        if (!shots) return;
+        await page.waitForTimeout(400);   // windows fade in
+        await snap(page, `${shots}/bond-${name}-${vw}x${vh}.png`);
+      };
+      await fitTo(page, vw, vh);
+      await stage();
+      await go(page, 'inn');
+      await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+      await partners();
+      await expect(page.locator('.slx-layer.slx-depth-0 [role=option]')).toHaveText(['談心新', '送禮']);
+      await page.locator('.slx-layer [data-id=talk]').click();
+      await expect(page.locator('.slx-layer.slx-depth-1 [role=option]')).toHaveText(['凜新']);
+      await shot('inn-partners');
+      await page.locator('.slx-layer.slx-depth-1 [data-id=rin]').click();
+      for (let i = 0; i < 6 && !(await page.locator('.slx-choice').isVisible()); i++) await w.key('z');
+      await expect(page.locator('.slx-choice [role=option]')).toHaveCount(3);
+      await page.waitForTimeout(700);   // windows fade in: measure them drawn
+      const choice = await stageBox(page, page.locator('.slx-choice'));
+      const last = await stageBox(page, page.locator('.slx-choice [role=option]').last());
+      const box = await stageBox(page, page.locator('.slx-talk'));
+      expect(last.y + last.height, 'the last choice inside its window').toBeLessThanOrEqual(choice.y + choice.height);
+      expect(choice.y + choice.height, 'the choices stand clear above the dialogue box').toBeLessThanOrEqual(box.y);
+      await shot('talk-choice');
+      await w.key('Enter');   // 「妳不喜歡嗎？」
+      await expect(said).toHaveText('「沒說不喜歡。」');
+      await w.closeTalk();
+      await expect(page.locator('.slx-talk')).toBeHidden();
+      const after = await bondOf();
+      expect(after.seen).toBe(true);
+      expect(after.talk).toBeGreaterThan(0);
+      await partners();
+      await page.locator('.slx-layer [data-id=talk]').click();
+      await expect(said).toHaveText(T.ui2.inn.talkedToday);   // one talk a day
+      await w.closeTalk();
+      await partners();
+      await page.locator('.slx-layer [data-id=gift]').click();
+      await page.locator('.slx-layer.slx-depth-1 [data-id=rin]').click();
+      const gifts = page.locator('.slx-layer.slx-depth-2');
+      await expect(gifts.locator('[data-id=dusk-cloth]')).toContainText(T.ui2.bond.taste.loved);
+      await expect(gifts.locator('[data-id=king-scale]')).toContainText(T.ui2.bond.taste.declined);
+      await shot('gift-menu');
+      await w.key('Escape'); await w.key('Escape'); await w.key('Escape');
+      await go(page, 'status', 'rin');
+      await expect(page.locator('.slx-stat-bond')).toHaveText(T.ui2.bond.line(T.ui2.bond.tiers[1]));
+      await shot('status-bond');
+    }
+    await fitTo(page, 1280, 720);
+    expect(w.errors).toEqual([]);
+  });
 });

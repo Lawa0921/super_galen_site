@@ -789,6 +789,13 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
     bond: {
       tiers: ['相識', '同行', '信賴', '羈絆', '心契'] as readonly string[],
       taste: { loved: '最愛', liked: '喜歡', neutral: '普通', declined: '婉拒' } as Record<string, string>,
+      /** Bond plan Task 14: the status page's line, the handbook's block, the return's tier line. */
+      line: (tier: string) => `好感度　${tier}`,
+      score: (tier: string, n: number) => `${tier}　${n}／100`,
+      source: { memory: '記憶', talk: '談心', gift: '送禮', field: '同隊' } as Record<string, string>,
+      count: (name: string, now: number, cap: number, full: boolean) => `${name}　${now}／${cap}${full ? '（已滿）' : ''}`,
+      known: (item: string, taste: string) => `${item}　${taste}`,
+      rose: (name: string, tier: string) => `${name}的好感度提升到『${tier}』。`,
     },
     /** The suggested builds screen (plan 8h Task 7): each build of a member, what it does and lacks; apply and follow. */
     builds: {

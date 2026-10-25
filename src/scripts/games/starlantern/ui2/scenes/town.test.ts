@@ -881,3 +881,36 @@ describe('TownScene: the romance in town (bond plan Task 13)', () => {
     } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); }
   });
 });
+
+describe('TownScene: the tier line (bond plan Task 14)', () => {
+  it('the tier line follows the banked line, with no draw', async () => {
+    const run = (ups: boolean) => {
+      let draws = 0;
+      const g = new Game(() => { draws++; return 0.5; }, null);
+      g.arrival = [];
+      g.notice = 'banked';
+      g.banked = { items: { moss: 1 }, gold: 0, viaLamp: false, gear: [], overflow: [] };
+      if (ups) g.bondUps.push({ id: 'rin', tier: 2 });
+      const root = document.createElement('div');
+      const s = new TownScene({ game: g, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+      s.enter(root);
+      return { g, root, s, draws: () => draws };
+    };
+    const text = (root: HTMLElement) => root.querySelector('.slx-talk .slx-text')!.textContent;
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const a = run(true);
+    await tick();
+    expect(text(a.root)).toContain('發光苔');   // what came home first
+    a.s.onAction('confirm'); await tick();
+    expect(text(a.root)).toBe('凜的好感度提升到『信賴』。');
+    a.s.onAction('confirm'); await tick();
+    const day = text(a.root);
+    a.s.onAction('confirm'); await tick();
+    expect(a.g.bondUps).toEqual([]);
+    const b = run(false);
+    await tick();
+    b.s.onAction('confirm'); await tick();
+    expect(text(b.root)).toBe(day);   // the same day's line, the same draws
+    expect(a.draws()).toBe(b.draws());
+  });
+});

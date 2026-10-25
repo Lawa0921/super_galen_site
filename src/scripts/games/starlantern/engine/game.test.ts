@@ -6252,3 +6252,40 @@ describe('one heart-to-heart at a time (bond review fix)', () => {
     } finally { BONDS_WRITTEN.splice(0); }
   });
 });
+
+describe('a tier gained on a dive (bond plan Task 14)', () => {
+  it('a run that raised a tier says so', () => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 3;
+    g.state.party.roster.chizuru.bond = { talk: 0, field: 9, gifts: {} };   // 19: one point from 同行
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });
+    g.state.inventory['return-lamp'] = 1;
+    expect(g.useReturnLamp()).toBe(true);
+    expect(g.bondUps).toEqual([{ id: 'chizuru', tier: 1 }]);   // and only her: the others are still 相識
+  });
+
+  it('a wipe keeps the news too', () => {
+    const g = new Game(calm(), memoryStorage(), undefined, 0, HERO_LINEUP);
+    g.state.dungeon.reached.mainline = 3;
+    g.state.party.roster.selene.bond = { talk: 0, field: 9, gifts: {} };
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    stepOnto(g, plantAt(g, 'elite'));
+    for (const e of g.battle!.enemies) e.sleep = 9;
+    for (const p of g.battle!.party) { p.hp = 0; p.alive = false; }
+    g.submitRound({});
+    expect(g.phase).toBe('town');
+    expect(g.bondUps).toEqual([]);   // nothing earned: a wipe is no floor
+    const h = new Game(calm(), memoryStorage(), undefined, 0, HERO_LINEUP);
+    h.state.dungeon.reached.mainline = 3;
+    h.state.party.roster.selene.bond = { talk: 0, field: 9, gifts: {} };
+    expect(h.depart(MAIN, 1)).toEqual({ ok: true });
+    stepOnto(h, plantAt(h, 'elite'));
+    expect(killAll(h).outcome).toBe('win');   // +2: 21, 同行
+    stepOnto(h, plantAt(h, 'elite'));
+    for (const p of h.battle!.party) { p.hp = 0; p.alive = false; }
+    h.submitRound({});
+    expect(h.phase).toBe('town');
+    expect(h.bondUps).toEqual([{ id: 'selene', tier: 1 }]);
+  });
+});

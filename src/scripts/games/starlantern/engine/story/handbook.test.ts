@@ -5,7 +5,7 @@ import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { chainLength, CHAINS } from '../../data/story/chains';
 import { TOWN_FRAGMENTS } from '../../data/story/fragments';
-import { CHAT_COUNT, HOME_OWNERS, SCENE_IDS, SEASON_SCENES, STAGES, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
+import { BONDS_WRITTEN, CHAT_COUNT, ENDINGS_WRITTEN, HOME_OWNERS, ROMANCES_WRITTEN, SCENE_IDS, SEASON_SCENES, STAGES, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
 import { SEASON_TITLES, STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { meet } from '../party';
@@ -265,8 +265,8 @@ describe("the adventurer's handbook", () => {
     const rest = ids.filter((id) => sceneKind(id) !== 'banter');
     expect(new Set(rest).size).toBe(rest.length);
     for (const id of new Set(banters)) expect(banters.filter((b) => b === id), id).toHaveLength(2);
-    // bond plan Task 8: the bond's scenes go on their pages in Task 14 (today none is registered, so the set is the same)
-    expect([...new Set(ids)].sort()).toEqual([...SCENE_IDS].filter((id) => !/^(bond|ending|romance):|^together$/.test(id)).sort());
+    // bond plan Task 14: every scene on its page but the walk with everyone, which is on none
+    expect([...new Set(ids)].sort()).toEqual([...SCENE_IDS].filter((id) => id !== 'together').sort());
     for (const id of CHARACTER_IDS) {
       expect(h.people.find((p) => p.id === id)!.scenes.filter((e) => e.scene.startsWith('chat:')).length).toBe(CHAT_COUNT[id]);
     }
@@ -438,5 +438,58 @@ describe('time and moon: the spring festival in the handbook (Task 7)', () => {
     expect(handbook(s).people.find((p) => p.id === 'chizuru')!.scenes.at(-1)).toMatchObject({ title: `${CHARACTERS.chizuru.name}・春祭`, fresh: true });
     // no one else's page lists it
     for (const p of handbook(s).people.filter((x) => x.id !== 'chizuru')) expect(p.scenes.map((e) => e.scene)).not.toContain('season:spring');
+  });
+});
+
+describe('the handbook and the bond (bond plan Task 14)', () => {
+  const page = (s: GameState, id: CharacterId) => handbook(s).people.find((p) => p.id === id)!;
+  it('the bond page counts every source against its cap', () => {
+    const s = newGame();
+    s.party.roster.rin.memories = 3;
+    s.party.roster.rin.bond = { talk: 5, field: 41, gifts: { 'dusk-cloth': 30 } };
+    const b = page(s, 'rin').bond!;
+    expect(b.tier).toBe(4);
+    expect(b.points).toBe(Math.min(100, 10 + 9 + 5 + 30 + 40));
+    expect(b.sources).toEqual({ memory: [9, 21], talk: [5, 12], gift: [30, 30], field: [40, 40] });
+    expect(page(s, 'hero').bond).toBeUndefined();
+    expect(page(s, 'selene').bond).toBeUndefined();   // not met
+    s.party = meet(s.party, 'selene', 1);
+    expect(page(s, 'selene').bond).toEqual({ tier: 0, points: 10, sources: { memory: [0, 15], talk: [0, 12], gift: [0, 30], field: [0, 40] }, tastes: [] });
+  });
+
+  it('a taste shows only once she has been offered it (a refusal too), in GIFTABLE order', () => {
+    const s = newGame();
+    s.party.roster.rin.bond = { talk: 0, field: 0, gifts: { 'star-tear': 1, 'dusk-cloth': 2, moss: 1 }, refused: ['king-scale'] };
+    expect(page(s, 'rin').bond!.tastes).toEqual([
+      { mat: 'moss', taste: 'neutral' }, { mat: 'dusk-cloth', taste: 'loved' }, { mat: 'star-tear', taste: 'liked' }, { mat: 'king-scale', taste: 'declined' },
+    ]);
+  });
+
+  it('bond scenes, endings and the romance are listed once seen', () => {
+    BONDS_WRITTEN.push('rin', 'liz');
+    ENDINGS_WRITTEN.push('rin', 'liz');
+    ROMANCES_WRITTEN.push('rin', 'liz');
+    const titled = (id: SceneId) => { STORY.scenes[id] = { title: id, lines: [{ who: 'narrator', text: '甲。' }], summary: '乙。' }; };
+    const ids: SceneId[] = ['bond:rin:1', 'bond:rin:2', 'bond:rin:3', 'bond:rin:4', 'ending:rin', 'romance:rin', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4', 'ending:liz', 'romance:liz'];
+    for (const id of ids) titled(id);
+    try {
+      const s = newGame();
+      s.party = meet(s.party, 'liz', 1);
+      s.story.seen.push('bond:rin:1', 'bond:rin:2', 'chat:rin:1', 'bond:liz:1', 'chat:liz:1', 'chat:liz:2');
+      const rin = page(s, 'rin').scenes.map((e) => e.scene);
+      expect(rin.indexOf('bond:rin:1')).toBe(rin.indexOf('chat:rin:1') + 1);   // her bonds after her chats
+      expect(rin).toContain('bond:rin:2');
+      expect(rin).not.toContain('bond:rin:3');
+      expect(page(s, 'liz').scenes.map((e) => e.scene)).toEqual(['chat:liz:1', 'chat:liz:2', 'bond:liz:1']);
+      s.party.roster.rin.oath = true;
+      s.story.seen.push('bond:rin:3', 'ending:rin', 'romance:rin', 'ending:liz');
+      const after = page(s, 'rin').scenes.map((e) => e.scene);
+      expect(after.slice(-2)).toEqual(['ending:rin', 'romance:rin']);
+      expect(after).toContain('bond:rin:3');
+      expect(page(s, 'liz').scenes.map((e) => e.scene).at(-1)).toBe('ending:liz');
+    } finally {
+      BONDS_WRITTEN.splice(0); ENDINGS_WRITTEN.splice(0); ROMANCES_WRITTEN.splice(0);
+      for (const id of ids) delete (STORY.scenes as Partial<typeof STORY.scenes>)[id];
+    }
   });
 });

@@ -117,9 +117,12 @@ export class TownScene implements Scene {
     if (banked && (notice === 'banked' || notice === 'lamp')) says.push({ who: '', text: bankedLine(banked, this.ctx.art) });
     else if (notice) says.push({ who: '', text: T.notices[notice] });
     if (endedLine) says.push({ who: '', text: endedLine });
+    // bond plan ruling 14: who rose a tier on the dive, after what came home; the day's line draws as it did without it
+    const draw = says.length === 0;
+    for (const u of game.bondUps.splice(0)) says.push({ who: '', text: T.ui2.bond.rose(CHARACTERS[u.id].name, T.ui2.bond.tiers[u.tier]) });
     // The day's line. With nothing before it, it is drawn from the game rng as it always was; after a notice it is picked
     // without a draw, so the rng stream (the next portal roll, the next run's seed) is what it was before staging S2.
-    if (!notice || RETURNS.has(notice)) says.push(this.dayLine(says.length === 0));
+    if (!notice || RETURNS.has(notice)) says.push(this.dayLine(draw));
     for (const l of says) await this.speak(l.who, l.text);
     await this.playNight();
     this.refreshCalendar();

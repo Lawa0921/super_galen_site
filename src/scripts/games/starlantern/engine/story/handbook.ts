@@ -4,7 +4,7 @@ import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from '../../data/story/fragments';
-import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, SEASON_SCENES, banterScene, groupScene, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
+import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, SEASON_SCENES, banterScene, bondScene, groupScene, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { memoriesOf } from '../progression';
@@ -13,6 +13,9 @@ import type { CharacterId, Element } from '../types';
 import { MEETINGS } from '../../data/meetings';
 import { followedLeads, nextLead, type Lead } from './leads';
 import { storyPieces } from './events';
+import { bondOf, bondPoints, bondTier, giftPoints, tasteOf } from './bond';
+import { BOND_CAP, BOND_PER_PIECE, GIFTABLE, type BondTier, type Companion, type Taste } from '../../data/story/bond';
+import type { GiftId } from '../types';
 
 /**
  * A found piece plays when it is told (`seen`) or still untold (story L spec §4.7: the handbook may tell it early). `fresh` is
@@ -23,7 +26,13 @@ export interface PiecePage { n: number; scene: SceneId; found: boolean; seen: bo
 export interface MemoryPage { id: CharacterId; met: boolean; fresh: boolean; pieces: PiecePage[] }
 /** A scene the handbook can replay: only scenes already seen are listed. */
 export interface SceneEntry { scene: SceneId; title: string; fresh: boolean }
-export interface PersonPage { id: CharacterId; met: boolean; title: string; segments: string[]; scenes: SceneEntry[] }
+/** Bond plan Task 14: a companion's bond on her page: her tier and points, each source against its cap, what she was offered. */
+export interface BondPage {
+  tier: BondTier; points: number;
+  sources: { memory: [number, number]; talk: [number, number]; gift: [number, number]; field: [number, number] };
+  tastes: { mat: GiftId; taste: Taste }[];
+}
+export interface PersonPage { id: CharacterId; met: boolean; title: string; segments: string[]; scenes: SceneEntry[]; bond?: BondPage }
 export interface TownPage { id: TownFragmentId; status: 'unknown' | 'held' | 'returned'; lines: string[]; scene: SceneEntry | null }
 export interface CodexPage { specials: string[]; sets: string[]; monsters: { id: string; name: string; weak: Element[] | null }[] }
 export interface TruthPage { stage: Stage; unlocked: boolean; text: string | null; scenes: SceneEntry[] }
@@ -87,10 +96,13 @@ export function handbook(s: GameState): Handbook {
     // Rin's page also replays the two of them before her story (the inn night and the first return, Task 10b), her
     // confession, the bellkeeper's arrival and the lone morning after it (continuity fix 4; story depth plan ruling 12); a
     // homecoming sits last on its owner's page (continuity fix 2).
+    // bond plan Task 14: her bond scenes after her chats; her after-story and her romance last (only the ones seen show)
+    const bonds = id === 'hero' ? [] : [1, 2, 3, 4].map((n) => bondScene(id, n));
+    const after: SceneId[] = id === 'hero' ? [] : [`ending:${id}`, `romance:${id}`];
     const own: SceneId[] = id === 'rin'
-      ? ['prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', ...chats, ...banters]
-      : [...chats, ...banters, ...home];
-    return { id, met, title: titleOf(m), segments: STORY.people[id].slice(0, k), scenes: entries(own) };
+      ? ['prologue-inn', 'first-return', 'rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', ...chats, ...bonds, ...banters, ...after]
+      : [...chats, ...bonds, ...banters, ...home, ...after];
+    return { id, met, title: titleOf(m), segments: STORY.people[id].slice(0, k), scenes: entries(own), ...(met && id !== 'hero' ? { bond: bondPage(s, id) } : {}) };
   });
   const town = TOWN_FRAGMENTS.map((f): TownPage => {
     const lines = STORY.town[f.id];
@@ -131,4 +143,25 @@ export function handbook(s: GameState): Handbook {
   const followed = followedLeads(s);
   const leads: LeadsPage = { current: nextLead(s), followed, allMet: followed.length === MEETINGS.length };
   return { memories, people, town, codex, truths, leads };
+}
+
+/** Bond plan Task 14: her bond page (spec §4.8): memory 3 a piece held of her chain's, each other source to its cap; a taste once offered. */
+function bondPage(s: GameState, c: Companion): BondPage {
+  const m = s.party.roster[c];
+  const b = bondOf(m);
+  const healed = storyPieces(s, c) >= chainLength(c);
+  const tastes = GIFTABLE.flatMap((mat): { mat: GiftId; taste: Taste }[] => {
+    if (b.gifts[mat]) return [{ mat, taste: tasteOf(c, mat, healed) ?? 'neutral' }];
+    if (b.refused?.includes(mat)) return [{ mat, taste: 'declined' }];
+    return [];
+  });
+  return {
+    tier: bondTier(m), points: bondPoints(m), tastes,
+    sources: {
+      memory: [BOND_PER_PIECE * memoriesOf(m), BOND_PER_PIECE * chainLength(c)],
+      talk: [Math.min(b.talk, BOND_CAP.talk), BOND_CAP.talk],
+      gift: [Math.min(giftPoints(m), BOND_CAP.gift), BOND_CAP.gift],
+      field: [Math.min(b.field, BOND_CAP.field), BOND_CAP.field],
+    },
+  };
 }

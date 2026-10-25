@@ -2135,3 +2135,14 @@ describe('revealIn in stage px (legibility Task 2a)', () => {
     }
   });
 });
+
+describe('the status page and the bond (bond plan Task 14)', () => {
+  it("a companion's page shows her bond, the hero's does not", () => {
+    const { root } = setup('scarlet', NO_ART, (g) => { g.state.party.roster.scarlet.bond = { talk: 0, field: 10, gifts: {} }; });
+    expect(root.querySelector('.slx-stat-bond')!.textContent).toBe('好感度　同行');
+    const plain = setup('scarlet');
+    expect(plain.root.querySelector('.slx-stat-bond')!.textContent).toBe('好感度　相識');   // no record: the tier its pieces make
+    const hero = setup('hero', NO_ART, (game) => { const p = game.state.party; p.recruited.push('hero'); p.grid[0] = 'hero'; });
+    expect(hero.root.querySelector('.slx-stat-bond')).toBeNull();
+  });
+});

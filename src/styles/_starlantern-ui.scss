@@ -150,8 +150,9 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-talk-face--right { right: 10px; }
 .slx-confirm { left: 50%; top: 50%; translate: -50% -50%; translate: round(down, -50%, 1px) round(down, -50%, 1px); min-width: 200px; text-align: center; }
 .slx-confirm p { margin: 0 0 6px; white-space: pre-line; }
-// Bond plan Task 9: a bond scene's choice, over the dialogue box (its 12px rows, CHOICE_MAX_CHARS at most) while Lorne's plate shows.
-.slx-choice { left: 50%; bottom: 76px; translate: -50% 0; translate: round(down, -50%, 1px) 0; min-width: 200px; }
+// Bond plan Task 9: a bond scene's choice, above the dialogue box (its 12px rows, CHOICE_MAX_CHARS at most) while Lorne's plate shows.
+// Bond plan Task 14: the box stands 10px up and 86px tall while it waits (plate, frame, no text), so the choice sits 4px clear of it.
+.slx-choice { left: 50%; bottom: 100px; translate: -50% 0; translate: round(down, -50%, 1px) 0; min-width: 200px; }
 @media (prefers-reduced-motion: reduce) { .slx-win, .slx-sel::before { animation: none; } }
 
 .slx-ui { transition: opacity 0.15s linear; }
@@ -716,7 +717,8 @@ $slx-mech: (heat: #ff9a10, expose: #5cffa8, mark: #ff6cd9, veil: #92b4ac, ward: 
 .slx-stat-cat-head::before { content: '→'; position: absolute; left: 5px; color: $slx-dim; }
 .slx-stat-cat-head[aria-expanded='true']::before { content: '↓'; }
 .slx-stat-cat-head:hover { color: #fff; }
-.slx-stat-affinity { margin: 0; padding: 2px 6px 2px 20px; color: $slx-dim; }
+.slx-stat-affinity, .slx-stat-bond { margin: 0; padding: 2px 6px 2px 20px; color: $slx-dim; }   // bond plan Task 14: her tier under her affinity
+.slx-hb-bond p { margin: 0; }
 .slx-row-cur { background: linear-gradient(90deg, rgba(232, 196, 106, 0.22), transparent); box-shadow: inset 2px 0 0 $slx-gold; }
 .slx-stat-cat-head.slx-row-cur, .slx-stat-table .slx-row-cur th { color: #fff; }
 /* Fixed layout (plan 8g Task 5): the row names take 22%, the total 11%, and the source columns share the rest evenly, so

@@ -13,6 +13,7 @@ import {
 import type { RaiseFail, TalentFail } from '../../engine/progression';
 import { ABYSS_UNLOCK } from '../../data/hero';
 import { SLOTS, activeIds, expToNext, powersOf, sheetOf, statSources, statsOf } from '../../engine/party';
+import { bondTier } from '../../engine/story/bond';
 import { STAT_CATEGORIES, type StatCategory } from '../../engine/stats';
 import { chainLength } from '../../data/story/chains';
 import type { AnyStat, CharacterId, Member, Slot, StatKey, Stats } from '../../engine/types';
@@ -183,7 +184,9 @@ const stats: StatusTab = {
         : [];
       // The primary heading carries the member's affinity: the primary that converts best, or 全能 for all of them.
       const affinity = c.id === 'primary'
-        ? [el('p', { class: 'slx-stat-affinity', text: t.affinity(def.affinity === 'all' ? t.affinityAll : T.gear.statName[def.affinity]) })]
+        ? [el('p', { class: 'slx-stat-affinity', text: t.affinity(def.affinity === 'all' ? t.affinityAll : T.gear.statName[def.affinity]) }),
+          // bond plan Task 14: a companion's bond tier beside it; Lorne has none
+          ...(id === 'hero' ? [] : [el('p', { class: 'slx-stat-bond', text: T.ui2.bond.line(T.ui2.bond.tiers[bondTier(m)]) })])]
         : [];
       return el('section', { class: 'slx-stat-cat', attrs: { 'data-cat': c.id } }, [head, ...affinity, ...table]);
     });
