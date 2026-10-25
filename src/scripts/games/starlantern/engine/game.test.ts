@@ -6158,3 +6158,76 @@ describe('the night walk and the romance (bond plan Task 10)', () => {
     expect(sceneTime('ending:liz')).toBe('day');
   }));
 });
+
+describe('a romance cut short plays at night (bond plan Task 11)', () => {
+  /** In town after the finale and the festival, Liz chosen and her romance never finished, the town saved. */
+  const chosen = (storage = memoryStorage(), prep?: (g: Game) => void) => {
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    const st = g.state;
+    st.story.act1Cleared = true;
+    st.story.finaleCleared = true;
+    st.story.queue = [];
+    st.story.seen.push('epilogue', 'bond:liz:4');
+    st.party = meet(st.party, 'liz', 1);
+    st.party.roster.liz.memories = 1;
+    st.party.roster.liz.bond = { talk: 12, field: 40, gifts: { 'old-coin': 24 } };   // 10 + 3 + 82 = 95
+    st.party = meet(st.party, 'noel', 1);
+    st.party = meet(st.party, 'selene', 1);   // a pair with a banter ready
+    st.party.roster.noel.memories = 1;
+    st.story.untold = ['mem:noel:1'];
+    prep?.(g);
+    expect(g.chooseRomance('liz')).toEqual({ ok: true, id: 'romance:liz' });   // saved; the walk never ends
+    return g;
+  };
+  const registered = <T,>(f: () => T): T => {
+    ROMANCES_WRITTEN.push('liz');
+    BONDS_WRITTEN.push('liz');
+    try { return f(); } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); }
+  };
+
+  it('a romance cut short plays in the next night', () => registered(() => {
+    const storage = memoryStorage();
+    chosen(storage);
+    const g = Game.boot(calm(), storage);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.arrival).not.toContain('romance:liz');
+    expect(g.night).toContain('romance:liz');
+    expect(g.night[0]).toBe('romance:liz');                         // before any memory
+    expect(g.night.some((id) => id.startsWith('mem:'))).toBe(false); // a romance night tells none
+    expect(g.arrival.some((id) => id.startsWith('banter:'))).toBe(false);
+    expect(g.sceneDone('romance:liz', 'played')).toBe(true);
+    expect(g.state.story.queue).not.toContain('romance:liz');
+  }));
+
+  it('a reload in town keeps it in the night', () => registered(() => {
+    const storage = memoryStorage();
+    chosen(storage);
+    const g = Game.boot(calm(), storage);
+    expect(g.night).toContain('romance:liz');   // the town it was chosen in, read back
+    expect(g.arrival).not.toContain('romance:liz');
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    const b = Game.boot(calm(), storage);       // back in town, before it plays
+    expect(b.night).toContain('romance:liz');
+    expect(b.arrival).not.toContain('romance:liz');
+  }));
+
+  it('the spring festival comes before a romance on the same night', () => registered(() => {
+    expect(SEASON_SCENES.spring).toBe('season:spring');
+    const storage = memoryStorage();
+    chosen(storage, (g) => {
+      const st = g.state;
+      st.party = meet(st.party, 'chizuru', 1);
+      st.party.roster.chizuru.memories = chainLength('chizuru');
+      for (let n = 1; n <= chainLength('chizuru'); n++) st.story.seen.push(memScene('chizuru', n));
+      st.story.seen.push('home:chizuru');
+      st.story.day = 20;
+      st.story.springDay = 20;
+    });
+    const g = Game.boot(calm(), storage);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.night).toEqual(['season:spring', 'romance:liz']);   // no memory
+  }));
+});

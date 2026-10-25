@@ -46,10 +46,16 @@ export const REACTIONS: Partial<Record<ActNode, GroupScene>> = { act2: 'group:ac
  * registered (the writing task adds each with its script); `isSceneId` reads it when called, `SCENE_IDS` when loaded.
  */
 export const SEASON_SCENES: Partial<Record<Season, SceneId>> = { spring: 'season:spring' };   // time and moon Task 8: the spring festival, written
-/** Time and moon ruling 7 (review fix 4): the night's order. The group scene, then the season's scene, then the memories. */
-export const NIGHT_RANK = { group: 0, season: 1, memory: 2 } as const;
-/** A scene the reaction slot holds, played as the night's first item: a group scene, or (after the finale) a season's scene. */
-export const isNightSlot = (id: SceneId): boolean => id.startsWith('group:') || id.startsWith('season:');
+/**
+ * Time and moon ruling 7 (review fix 4): the night's order. The group scene, then the season's scene, then (bond plan Task
+ * 11) a romance cut short, then the memories.
+ */
+export const NIGHT_RANK = { group: 0, season: 1, romance: 1.5, memory: 2 } as const;
+/**
+ * A scene the night plays though the day's list holds it: a group scene or (after the finale) a season's scene in the
+ * reaction slot, and (bond plan ruling 12) a romance cut short, queued, told on the next night (`Game.arrive`, `Game.boot`).
+ */
+export const isNightSlot = (id: SceneId): boolean => id.startsWith('group:') || id.startsWith('season:') || id.startsWith('romance:');
 
 export const memScene = (id: CharacterId, n: number): SceneId => `mem:${id}:${n}`;
 /** Bond plan Task 7: her `n`th bond scene (the 4th is 心契). */

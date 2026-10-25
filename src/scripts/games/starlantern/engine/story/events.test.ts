@@ -1974,3 +1974,14 @@ describe('after the finale: the endings (bond plan Task 10)', () => {
     expect(nextSeasonScene(s, dayOf(s))).toBeNull();
   });
 });
+
+describe('a romance cut short, in the story (bond plan Task 11)', () => {
+  it('the queue still ranks a romance as a day scene', () => {
+    const s = afterFestival();
+    s.story.queue = ['romance:liz'];
+    expect(arrivalScenes(s, { chat: true })).toEqual(['romance:liz']);   // moving it to the night is Game's
+    expect(arrivalScenes(s, { chat: false })).toEqual(['romance:liz']);
+    expect(isNightSlot('romance:liz')).toBe(true);
+    expect(isNightSlot('ending:liz')).toBe(false);
+  });
+});
