@@ -52,7 +52,13 @@ test.describe('delve gen2 旗標', () => {
     await page.goto('/games/delve?seed=e2e-map&autostart=1&fresh=1&gen2=1');
     await page.waitForFunction(() => window.__delveDebug?.game);
     expect(await page.evaluate(() => window.__delveDebug!.mapLabels().map((l) => l.name))).not.toContain('東方大海');
-    await page.evaluate(() => { const g = window.__delveDebug!.game; g.teleport(4300, 330); });
+    // 第一道東海的海面：由 layout 推算（避開島），不寫死 x
+    await page.evaluate(() => {
+      const g = window.__delveDebug!.game, L = g.gen2()!.layout, sea = L.landmass(1, 1);
+      let x = sea.x0 + 20;
+      while (L.regionAt(x)?.kind === 'island') x++;
+      g.teleport(x, L.origin.east.seaY - 2);
+    });
     await expect.poll(() => page.evaluate(() => window.__delveDebug!.mapLabels().map((l) => l.name))).toContain('東方大海');
   });
 

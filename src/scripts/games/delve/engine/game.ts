@@ -4477,7 +4477,9 @@ export class DelveGame {
     if (s?.kind === 'village') { cx = (s.info.x0 + s.info.x1) >> 1; cy = s.info.ground - 2; rk = 'village'; }
     else if (s?.kind === 'hall') { cx = (s.info.x0 + s.info.x1) >> 1; cy = s.info.floorY - 2; rk = 'dwarf_hall'; }
     else return '';
-    return this.discovery.listKnown().find((r) => r.kind === rk && r.contains(cx, cy))?.name ?? '';
+    // 先查已知表；不在已知表的（外圍欄登錄、還沒走過的聚落）退回外圍查詢（gen2Regions，同一份快取）；都沒有 → ''
+    const hit = this.discovery.listKnown().find((r) => r.kind === rk && r.contains(cx, cy)) ?? this.outerRegion?.(cx, cy).find((r) => r.kind === rk);
+    return hit?.name ?? '';
   }
   private talkFolk(n: FolkNpc): void {
     const lines = ROLES[n.role].lines;
@@ -4712,10 +4714,11 @@ export class DelveGame {
     if (!this.settle.cores.length) return '做一個「據點爐心」（石頭 15、木材 5、火把 3）放在地上，蓋好有床的房間，就會有人搬來住。';
     // 地區讀已知表（gen2 家鄉開局全知；舊世界 = 中央 regions）
     const known = this.discovery.listKnown();
-    const vs = this.sites.list('village').find(({ info: v }) => !known.some((r) => r.kind === 'village' && r.contains(v.x0 + 3, v.ground - 2) && this.discovery.isFound(r.id)));
+    // 取不到名字的聚落（siteName = ''）跳過：提示絕不說「」
+    const vs = this.sites.list('village').find(({ key, info: v }) => !known.some((r) => r.kind === 'village' && r.contains(v.x0 + 3, v.ground - 2) && this.discovery.isFound(r.id)) && this.siteName(key) !== '');
     if (vs) { const v = vs.info; return `${dir(v.x0, v.ground)}有一座村子「${this.siteName(vs.key)}」。村民會賣東西、幫你鍛造治療，村長那裡還有委託。`; }
     if (!this.settle.invited.has('healer') && !this.settle.npc('healer')) return '白天在地表多走走：路邊偶爾會遇到旅行藥師，邀請這位藥師到據點，回血會快很多。';
-    const hs = this.sites.list('hall').find(({ info: h }) => !known.some((r) => r.kind === 'dwarf_hall' && r.contains((h.x0 + h.x1) >> 1, h.floorY - 2) && this.discovery.isFound(r.id)));
+    const hs = this.sites.list('hall').find(({ key, info: h }) => !known.some((r) => r.kind === 'dwarf_hall' && r.contains((h.x0 + h.x1) >> 1, h.floorY - 2) && this.discovery.isFound(r.id)) && this.siteName(key) !== '');
     if (hs) { const h = hs.info; return `洞穴層深處住著矮人：${dir((h.x0 + h.x1) >> 1, h.floorY)}有「${this.siteName(hs.key)}」。他們賣地表買不到的礦石，還能用錠幫你升階裝備。`; }
     if (this.dungeon && !known.some((r) => r.kind === 'dungeon' && this.discovery.isFound(r.id))) return `${dir(this.dungeon.bbox.x, this.dungeon.bbox.y)}有一座地下城。帶夠藥水，裡面的鑰匙能打開金寶箱。`;
     if (!this.bossesDefeated.has('lantern_warden')) return '地下城最深處的守望者還沒被擊敗。準備好之後，用燈芯祭品把它叫出來吧。';

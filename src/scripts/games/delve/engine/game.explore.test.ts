@@ -5,7 +5,7 @@ import { DelveGame, type DelveEvent } from './game';
 import { T } from './tiles';
 import { FIXED_DT } from './constants';
 import { LightMap } from './lighting';
-import { Discovery } from './discovery';
+import { Discovery, gen2Regions, gen2RegionById } from './discovery';
 import type { QuestCtx } from './quests';
 import { SEA_Y } from './gen2/profile';
 import { areaLabel } from '../render/model';
@@ -102,21 +102,37 @@ const oldArea = (d: Discovery, x: number, y: number): string => {
   return here[0]?.name ?? d.regionsAt(x, y).find((r) => d.isFound(r.id))?.name ?? '未知之地';
 };
 
+/** 第一道東海的海面（避開島；layout 推算，不寫死 x） */
+function firstSea(g: DelveGame): { x: number; y: number } {
+  const L = g.gen2()!.layout, sea = L.landmass(1, 1);
+  expect(sea.kind).toBe('sea');
+  let x = sea.x0 + 20;
+  while (L.regionAt(x)?.kind === 'island') x++;
+  return { x, y: SEA_Y - 2 };
+}
+/** 提示走到村莊那一步：給一把鐵鎬、放一個據點爐心 */
+function readyForVillageHint(g: DelveGame): void {
+  g.giveGear('iron_pickaxe', 1);
+  g.settle.cores.push({ id: 1, x: g.spawn.x, y: g.spawn.y });
+}
+
 describe('gen2：HUD、提示、探路、委託讀已知地區', () => {
   it('HUD 地區名：gen2 出生點 = 家鄉林地、第一道東海 = 東方大海（不是「未知之地」）；沒走過的外圍 = 未知之地', () => {
     const g = new DelveGame({ seed: 'hud2', worldGen: { kind: 'gen2' } });
     expect(areaLabel(g.discovery, g.spawn.x, g.spawn.y)).toBe('家鄉林地');
-    expect(areaLabel(g.discovery, 4300, SEA_Y - 2)).toBe('未知之地');
-    g.teleport(4300, SEA_Y - 2); g.step(FIXED_DT);
-    expect(areaLabel(g.discovery, 4300, SEA_Y - 2)).toBe('東方大海');
+    const sea = firstSea(g);
+    expect(areaLabel(g.discovery, sea.x, sea.y)).toBe('未知之地');
+    g.teleport(sea.x, sea.y); g.step(FIXED_DT);
+    expect(areaLabel(g.discovery, sea.x, sea.y)).toBe('東方大海');
     // 家鄉的村莊：走進去之後顯示村名（結構比地塊地區小，排前面）
     const v = g.discovery.listKnown().find((r) => r.kind === 'village')!;
     expect(areaLabel(g.discovery, v.ax, v.ay)).not.toBe(v.name);
     g.discovery.visit(v.ax, v.ay);
     expect(areaLabel(g.discovery, v.ax, v.ay)).toBe(v.name);
-    // 蘑菇環境音用的 knownAt：家鄉的蘑菇林中心查得到
+    // 蘑菇環境音用的 knownAt：家鄉的蘑菇林中心查得到（家鄉一定有一座蘑菇林，homeAnchors 不變量）
     const m = g.discovery.listKnown().find((r) => r.kind === 'mushroom_biome');
-    if (m) expect(g.discovery.knownAt(m.ax, m.ay).some((r) => r.id === m.id)).toBe(true);
+    expect(m).toBeDefined();
+    expect(g.discovery.knownAt(m!.ax, m!.ay).some((r) => r.id === m!.id)).toBe(true);
   }, 60_000);
 
   it('舊世界的 HUD 取名不變：與改動前的寫法逐點相同；外圍查詢查到、但不在已知表的地區照舊不顯示', () => {
@@ -134,8 +150,7 @@ describe('gen2：HUD、提示、探路、委託讀已知地區', () => {
 
   it('gen2：提示指向家鄉沒去過的村莊（說得出村名）；聚落名取自已知表', () => {
     const g = new DelveGame({ seed: 'hint2', worldGen: { kind: 'gen2' } }), d = g.discovery;
-    g.giveGear('iron_pickaxe', 1);
-    g.settle.cores.push({ id: 1, x: g.spawn.x, y: g.spawn.y });
+    readyForVillageHint(g);
     const vs = d.listKnown().filter((r) => r.kind === 'village');
     expect(vs.length).toBeGreaterThan(1);
     // 每座村莊的聚落名 = 已知表裡那座村莊的名字
@@ -147,6 +162,29 @@ describe('gen2：HUD、提示、探路、委託讀已知地區', () => {
     const next = g.nextStepHint().match(/村子「([^」]+)」/)![1];
     expect(next).not.toBe(first);
     expect(vs.filter((v) => !d.isFound(v.id)).map((v) => v.name)).toContain(next);
+  }, 60_000);
+
+  it('gen2：不在已知表的聚落（外圍欄登錄、還沒走過）用外圍查詢取名；取不到名字的聚落提示跳過，絕不輸出「」', () => {
+    const g = new DelveGame({ seed: 'hint2', worldGen: { kind: 'gen2' } }), src = g.gen2()!;
+    readyForVillageHint(g);
+    const home = g.discovery.listKnown(), vs = home.filter((r) => r.kind === 'village'), hs = home.filter((r) => r.kind === 'dwarf_hall');
+    // 換一份沒有家鄉已知表的 Discovery（只有外圍查詢 + 反查）：家鄉的村莊 / 地廳都不在已知表，等同外圍欄登錄、還沒走過的聚落
+    const bare = new Discovery(g.regions, { open: true, trackOuter: true });
+    bare.setOuter(gen2Regions(g.seed, src));
+    bare.setResolver(gen2RegionById(g.seed, src));
+    (g as unknown as { cur: { discovery: Discovery } }).cur.discovery = bare;
+    expect(g.discovery.listKnown().some((r) => r.kind === 'village')).toBe(false);
+    for (const r of [...vs, ...hs]) { const s = g.siteAt(r.ax, r.ay)!; expect(g.siteName(s.key)).toBe(r.name); }
+    const named = g.nextStepHint().match(/村子「([^」]*)」/)![1];
+    expect(vs.map((v) => v.name)).toContain(named);
+    // 一個取不到名字的聚落（人工登錄在外圍大陸、那裡沒有村莊地區）：家鄉村莊都走過之後，提示跳過它
+    const far = src.layout.landmass(1, 3), fx = (far.x0 + far.x1) >> 1, ground = src.surfaceAt(fx);
+    g.world.onGenSites!([{ kind: 'village', key: 's-no-name', rot: 0, info: { x0: fx, x1: fx + 40, ground, houses: [], board: { x: fx + 20, y: ground - 1 }, style: 0 } }]);
+    expect(g.siteName('s-no-name')).toBe('');
+    for (const v of vs) bare.visit(v.ax, v.ay);
+    const h = g.nextStepHint();
+    expect(h).not.toContain('「」');
+    expect(h).not.toMatch(/村子/);
   }, 60_000);
 
   it('gen2：探路（scout）標出的地點在 listKnown 裡、還沒去過；委託的 nearestUnfound、markDone 也讀已知表', () => {
