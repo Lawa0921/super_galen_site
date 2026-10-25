@@ -7,7 +7,8 @@ import { BOND_SCENES, GIFT_LINES, RIN_OATH, ROMANCE_LINES, type GiftPools } from
 const RIN_OATH_GIFT_LINES = RIN_OATH.value;
 import { BONDS_WRITTEN, ENDINGS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, bondScene, sceneKind, type SceneId } from './story/scenes';
 import { CHOICE_MAX_CHARS, MAX_LINE_CHARS, STORY, flatLines, isChoice, type ChoiceLine, type SceneLine, type ScriptLine } from './story.zh-TW';
-import { CHIZURU_ARCHAIC, CHIZURU_NEVER, SYLVIE_WORLD, VOICE, dots, opensOnDots, telegraphBreaks } from './story/voiceGates';
+import { CHIZURU_ARCHAIC, CHIZURU_NEVER, SYLVIE_WORLD, VOICE, dots, opensOnDots, pinBeat, telegraphBreaks } from './story/voiceGates';
+import { CHARACTER_IDS } from './characters';
 
 /**
  * Bond plan Task 6 (spec §0 D14, §6.4): a companion's gift reactions are registered whole or not at all. What a written
@@ -334,5 +335,39 @@ describe('bond text: the gift reactions of all nine (bond plan Task 16)', () => 
       'gift:chizuru.loved.0: not her old style', 'gift:chizuru: too little of her own day', 'gift:chizuru: too much old style',
     ]);
     expect(giftVoiceBreaks({ ...EMPTY, gifts: { selene: pools(['「好亮。退路。三條。」', '「收下了。」'], ['「謝謝。」']) } })).toHaveLength(1);   // telegraphese
+  });
+});
+
+// ---- bond plan Task 17: Rin's, Selene's and Chizuru's bond scenes (arcs v7)
+
+describe('bond scenes: Rin, Selene, Chizuru (bond plan Task 17)', () => {
+  it('the three are registered, all four scenes of each written', () => {
+    for (const c of ['rin', 'selene', 'chizuru'] as Companion[]) {
+      expect(BONDS_WRITTEN, c).toContain(c);
+      for (let n = 1; n <= 4; n++) expect(BOND_SCENES[bondScene(c, n)], `${c} ${n}`).toBeDefined();
+    }
+  });
+
+  it('each scene holds its beat, in each reading it branches into (W4)', () => {
+    const noNoel = CHARACTER_IDS.filter((c) => c !== 'noel');
+    // Rin: the needle she wants; owing is not leaving; what she did not say then; the place she picked herself
+    pinBeat('bond:rin:1', { oath: false }, /長半分/);
+    pinBeat('bond:rin:2', { oath: false }, /欠了人就要還/);
+    pinBeat('bond:rin:3', { oath: true }, /那時候不能欠你/);
+    pinBeat('bond:rin:4', { oath: true }, /自己挑的位置/);
+    // Selene: the window she sorry-guessed; the choice she would not make (Noel met or not); a dog first; her first 明天見
+    pinBeat('bond:selene:1', {}, /害的/);
+    pinBeat('bond:selene:2', {}, /怕選錯/);
+    pinBeat('bond:selene:2', {}, /妳明明知道/);
+    pinBeat('bond:selene:2', { met: noNoel }, /有人繞了遠路/);
+    pinBeat('bond:selene:3', {}, /是一隻狗/);
+    pinBeat('bond:selene:4', { full: ['selene'] }, /明天見，洛恩/);
+    // Chizuru: paying more than asked; the great-grandson (her fourth piece told or not); the new rules; never late here
+    pinBeat('bond:chizuru:1', {}, /店家會吃虧/);
+    pinBeat('bond:chizuru:2', { seen: [] }, /曾祖母/);
+    pinBeat('bond:chizuru:2', { seen: [] }, /抱回懷裡/);
+    pinBeat('bond:chizuru:2', { seen: ['mem:chizuru:4'] }, /總該還有人在/);
+    pinBeat('bond:chizuru:3', {}, /也是我贏/);
+    pinBeat('bond:chizuru:4', { full: ['chizuru'] }, /一次也沒有遲到過/);
   });
 });

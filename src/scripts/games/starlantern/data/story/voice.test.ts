@@ -52,6 +52,8 @@ const POLISHED: string[] = [
   'tierUnlock',
   // Time and moon Task 8: the spring festival at Chizuru's shrine
   'scenes.season:',
+  // Bond plan Tasks 17-19: each companion's four bond scenes, as they are written
+  'scenes.bond:rin:', 'scenes.bond:selene:', 'scenes.bond:chizuru:',
 ];
 
 type Scope = readonly string[];

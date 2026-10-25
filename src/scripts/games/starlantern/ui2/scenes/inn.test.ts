@@ -15,6 +15,15 @@ import { CHARACTERS } from '../../data/characters';
 import { meet } from '../../engine/party';
 import { chainLength } from '../../data/story/chains';
 import { withTold } from '../../engine/testing';
+/**
+ * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
+ * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
+ */
+const BOND_BASE = [...BONDS_WRITTEN];
+const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
+const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+const SCENES_BASE = { ...STORY.scenes };
+const scenesBack = (id: keyof typeof STORY.scenes): void => { if (SCENES_BASE[id]) STORY.scenes[id] = SCENES_BASE[id]; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
 
 function setup(storage = memoryStorage()) {
   const game = new Game(constRng(0.5), storage, undefined, 0, LEGACY_LINEUP);
@@ -232,7 +241,7 @@ describe('InnScene: the calendar (time and moon Task 4)', () => {
 /** Bond plan Tasks 12-14: Rin's first heart-to-heart registered for the test with a scene of its own, taken out after. */
 function stageRinTalk(): () => void {
   const id = 'bond:rin:1' as const;
-  BONDS_WRITTEN.push('rin');
+  bondsAdd('rin');
   STORY.scenes[id] = {
     title: '凜・羈絆 1', summary: '凜說了一件小事。',
     lines: [
@@ -241,7 +250,7 @@ function stageRinTalk(): () => void {
       { who: 'narrator', text: '四' },
     ],
   };
-  return () => { BONDS_WRITTEN.splice(0); delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
+  return () => { bondsBack(); scenesBack(id); };
 }
 /** Rin at 同行 with her second piece: her first heart-to-heart is open. */
 const rinReady = (game: Game): void => {
@@ -433,7 +442,7 @@ describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
 
   it('夜裡走走: only while the walk is open; the last row is 和大家一起; 否 first; she is for keeps', async () => {
     ROMANCES_WRITTEN.push('liz');
-    BONDS_WRITTEN.push('liz');
+    bondsAdd('liz');
     const id = 'romance:liz' as const;
     STORY.scenes[id] = { title: '莉茲・夜路', summary: '兩個人走了一段夜路。', lines: [{ who: 'liz', text: '走吧' }, { who: 'rin', text: '路上小心', if: { met: 'rin' } }] };
     try {
@@ -460,12 +469,12 @@ describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
       expect(t.game.state.story.seen).toContain(id);
       t.partners();
       expect(t.rows().map(t.label)).toEqual(['談心', '送禮']);   // asked: no walk until the next return
-    } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; }
+    } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); scenesBack(id); }
   });
 
   it('和大家一起 writes nothing; unwritten, it is a line', () => {
     ROMANCES_WRITTEN.push('liz');
-    BONDS_WRITTEN.push('liz');
+    bondsAdd('liz');
     try {
       const t = open((g) => {
         const st = g.state;
@@ -481,7 +490,7 @@ describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
       expect(t.text()).toBe('大家一起在星燈下走了一段路。');
       expect(JSON.stringify(t.game.state)).toBe(before);
       expect(t.game.walkOpen()).toBe(false);
-    } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); }
+    } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); }
   });
 });
 

@@ -5592,6 +5592,7 @@ test.describe('starlantern', () => {
       expect(choice.y + choice.height, 'the choices stand clear above the dialogue box').toBeLessThanOrEqual(box.y);
       // its longest row and its frame show whole: no portrait covers it (review of Tasks 12-14)
       expect(last.x + last.width, 'the longest choice inside its window').toBeLessThanOrEqual(choice.x + choice.width);
+      await expect(page.locator('.slx-talk-face')).toBeVisible();   // his portrait lands a moment after the box (late art)
       const face = await stageBox(page, page.locator('.slx-talk-face'));
       const apart = choice.x + choice.width <= face.x || face.x + face.width <= choice.x || choice.y + choice.height <= face.y || face.y + face.height <= choice.y;
       expect(apart, `the choice ${JSON.stringify(choice)} clear of the portrait ${JSON.stringify(face)}`).toBe(true);

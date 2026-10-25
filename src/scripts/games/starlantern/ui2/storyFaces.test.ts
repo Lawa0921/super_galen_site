@@ -5,7 +5,12 @@ import { STORY, type ScriptLine, flatLines } from '../data/story.zh-TW';
 import { Game } from '../engine/game';
 import { constRng } from '../engine/testing';
 import type { CharacterId } from '../engine/types';
-import { BANTER_GATE, CHAT_GATE, SCENE_IDS, heavyScene } from '../data/story/scenes';
+import { BANTER_GATE, CHAT_GATE, SCENE_IDS, heavyScene, registeredBondScenes } from '../data/story/scenes';
+/**
+ * Bond plan Task 17: the bond's copy (registered as each companion is written) keeps every face rule below, checked line by
+ * line; the counts locked here are the main script's, so a newly written bond scene does not move them.
+ */
+const BOND_COPY = new Set<string>(registeredBondScenes());
 import { MOODS_OF, NORMAL_SMILES, PUBLISHED_FACES, allArtUrls, art, type StoryMood } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { GRAVE, GRAVE_FALLBACK, HAPPY, NEAR_FACE, speakerOf } from './story';
@@ -109,7 +114,7 @@ describe('companion grave faces', () => {
       if (typeof l.who === 'string' && typeof l.text === 'string') { lines.push(l as ScriptLine); return; }
       for (const v of Object.values(o)) walk(v);
     };
-    walk(STORY);
+    walk({ ...STORY, scenes: Object.fromEntries(Object.entries(STORY.scenes).filter(([id]) => !BOND_COPY.has(id))) });
     const heavy = lines.filter((l) => NORMAL_SMILES.has(l.who) && l.mood && GRAVE.has(l.mood));
     const s = state();
     const hidden = heavy.filter((l) => !speakerOf(l.who, s, ART, l.mood).face).map((l) => `${l.who} ${l.mood} ${l.text}`);
@@ -215,7 +220,7 @@ describe('faces in a heavy scene (staging S3)', () => {
       const t: Record<string, number> = {};
       const hidden: string[] = [];
       for (const id of SCENE_IDS) {
-        if (!heavyScene(id)) continue;
+        if (!heavyScene(id) || BOND_COPY.has(id)) continue;
         for (const l of flatLines(STORY.scenes[id].lines)) {
           if (l.who !== 'hero' && l.who !== 'rin') continue;
           const s = state();
@@ -253,7 +258,7 @@ describe('faces in a heavy scene (staging S3)', () => {
         const shown = speakerOf(l.who, s, ART, mood, heavy).face;
         const normal = art.portrait(l.who, 'normal');
         const k = !shown ? 'hidden' : shown === art.portrait(l.who, mood) ? 'exact' : shown !== normal ? 'near' : NORMAL_SMILES.has(l.who) || l.who === 'hero' ? 'smiling-normal' : 'calm-normal';
-        tally[`${heavy ? 'heavy' : 'light'} ${k}`] = (tally[`${heavy ? 'heavy' : 'light'} ${k}`] ?? 0) + 1;
+        if (!BOND_COPY.has(id)) tally[`${heavy ? 'heavy' : 'light'} ${k}`] = (tally[`${heavy ? 'heavy' : 'light'} ${k}`] ?? 0) + 1;
         if (heavy && k === 'smiling-normal' && !HAPPY.has(mood)) smiling.push(`${id} ${l.who} ${mood} ${l.text}`);
         if (heavy && k === 'hidden') hiddenHeavy.push(`${id} ${l.who} ${mood} ${l.text}`);
       }
@@ -309,7 +314,7 @@ describe('faces wave 4 (affinity plan Task A)', () => {
 
   it('each tagged line in the script shows the exact wave-4 face of its speaker and era', () => {
     const lines = tagged();
-    expect(lines.map(({ l }) => l.mood).sort()).toEqual([
+    expect(lines.filter(({ scene }) => !BOND_COPY.has(scene)).map(({ l }) => l.mood).sort()).toEqual([
       ...Array(6).fill('averted'), ...Array(4).fill('blush'), ...Array(6).fill('excited'), ...Array(12).fill('smug'), ...Array(2).fill('unguarded'),
     ]);
     for (const { scene, l } of lines) {

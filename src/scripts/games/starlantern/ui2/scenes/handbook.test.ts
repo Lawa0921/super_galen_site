@@ -17,6 +17,15 @@ import { HandbookScene, tabsFor } from './handbook';
 import { AFFIXES, AFFIX_IDS } from '../../data/affixes';
 import { TIERS } from '../../data/difficulty';
 import { HELL_BOSS_DEPTH, NIGHTMARE_DEPTH } from '../../engine/tiers';
+/**
+ * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
+ * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
+ */
+const BOND_BASE = [...BONDS_WRITTEN];
+const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
+const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+const SCENES_BASE = { ...STORY.scenes };
+const scenesBack = (id: keyof typeof STORY.scenes): void => { if (SCENES_BASE[id]) STORY.scenes[id] = SCENES_BASE[id]; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
 
 const H = T.ui2.handbook;
 
@@ -440,7 +449,7 @@ describe('HandbookScene: the bond (bond plan Task 14)', () => {
   });
 
   it('a replayed bond scene adds nothing', async () => {
-    BONDS_WRITTEN.push('rin');
+    bondsAdd('rin');
     STORY.scenes['bond:rin:1'] = {
       title: '凜・羈絆 1', summary: '一件小事。',
       lines: [{ who: 'hero', choices: [{ tone: 'stay', text: '（坐下。）', reply: [{ who: 'rin', text: '嗯。' }] }, { tone: 'ask', text: '「然後？」', reply: [{ who: 'rin', text: '沒了。' }] }] }],
@@ -457,6 +466,6 @@ describe('HandbookScene: the bond (bond plan Task 14)', () => {
       t.s.onAction('confirm');
       await t.settle();
       expect(t.game.state.party.roster.rin.bond!.talk).toBe(0);
-    } finally { BONDS_WRITTEN.splice(0); delete (STORY.scenes as Partial<typeof STORY.scenes>)['bond:rin:1']; }
+    } finally { bondsBack(); scenesBack('bond:rin:1'); }
   });
 });

@@ -23,6 +23,13 @@ import { NIGHT_BEATS } from '../data/story.zh-TW';
 import { MAX_DAY, SPRING_AFTER, dayOf } from './calendar';
 import { BONDS_WRITTEN, ENDINGS_WRITTEN, ROMANCES_WRITTEN, SEASON_SCENES, TOGETHER_WRITTEN, isSceneId, memScene, type SceneId } from '../data/story/scenes';
 import { meet } from './party';
+/**
+ * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
+ * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
+ */
+const BOND_BASE = [...BONDS_WRITTEN];
+const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
+const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -1451,9 +1458,9 @@ describe('bond scene ids in the save (bond plan Task 8)', () => {
 describe('bond scenes and the story they need (bond review fix)', () => {
   const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
   const registered = (f: () => void) => {
-    BONDS_WRITTEN.push('selene', 'rin');
+    bondsAdd('selene', 'rin');
     ENDINGS_WRITTEN.push('liz');
-    try { f(); } finally { BONDS_WRITTEN.splice(0); ENDINGS_WRITTEN.splice(0); }
+    try { f(); } finally { bondsBack(); ENDINGS_WRITTEN.splice(0); }
   };
   /** Selene met with her pieces told and a bond worth `field` more, after the finale when `after`. */
   const story = (o: { field?: number; after?: boolean } = {}): GameState => {

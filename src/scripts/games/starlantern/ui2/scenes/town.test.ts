@@ -17,6 +17,15 @@ import { linesOf } from '../story';
 import { sceneDone } from '../../engine/story/events';
 import { meet } from '../../engine/party';
 import type { CharacterId } from '../../engine/types';
+/**
+ * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
+ * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
+ */
+const BOND_BASE = [...BONDS_WRITTEN];
+const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
+const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+const SCENES_BASE = { ...STORY.scenes };
+const scenesBack = (id: keyof typeof STORY.scenes): void => { if (SCENES_BASE[id]) STORY.scenes[id] = SCENES_BASE[id]; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
 
 describe('TownScene', () => {
   it('shows place, gold and the facility menu with a greeting', () => {
@@ -782,7 +791,7 @@ describe('TownScene: the calendar (time and moon Task 4)', () => {
 /** Bond plan Tasks 12-14: Rin's first heart-to-heart registered for the test with a scene of its own, taken out after. */
 function stageRinTalk(): () => void {
   const id = 'bond:rin:1' as const;
-  BONDS_WRITTEN.push('rin');
+  bondsAdd('rin');
   STORY.scenes[id] = {
     title: '凜・羈絆 1', summary: '凜說了一件小事。',
     lines: [
@@ -791,7 +800,7 @@ function stageRinTalk(): () => void {
       { who: 'narrator', text: '四' },
     ],
   };
-  return () => { BONDS_WRITTEN.splice(0); delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
+  return () => { bondsBack(); scenesBack(id); };
 }
 /** Rin at 同行 with her second piece: her first heart-to-heart is open. */
 const rinReady = (game: Game): void => {
@@ -842,7 +851,7 @@ describe('TownScene: the romance in town (bond plan Task 13)', () => {
 
   it('the romance lines join the pool with one draw', async () => {
     ROMANCES_WRITTEN.push('liz');
-    BONDS_WRITTEN.push('liz');
+    bondsAdd('liz');
     ROMANCE_LINES.liz = ['戀甲', '戀乙'];
     try {
       let draws = 0;
@@ -862,12 +871,12 @@ describe('TownScene: the romance in town (bond plan Task 13)', () => {
       mk(h);
       await new Promise((r) => setTimeout(r, 0));
       expect(first).toBe(none);   // the pool is longer, the draws the same
-    } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); delete ROMANCE_LINES.liz; }
+    } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); delete ROMANCE_LINES.liz; }
   });
 
   it('the inn shows 新 while a night walk waits', async () => {
     ROMANCES_WRITTEN.push('liz');
-    BONDS_WRITTEN.push('liz');
+    bondsAdd('liz');
     try {
       const g = new Game(constRng(0.5), null);
       after(g);
@@ -878,7 +887,7 @@ describe('TownScene: the romance in town (bond plan Task 13)', () => {
       g.walkTogether();
       expect(root.querySelector('.slx-town-menu [data-id=inn] .slx-fresh')).not.toBeNull();   // read on the next arrival
       expect(mk(g).querySelector('.slx-town-menu [data-id=inn] .slx-fresh')).toBeNull();
-    } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); }
+    } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); }
   });
 });
 

@@ -5,7 +5,7 @@ import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { chainLength, CHAINS } from '../../data/story/chains';
 import { TOWN_FRAGMENTS } from '../../data/story/fragments';
-import { BONDS_WRITTEN, CHAT_COUNT, ENDINGS_WRITTEN, HOME_OWNERS, ROMANCES_WRITTEN, SCENE_IDS, SEASON_SCENES, STAGES, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
+import { BONDS_WRITTEN, CHAT_COUNT, ENDINGS_WRITTEN, HOME_OWNERS, ROMANCES_WRITTEN, SCENE_IDS, SEASON_SCENES, STAGES, bondScene, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
 import { SEASON_TITLES, STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { meet } from '../party';
@@ -14,6 +14,15 @@ import type { CharacterId } from '../types';
 import { handbook } from './handbook';
 import { withTold } from '../testing';
 import { arrivalScenes, onReturn, sceneDone } from './events';
+/**
+ * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
+ * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
+ */
+const BOND_BASE = [...BONDS_WRITTEN];
+const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
+const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+const SCENES_BASE = { ...STORY.scenes };
+const scenesBack = (id: keyof typeof STORY.scenes): void => { if (SCENES_BASE[id]) STORY.scenes[id] = SCENES_BASE[id]; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
 
 /** Rin's banters, in the pairs' fixed order: what her people page lists after her chats (B1, B2; ids are frozen once shipped). */
 const RIN_BANTERS: SceneId[] = [
@@ -229,6 +238,7 @@ describe("the adventurer's handbook", () => {
     // Task 10b: the inn night and the first return are the two of them before her story; they sit on her page, in story order.
     expect(rin.scenes.map((e) => [e.scene, e.fresh])).toEqual([
       ['prologue-inn', false], ['first-return', true], ['rin-reveal', true], ['rin-confess', false], ['bellkeeper-arrives', false], ['hero-alone', false], ['chat:rin:1', false], ['chat:rin:2', true], ['chat:rin:3', false], ['chat:rin:4', false],
+      ...(BONDS_WRITTEN.includes('rin') ? [1, 2, 3, 4].map((n) => [bondScene('rin', n), false]) : []),   // bond plan Task 17: her bond scenes after her chats
       ...RIN_BANTERS.map((id) => [id, false]),   // B1: her banters follow her chats, in the pairs' order (B2: all of them)
     ]);
     expect(h.town.find((t) => t.id === 'orik')!.scene!.fresh).toBe(true);
@@ -466,7 +476,7 @@ describe('the handbook and the bond (bond plan Task 14)', () => {
   });
 
   it('bond scenes, endings and the romance are listed once seen', () => {
-    BONDS_WRITTEN.push('rin', 'liz');
+    bondsAdd('rin', 'liz');
     ENDINGS_WRITTEN.push('rin', 'liz');
     ROMANCES_WRITTEN.push('rin', 'liz');
     const titled = (id: SceneId) => { STORY.scenes[id] = { title: id, lines: [{ who: 'narrator', text: '甲。' }], summary: '乙。' }; };
@@ -488,8 +498,8 @@ describe('the handbook and the bond (bond plan Task 14)', () => {
       expect(after).toContain('bond:rin:3');
       expect(page(s, 'liz').scenes.map((e) => e.scene).at(-1)).toBe('ending:liz');
     } finally {
-      BONDS_WRITTEN.splice(0); ENDINGS_WRITTEN.splice(0); ROMANCES_WRITTEN.splice(0);
-      for (const id of ids) delete (STORY.scenes as Partial<typeof STORY.scenes>)[id];
+      bondsBack(); ENDINGS_WRITTEN.splice(0); ROMANCES_WRITTEN.splice(0);
+      for (const id of ids) scenesBack(id);
     }
   });
 });

@@ -1974,7 +1974,7 @@ export function bondSceneEntries(
 ): [SceneId, Scene][] {
   const entry = (id: SceneId, title: string): [SceneId, Scene] => [id, { title, ...written(texts[id], id) }];
   return [
-    ...w.bonds.flatMap((c) => [1, 2, 3, 4].map((n) => entry(bondScene(c, n), `${nameOf(c)}・羈絆 ${n}`))),
+    ...w.bonds.flatMap((c) => [1, 2, 3, 4].map((n) => entry(bondScene(c, n), `${nameOf(c)}・羈絆${numeral(n)}`))),
     ...w.endings.map((c) => entry(`ending:${c}`, `${nameOf(c)}・後日談`)),
     ...w.romances.map((c) => entry(`romance:${c}`, `${nameOf(c)}・夜路`)),
     ...(w.together ? [entry('together', '夜路・和大家一起')] : []),

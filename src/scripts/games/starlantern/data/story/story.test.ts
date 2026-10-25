@@ -7,7 +7,7 @@ import { MEETINGS } from '../meetings';
 import { bondSceneEntries, FOUND_LINE, GROUP_TITLES, NIGHT_BEATS, SEASON_TITLES, NIGHT_PLACE, DAWN_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, CHOICE_MAX_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, flatLines, isChoice, worstCount, type ChoiceLine, type LineWhen, type SceneLine, type ScriptLine } from '../story.zh-TW';
 import { PL } from './places';
 import { BOND_GATE, type Companion } from './bond';
-import { ROMANCES_WRITTEN } from './scenes';
+import { BONDS_WRITTEN, ROMANCES_WRITTEN, bondScene } from './scenes';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds, type CalendarNow } from './chains';
 import { AFTER_CHOICE, dots, groupShapeBreaks, opensOnDots, pinBeat, sceneReadings, speakerOf, storyTexts, type Text } from './voiceGates';
 import { T } from '../text.zh-TW';
@@ -1051,7 +1051,8 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
     for (const t of storyTexts()) if (t.text.includes('我想看見')) expect(t.key, t.key).toMatch(/^scenes\.mem:selene:5\./);
     // She calls him 「洛恩先生」 until her memories are whole; her last piece is the first plain 「洛恩」 (style bible, I-22).
     for (const t of spokenBy('selene')) {
-      if (t.key.startsWith('scenes.mem:selene:5.') || t.line?.if?.full === 'selene') continue;
+      // bond plan Task 17: her 心契 opens only once she is whole (BOND_GATE.selene[4].full), so it says 「洛恩」
+      if (t.key.startsWith('scenes.mem:selene:5.') || t.key.startsWith('scenes.bond:selene:4.') || t.line?.if?.full === 'selene') continue;
       for (const m of t.text.matchAll(/洛恩(.?)/g)) expect(m[1], t.key).toBe('先');
     }
     expect(linesOf('mem:selene:5').some((l) => l.who === 'selene' && /洛恩(?!先生)/.test(l.text))).toBe(true);
@@ -3725,7 +3726,9 @@ describe('story L Task 15: the script reads fewer ways (spec §10)', () => {
   const ifs = (id: SceneId) => flatLines(STORY.scenes[id].lines).filter((l) => l.if).length;
 
   it('where a gate or a plain wording does it, a scene reads one way: the conditional lines, scene by scene', () => {
-    const all = storyTexts().filter((t) => t.line?.if);
+    // bond plan Task 17: the bond's copy branches by design (ruling M1: its first three scenes never expire, so they read
+    // either side of her last piece or of a friend met); this count is the main script's, the bond's is its own
+    const all = storyTexts().filter((t) => t.line?.if && !/^scenes\.(bond|ending|romance):|^scenes\.together\./.test(t.key));
     // Story L began at 125 (spec §10 counted 123: chat:rin:2 and :3 read her choice through helpers, and town:orik was left
     // out). Tasks 12 and 13 took 12, Task 14 keeps the finale at 24, Task 15 takes 9 more.
     // Two rows read as the spec could not: chat:scarlet:2 splits on what her last piece undoes (the debt, the duty), not only
@@ -3894,8 +3897,8 @@ describe('the bond script format, and the gates that read it (bond plan Task 7)'
 
 describe('registered bond scenes (bond plan Task 8)', () => {
   it('registered bond scenes join STORY.scenes', () => {
-    // today nothing is registered, so nothing joins
-    expect(bondSceneEntries()).toEqual([]);
+    // what is registered joins, in order (bond plan Task 17 registered Rin, Selene and Chizuru)
+    expect(bondSceneEntries().map(([id]) => id)).toEqual(BONDS_WRITTEN.flatMap((c) => [1, 2, 3, 4].map((n) => bondScene(c, n))));
     const s = (t: string) => ({ lines: [{ who: 'narrator' as const, text: t }], summary: '概要。' });
     const texts: Partial<Record<SceneId, { lines: SceneLine[]; summary: string }>> = {
       'bond:selene:1': s('一'), 'bond:selene:2': s('二'), 'bond:selene:3': s('三'), 'bond:selene:4': s('四'),
@@ -3903,7 +3906,7 @@ describe('registered bond scenes (bond plan Task 8)', () => {
     };
     const got = Object.fromEntries(bondSceneEntries({ bonds: ['selene'], endings: ['liz'], romances: ['rin'], together: true }, texts));
     expect(Object.keys(got)).toEqual(['bond:selene:1', 'bond:selene:2', 'bond:selene:3', 'bond:selene:4', 'ending:liz', 'romance:rin', 'together']);
-    expect(got['bond:selene:2'].title).toBe('瑟蕾・羈絆 2');
+    expect(got['bond:selene:2'].title).toBe('瑟蕾・羈絆二');
     expect(got['ending:liz'].title).toBe('莉茲・後日談');
     expect(got['romance:rin'].title).toBe('凜・夜路');
     expect(got.together.title).toBe('夜路・和大家一起');

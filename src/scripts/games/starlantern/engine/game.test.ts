@@ -60,6 +60,13 @@ import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
 import { BONDS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, sceneTime } from '../data/story/scenes';
 import { today } from './story/bond';
 import { withBondEarn, withBondScale } from './testing';
+/**
+ * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
+ * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
+ */
+const BOND_BASE = [...BONDS_WRITTEN];
+const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
+const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -6033,7 +6040,7 @@ describe('gifts in the game (bond plan Task 6)', () => {
 
 describe('a bond choice (bond plan Task 8)', () => {
   it('a choice counts once', () => {
-    BONDS_WRITTEN.push('selene');
+    bondsAdd('selene');
     try {
       const g = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
       g.state.party = meet(g.state.party, 'selene', 1);
@@ -6054,7 +6061,7 @@ describe('a bond choice (bond plan Task 8)', () => {
       g.pending.push('bond:selene:3');
       expect(g.bondChoice('bond:selene:3', 'promise')).toBe(true);
       expect(talk()).toBe(12);                                        // the cap
-    } finally { BONDS_WRITTEN.splice(0); }
+    } finally { bondsBack(); }
   });
 });
 
@@ -6065,7 +6072,7 @@ describe('a talk a day (bond plan Task 9)', () => {
     g.state.party.roster.rin.bond = { talk: 0, field: 10, gifts: {} };   // 10 + 6 + 10 = 26, 同行
     return g;
   };
-  const registered = <T,>(f: () => T): T => { BONDS_WRITTEN.push('rin'); try { return f(); } finally { BONDS_WRITTEN.splice(0); } };
+  const registered = <T,>(f: () => T): T => { bondsAdd('rin'); try { return f(); } finally { bondsBack(); } };
 
   it('one talk a day', () => registered(() => {
     const g = ready();
@@ -6113,8 +6120,8 @@ describe('the night walk and the romance (bond plan Task 10)', () => {
   };
   const registered = <T,>(f: () => T): T => {
     ROMANCES_WRITTEN.push('liz');
-    BONDS_WRITTEN.push('liz');
-    try { return f(); } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); TOGETHER_WRITTEN.value = false; }
+    bondsAdd('liz');
+    try { return f(); } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); TOGETHER_WRITTEN.value = false; }
   };
 
   it('the choice is for keeps', () => registered(() => {
@@ -6185,8 +6192,8 @@ describe('a romance cut short plays at night (bond plan Task 11)', () => {
   };
   const registered = <T,>(f: () => T): T => {
     ROMANCES_WRITTEN.push('liz');
-    BONDS_WRITTEN.push('liz');
-    try { return f(); } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); }
+    bondsAdd('liz');
+    try { return f(); } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); }
   };
 
   it('a romance cut short plays in the next night', () => registered(() => {
@@ -6238,7 +6245,7 @@ describe('a romance cut short plays at night (bond plan Task 11)', () => {
 
 describe('one heart-to-heart at a time (bond review fix)', () => {
   it('opening a second talk while one is pending returns null', () => {
-    BONDS_WRITTEN.push('rin', 'selene');
+    bondsAdd('rin', 'selene');
     try {
       const g = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
       g.state.party.roster.rin.memories = 2;
@@ -6253,7 +6260,7 @@ describe('one heart-to-heart at a time (bond review fix)', () => {
       expect(g.openBond('rin')).toBeNull();             // nor the same one twice
       expect(g.sceneDone('bond:rin:1', 'played')).toBe(true);
       expect(g.openBond('selene')).toBeNull();          // and once done, today's talk is had
-    } finally { BONDS_WRITTEN.splice(0); }
+    } finally { bondsBack(); }
   });
 });
 
