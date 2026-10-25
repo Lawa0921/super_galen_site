@@ -2,7 +2,9 @@ import {
   BOND_CAP, BOND_MAX, BOND_PER_PIECE, BOND_START, BOND_TIER_AT, GIFTABLE, GIFT_REPEAT_FULL, GIFT_TASTE, GIFT_VALUE,
   type BondTier, type Companion, type Taste,
 } from '../../data/story/bond';
+import { dayOf } from '../calendar';
 import { memoriesOf } from '../progression';
+import type { GameState } from '../state';
 import type { BondRecord, GiftId, Member } from '../types';
 
 /**
@@ -62,6 +64,16 @@ export function tierAt(points: number): BondTier {
   let tier = 0;
   for (let t = 1; t < BOND_TIER_AT.length; t++) if (points >= BOND_TIER_AT[t]) tier = t;
   return tier as BondTier;
+}
+
+/**
+ * Today's gifts and talk (bond plan ruling 10): what `story.bondDay` holds when it is today (`dayOf`), and nothing on any
+ * other day. Every read of `gifted` and `talked` goes through here.
+ */
+export function today(s: GameState): { gifted: Companion[]; talked: boolean } {
+  const st = s.story;
+  if (st.bondDay !== dayOf(s)) return { gifted: [], talked: false };
+  return { gifted: [...(st.gifted ?? [])], talked: st.talked === true };
 }
 
 /** Her tier; the hero's is always 0. */

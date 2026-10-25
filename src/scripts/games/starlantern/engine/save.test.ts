@@ -21,7 +21,8 @@ import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 import { NIGHT_BEATS } from '../data/story.zh-TW';
 import { MAX_DAY, SPRING_AFTER, dayOf } from './calendar';
-import { SEASON_SCENES, isSceneId, type SceneId } from '../data/story/scenes';
+import { SEASON_SCENES, isSceneId, memScene, type SceneId } from '../data/story/scenes';
+import { meet } from './party';
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -1304,5 +1305,102 @@ describe('time and moon: the festival recorded in the save (Task 7 review)', () 
     const summer = recorded();
     (summer.story as { festival?: unknown }).festival = 'season:summer';   // no such scene written
     expect(status(summer), 'unregistered').toBe('corrupt');
+  });
+});
+
+describe('bond in the save (bond plan Task 2)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  /** Day 5, the finale cleared; Rin with a bond, and Selene met (`told`: all her pieces told). */
+  const base = (told = false): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.story.day = 5;
+    g.party.roster.rin.bond = { talk: 5, field: 12, gifts: { 'dusk-cloth': 2 }, refused: ['king-scale'] };
+    g.party = meet(g.party, 'selene', 1);
+    if (told) {
+      g.party.roster.selene.memories = chainLength('selene');
+      for (let k = 1; k <= chainLength('selene'); k++) g.story.seen.push(memScene('selene', k));
+    }
+    return g;
+  };
+  const corrupt = (name: string, mut: (g: GameState) => void, told = false) => {
+    const g = base(told);
+    mut(g);
+    expect(status(g), name).toBe('corrupt');
+  };
+  const ok = (name: string, mut: (g: GameState) => void, told = false) => {
+    const g = base(told);
+    mut(g);
+    expect(status(g), name).toBe('ok');
+  };
+
+  it('the save version stays 9', () => {
+    expect(SAVE_VERSION).toBe(9);
+    expect(status(base())).toBe('ok');
+  });
+
+  it('every bond field round-trips', () => {
+    const g = base();
+    g.story.bondDay = 5;
+    g.story.gifted = ['rin'];
+    g.story.talked = true;
+    g.story.romance = 'rin';
+    const st = memoryStorage();
+    expect(saveGame(st, g)).toBe(true);
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.state.party.roster.rin.bond).toEqual({ talk: 5, field: 12, gifts: { 'dusk-cloth': 2 }, refused: ['king-scale'] });
+    expect([r.state.story.bondDay, r.state.story.gifted, r.state.story.talked, r.state.story.romance]).toEqual([5, ['rin'], true, 'rin']);
+    expect(r.state.party.roster.selene.bond).toBeUndefined();
+  });
+
+  it('a bond that cannot have happened is corrupt', () => {
+    const bond = () => ({ talk: 0, field: 0, gifts: {} });
+    corrupt('hero.bond', (g) => { g.party.roster.hero.bond = bond(); });
+    corrupt('an unmet Sylvie with a bond', (g) => { g.party.roster.sylvie.bond = bond(); });
+    corrupt('talk 13', (g) => { g.party.roster.rin.bond!.talk = 13; });
+    corrupt('talk -1', (g) => { g.party.roster.rin.bond!.talk = -1; });
+    corrupt('field 41', (g) => { g.party.roster.rin.bond!.field = 41; });
+    corrupt('field 1.5', (g) => { g.party.roster.rin.bond!.field = 1.5; });
+    corrupt('no gifts object', (g) => { (g.party.roster.rin.bond as { gifts?: unknown }).gifts = undefined; });
+    corrupt('a gift of essence', (g) => { g.party.roster.rin.bond!.gifts['essence-common'] = 1; });
+    corrupt('a gift of a potion', (g) => { g.party.roster.rin.bond!.gifts.potion = 1; });
+    corrupt('a gift count of 0', (g) => { g.party.roster.rin.bond!.gifts.moss = 0; });
+    corrupt('a gift count of 1000', (g) => { g.party.roster.rin.bond!.gifts.moss = 1000; });
+    corrupt('Rin took a king scale', (g) => { g.party.roster.rin.bond!.gifts['king-scale'] = 1; });
+    corrupt('Selene took an old coin before her pieces were told', (g) => { g.party.roster.selene.bond = { ...bond(), gifts: { 'old-coin': 1 } }; });
+    ok('Selene took an old coin after her pieces were told', (g) => { g.party.roster.selene.bond = { ...bond(), gifts: { 'old-coin': 1 } }; }, true);
+    corrupt('Selene holds every piece but none told', (g) => {
+      g.party.roster.selene.memories = chainLength('selene');
+      g.party.roster.selene.bond = { ...bond(), gifts: { 'old-coin': 1 } };
+    });
+    ok('the same Selene with no coin', (g) => {
+      g.party.roster.selene.memories = chainLength('selene');
+      g.party.roster.selene.bond = { ...bond(), gifts: { 'star-tear': 1 } };
+    });
+    corrupt('refused twice', (g) => { g.party.roster.rin.bond!.refused = ['king-scale', 'king-scale']; });
+    corrupt('refused something she never declines', (g) => { g.party.roster.rin.bond!.refused = ['dusk-cloth']; });
+    corrupt('refused not a list', (g) => { (g.party.roster.rin.bond as { refused?: unknown }).refused = 'king-scale'; });
+    ok('Selene still remembers declining the coin once healed', (g) => { g.party.roster.selene.bond = { ...bond(), refused: ['old-coin'] }; }, true);
+  });
+
+  it("today's gifts and talk, and the romance, are checked", () => {
+    corrupt('gifted the hero', (g) => { g.story.bondDay = 5; (g.story as { gifted?: unknown }).gifted = ['hero']; });
+    corrupt('gifted twice', (g) => { g.story.bondDay = 5; g.story.gifted = ['rin', 'rin']; });
+    corrupt('gifted with no bondDay', (g) => { g.story.gifted = ['rin']; });
+    corrupt('gifted someone unmet', (g) => { g.story.bondDay = 5; g.story.gifted = ['sylvie']; });
+    corrupt('talked false', (g) => { g.story.bondDay = 5; (g.story as { talked?: unknown }).talked = false; });
+    corrupt('talked with no bondDay', (g) => { g.story.talked = true; });
+    corrupt('bondDay 0', (g) => { g.story.bondDay = 0; });
+    corrupt('bondDay 1.5', (g) => { g.story.bondDay = 1.5; });
+    corrupt('bondDay after today', (g) => { g.story.day = 3; g.story.bondDay = 4; });
+    corrupt('bondDay after a new game\'s day 1', (g) => { delete g.story.day; g.story.bondDay = 2; });
+    corrupt('a romance before the finale', (g) => { g.story.finaleCleared = false; g.story.romance = 'rin'; });
+    corrupt('a romance with the hero', (g) => { (g.story as { romance?: unknown }).romance = 'hero'; });
+    corrupt('a romance with someone unmet', (g) => { g.story.romance = 'sylvie'; });
+    ok('bondDay today', (g) => { g.story.bondDay = 5; g.story.gifted = ['rin', 'selene']; g.story.talked = true; });
+    ok('bondDay yesterday', (g) => { g.story.bondDay = 4; g.story.gifted = ['rin']; });
+    ok('a romance with Selene', (g) => { g.story.romance = 'selene'; });
   });
 });

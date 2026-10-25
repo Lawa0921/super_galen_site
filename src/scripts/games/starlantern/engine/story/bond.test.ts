@@ -3,7 +3,8 @@ import { newMember } from '../party';
 import { chainLength } from '../../data/story/chains';
 import { COMPANIONS, GIFTABLE, GIFT_TASTE, type Companion } from '../../data/story/bond';
 import type { BondRecord, Member } from '../types';
-import { bondOf, bondPoints, bondTier, giftPoints, tasteOf, tierAt } from './bond';
+import { bondOf, bondPoints, bondTier, giftPoints, tasteOf, tierAt, today } from './bond';
+import { newGame } from '../state';
 
 /** A member of `id` with `memories` pieces held and `bond` as her record. */
 const who = (id: Member['id'], memories = 0, bond?: BondRecord): Member => ({ ...newMember(id), memories, ...(bond ? { bond } : {}) });
@@ -89,6 +90,22 @@ describe('bond score', () => {
       if (before === 'declined') continue;
       expect(tasteOf(c, mat, true), `${c} ${mat}`).toBe(before);
     }
+  });
+
+  it('today reads only today', () => {
+    const g = newGame();
+    expect(today(g)).toEqual({ gifted: [], talked: false });   // no fields
+    g.story.day = 6;
+    g.story.bondDay = 6;
+    g.story.gifted = ['rin'];
+    g.story.talked = true;
+    expect(today(g)).toEqual({ gifted: ['rin'], talked: true });
+    g.story.bondDay = 5;   // yesterday's
+    expect(today(g)).toEqual({ gifted: [], talked: false });
+    const fresh = newGame();
+    fresh.story.bondDay = 1;   // a new game reads as day 1
+    fresh.story.talked = true;
+    expect(today(fresh)).toEqual({ gifted: [], talked: true });
   });
 
   it('tasteOf reads the table and the healing', () => {

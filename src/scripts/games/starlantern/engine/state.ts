@@ -1,6 +1,7 @@
 import { favouredRegions } from '../data/meetings';
 import type { ActNode, BanterPair, GroupScene, SceneId } from '../data/story/scenes';
 import type { TownFragmentId } from '../data/story/fragments';
+import type { Companion } from '../data/story/bond';
 import type { RegionId } from '../data/regions';
 import type { Difficulty } from './battle';
 import type { Portal } from './dungeon/run';
@@ -81,6 +82,17 @@ export interface StoryState {
    * and saved with it; a reload plays it again until it is seen, and never decides it from the calendar. Absent: none.
    */
   festival?: SceneId;
+  /**
+   * Bond plan ruling 10 (spec §0 D3): the day `gifted` and `talked` belong to. Another day reads them as empty (`today` in
+   * engine/story/bond.ts), so nothing clears them on a departure. Absent: nothing given or talked yet.
+   */
+  bondDay?: number;
+  /** Who took a gift on `bondDay`, each once (spec §6.3). Only with `bondDay`. */
+  gifted?: Companion[];
+  /** A bond scene was opened on `bondDay` (spec §8.2). Only ever true, only with `bondDay`. */
+  talked?: true;
+  /** The one chosen for the romance ending (spec §9), after the finale; never changed once written. */
+  romance?: Companion;
 }
 
 /** A new game opens with the prologue and the inn night after it waiting for its first arrival in town. */
