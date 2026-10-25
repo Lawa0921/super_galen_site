@@ -16,8 +16,10 @@ import { BP_MINOR, BP_UNDER, BP_DEEP, KEEP, SPAWN_CLEAR, landSlot, type Blueprin
 import { naturalOpen } from './structures/miniBiome';
 import { SPAWN_X } from './layout';
 import { LAVA_Y } from './profile';
+import { shaftOf, shaftRoom } from './caves';
+import type { RegionInfo } from '../regionInfo';
 import type { BpCtx } from './bpcore';
-import { SEEDS5, homeBlueprints, loadColumns, srcOf, walkOut, worldOf } from './testUtil';
+import { SEEDS5, homeBlueprints, loadColumns, srcOf, worldOf } from './testUtil';
 
 const homeOf = (seed: string): HomeContent => homeContent(srcOf(seed));
 const PASS: ReadonlySet<number> = new Set([T.CRACKED_STONE, T.DOOR_CLOSED, T.DOOR_LOCKED]);
@@ -71,6 +73,25 @@ function escapes(src: Gen2Source, b: Blueprint, sx: number, sy: number, open: (x
       const k = nx * 4096 + ny;
       if (seen.has(k) || nx < x0 || nx >= x1 || ny < y0 || ny >= y1) continue;
       if (ny >= src.surfaceAt(nx) && !pass(nx, ny)) continue;
+      seen.add(k); st.push(nx, ny);
+    }
+  }
+  return false;
+}
+// 坑道底藏物（見下面的測試）：箱子 = 圓室中心欄、圓室最低一列的上一列，腳下石頭；載入那一帶後沿非實心格（坑道中心 ± 20 欄）走得到地表以上
+function cacheReachable(g: Gen2Source, seed: string, r: RegionInfo, b: Blueprint): boolean {
+  const ss = seedInt(seed, 'g2-shaft'), sh = shaftOf(ss, r, (x) => g.profile.surfaceAt(x), (x) => g.profile.layersAt(x).deep)!, rm = shaftRoom(ss, r, sh), c = b.chests[0];
+  if (b.chests.length !== 1 || c.kind !== 'relic' || c.x !== rm.x || c.y !== rm.y + rm.r - 1) return false;
+  const w = worldOf(g), x0 = sh.sx - 20, x1 = sh.sx + 21;
+  loadColumns(w, x0, x1);
+  if (w.getFg(c.x, c.y) !== T.CHEST || w.getFg(c.x, c.y + 1) !== T.STONE) return false;
+  const seen = new Set<number>([c.x * 4096 + c.y]), st = [c.x, c.y];
+  while (st.length) {
+    const y = st.pop()!, x = st.pop()!;
+    if (y < g.surfaceAt(x)) return true;
+    for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+      const k = nx * 4096 + ny;
+      if (seen.has(k) || nx < x0 || nx >= x1 || ny < 0 || ny > c.y || isSolidTile(w.getFg(nx, ny)) || w.getLiquid(nx, ny) > 0) continue;
       seen.add(k); st.push(nx, ny);
     }
   }
@@ -130,10 +151,11 @@ describe('gen2 家鄉的石碑 / 遺物 / 地標（Task 14）', () => {
     expect(sp.tablets).toEqual([{ x: t.x, y: t.y, id: 0 }]); expect(s2.blueprints.homePlans()).toContain(sp); }, 60_000);
 
   // 開局的家鄉藍圖預算（Q9）：目標 ≤ 300 ms 由 Task 21 在閒置機器上把關；這裡量 20 個種子並印出，只擋 gen2 開局門檻 1500 ms（全套負載下也穩）
-  it('開局預算（Q9，量測）：20 個種子的 homePlans + homeContent 每個 < 1500 ms，印出平均 / 最差', () => {
+  // DELVE_MEASURE=1 時印出平均 / 最差（報告用）；平常不印
+  it('開局預算（Q9，量測）：20 個種子的 homePlans + homeContent 每個 < 1500 ms', () => {
     const ts: number[] = [];
     for (let k = 0; k < 20; k++) { const g = new Gen2Source(`hb-${k}`), t0 = performance.now(); g.blueprints.homePlans(); homeContent(g); ts.push(performance.now() - t0); }
-    console.log(`[home budget] homePlans + homeContent over ${ts.length} seeds: mean ${(ts.reduce((a, b) => a + b, 0) / ts.length).toFixed(1)} ms, worst ${Math.max(...ts).toFixed(1)} ms`);
+    if (process.env.DELVE_MEASURE === '1') console.info(`[home budget] homePlans + homeContent over ${ts.length} seeds: mean ${(ts.reduce((a, b) => a + b, 0) / ts.length).toFixed(1)} ms, worst ${Math.max(...ts).toFixed(1)} ms`);
     expect(Math.max(...ts)).toBeLessThan(1500);
   }, 120_000);
 
@@ -156,12 +178,21 @@ describe('gen2 家鄉的石碑 / 遺物 / 地標（Task 14）', () => {
     }
   }, 120_000);
 
-  it('homeDecor 只看原始藍圖：同一組輸入同一個結果；離出生點近的小屋拿到指南針', () => {
+  it('homeDecor 只看原始藍圖：去掉裝飾重算，石碑 / 附加物品與 homePlans 的最終藍圖逐份相同；離出生點近的小屋拿到指南針', () => {
     const src = new Gen2Source('home-c'), plans = src.blueprints.homePlans(), sp = SPAWN_X;
-    // 去掉裝飾（石碑 / 箱子附加物）後重算一次，與 homePlans 用的相同
+    // 去掉裝飾（地城以外的石碑、地城以外箱子的附加物）＝原始藍圖；重算的裝飾要正好補回最終藍圖多出來的部分
     const raw = plans.map((b) => ({ ...b, tablets: b.kind === 'dungeon' ? b.tablets : [], chests: b.chests.map((c) => ({ x: c.x, y: c.y, kind: c.kind, ...(b.kind === 'dungeon' && c.extra ? { extra: c.extra } : {}) })) }));
-    const d1 = homeDecor(raw, sp), d2 = homeDecor(raw, sp);
-    expect(d1).toEqual(d2);
+    const d1 = homeDecor(raw, sp);
+    let nt = 0, ne = 0;
+    for (const b of plans) {
+      expect(d1.tablets.get(b.id) ?? [], `${b.kind}@${b.x} tablets`).toEqual(b.kind === 'dungeon' ? [] : b.tablets);
+      nt += (d1.tablets.get(b.id) ?? []).length;
+      const ext = d1.extras.get(b.id);
+      for (const c of b.chests) { const want = b.kind === 'dungeon' ? undefined : c.extra; expect(ext?.get(`${c.x},${c.y}`), `${b.kind}@${b.x} chest ${c.x},${c.y}`).toEqual(want); if (want) ne += want.length; }
+      if (ext) for (const k of ext.keys()) expect(b.chests.some((c) => `${c.x},${c.y}` === k), `${b.kind} extra key ${k}`).toBe(true);
+    }
+    // 14 − 地城的 3 塊；4 件遺物 + 指南針 + 深度計
+    expect(nt).toBe(11); expect(ne).toBe(6); expect(d1.tablets.size + d1.extras.size).toBeGreaterThan(0);
     const cabins = plans.filter((b) => b.kind === 'cabin').sort((p, q) => Math.abs(p.x + p.w / 2 - sp) - Math.abs(q.x + q.w / 2 - sp));
     expect(cabins[0].chests.some((c) => c.extra?.includes('compass'))).toBe(true); expect(cabins[1].chests.some((c) => c.extra?.includes('depth_meter'))).toBe(true);
   }, 60_000);
@@ -181,9 +212,11 @@ describe('gen2 家鄉的石碑 / 遺物 / 地標（Task 14）', () => {
       if (flat) expect(others.some((q) => q.x < x + 4 && x - 3 < q.x + q.w), `${seed} x ${x}`).toBe(true);
     } } }, 120_000);
 
-  it('新錨點都走得到（不載入世界，藍圖的格 + 天然洞穴探針）：2000 個家鄉的石室 ×2 / 熔岩祭壇 / 坑道底藏物從箱子（或地板）走得到外框外 ≥ 300 格或地表；0 個 RangeError', () => {
+  // 石室 / 熔岩祭壇：藍圖的格 + 天然洞穴探針（不載入世界）。坑道底藏物：主坑道是 fill 挖的、不在藍圖裡，所以載入箱子那一帶的欄驗：
+  // 箱子在該地區主坑道底圓室（caves.shaftRoom）的最低處、腳下是石地板，從箱子沿非實心、沒有液體的格（坑道 ± 20 欄內）走得到地表以上
+  it('新錨點都走得到：2000 個家鄉的石室 ×2 / 熔岩祭壇（藍圖的格 + 天然洞穴探針，走到外框外 ≥ 300 格或地表）、坑道底藏物（載入世界，箱子在坑道底圓室、沿主坑道走到地表）；0 個 RangeError', () => {
     const bad: string[] = [];
-    let n = 0;
+    let probed = 0, cached = 0;
     for (let k = 0; k < 2000; k++) {
       const seed = `lw-${k}`;
       try {
@@ -191,14 +224,12 @@ describe('gen2 家鄉的石碑 / 遺物 / 地標（Task 14）', () => {
         for (const a of g.blueprints.anchorsOf(m)) {
           if (!['alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache'].includes(a.kind)) continue;
           const b = g.blueprints.anchorBlueprint(m, a)!, s = startOf(b);
-          n++;
-          // 坑道底藏物：主坑道不在藍圖裡（fill 挖的），用探針 ∪ 主坑道的格走——這裡只驗箱子在坑道底圓室裡（上方三格是空的坑道）
-          if (a.kind === 'shaft_cache') continue;
-          if (!escapes(g, b, s.x, s.y, open)) bad.push(`${seed} ${a.kind}@${b.x}`);
+          if (a.kind !== 'shaft_cache') { probed++; if (!escapes(g, b, s.x, s.y, open)) bad.push(`${seed} ${a.kind}@${b.x}`); continue; }
+          if (cacheReachable(g, seed, a.region, b)) cached++; else bad.push(`${seed} shaft_cache@${b.x}`);
         }
       } catch (e) { if (!(e instanceof RangeError)) throw e; bad.push(`${seed}: ${e.message}`); }
     }
-    expect(bad.slice(0, 5)).toEqual([]); expect(n).toBe(2000 * 4);
+    expect(bad.slice(0, 5)).toEqual([]); expect(probed).toBe(2000 * 3); expect(cached).toBe(2000);
   }, 300_000);
 
   it('載入世界後真的走得出去：80 個家鄉的新錨點、4 件遺物箱、14 塊石碑與指南針 / 深度計的小屋（從那一格走出它所在的藍圖外框，裂紋石 / 門算走得過），都不進液體', () => {

@@ -12,7 +12,7 @@
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T } from '../tiles';
 import type { ItemId } from '../items';
-import { LORE_SITES } from '../lore';
+import { LORE_SITES, type LoreSite } from '../lore';
 import { KEEP, indexColumns, type Blueprint, type BpBox, type BpKind, type BpTablet } from './bpcore';
 
 // tablets：藍圖 id（sid）→ 要加的石碑；extras：sid → 箱子座標 "x,y" → 要加的物品
@@ -52,20 +52,21 @@ export function homeDecor(raw: readonly Blueprint[], spawnX: number): HomeDecor 
     return false;
   };
   const secretOf = (b: Blueprint): boolean => b.secret !== undefined;
-  const SITE: Readonly<Record<string, () => boolean>> = {
-    spawn: () => place(0, of('spawn_tablet')),
-    secret: () => place(1, of('mineshaft', secretOf), (b, f) => inBox(f, b.secret!)),
-    cabin: () => place(2, of('cabin')),
-    crystal: () => place(3, of('crystal_cave')),
-    mushroom: () => place(4, of('mushroom_biome')),
-    sky: () => place(5, of('sky_island')),
-    molten: () => place(8, of('molten_shrine')),
-    mineshaft: () => place(9, of('mineshaft'), (b, f) => !b.secret || !inBox(f, b.secret)),
-    snow: () => place(10, of('alcove', (b) => b.variant === 'snow')),
-    desert: () => place(11, of('alcove', (b) => b.variant === 'desert')),
-    ruin: () => place(13, of('ruin')),
+  // 主題地點 → 放法（碑文 id = LORE_SITES 的索引，只有那一份事實；地城的三篇由地城藍圖自己放）
+  const SITE: Readonly<Partial<Record<LoreSite, (id: number) => boolean>>> = {
+    spawn: (id) => place(id, of('spawn_tablet')),
+    secret: (id) => place(id, of('mineshaft', secretOf), (b, f) => inBox(f, b.secret!)),
+    cabin: (id) => place(id, of('cabin')),
+    crystal: (id) => place(id, of('crystal_cave')),
+    mushroom: (id) => place(id, of('mushroom_biome')),
+    sky: (id) => place(id, of('sky_island')),
+    molten: (id) => place(id, of('molten_shrine')),
+    mineshaft: (id) => place(id, of('mineshaft'), (b, f) => !b.secret || !inBox(f, b.secret)),
+    snow: (id) => place(id, of('alcove', (b) => b.variant === 'snow')),
+    desert: (id) => place(id, of('alcove', (b) => b.variant === 'desert')),
+    ruin: (id) => place(id, of('ruin')),
   };
-  for (const site of LORE_SITES) SITE[site]?.();
+  LORE_SITES.forEach((site, id) => SITE[site]?.(id));
   // 找不到主題地點的碑文：任何有可用地板的家鄉藍圖（村莊除外）裡最近的
   const any = sorted.filter((b) => b.kind !== 'village');
   LORE_SITES.forEach((_, id) => { if (!place(id, any)) throw new RangeError(`gen2: home has no floor for lore tablet ${id}`); });
