@@ -20,7 +20,8 @@ import { version8Save } from '../../src/scripts/games/starlantern/engine/testing
 import { defaultTalents, defaultTree } from '../../src/scripts/games/starlantern/engine/progression';
 import { buildTalents, buildTree } from '../../src/scripts/games/starlantern/engine/builds';
 import { buildOf } from '../../src/scripts/games/starlantern/data/builds';
-import { maxBondRecord } from '../../src/scripts/games/starlantern/engine/story/bond';
+import { bondPoints, maxBondRecord } from '../../src/scripts/games/starlantern/engine/story/bond';
+import { GIFT_LINES } from '../../src/scripts/games/starlantern/data/bond.zh-TW';
 import { SWEEP, asDesktop, asPhone, expectedMode, fitTo, go, legibility, longestGear, placeBeside, snap, stageBox, stageScale, startSweepGame, sweep, writeReviewIndex } from './starlantern-legibility';
 
 test.use({ launchOptions: { args: ['--mute-audio'] } });
@@ -5627,5 +5628,327 @@ test.describe('starlantern', () => {
     }
     await fitTo(page, 1280, 720);
     expect(w.errors).toEqual([]);
+  });
+  // ---- bond plan Task 22: the bond end to end, on the written copy (no scene stood in). With SL_SHOTS=<dir>, the
+  // acceptance pictures go to <dir>/accept-<what>-<w>x<h>-<project>.png.
+  test.describe('bond end to end (bond plan Task 22)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type BondDbg = { __starlanternDebug: { game: any } };
+    const said = (page: Page) => page.locator('.slx-talk:not([hidden]) .slx-text');
+    const plate = (page: Page) => page.locator('.slx-talk:not([hidden]) .slx-name');
+    const partners = async (page: Page) => {
+      await page.locator('.slx-inn .slx-cmd [data-id=partners]').click();
+      await expect(page.locator('.slx-layer.slx-depth-0')).toBeVisible();
+    };
+    /** 是 on a confirm box (否 is first). */
+    const yes = async (page: Page) => {
+      await expect(page.locator('.slx-confirm')).toBeVisible();
+      await page.keyboard.press('ArrowUp'); await page.keyboard.press('Enter');
+    };
+    /** A night at the inn: today's gift and talk are tomorrow's again. */
+    const rest = async (page: Page, w: { closeTalk(): Promise<void> }) => {
+      await page.locator('.slx-inn .slx-cmd [data-id=rest]').click();
+      await yes(page);
+      for (let i = 0; i < 80 && (await page.locator('.slx-night').count()) > 0; i++) await page.waitForTimeout(100);
+      await w.closeTalk();
+    };
+    const accept = async (page: Page, name: string, vw: number, vh: number, project: string) => {
+      const dir = process.env.SL_SHOTS;
+      if (!dir) return;
+      mkdirSync(dir, { recursive: true });
+      // a spoken line's portrait lands a moment after its box (late art); the windows fade in
+      if (await page.locator('.slx-talk:not([hidden]) .slx-name').isVisible()) await page.locator('.slx-talk:not([hidden]) img.slx-talk-face').waitFor({ state: 'visible', timeout: 5000 }).catch(() => undefined);
+      await page.waitForTimeout(1200);
+      await snap(page, `${dir}/accept-${name}-${vw}x${vh}-${project}.png`);
+    };
+    /** The picture at both sizes, on the screen as it stands (the scene goes on after it at 1280x720). */
+    const acceptBoth = async (page: Page, name: string, project: string) => {
+      if (!process.env.SL_SHOTS) return;
+      await accept(page, name, 1280, 720, project);
+      await fitTo(page, 844, 390);
+      await accept(page, name, 844, 390, project);
+      await fitTo(page, 1280, 720);
+    };
+    const member = (page: Page, c: string) => page.evaluate((id) => JSON.parse(JSON.stringify((window as unknown as BondDbg).__starlanternDebug.game.state.party.roster[id])), c);
+
+    test('gifts: a loved one and a declined one; a healed one says its line', async ({ page }, info) => {
+      test.setTimeout(240_000);
+      const w = await startSweepGame(page);
+      for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
+        await fitTo(page, vw, vh);
+        await page.evaluate(() => {
+          const g = (window as unknown as BondDbg).__starlanternDebug.game;
+          const s = g.state;
+          Object.assign(s.inventory, { 'dusk-cloth': 2, 'king-scale': 1, 'star-stone': 1 });
+          delete s.party.roster.rin.bond;
+          delete s.story.gifted; delete s.story.bondDay;
+          // Noel whole, who once refused 星紋石: her healed line (spec §6.4)
+          s.party.roster.noel.memories = 5;
+          for (let k = 1; k <= 5; k++) if (!s.story.seen.includes(`mem:noel:${k}`)) s.story.seen.push(`mem:noel:${k}`);
+          s.party.roster.noel.bond = { talk: 0, field: 0, gifts: {}, refused: ['star-stone'] };
+        });
+        await go(page, 'inn');
+        await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+        const before = await member(page, 'rin');
+        await partners(page);
+        await page.locator('.slx-layer [data-id=gift]').click();
+        await page.locator('.slx-layer.slx-depth-1 [data-id=rin]').click();
+        await accept(page, 'gift-menu', vw, vh, info.project.name);
+        await page.locator('.slx-layer.slx-depth-2 [data-id=dusk-cloth]').click();
+        await yes(page);
+        await expect(plate(page)).toHaveText(CHARACTERS.rin.name);
+        await expect(said(page)).toHaveText(GIFT_LINES.rin!.loved[0]);
+        await w.closeTalk();
+        const after = await member(page, 'rin');
+        expect(await page.evaluate(() => (window as unknown as BondDbg).__starlanternDebug.game.state.inventory['dusk-cloth'])).toBe(1);
+        expect(bondPoints(after) - bondPoints(before)).toBe(4);
+        await partners(page);
+        await page.locator('.slx-layer [data-id=gift]').click();
+        await expect(page.locator('.slx-layer.slx-depth-1 [data-id=rin]')).toContainText(T.ui2.inn.giftedToday);   // greyed for the day
+        // Noel's healed line, the same day (a gift a day is each one's)
+        await page.locator('.slx-layer.slx-depth-1 [data-id=noel]').click();
+        await page.locator('.slx-layer.slx-depth-2 [data-id=star-stone]').click();
+        await yes(page);
+        await expect(plate(page)).toHaveText(CHARACTERS.noel.name);
+        await expect(said(page)).toHaveText(GIFT_LINES.noel!.healed['star-stone']!);
+        await accept(page, 'gift-healed', vw, vh, info.project.name);
+        await w.closeTalk();
+        // a night, then 王者之鱗: she declines it and keeps nothing
+        await rest(page, w);
+        await partners(page);
+        await page.locator('.slx-layer [data-id=gift]').click();
+        await page.locator('.slx-layer.slx-depth-1 [data-id=rin]').click();
+        await page.locator('.slx-layer.slx-depth-2 [data-id=king-scale]').click();
+        await yes(page);
+        await expect(said(page)).toHaveText(GIFT_LINES.rin!.declined['king-scale']!);
+        await w.closeTalk();
+        expect(await page.evaluate(() => (window as unknown as BondDbg).__starlanternDebug.game.state.inventory['king-scale'])).toBe(1);
+        await partners(page);
+        await page.locator('.slx-layer [data-id=gift]').click();
+        await page.locator('.slx-layer.slx-depth-1 [data-id=rin]').click();
+        await expect(page.locator('.slx-layer.slx-depth-2 [data-id=king-scale]')).toContainText(T.ui2.bond.taste.declined);
+        await w.key('Escape'); await w.key('Escape'); await w.key('Escape');
+      }
+      await fitTo(page, 1280, 720);
+      expect(w.errors).toEqual([]);
+    });
+
+    test('a talk with a choice, and a skipped one', async ({ page }, info) => {
+      test.setTimeout(240_000);
+      const w = await startSweepGame(page);
+      const choices = (id: string) => (STORY.scenes[id as keyof typeof STORY.scenes].lines.find((l) => 'choices' in l) as { choices: unknown[] }).choices.length;
+      if (process.env.SL_SHOTS) await page.waitForTimeout(4000);   // the pictures: let the portraits finish loading first
+      for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
+        await fitTo(page, vw, vh);
+        // Selene with one piece told and 20 points (10 + 3 + 7): her first talk
+        await page.evaluate(() => {
+          const s = (window as unknown as BondDbg).__starlanternDebug.game.state;
+          s.party.roster.selene.memories = 1;
+          s.story.seen = s.story.seen.filter((x: string) => !/^bond:selene:|^mem:selene:/.test(x));
+          s.story.seen.push('mem:selene:1');
+          s.party.roster.selene.bond = { talk: 0, field: 7, gifts: {} };
+          delete s.story.talked;
+        });
+        await go(page, 'inn');
+        await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+        await partners(page);
+        await expect(page.locator('.slx-layer.slx-depth-0 [data-id=talk]')).toContainText('新');
+        await page.locator('.slx-layer [data-id=talk]').click();
+        await page.locator('.slx-layer.slx-depth-1 [data-id=selene]').click();
+        for (let i = 0; i < 10 && !(await page.locator('.slx-choice').isVisible()); i++) await w.key('z');
+        await expect(page.locator('.slx-choice [role=option]')).toHaveCount(choices('bond:selene:1'));
+        await accept(page, 'talk-choice', vw, vh, info.project.name);
+        await w.key('Enter');
+        await w.closeTalk();
+        const one = await member(page, 'selene');
+        expect([2, 3]).toContain(one.bond.talk);
+        await partners(page);
+        await expect(page.locator('.slx-layer.slx-depth-0 [role=option]')).toHaveText(['談心', '送禮']);   // its 新 gone
+        await w.key('Escape');
+        // the next day, her second: three told and 40 points; cancelled on the choice, its summary shows and it counts 2
+        await rest(page, w);
+        await page.evaluate(() => {
+          const s = (window as unknown as BondDbg).__starlanternDebug.game.state;
+          s.party.roster.selene.memories = 3;
+          for (const k of [2, 3]) if (!s.story.seen.includes(`mem:selene:${k}`)) s.story.seen.push(`mem:selene:${k}`);
+          s.party.roster.selene.bond.field = 30;
+        });
+        await partners(page);
+        await page.locator('.slx-layer [data-id=talk]').click();
+        await page.locator('.slx-layer.slx-depth-1 [data-id=selene]').click();
+        for (let i = 0; i < 10 && !(await page.locator('.slx-choice').isVisible()); i++) await w.key('z');
+        await expect(page.locator('.slx-choice [role=option]')).toHaveCount(choices('bond:selene:2'));
+        await w.key('Escape');
+        await expect(said(page)).toContainText(STORY.scenes['bond:selene:2'].summary!);   // shown as the skipped scene's summary
+        await w.closeTalk();
+        expect((await member(page, 'selene')).bond.talk).toBe(one.bond.talk + 2);
+        await rest(page, w);
+      }
+      await fitTo(page, 1280, 720);
+      expect(w.errors).toEqual([]);
+    });
+
+    test('after the finale: an after-story, the walk together, a romance, the handbook and a late one on the status page', async ({ page }, info) => {
+      test.setTimeout(360_000);
+      await fitTo(page, 1280, 720);
+      const game = <T, A = undefined>(fn: (g: any, a: A) => T, arg?: A): Promise<T> =>   // eslint-disable-line @typescript-eslint/no-explicit-any
+        page.evaluate(([src, a]) => new Function('g', 'a', `return (${src})(g, a)`)((window as unknown as BondDbg).__starlanternDebug.game, a), [fn.toString(), arg] as [string, unknown]) as Promise<T>;
+      const w = await setup(page, 7, { story: 'all' });
+      const playOut = async (watch?: (text: string) => Promise<void>) => {
+        for (let quiet = 0, i = 0; quiet < 4 && i < 400; i++) {
+          if (await page.locator('.slx-talk').first().isVisible()) {
+            quiet = 0;
+            if (watch) await watch((await page.locator('.slx-talk:not([hidden]) .slx-text').first().textContent()) ?? '');
+            await page.keyboard.press('z'); await page.waitForTimeout(30);
+          } else if ((await page.locator('.slx-cmd-hidden').count()) > 0) { quiet = 0; await page.waitForTimeout(60); }
+          else { quiet++; await page.waitForTimeout(60); }
+        }
+        await expect(page.locator('.slx-talk').first()).toBeHidden();
+      };
+      await playOut();   // the prologue and the inn night
+      // After the finale and the festival; Liz met, whole, at 心契, her four talks and her homecoming seen; Bobby met late
+      const party = await game((g) => JSON.parse(JSON.stringify(g.state.party)));
+      await game((g, p) => { g.state.party = p; }, meet(meet(party, 'liz', 1), 'bobby', 1));
+      await game((g, rec) => {
+        const s = g.state;
+        s.story.act1Cleared = true;
+        s.story.finaleCleared = true;
+        for (const id of ['epilogue', 'home:liz', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4', 'mem:liz:1', 'mem:liz:2', 'mem:liz:3', 'mem:liz:4', 'mem:liz:5']) if (!s.story.seen.includes(id)) s.story.seen.push(id);
+        s.party.roster.liz.memories = 5;
+        s.party.roster.liz.bond = rec;
+        s.party.roster.bobby.bond = { talk: 0, field: 12, gifts: {} };
+      }, maxBondRecord('liz'));
+      // a return: its talk slot is her after-story
+      const ending = flatLines(STORY.scenes['ending:liz'].lines).map((l) => l.text.slice(0, 12));   // either reading (Orik back or not)
+      let sawEnding = false;
+      await depart(page, w);
+      await playOut();
+      await lampHome(page, w);
+      const arrival: string[] = await game((g) => g.arrival);
+      expect(arrival).toContain('ending:liz');
+      // the after-story holds the talk slot; a banter, if one is open, comes after it
+      for (const b of arrival.filter((id) => id.startsWith('banter:'))) expect(arrival.indexOf(b), b).toBeGreaterThan(arrival.indexOf('ending:liz'));
+      const heard: string[] = [];
+      await playOut(async (t) => {
+        heard.push(t);
+        if (!sawEnding && ending.some((e) => t.includes(e))) { sawEnding = true; await acceptBoth(page, 'ending', info.project.name); }
+      });
+      expect(sawEnding, heard.join(' / ')).toBe(true);
+      expect(await game((g) => g.state.story.seen)).toContain('ending:liz');
+      // 夜裡走走: the walk together first (it records nothing), then, on the next return, Liz
+      await w.choose('.slx-town', '旅館');
+      await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+      await partners(page);
+      await page.locator('.slx-layer [data-id=walk]').click();
+      await expect(page.locator('.slx-layer.slx-depth-1 [role=option]')).toHaveText([CHARACTERS.liz.name, T.ui2.inn.together]);
+      await page.locator('.slx-layer.slx-depth-1 [data-id=together]').click();
+      await expect(said(page)).toHaveText(flatLines(STORY.scenes.together.lines)[0].text);
+      await expect(page.locator('.slx-veil-night')).toBeVisible();
+      await acceptBoth(page, 'together', info.project.name);
+      await playOut();
+      expect(await game((g) => g.state.story.romance)).toBeUndefined();
+      await partners(page);
+      await expect(page.locator('.slx-layer.slx-depth-0 [role=option]')).toHaveText(['談心', '送禮']);   // asked: none until the next return
+      await w.key('Escape');
+      await go(page, 'town');
+      await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+      await game((g) => { g.state.inventory['return-lamp'] = 1; });   // the new game starts with one lamp only
+      await depart(page, w);
+      await playOut();
+      await lampHome(page, w);
+      await playOut();
+      await w.choose('.slx-town', '旅館');
+      await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+      await partners(page);
+      await page.locator('.slx-layer [data-id=walk]').click();
+      await page.locator('.slx-layer.slx-depth-1 [data-id=liz]').click();
+      await yes(page);
+      const first = flatLines(STORY.scenes['romance:liz'].lines)[0].text;
+      await expect(said(page)).toHaveText(first);
+      await expect(page.locator('.slx-veil-night')).toBeVisible();
+      await acceptBoth(page, 'romance', info.project.name);
+      await playOut();
+      expect(await game((g) => g.state.story.romance)).toBe('liz');
+      expect(await game((g) => g.state.story.seen)).toContain('romance:liz');
+      await partners(page);
+      await expect(page.locator('.slx-layer.slx-depth-0 [role=option]')).toHaveText(['談心', '送禮']);   // chosen: the walk is gone
+      await w.key('Escape');
+      // saved, read back: still Liz
+      await rest(page, w);
+      await page.reload();
+      await expect(page.locator('.slx-title [aria-selected=true]')).toHaveText('繼續');
+      await w.key('Enter');
+      await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+      expect(await game((g) => g.state.story.romance)).toBe('liz');
+      // the handbook: her page shows the bond and replays her romance
+      for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
+        await fitTo(page, vw, vh);
+        await page.locator('.slx-town [data-id=handbook]').click();
+        await expect(page.locator('.slx-handbook')).toBeVisible();
+        const hbTab = (label: string) => page.locator('.slx-tabs .slx-tab').filter({ hasText: label });
+        const hbRow = (label: string) => page.locator('.slx-hb-list [role=option]').filter({ hasText: label });
+        await hbTab(T.ui2.handbook.tabs.people).click();
+        const cursorOn = () => page.locator('.slx-hb-list [aria-selected=true]').first().textContent();
+        for (let i = 0; i < 12 && !((await cursorOn()) ?? '').startsWith(CHARACTERS.liz.name); i++) await w.key('ArrowDown');
+        await expect(page.locator('.slx-hb-bond')).toBeVisible();
+        await expect(page.locator('.slx-hb-bond')).toContainText(T.ui2.bond.tiers[4]);
+        await page.locator('.slx-hb-bond').scrollIntoViewIfNeeded();
+        await accept(page, 'handbook-bond', vw, vh, info.project.name);
+        await w.key('Enter');
+        await expect(hbRow(STORY.scenes['romance:liz'].title)).toBeVisible();
+        await hbRow(STORY.scenes['romance:liz'].title).click();
+        await expect(page.locator('.slx-handbook.slx-hb-playing')).toBeVisible();
+        for (let i = 0; i < 40 && (await page.locator('.slx-handbook.slx-hb-playing').count()) > 0; i++) { await w.key('z'); await page.waitForTimeout(40); }
+        await expect(page.locator('.slx-handbook.slx-hb-playing')).toHaveCount(0);
+        await go(page, 'town');
+        await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+        // Bobby, met late: her bond on the status page
+        await go(page, 'status', 'bobby');
+        await expect(page.locator('.slx-stat-bond')).toBeVisible();
+        await accept(page, 'status-late', vw, vh, info.project.name);
+        await go(page, 'town');
+        await expect(page.locator('.slx-town')).toBeVisible(); await w.closeTalk();
+      }
+      await fitTo(page, 1280, 720);
+      expect(w.errors).toEqual([]);
+    });
+
+    test("the inn's lists stay inside their panel, on each of the three projects @dpr", async ({ page }) => {
+      test.setTimeout(120_000);
+      const w = await startSweepGame(page);
+      await page.evaluate(() => {
+        const s = (window as unknown as BondDbg).__starlanternDebug.game.state;
+        Object.assign(s.inventory, { 'dusk-cloth': 1, 'king-scale': 1, 'star-stone': 1, 'old-coin': 1, 'moss': 4, 'star-tear': 1, 'crystal-shell': 1, 'storm-stone': 1 });
+      });
+      const inside = async (list: string) => {
+        const panel = await stageBox(page, page.locator(list));
+        for (const row of await page.locator(`${list} [role=option]`).all()) {
+          const r = await stageBox(page, row);
+          expect(r.x, list).toBeGreaterThanOrEqual(panel.x - 0.5);
+          expect(r.y, list).toBeGreaterThanOrEqual(panel.y - 0.5);
+          expect(r.x + r.width, list).toBeLessThanOrEqual(panel.x + panel.width + 0.5);
+          expect(r.y + r.height, list).toBeLessThanOrEqual(panel.y + panel.height + 0.5);
+        }
+      };
+      for (const [vw, vh] of [[1280, 720], [844, 390]] as const) {
+        await fitTo(page, vw, vh);
+        await go(page, 'inn');
+        await expect(page.locator('.slx-inn')).toBeVisible(); await w.closeTalk();
+        await page.waitForTimeout(400);
+        await inside('.slx-inn .slx-cmd');
+        await partners(page);
+        await page.waitForTimeout(400);
+        await inside('.slx-layer.slx-depth-0');
+        await page.locator('.slx-layer [data-id=gift]').click();
+        await page.waitForTimeout(400);
+        await inside('.slx-layer.slx-depth-1');
+        await page.locator('.slx-layer.slx-depth-1 [data-id=rin]').click();
+        await page.waitForTimeout(400);
+        await inside('.slx-layer.slx-depth-2');
+        await w.key('Escape'); await w.key('Escape'); await w.key('Escape');
+      }
+      await fitTo(page, 1280, 720);
+      expect(w.errors).toEqual([]);
+    });
   });
 });
