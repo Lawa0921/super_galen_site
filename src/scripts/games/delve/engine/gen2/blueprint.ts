@@ -14,7 +14,8 @@
 // 家鄉地城區只有 dungeon 錨點（wholeRegion：外框佔滿整個地區，任何與地區相交的查詢都找得到它），其他層 / 槽全空。
 // 快取（Q9）：家鄉地塊的藍圖存在釘選表（永不淘汰，家鄉地城這種大藍圖只建一次）；外圍地塊照舊 LRU CACHE_MAX 份。
 // 液體藍圖（湖 / 地下湖 / 熔岩池，structures/lakes.ts）讓位：另一層與它的外框相交的那幾槽的藍圖外框與它相交、且那份不是液體或層比它淺 → 這份不放
-// （fill 依 (layer, id) 序蓋，後蓋的結構會切開液體；依「原始」擲出的結果判，沒有循環）。
+// （fill 依 (layer, id) 序蓋，後蓋的結構會切開液體；依「原始」擲出的結果判，沒有循環）。例外（Task 17）：家鄉的地表湖錨點（kind lake、等級 2）不讓位，
+// 碰到它的非液體機率 / 保證藍圖讓位（crossYields）、液體照舊讓位（湖的層最淺）、錨點碰到它 = RangeError（anchorLake）。
 // 跨層不重疊（Q10，M2a Task 9）：同一地區、不同層的兩份非液體藍圖外框不得相交；相交時依 crossYields 丟掉一份：
 // 錨點（2）> 保證槽（1，P11）> 機率擲出（0）；同級丟較深的（SURFACE < UNDER < DEEP；SKY / MINOR 同級一律讓位）。
 // 比對的是其他層的「原始」藍圖（同 yieldLiquid，不遞迴）；錨點彼此由錨點規則保證不相交（settlements.test 釘住），真的相交 → RangeError（不默默少放）。
@@ -53,7 +54,7 @@ import { buildMineshaftBp, rollMineshaftBp } from './structures/mineshaft';
 import { buildSkyIslandBp, rollSkyIslandBp } from './structures/skyIsland';
 import { buildMushroomBp, buildCrystalBp, rollMushroomBp, rollCrystalBp } from './structures/miniBiome';
 import { buildHiveBp, rollHiveBp } from './structures/hive';
-import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, SLOT_PAD, bandFreeSpan, slotWidth, landSlot, landSlotCount, touchesSpawnClear, partsMeet, partsOf, type Blueprint, type BpBox, type BpCtx, type BpKind, type Layer } from './bpcore';
+import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, SLOT_PAD, bandFreeSpan, dropLooseWebs, slotWidth, landSlot, landSlotCount, touchesSpawnClear, partsMeet, partsOf, type Blueprint, type BpBox, type BpCtx, type BpKind, type Layer } from './bpcore';
 import { encodeStructureId, decodeStructureId } from './structId';
 
 export {
@@ -144,6 +145,8 @@ const must = (kind: string, f: (c: BpCtx) => Blueprint | null) => (c: BpCtx): Bl
 registerAnchorBuild('cabin', must('cabin', (c) => buildCabin(c, { force: true })));
 registerAnchorBuild('ruin', must('ruin', (c) => buildRuin(c, { force: true })));
 registerAnchorBuild('cave_lake', must('cave_lake', (c) => buildCaveLake(c, { force: true })));
+// 家鄉的地表湖錨點（Task 17 延續事項 4）
+registerAnchorBuild('lake', must('lake', (c) => buildLake(c, { force: true })));
 registerAnchorBuild('alcove_snow', (c) => buildAlcoveBp(c, 'snow'));
 registerAnchorBuild('alcove_desert', (c) => buildAlcoveBp(c, 'desert'));
 registerAnchorBuild('molten_shrine', (c) => buildMoltenShrineBp(c));
@@ -198,10 +201,13 @@ export function liquidYields(b: Blueprint, o: Blueprint): boolean {
 const sideLayer = (l: Layer): boolean => l === BP_SKY || l === BP_MINOR;
 // 理由：空島的建構器讀 groundAt、groundAt 讀表層的讓位結果；表層若和 SKY 比就會建 SKY → 呼叫 groundAt → 重入（Q4）
 const blindToSide = (b: Blueprint): boolean => !sideLayer(b.layer) && (b.layer === BP_SURFACE || LIQUID.has(b.kind));
+// 家鄉的地表湖錨點（Task 17）：不讓位（anchorLake），碰到它的非液體機率 / 保證藍圖讓位；碰到它的錨點 = RangeError（錨點規則保證不會發生）
+const anchoredLake = (b: Blueprint, rank: 0 | 1 | 2): boolean => b.kind === 'lake' && rank === 2;
 export function crossYields(b: Blueprint, bRank: 0 | 1 | 2, o: Blueprint, oRank: 0 | 1 | 2): boolean {
   if (b.layer === o.layer || !boxesMeet(b, o)) return false;
   if (sideLayer(b.layer) && blindToSide(o)) return true;
   if (sideLayer(o.layer) && blindToSide(b)) return false;
+  if (anchoredLake(o, oRank) && !LIQUID.has(b.kind)) return bRank < 2;
   if (LIQUID.has(b.kind) || LIQUID.has(o.kind)) return false;
   if (bRank !== oRank) return bRank < oRank;
   if (sideLayer(b.layer)) return true;
@@ -400,8 +406,8 @@ export class BlueprintIndex {
   // 家鄉地塊走釘選表（Q9），外圍走 LRU。讓位：液體 → yieldLiquid、非液體 → yieldCross（都只看其他層的原始藍圖）
   private get(m: Landmass, r: RegionInfo, q: number, layer: Layer): Blueprint | null {
     const id = structureId(m.side, m.i, r.index, q, layer), make = (): Blueprint | null => {
-      const b = this.raw(m, r, q, layer);
-      return !b ? null : LIQUID.has(b.kind) ? this.yieldLiquid(m, r, b) : this.yieldCross(m, r, b, this.rank(m, r, q, layer));
+      const b = this.raw(m, r, q, layer), rank = b ? this.rank(m, r, q, layer) : 0;
+      return !b ? null : anchoredLake(b, rank) ? this.anchorLake(m, r, b) : LIQUID.has(b.kind) ? this.yieldLiquid(m, r, b) : this.yieldCross(m, r, b, rank);
     };
     return m.kind === 'home' ? memo(this.pinned, id, make) : lru(this.cache, id, make);
   }
@@ -434,8 +440,22 @@ export class BlueprintIndex {
   }
 
   private raw(m: Landmass, r: RegionInfo, q: number, layer: Layer): Blueprint | null {
-    const id = structureId(m.side, m.i, r.index, q, layer), make = (): Blueprint | null => this.build(m, r, q, layer, id);
+    // 建好就清掉懸空的蛛網（bpcore.dropLooseWebs，Task 17）
+    const id = structureId(m.side, m.i, r.index, q, layer), make = (): Blueprint | null => { const b = this.build(m, r, q, layer, id); if (b) dropLooseWebs(b); return b; };
     return m.kind === 'home' ? memo(this.pinnedRaw, id, make) : lru(this.rawCache, id, make);
+  }
+
+  // 家鄉的地表湖錨點 b（Task 17）：不讓位。地下層 / 深層與它相交（部件判定）的原始藍圖若也是錨點 → RangeError（錨點規則保證不相交）；
+  // 機率擲出的非液體在自己的 yieldCross 讓位（crossYields）、液體在 yieldLiquid 讓位（湖的層較淺）
+  private anchorLake(m: Landmass, r: RegionInfo, b: Blueprint): Blueprint {
+    for (const layer of CROSS[BP_SURFACE]) {
+      const [q0, q1] = slotsIn(r, layer, b.x, b.x + b.w);
+      for (let q = q0; q <= q1; q++) {
+        const o = this.raw(m, r, q, layer);
+        if (o && boxesMeet(b, o) && this.rank(m, r, q, layer) === 2) throw new RangeError(`gen2: anchors lake [${b.x}, ${b.x + b.w}) and ${o.kind} overlap across layers`);
+      }
+    }
+    return b;
   }
 
   // 液體藍圖 b 讓位（liquidYields）給另一層與它的外框相交的那幾槽的原始藍圖 → null（各層槽寬不同，不是「同一個 slot 序號」）

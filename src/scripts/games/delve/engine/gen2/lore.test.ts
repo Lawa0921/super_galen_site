@@ -114,18 +114,17 @@ describe('gen2 家鄉的石碑 / 遺物 / 地標（Task 14）', () => {
     const m = hc.relics.find((r) => r.item === 'night_amulet')!; expect(m.y).toBeGreaterThanOrEqual(srcOf(seed).layersAt(m.x).molten); expect(m.y).toBeLessThan(LAVA_Y - 12);
     for (const it of ['compass', 'depth_meter'] as const) expect(chestItemCount(w, bps, it), `${seed} ${it}`).toBe(1); } }, 180_000);
 
-  // 家鄉沒有地表湖（實測 60 個家鄉 0 座：家鄉表層可擲機率的槽幾乎都含主坑道或是錨點），旅人石堆（湖岸）只在家鄉有湖時出現——
-  // 這裡釘「家鄉有湖 ⇔ 有 CAIRN」，湖岸石堆本身由下一個測試在外圍的湖上驗
-  it('§4.4：地標放置率 ≥ 85%（有地標種類的家鄉藍圖中真的放了地標的比例），且含 RELIC_PACK / ORE_CART / GUARDIAN_STATUE / GEODE / SPORE_TOTEM / HONEY_JAR（家鄉有湖時另有 CAIRN）', () => {
+  // 家鄉的地表湖是錨點（Task 17 延續事項 4：舊生成器的家鄉每個種子都有地表湖），湖岸的旅人石堆（CAIRN）家鄉必有
+  it('§4.4：地標放置率 ≥ 85%（有地標種類的家鄉藍圖中真的放了地標的比例），且含 RELIC_PACK / ORE_CART / GUARDIAN_STATUE / GEODE / SPORE_TOTEM / HONEY_JAR / CAIRN', () => {
     for (const seed of SEEDS5) { const bp = homeBlueprints(seed), elig = bp.filter((b) => LANDMARK_KINDS.has(b.kind));
-      expect(elig.filter((b) => b.landmarks.length > 0).length / elig.length, seed).toBeGreaterThanOrEqual(0.85); }
-    const lakes = SEEDS5.some((s) => homeBlueprints(s).some((b) => b.kind === 'lake'));
-    expect(new Set(SEEDS5.flatMap((s) => homeOf(s).landmarks.map((l) => l.tile)))).toEqual(new Set([T.RELIC_PACK, T.ORE_CART, T.GUARDIAN_STATUE, T.GEODE, T.SPORE_TOTEM, T.HONEY_JAR, ...(lakes ? [T.CAIRN] : [])])); }, 180_000);
+      expect(elig.filter((b) => b.landmarks.length > 0).length / elig.length, seed).toBeGreaterThanOrEqual(0.85);
+      expect(homeOf(seed).landmarks.some((l) => l.tile === T.CAIRN), `${seed} cairn`).toBe(true); }
+    expect(new Set(SEEDS5.flatMap((s) => homeOf(s).landmarks.map((l) => l.tile)))).toEqual(new Set([T.RELIC_PACK, T.ORE_CART, T.GUARDIAN_STATUE, T.GEODE, T.SPORE_TOTEM, T.HONEY_JAR, T.CAIRN])); }, 180_000);
 
   it('M1 建構器補的地標（家鄉 + 外圍）：小屋 RELIC_PACK、遺跡 GUARDIAN_STATUE、湖 CAIRN、地下湖 RELIC_PACK；地標格在藍圖裡、腳下是實心；家鄉的每一份都有', () => {
     const TILE: Record<string, number> = { cabin: T.RELIC_PACK, ruin: T.GUARDIAN_STATUE, lake: T.CAIRN, cave_lake: T.RELIC_PACK };
     const seen: Record<string, number> = {};
-    for (const seed of SEEDS5) for (const b of homeBlueprints(seed)) if (b.kind in TILE && b.kind !== 'lake') expect(b.landmarks.length, `${seed} ${b.kind}@${b.x}`).toBe(1);
+    for (const seed of SEEDS5) for (const b of homeBlueprints(seed)) if (b.kind in TILE) expect(b.landmarks.length, `${seed} ${b.kind}@${b.x}`).toBe(1);
     for (const seed of SEEDS5.slice(0, 2)) for (const b of srcOf(seed).blueprints.overlapping(-12_000, 12_000)) {
       if (!(b.kind in TILE) || !b.landmarks.length) continue;
       const at = new Map<string, number>();
@@ -214,23 +213,26 @@ describe('gen2 家鄉的石碑 / 遺物 / 地標（Task 14）', () => {
 
   // 石室 / 熔岩祭壇：藍圖的格 + 天然洞穴探針（不載入世界）。坑道底藏物：主坑道是 fill 挖的、不在藍圖裡，所以載入箱子那一帶的欄驗：
   // 箱子在該地區主坑道底圓室（caves.shaftRoom）的最低處、腳下是石地板，從箱子沿非實心、沒有液體的格（坑道 ± 20 欄內）走得到地表以上
-  it('新錨點都走得到：2000 個家鄉的石室 ×2 / 熔岩祭壇（藍圖的格 + 天然洞穴探針，走到外框外 ≥ 300 格或地表）、坑道底藏物（載入世界，箱子在坑道底圓室、沿主坑道走到地表）；0 個 RangeError', () => {
-    const bad: string[] = [];
-    let probed = 0, cached = 0;
-    for (let k = 0; k < 2000; k++) {
-      const seed = `lw-${k}`;
-      try {
-        const g = new Gen2Source(seed), m = g.layout.landmassAt(SPAWN_X)!, open = naturalOpen({ seed, profile: g.profile } as BpCtx, {});
-        for (const a of g.blueprints.anchorsOf(m)) {
-          if (!['alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache'].includes(a.kind)) continue;
-          const b = g.blueprints.anchorBlueprint(m, a)!, s = startOf(b);
-          if (a.kind !== 'shaft_cache') { probed++; if (!escapes(g, b, s.x, s.y, open)) bad.push(`${seed} ${a.kind}@${b.x}`); continue; }
-          if (cacheReachable(g, seed, a.region, b)) cached++; else bad.push(`${seed} shaft_cache@${b.x}`);
-        }
-      } catch (e) { if (!(e instanceof RangeError)) throw e; bad.push(`${seed}: ${e.message}`); }
-    }
-    expect(bad.slice(0, 5)).toEqual([]); expect(probed).toBe(2000 * 3); expect(cached).toBe(2000);
-  }, 300_000);
+  // 2000 個家鄉切成兩段各自逾時（Task 17：單段實測 278 s 貼著 300 s 上限，整個資料夾一起跑時逾時；種子與斷言不變）
+  for (const [a, z] of [[0, 1000], [1000, 2000]] as const) {
+    it(`新錨點都走得到：家鄉 lw-${a}..${z - 1} 的石室 ×2 / 熔岩祭壇（藍圖的格 + 天然洞穴探針，走到外框外 ≥ 300 格或地表）、坑道底藏物（載入世界，箱子在坑道底圓室、沿主坑道走到地表）；0 個 RangeError`, () => {
+      const bad: string[] = [];
+      let probed = 0, cached = 0;
+      for (let k = a; k < z; k++) {
+        const seed = `lw-${k}`;
+        try {
+          const g = new Gen2Source(seed), m = g.layout.landmassAt(SPAWN_X)!, open = naturalOpen({ seed, profile: g.profile } as BpCtx, {});
+          for (const an of g.blueprints.anchorsOf(m)) {
+            if (!['alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache'].includes(an.kind)) continue;
+            const b = g.blueprints.anchorBlueprint(m, an)!, s = startOf(b);
+            if (an.kind !== 'shaft_cache') { probed++; if (!escapes(g, b, s.x, s.y, open)) bad.push(`${seed} ${an.kind}@${b.x}`); continue; }
+            if (cacheReachable(g, seed, an.region, b)) cached++; else bad.push(`${seed} shaft_cache@${b.x}`);
+          }
+        } catch (e) { if (!(e instanceof RangeError)) throw e; bad.push(`${seed}: ${e.message}`); }
+      }
+      expect(bad.slice(0, 5)).toEqual([]); expect(probed).toBe((z - a) * 3); expect(cached).toBe(z - a);
+    }, 300_000);
+  }
 
   it('載入世界後真的走得出去：80 個家鄉的新錨點、4 件遺物箱、14 塊石碑與指南針 / 深度計的小屋（從那一格走出它所在的藍圖外框，裂紋石 / 門算走得過），都不進液體', () => {
     const bad: string[] = [];

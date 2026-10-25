@@ -107,7 +107,7 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
     const zero = { setX: (): void => {}, at: (): number => 0 };
     const n = { soil: 0, stone: 0, basalt: 0 };
     const bad: string[] = [];
-    // 4 個種子的整個家鄉（四種生態、地城、礦坑…；沙漠地表的沙只有地表 + 4、+ 5 兩列在泥土帶的放礦範圍內，一個家鄉約 700 格，要多掃才碰得到）
+    // 4 個種子的整個家鄉（四種生態、地城、礦坑…；Task 17 起沙漠的沙到地表下 13–22、雪原凍土裡有冰 / 碎石 / 石——都不是泥土帶的銅宿主，這裡會抓到放寬）
     for (const seed of ['ore-host', 's-a', 's-b', 's-c']) for (let cx = 0; cx <= 131; cx++) {
       const src = srcOf(seed);
       const real = new Filler2(seed, src.layout, src.profile, src.blueprints), bare = new Filler2(seed, src.layout, src.profile, src.blueprints);
@@ -150,7 +150,7 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
       const col = fillCol(src, x >> 5);
       for (let y = I.surface; y < I.surface + 4; y++) expect(col.fg[li(x, y)], `x ${x} y ${y}`).toBe(T.SAND);
     }
-    // 沙漠地表的沙（地表下 6 格；泥土帶的銅從地表 + 4 起，沙不是宿主）：家鄉的沙漠陸地欄這幾格都不是礦
+    // 沙漠地表的沙（地表下至少 13 格，Task 17 延續事項 1；泥土帶的銅從地表 + 4 起，沙不是宿主）：家鄉的沙漠陸地欄這幾格都不是礦
     let desert = 0;
     const cols = new Map<number, Column>();
     for (let x = 100; x < 4100; x += 5) {
@@ -158,20 +158,24 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
       if (I.kind !== COL_LAND || I.biome !== BIOME.DESERT) continue;
       let col = cols.get(x >> 5);
       if (!col) { col = fillCol(src, x >> 5); cols.set(x >> 5, col); }
-      for (let y = I.surface; y < I.surface + 6; y++) expect(ORES.has(col.fg[li(x, y)]), `x ${x} y ${y}`).toBe(false);
+      for (let y = I.surface; y < Math.min(I.surface + 13, I.rock); y++) expect(ORES.has(col.fg[li(x, y)]), `x ${x} y ${y}`).toBe(false);
       desert++;
     }
     expect(desert).toBeGreaterThan(20);
   });
 
-  it('表層材質：森林草 + 泥、沙漠沙 6 + 砂岩、雪 5、叢林叢林草 + 泥巴；島欄沙灘沙 / 台地草', () => {
+  // Task 17 延續事項 1（規格補齊，比照舊生成器 legacy/worldgen.ts「生態區轉換」的表層：沙漠的沙到地表下 13–22、雪原薄雪 + 凍土）：
+  // 沙漠 / 雪原改成逐格規則，不再是 M1 的「沙 6 + 砂岩」「雪 5 + 泥」固定表。這裡驗結構（不重算雜訊）：
+  //   沙漠：地表下 13 格內（或到岩層）全是沙；岩層以上只有沙 / 砂岩（砂岩上可以有泥土帶的銅）；沙層底（第一格不是沙）落在地表下 13–22；
+  //   雪原：地表是雪；岩層以上只有雪 / 冰 / 泥 / 碎石 / 石（泥 / 雪上可以有銅）；雪薄（每欄岩層以上的雪 ≤ 14 格、平均 2–10）；
+  //     凍土的四種材質（泥、冰、碎石、石）都出現。
+  it('表層材質：森林草 + 泥、沙漠深沙（地表下 13–22）+ 砂岩、雪原薄雪 + 凍土、叢林叢林草 + 泥巴；島欄沙灘沙 / 台地草', () => {
     const src = new Gen2Source('skin');
     const want: Record<number, number[]> = {
       [BIOME.FOREST]: [T.GRASS, T.DIRT, T.DIRT, T.DIRT, T.DIRT, T.DIRT, T.DIRT],
-      [BIOME.DESERT]: [T.SAND, T.SAND, T.SAND, T.SAND, T.SAND, T.SAND, T.SANDSTONE],
-      [BIOME.SNOW]: [T.SNOW, T.SNOW, T.SNOW, T.SNOW, T.SNOW, T.DIRT],
       [BIOME.JUNGLE]: [T.JUNGLE_GRASS, T.MUD, T.MUD, T.MUD, T.MUD, T.MUD],
     };
+    const DESERT_SKIN = new Set<number>([T.SAND, T.SANDSTONE]), SNOW_SKIN = new Set<number>([T.SNOW, T.ICE, T.DIRT, T.GRAVEL, T.STONE]);
     const home = src.layout.landmassAt(2100)!;
     const seen = new Set<number>();
     // 同一欄只填一次（下面逐 x 取樣，相鄰 x 落在同一欄）
@@ -179,31 +183,61 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
     const colAt = (cx: number): Column => { let c = cols.get(cx); if (!c) cols.set(cx, c = fillCol(src, cx)); return c; };
     const ss = seedInt('skin', 'g2-shaft');
     let sampled = 0, checked = 0;
+    const bad: string[] = [];
+    const snow = { dirt: 0, ice: 0, gravel: 0, stone: 0, depth: [] as number[] }, desert = { sandstone: 0, cols: 0 };
     // 家鄉 + 東西各第一片大陸（M2a Task 9：家鄉的村莊整平了不少欄，只看家鄉時跳過的比例逼近 20%）
     const lands = [home, ...([1, -1] as const).map((sd) => { for (let i = 1; ; i++) { const m = src.layout.landmass(sd, i); if (m.kind === 'continent') return m; } })];
     for (const r of lands.flatMap((m) => m.regions)) {
       if (r.variant === VARIANT.BEACH) continue;
       const sx = shaftX(ss, r);
       for (let x = r.x0 + 30; x < r.x1 - 30; x += 11) {
-        const I = src.profile.info(x);
+        const I = src.profile.info(x), S = I.surface, n = want[r.biome]?.length ?? I.rock - S;
         // 入口欄與主坑道附近會挖到地表
         if (I.kind !== COL_LAND || src.isEntrance(x) || Math.abs(x - sx) <= 20) continue;
         sampled++;
         // 藍圖（湖 / 遺跡…）外框蓋到表層的欄由結構決定材質
-        if (src.blueprints.overlapping(x, x + 1).some((b) => b.y < I.surface + want[r.biome].length && b.y + b.h > I.surface)) continue;
-        const col = colAt(x >> 5);
-        // 地表 + 4 起的泥 / 雪 / 泥巴 / 砂岩可以是銅礦（逐帶宿主表，M2a Task 13）：當成原本的材質比
-        for (let d = 0; d < want[r.biome].length; d++) {
-          const w = want[r.biome][d], got = col.fg[li(x, I.surface + d)];
-          expect(d >= 4 && got === T.COPPER_ORE && SOIL_HOST.has(w) ? w : got, `biome ${r.biome} x ${x} d ${d}`).toBe(w);
+        if (src.blueprints.overlapping(x, x + 1).some((b) => b.y < S + n && b.y + b.h > S)) continue;
+        const col = colAt(x >> 5), at = (d: number): number => col.fg[li(x, S + d)];
+        // 地表 + 4 起的泥 / 雪 / 泥巴 / 砂岩可以是銅礦（逐帶宿主表，M2a Task 13）
+        const ore = (d: number, t: number): boolean => d >= 4 && t === T.COPPER_ORE;
+        if (want[r.biome]) {
+          for (let d = 0; d < n; d++) {
+            const w = want[r.biome][d], got = at(d);
+            expect(ore(d, got) && SOIL_HOST.has(w) ? w : got, `biome ${r.biome} x ${x} d ${d}`).toBe(w);
+          }
+        } else if (r.biome === BIOME.DESERT) {
+          let lead = 0;
+          while (lead < n && at(lead) === T.SAND) lead++;
+          if (lead < Math.min(13, n)) bad.push(`desert x ${x}: sand ${lead} / rock ${n}`);
+          if (lead < n && lead > 22) bad.push(`desert x ${x}: sand ${lead} > 22`);
+          for (let d = 0; d < n; d++) { const t = at(d); if (!DESERT_SKIN.has(t) && !ore(d, t)) bad.push(`desert x ${x} d ${d}: ${t}`); if (t === T.SANDSTONE) desert.sandstone++; }
+          desert.cols++;
+        } else {
+          if (at(0) !== T.SNOW) bad.push(`snow x ${x}: top ${at(0)}`);
+          let deep = 0;
+          for (let d = 0; d < n; d++) if (at(d) === T.SNOW) deep++;
+          snow.depth.push(deep);
+          for (let d = 0; d < n; d++) {
+            const t = at(d);
+            if (!SNOW_SKIN.has(t) && !ore(d, t)) bad.push(`snow x ${x} d ${d}: ${t}`);
+            if (t === T.DIRT) snow.dirt++; else if (t === T.ICE) snow.ice++; else if (t === T.GRAVEL) snow.gravel++; else if (t === T.STONE) snow.stone++;
+          }
         }
         seen.add(r.biome);
         checked++;
       }
     }
+    expect(bad.slice(0, 10)).toEqual([]);
     expect(seen.size).toBe(4);
     // 跳過藍圖欄不能吃掉大部分取樣：至少 80% 的取樣欄真的檢查了材質
     expect(checked, `${checked} / ${sampled}`).toBeGreaterThanOrEqual(Math.ceil(sampled * 0.8));
+    // 沙漠：沙層底在岩層以上的欄有砂岩
+    expect(desert.cols).toBeGreaterThan(20); expect(desert.sandstone).toBeGreaterThan(0);
+    // 雪原：凍土四種材質都有、雪層薄
+    const mean = snow.depth.reduce((a, b) => a + b, 0) / snow.depth.length;
+    expect(snow.depth.length).toBeGreaterThan(20); expect(Math.max(...snow.depth)).toBeLessThanOrEqual(14);
+    expect(mean).toBeGreaterThanOrEqual(2); expect(mean).toBeLessThanOrEqual(10);
+    for (const [k, v] of Object.entries(snow)) if (k !== 'depth') expect(v, `snow ${k}`).toBeGreaterThan(0);
     let isl = 0;
     for (let x = src.layout.landmass(1, 1).x0; x < src.layout.landmass(1, 1).x1; x++) {
       const I = src.profile.info(x);

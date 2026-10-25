@@ -8,6 +8,10 @@
 //       叢林 1 + 2t(1 − t)，t > 0.84 再乘 √(1 − (t − 0.84) / 0.16)（中段鼓到 1.5 倍）；
 //   · 中心 = 地區中點 + 傾斜（± 寬 × 0.35（叢林）/ 0.15（其他），越深越大）；左右邊各加擺動（± 23 + ± 7，乘 f = clamp((y − top) / 40, 0.35, 1)）；
 //   · 每格的 x 再加邊緣抖動 ± J × f（edge 雜訊）後落在 [xl, xr) 內 = 在淚滴裡；inner = 離邊的距離 / 18（夾到 1）。
+//   · 地塊邊界漸收（M2a Task 17 延續事項 2）：淚滴比地區寬（叢林中段 1.5 倍、再加傾斜），伸到地塊外的部分原本被地塊邊界垂直切掉
+//     （at 只看本欄所屬地塊的地區）。改成離地塊邊界 dB < TEAR_FADE 的格要 dB > FADE_MIN + fade × (TEAR_FADE − FADE_MIN) 才算在淚滴裡
+//     （fade = 0.6 × 13 × 13 + 0.4 × 9 × 7 的 2 八度值雜訊：兩組格距不對齊，等值線不會在格線上整段不動）：邊界 FADE_MIN 格內一定不在淚滴裡，
+//     再往內是雜訊的等值線，不是一條直線。
 // 每個地區的每列邊界只由 (seed, 地區, y) 決定（算一次、快取），加上每格的抖動雜訊 → 每一格只由 (seed, x, y) 決定，與分段無關。
 // 舊生成器的 FbmField(cellX, cellY, 2 八度, gain 0.5) 這裡是兩層沿 y 取樣的值雜訊（(cellX, cellY) 與 (cellX / 2, cellY / 2)，權重 2/3、1/3），
 // 格距同舊生成器：edge 13 × 13、mat 15 × 15、caveA 26 × 30、caveB 14 × 48。
@@ -29,6 +33,8 @@ export const TEAR_BOTTOM: Readonly<Record<number, number>> = {
 // 邊緣抖動 ± TEAR_J 格；inner 的距離尺度
 export const TEAR_J = 14;
 const INNER_D = 18;
+// 地塊邊界漸收的範圍（見檔頭）
+export const TEAR_FADE = 40, FADE_MIN = 3;
 // 快取的地區數上限
 const CACHE_MAX = 64;
 
@@ -91,17 +97,24 @@ export class Fbm2 {
 export class TeardropField {
   private readonly s: number;
   private readonly edge: Fbm2;
+  private readonly fade: Fbm2;
+  private readonly fade2: Fbm2;
   readonly mat: Fbm2;
   readonly caveA: Fbm2;
   readonly caveB: Fbm2;
   private readonly cache = new Map<RegionInfo, Teardrop>();
   private x = Number.NaN;
+  // 上一次 at(x) 的地塊範圍 [m0, m1)
+  private m0 = 0;
+  private m1 = 0;
   // 上一次 hit() 的 inner
   inner = -1;
 
   constructor(seed: string, private readonly layout: Layout, private readonly profile: Profile2) {
     this.s = seedInt(seed, 'g2-tear');
     this.edge = new Fbm2(13, 13, seedInt(seed, 'g2-tear-edge'));
+    this.fade = new Fbm2(13, 13, seedInt(seed, 'g2-tear-fade'));
+    this.fade2 = new Fbm2(9, 7, seedInt(seed, 'g2-tear-fade2'));
     this.mat = new Fbm2(15, 15, seedInt(seed, 'g2-tear-mat'));
     this.caveA = new Fbm2(26, 30, seedInt(seed, 'g2-tear-cave-a'));
     this.caveB = new Fbm2(14, 48, seedInt(seed, 'g2-tear-cave-b'));
@@ -117,13 +130,17 @@ export class TeardropField {
       const td = this.teardrop(r);
       if (x >= td.xmin && x < td.xmax) (out ??= []).push(td);
     }
-    if (out && x !== this.x) { this.edge.setX(x); this.mat.setX(x); this.caveA.setX(x); this.caveB.setX(x); this.x = x; }
+    if (out && x !== this.x) { this.edge.setX(x); this.fade.setX(x); this.fade2.setX(x); this.mat.setX(x); this.caveA.setX(x); this.caveB.setX(x); this.x = x; }
+    this.m0 = m.x0; this.m1 = m.x1;
     return out ?? NONE;
   }
 
   // (x, y) 落在哪個淚滴裡（重疊時取 inner 大的、同值取前面的；不在 = null），inner 寫進 this.inner。x 必須是上一次 at(x) 的 x
   hit(tds: readonly Teardrop[], x: number, y: number): Teardrop | null {
     let best: Teardrop | null = null, bi = -1;
+    // 地塊邊界漸收（只看 x 與 fade 雜訊，與哪個淚滴無關）
+    const dB = Math.min(x - this.m0, this.m1 - 1 - x);
+    if (dB < TEAR_FADE && dB <= FADE_MIN + (this.fade.at(y) * 0.6 + this.fade2.at(y) * 0.4) * (TEAR_FADE - FADE_MIN)) { this.inner = -1; return null; }
     for (const td of tds) {
       if (y < td.y0 || y >= td.y1) continue;
       const k = y - td.y0, xl = td.xl[k], xr = td.xr[k];

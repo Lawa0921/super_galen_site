@@ -181,7 +181,9 @@ const wholeBox = (c: BpCtx): Blueprint => ({ id: c.id, kind: 'cabin', layer: dec
   cells: new Int32Array(0), chests: [], ...emptyObjects(), wholeRegion: true });
 
 describe('gen2 anchors in the blueprint index', () => {
-  const g = new Gen2Source('whole'), home = g.layout.landmassAt(SPAWN_X)!;
+  // 種子：Task 17 起家鄉多了地表湖錨點，原本的 'whole' 最寬地區的表層槽全被錨點佔走（湖在含坑道那一槽），注入的 test_probe 會撞槽 → 換 whole-0
+  const SEED = 'whole-0';
+  const g = new Gen2Source(SEED), home = g.layout.landmassAt(SPAWN_X)!;
   // 家鄉最寬的一般地區（地下層至少 4 槽）裡第一個沒有正式錨點的地下槽 q；查詢只碰離 q ≥ 2 槽的地方
   const r = home.regions.filter((q) => q.variant !== VARIANT.BEACH && q.variant !== VARIANT.DUNGEON && q.variant !== VARIANT.SPAWN).sort((p, q) => (q.x1 - q.x0) - (p.x1 - p.x0))[0];
   const used = (layer: number) => new Set(g.blueprints.anchorsOf(home).filter((a) => a.region === r && a.layer === layer).map((a) => a.slot));
@@ -195,7 +197,7 @@ describe('gen2 anchors in the blueprint index', () => {
   it('wholeRegion 錨點：外框跨整個地區，查詢範圍沒碰到它所在的槽也找得到（恰一次）', () => {
     expect(n).toBeGreaterThanOrEqual(4); expect(qU).toBeDefined();
     probe = wholeBox;
-    const idx = new BlueprintIndex('whole', g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_UNDER, slot: qU, wholeRegion: true }] : []) });
+    const idx = new BlueprintIndex(SEED, g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_UNDER, slot: qU, wholeRegion: true }] : []) });
     const id = structureId(0, 0, r.index, qU, BP_UNDER);
     const hits = (a: number, z: number) => idx.overlapping(a, z).filter((b) => b.id === id).length;
     expect(Math.abs(far0 - landSlotStart(qU))).toBeGreaterThanOrEqual(2 * slotWidth(BP_UNDER));
@@ -208,7 +210,7 @@ describe('gen2 anchors in the blueprint index', () => {
 
   it('groundAt 重入丟錯（Q4 無循環改由程式保證）：SURFACE 錨點的建構器呼叫 groundAt → 丟錯，之後索引照常可用', () => {
     probe = (c) => { c.groundAt(c.slotX0); return wholeBox(c); };
-    const idx = new BlueprintIndex('whole', g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot: qS }] : []) });
+    const idx = new BlueprintIndex(SEED, g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot: qS }] : []) });
     const x = r.x0 + qS * LAND_SLOT_W + 1;
     expect(() => idx.groundAt(x)).toThrow(/groundAt re-entered/);
     expect(() => idx.overlapping(x, x + 1)).toThrow(/groundAt re-entered/);
@@ -217,9 +219,9 @@ describe('gen2 anchors in the blueprint index', () => {
   });
 
   it('錨點建構器的執行期檢查：外框比 ANCHOR_MAX_W 寬、或超出可用範圍 ± SLOT_PAD → 丟錯', () => {
-    const ss = seedInt('whole', 'g2-shaft'), sx = shaftX(ss, r), n = Math.floor((r.x1 - r.x0) / LAND_SLOT_W);
+    const ss = seedInt(SEED, 'g2-shaft'), sx = shaftX(ss, r), n = Math.floor((r.x1 - r.x0) / LAND_SLOT_W);
     const slot = Math.min(Math.floor((sx - r.x0) / LAND_SLOT_W), n - 1), sl = landSlot(r, slot, BP_SURFACE);
-    const mk = () => new BlueprintIndex('whole', g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot }] : []) });
+    const mk = () => new BlueprintIndex(SEED, g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot }] : []) });
     const at = (x: number, w: number) => (c: BpCtx): Blueprint => ({ ...wholeBox(c), x, w, wholeRegion: false });
     probe = (c) => at(placeX(c, 61, true, () => true)!, 61)(c);
     expect(() => mk().overlapping(sl.x0, sl.x1)).toThrow(/wider than 60/);
@@ -232,12 +234,12 @@ describe('gen2 anchors in the blueprint index', () => {
   });
 
   it('錨點在含坑道的槽：建構器的 slotX0 / slotX1 = 避開坑道帶後較大的一側，用 placeX 放的外框離坑道觸及範圍 ≥ 1', () => {
-    const ss = seedInt('whole', 'g2-shaft'), sx = shaftX(ss, r), q = Math.floor((sx - r.x0) / LAND_SLOT_W);
+    const ss = seedInt(SEED, 'g2-shaft'), sx = shaftX(ss, r), q = Math.floor((sx - r.x0) / LAND_SLOT_W);
     const sl = landSlot(r, Math.min(q, Math.floor((r.x1 - r.x0) / LAND_SLOT_W) - 1), BP_SURFACE), slot = (sl.x0 - r.x0) / LAND_SLOT_W;
     expect(sx >= sl.x0 && sx < sl.x1).toBe(true);
     let seen: BpCtx | null = null;
     probe = (c) => { seen = c; const x = placeX(c, 40, true, () => true)!; return { ...wholeBox(c), x, w: 40, wholeRegion: false }; };
-    const idx = new BlueprintIndex('whole', g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot }] : []) });
+    const idx = new BlueprintIndex(SEED, g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot }] : []) });
     const b = idx.overlapping(sl.x0, sl.x1, [BP_SURFACE]).find((p) => p.id === structureId(0, 0, r.index, slot, BP_SURFACE))!;
     const c = seen as BpCtx | null;
     expect(c).not.toBeNull();

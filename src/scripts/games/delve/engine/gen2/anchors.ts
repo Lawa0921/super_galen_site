@@ -4,6 +4,8 @@
 // 家鄉錨點的通則：只放在家鄉的一般地區（不是沙灘、不是地城區；地城區只有 dungeon 錨點）；含出生點 ± SPAWN_CLEAR 的槽
 // 不放（所有層，含 MINOR，Q16）；先找不含主坑道的槽，沒有才用含坑道的槽（外框限在避開坑道帶後較大的一側，anchorSpan；
 // shaft_cache 例外——它就是要坑道底那一槽）；同一 (地區, 層, 槽) 至多一個。
+// 家鄉的地表湖（M2a Task 17 延續事項 4）：舊生成器的家鄉每個種子都有地表湖，gen2 家鄉的表層槽幾乎都是錨點或含坑道，
+// 機率湖實測 60 個家鄉 0 座 → 空島之後挑一個表層錨點（避開村莊 / 遺跡 / 空島的槽與出生點清空區，見 homeAnchors 的 pickLake）。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { hash2, seedInt } from '../noise';
 import { BIOME } from '../world';
@@ -17,7 +19,7 @@ import { SLOPE, VILLAGE_VW } from './structures/village';
 import { ALCOVE_MAX_W, MOLTEN_MAX_W } from './structures/shrine';
 
 export type AnchorKind = 'dungeon' | 'village' | 'hall' | 'mineshaft_secret' | 'sky_island' | 'mushroom_biome' | 'crystal_cave' | 'hive'
-  | 'cave_lake' | 'ruin' | 'cabin' | 'alcove_snow' | 'alcove_desert' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet' | 'keep' | 'hermit_hut'
+  | 'cave_lake' | 'ruin' | 'cabin' | 'alcove_snow' | 'alcove_desert' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet' | 'lake' | 'keep' | 'hermit_hut'
   // 只給測試注入（Q8）：homeAnchors / continentAnchors 永遠不產生、正式碼永遠不登錄建構器
   | 'test_probe';
 // wholeRegion：佔滿整個地區（家鄉地城，Q2）——外框可以超出自己的槽，overlapping 對任何與地區相交的查詢都找得到它。
@@ -34,8 +36,10 @@ export function anchorBuild(kind: AnchorKind): AnchorBuild | undefined { return 
 
 // 回傳順序（同種依選取順序）
 const ORDER: readonly AnchorKind[] = ['dungeon', 'village', 'hall', 'mineshaft_secret', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive',
-  'cave_lake', 'ruin', 'cabin', 'alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache', 'spawn_tablet'];
+  'cave_lake', 'ruin', 'cabin', 'alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache', 'spawn_tablet', 'lake'];
 
+// 地表湖錨點最窄的外框（湖寬 20 + 兩側湖壁各 2；可用範圍放不下最寬的 64 時的備案）
+export const LAKE_MIN_W = 24;
 // 村莊離出生點至少、第 1 / 2 座的目標偏移；地廳第 2 座的目標偏移與兩座最小間距；礦坑密室 / 空島 / 熔岩祭壇離出生點至少
 const VILLAGE_AIM = 950, HALL_AIM = 1200, HALL_GAP = 840, SECRET_MIN = 160, SKY_MIN = 250, MOLTEN_MIN = 630;
 // 礦坑密室彼此至少 2 槽；地下層那一組的重挑次數
@@ -50,11 +54,12 @@ const SECRET_GAP = 2 * SUB_SLOT_W, UNDER_TRIES = 8;
 //   structures/hive.ts 的 HIVE_MAX_W；橢圓本身最寬 2 × 70 + 1 = 141 / 2 × 60 + 1 = 121 / 2 × 15 + 1 + 2 × 3 = 37，隧道只能在上限內延伸；
 //   後備的直豎井只加高、不加寬。hive 在 Task 11 從 37 放寬：蜂巢的殼是封閉的，一定要挖隧道或豎井接洞穴）；
 //   alcove 41 / molten_shrine 61 = 9 × 5 石室 + 兩側接洞的隧道各最多 16 欄 / 13 × 7 熔岩祭壇 + 各 24 欄（structures/shrine.ts 的 ALCOVE_MAX_W / MOLTEN_MAX_W；
-//   Task 14：小室一定要走得進去，原本的 9 / 15 放不下隧道）；spawn_tablet 12：小點位的寬 ≤ 12（實際外框 7 = 石碑 ± 3）。
+//   Task 14：小室一定要走得進去，原本的 9 / 15 放不下隧道）；spawn_tablet 12：小點位的寬 ≤ 12（實際外框 7 = 石碑 ± 3）；
+//   lake 64 = 湖寬上限 60 + 兩側湖壁各 2（structures/lakes.ts；錨點版的湖寬夾到可用範圍放得下，最窄 20 → 外框 24，見 LAKE_MIN_W）。
 // dungeon（wholeRegion）與 shaft_cache（刻意在坑道底）不受這個限制
 export const ANCHOR_MAX_W: Readonly<Partial<Record<AnchorKind, number>>> = {
   village: 91, ruin: 20, cabin: 75, cave_lake: 65, hall: 154, mineshaft_secret: 154, sky_island: 48,
-  mushroom_biome: 145, crystal_cave: 125, hive: 48, alcove_snow: ALCOVE_MAX_W, alcove_desert: ALCOVE_MAX_W, molten_shrine: MOLTEN_MAX_W, spawn_tablet: 12,
+  mushroom_biome: 145, crystal_cave: 125, hive: 48, alcove_snow: ALCOVE_MAX_W, alcove_desert: ALCOVE_MAX_W, molten_shrine: MOLTEN_MAX_W, spawn_tablet: 12, lake: 64,
   // 只給測試（BlueprintIndex 的執行期寬度檢查）
   test_probe: 60,
 };
@@ -114,12 +119,13 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   // 某層還空著、不碰出生點清空區、keep 成立、放得下 kind 外框的槽（依 x 序）：先回不含坑道的，沒有才回含坑道的
   // avoid(s) = 這個槽的可用範圍另外要避開的區間（Anchor.avoid）
   type Avoid = (s: Slot) => Span[];
-  const free = (kind: AnchorKind, layer: Layer, keep: (s: Slot) => boolean = () => true, avoid?: Avoid): Slot[] => {
-    const { plain, shafted } = split(kind, layer, keep, avoid);
+  // need = 可用範圍 − 兩側 SLOT_PAD 至少要多寬（預設 ANCHOR_MAX_W[kind]；地表湖的備案用 LAKE_MIN_W）
+  const free = (kind: AnchorKind, layer: Layer, keep: (s: Slot) => boolean = () => true, avoid?: Avoid, need?: number): Slot[] => {
+    const { plain, shafted } = split(kind, layer, keep, avoid, need);
     return plain.length ? plain : shafted;
   };
-  const split = (kind: AnchorKind, layer: Layer, keep: (s: Slot) => boolean, avoid?: Avoid): { plain: Slot[]; shafted: Slot[] } => {
-    const need = ANCHOR_MAX_W[kind];
+  const split = (kind: AnchorKind, layer: Layer, keep: (s: Slot) => boolean, avoid?: Avoid, needW?: number): { plain: Slot[]; shafted: Slot[] } => {
+    const need = needW ?? ANCHOR_MAX_W[kind];
     if (need === undefined) throw new RangeError(`gen2: anchor kind ${kind} has no max width`);
     const plain: Slot[] = [], shafted: Slot[] = [];
     for (const r of regions) {
@@ -233,6 +239,28 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   const pickCrystal = (keep: (s: Slot) => boolean): Slot | undefined =>
     crys((s) => s.r.biome === BIOME.FOREST && clearAbove(s) && keep(s)) ?? crys((s) => clearAbove(s) && keep(s))
     ?? crys((s) => s.r.biome === BIOME.FOREST && keep(s)) ?? crys(keep);
+  // 小點位：出生點東側第一個槽（只看 MINOR 層，與其他錨點的選法無關；先挑是為了讓地表湖避開它那一槽）
+  const tablet = add('spawn_tablet', free('spawn_tablet', BP_MINOR, (s) => s.x0 > sp)[0]);
+
+  // 地表湖（Task 17 延續事項 4）：在空島之後挑（見下面天空那段），前面的錨點選法完全不變。表層還空著的槽（不是村莊 / 遺跡、不含出生點清空區），
+  // 同序號的天空槽不是空島（空島的繩梯垂到地面，與湖相交 = RangeError）、不蓋出生點石碑那一槽。退讓鏈（各自雜湊挑一個）：
+  //   ① 森林 / 叢林（舊生成器的池塘與注水湖床不在雪原 / 沙漠）、正下方沒有地下層 / 深層錨點的槽；
+  //   ② 森林 / 叢林、正下方沒有 RISKY 的錨點（見下）——其他錨點（礦坑密室、小生態、熔岩祭壇…）都在深處，建構器收到 surfaceBan，豎井避開湖；
+  //   ③ 任何生態、同 ②；④ 任何生態、只避空島與石碑；放不下最寬的湖時同一條鏈用 LAKE_MIN_W 再找一次（建構器把湖寬夾進可用範圍）；
+  //   ⑤ 不避石碑那一槽（石碑的建構器收到 minorBan = 同地區的表層原始藍圖，在 170 格槽裡避開湖，湖最寬 64）
+  // RISKY：可能碰到湖的地下層錨點——地廳（後備豎井不避 surfaceBan）、地下湖（液體碰液體會默默讓位）、石室（y 可以就在岩層線，湖底碰得到）、小屋（頂 ≥ 地表 + 26，地形起伏時湖底碰得到）
+  const RISKY = new Set<AnchorKind>(['hall', 'cave_lake', 'alcove_snow', 'alcove_desert', 'cabin']), tabSl = landSlot(tablet.r, tablet.q, BP_MINOR);
+  const pickLake = (): Slot | undefined => {
+    const below = out.filter((a) => (a.layer === BP_UNDER || a.layer === BP_DEEP) && !a.wholeRegion).map((a) => ({ kind: a.kind, sl: landSlot(a.region, a.slot, a.layer) }));
+    const overBelow = (s: Slot, kinds?: ReadonlySet<AnchorKind>): boolean => below.some((b) => (!kinds || kinds.has(b.kind)) && b.sl.x0 < s.x1 && s.x0 < b.sl.x1);
+    const noSky = (s: Slot): boolean => !taken.has(key(s.r, BP_SKY, s.q));
+    const base = (s: Slot): boolean => noSky(s) && !(tabSl.x0 < s.x1 && s.x0 < tabSl.x1);
+    const wet = (s: Slot): boolean => s.r.biome === BIOME.FOREST || s.r.biome === BIOME.JUNGLE;
+    const chain: ((s: Slot) => boolean)[] = [(s) => base(s) && wet(s) && !overBelow(s), (s) => base(s) && wet(s) && !overBelow(s, RISKY), (s) => base(s) && !overBelow(s, RISKY), base, noSky];
+    for (const keep of chain) for (const need of [ANCHOR_MAX_W.lake!, LAKE_MIN_W]) { const q = hashed(free('lake', BP_SURFACE, keep, undefined, need), 15); if (q) return q; }
+    return undefined;
+  };
+
   const markPhase = out.length, takenPhase = new Set(taken);
   let secrets: Slot[] = [], minis: Slot[] = [], alcoves: Slot[] = [];
   for (const reserve of [false, true]) {
@@ -308,11 +336,20 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
       const below = [...halls, ...secrets, ...minis];
       const surfTaken = (s: Slot): boolean => taken.has(key(s.r, BP_SURFACE, s.q));
       const surfKind = (s: Slot): AnchorKind | undefined => out.find((a) => a.layer === BP_SURFACE && a.region === s.r && a.slot === s.q)?.kind;
-      for (let k = 0; k < 2; k++) {
-        let { s, av } = chain([...below, ...cabins, ...alcoves], k, true);
-        if (!s) ({ s, av } = chain(below, k, true));
-        if (!s) ({ s, av } = chain(below, k, false));
-        add('sky_island', s, av);
+      // 空島挑完再挑地表湖；湖沒有槽（家鄉只有約 8 個表層槽，2000 個種子約 0.5% 全被村莊 / 遺跡 / 空島佔走）→ 退回空島之前、先挑湖，
+      // 空島照同一條退讓鏈（湖那一槽當表層已佔：① ② 不用它，③ ④ 也只收村莊 / 遺跡的槽）。這樣其餘 99.5% 的家鄉空島與先前完全相同
+      const markSky = out.length, takenSky = new Set(taken);
+      for (const lakeFirst of [false, true]) {
+        if (lakeFirst) { out.length = markSky; taken.clear(); for (const q of takenSky) taken.add(q); add('lake', pickLake()); }
+        for (let k = 0; k < 2; k++) {
+          let { s, av } = chain([...below, ...cabins, ...alcoves], k, true);
+          if (!s) ({ s, av } = chain(below, k, true));
+          if (!s) ({ s, av } = chain(below, k, false));
+          add('sky_island', s, av);
+        }
+        if (lakeFirst) break;
+        const lk = pickLake();
+        if (lk) { add('lake', lk); break; }
       }
       break;
     } catch (e) {
@@ -320,9 +357,6 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
       out.length = markPhase; taken.clear(); for (const k of takenPhase) taken.add(k);
     }
   }
-  // 小點位：出生點東側第一個槽
-  add('spawn_tablet', free('spawn_tablet', BP_MINOR, (s) => s.x0 > sp)[0]);
-
   // Array.prototype.sort 是穩定排序：同種保持選取順序
   return out.sort((p, q) => ORDER.indexOf(p.kind) - ORDER.indexOf(q.kind));
 }

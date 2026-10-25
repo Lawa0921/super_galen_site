@@ -8,9 +8,11 @@ import { SPAWN_X } from './layout';
 import { BP_DEEP, KEEP, emptyObjects, partsOf, type Blueprint, type BpBox } from './bpcore';
 import { Filler2 } from './fill';
 import type { BlueprintIndex } from './blueprint';
-import { fillCol, bytes, FILL_DECOR } from './testUtil';
+import { fillCol, bytes, FILL_DECOR, worldOf, loadColumns } from './testUtil';
+import { TeardropField } from './teardrop';
+import type { Landmass } from './layout';
 import { Column, li } from '../column';
-import { T, W, SOLID_LUT, floorOk, ceilOk } from '../tiles';
+import { T, W, SOLID_LUT, floorOk, ceilOk, isSolidTile } from '../tiles';
 import { BlobNoise, ColNoise, BLOB_CELL } from '../genPrims';
 import { LIQ, LIQ_MAX } from '../liquidKind';
 import { BIOME } from '../world';
@@ -159,12 +161,13 @@ describe('gen2 填格新特徵（Task 12）', () => {
 
   // brief 的「每種 > 30」對雪灌木 / 枯灌木 / 蘑菇不成立：家鄉的雪地地表約 450 欄（7% → 期望約 31）、沙漠沙約 400 欄（12%，扣掉仙人掌期望約 42）、
   // 蘑菇（草 2% + 叢林草 1%）期望約 40，每個種子都 > 30 是擲硬幣。這三種每個種子 > 15，再用下一個測試驗機率
-  it('裝飾：每種 > 30 格（南瓜 > 5；雪灌木 / 枯灌木 / 蘑菇 > 15），每一格的支撐都合法（地板類下方實心、天花板類上方實心、藤往上接藤或實心）', () => { for (const s of HOME3) {
+  it('裝飾：每種 > 30 格（南瓜 ≥ 5；雪灌木 / 枯灌木 / 蘑菇 > 15），每一格的支撐都合法（地板類下方實心、天花板類上方實心、藤往上接藤或實心）', () => { for (const s of HOME3) {
     for (const t of [T.FLOWER, T.TALL_GRASS, T.SMALL_ROCK, T.BUSH, T.FERN, T.GLOW_MUSHROOM, T.STALACTITE, T.STALAGMITE, T.COBWEB, T.POT]) expect(s.count(t), String(t)).toBeGreaterThan(30);
     // 藤只算 fill 自己長的（蘑菇林的藤是藍圖畫的）：修正 1 的地下叢林之後每個種子 3,200–3,800（舊生成器同種子整圖 6,700–7,100）
     expect(s.fillCount(T.VINE)).toBeGreaterThan(1500);
     for (const t of [T.SNOW_SHRUB, T.DEAD_BUSH, T.MUSHROOM]) expect(s.count(t), String(t)).toBeGreaterThan(15);
-    expect(s.count(T.PUMPKIN)).toBeGreaterThan(5); expect(s.badSupport()).toEqual([]); } }, 30_000);
+    // 南瓜（草地上 0.7%）：Task 17 的地表湖錨點蓋掉幾十欄草地，ft-c 7 → 5（那 2 顆在湖的欄上；機率本身由下一個測試驗）
+    expect(s.count(T.PUMPKIN)).toBeGreaterThanOrEqual(5); expect(s.badSupport()).toEqual([]); } }, 30_000);
 
   // 修正 1：舊生成器的地下叢林是一路長到熔岩深淵上方的泥巴淚滴。舊生成器同種子：岩層以下的泥巴約 17.5 萬格 / 地表叢林 550–626 欄
   // （每欄 280–320 格）；gen2 家鄉每欄（叢林地區寬）實測 240–300 格，門檻 150（約舊的一半）
@@ -257,4 +260,106 @@ describe('gen2 填格新特徵（Task 12）', () => {
 
   it('分段填 = 整欄填（裝飾 / 熔岩帶在欄內、與分段無關）', () => { const src = new Gen2Source('feat'); for (const cx of [20, 66, 110]) {
     const parts = new Column(cx, 1200); src.fill(parts, cx * 32, cx * 32 + 7); src.fill(parts, cx * 32 + 7, cx * 32 + 32); expect(bytes(parts)).toEqual(bytes(fillCol(src, cx))); } }, 30_000);
+});
+
+// ── M2a Task 17 延續事項 2 / 3：邊界上沒有垂直直邊、藍圖的蛛網不懸空 ──
+// 一列一列看邊界那一側最外面的格 x：連續 run 列都是同一個 x = 一段 run 格高的垂直直邊。回最長的 run
+function longestStraight(edgeX: readonly (number | null)[]): number {
+  let best = 0, run = 0;
+  for (let k = 0; k < edgeX.length; k++) {
+    run = edgeX[k] !== null && k > 0 && edgeX[k] === edgeX[k - 1] ? run + 1 : edgeX[k] !== null ? 1 : 0;
+    best = Math.max(best, run);
+  }
+  return best;
+}
+// 地塊 m 靠 edge（x0 = 左緣、x1 = 右緣）那一側 60 欄內，每一列最靠邊的淚滴格 x（沒有 = null），y ∈ [0, 1200)
+function tearEdge(tf: TeardropField, m: Landmass, edge: 'x0' | 'x1'): (number | null)[] {
+  const out: (number | null)[] = new Array(1200).fill(null);
+  const xs = edge === 'x1' ? Array.from({ length: 60 }, (_, k) => m.x1 - 1 - k) : Array.from({ length: 60 }, (_, k) => m.x0 + k);
+  // 由外往內：每列第一個碰到的淚滴格就是最靠邊的
+  for (const x of xs) {
+    const tds = tf.at(x);
+    if (!tds.length) continue;
+    for (let y = 0; y < 1200; y++) if (out[y] === null && tf.hit(tds, x, y)) out[y] = x;
+  }
+  return out;
+}
+
+describe('gen2 邊界與蛛網（Task 17 延續事項）', () => {
+  // 淚滴（叢林泥巴 / 沙漠砂岩與沙 / 雪原冰）比地區寬（叢林中段 1.5 倍、再加傾斜），伸到地塊邊界外的部分原本被地塊邊界垂直切掉
+  // （teardrop.at 只看本欄所屬地塊的地區）：家鄉兩端與大陸兩端靠海那側出現上百列高的直邊。改成離地塊邊界 TEAR_FADE 格內漸收。
+  // 20 個種子 × （家鄉兩端 + 每側前 2 片大陸的兩端）：每一列最靠邊的淚滴格不碰邊界（離邊界 ≥ 2）、同一個 x 連續不到 24 列。
+  // 改前：被切的邊界整段貼著邊界那一欄（同一個 x 連續 25–525 列）。改後實測：漸收的等值線最長 19 列、離邊界 ≥ 40 的天然邊 15 列
+  // （平滑的邊在切線垂直的地方本來就有十幾列同一個 x，舊生成器的淚滴邊也是）
+  it('淚滴在地塊邊界漸收：不碰邊界、沒有 ≥ 24 格高的垂直直邊', () => {
+    let near = 0;
+    const bad: string[] = [];
+    for (let k = 0; k < 20; k++) {
+      const seed = `tb-${k}`, src = new Gen2Source(seed), tf = new TeardropField(seed, src.layout, src.profile);
+      const lands: Landmass[] = [src.layout.landmassAt(2100)!];
+      for (const side of [1, -1] as const) for (let i = 1, n = 0; n < 2; i++) { const m = src.layout.landmass(side, i); if (m.kind === 'continent') { lands.push(m); n++; } }
+      for (const m of lands) for (const edge of ['x0', 'x1'] as const) {
+        const e = tearEdge(tf, m, edge), b = edge === 'x1' ? m.x1 - 1 : m.x0;
+        if (e.some((x) => x !== null)) near++;
+        const touch = e.filter((x) => x !== null && Math.abs(x - b) < 2).length, run = longestStraight(e);
+        if (process.env.DELVE_MEASURE === '1' && e.some((x) => x !== null)) console.info('[tear edge]', seed, `${m.side}:${m.i}`, edge, touch, run);
+        if (touch > 0 || run >= 24) bad.push(`${seed} ${m.side}:${m.i} ${edge}: touch ${touch} run ${run}`);
+      }
+    }
+    expect(bad.slice(0, 10)).toEqual([]);
+    // 真的有淚滴伸到邊界附近（60 欄內）
+    expect(near).toBeGreaterThan(30);
+  }, 120_000);
+
+  // 表層材質原本照本欄地區的生態逐欄決定，不同生態的地區交界在地表到岩層之間是一條垂直直線（沙漠的沙 / 砂岩、雪原凍土對森林的泥）。
+  // 改成交界 ± SKIN_J 欄內逐格抖動（地表那一列不抖：地表裝飾、樹與仙人掌照地區）。5 個種子的家鄉，每個不同生態的陸地地區交界：
+  // 地表下 3 格到岩層之間，每一列「右邊地區的表層牆」最左邊那一格的 x，同一個 x 連續不超過 7 列（改前每個交界都是整段同一個 x：5–21 列；
+  // 改後 23 個交界最長 7 列，是抖動雜訊在極值附近幾列不動）
+  it('表層在不同生態的地區交界抖動：地表到岩層之間沒有 ≥ 8 格高的垂直直邊', () => {
+    // 用背景牆分生態（雪原凍土裡也有泥，前景分不出來）：泥牆 = 森林、砂岩牆 = 沙漠、雪牆 = 雪原、泥巴牆 = 叢林（牆從地表下 3 格起）
+    const cls = (w: number): number => (w === W.DIRT_WALL ? BIOME.FOREST : w === W.SANDSTONE_WALL ? BIOME.DESERT : w === W.SNOW_WALL ? BIOME.SNOW : w === W.MUD_WALL ? BIOME.JUNGLE : -1);
+    let pairs = 0;
+    const bad: string[] = [];
+    for (const seed of ['sk-a', 'sk-b', 'sk-c', 'sk-d', 'sk-e']) {
+      const src = new Gen2Source(seed), regs = src.layout.landmassAt(2100)!.regions, cols = new Map<number, Column>();
+      const wallAt = (x: number, y: number): number => { let c = cols.get(x >> 5); if (!c) cols.set(x >> 5, c = fillCol(src, x >> 5)); return c.wall[li(x, y)]; };
+      for (let j = 1; j < regs.length; j++) {
+        const L = regs[j - 1], R = regs[j], B = R.x0;
+        if (L.biome === R.biome || src.profile.info(B - 1).kind !== COL_LAND || src.profile.info(B).kind !== COL_LAND) continue;
+        // 交界兩側的藍圖（村莊、湖…）會蓋掉表層：外框碰到 [B − 24, B + 24) 的表層就跳過
+        if (src.blueprints.overlapping(B - 24, B + 24).some((b) => b.y < src.profile.info(B).rock)) continue;
+        pairs++;
+        let y0 = 0, y1 = 1200;
+        for (let x = B - 24; x < B + 24; x++) { const I = src.profile.info(x); y0 = Math.max(y0, I.surface + 3); y1 = Math.min(y1, I.rock); }
+        const edge: (number | null)[] = [];
+        for (let y = y0; y < y1; y++) { let e: number | null = null; for (let x = B - 24; x < B + 24 && e === null; x++) if (cls(wallAt(x, y)) === R.biome) e = x; edge.push(e); }
+        const run = longestStraight(edge);
+        if (process.env.DELVE_MEASURE === '1') console.info('[skin edge]', seed, B, run, y1 - y0);
+        if (run >= 8) bad.push(`${seed} ${L.biome}|${R.biome} @${B}: run ${run} of ${y1 - y0}`);
+      }
+    }
+    expect(bad).toEqual([]);
+    expect(pairs).toBeGreaterThan(10);
+  }, 120_000);
+
+  // 藍圖自己畫的蛛網（地城房間角落、小屋屋頂下、礦坑密室）在屋頂 / 側牆缺塊或接走廊的角落會懸空（rr-3 地城、rr-4 小屋）。
+  // 220 個家鄉：每份藍圖的蛛網格與它所在欄 ± 1 欄裡的所有蛛網（含 fill 自己放的），最終世界裡 4 鄰至少一格是實心
+  it('蛛網不懸空：220 個家鄉藍圖的蛛網（與附近 fill 的蛛網）4 鄰至少一格實心', () => {
+    let webs = 0;
+    const bad: string[] = [];
+    for (let k = 0; k < 220; k++) {
+      const seed = `web-${k}`, src = new Gen2Source(seed), w = worldOf(src), xs = new Set<number>();
+      for (const b of src.blueprints.homePlans()) for (let i = 0; i < b.cells.length; i += 5) if (b.cells[i + 2] === T.COBWEB) xs.add(b.cells[i]);
+      for (const x of xs) {
+        loadColumns(w, x - 2, x + 3);
+        for (let y = 1; y < 1199; y++) {
+          if (w.getFg(x, y) !== T.COBWEB) continue;
+          webs++;
+          if (![[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].some(([a, c]) => isSolidTile(w.getFg(a, c)))) bad.push(`${seed} ${x},${y}`);
+        }
+      }
+    }
+    expect(bad.slice(0, 10)).toEqual([]);
+    expect(webs).toBeGreaterThan(5000);
+  }, 180_000);
 });

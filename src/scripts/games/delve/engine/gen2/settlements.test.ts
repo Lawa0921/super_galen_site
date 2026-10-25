@@ -113,7 +113,10 @@ describe('gen2 家鄉的村莊與矮人地廳', () => {
     expect(crossYields(K, 0, box(BP_SURFACE, 0, 260, 40, 20), 0)).toBe(true); expect(crossYields(U, 0, far, 2)).toBe(false);
     // 同層、液體不歸這條規則管（液體照舊 liquidYields）
     expect(crossYields(box(BP_UNDER, 0, 300, 50, 50), 0, U, 2)).toBe(false);
-    expect(crossYields({ ...U, kind: 'cave_lake' }, 0, S_, 2)).toBe(false); expect(crossYields(U, 0, { ...S_, kind: 'lake' }, 2)).toBe(false);
+    expect(crossYields({ ...U, kind: 'cave_lake' }, 0, S_, 2)).toBe(false); expect(crossYields(U, 0, { ...S_, kind: 'lake' }, 0)).toBe(false);
+    // 例外（Task 17）：家鄉的地表湖錨點（lake、等級 2）不讓位，碰到它的非液體機率 / 保證藍圖讓位；錨點碰到它不讓（BlueprintIndex 丟 RangeError）；液體照舊
+    expect(crossYields(U, 0, { ...S_, kind: 'lake' }, 2)).toBe(true); expect(crossYields(U, 1, { ...S_, kind: 'lake' }, 2)).toBe(true);
+    expect(crossYields(U, 2, { ...S_, kind: 'lake' }, 2)).toBe(false); expect(crossYields({ ...U, kind: 'cave_lake' }, 0, { ...S_, kind: 'lake' }, 2)).toBe(false);
   });
 
   it('跨層規則在索引裡生效：注入的錨點（UNDER）外框壓到機率擲出的遺跡（SURFACE）→ 遺跡消失、錨點留著；不相交 → 都在', () => {

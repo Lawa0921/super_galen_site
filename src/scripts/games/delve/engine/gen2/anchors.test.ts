@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
 import { BlueprintIndex, landSlot, landSlotCount, slotOf, BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, slotWidth, type Layer } from './blueprint';
-import { ANCHOR_MAX_W, anchorSpan, continentAnchors, homeAnchors, villageFits, type Anchor, type AnchorKind } from './anchors';
+import { ANCHOR_MAX_W, LAKE_MIN_W, anchorSpan, continentAnchors, homeAnchors, villageFits, type Anchor, type AnchorKind } from './anchors';
 import { homeDungeonRegion, SPAWN_X, VARIANT, type Landmass } from './layout';
 import { shaftOf, shaftX, SHAFT_REACH } from './caves';
 import { hash2, seedInt } from '../noise';
@@ -14,12 +14,14 @@ import type { RegionInfo } from '../regionInfo';
 const slotRange = (a: Anchor): { x0: number; x1: number } => landSlot(a.region, a.slot, a.layer);
 const slotMid = (a: Anchor): number => { const s = slotRange(a); return (s.x0 + s.x1) / 2; };
 const slotOverlapsSpawnClear = (a: Anchor): boolean => { const s = slotRange(a); return s.x0 <= SPAWN_X + 80 && s.x1 > SPAWN_X - 80; };
-// 錨點可用範圍（建構器的外框只能在裡面）不碰坑道帶 [sx − SHAFT_REACH − 1, sx + SHAFT_REACH + 2)、放得下 ANCHOR_MAX_W + 兩側 8 格；回 null = 合格
+// 錨點可用範圍（建構器的外框只能在裡面）不碰坑道帶 [sx − SHAFT_REACH − 1, sx + SHAFT_REACH + 2)、放得下 ANCHOR_MAX_W + 兩側 8 格
+// （地表湖錨點例外：放得下最窄的湖 LAKE_MIN_W 就行，建構器把湖寬夾進可用範圍，Task 17）；回 null = 合格
 function spanProblem(seed: string, a: Anchor): string | null {
   if (a.kind === 'dungeon' || a.kind === 'shaft_cache') return null;
   const sp = anchorSpan(seed, a), sl = slotRange(a), sx = shaftX(seedInt(seed, 'g2-shaft'), a.region);
   if (sp.x0 < sl.x0 || sp.x1 > sl.x1) return `span [${sp.x0}, ${sp.x1}) outside slot`;
-  if (sp.x1 - sp.x0 - 16 < ANCHOR_MAX_W[a.kind]!) return `span ${sp.x1 - sp.x0} too narrow for ${ANCHOR_MAX_W[a.kind]}`;
+  const need = a.kind === 'lake' ? LAKE_MIN_W : ANCHOR_MAX_W[a.kind]!;
+  if (sp.x1 - sp.x0 - 16 < need) return `span ${sp.x1 - sp.x0} too narrow for ${need}`;
   if (Number.isFinite(sx) && !(sp.x1 <= sx - SHAFT_REACH - 1 || sp.x0 >= sx + SHAFT_REACH + 2)) return `span [${sp.x0}, ${sp.x1}) touches shaft ${sx}`;
   const inShaft = Number.isFinite(sx) && sx >= sl.x0 && sx < sl.x1;
   if (inShaft !== sp.shaft) return 'shaft flag';
@@ -79,7 +81,10 @@ describe('gen2 anchors', () => {
       const n = (k: AnchorKind) => a.filter((q) => q.kind === k).length;
       expect(n('dungeon')).toBe(1); expect(n('village')).toBeGreaterThanOrEqual(2); expect(n('village')).toBeLessThanOrEqual(4);
       expect(n('hall')).toBeGreaterThanOrEqual(1); expect(n('mineshaft_secret')).toBe(3); expect(n('sky_island')).toBe(2);
-      for (const k of ['mushroom_biome', 'crystal_cave', 'hive', 'cave_lake', 'ruin', 'alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache', 'spawn_tablet'] as const) expect(n(k), `${seed} ${k}`).toBe(1);
+      for (const k of ['mushroom_biome', 'crystal_cave', 'hive', 'cave_lake', 'ruin', 'alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache', 'spawn_tablet', 'lake'] as const) expect(n(k), `${seed} ${k}`).toBe(1);
+      // 地表湖（Task 17）：同序號的天空槽不是空島（空島的繩梯垂到地面）
+      const lk = a.find((q) => q.kind === 'lake')!;
+      expect(a.some((q) => q.kind === 'sky_island' && q.region === lk.region && q.slot === lk.slot), `${seed} lake under sky`).toBe(false);
       expect(n('cabin')).toBe(2);
       const keys = a.map((q) => `${q.region.index}:${q.layer}:${q.slot}`); expect(new Set(keys).size).toBe(keys.length);
       for (const q of a.filter((p) => p.kind === 'village')) { expect(q.region.biome).toBe(BIOME.FOREST); expect(Math.abs(slotMid(q) - SPAWN_X)).toBeGreaterThanOrEqual(200); }
@@ -114,8 +119,8 @@ describe('gen2 anchors', () => {
   }, 120_000);
 
   it('錨點的層、地區與坑道規則；回傳順序 = 規則順序；確定', () => {
-    const ORDER: AnchorKind[] = ['dungeon', 'village', 'hall', 'mineshaft_secret', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive', 'cave_lake', 'ruin', 'cabin', 'alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache', 'spawn_tablet'];
-    const LAYER: Record<string, number> = { dungeon: BP_SURFACE, village: BP_SURFACE, ruin: BP_SURFACE, hall: BP_DEEP, crystal_cave: BP_DEEP, molten_shrine: BP_DEEP, shaft_cache: BP_DEEP, sky_island: BP_SKY, spawn_tablet: BP_MINOR };
+    const ORDER: AnchorKind[] = ['dungeon', 'village', 'hall', 'mineshaft_secret', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive', 'cave_lake', 'ruin', 'cabin', 'alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache', 'spawn_tablet', 'lake'];
+    const LAYER: Record<string, number> = { dungeon: BP_SURFACE, village: BP_SURFACE, ruin: BP_SURFACE, lake: BP_SURFACE, hall: BP_DEEP, crystal_cave: BP_DEEP, molten_shrine: BP_DEEP, shaft_cache: BP_DEEP, sky_island: BP_SKY, spawn_tablet: BP_MINOR };
     for (const seed of SEEDS50.slice(0, 20)) {
       const g = new Gen2Source(seed), h = g.layout.landmassAt(SPAWN_X)!, a = g.blueprints.anchorsOf(h), ss = seedInt(seed, 'g2-shaft');
       expect(g.blueprints.anchorsOf(h)).toBe(a);

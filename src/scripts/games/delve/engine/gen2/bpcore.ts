@@ -6,6 +6,7 @@ import type { ItemId } from '../items';
 import type { RegionInfo } from '../regionInfo';
 import type { GenSite } from '../genTypes';
 import { seedInt } from '../noise';
+import { T, SOLID_LUT } from '../tiles';
 import type { Profile2 } from './profile';
 import { shaftX, SHAFT_REACH } from './caves';
 import { decodeStructureId } from './structId';
@@ -99,6 +100,24 @@ export function partsMeet(a: Blueprint, b: Blueprint): boolean {
   if (!boxMeet(a, b)) return false;
   for (const p of partsOf(a)) for (const q of partsOf(b)) if (boxMeet(p, q)) return true;
   return false;
+}
+// 藍圖自己畫的蛛網要掛得住（M2a Task 17 延續事項 3；地城房間角落接走廊 / 平台、小屋屋頂與側牆缺塊時原本會懸空）：
+// 每個蛛網格的 4 鄰，在藍圖自己的格裡（同一格寫多次取最後一次；沒寫或 KEEP = 不算實心，交回天然地形的格不保證）至少一格實心，否則換成空氣。
+// 依原本的格判（不連鎖）。BlueprintIndex 每份藍圖建好時跑一次；藍圖之間的部件不相交、之後的 pass 不拆實心格，所以成品裡也掛得住
+export function dropLooseWebs(b: Blueprint): void {
+  const c = b.cells;
+  let any = false;
+  for (let k = 2; k < c.length && !any; k += 5) any = c[k] === T.COBWEB;
+  if (!any) return;
+  const H = b.h + 2, key = (x: number, y: number): number => (x - b.x + 1) * H + (y - b.y + 1), fg = new Map<number, number>();
+  for (let k = 0; k < c.length; k += 5) fg.set(key(c[k], c[k + 1]), c[k + 2]);
+  const solid = (x: number, y: number): boolean => { const t = fg.get(key(x, y)); return t !== undefined && t !== KEEP && SOLID_LUT[t] === 1; };
+  const loose: number[] = [];
+  for (let k = 0; k < c.length; k += 5) {
+    const x = c[k], y = c[k + 1];
+    if (c[k + 2] === T.COBWEB && fg.get(key(x, y)) === T.COBWEB && !solid(x - 1, y) && !solid(x + 1, y) && !solid(x, y - 1) && !solid(x, y + 1)) loose.push(k);
+  }
+  for (const k of loose) c[k + 2] = T.AIR;
 }
 // 盒子與一組盒子有相交的
 export const boxHits = (a: BpBox, list: readonly BpBox[]): boolean => list.some((q) => boxMeet(a, q));

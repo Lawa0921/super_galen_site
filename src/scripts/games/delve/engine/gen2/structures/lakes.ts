@@ -8,26 +8,33 @@
 //   水面高過最寬列，水面以下比水面寬的兩肩填成殼（見 ellipse）。
 // · 熔岩池：橢圓 rx 8–20、ry 4–8，中心 y ∈ [molten + 10, LAVA_Y − 14]（取各欄最深的 molten），下半（中心列以下）滿熔岩，外圍 2 格玄武岩殼。
 // 殼 = 不在橢圓內、但 2 格內（含斜角）有橢圓內格的格；橢圓內的空腔整個被殼封住。
-// 放不下（槽內 3 個候選都不合條件）就回 null。後蓋的藍圖不會切開液體：同槽不同層的外框相交時由 BlueprintIndex 讓液體藍圖讓位。
+// 放不下（槽內 3 個候選都不合條件）就回 null。後蓋的藍圖不會切開液體：同槽不同層的外框相交時由 BlueprintIndex 讓液體藍圖讓位
+// （家鄉的地表湖錨點例外：它不讓位，碰到它的機率藍圖讓位，Task 17）。
+// · 地表湖 force（家鄉的湖錨點，Task 17）：湖寬夾到可用範圍放得下（最窄 20）；3 個候選都不合條件時掃整個可用範圍找第一個合條件的 x，
+//   都沒有就取兩岸差最小的 x（水位照樣 = 兩岸較低者，水不會溢出；只是一岸比較高）——一定回藍圖。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T, W } from '../../tiles';
 import { BIOME } from '../../world';
 import { LIQ, LIQ_MAX } from '../../liquidKind';
 import { HRng } from '../hrng';
 import { LAVA_Y, type Profile2 } from '../profile';
-import { BpGrid, placeX, emptyObjects, BP_SURFACE, BP_UNDER, BP_DEEP, type Blueprint, type BpCtx, type BpKind, type BpLandmark } from '../bpcore';
+import { BpGrid, placeX, emptyObjects, BP_SURFACE, BP_UNDER, BP_DEEP, SLOT_PAD, type Blueprint, type BpCtx, type BpKind, type BpLandmark } from '../bpcore';
 
 // 湖壁 / 殼的厚度
 const WALL = 2, SHELL = 2;
 // 兩岸差、外框內地表高出水位的上限
 const MAX_BANK = 8, MAX_HUMP = 8;
 
+// 地表湖的湖寬下限（HRng.int(20, 61)）
+const LAKE_W_MIN = 20;
+
 const soilOf = (biome: number): number => (biome === BIOME.DESERT ? T.SAND : biome === BIOME.JUNGLE ? T.MUD : T.DIRT);
 
-export function buildLake(c: BpCtx): Blueprint | null {
+export function buildLake(c: BpCtx, o: { force?: boolean } = {}): Blueprint | null {
   // ctx.ver 0 的規則
-  const rng = new HRng(c.s, c.id), p = c.profile;
-  const w = rng.int(20, 61), d = rng.int(6, 13), bw = w + 2 * WALL;
+  const rng = new HRng(c.s, c.id), p = c.profile, force = o.force === true;
+  const w0 = rng.int(20, 61), d = rng.int(6, 13);
+  const w = force ? Math.max(LAKE_W_MIN, Math.min(w0, c.slotX1 - c.slotX0 - 2 * SLOT_PAD - 2 * WALL)) : w0, bw = w + 2 * WALL;
   // 外框 x = bx：湖欄 [bx + WALL, bx + WALL + w)、兩岸 bx + WALL − 1 / bx + WALL + w
   const levelAt = (bx: number): number | null => {
     const sl = p.surfaceAt(bx + WALL - 1), sr = p.surfaceAt(bx + WALL + w);
@@ -36,9 +43,10 @@ export function buildLake(c: BpCtx): Blueprint | null {
     for (let x = bx; x < bx + bw; x++) if (p.surfaceAt(x) < level - MAX_HUMP) return null;
     return level;
   };
-  const bx = placeX(c, bw, false, (x) => levelAt(x) !== null);
+  let bx = placeX(c, bw, false, (x) => levelAt(x) !== null);
+  if (bx === null && force) bx = forceX(c, bw, levelAt);
   if (bx === null) return null;
-  const level = levelAt(bx)!, x0 = bx + WALL, x1 = x0 + w;
+  const level = levelAt(bx) ?? Math.max(p.surfaceAt(bx + WALL - 1), p.surfaceAt(bx + WALL + w)), x0 = bx + WALL, x1 = x0 + w;
   // 盆形：u = 2(x − x0) + 1 − w ∈ [−(w − 1), w − 1]，深 = d − floor((d − 1) u² / (w − 1)²)：兩邊 1、中央 d
   const depth = (x: number): number => {
     if (x < x0 || x >= x1) return 0;
@@ -69,6 +77,19 @@ export function buildLake(c: BpCtx): Blueprint | null {
   g.fg(bank, level - 1, T.CAIRN); g.liq(bank, level - 1, 0);
   return { id: c.id, kind: 'lake', layer: BP_SURFACE, x: bx, y: top, w: bw, h: bottom - top, cells: g.cells(), chests: [], ...emptyObjects(),
     landmarks: [{ x: bank, y: level - 1, tile: T.CAIRN, site: 'lake' }] };
+}
+
+// 地表湖 force 的備案：可用範圍 [slotX0 + SLOT_PAD, slotX1 − SLOT_PAD − bw] 裡第一個 levelAt 成立的 x；都不成立 → 兩岸差最小的 x（平手取左邊）
+function forceX(c: BpCtx, bw: number, levelAt: (bx: number) => number | null): number | null {
+  const a = c.slotX0 + SLOT_PAD, z = c.slotX1 - SLOT_PAD - bw, p = c.profile;
+  if (z < a) return null;
+  let best = a, bd = Infinity;
+  for (let x = a; x <= z; x++) {
+    if (levelAt(x) !== null) return x;
+    const dd = Math.abs(p.surfaceAt(x + WALL - 1) - p.surfaceAt(x + bw - WALL));
+    if (dd < bd) { bd = dd; best = x; }
+  }
+  return best;
 }
 
 // force（家鄉的 cave_lake 錨點，Task 14）：3 個候選都不合條件時用第一個放得下的 x、y 範圍不成立取下限（一定回藍圖）

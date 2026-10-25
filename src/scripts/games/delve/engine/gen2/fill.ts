@@ -19,27 +19,36 @@ import { COL_SEA, COL_BEACH, COL_LAND, COL_ISLAND, LAVA_Y, type ColInfo2, type P
 import { HOME_X0, SPAWN_X, type Layout } from './layout';
 import { SHAFT_HALF, SHAFT_REACH, CaveProbe, carveShaft, hasShaft, shaftOf, caveCut, caveK, type Shaft } from './caves';
 import { BP_SURFACE, BP_MINOR, stamp, solidParts, partsOf, type Blueprint, type BlueprintIndex, type BpBox } from './blueprint';
-import { TeardropField, type Teardrop } from './teardrop';
+import { TeardropField, Fbm2, type Teardrop } from './teardrop';
 
 // 每個 pass 的上下文：該地塊的版面版本
 export interface FillCtx { ver: number }
 
-// 表層：地表起 depth 格是 t（牆 w），其下到岩層是 under（牆 underW）
+// 表層：地表起 depth 格是 t（牆 w），其下到岩層是 under（牆 underW）。海床 / 沙灘 / 島與森林 / 叢林的陸地欄用這張表；
+// 沙漠 / 雪原的陸地欄是逐格規則（Task 17 延續事項 1，見下面的 SKIN_* 與 Filler2.landCell）
 interface Skin { depth: number; t: number; w: number; under: number; underW: number }
 const SEABED: Skin = { depth: 3, t: T.SAND, w: W.DIRT_WALL, under: T.DIRT, underW: W.DIRT_WALL };
 const BEACH: Skin = { depth: 4, t: T.SAND, w: W.DIRT_WALL, under: T.DIRT, underW: W.DIRT_WALL };
 const LAND_SKIN: Readonly<Record<number, Skin>> = {
   [BIOME.FOREST]: { depth: 1, t: T.GRASS, w: W.DIRT_WALL, under: T.DIRT, underW: W.DIRT_WALL },
-  [BIOME.DESERT]: { depth: 6, t: T.SAND, w: W.SANDSTONE_WALL, under: T.SANDSTONE, underW: W.SANDSTONE_WALL },
-  [BIOME.SNOW]: { depth: 5, t: T.SNOW, w: W.SNOW_WALL, under: T.DIRT, underW: W.DIRT_WALL },
   [BIOME.JUNGLE]: { depth: 1, t: T.JUNGLE_GRASS, w: W.MUD_WALL, under: T.MUD, underW: W.MUD_WALL },
 };
+// ── 沙漠 / 雪原的表層（ctx.ver 0；M2a Task 17 延續事項 1，比照舊生成器 legacy/worldgen.ts「生態區轉換」淚滴在岩層以上的部分）──
+//   沙漠：y < 砂層底 sandTo（= 地表 + 13 + floor(vnoise1(x, 20) × 10)，與地下沙漠淚滴同一條）→ 沙；其下到岩層 → 砂岩（mat > 0.68 → 沙）；牆砂岩牆
+//   雪原：雪層底 snowTo = 地表 + 2 + floor(vnoise1(x, 23) × 4 + vnoise1(x, 7) × 2.5 + max(0, vnoise1(x, 41) − 0.72) × 14)（薄、有起伏、偶有雪堆）；
+//     地表那格是雪，y < snowTo → 雪（mat > 0.8 → 冰）；其下到岩層是凍土：mat > 0.64 冰、< 0.2 碎石、< 0.27 石、y < snowTo + 3 且 > 0.5 雪、其餘泥；牆雪牆
+//   mat = 15 × 15 的 2 八度值雜訊（teardrop.Fbm2，同舊生成器 matN 的格距）
+const SKIN_SNOW_ICE = 0.8, FROST_ICE = 0.64, FROST_GRAVEL = 0.2, FROST_STONE = 0.27, FROST_SNOW = 0.5, FROST_SNOW_ROWS = 3;
+// 不同生態的陸地地區交界（Task 17 延續事項 2）：交界 ± SKIN_J 欄內，地表下第 y 列的表層照「x + 抖動」所在那一側地區的生態
+// （抖動 = (edge − 0.5) × 2 × SKIN_J × min(1, (y − 地表) / SKIN_RAMP)，edge = 6 × 6 的 2 八度值雜訊：岩層以上只有 10–26 列，格距大的話整段幾乎不動）：交界從地表那一列（不抖：
+// 地表裝飾 / 樹 / 仙人掌照地區）往下散成不規則的邊，不是一條垂直直線
+const SKIN_J = 12, SKIN_RAMP = 4;
 // 島欄離島的兩端（離水）這麼多格內是沙灘
 const ISLAND_BEACH = 4;
 // 島欄離水的格數（島地區 = 島本身的 [x0, x1)）
 const islandEdge = (x: number, r: RegionInfo): number => Math.min(x - r.x0, r.x1 - 1 - x);
 const landSkin = (biome: number): Skin => LAND_SKIN[biome] ?? LAND_SKIN[BIOME.FOREST];
-// 島欄（ctx.ver 0 的規則）：離水 ISLAND_BEACH 格內沙灘沙、其餘台地照島的生態（森林：草 + 泥）
+// 島欄（ctx.ver 0 的規則）：離水 ISLAND_BEACH 格內沙灘沙、其餘台地照島的生態（森林：草 + 泥）；陸地欄的表層由 Filler2.landCell 決定（這裡的值不用）
 const skinOf = (x: number, I: ColInfo2): Skin =>
   I.kind === COL_SEA ? SEABED : I.kind === COL_BEACH ? BEACH
     : I.kind === COL_ISLAND ? (islandEdge(x, I.region) < ISLAND_BEACH ? BEACH : landSkin(I.biome)) : landSkin(I.biome);
@@ -69,6 +78,8 @@ STONE_BASE[T.STONE] = 1; STONE_BASE[T.DEEP_STONE] = 1;
 //   熔岩帶的金（:1001 金礦脈上界熔岩線 + 25）：BASALT，只在 [熔岩線, 熔岩線 + MOLTEN_ORE_SPAN) 且 y < LAVA_Y（不落進熔岩海）
 // 沙不放礦（Task 12 裁決）；藍圖寫入的格之後由 stamp 蓋，不受這張表影響。
 // 門檻調到家鄉密度落在舊生成器 ±30%（ores.test.ts）；不用 genPrims.ORE_THR（那是 v1 的）。
+// Task 17：沙漠深沙 / 雪原凍土讓泥土帶的宿主變少（沙、冰、碎石、石不是泥土帶的銅宿主），泥土帶的銅 0.9125 → 0.909
+// （alpha / beta / gamma：改前 13.405‰、只改表層 12.263‰、重校後 13.345‰；舊生成器 13.397‰）
 const SOIL_ORE_FROM = 4, MOLTEN_ORE_SPAN = 25;
 const hostOf = (...ts: number[]): Uint8Array => { const h = new Uint8Array(256); for (const t of ts) h[t] = 1; return h; };
 const H_SOIL = hostOf(T.DIRT, T.SNOW, T.MUD, T.SANDSTONE);
@@ -77,7 +88,7 @@ const H_BASALT = hostOf(T.BASALT);
 interface OreRule { thr: number; host: Uint8Array }
 type OreRules = readonly [OreRule | null, OreRule | null, OreRule | null, OreRule | null];
 const G2_ORE: Readonly<Record<'copper' | 'iron' | 'silver' | 'gold', OreRules>> = {
-  copper: [{ thr: 0.9125, host: H_SOIL }, { thr: 0.9165, host: H_STONE }, null, null],
+  copper: [{ thr: 0.909, host: H_SOIL }, { thr: 0.9165, host: H_STONE }, null, null],
   iron: [null, { thr: 0.9385, host: H_STONE }, { thr: 0.963, host: H_STONE }, null],
   silver: [null, { thr: 0.98, host: H_STONE }, { thr: 0.9645, host: H_STONE }, null],
   gold: [null, null, { thr: 0.9595, host: H_STONE }, { thr: 0.9465, host: H_BASALT }],
@@ -162,6 +173,12 @@ export class Filler2 {
   // 蛛網看左右欄的天然實心（只看噪聲）
   private readonly probe: CaveProbe;
   private readonly tear: TeardropField;
+  // 表層（Task 17）：沙漠 / 雪原的 mat、地區交界的抖動、砂層底 / 雪層底的雜訊種子；landCell 的輸出
+  private readonly skinMat: Fbm2;
+  private readonly skinEdge: Fbm2;
+  private readonly sSkin: number;
+  private cellT = 0;
+  private cellW = 0;
   private readonly spawnX: number | null;
   // 地區 → 坑道（RegionInfo 是 Layout 的同一個物件）
   private readonly shafts = new Map<RegionInfo, Shaft | null>();
@@ -187,6 +204,9 @@ export class Filler2 {
     this.sVine = seedInt(seed, 'g2-vine');
     this.probe = new CaveProbe(seed);
     this.tear = new TeardropField(seed, layout, profile);
+    this.skinMat = new Fbm2(15, 15, seedInt(seed, 'g2-skin-mat'));
+    this.skinEdge = new Fbm2(6, 6, seedInt(seed, 'g2-skin-edge'));
+    this.sSkin = seedInt(seed, 'g2-skin');
     const home = layout.origin.home;
     this.spawnX = home ? home.x0 + SPAWN_X - HOME_X0 : null;
   }
@@ -234,7 +254,14 @@ export class Filler2 {
     if (I.kind === COL_SEA) {
       for (let y = Math.max(0, I.waterTop); y < S && y < H; y++) { const i = li(x, y); liq[i] = LIQ_MAX; lt[i] = LIQ.WATER; }
     }
-    const sk = skinOf(x, I), skinTo = S + sk.depth;
+    const sk = skinOf(x, I), skinTo = S + sk.depth, land = I.kind === COL_LAND;
+    // 陸地欄的表層（landCell）：本欄的砂層底（地下沙漠淚滴的沙也到這裡）/ 雪層底；交界 ± SKIN_J 內另一側不同生態的陸地地區（沒有 = −1）
+    const sandTo = S + DESERT_SAND_FROM + Math.floor(vnoise1(x, 20, this.sSkin + 4) * DESERT_SAND_SPAN), snowTo = this.snowTo(x, S);
+    const rg = I.region, nL = land && x - rg.x0 < SKIN_J ? this.skinNeighbor(rg.x0 - 1, I.biome) : -1;
+    const nR = land && rg.x1 - 1 - x < SKIN_J ? this.skinNeighbor(rg.x1, I.biome) : -1;
+    if (nL >= 0 || nR >= 0) this.skinEdge.setX(x);
+    const dry = (b: number): boolean => b === BIOME.DESERT || b === BIOME.SNOW;
+    if (land && (dry(I.biome) || dry(nL) || dry(nR))) this.skinMat.setX(x);
     const entrance = I.kind === COL_LAND && this.entranceAt(x) && !inRows(solid, S);
     const caveTop = entrance ? S : Math.max(rock, S + (I.kind === COL_SEA || I.kind === COL_ISLAND ? NO_DIG_SEA : NO_DIG));
     const spanInv = 1 / Math.max(1, molten - rock);
@@ -246,20 +273,26 @@ export class Filler2 {
     this.granite.setX(x); this.marble.setX(x); this.molten.setX(x); this.obsidian.setX(x);
     // 這一欄碰得到的地下生態淚滴（通常沒有；有的話淚滴的雜訊已 setX(x)）；沙漠淚滴的砂層底每欄算一次
     const tds = this.tear.at(x), tf = this.tear;
-    let sandTd: Teardrop | null = null, sandTo = 0;
     for (let y = Math.max(0, S); y < H; y++) {
       let t: number, w: number;
-      if (y < rock) { if (y < skinTo) { t = sk.t; w = sk.w; } else { t = sk.under; w = sk.underW; } }
+      if (y < rock) {
+        if (land) {
+          // 交界抖動：x + 抖動落在左 / 右鄰地區 → 用它的生態（地表那一列不抖）
+          let b = I.biome;
+          if ((nL >= 0 || nR >= 0) && y > S) {
+            const jx = x + (this.skinEdge.at(y) - 0.5) * 2 * SKIN_J * Math.min(1, (y - S) / SKIN_RAMP);
+            if (nL >= 0 && jx < rg.x0) b = nL; else if (nR >= 0 && jx >= rg.x1) b = nR;
+          }
+          this.landCell(b, y, S, sandTo, snowTo); t = this.cellT; w = this.cellW;
+        } else if (y < skinTo) { t = sk.t; w = sk.w; } else { t = sk.under; w = sk.underW; }
+      }
       else if (y < deep) { t = T.STONE; w = W.STONE_WALL; }
       else if (y < molten) { t = T.DEEP_STONE; w = W.DEEP_STONE_WALL; }
       else { t = T.BASALT; w = W.BASALT_WALL; }
       const i = li(x, y);
       // 地下生態淚滴只在岩層以下（岩層以上是地區自己的表層材質）
       const td = tds.length > 0 && y >= rock ? tf.hit(tds, x, y) : null, inner = tf.inner;
-      if (td) {
-        w = TEAR_WALL[td.biome];
-        if (td.biome === BIOME.DESERT && sandTd !== td) { sandTd = td; sandTo = S + DESERT_SAND_FROM + Math.floor(vnoise1(x, 20, td.s0 + 4) * DESERT_SAND_SPAN); }
-      }
+      if (td) w = TEAR_WALL[td.biome];
       if (y >= S + WALL_FROM) wall[i] = w;
       const inSolid = solid !== null && inRows(solid, y);
       // 洞穴（義大利麵越深越寬 + 洞穴層大洞窟）；免挖洞箱內不挖
@@ -303,6 +336,38 @@ export class Filler2 {
       }
       fg[i] = t;
     }
+  }
+
+  // 雪層底（見 SKIN_*）
+  private snowTo(x: number, S: number): number {
+    const s = this.sSkin;
+    return S + 2 + Math.floor(vnoise1(x, 23, s + 6) * 4 + vnoise1(x, 7, s + 7) * 2.5 + Math.max(0, vnoise1(x, 41, s + 8) - 0.72) * 14);
+  }
+
+  // 第 q 欄若是生態不是 own 的陸地欄 → 它的生態，否則 −1（gen2 範圍外也是 −1）
+  private skinNeighbor(q: number, own: number): number {
+    if (!this.profile.regionAt(q)) return -1;
+    const J = this.profile.info(q);
+    return J.kind === COL_LAND && J.biome !== own ? J.biome : -1;
+  }
+
+  // 陸地欄岩層以上第 y 列、照生態 b 的表層材質與牆（ctx.ver 0 的規則）→ this.cellT / this.cellW。沙漠 / 雪原讀 skinMat（本欄已 setX）
+  private landCell(b: number, y: number, S: number, sandTo: number, snowTo: number): void {
+    if (b === BIOME.DESERT) {
+      this.cellW = W.SANDSTONE_WALL;
+      this.cellT = y < sandTo || this.skinMat.at(y) > DESERT_SAND_THR ? T.SAND : T.SANDSTONE;
+      return;
+    }
+    if (b === BIOME.SNOW) {
+      this.cellW = W.SNOW_WALL;
+      if (y === S) { this.cellT = T.SNOW; return; }
+      const m = this.skinMat.at(y);
+      if (y < snowTo) { this.cellT = m > SKIN_SNOW_ICE ? T.ICE : T.SNOW; return; }
+      this.cellT = m > FROST_ICE ? T.ICE : m < FROST_GRAVEL ? T.GRAVEL : m < FROST_STONE ? T.STONE : y < snowTo + FROST_SNOW_ROWS && m > FROST_SNOW ? T.SNOW : T.DIRT;
+      return;
+    }
+    const k = landSkin(b);
+    if (y < S + k.depth) { this.cellT = k.t; this.cellW = k.w; } else { this.cellT = k.under; this.cellW = k.underW; }
   }
 
   // 淚滴的洞穴（ctx.ver 0 的規則；淚滴的雜訊已 setX(x)）：叢林洞穴、沙漠的直條砂岩洞與大泡泡、雪原的冰洞
