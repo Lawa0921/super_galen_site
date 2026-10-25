@@ -381,6 +381,119 @@ describe('gen2 地區：所有結構種類、已知地區表、id 反查', () =>
   }, 60_000);
 });
 
+// ── Task 17b：gen2 名字唯一（家鄉同 kind、同一座地城的房間）、三條路一致、村莊走近就發現 ──
+/** 同一組（key）裡不同 id 卻同名的組 → 「組鍵|名字×id 數」 */
+const dupGroups = (rs: readonly Region[], key: (r: Region) => string): string[] => {
+  const by = new Map<string, Set<number>>();
+  for (const r of rs) {
+    const k = `${key(r)}|${r.name}`;
+    let s = by.get(k);
+    if (!s) { s = new Set(); by.set(k, s); }
+    s.add(r.id);
+  }
+  return [...by].filter(([, s]) => s.size > 1).map(([k, s]) => `${k}×${s.size}`);
+};
+/** 一座地城（藍圖 id）的房間地區：part 1.. 連號，反查到 null 為止 */
+const roomsOf = (byId: (id: number) => Region | null, sid: number): Region[] => {
+  const out: Region[] = [];
+  for (let p = 1; p < 64; p++) { const r = byId(gen2SiteRegionId(sid, p)); if (!r) break; out.push(r); }
+  return out;
+};
+/** 同 Task 16 量測用的 50 個種子 */
+const DUP_SEEDS = Array.from({ length: 50 }, (_, i) => `dup-${i}`);
+
+describe('gen2 名字唯一、三條路一致、村莊走近就發現（Task 17b）', () => {
+  it('50 個種子：家鄉同 kind（也同 cat）沒有同名；家鄉地城的房間沒有同名', () => {
+    const byKind: string[] = [], byCat: string[] = [], rooms: string[] = [];
+    for (const seed of DUP_SEEDS) {
+      const src = new Gen2Source(seed), home = gen2HomeRegions(seed, src), byId = gen2RegionById(seed, src);
+      byKind.push(...dupGroups(home, (r) => r.kind).map((g) => `${seed} ${g}`));
+      byCat.push(...dupGroups(home, (r) => r.cat).map((g) => `${seed} ${g}`));
+      const dun = src.blueprints.homePlans().filter((b) => b.kind === 'dungeon');
+      expect(dun.length, seed).toBe(1);
+      for (const d of dun) {
+        const rs = roomsOf(byId, d.id);
+        expect(rs.length, seed).toBeGreaterThan(3);
+        // 房間地區也都在家鄉已知表裡（同一份）
+        for (const r of rs) expect(home.find((h) => h.id === r.id)?.name).toBe(r.name);
+        rooms.push(...dupGroups(rs, () => 'room').map((g) => `${seed} ${g}`));
+      }
+    }
+    expect.soft(byKind.length, `同 kind 同名 ${byKind.length} 組：${byKind.slice(0, 12).join('、')}`).toBe(0);
+    expect.soft(byCat.length, `同 cat 同名 ${byCat.length} 組：${byCat.slice(0, 12).join('、')}`).toBe(0);
+    expect(rooms.length, `同地城房間同名 ${rooms.length} 組：${rooms.slice(0, 12).join('、')}`).toBe(0);
+  }, 300_000);
+  it('每座地城（家鄉＋外圍掃 ±20,000）的房間沒有同名', () => {
+    for (const seed of ['rg2', 'dup-7']) {
+      const src = new Gen2Source(seed), byId = gen2RegionById(seed, src);
+      const dun = src.blueprints.overlapping(-20_000, 20_000).filter((b) => b.kind === 'dungeon');
+      expect(dun.length).toBeGreaterThan(0);
+      for (const d of dun) expect(dupGroups(roomsOf(byId, d.id), () => 'room'), `${seed} ${d.id}`).toEqual([]);
+    }
+  }, 120_000);
+  it('同一 id 三條路同名、兩實例同名、與查詢順序無關（家鄉全部 + 外圍抽樣 ≥ 200 個 id）', () => {
+    let outerN = 0;
+    for (const seed of ['rg2', 'dup-3', 'dup-17']) {
+      const a = new Gen2Source(seed), b = new Gen2Source(seed);
+      const qa = gen2Regions(seed, a), ia = gen2RegionById(seed, a);
+      const h = a.layout.origin.home!;
+      // 實例 a：先在家鄉逐點查（家鄉名字表在查詢裡第一次建）、再掃外圍、最後才 gen2HomeRegions；實例 b：先 gen2HomeRegions
+      const firstA = new Map<number, string>();
+      for (let x = h.x0; x < h.x1; x += 97) for (const y of [300, 420, 700]) for (const r of qa(x, y)) if (!firstA.has(r.id)) firstA.set(r.id, r.name);
+      const outer = new Map<number, { x: number; y: number; name: string }>();
+      for (let x = -25_000; x < 25_000; x += 41) {
+        if (x >= h.x0 - 64 && x < h.x1 + 64) continue;
+        for (const y of [300, 420, 700, 900]) for (const r of qa(x, y)) if (!outer.has(r.id)) outer.set(r.id, { x, y, name: r.name });
+      }
+      const homeB = gen2HomeRegions(seed, b), qb = gen2Regions(seed, b), ib = gen2RegionById(seed, b);
+      const homeA = gen2HomeRegions(seed, a);
+      expect(homeA.map(plain)).toEqual(homeB.map(plain));
+      for (const [id, name] of firstA) expect(homeA.find((r) => r.id === id)?.name, `${seed} ${id}`).toBe(name);
+      for (const r of homeA) {
+        expect(ia(r.id)?.name).toBe(r.name); expect(ib(r.id)?.name).toBe(r.name);
+        expect(qa(r.ax, r.ay).find((g) => g.id === r.id)?.name, `${seed} ${r.kind} ${r.id}`).toBe(r.name);
+        expect(qb(r.ax, r.ay).find((g) => g.id === r.id)?.name, `${seed} ${r.kind} ${r.id}`).toBe(r.name);
+      }
+      for (const [id, o] of outer) {
+        expect(ia(id)?.name, `${seed} ${id}`).toBe(o.name); expect(ib(id)?.name, `${seed} ${id}`).toBe(o.name);
+        expect(qb(o.x, o.y).find((g) => g.id === id)?.name).toBe(o.name);
+      }
+      outerN += outer.size;
+    }
+    expect(outerN).toBeGreaterThanOrEqual(200);
+  }, 300_000);
+  it('gen2 村莊：主體外左右 ≤ 22 格、上方 ≤ 10 格 visit 就發現，以外不會；地圖錨點仍在主體中心、外擴區的 HUD 地名是村名（同舊世界）', () => {
+    let n = 0;
+    for (const seed of ['rg2', 'dup-1', 'dup-2']) {
+      const src = new Gen2Source(seed), q = gen2Regions(seed, src), home = gen2HomeRegions(seed, src);
+      for (const b of src.blueprints.homePlans().filter((p) => p.kind === 'village')) {
+        const body = partsOf(b)[0], id = gen2SiteRegionId(b.id, 0), r = home.find((g) => g.id === id)!;
+        expect(r).toMatchObject({ kind: 'village', x: body.x - 22, y: body.y - 10, w: body.w + 44, h: body.h + 10, ax: body.x + (body.w >> 1), ay: body.y + (body.h >> 1) });
+        const mk = (): Discovery => { const d = new Discovery([], { open: true, trackOuter: true }); d.setOuter(q); d.know(home); return d; };
+        const hit = (x: number, y: number): boolean => mk().visit(x, y).some((g) => g.id === id);
+        const gy = body.y + body.h - 1, cx = body.x + (body.w >> 1);
+        expect(hit(body.x - 22, gy), `${seed} 左外擴`).toBe(true);
+        expect(hit(body.x + body.w + 21, gy), `${seed} 右外擴`).toBe(true);
+        expect(hit(cx, body.y - 10), `${seed} 上外擴`).toBe(true);
+        expect(hit(body.x - 23, gy), `${seed} 左外擴之外`).toBe(false);
+        expect(hit(body.x + body.w + 22, gy), `${seed} 右外擴之外`).toBe(false);
+        expect(hit(cx, body.y - 11), `${seed} 上外擴之外`).toBe(false);
+        expect(hit(cx, body.y + body.h), `${seed} 下方不外擴`).toBe(false);
+        const d = mk(); d.visit(body.x - 22, gy);
+        expect(d.areaAt(body.x - 22, gy)?.id).toBe(id);
+        expect(gen2RegionById(seed, src)(id)).toMatchObject(plain(r));
+        n++;
+      }
+    }
+    expect(n).toBeGreaterThan(3);
+  }, 120_000);
+  it('舊世界村莊的地區 = 結構框左右各外擴 22 格、上方 10 格，錨點在結構中心（基準：gen2 比照的就是這個）', () => {
+    const s = source();
+    const rs = buildRegions({ ...s, structures: [...s.structures, { kind: 'village', x: 100, y: 30, w: 70, h: 30 }] });
+    expect(rs.find((r) => r.kind === 'village')).toMatchObject({ x: 78, y: 20, w: 114, h: 40, ax: 135, ay: 45 });
+  });
+});
+
 // Task 16：烘焙世界把舊地區清單存成 RegionJSON（形狀取代 contains 函式），讀回後 contains 要逐格相同
 describe('RegionJSON', { timeout: 120_000 }, () => {
   const L = new DelveGame({ seed: 'fixture-v11' });

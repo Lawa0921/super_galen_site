@@ -8,6 +8,7 @@
 //   · 已知地區表（Task 15）：listKnown = 中央 regions ∪ know() 加入的地區；stats 的各類別總數只數它。gen2 世界開局 know(gen2HomeRegions)（家鄉全知），
 //     trackOuter 時 visit 到的外圍地區自動 know 並存進 toJSON().known（Q12）；region(id) 依序查中央 → 已知表 → resolver（gen2RegionById）。
 //     消費端（M2a Task 16）：大地圖 / 日誌 / 提示 / 委託讀 listKnown；HUD 與環境音讀 knownAt / areaAt（中央索引 ∪ 已知的外圍地區）。
+//   · gen2 名字（Task 17b）：家鄉同 kind 不重名、同一座地城的房間不重名（gen2Names.uniqueNames，Gen2Kit 建一次家鄉表）；村莊地區同舊世界外擴（走近就發現）。
 //   · RegionJSON（Task 16）：烘焙過的舊世界把 buildRegions 的清單存進存檔（id 依生成順序，之後不再重算）；
 //     contains 函式換成可存的形狀 RegionShape（buildRegions 填 shape），regionFromJSON 以深度層線重建出逐格相同的 contains。
 import { Rng } from './rng';
@@ -24,7 +25,8 @@ import { CULTURES } from './gen2/cultures';
 import { VARIANT, SPAWN_X, type Landmass } from './gen2/layout';
 import { slotOf, partsOf, type Blueprint, type BpBox, type BpKind } from './gen2/blueprint';
 import { FILL_REACH } from './gen2/fill';
-import { gen2SiteRegionId, isGen2SiteRegionId, siteOfRegionId } from './gen2/structId';
+import { gen2SiteRegionId, isGen2SiteRegionId, siteOfRegionId, decodeStructureId } from './gen2/structId';
+import { uniqueNames, type NameSpec } from './gen2Names';
 import { X_LIMIT } from './coords';
 
 /** 分類：地表區域（生態區）、地層、洞窟與秘境、遺跡與建築、地城、密室 */
@@ -152,6 +154,8 @@ const STRUCT_CAT: Partial<Record<string, RegionCat>> = {
   secret_room: 'secret',
   village: 'site', dwarf_hall: 'site',
 };
+/** 村莊地區的外擴（舊世界 buildRegions 與 gen2 共用）：結構框左右各 VILLAGE_PAD 格、上方 VILLAGE_PAD_UP 格（下方不外擴）；地圖錨點仍在結構框中心 */
+const VILLAGE_PAD = 22, VILLAGE_PAD_UP = 10;
 
 export function buildRegions(src: RegionSource): Region[] {
   const { width: W, height: H, layers } = src;
@@ -211,8 +215,8 @@ export function buildRegions(src: RegionSource): Region[] {
     let list = NAMES[s.kind];
     if (s.kind === 'cavern') list = NAMES[`cavern_${s.flavor ?? 'plain'}`];
     const round = s.kind === 'mushroom_biome' || s.kind === 'crystal_cave' || s.kind === 'cavern';
-    // 村落：走近（左右各 22 格、上方多 10 格）就算發現——還沒進村就跳出「發現：○○村」
-    const pad = s.kind === 'village' ? 22 : 0, padY = s.kind === 'village' ? 10 : 0;
+    // 村落：走近（左右各 VILLAGE_PAD = 22 格、上方多 VILLAGE_PAD_UP = 10 格）就算發現——還沒進村就跳出「發現：○○村」
+    const pad = s.kind === 'village' ? VILLAGE_PAD : 0, padY = s.kind === 'village' ? VILLAGE_PAD_UP : 0;
     const rx = s.x - pad, ry = s.y - padY, rw = s.w + pad * 2, rh = s.h + padY;
     add({ cat, kind: s.kind, name: nm.pick(list), x: rx, y: ry, w: rw, h: rh,
       ax: s.x + (s.w >> 1), ay: s.y + (s.h >> 1),
@@ -353,6 +357,8 @@ interface Gen2Kit {
   sites(b: Blueprint): readonly Region[];
 }
 const GEN2_KITS = new WeakMap<Gen2Source, Map<string, Gen2Kit>>();
+/** gen2Regions 多查的欄數：藍圖外框伸出槽的 FILL_REACH 與村莊外擴 VILLAGE_PAD 取大者 */
+const SITE_REACH = Math.max(FILL_REACH, VILLAGE_PAD);
 
 function gen2Kit(seed: string, src: Gen2Source): Gen2Kit {
   let bySeed = GEN2_KITS.get(src);
@@ -362,17 +368,25 @@ function gen2Kit(seed: string, src: Gen2Source): Gen2Kit {
   return kit;
 }
 
+/** 藍圖的一個結構地區（名字以外的部分）：box = 地區範圍、(ax, ay) = 地圖錨點、list = 命名名單 */
+interface SitePart { id: number; cat: RegionCat; kind: string; list: readonly string[]; box: BpBox; round: boolean; ax: number; ay: number }
+
 /**
- * 名字確定（由 id 雜湊挑），同種子跨實例相同（主機 / 客人逐位相同）。
+ * 名字（Task 17b）：起點由 id 雜湊在名單上挑；家鄉（gen2HomeRegions 的全部地區）依 kind 唯一化——kit 第一次碰到家鄉的地區時，
+ * 一次算好整個家鄉的 id → 名字表（gen2Names.uniqueNames：只看家鄉整組，與查詢順序無關），gen2Regions / gen2RegionById / gen2HomeRegions 都查這張表；
+ * 家鄉以外的藍圖在自己的部件之間唯一化（外圍地城的房間），外圍彼此可以重名、同一個 id 永遠同名。同種子跨實例相同（主機 / 客人逐位相同）。
  * 地塊地區範圍 = 欄範圍、y 在洞穴層線以上；結構地區 = 藍圖主體（部件 0；沒有部件 = 外框——豎井部件不算進地區）的矩形，
- * 蘑菇林 / 水晶洞 / 蜂巢是主體的內切橢圓；地城 = DungeonInfo.bbox（同舊世界）、房間 = 有名字的房間（ROOM_NAMES，依 rooms 順序編 part 1..）；
- * 礦坑密室 = Blueprint.secret（密室室內，Task 14）。
+ * 蘑菇林 / 水晶洞 / 蜂巢是主體的內切橢圓；村莊 = 主體左右各外擴 VILLAGE_PAD、上方 VILLAGE_PAD_UP（同舊世界，走近就算發現；錨點仍在主體中心）；
+ * 地城 = DungeonInfo.bbox（同舊世界）、房間 = 有名字的房間（ROOM_NAMES，依 rooms 順序編 part 1..）；礦坑密室 = Blueprint.secret（密室室內，Task 14）。
  */
 function makeGen2Kit(seed: string, src: Gen2Source): Gen2Kit {
   const sName = seedInt(seed, 'gen2-region-names');
   const cache = new Map<number, Region>(), siteCache = new Map<number, readonly Region[]>();
   const deep = (x: number): number => src.layersAt(x).deep;
-  const pickName = (list: readonly string[], id: number): string => list[Math.floor(hash2(id & 0xffffff, id >>> 24, sName) * list.length) % list.length];
+  const pickIdx = (n: number, id: number): number => Math.floor(hash2(id & 0xffffff, id >>> 24, sName) * n) % n;
+  const pickName = (list: readonly string[], id: number): string => list[pickIdx(list.length, id)];
+  const pickSpec = (id: number, kind: string, list: readonly string[]): NameSpec => ({ id, kind, list, start: pickIdx(list.length, id) });
+  const landKind = (info: RegionInfo): string => (info.kind === 'sea' || info.kind === 'island' ? info.kind : GEN2_BIOME_KEY[info.biome] ?? 'forest');
   const cached = (id: number, make: () => Region): Region => {
     let r = cache.get(id);
     if (!r) { r = make(); if (cache.size >= 4096) cache.clear(); cache.set(id, r); }
@@ -393,6 +407,50 @@ function makeGen2Kit(seed: string, src: Gen2Source): Gen2Kit {
     }
     return pre + pickName(NAMES[GEN2_BIOME_KEY[info.biome] ?? 'forest'], id);
   };
+  // 結構地區 id = gen2SiteRegionId(藍圖 id, part)（位元配置只在 gen2/structId.ts）
+  const siteParts = (b: Blueprint): SitePart[] => {
+    const m = GEN2_SITE[b.kind];
+    if (!m) return [];
+    const out: SitePart[] = [];
+    const add = (part: number, cat: RegionCat, kind: string, list: readonly string[], box: BpBox, round = false, anchor: BpBox = box): void => {
+      out.push({ id: gen2SiteRegionId(b.id, part), cat, kind, list, box, round, ax: anchor.x + (anchor.w >> 1), ay: anchor.y + (anchor.h >> 1) });
+    };
+    const s = b.site;
+    if (m.kind === 'dungeon' && s?.kind === 'dungeon') {
+      add(0, 'dungeon', 'dungeon', NAMES.dungeon, s.info.bbox);
+      let part = 1;
+      for (const r of s.info.rooms) {
+        const list = ROOM_NAMES[r.kind];
+        if (!list || part >= 64) continue;
+        add(part++, 'dungeon', `dungeon_${r.kind}`, list, r);
+      }
+    } else {
+      const body = partsOf(b)[0];
+      // 村莊：走近就算發現（同舊世界 buildRegions）——地區範圍外擴，錨點仍在主體中心
+      const box = m.kind === 'village' ? { x: body.x - VILLAGE_PAD, y: body.y - VILLAGE_PAD_UP, w: body.w + VILLAGE_PAD * 2, h: body.h + VILLAGE_PAD_UP } : body;
+      add(0, m.cat, m.kind, NAMES[m.kind], box, m.round === true, body);
+      if (m.kind === 'mineshaft' && b.secret) add(1, 'secret', 'secret_room', NAMES.secret_room, b.secret);
+    }
+    return out;
+  };
+  // 家鄉地塊地區的命名：沙灘 / 出生點林地是固定名字（landName），其餘家鄉地區用該生態的名單
+  const landSpec = (m: Landmass, info: RegionInfo): NameSpec => {
+    const id = gen2RegionId(m.side, m.i, info.index, 0), kind = landKind(info);
+    if (info.kind === 'home' && info.variant !== VARIANT.BEACH && info.variant !== VARIANT.SPAWN) return pickSpec(id, kind, NAMES[GEN2_BIOME_KEY[info.biome] ?? 'forest']);
+    return { id, kind, fixed: landName(info, id, false) };
+  };
+  // 家鄉的 id → 名字表：家鄉地塊的每個地區 + 家鄉藍圖（homePlans）的結構地區，依 kind 唯一化；第一次用到時建一次（沒有家鄉 = 空表）
+  let homeTable: Map<number, string> | null = null;
+  const homeNames = (): Map<number, string> => {
+    if (homeTable) return homeTable;
+    const h = src.layout.origin.home, m = h ? src.layout.landmassAt(h.x0) : null, specs: NameSpec[] = [];
+    if (m && m.kind === 'home') {
+      for (const info of m.regions) specs.push(landSpec(m, info));
+      for (const b of src.blueprints.homePlans()) for (const p of siteParts(b)) specs.push(pickSpec(p.id, p.kind, p.list));
+    }
+    homeTable = uniqueNames(specs);
+    return homeTable;
+  };
   // 地塊 m 的第 info 個地區 → Region（快取）
   const regionOf = (m: Landmass, info: RegionInfo): Region => {
     const id = gen2RegionId(m.side, m.i, info.index, 0);
@@ -402,36 +460,22 @@ function makeGen2Kit(seed: string, src: Gen2Source): Gen2Kit {
       for (let cx = info.x0; cx < info.x1; cx += 16) hmax = Math.max(hmax, deep(cx));
       const ax = Math.floor((info.x0 + info.x1) / 2);
       return {
-        id, cat: 'land', kind: info.kind === 'sea' || info.kind === 'island' ? info.kind : GEN2_BIOME_KEY[info.biome] ?? 'forest',
-        name: landName(info, id, first), x: info.x0, y: 0, w: info.x1 - info.x0, h: hmax,
+        id, cat: 'land', kind: landKind(info),
+        name: (m.kind === 'home' ? homeNames().get(id) : undefined) ?? landName(info, id, first), x: info.x0, y: 0, w: info.x1 - info.x0, h: hmax,
         ax, ay: Math.max(4, src.surfaceAt(ax) - 14),
         contains: (cx: number, cy: number): boolean => cx >= info.x0 && cx < info.x1 && cy >= 0 && cy < deep(cx),
       };
     });
   };
-  // 結構地區 id = gen2SiteRegionId(藍圖 id, part)（位元配置只在 gen2/structId.ts）
-  const site = (sid: number, part: number, cat: RegionCat, kind: string, names: readonly string[], box: BpBox, round = false): Region => {
-    const id = gen2SiteRegionId(sid, part), { x, y, w, h } = box;
-    return { id, cat, kind, name: pickName(names, id), x, y, w, h, ax: x + (w >> 1), ay: y + (h >> 1), contains: round ? ellipseHit(x, y, w, h) : rectHit(x, y, w, h) };
-  };
+  // 家鄉藍圖（結構 id 的 side = 0）查家鄉表；其他藍圖在自己的部件之間唯一化（家鄉表沒有的也退回這裡）
   const sitesOf = (b: Blueprint): readonly Region[] => {
-    const m = GEN2_SITE[b.kind];
-    if (!m) return [];
-    const out: Region[] = [];
-    const s = b.site;
-    if (m.kind === 'dungeon' && s?.kind === 'dungeon') {
-      out.push(site(b.id, 0, 'dungeon', 'dungeon', NAMES.dungeon, s.info.bbox));
-      let part = 1;
-      for (const r of s.info.rooms) {
-        const list = ROOM_NAMES[r.kind];
-        if (!list || part >= 64) continue;
-        out.push(site(b.id, part++, 'dungeon', `dungeon_${r.kind}`, list, r));
-      }
-    } else {
-      out.push(site(b.id, 0, m.cat, m.kind, NAMES[m.kind], partsOf(b)[0], m.round === true));
-      if (m.kind === 'mineshaft' && b.secret) out.push(site(b.id, 1, 'secret', 'secret_room', NAMES.secret_room, b.secret));
-    }
-    return out;
+    const ps = siteParts(b);
+    if (!ps.length) return [];
+    const home = decodeStructureId(b.id).side === 0 ? homeNames() : null, own = uniqueNames(ps.map((p) => pickSpec(p.id, p.kind, p.list)));
+    return ps.map((p): Region => {
+      const { x, y, w, h } = p.box;
+      return { id: p.id, cat: p.cat, kind: p.kind, name: home?.get(p.id) ?? own.get(p.id)!, x, y, w, h, ax: p.ax, ay: p.ay, contains: p.round ? ellipseHit(x, y, w, h) : rectHit(x, y, w, h) };
+    });
   };
   return {
     land: regionOf,
@@ -445,7 +489,8 @@ function makeGen2Kit(seed: string, src: Gen2Source): Gen2Kit {
 
 /**
  * gen2 地區的查詢：(x, y) → 那裡的結構地區（小的先：密室 / 地城房間先於礦坑 / 地城）與所在地區（陸地 / 海 / 島），先結構、後地區（惰性建立、快取）。
- * 結構用 overlapping 多查 FILL_REACH 欄（藍圖外框可能伸出自己的槽，同 Gen2Source.objectsIn / extrasIn；整區錨點如家鄉地城由 overlapping 本身處理）。
+ * 結構用 overlapping 多查 SITE_REACH 欄（藍圖外框可能伸出自己的槽 FILL_REACH 欄，同 Gen2Source.objectsIn / extrasIn；村莊地區又比外框外擴 VILLAGE_PAD；
+ * 整區錨點如家鄉地城由 overlapping 本身處理）。
  */
 export function gen2Regions(seed: string, src: Gen2Source): (x: number, y: number) => Region[] {
   const kit = gen2Kit(seed, src);
@@ -453,8 +498,10 @@ export function gen2Regions(seed: string, src: Gen2Source): (x: number, y: numbe
     const m = src.layout.landmassAt(x), info = m ? src.layout.regionAt(x) : null;
     if (!m || !info) return [];
     const out: Region[] = [];
-    for (const b of src.blueprints.overlapping(x - FILL_REACH, x + 1 + FILL_REACH)) {
-      if (b.x > x || b.x + b.w <= x || b.y > y || b.y + b.h <= y) continue;
+    for (const b of src.blueprints.overlapping(x - SITE_REACH, x + 1 + SITE_REACH)) {
+      // 外框（村莊加上外擴）不含 (x, y) 的藍圖不必建地區
+      const px = b.kind === 'village' ? VILLAGE_PAD : 0, py = b.kind === 'village' ? VILLAGE_PAD_UP : 0;
+      if (b.x - px > x || b.x + b.w + px <= x || b.y - py > y || b.y + b.h <= y) continue;
       for (const r of kit.sites(b)) if (r.contains(x, y)) out.push(r);
     }
     out.sort((a, b) => a.w * a.h - b.w * b.h);
