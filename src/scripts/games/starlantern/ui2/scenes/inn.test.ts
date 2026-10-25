@@ -14,6 +14,7 @@ import { ROMANCES_WRITTEN, TOGETHER_WRITTEN } from '../../data/story/scenes';
 import { CHARACTERS } from '../../data/characters';
 import { meet } from '../../engine/party';
 import { chainLength } from '../../data/story/chains';
+import { withTold } from '../../engine/testing';
 
 function setup(storage = memoryStorage()) {
   const game = new Game(constRng(0.5), storage, undefined, 0, LEGACY_LINEUP);
@@ -470,5 +471,27 @@ describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
       expect(JSON.stringify(t.game.state)).toBe(before);
       expect(t.game.walkOpen()).toBe(false);
     } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); }
+  });
+});
+
+describe('InnScene: a healed refusal (review of bond plan Tasks 12-14)', () => {
+  it('the gift list says 婉拒 after her healing until she has taken it, as the handbook does', () => {
+    const had = GIFT_LINES.noel;
+    GIFT_LINES.noel = { loved: ['甲', '乙'], liked: ['丙', '丁'], neutral: ['戊'], declined: { 'star-stone': '不要。' }, healed: { 'star-stone': '好。' } };
+    try {
+      const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, ['hero', 'rin']);
+      game.state = withTold(game.state, 'noel', chainLength('noel'));
+      game.state.party.roster.noel.bond = { talk: 0, field: 0, gifts: {}, refused: ['star-stone'] };
+      game.state.inventory = { 'star-stone': 2 };
+      const root = document.createElement('div');
+      const s = new InnScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity, 0);
+      s.enter(root);
+      s.onAction('confirm');
+      const right = () => [...[...root.querySelectorAll('.slx-layer')].at(-1)!.querySelectorAll('[role=option] .slx-right')].map((e) => e.textContent);
+      (root.querySelector('.slx-cmd [data-id=partners]') as HTMLElement).click();
+      s.onAction('down'); s.onAction('confirm');   // 送禮
+      s.onAction('confirm');                        // 諾艾兒
+      expect(right()).toEqual(['婉拒']);
+    } finally { if (had) GIFT_LINES.noel = had; else delete GIFT_LINES.noel; }
   });
 });

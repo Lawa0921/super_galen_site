@@ -493,3 +493,14 @@ describe('the handbook and the bond (bond plan Task 14)', () => {
     }
   });
 });
+
+describe('the handbook and a healed refusal (review of bond plan Tasks 12-14)', () => {
+  it('a material she refused stays 婉拒 after her healing until she takes it', () => {
+    const s = withTold(newGame(), 'noel', chainLength('noel'));
+    s.party.roster.noel.bond = { talk: 0, field: 0, gifts: {}, refused: ['star-stone'] };
+    const page = () => handbook(s).people.find((p) => p.id === 'noel')!.bond!.tastes;
+    expect(page()).toEqual([{ mat: 'star-stone', taste: 'declined' }]);
+    s.party.roster.noel.bond.gifts['star-stone'] = 1;
+    expect(page()).toEqual([{ mat: 'star-stone', taste: 'liked' }]);
+  });
+});

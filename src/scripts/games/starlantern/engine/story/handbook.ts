@@ -13,7 +13,7 @@ import type { CharacterId, Element } from '../types';
 import { MEETINGS } from '../../data/meetings';
 import { followedLeads, nextLead, type Lead } from './leads';
 import { storyPieces } from './events';
-import { bondOf, bondPoints, bondTier, giftPoints, tasteOf } from './bond';
+import { bondOf, bondPoints, bondTier, giftPoints, knownTaste } from './bond';
 import { BOND_CAP, BOND_PER_PIECE, GIFTABLE, type BondTier, type Companion, type Taste } from '../../data/story/bond';
 import type { GiftId } from '../types';
 
@@ -149,11 +149,9 @@ export function handbook(s: GameState): Handbook {
 function bondPage(s: GameState, c: Companion): BondPage {
   const m = s.party.roster[c];
   const b = bondOf(m);
-  const healed = storyPieces(s, c) >= chainLength(c);
   const tastes = GIFTABLE.flatMap((mat): { mat: GiftId; taste: Taste }[] => {
-    if (b.gifts[mat]) return [{ mat, taste: tasteOf(c, mat, healed) ?? 'neutral' }];
-    if (b.refused?.includes(mat)) return [{ mat, taste: 'declined' }];
-    return [];
+    const taste = knownTaste(s, c, mat);
+    return taste ? [{ mat, taste }] : [];
   });
   return {
     tier: bondTier(m), points: bondPoints(m), tastes,

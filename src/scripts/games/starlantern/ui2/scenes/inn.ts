@@ -9,11 +9,9 @@ import { Menu, type MenuItem } from '../menu';
 import type { UiAction } from '../input';
 import type { SceneCtx } from '../scene';
 import { MenuView, confirmBox, win } from '../widgets';
-import { bondOpen, giftLine, giftMood, giftPools, romanceCandidates, tasteOf, today } from '../../engine/story/bond';
+import { bondOpen, giftLine, giftMood, giftPools, knownTaste, romanceCandidates, today } from '../../engine/story/bond';
 import { COMPANIONS, GIFTABLE, type Companion } from '../../data/story/bond';
 import { TOGETHER_WRITTEN } from '../../data/story/scenes';
-import { storyPieces } from '../../engine/story/events';
-import { chainLength } from '../../data/story/chains';
 import { itemName } from '../../ui/dom';
 import { tonightMoon } from '../../engine/calendar';
 import type { Game } from '../../engine/game';
@@ -101,13 +99,8 @@ export class InnScene extends FacilityScene {
     const s = this.ctx.game.state;
     const held = GIFTABLE.filter((m) => (s.inventory[m] ?? 0) > 0);
     if (!held.length) { this.popAll(); void this.say(T.ui2.inn.nothingToGive); return; }
-    const b = s.party.roster[c].bond;
-    const healed = storyPieces(s, c) >= chainLength(c);
-    const known = (m: string): string | undefined => {
-      if (b?.gifts[m]) return T.ui2.bond.taste[tasteOf(c, m, healed) ?? 'neutral'];
-      if (b?.refused?.includes(m)) return T.ui2.bond.taste[tasteOf(c, m, healed) === 'declined' ? 'declined' : tasteOf(c, m, healed) ?? 'neutral'];
-      return undefined;
-    };
+    // the taste she has shown, as the handbook shows it (a refusal stays 婉拒 until she takes it, healed or not)
+    const known = (m: string): string | undefined => { const t = knownTaste(s, c, m); return t ? T.ui2.bond.taste[t] : undefined; };
     const v = new MenuView(new Menu(held.map((m) => ({ id: m, label: itemName(m), ...(known(m) ? { right: known(m) } : {}) }))), {
       pick: (it) => this.askGift(c, it.id),
       moved: () => this.ctx.sfx.cursor(),

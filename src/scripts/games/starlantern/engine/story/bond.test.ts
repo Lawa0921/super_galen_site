@@ -3,7 +3,8 @@ import { newMember } from '../party';
 import { chainLength } from '../../data/story/chains';
 import { COMPANIONS, GIFTABLE, GIFT_TASTE, type Companion } from '../../data/story/bond';
 import type { BondRecord, Member } from '../types';
-import { BOND_SWITCH, addField, bondOpen, nextBond, romanceCandidates, talkPoints, bondOf, bondPoints, bondTier, giftLine, giftMood, giftPools, giftPoints, giveGift, inDanger, tasteOf, tierAt, today } from './bond';
+import { BOND_SWITCH, addField, bondOpen, nextBond, romanceCandidates, talkPoints, bondOf, bondPoints, bondTier, giftLine, giftMood, giftPools, giftPoints, giveGift, inDanger, knownTaste, tasteOf, tierAt, today } from './bond';
+import { withTold } from '../testing';
 import type { GiftPools } from '../../data/bond.zh-TW';
 import { meet } from '../party';
 import { mulberry32 } from '../rng';
@@ -476,5 +477,18 @@ describe('romance candidates (bond plan Task 10)', () => {
     three.party.roster.rin.memories = 0;
     three.party.roster.rin.bond = { talk: 12, field: 40, gifts: { 'dusk-cloth': 24 } };   // 92
     expect(romanceCandidates(three, W)).toEqual(['noel', 'liz', 'rin']);
+  });
+});
+
+describe('the taste she has shown (review of bond plan Tasks 12-14)', () => {
+  it('a refusal stays 婉拒 after her healing until she is given it again; nothing offered shows nothing', () => {
+    const s = withTold(newGame(), 'noel', chainLength('noel'));   // healed: her star stones would now be liked
+    expect(knownTaste(s, 'noel', 'star-stone')).toBeUndefined();
+    s.party.roster.noel.bond = { talk: 0, field: 0, gifts: { 'storm-stone': 1 }, refused: ['star-stone'] };
+    expect(knownTaste(s, 'noel', 'star-stone')).toBe('declined');
+    expect(knownTaste(s, 'noel', 'storm-stone')).toBe('loved');
+    expect(knownTaste(s, 'noel', 'moss')).toBeUndefined();
+    s.party.roster.noel.bond.gifts['star-stone'] = 1;   // given again, healed: her new taste
+    expect(knownTaste(s, 'noel', 'star-stone')).toBe('liked');
   });
 });

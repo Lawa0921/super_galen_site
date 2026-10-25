@@ -47,6 +47,18 @@ export function tasteOf(c: Companion, mat: GiftId, healed: boolean): Taste | nul
 }
 
 /**
+ * The taste she has shown for `mat` (spec §4.8, §6.2), the one the inn's gift list and the handbook both show: a material
+ * she took reads her taste now (healed once her pieces are all told); one she only refused stays declined, even after her
+ * healing, until she is given it again; one never offered shows nothing.
+ */
+export function knownTaste(s: GameState, c: Companion, mat: GiftId): Taste | undefined {
+  const b = s.party.roster[c]?.bond;
+  if (b?.gifts[mat]) return tasteOf(c, mat, storyPieces(s, c) >= chainLength(c)) ?? 'neutral';
+  if (b?.refused?.includes(mat)) return 'declined';
+  return undefined;
+}
+
+/**
  * The points her gifts are worth, before the gift cap: each material's first GIFT_REPEAT_FULL are worth its taste, every
  * one after is worth 1. A gift is read with her healed taste: a material she took was never declined then, and healing
  * changes only declined ones, so both readings agree (tested). The hero has none.
