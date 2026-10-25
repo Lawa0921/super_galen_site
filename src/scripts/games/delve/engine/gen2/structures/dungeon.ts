@@ -72,8 +72,8 @@ export function buildDungeonBp(c: BpCtx): Blueprint {
   return { ...bp, ...drawnBox(bp), cells, colIndex, wholeRegion: true };
 }
 
-// 實際畫到的範圍：格子、solid、ground 的欄、箱子 / 陶罐 / 古碑（都在畫布內）
-function drawnBox(bp: Blueprint): { x: number; y: number; w: number; h: number } {
+// 實際畫到的範圍：格子、solid、ground 的欄、箱子 / 陶罐 / 古碑（都在畫布內；structures/keep.ts 共用）
+export function drawnBox(bp: Blueprint): { x: number; y: number; w: number; h: number } {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   const add = (x: number, y: number, w = 1, h = 1): void => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + w); y1 = Math.max(y1, y + h); };
   const c = bp.cells;

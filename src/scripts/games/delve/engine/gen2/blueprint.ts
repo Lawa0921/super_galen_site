@@ -8,6 +8,7 @@
 // SeaSlot.poi = 'island' 的槽沒有藍圖（島地形由 Profile2 + fill 負責）、'shipwreck' / 'crate' 各一份表層藍圖（ctx 的槽 = 海槽、region = 海本身）。
 // 島地區不進陸地槽位格。
 // 保證槽（P11）：每片非家鄉的大陸至少一間小屋、一座遺跡（見 BlueprintIndex.guard）。
+// 大陸錨點（Task 18，anchors.continentAnchors）：大東西（村莊 / 小地城 / 地廳）+ 1 座隱士小屋；保證槽在剩下的槽裡挑（Q15）。
 // 錨點（anchors.ts，M2a Task 7）：有錨點的 (地區, 層, 槽) 不擲機率、用登錄的錨點建構器（沒登錄 = 空著）；錨點優先於保證槽（Q15）。
 // 錨點可以在含主坑道的槽（找不到不含坑道的槽時），建構器收到的 slotX0 / slotX1 是避開坑道帶後較大的一側（anchors.anchorSpan），
 // 所以外框照舊離坑道觸及範圍 ≥ 1；「含坑道的槽沒有非 DEEP 藍圖」只對機率 / 保證藍圖成立（家鄉地下層的機率礦坑也例外，外框同樣避開坑道帶，Task 10）。
@@ -54,6 +55,8 @@ import { buildMineshaftBp, rollMineshaftBp } from './structures/mineshaft';
 import { buildSkyIslandBp, rollSkyIslandBp } from './structures/skyIsland';
 import { buildMushroomBp, buildCrystalBp, rollMushroomBp, rollCrystalBp } from './structures/miniBiome';
 import { buildHiveBp, rollHiveBp } from './structures/hive';
+import { buildKeepBp } from './structures/keep';
+import { buildHermitHutBp } from './structures/hermitHut';
 import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, SLOT_PAD, bandFreeSpan, dropLooseWebs, slotWidth, landSlot, landSlotCount, touchesSpawnClear, partsMeet, partsOf, type Blueprint, type BpBox, type BpCtx, type BpKind, type Layer } from './bpcore';
 import { encodeStructureId, decodeStructureId } from './structId';
 
@@ -152,6 +155,9 @@ registerAnchorBuild('alcove_desert', (c) => buildAlcoveBp(c, 'desert'));
 registerAnchorBuild('molten_shrine', (c) => buildMoltenShrineBp(c));
 registerAnchorBuild('shaft_cache', buildShaftCacheBp);
 registerAnchorBuild('spawn_tablet', buildSpawnTabletBp);
+// 荒野大陸的小地城 / 隱士小屋（Task 18；大陸的村莊 / 地廳錨點用上面家鄉同一個建構器，外圍的地廳一律加通地表的繩梯豎井，structures/hall.ts）
+registerAnchorBuild('keep', buildKeepBp);
+registerAnchorBuild('hermit_hut', buildHermitHutBp);
 
 // ── 槽位表 ──
 
@@ -365,6 +371,13 @@ export class BlueprintIndex {
 
   // 地塊的錨點（家鄉：homeAnchors；大陸：continentAnchors；海：沒有）+ 測試接縫 extraAnchors；依地塊快取
   anchorsOf(m: Landmass): readonly Anchor[] { return this.anchorTable(m).list; }
+
+  // 大陸 m 的保證小屋 / 遺跡（P11，guard 選的那兩份原始藍圖；測試比對用的公開查詢，Q5）
+  guaranteed(m: Landmass): { cabin: Blueprint; ruin: Blueprint } {
+    if (m.kind !== 'continent') throw new RangeError(`gen2: landmass ${m.side}:${m.i} is not a continent`);
+    const g = this.guard(m);
+    return { cabin: g.cabin.bp, ruin: g.ruin.bp };
+  }
 
   // 地塊 m 的錨點 a 的（讓位後的；家鄉 = 裝飾過的）藍圖；沒登錄建構器 / 被讓位 → null
   anchorBlueprint(m: Landmass, a: Anchor): Blueprint | null {
@@ -581,6 +594,8 @@ export class BlueprintIndex {
   // 保證槽（P11）：大陸在該層的合格槽（非沙灘地區、不含主坑道、不是錨點槽（Q15）；小屋看地下層的 170 格槽、遺跡看表層的 340 格槽）依 x 排序，
   // 起點 g = floor(hash2(side, i, s) × 該層合格槽數)；小屋 = 從 g 往後（繞回）第一個 buildCabin 不回 null 的槽、
   // 遺跡 = 從 g + 1 往後第一個 buildRuin 不回 null 的槽；全部失敗就從同一個起點依序 force（force 也會因坑道避讓帶回 null，Q3）。
+  // 錨點優先（Q15，Task 18）：建出來的那份與同地區其他層的錨點（原始藍圖）部件相交 → 這槽也不算（會被跨層規則讓掉：小地城底下的地下層、
+  // 地廳通地表豎井穿過的表層 / 地下層），照同一個順序往後找；剔除後沒有合格槽 = 版面壞了，照 M1 丟 RangeError（P11 不能默默失效）。
   // 保證槽的那一層不再擲機率
   private guard(m: Landmass): Guard {
     let g = this.guards.get(m);
@@ -598,10 +613,13 @@ export class BlueprintIndex {
       const n = ok.length;
       if (n === 0) throw new RangeError(`gen2: continent ${m.side}:${m.i} has no eligible blueprint slot`);
       const start = Math.floor(h * n) + off;
+      // 同地區其他層的錨點原始藍圖（錨點的建構器不查保證槽，這裡建它們沒有循環）
+      const anchorParts = (r: RegionInfo): Blueprint[] => this.anchorTable(m).list.filter((a) => a.region === r && a.layer !== layer)
+        .map((a) => this.raw(m, a.region, a.slot, a.layer)).filter((b): b is Blueprint => b !== null);
       for (const force of [false, true]) {
         for (let k = 0; k < n; k++) {
           const e = ok[(start + k) % n], bp = build(this.ctx(m, e.r, e.q, layer), { force });
-          if (bp) return { ...e, bp };
+          if (bp && !anchorParts(e.r).some((o) => partsMeet(bp, o))) return { ...e, bp };
         }
       }
       throw new RangeError(`gen2: continent ${m.side}:${m.i} has no slot for its guaranteed ${layer === BP_UNDER ? 'cabin' : 'ruin'}`);

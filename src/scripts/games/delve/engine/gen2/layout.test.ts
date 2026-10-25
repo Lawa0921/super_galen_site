@@ -82,15 +82,19 @@ describe('gen2 Layout', () => {
     expect(pois).toEqual(new Set(['island', 'shipwreck', 'crate']));
   });
 
-  it('文化：第一片東西大陸恰一片霧竹、20 個種子兩側都出現過；之後相鄰大陸文化不同；tier', () => {
-    const sides = new Set<number>();
-    for (const seed of SEEDS20) { const lay = L(seed), e = lay.landmass(1, 2), w = lay.landmass(-1, 2);
-      expect([e.culture, w.culture].filter((c) => c === 'mistbamboo')).toHaveLength(1);
-      sides.add(e.culture === 'mistbamboo' ? 1 : -1);
-      for (let i = 4; i <= 12; i += 2) expect(lay.landmass(1, i).culture).not.toBe(lay.landmass(1, i - 2).culture);
-      expect(lay.landmass(1, 1).tier).toBe(1); expect(lay.landmass(1, 2).tier).toBe(1); expect(lay.landmass(1, 3).tier).toBe(2);
-      expect(e.kind === 'continent' && e.regions.every((r) => r.kind === (e.culture ? 'culture' : 'wild'))).toBe(true); }
-    expect(sides.size).toBe(2);
+  // M2a Task 18（Q14）：v0 / v1 只有荒野大陸（spec §4.1 2026-10-24 修訂），霧竹之國的指派（離家最近、尚未進入過的那片、ver ≥ 2）是 M4 的工作
+  it('v0：所有大陸都是荒野（culture null、kind wild），含第一片東 / 西大陸；tier', () => {
+    for (const seed of SEEDS20) for (const side of [1, -1] as const) for (let i = 2; i <= 12; i += 2) {
+      const m = L(seed).landmass(side, i);
+      expect(m.culture, `${seed} ${side}:${i}`).toBeNull(); expect(m.regions.every((r) => r.kind === 'wild')).toBe(true);
+    }
+    const lay = L('tier');
+    expect(lay.landmass(1, 1).tier).toBe(1); expect(lay.landmass(1, 2).tier).toBe(1); expect(lay.landmass(1, 3).tier).toBe(2);
+  }, 30_000);
+  it('鎖表裡已存的 culture 照舊尊重（下面「鎖覆寫文化並往後推」的鎖表測試照留）', () => {
+    const locks = new LockTable(); locks.lock(1, 2, { ver: 0, culture: 'mistbamboo' });
+    expect(L('s', locks).landmass(1, 2).culture).toBe('mistbamboo'); expect(L('s', locks).landmass(-1, 2).culture).toBeNull();
+    expect(L('s', locks).landmass(1, 2).regions.every((r) => r.kind === 'culture' && r.culture === 'mistbamboo')).toBe(true);
   });
 
   it('tier：大陸 = 第幾片、海 = 往外下一片大陸；ver 沒鎖用 latestVer', () => {
@@ -202,7 +206,8 @@ describe('gen2 Layout', () => {
     expect(lay.landmass(1, 1)).toMatchObject({ kind: 'continent', x0: 10_000, tier: 1 }); expect(lay.landmassAt(5_000)).toBeNull();
     expect(lay.landmass(1, 2)).toMatchObject({ kind: 'sea', x0: lay.landmass(1, 1).x1, tier: 2 });
     expect(lay.landmass(-1, 1)).toMatchObject({ kind: 'sea', x1: -1_000, tier: 1 });
-    expect([lay.landmass(1, 1).culture, lay.landmass(-1, 2).culture].filter((c) => c === 'mistbamboo')).toHaveLength(1);
+    // v0 只有荒野（Q14）
+    expect([lay.landmass(1, 1).culture, lay.landmass(-1, 2).culture]).toEqual([null, null]);
     expect(lay.landmassAt(9_999)).toBeNull(); expect(lay.landmassAt(-1_000)).toBeNull();
     expect(lay.landmassAt(10_000)!.i).toBe(1); expect(lay.landmassAt(-1_001)!.i).toBe(1);
   });
@@ -215,8 +220,9 @@ describe('gen2 Layout', () => {
 
 describe('gen2 cultures', () => {
   it('文化池與 poolFor', () => {
-    expect(CULTURE_POOL).toEqual({ 0: ['mistbamboo', null] });
-    expect(poolFor(0)).toEqual(['mistbamboo', null]); expect(poolFor(5)).toBe(CULTURE_POOL[0]);
+    // v0 的池只有荒野（Q14）；霧竹之國的命名池留著（鎖表裡已存的霧竹大陸、M4 用）
+    expect(CULTURE_POOL).toEqual({ 0: [null] });
+    expect(poolFor(0)).toEqual([null]); expect(poolFor(5)).toBe(CULTURE_POOL[0]);
     expect(() => poolFor(-1)).toThrow(RangeError);
     expect(CULTURES.mistbamboo.name).toBe('霧竹之國'); expect(CULTURES.mistbamboo.prefixes).toHaveLength(8);
     expect(new Set(CULTURES.mistbamboo.prefixes).size).toBe(8);

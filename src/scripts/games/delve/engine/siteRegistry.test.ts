@@ -67,7 +67,8 @@ describe('SiteRegistry', () => {
     for (const s of sites) a.addSite(w, s);
     for (const s of [...sites].reverse()) b.addSite(w, s);
     const ids = (f: FolkWorld): (readonly [string, number])[] => f.npcs.map((n) => [n.key, n.id] as const).sort();
-    expect(ids(a)).toHaveLength(3 * 4 + 2 * 3);
+    // 3 座村莊 × 4、2 座地廳 × 3、1 座隱士小屋 × 1（Task 18：隱士）
+    expect(ids(a)).toHaveLength(3 * 4 + 2 * 3 + 1);
     expect(ids(b)).toEqual(ids(a));
     const r = new SiteRegistry({ ranges: 'gen2' });
     expect(r.add(sites[0])).toBe(true);

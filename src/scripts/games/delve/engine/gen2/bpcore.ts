@@ -14,7 +14,9 @@ import { decodeStructureId } from './structId';
 export type BpKind = 'cabin' | 'ruin' | 'shipwreck' | 'crate' | 'lake' | 'cave_lake' | 'lava_pool' | 'dungeon' | 'mineshaft' | 'sky_island' | 'village' | 'hall'
   | 'mushroom_biome' | 'crystal_cave' | 'hive'
   // 家鄉的石碑 / 遺物錨點（M2a Task 14，structures/shrine.ts）
-  | 'alcove' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet';
+  | 'alcove' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet'
+  // 荒野大陸的小地城與隱士小屋（M2a Task 18，structures/keep.ts、structures/hermitHut.ts）
+  | 'keep' | 'hermit_hut';
 // 層：表層 / 地下 / 深層 / 空中（浮空島）/ 小點（minor）；結構 id 的 layer 欄位 3 bit（structId.ts）
 export const BP_SURFACE = 0, BP_UNDER = 1, BP_DEEP = 2, BP_SKY = 3, BP_MINOR = 4, LAND_SLOT_W = 340, KEEP = -1;
 export type Layer = 0 | 1 | 2 | 3 | 4;

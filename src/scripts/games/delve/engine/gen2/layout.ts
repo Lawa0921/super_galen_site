@@ -60,7 +60,6 @@ export class Layout {
   private readonly east: SideState;
   private readonly west: SideState;
   private readonly home: Landmass | null;
-  private readonly culture1: number;
 
   constructor(seed: string, readonly origin: LayoutOrigin, private readonly locks: LockTable, private readonly latestVer: number) {
     const seeds = (t: string): SideSeeds => {
@@ -71,7 +70,6 @@ export class Layout {
       ({ dir, o, s: seeds(t), edges: [o.x], lands: [], seas: 0, continents: 0, prevCulture: undefined });
     this.east = side(1, origin.east, 'e');
     this.west = side(-1, origin.west, 'w');
-    this.culture1 = seedInt(seed, 'g2-culture1');
     this.home = origin.home ? this.buildHome(seedInt(seed, 'g2-home'), origin.home.x0, origin.home.x1) : null;
   }
 
@@ -179,9 +177,9 @@ export class Layout {
     const total = pick(hash2(i, 1, s.cont), Math.max(CONT_MIN, REGION_MIN * n), Math.min(CONT_MAX, REGION_MAX * n));
     const { x0, x1 } = this.span(st, total);
 
+    // 文化：鎖表存的照舊；其餘從文化池挑（M2a Task 18 刪掉「第一片東 / 西大陸恰一片霧竹」的規則，Q14：v0 的池只有荒野）
     let culture: CultureId | null;
     if (locked !== undefined) culture = locked;
-    else if (c === 1) culture = (hash2(0, 0, this.culture1) < 0.5) === (st.dir === 1) ? 'mistbamboo' : null;
     else {
       const pool = poolFor(ver), cand = pool.filter((p) => p !== st.prevCulture);
       culture = cand.length ? cand[Math.floor(hash2(i, 0, s.culture) * cand.length)] : pool[0];

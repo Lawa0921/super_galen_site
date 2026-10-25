@@ -35,10 +35,10 @@ describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
   it('藍圖格都在外框內、外框在槽內；同 id 兩次算出相同藍圖', () => {
     expect(all.length).toBeGreaterThan(20);
     for (const b of all) {
-      for (let k = 0; k < b.cells.length; k += 5) {
-        expect(b.cells[k]).toBeGreaterThanOrEqual(b.x); expect(b.cells[k]).toBeLessThan(b.x + b.w);
-        expect(b.cells[k + 1]).toBeGreaterThanOrEqual(b.y); expect(b.cells[k + 1]).toBeLessThan(b.y + b.h);
-      }
+      // 逐格比對後只 expect 一次（Task 18 的小地城每座約 9 萬格，逐格 expect 會超過 30 s 逾時）
+      let out = 0;
+      for (let k = 0; k < b.cells.length; k += 5) if (b.cells[k] < b.x || b.cells[k] >= b.x + b.w || b.cells[k + 1] < b.y || b.cells[k + 1] >= b.y + b.h) out++;
+      expect(out, `${b.kind} ${b.id}`).toBe(0);
       const slot = slotOf(b.id, src.layout);
       expect(slot.layer).toBe(b.layer);
       // wholeRegion 錨點（家鄉地城，M2a Task 8）：外框在地區內、豁免槽邊距（Q2）
@@ -87,8 +87,10 @@ describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
     }
     // 含坑道的槽沒有非 DEEP 藍圖——只對機率 / 保證藍圖；錨點可以在含坑道的槽（M2a Task 7，外框照下面的觸及範圍檢查）；
     // 家鄉地下層的機率礦坑也可以（M2a Task 10 控制者裁決：只在避開坑道帶的一側，外框同樣照下面的觸及範圍檢查，其他藍圖照舊）
+    // 錨點：家鄉與荒野大陸的（Task 18：大陸的村莊 / 隱士小屋可以在含坑道的槽，外框在避開坑道帶的一側）
     const s = seedInt('bp', 'g2-shaft'), anchored = new Set<number>(), hm = src.layout.landmassAt(SPAWN_X)!;
-    for (const m of [hm]) for (const a of idx.anchorsOf(m)) anchored.add(structureId(m.side, m.i, a.region.index, a.slot, a.layer));
+    const lands = new Set([hm, ...all.map((q) => src.layout.landmassAt(q.x)!).filter((m) => m.kind === 'continent')]);
+    for (const m of lands) for (const a of idx.anchorsOf(m)) anchored.add(structureId(m.side, m.i, a.region.index, a.slot, a.layer));
     const homeMine = (q: { kind: string; x: number }): boolean => q.kind === 'mineshaft' && q.x >= hm.x0 && q.x < hm.x1;
     for (const b of all.filter((q) => q.layer !== BP_DEEP && !anchored.has(q.id) && !homeMine(q))) {
       const r = slotOf(b.id, src.layout); const sx = shaftX(s, r.region);

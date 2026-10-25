@@ -104,6 +104,8 @@ export const NAMES: Record<string, readonly string[]> = {
   shipwreck: ['擱淺的商船', '沉默的殘骸', '鏽錨之舟', '破帆沉船'],
   dwarf_hall: ['鐵脈地廳', '深爐大廳', '灰鬚石廳', '琥珀礦廳'],
   pond: ['蘆葦池', '蛙鳴池', '睡蓮池', '野鴨池', '清泉池', '月影池'],
+  // 荒野大陸的隱士小屋（gen2 Task 18；Task 20 的隱士島共用）
+  hermit: ['隱者木屋', '孤燈小屋', '苔頂小屋', '松風草廬', '荒野茅舍', '獨居者之家'],
 };
 // 各房間種類的名單兩兩不重疊（含下面的 gen2 補充）：gen2 的「整座地城房間不重名」只在同種類內唯一化，靠這個前提（discovery.test 斷言）
 export const ROOM_NAMES: Partial<Record<RoomKind, readonly string[]>> = {
@@ -372,7 +374,8 @@ const GEN2_BIOME_KEY = ['forest', 'desert', 'snow', 'jungle'] as const;
 /**
  * gen2 藍圖種類 → 結構地區（kind、cat、round = 橢圓）。沒列的種類不立地區：箱子（crate）、熔岩池，
  * 以及家鄉的石碑 / 遺物點（alcove / molten_shrine / shaft_cache / spawn_tablet，Task 14；它們是點不是區域）。
- * 之後的種類（keep / hermit_hut：Task 18；lighthouse / wreck 島 / reef / sea_ruin：Task 20）接上時加在這裡。
+ * keep（荒野大陸的小地城，Task 18）= 地城（整座 + 有名字的房間，同家鄉地城）、hermit_hut（隱士小屋，Task 18）→ kind 'hermit'。
+ * 之後的種類（lighthouse / wreck 島 / reef / sea_ruin：Task 20）接上時加在這裡。
  */
 const GEN2_SITE: Partial<Record<BpKind, { kind: string; cat: RegionCat; round?: true }>> = {
   cabin: { kind: 'cabin', cat: 'site' }, ruin: { kind: 'ruin', cat: 'site' }, shipwreck: { kind: 'shipwreck', cat: 'site' },
@@ -380,7 +383,7 @@ const GEN2_SITE: Partial<Record<BpKind, { kind: string; cat: RegionCat; round?: 
   village: { kind: 'village', cat: 'site' }, hall: { kind: 'dwarf_hall', cat: 'site' },
   mushroom_biome: { kind: 'mushroom_biome', cat: 'cave', round: true }, crystal_cave: { kind: 'crystal_cave', cat: 'cave', round: true },
   hive: { kind: 'hive', cat: 'cave', round: true }, cave_lake: { kind: 'underground_lake', cat: 'cave' },
-  dungeon: { kind: 'dungeon', cat: 'dungeon' },
+  dungeon: { kind: 'dungeon', cat: 'dungeon' }, keep: { kind: 'dungeon', cat: 'dungeon' }, hermit_hut: { kind: 'hermit', cat: 'site' },
 };
 
 /** gen2 地區的建法（gen2Regions / gen2RegionById / gen2HomeRegions 共用；依 (src, seed) 共用一份，快取也共用） */

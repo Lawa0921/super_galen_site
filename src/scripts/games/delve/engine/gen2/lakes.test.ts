@@ -3,7 +3,7 @@
 // 形狀參數（寬 / 深 / 水位 / 橢圓 / 殼）；同一槽不同層的藍圖外框不與液體藍圖相交（後蓋的結構不會切開液體）。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
-import { BlueprintIndex, KEEP, liquidYields, emptyObjects, type Blueprint, type BpKind } from './blueprint';
+import { BlueprintIndex, KEEP, liquidYields, emptyObjects, partsMeet, type Blueprint, type BpKind } from './blueprint';
 import { LAVA_Y } from './profile';
 import { worldOf, loadColumns, liquidInvariant, snapshotLiquid, SEEDS5 } from './testUtil';
 import { anchorSpan } from './anchors';
@@ -123,7 +123,8 @@ describe('gen2 static liquids: lake / cave_lake / lava_pool', () => {
       (x) => [src.profile.layersAt(x).molten + 10, LAVA_Y - 14], (h) => (h + 1) >> 1);
   });
 
-  it('同一槽不同層的藍圖外框不與液體藍圖外框相交（5 個種子）', () => {
+  // 相交用部件判定（Task 11 修正 2：liquidYields 走 partsMeet；Task 18 起外圍地廳有通地表的豎井部件，外接矩形會蓋到上方的湖）
+  it('同一槽不同層的藍圖不與液體藍圖相交（部件判定，5 個種子）', () => {
     let n = 0;
     for (const seed of SEEDS5) {
       const g = new Gen2Source(seed), bps = new BlueprintIndex(seed, g.layout, g.profile).overlapping(-25_000, 25_000);
@@ -132,7 +133,7 @@ describe('gen2 static liquids: lake / cave_lake / lava_pool', () => {
         n++;
         for (const b of bps) {
           if (b === a) continue;
-          const hit = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+          const hit = partsMeet(a, b);
           expect(hit, `${seed}: ${a.kind} ${a.id} × ${b.kind} ${b.id}`).toBe(false);
         }
       }

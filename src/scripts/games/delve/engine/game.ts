@@ -4470,12 +4470,13 @@ export class DelveGame {
   }
   /** (x,y) 在哪個聚落裡（舊世界：村落含村外的緩坡、地廳外框外擴，同改動前；gen2 的範圍見 SiteRegistry） */
   siteAt(x: number, y: number): GenSite | null { return this.sites.at(x, y); }
-  /** 聚落名（村落 / 地廳：discovery 的名字；其他 / 不認得的 key → ''） */
+  /** 聚落名（村落 / 地廳 / 隱士小屋：discovery 的名字；其他 / 不認得的 key → ''） */
   siteName(key: string): string {
     const s = this.sites.byKey(key);
     let cx: number, cy: number, rk: string;
     if (s?.kind === 'village') { cx = (s.info.x0 + s.info.x1) >> 1; cy = s.info.ground - 2; rk = 'village'; }
     else if (s?.kind === 'hall') { cx = (s.info.x0 + s.info.x1) >> 1; cy = s.info.floorY - 2; rk = 'dwarf_hall'; }
+    else if (s?.kind === 'hermit') { cx = s.at.x; cy = s.at.y; rk = 'hermit'; }
     else return '';
     // 先查已知表；不在已知表的（外圍欄登錄、還沒走過的聚落）退回外圍查詢（gen2Regions，同一份快取）；都沒有 → ''
     const hit = this.discovery.listKnown().find((r) => r.kind === rk && r.contains(cx, cy)) ?? this.outerRegion?.(cx, cy).find((r) => r.kind === rk);

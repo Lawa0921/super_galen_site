@@ -189,8 +189,12 @@ export class FolkWorld {
       this.addSettled(w, s.key, 'runesmith', 'hall', { x0: h.forge.x - 1, x1: h.forge.x + 6 }, fy, null);
       this.addSettled(w, s.key, 'ore_trader', 'hall', { x0: h.cart.x - 7, x1: h.cart.x - 1 }, fy, null);
       this.addSettled(w, s.key, 'dwarf_elder', 'hall', { x0: cx - 6, x1: cx + 6 }, fy, null);
+    } else if (s.kind === 'hermit') {
+      // 隱士小屋（Task 18）：1 位隱士，白天在屋裡走動（at ± 3 = 屋內），晚上待在 at
+      const { x, y } = s.at;
+      this.addSettled(w, s.key, 'hermit', 'hut', { x0: x - 3, x1: x + 3 }, y, { x, y });
     }
-    // 隱士（Task 18 加角色）/ 地城：沒有常駐 NPC
+    // 地城：沒有常駐 NPC
   }
   /** 聚落 NPC：key = `${site}:${role}`、id 由 key 雜湊（撞號丟錯） */
   private addSettled(w: World, site: string, role: FolkRole, origin: FolkOrigin, zone: { x0: number; x1: number }, y: number,

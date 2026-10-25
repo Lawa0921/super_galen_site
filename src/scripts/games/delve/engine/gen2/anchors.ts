@@ -1,4 +1,4 @@
-// anchors.ts — gen2 錨點（保留槽）：保證家鄉（之後也有大陸，Task 18）必要結構的 (地區, 層, 槽)。
+// anchors.ts — gen2 錨點（保留槽）：保證家鄉與荒野大陸（Task 18，continentAnchors）必要結構的 (地區, 層, 槽)。
 // 錨點的槽不擲機率表：BlueprintIndex.build 先查錨點，有錨點就用登錄的建構器（沒登錄 = 該槽保留但空著），錨點也優先於大陸的保證槽（Q15）。
 // 錨點只由 (seed, 地塊) 與 Profile2（主坑道的深度）算出，與查詢順序無關；BlueprintIndex.anchorsOf 依地塊快取。
 // 家鄉錨點的通則：只放在家鄉的一般地區（不是沙灘、不是地城區；地城區只有 dungeon 錨點）；含出生點 ± SPAWN_CLEAR 的槽
@@ -17,6 +17,8 @@ import { entranceHit } from '../genPrims';
 import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, SLOT_PAD, VILLAGE_MIN, bandFreeSpan, centerAway, type Span, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type Layer } from './bpcore';
 import { SLOPE, VILLAGE_VW } from './structures/village';
 import { ALCOVE_MAX_W, MOLTEN_MAX_W } from './structures/shrine';
+import { KEEP_W } from './structures/keep';
+import { HUT_MAX_W } from './structures/hermitHut';
 
 export type AnchorKind = 'dungeon' | 'village' | 'hall' | 'mineshaft_secret' | 'sky_island' | 'mushroom_biome' | 'crystal_cave' | 'hive'
   | 'cave_lake' | 'ruin' | 'cabin' | 'alcove_snow' | 'alcove_desert' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet' | 'lake' | 'keep' | 'hermit_hut'
@@ -36,7 +38,7 @@ export function anchorBuild(kind: AnchorKind): AnchorBuild | undefined { return 
 
 // 回傳順序（同種依選取順序）
 const ORDER: readonly AnchorKind[] = ['dungeon', 'village', 'hall', 'mineshaft_secret', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive',
-  'cave_lake', 'ruin', 'cabin', 'alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache', 'spawn_tablet', 'lake'];
+  'cave_lake', 'ruin', 'cabin', 'alcove_snow', 'alcove_desert', 'molten_shrine', 'shaft_cache', 'spawn_tablet', 'lake', 'keep', 'hermit_hut'];
 
 // 地表湖錨點最窄的外框（湖寬 20 + 兩側湖壁各 2；可用範圍放不下最寬的 64 時的備案）
 export const LAKE_MIN_W = 24;
@@ -55,11 +57,13 @@ const SECRET_GAP = 2 * SUB_SLOT_W, UNDER_TRIES = 8;
 //   後備的直豎井只加高、不加寬。hive 在 Task 11 從 37 放寬：蜂巢的殼是封閉的，一定要挖隧道或豎井接洞穴）；
 //   alcove 41 / molten_shrine 61 = 9 × 5 石室 + 兩側接洞的隧道各最多 16 欄 / 13 × 7 熔岩祭壇 + 各 24 欄（structures/shrine.ts 的 ALCOVE_MAX_W / MOLTEN_MAX_W；
 //   Task 14：小室一定要走得進去，原本的 9 / 15 放不下隧道）；spawn_tablet 12：小點位的寬 ≤ 12（實際外框 7 = 石碑 ± 3）；
-//   lake 64 = 湖寬上限 60 + 兩側湖壁各 2（structures/lakes.ts；錨點版的湖寬夾到可用範圍放得下，最窄 20 → 外框 24，見 LAKE_MIN_W）。
+//   lake 64 = 湖寬上限 60 + 兩側湖壁各 2（structures/lakes.ts；錨點版的湖寬夾到可用範圍放得下，最窄 20 → 外框 24，見 LAKE_MIN_W）；
+//   keep 300 = 小地城的預留區寬（structures/keep.ts 的 KEEP_W，Task 18）；hermit_hut 19 = 屋寬上限 11 + 兩側整平各 4（structures/hermitHut.ts 的 HUT_MAX_W）。
 // dungeon（wholeRegion）與 shaft_cache（刻意在坑道底）不受這個限制
 export const ANCHOR_MAX_W: Readonly<Partial<Record<AnchorKind, number>>> = {
   village: 91, ruin: 20, cabin: 75, cave_lake: 65, hall: 154, mineshaft_secret: 154, sky_island: 48,
   mushroom_biome: 145, crystal_cave: 125, hive: 48, alcove_snow: ALCOVE_MAX_W, alcove_desert: ALCOVE_MAX_W, molten_shrine: MOLTEN_MAX_W, spawn_tablet: 12, lake: 64,
+  keep: KEEP_W, hermit_hut: HUT_MAX_W,
   // 只給測試（BlueprintIndex 的執行期寬度檢查）
   test_probe: 60,
 };
@@ -361,7 +365,122 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
   return out.sort((p, q) => ORDER.indexOf(p.kind) - ORDER.indexOf(q.kind));
 }
 
-// 大陸錨點：Task 18 實作（keep / hermit_hut 等）
-export function continentAnchors(_seed: string, _m: Landmass, _profile: Profile2): Anchor[] {
-  return [];
+// ── 大陸錨點（M2a Task 18；spec §4.1「荒野大陸的結構以遺跡、地城、小屋、礦坑、隱士為主」、§4.4 驚喜密度「任意 1,800 格內至少一個大東西」）──
+// 大東西（village / keep / hall）的目標點：x0 + BIG_EDGE、x1 − BIG_EDGE 與兩者之間均分（n = ceil(跨度 / BIG_GAP) + 1 個，相鄰目標距離 ≤ BIG_GAP）。
+// 種類（雜湊 bigKind）：tier 1 村莊 50% / 小地城 30% / 地廳 20%；tier ≥ 2 村莊 35% / 小地城 45% / 地廳 20%。
+// 每個目標取「槽中心最接近它的合格槽」（平手取 x 序在前的），已用過的槽跳過：
+//   · village：SURFACE 槽、可用範圍放得下 ANCHOR_MAX_W.village + 兩側 SLOT_PAD（外圍只置中，structures/village.ts）；任何生態都可以（雪原、沙漠、叢林也有村子），
+//     只排除 HIGH 變體的地區（太陡）。最近的合格槽離目標 > VILLAGE_NEAR（目標附近只有 HIGH 地區）→ 改放 keep。
+//   · keep：SURFACE 槽、放得下 KEEP_W（300）+ 兩側 SLOT_PAD（含主坑道的 340 格槽放不下，只有不含坑道的槽或吃餘數的最後一槽）。
+//   · hall：DEEP 槽、放得下 ANCHOR_MAX_W.hall（154）+ 兩側 SLOT_PAD（= 整個 170 格槽），而且它所在的表層槽（170 的槽界一定包含 340 的槽界，
+//     表層槽序號 = 深層槽序號 / 2、夾到最後一槽）沒有被用掉；選了之後那個表層槽也標成已用——外圍地廳一律有通地表的繩梯豎井（structures/hall.ts），
+//     豎井穿過那個表層槽，上面不能有別的錨點（錨點跨層相交 = RangeError）；同理村莊 / 小地城 / 隱士小屋不放在地廳的表層槽上。
+//     小地城的外框到地表下約 280 列、地廳的外框頂 ≥ deep + 23，兩者可能相交——靠同一條「表層槽已用」規則不讓地廳在小地城底下。
+//   · 選定的種類的槽離目標 ≤ KIND_NEAR（一個表層槽寬）就用它；否則（沒有合格槽、或最近的也太遠——例如大陸一端只剩含坑道的窄槽，小地城放不下）
+//     改取三種裡槽離目標最近的（平手依退讓順序 village → keep → hall；keep → hall → village；hall → keep → village），都沒有就跳過這個目標。
+// 隱士小屋（Q20b）：大東西選完之後，槽中心最接近 (x0 + x1) / 2、還沒用掉、放得下 ANCHOR_MAX_W.hermit_hut 的 SURFACE 槽，恰 1 座（沒有 = RangeError，
+// 大陸 ≥ 2400 寬至少 7 個表層槽、大東西至多 6 個目標）。
+// 保證小屋 / 遺跡（P11，BlueprintIndex.guard）在這些錨點之後挑（Q15：錨點優先，剔除錨點槽與會碰到錨點部件的槽後重找）。
+// 保證遺跡只放在不含主坑道的表層槽（窄大陸的表層槽約 6–8 個、其中 2–4 個含坑道，錨點全用掉的話 P11 會丟 RangeError）：選錨點之前先保留一個
+// 不含坑道的表層槽給它，錨點與地廳的表層槽都不用它。保留哪一個：候選依「不碰大陸兩端 END_KEEP 格的先」、再依離所有目標點由遠到近排，
+// 依序試，取第一個「兩端 END_REACH（500）格內都有大東西」的選法（保守估計外框，endsOk）；都不行用第一個。理由：保留的槽不能擠掉大東西最想要的槽，
+// 尤其是兩端（outer-0 東 6：保留最右的槽時，最右的目標只能退到 750 格外；outer-5 東 4：西端的 HIGH 地區只有一個不含坑道的槽；
+// dn-79 西 4：只有兩端的槽不碰 END_KEEP 以外的條件）。
+// 錨點只由 (seed, 地塊) 決定（anchorSpan 只看主坑道的位置），與查詢順序無關
+const BIG_EDGE = 200, BIG_GAP = 1100, VILLAGE_NEAR = 550, KIND_NEAR = 340, END_KEEP = 700, END_REACH = 500;
+// 大東西外框的最小半寬（村莊 (58 + 18) / 2、小地城畫出的範圍約 250 以上取 120、地廳 (60 + 4 + 2 × 20) / 2）：兩端檢查的保守估計
+const BIG_HALF: Readonly<Partial<Record<AnchorKind, number>>> = { village: 38, keep: 120, hall: 52 };
+type BigKind = 'village' | 'keep' | 'hall';
+const BIG_FALLBACK: Readonly<Record<BigKind, readonly BigKind[]>> = { village: ['village', 'keep', 'hall'], keep: ['keep', 'hall', 'village'], hall: ['hall', 'keep', 'village'] };
+// 第 k 個目標的種類（u ∈ [0, 1)）
+export function bigKind(tier: number, u: number): BigKind {
+  return tier <= 1 ? (u < 0.5 ? 'village' : u < 0.8 ? 'keep' : 'hall') : (u < 0.35 ? 'village' : u < 0.8 ? 'keep' : 'hall');
+}
+
+export function continentAnchors(seed: string, m: Landmass, _profile: Profile2): Anchor[] {
+  if (m.kind !== 'continent') return [];
+  // ctx.ver 0 的規則（m.ver）
+  const sA = seedInt(seed, 'g2-c-anchor'), mk = m.i * 2 + (m.side < 0 ? 1 : 0);
+  const key = (r: RegionInfo, layer: Layer, q: number): string => `${r.index}:${layer}:${q}`;
+  // 深層槽 q 所在的表層槽
+  const surfOf = (r: RegionInfo, q: number): number => Math.min(landSlotCount(r, BP_SURFACE) - 1, q >> 1);
+  // 目標點
+  const a = m.x0 + BIG_EDGE, z = m.x1 - BIG_EDGE, n = Math.max(2, Math.ceil((z - a) / BIG_GAP) + 1), targets: number[] = [];
+  for (let k = 0; k < n; k++) targets.push(a + Math.floor(((z - a) * k) / (n - 1)));
+  // 保留給保證遺跡的表層槽的候選：不含主坑道（同 BlueprintIndex.guard 的 shaftIn），依「不碰兩端 END_KEEP 格的先」、再依離所有目標點由遠到近（平手取 x 序在前的）
+  const reserves: { r: RegionInfo; q: number; inner: boolean; d: number }[] = [];
+  for (const r of m.regions) for (let q = 0; q < landSlotCount(r, BP_SURFACE); q++) {
+    if (anchorSpan(seed, { kind: 'ruin', region: r, layer: BP_SURFACE, slot: q }).shaft) continue;
+    const sl = landSlot(r, q, BP_SURFACE), mid = (sl.x0 + sl.x1) / 2;
+    reserves.push({ r, q, inner: sl.x0 >= m.x0 + END_KEEP && sl.x1 <= m.x1 - END_KEEP, d: Math.min(...targets.map((t) => Math.abs(mid - t))) });
+  }
+  if (!reserves.length) throw new RangeError(`gen2: continent ${m.side}:${m.i} has no shaft-free surface slot`);
+  reserves.sort((p, q) => Number(q.inner) - Number(p.inner) || q.d - p.d);
+
+  // 保留 rv 時的選法（大東西 + 隱士小屋）
+  const place = (rv: { r: RegionInfo; q: number }): Anchor[] => {
+    const out: Anchor[] = [], taken = new Set<string>([key(rv.r, BP_SURFACE, rv.q)]);
+    const cand = (kind: AnchorKind, layer: Layer, keep: (s: Slot) => boolean): Slot[] => {
+      const need = ANCHOR_MAX_W[kind]!, res: Slot[] = [];
+      for (const r of m.regions) for (let q = 0; q < landSlotCount(r, layer); q++) {
+        const sl = landSlot(r, q, layer), s: Slot = { r, layer, q, x0: sl.x0, x1: sl.x1, mid: (sl.x0 + sl.x1) / 2 };
+        if (taken.has(key(r, layer, q)) || !keep(s)) continue;
+        const sp = anchorSpan(seed, { kind, region: r, layer, slot: q });
+        if (sp.x1 - sp.x0 - 2 * SLOT_PAD >= need) res.push(s);
+      }
+      return res;
+    };
+    const nearest = (list: readonly Slot[], x: number): Slot | undefined => {
+      let best: Slot | undefined;
+      for (const s of list) if (!best || Math.abs(s.mid - x) < Math.abs(best.mid - x)) best = s;
+      return best;
+    };
+    // 種類 kind 在目標 t 的槽（沒有 = undefined）
+    const pick = (kind: BigKind, t: number): Slot | undefined => {
+      if (kind === 'hall') return nearest(cand('hall', BP_DEEP, (s) => !taken.has(key(s.r, BP_SURFACE, surfOf(s.r, s.q)))), t);
+      if (kind === 'keep') return nearest(cand('keep', BP_SURFACE, () => true), t);
+      const v = nearest(cand('village', BP_SURFACE, (s) => s.r.variant !== VARIANT.HIGH), t);
+      return v && Math.abs(v.mid - t) <= VILLAGE_NEAR ? v : undefined;
+    };
+    const add = (kind: AnchorKind, s: Slot): void => {
+      taken.add(key(s.r, s.layer, s.q));
+      if (s.layer === BP_DEEP) taken.add(key(s.r, BP_SURFACE, surfOf(s.r, s.q)));
+      out.push({ kind, region: s.r, layer: s.layer, slot: s.q });
+    };
+    for (let k = 0; k < n; k++) {
+      const t = targets[k], order = BIG_FALLBACK[bigKind(m.tier, hash2(mk, k, sA))];
+      let best: { kind: BigKind; s: Slot } | null = null;
+      for (const kind of order) {
+        const s = pick(kind, t);
+        if (!s) continue;
+        if (kind === order[0] && Math.abs(s.mid - t) <= KIND_NEAR) { best = { kind, s }; break; }
+        if (!best || Math.abs(s.mid - t) < Math.abs(best.s.mid - t)) best = { kind, s };
+      }
+      if (best) add(best.kind, best.s);
+    }
+    const hut = nearest(cand('hermit_hut', BP_SURFACE, () => true), (m.x0 + m.x1) / 2);
+    if (!hut) throw new RangeError(`gen2: continent ${m.side}:${m.i} has no slot for its hermit hut`);
+    add('hermit_hut', hut);
+    return out;
+  };
+  // 兩端 END_REACH 格內有大東西嗎（保守估計：外框 ≥ 可用範圍中點 ± BIG_HALF[kind]；建構器都把外框放在可用範圍中央附近）
+  const endsOk = (list: readonly Anchor[]): boolean => {
+    let lo = Infinity, hi = -Infinity;
+    for (const q of list) {
+      const h = BIG_HALF[q.kind];
+      if (h === undefined) continue;
+      const sp = anchorSpan(seed, q), c = (sp.x0 + sp.x1) / 2;
+      lo = Math.min(lo, c - h); hi = Math.max(hi, c + h);
+    }
+    return lo < m.x0 + END_REACH && hi > m.x1 - END_REACH;
+  };
+  // 依序試保留的槽，取第一個兩端都有大東西的選法；都不行就用第一個（outer.test 掃描釘住兩端與間隔）
+  let first: Anchor[] | null = null;
+  for (const rv of reserves) {
+    const out = place(rv);
+    first ??= out;
+    if (endsOk(out)) { first = out; break; }
+  }
+  // Array.prototype.sort 是穩定排序：同種保持選取順序
+  return first!.sort((p, q) => ORDER.indexOf(p.kind) - ORDER.indexOf(q.kind));
 }

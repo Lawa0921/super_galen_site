@@ -132,7 +132,8 @@ describe('gen2 blueprint objects', () => {
     expect(dg).toHaveLength(1);
     expect(settle.filter((b) => b.kind === 'village').length).toBeGreaterThanOrEqual(2); expect(settle.some((b) => b.kind === 'hall')).toBe(true);
     // 依 (layer, id) 序：聚落 = 外框 x 在範圍內的每一份藍圖的 site
-    expect(e.pots).toEqual(dg[0].pots); expect(e.tablets).toEqual(all.flatMap((b) => b.tablets));
+    // 陶罐：家鄉地城與荒野大陸的小地城（Task 18）
+    expect(e.pots).toEqual(all.filter((b) => b.kind === 'dungeon' || b.kind === 'keep').flatMap((b) => b.pots)); expect(e.tablets).toEqual(all.flatMap((b) => b.tablets));
     expect(e.tablets.map((t) => t.id).sort((a, b) => a - b)).toEqual([...Array(14).keys()]);
     const LANDMARKED = new Set(['mineshaft', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive', 'cabin', 'ruin', 'lake', 'cave_lake']);
     const marked = all.filter((b) => b.kind === 'village' || b.kind === 'hall' || LANDMARKED.has(b.kind));
@@ -146,7 +147,12 @@ describe('gen2 blueprint objects', () => {
     expect(e.pots.length).toBeGreaterThan(0); expect(e.tablets.length).toBe(14);
     expect(src.extrasIn(-20_000, 20_000)).not.toBe(e);
     expect(src.extrasIn(-20_000, 20_000).sites[0]).not.toBe(e.sites[0]);
-    for (const b of all.filter((q) => q.kind !== 'dungeon' && q.kind !== 'village' && q.kind !== 'hall')) {
+    // 荒野大陸的小地城（地城 site、整片 solid、地面覆寫）與隱士小屋（hermit site、整片 solid、地面覆寫、沒有陶罐 / 地標），Task 18
+    const keeps = all.filter((q) => q.kind === 'keep'), huts = all.filter((q) => q.kind === 'hermit_hut');
+    expect(keeps.length).toBeGreaterThan(0); expect(huts.length).toBeGreaterThan(0);
+    for (const b of keeps) { expect(b.site?.kind).toBe('dungeon'); expect(b.solid).not.toBeNull(); expect(b.tablets).toEqual([]); expect(b.wholeRegion).toBe(false); }
+    for (const b of huts) { expect(b.site?.kind).toBe('hermit'); expect(b.solid).toEqual({ x: b.x, y: b.y, w: b.w, h: b.h }); expect(b.ground).not.toBeNull(); expect(b.pots).toEqual([]); expect(b.landmarks).toEqual([]); }
+    for (const b of all.filter((q) => q.kind !== 'dungeon' && q.kind !== 'village' && q.kind !== 'hall' && q.kind !== 'keep' && q.kind !== 'hermit_hut')) {
       // 石碑只在家鄉（lore.homeDecor）
       expect(b.pots).toEqual([]); if (b.x < 0 || b.x >= 4200) expect(b.tablets).toEqual([]); expect(b.site).toBeNull(); expect(b.wholeRegion).toBe(false);
       if (!LANDMARKED.has(b.kind)) expect(b.landmarks).toEqual([]);

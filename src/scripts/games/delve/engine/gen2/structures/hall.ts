@@ -12,6 +12,10 @@
 //   · BpCanvas 的回退讀取假設天然格是實心、沒有洞穴：drawHall 只在「讀到不是實心」時才補隧道的地板（floorY）與頂（floorY − 5）
 //     → 外框整片併進 solid（箱內不挖噪聲洞穴，地板 / 頂在成品裡是天然岩；礦照常換）。
 //   · 礦車地標（T.ORE_CART、site 'dwarf_hall'）；site = { kind: 'hall', key: 's' + id, rot, info }（rot = c.rank，外圍 0）。
+//   · 外圍（荒野大陸，M2a Task 18；structureId 的 side ≠ 0）：一律從地表走得到（指揮官裁決，比照 Task 9–14）——洞穴網不保證連到地表，
+//     所以照樣接洞之外，一定挖上面那條 2 格寬、掛繩梯的豎井到地表（同後備豎井）；藍圖帶部件 = 地廳本體（外殼 + 隧道）+ 豎井在本體以上那兩欄，
+//     跨層判定與 solid 都只算部件（solid 外框整片、solidParts 只取部件內），部件外不寫任何格。豎井上方的表層槽不放別的錨點（anchors.continentAnchors），
+//     機率 / 保證藍圖照跨層規則讓位。家鄉的地廳不變（只保證通往附近洞穴，Task 9 裁決）。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T } from '../../tiles';
 import { HRng } from '../hrng';
@@ -19,6 +23,7 @@ import { CaveProbe } from '../caves';
 import { BpCanvas } from '../draw/bpCanvas';
 import { drawHall, HALL_IH } from '../draw/hall';
 import { BP_DEEP, type Blueprint, type BpCtx } from '../bpcore';
+import { decodeStructureId } from '../structId';
 
 export const TUNNEL_MIN = 20, TUNNEL_MAX = 36;
 // 外殼在內部兩側各 2 欄、上 3 列、下 2 列（draw/hall.ts）；隧道從內部外 3 欄起
@@ -65,18 +70,22 @@ export function buildHallBp(c: BpCtx, o: HallOptions = {}): Blueprint {
   }
   const { floorY, l, r } = pick ?? { floorY: top + start, l: TUNNEL_MAX, r: TUNNEL_MAX };
 
-  // 後備豎井：大廳中央 [sx, sx + 2)、從兩欄地表較高者的上一格往下
-  const sx = (x0 + x1) >> 1, top0 = pick ? Infinity : Math.min(p.surfaceAt(sx), p.surfaceAt(sx + 1)) - 1;
+  // 後備豎井（外圍地廳一律挖）：大廳中央 [sx, sx + 2)、從兩欄地表較高者的上一格往下
+  const outer = decodeStructureId(c.id).side !== 0, shaft = !pick || outer;
+  const sx = (x0 + x1) >> 1, top0 = shaft ? Math.min(p.surfaceAt(sx), p.surfaceAt(sx + 1)) - 1 : Infinity;
   const bx = x0 - MOUTH - l + 1, bw = x1 + MOUTH + r - bx, hy = floorY - HALL_IH - SHELL_UP, by = Math.min(hy, top0), bh = floorY + SHELL_DOWN + 1 - by;
   const cv = new BpCanvas({ x: bx, y: by, w: bw, h: bh }, p);
   const info = drawHall(cv, { x0, hw, floorY }, rng, (dir) => (dir < 0 ? l : r));
-  if (!pick) {
+  if (shaft) {
     for (let y = top0; y < info.y0; y++) for (let x = sx; x < sx + SHAFT_W; x++) { cv.setFg(x, y, T.AIR); cv.clearLiquid(x, y); }
     for (let y = top0 + 1; y <= floorY - 2; y++) cv.setFg(sx, y, T.ROPE);
   }
   cv.fillNatural(bx, by); cv.fillNatural(bx + bw - 1, by + bh - 1);
-  return cv.toBlueprint(c.id, 'hall', BP_DEEP, {
+  const bp = cv.toBlueprint(c.id, 'hall', BP_DEEP, {
     landmarks: [{ x: info.cart.x, y: info.cart.y, tile: T.ORE_CART, site: 'dwarf_hall' }],
     site: { kind: 'hall', key: 's' + c.id, rot: c.rank ?? 0, info },
   });
+  // 外圍：部件 = 本體（部件 0，discovery 的地區用它）+ 豎井在本體以上的兩欄
+  if (outer) bp.parts = [{ x: bx, y: hy, w: bw, h: by + bh - hy }, { x: sx, y: top0, w: SHAFT_W, h: hy - top0 }];
+  return bp;
 }

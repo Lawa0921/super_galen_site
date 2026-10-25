@@ -9,6 +9,7 @@ import { slotOf, partsOf, type Blueprint } from './gen2/blueprint';
 import { FILL_REACH } from './gen2/fill';
 import { SPAWN_X } from './gen2/layout';
 import { CULTURES } from './gen2/cultures';
+import { LockTable } from './gen2/locks';
 import { OuterProfile, type CentralFrame } from './legacy/chunkgen';
 import { BIOME } from './world';
 import { LORE } from './lore';
@@ -182,7 +183,8 @@ describe('gen2Regions', () => {
   it('gen2 地區 id 唯一、在 gen2 範圍內、跨實例穩定；名字確定；結構地區 id = gen2SiteRegionId(藍圖 id, 0)', () => {
     const seen = new Map<number, string>();
     for (let x = -30_000; x < 30_000; x += 53) for (const r of q(x, 300)) {
-      expect(r.cat === 'site' ? isGen2SiteRegionId(r.id) : isGen2RegionId(r.id), `${r.cat} ${r.id}`).toBe(true); expect(isOuterRegionId(r.id)).toBe(false);
+      // 地塊地區（cat land）走 gen2RegionId，結構地區（site / cave / secret / dungeon——荒野大陸的小地城在 y 300 查得到，Task 18）走 gen2SiteRegionId
+      expect(r.cat === 'land' ? isGen2RegionId(r.id) : isGen2SiteRegionId(r.id), `${r.cat} ${r.id}`).toBe(true); expect(isOuterRegionId(r.id)).toBe(false);
       if (seen.has(r.id)) expect(seen.get(r.id)).toBe(r.name); else seen.set(r.id, r.name);
     }
     for (let x = -30_000; x < 30_000; x += 977) expect(q2(x, 300).map((r) => [r.id, r.name])).toEqual(q(x, 300).map((r) => [r.id, r.name]));
@@ -211,9 +213,12 @@ describe('gen2Regions', () => {
     const d = new Discovery([]); d.load({ regions: [gen2RegionId(1, 2, 0, 0), site, 2 ** 33 - 1, 2 ** 33 + 2 ** 34, 2 ** 36] } as never);
     expect([...d.found]).toEqual([gen2RegionId(1, 2, 0, 0), site]);
   });
-  it('霧竹大陸的地區名用霧竹命名池', () => {
-    const m = [src.layout.landmass(1, 2), src.layout.landmass(-1, 2)].find((l) => l.culture === 'mistbamboo')!;
-    for (const r of m.regions) { const n = q(r.x0 + 5, 300).at(-1)!.name; expect(CULTURES.mistbamboo.suffixes.some((s) => n.endsWith(s))).toBe(true); }
+  // v0 只有荒野（Task 18，Q14）：用鎖表鎖一片霧竹大陸（既有機制，存檔裡已存的文化照舊尊重）
+  it('霧竹大陸的地區名用霧竹命名池（鎖表鎖住的霧竹大陸）', () => {
+    const locks = new LockTable(); locks.lock(1, 2, { ver: 0, culture: 'mistbamboo' });
+    const ms = new Gen2Source('rg', { locks }), mq = gen2Regions('rg', ms), m = ms.layout.landmass(1, 2);
+    expect(m.culture).toBe('mistbamboo');
+    for (const r of m.regions) { const n = mq(r.x0 + 5, 300).at(-1)!.name; expect(CULTURES.mistbamboo.suffixes.some((s) => n.endsWith(s))).toBe(true); }
   });
   it('海與島的名字', () => {
     expect(q(4300, 300).at(-1)!.name).toBe('東方大海'); 
@@ -232,8 +237,8 @@ const OUTER_PT: [number, number] = [4800, 300];
 const totals = (s: JournalStats): [string, number][] => s.cats.map((c) => [c.cat, c.total]);
 /** 地區去掉 contains（函式不能 deep-equal） */
 const plain = (r: Region): Omit<Region, 'contains'> => { const { contains: _c, ...rest } = r; return rest; };
-/** 會立地區的 gen2 藍圖種類（新錨點 alcove / molten_shrine / shaft_cache / spawn_tablet、箱子、熔岩池不立） */
-const SITE_BP = new Set(['cabin', 'ruin', 'shipwreck', 'mineshaft', 'sky_island', 'lake', 'village', 'hall', 'dungeon', 'mushroom_biome', 'crystal_cave', 'hive', 'cave_lake']);
+/** 會立地區的 gen2 藍圖種類（新錨點 alcove / molten_shrine / shaft_cache / spawn_tablet、箱子、熔岩池不立；荒野大陸的小地城 / 隱士小屋 Task 18 起立） */
+const SITE_BP = new Set(['cabin', 'ruin', 'shipwreck', 'mineshaft', 'sky_island', 'lake', 'village', 'hall', 'dungeon', 'mushroom_biome', 'crystal_cave', 'hive', 'cave_lake', 'keep', 'hermit_hut']);
 
 describe('gen2 地區：所有結構種類、已知地區表、id 反查', () => {
   const src = new Gen2Source('rg2'), q = gen2Regions('rg2', src), byId = gen2RegionById('rg2', src);
@@ -255,7 +260,7 @@ describe('gen2 地區：所有結構種類、已知地區表、id 反查', () =>
       if (b.site?.kind === 'dungeon') for (const r of b.site.info.rooms) mid(r);
     }
     for (const k of ['cabin', 'ruin', 'mineshaft', 'secret_room', 'sky_island', 'village', 'dwarf_hall', 'dungeon', 'mushroom_biome', 'crystal_cave', 'underground_lake']) expect(kinds, k).toContain(k);
-    for (const k of ['shipwreck', 'pond', 'hive', 'dungeon_entry']) expect(kinds, k).toContain(k);
+    for (const k of ['shipwreck', 'pond', 'hive', 'dungeon_entry', 'hermit']) expect(kinds, k).toContain(k);
   }, 120_000);
   it('每份立地區的藍圖在主體中心與左右兩端查得到自己的地區；新錨點 / 箱子 / 熔岩池不立地區、查詢不丟錯', () => {
     const skipped = new Set<string>();

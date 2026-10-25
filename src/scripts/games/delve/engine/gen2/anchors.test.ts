@@ -151,7 +151,11 @@ describe('gen2 anchors', () => {
       expect(a.find((q) => q.kind === 'ruin')!.region.biome).not.toBe(BIOME.SNOW);
       // 蘑菇林：首選（森林、不在地廳槽上方）還有空槽時一定在森林；選完全部錨點後仍空著的森林地下層槽，在選蘑菇林時也是空的（錨點只會增加）
       expect(mushroomProblem(seed, h, a)).toBeNull();
-      expect(continentAnchors(seed, g.layout.landmass(1, 2), g.profile)).toEqual([]);
+      // 大陸錨點（Task 18）：大東西（村莊 / 小地城 / 地廳）+ 恰一座隱士小屋；與家鄉錨點無關
+      const ca = continentAnchors(seed, g.layout.landmass(1, 2), g.profile);
+      expect(ca.filter((q) => q.kind === 'hermit_hut')).toHaveLength(1);
+      expect(ca.filter((q) => q.kind !== 'hermit_hut').every((q) => ['village', 'keep', 'hall'].includes(q.kind))).toBe(true);
+      expect(ca.length).toBeGreaterThanOrEqual(3);
     }
   }, 120_000);
 
@@ -218,11 +222,12 @@ describe('gen2 anchors', () => {
 
   it('地城區沒有主坑道', () => { for (const seed of SEEDS5) { const g = new Gen2Source(seed); expect(shaftX(seedInt(seed, 'g2-shaft'), homeDungeonRegion(g.layout.landmassAt(SPAWN_X)!))).toBeNaN(); } });
 
-  it('錨點優先於大陸的保證小屋 / 遺跡（Q15）：佔掉原本有小屋 / 遺跡的槽，保證改找剩下的槽（仍 ≥ 1）', () => {
+  // Task 18 起大陸有自己的錨點（大東西 + 隱士小屋），表層槽所剩不多：改成只佔掉保證的那一間小屋 / 那一座遺跡的槽（原本佔掉全部小屋 / 遺跡的槽）
+  it('錨點優先於大陸的保證小屋 / 遺跡（Q15）：佔掉保證小屋 / 遺跡的槽，保證改找剩下的槽（仍 ≥ 1）', () => {
     for (const seed of SEEDS5) for (const i of [2, 4]) {
       const g = new Gen2Source(seed), m = g.layout.landmass(1, i);
       const inM = (idx: BlueprintIndex) => idx.overlapping(m.x0, m.x1).filter((b) => b.x >= m.x0 && b.x < m.x1);
-      const before = inM(g.blueprints).filter((b) => (b.kind === 'cabin' && b.layer === BP_UNDER) || (b.kind === 'ruin' && b.layer === BP_SURFACE));
+      const gu = g.blueprints.guaranteed(m), before = [gu.cabin, gu.ruin];
       const probes: Anchor[] = before.map((b) => ({ kind: 'test_probe', region: slotOf(b.id, g.layout).region, layer: b.layer, slot: slotIndex(g, b.id) }));
       const idx = new BlueprintIndex(seed, g.layout, g.profile, { extraAnchors: (q) => (q === m ? probes : []) });
       const after = inM(idx), ids = new Set(before.map((b) => b.id));

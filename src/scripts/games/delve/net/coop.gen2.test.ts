@@ -12,7 +12,7 @@ import { LoopbackNet } from './loopback';
 import { SaveFormatError } from '../save/serialize';
 import type { Welcome } from './protocol';
 import type { BakeInfo } from '../save/bake';
-import { coopRig, FRAME } from './testRig';
+import { coopRig, FRAME, outerVillageBoard, siteNpcIds } from './testRig';
 
 const utf8 = (s: string): Uint8Array => new TextEncoder().encode(s);
 /** 改 host.ts 之前（Task 18 之前的程式）用 coopRig({ world: 'real' }) 錄下的 Welcome 的 FNV-1a */
@@ -128,6 +128,19 @@ describe('Task 18 連線：版本描述、gen2 客人不生成家鄉、烘焙世
     const host = rig.hostGame.actors.get(g.pid!)!.inventory.count('copper_coin');
     expect(host).toBe(c.inventory.slots.reduce((n, s) => n + (s?.item === 'copper_coin' ? s.count : 0), 0) + 37);
     expect(g.game!.local.inventory.count('copper_coin')).toBe(host);
+  }, 120_000);
+
+  // Task 18：外圍聚落的 NPC 在欄載入時登錄（world.onGenSites → SiteRegistry → FolkWorld.addSite），id = npcIdFor(key)、不依登錄順序
+  it('外圍村莊：客人在房主之後才載入那段 → NPC key / id 與房主相同；之前收到的位置被略過、不丟錯', () => {
+    const rig = coopRig({ world: 'gen2' }); rig.run(2000); const board = outerVillageBoard(rig);
+    rig.hostTeleport(board); rig.run(30 * FRAME);
+    const gg = rig.guests[0].game!, before = siteNpcIds(gg).length;
+    // 房主那邊已經有外圍村民、客人還沒載入那段（還沒登錄）
+    expect(siteNpcIds(rig.hostGame).length).toBeGreaterThan(before);
+    expect(() => rig.run(30 * FRAME)).not.toThrow();
+    rig.guestTeleport(board); rig.run(120 * FRAME);
+    expect(siteNpcIds(gg).length).toBeGreaterThan(before);
+    expect(siteNpcIds(gg)).toEqual(siteNpcIds(rig.hostGame));
   }, 120_000);
 
   it('舊世界連線不變：Welcome 位元組與改動前相同（P9）', () => {
