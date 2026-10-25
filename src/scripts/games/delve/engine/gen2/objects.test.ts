@@ -135,12 +135,14 @@ describe('gen2 blueprint objects', () => {
     // 陶罐：家鄉地城與荒野大陸的小地城（Task 18）
     expect(e.pots).toEqual(all.filter((b) => b.kind === 'dungeon' || b.kind === 'keep').flatMap((b) => b.pots)); expect(e.tablets).toEqual(all.flatMap((b) => b.tablets));
     expect(e.tablets.map((t) => t.id).sort((a, b) => a - b)).toEqual([...Array(14).keys()]);
-    const LANDMARKED = new Set(['mineshaft', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive', 'cabin', 'ruin', 'lake', 'cave_lake']);
+    // 小點位（Task 19）：cairn / camp 各一個地標，stones 沒有
+    const LANDMARKED = new Set(['mineshaft', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive', 'cabin', 'ruin', 'lake', 'cave_lake', 'minor']);
     const marked = all.filter((b) => b.kind === 'village' || b.kind === 'hall' || LANDMARKED.has(b.kind));
     expect(e.landmarks).toEqual(marked.flatMap((b) => b.landmarks));
-    // 每座地廳 / 礦坑 / 空島 / 小生態 / 蜂巢 / 小屋 / 遺跡 / 湖 / 地下湖至多一個地標（村莊沒有）；九成以上有
+    // 每座地廳 / 礦坑 / 空島 / 小生態 / 蜂巢 / 小屋 / 遺跡 / 湖 / 地下湖 / 小點位至多一個地標（村莊、石柱圈小點位沒有）；九成以上有
     expect(marked.every((b) => b.landmarks.length <= 1)).toBe(true);
-    expect(e.landmarks.length).toBeGreaterThanOrEqual(0.9 * marked.filter((b) => b.kind !== 'village').length);
+    expect(marked.filter((b) => b.kind === 'minor').every((b) => b.landmarks.length === (b.sub === 'stones' ? 0 : 1))).toBe(true);
+    expect(e.landmarks.length).toBeGreaterThanOrEqual(0.9 * marked.filter((b) => b.kind !== 'village' && b.sub !== 'stones').length);
     expect(marked.filter((b) => b.kind === 'mineshaft').length).toBeGreaterThan(3); expect(marked.filter((b) => b.kind === 'sky_island').length).toBeGreaterThanOrEqual(2);
     for (const k of ['mushroom_biome', 'crystal_cave', 'hive']) expect(marked.some((b) => b.kind === k), k).toBe(true);
     expect(e.sites).toEqual(all.filter((b) => b.site).map((b) => b.site));

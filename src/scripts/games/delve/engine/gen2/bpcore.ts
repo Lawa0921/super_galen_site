@@ -16,7 +16,11 @@ export type BpKind = 'cabin' | 'ruin' | 'shipwreck' | 'crate' | 'lake' | 'cave_l
   // 家鄉的石碑 / 遺物錨點（M2a Task 14，structures/shrine.ts）
   | 'alcove' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet'
   // 荒野大陸的小地城與隱士小屋（M2a Task 18，structures/keep.ts、structures/hermitHut.ts）
-  | 'keep' | 'hermit_hut';
+  | 'keep' | 'hermit_hut'
+  // 小點位（M2a Task 19，structures/minor.ts；M2b Task 9 依賴這個名字）
+  | 'minor';
+// 小點位的種類（Blueprint.sub）
+export type MinorSub = 'cairn' | 'camp' | 'stones';
 // 層：表層 / 地下 / 深層 / 空中（浮空島）/ 小點（minor）；結構 id 的 layer 欄位 3 bit（structId.ts）
 export const BP_SURFACE = 0, BP_UNDER = 1, BP_DEEP = 2, BP_SKY = 3, BP_MINOR = 4, LAND_SLOT_W = 340, KEEP = -1;
 export type Layer = 0 | 1 | 2 | 3 | 4;
@@ -76,6 +80,8 @@ export interface Blueprint {
   variant?: string;
   // 礦坑的密室室內（Task 14：密室的石碑只放在這裡面的 floors；坑道的石碑放在外面的 floors）
   secret?: BpBox;
+  // 小點位的種類（kind 'minor'，Task 19）
+  sub?: MinorSub;
 }
 
 // 依列序（y, x）的 cells → 依 (x >> 5, y, x) 排序的 cells 與 colIndex（每欄內保持原本的列序）
@@ -154,7 +160,8 @@ export interface BpCtx {
   // 家鄉錨點的禁區（BlueprintIndex.surfaceBan）：通到外面的豎井 / 小點位的外框不得與它相交；其他藍圖 = undefined。
   //   UNDER / DEEP（Task 11 修正 2）：同一片家鄉表層錨點（村莊 / 遺跡）的範圍——有建構器的用實際藍圖的部件，沒有的用預測的 x 範圍 × 整個世界高；
   //     Task 14 加上空島錨點的可用範圍 × 天空到地表（空島的建構器讀 groundAt，這裡不能建它）；DEEP 另外加上地下層錨點的部件（熔岩祭壇往上的豎井）。
-  //   MINOR（Task 14，出生點石碑）：同一個地區其他各層（SURFACE / UNDER / DEEP / SKY）與這一槽相交的原始藍圖的部件（MINOR 一律讓位，錨點讓位 = RangeError）
+  //   MINOR（Task 14，出生點石碑）：同一個地區其他各層（SURFACE / UNDER / DEEP / SKY）與這一槽相交的原始藍圖的部件（MINOR 一律讓位，錨點讓位 = RangeError）；
+  //     出生點石碑的 UNDER / DEEP 只算錨點（機率擲出的會讓位給它）。機率小點位（Task 19，家鄉與外圍都有）：UNDER / DEEP 也算機率 / 保證的（小點位等級最低，碰到就讓位）
   surfaceBan?: readonly BpBox[];
 }
 

@@ -26,9 +26,13 @@
 // 天空層（SKY，M2a Task 10）：空島的建構器讀 groundAt（繩梯接地），所以 SURFACE 層的讓位不看 SKY（否則 groundAt → SURFACE 讓位 → 建 SKY → groundAt
 // 重入）；對應地 SKY 一律讓位給相交的表層藍圖與液體（crossYields），UNDER / DEEP 與 SKY 照等級互比（它們的建構器不讀 groundAt）。
 // 家鄉的天空只有錨點（不擲機率），空島錨點底下那個表層槽也不擲機率，空島錨點因此不會碰到表層藍圖（碰到 = RangeError）。
-// 小點位（MINOR）層（Task 14 接上，目前只有出生點石碑錨點；機率小點位是 Task 19）：對表層 / 液體 / SKY 照 SKY 的規則一律讓位，所以 MINOR 錨點的建構器收到
+// 小點位（MINOR）層（Task 14 接上出生點石碑錨點；Task 19 的小點位 structures/minor.ts）：對表層 / 液體 / SKY 照 SKY 的規則一律讓位，所以 MINOR 錨點的建構器收到
 // surfaceBan = 同地區表層與天空與它的槽相交的原始藍圖、地下層 / 深層的錨點的部件，外框避開它們（錨點讓位 = RangeError）；
 // 地下層 / 深層機率擲出的藍圖碰到 MINOR 錨點就讓位（等級低）。
+// 小點位（Task 19）：有槽的陸地地區（沙灘、地城區除外）每個沒有錨點的 MINOR 槽，排除含出生點 ± 80 的槽與含主坑道的槽（同其他層），
+// 槽內（讓位後）有表層 / 天空藍圖的外框 → 不放（那裡已經有值得停下的東西；湖也是表層藍圖）；否則 buildMinorBp，surfaceBan = 同地區其他各層
+// 與這一槽相交的原始藍圖部件（含 UNDER / DEEP 機率擲出的：小點位是機率擲出、同級時 MINOR 讓位），所以小點位不會被讓掉、也不讓別人讓位
+// （UNDER / DEEP 的 crossYields 碰到等級 0 的 MINOR 不讓位），加入小點位不改變其他藍圖。
 // 家鄉藍圖開局一次建完（homePlans，Q9）：全部原始藍圖 → lore.homeDecor（石碑 / 遺物）→ 最終藍圖寫回釘選表；公開查詢（overlapping /
 // anchorBlueprint）碰到家鄉就先 homePlans，所以拿到的一律是裝飾過的那一份（groundAt 用內部查詢：裝飾不改地面）。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
@@ -57,6 +61,7 @@ import { buildMushroomBp, buildCrystalBp, rollMushroomBp, rollCrystalBp } from '
 import { buildHiveBp, rollHiveBp } from './structures/hive';
 import { buildKeepBp } from './structures/keep';
 import { buildHermitHutBp } from './structures/hermitHut';
+import { buildMinorBp } from './structures/minor';
 import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, SLOT_PAD, bandFreeSpan, dropLooseWebs, slotWidth, landSlot, landSlotCount, touchesSpawnClear, partsMeet, partsOf, type Blueprint, type BpBox, type BpCtx, type BpKind, type Layer } from './bpcore';
 import { encodeStructureId, decodeStructureId } from './structId';
 
@@ -436,12 +441,8 @@ export class BlueprintIndex {
   // 非液體藍圖 b（等級 rank）讓位（crossYields）給同地區另一層（CROSS[b.layer]）與它的外框相交的那幾槽（含該層的 wholeRegion 錨點）的原始藍圖 → null。
   // 錨點不默默丟：錨點與錨點相交、或 SKY 的錨點碰到表層藍圖 / 液體（錨點規則保證不會發生）→ RangeError
   private yieldCross(m: Landmass, r: RegionInfo, b: Blueprint, rank: 0 | 1 | 2): Blueprint | null {
-    const whole = this.anchorTable(m).whole;
     for (const layer of CROSS[b.layer]) {
-      const [q0, q1] = slotsIn(r, layer, b.x, b.x + b.w), qs: number[] = [];
-      for (let q = q0; q <= q1; q++) qs.push(q);
-      for (const a of whole) if (a.region === r && a.layer === layer && (a.slot < q0 || a.slot > q1)) qs.push(a.slot);
-      for (const q of qs) {
+      for (const q of this.slotList(m, r, layer, b.x, b.x + b.w)) {
         const o = this.raw(m, r, q, layer), oRank = this.rank(m, r, q, layer);
         if (!o || !crossYields(b, rank, o, oRank)) continue;
         // 錨點彼此必須由錨點規則保證不相交：同級相交時不默默丟掉較深的錨點
@@ -517,21 +518,38 @@ export class BlueprintIndex {
     return out;
   }
 
-  // 家鄉 MINOR 錨點 a 的 surfaceBan（Task 14，出生點石碑）：同地區與 a 的槽相交的 SURFACE / SKY 原始藍圖、UNDER / DEEP 錨點的部件（含整區錨點；
-  // UNDER / DEEP 機率擲出的會讓位給 MINOR 錨點，不用避）。建它們不會讀 MINOR（UNDER / DEEP 的讓位讀 MINOR，但這裡只建原始的），所以沒有循環
-  private minorBan(m: Landmass, a: Anchor): BpBox[] {
-    const sl = landSlot(a.region, a.slot, a.layer), r = a.region, out: BpBox[] = [], whole = this.anchorTable(m).whole;
+  // 地區 r 在 layer 層與 [x0, x1) 相交的槽序號，加上該層不在其中的 wholeRegion 錨點槽（讓位 / minorBan / 小點位共用）
+  private slotList(m: Landmass, r: RegionInfo, layer: Layer, x0: number, x1: number): number[] {
+    const [q0, q1] = slotsIn(r, layer, x0, x1), qs: number[] = [];
+    for (let q = q0; q <= q1; q++) qs.push(q);
+    for (const a of this.anchorTable(m).whole) if (a.region === r && a.layer === layer && (a.slot < q0 || a.slot > q1)) qs.push(a.slot);
+    return qs;
+  }
+
+  // MINOR 槽 sl 的 surfaceBan：同地區與 sl 相交的 SURFACE / SKY 原始藍圖、UNDER / DEEP 原始藍圖的部件（含整區錨點）。
+  // anchorsOnly（家鄉的出生點石碑，Task 14）：UNDER / DEEP 只算錨點（機率擲出的會讓位給 MINOR 錨點，不用避）；
+  // 機率小點位（Task 19）全部都算（它等級最低，碰到就讓位）。建它們不會讀 MINOR（UNDER / DEEP 的讓位讀 MINOR，但這裡只建原始的），所以沒有循環
+  private minorBan(m: Landmass, r: RegionInfo, sl: { x0: number; x1: number }, anchorsOnly: boolean): BpBox[] {
+    const out: BpBox[] = [];
     for (const layer of [BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY] as const) {
-      const [q0, q1] = slotsIn(r, layer, sl.x0, sl.x1), qs: number[] = [];
-      for (let q = q0; q <= q1; q++) qs.push(q);
-      for (const w of whole) if (w.region === r && w.layer === layer && (w.slot < q0 || w.slot > q1)) qs.push(w.slot);
-      for (const q of qs) {
-        if ((layer === BP_UNDER || layer === BP_DEEP) && this.rank(m, r, q, layer) !== 2) continue;
+      for (const q of this.slotList(m, r, layer, sl.x0, sl.x1)) {
+        if (anchorsOnly && (layer === BP_UNDER || layer === BP_DEEP) && this.rank(m, r, q, layer) !== 2) continue;
         const b = this.raw(m, r, q, layer);
         if (b) for (const p of partsOf(b)) if (p.x < sl.x1 && sl.x0 < p.x + p.w) out.push({ ...p });
       }
     }
     return out;
+  }
+
+  // 第 q 個 MINOR 槽的小點位（Task 19；排除槽已由 build 擋掉）：槽內有（讓位後的）表層 / 天空藍圖的外框 → null；
+  // 否則 buildMinorBp（surfaceBan = minorBan 全部層）。表層 / 天空的最終藍圖不讀 MINOR（CROSS），所以這裡查它們沒有循環
+  private minorPoint(m: Landmass, r: RegionInfo, q: number): Blueprint | null {
+    const sl = landSlot(r, q, BP_MINOR);
+    for (const layer of [BP_SURFACE, BP_SKY] as const) for (const k of this.slotList(m, r, layer, sl.x0, sl.x1)) {
+      const b = this.get(m, r, k, layer);
+      if (b && b.x < sl.x1 && sl.x0 < b.x + b.w) return null;
+    }
+    return buildMinorBp({ ...this.ctx(m, r, q, BP_MINOR), surfaceBan: this.minorBan(m, r, sl, false) });
   }
 
   // 含主坑道的第 q 槽扣掉坑道帶後較大的一側（bpcore.bandFreeSpan，與 anchors.anchorSpan 同一個）
@@ -554,7 +572,7 @@ export class BlueprintIndex {
       // 建構器的 slotX0 / slotX1 = 錨點的可用範圍（含坑道的槽 → 避開坑道帶後較大的一側；wholeRegion → 整個地區）
       const f = anchorBuild(a.kind), sp = anchorSpan(this.seed, a);
       if (!f) return null;
-      const surfaceBan = m.kind !== 'home' ? undefined : layer === BP_UNDER || layer === BP_DEEP ? this.surfaceBan(m, a) : layer === BP_MINOR ? this.minorBan(m, a) : undefined;
+      const surfaceBan = m.kind !== 'home' ? undefined : layer === BP_UNDER || layer === BP_DEEP ? this.surfaceBan(m, a) : layer === BP_MINOR ? this.minorBan(m, a.region, landSlot(a.region, a.slot, a.layer), true) : undefined;
       const bp = f({ ...this.ctx(m, r, q, layer), slotX0: sp.x0, slotX1: sp.x1, rank: this.anchorTable(m).rank.get(a), surfaceBan });
       // 執行期檢查（非 wholeRegion、非 shaft_cache）：外框寬 ≤ ANCHOR_MAX_W、外框在 [span.x0 + SLOT_PAD, span.x1 − SLOT_PAD) 內（不會蓋到坑道帶）
       if (!a.wholeRegion && a.kind !== 'shaft_cache') {
@@ -564,8 +582,7 @@ export class BlueprintIndex {
       }
       return bp;
     }
-    // 小點位（MINOR）目前只有錨點（機率小點位是 Task 19）
-    if (r.variant === VARIANT.DUNGEON || layer === BP_MINOR) return null;
+    if (r.variant === VARIANT.DUNGEON) return null;
     // 家鄉的天空只有錨點；家鄉的空島錨點底下那個表層槽（同槽寬、同序號）不擲機率（表層不看 SKY，靠這條保證空島錨點不碰表層藍圖）
     if (m.kind === 'home' && (layer === BP_SKY || (layer === BP_SURFACE && this.anchorTable(m).at.has(structureId(m.side, m.i, r.index, q, BP_SKY))))) return null;
     const sl = landSlot(r, q, layer);
@@ -574,6 +591,8 @@ export class BlueprintIndex {
     // 不用含坑道的槽平均湊不到 4 條礦坑。外框只在避開坑道帶（bpcore.shaftBand）較大的那一側，放不下就縮短、縮完太短就不放（structures/mineshaft.ts）
     const shafted = layer !== BP_DEEP && this.shaftIn(r, q, layer), homeUnder = m.kind === 'home' && layer === BP_UNDER;
     if (shafted && !homeUnder) return null;
+    // 小點位（Task 19）：出生點 ± 80 的槽與含主坑道的槽已在上面擋掉
+    if (layer === BP_MINOR) return this.minorPoint(m, r, q);
     if (m.kind === 'continent') {
       const g = this.guard(m);
       if (layer === BP_UNDER && g.cabin.r === r && g.cabin.q === q) return g.cabin.bp;

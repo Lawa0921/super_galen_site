@@ -85,6 +85,21 @@ describe('gen2 sea points: islands / shipwrecks / floating crates', () => {
     expect(n).toBeGreaterThan(10);
   });
 
+  // M2a Task 19：海點偏移 ± min(20, floor(槽寬 / 10))（島在 layout.test）
+  it('沉船與漂流箱的中心離槽中心 ≤ 20', () => {
+    let n = 0;
+    for (const seed of SEEDS5) {
+      const src = new Gen2Source(seed);
+      for (const side of [1, -1] as const) for (const i of [1, 3, 5, 7]) for (const s of src.layout.landmass(side, i).slots) {
+        if (s.poi === 'island') continue;
+        const b = src.blueprints.overlapping(s.x0, s.x1).find((q) => q.kind === s.poi && q.x >= s.x0 && q.x < s.x1)!;
+        n++;
+        expect(Math.abs(b.x + (b.w >> 1) - (s.x0 + ((s.x1 - s.x0) >> 1))), `${seed} ${side}:${i} slot ${s.k} ${s.poi}`).toBeLessThanOrEqual(20);
+      }
+    }
+    expect(n).toBeGreaterThan(30);
+  }, 60_000);
+
   it('海上的靜態液體不變量（含沉船與漂流箱的欄）', () => {
     const src = new Gen2Source('sea'), w = worldOf(src), sea = src.layout.landmass(1, 1);
     loadColumns(w, sea.x0, sea.x1); expect(liquidInvariant(w, sea.x0, sea.x1)).toEqual([]);

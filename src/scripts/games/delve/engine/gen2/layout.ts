@@ -10,6 +10,10 @@ import type { LockTable } from './locks';
 import { poolFor } from './cultures';
 
 export const HOME_X0 = 0, HOME_X1 = 4200, SPAWN_X = 2100, SEA_SLOT_W = 300;
+// 海點（島 / 沉船 / 漂流箱）離槽中央的偏移上限：± min(SEA_JITTER, floor(槽寬 / 10))（M2a Task 19：M1 的 ± 槽寬 / 10 可達 30，
+// 相鄰兩槽的點最大空隙 357 > 340；收到 20 後海上「任意連續 340 格內至少一個值得停下的東西」嚴格成立，Task 21）
+export const SEA_JITTER = 20;
+export const seaJitter = (slotW: number): number => Math.min(SEA_JITTER, Math.floor(slotW / 10));
 export const VARIANT = { PLAIN: 0, HILLS: 1, HIGH: 2, BEACH: 3, SPAWN: 4, ISLAND: 5, SEA: 6, DUNGEON: 7 } as const;
 
 export interface SideOrigin { x: number; start: 'sea' | 'continent'; seaY: number; shore: number }
@@ -156,7 +160,7 @@ export class Layout {
     }
     const chosen = order.slice(0, count).sort((a, b) => a - b);
     const islands: IslandInfo[] = chosen.map((q) => {
-      const sl = slots[q], sw = sl.x1 - sl.x0, d = Math.floor(sw / 10);
+      const sl = slots[q], sw = sl.x1 - sl.x0, d = seaJitter(sw);
       const iw = pick(hash2(i, q, s.isw), ISLAND_MIN, Math.min(ISLAND_MAX, sw - 80));
       const c = sl.x0 + (sw >> 1) + pick(hash2(i, q, s.iso), -d, d);
       sl.poi = 'island';

@@ -82,6 +82,14 @@ describe('gen2 Layout', () => {
     expect(pois).toEqual(new Set(['island', 'shipwreck', 'crate']));
   });
 
+  // M2a Task 19：海點偏移收到 ± min(20, floor(槽寬 / 10))（340 規則在海上嚴格成立，Task 21）
+  it('海槽偏移 ≤ 20：島與沉船的中心離槽中心 ≤ 20', () => {
+    for (const seed of SEEDS20) for (const side of [1, -1] as const) for (const i of [1, 3, 5]) {
+      const m = L(seed).landmass(side, i);
+      for (const d of m.islands) { const s = m.slots[d.slot]; expect(Math.abs(((d.x0 + d.x1) >> 1) - ((s.x0 + s.x1) >> 1)), `${seed} ${side}:${i}`).toBeLessThanOrEqual(20 + 1); }
+    }
+  }, 30_000);
+
   // M2a Task 18（Q14）：v0 / v1 只有荒野大陸（spec §4.1 2026-10-24 修訂），霧竹之國的指派（離家最近、尚未進入過的那片、ver ≥ 2）是 M4 的工作
   it('v0：所有大陸都是荒野（culture null、kind wild），含第一片東 / 西大陸；tier', () => {
     for (const seed of SEEDS20) for (const side of [1, -1] as const) for (let i = 2; i <= 12; i += 2) {

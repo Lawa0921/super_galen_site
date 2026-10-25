@@ -1,18 +1,19 @@
 // shipwreck.ts — gen2 海槽的沉船（spec §8「沉船（水下半埋，有寶箱）」）：寬 18–26、船殼高 6–8，
 // 船底（龍骨列）= 船寬內海床平均 + 2（半埋在海床裡）；木板船殼（底兩列內縮成船形）、側板與甲板殘缺、
 // 木樑桅杆殘段（從船內地板往上、高出船舷 1–4 格）、船殼與船內水中的格掛深色木板牆、一個箱子（M1 用 'ruin' 戰利品）。
-// 置中於槽 ± floor(槽寬 / 10)。
+// 置中於槽 ± min(20, floor(槽寬 / 10))（layout.seaJitter，Task 19）。
 // 靜態液體（spec §4.3）：實心格（木板）清掉水；非實心格（桅杆、箱子）與船內格的液體保留（KEEP）——
 // 海水本來就滿格，所以船內、箱子與桅杆都泡在滿格水裡、不會流動；船內海床以下的沙不動（半埋）。
 // 全部格在水面下（y > waterTop）。本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T, W, isSolidTile } from '../../tiles';
 import { HRng } from '../hrng';
 import { BpGrid, emptyObjects, BP_SURFACE, KEEP, SLOT_PAD, type Blueprint, type BpCtx } from '../bpcore';
+import { seaJitter } from '../layout';
 
 export function buildShipwreck(c: BpCtx): Blueprint {
   // ctx.ver 0 的規則
   const rng = new HRng(c.s, c.id), p = c.profile;
-  const w = rng.int(18, 27), hh = rng.int(6, 9), sw = c.slotX1 - c.slotX0, d = Math.floor(sw / 10);
+  const w = rng.int(18, 27), hh = rng.int(6, 9), sw = c.slotX1 - c.slotX0, d = seaJitter(sw);
   const mid = c.slotX0 + (sw >> 1), off = rng.int(-d, d + 1);
   const bx = Math.max(c.slotX0 + SLOT_PAD, Math.min(mid + off - (w >> 1), c.slotX1 - SLOT_PAD - w));
   const cxm = bx + (w >> 1), wt = p.waterTopAt(cxm) ?? p.surfaceAt(cxm) - 2;
