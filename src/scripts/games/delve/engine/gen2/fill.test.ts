@@ -169,7 +169,7 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
   //   沙漠：地表下 13 格內（或到岩層）全是沙；岩層以上只有沙 / 砂岩（砂岩上可以有泥土帶的銅）；沙層底（第一格不是沙）落在地表下 13–22；
   //   雪原：地表是雪；岩層以上只有雪 / 冰 / 泥 / 碎石 / 石（泥 / 雪上可以有銅）；雪薄（每欄岩層以上的雪 ≤ 14 格、平均 2–10）；
   //     凍土的四種材質（泥、冰、碎石、石）都出現。
-  it('表層材質：森林草 + 泥、沙漠深沙（地表下 13–22）+ 砂岩、雪原薄雪 + 凍土、叢林叢林草 + 泥巴；島欄沙灘沙 / 台地草', () => {
+  it('表層材質：森林草 + 泥（夾黏土脈）、沙漠深沙（地表下 13–22）+ 砂岩、雪原薄雪 + 凍土、叢林叢林草 + 泥巴；島欄沙灘沙 / 台地草', () => {
     const src = new Gen2Source('skin');
     const want: Record<number, number[]> = {
       [BIOME.FOREST]: [T.GRASS, T.DIRT, T.DIRT, T.DIRT, T.DIRT, T.DIRT, T.DIRT],
@@ -203,7 +203,9 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
         if (want[r.biome]) {
           for (let d = 0; d < n; d++) {
             const w = want[r.biome][d], got = at(d);
-            expect(ore(d, got) && SOIL_HOST.has(w) ? w : got, `biome ${r.biome} x ${x} d ${d}`).toBe(w);
+            // 森林的泥裡有黏土脈（Task 17 修正 1）：當成泥比
+            const asIs = (ore(d, got) && SOIL_HOST.has(w)) || (r.biome === BIOME.FOREST && w === T.DIRT && got === T.CLAY) ? w : got;
+            expect(asIs, `biome ${r.biome} x ${x} d ${d}`).toBe(w);
           }
         } else if (r.biome === BIOME.DESERT) {
           let lead = 0;

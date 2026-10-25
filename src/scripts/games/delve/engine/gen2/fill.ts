@@ -43,6 +43,10 @@ const SKIN_SNOW_ICE = 0.8, FROST_ICE = 0.64, FROST_GRAVEL = 0.2, FROST_STONE = 0
 // （抖動 = (edge − 0.5) × 2 × SKIN_J × min(1, (y − 地表) / SKIN_RAMP)，edge = 6 × 6 的 2 八度值雜訊：岩層以上只有 10–26 列，格距大的話整段幾乎不動）：交界從地表那一列（不抖：
 // 地表裝飾 / 樹 / 仙人掌照地區）往下散成不規則的邊，不是一條垂直直線
 const SKIN_J = 12, SKIN_RAMP = 4;
+// 黏土脈（Task 17 修正 1，舊生成器 legacy/worldgen.ts:612-618 的 tileRunner 黏土：只換泥土、y ∈ [地表, 岩層 + 10)；之後的生態淚滴把沙漠 / 雪原 /
+// 叢林裡的黏土換成沙 / 凍土 / 泥巴，所以只留在森林的泥裡）：森林陸地欄、森林表層的泥（交界抖動成別的生態的格不算）、地表下 1 格到岩層，
+// 團塊噪聲（genPrims.blobNoise，格距 CLAY_CELL）過門檻 → 黏土。黏土不是礦的宿主（同舊生成器 isOreHost），在礦之前換
+const CLAY_CELL = 7, CLAY_THR = 0.6;
 // 島欄離島的兩端（離水）這麼多格內是沙灘
 const ISLAND_BEACH = 4;
 // 島欄離水的格數（島地區 = 島本身的 [x0, x1)）
@@ -79,7 +83,8 @@ STONE_BASE[T.STONE] = 1; STONE_BASE[T.DEEP_STONE] = 1;
 // 沙不放礦（Task 12 裁決）；藍圖寫入的格之後由 stamp 蓋，不受這張表影響。
 // 門檻調到家鄉密度落在舊生成器 ±30%（ores.test.ts）；不用 genPrims.ORE_THR（那是 v1 的）。
 // Task 17：沙漠深沙 / 雪原凍土讓泥土帶的宿主變少（沙、冰、碎石、石不是泥土帶的銅宿主），泥土帶的銅 0.9125 → 0.909
-// （alpha / beta / gamma：改前 13.405‰、只改表層 12.263‰、重校後 13.345‰；舊生成器 13.397‰）
+// （alpha / beta / gamma：改前 13.405‰、只改表層 12.263‰、重校後 13.345‰；舊生成器 13.397‰）；
+// 修正 1 加黏土脈（黏土不是宿主）再 0.909 → 0.907（12.788‰ → 13.419‰）
 const SOIL_ORE_FROM = 4, MOLTEN_ORE_SPAN = 25;
 const hostOf = (...ts: number[]): Uint8Array => { const h = new Uint8Array(256); for (const t of ts) h[t] = 1; return h; };
 const H_SOIL = hostOf(T.DIRT, T.SNOW, T.MUD, T.SANDSTONE);
@@ -88,7 +93,7 @@ const H_BASALT = hostOf(T.BASALT);
 interface OreRule { thr: number; host: Uint8Array }
 type OreRules = readonly [OreRule | null, OreRule | null, OreRule | null, OreRule | null];
 const G2_ORE: Readonly<Record<'copper' | 'iron' | 'silver' | 'gold', OreRules>> = {
-  copper: [{ thr: 0.909, host: H_SOIL }, { thr: 0.9165, host: H_STONE }, null, null],
+  copper: [{ thr: 0.907, host: H_SOIL }, { thr: 0.9165, host: H_STONE }, null, null],
   iron: [null, { thr: 0.9385, host: H_STONE }, { thr: 0.963, host: H_STONE }, null],
   silver: [null, { thr: 0.98, host: H_STONE }, { thr: 0.9645, host: H_STONE }, null],
   gold: [null, null, { thr: 0.9595, host: H_STONE }, { thr: 0.9465, host: H_BASALT }],
@@ -176,6 +181,7 @@ export class Filler2 {
   // 表層（Task 17）：沙漠 / 雪原的 mat、地區交界的抖動、砂層底 / 雪層底的雜訊種子；landCell 的輸出
   private readonly skinMat: Fbm2;
   private readonly skinEdge: Fbm2;
+  private readonly clay: BlobNoise;
   private readonly sSkin: number;
   private cellT = 0;
   private cellW = 0;
@@ -206,6 +212,7 @@ export class Filler2 {
     this.tear = new TeardropField(seed, layout, profile);
     this.skinMat = new Fbm2(15, 15, seedInt(seed, 'g2-skin-mat'));
     this.skinEdge = new Fbm2(6, 6, seedInt(seed, 'g2-skin-edge'));
+    this.clay = blobNoise(seedInt(seed, 'g2-clay'), CLAY_CELL);
     this.sSkin = seedInt(seed, 'g2-skin');
     const home = layout.origin.home;
     this.spawnX = home ? home.x0 + SPAWN_X - HOME_X0 : null;
@@ -262,6 +269,8 @@ export class Filler2 {
     if (nL >= 0 || nR >= 0) this.skinEdge.setX(x);
     const dry = (b: number): boolean => b === BIOME.DESERT || b === BIOME.SNOW;
     if (land && (dry(I.biome) || dry(nL) || dry(nR))) this.skinMat.setX(x);
+    const forest = land && I.biome === BIOME.FOREST;
+    if (forest) this.clay.setX(x);
     const entrance = I.kind === COL_LAND && this.entranceAt(x) && !inRows(solid, S);
     const caveTop = entrance ? S : Math.max(rock, S + (I.kind === COL_SEA || I.kind === COL_ISLAND ? NO_DIG_SEA : NO_DIG));
     const spanInv = 1 / Math.max(1, molten - rock);
@@ -284,6 +293,7 @@ export class Filler2 {
             if (nL >= 0 && jx < rg.x0) b = nL; else if (nR >= 0 && jx >= rg.x1) b = nR;
           }
           this.landCell(b, y, S, sandTo, snowTo); t = this.cellT; w = this.cellW;
+          if (forest && b === BIOME.FOREST && t === T.DIRT && this.clay.above(y, CLAY_THR)) t = T.CLAY;
         } else if (y < skinTo) { t = sk.t; w = sk.w; } else { t = sk.under; w = sk.underW; }
       }
       else if (y < deep) { t = T.STONE; w = W.STONE_WALL; }

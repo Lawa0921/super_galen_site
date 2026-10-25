@@ -6,6 +6,8 @@ import { Gen2Source } from './index';
 import { BlueprintIndex, KEEP, liquidYields, emptyObjects, type Blueprint, type BpKind } from './blueprint';
 import { LAVA_Y } from './profile';
 import { worldOf, loadColumns, liquidInvariant, snapshotLiquid, SEEDS5 } from './testUtil';
+import { anchorSpan } from './anchors';
+import { SPAWN_X } from './layout';
 import { LiquidSim } from '../liquid';
 import { LIQ, LIQ_MAX } from '../liquidKind';
 import { T } from '../tiles';
@@ -189,3 +191,32 @@ function ellipseCheck(bs: Blueprint[], o: { rx: [number, number]; ry: [number, n
     }
   }
 }
+
+// 修正第 1 輪：家鄉的地表湖錨點（Task 17）用 buildLake force。placeX 的三個候選都不合條件（兩岸差 ≤ 8、外框內沒有高出水位 > 8 的丘）時，
+// forceX 先掃整個可用範圍找第一個合條件的 x（實測 lf-0..1999：6 次），再不行取兩岸差最小的 x、照樣以兩岸較低者為水位（2 次，兩岸差最大 11）；
+// 其餘 1992 次是一般候選。下面驗 200 個家鄉 + 那 8 個走到備案的種子：兩岸差 ≤ 12、湖裡有水、水面 = 兩岸較低者、液體靜止
+// （liquidInvariant：每個水格的下方與左右是實心或水 → 不溢出、湖底不懸空），而且備案真的被驗到（≥ 8 次）
+const FORCE_SEEDS = ['lf-87', 'lf-302', 'lf-670', 'lf-1035', 'lf-1307', 'lf-1315', 'lf-1403', 'lf-1990'];
+describe('家鄉地表湖錨點（buildLake force）', () => {
+  it('200 個家鄉 + 8 個走到 forceX 的種子：兩岸差 ≤ 12、有水、水面 = 兩岸較低者、液體靜止；備案真的驗到', () => {
+    let fallback = 0;
+    for (const seed of [...Array.from({ length: 200 }, (_, k) => `lf-${k}`), ...FORCE_SEEDS.slice(1)]) {
+      const g = new Gen2Source(seed), m = g.layout.landmassAt(SPAWN_X)!, a = g.blueprints.anchorsOf(m).find((q) => q.kind === 'lake')!;
+      const b = g.blueprints.anchorBlueprint(m, a)!, p = g.profile, w = b.w - 4;
+      // 湖欄 [b.x + 2, b.x + 2 + w)、兩岸 b.x + 1 / b.x + 2 + w（湖壁各 2 欄）
+      const sl = p.surfaceAt(b.x + 1), sr = p.surfaceAt(b.x + 2 + w), level = Math.max(sl, sr);
+      expect(Math.abs(sl - sr), `${seed} banks`).toBeLessThanOrEqual(12);
+      let ok = Math.abs(sl - sr) <= 8;
+      for (let x = b.x; x < b.x + b.w && ok; x++) if (p.surfaceAt(x) < level - 8) ok = false;
+      const sp = anchorSpan(seed, a), sw = sp.x1 - sp.x0, mid = sp.x0 + (sw >> 1), q = Math.floor(sw / 4);
+      if (!ok || ![mid, mid - q, mid + q].map((c) => c - (b.w >> 1)).includes(b.x)) fallback++;
+      const wd = worldOf(g);
+      loadColumns(wd, b.x - 2, b.x + b.w + 2);
+      let water = 0, top = Infinity;
+      for (let x = b.x; x < b.x + b.w; x++) for (let y = b.y; y < b.y + b.h; y++) if (wd.getLiquid(x, y) > 0 && wd.getLiquidType(x, y) === LIQ.WATER) { water++; top = Math.min(top, y); }
+      expect(water, `${seed} water`).toBeGreaterThan(0); expect(top, `${seed} level`).toBe(level);
+      expect(liquidInvariant(wd, b.x - 1, b.x + b.w + 1), seed).toEqual([]);
+    }
+    expect(fallback).toBeGreaterThanOrEqual(FORCE_SEEDS.length);
+  }, 180_000);
+});

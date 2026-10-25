@@ -12,6 +12,7 @@ import { SPAWN_X, VARIANT } from './layout';
 import { fillCol, bytes, worldOf, loadColumns, sampleRegions, bfsReachesDepth, SEEDS5 } from './testUtil';
 import { Column } from '../column';
 import { hash2, seedInt } from '../noise';
+import type { RegionInfo } from '../regionInfo';
 
 const src = new Gen2Source('bp');
 const idx = new BlueprintIndex('bp', src.layout, src.profile);
@@ -181,12 +182,25 @@ const wholeBox = (c: BpCtx): Blueprint => ({ id: c.id, kind: 'cabin', layer: dec
   cells: new Int32Array(0), chests: [], ...emptyObjects(), wholeRegion: true });
 
 describe('gen2 anchors in the blueprint index', () => {
-  // 種子：Task 17 起家鄉多了地表湖錨點，原本的 'whole' 最寬地區的表層槽全被錨點佔走（湖在含坑道那一槽），注入的 test_probe 會撞槽 → 換 whole-0
-  const SEED = 'whole-0';
-  const g = new Gen2Source(SEED), home = g.layout.landmassAt(SPAWN_X)!;
-  // 家鄉最寬的一般地區（地下層至少 4 槽）裡第一個沒有正式錨點的地下槽 q；查詢只碰離 q ≥ 2 槽的地方
-  const r = home.regions.filter((q) => q.variant !== VARIANT.BEACH && q.variant !== VARIANT.DUNGEON && q.variant !== VARIANT.SPAWN).sort((p, q) => (q.x1 - q.x0) - (p.x1 - p.x0))[0];
-  const used = (layer: number) => new Set(g.blueprints.anchorsOf(home).filter((a) => a.region === r && a.layer === layer).map((a) => a.slot));
+  // test_probe 只能注入正式錨點沒用的槽（同一槽兩個錨點 → anchorTable 丟錯）。種子與地區由程式挑（Task 17 修正 1：之後新增錨點不必再手動換種子）：
+  // 依序試 whole、whole-0、whole-1…，取第一個家鄉裡有這種一般地區的——依寬度由大到小，「地下層 ≥ 4 槽而且有空的地下槽、有空的表層槽、
+  // 含主坑道的那個表層槽也沒有正式錨點」（Task 17 起 whole 的家鄉沒有這種地區：湖錨點佔走了最寬地區含坑道的那一槽）
+  const pickProbe = (seed: string) => {
+    const g = new Gen2Source(seed), home = g.layout.landmassAt(SPAWN_X)!, list = g.blueprints.anchorsOf(home), ss = seedInt(seed, 'g2-shaft');
+    const usedIn = (rr: RegionInfo, layer: number) => new Set(list.filter((a) => a.region === rr && a.layer === layer).map((a) => a.slot));
+    // 含主坑道的表層槽（最後一槽吃餘數）
+    const shaftSlotOf = (rr: RegionInfo): number => Math.min(Math.floor((shaftX(ss, rr) - rr.x0) / LAND_SLOT_W), Math.max(1, Math.floor((rr.x1 - rr.x0) / LAND_SLOT_W)) - 1);
+    const ok = (rr: RegionInfo): boolean => {
+      const nU = Math.floor((rr.x1 - rr.x0) / slotWidth(BP_UNDER)), nS = Math.max(1, Math.floor((rr.x1 - rr.x0) / LAND_SLOT_W));
+      return nU >= 4 && [...Array(nU).keys()].some((q) => !usedIn(rr, BP_UNDER).has(q)) && [...Array(nS).keys()].some((q) => !usedIn(rr, BP_SURFACE).has(q))
+        && Number.isFinite(shaftX(ss, rr)) && !usedIn(rr, BP_SURFACE).has(shaftSlotOf(rr));
+    };
+    const r = home.regions.filter((q) => q.variant !== VARIANT.BEACH && q.variant !== VARIANT.DUNGEON && q.variant !== VARIANT.SPAWN).sort((p, q) => (q.x1 - q.x0) - (p.x1 - p.x0)).find(ok);
+    return r ? { seed, g, home, r, used: (layer: number) => usedIn(r, layer) } : null;
+  };
+  const probeAt = ['whole', ...Array.from({ length: 30 }, (_, k) => `whole-${k}`)].reduce<ReturnType<typeof pickProbe>>((acc, sd) => acc ?? pickProbe(sd), null)!;
+  const SEED = probeAt.seed, g = probeAt.g, home = probeAt.home, r = probeAt.r, used = probeAt.used;
+  // r 裡第一個沒有正式錨點的地下槽 q；查詢只碰離 q ≥ 2 槽的地方
   const n = Math.floor((r.x1 - r.x0) / slotWidth(BP_UNDER)), qU = [...Array(n).keys()].find((q) => !used(BP_UNDER).has(q))!;
   const qS = [...Array(Math.max(1, Math.floor((r.x1 - r.x0) / LAND_SLOT_W))).keys()].find((q) => !used(BP_SURFACE).has(q))!;
   // 離 qU ≥ 2 槽的那一端的一個槽 [far0, far0 + 170)
@@ -221,6 +235,7 @@ describe('gen2 anchors in the blueprint index', () => {
   it('錨點建構器的執行期檢查：外框比 ANCHOR_MAX_W 寬、或超出可用範圍 ± SLOT_PAD → 丟錯', () => {
     const ss = seedInt(SEED, 'g2-shaft'), sx = shaftX(ss, r), n = Math.floor((r.x1 - r.x0) / LAND_SLOT_W);
     const slot = Math.min(Math.floor((sx - r.x0) / LAND_SLOT_W), n - 1), sl = landSlot(r, slot, BP_SURFACE);
+    expect(used(BP_SURFACE).has(slot)).toBe(false);
     const mk = () => new BlueprintIndex(SEED, g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot }] : []) });
     const at = (x: number, w: number) => (c: BpCtx): Blueprint => ({ ...wholeBox(c), x, w, wholeRegion: false });
     probe = (c) => at(placeX(c, 61, true, () => true)!, 61)(c);
@@ -237,6 +252,7 @@ describe('gen2 anchors in the blueprint index', () => {
     const ss = seedInt(SEED, 'g2-shaft'), sx = shaftX(ss, r), q = Math.floor((sx - r.x0) / LAND_SLOT_W);
     const sl = landSlot(r, Math.min(q, Math.floor((r.x1 - r.x0) / LAND_SLOT_W) - 1), BP_SURFACE), slot = (sl.x0 - r.x0) / LAND_SLOT_W;
     expect(sx >= sl.x0 && sx < sl.x1).toBe(true);
+    expect(used(BP_SURFACE).has(slot)).toBe(false);
     let seen: BpCtx | null = null;
     probe = (c) => { seen = c; const x = placeX(c, 40, true, () => true)!; return { ...wholeBox(c), x, w: 40, wholeRegion: false }; };
     const idx = new BlueprintIndex(SEED, g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot }] : []) });

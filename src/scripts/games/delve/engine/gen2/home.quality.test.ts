@@ -52,11 +52,13 @@ describe('gen2 家鄉品質總驗（M2a Task 17，§4.4）', () => {
       expect(r, `${seed} biome ${biome}`).toBeDefined(); const sx = shaftX(seedInt(seed, 'g2-shaft'), r); loadColumns(w, sx - 20, sx + 20);
       expect(bfsReachesDepth(w, sx, src.surfaceAt(sx) - 1, (x) => src.layersAt(x).deep, sx - 20, sx + 20), `${seed} biome ${biome}`).toBe(true); } } }, 120_000);
 
-  it('家鄉不輸舊版：舊生成器家鄉出現過的 tile，gen2 家鄉（3 個種子聯集）都有，除了 NOT_PORTED', () => {
+  it('家鄉不輸舊版：舊生成器家鄉出現過的 tile，gen2 家鄉（3 個種子聯集）都有，除了 NOT_PORTED（NOT_PORTED 的 tile gen2 家鄉真的沒有）', () => {
     const now = homeTileSet(['alpha', 'beta', 'gamma']);
     // 每個世界只挑一個的 tile 組（地城磚三色）：組內任一個出現就算整組有
     const grouped = (t: number): boolean => ONE_PER_WORLD.some((g) => g.includes(t) && g.some((o) => now.has(o)));
     expect(LEGACY_HOME_TILES.filter((t) => !now.has(t) && !(t in NOT_PORTED) && !grouped(t))).toEqual([]);
+    // 反向（修正第 1 輪）：NOT_PORTED 只放 gen2 家鄉真的沒有的 tile——補做之後要從清單拿掉
+    expect(Object.keys(NOT_PORTED).map(Number).filter((t) => now.has(t))).toEqual([]);
     // 組內的每一個 gen2 都真的會挑到：20 個種子的家鄉地城磚三色都出現
     const bricks = new Set<number>();
     for (const seed of SEEDS20) { const b = homeBps(new Gen2Source(seed)).find((q) => q.kind === 'dungeon')!; for (let i = 0; i < b.cells.length; i += 5) bricks.add(b.cells[i + 2]); }

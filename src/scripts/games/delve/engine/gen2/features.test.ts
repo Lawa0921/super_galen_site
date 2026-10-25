@@ -161,13 +161,15 @@ describe('gen2 填格新特徵（Task 12）', () => {
 
   // brief 的「每種 > 30」對雪灌木 / 枯灌木 / 蘑菇不成立：家鄉的雪地地表約 450 欄（7% → 期望約 31）、沙漠沙約 400 欄（12%，扣掉仙人掌期望約 42）、
   // 蘑菇（草 2% + 叢林草 1%）期望約 40，每個種子都 > 30 是擲硬幣。這三種每個種子 > 15，再用下一個測試驗機率
-  it('裝飾：每種 > 30 格（南瓜 ≥ 5；雪灌木 / 枯灌木 / 蘑菇 > 15），每一格的支撐都合法（地板類下方實心、天花板類上方實心、藤往上接藤或實心）', () => { for (const s of HOME3) {
+  it('裝飾：每種 > 30 格（南瓜每個家鄉都有、3 個種子合計佔草地 > 0.35%；雪灌木 / 枯灌木 / 蘑菇 > 15），每一格的支撐都合法（地板類下方實心、天花板類上方實心、藤往上接藤或實心）', () => { for (const s of HOME3) {
     for (const t of [T.FLOWER, T.TALL_GRASS, T.SMALL_ROCK, T.BUSH, T.FERN, T.GLOW_MUSHROOM, T.STALACTITE, T.STALAGMITE, T.COBWEB, T.POT]) expect(s.count(t), String(t)).toBeGreaterThan(30);
     // 藤只算 fill 自己長的（蘑菇林的藤是藍圖畫的）：修正 1 的地下叢林之後每個種子 3,200–3,800（舊生成器同種子整圖 6,700–7,100）
     expect(s.fillCount(T.VINE)).toBeGreaterThan(1500);
     for (const t of [T.SNOW_SHRUB, T.DEAD_BUSH, T.MUSHROOM]) expect(s.count(t), String(t)).toBeGreaterThan(15);
-    // 南瓜（草地上 0.7%）：Task 17 的地表湖錨點蓋掉幾十欄草地，ft-c 7 → 5（那 2 顆在湖的欄上；機率本身由下一個測試驗）
-    expect(s.count(T.PUMPKIN)).toBeGreaterThanOrEqual(5); expect(s.badSupport()).toEqual([]); } }, 30_000);
+    // 南瓜（草地上 0.7%，每個家鄉期望約 10 顆）：每個家鄉都有；數量改看 3 個種子合計的比例（下面），不卡單一種子的門檻
+    expect(s.count(T.PUMPKIN)).toBeGreaterThan(0); expect(s.badSupport()).toEqual([]); }
+    const pumpkins = HOME3.reduce((a, s) => a + s.surfaceDecor.grass[T.PUMPKIN], 0), grass = HOME3.reduce((a, s) => a + s.surfaceSites.grass, 0);
+    expect(pumpkins / grass, `${pumpkins} / ${grass}`).toBeGreaterThan(0.007 * 0.5); }, 30_000);
 
   // 修正 1：舊生成器的地下叢林是一路長到熔岩深淵上方的泥巴淚滴。舊生成器同種子：岩層以下的泥巴約 17.5 萬格 / 地表叢林 550–626 欄
   // （每欄 280–320 格）；gen2 家鄉每欄（叢林地區寬）實測 240–300 格，門檻 150（約舊的一半）
@@ -340,6 +342,38 @@ describe('gen2 邊界與蛛網（Task 17 延續事項）', () => {
     }
     expect(bad).toEqual([]);
     expect(pairs).toBeGreaterThan(10);
+  }, 120_000);
+
+  // 修正第 1 輪：舊生成器的黏土脈（legacy/worldgen.ts:612-618，tileRunner 只換泥土、y ∈ [地表, 岩層 + 10)；之後的生態淚滴把沙漠 / 雪原 / 叢林的黏土換掉，
+  // 所以只留在森林的泥裡）。舊生成器 alpha / beta / gamma：黏土佔泥土帶泥 + 黏土的 4.8–6.2%、每塊平均 18–21 格、98% 在泥土帶。
+  // gen2：3 個家鄉，森林陸地欄的泥土帶 [地表 + 1, 岩層) 裡黏土佔（泥 + 黏土）3–8%、每塊（4 連通）平均 ≥ 8 格；黏土只出現在森林陸地欄的那個範圍
+  it('黏土脈：森林泥土帶的泥裡 3–8% 是黏土、成塊（平均 ≥ 8 格）；其他地方沒有黏土', () => {
+    for (const seed of SEEDS3) {
+      const src = new Gen2Source(seed), cols: Column[] = [];
+      for (let cx = 0; cx < CX1; cx++) cols.push(fillCol(src, cx));
+      const at = (x: number, y: number): number => cols[x >> 5].fg[li(x, y)];
+      let clay = 0, dirt = 0, blobs = 0;
+      const bad: string[] = [], seen = new Set<number>();
+      for (let x = 0; x < HOME_X1; x++) {
+        const I = src.profile.info(x), band = I.kind === COL_LAND && I.biome === BIOME.FOREST;
+        for (let y = 0; y < 1200; y++) {
+          const t = at(x, y), inBand = band && y > I.surface && y < I.rock;
+          if (t === T.CLAY && !inBand) bad.push(`${x},${y}`);
+          if (!inBand) continue;
+          if (t === T.DIRT) dirt++;
+          if (t !== T.CLAY) continue;
+          clay++;
+          if (seen.has(y * 4200 + x)) continue;
+          blobs++;
+          const st = [x, y]; seen.add(y * 4200 + x);
+          while (st.length) { const yy = st.pop()!, xx = st.pop()!; for (const [a, b] of [[xx + 1, yy], [xx - 1, yy], [xx, yy + 1], [xx, yy - 1]]) { const k = b * 4200 + a; if (a >= 0 && a < HOME_X1 && !seen.has(k) && at(a, b) === T.CLAY) { seen.add(k); st.push(a, b); } } }
+        }
+      }
+      if (process.env.DELVE_MEASURE === '1') console.info('[clay]', seed, clay, dirt, blobs);
+      expect(bad.slice(0, 5), seed).toEqual([]);
+      expect(clay / (clay + dirt), `${seed} ${clay} / ${clay + dirt}`).toBeGreaterThan(0.03); expect(clay / (clay + dirt), seed).toBeLessThan(0.08);
+      expect(clay / blobs, `${seed} ${clay} / ${blobs}`).toBeGreaterThanOrEqual(8);
+    }
   }, 120_000);
 
   // 藍圖自己畫的蛛網（地城房間角落、小屋屋頂下、礦坑密室）在屋頂 / 側牆缺塊或接走廊的角落會懸空（rr-3 地城、rr-4 小屋）。
