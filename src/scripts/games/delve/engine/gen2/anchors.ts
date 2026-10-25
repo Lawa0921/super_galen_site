@@ -18,6 +18,8 @@ import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, SLOT_PAD, 
 import { SLOPE, VILLAGE_VW } from './structures/village';
 import { ALCOVE_MAX_W, MOLTEN_MAX_W } from './structures/shrine';
 import { KEEP_W } from './structures/keep';
+import { LEVEL_HALF } from './structures/dungeon';
+import { HALL_MIN_W } from './structures/hall';
 import { HUT_MAX_W } from './structures/hermitHut';
 
 export type AnchorKind = 'dungeon' | 'village' | 'hall' | 'mineshaft_secret' | 'sky_island' | 'mushroom_biome' | 'crystal_cave' | 'hive'
@@ -388,8 +390,10 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
 // dn-79 西 4：只有兩端的槽不碰 END_KEEP 以外的條件）。
 // 錨點只由 (seed, 地塊) 決定（anchorSpan 只看主坑道的位置），與查詢順序無關
 const BIG_EDGE = 200, BIG_GAP = 1100, VILLAGE_NEAR = 550, KIND_NEAR = 340, END_KEEP = 700, END_REACH = 500;
-// 大東西外框的最小半寬（村莊 (58 + 18) / 2、小地城畫出的範圍約 250 以上取 120、地廳 (60 + 4 + 2 × 20) / 2）：兩端檢查的保守估計
-const BIG_HALF: Readonly<Partial<Record<AnchorKind, number>>> = { village: 38, keep: 120, hall: 52 };
+// 大東西外框一定涵蓋的半寬（兩端檢查的保守估計，可用範圍中點 ± 它）：村莊 (VILLAGE_VW 下限 + 兩側緩坡) / 2 = 38（外圍村莊置中於可用範圍）、
+// 小地城 LEVEL_HALF = 34（塔在預留區中央 = 可用範圍中點，塔周圍整平帶 ± 34 一定畫在外框裡；畫出的外框實測 187–300 寬，沒有構造上的下限）、
+// 地廳 HALL_MIN_W / 2 = 52（內部 + 外殼 + 兩側最短隧道，大廳置中於可用範圍）
+const BIG_HALF: Readonly<Partial<Record<AnchorKind, number>>> = { village: (VILLAGE_VW[0] + 2 * SLOPE) >> 1, keep: LEVEL_HALF, hall: HALL_MIN_W >> 1 };
 type BigKind = 'village' | 'keep' | 'hall';
 const BIG_FALLBACK: Readonly<Record<BigKind, readonly BigKind[]>> = { village: ['village', 'keep', 'hall'], keep: ['keep', 'hall', 'village'], hall: ['hall', 'keep', 'village'] };
 // 第 k 個目標的種類（u ∈ [0, 1)）

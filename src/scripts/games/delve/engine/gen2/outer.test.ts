@@ -7,15 +7,16 @@ import { DelveGame } from '../game';
 import { FIXED_DT, TILE_SIZE } from '../constants';
 import { T, isSolidTile } from '../tiles';
 import type { World } from '../world';
-import type { GenSite } from '../genTypes';
+import type { DungeonInfo, GenSite } from '../genTypes';
 import { seedInt } from '../noise';
 import { structureId, type Blueprint, type BpCtx } from './blueprint';
 import { anchorSpan, type Anchor } from './anchors';
 import { decodeStructureId } from './structId';
 import type { Landmass, Layout } from './layout';
 import { buildKeepBp } from './structures/keep';
+import { LEVEL_HALF } from './structures/dungeon';
 import { solvable, floodSolvable, worldOf, loadColumns } from './testUtil';
-import { gen2Regions, gen2RegionById } from '../discovery';
+import { gen2Regions, gen2RegionById, ROOM_NAMES } from '../discovery';
 import { areaLabel } from '../../render/model';
 
 const SEEDS20 = Array.from({ length: 20 }, (_, k) => `outer-${k}`);
@@ -38,16 +39,36 @@ const siteOf = <K extends GenSite['kind']>(b: Blueprint, kind: K): Site<K> => {
   if (b.site?.kind !== kind) throw new Error(`${b.kind} has no ${kind} site`);
   return b.site as Site<K>;
 };
-// 東側由近到遠第一座小地城、第一座村莊
-function firstOuter(seed: string): { src: Gen2Source; keep: Site<'dungeon'>; village: Site<'village'>; keepBp: Blueprint } {
+// 東側由近到遠第一座小地城、第一座村莊、第一座地廳
+function firstOuter(seed: string): { src: Gen2Source; keep: Site<'dungeon'>; village: Site<'village'>; hall: Site<'hall'>; keepBp: Blueprint } {
   const src = new Gen2Source(seed);
-  let keepBp: Blueprint | undefined, village: Blueprint | undefined;
-  for (let i = 2; (!keepBp || !village) && i < 40; i += 2) {
+  let keepBp: Blueprint | undefined, village: Blueprint | undefined, hall: Blueprint | undefined;
+  for (let i = 2; (!keepBp || !village || !hall) && i < 40; i += 2) {
     const bs = bpsIn(src, src.layout.landmass(1, i));
-    keepBp ??= bs.find((b) => b.kind === 'keep'); village ??= bs.find((b) => b.kind === 'village');
+    keepBp ??= bs.find((b) => b.kind === 'keep'); village ??= bs.find((b) => b.kind === 'village'); hall ??= bs.find((b) => b.kind === 'hall');
   }
-  if (!keepBp || !village) throw new Error(`${seed}: no outer keep / village`);
-  return { src, keep: siteOf(keepBp, 'dungeon'), village: siteOf(village, 'village'), keepBp };
+  if (!keepBp || !village || !hall) throw new Error(`${seed}: no outer keep / village / hall`);
+  return { src, keep: siteOf(keepBp, 'dungeon'), village: siteOf(village, 'village'), hall: siteOf(hall, 'hall'), keepBp };
+}
+// 欄在讀到時才載入的世界讀取（整座小地城先全部載入太慢）
+function lazyFg(w: World): { getFg(x: number, y: number): number; load(x: number): void } {
+  const loaded = new Set<number>(), load = (x: number): void => { if (!loaded.has(x >> 5)) { w.ensureColumn(x >> 5); loaded.add(x >> 5); } };
+  return { load, getFg: (x, y) => { load(x); return w.getFg(x, y); } };
+}
+// 小地城的鑰匙容器（載入後的世界）：每把鑰匙都在它的箱子 / 陶罐裡（金鑰匙 golden_key、其他 dungeon_key），地城鑰匙數 = 上鎖的門數、金鑰匙恰 1 把；回傳不對的項目
+function keyProblems(w: World, d: DungeonInfo, load: (x: number) => void = () => {}): string[] {
+  const out: string[] = [], locked = d.doors.filter((q) => q.locked).length;
+  let keys = 0;
+  for (const k of d.keys) {
+    load(k.x);
+    const i = w.idx(k.x, k.y), item = k.golden ? 'golden_key' : 'dungeon_key';
+    const n = k.container === 'chest' ? (w.chests.get(i) ?? []).filter((s) => s?.item === item).length : (w.potDrops.get(i) ?? []).filter((q) => q.item === item).length;
+    if (n < 1) out.push(`${item} missing in ${k.container} ${k.x},${k.y}`);
+    if (!k.golden) keys++;
+  }
+  if (keys !== locked) out.push(`keys ${keys} vs locked doors ${locked}`);
+  if (d.keys.filter((k) => k.golden).length !== 1) out.push('golden keys');
+  return out;
 }
 // 東側第一片大陸的隱士小屋
 function firstHermitHut(g: DelveGame): Site<'hermit'> {
@@ -61,10 +82,7 @@ const PASS: ReadonlySet<number> = new Set([T.CRACKED_STONE, T.DOOR_CLOSED, T.DOO
 function reachesSurface(w: World, src: Gen2Source, b: Blueprint, x: number, y: number): boolean {
   const x0 = b.x - 80, x1 = b.x + b.w + 80, y0 = Math.max(0, b.y - 80), y1 = b.y + b.h + 40, W = x1 - x0, seen = new Uint8Array(W * (y1 - y0)), st = [x, y];
   seen[(y - y0) * W + x - x0] = 1;
-  const loaded = new Set<number>(), fgAt = (cx: number, cy: number): number => {
-    if (!loaded.has(cx >> 5)) { w.ensureColumn(cx >> 5); loaded.add(cx >> 5); }
-    return w.getFg(cx, cy);
-  };
+  const fgAt = lazyFg(w).getFg;
   while (st.length) {
     const cy = st.pop()!, cx = st.pop()!;
     if ((cx < b.x || cx >= b.x + b.w || cy < b.y || cy >= b.y + b.h) && cy < src.surfaceAt(cx)) return true;
@@ -115,6 +133,9 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
           expect(bps.filter((o) => o !== k && !LIQUID_KINDS.has(o.kind) && meets(o, k)).map((o) => `${o.kind}@${o.x}`), `${seed} keep@${k.x}`).toEqual([]);
           const info = siteOf(k, 'dungeon').info;
           expect(info.rooms.length, `${seed} keep@${k.x}`).toBeGreaterThanOrEqual(8); expect(solvable(info), `${seed} keep@${k.x}`).toEqual({ ok: true });
+          // 外框涵蓋可用範圍中點 ± LEVEL_HALF（塔周圍整平帶；anchors.continentAnchors 估兩端有沒有大東西靠這一條）
+          const ka = g.blueprints.anchorsOf(m).find((q) => slotKey(q) === slotKeyOf(k, g.layout))!, sp = anchorSpan(seed, ka), c = (sp.x0 + sp.x1) >> 1;
+          expect(k.x <= c - LEVEL_HALF && k.x + k.w > c + LEVEL_HALF, `${seed} keep@${k.x}`).toBe(true);
         } } }
     expect(keeps).toBeGreaterThan(60);
   }, 300_000);
@@ -127,7 +148,7 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
 
   // 指揮官裁決 1：一律可進入。84 個種子 × 6 片大陸 = 504 片（切兩段各自逾時）
   for (const [a, z] of [[0, 42], [42, 84]] as const) {
-    it(`都從地表走得到（載入世界、液體不可走）：rch-${a}..${z - 1} × 6 片大陸的小地城入口與上鎖寶箱、地廳主廳、村莊委託板、隱士`, () => {
+    it(`都從地表走得到（載入世界、液體不可走）：rch-${a}..${z - 1} × 6 片大陸的小地城入口與上鎖寶箱、地廳主廳、村莊委託板、隱士；每座小地城 tile 層級可解、鑰匙都在容器裡`, () => {
       const bad: string[] = [], n: Record<string, number> = {};
       for (let s = a; s < z; s++) {
         const seed = `rch-${s}`, g = new Gen2Source(seed);
@@ -137,13 +158,20 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
             const pts = mustReach(b);
             if (!pts.length) continue;
             for (const p of pts) { n[p.tag] = (n[p.tag] ?? 0) + 1; if (!reachesSurface(w, g, b, p.x, p.y)) bad.push(`${seed} ${side}:${i} ${p.tag}@${p.x},${p.y}`); }
+            if (b.kind === 'keep') {
+              const d = siteOf(b, 'dungeon').info, lz = lazyFg(w), v = floodSolvable(lz, d);
+              n['keep flood'] = (n['keep flood'] ?? 0) + 1;
+              if (!v.ok) bad.push(`${seed} ${side}:${i} keep@${b.x} flood: ${v.why}`);
+              for (const q of keyProblems(w, d, lz.load)) bad.push(`${seed} ${side}:${i} keep@${b.x} ${q}`);
+            }
           }
         }
       }
-      console.info(`[gen2 outer reach] rch-${a}..${z - 1}`, JSON.stringify(n), 'bad', bad.length);
+      // DELVE_MEASURE=1 時印出各種類的點數（報告用）；平常不印
+      if (process.env.DELVE_MEASURE === '1') console.info(`[gen2 outer reach] rch-${a}..${z - 1}`, JSON.stringify(n), 'bad', bad.length);
       expect(bad.slice(0, 5)).toEqual([]);
       const conts = (z - a) * 6;
-      expect(n.hermit).toBe(conts); expect(n['keep entrance']).toBe(n['keep locked chest']);
+      expect(n.hermit).toBe(conts); expect(n['keep entrance']).toBe(n['keep locked chest']); expect(n['keep flood']).toBe(n['keep entrance']);
       for (const t of ['keep entrance', 'hall', 'village board']) expect(n[t] ?? 0, t).toBeGreaterThan(conts / 6);
     }, 300_000);
   }
@@ -154,15 +182,7 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
     loadColumns(w, d.bbox.x - 2, d.bbox.x + d.bbox.w + 2);
     expect(g.sites.list('dungeon').some((s) => s.key === keep.key)).toBe(true);
     expect(floodSolvable(w, d)).toEqual({ ok: true });
-    const locked = d.doors.filter((q) => q.locked).length;
-    let keys = 0;
-    for (const k of d.keys) {
-      const i = w.idx(k.x, k.y), item = k.golden ? 'golden_key' : 'dungeon_key';
-      const n = k.container === 'chest' ? (w.chests.get(i) ?? []).filter((s) => s?.item === item).length : (w.potDrops.get(i) ?? []).filter((q) => q.item === item).length;
-      expect(n, `${k.container} ${k.x},${k.y}`).toBeGreaterThanOrEqual(1);
-      if (!k.golden) keys++;
-    }
-    expect(keys).toBe(locked);
+    expect(keyProblems(w, d)).toEqual([]);
     const t = d.treasureChest;
     expect(w.getFg(t.x, t.y)).toBe(T.LOCKED_CHEST);
     g.teleport(t.x, t.y); g.step(FIXED_DT);
@@ -185,7 +205,10 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
         if (b.kind === 'keep') {
           const info = siteOf(b, 'dungeon').info, names: string[] = [];
           for (const r of info.rooms) {
+            // 有名單的房型（ROOM_NAMES：入口大廳 / 書庫 / 牢房 / 神殿 / 寶藏室 / 密室）一定立地區；其他房型（大廳 / 豎井 / 房間）不立
+            if (!ROOM_NAMES[r.kind]) continue;
             const cx = r.x + (r.w >> 1), cy = r.y + (r.h >> 1), hit = q(cx, cy).find((x) => x.kind === `dungeon_${r.kind}` && x.x === r.x && x.y === r.y);
+            expect(hit, `${seed} keep@${b.x} ${r.kind} room ${r.id}`).toBeDefined();
             if (!hit) continue;
             rooms++; names.push(hit.name);
             expect(byId(hit.id)?.name, `${seed} ${hit.kind}`).toBe(hit.name);
@@ -225,6 +248,26 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
     expect(g.nextStepHint()).not.toContain('「」');
   }, 120_000);
 
+  it('外圍聚落名（裁決 4）：外圍地廳欄載入後 siteName 非空、提示說得出廳名（不出現「」）', () => {
+    const { hall } = firstOuter('outer-k'), g = new DelveGame({ seed: 'outer-k', worldGen: { kind: 'gen2' } }), d = g.discovery, src = g.gen2()!;
+    g.giveGear('iron_pickaxe', 1); g.settle.cores.push({ id: 1, x: g.spawn.x, y: g.spawn.y });
+    // 提示依序：村莊 → 旅行藥師 → 地廳；讓前兩句都不成立（已邀請藥師）
+    g.settle.invited.add('healer');
+    // 站在地廳正上方的地表（地廳在洞穴層深處，還沒走進去）：那一欄載入 → 聚落登錄，名字走外圍查詢
+    const hx = (hall.info.x0 + hall.info.x1) >> 1;
+    g.teleport(hx, src.surfaceAt(hx) - 2); for (let k = 0; k < 30; k++) g.step(FIXED_DT);
+    expect(g.sites.byKey(hall.key)).toBeDefined();
+    const name = g.siteName(hall.key);
+    expect(name).not.toBe('');
+    // 家鄉的村莊 / 地廳與登錄過的外圍村莊都走過之後，提示指向這座外圍地廳
+    for (const r of d.listKnown().filter((q) => q.kind === 'village' || q.kind === 'dwarf_hall')) d.visit(r.ax, r.ay);
+    for (const v of g.sites.list('village')) d.visit(v.info.board.x, v.info.board.y);
+    const h = g.nextStepHint();
+    expect(h).not.toContain('「」');
+    expect(h).toContain(`「${name}」`);
+    expect(h).toMatch(/矮人/);
+  }, 120_000);
+
   it('效能（裁決 8）：小地城藍圖單次建構 ≤ 80 ms（3 次中位數；直接呼叫建構器）', () => {
     const { src, keepBp } = firstOuter('outer-k'), d = decodeStructureId(keepBp.id), m = src.layout.landmass(d.side as 1 | -1, d.i);
     const a = src.blueprints.anchorsOf(m).find((q) => q.kind === 'keep' && q.region.index === d.region && q.slot === d.slot)!, sp = anchorSpan('outer-k', a);
@@ -233,7 +276,8 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
     const ts: number[] = [];
     for (let k = 0; k < 3; k++) { const t0 = performance.now(), b = buildKeepBp(c); ts.push(performance.now() - t0); expect([b.x, b.y, b.w, b.h]).toEqual([keepBp.x, keepBp.y, keepBp.w, keepBp.h]); }
     ts.sort((p, q) => p - q);
-    console.info('[gen2 keep] build ms', ts.map((t) => t.toFixed(1)).join(' '));
+    // DELVE_MEASURE=1 時印出（報告用）；平常不印
+    if (process.env.DELVE_MEASURE === '1') console.info('[gen2 keep] build ms', ts.map((t) => t.toFixed(1)).join(' '));
     expect(ts[1]).toBeLessThanOrEqual(80);
   }, 60_000);
 });

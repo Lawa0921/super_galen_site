@@ -19,15 +19,17 @@ import type { ReservedZone } from '../../genTypes';
 import { LAVA_Y } from '../profile';
 import { VARIANT } from '../layout';
 import { BpCanvas } from '../draw/bpCanvas';
-import { generateDungeonOn } from '../draw/dungeon';
+import { generateDungeonOn, type DungeonPlanOpts } from '../draw/dungeon';
 import { BP_SURFACE, indexColumns, type Blueprint, type BpCtx, type BpTablet } from '../bpcore';
 
 // 對著沙灘那側留的格數
 const BEACH_GAP = 4;
 // 畫布在 zone.y1 以下多留（走廊 / 磚殼最多到 zone.y1 + 4、天然岩層回填最多到 zone.y1 + 14）
-const BELOW = 20;
-// 塔周圍整平帶（draw/dungeon.ts：x ∈ cx ± 34、需要左右鄰欄在畫布內；y ∈ [gy − 40, gy + 8)）
-const LEVEL_HALF = 34, LEVEL_UP = 40, LEVEL_DOWN = 8;
+export const BELOW = 20;
+// 塔周圍整平帶（draw/dungeon.ts：x ∈ cx ± 34、需要左右鄰欄在畫布內；y ∈ [gy − 40, gy + 8)）；structures/keep.ts 共用
+export const LEVEL_HALF = 34, LEVEL_UP = 40, LEVEL_DOWN = 8;
+// 規劃失敗時的備案：和入口連通的自由房間最少 5 間
+const MIN_CONNECTED_FALLBACK = 5;
 
 export function buildDungeonBp(c: BpCtx): Blueprint {
   // ctx.ver 0 的規則
@@ -43,17 +45,26 @@ export function buildDungeonBp(c: BpCtx): Blueprint {
     x0: zx0, x1: zx1, y0: Math.max(2, sMin - LEVEL_UP),
     y1: Math.min(LAVA_Y - 60, Math.max(rMax + 40, dMin + Math.floor((mMin - dMin) * 0.32))), side: beachWest ? 'left' : 'right',
   };
-  const cv = new BpCanvas({ x: zone.x0, y: zone.y0, w: zone.x1 - zone.x0, h: zone.y1 + BELOW - zone.y0 }, p);
   const color = DUNGEON_COLORS[(seedInt(c.seed, `g2-dungeon-color:${c.id}`) >>> 0) % DUNGEON_COLORS.length];
   const opts = { seed: `${c.seed}:g2-dungeon:${c.id}`, zone, surfaceAt: (x: number) => p.surfaceAt(x), height: p.height, color, natural: true };
+  return { ...finishDungeonBp(c, 'dungeon', 'home dungeon', opts), wholeRegion: true };
+}
+
+// 家鄉地城與荒野大陸的小地城（structures/keep.ts）共用的收尾：在 opts.zone（畫布多留 BELOW 列）上規劃並施工（8 次都失敗再用
+// minConnected 5 試，仍失敗丟 RangeError）→ 整平帶要整段在畫布內（否則丟錯）→ 整平帶與外框從區內最高地表往下併進 solid →
+// 古碑（LORE_SITES）與房間地板 floors → 藍圖（site = 地城、key 's' + id）→ 格子依欄排序 + colIndex、外框 = 實際畫到的範圍。
+// tag 只用在錯誤訊息。呼叫端只決定 zone 與 opts 的差異（房型清單、minConnected、古碑、種子字首、顏色鍵）
+export function finishDungeonBp(c: BpCtx, kind: 'dungeon' | 'keep', tag: string, opts: DungeonPlanOpts): Blueprint {
+  const p = c.profile, zone = opts.zone;
+  const cv = new BpCanvas({ x: zone.x0, y: zone.y0, w: zone.x1 - zone.x0, h: zone.y1 + BELOW - zone.y0 }, p);
   // 規劃失敗時不會畫任何格（generateDungeonOn 只在規劃成功後施工），同一張畫布可以再試
-  const info = generateDungeonOn(cv, opts) ?? generateDungeonOn(cv, { ...opts, minConnected: 5 });
-  if (!info) throw new RangeError(`gen2: home dungeon ${c.id} has no plan`);
+  const info = generateDungeonOn(cv, opts) ?? generateDungeonOn(cv, { ...opts, minConnected: MIN_CONNECTED_FALLBACK });
+  if (!info) throw new RangeError(`gen2: ${tag} ${c.id} has no plan`);
 
   const cx = info.entrance.x - 4, gy = info.entrance.y + 1;
   // 整平帶要整段在畫布內（左右鄰欄也在），否則 draw/dungeon.ts 會默默跳過那幾欄
   if (!cv.inBounds(cx - LEVEL_HALF - 1, gy - LEVEL_UP) || !cv.inBounds(cx + LEVEL_HALF + 1, gy + LEVEL_DOWN)) {
-    throw new RangeError(`gen2: home dungeon ${c.id} leveling band outside its canvas`);
+    throw new RangeError(`gen2: ${tag} ${c.id} leveling band outside its canvas`);
   }
   // 整平帶 [gy, gy + 8) 與地城外框從區內最高地表往下：併進 solid（BpBox 是外接矩形，兩個角就夠）
   cv.fillNatural(cx - LEVEL_HALF, gy); cv.fillNatural(cx + LEVEL_HALF, gy + LEVEL_DOWN - 1);
@@ -67,13 +78,13 @@ export function buildDungeonBp(c: BpCtx): Blueprint {
     const fy = q.y + q.h - 1;
     for (let x = q.x; x < q.x + q.w; x++) if (cv.fg(x, fy) === T.AIR && SOLID_LUT[cv.fg(x, fy + 1)] === 1) floors.push({ x, y: fy });
   }
-  const bp = cv.toBlueprint(c.id, 'dungeon', BP_SURFACE, { tablets, floors, site: { kind: 'dungeon', key: 's' + c.id, rot: 0, info } });
+  const bp = cv.toBlueprint(c.id, kind, BP_SURFACE, { tablets, floors, site: { kind: 'dungeon', key: 's' + c.id, rot: 0, info } });
   const { cells, colIndex } = indexColumns(bp.cells);
-  return { ...bp, ...drawnBox(bp), cells, colIndex, wholeRegion: true };
+  return { ...bp, ...drawnBox(bp), cells, colIndex };
 }
 
-// 實際畫到的範圍：格子、solid、ground 的欄、箱子 / 陶罐 / 古碑（都在畫布內；structures/keep.ts 共用）
-export function drawnBox(bp: Blueprint): { x: number; y: number; w: number; h: number } {
+// 實際畫到的範圍：格子、solid、ground 的欄、箱子 / 陶罐 / 古碑（都在畫布內）
+function drawnBox(bp: Blueprint): { x: number; y: number; w: number; h: number } {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   const add = (x: number, y: number, w = 1, h = 1): void => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + w); y1 = Math.max(y1, y + h); };
   const c = bp.cells;

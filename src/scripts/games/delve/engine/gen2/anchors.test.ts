@@ -222,7 +222,11 @@ describe('gen2 anchors', () => {
 
   it('地城區沒有主坑道', () => { for (const seed of SEEDS5) { const g = new Gen2Source(seed); expect(shaftX(seedInt(seed, 'g2-shaft'), homeDungeonRegion(g.layout.landmassAt(SPAWN_X)!))).toBeNaN(); } });
 
-  // Task 18 起大陸有自己的錨點（大東西 + 隱士小屋），表層槽所剩不多：改成只佔掉保證的那一間小屋 / 那一座遺跡的槽（原本佔掉全部小屋 / 遺跡的槽）
+  // 測試縮減（Task 18）：M1 版本把大陸上「所有」小屋 / 遺跡的槽都注入 test_probe 錨點（多槽都被佔），驗保證槽還能在剩下的槽找到。
+  // Task 18 起大陸自己就有錨點（大東西 3–6 個 + 隱士小屋 1 個，含地廳上方被標成已用的表層槽），不含坑道的表層槽常只剩
+  // continentAnchors 保留給保證遺跡的那一個——再把所有遺跡槽佔掉，正確結果就是「沒有合格槽」→ RangeError（P11 不默默失效），測不到「改找剩下的槽」。
+  // 所以改成只佔掉保證的那一間小屋 / 那一座遺跡的槽：仍然驗「錨點佔掉保證槽 → guard 在剩下的槽重找、各 ≥ 1」（Q15）；
+  // 「錨點槽與碰到錨點部件的槽都被剔除」另由 outer.test 的 Q15 測試（20 個種子 × 6 片大陸）驗
   it('錨點優先於大陸的保證小屋 / 遺跡（Q15）：佔掉保證小屋 / 遺跡的槽，保證改找剩下的槽（仍 ≥ 1）', () => {
     for (const seed of SEEDS5) for (const i of [2, 4]) {
       const g = new Gen2Source(seed), m = g.layout.landmass(1, i);

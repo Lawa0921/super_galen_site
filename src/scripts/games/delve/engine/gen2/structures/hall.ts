@@ -12,7 +12,7 @@
 //   · BpCanvas 的回退讀取假設天然格是實心、沒有洞穴：drawHall 只在「讀到不是實心」時才補隧道的地板（floorY）與頂（floorY − 5）
 //     → 外框整片併進 solid（箱內不挖噪聲洞穴，地板 / 頂在成品裡是天然岩；礦照常換）。
 //   · 礦車地標（T.ORE_CART、site 'dwarf_hall'）；site = { kind: 'hall', key: 's' + id, rot, info }（rot = c.rank，外圍 0）。
-//   · 外圍（荒野大陸，M2a Task 18；structureId 的 side ≠ 0）：一律從地表走得到（指揮官裁決，比照 Task 9–14）——洞穴網不保證連到地表，
+//   · 外圍（荒野大陸，M2a Task 18；所屬地區的 kind 不是 'home'——地廳只放在家鄉（kind home）與大陸（wild / culture）的地區）：一律從地表走得到（指揮官裁決，比照 Task 9–14）——洞穴網不保證連到地表，
 //     所以照樣接洞之外，一定挖上面那條 2 格寬、掛繩梯的豎井到地表（同後備豎井）；藍圖帶部件 = 地廳本體（外殼 + 隧道）+ 豎井在本體以上那兩欄，
 //     跨層判定與 solid 都只算部件（solid 外框整片、solidParts 只取部件內），部件外不寫任何格。豎井上方的表層槽不放別的錨點（anchors.continentAnchors），
 //     機率 / 保證藍圖照跨層規則讓位。家鄉的地廳不變（只保證通往附近洞穴，Task 9 裁決）。
@@ -23,15 +23,18 @@ import { CaveProbe } from '../caves';
 import { BpCanvas } from '../draw/bpCanvas';
 import { drawHall, HALL_IH } from '../draw/hall';
 import { BP_DEEP, type Blueprint, type BpCtx } from '../bpcore';
-import { decodeStructureId } from '../structId';
 
 export const TUNNEL_MIN = 20, TUNNEL_MAX = 36;
 // 外殼在內部兩側各 2 欄、上 3 列、下 2 列（draw/hall.ts）；隧道從內部外 3 欄起
 const SHELL = 2, SHELL_UP = 3, SHELL_DOWN = 2, MOUTH = 3;
+// 內部寬 [HALL_HW_MIN, HALL_HW_MAX)（rng.int）；外框最窄 = 內部 + 兩側外殼 + 兩側隧道最短（anchors.continentAnchors 估大陸兩端有沒有大東西用）
+export const HALL_HW_MIN = 60, HALL_HW_MAX = 78;
 // 地板離 deep 至少 24 + 室內高 + 2、離 molten 至少 26（舊生成器的規則）
 const DEEP_GAP = 24, MOLTEN_GAP = 26;
 // 後備豎井的寬
 const SHAFT_W = 2;
+// 外框最窄的寬：bx = x0 − 3 − l + 1、右緣 x1 + 3 + r → 寬 = hw + 4 + l + r ≥ HALL_HW_MIN + 2 × SHELL + 2 × TUNNEL_MIN
+export const HALL_MIN_W = HALL_HW_MIN + 2 * SHELL + 2 * TUNNEL_MIN;
 
 // 天然洞穴的判定（預設 CaveProbe；測試注入「全部不通」來走後備豎井）
 export interface HallOptions { caveOpen?: (x: number, y: number) => boolean }
@@ -39,7 +42,7 @@ export interface HallOptions { caveOpen?: (x: number, y: number) => boolean }
 export function buildHallBp(c: BpCtx, o: HallOptions = {}): Blueprint {
   // ctx.ver 0 的規則
   const p = c.profile, rng = new HRng(c.s, c.id);
-  const hw = rng.int(60, 78), fu = rng.next();
+  const hw = rng.int(HALL_HW_MIN, HALL_HW_MAX), fu = rng.next();
   const x0 = c.slotX0 + ((c.slotX1 - c.slotX0) >> 1) - (hw >> 1), x1 = x0 + hw - 1;
   // 隧道最長時的外框 [x0 − 2 − 36, x1 + 2 + 36] 各欄的極值
   let top = 0, bot = p.height;
@@ -71,7 +74,7 @@ export function buildHallBp(c: BpCtx, o: HallOptions = {}): Blueprint {
   const { floorY, l, r } = pick ?? { floorY: top + start, l: TUNNEL_MAX, r: TUNNEL_MAX };
 
   // 後備豎井（外圍地廳一律挖）：大廳中央 [sx, sx + 2)、從兩欄地表較高者的上一格往下
-  const outer = decodeStructureId(c.id).side !== 0, shaft = !pick || outer;
+  const outer = c.region.kind !== 'home', shaft = !pick || outer;
   const sx = (x0 + x1) >> 1, top0 = shaft ? Math.min(p.surfaceAt(sx), p.surfaceAt(sx + 1)) - 1 : Infinity;
   const bx = x0 - MOUTH - l + 1, bw = x1 + MOUTH + r - bx, hy = floorY - HALL_IH - SHELL_UP, by = Math.min(hy, top0), bh = floorY + SHELL_DOWN + 1 - by;
   const cv = new BpCanvas({ x: bx, y: by, w: bw, h: bh }, p);
