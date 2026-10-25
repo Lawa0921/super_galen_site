@@ -162,6 +162,11 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 // The place plate stays 36px tall at 24px (a 24px line, 4px padding), above the windows that start at 48px (the portal cards).
 .slx-place { left: 12px; top: 10px; padding: 4px 10px; font-size: $slx-fs-big; line-height: 24px; color: $slx-ink; }
 .slx-gold { right: 12px; top: 10px; color: $slx-gold; }
+// Time and moon (ruling 8): the season and today's moon, a 12px window beside the place plate, both in one row (the town
+// menu starts at 56px, so a window under the plate would cover it; the skinned plate is 48px tall).
+.slx-town-hud { position: absolute; left: 12px; top: 10px; display: flex; align-items: center; gap: 6px; }
+.slx-town-hud > .slx-win { position: static; }
+.slx-calendar { padding: 2px 10px; font-size: $slx-fs; line-height: 16px; color: $slx-ink; white-space: nowrap; }
 .slx-town-menu { left: 12px; top: 56px; min-width: 150px; }
 
 // Generated window frame and cursor; switched on by ui2/main.ts only when the art is published.
@@ -195,6 +200,10 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-veil.slx-on { opacity: 1; }
 .slx-veil-past { background: rgba(46, 30, 12, 0.4); backdrop-filter: sepia(0.8) saturate(0.6) brightness(0.7); }
 .slx-veil-night { background: rgba(4, 8, 30, 0.58); }
+// Time and moon (ruling 8): tonight's moon tints the night. Full: a little lighter and bluer; new: darker. The quarters keep
+// the plain night.
+.slx-veil-night.slx-moon-full { background: rgba(14, 24, 58, 0.5); }
+.slx-veil-night.slx-moon-new { background: rgba(2, 4, 16, 0.66); }
 .slx-dungeon .slx-veil { z-index: 1; }
 // Where a scene is (story staging S6): a one-line card where the place plate stands, 12px on the type scale.
 .slx-place-card { left: 12px; top: 10px; padding: 3px 10px; font-size: $slx-fs; line-height: 16px; letter-spacing: 1px; color: $slx-ink; white-space: nowrap; }
@@ -205,7 +214,7 @@ $slx-upright: '(orientation: portrait) and (max-width: #{$slx-w - 1px})';
 .slx-npc { position: absolute; right: 0; bottom: 0; height: 330px; }
 .slx-cmd { left: 12px; top: 56px; min-width: 120px; }
 /* While a story scene plays in a facility or the town, its face stands where the command window is: hide the window, keep its place. */
-.slx-facility .slx-cmd.slx-cmd-hidden, .slx-town .slx-town-menu.slx-cmd-hidden, .slx-town .slx-back.slx-cmd-hidden, .slx-town .slx-place.slx-cmd-hidden, .slx-town .slx-gold.slx-cmd-hidden, .slx-facility .slx-place.slx-cmd-hidden, .slx-facility .slx-gold.slx-cmd-hidden, .slx-dungeon .slx-pad.slx-cmd-hidden, .slx-dungeon .slx-weight.slx-cmd-hidden, .slx-dungeon .slx-keyhint.slx-cmd-hidden { visibility: hidden; }
+.slx-facility .slx-cmd.slx-cmd-hidden, .slx-town .slx-town-menu.slx-cmd-hidden, .slx-town .slx-back.slx-cmd-hidden, .slx-town .slx-place.slx-cmd-hidden, .slx-town .slx-calendar.slx-cmd-hidden, .slx-town .slx-gold.slx-cmd-hidden, .slx-facility .slx-place.slx-cmd-hidden, .slx-facility .slx-gold.slx-cmd-hidden, .slx-dungeon .slx-pad.slx-cmd-hidden, .slx-dungeon .slx-weight.slx-cmd-hidden, .slx-dungeon .slx-keyhint.slx-cmd-hidden { visibility: hidden; }
 .slx-stage { position: absolute; inset: 0; pointer-events: none; }
 .slx-stage > * { pointer-events: auto; }
 .slx-layer { left: 150px; top: 56px; max-width: 300px; }

@@ -10,6 +10,7 @@ import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
 import { playAndRecord, playBeat, playNight, storyCtx, type SceneOpts } from '../story';
 import { Dialogue, MenuView, win } from '../widgets';
+import { tonightMoon } from '../../engine/calendar';
 
 /**
  * The card after a clear. Act 1's clear (the lantern-eater falls) shows its card and goes back to town, where 'act1-after'
@@ -57,7 +58,13 @@ export class ClearScene implements Scene {
     const game = this.ctx.game;
     const ids: SceneId[] = [...(game.finale?.pieces ?? []), 'finale'];
     const n = ids[0] === 'finale-eve' ? 1 + ids.slice(1).findIndex((id) => !game.eve.includes(id)) : 0;
-    await playNight(ids.slice(0, n), storyCtx(this.ctx), (id, o) => this.playOne(id, o), (line) => this.beat(line));
+    // Time and moon review fix 8: the eve told here is the night before this dive, under its moon.
+    this.talk.moon = tonightMoon(game.state);
+    try {
+      await playNight(ids.slice(0, n), storyCtx(this.ctx), (id, o) => this.playOne(id, o), (line) => this.beat(line));
+    } finally {
+      this.talk.moon = null;
+    }
     for (const id of ids.slice(n)) await this.playOne(id);
   }
 

@@ -475,6 +475,41 @@ describe('Dialogue faces', () => {
     expect(scene.querySelector('.slx-place-card')).toBeNull();
   });
 
+  it('a night card under a moon tints the veil; a day card or no moon does not (time and moon Task 5)', () => {
+    const scene = document.createElement('div');
+    const d = new Dialogue(Infinity);
+    scene.append(d.el);
+    expect(d.moon).toBeNull();
+    const tints = () => [...(scene.querySelector('.slx-veil-night')?.classList ?? [])].filter((c) => c.startsWith('slx-moon-'));
+    d.setPlace({ text: '月影旅館・夜', night: true });   // no moon: the plain night
+    expect(tints()).toEqual([]);
+    expect(scene.querySelector('.slx-veil-night')!.classList.contains('slx-on')).toBe(true);
+    d.moon = 'full';
+    d.setPlace({ text: '月影旅館・深夜', night: true });
+    expect(tints()).toEqual(['slx-moon-full']);
+    d.moon = 'new';
+    d.setPlace({ text: '月影旅館・夜', night: true });
+    expect(tints()).toEqual(['slx-moon-new']);
+    d.setPlace({ text: '月影旅館・清晨' });               // a day card: no veil, no tint
+    expect(tints()).toEqual([]);
+    expect(scene.querySelector('.slx-veil-night')!.classList.contains('slx-on')).toBe(false);
+  });
+
+  it('the tint goes with the card (time and moon Task 5)', () => {
+    const scene = document.createElement('div');
+    const d = new Dialogue(Infinity);
+    scene.append(d.el);
+    d.moon = 'waning';
+    d.setPlace({ text: '月影旅館・夜', night: true });
+    const veil = scene.querySelector('.slx-veil-night')!;
+    expect(veil.classList.contains('slx-moon-waning')).toBe(true);
+    d.setPlace(null);
+    expect([...veil.classList].filter((c) => c.startsWith('slx-moon-'))).toEqual([]);
+    d.moon = null;
+    d.setPlace({ text: '月影旅館・夜', night: true });
+    expect([...veil.classList].filter((c) => c.startsWith('slx-moon-'))).toEqual([]);
+  });
+
   it('memory style marks the box', () => {
     const d = new Dialogue(Infinity);
     d.setStyle('memory');

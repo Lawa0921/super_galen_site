@@ -166,3 +166,38 @@ describe("ClearScene: the eve as the finale's fallback (story L Task 3d)", () =>
     }
   });
 });
+
+describe('ClearScene: the eve under its moon (time and moon Task 5)', () => {
+  const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+  it("the eve in the finale's list wears the same moon", async () => {
+    const game = new Game(constRng(0.5), null);
+    for (const c of ['selene', 'noel'] as const) {
+      game.state.party = meet(game.state.party, c, 1);
+      game.state.party.roster[c].memories = 1;
+    }
+    game.state.story.untold = ['mem:selene:1', 'mem:noel:1'];
+    game.state.story.day = 3;   // the finale's dive: last night was day 2's, a new moon
+    game.phase = 'clear';
+    game.cleared = 'finale';
+    game.finale = { pieces: ['finale-eve', 'mem:selene:1', 'mem:noel:1', 'mem:hero:10'] };
+    game.eve = ['mem:selene:1', 'mem:noel:1'];
+    const root = document.createElement('div');
+    const s = new ClearScene({
+      game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(),
+      settings: { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant', story: 'all' }) },
+    });
+    s.enter(root);
+    const eve = 1 + linesOf('mem:selene:1', game.state).length + linesOf('mem:noel:1', game.state).length + 1;   // the eve's line, two memories, a beat
+    const tints: string[] = [];
+    for (let i = 0; i < 80 && !root.querySelector('.slx-clear-card'); i++) {
+      const veil = root.querySelector('.slx-veil-night.slx-on');
+      tints.push(veil ? [...veil.classList].filter((c) => c.startsWith('slx-moon-')).join(' ') : '-');
+      s.onAction('confirm');
+      await tick();
+    }
+    expect(root.querySelector('.slx-clear-card')).not.toBeNull();
+    expect(tints.slice(0, eve).every((t) => t === 'slx-moon-new'), tints.join('|')).toBe(true);
+    expect(tints.slice(eve).some((t) => t.startsWith('slx-moon-'))).toBe(false);   // the finale's own scenes: no moon
+    expect((s as unknown as { talk: { moon: unknown } }).talk.moon).toBeNull();
+  });
+});

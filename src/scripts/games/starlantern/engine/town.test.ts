@@ -12,6 +12,7 @@ import { EQUIPMENT } from '../data/equipment';
 import { ITEMS } from '../data/items';
 import { PERKS } from '../data/story/fragments';
 import type { ItemInstance } from './types';
+import { MAX_DAY, dayOf } from './calendar';
 
 const withInv = (inv: Record<string, number>, gold = 150) => ({ ...newGame(undefined, 0, LEGACY_LINEUP), inventory: inv, gold });
 const withBag = (bag: ItemInstance[]) => ({ ...newGame(undefined, 0, LEGACY_LINEUP), bag, nextUid: Math.max(0, ...bag.map((it) => it.uid)) + 1 });
@@ -167,6 +168,33 @@ describe('useFieldItem', () => {
     expect(useFieldItem(s, 'potion', 'liz')).toEqual({ ok: false, reason: 'invalid' });
     expect(useFieldItem({ ...s, inventory: {} }, 'potion', 'noel')).toEqual({ ok: false, reason: 'stock' });
     expect(useFieldItem(s, 'return-lamp', 'noel')).toEqual({ ok: false, reason: 'invalid' });
+  });
+  it("a potion on a member above max HP (an altar's leftover) keeps the extra (time and moon Task 9)", () => {
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
+    const max = statsOf(s.party.roster.liz).hp;
+    s.party.roster.liz.hp = max + 20;
+    const r = useFieldItem(s, 'potion', 'liz');
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.state.party.roster.liz.hp).toBe(max + 20);
+    expect(r.state.inventory.potion).toBe(START_ITEMS.potion - 1);   // used up all the same, as before
+  });
+  it('a potion below max still heals up to max, not past it (time and moon Task 9)', () => {
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
+    const max = statsOf(s.party.roster.liz).hp;
+    s.party.roster.liz.hp = max - 10;
+    const r = useFieldItem(s, 'potion', 'liz');
+    expect(r.ok && r.state.party.roster.liz.hp).toBe(max);
+  });
+  it('TP above max is kept too (time and moon Task 9)', () => {
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
+    s.inventory.ether = 1;
+    const max = statsOf(s.party.roster.noel).tp;
+    s.party.roster.noel.tp = max + 7;
+    const r = useFieldItem(s, 'ether', 'noel');
+    expect(r.ok && r.state.party.roster.noel.tp).toBe(max + 7);
+    s.party.roster.noel.tp = max - 5;
+    const low = useFieldItem(s, 'ether', 'noel');
+    expect(low.ok && low.state.party.roster.noel.tp).toBe(max);
   });
 });
 
@@ -397,5 +425,30 @@ describe('townsfolk returns change the town', () => {
     expect(fed.ok && fed.state.story.fed).toBe(true);
     expect(m.story.fed).toBe(false);
     expect(rest({ ...m, gold: 0 })).toEqual({ ok: false, reason: 'gold' });
+  });
+});
+
+describe('time and moon: a night at the inn (Task 1)', () => {
+  it('a night at the inn is one day, saved with the rest', () => {
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
+    const r = rest(s);
+    if (!r.ok) throw new Error('rest failed');
+    expect(r.state.story.day).toBe(2);
+    expect(dayOf(s)).toBe(1);   // the state passed in is not changed
+    const again = rest({ ...r.state, gold: 150 });
+    expect(again.ok && again.state.story.day).toBe(3);
+    // what the inn saves holds the next day (a save needs the hero on the field: the default lineup)
+    const inn = rest(newGame());
+    if (!inn.ok) throw new Error('rest failed');
+    const st = memoryStorage();
+    expect(saveGame(st, inn.state)).toBe(true);
+    const loaded = loadGame(st);
+    expect(loaded.status === 'ok' && loaded.state.story.day).toBe(2);
+    // the last day stays the last
+    const end = { ...newGame(undefined, 0, LEGACY_LINEUP), story: { ...s.story, day: MAX_DAY } };
+    const last = rest(end);
+    expect(last.ok && last.state.story.day).toBe(MAX_DAY);
+    // no gold, no night: the day stays
+    expect(rest({ ...s, gold: 0 })).toEqual({ ok: false, reason: 'gold' });
   });
 });

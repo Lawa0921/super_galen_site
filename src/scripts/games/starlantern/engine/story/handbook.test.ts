@@ -1,12 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import { CHARACTER_IDS } from '../../data/characters';
+import { afterEach, describe, it, expect } from 'vitest';
+import { CHARACTERS, CHARACTER_IDS } from '../../data/characters';
 import { ENEMIES } from '../../data/enemies';
 import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { chainLength, CHAINS } from '../../data/story/chains';
 import { TOWN_FRAGMENTS } from '../../data/story/fragments';
-import { CHAT_COUNT, HOME_OWNERS, SCENE_IDS, STAGES, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
-import { STORY } from '../../data/story.zh-TW';
+import { CHAT_COUNT, HOME_OWNERS, SCENE_IDS, SEASON_SCENES, STAGES, homeScene, memScene, sceneKind, type SceneId } from '../../data/story/scenes';
+import { SEASON_TITLES, STORY } from '../../data/story.zh-TW';
+import { T } from '../../data/text.zh-TW';
 import { meet } from '../party';
 import { newGame, type GameState } from '../state';
 import type { CharacterId } from '../types';
@@ -110,7 +111,9 @@ describe("the adventurer's handbook", () => {
     const s = everything();
     for (const c of HOME_OWNERS) {
       const page = handbook(s).people.find((p) => p.id === c)!;
-      expect(page.scenes.map((e) => e.scene).slice(-1), c).toEqual([homeScene(c)]);
+      // time and moon Task 8: the spring festival follows Chizuru's homecoming on her page
+      const tail: SceneId[] = c === 'chizuru' ? [homeScene(c), 'season:spring'] : [homeScene(c)];
+      expect(page.scenes.map((e) => e.scene).slice(-tail.length), c).toEqual(tail);
     }
     s.story.seen = s.story.seen.filter((id) => id !== 'home:liz');
     expect(handbook(s).people.find((p) => p.id === 'liz')!.scenes.map((e) => e.scene)).not.toContain('home:liz');
@@ -390,5 +393,49 @@ describe("the handbook's leads (6c Task 16)", () => {
     expect(leads.current).toBeNull();
     expect(leads.followed).toHaveLength(8);
     expect(leads.allMet).toBe(true);
+  });
+});
+
+describe('time and moon: the handbook says the moon (Task 4)', () => {
+  it('a moon piece not found yet says its moon in the hint', () => {
+    const s = withMemories(fresh(), 'selene', 0);
+    const where = CHAINS.selene.pieces[0].regions.map((r) => REGIONS[r].name).join('、');
+    const hints = handbook(s).memories.find((m) => m.id === 'selene')!.pieces.map((p) => p.hint);
+    expect(hints).toEqual([`${where}・淺層`, `${where}・深處・滿月`, `${where}・深處`, `${where}・深處・滿月`, `${where}・深處・新月`]);
+    // no other chain waits on a moon: no moon in its hints
+    for (const id of CHARACTER_IDS.filter((c) => c !== 'selene')) {
+      for (const p of handbook(withMemories(fresh(), id, 0)).memories.find((m) => m.id === id)!.pieces) expect(p.hint, id).not.toMatch(/[新滿]月|[上下]弦/);
+    }
+  });
+
+  it('a piece under more than one moon names them all', () => {
+    expect(T.ui2.handbook.pieceHint('本道', true, '新月、滿月')).toBe('本道・深處・新月、滿月');
+    expect(T.ui2.handbook.pieceHint('本道', false)).toBe('本道・淺層');
+    const where = CHAINS.selene.pieces[1].regions.map((r) => REGIONS[r].name).join('、');
+    const piece = CHAINS.selene.pieces[1];
+    const was = piece.when;
+    piece.when = { moon: ['new', 'full'] };
+    try {
+      expect(handbook(withMemories(fresh(), 'selene', 0)).memories.find((m) => m.id === 'selene')!.pieces[1].hint).toBe(`${where}・深處・新月、滿月`);
+    } finally {
+      piece.when = was;
+    }
+  });
+});
+
+describe('time and moon: the spring festival in the handbook (Task 7)', () => {
+  it("the festival sits after Chizuru's homecoming on her page", () => {
+    expect(SEASON_SCENES.spring).toBe('season:spring');   // Task 8: written and registered
+    const s = withMemories(fresh(), 'chizuru', chainLength('chizuru'));
+    for (let n = 1; n <= chainLength('chizuru'); n++) s.story.seen.push(memScene('chizuru', n));
+    s.story.seen.push('home:chizuru');
+    const page = () => handbook(s).people.find((p) => p.id === 'chizuru')!.scenes.map((e) => e.scene);
+    expect(page().at(-1)).toBe('home:chizuru');   // not yet seen: not listed
+    s.story.seen.push('season:spring');
+    s.story.fresh = ['season:spring'];
+    expect(page().slice(-2)).toEqual(['home:chizuru', 'season:spring']);
+    expect(handbook(s).people.find((p) => p.id === 'chizuru')!.scenes.at(-1)).toMatchObject({ title: `${CHARACTERS.chizuru.name}・春祭`, fresh: true });
+    // no one else's page lists it
+    for (const p of handbook(s).people.filter((x) => x.id !== 'chizuru')) expect(p.scenes.map((e) => e.scene)).not.toContain('season:spring');
   });
 });

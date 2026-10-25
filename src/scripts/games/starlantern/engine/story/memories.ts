@@ -1,6 +1,6 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import type { RegionId } from '../../data/regions';
-import { CHAINS, ELITE_PIECE_CHANCE, HERO_TOPUP, MEMORY_PITY, whenHolds, type FragmentSource } from '../../data/story/chains';
+import { CHAINS, ELITE_PIECE_CHANCE, HERO_TOPUP, MEMORY_PITY, whenHolds, type CalendarNow, type FragmentSource } from '../../data/story/chains';
 import type { ShardGrade, TownFragmentId } from '../../data/story/fragments';
 import type { CharacterId, Party } from '../types';
 import { memoriesOf } from '../progression';
@@ -17,7 +17,11 @@ export type FragmentGain =
   | { kind: 'shard'; grade: ShardGrade }
   | { kind: 'town'; id: TownFragmentId };
 
-export interface PieceCtx { region: RegionId; depth: number; source: FragmentSource; who?: CharacterId }
+/**
+ * `cal` (time and moon plan ruling 3): today, as the game sees it in the labyrinth. Given, a piece's calendar gate must hold;
+ * absent (the expectation, the pace, the sim), every gate holds, as before.
+ */
+export interface PieceCtx { region: RegionId; depth: number; source: FragmentSource; who?: CharacterId; cal?: CalendarNow }
 
 /** Salts the memory drops' own rng, so a drop never takes a draw from the loot rolls. */
 export const MEMORY_SALT = 0x510e527f;
@@ -43,7 +47,7 @@ export function eligible(p: Party, id: CharacterId, ctx: PieceCtx): boolean {
   const piece = CHAINS[id].pieces[n - 1];
   if (!piece.regions.includes(ctx.region)) return false;
   if (!Number.isFinite(ctx.depth) || ctx.depth < piece.minDepth) return false;
-  if (!whenHolds(piece.when)) return false;
+  if (!whenHolds(piece.when, ctx.cal)) return false;
   if (piece.bossOnly && ctx.source !== 'boss') return false;
   return true;
 }
@@ -74,7 +78,10 @@ export function pieceDrops(p: Party, pity: Pity, ctx: PieceCtx, rng: Rng): Chara
   return [pick(rng, tied)];
 }
 
-/** Pity after a cleared floor: chains that could drop here and did not gain 1 (to MAX_PITY); a chain that dropped resets to 0. */
+/**
+ * Pity after a cleared floor: chains that could drop here and did not gain 1 (to MAX_PITY); a chain that dropped resets to 0.
+ * It takes no calendar (time and moon ruling 3): while Selene waits for her moon her pity still counts the floors.
+ */
 export function pityAfterFloor(p: Party, pity: Pity, region: RegionId, depth: number, dropped: CharacterId[]): Pity {
   const next: Pity = { ...pity };
   const ctx: PieceCtx = { region, depth, source: 'glimmer' };
@@ -89,15 +96,29 @@ export function pityAfterFloor(p: Party, pity: Pity, region: RegionId, depth: nu
  * Chains whose glimmer on this floor must hold their piece, in roster order, at most FORCED_GLIMMERS.max: pity at
  * MEMORY_PITY; and Rin on the main road while she has no piece yet, or once the depth reaches her last piece's
  * threshold (her catch-up, so a player who reaches the finale without her choice gets her next piece every floor).
+ * Given `cal` (time and moon ruling 3, review fix 1), a chain whose next piece waits on the moon, tonight's moon, eligible
+ * and its pity due, is added after those, beyond the cap: the moon's first floor always holds her glimmer. Without `cal`
+ * (the expectation, the pace, the sim) the list is as before.
  */
-export function forcedGlimmers(p: Party, pity: Pity, region: RegionId, depth: number): CharacterId[] {
-  const ctx: PieceCtx = { region, depth, source: 'glimmer' };
+export function forcedGlimmers(p: Party, pity: Pity, region: RegionId, depth: number, cal?: CalendarNow): CharacterId[] {
+  const ctx: PieceCtx = { region, depth, source: 'glimmer', ...(cal ? { cal } : {}) };
   const rinLast = CHAINS.rin.pieces[CHAINS.rin.pieces.length - 1].minDepth;
-  return CHARACTER_IDS.filter((id) => {
+  const due = CHARACTER_IDS.filter((id) => {
     if (!eligible(p, id, ctx)) return false;
     if (id === 'rin' && region === 'mainline' && (memoriesOf(p.roster.rin) === 0 || depth >= rinLast)) return true;
     return (pity[id] ?? 0) >= MEMORY_PITY;
-  }).slice(0, FORCED_GLIMMERS.max);
+  });
+  const capped = due.slice(0, FORCED_GLIMMERS.max);
+  if (!cal) return capped;
+  const moonDue = due.filter((id) => !capped.includes(id) && (pity[id] ?? 0) >= MEMORY_PITY && waitsOnMoon(p, id, cal));
+  return [...capped, ...moonDue];
+}
+
+/** Whether `id`'s next piece has a moon in its gate and `cal` is under it. */
+function waitsOnMoon(p: Party, id: CharacterId, cal: CalendarNow): boolean {
+  const n = nextPiece(p, id);
+  const moon = n === null ? undefined : CHAINS[id].pieces[n - 1].when?.moon;
+  return !!moon && moon.includes(cal.moon);
 }
 
 /** Adds one piece per entry, in order; an id with no member, or a complete chain, is skipped; `gained` numbers each piece. The given party is not changed. */

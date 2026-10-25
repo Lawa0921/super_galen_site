@@ -16,6 +16,7 @@ import { tierUnlocked } from './tiers';
 import { buildOf } from '../data/builds';
 import { BANTER_PAIRS, GROUP_GATE, isSceneId, type BanterPair } from '../data/story/scenes';
 import { MAX_WAITED } from './story/events';
+import { MAX_DAY, SPRING_AFTER } from './calendar';
 import { ABSORB_CAP, ABSORB_GAIN, TOWN_FRAGMENTS } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 import { NIGHT_BEATS } from '../data/story.zh-TW';
@@ -110,6 +111,11 @@ function isStory(v: unknown): boolean {
   // story L: a group scene's chances, one of the three groups not yet seen, 0 or 1
   if (v.reacts !== undefined && !(isObj(v.reacts) && Object.entries(v.reacts).every(([k, n]) => Object.hasOwn(GROUP_GATE, k) && !(v.seen as unknown[]).includes(k) && (n === 0 || n === 1)))) return false;
   if (v.waited !== undefined && !(isObj(v.waited) && Object.entries(v.waited).every(([k, n]) => BANTER_PAIRS.includes(k as BanterPair) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= MAX_WAITED))) return false;
+  // time and moon (ruling 12): today, a whole day from 1 to MAX_DAY; spring's day, only once the finale is cleared
+  if (v.day !== undefined && !(Number.isInteger(v.day) && (v.day as number) >= 1 && (v.day as number) <= MAX_DAY)) return false;
+  if (v.springDay !== undefined && !(v.finaleCleared && Number.isInteger(v.springDay) && (v.springDay as number) >= 1 && (v.springDay as number) <= MAX_DAY + SPRING_AFTER)) return false;
+  // the season's scene a return recorded (Task 7 review): a registered season scene, after the finale, not yet seen
+  if (v.festival !== undefined && !(isSceneId(v.festival) && v.festival.startsWith('season:') && v.finaleCleared && !(v.seen as unknown[]).includes(v.festival))) return false;
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }
 

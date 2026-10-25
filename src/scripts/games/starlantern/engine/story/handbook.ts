@@ -4,7 +4,7 @@ import { SETS, SPECIALS } from '../../data/gear';
 import { REGIONS } from '../../data/regions';
 import { CHAINS, chainLength } from '../../data/story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from '../../data/story/fragments';
-import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, banterScene, groupScene, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
+import { BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, HOME_OWNERS, SEASON_SCENES, banterScene, groupScene, homeScene, memScene, type HomeOwner, type SceneId, type Stage, STAGES } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { memoriesOf } from '../progression';
@@ -36,10 +36,14 @@ const TRUTH_SCENE: Record<Stage, SceneId> = {
   prologue: 'prologue', act1: 'act1-after', act2: 'act2', act3: 'act3', act4: 'act4', after: 'finale',
 };
 
-/** How deep a piece lies (spec §7.6): the example reads 「熾焰之地・深處」. */
+/**
+ * How deep a piece lies (spec §7.6): the example reads 「熾焰之地・深處」. A piece that waits on the moon says which (time
+ * and moon ruling 4): 「…・深處・滿月」, several joined by 「、」.
+ */
 const hintOf = (id: CharacterId, i: number): string => {
   const p = CHAINS[id].pieces[i];
-  return T.ui2.handbook.pieceHint(p.regions.map((r) => REGIONS[r].name).join('、'), p.minDepth >= 6);
+  const moon = p.when?.moon?.map((m) => T.ui2.calendar.moon[m]).join('、');
+  return T.ui2.handbook.pieceHint(p.regions.map((r) => REGIONS[r].name).join('、'), p.minDepth >= 6, moon);
 };
 
 /** Titles, newness and the seen-only rule, for one state. */
@@ -75,6 +79,8 @@ export function handbook(s: GameState): Handbook {
     const k = !met ? 0 : id === 'rin' && m.oath ? 4 : have >= len ? 3 : have >= Math.ceil(len / 2) ? 2 : 1;
     const chats = Array.from({ length: CHAT_COUNT[id] }, (_, i): SceneId => `chat:${id}:${i + 1}`);
     const home: SceneId[] = (HOME_OWNERS as string[]).includes(id) ? [homeScene(id as HomeOwner)] : [];
+    // Time and moon ruling 7: the spring festival at her shrine sits on Chizuru's page, after her homecoming.
+    if (id === 'chizuru' && SEASON_SCENES.spring) home.push(SEASON_SCENES.spring);
     // B1: a banter sits on the page of each of its two, after her chats, in the pairs' fixed order.
     const banters = BANTER_PAIRS.filter((p) => p.split('-').includes(id))
       .flatMap((p) => Array.from({ length: BANTER_COUNT[p] ?? 0 }, (_, i) => banterScene(p, i + 1)));

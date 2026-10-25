@@ -20,6 +20,8 @@ import type { CharacterId } from './types';
 import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 import { NIGHT_BEATS } from '../data/story.zh-TW';
+import { MAX_DAY, SPRING_AFTER, dayOf } from './calendar';
+import { SEASON_SCENES, isSceneId, type SceneId } from '../data/story/scenes';
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -1186,5 +1188,121 @@ describe('story L: the dawn pick in the save (controller ruling 2026-10-24)', ()
       mut(g);
       expect(status(g), name).toBe('corrupt');
     }
+  });
+});
+
+describe('time and moon: the day in the save (Task 1)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  /** The finale cleared on day 40: spring on day 44. */
+  const cleared = (): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.story.day = 41;
+    g.story.springDay = 44;
+    return g;
+  };
+
+  it('day and springDay save and load', () => {
+    const st = memoryStorage();
+    expect(saveGame(st, cleared())).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && [r.state.story.day, r.state.story.springDay]).toEqual([41, 44]);
+    const edge = cleared();
+    edge.story.day = MAX_DAY;
+    edge.story.springDay = MAX_DAY + SPRING_AFTER;
+    expect(status(edge)).toBe('ok');
+    edge.story.day = 1;
+    edge.story.springDay = 1;
+    expect(status(edge)).toBe('ok');
+  });
+
+  it('a day below 1, a fraction, or above MAX_DAY is refused', () => {
+    for (const day of [0, -1, 1.5, MAX_DAY + 1, '3', null, Number.NaN]) {
+      const g = newGame();
+      (g.story as { day?: unknown }).day = day;
+      expect(status(g), String(day)).toBe('corrupt');
+    }
+  });
+
+  it('springDay without the finale cleared is refused', () => {
+    const g = newGame();
+    g.story.springDay = 5;
+    expect(status(g)).toBe('corrupt');
+    for (const springDay of [0, 2.5, MAX_DAY + SPRING_AFTER + 1, '44']) {
+      const c = cleared();
+      (c.story as { springDay?: unknown }).springDay = springDay;
+      expect(status(c), String(springDay)).toBe('corrupt');
+    }
+    const absent = cleared();
+    delete absent.story.springDay;
+    expect(status(absent)).toBe('ok');   // read as spring already (ruling 6)
+  });
+
+  it('a save without day reads as day 1', () => {
+    const st = memoryStorage();
+    expect(saveGame(st, newGame())).toBe(true);
+    const r = loadGame(st);
+    if (r.status !== 'ok') throw new Error(r.status);
+    expect(r.state.story.day).toBeUndefined();
+    expect(dayOf(r.state)).toBe(1);
+  });
+});
+
+describe('time and moon: the spring festival in the save (Task 7)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  const cleared = (): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.story.day = 30;
+    g.story.springDay = 24;
+    g.story.seen.push('season:spring');
+    return g;
+  };
+  it('a queued or seen season:spring loads, only once it is registered', () => {
+    expect(SEASON_SCENES.spring).toBe('season:spring');   // Task 8 wrote and registered it
+    expect(status(cleared())).toBe('ok');
+    // a season with no scene written is not a scene
+    const summer = cleared();
+    summer.story.seen.push('season:summer' as SceneId);
+    expect(status(summer)).toBe('corrupt');
+    const queued = newGame();
+    queued.story.queue.push('season:spring');
+    expect(status(queued)).toBe('ok');
+    expect(isSceneId('season:spring')).toBe(true);
+    expect(isSceneId('season:summer')).toBe(false);
+  });
+});
+
+describe('time and moon: the festival recorded in the save (Task 7 review)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  const recorded = (): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.story.day = 21;
+    g.story.springDay = 20;
+    g.story.festival = 'season:spring';
+    return g;
+  };
+  it('festival saves and loads; one unregistered, not a season scene, before the finale or already seen is refused', () => {
+    const st = memoryStorage();
+    expect(saveGame(st, recorded())).toBe(true);
+    const r = loadGame(st);
+    expect(r.status === 'ok' && r.state.story.festival).toBe('season:spring');
+    const cases: [string, (g: GameState) => void][] = [
+      ['not a season scene', (g) => { (g.story as { festival?: unknown }).festival = 'home:chizuru'; }],
+      ['before the finale', (g) => { g.story.finaleCleared = false; delete g.story.springDay; }],
+      ['already seen', (g) => { g.story.seen.push('season:spring'); }],
+    ];
+    for (const [name, mut] of cases) {
+      const g = recorded();
+      mut(g);
+      expect(status(g), name).toBe('corrupt');
+    }
+    const summer = recorded();
+    (summer.story as { festival?: unknown }).festival = 'season:summer';   // no such scene written
+    expect(status(summer), 'unregistered').toBe('corrupt');
   });
 });

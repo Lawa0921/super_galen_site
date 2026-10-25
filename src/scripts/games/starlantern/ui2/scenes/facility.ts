@@ -2,6 +2,7 @@ import { STORY, type ScriptLine } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { storyStage } from '../../engine/story/events';
 import type { SceneId } from '../../data/story/scenes';
+import type { MoonPhase } from '../../data/story/chains';
 import { art } from '../../render/artPaths';
 import { el } from '../../ui/dom';
 import type { UiAction } from '../input';
@@ -197,6 +198,11 @@ export abstract class FacilityScene implements Scene {
     this.syncInert();
     // A scene that throws is reported and treated as over, so the caller carries on (the guild still pays the reward line).
     return p.done.catch((e) => { console.error('starlantern: facility scene failed', e); }).finally(() => { this.playing = null; this.talking = false; for (const e of [this.cmdWin, this.place, this.gold]) e.classList.remove('slx-cmd-hidden'); this.syncInert(); });
+  }
+
+  /** Time and moon ruling 8: the moon a night card's veil wears in this facility's box (null: the plain night). */
+  protected setMoon(moon: MoonPhase | null): void {
+    this.talk.moon = moon;
   }
 
   /** Story L: plays `ids` as a night in this facility's box (`playNight`): memories under the night's card, a beat between two. */

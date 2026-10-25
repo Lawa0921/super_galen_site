@@ -5,9 +5,20 @@ export type MoonPhase = 'new' | 'waxing' | 'full' | 'waning';
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 /** Calendar gate of a memory piece (spec §11.1). */
 export interface When { moon?: MoonPhase[]; time?: 'day' | 'night'; season?: Season[] }
+/** Today as a piece's gate reads it (time and moon plan ruling 3; `engine/story/events.ts` `calendarOf`). */
+export interface CalendarNow { moon: MoonPhase; season: Season; time: 'day' | 'night' }
 
-/** Always true until item 4 (the calendar) lands. */
-export const whenHolds = (_w?: When): boolean => true;
+/**
+ * Whether a calendar gate holds today (time and moon ruling 3): every field written must match `cal`. With no gate, or no
+ * calendar given (the expectation, the pace and the sim walk without one), it holds.
+ */
+export const whenHolds = (w?: When, cal?: CalendarNow): boolean => {
+  if (!w || !cal) return true;
+  if (w.moon && !w.moon.includes(cal.moon)) return false;
+  if (w.time && w.time !== cal.time) return false;
+  if (w.season && !w.season.includes(cal.season)) return false;
+  return true;
+};
 
 /** `gather` is the hook for item 5; nothing in plan 6b uses it. */
 export type FragmentSource = 'boss' | 'elite' | 'glimmer' | 'chest' | 'vault' | 'gather';

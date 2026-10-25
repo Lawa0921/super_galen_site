@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { CHAINS, chainLength } from '../../data/story/chains';
+import { CHAINS, chainLength, type CalendarNow, type MoonPhase } from '../../data/story/chains';
 import { ABSORB_CAP, ABSORB_GAIN } from '../../data/story/fragments';
 import { floorOf, newRun } from '../dungeon/run';
 import { STANDARD_LINEUP } from '../party';
 import type { CharacterId } from '../types';
-import { EXPECT_ELITE_EVERY, expectedMemories, memoryPace } from './expect';
+import { EXPECT_ELITE_EVERY, EXPECT_SEED, expectedMemories, memoryPace, walkFloor } from './expect';
+import { memoriesOf } from '../progression';
 import { FORCED_GLIMMERS, applyPieces, eligible, forcedGlimmers, pityAfterFloor, type Pity } from './memories';
 import { MEMORY_PITY } from '../../data/story/chains';
 import { meet } from '../party';
@@ -163,5 +164,39 @@ describe('expectedMemories (spec §9.4 point 7)', () => {
     a.hero.memories = 99;
     expect(expectedMemories(12, STANDARD_LINEUP).hero.memories).toBeLessThanOrEqual(chainLength('hero'));
     expect(expectedMemories(12, STANDARD_LINEUP).hero.absorbed).not.toContainEqual({ stat: 'hp', amount: 999 });
+  });
+});
+
+describe('time and moon: the expectation and the moon (Task 2)', () => {
+  const MOONS: MoonPhase[] = ['new', 'waxing', 'full', 'waning'];
+  const cal = (moon: MoonPhase): CalendarNow => ({ moon, season: 'autumn', time: 'day' });
+  const fresh = (ids: CharacterId[]) => ({ ...newGame(mulberry32(EXPECT_SEED), EXPECT_SEED, ids), inventory: {} });
+  const road = () => newRun(EXPECT_SEED, 'mainline', 'plain', 1);
+
+  it('walkFloor matches the calendar-free floor under every moon when no moon piece is due', () => {
+    let s = fresh(['hero', 'rin', 'chizuru']);
+    let pity: Pity = {};
+    for (let d = 1; d <= 15; d++) {
+      const plain = walkFloor(s, pity, 'mainline', d, road());
+      for (const moon of MOONS) expect(walkFloor(s, pity, 'mainline', d, road(), cal(moon)), `depth ${d}, ${moon}`).toEqual(plain);
+      s = plain.state;
+      pity = plain.pity;
+    }
+  });
+
+  it("with Selene's second piece due, only the full moon's floor gives it", () => {
+    const s = fresh(['hero', 'selene']);
+    s.party.roster.selene.memories = 1;
+    const pity: Pity = { selene: MEMORY_PITY };
+    for (const moon of MOONS) {
+      const f = walkFloor(s, pity, 'mainline', 6, road(), cal(moon));
+      if (moon === 'full') expect([memoriesOf(f.state.party.roster.selene), f.pity.selene], moon).toEqual([2, 0]);
+      else expect([memoriesOf(f.state.party.roster.selene), f.pity.selene], moon).toEqual([1, MEMORY_PITY + 1]);
+    }
+    expect(memoriesOf(s.party.roster.selene)).toBe(1);   // the given state is not changed
+  });
+
+  it('the expectation takes no calendar', () => {
+    expect(memoryPace('selene')).toEqual([5, 8, 11, 14, 17]);   // measured at Task 0 (baseline.md)
   });
 });

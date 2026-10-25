@@ -324,6 +324,33 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
     },
   },
+  ...(['full', 'new'] as const).map((moon) => ({
+    // Time and moon (Task 5): a night told under tonight's moon, the veil tinted (full: lighter and bluer; new: darker).
+    name: `night-moon-${moon}`, visit: async (page: Page, w: SpecHelpers) => {
+      await readAll(page, w);   // what is still on screen
+      await page.evaluate((day) => {
+        const d = (window as unknown as { __starlanternDebug: { game: { arrival: string[]; night: string[]; state: { story: { day?: number } } } } }).__starlanternDebug;
+        d.game.arrival = [];
+        d.game.night = ['mem:rin:1'];
+        d.game.state.story.day = day;   // tonight is the day before's
+      }, moon === 'full' ? 5 : 3);
+      await go(page, 'town');
+      await expect(page.locator('.slx-town .slx-talk')).toBeVisible();
+      await w.key('z');   // the day's line
+      if (!(await page.locator('.slx-town .slx-place-card').isVisible())) await w.key('z');   // the line whole first
+      await expect(page.locator(`.slx-town .slx-veil-night.slx-on.slx-moon-${moon}`)).toHaveCount(1);
+      // Task 7 review: on to the memory's present lines, so no sepia past veil hides the moon's tint
+      for (let i = 0; i < 20 && (await page.locator('.slx-town .slx-talk.slx-talk--memory').count()) > 0; i++) {
+        if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+        await w.key('z');
+      }
+      await expect(page.locator('.slx-town .slx-talk.slx-talk--memory')).toHaveCount(0);
+      await expect(page.locator('.slx-town .slx-veil-past.slx-on')).toHaveCount(0);
+      await expect(page.locator(`.slx-town .slx-veil-night.slx-on.slx-moon-${moon}`)).toHaveCount(1);
+      if (!(await page.locator('.slx-town .slx-talk .slx-next').isVisible())) await w.key('z');   // the line whole
+      await page.waitForTimeout(500);   // the past veil fades out (0.45s)
+    },
+  })),
   {
     // Story L: a group scene, the first thing of the night, under its own card (the inn's dinner, not the night's).
     name: 'group-scene', visit: async (page, w) => {
@@ -451,6 +478,16 @@ export const SWEEP: { name: string; visit(page: Page, w: SpecHelpers): Promise<v
       await expect(rin.locator('.slx-fresh')).toHaveText(T.ui2.handbook.fresh);
       await rin.click();
       await expect(page.locator('.slx-handbook .slx-hb-list [role=option] .slx-fresh').first()).toHaveText(T.ui2.handbook.fresh);
+    },
+  },
+  {
+    // Time and moon (Task 4): Selene's pieces not found yet say the moon each waits for, the longest hints in the list.
+    name: 'handbook-moon', visit: async (page) => {
+      await go(page, 'handbook');
+      await page.locator('.slx-handbook .slx-hb-list [role=option][data-id=selene]').click();
+      const full = page.locator('.slx-handbook .slx-hb-list [role=option]').filter({ hasText: `・${T.ui2.calendar.moon.full}` });
+      await expect(full.first()).toBeVisible();
+      await expect(page.locator('.slx-handbook .slx-hb-list [role=option]').filter({ hasText: `・${T.ui2.calendar.moon.new}` })).toHaveCount(1);
     },
   },
   {
