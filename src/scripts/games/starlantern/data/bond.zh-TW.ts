@@ -326,6 +326,209 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
     ],
     summary: '千鶴說，她在祭典之前遲到了很多年；在這裡，她一次也沒有遲到過。',
   },
+
+  // ---- bond plan Task 18: Safira (arcs v7). 小洛, never his name; 唷 and 呀; her jokes keep off the troupe.
+  'bond:safira:1': {
+    lines: [
+      { who: 'narrator', place: PL.square, text: '廣場。石板上用粉筆畫了一整條舞步，每一個腳印，都剛好擋在洛恩平常溜走的那條路上。' },
+      { who: 'narrator', text: '他繞了一圈，腳印也跟著繞了一圈。莎菲拉昨晚補畫到半夜。' },
+      { who: 'safira', mood: 'wink', text: '「小洛，這邊！整條都是給你一個人的舞台唷～」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「這是誰的腳印？」', reply: [
+          { who: 'safira', mood: 'laugh', text: '「你的呀！第一步踩這裡，第二步轉半圈，第三步最難，很多人踩空呀。」' },
+          { who: 'narrator', text: '她一路跳給他看，跳到第八步才停。' },
+        ] },
+        { tone: 'stay', text: '（站在第一個腳印上，不動。）', reply: [{ who: 'safira', mood: 'laugh', text: '「站上去了！掌聲呢？──沒有？那我自己拍。」' }] },
+        { tone: 'promise', text: '「明天我踩一步。」', reply: [{ who: 'safira', mood: 'smile', text: '「一步也算唷～記下了，小洛。」' }] },
+      ] },
+    ],
+    summary: '莎菲拉在廣場畫了一整條粉筆舞步，剛好擋住洛恩平常溜走的路。',
+  },
+  'bond:safira:2': {
+    lines: [
+      { who: 'narrator', place: PL.square, text: '廣場。莎菲拉帶著鎮上的孩子跳舞遊行，孩子們連她踩錯的那一步都學得一模一樣，一路跳出了廣場。' },
+      { who: 'narrator', text: '最後面的那個孩子跟丟了。希爾薇循著腳印在井邊找到他，抱回來，第一次對莎菲拉大聲。', if: { met: 'sylvie' } },
+      { who: 'narrator', text: '最後面的那個孩子跟丟了。洛恩在井邊找到他，把他抱了回來。', if: { notMet: 'sylvie' } },
+      { who: 'sylvie', mood: 'serious', text: '「孩子哭了一路。妳一次都沒有回頭看。」', if: { met: 'sylvie' } },
+      { who: 'safira', mood: 'sad', text: '「跟在我後面的人，總是跟得很緊。我忘了。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「妳忘了什麼？」', reply: [{ who: 'safira', text: '「下一拍再說。我先去道歉──這次不跳著去，用走的。」' }] },
+        { tone: 'stay', text: '（陪她把廣場上的粉筆擦掉。）', reply: [{ who: 'safira', text: '「擦乾淨了。我畫得太長，長到自己都快迷路了唷。明天畫短一點，短到看得見最後一個人。」' }] },
+        { tone: 'promise', text: '「下一場，我走最後面。」', reply: [{ who: 'safira', mood: 'smile', text: '「那最後面就有人了唷。」' }] },
+      ] },
+    ],
+    summary: '莎菲拉帶孩子跳舞遊行，最後面的孩子跟丟了；她一次都沒有回頭。',
+  },
+  'bond:safira:3': {
+    lines: [
+      { who: 'narrator', place: PL.innYard, text: '旅館的後院。莎菲拉把洛恩拉到正中間，自己退到一邊。' },
+      { who: 'safira', mood: 'wink', text: '「今天換小洛數拍子，我跟。」' },
+      { who: 'narrator', text: '他數：一、二、三、五。她的腳抬起來想搶拍，停在半空，又放下，等他數下一個。' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「四去哪了？」', reply: [
+          { who: 'safira', mood: 'laugh', text: '「四是用來喘氣的呀！」' },
+          { who: 'safira', mood: 'smile', text: '「被人數著跳，原來不用一直往前衝。」' },
+        ] },
+        { tone: 'stay', text: '（不數了，只是拍手。）', reply: [{ who: 'safira', mood: 'laugh', text: '「掌聲！是給我的？──收下了唷。」' }] },
+        { tone: 'promise', text: '「明天數到八給妳聽。」', reply: [{ who: 'safira', text: '「說好了唷，數到八，一個都不准跳。」' }] },
+      ] },
+    ],
+    summary: '莎菲拉讓洛恩數拍子，自己跟著跳；他數錯了，她還是等他。',
+  },
+  'bond:safira:4': {
+    lines: [
+      { who: 'narrator', place: PL.square, text: '白天的廣場。莎菲拉站上石階宣布，接下來的節目不准拍手，違者罰跳一支。' },
+      { who: 'narrator', text: '洛恩把手插進口袋。她跳完一整支，停在原地，沒有喊掌聲。' },
+      { who: 'safira', text: '「以前每一首，我都要掌聲。一安靜下來，就怕聽見後面沒有人。」' },
+      { who: 'safira', mood: 'smile', text: '「在這裡，安靜也沒關係。小洛在看，我知道。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「不要掌聲？」', reply: [
+          { who: 'safira', mood: 'smile', text: '「今天不要。被看著，就夠了。」' },
+          { who: 'narrator', text: '她轉了一圈，腳踝上的銅環輕輕響了一聲。' },
+        ] },
+        { tone: 'stay', text: '（不拍手，只是看著她。）', reply: [{ who: 'safira', mood: 'smile', text: '「就是這樣唷。」' }] },
+        { tone: 'promise', text: '「明天的練習，我會到。」', reply: [{ who: 'safira', mood: 'wink', text: '「那明天，我也不要掌聲唷。」' }] },
+      ] },
+      { who: 'narrator', text: '廣場上的人來來去去，誰都沒有拍手，她笑得很開心。' },
+    ],
+    summary: '莎菲拉跳完一支舞，沒有要掌聲；她說安靜也沒關係，因為有人在看。',
+  },
+
+  // ---- Sylvie (arcs v7). 洛恩; her grumbling is how she looks after people; 啦 and 欸 rare, none in her 心契.
+  'bond:sylvie:1': {
+    lines: [
+      { who: 'narrator', place: PL.innYard, text: '旅館的後院。希爾薇蹲在籬笆前，用小刀刻箭頭，一路指向旅館的後門。' },
+      { who: 'sylvie', text: '「半夜迷路的人，看得見這個。」' },
+      { who: 'sylvie', text: '「最後一個指廚房。餓的人也算迷路。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「刻給誰看的？」', reply: [{ who: 'sylvie', text: '「誰都行。看不懂箭頭的，就跟著湯的味道走。」' }] },
+        { tone: 'stay', text: '（蹲下來，替她扶著木板。）', reply: [
+          { who: 'sylvie', text: '「扶歪了啦。」' },
+          { who: 'narrator', text: '她沒有說不用，又多刻了一個小箭頭，指向他。' },
+        ] },
+        { tone: 'promise', text: '「明天我來把剩下的刻完。」', reply: [{ who: 'sylvie', text: '「你刻的會歪。那就歪一個也好。」' }] },
+      ] },
+    ],
+    summary: '希爾薇在後院的籬笆上刻箭頭，最後一個指向廚房。',
+  },
+  'bond:sylvie:2': {
+    lines: [
+      { who: 'narrator', place: PL.innKitchen, text: '旅館的廚房。下迷宮那一趟，希爾薇把兩個人的背包都背了，跑慢半步；洛恩替她擋了一下，手臂劃了一道。' },
+      { who: 'sylvie', text: '「瑪莎的麵包硬得能擋刀，下次拿這個擋。」' },
+      { who: 'sylvie', mood: 'serious', text: '「我背得動。一向都背得動。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「下次背包分我一半？」', reply: [{ who: 'sylvie', text: '「一半太多。三分之一，我再看看。」' }] },
+        { tone: 'stay', text: '（讓她把繃帶纏完。）', reply: [
+          { who: 'narrator', text: '她纏得很仔細，最後打了一個獵人的結。' },
+          { who: 'sylvie', text: '「明天要下雨，傷口別碰水。」' },
+        ] },
+        { tone: 'promise', text: '「明天我自己背。」', reply: [{ who: 'sylvie', text: '「那我在後面看著。背歪了，我會說。」' }] },
+      ] },
+    ],
+    summary: '希爾薇硬是把兩個人的背包都背了；替她擋下那一下的是洛恩。',
+  },
+  'bond:sylvie:3': {
+    lines: [
+      { who: 'narrator', place: PL.innKitchen, text: '旅館的廚房。希爾薇照瑪莎的方子燉了一鍋湯，自己嚐了五口，一口說淡，一口說鹹。' },
+      { who: 'sylvie', text: '「野味我會烤，鍋子裡的鹹淡我不會。你嚐嚐。」' },
+      { who: 'narrator', text: '第六口，她才把勺子交到洛恩手上。' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「要加什麼？」', reply: [{ who: 'sylvie', text: '「加一小撮鹽就好。你別動手，你的一撮太大。」' }] },
+        { tone: 'stay', text: '（把鹽罐推到她手邊。）', reply: [
+          { who: 'narrator', text: '她撒了一小撮，自己又嚐一口，臉紅了。' },
+          { who: 'sylvie', mood: 'blush', text: '「還行。風轉南了，明天收衣服。」' },
+        ] },
+        { tone: 'promise', text: '「下次換我煮。」', reply: [{ who: 'sylvie', text: '「那我先把胃藥準備好。」' }] },
+      ] },
+    ],
+    summary: '希爾薇燉了一鍋湯，嚐了五口還拿不定，第六口才把勺子交給洛恩。',
+  },
+  'bond:sylvie:4': {
+    lines: [
+      { who: 'narrator', place: PL.innLot, text: '旅館旁的空地。那棵芽長高了，三支箭還插在旁邊。希爾薇在籬笆上刻最後一個箭頭，刻歪了。' },
+      { who: 'sylvie', text: '「風害的。」' },
+      { who: 'narrator', text: '刻歪的箭頭，指著那棵芽。' },
+      { who: 'sylvie', mood: 'unguarded', text: '「你那時候不收種子，要我自己種。我一直以為，活下來的人要一直守著，不能停。」' },
+      { who: 'sylvie', mood: 'unguarded', text: '「現在我想看它長大。也想看你們。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「它要長多久？」', reply: [{ who: 'sylvie', text: '「很久。所以我哪裡也不去。」' }] },
+        { tone: 'stay', text: '（蹲在她旁邊，看著那棵芽。）', reply: [
+          { who: 'narrator', text: '她拔起一支箭，插回箭袋。' },
+          { who: 'sylvie', mood: 'unguarded', text: '「它不用人站崗了。」' },
+        ] },
+        { tone: 'promise', text: '「明天早上，我們一起來澆水。」', reply: [{ who: 'sylvie', text: '「水要先曬過，冷的它不喝。」' }] },
+      ] },
+    ],
+    summary: '希爾薇刻了最後一個箭頭，指著那棵芽；她說想看它長大，也想看大家。',
+  },
+
+  // ---- Noel (arcs v7). Scenes 1-3 never name him and never thank him straight; 本小姐, 哼; her notebook is hers alone.
+  'bond:noel:1': {
+    lines: [
+      { who: 'narrator', place: PL.inn, text: '月影旅館的大廳。諾艾兒把筆記本攤在洛恩面前，整整一頁，全是她替自己想的稱號。' },
+      { who: 'noel', mood: 'smug', text: '「哼，挑一個！本小姐今天就要正式出道。」' },
+      { who: 'narrator', text: '每一個都比上一個長，戰績也越寫越誇張。最後一個寫著打倒了凜的某某，後面括號：暫定。' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「哪一個最好？」', reply: [
+          { who: 'noel', mood: 'smug', text: '「全部都好！不過這三個最好。」' },
+          { who: 'narrator', text: '她念了三個，一個比一個長，念完自己喘了一口氣。' },
+        ] },
+        { tone: 'stay', text: '（在最短的那個下面畫線。）', reply: [{ who: 'noel', mood: 'panic', text: '「最、最短的？那是本小姐隨手寫的！」' }] },
+        { tone: 'promise', text: '「明天聽妳宣布。」', reply: [{ who: 'noel', mood: 'smug', text: '「哼，等著被嚇到吧。」' }] },
+      ] },
+    ],
+    summary: '諾艾兒寫了一整頁稱號要洛恩挑，最長的那一個還是暫定。',
+  },
+  'bond:noel:2': {
+    lines: [
+      { who: 'narrator', place: PL.inn, text: '月影旅館的大廳。諾艾兒跟凜比劈柴，用雷劈，劈完手指麻得握不住筆，只好要洛恩替她寫筆記：每個人的名字和長相。' },
+      { who: 'rin', text: '「我劈了四十二根柴。妳三根，其中一根是灰。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「為什麼要寫長相？」', reply: [{ who: 'noel', mood: 'pout', text: '「不、不為什麼！本小姐的筆記，要完整！」' }] },
+        { tone: 'stay', text: '（照她說的，一個一個寫。）', reply: [
+          { who: 'noel', text: '「瑪莎，眉毛這樣，再兇一點。」' },
+          { who: 'noel', mood: 'pout', text: '「輪到你了？這一張，本小姐自己畫。」' },
+        ] },
+        { tone: 'promise', text: '「明天再補新的。」', reply: [{ who: 'noel', mood: 'smug', text: '「哼，那你們別跑太遠，頁數不夠。」' }] },
+      ] },
+      { who: 'narrator', text: '那一頁的最下面，洛恩把她的名字和臉也寫了上去。她看見了，什麼也沒說。' },
+    ],
+    summary: '諾艾兒跟凜比劈柴，累得握不住筆，要洛恩替她把每個人的長相寫進筆記。',
+  },
+  'bond:noel:3': {
+    lines: [
+      { who: 'narrator', place: PL.innYard, text: '旅館的後院。諾艾兒手裡聚起一顆大雷，看了很久，又一點一點把它壓小，壓到只有指甲那麼大。' },
+      { who: 'noel', text: '「大的那個，本小姐暫時不練。」' },
+      { who: 'narrator', text: '小雷光一離手，就去追旅館的貓，她追在後面跑了半個院子。' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「為什麼練小的？」', reply: [
+          { who: 'noel', mood: 'smug', text: '「小的才照得到字。大的只會照到天花板！」' },
+          { who: 'noel', text: '「晚上看筆記，剛好。」' },
+        ] },
+        { tone: 'stay', text: '（伸出手，讓小雷光停在掌心。）', reply: [{ who: 'noel', mood: 'panic', text: '「不、不燙吧？本小姐控制得很好吧！」' }] },
+        { tone: 'promise', text: '「今晚用它照筆記。」', reply: [{ who: 'noel', mood: 'smug', text: '「哼，平常要收費的。今晚免費。」' }] },
+      ] },
+    ],
+    summary: '諾艾兒把一顆大雷壓成指甲大的小雷光，說大的那個暫時不練。',
+  },
+  'bond:noel:4': {
+    lines: [
+      { who: 'narrator', place: PL.square, text: '廣場。諾艾兒宣布今天的稱號是被記住的諾艾兒，又嫌太短，加了三個形容詞。' },
+      { who: 'noel', mood: 'blush', text: '「洛、洛恩。……直接叫名字，還是不習慣。」' },
+      { who: 'narrator', text: '她翻開筆記本。那一頁的最下面，是洛恩替她寫的名字，和一張畫得很醜的臉。' },
+      { who: 'noel', text: '「想當最厲害，是怕沒人記得我。」' },
+      { who: 'noel', mood: 'blush', text: '「在這裡，有人把我的臉寫進了筆記。所以本小姐留下來了。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「現在還要稱號嗎？」', reply: [
+          { who: 'noel', mood: 'blush', text: '「不、不要了。有人記得，就先這樣。」' },
+          { who: 'narrator', text: '她把那一頁折了一個角。' },
+        ] },
+        { tone: 'stay', text: '（把她頭頂翹起來的那撮頭髮壓平。）', reply: [{ who: 'noel', mood: 'blush', text: '「不准笑！謝、謝謝。」' }] },
+        { tone: 'promise', text: '「明天我再畫一次妳的臉。」', reply: [{ who: 'noel', mood: 'pout', text: '「這次畫好看一點！不准畫頭髮！」' }] },
+      ] },
+    ],
+    summary: '諾艾兒說，想當最厲害，是怕沒人記得她；這裡有人把她的臉寫進了筆記。',
+  },
 };
 
 /** Two town lines for the one chosen (plan ruling 13), added to the town's pool under her name once she is chosen. */

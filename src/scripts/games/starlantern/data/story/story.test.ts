@@ -1184,7 +1184,8 @@ describe('Task 9: Sylvie, Noel and Bobby', () => {
   });
 
   it("Noel says 「喂，歸來者」 until her memories are whole, then 「洛恩」 with a blush; her teacher is the merchant in her last piece", () => {
-    const full = (key: string, line?: ScriptLine) => key.startsWith('scenes.mem:noel:5.') || line?.if?.full === 'noel';
+    // bond plan Task 18: her 心契 opens only once she is whole (BOND_GATE.noel[4].full)
+    const full = (key: string, line?: ScriptLine) => key.startsWith('scenes.mem:noel:5.') || key.startsWith('scenes.bond:noel:4.') || line?.if?.full === 'noel';
     for (const t of spokenBy('noel')) {
       if (t.text.includes('洛恩')) expect(full(t.key, t.line), t.key).toBe(true);
       if (t.text.includes('歸來者')) expect(full(t.key, t.line), t.key).toBe(false);

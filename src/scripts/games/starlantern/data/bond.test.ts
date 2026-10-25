@@ -371,3 +371,35 @@ describe('bond scenes: Rin, Selene, Chizuru (bond plan Task 17)', () => {
     pinBeat('bond:chizuru:4', { full: ['chizuru'] }, /一次也沒有遲到過/);
   });
 });
+
+// ---- bond plan Task 18: Safira's, Sylvie's and Noel's bond scenes (arcs v7)
+
+describe('bond scenes: Safira, Sylvie, Noel (bond plan Task 18)', () => {
+  it('the three are registered, all four scenes of each written', () => {
+    for (const c of ['safira', 'sylvie', 'noel'] as Companion[]) {
+      expect(BONDS_WRITTEN, c).toContain(c);
+      for (let n = 1; n <= 4; n++) expect(BOND_SCENES[bondScene(c, n)], `${c} ${n}`).toBeDefined();
+    }
+  });
+
+  it('each scene holds its beat, in each reading it branches into (W4)', () => {
+    const noSylvie = CHARACTER_IDS.filter((c) => c !== 'sylvie');
+    // Safira: a stage for him alone; the child she never looked back for (Sylvie met or not); she waits for his count; no applause
+    pinBeat('bond:safira:1', {}, /一個人的舞台/);
+    pinBeat('bond:safira:2', {}, /跟得很緊/);
+    pinBeat('bond:safira:2', {}, /妳一次都沒有回頭看/);
+    pinBeat('bond:safira:2', { met: noSylvie }, /洛恩在井邊找到他/);
+    pinBeat('bond:safira:3', {}, /停在半空/);
+    pinBeat('bond:safira:4', { full: ['safira'] }, /安靜也沒關係/);
+    // Sylvie: hungry counts as lost; she always carries it; the sixth spoonful; she wants to watch it grow
+    pinBeat('bond:sylvie:1', {}, /餓的人也算迷路/);
+    pinBeat('bond:sylvie:2', {}, /一向都背得動/);
+    pinBeat('bond:sylvie:3', {}, /第六口/);
+    pinBeat('bond:sylvie:4', { full: ['sylvie'] }, /想看它長大/);
+    // Noel: the title still provisional; every face in the notebook; the big one shelved; afraid no one would remember her
+    pinBeat('bond:noel:1', {}, /暫定/);
+    pinBeat('bond:noel:2', {}, /每個人的名字和長相/);
+    pinBeat('bond:noel:3', {}, /暫時不練/);
+    pinBeat('bond:noel:4', { full: ['noel'] }, /怕沒人記得我/);
+  });
+});
