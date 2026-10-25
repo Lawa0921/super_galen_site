@@ -140,6 +140,7 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
           }
         }
       }
+      console.info(`[gen2 outer reach] rch-${a}..${z - 1}`, JSON.stringify(n), 'bad', bad.length);
       expect(bad.slice(0, 5)).toEqual([]);
       const conts = (z - a) * 6;
       expect(n.hermit).toBe(conts); expect(n['keep entrance']).toBe(n['keep locked chest']);
