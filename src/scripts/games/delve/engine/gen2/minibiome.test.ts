@@ -128,8 +128,9 @@ describe('gen2 小生態與蜂巢', () => {
     for (const k of KINDS) for (const b of outerOf(SEEDS5[0], k).slice(0, 6)) bps.push({ seed: SEEDS5[0], b });
     for (const k of KINDS) expect(bps.filter((q) => q.b.kind === k).length, k).toBeGreaterThanOrEqual(6);
     const FG: Record<Kind, number[]> = {
-      mushroom_biome: [T.AIR, T.MUD, T.MUSHROOM_GRASS, T.GLOW_MUSHROOM, T.VINE, T.SPORE_TOTEM],
-      crystal_cave: [T.AIR, T.MARBLE, T.CRYSTAL, T.GEODE], hive: [T.AIR, T.HIVE, T.HONEY_JAR],
+      // 家鄉最近的那座蘑菇林 / 水晶洞放了石碑（Task 14）
+      mushroom_biome: [T.AIR, T.MUD, T.MUSHROOM_GRASS, T.GLOW_MUSHROOM, T.VINE, T.SPORE_TOTEM, T.LORE_TABLET],
+      crystal_cave: [T.AIR, T.MARBLE, T.CRYSTAL, T.GEODE, T.LORE_TABLET], hive: [T.AIR, T.HIVE, T.HONEY_JAR],
     };
     const WALL: Record<Kind, number> = { mushroom_biome: W.MUD_WALL, crystal_cave: W.ICE_WALL, hive: W.HIVE_WALL };
     for (const { seed, b } of bps) {

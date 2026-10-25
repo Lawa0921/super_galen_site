@@ -9,10 +9,12 @@ import { hash2, seedInt } from '../noise';
 import { BIOME } from '../world';
 import type { RegionInfo } from '../regionInfo';
 import { HOME_X0, SPAWN_X, VARIANT, homeDungeonRegion, type Landmass } from './layout';
-import type { Profile2 } from './profile';
+import { COL_LAND, type Profile2 } from './profile';
 import { shaftOf, shaftX } from './caves';
+import { entranceHit } from '../genPrims';
 import { BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, SUB_SLOT_W, SLOT_PAD, VILLAGE_MIN, bandFreeSpan, centerAway, type Span, landSlot, landSlotCount, touchesSpawnClear, type Blueprint, type BpCtx, type Layer } from './bpcore';
 import { SLOPE, VILLAGE_VW } from './structures/village';
+import { ALCOVE_MAX_W, MOLTEN_MAX_W } from './structures/shrine';
 
 export type AnchorKind = 'dungeon' | 'village' | 'hall' | 'mineshaft_secret' | 'sky_island' | 'mushroom_biome' | 'crystal_cave' | 'hive'
   | 'cave_lake' | 'ruin' | 'cabin' | 'alcove_snow' | 'alcove_desert' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet' | 'keep' | 'hermit_hut'
@@ -47,11 +49,12 @@ const SECRET_GAP = 2 * SUB_SLOT_W, UNDER_TRIES = 8;
 //   mushroom_biome 145、crystal_cave 125、hive 48 = 整個外框（含接洞隧道）的寬度上限（structures/miniBiome.ts 的 MUSHROOM_MAX_W / CRYSTAL_MAX_W、
 //   structures/hive.ts 的 HIVE_MAX_W；橢圓本身最寬 2 × 70 + 1 = 141 / 2 × 60 + 1 = 121 / 2 × 15 + 1 + 2 × 3 = 37，隧道只能在上限內延伸；
 //   後備的直豎井只加高、不加寬。hive 在 Task 11 從 37 放寬：蜂巢的殼是封閉的，一定要挖隧道或豎井接洞穴）；
-//   alcove 9 = 9 × 5 石室（Task 14）；molten_shrine 15、spawn_tablet 12：Task 14 規格沒給寬度，這裡訂為契約上限（spawn_tablet 照小點位的寬 ≤ 12）。
+//   alcove 41 / molten_shrine 61 = 9 × 5 石室 + 兩側接洞的隧道各最多 16 欄 / 13 × 7 熔岩祭壇 + 各 24 欄（structures/shrine.ts 的 ALCOVE_MAX_W / MOLTEN_MAX_W；
+//   Task 14：小室一定要走得進去，原本的 9 / 15 放不下隧道）；spawn_tablet 12：小點位的寬 ≤ 12（實際外框 7 = 石碑 ± 3）。
 // dungeon（wholeRegion）與 shaft_cache（刻意在坑道底）不受這個限制
 export const ANCHOR_MAX_W: Readonly<Partial<Record<AnchorKind, number>>> = {
   village: 91, ruin: 20, cabin: 75, cave_lake: 65, hall: 154, mineshaft_secret: 154, sky_island: 48,
-  mushroom_biome: 145, crystal_cave: 125, hive: 48, alcove_snow: 9, alcove_desert: 9, molten_shrine: 15, spawn_tablet: 12,
+  mushroom_biome: 145, crystal_cave: 125, hive: 48, alcove_snow: ALCOVE_MAX_W, alcove_desert: ALCOVE_MAX_W, molten_shrine: MOLTEN_MAX_W, spawn_tablet: 12,
   // 只給測試（BlueprintIndex 的執行期寬度檢查）
   test_probe: 60,
 };
@@ -100,7 +103,7 @@ function spacedCount(list: readonly Slot[], gap: number): number {
 // （可用範圍 = anchorSpan 的較大一側）；兩種都要放得下該種的 ANCHOR_MAX_W + 兩側 SLOT_PAD。整個家鄉都找不到 → RangeError（不默默少放）
 export function homeAnchors(seed: string, home: Landmass, profile: Profile2): Anchor[] {
   const dz = homeDungeonRegion(home);
-  const sA = seedInt(seed, 'g2-anchor'), sShaft = seedInt(seed, 'g2-shaft');
+  const sA = seedInt(seed, 'g2-anchor'), sShaft = seedInt(seed, 'g2-shaft'), sEnt = seedInt(seed, 'g2-entrance');
   const sp = home.x0 + SPAWN_X - HOME_X0, dWest = dz.x1 <= sp;
   const u = (k: number, n: number): number => hash2(k, n, sA);
   const out: Anchor[] = [];
@@ -231,13 +234,15 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
     crys((s) => s.r.biome === BIOME.FOREST && clearAbove(s) && keep(s)) ?? crys((s) => clearAbove(s) && keep(s))
     ?? crys((s) => s.r.biome === BIOME.FOREST && keep(s)) ?? crys(keep);
   const markPhase = out.length, takenPhase = new Set(taken);
-  let secrets: Slot[] = [], minis: Slot[] = [];
+  let secrets: Slot[] = [], minis: Slot[] = [], alcoves: Slot[] = [];
   for (const reserve of [false, true]) {
     try {
       minis = [];
       if (reserve) { const cr = add('crystal_cave', pickCrystal(() => true)); taken.add(key(cr.r, BP_UNDER, cr.q)); minis.push(cr); }
-      // 地下層：小屋 = 離出生點最近的兩槽
-      for (let k = 0; k < 2; k++) add('cabin', nearest(free('cabin', BP_UNDER), sp));
+      // 地下層：小屋 = 離出生點最近的兩槽。Task 14 起小屋錨點有建構器（頂 y 可到 molten − 30，地廳的外框頂 ≥ deep + 23）：
+      // 先挑不在地廳的槽上方的（錨點跨層相交 = RangeError），沒有才不避
+      const cabins: Slot[] = [];
+      for (let k = 0; k < 2; k++) cabins.push(add('cabin', nearest(free('cabin', BP_UNDER, offHalls), sp) ?? nearest(free('cabin', BP_UNDER), sp)));
       // 先挑要整槽的礦坑密室（寬 154 + 邊距 = 170；每一座只在「挑了之後剩下的還湊得滿 3 座」的槽裡挑），再來生態限定的小結構
       // （放得進含坑道槽的一側，沒有不含坑道的槽時退過去）、蘑菇林，最後地下湖。
       // 雜湊挑法可能把後面的種類擠到沒槽：這一組整組重挑（第 t 次用雜湊鍵 + 100t），UNDER_TRIES 次都不行才丟 RangeError。
@@ -255,10 +260,12 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
             const pv = plain.filter(viable);
             secrets.push(add('mineshaft_secret', hashed(pv.length ? pv : shafted.filter(viable), 11 + k + o)));
           }
-          add('alcove_snow', hashed(free('alcove_snow', BP_UNDER, biome(BIOME.SNOW)), 6 + o));
-          add('alcove_desert', hashed(free('alcove_desert', BP_UNDER, biome(BIOME.DESERT)), 7 + o));
+          // 石室（Task 14）接不上洞穴時的直豎井會往下挖到 deep 線：先挑不在地廳的槽上方的
+          const alcove = (k: 'alcove_snow' | 'alcove_desert', b: number, h: number): Slot | undefined =>
+            hashed(free(k, BP_UNDER, (s) => biome(b)(s) && offHalls(s)), h + o) ?? hashed(free(k, BP_UNDER, biome(b)), h + o);
+          alcoves = [add('alcove_snow', alcove('alcove_snow', BIOME.SNOW, 6)), add('alcove_desert', alcove('alcove_desert', BIOME.DESERT, 7))];
           // 蜂巢的外框底到 deep + 33、地廳的外框頂 ≥ deep + 23：蜂巢不放在地廳的槽上方（Task 11）。蘑菇林的外框底 ≤ rock + 0.4 (deep − rock) + 69，
-          // 碰不到地廳與熔岩祭壇（molten 附近）；shaft_cache 還沒有建構器（Task 14 接上時要一併檢查）
+          // 碰不到地廳與熔岩祭壇（molten 附近）；shaft_cache（Task 14）在坑道帶內，地下層錨點的外框都避開坑道帶，碰不到它
           const hive = (keep: (s: Slot) => boolean): Slot | undefined => hashed(free('hive', BP_UNDER, (s) => s.r.biome === BIOME.JUNGLE && offHalls(s) && keep(s)), 8 + o);
           const hv = add('hive', hive(clearAbove) ?? hive(() => true));
           // 蘑菇林也不放在地廳的槽上方（地廳的後備豎井把外框拉到地表，Task 11 修正 1）；森林的地下層槽被吃光時依序退到叢林、任何地區、最後不避地廳
@@ -281,14 +288,30 @@ export function homeAnchors(seed: string, home: Landmass, profile: Profile2): An
       // 可用範圍另外避開村莊外框可能的 x 範圍（surfaceAvoid）；④ 遺跡錨點的槽也可以（同樣避開遺跡外框可能的範圍）
       // 也避開三種小生態錨點的槽：它們接不上洞穴時的直豎井會一路挖到地表（Task 11 修正 1；bx-3055 蜂巢的豎井撞到空島外框 → RangeError），
       // 豎井只在自己外框的欄裡，所以避開那個 170 格槽就碰不到
-      const below = [...halls, ...secrets, ...minis], skyAvoid: Avoid = (s) => below.filter((b) => overX(s, b)).map((b) => ({ x0: b.x0, x1: b.x1 }));
-      const skyAvoid2: Avoid = (s) => [...skyAvoid(s), ...surfaceAvoid(s)];
+      // Task 14：小屋與石室錨點的直豎井也會通地表（它們的 surfaceBan 有空島的可用範圍，空島蓋住整槽時豎井無處可挖）：整條退讓鏈先連它們的槽一起避開，
+      // 找不到才用只避開上面那幾種的同一條鏈（只用前者時 30,000 個種子約 0.05% 放不下空島）
+      // rope = 可用範圍裡要有掛得了繩梯的欄（陸地欄、不是地表入口欄、離可用範圍兩端 ≥ SLOT_PAD + 4：空島的建構器會在整個可用範圍找接得到地面的繩梯欄；
+      // 家鄉 anc-10 的可用範圍 68 欄有 58 欄是入口 → 沒有繩梯）；先挑有的，都沒有才不管
+      const chain = (list: readonly Slot[], k: number, rope: boolean): { s: Slot | undefined; av: Avoid } => {
+        const skyAvoid: Avoid = (s) => list.filter((b) => overX(s, b)).map((b) => ({ x0: b.x0, x1: b.x1 }));
+        const skyAvoid2: Avoid = (s) => [...skyAvoid(s), ...surfaceAvoid(s)];
+        const ropeable = (s: Slot, av: Avoid): boolean => {
+          const sp = bandFreeSpan(s, shaftX(sShaft, s.r), av(s));
+          for (let x = sp.x0 + SLOT_PAD + 4; x < sp.x1 - SLOT_PAD - 4; x++) if (profile.info(x).kind === COL_LAND && !entranceHit(x, sEnt)) return true;
+          return false;
+        };
+        const pick = (keep: (s: Slot) => boolean, av: Avoid): Slot | undefined => hashed(free('sky_island', BP_SKY, (q) => keep(q) && (!rope || ropeable(q, av)), av), 14 + k);
+        let av = skyAvoid, s = pick((q) => far(q, SKY_MIN) && !surfTaken(q), skyAvoid) ?? pick((q) => !surfTaken(q), skyAvoid);
+        if (!s) { av = skyAvoid2; s = pick((q) => !surfTaken(q) || surfKind(q) === 'village', av) ?? pick((q) => !surfTaken(q) || surfKind(q) === 'village' || surfKind(q) === 'ruin', av); }
+        return { s, av };
+      };
+      const below = [...halls, ...secrets, ...minis];
       const surfTaken = (s: Slot): boolean => taken.has(key(s.r, BP_SURFACE, s.q));
       const surfKind = (s: Slot): AnchorKind | undefined => out.find((a) => a.layer === BP_SURFACE && a.region === s.r && a.slot === s.q)?.kind;
       for (let k = 0; k < 2; k++) {
-        const pick = (keep: (s: Slot) => boolean, av: Avoid): Slot | undefined => hashed(free('sky_island', BP_SKY, keep, av), 14 + k);
-        let av = skyAvoid, s = pick((q) => far(q, SKY_MIN) && !surfTaken(q), skyAvoid) ?? pick((q) => !surfTaken(q), skyAvoid);
-        if (!s) { av = skyAvoid2; s = pick((q) => !surfTaken(q) || surfKind(q) === 'village', av) ?? pick((q) => !surfTaken(q) || surfKind(q) === 'village' || surfKind(q) === 'ruin', av); }
+        let { s, av } = chain([...below, ...cabins, ...alcoves], k, true);
+        if (!s) ({ s, av } = chain(below, k, true));
+        if (!s) ({ s, av } = chain(below, k, false));
         add('sky_island', s, av);
       }
       break;

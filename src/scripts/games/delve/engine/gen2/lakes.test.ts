@@ -71,10 +71,11 @@ describe('gen2 static liquids: lake / cave_lake / lava_pool', () => {
   // liq 依 (layer, id) 排序，前 30 / 8 份多半是地表湖；每種各取前 6 份再驗一次
   it('每一種各 6 份：不變量 + 喚醒 300 刻不動', () => { for (const k of KINDS) settledInWorld(ofKind(k).slice(0, 6)); });
 
+  // 地下湖液面中央的 3 格石台（Task 14 的地標）底下的水格，上方是石台、不是液面
   it('每份液體藍圖的水面 / 熔岩面是一條水平線', () => {
     for (const b of liq) {
-      const tops = new Set<number>();
-      for (let k = 0; k < b.cells.length; k += 5) if (b.cells[k + 4] > 0 && !hasLiquidCellAbove(b, b.cells[k], b.cells[k + 1])) tops.add(b.cells[k + 1]);
+      const tops = new Set<number>(), m = cellMap(b);
+      for (let k = 0; k < b.cells.length; k += 5) if (b.cells[k + 4] > 0 && !hasLiquidCellAbove(b, b.cells[k], b.cells[k + 1]) && m.get(`${b.cells[k]},${b.cells[k + 1] - 1}`)?.[0] !== T.STONE) tops.add(b.cells[k + 1]);
       expect(tops.size).toBe(1);
     }
   });
@@ -159,6 +160,13 @@ function ellipseCheck(bs: Blueprint[], o: { rx: [number, number]; ry: [number, n
   for (const b of bs) {
     const m = cellMap(b), inner: { x: number; y: number; q: number }[] = [];
     for (const [k, [f, q]] of m) if (f === T.AIR) { const [x, y] = k.split(',').map(Number); inner.push({ x, y, q }); }
+    // 地下湖的地標（Task 14）：液面中央 3 格石台 + 台上的行囊，原本是內部（石台那 3 格是液體）
+    const l = b.landmarks[0];
+    if (l) {
+      expect(l.tile).toBe(T.RELIC_PACK); expect(m.get(`${l.x},${l.y}`)![0]).toBe(T.RELIC_PACK);
+      inner.push({ x: l.x, y: l.y, q: 0 });
+      for (let dx = -1; dx <= 1; dx++) { expect(m.get(`${l.x + dx},${l.y + 1}`)![0]).toBe(o.shell); inner.push({ x: l.x + dx, y: l.y + 1, q: full(o.type) }); }
+    }
     const ys = inner.map((c) => c.y), y0 = Math.min(...ys), y1 = Math.max(...ys), h = y1 - y0 + 1, ry = (h - 1) >> 1, cy = y0 + ry;
     const xs = inner.map((c) => c.x), cx = (Math.min(...xs) + Math.max(...xs)) >> 1, rx = cx - Math.min(...xs);
     // 液面高過最寬列（地下湖）時兩肩填成殼，量到的半寬 = 液面那列的半寬（ry ≤ 12、液面在中心上 ≤ 2 列：至少 rx − 1）

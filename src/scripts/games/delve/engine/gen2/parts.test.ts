@@ -124,17 +124,19 @@ describe('gen2 藍圖部件與 surfaceBan', () => {
     expect(solidParts({ ...base, solid: { x: 0, y: 22, w: 20, h: 8 }, parts: [{ x: 0, y: 20, w: 20, h: 10 }, { x: 5, y: 0, w: 2, h: 20 }] })).toEqual([{ x: 0, y: 22, w: 20, h: 8 }]);
   });
 
-  it('surfaceBan = 同 x 範圍的家鄉表層錨點部件（村莊用實際藍圖；遺跡還沒有建構器、用預測範圍 × 整個世界高）；只給家鄉 UNDER / DEEP 錨點', () => {
+  it('surfaceBan = 同 x 範圍的家鄉表層錨點部件（村莊 / 遺跡用實際藍圖，遺跡 Task 14 接上建構器）+ 空島錨點的可用範圍 × 天空到地表；只給家鄉 UNDER / DEEP 錨點', () => {
     for (const seed of ['s-a', 's-b', 's-c']) {
       const g = new Gen2Source(seed), m = homeOf(g), list = g.blueprints.anchorsOf(m);
-      const vil = list.filter((a) => a.kind === 'village').map((a) => g.blueprints.anchorBlueprint(m, a)!);
+      const vil = list.filter((a) => a.kind === 'village' || a.kind === 'ruin').map((a) => g.blueprints.anchorBlueprint(m, a)!);
+      expect(vil.some((v) => v.kind === 'ruin')).toBe(true);
       for (const a of list.filter((q) => q.layer === BP_UNDER)) {
         const ban = g.blueprints.surfaceBan(m, a), sl = { x0: a.region.x0, x1: a.region.x1 };
         for (const v of vil) if (v.x < sl.x1 && sl.x0 < v.x + v.w) {
           const s = anchorSpan(seed, a);
           if (v.x < s.x1 && s.x0 < v.x + v.w) expect(ban).toContainEqual({ x: v.x, y: v.y, w: v.w, h: v.h });
         }
-        for (const q of ban) if (q.y === 0) expect(q.h).toBe(g.profile.height);
+        // y = 0 的只剩空島的範圍：到可用範圍內最高的 profile 地表下 1 格
+        for (const q of ban) if (q.y === 0) { let low = 0; for (let x = q.x; x < q.x + q.w; x++) low = Math.max(low, g.profile.surfaceAt(x)); expect(q.h).toBe(low + 2); }
       }
       expect(list.some((a) => a.layer === BP_SURFACE && a.kind === 'ruin')).toBe(true);
     }

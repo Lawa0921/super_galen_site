@@ -173,7 +173,7 @@ function mineshaft(c: BpCtx, anchor: boolean, force: boolean, o: MineshaftOption
   const cv = new BpCanvas({ x: left, y: top, w: end - left, h: bottom - top }, p);
   drawMineshaft(cv, { x0, len, yTop }, rng);
   if (ramp) drawRamp(cv, { x0, yTop }, (x) => p.surfaceAt(x));
-  if (secret) drawSecretRoom(cv, lay, rng);
+  const sroom = secret ? drawSecretRoom(cv, lay, rng) : null;
   const sc = plan.col;
   if (Number.isFinite(plan.up)) {
     // 往上的豎井：[col, col + 2) 從地表上一格挖到坑道頂板（含），繩梯從地表垂到坑道地板上一格
@@ -185,11 +185,19 @@ function mineshaft(c: BpCtx, anchor: boolean, force: boolean, o: MineshaftOption
     for (let y = yTop + 4; y < plan.hole; y++) for (let x = sc; x < sc + SHAFT_W; x++) { cv.setFg(x, y, T.AIR); cv.clearLiquid(x, y); }
     for (let y = yTop + 3; y < plan.hole; y++) cv.setFg(sc, y, T.ROPE);
   }
+  // floors（Task 14，給石碑）：坑道站立列（yTop + 3）與密室地板列的空氣格、頭頂空氣、腳下實心（外框整片 solid，腳下的天然岩在成品裡也是實心）；
+  // 坑道的在鋪軌道之前算（軌道鋪滿站立列，石碑蓋掉那一格軌道）。密室室內記進 secret（lore.homeDecor 分開密室與坑道的石碑）
+  const stand = (x: number, y: number): boolean => cv.fg(x, y) === T.AIR && cv.fg(x, y - 1) === T.AIR && cv.isSolid(x, y + 1);
+  const floors: { x: number; y: number }[] = [];
+  for (let x = x0; x < x0 + len; x++) if (stand(x, yTop + 3)) floors.push({ x, y: yTop + 3 });
+  if (sroom) for (let x = sroom.x; x < sroom.x + sroom.w; x++) if (stand(x, sroom.chest.y)) floors.push({ x, y: sroom.chest.y });
   // 軌道與礦車在豎井之後鋪（往下的豎井那兩欄地板挖掉了，不鋪軌道；往上的豎井那欄有繩梯，礦車不停在那裡）
   const landmarks = cart(cv, x0, len, yTop);
+  const lm = landmarks[0], fl = lm ? floors.filter((f) => f.x !== lm.x || f.y !== lm.y) : floors;
   // 免挖洞箱 = 整個外框（BpBox 是外接矩形，兩個角就夠）；有豎井時 fill 只算與部件相交的部分（bpcore.solidParts）
   cv.fillNatural(left, top); cv.fillNatural(end - 1, bottom - 1);
-  const bp = cv.toBlueprint(c.id, 'mineshaft', BP_UNDER, { landmarks });
+  const bp = cv.toBlueprint(c.id, 'mineshaft', BP_UNDER, { landmarks, floors: fl });
+  if (sroom) bp.secret = { x: sroom.x, y: sroom.y, w: sroom.w, h: sroom.h };
   // 部件（Task 11 修正 2）：有往上 / 往下的豎井時 = 主體（斜坡、密室、坑道的外接矩形）+ 豎井那兩欄；部件外的格都沒畫（KEEP）。
   // 理由：豎井把外框拉到地表 / 洞穴，整片外框會壓到上方的村莊（rv-1247 → 開機 RangeError）、抹掉下方的洞穴（solid）
   const mainTop = Math.min(secret ? shell.y : yTop - 1, ramp ? yTop - steps : Infinity), mainBot = secret ? shell.y + shell.h : yTop + 5;

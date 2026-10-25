@@ -77,19 +77,20 @@ export class Gen2Source implements ColumnSource {
     if (!r) throw new RangeError(`gen2: x ${x} is outside gen2`);
     return r;
   }
-  // 生成物件：與 [x0, x1) 相交的藍圖裡 x ∈ [x0, x1) 的箱子，內容 = chestLoot(seed, x, y, kind, depthFrac) + 附加物品（每次回新的 slots）
+  // 生成物件：與 [x0 − FILL_REACH, x1 + FILL_REACH) 相交的藍圖裡 x ∈ [x0, x1) 的箱子（坑道底藏物的外框可能伸出自己的槽 ≤ SHAFT_REACH 欄，Task 14；
+  // 同 fill 的查詢範圍），內容 = chestLoot(seed, x, y, kind, depthFrac) + 附加物品（每次回新的 slots）
   objectsIn(x0: number, x1: number): GenChest[] {
     const out: GenChest[] = [];
-    for (const b of this.blueprints.overlapping(x0, x1)) for (const c of b.chests) {
+    for (const b of this.blueprints.overlapping(x0 - FILL_REACH, x1 + FILL_REACH)) for (const c of b.chests) {
       if (c.x >= x0 && c.x < x1) out.push({ x: c.x, y: c.y, slots: withExtras(chestLoot(this.seed, c.x, c.y, c.kind, depthFrac(this.profile, c.x, c.y)), c.extra ?? []) });
     }
     return out;
   }
-  // 其他生成物件：相交藍圖裡 x ∈ [x0, x1) 的陶罐掉落 / 石碑 / 地標，與錨點（外框 x）在 [x0, x1) 內的聚落（每次回新物件）
+  // 其他生成物件：與 [x0 − FILL_REACH, x1 + FILL_REACH) 相交的藍圖裡 x ∈ [x0, x1) 的陶罐掉落 / 石碑 / 地標，與錨點（外框 x）在 [x0, x1) 內的聚落（每次回新物件）
   extrasIn(x0: number, x1: number): GenExtras {
     const out: GenExtras = { pots: [], tablets: [], landmarks: [], sites: [] };
     const inside = (x: number): boolean => x >= x0 && x < x1;
-    for (const b of this.blueprints.overlapping(x0, x1)) {
+    for (const b of this.blueprints.overlapping(x0 - FILL_REACH, x1 + FILL_REACH)) {
       for (const p of b.pots) if (inside(p.x)) out.pots.push({ x: p.x, y: p.y, drops: p.drops.map((d) => ({ ...d })) });
       for (const t of b.tablets) if (inside(t.x)) out.tablets.push({ ...t });
       for (const l of b.landmarks) if (inside(l.x)) out.landmarks.push({ ...l });

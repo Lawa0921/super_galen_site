@@ -47,6 +47,10 @@ const CARVE_H = 4, BOTTOM_BELOW = 12, ROOM_R = 6;
 const MAX_RISE = 64;
 // 坑道各列離 shaftX 最遠 SHAFT_HALF 格（中心 ± AMP、寬 2）；再加底端圓室半徑 = 整條坑道的水平觸及範圍
 export const SHAFT_HALF = AMP + 1, SHAFT_REACH = SHAFT_HALF + ROOM_R;
+// 底端圓室：中心 (sx + shaftOffset(bottom), bottom)、半徑 ROOM_R（structures/shrine.ts 的坑道底藏物放在圓室最低處）
+export function shaftRoom(seed: number, r: RegionInfo, sh: Shaft): { x: number; y: number; r: number } {
+  return { x: sh.sx + shaftOffset(seed, r, sh.bottom), y: sh.bottom, r: ROOM_R };
+}
 
 // 地區的雜湊鍵：家鄉 0、東第 i 片 2i、西第 i 片 2i + 1
 const regionKey = (r: RegionInfo): number => r.landmass * 2 + (r.side === -1 ? 1 : 0);

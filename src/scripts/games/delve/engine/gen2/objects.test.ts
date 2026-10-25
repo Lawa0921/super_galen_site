@@ -29,6 +29,8 @@ describe('gen2 blueprint objects', () => {
         expect(b.solid.y).toBeGreaterThanOrEqual(b.y); expect(b.solid.y + b.solid.h).toBeLessThanOrEqual(b.y + b.h); }
       if (b.ground) { grounds++; expect(b.ground.x0).toBeGreaterThanOrEqual(b.x); expect(b.ground.x0 + b.ground.tops.length).toBeLessThanOrEqual(b.x + b.w); }
       if (b.wholeRegion) { expect(b.x).toBeGreaterThanOrEqual(s.region.x0); expect(b.x + b.w).toBeLessThanOrEqual(s.region.x1); continue; } // Q2
+      // 坑道底藏物（Task 14）刻意放在主坑道底的圓室：外框在坑道觸及範圍內（可能伸出槽 ≤ SHAFT_REACH，fill / objectsIn 多查 FILL_REACH）
+      if ((b.kind as string) === 'shaft_cache') { const sx = shaftX(seedInt('obj', 'g2-shaft'), s.region); expect(Math.abs(b.x + 1 - sx)).toBeLessThanOrEqual(SHAFT_REACH); continue; }
       expect(s.x1 - s.x0).toBeLessThan(2 * slotWidth(b.layer));
       expect(b.x).toBeGreaterThanOrEqual(s.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(s.x1 - 8);
     }
@@ -124,26 +126,29 @@ describe('gen2 blueprint objects', () => {
     expect(dug).toBeGreaterThan(50); expect(ores).toBeGreaterThan(5); expect(shaft).toBeGreaterThan(50); expect(oresIn).toBeGreaterThanOrEqual(ores);
   }, 60_000);
 
-  it('extrasIn / objectsIn：物件只來自家鄉地城（陶罐 / 古碑 / 聚落，M2a Task 8）與村莊 / 地廳（聚落、礦車地標，Task 9）、礦坑的礦車 / 空島的守望石像（地標，Task 10）、小生態與蜂巢的地標（Task 11）；其他 M1 藍圖回空清單；每次回新物件', () => {
+  it('extrasIn / objectsIn：物件只來自家鄉地城（陶罐 / 古碑 / 聚落，M2a Task 8）與村莊 / 地廳（聚落、礦車地標，Task 9）、礦坑的礦車 / 空島的守望石像（地標，Task 10）、小生態與蜂巢的地標（Task 11）、小屋 / 遺跡 / 湖 / 地下湖的地標與家鄉的 14 塊石碑（Task 14）；每次回新物件', () => {
     const all = src.blueprints.overlapping(-20_000, 20_000), e = src.extrasIn(-20_000, 20_000);
     const dg = all.filter((b) => b.kind === 'dungeon'), settle = all.filter((b) => b.kind === 'village' || b.kind === 'hall');
     expect(dg).toHaveLength(1);
     expect(settle.filter((b) => b.kind === 'village').length).toBeGreaterThanOrEqual(2); expect(settle.some((b) => b.kind === 'hall')).toBe(true);
     // 依 (layer, id) 序：聚落 = 外框 x 在範圍內的每一份藍圖的 site
-    expect(e.pots).toEqual(dg[0].pots); expect(e.tablets).toEqual(dg[0].tablets);
-    const LANDMARKED = new Set(['mineshaft', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive']);
+    expect(e.pots).toEqual(dg[0].pots); expect(e.tablets).toEqual(all.flatMap((b) => b.tablets));
+    expect(e.tablets.map((t) => t.id).sort((a, b) => a - b)).toEqual([...Array(14).keys()]);
+    const LANDMARKED = new Set(['mineshaft', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive', 'cabin', 'ruin', 'lake', 'cave_lake']);
     const marked = all.filter((b) => b.kind === 'village' || b.kind === 'hall' || LANDMARKED.has(b.kind));
     expect(e.landmarks).toEqual(marked.flatMap((b) => b.landmarks));
-    // 每座地廳 / 礦坑 / 空島 / 小生態 / 蜂巢恰好一個地標（村莊沒有）
-    expect(e.landmarks.length).toBe(marked.filter((b) => b.kind !== 'village').length);
+    // 每座地廳 / 礦坑 / 空島 / 小生態 / 蜂巢 / 小屋 / 遺跡 / 湖 / 地下湖至多一個地標（村莊沒有）；九成以上有
+    expect(marked.every((b) => b.landmarks.length <= 1)).toBe(true);
+    expect(e.landmarks.length).toBeGreaterThanOrEqual(0.9 * marked.filter((b) => b.kind !== 'village').length);
     expect(marked.filter((b) => b.kind === 'mineshaft').length).toBeGreaterThan(3); expect(marked.filter((b) => b.kind === 'sky_island').length).toBeGreaterThanOrEqual(2);
     for (const k of ['mushroom_biome', 'crystal_cave', 'hive']) expect(marked.some((b) => b.kind === k), k).toBe(true);
     expect(e.sites).toEqual(all.filter((b) => b.site).map((b) => b.site));
-    expect(e.pots.length).toBeGreaterThan(0); expect(e.tablets.length).toBe(3);
+    expect(e.pots.length).toBeGreaterThan(0); expect(e.tablets.length).toBe(14);
     expect(src.extrasIn(-20_000, 20_000)).not.toBe(e);
     expect(src.extrasIn(-20_000, 20_000).sites[0]).not.toBe(e.sites[0]);
     for (const b of all.filter((q) => q.kind !== 'dungeon' && q.kind !== 'village' && q.kind !== 'hall')) {
-      expect(b.pots).toEqual([]); expect(b.tablets).toEqual([]); expect(b.site).toBeNull(); expect(b.wholeRegion).toBe(false);
+      // 石碑只在家鄉（lore.homeDecor）
+      expect(b.pots).toEqual([]); if (b.x < 0 || b.x >= 4200) expect(b.tablets).toEqual([]); expect(b.site).toBeNull(); expect(b.wholeRegion).toBe(false);
       if (!LANDMARKED.has(b.kind)) expect(b.landmarks).toEqual([]);
       if (b.kind !== 'ruin') expect(b.ground).toBeNull();
       // 礦坑：外框整片 solid（Task 10）；其他沒有

@@ -19,7 +19,7 @@ import { drawSkyIsland, SKY_HH } from '../draw/skyIsland';
 import { seedInt } from '../../noise';
 import { entranceHit } from '../../genPrims';
 import { COL_LAND, COL_SEA } from '../profile';
-import { BP_SKY, placeX, type Blueprint, type BpCtx } from '../bpcore';
+import { BP_SKY, SLOT_PAD, placeX, type Blueprint, type BpCtx } from '../bpcore';
 
 // 島面離外框附近地表至少 30 + thick + lift；外框附近 = 島兩側各多 6 欄；樹冠最高到 top − 9（樹幹 ≤ 7 + 冠半徑 2）
 const AIR_GAP = 30, NEAR = 6, CROWN = 9;
@@ -49,8 +49,16 @@ function skyIsland(c: BpCtx, force: boolean): Blueprint | null {
   const sEnt = seedInt(c.seed, 'g2-entrance');
   const ground = (x: number): number => { const k = p.info(x).kind; return k === COL_SEA || (k === COL_LAND && entranceHit(x, sEnt)) ? -1 : c.groundAt(x); };
   // 外框 x：placeX 的候選裡第一個有接得到地面的繩梯欄的
-  const x0 = placeX(c, iw, force, (x) => ropeCols(x, iw).some((rx) => ground(rx) >= 0));
+  const ropeOk = (x: number): boolean => ropeCols(x, iw).some((rx) => ground(rx) >= 0);
+  let x0 = placeX(c, iw, force, ropeOk);
   if (x0 === null) return null;
+  // 錨點（force）：placeX 的 3 個候選都接不到地面（Task 14：家鄉 anc-10 出現過沒有繩梯的空島）→ 可用範圍內離中央近的放得下的 x 依序找第一個接得到的；
+  // 都沒有才照舊（沒有繩梯）
+  if (force && !ropeOk(x0)) {
+    const mid = (c.slotX0 + c.slotX1 - iw) >> 1, xs: number[] = [];
+    for (let x = c.slotX0 + SLOT_PAD; x + iw <= c.slotX1 - SLOT_PAD; x++) xs.push(x);
+    x0 = xs.sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid) || a - b).find(ropeOk) ?? x0;
+  }
   let minTop = p.height;
   for (let x = x0 - NEAR; x < x0 + iw + NEAR; x++) minTop = Math.min(minTop, p.surfaceAt(x));
   const top = Math.max(TOP_MIN, minTop - AIR_GAP - thick - lift);
@@ -59,7 +67,13 @@ function skyIsland(c: BpCtx, force: boolean): Blueprint | null {
   for (const rx of ropeCols(x0, iw)) low = Math.max(low, c.groundAt(rx));
   const y = top - CROWN, cv = new BpCanvas({ x: x0, y, w: iw, h: low + 1 - y }, p);
   drawSkyIsland(cv, { x0, iw, top, thick, noiseSeed }, rng, ground);
-  return cv.toBlueprint(c.id, 'sky_island', BP_SKY, { landmarks: statue(cv, x0, iw, top) });
+  const landmarks = statue(cv, x0, iw, top);
+  // floors（Task 14，給石碑）：島面上站得住的格（同石像的條件；空中的天然格就是空氣，畫布的回退讀取在這裡是準的）
+  const floors: { x: number; y: number }[] = [];
+  for (let y = top - SKY_HH; y <= top + 2; y++) for (let x = x0 + 1; x < x0 + iw - 1; x++) {
+    if (cv.fg(x, y) === T.AIR && cv.fg(x, y - 1) === T.AIR && cv.isSolid(x, y + 1)) floors.push({ x, y });
+  }
+  return cv.toBlueprint(c.id, 'sky_island', BP_SKY, { landmarks, floors });
 }
 
 // 離島中央（x0 + iw / 2、島面上一列）最近（曼哈頓距離）的站得住的格（平手取 y 小、再取 x 小的）放守望石像；沒有就不放

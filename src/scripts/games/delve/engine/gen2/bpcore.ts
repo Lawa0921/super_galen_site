@@ -11,7 +11,9 @@ import { shaftX, SHAFT_REACH } from './caves';
 import { decodeStructureId } from './structId';
 
 export type BpKind = 'cabin' | 'ruin' | 'shipwreck' | 'crate' | 'lake' | 'cave_lake' | 'lava_pool' | 'dungeon' | 'mineshaft' | 'sky_island' | 'village' | 'hall'
-  | 'mushroom_biome' | 'crystal_cave' | 'hive';
+  | 'mushroom_biome' | 'crystal_cave' | 'hive'
+  // 家鄉的石碑 / 遺物錨點（M2a Task 14，structures/shrine.ts）
+  | 'alcove' | 'molten_shrine' | 'shaft_cache' | 'spawn_tablet';
 // 層：表層 / 地下 / 深層 / 空中（浮空島）/ 小點（minor）；結構 id 的 layer 欄位 3 bit（structId.ts）
 export const BP_SURFACE = 0, BP_UNDER = 1, BP_DEEP = 2, BP_SKY = 3, BP_MINOR = 4, LAND_SLOT_W = 340, KEEP = -1;
 export type Layer = 0 | 1 | 2 | 3 | 4;
@@ -50,7 +52,8 @@ export interface Blueprint {
   pots: BpPot[];
   tablets: BpTablet[];
   landmarks: BpLandmark[];
-  // 站得住的格（空氣、腳下實心）：給石碑 / 地標用
+  // 站得住的格（給石碑用，M2a Task 14 的 lore.homeDecor）：那格與頭頂那格是空氣、腳下實心（成品裡也是：腳下是藍圖畫的實心格，
+  // 或在 solid 部件內的天然格）、不在液體裡；建構器自己算（地標 / 箱子那格不算）
   floors: { x: number; y: number }[];
   // 地面覆寫（只有 SURFACE 層的藍圖有，Q4）
   ground: BpGround | null;
@@ -66,6 +69,10 @@ export interface Blueprint {
   // 大藍圖（家鄉地城）：cells 依 (x >> 5, y, x) 排序，欄號（x >> 5）→ 該欄的格在 cells 的 [起, 訖)（以 Int32 為單位）；
   // stamp 有它就只掃該欄的範圍（同一藍圖每格只出現一次，排序不改蓋出來的結果）
   colIndex?: Map<number, [number, number]>;
+  // 變體（石室 alcove：'snow' / 'desert'，Task 14；lore.homeDecor 依它放第 10 / 11 塊石碑）
+  variant?: string;
+  // 礦坑的密室室內（Task 14：密室的石碑只放在這裡面的 floors；坑道的石碑放在外面的 floors）
+  secret?: BpBox;
 }
 
 // 依列序（y, x）的 cells → 依 (x >> 5, y, x) 排序的 cells 與 colIndex（每欄內保持原本的列序）
@@ -123,8 +130,10 @@ export interface BpCtx {
   groundAt(x: number): number;
   rank?: number;
   spawnX?: number;
-  // 家鄉 UNDER / DEEP 錨點（Task 11 修正 2）：同一片家鄉表層錨點（村莊 / 遺跡）的範圍——有建構器的用實際藍圖的部件，
-  // 還沒有的（遺跡）用預測的 x 範圍 × 整個世界高。通地表的豎井（礦坑密室、小生態）的部件不得與它相交；其他藍圖 = undefined
+  // 家鄉錨點的禁區（BlueprintIndex.surfaceBan）：通到外面的豎井 / 小點位的外框不得與它相交；其他藍圖 = undefined。
+  //   UNDER / DEEP（Task 11 修正 2）：同一片家鄉表層錨點（村莊 / 遺跡）的範圍——有建構器的用實際藍圖的部件，沒有的用預測的 x 範圍 × 整個世界高；
+  //     Task 14 加上空島錨點的可用範圍 × 天空到地表（空島的建構器讀 groundAt，這裡不能建它）；DEEP 另外加上地下層錨點的部件（熔岩祭壇往上的豎井）。
+  //   MINOR（Task 14，出生點石碑）：同一個地區其他各層（SURFACE / UNDER / DEEP / SKY）與這一槽相交的原始藍圖的部件（MINOR 一律讓位，錨點讓位 = RangeError）
   surfaceBan?: readonly BpBox[];
 }
 

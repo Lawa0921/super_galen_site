@@ -1,7 +1,9 @@
 // worldBoot.ts — DelveGame 的世界開機：把「生成 → 世界與生成資訊」包成 WorldContent，建構子只讀它。
 //   · legacy：舊生成器（generateWorld 的 GenResult）→ World.fromGen（中央 arrays 模式）+ 外圍 OuterGen（無限世界）。
-//   · gen2：不建中央、什麼都不生成（欄由 Gen2Source 在 ensureColumn 時生成）；家鄉的聚落（村莊 / 地廳 / 地城）開局就建好藍圖、放進 sites
-//     （gen2/home.ts 的 homeSites，Q11）；其餘生成資訊空陣列 / null。
+//   · gen2：不建中央、什麼都不生成（欄由 Gen2Source 在 ensureColumn 時生成）；開局先建家鄉全部藍圖（BlueprintIndex.homePlans，Q9，
+//     客人副本也一樣——只算藍圖），再由 gen2/home.ts 的 homeContent（Q11，Task 14）填：sites（家鄉聚落，居民開局就在）、tablets（14 塊石碑，
+//     日誌古碑 0 / 14、碑文 id）、relics、landmarks（日誌的地標總數）、structures（地下背景：蘑菇林 / 地城）。
+//     villages / halls / dungeon 仍給空的（舊世界的 legacySites / 地城提示走它們；gen2 的聚落走 sites），regions 仍是 []（地區走 Task 15）。
 //   · baked（烘焙過的舊世界，Task 16）：不跑舊生成器；中央的格子全在存檔裡（讀檔蓋上），每欄資料 / 生成資訊 / 地區清單取存檔的
 //     LegacyMeta；欄由 BakedSource 分段生成（舊外圍 = v1、接縫外 = gen2）。
 import { World, type ColumnSource } from './world';
@@ -16,7 +18,7 @@ import { BakedSource } from './bakedSource';
 import type { BakeInfo } from '../save/bake';
 import type { LegacyMeta } from '../save/legacyMeta';
 import { Gen2Source } from './gen2';
-import { homeSites } from './gen2/home';
+import { homeContent } from './gen2/home';
 import { LockTable, type LockJSON } from './gen2/locks';
 import { SPAWN_X } from './gen2/layout';
 import { SEA_Y, CAVERN_BASE, MOLTEN_BASE } from './gen2/profile';
@@ -85,6 +87,9 @@ export function bootLegacy(seed: string, gen: GenResult, opts: { bounds: WorldBo
 export function bootGen2(seed: string, spec: Extract<WorldGenSpec, { kind: 'gen2' }>, replica: boolean): WorldContent {
   const source = new Gen2Source(seed, { locks: LockTable.fromJSON(spec.locks ?? [], { frozen: replica }), recordLocks: !replica });
   const world = new World(WORLD_W, WORLD_H, { bounds: 'infinite', source, central: 'source' });
+  source.blueprints.homePlans();
+  // 遊戲會改自己的陣列：給複本（homeContent 依 source 快取）
+  const hc = structuredClone(homeContent(source));
   // HUD / 後備用的全域層線（每欄的真實層線一律問 source.layersAt）
   world.surfaceY = SEA_Y + 30;
   world.rockY = SEA_Y + 60;
@@ -93,11 +98,11 @@ export function bootGen2(seed: string, spec: Extract<WorldGenSpec, { kind: 'gen2
   return {
     world,
     spawn: { x: SPAWN_X, y: source.surfaceAt(SPAWN_X) - 1 },
-    biomes: [], structures: [], landforms: [],
+    biomes: [], structures: hc.structures, landforms: [],
     dungeonZone: null, layers: null, dungeon: null,
-    tablets: [], relics: [], springs: [],
-    villages: [], halls: [], landmarks: [],
-    sites: homeSites(source),
+    tablets: hc.tablets, relics: hc.relics, springs: [],
+    villages: [], halls: [], landmarks: hc.landmarks,
+    sites: hc.sites,
     regions: [],
     outer: gen2Regions(seed, source),
     land: gen2LandQuery(source),

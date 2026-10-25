@@ -311,7 +311,10 @@ function grove(c: BpCtx, sp: GroveSpec, o: MiniOptions): Blueprint | null {
     }
     const landmarks: BpLandmark[] = [];
     if (spot) { g.fg(spot.x, spot.y, sp.landmark); landmarks.push({ x: spot.x, y: spot.y, tile: sp.landmark, site: sp.kind }); }
-    const out: Blueprint = { id: c.id, kind: sp.kind, layer: sp.layer, x: x0, y: top, w: x1 - x0, h: bottom - top, cells: g.cells(), chests: [], ...emptyObjects(), landmarks };
+    // floors（Task 14，給石碑）：主洞室裡裝飾之後仍是空氣、頭頂空氣、腳下是 E 內的殼的格（E 內每一格都由藍圖寫）
+    const floors: { x: number; y: number }[] = [];
+    for (let y = by + 1; y < by + bh - 1; y++) for (let x = bx; x < bx + bw; x++) if (inMain(x, y) && airE(x, y) && airE(x, y - 1) && solidE(x, y + 1)) floors.push({ x, y });
+    const out: Blueprint = { id: c.id, kind: sp.kind, layer: sp.layer, x: x0, y: top, w: x1 - x0, h: bottom - top, cells: g.cells(), chests: [], ...emptyObjects(), landmarks, floors };
     if (parts) out.parts = parts;
     return out;
   };

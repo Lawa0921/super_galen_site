@@ -18,7 +18,7 @@ import { ColNoise, CavernNoise, NO_DIG, spagNoise, entranceHit, oreNoise, blobNo
 import { COL_SEA, COL_BEACH, COL_LAND, COL_ISLAND, LAVA_Y, type ColInfo2, type Profile2 } from './profile';
 import { HOME_X0, SPAWN_X, type Layout } from './layout';
 import { SHAFT_HALF, SHAFT_REACH, CaveProbe, carveShaft, hasShaft, shaftOf, caveCut, caveK, type Shaft } from './caves';
-import { BP_SURFACE, stamp, solidParts, partsOf, type Blueprint, type BlueprintIndex, type BpBox } from './blueprint';
+import { BP_SURFACE, BP_MINOR, stamp, solidParts, partsOf, type Blueprint, type BlueprintIndex, type BpBox } from './blueprint';
 import { TeardropField, type Teardrop } from './teardrop';
 
 // 每個 pass 的上下文：該地塊的版面版本
@@ -200,7 +200,8 @@ export class Filler2 {
     this.shaftPass(col, x0, x1);
     // 結構：在材質 / 洞穴 / 礦 / 液體 / 坑道之後依 (layer, id) 序蓋
     for (const b of bps) stamp(col, b, x0, x1);
-    this.plants(col, x0, x1, bps.filter((b) => b.layer === BP_SURFACE));
+    // 樹不長在表層藍圖與小點位（出生點石碑，Task 14）的外框內
+    this.plants(col, x0, x1, bps.filter((b) => b.layer === BP_SURFACE || b.layer === BP_MINOR));
     // 裝飾最後放：支撐格（上 / 下一格）已經是坑道、藍圖、樹之後的最終格
     for (let x = x0; x < x1; x++) this.decorate(col, x, this.profile.info(x), this.ctxAt(x), boxRows(parts, x));
   }

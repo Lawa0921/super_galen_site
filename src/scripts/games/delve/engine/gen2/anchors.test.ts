@@ -103,7 +103,8 @@ describe('gen2 anchors', () => {
       const meets = (p: { x0: number; x1: number }, q: { x0: number; x1: number }): boolean => p.x0 < q.x1 && q.x0 < p.x1;
       for (const k of a.filter((q) => q.kind === 'sky_island')) {
         const surf = a.find((q) => q.layer === BP_SURFACE && q.region === k.region && q.slot === k.slot);
-        if (surf) { expect(['village', 'ruin'], seed).toContain(surf.kind); const sb = g.blueprints.anchorBlueprint(h, surf); if (sb) expect(meets(anchorSpan(seed, k), { x0: sb.x, x1: sb.x + sb.w }), `${seed} sky over ${surf.kind}`).toBe(false); }
+        // 村莊 / 遺跡都有建構器（遺跡 Task 14 接上），一定建得出來
+        if (surf) { expect(['village', 'ruin'], seed).toContain(surf.kind); const sb = g.blueprints.anchorBlueprint(h, surf); expect(sb, `${seed} ${surf.kind}`).not.toBeNull(); expect(meets(anchorSpan(seed, k), { x0: sb!.x, x1: sb!.x + sb!.w }), `${seed} sky over ${surf.kind}`).toBe(false); }
         for (const q of a.filter((p) => ['hall', 'mineshaft_secret', 'mushroom_biome', 'crystal_cave', 'hive'].includes(p.kind))) if (meets(slotRange(k), slotRange(q))) { avoided++; expect(meets(anchorSpan(seed, k), slotRange(q)), `${seed} sky over ${q.kind}`).toBe(false); }
       }
     }

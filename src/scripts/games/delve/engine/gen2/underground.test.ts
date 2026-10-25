@@ -76,7 +76,9 @@ function cellMap(b: Blueprint): Map<string, number> {
 function shaftOf(b: Blueprint): { x0: number; x1: number; yTop: number } {
   const cart = b.landmarks[0], yTop = cart.y - 3, at = cellMap(b);
   let x0 = Infinity, x1 = -Infinity;
-  for (let x = b.x; x < b.x + b.w; x++) { const t = at.get(`${x},${yTop + 3}`); if (t === T.RAIL || t === T.ORE_CART) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); } }
+  // 家鄉礦坑的石碑（Task 14）蓋掉坑道站立列的一格軌道（密室裡的石碑不算：密室地板與站立列同一列）
+  const inSecret = (x: number): boolean => !!b.secret && x >= b.secret.x && x < b.secret.x + b.secret.w;
+  for (let x = b.x; x < b.x + b.w; x++) { const t = at.get(`${x},${yTop + 3}`); if (t === T.RAIL || t === T.ORE_CART || (t === T.LORE_TABLET && !inSecret(x))) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); } }
   return { x0, x1, yTop };
 }
 // 斜坡（坑道左端外、藍圖畫了空氣的欄）每欄最低的空氣格；左側有密室 = 沒有斜坡

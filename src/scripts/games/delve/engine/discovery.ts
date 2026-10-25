@@ -413,7 +413,8 @@ export interface DiscoveryOpts {
   treasureItems?: readonly ItemId[];
   /** 世界裡的地標 tile index（舊世界：全部；gen2：已登錄的） */
   landmarks?: readonly number[];
-  /** gen2 / 烘焙世界傳 true：load 保留所有存檔的地標鍵、不經 landmarkSet 過濾 */
+  /** gen2 世界傳 true（DelveGame 只對 genKind 'gen2' 傳）：load 保留所有存檔的地標鍵、不經 landmarkSet 過濾。
+   *  烘焙世界傳 false：BakedSource 沒有 extrasIn，不登錄生成的地標（只有存檔的舊地標，closed 就對）；BakedSource 只在 dev、M2b 刪掉 */
   open?: boolean;
 }
 export interface CategoryStat { cat: RegionCat; label: string; found: number; total: number; }
@@ -448,7 +449,7 @@ export class Discovery {
   /** 世界裡（已知的）地標的 tile index：可領的集合（closed 世界：存檔讀回時只認這些；gen2 世界由 knowLandmark 隨載入增加） */
   readonly landmarkSet: ReadonlySet<number>;
   private readonly known: Set<number>;
-  /** true（gen2 / 烘焙世界）：load 保留存檔的所有地標鍵（生成的地標要等那一欄載入才登錄，讀檔時還不知道） */
+  /** true（gen2 世界）：load 保留存檔的所有地標鍵（生成的地標要等那一欄載入才登錄，讀檔時還不知道） */
   private readonly open: boolean;
   private grid = new Map<number, number[]>();
   /** 外圍地區的查詢（無限世界；回傳 (x, y) 所在的外圍地區；null = 沒有外圍） */
