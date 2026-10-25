@@ -2,6 +2,7 @@ import type { CharacterId } from '../../engine/types';
 import { CHARACTER_IDS } from '../characters';
 import { CHAINS, type Season } from './chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './fragments';
+import type { Companion } from './bond';
 
 export type ActNode = 'act2' | 'act3' | 'act4';
 export const ACT_DEPTHS: Record<ActNode, number> = { act2: 4, act3: 10, act4: 16 };
@@ -123,6 +124,25 @@ const MAJOR_CAPS: Partial<Record<MajorScene, number>> = {
   'finale-eve': 2,   // story L spec §11
 };
 
+/**
+ * Bond plan ruling 6 (spec §0 D14): the bond's scenes are registered as each is written, never as drafts (as `REACTIONS`):
+ * a companion here has all four of her bond scenes (`bond:<c>:1` to `4`), her after-story (`ending:<c>`), her romance
+ * (`romance:<c>`); `TOGETHER_WRITTEN.value`, the night walk with everyone (`together`). Their text is `data/bond.zh-TW.ts`
+ * `BOND_SCENES` (data/bond.test.ts checks the two agree). Arrays and a box, not constants, so a test can register its own
+ * and put them back; `isSceneId` reads them when called, `SCENE_IDS` when loaded.
+ */
+export const BONDS_WRITTEN: Companion[] = [];
+export const ENDINGS_WRITTEN: Companion[] = [];
+export const ROMANCES_WRITTEN: Companion[] = [];
+export const TOGETHER_WRITTEN: { value: boolean } = { value: false };
+/** The registered bond scene ids, in order: bond scenes, after-stories, romances, the walk together. */
+export const registeredBondScenes = (): SceneId[] => [
+  ...BONDS_WRITTEN.flatMap((c) => [1, 2, 3, 4].map((n) => bondScene(c, n))),
+  ...ENDINGS_WRITTEN.map((c): SceneId => `ending:${c}`),
+  ...ROMANCES_WRITTEN.map((c): SceneId => `romance:${c}`),
+  ...(TOGETHER_WRITTEN.value ? ['together' as const] : []),
+];
+
 /** Every scene id, in a fixed order: major scenes, then memories, chats, returns, homecomings, banters (B1) and the group scenes (story L). */
 export const SCENE_IDS: SceneId[] = [
   ...MAJOR_SCENES,
@@ -133,10 +153,12 @@ export const SCENE_IDS: SceneId[] = [
   ...BANTER_PAIRS.flatMap((p) => Array.from({ length: BANTER_COUNT[p] ?? 0 }, (_, i) => banterScene(p, i + 1))),
   ...ACT_NODES.flatMap((n): SceneId[] => (REACTIONS[n] ? [REACTIONS[n]] : [])),   // story L: the written group scenes
   ...Object.values(SEASON_SCENES),   // time and moon: the written season scenes
+  ...registeredBondScenes(),   // bond plan Task 8: the written bond scenes, after every other
 ];
 
 const SCENE_SET = new Set<string>(SCENE_IDS);
-export const isSceneId = (v: unknown): v is SceneId => typeof v === 'string' && (SCENE_SET.has(v) || (Object.values(SEASON_SCENES) as string[]).includes(v));
+export const isSceneId = (v: unknown): v is SceneId => typeof v === 'string'
+  && (SCENE_SET.has(v) || (Object.values(SEASON_SCENES) as string[]).includes(v) || (registeredBondScenes() as string[]).includes(v));
 
 export type SceneKind = 'major' | 'memory' | 'chat' | 'town' | 'home' | 'banter' | 'group' | 'bond' | 'ending' | 'romance';
 export function sceneKind(id: SceneId): SceneKind {

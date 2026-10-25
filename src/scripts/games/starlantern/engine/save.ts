@@ -144,6 +144,11 @@ function isStory(v: unknown): boolean {
   if (v.gifted !== undefined && !(v.bondDay !== undefined && isUniqueList(v.gifted, (x) => COMPANIONS.includes(x as Companion)))) return false;
   if (v.talked !== undefined && !(v.talked === true && v.bondDay !== undefined)) return false;
   if (v.romance !== undefined && !(ROMANCEABLE.includes(v.romance as Companion) && v.finaleCleared)) return false;
+  // bond plan Task 8: the walk together is never recorded; a romance scene is only the chosen one's
+  for (const list of [v.seen, v.fresh, v.queue] as unknown[][]) {
+    if (list.includes('together')) return false;
+    if (list.some((id) => typeof id === 'string' && id.startsWith('romance:') && id !== `romance:${v.romance as string}`)) return false;
+  }
   return isObj(v.pity) && Object.entries(v.pity).every(([k, n]) => CHARACTER_IDS.includes(k as never) && Number.isInteger(n) && (n as number) >= 0 && (n as number) <= 999);
 }
 

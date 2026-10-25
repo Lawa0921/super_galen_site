@@ -1,5 +1,7 @@
 import type { GiftId } from '../engine/types';
 import type { Companion } from './story/bond';
+import type { SceneId } from './story/scenes';
+import type { SceneLine } from './story.zh-TW';
 
 /**
  * The bond's text (bond plan Task 6 on; spec 2026-10-18 affinity design, 0 D14): only text that is written. Nothing here is
@@ -25,3 +27,13 @@ export const GIFT_LINES: Partial<Record<Companion, GiftPools>> = {};
 
 /** Rin's reactions after her choice; she is offered only once both of hers are written (plan ruling 6). */
 export const RIN_OATH_GIFT_LINES: GiftPools | null = null;
+
+/**
+ * The bond's scenes as written (bond plan Task 8): each bond scene, after-story, romance and the walk together, keyed by its
+ * id, registered in data/story/scenes.ts as it is written; `buildScenes` adds them to `STORY.scenes`. A scene may use the
+ * location cards of data/story/places.ts (a new one goes in that table).
+ */
+export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary: string }>> = {};
+
+/** Two town lines for the one chosen (plan ruling 13), added to the town's pool under her name once she is chosen. */
+export const ROMANCE_LINES: Partial<Record<Companion, string[]>> = {};

@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { COMPANIONS, GIFT_TASTE, type Companion } from './story/bond';
-import { GIFT_LINES, RIN_OATH_GIFT_LINES, type GiftPools } from './bond.zh-TW';
+import { BOND_SCENES, GIFT_LINES, RIN_OATH_GIFT_LINES, ROMANCE_LINES, type GiftPools } from './bond.zh-TW';
+import { BONDS_WRITTEN, ENDINGS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, bondScene, sceneKind, type SceneId } from './story/scenes';
+import { CHOICE_MAX_CHARS, MAX_LINE_CHARS, STORY, flatLines, isChoice, type ChoiceLine, type SceneLine, type ScriptLine } from './story.zh-TW';
+import { dots, opensOnDots } from './story/voiceGates';
 
 /**
  * Bond plan Task 6 (spec §0 D14, §6.4): a companion's gift reactions are registered whole or not at all. What a written
@@ -44,5 +50,228 @@ describe('bond text: gift reactions', () => {
     expect(allProblems({ chizuru: { ...whole('chizuru'), healed: { 'ice-crystal': '八' } } }, null)).toHaveLength(1);   // she never heals
     expect(allProblems({ rin: whole('rin') }, null)).toEqual(['rin: written before her choice only']);
     expect(allProblems({}, whole('rin'))).toEqual(['rin: written after her choice only']);
+  });
+});
+
+// ---- bond plan Task 8: the gates on the bond's copy. Each takes the copy as an argument (the real tables by default) and
+// says what breaks, one line a break, so the test can prove on an injected table that it bites.
+
+/** All of the bond's copy and its registries (spec §0 D14), as one argument. */
+interface BondCopy {
+  scenes: Partial<Record<SceneId, { lines: SceneLine[]; summary: string }>>;
+  gifts: Partial<Record<Companion, GiftPools>>;
+  rinOath: GiftPools | null;
+  romance: Partial<Record<Companion, string[]>>;
+  bonds: readonly Companion[]; endings: readonly Companion[]; romances: readonly Companion[]; together: boolean;
+}
+const REAL = (): BondCopy => ({
+  scenes: BOND_SCENES, gifts: GIFT_LINES, rinOath: RIN_OATH_GIFT_LINES, romance: ROMANCE_LINES,
+  bonds: BONDS_WRITTEN, endings: ENDINGS_WRITTEN, romances: ROMANCES_WRITTEN, together: TOGETHER_WRITTEN.value,
+});
+const EMPTY: BondCopy = { scenes: {}, gifts: {}, rinOath: null, romance: {}, bonds: [], endings: [], romances: [], together: false };
+const scenesOf = (copy: BondCopy) => Object.entries(copy.scenes) as [SceneId, { lines: SceneLine[]; summary: string }][];
+/** Every gift line of the copy, with whose it is and where it sits. */
+const giftLinesOf = (copy: BondCopy): { key: string; who: Companion; text: string }[] => {
+  const of = (who: Companion, p: GiftPools, tag: string) => [
+    ...(['loved', 'liked', 'neutral'] as const).flatMap((t) => p[t].map((text, i) => ({ key: `${tag}.${t}.${i}`, who, text }))),
+    ...Object.entries(p.declined).map(([m, text]) => ({ key: `${tag}.declined.${m}`, who, text: text! })),
+    ...Object.entries(p.healed).map(([m, text]) => ({ key: `${tag}.healed.${m}`, who, text: text! })),
+  ];
+  return [
+    ...(Object.entries(copy.gifts) as [Companion, GiftPools][]).flatMap(([c, p]) => of(c, p, `gift:${c}`)),
+    ...(copy.rinOath ? of('rin', copy.rinOath, 'gift:rin-oath') : []),
+  ];
+};
+const romanceLinesOf = (copy: BondCopy): { key: string; who: Companion; text: string }[] =>
+  (Object.entries(copy.romance) as [Companion, string[]][]).flatMap(([c, ls]) => ls.map((text, i) => ({ key: `romanceLines.${c}.${i}`, who: c, text })));
+/** Every string of the copy: each scene's lines (choices opened), their place cards and summaries, gift and romance lines. */
+const allText = (copy: BondCopy): { key: string; text: string }[] => [
+  ...scenesOf(copy).flatMap(([id, s]) => [
+    ...flatLines(s.lines).flatMap((l, i) => [{ key: `${id}.${i}`, text: l.text }, ...(l.place ? [{ key: `${id}.${i}.place`, text: l.place.text }] : [])]),
+    { key: `${id}.summary`, text: s.summary },
+  ]),
+  ...giftLinesOf(copy), ...romanceLinesOf(copy),
+];
+
+const choiceCountBreaks = (copy: BondCopy): string[] => scenesOf(copy).flatMap(([id, s]) => {
+  const n = s.lines.filter(isChoice).length;
+  const want = sceneKind(id) === 'bond' ? 1 : 0;
+  return n === want ? [] : [`${id}: ${n} choices, not ${want}`];
+});
+const choiceShapeBreaks = (copy: BondCopy): string[] => scenesOf(copy).flatMap(([id, s]) => s.lines.filter(isChoice).flatMap((c) => [
+  ...(c.choices.length < 2 || c.choices.length > 3 ? [`${id}: ${c.choices.length} ways to say it`] : []),
+  ...(new Set(c.choices.map((x) => x.tone)).size !== c.choices.length ? [`${id}: a tone twice`] : []),
+  ...c.choices.flatMap((x) => [
+    ...([...x.text].length > CHOICE_MAX_CHARS ? [`${id}: 「${x.text}」 is over ${CHOICE_MAX_CHARS}`] : []),
+    ...(x.reply.length < 1 || x.reply.length > 2 ? [`${id}: a reply of ${x.reply.length} lines`] : []),
+    ...(x.reply.some((l) => l.if) ? [`${id}: a reply line with a condition`] : []),
+  ]),
+]));
+/** Season and moon words (spec §0 D11): none, the inn's name 月影旅館 aside; nor the lantern festival. */
+const SEASON_MOON = /[春夏秋冬雪月]|星燈祭/;
+const seasonBreaks = (copy: BondCopy): string[] =>
+  allText(copy).filter((t) => SEASON_MOON.test(t.text.replaceAll('月影旅館', ''))).map((t) => `${t.key}: ${t.text}`);
+const summaryBreaks = (copy: BondCopy): string[] => scenesOf(copy).flatMap(([id, s]) => [
+  ...(s.summary.trim() === '' ? [`${id}: no summary`] : []),
+  ...([...s.summary].length > MAX_LINE_CHARS ? [`${id}: a summary over ${MAX_LINE_CHARS}`] : []),
+  ...(SEASON_MOON.test(s.summary.replaceAll('月影旅館', '')) ? [`${id}: a season or the moon in its summary`] : []),
+]);
+const registryBreaks = (copy: BondCopy): string[] => {
+  const want = new Set<string>([
+    ...copy.bonds.flatMap((c) => [1, 2, 3, 4].map((n) => bondScene(c, n))), ...copy.endings.map((c) => `ending:${c}`),
+    ...copy.romances.map((c) => `romance:${c}`), ...(copy.together ? ['together'] : []),
+  ]);
+  const have = new Set<string>(Object.keys(copy.scenes));
+  return [
+    ...[...want].filter((id) => !have.has(id)).map((id) => `${id}: registered, not written`),
+    ...[...have].filter((id) => !want.has(id)).map((id) => `${id}: written, not registered`),
+    ...(Object.keys(copy.romance) as Companion[]).filter((c) => !copy.romances.includes(c)).map((c) => `romanceLines.${c}: her romance is not registered`),
+  ];
+};
+const PRE_CHOICE = /洛恩|我們|[呢吧啦喔囉嘛耶]|！/;
+const PRE_CHOICE_MOODS: ReadonlySet<string> = new Set(['normal', 'serious', 'guarded']);
+const rinBeforeBreaks = (copy: BondCopy): string[] => [
+  ...(['bond:rin:1', 'bond:rin:2'] as SceneId[]).flatMap((id) => flatLines(copy.scenes[id]?.lines ?? []).filter((l) => l.who === 'rin').flatMap((l) => [
+    ...(PRE_CHOICE.test(l.text) ? [`${id}: 「${l.text}」`] : []),
+    ...(l.mood && !PRE_CHOICE_MOODS.has(l.mood) ? [`${id}: ${l.mood}`] : []),
+  ])),
+  ...giftLinesOf({ ...copy, rinOath: null }).filter((t) => t.who === 'rin' && PRE_CHOICE.test(t.text)).map((t) => `${t.key}: 「${t.text}」`),
+];
+/** Style bible §3: Safira never says his name; Selene, Noel and Scarlet call him otherwise once whole, so a reading-blind gift line names him not. */
+const callBreaks = (copy: BondCopy): string[] => [
+  ...scenesOf(copy).flatMap(([id, s]) => flatLines(s.lines).filter((l) => l.who === 'safira' && l.text.includes('洛恩')).map((l) => `${id}: Safira says 「洛恩」`)),
+  ...giftLinesOf(copy).filter((t) => (t.who === 'safira' || t.who === 'selene' || t.who === 'noel' || t.who === 'scarlet') && t.text.includes('洛恩')).map((t) => `${t.key}: 「洛恩」`),
+];
+const LOUD = new Set<string>(['noel', 'bobby', 'safira', 'liz']);
+/** Bible §2.2–§2.4, the light rules, on the copy that is no scene (gift and romance lines). */
+const lightCopyBreaks = (copy: BondCopy): string[] => [...giftLinesOf(copy), ...romanceLinesOf(copy)].flatMap((t) => [
+  ...(dots(t.text) > 1 ? [`${t.key}: two 「……」`] : []),
+  ...(opensOnDots(t.text) ? [`${t.key}: opens on 「……」`] : []),
+  ...(t.text.includes('！') && !LOUD.has(t.who) ? [`${t.key}: 「！」 is not hers`] : []),
+]);
+const ROOM = /你房裡|你的房間|他的房間|她的房間|凜的房間|各自的房/;
+const roomBreaks = (copy: BondCopy): string[] => allText(copy).filter((t) => ROOM.test(t.text)).map((t) => t.key);
+const LOSS = /吃醋|嫉妒|離開隊伍|退出隊伍|不要我了|輸給/;
+const romanceBreaks = (copy: BondCopy): string[] => scenesOf(copy).filter(([id]) => id.startsWith('romance:')).flatMap(([id, s]) => {
+  const c = id.split(':')[1];
+  const lines = flatLines(s.lines);
+  const other = lines.some((l) => l.who !== c && l.who !== 'hero' && (COMPANIONS as string[]).includes(l.who) && l.if?.met === l.who);
+  return [...(other ? [] : [`${id}: no other companion is there`]), ...lines.filter((l) => LOSS.test(l.text)).map((l) => `${id}: 「${l.text}」`)];
+});
+/** A banter holds no choice and no tier: one reading for two companions on their own. */
+const banterBreaks = (scenes: Partial<Record<SceneId, { lines: SceneLine[] }>>): string[] =>
+  (Object.entries(scenes) as [SceneId, { lines: SceneLine[] }][]).filter(([id]) => id.startsWith('banter:')).flatMap(([id, s]) => [
+    ...(s.lines.some(isChoice) ? [`${id}: a choice`] : []),
+    ...(flatLines(s.lines).some((l) => l.if?.tier) ? [`${id}: a tier`] : []),
+  ]);
+
+describe('bond text: the gates on the copy (bond plan Task 8)', () => {
+  const line = (who: ScriptLine['who'], text: string, extra: Partial<ScriptLine> = {}): ScriptLine => ({ who, text, ...extra });
+  const choice = (n = 2): ChoiceLine => ({ who: 'hero', choices: (['ask', 'stay', 'promise'] as const).slice(0, n).map((tone) => ({ tone, text: '「後來呢？」', reply: [line('selene', '「好。」')] })) });
+  const scene = (lines: SceneLine[], summary = '她說了一件事。') => ({ lines, summary });
+  const bonds4 = (c: Companion, lines = [line('narrator', '甲。'), choice()]) =>
+    Object.fromEntries([1, 2, 3, 4].map((n) => [bondScene(c, n), scene(lines)]));
+
+  it('every bond scene holds exactly one choice, and nothing else does', () => {
+    expect(choiceCountBreaks(REAL())).toEqual([]);
+    expect(choiceCountBreaks({ ...EMPTY, scenes: { 'bond:selene:1': scene([line('narrator', '甲。')]), 'ending:liz': scene([choice()]) } }))
+      .toEqual(['bond:selene:1: 0 choices, not 1', 'ending:liz: 1 choices, not 0']);
+    expect(choiceCountBreaks({ ...EMPTY, scenes: { 'bond:selene:1': scene([choice(), choice()]) } })).toEqual(['bond:selene:1: 2 choices, not 1']);
+  });
+
+  it('choices are two or three ways to say it', () => {
+    expect(choiceShapeBreaks(REAL())).toEqual([]);
+    const bad: ChoiceLine = { who: 'hero', choices: [
+      { tone: 'ask', text: `「${'好'.repeat(19)}」`, reply: [] },
+      { tone: 'ask', text: '「好。」', reply: [line('selene', '一'), line('selene', '二'), line('selene', '三')] },
+    ] };
+    expect(choiceShapeBreaks({ ...EMPTY, scenes: { 'bond:selene:1': scene([bad]) } })).toHaveLength(4);   // a tone twice, too long, no reply, three
+    expect(choiceShapeBreaks({ ...EMPTY, scenes: { 'bond:selene:1': scene([choice(1)]) } })).toEqual(['bond:selene:1: 1 ways to say it']);
+    const iffy: ChoiceLine = { who: 'hero', choices: [choice().choices[0], { tone: 'stay', text: '（坐下。）', reply: [line('selene', '「嗯。」', { if: { met: 'rin' } })] }] };
+    expect(choiceShapeBreaks({ ...EMPTY, scenes: { 'bond:selene:1': scene([iffy]) } })).toEqual(['bond:selene:1: a reply line with a condition']);
+    expect(choiceShapeBreaks({ ...EMPTY, scenes: { 'bond:selene:1': scene([choice(3)]) } })).toEqual([]);
+  });
+
+  it('every scene has its summary', () => {
+    expect(summaryBreaks(REAL())).toEqual([]);
+    expect(summaryBreaks({ ...EMPTY, scenes: { 'ending:liz': scene([line('narrator', '甲。')], ' '), 'ending:noel': scene([line('narrator', '甲。')], '那一晚的月亮很圓。') } }))
+      .toEqual(['ending:liz: no summary', 'ending:noel: a season or the moon in its summary']);
+    expect(summaryBreaks({ ...EMPTY, scenes: { 'ending:liz': scene([line('narrator', '甲。')], '好'.repeat(61)) } })).toEqual([`ending:liz: a summary over ${MAX_LINE_CHARS}`]);
+  });
+
+  it('registries match the scripts', () => {
+    expect(registryBreaks(REAL())).toEqual([]);
+    expect(registryBreaks({ ...EMPTY, bonds: ['selene'], scenes: { 'bond:selene:1': scene([choice()]) } })).toEqual([
+      'bond:selene:2: registered, not written', 'bond:selene:3: registered, not written', 'bond:selene:4: registered, not written',
+    ]);
+    expect(registryBreaks({ ...EMPTY, scenes: { 'ending:liz': scene([]) }, romance: { rin: ['一'] } })).toEqual([
+      'ending:liz: written, not registered', 'romanceLines.rin: her romance is not registered',
+    ]);
+    expect(registryBreaks({ ...EMPTY, bonds: ['selene'], endings: ['liz'], romances: ['rin'], together: true, romance: { rin: ['一'] },
+      scenes: { ...bonds4('selene'), 'ending:liz': scene([]), 'romance:rin': scene([]), together: scene([]) } })).toEqual([]);
+  });
+
+  it('bond copy names no season and no moon', () => {
+    expect(seasonBreaks(REAL())).toEqual([]);
+    const at = { text: '月影旅館・夜', night: true as const };
+    expect(seasonBreaks({ ...EMPTY, scenes: { 'bond:selene:1': scene([line('narrator', '月影旅館的走廊很安靜。', { place: at }), choice()]) } })).toEqual([]);
+    for (const bad of ['窗外下著雪。', '月亮出來了。', '春天到了。', '星燈祭那一晚。']) {
+      expect(seasonBreaks({ ...EMPTY, scenes: { 'bond:selene:1': scene([line('narrator', bad)]) } }), bad).toHaveLength(1);
+    }
+    expect(seasonBreaks({ ...EMPTY, scenes: { 'bond:selene:1': scene([line('narrator', '甲。', { place: { text: '屋頂・月下' } })]) } })).toHaveLength(1);
+    expect(seasonBreaks({ ...EMPTY, gifts: { selene: { loved: ['「像月光。」'], liked: [], neutral: [], declined: {}, healed: {} } } })).toHaveLength(1);
+    expect(seasonBreaks({ ...EMPTY, romance: { rin: ['夏天的夜。'] } })).toHaveLength(1);
+    const reply: ChoiceLine = { who: 'hero', choices: [{ tone: 'ask', text: '「冷嗎？」', reply: [line('selene', '「雪好白。」')] }, choice().choices[1]] };
+    expect(seasonBreaks({ ...EMPTY, scenes: { 'bond:selene:1': scene([reply]) } })).toHaveLength(1);
+  });
+
+  it('Rin before her choice', () => {
+    expect(rinBeforeBreaks(REAL())).toEqual([]);
+    expect(rinBeforeBreaks({ ...EMPTY, scenes: { 'bond:rin:1': scene([line('rin', '「洛恩。」'), line('rin', '「嗯。」', { mood: 'smile' })]) } }))
+      .toEqual(['bond:rin:1: 「「洛恩。」」', 'bond:rin:1: smile']);
+    expect(rinBeforeBreaks({ ...EMPTY, scenes: { 'bond:rin:2': scene([line('rin', '「好吧。」')]), 'bond:rin:3': scene([line('rin', '「洛恩，好吧！」')]) } })).toEqual(['bond:rin:2: 「「好吧。」」']);
+    const pools = { loved: ['「我們走。」'], liked: [], neutral: [], declined: {}, healed: {} };
+    expect(rinBeforeBreaks({ ...EMPTY, gifts: { rin: pools }, rinOath: { ...pools, loved: ['「洛恩，我們走。」'] } })).toEqual(['gift:rin.loved.0: 「「我們走。」」']);
+  });
+
+  it('who calls him what', () => {
+    expect(callBreaks(REAL())).toEqual([]);
+    expect(callBreaks({ ...EMPTY, scenes: { 'bond:safira:1': scene([line('safira', '「洛恩！」'), line('liz', '「洛恩老大。」')]) } })).toEqual(['bond:safira:1: Safira says 「洛恩」']);
+    const p = (t: string): GiftPools => ({ loved: [t], liked: [], neutral: [], declined: {}, healed: {} });
+    expect(callBreaks({ ...EMPTY, gifts: { selene: p('「洛恩先生。」'), noel: p('「洛恩。」'), scarlet: p('「洛恩閣下。」'), liz: p('「洛恩老大。」') } })).toHaveLength(3);
+  });
+
+  it('light and heavy: gift and romance lines keep the light rules', () => {
+    expect(lightCopyBreaks(REAL())).toEqual([]);
+    const p = (who: Companion, t: string) => ({ ...EMPTY, gifts: { [who]: { loved: [t], liked: [], neutral: [], declined: {}, healed: {} } } });
+    expect(lightCopyBreaks(p('selene', '「……謝謝……」'))).toEqual(['gift:selene.loved.0: two 「……」', 'gift:selene.loved.0: opens on 「……」']);
+    expect(lightCopyBreaks(p('selene', '「好亮！」'))).toEqual(['gift:selene.loved.0: 「！」 is not hers']);
+    expect(lightCopyBreaks(p('bobby', '「好亮！」'))).toEqual([]);
+    expect(lightCopyBreaks({ ...EMPTY, romance: { rin: ['「……走吧。」'] } })).toEqual(['romanceLines.rin.0: opens on 「……」']);
+  });
+
+  it('the finale and the festival are untouched', () => {
+    // data/story/frozenScenes.test.ts holds the snapshot; this checks it is there and holds both scenes.
+    const fixture = join(dirname(fileURLToPath(import.meta.url)), 'story', '__fixtures__', 'frozen-scenes.json');
+    expect(existsSync(fixture)).toBe(true);
+    expect(Object.keys(JSON.parse(readFileSync(fixture, 'utf8'))).sort()).toEqual(['epilogue', 'finale']);
+  });
+
+  it('no banter holds a choice or a tier', () => {
+    expect(banterBreaks(STORY.scenes)).toEqual([]);
+    expect(banterBreaks({ 'banter:noel-rin:1': { lines: [choice()] }, 'banter:noel-rin:2': { lines: [line('rin', '一', { if: { tier: { who: 'rin', min: 1 } } })] } }))
+      .toEqual(['banter:noel-rin:1: a choice', 'banter:noel-rin:2: a tier']);
+  });
+
+  it('no room of his own', () => {
+    expect(roomBreaks(REAL())).toEqual([]);
+    expect(roomBreaks({ ...EMPTY, scenes: { 'bond:rin:3': scene([line('narrator', '他回到自己的床。'), line('narrator', '她敲了敲他的房間。')]) } })).toEqual(['bond:rin:3.1']);
+  });
+
+  it('a romance keeps everyone', () => {
+    expect(romanceBreaks(REAL())).toEqual([]);
+    expect(romanceBreaks({ ...EMPTY, scenes: { 'romance:rin': scene([line('rin', '「走吧。」'), line('selene', '「我吃醋了呢。」')]) } }))
+      .toEqual(['romance:rin: no other companion is there', 'romance:rin: 「「我吃醋了呢。」」']);
+    expect(romanceBreaks({ ...EMPTY, scenes: { 'romance:rin': scene([line('rin', '「走吧。」'), line('selene', '「路上小心。」', { if: { met: 'selene' } })]) } })).toEqual([]);
   });
 });

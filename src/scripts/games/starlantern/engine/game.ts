@@ -47,8 +47,8 @@ import { moveRune, socketRune, unsocketRune, type SocketAt, type SocketFail } fr
 import type { RuneRef } from '../data/runes';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
 import { applyBuild, applyCost, followUp } from './builds';
-import { addField, giveGift, inDanger, type GiveResult } from './story/bond';
-import type { Companion } from '../data/story/bond';
+import { addField, bondOf, giveGift, inDanger, talkPoints, type GiveResult } from './story/bond';
+import { BOND_CAP, type Companion, type Tone } from '../data/story/bond';
 import { FIELD_POINTS } from '../data/story/bond';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
 
@@ -139,6 +139,8 @@ export class Game {
   private safeSeen = new Set<CharacterId>();
   /** Bond plan ruling 3: who dropped into danger during this fight, from out of it (`safeSeen`). Not saved. */
   private endangered = new Set<CharacterId>();
+  /** Bond plan Task 8: the pending bond scenes whose choice has counted (once each). Not saved. */
+  private choiceCounted = new Set<SceneId>();
   /**
    * The tier the fight on now is played and paid at (difficulty plan ruling 17): the run's at `startBattle`, none for a
    * story fight or a Normal run. The fight's scale, affixes, gear, runes and boss-kill key read it, never `run.difficulty`;
@@ -1194,6 +1196,22 @@ export class Game {
     return true;
   }
 
+  /**
+   * Bond plan Task 8 (spec §7.4): the choice of a bond scene that is playing, before its `sceneDone`: her talk points
+   * (`talkPoints`; `null` for skipped) up to BOND_CAP.talk. Only for a bond scene in `pending`, not yet seen, once.
+   */
+  bondChoice(id: SceneId, tone: Tone | null): boolean {
+    if (!id.startsWith('bond:') || !this.pending.includes(id) || this.state.story.seen.includes(id) || this.choiceCounted.has(id)) return false;
+    const c = id.split(':')[1] as Companion;
+    const m = this.state.party.roster[c];
+    if (!m || !this.state.party.recruited.includes(c)) return false;
+    this.choiceCounted.add(id);
+    const b = bondOf(m);
+    const party = this.state.party;
+    this.state.party = { ...party, roster: { ...party.roster, [c]: { ...m, bond: { ...b, gifts: { ...b.gifts }, talk: Math.min(BOND_CAP.talk, b.talk + talkPoints(c, tone)) } } } };
+    return true;
+  }
+
   /** Bond plan Task 6: one gift to a companion (`giveGift`), town only, saved at once like a shard absorbed. */
   give(c: Companion, mat: string): GiveResult | { ok: false; reason: 'phase' } {
     if (this.phase !== 'town') return { ok: false, reason: 'phase' };
@@ -1284,6 +1302,7 @@ export class Game {
     this.night = this.night.filter((s) => s !== id);
     this.eve = this.eve.filter((s) => s !== id);
     this.pending = this.pending.filter((s) => s !== id);
+    this.choiceCounted.delete(id);
     this.state = sceneDone(this.state, id, how);
     if (eve) {
       this.eve = eveMemories(this.state);

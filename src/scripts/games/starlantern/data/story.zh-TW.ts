@@ -8,7 +8,8 @@ import { CHAINS, type MoonPhase, type Season } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
 import { PL, type Place } from './story/places';
 import type { BondTier, Companion, Tone } from './story/bond';
-import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, SEASON_SCENES, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, BONDS_WRITTEN, CHAT_COUNT, ENDINGS_WRITTEN, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, ROMANCES_WRITTEN, SEASON_SCENES, TOGETHER_WRITTEN, banterScene, banterTwo, bondScene, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { BOND_SCENES } from './bond.zh-TW';
 
 export type NpcId = 'anna' | 'orik' | 'marta' | 'glen' | 'doran' | 'merchant' | 'bellkeeper';
 export const NPC_NAMES: Record<NpcId, string> = {
@@ -1961,6 +1962,25 @@ const BANTER: Partial<Record<SceneId, Written>> = {
 /** A scene as the game plays it: its handbook title, its lines as written (a bond scene's choices among them), its summary. */
 export interface Scene { title: string; lines: SceneLine[]; summary: string }
 
+/** What is registered of the bond's scenes (data/story/scenes.ts), as one argument. */
+export interface BondWritten { bonds: readonly Companion[]; endings: readonly Companion[]; romances: readonly Companion[]; together: boolean }
+/**
+ * Bond plan Task 8: the registered bond scenes with their titles (interface labels may carry numerals) and their text
+ * (`BOND_SCENES`), in `SCENE_IDS` order. A registered scene with no text throws: it is a bug, not a draft.
+ */
+export function bondSceneEntries(
+  w: BondWritten = { bonds: BONDS_WRITTEN, endings: ENDINGS_WRITTEN, romances: ROMANCES_WRITTEN, together: TOGETHER_WRITTEN.value },
+  texts: Partial<Record<SceneId, { lines: SceneLine[]; summary: string }>> = BOND_SCENES,
+): [SceneId, Scene][] {
+  const entry = (id: SceneId, title: string): [SceneId, Scene] => [id, { title, ...written(texts[id], id) }];
+  return [
+    ...w.bonds.flatMap((c) => [1, 2, 3, 4].map((n) => entry(bondScene(c, n), `${nameOf(c)}・羈絆 ${n}`))),
+    ...w.endings.map((c) => entry(`ending:${c}`, `${nameOf(c)}・後日談`)),
+    ...w.romances.map((c) => entry(`romance:${c}`, `${nameOf(c)}・夜路`)),
+    ...(w.together ? [entry('together', '夜路・和大家一起')] : []),
+  ];
+}
+
 function buildScenes(): Record<SceneId, Scene> {
   const out = {} as Record<SceneId, Scene>;
   // Plan 6c wrote every scene (Task 14 removed the drafts): a scene without its SCRIPT entry is a bug, not a draft.
@@ -1984,6 +2004,7 @@ function buildScenes(): Record<SceneId, Scene> {
       out[id] = { title: `${nameOf(a)}與${nameOf(b)}・閒聊${numeral(n)}`, ...written(BANTER[id], id) };
     }
   }
+  for (const [id, scene] of bondSceneEntries()) out[id] = scene;   // bond plan Task 8: the registered bond scenes
   return out;
 }
 

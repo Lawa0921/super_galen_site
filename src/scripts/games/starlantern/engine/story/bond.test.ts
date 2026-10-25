@@ -3,7 +3,7 @@ import { newMember } from '../party';
 import { chainLength } from '../../data/story/chains';
 import { COMPANIONS, GIFTABLE, GIFT_TASTE, type Companion } from '../../data/story/bond';
 import type { BondRecord, Member } from '../types';
-import { BOND_SWITCH, addField, bondOf, bondPoints, bondTier, giftLine, giftMood, giftPools, giftPoints, giveGift, inDanger, tasteOf, tierAt, today } from './bond';
+import { BOND_SWITCH, addField, talkPoints, bondOf, bondPoints, bondTier, giftLine, giftMood, giftPools, giftPoints, giveGift, inDanger, tasteOf, tierAt, today } from './bond';
 import type { GiftPools } from '../../data/bond.zh-TW';
 import { meet } from '../party';
 import { mulberry32 } from '../rng';
@@ -357,5 +357,19 @@ describe('gifts (bond plan Task 6)', () => {
         was = now;
       }
     }
+  });
+});
+
+describe('talk points (bond plan Task 8)', () => {
+  it('talk points never miss', () => {
+    for (const c of COMPANIONS) {
+      const pts = (['ask', 'stay', 'promise'] as const).map((t) => talkPoints(c, t));
+      for (const p of pts) expect([2, 3], c).toContain(p);
+      expect(Math.max(...pts) - Math.min(...pts), c).toBeLessThanOrEqual(1);
+      expect(pts.filter((p) => p === 3), c).toHaveLength(1);   // her preferred tone
+      expect(talkPoints(c, null), c).toBe(2);
+    }
+    expect(talkPoints('selene', 'promise')).toBe(3);
+    expect(talkPoints('selene', 'ask')).toBe(2);
   });
 });

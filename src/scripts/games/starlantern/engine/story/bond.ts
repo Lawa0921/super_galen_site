@@ -1,6 +1,7 @@
 import {
   BOND_CAP, BOND_MAX, BOND_PCT, BOND_PER_PIECE, BOND_RUN_CAP, BOND_SCALE, BOND_START, BOND_TIER_AT, DANGER_PCT, GIFTABLE,
-  GIFT_MOOD, GIFT_REPEAT_FULL, GIFT_TASTE, GIFT_VALUE, RIN_GIFT_MOOD_BEFORE_OATH, type BondTier, type Companion, type Taste,
+  GIFT_MOOD, GIFT_REPEAT_FULL, GIFT_TASTE, GIFT_VALUE, RIN_GIFT_MOOD_BEFORE_OATH, TALK_POINTS, TONE_PREF, type BondTier, type Companion,
+  type Taste, type Tone,
 } from '../../data/story/bond';
 import { GIFT_LINES, RIN_OATH_GIFT_LINES, type GiftPools } from '../../data/bond.zh-TW';
 import type { StoryMood } from '../../render/artPaths';
@@ -205,3 +206,7 @@ export function giftLine(r: Extract<GiveResult, { ok: true }>, pools: GiftPools)
 /** Her face for a gift (spec §6.4): Rin before her choice always `normal` (her averted face waits on her 4th piece). */
 export const giftMood = (c: Companion, taste: Taste, oath: boolean): StoryMood =>
   c === 'rin' && !oath ? RIN_GIFT_MOOD_BEFORE_OATH : GIFT_MOOD[c][taste];
+
+/** A bond scene's choice (spec §7.2): her preferred tone 3, any other 2, none (skipped, or cancelled on the choice) 2. */
+export const talkPoints = (c: Companion, tone: Tone | null): 2 | 3 =>
+  (tone !== null && tone === TONE_PREF[c] ? TALK_POINTS.preferred : tone === null ? TALK_POINTS.skipped : TALK_POINTS.other) as 2 | 3;

@@ -21,7 +21,7 @@ import { ABSORB_CAP, ABSORB_GAIN } from '../data/story/fragments';
 import { chainLength } from '../data/story/chains';
 import { NIGHT_BEATS } from '../data/story.zh-TW';
 import { MAX_DAY, SPRING_AFTER, dayOf } from './calendar';
-import { SEASON_SCENES, isSceneId, memScene, type SceneId } from '../data/story/scenes';
+import { ROMANCES_WRITTEN, SEASON_SCENES, TOGETHER_WRITTEN, isSceneId, memScene, type SceneId } from '../data/story/scenes';
 import { meet } from './party';
 
 describe('save', () => {
@@ -1403,4 +1403,47 @@ describe('bond in the save (bond plan Task 2)', () => {
     ok('bondDay yesterday', (g) => { g.story.bondDay = 4; g.story.gifted = ['rin']; });
     ok('a romance with Selene', (g) => { g.story.romance = 'selene'; });
   });
+});
+
+describe('bond scene ids in the save (bond plan Task 8)', () => {
+  const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
+  /** The romance and the walk together registered for the test (the registries start empty), put back after. */
+  const withRegistered = (f: () => void) => {
+    ROMANCES_WRITTEN.push('liz', 'rin');
+    TOGETHER_WRITTEN.value = true;
+    try { f(); } finally { ROMANCES_WRITTEN.splice(0); TOGETHER_WRITTEN.value = false; }
+  };
+  const after = (): GameState => {
+    const g = newGame();
+    g.story.act1Cleared = true;
+    g.story.finaleCleared = true;
+    g.party = meet(g.party, 'liz', 1);
+    return g;
+  };
+  it('the walk together is never recorded', () => withRegistered(() => {
+    expect(isSceneId('together')).toBe(true);
+    for (const list of ['seen', 'fresh', 'queue'] as const) {
+      const g = after();
+      g.story.seen.push('together');
+      if (list !== 'seen') g.story[list].push('together');
+      if (list === 'queue') g.story.seen = g.story.seen.filter((s) => s !== 'together');
+      expect(status(g), list).toBe('corrupt');
+    }
+  }));
+  it("a romance scene is only the chosen one's", () => withRegistered(() => {
+    const g = after();
+    g.story.romance = 'liz';
+    g.story.seen.push('romance:liz');
+    expect(status(g)).toBe('ok');
+    g.story.romance = 'rin';
+    expect(status(g)).toBe('corrupt');
+    delete g.story.romance;
+    expect(status(g)).toBe('corrupt');
+    const q = after();
+    q.story.romance = 'liz';
+    q.story.queue.push('romance:rin');
+    expect(status(q)).toBe('corrupt');
+    q.story.queue = ['romance:liz'];
+    expect(status(q)).toBe('ok');
+  }));
 });

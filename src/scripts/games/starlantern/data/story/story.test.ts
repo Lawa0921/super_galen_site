@@ -4,7 +4,7 @@ import { ITEMS } from '../items';
 import { MATERIALS } from '../materials';
 import { REGIONS } from '../regions';
 import { MEETINGS } from '../meetings';
-import { FOUND_LINE, GROUP_TITLES, NIGHT_BEATS, SEASON_TITLES, NIGHT_PLACE, DAWN_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, CHOICE_MAX_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, flatLines, isChoice, worstCount, type ChoiceLine, type LineWhen, type SceneLine, type ScriptLine } from '../story.zh-TW';
+import { bondSceneEntries, FOUND_LINE, GROUP_TITLES, NIGHT_BEATS, SEASON_TITLES, NIGHT_PLACE, DAWN_PLACE, introIndex, numeral, STORY, PLACEHOLDERS, NPC_NAMES, MAX_LINE_CHARS, CHOICE_MAX_CHARS, MEMORY_GUESTS, moodAllowed, linesWhen, flatLines, isChoice, worstCount, type ChoiceLine, type LineWhen, type SceneLine, type ScriptLine } from '../story.zh-TW';
 import { PL } from './places';
 import { BOND_GATE, type Companion } from './bond';
 import { CHAINS, HERO_TOPUP, chainLength, whenHolds, type CalendarNow } from './chains';
@@ -3875,5 +3875,26 @@ describe('the bond script format, and the gates that read it (bond plan Task 7)'
     const named: ChoiceLine = { who: 'hero', choices: [{ ...choice.choices[0], reply: [{ who: 'rin', text: '「洛恩。」' }] }, choice.choices[1]] };
     withScene('bond:rin:1', [named], () => expect(rinNameBreaks()).toEqual(['scenes.bond:rin:1.lines.0.choices.0.reply.0.text']));
     withScene('bond:rin:3', [named], () => expect(rinNameBreaks()).toEqual([]));   // after her choice (BOND_GATE oath)
+  });
+});
+
+describe('registered bond scenes (bond plan Task 8)', () => {
+  it('registered bond scenes join STORY.scenes', () => {
+    // today nothing is registered, so nothing joins
+    expect(bondSceneEntries()).toEqual([]);
+    const s = (t: string) => ({ lines: [{ who: 'narrator' as const, text: t }], summary: '概要。' });
+    const texts: Partial<Record<SceneId, { lines: SceneLine[]; summary: string }>> = {
+      'bond:selene:1': s('一'), 'bond:selene:2': s('二'), 'bond:selene:3': s('三'), 'bond:selene:4': s('四'),
+      'ending:liz': s('五'), 'romance:rin': s('六'), together: s('七'),
+    };
+    const got = Object.fromEntries(bondSceneEntries({ bonds: ['selene'], endings: ['liz'], romances: ['rin'], together: true }, texts));
+    expect(Object.keys(got)).toEqual(['bond:selene:1', 'bond:selene:2', 'bond:selene:3', 'bond:selene:4', 'ending:liz', 'romance:rin', 'together']);
+    expect(got['bond:selene:2'].title).toBe('瑟蕾・羈絆 2');
+    expect(got['ending:liz'].title).toBe('莉茲・後日談');
+    expect(got['romance:rin'].title).toBe('凜・夜路');
+    expect(got.together.title).toBe('夜路・和大家一起');
+    expect(got['ending:liz'].lines).toBe(texts['ending:liz']!.lines);
+    // a registered scene with no script is a bug, not a draft
+    expect(() => bondSceneEntries({ bonds: [], endings: ['noel'], romances: [], together: false }, texts)).toThrow(/ending:noel/);
   });
 });

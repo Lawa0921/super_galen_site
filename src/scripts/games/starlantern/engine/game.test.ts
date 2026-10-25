@@ -57,6 +57,7 @@ import { MEMORY_PITY } from '../data/story/chains';
 import { BOND_SWITCH, bondOf, bondPoints } from './story/bond';
 import { GIFT_LINES, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
+import { BONDS_WRITTEN } from '../data/story/scenes';
 import { withBondEarn, withBondScale } from './testing';
 
 vi.mock('./portals', async (importOriginal) => {
@@ -6023,4 +6024,31 @@ describe('gifts in the game (bond plan Task 6)', () => {
     expect(g.give('selene', 'star-tear').ok).toBe(true);
     expect(calls).toBe(was);
   }));
+});
+
+describe('a bond choice (bond plan Task 8)', () => {
+  it('a choice counts once', () => {
+    BONDS_WRITTEN.push('selene');
+    try {
+      const g = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
+      g.state.party = meet(g.state.party, 'selene', 1);
+      const talk = () => bondOf(g.state.party.roster.selene).talk;
+      expect(g.bondChoice('bond:selene:1', 'promise')).toBe(false);   // not pending
+      g.pending.push('bond:selene:1');
+      expect(g.bondChoice('chat:selene:1' as SceneId, 'promise')).toBe(false);   // no bond scene
+      expect(g.bondChoice('bond:selene:1', 'promise')).toBe(true);
+      expect(talk()).toBe(3);                                         // her preferred tone
+      expect(g.bondChoice('bond:selene:1', 'promise')).toBe(false);   // once
+      expect(talk()).toBe(3);
+      expect(g.sceneDone('bond:selene:1', 'played')).toBe(true);
+      expect(g.bondChoice('bond:selene:1', 'ask')).toBe(false);       // done
+      g.pending.push('bond:selene:2');
+      expect(g.bondChoice('bond:selene:2', null)).toBe(true);         // skipped: 2
+      expect(talk()).toBe(5);
+      g.state.party.roster.selene.bond!.talk = 11;
+      g.pending.push('bond:selene:3');
+      expect(g.bondChoice('bond:selene:3', 'promise')).toBe(true);
+      expect(talk()).toBe(12);                                        // the cap
+    } finally { BONDS_WRITTEN.splice(0); }
+  });
 });

@@ -265,7 +265,8 @@ describe("the adventurer's handbook", () => {
     const rest = ids.filter((id) => sceneKind(id) !== 'banter');
     expect(new Set(rest).size).toBe(rest.length);
     for (const id of new Set(banters)) expect(banters.filter((b) => b === id), id).toHaveLength(2);
-    expect([...new Set(ids)].sort()).toEqual([...SCENE_IDS].sort());
+    // bond plan Task 8: the bond's scenes go on their pages in Task 14 (today none is registered, so the set is the same)
+    expect([...new Set(ids)].sort()).toEqual([...SCENE_IDS].filter((id) => !/^(bond|ending|romance):|^together$/.test(id)).sort());
     for (const id of CHARACTER_IDS) {
       expect(h.people.find((p) => p.id === id)!.scenes.filter((e) => e.scene.startsWith('chat:')).length).toBe(CHAT_COUNT[id]);
     }
