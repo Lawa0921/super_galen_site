@@ -15,6 +15,8 @@ import type { BiomeSegment, Structure, Landform, ReservedZone, GenLayers, GenRel
 import { SiteRegistry, legacySites } from './siteRegistry';
 import { bootBaked, bootGen2, bootLegacy, type WorldContent, type WorldGenSpec } from './worldBoot';
 import { Gen2Source } from './gen2';
+import { gen2SiteRegionId } from './gen2/structId';
+import type { Landmass } from './gen2/layout';
 import { BakedSource } from './bakedSource';
 import { T, W, TIER_UNBREAKABLE, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
 import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, type PickStats, type WeaponDef, type WeaponKind } from './items';
@@ -4591,6 +4593,13 @@ export class DelveGame {
         msg = `「${r.name}」在（${r.x}, ${r.y}），已經標在你的地圖上了`;
         break;
       }
+      // 隱士的 chart（M2a Task 20）：下一片大陸的大東西；都找到 / 標過了就退回一般的 scout
+      case 'chart': {
+        const r = this.chartTarget(who.key) ?? this.scout();
+        if (!r) return fail('我知道的地方，你都已經去過了');
+        msg = `「${r.name}」在（${r.x}, ${r.y}），已經標在你的地圖上了`;
+        break;
+      }
       default: return fail('');
     }
     if (price > 0) pay(this.inventory, price);
@@ -4703,6 +4712,33 @@ export class DelveGame {
     this.explored.revealDisc(c.x, c.y, 10);
     this.addScoutMark(c.x, c.y);
     this.lastScout = { name: c.name, x: c.x, y: c.y };
+    return this.lastScout;
+  }
+  /**
+   * 隱士的 chart（M2a Task 20）：隱士所在地塊朝外的下一片大陸（島上的隱士 = 該海朝外、荒野大陸的隱士小屋 = 該大陸朝外）的錨點大東西
+   * （村莊 / 小地城 / 地廳；Discovery.region 查得到）裡，離隱士最近、還沒找到、還沒標過的那一處 → 標上地圖（同 scout）。
+   * 沒有（不是 gen2 世界 / 不是聚落的 NPC / 家鄉 / 都找到或標過了）→ null，呼叫端退回 scout
+   */
+  private chartTarget(key: string | undefined): { name: string; x: number; y: number } | null {
+    const src = this.gen2(), n = key ? this.folk.byKey(key) : null, s = n?.site ? this.sites.byKey(n.site) : undefined;
+    if (!src || !n) return null;
+    const hx = s?.kind === 'hermit' ? s.at.x : Math.floor((n.body.x + n.body.w / 2) / TILE_SIZE), lay = src.layout, m = lay.landmassAt(hx);
+    if (!m || m.side === 0) return null;
+    let c: Landmass | null = null;
+    for (let k = m.i + 1; k <= m.i + 2 && !c; k++) { const q = lay.landmass(m.side, k); if (q.kind === 'continent') c = q; }
+    if (!c) return null;
+    const cand: Region[] = [];
+    for (const a of src.blueprints.anchorsOf(c)) {
+      if (a.kind !== 'village' && a.kind !== 'keep' && a.kind !== 'hall') continue;
+      const b = src.blueprints.anchorBlueprint(c, a), r = b ? this.discovery.region(gen2SiteRegionId(b.id, 0)) : null;
+      if (r && r.name && !this.discovery.isFound(r.id) && !this.scouted.has(`${r.ax},${r.ay}`)) cand.push(r);
+    }
+    cand.sort((p, q) => Math.abs(p.ax - hx) - Math.abs(q.ax - hx) || p.ax - q.ax);
+    const r = cand[0];
+    if (!r) return null;
+    this.explored.revealDisc(r.ax, r.ay, 10);
+    this.addScoutMark(r.ax, r.ay);
+    this.lastScout = { name: r.name, x: r.ax, y: r.ay };
     return this.lastScout;
   }
   /** 嚮導的「下一步」：依目前進度給一句具體的建議 */

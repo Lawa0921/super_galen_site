@@ -237,8 +237,10 @@ const OUTER_PT: [number, number] = [4800, 300];
 const totals = (s: JournalStats): [string, number][] => s.cats.map((c) => [c.cat, c.total]);
 /** 地區去掉 contains（函式不能 deep-equal） */
 const plain = (r: Region): Omit<Region, 'contains'> => { const { contains: _c, ...rest } = r; return rest; };
-/** 會立地區的 gen2 藍圖種類（新錨點 alcove / molten_shrine / shaft_cache / spawn_tablet、箱子、熔岩池不立；荒野大陸的小地城 / 隱士小屋 Task 18 起立） */
-const SITE_BP = new Set(['cabin', 'ruin', 'shipwreck', 'mineshaft', 'sky_island', 'lake', 'village', 'hall', 'dungeon', 'mushroom_biome', 'crystal_cave', 'hive', 'cave_lake', 'keep', 'hermit_hut']);
+/** 會立地區的 gen2 藍圖種類（新錨點 alcove / molten_shrine / shaft_cache / spawn_tablet、箱子、熔岩池不立；荒野大陸的小地城 / 隱士小屋 Task 18 起立；
+ *  海上的有建物的島 / 珊瑚礁 / 海底遺跡 Task 20 起立） */
+const SITE_BP = new Set(['cabin', 'ruin', 'shipwreck', 'mineshaft', 'sky_island', 'lake', 'village', 'hall', 'dungeon', 'mushroom_biome', 'crystal_cave', 'hive', 'cave_lake', 'keep', 'hermit_hut',
+  'island', 'reef', 'sea_ruin']);
 
 describe('gen2 地區：所有結構種類、已知地區表、id 反查', () => {
   const src = new Gen2Source('rg2'), q = gen2Regions('rg2', src), byId = gen2RegionById('rg2', src);

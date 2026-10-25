@@ -9,6 +9,7 @@ import { STRANDED_MAX } from './folk';
 import { restoreGame, serializeGame } from '../save/serialize';
 import type { DungeonInfo } from './genTypes';
 import { SITE_NPC_BASE, npcIdFor } from './siteRegistry';
+import { gen2SiteRegionId } from './gen2/structId';
 
 
 
@@ -356,5 +357,36 @@ describe('存檔', { timeout: 120_000 }, () => {
     expect(h.buffOn('ward')).toBe(true);
     expect(h.discovery.landmarks.has(h.world.idx(l.x, l.y))).toBe(true);
     expect(h.folk.npcs.filter((n) => n.site !== null).length).toBe(g.folk.npcs.filter((n) => n.site !== null).length);
+  });
+});
+
+// M2a Task 20：隱士的 chart 服務（荒野大陸的隱士小屋 = 該大陸朝外的下一片大陸；島上的隱士在 gen2/islands.test.ts）
+describe('隱士的 chart（荒野大陸的隱士小屋）', { timeout: 120_000 }, () => {
+  it('標出朝外下一片大陸的一處未找到的大東西（村莊 / 小地城 / 地廳）；都找到了就退回一般的 scout', () => {
+    const g = new DelveGame({ seed: 'chart-c', worldGen: { kind: 'gen2' } }), src = g.gen2()!, lay = src.layout, cont = lay.landmass(1, 2);
+    const hut = src.blueprints.overlapping(cont.x0, cont.x1).find((b) => b.kind === 'hermit_hut' && b.x >= cont.x0 && b.x < cont.x1)!;
+    const site = hut.site!;
+    if (site.kind !== 'hermit') throw new Error('no hermit site');
+    g.teleport(site.at.x, site.at.y); steps(g, 30);
+    const key = `${site.key}:hermit`, next = lay.landmass(1, 4);
+    expect(g.folk.byKey(key)?.role).toBe('hermit');
+    g.give('copper_coin', 2000);
+    // 下一片大陸的大東西的地區
+    const big = src.blueprints.anchorsOf(next).filter((a) => a.kind === 'village' || a.kind === 'keep' || a.kind === 'hall')
+      .map((a) => g.discovery.region(gen2SiteRegionId(src.blueprints.anchorBlueprint(next, a)!.id, 0))!);
+    expect(big.length).toBeGreaterThanOrEqual(2);
+    const before = g.scoutMarks.length, coins = g.coins(), r = g.folkService(key, 'chart');
+    expect(r.ok).toBe(true); expect(g.coins()).toBe(coins - 120);
+    const m = g.scoutMarks.at(-1)!;
+    expect(g.scoutMarks.length).toBe(before + 1);
+    expect(big.some((q) => q.ax === m.x && q.ay === m.y)).toBe(true);
+    expect(r.msg).toContain(`「${big.find((q) => q.ax === m.x && q.ay === m.y)!.name}」`);
+    // 全部走過（找到）→ 退回一般的 scout（標附近已知、沒去過的地點）
+    for (const q of big) g.discovery.visit(q.ax, q.ay);
+    expect(big.every((q) => g.discovery.isFound(q.id))).toBe(true);
+    const r2 = g.folkService(key, 'chart'), m2 = g.scoutMarks.at(-1)!;
+    expect(r2.ok).toBe(true); expect(r2.msg).not.toContain('「」');
+    expect(big.some((q) => q.ax === m2.x && q.ay === m2.y)).toBe(false);
+    expect(g.lastScout).toMatchObject({ x: m2.x, y: m2.y });
   });
 });

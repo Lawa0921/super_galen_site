@@ -18,8 +18,10 @@ export const VARIANT = { PLAIN: 0, HILLS: 1, HIGH: 2, BEACH: 3, SPAWN: 4, ISLAND
 
 export interface SideOrigin { x: number; start: 'sea' | 'continent'; seaY: number; shore: number }
 export interface LayoutOrigin { home: { x0: number; x1: number } | null; east: SideOrigin; west: SideOrigin }
-export interface IslandInfo { x0: number; x1: number; slot: number }
-export interface SeaSlot { k: number; x0: number; x1: number; poi: 'island' | 'shipwreck' | 'crate' }
+// 島的種類（M2a Task 20，spec §8）：plain = 只有地形與樹；其他三種有一份表層藍圖（structures/island.ts）
+export type IslandType = 'plain' | 'lighthouse' | 'hermit' | 'wreck';
+export interface IslandInfo { x0: number; x1: number; slot: number; type: IslandType }
+export interface SeaSlot { k: number; x0: number; x1: number; poi: 'island' | 'shipwreck' | 'crate' | 'reef' | 'sea_ruin' }
 export interface Landmass {
   side: Side; i: number; kind: 'home' | 'continent' | 'sea';
   x0: number; x1: number; tier: number; culture: CultureId | null; ver: number;
@@ -38,6 +40,11 @@ const REGION_MIN = 700, REGION_MAX = 1500, CONT_MIN = 2400, CONT_MAX = 5200;
 // 海
 const SEA_MIN = 480, SEA_FIRST_MAX = 700, SEA_MAX = 1200;
 const ISLAND_MIN = 40, ISLAND_MAX = 160;
+// 有建物的島的三種（依雜湊均分）；第一座以外的島有建物的機率
+const BUILT_ISLANDS = ['lighthouse', 'hermit', 'wreck'] as const, ISLAND_BUILT_P = 0.4;
+// 非島槽的點：依序累加（沉船 30% / 漂流箱 30% / 珊瑚礁 20% / 海底遺跡 20%，Task 20）
+const SEA_POI: readonly (readonly [number, Exclude<SeaSlot['poi'], 'island'>])[] = [[0.3, 'shipwreck'], [0.6, 'crate'], [0.8, 'reef'], [1, 'sea_ruin']];
+const seaPoi = (h: number): Exclude<SeaSlot['poi'], 'island'> => { for (const [p, t] of SEA_POI) if (h < p) return t; return 'sea_ruin'; };
 const BASIC_BIOMES = [BIOME.FOREST, BIOME.DESERT, BIOME.SNOW, BIOME.JUNGLE] as const;
 const LAND_VARIANTS = [VARIANT.PLAIN, VARIANT.HILLS, VARIANT.HIGH] as const;
 const HOME_VARIANTS = [VARIANT.PLAIN, VARIANT.HILLS] as const;
@@ -45,7 +52,7 @@ const HOME_VARIANTS = [VARIANT.PLAIN, VARIANT.HILLS] as const;
 // h ∈ [0,1) → [lo, hi] 的整數（含兩端）
 const pick = (h: number, lo: number, hi: number): number => lo + Math.floor(h * (hi - lo + 1));
 
-interface SideSeeds { sea: number; isle: number; isw: number; iso: number; poi: number; cont: number; cut: number; biome: number; variant: number; culture: number }
+interface SideSeeds { sea: number; isle: number; isw: number; iso: number; ity: number; poi: number; cont: number; cut: number; biome: number; variant: number; culture: number }
 
 interface SideState {
   dir: 1 | -1;
@@ -68,7 +75,7 @@ export class Layout {
   constructor(seed: string, readonly origin: LayoutOrigin, private readonly locks: LockTable, private readonly latestVer: number) {
     const seeds = (t: string): SideSeeds => {
       const n = (name: string): number => seedInt(seed, `g2-${t}-${name}`);
-      return { sea: n('sea'), isle: n('isle'), isw: n('isw'), iso: n('iso'), poi: n('poi'), cont: n('cont'), cut: n('cut'), biome: n('biome'), variant: n('variant'), culture: n('culture') };
+      return { sea: n('sea'), isle: n('isle'), isw: n('isw'), iso: n('iso'), ity: n('ity'), poi: n('poi'), cont: n('cont'), cut: n('cut'), biome: n('biome'), variant: n('variant'), culture: n('culture') };
     };
     const side = (dir: 1 | -1, o: SideOrigin, t: string): SideState =>
       ({ dir, o, s: seeds(t), edges: [o.x], lands: [], seas: 0, continents: 0, prevCulture: undefined });
@@ -143,12 +150,12 @@ export class Layout {
     const { x0, x1 } = this.span(st, w);
     const tier = st.continents + 1;
 
-    // 槽位：ceil(w / 300) 個，均分（每槽 ceil(w / n)，最後一槽吃餘數）
+    // 槽位：ceil(w / 300) 個，均分（每槽 ceil(w / n)，最後一槽吃餘數）；非島槽的點依 hash2(i, q, poi) 擲 SEA_POI（Task 20）
     const n = Math.floor((w + SEA_SLOT_W - 1) / SEA_SLOT_W), base = Math.floor((w + n - 1) / n);
     const slots: SeaSlot[] = [];
     for (let q = 0; q < n; q++) {
       const a = x0 + q * base;
-      slots.push({ k: q, x0: a, x1: q < n - 1 ? a + base : x1, poi: hash2(i, q, s.poi) < 0.5 ? 'shipwreck' : 'crate' });
+      slots.push({ k: q, x0: a, x1: q < n - 1 ? a + base : x1, poi: seaPoi(hash2(i, q, s.poi)) });
     }
 
     // 島：1–min(3, n) 座，各佔不同槽（部分 Fisher–Yates），依槽序排
@@ -158,14 +165,16 @@ export class Layout {
       const r = j + Math.floor(hash2(i, j, s.isle) * (n - j));
       const t = order[j]; order[j] = order[r]; order[r] = t;
     }
+    // 種類（Task 20，spec §8）：依槽序的第一座島一定有建物（三種依 hash2(i, q, ity) 均分），其餘 ISLAND_BUILT_P 有建物（同一個雜湊值）、其他 plain
     const chosen = order.slice(0, count).sort((a, b) => a - b);
-    const islands: IslandInfo[] = chosen.map((q) => {
+    const islands: IslandInfo[] = chosen.map((q, j) => {
       const sl = slots[q], sw = sl.x1 - sl.x0, d = seaJitter(sw);
       const iw = pick(hash2(i, q, s.isw), ISLAND_MIN, Math.min(ISLAND_MAX, sw - 80));
       const c = sl.x0 + (sw >> 1) + pick(hash2(i, q, s.iso), -d, d);
       sl.poi = 'island';
-      const a = c - (iw >> 1);
-      return { x0: a, x1: a + iw, slot: q };
+      const a = c - (iw >> 1), h = hash2(i, q, s.ity);
+      const type: IslandType = j === 0 ? BUILT_ISLANDS[Math.floor(h * 3)] : h < ISLAND_BUILT_P ? BUILT_ISLANDS[Math.min(2, Math.floor((h * 3) / ISLAND_BUILT_P))] : 'plain';
+      return { x0: a, x1: a + iw, slot: q, type };
     });
 
     const reg = (kind: RegionKind, variant: number, biome: number, index: number, a: number, b: number): RegionInfo =>

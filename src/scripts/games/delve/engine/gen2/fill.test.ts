@@ -136,9 +136,11 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
 
   it('海床、沙灘與沙漠地表的沙不會被換成礦（Task 12 裁決：沙不放礦；逐帶宿主表）', () => {
     const src = new Gen2Source('sand'), sea = src.layout.landmass(1, 1);
+    // 海上的藍圖（Task 20 起有珊瑚礁 / 海底遺跡蓋在海床上）外框內的欄由結構決定材質
+    const seaBps = src.blueprints.overlapping(sea.x0, sea.x1);
     let n = 0;
     for (let x = sea.x0; x < sea.x1; x += 3) {
-      if (src.profile.info(x).kind !== COL_SEA) continue;
+      if (src.profile.info(x).kind !== COL_SEA || seaBps.some((b) => x >= b.x && x < b.x + b.w)) continue;
       const col = fillCol(src, x >> 5), s = src.surfaceAt(x);
       for (let y = s; y < s + 3; y++) expect(col.fg[li(x, y)]).toBe(T.SAND);
       n++;
@@ -242,9 +244,11 @@ describe('gen2 fill / Gen2Source', { timeout: 30_000 }, () => {
     expect(mean).toBeGreaterThanOrEqual(2); expect(mean).toBeLessThanOrEqual(10);
     for (const [k, v] of Object.entries(snow)) if (k !== 'depth') expect(v, `snow ${k}`).toBeGreaterThan(0);
     let isl = 0;
+    // 島上的建物（Task 20：燈塔 / 隱士屋 / 沉船島的表層藍圖）外框內的欄由結構決定材質
+    const isles = src.blueprints.overlapping(src.layout.landmass(1, 1).x0, src.layout.landmass(1, 1).x1).filter((b) => b.kind === 'island');
     for (let x = src.layout.landmass(1, 1).x0; x < src.layout.landmass(1, 1).x1; x++) {
       const I = src.profile.info(x);
-      if (I.kind !== COL_ISLAND) continue;
+      if (I.kind !== COL_ISLAND || isles.some((b) => x >= b.x && x < b.x + b.w)) continue;
       const col = colAt(x >> 5);
       // 島的表層歸 Task 11（P12，詳見 sea.test.ts）：離水 4 格內沙灘沙、其餘草 + 泥；地表以上只有空氣與樹
       const e = Math.min(x - I.region.x0, I.region.x1 - 1 - x);

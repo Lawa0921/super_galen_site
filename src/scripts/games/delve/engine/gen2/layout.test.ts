@@ -64,8 +64,8 @@ describe('gen2 Layout', () => {
       expect(L(seed).regionAt((d.x0 + d.x1) >> 1)!.kind).toBe('island'); });
     const free = m.slots.find((s) => s.poi !== 'island'); if (free) expect(L(seed).regionAt(free.x0 + 1)!.kind).toBe('sea'); } });
 
-  it('槽位均分（最後一槽吃餘數）、島寬 ≤ 槽寬 − 80 且置中 ± floor(槽寬 / 10)、島依 x 排序、其他槽是沉船或木箱', () => {
-    const pois = new Set<string>();
+  it('槽位均分（最後一槽吃餘數）、島寬 ≤ 槽寬 − 80 且置中 ± floor(槽寬 / 10)、島依 x 排序、其他槽是沉船 / 木箱 / 珊瑚礁 / 海底遺跡（Task 20）', () => {
+    const pois = new Set<string>(), types = new Set<string>();
     for (const seed of SEEDS20) for (const side of [1, -1] as const) for (let i = 1; i <= 30; i += 2) {
       const m = L(seed).landmass(side, i), w = m.x1 - m.x0, n = m.slots.length, base = Math.ceil(w / n);
       m.slots.forEach((s, k) => expect(s.x1 - s.x0).toBe(k < n - 1 ? base : w - base * (n - 1)));
@@ -75,11 +75,15 @@ describe('gen2 Layout', () => {
         expect(Math.abs(d.x0 + ((d.x1 - d.x0) >> 1) - c)).toBeLessThanOrEqual(Math.floor(sw / 10));
       }
       for (let j = 1; j < m.islands.length; j++) expect(m.islands[j].slot).toBeGreaterThan(m.islands[j - 1].slot);
-      for (const s of m.slots) { pois.add(s.poi); expect(['island', 'shipwreck', 'crate']).toContain(s.poi); }
+      // Task 20：島的種類；依槽序的第一座島一定有建物（spec §8）
+      for (const d of m.islands) { types.add(d.type); expect(['plain', 'lighthouse', 'hermit', 'wreck']).toContain(d.type); }
+      expect(m.islands[0].type).not.toBe('plain');
+      for (const s of m.slots) { pois.add(s.poi); expect(['island', 'shipwreck', 'crate', 'reef', 'sea_ruin']).toContain(s.poi); }
       for (const r of m.regions) expect(r).toMatchObject({ side, landmass: i, culture: null, tier: m.tier });
       m.regions.slice(1).forEach((r) => expect(r.biome).toBe(BIOME.FOREST));
     }
-    expect(pois).toEqual(new Set(['island', 'shipwreck', 'crate']));
+    expect(pois).toEqual(new Set(['island', 'shipwreck', 'crate', 'reef', 'sea_ruin']));
+    expect(types).toEqual(new Set(['plain', 'lighthouse', 'hermit', 'wreck']));
   });
 
   // M2a Task 19：海點偏移收到 ± min(20, floor(槽寬 / 10))（340 規則在海上嚴格成立，Task 21）

@@ -367,6 +367,16 @@ export function outerVillageBoard(rig: Rig): { x: number; y: number } {
   }
   throw new Error('outerVillageBoard: no outer village');
 }
+/** gen2 世界：東側由近到遠第一座隱士島（海上、kind 'island' 的藍圖）的 hermit site（M2a Task 20） */
+export function seaHermit(rig: Rig): { key: string; at: { x: number; y: number } } {
+  const src = rig.hostGame.gen2();
+  if (!src) throw new Error('seaHermit: not a gen2 world');
+  for (let i = 1; i < 40; i += 2) {
+    const m = src.layout.landmass(1, i);
+    for (const b of src.blueprints.overlapping(m.x0, m.x1)) if (b.kind === 'island' && b.site?.kind === 'hermit' && b.x >= m.x0 && b.x < m.x1) return { key: b.site.key, at: { ...b.site.at } };
+  }
+  throw new Error('seaHermit: no hermit island');
+}
 /** 聚落 NPC（id ≥ SITE_NPC_BASE）的 [key, id]，依 key 排序（房主與客人比對用，Task 18） */
 export function siteNpcIds(game: DelveGame): [string, number][] {
   return game.folk.npcs.filter((n) => n.id >= SITE_NPC_BASE).map((n): [string, number] => [n.key, n.id]).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));

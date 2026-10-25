@@ -18,7 +18,9 @@ export type BpKind = 'cabin' | 'ruin' | 'shipwreck' | 'crate' | 'lake' | 'cave_l
   // 荒野大陸的小地城與隱士小屋（M2a Task 18，structures/keep.ts、structures/hermitHut.ts）
   | 'keep' | 'hermit_hut'
   // 小點位（M2a Task 19，structures/minor.ts；M2b Task 9 依賴這個名字）
-  | 'minor';
+  | 'minor'
+  // 海上（M2a Task 20）：有建物的島（structures/island.ts；variant = 島的種類）、珊瑚礁（reef.ts）、海底遺跡（seaRuin.ts）
+  | 'island' | 'reef' | 'sea_ruin';
 // 小點位的種類（Blueprint.sub）
 export type MinorSub = 'cairn' | 'camp' | 'stones';
 // 層：表層 / 地下 / 深層 / 空中（浮空島）/ 小點（minor）；結構 id 的 layer 欄位 3 bit（structId.ts）
@@ -76,7 +78,7 @@ export interface Blueprint {
   // 大藍圖（家鄉地城）：cells 依 (x >> 5, y, x) 排序，欄號（x >> 5）→ 該欄的格在 cells 的 [起, 訖)（以 Int32 為單位）；
   // stamp 有它就只掃該欄的範圍（同一藍圖每格只出現一次，排序不改蓋出來的結果）
   colIndex?: Map<number, [number, number]>;
-  // 變體（石室 alcove：'snow' / 'desert'，Task 14；lore.homeDecor 依它放第 10 / 11 塊石碑）
+  // 變體（石室 alcove：'snow' / 'desert'，Task 14；lore.homeDecor 依它放第 10 / 11 塊石碑。有建物的島 kind 'island'：島的種類 'lighthouse' / 'hermit' / 'wreck'，Task 20）
   variant?: string;
   // 礦坑的密室室內（Task 14：密室的石碑只放在這裡面的 floors；坑道的石碑放在外面的 floors）
   secret?: BpBox;

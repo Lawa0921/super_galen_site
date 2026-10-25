@@ -135,15 +135,15 @@ describe('gen2 blueprint objects', () => {
     // 陶罐：家鄉地城與荒野大陸的小地城（Task 18）
     expect(e.pots).toEqual(all.filter((b) => b.kind === 'dungeon' || b.kind === 'keep').flatMap((b) => b.pots)); expect(e.tablets).toEqual(all.flatMap((b) => b.tablets));
     expect(e.tablets.map((t) => t.id).sort((a, b) => a - b)).toEqual([...Array(14).keys()]);
-    // 小點位（Task 19）：cairn / camp 各一個地標，stones 沒有
-    const LANDMARKED = new Set(['mineshaft', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive', 'cabin', 'ruin', 'lake', 'cave_lake', 'minor']);
+    // 小點位（Task 19）：cairn / camp 各一個地標，stones 沒有；海上（Task 20）：珊瑚礁的遺落行囊、海底遺跡與燈塔島的守望石像（島的其他種類沒有）
+    const LANDMARKED = new Set(['mineshaft', 'sky_island', 'mushroom_biome', 'crystal_cave', 'hive', 'cabin', 'ruin', 'lake', 'cave_lake', 'minor', 'reef', 'sea_ruin', 'island']);
     const marked = all.filter((b) => b.kind === 'village' || b.kind === 'hall' || LANDMARKED.has(b.kind));
     expect(e.landmarks).toEqual(marked.flatMap((b) => b.landmarks));
     // 每座地廳 / 礦坑 / 空島 / 小生態 / 蜂巢 / 小屋 / 遺跡 / 湖 / 地下湖 / 小點位至多一個地標（村莊、石柱圈小點位沒有）；九成以上有
     expect(marked.every((b) => b.landmarks.length <= 1)).toBe(true);
     expect(marked.filter((b) => b.kind === 'minor').every((b) => b.landmarks.length === (b.sub === 'stones' ? 0 : 1))).toBe(true);
-    // 九成的比例只算舊種類（小點位由上一行精確斷言，不進分子 / 分母）
-    const old = marked.filter((b) => b.kind !== 'minor');
+    // 九成的比例只算舊種類（小點位由上一行精確斷言、島由下面依種類精確斷言，不進分子 / 分母）
+    const old = marked.filter((b) => b.kind !== 'minor' && b.kind !== 'island');
     expect(old.flatMap((b) => b.landmarks).length).toBeGreaterThanOrEqual(0.9 * old.filter((b) => b.kind !== 'village').length);
     expect(marked.filter((b) => b.kind === 'mineshaft').length).toBeGreaterThan(3); expect(marked.filter((b) => b.kind === 'sky_island').length).toBeGreaterThanOrEqual(2);
     for (const k of ['mushroom_biome', 'crystal_cave', 'hive']) expect(marked.some((b) => b.kind === k), k).toBe(true);
@@ -156,7 +156,17 @@ describe('gen2 blueprint objects', () => {
     expect(keeps.length).toBeGreaterThan(0); expect(huts.length).toBeGreaterThan(0);
     for (const b of keeps) { expect(b.site?.kind).toBe('dungeon'); expect(b.solid).not.toBeNull(); expect(b.tablets).toEqual([]); expect(b.wholeRegion).toBe(false); }
     for (const b of huts) { expect(b.site?.kind).toBe('hermit'); expect(b.solid).toEqual({ x: b.x, y: b.y, w: b.w, h: b.h }); expect(b.ground).not.toBeNull(); expect(b.pots).toEqual([]); expect(b.landmarks).toEqual([]); }
-    for (const b of all.filter((q) => q.kind !== 'dungeon' && q.kind !== 'village' && q.kind !== 'hall' && q.kind !== 'keep' && q.kind !== 'hermit_hut')) {
+    // 有建物的島（Task 20）：燈塔 = 守望石像地標、整片 solid、地面覆寫；隱士 = hermit site（同隱士小屋）；沉船島 = 都沒有
+    const isles = all.filter((q) => q.kind === 'island');
+    expect(new Set(isles.map((b) => b.variant))).toEqual(new Set(['lighthouse', 'hermit', 'wreck']));
+    for (const b of isles) {
+      const box = { x: b.x, y: b.y, w: b.w, h: b.h };
+      expect(b.pots).toEqual([]); expect(b.tablets).toEqual([]); expect(b.wholeRegion).toBe(false);
+      if (b.variant === 'lighthouse') { expect(b.landmarks.map((l) => l.tile)).toEqual([T.GUARDIAN_STATUE]); expect(b.solid).toEqual(box); expect(b.ground).not.toBeNull(); expect(b.site).toBeNull(); }
+      else if (b.variant === 'hermit') { expect(b.site?.kind).toBe('hermit'); expect(b.solid).toEqual(box); expect(b.ground).not.toBeNull(); expect(b.landmarks).toEqual([]); }
+      else { expect(b.variant).toBe('wreck'); expect(b.site).toBeNull(); expect(b.solid).toBeNull(); expect(b.ground).toBeNull(); expect(b.landmarks).toEqual([]); }
+    }
+    for (const b of all.filter((q) => q.kind !== 'dungeon' && q.kind !== 'village' && q.kind !== 'hall' && q.kind !== 'keep' && q.kind !== 'hermit_hut' && q.kind !== 'island')) {
       // 石碑只在家鄉（lore.homeDecor）
       expect(b.pots).toEqual([]); if (b.x < 0 || b.x >= 4200) expect(b.tablets).toEqual([]); expect(b.site).toBeNull(); expect(b.wholeRegion).toBe(false);
       if (!LANDMARKED.has(b.kind)) expect(b.landmarks).toEqual([]);

@@ -5,7 +5,9 @@
 // 外框在地區 [r.x0, r.x1) 內，Q2），solid / ground 在外框內，所以 fill 一段 [x0, x1) 只要看與它相交的槽（加上相交地區的 wholeRegion 錨點），
 // 任何一段都蓋得出同一份藍圖與自己相交的部分。
 // 海槽（P12 / spec §8）：structureId / slotOf 認得海槽（region = 0、slot = SeaSlot.k、表層）；每個海槽恰有一個點：
-// SeaSlot.poi = 'island' 的槽沒有藍圖（島地形由 Profile2 + fill 負責）、'shipwreck' / 'crate' 各一份表層藍圖（ctx 的槽 = 海槽、region = 海本身）。
+// SeaSlot.poi = 'island' 的槽：島地形由 Profile2 + fill 負責，有建物的島（IslandInfo.type ≠ 'plain'，Task 20）另有一份 kind 'island' 的表層藍圖
+// （structures/island.ts；ctx 的槽 = 海槽、region = 島本身的 RegionInfo，slotOf 反查照舊回海）、plain 沒有藍圖；
+// 'shipwreck' / 'crate' / 'reef' / 'sea_ruin' 各一份表層藍圖（ctx 的槽 = 海槽、region = 海本身）。
 // 島地區不進陸地槽位格。
 // 保證槽（P11）：每片非家鄉的大陸至少一間小屋、一座遺跡（見 BlueprintIndex.guard）。
 // 大陸錨點（Task 18，anchors.continentAnchors）：大東西（村莊 / 小地城 / 地廳）+ 1 座隱士小屋；保證槽在剩下的槽裡挑（Q15）。
@@ -41,7 +43,7 @@ import { BIOME } from '../world';
 import { X_LIMIT } from '../coords';
 import { li, type Column } from '../column';
 import type { RegionInfo } from '../regionInfo';
-import { HOME_X0, SPAWN_X, VARIANT, type Landmass, type Layout, type SeaSlot } from './layout';
+import { HOME_X0, SPAWN_X, VARIANT, type IslandInfo, type Landmass, type Layout, type SeaSlot } from './layout';
 import { ANCHOR_MAX_W, anchorBuild, anchorSpan, continentAnchors, homeAnchors, registerAnchorBuild, surfaceAnchorRanges, type Anchor } from './anchors';
 import type { Profile2 } from './profile';
 import { shaftX } from './caves';
@@ -52,6 +54,9 @@ import { buildAlcoveBp, buildMoltenShrineBp, buildShaftCacheBp, buildSpawnTablet
 import { applyDecor, homeDecor } from './lore';
 import { buildShipwreck } from './structures/shipwreck';
 import { buildCrate } from './structures/crate';
+import { buildIslandBp } from './structures/island';
+import { buildReefBp } from './structures/reef';
+import { buildSeaRuinBp } from './structures/seaRuin';
 import { buildDungeonBp } from './structures/dungeon';
 import { buildVillageBp } from './structures/village';
 import { buildHallBp } from './structures/hall';
@@ -185,9 +190,9 @@ const ROLL: readonly (readonly Roll[])[] = [
 ];
 // 家鄉的地下層：ROLL[BP_UNDER] 只把礦坑那一項換成 HOME_UNDER_MINESHAFT_P
 const HOME_UNDER_ROLL: readonly Roll[] = ROLL[BP_UNDER].map((e) => (e.build === rollMineshaftBp ? { ...e, p: HOME_UNDER_MINESHAFT_P } : e));
-// 海槽的點（island 沒有藍圖）
+// 海槽的點（island 走 islandPoint：有建物的島才有藍圖）
 type SeaPoi = Exclude<SeaSlot['poi'], 'island'>;
-const SEA_BUILD: Readonly<Record<SeaPoi, (c: BpCtx) => Blueprint>> = { shipwreck: buildShipwreck, crate: buildCrate };
+const SEA_BUILD: Readonly<Record<SeaPoi, (c: BpCtx) => Blueprint>> = { shipwreck: buildShipwreck, crate: buildCrate, reef: buildReefBp, sea_ruin: buildSeaRuinBp };
 const LIQUID: ReadonlySet<BpKind> = new Set<BpKind>(['lake', 'cave_lake', 'lava_pool']);
 const LAYERS: readonly Layer[] = [BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR];
 // 液體藍圖的讓位只看這三層（SKY 讓位給液體，不是反過來）
@@ -322,9 +327,9 @@ export class BlueprintIndex {
       }
       if (m.kind === 'sea') {
         if (layers.includes(BP_SURFACE)) for (const s of m.slots) {
-          if (s.poi === 'island' || s.x1 <= x0 || s.x0 >= x1) continue;
-          const b = this.seaPoint(m, s, s.poi);
-          if (b.x < x1 && b.x + b.w > x0) out.push(b);
+          if (s.x1 <= x0 || s.x0 >= x1) continue;
+          const b = s.poi === 'island' ? this.islandPoint(m, s) : this.seaPoint(m, s, s.poi);
+          if (b && b.x < x1 && b.x + b.w > x0) out.push(b);
         }
       } else {
         const whole = this.anchorTable(m).whole;
@@ -415,10 +420,22 @@ export class BlueprintIndex {
     return t;
   }
 
-  // 海槽的點（沉船 / 漂流箱）：ver 0 的規則（build 收到該海的 ctx.ver）
+  // 海槽的點（沉船 / 漂流箱 / 珊瑚礁 / 海底遺跡）：ver 0 的規則（build 收到該海的 ctx.ver）
   private seaPoint(m: Landmass, s: SeaSlot, poi: SeaPoi): Blueprint {
     const id = structureId(m.side, m.i, 0, s.k, BP_SURFACE), build = SEA_BUILD[poi];
-    return lru(this.cache, id, () => build({ seed: this.seed, s: this.s, id, slotX0: s.x0, slotX1: s.x1, region: m.regions[0], profile: this.profile, ver: m.ver, groundAt: this.groundFn }))!;
+    return lru(this.cache, id, () => build(this.seaCtx(m, s, m.regions[0])))!;
+  }
+
+  // 島槽（Task 20）：有建物的島 → buildIslandBp（region = 島本身）；plain → null（只有地形與樹）
+  private islandPoint(m: Landmass, s: SeaSlot): Blueprint | null {
+    const d = m.islands.find((q) => q.slot === s.k);
+    if (!d || d.type === 'plain') return null;
+    const id = structureId(m.side, m.i, 0, s.k, BP_SURFACE);
+    return lru(this.cache, id, () => buildIslandBp(this.seaCtx(m, s, islandRegion(m, d)), d.type));
+  }
+
+  private seaCtx(m: Landmass, s: SeaSlot, region: RegionInfo): BpCtx {
+    return { seed: this.seed, s: this.s, id: structureId(m.side, m.i, 0, s.k, BP_SURFACE), slotX0: s.x0, slotX1: s.x1, region, profile: this.profile, ver: m.ver, groundAt: this.groundFn };
   }
 
   // 家鄉地塊走釘選表（Q9），外圍走 LRU。讓位：液體 → yieldLiquid、非液體 → yieldCross（都只看其他層的原始藍圖）
@@ -648,6 +665,13 @@ export class BlueprintIndex {
     this.guards.set(m, g);
     return g;
   }
+}
+
+// 海 m 裡島 d 的 RegionInfo（layout.buildSea：regions[j + 1] = 第 j 座島）
+function islandRegion(m: Landmass, d: IslandInfo): RegionInfo {
+  const r = m.regions[m.islands.indexOf(d) + 1];
+  if (!r || r.kind !== 'island' || r.x0 !== d.x0) throw new RangeError(`gen2: sea ${m.side}:${m.i} has no region for island [${d.x0}, ${d.x1})`);
+  return r;
 }
 
 // 釘選表：未命中 make() 後放入，永不淘汰

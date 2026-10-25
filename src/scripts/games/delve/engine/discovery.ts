@@ -9,6 +9,7 @@
 //     trackOuter 時 visit 到的外圍地區自動 know 並存進 toJSON().known（Q12）；region(id) 依序查中央 → 已知表 → resolver（gen2RegionById）。
 //     消費端（M2a Task 16）：大地圖 / 日誌 / 提示 / 委託讀 listKnown；HUD 與環境音讀 knownAt / areaAt（中央索引 ∪ 已知的外圍地區）。
 //   · gen2 名字（Task 17b）：家鄉同 kind 不重名、同一座地城的房間不重名（gen2Names.uniqueNames，Gen2Kit 建一次家鄉表）；村莊地區同舊世界外擴（走近就發現）。
+//     Task 20：一道海裡（海 / 島 / 海上的結構）同 kind 不重名，相鄰大陸的隱士小屋與隱士島共用名單、先佔位（Gen2Kit 每道海建一張表）。
 //   · RegionJSON（Task 16）：烘焙過的舊世界把 buildRegions 的清單存進存檔（id 依生成順序，之後不再重算）；
 //     contains 函式換成可存的形狀 RegionShape（buildRegions 填 shape），regionFromJSON 以深度層線重建出逐格相同的 contains。
 import { Rng } from './rng';
@@ -23,7 +24,7 @@ import type { Side, RegionInfo } from './regionInfo';
 import type { Gen2Source } from './gen2';
 import { CULTURES } from './gen2/cultures';
 import { VARIANT, SPAWN_X, type Landmass } from './gen2/layout';
-import { slotOf, partsOf, type Blueprint, type BpBox, type BpKind } from './gen2/blueprint';
+import { slotOf, partsOf, BP_SURFACE, type Blueprint, type BpBox, type BpKind } from './gen2/blueprint';
 import { FILL_REACH } from './gen2/fill';
 import { gen2SiteRegionId, isGen2SiteRegionId, siteOfRegionId, decodeStructureId } from './gen2/structId';
 import { uniqueNames, type NameSpec } from './gen2Names';
@@ -106,6 +107,11 @@ export const NAMES: Record<string, readonly string[]> = {
   pond: ['蘆葦池', '蛙鳴池', '睡蓮池', '野鴨池', '清泉池', '月影池'],
   // 荒野大陸的隱士小屋（gen2 Task 18；Task 20 的隱士島共用）
   hermit: ['隱者木屋', '孤燈小屋', '苔頂小屋', '松風草廬', '荒野茅舍', '獨居者之家'],
+  // gen2 海上（Task 20）：燈塔島、沉船島、珊瑚礁、海底遺跡（不得和任何其他名單重複，islands.test 斷言）
+  lighthouse: ['望海燈塔', '霧笛燈塔', '潮汐燈塔', '守夜燈塔', '浪尖燈塔', '北辰燈塔', '白帆燈塔', '老燈守的塔'],
+  wreck_isle: ['擱淺船島', '龍骨沙洲', '斷桅島', '破船灘', '殘帆島', '舊舵島'],
+  reef: ['珊瑚暗礁', '銀鱗礁', '金沙礁', '潮紋礁', '海扇礁', '星砂暗礁', '藍斑礁', '浪底礁'],
+  sea_ruin: ['沉沒的神殿', '海底古屋', '潮下石廳', '淹沒的哨站', '海淵遺址', '沉城一角', '藻覆石屋'],
 };
 // 各房間種類的名單兩兩不重疊（含下面的 gen2 補充）：gen2 的「整座地城房間不重名」只在同種類內唯一化，靠這個前提（discovery.test 斷言）
 export const ROOM_NAMES: Partial<Record<RoomKind, readonly string[]>> = {
@@ -375,7 +381,8 @@ const GEN2_BIOME_KEY = ['forest', 'desert', 'snow', 'jungle'] as const;
  * gen2 藍圖種類 → 結構地區（kind、cat、round = 橢圓）。沒列的種類不立地區：箱子（crate）、熔岩池，
  * 以及家鄉的石碑 / 遺物點（alcove / molten_shrine / shaft_cache / spawn_tablet，Task 14；它們是點不是區域）。
  * keep（荒野大陸的小地城，Task 18）= 地城（整座 + 有名字的房間，同家鄉地城）、hermit_hut（隱士小屋，Task 18）→ kind 'hermit'。
- * 之後的種類（lighthouse / wreck 島 / reef / sea_ruin：Task 20）接上時加在這裡。
+ * 海上（Task 20）：珊瑚礁 → 'reef'、海底遺跡 → 'sea_ruin'；有建物的島（kind 'island'）依 variant 查 ISLAND_SITE：
+ * 燈塔島 → 'lighthouse'、隱士島 → 'hermit'（同隱士小屋的名單）、沉船島 → 'wreck_isle'（島本身的地塊地區照舊是 'island'）。
  */
 const GEN2_SITE: Partial<Record<BpKind, { kind: string; cat: RegionCat; round?: true }>> = {
   cabin: { kind: 'cabin', cat: 'site' }, ruin: { kind: 'ruin', cat: 'site' }, shipwreck: { kind: 'shipwreck', cat: 'site' },
@@ -384,7 +391,13 @@ const GEN2_SITE: Partial<Record<BpKind, { kind: string; cat: RegionCat; round?: 
   mushroom_biome: { kind: 'mushroom_biome', cat: 'cave', round: true }, crystal_cave: { kind: 'crystal_cave', cat: 'cave', round: true },
   hive: { kind: 'hive', cat: 'cave', round: true }, cave_lake: { kind: 'underground_lake', cat: 'cave' },
   dungeon: { kind: 'dungeon', cat: 'dungeon' }, keep: { kind: 'dungeon', cat: 'dungeon' }, hermit_hut: { kind: 'hermit', cat: 'site' },
+  reef: { kind: 'reef', cat: 'site' }, sea_ruin: { kind: 'sea_ruin', cat: 'site' },
 };
+const ISLAND_SITE: Readonly<Record<string, { kind: string; cat: RegionCat }>> = {
+  lighthouse: { kind: 'lighthouse', cat: 'site' }, hermit: { kind: 'hermit', cat: 'site' }, wreck: { kind: 'wreck_isle', cat: 'site' },
+};
+const siteKindOf = (b: Blueprint): { kind: string; cat: RegionCat; round?: true } | undefined =>
+  (b.kind === 'island' ? (b.variant ? ISLAND_SITE[b.variant] : undefined) : GEN2_SITE[b.kind]);
 
 /** gen2 地區的建法（gen2Regions / gen2RegionById / gen2HomeRegions 共用；依 (src, seed) 共用一份，快取也共用） */
 interface Gen2Kit {
@@ -449,7 +462,7 @@ function makeGen2Kit(seed: string, src: Gen2Source): Gen2Kit {
   };
   // 結構地區 id = gen2SiteRegionId(藍圖 id, part)（位元配置只在 gen2/structId.ts）
   const siteParts = (b: Blueprint): SitePart[] => {
-    const m = GEN2_SITE[b.kind];
+    const m = siteKindOf(b);
     if (!m) return [];
     const out: SitePart[] = [];
     const add = (part: number, cat: RegionCat, kind: string, box: BpBox, round = false, anchor: BpBox = box): void => {
@@ -492,34 +505,65 @@ function makeGen2Kit(seed: string, src: Gen2Source): Gen2Kit {
     homeTable = uniqueNames(specs);
     return homeTable;
   };
+  // 海的 id → 名字表（Task 20）：一道海 m 的地塊地區（海：固定名字；島：NAMES.island）+ 海上每份表層藍圖的結構地區，依 kind 唯一化；
+  // 相鄰大陸（朝內 / 朝外各一片）的隱士小屋與隱士島同名單，先當固定名字佔位（小屋的名字不變、隱士島避開它）。每道海第一次用到時建一次
+  const seaTables = new Map<Landmass, Map<number, string>>();
+  const seaNames = (m: Landmass): Map<number, string> => {
+    let t = seaTables.get(m);
+    if (t) return t;
+    const specs: NameSpec[] = [];
+    for (const info of m.regions) {
+      const id = gen2RegionId(m.side, m.i, info.index, 0);
+      specs.push(info.kind === 'island' ? pickSpec(id, 'island', gen2Pool('island')!) : { id, kind: landKind(info), fixed: landName(info, id, firstSea(m, info)) });
+    }
+    for (const b of src.blueprints.overlapping(m.x0, m.x1, [BP_SURFACE])) if (b.x >= m.x0 && b.x < m.x1) for (const p of siteParts(b)) specs.push(pickSpec(p.id, p.kind, p.pool));
+    const kinds = new Set(specs.map((q) => q.kind));
+    for (const k of [m.i - 1, m.i + 1]) {
+      const c = k >= 1 ? src.layout.landmass(m.side as 1 | -1, k) : null;
+      if (!c || c.kind !== 'continent') continue;
+      for (const a of src.blueprints.anchorsOf(c)) {
+        const b = a.kind === 'hermit_hut' ? src.blueprints.anchorBlueprint(c, a) : null;
+        if (b) for (const r of sitesOf(b)) if (kinds.has(r.kind)) specs.push({ id: r.id, kind: r.kind, fixed: r.name });
+      }
+    }
+    t = uniqueNames(specs);
+    if (seaTables.size >= 64) seaTables.clear();
+    seaTables.set(m, t);
+    return t;
+  };
+  // 這道海是不是該側的第一道海（名字是「東方大海」/「西方大海」）
+  const firstSea = (m: Landmass, info: RegionInfo): boolean => {
+    const o = src.layout.origin;
+    return info.kind === 'sea' && m.i === ((m.side > 0 ? o.east : o.west).start === 'sea' ? 1 : 2);
+  };
   // 地塊 m 的第 info 個地區 → Region（快取）
   const regionOf = (m: Landmass, info: RegionInfo): Region => {
-    const id = gen2RegionId(m.side, m.i, info.index, 0);
-    const o = src.layout.origin, first = info.kind === 'sea' && m.i === ((m.side > 0 ? o.east : o.west).start === 'sea' ? 1 : 2);
+    const id = gen2RegionId(m.side, m.i, info.index, 0), first = firstSea(m, info);
     return cached(id, () => {
       let hmax = 0;
       for (let cx = info.x0; cx < info.x1; cx += 16) hmax = Math.max(hmax, deep(cx));
       const ax = Math.floor((info.x0 + info.x1) / 2);
       return {
         id, cat: 'land', kind: landKind(info),
-        name: (m.kind === 'home' ? homeNames().get(id) : undefined) ?? landName(info, id, first), x: info.x0, y: 0, w: info.x1 - info.x0, h: hmax,
+        name: (m.kind === 'home' ? homeNames().get(id) : m.kind === 'sea' ? seaNames(m).get(id) : undefined) ?? landName(info, id, first), x: info.x0, y: 0, w: info.x1 - info.x0, h: hmax,
         ax, ay: Math.max(4, src.surfaceAt(ax) - 14),
         contains: (cx: number, cy: number): boolean => cx >= info.x0 && cx < info.x1 && cy >= 0 && cy < deep(cx),
       };
     });
   };
-  // 家鄉藍圖（結構 id 的 side = 0）查家鄉表；其他藍圖在自己的部件之間唯一化（家鄉表沒有的也退回這裡；只在需要時才算）
-  const sitesOf = (b: Blueprint): readonly Region[] => {
+  // 家鄉藍圖（結構 id 的 side = 0）查家鄉表、海上的藍圖查那道海的表（Task 20）；其他藍圖在自己的部件之間唯一化（表裡沒有的也退回這裡；只在需要時才算）
+  function sitesOf(b: Blueprint): readonly Region[] {
     const ps = siteParts(b);
     if (!ps.length) return [];
-    const home = decodeStructureId(b.id).side === 0 ? homeNames() : null;
+    const d = decodeStructureId(b.id), lm = d.side === 0 ? null : src.layout.landmass(d.side as 1 | -1, d.i);
+    const table = d.side === 0 ? homeNames() : lm?.kind === 'sea' ? seaNames(lm) : null;
     let own: Map<number, string> | null = null;
     return ps.map((p): Region => {
       const { x, y, w, h } = p.box;
-      const name = home?.get(p.id) ?? (own ??= uniqueNames(ps.map((q) => pickSpec(q.id, q.kind, q.pool)))).get(p.id)!;
+      const name = table?.get(p.id) ?? (own ??= uniqueNames(ps.map((q) => pickSpec(q.id, q.kind, q.pool)))).get(p.id)!;
       return { id: p.id, cat: p.cat, kind: p.kind, name, x, y, w, h, ax: p.ax, ay: p.ay, contains: p.round ? ellipseHit(x, y, w, h) : rectHit(x, y, w, h) };
     });
-  };
+  }
   return {
     land: regionOf,
     sites(b: Blueprint): readonly Region[] {
