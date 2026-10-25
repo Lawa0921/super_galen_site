@@ -180,8 +180,12 @@ export function sceneKind(id: SceneId): SceneKind {
  * town, story L). Rin's reveal is the night of the return that brings it. Anything else is day.
  */
 export const SCENE_TIME: Partial<Record<SceneId, 'night'>> = { 'rin-reveal': 'night', 'season:spring': 'night' };
-/** Whether a scene happens by day or by night: a memory, or one `SCENE_TIME` names, is night. */
-export const sceneTime = (id: SceneId): 'day' | 'night' => (sceneKind(id) === 'memory' || SCENE_TIME[id] === 'night' ? 'night' : 'day');
+/**
+ * Whether a scene happens by day or by night: a memory, or one `SCENE_TIME` names, is night; so is a registered romance
+ * (bond plan ruling 12: the night walk under the lantern, spec §0 D8).
+ */
+export const sceneTime = (id: SceneId): 'day' | 'night' => (sceneKind(id) === 'memory' || SCENE_TIME[id] === 'night'
+  || (id.startsWith('romance:') && ROMANCES_WRITTEN.includes(id.split(':')[1] as Companion)) ? 'night' : 'day');
 
 const LONG_MEMORIES = new Set<SceneId>(['mem:hero:9', 'mem:hero:10', 'mem:rin:7']);
 

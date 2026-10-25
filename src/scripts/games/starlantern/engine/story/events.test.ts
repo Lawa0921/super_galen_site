@@ -14,6 +14,9 @@ import { Game } from '../game';
 import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, orderNight, planNight } from './nights';
 import { memoryTone } from '../../data/story/tone';
 import { NIGHT_BEATS } from '../../data/story.zh-TW';
+import { ENDINGS_WRITTEN, memScene as memOf } from '../../data/story/scenes';
+import { nextEnding } from './events';
+import type { Companion } from '../../data/story/bond';
 
 /** A new game with the prologue already behind it, so only what a test adds is waiting. */
 const base = (): GameState => {
@@ -1824,5 +1827,150 @@ describe('heart-to-hearts in the story (bond plan Task 9)', () => {
     const done = sceneDone(s, 'bond:rin:1', 'played');
     expect(done.story.queue).toEqual([]);
     expect(onReturn(done).queue.some((q) => q.startsWith('bond:'))).toBe(false);
+  });
+});
+
+// ---- bond plan Task 10: the states the after-finale tests read
+/** After the finale, on the return the festival is owed: the act nodes passed, the festival queued. */
+const finaleDone = (): GameState => {
+  const s = base();
+  s.story.act1Cleared = true;
+  s.story.finaleCleared = true;
+  s.dungeon.reached.mainline = 30;
+  s.story.nodes = ['act2', 'act3', 'act4'];
+  s.story.seen.push('prologue-inn', 'first-return', 'act1-after', 'act2', 'act3', 'act4', 'group:act2', 'group:act3', 'group:act4', 'finale');
+  s.party.roster.rin.memories = chainLength('rin');
+  s.party.roster.rin.oath = true;
+  for (let k = 1; k <= chainLength('rin'); k++) s.story.seen.push(memOf('rin', k));
+  for (let n = 1; n <= 4; n++) s.story.seen.push(`chat:rin:${n}` as SceneId);
+  for (let n = 1; n <= 5; n++) s.story.seen.push(`chat:hero:${n}` as SceneId);
+  s.story.seen.push('rin-reveal', 'rin-confess', 'bellkeeper-arrives', 'hero-alone', 'finale-eve');
+  return s;
+};
+/** The return after the festival: it is seen; Liz met and whole, her homecoming seen. */
+const afterFestival = (home = true): GameState => {
+  const s = finaleDone();
+  s.story.seen.push('epilogue');
+  withMemories(s, 'liz', chainLength('liz'));
+  for (let k = 1; k <= chainLength('liz'); k++) s.story.seen.push(memOf('liz', k));
+  for (let n = 1; n <= 2; n++) s.story.seen.push(`chat:liz:${n}` as SceneId);
+  if (home) s.story.seen.push('home:liz');
+  return s;
+};
+
+describe('after the finale: the endings (bond plan Task 10)', () => {
+  /** Endings registered for the test (the registry starts empty), put back after. */
+  const withEndings = <T,>(cs: Companion[], f: () => T): T => { ENDINGS_WRITTEN.push(...cs); try { return f(); } finally { ENDINGS_WRITTEN.splice(0); } };
+  const back = (s: GameState) => arrivalScenes(s, { chat: true, ending: (st) => nextEnding(st) });
+
+  it("the festival's return is as it was", () => withEndings(['liz'], () => {
+    const a = finaleDone();
+    withMemories(a, 'liz', chainLength('liz'));
+    for (let k = 1; k <= chainLength('liz'); k++) a.story.seen.push(memOf('liz', k));
+    a.story.seen.push('home:liz');
+    a.story.queue = ['epilogue'];
+    // measured before bond plan Task 10: the festival, a light chat after it, no banter
+    expect(arrivalScenes(a, { chat: true, afterFinale: true })).toEqual(['epilogue', 'chat:liz:1']);
+    expect(arrivalScenes(a, { chat: true, afterFinale: true, ending: (st) => nextEnding(st) })).toEqual(['epilogue', 'chat:liz:1']);
+    expect(nextEnding(a)).toBeNull();   // the festival not seen yet
+  }));
+
+  it("endings take the chat's place, from the next return", () => withEndings(['liz', 'noel'], () => {
+    const s = afterFestival();
+    expect(arrivalScenes(s, { chat: true })).toEqual([]);   // measured before: nothing owed, no chat, no banter (no pair met)
+    expect(back(s)).toEqual(['ending:liz']);                 // no banter: no pair is met
+    s.story.seen.push('ending:liz');
+    expect(back(s)).toEqual([]);                             // Noel is not met
+    withMemories(s, 'noel', chainLength('noel'));
+    for (let k = 1; k <= chainLength('noel'); k++) s.story.seen.push(memOf('noel', k));
+    for (let n = 1; n <= 2; n++) s.story.seen.push(`chat:noel:${n}` as SceneId);
+    expect(nextEnding(s)).toBe('ending:noel');
+    const order = back(s);
+    expect(order[0]).toBe('ending:noel');
+    expect(order.filter((x) => x.startsWith('banter:'))).toEqual(order.slice(1));   // an ending is light: banters may follow
+  }));
+
+  it("the spring festival's return plays no ending; the next return does", () => withEndings(['liz'], () => {
+    const d = afterFestival();
+    withMemories(d, 'chizuru', chainLength('chizuru'));
+    for (let k = 1; k <= chainLength('chizuru'); k++) d.story.seen.push(memOf('chizuru', k));
+    d.story.seen.push('home:chizuru', 'chat:chizuru:1', 'chat:chizuru:2');
+    d.story.day = 30;
+    d.story.springDay = 20;
+    expect(SEASON_SCENES.spring).toBe('season:spring');
+    expect(nextEnding(d)).toBe('ending:liz');
+    expect(back(d)).toEqual(['season:spring']);   // measured before: the festival alone
+    d.story.seen.push('season:spring');
+    const next = back(d);
+    expect(next[0]).toBe('ending:liz');
+    expect(next.slice(1).every((x) => x.startsWith('banter:'))).toBe(true);
+  }));
+
+  it('a homecoming and its ending never share an arrival', () => withEndings(['liz'], () => {
+    const c = afterFestival(false);
+    c.story.queue = ['home:liz'];
+    expect(back(c)).toEqual(['home:liz']);   // measured before, and still no ending with it
+    c.story.queue = [];
+    c.story.seen.push('home:liz');
+    expect(back(c)).toEqual(['ending:liz']);
+  }));
+
+  it("Chizuru's ending waits for the spring festival", () => withEndings(['chizuru'], () => {
+    const s = afterFestival();
+    withMemories(s, 'chizuru', chainLength('chizuru'));
+    for (let k = 1; k <= chainLength('chizuru'); k++) s.story.seen.push(memOf('chizuru', k));
+    s.story.seen.push('home:chizuru');
+    expect(nextEnding(s)).toBeNull();   // the festival is registered and not seen
+    s.story.seen.push('season:spring');
+    expect(nextEnding(s)).toBe('ending:chizuru');
+    const spring = SEASON_SCENES.spring;
+    s.story.seen.pop();
+    delete SEASON_SCENES.spring;
+    try { expect(nextEnding(s)).toBe('ending:chizuru'); } finally { SEASON_SCENES.spring = spring; }   // none registered: no wait
+  }));
+
+  it('an ending needs no bond; a late meeting still gets hers; none before the finale; unwritten ones are passed over', () => withEndings(['liz', 'sylvie'], () => {
+    const s = afterFestival();
+    expect(s.party.roster.liz.bond).toBeUndefined();   // 10 + 15: no record at all
+    expect(nextEnding(s)).toBe('ending:liz');
+    const late = afterFestival();
+    late.party.recruited = late.party.recruited.filter((c) => c !== 'liz');
+    expect(nextEnding(late)).toBeNull();
+    withMemories(late, 'sylvie', chainLength('sylvie'));   // met after the finale
+    for (let k = 1; k <= chainLength('sylvie'); k++) late.story.seen.push(memOf('sylvie', k));
+    late.story.seen.push('home:sylvie');
+    expect(nextEnding(late)).toBe('ending:sylvie');
+    const early = afterFestival();
+    early.story.finaleCleared = false;
+    expect(nextEnding(early)).toBeNull();
+    const noFestival = afterFestival();
+    noFestival.story.seen = noFestival.story.seen.filter((x) => x !== 'epilogue');
+    expect(nextEnding(noFestival)).toBeNull();
+    expect(nextEnding(afterFestival(), [])).toBeNull();   // not written
+    expect(nextEnding(afterFestival())).toBe('ending:liz');
+  }));
+
+  it('a queued romance is heavy', () => {
+    const s = afterFestival();
+    withMemories(s, 'noel', 1);
+    withMemories(s, 'selene', 1);
+    expect(arrivalScenes(s, { chat: true }).some((x) => x.startsWith('banter:'))).toBe(true);
+    s.story.queue = ['romance:liz'];
+    const r = arrivalScenes(s, { chat: true });
+    expect(r[0]).toBe('romance:liz');
+    expect(r.some((x) => x.startsWith('banter:'))).toBe(false);
+  });
+
+  it('the night, the dawn and the reactions are untouched', () => {
+    const s = afterFestival();
+    s.story.untold = ['mem:liz:5'] as SceneId[];
+    const plain = arrivalScenes(s, { chat: true });
+    const pick = () => withEndings(['liz'], () => back(s));
+    const ending = pick();
+    expect(ending).toEqual([...plain, 'ending:liz']);
+    expect(planNight(s, ending)).toEqual(planNight(s, plain));
+    expect(dawnMemory(s, [])).toEqual(dawnMemory(s, []));
+    expect(nextReaction(s, ending)).toEqual(nextReaction(s, plain));
+    expect(nextSeasonScene(s, dayOf(s))).toBeNull();
   });
 });

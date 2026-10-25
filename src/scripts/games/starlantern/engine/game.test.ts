@@ -57,7 +57,7 @@ import { MEMORY_PITY } from '../data/story/chains';
 import { BOND_SWITCH, bondOf, bondPoints } from './story/bond';
 import { GIFT_LINES, type GiftPools } from '../data/bond.zh-TW';
 import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
-import { BONDS_WRITTEN } from '../data/story/scenes';
+import { BONDS_WRITTEN, ROMANCES_WRITTEN, TOGETHER_WRITTEN, sceneTime } from '../data/story/scenes';
 import { today } from './story/bond';
 import { withBondEarn, withBondScale } from './testing';
 
@@ -6090,5 +6090,71 @@ describe('a talk a day (bond plan Task 9)', () => {
     expect(b.state.story.talked).toBeUndefined();
     expect(bondOf(b.state.party.roster.rin).talk).toBe(0);
     expect(b.openBond('rin')).toBe('bond:rin:1');
+  }));
+});
+
+describe('the night walk and the romance (bond plan Task 10)', () => {
+  /** In town after the finale and the festival, Liz at 心契 with her 4th bond scene seen; her romance registered. */
+  const walk = (storage = memoryStorage()) => {
+    const g = new Game(calm(), storage, undefined, 0, ['hero', 'rin']);
+    const st = g.state;
+    st.story.act1Cleared = true;
+    st.story.finaleCleared = true;
+    st.story.queue = [];
+    st.story.seen.push('epilogue', 'bond:liz:4');
+    st.party = meet(st.party, 'liz', 1);
+    st.party.roster.liz.memories = chainLength('liz');
+    st.party.roster.liz.bond = { talk: 12, field: 40, gifts: { 'old-coin': 24 } };
+    return g;
+  };
+  const registered = <T,>(f: () => T): T => {
+    ROMANCES_WRITTEN.push('liz');
+    BONDS_WRITTEN.push('liz');
+    try { return f(); } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); TOGETHER_WRITTEN.value = false; }
+  };
+
+  it('the choice is for keeps', () => registered(() => {
+    const storage = memoryStorage();
+    const g = walk(storage);
+    expect(g.walkOpen()).toBe(true);
+    expect(g.chooseRomance('liz')).toEqual({ ok: true, id: 'romance:liz' });
+    expect(g.state.story.romance).toBe('liz');
+    expect(g.state.story.queue).toContain('romance:liz');
+    expect(g.pending).toContain('romance:liz');
+    expect(g.walkOpen()).toBe(false);
+    expect(g.chooseRomance('liz')).toEqual({ ok: false, reason: 'chosen' });
+    expect(g.state.story.romance).toBe('liz');
+    const b = Game.boot(calm(), storage);
+    expect(b.state.story.romance).toBe('liz');
+    expect(b.chooseRomance('rin')).toEqual({ ok: false, reason: 'chosen' });
+  }));
+
+  it('together writes nothing', () => registered(() => {
+    const g = walk();
+    const before = JSON.stringify(g.state);
+    expect(g.walkTogether()).toBe(true);
+    expect(JSON.stringify(g.state)).toBe(before);
+    expect(g.walkOpen()).toBe(false);
+    expect(g.walkTogether()).toBe(false);   // asked already
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.returnToTown()).toBe(true);
+    expect(g.walkOpen()).toBe(true);        // the next return asks again
+  }));
+
+  it('nobody eligible, no night walk', () => {
+    const g = walk();   // not registered
+    expect(g.walkOpen()).toBe(false);
+    expect(g.chooseRomance('liz')).toEqual({ ok: false, reason: 'ineligible' });
+    registered(() => {
+      g.state.party.roster.liz.bond = { talk: 0, field: 0, gifts: {} };
+      expect(g.walkOpen()).toBe(false);
+      expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+      expect(g.walkOpen()).toBe(false);   // not in the labyrinth either
+    });
+  });
+
+  it('a romance is a night scene', () => registered(() => {
+    expect(sceneTime('romance:liz')).toBe('night');
+    expect(sceneTime('ending:liz')).toBe('day');
   }));
 });

@@ -1,5 +1,5 @@
 import {
-  BOND_GATE, BOND_CAP, BOND_MAX, BOND_PCT, BOND_PER_PIECE, BOND_RUN_CAP, BOND_SCALE, BOND_START, BOND_TIER_AT, DANGER_PCT, GIFTABLE,
+  ROMANCEABLE, BOND_GATE, BOND_CAP, BOND_MAX, BOND_PCT, BOND_PER_PIECE, BOND_RUN_CAP, BOND_SCALE, BOND_START, BOND_TIER_AT, DANGER_PCT, GIFTABLE,
   GIFT_MOOD, GIFT_REPEAT_FULL, GIFT_TASTE, GIFT_VALUE, RIN_GIFT_MOOD_BEFORE_OATH, TALK_POINTS, TONE_PREF, type BondTier, type Companion,
   type Taste, type Tone,
 } from '../../data/story/bond';
@@ -7,7 +7,7 @@ import { GIFT_LINES, RIN_OATH_GIFT_LINES, type GiftPools } from '../../data/bond
 import type { StoryMood } from '../../render/artPaths';
 import { chainLength } from '../../data/story/chains';
 import { gateExpired, gateOpen, storyPieces } from './events';
-import { BONDS_WRITTEN, bondScene, type SceneId } from '../../data/story/scenes';
+import { BONDS_WRITTEN, ROMANCES_WRITTEN, bondScene, type SceneId } from '../../data/story/scenes';
 import { CHARACTER_IDS } from '../../data/characters';
 import type { Run } from '../dungeon/run';
 import { CHARACTERS } from '../../data/characters';
@@ -233,3 +233,14 @@ export function nextBond(s: GameState, c: Companion, written: readonly Companion
 /** Every companion's open heart-to-heart (`nextBond`), in CHARACTER_IDS order. */
 export const bondOpen = (s: GameState, written: readonly Companion[] = BONDS_WRITTEN): SceneId[] =>
   CHARACTER_IDS.flatMap((c) => (c === 'hero' ? [] : [nextBond(s, c, written)].filter((x): x is SceneId => x !== null)));
+
+/**
+ * Who may be asked on the night walk (bond plan ruling 12, spec §9.2): after the finale and the festival, while no one is
+ * chosen; romanceable, met, registered (`written`), at 心契, her 心契 scene seen. Highest bond first, CHARACTER_IDS on a tie.
+ */
+export function romanceCandidates(s: GameState, written: readonly Companion[] = ROMANCES_WRITTEN): Companion[] {
+  const st = s.story;
+  if (!st.finaleCleared || !st.seen.includes('epilogue') || st.romance !== undefined) return [];
+  const ok = ROMANCEABLE.filter((c) => written.includes(c) && s.party.recruited.includes(c) && bondTier(s.party.roster[c]) === 4 && st.seen.includes(bondScene(c, 4)));
+  return ok.sort((a, b) => bondPoints(s.party.roster[b]) - bondPoints(s.party.roster[a]) || CHARACTER_IDS.indexOf(a) - CHARACTER_IDS.indexOf(b));
+}

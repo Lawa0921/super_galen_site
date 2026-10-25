@@ -34,7 +34,7 @@ import { loadGame, saveGame, type SaveStorage } from './save';
 import { MAX_REACHED } from './levels';
 import { rollPortals } from './portals';
 import { nextLead } from './story/leads';
-import { afterWin, arrivalScenes, calendarOf, markRead, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
+import { afterWin, arrivalScenes, calendarOf, markRead, nextEnding, onReturn, sceneDone, settleBellkeeper, settleOpening } from './story/events';
 import { NIGHT_BEATS, type ScriptLine } from '../data/story.zh-TW';
 import { DAWN_BACKLOG, dawnMemory, eveMemories, nextBeat, orderNight, planNight, restoreNight } from './story/nights';
 import { SPRING_AFTER, dayOf, nextDay } from './calendar';
@@ -47,7 +47,7 @@ import { moveRune, socketRune, unsocketRune, type SocketAt, type SocketFail } fr
 import type { RuneRef } from '../data/runes';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
 import { applyBuild, applyCost, followUp } from './builds';
-import { addField, bondOf, giveGift, inDanger, nextBond, talkPoints, today, type GiveResult } from './story/bond';
+import { addField, bondOf, giveGift, inDanger, nextBond, romanceCandidates, talkPoints, today, type GiveResult } from './story/bond';
 import { BOND_CAP, type Companion, type Tone } from '../data/story/bond';
 import { FIELD_POINTS } from '../data/story/bond';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
@@ -141,6 +141,8 @@ export class Game {
   private endangered = new Set<CharacterId>();
   /** Bond plan Task 8: the pending bond scenes whose choice has counted (once each). Not saved. */
   private choiceCounted = new Set<SceneId>();
+  /** Bond plan ruling 12: the night walk was asked on this stay in town (set back on each arrival). Not saved. */
+  private walkAsked = false;
   /**
    * The tier the fight on now is played and paid at (difficulty plan ruling 17): the run's at `startBattle`, none for a
    * story fight or a Normal run. The fight's scale, affixes, gear, runes and boss-kill key read it, never `run.difficulty`;
@@ -1209,6 +1211,35 @@ export class Game {
     return id;
   }
 
+  /** Bond plan ruling 12: the night walk is offered: in town, not asked yet on this return, someone may be asked. */
+  walkOpen(): boolean {
+    return this.phase === 'town' && !this.walkAsked && romanceCandidates(this.state).length > 0;
+  }
+
+  /**
+   * Bond plan ruling 12 (spec §9.2, §14): she is the one, for keeps. Her romance (`romance:<c>`) is queued, so a walk cut
+   * short is told on the next return, and waits in `pending` for the screen; the town saves. Once chosen, never again.
+   */
+  chooseRomance(c: Companion): { ok: true; id: SceneId } | { ok: false; reason: 'chosen' | 'ineligible' | 'phase' } {
+    if (this.state.story.romance !== undefined) return { ok: false, reason: 'chosen' };
+    if (this.phase !== 'town') return { ok: false, reason: 'phase' };
+    if (!romanceCandidates(this.state).includes(c)) return { ok: false, reason: 'ineligible' };
+    const id: SceneId = `romance:${c}`;
+    this.state.story.romance = c;
+    if (!this.state.story.queue.includes(id)) this.state.story.queue.push(id);
+    if (!this.pending.includes(id)) this.pending.push(id);
+    this.walkAsked = true;
+    this.saveInTown();
+    return { ok: true, id };
+  }
+
+  /** Bond plan ruling 12: the walk with everyone. Nothing is written; the walk is not offered again until the next return. */
+  walkTogether(): boolean {
+    if (!this.walkOpen()) return false;
+    this.walkAsked = true;
+    return true;
+  }
+
   /**
    * Bond plan Task 8 (spec §7.4): the choice of a bond scene that is playing, before its `sceneDone`: her talk points
    * (`talkPoints`; `null` for skipped) up to BOND_CAP.talk. Only for a bond scene in `pending`, not yet seen, once.
@@ -1377,7 +1408,9 @@ export class Game {
    */
   private arrive(afterFinale = false): void {
     this.state.story = onReturn(this.state);
-    const day = arrivalScenes(this.state, { chat: true, afterFinale });
+    // bond plan ruling 11: after the finale an after-story takes the chat's place
+    const day = arrivalScenes(this.state, { chat: true, afterFinale, ending: (s) => nextEnding(s) });
+    this.walkAsked = false;   // bond plan ruling 12: the night walk is asked again on each return
     const plan = planNight(this.state, day);
     this.state.story.tonight = [...plan.before, ...plan.night];
     // 【控制者裁定 2026-10-24】 the dawn before the next departure, picked now and saved with the return

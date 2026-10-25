@@ -3,7 +3,7 @@ import { newMember } from '../party';
 import { chainLength } from '../../data/story/chains';
 import { COMPANIONS, GIFTABLE, GIFT_TASTE, type Companion } from '../../data/story/bond';
 import type { BondRecord, Member } from '../types';
-import { BOND_SWITCH, addField, bondOpen, nextBond, talkPoints, bondOf, bondPoints, bondTier, giftLine, giftMood, giftPools, giftPoints, giveGift, inDanger, tasteOf, tierAt, today } from './bond';
+import { BOND_SWITCH, addField, bondOpen, nextBond, romanceCandidates, talkPoints, bondOf, bondPoints, bondTier, giftLine, giftMood, giftPools, giftPoints, giveGift, inDanger, tasteOf, tierAt, today } from './bond';
 import type { GiftPools } from '../../data/bond.zh-TW';
 import { meet } from '../party';
 import { mulberry32 } from '../rng';
@@ -438,5 +438,43 @@ describe('heart-to-hearts: the gates (bond plan Task 9)', () => {
     s.party.roster.rin.memories = 2;   // 10 + 6 + 10 = 26, 同行, two pieces
     expect(bondOpen(s, W)).toEqual(['bond:rin:1', 'bond:selene:1']);   // CHARACTER_IDS order
     expect(nextBond(s, 'sylvie', ['sylvie'])).toBeNull();   // not met
+  });
+});
+
+describe('romance candidates (bond plan Task 10)', () => {
+  /** After the finale and the festival; `c` met, whole, at 心契 with her 4th bond scene seen. */
+  const eligible = (cs: Companion[]): GameState => {
+    const s = newGame();
+    s.story.act1Cleared = true;
+    s.story.finaleCleared = true;
+    s.story.seen.push('epilogue');
+    for (const c of cs) {
+      if (!s.party.recruited.includes(c)) s.party = meet(s.party, c, 1);
+      s.party.roster[c].memories = chainLength(c);
+      s.party.roster[c].bond = { talk: 12, field: 40, gifts: { [GIFT_TASTE[c].loved[0]]: 24 } };
+      s.story.seen.push(`bond:${c}:4`);
+    }
+    return s;
+  };
+  const W: Companion[] = ['liz', 'rin', 'noel'];
+  it('romance candidates', () => {
+    expect(romanceCandidates(eligible(['liz']), W)).toEqual(['liz']);
+    expect(romanceCandidates(eligible(['liz']))).toEqual([]);   // nothing is registered today
+    const cut: [string, (s: GameState) => void][] = [
+      ['no finale', (s) => { s.story.finaleCleared = false; }],
+      ['no festival', (s) => { s.story.seen = s.story.seen.filter((x) => x !== 'epilogue'); }],
+      ['chosen already', (s) => { s.story.romance = 'rin'; }],
+      ['not met', (s) => { s.party.recruited = s.party.recruited.filter((c) => c !== 'liz'); }],
+      ['not 心契', (s) => { s.party.roster.liz.bond = { talk: 12, field: 0, gifts: {} }; }],
+      ['her 心契 not seen', (s) => { s.story.seen = s.story.seen.filter((x) => x !== 'bond:liz:4'); }],
+    ];
+    for (const [why, mut] of cut) { const s = eligible(['liz']); mut(s); expect(romanceCandidates(s, W), why).toEqual([]); }
+    expect(romanceCandidates(eligible(['liz']), ['rin'])).toEqual([]);   // not registered
+    // highest bond first, CHARACTER_IDS breaks a tie
+    const three = eligible(['liz', 'noel', 'rin']);
+    expect(romanceCandidates(three, W)).toEqual(['rin', 'noel', 'liz']);   // all at 100: CHARACTER_IDS order
+    three.party.roster.rin.memories = 0;
+    three.party.roster.rin.bond = { talk: 12, field: 40, gifts: { 'dusk-cloth': 24 } };   // 92
+    expect(romanceCandidates(three, W)).toEqual(['noel', 'liz', 'rin']);
   });
 });

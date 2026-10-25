@@ -1,6 +1,6 @@
 import { CHARACTER_IDS } from '../../data/characters';
 import { chainLength, type CalendarNow, type Season } from '../../data/story/chains';
-import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAYOFFS, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, EVE_DEPTH, GROUP_GATE, HEAVY_MAJORS, HOME_OWNERS, REACTIONS, SEASON_SCENES, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type GroupScene, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
+import { ACT_DEPTHS, ACT_NODES, ALONE, BANTER_COUNT, BANTER_GATE, BANTER_PAYOFFS, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, DEPARTURE_SCENES, ENDINGS_WRITTEN, EVE_DEPTH, GROUP_GATE, HEAVY_MAJORS, HOME_OWNERS, REACTIONS, SEASON_SCENES, STAGES, banterScene, banterTwo, heavyScene, homeScene, isHeavyArrival, type ActNode, type BanterPair, type GroupScene, type SceneId, type Stage, type StoryGate } from '../../data/story/scenes';
 import { memoriesOf } from '../progression';
 import type { GameState, StoryState } from '../state';
 import type { CharacterId } from '../types';
@@ -292,9 +292,11 @@ export function openPairs(s: GameState, gates: Partial<Record<SceneId, StoryGate
  * plays first (the opening, the acts, the bellkeeper, the memories, the homecomings), then one chat, then one banter (B1):
  * a banter never goes ahead of anything the story owes, and it plays even when no chat is due. No banter follows a heavy
  * arrival (`HEAVY_ARRIVAL`, or `afterFinale`: the return right after the ending); it waits for the next return. The heavy
- * check reads the queue and the scene in the chat slot: `slot` fills that slot, `nextChat` by default (6d: an ending first).
+ * check reads the queue and the scene in the chat slot: `slot` fills that slot, `nextChat` by default. Bond plan ruling 11:
+ * `ending` is tried first (`Game.arrive` passes `nextEnding`); one it gives takes the chat slot, and none leaves the slot
+ * as it was. A return whose slot holds a group or a season's scene never asks it.
  */
-export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: boolean; slot?: (s: GameState) => SceneId | null; reactions?: Partial<Record<ActNode, GroupScene>> }): SceneId[] {
+export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: boolean; slot?: (s: GameState) => SceneId | null; reactions?: Partial<Record<ActNode, GroupScene>>; ending?: (s: GameState) => SceneId | null }): SceneId[] {
   const alone = ALONE.find((id) => s.story.queue.includes(id));
   if (alone) return [alone];
   const sorted = s.story.queue.filter((id) => !DEPARTURE_SCENES.includes(id)).sort((a, b) => rank(a) - rank(b));
@@ -312,7 +314,7 @@ export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: bo
   if (season) return [...list, season];
   if (!o.chat) return list;
   const heavyList = list.some(isHeavyArrival);
-  const chat = (o.slot ?? ((st: GameState) => nextChat(st, CHAT_GATE, heavyList)))(s);
+  const chat = o.ending?.(s) ?? (o.slot ?? ((st: GameState) => nextChat(st, CHAT_GATE, heavyList)))(s);
   const heavy = !!o.afterFinale || [...list, ...(chat ? [chat] : [])].some(isHeavyArrival);
   const banter = heavy ? null : nextBanter(s);
   // A second banter (story depth plan ruling 9, with its pre-authorized fallback): nothing owed in the queue, not the return
@@ -322,6 +324,25 @@ export function arrivalScenes(s: GameState, o: { chat: boolean; afterFinale?: bo
   const quiet = !!banter && list.length === 0 && !o.afterFinale && openPairs(s) >= 3;
   const second = quiet ? pickBanter({ ...s, story: { ...s.story, seen: [...s.story.seen, banter] } }, BANTER_GATE, BANTER_COUNT, banterTwo(banter).join('-')) : null;
   return [...list, ...(chat ? [chat] : []), ...(banter ? [banter] : []), ...(second ? [second] : [])];
+}
+
+/**
+ * Bond plan ruling 11 (spec §8.5, §0 D10): the next after-story, or null. After the finale with the festival (`epilogue`)
+ * seen: in CHARACTER_IDS order, the first companion met with her pieces all told whose `ending:<c>` is registered
+ * (`written`) and not seen; a homecoming of hers (`home:<c>`) seen first; Chizuru's waits for the spring festival too, when
+ * it is registered. Her bond is never asked: no one is left in the dark.
+ */
+export function nextEnding(s: GameState, written: readonly CharacterId[] = ENDINGS_WRITTEN): SceneId | null {
+  if (!s.story.finaleCleared || !s.story.seen.includes('epilogue')) return null;
+  for (const c of CHARACTER_IDS) {
+    if (c === 'hero' || !written.includes(c) || !s.party.recruited.includes(c)) continue;
+    const id: SceneId = `ending:${c}`;
+    if (s.story.seen.includes(id) || storyPieces(s, c) < chainLength(c)) continue;
+    if ((HOME_OWNERS as CharacterId[]).includes(c) && !s.story.seen.includes(homeScene(c as (typeof HOME_OWNERS)[number]))) continue;
+    if (c === 'chizuru' && SEASON_SCENES.spring && !s.story.seen.includes(SEASON_SCENES.spring)) continue;
+    return id;
+  }
+  return null;
 }
 
 /**
