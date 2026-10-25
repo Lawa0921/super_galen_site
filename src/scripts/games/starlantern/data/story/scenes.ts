@@ -137,7 +137,7 @@ const MAJOR_CAPS: Partial<Record<MajorScene, number>> = {
  * `BOND_SCENES` (data/bond.test.ts checks the two agree). Arrays and a box, not constants, so a test can register its own
  * and put them back; `isSceneId` reads them when called, `SCENE_IDS` when loaded.
  */
-export const BONDS_WRITTEN: Companion[] = ['rin', 'selene', 'chizuru', 'safira', 'sylvie', 'noel'];   // bond plan Tasks 17, 18
+export const BONDS_WRITTEN: Companion[] = ['rin', 'selene', 'chizuru', 'safira', 'sylvie', 'noel', 'bobby', 'liz', 'scarlet'];   // bond plan Tasks 17-19
 export const ENDINGS_WRITTEN: Companion[] = [];
 export const ROMANCES_WRITTEN: Companion[] = [];
 export const TOGETHER_WRITTEN: { value: boolean } = { value: false };

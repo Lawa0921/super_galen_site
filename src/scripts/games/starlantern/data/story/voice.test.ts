@@ -55,6 +55,7 @@ const POLISHED: string[] = [
   // Bond plan Tasks 17-19: each companion's four bond scenes, as they are written
   'scenes.bond:rin:', 'scenes.bond:selene:', 'scenes.bond:chizuru:',
   'scenes.bond:safira:', 'scenes.bond:sylvie:', 'scenes.bond:noel:',
+  'scenes.bond:bobby:', 'scenes.bond:liz:', 'scenes.bond:scarlet:',
 ];
 
 type Scope = readonly string[];

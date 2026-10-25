@@ -529,6 +529,202 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
     ],
     summary: '諾艾兒說，想當最厲害，是怕沒人記得她；這裡有人把她的臉寫進了筆記。',
   },
+
+  // ---- bond plan Task 19: Bobby (arcs v7). 洛恩哥; 一下下 is never a moment; her 心契 has no 喔; her family's hand in his
+  // sword is the finale's, never said here.
+  'bond:bobby:1': {
+    lines: [
+      { who: 'narrator', place: PL.forge, text: '鍛造屋。波比問洛恩缺什麼，他說什麼都不缺；她就做了一個他不知道自己缺的東西。' },
+      { who: 'narrator', text: '會自己找劍鞘的劍穗。它找錯了，纏在多蘭的鐵鎚上。多蘭看了一眼：「嗯。」' },
+      { who: 'bobby', mood: 'grin', text: '「嘿嘿，那是試作品！正式版一下下就好！」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「這是什麼？」', reply: [
+          { who: 'bobby', mood: 'excited', text: '「這個齒輪負責聞劍鞘，這個負責轉彎，這個──啊，這邊鬆了！」' },
+          { who: 'bobby', mood: 'grin', text: '「還沒講到最好的地方喔！」' },
+        ] },
+        { tone: 'stay', text: '（伸手讓她把劍穗綁上去。）', reply: [{ who: 'bobby', mood: 'excited', text: '「綁、綁上去了！洛恩哥第一個用！」' }] },
+        { tone: 'promise', text: '「下一層，我帶著它下去。」', reply: [{ who: 'bobby', text: '「那要報告它有沒有找錯鞘喔！」' }] },
+      ] },
+    ],
+    summary: '波比替什麼都不缺的洛恩做了一個會自己找劍鞘的劍穗，它找錯了。',
+  },
+  'bond:bobby:2': {
+    lines: [
+      { who: 'narrator', place: PL.forge, text: '鍛造屋。波比說要看洛恩的劍一下下，拆了一整夜。四十八個零件攤在桌上，順序記不起來了。' },
+      { who: 'narrator', text: '洛恩那天下不去了。' },
+      { who: 'bobby', mood: 'focused', text: '「做錯的東西，要修到對為止。不然它就會被丟掉。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「這一個是什麼？」', reply: [
+          { who: 'bobby', mood: 'excited', text: '「這是──啊！就是這裡！順序想起來了！」' },
+          { who: 'narrator', text: '她一口氣裝回去三個，又停在第四個。' },
+        ] },
+        { tone: 'stay', text: '（坐下來，一起把零件排好。）', reply: [{ who: 'bobby', mood: 'grin', text: '「洛恩哥排的那一排，是反的喔。嘿嘿。」' }] },
+        { tone: 'promise', text: '「明天只拆一半。」', reply: [{ who: 'bobby', text: '「只拆一半！這次是真的，大概。」' }] },
+      ] },
+    ],
+    summary: '波比說要看劍一下下，拆了一整夜，順序記不起來；洛恩那天下不去了。',
+  },
+  'bond:bobby:3': {
+    lines: [
+      { who: 'narrator', place: PL.innKitchen, text: '旅館的廚房。瑪莎的舊音樂盒，有一個音永遠是歪的。' },
+      { who: 'narrator', text: '波比的手伸過去，縮回來，又伸過去；另一隻手在口袋裡轉螺絲，轉到發燙，整張臉皺成一團。瑪莎說，她就喜歡那個歪的音。' },
+      { who: 'bobby', mood: 'focused', text: '「我不修。今天不修。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「忍得住？」', reply: [{ who: 'bobby', text: '「忍、忍不住！可是它歪的地方，瑪莎阿姨會跟著哼。」' }] },
+        { tone: 'stay', text: '（陪她聽完那一首。）', reply: [{ who: 'bobby', mood: 'smile', text: '「歪的那一下，其實很好聽耶。」' }] },
+        { tone: 'promise', text: '「明天它還會歪。」', reply: [{ who: 'bobby', mood: 'grin', text: '「嘿嘿，那我明天再來聽。」' }] },
+      ] },
+    ],
+    summary: '瑪莎的音樂盒有一個歪掉的音，波比忍了又忍，沒有修。',
+  },
+  'bond:bobby:4': {
+    lines: [
+      { who: 'narrator', place: PL.forge, text: '鍛造屋。波比把劍還給洛恩，自己掐著手指計時。' },
+      { who: 'bobby', mood: 'grin', text: '「八十七下！這次真的是一下下。」' },
+      { who: 'bobby', text: '「我一直以為，要修好東西，才能被留下來。」' },
+      { who: 'bobby', text: '「可是在這裡，沒有人要我修好什麼，大家還是留著我。」' },
+      { who: 'bobby', mood: 'smile', text: '「洛恩哥是我第一個不想修的人。你這樣就好。」' },
+      { who: 'narrator', text: '她說完自己愣了一下，趕緊低頭講起劍要怎麼上油。' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「真的不想修？」', reply: [{ who: 'bobby', mood: 'grin', text: '「一顆螺絲都不想。這是我說過最厲害的一句話了吧。」' }] },
+        { tone: 'stay', text: '（收下劍，摸了摸她的頭。）', reply: [{ who: 'bobby', mood: 'blush', text: '「劍、劍要記得上油！」' }] },
+        { tone: 'promise', text: '「明天的劍，再借妳看一下下。」', reply: [{ who: 'bobby', mood: 'smile', text: '「那時候，我只看，不拆。」' }] },
+      ] },
+    ],
+    summary: '波比說，這裡沒有人要她修好什麼；洛恩哥是她第一個不想修的人。',
+  },
+
+  // ---- Liz (arcs v7). 老大; the doorway is hers; no 爸爸 before her last piece, and no reunion.
+  'bond:liz:1': {
+    lines: [
+      { who: 'narrator', place: PL.inn, text: '月影旅館的大廳。莉茲把全隊的東西攤在桌上，一件一件估價，要找出隊上最值錢的東西。' },
+      { who: 'liz', mood: 'scheming', text: '「老大這捲繃帶，原價一枚銅板。被老大纏過，跌到半枚。」' },
+      { who: 'narrator', text: '她估到自己的雙刃，跟自己殺了三次價。' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「誰教妳估價的？」', reply: [{ who: 'liz', mood: 'hushed', text: '「有人教過。估對了，頭髮就會被揉成鳥窩。」' }] },
+        { tone: 'stay', text: '（把自己的錢袋放在她面前。）', reply: [{ who: 'liz', mood: 'scheming', text: '「老大，這袋裡一半是銅板，一半是麵包屑。」' }] },
+        { tone: 'promise', text: '「明天帶個值錢的給妳估。」', reply: [
+          { who: 'liz', mood: 'smile', text: '「成交！估對了，獎勵給錢就好啦。」' },
+          { who: 'narrator', text: '她伸出手，等他握。' },
+        ] },
+      ] },
+    ],
+    summary: '莉茲替全隊估價，洛恩的繃帶只值半枚銅板。',
+  },
+  'bond:liz:2': {
+    lines: [
+      { who: 'narrator', place: PL.guild, text: '冒險者公會。莉茲給洛恩開了一疊借條：麵包錢、帶路錢、陪聊錢，利息算到半枚銅板以下。' },
+      { who: 'narrator', text: '他下潛之前，連一瓶藥都買不起了。' },
+      { who: 'narrator', text: '最後一張的期限欄，她寫了之後再付，寫完停住了。' },
+      { who: 'liz', mood: 'hushed', text: '「這種借條，我看過一整面牆。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「一整面牆？」', reply: [{ who: 'liz', text: '「沒什麼。老大，你那疊期限改成明天──欠太久的，會變成一面牆。」' }] },
+        { tone: 'stay', text: '（把借條一張一張摺好，收進懷裡。）', reply: [{ who: 'liz', text: '「收那麼好做什麼？又不值錢。」' }] },
+        { tone: 'promise', text: '「明天我一定付。」', reply: [{ who: 'liz', mood: 'smile', text: '「這句我收了，不收利息。」' }] },
+      ] },
+    ],
+    summary: '莉茲替洛恩開了一疊借條，利息算得比誰都細；寫到最後一張，她停住了。',
+  },
+  'bond:liz:3': {
+    lines: [
+      { who: 'narrator', place: PL.innKitchen, text: '旅館的廚房。莉茲烤了一盤麵包，邊邊全焦了，她說這種最好吃。' },
+      { who: 'narrator', text: '她摸出那疊借條，撕了一張，停下來算了一下，又撕一張，最後一口氣全撕了。撕到洛恩那張，她猶豫得最久。' },
+      { who: 'liz', mood: 'smile', text: '「虧大了。這一盤，不算錢。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「不收錢？」', reply: [{ who: 'liz', text: '「這盤估不出價。估不出價的，我不賣。」' }] },
+        { tone: 'stay', text: '（拿了最焦的那一塊。）', reply: [{ who: 'liz', mood: 'scheming', text: '「老大，眼光不錯。那塊最好吃。」' }] },
+        { tone: 'promise', text: '「明天再烤一盤，我來搬柴。」', reply: [
+          { who: 'liz', mood: 'smile', text: '「好啦，柴算你的，麵包算我的。──不對不對，都不算錢。」' },
+          { who: 'liz', mood: 'hushed', text: '「有人等著吃，烤起來比較香。」' },
+        ] },
+      ] },
+    ],
+    summary: '莉茲烤了一盤邊邊焦掉的麵包，說這盤不算錢，還把借條全撕了。',
+  },
+  'bond:liz:4': {
+    lines: [
+      { who: 'narrator', place: PL.squareDusk, text: '黃昏的廣場。莉茲坐在台階上，先替台階估了價。' },
+      { who: 'liz', mood: 'scheming', text: '「坐起來值三枚銅板，看夕陽另加一枚。」' },
+      { who: 'liz', text: '「以前我以為，把錢帶回家就好。」' },
+      { who: 'liz', mood: 'hushed', text: '「後來才知道，家是門口有人等。」' },
+      { who: 'liz', mood: 'smile', text: '「這支隊伍，是我回來的時候，門口有人的地方。」' },
+      { who: 'liz', text: '「爸爸說，帳他自己會對，叫我別急著回去顧店。」', if: { returned: 'orik' } },
+      { who: 'liz', mood: 'hushed', text: '「帽子還掛在門後。等爸爸想起來之前，這裡也有人等我。」', if: { notReturned: 'orik' } },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「現在最值錢的是什麼？」', reply: [{ who: 'liz', text: '「台階的價錢我算得出來。這個，我算不出來。」' }] },
+        { tone: 'stay', text: '（陪她坐在台階上，看人回家。）', reply: [{ who: 'liz', text: '「老大，你坐得太近了。算了，這個位置不收錢。」' }] },
+        { tone: 'promise', text: '「明天傍晚，台階上等妳。」', reply: [
+          { who: 'liz', mood: 'smile', text: '「這次不殺價，成交。」' },
+          { who: 'narrator', text: '她伸出手，這一次沒有討價還價。' },
+        ] },
+      ] },
+    ],
+    summary: '莉茲說，家是門口有人等；這支隊伍，是她回來時門口有人的地方。',
+  },
+
+  // ---- Scarlet (arcs v7). Scenes 1-3 never name him; no 起誓, no 選, nothing of her last piece before it; 「！」 not hers.
+  'bond:scarlet:1': {
+    lines: [
+      { who: 'narrator', place: PL.guild, text: '冒險者公會。絲嘉蕾把全隊的雜務排成一張勤務表，每一格都填了人，只有她自己那一格空著。' },
+      { who: 'scarlet', text: '「待命。等候命令。」' },
+      { who: 'narrator', text: '洛恩隨口說去吃點心。她立正出門，回來時手裡拿著半塊蛋糕。' },
+      { who: 'scarlet', mood: 'serious', text: '「回報：外酥內軟，甜度三成。另外半塊，請長官品評。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「為什麼要等命令？」', reply: [{ who: 'scarlet', text: '「有命令，就知道該做什麼。」' }] },
+        { tone: 'stay', text: '（在她那一格畫一個問號。）', reply: [{ who: 'scarlet', mood: 'surprised', text: '「問號……是什麼勤務？請說明。」' }] },
+        { tone: 'promise', text: '「明天給妳一道命令。」', reply: [{ who: 'scarlet', text: '「遵命。我會保持待命。」' }] },
+      ] },
+    ],
+    summary: '絲嘉蕾排了一張勤務表，只有自己那一格空著，等候命令。',
+  },
+  'bond:scarlet:2': {
+    lines: [
+      { who: 'narrator', place: PL.inn, text: '月影旅館的大廳。公帳連著三天對不平，每次分錢，總是多出一份。' },
+      { who: 'scarlet', mood: 'serious', text: '「報告：差額是我。」' },
+      { who: 'liz', mood: 'serious', text: '「帳上多出來的那一份，是妳的賣命錢！妳不拿，就是把自己從帳上劃掉！」', if: { met: 'liz' } },
+      { who: 'narrator', text: '洛恩把那一份錢推回她面前。', if: { notMet: 'liz' } },
+      { who: 'scarlet', mood: 'sad', text: '「莉茲小姐走了。我以為，少一份，就不會給誰添麻煩。」', if: { met: 'liz' } },
+      { who: 'scarlet', mood: 'sad', text: '「報告完畢。我以為，少一份，就不會給誰添麻煩。」', if: { notMet: 'liz' } },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「為什麼不拿自己那份？」', reply: [{ who: 'scarlet', text: '「我拿了，也不知道要用在哪裡。」' }] },
+        { tone: 'stay', text: '（把錢收攏，放回她的掌心。）', reply: [{ who: 'scarlet', text: '「收下了。這一份，是我的。」' }] },
+        { tone: 'promise', text: '「明天陪妳把帳對一次。」', reply: [{ who: 'scarlet', text: '「遵命。數字的部分，請提醒我。」' }] },
+      ] },
+    ],
+    summary: '絲嘉蕾每次都把自己那份錢放回公帳；被發現的時候，她說差額是她。',
+  },
+  'bond:scarlet:3': {
+    lines: [
+      { who: 'narrator', place: PL.square, text: '廣場。孩子們拿木劍挑戰騎士大人，最小的那一個跑到她前面，大喊要保護她。' },
+      { who: 'narrator', text: '她的手已經按上劍柄，一根一根手指鬆開，慢慢單膝跪下，讓那把木劍擋在她前面。' },
+      { who: 'scarlet', mood: 'serious', text: '「回報：後方安全。」' },
+      { who: 'scarlet', text: '「我也被木劍追過。追我的人，很會耍賴。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「怎麼耍賴的？」', reply: [{ who: 'scarlet', mood: 'smile', text: '「輸了就說，剛才那一下不算。」' }] },
+        { tone: 'stay', text: '（也撿起一把木劍，站到孩子後面。）', reply: [{ who: 'scarlet', mood: 'smile', text: '「被兩個人守著。這種陣形，我還沒學過。」' }] },
+        { tone: 'promise', text: '「明天換孩子們排勤務表。」', reply: [{ who: 'scarlet', text: '「那我會被排在哪裡，我有點擔心。」' }] },
+      ] },
+    ],
+    summary: '孩子拿著木劍要保護絲嘉蕾，她鬆開劍柄，單膝跪下，讓孩子守。',
+  },
+  'bond:scarlet:4': {
+    lines: [
+      { who: 'narrator', place: PL.guild, text: '冒險者公會。新的勤務表上多了一格『點心：全員』。絲嘉蕾說這是她排過最難的一格。' },
+      { who: 'narrator', text: '她拿起筆，在最後一格第一次替自己寫了名字：『休息：絲嘉蕾』。' },
+      { who: 'scarlet', text: '「洛恩，我以前排班，從來不把自己算進去。」' },
+      { who: 'scarlet', mood: 'smile', text: '「在這裡，我第一次覺得自己也在隊伍裡面。算在裡面的人，也可以休息。」' },
+      { who: 'hero', choices: [
+        { tone: 'ask', text: '「休息的時候做什麼？」', reply: [{ who: 'scarlet', text: '「不知道。所以，請教我。」' }] },
+        { tone: 'stay', text: '（在那一格後面，寫上自己的名字。）', reply: [
+          { who: 'scarlet', mood: 'smile', text: '「兩個人一起休息……這樣排，勤務表沒有寫過。」' },
+          { who: 'narrator', text: '她看了很久，沒有劃掉。' },
+        ] },
+        { tone: 'promise', text: '「明天第一班，我來站。」', reply: [{ who: 'scarlet', mood: 'smile', text: '「那明天，我睡到第二班。以騎士的名譽保證。」' }] },
+      ] },
+      { who: 'narrator', text: '她把盾靠在牆上，坐了下來。' },
+    ],
+    summary: '絲嘉蕾第一次替自己排了一格休息，因為算在隊伍裡的人，也可以休息。',
+  },
 };
 
 /** Two town lines for the one chosen (plan ruling 13), added to the town's pool under her name once she is chosen. */

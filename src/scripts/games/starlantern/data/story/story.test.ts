@@ -1325,7 +1325,8 @@ describe('Task 10: Liz, Scarlet and the survive line', () => {
 
   it("Scarlet says 「洛恩閣下」 until her memories are whole; the princess's words live in her last piece alone", () => {
     for (const t of spokenBy('scarlet')) {
-      if (t.key.startsWith('scenes.mem:scarlet:5.') || t.line?.if?.full === 'scarlet') continue;
+      // bond plan Task 19: her 心契 opens only once she is whole (BOND_GATE.scarlet[4].full)
+      if (t.key.startsWith('scenes.mem:scarlet:5.') || t.key.startsWith('scenes.bond:scarlet:4.') || t.line?.if?.full === 'scarlet') continue;
       for (const m of t.text.matchAll(/洛恩(.?.?)/g)) expect(m[1], t.key).toBe('閣下');
     }
     expect(spokenBy('scarlet').some((t) => t.text.includes('洛恩閣下'))).toBe(true);

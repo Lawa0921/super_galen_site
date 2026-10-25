@@ -403,3 +403,38 @@ describe('bond scenes: Safira, Sylvie, Noel (bond plan Task 18)', () => {
     pinBeat('bond:noel:4', { full: ['noel'] }, /怕沒人記得我/);
   });
 });
+
+// ---- bond plan Task 19: Bobby's, Liz's and Scarlet's bond scenes (arcs v7); with them all nine are written
+
+describe('bond scenes: Bobby, Liz, Scarlet (bond plan Task 19)', () => {
+  it('the three are registered, all four scenes of each written; every companion now has hers', () => {
+    for (const c of ['bobby', 'liz', 'scarlet'] as Companion[]) {
+      expect(BONDS_WRITTEN, c).toContain(c);
+      for (let n = 1; n <= 4; n++) expect(BOND_SCENES[bondScene(c, n)], `${c} ${n}`).toBeDefined();
+    }
+    expect([...BONDS_WRITTEN].sort()).toEqual([...COMPANIONS].sort());
+  });
+
+  it('each scene holds its beat, in each reading it branches into (W4)', () => {
+    const noLiz = CHARACTER_IDS.filter((c) => c !== 'liz');
+    // Bobby: the tassel that found the wrong sheath; mend it till it is right; not today; the first one she won't fix
+    pinBeat('bond:bobby:1', {}, /找錯了/);
+    pinBeat('bond:bobby:2', {}, /修到對為止/);
+    pinBeat('bond:bobby:3', {}, /今天不修/);
+    pinBeat('bond:bobby:4', { full: ['bobby'] }, /第一個不想修的人/);
+    // Liz: half a copper; a whole wall of them; every IOU torn; home is someone at the door (Orik's piece back or not)
+    pinBeat('bond:liz:1', {}, /跌到半枚/);
+    pinBeat('bond:liz:2', {}, /我看過一整面牆/);
+    pinBeat('bond:liz:3', {}, /一口氣全撕了/);
+    pinBeat('bond:liz:4', { full: ['liz'] }, /門口有人等/);
+    pinBeat('bond:liz:4', { full: ['liz'], returned: ['orik'] }, /帳他自己會對/);
+    pinBeat('bond:liz:4', { full: ['liz'], returned: [] }, /帽子還掛在門後/);
+    // Scarlet: her own slot left empty; the difference is her (Liz met or not); she kneels and lets the child guard; rest
+    pinBeat('bond:scarlet:1', {}, /只有她自己那一格空著/);
+    pinBeat('bond:scarlet:2', {}, /差額是我/);
+    pinBeat('bond:scarlet:2', {}, /命錢/);
+    pinBeat('bond:scarlet:2', { met: noLiz }, /推回她面前/);
+    pinBeat('bond:scarlet:3', {}, /單膝跪下/);
+    pinBeat('bond:scarlet:4', { full: ['scarlet'] }, /休息：絲嘉蕾/);
+  });
+});
