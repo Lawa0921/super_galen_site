@@ -1,12 +1,13 @@
 import {
-  BOND_CAP, BOND_MAX, BOND_PCT, BOND_PER_PIECE, BOND_SCALE, BOND_START, BOND_TIER_AT, GIFTABLE, GIFT_REPEAT_FULL, GIFT_TASTE,
-  GIFT_VALUE, type BondTier, type Companion, type Taste,
+  BOND_CAP, BOND_MAX, BOND_PCT, BOND_PER_PIECE, BOND_RUN_CAP, BOND_SCALE, BOND_START, BOND_TIER_AT, DANGER_PCT, GIFTABLE,
+  GIFT_REPEAT_FULL, GIFT_TASTE, GIFT_VALUE, type BondTier, type Companion, type Taste,
 } from '../../data/story/bond';
+import type { Run } from '../dungeon/run';
 import { CHARACTERS } from '../../data/characters';
 import { dayOf } from '../calendar';
 import { memoriesOf } from '../progression';
 import type { GameState } from '../state';
-import type { BondRecord, GiftId, Member, Sheet } from '../types';
+import type { BondRecord, CharacterId, GiftId, Member, Party, Sheet } from '../types';
 
 /**
  * Bond (好感度) as pure functions of what has happened (bond plan Task 1; spec §4). No rng of any kind: every point is an
@@ -103,6 +104,30 @@ export function bondStats(m: Pick<Member, 'id' | 'level' | 'memories' | 'bond'>,
   const out: Partial<Sheet> = {};
   for (const k of BOND_STATS) out[k] = Math.floor(((def.base[k] + def.growth[k] * (m.level - 1)) * pct * scale) / 100);
   return out;
+}
+
+/** In danger (bond plan ruling 3, spec §0 D4): down, or at DANGER_PCT of her max HP or less. */
+export const inDanger = (c: { hp: number; max: { hp: number } }): boolean => c.hp <= 0 || c.hp * 100 <= c.max.hp * DANGER_PCT;
+
+/**
+ * Field points (spec §4.3): `pts` for each companion of `ids` (the hero passed over), up to what the dive has left of
+ * BOND_RUN_CAP (`run.bond`) and her lifetime BOND_CAP.field. Pure: a new party and what each one gained; the caller adds
+ * `gained` to `run.bond`. Switched off (`BOND_SWITCH.earn` false), the party comes back as it was.
+ */
+export function addField(party: Party, run: Pick<Run, 'bond'>, ids: readonly CharacterId[], pts: number): { party: Party; gained: Partial<Record<Companion, number>> } {
+  const gained: Partial<Record<Companion, number>> = {};
+  if (!BOND_SWITCH.earn) return { party, gained };
+  let roster = party.roster;
+  for (const id of ids) {
+    if (id === 'hero') continue;
+    const m = roster[id];
+    const b = bondOf(m);
+    const add = Math.min(pts, BOND_RUN_CAP - (run.bond[id] ?? 0) - (gained[id] ?? 0), BOND_CAP.field - b.field);
+    if (add <= 0) continue;
+    roster = { ...roster, [id]: { ...m, bond: { ...b, gifts: { ...b.gifts }, field: b.field + add } } };
+    gained[id] = (gained[id] ?? 0) + add;
+  }
+  return { party: roster === party.roster ? party : { ...party, roster }, gained };
 }
 
 /**

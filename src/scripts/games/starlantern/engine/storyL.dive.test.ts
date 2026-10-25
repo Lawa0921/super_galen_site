@@ -10,6 +10,7 @@ import { floorOf, type Portal } from './dungeon/run';
 import { memoriesOf } from './progression';
 import { statsOf } from './party';
 import { CHARACTER_IDS } from '../data/characters';
+import { withBondScale } from './testing';
 import type { Pos } from './types';
 
 /**
@@ -147,7 +148,8 @@ function dive() {
 
 describe('story L: the seeded dive (Task 0)', () => {
   it('a seeded dive is what it was before story L', () => {
-    const now = dive();
+    // Bond plan ruling 5: this pins the pickup path; the bond's battle bonus is band 21's to measure, so it is off here.
+    const now = withBondScale(0, dive);
     if (process.env.STORY_L_RECORD === '1') {
       if (!existsSync(dirname(FIXTURE))) mkdirSync(dirname(FIXTURE), { recursive: true });
       writeFileSync(FIXTURE, `${JSON.stringify(now, null, 2)}\n`);

@@ -3,7 +3,9 @@ import { newMember } from '../party';
 import { chainLength } from '../../data/story/chains';
 import { COMPANIONS, GIFTABLE, GIFT_TASTE, type Companion } from '../../data/story/bond';
 import type { BondRecord, Member } from '../types';
-import { bondOf, bondPoints, bondTier, giftPoints, tasteOf, tierAt, today } from './bond';
+import { BOND_SWITCH, addField, bondOf, bondPoints, bondTier, giftPoints, inDanger, tasteOf, tierAt, today } from './bond';
+import { BOND_CAP, BOND_RUN_CAP } from '../../data/story/bond';
+import { newRun } from '../dungeon/run';
 import { newGame } from '../state';
 
 /** A member of `id` with `memories` pieces held and `bond` as her record. */
@@ -90,6 +92,48 @@ describe('bond score', () => {
       if (before === 'declined') continue;
       expect(tasteOf(c, mat, true), `${c} ${mat}`).toBe(before);
     }
+  });
+
+  it('field points: the run cap, the lifetime cap, never the hero, nothing while switched off', () => {
+    const g = newGame(undefined, 0, ['hero', 'rin', 'selene']);
+    const run = newRun(1, 'mainline', 'plain', 1);
+    let p = g.party;
+    const gained: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      const r = addField(p, run, ['hero', 'rin'], 2);
+      p = r.party;
+      gained.push(r.gained.rin ?? 0);
+      for (const [id, n] of Object.entries(r.gained)) run.bond[id as Companion] = (run.bond[id as Companion] ?? 0) + n!;
+    }
+    expect(BOND_RUN_CAP).toBe(5);
+    expect(gained).toEqual([2, 2, 1, 0]);   // four +2 on one dive stop at the cap
+    expect(p.roster.rin.bond!.field).toBe(BOND_RUN_CAP);
+    expect(p.roster.hero.bond).toBeUndefined();
+    expect(g.party.roster.rin.bond).toBeUndefined();   // the party given is not changed
+    expect(run.bond).toEqual({ rin: BOND_RUN_CAP });
+    // the lifetime cap: at 39, +2 gives 1
+    const near = { ...p, roster: { ...p.roster, selene: { ...p.roster.selene, bond: { talk: 0, field: BOND_CAP.field - 1, gifts: {} } } } };
+    const r = addField(near, newRun(2, 'mainline', 'plain', 1), ['selene'], 2);
+    expect(r.gained).toEqual({ selene: 1 });
+    expect(r.party.roster.selene.bond!.field).toBe(BOND_CAP.field);
+    expect(addField(r.party, newRun(3, 'mainline', 'plain', 1), ['selene'], 2).gained).toEqual({});
+    // switched off, nothing at all
+    BOND_SWITCH.earn = false;
+    try {
+      const off = addField(g.party, newRun(4, 'mainline', 'plain', 1), ['rin'], 2);
+      expect(off.party).toBe(g.party);
+      expect(off.gained).toEqual({});
+    } finally {
+      BOND_SWITCH.earn = true;
+    }
+  });
+
+  it('inDanger: down, or at 30 % of her max HP or less', () => {
+    expect(inDanger({ hp: 30, max: { hp: 100 } })).toBe(true);
+    expect(inDanger({ hp: 31, max: { hp: 100 } })).toBe(false);
+    expect(inDanger({ hp: 0, max: { hp: 100 } })).toBe(true);
+    expect(inDanger({ hp: 3, max: { hp: 10 } })).toBe(true);
+    expect(inDanger({ hp: 4, max: { hp: 10 } })).toBe(false);
   });
 
   it('today reads only today', () => {

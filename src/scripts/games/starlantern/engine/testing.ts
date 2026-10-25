@@ -99,6 +99,20 @@ export function withBondScale<T>(scale: number, f: () => T): T {
 }
 
 /**
+ * Bond plan Task 5: `f` with field points earned (`earn` true) or not, set back afterwards even when `f` throws. For a test
+ * that pins the whole party across a floor or a fight, where the field points would be the only change.
+ */
+export function withBondEarn<T>(earn: boolean, f: () => T): T {
+  const was = BOND_SWITCH.earn;
+  BOND_SWITCH.earn = earn;
+  try {
+    return f();
+  } finally {
+    BOND_SWITCH.earn = was;
+  }
+}
+
+/**
  * Story L plan ruling 1: `c` holds at least `n` pieces and has told the first `n` (`mem:c:1` to `mem:c:n` in `seen`); she
  * is met first when she is not yet. Everything else is left as it was. For tests that pin a gate, not the gap between held
  * and told. Returns a new state.

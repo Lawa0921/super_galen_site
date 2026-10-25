@@ -54,6 +54,9 @@ import { SPRING_AFTER, dayOf, moonOf, tonightMoon } from './calendar';
 import { orderNight } from './story/nights';
 import { calendarOf } from './story/events';
 import { MEMORY_PITY } from '../data/story/chains';
+import { BOND_SWITCH, bondOf } from './story/bond';
+import { BOND_RUN_CAP, FIELD_POINTS } from '../data/story/bond';
+import { withBondEarn, withBondScale } from './testing';
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -306,7 +309,8 @@ describe('moving', () => {
     g.depart({ region: 'mainline', condition: 'bounty' }, 1);
     expect(stepOnto(g, plainChest(g))).toEqual({ kind: 'chest', item: 'old-coin', qty: 3 });   // 2 x 1.5
   });
-  it('descending past MAX_REACHED keeps reached capped, pays no exp, and the save still loads', () => {
+  // Bond plan Task 5: this pins the whole party across the stairs; the floor's field point is the bond tests' to check.
+  it('descending past MAX_REACHED keeps reached capped, pays no exp, and the save still loads', () => withBondEarn(false, () => {
     const st = memoryStorage();
     const g = new Game(calm(), st, undefined, 0, HERO_LINEUP);
     g.state.dungeon.reached.mainline = MAX_REACHED;
@@ -320,7 +324,7 @@ describe('moving', () => {
     expect(g.state.dungeon.reached.mainline).toBe(MAX_REACHED);
     expect(saveGame(st, g.state)).toBe(true);
     expect(loadGame(st).status).toBe('ok');
-  });
+  }));
   it('stairs go one deeper and never back', () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
@@ -1363,7 +1367,8 @@ describe('depth-clear exp', () => {
     for (const id of g.state.party.recruited) expect([id, g.state.party.roster[id].exp]).toEqual([id, 0]);
   });
 
-  it('a second run through a depth already cleared gets no grant', () => {
+  // Bond plan Task 5: the whole roster is pinned across the stairs; the floor's field point is the bond tests' to check.
+  it('a second run through a depth already cleared gets no grant', () => withBondEarn(false, () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
     g.depart(MAIN, 1);
     const first = downstairs(g, g.map().down!);
@@ -1373,7 +1378,7 @@ describe('depth-clear exp', () => {
     const before = structuredClone(g.state.party.roster);
     expect(downstairs(g, g.map().down!)).toEqual({ kind: 'floor', floor: 2 });
     expect(g.state.party.roster).toEqual(before);
-  });
+  }));
 
   it("another region's first clear of the same depth does get the grant", () => {
     const g = new Game(calm(), null, undefined, 0, LEGACY_LINEUP);
@@ -5784,5 +5789,179 @@ describe('time and moon: a reload never decides the festival again (Task 7 revie
     expect(b.returnToTown()).toBe(true);
     expect(b.night).toEqual(['season:spring']);
     expect(b.state.story.festival).toBe('season:spring');
+  });
+});
+
+describe('bond from going down and fighting together (bond plan Task 5)', () => {
+  const field = (g: Game, id: CharacterId) => bondOf(g.state.party.roster[id]).field;
+  const fighter = (g: Game, id: CharacterId) => g.battle!.party.find((c) => c.key === id)!;
+  /** Every foe asleep for a while: a round passes and nobody's HP moves. */
+  const lull = (g: Game) => { for (const e of g.battle!.enemies) e.sleep = 9; };
+  /** HP at 20 % of her max: in danger. */
+  const low = (g: Game, id: CharacterId) => { const c = fighter(g, id); c.hp = Math.floor(c.max.hp * 0.2); };
+  const elite = (g: Game) => { stepOnto(g, plantAt(g, 'elite')); expect(g.phase).toBe('battle'); };
+
+  it('going down the stairs bonds whoever goes along', () => {
+    const g = inMap(1);
+    g.state.party = meet(g.state.party, 'rin', 1);   // a sixth: on the bench
+    expect(activeIds(g.state.party)).not.toContain('rin');
+    g.state.party.roster.noel.hp = 0;                  // down
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });
+    for (const id of ['chizuru', 'liz', 'selene'] as const) expect(field(g, id), id).toBe(FIELD_POINTS.floor);
+    expect(field(g, 'noel')).toBe(0);
+    expect(field(g, 'rin')).toBe(0);
+    expect(g.state.party.roster.hero.bond).toBeUndefined();
+    expect(g.run!.bond).toEqual({ chizuru: 1, liz: 1, selene: 1 });
+  });
+
+  it('a boss or an elite bonds everyone in the fight', () => {
+    const g = inMap(1);
+    elite(g);
+    fighter(g, 'noel').hp = 0;
+    fighter(g, 'noel').alive = false;   // down at the end, but in the fight
+    expect(killAll(g).outcome).toBe('win');
+    for (const id of ['chizuru', 'liz', 'noel', 'selene'] as const) expect(field(g, id), id).toBe(FIELD_POINTS.strong);
+    expect(g.state.party.roster.hero.bond).toBeUndefined();
+    // a plain fight gives nothing
+    const p = inMap(1);
+    (p as unknown as { startBattle: (ids: string[], boss: boolean) => void }).startBattle(['slime'], false);
+    expect(killAll(p).outcome).toBe('win');
+    expect(field(p, 'chizuru')).toBe(0);
+  });
+
+  it('saved means she dropped into danger during the fight and stood at the end', () => {
+    const g = inMap(1);
+    elite(g);
+    lull(g);
+    low(g, 'selene');
+    expect(g.submitRound({})!.end).toBeNull();   // the round ends with her in danger
+    expect(killAll(g).outcome).toBe('win');
+    expect(field(g, 'selene')).toBe(FIELD_POINTS.strong + FIELD_POINTS.saved);
+    expect(field(g, 'chizuru')).toBe(FIELD_POINTS.strong);
+  });
+
+  it('coming in low is not being saved', () => {
+    const g = inMap(1);
+    g.state.party.roster.selene.hp = Math.floor(statsOf(g.state.party.roster.selene).hp * 0.2);
+    elite(g);
+    lull(g);
+    expect(g.submitRound({})!.end).toBeNull();
+    expect(killAll(g).outcome).toBe('win');
+    expect(field(g, 'selene')).toBe(FIELD_POINTS.strong);   // in danger the whole fight: no saved
+  });
+
+  it('low, mended, then low again counts', () => {
+    const g = inMap(1);
+    g.state.party.roster.selene.hp = Math.floor(statsOf(g.state.party.roster.selene).hp * 0.2);
+    elite(g);
+    lull(g);
+    fighter(g, 'selene').hp = fighter(g, 'selene').max.hp;   // mended
+    expect(g.submitRound({})!.end).toBeNull();
+    low(g, 'selene');                                         // and low again
+    expect(g.submitRound({})!.end).toBeNull();
+    expect(killAll(g).outcome).toBe('win');
+    expect(field(g, 'selene')).toBe(FIELD_POINTS.strong + FIELD_POINTS.saved);
+  });
+
+  it('in danger and down at the end gives nothing for being saved', () => {
+    const g = inMap(1);
+    elite(g);
+    lull(g);
+    low(g, 'selene');
+    expect(g.submitRound({})!.end).toBeNull();
+    fighter(g, 'selene').hp = 0;
+    fighter(g, 'selene').alive = false;
+    expect(killAll(g).outcome).toBe('win');
+    expect(field(g, 'selene')).toBe(FIELD_POINTS.strong);
+  });
+
+  it('a rescue fight and a flight give nothing', () => {
+    const r = new Game(calm(), memoryStorage(), undefined, 0, ['hero', 'rin']);
+    r.state.dungeon.reached.mainline = 3;
+    expect(r.depart(MAIN, 2)).toEqual({ ok: true });
+    const c = floorOf(r.run!, 2).contents.find((x) => x.kind === 'rescue')!;
+    expect(stepOnto(r, c.at)).toEqual({ kind: 'rescue', who: 'selene' });
+    lull(r);
+    low(r, 'rin');
+    expect(r.submitRound({})!.end).toBeNull();
+    expect(killAll(r).outcome).toBe('win');
+    expect(field(r, 'rin')).toBe(0);
+    expect(r.state.party.roster.selene.bond).toBeUndefined();
+    const f = inMap(1);
+    elite(f);
+    lull(f);
+    low(f, 'selene');
+    expect(f.submitRound({})!.end).toBeNull();
+    flee(f);
+    expect(field(f, 'selene')).toBe(0);
+    expect(f.run!.bond).toEqual({});
+  });
+
+  it('five a run, and a wipe keeps what was earned', () => {
+    const g = inMap(1);
+    elite(g);
+    lull(g);
+    low(g, 'selene');
+    expect(g.submitRound({})!.end).toBeNull();
+    expect(killAll(g).outcome).toBe('win');       // strong 2 + saved 2
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });   // + floor 1: 5
+    expect(field(g, 'selene')).toBe(BOND_RUN_CAP);
+    elite(g);
+    expect(killAll(g).outcome).toBe('win');
+    expect(field(g, 'selene')).toBe(BOND_RUN_CAP);   // the dive's cap
+    expect(field(g, 'chizuru')).toBe(FIELD_POINTS.strong * 2 + FIELD_POINTS.floor);
+    // a wipe: what was earned stays
+    elite(g);
+    for (const p of g.battle!.party) { p.hp = 0; p.alive = false; }
+    expect(g.submitRound({})!.end!.outcome).toBe('lose');
+    expect(g.phase).toBe('town');
+    expect(field(g, 'selene')).toBe(BOND_RUN_CAP);
+    // the next dive counts from 0
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    expect(g.run!.bond).toEqual({});
+    expect(downstairs(g, g.map().down!)).toMatchObject({ kind: 'floor', floor: 2 });
+    expect(field(g, 'selene')).toBe(BOND_RUN_CAP + FIELD_POINTS.floor);
+  });
+
+  it('bond draws nothing', () => {
+    type Trace = { rng: number; loot: number; memory: number; ends: unknown[]; fields: number[] };
+    const play = (earn: boolean): Trace => {
+      const was = BOND_SWITCH.earn;
+      BOND_SWITCH.earn = earn;
+      try {
+        return withBondScale(0, () => {
+          const base = mulberry32(7);
+          let calls = 0;
+          const rng: Rng = () => { calls++; return base(); };
+          const g = new Game(rng, memoryStorage(), undefined, 0, HERO_LINEUP);
+          g.state.dungeon.reached.mainline = 3;
+          for (const id of HERO_LINEUP) g.state.party.roster[id].level = 12;
+          expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+          const ends: unknown[] = [];
+          const fight = () => {
+            for (let i = 0; i < 40 && g.phase === 'battle'; i++) {
+              const acts = Object.fromEntries(g.battle!.party.filter((c) => c.alive).map((c) => [c.key, { kind: 'attack', target: g.battle!.enemies.find((e) => e.alive)?.key ?? '' }]));
+              const r = g.submitRound(acts as never)!;
+              if (r.end) ends.push({ outcome: r.end.outcome, drops: r.end.drops, gear: r.end.gear.map((it) => [it.base, it.rarity]), fragments: r.end.fragments ?? [] });
+            }
+          };
+          stepOnto(g, plantAt(g, 'elite'));
+          fight();
+          downstairs(g, g.map().down!);
+          downstairs(g, g.map().down!);
+          stepOnto(g, g.map().boss!);
+          fight();
+          const fields = HERO_LINEUP.map((id) => bondOf(g.state.party.roster[id]).field);
+          return { rng: calls, loot: g.run?.lootDraws ?? -1, memory: g.run?.memoryDraws ?? -1, ends, fields };
+        });
+      } finally {
+        BOND_SWITCH.earn = was;
+      }
+    };
+    const on = play(true), off = play(false);
+    expect(on.ends.length).toBeGreaterThanOrEqual(2);
+    expect({ ...on, fields: [] }).toEqual({ ...off, fields: [] });
+    expect(off.fields.every((n) => n === 0)).toBe(true);
+    expect(on.fields.some((n) => n > 0)).toBe(true);
   });
 });

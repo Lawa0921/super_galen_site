@@ -47,6 +47,8 @@ import { moveRune, socketRune, unsocketRune, type SocketAt, type SocketFail } fr
 import type { RuneRef } from '../data/runes';
 import { addItem, buy as townBuy, rest as innRest, respec as townRespec, type TownResult } from './town';
 import { applyBuild, applyCost, followUp } from './builds';
+import { addField, inDanger } from './story/bond';
+import { FIELD_POINTS } from '../data/story/bond';
 import type { CharacterId, GearSlot, ItemInstance, Member, Pos, Slot } from './types';
 
 export type Phase = 'town' | 'map' | 'battle' | 'clear';
@@ -132,6 +134,10 @@ export class Game {
   private eliteAt: Pos | null = null;
   /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
   private rescueAt: { at: Pos; who: Meetable } | null = null;
+  /** Bond plan ruling 3: who this fight has seen out of danger (at its start or after a round). Not saved. */
+  private safeSeen = new Set<CharacterId>();
+  /** Bond plan ruling 3: who dropped into danger during this fight, from out of it (`safeSeen`). Not saved. */
+  private endangered = new Set<CharacterId>();
   /**
    * The tier the fight on now is played and paid at (difficulty plan ruling 17): the run's at `startBattle`, none for a
    * story fight or a Normal run. The fight's scale, affixes, gear, runes and boss-kill key read it, never `run.difficulty`;
@@ -619,6 +625,7 @@ export class Game {
       this.state.party = awarded.party;
       this.state = followUp(this.state, this.state.party.recruited, was);
     }
+    this.earnField(standing, FIELD_POINTS.floor);   // bond plan Task 5: a floor gone down together, whoever stands on the field
     const story = this.state.story;
     story.pity = pityAfterFloor(this.state.party, story.pity, this.run.region, this.floor, this.run.dropped[this.floor] ?? []);
     const floor = this.changeFloor(this.floor + 1);
@@ -684,6 +691,7 @@ export class Game {
     this.state.inventory = { ...b.inventory };
     this.state.revealed = structuredClone(b.revealed);
     this.state.party = writeBack(this.state.party, b);
+    this.watchDanger(b);
     if (b.outcome === 'ongoing') return { battle: b, end: null };
     this.battle = null;
     const empty: BattleEnd = { outcome: b.outcome, exp: 0, gold: 0, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [] };
@@ -734,6 +742,12 @@ export class Game {
       const here = floorOf(this.run!, this.floor);
       here.contents = here.contents.filter((c) => !(c.kind === 'rescue' && c.at.x === rescue.at.x && c.at.y === rescue.at.y));   // she is met: no marker stays
       met = { id: rescue.who, level, benched: !activeIds(this.state.party).includes(rescue.who) };
+    }
+    // Bond plan Task 5 (spec §4.3): a boss or an elite won with her in it; then her life saved. A rescue gives none (she
+    // joins after it). Both share the dive's cap.
+    if (!rescue) {
+      if (b.boss || elite) this.earnField(b.party.map((c) => c.key as CharacterId), FIELD_POINTS.strong);
+      this.earnField(b.party.filter((c) => c.alive && c.hp > 0 && this.endangered.has(c.key as CharacterId)).map((c) => c.key as CharacterId), FIELD_POINTS.saved);
     }
     // Memory pieces come after exp and the meeting, and before the phase can switch to clear (the story boss pays too).
     let fragments: FragmentGain[] = [];
@@ -1550,6 +1564,28 @@ export class Game {
     this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra, ...rest });
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
+    // Bond plan ruling 3: who starts this fight out of danger. One who starts in it is not saved by living through it.
+    this.safeSeen.clear();
+    this.endangered.clear();
+    for (const c of this.battle.party) if (c.alive && !inDanger(c)) this.safeSeen.add(c.key as CharacterId);
+  }
+
+  /** Bond plan ruling 3, after a round: one in danger who was seen out of it is endangered; one out of it is seen so. */
+  private watchDanger(b: BattleState): void {
+    for (const c of b.party) {
+      const id = c.key as CharacterId;
+      if (!c.alive || inDanger(c)) { if (this.safeSeen.has(id)) this.endangered.add(id); }
+      else this.safeSeen.add(id);
+    }
+  }
+
+  /** Bond plan Task 5: field points for `ids` on this dive (engine/story/bond.ts `addField`). */
+  private earnField(ids: readonly CharacterId[], pts: number): void {
+    const run = this.run;
+    if (!run || !ids.length) return;
+    const r = addField(this.state.party, run, ids, pts);
+    this.state.party = r.party;
+    for (const [id, n] of Object.entries(r.gained) as [CharacterId, number][]) run.bond[id] = (run.bond[id] ?? 0) + n;
   }
 
   private wipe(): void {

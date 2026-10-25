@@ -56,13 +56,18 @@ export interface Run {
    * run is the run it always was. Not saved (a run never is).
    */
   difficulty?: Difficulty;
+  /**
+   * Bond plan Task 5 (spec §4.3): the field points each companion has earned on this dive, against BOND_RUN_CAP. Not saved
+   * (a run never is); the points themselves go straight into `Member.bond.field`, so a wipe keeps them.
+   */
+  bond: Partial<Record<CharacterId, number>>;
 }
 
 export function newRun(seed: number, region: RegionId, condition: ConditionId, startDepth: number, rescues: Record<number, Meetable> = {}, difficulty?: Difficulty): Run {
   return {
     seed, region, condition, startDepth, floors: new Map(), opened: new Set(), explored: {},
     loot: { items: {}, gold: 0, gear: [] }, rolls: {}, gearRolls: {}, waiting: {}, lootDraws: 0, usedFountain: false, altarBuffs: [], keys: new Set(), rescues: { ...rescues },
-    glimmers: {}, memoryDraws: 0, dropped: {}, runeDraws: 0,
+    glimmers: {}, memoryDraws: 0, dropped: {}, runeDraws: 0, bond: {},
     ...(difficulty && difficulty !== 'normal' ? { difficulty } : {}),
   };
 }
