@@ -10,7 +10,8 @@ import { bestPicture } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
-import { NPC_FACILITY, playAndRecord, playBeat, playNight, storyCtx, type SceneOpts } from '../story';
+import { NPC_FACILITY, playAndRecord, playBeat, playNight, playScene, storyCtx, type SceneOpts } from '../story';
+import type { StoryMode } from '../settings';
 import { Dialogue, MenuView, backControl, win, type Rich } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate' | 'forge';
@@ -187,10 +188,17 @@ export abstract class FacilityScene implements Scene {
     this.layers.forEach((l, i) => l.el.classList.toggle('slx-under', i < this.layers.length - 1));
   }
 
-  /** Plays story scene `id` in this facility's dialogue box and records it; resolves when it ends or the player skips it. */
-  protected play(id: SceneId, o: SceneOpts = {}): Promise<void> {
+  /**
+   * Plays story scene `id` in this facility's dialogue box and records it; resolves when it ends or the player skips it.
+   * Bond plan Task 12: `mode` stands in for the story setting (a scene the player starts, a talk at the inn, always plays:
+   * `'all'`); `record: false` plays it and records nothing (the walk with everyone).
+   */
+  protected play(id: SceneId, o: SceneOpts & { mode?: StoryMode; record?: false } = {}): Promise<void> {
     this.then = null;
-    const p = playAndRecord(this.talk, id, storyCtx(this.ctx), o);
+    const { mode, record, ...opts } = o;
+    const sc = { ...storyCtx(this.ctx), ...(mode ? { mode } : {}) };
+    const p = record === false ? (() => { const q = playScene(this.talk, id, sc, opts); return { done: q.done.then(() => {}), onAction: q.onAction }; })()
+      : playAndRecord(this.talk, id, sc, opts);
     this.playing = p;
     this.talking = true;
     // The place plate and the gold go with the command window (staging S1): a scene may be set elsewhere (its own card).

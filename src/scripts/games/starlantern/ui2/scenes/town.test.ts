@@ -10,6 +10,7 @@ import { ACT_DEPTHS, type SceneId } from '../../data/story/scenes';
 import { NIGHT_BEATS, NPC_NAMES, STORY, type ScriptLine, flatLines } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
+import { BONDS_WRITTEN } from '../../data/story/scenes';
 import { linesOf } from '../story';
 import { sceneDone } from '../../engine/story/events';
 import { meet } from '../../engine/party';
@@ -773,5 +774,51 @@ describe('TownScene: the calendar (time and moon Task 4)', () => {
     expect(game.state.story.seen).toContain('act3');
     expect(t.cal().classList.contains('slx-cmd-hidden')).toBe(false);   // the menu is back, with the day's line
     expect(t.cal().textContent).toBe('冬・下弦');
+  });
+});
+
+/** Bond plan Tasks 12-14: Rin's first heart-to-heart registered for the test with a scene of its own, taken out after. */
+function stageRinTalk(): () => void {
+  const id = 'bond:rin:1' as const;
+  BONDS_WRITTEN.push('rin');
+  STORY.scenes[id] = {
+    title: '凜・羈絆 1', summary: '凜說了一件小事。',
+    lines: [
+      { who: 'rin', text: '一' },
+      { who: 'hero', choices: [{ tone: 'ask', text: '「後來呢？」', reply: [{ who: 'rin', text: '二' }] }, { tone: 'stay', text: '（坐下。）', reply: [{ who: 'rin', text: '三' }] }] },
+      { who: 'narrator', text: '四' },
+    ],
+  };
+  return () => { BONDS_WRITTEN.splice(0); delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
+}
+/** Rin at 同行 with her second piece: her first heart-to-heart is open. */
+const rinReady = (game: Game): void => {
+  game.state.party.roster.rin.memories = 2;
+  game.state.party.roster.rin.bond = { talk: 0, field: 10, gifts: {} };
+};
+
+describe('TownScene: the inn and the bond (bond plan Task 12)', () => {
+  it('the inn shows 新 while a talk waits', async () => {
+    const innRow = (root: HTMLElement) => root.querySelector('.slx-town-menu [data-id=inn]')!;
+    const mk = (game: Game) => {
+      const root = document.createElement('div');
+      new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity).enter(root);
+      return root;
+    };
+    const plain = new Game(constRng(0.5), null);
+    plain.arrival = [];
+    expect(innRow(mk(plain)).querySelector('.slx-fresh')).toBeNull();
+    const back = stageRinTalk();
+    try {
+      const g = new Game(constRng(0.5), null);
+      g.arrival = [];
+      rinReady(g);
+      const root = mk(g);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(innRow(root).querySelector('.slx-fresh')!.textContent).toBe('新');
+      g.state.story.bondDay = 1;
+      g.state.story.talked = true;
+      expect(innRow(mk(g)).querySelector('.slx-fresh')).toBeNull();   // talked today
+    } finally { back(); }
   });
 });

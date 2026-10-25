@@ -6,7 +6,8 @@ import type { MenuItem } from '../menu';
 import { FacilityScene } from './facility';
 import { MenuView } from '../widgets';
 import { Menu } from '../menu';
-import { STORY } from '../../data/story.zh-TW';
+import { STORY, flatLines } from '../../data/story.zh-TW';
+import { DEFAULT_SETTINGS } from '../settings';
 import type { ActNode, SceneId } from '../../data/story/scenes';
 
 class Probe extends FacilityScene {
@@ -18,7 +19,7 @@ class Probe extends FacilityScene {
     this.push({ el: sub.el, onAction: (a) => sub.onAction(a) });
   }
   cheer(): Promise<void> { return this.say('好！', 'happy'); }
-  scene(id: SceneId): Promise<void> { return this.play(id); }
+  scene(id: SceneId, o: Parameters<FacilityScene['play']>[1] = {}): Promise<void> { return this.play(id, o); }
 }
 
 const ctx = () => ({ game: new Game(constRng(0.5), null), art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() });
@@ -135,5 +136,46 @@ describe('FacilityScene story', () => {
     await done;
     expect(cmd.classList.contains('slx-cmd-hidden')).toBe(false);
     for (const e of hud) expect(e.classList.contains('slx-cmd-hidden'), e.className).toBe(false);
+  });
+});
+
+describe('FacilityScene.play: the mode and record (bond plan Task 12)', () => {
+  it('a mode the caller gives wins over the setting; record false plays and records nothing', async () => {
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, story: 'none' as const }) };
+    const c = { ...ctx(), settings };
+    const root = document.createElement('div');
+    const s = new Probe(c, 'guild', Infinity);
+    s.enter(root);
+    s.onAction('confirm');
+    const id = 'chat:hero:1';
+    // the setting alone: not shown, recorded as auto (a scene is recorded only while it is due: pending here)
+    c.game.pending.push(id);
+    await s.scene(id);
+    expect(c.game.state.story.fresh).toContain(id);
+    // the player's own: shown and played
+    const c2 = { ...ctx(), settings };
+    const r2 = document.createElement('div');
+    const s2 = new Probe(c2, 'guild', Infinity);
+    s2.enter(r2);
+    s2.onAction('confirm');
+    c2.game.pending.push(id);
+    const p = s2.scene(id, { mode: 'all' });
+    expect(r2.querySelector('.slx-talk .slx-text')!.textContent).toBe(flatLines(STORY.scenes[id].lines)[0].text);
+    for (let i = 0; i < flatLines(STORY.scenes[id].lines).length; i++) { s2.onAction('confirm'); await new Promise((r) => setTimeout(r, 0)); }
+    await p;
+    expect(c2.game.state.story.seen).toContain(id);
+    expect(c2.game.state.story.fresh).not.toContain(id);
+    // record: false (a walk with everyone): shown, never recorded
+    const c3 = { ...ctx(), settings };
+    const r3 = document.createElement('div');
+    const s3 = new Probe(c3, 'guild', Infinity);
+    s3.enter(r3);
+    s3.onAction('confirm');
+    c3.game.pending.push(id);
+    const seen = [...c3.game.state.story.seen];
+    const q = s3.scene(id, { mode: 'all', record: false });
+    for (let i = 0; i < flatLines(STORY.scenes[id].lines).length; i++) { s3.onAction('confirm'); await new Promise((r) => setTimeout(r, 0)); }
+    await q;
+    expect(c3.game.state.story.seen).toEqual(seen);
   });
 });

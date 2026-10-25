@@ -5,6 +5,10 @@ import { NO_ART } from '../../render/textures';
 import { InnScene } from './inn';
 import { LEGACY_LINEUP } from '../../engine/party';
 import { TownScene } from './town';
+import { STORY } from '../../data/story.zh-TW';
+import { BONDS_WRITTEN } from '../../data/story/scenes';
+import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
+import { today } from '../../engine/story/bond';
 
 function setup(storage = memoryStorage()) {
   const game = new Game(constRng(0.5), storage, undefined, 0, LEGACY_LINEUP);
@@ -70,7 +74,7 @@ describe('InnScene', () => {
 
   it('the inn offers 休息, 復活 and 重置配點', () => {
     const { opts } = setup();
-    expect(opts()).toEqual(['休息（20 G）', '復活', '重置配點', '建議配點', '離開']);
+    expect(opts()).toEqual(['休息（20 G）', '復活', '重置配點', '建議配點', '夥伴', '離開']);   // bond plan Task 12: 夥伴, fifth
   });
 
   it('the inn opens the suggested builds (plan 8h)', () => {
@@ -105,7 +109,7 @@ describe('InnScene', () => {
     expect(game.state.gold).toBe(gold - 25);
     expect(storage.map.get('starlantern-save')).toBeTruthy();   // saved
     await vi.waitFor(() => expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('絲嘉蕾的配點已重置，點數可以重新分配了。'));
-    expect(opts().length).toBe(5);   // 休息, 復活, 重置配點, 建議配點 (plan 8h), 離開
+    expect(opts().length).toBe(6);   // 休息, 復活, 重置配點, 建議配點 (plan 8h), 夥伴 (bond plan Task 12), 離開
   });
 
   /** Opens 重置配點 and says yes for 絲嘉蕾, who has one talent point spent. */
@@ -216,5 +220,111 @@ describe('InnScene: the calendar (time and moon Task 4)', () => {
     const town = document.createElement('div');
     new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity).enter(town);
     expect(town.querySelector('.slx-calendar')!.textContent).toBe('秋・新月');
+  });
+});
+
+/** Bond plan Tasks 12-14: Rin's first heart-to-heart registered for the test with a scene of its own, taken out after. */
+function stageRinTalk(): () => void {
+  const id = 'bond:rin:1' as const;
+  BONDS_WRITTEN.push('rin');
+  STORY.scenes[id] = {
+    title: '凜・羈絆 1', summary: '凜說了一件小事。',
+    lines: [
+      { who: 'rin', text: '一' },
+      { who: 'hero', choices: [{ tone: 'ask', text: '「後來呢？」', reply: [{ who: 'rin', text: '二' }] }, { tone: 'stay', text: '（坐下。）', reply: [{ who: 'rin', text: '三' }] }] },
+      { who: 'narrator', text: '四' },
+    ],
+  };
+  return () => { BONDS_WRITTEN.splice(0); delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
+}
+/** Rin at 同行 with her second piece: her first heart-to-heart is open. */
+const rinReady = (game: Game): void => {
+  game.state.party.roster.rin.memories = 2;
+  game.state.party.roster.rin.bond = { talk: 0, field: 10, gifts: {} };
+};
+
+describe('InnScene: the partners (bond plan Task 12)', () => {
+  const open = (story: StoryMode = 'all', prep?: (g: Game) => void) => {
+    const storage = memoryStorage();
+    const game = new Game(constRng(0.5), storage, undefined, 0, ['hero', 'rin']);
+    prep?.(game);
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, story }) };
+    const s = new InnScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), settings }, Infinity, 0);
+    s.enter(root);
+    s.onAction('confirm');   // the greeting
+    const text = () => root.querySelector('.slx-talk .slx-text')!.textContent;
+    const rows = (sel: string) => [...root.querySelectorAll(`${sel} [role=option]`)];
+    const label = (o: Element) => o.querySelector('.slx-label')!.textContent;
+    const fresh = (o: Element | undefined) => !!o?.querySelector('.slx-fresh');
+    /** 夥伴 from the command window (a click on its row). */
+    const partners = () => { (root.querySelector('.slx-cmd [data-id=partners]') as HTMLElement).click(); };
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    return { game, root, s, text, rows, label, fresh, partners, tick, storage };
+  };
+
+  it('夥伴 is the fifth command, marked 新 while a talk waits', () => {
+    const plain = open();
+    expect(plain.rows('.slx-cmd').map(plain.label)[4]).toBe('夥伴');
+    expect(plain.fresh(plain.rows('.slx-cmd')[4])).toBe(false);
+    const back = stageRinTalk();
+    try {
+      const t = open('all', rinReady);
+      expect(t.fresh(t.rows('.slx-cmd')[4])).toBe(true);
+      expect(t.rows('.slx-cmd')[4].querySelector('.slx-fresh')!.textContent).toBe('新');
+    } finally { back(); }
+  });
+
+  it('談心 with nobody to talk to says so', () => {
+    const t = open();
+    t.partners();
+    expect(t.rows('.slx-layer').map(t.label)).toEqual(['談心']);
+    t.s.onAction('confirm');
+    expect(t.text()).toBe('現在還沒有誰想找你談心。');
+    expect(t.root.querySelector('.slx-layer')).toBeNull();
+  });
+
+  it('談心 plays her talk, and once done today says so; 新 is gone', async () => {
+    const back = stageRinTalk();
+    try {
+      const t = open('all', rinReady);
+      t.partners();
+      expect(t.fresh(t.rows('.slx-layer')[0])).toBe(true);
+      t.s.onAction('confirm');                         // 談心
+      expect(t.rows('.slx-layer.slx-depth-1').map(t.label)).toEqual(['凜']);   // the list over 夥伴's
+      t.s.onAction('confirm');                         // 凜
+      await t.tick();
+      expect(t.text()).toBe('一');
+      t.s.onAction('confirm'); await t.tick();          // the choice
+      expect([...t.root.querySelectorAll('.slx-choice [role=option]')].map(t.label)).toEqual(['「後來呢？」', '（坐下。）']);
+      t.s.onAction('down'); t.s.onAction('confirm'); await t.tick();
+      expect(t.text()).toBe('三');
+      t.s.onAction('confirm'); await t.tick();
+      expect(t.text()).toBe('四');
+      t.s.onAction('confirm'); await t.tick();
+      expect(t.game.state.story.seen).toContain('bond:rin:1');
+      expect(today(t.game.state).talked).toBe(true);
+      expect(t.game.state.party.roster.rin.bond!.talk).toBe(3);   // stay is hers
+      expect(t.fresh(t.rows('.slx-cmd')[4])).toBe(false);
+      t.partners();
+      expect(t.fresh(t.rows('.slx-layer')[0])).toBe(false);
+      t.s.onAction('confirm');
+      expect(t.text()).toBe('今天已經談過心了，明天再來吧。');
+    } finally { back(); }
+  });
+
+  it('a talk the player opens plays though the story is set to none', async () => {
+    const back = stageRinTalk();
+    try {
+      const t = open('none', rinReady);
+      t.partners();
+      t.s.onAction('confirm');
+      t.s.onAction('confirm');
+      await t.tick();
+      expect(t.text()).toBe('一');                       // shown, not recorded as auto
+      for (let i = 0; i < 4; i++) { t.s.onAction('confirm'); await t.tick(); }
+      expect(t.game.state.story.seen).toContain('bond:rin:1');
+      expect(t.game.state.story.fresh).not.toContain('bond:rin:1');
+    } finally { back(); }
   });
 });

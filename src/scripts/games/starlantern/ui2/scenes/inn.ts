@@ -1,13 +1,21 @@
 import { CHARACTERS } from '../../data/characters';
 import { T } from '../../data/text.zh-TW';
 import type { CharacterId } from '../../engine/types';
+import type { GameState } from '../../engine/state';
 import { hasSpent, innCost, respecPrice, revive, reviveCost } from '../../engine/town';
 import { el } from '../../ui/dom';
 import { Menu, type MenuItem } from '../menu';
 import type { UiAction } from '../input';
 import type { SceneCtx } from '../scene';
 import { MenuView, confirmBox, win } from '../widgets';
+import { bondOpen, today } from '../../engine/story/bond';
+import type { Companion } from '../../data/story/bond';
 import { FacilityScene } from './facility';
+
+/** The 新 mark in a list's right column (as the handbook's), or nothing. */
+const freshRight = (on: boolean): Pick<MenuItem, 'right' | 'rightClass'> => (on ? { right: T.ui2.handbook.fresh, rightClass: 'slx-fresh' } : {});
+/** Bond plan Task 12: a heart-to-heart open and today's talk not had: the inn's 夥伴 and the town's 旅館 say 新. */
+export const innTalkWaits = (s: GameState): boolean => !today(s).talked && bondOpen(s).length > 0;
 
 export class InnScene extends FacilityScene {
   private nightTimer: ReturnType<typeof setTimeout> | null = null;
@@ -27,11 +35,52 @@ export class InnScene extends FacilityScene {
   }
 
   protected commands(): MenuItem[] {
-    return [{ id: 'rest', label: T.ui2.inn.rest(innCost(this.ctx.game.state.party)) }, { id: 'revive', label: T.ui2.inn.revive }, { id: 'respec', label: T.ui2.inn.respec }, { id: 'builds', label: T.ui2.inn.builds }];
+    return [{ id: 'rest', label: T.ui2.inn.rest(innCost(this.ctx.game.state.party)) }, { id: 'revive', label: T.ui2.inn.revive }, { id: 'respec', label: T.ui2.inn.respec }, { id: 'builds', label: T.ui2.inn.builds },
+      // bond plan Task 12 (spec §0 D9): one entry for the bond, 新 while something waits there
+      { id: 'partners', label: T.ui2.inn.partners, ...freshRight(this.talkWaits()) }];
+  }
+
+  /** A heart-to-heart is open and today's talk not had yet (the 新 of 夥伴 and 談心; the town's inn reads it too). */
+  private talkWaits(): boolean {
+    return innTalkWaits(this.ctx.game.state);
+  }
+
+  /** 夥伴 (bond plan Task 12): its one list; Task 13 adds the gifts and the night walk to it. */
+  private partnersList(): void {
+    const v = new MenuView(new Menu([{ id: 'talk', label: T.ui2.inn.talk, ...freshRight(this.talkWaits()) }]), {
+      pick: (it) => { if (it.id === 'talk') this.talkList(); },
+      moved: () => this.ctx.sfx.cursor(),
+      cancel: () => this.pop(),
+    });
+    this.push({ el: win('slx-list', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  /** 談心: today's had, or nobody waits, said; else who has a talk waiting, each 新. */
+  private talkList(): void {
+    const s = this.ctx.game.state;
+    if (today(s).talked) { this.popAll(); void this.say(T.ui2.inn.talkedToday); return; }
+    const ids = bondOpen(s);
+    if (!ids.length) { this.popAll(); void this.say(T.ui2.inn.nobodyToTalk); return; }
+    const v = new MenuView(new Menu(ids.map((id) => { const c = id.split(':')[1] as Companion; return { id: c, label: CHARACTERS[c].name, ...freshRight(true) }; })), {
+      pick: (it) => void this.talkWith(it.id as Companion),
+      moved: () => this.ctx.sfx.cursor(),
+      cancel: () => this.pop(),
+    });
+    this.push({ el: win('slx-list', [v.el]), onAction: (a) => v.onAction(a) });
+  }
+
+  /** Her talk, opened by the player: it plays whatever the story setting says (controller ruling, 2026-10-25). */
+  private async talkWith(c: Companion): Promise<void> {
+    this.popAll();
+    const id = this.ctx.game.openBond(c);
+    if (!id) { void this.say(T.ui2.inn.talkedToday); return; }
+    await this.play(id, { mode: 'all' });
+    this.refresh();
   }
 
   protected onCommand(id: string): void {
-    if (id === 'rest') this.askRest();
+    if (id === 'partners') this.partnersList();
+    else if (id === 'rest') this.askRest();
     else if (id === 'respec') this.respecList();
     else if (id === 'builds') this.ctx.go('builds');
     else this.reviveList();

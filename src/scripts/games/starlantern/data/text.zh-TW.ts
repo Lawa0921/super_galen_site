@@ -775,6 +775,9 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
       /** Plan 8h: the suggested builds screen, after 重置配點. */
       builds: '建議配點',
+      /** Bond plan Task 12 (spec §0 D9): the inn's one bond entry, and its heart-to-heart. */
+      partners: '夥伴', talk: '談心',
+      talkedToday: '今天已經談過心了，明天再來吧。', nobodyToTalk: '現在還沒有誰想找你談心。',
     },
     /** The suggested builds screen (plan 8h Task 7): each build of a member, what it does and lacks; apply and follow. */
     builds: {

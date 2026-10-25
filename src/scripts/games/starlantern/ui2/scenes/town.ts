@@ -20,6 +20,7 @@ import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
 import { playAndRecord, playBeat, playNight, shouldPlay, storyCtx, type SceneOpts } from '../story';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
+import { innTalkWaits } from './inn';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge', 'handbook', 'settings'] as const;
 /** The notices of a return home: the day's line still follows them (staging S2). The others are about the interface. */
@@ -65,8 +66,7 @@ export class TownScene implements Scene {
   enter(root: HTMLElement): void {
     this.root = root;
     const t = T.ui2.town;
-    const menu = new Menu(FACILITIES.map((id) => ({ id, label: t.facilities[id] })));
-    this.view = new MenuView(menu, { pick: (it) => this.pick(it.id, it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.askTitle(); } });
+    this.view = new MenuView(new Menu(this.menuItems()), { pick: (it) => this.pick(it.id, it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.askTitle(); } });
     const place = win('slx-place', [document.createTextNode(t.place)]);
     this.calEl = win('slx-calendar', [document.createTextNode(this.calendarText())]);
     const gold = win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)]);
@@ -122,6 +122,20 @@ export class TownScene implements Scene {
     for (const l of says) await this.speak(l.who, l.text);
     await this.playNight();
     this.refreshCalendar();
+    this.refreshMenu();
+  }
+
+  /** The town's menu: each facility, the inn marked 新 while a talk waits there (bond plan Task 12). */
+  private menuItems() {
+    const t = T.ui2.town;
+    const fresh = innTalkWaits(this.ctx.game.state);
+    return FACILITIES.map((id) => ({ id, label: t.facilities[id], ...(id === 'inn' && fresh ? { right: T.ui2.handbook.fresh, rightClass: 'slx-fresh' } : {}) }));
+  }
+
+  /** The menu's marks read again once the arrival's scenes have played (they may have opened a talk). */
+  private refreshMenu(): void {
+    this.view.menu.items.splice(0, this.view.menu.items.length, ...this.menuItems());
+    this.view.render();
   }
 
   /** 「秋・下弦」: the season the story stands in and today's moon (time and moon ruling 8). */
