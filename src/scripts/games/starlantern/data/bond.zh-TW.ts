@@ -210,7 +210,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
       { who: 'narrator', place: PL.square, text: '廣場。整個早上，麵包幾時賣完、葛倫打幾個呵欠，瑟蕾全說中了；只有洛恩問的那一件，她說得含糊。', if: { notMet: 'noel' } },
       { who: 'narrator', text: '大的會很響，小的會很亮。諾艾兒選了大的，在孩子們面前炸成一團煙。', if: { met: 'noel' } },
       { who: 'narrator', text: '遠的那條風景很好，近的那條很近。洛恩選了遠的，繞了大半天才回來。', if: { notMet: 'noel' } },
-      { who: 'noel', mood: 'serious', text: '「妳只說會很響！炸了也是響！妳明明知道會炸！」', if: { met: 'noel' } },
+      { who: 'noel', mood: 'pout', text: '「妳只說會很響！炸了也是響！妳明明知道會炸！」', if: { met: 'noel' } },
       { who: 'selene', mood: 'wistful', text: '「她走了。我不替人選，是怕選錯。結果，是她一個人選錯。」', if: { met: 'noel' } },
       { who: 'selene', mood: 'wistful', text: '「我不替人選，是怕選錯。結果，有人繞了遠路。」', if: { notMet: 'noel' } },
       { who: 'hero', choices: [
@@ -226,7 +226,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
       { who: 'narrator', place: PL.plazaMorning, text: '清晨的傳送門廣場。瑟蕾在掌心寫了一個名字，握起來，又攤開。' },
       { who: 'selene', mood: 'foresee', text: '「下一個從那頭走過來的，是諾艾兒。」', if: { met: 'noel' } },
       { who: 'selene', mood: 'foresee', text: '「下一個從那頭走過來的，是瑪莎。」', if: { notMet: 'noel' } },
-      { who: 'narrator', text: '下一個走過來的是一隻狗。再下一個，才是諾艾兒。', if: { met: 'noel' } },
+      { who: 'narrator', text: '下一個走過來的是一隻狗。再下一個才是諾艾兒，把一盞雷光做的小提燈塞進她手裡。', if: { met: 'noel' } },
       { who: 'narrator', text: '下一個走過來的是一隻狗。再下一個，才是提著水桶的瑪莎。', if: { notMet: 'noel' } },
       { who: 'noel', mood: 'smug', text: '「哼，試射的成品，送妳。小、小的那一種！」', if: { met: 'noel' } },
       { who: 'hero', choices: [
@@ -235,7 +235,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
         { tone: 'promise', text: '「明天換我猜。」', reply: [{ who: 'selene', mood: 'smile', text: '「好。猜錯的人請喝熱茶──那我先去燒水。」' }] },
       ] },
     ],
-    summary: '瑟蕾猜下一個走過來的人，輸給了一隻狗；什麼都沒有塌下來。',
+    summary: '瑟蕾猜下一個走過來的是誰，結果輸給了一隻狗；猜錯了，也什麼事都沒有。',
   },
   'bond:selene:4': {
     lines: [
@@ -294,7 +294,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
   'bond:chizuru:3': {
     lines: [
       { who: 'narrator', place: PL.square, text: '廣場。麵包店的孩子拉著千鶴玩踢石子，規則和她那時候不一樣。' },
-      { who: 'chizuru', text: '「我們那時候的規則是這樣的：石子要踢三步，不可以回頭，還有──」' },
+      { who: 'chizuru', text: '「我們那時候的規則是這樣的：石子只踢一次，不可以回頭，還有──」' },
       { who: 'narrator', text: '孩子們的眼睛越睜越圓。她停在半句，撿起石子，照孩子們的新規則踢了出去，還贏了。' },
       { who: 'chizuru', mood: 'smile', text: '「按我們那時候的規則，也是我贏。」' },
       { who: 'hero', choices: [
@@ -322,7 +322,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
           { who: 'narrator', text: '她把那張紙收回袖子，又添了一道。' },
         ] },
       ] },
-      { who: 'narrator', text: '祠前的鈴被風吹著，輕輕響了一聲。' },
+      { who: 'narrator', text: '祠前的香剛好燒完一半。她看了一眼，說時辰正好。' },
     ],
     summary: '千鶴說，她在祭典之前遲到了很多年；在這裡，她一次也沒有遲到過。',
   },
@@ -536,7 +536,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
     lines: [
       { who: 'narrator', place: PL.forge, text: '鍛造屋。波比問洛恩缺什麼，他說什麼都不缺；她就做了一個他不知道自己缺的東西。' },
       { who: 'narrator', text: '會自己找劍鞘的劍穗。它找錯了，纏在多蘭的鐵鎚上。多蘭看了一眼：「嗯。」' },
-      { who: 'bobby', mood: 'grin', text: '「嘿嘿，那是試作品！正式版一下下就好！」' },
+      { who: 'bobby', mood: 'grin', text: '「嘿嘿，那是試作品，正式版一下下就好！」' },
       { who: 'hero', choices: [
         { tone: 'ask', text: '「這是什麼？」', reply: [
           { who: 'bobby', mood: 'excited', text: '「這個齒輪負責聞劍鞘，這個負責轉彎，這個──啊，這邊鬆了！」' },
@@ -628,7 +628,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
   'bond:liz:3': {
     lines: [
       { who: 'narrator', place: PL.innKitchen, text: '旅館的廚房。莉茲烤了一盤麵包，邊邊全焦了，她說這種最好吃。' },
-      { who: 'narrator', text: '她摸出那疊借條，撕了一張，停下來算了一下，又撕一張，最後一口氣全撕了。撕到洛恩那張，她猶豫得最久。' },
+      { who: 'narrator', text: '她摸出那疊借條，撕了一張，停下來算了一下，又撕一張，最後一口氣全撕了。撕到期限寫著之後再付的那一張，她猶豫得最久。' },
       { who: 'liz', mood: 'smile', text: '「虧大了。這一盤，不算錢。」' },
       { who: 'hero', choices: [
         { tone: 'ask', text: '「不收錢？」', reply: [{ who: 'liz', text: '「這盤估不出價。估不出價的，我不賣。」' }] },
@@ -668,7 +668,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
       { who: 'narrator', place: PL.guild, text: '冒險者公會。絲嘉蕾把全隊的雜務排成一張勤務表，每一格都填了人，只有她自己那一格空著。' },
       { who: 'scarlet', text: '「待命。等候命令。」' },
       { who: 'narrator', text: '洛恩隨口說去吃點心。她立正出門，回來時手裡拿著半塊蛋糕。' },
-      { who: 'scarlet', mood: 'serious', text: '「回報：外酥內軟，甜度三成。另外半塊，請長官品評。」' },
+      { who: 'scarlet', mood: 'serious', text: '「回報：外酥內軟，甜度三成。另外半塊，請品評。」' },
       { who: 'hero', choices: [
         { tone: 'ask', text: '「為什麼要等命令？」', reply: [{ who: 'scarlet', text: '「有命令，就知道該做什麼。」' }] },
         { tone: 'stay', text: '（在她那一格畫一個問號。）', reply: [{ who: 'scarlet', mood: 'surprised', text: '「問號……是什麼勤務？請說明。」' }] },
@@ -679,12 +679,11 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
   },
   'bond:scarlet:2': {
     lines: [
-      { who: 'narrator', place: PL.inn, text: '月影旅館的大廳。公帳連著三天對不平，每次分錢，總是多出一份。' },
-      { who: 'scarlet', mood: 'serious', text: '「報告：差額是我。」' },
+      { who: 'narrator', place: PL.inn, text: '月影旅館的大廳。公帳連著三天對不平，總是多出一份。絲嘉蕾立正：「報告：差額是我。」' },
       { who: 'liz', mood: 'serious', text: '「帳上多出來的那一份，是妳的賣命錢！妳不拿，就是把自己從帳上劃掉！」', if: { met: 'liz' } },
+      { who: 'narrator', text: '莉茲把錢摔在桌上，頭也不回地走了。', if: { met: 'liz' } },
       { who: 'narrator', text: '洛恩把那一份錢推回她面前。', if: { notMet: 'liz' } },
-      { who: 'scarlet', mood: 'sad', text: '「莉茲小姐走了。我以為，少一份，就不會給誰添麻煩。」', if: { met: 'liz' } },
-      { who: 'scarlet', mood: 'sad', text: '「報告完畢。我以為，少一份，就不會給誰添麻煩。」', if: { notMet: 'liz' } },
+      { who: 'scarlet', mood: 'sad', text: '「我以為，少一份，就不會給誰添麻煩。」' },
       { who: 'hero', choices: [
         { tone: 'ask', text: '「為什麼不拿自己那份？」', reply: [{ who: 'scarlet', text: '「我拿了，也不知道要用在哪裡。」' }] },
         { tone: 'stay', text: '（把錢收攏，放回她的掌心。）', reply: [{ who: 'scarlet', text: '「收下了。這一份，是我的。」' }] },
@@ -700,7 +699,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
       { who: 'scarlet', mood: 'serious', text: '「回報：後方安全。」' },
       { who: 'scarlet', text: '「我也被木劍追過。追我的人，很會耍賴。」' },
       { who: 'hero', choices: [
-        { tone: 'ask', text: '「怎麼耍賴的？」', reply: [{ who: 'scarlet', mood: 'smile', text: '「輸了就說，剛才那一下不算。」' }] },
+        { tone: 'ask', text: '「怎麼耍賴的？」', reply: [{ who: 'scarlet', text: '「輸了就說，剛才那一下不算。」' }] },
         { tone: 'stay', text: '（也撿起一把木劍，站到孩子後面。）', reply: [{ who: 'scarlet', mood: 'smile', text: '「被兩個人守著。這種陣形，我還沒學過。」' }] },
         { tone: 'promise', text: '「明天換孩子們排勤務表。」', reply: [{ who: 'scarlet', text: '「那我會被排在哪裡，我有點擔心。」' }] },
       ] },
@@ -712,14 +711,14 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
       { who: 'narrator', place: PL.guild, text: '冒險者公會。新的勤務表上多了一格『點心：全員』。絲嘉蕾說這是她排過最難的一格。' },
       { who: 'narrator', text: '她拿起筆，在最後一格第一次替自己寫了名字：『休息：絲嘉蕾』。' },
       { who: 'scarlet', text: '「洛恩，我以前排班，從來不把自己算進去。」' },
-      { who: 'scarlet', mood: 'smile', text: '「在這裡，我第一次覺得自己也在隊伍裡面。算在裡面的人，也可以休息。」' },
+      { who: 'scarlet', text: '「在這裡，我第一次覺得自己也在隊伍裡面。算在裡面的人，也可以休息。」' },
       { who: 'hero', choices: [
         { tone: 'ask', text: '「休息的時候做什麼？」', reply: [{ who: 'scarlet', text: '「不知道。所以，請教我。」' }] },
         { tone: 'stay', text: '（在那一格後面，寫上自己的名字。）', reply: [
           { who: 'scarlet', mood: 'smile', text: '「兩個人一起休息……這樣排，勤務表沒有寫過。」' },
           { who: 'narrator', text: '她看了很久，沒有劃掉。' },
         ] },
-        { tone: 'promise', text: '「明天第一班，我來站。」', reply: [{ who: 'scarlet', mood: 'smile', text: '「那明天，我睡到第二班。以騎士的名譽保證。」' }] },
+        { tone: 'promise', text: '「明天第一班，我來站。」', reply: [{ who: 'scarlet', mood: 'serious', text: '「那明天，我睡到第二班。以騎士的名譽保證。」' }] },
       ] },
       { who: 'narrator', text: '她把盾靠在牆上，坐了下來。' },
     ],

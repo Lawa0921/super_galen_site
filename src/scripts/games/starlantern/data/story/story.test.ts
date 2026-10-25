@@ -16,9 +16,19 @@ import { TOWN_FRAGMENTS, type TownFragmentId, shardGrade, isFragmentItem, fragme
 import { memoryPace } from '../../engine/story/expect';
 import { leadOpen } from '../../engine/story/leads';
 import type { StoryMood } from '../../render/artPaths';
-import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, type GroupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, SCENE_TIME, SEASON_SCENES, sceneTime, type SceneId, type Stage, type StoryGate } from './scenes';
+import { ACT_DEPTHS, ACT_NODES, DEPARTURE_SCENES, GROUP_GATE, REACTIONS, groupScene, heavyScene, registeredBondScenes, type GroupScene, BANTER_COUNT, BANTER_GATE, BANTER_PAIRS, CHAT_COUNT, CHAT_GATE, HOME_OWNERS, SCENE_IDS, STAGES, MAJOR_SCENES, homeScene, isSceneId, lineCap, memScene, sceneKind, SCENE_TIME, SEASON_SCENES, sceneTime, type SceneId, type Stage, type StoryGate } from './scenes';
 
 const COMPANIONS = CHARACTER_IDS.filter((id) => id !== 'hero' && id !== 'rin');
+/** Review 5: the key is in a bond scene whose gate waits on `c` whole (`BOND_GATE[x][n].full`), so it only plays once she is. */
+const bondWhole = (c: CharacterId, key: string): boolean => {
+  const m = /^scenes\.bond:([a-z]+):([1-4])\./.exec(key);
+  return !!m && BOND_GATE[m[1] as Companion]?.[Number(m[2]) as 1 | 2 | 3 | 4]?.full === c;
+};
+
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ROMANCES_BASE = [...ROMANCES_WRITTEN];
+const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
 
 describe('story data', () => {
   it('every chain is as long as the spec says', () => {
@@ -130,12 +140,12 @@ describe('story data', () => {
 
   it('a romance registered reads as night; one not registered as day (bond review fix)', () => {
     expect(sceneTime('romance:liz')).toBe('day');
-    ROMANCES_WRITTEN.push('liz');
+    regAdd(ROMANCES_WRITTEN, 'liz');
     try {
       expect(sceneTime('romance:liz')).toBe('night');
       expect(sceneTime('romance:rin')).toBe('day');
       expect(sceneTime('ending:liz')).toBe('day');
-    } finally { ROMANCES_WRITTEN.splice(0); }
+    } finally { romancesBack(); }
     expect(sceneTime('romance:liz')).toBe('day');
   });
 
@@ -1052,7 +1062,7 @@ describe('Task 8: Selene, Chizuru and Safira', () => {
     // She calls him 「洛恩先生」 until her memories are whole; her last piece is the first plain 「洛恩」 (style bible, I-22).
     for (const t of spokenBy('selene')) {
       // bond plan Task 17: her 心契 opens only once she is whole (BOND_GATE.selene[4].full), so it says 「洛恩」
-      if (t.key.startsWith('scenes.mem:selene:5.') || t.key.startsWith('scenes.bond:selene:4.') || t.line?.if?.full === 'selene') continue;
+      if (t.key.startsWith('scenes.mem:selene:5.') || bondWhole('selene', t.key) || t.line?.if?.full === 'selene') continue;
       for (const m of t.text.matchAll(/洛恩(.?)/g)) expect(m[1], t.key).toBe('先');
     }
     expect(linesOf('mem:selene:5').some((l) => l.who === 'selene' && /洛恩(?!先生)/.test(l.text))).toBe(true);
@@ -1185,7 +1195,7 @@ describe('Task 9: Sylvie, Noel and Bobby', () => {
 
   it("Noel says 「喂，歸來者」 until her memories are whole, then 「洛恩」 with a blush; her teacher is the merchant in her last piece", () => {
     // bond plan Task 18: her 心契 opens only once she is whole (BOND_GATE.noel[4].full)
-    const full = (key: string, line?: ScriptLine) => key.startsWith('scenes.mem:noel:5.') || key.startsWith('scenes.bond:noel:4.') || line?.if?.full === 'noel';
+    const full = (key: string, line?: ScriptLine) => key.startsWith('scenes.mem:noel:5.') || bondWhole('noel', key) || line?.if?.full === 'noel';
     for (const t of spokenBy('noel')) {
       if (t.text.includes('洛恩')) expect(full(t.key, t.line), t.key).toBe(true);
       if (t.text.includes('歸來者')) expect(full(t.key, t.line), t.key).toBe(false);
@@ -1326,7 +1336,7 @@ describe('Task 10: Liz, Scarlet and the survive line', () => {
   it("Scarlet says 「洛恩閣下」 until her memories are whole; the princess's words live in her last piece alone", () => {
     for (const t of spokenBy('scarlet')) {
       // bond plan Task 19: her 心契 opens only once she is whole (BOND_GATE.scarlet[4].full)
-      if (t.key.startsWith('scenes.mem:scarlet:5.') || t.key.startsWith('scenes.bond:scarlet:4.') || t.line?.if?.full === 'scarlet') continue;
+      if (t.key.startsWith('scenes.mem:scarlet:5.') || bondWhole('scarlet', t.key) || t.line?.if?.full === 'scarlet') continue;
       for (const m of t.text.matchAll(/洛恩(.?.?)/g)) expect(m[1], t.key).toBe('閣下');
     }
     expect(spokenBy('scarlet').some((t) => t.text.includes('洛恩閣下'))).toBe(true);
@@ -2090,6 +2100,18 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
     ];
     return scenes.flatMap((s) => readings(s.lines, c).map((played) => ({ id: s.id, c, played })));
   });
+  /**
+   * Review 5: the light bond scenes (1-3, as registered) as they are heard: each reading, one way per reply (bible §2.4
+   * counts a scene as it plays, so a reply's 「！」 adds to the lines around it).
+   */
+  const bondLight = (): { id: string; played: ScriptLine[] }[] => registeredBondScenes().filter((id) => sceneKind(id) === 'bond' && !heavyScene(id))
+    .flatMap((id) => sceneReadings(id).flatMap((r) => {
+      const at = r.played.findIndex(isChoice);
+      if (at < 0) return [{ id, played: r.played as ScriptLine[] }];
+      const before = r.played.slice(0, at) as ScriptLine[];
+      const after = r.played.slice(at + 1) as ScriptLine[];
+      return (r.played[at] as ChoiceLine).choices.map((x) => ({ id: `${id} (${x.tone})`, played: [...before, { who: 'hero' as const, text: x.text }, ...x.reply, ...after] }));
+    }));
   const chatLines = (): { id: SceneId; owner: string; line: ScriptLine }[] =>
     C.flatMap((c) => [1, 2].flatMap((n) => {
       const id = `chat:${c}:${n}` as SceneId;
@@ -2104,7 +2126,7 @@ describe('V2 voice pass: the companions sound like themselves (style bible §2.2
   });
 
   it('exclamation marks: three a scene at most, and only the loud ones use them', () => {
-    for (const { id, played } of light()) {
+    for (const { id, played } of [...light(), ...bondLight()]) {
       // spoken lines only: the meeting's found line (`FOUND_LINE`) is narration and not anyone's voice
       const spoken = join(played.filter((l) => l.who !== 'narrator'));
       expect((spoken.match(/！/g) ?? []).length, `${id}: ${spoken}`).toBeLessThanOrEqual(3);
@@ -3728,9 +3750,13 @@ describe('story L Task 15: the script reads fewer ways (spec §10)', () => {
   const ifs = (id: SceneId) => flatLines(STORY.scenes[id].lines).filter((l) => l.if).length;
 
   it('where a gate or a plain wording does it, a scene reads one way: the conditional lines, scene by scene', () => {
-    // bond plan Task 17: the bond's copy branches by design (ruling M1: its first three scenes never expire, so they read
-    // either side of her last piece or of a friend met); this count is the main script's, the bond's is its own
-    const all = storyTexts().filter((t) => t.line?.if && !/^scenes\.(bond|ending|romance):|^scenes\.together\./.test(t.key));
+    // bond plan Task 17: the bond scenes branch by design (ruling M1: their first three never expire, so they read either
+    // side of her last piece or of a friend met); this count is the main script's, the bond scenes' is pinned on its own
+    // below (review 5: only `bond:` is set apart; an after-story or a romance counts here)
+    const all = storyTexts().filter((t) => t.line?.if && !/^scenes\.bond:/.test(t.key));
+    // the bond scenes' own: Tasks 17-19, 24 (a friend met or not, Liz's father back or not, Chizuru's shrine known or not;
+    // review 5: Scarlet's second reads Liz's leaving as one line of narration, one fewer)
+    expect(storyTexts().filter((t) => t.line?.if && /^scenes\.bond:/.test(t.key)).length).toBe(24);
     // Story L began at 125 (spec §10 counted 123: chat:rin:2 and :3 read her choice through helpers, and town:orik was left
     // out). Tasks 12 and 13 took 12, Task 14 keeps the finale at 24, Task 15 takes 9 more.
     // Two rows read as the spec could not: chat:scarlet:2 splits on what her last piece undoes (the debt, the duty), not only

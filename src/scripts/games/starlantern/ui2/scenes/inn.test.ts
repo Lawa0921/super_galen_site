@@ -22,6 +22,10 @@ import { withTold } from '../../engine/testing';
 const BOND_BASE = [...BONDS_WRITTEN];
 const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
 const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ROMANCES_BASE = [...ROMANCES_WRITTEN];
+const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
 const SCENES_BASE = { ...STORY.scenes };
 const scenesBack = (id: keyof typeof STORY.scenes): void => { if (SCENES_BASE[id]) STORY.scenes[id] = SCENES_BASE[id]; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
 
@@ -441,7 +445,7 @@ describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
   });
 
   it('夜裡走走: only while the walk is open; the last row is 和大家一起; 否 first; she is for keeps', async () => {
-    ROMANCES_WRITTEN.push('liz');
+    regAdd(ROMANCES_WRITTEN, 'liz');
     bondsAdd('liz');
     const id = 'romance:liz' as const;
     STORY.scenes[id] = { title: '莉茲・夜路', summary: '兩個人走了一段夜路。', lines: [{ who: 'liz', text: '走吧' }, { who: 'rin', text: '路上小心', if: { met: 'rin' } }] };
@@ -469,11 +473,11 @@ describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
       expect(t.game.state.story.seen).toContain(id);
       t.partners();
       expect(t.rows().map(t.label)).toEqual(['談心', '送禮']);   // asked: no walk until the next return
-    } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); scenesBack(id); }
+    } finally { romancesBack(); bondsBack(); scenesBack(id); }
   });
 
   it('和大家一起 writes nothing; unwritten, it is a line', () => {
-    ROMANCES_WRITTEN.push('liz');
+    regAdd(ROMANCES_WRITTEN, 'liz');
     bondsAdd('liz');
     try {
       const t = open((g) => {
@@ -490,7 +494,7 @@ describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
       expect(t.text()).toBe('大家一起在星燈下走了一段路。');
       expect(JSON.stringify(t.game.state)).toBe(before);
       expect(t.game.walkOpen()).toBe(false);
-    } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); }
+    } finally { romancesBack(); bondsBack(); }
   });
 });
 

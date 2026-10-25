@@ -4,6 +4,7 @@ import { ITEMS } from '../items';
 import { CHARACTER_IDS } from '../characters';
 import { moodsFor } from '../story.zh-TW';
 import { chainLength } from './chains';
+import { HOME_OWNERS } from './scenes';
 import { isFragmentItem } from './fragments';
 import type { MaterialDef } from '../../engine/types';
 import {
@@ -75,8 +76,12 @@ describe('bond data', () => {
     expect(ROMANCEABLE).toHaveLength(9);
     expect(ROMANCEABLE as string[]).not.toContain('hero');
     // Bond plan ruling 9.
+    // review 5 P1: a 心契 that stands on her homecoming (the shrine, the sapling, the hat) waits for it to be seen
+    const home = ['chizuru', 'safira', 'sylvie', 'liz'];
+    expect(home).toEqual(HOME_OWNERS);
     const companion = (c: Exclude<Companion, 'rin'>) => ({
-      1: { tier: 1, pieces: { [c]: 1 } }, 2: { tier: 2, pieces: { [c]: 3 } }, 3: { tier: 3, pieces: { [c]: 4 } }, 4: { tier: 4, full: c },
+      1: { tier: 1, pieces: { [c]: 1 } }, 2: { tier: 2, pieces: { [c]: 3 } }, 3: { tier: 3, pieces: { [c]: 4 } },
+      4: { tier: 4, full: c, ...(home.includes(c) ? { seen: [`home:${c}`] } : {}) },
     });
     expect(BOND_GATE).toEqual({
       rin: { 1: { tier: 1, pieces: { rin: 2 }, beforeChoice: true }, 2: { tier: 2, pieces: { rin: 4 }, beforeChoice: true }, 3: { tier: 3, oath: true }, 4: { tier: 4, oath: true } },

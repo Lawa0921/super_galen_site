@@ -5,15 +5,16 @@ import { STORY, type ScriptLine, flatLines } from '../data/story.zh-TW';
 import { Game } from '../engine/game';
 import { constRng } from '../engine/testing';
 import type { CharacterId } from '../engine/types';
-import { BANTER_GATE, CHAT_GATE, SCENE_IDS, heavyScene, registeredBondScenes } from '../data/story/scenes';
+import { BANTER_GATE, CHAT_GATE, SCENE_IDS, heavyScene, registeredBondScenes, type SceneId } from '../data/story/scenes';
 /**
  * Bond plan Task 17: the bond's copy (registered as each companion is written) keeps every face rule below, checked line by
- * line; the counts locked here are the main script's, so a newly written bond scene does not move them.
+ * line; the counts locked here are the main script's, so a newly written bond scene does not move them (review 5: only the
+ * counts and tallies leave it out; the bond's lines play in the era `sceneEra` gives them).
  */
 const BOND_COPY = new Set<string>(registeredBondScenes());
 import { MOODS_OF, NORMAL_SMILES, PUBLISHED_FACES, allArtUrls, art, type StoryMood } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
-import { GRAVE, GRAVE_FALLBACK, HAPPY, NEAR_FACE, speakerOf } from './story';
+import { GRAVE, GRAVE_FALLBACK, HAPPY, NEAR_FACE, sceneEra, speakerOf } from './story';
 
 // Companion talking faces, wave 1 (art-factory/starlantern/runs/2026-10-23-faces-wave1; user approval 2026-10-23
 // 「可以先這樣接進去看看」): a grave line shows the companion's own face, or a near one, and never her smiling normal.
@@ -115,14 +116,18 @@ describe('companion grave faces', () => {
       for (const v of Object.values(o)) walk(v);
     };
     walk({ ...STORY, scenes: Object.fromEntries(Object.entries(STORY.scenes).filter(([id]) => !BOND_COPY.has(id))) });
-    const heavy = lines.filter((l) => NORMAL_SMILES.has(l.who) && l.mood && GRAVE.has(l.mood));
+    // review 5: the locked counts are the main script's; the face rules hold for the bond's copy too, line by line
+    const main = lines.slice();
+    for (const id of BOND_COPY) walk(STORY.scenes[id as SceneId]);
+    const grave = (l: ScriptLine) => NORMAL_SMILES.has(l.who) && !!l.mood && GRAVE.has(l.mood);
+    const heavy = lines.filter(grave);
     const s = state();
     const hidden = heavy.filter((l) => !speakerOf(l.who, s, ART, l.mood).face).map((l) => `${l.who} ${l.mood} ${l.text}`);
-    expect(heavy).toHaveLength(108);   // time and moon Task 8: the spring festival's two solemn Chizuru lines (+2)   // story polish M: memories end on an action now, not on a said wound (107 -> 100); story L group:act2 +1, group:act3 +3, group:act4 +7; story L Tasks 12-13: chat:sylvie:1 and :2 read one way (-2), chat:chizuru:2 waits for Bobby (-2); story L Tasks 14-15 net 0 (the finale's Selene wistful and second Scarlet vow +2, hero-alone's Scarlet -2), then the cold read's silent Scarlet in the finale (-1)
+    expect(main.filter(grave)).toHaveLength(108);   // time and moon Task 8: the spring festival's two solemn Chizuru lines (+2)   // story polish M: memories end on an action now, not on a said wound (107 -> 100); story L group:act2 +1, group:act3 +3, group:act4 +7; story L Tasks 12-13: chat:sylvie:1 and :2 read one way (-2), chat:chizuru:2 waits for Bobby (-2); story L Tasks 14-15 net 0 (the finale's Selene wistful and second Scarlet vow +2, hero-alone's Scarlet -2), then the cold read's silent Scarlet in the finale (-1)
     expect(hidden).toEqual([]);
     // Liz's hushed lines are not grave but used to borrow her smile: all 7 now have the hushed face (story polish M: her meeting has none).
     const hushed = lines.filter((l) => l.who === 'liz' && l.mood === 'hushed');
-    expect(hushed).toHaveLength(7);
+    expect(main.filter((l) => l.who === 'liz' && l.mood === 'hushed')).toHaveLength(7);
     for (const l of hushed) expect(speakerOf('liz', s, ART, 'hushed').face, l.text).toBe(art.portrait('liz', 'hushed'));
   });
 
@@ -220,16 +225,16 @@ describe('faces in a heavy scene (staging S3)', () => {
       const t: Record<string, number> = {};
       const hidden: string[] = [];
       for (const id of SCENE_IDS) {
-        if (!heavyScene(id) || BOND_COPY.has(id)) continue;
+        if (!heavyScene(id)) continue;
         for (const l of flatLines(STORY.scenes[id].lines)) {
           if (l.who !== 'hero' && l.who !== 'rin') continue;
           const s = state();
-          if (l.if?.oath === true) s.party.roster.rin.oath = true;   // a line gated on her oath plays in the oath era
+          if (l.if?.oath === true || (BOND_COPY.has(id) && sceneEra(id) === 'after')) s.party.roster.rin.oath = true;   // a line gated on her oath plays in the oath era
           const mood = l.mood ?? 'normal';
           const artId = l.who === 'rin' && s.party.roster.rin.oath ? 'rin-oath' : l.who;
           const shown = speakerOf(l.who, s, index, mood, true).face;
           const k = !shown ? 'hidden' : shown === art.portrait(artId, mood) ? 'exact' : shown === art.portrait(artId, 'normal') ? 'calm-normal' : 'near';
-          t[`${l.who} ${k}`] = (t[`${l.who} ${k}`] ?? 0) + 1;
+          if (!BOND_COPY.has(id)) t[`${l.who} ${k}`] = (t[`${l.who} ${k}`] ?? 0) + 1;   // review 5: counts are the main script's; hidden reads the bond's too
           if (!shown) hidden.push(`${id} ${l.who} ${mood} ${l.text}`);
         }
       }
@@ -319,7 +324,7 @@ describe('faces wave 4 (affinity plan Task A)', () => {
     ]);
     for (const { scene, l } of lines) {
       const s = state();
-      if (l.if?.oath === true || SCENE_ONLY_AFTER_OATH.has(scene)) s.party.roster.rin.oath = true;
+      if (l.if?.oath === true || SCENE_ONLY_AFTER_OATH.has(scene) || (BOND_COPY.has(scene) && sceneEra(scene as SceneId) === 'after')) s.party.roster.rin.oath = true;
       const artId = l.who === 'rin' && s.party.roster.rin.oath ? 'rin-oath' : l.who;
       for (const heavy of [false, true]) expect(speakerOf(l.who, s, ART, l.mood, heavy).face, `${scene} ${l.text}`).toBe(art.portrait(artId, l.mood!));
     }

@@ -8,7 +8,8 @@ import { withTold } from '../testing';
 import type { GiftPools } from '../../data/bond.zh-TW';
 import { meet } from '../party';
 import { mulberry32 } from '../rng';
-import { BONDS_WRITTEN, memScene } from '../../data/story/scenes';
+import { BONDS_WRITTEN, HOME_OWNERS, homeScene, memScene } from '../../data/story/scenes';
+import { BOND_GATE } from '../../data/story/bond';
 import type { GameState } from '../state';
 import { BOND_CAP, BOND_RUN_CAP } from '../../data/story/bond';
 import { newRun } from '../dungeon/run';
@@ -429,10 +430,27 @@ describe('heart-to-hearts: the gates (bond plan Task 9)', () => {
     expect(nextBond(s, 'selene', W)).toBe('bond:selene:2');
   });
 
+  it('a heart-pact waits for her homecoming (review 5 P1: the shrine, the sapling, the hat are told there first)', () => {
+    for (const c of HOME_OWNERS) {
+      const s = newGame();
+      if (!s.party.recruited.includes(c)) s.party = meet(s.party, c, 1);
+      s.party.roster[c].memories = chainLength(c);
+      for (let k = 1; k <= chainLength(c); k++) s.story.seen.push(memScene(c, k));
+      s.party.roster[c].bond = { talk: 12, field: 40, gifts: fullGifts(c) };
+      s.story.seen.push(`bond:${c}:1`, `bond:${c}:2`, `bond:${c}:3`);
+      expect(bondTier(s.party.roster[c]), c).toBe(4);
+      expect(nextBond(s, c, [c]), c).toBeNull();
+      s.story.seen.push(homeScene(c));
+      expect(nextBond(s, c, [c]), c).toBe(`bond:${c}:4`);
+    }
+    // and one with no homecoming waits on nothing more than her chain (above: Selene)
+    expect(BOND_GATE.selene[4].seen).toBeUndefined();
+  });
+
   it('unwritten, not offered', () => {
     const s = selene(1, 7);
     expect(nextBond(s, 'selene', [])).toBeNull();
-    expect(nextBond(s, 'selene')).toBe(BONDS_WRITTEN.includes('selene') ? 'bond:selene:1' : null);   // by default, what is registered (Task 17 wrote hers)
+    expect(nextBond(s, 'selene')).toBe('bond:selene:1');   // by default, what is registered (Task 17 wrote hers)
     expect(bondOpen(s, W)).toEqual(['bond:selene:1']);
     expect(bondOpen(s, [])).toEqual([]);
     s.party.roster.rin.bond = { talk: 0, field: 10, gifts: {} };

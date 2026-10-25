@@ -361,6 +361,7 @@ describe('bond scenes: Rin, Selene, Chizuru (bond plan Task 17)', () => {
     pinBeat('bond:selene:2', {}, /妳明明知道/);
     pinBeat('bond:selene:2', { met: noNoel }, /有人繞了遠路/);
     pinBeat('bond:selene:3', {}, /是一隻狗/);
+    pinBeat('bond:selene:3', {}, /小提燈塞進她手裡/);   // review 5: the gift is seen
     pinBeat('bond:selene:4', { full: ['selene'] }, /明天見，洛恩/);
     // Chizuru: paying more than asked; the great-grandson (her fourth piece told or not); the new rules; never late here
     pinBeat('bond:chizuru:1', {}, /店家會吃虧/);
@@ -368,6 +369,7 @@ describe('bond scenes: Rin, Selene, Chizuru (bond plan Task 17)', () => {
     pinBeat('bond:chizuru:2', { seen: [] }, /抱回懷裡/);
     pinBeat('bond:chizuru:2', { seen: ['mem:chizuru:4'] }, /總該還有人在/);
     pinBeat('bond:chizuru:3', {}, /也是我贏/);
+    pinBeat('bond:chizuru:3', {}, /只踢一次/);   // review 5: the old rule plainly older than the new one
     pinBeat('bond:chizuru:4', { full: ['chizuru'] }, /一次也沒有遲到過/);
   });
 });
@@ -426,6 +428,7 @@ describe('bond scenes: Bobby, Liz, Scarlet (bond plan Task 19)', () => {
     pinBeat('bond:liz:1', {}, /跌到半枚/);
     pinBeat('bond:liz:2', {}, /我看過一整面牆/);
     pinBeat('bond:liz:3', {}, /一口氣全撕了/);
+    pinBeat('bond:liz:3', {}, /之後再付的那一張/);   // review 5: every IOU is his (scene 2); the last one holds her longest
     pinBeat('bond:liz:4', { full: ['liz'] }, /門口有人等/);
     pinBeat('bond:liz:4', { full: ['liz'], returned: ['orik'] }, /帳他自己會對/);
     pinBeat('bond:liz:4', { full: ['liz'], returned: [] }, /帽子還掛在門後/);
@@ -434,7 +437,20 @@ describe('bond scenes: Bobby, Liz, Scarlet (bond plan Task 19)', () => {
     pinBeat('bond:scarlet:2', {}, /差額是我/);
     pinBeat('bond:scarlet:2', {}, /命錢/);
     pinBeat('bond:scarlet:2', { met: noLiz }, /推回她面前/);
+    pinBeat('bond:scarlet:2', {}, /摔在桌上/);   // review 5: Liz leaves on the page, not in Scarlet's mouth
     pinBeat('bond:scarlet:3', {}, /單膝跪下/);
     pinBeat('bond:scarlet:4', { full: ['scarlet'] }, /休息：絲嘉蕾/);
+  });
+
+  it('Selene, Noel and Scarlet call him nothing in their first three; Selene says neither 你 nor 您 there (I-208, review 5)', () => {
+    const ADDRESS = /洛恩|閣下|長官|歸來者|先生|大人/;
+    const out: string[] = [];
+    for (const c of ['selene', 'noel', 'scarlet'] as Companion[]) for (const n of [1, 2, 3]) {
+      for (const l of flatLines(BOND_SCENES[bondScene(c, n)]!.lines)) {
+        if (l.who !== c) continue;
+        if (ADDRESS.test(l.text) || (c === 'selene' && /你|您/.test(l.text))) out.push(`${bondScene(c, n)}: ${l.text}`);
+      }
+    }
+    expect(out).toEqual([]);
   });
 });

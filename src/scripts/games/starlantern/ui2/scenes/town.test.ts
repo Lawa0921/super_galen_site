@@ -24,6 +24,12 @@ import type { CharacterId } from '../../engine/types';
 const BOND_BASE = [...BONDS_WRITTEN];
 const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
 const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ROMANCES_BASE = [...ROMANCES_WRITTEN];
+const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
+const ROMANCE_LINES_BASE = { ...ROMANCE_LINES };
+const romanceLinesBack = (): void => { for (const k of Object.keys(ROMANCE_LINES) as (keyof typeof ROMANCE_LINES)[]) delete ROMANCE_LINES[k]; Object.assign(ROMANCE_LINES, ROMANCE_LINES_BASE); };
 const SCENES_BASE = { ...STORY.scenes };
 const scenesBack = (id: keyof typeof STORY.scenes): void => { if (SCENES_BASE[id]) STORY.scenes[id] = SCENES_BASE[id]; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
 
@@ -850,7 +856,7 @@ describe('TownScene: the romance in town (bond plan Task 13)', () => {
   };
 
   it('the romance lines join the pool with one draw', async () => {
-    ROMANCES_WRITTEN.push('liz');
+    regAdd(ROMANCES_WRITTEN, 'liz');
     bondsAdd('liz');
     ROMANCE_LINES.liz = ['戀甲', '戀乙'];
     try {
@@ -871,11 +877,11 @@ describe('TownScene: the romance in town (bond plan Task 13)', () => {
       mk(h);
       await new Promise((r) => setTimeout(r, 0));
       expect(first).toBe(none);   // the pool is longer, the draws the same
-    } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); delete ROMANCE_LINES.liz; }
+    } finally { romancesBack(); bondsBack(); romanceLinesBack(); }
   });
 
   it('the inn shows 新 while a night walk waits', async () => {
-    ROMANCES_WRITTEN.push('liz');
+    regAdd(ROMANCES_WRITTEN, 'liz');
     bondsAdd('liz');
     try {
       const g = new Game(constRng(0.5), null);
@@ -887,7 +893,7 @@ describe('TownScene: the romance in town (bond plan Task 13)', () => {
       g.walkTogether();
       expect(root.querySelector('.slx-town-menu [data-id=inn] .slx-fresh')).not.toBeNull();   // read on the next arrival
       expect(mk(g).querySelector('.slx-town-menu [data-id=inn] .slx-fresh')).toBeNull();
-    } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); }
+    } finally { romancesBack(); bondsBack(); }
   });
 });
 

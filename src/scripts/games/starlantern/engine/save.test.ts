@@ -30,6 +30,13 @@ import { meet } from './party';
 const BOND_BASE = [...BONDS_WRITTEN];
 const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
 const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ENDINGS_BASE = [...ENDINGS_WRITTEN];
+const endingsBack = (): void => { ENDINGS_WRITTEN.splice(0, ENDINGS_WRITTEN.length, ...ENDINGS_BASE); };
+const ROMANCES_BASE = [...ROMANCES_WRITTEN];
+const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
+const TOGETHER_BASE = TOGETHER_WRITTEN.value;
 
 describe('save', () => {
   it('round-trips a game', () => {
@@ -1416,9 +1423,9 @@ describe('bond scene ids in the save (bond plan Task 8)', () => {
   const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
   /** The romance and the walk together registered for the test (the registries start empty), put back after. */
   const withRegistered = (f: () => void) => {
-    ROMANCES_WRITTEN.push('liz', 'rin');
+    regAdd(ROMANCES_WRITTEN, 'liz', 'rin');
     TOGETHER_WRITTEN.value = true;
-    try { f(); } finally { ROMANCES_WRITTEN.splice(0); TOGETHER_WRITTEN.value = false; }
+    try { f(); } finally { romancesBack(); TOGETHER_WRITTEN.value = TOGETHER_BASE; }
   };
   const after = (): GameState => {
     const g = newGame();
@@ -1459,8 +1466,8 @@ describe('bond scenes and the story they need (bond review fix)', () => {
   const status = (g: GameState) => loadGame(memoryStorage({ [SAVE_KEY]: JSON.stringify(g) })).status;
   const registered = (f: () => void) => {
     bondsAdd('selene', 'rin');
-    ENDINGS_WRITTEN.push('liz');
-    try { f(); } finally { bondsBack(); ENDINGS_WRITTEN.splice(0); }
+    regAdd(ENDINGS_WRITTEN, 'liz');
+    try { f(); } finally { bondsBack(); endingsBack(); }
   };
   /** Selene met with her pieces told and a bond worth `field` more, after the finale when `after`. */
   const story = (o: { field?: number; after?: boolean } = {}): GameState => {

@@ -4,7 +4,7 @@ import { BANTER_GATE, CHAT_GATE, GROUP_GATE, MAJOR_SCENES, heavyScene, memScene,
 import { AFTER_CHOICE } from '../data/story/voiceGates';
 import { WARM_MOODS } from '../data/story/tone';
 import { NIGHT_PLACE, NPC_NAMES, STORY, isChoice, linesWhen, type ChoiceLine, type NpcId, type Place, type SceneLine, type ScriptLine, type Speaker } from '../data/story.zh-TW';
-import { COMPANIONS, type Tone } from '../data/story/bond';
+import { BOND_GATE, COMPANIONS, type BondStep, type Companion, type Tone } from '../data/story/bond';
 import { Menu } from './menu';
 import { MenuView, win } from './widgets';
 import { bondTier } from '../engine/story/bond';
@@ -89,18 +89,24 @@ const faceOrder = (mood: StoryMood, artId: string, heavy: boolean): StoryMood[] 
 
 /** Which side of Rin's choice a scene belongs to: `before` her oath, `after` it, or null when it can play on either. */
 export type Era = 'before' | 'after';
-const gateOf = (id: SceneId): StoryGate | undefined => CHAT_GATE[id] ?? BANTER_GATE[id] ?? (GROUP_GATE as Partial<Record<SceneId, StoryGate>>)[id];
+/** A scene's gate: a chat's, a banter's, a group scene's, or a bond scene's (`BOND_GATE`: Rin's first two expire at her choice, her last two wait on it). */
+const gateOf = (id: SceneId): StoryGate | undefined => {
+  const bond = /^bond:([a-z]+):([1-4])$/.exec(id);
+  if (bond) return BOND_GATE[bond[1] as Companion]?.[Number(bond[2]) as BondStep];
+  return CHAT_GATE[id] ?? BANTER_GATE[id] ?? (GROUP_GATE as Partial<Record<SceneId, StoryGate>>)[id];
+};
 /**
  * The era a scene belongs to, from when it can ever play: her memory pieces and her reveal (the reveal sets the oath as it
  * ends, and every piece of hers is told before it), and a scene gated `beforeChoice`, are `before`; the scenes after her
  * choice (`AFTER_CHOICE`), the eve (queued only once she has sworn) and a scene gated `oath` are `after`. Any other can play on
- * either side, so it has none and follows the game. A replay from the handbook after her oath then shows the faces she had
+ * either side, so it has none and follows the game. The after-stories, the romances and the walk together come after the
+ * finale, so after her choice too. A replay from the handbook after her oath then shows the faces she had
  * when the scene was told (her guilty averted look, not her shy one), and a scene played live reads the same as the game.
  */
 export function sceneEra(id: SceneId): Era | null {
   const g = gateOf(id);
   if (id === 'rin-reveal' || g?.beforeChoice || Array.from({ length: chainLength('rin') }, (_, i) => memScene('rin', i + 1)).includes(id)) return 'before';
-  if (AFTER_CHOICE.has(id) || id === 'finale-eve' || g?.oath) return 'after';
+  if (AFTER_CHOICE.has(id) || id === 'finale-eve' || g?.oath || sceneKind(id) === 'ending' || sceneKind(id) === 'romance') return 'after';
   return null;
 }
 

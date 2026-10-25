@@ -2,7 +2,7 @@ import type { CharacterId, GiftId, MaterialDef, MaterialKind } from '../../engin
 import type { StoryMood } from '../../render/artPaths';
 import { CHARACTER_IDS } from '../characters';
 import { MATERIALS } from '../materials';
-import type { StoryGate } from './scenes';
+import type { SceneId, StoryGate } from './scenes';
 
 /**
  * Bond (好感度) with Lorne: every constant and table, data only (bond plan Task 1; spec
@@ -116,8 +116,14 @@ export type BondStep = 1 | 2 | 3 | 4;
  * Rin's first two expire at her choice (`beforeChoice`): an expired one is passed over, not seen, and holds nothing back.
  */
 const companionGate = (c: Exclude<Companion, 'rin'>): Record<BondStep, StoryGate & { tier: BondTier }> => ({
-  1: { tier: 1, pieces: { [c]: 1 } }, 2: { tier: 2, pieces: { [c]: 3 } }, 3: { tier: 3, pieces: { [c]: 4 } }, 4: { tier: 4, full: c },
+  1: { tier: 1, pieces: { [c]: 1 } }, 2: { tier: 2, pieces: { [c]: 3 } }, 3: { tier: 3, pieces: { [c]: 4 } },
+  4: { tier: 4, full: c, ...(HOMECOMING.includes(c) ? { seen: [`home:${c}` as SceneId] } : {}) },
 });
+/**
+ * The four whose ending already played in the town (`HOME_OWNERS`, data/story/scenes.ts, kept apart here: that module
+ * reads this one): their 心契 stands on it (the shrine, the sapling, the hat), so it waits for it (review 5 P1).
+ */
+const HOMECOMING: readonly Companion[] = ['chizuru', 'safira', 'sylvie', 'liz'];
 export const BOND_GATE: Record<Companion, Record<BondStep, StoryGate & { tier: BondTier }>> = {
   rin: {
     1: { tier: 1, pieces: { rin: 2 }, beforeChoice: true }, 2: { tier: 2, pieces: { rin: 4 }, beforeChoice: true },

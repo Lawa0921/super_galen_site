@@ -32,6 +32,11 @@ const withMemories = (s: GameState, id: CharacterId, n: number): GameState => {
 };
 const returned = (s: GameState): GameState => ({ ...s, story: onReturn(s) });
 
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ENDINGS_BASE = [...ENDINGS_WRITTEN];
+const endingsBack = (): void => { ENDINGS_WRITTEN.splice(0, ENDINGS_WRITTEN.length, ...ENDINGS_BASE); };
+
 describe('story triggers', () => {
   it('act nodes fire by depth alone', () => {
     const s = base();
@@ -1860,7 +1865,7 @@ const afterFestival = (home = true): GameState => {
 
 describe('after the finale: the endings (bond plan Task 10)', () => {
   /** Endings registered for the test (the registry starts empty), put back after. */
-  const withEndings = <T,>(cs: Companion[], f: () => T): T => { ENDINGS_WRITTEN.push(...cs); try { return f(); } finally { ENDINGS_WRITTEN.splice(0); } };
+  const withEndings = <T,>(cs: Companion[], f: () => T): T => { regAdd(ENDINGS_WRITTEN, ...cs); try { return f(); } finally { endingsBack(); } };
   const back = (s: GameState) => arrivalScenes(s, { chat: true, ending: (st) => nextEnding(st) });
 
   it("the festival's return is as it was", () => withEndings(['liz'], () => {

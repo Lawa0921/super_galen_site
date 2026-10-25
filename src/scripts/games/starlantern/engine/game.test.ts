@@ -67,6 +67,11 @@ import { withBondEarn, withBondScale } from './testing';
 const BOND_BASE = [...BONDS_WRITTEN];
 const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
 const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ROMANCES_BASE = [...ROMANCES_WRITTEN];
+const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
+const TOGETHER_BASE = TOGETHER_WRITTEN.value;
 
 vi.mock('./portals', async (importOriginal) => {
   const mod = await importOriginal<typeof import('./portals')>();
@@ -6119,9 +6124,9 @@ describe('the night walk and the romance (bond plan Task 10)', () => {
     return g;
   };
   const registered = <T,>(f: () => T): T => {
-    ROMANCES_WRITTEN.push('liz');
+    regAdd(ROMANCES_WRITTEN, 'liz');
     bondsAdd('liz');
-    try { return f(); } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); TOGETHER_WRITTEN.value = false; }
+    try { return f(); } finally { romancesBack(); bondsBack(); TOGETHER_WRITTEN.value = TOGETHER_BASE; }
   };
 
   it('the choice is for keeps', () => registered(() => {
@@ -6191,9 +6196,9 @@ describe('a romance cut short plays at night (bond plan Task 11)', () => {
     return g;
   };
   const registered = <T,>(f: () => T): T => {
-    ROMANCES_WRITTEN.push('liz');
+    regAdd(ROMANCES_WRITTEN, 'liz');
     bondsAdd('liz');
-    try { return f(); } finally { ROMANCES_WRITTEN.splice(0); bondsBack(); }
+    try { return f(); } finally { romancesBack(); bondsBack(); }
   };
 
   it('a romance cut short plays in the next night', () => registered(() => {

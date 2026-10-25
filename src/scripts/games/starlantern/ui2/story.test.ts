@@ -605,6 +605,12 @@ describe('Rin\'s era in a scene (handbook replays)', () => {
       expect(sceneEra(id), id).toBe('after');
     }
     for (const id of ['chat:liz:1', 'mem:scarlet:1', 'chat:rin:3', 'act3'] as SceneId[]) expect(sceneEra(id), id).toBeNull();
+    // review 5: the bond's gates too. Rin's first two expire at her choice, her last two wait on it; the after-stories, the
+    // romances and the walk together come after the finale; another companion's bond scene plays on either side.
+    expect(sceneEra('bond:rin:1')).toBe('before');
+    expect(sceneEra('bond:rin:2')).toBe('before');
+    for (const id of ['bond:rin:3', 'bond:rin:4', 'ending:rin', 'romance:rin', 'ending:liz', 'romance:noel', 'together'] as SceneId[]) expect(sceneEra(id), id).toBe('after');
+    for (const id of ['bond:selene:1', 'bond:liz:4'] as SceneId[]) expect(sceneEra(id), id).toBeNull();
   });
 
   it('a memory of hers replayed after her oath shows the faces she had then, not her rin-oath ones', async () => {

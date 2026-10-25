@@ -21,6 +21,12 @@ import { arrivalScenes, onReturn, sceneDone } from './events';
 const BOND_BASE = [...BONDS_WRITTEN];
 const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
 const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ENDINGS_BASE = [...ENDINGS_WRITTEN];
+const endingsBack = (): void => { ENDINGS_WRITTEN.splice(0, ENDINGS_WRITTEN.length, ...ENDINGS_BASE); };
+const ROMANCES_BASE = [...ROMANCES_WRITTEN];
+const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
 const SCENES_BASE = { ...STORY.scenes };
 const scenesBack = (id: keyof typeof STORY.scenes): void => { if (SCENES_BASE[id]) STORY.scenes[id] = SCENES_BASE[id]; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
 
@@ -477,8 +483,8 @@ describe('the handbook and the bond (bond plan Task 14)', () => {
 
   it('bond scenes, endings and the romance are listed once seen', () => {
     bondsAdd('rin', 'liz');
-    ENDINGS_WRITTEN.push('rin', 'liz');
-    ROMANCES_WRITTEN.push('rin', 'liz');
+    regAdd(ENDINGS_WRITTEN, 'rin', 'liz');
+    regAdd(ROMANCES_WRITTEN, 'rin', 'liz');
     const titled = (id: SceneId) => { STORY.scenes[id] = { title: id, lines: [{ who: 'narrator', text: '甲。' }], summary: '乙。' }; };
     const ids: SceneId[] = ['bond:rin:1', 'bond:rin:2', 'bond:rin:3', 'bond:rin:4', 'ending:rin', 'romance:rin', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4', 'ending:liz', 'romance:liz'];
     for (const id of ids) titled(id);
@@ -498,7 +504,7 @@ describe('the handbook and the bond (bond plan Task 14)', () => {
       expect(after).toContain('bond:rin:3');
       expect(page(s, 'liz').scenes.map((e) => e.scene).at(-1)).toBe('ending:liz');
     } finally {
-      bondsBack(); ENDINGS_WRITTEN.splice(0); ROMANCES_WRITTEN.splice(0);
+      bondsBack(); endingsBack(); romancesBack();
       for (const id of ids) scenesBack(id);
     }
   });
