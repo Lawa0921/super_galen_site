@@ -1419,8 +1419,9 @@ $slx-starlit: #bff6ff;
 // Reroll and fusion stack three or four windows; those under the top one (facility.ts marks them slx-under) darken,
 // so the open list or confirm reads cleanly. A filter, not opacity: the windows stay opaque, so one list's text never shows
 // through another. The forge's detail window is not a layer and stays bright. The shop dims the same way; its material page
-// is a layer holding two windows (list and detail), so the windows inside a marked layer darken too.
-.slx-forge, .slx-shop {
+// is a layer holding two windows (list and detail), so the windows inside a marked layer darken too. The inn's 夥伴 stacks
+// three lists (partners, who, what to give) and dims the same way (review of bond plan Tasks 12-14).
+.slx-forge, .slx-shop, .slx-inn {
   .slx-win.slx-under, .slx-under > .slx-win { filter: brightness(0.45) saturate(0.5); transition: filter 0.12s ease-out; }
 }
 .slx-lack { color: $slx-down; }

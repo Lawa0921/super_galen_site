@@ -5521,6 +5521,11 @@ test.describe('starlantern', () => {
       const gifts = page.locator('.slx-layer.slx-depth-2');
       await expect(gifts.locator('[data-id=dusk-cloth]')).toContainText(T.ui2.bond.taste.loved);
       await expect(gifts.locator('[data-id=king-scale]')).toContainText(T.ui2.bond.taste.declined);
+      // the windows under the open one darken, as the forge's and the shop's do (review of Tasks 12-14)
+      for (const under of ['.slx-inn .slx-cmd', '.slx-inn .slx-layer.slx-depth-0', '.slx-inn .slx-layer.slx-depth-1']) {
+        await expect(page.locator(under), under).toHaveCSS('filter', /brightness\(0\.45\)/);
+      }
+      await expect(gifts).toHaveCSS('filter', 'none');
       await shot('gift-menu');
       await w.key('Escape'); await w.key('Escape'); await w.key('Escape');
       await go(page, 'status', 'rin');
