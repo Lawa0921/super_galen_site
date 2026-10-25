@@ -26,7 +26,9 @@ export interface GiftPools {
 export const GIFT_LINES: Partial<Record<Companion, GiftPools>> = {};
 
 /** Rin's reactions after her choice; she is offered only once both of hers are written (plan ruling 6). */
-export const RIN_OATH_GIFT_LINES: GiftPools | null = null;
+export const RIN_OATH: { value: GiftPools | null } = { value: null };
+/** The same table, as `giveGift` and `giftPools` read it by default (read when called: `RIN_OATH.value`). */
+export const rinOathLines = (): GiftPools | null => RIN_OATH.value;
 
 /**
  * The bond's scenes as written (bond plan Task 8): each bond scene, after-story, romance and the walk together, keyed by its

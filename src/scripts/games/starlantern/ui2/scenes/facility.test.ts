@@ -19,6 +19,8 @@ class Probe extends FacilityScene {
     this.push({ el: sub.el, onAction: (a) => sub.onAction(a) });
   }
   cheer(): Promise<void> { return this.say('好！', 'happy'); }
+  her(text: string): Promise<void> { return this.speakAs('selene', text, 'smile'); }
+  twice(): Promise<void> { return this.sayThen('一', '二'); }
   scene(id: SceneId, o: Parameters<FacilityScene['play']>[1] = {}): Promise<void> { return this.play(id, o); }
 }
 
@@ -177,5 +179,19 @@ describe('FacilityScene.play: the mode and record (bond plan Task 12)', () => {
     for (let i = 0; i < flatLines(STORY.scenes[id].lines).length; i++) { s3.onAction('confirm'); await new Promise((r) => setTimeout(r, 0)); }
     await q;
     expect(c3.game.state.story.seen).toEqual(seen);
+  });
+});
+
+describe('FacilityScene.speakAs (bond plan Task 13)', () => {
+  it('a companion speaks in the facility box, with her plate; a held second box does not follow her', async () => {
+    const c = ctx(); const root = document.createElement('div');
+    const s = new Probe(c, 'inn', Infinity); s.enter(root);
+    s.onAction('confirm');
+    void s.twice();                       // 一, holding 二 for the next box
+    void s.her('謝謝您。');
+    expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe('瑟蕾');
+    expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('謝謝您。');
+    s.onAction('confirm');
+    expect(root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(true);   // no 二 after her
   });
 });

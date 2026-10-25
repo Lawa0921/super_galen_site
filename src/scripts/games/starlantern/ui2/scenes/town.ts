@@ -20,7 +20,8 @@ import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
 import { playAndRecord, playBeat, playNight, shouldPlay, storyCtx, type SceneOpts } from '../story';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
-import { innTalkWaits } from './inn';
+import { innNews } from './inn';
+import { ROMANCE_LINES } from '../../data/bond.zh-TW';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge', 'handbook', 'settings'] as const;
 /** The notices of a return home: the day's line still follows them (staging S2). The others are about the interface. */
@@ -128,7 +129,7 @@ export class TownScene implements Scene {
   /** The town's menu: each facility, the inn marked 新 while a talk waits there (bond plan Task 12). */
   private menuItems() {
     const t = T.ui2.town;
-    const fresh = innTalkWaits(this.ctx.game.state);
+    const fresh = innNews(this.ctx.game);
     return FACILITIES.map((id) => ({ id, label: t.facilities[id], ...(id === 'inn' && fresh ? { right: T.ui2.handbook.fresh, rightClass: 'slx-fresh' } : {}) }));
   }
 
@@ -207,6 +208,8 @@ export class TownScene implements Scene {
       ...STORY.townLines[stage].map((text) => ({ who: '', text })),
       ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),
       ...bellkeeperPool(s).map((text) => ({ who: NPC_NAMES.bellkeeper, text })),
+      // bond plan ruling 13: the one chosen says her two lines too, last in the pool (the draw is the same one)
+      ...(s.story.romance ? (ROMANCE_LINES[s.story.romance] ?? []).map((text) => ({ who: CHARACTERS[s.story.romance!].name, text })) : []),
     ];
     const i = draw ? Math.floor(this.ctx.game.rng() * pool.length) : (s.gold + s.story.seen.length) % pool.length;
     return pool[i];

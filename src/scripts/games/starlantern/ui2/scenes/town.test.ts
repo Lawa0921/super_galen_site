@@ -10,7 +10,9 @@ import { ACT_DEPTHS, type SceneId } from '../../data/story/scenes';
 import { NIGHT_BEATS, NPC_NAMES, STORY, type ScriptLine, flatLines } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
-import { BONDS_WRITTEN } from '../../data/story/scenes';
+import { BONDS_WRITTEN, ROMANCES_WRITTEN } from '../../data/story/scenes';
+import { ROMANCE_LINES } from '../../data/bond.zh-TW';
+import { chainLength } from '../../data/story/chains';
 import { linesOf } from '../story';
 import { sceneDone } from '../../engine/story/events';
 import { meet } from '../../engine/party';
@@ -820,5 +822,62 @@ describe('TownScene: the inn and the bond (bond plan Task 12)', () => {
       g.state.story.talked = true;
       expect(innRow(mk(g)).querySelector('.slx-fresh')).toBeNull();   // talked today
     } finally { back(); }
+  });
+});
+
+describe('TownScene: the romance in town (bond plan Task 13)', () => {
+  const after = (g: Game) => {
+    const st = g.state;
+    st.story.act1Cleared = true; st.story.finaleCleared = true;
+    st.story.seen.push('epilogue', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4');
+    st.party = meet(st.party, 'liz', 1);
+    st.party.roster.liz.memories = chainLength('liz');
+    st.party.roster.liz.bond = { talk: 12, field: 40, gifts: { 'old-coin': 24 } };
+  };
+  const mk = (game: Game) => {
+    const root = document.createElement('div');
+    new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity).enter(root);
+    return root;
+  };
+
+  it('the romance lines join the pool with one draw', async () => {
+    ROMANCES_WRITTEN.push('liz');
+    BONDS_WRITTEN.push('liz');
+    ROMANCE_LINES.liz = ['戀甲', '戀乙'];
+    try {
+      let draws = 0;
+      const g = new Game(() => { draws++; return 0.999; }, null);   // the last of the pool
+      after(g);
+      g.arrival = [];
+      g.state.story.romance = 'liz';
+      const root = mk(g);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('戀乙');
+      expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe(CHARACTERS.liz.name);
+      const first = draws;
+      let none = 0;
+      const h = new Game(() => { none++; return 0.999; }, null);
+      after(h);
+      h.arrival = [];
+      mk(h);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(first).toBe(none);   // the pool is longer, the draws the same
+    } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); delete ROMANCE_LINES.liz; }
+  });
+
+  it('the inn shows 新 while a night walk waits', async () => {
+    ROMANCES_WRITTEN.push('liz');
+    BONDS_WRITTEN.push('liz');
+    try {
+      const g = new Game(constRng(0.5), null);
+      after(g);
+      g.arrival = [];
+      const root = mk(g);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(root.querySelector('.slx-town-menu [data-id=inn] .slx-fresh')!.textContent).toBe('新');
+      g.walkTogether();
+      expect(root.querySelector('.slx-town-menu [data-id=inn] .slx-fresh')).not.toBeNull();   // read on the next arrival
+      expect(mk(g).querySelector('.slx-town-menu [data-id=inn] .slx-fresh')).toBeNull();
+    } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); }
   });
 });

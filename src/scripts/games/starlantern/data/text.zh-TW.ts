@@ -778,6 +778,17 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       /** Bond plan Task 12 (spec §0 D9): the inn's one bond entry, and its heart-to-heart. */
       partners: '夥伴', talk: '談心',
       talkedToday: '今天已經談過心了，明天再來吧。', nobodyToTalk: '現在還沒有誰想找你談心。',
+      /** Bond plan Task 13: gifts and the night walk, under 夥伴. */
+      gift: '送禮', walk: '夜裡走走', together: '和大家一起',
+      giftedToday: '今天已經收過了', nothingToGive: '你手上沒有能送的東西。', nobodyToGift: '現在還沒有誰能收下你的禮物。',
+      askGift: (name: string, item: string) => `要把${item}送給${name}嗎？`,
+      askRomance: (name: string) => `和${name}兩個人走走嗎？\n選了就不能改。`,
+      togetherSaid: '大家一起在星燈下走了一段路。',
+    },
+    /** Bond plan Tasks 13-14: the bond's tiers and what a gift is to her (interface words: numerals are fine). */
+    bond: {
+      tiers: ['相識', '同行', '信賴', '羈絆', '心契'] as readonly string[],
+      taste: { loved: '最愛', liked: '喜歡', neutral: '普通', declined: '婉拒' } as Record<string, string>,
     },
     /** The suggested builds screen (plan 8h Task 7): each build of a member, what it does and lacks; apply and follow. */
     builds: {

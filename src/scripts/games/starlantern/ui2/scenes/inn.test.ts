@@ -9,6 +9,11 @@ import { STORY } from '../../data/story.zh-TW';
 import { BONDS_WRITTEN } from '../../data/story/scenes';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { today } from '../../engine/story/bond';
+import { GIFT_LINES, RIN_OATH, type GiftPools } from '../../data/bond.zh-TW';
+import { ROMANCES_WRITTEN, TOGETHER_WRITTEN } from '../../data/story/scenes';
+import { CHARACTERS } from '../../data/characters';
+import { meet } from '../../engine/party';
+import { chainLength } from '../../data/story/chains';
 
 function setup(storage = memoryStorage()) {
   const game = new Game(constRng(0.5), storage, undefined, 0, LEGACY_LINEUP);
@@ -278,7 +283,7 @@ describe('InnScene: the partners (bond plan Task 12)', () => {
   it('談心 with nobody to talk to says so', () => {
     const t = open();
     t.partners();
-    expect(t.rows('.slx-layer').map(t.label)).toEqual(['談心']);
+    expect(t.rows('.slx-layer').map(t.label)).toEqual(['談心', '送禮']);   // Task 13 added 送禮
     t.s.onAction('confirm');
     expect(t.text()).toBe('現在還沒有誰想找你談心。');
     expect(t.root.querySelector('.slx-layer')).toBeNull();
@@ -326,5 +331,144 @@ describe('InnScene: the partners (bond plan Task 12)', () => {
       expect(t.game.state.story.seen).toContain('bond:rin:1');
       expect(t.game.state.story.fresh).not.toContain('bond:rin:1');
     } finally { back(); }
+  });
+});
+
+describe('InnScene: gifts and the night walk (bond plan Task 13)', () => {
+  const pools = (tag: string): GiftPools => ({
+    loved: [`${tag}最愛一`, `${tag}最愛二`], liked: [`${tag}喜歡一`, `${tag}喜歡二`], neutral: [`${tag}普通`],
+    declined: { 'king-scale': `${tag}婉拒` }, healed: {},
+  });
+  /** Rin's gift lines registered (before and after her choice), put back after. */
+  const withRinGifts = <T,>(f: () => T): T => {
+    const had = GIFT_LINES.rin;
+    const box = (GIFT_LINES as Record<string, GiftPools | undefined>);
+    box.rin = pools('前');
+    RIN_OATH.value = pools('後');
+    try { return f(); } finally { if (had) box.rin = had; else delete box.rin; RIN_OATH.value = null; }
+  };
+  const open = (prep?: (g: Game) => void) => {
+    const game = new Game(constRng(0.5), memoryStorage(), undefined, 0, ['hero', 'rin']);
+    game.state.inventory = { 'dusk-cloth': 2, 'king-scale': 1, 'essence-common': 5, potion: 3 };
+    prep?.(game);
+    const root = document.createElement('div');
+    const s = new InnScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity, 0);
+    s.enter(root);
+    s.onAction('confirm');
+    const top = () => [...root.querySelectorAll('.slx-layer')].at(-1)!;
+    const rows = () => [...top().querySelectorAll('[role=option]')];
+    const label = (o: Element) => o.querySelector('.slx-label')!.textContent;
+    const right = (o: Element) => o.querySelector('.slx-right')?.textContent ?? null;
+    const pick = (text: string) => { const i = rows().findIndex((o) => label(o) === text); for (let k = 0; k < i; k++) s.onAction('down'); s.onAction('confirm'); };
+    const partners = () => { (root.querySelector('.slx-cmd [data-id=partners]') as HTMLElement).click(); };
+    const text = () => root.querySelector('.slx-talk .slx-text')!.textContent;
+    const plate = () => root.querySelector('.slx-talk .slx-name')!.textContent;
+    return { game, root, s, rows, label, right, pick, partners, text, plate, top };
+  };
+
+  it('送禮 lists who has lines, then only what she can be given; a declined gift stays and is marked', () => withRinGifts(() => {
+    const t = open();
+    t.partners();
+    expect(t.rows().map(t.label)).toEqual(['談心', '送禮']);   // no night walk before the finale
+    t.pick('送禮');
+    expect(t.rows().map(t.label)).toEqual(['凜']);
+    t.pick('凜');
+    expect(t.rows().map(t.label)).toEqual(['暮影布', '王者之鱗']);   // held and giftable only
+    expect(t.rows().map(t.right)).toEqual([null, null]);           // nothing known yet
+    t.pick('王者之鱗');
+    expect(t.root.querySelector('.slx-confirm')!.textContent).toContain('王者之鱗');
+    expect(t.root.querySelector('.slx-confirm [aria-selected=true]')!.textContent).toBe('否');   // 否 first
+    t.s.onAction('up'); t.s.onAction('confirm');
+    expect(t.text()).toBe('前婉拒');
+    expect(t.plate()).toBe(CHARACTERS.rin.name);
+    expect(t.game.state.inventory['king-scale']).toBe(1);
+    t.s.onAction('confirm');
+    t.partners(); t.pick('送禮'); t.pick('凜');
+    expect(t.rows().map(t.right)).toEqual([null, '婉拒']);
+  }));
+
+  it('a loved gift: her line in her name, then greyed for the day; no keeper line follows', () => withRinGifts(() => {
+    const t = open();
+    t.partners(); t.pick('送禮'); t.pick('凜'); t.pick('暮影布');
+    t.s.onAction('up'); t.s.onAction('confirm');
+    expect(t.text()).toBe('前最愛一');
+    expect(t.plate()).toBe(CHARACTERS.rin.name);   // not Marta
+    t.s.onAction('confirm');
+    expect(t.root.querySelector('.slx-talk')!.hasAttribute('hidden')).toBe(true);   // no second box after hers
+    t.partners(); t.pick('送禮');
+    const rin = t.rows()[0];
+    expect(rin.getAttribute('aria-disabled')).toBe('true');
+    expect(t.right(rin)).toBe('今天已經收過了');
+  }));
+
+  it("Rin's lines read her choice", () => withRinGifts(() => {
+    const t = open((g) => { g.state.party.roster.rin.memories = chainLength('rin'); g.state.party.roster.rin.oath = true; });
+    t.partners(); t.pick('送禮'); t.pick('凜'); t.pick('暮影布');
+    t.s.onAction('up'); t.s.onAction('confirm');
+    expect(t.text()).toBe('後最愛一');
+  }));
+
+  it('nobody written, or nothing to give, is said', () => {
+    const t = open();
+    t.partners(); t.pick('送禮');
+    expect(t.text()).toBe('現在還沒有誰能收下你的禮物。');
+    withRinGifts(() => {
+      const u = open((g) => { g.state.inventory = { potion: 3 }; });
+      u.partners(); u.pick('送禮'); u.pick('凜');
+      expect(u.text()).toBe('你手上沒有能送的東西。');
+    });
+  });
+
+  it('夜裡走走: only while the walk is open; the last row is 和大家一起; 否 first; she is for keeps', async () => {
+    ROMANCES_WRITTEN.push('liz');
+    BONDS_WRITTEN.push('liz');
+    const id = 'romance:liz' as const;
+    STORY.scenes[id] = { title: '莉茲・夜路', summary: '兩個人走了一段夜路。', lines: [{ who: 'liz', text: '走吧' }, { who: 'rin', text: '路上小心', if: { met: 'rin' } }] };
+    try {
+      const t = open((g) => {
+        const st = g.state;
+        st.story.act1Cleared = true; st.story.finaleCleared = true;
+        st.story.seen.push('epilogue', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4');
+        st.party = meet(st.party, 'liz', 1);
+        st.party.roster.liz.memories = chainLength('liz');
+        st.party.roster.liz.bond = { talk: 12, field: 40, gifts: { 'old-coin': 24 } };
+      });
+      t.partners();
+      expect(t.rows().map(t.label)).toEqual(['談心', '送禮', '夜裡走走']);
+      t.pick('夜裡走走');
+      expect(t.rows().map(t.label)).toEqual(['莉茲', '和大家一起']);
+      t.pick('莉茲');
+      expect(t.root.querySelector('.slx-confirm [aria-selected=true]')!.textContent).toBe('否');
+      t.s.onAction('up'); t.s.onAction('confirm');
+      await new Promise((r) => setTimeout(r, 0));
+      expect(t.text()).toBe('走吧');
+      expect(t.game.state.story.romance).toBe('liz');
+      t.s.onAction('confirm'); await new Promise((r) => setTimeout(r, 0));
+      t.s.onAction('confirm'); await new Promise((r) => setTimeout(r, 0));
+      expect(t.game.state.story.seen).toContain(id);
+      t.partners();
+      expect(t.rows().map(t.label)).toEqual(['談心', '送禮']);   // asked: no walk until the next return
+    } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; }
+  });
+
+  it('和大家一起 writes nothing; unwritten, it is a line', () => {
+    ROMANCES_WRITTEN.push('liz');
+    BONDS_WRITTEN.push('liz');
+    try {
+      const t = open((g) => {
+        const st = g.state;
+        st.story.act1Cleared = true; st.story.finaleCleared = true;
+        st.story.seen.push('epilogue', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4');
+        st.party = meet(st.party, 'liz', 1);
+        st.party.roster.liz.memories = chainLength('liz');
+        st.party.roster.liz.bond = { talk: 12, field: 40, gifts: { 'old-coin': 24 } };
+      });
+      const before = JSON.stringify(t.game.state);
+      t.partners(); t.pick('夜裡走走'); t.pick('和大家一起');
+      expect(TOGETHER_WRITTEN.value).toBe(false);
+      expect(t.text()).toBe('大家一起在星燈下走了一段路。');
+      expect(JSON.stringify(t.game.state)).toBe(before);
+      expect(t.game.walkOpen()).toBe(false);
+    } finally { ROMANCES_WRITTEN.splice(0); BONDS_WRITTEN.splice(0); }
   });
 });

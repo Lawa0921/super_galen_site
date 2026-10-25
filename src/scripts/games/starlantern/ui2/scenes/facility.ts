@@ -10,7 +10,9 @@ import { bestPicture } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
-import { NPC_FACILITY, playAndRecord, playBeat, playNight, playScene, storyCtx, type SceneOpts } from '../story';
+import { NPC_FACILITY, playAndRecord, playBeat, playNight, playScene, speakerOf, storyCtx, type SceneOpts } from '../story';
+import type { CharacterId } from '../../engine/types';
+import type { StoryMood } from '../../render/artPaths';
 import type { StoryMode } from '../settings';
 import { Dialogue, MenuView, backControl, win, type Rich } from '../widgets';
 
@@ -148,6 +150,21 @@ export abstract class FacilityScene implements Scene {
     this.syncInert();
     const done = this.talk.say(T.ui2.facility[this.id].npc, text);
     // A line that settles while a newer one is up (a held line, or a line said over it) leaves the menu locked.
+    void done.then(() => { if (this.talk.busy()) return; this.talking = false; this.syncInert(); });
+    return done;
+  }
+
+  /**
+   * Bond plan Task 13: a companion says one line in this facility's box (a gift's thanks), with her plate and her face
+   * (`speakerOf`); a second box the keeper held (`sayThen`) is dropped, so nothing of hers follows.
+   */
+  protected speakAs(who: CharacterId, text: string, mood: StoryMood = 'normal'): Promise<void> {
+    this.then = null;
+    this.talk.setStyle('plain');
+    this.talking = true;
+    this.syncInert();
+    const sp = speakerOf(who, this.ctx.game.state, this.ctx.art, mood);
+    const done = this.talk.say(sp.name, text, sp.face ? { src: sp.face, side: 'right' } : undefined);
     void done.then(() => { if (this.talk.busy()) return; this.talking = false; this.syncInert(); });
     return done;
   }

@@ -3,7 +3,7 @@ import {
   GIFT_MOOD, GIFT_REPEAT_FULL, GIFT_TASTE, GIFT_VALUE, RIN_GIFT_MOOD_BEFORE_OATH, TALK_POINTS, TONE_PREF, type BondTier, type Companion,
   type Taste, type Tone,
 } from '../../data/story/bond';
-import { GIFT_LINES, RIN_OATH_GIFT_LINES, type GiftPools } from '../../data/bond.zh-TW';
+import { GIFT_LINES, rinOathLines, type GiftPools } from '../../data/bond.zh-TW';
 import type { StoryMood } from '../../render/artPaths';
 import { chainLength } from '../../data/story/chains';
 import { gateExpired, gateOpen, storyPieces } from './events';
@@ -152,7 +152,8 @@ export type GiveResult =
   | { ok: false; reason: 'hero' | 'unmet' | 'today' | 'stock' | 'ungiftable' | 'unwritten' };
 
 /** Her reaction lines (bond plan ruling 6): Rin's after her choice are their own table; undefined while not written. */
-export function giftPools(s: GameState, c: Companion, pools: Partial<Record<Companion, GiftPools>> = GIFT_LINES, rinOath: GiftPools | null = RIN_OATH_GIFT_LINES): GiftPools | undefined {
+export function giftPools(s: GameState, c: Companion, pools: Partial<Record<Companion, GiftPools>> = GIFT_LINES, rinOath: GiftPools | null = rinOathLines()): GiftPools | undefined {
+  if (c === 'rin' && !rinOath) return undefined;   // Rin is offered once both of her tables are written (plan ruling 6)
   return c === 'rin' && s.party.roster.rin?.oath ? rinOath ?? undefined : pools[c];
 }
 
@@ -162,7 +163,7 @@ export function giftPools(s: GameState, c: Companion, pools: Partial<Record<Comp
  * tables). Declined: nothing is used up or recorded but `refused`, and it is not today's gift. Taken: one less in the
  * inventory, her count up, today's gift hers. Her taste is the healed one once her pieces are all told (spec §0 D2).
  */
-export function giveGift(s: GameState, c: Companion, mat: GiftId, pools: Partial<Record<Companion, GiftPools>> = GIFT_LINES, rinOath: GiftPools | null = RIN_OATH_GIFT_LINES): GiveResult {
+export function giveGift(s: GameState, c: Companion, mat: GiftId, pools: Partial<Record<Companion, GiftPools>> = GIFT_LINES, rinOath: GiftPools | null = rinOathLines()): GiveResult {
   if ((c as string) === 'hero') return { ok: false, reason: 'hero' };
   if (!s.party.recruited.includes(c)) return { ok: false, reason: 'unmet' };
   if (today(s).gifted.includes(c)) return { ok: false, reason: 'today' };
