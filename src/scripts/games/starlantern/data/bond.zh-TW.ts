@@ -40,7 +40,7 @@ export const GIFT_LINES: Partial<Record<Companion, GiftPools>> = {
   },
   selene: {
     loved: ['「真漂亮。像窗外剛點起的一盞燈。這一句不算預言，是真心的。」', '「又收到了。我早就看見了呢──啊，剛才那句請當作沒聽見。」'],
-    liked: ['「謝謝。我替它看了一下明天──啊，不行，說出來就會長出腳來。」', '「同樣的禮物，又一份。明天也許會下雨，也許不會。這種預言最安全了呢。」'],
+    liked: ['「謝謝。我替它看了一下明天──啊，不行，說出來就會長出腳來。」', '「同樣的禮物，又一份。明天會不會再收到，也許會，也許不會。這種預言最安全了呢。」'],
     neutral: ['「要用在哪裡，就請星星替我決定吧。」'],
     declined: { 'old-coin': '「銀幣一拋，就有正反兩面。我不想替誰選，請收回去。」' },
     healed: { 'old-coin': '「這一次，我收下。我不拋它，就這樣收著。是我自己決定的。」' },
@@ -208,7 +208,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
     lines: [
       { who: 'narrator', place: PL.square, text: '廣場。整個早上，麵包幾時賣完、葛倫打幾個呵欠，瑟蕾全說中了；只有諾艾兒問的那一件，她說得含糊。', if: { met: 'noel' } },
       { who: 'narrator', place: PL.square, text: '廣場。整個早上，麵包幾時賣完、葛倫打幾個呵欠，瑟蕾全說中了；只有洛恩問的那一件，她說得含糊。', if: { notMet: 'noel' } },
-      { who: 'narrator', text: '大的會很響，小的會很亮。諾艾兒選了大的，在孩子們面前炸成一團煙。', if: { met: 'noel' } },
+      { who: 'narrator', text: '她只說：大的會很響，小的會很亮。諾艾兒選了大的，在孩子們面前炸成一團煙。', if: { met: 'noel' } },
       { who: 'narrator', text: '遠的那條風景很好，近的那條很近。洛恩選了遠的，繞了大半天才回來。', if: { notMet: 'noel' } },
       { who: 'noel', mood: 'pout', text: '「妳只說會很響！炸了也是響！妳明明知道會炸！」', if: { met: 'noel' } },
       { who: 'selene', mood: 'wistful', text: '「她走了。我不替人選，是怕選錯。結果，是她一個人選錯。」', if: { met: 'noel' } },
@@ -284,7 +284,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
       { who: 'narrator', text: '千鶴停住了，把那包謝禮抱回懷裡。', if: { notSeen: 'mem:chizuru:4' } },
       { who: 'narrator', text: '她算得出那是多少年。算出來了，還是停了一下。', if: { seen: 'mem:chizuru:4' } },
       { who: 'hero', choices: [
-        { tone: 'ask', text: '「婆婆是什麼樣的人？」', reply: [{ who: 'chizuru', text: '「我們那時候，婆婆總坐在石階上剝豆子。我又說成現在的事了。」' }] },
+        { tone: 'ask', text: '「婆婆是什麼樣的人？」', reply: [{ who: 'chizuru', text: '「婆婆每天都坐在石階上剝豆子。這個時辰，應該剝到一半了。」' }] },   // the slip is left unsaid (bible §3)
         { tone: 'stay', text: '（把店主送的麵包分她一半。）', reply: [{ who: 'chizuru', mood: 'smile', text: '「和婆婆的麥芽糖，一樣甜。」' }] },
         { tone: 'promise', text: '「明天陪妳去店裡打招呼。」', reply: [{ who: 'chizuru', mood: 'smile', text: '「好。替婆婆向她的曾孫，好好行一次禮。」' }] },
       ] },
@@ -628,7 +628,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
   'bond:liz:3': {
     lines: [
       { who: 'narrator', place: PL.innKitchen, text: '旅館的廚房。莉茲烤了一盤麵包，邊邊全焦了，她說這種最好吃。' },
-      { who: 'narrator', text: '她摸出那疊借條，撕了一張，停下來算了一下，又撕一張，最後一口氣全撕了。撕到期限寫著之後再付的那一張，她猶豫得最久。' },
+      { who: 'narrator', text: '她摸出那疊借條，撕了一張，停下來算了一下，又撕一張。撕到期限寫著之後再付的那一張，她猶豫得最久，然後一口氣全撕了。' },
       { who: 'liz', mood: 'smile', text: '「虧大了。這一盤，不算錢。」' },
       { who: 'hero', choices: [
         { tone: 'ask', text: '「不收錢？」', reply: [{ who: 'liz', text: '「這盤估不出價。估不出價的，我不賣。」' }] },
@@ -925,7 +925,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
       { who: 'narrator', text: '廣場那頭，莉茲正在跟宵夜攤喊價，整條街都聽得見。', if: { met: 'liz' } },
       { who: 'liz', mood: 'scheming', text: '「三串算兩串！不然我明天去對面買！」', if: { met: 'liz' } },
       { who: 'noel', mood: 'pout', text: '「吵死了，害本小姐數錯了一根睫毛。」', if: { met: 'liz' } },
-      { who: 'noel', mood: 'sad', text: '「我以前把好多人的臉都忘了。老師的，還有好多人的。」' },
+      { who: 'noel', mood: 'sad', text: '「我以前把好多人的臉都忘了。老師的，還有很多張。」' },
       { who: 'noel', mood: 'blush', text: '「這一張臉，我不會再忘。」' },
       { who: 'narrator', text: '她說完，張著嘴愣住了。小雷光跟著抖了一下。' },
       { who: 'hero', mood: 'smile', text: '「記不住也沒關係。我天天站到妳面前。」' },
@@ -954,7 +954,7 @@ export const BOND_SCENES: Partial<Record<SceneId, { lines: SceneLine[]; summary:
     lines: [
       { who: 'narrator', place: PL.nightWalk, text: '鎮上的夜路。莉茲從懷裡掏出一張紙，攤在街燈底下。' },
       { who: 'liz', mood: 'scheming', text: '「老大，簽個合約吧。我熬了三個晚上寫的，條款比公會的還多。」' },
-      { who: 'narrator', text: '紙的最上面寫著：『合夥一輩子。雙方同意。』價錢那一欄空著。' },
+      { who: 'narrator', text: '紙的最上面寫著第一條：『合夥一輩子。雙方同意。』價錢那一欄空著。' },
       { who: 'liz', mood: 'hushed', text: '「這一份，我不寫價錢。」' },
       { who: 'liz', text: '「第二條：以後誰先到家，誰就在門口等。這一條，不准改。」' },
       { who: 'hero', mood: 'smile', text: '「價錢那一欄，我也不填。」' },
