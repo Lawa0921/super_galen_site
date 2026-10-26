@@ -33,8 +33,10 @@ const ROLLED: Readonly<Record<string, (c: BpCtx) => Blueprint | null>> = {
   hive: rollHiveBp, mineshaft: rollMineshaftBp, sky_island: rollSkyIslandBp, minor: buildMinorBp, shipwreck: buildShipwreck, crate: buildCrate, reef: buildReefBp, sea_ruin: buildSeaRuinBp,
 };
 const ms = (f: () => unknown): number => { const t0 = performance.now(); f(); return performance.now() - t0; };
+// 建構器的單次建構時間：同一份 ctx 建 3 次取最快的（建構器是純函式、每次從頭算；取最快的是濾掉排程 / GC 的負載抖動，同 legacy worldgen 效能測試「取較快者」）
+const best3 = (f: () => unknown): number => Math.min(ms(f), ms(f), ms(f));
 
-// 每個種子：家鄉的全部藍圖、東西兩側第一片大陸與第一道海的全部藍圖，各自直接呼叫建構器一次（ctx 由藍圖 id 反查槽 = 機率藍圖 / 海點的 slotX0 / slotX1；
+// 每個種子：家鄉的全部藍圖、東西兩側第一片大陸與第一道海的全部藍圖，各自直接呼叫建構器（best3；ctx 由藍圖 id 反查槽 = 機率藍圖 / 海點的 slotX0 / slotX1；
 // 錨點用錨點的可用範圍與 surfaceBan）
 interface BuildTimes { dungeon: number; keep: number; other: number; otherKind: string; homePlans: number; firstTouchHomeColumn: number; firstTouchKeepColumn: number }
 function buildTimes(seeds: readonly string[]): BuildTimes {
@@ -71,7 +73,7 @@ function buildTimes(seeds: readonly string[]): BuildTimes {
           if (!f) throw new Error(`no builder for ${b.kind}`);
           run = () => f(base);
         }
-        const dt = ms(run);
+        const dt = best3(run);
         if (b.kind === 'dungeon') t.dungeon = Math.max(t.dungeon, dt);
         else if (b.kind === 'keep') t.keep = Math.max(t.keep, dt);
         else if (dt > t.other) { t.other = dt; t.otherKind = `${b.kind}@${b.x}`; }

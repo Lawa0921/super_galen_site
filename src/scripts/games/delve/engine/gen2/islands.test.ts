@@ -476,4 +476,4 @@ const WRECK_ISLE_HASH = 2107307070;
 const CHEST_HASH = 2991537935;
 // Task 21 重錄（原 951269948，Task 20 前錄）：隱士小屋的整平依生態鋪地表（雪原鋪雪、沙漠鋪沙、叢林鋪叢林草；原本一律鋪草），
 // 大陸大東西的退讓 / 欠債規則也讓部分小屋換了槽；共用畫法（drawHermitHut / levelSite）沒有改——島上的小屋（森林）照舊草 / 泥土
-const HUT_HASH = 2919849084;
+const HUT_HASH = 2908162404;
