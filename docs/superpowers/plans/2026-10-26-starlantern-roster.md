@@ -161,6 +161,8 @@ spec 已核准（2026-10-26，控制者依使用者授權）。下面是 spec �
 23. **圖示尺寸**：照 5d 的實際產出（`icon-blaze-core` 33×35），QA 用 `--height 32`、方框 ≤ 36×36；`contract.md` 的「24×24 方框」在 D1 改成和 5d 實際一致的寫法（只改文字，附 5d 的量測）。
 24. **生成**：一律 `codex_still.py generate`（`contract.md:6`）。四批全做（含地區）。codex Plus 額度用完時改用 codex credits（使用者 2026-10-26 裁定）；**兩者都用完**才暫停回報。工具不自動切換到其他後端，也**絕不用佔位美術**。
 25. **地區的表等原生上線才換（PR A 審查，控制者裁定）**：地區的表只有在**那個地區的原生組全部上線**之後才換成「原生 6 組＋本帶前 6 組」；在那之前一律是「舊表整張＋已上線的新組」（spec §8.1 第 4 步的過渡，不管新組有幾組）。本道照 spec §8.1 原規則。另外，只有寶物怪的那一組不會單獨加進舊表（舊表只有 3–4 組，牠會變成四、五場就一場）。測試：`data/monsters.test.ts` 的 `every live wave keeps the tables whole`，對 L1–L4 每一波的上線集合，在真的 `encounterTable` 上逐帶逐區驗 spec §3.4 與經驗等價。
+26. **`palette_max` 只記錄（控制者 2026-10-26 裁定，R0 審查後）**：spec §13.4 的「不透明色數 ≤ 32」改成只記在 QA（`colours`、`palette_over`），不擋核准與發布。理由：codex 從來畫不出 32 色以內的圖，已核准的舊怪是 1.2k–10k 色（slime 1,254、lanterneater 10,423），R0 五隻是 1.7k–13k 色；量化會改掉使用者核准的圖。其餘 QA 關卡不變（spec §0 第 16 條）。
+27. **遺忘圖示晚一步發布（控制者 2026-10-26 裁定，R0 審查後）**：`icon-ail-forget-14` 跟 R0 一起畫、QA 已過，但 `AilmentShown` 要到 B9 才有 `forget`，先發布會讓 manifest 多一個遊戲不認得的網址（`published.test.ts`）。所以它是自己的一輪（`roster_art.py` 的 `forget`，登錄表 `roster-forget`）：R0 發布時不含它；E1c 在 B2 合併後以獨立審核紀錄 `approve --batch forget --review <紀錄>`、`publish --batch forget`，同一個 commit 把 `forget` 加進 `AILMENT_ICON_IDS`。圖示主色 `#8FD9B6`（霧綠），B9 的 `AILMENT_FILL.forget` 用同一色（spec §0 第 17 條）。
 
 ## 使用者已決定（2026-10-26）
 
@@ -719,7 +721,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 **Files:** `public/assets/games/starlantern/{enemy,icon,gear,ui}/`、manifest、registry、`data/monsters.ts`（`ROSTER_ART`）、`render/artPaths.ts`（`AILMENT_ICON_IDS` 加 `forget`）、`render/artPaths.test.ts`（722 → 769，註解寫算式「722 + 18 敵人 + 18 圖示 + 5×2 專屬 + 1 遺忘」；若發布前總數不是 722，以實際值重算）。
 
-- [ ] **Step 1**：`publish --batch r0`、`publish --batch r1`。
+- [ ] **Step 1**：`publish --batch r1`（R0 已在 PR D 發布，裁定 26–27）；B2 合併後 `approve --batch forget --review <紀錄>`、`publish --batch forget`，同一個 commit 在 `AILMENT_ICON_IDS` 加 `forget`（裁定 27；B9 的 `AILMENT_FILL.forget` 是 `#8FD9B6`）。
 - [ ] **Step 2**：`rtk proxy python -m pytest art-factory/starlantern/tools -q`、vitest 全套（`published.test.ts`、`artPaths.test.ts`、`data/monsters.test.ts` 的 `every art id is published`、`gearArt.test.ts`）、tsc、閘門 identical（只有 `ROSTER_ART`，沒有上線）、e2e。
 - [ ] **Step 3**：收尾 G，commit：`feat(art): the first eighteen roster foes, their materials and uniques`。
 

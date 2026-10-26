@@ -1,0 +1,19 @@
+{
+  "batch": "r0",
+  "parts": {
+    "enemy-paper-moth": "dd237b664b4d4ecd66eb640324c0115d0eb4027089b298a211ec9336d836c9ce",
+    "enemy-root-hound": "9f7a57b258db173b7747d81adc14bbb9a63e44ea35b073e654e458cc9ac295bc",
+    "enemy-bell-watcher": "3d79262286c359e17df0f9e46ee64b47237db731985b44c1de134d99ac1905b6",
+    "enemy-false-moon": "bd2c9e27f22c5dd8ed91184745051f4131f88eae8b7d40ea18bf032ed1742643",
+    "enemy-fog-warden": "e509aced22687f782de962d5f2f4d08080ca84d748b5d024edf51791ae2dfcfb",
+    "icon-faded-letter": "a21d17d27161e6d7fb4727d5ce863117e573537b76c92761a0e95bdb5cf7f2e2",
+    "icon-mist-root": "46ef8e0cdaa41efc64f91952e2b88d4e87b83a7f96a975e24942c45e1e9d0ed8",
+    "icon-grey-cord": "0069900346ebd64d5b0933c7bf59f9c5727d4edc74ed79882df228a7b4bd96ee",
+    "icon-moon-silver": "c12eb3384e439606baee485026aaeacf052fb01ec260f787a24d87be60122465",
+    "icon-fog-gate-plate": "26c1a99749f0b89037dd3ac474e43f62ced21d463f8ab2e203cf8f6414c9cc24",
+    "gear-moonless-mirror-large": "e9cf63ab8e123d4a2c9125c2687f2a0630b743e482f94ee8f22739f65d0e1fae",
+    "gear-moonless-mirror": "ddf587d6df77fb72e3f076386205b6674743101299cc7d5b241601a363590496",
+    "gear-fog-halberd-large": "74f9927b4560fe9c9a21b0baabcc3aba5dd08f78c8be0f4169b0505875b5bb98",
+    "gear-fog-halberd": "e5e2264a308bf95a1a9f3651727699bed2f644f1228c15842f9ed02a8b7233bd"
+  }
+}

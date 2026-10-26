@@ -1,0 +1,40 @@
+{
+  "assets": {
+    "enemy-false-moon": {
+      "final": "art-factory/starlantern/work/enemy-false-moon/cand/a2/enemy-false-moon.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-false-moon\\enemy-false-moon-a2.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "too many colours"
+        ],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 12,
+        "size": [
+          81,
+          97
+        ],
+        "height": 95,
+        "width": 79,
+        "colours": 3319,
+        "lum": [
+          0.178,
+          0.977,
+          0.622
+        ],
+        "erased": 0,
+        "spec": "roster-sprite:d5d24a1a03ef"
+      },
+      "status": "qa_failed",
+      "kind": "roster-sprite",
+      "roster_class": "warden",
+      "mainline": true
+    }
+  }
+}
