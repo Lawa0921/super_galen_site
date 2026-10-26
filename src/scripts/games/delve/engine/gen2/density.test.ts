@@ -13,9 +13,10 @@ describe('gen2 驚喜密度（Task 21）', () => {
     for (const seed of ['dens-a', 'dens-b', 'dens-c', 'dens-d', 'dens-e', 'dens-f', 'dens-g', 'dens-h', 'dens-i', 'dens-j']) {
       const { small, big } = pois(new Gen2Source(seed), -50_000, 50_000);
       // DELVE_MEASURE=1 時印出各種子的最大空隙（報告用）；平常不印
-      if (process.env.DELVE_MEASURE === '1') console.info('[gen2 density]', seed, 'small max gap', maxGap(small), 'big max gap', maxGap(big), 'small n', small.length, 'big n', big.length);
-      expect(maxGap(small), `${seed} small ${worst(gapsOf(small))}`).toBeLessThan(340);
-      expect(maxGap(big), `${seed} big ${worst(gapsOf(big))}`).toBeLessThan(1800);
+      if (process.env.DELVE_MEASURE === '1') console.info('[gen2 density]', seed, 'small max gap', maxGap(small, -50_000, 50_000), 'big max gap', maxGap(big, -50_000, 50_000), 'small n', small.length, 'big n', big.length);
+      // 全分支審查 Minor：傳範圍，兩端（−50,000 到第一個點、最後一個點到 50,000）的空隙也算進去（實測兩端最寬：小點位 225、大東西 1,016）
+      expect(maxGap(small, -50_000, 50_000), `${seed} small ${worst(gapsOf(small, -50_000, 50_000))}`).toBeLessThan(340);
+      expect(maxGap(big, -50_000, 50_000), `${seed} big ${worst(gapsOf(big, -50_000, 50_000))}`).toBeLessThan(1800);
     }
   }, 300_000);
 

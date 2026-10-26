@@ -315,7 +315,8 @@ describe('gen2 家鄉的村莊與矮人地廳', () => {
       }
     }
     expect(halls).toBeGreaterThanOrEqual(300);
-    console.log(`[halls] ${halls} halls, ${fallback} via the fallback shaft`);
+    // DELVE_MEASURE=1 時印出（報告用）；平常不印
+    if (process.env.DELVE_MEASURE === '1') console.info(`[halls] ${halls} halls, ${fallback} via the fallback shaft`);
   }, 600_000);
 
   it('錨點建構器在最窄的可用範圍（ANCHOR_MAX_W + 2 × SLOT_PAD）內也放得進去（不靠 placeX 的夾位置）', () => {

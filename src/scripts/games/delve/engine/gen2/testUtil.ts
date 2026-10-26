@@ -59,6 +59,21 @@ export function firstSolid(w: World, x: number, skip?: (y: number) => boolean): 
   return w.height;
 }
 
+// 藍圖 b 的地面覆寫（b.ground）涵蓋的每一欄：src.surfaceAt(x) 要等於該欄由上往下第一個實心格（skip(x, y) = true 的格是建物自己的格——
+// 屋牆、屋頂、塔身——不算地面）。先載入那些欄；回傳不符的欄（surface = surfaceAt、solid = 第一個實心格）與驗過的欄數
+export function groundVsFirstSolid(w: World, src: { surfaceAt(x: number): number }, b: Blueprint, skip: (x: number, y: number) => boolean):
+  { checked: number; bad: { x: number; surface: number; solid: number }[] } {
+  const g = b.ground;
+  if (!g) throw new Error(`${b.kind}@${b.x} has no ground override`);
+  loadColumns(w, g.x0, g.x0 + g.tops.length);
+  const bad: { x: number; surface: number; solid: number }[] = [];
+  for (let k = 0; k < g.tops.length; k++) {
+    const x = g.x0 + k, surface = src.surfaceAt(x), solid = firstSolid(w, x, (y) => skip(x, y));
+    if (surface !== solid) bad.push({ x, surface, solid });
+  }
+  return { checked: g.tops.length, bad };
+}
+
 // fill 放的裝飾（M2a Task 12）：都不是實心，人走得過去
 export const FILL_DECOR: ReadonlySet<number> = new Set<number>([T.POT, T.FLOWER, T.TALL_GRASS, T.MUSHROOM, T.SMALL_ROCK, T.BUSH, T.PUMPKIN, T.DEAD_BUSH,
   T.SNOW_SHRUB, T.FERN, T.GLOW_MUSHROOM, T.STALAGMITE, T.STALACTITE, T.VINE, T.COBWEB]);

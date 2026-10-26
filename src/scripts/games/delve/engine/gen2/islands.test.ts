@@ -12,7 +12,9 @@ import { decodeStructureId, gen2SiteRegionId } from './structId';
 import { buildShipwreck } from './structures/shipwreck';
 import { buildReefBp } from './structures/reef';
 import { buildSeaRuinBp } from './structures/seaRuin';
-import { worldOf, loadColumns, liquidInvariant, SEEDS5, srcOf } from './testUtil';
+import { TOWER_W } from './structures/island';
+import { LEVEL_SIDE } from './structures/hermitHut';
+import { worldOf, loadColumns, liquidInvariant, groundVsFirstSolid, SEEDS5, srcOf } from './testUtil';
 import { DelveGame } from '../game';
 import { FIXED_DT } from '../constants';
 import { T, W, isSolidTile, isPlatformTile } from '../tiles';
@@ -210,6 +212,33 @@ describe('gen2 島的種類、珊瑚礁、海底遺跡（Task 20）', () => {
       } }
     for (const t of ['lighthouse', 'hermit', 'wreck']) expect(n[t], t).toBeGreaterThan(3);
   }, 120_000);
+
+  // M2a 全分支審查（計畫 Review Focus 3「地面覆寫與實際地形不符」）：燈塔島與隱士島共用 hermitHut.levelSite 的整平（塔 / 屋 ± LEVEL_SIDE 欄緩坡），
+  // 同 settlements.test 的村莊：ground 涵蓋的每一欄 surfaceAt = 由上往下第一個實心格。跳過的只有地面以上的建物格——
+  // 燈塔 = 塔身 tx .. tx + TOWER_W − 1（含屋頂垛口；塔址 tx = 守望石像 x − 2、地面 = 石像下一列）、隱士屋 = 屋寬 ± 1 欄（茅草屋簷），地面那一列與以下一律要對得上。
+  // 沉船島沒有地面覆寫（ground = null，不整平），不在這裡驗。20 個種子 × 4 道海：實測燈塔島 41、隱士島 39 座、1,230 欄，不符 0、沒有例外
+  it('地面覆寫 = 第一個實心格：燈塔島 / 隱士島的 ground 涵蓋的每一欄（只跳過地面以上的塔身 / 屋牆屋頂，沒有例外）', () => {
+    const n: Record<string, number> = { lighthouse: 0, hermit: 0 }, bad: string[] = [];
+    let cols = 0;
+    for (const seed of SEEDS20) { const src = srcOf(seed), w = worldOf(src);
+      for (const [side, i] of SEAS) for (const b of seaBps(src, src.layout.landmass(side, i)).filter((q) => q.kind === 'island' && q.variant !== 'wreck')) {
+        let skip: (x: number, y: number) => boolean;
+        if (b.variant === 'lighthouse') {
+          const s = b.landmarks[0], tx = s.x - 2, floorY = s.y + 1;
+          skip = (x, y) => y < floorY && x >= tx && x < tx + TOWER_W;
+        } else {
+          if (b.site?.kind !== 'hermit') throw new Error(`hermit isle@${b.x} has no hermit site`);
+          const floorY = b.site.at.y + 1, x0 = b.x + LEVEL_SIDE, x1 = b.x + b.w - 1 - LEVEL_SIDE;
+          skip = (x, y) => y < floorY && x >= x0 - 1 && x <= x1 + 1;
+        }
+        const r = groundVsFirstSolid(w, src, b, skip);
+        n[b.variant!]++; cols += r.checked;
+        for (const q of r.bad) bad.push(`${seed} ${side}:${i} ${b.variant}@${b.x} x ${q.x}: surface ${q.surface} first solid ${q.solid} (tile ${w.getFg(q.x, q.surface)})`);
+      } }
+    expect(bad.slice(0, 8), `${bad.length} columns`).toEqual([]);
+    // 樣本數下限（不是空測）
+    expect(n.lighthouse).toBeGreaterThanOrEqual(30); expect(n.hermit).toBeGreaterThanOrEqual(30); expect(cols).toBeGreaterThanOrEqual(1000);
+  }, 240_000);
 
   it('裁決 7：燈塔島 / 隱士島從島灘走得到入口（不經液體、不必挖）——燈塔兩端都行、隱士至少一端；沉船島的格都在水面上', () => {
     const n: Record<string, number> = { lighthouse: 0, hermit: 0, wreck: 0 }, bad: string[] = [];

@@ -420,6 +420,14 @@ M2a 各 Task 審查時延到 M2b 的事；開 M2b 時逐條排進對應 Task（�
 | 8 | P5 閒置機器效能比：M2a 第一組中位數 2.02、第二組同碼 1.65（機器有兩個 Android 模擬器，非閒置）；**M2a 合併前或 M2b 凍結前在閒置機器重量，中位數 ≤ 2.00** | M2a T21 | 合併前／全面驗收 |
 | 9 | gen2 慢測試檔：parts / minibiome / boot / lore 單檔 220–407 s（每個 it ≤ 194 s）；凍結時評估種子數 | M2a T21 | 凍結 v1 |
 | 10 | Q16 已於 2026-10-26 修訂（T21-12）：小點位可放進含主坑道的槽（外框在 shaftBand 外、入口不在 minorZone）；M2b 退役或重錄 `blueprint.test` 時沿用修訂後語意 | M2a T21 | 退役釘選測試 |
+| 11 | gen2 提示的地標數混用兩種集合：`game.ts:4761` 的 `this.landmarks.length - this.discovery.landmarks.size`，前者只含家鄉、後者含外圍，可能少算或變負 → 誤報「走遍了」 | M2a 全分支審查 | 切換那批（與第 5 列一起處理） |
+| 12 | gen2 讀檔時每個 known id 都經 `gen2RegionById` 反查而建出藍圖（`discovery.ts:905–909`），讀檔時間隨探索量增加；效能清單補讀檔量測 | M2a 全分支審查 | 凍結前必做（效能清單） |
+| 13 | `discovery.ts` 拆出 `gen2Regions.ts`，同時把 `landOf` 解碼（`discovery.ts:614`）搬家 | M2a 全分支審查 | 刪舊生成器那批或凍結前 |
+| 14 | 三份洪水走訪測試工具合併成一份：`outer.test` 的 `reachesSurface`、`lore.test` 的 `walkFrom`、`testUtil` 的 `walkOut` | M2a 全分支審查 | 刪舊生成器那批或凍結前 |
+| 15 | `minor.test` 的礦坑入口判定沒有直接證明洞口屬於該礦坑 | M2a 全分支審查 | 刪舊生成器那批或凍結前 |
+| 16 | T8 的 `minConnected` 5 後備路徑（`structures/dungeon.ts` 的 `MIN_CONNECTED_FALLBACK`）沒有測試 | M2a 全分支審查 | 刪舊生成器那批或凍結前 |
+| 17 | `anchors.ts` 抽出 `homeBigCover`、`BIG_HALF`、`endsOk` 成小檔 | M2a 全分支審查 | 刪舊生成器那批或凍結前 |
+| 18 | 小瑕疵一批：`BakedSource` 與槽外重疊的契約、`anchors.test` 的 ruin 分支案例、`skin.ts` 拆檔、銅門檻與湖 fallback 的註解、`gridCanvas` / rank 指紋 / `cosmeticSources` | M2a 全分支審查 | 刪 legacy 或凍結前一併處理 |
 
 ---
 

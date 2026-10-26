@@ -16,7 +16,8 @@ import { decodeStructureId } from './structId';
 import type { Landmass, Layout } from './layout';
 import { buildKeepBp } from './structures/keep';
 import { LEVEL_HALF } from './structures/dungeon';
-import { solvable, floodSolvable, worldOf, loadColumns } from './testUtil';
+import { LEVEL_SIDE } from './structures/hermitHut';
+import { solvable, floodSolvable, worldOf, loadColumns, groundVsFirstSolid } from './testUtil';
 import { gen2Regions, gen2RegionById, ROOM_NAMES } from '../discovery';
 import { areaLabel } from '../../render/model';
 
@@ -339,6 +340,48 @@ describe('gen2 荒野大陸的大東西與隱士小屋（Task 18）', () => {
     expect(bad.slice(0, 5)).toEqual([]);
     // 不是空測：四種生態的村莊與隱士小屋都有
     for (const bi of [BIOME.FOREST, BIOME.JUNGLE, BIOME.SNOW, BIOME.DESERT]) for (const k of ['village', 'hermit_hut']) expect(seen.get(`${k}:${bi}`) ?? 0, `${k} biome ${bi}`).toBeGreaterThan(0);
+  }, 300_000);
+
+  // M2a 全分支審查（計畫 Review Focus 3「地面覆寫與實際地形不符」）：同 settlements.test 的家鄉村莊，換成外圍村莊、
+  // 小地城（finishDungeonBp 的塔周圍整平帶）與隱士小屋（levelSite 的整平 + 兩側緩坡）。跳過的只有地面以上的建物格（屋牆 / 屋頂 / 塔身），
+  // 地面那一列與以下一律要對得上。
+  // 唯一的例外（明列、逐欄驗）：小地城入口豎井（draw/dungeon.ts 的 entryShaft，sx = cx − 1 = entrance.x − 5 起 4 欄）最上面那層平台
+  // 就鋪在地面 gy 上（shaftPlatforms 的 upperFloor + 1）。平台不是實心格（isSolidTile = false），所以「第一個實心格」落到豎井底下的房間；
+  // 但平台站得住、從上面走過不會掉（要按下才穿過），surfaceAt = gy 正是走路的高度——判定可接受、不改建構器（家鄉地城同一段畫法，也是這 4 欄）。
+  // 4 個種子 × 6 片大陸：實測村莊 41、小地城 41、隱士小屋 24 座、6,669 欄；不符的 164 欄 = 41 座小地城 × 這 4 欄，其他 0
+  it('地面覆寫 = 第一個實心格：外圍村莊 / 小地城 / 隱士小屋的 ground 涵蓋的每一欄（只跳過地面以上的建物格；小地城入口豎井口的 4 欄平台是明列的例外）', () => {
+    const n: Record<string, number> = { village: 0, keep: 0, hermit_hut: 0 }, bad: string[] = [];
+    let cols = 0, shaftCols = 0;
+    for (const seed of SEEDS20.slice(0, 4)) {
+      const g = new Gen2Source(seed), w = worldOf(g);
+      for (const [side, i] of CONTS) for (const b of bpsIn(g, g.layout.landmass(side, i))) {
+        let skip: (x: number, y: number) => boolean, shaft = (_x: number): boolean => false;
+        if (b.kind === 'village') {
+          // 房子的牆 / 屋頂：地面以上、屋寬 ± 1 欄（同 settlements.test 的家鄉村莊）
+          const v = siteOf(b, 'village').info;
+          skip = (x, y) => y < v.ground && v.houses.some((h) => x >= h.x0 - 1 && x <= h.x1 + 1);
+        } else if (b.kind === 'hermit_hut') {
+          // 木屋的牆 / 屋頂：地面（隱士站的格下一列）以上、屋寬 ± 1 欄；屋寬 = 外框扣掉兩側各 LEVEL_SIDE 欄的緩坡
+          const at = siteOf(b, 'hermit').at, x0 = b.x + LEVEL_SIDE, x1 = b.x + b.w - 1 - LEVEL_SIDE, floorY = at.y + 1;
+          skip = (x, y) => y < floorY && x >= x0 - 1 && x <= x1 + 1;
+        } else if (b.kind === 'keep') {
+          // 入口塔的塔身與城垛：整平後的地面 gy 以上、tower.x − 1 .. tower.x + tower.w（同 dungeon.test 跳過的欄）
+          const d = siteOf(b, 'dungeon').info, t = d.tower, gy = d.entrance.y + 1, sx = d.entrance.x - 5;
+          skip = (x, y) => y < gy && x >= t.x - 1 && x <= t.x + t.w;
+          // 例外的欄：豎井的 4 欄之一、surfaceAt = gy、地面那格是平台、平台底下至少一格空氣（真的是豎井口；底下的入口大廳地板上可能有骨頭等雜物，都不是實心）
+          shaft = (x) => x >= sx && x < sx + 4 && g.surfaceAt(x) === gy && w.getFg(x, gy) === T.PLATFORM && w.getFg(x, gy + 1) === T.AIR;
+        } else continue;
+        const r = groundVsFirstSolid(w, g, b, skip), ex = r.bad.filter((q) => shaft(q.x));
+        n[b.kind]++; cols += r.checked;
+        // 每座小地城恰好這 4 欄（多了、少了都算錯：少了代表畫法變了，例外要重審）
+        if (b.kind === 'keep') { shaftCols += ex.length; if (ex.length !== 4) bad.push(`${seed} ${side}:${i} keep@${b.x}: ${ex.length} shaft columns`); }
+        for (const q of r.bad) if (!ex.includes(q)) bad.push(`${seed} ${side}:${i} ${b.kind}@${b.x} x ${q.x}: surface ${q.surface} first solid ${q.solid} (tile ${w.getFg(q.x, q.surface)})`);
+      }
+    }
+    expect(bad.slice(0, 8), `${bad.length} problems`).toEqual([]);
+    // 樣本數下限（不是空測）：每片大陸恰 1 座隱士小屋；村莊 / 小地城實測各 41 座
+    expect(n.hermit_hut).toBe(24); expect(n.village).toBeGreaterThanOrEqual(30); expect(n.keep).toBeGreaterThanOrEqual(30);
+    expect(shaftCols).toBe(4 * n.keep); expect(cols).toBeGreaterThanOrEqual(5000);
   }, 300_000);
 
   it('效能（裁決 8）：小地城藍圖單次建構 ≤ 80 ms（3 次中位數；直接呼叫建構器）', () => {
