@@ -1632,7 +1632,7 @@ def test_lum_range_rejects_flat_art_and_dark_main_road_art():
     assert p95 - p5 >= 0.35 and mean < 0.35
 
 
-def _sprite_raw(path, h=320, w=200, fill=None, cut=False, pink=False):
+def _sprite_raw(path, h=320, w=200, fill=None, cut=False, pink=False, gap=False):
     """A codex-like monster raw: a shaded body with a dark outline on flat magenta (a band of light to dark greys)."""
     from PIL import ImageDraw
     img = canvas(400, 400 if not cut else h); d = ImageDraw.Draw(img)
@@ -1642,6 +1642,7 @@ def _sprite_raw(path, h=320, w=200, fill=None, cut=False, pink=False):
         v = 70 + 22 * k
         d.rectangle((x0 + 6, y0 + 6 + k * (h - 12) // 8, x0 + w - 7, y0 + 6 + (k + 1) * (h - 12) // 8 - 1), fill=fill or (v, v, v - 10))
     if pink: d.rectangle((x0 + 60, y0 + 100, x0 + 100, y0 + 140), fill=(255, 120, 255))   # art keyed out as magenta
+    if gap: d.rectangle((x0 + 60, y0 + 100, x0 + 100, y0 + 140), fill=(190, 20, 190))     # a real gap: the key blended dark
     path.parent.mkdir(parents=True, exist_ok=True); img.save(path); return path
 
 
@@ -1675,6 +1676,15 @@ def test_process_roster_icon_holds_the_5d_size(tmp_path):
     q = A.process_roster_icon(reg, 'icon-test', cell, tmp_path / 'w', tmp_path / 'raw.png')
     assert q['pass'] and q['spec'] == A.qa_spec('roster-icon') and max(q['size']) <= A.ICON_BOX, q
     assert A.ICON_HEIGHT == 32 and A.ICON_BOX == 36
-    wide = _shape_cell(360, 200, 'rect')                                    # 32 tall makes it 58 wide: past the 36 box
+    wide = _shape_cell(360, 200, 'rect')                                    # 32 tall would make it 58 wide: past the 36 box
     q = A.process_roster_icon(reg, 'icon-wide', wide, tmp_path / 'w', tmp_path / 'raw.png')
-    assert 'larger than the icon box' in q['reasons'], q
+    assert q['pass'] and max(q['size']) <= A.ICON_BOX and q['size'][0] >= A.ICON_BOX - 3, q   # R0 a1: a wide item fits the box instead
+
+
+def test_a_gap_of_dark_key_blend_is_not_an_erased_interior(tmp_path):
+    """R0 a1 review (2026-10-26): codex's real gaps between a body and its arms hold the key blended into the outline
+    ((200, 19, 193), (151, 48, 151)); they are background, not art the cutout took away."""
+    reg = A.Registry(tmp_path / 'r.json'); raw = _sprite_raw(tmp_path / 'gap.png', gap=True)
+    q = A.process_roster_sprite(reg, 'enemy-gap', Image.open(raw), tmp_path / 'w', raw, 'normal', mainline=True)
+    assert q['erased'] == 0 and 'interior erased' not in q['reasons'], q
+    assert (A.KEY_BLEND_G_MAX, A.KEY_BLEND_STEP) == (64, 80)
