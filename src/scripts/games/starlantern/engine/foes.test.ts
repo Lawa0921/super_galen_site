@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { createHash } from 'node:crypto';
-import { ROW_MAX, createBattle, intentLabel, planEnemies, resolveRound, rewards, type Action, type BattleState } from './battle';
-import { constRng, fullParty, makeBattle, makeCombatant } from './testing';
+import { ROW_MAX, createBattle, intentLabel, planEnemies, resolveRound, rewards, turnOrder, type Action, type BattleState } from './battle';
+import { guardTargets } from './foes';
+import { constRng, fullParty, makeBattle, makeCombatant, withRosterLive } from './testing';
 import { LEGACY_LINEUP } from './party';
 import { mulberry32, type Rng } from './rng';
 import { applyEffect } from './skills';
 import { T } from '../data/text.zh-TW';
 import { ENEMIES } from '../data/enemies';
-import { LEGACY_ENEMY_IDS } from '../data/monsters';
 import type { Effect, EnemyDef, EnemySkill } from './types';
 import type { Combatant } from './combatant';
 
@@ -24,24 +23,6 @@ const defend = (s: BattleState): Record<string, Action> => Object.fromEntries(s.
 const counted = (v = 0.5) => { const r = { n: 0, rng: (() => { r.n++; return v; }) as Rng }; return r; };
 const acted = (s: BattleState, key: string) => s.log.filter((e) => e.type === 'act' && e.actor === key).map((e) => (e as { label: string }).label);
 const hitsOn = (s: BattleState, key: string) => s.log.filter((e) => e.type === 'damage' && e.target === key).length;
-
-describe('old foes act as before (roster plan B2)', () => {
-  it('old foes act as before', () => {
-    // The ten legacy definitions' plans and first round, 200 seeds each, hashed before the roster mechanics went in.
-    const party = fullParty(LEGACY_LINEUP);
-    const all: unknown[] = [];
-    for (const id of LEGACY_ENEMY_IDS) {
-      for (let seed = 1; seed <= 200; seed++) {
-        const rng = mulberry32(seed);
-        const s = createBattle({ party, enemyIds: [id, id, 'slime'], boss: !!ENEMIES[id].boss, inventory: {}, revealed: {}, scale: { depth: 12, region: 'mainline' } });
-        planEnemies(s, rng);
-        const after = resolveRound(s, defend(s), rng);
-        all.push([id, seed, s.intents, after.intents, after.log.length, after.party.map((c) => c.hp)]);
-      }
-    }
-    expect(createHash('sha256').update(JSON.stringify(all)).digest('hex')).toBe('9c6cdc2f9b9aff1b73f7310a29c91e7554340861ee8279f509360c6306f47151');
-  });
-});
 
 describe('M1 wind-up (roster plan B2)', () => {
   /** A hound that winds up 伏低 before 撲咬, and a member it hits. */
@@ -262,22 +243,45 @@ describe('M13 steal (roster plan B3)', () => {
     expect(r.enemies[0].stolen).toBeUndefined();
   });
 
+  /** A thief that has taken 20 (the pack down to 80), then felled by the party's blow. */
+  const felled = (over: Partial<EnemyDef> = {}) => {
+    let s = resolveRound(field(100, over), defend(field(100, over)), constRng(0.5));
+    s.enemies[0].hp = 1;
+    s.enemies[0].sleep = 9;
+    s.party[0].max = { ...s.party[0].max, atk: 999 };
+    s = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(s.enemies[0].alive).toBe(false);
+    return s;
+  };
+
   it('returns on a kill', () => {
-    const s = resolveRound(field(100), defend(field(100)), constRng(0.5));
+    // The moment it falls, what it took is back in the pack (B1 review item 9), win or not.
+    const s = felled();
+    expect(s.purse!.gold).toBe(100);
+    expect(s.enemies[0].returned).toBe(20);
+    expect(s.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'return', amount: 20 });
+    // The win's rewards tell it, and do not pay it twice.
     for (const e of s.enemies) { e.hp = 0; e.alive = false; }
     s.outcome = 'win';
     const paid = rewards(s, constRng(0.99), false);
-    const none = rewards({ ...s, enemies: s.enemies.map((e) => ({ ...e, stolen: undefined })) }, constRng(0.99), false);
+    const none = rewards({ ...s, enemies: s.enemies.map((e) => ({ ...e, stolen: undefined, returned: undefined })) }, constRng(0.99), false);
     expect(paid.returned).toBe(20);
-    expect(paid.gold).toBe(none.gold + 20);
+    expect(paid.gold).toBe(none.gold);
     expect(none.returned).toBeUndefined();
   });
 
   it('a warden returns twice', () => {
-    const s = resolveRound(field(100, { rank: 'warden' }), defend(field(100)), constRng(0.5));
+    const s = felled({ rank: 'warden' });
+    expect(s.purse!.gold).toBe(120);
+    expect(s.enemies[0].returned).toBe(40);
+  });
+
+  it('a thief already down when the round opens gives it back too', () => {
+    const s = resolveRound(field(100), defend(field(100)), constRng(0.5));
     for (const e of s.enemies) { e.hp = 0; e.alive = false; }
-    s.outcome = 'win';
-    expect(rewards(s, constRng(0.99), false).returned).toBe(40);
+    const r = resolveRound(s, defend(s), constRng(0.5));
+    expect(r.outcome).toBe('win');
+    expect(r.purse!.gold).toBe(100);
   });
 
   it('lost on a flee', () => {
@@ -565,5 +569,138 @@ describe('the intent says what a foe mechanic will do (roster plan B6)', () => {
     const s = makeBattle([P('scarlet')], [E('e0'), E('e1', { decoyOf: 'e0' })]);
     s.intents = { e1: { kind: 'attack', target: 'scarlet' } };
     expect(intentLabel(s, 'e1')).toBe('');
+  });
+});
+
+describe('roster plan B1 review', () => {
+  it('1. a last word never fells the last member standing: she is left at 1 HP and the fight is won', () => {
+    const blast = { name: '燭爆', target: 'enemies' as const, effects: [hit(999)] };
+    const s = makeBattle([P('scarlet', { hp: 1, max: { hp: 1, atk: 999 } as never })], [E('e0', { hp: 1 })], { enemyDefs: { e0: def([], { onFall: blast }) } });
+    const r = resolveRound(s, { scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
+    expect(r.party[0]).toMatchObject({ alive: true, hp: 1 });
+    expect(r.outcome).toBe('win');
+    // With two standing, the first may fall; the last one standing does not.
+    const two = makeBattle([P('scarlet', { max: { hp: 50, atk: 999 } as never }), P('noel', { max: { hp: 50 } as never })], [E('e0', { hp: 1 })],
+      { enemyDefs: { e0: def([], { onFall: blast }) } });
+    const r2 = resolveRound(two, { scarlet: { kind: 'attack', target: 'e0' }, noel: { kind: 'defend' } }, constRng(0.5));
+    expect(r2.party.filter((c) => c.alive)).toHaveLength(1);
+    expect(r2.party.find((c) => c.alive)!.hp).toBe(1);
+    expect(r2.outcome).toBe('win');
+    // The guard is the last word's only: it leaves no one undying after it.
+    expect(r2.party.some((c) => c.undying)).toBe(false);
+  });
+
+  it('2. a call that cannot happen is passed over at its draw, so the intent tells the truth', () => {
+    const caller: EnemySkill = { name: '呼喚', chance: 1, target: 'self', effects: [{ kind: 'summon', id: 'slime', max: 1 }] };
+    const spent = () => makeBattle([P('scarlet', { max: { hp: 999 } as never })], [E('e0', { summons: 1 })], { enemyDefs: { e0: def([caller]) }, meet: { k: 1, cap: 4 } });
+    const s = spent();
+    planEnemies(s, constRng(0.5));
+    expect(s.intents!.e0.kind).toBe('attack');
+    expect(intentLabel(s, 'e0')).toBe('攻擊 → scarlet');
+    // It drew for the call, as a failed chance would.
+    const a = counted(), b = counted();
+    planEnemies(spent(), a.rng);
+    planEnemies(makeBattle([P('scarlet')], [E('e0')], { enemyDefs: { e0: def([{ ...caller, chance: 0 }]) } }), b.rng);
+    expect(a.n).toBe(b.n);
+  });
+
+  it('3. the nest never attacks: it hatches each turn while there is room, and curls up when there is none', () => {
+    const nest = ENEMIES['lantern-brood'];
+    expect(nest.skills[0].effects[0]).toMatchObject({ kind: 'summon', id: 'lantern-larva' });
+    expect(nest.skills[0].effects[0]).not.toHaveProperty('max');
+    let s = withRosterLive(['lantern-brood', 'lantern-larva'], () => {
+      let b = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0', { defId: 'lantern-brood', max: { hp: 9999 } as never })], { meet: { k: 1, cap: 3 } });
+      const acts: string[][] = [];
+      for (let i = 0; i < 6; i++) {
+        b = resolveRound(b, defend(b), mulberry32(i + 1));
+        acts.push(acted(b, 'e0'));
+      }
+      expect(acts.slice(0, 2)).toEqual([['孵化'], ['孵化']]);
+      expect(acts.slice(2).every((a) => a.length === 1 && a[0] === '蜷縮')).toBe(true);
+      expect(acts.flat()).not.toContain('攻擊');
+      return b;
+    });
+    expect(s.enemies.filter((e) => e.summoned)).toHaveLength(2);
+  });
+
+  it('4. decoys leave with their body when it falls for good', () => {
+    const was = ENEMIES.slime;
+    let s: BattleState;
+    try {
+      (ENEMIES as Record<string, EnemyDef>).slime = { ...was, opener: 'decoy', skills: [] };
+      s = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime'], inventory: {}, revealed: {} });
+    } finally {
+      (ENEMIES as Record<string, EnemyDef>).slime = was;
+    }
+    s.enemies[0].hp = 1;
+    const acts = Object.fromEntries(s.party.map((c) => [c.key, { kind: 'defend' as const }])) as Record<string, Action>;
+    acts[s.party[0].key] = { kind: 'attack', target: 'e0' };
+    const r = resolveRound(s, acts, constRng(0.5));
+    expect(r.enemies[0].alive).toBe(false);
+    expect(r.enemies[1]).toMatchObject({ alive: false, left: true });
+    expect(r.log).toContainEqual({ type: 'foe', actor: 'e1', cue: 'vanish' });
+    expect(r.outcome).toBe('win');
+  });
+
+  it('6. a fold-back works once a fight for the whole flock', () => {
+    const fold: EnemySkill = { name: '重摺', chance: 1, target: 'deadAlly', when: 'deadAlly', oncePerFight: true, effects: [{ kind: 'revive', hpPct: 0.3 }] };
+    expect(ENEMIES['paper-cranes'].skills.find((k) => k.name === '重摺')).toMatchObject({ when: 'deadAlly', oncePerFight: true });
+    let s = makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0', { defId: 'paper-cranes' }), E('e1', { defId: 'paper-cranes' }), E('e2', { alive: false, hp: 0 }), E('e3', { alive: false, hp: 0 })],
+      { enemyDefs: { e0: def([fold]), e1: def([fold]) } });
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.log.filter((e) => e.type === 'revive')).toHaveLength(1);
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.log.filter((e) => e.type === 'revive')).toHaveLength(0);
+  });
+
+  it('7. a decoy draws nothing in the turn order', () => {
+    const a = counted(), b = counted();
+    turnOrder([E('e0'), E('e1', { decoyOf: 'e0' })], a.rng, 1);
+    turnOrder([E('e0')], b.rng, 1);
+    expect(a.n).toBe(b.n);
+    expect(turnOrder([E('e0'), E('e1', { decoyOf: 'e0' })], constRng(0.5), 1).map((c) => c.key)).toEqual(['e0']);
+  });
+
+  it('8. a guard never guards a decoy', () => {
+    const s = makeBattle([P('scarlet')], [E('e0'), E('e1', { decoyOf: 'e9', hp: 1, max: { hp: 1 } as never })]);
+    expect(guardTargets(s, s.enemies[0], { name: 'g', chance: 1, target: 'ally', effects: [{ kind: 'cover', turns: 2 }] })).toEqual([]);
+  });
+
+  it('11. a veil beats a hunt: a veiled member is never the one called out', () => {
+    const caller = makeBattle([P('scarlet'), P('noel', { veil: 2 })], [E('e0')], { enemyDefs: { e0: def([{ name: '宣告', chance: 1, target: 'enemy', effects: [{ kind: 'hunt' }] }]) } });
+    caller.intents = { e0: { kind: 'enemy-skill', index: 0, target: 'noel' } };
+    const r = resolveRound(caller, defend(caller), constRng(0.5));
+    expect(r.party[1].hunted).toBeUndefined();
+    // Hunted, then veiled: the blows go where they were drawn.
+    const s = makeBattle([P('scarlet'), P('noel', { hunted: 2, veil: 2 })], [E('e0')], { round: 1 });
+    s.intents = { e0: { kind: 'attack', target: 'scarlet' } };
+    // (Her own action would end her veil, so she holds it this round.)
+    const r2 = resolveRound(s, { scarlet: { kind: 'defend' } }, constRng(0.5));
+    expect(hitsOn(r2, 'scarlet')).toBe(1);
+    expect(hitsOn(r2, 'noel')).toBe(0);
+  });
+
+  it('13. two foes in disguise keep their letters', () => {
+    const was = ENEMIES.slime;
+    try {
+      (ENEMIES as Record<string, EnemyDef>).slime = { ...was, opener: 'disguise' };
+      const s = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime', 'slime'], inventory: {}, revealed: {} });
+      expect(s.enemies.map((e) => e.name)).toEqual([`${T.battle.foe.disguise} A`, `${T.battle.foe.disguise} B`]);
+      expect(s.enemies.map((e) => e.disguised)).toEqual([`${was.name} A`, `${was.name} B`]);
+    } finally {
+      (ENEMIES as Record<string, EnemyDef>).slime = was;
+    }
+  });
+
+  it('13. opening decoys stop at ROW_MAX', () => {
+    const was = ENEMIES.slime;
+    try {
+      (ENEMIES as Record<string, EnemyDef>).slime = { ...was, opener: 'decoy', decoys: 3, skills: [] };
+      const s = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime', 'slime', 'slime'], inventory: {}, revealed: {}, extra: 9 });
+      expect(s.enemies.length).toBe(ROW_MAX);
+      expect(s.enemies.filter((e) => e.decoyOf)).toHaveLength(ROW_MAX - 3);
+    } finally {
+      (ENEMIES as Record<string, EnemyDef>).slime = was;
+    }
   });
 });

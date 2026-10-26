@@ -182,7 +182,7 @@ describe('one hundred roster foes (roster plan Task A2, spec §5)', () => {
     // B2), M24's hunt (B2), M13's steal after a hit on one member (B3), M4's call of a foe that exists (B4) and M22's
     // fold-back of a fallen ally (B4). The later mechanics (B2 PR) add their own fields.
     const DAMAGE_KEYS = new Set(['kind', 'power', 'element', 'scale', 'melee', 'hits', 'crit', 'execute', 'wounded']);
-    const SKILL_KEYS = new Set(['name', 'chance', 'target', 'effects', 'windup', 'when']);
+    const SKILL_KEYS = new Set(['name', 'chance', 'target', 'effects', 'windup', 'when', 'oncePerFight']);
     for (const id of rosterIds()) for (const s of ENEMIES[id].skills) {
       expect(['enemy', 'enemies', 'row', 'column', 'cross', 'self', 'ally', 'allies', 'deadAlly'], `${id} ${s.name}`).toContain(s.target);
       expect(s.target === 'deadAlly', `${id} ${s.name}`).toBe(s.when === 'deadAlly');
@@ -191,7 +191,7 @@ describe('one hundred roster foes (roster plan Task A2, spec §5)', () => {
       if (s.windup !== undefined) expect(s.windup.length > 0 && s.windup !== s.name, `${id} ${s.name}`).toBe(true);
       for (const e of s.effects) {
         expect(['damage', 'inflict', 'buff', 'heal', 'cover', 'hunt', 'steal', 'summon', 'revive'], `${id} ${s.name}`).toContain(e.kind);
-        if (e.kind === 'summon') expect([s.target, s.effects.length, !!ENEMIES[e.id], e.max > 0], `${id} ${s.name}`).toEqual(['self', 1, true, true]);
+        if (e.kind === 'summon') expect([s.target, s.effects.length, !!ENEMIES[e.id], e.max === undefined || e.max > 0], `${id} ${s.name}`).toEqual(['self', 1, true, true]);
         if (e.kind === 'revive') expect(s.when, `${id} ${s.name}`).toBe('deadAlly');
         if (e.kind === 'steal') expect([s.target, s.effects[0].kind, e.perDepth], `${id} ${s.name}`).toEqual(['enemy', 'damage', 5]);
         if (e.kind === 'cover') expect([s.target, s.effects.length], `${id} ${s.name}`).toEqual(['ally', 1]);

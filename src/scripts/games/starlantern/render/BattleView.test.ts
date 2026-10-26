@@ -121,6 +121,15 @@ describe('BattleView late foes (roster plan B1)', () => {
     expect(onParty).not.toHaveBeenCalled();   // a hit on the summon is the summon's, not a member's
   });
 
+  it('a named foe on the elite path wears no ★ (B1 review item 12)', () => {
+    const view = new BattleView(true, bank);
+    const s = makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], [makeCombatant({ key: 'e0', side: 'enemy', name: '不存在的月亮', tint: 'elite', named: true })]);
+    view.setup(s, { width: 640, height: 360 }, 1);
+    expect(view.nameOf('e0')).toBe('不存在的月亮');
+    view.syncHp(s);
+    expect(view.nameOf('e0')).toBe('不存在的月亮');
+  });
+
   it('the name tag follows a foe unmasked (roster plan B6)', () => {
     const view = new BattleView(true, bank);
     const s = battle([]);
@@ -131,8 +140,24 @@ describe('BattleView late foes (roster plan B1)', () => {
     expect(view.nameOf('e0')).toBe('塵封木箱');
   });
 
+  it('a foe an ally revives stands in the picture again, and every foe standing at the end is shown (B1 review item 5)', async () => {
+    const view = new BattleView(false, bank, true);   // calm: no breathing loop left running after the test
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 1));
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1);
+    await view.play({ ...s, log: [{ type: 'ko', target: 'e0' }, { type: 'revive', target: 'e0' }] }, sfx);
+    const box = view.enemyBoxOf('e0')!;
+    expect(box.alpha).toBe(1);
+    expect((box.children[0] as Container).children.filter((c) => c.visible)).toHaveLength(1);
+    // A foe alive at the end of the play is shown, whatever the log said on the way.
+    box.alpha = 0;
+    await view.play({ ...s, log: [] }, sfx);
+    expect(box.alpha).toBe(1);
+    vi.unstubAllGlobals();
+  });
+
   it('a foe that rises stands in the picture again', async () => {
-    const view = new BattleView(false, bank);
+    const view = new BattleView(false, bank, true);   // calm: no breathing loop left running after the test
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 1));
     const s = battle([]);
     view.setup(s, { width: 640, height: 360 }, 1);

@@ -277,6 +277,10 @@ export const T = {
       reveal: (who: string) => `寶箱現出原形：是${who}！`,
       summon: (who: string, other: string) => `${who}叫來了${other}！`,
       rise: (who: string) => `${who}又站了起來！`,
+      /** B1 review item 9: a felled thief's gold back in the pack. */
+      return: (who: string, _other: string, n: number) => `${who}偷走的 ${n} 金回到背包了！`,
+      /** B1 review item 4: a decoy leaves with its foe. */
+      vanish: (who: string) => `${who}跟著散去了。`,
     },
     heal: (who: string, n: number) => `${who} 回復 ${n} HP`,
     tp: (who: string, n: number) => `${who} 回復 ${n} TP`,

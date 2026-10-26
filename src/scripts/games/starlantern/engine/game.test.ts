@@ -6385,9 +6385,22 @@ describe('a thief in a real fight (roster plan B3, M13)', () => {
     expect(g.run!.loot.gold).toBe(95);
     const before = g.run!.loot.gold;
     const end = killAll(g);
+    // Back in the pack the moment it fell (B1 review item 9); the win's gold is the fight's own.
     expect(end.returned).toBe(5);
-    expect(g.run!.loot.gold - before).toBe(end.gold);
-    expect(end.gold).toBeGreaterThanOrEqual(5);
+    expect(g.run!.loot.gold - before).toBe(end.gold + 5);
+  });
+
+  it('a fight whose summoner can call a thief carries a purse too (B1 review item 9)', () => {
+    const was = ENEMIES.slime;
+    try {
+      (ENEMIES as Record<string, typeof was>).slime = { ...was, skills: [{ name: '呼喚', chance: 1, target: 'self', effects: [{ kind: 'summon', id: 'market-ghost', max: 1 }] }] };
+      const g = inMap(1, mulberry32(7));
+      g.run!.loot.gold = 50;
+      (g as unknown as { startBattle: (ids: string[], boss: boolean) => void }).startBattle(['slime'], false);
+      expect(g.battle!.purse).toEqual({ gold: 50, depth: 1 });
+    } finally {
+      (ENEMIES as Record<string, typeof was>).slime = was;
+    }
   });
 
   it('lost when the party flees', () => {
@@ -6408,6 +6421,30 @@ describe('a thief in a real fight (roster plan B3, M13)', () => {
     expect(g.battle!.purse).toBeUndefined();
   });
 });
+describe('a win with no foe felled (roster plan B1 review, item 13)', () => {
+  const RIN_LINEUP: CharacterId[] = ['hero', 'rin', 'chizuru', 'liz', 'noel'];
+  /** A fight against one slime that `flees` (or is felled), with Rin in it. */
+  const fight = (flees: boolean) => {
+    const g = new Game(calm(), null, undefined, 0, RIN_LINEUP);
+    expect(g.depart(MAIN, 1)).toEqual({ ok: true });
+    (g as unknown as { startBattle: (ids: string[], boss: boolean) => void }).startBattle(['slime'], false);
+    const b = g.battle!;
+    if (flees) b.enemyDefs!.e0 = { ...b.enemyDefs!.e0, fleeAfter: 1, skills: [] };
+    else for (const e of b.enemies) { e.hp = 0; e.alive = false; }
+    const all = Object.fromEntries(b.party.map((c) => [c.key, { kind: 'defend' as const }]));
+    const r = g.submitRound(all)!;
+    return { g, end: r.end! };
+  };
+
+  it("one where every foe ran away gives no story beat and saves no one", () => {
+    const ran = fight(true);
+    expect(ran.end.outcome).toBe('win');
+    expect(ran.g.state.story.queue).not.toContain('first-return');
+    // A real win gives the beat.
+    expect(fight(false).g.state.story.queue).toContain('first-return');
+  });
+});
+
 describe('wardens on the map and bosses by depth (roster plan B5)', () => {
   /** A game past the story with `region` reached to `depth`, on `tier`, departed at `depth`. */
   const deep = (region: Portal['region'], depth: number, tier: Difficulty = 'normal', rng: Rng = calm()): Game => {
@@ -6465,6 +6502,9 @@ describe('wardens on the map and bosses by depth (roster plan B5)', () => {
       expect(g.battle!.enemies.map((e) => e.defId)).toEqual(['false-moon']);
       expect(g.battle!.enemies[0].tint).toBe('elite');
       expect(g.battle!.boss).toBe(false);
+      // A named foe: no ★ before its name (B1 review item 12).
+      expect(g.battle!.enemies[0].name.startsWith('★')).toBe(false);
+      expect(g.battle!.enemies[0].named).toBe(true);
     });
   });
 

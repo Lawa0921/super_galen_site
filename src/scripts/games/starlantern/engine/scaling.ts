@@ -205,7 +205,8 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
   const lead = affixes?.length ? affixes.flatMap((a) => { const k = AFFIXES[a].skill; return k ? [{ ...k, effects: k.effects.map((e) => ({ ...e })) }] : []; }) : null;
   return {
     ...def,
-    name: `${elite ? '★' : ''}${name}`,
+    // A warden is a named foe (B1 review item 12): on the elite path, but no ★ before its name.
+    name: `${elite && def.rank !== 'warden' ? '★' : ''}${name}`,
     stats,
     sec,
     // A named story foe keeps its own elements: the region's belong to its monsters.

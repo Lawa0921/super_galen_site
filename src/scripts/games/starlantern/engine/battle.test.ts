@@ -1230,32 +1230,8 @@ describe('meeting one foe at a time (roster plan B1)', () => {
   const party = fullParty(LEGACY_LINEUP);
   const k = (boss: boolean) => (boss ? bossPartyScale : partyScale)(activeIds(party).length);
 
-  it('meetEnemy matches createBattle', () => {
-    const cases: { ids: string[]; boss?: boolean; scale?: Parameters<typeof createBattle>[0]['scale']; names?: Record<string, string>; bossPower?: number }[] = [
-      { ids: ['wolf', 'wolf', 'bat'], scale: { depth: 10, region: 'mainline', elite: 'wolf' } },
-      { ids: ['slime', 'golem', 'slime'], scale: { depth: 14, region: 'frost', condition: 'plain' } },
-      { ids: ['wolf', 'bat', 'wolf'], scale: { depth: 12, region: 'blaze', elite: 'bat', difficulty: 'nightmare', affixes: ['tough', 'swift'] } },
-      { ids: ['wolf', 'bat', 'slime'], scale: { depth: 20, region: 'mainline', difficulty: 'hell', crowdAffix: { pick: 0.5, id: 'scorch' } } },
-      { ids: ['lanterneater'], boss: true, scale: { depth: 10, region: 'shade', difficulty: 'nightmare', affixes: ['scorch'] }, names: { lanterneater: '試名' }, bossPower: 1.2 },
-      { ids: ['slime', 'bat'] },
-    ];
-    for (const c of cases) {
-      const whole = createBattle({ party, enemyIds: c.ids, boss: c.boss, inventory: {}, revealed: {}, scale: c.scale, names: c.names, bossPower: c.bossPower });
-      const empty = createBattle({ party, enemyIds: [], boss: c.boss, inventory: {}, revealed: {}, scale: c.scale, names: c.names, bossPower: c.bossPower });
-      const counts: Record<string, number> = {}, seen: Record<string, number> = {};
-      for (const id of c.ids) counts[id] = (counts[id] ?? 0) + 1;
-      const t = c.scale?.difficulty === 'hell' && c.scale.crowdAffix && !c.boss && !c.scale.elite ? Math.floor(c.scale.crowdAffix.pick * c.ids.length) : -1;
-      c.ids.forEach((id, i) => {
-        const n = (seen[id] = (seen[id] ?? 0) + 1);
-        meetEnemy(empty, id, { scale: c.scale, boss: !!c.boss, k: k(!!c.boss), bossPower: c.bossPower, names: c.names },
-          { elite: !!c.scale && c.scale.elite === id && n === 1, ...(counts[id] > 1 ? { letter: String.fromCharCode(64 + n) } : {}), ...(i === t ? { crowd: c.scale!.crowdAffix!.id } : {}) });
-      });
-      expect(empty.enemies, c.ids.join()).toEqual(whole.enemies);
-      expect(empty.enemyDefs, c.ids.join()).toEqual(whole.enemyDefs);
-      expect(Object.keys(empty.enemyDefs ?? {}), c.ids.join()).toEqual(Object.keys(whole.enemyDefs ?? {}));
-    }
-  });
-
+  // `meetEnemy matches createBattle` is gone (B1 review item 10): createBattle meets every foe through meetEnemy, so it
+  // compared the function with itself; engine/legacyFights.test.ts pins the old roster's whole fights instead.
   it('a foe met later takes the next key and its own letter', () => {
     const s = createBattle({ party, enemyIds: ['wolf', 'wolf'], inventory: {}, revealed: {}, scale: { depth: 8, region: 'mainline' } });
     const c = meetEnemy(s, 'wolf', { scale: { depth: 8, region: 'mainline' }, k: k(false) }, { letter: 'C' });

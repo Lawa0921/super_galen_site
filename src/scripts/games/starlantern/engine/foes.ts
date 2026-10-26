@@ -6,6 +6,13 @@ import type { BattleState } from './battle';
 import { addBuff, type Combatant } from './combatant';
 import type { EnemyDef, EnemySkill } from './types';
 import { T } from '../data/text.zh-TW';
+import { ENEMIES } from '../data/enemies';
+import { listedEnemy } from '../data/monsters';
+
+/** Roster plan B4 (M4): the most foes a boss fight holds, the boss and its parts and its calls together. */
+export const BOSS_GROUP_CAP = 4;
+/** Roster plan B6: the most foes a fight's row ever holds, the fallen and the opening decoys included. */
+export const ROW_MAX = 8;
 
 /**
  * Roster plan B6: a foe's mechanics as lines for its target note: who guards it, what it stole, when it runs, whom it
@@ -37,12 +44,15 @@ export function openWith(c: Combatant, d: EnemyDef): void {
     case 'ambush':
       c.ambush = true;
       return;
-    case 'disguise':
+    case 'disguise': {
+      // Its letter stays with the disguise (「寶箱？ A」, B1 review item 13).
+      const letter = / [A-Z]$/.exec(c.name)?.[0] ?? '';
       c.ambush = true;
       c.disguised = c.name;
-      c.name = T.battle.foe.disguise;
+      c.name = `${T.battle.foe.disguise}${letter}`;
       addBuff(c, { stat: 'atk', pct: OPENER.disguiseAtkPct, turns: 1 });
       return;
+    }
   }
 }
 
@@ -54,15 +64,60 @@ export function wakeUp(s: BattleState, c: Combatant): void {
   s.log.push({ type: 'foe', actor: c.key, cue: 'wake' });
 }
 
-/** M13: whether any foe of the fight can steal (only then does a fight get a purse; game.ts startBattle). */
-export function stealsIn(s: BattleState, defOf: (c: Combatant) => EnemyDef | undefined): boolean {
-  return s.enemies.some((c) => defOf(c)?.skills.some((k) => k.effects.some((e) => e.kind === 'steal')));
+/** M13: whether a definition steals, or calls a foe that does (two calls deep). */
+function steals(d: EnemyDef | undefined, depth = 2): boolean {
+  if (!d) return false;
+  return d.skills.some((k) => k.effects.some((e) => e.kind === 'steal' || (e.kind === 'summon' && depth > 0 && steals(ENEMIES[e.id], depth - 1))));
 }
 
-/** M13: the gold felled thieves give back, a warden's twice over; a thief that left keeps it. */
-export function returnedGold(s: BattleState, defOf: (c: Combatant) => EnemyDef | undefined): number {
-  return s.enemies.reduce((n, c) => n + (!c.alive && !c.left && c.stolen ? c.stolen * (defOf(c)?.rank === 'warden' ? 2 : 1) : 0), 0);
+/**
+ * M13: whether a thief can be in the fight, one there from the start or one a foe can call (only then does a fight get a
+ * purse; game.ts startBattle; B1 review item 9).
+ */
+export function stealsIn(s: BattleState, defOf: (c: Combatant) => EnemyDef | undefined): boolean {
+  return s.enemies.some((c) => steals(defOf(c)));
 }
+
+/**
+ * M13, B1 review item 9: a thief felled (not one that left) gives what it took back to the pack the moment it falls, a
+ * warden's twice over, win or not; each once. A fight with no purse (the sim) has no pack to give it to.
+ */
+export function settleThieves(s: BattleState, defOf: (c: Combatant) => EnemyDef | undefined): void {
+  if (!s.purse) return;
+  for (const c of s.enemies) {
+    if (c.alive || c.left || !c.stolen || c.returned !== undefined) continue;
+    const n = c.stolen * (defOf(c)?.rank === 'warden' ? 2 : 1);
+    c.returned = n;
+    s.purse.gold += n;
+    s.log.push({ type: 'foe', actor: c.key, cue: 'return', amount: n });
+  }
+}
+
+/** M13: the gold felled thieves gave back in this fight (shown with the win; already in the pack). */
+export function returnedGold(s: BattleState): number {
+  return s.enemies.reduce((n, c) => n + (c.returned ?? 0), 0);
+}
+
+/** M19, B1 review item 4: a decoy whose foe is down (and did not stand again) leaves the fight with it. */
+export function decoysLeave(s: BattleState): void {
+  for (const d of s.enemies) {
+    if (!d.decoyOf || !d.alive) continue;
+    const owner = s.enemies.find((c) => c.key === d.decoyOf);
+    if (owner?.alive) continue;
+    d.alive = false;
+    d.left = true;
+    s.log.push({ type: 'foe', actor: d.key, cue: 'vanish' });
+  }
+}
+
+/** M4: whether `actor` may call `id` now: a fight that keeps its meeting, room under its cap and ROW_MAX, calls left, `id` live. */
+export function canSummon(s: BattleState, actor: Combatant, id: string, max?: number): boolean {
+  const room = s.meet ? s.enemies.filter((c) => c.alive && !c.decoyOf).length < s.meet.cap && s.enemies.length < ROW_MAX : false;
+  return room && (max === undefined || (actor.summons ?? 0) < max) && listedEnemy(id);
+}
+
+/** B1 review item 6: the key a once-a-fight skill is spent under, shared by every foe of its kind. */
+export const spentKey = (c: Combatant, sk: EnemySkill): string => `${c.defId}/${sk.name}`;
 
 /** M19: the evasion a foe has while any of its decoys stands. */
 export const DECOY = { evasion: 20 } as const;
@@ -89,9 +144,15 @@ export function linkShares(s: BattleState, defOf: (c: Combatant) => EnemyDef | u
   }
 }
 
-/** M22: whether a skill can be used now: a `when: 'deadAlly'` one only while an ally lies fallen, never raised, not gone. */
+/**
+ * Whether a skill can be used now (passed over after its draw when not, as a failed chance is): a `when: 'deadAlly'` one
+ * only while an ally lies fallen, never raised, not gone (M22); a call only while it can happen (M4, B1 review item 2); a
+ * once-a-fight one only before its kind has used it (B1 review item 6).
+ */
 export function usableNow(s: BattleState, e: Combatant, sk: EnemySkill): boolean {
-  return sk.when !== 'deadAlly' || s.enemies.some((c) => c !== e && !c.alive && !c.left && !c.rose && !c.decoyOf);
+  if (sk.when === 'deadAlly' && !s.enemies.some((c) => c !== e && !c.alive && !c.left && !c.rose && !c.decoyOf)) return false;
+  if (sk.oncePerFight && s.spent?.includes(spentKey(e, sk))) return false;
+  return sk.effects.every((x) => x.kind !== 'summon' || canSummon(s, e, x.id, x.max));
 }
 
 const living = (cs: Combatant[]) => cs.filter((c) => c.alive);
@@ -114,14 +175,15 @@ export function foeGuard(s: BattleState, t: Combatant): Combatant {
  */
 export function guardTargets(s: BattleState, actor: Combatant, sk: EnemySkill): Combatant[] | undefined {
   if (actor.side !== 'enemy' || sk.target !== 'ally' || !sk.effects.some((e) => e.kind === 'cover')) return undefined;
-  const others = living(s.enemies).filter((c) => c !== actor);
+  const others = living(s.enemies).filter((c) => c !== actor && !c.decoyOf);   // never a decoy (B1 review item 8)
   if (!others.length) return [];
   return [others.reduce((a, b) => (b.hp / b.max.hp < a.hp / a.max.hp ? b : a))];
 }
 
 /** M24 hunt: the living member called out for `round` (a hunt lands on one at a time), or undefined. */
 export function huntedIn(s: BattleState, round: number): Combatant | undefined {
-  return s.party.find((c) => c.alive && c.hunted === round && !c.defending);
+  // A veil beats a hunt (B1 review item 11): a veiled member is never the one called out.
+  return s.party.find((c) => c.alive && c.hunted === round && !c.defending && !c.veil);
 }
 
 /** At a round's start, once the party's defending is known: a member who defends lifts the hunt on her (M24). */

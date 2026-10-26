@@ -108,7 +108,7 @@ export interface BattleEnd {
   fragments?: FragmentGain[];
   /** The part of `gold` that was Liz's left-over coins (plan 8c); absent or 0 when none. */
   coinGold?: number;
-  /** The part of `gold` that felled thieves gave back (roster plan B3, M13); absent when none did. */
+  /** The gold felled thieves gave back (roster plan B3, M13): already back in the pack as each fell, not in `gold`; absent when none did. */
   returned?: number;
   /** Runes the fight dropped into the bag, in order (plan 8f); absent when none. */
   runes?: RuneRef[];
@@ -759,8 +759,10 @@ export class Game {
     // Followers lay out their builds at their level and memories now; only the rune slots opened since the last fight
     // take its runes from the bag, so one she emptied by hand stays empty (plan 8h ruling 13, final review I3).
     this.state = followUp(this.state, this.state.party.recruited, was);
-    // Rin's first won fight queues the first-return scene for the next arrival (Task 10b).
-    this.state.story = afterWin(this.state.story, b.party.map((c) => c.key));
+    // Rin's first won fight queues the first-return scene for the next arrival (Task 10b). A "win" where every foe ran
+    // off (none felled) is no fight won: no story beat, no one saved (B1 review item 13).
+    const felled = !b.enemies.every((e) => e.left);
+    if (felled) this.state.story = afterWin(this.state.story, b.party.map((c) => c.key));
     if (elite) this.map().tiles[elite.y][elite.x] = 'floor';   // a beaten elite is gone
     if (elite && warden) {
       // A beaten warden is gone for this run, its room with it (roster plan B5).
@@ -781,7 +783,7 @@ export class Game {
     // joins after it). Both share the dive's cap.
     if (!rescue) {
       if (b.boss || elite) this.earnField(b.party.map((c) => c.key as CharacterId), FIELD_POINTS.strong);
-      this.earnField(b.party.filter((c) => c.alive && c.hp > 0 && this.endangered.has(c.key as CharacterId)).map((c) => c.key as CharacterId), FIELD_POINTS.saved);
+      if (felled) this.earnField(b.party.filter((c) => c.alive && c.hp > 0 && this.endangered.has(c.key as CharacterId)).map((c) => c.key as CharacterId), FIELD_POINTS.saved);
     }
     // Memory pieces come after exp and the meeting, and before the phase can switch to clear (the story boss pays too).
     let fragments: FragmentGain[] = [];

@@ -50,6 +50,8 @@ export function battleCues(log: BattleEvent[], defIdOf: (key: string) => string 
       });
     } else if (ev.type === 'miss') out.push({ kind: 'miss', key: ev.target });
     else if (ev.type === 'ko') out.push({ kind: 'ko', key: ev.target });
+    // A revive stands the fallen up in the picture as a rise does (B1 review item 5); a member has no slot and ignores it.
+    else if (ev.type === 'revive') { out.push({ kind: 'fx', key: ev.target, fx: 'heal' }, { kind: 'rise', key: ev.target }, { kind: 'wait', ms: EVENT_MS }); return; }
     else if (ev.type === 'mech') { out.push({ kind: 'mech', key: ev.actor, cue: ev.cue }, { kind: 'wait', ms: EVENT_MS, keep: true }); return; }
     // A foe mechanic's moment (roster plan B3–B4): a summon joins the row and a risen foe stands again; the rest are lines.
     else if (ev.type === 'foe') {

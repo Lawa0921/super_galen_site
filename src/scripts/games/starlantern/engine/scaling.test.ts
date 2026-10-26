@@ -634,6 +634,20 @@ describe('the roster waits on its live set (roster plan Task A4)', () => {
   });
 });
 
+describe('a warden is a named foe (roster plan B1 review, item 12)', () => {
+  it('it fights as an elite (the ELITE stats and rewards) with no ★ before its name', () => {
+    const r = REGIONS.mainline;
+    const elite = scaleEnemy(ENEMIES['false-moon'], 8, r, true, CONDITIONS.plain);
+    const plain = scaleEnemy(ENEMIES['false-moon'], 8, r, false, CONDITIONS.plain);
+    expect(elite.name).toBe(plain.name);
+    expect(elite.name.startsWith('★')).toBe(false);
+    expect(elite.stats.hp).toBeGreaterThan(plain.stats.hp);
+    expect(elite.exp).toBeGreaterThan(plain.exp);
+    // An ordinary elite keeps its star.
+    expect(scaleEnemy(ENEMIES.wolf, 8, r, true, CONDITIONS.plain).name.startsWith('★')).toBe(true);
+  });
+});
+
 describe('a boss part grows from the boss home (roster plan B5)', () => {
   it('a part is met at the level its boss is', () => {
     for (const id of ['archon-hand', 'rime-pillar']) {

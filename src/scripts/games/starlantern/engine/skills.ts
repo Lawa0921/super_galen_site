@@ -578,7 +578,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     }
     case 'hunt': {
       // A foe calls a member out for next round (roster plan B2, M24); draws nothing.
-      if (!target.alive || target.side === actor.side) return;
+      if (!target.alive || target.side === actor.side || target.veil) return;   // a veil beats a hunt (B1 review item 11)
       target.hunted = (ctx.battle?.round ?? 0) + 1;
       return;
     }

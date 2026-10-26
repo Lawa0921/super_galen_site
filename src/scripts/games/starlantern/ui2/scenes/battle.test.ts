@@ -1343,6 +1343,7 @@ describe('BattleScene roster foes (roster plan B6)', () => {
   it('gold a felled thief took comes back in a line under the gold', async () => {
     const { s, root } = setup((g) => {
       g.battle!.enemies[0].stolen = 9;
+      g.battle!.purse = { gold: 0, depth: 1 };
       for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
     });
     for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }   // 防禦 ×5

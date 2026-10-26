@@ -315,7 +315,7 @@ export class BattleView {
     const tex = this.bank?.get(enemyArt(e.defId)) ?? null;
     const maxH = (bottom > 0 ? usable : size.height) * (e.boss ? (bottom > 0 ? 0.62 : 0.7) : 0.45);
     const elite = e.tint === 'elite';
-    const name = elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
+    const name = elite && !e.named && !e.name.startsWith('★') ? `★${e.name}` : e.name;
     const label = pixelText(slotName(name, this.labelMax), 12, 0xffffff);
     label.anchor.set(0.5, 0);
     const lift = bottom > 0 ? NAME_LIFT : 0;
@@ -487,6 +487,8 @@ export class BattleView {
     for (const e of state.enemies) {
       const s = this.slots.get(e.key);
       if (s && !e.alive && !s.box.destroyed) s.box.alpha = 0;
+      // A foe standing at the end is shown whole, however it got up (B1 review item 5).
+      if (s && e.alive && !s.box.destroyed && (s.box.alpha < 1 || s.body.children.length > 1)) this.standUp(s);
     }
   }
 
@@ -713,7 +715,7 @@ export class BattleView {
       if (!this.slots.has(e.key)) this.addFoe(e);
       const s = this.slots.get(e.key);
       // A name that changed (a foe unmasked, roster plan B6) is cut to its slot again.
-      const name = s && s.tint.elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
+      const name = s && s.tint.elite && !e.named && !e.name.startsWith('★') ? `★${e.name}` : e.name;
       if (s && !s.name.destroyed && s.fullName !== name) { s.fullName = name; s.name.text = slotName(name, this.labelMax); }
       if (s && !s.bar.destroyed) { s.hp = e.hp; s.max = e.max.hp; this.drawBar(s); }
     }

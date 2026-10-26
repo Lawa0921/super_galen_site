@@ -136,10 +136,14 @@ export interface Combatant {
   fell?: true;
   /** Roster plan B4 (M20): the key of the foe it shares its wounds with. */
   share?: string;
+  /** B1 review item 9: the gold this felled thief gave back to the pack (twice what it took, for a warden). */
+  returned?: number;
+  /** B1 review item 12: a named foe (a warden): on the elite path, but no ★ before its name. */
+  named?: true;
 }
 
 /** Roster plan B3–B4: a foe mechanic's moment in the log (battleLines words it). */
-export type FoeCue = 'flee' | 'steal' | 'wake' | 'reveal' | 'summon' | 'rise';
+export type FoeCue = 'flee' | 'steal' | 'wake' | 'reveal' | 'summon' | 'rise' | 'return' | 'vanish';
 
 /** The aim stacks `a` holds on `t` (Sylvie; 0 for anyone else or any other foe). */
 const aimOn = (a: Combatant, t: Combatant): number => (a.mech?.kind === 'aim' && a.mech.target === t.key ? a.mech.stacks : 0);

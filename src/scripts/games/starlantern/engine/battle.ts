@@ -17,8 +17,7 @@ import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
-import { DECOY, foeGuard, foesRoundEnd, foesRoundStart, guardTargets, huntedIn, linkShares, openWith, returnedGold, syncDecoys, usableNow, wakeUp } from './foes';
-import { listedEnemy } from '../data/monsters';
+import { BOSS_GROUP_CAP, ROW_MAX, canSummon, decoysLeave, foeGuard, foesRoundEnd, foesRoundStart, guardTargets, huntedIn, linkShares, openWith, returnedGold, settleThieves, spentKey, syncDecoys, usableNow, wakeUp } from './foes';
 import { countCast, credit, lossOf, type Ledger } from './ledger';
 import { AIM, barrierPower, type Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
@@ -72,6 +71,8 @@ export interface BattleState {
    * cap; 4 in a boss fight). Set only on a fight with a foe that summons or brings decoys.
    */
   meet?: Meeting & { cap: number };
+  /** B1 review item 6: the once-a-fight skills used, by `spentKey`; absent until one is. */
+  spent?: string[];
   /** The barriers over the party (engine/mech.ts); the old roster raises none. */
   barriers?: Barrier[];
   /** The last plain skill a companion cast, for the hero's echo (engine/mechanics/echo.ts): who, in which round, as cast, at what TP. */
@@ -120,10 +121,7 @@ export type EnemyAction = { kind: 'attack'; target?: string; shownTarget?: strin
 
 /** Rounds Scarlet's story fight lasts. */
 export const STORY_FIGHT_ROUNDS = 3;
-/** Roster plan B4 (M4): the most foes a boss fight holds, the boss and its parts and its calls together. */
-export const BOSS_GROUP_CAP = 4;
-/** Roster plan B6: the most foes a fight's row ever holds, the fallen included (the screen has a place for each). */
-export const ROW_MAX = 8;
+export { BOSS_GROUP_CAP, ROW_MAX };
 export const LIMIT_MAX = 100;
 export const LIMIT_PER_ACTION = 12;
 /** Damage taken adds floor(damage / max HP * this), at least 1 (see dealDamage). */
@@ -243,7 +241,8 @@ export function createBattle(o: {
   for (const c of [...s.enemies]) {
     const d = enemyDef(s, c);
     if (d?.opener !== 'decoy') continue;
-    for (let n = 0; n < (d.decoys ?? 1); n++) {
+    // Opening decoys count toward ROW_MAX (B1 review item 13).
+    for (let n = 0; n < (d.decoys ?? 1) && s.enemies.length < ROW_MAX; n++) {
       const phantom = meetEnemy(s, c.defId, meeting);
       phantom.name = T.battle.foe.decoy(c.name);
       phantom.max = { ...phantom.max, hp: 1 };
@@ -303,6 +302,7 @@ export function meetEnemy(s: BattleState, id: string, m: Meeting, as: MeetAs = {
   const name = as.letter ? `${d.name} ${as.letter}` : d.name;
   const c = fromEnemy(d, key, name, elite ? 'elite' : region ? regionTint(region) : undefined, level);
   if (aff) c.affixes = [...aff];
+  if (d.rank === 'warden') c.named = true;   // a named foe wears no ★ (B1 review item 12)
   openWith(c, d);   // its opener (roster plan B3, M14); none on the old roster
   s.enemies.push(c);
   return c;
@@ -313,7 +313,9 @@ export function meetEnemy(s: BattleState, id: string, m: Meeting, as: MeetAs = {
  * round one (roster plan B3, M14). One draw per combatant either way.
  */
 export function turnOrder(cs: Combatant[], rng: Rng, round = 0): Combatant[] {
+  // A decoy never acts, so it is left out before the roll and draws nothing (B1 review item 7).
   return cs
+    .filter((c) => !c.decoyOf)
     .map((c, i) => ({ c, i, k: stat(c, 'spd') * (1 + rng() * 0.25), last: round > 0 && c.delay === round, first: round === 1 && !!c.ambush }))
     .sort((a, b) => Number(b.first) - Number(a.first) || Number(a.last) - Number(b.last) || b.k - a.k || a.i - b.i)
     .map((x) => x.c);
@@ -548,9 +550,18 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     else delete actor.winding;
   }
   if (actor.side === 'enemy' && act.kind === 'enemy-skill' && !act.windup) {
-    // A call with no room, none left, or no one live to call is a plain attack instead (roster plan B4, M4).
-    const sk = enemyDef(s, actor)?.skills[act.index];
-    if (sk?.effects.some((e) => e.kind === 'summon' && !canSummon(s, actor, e.id, e.max))) act = { kind: 'attack', target: act.target };
+    // A skill that can no longer be used (a call with no room since it was planned; a once-a-fight one its kind just used)
+    // gives way to the first one of its list that can, else a plain attack (roster plan B4; B1 review items 2, 3, 6).
+    const skills = enemyDef(s, actor)?.skills ?? [];
+    const sk = skills[act.index];
+    if (sk && !usableNow(s, actor, sk)) {
+      const i = skills.findIndex((k) => !k.windup && k.when !== 'deadAlly' && usableNow(s, actor, k));
+      act = i >= 0 ? { kind: 'enemy-skill', index: i, target: act.target } : { kind: 'attack', target: act.target };
+    }
+    if (act.kind === 'enemy-skill') {
+      const used = skills[act.index];
+      if (used?.oncePerFight) (s.spent ??= []).push(spentKey(actor, used));
+    }
   }
   if (actor.side === 'enemy') {
     // A single blow goes where a taunt, a challenge or a cover sends it (forcedTarget); the ledger credits the one it
@@ -829,11 +840,6 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
   afterFalls(s, ctx, rng);
 }
 
-/** Roster plan B4 (M4): whether `actor` may call a `id` now: a fight that keeps its meeting, room under its cap, calls left, and `id` live. */
-function canSummon(s: BattleState, actor: Combatant, id: string, max: number): boolean {
-  const room = s.meet ? living(s.enemies).filter((c) => !c.decoyOf).length < s.meet.cap && s.enemies.length < ROW_MAX : false;
-  return room && (actor.summons ?? 0) < max && listedEnemy(id);
-}
 
 /** Roster plan B4 (M4): a foe joins at the end of the line, lettered after its kind; it acts from the next round and pays nothing. */
 function summon(s: BattleState, actor: Combatant, id: string): void {
@@ -867,9 +873,22 @@ function afterFalls(s: BattleState, ctx: EffectContext, rng: Rng): void {
     e.fell = true;
     const down = new Set(s.enemies.filter((c) => !c.alive).map((c) => c.key));
     s.log.push({ type: 'act', actor: e.key, label: last.name });
-    for (const t of resolveTargets(s, e, last.target, undefined, rng)) for (const eff of last.effects) applyEffect(e, t, eff, ctx);
+    for (const t of resolveTargets(s, e, last.target, undefined, rng)) {
+      // A last word never fells the last member standing: she is left at 1 HP (B1 review item 1, as M28 never swallows her).
+      const lastStanding = t.side === 'party' && t.alive && !t.undying && living(s.party).length === 1;
+      if (lastStanding) t.undying = true;
+      for (const eff of last.effects) applyEffect(e, t, eff, ctx);
+      if (lastStanding) delete t.undying;
+    }
     for (const c of s.enemies) if (!c.alive && !down.has(c.key)) c.fell = true;
   }
+  settleFalls(s);
+}
+
+/** What a fall settles at once, drawing nothing: decoys leave with their foe (M19), felled thieves give back (M13), evasion follows the decoys. */
+function settleFalls(s: BattleState): void {
+  decoysLeave(s);
+  settleThieves(s, (c) => enemyDef(s, c));
   syncDecoys(s);
 }
 
@@ -911,7 +930,9 @@ export function syncWards(s: BattleState): void {
 export function resolveRound(prev: BattleState, actions: Record<string, Action>, rng: Rng, ledger?: Ledger): BattleState {
   const s = structuredClone(prev);
   s.log = [];
-  if (s.outcome !== 'ongoing' || checkOutcome(s)) return s;
+  if (s.outcome !== 'ongoing') return s;
+  settleFalls(s);   // a thief or a decoy's foe already down gives back or takes its decoys with it (B1 review items 4, 9)
+  if (checkOutcome(s)) return s;
   s.round += 1;
   syncWards(s);   // a state built or loaded with barriers meets its first hit with the wards on
   const ctx: EffectContext = { rng, itemBoost: s.itemBoost, revealed: s.revealed, log: s.log, battle: s, ...(ledger ? { ledger } : {}) };
@@ -1038,9 +1059,10 @@ export function rewards(s: BattleState, rng: Rng, dropBoost: boolean, dropMul = 
   }
   // Liz's coins left at a won fight's end become gold (plan 8c ruling 21); no draw.
   const coinGold = s.outcome === 'win' ? s.party.reduce((n, c) => n + (c.mech?.kind === 'coins' ? c.mech.coins * COINS.gold : 0), 0) : 0;
-  // What felled thieves took comes back with the gold (roster plan B3, M13); no draw. Absent when none did.
-  const returned = returnedGold(s, (c) => enemyDef(s, c));
-  return { exp: Math.round(exp * (1 + find('expBonus') / 100)), gold: Math.round(gold * (1 + find('goldFind') / 100)) + coinGold + returned, drops, coinGold, ...(returned ? { returned } : {}) };
+  // What felled thieves gave back (roster plan B3, M13), told with the win: it went back into the pack as each fell (B1
+  // review item 9), so it is not in `gold`. Absent when none did.
+  const returned = returnedGold(s);
+  return { exp: Math.round(exp * (1 + find('expBonus') / 100)), gold: Math.round(gold * (1 + find('goldFind') / 100)) + coinGold, drops, coinGold, ...(returned ? { returned } : {}) };
 }
 
 export function writeBack(p: Party, s: BattleState): Party {

@@ -111,7 +111,7 @@ export type Effect =
    * The foe calls a foe `id` into the fight (roster plan B4, M4): no more than `max` a fight, only while the fight has room
    * (its group cap; 4 in a boss fight) and only one already live; otherwise it attacks instead. The newcomer pays nothing.
    */
-  | { kind: 'summon'; id: string; max: number };
+  | { kind: 'summon'; id: string; max?: number };
 /**
  * A skill's part in its owner's mechanic: `release` spends Chizuru's barrier for power; `coin-power` and `coin-hits` spend
  * Liz's coins for power or for hits; `consume-aim` spends Sylvie's aim for power; `ember-power` spends Scarlet's embers
@@ -209,8 +209,11 @@ export interface CharacterDef {
  * Roster plan B2 (M1): `windup`, the name of the turn the foe spends winding this skill up; the skill itself lands the
  * round after (battle.ts chooseEnemyActions). Sleep or a freeze breaks the charge.
  */
-/** Roster plan B4 (M22): `when: 'deadAlly'`, usable only while an ally lies fallen (and was never raised); its draw holds. */
-export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[]; windup?: string; when?: 'deadAlly' }
+/**
+ * Roster plan B4 (M22): `when: 'deadAlly'`, usable only while an ally lies fallen (and was never raised); its draw holds.
+ * B1 review item 6: `oncePerFight`, used once a fight by all the foes of its kind together.
+ */
+export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[]; windup?: string; when?: 'deadAlly'; oncePerFight?: true }
 export interface EnemyDef {
   id: string; name: string; floor: 1 | 2 | 3; boss?: boolean; stats: Stats; weak: Element[]; resist: Element[];
   exp: number; gold: number; drops: { mat: string; chance: number }[]; skills: EnemySkill[];

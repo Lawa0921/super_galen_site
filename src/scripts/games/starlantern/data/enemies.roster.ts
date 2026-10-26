@@ -55,10 +55,11 @@ const guard = (turns: number): Effect => ({ kind: 'cover', turns });
 const hunt: Effect = { kind: 'hunt' };
 /** Plan B3 (M13): after its hit lands, it takes up to depth × `perDepth` gold from the run pack. */
 const steal = (perDepth: number): Effect => ({ kind: 'steal', perDepth });
-/** Plan B4 (M4): it calls a foe `id` into the fight, `max` a fight (while there is room and that foe is live). */
-const call = (name: string, id: string, max: number, chance = 0.25): EnemySkill => sk(name, chance, 'self', { kind: 'summon', id, max });
-/** Plan B4 (M22): it folds a fallen ally back up at 30% HP, once each; only while one lies fallen. */
-const refold = (name: string, chance: number): EnemySkill => ({ ...sk(name, chance, 'deadAlly', { kind: 'revive', hpPct: 0.3 }), when: 'deadAlly' });
+/** Plan B4 (M4): it calls a foe `id` into the fight, `max` a fight (absent: no limit but the room; B1 review item 3). */
+const call = (name: string, id: string, max: number | undefined, chance = 0.25): EnemySkill =>
+  sk(name, chance, 'self', { kind: 'summon', id, ...(max !== undefined ? { max } : {}) });
+/** Plan B4 (M22): it folds a fallen ally back up at 30% HP, once a fight for the whole flock (B1 review item 6). */
+const refold = (name: string, chance: number): EnemySkill => ({ ...sk(name, chance, 'deadAlly', { kind: 'revive', hpPct: 0.3 }), when: 'deadAlly', oncePerFight: true });
 const poison = (chance: number): Effect => ({ kind: 'inflict', status: 'poison', chance });
 
 /** The elements of a region, for its own foes (data/regions.ts REGIONS: `scaleEnemy` gives these in the region anyway). */
@@ -263,7 +264,8 @@ const WARDENS: [string, Spec][] = [
   ['requiem-conductor', { name: '鎮魂指揮者', arch: 'std', rank: 'warden', weak: ['phys'], resist: ['ice'],
     skills: [call('召集歌隊', 'requiem-choir', 2), sk('指揮', 0.4, 'allies', buff('spd', 40, 3)), sk('終章', 0.3, 'enemies', hit(80, 'ice'))] }],
   ['lantern-brood', { name: '燈底之巢', arch: 'heavy', rank: 'warden', weak: ['ice'], resist: ['fire'],
-    skills: [call('孵化', 'lantern-larva', 4, 0.6), sk('蜷縮', 0.4, 'self', buff('def', 20, 2))] }],
+    // Spec §5.5: it never attacks; it hatches one a turn while there is room, and curls up when there is none (B1 review item 3).
+    skills: [call('孵化', 'lantern-larva', undefined, 1), sk('蜷縮', 1, 'self', buff('def', 20, 2))] }],
   ['mirage-lead', { name: '蜃樓的領舞者', arch: 'std', rank: 'warden', home: 'blaze', lore: 'safira', remnant: true, opener: 'decoy', decoys: 2,
     skills: [sk('轉拍', 0.3, 'allies', buff('spd', 30, 3)), sk('領舞', 0.3, 'enemy', hit(130))] }],
   ['ice-shrine', { name: '冰中的拜殿', arch: 'heavy', rank: 'warden', home: 'frost', lore: 'chizuru',
