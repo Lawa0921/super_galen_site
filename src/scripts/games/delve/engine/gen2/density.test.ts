@@ -8,8 +8,9 @@ import { pois, maxGap, gapsOf } from './testUtil';
 const worst = (g: { at: number; w: number }[]): string => [...g].sort((p, q) => q.w - p.w).slice(0, 3).map((q) => `${q.w}@${q.at}`).join(' ');
 
 describe('gen2 驚喜密度（Task 21）', () => {
-  it('驚喜密度（陸地 + 海，±50,000，3 個種子）：任意 340 格內有東西、任意 1,800 格內有大東西', () => {
-    for (const seed of ['dens-a', 'dens-b', 'dens-c']) {
+  // 修正回合 2（T21-12）：種子從 3 個擴到 10 個（dens-e / f / g 在「含坑道的槽不放小點位」時是 350 / 343 / 341）；每個種子約 1–2 s
+  it('驚喜密度（陸地 + 海，±50,000，10 個種子）：任意 340 格內有東西、任意 1,800 格內有大東西', () => {
+    for (const seed of ['dens-a', 'dens-b', 'dens-c', 'dens-d', 'dens-e', 'dens-f', 'dens-g', 'dens-h', 'dens-i', 'dens-j']) {
       const { small, big } = pois(new Gen2Source(seed), -50_000, 50_000);
       // DELVE_MEASURE=1 時印出各種子的最大空隙（報告用）；平常不印
       if (process.env.DELVE_MEASURE === '1') console.info('[gen2 density]', seed, 'small max gap', maxGap(small), 'big max gap', maxGap(big), 'small n', small.length, 'big n', big.length);

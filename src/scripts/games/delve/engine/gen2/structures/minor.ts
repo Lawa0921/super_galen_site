@@ -1,6 +1,6 @@
 // minor.ts — gen2 的小點位（MINOR 層，M2a Task 19；spec「任意連續 340 格內至少一個值得停下的東西」）：每個有槽的陸地地區（沙灘、地城區除外）每 170 格一槽
-// （四捨五入，最後一槽 85–254 寬，bpcore.landSlotCount），槽的偏好區（minorZone：中段 / 家鄉緊鄰出生點清空區的槽 = 靠出生點那一半）
-// 沒有（讓位後的）表層 / 天空藍圖、也不在排除範圍（家鄉含出生點 ± 80 的槽、含主坑道的槽；BlueprintIndex 判）就放一個小點位（Task 21 調整，驚喜密度 density.test）。種類（雜湊）：
+// （四捨五入，最後一槽 85–254 寬，bpcore.landSlotCount），槽的偏好區（minorZone：中段 / 家鄉緊鄰出生點清空區的槽 = 靠出生點那一半）沒有主坑道入口、
+// 沒有（讓位後的）表層 / 天空藍圖、也不在排除範圍（家鄉含出生點 ± 80 的槽；BlueprintIndex 判）就放一個小點位（Task 21 調整，驚喜密度 density.test）。種類（雜湊）：
 //   · cairn 45%：石堆（兩塊石頭夾著地標 T.CAIRN、一塊石頭上一顆小石子）+ 紅布旗（4 格旗桿、桿頂旁 2 格村旗布），寬 5；
 //   · camp 30%：木板帳篷（A 字形、一側開口、室內木板牆）+ 帳篷裡的地標 T.RELIC_PACK + 帳篷外一支火把，寬 6；
 //   · stones 25%：3–5 根石柱（兩端 3 格高、中間 2–3 格）排成一圈 + 第一 / 最後一道縫裡各一個陶罐，寬 2n − 1（5–9）。
@@ -71,7 +71,7 @@ function stones(rng: HRng): Shape {
   return { w: 2 * n - 1, cells, level: [], mark: null };
 }
 
-// 小點位槽的偏好區（Task 21；BlueprintIndex.minorPoint 判「槽裡已經有表層 / 天空藍圖」與 buildMinorBp 的偏好點共用）：
+// 小點位槽的偏好區（Task 21；BlueprintIndex.minorPoint 判「槽裡已經有值得停下的東西」與 buildMinorBp 的偏好點共用）：
 // 一般的槽 = 中段 [x0 + 寬 / 4, x1 − 寬 / 4)（toSpawn 0）；家鄉緊鄰出生點清空區的槽（槽離清空區 < 一個槽寬）= 靠出生點的那一半
 // （toSpawn +1 = 出生點在槽的東邊、−1 = 在西邊；偏好點 = 槽靠出生點的那一端）——清空區 160 格加上兩側的槽，小點位放在槽中段時
 // 出生點兩側的東西相距可到 340 以上（驚喜密度，density.test）

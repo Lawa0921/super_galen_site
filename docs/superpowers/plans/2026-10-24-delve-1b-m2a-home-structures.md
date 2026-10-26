@@ -1043,7 +1043,7 @@ it('外圍村莊：客人在房主之後才載入那段 → NPC key / id 與房�
 
 **Interfaces:**
 - Produces（`minor.ts`）：`buildMinorBp(c: BpCtx): Blueprint`（kind `'minor'`、`sub: 'cairn' | 'camp' | 'stones'` 記在藍圖上）——種類（雜湊）：`cairn`（石堆 + 紅布旗，地標 `T.CAIRN`）45%、`camp`（木板帳篷 + 火把 + 地標 `T.RELIC_PACK`）30%、`stones`（3–5 根石柱圍一圈 + 2 個陶罐）25%；寬 ≤ 12、站在 `c.groundAt(x)` 上（Q4：只看 profile + SURFACE 層的地面覆寫；**小點位自己沒有 `ground`**；只畫地表以上與地表那一格）。`spawn_tablet` 錨點佔用它所在的 MINOR 槽（Task 7：在 ± 80 之外）。
-- **排除範圍（Q16）**：小點位外框不得落在——家鄉兩端沙灘（`[0, 70)`、`[4130, 4200)`）；出生點清空區（含 `SPAWN_X ± 80` 的 MINOR 槽整槽不放）；主坑道 `[shaftX − (SHAFT_HALF + 2), shaftX + (SHAFT_HALF + 2)]`（另外 M1 測試要求含 shaftX 的槽整槽不放、外框離 sx 在 `SHAFT_REACH` 範圍外，比這條嚴，以 M1 為準）；湖藍圖的外框（`kind === 'lake'` 的 SURFACE 藍圖，M1 Task 10 起就有——湖的資料在 M2a 就拿得到，不等 M2b 的 `waterTopAt`）；海（`waterTopAt(x) !== null`）。被排除的槽不放小點位（不往旁邊挪）。
+- **排除範圍（Q16）**：小點位外框不得落在——家鄉兩端沙灘（`[0, 70)`、`[4130, 4200)`）；出生點清空區（含 `SPAWN_X ± 80` 的 MINOR 槽整槽不放）；主坑道 `[shaftX − (SHAFT_HALF + 2), shaftX + (SHAFT_HALF + 2)]`（另外 M1 測試要求外框離 sx 在 `SHAFT_REACH` 範圍外，比這條嚴，以 M1 為準；原本也要求含 shaftX 的槽整槽不放——**2026-10-26 修訂（T21-12）**：含主坑道的槽可以放小點位，條件是主坑道入口 `[sx − 1, sx + 3)` 不在槽的偏好區 minorZone、外框完全在 shaftBand 外，因為規格 §4.4「任意 340 格內有東西」要對任意種子成立，整槽不放在 dens-e / f / g 留下 341–350 的空隙）；湖藍圖的外框（`kind === 'lake'` 的 SURFACE 藍圖，M1 Task 10 起就有——湖的資料在 M2a 就拿得到，不等 M2b 的 `waterTopAt`）；海（`waterTopAt(x) !== null`）。被排除的槽不放小點位（不往旁邊挪）。
 - 小點位不建地區（不進 Discovery 地區），但地標照常登錄。
 
 - [ ] **Step 1: 寫失敗測試**
@@ -1211,7 +1211,7 @@ it('大藍圖建構與開局預算', () => { const t = buildTimes(['perf-a', 'pe
 - **Q13**（Task 16、20）：用真名——`scout(): { name, x, y } | null`、`scoutMarks: MapMarker[]`（`{ x, y }`）、`folkService(key, kind): { ok, msg }`、`inventory.add`、`coins()`；不存在的 `id` / `useFolkService` / `give` 全拿掉。
 - **Q14**（Task 18、決定 10、規格模糊處 1）：v1 只有荒野大陸（全部 culture null，測試釘）；刪 c = 1 規則，不做 `CULTURE_SINCE`；霧竹指派（最近未進入、ver ≥ 2）是 M4。
 - **Q15**（Task 18）：錨點優先於 P11 保證小屋 / 遺跡；`guard()` 在剩下的槽重找，仍各 ≥ 1（測試）。
-- **Q16**（Task 7、14、19）：小點位排除家鄉沙灘、出生點清空區、坑道 ±(SHAFT_HALF + 2)、湖藍圖外框；`spawn_tablet` 移到 ± 80 之外的 MINOR 槽；M1 `blueprint.test.ts` 列入並保持綠。
+- **Q16**（Task 7、14、19；2026-10-26 修訂 T21-12）：小點位排除家鄉沙灘、出生點清空區、坑道 ±(SHAFT_HALF + 2)、湖藍圖外框；`spawn_tablet` 移到 ± 80 之外的 MINOR 槽；M1 `blueprint.test.ts` 列入並保持綠——其中「含坑道的槽沒有非 DEEP 藍圖」那條斷言修訂為排除 MINOR 層（小點位可放進含坑道的槽：入口不在 minorZone、外框在 shaftBand 外，由新增的正向斷言與 SHAFT_REACH 距離斷言把關）。修訂理由：Q16 是作者自訂規則，字面不能壓過規格 §4.4「任意 340 格內有東西」（對任意種子成立）。
 - **Q17**（Task 13、17）：量測測試印出後斷言（礦物密度對記錄值 ±30%、tile 集合相等），逾時 300 s；沒有只印不驗的測試。
 - **Q18**（Task 2、7、8、10、11、12、13、20）：重測試一律寫逾時；Task 8 / 12 的共用 fixture 用 `beforeAll(…, timeout)`。
 - **Q19**（M2b Task 8）：退役表加 `FOLK_BEFORE`。

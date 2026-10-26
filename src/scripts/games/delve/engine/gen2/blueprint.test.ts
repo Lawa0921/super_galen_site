@@ -3,11 +3,13 @@
 // 錨點（M2a Task 7）：wholeRegion 外框任何相交的查詢都找得到、groundAt 重入丟錯（Q4）。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
-import { BlueprintIndex, slotOf, structureId, slotWidth, emptyObjects, placeX, landSlot, BP_DEEP, BP_SURFACE, BP_UNDER, LAND_SLOT_W, type Blueprint, type BpCtx } from './blueprint';
+import { BlueprintIndex, slotOf, structureId, slotWidth, emptyObjects, placeX, landSlot, BP_DEEP, BP_SURFACE, BP_UNDER, BP_MINOR, LAND_SLOT_W, type Blueprint, type BpCtx } from './blueprint';
 import { registerAnchorBuild, type AnchorBuild } from './anchors';
 import { decodeStructureId } from './structId';
 import { HRng } from './hrng';
 import { shaftX, SHAFT_REACH } from './caves';
+import { shaftBand } from './bpcore';
+import { minorZone } from './structures/minor';
 import { SPAWN_X, VARIANT } from './layout';
 import { fillCol, bytes, worldOf, loadColumns, sampleRegions, bfsReachesDepth, SEEDS5 } from './testUtil';
 import { Column } from '../column';
@@ -92,7 +94,8 @@ describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
     const lands = new Set([hm, ...all.map((q) => src.layout.landmassAt(q.x)!).filter((m) => m.kind === 'continent')]);
     for (const m of lands) for (const a of idx.anchorsOf(m)) anchored.add(structureId(m.side, m.i, a.region.index, a.slot, a.layer));
     const homeMine = (q: { kind: string; x: number }): boolean => q.kind === 'mineshaft' && q.x >= hm.x0 && q.x < hm.x1;
-    for (const b of all.filter((q) => q.layer !== BP_DEEP && !anchored.has(q.id) && !homeMine(q))) {
+    // Q16 修訂（T21-12）：小點位可放進含坑道的槽，坑道安全由下方正向斷言與 SHAFT_REACH 距離斷言把關
+    for (const b of all.filter((q) => q.layer !== BP_DEEP && q.layer !== BP_MINOR && !anchored.has(q.id) && !homeMine(q))) {
       const r = slotOf(b.id, src.layout); const sx = shaftX(s, r.region);
       if (Number.isFinite(sx)) expect(sx >= r.x0 && sx < r.x1).toBe(false);
     }
@@ -266,4 +269,24 @@ describe('gen2 anchors in the blueprint index', () => {
     expect(b.x + b.w <= sx - SHAFT_REACH - 1 || b.x >= sx + SHAFT_REACH + 2).toBe(true);
     expect(b.x).toBeGreaterThanOrEqual(sl.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(sl.x1 - 8);
   });
+
+  // Q16 修訂（T21-12，2026-10-26）：小點位可以放進含主坑道的槽（規格 §4.4「任意 340 格內有東西」對任意種子成立）——
+  // 正向釘住：那種槽的小點位，主坑道入口 [sx − 1, sx + 3) 不在槽的偏好區（minorZone）裡、外框完全在坑道帶（shaftBand）之外
+  it('含主坑道的槽裡的小點位（T21-12）：坑道入口不在偏好區、外框在坑道帶外（8 個種子 × ±30,000）', () => {
+    let n = 0;
+    for (const seed of ['bp', ...SEEDS5, 'bp-shaft-a', 'bp-shaft-b']) {
+      const g = new Gen2Source(seed), ss = seedInt(seed, 'g2-shaft');
+      for (const b of g.blueprints.overlapping(-30_000, 30_000, [BP_MINOR])) {
+        if (b.kind !== 'minor') continue;
+        const sl = slotOf(b.id, g.layout), sx = shaftX(ss, sl.region);
+        if (!Number.isFinite(sx) || sx < sl.x0 || sx >= sl.x1) continue;
+        n++;
+        const z = minorZone(sl.x0, sl.x1, sl.region.kind === 'home' ? SPAWN_X : undefined), band = shaftBand(sx);
+        expect(sx - 1 < z.z1 && z.z0 < sx + 3, `${seed} minor@${b.x} entrance in zone [${z.z0}, ${z.z1})`).toBe(false);
+        expect(b.x + b.w <= band.l || b.x >= band.r, `${seed} minor@${b.x} in band [${band.l}, ${band.r})`).toBe(true);
+      }
+    }
+    // 不是空測：含坑道的槽的小點位夠多
+    expect(n).toBeGreaterThan(50);
+  }, 180_000);
 });
