@@ -140,10 +140,18 @@ export interface Combatant {
   returned?: number;
   /** B1 review item 12: a named foe (a warden): on the elite path, but no ★ before its name. */
   named?: true;
+  /** Roster plan B7 (M5): its weakness turns (`EnemyDef.prism`), so a hit on it tells the bestiary nothing. */
+  prism?: true;
+  /** Roster plan B7 (M8): the index of the stage it fights in (`EnemyDef.stages`); absent, its own skills. */
+  stage?: number;
+  /** Roster plan B7 (M16): the rounds an adaptation lasts on it (`EnemyDef.adapt`). */
+  adapt?: number;
+  /** Roster plan B7 (M16): the element it adapted to, the rounds left (0: over, never again), and whether it was a weakness. */
+  adapted?: { el: Element; turns: number; weak?: true };
 }
 
 /** Roster plan B3–B4: a foe mechanic's moment in the log (battleLines words it). */
-export type FoeCue = 'flee' | 'steal' | 'wake' | 'reveal' | 'summon' | 'rise' | 'return' | 'vanish';
+export type FoeCue = 'flee' | 'steal' | 'wake' | 'reveal' | 'summon' | 'rise' | 'return' | 'vanish' | 'stage' | 'adapt';
 
 /** The aim stacks `a` holds on `t` (Sylvie; 0 for anyone else or any other foe). */
 const aimOn = (a: Combatant, t: Combatant): number => (a.mech?.kind === 'aim' && a.mech.target === t.key ? a.mech.stacks : 0);

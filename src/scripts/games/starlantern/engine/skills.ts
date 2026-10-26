@@ -16,6 +16,7 @@ import { T } from '../data/text.zh-TW';
 import { overclock, placeDevice, tuneUp } from './mechanics/devices';
 import { raiseBarrier } from './mechanics/barrier';
 import { addEmbers } from './mechanics/embers';
+import { adaptTo } from './foes';
 
 /**
  * `ledger`: the sim's contribution ledger (absent in the game); it reads the fight and never draws. `redirect`: set only
@@ -358,10 +359,12 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
         const lost = dealDamage(target, amount, { ledger: ctx.ledger, log: ctx.log });
         unmask(target, ctx);
         ctx.lastHit = { target: target.key, amount: lost };
-        if (target.side === 'enemy') reveal(ctx.revealed, target.defId, eff.element);
+        // A foe whose weakness turns tells the bestiary nothing (roster plan B7, M5).
+        if (target.side === 'enemy' && !target.prism) reveal(ctx.revealed, target.defId, eff.element);
         ctx.log.push({ type: 'damage', target: target.key, amount: lost, element: eff.element, mult, ...(crit ? { crit } : {}) });
         if (!target.alive) ctx.log.push({ type: 'ko', target: target.key });
         if (twin) shareWound(actor, twin, full - amount, eff.element, ctx);
+        adaptTo(target, eff.element, ctx.log);   // the first element to land on a foe that adapts (roster plan B7, M16)
         onLandedHit(actor, target, ctx);
         // Her runes on this hit (plan 8e): absent fields do nothing and draw nothing.
         runeHit(actor, target, eff, crit, hpBefore - target.hp, ctx);
@@ -510,7 +513,7 @@ export function applyEffect(actor: Combatant, target: Combatant, eff: Effect, ct
     case 'appraise': {
       if (!target.alive) return;
       target.appraised = actor.key;
-      for (const el of target.weak) reveal(ctx.revealed, target.defId, el);
+      if (!target.prism) for (const el of target.weak) reveal(ctx.revealed, target.defId, el);
       return;
     }
     case 'delay': {

@@ -110,6 +110,7 @@ interface Spec {
   rank?: EnemyDef['rank'];
   fleeAfter?: number; opener?: EnemyDef['opener'];
   decoys?: number; onFall?: EnemyDef['onFall']; rise?: EnemyDef['rise']; shareWith?: string;
+  prism?: EnemyDef['prism']; adapt?: number; stages?: EnemyDef['stages']; stageEvery?: number;
 }
 
 function foe(id: string, s: Spec): EnemyDef {
@@ -124,6 +125,8 @@ function foe(id: string, s: Spec): EnemyDef {
     ...(s.fleeAfter ? { fleeAfter: s.fleeAfter } : {}), ...(s.opener ? { opener: s.opener } : {}),
     ...(s.decoys ? { decoys: s.decoys } : {}), ...(s.onFall ? { onFall: s.onFall } : {}), ...(s.rise ? { rise: s.rise } : {}),
     ...(s.shareWith ? { shareWith: s.shareWith } : {}),
+    ...(s.prism ? { prism: s.prism } : {}), ...(s.adapt ? { adapt: s.adapt } : {}),
+    ...(s.stages ? { stages: s.stages } : {}), ...(s.stageEvery ? { stageEvery: s.stageEvery } : {}),
   };
 }
 
@@ -151,7 +154,7 @@ const MAINLINE: [string, Spec][] = [
   ['mist-twin', { name: '霧雙子', arch: 'swarm', weak: ['fire'], resist: ['ice'], band: 'C', inscribe: 'multi',
     onFall: { name: '雙生之怒', target: 'allies', effects: [buff('atk', 40, 3)] },
     skills: [sk('雙影', 0.3, 'enemy', hit(100))] }],
-  ['moon-crow', { name: '映月鴉', arch: 'std', mul: { spd: UP }, band: 'C', inscribe: 'crit',
+  ['moon-crow', { name: '映月鴉', arch: 'std', mul: { spd: UP }, band: 'C', inscribe: 'crit', prism: 'cycle',
     skills: [sk('鏡羽', 0.3, 'enemy', hit(120))] }],
   ['bell-watcher', { name: '鐘樓巡守', arch: 'std', weak: ['ice'], band: 'C', inscribe: 'evasion', lore: 'rin', remnant: true,
     skills: [sk('宣告', 0.25, 'enemy', hunt), sk('巡守之杖', 0.3, 'enemy', hit(130))] }],
@@ -178,7 +181,7 @@ const MAINLINE: [string, Spec][] = [
     skills: [windup(sk('燈火之誓', 0.2, 'enemies', hit(120, 'fire')), '舉燈')] }],
   ['ember-maw', { name: '餘燼之口', arch: 'heavy', weak: ['thunder'], resist: ['ice'], band: 'E', inscribe: 'fireDmg',
     skills: [call('點燃燭芯', 'wick-shade', 2), sk('吞吐', 0.3, 'row', hit(90, 'fire'))] }],
-  ['sorrow-crystal', { name: '悲傷結晶', arch: 'std', weak: ['phys'], band: 'E', inscribe: 'iceRes',
+  ['sorrow-crystal', { name: '悲傷結晶', arch: 'std', weak: ['phys'], band: 'E', inscribe: 'iceRes', adapt: 3,
     skills: [sk('碎晶', 0.3, 'enemy', hit(120, 'ice', { scale: 'atk' }))] }],
   ['deep-tendril', { name: '燈底之鬚', arch: 'std', weak: ['fire'], resist: ['ice'], band: 'E', inscribe: 'tp',
     skills: [sk('汲取', 0.35, 'enemy', hit(110))] }],
@@ -255,8 +258,10 @@ const NATIVE: [string, Spec][] = [
 ];
 
 const WARDENS: [string, Spec][] = [
-  ['false-moon', { name: '不存在的月亮', arch: 'std', rank: 'warden', weak: ['fire'], resist: ['ice'], lore: 'selene',
-    skills: [sk('月明', 0.3, 'allies', heal(40)), sk('月蝕', 0.3, 'enemies', hit(90, 'ice'))] }],
+  // Spec §5.5 (ruling 20): two rounds of 月明 (it mends and steadies its allies), two of 月蝕 (cold on the whole party).
+  ['false-moon', { name: '不存在的月亮', arch: 'std', rank: 'warden', weak: ['fire'], resist: ['ice'], lore: 'selene', stageEvery: 2,
+    skills: [sk('月明之光', 0.4, 'allies', heal(40)), sk('月明之守', 0.3, 'allies', buff('def', 30, 2))],
+    stages: [{ skills: [sk('月蝕', 0.5, 'enemies', hit(90, 'ice')), sk('蝕影', 0.3, 'enemy', hit(130))] }] }],
   ['bell-warden', { name: '鐘樓的守門人', arch: 'std', rank: 'warden', weak: ['ice'], lore: 'rin', remnant: true,
     skills: [sk('鐘聲', 0.3, 'row', hit(90, 'thunder')), sk('點名', 0.25, 'enemy', hunt)] }],
   ['toppled-automaton', { name: '倒下的機兵', arch: 'heavy', rank: 'warden', weak: ['thunder'], resist: ['ice'], lore: 'bobby', rise: { pct: 30 },

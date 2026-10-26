@@ -17,7 +17,7 @@ import { SECONDARY_KEYS } from './stats';
 import { applyEffect, patchSkill, pctOf, type EffectContext } from './skills';
 import { afterAction, afterFoe, castCost, castDef, extraAction, initMechs, mechBeforeTicks, mechRoundEnd, payMech, watchAction, type CastDef } from './mechanics/index';
 import { AILMENT, ageAilments, shockTick, tickAilments } from './ailments';
-import { BOSS_GROUP_CAP, ROW_MAX, canSummon, decoysLeave, foeGuard, foesRoundEnd, foesRoundStart, guardTargets, huntedIn, linkShares, openWith, returnedGold, settleThieves, spentKey, syncDecoys, usableNow, wakeUp } from './foes';
+import { BOSS_GROUP_CAP, ROW_MAX, canSummon, decoysLeave, foeGuard, foeTraits, foesRoundEnd, foesRoundStart, foesStage, guardTargets, huntedIn, linkShares, openWith, returnedGold, settleThieves, spentKey, syncDecoys, usableNow, wakeUp } from './foes';
 import { countCast, credit, lossOf, type Ledger } from './ledger';
 import { AIM, barrierPower, type Barrier } from './mech';
 import type { MoonPhase } from './mechanics/moon';
@@ -31,7 +31,7 @@ import { applyRunes, bounceNext, runeStates, type RuneMiss } from './runes';
 import { isInnate, keystonesOf, mechKnob, pctMod, skillRank, treeMods, ultimateFor } from './progression';
 import { NODES } from '../data/trees';
 import { KEYSTONE_VALUES, MEMORY_KEYSTONE_VALUES, type KeystoneId } from '../data/talents';
-import type { BuffStat, CharacterId, Effect, Element, EnemyDef, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
+import type { BuffStat, CharacterId, Effect, Element, EnemyDef, EnemySkill, Member, Party, Row, SecondaryKey, SkillDef, Target } from './types';
 
 export type Action =
   | { kind: 'attack'; target: string }
@@ -179,6 +179,11 @@ function fromEnemy(d: EnemyDef, key: string, name: string, tint: Combatant['tint
 const enemyDef = (s: BattleState, c: Combatant): EnemyDef | undefined => s.enemyDefs?.[c.key] ?? ENEMIES[c.defId];
 /** A foe's definition as met in this fight (the screen reads its mechanics: roster plan B6). */
 export const foeDef = enemyDef;
+/** The skills a foe fights with now: its stage's (roster plan B7, M8), else its own. */
+export const skillsOf = (s: BattleState, c: Combatant): EnemySkill[] => {
+  const d = enemyDef(s, c);
+  return (c.stage !== undefined ? d?.stages?.[c.stage]?.skills : undefined) ?? d?.skills ?? [];
+};
 
 export function createBattle(o: {
   party: Party; enemyIds: string[]; boss?: boolean; inventory: Record<string, number>; revealed: Record<string, Element[]>;
@@ -255,6 +260,7 @@ export function createBattle(o: {
   }
   syncDecoys(s);
   linkShares(s, (c) => enemyDef(s, c));
+  foesStage(s, 1, (c) => enemyDef(s, c));   // a turning weakness or a stage as the fight opens (roster plan B7)
   const enemies = s.enemies;
   if (o.survive) {
     s.survive = o.survive;
@@ -306,6 +312,7 @@ export function meetEnemy(s: BattleState, id: string, m: Meeting, as: MeetAs = {
   if (aff) c.affixes = [...aff];
   if (d.rank === 'warden') c.named = true;   // a named foe wears no ★ (B1 review item 12)
   openWith(c, d);   // its opener (roster plan B3, M14); none on the old roster
+  foeTraits(c, d);   // its turning weakness, its adaptation (roster plan B7); none on the old roster
   s.enemies.push(c);
   return c;
 }
@@ -470,9 +477,10 @@ const skillIsMelee = (effects: Effect[]) => effects.some((e) => e.kind === 'dama
 /** Each living enemy's action for `round` (the one being played, or the next one when planned ahead). */
 function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string, EnemyAction> {
   const out = new Map<string, EnemyAction>();
+  foesStage(s, round, (c) => enemyDef(s, c));   // the round's weakness and stage, before the draw (roster plan B7)
   for (const e of living(s.enemies)) {
     if (e.decoyOf) continue;   // a decoy never acts, and draws nothing (roster plan B4, M19)
-    const skills = enemyDef(s, e)?.skills ?? [];
+    const skills = skillsOf(s, e);
     // A foe winding up draws no skill: the one it wound up comes now, drawn for its target only (roster plan B2, M1).
     // A skill that cannot be used now (M22: a revive with no one fallen) is passed over after its draw, as if it failed.
     const charged = e.winding !== undefined && !!skills[e.winding];
@@ -505,7 +513,7 @@ function chooseEnemyActions(s: BattleState, rng: Rng, round: number): Map<string
  */
 export function forcedTarget(s: BattleState, enemy: Combatant, act: EnemyAction, round = s.round): { to: Combatant; pool: Combatant[]; cover?: true } | null {
   if (act.kind === 'enemy-skill' && act.windup) return null;   // winding up is no blow (roster plan B2, M1)
-  const sk = act.kind === 'enemy-skill' ? enemyDef(s, enemy)?.skills[act.index] : undefined;
+  const sk = act.kind === 'enemy-skill' ? skillsOf(s, enemy)[act.index] : undefined;
   if (!(act.kind === 'attack' || sk?.target === 'enemy')) return null;
   const melee = act.kind === 'attack' ? enemy.melee : skillIsMelee(sk?.effects ?? []);
   // A veiled member is passed over by single blows, so she is in no pool of what they would have done (plan 8c final).
@@ -555,7 +563,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
     // A skill that can no longer be used (a call with no room since it was planned; a once-a-fight one its kind just used)
     // is a plain attack; only a foe with no damaging skill at all (the nest) takes the first one of its list that can be
     // used instead, so it never attacks (roster plan B4; B1 review items 2, 3, 6; confirmation review item 2).
-    const skills = enemyDef(s, actor)?.skills ?? [];
+    const skills = skillsOf(s, actor);
     const sk = skills[act.index];
     if (sk && !usableNow(s, actor, sk)) {
       const harmless = !skills.some((k) => k.effects.some((e) => e.kind === 'damage'));
@@ -592,7 +600,7 @@ function perform(s: BattleState, actor: Combatant, act: Action | EnemyAction, ct
       return null;
     }
     case 'enemy-skill': {
-      const sk = enemyDef(s, actor)!.skills[act.index];
+      const sk = skillsOf(s, actor)[act.index];
       if (act.windup) {
         // It winds up (roster plan B2, M1): the skill comes next round.
         actor.winding = act.index;
@@ -1023,10 +1031,11 @@ export function intentLabel(s: BattleState, key: string): string {
   const e = s.enemies.find((x) => x.key === key);
   if (e?.frozen) return '凍結中';   // it will lose this turn (its plan is still drawn, so the sequence holds)
   const def = e ? enemyDef(s, e) : undefined;
-  const name = a.kind === 'attack' ? '攻擊' : (def?.skills[a.index]?.name ?? '');
+  const skills = e ? skillsOf(s, e) : def?.skills ?? [];
+  const name = a.kind === 'attack' ? '攻擊' : (skills[a.index]?.name ?? '');
   if (a.kind === 'enemy-skill' && a.windup) return T.battle.foe.windup(name);   // roster plan B2, M1
   if (e?.decoyOf) return '';   // a decoy never acts (roster plan B4, M19)
-  const sk = a.kind === 'enemy-skill' ? def?.skills[a.index] : null;
+  const sk = a.kind === 'enemy-skill' ? skills[a.index] : null;
   const single = a.kind === 'attack' || sk?.target === 'enemy' || sk?.target === 'row' || sk?.target === 'column' || sk?.target === 'cross';
   const shown = a.shownTarget ?? a.target;
   // A guard names the ally it would guard as things stand (roster plan B6, M2); a hunt says it is one (M24).

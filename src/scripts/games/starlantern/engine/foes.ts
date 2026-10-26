@@ -3,8 +3,8 @@
  * decision here is made without a draw (spec §6.1); a combatant without these fields walks every path it walked before.
  */
 import type { BattleState } from './battle';
-import { addBuff, type Combatant } from './combatant';
-import type { EnemyDef, EnemySkill } from './types';
+import { addBuff, type BattleEvent, type Combatant } from './combatant';
+import type { Element, EnemyDef, EnemySkill } from './types';
 import { T } from '../data/text.zh-TW';
 import { ENEMIES } from '../data/enemies';
 import { listedEnemy } from '../data/monsters';
@@ -155,6 +155,90 @@ export function usableNow(s: BattleState, e: Combatant, sk: EnemySkill): boolean
   return sk.effects.every((x) => x.kind !== 'summon' || canSummon(s, e, x.id, x.max));
 }
 
+/** M5: the elements a cycling prism's weakness turns through, a round each. */
+export const PRISM_CYCLE: readonly Element[] = ['phys', 'fire', 'ice', 'thunder'];
+
+/**
+ * Roster plan B7: what a foe's definition puts on it as it is met (meetEnemy), drawing nothing: a turning weakness (M5),
+ * an adaptation's rounds (M16). None on the old roster, which stays the same object field for field.
+ */
+export function foeTraits(c: Combatant, d: EnemyDef): void {
+  if (d.prism) c.prism = true;
+  if (d.adapt) c.adapt = d.adapt;
+}
+
+/** M8: the stage `e` fights `round` in: by its HP share (never back) or, with `stageEvery`, by the round. */
+function stageFor(e: Combatant, d: EnemyDef, round: number): number | undefined {
+  const stages = d.stages ?? [];
+  if (d.stageEvery) {
+    const i = Math.floor((Math.max(1, round) - 1) / d.stageEvery) % (stages.length + 1);
+    return i === 0 ? undefined : i - 1;
+  }
+  let at = e.stage;
+  const share = (e.hp * 100) / e.max.hp;
+  stages.forEach((st, i) => { if (st.below !== undefined && share <= st.below && (at === undefined || i > at)) at = i; });
+  return at;
+}
+
+/**
+ * Roster plan B7, as a round's plan is drawn (and once as the fight opens), drawing nothing: a cycling prism takes the
+ * round's weakness (M5), and a foe with stages takes the stage the round finds it in (M8), with that stage's elements when
+ * it names them. Between the plan and the blow nothing changes, so a planned skill is always one of the list it is played
+ * from. An adaptation in force (M16) stays over the new elements.
+ */
+export function foesStage(s: BattleState, round: number, defOf: (c: Combatant) => EnemyDef | undefined): void {
+  for (const e of s.enemies) {
+    if (!e.alive) continue;
+    const d = defOf(e);
+    if (!d || (!d.prism && !d.stages?.length)) continue;
+    if (d.stages?.length) {
+      const at = stageFor(e, d, round);
+      if (at !== e.stage) {
+        if (at === undefined) delete e.stage; else e.stage = at;
+        const st = at === undefined ? undefined : d.stages[at];
+        e.weak = [...(st?.weak ?? d.weak)];
+        e.resist = [...(st?.resist ?? d.resist)];
+        if (!d.stageEvery) s.log.push({ type: 'foe', actor: e.key, cue: 'stage' });
+      }
+    }
+    if (d.prism === 'cycle') {
+      e.weak = [PRISM_CYCLE[(Math.max(1, round) - 1) % PRISM_CYCLE.length]];
+      e.resist = [];
+    }
+    keepAdapted(e);
+  }
+}
+
+/** M16: an adaptation in force stays over whatever elements the foe has now. */
+function keepAdapted(e: Combatant): void {
+  const a = e.adapted;
+  if (!a || a.turns <= 0) return;
+  e.weak = e.weak.filter((x) => x !== a.el);
+  if (!e.resist.includes(a.el)) e.resist = [...e.resist, a.el];
+}
+
+/**
+ * M16: the first element that lands on a foe that adapts becomes its resistance, and no weakness, for its rounds; once a
+ * fight. Draws nothing.
+ */
+export function adaptTo(t: Combatant, el: Element, log: BattleEvent[]): void {
+  if (!t.adapt || t.adapted || !t.alive) return;
+  t.adapted = { el, turns: t.adapt, ...(t.weak.includes(el) ? { weak: true as const } : {}) };
+  keepAdapted(t);
+  log.push({ type: 'foe', actor: t.key, cue: 'adapt' });
+}
+
+/** M16, at a round's end: an adaptation counts down; when it is over its element is what it was before. */
+function ageAdapted(e: Combatant, d: EnemyDef | undefined): void {
+  const a = e.adapted;
+  if (!a || a.turns <= 0) return;
+  if (a.turns > 1) { e.adapted = { ...a, turns: a.turns - 1 }; return; }
+  e.adapted = { el: a.el, turns: 0 };
+  const own = e.stage !== undefined ? d?.stages?.[e.stage]?.resist ?? d?.resist : d?.resist;
+  if (!(own ?? []).includes(a.el) && d?.prism !== 'cycle') e.resist = e.resist.filter((x) => x !== a.el);
+  if (a.weak) e.weak = [...e.weak, a.el];
+}
+
 const living = (cs: Combatant[]) => cs.filter((c) => c.alive);
 /** A foe that can stir: awake and not frozen (a sleeping or frozen guard guards no one, as Scarlet covers no one then). */
 const stirs = (c: Combatant) => c.alive && c.sleep === 0 && !c.frozen;
@@ -205,6 +289,7 @@ export function foesRoundEnd(s: BattleState, defOf: (c: Combatant) => EnemyDef |
     delete e.winding;
     s.log.push({ type: 'foe', actor: e.key, cue: 'flee' });
   }
+  for (const e of s.enemies) ageAdapted(e, defOf(e));   // M16
   for (const e of s.enemies) {
     if (!e.cover) continue;
     if (e.cover.turns > 1) e.cover = { ...e.cover, turns: e.cover.turns - 1 };

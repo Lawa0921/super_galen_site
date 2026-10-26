@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { BOSS_GROUP_CAP, ROW_MAX, createBattle, intentLabel, planEnemies, resolveRound, rewards, turnOrder, type Action, type BattleState } from './battle';
+import { BOSS_GROUP_CAP, ROW_MAX, createBattle, intentLabel, planEnemies, resolveRound, rewards, skillsOf, turnOrder, type Action, type BattleState } from './battle';
+import { scaleEnemy } from './scaling';
+import { REGIONS } from '../data/regions';
 import { guardTargets } from './foes';
 import { constRng, fullParty, makeBattle, makeCombatant, withRosterLive } from './testing';
 import { LEGACY_LINEUP, activeIds } from './party';
@@ -725,5 +727,124 @@ describe('roster plan B1 review', () => {
     } finally {
       (ENEMIES as Record<string, EnemyDef>).slime = was;
     }
+  });
+});
+
+describe('M5 a turning weakness (roster plan B7)', () => {
+  const crow = () => createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['moon-crow'], inventory: {}, revealed: {} });
+
+  it('cycles through all four elements', () => {
+    expect(ENEMIES['moon-crow'].prism).toBe('cycle');
+    let s = crow();
+    for (const c of s.party) { c.max = { ...c.max, hp: 99999 }; c.hp = 99999; }
+    s.enemies[0].max = { ...s.enemies[0].max, hp: 99999 };
+    s.enemies[0].hp = 99999;
+    const seen = [s.enemies[0].weak];
+    for (let i = 0; i < 4; i++) {
+      s = resolveRound(s, defend(s), constRng(0.5));
+      seen.push(s.enemies[0].weak);   // planned for the next round, so it shows before the party chooses
+    }
+    expect(seen).toEqual([['phys'], ['fire'], ['ice'], ['thunder'], ['phys']]);
+    expect(s.enemies[0].resist).toEqual([]);
+  });
+
+  it('a region does not override a prism', () => {
+    const blaze = scaleEnemy(ENEMIES['moon-crow'], 8, REGIONS.blaze, false);
+    expect([blaze.weak, blaze.resist]).toEqual([[], []]);
+    // An ordinary foe takes the region's, as ever.
+    expect(scaleEnemy(ENEMIES['paper-moth'], 8, REGIONS.blaze, false).weak).toEqual([...REGIONS.blaze.weak]);
+  });
+
+  it('a prism foe writes no revealed weakness', () => {
+    const s = crow();
+    const hero = s.party[0];
+    const ctx = { rng: constRng(0.5), itemBoost: false, revealed: s.revealed, log: s.log, battle: s };
+    applyEffect(hero, s.enemies[0], { kind: 'damage', power: 10, element: 'fire', scale: 'mag', melee: false }, ctx);
+    applyEffect(hero, s.enemies[0], { kind: 'appraise' }, ctx);
+    expect(s.revealed['moon-crow']).toBeUndefined();
+    // Any other foe tells it as before.
+    const plain = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['slime'], inventory: {}, revealed: {} });
+    applyEffect(hero, plain.enemies[0], { kind: 'damage', power: 10, element: 'fire', scale: 'mag', melee: false }, { ...ctx, revealed: plain.revealed, battle: plain });
+    expect(plain.revealed.slime).toEqual(['fire']);
+  });
+});
+
+describe('M16 adapt (roster plan B7)', () => {
+  const crystal = (over: Partial<Combatant> = {}) =>
+    makeBattle([P('scarlet', { max: { mag: 40, tp: 99 } as never, tp: 99 })], [E('e0', { adapt: 3, weak: ['fire'], max: { hp: 9999 } as never, ...over })], { enemyDefs: { e0: def([], { adapt: 3, weak: ['fire'] }) } });
+  const cast = (skill: string): Record<string, Action> => ({ scarlet: { kind: 'skill', skill, target: 'e0' } });
+
+  it('adapts to the first element', () => {
+    expect(ENEMIES['sorrow-crystal'].adapt).toBe(3);
+    const r = resolveRound(crystal(), cast('fire-star'), constRng(0.5));
+    // The first fire landed as a weakness; now fire is its resistance and no weakness.
+    expect(r.log.find((e) => e.type === 'damage' && e.target === 'e0')).toMatchObject({ mult: 1.5 });
+    expect(r.enemies[0].resist).toEqual(['fire']);
+    expect(r.enemies[0].weak).toEqual([]);
+    expect(r.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'adapt' });
+    // The next element finds it as it was: only the first one counts.
+    const r2 = resolveRound(r, cast('ice-star'), constRng(0.5));
+    expect(r2.enemies[0].resist).toEqual(['fire']);
+    expect(r2.log.find((e) => e.type === 'damage' && e.target === 'e0')).toMatchObject({ mult: 1 });
+  });
+
+  it('adaptation expires', () => {
+    let s = resolveRound(crystal(), cast('fire-star'), constRng(0.5));
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.enemies[0].resist).toEqual(['fire']);
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect([s.enemies[0].resist, s.enemies[0].weak]).toEqual([[], ['fire']]);
+    // Once a fight: fire lands as a weakness again, and it does not adapt a second time.
+    s = resolveRound(s, cast('fire-star'), constRng(0.5));
+    expect(s.enemies[0].resist).toEqual([]);
+    expect(s.log.find((e) => e.type === 'damage' && e.target === 'e0')).toMatchObject({ mult: 1.5 });
+  });
+});
+
+describe('M8 stages (roster plan B7)', () => {
+  const blow = (name: string): EnemySkill => ({ name, chance: 1, target: 'enemy', effects: [hit(50)] });
+  const staged = () => makeBattle([P('scarlet', { max: { hp: 9999 } as never })], [E('e0', { max: { hp: 100 } as never })],
+    { enemyDefs: { e0: def([blow('一階')], { stages: [{ below: 50, skills: [blow('二階')], weak: ['ice'] }] }) } });
+
+  it('switches under its threshold', () => {
+    const s = staged();
+    s.enemies[0].hp = 60;
+    planEnemies(s, constRng(0.5));
+    expect(intentLabel(s, 'e0')).toBe('一階 → scarlet');
+    s.enemies[0].hp = 50;
+    planEnemies(s, constRng(0.5));
+    expect(intentLabel(s, 'e0')).toBe('二階 → scarlet');
+    expect(s.enemies[0]).toMatchObject({ stage: 0, weak: ['ice'] });
+    expect(s.log).toContainEqual({ type: 'foe', actor: 'e0', cue: 'stage' });
+    const r = resolveRound(s, defend(s), constRng(0.5));
+    expect(acted(r, 'e0')).toEqual(['二階']);
+  });
+
+  it('never switches back after healing', () => {
+    const s = staged();
+    s.enemies[0].hp = 40;
+    planEnemies(s, constRng(0.5));
+    s.enemies[0].hp = 100;
+    const r = resolveRound(s, defend(s), constRng(0.5));
+    expect(r.enemies[0].stage).toBe(0);
+    expect(acted(r, 'e0')).toEqual(['二階']);
+    expect(intentLabel(r, 'e0')).toBe('二階 → scarlet');
+  });
+
+  it('the false moon turns between bright and eclipse every two rounds', () => {
+    const moon = ENEMIES['false-moon'];
+    expect(moon.stageEvery).toBe(2);
+    let s = createBattle({ party: fullParty(LEGACY_LINEUP), enemyIds: ['false-moon'], inventory: {}, revealed: {} });
+    for (const c of s.party) { c.max = { ...c.max, hp: 99999 }; c.hp = 99999; }
+    const lists: string[][] = [];
+    for (let i = 0; i < 6; i++) {
+      s = resolveRound(s, defend(s), mulberry32(i + 1));
+      lists.push(skillsOf(s, s.enemies[0]).map((k) => k.name));   // the list its next round is drawn from
+    }
+    const bright = moon.skills.map((k) => k.name), eclipse = moon.stages![0].skills.map((k) => k.name);
+    // Rounds 2..7: bright (2), eclipse (3, 4), bright (5, 6), eclipse (7).
+    expect(lists).toEqual([bright, eclipse, eclipse, bright, bright, eclipse]);
+    expect(bright.some((n) => n.includes('月明'))).toBe(true);
+    expect(eclipse.some((n) => n.includes('月蝕'))).toBe(true);
   });
 });

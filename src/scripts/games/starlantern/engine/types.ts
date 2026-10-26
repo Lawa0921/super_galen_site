@@ -214,6 +214,13 @@ export interface CharacterDef {
  * B1 review item 6: `oncePerFight`, used once a fight by all the foes of its kind together.
  */
 export interface EnemySkill { name: string; chance: number; target: Target; effects: Effect[]; windup?: string; when?: 'deadAlly'; oncePerFight?: true }
+/**
+ * Roster plan B7 (M8): one stage of a foe's fight, in place of its own skills (and its elements, when it names them).
+ * `below`: it comes once the foe's HP share is at or under this percent, seen when the foe's next turn is planned; a
+ * stage reached is kept, whatever the foe heals. A foe with `stageEvery` turns through its own skills and its stages
+ * instead, a stage every that many rounds (the false moon's 月明 and 月蝕).
+ */
+export interface EnemyStage { below?: number; skills: EnemySkill[]; weak?: Element[]; resist?: Element[] }
 export interface EnemyDef {
   id: string; name: string; floor: 1 | 2 | 3; boss?: boolean; stats: Stats; weak: Element[]; resist: Element[];
   exp: number; gold: number; drops: { mat: string; chance: number }[]; skills: EnemySkill[];
@@ -255,6 +262,17 @@ export interface EnemyDef {
   rise?: { pct: number };
   /** Roster plan B4 (M20): while it and a foe of this id both stand, each blow on either is split between them. */
   shareWith?: string;
+  /**
+   * Roster plan B7 (M5): a foe whose weakness turns. `cycle`, a new one each round through phys, fire, ice and thunder;
+   * `stage`, its stages name it. A region never overrides it, and the bestiary is never told it (no `revealed`).
+   */
+  prism?: 'cycle' | 'stage';
+  /** Roster plan B7 (M16): the first element that lands on it is its resistance (and no weakness) for this many rounds. */
+  adapt?: number;
+  /** Roster plan B7 (M8): its stages, in order (EnemyStage). */
+  stages?: EnemyStage[];
+  /** Roster plan B7 (M8): it turns through its own skills and each stage, this many rounds each. */
+  stageEvery?: number;
 }
 export interface ItemDef {
   id: string; name: string; price: number; target: Target | null; effects: Effect[]; battle: boolean; returnToTown?: boolean; desc: string;

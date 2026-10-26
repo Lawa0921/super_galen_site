@@ -209,9 +209,10 @@ export function scaleEnemy(def: EnemyDef, depth: number, region: RegionDef, elit
     name: `${elite && def.rank !== 'warden' ? '★' : ''}${name}`,
     stats,
     sec,
-    // A named story foe keeps its own elements: the region's belong to its monsters.
-    weak: regional && !def.story ? [...region.weak] : [...def.weak],
-    resist: regional && !early && !def.story ? [...region.resist] : [...def.resist],
+    // A named story foe keeps its own elements: the region's belong to its monsters. So does a foe whose weakness turns
+    // (roster plan B7, M5).
+    weak: regional && !def.story && !def.prism ? [...region.weak] : [...def.weak],
+    resist: regional && !early && !def.story && !def.prism ? [...region.resist] : [...def.resist],
     skills: lead ? [...lead, ...own] : own,
     // With a tier, one rounding (ruling 9); without, the line as it was.
     exp: tier ? Math.round(def.exp * reward * condition.expMul * tier.reward) : Math.round(def.exp * reward * condition.expMul),

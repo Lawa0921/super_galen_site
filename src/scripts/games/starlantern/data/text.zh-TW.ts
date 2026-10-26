@@ -196,6 +196,8 @@ export const T = {
       word: {
         winding: '蓄力', guarding: '守護', guarded: '受守護', stolen: (n: number) => `偷走 ${n} 金`, shared: '同心',
         flee: (n: number) => `溜走${n}`, hunted: '被宣告',
+        /** Roster plan B7: a turning weakness now (M5), an adaptation in force (M16); `el` is the element's name. */
+        weak: (el: string) => `弱${el}`, adapted: (el: string) => `抗${el}`,
       },
     },
     /** The part of the gold a felled thief gave back (roster plan B3, M13), already counted in the gold line. */
@@ -281,6 +283,9 @@ export const T = {
       return: (who: string, _other: string, n: number) => `${who}偷走的 ${n} 金回到背包了！`,
       /** B1 review item 4: a decoy leaves with its foe. */
       vanish: (who: string) => `${who}跟著散去了。`,
+      /** Roster plan B7: a foe enters its next stage (M8); a foe adapts to what struck it (M16). */
+      stage: (who: string) => `${who}的樣子變了！`,
+      adapt: (who: string) => `${who}適應了這一擊的屬性！`,
     },
     heal: (who: string, n: number) => `${who} 回復 ${n} HP`,
     tp: (who: string, n: number) => `${who} 回復 ${n} TP`,

@@ -18,6 +18,9 @@ export const foeMarks: MechModule = {
     if (!e.alive) return [];
     const out: MechWord[] = [];
     if (e.winding !== undefined) out.push(plain(W.winding));
+    // Roster plan B7: a turning weakness as it stands (M5), an adaptation in force (M16).
+    if (e.prism) for (const el of e.weak) out.push(plain(W.weak(T.element[el])));
+    if (e.adapted && e.adapted.turns > 0) out.push(plain(W.adapted(T.element[e.adapted.el])));
     if (e.cover) out.push(plain(W.guarding));
     if (foeGuard(s, e) !== e) out.push(plain(W.guarded));
     if (e.stolen) out.push(plain(W.stolen(e.stolen)));
