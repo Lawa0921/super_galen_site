@@ -616,4 +616,20 @@ describe('the roster waits on its live set (roster plan Task A4)', () => {
     });
     expect(ROSTER_LIVE.size).toBe(0);
   });
+
+  it('a region keeps its legacy table until its natives are live (PR A review ruling)', () => {
+    const roadB = Object.values(MAINLINE_TABLES.B).flat();
+    withRosterLive(roadB, () => {
+      expect(encounterTable('frost', 4)).toEqual([...legacyEncounterTable('frost', 4), ...MAINLINE_TABLES.B.slice(0, 6)]);
+      expect(encounterTable('mainline', 4)).toEqual(MAINLINE_TABLES.B);
+    });
+    withRosterLive([...roadB, ...NATIVE_GROUPS.frost.flat()], () => {
+      expect(encounterTable('frost', 4)).toEqual([...NATIVE_GROUPS.frost, ...MAINLINE_TABLES.B.slice(0, 6)]);
+      expect(encounterTable('blaze', 4)).toEqual([...legacyEncounterTable('blaze', 4), ...MAINLINE_TABLES.B.slice(0, 6)]);
+    });
+    // A treasure foe alone never joins a legacy table.
+    withRosterLive(['hoarder'], () => {
+      for (const d of [4, 10, 16]) expect(encounterTable('mainline', d)).toEqual(legacyEncounterTable('mainline', d));
+    });
+  });
 });

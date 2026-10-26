@@ -10,8 +10,9 @@ import {
   WARDEN_GROUPS, artEnemy, artMaterial, artSpecial, bandOf, bossFor, listedEnemy, liveRosterIds, ownerOf, wardenFor,
 } from './monsters';
 import { REGIONS, type RegionId } from './regions';
-import { legacyEncounterTable, scaleEnemy } from '../engine/scaling';
+import { encounterTable, legacyEncounterTable, scaleEnemy } from '../engine/scaling';
 import { withRosterLive } from '../engine/testing';
+import { MARKER_GLYPH } from '../render/markers';
 import { GLIMMER_SALT, WARDEN_SALT } from '../engine/dungeon/run';
 import { STARLIT_SALT } from '../engine/loot/drops';
 import { FORGE_SALT } from '../engine/forge/cost';
@@ -540,45 +541,155 @@ describe('roster tables, bosses and wardens (roster plan Task A4, spec §3.4, §
 });
 
 /**
- * Roster plan Task A5 (spec §4.1, §4.2, ruling 20): a name is seen at any depth, so no roster name may carry a word the
- * story has not told yet. Copied from the lore ledger's 揭露表 (docs/superpowers/story/starlantern-lore-ledger.md §3, :98-114)
- * and data/story/story.test.ts (a test file is not imported); when the ledger changes, this list changes with it.
+ * Roster plan Task A5 (spec §4.1, §4.2, ruling 20; widened by the PR A review): a name, a skill's name or an own unique's
+ * lore is seen at any depth, so none may carry a word the story has not told yet. Copied from the lore ledger's 揭露表
+ * (docs/superpowers/story/starlantern-lore-ledger.md §3, :98-114) and from data/story/story.test.ts (a test file is not
+ * imported): `RIN_SECRET_TERMS` (:428), `SPOILERS` (:457, :462) and the whole of `REVEALED` (:1009-1046), row for row, so a
+ * companion's words before her piece are kept out too. When either changes, this list changes with it.
  */
-const SECRET_WORDS: { word: string; from: string }[] = [
-  { word: '靜鐘會', from: 'ledger :100, story.test.ts :462 (act3)' },
-  { word: '守燈人', from: 'ledger :101-102, story.test.ts :457 (act4, mem:hero:9)' },
-  { word: '燈鑰', from: 'ledger :102-103 (mem:hero:10)' },
-  { word: '代號', from: 'ledger :104, story.test.ts :428 RIN_SECRET_TERMS (mem:rin:6)' },
-  { word: '信物', from: 'ledger :104, RIN_SECRET_TERMS' },
-  { word: '刺客', from: 'ledger :104, RIN_SECRET_TERMS' },
-  { word: '派來殺', from: 'ledger :104, RIN_SECRET_TERMS' },
-  { word: '派去殺', from: 'ledger :104, RIN_SECRET_TERMS' },
-  { word: '去殺', from: 'ledger :104, RIN_SECRET_TERMS' },
-  { word: '要殺的人', from: 'ledger :104, RIN_SECRET_TERMS' },
-  { word: '艾斯特拉', from: 'ledger :101 (act4)' },
-  { word: '燈喰之母', from: 'STORY.finaleBossName (finale); lantern-mother itself excepted' },
-  { word: '撤退', from: 'story.test.ts :1046 REVEALED scarlet 5' },
-  { word: '歐里克', from: 'ledger :109, story.test.ts :1039 REVEALED liz 5' },
-  { word: '道具店', from: 'ledger :109 (T10)' },
-  { word: '露米亞', from: 'ledger :109 (T10)' },
-  { word: '債', from: 'story.test.ts :1036 REVEALED liz 2' },
-  { word: '新月', from: 'story.test.ts :1011 REVEALED selene 5 (I-201)' },
-  { word: '滿月', from: 'ruling 20: false-moon names neither phase (mem:selene:2)' },
-  { word: '公主', from: 'story.test.ts :1045 REVEALED scarlet 4, I-211' },
-  { word: '祖先', from: 'story.test.ts :1028 REVEALED bobby 1' },
+const SECRET_WORDS: { re: RegExp; from: string }[] = [
+  { re: /靜鐘會/, from: 'ledger :100, story.test.ts :462 (act3)' },
+  { re: /守燈人/, from: 'ledger :101-102, story.test.ts :457 (act4, mem:hero:9)' },
+  { re: /燈鑰/, from: 'ledger :102-103 (mem:hero:10)' },
+  { re: /代號|信物|刺客|派來殺|派去殺|去殺|要殺的人/, from: 'ledger :104, story.test.ts :428 RIN_SECRET_TERMS (mem:rin:6)' },
+  { re: /艾斯特拉/, from: 'ledger :101 (act4)' },
+  { re: /燈喰之母/, from: 'STORY.finaleBossName (finale); lantern-mother itself excepted' },
+  { re: /道具店|露米亞/, from: 'ledger :109 (T10)' },
+  { re: /滿月/, from: 'ruling 20: false-moon names neither phase (mem:selene:2)' },
+  // REVEALED, story.test.ts :1010-1046
+  { re: /洛恩/, from: ':1010, :1021, :1040 (selene, noel, scarlet 5)' },
+  { re: /我想看見|新月/, from: ':1011 selene 5' },
+  { re: /不在了/, from: ':1012 chizuru 4' },
+  { re: /託付/, from: ':1013 chizuru 5' },
+  { re: /團長|做決定的/, from: ':1014 safira 4' },
+  { re: /[你妳]要繼續跳/, from: ':1015 safira 5' },
+  { re: /林子|守林/, from: ':1018 sylvie 1' },
+  { re: /帶出去/, from: ':1019 sylvie 4' },
+  { re: /帶出來|種子|種下|空地|新綠|發芽/, from: ':1020 sylvie 5' },
+  { re: /星火|燒掉/, from: ':1023 noel 3' },
+  { re: /燒光|為薪|保護/, from: ':1024 noel 4' },
+  { re: /商人/, from: ':1025 noel 5' },
+  { re: /祖先/, from: ':1028 bobby 1' },
+  { re: /一族|錯了/, from: ':1029 bobby 2' },
+  { re: /構造圖|都能裝/, from: ':1030 bobby 3' },
+  { re: /道歉|修好/, from: ':1031 bobby 4' },
+  { re: /閥/, from: ':1032 bobby 5' },
+  { re: /櫃檯|估價的本事|瓶罐/, from: ':1035 liz 1' },
+  { re: /債|借據|賒/, from: ':1036 liz 2' },
+  { re: /帽子|星燈|光柱/, from: ':1037 liz 3' },
+  { re: /麵包.{0,4}焦|焦.{0,4}麵包|寶庫的門/, from: ':1038 liz 4' },
+  { re: /爸爸|父親|歐里克|臉想起來/, from: ':1039 liz 5' },
+  { re: /起誓|立誓|誓言/, from: ':1042 scarlet 1' },
+  { re: /國家|王國/, from: ':1043 scarlet 2' },
+  { re: /轉身|逃|號角/, from: ':1044 scarlet 3' },
+  { re: /王城|公主|殿下/, from: ':1045 scarlet 4' },
+  { re: /朋友|活下去|撤退|密道/, from: ':1046 scarlet 5' },
+];
+/**
+ * Words the roster uses by the spec's own naming, cut out of a text before the scan (PR A review, item 2). Each is an
+ * everyday word in the name of a thing, not a companion's telling: 星火 (Noel's piece 3) names the storm land's star-fire
+ * foes (spec §4.2: 星屑火, 星火巨像; §5.6: 星火核, 星火頭冠); 號角 (Scarlet's piece 3) names the iron land's last
+ * commander's horn (spec §5.6: 紅色號角, and its skill 號角, which never says it is a retreat's).
+ */
+const APPROVED_WORDS: { word: string; from: string }[] = [
+  { word: '星火', from: 'spec §4.2, §5.6 (storm land)' },
+  { word: '號角', from: 'spec §5.6 (last-commander, red-horn)' },
 ];
 
 describe('roster names keep every secret (roster plan Task A5)', () => {
-  it('no name gives a secret away', () => {
-    const names: [string, string][] = [
+  it('no name, skill name or lore gives a secret away', () => {
+    const texts: [string, string][] = [
       ...rosterIds().map((id): [string, string] => [id, ENEMIES[id].name]),
+      ...rosterIds().flatMap((id) => ENEMIES[id].skills.map((k): [string, string] => [`${id} skill`, k.name])),
       ...rosterMats().map((m): [string, string] => [m.id, m.name]),
       ...ownUniques().map((s): [string, string] => [s.id, s.name]),
+      ...ownUniques().map((s): [string, string] => [`${s.id} lore`, s.lore]),
     ];
-    expect(names).toHaveLength(100 + 98 + 39);
-    for (const [id, name] of names) for (const { word, from } of SECRET_WORDS) {
-      if (id === 'lantern-mother' && word === '燈喰之母') continue;
-      expect(name.includes(word), `${id} 「${name}」 holds 「${word}」 (${from})`).toBe(false);
+    expect(texts.length).toBeGreaterThan(100 + 98 + 39 * 2);
+    for (const [id, raw] of texts) {
+      const text = APPROVED_WORDS.reduce((t, { word }) => t.split(word).join('〇'), raw);
+      for (const { re, from } of SECRET_WORDS) {
+        if (id === 'lantern-mother' && re.source === '燈喰之母') continue;
+        expect(re.test(text), `${id} 「${raw}」 matches ${re} (${from})`).toBe(false);
+      }
     }
+  });
+});
+
+/**
+ * The plan's go-live waves (L1b, L2b with L2c, L3b, L4b), cumulative: what ROSTER_LIVE holds after each (PR A review, item 1).
+ */
+const WAVE_1 = ['paper-moth', 'lamp-wight', 'root-hound', 'tin-soldier', 'dust-mimic', 'market-ghost', 'tongueless-bell', 'hollow-hunter', 'mist-twin',
+  'moon-crow', 'bell-watcher', 'sleepwalker', 'hoarder', 'fog-warden', 'silent-bell', 'hollow-champion', 'false-moon', 'bell-warden'];
+const WAVE_2 = [...WAVE_1, 'old-city-sentinel', 'requiem-choir', 'lantern-larva', 'epitaph-golem', 'ancestor-automaton', 'ash-archivist', 'wick-shade',
+  'keeper-echo', 'ember-maw', 'sorrow-crystal', 'deep-tendril', 'music-box', 'paper-cranes', 'lost-shadow', 'returning-light', 'gilded-hoarder',
+  'old-city-archon', 'gorged-beast', 'forgotten-festival', 'starless-whale', 'stopped-clock', 'first-lantern', 'lantern-mother', 'archon-hand',
+  'toppled-automaton', 'requiem-conductor', 'lantern-brood'];
+const WAVE_3 = [...WAVE_2, ...Object.entries(NATIVES).filter(([, r]) => ['blaze', 'frost', 'storm'].includes(r)).map(([id]) => id),
+  ...REGION_BOSSES.blaze, ...REGION_BOSSES.frost, ...REGION_BOSSES.storm, 'mirage-lead', 'ice-shrine', 'burning-page', 'rime-pillar'];
+const WAVE_4 = [...WAVE_3, ...Object.entries(NATIVES).filter(([, r]) => ['mire', 'shade', 'iron'].includes(r)).map(([id]) => id),
+  ...REGION_BOSSES.mire, ...REGION_BOSSES.shade, ...REGION_BOSSES.iron, 'grey-elder', 'locked-vault', 'gate-breaker'];
+
+describe('every live wave keeps the tables whole (PR A review, item 1; spec §3.4, §9.1 point 4)', () => {
+  const treasure = (id: string) => NORMALS[id]?.[0] === 'treasure';
+  const groupExp = (g: string[], region: RegionId, depth: number) =>
+    g.reduce((n, id) => n + (treasure(id) ? 0 : scaleEnemy(ENEMIES[id], depth, REGIONS[region], false).exp), 0);
+  const mean = (t: string[][], region: RegionId, depth: number) => t.reduce((n, g) => n + groupExp(g, region, depth), 0) / t.length;
+  const inRange = (ratio: number, what: string) => expect(ratio >= 0.92 && ratio <= 1.08, `${what} ${ratio.toFixed(3)}`).toBe(true);
+  const nativesLive = (r: Land) => NATIVE_GROUPS[r].flat().every((id) => ROSTER_LIVE.has(id));
+
+  type Land = (typeof NATIVE_REGIONS)[number];
+  for (const [name, wave] of [['L1', WAVE_1], ['L2', WAVE_2], ['L3', WAVE_3], ['L4', WAVE_4]] as const) {
+    it(`wave ${name}: species, natives and exp hold on every band and region`, () => {
+      expect(new Set(wave).size, name).toBe(wave.length);
+      withRosterLive([...wave], () => {
+        for (const r of ALL_REGIONS) for (let d = 4; d <= 60; d++) {
+          const t = encounterTable(r, d);
+          const legacy = legacyEncounterTable(r, d);
+          const what = `${name} ${r} d${d}`;
+          const replaced = JSON.stringify(t.slice(0, legacy.length)) !== JSON.stringify(legacy);
+          // Ruling (PR A review): a region's table is its own only once its natives are live; until then the legacy table
+          // stays whole and live roster groups only join it. The main road's band table replaces it once six groups are live.
+          if (r !== 'mainline') expect(replaced, what).toBe(nativesLive(r as Land));
+          if (replaced) {
+            // Spec §3.4 holds on every table the roster stands in for (a legacy table is today's game and keeps its own shape).
+            const species = speciesOf(t);
+            expect(species.size, what).toBeGreaterThanOrEqual(8);
+            for (const id of species) expect(t.filter((g) => g.some((x) => x === id)).length / t.length, `${what} ${id}`).toBeLessThanOrEqual(0.4);
+            if (r !== 'mainline') {
+              const land = r as Land;
+              expect([...species].filter((id) => ENEMIES[id].home === land).length, what).toBeGreaterThanOrEqual(4);
+              expect(t.filter((g) => g.some((id) => ENEMIES[id].home === land)).length / t.length, what).toBeGreaterThanOrEqual(0.4);
+            }
+          }
+          if (r !== 'mainline') {
+            if (d <= 30) inRange(mean(t, r, d) / mean(legacyEncounterTable(r, d), r, d), `${what} exp`);
+          }
+        }
+        // The main road, each band over its depths together (see exp holds against the legacy tables).
+        for (const b of ['B', 'C', 'D', 'E'] as const) {
+          let fresh = 0, legacy = 0;
+          for (let d = 4; d <= 30; d++) if (bandOf(d) === b) {
+            fresh += mean(encounterTable('mainline', d), 'mainline', d);
+            legacy += mean(legacyEncounterTable('mainline', d), 'mainline', d);
+          }
+          inRange(fresh / legacy, `${name} mainline ${b} exp`);
+        }
+      });
+    });
+  }
+
+  it('the waves end with the whole roster live', () => {
+    expect([...WAVE_4].sort()).toEqual(rosterIds().sort());
+  });
+});
+
+describe('a warden waits for its room (PR A review, item 3)', () => {
+  it('no warden goes live before the map can mark and enter a warden room', () => {
+    // floorOf places a live warden's room, but nothing marks or enters one until plan B5 (the elite's event tile, `move`).
+    // B5 adds the 'warden' marker and its handling, then flips the first expectation and removes this note.
+    const ready = Object.hasOwn(MARKER_GLYPH, 'warden');
+    expect(ready).toBe(false);
+    for (const id of [...MAINLINE_WARDENS, ...Object.values(REGION_WARDENS)]) expect(ROSTER_LIVE.has(id) && !ready, `${id} is live with no warden room`).toBe(false);
   });
 });

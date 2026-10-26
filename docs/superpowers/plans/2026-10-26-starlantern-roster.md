@@ -160,6 +160,7 @@ spec 已核准（2026-10-26，控制者依使用者授權）。下面是 spec �
 22. **遺忘的圖示**：`forget` 的 14px 異常小圖示跟 E1 一起生成、審核、發布（G4 的小圖示工具）。B9 實作遺忘時，`AILMENT_ICON_IDS`（`render/artPaths.ts:27`）**不加** `forget`；異常列沒有圖示時照既有的文字顯示（B9 先確認退回文字的路徑存在，沒有就在 B9 補上文字退回，不畫任何圖）。E1 發布時才把 `forget` 加進 `AILMENT_ICON_IDS`。
 23. **圖示尺寸**：照 5d 的實際產出（`icon-blaze-core` 33×35），QA 用 `--height 32`、方框 ≤ 36×36；`contract.md` 的「24×24 方框」在 D1 改成和 5d 實際一致的寫法（只改文字，附 5d 的量測）。
 24. **生成**：一律 `codex_still.py generate`（`contract.md:6`）。四批全做（含地區）。codex Plus 額度用完時改用 codex credits（使用者 2026-10-26 裁定）；**兩者都用完**才暫停回報。工具不自動切換到其他後端，也**絕不用佔位美術**。
+25. **地區的表等原生上線才換（PR A 審查，控制者裁定）**：地區的表只有在**那個地區的原生組全部上線**之後才換成「原生 6 組＋本帶前 6 組」；在那之前一律是「舊表整張＋已上線的新組」（spec §8.1 第 4 步的過渡，不管新組有幾組）。本道照 spec §8.1 原規則。另外，只有寶物怪的那一組不會單獨加進舊表（舊表只有 3–4 組，牠會變成四、五場就一場）。測試：`data/monsters.test.ts` 的 `every live wave keeps the tables whole`，對 L1–L4 每一波的上線集合，在真的 `encounterTable` 上逐帶逐區驗 spec §3.4 與經驗等價。
 
 ## 使用者已決定（2026-10-26）
 
@@ -406,7 +407,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - 已知會紅：預期沒有。
 
 **Interfaces:**
-- `bandOf(depth)`（spec §3.1）；`encounterTable(region, depth)`：`depth ≤ 3` → 舊表；否則 live 過濾，沒有新組 → 舊表；新組少於 6 → 舊表＋新組；其餘 → live 表。
+- `bandOf(depth)`（spec §3.1）；`encounterTable(region, depth)`：`depth ≤ 3` → 舊表；否則 live 過濾，沒有新組 → 舊表；新組少於 6、或地區的原生組還沒全部上線（裁定 25）→ 舊表＋新組；其餘 → live 表。
 - `bossFor(region, depth): string[]`（裁定 11；只處理 5 的倍數；呼叫端在 B5 接上）。
 - `wardenFor(region, depth): string | null`（`d ≥ 8`、`d % 5 === 3`、不是頭目層；本道 `MAINLINE_WARDENS[((d − 8) / 5) % 5]`、地區 `REGION_WARDENS[r]`；沒上線回 `null`）。
 - `WARDEN_SALT = 0x428a2f98`（`engine/dungeon/run.ts`，export）。
@@ -562,6 +563,10 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - Read：spec §9.3、裁定 4、5；`engine/balance.bond.test.ts`（選擇性執行的寫法、不 import 凍結檔的輔助函式）。
 
 - [ ] **Step 1：寫帶**（spec §9.3，門檻全部沿用；22e 取消）：22a 物種等價、22b 頭目等價（對照同深度同地區的 `lanterneater`）、22c 地區深處、22d 深帶歪隊、22f 頭目歪隊、22g 寶物怪（只報告）、22h 專屬獨特天花板、22i 守關者；22j（`tierBands.roster.test.ts`）：每個新頭目在它出現的第 10–25 層，噩夢魔法階與地獄稀有階（同 N3、H2 的隊伍與詞綴），勝率 ≥ 同格 `lanterneater` − 0.10、而且「不裝符文」的勝率 ≤ 同格 `lanterneater` 的不裝符文 + 0.10；每個守關者在地獄第 20、25 層（有的話）勝率 ≥ .75（同 HE）。檔頭寫跑法。
+- **還沒量到的量（PR A 審查第 4 點，22c、22g 與收尾時處理，或在報告裡明寫沒量）**：
+  - 本道 F 帶（31 層以後）的經驗等價沒有測試（`exp holds` 只量 4–30；A 時手算約 1.0）；
+  - 經驗是「每組」等價，不是「每回合」：霜凍、鋼鐵成對的重型打得久，練等其實會慢一些（22c 量勝率與 hpLoss 時順便記每場回合數）；
+  - 金幣與素材賣價沒有等價檢查（招牌素材依帶定價，深層錢包會變厚；`economy.test.ts` 在 L 任務重跑，門檻不放寬）。
 - [ ] **Step 2**：`ROSTER_BANDS=1` 跑一次（定義都查得到，不需要上線）。紅的格子：只調新物種自己的數字（四輪為限），每一輪的表存 SDD `bands-22.md`。22j 在 L 任務才是必過（這裡記錄即可）。
 - [ ] **Step 3**：全套（不含選擇性帶）、tsc、閘門 identical（只調名冊數字不會動到舊表）。
 - [ ] **Step 4**：收尾 G，commit：`test(starlantern): band 22, the roster against the lantern-eater and its own kin`。

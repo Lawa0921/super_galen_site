@@ -51,6 +51,9 @@ export function bandOf(depth: number): Band {
   return depth <= 3 ? 'A' : depth <= 9 ? 'B' : depth <= 15 ? 'C' : depth <= 24 ? 'D' : depth <= 30 ? 'E' : 'F';
 }
 
+/** The treasure foes (spec §5.3, archetype 寶): they flee, so the tables count them as paying nothing. */
+export const TREASURE: ReadonlySet<string> = new Set(['hoarder', 'gilded-hoarder']);
+
 const x2 = (id: string) => [id, id];
 const x3 = (id: string) => [id, id, id];
 
@@ -167,6 +170,10 @@ export function wardenFor(region: RegionId, depth: number): string | null {
 /**
  * Spec §8.1 steps 2-5: the table for a depth past 3, given the legacy one. Only groups whose every id is live count; with
  * none holding a roster id the legacy table stands, with fewer than six the live new ones join it, else they replace it.
+ * A region's table is replaced only once all its native groups are live (controller ruling, PR A review): before that a
+ * region keeps its legacy table whole and the live main-road groups only join it, so it never turns into a main-road table
+ * with no natives. A treasure foe's lone group never joins a legacy table by itself: one group in four or five would be a
+ * treasure foe there, where its band's table has one in twelve.
  */
 export function rosterTable(region: RegionId, depth: number, legacy: string[][]): string[][] {
   const band = bandOf(depth);
@@ -174,6 +181,7 @@ export function rosterTable(region: RegionId, depth: number, legacy: string[][])
   const full = region === 'mainline' ? MAINLINE_TABLES[band] : [...NATIVE_GROUPS[region], ...MAINLINE_TABLES[band].slice(0, 6)];
   const live = full.filter((g) => g.every(listedEnemy));
   const fresh = live.filter((g) => g.some((id) => !LEGACY.has(id)));
-  if (!fresh.length) return legacy;
-  return live.length < 6 ? [...legacy, ...fresh] : live;
+  if (!fresh.some((g) => !g.every((id) => TREASURE.has(id)))) return legacy;
+  const own = region === 'mainline' || NATIVE_GROUPS[region].every((g) => g.every(listedEnemy));
+  return !own || live.length < 6 ? [...legacy, ...fresh] : live;
 }

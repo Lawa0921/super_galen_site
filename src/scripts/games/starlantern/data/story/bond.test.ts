@@ -33,8 +33,11 @@ describe('bond data', () => {
   it('GIFTABLE is every monster, junk, rare, region and keepsake material', () => {
     // Roster plan ruling 13: the kind alone decides, with no list of exceptions; a keepsake is giftable, a trophy is not.
     expect(GIFT_KINDS).toEqual(['monster', 'junk', 'rare', 'region', 'keepsake']);
-    expect(GIFTABLE).toEqual(giftableOf(MATERIALS));
-    expect([...GIFTABLE].sort()).toEqual(Object.values(MATERIALS).filter((m) => ['monster', 'junk', 'rare', 'region', 'keepsake'].includes(m.kind)).map((m) => m.id).sort());
+    // Counted apart from the derivation: the eighteen, the roster's 59 signatures and its 9 keepsakes (ruling 12).
+    const KEEPSAKES = ['moon-silver', 'tower-dust', 'automaton-core', 'copper-anklet', 'shrine-rope', 'ash-page', 'ashen-acorn', 'vault-coin', 'gate-splinter'];
+    expect(GIFTABLE).toHaveLength(18 + 59 + 9);
+    for (const id of KEEPSAKES) expect(GIFTABLE, id).toContain(id);
+    expect(GIFTABLE.filter((id) => MATERIALS[id].owner && MATERIALS[id].kind === 'monster')).toHaveLength(59);
     for (const id of GIFTABLE) {
       expect(id.startsWith('essence-')).toBe(false);
       expect(ITEMS[id]).toBeUndefined();
