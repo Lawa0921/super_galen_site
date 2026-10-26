@@ -18,8 +18,10 @@ import type { UiAction } from '../input';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
-import { playAndRecord, playBeat, playNight, shouldPlay, storyCtx, type SceneOpts } from '../story';
+import { playAndRecord, playBeat, playNight, putBackdrop, sceneStaging, shouldPlay, storyCtx, type SceneOpts } from '../story';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
+import { innNews } from './inn';
+import { ROMANCE_LINES } from '../../data/bond.zh-TW';
 
 const FACILITIES = ['guild', 'shop', 'inn', 'gate', 'forge', 'handbook', 'settings'] as const;
 /** The notices of a return home: the day's line still follows them (staging S2). The others are about the interface. */
@@ -50,6 +52,7 @@ export class TownScene implements Scene {
   private calEl!: HTMLElement;
   private talk: Dialogue;
   private root!: HTMLElement;
+  private sceneEl!: HTMLElement;
   private ask: MenuView | null = null;
   /** The story scene (or a night's beat) on screen, if any: it takes the actions while it plays. */
   private playing: { onAction(a: UiAction): void } | null = null;
@@ -65,13 +68,12 @@ export class TownScene implements Scene {
   enter(root: HTMLElement): void {
     this.root = root;
     const t = T.ui2.town;
-    const menu = new Menu(FACILITIES.map((id) => ({ id, label: t.facilities[id] })));
-    this.view = new MenuView(menu, { pick: (it) => this.pick(it.id, it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.askTitle(); } });
+    this.view = new MenuView(new Menu(this.menuItems()), { pick: (it) => this.pick(it.id, it.label), moved: () => this.ctx.sfx.cursor(), cancel: () => { this.ctx.sfx.cancel(); this.askTitle(); } });
     const place = win('slx-place', [document.createTextNode(t.place)]);
     this.calEl = win('slx-calendar', [document.createTextNode(this.calendarText())]);
     const gold = win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)]);
     this.hud = [place, this.calEl, gold];
-    const sceneEl = el('div', { class: 'slx-scene slx-town' }, [
+    const sceneEl = this.sceneEl = el('div', { class: 'slx-scene slx-town' }, [
       // the place plate and the calendar beside it, in one row (time and moon ruling 8); then the gold
       el('div', { class: 'slx-town-hud' }, [place, this.calEl]),
       gold,
@@ -116,12 +118,29 @@ export class TownScene implements Scene {
     if (banked && (notice === 'banked' || notice === 'lamp')) says.push({ who: '', text: bankedLine(banked, this.ctx.art) });
     else if (notice) says.push({ who: '', text: T.notices[notice] });
     if (endedLine) says.push({ who: '', text: endedLine });
+    // bond plan ruling 14: who rose a tier on the dive, after what came home; the day's line draws as it did without it
+    const draw = says.length === 0;
+    for (const u of game.bondUps.splice(0)) says.push({ who: '', text: T.ui2.bond.rose(CHARACTERS[u.id].name, T.ui2.bond.tiers[u.tier]) });
     // The day's line. With nothing before it, it is drawn from the game rng as it always was; after a notice it is picked
     // without a draw, so the rng stream (the next portal roll, the next run's seed) is what it was before staging S2.
-    if (!notice || RETURNS.has(notice)) says.push(this.dayLine(says.length === 0));
+    if (!notice || RETURNS.has(notice)) says.push(this.dayLine(draw));
     for (const l of says) await this.speak(l.who, l.text);
     await this.playNight();
     this.refreshCalendar();
+    this.refreshMenu();
+  }
+
+  /** The town's menu: each facility, the inn marked 新 while a talk waits there (bond plan Task 12). */
+  private menuItems() {
+    const t = T.ui2.town;
+    const fresh = innNews(this.ctx.game);
+    return FACILITIES.map((id) => ({ id, label: t.facilities[id], ...(id === 'inn' && fresh ? { right: T.ui2.handbook.fresh, rightClass: 'slx-fresh' } : {}) }));
+  }
+
+  /** The menu's marks read again once the arrival's scenes have played (they may have opened a talk). */
+  private refreshMenu(): void {
+    this.view.menu.items.splice(0, this.view.menu.items.length, ...this.menuItems());
+    this.view.render();
   }
 
   /** 「秋・下弦」: the season the story stands in and today's moon (time and moon ruling 8). */
@@ -193,6 +212,8 @@ export class TownScene implements Scene {
       ...STORY.townLines[stage].map((text) => ({ who: '', text })),
       ...rinSays.map((text) => ({ who: CHARACTERS.rin.name, text })),
       ...bellkeeperPool(s).map((text) => ({ who: NPC_NAMES.bellkeeper, text })),
+      // bond plan ruling 13: the one chosen says her two lines too, last in the pool (the draw is the same one)
+      ...(s.story.romance ? (ROMANCE_LINES[s.story.romance] ?? []).map((text) => ({ who: CHARACTERS[s.story.romance!].name, text })) : []),
     ];
     const i = draw ? Math.floor(this.ctx.game.rng() * pool.length) : (s.gold + s.story.seen.length) % pool.length;
     return pool[i];
@@ -206,11 +227,14 @@ export class TownScene implements Scene {
     // One the story setting does not show is only recorded (auto): the town stays as it is.
     if (!shouldPlay(id, storyCtx(this.ctx).mode)) { await playAndRecord(this.talk, id, storyCtx(this.ctx), o).done; return; }
     this.putAway(true);
+    // whole-branch review M1: an after-story stands on its own place here too (`sceneStaging`; the town has no keeper)
+    const takeDown = putBackdrop(this.sceneEl, this.ctx.art, sceneStaging(id, 'town')?.backdrop ?? null);
     try {
       const p = playAndRecord(this.talk, id, storyCtx(this.ctx), o);
       this.playing = p;
       await p.done;
     } finally {
+      takeDown();
       this.playing = null;
       if (!this.inNight) this.putAway(false);
     }

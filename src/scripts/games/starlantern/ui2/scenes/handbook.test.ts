@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { CHARACTER_IDS, CHARACTERS, titleOf } from '../../data/characters';
 import { TOWN_FRAGMENTS } from '../../data/story/fragments';
-import { memScene, type SceneId } from '../../data/story/scenes';
+import { BONDS_WRITTEN, memScene, type SceneId } from '../../data/story/scenes';
 import { STORY } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { Game } from '../../engine/game';
@@ -17,6 +17,15 @@ import { HandbookScene, tabsFor } from './handbook';
 import { AFFIXES, AFFIX_IDS } from '../../data/affixes';
 import { TIERS } from '../../data/difficulty';
 import { HELL_BOSS_DEPTH, NIGHTMARE_DEPTH } from '../../engine/tiers';
+/**
+ * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
+ * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
+ */
+const BOND_BASE = [...BONDS_WRITTEN];
+const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
+const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+const SCENES_BASE = { ...STORY.scenes };
+const scenesBack = (id: keyof typeof STORY.scenes): void => { if (SCENES_BASE[id]) STORY.scenes[id] = SCENES_BASE[id]; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
 
 const H = T.ui2.handbook;
 
@@ -420,5 +429,43 @@ describe('HandbookScene: a replayed night (time and moon Task 5)', () => {
     expect(t.root.querySelector('.slx-veil-night.slx-on')).not.toBeNull();
     expect(t.root.querySelector('[class*="slx-moon-"]')).toBeNull();
     await t.skipScene();
+  });
+});
+
+describe('HandbookScene: the bond (bond plan Task 14)', () => {
+  it("a companion's page shows her bond and what she has been offered", () => {
+    const t = setup(undefined, (g) => { g.state.party.roster.rin.bond = { talk: 3, field: 40, gifts: { 'dusk-cloth': 30 }, refused: ['king-scale'] }; });
+    t.goTab(H.tabs.people);
+    t.s.onAction('down');   // 凜
+    const text = t.root.querySelector('.slx-hb-bond')!.textContent!;
+    expect(text).toContain('信賴　83／100'.replace('信賴', '羈絆'));
+    expect(text).toContain('送禮　30／30（已滿）');
+    expect(text).toContain('同隊　40／40（已滿）');
+    expect(text).toContain('談心　3／12');
+    expect(text).toContain('暮影布　最愛');
+    expect(text).toContain('王者之鱗　婉拒');
+    t.s.onAction('up');     // 洛恩
+    expect(t.root.querySelector('.slx-hb-bond')).toBeNull();
+  });
+
+  it('a replayed bond scene adds nothing', async () => {
+    bondsAdd('rin');
+    STORY.scenes['bond:rin:1'] = {
+      title: '凜・羈絆 1', summary: '一件小事。',
+      lines: [{ who: 'hero', choices: [{ tone: 'stay', text: '（坐下。）', reply: [{ who: 'rin', text: '嗯。' }] }, { tone: 'ask', text: '「然後？」', reply: [{ who: 'rin', text: '沒了。' }] }] }],
+    };
+    try {
+      const t = setup(undefined, (g) => { g.state.party.roster.rin.memories = 2; g.state.party.roster.rin.bond = { talk: 0, field: 10, gifts: {} }; g.state.story.seen.push('bond:rin:1'); });
+      t.goTab(H.tabs.people);
+      t.s.onAction('down');
+      t.s.onAction('confirm');   // her scenes
+      t.pick('凜・羈絆 1');
+      await t.settle();
+      t.s.onAction('confirm');   // 坐下
+      await t.settle();
+      t.s.onAction('confirm');
+      await t.settle();
+      expect(t.game.state.party.roster.rin.bond!.talk).toBe(0);
+    } finally { bondsBack(); scenesBack('bond:rin:1'); }
   });
 });

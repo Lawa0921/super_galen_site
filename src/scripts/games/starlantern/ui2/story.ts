@@ -2,8 +2,13 @@ import { CHARACTERS, CHARACTER_IDS } from '../data/characters';
 import { chainLength } from '../data/story/chains';
 import { BANTER_GATE, CHAT_GATE, GROUP_GATE, MAJOR_SCENES, heavyScene, memScene, sceneKind, type SceneId, type StoryGate } from '../data/story/scenes';
 import { AFTER_CHOICE } from '../data/story/voiceGates';
+import type { Backdrop } from '../data/story/places';
 import { WARM_MOODS } from '../data/story/tone';
-import { NIGHT_PLACE, NPC_NAMES, STORY, linesWhen, type NpcId, type Place, type ScriptLine, type Speaker } from '../data/story.zh-TW';
+import { NIGHT_PLACE, NPC_NAMES, STORY, flatLines, isChoice, linesWhen, type ChoiceLine, type NpcId, type Place, type SceneLine, type ScriptLine, type Speaker } from '../data/story.zh-TW';
+import { BOND_GATE, COMPANIONS, type BondStep, type Companion, type Tone } from '../data/story/bond';
+import { Menu } from './menu';
+import { MenuView, win } from './widgets';
+import { bondTier } from '../engine/story/bond';
 import { T } from '../data/text.zh-TW';
 import type { Game } from '../engine/game';
 import { storyPieces } from '../engine/story/events';
@@ -12,6 +17,7 @@ import type { CharacterId } from '../engine/types';
 import { NORMAL_SMILES, art, type StoryMood } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { artIdOf } from '../ui/art';
+import { el } from '../ui/dom';
 import type { UiAction } from './input';
 import type { SceneCtx } from './scene';
 import { DEFAULT_SETTINGS, type StoryMode } from './settings';
@@ -85,18 +91,57 @@ const faceOrder = (mood: StoryMood, artId: string, heavy: boolean): StoryMood[] 
 
 /** Which side of Rin's choice a scene belongs to: `before` her oath, `after` it, or null when it can play on either. */
 export type Era = 'before' | 'after';
-const gateOf = (id: SceneId): StoryGate | undefined => CHAT_GATE[id] ?? BANTER_GATE[id] ?? (GROUP_GATE as Partial<Record<SceneId, StoryGate>>)[id];
+/** A scene's gate: a chat's, a banter's, a group scene's, or a bond scene's (`BOND_GATE`: Rin's first two expire at her choice, her last two wait on it). */
+const gateOf = (id: SceneId): StoryGate | undefined => {
+  const bond = /^bond:([a-z]+):([1-4])$/.exec(id);
+  if (bond) return BOND_GATE[bond[1] as Companion]?.[Number(bond[2]) as BondStep];
+  return CHAT_GATE[id] ?? BANTER_GATE[id] ?? (GROUP_GATE as Partial<Record<SceneId, StoryGate>>)[id];
+};
 /**
  * The era a scene belongs to, from when it can ever play: her memory pieces and her reveal (the reveal sets the oath as it
  * ends, and every piece of hers is told before it), and a scene gated `beforeChoice`, are `before`; the scenes after her
  * choice (`AFTER_CHOICE`), the eve (queued only once she has sworn) and a scene gated `oath` are `after`. Any other can play on
- * either side, so it has none and follows the game. A replay from the handbook after her oath then shows the faces she had
+ * either side, so it has none and follows the game. The after-stories, the romances and the walk together come after the
+ * finale, so after her choice too. A replay from the handbook after her oath then shows the faces she had
  * when the scene was told (her guilty averted look, not her shy one), and a scene played live reads the same as the game.
  */
+/**
+ * Review of bond plan Task 22: how a scene opened from a facility stands on its place card (`Place.backdrop`, `at`). The
+ * facility's own hall keeps its keeper and its picture; anywhere else the keeper steps away, and the place's own published
+ * picture (one other than the facility's) goes behind the scene. A card with no picture of its own keeps the facility's; no
+ * card moves nothing. `screen` is where it plays: a facility, or the town (no keeper there; whole-branch review M1).
+ */
+export function stagingOf(place: Place | undefined, screen: Backdrop): { backdrop: Backdrop | null; keeper: boolean } {
+  if (!place) return { backdrop: null, keeper: true };
+  return { backdrop: place.backdrop && place.backdrop !== screen ? place.backdrop : null, keeper: place.at === screen };
+}
+
+/**
+ * How a bond scene, an after-story, a romance or the walk together stands where it plays (`stagingOf` on its first card);
+ * null for any other scene, which stays as the screen has it.
+ */
+export function sceneStaging(id: SceneId, screen: Backdrop): { backdrop: Backdrop | null; keeper: boolean } | null {
+  const kind = sceneKind(id);
+  if (kind !== 'bond' && kind !== 'ending' && kind !== 'romance') return null;
+  return stagingOf(flatLines(STORY.scenes[id]?.lines ?? []).find((l) => l.place)?.place, screen);
+}
+
+/**
+ * Puts `backdrop`'s published picture behind a scene on `sceneEl`, over the screen's own picture (`.slx-bg`), when it has
+ * landed (none: the screen's stays). Gives back what takes it down again.
+ */
+export function putBackdrop(sceneEl: HTMLElement, index: ArtIndex, backdrop: Backdrop | null): () => void {
+  if (!backdrop || !index.has(art.scene(backdrop))) return () => {};
+  const shown = el('img', { class: 'slx-bg slx-backdrop', attrs: { src: art.scene(backdrop), alt: '' } });
+  const bg = sceneEl.querySelector(':scope > .slx-bg');
+  if (bg) bg.after(shown); else sceneEl.prepend(shown);
+  return () => shown.remove();
+}
+
 export function sceneEra(id: SceneId): Era | null {
   const g = gateOf(id);
   if (id === 'rin-reveal' || g?.beforeChoice || Array.from({ length: chainLength('rin') }, (_, i) => memScene('rin', i + 1)).includes(id)) return 'before';
-  if (AFTER_CHOICE.has(id) || id === 'finale-eve' || g?.oath) return 'after';
+  if (AFTER_CHOICE.has(id) || id === 'finale-eve' || g?.oath || sceneKind(id) === 'ending' || sceneKind(id) === 'romance') return 'after';
   return null;
 }
 
@@ -129,15 +174,17 @@ function speakerFaces(who: Speaker, s: GameState, mood: StoryMood, heavy: boolea
   return { name: NPC_NAMES[npc], faces: facility ? [art.npc(facility, 'normal')] : [] };
 }
 
-/** A scene's lines without the ones whose condition does not hold for this game. */
-export function linesOf(id: SceneId, s: GameState): ScriptLine[] {
+/** A scene's lines without the ones whose condition does not hold for this game (a choice always stays). */
+export function linesOf(id: SceneId, s: GameState): SceneLine[] {
   // story L spec §4.9: a companion is full once her last piece is told; Lorne and Rin once they hold it all.
   const full = CHARACTER_IDS.filter((c) => !!s.party.roster[c] && storyPieces(s, c) >= chainLength(c));
-  return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath, seen: s.story.seen });
+  // bond plan Task 7: each met companion's bond tier, for the lines that wait on one
+  const tiers = Object.fromEntries(COMPANIONS.filter((c) => s.party.recruited.includes(c)).map((c) => [c, bondTier(s.party.roster[c])]));
+  return linesWhen(STORY.scenes[id].lines, { met: s.party.recruited, full, returned: s.story.returned, oath: !!s.party.roster.rin?.oath, seen: s.story.seen, tiers });
 }
 
 /** The first one to speak in `lines`: they stand on the left, everyone else on the right. */
-const firstSpeaker = (lines: ScriptLine[]): Speaker | undefined => lines.find((l) => l.who !== 'narrator')?.who;
+const firstSpeaker = (lines: readonly SceneLine[]): Speaker | undefined => lines.find((l) => l.who !== 'narrator')?.who;
 
 /** Says one line in the box: its speaker's plate (or `plate`, when given), and the face on its side. `heavy`: see `faceOrder`; `era`: `sceneEra`. */
 function sayLine(talk: Dialogue, line: ScriptLine, ctx: StoryCtx, first: Speaker | undefined, plate?: string, heavy = false, era: Era | null = null): Promise<void> {
@@ -156,14 +203,37 @@ export interface SceneOpts { place?: Place }
 
 /**
  * Plays a scene in the dialogue box. While it plays the caller hands every action to `onAction`:
- * confirm turns the page, cancel (Esc, X, right click) stops and shows the summary instead.
+ * confirm turns the page, cancel (Esc, X, right click) stops and shows the summary instead. A bond scene's choice (bond
+ * plan Task 9, spec §7.4): Lorne's plate and face in the box and the ways to say it in a menu over it; the one picked plays
+ * its reply and the scene goes on; cancel on the menu skips the scene as cancel anywhere does. `chosen()` is the tone
+ * picked, null when none was.
  */
-export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOpts = {}): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void } {
+export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOpts = {}): { done: Promise<'done' | 'skipped'>; onAction(a: UiAction): void; chosen(): Tone | null } {
   let finished = false;
   let summary: Promise<void> | null = null;
   const lines = linesOf(id, ctx.game.state);
   const first = firstSpeaker(lines);
   const heavy = heavyScene(id);
+  let picked: Tone | null = null;
+  /** The choice menu up now, and how it ends: picked, or cancelled (the scene skipped). */
+  let menu: { view: MenuView; box: HTMLElement; end(c: ChoiceLine['choices'][number] | null): void } | null = null;
+  const skip = (): void => { talk.stop(); talk.setStyle('plain'); talk.setPlace(null); summary = talk.say('', T.ui2.story.skipped(STORY.scenes[id].summary)); };
+  /** Asks which way Lorne says it: his plate and face in the box, the choices over it; null when cancelled. */
+  const ask = (line: ChoiceLine): Promise<ChoiceLine['choices'][number] | null> => new Promise((resolve) => {
+    const sp = speakerOf('hero', ctx.game.state, ctx.art, 'normal', heavy, era);
+    const side = first === 'hero' ? 'left' : 'right';
+    void talk.say(sp.name, '', sp.face ? { src: sp.face, side } : undefined);
+    // review of Tasks 12-14: the choice stands on the side away from his portrait, so it never covers anyone
+    const box = win(`slx-choice slx-choice--${side === 'left' ? 'right' : 'left'}`, []);
+    const close = () => { box.remove(); menu = null; };
+    const view = new MenuView(new Menu(line.choices.map((c, i) => ({ id: String(i), label: c.text }))), {
+      pick: (it) => { close(); resolve(line.choices[Number(it.id)]); },
+      cancel: () => { close(); resolve(null); },
+    });
+    box.append(view.el);
+    talk.el.parentElement?.insertBefore(box, talk.el);
+    menu = { view, box, end: (c) => { close(); resolve(c); } };
+  });
   // Her look is the scene's era, so a memory replayed after her oath wears the faces it was told with.
   const era = sceneEra(id);
   talk.hold(true);
@@ -173,6 +243,17 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOp
     try {
       for (const line of lines) {
         if (summary) break;
+        if (isChoice(line)) {
+          const c = await ask(line);
+          if (!c) { if (!summary) skip(); break; }
+          picked = c.tone;
+          for (const r of c.reply) {
+            if (summary) break;
+            talk.setStyle('plain');
+            await sayLine(talk, r, ctx, first, undefined, heavy, era);
+          }
+          continue;
+        }
         // Only a memory's remembered past wears the memory look; its present lines are any scene's (staging S5).
         talk.setStyle(line.past ? 'memory' : 'plain');
         // Where it happens, from the line that says so (staging S6); a line with no place keeps the card up.
@@ -183,6 +264,8 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOp
       return summary ? 'skipped' : 'done';
     } finally {
       // Ended, skipped or thrown: the screen gets its everyday look back and the box is let go (staging review 1).
+      menu?.box.remove();
+      menu = null;
       finished = true;
       talk.setStyle('plain');
       talk.setPlace(null);
@@ -196,10 +279,17 @@ export function playScene(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOp
     done,
     onAction(a) {
       if (finished) return;
+      // A choice up: the menu has the keys; cancel there skips the scene.
+      if (menu) {
+        if (a === 'cancel') { const m = menu; skip(); m.end(null); return; }
+        menu.view.onAction(a);
+        return;
+      }
       if (a === 'confirm') { talk.onAction('confirm'); return; }
       // Cancelling while the summary is up does nothing more: the summary is already the last line.
-      if (a === 'cancel' && !summary) { talk.stop(); talk.setStyle('plain'); talk.setPlace(null); summary = talk.say('', T.ui2.story.skipped(STORY.scenes[id].summary)); }
+      if (a === 'cancel' && !summary) skip();
     },
+    chosen: () => (summary ? null : picked),
   };
 }
 
@@ -242,15 +332,24 @@ export function playLines(talk: Dialogue, lines: ScriptLine[], ctx: StoryCtx, pl
  * story setting skips it. Every screen that plays a due scene goes through here, so none writes its own copy of this.
  */
 export function playAndRecord(talk: Dialogue, id: SceneId, ctx: StoryCtx, o: SceneOpts = {}): { done: Promise<void>; onAction(a: UiAction): void } {
+  // bond plan Task 9 (spec §7.4): a bond scene's choice is counted before it is recorded; none shown or none picked is null
+  const bond = sceneKind(id) === 'bond';
   if (!shouldPlay(id, ctx.mode)) {
+    if (bond) ctx.game.bondChoice(id, null);
     ctx.game.sceneDone(id, 'auto');
     return { done: Promise.resolve(), onAction() {} };
   }
   // A scene that fails is still recorded (as auto, so it reads as new in the handbook) and the error goes on to the caller.
-  const failed = (e: unknown): never => { ctx.game.sceneDone(id, 'auto'); throw e; };
+  const failed = (e: unknown): never => { if (bond) ctx.game.bondChoice(id, null); ctx.game.sceneDone(id, 'auto'); throw e; };
   let p: ReturnType<typeof playScene>;
   try { p = playScene(talk, id, ctx, o); } catch (e) { return failed(e); }
-  return { done: p.done.then((how) => { ctx.game.sceneDone(id, how === 'done' ? 'played' : 'skipped'); }, failed), onAction: p.onAction };
+  return {
+    done: p.done.then((how) => {
+      if (bond) ctx.game.bondChoice(id, how === 'done' ? p.chosen() : null);
+      ctx.game.sceneDone(id, how === 'done' ? 'played' : 'skipped');
+    }, failed),
+    onAction: p.onAction,
+  };
 }
 
 /**

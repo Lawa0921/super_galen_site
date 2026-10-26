@@ -189,15 +189,17 @@ function arrange(picks: SceneId[]): SceneId[] {
 export function planNight(s: GameState, day: SceneId[]): NightPlan {
   const before = owedPieces(s, day);
   if (day.some((id) => ALONE.includes(id))) return { before, night: [] };
-  // Time and moon ruling 7: the spring festival is the whole night; the memories wait for the next one (the owed rule stays)
-  if (day.some((id) => id.startsWith('season:'))) return { before, night: [] };
+  // Time and moon ruling 7: the spring festival is the whole night; the memories wait for the next one (the owed rule stays).
+  // Bond plan Task 11: so is a romance cut short.
+  if (day.some((id) => id.startsWith('season:') || id.startsWith('romance:'))) return { before, night: [] };
   const backlog = (s.story.untold ?? []).length - before.length;
   return { before, night: pickMemories(s, day, nightCap(backlog), before) };
 }
 
 /** Time and moon ruling 7: a night's items in their order (`NIGHT_RANK`: the group scene, the season's, the memories); each kind keeps its own order. */
 export function orderNight(ids: SceneId[]): SceneId[] {
-  const rank = (id: SceneId): number => (id.startsWith('group:') ? NIGHT_RANK.group : id.startsWith('season:') ? NIGHT_RANK.season : NIGHT_RANK.memory);
+  const rank = (id: SceneId): number => (id.startsWith('group:') ? NIGHT_RANK.group : id.startsWith('season:') ? NIGHT_RANK.season
+    : id.startsWith('romance:') ? NIGHT_RANK.romance : NIGHT_RANK.memory);
   return [...ids].sort((a, b) => rank(a) - rank(b));
 }
 

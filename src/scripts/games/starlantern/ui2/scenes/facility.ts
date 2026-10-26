@@ -10,7 +10,10 @@ import { bestPicture } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
-import { NPC_FACILITY, playAndRecord, playBeat, playNight, storyCtx, type SceneOpts } from '../story';
+import { NPC_FACILITY, playAndRecord, playBeat, playNight, playScene, putBackdrop, sceneStaging, speakerOf, storyCtx, type SceneOpts } from '../story';
+import type { CharacterId } from '../../engine/types';
+import type { StoryMood } from '../../render/artPaths';
+import type { StoryMode } from '../settings';
 import { Dialogue, MenuView, backControl, win, type Rich } from '../widgets';
 
 export type FacilityId = 'guild' | 'shop' | 'inn' | 'gate' | 'forge';
@@ -28,6 +31,9 @@ export abstract class FacilityScene implements Scene {
   private gold!: HTMLElement;
   private place!: HTMLElement;
   private npc: HTMLImageElement | null = null;
+  private sceneEl!: HTMLElement;
+  /** Review of bond plan Task 22: the keeper is away while a scene set elsewhere plays (her bust, if it lands then, too). */
+  private keeperAway = false;
   private talk: Dialogue;
   private moodTimer: ReturnType<typeof setTimeout> | null = null;
   private talking = false;
@@ -58,13 +64,13 @@ export abstract class FacilityScene implements Scene {
     this.cmdWin = win('slx-cmd');
     this.stage = el('div', { class: 'slx-stage' });
     this.back = backControl(() => this.onAction('cancel'));
-    const sceneEl = el('div', { class: `slx-scene slx-facility slx-${this.id}` }, [
+    const sceneEl = this.sceneEl = el('div', { class: `slx-scene slx-facility slx-${this.id}` }, [
       (this.place = win('slx-place', [document.createTextNode(f.place)])), this.gold, this.back, this.cmdWin, this.stage, this.talk.el,
     ]);
     // The scene picture first, then the keeper's bust; each is put in when it lands if it had not yet (ui2/lateArt).
     bestPicture(sceneEl, 'bg', this.ctx.art, this.sceneArts(), (src) => el('img', { class: 'slx-bg', attrs: { src, alt: '' } }), (n) => sceneEl.prepend(n));
     bestPicture(sceneEl, 'npc', this.ctx.art, [art.npc(this.id, 'normal')], (src) => el('img', { class: 'slx-npc', attrs: { src, alt: '' } }),
-      (n) => { this.npc = n as HTMLImageElement; this.place.before(n); });
+      (n) => { this.npc = n as HTMLImageElement; n.classList.toggle('slx-keeper-away', this.keeperAway); this.place.before(n); });
     root.append(sceneEl);
     this.refresh();
     // Coming back from one of the guild's own screens (or settings) is not a new visit: no greeting.
@@ -151,6 +157,21 @@ export abstract class FacilityScene implements Scene {
     return done;
   }
 
+  /**
+   * Bond plan Task 13: a companion says one line in this facility's box (a gift's thanks), with her plate and her face
+   * (`speakerOf`); a second box the keeper held (`sayThen`) is dropped, so nothing of hers follows.
+   */
+  protected speakAs(who: CharacterId, text: string, mood: StoryMood = 'normal'): Promise<void> {
+    this.then = null;
+    this.talk.setStyle('plain');
+    this.talking = true;
+    this.syncInert();
+    const sp = speakerOf(who, this.ctx.game.state, this.ctx.art, mood);
+    const done = this.talk.say(sp.name, text, sp.face ? { src: sp.face, side: 'right' } : undefined);
+    void done.then(() => { if (this.talk.busy()) return; this.talking = false; this.syncInert(); });
+    return done;
+  }
+
   /** Two boxes from the keeper: `first`, and `second` once the player closes it (a key or a click). */
   protected sayThen(first: string | Rich, second: string | Rich): Promise<void> {
     const done = this.say(first);
@@ -187,17 +208,48 @@ export abstract class FacilityScene implements Scene {
     this.layers.forEach((l, i) => l.el.classList.toggle('slx-under', i < this.layers.length - 1));
   }
 
-  /** Plays story scene `id` in this facility's dialogue box and records it; resolves when it ends or the player skips it. */
-  protected play(id: SceneId, o: SceneOpts = {}): Promise<void> {
+  /**
+   * Plays story scene `id` in this facility's dialogue box and records it; resolves when it ends or the player skips it.
+   * Bond plan Task 12: `mode` stands in for the story setting (a scene the player starts, a talk at the inn, always plays:
+   * `'all'`); `record: false` plays it and records nothing (the walk with everyone).
+   */
+  protected play(id: SceneId, o: SceneOpts & { mode?: StoryMode; record?: false } = {}): Promise<void> {
     this.then = null;
-    const p = playAndRecord(this.talk, id, storyCtx(this.ctx), o);
+    const { mode, record, ...opts } = o;
+    const sc = { ...storyCtx(this.ctx), ...(mode ? { mode } : {}) };
+    // A scene that throws before it starts (either path) is a failed play like any other: reported below, never thrown here.
+    let p: { done: Promise<void>; onAction(a: UiAction): void };
+    try {
+      p = record === false ? (() => { const q = playScene(this.talk, id, sc, opts); return { done: q.done.then(() => {}), onAction: q.onAction }; })()
+        : playAndRecord(this.talk, id, sc, opts);
+    } catch (e) { p = { done: Promise.reject(e), onAction() {} }; }
     this.playing = p;
     this.talking = true;
     // The place plate and the gold go with the command window (staging S1): a scene may be set elsewhere (its own card).
     for (const e of [this.cmdWin, this.place, this.gold]) e.classList.add('slx-cmd-hidden');
     this.syncInert();
+    const unstage = this.standOn(id);
     // A scene that throws is reported and treated as over, so the caller carries on (the guild still pays the reward line).
-    return p.done.catch((e) => { console.error('starlantern: facility scene failed', e); }).finally(() => { this.playing = null; this.talking = false; for (const e of [this.cmdWin, this.place, this.gold]) e.classList.remove('slx-cmd-hidden'); this.syncInert(); });
+    return p.done.catch((e) => { console.error('starlantern: facility scene failed', e); }).finally(() => { unstage(); this.playing = null; this.talking = false; for (const e of [this.cmdWin, this.place, this.gold]) e.classList.remove('slx-cmd-hidden'); this.syncInert(); });
+  }
+
+  /**
+   * Review of bond plan Task 22: a bond scene, a romance or the walk together opened here stands on its own card
+   * (`sceneStaging`): the keeper steps away unless it is this facility's hall, and the place's published picture goes behind
+   * it while it plays (none loaded: this facility's stays). Gives back what puts it all back. An after-story plays from the
+   * town on a return, and stands the same way there (ui2/scenes/town `playScene`; whole-branch review M1).
+   */
+  private standOn(id: SceneId): () => void {
+    const staging = sceneStaging(id, this.id);
+    if (!staging) return () => {};
+    this.keeperAway = !staging.keeper;
+    this.npc?.classList.toggle('slx-keeper-away', this.keeperAway);
+    const takeDown = putBackdrop(this.sceneEl, this.ctx.art, staging.backdrop);
+    return () => {
+      this.keeperAway = false;
+      this.npc?.classList.remove('slx-keeper-away');
+      takeDown();
+    };
   }
 
   /** Time and moon ruling 8: the moon a night card's veil wears in this facility's box (null: the plain night). */

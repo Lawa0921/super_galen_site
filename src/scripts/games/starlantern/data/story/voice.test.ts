@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHARACTER_IDS } from '../characters';
 import { MEETINGS } from '../meetings';
-import { STORY, type ScriptLine, type Speaker } from '../story.zh-TW';
+import { STORY, type ScriptLine, type Speaker, flatLines } from '../story.zh-TW';
 import { BANTER_GATE, CHAT_GATE, SCENE_IDS, type SceneId } from './scenes';
 import {
   AFTER_CHOICE, CHIZURU_ARCHAIC, CHIZURU_NEVER, CONNECTIVES, ELLIPSIS, SYLVIE_WORLD, INTERJECTIONS, SENTENCE_PARTICLE, TELEGRAPH_OK, VOCATIVES, VOICE, WORD_LISTS_AT_TASK3,
@@ -52,6 +52,14 @@ const POLISHED: string[] = [
   'tierUnlock',
   // Time and moon Task 8: the spring festival at Chizuru's shrine
   'scenes.season:',
+  // Bond plan Tasks 17-19: each companion's four bond scenes, as they are written
+  'scenes.bond:rin:', 'scenes.bond:selene:', 'scenes.bond:chizuru:',
+  'scenes.bond:safira:', 'scenes.bond:sylvie:', 'scenes.bond:noel:',
+  'scenes.bond:bobby:', 'scenes.bond:liz:', 'scenes.bond:scarlet:',
+  // Bond plan Task 20: the nine after-stories and the walk together
+  'scenes.ending:', 'scenes.together.',
+  // Bond plan Task 21: the nine romances
+  'scenes.romance:',
 ];
 
 type Scope = readonly string[];
@@ -198,7 +206,7 @@ describe('voice gates: the gates themselves (story polish Task 3)', () => {
 
   it('the approved samples pass the telegraph gate as they stand (Task 2 finals)', () => {
     const at = (scene: SceneId, has: string): string => {
-      const hits = STORY.scenes[scene].lines.filter((l) => l.text.includes(has));
+      const hits = flatLines(STORY.scenes[scene].lines).filter((l) => l.text.includes(has));
       expect(hits, `${scene} ${has}`).toHaveLength(1);
       return hits[0].text;
     };
@@ -559,9 +567,9 @@ describe('story L: Sylvie and Chizuru in their new voices (Tasks 12, 13)', () =>
 
   it('chat:sylvie:2 waits for her memories told whole; chat:sylvie:1 reads one way and keeps the bed (Task 12, spec §10)', () => {
     expect(CHAT_GATE['chat:sylvie:2']).toEqual({ full: 'sylvie' });
-    for (const n of [1, 2]) for (const l of STORY.scenes[`chat:sylvie:${n}` as SceneId].lines) expect(l.if, `chat:sylvie:${n}: ${l.text}`).toBeUndefined();
-    expect(STORY.scenes['chat:sylvie:1'].lines.some((l) => l.who === 'bobby')).toBe(false);
-    expect(STORY.scenes['chat:sylvie:1'].lines.map((l) => l.text).join('')).toMatch(/床/);
+    for (const n of [1, 2]) for (const l of flatLines(STORY.scenes[`chat:sylvie:${n}` as SceneId].lines)) expect(l.if, `chat:sylvie:${n}: ${l.text}`).toBeUndefined();
+    expect(flatLines(STORY.scenes['chat:sylvie:1'].lines).some((l) => l.who === 'bobby')).toBe(false);
+    expect(flatLines(STORY.scenes['chat:sylvie:1'].lines).map((l) => l.text).join('')).toMatch(/床/);
     expect(() => pinBeat('chat:sylvie:2', { full: ['sylvie'] }, /睡床/)).not.toThrow();
   });
 
@@ -588,7 +596,7 @@ describe('story L: Sylvie and Chizuru in their new voices (Tasks 12, 13)', () =>
     };
     const ids = SCENE_IDS.filter((id) => /^chat:chizuru:|^banter:.*chizuru/.test(id));
     expect(ids.length).toBeGreaterThanOrEqual(8);
-    for (const id of ids) for (const l of STORY.scenes[id].lines) {
+    for (const id of ids) for (const l of flatLines(STORY.scenes[id].lines)) {
       if (l.who === 'chizuru' && before(id, l)) expect(l.text, `${id}: ${l.text}`).not.toMatch(/幾十年|好幾十年|數十年/);
     }
     for (const l of [...STORY.meet.chizuru.before, ...STORY.meet.chizuru.after]) expect(l.text).not.toMatch(/幾十年|數十年/);
@@ -596,7 +604,7 @@ describe('story L: Sylvie and Chizuru in their new voices (Tasks 12, 13)', () =>
 
   it('chat:chizuru:2 waits for Bobby, and so reads no way without her (Task 13, spec §10)', () => {
     expect(CHAT_GATE['chat:chizuru:2']).toEqual({ met: ['bobby'] });
-    const lines = STORY.scenes['chat:chizuru:2'].lines;
+    const lines = flatLines(STORY.scenes['chat:chizuru:2'].lines);
     expect(lines.some((l) => l.if?.notMet === 'bobby')).toBe(false);
     expect(lines.filter((l) => l.if).length).toBe(2);   // her bell, before and after her last piece
   });

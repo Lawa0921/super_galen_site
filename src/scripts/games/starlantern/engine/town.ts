@@ -192,6 +192,9 @@ export function rest(s: GameState): TownResult {
   n.gold -= cost;
   if (hasPerk(n, 'inn-meal')) n.story.fed = true;   // Marta's meal waits for the next departure
   n.story.day = nextDay(dayOf(s));   // time and moon (ruling 1): a night at the inn is a day; it tells no memory
+  // The festival a return recorded is that return's night; this is another night under another moon, so a reload must not
+  // play it here. Spring never goes back and the festival is still unseen, so the next return decides it again.
+  delete n.story.festival;
   for (const id of n.party.recruited) {
     const m = n.party.roster[id];
     if (m.hp <= 0) continue;

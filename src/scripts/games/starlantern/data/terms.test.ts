@@ -4,7 +4,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { CHARACTERS, CHARACTER_IDS } from './characters';
-import { NPC_NAMES, STORY } from './story.zh-TW';
+import { NPC_NAMES, STORY, flatLines } from './story.zh-TW';
 import { SCENE_IDS } from './story/scenes';
 import { dots, opensOnDots, telegraphBreaks } from './story/voiceGates';
 import { T } from './text.zh-TW';
@@ -64,7 +64,7 @@ function uiSentences(): { key: string; text: string }[] {
   walk(T, 'T');
   for (const id of SCENE_IDS) out.push({ key: `STORY.scenes.${id}.title`, text: STORY.scenes[id].title });
   // Story staging S6: a scene's location cards are interface text too.
-  for (const id of SCENE_IDS) STORY.scenes[id].lines.forEach((l, i) => { if (l.place) out.push({ key: `STORY.scenes.${id}.lines.${i}.place`, text: l.place.text }); });
+  for (const id of SCENE_IDS) flatLines(STORY.scenes[id].lines).forEach((l, i) => { if (l.place) out.push({ key: `STORY.scenes.${id}.lines.${i}.place`, text: l.place.text }); });
   for (const s of Object.values(SPECIALS)) out.push({ key: `SPECIALS.${s.id}.lore`, text: s.lore ?? '' });
   // The affixes' lines (difficulty plan Task 3; T2-T3 review, minor 6): the battle's target note reads them.
   for (const id of AFFIX_IDS) out.push({ key: `AFFIXES.${id}.line`, text: AFFIXES[id].line });
@@ -152,7 +152,7 @@ describe('terms (story polish)', () => {
     const quotes = (t: string): string[] => [...t.matchAll(/「([^」]*)」/g)].map((m) => m[1]);
     for (const c of CHARACTER_IDS.filter((id) => id !== 'hero')) {
       for (const id of SCENE_IDS.filter((s) => s.startsWith(`mem:${c}:`))) {
-        for (const l of STORY.scenes[id].lines) if (l.who === 'narrator') for (const q of quotes(l.text)) if (q.includes('你')) out.push(`${id}: ${q}`);
+        for (const l of flatLines(STORY.scenes[id].lines)) if (l.who === 'narrator') for (const q of quotes(l.text)) if (q.includes('你')) out.push(`${id}: ${q}`);
       }
       for (const [i, t] of STORY.people[c].entries()) for (const q of quotes(t)) if (q.includes('你')) out.push(`people.${c}.${i}: ${q}`);
     }

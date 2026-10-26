@@ -8,6 +8,7 @@ import { NODES, TREES, type TreeNode } from '../data/trees';
 import type { CharacterId, ItemInstance, Party } from './types';
 import { CHARACTER_IDS } from '../data/characters';
 import { newGame, type GameState } from './state';
+import { BOND_SWITCH } from './story/bond';
 
 /** A plain common instance of a base (no affixes) at the base's own level, for fixtures. */
 export function plainItem(base: string, uid: number): ItemInstance {
@@ -82,6 +83,33 @@ export function version8Save(trees8b: Record<string, { id: string }[][]>): { raw
   g.party.roster.noel.equip.ring1 = { ...plainItem('star-ring', g.nextUid), rarity: 'legendary', ilvl: 20, special: 'lg-noel' };
   g.nextUid++;
   return { raw: JSON.stringify({ ...g, version: 8 }), state: g };
+}
+
+/**
+ * Bond plan ruling 5: `f` with the bond's battle bonus at `scale` (0: off), set back afterwards even when `f` throws.
+ */
+export function withBondScale<T>(scale: number, f: () => T): T {
+  const was = BOND_SWITCH.scale;
+  BOND_SWITCH.scale = scale;
+  try {
+    return f();
+  } finally {
+    BOND_SWITCH.scale = was;
+  }
+}
+
+/**
+ * Bond plan Task 5: `f` with field points earned (`earn` true) or not, set back afterwards even when `f` throws. For a test
+ * that pins the whole party across a floor or a fight, where the field points would be the only change.
+ */
+export function withBondEarn<T>(earn: boolean, f: () => T): T {
+  const was = BOND_SWITCH.earn;
+  BOND_SWITCH.earn = earn;
+  try {
+    return f();
+  } finally {
+    BOND_SWITCH.earn = was;
+  }
 }
 
 /**

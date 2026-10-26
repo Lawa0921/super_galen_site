@@ -314,9 +314,11 @@ export const T = {
       /** Beside a skill's name on the skills page: it can be cast outside battle (SkillDef.field). */
       fieldTag: '迷宮中可用',
       /** Column titles for statSources; a new source needs one line here. */
-      sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', memory: '記憶', primary: '主屬性' } as Record<string, string>,
+      sources: { base: '基礎', growth: '成長', gear: '裝備', set: '套裝', talent: '天賦', memory: '記憶', bond: '羈絆', primary: '主屬性' } as Record<string, string>,
       /** A column heading too long for its share of the table: the short word, the whole one in its title (plan 8g Task 5 review). */
       sourcesShort: { primary: '主屬' } as Record<string, string>,
+      /** Second review of bond plan Tasks 12-14: one character each, for a page whose columns are too narrow for two (statusTabs). */
+      sourcesOne: { base: '基', growth: '成', gear: '裝', set: '套', talent: '賦', memory: '憶', bond: '絆', primary: '主' } as Record<string, string>,
       total: '合計',
       /** Category headings of the stats page, in STAT_CATEGORIES order. */
       cats: { primary: '主屬性', attack: '攻擊', defense: '防禦', element: '元素', resource: '資源', other: '其他' } as Record<StatCategory, string>,
@@ -328,6 +330,8 @@ export const T = {
       affinityAll: '全能',
       /** Column of the cut a cap takes off a total (an em dash when the stat is under its cap). */
       capCol: '上限',
+      /** 上限 in one character, beside sourcesOne. */
+      capColOne: '限',
       targets: TARGETS,
       exp: (n: number, next: number) => `經驗 ${n}／${next}`,
       place: (where: string) => `站位 ${where}`,
@@ -775,6 +779,27 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
       nobodyDown: '大家都很有精神呢。', revived: (name: string) => `${name} 醒過來了！`,
       /** Plan 8h: the suggested builds screen, after 重置配點. */
       builds: '建議配點',
+      /** Bond plan Task 12 (spec §0 D9): the inn's one bond entry, and its heart-to-heart. */
+      partners: '夥伴', talk: '談心',
+      talkedToday: '今天已經談過心了，明天再來吧。', talkCut: '剛才那段談心沒能說完，等下次回城再說吧。', nobodyToTalk: '現在還沒有誰想找你談心。',
+      /** Bond plan Task 13: gifts and the night walk, under 夥伴. */
+      gift: '送禮', walk: '夜裡走走', together: '和大家一起',
+      giftedToday: '今天已經收過了', nothingToGive: '你手上沒有能送的東西。', nobodyToGift: '現在還沒有誰能收下你的禮物。',
+      askGift: (name: string, item: string) => `要把${item}送給${name}嗎？`,
+      askRomance: (name: string) => `和${name}兩個人走走嗎？\n選了就不能改。`,
+      togetherSaid: '大家一起在星燈下走了一段路。',
+    },
+    /** Bond plan Tasks 13-14: the bond's tiers and what a gift is to her (interface words: numerals are fine). */
+    bond: {
+      tiers: ['相識', '同行', '信賴', '羈絆', '心契'] as readonly string[],
+      taste: { loved: '最愛', liked: '喜歡', neutral: '普通', declined: '婉拒' } as Record<string, string>,
+      /** Bond plan Task 14: the status page's line, the handbook's block, the return's tier line. */
+      line: (tier: string) => `好感度　${tier}`,
+      score: (tier: string, n: number) => `${tier}　${n}／100`,
+      source: { memory: '記憶', talk: '談心', gift: '送禮', field: '同隊' } as Record<string, string>,
+      count: (name: string, now: number, cap: number, full: boolean) => `${name}　${now}／${cap}${full ? '（已滿）' : ''}`,
+      known: (item: string, taste: string) => `${item}　${taste}`,
+      rose: (name: string, tier: string) => `${name}的好感度提升到『${tier}』。`,
     },
     /** The suggested builds screen (plan 8h Task 7): each build of a member, what it does and lacks; apply and follow. */
     builds: {

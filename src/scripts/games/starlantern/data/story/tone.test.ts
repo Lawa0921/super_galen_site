@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { STORY } from '../story.zh-TW';
+import { STORY, flatLines } from '../story.zh-TW';
 import { CLOSING_PIECES, SCENE_IDS, type SceneId } from './scenes';
 import { WARM_MOODS, memoryTone } from './tone';
 
 const memories = SCENE_IDS.filter((id) => id.startsWith('mem:'));
-const glad = (id: SceneId) => STORY.scenes[id].lines.some((l) => !!l.mood && WARM_MOODS.has(l.mood));
+const glad = (id: SceneId) => flatLines(STORY.scenes[id].lines).some((l) => !!l.mood && WARM_MOODS.has(l.mood));
 
 describe('story L: a memory\'s tone (spec §4.3)', () => {
   it('a memory with a glad face is warm, unless it closes a chain', () => {

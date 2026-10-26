@@ -7,7 +7,7 @@ import { LEGACY_LINEUP, START_LINEUP, meet } from '../../engine/party';
 import { T } from '../../data/text.zh-TW';
 import { CHARACTERS } from '../../data/characters';
 import { ABSORB_CAP, ABSORB_GAIN, PERKS, SHARD_IDS, SHARD_NAMES, SHARD_PRICE, TOWN_FRAGMENTS } from '../../data/story/fragments';
-import { STORY } from '../../data/story.zh-TW';
+import { STORY, flatLines } from '../../data/story.zh-TW';
 import { linesOf } from '../story';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
 import { MEETINGS } from '../../data/meetings';
@@ -305,7 +305,7 @@ describe('GuildScene fragment exchange', () => {
     expect(game.pending).toEqual(['town:anna']);   // it leaves `pending` only once the scene is done
     const lines = await drain(root, s);
     expect(game.pending).toEqual([]);
-    const script = linesOf('town:anna', game.state).map((l) => l.text);
+    const script = flatLines(linesOf('town:anna', game.state)).map((l) => l.text);
     expect(lines.slice(0, script.length)).toEqual(script);
     expect(lines.length).toBeGreaterThan(script.length);   // the reward line follows
     expect(game.state.inventory['star-tear']).toBe(1);

@@ -252,6 +252,24 @@ export interface Member {
    * points its way. Absent: none (the standard policy). Nothing writes it before plan 8h Task 6.
    */
   build?: string;
+  /**
+   * Her bond with Lorne (bond plan Task 1, spec §4.1): a record of what has happened, never a score; `bondPoints` derives the
+   * score from it and the pieces she holds. Companions only, never the hero. Absent: nothing earned yet. Read it through `bondOf`.
+   */
+  bond?: BondRecord;
+}
+/** A giftable material's id (`data/story/bond.ts` `GIFTABLE` says which materials are giftable). */
+export type GiftId = string;
+/** What a companion's bond is made of (spec §4.1); each source has its own cap (`BOND_CAP`). */
+export interface BondRecord {
+  /** Points from the bond scenes' choices, 0..BOND_CAP.talk. */
+  talk: number;
+  /** Points from exploring and fighting together, 0..BOND_CAP.field. */
+  field: number;
+  /** Gifts she has taken: how many of each giftable material. */
+  gifts: Partial<Record<GiftId, number>>;
+  /** Materials she has handed back (only for the handbook's 婉拒); no points either way. */
+  refused?: GiftId[];
 }
 export interface Party {
   /** 3x3 placement, cells 0-2 front, 3-5 middle, 6-8 back (see engine/formation.ts). */

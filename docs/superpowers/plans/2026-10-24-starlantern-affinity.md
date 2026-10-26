@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 九位夥伴（凜＋八位）各有一個 0–100 的好感度、五個階段（相識、同行、信賴、羈絆、心契）。四種來源都推得動：記憶碎片、旅館裡羈絆場景的選項、送禮、同隊探索與戰鬥。只刷一種來源到不了頂，好感度永遠不會下降。每升一階就有一段新的羈絆場景，第四段是「心契」；終幕之後每人一段後日談；玩家可以選一位走到戀愛結局，選了就不能改。戰鬥加成是她天生數值的 1–4%，普通難度的 sim gate 逐位元不變。這份計畫合併了舊的 6d（引擎）與 6e（文字）：引擎先做，文字寫好一位才註冊一位，master 上永遠沒有暫定文案。
+**Goal:** 九位夥伴（凜＋八位）各有一個 0–100 的好感度、五個階段（相識、同行、信賴、羈絆、心契）。四種來源都推得動：記憶碎片、旅館裡羈絆場景的選項、送禮、同隊探索與戰鬥。只刷一種來源到不了頂，好感度永遠不會下降。每升一階就有一段新的羈絆場景，第四段是「心契」；終幕之後每人一段後日談；玩家可以選一位走到戀愛結局，選了就不能改。戰鬥加成是她天生數值的 1–2%（spec §0 D24），普通難度的 sim gate 逐位元不變。這份計畫合併了舊的 6d（引擎）與 6e（文字）：引擎先做，文字寫好一位才註冊一位，master 上永遠沒有暫定文案。
 
 **Architecture:**
 - **好感度是紀錄，不是分數**：`Member.bond` 只存對話分、同隊分、收下的禮物（與婉拒過的素材）。總分由純函式從紀錄與持有的碎片推出；每種來源各有上限。
@@ -43,7 +43,7 @@ spec §0 已經定了方向（D1–D20）。這裡只寫 spec 沒寫、由本計
    - **Task 2 起需要日曆計畫已合併進 master**（`engine/calendar.ts` 的 `dayOf`、`MAX_DAY`；`data/story/scenes.ts` 的 `SCENE_TIME`、`SEASON_SCENES`、`NIGHT_RANK`；`engine/story/events.ts` 的 `nextSeasonScene`；`engine/game.ts` 的 `isNightSlot`）。本計畫以日曆計畫審查修正後的版本（`feat/starlantern-time-moon` 的 `3d0135f86`，【審查修正 4】：春祭走反應槽、夜晚場景由 `isNightSlot` 移進 `night`）為準。開 Task 2 前 `git log origin/master` 找不到日曆計畫的收尾 commit，就停下來回報 NEEDS_CONTEXT，不自己做日曆。
    - Task 11 會改日曆分支加進來的程式碼（`isNightSlot`、`NIGHT_RANK`、`planNight` 的重夜規則），所以它一定在日曆合併之後。
    - 任務依編號順序執行；Task A（美術）和任何任務都不衝突，隨時可以做。
-2. **設計者裁定：數值照 spec 的提案**（spec §4、§5、§6.3、§7.2、§13），本計畫不改：`BOND_START 10`、門檻 `0/20/40/60/85`、`BOND_PER_PIECE 3`、`BOND_CAP { talk 12, gift 30, field 40 }`、`BOND_RUN_CAP 4`、同隊 `floor 1 / strong 2 / saved 2`、`DANGER_PCT 30`、`GIFT_VALUE 4/2/1`、`GIFT_REPEAT_FULL 2`、選項 `偏好 3 / 其他 2 / 跳過 2`、`BOND_PCT 0/1/2/3/4 %`、`BOND_SCALE 1`。只有第 21 項紅燈時能動 `BOND_PCT`（只能往下），只有 21p 紅燈時能在 spec §13 的護欄內動提案數字，而且 `bond caps keep every single source and every pair below 心契` 必須維持綠。
+2. **設計者裁定：數值照 spec 的提案**（spec §4、§5、§6.3、§7.2、§13），本計畫不改：`BOND_START 10`、門檻 `0/20/40/60/85`、`BOND_PER_PIECE 3`、`BOND_CAP { talk 12, gift 30, field 40 }`、`BOND_RUN_CAP 5`（Task 4 的 21p 由 4 調成 5，spec §0 D25）、同隊 `floor 1 / strong 2 / saved 2`、`DANGER_PCT 30`、`GIFT_VALUE 4/2/1`、`GIFT_REPEAT_FULL 2`、選項 `偏好 3 / 其他 2 / 跳過 2`、`BOND_PCT 0/1/2/2/2 %`（Task 4 的 21b 由 0/1/2/3/4 調低，spec §0 D24；控制者 2026-10-25 裁定維持：加成刻意很小，回報在劇情）、`BOND_SCALE 1`。只有第 21 項紅燈時能動 `BOND_PCT`（只能往下），只有 21p 紅燈時能在 spec §13 的護欄內動提案數字，而且 `bond caps keep every single source and every pair below 心契` 必須維持綠。
 3. **設計者裁定：「救了她一命」**（spec §0 D4）：
    - 「危險」＝ `hp ≤ 0` 或 `hp × 100 ≤ max.hp × DANGER_PCT`。
    - `Game` 有兩個不存檔的集合：`private safeSeen = new Set<CharacterId>()`（這場戰鬥裡曾經被看到不在危險中的人）與 `private endangered = new Set<CharacterId>()`（**在戰鬥中**掉進危險的人）。
@@ -56,6 +56,7 @@ spec §0 已經定了方向（D1–D20）。這裡只寫 spec 沒寫、由本計
    - `engine/testing.ts` 新增 `withBondScale<T>(scale: number, f: () => T): T`（`finally` 改回）；
    - `engine/storyL.dive.test.ts` 在 Task 5 起包在 `withBondScale(0, …)` 裡：它釘的是碎片的拾取路徑，好感度的加成由第 21 項量。**fixture 不重錄**；`scale 0` 下它必須逐位元相同。
    - Task 5 之後，若有既有的 `Game` 測試因為某位夥伴跨過階段、戰鬥結果改變而紅燈，唯一允許的修法是把那個測試包進 `withBondScale(0, …)` 並寫註解；不可以改期望值。每一個都列進報告。
+   - **控制者 2026-10-25 追認的例外**：`engine/testing.ts` 的 `withBondEarn(false, …)`（`finally` 改回）。只給「整個隊伍前後逐欄相同」的既有測試用，而且唯一的差別必須是下樓時合法得到的同隊分；同樣寫註解、不改期望值、列進報告（Task 5 用在 `descending past MAX_REACHED…` 與 `a second run through a depth already cleared…`）。
 6. **設計者裁定：註冊表**（spec §0 D14）。全部放在 `data/story/scenes.ts`（只有 id，沒有文字，所以沒有循環載入）：
    - `BONDS_WRITTEN: readonly Companion[]`：四段羈絆場景都寫好的夥伴；
    - `ENDINGS_WRITTEN: readonly Companion[]`；
@@ -198,9 +199,9 @@ spec §0 已經定了方向（D1–D20）。這裡只寫 spec 沒寫、由本計
 2. **只刷一種來源到不了頂**：任一種加滿 ≤ 信賴，任兩種加滿 < 85。→ Task 1 `bond caps keep every single source and every pair below 心契`。
 3. **戰鬥與模擬逐位元不變**：`battle.ts`、`combatant.ts` 沒有 diff；sim gate identical、`cmp` 無差；`withBondScale(0)` 下的下潛快照不變；`bond draws nothing`。→ Task 3、5、每個碰引擎的任務的閘門。
 4. **加成不碾壓**：第 21 項（普通 21a–d、噩夢與地獄的「沒符文打不過頭目」21e）在全員心契下仍成立；量測的快取分得開好感度倍率；紅了只調低 `BOND_PCT`。→ Task 4。
-5. **同一件事只計一次、一天一次、沒有漏洞**：同一段的選項、同一層的下樓、精英又救命（共享每趟 4 分）、同一天的第二份禮與第二段談心；殘血開打不算「救了她一命」。→ Task 5、6、9。
+5. **同一件事只計一次、一天一次、沒有漏洞**：同一段的選項、同一層的下樓、精英又救命（共享每趟 5 分，spec §0 D25）、同一天的第二份禮與第二段談心；殘血開打不算「救了她一命」。→ Task 5、6、9。
 6. **羈絆不搶劇情槽**：`arrivalScenes` 在沒有終幕之後的內容時與現在完全相同；夜晚、清晨、反應槽、春祭不變；羈絆場景不進佇列；春祭那一次沒有後日談；中斷的戀愛在夜晚補播。→ Task 9、10、11 的回歸測試。
-7. **沒有人被留在黑暗裡**：後日談不看好感度；終幕之後才遇見或才集滿的人也輪得到；戀愛裡其他夥伴在場、沒有人失落。→ Task 10、20、21。
+7. **沒有人被留在黑暗裡**：後日談不看好感度；終幕之後才遇見或才集滿的人也輪得到；戀愛裡的夥伴遇見了才出現（`if.met`，spec §0 D27）、沒有人失落。→ Task 10、20、21。
 8. **戀愛的份量**：只有明確選擇才成立；選了不能改；「和大家一起」不寫存檔；中斷的戀愛下次回城在夜晚補播。→ Task 10、11。
 9. **不劇透**：羈絆文字的位置規則讓 `SPOILERS`、`RIN_SECRET_TERMS` 照樣適用；凜揭露前不叫名字、不說「我們」。→ Task 7、8 與每個寫作任務。
 
@@ -326,7 +327,7 @@ spec §0 已經定了方向（D1–D20）。這裡只寫 spec 沒寫、由本計
 - 已知會紅：`status.test.ts` 裡斷言屬性來源欄數或順序的測試：改成從 `statSources` 推導，斷言的意圖不變；列進報告。
 
 **Interfaces:**
-- `bondStats(m, scale = BOND_SWITCH.scale): Partial<Sheet>`：洛恩、`scale 0`、階段 0 回傳 `{}`；否則 `hp atk def mag res` 每一項 `Math.floor((base[k] + growth[k] × (level − 1)) × BOND_PCT[tier] × scale / 100)`，`def = CHARACTERS[m.id]`。不加 `spd`、`tp`、暴擊、量表、主屬性（spec §5.1）。
+- `bondStats(m, scale = BOND_SWITCH.scale): Partial<Sheet>`：洛恩、**沒有 `m.bond` 紀錄**（spec §0 D26：沒有紀錄就沒有戰鬥加成，狀態頁的「羈絆」欄顯示「—」；之後寫的手冊文字照這條規則）、`scale 0`、階段 0 回傳 `{}`；否則 `hp atk def mag res` 每一項 `Math.floor((base[k] + growth[k] × (level − 1)) × BOND_PCT[tier] × scale / 100)`，`def = CHARACTERS[m.id]`。不加 `spd`、`tp`、暴擊、量表、主屬性（spec §5.1）。
 - `maxBondRecord(c)`：`{ talk: 12, field: 40, gifts: { [loved[0]]: 9, [loved[1]]: 9 } }`：`giftPoints` 剛好 30，不靠碎片就是 92、心契。
 - `partyAt`：`lineup.bond === 'max'` 時每位夥伴 `bond: maxBondRecord(id)`，洛恩不給；沒有 `bond` 的 `Lineup` 產生的成員逐欄相同（沒有 `bond` 欄位）。
 
@@ -397,7 +398,7 @@ spec §0 已經定了方向（D1–D20）。這裡只寫 spec 沒寫、由本計
 
 - [ ] **Step 1：寫失敗的測試**
   - `run.test.ts`：`a new run holds no bond yet`。
-  - `bond.test.ts`：每趟 4 分（四個 +2 只加到 4）；終身 40（39 時 +2 只加 1）；洛恩不加；`earn = false` 不變；`inDanger` 的邊界（30% 整是危險、31% 不是、倒下是）。
+  - `bond.test.ts`：每趟 `BOND_RUN_CAP` 分（5；四個 +2 依序 2、2、1、0）；終身 40（39 時 +2 只加 1）；洛恩不加；`earn = false` 不變；`inDanger` 的邊界（30% 整是危險、31% 不是、倒下是）。
   - `game.test.ts`：
     - `going down the stairs bonds whoever goes along`（出戰的 +1；板凳、倒下的不加）；
     - `a boss or an elite bonds everyone in the fight`；
@@ -406,7 +407,7 @@ spec §0 已經定了方向（D1–D20）。這裡只寫 spec 沒寫、由本計
     - `low, mended, then low again counts`：開戰時在危險中、某一回合後被補到 30% 以上、之後又掉下去、活著打完 → +2；
     - `in danger and down at the end gives nothing`；
     - `a rescue fight and a flight give nothing`；
-    - `four a run, and a wipe keeps what was earned`（全滅後 `field` 不變；下一趟從 0 計）；
+    - `five a run, and a wipe keeps what was earned`（全滅後 `field` 不變；下一趟從 0 計）；
     - `bond draws nothing`：兩個 `Game`，同一種子與狀態，`scale 0`，一個 `earn` 開、一個關；`rng` 包計數器；同一串操作（出發、一場戰鬥固定行動打完、下樓兩次、打第 3 層頭目）；兩邊的 `game.rng` 呼叫次數、`run.lootDraws`、`run.memoryDraws`、每場 `BattleEnd` 的掉落與碎片深度相等；開的那一邊至少一位 `field > 0`。
   - 報告附 `git diff --stat <BASE> -- src/scripts/games/starlantern/engine/battle.ts src/scripts/games/starlantern/engine/combatant.ts`（必須沒有輸出）。
   - `storyL.dive.test.ts`：包進 `withBondScale(0)` 之後與 fixture 相同。
@@ -665,7 +666,7 @@ spec §0 已經定了方向（D1–D20）。這裡只寫 spec 沒寫、由本計
   - 每段的選項：三種語氣各會讓她怎麼回應，偏好的那一個多了什麼（笑了、多說一句）；
   - 每段的笑點從哪裡來（她的個性、口頭禪、和誰的拌嘴）；
   - 後日談一行（歸鄉之後的日常；階段 ≥ 3 多的那一句是什麼）；戀愛一行（圍繞「回來」，其他夥伴在哪裡）；
-  - 凜：第 1、2 段是揭露前的她（不叫名字、不說「我們」），第 3 段提起「那時候沒說的」，過期的玩家也接得上；戀愛裡她第一次主動說想要什麼（spec §9.5）。
+  - 凜：第 1、2 段是揭露前的她（不叫名字、不說「我們」），第 3 段提起「那時候沒說的」，過期的玩家也接得上；戀愛裡她再欠一樣、而且不打算還（spec §9.5、§0 D27）。
   - 瑟蕾的月亮是她的人設，但羈絆文字一個「月」字都不能有（守門）：她的預言、遠望改用星、燈、窗外的光。
   - 不重演閒聊已用掉的梗（I-158 到 I-160），回呼就變奏。
 - [ ] **Step 2**：控制者派一位全新讀者讀 `arcs.md`：每一位的慾望與毛病是否清楚、彼此不同、和她的回憶不矛盾；四段是否真的在動；每段有沒有笑點。不及格改到及格。
@@ -712,7 +713,7 @@ spec §0 已經定了方向（D1–D20）。這裡只寫 spec 沒寫、由本計
 
 **Files:** `data/bond.zh-TW.ts`（`romance:c`、`ROMANCE_LINES`）、`data/story/scenes.ts`（`ROMANCES_WRITTEN`）、`data/bond.test.ts`、`voice.test.ts`、帳本。
 
-- `romance:c` ≤ 12 句、重的、夜晚的夜路（地點卡 `night: true`，加在 `PL`；暗幕帶今晚的月色，但文字一個「月」字都沒有）；洛恩的告白用他自己的方式，圍繞「回來」，不說英雄式宣言；至少一句有其他夥伴（`if.met`），沒有人失落、吃醋、退出；凜第一次主動說想要什麼，呼應「這個名字是我自己決定要用的」；諾艾兒告白時自稱掉回「我」；千鶴可以叫一次「洛恩」；每段一句 `summary`。
+- `romance:c` ≤ 12 句、重的、夜晚的夜路（地點卡 `night: true`，加在 `PL`；暗幕帶今晚的月色，但文字一個「月」字都沒有）；洛恩的告白用他自己的方式，圍繞「回來」，不說英雄式宣言；那位夥伴遇見了才出現（`if.met`，spec §0 D27），沒有人失落、吃醋、退出；凜再欠一樣、而且不打算還，呼應「這個名字是我自己決定要用的」；諾艾兒告白時自稱掉回「我」；千鶴可以叫一次「洛恩」；每段一句 `summary`。
 - `ROMANCE_LINES`：每人 2 句，輕的城鎮台詞。
 - [ ] W1–W8。commit：`feat(starlantern): nine romances, one for keeps`。
 

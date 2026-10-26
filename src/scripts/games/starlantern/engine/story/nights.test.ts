@@ -376,7 +376,17 @@ describe('time and moon: the festival night (Task 7)', () => {
   });
 
   it('the night is ordered group, season, memory', () => {
-    expect(NIGHT_RANK).toEqual({ group: 0, season: 1, memory: 2 });
+    expect(NIGHT_RANK).toEqual({ group: 0, season: 1, romance: 1.5, memory: 2 });   // bond plan Task 11 added romance
     expect(orderNight([m('noel', 1), 'season:spring', m('liz', 1), 'group:act2'])).toEqual(['group:act2', 'season:spring', m('noel', 1), m('liz', 1)]);
+  });
+});
+
+describe('a romance cut short (bond plan Task 11)', () => {
+  it('a romance night tells no memory', () => {
+    const s = untold([m('noel', 1), m('safira', 1), m('bobby', 1)]);
+    expect(planNight(s, ['romance:liz'])).toEqual({ before: [], night: [] });
+    // what the day owes still leads (`owedPieces`), as on a festival night
+    expect(planNight(s, ['romance:liz', 'act2']).before).toEqual(planNight(s, ['act2']).before);
+    expect(orderNight([m('noel', 1), 'romance:liz', 'season:spring', 'group:act2'])).toEqual(['group:act2', 'season:spring', 'romance:liz', m('noel', 1)]);
   });
 });

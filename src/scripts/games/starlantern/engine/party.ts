@@ -4,6 +4,7 @@ import { SKILLS } from '../data/skills';
 import { depthLevel } from './levels';
 import { CHAINS, MEMORY_SCALE } from '../data/story/chains';
 import { memoriesOf } from './progression';
+import { bondStats } from './story/bond';
 import { SETS, SPECIALS } from '../data/gear';
 import { itemSlot, itemStats } from './loot/item';
 import { learnedSkills, newTree, skillPoints, talentPoints, talentStats } from './progression';
@@ -37,7 +38,7 @@ export function defaultSlotFor(m: Member, it: ItemInstance): Slot {
 export const expToNext = (level: number): number => Math.floor(14 * level ** 1.3);
 
 /** Where a member's numbers come from; later systems (enchanting, talents) add a source here and the character sheet grows a column. */
-export type StatSource = 'base' | 'growth' | 'gear' | 'set' | 'talent' | 'memory' | 'primary';
+export type StatSource = 'base' | 'growth' | 'gear' | 'set' | 'talent' | 'memory' | 'bond' | 'primary';
 
 const worn = (m: Member): ItemInstance[] => SLOTS.map((s) => m.equip[s]).filter((it): it is ItemInstance => !!it);
 
@@ -102,7 +103,9 @@ export function statSources(m: Member): { source: StatSource; stats: Partial<She
   }
   return [
     { source: 'base', stats: base }, { source: 'growth', stats: growth }, { source: 'gear', stats: gear },
-    { source: 'set', stats: set }, { source: 'talent', stats: talent }, { source: 'memory', stats: memory }, { source: 'primary', stats: convertPrimary(prim, def.affinity) },
+    { source: 'set', stats: set }, { source: 'talent', stats: talent }, { source: 'memory', stats: memory },
+    // Bond plan Task 3 (spec §5.1): a share of her natural stats; never primaries, so it converts nothing.
+    { source: 'bond', stats: bondStats(m) }, { source: 'primary', stats: convertPrimary(prim, def.affinity) },
   ];
 }
 

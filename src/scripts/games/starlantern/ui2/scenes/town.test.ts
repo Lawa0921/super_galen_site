@@ -7,13 +7,31 @@ import type { ItemInstance } from '../../engine/types';
 import { TownScene } from './town';
 import { CHARACTERS } from '../../data/characters';
 import { ACT_DEPTHS, type SceneId } from '../../data/story/scenes';
-import { NIGHT_BEATS, NPC_NAMES, STORY, type ScriptLine } from '../../data/story.zh-TW';
+import { NIGHT_BEATS, NPC_NAMES, STORY, type ScriptLine, flatLines } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { DEFAULT_SETTINGS, type StoryMode } from '../settings';
+import { BONDS_WRITTEN, ROMANCES_WRITTEN } from '../../data/story/scenes';
+import { ROMANCE_LINES } from '../../data/bond.zh-TW';
+import { chainLength } from '../../data/story/chains';
 import { linesOf } from '../story';
 import { sceneDone } from '../../engine/story/events';
 import { meet } from '../../engine/party';
 import type { CharacterId } from '../../engine/types';
+/**
+ * Bond plan Task 17: the registries hold what is written now, so a test that registers its own puts back what was there
+ * (`bondsBack`), registers a companion only once (`bondsAdd`), and gives a written scene back instead of deleting it.
+ */
+const BOND_BASE = [...BONDS_WRITTEN];
+const bondsAdd = (...cs: (typeof BONDS_WRITTEN)[number][]): void => { for (const c of cs) if (!BONDS_WRITTEN.includes(c)) BONDS_WRITTEN.push(c); };
+const bondsBack = (): void => { BONDS_WRITTEN.splice(0, BONDS_WRITTEN.length, ...BOND_BASE); };
+// review 5: the after-story and romance registries go back to what is registered, not to empty
+const regAdd = <T,>(reg: T[], ...xs: T[]): void => { for (const x of xs) if (!reg.includes(x)) reg.push(x); };
+const ROMANCES_BASE = [...ROMANCES_WRITTEN];
+const romancesBack = (): void => { ROMANCES_WRITTEN.splice(0, ROMANCES_WRITTEN.length, ...ROMANCES_BASE); };
+const ROMANCE_LINES_BASE = { ...ROMANCE_LINES };
+const romanceLinesBack = (): void => { for (const k of Object.keys(ROMANCE_LINES) as (keyof typeof ROMANCE_LINES)[]) delete ROMANCE_LINES[k]; Object.assign(ROMANCE_LINES, ROMANCE_LINES_BASE); };
+const SCENES_BASE = { ...STORY.scenes };
+const scenesBack = (id: keyof typeof STORY.scenes): void => { if (SCENES_BASE[id]) STORY.scenes[id] = SCENES_BASE[id]; else delete (STORY.scenes as Partial<typeof STORY.scenes>)[id]; };
 
 describe('TownScene', () => {
   it('shows place, gold and the facility menu with a greeting', () => {
@@ -282,7 +300,7 @@ describe('TownScene story', () => {
     const settle = () => new Promise((r) => setTimeout(r, 0));
     return { root, s, go, menu, text, settle };
   };
-  const firstLine = (id: SceneId, game: Game) => linesOf(id, game.state)[0].text;
+  const firstLine = (id: SceneId, game: Game) => flatLines(linesOf(id, game.state))[0].text;
 
   it('arrival scenes play before the menu', async () => {
     const game = Game.fresh(constRng(0.5), null);
@@ -292,12 +310,12 @@ describe('TownScene story', () => {
     expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(true);
     expect(t.root.querySelector('.slx-back')!.classList.contains('slx-cmd-hidden')).toBe(true);   // 返回 is not offered over a scene
     expect(t.text()).toBe(firstLine('prologue', game));
-    for (let i = 0; i < linesOf('prologue', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    for (let i = 0; i < flatLines(linesOf('prologue', game.state)).length; i++) { t.s.onAction('confirm'); await t.settle(); }
     // The inn night follows at once: still no menu, no 返回 (Task 10b).
     expect(t.text()).toBe(firstLine('prologue-inn', game));
     expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(true);
     expect(t.root.querySelector('.slx-back')!.classList.contains('slx-cmd-hidden')).toBe(true);
-    for (let i = 0; i < linesOf('prologue-inn', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    for (let i = 0; i < flatLines(linesOf('prologue-inn', game.state)).length; i++) { t.s.onAction('confirm'); await t.settle(); }
     expect(t.menu().classList.contains('slx-cmd-hidden')).toBe(false);   // the town's own line is up now
     expect(t.root.querySelector('.slx-back')!.classList.contains('slx-cmd-hidden')).toBe(false);
     t.s.onAction('confirm');
@@ -315,7 +333,7 @@ describe('TownScene story', () => {
     const place = t.root.querySelector('.slx-place')!, gold = t.root.querySelector('.slx-gold')!;
     expect(place.classList.contains('slx-cmd-hidden')).toBe(true);
     expect(gold.classList.contains('slx-cmd-hidden')).toBe(true);
-    for (let i = 0; i < linesOf('act1-after', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    for (let i = 0; i < flatLines(linesOf('act1-after', game.state)).length; i++) { t.s.onAction('confirm'); await t.settle(); }
     expect(place.classList.contains('slx-cmd-hidden')).toBe(false);
     expect(gold.classList.contains('slx-cmd-hidden')).toBe(false);
   });
@@ -497,7 +515,7 @@ describe('TownScene: the night (story L Task 3c)', () => {
     const settle = () => new Promise((r) => setTimeout(r, 0));
     /** Confirm through `id`'s lines, checking each is up in turn. */
     const through = async (id: SceneId, each?: () => void) => {
-      for (const l of linesOf(id, game.state)) {
+      for (const l of flatLines(linesOf(id, game.state))) {
         expect(text()).toBe(l.text);
         each?.();
         s.onAction('confirm'); await settle();
@@ -537,7 +555,7 @@ describe('TownScene: the night (story L Task 3c)', () => {
     expect(t.text()).toBe('平安回城。帶回了：40 G。');
     expect(t.card()).toBeNull();
     t.s.onAction('confirm'); await t.settle();
-    expect(t.text()).not.toBe(linesOf('mem:liz:1', game.state)[0].text);   // the day's line, before the night
+    expect(t.text()).not.toBe(flatLines(linesOf('mem:liz:1', game.state))[0].text);   // the day's line, before the night
     expect([t.card(), t.night()]).toEqual([null, false]);
     t.s.onAction('confirm'); await t.settle();
     await t.through('mem:liz:1', () => {
@@ -584,8 +602,8 @@ describe('TownScene: the night (story L Task 3c)', () => {
       await t.through('mem:hero:3', () => expect([t.card(), t.night()]).toEqual(['月影旅館・夜', true]));
       // no beat between the owed ones: they lead into the act
       await t.through('mem:rin:2', () => expect(t.card()).toBe('月影旅館・夜'));
-      expect(t.text()).toBe(linesOf('act2', game.state)[0].text);
-      expect(t.card()).toBe(linesOf('act2', game.state)[0].place!.text);
+      expect(t.text()).toBe(flatLines(linesOf('act2', game.state))[0].text);
+      expect(t.card()).toBe(flatLines(linesOf('act2', game.state))[0].place!.text);
       expect(game.state.story.beat).toBeUndefined();
     });
   });
@@ -694,7 +712,7 @@ describe('TownScene: the night (story L Task 3c)', () => {
     expect(tinted('full')).toBe(false);   // the day's line: no night yet
     t.s.onAction('confirm'); await t.settle();
     await t.through('mem:liz:1', () => expect([t.night(), tinted('full')]).toEqual([true, true]));
-    for (let i = 0; i < 6 && t.text() !== linesOf('mem:noel:1', game.state)[0].text; i++) { t.s.onAction('confirm'); await t.settle(); }   // the beat
+    for (let i = 0; i < 6 && t.text() !== flatLines(linesOf('mem:noel:1', game.state))[0].text; i++) { t.s.onAction('confirm'); await t.settle(); }   // the beat
     await t.through('mem:noel:1', () => expect(tinted('full')).toBe(true));
     expect(t.root.querySelector('[class*="slx-moon-"]')).toBeNull();   // the night over, the tint goes with the card
   });
@@ -754,7 +772,7 @@ describe('TownScene: the calendar (time and moon Task 4)', () => {
     game.state.story.queue = ['act1-after'];
     const t = open(game);
     expect(t.cal().classList.contains('slx-cmd-hidden')).toBe(true);
-    for (let i = 0; i < linesOf('act1-after', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    for (let i = 0; i < flatLines(linesOf('act1-after', game.state)).length; i++) { t.s.onAction('confirm'); await t.settle(); }
     expect(t.cal().classList.contains('slx-cmd-hidden')).toBe(false);
   });
 
@@ -769,9 +787,164 @@ describe('TownScene: the calendar (time and moon Task 4)', () => {
     game.arrival = ['act3'];
     const t = open(game);
     expect(t.cal().textContent).toBe('秋・下弦');
-    for (let i = 0; i < linesOf('act3', game.state).length; i++) { t.s.onAction('confirm'); await t.settle(); }
+    for (let i = 0; i < flatLines(linesOf('act3', game.state)).length; i++) { t.s.onAction('confirm'); await t.settle(); }
     expect(game.state.story.seen).toContain('act3');
     expect(t.cal().classList.contains('slx-cmd-hidden')).toBe(false);   // the menu is back, with the day's line
     expect(t.cal().textContent).toBe('冬・下弦');
+  });
+});
+
+/** Bond plan Tasks 12-14: Rin's first heart-to-heart registered for the test with a scene of its own, taken out after. */
+function stageRinTalk(): () => void {
+  const id = 'bond:rin:1' as const;
+  bondsAdd('rin');
+  STORY.scenes[id] = {
+    title: '凜・羈絆 1', summary: '凜說了一件小事。',
+    lines: [
+      { who: 'rin', text: '一' },
+      { who: 'hero', choices: [{ tone: 'ask', text: '「後來呢？」', reply: [{ who: 'rin', text: '二' }] }, { tone: 'stay', text: '（坐下。）', reply: [{ who: 'rin', text: '三' }] }] },
+      { who: 'narrator', text: '四' },
+    ],
+  };
+  return () => { bondsBack(); scenesBack(id); };
+}
+/** Rin at 同行 with her second piece: her first heart-to-heart is open. */
+const rinReady = (game: Game): void => {
+  game.state.party.roster.rin.memories = 2;
+  game.state.party.roster.rin.bond = { talk: 0, field: 10, gifts: {} };
+};
+
+describe('TownScene: the inn and the bond (bond plan Task 12)', () => {
+  it('the inn shows 新 while a talk waits', async () => {
+    const innRow = (root: HTMLElement) => root.querySelector('.slx-town-menu [data-id=inn]')!;
+    const mk = (game: Game) => {
+      const root = document.createElement('div');
+      new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity).enter(root);
+      return root;
+    };
+    const plain = new Game(constRng(0.5), null);
+    plain.arrival = [];
+    expect(innRow(mk(plain)).querySelector('.slx-fresh')).toBeNull();
+    const back = stageRinTalk();
+    try {
+      const g = new Game(constRng(0.5), null);
+      g.arrival = [];
+      rinReady(g);
+      const root = mk(g);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(innRow(root).querySelector('.slx-fresh')!.textContent).toBe('新');
+      g.state.story.bondDay = 1;
+      g.state.story.talked = true;
+      expect(innRow(mk(g)).querySelector('.slx-fresh')).toBeNull();   // talked today
+    } finally { back(); }
+  });
+});
+
+describe('TownScene: the romance in town (bond plan Task 13)', () => {
+  const after = (g: Game) => {
+    const st = g.state;
+    st.story.act1Cleared = true; st.story.finaleCleared = true;
+    st.story.seen.push('epilogue', 'bond:liz:1', 'bond:liz:2', 'bond:liz:3', 'bond:liz:4');
+    st.party = meet(st.party, 'liz', 1);
+    st.party.roster.liz.memories = chainLength('liz');
+    st.party.roster.liz.bond = { talk: 12, field: 40, gifts: { 'old-coin': 24 } };
+  };
+  const mk = (game: Game) => {
+    const root = document.createElement('div');
+    new TownScene({ game, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity).enter(root);
+    return root;
+  };
+
+  it('the romance lines join the pool with one draw', async () => {
+    regAdd(ROMANCES_WRITTEN, 'liz');
+    bondsAdd('liz');
+    ROMANCE_LINES.liz = ['戀甲', '戀乙'];
+    try {
+      let draws = 0;
+      const g = new Game(() => { draws++; return 0.999; }, null);   // the last of the pool
+      after(g);
+      g.arrival = [];
+      g.state.story.romance = 'liz';
+      const root = mk(g);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(root.querySelector('.slx-talk .slx-text')!.textContent).toBe('戀乙');
+      expect(root.querySelector('.slx-talk .slx-name')!.textContent).toBe(CHARACTERS.liz.name);
+      const first = draws;
+      let none = 0;
+      const h = new Game(() => { none++; return 0.999; }, null);
+      after(h);
+      h.arrival = [];
+      mk(h);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(first).toBe(none);   // the pool is longer, the draws the same
+    } finally { romancesBack(); bondsBack(); romanceLinesBack(); }
+  });
+
+  it('the inn shows 新 while a night walk waits', async () => {
+    regAdd(ROMANCES_WRITTEN, 'liz');
+    bondsAdd('liz');
+    try {
+      const g = new Game(constRng(0.5), null);
+      after(g);
+      g.arrival = [];
+      const root = mk(g);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(root.querySelector('.slx-town-menu [data-id=inn] .slx-fresh')!.textContent).toBe('新');
+      g.walkTogether();
+      expect(root.querySelector('.slx-town-menu [data-id=inn] .slx-fresh')).not.toBeNull();   // read on the next arrival
+      expect(mk(g).querySelector('.slx-town-menu [data-id=inn] .slx-fresh')).toBeNull();
+    } finally { romancesBack(); bondsBack(); }
+  });
+});
+
+describe('TownScene: the tier line (bond plan Task 14)', () => {
+  it('the tier line follows the banked line, with no draw', async () => {
+    const run = (ups: boolean) => {
+      let draws = 0;
+      const g = new Game(() => { draws++; return 0.5; }, null);
+      g.arrival = [];
+      g.notice = 'banked';
+      g.banked = { items: { moss: 1 }, gold: 0, viaLamp: false, gear: [], overflow: [] };
+      if (ups) g.bondUps.push({ id: 'rin', tier: 2 });
+      const root = document.createElement('div');
+      const s = new TownScene({ game: g, art: NO_ART, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn() }, Infinity);
+      s.enter(root);
+      return { g, root, s, draws: () => draws };
+    };
+    const text = (root: HTMLElement) => root.querySelector('.slx-talk .slx-text')!.textContent;
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const a = run(true);
+    await tick();
+    expect(text(a.root)).toContain('發光苔');   // what came home first
+    a.s.onAction('confirm'); await tick();
+    expect(text(a.root)).toBe('凜的好感度提升到『信賴』。');
+    a.s.onAction('confirm'); await tick();
+    const day = text(a.root);
+    a.s.onAction('confirm'); await tick();
+    expect(a.g.bondUps).toEqual([]);
+    const b = run(false);
+    await tick();
+    b.s.onAction('confirm'); await tick();
+    expect(text(b.root)).toBe(day);   // the same day's line, the same draws
+    expect(a.draws()).toBe(b.draws());
+  });
+});
+
+// Whole-branch review M1: an after-story plays from the town on a return, and stands on its own place all the same.
+describe('TownScene: an after-story stands on its own place (review of bond plan Task 22)', () => {
+  it("Liz's after-story plays over the shop at dusk, and the town comes back after it", async () => {
+    const g = new Game(constRng(0.5), null);
+    g.state.party = meet(g.state.party, 'liz', 1);
+    g.arrival = ['ending:liz'];
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, story: 'all' as StoryMode }) };
+    const s = new TownScene({ game: g, art: { has: () => true }, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+    s.enter(root);
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    await tick();
+    expect(root.querySelector('.slx-backdrop')?.getAttribute('src')).toBe(art.scene('shop'));
+    for (let i = 0; i < 30 && !g.state.story.seen.includes('ending:liz'); i++) { s.onAction('confirm'); await tick(); }
+    expect(g.state.story.seen).toContain('ending:liz');
+    expect(root.querySelector('.slx-backdrop')).toBeNull();
   });
 });

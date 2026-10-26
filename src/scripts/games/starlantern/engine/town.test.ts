@@ -451,4 +451,17 @@ describe('time and moon: a night at the inn (Task 1)', () => {
     // no gold, no night: the day stays
     expect(rest({ ...s, gold: 0 })).toEqual({ ok: false, reason: 'gold' });
   });
+  it('a night at the inn drops the festival the last return recorded (bond batch fix)', () => {
+    // The return records `story.festival` for its own night. A night at the inn is another night under another moon: a
+    // reload after it must not play the festival there. Nothing is lost: spring never goes back, and the festival is
+    // unseen, so the next return decides it again.
+    const s = newGame(undefined, 0, LEGACY_LINEUP);
+    Object.assign(s.story, { act1Cleared: true, finaleCleared: true, day: 21, springDay: 20, festival: 'season:spring' });
+    const r = rest(s);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.state.story.festival).toBeUndefined();
+    expect('festival' in r.state.story).toBe(false);
+    expect(r.state.story.day).toBe(22);
+    expect(s.story.festival).toBe('season:spring');   // the state passed in is not changed
+  });
 });

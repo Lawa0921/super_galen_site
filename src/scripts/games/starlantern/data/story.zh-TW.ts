@@ -6,7 +6,10 @@ import { MEETINGS, type Meetable } from './meetings';
 import { numeral } from './numeral';
 import { CHAINS, type MoonPhase, type Season } from './story/chains';
 import { TOWN_FRAGMENTS, type TownFragmentId } from './story/fragments';
-import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, CHAT_COUNT, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, SEASON_SCENES, banterScene, banterTwo, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { PL, type Place } from './story/places';
+import type { BondTier, Companion, Tone } from './story/bond';
+import { ACT_NODES, BANTER_COUNT, BANTER_PAIRS, BONDS_WRITTEN, CHAT_COUNT, ENDINGS_WRITTEN, type GroupScene, HOME_OWNERS, type HomeOwner, MAJOR_SCENES, type MajorScene, REACTIONS, ROMANCES_WRITTEN, SEASON_SCENES, TOGETHER_WRITTEN, banterScene, banterTwo, bondScene, homeScene, memScene, type SceneId, type Stage } from './story/scenes';
+import { BOND_SCENES } from './bond.zh-TW';
 
 export type NpcId = 'anna' | 'orik' | 'marta' | 'glen' | 'doran' | 'merchant' | 'bellkeeper';
 export const NPC_NAMES: Record<NpcId, string> = {
@@ -14,8 +17,7 @@ export const NPC_NAMES: Record<NpcId, string> = {
 };
 
 export type Speaker = CharacterId | NpcId | 'narrator';
-/** A scene's location card (story staging S6). */
-export interface Place { text: string; night?: true }
+export type { Place } from './story/places';
 export interface ScriptLine {
   who: Speaker; mood?: StoryMood; text: string;
   /**
@@ -33,12 +35,35 @@ export interface ScriptLine {
    * `oath`: Rin has made her choice (`true`) or has not yet (`false`).
    * `returned`: that townsfolk fragment has been given back; `notReturned`: not yet (Liz's last piece reads both ways).
    * `seen`: that scene has been seen; `notSeen`: not yet (story depth: a line that waits on a scene, or stands in for it).
+   * `tier`: that companion's bond is at least that tier (bond plan Task 7; `LineWhen.tiers`).
    */
   if?: {
     met?: CharacterId; notMet?: CharacterId; returned?: TownFragmentId; notReturned?: TownFragmentId; full?: CharacterId; notFull?: CharacterId; oath?: boolean;
-    seen?: SceneId; notSeen?: SceneId;
+    seen?: SceneId; notSeen?: SceneId; tier?: { who: Companion; min: BondTier };
   };
 }
+
+/**
+ * One way Lorne says it in a bond scene (spec §7.2, §7.3): its tone, his line (in 「」) or his action (in （）), at most
+ * CHOICE_MAX_CHARS, and the 1 to 2 lines that follow it.
+ */
+export interface Choice { tone: Tone; text: string; reply: ScriptLine[] }
+/** A fork in a bond scene (spec §7.3): Lorne picks one of 2 to 3 ways to say the same care. Never filtered by `if`. */
+export interface ChoiceLine { who: 'hero'; choices: Choice[] }
+/** A line of a scene as written: a plain line, or a choice (bond scenes only). */
+export type SceneLine = ScriptLine | ChoiceLine;
+/** The longest a choice's text may be (spec §0 D13): it is a 12px menu row. */
+export const CHOICE_MAX_CHARS = 20;
+export const isChoice = (l: SceneLine): l is ChoiceLine => 'choices' in l;
+/** How many lines a scene plays at worst (spec §7.3): each line one, a choice one and then its longest reply. */
+export const worstCount = (lines: readonly SceneLine[]): number =>
+  lines.reduce((n, l) => n + (isChoice(l) ? 1 + Math.max(0, ...l.choices.map((c) => c.reply.length)) : 1), 0);
+/**
+ * Every line as the gates read it (bond plan Task 7): a choice opened into each of its texts, said by Lorne, followed by that
+ * choice's reply. A scene with no choice is its own lines.
+ */
+export const flatLines = (lines: readonly SceneLine[]): ScriptLine[] =>
+  lines.flatMap((l) => (isChoice(l) ? l.choices.flatMap((c): ScriptLine[] => [{ who: 'hero', text: c.text }, ...c.reply]) : [l]));
 
 /** A line of the bellkeeper's pool in town (story depth Task 4): `returned`, once that townsfolk fragment is back. */
 export interface KeeperLine { text: string; if?: { returned?: TownFragmentId } }
@@ -47,11 +72,16 @@ export interface KeeperLine { text: string; if?: { returned?: TownFragmentId } }
  * What a scene's conditions are checked against. `seen` is the save's seen scenes; left out, nothing counts as seen (the one
  * caller in play, `ui2/story.ts`, always gives it; tests and the handbook readers that do not name it read it as empty).
  */
-export interface LineWhen { met: CharacterId[]; full: CharacterId[]; returned: TownFragmentId[]; oath: boolean; seen?: SceneId[] }
+export interface LineWhen {
+  met: CharacterId[]; full: CharacterId[]; returned: TownFragmentId[]; oath: boolean; seen?: SceneId[];
+  /** Each companion's bond tier (bond plan Task 7); one left out, or no `tiers` at all, reads as 0. */
+  tiers?: Partial<Record<Companion, BondTier>>;
+}
 
-/** The lines that play: every line whose conditions all hold (a line with none always plays). */
-export function linesWhen(lines: ScriptLine[], w: LineWhen): ScriptLine[] {
+/** The lines that play: every line whose conditions all hold (a line with none always plays, and so does a choice). */
+export function linesWhen<L extends SceneLine>(lines: readonly L[], w: LineWhen): L[] {
   return lines.filter((l) => {
+    if (isChoice(l)) return true;
     const c = l.if;
     if (!c) return true;
     if (c.met && !w.met.includes(c.met)) return false;
@@ -63,6 +93,7 @@ export function linesWhen(lines: ScriptLine[], w: LineWhen): ScriptLine[] {
     if (c.oath !== undefined && c.oath !== w.oath) return false;
     if (c.seen && !(w.seen ?? []).includes(c.seen)) return false;
     if (c.notSeen && (w.seen ?? []).includes(c.notSeen)) return false;
+    if (c.tier && (w.tiers?.[c.tier.who] ?? 0) < c.tier.min) return false;
     return true;
   });
 }
@@ -114,24 +145,6 @@ const N = (text: string, oath?: boolean): ScriptLine => (oath === undefined ? { 
 const NP = (text: string): ScriptLine => ({ who: 'narrator', text, past: true });
 /** `line`, with the scene's location card from it on (story staging S6). */
 const at = (place: Place, line: ScriptLine): ScriptLine => ({ ...line, place });
-/**
- * The location cards (story staging S6), each where the scene's own narration names the place. Night dims the screen: the
- * deep nights and the dark before dawn.
- */
-const PL = {
-  plazaPredawn: { text: '傳送門廣場・黎明前' }, plaza: { text: '傳送門廣場' }, plazaNight: { text: '傳送門廣場・夜', night: true },
-  plazaDeepNight: { text: '傳送門廣場・深夜', night: true }, plazaBeforeDawn: { text: '傳送門廣場・天亮前', night: true },
-  plazaMorning: { text: '傳送門廣場・清晨' },
-  guild: { text: '冒險者公會' }, guildCellar: { text: '冒險者公會・地下室' }, guildClosed: { text: '冒險者公會・打烊以後' },
-  inn: { text: '月影旅館' }, innNight: { text: '月影旅館・夜', night: true }, innDeepNight: { text: '月影旅館・深夜', night: true },
-  innDawn: { text: '月影旅館・清晨' }, innBeforeDawn: { text: '月影旅館・天亮前', night: true }, innDinner: { text: '月影旅館・晚飯' },
-  innKitchen: { text: '月影旅館・廚房' }, innYard: { text: '月影旅館・後院' }, innDoor: { text: '月影旅館・門口' },
-  innRoof: { text: '月影旅館屋頂・深夜', night: true }, innHall: { text: '旅館走廊・夜', night: true },
-  roofNight: { text: '屋頂・夜', night: true },
-  shopClosed: { text: '道具店・打烊以後' }, shopEvening: { text: '道具店・傍晚' }, forge: { text: '鍛造屋' }, forgeDoor: { text: '鍛造屋門口' },
-  edgeMorning: { text: '鎮邊・清晨' }, squareDusk: { text: '廣場・黃昏' }, square: { text: '廣場' }, festival: { text: '廣場・星燈祭之夜', night: true },
-  depth16: { text: '本道第十六層' }, depth30: { text: '第三十層・燈前' }, lampBase: { text: '星燈之底' },
-} satisfies Record<string, Place>;
 /** Story L plan ruling 3: the night's card, over a return's memories (the owed ones before the day's scene, and the night's). */
 export const NIGHT_PLACE: Place = PL.innNight;
 /** 【控制者裁定 2026-10-24】 The card the dawn before departure tells its one memory under. */
@@ -1562,7 +1575,7 @@ const HOME: Record<HomeOwner, Written> = {
 const SEASON: Partial<Record<Season, Written>> = {
   spring: {
     lines: [
-      at({ text: '鎮邊小祠・春祭之夜', night: true }, N('冬天過去了。鎮邊小祠的屋簷下掛滿紙燈，祠前的供品堆成一座小山，全是白蘿蔔。')),
+      at(PL.shrineSpringNight, N('冬天過去了。鎮邊小祠的屋簷下掛滿紙燈，祠前的供品堆成一座小山，全是白蘿蔔。')),
       { who: 'chizuru', mood: 'bewildered', text: '「春祭開始了。照我們那時候的規矩，先向神明報上供品：白蘿蔔、白蘿蔔，還有白蘿蔔。」' },
       { who: 'marta', text: '「賣菜的婆婆起的頭，整條街都跟著供。今晚旅館大概只能煮蘿蔔湯了。」' },
       { who: 'chizuru', mood: 'solemn', text: '「這首祭歌原本的後半，唱的是提燈的人沒有回來。從今年起，我改了這一句。」', if: { notSeen: 'group:act4' } },
@@ -1946,8 +1959,30 @@ const BANTER: Partial<Record<SceneId, Written>> = {
   },
 };
 
-function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }> {
-  const out = {} as Record<SceneId, { title: string; lines: ScriptLine[]; summary: string }>;
+/** A scene as the game plays it: its handbook title, its lines as written (a bond scene's choices among them), its summary. */
+export interface Scene { title: string; lines: SceneLine[]; summary: string }
+
+/** What is registered of the bond's scenes (data/story/scenes.ts), as one argument. */
+export interface BondWritten { bonds: readonly Companion[]; endings: readonly Companion[]; romances: readonly Companion[]; together: boolean }
+/**
+ * Bond plan Task 8: the registered bond scenes with their titles (interface labels may carry numerals) and their text
+ * (`BOND_SCENES`), in `SCENE_IDS` order. A registered scene with no text throws: it is a bug, not a draft.
+ */
+export function bondSceneEntries(
+  w: BondWritten = { bonds: BONDS_WRITTEN, endings: ENDINGS_WRITTEN, romances: ROMANCES_WRITTEN, together: TOGETHER_WRITTEN.value },
+  texts: Partial<Record<SceneId, { lines: SceneLine[]; summary: string }>> = BOND_SCENES,
+): [SceneId, Scene][] {
+  const entry = (id: SceneId, title: string): [SceneId, Scene] => [id, { title, ...written(texts[id], id) }];
+  return [
+    ...w.bonds.flatMap((c) => [1, 2, 3, 4].map((n) => entry(bondScene(c, n), `${nameOf(c)}・羈絆${numeral(n)}`))),
+    ...w.endings.map((c) => entry(`ending:${c}`, `${nameOf(c)}・後日談`)),
+    ...w.romances.map((c) => entry(`romance:${c}`, `${nameOf(c)}・夜路`)),
+    ...(w.together ? [entry('together', '夜路・和大家一起')] : []),
+  ];
+}
+
+function buildScenes(): Record<SceneId, Scene> {
+  const out = {} as Record<SceneId, Scene>;
   // Plan 6c wrote every scene (Task 14 removed the drafts): a scene without its SCRIPT entry is a bug, not a draft.
   const scene = (id: SceneId, title: string): void => { out[id] = { title, ...written(SCRIPT[id], id) }; };
   for (const id of MAJOR_SCENES) scene(id, MAJOR_TITLES[id]);
@@ -1969,6 +2004,7 @@ function buildScenes(): Record<SceneId, { title: string; lines: ScriptLine[]; su
       out[id] = { title: `${nameOf(a)}與${nameOf(b)}・閒聊${numeral(n)}`, ...written(BANTER[id], id) };
     }
   }
+  for (const [id, scene] of bondSceneEntries()) out[id] = scene;   // bond plan Task 8: the registered bond scenes
   return out;
 }
 

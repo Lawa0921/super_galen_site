@@ -26,6 +26,9 @@ import { EquipScene } from './scenes/equip';
 import { HandbookScene } from './scenes/handbook';
 import { WorkshopScene } from './scenes/workshop';
 import { BuildsScene } from './scenes/builds';
+import { STORY } from '../data/story.zh-TW';
+import { BONDS_WRITTEN } from '../data/story/scenes';
+import { GIFT_LINES, RIN_OATH } from '../data/bond.zh-TW';
 
 function safeStorage(): Storage | null {
   try { return window.localStorage; } catch { return null; }
@@ -103,6 +106,8 @@ export async function mountNext(): Promise<void> {
     go: (name: SceneName, arg?: string) => router.go(name, arg),
     /** Tests only: the live settings (the sweep plays a scene with the story on, story staging S5/S6). */
     settings: settingsStore,
+    /** Tests only: the bond's registries, so the review's pictures can stand in a scene that is not written yet (bond plan Task 14). */
+    bond: { STORY, BONDS_WRITTEN, GIFT_LINES, RIN_OATH },
   };
   ui.dataset.ready = 'true';
   await router.go('title');

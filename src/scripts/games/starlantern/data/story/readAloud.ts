@@ -3,7 +3,9 @@
 // STORY_DUMP when that is set.
 import { CHARACTERS, CHARACTER_IDS } from '../characters';
 import { MEETINGS } from '../meetings';
-import { NPC_NAMES, STORY, introIndex, numeral, type LineWhen, type ScriptLine, type Speaker } from '../story.zh-TW';
+import { NPC_NAMES, STORY, flatLines, introIndex, isChoice, numeral, type LineWhen, type SceneLine, type ScriptLine, type Speaker } from '../story.zh-TW';
+import { GIFT_LINES, RIN_OATH, ROMANCE_LINES, type GiftPools } from '../bond.zh-TW';
+import { COMPANIONS, type Companion, type Tone } from './bond';
 import { T } from '../text.zh-TW';
 import { SCENE_IDS, type SceneId } from './scenes';
 import { SENTENCE_PARTICLE, dots, heavyScene, readingsOf, sceneReadings, speakerOf, storyTexts } from './voiceGates';
@@ -15,7 +17,9 @@ const PARTICLES = ['呢', '吧', '啦', '喔', '囉', '嘛', '耶', '唷', '呀'
 const nameOf = (who: Speaker): string =>
   who === 'narrator' ? '' : (CHARACTER_IDS as string[]).includes(who) ? CHARACTERS[who as keyof typeof CHARACTERS].name : NPC_NAMES[who as keyof typeof NPC_NAMES];
 /** The scenes `lines` wait on (`if.seen`, `if.notSeen`), in the order they first come. */
-const waitsOn = (lines: ScriptLine[]): SceneId[] => [...new Set(lines.flatMap((l) => [l.if?.seen, l.if?.notSeen].filter((x): x is SceneId => !!x)))];
+const waitsOn = (lines: readonly SceneLine[]): SceneId[] => [...new Set(flatLines(lines).flatMap((l) => [l.if?.seen, l.if?.notSeen].filter((x): x is SceneId => !!x)))];
+/** Bond plan Task 7: what each tone of a choice is called in the dump. */
+const TONE_NAMES: Record<Tone, string> = { ask: '問', stay: '陪', promise: '約' };
 /**
  * What a reading turns on, in words: who is not met, whose memories are whole, which townsfolk piece is back, her choice,
  * and each scene the lines wait on, seen or not (`waits`).
@@ -70,8 +74,30 @@ function render(prefixes: string[], blind: boolean): { lines: string[]; said: Sa
     const scene = STORY.scenes[id];
     body.push(heading(`scenes.${id}`, heavyScene(id) ? '［重］' : '［輕］', scene.title), '');
     const waits = waitsOn(scene.lines);
-    sceneReadings(id).forEach((r, k) => body.push(reading(readingLabel(r.when, waits), k), ...r.lines.map((l) => say(l)), ''));
+    // bond plan Task 7: a choice prints each way Lorne can say it, marked with its tone, its reply under it
+    const sayAll = (l: SceneLine): string[] => (isChoice(l)
+      ? l.choices.flatMap((c) => [`［選項・${TONE_NAMES[c.tone]}］${say({ who: 'hero', text: c.text })}`, ...c.reply.map((x) => `　→ ${say(x)}`)])
+      : [say(l)]);
+    sceneReadings(id).forEach((r, k) => body.push(reading(readingLabel(r.when, waits), k), ...r.played.flatMap(sayAll), ''));
     if (!blind) body.push(`摘要：${scene.summary}`, '');
+  }
+  // bond plan Task 7: her gift reactions (`gift:<c>`), pool by pool; Rin's after her choice under their own heading
+  const pools = (title: string, c: Companion, p: GiftPools): string[] => [
+    heading(title, '［輕］'), '',
+    ...(['loved', 'liked', 'neutral'] as const).flatMap((t) => p[t].map((x) => `${blind ? '・' : `${t}　`}${say({ who: c, text: x })}`)),
+    ...Object.entries(p.declined).map(([m, x]) => `${blind ? '・' : `declined ${m}　`}${say({ who: c, text: x! })}`),
+    ...Object.entries(p.healed).map(([m, x]) => `${blind ? '・' : `healed ${m}　`}${say({ who: c, text: x! })}`),
+    '',
+  ];
+  for (const c of COMPANIONS) {
+    if (!touches(`gift:${c}`)) continue;
+    if (GIFT_LINES[c]) body.push(...pools(`gift:${c}`, c, GIFT_LINES[c]!));
+    if (c === 'rin' && RIN_OATH.value) body.push(...pools('gift:rin（選擇之後）', c, RIN_OATH.value));
+  }
+  // the town's lines for the one chosen (`romanceLines`), each with her plate
+  if (touches('romanceLines')) {
+    const rows = (Object.entries(ROMANCE_LINES) as [Companion, string[]][]).flatMap(([c, ls]) => ls.map((x) => `${blind ? '・' : `romanceLines.${c}　`}${say({ who: c, text: x })}`));
+    if (rows.length) body.push(heading('romanceLines', '［輕］'), '', ...rows, '');
   }
   // in the order they are met: by depth, the mainline first at a depth it shares (spec §6)
   const byDepth = [...MEETINGS].sort((a, b) => a.depth - b.depth || Number(b.region === 'mainline') - Number(a.region === 'mainline'));

@@ -4,7 +4,7 @@ import { T } from '../../data/text.zh-TW';
 import { constRng } from '../../engine/testing';
 import { NO_ART } from '../../render/textures';
 import { ClearScene } from './clear';
-import { NIGHT_BEATS, STORY } from '../../data/story.zh-TW';
+import { NIGHT_BEATS, STORY, flatLines } from '../../data/story.zh-TW';
 import { meet } from '../../engine/party';
 import { linesOf } from '../story';
 import type { SceneId } from '../../data/story/scenes';
@@ -153,13 +153,13 @@ describe("ClearScene: the eve as the finale's fallback (story L Task 3d)", () =>
       const said: { text: string | null | undefined; card: string | null }[] = [];
       for (let i = 0; i < 60 && !root.querySelector('.slx-clear-card'); i++) { said.push({ text: text(), card: card() }); s.onAction('confirm'); await tick(); }
       expect(root.querySelector('.slx-clear-card')).not.toBeNull();
-      const selene = linesOf('mem:selene:1', game.state).map((l) => l.text);
-      const noel = linesOf('mem:noel:1', game.state).map((l) => l.text);
+      const selene = flatLines(linesOf('mem:selene:1', game.state)).map((l) => l.text);
+      const noel = flatLines(linesOf('mem:noel:1', game.state)).map((l) => l.text);
       const texts = said.map((x) => x.text);
-      expect(texts.slice(0, 2 + selene.length + noel.length)).toEqual([STORY.scenes['finale-eve'].lines[0].text, ...selene, '樓下的貓叫了一聲。', ...noel]);
+      expect(texts.slice(0, 2 + selene.length + noel.length)).toEqual([flatLines(STORY.scenes['finale-eve'].lines)[0].text, ...selene, '樓下的貓叫了一聲。', ...noel]);
       expect(said.slice(0, 2 + selene.length + noel.length).every((x) => x.card === '月影旅館・夜')).toBe(true);
       // no beat between the eve's last memory and Lorne's piece
-      expect(texts[2 + selene.length + noel.length]).toBe(linesOf('mem:hero:10', game.state)[0].text);
+      expect(texts[2 + selene.length + noel.length]).toBe(flatLines(linesOf('mem:hero:10', game.state))[0].text);
       expect(texts.filter((t) => t === '樓下的貓叫了一聲。')).toHaveLength(1);
     } finally {
       NIGHT_BEATS.lines.splice(0);
@@ -187,7 +187,7 @@ describe('ClearScene: the eve under its moon (time and moon Task 5)', () => {
       settings: { get: () => ({ ...DEFAULT_SETTINGS, textSpeed: 'instant', story: 'all' }) },
     });
     s.enter(root);
-    const eve = 1 + linesOf('mem:selene:1', game.state).length + linesOf('mem:noel:1', game.state).length + 1;   // the eve's line, two memories, a beat
+    const eve = 1 + flatLines(linesOf('mem:selene:1', game.state)).length + flatLines(linesOf('mem:noel:1', game.state)).length + 1;   // the eve's line, two memories, a beat
     const tints: string[] = [];
     for (let i = 0; i < 80 && !root.querySelector('.slx-clear-card'); i++) {
       const veil = root.querySelector('.slx-veil-night.slx-on');
