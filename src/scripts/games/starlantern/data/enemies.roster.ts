@@ -263,7 +263,7 @@ const WARDENS: [string, Spec][] = [
   ['requiem-conductor', { name: '鎮魂指揮者', arch: 'std', rank: 'warden', weak: ['phys'], resist: ['ice'],
     skills: [call('召集歌隊', 'requiem-choir', 2), sk('指揮', 0.4, 'allies', buff('spd', 40, 3)), sk('終章', 0.3, 'enemies', hit(80, 'ice'))] }],
   ['lantern-brood', { name: '燈底之巢', arch: 'heavy', rank: 'warden', weak: ['ice'], resist: ['fire'],
-    skills: [call('孵化', 'lantern-larva', 9, 0.6), sk('蜷縮', 0.4, 'self', buff('def', 20, 2))] }],
+    skills: [call('孵化', 'lantern-larva', 4, 0.6), sk('蜷縮', 0.4, 'self', buff('def', 20, 2))] }],
   ['mirage-lead', { name: '蜃樓的領舞者', arch: 'std', rank: 'warden', home: 'blaze', lore: 'safira', remnant: true, opener: 'decoy', decoys: 2,
     skills: [sk('轉拍', 0.3, 'allies', buff('spd', 30, 3)), sk('領舞', 0.3, 'enemy', hit(130))] }],
   ['ice-shrine', { name: '冰中的拜殿', arch: 'heavy', rank: 'warden', home: 'frost', lore: 'chizuru',

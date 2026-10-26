@@ -440,7 +440,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 ### Task B0：基準
 
-- [ ] 照 A0 的 Step 1、3、4 錄 SDD `B1/baseline.md` 與 `gate-0`（不錄新 fixture）。
+- [ ] 照 A0 的 Step 1、3、4 錄 SDD `B1/baseline.md` 與 `gate-0`（不錄新 fixture）。（B1 實作附註：e2e 的 dev server 讀的是工作樹，所以 e2e 基準和 B1 一起跑，沒有在改動前另跑一次。）
 
 ### Task B1：`meetEnemy` 與戰鬥中加入敵人
 
@@ -503,6 +503,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 **Files:**
 - Modify：`ui2/scenes/battle.ts`（意圖欄：蓄力、守護、宣告；名牌：寶箱？、受守護、偷走的金額；目標說明）、`engine/mechanics/index.ts`（`foeWords` 的新字）、`data/text.zh-TW.ts`（`T.battle` 底下新字串，先 grep 確認不撞名；殘影倒下「〇〇散成了霧。」）、`ui2/battleText.ts`（`remnant` 用殘影那一句）。
 - Test：`ui2/scenes/battle.test.ts`、`engine/mechanics/*.test.ts`、`ui2/typeScale.test.ts`、legibility 掃描。
+- **B6 實作修正**：頭上的字由新的機制模組 `engine/mechanics/foeWords.ts`（排在模組清單最後）給：蓄力、守護、受守護、偷走 N 金、同心、溜走N，隊員被宣告時腳下「被宣告」；意圖在守護技後加「（守護）」並指出要守誰、宣告技加「（宣告）」，幻影沒有意圖；目標說明逐行加上守護者、偷走的金額、幾回合後溜走、同心的同伴（`engine/foes.ts` `foeNotes`）；勝利結算在金錢下加「（其中討回了被偷走的 N）」；名牌在 `syncHp` 跟著名字更新（寶箱現形）。另外：召喚會讓一列的敵人越來越多（倒下的也佔位），所以加 `ROW_MAX = 8`（倒下的算在內，滿了就不再召喚），`src/styles/_starlantern-ui.scss` 的目標箭頭類別從 4 隻擴到 8 隻；燈底之巢的孵化上限改成每場 4 次。
 
 - [ ] **Step 1：寫失敗的測試**：每個 B2–B5 機制的畫面字（意圖、名牌、紀錄各一個測試）；`a remnant fades into mist in the log`；新字串都在 Cubic 11（`glyphs.test.ts`）。
 - [ ] **Step 2–5**：同上；e2e 必跑；commit：`feat(starlantern): the battle screen shows what the new foes are doing`。

@@ -712,6 +712,9 @@ export class BattleView {
     for (const e of state.enemies) {
       if (!this.slots.has(e.key)) this.addFoe(e);
       const s = this.slots.get(e.key);
+      // A name that changed (a foe unmasked, roster plan B6) is cut to its slot again.
+      const name = s && s.tint.elite && !e.name.startsWith('★') ? `★${e.name}` : e.name;
+      if (s && !s.name.destroyed && s.fullName !== name) { s.fullName = name; s.name.text = slotName(name, this.labelMax); }
       if (s && !s.bar.destroyed) { s.hp = e.hp; s.max = e.max.hp; this.drawBar(s); }
     }
   }

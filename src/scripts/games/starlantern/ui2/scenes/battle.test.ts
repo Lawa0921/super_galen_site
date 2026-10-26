@@ -24,6 +24,9 @@ import { skillFor } from '../../engine/battle';
 import { ECHO, echoDef } from '../../engine/mechanics/echo';
 import { CHARACTERS } from '../../data/characters';
 import { AFFIXES } from '../../data/affixes';
+import { ENEMIES } from '../../data/enemies';
+import { ROW_MAX } from '../../engine/battle';
+import { compile } from 'sass';
 import { SHARD_NAMES } from '../../data/story/fragments';
 import { FINALE_DEPTH } from '../../data/story/scenes';
 import { STORY, type ScriptLine } from '../../data/story.zh-TW';
@@ -1328,6 +1331,42 @@ describe('BattleScene coins (plan 8c)', () => {
     await flush();
     expect(root.querySelector('.slx-result')).not.toBeNull();
     expect(root.querySelector('.slx-result')!.textContent).toContain(T.battle.coinGold(12));
+  });
+});
+
+describe('BattleScene roster foes (roster plan B6)', () => {
+  it('the target arrow has a place in a row grown by summons, up to ROW_MAX foes', () => {
+    const css = compile('src/styles/_starlantern-ui.scss', { silenceDeprecations: ['global-builtin', 'slash-div', 'import'] as never }).css;
+    for (let n = 1; n <= ROW_MAX; n++) for (let i = 0; i < n; i++) expect(css, `${n}-${i}`).toContain(`.slx-target-${n}-${i} {`);
+  });
+
+  it('gold a felled thief took comes back in a line under the gold', async () => {
+    const { s, root } = setup((g) => {
+      g.battle!.enemies[0].stolen = 9;
+      for (const e of g.battle!.enemies) { e.hp = 0; e.alive = false; }
+    });
+    for (let i = 0; i < 5; i++) { s.onAction('down'); s.onAction('down'); s.onAction('confirm'); }   // 防禦 ×5
+    await flush();
+    expect(root.querySelector('.slx-result')!.textContent).toContain(T.battle.returned(9));
+  });
+
+  it("the target note says a foe's guard, what it stole, when it runs and whom it shares with", () => {
+    const { s, root, game } = setup((g) => {
+      const b = g.battle!;
+      while (b.enemies.length < 3) b.enemies.push({ ...structuredClone(b.enemies[0]), key: `e${b.enemies.length}` });
+      b.enemies[1].cover = { ally: 'e0', turns: 2 };
+      b.enemies[0].stolen = 7;
+      b.enemies[0].share = 'e2';
+      b.enemies[2].share = 'e0';
+      b.enemyDefs = { ...(b.enemyDefs ?? {}), e0: { ...(b.enemyDefs?.e0 ?? ENEMIES[b.enemies[0].defId]), fleeAfter: 3 } };
+    });
+    const b = game.battle!;
+    s.onAction('confirm');                                   // 攻擊: whom?
+    const note = root.querySelector('.slx-bnote')!.textContent!.split('\n');
+    expect(note).toEqual([
+      ...(intentLabel(b, 'e0') ? [T.ui2.battle.intentNote(intentLabel(b, 'e0'))] : []),
+      T.ui2.battle.foe.guarded(b.enemies[1].name), T.ui2.battle.foe.stolen(7), T.ui2.battle.foe.flee(3 - b.round), T.ui2.battle.foe.shared(b.enemies[2].name),
+    ]);
   });
 });
 

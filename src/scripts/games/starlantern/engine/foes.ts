@@ -7,6 +7,23 @@ import { addBuff, type Combatant } from './combatant';
 import type { EnemyDef, EnemySkill } from './types';
 import { T } from '../data/text.zh-TW';
 
+/**
+ * Roster plan B6: a foe's mechanics as lines for its target note: who guards it, what it stole, when it runs, whom it
+ * shares its wounds with. None for the old roster.
+ */
+export function foeNotes(s: BattleState, e: Combatant, defOf: (c: Combatant) => EnemyDef | undefined): string[] {
+  const N = T.ui2.battle.foe;
+  const out: string[] = [];
+  const guard = foeGuard(s, e);
+  if (guard !== e) out.push(N.guarded(guard.name));
+  if (e.stolen) out.push(N.stolen(e.stolen));
+  const after = defOf(e)?.fleeAfter;
+  if (after !== undefined && after > s.round) out.push(N.flee(after - s.round));
+  const mate = e.share ? s.enemies.find((x) => x.key === e.share && x.alive) : undefined;
+  if (mate) out.push(N.shared(mate.name));
+  return out;
+}
+
 /** M14: rounds an `asleep` opener sleeps (it acts in round three); its anger on waking; a disguise's first bite. */
 export const OPENER = { sleepRounds: 2, wakeAtkPct: 50, wakeTurns: 3, disguiseAtkPct: 50 } as const;
 

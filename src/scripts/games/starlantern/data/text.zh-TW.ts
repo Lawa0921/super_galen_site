@@ -189,7 +189,17 @@ export const T = {
       disguise: '寶箱？',
       /** M19: a decoy's name beside its foe's. */
       decoy: (name: string) => `${name}的幻影`,
+      /** Roster plan B6: after a guard's (M2) or a hunt's (M24) skill name in its intent. */
+      guardTag: '（守護）',
+      huntTag: '（宣告）',
+      /** Roster plan B6: the words over a foe (and under a member it called out). */
+      word: {
+        winding: '蓄力', guarding: '守護', guarded: '受守護', stolen: (n: number) => `偷走 ${n} 金`, shared: '同心',
+        flee: (n: number) => `溜走${n}`, hunted: '被宣告',
+      },
     },
+    /** The part of the gold a felled thief gave back (roster plan B3, M13), already counted in the gold line. */
+    returned: (n: number) => `（其中討回了被偷走的 ${n}）`,
   },
   element: { phys: '物理', fire: '火', ice: '冰', thunder: '雷' },
   /** Ailment names on the battle screen (the region trait `burn` reads 酷熱, so the two never share a word). */
@@ -257,6 +267,8 @@ export const T = {
     trigger: (who: string, rune: string, skill: string) => `${who}的${rune}：${skill}！`,
     damage: (who: string, n: number, mult: number) => `${who} 受到 ${n} 傷害${mult > 1 ? '（弱點）' : mult < 1 ? '（抗性）' : ''}`,
     ko: (who: string) => `${who} 倒下了`,
+    /** A remnant of a person falls (roster plan ruling 6): it is not a defeat. */
+    mist: (who: string) => `${who}散成了霧。`,
     /** The roster's foe mechanics (roster plan B3–B4): `who` the foe, `other` whom it touched, `n` the gold it took. */
     foe: {
       flee: (who: string) => `${who}溜走了！`,
@@ -294,6 +306,13 @@ export const T = {
       survive: (left: number) => `撐過去！還有 ${left} 回合`,
       /** A foe's whole intent in the target note (the picture may shorten it to fit its slot): marked as over its head. */
       intentNote: (label: string) => `◆ ${label}`,
+      /** The roster's foe mechanics in the target note (roster plan B6), a line each. */
+      foe: {
+        guarded: (guard: string) => `${guard}守著牠：單體攻擊會打到${guard}身上`,
+        stolen: (n: number) => `偷走了 ${n} 金，打倒就會還回來`,
+        flee: (n: number) => `再 ${n} 回合就會溜走`,
+        shared: (mate: string) => `和${mate}同心：受到的傷害兩隻平分`,
+      },
     },
     memory: {
       /** Story L spec §4.2: one caption for each one who remembered something; the memory itself is told at night in town. */

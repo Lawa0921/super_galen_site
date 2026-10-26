@@ -121,6 +121,16 @@ describe('BattleView late foes (roster plan B1)', () => {
     expect(onParty).not.toHaveBeenCalled();   // a hit on the summon is the summon's, not a member's
   });
 
+  it('the name tag follows a foe unmasked (roster plan B6)', () => {
+    const view = new BattleView(true, bank);
+    const s = battle([]);
+    s.enemies[0].name = T.battle.foe.disguise;
+    view.setup(s, { width: 640, height: 360 }, 1);
+    expect(view.nameOf('e0')).toBe('寶箱？');
+    view.syncHp({ ...s, enemies: [{ ...s.enemies[0], name: '塵封木箱' }] });
+    expect(view.nameOf('e0')).toBe('塵封木箱');
+  });
+
   it('a foe that rises stands in the picture again', async () => {
     const view = new BattleView(false, bank);
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 1));

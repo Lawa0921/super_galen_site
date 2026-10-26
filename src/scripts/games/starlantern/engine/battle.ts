@@ -122,6 +122,8 @@ export type EnemyAction = { kind: 'attack'; target?: string; shownTarget?: strin
 export const STORY_FIGHT_ROUNDS = 3;
 /** Roster plan B4 (M4): the most foes a boss fight holds, the boss and its parts and its calls together. */
 export const BOSS_GROUP_CAP = 4;
+/** Roster plan B6: the most foes a fight's row ever holds, the fallen included (the screen has a place for each). */
+export const ROW_MAX = 8;
 export const LIMIT_MAX = 100;
 export const LIMIT_PER_ACTION = 12;
 /** Damage taken adds floor(damage / max HP * this), at least 1 (see dealDamage). */
@@ -177,6 +179,8 @@ function fromEnemy(d: EnemyDef, key: string, name: string, tint: Combatant['tint
 
 /** An enemy's definition in this fight: the scaled one when the fight has one, else the plain entry. */
 const enemyDef = (s: BattleState, c: Combatant): EnemyDef | undefined => s.enemyDefs?.[c.key] ?? ENEMIES[c.defId];
+/** A foe's definition as met in this fight (the screen reads its mechanics: roster plan B6). */
+export const foeDef = enemyDef;
 
 export function createBattle(o: {
   party: Party; enemyIds: string[]; boss?: boolean; inventory: Record<string, number>; revealed: Record<string, Element[]>;
@@ -827,7 +831,7 @@ function endOfRound(s: BattleState, ctx: EffectContext, rng: Rng): void {
 
 /** Roster plan B4 (M4): whether `actor` may call a `id` now: a fight that keeps its meeting, room under its cap, calls left, and `id` live. */
 function canSummon(s: BattleState, actor: Combatant, id: string, max: number): boolean {
-  const room = s.meet ? living(s.enemies).filter((c) => !c.decoyOf).length < s.meet.cap : false;
+  const room = s.meet ? living(s.enemies).filter((c) => !c.decoyOf).length < s.meet.cap && s.enemies.length < ROW_MAX : false;
   return room && (actor.summons ?? 0) < max && listedEnemy(id);
 }
 
@@ -1000,9 +1004,12 @@ export function intentLabel(s: BattleState, key: string): string {
   const sk = a.kind === 'enemy-skill' ? def?.skills[a.index] : null;
   const single = a.kind === 'attack' || sk?.target === 'enemy' || sk?.target === 'row' || sk?.target === 'column' || sk?.target === 'cross';
   const shown = a.shownTarget ?? a.target;
-  const who = single && shown ? s.party.find((c) => c.key === shown)?.name : null;
+  // A guard names the ally it would guard as things stand (roster plan B6, M2); a hunt says it is one (M24).
+  const guarded = e && sk ? guardTargets(s, e, sk)?.[0]?.name : undefined;
+  const who = guarded ?? (single && shown ? s.party.find((c) => c.key === shown)?.name : null);
+  const tag = guarded !== undefined ? T.battle.foe.guardTag : sk?.effects.some((x) => x.kind === 'hunt') ? T.battle.foe.huntTag : '';
   const area = sk?.target === 'enemies' ? '（全體）' : sk?.target === 'row' ? '（整排）' : sk?.target === 'column' ? '（整列）' : sk?.target === 'cross' ? '（十字）' : '';
-  return `${name}${area}${who ? ` → ${who}` : ''}`;
+  return `${name}${tag}${area}${who ? ` → ${who}` : ''}`;
 }
 
 /**

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
-import { createBattle, intentLabel, planEnemies, resolveRound, rewards, type Action, type BattleState } from './battle';
+import { ROW_MAX, createBattle, intentLabel, planEnemies, resolveRound, rewards, type Action, type BattleState } from './battle';
 import { constRng, fullParty, makeBattle, makeCombatant } from './testing';
 import { LEGACY_LINEUP } from './party';
 import { mulberry32, type Rng } from './rng';
 import { applyEffect } from './skills';
+import { T } from '../data/text.zh-TW';
 import { ENEMIES } from '../data/enemies';
 import { LEGACY_ENEMY_IDS } from '../data/monsters';
 import type { Effect, EnemyDef, EnemySkill } from './types';
@@ -396,6 +397,16 @@ describe('M4 summon (roster plan B4)', () => {
     expect(s.enemies.filter((e) => e.summoned)).toHaveLength(2);
   });
 
+  it('the row never grows past ROW_MAX, the fallen counted (roster plan B6)', () => {
+    let s = field(99, ROW_MAX - 2);
+    for (const e of s.enemies.slice(1)) { e.alive = false; e.hp = 0; }
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.enemies).toHaveLength(ROW_MAX);   // one call fills the row
+    s = resolveRound(s, defend(s), constRng(0.5));
+    expect(s.enemies).toHaveLength(ROW_MAX);
+    expect(acted(s, 'e0')).toEqual(['攻擊']);
+  });
+
   it('calls no one not yet live', () => {
     const r = resolveRound(field(4, 0, caller(9, 'lamp-wight')), defend(field(4)), constRng(0.5));
     expect(r.enemies).toHaveLength(1);
@@ -534,5 +545,25 @@ describe('M20 shared wounds (roster plan B4)', () => {
     t.enemies[1].hp = 0;
     const whole = resolveRound(t, { ...defend(t), scarlet: { kind: 'attack', target: 'e0' } }, constRng(0.5));
     expect(t.enemies[0].hp - whole.enemies[0].hp).toBeGreaterThanOrEqual(lost(0) + lost(1) - 1);
+  });
+});
+
+describe('the intent says what a foe mechanic will do (roster plan B6)', () => {
+  it('a guard shows whom it will guard, and a hunt whom it calls out', () => {
+    const s = makeBattle([P('scarlet'), P('noel')], [E('e0', { name: '錫兵' }), E('e1', { name: '幽影', hp: 40 })], {
+      enemyDefs: {
+        e0: def([{ name: '列隊', chance: 1, target: 'ally', effects: [{ kind: 'cover', turns: 2 }] }]),
+        e1: def([{ name: '記下名字', chance: 1, target: 'enemy', effects: [{ kind: 'hunt' }] }]),
+      },
+    });
+    s.intents = { e0: { kind: 'enemy-skill', index: 0 }, e1: { kind: 'enemy-skill', index: 0, target: 'noel' } };
+    expect(intentLabel(s, 'e0')).toBe(`列隊${T.battle.foe.guardTag} → 幽影`);
+    expect(intentLabel(s, 'e1')).toBe(`記下名字${T.battle.foe.huntTag} → noel`);
+  });
+
+  it('a decoy shows no intent', () => {
+    const s = makeBattle([P('scarlet')], [E('e0'), E('e1', { decoyOf: 'e0' })]);
+    s.intents = { e1: { kind: 'attack', target: 'scarlet' } };
+    expect(intentLabel(s, 'e1')).toBe('');
   });
 });
