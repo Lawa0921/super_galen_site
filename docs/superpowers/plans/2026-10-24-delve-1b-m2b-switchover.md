@@ -404,6 +404,25 @@ it('outerGen 0（舊版客人眼中的 v0）或 2（更新版）的 welcome → 
 
 ---
 
+## M2a 帶過來的延後項（2026-10-26，M2a 執行時的作者裁決）
+
+M2a 各 Task 審查時延到 M2b 的事；開 M2b 時逐條排進對應 Task（多半與「刪舊」「凍結前必做」同批），凍結 v1 前全部要有結論。
+
+| # | 延後項 | 來源 | 建議併入 |
+|---|--------|------|----------|
+| 1 | 小地城（`structures/keep.ts`）共用地城畫圖碼，每座都放符文鎬（`rune_pickaxe`）／探險提燈／探險家地圖這三件「獨特」物品；刪 legacy 後把獨特物品參數化，只放家鄉主地城 | M2a T18 | 刪舊生成器那批 |
+| 2 | 沙漠／雪原的小地城整平帶仍長草（畫圖碼與 legacy 共用）；改用 `biomeGround` | M2a T21 | 同上 |
+| 3 | 礦坑 solid 精準化：外框整片 solid 會抹掉礦坑下方洞穴（往下豎井讓外框延伸到洞穴列，中位 5、P90 68、最多 127 列）；`Blueprint.solid` 改 `BpBox[]`，只包坑道與斜坡 | M2a T10 | 凍結前必做 |
+| 4 | 家鄉地廳後備豎井套 parts + surfaceBan（注入下 3.7% 撞村莊，真實 0/1664） | M2a T9 | 凍結前必做 |
+| 5 | `WorldContent` 的 villages / halls / dungeon 改接 `HomeContent`；gen2 世界的 `g.dungeon` 仍是 null，提示缺地城那句（要改 `game.gen2.test` 的 dungeon null 斷言） | M2a T14–T16 | 切換那批 |
+| 6 | gen2 層線較淺，鐵在地表下 10–40 就出現（legacy 40 以後）→ 調層線 | M2a T13 | 凍結前必做 |
+| 7 | `CULTURE_SINCE` 文字移除（Q14：v1 只有荒野大陸） | M2a Q14 | 凍結 v1 |
+| 8 | P5 閒置機器效能比：M2a 第一組中位數 2.02、第二組同碼 1.65（機器有兩個 Android 模擬器，非閒置）；**M2a 合併前或 M2b 凍結前在閒置機器重量，中位數 ≤ 2.00** | M2a T21 | 合併前／全面驗收 |
+| 9 | gen2 慢測試檔：parts / minibiome / boot / lore 單檔 220–407 s（每個 it ≤ 194 s）；凍結時評估種子數 | M2a T21 | 凍結 v1 |
+| 10 | Q16 已於 2026-10-26 修訂（T21-12）：小點位可放進含主坑道的槽（外框在 shaftBand 外、入口不在 minorZone）；M2b 退役或重錄 `blueprint.test` 時沿用修訂後語意 | M2a T21 | 退役釘選測試 |
+
+---
+
 ## 凍結前必做清單對照（memory `delve-infinite-1b-carry`）
 
 | carry 項目 | 落在 |
