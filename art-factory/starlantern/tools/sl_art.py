@@ -1267,20 +1267,24 @@ LUM_MEAN_MIN = 0.35      # a main-road species (recoloured by region: brightness
 LUM_PCT = (5, 95)
 ROSTER_ERASED_MAX = 8    # enclosed transparent pixels whose raw was not the key: more is an over-erased interior
 KEY_BLEND_G_MAX = 64     # erased check: a raw pixel with green at most this ...
-KEY_BLEND_STEP = 80      # ... and red and blue this far above it is the key blended into an outline (a real gap)
+KEY_BLEND_STEP = 80      # ... and red and blue this far above it is the key blended into an outline
+KEY_NEAR = 30            # erased check: a sampled raw pixel this close to the key is the key (the alpha QA hint uses 30 too)
+CUTOUT_MARGIN, CUTOUT_FRINGE = 70, 90   # cutout()'s reach, mirrored so the roster stamps move with it (a test holds them equal)
 ICON_HEIGHT = 32         # roster ruling 23: the material icons follow 5d's actual output (icon-blaze-core 33 x 35) ...
 ICON_BOX = 36            # ... so the final canvas fits a 36 x 36 box
 ROSTER_SPRITE_RULES = ('block downscale to the class height; alpha QA (residue, semi alpha, raw-canvas cut, spill, key tint); '
                        'speckless subject height inside the class band, swarm width cap; opaque colours over PALETTE_MAX recorded, never failed; '
                        'luminance p5-p95 spread >= LUM_RANGE_MIN, main-road mean >= LUM_MEAN_MIN; enclosed pockets of any size '
-                       'whose sampled raw is neither the key nor a dark key blend count as erased')
+                       'whose sampled raw is not the key count as erased, a dark key blend exempt only in a pocket that holds pure key')
 ROSTER_ICON_RULES = ('block downscale to ICON_HEIGHT, or to fit a wide subject inside ICON_BOX with its pad; alpha QA with spill '
-                     'and key tint; final canvas inside ICON_BOX')
+                     'and key tint; final canvas inside ICON_BOX; erased interior as the roster sprites')
 SPEC_INPUTS['roster-sprite'] = ('ROSTER_HEIGHT', 'ROSTER_HEIGHT_BAND', 'ROSTER_SWARM_MAX_W', 'PALETTE_MAX', 'LUM_RANGE_MIN',
-                                'LUM_MEAN_MIN', 'LUM_PCT', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX',
+                                'LUM_MEAN_MIN', 'LUM_PCT', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR',
+                                'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX',
                                 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE', 'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS',
                                 'ROSTER_SPRITE_RULES')
-SPEC_INPUTS['roster-icon'] = ('ICON_HEIGHT', 'ICON_BOX', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE',
+SPEC_INPUTS['roster-icon'] = ('ICON_HEIGHT', 'ICON_BOX', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR',
+                              'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'SPECK_MAX', 'MAGENTA', 'MAGENTA_SPILL_MAX', 'KEY_TINT_INSIDE_MAX', 'SPILL_HUE',
                               'SPILL_STEP', 'SPILL_BAND', 'STRONG_DEFRINGE', '_SHIFTS', 'ROSTER_ICON_RULES')
 
 
@@ -1332,19 +1336,54 @@ def lum_range(final, mainline):
     return out
 
 
+def _pocket_labels(mask):
+    """4-connected components of a boolean mask: an int array, 0 outside, 1..n inside."""
+    lab = np.zeros(mask.shape, np.int32); n = 0; h, w = mask.shape
+    for y, x in zip(*np.nonzero(mask)):
+        if lab[y, x]: continue
+        n += 1; lab[y, x] = n; stack = [(y, x)]
+        while stack:
+            cy, cx = stack.pop()
+            for ny, nx in ((cy + 1, cx), (cy - 1, cx), (cy, cx + 1), (cy, cx - 1)):
+                if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not lab[ny, nx]: lab[ny, nx] = n; stack.append((ny, nx))
+    return lab
+
+
+def erased_count(alpha, raw_rgb):
+    """Enclosed transparent pixels (pockets of any size) that were art in the raw, sampled the way the final was. A pixel
+    within KEY_NEAR of the key is background. The key blended dark into an outline (green <= KEY_BLEND_G_MAX, red and blue
+    KEY_BLEND_STEP above it) is background only in a pocket that also holds pure key (a real seam: key in the middle, blend
+    along its rim); in a pocket with no key at all every pixel is art the cutout took for magenta, whatever its colour
+    (PR D review, High 1: a solid violet patch is never a seam)."""
+    pockets = _enclosed_transparent(alpha, small=alpha.size)
+    if raw_rgb.shape[:2] != alpha.shape or not pockets.any(): return 0
+    c = raw_rgb.astype(np.int16); r, g, b = c[..., 0], c[..., 1], c[..., 2]
+    key = _near_magenta(raw_rgb, KEY_NEAR); blend = (g <= KEY_BLEND_G_MAX) & (r - g >= KEY_BLEND_STEP) & (b - g >= KEY_BLEND_STEP)
+    lab = _pocket_labels(pockets); seamed = np.isin(lab, np.unique(lab[pockets & key])) & pockets
+    return int((pockets & ~key & ~(blend & seamed)).sum())
+
+
 def _erased_pixels(img, final, block):
-    """Enclosed transparent pixels (pockets of any size) whose raw, sampled the way the final was, is not the key: art the
-    cutout took for magenta. True gaps between legs or arms are key-coloured in the raw and do not count."""
+    """erased_count for a block-downscaled final (sprites, icons): the raw sampled with the same block and pad."""
     cut = cutout(img); bbox = cut.getbbox()
     if bbox is None or not block: return 0
     src = Image.new('RGB', (bbox[2] - bbox[0] + 2 * block, bbox[3] - bbox[1] + 2 * block), (255, 0, 255))
     src.paste(img.convert('RGB').crop(bbox), (block, block))
-    rgb = np.asarray(to_art_pixels(src, block).convert('RGB')); c = rgb.astype(np.int16); r, g, bl = c[..., 0], c[..., 1], c[..., 2]
-    # the key and its blends into a dark outline (green almost gone, red and blue far above it) are background, never art
-    hint = _near_magenta(rgb, 30) | ((g <= KEY_BLEND_G_MAX) & (r - g >= KEY_BLEND_STEP) & (bl - g >= KEY_BLEND_STEP))
-    a = np.asarray(final.convert('RGBA'))[..., 3]
-    if hint.shape != a.shape: return 0
-    return int((_enclosed_transparent(a, small=a.size) & ~hint).sum())
+    return erased_count(np.asarray(final.convert('RGBA'))[..., 3], np.asarray(to_art_pixels(src, block).convert('RGB')))
+
+
+def _erased_normalized(img, final, long_side, canvas):
+    """erased_count for a gear final (`_finish_normalized`): the raw sampled at the same scale, padded and centred alike."""
+    img = img.convert('RGB'); bbox = _cut_box(cutout(img))
+    if bbox is None: return 0
+    try:
+        w, h, _ = _subject_dims(bbox, long_side)
+    except ValueError:
+        return 0
+    src = _sample_padded(img.crop(bbox), w, h, (255, 0, 255))
+    if canvas:
+        cell = Image.new('RGB', (canvas, canvas), (255, 0, 255)); cell.paste(src, ((canvas - src.width) // 2, (canvas - src.height) // 2)); src = cell
+    return erased_count(np.asarray(final.convert('RGBA'))[..., 3], np.asarray(src.convert('RGB')))
 
 
 def process_roster_sprite(reg, aid, img, workdir, raw, cls, mainline):
@@ -1374,10 +1413,31 @@ def process_roster_icon(reg, aid, cell, workdir, raw):
     qa = _finish(reg, aid, cell, 'sprite', workdir, raw, block=block, height=ICON_HEIGHT, despill_=True)
     final = Image.open(_final_path(reg.get(aid)['final'])).convert('RGBA')
     if max(final.size) > ICON_BOX and 'larger than the icon box' not in qa['reasons']: qa['reasons'].append('larger than the icon box')
-    qa.update({'pass': not qa['reasons'], 'spec': qa_spec('roster-icon')})
+    erased = _erased_pixels(cell, final, qa.get('block'))
+    if erased > ROSTER_ERASED_MAX and 'interior erased' not in qa['reasons']: qa['reasons'].append('interior erased')
+    qa.update({'pass': not qa['reasons'], 'erased': erased, 'spec': qa_spec('roster-icon')})
     _save_final(reg, aid, final, qa, workdir, raw)
     reg.set(aid, kind='roster-icon')
     return qa
+
+
+ROSTER_GEAR_RULES = 'gear-cell (5d sizes, mass and spill) plus the erased interior of the roster sprites, on each final'
+SPEC_INPUTS['roster-gear'] = SPEC_INPUTS['gear-cell'] + ('ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP', 'KEY_NEAR',
+                                                       'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'ROSTER_GEAR_RULES')
+
+
+def process_roster_gear_cell(reg, gid, cell, workdir, raw, slot=None, kind=None, large=GEAR_LARGE, icon=GEAR_ICON):
+    """A roster own unique: process_gear_cell (5d's sizes and gates, unchanged) and the erased-interior gate on each of
+    its two finals (PR D review, Low 4), stamped qa_spec('roster-gear'), registry kind 'roster-gear'."""
+    out = process_gear_cell(reg, gid, cell, workdir, raw, large=large, icon=icon, slot=slot, kind=kind)
+    for aid, (side, size) in ((f'gear-{gid}-large', large), (f'gear-{gid}', icon)):
+        qa = out[aid]; final = Image.open(_final_path(reg.get(aid)['final'])).convert('RGBA')
+        erased = _erased_normalized(cell, final, side, size)
+        if erased > ROSTER_ERASED_MAX and 'interior erased' not in qa['reasons']: qa['reasons'].append('interior erased')
+        qa.update({'pass': not qa['reasons'], 'erased': erased, 'spec': qa_spec('roster-gear')})
+        _save_final(reg, aid, final, qa, workdir, raw)
+        reg.set(aid, kind='roster-gear')
+    return out
 
 
 def main(argv=None):

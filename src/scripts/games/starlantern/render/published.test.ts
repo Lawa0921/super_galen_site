@@ -35,6 +35,15 @@ describe('published starlantern art', () => {
     }
   });
 
+  it('the url totals agree: allArtUrls, the manifest, artPaths.test.ts and the e2e manifest count (roster PR D review)', () => {
+    // roster_art.py publish moves both written totals; this holds them to the real ones so a publish can never leave one behind.
+    const total = (file: string, re: RegExp) => Number(re.exec(readFileSync(file, 'utf8'))?.[1]);
+    const urls = allArtUrls().length;
+    expect(manifest.size).toBe(urls);
+    expect(total('src/scripts/games/starlantern/render/artPaths.test.ts', /expect\(urls\)\.toHaveLength\((\d+)\);/)).toBe(urls);
+    expect(total('tests/e2e/starlantern.spec.ts', /expect\(manifest\.length\)\.toBe\((\d+)\);/)).toBe(urls);
+  });
+
   it('no removed skill keeps a file in the runtime folder (art step 9)', () => {
     for (const id of ['triple-slash', 'sacred-sake', 'thunder-thrust', 'blessing', 'sanctuary', 'shadow-flurry', 'venom-edge', 'snare-shot',
       'fire-arrow', 'storm-volley', 'guardian-roar', 'fortress', 'veil-dance', 'sirocco', 'repair-kit']) {

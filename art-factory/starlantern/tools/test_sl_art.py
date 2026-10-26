@@ -1393,13 +1393,14 @@ def _constants_read(f, seen=None):
 
 
 @pytest.mark.parametrize('kind, gate', [('gear-cell', 'process_gear_cell'), ('nine-slice', 'nine_slice'), ('skill-cell', 'process_skill_cell'),
-                                        ('roster-sprite', 'process_roster_sprite'), ('roster-icon', 'process_roster_icon')])
+                                        ('roster-sprite', 'process_roster_sprite'), ('roster-icon', 'process_roster_icon'),
+                                        ('roster-gear', 'process_roster_gear_cell')])
 def test_every_constant_a_gate_reads_is_in_its_stamp(kind, gate):
     assert _constants_read(getattr(A, gate)) - NOT_THRESHOLDS <= set(A.SPEC_INPUTS[kind]), \
         _constants_read(getattr(A, gate)) - NOT_THRESHOLDS - set(A.SPEC_INPUTS[kind])
 
 
-@pytest.mark.parametrize('kind', ['gear-cell', 'nine-slice', 'skill-cell', 'roster-sprite', 'roster-icon'])
+@pytest.mark.parametrize('kind', ['gear-cell', 'nine-slice', 'skill-cell', 'roster-sprite', 'roster-icon', 'roster-gear'])
 def test_spec_stamp_is_a_readable_hash_that_moves_with_any_covered_constant(kind, monkeypatch):
     stamp = A.qa_spec(kind)
     assert re.fullmatch(rf'{kind}:[0-9a-f]{{12}}', stamp) and A.qa_spec(kind) == stamp       # deterministic
@@ -1632,7 +1633,7 @@ def test_lum_range_rejects_flat_art_and_dark_main_road_art():
     assert p95 - p5 >= 0.35 and mean < 0.35
 
 
-def _sprite_raw(path, h=320, w=200, fill=None, cut=False, pink=False, gap=False):
+def _sprite_raw(path, h=320, w=200, fill=None, cut=False, pink=False, gap=False, patch=None):
     """A codex-like monster raw: a shaded body with a dark outline on flat magenta (a band of light to dark greys)."""
     from PIL import ImageDraw
     img = canvas(400, 400 if not cut else h); d = ImageDraw.Draw(img)
@@ -1642,7 +1643,9 @@ def _sprite_raw(path, h=320, w=200, fill=None, cut=False, pink=False, gap=False)
         v = 70 + 22 * k
         d.rectangle((x0 + 6, y0 + 6 + k * (h - 12) // 8, x0 + w - 7, y0 + 6 + (k + 1) * (h - 12) // 8 - 1), fill=fill or (v, v, v - 10))
     if pink: d.rectangle((x0 + 60, y0 + 100, x0 + 100, y0 + 140), fill=(255, 120, 255))   # art keyed out as magenta
-    if gap: d.rectangle((x0 + 60, y0 + 100, x0 + 100, y0 + 140), fill=(190, 20, 190))     # a real gap: the key blended dark
+    if gap:   # a real seam: pure key down the middle, the key blended dark only along its rim
+        d.rectangle((x0 + 60, y0 + 100, x0 + 100, y0 + 140), fill=(190, 20, 190)); d.rectangle((x0 + 70, y0 + 110, x0 + 90, y0 + 130), fill=(255, 0, 255))
+    if patch: d.rectangle((x0 + 60, y0 + 100, x0 + 100, y0 + 140), fill=patch)            # a solid 41 x 41 patch of art
     path.parent.mkdir(parents=True, exist_ok=True); img.save(path); return path
 
 
@@ -1682,8 +1685,8 @@ def test_process_roster_icon_holds_the_5d_size(tmp_path):
 
 
 def test_a_gap_of_dark_key_blend_is_not_an_erased_interior(tmp_path):
-    """R0 a1 review (2026-10-26): codex's real gaps between a body and its arms hold the key blended into the outline
-    ((200, 19, 193), (151, 48, 151)); they are background, not art the cutout took away."""
+    """R0 a1 review (2026-10-26): codex's real gaps between a body and its arms hold pure key with the key blended into the
+    outline along their rim ((200, 19, 193), (151, 48, 151)); the rim is background, not art the cutout took away."""
     reg = A.Registry(tmp_path / 'r.json'); raw = _sprite_raw(tmp_path / 'gap.png', gap=True)
     q = A.process_roster_sprite(reg, 'enemy-gap', Image.open(raw), tmp_path / 'w', raw, 'normal', mainline=True)
     assert q['erased'] == 0 and 'interior erased' not in q['reasons'], q
@@ -1701,3 +1704,47 @@ def test_a_sprite_over_the_32_colour_palette_passes_with_its_count_recorded(tmp_
     q = A.process_roster_sprite(A.Registry(tmp_path / 'r.json'), 'enemy-grain', Image.open(raw), tmp_path / 'w', raw, 'normal', mainline=True)
     assert q['colours'] > A.PALETTE_MAX and 'too many colours' not in q['reasons'] and q['pass'], q
     assert q['palette_over'] is True
+
+
+# --- PR D review (2026-10-26), High 1 and Low 4, 8: erased interiors -------------------------------------------------------------
+VIOLETS = [(190, 20, 190), (200, 50, 210), (230, 40, 180), (170, 30, 230), (150, 60, 200)]
+
+
+@pytest.mark.parametrize('colour', VIOLETS)
+def test_a_solid_violet_patch_the_cutout_erased_fails(tmp_path, colour):
+    """A 41 x 41 violet or orchid patch inside a body is art: no pure key in its pocket, so its key-blend colour is no excuse."""
+    raw = _sprite_raw(tmp_path / 'violet.png', patch=colour)
+    q = A.process_roster_sprite(A.Registry(tmp_path / 'r.json'), 'enemy-violet', Image.open(raw), tmp_path / 'w', raw, 'normal', mainline=True)
+    assert 'interior erased' in q['reasons'] and q['erased'] > A.ROSTER_ERASED_MAX, q
+
+
+def test_erased_count_exempts_blend_only_in_a_pocket_with_pure_key():
+    a = np.full((9, 9), 255, np.uint8); a[2:7, 2:7] = 0                    # one 5 x 5 pocket
+    raw = np.zeros((9, 9, 3), np.uint8); raw[2:7, 2:7] = (190, 20, 190)    # blend all over it
+    assert A.erased_count(a, raw) == 25                                     # no key: every pixel is erased art
+    raw[4, 4] = (255, 0, 255)
+    assert A.erased_count(a, raw) == 0                                      # a key core: the blend round it is a seam
+    raw[2, 2] = (120, 200, 90)
+    assert A.erased_count(a, raw) == 1                                      # art in a seam still counts
+
+
+def test_roster_icons_and_gear_have_the_erasure_gate(tmp_path):
+    from PIL import ImageDraw
+    cell = _shape_cell(300, 280, 'ellipse'); ImageDraw.Draw(cell).rectangle((170, 170, 230, 230), fill=(200, 50, 210))
+    q = A.process_roster_icon(A.Registry(tmp_path / 'r.json'), 'icon-violet', cell, tmp_path / 'w', tmp_path / 'raw.png')
+    assert 'interior erased' in q['reasons'] and q['erased'] > A.ROSTER_ERASED_MAX, q
+    reg = A.Registry(tmp_path / 'g.json')
+    out = A.process_roster_gear_cell(reg, 'violet', cell, tmp_path / 'g', tmp_path / 'raw.png', slot='body')
+    for aid, q in out.items():
+        assert 'interior erased' in q['reasons'] and q['spec'] == A.qa_spec('roster-gear'), (aid, q)
+        assert reg.get(aid)['kind'] == 'roster-gear'
+    clean = A.process_roster_gear_cell(A.Registry(tmp_path / 'c.json'), 'plain', _shape_cell(300, 280, 'ellipse'), tmp_path / 'c', tmp_path / 'raw.png', slot='body')
+    assert all(q['pass'] and q['erased'] == 0 for q in clean.values()), clean
+
+
+def test_the_cutout_reach_and_the_key_hint_are_stamped():
+    import inspect
+    assert A.KEY_NEAR == 30 and A.CUTOUT_MARGIN == inspect.signature(A.cutout).parameters['margin'].default == 70
+    assert A.CUTOUT_FRINGE == 90 and '_near_magenta(rgb, 90)' in inspect.getsource(A.cutout)       # cutout's fringe reach
+    for kind in ('roster-sprite', 'roster-icon', 'roster-gear'):
+        assert {'KEY_NEAR', 'CUTOUT_MARGIN', 'CUTOUT_FRINGE', 'ROSTER_ERASED_MAX', 'KEY_BLEND_G_MAX', 'KEY_BLEND_STEP'} <= set(A.SPEC_INPUTS[kind]), kind

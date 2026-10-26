@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from './enemies';
@@ -22,6 +23,16 @@ import { ABSORB_SALT } from '../engine/story/fragments';
 import { MEMORY_SALT } from '../engine/story/memories';
 import { AFFIX_SALT } from '../engine/tiers';
 
+/** The art factory's registry: what is published, from where (read independently of the switches it is checked against). */
+const REGISTRY = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as {
+  assets: Record<string, { status?: string; runtime?: string; final?: string }>;
+};
+const publishedArt = (aid: string): boolean => {
+  const e = REGISTRY.assets[aid];
+  return e?.status === 'published' && !!e.runtime && existsSync(`public${e.runtime}`);
+};
+const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
+
 describe('roster switches (roster plan Task A1, spec §11.1)', () => {
   it('the live set is inside the art set', () => {
     for (const id of ROSTER_LIVE) expect(ROSTER_ART.has(id), id).toBe(true);
@@ -42,8 +53,11 @@ describe('roster switches (roster plan Task A1, spec §11.1)', () => {
     const fresh = Object.keys(ENEMIES).filter((id) => !LEGACY_ENEMY_IDS.includes(id));
     for (const id of fresh) {
       expect(listedEnemy(id), id).toBe(false);
-      expect(artEnemy(id), id).toBe(ROSTER_ART.has(id)); // drawn once its art round is published (R0 since PR D), never listed
     }
+    // Drawn exactly when the registry has its sprite published (R0 since PR D); never listed while nothing is live.
+    expect(fresh.filter(artEnemy).sort()).toEqual(fresh.filter((id) => publishedArt(`enemy-${id}`)).sort());
+    for (const id of ['paper-moth', 'root-hound', 'bell-watcher', 'false-moon', 'fog-warden']) expect(artEnemy(id), id).toBe(true);
+    expect(artEnemy('lamp-wight')).toBe(false);   // R1: drawn on the R0 sheets, not published
     expect(listedEnemy('no-such-foe')).toBe(false);
   });
 });
@@ -362,8 +376,13 @@ describe('roster materials and own uniques (roster plan Task A3, spec §7)', () 
   });
 
   it('art waits on the owner (ruling 3)', () => {
-    for (const m of Object.values(MATERIALS)) expect(artMaterial(m.id), m.id).toBe(!m.owner || ROSTER_ART.has(m.owner));
-    for (const s of Object.values(SPECIALS)) expect(artSpecial(s.id), s.id).toBe(!s.owner || ROSTER_ART.has(s.owner));
+    // A roster material or unique is loaded exactly when the registry has its icon (both gear images) published.
+    for (const m of Object.values(MATERIALS)) expect(artMaterial(m.id), m.id).toBe(!m.owner || publishedArt(`icon-${m.id}`));
+    for (const s of Object.values(SPECIALS)) {
+      expect(artSpecial(s.id), s.id).toBe(!s.owner || (publishedArt(`gear-${s.id}`) && publishedArt(`gear-${s.id}-large`)));
+    }
+    expect(artMaterial('faded-letter') && artSpecial('fog-halberd')).toBe(true);     // R0's, published in PR D
+    expect(artMaterial('wight-wick') || artSpecial('silent-chime')).toBe(false);     // R1's, waiting
   });
 });
 
@@ -698,23 +717,23 @@ describe('a warden waits for its room (PR A review, item 3)', () => {
 describe('roster art switch (roster plan Task D4)', () => {
   // A roster id enters ROSTER_ART only in its art round's publish commit (art-factory/starlantern/tools/roster_art.py publish):
   // from then on the game loads its sprite, its material's icon and its own unique's two gear images, so all of them must
-  // be published in the registry and on disk. The 5d cross-check (render/gearArt.test.ts) leaves the roster's ids to this.
-  const registry = JSON.parse(readFileSync('art-factory/starlantern/registry.json', 'utf8')) as {
-    assets: Record<string, { status?: string; runtime?: string }>;
-  };
-  const published = (aid: string) => {
-    const e = registry.assets[aid];
-    return e?.status === 'published' && !!e.runtime && existsSync(`public${e.runtime}`);
+  // be published in the registry, on disk, and be the very bytes the registry's QA-passed final holds (PR D review, Low 6).
+  // The 5d cross-check (render/gearArt.test.ts) leaves the roster's ids to this.
+  const shipped = (aid: string) => {
+    const e = REGISTRY.assets[aid];
+    expect(publishedArt(aid), aid).toBe(true);
+    expect(sha256(`public${e.runtime}`), `${aid}: the runtime file is its registry final`).toBe(sha256(e.final!));
   };
 
   it('every art id is published', () => {
+    const fresh = new Set(rosterIds());
     for (const id of ROSTER_ART) {
-      expect(ENEMIES[id], id).toBeDefined();
-      expect(published(`enemy-${id}`), `enemy-${id}`).toBe(true);
-      for (const m of Object.values(MATERIALS).filter((x) => x.owner === id)) expect(published(`icon-${m.id}`), `icon-${m.id}`).toBe(true);
+      expect(fresh.has(id) && !LEGACY_ENEMY_IDS.includes(id), `${id} is a roster id`).toBe(true);
+      shipped(`enemy-${id}`);
+      for (const m of Object.values(MATERIALS).filter((x) => x.owner === id)) shipped(`icon-${m.id}`);
       for (const s of Object.values(SPECIALS).filter((x) => x.owner === id)) {
-        expect(published(`gear-${s.id}`), `gear-${s.id}`).toBe(true);
-        expect(published(`gear-${s.id}-large`), `gear-${s.id}-large`).toBe(true);
+        shipped(`gear-${s.id}`);
+        shipped(`gear-${s.id}-large`);
       }
     }
   });

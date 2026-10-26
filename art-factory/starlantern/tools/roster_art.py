@@ -20,7 +20,7 @@ Rounds (spec §13.5): r0 the style sample (5 foes, the R0+R1 icon sheet, the R0+
 rest; the forget chip drawn with r0 is approved and published as its own round `forget` in E1c (ruling 27). Every asset belongs to the round of its owner (an R1 foe's icon drawn on the R0 sheet is published with R1), so a
 published round always has a foe's sprite, its icon and its unique together. Run from the repo root.
 """
-import datetime, json, re, subprocess, sys, time
+import datetime, json, os, re, shutil, subprocess, sys, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -45,6 +45,7 @@ MATERIALS_TS = GAME / 'data/materials.roster.ts'
 GEAR_TS = GAME / 'data/gear.roster.ts'
 MONSTERS_TS = GAME / 'data/monsters.ts'
 ARTPATHS_TEST = GAME / 'render/artPaths.test.ts'
+E2E_SPEC = REPO / 'tests/e2e/starlantern.spec.ts'   # its manifest count follows every publish (PR D review, Low 5)
 
 CAP = 3   # contract: at most 3 codex attempts per id, then stop and report (never a substitute)
 
@@ -550,7 +551,7 @@ def assets_of(job, part):
 def KIND_OF(aid):
     if aid.startswith('enemy-'): return 'roster-sprite'
     if aid == FORGET_ASSET: return 'skill-cell'
-    if aid.startswith('gear-'): return 'gear-cell'
+    if aid.startswith('gear-'): return 'roster-gear'
     return 'roster-icon'
 
 
@@ -679,7 +680,7 @@ def process_attempt(reg, job, raw, workdir, parts=None):
         if part is None or (parts and part not in parts): continue
         if job['kind'] == 'gear-sheet':
             u = uniques()[part]
-            out.update(A.process_gear_cell(reg, part, cell, workdir, raw, large=G.LARGE, icon=G.ICON, slot=u['slot'], kind=u['kind']))
+            out.update(A.process_roster_gear_cell(reg, part, cell, workdir, raw, slot=u['slot'], kind=u['kind'], large=G.LARGE, icon=G.ICON))
         else:
             out[f'icon-{part}'] = A.process_roster_icon(reg, f'icon-{part}', cell, workdir, raw)
     return out
@@ -752,14 +753,37 @@ def sha256(path):
 DATE = re.compile(r'\d{4}-\d{2}-\d{2}')
 
 
-def _review_passes(text, aid, sha):
-    """A review record line names the image and its sha256 and says 通過 (and not 不通過)."""
-    return any(aid in ln and sha in ln and '通過' in ln and '不通過' not in ln for ln in text.splitlines())
+REVIEW_LINE = re.compile(r'^- (\S+) ([0-9a-f]{64}) 通過$')
+
+
+def review_passes(text):
+    """The images an independent review record passes: {asset id: sha256}, from lines of exactly `- <id> <sha256> 通過`
+    (PR D review, Medium 2). Free text may stand on other lines, but a line that starts with `- ` in any other form (another
+    verdict, a negation such as 未通過 or 通過？否, words after 通過) is returned in the second value and refuses the round."""
+    passed, bad = {}, []
+    for ln in text.splitlines():
+        if not ln.startswith('- '): continue
+        m = REVIEW_LINE.match(ln)
+        if m: passed[m.group(1)] = m.group(2)
+        else: bad.append(ln)
+    return passed, bad
+
+
+def repo_path(path):
+    """A file under the art factory as the repo names it (`art-factory/starlantern/...`), never an absolute worktree path."""
+    return 'art-factory/starlantern/' + Path(path).resolve().relative_to(WORK.parent.resolve()).as_posix()
+
+
+def review_copy(rnd):
+    """Where approve keeps the R1-R4 review record, committed with the approval (PR D review, Medium 3)."""
+    return WORK / 'review' / f'roster-{rnd}-review.md'
 
 
 def do_approve(reg, rnd, by=None, review=None):
-    """R0: the USER's approval of the style sample (their words and the date in `by`). R1-R4 (ruling 21): an independent
-    fresh-context review record (`review`) that lists every image's sha256 with 通過; no user words are asked for or taken.
+    """R0: the USER's approval of the style sample (their words and the date in `by`). R1-R4 (ruling 21) and the forget
+    chip (ruling 27): an independent fresh-context review record (`review`) whose lines `- <id> <sha256> 通過` cover every
+    asset of the round; no user words are asked for or taken. The record is kept at work/review/roster-<round>-review.md
+    with its sha256.
 
     Either way approval is tied to what was shown: every asset of the round picked, QA passed under the current spec, and
     its final still the bytes the review page recorded (and, for R1-R4, the bytes the review passed). Any miss refuses the
@@ -777,9 +801,10 @@ def do_approve(reg, rnd, by=None, review=None):
     sp = shown_path(rnd)
     if not sp.exists(): raise PermissionError(f'no review page record for {rnd} ({sp}); build and show the review page first')
     shown = json.loads(sp.read_text(encoding='utf-8')).get('parts', {})
-    text = Path(review).read_text(encoding='utf-8') if review else ''
+    passed, bad = review_passes(Path(review).read_text(encoding='utf-8')) if review else ({}, [])
     aids = batch_assets(rnd); problems = {}
     if not shown: problems['nothing was shown'] = [rnd]
+    if bad: problems['review lines not in the form "- <id> <sha256> 通過"'] = bad
     for aid in aids:
         e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
         if not e.get('chosen_attempt') or f is None or not f.is_file(): problems.setdefault('not picked', []).append(aid); continue
@@ -787,16 +812,21 @@ def do_approve(reg, rnd, by=None, review=None):
         if A.qa_stale(e): problems.setdefault('QA recorded under an older spec (pick it again)', []).append(aid); continue
         h = sha256(f)
         if h != shown.get(aid): problems.setdefault('changed since (or missing from) the review page', []).append(aid)
-        elif review and not _review_passes(text, aid, h): problems.setdefault('not passed by the independent review (id, sha256, 通過)', []).append(aid)
+        elif review and passed.get(aid) != h: problems.setdefault('not passed by the independent review (id, sha256, 通過)', []).append(aid)
     if problems: raise PermissionError(f'refusing to approve {rnd}: {problems}')
     today = datetime.date.today().isoformat()
-    who = by or f'independent review {review} ({today})'
+    rec = {'date': today, 'record': repo_path(sp), 'shown': {a: sha256(A._final_path(reg.data['assets'][a]['final'])) for a in aids}}
+    if review:
+        kept = review_copy(rnd); kept.parent.mkdir(parents=True, exist_ok=True)
+        if Path(review).resolve() != kept.resolve(): shutil.copyfile(review, kept)
+        rec.update({'review': repo_path(kept), 'review_sha256': sha256(kept)})
+        who = f'independent review {repo_path(kept)} ({today})'
+    else:
+        rec['by'] = by; who = by
     done = []
     for aid in aids:
         e = reg.data['assets'][aid]
         if e['status'] == 'qa_passed': e['status'] = 'approved'; e['approved_by'] = who; done.append(aid)
-    rec = {'date': today, 'record': str(sp), 'shown': {a: sha256(A._final_path(reg.data['assets'][a]['final'])) for a in aids}}
-    rec.update({'by': by} if by else {'review': str(review)})
     reg.data.setdefault('approved_batches', {})[lab] = rec
     if rnd == 'r0':
         reg.data['roster_style_approved'] = today
@@ -857,37 +887,78 @@ def bump_art_count(add, note, path=None):
     return new
 
 
+E2E_RE = re.compile(rb'([ \t]*)expect\(manifest\.length\)\.toBe\((\d+)\);(\r?\n)')
+
+
+def url_totals():
+    """(the url total in artPaths.test.ts, the manifest count in the e2e spec): publish moves both by the same amount."""
+    a = COUNT_RE.search(_read_keep_eol(ARTPATHS_TEST)[0]); b = E2E_RE.search(E2E_SPEC.read_bytes())
+    if not a or not b: raise ValueError('a url total is not where it was (artPaths.test.ts, tests/e2e/starlantern.spec.ts)')
+    return int(a.group(1)), int(b.group(2))
+
+
+def bump_e2e_count(add, note, path=None):
+    """The e2e spec's manifest count + `add`, with a comment line; byte-level, so that file's mixed line endings stay as
+    they are (the new lines take the ending of the line they stand before)."""
+    path = Path(path or E2E_SPEC); raw = path.read_bytes(); m = E2E_RE.search(raw)
+    if not m: raise ValueError(f'the manifest count is not where it was in {path}')
+    indent, old, eol = m.group(1), int(m.group(2)), m.group(3); new = old + add
+    line = indent + f'// + {note} = {new}'.encode('utf-8') + eol + indent + f'expect(manifest.length).toBe({new});'.encode('utf-8') + eol
+    path.write_bytes(raw[:m.start()] + line + raw[m.end():])
+    return new
+
+
 def do_publish(reg, rnd, public=None):
-    """Publish an approved round: every asset of it must be approved and still the approved bytes, or nothing goes out.
-    Writes runtime, copies to public/, rewrites the manifest, adds the round's foes to ROSTER_ART (data/monsters.ts) and the
-    url count to render/artPaths.test.ts, all in the working tree for the implementer to commit."""
+    """Publish an approved round, all or nothing (PR D review, Low 7): every asset of it must be approved and still the
+    approved bytes, and the game files must be where they were, before anything moves. Each file is copied to a temp name
+    next to its runtime path; only when every copy has landed are they renamed into place, and only then do the registry,
+    the manifest, ROSTER_ART (data/monsters.ts) and the url counts (render/artPaths.test.ts, the e2e manifest count)
+    change. A failed copy leaves no file and no temp behind. A retry after success publishes nothing and changes nothing
+    (returns []). Everything stays in the working tree for the implementer to commit."""
     public = Path(public or PUBLIC); lab = label(rnd)
     rec = reg.data.get('approved_batches', {}).get(lab)
     if not rec: raise PermissionError(f'round {rnd} has no current approval; build its review page and approve it first')
     shown = rec.get('shown') if isinstance(rec.get('shown'), dict) else {}
-    aids = batch_assets(rnd); problems = {}
+    aids = batch_assets(rnd); problems = {}; todo = []
     for aid in aids:
         e = reg.data['assets'].get(aid, {}); f = A._final_path(e['final']) if e.get('final') else None
-        if e.get('status') != 'approved': problems.setdefault(f'status {e.get("status")}', []).append(aid); continue
+        if e.get('status') not in ('approved', 'published'): problems.setdefault(f'status {e.get("status")}', []).append(aid); continue
         if f is None or not f.is_file(): problems.setdefault('final file missing', []).append(aid); continue
-        if shown.get(aid) != sha256(f): problems.setdefault('changed since (or missing from) the approval', []).append(aid)
+        if shown.get(aid) != sha256(f): problems.setdefault('changed since (or missing from) the approval', []).append(aid); continue
+        if e['status'] == 'published':   # an earlier publish of this round: it must be exactly what was approved
+            dst = public / e.get('runtime', '').lstrip('/')
+            if e.get('runtime') != runtime(aid) or not dst.is_file() or sha256(dst) != shown[aid]:
+                problems.setdefault('published file is not the approved one', []).append(aid)
+            continue
+        todo.append(aid)
     try:
-        roster_art_ids(); _read_keep_eol(ARTPATHS_TEST)
-        if not COUNT_RE.search(_read_keep_eol(ARTPATHS_TEST)[0]): raise ValueError('no url total in artPaths.test.ts')
+        roster_art_ids(); url_totals()
     except (ValueError, OSError) as err:
         problems.setdefault('cannot update the game files', []).append(str(err))
     if problems: raise PermissionError(f'refusing to publish {rnd}; nothing was published: {problems}')
-    for aid in aids:
-        reg.set(aid, runtime=runtime(aid)); reg.publish(aid, public, roster=True)
-    reg.write_manifest(public)
+    if not todo: return []
+    staged = []
+    try:
+        for aid in todo:
+            dst = public / runtime(aid).lstrip('/'); dst.parent.mkdir(parents=True, exist_ok=True)
+            tmp = dst.with_name(dst.name + '.publishing'); staged.append((tmp, dst))
+            shutil.copyfile(A._final_path(reg.data['assets'][aid]['final']), tmp)
+    except BaseException:
+        for tmp, _ in staged:
+            if tmp.exists(): tmp.unlink()
+        raise
+    for tmp, dst in staged: os.replace(tmp, dst)
+    for aid in todo:
+        reg.data['assets'][aid].update(runtime=runtime(aid), status='published')
+    reg._save(); reg.write_manifest(public)
     if ROUNDS.get(rnd): add_roster_art(ROUNDS[rnd])
-    foes = sum(a.startswith('enemy-') for a in aids); icons = sum(a.startswith('icon-') and a != FORGET_ASSET for a in aids)
-    gear = sum(a.startswith('gear-') and not a.endswith('-large') for a in aids)
+    foes = sum(a.startswith('enemy-') for a in todo); icons = sum(a.startswith('icon-') and a != FORGET_ASSET for a in todo)
+    gear = sum(a.startswith('gear-') and not a.endswith('-large') for a in todo)
     who = rec.get('by') or f'independent review {rec.get("date")}'
     note = (f'roster {rnd.upper()} ({who}): {foes} foes, {icons} material icons, {gear} own uniques x 2'
-            + (', the forget chip' if FORGET_ASSET in aids else ''))
-    bump_art_count(len(aids), note)
-    return aids
+            + (', the forget chip' if FORGET_ASSET in todo else ''))
+    bump_art_count(len(todo), note); bump_e2e_count(len(todo), note)
+    return todo
 
 
 def approve(argv):

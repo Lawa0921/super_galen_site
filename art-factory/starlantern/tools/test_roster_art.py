@@ -159,7 +159,8 @@ def test_gen_stops_at_the_attempt_cap(factory, monkeypatch):
 def factory(tmp_path, monkeypatch):
     for name, p in {'REG_PATH': tmp_path / 'registry.json', 'RAW': tmp_path / 'raw', 'WORK': tmp_path / 'work',
                     'PUBLIC': tmp_path / 'public', 'PLAN_PATH': tmp_path / 'roster-plan.json', 'PROMPTS': tmp_path / 'prompts',
-                    'MONSTERS_TS': tmp_path / 'monsters.ts', 'ARTPATHS_TEST': tmp_path / 'artPaths.test.ts'}.items():
+                    'MONSTERS_TS': tmp_path / 'monsters.ts', 'ARTPATHS_TEST': tmp_path / 'artPaths.test.ts',
+                    'E2E_SPEC': tmp_path / 'starlantern.spec.ts'}.items():
         monkeypatch.setattr(R, name, p)
     return tmp_path
 
@@ -268,6 +269,7 @@ def test_r0_needs_the_users_words_in_by(factory, review):
     assert reg.data['roster_style_anchor']['root-hound'].endswith('enemy-root-hound-a1.png')
     rec = reg.data['approved_batches']['roster-r0']
     assert rec['by'] == 'user: 可以，照這風格 2026-10-27' and all(SHA.match(h) for h in rec['shown'].values())
+    assert rec['record'] == 'art-factory/starlantern/work/review/roster-r0-shown.json'                # PR D review, Medium 3
     assert 'style_approved' not in reg.data                                 # the 5d gear flag is not touched
 
 
@@ -290,8 +292,13 @@ def test_r1_to_r4_need_an_independent_review_record_instead(factory, review):
     done = R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(rec))
     reg = A.Registry(R.REG_PATH)
     assert set(done) == set(R.batch_assets('r1'))
-    assert reg.data['approved_batches']['roster-r1']['review'] == str(rec)
-    assert reg.get('enemy-lamp-wight')['approved_by'].startswith('independent review')
+    rb = reg.data['approved_batches']['roster-r1']
+    kept = R.WORK / 'review' / 'roster-r1-review.md'
+    assert kept.read_bytes() == rec.read_bytes() and rb['review_sha256'] == R.sha256(rec)              # PR D review, Medium 3
+    assert rb['review'] == 'art-factory/starlantern/work/review/roster-r1-review.md'
+    assert rb['record'] == 'art-factory/starlantern/work/review/roster-r1-shown.json'
+    assert not any(':' in str(v) or str(v).startswith('/') for v in (rb['review'], rb['record']))         # never an absolute path
+    assert reg.get('enemy-lamp-wight')['approved_by'].startswith('independent review art-factory/starlantern/work/review/roster-r1-review.md')
 
 
 # --- D3: the review page ----------------------------------------------------------------------------------------------------
@@ -368,6 +375,7 @@ def rooted(factory, monkeypatch):
     subprocess.run(['git', 'init', '-q'], cwd=public, check=True)
     R.MONSTERS_TS.write_text(MONSTERS, encoding='utf-8', newline='\n')
     R.ARTPATHS_TEST.write_bytes(ARTPATHS.replace('\n', '\r\n').encode('utf-8'))
+    R.E2E_SPEC.write_bytes(E2E.encode('utf-8'))
     return public
 
 
@@ -426,3 +434,68 @@ def test_old_sl_art_approve_and_publish_refuse_roster_parts(factory, rooted):
     with pytest.raises(PermissionError, match='roster_art.py'):
         A.Registry(R.REG_PATH).publish('enemy-x', rooted)
     assert not (rooted / 'assets/games/starlantern/enemy/x.png').exists()
+
+
+# --- PR D review (2026-10-26): Medium 2, Low 5, Low 7 -------------------------------------------------------------------------
+def _r1_record(factory, review):
+    _fill(factory, 'r1'); review.main('r1')
+    reg = A.Registry(R.REG_PATH); reg.data['roster_style_approved'] = '2026-10-27'; reg._save()
+    shown = json.loads(R.shown_path('r1').read_text(encoding='utf-8'))['parts']
+    return [f'- {a} {h} 通過' for a, h in shown.items()]
+
+
+@pytest.mark.parametrize('verdict', ['未通過', '沒有通過', '無法通過：輪廓不清', '通過？否', '不通過', '通過 ', '通過（有疑慮）', 'PASS'])
+def test_a_review_line_passes_only_in_the_strict_format(factory, review, verdict):
+    lines = _r1_record(factory, review)
+    rec = factory / 'rec.md'
+    rec.write_text('\n'.join(lines[:-1] + [lines[-1][:-len('通過')] + verdict]) + '\n', encoding='utf-8')
+    _refused(factory, 'r1', review=str(rec))
+    assert not (R.WORK / 'review' / 'roster-r1-review.md').exists()
+
+
+def test_a_review_record_needs_every_asset_of_the_round_and_nothing_else_on_its_lines(factory, review):
+    lines = _r1_record(factory, review); rec = factory / 'rec.md'
+    rec.write_text('# R1 review\n\n' + '\n'.join(lines[:-1]) + '\n', encoding='utf-8')
+    _refused(factory, 'r1', review=str(rec))                                # an asset of the round is missing
+    rec.write_text('\n'.join(lines + [lines[0] + ' 但臉太清楚']) + '\n', encoding='utf-8')
+    _refused(factory, 'r1', review=str(rec))                                # a line in any other form is not a pass
+    rec.write_text('# R1 review, fresh-context agent\n\nnotes are free text\n\n' + '\n'.join(lines) + '\n', encoding='utf-8')
+    assert set(R.do_approve(A.Registry(R.REG_PATH), 'r1', review=str(rec))) == set(R.batch_assets('r1'))
+
+
+E2E = ("  test('every published art file loads', async ({ page }) => {\r\n"
+       "    // Sylvie's unguarded, Noel's smug, Bobby's excited = 722\n"
+       "    expect(manifest.length).toBe(722);\n"
+       "    // Every file the manifest lists answers 200.\r\n")
+
+
+def test_publish_moves_the_e2e_manifest_count_with_the_url_total(factory, review, rooted):
+    R.E2E_SPEC.write_bytes(E2E.encode('utf-8'))
+    _fill(factory, 'r0'); review.main('r0'); R.do_approve(A.Registry(R.REG_PATH), 'r0', by='user: 可以 2026-10-27')
+    R.do_publish(A.Registry(R.REG_PATH), 'r0', rooted)
+    raw = R.E2E_SPEC.read_bytes()
+    assert b'    expect(manifest.length).toBe(736);\n' in raw and b'= 736\n' in raw              # that line's own LF kept
+    assert raw.startswith(E2E.split('\n')[0].encode('utf-8')) and raw.endswith(b'answers 200.\r\n')   # the CRLF lines untouched
+    assert R.url_totals() == (736, 736)
+
+
+def test_publish_is_all_or_nothing_and_a_retry_is_a_no_op(factory, review, rooted, monkeypatch):
+    public = rooted; R.E2E_SPEC.write_bytes(E2E.encode('utf-8'))
+    _fill(factory, 'r0'); review.main('r0'); R.do_approve(A.Registry(R.REG_PATH), 'r0', by='user: 可以 2026-10-27')
+    before = (R.REG_PATH.read_bytes(), R.MONSTERS_TS.read_bytes(), R.ARTPATHS_TEST.read_bytes(), R.E2E_SPEC.read_bytes())
+    real = R.shutil.copyfile; calls = []
+    def flaky(src, dst, *a, **k):
+        calls.append(dst)
+        if len(calls) == 3: raise OSError('disk full')
+        return real(src, dst, *a, **k)
+    monkeypatch.setattr(R.shutil, 'copyfile', flaky)
+    with pytest.raises(OSError):
+        R.do_publish(A.Registry(R.REG_PATH), 'r0', public)
+    assert (R.REG_PATH.read_bytes(), R.MONSTERS_TS.read_bytes(), R.ARTPATHS_TEST.read_bytes(), R.E2E_SPEC.read_bytes()) == before
+    assert not [p for p in public.rglob('*') if p.is_file() and '.git' not in p.parts]            # no file, no temp file left
+    monkeypatch.setattr(R.shutil, 'copyfile', real)
+    done = R.do_publish(A.Registry(R.REG_PATH), 'r0', public)
+    after = (R.REG_PATH.read_bytes(), R.MONSTERS_TS.read_bytes(), R.ARTPATHS_TEST.read_bytes(), R.E2E_SPEC.read_bytes())
+    assert set(done) == set(R.batch_assets('r0'))
+    assert R.do_publish(A.Registry(R.REG_PATH), 'r0', public) == []                                # a retry changes nothing
+    assert (R.REG_PATH.read_bytes(), R.MONSTERS_TS.read_bytes(), R.ARTPATHS_TEST.read_bytes(), R.E2E_SPEC.read_bytes()) == after
