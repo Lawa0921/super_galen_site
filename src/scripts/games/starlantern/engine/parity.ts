@@ -9,7 +9,7 @@ import { expectedEnhance } from '../data/forge';
 import { newLedger, totalOf, type Contribution } from './ledger';
 import { STANDARD_LINEUP } from './party';
 import type { PolicyTable } from './policy';
-import { encounterTable } from './scaling';
+import { legacyEncounterTable } from './scaling';
 import { kitParty, simBattle } from './sim';
 import type { CharacterId } from './types';
 
@@ -62,7 +62,7 @@ export function measureParity(policies?: PolicyTable): ParityTable {
     const depth = parityDepth(level);
     const scale = { depth, region: 'mainline' as const };
     const fights: { enemyIds: string[]; boss: boolean }[] = [
-      ...encounterTable('mainline', depth).map((g) => ({ enemyIds: g, boss: false })),
+      ...legacyEncounterTable('mainline', depth).map((g) => ({ enemyIds: g, boss: false })),
       { enemyIds: ['lanterneater'], boss: true },
     ];
     for (const { measured, ids } of parityLineups()) {

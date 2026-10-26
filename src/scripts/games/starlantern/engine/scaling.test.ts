@@ -12,7 +12,7 @@ import { DEEP_ENEMIES, deepPower, enemyLevelAt, homeLevel, BOSS_PARTY_SCALE, DEP
 import { constRng, fullParty } from './testing';
 import { TIERS, type DepthFactors, type TierDef } from '../data/difficulty';
 import { AFFIXES } from '../data/affixes';
-import { rewardGrowth } from './scaling';
+import { encounterTable, legacyEncounterTable, rewardGrowth } from './scaling';
 
 const MAIN = REGIONS.mainline;
 const wolf = ENEMIES.wolf;
@@ -574,5 +574,13 @@ describe('affixes in scaleEnemy (difficulty plan Task 3)', () => {
     // No affixes, or an empty list: as without.
     expect(scaleEnemy(wolf, 10, MAIN, false, plain, night, [])).toEqual(base);
     expect(scaleEnemy(wolf, 10, MAIN, false, plain, null, [])).toEqual(scaleEnemy(wolf, 10, MAIN, false, plain));
+  });
+});
+
+describe('the legacy encounter table (roster plan Task A1)', () => {
+  it('the legacy table is the table', () => {
+    for (const region of Object.keys(REGIONS) as RegionId[]) for (let d = 1; d <= 60; d++) {
+      expect(encounterTable(region, d), `${region} ${d}`).toEqual(legacyEncounterTable(region, d));
+    }
   });
 });

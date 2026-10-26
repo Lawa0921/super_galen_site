@@ -1,5 +1,6 @@
 import { CHARACTER_IDS } from '../data/characters';
 import { ENEMIES } from '../data/enemies';
+import { artEnemy } from '../data/monsters';
 import { EQUIPMENT, WEAPON_KINDS } from '../data/equipment';
 import { RARITIES, SETS, SPECIALS, regionSpecials } from '../data/gear';
 import { ITEMS } from '../data/items';
@@ -227,7 +228,8 @@ export function allArtUrls(): string[] {
   for (const d of DIRS) urls.push(art.party(d));
   urls.push(art.fog);
   for (const f of [1, 2, 3]) { for (const k of TILE_KEYS) urls.push(art.tile(f, k)); urls.push(art.wallTop(f), art.wallFace(f), art.bg(f)); }
-  for (const id of Object.keys(ENEMIES)) if (!ENEMIES[id].look) urls.push(art.enemy(id));
+  // Roster plan ruling 3: a roster enemy's art is listed once its art batch is published (ROSTER_ART).
+  for (const id of Object.keys(ENEMIES)) if (artEnemy(id) && !ENEMIES[id].look) urls.push(art.enemy(id));
   for (const k of FX_KEYS) urls.push(art.fx(k), art.fxAnim(k));
   urls.push(art.frame);
   for (const s of ['title', 'town', 'guild', 'shop', 'inn', 'gate'] as const) urls.push(art.scene(s));
