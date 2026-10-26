@@ -3,6 +3,7 @@ import { Game } from '../../engine/game';
 import { constRng, memoryStorage } from '../../engine/testing';
 import { NO_ART, type ArtIndex } from '../../render/textures';
 import { art } from '../../render/artPaths';
+import { PL } from '../../data/story/places';
 import { InnScene } from './inn';
 import { LEGACY_LINEUP } from '../../engine/party';
 import { TownScene } from './town';
@@ -634,5 +635,23 @@ describe('InnScene: a bond scene elsewhere stages its own place (review of Task 
     await new Promise((r) => setTimeout(r, 0));
     expect(t.root.querySelector('.slx-backdrop')).toBeNull();
     expect(t.root.querySelector('.slx-inn .slx-npc')!.classList.contains('slx-keeper-away')).toBe(true);
+  });
+
+  it('a scene that breaks mid-play still gives the inn and Marta back (whole-branch review L2)', async () => {
+    const id = 'bond:selene:1';
+    const had = STORY.scenes[id];
+    // its second line cannot be read: the scene throws once it gets there, after the staging is up
+    const broken = { who: 'narrator' as const, get text(): string { throw new Error('a broken line'); } };
+    STORY.scenes[id] = { ...had, lines: [{ who: 'narrator', place: PL.squareDusk, text: '黃昏的廣場。' }, broken] };
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const t = open(firstTalk('selene'));
+      await t.talkWith('selene');
+      expect(t.root.querySelector('.slx-backdrop')).not.toBeNull();
+      await t.playOut();
+      expect(err).toHaveBeenCalled();
+      expect(t.root.querySelector('.slx-backdrop')).toBeNull();
+      expect(t.root.querySelector('.slx-inn .slx-npc')!.classList.contains('slx-keeper-away')).toBe(false);
+    } finally { STORY.scenes[id] = had; err.mockRestore(); }
   });
 });

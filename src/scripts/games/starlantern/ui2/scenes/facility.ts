@@ -1,4 +1,4 @@
-import { STORY, flatLines, type ScriptLine } from '../../data/story.zh-TW';
+import { STORY, type ScriptLine } from '../../data/story.zh-TW';
 import { T } from '../../data/text.zh-TW';
 import { storyStage } from '../../engine/story/events';
 import type { SceneId } from '../../data/story/scenes';
@@ -10,8 +10,7 @@ import { bestPicture } from '../lateArt';
 import { Menu, type MenuItem } from '../menu';
 import type { Scene, SceneCtx, SceneName } from '../scene';
 import { textCps } from '../settings';
-import { NPC_FACILITY, playAndRecord, playBeat, playNight, playScene, speakerOf, stagingOf, storyCtx, type SceneOpts } from '../story';
-import { sceneKind } from '../../data/story/scenes';
+import { NPC_FACILITY, playAndRecord, playBeat, playNight, playScene, putBackdrop, sceneStaging, speakerOf, storyCtx, type SceneOpts } from '../story';
 import type { CharacterId } from '../../engine/types';
 import type { StoryMood } from '../../render/artPaths';
 import type { StoryMode } from '../settings';
@@ -235,27 +234,21 @@ export abstract class FacilityScene implements Scene {
   }
 
   /**
-   * Review of bond plan Task 22: a bond scene, an after-story, a romance or the walk together opened here stands on its own
-   * card (`stagingOf`): the keeper steps away unless it is this facility's hall, and the place's published picture goes behind
-   * it while it plays (none loaded: this facility's stays). Gives back what puts it all back.
+   * Review of bond plan Task 22: a bond scene, a romance or the walk together opened here stands on its own card
+   * (`sceneStaging`): the keeper steps away unless it is this facility's hall, and the place's published picture goes behind
+   * it while it plays (none loaded: this facility's stays). Gives back what puts it all back. An after-story plays from the
+   * town on a return, and stands the same way there (ui2/scenes/town `playScene`; whole-branch review M1).
    */
   private standOn(id: SceneId): () => void {
-    const kind = sceneKind(id);
-    if (kind !== 'bond' && kind !== 'ending' && kind !== 'romance') return () => {};
-    const place = flatLines(STORY.scenes[id]?.lines ?? []).find((l) => l.place)?.place;
-    const { backdrop, keeper } = stagingOf(place, this.id);
-    this.keeperAway = !keeper;
+    const staging = sceneStaging(id, this.id);
+    if (!staging) return () => {};
+    this.keeperAway = !staging.keeper;
     this.npc?.classList.toggle('slx-keeper-away', this.keeperAway);
-    let shown: HTMLElement | null = null;
-    if (backdrop && this.ctx.art.has(art.scene(backdrop))) {
-      shown = el('img', { class: 'slx-bg slx-backdrop', attrs: { src: art.scene(backdrop), alt: '' } });
-      const bg = this.sceneEl.querySelector(':scope > .slx-bg');
-      if (bg) bg.after(shown); else this.sceneEl.prepend(shown);
-    }
+    const takeDown = putBackdrop(this.sceneEl, this.ctx.art, staging.backdrop);
     return () => {
       this.keeperAway = false;
       this.npc?.classList.remove('slx-keeper-away');
-      shown?.remove();
+      takeDown();
     };
   }
 

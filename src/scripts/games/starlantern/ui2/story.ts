@@ -4,7 +4,7 @@ import { BANTER_GATE, CHAT_GATE, GROUP_GATE, MAJOR_SCENES, heavyScene, memScene,
 import { AFTER_CHOICE } from '../data/story/voiceGates';
 import type { Backdrop } from '../data/story/places';
 import { WARM_MOODS } from '../data/story/tone';
-import { NIGHT_PLACE, NPC_NAMES, STORY, isChoice, linesWhen, type ChoiceLine, type NpcId, type Place, type SceneLine, type ScriptLine, type Speaker } from '../data/story.zh-TW';
+import { NIGHT_PLACE, NPC_NAMES, STORY, flatLines, isChoice, linesWhen, type ChoiceLine, type NpcId, type Place, type SceneLine, type ScriptLine, type Speaker } from '../data/story.zh-TW';
 import { BOND_GATE, COMPANIONS, type BondStep, type Companion, type Tone } from '../data/story/bond';
 import { Menu } from './menu';
 import { MenuView, win } from './widgets';
@@ -17,6 +17,7 @@ import type { CharacterId } from '../engine/types';
 import { NORMAL_SMILES, art, type StoryMood } from '../render/artPaths';
 import type { ArtIndex } from '../render/textures';
 import { artIdOf } from '../ui/art';
+import { el } from '../ui/dom';
 import type { UiAction } from './input';
 import type { SceneCtx } from './scene';
 import { DEFAULT_SETTINGS, type StoryMode } from './settings';
@@ -108,11 +109,33 @@ const gateOf = (id: SceneId): StoryGate | undefined => {
  * Review of bond plan Task 22: how a scene opened from a facility stands on its place card (`Place.backdrop`, `at`). The
  * facility's own hall keeps its keeper and its picture; anywhere else the keeper steps away, and the place's own published
  * picture (one other than the facility's) goes behind the scene. A card with no picture of its own keeps the facility's; no
- * card moves nothing.
+ * card moves nothing. `screen` is where it plays: a facility, or the town (no keeper there; whole-branch review M1).
  */
-export function stagingOf(place: Place | undefined, facility: Exclude<Backdrop, 'town'>): { backdrop: Backdrop | null; keeper: boolean } {
+export function stagingOf(place: Place | undefined, screen: Backdrop): { backdrop: Backdrop | null; keeper: boolean } {
   if (!place) return { backdrop: null, keeper: true };
-  return { backdrop: place.backdrop && place.backdrop !== facility ? place.backdrop : null, keeper: place.at === facility };
+  return { backdrop: place.backdrop && place.backdrop !== screen ? place.backdrop : null, keeper: place.at === screen };
+}
+
+/**
+ * How a bond scene, an after-story, a romance or the walk together stands where it plays (`stagingOf` on its first card);
+ * null for any other scene, which stays as the screen has it.
+ */
+export function sceneStaging(id: SceneId, screen: Backdrop): { backdrop: Backdrop | null; keeper: boolean } | null {
+  const kind = sceneKind(id);
+  if (kind !== 'bond' && kind !== 'ending' && kind !== 'romance') return null;
+  return stagingOf(flatLines(STORY.scenes[id]?.lines ?? []).find((l) => l.place)?.place, screen);
+}
+
+/**
+ * Puts `backdrop`'s published picture behind a scene on `sceneEl`, over the screen's own picture (`.slx-bg`), when it has
+ * landed (none: the screen's stays). Gives back what takes it down again.
+ */
+export function putBackdrop(sceneEl: HTMLElement, index: ArtIndex, backdrop: Backdrop | null): () => void {
+  if (!backdrop || !index.has(art.scene(backdrop))) return () => {};
+  const shown = el('img', { class: 'slx-bg slx-backdrop', attrs: { src: art.scene(backdrop), alt: '' } });
+  const bg = sceneEl.querySelector(':scope > .slx-bg');
+  if (bg) bg.after(shown); else sceneEl.prepend(shown);
+  return () => shown.remove();
 }
 
 export function sceneEra(id: SceneId): Era | null {

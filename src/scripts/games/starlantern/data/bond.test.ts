@@ -487,7 +487,7 @@ describe('after-stories and the walk together (bond plan Task 20)', () => {
     // Liz, both ways: her father back (a contest at the counter) or not (a sale a day, the hat still behind his door)
     pinBeat('ending:liz', { full: ['liz'], returned: ['orik'] }, /輸家價/);
     pinBeat('ending:liz', { full: ['liz'], returned: [] }, /紅帽子，還掛在門後/);
-    pinBeat('ending:liz', { full: ['liz'], tiers: { liz: 3 } }, /。不估。/);
+    pinBeat('ending:liz', { full: ['liz'], tiers: { liz: 3 } }, /明天換一雙/);   // whole-branch review: an everyday appraisal; 不估價 is the romance's
     pinBeat('together', {}, /分不出哪一個是誰的/);
   });
 
@@ -538,11 +538,11 @@ describe('romances (bond plan Task 21)', () => {
   });
 
   it("Lorne answers each his own way: one answer in each, nine different, 「回來」 in Rin's, Selene's, Chizuru's and Sylvie's (I-205)", () => {
-    // his answer is his last line there (Rin's has a question before it, 「想要什麼？」); to Scarlet he writes it, an order on
-    // her duty roster (arcs v7), and says nothing
+    // his answer is his last line there (Rin's has a question before it, 「想要什麼？」); to Scarlet he gives the order back
+    // (whole-branch review: from a vow to a choice)
     const said = COMPANIONS.map((c) => {
       const lines = flatLines(BOND_SCENES[ROMANCE(c)]!.lines);
-      const his = c === 'scarlet' ? lines.filter((l) => l.who === 'narrator' && /『命令：/.test(l.text)) : lines.filter((l) => l.who === 'hero');
+      const his = lines.filter((l) => l.who === 'hero');
       expect(his.length, c).toBeGreaterThanOrEqual(1);
       expect(his.length, c).toBeLessThanOrEqual(2);
       return [c, his[his.length - 1].text] as const;

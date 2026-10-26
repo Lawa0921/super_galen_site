@@ -18,7 +18,7 @@ import type { UiAction } from '../input';
 import { Menu } from '../menu';
 import type { Scene, SceneCtx } from '../scene';
 import { textCps } from '../settings';
-import { playAndRecord, playBeat, playNight, shouldPlay, storyCtx, type SceneOpts } from '../story';
+import { playAndRecord, playBeat, playNight, putBackdrop, sceneStaging, shouldPlay, storyCtx, type SceneOpts } from '../story';
 import { Dialogue, MenuView, backControl, confirmBox, win, type Rich, type RichPart } from '../widgets';
 import { innNews } from './inn';
 import { ROMANCE_LINES } from '../../data/bond.zh-TW';
@@ -52,6 +52,7 @@ export class TownScene implements Scene {
   private calEl!: HTMLElement;
   private talk: Dialogue;
   private root!: HTMLElement;
+  private sceneEl!: HTMLElement;
   private ask: MenuView | null = null;
   /** The story scene (or a night's beat) on screen, if any: it takes the actions while it plays. */
   private playing: { onAction(a: UiAction): void } | null = null;
@@ -72,7 +73,7 @@ export class TownScene implements Scene {
     this.calEl = win('slx-calendar', [document.createTextNode(this.calendarText())]);
     const gold = win('slx-gold', [document.createTextNode(`${this.ctx.game.state.gold} G`)]);
     this.hud = [place, this.calEl, gold];
-    const sceneEl = el('div', { class: 'slx-scene slx-town' }, [
+    const sceneEl = this.sceneEl = el('div', { class: 'slx-scene slx-town' }, [
       // the place plate and the calendar beside it, in one row (time and moon ruling 8); then the gold
       el('div', { class: 'slx-town-hud' }, [place, this.calEl]),
       gold,
@@ -226,11 +227,14 @@ export class TownScene implements Scene {
     // One the story setting does not show is only recorded (auto): the town stays as it is.
     if (!shouldPlay(id, storyCtx(this.ctx).mode)) { await playAndRecord(this.talk, id, storyCtx(this.ctx), o).done; return; }
     this.putAway(true);
+    // whole-branch review M1: an after-story stands on its own place here too (`sceneStaging`; the town has no keeper)
+    const takeDown = putBackdrop(this.sceneEl, this.ctx.art, sceneStaging(id, 'town')?.backdrop ?? null);
     try {
       const p = playAndRecord(this.talk, id, storyCtx(this.ctx), o);
       this.playing = p;
       await p.done;
     } finally {
+      takeDown();
       this.playing = null;
       if (!this.inNight) this.putAway(false);
     }

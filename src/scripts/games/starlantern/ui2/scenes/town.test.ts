@@ -929,3 +929,22 @@ describe('TownScene: the tier line (bond plan Task 14)', () => {
     expect(a.draws()).toBe(b.draws());
   });
 });
+
+// Whole-branch review M1: an after-story plays from the town on a return, and stands on its own place all the same.
+describe('TownScene: an after-story stands on its own place (review of bond plan Task 22)', () => {
+  it("Liz's after-story plays over the shop at dusk, and the town comes back after it", async () => {
+    const g = new Game(constRng(0.5), null);
+    g.state.party = meet(g.state.party, 'liz', 1);
+    g.arrival = ['ending:liz'];
+    const root = document.createElement('div');
+    const settings = { get: () => ({ ...DEFAULT_SETTINGS, story: 'all' as StoryMode }) };
+    const s = new TownScene({ game: g, art: { has: () => true }, sfx: { cursor: vi.fn(), confirm: vi.fn(), cancel: vi.fn(), error: vi.fn() }, go: vi.fn(), hasSave: () => false, newGame: vi.fn(), settings }, Infinity);
+    s.enter(root);
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    await tick();
+    expect(root.querySelector('.slx-backdrop')?.getAttribute('src')).toBe(art.scene('shop'));
+    for (let i = 0; i < 30 && !g.state.story.seen.includes('ending:liz'); i++) { s.onAction('confirm'); await tick(); }
+    expect(g.state.story.seen).toContain('ending:liz');
+    expect(root.querySelector('.slx-backdrop')).toBeNull();
+  });
+});
