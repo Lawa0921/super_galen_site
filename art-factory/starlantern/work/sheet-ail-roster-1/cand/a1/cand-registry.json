@@ -1,0 +1,45 @@
+{
+  "assets": {
+    "icon-ail-forget-14": {
+      "final": "art-factory/starlantern/work/sheet-ail-roster-1/cand/a1/icon-ail-forget-14.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-ail-roster-1\\sheet-ail-roster-1-a1.png",
+      "qa": {
+        "pass": true,
+        "reasons": [],
+        "warnings": [],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 0,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "subject": {
+          "long": 12,
+          "short": 10,
+          "mass": 0.639,
+          "box": [
+            1,
+            2,
+            13,
+            12
+          ],
+          "centre_off": 0.0
+        },
+        "block": 53.833,
+        "scale": 53.833,
+        "size": [
+          14,
+          14
+        ],
+        "spec": "skill-cell:533a8c45dbc6",
+        "interior_holes": 0
+      },
+      "status": "qa_passed",
+      "kind": "skill-cell",
+      "source": {
+        "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\sheet-ail-roster-1\\sheet-ail-roster-1-a1.png",
+        "cell": "ail-forget"
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "assets": {
+    "enemy-fog-warden": {
+      "final": "art-factory/starlantern/work/enemy-fog-warden/cand/a2/enemy-fog-warden.png",
+      "raw": "C:\\Users\\bag57\\art-refs\\starlantern\\raw\\enemy-fog-warden\\enemy-fog-warden-a2.png",
+      "qa": {
+        "pass": false,
+        "reasons": [
+          "too many colours"
+        ],
+        "warnings": [
+          "enclosed holes"
+        ],
+        "residue": 0,
+        "semi": 0,
+        "edge": 0,
+        "holes": 7,
+        "magenta_spill": 0,
+        "key_tint_inside": 0,
+        "block": 8,
+        "size": [
+          130,
+          154
+        ],
+        "height": 151,
+        "width": 127,
+        "colours": 9234,
+        "lum": [
+          0.132,
+          0.895,
+          0.538
+        ],
+        "erased": 3,
+        "spec": "roster-sprite:d5d24a1a03ef"
+      },
+      "status": "qa_failed",
+      "kind": "roster-sprite",
+      "roster_class": "boss",
+      "mainline": true
+    }
+  }
+}

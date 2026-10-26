@@ -1,0 +1,29 @@
+{
+  "pass": false,
+  "reasons": [
+    "swarm wider than its band",
+    "too many colours"
+  ],
+  "warnings": [],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 0,
+  "magenta_spill": 0,
+  "key_tint_inside": 0,
+  "block": 11,
+  "size": [
+    76,
+    52
+  ],
+  "height": 50,
+  "width": 74,
+  "colours": 2220,
+  "lum": [
+    0.106,
+    0.954,
+    0.591
+  ],
+  "erased": 0,
+  "spec": "roster-sprite:d5d24a1a03ef"
+}

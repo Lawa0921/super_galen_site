@@ -1,0 +1,30 @@
+{
+  "pass": false,
+  "reasons": [
+    "too many colours"
+  ],
+  "warnings": [
+    "enclosed holes"
+  ],
+  "residue": 0,
+  "semi": 0,
+  "edge": 0,
+  "holes": 8,
+  "magenta_spill": 0,
+  "key_tint_inside": 0,
+  "block": 15,
+  "size": [
+    76,
+    65
+  ],
+  "height": 63,
+  "width": 74,
+  "colours": 1975,
+  "lum": [
+    0.062,
+    0.898,
+    0.525
+  ],
+  "erased": 0,
+  "spec": "roster-sprite:d5d24a1a03ef"
+}

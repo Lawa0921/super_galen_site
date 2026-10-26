@@ -12,7 +12,7 @@
 - QA（`sl_art.py` 自動）：透明素材不得有 magenta 殘留、半透明像素、碰到畫布邊；可拼接圖塊 `seam` ≤ 24（超過時交給使用者在審核頁判斷）。
 - 畫布邊：主體不得被原圖畫布切到（`subject cut by the canvas edge`）。半身頭貼允許碰到下緣（`allow_edge: [bottom]`）；個別肩膀碰到側邊的頭貼，在登錄表記錄 `allow_edge` 與原因。
 - 例外：主體內 16 px 以下、且原圖不是純 magenta 的封閉透明洞只列為警告（`warnings`），由人工在審核頁檢查，不自動退件。原因是 codex 輸出的頭髮、武器與身體之間常有真正的細縫。
-- 尺寸：codex 不遵守指定的像素數，所以透明素材以「目標美術像素高度」決定縮放（`--height`）：立繪 280、頭貼 115、地圖隊伍 32、一般敵人 64、頭目 150、圖示 32、特效 64；圖塊表與背景用固定 `--block`（6、4）。
+- 尺寸：codex 不遵守指定的像素數，所以透明素材以「目標美術像素高度」決定縮放（`--height`）：立繪 280、頭貼 115、地圖隊伍 32、一般敵人 64、頭目 150、圖示 32、特效 64；圖塊表與背景用固定 `--block`（6、4）。怪物名冊的敵人分五種高度（群 52、一般 64、重 76、守關者與部件 96、頭目 150），見「怪物名冊」一節。
 
 ## 各類規格
 
@@ -24,8 +24,8 @@
 | 圖塊 | `tile-f<n>-<tile>` | `/assets/games/starlantern/tiles/f<n>-<tile>.png` | 不透明 | 32×32 |
 | 可拼接牆 | `tile-f<n>-wall-top`、`tile-f<n>-wall-face` | `/assets/games/starlantern/tiles/f<n>-wall-top.png`、`f<n>-wall-face.png` | 不透明 | 62×62（同該層 floor），見「可拼接牆」 |
 | 戰鬥背景 | `bg-f<n>` | `/assets/games/starlantern/bg/f<n>.png` | 不透明 | 寬 320–480，16:9 |
-| 敵人 | `enemy-<eid>` | `/assets/games/starlantern/enemy/<eid>.png` | 透明 | 高 48–112；頭目 120–200 |
-| 圖示 | `icon-<id>` | `/assets/games/starlantern/icon/<id>.png` | 透明 | 24×24 方框內 |
+| 敵人 | `enemy-<eid>` | `/assets/games/starlantern/enemy/<eid>.png` | 透明 | 高 48–112；頭目 120–200（名冊依類別再收窄，見「怪物名冊」） |
+| 圖示 | `icon-<id>` | `/assets/games/starlantern/icon/<id>.png` | 透明 | `--height 32`，成品畫布在 36×36 方框內（照 5d 實際產出：`icon-blaze-core` 33×35、`icon-frost-heart` 36×33、`icon-star-tear` 25×35；名冊計畫裁定 23 改寫，原寫「24×24」） |
 | 特效 | `fx-<key>` | `/assets/games/starlantern/fx/<key>.png` | 透明 | 高 32–96 |
 | 特效動畫 | `fx-<key>-anim` | `/assets/games/starlantern/fx/<key>-anim.png`（橫向 4 格等寬，CSS `steps(4)` 播放） | 透明 | 每格同尺寸，最大格高約 64 |
 | 介面框 | `ui-frame` | `/assets/games/starlantern/ui/frame.png` | 不透明 | 48×48，角 16 |
@@ -142,7 +142,8 @@
 
 - 3×2 技能表放不滿時，空格畫 `plain empty stone slab`，切完丟棄：noel 1 格、rin-2 2 格、hero-4 3 格（照 sheet-icons-3 的先例）。
 - `pick` 寫 `chosen_attempt`、`source_id`、`batch`（`gear-5d-<batch>`），**不寫 `runtime`**；`runtime` 只由 `publish` 寫入，和 `artPaths.ts` 的 `NO_ICON_YET` 刪除放在同一個 commit。
-- **每一批**都要使用者在審核頁核准後，才可以 `approve --batch B --by "<使用者原話> <YYYY-MM-DD>"`（沒有日期會拒絕），再 `silhouettes`、`publish --batch B`。核准記在登錄表根部 `approved_batches`；`publish` 沒有該批的核准紀錄就拒絕。獨立代理的視覺檢查是交給使用者之前的前置步驟，不能取代使用者核准。
+- 5d 的三批（sample、main-gear、skills）都是使用者在審核頁核准後，才 `approve --batch B --by "<使用者原話> <YYYY-MM-DD>"`（沒有日期會拒絕），再 `silhouettes`、`publish --batch B`（都已完成）。核准記在登錄表根部 `approved_batches`；`publish` 沒有該批的核准紀錄就拒絕。
+- **2026-10-26 起（使用者裁定，名冊計畫裁定 21）**：使用者只核准風格樣本。怪物名冊的 R0 風格樣本由使用者在審核頁核准（`roster_art.py approve --batch r0 --by "<使用者原話> <YYYY-MM-DD>"`）；R1–R4 每一批在機械 QA 全過、而且一位全新脈絡的獨立代理（Opus，不參與生成）審核通過後就發布（`approve --batch rN --review <審核紀錄>`），不再等使用者核准；使用者之後可以要求換掉任何一張（重做 → QA → 審核 → 重新發布）。審核頁網址照樣交給使用者。
 - 核准綁定使用者看到的圖：`review_gear.py <batch>` 把頁面上每張成品的 sha256 記在 `work/review/<batch>-shown.json`（清單欄也印出前 12 碼）。`approve` 在下列任一情況整批拒絕、什麼都不改：沒有這份紀錄、頁面什麼都沒顯示、有 part 未挑選或成品檔不見、有 part 不是 `qa_passed`（例如 `qa_failed`）、成品的 hash 和頁面紀錄不同（審核後又重挑）。重挑之後要重新產生審核頁、重新給使用者看。
 - 樣本批只有在 `approve` 成功時才寫 `style_approved`，同時記下風格錨點 `style_anchor`（sheet-gear-1 多數 part 出自的那一版）；`gear-anchor.png` 只由這個紀錄的版本產生。沒有 `style_approved`，`gen` 拒絕生成 `main-gear` 與 `skills` 的任何工作表，`approve` 也拒絕這兩批。
 - 已 `approved`／`published` 的 part 不能直接重挑：`pick` 拒絕，除非加 `--reopen`。`--reopen` 先把所有動作檢查一遍（原圖能切格、要刪的檔在 git 追蹤之下、要還原的舊圖示檔還在），任一不通過就什麼都不改；通過後才把已發布的檔 `retire`（刪檔、移出 manifest），清掉 `runtime` 與 `approved_by`，舊狀態記進 `history`，由它轉出的剪影也一起重開。
@@ -238,3 +239,35 @@
   - 史詩格沿用稀有度顏色混色的邊框（`.slx-rarity-epic`），沒有外框圖時才套用；
   - 星輝只剩文字的青白光暈（`.slx-starlit`）與它本身稀有度的外觀，不用 CSS 畫星星或光。
 - 發布（5d Task 8，使用者已核准樣本之後）：`gear_art.py publish --batch sample` 寫入 `runtime`，同一個 commit 從 `NO_ICON_YET` 刪掉 `ui:rarity-epic`、`ui:starlit` 與其他樣本鍵，並重算 `artPaths.test.ts` 的總數。
+
+## 怪物名冊（roster plan PR D–E；spec §13）
+依據：`docs/superpowers/specs/2026-10-19-starlantern-monster-roster-design.md` §13 與 `docs/superpowers/plans/2026-10-26-starlantern-roster.md`（裁定 18、21–24）。
+- 工具：`tools/roster_art.py`（`gen`／`cand`／`pick`／`note`／`approve`／`publish`／`plan-json`）；審核頁 `tools/review_roster.py <rN>` → `tmp/starlantern/review-roster/<rN>/index.html`（`--contact=<png>` 另出一張遊戲實際大小的對照表）。`roster-plan.json` 由 `plan-json` 產生並 commit，測試檢查它是最新的。
+- 生成一律 `codex_still.py generate`（由 `roster_art.py gen` 呼叫，一次一張）；codex Plus 額度用完改用 codex credits，兩者都用完才停下回報；不換別的後端，絕不用佔位美術。每個 id 最多 3 次（`CAP`），R0 的每隻敵人至少 2 版擇優。
+
+| 輪 | 敵人 | 同輪生成的表 |
+|---|---|---|
+| r0 風格樣本 | `paper-moth`（群）、`root-hound`（一般）、`bell-watcher`（故事人形）、`false-moon`（守關者）、`fog-warden`（頭目） | `sheet-icons-roster-1`（R0＋R1 的 18 個素材圖示＋2 格空石板）、`sheet-gear-roster-1`（R0＋R1 的 5 件專屬獨特＋1 格空石板）、`sheet-ail-roster-1`（遺忘的異常小圖示） |
+| r1–r4 | 13、27、28、27 隻（`roster-plan.json` 的 `rounds`） | r2–r4 各兩張 5×4 圖示表、兩張 3×2 專屬獨特表 |
+
+- **R0 已核准並發布**：使用者 2026-10-26「核可，照這個畫風做下去」（看的是 R0 對照表與審核頁）。`approve --batch r0` 寫入 `roster_style_approved`、`roster_style_anchor`（五隻的採用原圖：paper-moth a3、root-hound a2、bell-watcher a1、false-moon a2、fog-warden a1）；`publish --batch r0` 發布 14 件（5 隻敵人、5 個素材圖示、2 件專屬獨特 ×2），`ROSTER_ART` 加這 5 個 id，`allArtUrls` 722 → 736；`ROSTER_LIVE` 仍是空的。遺忘圖示照裁定 27 留在工廠（`qa_passed`），等 E1c。R1 的 13 個圖示與 3 件專屬獨特已畫在 R0 的表上、QA 已過，跟 R1 一起審核與發布。
+
+- 每件素材屬於它主人的那一輪（R1 敵人的圖示畫在 R0 的表上，但跟 R1 一起核准、發布），所以發布過的一輪，每隻敵人的立繪、它的素材圖示與專屬獨特一定同時在；登錄表 `batch` 是 `roster-<rN>`。
+
+| 類別 | `--height` | prompt 高度 | QA 高度帶 |
+|---|---|---|---|
+| 群（`swarm`） | 52 | about 56 art pixels tall | 40–64，寬 ≤ 72 |
+| 一般（標準、術、輔、寶） | 64 | about 72 | 48–112 |
+| 重 | 76 | about 84 | 48–112 |
+| 守關者、部件 | 96 | about 104 | 80–120 |
+| 頭目 | 150 | about 160, filling much of the canvas | 120–200 |
+
+- Prompt：逐字沿用 `batch.py` 的敵人句型，附 `enemy-slime` 原圖；守關者與頭目再附 `enemy-lanterneater`；R1 起再附一張 R0 同類型的核准原圖（登錄表 `roster_style_anchor`，只在 R0 核准時寫入）；故事怪物不附任何夥伴立繪。本道物種用中性、偏亮的配色（地區上色是「亮度 × 顏色」），地區原生用該區本色；故人的殘影寫「由霧、光、材質構成，沒有清楚的臉」。
+- 素材圖示：照上面「圖示」列（`--height 32`、畫布 ≤ 36×36），附 5d 的風格錨點（`gear-anchor.png`）與 5d 已核准的 12 個素材圖示（`raw/roster-refs/mat-icons-x8.png`，不進 repo）。`iou-slip`、`hymn-sheet`、`torn-page`、`ash-page`、`epitaph-stone` 一律寫 blank、unreadable marks, no letters。
+- 專屬獨特：照 5d 的 `gear-<id>`／`gear-<id>-large` 規格與 `process_gear_cell`（傳入資料的 slot 與武器種類），版面照 `sheet-gear-8`（3×2），附 5d 風格錨點；沒有剪影。
+- 遺忘的異常小圖示：照 G4 的 chip 規格（`icon-ail-forget-14`，長邊 12、畫布 14，覆蓋率取樣，內部洞多於 `g4_art.HOLE_MAX` 就失敗），主色 `#8FD9B6`（B9 的 `AILMENT_FILL.forget` 用同一色）。它自成一輪（`forget`，登錄表 `roster-forget`，計畫裁定 27）：R0 發布時不含它，等 B9 之後在 E1c 以獨立審核紀錄核准並發布，同一個 commit 把 `forget` 加進 `AILMENT_ICON_IDS`。
+- 機械 QA（`sl_art.process_roster_sprite`，QA 戳記 `roster-sprite`）：原有的 magenta 殘留、半透明、碰邊、被原圖畫布切到、洋紅溢色；另加 `height_band`、`palette_max`（不透明色數；只記錄 `colours`、`palette_over`，不擋：控制者 2026-10-26 裁定，計畫裁定 26）、`lum_range`（亮度第 5–95 百分位差 ≥ 0.35，否則 `too flat to tint`；本道物種平均亮度 ≥ 0.35，否則 `too dark to tint`）、`interior erased`（主體內任何大小的封閉透明區，原圖取樣不是 key 色的像素超過 8 個：被當成洋紅去掉的美術。key 混進深色描邊的顏色只有在同一個洞裡、4 連通 2 個取樣像素以內有純 key 時才算背景，也就是真的縫的邊；其餘不管什麼顏色都算被擦掉的美術，洞裡有 key 小點或旁邊接著真的縫都不例外。PR D 審查 High 1 與確認審查）。素材圖示（`process_roster_icon`，戳記 `roster-icon`）畫布超過 36 就 `larger than the icon box`；素材圖示與專屬獨特（`process_roster_gear_cell`，戳記 `roster-gear`）也套同一個 `interior erased`。`cutout` 的取色範圍（70、90）與 key 判定（30）列在戳記裡，改了就讓舊 QA 失效。「沒有清楚的臉」是人工檢查項，在審核頁打勾。
+- 審核頁八個區塊：三張戰鬥背景上的遊戲內大小（照 `BattleView.setup` 的版面與縮放）、和既有 9 隻並排、7 種地區色調（`tintMatrix` 同公式）、群／成對／多部位／守關者與召喚、圖示放進清單列與背包格、故事怪物的閘門與「不得畫出的東西」、QA 數字與所有版本、淘汰原因。**沒有**圖鑑「？？？」的輪廓預覽（裁定 18：沒見過的物種只顯示「？？？」，5d 規定輪廓只能由核准的圖轉出、不能用 CSS 畫）。
+- 核准：`approve` 綁定審核頁記下的每張 sha256（`work/review/roster-<rN>-shown.json`）。R0 只接受 `--by "<使用者原話> <YYYY-MM-DD>"`（不接受審核紀錄），成功時寫 `roster_style_approved`、`roster_style_anchor`；沒有 `roster_style_approved`，`gen` 拒絕 r1–r4 的任何工作。R1–R4 只接受 `--review <紀錄>`（不接受使用者原話）：以 `- ` 開頭的行必須正好是 `- <素材 id> <sha256> 通過`，其他行可以寫說明；該輪缺任何一張、有任何一行是別的寫法（未通過、沒有通過、通過？否、通過後面還有字）或 sha256 不符，就整輪拒絕、什麼都不改。核准時把紀錄複製成 `work/review/roster-<rN>-review.md`（隨核准 commit），登錄表記它的 repo 相對路徑與 sha256；R0 的審核頁紀錄也只記 repo 相對路徑。
+- 發布：`publish --batch rN` 要該輪每一件都 `approved` 而且仍是核准時的檔案，否則整輪拒絕。全有或全無：每個檔先複製到 runtime 路徑旁的暫存檔，全部成功才改名到位，之後才寫 `runtime`、狀態、manifest，把該輪敵人 id 加進 `data/monsters.ts` 的 `ROSTER_ART`，並在 `render/artPaths.test.ts` 的總數與 `tests/e2e/starlantern.spec.ts` 的 manifest 數各加上件數與一行算式註解（後者照原行的換行）；任何一份複製失敗就不留任何檔案。重跑已發布的一輪什麼都不改。全部留在工作樹，由實作者 commit（`ROSTER_LIVE` 不動）。`render/published.test.ts` 檢查 `allArtUrls`、manifest、兩處寫死的總數一致。`data/monsters.test.ts` 的 `every art id is published` 檢查 `ROSTER_ART` 只有名冊的 id，而且每個 id 的立繪、素材圖示與專屬獨特兩張圖都已發布、檔案存在，runtime 檔的 sha256 等於登錄表成品的 sha256。遺忘圖示（`publish --batch forget`）發布的同一個 commit 要把 `forget` 加進 `render/artPaths.ts` 的 `AILMENT_ICON_IDS`（E1c）。
+- 舊的 `sl_art.py approve --id` 與 `sl_art.py publish --approved` 一律拒絕 `roster-*` 批次的素材（訊息指向 `roster_art.py`）。已核准未發布的素材要重挑須加 `--reopen`（該輪核准轉成 `stale_approvals`，要重新審核）；已發布的換圖還沒有工具（之後使用者要求換圖時再做），`pick` 直接拒絕。
