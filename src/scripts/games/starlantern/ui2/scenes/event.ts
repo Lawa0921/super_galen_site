@@ -155,6 +155,10 @@ export function eventLayer(host: EventHost, content: Content): Layer {
     case 'elite':
       return eventWindow(host, 'elite', E.elite.title, [line(E.elite.desc), line(E.elite.ask, 'slx-event-ask')],
         [{ id: 'fight', label: E.elite.fight }, leaveItem()], () => { host.popAll(); host.fight(); });
+    // A warden's room (roster plan B5): asked as an elite is, under the elite's art.
+    case 'warden':
+      return eventWindow(host, 'elite', E.warden.title, [line(E.warden.desc), line(E.warden.ask, 'slx-event-ask')],
+        [{ id: 'fight', label: E.warden.fight }, leaveItem()], () => { host.popAll(); host.fight(); });
     default:
       throw new Error(`no event window for ${content.kind}`);
   }

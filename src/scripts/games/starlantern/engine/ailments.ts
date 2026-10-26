@@ -75,7 +75,10 @@ export function inflictAilment(actor: Combatant, t: Combatant, status: AilmentId
         // The first poisoner keeps the credit while the poison lasts (the contribution ledger).
         if (!t.poison) t.poisonSrc = actor.key;
         t.poison = true;
-      } else t.sleep = turns ?? SLEEP_TURNS;
+      } else {
+        t.sleep = turns ?? SLEEP_TURNS;
+        delete t.winding;   // sleep breaks a foe's charge (roster plan B2, M1)
+      }
       ctx.log.push({ type: 'status', target: t.key, status });
     } else ctx.log.push({ type: 'resist', target: t.key });
     return;
@@ -94,7 +97,10 @@ export function inflictAilment(actor: Combatant, t: Combatant, status: AilmentId
     case 'bleed': addBleed(t, { tick: tickOf(hit, AILMENT.bleedPct), turns: AILMENT.bleedTurns, src: actor.key }); break;
     case 'shock': t.shock = Math.max(t.shock ?? 0, AILMENT.shockTurns); break;
     case 'freeze':
-      if (t.boss || t.side === 'party') { t.chill = Math.max(t.chill ?? 0, AILMENT.chillTurns); shown = 'chill'; } else t.frozen = true;
+      if (t.boss || t.side === 'party') { t.chill = Math.max(t.chill ?? 0, AILMENT.chillTurns); shown = 'chill'; } else {
+        t.frozen = true;
+        delete t.winding;   // so does a freeze (roster plan B2, M1)
+      }
       break;
   }
   ctx.log.push({ type: 'status', target: t.key, status: shown });

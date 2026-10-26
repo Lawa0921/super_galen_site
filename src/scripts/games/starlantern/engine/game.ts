@@ -4,6 +4,8 @@ import { ITEMS } from '../data/items';
 import { capacity, carried, weightOf } from '../data/weights';
 import { FLOORS } from '../data/floors';
 import { STORY_FIGHT_ROUNDS, createBattle, planEnemies, resolveRound, rewards, writeBack, type Action, type BattleScale, type BattleState, type Difficulty } from './battle';
+import { stealsIn } from './foes';
+import { bossFor, wardenGroup } from '../data/monsters';
 import { floorOf, newRun, startDepths, terrainOf, type Portal, type Run } from './dungeon/run';
 import type { Content } from './dungeon/rooms';
 import { applyPieces, forcedGlimmers, memoryRng, pieceDrops, pityAfterFloor, type FragmentGain } from './story/memories';
@@ -106,6 +108,8 @@ export interface BattleEnd {
   fragments?: FragmentGain[];
   /** The part of `gold` that was Liz's left-over coins (plan 8c); absent or 0 when none. */
   coinGold?: number;
+  /** The gold felled thieves gave back (roster plan B3, M13): already back in the pack as each fell, not in `gold`; absent when none did. */
+  returned?: number;
   /** Runes the fight dropped into the bag, in order (plan 8f); absent when none. */
   runes?: RuneRef[];
   /** Runes paid as gold for want of room (RUNE_STACK); their gold is in `state.gold`, not in `gold` or the run pack. */
@@ -133,6 +137,8 @@ export class Game {
   battle: BattleState | null = null;
   /** The elite tile whose fight is on; it turns to floor on a win. */
   private eliteAt: Pos | null = null;
+  /** Roster plan B5: the fight on `eliteAt` is a warden's (it pays as an elite but no memory piece, and its room goes). */
+  private wardenFight = false;
   /** The rescue room whose fight is on; she is met and the tile turns to floor on a win. */
   private rescueAt: { at: Pos; who: Meetable } | null = null;
   /** Bond plan ruling 3: who this fight has seen out of danger (at its start or after a round). Not saved. */
@@ -336,11 +342,12 @@ export class Game {
       case 'down': return this.stairs();
       case 'entrance': return { kind: 'entrance' };
       case 'boss':
-        // The mainline story boss stays as written; every other boss is the 燈喰之獸 grown by depth and region.
+        // The mainline story boss stays as written; every other boss is the one bossFor names for the depth and region (roster
+        // plan B5): the 燈喰之獸, grown by depth and region, until a roster boss is live there.
         if (this.isFinaleFight() && !this.state.party.roster.rin?.oath) { this.finaleWaiting = true; return { kind: 'moved' }; }
         if (this.isFinaleFight()) this.startBattle([FINALE_BOSS.base], true, true, undefined, 0, { names: { [FINALE_BOSS.base]: STORY.finaleBossName }, bossPower: FINALE_BOSS.power, story: true });
         else if (this.isStoryDepth(this.floor)) this.startBattle(['lanterneater'], true, false, undefined, 0, { story: true });
-        else this.startBattle(['lanterneater'], true);
+        else this.startBattle(bossFor(this.run!.region, this.floor), true);
         return { kind: 'boss' };
       case 'chest': return this.openChest() ?? { kind: 'moved' };
       case 'fountain': return this.run!.usedFountain ? this.walk() : this.eventHere();
@@ -358,6 +365,15 @@ export class Game {
       case 'elite': {
         const group = eliteGroup(this.run!, this.floor);
         this.startBattle(group, false, true, group[0]);
+        this.eliteAt = { ...this.pos };
+        return { kind: 'battle' };
+      }
+      case 'warden': {
+        // A warden's room (roster plan B5, ruling 10): the elite path, keyed by this tile for its affixes.
+        const c = floorOf(this.run!, this.floor).contents.find((x) => x.kind === 'warden' && x.at.x === this.pos.x && x.at.y === this.pos.y);
+        if (!c?.warden) { this.map().tiles[this.pos.y][this.pos.x] = 'floor'; return this.walk(); }
+        const group = wardenGroup(c.warden);
+        this.startBattle(group, false, true, group[0], 0, { warden: true });
         this.eliteAt = { ...this.pos };
         return { kind: 'battle' };
       }
@@ -698,6 +714,7 @@ export class Game {
     if (this.phase !== 'battle' || !this.battle) return null;
     const b = resolveRound(this.battle, actions, this.rng);
     this.battle = b;
+    if (b.purse && this.run) this.run.loot.gold = b.purse.gold;   // what a thief took is gone from the pack at once (B3)
     this.state.inventory = { ...b.inventory };
     this.state.revealed = structuredClone(b.revealed);
     this.state.party = writeBack(this.state.party, b);
@@ -707,6 +724,8 @@ export class Game {
     const empty: BattleEnd = { outcome: b.outcome, exp: 0, gold: 0, drops: {}, levelUps: [], left: {}, gear: [], gearLeft: [] };
     const elite = this.eliteAt;
     this.eliteAt = null;
+    const warden = this.wardenFight;
+    this.wardenFight = false;
     const rescue = this.rescueAt;
     this.rescueAt = null;
     const tier = this.fightTier;
@@ -740,9 +759,16 @@ export class Game {
     // Followers lay out their builds at their level and memories now; only the rune slots opened since the last fight
     // take its runes from the bag, so one she emptied by hand stays empty (plan 8h ruling 13, final review I3).
     this.state = followUp(this.state, this.state.party.recruited, was);
-    // Rin's first won fight queues the first-return scene for the next arrival (Task 10b).
-    this.state.story = afterWin(this.state.story, b.party.map((c) => c.key));
+    // Rin's first won fight queues the first-return scene for the next arrival (Task 10b). A "win" where every foe ran
+    // off (none felled) is no fight won: no story beat, no one saved (B1 review item 13).
+    const felled = !b.enemies.every((e) => e.left);
+    if (felled) this.state.story = afterWin(this.state.story, b.party.map((c) => c.key));
     if (elite) this.map().tiles[elite.y][elite.x] = 'floor';   // a beaten elite is gone
+    if (elite && warden) {
+      // A beaten warden is gone for this run, its room with it (roster plan B5).
+      const here = floorOf(this.run!, this.floor);
+      here.contents = here.contents.filter((c) => !(c.kind === 'warden' && c.at.x === elite.x && c.at.y === elite.y));
+    }
     let met: BattleEnd['met'];
     if (rescue) {
       // She joins after the exp is shared, so the fight's exp is not hers, at the level the party that won has earned.
@@ -757,12 +783,13 @@ export class Game {
     // joins after it). Both share the dive's cap.
     if (!rescue) {
       if (b.boss || elite) this.earnField(b.party.map((c) => c.key as CharacterId), FIELD_POINTS.strong);
-      this.earnField(b.party.filter((c) => c.alive && c.hp > 0 && this.endangered.has(c.key as CharacterId)).map((c) => c.key as CharacterId), FIELD_POINTS.saved);
+      if (felled) this.earnField(b.party.filter((c) => c.alive && c.hp > 0 && this.endangered.has(c.key as CharacterId)).map((c) => c.key as CharacterId), FIELD_POINTS.saved);
     }
     // Memory pieces come after exp and the meeting, and before the phase can switch to clear (the story boss pays too).
     let fragments: FragmentGain[] = [];
     const finale = b.boss && this.isFinaleFight();
-    if (b.boss || elite) {
+    // A warden pays no memory piece (spec §8.3, ruling 10); a boss and an elite do.
+    if (b.boss || (elite && !warden)) {
       const run = this.run!;
       const source = b.boss ? 'boss' : 'elite';
       const rng = memoryRng(run);
@@ -824,6 +851,7 @@ export class Game {
     // In an elite fight the first enemy is the elite; the rest are escorts.
     for (let i = elite ? 1 : 0; i < b.enemies.length; i++) {
       if (b.survive && b.enemies[i].alive) continue;
+      if (b.enemies[i].left || b.enemies[i].summoned) continue;   // it takes no loot draw (roster plan B1)
       const rng = lootRng(run);
       if (rng() < GEAR_CHANCE.monster) gear.push(rollGear(rng, this.dropCtx('monster', tier)));
     }
@@ -861,6 +889,7 @@ export class Game {
     for (let i = 0; i < b.enemies.length; i++) {
       const first = elite && i === 0;
       if (!first && b.survive && b.enemies[i].alive) continue;
+      if (b.enemies[i].left || b.enemies[i].summoned) continue;   // it takes no rune draw (roster plan B1)
       const chance = first ? RUNE_DROP.elite : RUNE_DROP.monster;
       if (rng() < (t ? chance * t.runeDrop : chance)) roll(first ? 'elite' : 'monster');
     }
@@ -1639,8 +1668,9 @@ export class Game {
    * (difficulty plan ruling 17). Otherwise the run's tier: its scale, and the affixes keyed by the spot (engine/tiers.ts)
    * on an elite (this tile), a boss (the depth) or, on Hell, one foe of a plain crowd (this tile).
    */
-  private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string, extra = 0, opts: { survive?: number; names?: Record<string, string>; bossPower?: number; story?: true } = {}): void {
-    const { story, ...rest } = opts;
+  private startBattle(enemyIds: string[], boss: boolean, scaled = true, elite?: string, extra = 0, opts: { survive?: number; names?: Record<string, string>; bossPower?: number; story?: true; warden?: true } = {}): void {
+    const { story, warden, ...rest } = opts;
+    this.wardenFight = !!warden;
     const run = this.run;
     this.fightTier = story ? undefined : run?.difficulty;
     const t = tierOf(this.fightTier);
@@ -1655,6 +1685,8 @@ export class Game {
       }
     }
     this.battle = createBattle({ party: this.state.party, enemyIds, boss, inventory: this.state.inventory, revealed: this.state.revealed, scale, depth: this.floor, altar: this.run?.altarBuffs, extra, ...rest });
+    // A thief in the fight reaches into the run pack (roster plan B3, M13); a fight without one carries no purse.
+    if (run && stealsIn(this.battle, (c) => this.battle!.enemyDefs?.[c.key])) this.battle.purse = { gold: run.loot.gold, depth: this.floor };
     planEnemies(this.battle, this.rng);
     this.phase = 'battle';
     // Bond plan ruling 3: who starts this fight out of danger. One who starts in it is not saved by living through it.

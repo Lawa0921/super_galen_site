@@ -244,12 +244,13 @@ export class DungeonScene implements Scene {
 
   private move(dir: Dir): void {
     const g = this.ctx.game;
-    // An elite is seen from the doorway: ask before stepping in, since stepping in starts the fight.
+    // An elite (or a warden, roster plan B5) is seen from the doorway: ask before stepping in, since stepping in starts the fight.
     const ahead = g.phase === 'map' ? step(g.map(), g.pos, dir) : null;
-    if (ahead?.moved && ahead.tile === 'elite') {
+    if (ahead?.moved && (ahead.tile === 'elite' || ahead.tile === 'warden')) {
       g.facing = dir;
-      const c = floorOf(g.run!, g.floor).contents.find((x) => x.kind === 'elite' && x.at.x === ahead.pos.x && x.at.y === ahead.pos.y)
-        ?? { kind: 'elite' as const, at: ahead.pos, room: -1 };
+      const kind = ahead.tile;
+      const c = floorOf(g.run!, g.floor).contents.find((x) => x.kind === kind && x.at.x === ahead.pos.x && x.at.y === ahead.pos.y)
+        ?? { kind, at: ahead.pos, room: -1 };
       this.ctx.sfx.cursor();
       this.push(eventLayer(this.host(dir), c));
       return;

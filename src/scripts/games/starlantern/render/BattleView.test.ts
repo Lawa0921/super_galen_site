@@ -76,6 +76,114 @@ describe('BattleView left inset', () => {
   });
 });
 
+describe('BattleView late foes (roster plan B1)', () => {
+  it('BattleView adds a foe mid-fight and lays the row out again', () => {
+    const view = new BattleView(true, bank);
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1, 160, 66);
+    expect(view.anchor('e0')!.x).toBeCloseTo(160 + (640 - 160) / 2, 0);
+    const late = makeCombatant({ key: 'e1', side: 'enemy', name: '新來的', max: { hp: 80 } as never });
+    const two: BattleState = { ...s, enemies: [...s.enemies, late] };
+    view.syncHp(two);
+    // Two slots over the area right of the command window, in order.
+    expect(view.anchor('e0')!.x).toBeCloseTo(160 + (640 - 160) / 3, 0);
+    expect(view.anchor('e1')!.x).toBeCloseTo(160 + ((640 - 160) * 2) / 3, 0);
+    expect(view.anchor('e1')!.y).toBeCloseTo(view.anchor('e0')!.y, 0);
+    expect(view.nameOf('e1')).toBe('新來的');
+    expect(view.enemyHp('e1')).toEqual({ hp: 80, max: 80 });
+    expect(view.enemyBoxOf('e1')!.alpha).toBe(1);
+    // A second sync adds nothing more.
+    view.syncHp(two);
+    const boxes = (view.root.children[0] as Container).children.filter((c) => c instanceof Container && !(c instanceof Sprite) && c.children.length > 0);
+    expect(boxes).toHaveLength(2);
+  });
+
+  it('an intent fits the narrower slots after foes join', () => {
+    const view = new BattleView(true, bank);
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1, 160, 66);
+    view.syncHp({ ...s, enemies: [...s.enemies, makeCombatant({ key: 'e1', side: 'enemy' }), makeCombatant({ key: 'e2', side: 'enemy' })] });
+    const long = '一個非常非常非常非常非常非常長的招式名稱（全體） → 千鶴';
+    view.showIntents({ e0: long, e1: long, e2: long });
+    const slotW = (640 - 160) / 4;
+    for (const k of ['e0', 'e1', 'e2']) expect(view.intentRect(k)!.width, k).toBeLessThanOrEqual(slotW);
+  });
+
+  it('a summon joins the row as the log calls it, before anything it does plays', async () => {
+    const view = new BattleView(true, bank);
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1);
+    const late = makeCombatant({ key: 'e1', side: 'enemy', name: '幼體' });
+    const onParty = vi.fn();
+    await view.play({ ...s, enemies: [...s.enemies, late], log: [{ type: 'foe', actor: 'e0', cue: 'summon', target: 'e1' }, { type: 'damage', target: 'e1', amount: 3, element: 'phys', mult: 1 }] }, sfx, onParty);
+    expect(view.anchor('e1')).not.toBeNull();
+    expect(view.enemyHp('e1')!.hp).toBe(97);
+    expect(onParty).not.toHaveBeenCalled();   // a hit on the summon is the summon's, not a member's
+  });
+
+  it('a named foe on the elite path wears no ★ (B1 review item 12)', () => {
+    const view = new BattleView(true, bank);
+    const s = makeBattle([makeCombatant({ key: 'scarlet', side: 'party' })], [makeCombatant({ key: 'e0', side: 'enemy', name: '不存在的月亮', tint: 'elite', named: true })]);
+    view.setup(s, { width: 640, height: 360 }, 1);
+    expect(view.nameOf('e0')).toBe('不存在的月亮');
+    view.syncHp(s);
+    expect(view.nameOf('e0')).toBe('不存在的月亮');
+  });
+
+  it('the name tag follows a foe unmasked (roster plan B6)', () => {
+    const view = new BattleView(true, bank);
+    const s = battle([]);
+    s.enemies[0].name = T.battle.foe.disguise;
+    view.setup(s, { width: 640, height: 360 }, 1);
+    expect(view.nameOf('e0')).toBe('寶箱？');
+    view.syncHp({ ...s, enemies: [{ ...s.enemies[0], name: '塵封木箱' }] });
+    expect(view.nameOf('e0')).toBe('塵封木箱');
+  });
+
+  it('a foe an ally revives stands in the picture again, and every foe standing at the end is shown (B1 review item 5)', async () => {
+    const view = new BattleView(false, bank, true);   // calm: no breathing loop left running after the test
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 1));
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1);
+    await view.play({ ...s, log: [{ type: 'ko', target: 'e0' }, { type: 'revive', target: 'e0' }] }, sfx);
+    const box = view.enemyBoxOf('e0')!;
+    expect(box.alpha).toBe(1);
+    expect((box.children[0] as Container).children.filter((c) => c.visible)).toHaveLength(1);
+    // A foe alive at the end of the play is shown, whatever the log said on the way.
+    box.alpha = 0;
+    await view.play({ ...s, log: [] }, sfx);
+    expect(box.alpha).toBe(1);
+    vi.unstubAllGlobals();
+  });
+
+  it('a foe revived and struck in the same play is in the picture when the blow lands (confirmation review item 3)', async () => {
+    const view = new BattleView(false, bank, true);
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 1));
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1);
+    const box = view.enemyBoxOf('e0')!;
+    const seen: number[] = [];
+    const watch = { ...sfx, hit: () => { seen.push(box.alpha); } } as unknown as SoundManager;
+    await view.play({ ...s, log: [{ type: 'ko', target: 'e0' }, { type: 'revive', target: 'e0' }, { type: 'damage', target: 'e0', amount: 3, element: 'phys', mult: 1 }] }, watch);
+    expect(seen).toEqual([1]);
+    vi.unstubAllGlobals();
+  });
+
+  it('a foe that rises stands in the picture again', async () => {
+    const view = new BattleView(false, bank, true);   // calm: no breathing loop left running after the test
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 1));
+    const s = battle([]);
+    view.setup(s, { width: 640, height: 360 }, 1);
+    const up: BattleState = { ...s, log: [{ type: 'ko', target: 'e0' }, { type: 'foe', actor: 'e0', cue: 'rise' }] };
+    await view.play(up, sfx);
+    const box = view.enemyBoxOf('e0')!;
+    expect(box.alpha).toBe(1);
+    const body = box.children[0] as Container;
+    expect(body.children.filter((c) => c.visible)).toHaveLength(1);   // its picture, whole; no shards left
+    vi.unstubAllGlobals();
+  });
+});
+
 describe('BattleView bottom inset', () => {
   it('stands enemies and their names above the party bar', () => {
     const view = new BattleView(true, bank);

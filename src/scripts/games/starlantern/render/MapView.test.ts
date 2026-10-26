@@ -4,7 +4,7 @@ import { Game } from '../engine/game';
 import { DELTA, tileAt } from '../engine/map';
 import { mulberry32 } from '../engine/rng';
 import { floorOf } from '../engine/dungeon/run';
-import { constRng } from '../engine/testing';
+import { constRng, withRosterLive } from '../engine/testing';
 import { fogState } from './fog';
 import { MAP_CELL, MapView } from './MapView';
 import { MARKER_GLYPH, markersOf } from './markers';
@@ -252,6 +252,37 @@ describe('MapView event markers', () => {
     }
     const tileUrls = urls.filter((u) => /\/tiles\/f\d-/.test(u));
     expect(tileUrls.some((u) => /-(fountain|trap|merchant|altar|elite|vault|key)\.png$/.test(u))).toBe(false);
+  });
+
+  it('the map draws a warden on the elite tile', () => {
+    withRosterLive(['false-moon'], () => {
+      const game = new Game(constRng(0.99), null);
+      game.state.dungeon.reached.mainline = 8;
+      game.depart({ region: 'mainline', condition: 'plain' }, 8);
+      const room = floorOf(game.run!, 8).contents.find((c) => c.kind === 'warden')!;
+      expect(room).toBeDefined();
+      exploreAll(game);
+      expect(markersOf(game)).toContainEqual({ kind: 'warden', x: room.at.x, y: room.at.y });
+      // With the event art: the elite's tile, under its own label; plain floor under it.
+      const urls: string[] = [];
+      const spy = { get: (u: string) => { urls.push(u); return Texture.WHITE; }, has: () => true } as unknown as TextureBank;
+      const view = new MapView(spy);
+      view.draw(game, SIZE);
+      expect(view.markerLabels()).toContain('event-warden');
+      expect(urls).toContain(art.eventTile('elite'));
+      expect(urls.some((u) => u.includes('event-warden'))).toBe(false);
+      expect(urls.some((u) => /\/tiles\/f\d-warden/.test(u))).toBe(false);
+      // Without it, the elite's glyph.
+      const plain = new MapView(noEventArt);
+      plain.draw(game, SIZE);
+      expect(plain.markerGlyphs()).toContain(MARKER_GLYPH.elite);
+      expect(MARKER_GLYPH.warden).toBe(MARKER_GLYPH.elite);
+      // Beaten, it is floor and unmarked.
+      expect(stepOnto(game, room.at).kind).toBe('battle');
+      for (const e of game.battle!.enemies) { e.hp = 0; e.alive = false; }
+      game.submitRound({});
+      expect(markersOf(game).some((m) => m.kind === 'warden')).toBe(false);
+    });
   });
 
   it('a seen rescue room shows the 救 marker and asks for no art', () => {

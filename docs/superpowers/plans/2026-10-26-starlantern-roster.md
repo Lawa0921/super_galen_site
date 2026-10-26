@@ -440,7 +440,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 
 ### Task B0：基準
 
-- [ ] 照 A0 的 Step 1、3、4 錄 SDD `B1/baseline.md` 與 `gate-0`（不錄新 fixture）。
+- [ ] 照 A0 的 Step 1、3、4 錄 SDD `B1/baseline.md` 與 `gate-0`（不錄新 fixture）。（B1 實作附註：e2e 的 dev server 讀的是工作樹，所以 e2e 基準和 B1 一起跑，沒有在改動前另跑一次。）
 
 ### Task B1：`meetEnemy` 與戰鬥中加入敵人
 
@@ -460,6 +460,8 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 - Create：`engine/foes.ts`（敵方機制的純函式）、`engine/foes.test.ts`。
 - Modify：`engine/types.ts`（`EnemySkill.windup?: string`；`Effect { kind: 'hunt' }`）、`engine/combatant.ts`（`winding?`、`hunted?`）、`engine/battle.ts`（`chooseEnemyActions`：蓄力中的敵人不抽、強制下一招；`intentLabel` 顯示「蓄力：〇〇」；敵方 `cover` 的鏡像版 `foeCover`：我方單體行動打向被守護的敵人時改打守護者；`hunt`：下一回合所有敵人的單體目標改成被宣告者，我方嘲諷優先、防禦會解除宣告）、`engine/skills.ts`（`cover` 的處理允許敵人施放在同伴身上）、`data/enemies.roster.ts`（用到這些機制的物種補上欄位）。
 - Test：`engine/foes.test.ts`、`engine/battle.test.ts`。
+- 已知會紅與改法（**B2 實作修正**，原計畫漏列）：`data/monsters.test.ts` 的 `only plain effects so far`（A2 的「機制在 B 系列才加」）→ 改名 `only plain effects and the mechanics built so far`，允許清單只加本任務的三樣：技能的 `windup`、只用在 `ally` 目標且單獨一個效果的 `cover`、只用在 `enemy` 目標的 `hunt`；其餘斷言不變。
+- 實作裁定（B2）：守護技（`ally` 目標＋`cover`）守的是「自己以外 HP 比例最低的同伴」（同比例取隊列裡的第一隻），不抽亂數；睡著或凍結的守護者不守（同絲嘉蕾）。蓄力被睡眠或凍結打斷後，若被打醒而輪到它，那一回合改普攻。宣告的順序：嘲諷 → 盾擊 → 宣告 → 代受（被宣告的人有人代受時仍由代受者承受）；被宣告的人那一回合防禦就解除；宣告不管站位（同盾擊）。
 
 - [ ] **Step 1：寫失敗的測試**（spec §6.2 的測試義務，名字照抄）：M1 `lands the round after its wind-up`、`sleep breaks a charge`、`freeze breaks a charge`、`shows in intentLabel`、`draws nothing while winding`（蓄力回合的 rng 抽取次數比不蓄力少的那一次正好是 `findIndex` 的那幾次）；M2 `takes single-target hits`、`area ignores a guard`、`ends after its turns`；M24 `focuses the hunted member`、`taunt overrides`、`defending lifts the hunt`。另：`old foes act as before`（舊 10 個定義的 `chooseEnemyActions` 在 200 個種子下逐一相同）。
 - [ ] **Step 2–4**：紅、實作、測試＋全套＋tsc＋閘門 identical。
@@ -470,6 +472,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 **Files:**
 - Modify：`engine/types.ts`（`EnemyDef.fleeAfter?`、`opener?`、`Effect { kind: 'steal'; perDepth }`）、`engine/combatant.ts`（`stolen?`、`disguised?`）、`engine/battle.ts`（回合結束 `fleeAfter` → `left`；`opener` 在 `meetEnemy` 套用：`asleep` 設 `sleep`、`ambush` 第一回合最先、`disguise` 名牌「寶箱？」直到第一次受傷且第一回合 atk +50%）、`engine/game.ts`（偷竊：從 `run.loot.gold` 移到 `stolen`，每次上限 `depth × perDepth`，不會讓背包變負；打倒奉還，守關者 ×2；逃走或戰敗就沒了）、`engine/mechanics/index.ts`（`foeWords`：「寶箱？」「偷走 〇〇 金」）。模擬沒有 `run`：不偷（`the sim steals nothing`）。
 - Test：`engine/foes.test.ts`、`engine/game.test.ts`、`engine/battle.test.ts`。
+- 實作裁定（B3）：戰鬥的錢包 `BattleState.purse = { gold, depth }` 只在有會偷的敵人時由 `startBattle` 放上（其他戰鬥的狀態一個欄位都不多），每回合寫回 `run.loot.gold`；奉還的金額加進 `rewards().gold`，另記 `returned` 供畫面說明；偷竊只在同一招的傷害打中那名隊員時發生。逃走在回合結束、角色機制之後結算；場上只剩離場的敵人時算勝利（什麼都不給）。開場：`asleep` 睡 2 回合（第 3 回合行動）、醒來 atk +50% 3 回合；`disguise` 也算伏擊（第一回合最先），名字換成「寶箱？」、第一回合 atk +50%（1 回合），被打中一下才現形。
 
 - [ ] **Step 1：寫失敗的測試**：`flees at the end of round N`、`a fled foe pays nothing and takes no loot or rune draw`、`returns on a kill`、`a warden returns twice`、`lost on a flee`、`never below zero`、`the sim steals nothing`、每種開場一個成功與一個邊界（`asleep wakes on a hit or by round three`、`ambush acts first only in round one`、`disguise lifts on the first hit`）。
 - [ ] **Step 2–5**：同上；commit：`feat(starlantern): foes that run, steal and open the fight their own way`。
@@ -479,6 +482,8 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 **Files:**
 - Modify：`engine/types.ts`（`Effect { kind: 'summon'; id; max }`、`EnemyDef.onFall?`、`rise?`、`shareWith?`、`EnemySkill.when?: 'deadAlly'`）、`engine/battle.ts`（召喚呼叫 `meetEnemy`，`summoned: true`，本回合不行動，達 `groupCap`（頭目戰 4）就不召喚而改普攻；`onFall` 在 `ko` 之後結算一次、不連鎖；`rise` 第一次倒下時以 pct 站起；`when: 'deadAlly'` 沒有倒下的同伴時這招視為不可用（`findIndex` 跳過它但**照抽**，抽取次數不變）；幻影 1 HP、無報酬、在場時本體 `evasion` +20；`shareWith` 兩隻都活著時傷害各半）、`render/BattleView.ts`（站起的精靈重新顯示）。
 - Test：`engine/foes.test.ts`、`engine/battle.test.ts`、`render/BattleView.test.ts`。
+- 實作裁定（B4）：`BattleState.meet`（相遇方式＋場上上限：一般戰 `groupCap`＋`extra`，頭目戰 `BOSS_GROUP_CAP = 4`）只在有會召喚或帶幻影的敵人時才放上。召喚不成（滿了、次數用完、或目標還沒上線 `listedEnemy`）就改普攻；召喚來的排在最後、照同種的數量加字母。幻影只在開戰時出現（被召喚來的舞者不帶幻影），名字「〇〇的幻影」，1 HP、不行動也不抽亂數；本體在任一幻影站著時閃避 +20。倒下的處理在每個行動之後與回合結束時：先站起（`rise`，每隻一次；同伴替牠復活也算用掉），再結算 `onFall`（每隻一次，從牠那一邊看目標；被別隻的 `onFall` 打倒的不再引爆）。平分傷害：目標承受一半（進位），同伴承受其餘，同伴那一份不擲骰、不觸發命中效果。
+- 留給 B2 PR（B11 `every trait is implemented` 會擋）：歸途之光倒下時回 10% HP（沒有按比例回血的效果）、騎士殘影「同伴倒下時自己 def +30%」、祭典的燈籠、行列的影子、灰枯的孢子莢（這三樣沒有敵人 id）。
 
 - [ ] **Step 1：寫失敗的測試**：`respects the cap`、`a summon acts from the next round`、`the target id must exist`（資料測試）、`fires once`、`does not chain forever`、`rises only once`、`a revive with no fallen ally is passed over, and the draw count holds`、`decoy pays nothing`、`evasion drops with the decoy`、`splits while both stand`。
 - [ ] **Step 2–5**：同上；commit：`feat(starlantern): summons, decoys, last words, second winds and shared wounds`。
@@ -488,6 +493,7 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 **Files:**
 - Modify：`engine/game.ts`（`move` 的 `'boss'`：終幕與第 3 層照舊，其他改成 `startBattle(bossFor(region, depth), true)`；新的 `'warden'` 格：`startBattle(group, false, true, group[0], 0, { warden: true })`；勝利時 `warden` 不呼叫 `pieceDrops`／`lootFragments`、那一格變地板、`floorOf` 的 contents 移除它；`elite` 的報酬照舊）、`engine/dungeon/rooms.ts`／`render/MapView.ts`（`warden` 格用精英的事件地磚）、`engine/battle.ts`（部件 `rank: 'part'` 的等級與 `BOSS_HOME`；詞綴只給 `boss`）、`engine/scaling.ts`（`homeLevel` 認 `rank: 'part'`）。
 - Test：`engine/game.test.ts`、`render/MapView.test.ts`、`engine/scaling.test.ts`。
+- **B5 實作修正**：`engine/dungeon/rooms.ts` 不用再改（A4 已加 `'warden'`）；`engine/battle.ts` 也不用改（詞綴本來就只給 `ENEMIES[id].boss`，部件不是 `boss`；部件的等級由 `homeLevel` 認 `rank: 'part'` 給 `BOSS_HOME`）。另外要改（原計畫漏列）：`render/markers.ts`（`MarkerKind`、`MARKER_GLYPH`、`LIVE` 加 `'warden'`，字形同菁英的 ★）、`ui2/scenes/dungeon.ts` 與 `ui2/scenes/event.ts`（守關者的房間和菁英一樣先問「要挑戰嗎？」，用菁英的事件圖）、`data/text.zh-TW.ts`（`T.ui2.event.warden`）、`data/monsters.ts`（`wardenGroup`：護衛上線了才同行）、`data/monsters.test.ts`（翻轉 PR A 留下的 `a warden waits for its room` 釘子）；測試另加 `ui2/scenes/event.test.ts`。打倒守關者之後，那一格變地板，`floorOf` 的 contents 也移除它；逃走則留著。
 
 - [ ] **Step 1：寫失敗的測試**：`with nothing live every boss is the lantern-eater`（深度 5、10、15 × 七區，`startBattle` 的 `enemyIds` 與今天相同）；`a live boss is met where bossFor says`（`withRosterLive`）；`the archon comes with two hands, and only the archon takes affixes`（噩夢）；`a warden pays no memory piece`；`a warden pays like an elite`（同一個種子下 `lootDraws`、`runeDraws` 的增量和精英戰相同）；`a warden takes elite affixes keyed by its tile`；`a beaten warden leaves floor behind`；`the map draws a warden on the elite tile`。
 - [ ] **Step 2–5**：同上；e2e 必跑；commit：`feat(starlantern): wardens on the map and bosses by depth, once they are live`。
@@ -497,11 +503,19 @@ E 與 L 的對應（敵人清單以 spec §13.5 的輪次為準，`roster_art.py
 **Files:**
 - Modify：`ui2/scenes/battle.ts`（意圖欄：蓄力、守護、宣告；名牌：寶箱？、受守護、偷走的金額；目標說明）、`engine/mechanics/index.ts`（`foeWords` 的新字）、`data/text.zh-TW.ts`（`T.battle` 底下新字串，先 grep 確認不撞名；殘影倒下「〇〇散成了霧。」）、`ui2/battleText.ts`（`remnant` 用殘影那一句）。
 - Test：`ui2/scenes/battle.test.ts`、`engine/mechanics/*.test.ts`、`ui2/typeScale.test.ts`、legibility 掃描。
+- **B6 實作修正**：頭上的字由新的機制模組 `engine/mechanics/foeWords.ts`（排在模組清單最後）給：蓄力、守護、受守護、偷走 N 金、同心、溜走N，隊員被宣告時腳下「被宣告」；意圖在守護技後加「（守護）」並指出要守誰、宣告技加「（宣告）」，幻影沒有意圖；目標說明逐行加上守護者、偷走的金額、幾回合後溜走、同心的同伴（`engine/foes.ts` `foeNotes`）；勝利結算在金錢下加「（其中討回了被偷走的 N）」；名牌在 `syncHp` 跟著名字更新（寶箱現形）。另外：召喚會讓一列的敵人越來越多（倒下的也佔位），所以加 `ROW_MAX = 8`（倒下的算在內，滿了就不再召喚），`src/styles/_starlantern-ui.scss` 的目標箭頭類別從 4 隻擴到 8 隻；燈底之巢的孵化上限改成每場 4 次。
 
 - [ ] **Step 1：寫失敗的測試**：每個 B2–B5 機制的畫面字（意圖、名牌、紀錄各一個測試）；`a remnant fades into mist in the log`；新字串都在 Cubic 11（`glyphs.test.ts`）。
 - [ ] **Step 2–5**：同上；e2e 必跑；commit：`feat(starlantern): the battle screen shows what the new foes are doing`。
 
 **PR B1 收尾**：全新脈絡審查（重點：舊定義的逐位元、召喚與逃走的抽取、守關者不給碎片）。
+
+**PR B1 審查修正（2026-10-26，CHANGES REQUESTED 之後）**：每一條先寫紅燈測試再改，裁定同時抄進 spec §0 第 15 條。
+- 高：倒下時的效果不打倒最後一個站著的隊員（留 1 HP），不動 `checkOutcome` 的順序。
+- 中：召喚不成時在抽取時跳過（`usableNow` 加 `canSummon`），意圖不再說謊；計畫後才被擋一律普攻，只有沒有任何傷害技的敵人（燈底之巢）改用第一個能用的招（確認審查第 2 條）。燈底之巢每回合孵一隻、沒有每場上限、孵不了就蜷縮、永不攻擊。本體倒下且沒站起時幻影一起離場（`vanish`）。被同伴復活的敵人走 `rise` 的站起，`play` 結束時所有活著的敵人都顯示。重摺整群每場一次（`oncePerFight`、`BattleState.spent`）。
+- 低：幻影在 `turnOrder` 之前就排除（不抽亂數）；守護不守幻影；小偷倒下時偷走的錢立刻回到錢包（`return`），會召喚小偷的戰鬥也有錢包；整場戰鬥的舊名冊釘子 `engine/legacyFights.test.ts`（517 種情況、3102 場、抽取 377689 次，雜湊在 origin/master 錄），取代原本一回合、200 個種子的釘子，並刪掉自己比自己的 `meetEnemy matches createBattle`；隱匿勝過宣告；守關者吃 `ELITE` 數值（spec §5.5、§5.1 以此為前提）但名字前沒有 ★（`Combatant.named`）；只剩逃走的敵人的勝利不給 `afterWin` 與「被救下」好感；兩隻偽裝保留字母；開場幻影算進 `ROW_MAX`；凍結也打斷蓄力。
+- 確認審查（`743e8058a` 之後）：有守關者的戰鬥場上上限是 `BOSS_GROUP_CAP`（用真的守關者組與五人隊伍測）；被擋的計畫改普攻（見上）；`battleCues` 的 `revive`→`rise` 有單元測試，另加「復活後同一段播放裡挨打時看得到」的畫面測試；`rise` 只發給畫面上有格子的敵人，隊員的復活時間和 master 一樣。
+
 
 ---
 

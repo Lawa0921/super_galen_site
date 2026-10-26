@@ -3,7 +3,8 @@ import type { HitExtra, PartyCue } from '../../render/BattleView';
 import type { FxKey } from '../../render/artPaths';
 import { ITEMS } from '../../data/items';
 import { T } from '../../data/text.zh-TW';
-import { LIMIT_MAX, intentLabel, runeView, skillFor, type Action, type BattleState } from '../../engine/battle';
+import { LIMIT_MAX, foeDef, intentLabel, runeView, skillFor, type Action, type BattleState } from '../../engine/battle';
+import { foeNotes } from '../../engine/foes';
 import { autoActions } from '../../engine/builds';
 import type { Combatant } from '../../engine/combatant';
 import { ailmentChips, type AilmentChip } from '../../engine/ailments';
@@ -293,7 +294,9 @@ export class BattleScene implements Scene {
    */
   private targetNote(e: Combatant): string | undefined {
     const intent = intentLabel(this.state, e.key);
-    const lines = [...(intent ? [T.ui2.battle.intentNote(intent)] : []), ...(e.affixes ?? []).map((a) => T.ui2.tier.affixLine(AFFIXES[a].name, AFFIXES[a].line))];
+    const lines = [...(intent ? [T.ui2.battle.intentNote(intent)] : []), ...(e.affixes ?? []).map((a) => T.ui2.tier.affixLine(AFFIXES[a].name, AFFIXES[a].line)),
+      // The roster's foe mechanics, a line each (roster plan B6); none for the old roster.
+      ...foeNotes(this.state, e, (c) => foeDef(this.state, c))];
     return lines.length ? lines.join('\n') : undefined;
   }
 
@@ -515,7 +518,8 @@ export class BattleScene implements Scene {
     if (!r) { this.busy = false; this.before = null; this.cmd.hidden = false; this.root.removeAttribute('inert'); this.renderCommands(); return; }
     this.state = r.battle;
     const names = new Map([...r.battle.party, ...r.battle.enemies].map((c) => [c.key, c.name]));
-    const lines = battleLines(r.battle.log, (k) => names.get(k) ?? k);
+    const remnants = new Set(r.battle.enemies.filter((e) => foeDef(r.battle, e)?.remnant).map((e) => e.key));
+    const lines = battleLines(r.battle.log, (k) => names.get(k) ?? k, (k) => remnants.has(k));
     try {
       // With a stage, each line is shown by the playback itself at the moment its event is drawn.
       if (this.ctx.stage) await this.ctx.stage.battleView.play(r.battle, this.sfxAdapter(), (key, cue, name, amount, extra) => this.onParty(key, cue, name, amount, extra), (i) => this.showLine(lines, r.battle.log, i));
@@ -691,6 +695,7 @@ export class BattleScene implements Scene {
       for (const l of fragmentLines(found)) lines.push({ text: l });
       lines.push({ text: T.battle.exp(end.exp) }, { text: T.battle.gold(end.gold) });
       if (end.coinGold) lines.push({ text: T.battle.coinGold(end.coinGold) });
+      if (end.returned) lines.push({ text: T.battle.returned(end.returned) });
       // Won gear reads after its gear icon once that is published and loaded (the line keeps its rarity colour either way).
       for (const it of end.gear) lines.push({ text: [{ text: gearLabel(it), cls: 'slx-loot-name', icon: gearIconLate(this.ctx.art, it) }], cls: `slx-loot-gear ${rarityClass(it)}` });
       // Runes after the gear, each once and in the order they dropped, in its tier's colour (plan 8f); one past the stack

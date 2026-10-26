@@ -105,7 +105,45 @@ export interface Combatant {
   riposte?: { power: number; turns: number };
   /** Who this foe must strike, and in which round (Scarlet's 盾擊). */
   challenged?: { by: string; round: number };
+  /**
+   * Roster plan B1: a foe that left the fight (it fled, spec M3). It is also not `alive`, so nothing targets it and the
+   * fight is over without it; it pays nothing and takes no loot or rune draw, and no one raises it.
+   */
+  left?: true;
+  /** Roster plan B1: a foe that joined mid-fight (a summon, spec M4): it pays nothing and takes no loot or rune draw. */
+  summoned?: true;
+  /** Roster plan B2 (M1): the index of the skill this foe is winding up; it lands next round. Sleep or a freeze breaks it. */
+  winding?: number;
+  /** Roster plan B2 (M24): the round a foe's hunt sends every single blow to this member. */
+  hunted?: number;
+  /** Roster plan B3 (M13): the gold this foe took from the run pack, given back if it is felled. */
+  stolen?: number;
+  /** Roster plan B3 (M14): its own name while it wears 「寶箱？」 as its `name`; a landed hit unmasks it. */
+  disguised?: string;
+  /** Roster plan B3 (M14): asleep from the start; it wakes angry (`wake`) at its first turn awake. */
+  dozing?: true;
+  /** Roster plan B3 (M14): it acts first in round one. */
+  ambush?: true;
+  /** Roster plan B4 (M4): how many foes it has called this fight. */
+  summons?: number;
+  /** Roster plan B4 (M19): the foe this 1 HP phantom stands beside; a decoy never acts and pays nothing. */
+  decoyOf?: string;
+  /** Roster plan B4 (M19): the evasion its standing decoys add to it now. */
+  blur?: number;
+  /** Roster plan B4 (M22): it has stood up again once (by its own `rise` or an ally's revive); it never does again. */
+  rose?: true;
+  /** Roster plan B4 (M10): its fall has been answered (its `onFall` went off, or a fall another's set off took it). */
+  fell?: true;
+  /** Roster plan B4 (M20): the key of the foe it shares its wounds with. */
+  share?: string;
+  /** B1 review item 9: the gold this felled thief gave back to the pack (twice what it took, for a warden). */
+  returned?: number;
+  /** B1 review item 12: a named foe (a warden): on the elite path, but no ★ before its name. */
+  named?: true;
 }
+
+/** Roster plan B3–B4: a foe mechanic's moment in the log (battleLines words it). */
+export type FoeCue = 'flee' | 'steal' | 'wake' | 'reveal' | 'summon' | 'rise' | 'return' | 'vanish';
 
 /** The aim stacks `a` holds on `t` (Sylvie; 0 for anyone else or any other foe). */
 const aimOn = (a: Combatant, t: Combatant): number => (a.mech?.kind === 'aim' && a.mech.target === t.key ? a.mech.stacks : 0);
@@ -142,7 +180,9 @@ export type BattleEvent =
   /** A survive fight lasted its rounds. */
   | { type: 'survived' }
   /** A trigger rune cast `skill` for `actor`, for free (plan 8e Task 6). */
-  | { type: 'trigger'; actor: string; skill: string; rune: RuneId };
+  | { type: 'trigger'; actor: string; skill: string; rune: RuneId }
+  /** A foe mechanic's moment (roster plan B3–B4): `target` the member or foe it touched, `amount` the gold it took. */
+  | { type: 'foe'; actor: string; cue: FoeCue; target?: string; amount?: number };
 
 export const MAX_BUFFS = 3;
 export const SLEEP_TURNS = 3;
@@ -334,6 +374,9 @@ export function dealDamage(t: Combatant, amount: number, opts: { dot?: true; led
     delete t.coverAlso;
     delete t.riposte;
     delete t.challenged;
+    delete t.winding;
+    delete t.hunted;
+    delete t.dozing;
     // Her marks and her aim end with her (their words go from the foes too).
     if (t.mech?.kind === 'mark') t.mech.marks = [];
     if (t.mech?.kind === 'aim') { t.mech.target = null; t.mech.stacks = 0; delete t.mech.lock; }

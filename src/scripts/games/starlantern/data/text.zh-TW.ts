@@ -181,6 +181,25 @@ export const T = {
     /** Words that pop over a struck enemy or member. */
     pop: { miss: 'MISS', crit: '暴擊！', weak: '弱點！', resist: '抗性', tp: (n: number) => `+${n} TP` },
     gearLeft: (name: string) => `背包已滿，留下了 ${name}`,
+    /** The roster's foe mechanics on the battle screen (roster plan B2–B6): intents, name tags and log lines. */
+    foe: {
+      /** M1: the intent of a foe winding a skill up. */
+      windup: (skill: string) => `蓄力：${skill}`,
+      /** M14: the name a foe in disguise wears until a hit unmasks it. */
+      disguise: '寶箱？',
+      /** M19: a decoy's name beside its foe's. */
+      decoy: (name: string) => `${name}的幻影`,
+      /** Roster plan B6: after a guard's (M2) or a hunt's (M24) skill name in its intent. */
+      guardTag: '（守護）',
+      huntTag: '（宣告）',
+      /** Roster plan B6: the words over a foe (and under a member it called out). */
+      word: {
+        winding: '蓄力', guarding: '守護', guarded: '受守護', stolen: (n: number) => `偷走 ${n} 金`, shared: '同心',
+        flee: (n: number) => `溜走${n}`, hunted: '被宣告',
+      },
+    },
+    /** The part of the gold a felled thief gave back (roster plan B3, M13), already counted in the gold line. */
+    returned: (n: number) => `（其中討回了被偷走的 ${n}）`,
   },
   element: { phys: '物理', fire: '火', ice: '冰', thunder: '雷' },
   /** Ailment names on the battle screen (the region trait `burn` reads 酷熱, so the two never share a word). */
@@ -248,6 +267,21 @@ export const T = {
     trigger: (who: string, rune: string, skill: string) => `${who}的${rune}：${skill}！`,
     damage: (who: string, n: number, mult: number) => `${who} 受到 ${n} 傷害${mult > 1 ? '（弱點）' : mult < 1 ? '（抗性）' : ''}`,
     ko: (who: string) => `${who} 倒下了`,
+    /** A remnant of a person falls (roster plan ruling 6): it is not a defeat. */
+    mist: (who: string) => `${who}散成了霧。`,
+    /** The roster's foe mechanics (roster plan B3–B4): `who` the foe, `other` whom it touched, `n` the gold it took. */
+    foe: {
+      flee: (who: string) => `${who}溜走了！`,
+      steal: (who: string, other: string, n: number) => `${who}從${other}身上摸走了 ${n} 金！`,
+      wake: (who: string) => `${who}醒了，氣呼呼的！`,
+      reveal: (who: string) => `寶箱現出原形：是${who}！`,
+      summon: (who: string, other: string) => `${who}叫來了${other}！`,
+      rise: (who: string) => `${who}又站了起來！`,
+      /** B1 review item 9: a felled thief's gold back in the pack. */
+      return: (who: string, _other: string, n: number) => `${who}偷走的 ${n} 金回到背包了！`,
+      /** B1 review item 4: a decoy leaves with its foe. */
+      vanish: (who: string) => `${who}跟著散去了。`,
+    },
     heal: (who: string, n: number) => `${who} 回復 ${n} HP`,
     tp: (who: string, n: number) => `${who} 回復 ${n} TP`,
     revive: (who: string) => `${who} 復活了`,
@@ -276,6 +310,13 @@ export const T = {
       survive: (left: number) => `撐過去！還有 ${left} 回合`,
       /** A foe's whole intent in the target note (the picture may shorten it to fit its slot): marked as over its head. */
       intentNote: (label: string) => `◆ ${label}`,
+      /** The roster's foe mechanics in the target note (roster plan B6), a line each. */
+      foe: {
+        guarded: (guard: string) => `${guard}守著牠：單體攻擊會打到${guard}身上`,
+        stolen: (n: number) => `偷走了 ${n} 金，打倒就會還回來`,
+        flee: (n: number) => `再 ${n} 回合就會溜走`,
+        shared: (mate: string) => `和${mate}同心：受到的傷害兩隻平分`,
+      },
     },
     memory: {
       /** Story L spec §4.2: one caption for each one who remembered something; the memory itself is told at night in town. */
@@ -914,6 +955,8 @@ ${cost === 0 ? '這次免費' : `需要 ${cost} G`}，點數會全部退回。`,
         opened: (list: string) => `打開寶庫：${list}`, failed: '寶庫打不開。需要這一層的鑰匙。',
       },
       elite: { title: '菁英怪', desc: '房間中央有一隻強大的敵人（★）。', ask: '要挑戰嗎？', fight: '挑戰' },
+      /** A warden's room (roster plan B5). */
+      warden: { title: '守關者', desc: '這一層的守關者守在房間正中央（★）。', ask: '要挑戰嗎？', fight: '挑戰' },
       trap: {
         hurt: (n: number) => `陷阱！全隊受到 ${n} 點傷害。`,
         poison: (n: number, tp: number) => `毒氣陷阱！全隊受到 ${n} 點傷害${tp > 0 ? `，TP 最多減少 ${tp}` : ''}。`,

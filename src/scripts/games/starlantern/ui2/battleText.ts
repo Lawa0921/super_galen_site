@@ -10,14 +10,17 @@ import type { FragmentGain } from '../engine/story/memories';
 import type { LevelUp } from '../engine/party';
 import type { Party } from '../engine/types';
 
-/** One line of battle narration per event, for the message window. */
-export function battleLines(log: BattleEvent[], nameOf: (key: string) => string): string[] {
+/**
+ * One line of battle narration per event, for the message window. `remnant` says which foes are the remnants of people
+ * (roster plan ruling 6): their fall reads 「散成了霧。」.
+ */
+export function battleLines(log: BattleEvent[], nameOf: (key: string) => string, remnant: (key: string) => boolean = () => false): string[] {
   return log.map((e) => {
     switch (e.type) {
       case 'act': return T.log.act(nameOf(e.actor), e.label);
       case 'damage': return T.log.damage(nameOf(e.target), e.amount, e.mult) + (e.crit ? T.log.crit : '');
       case 'miss': return T.log.miss(nameOf(e.target));
-      case 'ko': return T.log.ko(nameOf(e.target));
+      case 'ko': return remnant(e.target) ? T.log.mist(nameOf(e.target)) : T.log.ko(nameOf(e.target));
       case 'heal': return T.log.heal(nameOf(e.target), e.amount);
       case 'tp': return e.regen ? '' : T.log.tp(nameOf(e.target), e.amount);   // regen pops on the member instead
       case 'revive': return T.log.revive(nameOf(e.target));
@@ -38,6 +41,7 @@ export function battleLines(log: BattleEvent[], nameOf: (key: string) => string)
       case 'frozen': return T.log.frozen(nameOf(e.actor));
       case 'survived': return STORY.survived;
       case 'trigger': return T.log.trigger(nameOf(e.actor), RUNES[e.rune].name, SKILLS[e.skill]?.name ?? e.skill);
+      case 'foe': return T.log.foe[e.cue](nameOf(e.actor), e.target ? nameOf(e.target) : '', e.amount ?? 0);
     }
   });
 }

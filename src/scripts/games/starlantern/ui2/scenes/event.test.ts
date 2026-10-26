@@ -204,6 +204,23 @@ describe('EventLayer', () => {
     expect(go).toHaveBeenCalledWith('battle');
   });
 
+  it('a warden asks before the fight as an elite does, and fights as one (roster plan B5)', () => {
+    const { game, s, go, options, pick, plant, layer } = setup();
+    const { dir, at } = plant('warden', { warden: 'false-moon' });
+    const from = { ...game.pos };
+    s.onAction(dir);
+    expect(layer()!.textContent).toContain('守關者');
+    expect(layer()!.textContent).toContain('要挑戰嗎？');
+    expect(game.pos).toEqual(from);
+    expect(options()).toEqual(['挑戰', '離開']);
+    pick('挑戰');
+    expect(game.pos).toEqual(at);
+    expect(game.phase).toBe('battle');
+    expect(game.battle!.enemies.map((e) => e.defId)).toEqual(['false-moon']);
+    expect(game.battle!.enemies[0].tint).toBe('elite');
+    expect(go).toHaveBeenCalledWith('battle');
+  });
+
   it('a trap says what happened and flashes the screen red', () => {
     const { game, s, root, plant, text, layer } = setup();
     const { dir } = plant('trap');
