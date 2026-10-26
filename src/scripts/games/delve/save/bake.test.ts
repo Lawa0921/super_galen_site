@@ -251,7 +251,8 @@ describe('舊世界烘焙（Task 16）', { timeout: 120_000 }, () => {
     if (e.start === 'sea') expect(B.world.source!.waterTopAt!(e.x + 50)).toBe(frame.edgeR + 1);
     const c1 = [B.gen2()!.layout.landmass(1, e.start === 'sea' ? 2 : 1), B.gen2()!.layout.landmass(-1, range.west.start === 'sea' ? 2 : 1)];
     for (const m of c1) expect(m.kind).toBe('continent');
-    expect(c1.filter((m) => m.culture === 'mistbamboo')).toHaveLength(1);
+    // v0 只有荒野大陸（M2a Task 18，Q14；霧竹之國的指派是 M4）
+    expect(c1.map((m) => m.culture)).toEqual([null, null]);
   });
 
   it('烘焙世界讀檔不必跑舊生成器、genKind baked、存回再讀一樣', () => {

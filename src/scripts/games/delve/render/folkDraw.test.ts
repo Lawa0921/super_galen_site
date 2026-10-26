@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { folkFrames, folkFrame } from './folkDraw';
+import { folkFrames, folkFrame, folkIdlePose } from './folkDraw';
+import { IDLE_FRAMES } from './anim';
+import { SITE_NPC_BASE, npcIdFor } from '../engine/siteRegistry';
 import { folkLook, ROLES, type FolkRole } from '../engine/folkDefs';
 import { Rng } from '../engine/rng';
 import { HAIR_STYLES } from '../engine/appearance';
@@ -66,5 +68,36 @@ describe('世界 NPC 的紙娃娃', () => {
     const dwarf = folkFrames(folkLook('ore_trader', new Rng('d')));
     expect(topRow(dwarf.idle[0])).toBeGreaterThanOrEqual(topRow(human.idle[0]) + 3);
     expect(folkLook('ore_trader', new Rng('d')).head).toBe('hat:miner');
+  });
+});
+
+describe('站姿動畫的相位（聚落 NPC 的 id 是 2 的 52 次方等級的大數）', () => {
+  // 60 fps 取樣 400 秒：眨眼佔的時間比例、每秒看到幾種 idle 影格
+  const sample = (id: number): { blink: number; frames: number } => {
+    let blink = 0, n = 0;
+    const seen = new Set<number>();
+    for (let f = 0; f < 60 * 400; f++, n++) {
+      const p = folkIdlePose(f / 60, id);
+      if (p === 'blink') blink++;
+      else if (f < 60) seen.add(p);
+    }
+    return { blink: blink / n, frames: seen.size };
+  };
+  it('大 id（≈ 2^52）眨眼仍約 3%（每 4 秒 0.12 秒）、idle 影格照常輪替', () => {
+    const big = [SITE_NPC_BASE + 4503599627370496 - 1, 4503599627370496 + 5, 3e15, 1.5e15, npcIdFor('v0:elder'), npcIdFor('s7919:guide')];
+    for (const id of big) {
+      const r = sample(id);
+      expect(r.blink, `${id}`).toBeGreaterThan(0.02);
+      expect(r.blink, `${id}`).toBeLessThan(0.04);
+      expect(r.frames, `${id}`).toBe(IDLE_FRAMES);
+    }
+  });
+  it('小 id（遇見型 NPC）與原本的式子逐格相同', () => {
+    for (const id of [1, 2, 7, 19, 4095]) {
+      for (let f = 0; f < 600; f++) {
+        const c = f / 60, old = (c + id) % 4 < 0.12 ? 'blink' : Math.floor((c + id * 0.3) * 4) % IDLE_FRAMES;
+        expect(folkIdlePose(c, id)).toBe(old);
+      }
+    }
   });
 });

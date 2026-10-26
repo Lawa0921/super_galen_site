@@ -4,7 +4,7 @@
 // 只有舊生成器（worldgen.ts、gen/**）與生成畫面的剖面取樣（render/genSection.ts）碰它。
 import { CHUNK } from '../../constants';
 import { tileKey, tileXY as keyToXY, chunkKey, chunkXY, chunkOfX, localX } from '../../coords';
-import type { GenLayers } from '../worldgen';
+import type { GenLayers } from '../../genTypes';
 import { SOLID_LUT, PLATFORM_LUT, CLIMB_LUT, T } from '../../tiles';
 import type { Stack } from '../../inventory';
 import { CHEST_SLOTS, type Drop } from '../../loot';

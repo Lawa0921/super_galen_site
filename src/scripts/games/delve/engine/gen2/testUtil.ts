@@ -1,12 +1,17 @@
 // testUtil.ts — gen2 測試共用（只給 *.test.ts 用，不進遊戲路徑）：填一欄、位元組、source 模式的 World、
-// 取樣陸地地區、空氣 BFS、靜態液體不變量。本資料夾的非測試檔會被 grep 禁用 API，這裡一樣遵守。
+// 取樣陸地地區、空氣 BFS、靜態液體不變量、地城的可解性。本資料夾的非測試檔會被 grep 禁用 API，這裡一樣遵守。
 import { Column, type ColumnSource } from '../column';
 import { CHUNK, WORLD_H } from '../constants';
 import { World, LIQ } from '../world';
-import { T, isSolidTile } from '../tiles';
+import { T, DUNGEON_COLORS, isSolidTile } from '../tiles';
 import { LIQ_MAX } from '../liquidKind';
 import type { RegionInfo } from '../regionInfo';
-import type { Gen2Source } from './index';
+import type { DungeonInfo } from '../genTypes';
+import { Gen2Source } from './index';
+import { partsMeet, BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR, KEEP, type Blueprint } from './bpcore';
+import { hasShaft, shaftX } from './caves';
+import { seedInt } from '../noise';
+import { ORES4, BANDS4, type OreKind, type OreBand } from './oreBaseline';
 
 // 第 cx 欄整欄（32 格）由 src 填
 export function fillCol(src: ColumnSource, cx: number): Column {
@@ -48,10 +53,35 @@ export function sampleRegions(src: Gen2Source, o: { home: boolean; perSide: numb
   return out;
 }
 
-// 從 (x, y) 走 4 鄰的空氣格（沒有液體）、x ∈ [xLo, xHi]，走得到任一 y ≥ deepAt(x) 的格 = true
+// 第 x 欄由上往下第一個實心格的 y（skip(y) = true 的格不算；整欄都不是 = 世界高）
+export function firstSolid(w: World, x: number, skip?: (y: number) => boolean): number {
+  for (let y = 0; y < w.height; y++) if (isSolidTile(w.getFg(x, y)) && !skip?.(y)) return y;
+  return w.height;
+}
+
+// 藍圖 b 的地面覆寫（b.ground）涵蓋的每一欄：src.surfaceAt(x) 要等於該欄由上往下第一個實心格（skip(x, y) = true 的格是建物自己的格——
+// 屋牆、屋頂、塔身——不算地面）。先載入那些欄；回傳不符的欄（surface = surfaceAt、solid = 第一個實心格）與驗過的欄數
+export function groundVsFirstSolid(w: World, src: { surfaceAt(x: number): number }, b: Blueprint, skip: (x: number, y: number) => boolean):
+  { checked: number; bad: { x: number; surface: number; solid: number }[] } {
+  const g = b.ground;
+  if (!g) throw new Error(`${b.kind}@${b.x} has no ground override`);
+  loadColumns(w, g.x0, g.x0 + g.tops.length);
+  const bad: { x: number; surface: number; solid: number }[] = [];
+  for (let k = 0; k < g.tops.length; k++) {
+    const x = g.x0 + k, surface = src.surfaceAt(x), solid = firstSolid(w, x, (y) => skip(x, y));
+    if (surface !== solid) bad.push({ x, surface, solid });
+  }
+  return { checked: g.tops.length, bad };
+}
+
+// fill 放的裝飾（M2a Task 12）：都不是實心，人走得過去
+export const FILL_DECOR: ReadonlySet<number> = new Set<number>([T.POT, T.FLOWER, T.TALL_GRASS, T.MUSHROOM, T.SMALL_ROCK, T.BUSH, T.PUMPKIN, T.DEAD_BUSH,
+  T.SNOW_SHRUB, T.FERN, T.GLOW_MUSHROOM, T.STALAGMITE, T.STALACTITE, T.VINE, T.COBWEB]);
+
+// 從 (x, y) 走 4 鄰的非實心格（沒有液體；M2a Task 12 起洞穴裡有裝飾，裝飾不擋路）、x ∈ [xLo, xHi]，走得到任一 y ≥ deepAt(x) 的格 = true
 export function bfsReachesDepth(w: World, x: number, y: number, deepAt: (x: number) => number, xLo: number, xHi: number): boolean {
   const H = w.height, wd = xHi - xLo + 1;
-  const open = (px: number, py: number): boolean => w.getFg(px, py) === T.AIR && w.getLiquid(px, py) === 0;
+  const open = (px: number, py: number): boolean => !isSolidTile(w.getFg(px, py)) && w.getLiquid(px, py) === 0;
   if (!open(x, y)) return false;
   const deep: number[] = [];
   for (let px = xLo; px <= xHi; px++) deep.push(deepAt(px));
@@ -72,7 +102,7 @@ export function bfsReachesDepth(w: World, x: number, y: number, deepAt: (x: numb
   return false;
 }
 
-// 靜態液體不變量：x ∈ [x0, x1) 的每個水 / 熔岩格都是滿格、不在實心格裡，下方與左右是實心或同種滿格液體（世界底下算實心）。回違規格。
+// 靜態液體不變量：x ∈ [x0, x1) 的每個水 / 熔岩 / 蜂蜜格都是滿格、不在實心格裡，下方與左右是實心或同種滿格液體（世界底下算實心）。回違規格。
 // 液體可以泡著非實心物件（箱子、木樑；liquid.ts 只擋實心格），所以沉船裡泡水的箱子 / 桅杆也算靜止。
 export function liquidInvariant(w: World, x0: number, x1: number): { x: number; y: number }[] {
   const bad: { x: number; y: number }[] = [];
@@ -83,7 +113,7 @@ export function liquidInvariant(w: World, x0: number, x1: number): { x: number; 
     for (let y = 0; y < H; y++) {
       if (w.getLiquid(x, y) === 0) continue;
       const type = w.getLiquidType(x, y);
-      const ok = (type === LIQ.WATER || type === LIQ.LAVA) && w.getLiquid(x, y) === LIQ_MAX && !isSolidTile(w.getFg(x, y))
+      const ok = (type === LIQ.WATER || type === LIQ.LAVA || type === LIQ.HONEY) && w.getLiquid(x, y) === LIQ_MAX && !isSolidTile(w.getFg(x, y))
         && holds(x, y + 1, type) && holds(x - 1, y, type) && holds(x + 1, y, type);
       if (!ok) bad.push({ x, y });
     }
@@ -94,3 +124,264 @@ export function liquidInvariant(w: World, x0: number, x1: number): { x: number; 
 // 測試檔共用的小工具
 export const range = (a: number, b: number): number[] => Array.from({ length: b - a }, (_, k) => a + k);
 export const SEEDS5 = ['s-a', 's-b', 's-c', 's-d', 's-e'];
+export const SEEDS50 = Array.from({ length: 50 }, (_, k) => `anc-${k}`);
+
+// 每個種子一個 Gen2Source（同一個測試檔內共用）
+const SRC = new Map<string, Gen2Source>();
+export function srcOf(seed: string): Gen2Source {
+  let s = SRC.get(seed);
+  if (!s) { s = new Gen2Source(seed); SRC.set(seed, s); }
+  return s;
+}
+// 家鄉地塊（與 [home.x0, home.x1) 相交）的全部藍圖，依 (layer, id) 排序
+export function homeBlueprints(seed: string): Blueprint[] {
+  const s = srcOf(seed), h = s.layout.origin.home;
+  if (!h) throw new Error('no gen2 home');
+  return s.blueprints.overlapping(h.x0, h.x1);
+}
+// 依序找種子（SEEDS5）家鄉裡第一份 kind 藍圖
+export function firstOf(kind: string): { src: Gen2Source; b: Blueprint } {
+  for (const seed of SEEDS5) { const b = homeBlueprints(seed).find((q) => q.kind === kind); if (b) return { src: srcOf(seed), b }; }
+  throw new Error(`no home ${kind}`);
+}
+
+// ── 外框 b 內的格（藍圖外框 = { x, y, w, h }）──
+type Box = { x: number; y: number; w: number; h: number };
+// 讓外框涵蓋的欄都常駐
+export const loadBox = (w: World, b: Box): void => loadColumns(w, b.x, b.x + b.w);
+// 外框內 fg = tile 的格數
+export function countIn(w: World, b: Box, tile: number): number {
+  let n = 0;
+  for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) if (w.getFg(x, y) === tile) n++;
+  return n;
+}
+// 外框內有 type 液體的格數
+export function liquidIn(w: World, b: Box, type: number): number {
+  let n = 0;
+  for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) if (w.getLiquid(x, y) > 0 && w.getLiquidType(x, y) === type) n++;
+  return n;
+}
+// 外框內 liquid / liquidType 的複本
+export function snapshotLiquid(w: World, b: Box): number[] {
+  const out: number[] = [];
+  for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) out.push(w.getLiquid(x, y), w.getLiquidType(x, y));
+  return out;
+}
+
+// ── 地城的可解性（原 legacy/gen/dungeon.test.ts 的兩個檢查，改成吃 DungeonInfo / World；M2b 刪 legacy 後仍在）──
+type Verdict = { ok: true } | { ok: false; why: string };
+const bad = (why: string): Verdict => ({ ok: false, why });
+
+// 房間圖：鑰匙數 = 上鎖的門數 = 上鎖的邊數；不開鎖就到得了所有地城鑰匙、到不了寶藏室與放金鑰匙的神殿；
+// 金鑰匙在上鎖的神殿（不是寶藏室）、寶藏室上鎖；拿齊鑰匙逐一開門 → 所有房間都到得了
+export function solvable(d: DungeonInfo): Verdict {
+  const lockedEdges = d.edges.filter((e) => e.locked), regular = d.keys.filter((k) => !k.golden), golden = d.keys.filter((k) => k.golden);
+  if (regular.length !== lockedEdges.length) return bad(`keys ${regular.length} vs locked edges ${lockedEdges.length}`);
+  if (d.doors.filter((q) => q.locked).length !== lockedEdges.length) return bad('locked doors vs locked edges');
+  if (golden.length !== 1) return bad(`golden keys ${golden.length}`);
+  const T_ = d.rooms[d.treasureRoom], K = d.rooms[d.keyRoom];
+  if (T_.kind !== 'treasure' || !T_.locked) return bad('treasure room not locked');
+  if (K.kind !== 'shrine' || !K.locked || golden[0].room !== d.keyRoom) return bad('golden key not in the locked shrine');
+  const reach = (open: (e: DungeonInfo['edges'][number]) => boolean): Set<number> => {
+    const seen = new Set([d.entryRoom]), q = [d.entryRoom];
+    while (q.length) {
+      const a = q.pop()!;
+      for (const e of d.edges) {
+        if (!open(e)) continue;
+        const o = e.a === a ? e.b : e.b === a ? e.a : -1;
+        if (o >= 0 && !seen.has(o)) { seen.add(o); q.push(o); }
+      }
+    }
+    return seen;
+  };
+  const free = reach((e) => !e.locked);
+  for (const k of regular) if (!free.has(k.room)) return bad(`key in room ${k.room} behind a lock`);
+  if (free.has(d.treasureRoom) || free.has(d.keyRoom)) return bad('locked room reachable without a key');
+  let keys = regular.length, got = free;
+  const opened = new Set<number>();
+  for (let guard = 0; guard <= lockedEdges.length; guard++) {
+    const i = lockedEdges.findIndex((e, k) => !opened.has(k) && (got.has(e.a) || got.has(e.b)));
+    if (i < 0 || keys === 0) break;
+    opened.add(i); keys--;
+    got = reach((e) => !e.locked || opened.has(lockedEdges.indexOf(e)));
+  }
+  if (got.size !== d.rooms.length) return bad(`reached ${got.size} of ${d.rooms.length} rooms`);
+  return { ok: true };
+}
+
+// tile 層級（洪水填充，4 連通，範圍 = bbox 外擴）：非實心可走、關著的木門可開、上鎖的門依 openLocked。
+// 不開鎖：拿得到所有地城鑰匙、碰不到金鑰匙 / 金寶箱 / 上鎖房間內部；開鎖：金鑰匙、金寶箱、每個房間的地板都到得了
+// w 只要讀得到 fg（gen2 的 World 與舊生成器的 GenGrid 都可以，legacy/gen/dungeon.test.ts 共用）
+export function floodSolvable(w: { getFg(x: number, y: number): number }, d: DungeonInfo): Verdict {
+  const b = d.bbox, x0 = b.x - 2, x1 = b.x + b.w + 2, y0 = b.y - 6, y1 = b.y + b.h + 2, W = x1 - x0;
+  const flood = (openLocked: boolean): Uint8Array => {
+    const seen = new Uint8Array(W * (y1 - y0));
+    const pass = (x: number, y: number): boolean => {
+      const t = w.getFg(x, y);
+      if (t === T.DOOR_CLOSED) return true;
+      if (t === T.DOOR_LOCKED) return openLocked;
+      return !isSolidTile(t);
+    };
+    const st = [d.entrance.x, d.entrance.y];
+    seen[(d.entrance.y - y0) * W + d.entrance.x - x0] = 1;
+    while (st.length) {
+      const y = st.pop()!, x = st.pop()!;
+      for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+        if (nx < x0 || nx >= x1 || ny < y0 || ny >= y1) continue;
+        const k = (ny - y0) * W + nx - x0;
+        if (seen[k] || !pass(nx, ny)) continue;
+        seen[k] = 1; st.push(nx, ny);
+      }
+    }
+    return seen;
+  };
+  const closed = flood(false), open = flood(true), at = (s: Uint8Array, x: number, y: number): boolean => s[(y - y0) * W + x - x0] === 1;
+  for (const k of d.keys.filter((q) => !q.golden)) if (!at(closed, k.x, k.y)) return bad(`key at ${k.x},${k.y} unreachable`);
+  const g = d.keys.find((q) => q.golden)!, t = d.treasureChest;
+  if (at(closed, g.x, g.y) || at(closed, t.x, t.y)) return bad('golden key / treasure chest reachable without a key');
+  if (!at(open, g.x, g.y) || !at(open, t.x, t.y)) return bad('golden key / treasure chest unreachable with keys');
+  for (const q of d.rooms) {
+    let any = false;
+    for (let x = q.x; x < q.x + q.w && !any; x++) any = at(open, x, q.y + q.h - 1);
+    if (!any) return bad(`room ${q.id} ${q.kind} floor unreachable`);
+  }
+  for (const q of d.rooms.filter((r) => r.locked)) {
+    for (let y = q.y; y < q.y + q.h; y++) for (let x = q.x; x < q.x + q.w; x++) if (at(closed, x, y)) return bad(`locked room ${q.id} open at ${x},${y}`);
+  }
+  return { ok: true };
+}
+
+// rect 內地面以下（y ≥ surfaceAt；地面以上是天空，不是洞穴）的空氣格中，背景牆不是地城牆（三色之一）的座標
+const DUNGEON_WALLS: ReadonlySet<number> = new Set(DUNGEON_COLORS.map((c) => c.wall));
+export function naturalHoles(w: World, r: { x: number; y: number; w: number; h: number }): { x: number; y: number }[] {
+  const out: { x: number; y: number }[] = [];
+  for (let x = r.x; x < r.x + r.w; x++) {
+    const s = w.surfaceAt(x);
+    for (let y = Math.max(r.y, s); y < r.y + r.h; y++) if (w.getFg(x, y) === T.AIR && !DUNGEON_WALLS.has(w.getWall(x, y))) out.push({ x, y });
+  }
+  return out;
+}
+
+// 從藍圖的第一個地標（礦坑的礦車、小生態 / 蜂巢的地標，Task 10 / 11）出發走不擋身體的格（4 鄰、不進液體），範圍 = 外框外擴 80 欄、外框上方 80 列（到世界頂）到外框下 40 列：
+// 走到外框外 ≥ 300 格、或走到地表以上（y < 地面）= true
+export function walkOut(w: World, src: Gen2Source, b: Blueprint): boolean {
+  const cart = b.landmarks[0], x0 = b.x - 80, x1 = b.x + b.w + 80, y0 = Math.max(0, b.y - 80), y1 = b.y + b.h + 40, W = x1 - x0;
+  const seen = new Uint8Array(W * (y1 - y0)), st = [cart.x, cart.y];
+  seen[(cart.y - y0) * W + cart.x - x0] = 1;
+  let out = 0;
+  while (st.length) {
+    const y = st.pop()!, x = st.pop()!;
+    if (y < src.surfaceAt(x)) return true;
+    if ((x < b.x || x >= b.x + b.w || y < b.y || y >= b.y + b.h) && ++out >= 300) return true;
+    for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+      if (nx < x0 || nx >= x1 || ny < y0 || ny >= y1) continue;
+      const k = (ny - y0) * W + nx - x0;
+      if (seen[k] || isSolidTile(w.getFg(nx, ny)) || w.getLiquid(nx, ny) > 0) continue;
+      seen[k] = 1; st.push(nx, ny);
+    }
+  }
+  return false;
+}
+// ── 跨層不重疊（Q10）──
+// 外框相交、而且兩份都不是液體的藍圖配對（所有層之間；同層的配對由槽保證不相交，也一併檢查）。回 [kind@x:layer, kind@x:layer]
+const LIQUID_KINDS: ReadonlySet<string> = new Set(['lake', 'cave_lake', 'lava_pool']);
+export function overlapPairs(bps: readonly Blueprint[]): [string, string][] {
+  const out: [string, string][] = [];
+  // 部件判定（Task 11 修正 2；沒有部件 = 外框）
+  const meet = partsMeet;
+  const tag = (b: Blueprint): string => `${b.kind}@${b.x}:${b.layer}`;
+  for (let i = 0; i < bps.length; i++) for (let j = i + 1; j < bps.length; j++) {
+    const a = bps[i], b = bps[j];
+    if (a.id === b.id || LIQUID_KINDS.has(a.kind) || LIQUID_KINDS.has(b.kind) || !meet(a, b)) continue;
+    out.push([tag(a), tag(b)]);
+  }
+  return out;
+}
+
+// ── 礦物密度的量法（M2a Task 13；legacy/oreBaseline.measure.test.ts 與 ores.test.ts 共用同一份，兩邊一致）──
+// 深度帶相對該欄層線：dirt = [surface, rock)、rock = [rock, deep)、deep = [deep, molten)、molten = [molten, H)；
+// 每帶記礦格數與總格數（含洞穴 / 結構 / 液體格），密度 = 礦 ÷ 總格數 × 1000（千分比）
+export const ORE_X0 = 100, ORE_X1 = 4100;
+export const ORE_TILE: Readonly<Record<OreKind, number>> = { copper: T.COPPER_ORE, iron: T.IRON_ORE, silver: T.SILVER_ORE, gold: T.GOLD_ORE };
+export interface OreLines { surface: number; rock: number; deep: number; molten: number }
+export interface OreTally { ore: Record<OreKind, Record<OreBand, number>>; cells: Record<OreBand, number> }
+const bandZero = (): Record<OreBand, number> => ({ dirt: 0, rock: 0, deep: 0, molten: 0 });
+export function newOreTally(): OreTally {
+  return { ore: { copper: bandZero(), iron: bandZero(), silver: bandZero(), gold: bandZero() }, cells: bandZero() };
+}
+// 一欄：fgAt(y) = 這欄第 y 格的前景
+export function tallyColumn(t: OreTally, fgAt: (y: number) => number, L: OreLines, H: number): void {
+  const ends: [OreBand, number, number][] = [['dirt', L.surface, L.rock], ['rock', L.rock, L.deep], ['deep', L.deep, L.molten], ['molten', L.molten, H]];
+  for (const [band, a, b] of ends) {
+    for (let y = Math.max(0, a); y < b && y < H; y++) {
+      t.cells[band]++;
+      const f = fgAt(y);
+      for (const ore of ORES4) if (f === ORE_TILE[ore]) t.ore[ore][band]++;
+    }
+  }
+}
+export function oreDensity(t: OreTally): Record<OreKind, Record<OreBand, number>> {
+  const out = { copper: bandZero(), iron: bandZero(), silver: bandZero(), gold: bandZero() };
+  for (const ore of ORES4) for (const band of BANDS4) out[ore][band] = t.cells[band] > 0 ? (t.ore[ore][band] * 1000) / t.cells[band] : 0;
+  return out;
+}
+// 幾個種子的密度平均（每個種子各自算密度再平均）
+export function meanDensity(ms: readonly Record<OreKind, Record<OreBand, number>>[]): Record<OreKind, Record<OreBand, number>> {
+  const out = { copper: bandZero(), iron: bandZero(), silver: bandZero(), gold: bandZero() };
+  for (const ore of ORES4) for (const band of BANDS4) { let s = 0; for (const m of ms) s += m[ore][band]; out[ore][band] = s / ms.length; }
+  return out;
+}
+
+// ── 驚喜密度（M2a Task 21，spec §4.4「任意連續 340 格內至少一個值得停下的東西、任意 1,800 格內至少一個大東西」）──
+// 小（值得停下的東西）= [x0, x1) 內 SURFACE / SKY / MINOR 層的藍圖外框、島（含 plain）、每個海點的藍圖（表層，已含在前者）、主坑道入口 [shaftX − 1, shaftX + 3)、
+// 礦坑在地表的入口（礦坑藍圖在 profile 地表那一格寫了非實心的欄：斜坡口 / 通地表的豎井口；Task 19 裁決 1 同主坑道入口算值得停下的東西）；
+// 大 = 村莊、小地城（keep）/ 家鄉地城（dungeon）、地廳（hall，DEEP 層）、有建物的島（kind 'island'）。區間 [a, b)，依 a 排序
+export type Span1 = [number, number];
+const BIG_POI: ReadonlySet<string> = new Set(['village', 'keep', 'dungeon', 'hall', 'island']);
+export function pois(src: Gen2Source, x0: number, x1: number): { small: Span1[]; big: Span1[] } {
+  const small: Span1[] = [], big: Span1[] = [], ss = seedInt(src.seed, 'g2-shaft');
+  for (let x = x0; x < x1;) {
+    const m = src.layout.landmassAt(x);
+    if (!m) break;
+    const a = Math.max(x0, m.x0), z = Math.min(x1, m.x1);
+    // 逐地塊查（外圍的藍圖快取是 LRU，整段 ±50,000 一次查會一直淘汰重建）；外框跨到鄰地塊的藍圖會在兩邊都出現，排序後重複不影響空隙
+    for (const b of src.blueprints.overlapping(a, z, [BP_SURFACE, BP_UNDER, BP_DEEP, BP_SKY, BP_MINOR])) {
+      if (b.kind === 'mineshaft') { small.push(...mineOpenings(src, b)); continue; }
+      if (b.layer === BP_UNDER) continue;
+      const s: Span1 = [b.x, b.x + b.w];
+      if (b.layer !== BP_DEEP) small.push(s);
+      if (BIG_POI.has(b.kind)) big.push(s);
+    }
+    for (const d of m.islands) if (d.x1 > a && d.x0 < z) small.push([d.x0, d.x1]);
+    if (m.kind !== 'sea') for (const r of m.regions) {
+      if (!hasShaft(r)) continue;
+      const sx = shaftX(ss, r);
+      if (Number.isFinite(sx) && sx + 3 > a && sx - 1 < z) small.push([sx - 1, sx + 3]);
+    }
+    x = m.x1;
+  }
+  const by = (p: Span1, q: Span1): number => p[0] - q[0] || p[1] - q[1];
+  return { small: small.sort(by), big: big.sort(by) };
+}
+// 礦坑 b 在地表的入口欄（藍圖在 profile 地表那一格寫了非實心 fg 的欄；每欄一個 [x, x + 1)）
+function mineOpenings(src: Gen2Source, b: Blueprint): Span1[] {
+  const xs = new Set<number>();
+  for (let k = 0; k < b.cells.length; k += 5) {
+    const x = b.cells[k], f = b.cells[k + 2];
+    if (f !== KEEP && !isSolidTile(f) && b.cells[k + 1] === src.profile.surfaceAt(x)) xs.add(x);
+  }
+  return [...xs].map((x): Span1 => [x, x + 1]);
+}
+// 依 a 排序的區間之間最大的空隙（下一個.a − 目前為止最大的 b）；給了 x0 / x1 就也算範圍兩端到第一個 / 最後一個的空隙。沒有區間 = 整段（或 Infinity）
+export function maxGap(sp: readonly Span1[], x0?: number, x1?: number): number {
+  return gapsOf(sp, x0, x1).reduce((g, q) => Math.max(g, q.w), sp.length ? 0 : x0 !== undefined && x1 !== undefined ? x1 - x0 : Infinity);
+}
+// 每個空隙（起點 at、寬 w），測試失敗時印位置用
+export function gapsOf(sp: readonly Span1[], x0?: number, x1?: number): { at: number; w: number }[] {
+  const out: { at: number; w: number }[] = [];
+  if (!sp.length) return out;
+  let end = x0 ?? sp[0][0];
+  for (const [a, b] of sp) { if (a > end) out.push({ at: end, w: a - end }); end = Math.max(end, b); }
+  if (x1 !== undefined && x1 > end) out.push({ at: end, w: x1 - end });
+  return out;
+}

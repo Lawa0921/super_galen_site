@@ -1,14 +1,20 @@
 // blueprint.test.ts — gen2 結構藍圖與槽位格：藍圖格在外框內、外框在槽內、確定性、分段蓋 = 整欄蓋、overlapping 範圍查詢、
-// 保證槽（P11）與排除區（出生點、主坑道）、structureId / slotOf 反查（陸地槽與海槽，P12）、主坑道蓋上結構後仍通。
+// 保證槽（P11）與排除區（出生點、主坑道）、structureId / slotOf 反查（陸地槽與海槽，P12）、主坑道蓋上結構後仍通；
+// 錨點（M2a Task 7）：wholeRegion 外框任何相交的查詢都找得到、groundAt 重入丟錯（Q4）。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
-import { BlueprintIndex, slotOf, structureId, BP_DEEP, BP_SURFACE, BP_UNDER, LAND_SLOT_W } from './blueprint';
+import { BlueprintIndex, slotOf, structureId, slotWidth, emptyObjects, placeX, landSlot, BP_DEEP, BP_SURFACE, BP_UNDER, BP_MINOR, LAND_SLOT_W, type Blueprint, type BpCtx } from './blueprint';
+import { registerAnchorBuild, type AnchorBuild } from './anchors';
+import { decodeStructureId } from './structId';
 import { HRng } from './hrng';
 import { shaftX, SHAFT_REACH } from './caves';
+import { shaftBand } from './bpcore';
+import { minorZone } from './structures/minor';
 import { SPAWN_X, VARIANT } from './layout';
 import { fillCol, bytes, worldOf, loadColumns, sampleRegions, bfsReachesDepth, SEEDS5 } from './testUtil';
 import { Column } from '../column';
 import { hash2, seedInt } from '../noise';
+import type { RegionInfo } from '../regionInfo';
 
 const src = new Gen2Source('bp');
 const idx = new BlueprintIndex('bp', src.layout, src.profile);
@@ -31,14 +37,17 @@ describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
   it('藍圖格都在外框內、外框在槽內；同 id 兩次算出相同藍圖', () => {
     expect(all.length).toBeGreaterThan(20);
     for (const b of all) {
-      for (let k = 0; k < b.cells.length; k += 5) {
-        expect(b.cells[k]).toBeGreaterThanOrEqual(b.x); expect(b.cells[k]).toBeLessThan(b.x + b.w);
-        expect(b.cells[k + 1]).toBeGreaterThanOrEqual(b.y); expect(b.cells[k + 1]).toBeLessThan(b.y + b.h);
-      }
+      // 逐格比對後只 expect 一次（Task 18 的小地城每座約 9 萬格，逐格 expect 會超過 30 s 逾時）
+      let out = 0;
+      for (let k = 0; k < b.cells.length; k += 5) if (b.cells[k] < b.x || b.cells[k] >= b.x + b.w || b.cells[k + 1] < b.y || b.cells[k + 1] >= b.y + b.h) out++;
+      expect(out, `${b.kind} ${b.id}`).toBe(0);
       const slot = slotOf(b.id, src.layout);
-      expect(b.x).toBeGreaterThanOrEqual(slot.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(slot.x1 - 8);
       expect(slot.layer).toBe(b.layer);
+      // wholeRegion 錨點（家鄉地城，M2a Task 8）：外框在地區內、豁免槽邊距（Q2）
+      if (b.wholeRegion) { expect(b.x).toBeGreaterThanOrEqual(slot.region.x0); expect(b.x + b.w).toBeLessThanOrEqual(slot.region.x1); continue; }
+      expect(b.x).toBeGreaterThanOrEqual(slot.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(slot.x1 - 8);
     }
+    expect(all.filter((b) => b.wholeRegion).map((b) => b.kind)).toEqual(['dungeon']);
     expect(new BlueprintIndex('bp', src.layout, src.profile).overlapping(-40_000, 40_000)).toEqual(all);
   });
 
@@ -78,8 +87,15 @@ describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
         expect(q.x0 <= SPAWN_X + 80 && q.x1 > SPAWN_X - 80, `spawn-${k} ${b.kind} ${b.x}`).toBe(false);
       }
     }
-    const s = seedInt('bp', 'g2-shaft');
-    for (const b of all.filter((q) => q.layer !== BP_DEEP)) {
+    // 含坑道的槽沒有非 DEEP 藍圖——只對機率 / 保證藍圖；錨點可以在含坑道的槽（M2a Task 7，外框照下面的觸及範圍檢查）；
+    // 家鄉地下層的機率礦坑也可以（M2a Task 10 控制者裁決：只在避開坑道帶的一側，外框同樣照下面的觸及範圍檢查，其他藍圖照舊）
+    // 錨點：家鄉與荒野大陸的（Task 18：大陸的村莊 / 隱士小屋可以在含坑道的槽，外框在避開坑道帶的一側）
+    const s = seedInt('bp', 'g2-shaft'), anchored = new Set<number>(), hm = src.layout.landmassAt(SPAWN_X)!;
+    const lands = new Set([hm, ...all.map((q) => src.layout.landmassAt(q.x)!).filter((m) => m.kind === 'continent')]);
+    for (const m of lands) for (const a of idx.anchorsOf(m)) anchored.add(structureId(m.side, m.i, a.region.index, a.slot, a.layer));
+    const homeMine = (q: { kind: string; x: number }): boolean => q.kind === 'mineshaft' && q.x >= hm.x0 && q.x < hm.x1;
+    // Q16 修訂（T21-12）：小點位可放進含坑道的槽，坑道安全由下方正向斷言與 SHAFT_REACH 距離斷言把關
+    for (const b of all.filter((q) => q.layer !== BP_DEEP && q.layer !== BP_MINOR && !anchored.has(q.id) && !homeMine(q))) {
       const r = slotOf(b.id, src.layout); const sx = shaftX(s, r.region);
       if (Number.isFinite(sx)) expect(sx >= r.x0 && sx < r.x1).toBe(false);
     }
@@ -110,23 +126,26 @@ describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
     expect(seen).toBeGreaterThan(20);
   });
 
-  it('非保證槽照機率：遺跡約 30% 的表層槽、小屋約 40% 的地下層槽（上限）', () => {
+  // M2a Task 2：地下層改成 170 格槽、小屋 0.35（各層槽數依 slotWidth 算）
+  it('非保證槽照機率：遺跡約 30% 的表層槽、小屋約 35% 的地下層槽（上限）', () => {
     const land = sampleRegions(src, { home: false, perSide: 6 });
-    let slots = 0;
-    for (const r of land) slots += Math.max(1, Math.floor((r.x1 - r.x0) / LAND_SLOT_W));
+    let slots = 0, under = 0;
+    for (const r of land) { slots += Math.max(1, Math.floor((r.x1 - r.x0) / LAND_SLOT_W)); under += Math.max(1, Math.floor((r.x1 - r.x0) / slotWidth(BP_UNDER))); }
     const lo = Math.min(...land.map((r) => r.x0)), hi = Math.max(...land.map((r) => r.x1));
     const bps = idx.overlapping(lo, hi).filter((b) => b.x >= lo && b.x < hi);
     const ruins = bps.filter((b) => b.kind === 'ruin').length, cabins = bps.filter((b) => b.kind === 'cabin').length;
-    // 12 片大陸各有 1 個保證槽；其餘槽最多 30% / 40%（建不成會更少）
+    // 12 片大陸各有 1 個保證槽；其餘槽最多 30% / 35%（建不成會更少）
     expect(ruins).toBeGreaterThan(12); expect(ruins).toBeLessThan(12 + slots * 0.45);
-    expect(cabins).toBeGreaterThan(12); expect(cabins).toBeLessThan(12 + slots * 0.55);
+    expect(cabins).toBeGreaterThan(12); expect(cabins).toBeLessThan(12 + under * 0.5);
   });
 
   it('structureId / slotOf：陸地槽與海槽都反查得回來（P12：海 region = 0、slot = SeaSlot.k、表層）', () => {
     const m = src.layout.landmass(1, 2), r = m.regions[1];
     const id = structureId(1, 2, 1, 1, BP_UNDER), q = slotOf(id, src.layout);
     expect(q.region).toBe(r); expect(q.layer).toBe(BP_UNDER);
-    expect(q.x0).toBe(r.x0 + LAND_SLOT_W); expect(q.x1).toBe(Math.floor((r.x1 - r.x0) / LAND_SLOT_W) > 2 ? r.x0 + 2 * LAND_SLOT_W : r.x1);
+    // 地下層的槽寬 = slotWidth(BP_UNDER)（M2a Task 2：170）
+    const uw = slotWidth(BP_UNDER);
+    expect(q.x0).toBe(r.x0 + uw); expect(q.x1).toBe(Math.floor((r.x1 - r.x0) / uw) > 2 ? r.x0 + 2 * uw : r.x1);
     // 最後一槽吃餘數
     const n = Math.floor((r.x1 - r.x0) / LAND_SLOT_W), last = slotOf(structureId(1, 2, 1, n - 1, BP_SURFACE), src.layout);
     expect(last.x1).toBe(r.x1); expect(last.x1 - last.x0).toBeGreaterThanOrEqual(LAND_SLOT_W); expect(last.x1 - last.x0).toBeLessThan(2 * LAND_SLOT_W);
@@ -151,10 +170,123 @@ describe('gen2 blueprints / slot grid', { timeout: 30_000 }, () => {
 
   it('主坑道在蓋上結構後仍走得到洞穴層', () => {
     const w = worldOf(src), s = seedInt('bp', 'g2-shaft');
-    for (const r of sampleRegions(src, { home: true, perSide: 3 }).filter((q) => q.variant !== VARIANT.BEACH)) {
+    // 沙灘與家鄉地城區沒有主坑道（M2a Task 7）
+    for (const r of sampleRegions(src, { home: true, perSide: 3 }).filter((q) => q.variant !== VARIANT.BEACH && q.variant !== VARIANT.DUNGEON)) {
       const sx = shaftX(s, r);
       loadColumns(w, sx - 20, sx + 20);
       expect(bfsReachesDepth(w, sx, src.surfaceAt(sx) - 1, (x) => src.layersAt(x).deep, sx - 20, sx + 20)).toBe(true);
     }
   });
+});
+
+// 本檔登錄 test_probe 的建構器（只在本檔的模組實例裡；anchors.test.ts 靠它沒登錄）：probe 決定這次蓋什麼
+let probe: AnchorBuild = () => { throw new Error('probe not set'); };
+registerAnchorBuild('test_probe', (c) => probe(c));
+// 外框 = 整個地區 [r.x0, r.x1)、y 600..609 的空藍圖
+const wholeBox = (c: BpCtx): Blueprint => ({ id: c.id, kind: 'cabin', layer: decodeStructureId(c.id).layer, x: c.region.x0, y: 600, w: c.region.x1 - c.region.x0, h: 10,
+  cells: new Int32Array(0), chests: [], ...emptyObjects(), wholeRegion: true });
+
+describe('gen2 anchors in the blueprint index', () => {
+  // test_probe 只能注入正式錨點沒用的槽（同一槽兩個錨點 → anchorTable 丟錯）。種子與地區由程式挑（Task 17 修正 1：之後新增錨點不必再手動換種子）：
+  // 依序試 whole、whole-0、whole-1…，取第一個家鄉裡有這種一般地區的——依寬度由大到小，「地下層 ≥ 4 槽而且有空的地下槽、有空的表層槽、
+  // 含主坑道的那個表層槽也沒有正式錨點」（Task 17 起 whole 的家鄉沒有這種地區：湖錨點佔走了最寬地區含坑道的那一槽）
+  const pickProbe = (seed: string) => {
+    const g = new Gen2Source(seed), home = g.layout.landmassAt(SPAWN_X)!, list = g.blueprints.anchorsOf(home), ss = seedInt(seed, 'g2-shaft');
+    const usedIn = (rr: RegionInfo, layer: number) => new Set(list.filter((a) => a.region === rr && a.layer === layer).map((a) => a.slot));
+    // 含主坑道的表層槽（最後一槽吃餘數）
+    const shaftSlotOf = (rr: RegionInfo): number => Math.min(Math.floor((shaftX(ss, rr) - rr.x0) / LAND_SLOT_W), Math.max(1, Math.floor((rr.x1 - rr.x0) / LAND_SLOT_W)) - 1);
+    const ok = (rr: RegionInfo): boolean => {
+      const nU = Math.floor((rr.x1 - rr.x0) / slotWidth(BP_UNDER)), nS = Math.max(1, Math.floor((rr.x1 - rr.x0) / LAND_SLOT_W));
+      return nU >= 4 && [...Array(nU).keys()].some((q) => !usedIn(rr, BP_UNDER).has(q)) && [...Array(nS).keys()].some((q) => !usedIn(rr, BP_SURFACE).has(q))
+        && Number.isFinite(shaftX(ss, rr)) && !usedIn(rr, BP_SURFACE).has(shaftSlotOf(rr));
+    };
+    const r = home.regions.filter((q) => q.variant !== VARIANT.BEACH && q.variant !== VARIANT.DUNGEON && q.variant !== VARIANT.SPAWN).sort((p, q) => (q.x1 - q.x0) - (p.x1 - p.x0)).find(ok);
+    return r ? { seed, g, home, r, used: (layer: number) => usedIn(r, layer) } : null;
+  };
+  const probeAt = ['whole', ...Array.from({ length: 30 }, (_, k) => `whole-${k}`)].reduce<ReturnType<typeof pickProbe>>((acc, sd) => acc ?? pickProbe(sd), null)!;
+  const SEED = probeAt.seed, g = probeAt.g, home = probeAt.home, r = probeAt.r, used = probeAt.used;
+  // r 裡第一個沒有正式錨點的地下槽 q；查詢只碰離 q ≥ 2 槽的地方
+  const n = Math.floor((r.x1 - r.x0) / slotWidth(BP_UNDER)), qU = [...Array(n).keys()].find((q) => !used(BP_UNDER).has(q))!;
+  const qS = [...Array(Math.max(1, Math.floor((r.x1 - r.x0) / LAND_SLOT_W))).keys()].find((q) => !used(BP_SURFACE).has(q))!;
+  // 離 qU ≥ 2 槽的那一端的一個槽 [far0, far0 + 170)
+  const far0 = qU < n / 2 ? r.x0 + (n - 1) * slotWidth(BP_UNDER) : r.x0;
+
+  const landSlotStart = (q: number): number => r.x0 + q * slotWidth(BP_UNDER);
+
+  it('wholeRegion 錨點：外框跨整個地區，查詢範圍沒碰到它所在的槽也找得到（恰一次）', () => {
+    expect(n).toBeGreaterThanOrEqual(4); expect(qU).toBeDefined();
+    probe = wholeBox;
+    const idx = new BlueprintIndex(SEED, g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_UNDER, slot: qU, wholeRegion: true }] : []) });
+    const id = structureId(0, 0, r.index, qU, BP_UNDER);
+    const hits = (a: number, z: number) => idx.overlapping(a, z).filter((b) => b.id === id).length;
+    expect(Math.abs(far0 - landSlotStart(qU))).toBeGreaterThanOrEqual(2 * slotWidth(BP_UNDER));
+    expect(hits(far0, far0 + 5)).toBe(1);                 // 只碰到離 qU 很遠的那一槽
+    expect(hits(far0 === r.x0 ? r.x0 - 400 : r.x1 - 1, far0 === r.x0 ? r.x0 + 1 : r.x1 + 400)).toBe(1); // 跨出地區
+    expect(hits(r.x0 - 1000, r.x1 + 1000)).toBe(1);       // 涵蓋 qU 的槽：不重複
+    expect(hits(r.x1, r.x1 + 400)).toBe(0); expect(hits(r.x0 - 400, r.x0)).toBe(0);
+    expect(idx.overlapping(far0, far0 + 5, [BP_SURFACE]).filter((b) => b.id === id)).toEqual([]);  // 只在自己的層
+  });
+
+  it('groundAt 重入丟錯（Q4 無循環改由程式保證）：SURFACE 錨點的建構器呼叫 groundAt → 丟錯，之後索引照常可用', () => {
+    probe = (c) => { c.groundAt(c.slotX0); return wholeBox(c); };
+    const idx = new BlueprintIndex(SEED, g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot: qS }] : []) });
+    const x = r.x0 + qS * LAND_SLOT_W + 1;
+    expect(() => idx.groundAt(x)).toThrow(/groundAt re-entered/);
+    expect(() => idx.overlapping(x, x + 1)).toThrow(/groundAt re-entered/);
+    // 旗標有復原：別的地方照常
+    expect(idx.groundAt(-3000)).toBe(g.blueprints.groundAt(-3000));
+  });
+
+  it('錨點建構器的執行期檢查：外框比 ANCHOR_MAX_W 寬、或超出可用範圍 ± SLOT_PAD → 丟錯', () => {
+    const ss = seedInt(SEED, 'g2-shaft'), sx = shaftX(ss, r), n = Math.floor((r.x1 - r.x0) / LAND_SLOT_W);
+    const slot = Math.min(Math.floor((sx - r.x0) / LAND_SLOT_W), n - 1), sl = landSlot(r, slot, BP_SURFACE);
+    expect(used(BP_SURFACE).has(slot)).toBe(false);
+    const mk = () => new BlueprintIndex(SEED, g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot }] : []) });
+    const at = (x: number, w: number) => (c: BpCtx): Blueprint => ({ ...wholeBox(c), x, w, wholeRegion: false });
+    probe = (c) => at(placeX(c, 61, true, () => true)!, 61)(c);
+    expect(() => mk().overlapping(sl.x0, sl.x1)).toThrow(/wider than 60/);
+    probe = (c) => at(c.slotX0 + 7, 30)(c);                                  // 離可用範圍左緣只有 7 格
+    expect(() => mk().overlapping(sl.x0, sl.x1)).toThrow(/outside its span/);
+    probe = (c) => at(sx - 10, 30)(c);                                       // 壓在坑道上
+    expect(() => mk().overlapping(sl.x0, sl.x1)).toThrow(/outside its span/);
+    probe = (c) => at(placeX(c, 60, true, () => true)!, 60)(c);             // 剛好合格
+    expect(mk().overlapping(sl.x0, sl.x1).some((b) => b.id === structureId(0, 0, r.index, slot, BP_SURFACE))).toBe(true);
+  });
+
+  it('錨點在含坑道的槽：建構器的 slotX0 / slotX1 = 避開坑道帶後較大的一側，用 placeX 放的外框離坑道觸及範圍 ≥ 1', () => {
+    const ss = seedInt(SEED, 'g2-shaft'), sx = shaftX(ss, r), q = Math.floor((sx - r.x0) / LAND_SLOT_W);
+    const sl = landSlot(r, Math.min(q, Math.floor((r.x1 - r.x0) / LAND_SLOT_W) - 1), BP_SURFACE), slot = (sl.x0 - r.x0) / LAND_SLOT_W;
+    expect(sx >= sl.x0 && sx < sl.x1).toBe(true);
+    expect(used(BP_SURFACE).has(slot)).toBe(false);
+    let seen: BpCtx | null = null;
+    probe = (c) => { seen = c; const x = placeX(c, 40, true, () => true)!; return { ...wholeBox(c), x, w: 40, wholeRegion: false }; };
+    const idx = new BlueprintIndex(SEED, g.layout, g.profile, { extraAnchors: (m) => (m === home ? [{ kind: 'test_probe', region: r, layer: BP_SURFACE, slot }] : []) });
+    const b = idx.overlapping(sl.x0, sl.x1, [BP_SURFACE]).find((p) => p.id === structureId(0, 0, r.index, slot, BP_SURFACE))!;
+    const c = seen as BpCtx | null;
+    expect(c).not.toBeNull();
+    const left = sx - SHAFT_REACH - 1 - sl.x0, right = sl.x1 - (sx + SHAFT_REACH + 2);
+    expect([c!.slotX0, c!.slotX1]).toEqual(left >= right ? [sl.x0, sx - SHAFT_REACH - 1] : [sx + SHAFT_REACH + 2, sl.x1]);
+    expect(b.x + b.w <= sx - SHAFT_REACH - 1 || b.x >= sx + SHAFT_REACH + 2).toBe(true);
+    expect(b.x).toBeGreaterThanOrEqual(sl.x0 + 8); expect(b.x + b.w).toBeLessThanOrEqual(sl.x1 - 8);
+  });
+
+  // Q16 修訂（T21-12，2026-10-26）：小點位可以放進含主坑道的槽（規格 §4.4「任意 340 格內有東西」對任意種子成立）——
+  // 正向釘住：那種槽的小點位，主坑道入口 [sx − 1, sx + 3) 不在槽的偏好區（minorZone）裡、外框完全在坑道帶（shaftBand）之外
+  it('含主坑道的槽裡的小點位（T21-12）：坑道入口不在偏好區、外框在坑道帶外（8 個種子 × ±30,000）', () => {
+    let n = 0;
+    for (const seed of ['bp', ...SEEDS5, 'bp-shaft-a', 'bp-shaft-b']) {
+      const g = new Gen2Source(seed), ss = seedInt(seed, 'g2-shaft');
+      for (const b of g.blueprints.overlapping(-30_000, 30_000, [BP_MINOR])) {
+        if (b.kind !== 'minor') continue;
+        const sl = slotOf(b.id, g.layout), sx = shaftX(ss, sl.region);
+        if (!Number.isFinite(sx) || sx < sl.x0 || sx >= sl.x1) continue;
+        n++;
+        const z = minorZone(sl.x0, sl.x1, sl.region.kind === 'home' ? SPAWN_X : undefined), band = shaftBand(sx);
+        expect(sx - 1 < z.z1 && z.z0 < sx + 3, `${seed} minor@${b.x} entrance in zone [${z.z0}, ${z.z1})`).toBe(false);
+        expect(b.x + b.w <= band.l || b.x >= band.r, `${seed} minor@${b.x} in band [${band.l}, ${band.r})`).toBe(true);
+      }
+    }
+    // 不是空測：含坑道的槽的小點位夠多
+    expect(n).toBeGreaterThan(50);
+  }, 180_000);
 });

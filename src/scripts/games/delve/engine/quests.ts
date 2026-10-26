@@ -35,7 +35,7 @@ export interface GiverInfo { key: string; name: string; race: FolkRace; x: numbe
 /** 產生委託要從遊戲拿的東西 */
 export interface QuestCtx {
   day: number;
-  /** 離 (x,y) 最近、還沒發現的地點（cats 篩選；skip = 已被其他委託指定的） */
+  /** 離 (x,y) 最近、還沒發現的地點（Discovery.listKnown 裡的：舊世界 = 中央 regions、gen2 = 家鄉全知 + 走過的外圍；cats 篩選；skip = 已被其他委託指定的） */
   nearestUnfound(x: number, y: number, cats: readonly string[], skip: ReadonlySet<number>): { id: number; name: string; x: number; y: number } | null;
 }
 

@@ -8,26 +8,33 @@
 //   水面高過最寬列，水面以下比水面寬的兩肩填成殼（見 ellipse）。
 // · 熔岩池：橢圓 rx 8–20、ry 4–8，中心 y ∈ [molten + 10, LAVA_Y − 14]（取各欄最深的 molten），下半（中心列以下）滿熔岩，外圍 2 格玄武岩殼。
 // 殼 = 不在橢圓內、但 2 格內（含斜角）有橢圓內格的格；橢圓內的空腔整個被殼封住。
-// 放不下（槽內 3 個候選都不合條件）就回 null。後蓋的藍圖不會切開液體：同槽不同層的外框相交時由 BlueprintIndex 讓液體藍圖讓位。
+// 放不下（槽內 3 個候選都不合條件）就回 null。後蓋的藍圖不會切開液體：同槽不同層的外框相交時由 BlueprintIndex 讓液體藍圖讓位
+// （家鄉的地表湖錨點例外：它不讓位，碰到它的機率藍圖讓位，Task 17）。
+// · 地表湖 force（家鄉的湖錨點，Task 17）：湖寬夾到可用範圍放得下（最窄 20）；3 個候選都不合條件時掃整個可用範圍找第一個合條件的 x，
+//   都沒有就取兩岸差最小的 x（水位照樣 = 兩岸較低者，水不會溢出；只是一岸比較高）——一定回藍圖。
 // 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
 import { T, W } from '../../tiles';
 import { BIOME } from '../../world';
 import { LIQ, LIQ_MAX } from '../../liquidKind';
 import { HRng } from '../hrng';
 import { LAVA_Y, type Profile2 } from '../profile';
-import { BpGrid, placeX, BP_SURFACE, BP_UNDER, BP_DEEP, type Blueprint, type BpCtx, type BpKind } from '../bpcore';
+import { BpGrid, placeX, emptyObjects, BP_SURFACE, BP_UNDER, BP_DEEP, SLOT_PAD, type Blueprint, type BpCtx, type BpKind, type BpLandmark } from '../bpcore';
 
 // 湖壁 / 殼的厚度
 const WALL = 2, SHELL = 2;
 // 兩岸差、外框內地表高出水位的上限
 const MAX_BANK = 8, MAX_HUMP = 8;
 
+// 地表湖的湖寬下限（HRng.int(20, 61)）
+const LAKE_W_MIN = 20;
+
 const soilOf = (biome: number): number => (biome === BIOME.DESERT ? T.SAND : biome === BIOME.JUNGLE ? T.MUD : T.DIRT);
 
-export function buildLake(c: BpCtx): Blueprint | null {
+export function buildLake(c: BpCtx, o: { force?: boolean } = {}): Blueprint | null {
   // ctx.ver 0 的規則
-  const rng = new HRng(c.s, c.id), p = c.profile;
-  const w = rng.int(20, 61), d = rng.int(6, 13), bw = w + 2 * WALL;
+  const rng = new HRng(c.s, c.id), p = c.profile, force = o.force === true;
+  const w0 = rng.int(20, 61), d = rng.int(6, 13);
+  const w = force ? Math.max(LAKE_W_MIN, Math.min(w0, c.slotX1 - c.slotX0 - 2 * SLOT_PAD - 2 * WALL)) : w0, bw = w + 2 * WALL;
   // 外框 x = bx：湖欄 [bx + WALL, bx + WALL + w)、兩岸 bx + WALL − 1 / bx + WALL + w
   const levelAt = (bx: number): number | null => {
     const sl = p.surfaceAt(bx + WALL - 1), sr = p.surfaceAt(bx + WALL + w);
@@ -36,16 +43,19 @@ export function buildLake(c: BpCtx): Blueprint | null {
     for (let x = bx; x < bx + bw; x++) if (p.surfaceAt(x) < level - MAX_HUMP) return null;
     return level;
   };
-  const bx = placeX(c, bw, false, (x) => levelAt(x) !== null);
+  let bx = placeX(c, bw, false, (x) => levelAt(x) !== null);
+  if (bx === null && force) bx = forceX(c, bw, levelAt);
   if (bx === null) return null;
-  const level = levelAt(bx)!, x0 = bx + WALL, x1 = x0 + w;
+  const level = levelAt(bx) ?? Math.max(p.surfaceAt(bx + WALL - 1), p.surfaceAt(bx + WALL + w)), x0 = bx + WALL, x1 = x0 + w;
   // 盆形：u = 2(x − x0) + 1 − w ∈ [−(w − 1), w − 1]，深 = d − floor((d − 1) u² / (w − 1)²)：兩邊 1、中央 d
   const depth = (x: number): number => {
     if (x < x0 || x >= x1) return 0;
     const u = 2 * (x - x0) + 1 - w;
     return d - Math.floor(((d - 1) * u * u) / ((w - 1) * (w - 1)));
   };
-  let top = level, bottom = level + d + WALL;
+  // 地標（M2a Task 14）：旅人石堆放在地表 = 水位那一岸（兩岸同高取左岸）的岸邊欄、水位上一格（外框往上包到水位上兩格）
+  const bank = p.surfaceAt(x0 - 1) === level ? x0 - 1 : x1;
+  let top = level - 2, bottom = level + d + WALL;
   for (let x = bx; x < bx + bw; x++) {
     const s = p.surfaceAt(x);
     if (x >= x0 && x < x1) top = Math.min(top, s);
@@ -63,14 +73,31 @@ export function buildLake(c: BpCtx): Blueprint | null {
       if (y < level + dep) { g.fg(x, y, T.AIR); g.liq(x, y, (LIQ_MAX << 8) | LIQ.WATER); } else { g.fg(x, y, soil); g.liq(x, y, 0); }
     }
   }
-  return { id: c.id, kind: 'lake', layer: BP_SURFACE, x: bx, y: top, w: bw, h: bottom - top, cells: g.cells(), chests: [] };
+  // 岸邊欄在水位那一列起是土（上面的迴圈），石堆站在上面
+  g.fg(bank, level - 1, T.CAIRN); g.liq(bank, level - 1, 0);
+  return { id: c.id, kind: 'lake', layer: BP_SURFACE, x: bx, y: top, w: bw, h: bottom - top, cells: g.cells(), chests: [], ...emptyObjects(),
+    landmarks: [{ x: bank, y: level - 1, tile: T.CAIRN, site: 'lake' }] };
 }
 
-export function buildCaveLake(c: BpCtx): Blueprint | null {
+// 地表湖 force 的備案：可用範圍 [slotX0 + SLOT_PAD, slotX1 − SLOT_PAD − bw] 裡第一個 levelAt 成立的 x；都不成立 → 兩岸差最小的 x（平手取左邊）
+function forceX(c: BpCtx, bw: number, levelAt: (bx: number) => number | null): number | null {
+  const a = c.slotX0 + SLOT_PAD, z = c.slotX1 - SLOT_PAD - bw, p = c.profile;
+  if (z < a) return null;
+  let best = a, bd = Infinity;
+  for (let x = a; x <= z; x++) {
+    if (levelAt(x) !== null) return x;
+    const dd = Math.abs(p.surfaceAt(x + WALL - 1) - p.surfaceAt(x + bw - WALL));
+    if (dd < bd) { bd = dd; best = x; }
+  }
+  return best;
+}
+
+// force（家鄉的 cave_lake 錨點，Task 14）：3 個候選都不合條件時用第一個放得下的 x、y 範圍不成立取下限（一定回藍圖）
+export function buildCaveLake(c: BpCtx, o: { force?: boolean } = {}): Blueprint | null {
   // ctx.ver 0 的規則
   const rng = new HRng(c.s, c.id);
   const rx = rng.int(12, 31), ry = rng.int(6, 13), fy = rng.next();
-  return ellipse(c, { kind: 'cave_lake', layer: BP_UNDER, rx, ry, fy, type: LIQ.WATER, shell: T.STONE,
+  return ellipse(c, { kind: 'cave_lake', layer: BP_UNDER, rx, ry, fy, type: LIQ.WATER, shell: T.STONE, force: o.force === true, islet: T.RELIC_PACK,
     span: (p, x) => { const l = p.layersAt(x); return [l.rock + 20, l.deep - 20]; },
     // 下 60% 列（無條件捨去）
     rows: (h) => Math.floor((h * 3) / 5) });
@@ -88,6 +115,9 @@ export function buildLavaPool(c: BpCtx): Blueprint | null {
 
 interface EllipseSpec {
   kind: BpKind; layer: 0 | 1 | 2; rx: number; ry: number; fy: number; type: number; shell: number;
+  force?: boolean;
+  // 地標（地下湖：遺落的行囊，Task 14）：液面那一列中央 3 格換成殼（舊生成器 landmarks.ts 的「水面上鑿一塊石台」），地標放在中央那格上面
+  islet?: number;
   // 某欄中心 y 的 [下限, 上限]；整個橢圓取各欄最緊的
   span: (p: Profile2, x: number) => [number, number];
   // 高 h 列的橢圓裡，底下幾列是液體
@@ -102,10 +132,10 @@ function ellipse(c: BpCtx, o: EllipseSpec): Blueprint | null {
     for (let x = bx + SHELL; x < bx + bw - SHELL; x++) { const [a, b] = o.span(p, x); lo = Math.max(lo, a); hi = Math.min(hi, b); }
     return { lo, hi };
   };
-  const bx = placeX(c, bw, false, (x) => { const s = span(x); return s.hi >= s.lo; });
+  const bx = placeX(c, bw, o.force === true, (x) => { const s = span(x); return s.hi >= s.lo; });
   if (bx === null) return null;
   const { lo, hi } = span(bx);
-  const cx = bx + SHELL + rx, cy = lo + Math.floor(o.fy * (hi - lo + 1)), by = cy - ry - SHELL;
+  const cx = bx + SHELL + rx, cy = hi >= lo ? lo + Math.floor(o.fy * (hi - lo + 1)) : lo, by = cy - ry - SHELL;
   const rx2 = rx * rx, ry2 = ry * ry, rr = rx2 * ry2;
   const inEllipse = (x: number, y: number): boolean => { const dx = x - cx, dy = y - cy; return dx * dx * ry2 + dy * dy * rx2 <= rr; };
   const liqTop = cy + ry + 1 - o.rows(2 * ry + 1), full = (LIQ_MAX << 8) | o.type;
@@ -121,5 +151,11 @@ function ellipse(c: BpCtx, o: EllipseSpec): Blueprint | null {
     for (let dy = -SHELL; dy <= SHELL && !shell; dy++) for (let dx = -SHELL; dx <= SHELL; dx++) if (inside(x + dx, y + dy)) { shell = true; break; }
     if (shell) { g.fg(x, y, o.shell); g.liq(x, y, 0); }
   }
-  return { id: c.id, kind: o.kind, layer: o.layer, x: bx, y: by, w: bw, h: bh, cells: g.cells(), chests: [] };
+  const landmarks: BpLandmark[] = [];
+  if (o.islet !== undefined) {
+    for (let x = cx - 1; x <= cx + 1; x++) { g.fg(x, liqTop, o.shell); g.liq(x, liqTop, 0); }
+    g.fg(cx, liqTop - 1, o.islet);
+    landmarks.push({ x: cx, y: liqTop - 1, tile: o.islet, site: o.kind });
+  }
+  return { id: c.id, kind: o.kind, layer: o.layer, x: bx, y: by, w: bw, h: bh, cells: g.cells(), chests: [], ...emptyObjects(), landmarks };
 }

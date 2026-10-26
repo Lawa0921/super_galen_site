@@ -1,0 +1,107 @@
+// hall.ts — gen2 矮人地廳（M2a Task 9；spec §4.4「至少 1 座矮人廳」）：家鄉的 hall 錨點建構器（DEEP 層）。
+// 畫圖是與舊生成器共用的 draw/hall.ts（drawHall），畫在 BpCanvas 上再輸出藍圖：
+//   · 內部寬 hw ∈ [60, 78)，大廳置中於可用範圍（c.slotX0 / slotX1 ≥ ANCHOR_MAX_W.hall + 2 × SLOT_PAD = 170，置中一定放得下）。
+//   · floorY ∈ [max(deep + 24) + 13, min(molten − 26))，極值取「隧道最長時的外框」各欄（實際外框是它的子集）。
+//   · 兩側軌道隧道各 TUNNEL_MIN–TUNNEL_MAX（20–36）格，固定長度（外框 ≤ 77 + 4 + 2 × 36 = 153 ≤ ANCHOR_MAX_W.hall 154）。
+//     spec「通往附近洞穴」：舊生成器逐欄掃已生成的格找洞穴；gen2 改用噪聲探針（caves.CaveProbe，與 fill.ts 同一份判定、只依 seed 與側寫，局部可算）：
+//     每側取最短的長度 n，使隧道口外那一欄（外框外第一欄）隧道的 4 列裡有 ≥ 3 格天然洞穴；floorY 從雜湊起點往下（繞回）試完整個範圍，
+//     先找兩側都接得到洞穴的列，沒有就取第一個接得到一側的列。
+//     隧道口外那一欄在外框外，solid 管不到它，fill 照噪聲挖開，所以隧道真的通到那個洞穴（測試從大廳走到外框外）。
+//     整個範圍都接不到洞穴（後備，實測 300 個種子沒有發生）：floorY 用起點、兩側 36 格，另外在大廳中央往上鑿一條 2 格寬的豎井到地表、
+//     掛繩梯（T.ROPE，從地表垂到地板上一格），外框往上延伸到地表上一格（豎井在外框內、整個外框仍是 solid）——地廳一定走得到。
+//   · BpCanvas 的回退讀取假設天然格是實心、沒有洞穴：drawHall 只在「讀到不是實心」時才補隧道的地板（floorY）與頂（floorY − 5）
+//     → 外框整片併進 solid（箱內不挖噪聲洞穴，地板 / 頂在成品裡是天然岩；礦照常換）。
+//   · 礦車地標（T.ORE_CART、site 'dwarf_hall'）；site = { kind: 'hall', key: 's' + id, rot, info }（rot = c.rank，外圍 0）。
+//   · 外圍（荒野大陸，M2a Task 18；所屬地區的 kind 不是 'home'——地廳只放在家鄉（kind home）與大陸（wild / culture）的地區）：一律從地表走得到（指揮官裁決，比照 Task 9–14）——洞穴網不保證連到地表，
+//     所以照樣接洞之外，一定挖上面那條 2 格寬、掛繩梯的豎井到地表（同後備豎井）；藍圖帶部件 = 地廳本體（外殼 + 隧道）+ 豎井在本體以上那兩欄，
+//     跨層判定與 solid 都只算部件（solid 外框整片、solidParts 只取部件內），部件外不寫任何格。豎井上方的表層槽不放別的錨點（anchors.continentAnchors），
+//     機率 / 保證藍圖照跨層規則讓位。家鄉的地廳不變（只保證通往附近洞穴，Task 9 裁決）。
+// 本資料夾的非測試檔不得出現連續兩個星號、亂數與超越函數（測試會 grep），註解一律用 //。
+import { T } from '../../tiles';
+import { HRng } from '../hrng';
+import { CaveProbe } from '../caves';
+import { BpCanvas } from '../draw/bpCanvas';
+import { drawHall, HALL_IH } from '../draw/hall';
+import { BP_DEEP, boxHits, type Blueprint, type BpCtx } from '../bpcore';
+
+export const TUNNEL_MIN = 20, TUNNEL_MAX = 36;
+// 外殼在內部兩側各 2 欄、上 3 列、下 2 列（draw/hall.ts）；隧道從內部外 3 欄起
+const SHELL = 2, SHELL_UP = 3, SHELL_DOWN = 2, MOUTH = 3;
+// 內部寬 [HALL_HW_MIN, HALL_HW_MAX)（rng.int）；外框最窄 = 內部 + 兩側外殼 + 兩側隧道最短（anchors.continentAnchors 估大陸兩端有沒有大東西用）
+export const HALL_HW_MIN = 60, HALL_HW_MAX = 78;
+// 地板離 deep 至少 24 + 室內高 + 2、離 molten 至少 26（舊生成器的規則）
+const DEEP_GAP = 24, MOLTEN_GAP = 26;
+// 後備豎井的寬
+const SHAFT_W = 2;
+// 外框最窄的寬：bx = x0 − 3 − l + 1、右緣 x1 + 3 + r → 寬 = hw + 4 + l + r ≥ HALL_HW_MIN + 2 × SHELL + 2 × TUNNEL_MIN
+export const HALL_MIN_W = HALL_HW_MIN + 2 * SHELL + 2 * TUNNEL_MIN;
+
+// 天然洞穴的判定（預設 CaveProbe；測試注入「全部不通」來走後備豎井）
+export interface HallOptions { caveOpen?: (x: number, y: number) => boolean }
+
+export function buildHallBp(c: BpCtx, o: HallOptions = {}): Blueprint {
+  // ctx.ver 0 的規則
+  const p = c.profile, rng = new HRng(c.s, c.id);
+  const hw = rng.int(HALL_HW_MIN, HALL_HW_MAX), fu = rng.next();
+  const x0 = c.slotX0 + ((c.slotX1 - c.slotX0) >> 1) - (hw >> 1), x1 = x0 + hw - 1;
+  // 隧道最長時的外框 [x0 − 2 − 36, x1 + 2 + 36] 各欄的極值
+  let top = 0, bot = p.height;
+  for (let x = x0 - SHELL - TUNNEL_MAX; x <= x1 + SHELL + TUNNEL_MAX; x++) {
+    const L = p.layersAt(x);
+    top = Math.max(top, L.deep + DEEP_GAP + HALL_IH + 2); bot = Math.min(bot, L.molten - MOLTEN_GAP);
+  }
+  if (bot <= top) throw new RangeError(`gen2: hall ${c.id} has no room between deep and molten (${top}, ${bot})`);
+
+  // 隧道口外那一欄（隧道 n 格時）有 ≥ 3 格天然洞穴的最短 n；沒有 = 0
+  const probe = new CaveProbe(c.seed), caveOpen = o.caveOpen ?? ((x: number, y: number): boolean => probe.open(x, y, p.info(x)));
+  const reach = (floorY: number, dir: -1 | 1): number => {
+    const sx = dir < 0 ? x0 - MOUTH : x1 + MOUTH;
+    for (let n = TUNNEL_MIN; n <= TUNNEL_MAX; n++) {
+      const x = sx + dir * n;
+      let open = 0;
+      for (let y = floorY - 4; y < floorY; y++) if (caveOpen(x, y)) open++;
+      if (open >= 3) return n;
+    }
+    return 0;
+  };
+  const span = bot - top, start = Math.floor(fu * span);
+  let pick: { floorY: number; l: number; r: number } | null = null;
+  for (let t = 0; t < span; t++) {
+    const floorY = top + ((start + t) % span), l = reach(floorY, -1), r = reach(floorY, 1);
+    if (l && r) { pick = { floorY, l, r }; break; }
+    if ((l || r) && !pick) pick = { floorY, l: l || TUNNEL_MAX, r: r || TUNNEL_MAX };
+  }
+  const { floorY, l, r } = pick ?? { floorY: top + start, l: TUNNEL_MAX, r: TUNNEL_MAX };
+
+  // 後備豎井（外圍地廳一律挖）：2 欄寬 [sx, sx + 2)、從兩欄地表較高者的上一格往下挖到大廳 / 隧道的空氣。sx = 大廳中央；
+  // 家鄉（Task 21，Task 9 審查 Minor）：豎井要避開 c.surfaceBan（家鄉表層 / 地下層錨點的部件）——原本的豎井在大廳中央、外框整片從地表起，
+  // 上方有村莊錨點就是錨點跨層相交 → 開機 RangeError。改成在大廳內部與兩側隧道的欄裡、離中央由近到遠找第一個豎井不碰 surfaceBan 的欄，
+  // 而且有豎井的地廳一律帶部件（本體 + 豎井那兩欄），跨層判定只看部件；整段都碰到 → RangeError（地廳一定走得到，不默默少一條路）
+  const outer = c.region.kind !== 'home', shaft = !pick || outer, hy = floorY - HALL_IH - SHELL_UP, ban = outer ? [] : c.surfaceBan ?? [];
+  const bx = x0 - MOUTH - l + 1, bw = x1 + MOUTH + r - bx;
+  const topOf = (x: number): number => Math.min(p.surfaceAt(x), p.surfaceAt(x + 1)) - 1;
+  let sx = (x0 + x1) >> 1;
+  if (shaft && ban.length) {
+    const xs: number[] = [];
+    for (let x = bx; x + SHAFT_W <= bx + bw; x++) xs.push(x);
+    const c0 = sx, ok = xs.sort((a, b) => Math.abs(a - c0) - Math.abs(b - c0) || a - b).find((x) => !boxHits({ x, y: topOf(x), w: SHAFT_W, h: hy - topOf(x) }, ban));
+    if (ok === undefined) throw new RangeError(`gen2: hall ${c.id} fallback shaft has no column clear of the surface anchors in [${bx}, ${bx + bw})`);
+    sx = ok;
+  }
+  const top0 = shaft ? topOf(sx) : Infinity, by = Math.min(hy, top0), bh = floorY + SHELL_DOWN + 1 - by;
+  const cv = new BpCanvas({ x: bx, y: by, w: bw, h: bh }, p);
+  const info = drawHall(cv, { x0, hw, floorY }, rng, (dir) => (dir < 0 ? l : r));
+  if (shaft) {
+    // 每欄挖到大廳 / 隧道畫的空氣為止（大廳中央就是 info.y0；拱頂兩側與隧道更低）
+    for (let x = sx; x < sx + SHAFT_W; x++) for (let y = top0; y < floorY && !(y >= hy && cv.fg(x, y) === T.AIR); y++) { cv.setFg(x, y, T.AIR); cv.clearLiquid(x, y); }
+    for (let y = top0 + 1; y <= floorY - 2; y++) cv.setFg(sx, y, T.ROPE);
+  }
+  cv.fillNatural(bx, by); cv.fillNatural(bx + bw - 1, by + bh - 1);
+  const bp = cv.toBlueprint(c.id, 'hall', BP_DEEP, {
+    landmarks: [{ x: info.cart.x, y: info.cart.y, tile: T.ORE_CART, site: 'dwarf_hall' }],
+    site: { kind: 'hall', key: 's' + c.id, rot: c.rank ?? 0, info },
+  });
+  // 有豎井（外圍一律、家鄉的後備）：部件 = 本體（部件 0，discovery 的地區用它）+ 豎井在本體以上的兩欄
+  if (shaft) bp.parts = [{ x: bx, y: hy, w: bw, h: by + bh - hy }, { x: sx, y: top0, w: SHAFT_W, h: hy - top0 }];
+  return bp;
+}

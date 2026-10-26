@@ -1,10 +1,11 @@
-// sea.test.ts — gen2 海上點位（spec §8，M1）：每道海的每個 300 格槽恰有一個點（島 / 沉船 / 漂流箱）、
+// sea.test.ts — gen2 海上點位（spec §8，M1；M2a Task 20 加珊瑚礁 / 海底遺跡 / 有建物的島，形狀在 islands.test）：每道海的每個 300 格槽恰有一個點、
 // 沉船在水面下半埋於海床（有箱子、船內保留水）、漂流箱浮在水面（三格木板 + 箱子）、海上的靜態液體不變量、
 // 島的表層（沙灘沙 / 台地草）與樹（P12：本 Task 是島地形的唯一擁有者）、slotOf 反查海槽。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
 import { BlueprintIndex, slotOf, KEEP, BP_SURFACE, type Blueprint } from './blueprint';
 import { SEA_Y } from './profile';
+import type { IslandInfo } from './layout';
 import { fillCol, worldOf, loadColumns, liquidInvariant, SEEDS5 } from './testUtil';
 import { li } from '../column';
 import { T, W, isSolidTile } from '../tiles';
@@ -28,6 +29,12 @@ function cellAt(b: Blueprint, x: number, y: number): { f: number; w: number; q: 
   return o;
 }
 const count = (b: Blueprint, t: number): number => { let n = 0; for (let k = 0; k < b.cells.length; k += 5) if (b.cells[k + 2] === t) n++; return n; };
+// 島 d 上不在島藍圖（Task 20：燈塔 / 隱士 / 沉船島）外框內的欄
+function islandCols(src: Gen2Source, d: IslandInfo): number[] {
+  const bps = src.blueprints.overlapping(d.x0, d.x1, [BP_SURFACE]).filter((b) => b.kind === 'island'), out: number[] = [];
+  for (let x = d.x0; x < d.x1; x++) if (!bps.some((b) => x >= b.x && x < b.x + b.w)) out.push(x);
+  return out;
+}
 
 describe('gen2 sea points: islands / shipwrecks / floating crates', () => {
   it('每道海的每個槽恰有一個點', () => {
@@ -38,7 +45,8 @@ describe('gen2 sea points: islands / shipwrecks / floating crates', () => {
         expect(sea.kind).toBe('sea');
         for (const s of sea.slots) {
           const bps = idx.overlapping(s.x0, s.x1).filter((b) => b.x >= s.x0 && b.x < s.x1);
-          if (s.poi === 'island') { expect(bps).toEqual([]); expect(sea.islands.some((d) => d.slot === s.k)).toBe(true); }
+          // 島槽：plain 沒有藍圖、有建物的島一份 kind 'island'（Task 20）
+          if (s.poi === 'island') { const d = sea.islands.find((q) => q.slot === s.k); expect(d).toBeDefined(); expect(bps.map((b) => b.kind)).toEqual(d!.type === 'plain' ? [] : ['island']); }
           else { expect(bps, `${seed} ${side}:${i} slot ${s.k}`).toHaveLength(1); expect(bps[0].kind).toBe(s.poi); expect(bps[0].layer).toBe(BP_SURFACE); }
         }
       }
@@ -53,7 +61,8 @@ describe('gen2 sea points: islands / shipwrecks / floating crates', () => {
     expect(c.y).toBe(top - 2); expect(col.fg[li(c.x, top - 2)]).toBe(T.CHEST);
     expect([-1, 0, 1].map((d) => col.fg[li(c.x + d, top - 1)])).toEqual([T.PLANKS, T.PLANKS, T.PLANKS]);
     // 漂流箱的格沒有碰到水面那一列（水不被擠掉）
-    expect(cr.y + cr.h).toBe(top); expect(cr.chests).toEqual([{ x: c.x, y: top - 2, kind: 'cabin' }]);
+    // 漂流箱的少量物資表（Task 20 起 'crate'）
+    expect(cr.y + cr.h).toBe(top); expect(cr.chests).toEqual([{ x: c.x, y: top - 2, kind: 'crate' }]);
   });
 
   it('沉船的形狀：寬 18–26、船底在海床下 2 格、木板船殼 + 木樑桅杆 + 深色木板牆、置中於槽 ± 槽寬 / 10、箱子在船內水中（ruin）', () => {
@@ -85,6 +94,22 @@ describe('gen2 sea points: islands / shipwrecks / floating crates', () => {
     expect(n).toBeGreaterThan(10);
   });
 
+  // M2a Task 19：海點偏移 ± min(20, floor(槽寬 / 10))（島在 layout.test）
+  it('沉船與漂流箱的中心離槽中心 ≤ 20', () => {
+    let n = 0;
+    for (const seed of SEEDS5) {
+      const src = new Gen2Source(seed);
+      for (const side of [1, -1] as const) for (const i of [1, 3, 5, 7]) for (const s of src.layout.landmass(side, i).slots) {
+        if (s.poi === 'island') continue;
+        const b = src.blueprints.overlapping(s.x0, s.x1).find((q) => q.kind === s.poi && q.x >= s.x0 && q.x < s.x1), msg = `${seed} ${side}:${i} slot ${s.k} ${s.poi}`;
+        expect(b, msg).toBeDefined();
+        n++;
+        expect(Math.abs(b!.x + (b!.w >> 1) - (s.x0 + ((s.x1 - s.x0) >> 1))), msg).toBeLessThanOrEqual(20);
+      }
+    }
+    expect(n).toBeGreaterThan(30);
+  }, 60_000);
+
   it('海上的靜態液體不變量（含沉船與漂流箱的欄）', () => {
     const src = new Gen2Source('sea'), w = worldOf(src), sea = src.layout.landmass(1, 1);
     loadColumns(w, sea.x0, sea.x1); expect(liquidInvariant(w, sea.x0, sea.x1)).toEqual([]);
@@ -92,7 +117,8 @@ describe('gen2 sea points: islands / shipwrecks / floating crates', () => {
 
   it('沉船：載入後箱子與桅杆泡在滿格水裡，整片喚醒跑 300 刻水不動', () => {
     const src = new Gen2Source('wreck'), w = worldOf(src), sim = new LiquidSim(w);
-    const wrecks = new BlueprintIndex('wreck', src.layout, src.profile).overlapping(-20_000, 20_000).filter((b) => b.kind === 'shipwreck').slice(0, 4);
+    // Task 20 起沉船只佔非島槽的 30%（原本 50%）：範圍放寬到 ±30,000 才湊得到 4 艘
+    const wrecks = new BlueprintIndex('wreck', src.layout, src.profile).overlapping(-30_000, 30_000).filter((b) => b.kind === 'shipwreck').slice(0, 4);
     expect(wrecks.length).toBe(4);
     for (const b of wrecks) {
       loadColumns(w, b.x - 4, b.x + b.w + 4);
@@ -112,7 +138,8 @@ describe('gen2 sea points: islands / shipwrecks / floating crates', () => {
     let treed = 0, n = 0;
     for (const i of [1, 3, 5]) for (const d of src.layout.landmass(1, i).islands) {
       n++;
-      const x = (d.x0 + d.x1) >> 1, col = fillCol(src, x >> 5);
+      // 表層看島上建物（Task 20 的島藍圖）外框以外、離中央最近的一欄
+      const x = islandCols(src, d).sort((p, q) => Math.abs(p - ((d.x0 + d.x1) >> 1)) - Math.abs(q - ((d.x0 + d.x1) >> 1)))[0], col = fillCol(src, x >> 5);
       expect(src.waterTopAt(x)).toBeNull(); expect(src.surfaceAt(x)).toBeLessThan(SEA_Y);
       expect([T.GRASS, T.SAND]).toContain(col.fg[li(x, src.surfaceAt(x))]); expect(src.regionAt(x).kind).toBe('island');
       const w = worldOf(src); loadColumns(w, d.x0, d.x1); if (rangeHas(w, d.x0, d.x1, T.WOOD)) treed++;
@@ -125,7 +152,8 @@ describe('gen2 sea points: islands / shipwrecks / floating crates', () => {
       const src = new Gen2Source(seed), w = worldOf(src);
       for (const d of src.layout.landmass(-1, 1).islands.concat(src.layout.landmass(1, 3).islands)) {
         loadColumns(w, d.x0 - 2, d.x1 + 2);
-        for (let x = d.x0; x < d.x1; x++) {
+        // 島上建物（Task 20）的外框以外照舊
+        for (const x of islandCols(src, d)) {
           const s = src.surfaceAt(x), e = Math.min(x - d.x0, d.x1 - 1 - x);
           if (e < 4) expect([0, 1, 2, 3].map((k) => w.getFg(x, s + k)), `${seed} ${x}`).toEqual([T.SAND, T.SAND, T.SAND, T.SAND]);
           else expect([w.getFg(x, s), w.getFg(x, s + 1)], `${seed} ${x}`).toEqual([T.GRASS, T.DIRT]);
@@ -138,7 +166,7 @@ describe('gen2 sea points: islands / shipwrecks / floating crates', () => {
   it('slotOf 反查海槽（P12）', () => {
     // brief 的範圍 [4200, 7200) 在 'sid' 只有第一道海、它的槽全是島（測試會是空的）→ 放寬到東側 30000 格
     const src = new Gen2Source('sid'), bps = new BlueprintIndex('sid', src.layout, src.profile).overlapping(4200, 4200 + 30_000);
-    const sea = bps.filter((q) => q.kind === 'shipwreck' || q.kind === 'crate');
+    const sea = bps.filter((q) => ['shipwreck', 'crate', 'reef', 'sea_ruin', 'island'].includes(q.kind));
     expect(sea.length).toBeGreaterThan(0);
     for (const b of sea) {
       const s = slotOf(b.id, src.layout);

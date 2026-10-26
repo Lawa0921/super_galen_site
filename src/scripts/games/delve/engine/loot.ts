@@ -8,7 +8,9 @@ import { ilvlForDepth, rollDropItem, rollGear, rollRarity, type LootSource } fro
 export const CHEST_SLOTS = 20;
 export type ChestKind = 'cabin' | 'mineshaft' | 'ruin' | 'cavern' | 'sky' | 'dungeon' | 'treasure'
   /** 密室（裂紋石後面）/ 難到達處的珍寶箱：比一般箱子好 */
-  | 'secret' | 'relic';
+  | 'secret' | 'relic'
+  /** gen2 海上的漂流箱（M2a Task 20）：少量物資，沒有裝備 / 時裝 */
+  | 'crate';
 export interface Drop { item: ItemId; n: number; }
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -42,6 +44,7 @@ export function chestGear(seed: string, x: number, y: number, kind: ChestKind, d
   const d = clamp01(depth);
   const deep = kind === 'dungeon' || kind === 'treasure' || kind === 'secret' || kind === 'relic';
   const src: LootSource = deep ? 'dungeon' : 'chest';
+  if (kind === 'crate') return [];
   const n = kind === 'treasure' ? 2 : kind === 'secret' || kind === 'relic' ? 1 : r.next() < (kind === 'dungeon' ? 0.6 : 0.45) ? 1 : 0;
   const ilvl = kind === 'dungeon' || kind === 'treasure' ? Math.max(4, ilvlForDepth(d)) : Math.min(5, ilvlForDepth(d) + (kind === 'sky' || deep ? 1 : 0));
   const out: Stack[] = [];
@@ -61,6 +64,16 @@ export function chestLoot(seed: string, x: number, y: number, kind: ChestKind, d
     slots[i] = g;
   }
   return slots;
+}
+
+/** 箱子的附加物品（藍圖指定的遺物等）：每件放進第一個空格，沒有空格就蓋最後一格（與舊生成器的 addTo 同語意）；回新陣列、不改 slots */
+export function withExtras(slots: readonly (Stack | null)[], extra: readonly ItemId[]): (Stack | null)[] {
+  const out = slots.slice();
+  for (const item of extra) {
+    const k = out.indexOf(null);
+    out[k >= 0 ? k : out.length - 1] = { item, count: 1 };
+  }
+  return out;
 }
 
 /** 只在箱子裡找得到的時裝（收集目標） */
@@ -124,6 +137,14 @@ function baseChestLoot(seed: string, x: number, y: number, kind: ChestKind, dept
     slots[k++] = { item, count: Math.min(count, ITEMS[item].maxStack) };
   };
   if (kind === 'dungeon' || kind === 'treasure') return dungeonLoot(r, kind, slots);
+  // 漂流箱（Task 20）：銅幣 5–15、火把 2–5、再一樣（繩索 5–10 / 木材 6–14 / 烤魚 1）；不看深度（浮在水面上）
+  if (kind === 'crate') {
+    put('copper_coin', r.int(5, 16));
+    put('torch', r.int(2, 6));
+    const k3 = r.int(0, 3);
+    if (k3 === 0) put('rope', r.int(5, 11)); else if (k3 === 1) put('wood', r.int(6, 15)); else put('grilled_fish', 1);
+    return slots;
+  }
   if (kind === 'secret' || kind === 'relic') {
     put(d > 0.5 || r.chance(2) ? 'gold_ore' : 'silver_ore', r.int(8, 18));
     put('silver_coin', r.int(6, 16) + Math.floor(d * 20));

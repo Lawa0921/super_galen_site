@@ -10,12 +10,15 @@ import { World, type ColumnSource } from './world';
 import { chunkOfX, defaultBounds, type WorldBounds } from './coords';
 import { OuterGen, frameOf } from './legacy/chunkgen';
 import { LOAD_COLS, planStreaming } from './streaming';
-import { generateWorld, type GenResult, type BiomeSegment, type Structure, type Landform, type ReservedZone, type GenLayers } from './legacy/worldgen';
+import { generateWorld, type GenResult } from './legacy/worldgen';
+import type { BiomeSegment, Structure, Landform, ReservedZone, GenLayers, GenRelic, DungeonInfo, VillageInfo, HallInfo, LandmarkInfo, GenSite } from './genTypes';
+import { SiteRegistry, legacySites } from './siteRegistry';
 import { bootBaked, bootGen2, bootLegacy, type WorldContent, type WorldGenSpec } from './worldBoot';
 import { Gen2Source } from './gen2';
+import { gen2SiteRegionId } from './gen2/structId';
+import { chartPick } from './chart';
+import type { Landmass } from './gen2/layout';
 import { BakedSource } from './bakedSource';
-import type { DungeonInfo } from './legacy/gen/dungeon';
-type GenRelic = { x: number; y: number; item: ItemId; where: string };
 import { T, W, TIER_UNBREAKABLE, tileDef, isSolidTile, isChestTile, isDoorTile, isInteractive, isBedTile, floorOk, ceilOk, ropeOk } from './tiles';
 import { ITEMS, INFO_ACCESSORIES, type Accessory, type ItemDef, type ItemId, type PickStats, type WeaponDef, type WeaponKind } from './items';
 import { bossRebirth, potLoot, type Drop } from './loot';
@@ -81,8 +84,6 @@ import { FolkWorld, type FolkEvent, type FolkHost, type FolkNpc } from './folk';
 import { ROLES, AFF_QUEST, AFF_RESCUE, BUFFS, affMul, affTier, type BuffKind, type FolkService } from './folkDefs';
 import { QuestLog, type QuestDef, type GiverInfo, type QuestCtx } from './quests';
 import { landmarkReward } from './sites';
-import type { VillageInfo, HallInfo } from './legacy/gen/settlements';
-import type { LandmarkInfo } from './legacy/gen/landmarks';
 import { isLandmarkTile } from './tiles';
 import { WALL_ITEM } from './items';
 import { marchTiles } from './aimRay';
@@ -734,9 +735,14 @@ export class DelveGame {
   readonly stonesUnlocked = new Set<number>();
   /** 外圍地區（無限世界的海 / 生態段；所有 actor 的 Discovery 共用同一個查詢與快取） */
   private readonly outerRegion: ((x: number, y: number) => Region[]) | null;
+  /** 開局就知道的地區（gen2 家鄉全知，Task 15；舊世界 = []）與地區 id 反查（gen2；舊世界 = null）——每個 actor 的 Discovery 都拿到同一份 */
+  private readonly knownRegions: readonly Region[];
+  private readonly regionResolver: ((id: number) => Region | null) | null;
   /** 地表村落 / 矮人地廳（世界生成） */
   readonly villages: readonly VillageInfo[];
   readonly halls: readonly HallInfo[];
+  /** 聚落登錄（村落 / 地廳 / 隱士 / 地城，穩定的 key；新 key → folk.addSite 放那裡的 NPC） */
+  readonly sites: SiteRegistry;
   /** 每個發現地點的地標（一次性發現物；領過的記在 discovery.landmarks） */
   readonly landmarks: readonly LandmarkInfo[];
   private landmarkAt = new Map<number, LandmarkInfo>();
@@ -851,7 +857,11 @@ export class DelveGame {
     this.world = content.world;
     // 客人副本：卸載的欄不停放（D4：回來時由房主重新同步）
     if (this.mode === 'replica') this.world.noPark = true;
+    // 生成的地標（gen2 藍圖）在那一欄載入時才登錄：每個玩家的 Discovery 都要認得它（還沒建 Discovery 的 actor 在建時補上）
+    this.world.onGenLandmark = (k) => { for (const a of this.actors.values()) a.discovery?.knowLandmark(k); };
     this.outerRegion = content.outer;
+    this.knownRegions = content.known;
+    this.regionResolver = content.resolveRegion;
     // 傳送碑：出生點那顆在 spawn.x + 7 的生成地表上（舊世界 = 中央每欄陣列、gen2 = source 的側寫：挖掘 / 蓋東西不會讓碑移動）；
     // 外圍的由陸地查詢算（有界世界沒有）
     const stoneX = content.spawn.x + 7;
@@ -894,12 +904,17 @@ export class DelveGame {
     this.halls = content.halls;
     this.landmarks = content.landmarks;
     for (const l of this.landmarks) this.landmarkAt.set(this.world.idx(l.x, l.y), l);
-    this.discovery = new Discovery(this.regions, { loreTotal: content.tablets.length, landmarks: [...this.landmarkAt.keys()] });
-    this.discovery.setOuter(this.outerRegion);
+    this.discovery = this.newDiscovery();
     // 據點核心範圍的欄 pin 住（無限世界：居民在那裡活動，不卸載）
     this.settle.attach(this.world);
-    this.folk = new FolkWorld(this.seed, this.villages, this.halls);
-    this.folk.populate(this.world);
+    this.folk = new FolkWorld(this.seed);
+    // 舊世界（legacy / baked）沿用改動前的 siteAt 範圍；gen2 用新範圍
+    this.sites = new SiteRegistry({ ranges: this.genKind === 'gen2' ? 'gen2' : 'legacy' });
+    this.sites.onAdd((s) => this.folk.addSite(this.world, s));
+    if (this.genKind !== 'gen2') for (const s of legacySites(this.villages, this.halls, this.dungeon)) this.sites.add(s);
+    // gen2 家鄉的聚落開局就登錄（居民開局就在）；之後欄載入時交來的聚落（外圍、或同一個家鄉聚落再交一次）依 key 去重
+    for (const s of content.sites) this.sites.add(s);
+    this.world.onGenSites = (ss) => { for (const s of ss) this.sites.add(s); };
     // 開局一段時間內不會遇見（第一位旅人至少四分之一天後、第一位受困者半天後）
     this.folk.enc.nextTraveller = this.time + DAY_LENGTH * 0.25;
     this.folk.enc.nextStranded = this.time + DAY_LENGTH * 0.5;
@@ -1054,8 +1069,7 @@ export class DelveGame {
     a.inventory = starterInventory();
     a.appearance = normalizeAppearance(character.appearance);
     a.explored = new ExploredMap(this.world.width, this.world.height, undefined, this.world);
-    a.discovery = new Discovery(this.regions, { loreTotal: this.tablets.length, landmarks: [...this.landmarkAt.keys()] });
-    a.discovery.setOuter(this.outerRegion);
+    a.discovery = this.newDiscovery();
     this.actors.set(pid, a);
     this.evRead.set(pid, this.evBase + this.events.length);
     this.withActor(a, () => {
@@ -2198,9 +2212,21 @@ export class DelveGame {
     this.markers = r.markers;
     return r.action;
   }
-  /** 古碑 (x,y) 的碑文編號 */
+  /** 古碑 (x,y) 的碑文編號：舊生成器的碑 > gen2 藍圖登錄的碑 > 座標雜湊 */
   tabletId(x: number, y: number): number {
-    return this.tabletAt.get(this.world.idx(x, y)) ?? ((x * 7 + y) % 14);
+    const k = this.world.idx(x, y);
+    return this.tabletAt.get(k) ?? this.world.genTablets.get(k) ?? ((x * 7 + y) % 14);
+  }
+  /** 目前已知的地標鍵：舊生成器的 + gen2 已登錄的（新建的 Discovery 用） */
+  private landmarkKeys(): number[] { return [...this.landmarkAt.keys(), ...this.world.genLandmarks.keys()]; }
+  /** 一個 actor 的 Discovery：中央地區 + 外圍查詢；gen2 另外 trackOuter（Q12）、開局已知的家鄉地區、id 反查（Task 15） */
+  private newDiscovery(): Discovery {
+    const gen2 = this.genKind === 'gen2';
+    const d = new Discovery(this.regions, { loreTotal: this.tablets.length, landmarks: this.landmarkKeys(), open: gen2, trackOuter: gen2 });
+    d.setOuter(this.outerRegion);
+    d.know(this.knownRegions);
+    d.setResolver(this.regionResolver);
+    return d;
   }
 
   // ── 床 / 傳送石 ───────────────────────────────────────
@@ -2582,10 +2608,9 @@ export class DelveGame {
       return Boolean(c);
     }
     if (id === T.QUEST_BOARD) {
-      const v = this.villages.findIndex((q) => Math.abs(q.board.x - x) <= 2 && Math.abs(q.board.y - y) <= 2);
-      const elder = this.folk.byKey(`v${Math.max(0, v)}:elder`);
-      if (!elder) return false;
-      this.emit({ type: 'folktalk', key: elder.key, line: '委託板上釘著幾張紙條。做完了去找村長領報酬。', board: true });
+      const key = this.questGiverAt(x, y);
+      if (!key) return false;
+      this.emit({ type: 'folktalk', key, line: '委託板上釘著幾張紙條。做完了去找村長領報酬。', board: true });
       return true;
     }
     if (isLandmarkTile(id)) return this.claimLandmark(x, y);
@@ -4249,7 +4274,7 @@ export class DelveGame {
     if (!n || !sv || sv.kind !== 'reveal') return false;
     const price = shopPrice(sv.price ?? 100, n.mood);
     const pt = this.playerTile();
-    const left = this.regions.filter((r) => r.ax >= 0 && !this.discovery.isFound(r.id) && !this.markers.some((m) => m.x === r.ax && m.y === r.ay));
+    const left = this.discovery.listKnown().filter((r) => r.ax >= 0 && !this.discovery.isFound(r.id) && !this.markers.some((m) => m.x === r.ax && m.y === r.ay));
     if (!left.length) return false;
     if (this.coins() < price) { this.block('use', 'coins', 0, 0); return false; }
     left.sort((a, b) => Math.hypot(a.ax - pt.x, a.ay - pt.y) - Math.hypot(b.ax - pt.x, b.ay - pt.y));
@@ -4404,13 +4429,13 @@ export class DelveGame {
       get viewHalf() { return self.viewHalf; },
       isNight: () => this.isNight(), playerTiles: () => this.playerTiles(),
       underground: (x, y) => {
-        const b = this.dungeon?.bbox;
-        return y > this.world.layersAt(x).rock + 4 && !(b && x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
+        if (y <= this.world.layersAt(x).rock + 4) return false;
+        return !this.sites.list('dungeon').some(({ info: { bbox: b } }) => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
       },
       onSurface: (x, y) => {
         return y <= this.world.layersAt(x).rock - 6 && y <= this.world.surfaceAt(x) + 4;
       },
-      safeAt: (x, y) => this.settle.claimAt(x, y) !== null || this.siteAt(x, y) !== null,
+      safeAt: (x, y) => this.folkSafeAt(x, y),
       playerOverlaps: (x, y) => this.tileOverlapsPlayer(x, y),
       wantHerbalist: () => !this.settle.npc('healer') && !this.settle.invited.has('healer'),
     };
@@ -4432,25 +4457,33 @@ export class DelveGame {
     }
     if (this.tick % 30 === 0) this.refreshQuests();
   }
-  /** (x,y) 在哪個村落 / 地廳裡（範圍含村外的緩坡） */
-  siteAt(x: number, y: number): { kind: 'village' | 'hall'; i: number } | null {
-    for (let i = 0; i < this.villages.length; i++) {
-      const v = this.villages[i];
-      if (x >= v.x0 - 12 && x <= v.x1 + 12 && y >= v.ground - 28 && y <= v.ground + 4) return { kind: 'village', i };
-    }
-    for (let i = 0; i < this.halls.length; i++) {
-      const h = this.halls[i];
-      if (x >= h.x0 - 4 && x <= h.x1 + 4 && y >= h.y0 - 5 && y <= h.floorY + 2) return { kind: 'hall', i };
-    }
-    return null;
+  /**
+   * 世界 NPC 的「安全的地方」（旅人不在這裡出現；護送到這裡算完成）：據點範圍、村落 / 地廳 / 隱士小屋；
+   * 地城不算（裡面還有怪，護送不能在地城裡結束）
+   */
+  folkSafeAt(x: number, y: number): boolean {
+    if (this.settle.claimAt(x, y) !== null) return true;
+    const s = this.siteAt(x, y);
+    return s !== null && s.kind !== 'dungeon';
   }
-  /** 地區名（村落 / 地廳：discovery 的名字） */
-  siteName(kind: 'village' | 'hall', i: number): string {
-    const rk = kind === 'village' ? 'village' : 'dwarf_hall';
-    const s = kind === 'village' ? this.villages[i] : this.halls[i];
-    if (!s) return '';
-    const cx = (s.x0 + s.x1) >> 1, cy = kind === 'village' ? (s as VillageInfo).ground - 2 : (s as HallInfo).floorY - 2;
-    return this.regions.find((r) => r.kind === rk && r.contains(cx, cy))?.name ?? '';
+  /** (x,y) 的委託板給委託的 NPC key：委託板所在村子的村長（找不到村子就是第一座村子，同改動前）；沒有村長 → null */
+  questGiverAt(x: number, y: number): string | null {
+    const at = this.sites.at(x, y), v = at?.kind === 'village' ? at : this.sites.list('village')[0];
+    return (v ? this.folk.byKey(`${v.key}:elder`) : null)?.key ?? null;
+  }
+  /** (x,y) 在哪個聚落裡（舊世界：村落含村外的緩坡、地廳外框外擴，同改動前；gen2 的範圍見 SiteRegistry） */
+  siteAt(x: number, y: number): GenSite | null { return this.sites.at(x, y); }
+  /** 聚落名（村落 / 地廳 / 隱士小屋：discovery 的名字；其他 / 不認得的 key → ''） */
+  siteName(key: string): string {
+    const s = this.sites.byKey(key);
+    let cx: number, cy: number, rk: string;
+    if (s?.kind === 'village') { cx = (s.info.x0 + s.info.x1) >> 1; cy = s.info.ground - 2; rk = 'village'; }
+    else if (s?.kind === 'hall') { cx = (s.info.x0 + s.info.x1) >> 1; cy = s.info.floorY - 2; rk = 'dwarf_hall'; }
+    else if (s?.kind === 'hermit') { cx = s.at.x; cy = s.at.y; rk = 'hermit'; }
+    else return '';
+    // 先查已知表；不在已知表的（外圍欄登錄、還沒走過的聚落）退回外圍查詢（gen2Regions，同一份快取）；都沒有 → ''
+    const hit = this.discovery.listKnown().find((r) => r.kind === rk && r.contains(cx, cy)) ?? this.outerRegion?.(cx, cy).find((r) => r.kind === rk);
+    return hit?.name ?? '';
   }
   private talkFolk(n: FolkNpc): void {
     const lines = ROLES[n.role].lines;
@@ -4561,6 +4594,13 @@ export class DelveGame {
         msg = `「${r.name}」在（${r.x}, ${r.y}），已經標在你的地圖上了`;
         break;
       }
+      // 隱士的 chart（M2a Task 20）：下一片大陸的大東西；都找到 / 標過了就退回一般的 scout
+      case 'chart': {
+        const r = this.chartTarget(who.key) ?? this.scout();
+        if (!r) return fail('我知道的地方，你都已經去過了');
+        msg = `「${r.name}」在（${r.x}, ${r.y}），已經標在你的地圖上了`;
+        break;
+      }
       default: return fail('');
     }
     if (price > 0) pay(this.inventory, price);
@@ -4663,17 +4703,42 @@ export class DelveGame {
       if (this.discovery.landmarks.has(i) || marked(l.x, l.y)) continue;
       cand.push({ name: tileDef(l.tile).name.zh, x: l.x, y: l.y, d: Math.hypot(l.x - pt.x, (l.y - pt.y) * 1.5) });
     }
-    for (const r of this.regions) {
+    for (const r of this.discovery.listKnown()) {
       if (r.ax < 0 || r.cat === 'land' || r.cat === 'depth' || this.discovery.isFound(r.id) || marked(r.ax, r.ay)) continue;
       cand.push({ name: r.name, x: r.ax, y: r.ay, d: Math.hypot(r.ax - pt.x, (r.ay - pt.y) * 1.5) * 0.9 });
     }
     cand.sort((a, b) => a.d - b.d);
     const c = cand[0];
-    if (!c) return null;
-    this.explored.revealDisc(c.x, c.y, 10);
-    this.addScoutMark(c.x, c.y);
-    this.lastScout = { name: c.name, x: c.x, y: c.y };
+    return c ? this.markScout(c.name, c.x, c.y) : null;
+  }
+  /** 嚮導 / 線索 / 隱士的 chart 標好一個地點：地圖揭露周圍、加標記、記成 lastScout */
+  private markScout(name: string, x: number, y: number): { name: string; x: number; y: number } {
+    this.explored.revealDisc(x, y, 10);
+    this.addScoutMark(x, y);
+    this.lastScout = { name, x, y };
     return this.lastScout;
+  }
+  /**
+   * 隱士的 chart（M2a Task 20）：隱士所在地塊朝外的下一片大陸（島上的隱士 = 該海朝外、荒野大陸的隱士小屋 = 該大陸朝外）的錨點大東西
+   * （村莊 / 小地城 / 地廳；Discovery.region 查得到）裡，離隱士最近、還沒找到、還沒標過、地圖錨點在世界內的那一處（chart.chartPick）→ 標上地圖（同 scout）。
+   * 沒有（不是 gen2 世界 / 不是聚落的 NPC / 家鄉 / 都找到或標過了）→ null，呼叫端退回 scout
+   */
+  private chartTarget(key: string | undefined): { name: string; x: number; y: number } | null {
+    const src = this.gen2(), n = key ? this.folk.byKey(key) : null, s = n?.site ? this.sites.byKey(n.site) : undefined;
+    if (!src || !n) return null;
+    const hx = s?.kind === 'hermit' ? s.at.x : Math.floor((n.body.x + n.body.w / 2) / TILE_SIZE), lay = src.layout, m = lay.landmassAt(hx);
+    if (!m || m.side === 0) return null;
+    let c: Landmass | null = null;
+    for (let k = m.i + 1; k <= m.i + 2 && !c; k++) { const q = lay.landmass(m.side, k); if (q.kind === 'continent') c = q; }
+    if (!c) return null;
+    const cand: Region[] = [];
+    for (const a of src.blueprints.anchorsOf(c)) {
+      if (a.kind !== 'village' && a.kind !== 'keep' && a.kind !== 'hall') continue;
+      const b = src.blueprints.anchorBlueprint(c, a), r = b ? this.discovery.region(gen2SiteRegionId(b.id, 0)) : null;
+      if (r) cand.push(r);
+    }
+    const r = chartPick(cand, hx, (q) => this.discovery.isFound(q.id) || this.scouted.has(`${q.ax},${q.ay}`));
+    return r ? this.markScout(r.name, r.ax, r.ay) : null;
   }
   /** 嚮導的「下一步」：依目前進度給一句具體的建議 */
   nextStepHint(): string {
@@ -4683,12 +4748,15 @@ export class DelveGame {
     const tier = pick ? ITEMS[pick.item].pick!.tier : 0;
     if (tier <= 1) return '先換一把好鎬：挖銅礦，用熔爐煉成銅錠，在鐵砧旁做銅鎬。挖得快，往下才有意思。';
     if (!this.settle.cores.length) return '做一個「據點爐心」（石頭 15、木材 5、火把 3）放在地上，蓋好有床的房間，就會有人搬來住。';
-    const vi = this.villages.findIndex((v) => !this.regions.some((r) => r.kind === 'village' && r.contains(v.x0 + 3, v.ground - 2) && this.discovery.isFound(r.id)));
-    if (vi >= 0) { const v = this.villages[vi]; return `${dir(v.x0, v.ground)}有一座村子「${this.siteName('village', vi)}」。村民會賣東西、幫你鍛造治療，村長那裡還有委託。`; }
+    // 地區讀已知表（gen2 家鄉開局全知；舊世界 = 中央 regions）
+    const known = this.discovery.listKnown();
+    // 取不到名字的聚落（siteName = ''）跳過：提示絕不說「」
+    const vs = this.sites.list('village').find(({ key, info: v }) => !known.some((r) => r.kind === 'village' && r.contains(v.x0 + 3, v.ground - 2) && this.discovery.isFound(r.id)) && this.siteName(key) !== '');
+    if (vs) { const v = vs.info; return `${dir(v.x0, v.ground)}有一座村子「${this.siteName(vs.key)}」。村民會賣東西、幫你鍛造治療，村長那裡還有委託。`; }
     if (!this.settle.invited.has('healer') && !this.settle.npc('healer')) return '白天在地表多走走：路邊偶爾會遇到旅行藥師，邀請這位藥師到據點，回血會快很多。';
-    const hi = this.halls.findIndex((h) => !this.regions.some((r) => r.kind === 'dwarf_hall' && r.contains((h.x0 + h.x1) >> 1, h.floorY - 2) && this.discovery.isFound(r.id)));
-    if (hi >= 0) { const h = this.halls[hi]; return `洞穴層深處住著矮人：${dir((h.x0 + h.x1) >> 1, h.floorY)}有「${this.siteName('hall', hi)}」。他們賣地表買不到的礦石，還能用錠幫你升階裝備。`; }
-    if (this.dungeon && !this.regions.some((r) => r.kind === 'dungeon' && this.discovery.isFound(r.id))) return `${dir(this.dungeon.bbox.x, this.dungeon.bbox.y)}有一座地下城。帶夠藥水，裡面的鑰匙能打開金寶箱。`;
+    const hs = this.sites.list('hall').find(({ key, info: h }) => !known.some((r) => r.kind === 'dwarf_hall' && r.contains((h.x0 + h.x1) >> 1, h.floorY - 2) && this.discovery.isFound(r.id)) && this.siteName(key) !== '');
+    if (hs) { const h = hs.info; return `洞穴層深處住著矮人：${dir((h.x0 + h.x1) >> 1, h.floorY)}有「${this.siteName(hs.key)}」。他們賣地表買不到的礦石，還能用錠幫你升階裝備。`; }
+    if (this.dungeon && !known.some((r) => r.kind === 'dungeon' && this.discovery.isFound(r.id))) return `${dir(this.dungeon.bbox.x, this.dungeon.bbox.y)}有一座地下城。帶夠藥水，裡面的鑰匙能打開金寶箱。`;
     if (!this.bossesDefeated.has('lantern_warden')) return '地下城最深處的守望者還沒被擊敗。準備好之後，用燈芯祭品把它叫出來吧。';
     const left = this.landmarks.length - this.discovery.landmarks.size;
     return left > 0 ? `這個世界還有 ${left} 件地標沒被發現。讓我幫你標一個在地圖上？` : '你已經走遍這個世界了。要不要試試蓋一座 Lv3 的村莊？';
@@ -4702,7 +4770,7 @@ export class DelveGame {
       day: dayIndexOf(this.time),
       nearestUnfound: (x, y, cats, skip) => {
         let best: { id: number; name: string; x: number; y: number } | null = null, bd = Infinity;
-        for (const r of this.regions) {
+        for (const r of this.discovery.listKnown()) {
           if (r.ax < 0 || !cats.includes(r.cat) || this.discovery.isFound(r.id) || skip.has(r.id) || r.kind === 'village' || r.kind === 'dwarf_hall') continue;
           const d = Math.hypot(r.ax - x, (r.ay - y) * 1.2);
           if (d < bd && d > 30) { bd = d; best = { id: r.id, name: r.name, x: r.ax, y: r.ay }; }
@@ -4740,7 +4808,7 @@ export class DelveGame {
   /** 這個標記已經沒用了：那裡的地標領過了、或那個地點已經發現了 */
   private markDone(x: number, y: number): boolean {
     if (this.world.inBounds(x, y) && this.landmarkAt.has(this.world.idx(x, y))) return this.discovery.landmarks.has(this.world.idx(x, y));
-    return this.regions.some((r) => r.ax === x && r.ay === y && this.discovery.isFound(r.id));
+    return this.discovery.listKnown().some((r) => r.ax === x && r.ay === y && this.discovery.isFound(r.id));
   }
   /** 交付：要在委託人身邊（村長 / 長老 / 被護送的人） */
   turnInQuest(id: string): boolean {
@@ -4784,7 +4852,7 @@ export class DelveGame {
   // ── 地標 ──
   /** 領地標：第一次 → 獎勵 + 文字 + 線索；之後只顯示文字 */
   private claimLandmark(x: number, y: number): boolean {
-    const i = this.world.idx(x, y), info = this.landmarkAt.get(i), tile = this.world.getFg(x, y);
+    const i = this.world.idx(x, y), info = this.landmarkAt.get(i) ?? this.world.genLandmarks.get(i), tile = this.world.getFg(x, y);
     const r = landmarkReward(this.seed, tile, info?.site ?? '', this.depthFrac(x, y), i);
     if (!info || !this.discovery.claimLandmark(i)) {
       this.emit({ type: 'landmark', x, y, tile, first: false, title: r.title, text: '這裡已經搜過了。', clue: null, items: [], coins: 0 });

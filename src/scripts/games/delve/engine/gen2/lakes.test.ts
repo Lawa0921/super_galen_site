@@ -3,24 +3,19 @@
 // 形狀參數（寬 / 深 / 水位 / 橢圓 / 殼）；同一槽不同層的藍圖外框不與液體藍圖相交（後蓋的結構不會切開液體）。
 import { describe, it, expect } from 'vitest';
 import { Gen2Source } from './index';
-import { BlueprintIndex, KEEP, liquidYields, type Blueprint, type BpKind } from './blueprint';
+import { BlueprintIndex, KEEP, liquidYields, emptyObjects, partsMeet, type Blueprint, type BpKind } from './blueprint';
 import { LAVA_Y } from './profile';
-import { worldOf, loadColumns, liquidInvariant, SEEDS5 } from './testUtil';
+import { worldOf, loadColumns, liquidInvariant, snapshotLiquid, SEEDS5 } from './testUtil';
+import { anchorSpan } from './anchors';
+import { SPAWN_X } from './layout';
 import { LiquidSim } from '../liquid';
 import { LIQ, LIQ_MAX } from '../liquidKind';
 import { T } from '../tiles';
-import type { World } from '../world';
 
 const KINDS = ['lake', 'cave_lake', 'lava_pool'];
 const src = new Gen2Source('lake'), liq = new BlueprintIndex('lake', src.layout, src.profile).overlapping(-25_000, 25_000).filter((b) => KINDS.includes(b.kind));
 const ofKind = (k: string): Blueprint[] => liq.filter((b) => b.kind === k);
 
-// 外框內 liquid / liquidType 的複本
-function snapshotLiquid(w: World, b: Blueprint): number[] {
-  const out: number[] = [];
-  for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) out.push(w.getLiquid(x, y), w.getLiquidType(x, y));
-  return out;
-}
 // 藍圖最後蓋在 (x, y) 的液體值（沒有 = KEEP）
 function liqAt(b: Blueprint, x: number, y: number): number {
   let v = KEEP;
@@ -78,10 +73,11 @@ describe('gen2 static liquids: lake / cave_lake / lava_pool', () => {
   // liq 依 (layer, id) 排序，前 30 / 8 份多半是地表湖；每種各取前 6 份再驗一次
   it('每一種各 6 份：不變量 + 喚醒 300 刻不動', () => { for (const k of KINDS) settledInWorld(ofKind(k).slice(0, 6)); });
 
+  // 地下湖液面中央的 3 格石台（Task 14 的地標）底下的水格，上方是石台、不是液面
   it('每份液體藍圖的水面 / 熔岩面是一條水平線', () => {
     for (const b of liq) {
-      const tops = new Set<number>();
-      for (let k = 0; k < b.cells.length; k += 5) if (b.cells[k + 4] > 0 && !hasLiquidCellAbove(b, b.cells[k], b.cells[k + 1])) tops.add(b.cells[k + 1]);
+      const tops = new Set<number>(), m = cellMap(b);
+      for (let k = 0; k < b.cells.length; k += 5) if (b.cells[k + 4] > 0 && !hasLiquidCellAbove(b, b.cells[k], b.cells[k + 1]) && m.get(`${b.cells[k]},${b.cells[k + 1] - 1}`)?.[0] !== T.STONE) tops.add(b.cells[k + 1]);
       expect(tops.size).toBe(1);
     }
   });
@@ -127,7 +123,8 @@ describe('gen2 static liquids: lake / cave_lake / lava_pool', () => {
       (x) => [src.profile.layersAt(x).molten + 10, LAVA_Y - 14], (h) => (h + 1) >> 1);
   });
 
-  it('同一槽不同層的藍圖外框不與液體藍圖外框相交（5 個種子）', () => {
+  // 相交用部件判定（Task 11 修正 2：liquidYields 走 partsMeet；Task 18 起外圍地廳有通地表的豎井部件，外接矩形會蓋到上方的湖）
+  it('同一槽不同層的藍圖不與液體藍圖相交（部件判定，5 個種子）', () => {
     let n = 0;
     for (const seed of SEEDS5) {
       const g = new Gen2Source(seed), bps = new BlueprintIndex(seed, g.layout, g.profile).overlapping(-25_000, 25_000);
@@ -136,16 +133,17 @@ describe('gen2 static liquids: lake / cave_lake / lava_pool', () => {
         n++;
         for (const b of bps) {
           if (b === a) continue;
-          const hit = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+          const hit = partsMeet(a, b);
           expect(hit, `${seed}: ${a.kind} ${a.id} × ${b.kind} ${b.id}`).toBe(false);
         }
       }
     }
     expect(n).toBeGreaterThan(50);
-  });
+  // 5 個種子 ±25,000 格的全部藍圖（Task 11 加了小生態 / 蜂巢的建構，超過預設 5 秒）
+  }, 60_000);
 
   it('liquidYields：液體讓給相交的非液體（任一層）與較淺層的液體；不相交、同層、非液體本身都不讓', () => {
-    const bp = (kind: BpKind, layer: 0 | 1 | 2, x: number, y: number): Blueprint => ({ id: 0, kind, layer, x, y, w: 10, h: 10, cells: new Int32Array(0), chests: [] });
+    const bp = (kind: BpKind, layer: 0 | 1 | 2, x: number, y: number): Blueprint => ({ id: 0, kind, layer, x, y, w: 10, h: 10, cells: new Int32Array(0), chests: [], ...emptyObjects() });
     const lake = bp('lake', 0, 0, 0), cave = bp('cave_lake', 1, 5, 5), lava = bp('lava_pool', 2, 5, 5);
     expect(liquidYields(lake, bp('cabin', 1, 5, 5))).toBe(true);
     expect(liquidYields(lava, bp('cabin', 1, 5, 5))).toBe(true);
@@ -165,6 +163,13 @@ function ellipseCheck(bs: Blueprint[], o: { rx: [number, number]; ry: [number, n
   for (const b of bs) {
     const m = cellMap(b), inner: { x: number; y: number; q: number }[] = [];
     for (const [k, [f, q]] of m) if (f === T.AIR) { const [x, y] = k.split(',').map(Number); inner.push({ x, y, q }); }
+    // 地下湖的地標（Task 14）：液面中央 3 格石台 + 台上的行囊，原本是內部（石台那 3 格是液體）
+    const l = b.landmarks[0];
+    if (l) {
+      expect(l.tile).toBe(T.RELIC_PACK); expect(m.get(`${l.x},${l.y}`)![0]).toBe(T.RELIC_PACK);
+      inner.push({ x: l.x, y: l.y, q: 0 });
+      for (let dx = -1; dx <= 1; dx++) { expect(m.get(`${l.x + dx},${l.y + 1}`)![0]).toBe(o.shell); inner.push({ x: l.x + dx, y: l.y + 1, q: full(o.type) }); }
+    }
     const ys = inner.map((c) => c.y), y0 = Math.min(...ys), y1 = Math.max(...ys), h = y1 - y0 + 1, ry = (h - 1) >> 1, cy = y0 + ry;
     const xs = inner.map((c) => c.x), cx = (Math.min(...xs) + Math.max(...xs)) >> 1, rx = cx - Math.min(...xs);
     // 液面高過最寬列（地下湖）時兩肩填成殼，量到的半寬 = 液面那列的半寬（ry ≤ 12、液面在中心上 ≤ 2 列：至少 rx − 1）
@@ -187,3 +192,32 @@ function ellipseCheck(bs: Blueprint[], o: { rx: [number, number]; ry: [number, n
     }
   }
 }
+
+// 修正第 1 輪：家鄉的地表湖錨點（Task 17）用 buildLake force。placeX 的三個候選都不合條件（兩岸差 ≤ 8、外框內沒有高出水位 > 8 的丘）時，
+// forceX 先掃整個可用範圍找第一個合條件的 x（實測 lf-0..1999：6 次），再不行取兩岸差最小的 x、照樣以兩岸較低者為水位（2 次，兩岸差最大 11）；
+// 其餘 1992 次是一般候選。下面驗 200 個家鄉 + 那 8 個走到備案的種子：兩岸差 ≤ 12、湖裡有水、水面 = 兩岸較低者、液體靜止
+// （liquidInvariant：每個水格的下方與左右是實心或水 → 不溢出、湖底不懸空），而且備案真的被驗到（≥ 8 次）
+const FORCE_SEEDS = ['lf-87', 'lf-302', 'lf-670', 'lf-1035', 'lf-1307', 'lf-1315', 'lf-1403', 'lf-1990'];
+describe('家鄉地表湖錨點（buildLake force）', () => {
+  it('200 個家鄉 + 8 個走到 forceX 的種子：兩岸差 ≤ 12、有水、水面 = 兩岸較低者、液體靜止；備案真的驗到', () => {
+    let fallback = 0;
+    for (const seed of [...Array.from({ length: 200 }, (_, k) => `lf-${k}`), ...FORCE_SEEDS.slice(1)]) {
+      const g = new Gen2Source(seed), m = g.layout.landmassAt(SPAWN_X)!, a = g.blueprints.anchorsOf(m).find((q) => q.kind === 'lake')!;
+      const b = g.blueprints.anchorBlueprint(m, a)!, p = g.profile, w = b.w - 4;
+      // 湖欄 [b.x + 2, b.x + 2 + w)、兩岸 b.x + 1 / b.x + 2 + w（湖壁各 2 欄）
+      const sl = p.surfaceAt(b.x + 1), sr = p.surfaceAt(b.x + 2 + w), level = Math.max(sl, sr);
+      expect(Math.abs(sl - sr), `${seed} banks`).toBeLessThanOrEqual(12);
+      let ok = Math.abs(sl - sr) <= 8;
+      for (let x = b.x; x < b.x + b.w && ok; x++) if (p.surfaceAt(x) < level - 8) ok = false;
+      const sp = anchorSpan(seed, a), sw = sp.x1 - sp.x0, mid = sp.x0 + (sw >> 1), q = Math.floor(sw / 4);
+      if (!ok || ![mid, mid - q, mid + q].map((c) => c - (b.w >> 1)).includes(b.x)) fallback++;
+      const wd = worldOf(g);
+      loadColumns(wd, b.x - 2, b.x + b.w + 2);
+      let water = 0, top = Infinity;
+      for (let x = b.x; x < b.x + b.w; x++) for (let y = b.y; y < b.y + b.h; y++) if (wd.getLiquid(x, y) > 0 && wd.getLiquidType(x, y) === LIQ.WATER) { water++; top = Math.min(top, y); }
+      expect(water, `${seed} water`).toBeGreaterThan(0); expect(top, `${seed} level`).toBe(level);
+      expect(liquidInvariant(wd, b.x - 1, b.x + b.w + 1), seed).toEqual([]);
+    }
+    expect(fallback).toBeGreaterThanOrEqual(FORCE_SEEDS.length);
+  }, 180_000);
+});

@@ -9,7 +9,7 @@ import { ENEMIES } from '../engine/enemies';
 import { drawBmpIcon, drawIcon, type Atlas } from './textures';
 import { fashionIcon } from './fashionIcon';
 import { tintKey } from '../engine/tint';
-import { countLabel, recipeRows, statusText } from './model';
+import { areaLabel, countLabel, recipeRows, statusText } from './model';
 import { CHEST_SLOTS } from '../engine/loot';
 import { heartFills } from './tooltip';
 import type { Stack } from '../engine/inventory';
@@ -700,9 +700,8 @@ export class Hud {
     this.drawDeath();
     if (this.frame % 10 === 0) {
       const g = this.game, f = g.feetTile(), w = g.world;
-      // 區域：已發現的最小地區名（結構 > 生態區）；沒有就是未知之地
-      const here = g.discovery.regionsAt(f.x, f.y).filter((r) => r.cat !== 'depth' && g.discovery.isFound(r.id)).sort((a, b) => a.w * a.h - b.w * b.h);
-      const area = here[0]?.name ?? g.discovery.regionsAt(f.x, f.y).find((r) => g.discovery.isFound(r.id))?.name ?? '未知之地';
+      // 區域：已發現的最小地區名（結構 > 生態區；含 gen2 家鄉與走過的外圍）；沒有就是未知之地
+      const area = areaLabel(g.discovery, f.x, f.y);
       const nav = g.navInfo();
       // 深度層線：中央照舊用全世界的 cavernY / moltenY；中央以外用該欄自己的（外圍生成器每欄加了雜訊）
       const L = w.isLegacyCentral(f.x) ? null : w.layersAt(f.x);

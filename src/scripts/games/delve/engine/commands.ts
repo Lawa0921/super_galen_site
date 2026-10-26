@@ -82,8 +82,8 @@ const PENDING: { readonly [K in CmdOp]: CmdResults[K] } = {
 for (const v of Object.values(PENDING)) if (v !== null && typeof v === 'object') Object.freeze(v);
 export const CMD_PENDING: { readonly [K in CmdOp]: CmdResults[K] } = Object.freeze(PENDING);
 
-/** 鄉民服務（folkDefs 沒有匯出清單） */
-export const FOLK_SERVICES = ['heal', 'bless', 'ward', 'minesong', 'forge', 'deepforge', 'hint', 'scout', 'invite', 'rescue'] as const satisfies readonly FolkService[];
+/** 鄉民服務（folkDefs 沒有匯出清單；chart = 隱士的海圖，M2a Task 20） */
+export const FOLK_SERVICES = ['heal', 'bless', 'ward', 'minesong', 'forge', 'deepforge', 'hint', 'scout', 'invite', 'rescue', 'chart'] as const satisfies readonly FolkService[];
 
 // ── 欄位解析：回傳要放進新物件的值，不合法 → BAD ─────────────
 const BAD: unique symbol = Symbol('bad');
